@@ -70,12 +70,13 @@ function block(x: number, y: number, z: number, w: number, h: number, d: number,
     Mesh3D: { shape: 'box', width: w, height: h, depth: d, frontTint: side, backTint: side, edgeTint: top, ...(vox ? { voxelTex: vox } : {}) },
   };
 }
-const PAT_BY_ACT: Array<VoxelTex['pattern']> = ['grass', 'stone', 'plain', 'crystal'];
-/** 由层主题派生地台/墙的体素贴图（tile=每边格数·§B 7×7 → tile 7）。 */
-const floorTex = (t: ActDef, act: number): VoxelTex => ({ top: t.floorTop, top2: t.top2, side: t.floorSide, side2: t.side2, trim: t.trim, pattern: PAT_BY_ACT[act % 4], tile: 7, topSrc: tileArt(act, 'top'), sideSrc: tileArt(act, 'side') });
+/** 围墙体素贴图（tile=每边格数·§B 7×7 → tile 7）。地台改金属 Material3D 后不再用 floorTex（已删）。 */
 const wallTex = (t: ActDef, act: number): VoxelTex => ({ top: t.wall, side: t.wall, side2: t.side2, trim: t.trim, wall: true, tile: 7, sideSrc: tileArt(act, 'wall') });
-// 围墙金属材质（owner 2026-07-03「场馆稍微有点金属质感」）：iron 预设 + **主题墙色 tint** = 带金属反光的墙、保留主题色（渲染器 Material3D 优先于 voxelTex）·靠 Sky3D.env(IBL) 反射成像。
-const wallMetal = (t: ActDef) => ({ preset: 'iron' as const, color: t.wall, surface: { pattern: 'bumps' as const, tiles: 6, normal: 0.32, rough: 0.55 } });
+// 场馆整体金属化（owner 2026-07-03「所有东西换金属质感·跟金环一致·不完全一样·色彩微调」）：
+//   结构件（墙/地/基座）= 哑光**铁** iron + 主题色 tint（暗·粗糙·稳）；亮件（火盆碗珠/门/环）= 抛光**金** gold（亮·反射强）。
+//   Material3D 优先于 voxelTex（渲染器）·都靠 Sky3D.env(IBL) 反射成像。一致=同金属家族·不同=结构哑光 vs 亮件抛光。
+const metalStruct = (color: number) => ({ preset: 'iron' as const, color, surface: { pattern: 'bumps' as const, tiles: 6, normal: 0.3, rough: 0.55 } });
+const metalBright = (color: number) => ({ preset: 'gold' as const, color, surface: { pattern: 'bumps' as const, tiles: 5, normal: 0.32, rough: 0.32 } });
 
 /**
  * 即时生成第 index 间竞技场的全部实体（id 以 `r{index}-` 前缀·跨房间唯一·便于流式卸载）。
@@ -102,9 +103,9 @@ function cornerBraziers(P: string, baseZ: number, hw: number, hd: number, pillar
   let n = 0;
   for (const x of xs) for (const z of zs) {
     const k = `${P}-bra${n++}`;
-    out[`${k}-pil`] = block(x, 0.55, baseZ + z, 0.28, 1.1, 0.28, pillar, pillarSide);
-    out[`${k}-bowl`] = block(x, 1.22, baseZ + z, 0.42, 0.24, 0.42, hot, hotSide);
-    out[`${k}-orb`] = block(x, 1.5, baseZ + z, 0.28, 0.28, 0.28, hot, hot);
+    out[`${k}-pil`] = { ...block(x, 0.55, baseZ + z, 0.28, 1.1, 0.28, pillar, pillarSide), Material3D: metalStruct(pillar) }; // 火炬立柱=铁
+    out[`${k}-bowl`] = { ...block(x, 1.22, baseZ + z, 0.42, 0.24, 0.42, hot, hotSide), Material3D: metalBright(hot) }; // 火盆碗=金
+    out[`${k}-orb`] = { ...block(x, 1.5, baseZ + z, 0.28, 0.28, 0.28, hot, hot), Material3D: metalBright(hot) }; // 火珠=金
     out[`${k}-glow`] = glow(x, 1.62, baseZ + z, 0xffb05a, 1.7, 0.42); // 火盆暖光晕（收敛·owner「颜色怪」=地台上过亮光斑→降透明/尺寸）
   }
   return out;
@@ -132,29 +133,30 @@ export function genRoom(index: number): Record<string, Ent> {
 
   const out: Record<string, Ent> = {
     // ── 浮空微缩盒庭：分层基座（往下收窄的两级台·§B 基座 y −1.0 / −2.3）──
-    [`${P}-plinth1`]: block(0, -1.0, baseZ, hw * 2 + 1.0, 0.6, hd * 2 + 1.0, darken(t.floorSide, 0.18), darken(t.floorSide, 0.34)),
-    [`${P}-plinth2`]: block(0, -2.3, baseZ, hw * 2 + 0.3, 0.7, hd * 2 + 0.3, darken(t.floorSide, 0.42), darken(t.floorSide, 0.56)),
-    // 竞技场地台（顶在 y=0·§B 薄地格 0.45）——顶面程序化地砖网格（复刻「带精美贴图的体素」·tile 7）
-    [`${P}-floor`]: block(0, -FLOOR_H / 2, baseZ, hw * 2, FLOOR_H, hd * 2, t.floorTop, t.floorSide, undefined, floorTex(t, m.act)),
+    [`${P}-plinth1`]: { ...block(0, -1.0, baseZ, hw * 2 + 1.0, 0.6, hd * 2 + 1.0, darken(t.floorSide, 0.18), darken(t.floorSide, 0.34)), Material3D: metalStruct(darken(t.floorSide, 0.22)) },
+    [`${P}-plinth2`]: { ...block(0, -2.3, baseZ, hw * 2 + 0.3, 0.7, hd * 2 + 0.3, darken(t.floorSide, 0.42), darken(t.floorSide, 0.56)), Material3D: metalStruct(darken(t.floorSide, 0.42)) },
+    // 竞技场地台（顶在 y=0·§B 薄地格 0.45）——**金属地盘**（owner 整场金属化）。撤 floorTex（顶面手绘草贴图会盖过 Material3D）→ 纯金属；
+    // 色彩微调：地面用暖青铜色 floorSide（非绿 floorTop）→ 明显金属、跟金环一致。
+    [`${P}-floor`]: { ...block(0, -FLOOR_H / 2, baseZ, hw * 2, FLOOR_H, hd * 2, t.floorTop, t.floorSide), Material3D: metalStruct(t.floorSide) },
     // 三面围墙（左/右/后=入口侧·§B 墙高 0.85）——墙纹 + 顶饰条
-    [`${P}-wall-l`]: { ...block(-hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: wallMetal(t) },
-    [`${P}-wall-r`]: { ...block(hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: wallMetal(t) },
-    [`${P}-wall-back`]: { ...block(0, wcy, baseZ - hd, hw * 2, WALL_H, WALL_T, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: wallMetal(t) },
+    [`${P}-wall-l`]: { ...block(-hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: metalStruct(t.wall) },
+    [`${P}-wall-r`]: { ...block(hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: metalStruct(t.wall) },
+    [`${P}-wall-back`]: { ...block(0, wcy, baseZ - hd, hw * 2, WALL_H, WALL_T, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: metalStruct(t.wall) },
     // 前墙留中央门洞（+Z 端·通向上一间·发光门楣 + 门内符文光幕）
-    [`${P}-wall-fl`]: { ...block(-segCx, wcy, baseZ + hd, segW, WALL_H, WALL_T, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: wallMetal(t) },
-    [`${P}-wall-fr`]: { ...block(segCx, wcy, baseZ + hd, segW, WALL_H, WALL_T, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: wallMetal(t) },
-    [`${P}-door-top`]: block(0, WALL_H + 0.16, baseZ + hd, DOOR, 0.32, WALL_T, t.accent, t.wall),
+    [`${P}-wall-fl`]: { ...block(-segCx, wcy, baseZ + hd, segW, WALL_H, WALL_T, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: metalStruct(t.wall) },
+    [`${P}-wall-fr`]: { ...block(segCx, wcy, baseZ + hd, segW, WALL_H, WALL_T, t.wall, t.floorSide, undefined, wallTex(t, m.act)), Material3D: metalStruct(t.wall) },
+    [`${P}-door-top`]: { ...block(0, WALL_H + 0.16, baseZ + hd, DOOR, 0.32, WALL_T, t.accent, t.wall), Material3D: metalBright(t.accent) }, // 门楣=金
     [`${P}-portal`]: block(0, 0.5, baseZ + hd - 0.04, DOOR - 0.15, WALL_H + 0.15, 0.08, t.accent, t.accent),
     [`${P}-door-glow`]: glow(0, 0.75, baseZ + hd - 0.2, t.accent, 2.4, 0.6), // 门符文光晕
     // 通向上一间的短走廊（穿过门洞·暗示"还有更上面"）
-    [`${P}-corridor`]: block(0, -FLOOR_H / 2, baseZ + ROOM_SPACING / 2, DOOR, FLOOR_H, ROOM_SPACING - hd - HD, t.floorTop, t.floorSide),
+    [`${P}-corridor`]: { ...block(0, -FLOOR_H / 2, baseZ + ROOM_SPACING / 2, DOOR, FLOOR_H, ROOM_SPACING - hd - HD, t.floorTop, t.floorSide), Material3D: metalStruct(t.floorTop) },
     // ── 四角发光火盆（暖光晕 + 纵向层次·微缩盒庭标志·§B @±4.3）──
     ...cornerBraziers(P, baseZ, hw, hd, t.wall, t.floorSide, BRAZIER, BRAZIER_HOT),
     // ── 上方漂浮灯笼（加性暖光晕·复刻原型 lantern glowSprite）──
-    // 上面两盏灯笼换成**两个小巧竖立旋转金属环**（命运之环·owner 2026-07-03「要小·和灯差不多大·点缀比例」）——就摆在原灯位、左右反向不同速转。
-    [`${P}-ring-l`]: metalRing(-2.1, 2.9, baseZ - 1.6, 0.72, 1.4),
-    [`${P}-ring-r`]: metalRing(2.4, 3.1, baseZ + 0.8, 0.72, -1.15),
-    [`${P}-lan3`]: glow(0, 3.3, baseZ - 2.4, LANTERN, 1.4, 0.28), // 顶后一盏灯笼留着（暖氛围）
+    // 命运之环：两个小巧竖立旋转金属环，摆在**战场左上角/右上角**（= 屏上方门侧两个火炬/火盆的位置·+Z 端·owner 2026-07-03 澄清）——悬在火炬上方、左右反向不同速转。
+    [`${P}-ring-l`]: metalRing(-(hw + 0.8), 1.85, baseZ + (hd + 0.8), 0.8, 1.4),
+    [`${P}-ring-r`]: metalRing(hw + 0.8, 1.85, baseZ + (hd + 0.8), 0.8, -1.15),
+    // 三盏漂浮灯笼撤了（上面两盏换成命运之环·顶后一盏也去掉·保持光秃）。四角火炬(火盆)留着做「竖起来的火炬」。
   };
 
   // 中心 furniture 全撤（owner 2026-07-03「场景里的平台 + 旋转骰子都去掉·先要光秃秃的场景」）：
