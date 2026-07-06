@@ -23,6 +23,7 @@ export const B_GOAL = 0;         // 敌兵越过此格(→−1) → 我大本营
 // ── 回合经济（doc24 §四·真机调；各 cost 暂定 1）──
 export const TURN_HOME_BLOOD = 3;
 export const MANA_START = 4, MANA_PER_TURN = 1; // 起手源泉 4（owner 2026-06-23 REQ-G-起手源泉·双方对称·6→3→4·4vs3 未最终拍板·先按 4·一行常量）；每回合 +1（前 10 回合）
+export const MANA_CAP = 10; // 源泉累积上限（owner 2026-07-04 拍板·bug：无处可花时一路涨到 15→封顶 10·双方对称；满 10 再 += 为浪费→源泉 sink「源泉换战力/直接施法」另议）
 export const MANA_PER_TURN_LATE = 2, MANA_RAMP_TURN = 10; // 第 10 回合后提速到 +2（owner 2026-06-21·后期放大节奏）
 /** 该回合开始应 +多少召唤源泉（turn>10 提速到 2·否则 1）。 */
 export const manaGain = (turn: number): number => (turn > MANA_RAMP_TURN ? MANA_PER_TURN_LATE : MANA_PER_TURN);
@@ -647,8 +648,10 @@ export function endTurnFinish(b: TurnBattle): void {
     b.active = 'b'; b.b.swapsUsed = 0; // 换牌硬帽·新回合方重置(owner 2026-07-03)
     if (b.turn > 1) b.b.mana += manaGain(b.turn); // turn-1 b 已带 MANA_START 起步（①）·turn-2 起对称 +源泉
     if (b.dishaB.bonusMana > 0) b.b.mana += b.dishaB.bonusMana; // 地煞·大军压境/机动调度
+    b.b.mana = Math.min(MANA_CAP, b.b.mana); // 源泉封顶 10（owner 2026-07-04·防无处可花累积溢出）
   } else {
     b.active = 'a'; b.turn += 1; b.a.mana += manaGain(b.turn); b.a.swapsUsed = 0; // 换牌硬帽·新回合方重置
+    b.a.mana = Math.min(MANA_CAP, b.a.mana); // 源泉封顶 10（owner 2026-07-04）
   }
   b.actionTaken = null;
 }

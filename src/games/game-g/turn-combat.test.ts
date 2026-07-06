@@ -234,6 +234,13 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lanes[0].a[0].slot).toBe(6);  // 下回合正常推进 1 格补进
   });
 
+  it('源泉封顶 10（owner 2026-07-04·防无处可花累积溢出到 15）', () => {
+    const b = initTurnBattle({ seed: 5 });                       // 空场·双方无兵 → 不消耗源泉
+    for (let i = 0; i < 40 && b.winner === 'pending'; i++) endTurn(b); // 空跑多回合·源泉本会一路涨
+    expect(b.a.mana).toBeLessThanOrEqual(10); expect(b.b.mana).toBeLessThanOrEqual(10); // 封顶
+    expect(Math.max(b.a.mana, b.b.mana)).toBe(10);              // 确实涨到了上限(证封顶生效而非没涨)
+  });
+
   it('突深边角回归(REQ-G-突深边角)：玩家突深贴敌家·敌新兵落身后 → 敌移动不反向传送/不越界', () => {
     const b = initTurnBattle({ seed: 5 });
     b.lanes[0].a = [unit('as', 'A', 7)];                                 // 玩家突深单兵 @7(贴敌家8)
