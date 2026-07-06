@@ -97,6 +97,43 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
   const [copied, setCopied] = useState(false);
   const [importing, setImporting] = useState(false);
   const [generating, setGenerating] = useState(false);
+  // 右键 vendor 菜单（copy 到游戏）：游戏列表 + 菜单锚点 + 轻提示。
+  const [games, setGames] = useState<ReadonlyArray<{ id: string; hasLocalArt: boolean }>>([]);
+  const [menu, setMenu] = useState<{ x: number; y: number; rec: LibraryRecord } | null>(null);
+  const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [vendoring, setVendoring] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/games')
+      .then((r) => r.json())
+      .then((j) => setGames((j?.games ?? []) as ReadonlyArray<{ id: string; hasLocalArt: boolean }>))
+      .catch(() => setGames([]));
+  }, []);
+
+  const openMenu = useCallback((e: React.MouseEvent, rec: LibraryRecord) => {
+    e.preventDefault();
+    setSelectedId(rec.id);
+    setMenu({ x: e.clientX, y: e.clientY, rec });
+  }, []);
+
+  const vendorTo = useCallback(async (rec: LibraryRecord, game: string) => {
+    if (vendoring) return;
+    setVendoring(true);
+    setMenu(null);
+    try {
+      const res = await fetch('/api/assets/vendor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: rec.id, game }),
+      }).then((r) => r.json());
+      setToast(res.success ? { ok: true, msg: `✓ 已 copy「${rec.id}」→ ${game}` } : { ok: false, msg: `✕ ${res.error ?? 'vendor 失败'}` });
+    } catch (e) {
+      setToast({ ok: false, msg: `✕ ${String(e)}` });
+    } finally {
+      setVendoring(false);
+      window.setTimeout(() => setToast(null), 3200);
+    }
+  }, [vendoring]);
 
   const enabledSources = useMemo(
     () => (Object.keys(sources) as LibrarySource[]).filter((s) => sources[s]),
@@ -273,7 +310,7 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
           <div style={{ flex: 1, overflow: 'auto', padding: 12, display: 'flex', flexWrap: 'wrap', gap: 8, alignContent: 'flex-start' }}>
             {shown.length === 0 && <div style={{ color: SHELL.dim, fontSize: 13, padding: 8 }}>无匹配资产</div>}
             {shown.map((r) => (
-              <AssetCard key={`${r.source}:${r.id}`} r={r} px={thumbPx} active={selectedId === r.id} onPick={() => setSelectedId(r.id)} />
+              <AssetCard key={`${r.source}:${r.id}`} r={r} px={thumbPx} active={selectedId === r.id} onPick={() => setSelectedId(r.id)} onContext={(e) => openMenu(e, r)} />
             ))}
           </div>
           {/* 状态栏 */}
@@ -388,13 +425,54 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
           )}
         </div>
       </div>
+
+      {/* ── 右键菜单：copy 到游戏（vendor 进该游戏本地美术目录）── */}
+      {menu && (
+        <>
+          <div onClick={() => setMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMenu(null); }} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+          <div style={{ position: 'fixed', left: Math.min(menu.x, window.innerWidth - 220), top: Math.min(menu.y, window.innerHeight - 320), zIndex: 41, width: 208, background: SHELL.bg2, border: `1px solid ${SHELL.lineStrong}`, borderRadius: 8, boxShadow: SHELL.shadow, padding: 6, fontSize: 12, maxHeight: 300, overflow: 'auto' }}>
+            <div style={{ padding: '4px 8px', color: SHELL.dim, fontFamily: SHELL.fontMono, fontSize: 10, wordBreak: 'break-all', borderBottom: `1px solid ${SHELL.line}`, marginBottom: 4 }}>{menu.rec.id}</div>
+            {menu.rec.source !== 'project' ? (
+              <div style={{ padding: '6px 8px', color: SHELL.warn, lineHeight: 1.5 }}>
+                仅「项目资产」可 copy 到游戏<br />
+                <span style={{ color: SHELL.dim }}>（当前来源：{menu.rec.sourceLabel}）</span>
+              </div>
+            ) : (
+              <>
+                <div style={{ padding: '2px 8px 5px', color: SHELL.violet }}>📦 copy 到游戏本地库…</div>
+                {games.length === 0 && <div style={{ padding: '4px 8px', color: SHELL.dim }}>无游戏（需 python3 apollo.py）</div>}
+                {games.map((g) => (
+                  <div
+                    key={g.id}
+                    data-vendor-game={g.id}
+                    onClick={() => vendorTo(menu.rec, g.id)}
+                    style={{ padding: '5px 8px', borderRadius: 5, cursor: vendoring ? 'default' : 'pointer', color: SHELL.text, display: 'flex', alignItems: 'center', gap: 6, opacity: vendoring ? 0.5 : 1 }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = SHELL.jadeWash)}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <span style={{ color: SHELL.jade }}>▸</span> {g.id}
+                    {g.hasLocalArt && <span style={{ marginLeft: 'auto', fontSize: 9, color: SHELL.dim }}>已有本地库</span>}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── vendor 结果轻提示 ── */}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 50, padding: '9px 18px', borderRadius: 8, fontSize: 13, background: SHELL.bg2, border: `1px solid ${toast.ok ? SHELL.jadeLine : SHELL.danger}`, color: toast.ok ? SHELL.ok : SHELL.danger, boxShadow: SHELL.shadow }}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
 
 // ── 网格卡片 ──
 
-function AssetCard({ r, px, active, onPick }: { r: LibraryRecord; px: number; active: boolean; onPick: () => void }) {
+function AssetCard({ r, px, active, onPick, onContext }: { r: LibraryRecord; px: number; active: boolean; onPick: () => void; onContext: (e: React.MouseEvent) => void }) {
   const [hover, setHover] = useState(false);
   // 图上标签：语义标签优先（像素扫描层），没有则退回普通 tags；悬停 title 给全量。
   const overlayTags = (r.semanticTags?.length ? r.semanticTags : r.tags).slice(0, 2);
@@ -402,9 +480,10 @@ function AssetCard({ r, px, active, onPick }: { r: LibraryRecord; px: number; ac
   return (
     <div
       onClick={onPick}
+      onContextMenu={onContext}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      title={`${r.id}${r.semanticTags?.length ? `\n语义: ${r.semanticTags.join(' ')}` : ''}`}
+      title={`${r.id}${r.semanticTags?.length ? `\n语义: ${r.semanticTags.join(' ')}` : ''}\n（右键 copy 到游戏）`}
       style={{
         width: px + 28, padding: 6, borderRadius: 8, cursor: 'pointer',
         background: active ? SHELL.jadeWash : hover ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.015)',

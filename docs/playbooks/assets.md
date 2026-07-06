@@ -43,7 +43,8 @@
 Free Library（共享 `assets/index.json` + `FreeArtLib/`）= **货架·只被 copy**；游戏运行时**只引自己的本地索引**，要用共享资源就 vendor 进本地、**不直引货架、也不直引全局散落目录**。
 - 本地根：`public/games/<game>/art/`；本地索引：`public/games/<game>/art/index.json`（站点绝对路径 `/games/<game>/art/...` + `baseUrl ''`，游戏侧 `registerAssetIndex(parseAssetIndex(local))` 直接消费）。
 - 分类子目录（约定）：`textures/`（贴图）· `models/`（mesh glb）· `materials/`（`type:'material'` 数据资产·无文件可省目录）· `env/`（天空盒 hdr）。3D 别混进 2D 平铺目录。
-- 工具：`node scripts/vendor-asset.mjs <shared-id> <game> [--as <local-id>]`（2D/3D 同一条·携 spec/license/`provenance.vendoredFrom`·幂等；材质等数据型无文件也支持）。
+- 工具：`node scripts/vendor-asset.mjs <shared-id> <game> [--as <local-id>] [--json]`（2D/3D 同一条·携 spec/license/`provenance.vendoredFrom`·幂等；材质等数据型无文件也支持；`--json` 机读）。
+- **软件内直达**：Studio 资源库网格里**右键**任一「项目资产」→ 弹游戏列表 → 点某游戏即 copy 进它本地库（`POST /api/assets/vendor`·薄胶水 shell 调本脚本；`GET /api/games` 枚举 src/games/game-*）。FreeArtLib/游戏清单来源暂不支持右键 vendor（脚本源限共享 `assets/index.json`）。
 - 🚫 反例：游戏直引 `public/textures/` 等全局散落目录（绕过货架+本地索引）——正被 `REQ-PA-3D公用货架` ④b 消解。
 
 ## ⑦ 公用 3D 基础素材货架（可 vendor·`scripts/gen-shelf-3d.mjs` 备料）

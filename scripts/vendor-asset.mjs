@@ -24,9 +24,11 @@ function die(msg) { console.error(`vendor-asset: ${msg}`); process.exit(1); }
 const argv = process.argv.slice(2);
 const asIdx = argv.indexOf('--as');
 const localId = asIdx >= 0 ? argv[asIdx + 1] : undefined;
-const positional = argv.filter((a, i) => a !== '--as' && argv[i - 1] !== '--as');
+const asJson = argv.includes('--json'); // 机读：后端/UI 解析用
+// 位置参数 = 既不是 flag（--x）、也不是 --as 的取值
+const positional = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--as');
 const [assetId, game] = positional;
-if (!assetId || !game) die('用法: node scripts/vendor-asset.mjs <shared-asset-id> <game> [--as <local-id>]');
+if (!assetId || !game) die('用法: node scripts/vendor-asset.mjs <shared-asset-id> <game> [--as <local-id>] [--json]');
 
 // —— 读共享库·定位源条目 ——
 if (!existsSync(SHARED_INDEX)) die(`找不到共享库索引 ${SHARED_INDEX}`);
@@ -83,6 +85,10 @@ local.assets.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)); // 稳定
 
 writeFileSync(localIndexFile, JSON.stringify(local, null, 2) + '\n');
 
-console.log(`vendored "${assetId}" → ${dataOnly ? '(数据型·无文件)' : servedPath}`);
-console.log(`  本地索引: ${localIndexFile}（${local.assets.length} 条）`);
-console.log(`  游戏侧消费：registerAssetIndex(parseAssetIndex(<该 index.json>), assets)  // baseUrl ''`);
+if (asJson) {
+  console.log(JSON.stringify({ ok: true, id, game, type: src.type, dataOnly, servedPath: servedPath ?? null, localCount: local.assets.length, updated: at >= 0 }));
+} else {
+  console.log(`vendored "${assetId}" → ${dataOnly ? '(数据型·无文件)' : servedPath}`);
+  console.log(`  本地索引: ${localIndexFile}（${local.assets.length} 条）`);
+  console.log(`  游戏侧消费：registerAssetIndex(parseAssetIndex(<该 index.json>), assets)  // baseUrl ''`);
+}

@@ -1072,6 +1072,56 @@ def handle_asset_generate_providers() -> dict:
     except Exception as e:  # 脚本缺失/解析失败不炸端点
         return {'providers': [], 'error': str(e)}
 
+# ── Vendor：把共享库资产 copy 进某游戏的本地美术目录（右键"copy 到游戏"入口的后端）─────────
+# 能力"大脑"在 PA 车道的 scripts/vendor-asset.mjs（copy 文件 + upsert 本地索引·自动按类型归子目录·
+# 携 spec/license/provenance.vendoredFrom·幂等）；本端点只是薄胶水：校验 → shell 调 → 回机读结果。
+
+GAME_RE = re.compile(r'game-[a-z0-9]+')
+
+def handle_games_list() -> dict:
+    """GET /api/games。枚举 src/games/game-* 为权威游戏列表（标注是否已建本地美术目录）。"""
+    games = []
+    gdir = ROOT / 'src' / 'games'
+    if gdir.is_dir():
+        for d in sorted(gdir.iterdir()):
+            if d.is_dir() and GAME_RE.fullmatch(d.name):
+                has_art = (ROOT / 'public' / 'games' / d.name / 'art' / 'index.json').exists()
+                games.append({'id': d.name, 'hasLocalArt': has_art})
+    return {'games': games}
+
+
+def handle_asset_vendor(body: dict) -> dict:
+    """POST /api/assets/vendor。body = { id:str（共享库资产 id）, game:str, as?:str（本地 id 覆盖）}。"""
+    asset_id = str(body.get('id', '')).strip()
+    game = str(body.get('game', '')).strip()
+    as_id = body.get('as')
+    if not asset_id:
+        return {'success': False, 'error': 'id 不能为空'}
+    if not GAME_RE.fullmatch(game):  # 白名单：防注入/路径穿越
+        return {'success': False, 'error': f'非法 game: {game or "(空)"}'}
+    cmd = ['node', 'scripts/vendor-asset.mjs', asset_id, game, '--json']
+    if as_id:
+        a = str(as_id).strip()
+        # 本地 id（贴图 key 风格）：首字符 alnum、字符集 [A-Za-z0-9/_.-]、禁 ".." 段
+        if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9/_.\-]*', a) or '..' in a:
+            return {'success': False, 'error': f'非法 as id: {a}'}
+        cmd += ['--as', a]
+    try:
+        proc = subprocess.run(**_spawn(cmd), cwd=ROOT, capture_output=True, timeout=60)
+    except subprocess.TimeoutExpired:
+        return {'success': False, 'error': 'vendor 超时'}
+    out = proc.stdout.decode('utf-8', 'replace').strip()
+    if proc.returncode != 0:
+        err = proc.stderr.decode('utf-8', 'replace').strip() or out
+        return {'success': False, 'error': f'vendor 失败: {err[:400]}'}
+    line = out.splitlines()[-1] if out else ''
+    try:
+        res = json.loads(line)
+    except Exception:
+        return {'success': False, 'error': f'解析结果失败: {out[:200]}'}
+    print(c("  [VENDOR]", 'g'), f"{asset_id} → {game}")
+    return {'success': True, **res}
+
 # ── 资产自动标注（入库主动扫描 / 存量回填共用一条管线；Claude 视觉打语义标签）──
 
 AUTOTAG_SYSTEM = """You tag 2D game sprites for an asset library's search index.
@@ -1630,6 +1680,8 @@ class APIHandler(BaseHTTPRequestHandler):
             data = get_available_providers()
         elif path == '/api/assets/generate/providers':
             data = handle_asset_generate_providers()
+        elif path == '/api/games':
+            data = handle_games_list()
         elif path == '/api/settings':
             data = handle_settings_get()
         else:
@@ -1699,6 +1751,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_asset_generate(body)
             except Exception as e:  # 防御：单次生成失败不拖死 API 进程
                 data = {'success': False, 'error': f'生成异常: {e}'}
+        elif path == '/api/assets/vendor':
+            try:
+                data = handle_asset_vendor(body)
+            except Exception as e:  # 防御：单次 vendor 失败不拖死 API 进程
+                data = {'success': False, 'error': f'vendor 异常: {e}'}
         else:
             data = {'error': 'Unknown POST endpoint'}
 
