@@ -65,7 +65,14 @@
 
 > 所有 done/wontfix/作废 条目（含裁决理由与完工摘要）已归档到 `requests-archive.md`；查旧单先 grep 它。本池只留活跃 open/in-progress/排队 条目（防每读付历史 token·owner 2026-07-04 token 底盘优化）。
 
-### REQ-ART-M2.5-人审门 · AI 生成产物改「待审区」·人点入库才登记 · [2026-07-04] · Lead 图纸 → **指派：Opus（PST 域施工·PA 会审登记契约）** · status: **施工中** · 优先级: **P1（宪法级缺口·工坊改造第一刀）** · 类型: 产品化·资产治理（不碰引擎核）
+### REQ-PA-工坊工位四件 · PA 已做批对齐认定 + 后续任务（owner「直接给他分派」）· [2026-07-04] · Lead 裁决派单 → **指派：PA** · status: open · 优先级: P1 · 类型: 资产治理与数据面（工坊分工=主责 PST·副责 PA）
+> **对齐认定（Lead 2026-07-04）**：PA 近批（`d4a38341`→`b34ba961`：mesh/材质货架·程序化贴图+天空盒·9 品类 PBR 材质库·vendor 数据型扩展·右键 copy 入口）**全部落在愿景 M0 + M2 接线器切片上，方向零偏差**。边界更新：owner 已开 PST 角色——**工坊 UI/apollo.py 端点自此归 PST**（`b34ba961` 的右键入口移交 PST 维护）；PA 专注资产逻辑/CLI/契约（`assets/**`·`scripts/` 资产线·index 规范）。
+> **① REQ-PA-3D 收尾**：③ 本地目录标准 `public/games/<game>/art/{textures,models,materials,env}/` 回填 `docs/playbooks/assets.md` 一节；①②④a 完成态在原单回标（④b P3D 切换催 P3D）。
+> **② M2.5 登记契约（PST 的图纸补件·先行）**：出 ≤1 页「pending 清单 + provenance/license 硬字段」契约（字段名/必填/校验规则/示例条目），供 PST 照抄实现；M2.5 完工时 PA 会审登记面 diff。
+> **③ 三方对账 CLI（M1 数据面前置）**：`scripts/asset-reconcile.mjs`——引用（各游戏 manifest/代码里的资产 key）↔ 登记（index）↔ 磁盘 三方对账；孤儿登记/悬空引用各成一类 finding（行 schema：位置|期望|实际）；判词 token `RECONCILE: PASS|WARNINGS|FAIL`+退出码（照 docs-ref-guard 模式）；M1 报表直接吃它的 `--json` 输出。
+> **④ 配方格式草案（M2/M3 前置）**：把 gen-textures/pack-atlas 收编为「recipe 纯数据」的格式草案 ≤2 页（op 闭集/参数 schema/可重跑语义）交 Lead 审——过审前不动现有 CLI。
+
+### REQ-ART-M2.5-人审门 · AI 生成产物改「待审区」·人点入库才登记 · [2026-07-04] · Lead 图纸 → **指派：PST（owner 2026-07-04 开设 PST 角色 session·照单施工）·PA 会审登记契约** · status: **待 PST 领工（开工必读：roles/PST.md → art-pipeline-vision §三§七 → 本单 spec）** · 优先级: **P1（宪法级缺口·工坊改造第一刀）** · 类型: 产品化·资产治理（不碰引擎核）
 > **spec（Lead 图纸）**：① **待审区**：`/api/assets/generate` 产物改落 `assets/ai/pending/`（游戏本地则 `public/games/<g>/art/ai/pending/`）+ 独立 `pending.json` 清单（**绝不进 assets/index.json**），返回预览 URL。② **审核端点** `POST /api/assets/review`：`{id, action:'approve'|'reject'}`——approve=移文件出 pending + 登记 index，**provenance 硬校验**（model/prompt/date/license 缺一拒绝登记）；reject=删 pending 文件+清单项。路径防护照 asset-import 先例。③ **UI**（`AssetGenPanel`/`AssetLibrary`）：生成后显示预览 + 「✓ 入库 / ✕ 弃置」双按钮（替换现"已生成并登记"直落文案）；AssetLibrary 加「待审区」入口 + 待审计数 badge。④ **测试**：smoke 走全链（mock 生成→pending 不在 index→approve→在 index 且 provenance 全→reject→pending 清空）+ 渲染测试更新；**grep 自证无任何"生成即登记"残留路径**。⑤ 门禁全绿直推；完工标 ✅ 待 Lead 验收（真浏览器过一遍生成→审→入库旅程）。出处：`docs/design/art-pipeline-vision-2026-07.md §七`。
 
 ### REQ-ART-美术工坊愿景 · 美术库改造为「美术编辑器」（货架可视化+AI 加工+接线器）· [2026-07-04] · owner 提出 → Lead 调研出稿 · status: **✅ owner 已批（2026-07-04）·分期开工：M2.5 施工中·M1 排队** · 优先级: P1（方向级） · 类型: 产品化·资产管线（**主责 PST·副责 PA 治理契约·风格锚素材=GD-\<game\>**）
