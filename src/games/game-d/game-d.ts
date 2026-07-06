@@ -28,7 +28,6 @@ import { makeFoe, counterDisabled, evalChallenge, damageOf, condLabel, type Foe 
 import { elementBadge, diceFaceArt, lootCardArt, skyArt, CARDED_DEFIDS } from './art.js';
 import mashanFont from './assets/fonts/mashanzheng.woff2'; // 自托管中文毛笔艺术字（Ma Shan Zheng·OFL·仅子集·离线·标题 logo 用·见 assets/fonts/CREDITS.md）
 import { Throw3D } from './throw3d.js'; // 战场 3D 物理掷骰（物理落地→读朝上面=确定点数·owner 2026-07-03）
-import { preloadPhysics } from '@renderer/three/physics.js'; // 预热 cannon-es（首掷即步进·不等懒加载）
 
 const SOLO_HEARTS = 6;
 const FLOORS = 4;
@@ -131,7 +130,8 @@ export function mount(container: HTMLElement): () => void {
   engine.load(baseBlueprint());
   const renderer = new ThreeRenderer({ width: w, height: h, background: 0xe7e3dc, assets });
   engine.attachRenderer(renderer, stage);
-  void preloadPhysics(); // 预热 cannon-es（首次掷骰即步进·免懒加载首帧跳过）
+  // 物理子系统由渲染器在出现 RigidBody3D 时**懒加载**（ensurePhysics·连带 cannon-es 进独立 chunk）——game-d 不静态
+  // import physics.ts，否则 vite dev 会硬解析可选重依赖 cannon-es 报「Failed to resolve」（本文件曾误加 preloadPhysics 触发·已撤）。
   const throw3d = new Throw3D(engine); // 战场物理掷骰编排器（tick 见 engine.subscribe·clear 见 beginRoom/teardown）
 
   // 种子化随机（引擎 RandomSeed·nextRandom 就地推进 → 可回放/双人 lockstep 同步·绝不 Math.random）。
