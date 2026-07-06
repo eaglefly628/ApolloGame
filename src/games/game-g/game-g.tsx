@@ -849,9 +849,9 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
       ov.style.cssText = 'position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(6,9,13,.82);backdrop-filter:blur(4px);font-family:system-ui';
       const text = `Game G 战场操作日志（第 ${save.stage} 战 · ${dbg.length} 条）\n${'='.repeat(40)}\n${dbg.join('\n') || '（暂无操作）'}`;
       ov.innerHTML = `<div style="width:min(92%,820px);max-height:84vh;display:flex;flex-direction:column;gap:10px;background:#121826;border:1px solid #2a3346;border-radius:14px;padding:16px">
-        <div style="display:flex;align-items:center;gap:10px"><b style="color:#eaf0f6;font-size:15px;flex:1">📋 战场操作日志</b><button id="dbg-copy" style="padding:7px 16px;border-radius:8px;border:none;cursor:pointer;background:linear-gradient(180deg,#ff8d5a,#ee5a25);color:#fff;font-weight:700">复制</button><button id="dbg-close" style="padding:7px 14px;border-radius:8px;border:1px solid #3a4659;cursor:pointer;background:transparent;color:#cdd7e3">关闭</button></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="color:#eaf0f6;font-size:15px;flex:1">📋 战场操作日志</b><button id="dbg-alltg" style="padding:7px 12px;border-radius:8px;border:1px solid #6b4bd6;cursor:pointer;background:rgba(124,58,237,.18);color:#c4b5fd;font-weight:700">🃏 全天罡到手</button><button id="dbg-mana" style="padding:7px 12px;border-radius:8px;border:1px solid #2b6ca8;cursor:pointer;background:rgba(58,134,212,.18);color:#93c5fd;font-weight:700">💧 +10源泉</button><button id="dbg-copy" style="padding:7px 16px;border-radius:8px;border:none;cursor:pointer;background:linear-gradient(180deg,#ff8d5a,#ee5a25);color:#fff;font-weight:700">复制</button><button id="dbg-close" style="padding:7px 14px;border-radius:8px;border:1px solid #3a4659;cursor:pointer;background:transparent;color:#cdd7e3">关闭</button></div>
         <textarea id="dbg-text" readonly style="flex:1;min-height:340px;resize:none;background:#0b0f17;color:#bcd;border:1px solid #2a3346;border-radius:10px;padding:11px;font:12px/1.5 ui-monospace,monospace;white-space:pre"></textarea>
-        <div id="dbg-hint" style="font-size:11px;color:#7d8b9a">出 bug 时点「复制」把日志贴给开发排查。</div></div>`;
+        <div id="dbg-hint" style="font-size:11px;color:#7d8b9a">出 bug 点「复制」贴给开发排查。｜dev：🃏 把全部天罡调到手牌(+源泉) · 💧 加源泉 → 测天罡用。</div></div>`;
       root.appendChild(ov);
       const ta = ov.querySelector('#dbg-text') as HTMLTextAreaElement; ta.value = text;
       const close = (): void => ov.remove();
@@ -861,6 +861,15 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch { /* ignore */ }
         if (!ok && navigator.clipboard) void navigator.clipboard.writeText(text).catch(() => {});
         const h = ov.querySelector('#dbg-hint'); if (h) h.textContent = '✓ 已复制到剪贴板。';
+      });
+      // dev 调试（owner 2026-07-06·日志面板内）：🃏 把全部天罡调到手牌 + 加满源泉（测天罡用）· 💧 加源泉。
+      ov.querySelector('#dbg-alltg')?.addEventListener('click', () => {
+        for (const t of GAME_G_TIANGANGS) debugGrantTengang(tb, 'a', t.id); // 全部天罡进手牌
+        debugAddMana(tb, 'a', GAME_G_TIANGANGS.length * 2); // 加足源泉好施放
+        mounted?.update(); log(`🛠dev·全天罡到手牌(${GAME_G_TIANGANGS.length}张)+加源泉→${tb.a.mana}`); close();
+      });
+      ov.querySelector('#dbg-mana')?.addEventListener('click', () => {
+        debugAddMana(tb, 'a', 10); mounted?.update(); const h = ov.querySelector('#dbg-hint'); if (h) h.textContent = `✓ 源泉 +10 → 现 ${tb.a.mana}。`;
       });
     };
     root.appendChild(dbgBtn); // 挂 root(非 stage·避免 mountTurnBattle 重渲抹掉)·左下角
