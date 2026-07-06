@@ -11,6 +11,7 @@ describe('Game G · 流程走查（出征→结算→继续·happy-dom）', () =
     vi.useFakeTimers();
     try {
       localStorage.clear();
+      (window as unknown as { __ggFastPerf?: boolean }).__ggFastPerf = true; // 演出快进（Lead·BUG-G-flow-walk）：走查把演出节奏折成最小 tick·移出 sim 测试预算·并发下不再超时
       const c = document.createElement('div'); document.body.appendChild(c);
       const cleanup = mount(c);
       click(c.querySelector('[data-action="play"]'));

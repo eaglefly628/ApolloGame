@@ -71,9 +71,10 @@
 > **为什么规则没拦住（Lead 定性·非幻觉）**：①手册有真缺口——浮层/连线/斩击特效 LayoutNode 表达不了（锚定件当时未立单）；②审计无牙——game-g 存量 62 处红旗常年 `AUDIT: FAIL`，红海里 +5 无信号（破窗效应）；③owner 现场 playtest 连发需求，速度压过"提缺口等裁决"流程。session 明知规则（新增处还写了自辩注释），是**激励失衡**不是失忆。修法=给规则装牙。
 > **spec（Lead 图纸）**：① 新建机读基线 `scripts/audit-baseline.json`：每游戏 `{nakedRandom, innerHTML, createElement}` 计数（以当前 HEAD 实测数灌入=存量既往不咎·含本批 +5）。② `game-skill-audit.mjs` 加基线对比段：任一计数 **高于基线 → `RATCHET: FAIL` 退出码 1**·点名游戏+指标+新增行；低于基线 → 提示"同提交把基线降下来"（降基线=还债的仪式感·同提交必须改 baseline 文件）。③ 薄 vitest 包装 `scripts/audit-ratchet.test.mjs`（照 docs-ref-guard.test 模式）扫全部 8 款 → **红旗增量从此挡在推送门禁里**。④ 抬基线的唯一合法姿势：baseline 条目带 `reason:"REQ-xxx"` 字段挂缺口单号（机器不验单号真伪·但 diff 在验收时一眼可见）。⑤ 回填 `playbooks/ui.md` + `testing.md` 各一行。门禁全绿直推。
 
-### BUG-G-flow-walk 满局走查临界超时（门禁级 flaky·全量并发下翻车） · [2026-07-04] · 主程（棘轮验收撞到） → **程序A/程序B（谁的演出拍谁修）** · Game G · status: open · 优先级: **P1（flaky 门禁=教全员无视红灯·比单 bug 危险）** · 类型: 测试健壮性（演出节奏拖垮走查预算）
+### BUG-G-flow-walk 满局走查临界超时（门禁级 flaky·全量并发下翻车） · [2026-07-04] · 主程（棘轮验收撞到） → **程序A/程序B（谁的演出拍谁修）** · Game G · status: **✅ done（程序B 2026-07-06·按 Lead 修法①）** · 优先级: **P1** · 类型: 测试健壮性（演出节奏拖垮走查预算）
 > **现象**：`flow-walk.test.ts` 单跑两次全绿；全量 vitest 并发负载下 ~40s 翻车（此前收敛 ~5s）。**根因链**：playtest 批把演出节奏放慢（行军 1 秒/步·每兵 2 秒起身落地·前奏 2s），满局走查跟着墙钟节奏变长 → 负载一挤过线。
 > **修法方向（Lead·二选一或并用）**：① 走查测试进 headless 时演出**快进**——timeline 拍走 `skipOnSignal` / pacing 系数=0（演出时长是表现参数，不该进 sim 测试预算；`playbooks/testing.md` 三禁「真时间等待」精神同源）；② 走查断言「N tick 内收敛」而非墙钟。修完在全量并发下连过 3 次才算数。
+> **✅ done（程序B 2026-07-06·采 Lead 修法①·演出快进）**：`game-g.tsx` 加 opt-in `window.__ggFastPerf` → `FAST_PERF`/`pT()`/`pMs()`：headless 走查把行军(walkTicks)/前奏(showClashCue DUR)/横幅(showBanner)/掷骰(doClashRoll TOTAL 42→2)/收场(clash-settle cues·zoom out)全部墙钟拍折成 ≤1 tick——演出逻辑照跑(仍捕演出抛错)·只是不再拖满 pump 预算。`flow-walk.test.ts` mount 前置 `__ggFastPerf=true`。**真机默认 1·原节奏零改**（FAST_PERF 仅 opt-in 生效）。**验收**：flow-walk 58s→2.7s；全量并发(309 files)**连过 3 次**（flow-walk 3.4s/11.9s/3.6s·worst 远低 40s 翻车线）；tsc 0 · vitest 2297 · build ok。（另：P20 的 MAX_TURNS 保底收敛同时消除了「满局不结」这一潜在超时源。）
 
 ### REQ-G-复查尾巴三件 · Lead review 2026-07-04 批产出（程序A/B 点名必读） · [2026-07-04] · 主程 → **程序A（①③）· 程序B（②）** · status: open · 优先级: P1 · 类型: 复查落地（owner 拍板「把三条尾巴给程序员A和B落地」）
 > **① 程序A·对折下限=3 落码**：owner 定案在 `REQ-G-掷骰核两bug ①`（spec/验算已写死·`Math.max(0)→3` 一行+测试）——当前代码停在临时版 `P_MIN=1`（`clash-resolve.ts:31`），定案未落。落完该单标 done。
