@@ -80,26 +80,35 @@ export function mountClashDie3D(host: HTMLElement, w: number, h: number, opts: C
   // 骰体：位姿 + box 六面数字骰面 + **Anim3D 数据驱动翻滚**（rotX+rotY 双 spin + y-bob·渲染器 Anim3DSystem 每帧算·
   //   零游戏层逐帧手写——遵「把逐帧手写下沉成数据」的 3D 基座铁律·owner「必须 follow 底座·不能自己创造」）。
   const SZ = 3.0;
-  const rx = mine ? 1.4 : 1.15, ry = mine ? 1.9 : -1.65; // rad/秒·两骰异速（错开视觉·非同步）
+  const rx = mine ? 1.4 : 1.15, ry = mine ? 1.9 : -1.65; // rad/秒·基速·两骰异速（错开视觉·非同步）
+  // Anim3D spin 通道对象**存引用**→ P18：game 层按钟形曲线脉动其 rate（加速→峰值→减速·像摇骰子·非恒速·owner 2026-07-04「旋转要有加速减速曲线·别恒速看着突然停」）。
+  //   只改自家实体的组件数据·不碰渲染器/Anim3DSystem（真·下沉成 Anim3D ease/pulse 通道归 P3D·已提 requests-3d）。
+  const spinX = { kind: 'spin', field: 'rotX', rate: rx };
+  const spinY = { kind: 'spin', field: 'rotY', rate: ry };
   add('cd-die',
     { type: 'Transform3D', x: 0, y: 0.1, z: 0, rotX: -0.3, rotY: 0.4, scale: 1 },
     { type: 'Mesh3D', shape: 'box', width: SZ, height: SZ, depth: SZ, frontTint: 0xffffff, dieFaces: dieFaces(opts.power, dark, mine) },
-    { type: 'Anim3D', channels: [
-      { kind: 'spin', field: 'rotX', rate: rx },
-      { kind: 'spin', field: 'rotY', rate: ry },
-      { kind: 'bob', field: 'y', amp: 0.16, freq: 3.1, phase: mine ? 0 : 1.6 },
-    ] },
+    { type: 'Anim3D', channels: [spinX, spinY, { kind: 'bob', field: 'y', amp: 0.16, freq: 3.1, phase: mine ? 0 : 1.6 }] },
   );
-  // 能量注入粒子（Vfx3D·真 3D 粒子·替设计稿 CSS gd-inject div）：骰底上涌 + 渐隐·阵营色·加性发光
+  // 能量注入粒子（Vfx3D·真 3D 粒子）：P18 修「粒子层级在骰之下·被挡」→ 发射点前移到骰**前方**(z 正=朝相机) + 抬高·加大量/尺寸 → 火星在骰前迸涌可见·不被骰体遮。
   add('cd-vfx',
-    { type: 'Transform3D', x: 0, y: -2.0, z: 0 },
-    { type: 'Vfx3D', rate: 22, lifetime: 0.85, lifeVar: 0.3, max: 48, shape: 'cone', coneAngle: 0.5, emitRadius: 1.0, speed: 3.2, speedVar: 1, gravity: -1.3, drag: 0.4, size: 0.3, color: mine ? 0xff965a : 0x5aaaff, blend: 'add' },
+    { type: 'Transform3D', x: 0, y: -1.4, z: 1.7 },
+    { type: 'Vfx3D', rate: 30, lifetime: 0.9, lifeVar: 0.3, max: 64, shape: 'cone', coneAngle: 0.62, emitRadius: 1.2, speed: 3.6, speedVar: 1.1, gravity: -1.3, drag: 0.4, size: 0.36, color: mine ? 0xff965a : 0x5aaaff, blend: 'add' },
   );
   engine.start(); // rAF 循环 → renderer.sync 每帧跑 Anim3DSystem/VfxSystem（翻滚 + 粒子皆数据驱动）
+  // ── P18 旋转脉动（加速→峰值→减速循环·摇骰手感）：钟形曲线改 spin rate（中间最快·两端慢）。rAF timestamp 驱动（非 Date.now）。──
+  let rafId = 0; const PERIOD = 1500; // ms/脉动周期
+  const pulse = (t: number): void => {
+    const k = 0.5 - 0.5 * Math.cos(((t % PERIOD) / PERIOD) * 2 * Math.PI); // 0(慢)→1(峰·最快)→0(慢) 钟形
+    const boost = 1.4 + k * 3.6; // 基速×[1.4,5.0] → 高速 + 明显加速减速
+    spinX.rate = rx * boost; spinY.rate = ry * boost;
+    rafId = requestAnimationFrame(pulse);
+  };
+  rafId = requestAnimationFrame(pulse);
 
   return {
     destroy: (): void => {
-      try { engine.stop(); renderer.destroy(); } catch { /* noop */ }
+      try { if (rafId) cancelAnimationFrame(rafId); engine.stop(); renderer.destroy(); } catch { /* noop */ }
       host.replaceChildren();
     },
   };
