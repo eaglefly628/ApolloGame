@@ -66,6 +66,7 @@
 > 所有 done/wontfix/作废 条目（含裁决理由与完工摘要）已归档到 `requests-archive.md`；查旧单先 grep 它。本池只留活跃 open/in-progress/排队 条目（防每读付历史 token·owner 2026-07-04 token 底盘优化）。
 
 ### REQ-STUDIO-低模生成四件 · owner 用 deepseek 实测暴露「词汇灌注≠弱模友好」 · [2026-07-06] · owner 实测（3 轮校验不过·184k tokens/单局）→ Lead 诊断出图 → **指派：Opus** · status: **✅ done（Opus·2026-07-06·门禁全绿直推·待 Lead 真浏览器验收 + owner 真 deepseek 重测）** · 优先级: **P0（owner 实际堵点·创作台核心命题）** · 类型: 产品化·生成管线架构
+> **Lead 验收（2026-07-06）REVIEW: PASS**：独立复跑门禁全 0 + smoke 44/44 + 真浏览器 e2e 12/12；引擎域零触碰核实（错误改写/词汇裁剪全在 apollo.py 侧·manifest-check 一字未动=正确的分层）；词汇裁剪实测 41.9k→10.4k 字符（-75%）·重试轮仅 +1.8k（轮次裁剪生效）。**剩最后一步实测留 owner：真 deepseek key 同题重测（目标 ≤1 轮通过·对比 184k 基线）——本环境无 key。**
 > **✅ 完工回执（Opus·2026-07-06·四件 + 交互日志一批）**：
 > **① 模板起步+增量修改（默认路径·最大杠杆）**：apollo.py `TEMPLATE_LIBRARY` 6 模板（**逐个过 manifest-check 全绿**）——`bounce`(弹跳小球)/`platform-jump`(平台跳跃·收编 PRESET)/`pong`(弹球对战·收编 PRESET)/`collect`(收集金币)/`dice`(掷骰子)/`cards`(卡牌桌)。新 `mode:'template-edit'`：关键词选最近模板 → prompt=「这是能跑的基线 manifest + 用户想法 → 输出**修改后的完整 manifest**」→ autofix 硬校验回路。前端 `CreationWizard` create 态加「生成方式」双选：**「从模板改」（默认·各档模型都稳）/「自由生成」（从零·适合强模型）**；预览态标注「基于「X」模板修改」。
 > **② 词汇按题材裁剪**：关键词→模板+能力族纯数据映射（`TEMPLATE_KEYWORDS`/`CAPABILITY_FAMILIES`/`_BASE_ATOM_IDS`）；`_slice_catalog` 把前端送来的**全量** catalog（82 能力·41.9k 字符≈10k tokens）按能力 id 切块 → 只留「基础原子(13)+模板已用族+题材族」子集。**样例**：`掷骰子`→模板 `dice`·族 `[dice,ui]`→子集 **10.4k 字符≈2.6k tokens**（裁掉 ~75%，排除 match3/3D 等无关能力·字节稳定可缓存）。校验错误点名**被裁掉的真实能力**时 `rebuild_system` 下轮补该族全量（`bounce` 子集遇 `t2-dice-roll` 错误→补 `w1-random`/`t2-keybind` 整族）。
