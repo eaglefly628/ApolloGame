@@ -65,6 +65,9 @@
 
 > 所有 done/wontfix/作废 条目（含裁决理由与完工摘要）已归档到 `requests-archive.md`；查旧单先 grep 它。本池只留活跃 open/in-progress/排队 条目（防每读付历史 token·owner 2026-07-04 token 底盘优化）。
 
+### REQ-ART-美术工坊愿景 · 美术库改造为「美术编辑器」（货架可视化+AI 加工+接线器）· [2026-07-04] · owner 提出 → Lead 调研出稿 · status: **设计稿·待 owner 审**（`docs/design/art-pipeline-vision-2026-07.md` + 视觉稿已交付） · 优先级: P1（方向级） · 类型: 产品化·资产管线（PA 域为主）
+> 一句话：不做 DCC，做**货架管理器+AI 加工台+游戏接线器**三合一，作创作台第三面板（复用 apollo.py/BYO-key/本地 Git）。AI 铁律：修复/变体/生成全是**闭集操作+数据配方**，产物带 provenance 硬字段、**人审门后才入库**。分期 M1 货架可视化 → M2 导入/接线 UI → M3 AI 2D → M4 3D 外链；M0=REQ-PA-3D（在跑）。owner 拍板后 M1 起单派工。
+
 ### REQ-QA-红旗棘轮 · audit 加基线对比——红旗计数只许降不许升·进门禁 · [2026-07-04] · 主程（owner「有规则为什么还手写了5处·要复查规则」） · status: ✅ **done（Opus 施工 2026-07-06·门禁全绿直推）** · 类型: 质量强制基建（把规则从文字变成机器）
 > **Lead 验收（2026-07-04）REVIEW: PASS**：独立复跑（AUDIT: FAIL 存量如实 + RATCHET: PASS·全套退出码亲测）+ 自做红测（篡改 game-z 基线 → RATCHET: FAIL 点名正确·恢复即绿）。验收中另撞到 flow-walk 门禁级 flaky——另立 BUG-G-flow-walk 单（与棘轮无关）。
 > **完工摘要（Opus 2026-07-06）**：① `scripts/audit-baseline.json` 已建（`{_doc, games}` 结构·数值=当前 HEAD audit 实测灌入·存量既往不咎）——基线快照：game-d `{0,0,3}`·game-e `{3,0,1}`·game-f `{0,27,14}`·game-g `{8,29,31}`·game-h `{1,0,2}`·game-i `{0,0,5}`·game-x `{0,0,3}`·game-z `{0,0,4}`（序=nakedRandom/innerHTML/createElement）。② `game-skill-audit.mjs` 加 `runRatchet` 追加段：超基线→`RATCHET: FAIL`+退出码 1+点名「游戏 指标: 基线 X → 现 Y（+N）」；低于→打印降基线提示（不红）；等于→静默。既有 `AUDIT` 判词/用法零改，最终退出码=`(anyRed||ratchetFail)?1:0`（子集调用只比对审到的游戏）。③ `scripts/audit-ratchet.test.mjs` 进 vitest（spawn CLI·断言全 8 款 `RATCHET: PASS`·基线覆盖 8 款）。④ **自证红**：临时把 game-z createElement 基线 4→3 → CLI 打 `RATCHET: FAIL` 点名 `game-z document.createElement: 基线 3 → 现 4（+1）` 退出码 1、ratchet 测试转红；恢复即绿（2 tests pass）。⑤ 回填 `docs/playbooks/testing.md` 红线区一行 + `docs/playbooks/ui.md` 棘轮行 `audit-baseline` → 反引号 `scripts/audit-baseline.json`。门禁：docs-ref-guard PASS / tsc 0 / vitest 2295 pass / build 0。抬基线唯一合法姿势=baseline 条目挂 `reason:"REQ-xxx"`（机器不验单号真伪·diff 验收可见）。
