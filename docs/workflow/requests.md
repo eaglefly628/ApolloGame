@@ -55,6 +55,10 @@
 
 > 所有 done/wontfix/作废 条目（含裁决理由与完工摘要）已归档到 `requests-archive.md`；查旧单先 grep 它。本池只留活跃 open/in-progress/排队 条目（防每读付历史 token·owner 2026-07-04 token 底盘优化）。
 
+### REQ-D-物理骰确定性回收路径 · game-d 3D 掷骰结果由 cannon-es 物理决定=非确定性（记债·定回收约束） · [2026-07-04] · 主程（game-g/d 批 review 撞到 `throw3d.ts` 自曝注释） · status: **记债（owner 已拍「先做效果·原型阶段」·不阻塞）·回收路径已定死见下** · 优先级: P2（出货前必收） · 类型: 确定性红线豁免登记（时限性）
+> **现状**：`game-d/throw3d.ts` 掷骰值由 cannon-es 刚体落定读面（render 层物理·非同步）→ game-d 的 seed/回放/分享种子失效（REQ-GAMED ① run-seed 工作被空置）；lockstep 双人未来不可行。owner 原型期豁免**有效**，但按宪法确定性红线必须登记回收路径，防"原型态默认转正"。
+> **回收路径（Lead 定死·出货前二选一实施·P3D 域）**：A（业界标准做法·推荐）**值由种子 PRNG 先定，物理只演**——掷值来自 `RandomSeed` 流，cannon-es 自由翻滚，落定瞬间按目标值做姿态对齐（quaternion snap/最后一帧修正·玩家不可感知）→ 效果保留·确定性全回收；B 物理保真派：录制固定初速/扭矩样本库（seed 选样本·回放同样本）→ 工程更贵。**验收线**：game-d 回归「同 seed 同结果」+ replay 测试，audit 裸随机红旗照常适用。出货 checklist（PS 内门）挂此单。
+
 ### REQ-UI-锚定与绑定层 · UI 声明化二期（REQ-ARCH-ANCHOR 历史欠账收账） · [2026-07-04] · owner 亲派 → **指派：UI 程序员（owner 直辖·UI 库域授权施工·Lead 图纸+验收）** · status: **open（①锚定立即施工·②绑定设计稿先行）** · 优先级: **P1（弱 LLM 产完整游戏的最大单一杠杆·底座终审 🔴#3）** · 类型: 引擎 UI 库能力（render-only）
 > **owner 2026-07-04**：「UI 锚定点加绑定层，派给 UI 程序员做，我让 UI 程序员查。」出处：底座终审 `docs/design/base-capability-review-2026-07-03.md §二🔴#3 + §四.3`（锚定与绑定**分两步**·锚定先行）。
 > **要消灭的病（现状证据）**：game-g 战场徽标/VS 连线/胜负挂牌全靠手写 `getElementById('u-'+id)` + `getBoundingClientRect` + `createElement`（`game-g.tsx:372/411-413/440`）——正是 audit 红旗 createElement×27 的一大来源；每个游戏都会再犯，因为**引擎没给「把浮层钉在活动目标上」的数据说法**。
