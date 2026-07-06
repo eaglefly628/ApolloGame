@@ -30,6 +30,7 @@
 - **禁**：游戏层手写 React 屏 / 自由 CSS·DOM（`innerHTML`/`createElement`）；直用 `ui/shell`(UINode) / `ui/vn`（待退役）。
 - **handler 里绝不塞自由逻辑**：`action` 只发信号名，世界改动入 sim 能力层。
 - LayoutNode 表达不了的 → 走 requests.md 让主程扩控件（下沉成通用 UI 能力），**绝不手写 React 逃生**。
+- **红旗棘轮（owner 2026-07-04 拍板·复查规则）**：每游戏的裸随机/innerHTML/createElement 计数**只许降不许升**（基线 `scripts/audit-baseline.json`·超基线=门禁红）。真表达不了的先提缺口单，抬基线必须在 baseline 条目挂 `reason:"REQ-xxx"`。浮层/连线/钉实体特效的基座件=REQ-UI-锚定（Float/Connector·施工中），落地前忍住别自造。
 
 ## ④ 正样例 / 反面教材
 

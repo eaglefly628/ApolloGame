@@ -65,6 +65,15 @@
 
 > 所有 done/wontfix/作废 条目（含裁决理由与完工摘要）已归档到 `requests-archive.md`；查旧单先 grep 它。本池只留活跃 open/in-progress/排队 条目（防每读付历史 token·owner 2026-07-04 token 底盘优化）。
 
+### REQ-QA-红旗棘轮 · audit 加基线对比——红旗计数只许降不许升·进门禁 · [2026-07-04] · 主程（owner「有规则为什么还手写了5处·要复查规则」） · status: **施工中（指派：Opus·high·立即）** · 类型: 质量强制基建（把规则从文字变成机器）
+> **为什么规则没拦住（Lead 定性·非幻觉）**：①手册有真缺口——浮层/连线/斩击特效 LayoutNode 表达不了（锚定件当时未立单）；②审计无牙——game-g 存量 62 处红旗常年 `AUDIT: FAIL`，红海里 +5 无信号（破窗效应）；③owner 现场 playtest 连发需求，速度压过"提缺口等裁决"流程。session 明知规则（新增处还写了自辩注释），是**激励失衡**不是失忆。修法=给规则装牙。
+> **spec（Lead 图纸）**：① 新建机读基线 `scripts/audit-baseline.json`：每游戏 `{nakedRandom, innerHTML, createElement}` 计数（以当前 HEAD 实测数灌入=存量既往不咎·含本批 +5）。② `game-skill-audit.mjs` 加基线对比段：任一计数 **高于基线 → `RATCHET: FAIL` 退出码 1**·点名游戏+指标+新增行；低于基线 → 提示"同提交把基线降下来"（降基线=还债的仪式感·同提交必须改 baseline 文件）。③ 薄 vitest 包装 `scripts/audit-ratchet.test.mjs`（照 docs-ref-guard.test 模式）扫全部 8 款 → **红旗增量从此挡在推送门禁里**。④ 抬基线的唯一合法姿势：baseline 条目带 `reason:"REQ-xxx"` 字段挂缺口单号（机器不验单号真伪·但 diff 在验收时一眼可见）。⑤ 回填 `playbooks/ui.md` + `testing.md` 各一行。门禁全绿直推。
+
+### REQ-G-复查尾巴三件 · Lead review 2026-07-04 批产出（程序A/B 点名必读） · [2026-07-04] · 主程 → **程序A（①③）· 程序B（②）** · status: open · 优先级: P1 · 类型: 复查落地（owner 拍板「把三条尾巴给程序员A和B落地」）
+> **① 程序A·对折下限=3 落码**：owner 定案在 `REQ-G-掷骰核两bug ①`（spec/验算已写死·`Math.max(0)→3` 一行+测试）——当前代码停在临时版 `P_MIN=1`（`clash-resolve.ts:31`），定案未落。落完该单标 done。
+> **② 程序B·红旗 DOM 增量清偿名单**：本批新增 5 处手写 DOM 全在 `game-g.tsx`（斩击两半/斩线/胜者戴冠/交战 cue 覆层×2·git diff 42e264d1..HEAD 可点行）。处置：**登记在此=「REQ-UI-锚定 落地后第一批切换 Float/Connector」名单**，锚定件上线前不强拆（owner 迭代速度优先）；**但即日起新增**浮层/连线/特效手写 DOM，提交信息必须挂缺口单号——红旗棘轮（REQ-QA-红旗棘轮·施工中）上线后由门禁强制「只降不升」。
+> **③ 程序A·战斗 bug 核对清单逐条回报**：`REQ-G-战斗bug核对清单` 仍挂「待程序A 回报 fixed/未修」——逐条回报后 design G 才能重跑 sim + owner 重玩新流，别让链路断在回报这步。
+
 ### REQ-D-物理骰确定性回收路径 · game-d 3D 掷骰结果由 cannon-es 物理决定=非确定性（记债·定回收约束） · [2026-07-04] · 主程（game-g/d 批 review 撞到 `throw3d.ts` 自曝注释） · status: **记债（owner 已拍「先做效果·原型阶段」·不阻塞）·回收路径已定死见下** · 优先级: P2（出货前必收） · 类型: 确定性红线豁免登记（时限性）
 > **现状**：`game-d/throw3d.ts` 掷骰值由 cannon-es 刚体落定读面（render 层物理·非同步）→ game-d 的 seed/回放/分享种子失效（REQ-GAMED ① run-seed 工作被空置）；lockstep 双人未来不可行。owner 原型期豁免**有效**，但按宪法确定性红线必须登记回收路径，防"原型态默认转正"。
 > **回收路径（Lead 定死·出货前二选一实施·P3D 域）**：A（业界标准做法·推荐）**值由种子 PRNG 先定，物理只演**——掷值来自 `RandomSeed` 流，cannon-es 自由翻滚，落定瞬间按目标值做姿态对齐（quaternion snap/最后一帧修正·玩家不可感知）→ 效果保留·确定性全回收；B 物理保真派：录制固定初速/扭矩样本库（seed 选样本·回放同样本）→ 工程更贵。**验收线**：game-d 回归「同 seed 同结果」+ replay 测试，audit 裸随机红旗照常适用。出货 checklist（PS 内门）挂此单。
