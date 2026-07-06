@@ -186,4 +186,71 @@ if (adviceGames.length) {
 // ── 判词 token + 退出码（⚠ 建议不参与） ──
 const verdict = anyRed ? 'FAIL' : anyYellow ? 'WARNINGS' : 'PASS';
 console.log(`\nAUDIT: ${verdict}`);
-process.exit(anyRed ? 1 : 0);
+
+// ── 红旗棘轮：与机读基线对比（REQ-QA-红旗棘轮·owner 2026-07-04 拍板）──────
+// 三红旗计数（裸Math.random / innerHTML / document.createElement）只许降不许升。
+// 任一游戏任一指标高于基线 → RATCHET: FAIL + 退出码 1（点名游戏/指标/超额数）；
+// 低于基线 → 提示"同提交把基线降下来"（还债仪式·不红）；等于 → 静默。
+// 存量既往不咎（基线=灌入时 HEAD 实测），只挡「新增红旗」。RATCHET 是 AUDIT 的追加段，
+// 既有 AUDIT 判词与退出码语义完全兼容——最终退出码 = (anyRed || ratchetFail) ? 1 : 0。
+
+/** 红旗棘轮基线（机读·随本工具同目录）。 */
+const BASELINE_PATH = join('scripts', 'audit-baseline.json');
+/** 基线三指标 → audit flags 键 → 展示名。 */
+const RATCHET_METRICS = [
+  ['nakedRandom', 'mathRandom', '裸Math.random'],
+  ['innerHTML', 'innerHTML', 'innerHTML'],
+  ['createElement', 'createElement', 'document.createElement'],
+];
+
+const ratchetFail = runRatchet(rows);
+
+process.exit(anyRed || ratchetFail ? 1 : 0);
+
+/**
+ * 对比机读基线，打印棘轮段，返回是否 FAIL（有任一指标超基线）。
+ * 只比对本次实际审计到的游戏（rows）——支持子集调用。
+ */
+function runRatchet(rows) {
+  let baseline;
+  try {
+    baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8')).games;
+  } catch (e) {
+    console.error(`\n── 红旗棘轮 ──`);
+    console.error(`  基线文件读取失败（${BASELINE_PATH}）：${e.message}`);
+    console.error(`\nRATCHET: FAIL`);
+    return true;
+  }
+  const overages = []; // 超基线（新增红旗·致命）
+  const drops = [];    // 低于基线（该降基线还债）
+  const missing = [];  // 无基线条目（新游戏）
+  for (const r of rows) {
+    const b = baseline[r.game];
+    if (!b) { missing.push(r.game); continue; }
+    for (const [baseKey, flagKey, label] of RATCHET_METRICS) {
+      const cur = r.flags[flagKey].length;
+      const base = b[baseKey] ?? 0;
+      if (cur > base) overages.push({ game: r.game, label, base, cur });
+      else if (cur < base) drops.push({ game: r.game, label, base, cur });
+    }
+  }
+  console.log(`\n── 红旗棘轮（对比基线 ${BASELINE_PATH}·只降不升）──`);
+  if (missing.length) {
+    console.log(`  ⚠ 无基线条目（新游戏？请加入 audit-baseline.json）: ${missing.join(', ')}`);
+  }
+  if (drops.length) {
+    console.log('  ⬇ 低于基线（记得同提交把基线降下来·还债仪式）:');
+    for (const d of drops) console.log(`      ${d.game} ${d.label}: ${d.base} → ${d.cur}（-${d.base - d.cur}）`);
+  }
+  if (overages.length) {
+    console.error('  🔺 超基线（新增红旗·门禁红）:');
+    for (const o of overages) {
+      console.error(`      ${o.game} ${o.label}: 基线 ${o.base} → 现 ${o.cur}（+${o.cur - o.base}）`);
+    }
+    console.error('  抬基线唯一合法姿势：给该游戏 baseline 条目挂 reason:"REQ-xxx"（缺口单号）。');
+    console.error('\nRATCHET: FAIL');
+    return true;
+  }
+  console.log('\nRATCHET: PASS');
+  return false;
+}

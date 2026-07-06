@@ -24,6 +24,7 @@
 - **缺基线判黄不判绿**：sim 缺目标带、bench 缺 prior、AC 不可测 → CONCERNS / MANUAL CHECK 交 owner；绝不默认过、绝不编造目标值。
 - **存档/回放改动必测边界**：旧版本档载入（save-port migrate 链）+ 损坏档优雅拒绝（`CorruptSaveError` 基座已给）。
 - **冒烟脚本 fail-fast**：前置缺失（无 build/无 manifest）立即非零退出 + 指出补救命令，禁静默跳过造假绿。
+- **红旗棘轮（只降不升·进门禁）**：8 款游戏的裸随机/innerHTML/createElement 计数以 `scripts/audit-baseline.json` 为机读基线，任一超基线 → `scripts/game-skill-audit.mjs` 打 `RATCHET: FAIL` + 退出码 1，`scripts/audit-ratchet.test.mjs` 在 vitest 里守着。降基线是还债仪式（消灭红旗必须同提交改 baseline）；抬基线唯一合法姿势=给该游戏条目挂 `reason:"REQ-xxx"` 缺口单号。
 
 ## 验收纪律（Lead / 判官侧）
 
