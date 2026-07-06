@@ -141,26 +141,11 @@ export function genRoom(index: number): Record<string, Ent> {
     [`${P}-lan1`]: glow(-2.1, 2.9, baseZ - 1.6, LANTERN, 1.6, 0.5),
     [`${P}-lan2`]: glow(2.4, 3.1, baseZ + 0.8, LANTERN, 1.6, 0.5),
     [`${P}-lan3`]: glow(0, 3.3, baseZ - 2.4, LANTERN, 1.6, 0.5),
-    // 散落元素色块（占位美术·靠颜色区分类型）
-    [`${P}-t1`]: block(-1.9, 0.24, baseZ - 1.6, 0.38, 0.38, 0.38, t.accent, t.floorSide, 0.6),
-    [`${P}-t2`]: block(2.0, 0.24, baseZ + 1.3, 0.38, 0.38, 0.38, t.wall, t.floorSide, 0.6),
   };
 
-  if (boss) {
-    // BOSS 间：中心一座发光巨块（占位"Boss"）
-    out[`${P}-boss`] = block(0, 1.0, baseZ, 1.9, 2.0, 1.9, t.accent, t.wall, 0.4);
-    out[`${P}-boss-glow`] = glow(0, 1.3, baseZ, t.accent, 3.2, 0.5);
-  } else {
-    // 战斗间：中心台座 + 斜摆发光宝物 + 宝物光晕（复刻原型 altar gem glowSprite）
-    out[`${P}-dais`] = block(0, 0.18, baseZ, 1.9, 0.36, 1.9, t.wall, t.floorSide);
-    // 祭坛宝物：自转 + 上下浮（§C 宝石 rot.y+=.02/帧≈1.2rad/s·y bob sin(tt*1.8)*.13）——render-only Anim3D 数据（非手写）。
-    out[`${P}-gem`] = { ...block(0, 0.78, baseZ, 0.7, 0.7, 0.7, t.accent, t.accent, 0.6), Anim3D: { channels: [
-      { kind: 'spin', field: 'rotY', rate: 1.2 }, { kind: 'bob', field: 'y', amp: 0.13, freq: 1.8 },
-    ] } };
-    out[`${P}-gem-glow`] = glow(0, 0.78, baseZ, t.accent, 1.9, 0.6);
-  }
-
-  // （去掉 showcase 小黄鸭——owner 2026-07-02「中间一只鸭子干什么·没这设计」；骰途战场不放它。）
+  // 中心 furniture 全撤（owner 2026-07-03「场景里的平台 + 旋转骰子都去掉·先要光秃秃的场景」）：
+  //   去掉 dais 台座 + 自转 gem 宝物（=中间那颗旋转骰）+ 散落色块 t1/t2 + BOSS 中心巨块 →
+  //   中心空出=纯地台（正好给物理掷骰腾地方）。boss/normal 暂同样光秃（后续按玩法再加）。
   return out;
 }
 
