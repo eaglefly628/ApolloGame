@@ -11,6 +11,12 @@
 
 ## 待处理 / 进行中
 
+### REQ-AIGEN-软件内文本生成资产 · Tripo(3D)+千问(2D) 接入创作台 · [2026-07-04] · owner 拍板 → **PA 已建生成框架(资产侧)· 待主程/PE 做运行时+设置UI** · status: **框架 ✅ done(PA·mock 全绿)；运行时/设置UI 待主程裁域派工** · 类型: 新能力(外部 AI 服务·表现层旁路)
+> **owner 愿景**：软件内用自然语言描述 → 生成资产（3D 用 **Tripo**·2D 用 **千问/DashScope 万相**），落进资产库。先 mock 打通全框架。
+> **PA 已交付（资产侧·`scripts/ai-gen.mjs` + `ai-gen.test.mjs`·mock 全绿）**：厂商无关生成框架 = 适配器注册表（`tripo` 文本→glb·`qwen` 文本→png）+ mock 产合法资产（glb/png·prompt 播种）+ **连库**（落 `assets/index.json` 或游戏本地 `art/index.json`·带 provenance 厂商/prompt/模型/mock/日期）+ 真调门控（fetch Tripo v2 openapi / DashScope 万相·密钥走 env `TRIPO_API_KEY`/`DASHSCOPE_API_KEY`·**绝不入库**·本环境 GitHub-only 真调被挡→`--mock`）+ 设置视图 `providerSettings()`（envKey/是否已配/打码·可被 server/UI 复用）。哲学同 `src/services/aigp`（非确定性旁路·不碰 sim/hash）。
+> **待主程/PE（跨域·非 PA）**：① **设置 UI + server**——把 Tripo/DashScope key 接进 `apollo.py` 设置系统（现 `LLM_PROVIDERS` 是 chat 域·生成域另起一套或并入）+ 创作台设置屏（LayoutNode·UI铁律·复用 `providerSettings()` 形状与 `apiKeyMasked` 打码）。② **运行时生成 UI**——创作台输入 prompt→调生成→资产入本地库→即时可用（异步任务·pending/进度·参照 aigp 视频端口 handle 模式）。③ 浏览器侧直调需把生成逻辑做成 `src/services/ai-gen/` 端口（node 侧 `ai-gen.mjs` 是 authoring-time 参照）。
+> **真调前置**：放宽网络的环境/session（Tripo/DashScope 域名本环境 403）+ 用户付费 key（owner 已购）。许可按各家订阅商用条款（provenance 已记）。
+
 ### REQ-PA-3D公用货架 · Free Library 增公用 3D 基础素材 + 3D vendoring + 本地目录标准 · [2026-07-04] · owner 拍板 → **指派：PA（资产侧 ①②③④a）· P3D（游戏侧切换 ④b）** · status: **PA 侧 ✅ done（①②③④a·分步全绿推）；④b 转 `requests-3d.md`「REQ-3D-货架接入」待 P3D** · 类型: 架构补全（vendoring 模型的 3D 半边·真缺口）
 > **PA 施工回执（2026-07-04·分步全绿推）**：① 货架备料工具 `scripts/gen-shelf-3d.mjs`——11 材质(数据型 `mat/*`)+3 基础 mesh(程序化 glb `mesh/plane|cube|sphere`·three GLTFLoader 实测可解析)+3 程序化贴图(`tex/plank_*`·usage 闭集)+1 渐变天空盒(`env/sky-gradient`·纯 Node PNG)。② `vendor-asset.mjs` 支持数据型(material 无 path·免 copy)+文件型(mesh glb/贴图)——`game-z` vendor 了 mat/mesh fixture，`vendor.test` 覆盖两路。③ 本地目录标准 `public/games/<game>/art/{textures,models,materials,env}/` 已写进 `playbooks/assets.md ⑥`。④a 程序化贴图产进货架。守护测 `src/assets/shelf-3d.test.ts`。
 > **owner 愿景**：Free Library = 统一货架（2D + 公用 3D 基础素材）；每游戏开工按需 vendor 到本地美术目录，一律不直引货架。

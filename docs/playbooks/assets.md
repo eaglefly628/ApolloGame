@@ -55,3 +55,11 @@ Free Library（共享 `assets/index.json` + `FreeArtLib/`）= **货架·只被 c
 - **天空盒**：`env/sky-gradient`（equirect 渐变）。
 - **程序化 PBR 材质库**（成套·各品类·每套 albedo+normal+roughness 贴图 + 引它们的材质 `mat/<品类>`）：`brick`·`cobblestone`·`grass`·`sand`·`concrete`·`metal`(金属度1·拉丝)·`fabric`·`tile`·`gravel`。贴图在 `tex/pbr/<品类>_{albedo,normal,rough}`。vendor 材质会连带其贴图 key（游戏侧一并 vendor 那几张贴图）。
 - 备料/扩充：`node scripts/gen-shelf-3d.mjs [materials|meshes|textures|env|pbr|all]`（确定性·幂等·零网络·CC0 自产）。缺某类基础素材/品类 → 扩这个脚本（加一条 `CATS` 品类），不在游戏层自造。
+
+## ⑧ AI 文本生成资产（外部服务·框架 `scripts/ai-gen.mjs`）
+
+文本→资产，落进资产库（带 provenance）。哲学同 `src/services/aigp`：外部**非确定性** AI 走旁路，产物=固定数据，不碰 sim/hash。
+- 用法：`node scripts/ai-gen.mjs <tripo|qwen> "<prompt>" [--game <g>] [--id <id>] [--mock]`；`node scripts/ai-gen.mjs providers` 看设置视图。
+- 适配器（可扩·加一条进 `ADAPTERS`）：**tripo** 文本→3D glb（`TRIPO_API_KEY`）· **qwen** 文本→2D png（DashScope 万相·`DASHSCOPE_API_KEY`）。
+- 密钥走 env、**绝不入库**；缺 key 或 `--mock` → mock（产合法占位·prompt 播种）。**本环境 GitHub-only·真调 API 被挡 → 用 `--mock`**；真调等放宽网络的 session。
+- 落库：`--game` 给了=游戏本地 `art/ai/`；否则共享货架 `assets/ai/`。运行时（软件内输入即生成）+ 设置 UI = 主程/PE 域，见 `requests.md` REQ-AIGEN。
