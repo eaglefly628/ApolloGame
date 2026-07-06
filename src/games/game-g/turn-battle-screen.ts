@@ -384,7 +384,7 @@ function clashCalcCol(rows: [string, number][], head: string, team: 'mine' | 'fo
     ],
   });
   return {
-    type: 'Panel', id: `clash-cc-${team}`, props: { edge: team }, layout: { direction: 'column', gap: 3, padding: 14, width: 230, chamfer: 14 },
+    type: 'Panel', id: `clash-cc-${team}`, props: { edge: team, glass: true }, layout: { direction: 'column', gap: 3, padding: 15, width: 246, chamfer: 14 }, // R21：246px 宽 + 磨砂（忠实设计稿 calcBase）
     children: [{ type: 'Label', id: `clash-cc-${team}-h`, props: { text: head, size: 'xs', color: clashTextTone(team), bold: true, tracking: 1.6 } }, ...rowNodes],
   };
 }
@@ -422,9 +422,9 @@ function clashNode(cv: TurnClashView): LayoutNode {
     // 掷前=3D 骰竞技（clash-die3d 锚点·引擎 ThreeRenderer 覆此翻滚·🎲 兜底）+ 掷值文本(clash-die·驱动就地滚·藏于骰上方无妨)；
     // 揭晓=奶白平面骰显**真实掷值**(clash-die·非随机骰面·免与胜负矛盾·忠实设计稿 reveal 相)。两相皆保 clash-die id（驱动依赖）。
     const dieSlot: LayoutNode = revealed
-      ? { type: 'Panel', id: `clash-dieface-${s}`, props: { bg: { custom: 'linear-gradient(150deg,#fffaf0,#e6d3ad)' }, edge: won ? tone : 'gold' }, layout: { width: 66, height: 66, radius: 14, align: 'center', justify: 'center', direction: 'row', fx: won ? [{ kind: 'glow', ms: 1200 }] : undefined },
+      ? { type: 'Panel', id: `clash-dieface-${s}`, props: { bg: { custom: 'linear-gradient(150deg,#fffaf0,#e6d3ad)' }, edge: won ? tone : 'gold' }, layout: { width: 70, height: 70, radius: 15, align: 'center', justify: 'center', direction: 'row', fx: won ? [{ kind: 'glow', ms: 1200 }] : undefined },
           children: [{ type: 'Label', id: `clash-die-${s}`, props: { text: String(roll ?? '?'), size: 30, color: tone, bold: true, mono: true } }] }
-      : { type: 'Panel', id: `clash-die3d-${s}`, props: { bg: { custom: 'linear-gradient(150deg,#fffaf0,#e6d3ad)' }, edge: 'gold' }, layout: { width: 66, height: 66, radius: 14, align: 'center', justify: 'center', direction: 'column', gap: 0, fx: [{ kind: 'pulse', color: 'gold', ms: 900 }] },
+      : { type: 'Panel', id: `clash-die3d-${s}`, props: { bg: { custom: 'linear-gradient(150deg,#fffaf0,#e6d3ad)' }, edge: 'gold' }, layout: { width: 70, height: 70, radius: 15, align: 'center', justify: 'center', direction: 'column', gap: 0, fx: [{ kind: 'pulse', color: 'gold', ms: 900 }] },
           children: [
             { type: 'Label', id: `clash-die3d-ph-${s}`, props: { text: '🎲', size: 30, color: 'text' } }, // 无 WebGL 兜底（有 WebGL 时 3D 骰覆盖）
             { type: 'Label', id: `clash-die-${s}`, props: { text: '?', size: 'xs', color: tone, bold: true, mono: true } }, // 驱动就地滚的掷值（掷前藏于骰面·勿删 id）
@@ -438,7 +438,7 @@ function clashNode(cv: TurnClashView): LayoutNode {
   const sideStack = (mine: boolean): LayoutNode => ({
     type: 'Panel', id: `clash-side-${mine ? 'm' : 'f'}`, props: { bare: true }, layout: { direction: 'column', gap: 9, align: 'center' },
     children: [
-      { type: 'PlayingCard', id: `clash-card-${mine ? 'm' : 'f'}`, props: { rank: (mine ? cv.mine : cv.foe).rank, suit: SUITG[(mine ? cv.mine : cv.foe).suit], face: 'light', size: 'md', label: (mine ? cv.mine : cv.foe).name, selected: revealed && (mine ? cv.mine.won : cv.foe.won), dimmed: !mine && revealed && !cv.foe.won && !cv.foe.lastStand }, layout: { rotate: mine ? -4 : 4 } },
+      { type: 'PlayingCard', id: `clash-card-${mine ? 'm' : 'f'}`, props: { rank: (mine ? cv.mine : cv.foe).rank, suit: SUITG[(mine ? cv.mine : cv.foe).suit], face: 'light', size: 'lg', label: (mine ? cv.mine : cv.foe).name, selected: revealed && (mine ? cv.mine.won : cv.foe.won), dimmed: !mine && revealed && !cv.foe.won && !cv.foe.lastStand }, layout: { rotate: mine ? -4 : 4 } }, // R21：md→lg(82×116·底座最大)·仍小于设计 118×142 → 已提 REQ 扩 xl 尺
       dieCol(mine),
     ],
   });
@@ -500,8 +500,9 @@ function clashNode(cv: TurnClashView): LayoutNode {
   });
 
   return {
-    type: 'Panel', id: 'clash-panel', props: { accent: true, bg: { custom: 'radial-gradient(80% 100% at 50% 0%, #1b2638 0%, #0e1622 56%, #080d15 100%)' } },
-    layout: { direction: 'column', gap: 12, padding: 22, width: 968, chamfer: 20 },
+    // R21 布局重置（owner 2026-07-04）：底板=**半透明磨砂玻璃**（忠实设计稿 panel·rgba .82/.86 + backdrop blur·非旧不透明 radial）→ 透出模糊棋盘、金描边+柔光。
+    type: 'Panel', id: 'clash-panel', props: { accent: true, glass: true, bg: { custom: 'linear-gradient(180deg,rgba(20,32,48,.82),rgba(10,18,28,.86))' } },
+    layout: { direction: 'column', gap: 12, padding: 20, width: 960, chamfer: 20 },
     children,
   };
 }
