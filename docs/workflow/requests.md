@@ -569,3 +569,17 @@
 > 5. **Boss AI 随机误选幅度过大**（新记·未单独立单）——ε 探索让 Boss 拿 2.8分抽牌压过 15.9分部署→整局 0 源泉、从不打出手里 8S/JS/KS·显得弱智而非"弱"。**请程序A 判断**：这是有意教学关降智还是噪声过大？建议降 ε 或改"保守但理性"(少动作·别选低分动作)。若需 design G 定 Boss 强度目标再回环。
 > 6. **源泉无上限·可累积超10**（owner 2026-07-04 报·新bug）——`turn-combat.ts:654/657` `mana += manaGain(turn)` 无 `Math.min` 封顶→无处可花时源泉一路涨（log T28 我8→T31 我15）。**owner 拍板：源泉最多累积到 10**。待修：`mana = Math.min(MANA_CAP=10, mana + manaGain)`（双方对称·a/b 同）。**注**：封顶后满10再+=0=浪费→正是 owner「源泉→战力直接施法」备选想法(源泉 sink)要解决的（见 design G 讨论·另议是否加 sink 让满前能花掉）。
 > **回报后**：design G 据 fixed 状态重跑 sim + owner 重玩新流。
+
+### REQ-G-关1开局过载重标（敌开局5兵+战19墙碾压·owner playtest 被打爆）· [2026-07-05] · owner playtest → design G(数值spec) + 程序A(garrison分档/hero强化) · Game G · status: open · 优先级: **P1（关1教学关不可玩·压垮性开局）** · 类型: 平衡重标（多系统叠加过载·战斗核改后没重估）
+> **owner 2026-07-05 两局连续被中路墙+开局兵海磨死**。GD 查开局机制定性：**三套给敌方加兵的系统叠加、且改战斗核后没重估** → 敌开局5兵+主将战19墙 vs 玩家空场（教学关压垮性）。
+> **过载来源（各自"合理"·叠加要命）**：
+> 1. `OPENING_HAND=3`（双方对称·公平·不动）。
+> 2. `startFormation` 关1=2守军（REQ-G-开局排阵·owner·保留但见下）。
+> 3. **`BOSS_GARRISON_MANA=3` 开局布防·免费额外线·强制铺满三路**（turn-combat.ts:839·owner 2026-06-29 定于旧战斗模型·**只给Boss不给玩家的不对称白送**·掷战力骰核下没重估）。
+> 4. **主将+16 强化 → 3♠战力19 墙**（占位hero强化·`REQ-G-Boss写死明牌天罡` 已flag·中路堵~10回合打不动）。
+> **叠加后果（playtest 实录）**：敌开局5兵压场→玩家主将丢中路撞stack秒死→**士气-4整路残整局**→敌连胜snowball破家。
+> **GD 修法spec（数值·design G sim 标·程序A 落值）**：
+> 1. **`BOSS_GARRISON_MANA` 按关分档**：关1=**0或1**（教学关不白送免费线）·后段关再爬。**owner 拍档位**（GD 倾向关1=0·纯靠startFormation 2守军 + 主将 立面·先教干净盘面）。
+> 2. **主将 hero 强化按关分档**：关1 主将战力压到 **~12**（非19·别做打不动墙）·接16牌组loader 时校准（并入 `REQ-G-Boss写死明牌天罡`）。
+> 3. **士气-4 主将阵亡**（`ROUT_PTS=4`·per-lane 永久）：关1 减轻或改可恢复（并入 `iteration-backlog-strategy-depth §二` 疲劳恢复批·这局证明它是压垮一环）。
+> **GD 回环**：程序A 落 garrison 分档 + hero 分档后 → design G 用 sim 重标关1 到 ~70%（现被开局过载压到远低）。**注**：疲劳恢复模型程序A 已部分实装（log「疲劳40%·休整可回」）·现利好赢方(Boss)·需 design G 连带 sim 复核恢复参数别助长 snowball。
