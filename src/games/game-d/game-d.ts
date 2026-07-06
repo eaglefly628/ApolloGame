@@ -173,7 +173,7 @@ export function mount(container: HTMLElement): () => void {
     // 盒庭=浅暖。相机在天空盒球内 → 用 Sky3D 渐变穹顶。Title 开 env（中性 studio IBL）给玻璃骰反射高级感；盒庭不开。
     const s = engine.world.getComponent<{ type: 'Sky3D'; top: number; bottom: number; clouds?: boolean; env?: number }>('sky', 'Sky3D');
     // 盒庭天穹/背景 = **暖调奶油**（照设计稿 02-arena 暖色房间·owner「太白·要更暖更清爽暖色」·非近白）。
-    if (s) { s.top = dark ? 0x93a3b7 : 0xe9dcc2; s.bottom = dark ? 0x646f82 : 0xd6c2a0; s.clouds = false; s.env = dark ? 0.28 : 0; }
+    if (s) { s.top = dark ? 0x93a3b7 : 0xe9dcc2; s.bottom = dark ? 0x646f82 : 0xd6c2a0; s.clouds = false; s.env = dark ? 0.28 : 0.5; } // 盒庭开 IBL(0.5)：金属环反射成像（无 IBL 纯金属发黑）
     renderer.setBackgroundTexture(null);
     renderer.setBackground(dark ? 0x7c8699 : 0xddcdb0);
     // Title 关闭泛光/移轴（参考原型是纯 ACES 渲染·无 composer·骰子靠 emissive .16 自发光）；盒庭用强移轴+泛光。

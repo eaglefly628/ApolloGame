@@ -84,6 +84,15 @@ const wallTex = (t: ActDef, act: number): VoxelTex => ({ top: t.wall, side: t.wa
 const glow = (x: number, y: number, z: number, color: number, scale: number, opacity = 0.7): Ent =>
   ({ Transform3D: { x, y, z }, Glow3D: { color, scale, opacity } });
 
+/** 竖立的旋转金属环（owner 2026-07-03·借 game-z prim-torus 配方：金 PBR + 表面细节 + 绕 Y 自转）。
+ *  torus 默认在 XY 平面 = **竖直**环（面朝 ±Z）；spin rotY = 绕竖轴转（面→侧→面·别忘了它旋转）。金属靠 Sky3D.env(IBL) 反射成像。 */
+const metalRing = (x: number, y: number, z: number, dia: number, spin: number): Ent => ({
+  Transform3D: { x, y, z },
+  Mesh3D: { shape: 'torus', width: dia, height: dia, frontTint: 0xffd991, tube: 0.32 },
+  Material3D: { preset: 'gold', surface: { pattern: 'bumps', tiles: 6, normal: 0.4, rough: 0.28 } },
+  Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: spin }] },
+});
+
 /** 四角火盆（立柱 + 亮暖火盆 + **加性暖光晕**·复刻原型 brazier·§B @±4.3）——微缩盒庭的暖光与纵向层次。 */
 function cornerBraziers(P: string, baseZ: number, hw: number, hd: number, pillar: number, pillarSide: number, hot: number, hotSide: number): Record<string, Ent> {
   const out: Record<string, Ent> = {};
@@ -140,9 +149,10 @@ export function genRoom(index: number): Record<string, Ent> {
     // ── 四角发光火盆（暖光晕 + 纵向层次·微缩盒庭标志·§B @±4.3）──
     ...cornerBraziers(P, baseZ, hw, hd, t.wall, t.floorSide, BRAZIER, BRAZIER_HOT),
     // ── 上方漂浮灯笼（加性暖光晕·复刻原型 lantern glowSprite）──
-    [`${P}-lan1`]: glow(-2.1, 2.9, baseZ - 1.6, LANTERN, 1.4, 0.28),
-    [`${P}-lan2`]: glow(2.4, 3.1, baseZ + 0.8, LANTERN, 1.4, 0.28),
-    [`${P}-lan3`]: glow(0, 3.3, baseZ - 2.4, LANTERN, 1.4, 0.28),
+    // 两盏「下面的灯」换成**两个竖立旋转金属环**（owner 2026-07-03·材质借 game-z 金属环）——左右对称、反向不同速转。
+    [`${P}-ring-l`]: metalRing(-2.5, 1.5, baseZ + 0.4, 1.7, 1.3),
+    [`${P}-ring-r`]: metalRing(2.5, 1.5, baseZ + 0.4, 1.7, -1.05),
+    [`${P}-lan3`]: glow(0, 3.3, baseZ - 2.4, LANTERN, 1.4, 0.28), // 顶后一盏灯笼留着（暖氛围）
   };
 
   // 中心 furniture 全撤（owner 2026-07-03「场景里的平台 + 旋转骰子都去掉·先要光秃秃的场景」）：
