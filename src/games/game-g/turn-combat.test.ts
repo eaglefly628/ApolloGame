@@ -5,7 +5,7 @@ import { cardStamina } from './combat-types.js';
 import {
   initTurnBattle, drawCard, deployUnit, castTengang, swapCard, endTurn, aiTakeTurn, turnHash, turnActive,
   unitPowerParts, REST_RECOVER_PM, SWAP_PER_TURN,
-  MANA_START, A_DEPLOY_SLOT, A_GOAL, TURN_HOME_BLOOD,
+  MANA_START, A_DEPLOY_SLOT, A_GOAL, TURN_HOME_BLOOD, MORALE_SHOCK_PTS, MORALE_SHOCK_TURNS,
   type PokerCard, type TengangHandCard, type TurnUnit, type TurnBattle,
 } from './turn-combat.js';
 
@@ -135,6 +135,33 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     // 主将本人不吃士气（effPower general 分支 shift 0）
     const gen = b.lanes[0].a.find((u) => u.id === 'gen')!;
     expect(unitPowerParts(b, 'a', 0, gen).morale).toBe(0);
+  });
+
+  it('士气 v2(主将阵亡·临时震荡)：当时在场兵 −N 线性衰减·N回合归0 / 新兵免疫 / 不永久', () => {
+    const b = initTurnBattle({ seed: 1 });
+    b.lanes[0].aGenDead = true; // 主将已亡（该路）
+    const deathTurn = b.turn;   // =1
+    const until = deathTurn + MORALE_SHOCK_TURNS;
+    // 当时在场兵：盖震荡到期回合 until；新兵：无 moraleShock 字段 → 免疫。
+    const veteran: TurnUnit = { ...unit('vet', '9', A_DEPLOY_SLOT), moraleShock: until };
+    const rookie = unit('new', '9', A_DEPLOY_SLOT + 1); // 阵亡后新部署·无字段
+    b.lanes[0].a.push(veteran, rookie);
+    // ① 阵亡当回合：老兵满档 −N；新兵 0（免疫）。
+    expect(unitPowerParts(b, 'a', 0, veteran).morale).toBe(-MORALE_SHOCK_PTS);
+    expect(unitPowerParts(b, 'a', 0, rookie).morale).toBe(0);
+    // ② 逐回合线性衰减·始终朝 0 收（不永久）。
+    let prev = -MORALE_SHOCK_PTS;
+    for (let t = deathTurn + 1; t < until; t++) {
+      b.turn = t;
+      const m = unitPowerParts(b, 'a', 0, veteran).morale;
+      expect(m).toBeGreaterThan(prev); // 越来越轻（趋 0）
+      expect(m).toBeLessThan(0);       // 尚未归零
+      expect(unitPowerParts(b, 'a', 0, rookie).morale).toBe(0); // 新兵恒免疫
+      prev = m;
+    }
+    // ③ 第 N 回合：归 0（震荡散尽·死亡螺旋被斩断）。
+    b.turn = until;
+    expect(unitPowerParts(b, 'a', 0, veteran).morale).toBe(0);
   });
 
   it('判负：大本营血归 0 → 该方负', () => {

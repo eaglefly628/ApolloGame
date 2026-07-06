@@ -36,7 +36,12 @@ export const DISCARD_REFUND = 0.5; // 弃牌返还 0.5 召唤源泉（owner 2026
 export const SWAP_PER_TURN = 1, SWAP_COST = 0; // 换牌（owner 2026-07-03·三行为自由）：选中手牌 1 张 → 弃 + 从指定库随机补 1 张；每回合硬帽 1 次(破无限churn死循环)·免费。未来 Boss 地煞可按关加税/上锁(swapTax/swapLock·明牌杠杆)。
 export const OPENING_HAND = 3; // 起手摸 N（doc24 §六/七 待定）
 export const HAND_MAX = 8; // 手牌上限（天罡·广纳 handMaxAdd 抬高）
-const MORALE_PTS = 2, ROUT_PTS = 4; // 同 live-combat/doc06：主将在→下属 +战力 / 主将亡→溃散 −战力
+const MORALE_PTS = 2; // 同 live-combat/doc06：主将在→该路下属 +战力（士气光环·live）
+// 士气 v2（owner 2026-07-05·REQ-G-主将阵亡士气重构·替旧「永久 −ROUT_PTS(4) 全路溃散」死亡螺旋+反逻辑）：
+//   主将阵亡瞬间 → 只给**当时在场**的该路余部盖一枚临时震荡 → 逐回合**线性衰减**、第 N 回合归 0；
+//   阵亡后**新部署**的兵 0 惩罚（没见过·可重建）；兵离场即清（不写 pokerDeck·不烙卡·重抽干净）。
+export const MORALE_SHOCK_PTS = 3;   // 震荡初值 −N（阵亡当回合满档·owner「−4 夸张→靠 −2/−3」·design G sim 标终值 X=2~3）
+export const MORALE_SHOCK_TURNS = 3; // 衰减窗口 N 回合（第 N 回合归 0·owner N=2~3·design G sim 标）
 // 战损疲劳（owner 2026-07-06·连续疲劳条·替离散「0.5^wins 对折」）：胜者永远留场；疲劳 = 连续量 `fatiguePm∈[0,1000]`（战力损失千分比）。
 //   胜一场 → `fatiguePm += (1000−fatiguePm)×0.5`（0→500→750→875…·有效战力仍逐胜对折·首几场与旧 0.5^wins 逐字等价·「数值对了」）；
 //   本轮**不战斗**的在场兵 → `fatiguePm −= REST_RECOVER_PM`（休整回血·夹≥0·回不到负=最多满血）。强兵连战越疲、歇一轮回一成 → 弱兵车轮仍磨得动、但强兵能喘。
@@ -54,7 +59,7 @@ export const MAX_TURNS = 60;
 //    兵天生想直走推底破家·中途换路是跟核心目标对着干；真策略深度在部署那一刻选哪条路（田忌赛马）·不在中途改路。
 
 // 场上兵：占一格 slot；续航 staminaLeft 打光退场（同 live-combat 经济）。speed=每回合推进格数(默认1·缺省视作1·向后兼容旧字面量)。
-export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number; speed?: number; cost?: number; wins?: number; fatiguePm?: number; hold?: boolean } // fatiguePm=疲劳千分比(战力损失量·owner 2026-07-06 连续疲劳条·替离散 0.5^wins)：胜→fatiguePm+=(1000−fatiguePm)×0.5(仍≈对折)；本轮不战→−REST_RECOVER_PM(休整回血·夹≥0)；有效战力×(1000−fatiguePm)/1000。wins=累计胜场(仅日志/画像·不再驱动战力)；cost=部署所花源泉；hold=开局排阵守军·静态死守(REQ-G-开局排阵·不前压/不冲家/接触才战/赢守原位)
+export interface TurnUnit { id: string; rank: string; suit: string; points: number; buff: number; general: boolean; stamina: number; staminaLeft: number; slot: number; speed?: number; cost?: number; wins?: number; fatiguePm?: number; hold?: boolean; moraleShock?: number } // moraleShock=士气震荡到期回合(owner 2026-07-05 士气v2)：主将阵亡瞬间给当时在场余部盖=deathTurn+MORALE_SHOCK_TURNS；clash 时按剩余回合线性衰减出 −战力·到期归0；per-unit 战场态·离场随兵对象丢弃(绝不写 pokerDeck→不烙卡)·新兵无此字段→免疫。// fatiguePm=疲劳千分比(战力损失量·owner 2026-07-06 连续疲劳条·替离散 0.5^wins)：胜→fatiguePm+=(1000−fatiguePm)×0.5(仍≈对折)；本轮不战→−REST_RECOVER_PM(休整回血·夹≥0)；有效战力×(1000−fatiguePm)/1000。wins=累计胜场(仅日志/画像·不再驱动战力)；cost=部署所花源泉；hold=开局排阵守军·静态死守(REQ-G-开局排阵·不前压/不冲家/接触才战/赢守原位)
 // 行军速度（owner 2026-06-21）：大王/小王(★/王/JOKER) 与 老K 三类高阶兵·疾行 2 格/回合；其余 1 格。纯 rank 派生·确定性。
 const FAST_RANKS = new Set(['★', '王', 'JOKER', 'K']);
 export function unitSpeed(rank: string): number { return FAST_RANKS.has(rank) ? 2 : 1; }
@@ -329,7 +334,15 @@ function championId(b: TurnBattle, side: 'a' | 'b'): string | undefined {
 
 // 有效战力 P_eff（doc19 §三 · 复用 live-combat 同款：base + 经营 buff + 天罡(双方己侧·Boss 施法亦生效) + 士气；apply add→mul→floor→clamp）。
 // noRout（地煞·破釜沉舟/死战不退）：Boss 主将亡不溃散（shift 不取 −ROUT）。fx=该侧 tengangA（NO_TENGANG → 零修正·行为同前）。
-function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, champId?: string, noRout = false, nearDef = 0, phalanx = 0): { pEff: number; shift: number; tg: number; nearDef: number; phalanx: number } {
+// 士气 v2 · 当时在场兵的即时震荡值（owner 2026-07-05）：主将阵亡后 [deathTurn, until) 内线性衰减 −N → 0，到期/无字段=0。
+//   until = deathTurn + MORALE_SHOCK_TURNS；remaining = until − turn ∈ (0, N] → −round(PTS×remaining/N)；≤0 已到期归 0。整数运算·确定性（回放/lockstep 无漂移）。
+function activeShock(u: TurnUnit, turn: number): number {
+  const until = u.moraleShock ?? 0;
+  const remaining = until - turn;
+  if (remaining <= 0) return 0; // 无震荡 / 已衰减到期
+  return -Math.round((MORALE_SHOCK_PTS * remaining) / MORALE_SHOCK_TURNS);
+}
+function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, champId?: string, noRout = false, nearDef = 0, phalanx = 0, turn = 0): { pEff: number; shift: number; tg: number; nearDef: number; phalanx: number } {
   const col = colOf(lane, side);
   let tg = fx.powerAll + fx.pEffAdd;
   if (fx.powerFront && col.length && u.id === col[0].id) tg += fx.powerFront; // 锋矢：前锋
@@ -346,7 +359,7 @@ function effPower(u: TurnUnit, lane: TurnLane, side: 'a' | 'b', fx: TengangFx, c
   const shift = !genDead ? (genHere ? MORALE_PTS + moraleBonus : 0)
     : fx.revenge > 0 ? fx.revenge // 哀兵：主将亡 → 余部暴怒 +N
     : noRoutEff ? 0               // 督战：主将亡不溃散
-    : -ROUT_PTS;                  // 默认：主将亡 → 溃散
+    : activeShock(u, turn);       // 默认(士气v2)：主将亡 → 当时在场兵临时震荡·线性衰减·N回合归0·新兵免疫(无字段=0)
   return { pEff: pEff(u.points, u.buff + tg + shift + nearDef + phalanx, mul, fp), shift, tg, nearDef, phalanx };
 }
 // 斯巴达方阵（owner 2026-07-03 改逻辑为真·每兵加战力）：Boss 侧每兵按**自身**相邻友兵数 → +确定战力
@@ -382,7 +395,7 @@ export function unitPowerParts(b: TurnBattle, side: 'a' | 'b', li: number, u: Tu
   const nearDef = side === 'b' && dB.nearBaseSlots > 0 && u.slot >= SLOTS - dB.nearBaseSlots ? dB.nearBasePower : 0; // 隘口守军（仅 Boss 侧·贴家固守）
   const phalanx = side === 'b' ? phalanxPower(b, li, u) : 0; // 斯巴达方阵：每兵按自身相邻友兵数 +战力（owner 2026-07-03·仅 Boss 侧）
   const noRout = side === 'b' && dB.noRout;
-  const e = effPower(u, lane, side, fx, champ, noRout, nearDef, phalanx);
+  const e = effPower(u, lane, side, fx, champ, noRout, nearDef, phalanx, b.turn);
   const tgBreak = sd.castFx.map(({ id, fx: f }) => [id, Math.round(tgContribOf(u, lane, side, f))] as [string, number]).filter((r) => r[1] !== 0); // 逐张天罡溯源（同 resolveClash）
   return { rank: u.rank, suit: u.suit, general: u.general, points: u.points, buff: u.buff, morale: e.shift, tengang: e.tg, pEff: e.pEff, tgBreak, nearDef: e.nearDef, phalanx: e.phalanx, wins: u.wins, fatiguePm: u.fatiguePm };
 }
@@ -417,9 +430,14 @@ function bossEdge(b: TurnBattle, li: number, pf: TurnUnit, bf: TurnUnit): number
   return e;
 }
 
-function killFront(lane: TurnLane, side: 'a' | 'b'): void {
+function killFront(lane: TurnLane, side: 'a' | 'b', shockUntil = 0): void {
   const q = colOf(lane, side); const u = q.shift();
-  if (u?.general) { if (side === 'a') lane.aGenDead = true; else lane.bGenDead = true; }
+  if (u?.general) {
+    if (side === 'a') lane.aGenDead = true; else lane.bGenDead = true;
+    // 士气 v2（owner 2026-07-05）：主将阵亡瞬间 → 只给**当时在场**的该路余部盖临时震荡（衰减·N回合归0）；
+    //   此刻还没部署的兵拿不到字段 → 天然免疫（新兵可重建这条路·杜绝永久诅咒/死亡螺旋）。
+    if (shockUntil > 0) for (const x of q) if (!x.general) x.moraleShock = shockUntil;
+  }
 }
 
 // 掷命解算评估（纯读·不掷骰不改状态）：算两军前锋有效战力 ea/eb（含地煞·招牌气势折成的确定战力）。
@@ -437,7 +455,7 @@ function clashEval(b: TurnBattle, li: number): ClashEval | null {
   const dB = b.dishaB;
   const nearDefB = dB.nearBaseSlots > 0 && fb.slot >= SLOTS - dB.nearBaseSlots ? dB.nearBasePower : 0; // 温泉关·隘口守军固守 +战力（贴 Boss 家·进战力拆解）
   const phalanxB = phalanxPower(b, li, fb); // 斯巴达方阵：前锋按自身相邻友兵数 +战力（owner 2026-07-03·改逻辑为真·每兵加战力·已从 bossEdge 移出防重复计）
-  const ba = effPower(fa, lane, 'a', b.a.tengangA, champA), bb = effPower(fb, lane, 'b', b.b.tengangA, champB, dB.noRout, nearDefB, phalanxB);
+  const ba = effPower(fa, lane, 'a', b.a.tengangA, champA, false, 0, 0, b.turn), bb = effPower(fb, lane, 'b', b.b.tengangA, champB, dB.noRout, nearDefB, phalanxB, b.turn);
   const dishaEdge = Math.round(bossEdge(b, li, fa, fb) / EDGE_TO_POWER); // 地煞·招牌气势 → Boss 确定战力加成
   const ea = ba.pEff, eb = clampP(bb.pEff + dishaEdge); // Boss 有效战力含地煞气势（夹 P_MAX）
   return { fa, fb, ea, eb, dishaEdge, ba, bb };
@@ -521,7 +539,7 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
     const loser = aWins ? 'b' : 'a';
     const loserFront = colOf(lane, loser)[0];
     const winnerKillsGeneral = !!loserFront?.general; // 本场斩掉的是敌主将？
-    killFront(lane, loser); // 输家阵亡
+    killFront(lane, loser, b.turn + MORALE_SHOCK_TURNS); // 输家阵亡（主将亡则盖士气震荡·士气v2）
     // 擒王（REQ-G-天罡原生重构 §四.3）：胜方持擒王 + 本场斩掉败方主将 → 败方该路余部全溃（主将已由 killFront 斩·余部清空该列）。
     if (winnerKillsGeneral && sideOf(b, aWins ? 'a' : 'b').tengangA.killGeneralRout > 0) {
       if (loser === 'a') lane.aGenDead = true; else lane.bGenDead = true; // 主将亡标记（若前锋即主将·killFront 已置；防御性重置）
