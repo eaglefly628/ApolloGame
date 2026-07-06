@@ -702,8 +702,9 @@ export function mount(container: HTMLElement): () => void {
           lbl('dl-trial-l', `本轮可凑 · 对照试炼`, { size: 'xs', color: 'sub' }),
           lbl('dl-trial-v', `${ELEM_INFO[(trialCond as { el: Elem }).el].cn} ${have}/${need} ${have >= need ? '✅' : '✗'}`, { size: 'sm', bold: true, color: have >= need ? 'ok' : 'danger' }),
         ], { justify: 'between', align: 'center' })] : []),
-        { type: 'Button', id: 'dl-confirm', props: { label: `确认投掷 · ${S.loadout.length} 骰`, kind: 'hero', disabled: S.loadout.length === 0, action: 'throw' } },
-        lbl('dl-hint', S.loadout.length === 0 ? '选择尚未满足试炼需求' : '回到战场掷出这组骰子', { size: 'xs', color: 'dim' }),
+        // owner 2026-07-06 bug：确认只**回战场备好骰组**（closeDish），不当场掷出——掷骰须由战场「掷出」显式触发。
+        { type: 'Button', id: 'dl-confirm', props: { label: `确认备战 · ${S.loadout.length} 骰`, kind: 'hero', disabled: S.loadout.length === 0, action: 'closeDish' } },
+        lbl('dl-hint', S.loadout.length === 0 ? '选择尚未满足试炼需求' : '回到战场·点「掷出」投掷这组骰子', { size: 'xs', color: 'dim' }),
       ],
     };
   };

@@ -79,7 +79,8 @@ const grayOf = (c: number, lift = 0): number => {
 };
 const metalStruct = (color: number) => ({ preset: 'iron' as const, color: grayOf(color) });     // 墙/基座/走廊/火炬柱=哑光铁皮
 const metalBright = (color: number) => ({ preset: 'steel' as const, color: grayOf(color, 48) }); // 碗/珠/门楣=抛光亮铁皮（去金·只亮一档拉层次）
-const metalFloor = { preset: 'iron' as const, color: 0x84898f };                                 // 地盘=哑光中性铁皮（flat·略暗于墙）
+// 地盘 = 纯绿草地（owner 2026-07-06「纯铁皮太丑·换纯绿草地」）：哑光绿(matte·非金属·不吃 IBL 不发黑) + 细噪面（有机起伏·非塑料死平）。
+const grassFloor = (t: ActDef) => ({ preset: 'matte' as const, color: t.floorTop, surface: { pattern: 'noise' as const, tiles: 12, normal: 0.4, rough: 0.96 } });
 
 /**
  * 即时生成第 index 间竞技场的全部实体（id 以 `r{index}-` 前缀·跨房间唯一·便于流式卸载）。
@@ -90,13 +91,22 @@ const metalFloor = { preset: 'iron' as const, color: 0x84898f };                
 const glow = (x: number, y: number, z: number, color: number, scale: number, opacity = 0.7): Ent =>
   ({ Transform3D: { x, y, z }, Glow3D: { color, scale, opacity } });
 
-/** 竖立的旋转金属环（owner 2026-07-03·借 game-z prim-torus 配方：**铁** PBR + 绕 Y 自转·owner 2026-07-06 去金改铁皮）。
- *  torus 默认在 XY 平面 = **竖直**环（面朝 ±Z）；spin rotY = 绕竖轴转（面→侧→面·别忘了它旋转）。金属靠 Sky3D.env(IBL) 反射成像。 */
-const metalRing = (x: number, y: number, z: number, dia: number, spin: number): Ent => ({
-  Transform3D: { x, y, z },
+/** 竖立的旋转金属环（铁 PBR·owner 2026-07-06「各方向都有加速度在随机旋转」= 魔幻乱翻）：
+ *  rotX/Y/Z 各叠 **spin(匀速漂移)+bob(正弦摆动)** → 同轴叠加=**变速自转**（加速↔减速·anim3d 同 field compose）；
+ *  三轴不同 rate + 互质 freq/phase → 准周期不重复=看着随机乱翻·各方向都在转。o=每环相位偏移（两环独立乱转·不同步）。
+ *  纯数据（引擎 Anim3D 能力·非游戏层逐帧改 rate 的 bypass）。torus 默认 XY 平面=竖直环。金属靠 Sky3D.env(IBL) 成像。 */
+const metalRing = (x: number, y: number, z: number, dia: number, o: number): Ent => ({
+  Transform3D: { x, y, z, rotX: o * 0.7, rotZ: o * 1.3 }, // 起始姿态错开
   Mesh3D: { shape: 'torus', width: dia, height: dia, frontTint: 0xc4c7c7, tube: 0.32 },
   Material3D: { preset: 'steel' }, // 抛光铁环·flat·去金（owner 不喜黄金属风）
-  Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: spin }] },
+  Anim3D: { channels: [
+    { kind: 'spin', field: 'rotX', rate: 1.1 - o * 0.4 },
+    { kind: 'bob', field: 'rotX', amp: 1.0, freq: 0.71 + o * 0.13, phase: o * 1.9 },
+    { kind: 'spin', field: 'rotY', rate: 1.5 + o * 0.5 },
+    { kind: 'bob', field: 'rotY', amp: 1.2, freq: 0.53 + o * 0.17, phase: o * 0.7 },
+    { kind: 'spin', field: 'rotZ', rate: 0.8 + o * 0.6 },
+    { kind: 'bob', field: 'rotZ', amp: 0.9, freq: 0.89 - o * 0.11, phase: o * 2.6 },
+  ] },
 });
 
 /** 四角火盆（立柱 + 亮暖火盆 + **加性暖光晕**·复刻原型 brazier·§B @±4.3）——微缩盒庭的暖光与纵向层次。 */
@@ -138,9 +148,8 @@ export function genRoom(index: number): Record<string, Ent> {
     // ── 浮空微缩盒庭：分层基座（往下收窄的两级台·§B 基座 y −1.0 / −2.3）──
     [`${P}-plinth1`]: { ...block(0, -1.0, baseZ, hw * 2 + 1.0, 0.6, hd * 2 + 1.0, darken(t.floorSide, 0.18), darken(t.floorSide, 0.34)), Material3D: metalStruct(darken(t.floorSide, 0.22)) },
     [`${P}-plinth2`]: { ...block(0, -2.3, baseZ, hw * 2 + 0.3, 0.7, hd * 2 + 0.3, darken(t.floorSide, 0.42), darken(t.floorSide, 0.56)), Material3D: metalStruct(darken(t.floorSide, 0.42)) },
-    // 竞技场地台（顶在 y=0·§B 薄地格 0.45）——**金属地盘**（owner 整场金属化）。撤 floorTex（顶面手绘草贴图会盖过 Material3D）→ 纯金属；
-    // 色彩微调：地面用暖青铜色 floorSide（非绿 floorTop）→ 明显金属、跟金环一致。
-    [`${P}-floor`]: { ...block(0, -FLOOR_H / 2, baseZ, hw * 2, FLOOR_H, hd * 2, t.floorTop, t.floorSide), Material3D: metalFloor },
+    // 竞技场地台（顶在 y=0·§B 薄地格 0.45）——**纯绿草地**（owner 2026-07-06「纯铁皮太丑·换纯绿草地」）：matte 绿(t.floorTop) + 细噪面。
+    [`${P}-floor`]: { ...block(0, -FLOOR_H / 2, baseZ, hw * 2, FLOOR_H, hd * 2, t.floorTop, t.floorSide), Material3D: grassFloor(t) },
     // 三面围墙（左/右/后=入口侧·§B 墙高 0.85）——墙纹 + 顶饰条
     [`${P}-wall-l`]: { ...block(-hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide), Material3D: metalStruct(t.wall) },
     [`${P}-wall-r`]: { ...block(hw, wcy, baseZ, WALL_T, WALL_H, hd * 2, t.wall, t.floorSide), Material3D: metalStruct(t.wall) },
@@ -157,8 +166,8 @@ export function genRoom(index: number): Record<string, Ent> {
     ...cornerBraziers(P, baseZ, hw, hd, t.wall, t.floorSide, BRAZIER, BRAZIER_HOT),
     // ── 上方漂浮灯笼（加性暖光晕·复刻原型 lantern glowSprite）──
     // 命运之环：两个小巧竖立旋转金属环，摆在**战场左上角/右上角**（= 屏上方门侧两个火炬/火盆的位置·+Z 端·owner 2026-07-03 澄清）——悬在火炬上方、左右反向不同速转。
-    [`${P}-ring-l`]: metalRing(-(hw + 0.8), 1.85, baseZ + (hd + 0.8), 0.8, 1.4),
-    [`${P}-ring-r`]: metalRing(hw + 0.8, 1.85, baseZ + (hd + 0.8), 0.8, -1.15),
+    [`${P}-ring-l`]: metalRing(-(hw + 0.8), 1.85, baseZ + (hd + 0.8), 0.8, 0),
+    [`${P}-ring-r`]: metalRing(hw + 0.8, 1.85, baseZ + (hd + 0.8), 0.8, 1),
     // 三盏漂浮灯笼撤了（上面两盏换成命运之环·顶后一盏也去掉·保持光秃）。四角火炬(火盆)留着做「竖起来的火炬」。
   };
 

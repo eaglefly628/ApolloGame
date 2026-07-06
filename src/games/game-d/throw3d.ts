@@ -60,13 +60,14 @@ export class Throw3D {
       const faces = PIPS.map((pip) => ({ color: hex(el), pip, src: diceFaceArt(el, pip) }));
       const x = (i - (n - 1) / 2) * 0.9; // 中心附近起手·靠横向初速抛向四壁反弹
       this.engine.world.createEntity(id);
-      this.engine.world.addComponent(id, { type: 'Transform3D', x, y: 3 + i * 0.25, z: roomZ + (rand() - 0.5) * 0.5, scale: 1 } as unknown as Component);
+      // owner 2026-07-06「翻滚入场太浮夸·短一点·重点是从骰子里翻滚出结果」：降落点、收横向初速与角速度 → 短促收束的翻滚（仍够翻乱面·公平）。
+      this.engine.world.addComponent(id, { type: 'Transform3D', x, y: 2 + i * 0.18, z: roomZ + (rand() - 0.5) * 0.4, scale: 1 } as unknown as Component);
       this.engine.world.addComponent(id, { type: 'Mesh3D', shape: 'box', width: DIE, height: DIE, depth: DIE, frontTint: hex(el), edgeTint: hex(el), dieFaces: faces } as unknown as Component);
-      // 强翻滚 + **有力横向初速**（抛向四壁·撞墙反弹=掷骰盒手感·owner「四边反弹·真实模拟」）。反弹靠物理世界默认 restitution。
+      // 适度翻滚 + 温和横向初速（抛向四壁·撞墙反弹=掷骰盒手感·收敛幅度不再满场乱飞）。反弹靠物理世界默认 restitution。
       this.engine.world.addComponent(id, {
         type: 'RigidBody3D', shape: 'box', mass: 1, restitution: 0.4, friction: 0.5,
-        vx: (rand() - 0.5) * 8, vy: 1 + rand(), vz: (rand() - 0.5) * 8,
-        avx: (rand() - 0.5) * 24, avy: (rand() - 0.5) * 24, avz: (rand() - 0.5) * 24,
+        vx: (rand() - 0.5) * 4.5, vy: 0.4 + rand() * 0.7, vz: (rand() - 0.5) * 4.5,
+        avx: (rand() - 0.5) * 13, avy: (rand() - 0.5) * 13, avz: (rand() - 0.5) * 13,
       } as unknown as Component);
     });
   }
@@ -85,8 +86,8 @@ export class Throw3D {
       this.prevQuat[i] = [q[0]!, q[1]!, q[2]!, q[3]!];
     });
     if (moving) this.lastMoveMs = nowMs;
-    // 静止 ≥350ms 且至少滚了 1.2s（避开初始下落阶段）→ 落定；或 7s 超时兜底强制读。
-    if ((elapsed > 1200 && nowMs - this.lastMoveMs > 350) || elapsed > 7000) this.finish();
+    // 静止 ≥300ms 且至少滚了 0.8s（避开初始下落阶段·owner「短一点」缩短窗口）→ 落定；或 4s 超时兜底强制读。
+    if ((elapsed > 800 && nowMs - this.lastMoveMs > 300) || elapsed > 4000) this.finish();
   }
 
   private finish(): void {
