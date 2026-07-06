@@ -74,9 +74,10 @@
 > 4. **token/缓存卫生**：system+catalog 逐轮字节稳定（最大化 provider 前缀缓存——本次 122k 命中证明有效）；autofix 回喂只带「上轮 manifest+本轮错误」，裁掉更早轮次的失败输出（防对话超线性膨胀）。
 > **验收**：mock+真 provider 各过一遍「模板改」路径；弱模型基准=deepseek 同题重测，目标 ≤1 轮修复通过；token/局记录进完工摘要对比 184k 基线。门禁全绿。
 
-### REQ-STUDIO-生成进度与心跳 · 长生成过程黑箱→阶段灯+心跳+秒表（不做假百分比） · [2026-07-04] · owner（「一直在工作但没告诉我」）→ **指派：PST（与 P0 中间态单同批做·代码相邻）** · status: open · 优先级: P1 · 类型: 产品体验（长任务可见性）
+### REQ-STUDIO-生成进度与心跳+交互日志 · 长生成黑箱→阶段灯/心跳/秒表 + LLM 往返 JSONL 日志 · [2026-07-04·07-06 扩] · owner → **指派：PST 或 Opus（P0 存盘单完工后立即接·同 apollo.py 防并行冲突）** · status: **排队（顺位第二）** · 优先级: P1 · 类型: 产品体验（长任务可见性）
 > **owner 现象**：生成稿子过程系统一直在工作，但界面无任何进度/心跳——用户不知道是活着还是死了。
 > **spec（Lead 图纸）**：
+> 0. **LLM 交互日志（owner 2026-07-06 追加「辅助诊断」·本单第 0 项·最先做）**：apollo.py 每次 LLM 往返落一行 JSONL 到 `.apollo/llm-logs/YYYY-MM-DD.jsonl`（gitignore）：`{ts, provider, model, mode(chat|generate|autofix-k), promptChars, responseChars, validation:'pass'|'fail', errors[截断], elapsedMs, usage?{provider 回的 token 数}}`——**API key 绝不落盘**；prompt/response 全文默认不落（只落长度），`APOLLO_LOG_VERBOSE=1` 才落全文（本地排障用）。排障口径回填 `docs/playbooks/testing.md` 一行。今天那种"三轮失败是什么"的问题从此 `cat` 一下就有答案。
 > 1. **作业模型（照 steam-publisher serve.py 轮询先例·弃长连接）**：生成类端点（`/api/generate`·design 各段·`/api/assets/generate`）改「提交即回 job-id → 前端轮询 `GET /api/jobs/<id>`」：`{stage, detail, elapsedMs, heartbeatAt, done?, error?}`。轮询短请求天然免疫代理断长连接——这就是"心跳维持"的正解。
 > 2. **阶段闭集（诚实进度·非百分比）**：`submitted → provider 响应中 → 校验中 → 自动修复 k/3 → 落盘 → done|error`。**禁止假百分比进度条**——LLM 无真进度，编造=对用户撒谎；给的是：阶段灯 + 已耗时秒表 + 最后心跳时间（>15s 无心跳显"可能卡住"黄条，超时显式红）。
 > 3. **前端统一件**：一个 BusyIndicator 组件（阶段灯/秒表/心跳/出错红条），DesignStudio、CreationWizard、AssetGenPanel 三处共用——别一处一套。
