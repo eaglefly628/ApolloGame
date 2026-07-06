@@ -7,7 +7,7 @@ import { type ClashEvent } from './combat-types.js';
 import { freshSave, loadSave, persist, resetFortuneIfNewDay, FORTUNE_MAX, activeDeck, syncTiangangs, newDeckId, rollBoss, TIANGANG_DECK_SIZE, MAX_TIANGANG_DECKS, DEFAULT_STARTER_TIANGANGS } from './game-g-save.js';
 import { favorToP, cardRank, avg, describeFormation, pick3, buildPickDeck, bossHeroCard, aggregateTengang, seededShuffleArr } from './game-g-build.js';
 import { clashToTurnView } from './game-g-clash-view.js';
-import { initTurnBattle, drawCard, deployUnit, castTengang, castTengangAt, swapCard, advanceMovePhase, resolveClashAt, endTurnFinish, aiDecide, bossOpeningGarrison, debugGrantTengang, debugAddMana, BOSS_GARRISON_MANA, OPENING_HAND, DRAW_COST, CAST_COST, SWAP_PER_TURN, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
+import { initTurnBattle, drawCard, deployUnit, castTengang, castTengangAt, swapCard, advanceMovePhase, resolveClashAt, endTurnFinish, aiDecide, bossOpeningGarrison, debugGrantTengang, debugAddMana, OPENING_HAND, DRAW_COST, CAST_COST, SWAP_PER_TURN, type PokerCard, type TengangHandCard, type Card } from './turn-combat.js';
 import { DISHA_NAME, stageDisha } from './disha.js';
 import { mountTurnBattle, buildTurnBattleView, type TurnBattleView, type TurnBattleActions, type TurnClashView, type TurnShaView } from './turn-battle-screen.js';
 // 掷硬币（战胜硬币）已随「确定制」退役为死代码（owner 2026-07-01「掷硬币这环节没意义·太繁琐·先放死代码等以后可能用」）：
@@ -346,7 +346,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     // 战场操作日志（debug·owner 2026-06-21「出 bug 把日志贴来排查」）：提前声明→开局布防即可入日志。逐条记 玩家/AI 操作 + 掷命 + 结算。
     const dbg: string[] = [];
     const log = (s: string): void => { if (dbg.length > 1200) dbg.shift(); dbg.push(`[T${tb.turn}|源泉 我${tb.a.mana}/敌${tb.b.mana}] ${s}`); };
-    bossOpeningGarrison(tb, BOSS_GARRISON_MANA, aggregateTengang, log); // 开局布防（owner 2026-06-29·敌方开场即设防一线）·记 AI 布防决策日志（owner 2026-07-02）
+    bossOpeningGarrison(tb, lvl.boss.garrisonMana, aggregateTengang, log); // 开局布防（owner 2026-06-29·敌方开场即设防一线）·按关分档 garrisonMana(关1=0·REQ-G-关1开局过载重标)·记 AI 布防决策日志（owner 2026-07-02）
     const garrisonIds: string[] = tb.lanes.flatMap((L) => L.b.map((u) => u.id)); // 布防摆下的敌兵 id → 供开场「敌方布防」逐张亮相演出（owner 2026-07-04·别让敌兵凭空预置看着像源泉没扣·布防免费=设计·源泉不减对；演个敌方设防初始拍再轮到我）
     // 敌堡垒 3 地煞明牌（动态·owner 2026-06-29 修「敌人发动斯巴达方阵但右下仍显待发动」）：
     // used 每帧据 tb 重算 → 被动地煞(开局生效·dishaBaseIds) / 可施放地煞已打出(dishaCastIds) → 显「已发动」；可施放未打 → 「待发动」。

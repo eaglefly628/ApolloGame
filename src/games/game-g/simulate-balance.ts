@@ -9,7 +9,7 @@ import {
   TIANGANG_BY_ID, bossFor, RUN_BATTLES, deployCost, type ArmyCard,
 } from './index.js';
 import {
-  initTurnBattle, drawCard, deployUnit, castTengang, swapCard, endTurn, aiTakeTurn, bossOpeningGarrison, BOSS_GARRISON_MANA,
+  initTurnBattle, drawCard, deployUnit, castTengang, swapCard, endTurn, aiTakeTurn, bossOpeningGarrison,
   OPENING_HAND, DRAW_COST, CAST_COST, SWAP_PER_TURN, type TurnBattle, type PokerCard, type TengangHandCard,
 } from './turn-combat.js';
 import { playerTakeTurnAI } from './player-ai.js'; // 终极版 Player-AI（前向推演搜索·owner 2026-07-03「推演敌人未来」）
@@ -173,7 +173,7 @@ function runBattle(
 
   for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!);
   for (let i = 0; i < OPENING_HAND && tb.b.pokerDeck.length; i++) tb.b.hand.push(tb.b.pokerDeck.shift()!);
-  if (!mirror) bossOpeningGarrison(tb, BOSS_GARRISON_MANA, aggregateTengang); // 开局布防（owner 2026-06-29·敌方开场设防·与 live 一致）；镜像：无布防(对称)
+  if (!mirror) bossOpeningGarrison(tb, lvl.boss.garrisonMana, aggregateTengang); // 开局布防（owner 2026-06-29·敌方开场设防·与 live 一致）·按关分档 garrisonMana(关1=0)；镜像：无布防(对称)
 
   let firstClashTurn = -1, firstScoreTurn = -1, prevClash = 0, prevHA = tb.homeA, prevHB = tb.homeB;
   const MAX_TURNS = 300;

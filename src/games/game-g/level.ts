@@ -3,7 +3,7 @@
 // 引擎按 id 逐关加载喂 turn-combat（doc24 回合制）：Boss 大本营血/地煞/12 天罡 seed 随机/loadoutCap 上限。
 import { campaignFor, TIANGANG_UNLOCK, isRetiredTiangang, type StageCampaign } from './blueprint.js';
 import { stageDisha } from './disha.js';
-import { NEUTRAL_AI, type AiProfile, type PokerCard } from './turn-combat.js';
+import { NEUTRAL_AI, BOSS_GARRISON_MANA, type AiProfile, type PokerCard } from './turn-combat.js';
 import { seededShuffle } from '@atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移）
 
 export interface LevelDef {
@@ -12,8 +12,8 @@ export interface LevelDef {
   intro: string;                                  // 开场战役背景旁白
   bossLines: { open: string; mid: string; lose: string }; // Boss 对白（开场/劣势/败北）
   boss: { homeHp: number; disha: string[]; tiangang: string[]; aiTier: number; aiProfile: AiProfile;
-    deck: { rank: string; suit: string }[]; favorBias: number; stayP: number;
-    startFormation: { rank: string; suit: string; lane: number; slot: number }[] }; // 16 牌组(关1-5·空=回退泛化army) + 牌力偏置(写卡buff) + 留场P + 地煞 3 + 随机 12 天罡 + AI 档 + 策略画像 + 开局排阵守军(REQ-G-开局排阵)
+    deck: { rank: string; suit: string }[]; favorBias: number; stayP: number; garrisonMana: number;
+    startFormation: { rank: string; suit: string; lane: number; slot: number }[] }; // 16 牌组(关1-5·空=回退泛化army) + 牌力偏置(写卡buff) + 留场P + 地煞 3 + 随机 12 天罡 + AI 档 + 策略画像 + garrisonMana(开局布防预算·按关分档·REQ-G-关1开局过载重标) + 开局排阵守军(REQ-G-开局排阵)
   reward: { unlock: string[]; gold: number };
   loadoutCap: number;                             // 玩家本关天罡 loadout 上限（新手区 2→3）
 }
@@ -30,12 +30,14 @@ const AI_PROFILES: Record<number, AiProfile> = {
 // 难度档（doc27 §四）：大本营血 / loadoutCap / AI 智能档。**按 stage 索引**（design G 2026-06-20 修 bug：原按 c.stars 索引·STAGE_CAMPAIGN stars 仅 1-3 → 4/5 档死表·项羽实拿 tier2）。
 // 当前 5 战 run = 关1-5 难度阶梯 ★→★★★★★（项羽=run 终 boss·最难）。52 关批量铺开时按 doc27 §四 阶段区间重定（design G「按批出关」）。
 // bossTg（owner 2026-06-29）：Boss 出战天罡数·逐关递增（关1 仅 2·序战轻松）——v2「按基础牌」后 12 天罡过强·须按关收。
-const DIFFICULTY: Record<number, { homeHp: number; loadoutCap: number; aiTier: number; bossTg: number }> = {
-  1: { homeHp: 3, loadoutCap: 2, aiTier: 1, bossTg: 2 }, // ★ 序战（v2 按基础牌后·AI 3→1：关1 回轻松·不全知预判·会犯错·owner 2026-06-29 目标 ~80%）
-  2: { homeHp: 3, loadoutCap: 3, aiTier: 3, bossTg: 4 }, // ★★（AI 智能档 2→3：同上·开全知预判；家血/loadout 不动=只让 AI 变聪明·非整关变难）
-  3: { homeHp: 4, loadoutCap: 3, aiTier: 3, bossTg: 6 }, // ★★★
-  4: { homeHp: 4, loadoutCap: 4, aiTier: 4, bossTg: 9 }, // ★★★★
-  5: { homeHp: 5, loadoutCap: 5, aiTier: 5, bossTg: 12 }, // ★★★★★ 终章
+// garrisonMana（开局布防预算·按关分档·REQ-G-关1开局过载重标·owner 2026-07-05）：关1=0——去掉「只给 Boss 不给玩家」的免费额外线（教学关别开局 5 兵压场·GD 荐纯靠 startFormation 2 守军 + 主将立面教干净盘面）；
+//   关2-5 暂沿用旧值 BOSS_GARRISON_MANA(=3·零回归)·待 design G sim 分档「后段关再爬」定终值（roadmap §二.2）。
+const DIFFICULTY: Record<number, { homeHp: number; loadoutCap: number; aiTier: number; bossTg: number; garrisonMana: number }> = {
+  1: { homeHp: 3, loadoutCap: 2, aiTier: 1, bossTg: 2, garrisonMana: 0 },                    // ★ 序战（v2 按基础牌后·AI 3→1：关1 回轻松·不全知预判·会犯错·owner 2026-06-29 目标 ~80%）·garrison=0 去白送额外线
+  2: { homeHp: 3, loadoutCap: 3, aiTier: 3, bossTg: 4, garrisonMana: BOSS_GARRISON_MANA },   // ★★（AI 智能档 2→3：同上·开全知预判；家血/loadout 不动=只让 AI 变聪明·非整关变难）
+  3: { homeHp: 4, loadoutCap: 3, aiTier: 3, bossTg: 6, garrisonMana: BOSS_GARRISON_MANA },   // ★★★
+  4: { homeHp: 4, loadoutCap: 4, aiTier: 4, bossTg: 9, garrisonMana: BOSS_GARRISON_MANA },   // ★★★★
+  5: { homeHp: 5, loadoutCap: 5, aiTier: 5, bossTg: 12, garrisonMana: BOSS_GARRISON_MANA },  // ★★★★★ 终章
 };
 
 // 关1-5 Boss「16 牌组」（design/boss-config-1-5.md §一-五·design G 2026-06-21 标定·rank+suit·与玩家 16 张对称）。
@@ -102,6 +104,7 @@ export function loadLevel(stage: number): LevelDef {
     bossLines: { open: lore.open, mid: lore.mid, lose: lore.lose },
     boss: { homeHp: diff.homeHp, disha: stageDisha(stage), tiangang: bossTiangang(stage, diff.bossTg), aiTier: diff.aiTier, aiProfile: AI_PROFILES[stage] ?? NEUTRAL_AI,
       deck: (BOSS_DECK_1_5[stage] ?? []).map(parseCardCode).filter((c): c is { rank: string; suit: string } => c != null), favorBias: BOSS_FAVOR_BIAS[stage] ?? 0, stayP: BOSS_STAY_P[stage] ?? 0.5,
+      garrisonMana: diff.garrisonMana,
       startFormation: BOSS_START_FORMATION[stage] ?? [] },
     reward: { unlock, gold: 20 + stage * 10 },
     loadoutCap: diff.loadoutCap,
