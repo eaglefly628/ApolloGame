@@ -538,6 +538,7 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
   } else {
     const loser = aWins ? 'b' : 'a';
     const loserFront = colOf(lane, loser)[0];
+    const vacatedSlot = loserFront?.slot; // 阵亡敌兵腾出的格（攻方胜 → 前进占据·owner 2026-07-06）
     const winnerKillsGeneral = !!loserFront?.general; // 本场斩掉的是敌主将？
     killFront(lane, loser, b.turn + MORALE_SHOCK_TURNS); // 输家阵亡（主将亡则盖士气震荡·士气v2）
     // 擒王（REQ-G-天罡原生重构 §四.3）：胜方持擒王 + 本场斩掉败方主将 → 败方该路余部全溃（主将已由 killFront 斩·余部清空该列）。
@@ -547,6 +548,14 @@ function applyClashOutcome(b: TurnBattle, li: number, ev: ClashEval, aWins: bool
     }
     const relay = sideOf(b, loser).tengangA.relay; // 薪火：一张阵亡 → 同路下一张接棒续航 +N
     const next = colOf(lane, loser)[0]; if (relay > 0 && next) next.staminaLeft += relay;
+    // 攻方胜 → 前进占据阵亡敌兵腾出的格（owner 2026-07-06「往前攻击撞死人的当然占位；守方守原位」·替 2026-07-04「胜者一律守原位」）。
+    //   攻方 = 本行动相推进者 = b.active（clash 恒由 advanceSide(b.active) 触发·攻守由此判）；仅胜方==active 才占（守方胜=被攻方·不动）。
+    //   攻方前锋此刻恰停在敌前一格（advanceColumnVsFoe 封顶「敌前一格」）→ 占位=前进 1 格到 vacatedSlot·不越界不瞬移；静守兵(hold)不追击。
+    const winSide = aWins ? 'a' : 'b';
+    if (winSide === b.active && vacatedSlot != null) {
+      const wf = colOf(lane, winSide)[0];
+      if (wf && !wf.hold) wf.slot = vacatedSlot;
+    }
   }
   // 胜者去留（owner 2026-07-06 连续疲劳条·取消离散连胜/自动退场）：**永远留场继续作战**（战场不空·心流不断）；
   //   胜一场 → 累加疲劳 `fatiguePm += (1000−fatiguePm)×0.5`（有效战力对折·整数千分比·确定性）；**无自动退场**（owner「没必要退场·满3光荣回库删掉」）。

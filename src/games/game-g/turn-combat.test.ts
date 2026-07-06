@@ -98,6 +98,26 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.active).toBe('a'); expect(b.turn).toBe(2); // 回我方放置·回合数 +1
   });
 
+  it('攻方胜 → 占据阵亡敌兵腾出的格 / 守方胜 → 守原位（owner 2026-07-06·攻守定去留）', () => {
+    // 攻方占位：a(行动方) 强兵 A@2 撞 弱敌 2@3 → a 胜 → a 前进占据 slot3。
+    const atk = initTurnBattle({ seed: 1 });
+    atk.lanes[0].a.push(unit('a0', 'A', A_DEPLOY_SLOT + 2));      // pEff 14
+    atk.lanes[0].b.push(unit('b0', '2', A_DEPLOY_SLOT + 3, -1));  // pEff 1·敌前锋相邻
+    endTurn(atk); // a 行动相：a0 推进撞 b0 → a 胜
+    expect(atk.lastClash?.aWins).toBe(true);
+    expect(atk.lanes[0].b.length).toBe(0);                        // 敌阵亡
+    expect(atk.lanes[0].a[0].slot).toBe(A_DEPLOY_SLOT + 3);       // 攻方胜 → 占据敌腾出的格
+
+    // 守方守原位：a(行动方) 弱兵撞强敌 → a 亡·b 是守方胜 → 不占 a 的格、守原位。
+    const def = initTurnBattle({ seed: 1 });
+    def.lanes[0].a.push(unit('a1', '2', A_DEPLOY_SLOT + 2, -1));  // pEff 1
+    def.lanes[0].b.push(unit('b1', 'A', A_DEPLOY_SLOT + 3));      // pEff 14·敌前锋相邻
+    endTurn(def); // a 行动相：a1 撞 b1 → a 败
+    expect(def.lastClash?.aWins).toBe(false);
+    expect(def.lanes[0].a.length).toBe(0);                        // 攻方 a 阵亡
+    expect(def.lanes[0].b[0].slot).toBe(A_DEPLOY_SLOT + 3);       // 守方 b 胜 → 守原位(未前压占格)
+  });
+
   it('无敌路推进到底 → 敌大本营 −1 血、该兵退场', () => {
     const b = initTurnBattle({ seed: 1 });
     b.lanes[0].a.push(unit('a0', '7', A_DEPLOY_SLOT));
@@ -260,19 +280,19 @@ describe('Game G · turn-combat（doc24 单机回合制 · A0 重构）', () => 
     expect(b.lanes[0].a[0] ? (b.lanes[0].a[0].fatiguePm ?? 0) : 0).toBe(0); // 多轮休整 → 疲劳清零（满血）
   });
 
-  it('碰撞才战斗 + 胜者守原位不追击(owner 2026-07-04 改)：落点空只走位·踩到敌才打·赢了守原位(不推进占腾出格)', () => {
+  it('碰撞才战斗 + 攻方胜占据腾出格(owner 2026-07-06 攻守定去留·替 07-04 一律守原位)：落点空只走位·踩到敌才打·攻方赢了前进占腾出格', () => {
     const b = initTurnBattle({ seed: 1, startFormation: [{ rank: '2', suit: 'S', lane: 0, slot: 6, buff: -1 }] }); // 敌守军 2@6·pEff1(恒掷1·必负)
     b.lanes[0].a.push(unit('p', 'A', 3)); // 玩家 A@3·pEff14·speed1·必胜
     b.active = 'a'; endTurn(b); // 3→落点4(空) → 不打·只走位
     expect(b.clashSeq).toBe(0); expect(b.lanes[0].a[0].slot).toBe(4);
     b.active = 'a'; endTurn(b); // 4→落点5(空) → 不打
     expect(b.clashSeq).toBe(0); expect(b.lanes[0].a[0].slot).toBe(5);
-    b.active = 'a'; endTurn(b); // 5→落点6(敌!) → 碰撞才战 → A 必胜 → 守军亡 → A **守原位停 5**(不推进占 6·owner 2026-07-04)
+    b.active = 'a'; endTurn(b); // 5→落点6(敌!) → 碰撞才战 → A(攻方) 必胜 → 守军亡 → A **前进占据 6**(owner 2026-07-06 攻方占位)
     expect(b.clashSeq).toBe(1); expect(b.lastClash?.aWins).toBe(true);
     expect(b.lanes[0].b.length).toBe(0);   // 守军阵亡
-    expect(b.lanes[0].a[0].slot).toBe(5);  // 胜者守原位·不推进（前进交下回合正常行军）
-    b.active = 'a'; endTurn(b);            // 下回合正常行军：5→6(现空) → 补进腾出格
-    expect(b.lanes[0].a[0].slot).toBe(6);  // 下回合正常推进 1 格补进
+    expect(b.lanes[0].a[0].slot).toBe(6);  // 攻方胜 → 占据敌腾出的格(6)·非停 5
+    b.active = 'a'; endTurn(b);            // 下回合无敌 → 继续行军 6→7
+    expect(b.lanes[0].a[0].slot).toBe(7);
   });
 
   it('源泉封顶 10（owner 2026-07-04·防无处可花累积溢出到 15）', () => {
