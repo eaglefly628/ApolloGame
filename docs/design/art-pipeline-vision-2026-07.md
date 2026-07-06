@@ -13,7 +13,7 @@
 | 治理 | — | PA 角色 + asset-manager agent + resource-manager 技能 + spec 闭集元数据（usage/colorSpace/wrap/genCollision）+ 红旗棘轮 |
 
 **已立住的管线原则（改造中必须保住）**：①单一真相=index，逻辑只引资产 id，资产没填也能跑；②vendoring 制——游戏不直引货架；③spec 闭集元数据；④许可/来源随条目走。
-**真缺口**：①零 AI（导入靠人扒包，修复/变体全无）；②零可视化（纯 CLI+JSON，选材靠 grep）；③声音资产面≈空白；④「引用↔登记↔磁盘」三方对账无工具。
+**真缺口（2026-07-04 二稿修正——首稿「零 AI/零可视化」过时，实测已有美术台雏形，见 §七）**：①AI 只有"生成"通道、无修复/变体/整理闭集，且**无人审门**（生成即登记）；②可视化只有列表级（30k 项无缩略图墙/搜索规模化）；③声音资产面≈空白；④三方对账无工具。
 
 ## 二、行业对照：现代引擎美术管线长什么样
 
@@ -81,6 +81,20 @@
 - ❌ 自动入库——人审门是铁的，AI 时代的资产库死于无人审的垃圾涌入；
 - ❌ 平台派生矩阵（多分辨率/压缩档）——web 单平台，YAGNI。
 
+## 七、现台改造评估（2026-07-04·owner 问「当前美术台能改造吗」——答：能，增量改造非推倒）
+
+**已存在的美术台**（此前盘点遗漏·edd2fe23 等）：`AssetLibrary/AssetBrowser/AssetGenPanel`（~616 行·含渲染测试）+ apollo.py 四端点（import/generate/providers/autotag·mock 兜底·路径防注入·密钥打码）+ `scripts/ai-gen.mjs`（**tripo 文生 3D PBR + qwen wanx 文生图两条真调路径都已写好**·无 key 自动 mock·带 provenance 字段）。
+
+| 愿景五区 | 现台 | 改造 gap |
+|---|---|---|
+| ①货架区 | AssetBrowser 列表+定位（挂 Inspector 内） | 缩略图墙（30k 项虚拟滚动）/许可徽标/双货架树/预算仪表 |
+| ②导入台 | `/api/assets/import` 端点在 | spec 闭集表单 + 许可确认流 UI |
+| ③AI 加工台 | **生成通道已通**（2D+3D·mock 兜底·provenance 有） | ⚠️**人审门缺失（生成即登记·宪法级·先修）**；修复/变体/整理闭集；风格锚 |
+| ④接线器 | vendor CLI 有 | UI + 三方对账报表 |
+| ⑤配方 | pack-atlas/gen-textures 散装 CLI | 收编为数据配方 |
+
+**改造顺序（修订版）**：**M2.5 人审门**（小·最先——生成产物改进「待审区」，人点入库才登记，provenance 升硬校验）→ M1 货架可视化 → M2 导入/接线 UI → M3 修复/变体闭集+风格锚 → M4 3D 打磨。原 M0-M4 分期框架不变，只是起点从零改为从现台长出。
+
 ## 六、下一步
 
-owner 审本稿 → 拍板后 M1 起单（指派：Opus·spec 由 Lead 出）；界面视觉稿另附（SendUserFile 交付·不入库）。
+owner 审本稿 → 拍板后 **M2.5 人审门先行起单**（小·PST/PA 域），M1 随后；spec 由 Lead 出。界面视觉稿另附（SendUserFile 交付·不入库）。
