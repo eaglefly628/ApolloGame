@@ -730,7 +730,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
         const card = tb.a.hand[i];
         if (selMode === 'swap') { // 换牌：选牌库→点手里1张 → 弃并从该库随机补1张（1/回合·免费）
           if (tb.a.swapsUsed >= SWAP_PER_TURN) { playSfx('invalid'); flash('✗ 换牌本回合已用尽（1/回合）'); return; }
-          const sc = card; if (swapCard(tb, 'a', i, swapFrom)) { playSfx('draw'); const nc = tb.a.hand[tb.a.hand.length - 1]; log(`我·换牌 ${sc ? cardLabel(sc) : '?'} → 补${swapFrom === 'poker' ? '扑克' : '天罡'} ${nc ? cardLabel(nc) : '?'}（免费·1/回合·已用尽）`); flash('✓ 换牌成功——补入 1 张（本回合换牌用尽）'); dealtId = nc?.id ?? null; }
+          const sc = card; if (swapCard(tb, 'a', i, swapFrom)) { playSfx('draw'); const nc = tb.a.hand[tb.a.hand.length - 1]; log(`我·换牌 ${sc ? cardLabel(sc) : '?'} → 补${swapFrom === 'poker' ? '扑克' : '天罡'} ${nc ? cardLabel(nc) : '?'}（免费·1/回合·已用尽）`); flash('✓ 换牌成功——补入 1 张（本回合换牌用尽）'); dealtId = nc?.id ?? null; const did = dealtId; window.setTimeout(() => { if (dealtId === did) { dealtId = null; if (!perfClash) mounted?.update(); } }, 560); } // 补入牌 g-deal 入场·~560ms 后清标记（同抽牌路径·否则 dealtId 不清→每次重渲重播替换动画·owner 2026-07-06）
           else { playSfx('invalid'); flash(`✗ ${swapFrom === 'poker' ? '扑克' : '天罡'}牌库空了，换不了`); }
           selHand = -1; selMode = null; // 换牌用尽 → 收起子菜单
         }
