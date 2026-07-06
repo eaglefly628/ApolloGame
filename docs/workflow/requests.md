@@ -11,6 +11,11 @@
 
 ## 待处理 / 进行中
 
+### REQ-UI-PlayingCard-xl尺寸 · [2026-07-06] · PG（game-g 绝命对决 R21 布局重置）→ 主程（ui/components 控件集） · status: **open（控件缺口·PG 不擅改 render.ts）** · 类型: 基座控件扩尺寸档（闭集加一档·additive·非逃生）
+> **源起**：owner R21「布局重置」要绝命对决特写忠实设计稿（`design/UI/Game G 绝命对决.dc.html`）——设计稿对决双方扑克牌 **118×142**；现 `PlayingCard` 尺寸闭集 `PCARD_DIMS`（`src/ui/components/render.ts:584`）最大档 `lg=[82,116,18,46]`，比设计小一圈。PG 已把特写用到 `lg`（当前最大），仍不足。
+> **申请**：`PCARD_DIMS` 加 `xl: [118,142,22,58]`（宽,高,圆角,大字号·按 lg→md 比例外推）。纯加档·不动现有 sm/md/lg（零回归·所有现用点不受影响）。
+> **为何不 PG 自己改**：`render.ts` = LayoutNode 解释器/基座控件集（主程域）；扩控件闭集走 requests（UI铁律「表达不了→requests.md 扩控件·绝不手写逃生」）。到货后 PG 把 `clash-card-m/f` 的 `size:'lg'`→`'xl'` 切一行即忠实设计稿。
+
 ### REQ-AIGEN-软件内文本生成资产 · Tripo(3D)+千问(2D) 接入创作台 · [2026-07-04] · owner 拍板 → **PA 已建生成框架(资产侧)· 待主程/PE 做运行时+设置UI** · status: **框架 ✅ done(PA·mock 全绿)；运行时/设置UI 待主程裁域派工** · 类型: 新能力(外部 AI 服务·表现层旁路)
 > **owner 愿景**：软件内用自然语言描述 → 生成资产（3D 用 **Tripo**·2D 用 **千问/DashScope 万相**），落进资产库。先 mock 打通全框架。
 > **PA 已交付（资产侧·`scripts/ai-gen.mjs` + `ai-gen.test.mjs`·mock 全绿）**：厂商无关生成框架 = 适配器注册表（`tripo` 文本→glb·`qwen` 文本→png）+ mock 产合法资产（glb/png·prompt 播种）+ **连库**（落 `assets/index.json` 或游戏本地 `art/index.json`·带 provenance 厂商/prompt/模型/mock/日期）+ 真调门控（fetch Tripo v2 openapi / DashScope 万相·密钥走 env `TRIPO_API_KEY`/`DASHSCOPE_API_KEY`·**绝不入库**·本环境 GitHub-only 真调被挡→`--mock`）+ 设置视图 `providerSettings()`（envKey/是否已配/打码·可被 server/UI 复用）。哲学同 `src/services/aigp`（非确定性旁路·不碰 sim/hash）。
