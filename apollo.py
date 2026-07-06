@@ -265,6 +265,9 @@ def _mock_enabled() -> bool:
 
 # 剩余「坏 JSON」次数（进程级可变状态；autofix 回路每消费一次自减）。
 _MOCK_BAD_REMAINING = int(os.environ.get('APOLLO_MOCK_BAD_N') or 0)
+# 剩余「校验不过的 manifest」次数：产**合法 JSON 但含未知能力**（驱动 manifest-check 失败 →
+# 服务端错误指令化 + 词汇族扩 + 轮次裁剪回路，弱模基准自证用）。每消费一次自减。
+_MOCK_BAD_MANIFEST_REMAINING = int(os.environ.get('APOLLO_MOCK_BAD_MANIFEST_N') or 0)
 # mock 修订用的确定性染色目标（与常见预设色不同 → 测试可断言「确实改了」）。
 _MOCK_REVISE_TINT = 0xff0000
 
@@ -344,6 +347,50 @@ def _extract_json(text: str) -> str:
         text = text.split('```')[1].split('```')[0]
     return text.strip()
 
+# ── LLM 交互日志（每次往返落一行 JSONL·排障用·REQ-STUDIO 心跳单第 0 项）──────────
+# 目录 .apollo/llm-logs/YYYY-MM-DD.jsonl（gitignore）。**API key 绝不落盘**；prompt/response 全文
+# 默认不落（只落字符数），APOLLO_LOG_VERBOSE=1 才落全文（本地排障）。best-effort：任何异常都吞掉，
+# 绝不让日志拖垮一次生成。「三轮失败是什么」从此 `cat` 一下 jsonl 就有答案。
+LLM_LOGS_DIR = ROOT / '.apollo' / 'llm-logs'
+
+def _log_verbose() -> bool:
+    return os.environ.get('APOLLO_LOG_VERBOSE', '') in ('1', 'true', 'yes')
+
+def _trunc(s, n: int = 200) -> str:
+    s = '' if s is None else str(s)
+    return s if len(s) <= n else s[:n] + '…'
+
+def _llm_log(*, provider: str, model: str, mode: str, req: dict,
+             validation=None, errors=None, prompt_full: str = '', response_full: str = '') -> None:
+    """把一次 LLM 往返落一行 JSONL。req = _provider_request 的返回（含 promptChars/responseChars/elapsedMs/usage）。
+    行 schema：{ts, provider, model, mode, promptChars, responseChars, validation, errors[≤200字], elapsedMs, usage?}。"""
+    try:
+        rec = {
+            'ts': time.strftime('%Y-%m-%dT%H:%M:%S'),
+            'provider': provider,
+            'model': model,
+            'mode': mode,
+            'promptChars': req.get('promptChars', 0),
+            'responseChars': req.get('responseChars', 0),
+            'validation': validation,
+            'errors': [_trunc(e) for e in (errors or []) if e],
+            'elapsedMs': req.get('elapsedMs', 0),
+        }
+        usage = req.get('usage')
+        if usage:
+            rec['usage'] = usage
+        if not req.get('success'):
+            rec['error'] = _trunc(req.get('error'))
+        if _log_verbose():  # 本地排障：落 prompt/response 全文（仍不含 API key——key 只在 HTTP 头）
+            rec['prompt'] = prompt_full
+            rec['response'] = response_full or req.get('text', '')
+        LLM_LOGS_DIR.mkdir(parents=True, exist_ok=True)
+        fname = LLM_LOGS_DIR / (time.strftime('%Y-%m-%d') + '.jsonl')
+        with fname.open('a', encoding='utf-8') as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + '\n')
+    except Exception:
+        pass  # 日志失败绝不影响生成
+
 # ── 统一 LLM 传输层（system + messages[{role,content}] → 原始文本）──────────
 # generate（单轮）与 autofix（多轮回喂错误）共用一条传输。mock provider 在此短路。
 # 各 provider 的 chat 格式差异只在这里消化：anthropic 走独立 system 字段，其余（OpenAI 兼容 /
@@ -355,8 +402,19 @@ _OPENAI_COMPAT_URLS = {
 
 def _provider_request(provider: str, api_key: str, model: str, system: str, messages: list,
                       max_tokens: int = 4096) -> dict:
+    # 度量（供 _llm_log）：promptChars = system + 全 messages 内容字节；elapsedMs = 本轮墙钟；
+    # usage = provider 回的 token 数（若有）。这些是 additive，不改任何调用方语义。
+    prompt_chars = len(system or '') + sum(len(str(m.get('content', ''))) for m in messages)
+    t0 = time.time()
+
+    def _meta(d: dict) -> dict:
+        d.setdefault('promptChars', prompt_chars)
+        d.setdefault('responseChars', len(d.get('text', '') or ''))
+        d.setdefault('elapsedMs', int((time.time() - t0) * 1000))
+        return d
+
     if provider == 'mock':
-        return _mock_response(system, messages)
+        return _meta(_mock_response(system, messages))
     try:
         if provider == 'anthropic':
             url = 'https://api.anthropic.com/v1/messages'
@@ -379,18 +437,22 @@ def _provider_request(provider: str, api_key: str, model: str, system: str, mess
         req = urllib.request.Request(url, data=body, headers=headers, method='POST')
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode())
+        usage = None
         if fmt == 'anthropic':
             text = data.get('content', [{}])[0].get('text', '')
+            usage = data.get('usage')
         elif fmt == 'ollama':
             text = data.get('message', {}).get('content', '')
+            usage = {k: data[k] for k in ('prompt_eval_count', 'eval_count') if k in data} or None
         else:
             text = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-        return {'success': True, 'text': text}
+            usage = data.get('usage')
+        return _meta({'success': True, 'text': text, 'usage': usage})
     except urllib.error.HTTPError as e:
         err_body = e.read().decode() if hasattr(e, 'read') else str(e)
-        return {'success': False, 'error': f'API error {e.code}: {err_body[:500]}'}
+        return _meta({'success': False, 'error': f'API error {e.code}: {err_body[:500]}'})
     except Exception as e:
-        return {'success': False, 'error': str(e)}
+        return _meta({'success': False, 'error': str(e)})
 
 # ── Mock 响应（无 key 测试用）──────────────────────────────────────────
 def _mock_manifest() -> dict:
@@ -432,19 +494,36 @@ def _mock_response(system: str, messages: list) -> dict:
       · design-breakdown（system 以 breakdown 头起）→ 固定小 GDD 的 JSON（受 bad-N 影响，测重问）。
       · manifest（create / revise / prototype）→ 内置 manifest；revise 走确定性染色（受 bad-N 影响）。
     _MOCK_BAD_REMAINING>0 时**仅对产 JSON 的模式**先回坏 JSON（每次自减），驱动服务端 autofix / breakdown 重问。"""
-    global _MOCK_BAD_REMAINING
+    global _MOCK_BAD_REMAINING, _MOCK_BAD_MANIFEST_REMAINING
     s = system or ''
     # 产文本的两模式：从不注坏 JSON（对它们无意义）。
     if s == DESIGN_CHAT_SYSTEM:
         return {'success': True, 'text': _mock_design_chat(messages)}
     if s == DESIGN_REVISE_SYSTEM:
         return {'success': True, 'text': _mock_design_revise(messages)}
-    # 以下皆为产 JSON 的模式：honor bad-N。
+    # 以下皆为产 JSON 的模式：honor bad-N（坏 JSON）→ 再 honor bad-manifest-N（合法 JSON·校验不过）。
     if _MOCK_BAD_REMAINING > 0:
         _MOCK_BAD_REMAINING -= 1
         return {'success': True, 'text': '{ "name": "broken", oops not valid json '}
+    if _MOCK_BAD_MANIFEST_REMAINING > 0:
+        _MOCK_BAD_MANIFEST_REMAINING -= 1
+        bad = _mock_manifest()
+        bad['capabilities'] = list(bad['capabilities']) + ['zz-mock-bogus-cap']  # 未知能力 → manifest-check 拒
+        return {'success': True, 'text': json.dumps(bad, ensure_ascii=False)}
     if s.startswith(_DESIGN_BREAKDOWN_HEAD):
         return {'success': True, 'text': _mock_breakdown_json()}
+    # template-edit：user_msg 带「## Baseline manifest」→ 对基线做确定性小改（revise 式染色）回全文。
+    tpl_marker = '## Baseline manifest'
+    tpl_src = next((str(m.get('content', '')) for m in messages
+                    if m.get('role') == 'user' and tpl_marker in str(m.get('content', ''))), None)
+    if tpl_src is not None:
+        b = tpl_src.split(tpl_marker, 1)[1].split('## 用户想要', 1)[0]
+        i, j = b.find('{'), b.rfind('}')
+        try:
+            base = json.loads(b[i:j + 1]) if 0 <= i < j else _mock_manifest()
+        except Exception:
+            base = _mock_manifest()
+        return {'success': True, 'text': json.dumps(_mock_revise(base), ensure_ascii=False)}
     marker = '## Current game manifest'
     revise_src = next((str(m.get('content', '')) for m in messages
                        if m.get('role') == 'user' and marker in str(m.get('content', ''))), None)
@@ -511,46 +590,211 @@ def _mock_design_revise(messages: list) -> str:
 
 # ── 生成管线：单轮生成 + 服务端 autofix 重试（落地 ai-dev-pipeline §7-5）─────
 def _generate_with_autofix(provider: str, api_key: str, model: str, system: str,
-                           user_msg: str, autofix: bool, max_attempts: int = 3) -> dict:
+                           user_msg: str, autofix: bool, max_attempts: int = 3,
+                           *, log_mode: str = 'generate', rebuild_system=None) -> dict:
     """messages 起于一条 user_msg。每轮：调 LLM → JSON parse →（autofix 时）manifest-check 校验。
-    失败把错误文本回喂当作下一轮 user 消息重问，≤max_attempts。传输/网络错误直接返回（不重试网络层）。
-    autofix=False：只跑一轮 + 软告警（_validate_blueprint），保持旧 GameCreator 行为不变。"""
-    messages = [{'role': 'user', 'content': user_msg}]
+    失败时**把错误改写成一句可执行修改指令**回喂重问，≤max_attempts。传输/网络错误直接返回（不重试网络层）。
+
+    token/缓存卫生（REQ-STUDIO 低模 ④）：回喂只带「base_user + 上一轮 assistant + 本轮错误指令」，
+    **裁掉更早轮次的失败输出**（防对话超线性膨胀）；system 逐轮字节稳定（除非 rebuild_system 主动扩词表）。
+    词汇按需扩（低模 ②）：错误点名"未知能力"且它其实是被裁掉的真实能力 → rebuild_system 补它整族。
+    每轮落一行 LLM 交互日志（心跳单第 0 项）。autofix=False：只跑一轮 + 软告警，保持旧 GameCreator 行为。"""
+    base_user = {'role': 'user', 'content': user_msg}
     attempts = 0
-    fixed_errors: list[str] = []
+    fixed_errors: list[str] = []       # 原始校验错误（回前端「查看原始校验错误」区块）
+    fix_instructions: list[str] = []   # LLM 化的可执行修改指令（回喂 LLM）
+    cur_system = system
+    last_assistant = None
+    last_instruction = None
     limit = max_attempts if autofix else 1
     while attempts < limit:
         attempts += 1
-        r = _provider_request(provider, api_key, model, system, messages)
+        # 轮次裁剪：首轮只 base_user；重试轮 = base_user + 上一轮输出 + 本轮错误指令（不累积历史失败）。
+        if last_assistant is None:
+            messages = [base_user]
+        else:
+            messages = [base_user,
+                        {'role': 'assistant', 'content': last_assistant},
+                        {'role': 'user', 'content': last_instruction}]
+        mode_label = log_mode if attempts == 1 else f'autofix-{attempts}'
+        r = _provider_request(provider, api_key, model, cur_system, messages)
         if not r.get('success'):
+            _llm_log(provider=provider, model=model, mode=mode_label, req=r,
+                     validation='error', errors=[r.get('error')], prompt_full=cur_system)
             return {'success': False, 'error': r.get('error', 'LLM 请求失败'),
-                    'blueprint': None, 'attempts': attempts, 'fixed_errors': fixed_errors}
+                    'blueprint': None, 'attempts': attempts, 'fixed_errors': fixed_errors,
+                    'fix_instructions': fix_instructions}
         text = r['text']
         try:
             manifest = json.loads(_extract_json(text))
         except Exception as e:
+            raw = f'输出不是合法 JSON：{e}'
+            instr = ('你上次的输出不是合法 JSON。只输出完整 manifest 的纯 JSON 对象'
+                     '（从 { 开始到 } 结束），不要 markdown 围栏、不要任何解释文字。')
+            _llm_log(provider=provider, model=model, mode=mode_label, req=r,
+                     validation='fail', errors=[raw], prompt_full=cur_system, response_full=text)
             if not autofix:
                 return {'success': False, 'error': f'Invalid JSON from LLM: {e}',
-                        'blueprint': None, 'attempts': attempts, 'fixed_errors': fixed_errors}
-            fixed_errors.append(f'输出不是合法 JSON：{e}')
-            messages += [{'role': 'assistant', 'content': text},
-                         {'role': 'user', 'content': f'你上次的输出不是合法 JSON（{e}）。只输出完整的 manifest 纯 JSON，不要 markdown 围栏、不要任何解释。'}]
+                        'blueprint': None, 'attempts': attempts, 'fixed_errors': fixed_errors,
+                        'fix_instructions': fix_instructions}
+            fixed_errors.append(raw)
+            fix_instructions.append(instr)
+            last_assistant, last_instruction = text, instr
             continue
         if not autofix:
+            _llm_log(provider=provider, model=model, mode=mode_label, req=r,
+                     validation='skip', errors=[], prompt_full=cur_system, response_full=text)
             warnings = _validate_blueprint(manifest)
             return {'success': True, 'error': None, 'blueprint': manifest, 'manifest': manifest,
-                    'warnings': warnings, 'attempts': attempts, 'fixed_errors': fixed_errors}
+                    'warnings': warnings, 'attempts': attempts, 'fixed_errors': fixed_errors,
+                    'fix_instructions': fix_instructions}
         ok, msg = _run_manifest_check(manifest)
+        _llm_log(provider=provider, model=model, mode=mode_label, req=r,
+                 validation='pass' if ok else 'fail', errors=[] if ok else [msg],
+                 prompt_full=cur_system, response_full=text)
         if ok:
             warnings = _validate_blueprint(manifest)
             return {'success': True, 'error': None, 'blueprint': manifest, 'manifest': manifest,
-                    'warnings': warnings, 'attempts': attempts, 'fixed_errors': fixed_errors}
+                    'warnings': warnings, 'attempts': attempts, 'fixed_errors': fixed_errors,
+                    'fix_instructions': fix_instructions}
+        instr, unknown_ids = _llm_ify_error(msg, manifest)
         fixed_errors.append(msg)
-        messages += [{'role': 'assistant', 'content': text},
-                     {'role': 'user', 'content': f'该 manifest 未通过引擎校验，错误如下：\n{msg}\n请修正并只输出完整的修正后 manifest 纯 JSON。'}]
+        fix_instructions.append(instr)
+        if rebuild_system and unknown_ids:  # 错误点名未知能力 → 尝试补该族全量（下轮 system 换新）
+            new_sys = rebuild_system(unknown_ids)
+            if new_sys:
+                cur_system = new_sys
+        last_assistant, last_instruction = text, instr
     return {'success': False, 'error': f'自动修正 {attempts} 次后仍未通过校验，换个说法再试试。',
             'blueprint': None, 'attempts': attempts, 'fixed_errors': fixed_errors,
-            'raw_error': fixed_errors[-1] if fixed_errors else None}
+            'fix_instructions': fix_instructions, 'raw_error': fixed_errors[-1] if fixed_errors else None}
+
+# ── 低模生成四件（REQ-STUDIO·让弱模型不在 81 项词表里从零作曲）─────────────────
+# ③ 校验错误 LLM 化：把 manifest-check 的机读错误改写成「一句可执行修改指令」（指名 entity/字段 +
+#   合法值示例）。侵入最小方案=纯 apollo.py 侧字符串映射层，不改引擎校验器（manifest-check.mjs）。
+_RE_UNKNOWN_CAP = re.compile(r'未知 capability id[:：]\s*(.+?)（')
+# formatIssues 形状：「<entity>.<Comp>.<field> —— <Comp>.<field> 应为 number，实为 string」，
+# 把 entity.Comp.field 与其后的 应为<type> 绑起来抽取（entity id 允许连字符）。
+_RE_COMP_TYPE = re.compile(
+    r'([A-Za-z0-9_-]+)\.([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\s*——\s*[A-Za-z0-9_]+\.[A-Za-z0-9_]+\s*应为\s*(number|boolean)')
+
+def _llm_ify_error(msg: str, manifest: dict):
+    """manifest-check 机读错误 → (可执行修改指令, 名到的未知能力 id 集)。unknown 供词汇族按需扩用。"""
+    msg = msg or ''
+    lines: list[str] = []
+    unknown: set[str] = set()
+    m = _RE_UNKNOWN_CAP.search(msg)
+    if m:
+        caps = [c.strip() for c in re.split(r'[,，、]\s*', m.group(1)) if c.strip()]
+        unknown.update(caps)
+        cap_list = '、'.join(f'`{c}`' for c in caps)
+        lines.append(f'capabilities 数组里出现了目录中没有的能力 id：{cap_list}。把它们删掉，'
+                     f'或替换成"能力目录"里真实列出的 id（未知 id 会被引擎拒绝加载）。')
+    for ent, comp, field, typ in _RE_COMP_TYPE.findall(msg)[:8]:
+        example = '0 这样的纯数字（不要加引号）' if typ == 'number' else 'true 或 false（布尔·不要加引号）'
+        lines.append(f'实体 `{ent}` 的组件 `{comp}` 的字段 `{field}` 必须是 {typ}——把它的值改成 {example}。')
+    if not lines:  # 结构/其它错误：原样给 + 通用可执行包装
+        lines.append(f'上一版 manifest 没通过引擎校验：{_trunc(msg, 300)}。请据此修正。')
+    instruction = ('该 manifest 未通过引擎校验，请按下面逐条修改（只改需要改的，其余保持原样），'
+                   '然后只输出完整的修正后 manifest 纯 JSON：\n- ' + '\n- '.join(lines))
+    return instruction, unknown
+
+# ② 词汇按题材裁剪：把前端送来的**全量** catalog 文本按能力 id 切块 → 只保留需要的子集（模板已用族 +
+#   基础原子 + 命中题材族）。buildCapabilityCatalog 不动（引擎域）；纯字符串切片，确定性、字节稳定。
+_CAT_BLOCK_RE = re.compile(r'^- (\S+) ')
+
+def _catalog_blocks(full: str):
+    """catalog 文本 → [(id, block_text)]（每块 = 「- id (...)」起、到下一块前止；保原顺序）。"""
+    blocks, cur_id, cur = [], None, []
+    for line in (full or '').split('\n'):
+        m = _CAT_BLOCK_RE.match(line)
+        if m:
+            if cur_id is not None:
+                blocks.append((cur_id, '\n'.join(cur)))
+            cur_id, cur = m.group(1), [line]
+        elif cur_id is not None:
+            cur.append(line)
+    if cur_id is not None:
+        blocks.append((cur_id, '\n'.join(cur)))
+    return blocks
+
+def _catalog_block_ids(full: str) -> set:
+    return {bid for bid, _ in _catalog_blocks(full)}
+
+def _slice_catalog(full: str, keep_ids) -> str:
+    """按 keep_ids 选块（保原顺序）。无块结构（fallback 单行目录）或一个都没命中 → 原样返回，绝不给空词表。"""
+    blocks = _catalog_blocks(full)
+    if not blocks:
+        return full
+    keep = set(keep_ids)
+    picked = [txt for bid, txt in blocks if bid in keep]
+    return '\n'.join(picked) if picked else full
+
+def _template_family_ids(template: dict, families) -> list:
+    """模板已用能力 + 基础原子 + 命中题材族 → 去重保序的能力 id 列表（喂 _slice_catalog）。"""
+    ids = list(_BASE_ATOM_IDS) + list(template.get('capabilities', []))
+    for fam in families:
+        ids += CAPABILITY_FAMILIES.get(fam, [])
+    seen, out = set(), []
+    for i in ids:
+        if i not in seen:
+            seen.add(i)
+            out.append(i)
+    return out
+
+def _pick_template(prompt: str):
+    """① 关键词 → 最近的能跑模板 + 题材族（纯数据映射·首个命中胜·默认物理弹跳）。返回 (template, families)。"""
+    p = (prompt or '').lower()
+    for key, families, kws in TEMPLATE_KEYWORDS:
+        if any(kw.lower() in p for kw in kws):
+            return TEMPLATE_LIBRARY[key], list(families)
+    return TEMPLATE_LIBRARY['bounce'], ['platform']
+
+TEMPLATE_EDIT_TASK = (
+    "Below is a runnable baseline Apollo Engine manifest (it already passes engine validation) and the "
+    "game the user wants. Modify the baseline into the user's game by editing ONLY what the idea needs — "
+    "rename entities, tweak numbers, swap colors/art, add or remove a few entities. Reuse the baseline's "
+    "capabilities and shape wherever possible. Enable ONLY capability ids that appear in the catalog in the "
+    "system prompt. Output the COMPLETE modified manifest as pure JSON (no markdown, no explanation)."
+)
+
+def _handle_template_edit(provider: str, api_key: str, model: str, body: dict, catalog: str) -> dict:
+    """① 模板起步 + 增量修改（默认路径）：关键词选模板 → 注入题材子集词表 → LLM 改基线出完整 manifest。
+    ② 校验错误点名未裁进来的真实能力 → 下轮补该族全量（rebuild_system）。走 autofix 硬校验回路。"""
+    prompt = str(body.get('prompt') or '').strip()
+    if not prompt:
+        return {'success': False, 'error': 'template-edit 需要 prompt（一句话创意）', 'blueprint': None}
+    full = catalog or _FALLBACK_CATALOG
+    template, families = _pick_template(prompt)
+    keep = _template_family_ids(template, families)
+    known_ids = _catalog_block_ids(full)
+
+    def _rebuild(unknown_ids):
+        added = False
+        for cid in unknown_ids:
+            if cid in known_ids and cid not in keep:  # 是真实能力、只是被裁掉了 → 补它 + 它整族
+                keep.append(cid)
+                added = True
+                for _fam, ids in CAPABILITY_FAMILIES.items():
+                    if cid in ids:
+                        for x in ids:
+                            if x in known_ids and x not in keep:
+                                keep.append(x)
+        if not added:
+            return None
+        return GAME_GEN_SYSTEM_PROMPT.replace('{CAPABILITY_CATALOG}', _slice_catalog(full, keep))
+
+    system = GAME_GEN_SYSTEM_PROMPT.replace('{CAPABILITY_CATALOG}', _slice_catalog(full, keep))
+    baseline = _template_manifest(template)
+    user_msg = (TEMPLATE_EDIT_TASK
+                + '\n\n## Baseline manifest（已能通过引擎校验的可运行基线·题材=' + template['key'] + '）\n'
+                + json.dumps(baseline, ensure_ascii=False, indent=2)
+                + '\n\n## 用户想要的游戏\n' + prompt
+                + '\n\nOutput the COMPLETE modified manifest as pure JSON.')
+    res = _generate_with_autofix(provider, api_key, model, system, user_msg, autofix=True,
+                                 log_mode='template-edit', rebuild_system=_rebuild)
+    res['template'] = template['key']
+    return res
 
 # ── 设计先行创作流 · 四模式的引导词（讨论 → 分解 → 对齐 → 原型）─────────────
 # 主创作流升级：输入是策划案（或从讨论窗构想对齐）→ AI 分解成 design 目录 → 反复对齐 → 定稿生成原型。
@@ -604,6 +848,10 @@ def _handle_design_chat(provider: str, api_key: str, model: str, body: dict) -> 
     if not msgs:
         return {'success': False, 'error': 'messages 里没有有效对话轮次'}
     r = _provider_request(provider, api_key, model, DESIGN_CHAT_SYSTEM, msgs)
+    _llm_log(provider=provider, model=model, mode='chat', req=r,
+             validation='n/a' if r.get('success') else 'error',
+             errors=[] if r.get('success') else [r.get('error')],
+             prompt_full=DESIGN_CHAT_SYSTEM, response_full=r.get('text', ''))
     if not r.get('success'):
         return {'success': False, 'error': r.get('error', 'LLM 请求失败')}
     text = r['text']
@@ -654,11 +902,17 @@ def _handle_design_breakdown(provider: str, api_key: str, model: str, body: dict
     attempts, errors = 0, []
     while attempts < 3:
         attempts += 1
+        mode_label = 'breakdown' if attempts == 1 else f'autofix-{attempts}'
         r = _provider_request(provider, api_key, model, system, msgs)
         if not r.get('success'):
+            _llm_log(provider=provider, model=model, mode=mode_label, req=r,
+                     validation='error', errors=[r.get('error')], prompt_full=system)
             return {'success': False, 'error': r.get('error', 'LLM 请求失败'), 'attempts': attempts, 'fixed_errors': errors}
         text = r['text']
         ok, res = _parse_design_files(text)
+        _llm_log(provider=provider, model=model, mode=mode_label, req=r,
+                 validation='pass' if ok else 'fail', errors=[] if ok else [res],
+                 prompt_full=system, response_full=text)
         if ok:
             for rel, content in res.items():
                 _write_design_file(game_dir, rel, content)
@@ -688,6 +942,10 @@ def _handle_design_revise(provider: str, api_key: str, model: str, body: dict) -
                 f'## Revision instruction\n{instruction}\n\n'
                 'Output the COMPLETE revised document as markdown (no code fences, no explanation).')
     r = _provider_request(provider, api_key, model, DESIGN_REVISE_SYSTEM, [{'role': 'user', 'content': user_msg}])
+    _llm_log(provider=provider, model=model, mode='design-revise', req=r,
+             validation='n/a' if r.get('success') else 'error',
+             errors=[] if r.get('success') else [r.get('error')],
+             prompt_full=DESIGN_REVISE_SYSTEM, response_full=r.get('text', ''))
     if not r.get('success'):
         return {'success': False, 'error': r.get('error', 'LLM 请求失败')}
     return {'success': True, 'file_path': file_path, 'content': _strip_fence(r['text'])}
@@ -706,7 +964,7 @@ def _handle_prototype(provider: str, api_key: str, model: str, body: dict, syste
         return {'success': False, 'error': '该游戏还没有 design 文档，先分解设计稿再生成原型'}
     gdd = '\n\n'.join(f'### {rel}\n{content}' for rel, content in files.items())
     user_msg = PROTOTYPE_TASK + '\n\n## Game Design Document\n' + gdd
-    return _generate_with_autofix(provider, api_key, model, system, user_msg, autofix=True)
+    return _generate_with_autofix(provider, api_key, model, system, user_msg, autofix=True, log_mode='prototype')
 
 
 def _strip_fence(text: str) -> str:
@@ -750,6 +1008,9 @@ def handle_generate(body: dict) -> dict:
         return _handle_design_revise(provider, api_key, model, body)
     if mode == 'prototype':
         return _handle_prototype(provider, api_key, model, body, system)
+    # 低模默认路径（REQ-STUDIO 低模 ①）：从最近的能跑模板做增量修改（题材子集词表 + 校验回路）。
+    if mode == 'template-edit':
+        return _handle_template_edit(provider, api_key, model, body, catalog)
 
     if mode == 'revise':
         current = body.get('current_manifest')
@@ -770,7 +1031,8 @@ def handle_generate(body: dict) -> dict:
             return {'success': False, 'error': 'No prompt provided', 'blueprint': None}
         user_msg = prompt
 
-    return _generate_with_autofix(provider, api_key, model, system, user_msg, autofix)
+    return _generate_with_autofix(provider, api_key, model, system, user_msg, autofix,
+                                  log_mode='revise' if mode == 'revise' else 'generate')
 
 # ── 设置端点（BYO key 面板 · M3）────────────────────────────────────────
 # 面板 provider 顺序：千问第一，anthropic/deepseek/openai 兼容随后，ollama（本地·免 key）末位；
@@ -964,6 +1226,132 @@ PRESET_BLUEPRINTS = {
         },
     },
 }
+
+# ══ 低模模板库（REQ-STUDIO 低模 ①）══════════════════════════════════════════════
+# 内置「能跑模板 manifest」库（按题材键）——弱模型不再从零作曲，而是从最近的可运行基线做增量修改。
+# **每个模板都过 manifest-check 全绿**（守护：scripts/studio-lowmodel-smoke.py 逐个校验）。
+# 收编自现有 PRESET（platform-jump/pong）+ 系统词最小样例（bounce）+ 新增题材（collect/dice/cards）。
+_TEXT = {'fontSize': 16, 'fontFamily': 'sans-serif', 'anchor': 'center', 'lineSpacing': 1.2}
+
+TEMPLATE_LIBRARY = {
+    'bounce': {
+        'key': 'bounce', 'name': '弹跳小球', 'description': '一个小球在重力下下落，撞到地面就反弹',
+        'capabilities': ['a1-transform', 'b1-velocity', 'b2-acceleration', 'c1-shape', 'l2-color',
+                         'l5-camera', 'b3-mass', 'd1-overlap-detect', 't1-accel-apply', 't1-motion-apply',
+                         't2-collision-resolve', 't2-bounds-clamp'],
+        'entities': {
+            'camera': _CAM,
+            'ball': {'Transform': {'x': 320, 'y': 60, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                     'Velocity': {'vx': 2, 'vy': 0, 'angular': 0}, 'Acceleration': {'ax': 0, 'ay': 0.5},
+                     'Shape': {'kind': 'circle', 'radius': 12}, 'Color': {'tint': 0x4ae0d0, 'alpha': 1},
+                     'Mass': {'value': 1}, 'Bounds': {'minX': 0, 'minY': 0, 'maxX': 640, 'maxY': 400}},
+            'ground': {'Transform': {'x': 320, 'y': 380, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                       'Shape': {'kind': 'box', 'width': 640, 'height': 40}, 'Color': {'tint': 0x36363e, 'alpha': 1},
+                       'Mass': {'value': 0}},
+        },
+    },
+    'platform-jump': {
+        'key': 'platform-jump', 'name': '平台跳跃', 'description': '带重力的横版平台跳跃：玩家在若干平台间移动',
+        'capabilities': list(PRESET_BLUEPRINTS['platformer']['capabilities']),
+        'entities': json.loads(json.dumps(PRESET_BLUEPRINTS['platformer']['entities'])),
+    },
+    'pong': {
+        'key': 'pong', 'name': '弹球对战', 'description': '两名玩家用球拍接弹球（Pong）',
+        'capabilities': list(PRESET_BLUEPRINTS['pong']['capabilities']),
+        'entities': json.loads(json.dumps(PRESET_BLUEPRINTS['pong']['entities'])),
+    },
+    'collect': {
+        'key': 'collect', 'name': '收集金币', 'description': '俯视角玩家在场地里移动，碰到金币把它收集掉',
+        'capabilities': ['a1-transform', 'b1-velocity', 'c1-shape', 'l2-color', 'l5-camera', 'g1-tag',
+                         'd1-overlap-detect', 't2-trigger-zone', 't2-bounds-clamp', 't1-motion-apply',
+                         'k2-destroy', 'f1-resource'],
+        'entities': {
+            'camera': _CAM,
+            'player': {'Transform': {'x': 320, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                       'Velocity': {'vx': 0, 'vy': 0, 'angular': 0}, 'Shape': {'kind': 'box', 'width': 22, 'height': 22},
+                       'Color': {'tint': 0x38bdf8, 'alpha': 1}, 'Controllable': {'playerId': 'p1', 'speed': 3},
+                       'Tag': {'flags': 1}, 'Bounds': {'minX': 0, 'minY': 0, 'maxX': 640, 'maxY': 400}},
+            'score': {'Resource': {'id': 'score', 'current': 0, 'min': 0, 'max': 999}},
+            'coin1': {'Transform': {'x': 120, 'y': 100, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                      'Shape': {'kind': 'circle', 'radius': 9}, 'Color': {'tint': 0xfbbf24, 'alpha': 1}, 'Tag': {'flags': 2}},
+            'coin2': {'Transform': {'x': 500, 'y': 140, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                      'Shape': {'kind': 'circle', 'radius': 9}, 'Color': {'tint': 0xfbbf24, 'alpha': 1}, 'Tag': {'flags': 2}},
+            'coin3': {'Transform': {'x': 300, 'y': 320, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                      'Shape': {'kind': 'circle', 'radius': 9}, 'Color': {'tint': 0xfbbf24, 'alpha': 1}, 'Tag': {'flags': 2}},
+        },
+    },
+    'dice': {
+        'key': 'dice', 'name': '掷骰子', 'description': '掷两颗骰子，按点数比大小/结算——按空格重掷',
+        'capabilities': ['a1-transform', 'c1-shape', 'l2-color', 'l5-camera', 'l6-text',
+                         'w1-random', 't2-dice-roll', 't2-keybind'],
+        'entities': {
+            'camera': _CAM,
+            'world': {'RandomSeed': {'seed': 12345, 'sequence': 0}},
+            'roller': {
+                'KeyBinding': {'key': ' ', 'signal': 'roll', 'phase': 'down'},
+                'DicePool': {'dice': [{'faces': [{'value': v, 'element': 0} for v in range(1, 7)]},
+                                      {'faces': [{'value': v, 'element': 0} for v in range(1, 7)]}],
+                             'rollOnSignal': 'roll', 'locked': []},
+            },
+            'die1': {'Transform': {'x': 250, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                     'Shape': {'kind': 'box', 'width': 56, 'height': 56}, 'Color': {'tint': 0xf1f5f9, 'alpha': 1},
+                     'Text': {'content': '?', **_TEXT}},
+            'die2': {'Transform': {'x': 390, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                     'Shape': {'kind': 'box', 'width': 56, 'height': 56}, 'Color': {'tint': 0xf1f5f9, 'alpha': 1},
+                     'Text': {'content': '?', **_TEXT}},
+        },
+    },
+    'cards': {
+        'key': 'cards', 'name': '卡牌桌', 'description': '一张扑克牌桌：一手牌 + 出牌评分（Balatro 式底座）',
+        'capabilities': ['a1-transform', 'c1-shape', 'l2-color', 'l5-camera', 'l6-text',
+                         't2-card-pile', 't2-card-play', 't3-poker-hand', 'f2-flag'],
+        'entities': {
+            'camera': _CAM,
+            'table': {
+                'CardPile': {'owner': 'p1', 'deck': list(range(0, 52)), 'hand': [], 'handSize': 5},
+                'PlayedHand': {'cards': []},
+                'Flag': {'id': 'p1', 'active': False},
+            },
+            'card1': {'Transform': {'x': 190, 'y': 250, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                      'Shape': {'kind': 'box', 'width': 60, 'height': 84}, 'Color': {'tint': 0xf8fafc, 'alpha': 1},
+                      'Text': {'content': 'A', **_TEXT}},
+            'card2': {'Transform': {'x': 260, 'y': 250, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                      'Shape': {'kind': 'box', 'width': 60, 'height': 84}, 'Color': {'tint': 0xf8fafc, 'alpha': 1},
+                      'Text': {'content': 'K', **_TEXT}},
+            'card3': {'Transform': {'x': 330, 'y': 250, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                      'Shape': {'kind': 'box', 'width': 60, 'height': 84}, 'Color': {'tint': 0xf8fafc, 'alpha': 1},
+                      'Text': {'content': 'Q', **_TEXT}},
+        },
+    },
+}
+
+def _template_manifest(tpl: dict) -> dict:
+    """模板条目 → 完整 manifest（name/description/capabilities/entities·深拷贝防污染）。"""
+    return {'name': tpl['name'], 'description': tpl['description'],
+            'capabilities': list(tpl['capabilities']),
+            'entities': json.loads(json.dumps(tpl['entities']))}
+
+# 基础原子（任何题材都注入的最小词表底座）+ 题材能力族（纯数据·命中关键词时整族注入·校验漏词也补它）。
+_BASE_ATOM_IDS = ['a1-transform', 'b1-velocity', 'b2-acceleration', 'c1-shape', 'b3-mass', 'l2-color',
+                  'l5-camera', 'l6-text', 't1-motion-apply', 't1-accel-apply',
+                  'd1-overlap-detect', 't2-collision-resolve', 't2-bounds-clamp']
+CAPABILITY_FAMILIES = {
+    'platform': ['t2-ground-sense', 't2-jump', 't2-friction', 'i1-input-capture', 'i2-action-map', 'g1-tag'],
+    'collect':  ['g1-tag', 't2-trigger-zone', 'f1-resource', 'k2-destroy', 't2-clickable', 't2-text-binding'],
+    'dice':     ['w1-random', 't2-dice-roll', 't2-keybind', 't2-event-when', 't2-effect-apply', 'f1-resource', 'f2-flag', 't2-text-binding'],
+    'cards':    ['t2-card-pile', 't2-card-play', 't3-poker-hand', 't3-card-scoring', 't2-clickable', 'f1-resource', 'f2-flag', 't2-text-binding'],
+    'combat':   ['t2-hitbox', 't2-mortal', 'f1-resource', 'g1-tag', 'k1-spawn', 'k2-destroy', 't2-steering', 'g2-relation'],
+    'ui':       ['l6-text', 't2-text-binding', 't2-gauge', 't2-clickable'],
+}
+# 关键词 → (模板 key, 题材族)。首个命中胜；默认物理弹跳。中英文皆可（英文小写匹配）。
+TEMPLATE_KEYWORDS = [
+    ('dice',          ['dice', 'ui'],    ['骰', '掷', '色子', '点数', '比大小', 'dice', 'roll']),
+    ('cards',         ['cards', 'ui'],   ['卡牌', '扑克', '抽牌', '手牌', '出牌', 'card', 'poker', 'deck', 'balatro']),
+    ('pong',          ['platform'],      ['乒乓', '球拍', '弹球', '接球', 'pong', 'paddle']),
+    ('platform-jump', ['platform'],      ['平台', '横版', '马里奥', '闯关', '跳跃', 'platform', 'jump', 'mario']),
+    ('collect',       ['collect', 'ui'], ['收集', '金币', '吃', '迷宫', '采集', 'collect', 'coin', 'gather', 'maze', 'pac']),
+    ('bounce',        ['platform'],      ['弹', '球', '重力', '物理', '掉落', 'bounce', 'ball', 'gravity', 'physics', 'fall']),
+]
 
 # ── 资产导入（资源库导入器的写盘端，仅本机 dev 用）──
 

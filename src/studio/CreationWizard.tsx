@@ -44,12 +44,24 @@ interface GenResult {
   warnings?: string[];
   attempts?: number;
   fixed_errors?: string[];
+  /** template-edit 模式：服务端按题材关键词选中的模板 key。 */
+  template?: string;
 }
+
+/** 生成方式（REQ-STUDIO 低模 ①）：template=从最近的能跑模板做增量修改（默认·各档模型都稳）；
+ *  free=从零自由生成（词表大·适合强模型）。 */
+type GenMode = 'template' | 'free';
+
+// 模板 key → 中文题材名（仅用于预览态的「基于 X 模板」提示；服务端权威·此处纯展示）。
+const TEMPLATE_LABELS: Record<string, string> = {
+  bounce: '弹跳小球', 'platform-jump': '平台跳跃', pong: '弹球对战',
+  collect: '收集金币', dice: '掷骰子', cards: '卡牌桌',
+};
 
 type Phase =
   | { k: 'input' }
   | { k: 'generating' }
-  | { k: 'preview'; manifest: unknown; attempts: number; fixedErrors: string[] }
+  | { k: 'preview'; manifest: unknown; attempts: number; fixedErrors: string[]; template?: string }
   | { k: 'error'; message: string; rawErrors: string[] }
   | { k: 'saving' };
 
@@ -86,6 +98,7 @@ export function CreationWizard({
 
   const [name, setName] = useState(initialName ?? '');
   const [idea, setIdea] = useState('');          // create 态：一句话创意
+  const [genMode, setGenMode] = useState<GenMode>('template'); // create 态：生成方式（默认从模板改）
   const [instruction, setInstruction] = useState(''); // revise 态：修改指令
   const [phase, setPhase] = useState<Phase>({ k: 'input' });
   const [saveErr, setSaveErr] = useState<string | null>(null);
@@ -117,9 +130,12 @@ export function CreationWizard({
     if (!activeProvider) return;
     setPhase({ k: 'generating' });
     setSaveErr(null);
+    // create 态默认走「从模板改」(mode:'template-edit')——弱模型不从零作曲，改能跑基线；「自由生成」才从零。
     const body = mode === 'revise'
       ? { mode: 'revise', current_manifest: currentManifest, instruction: instruction.trim(), provider: activeProvider.id, catalog, autofix: true }
-      : { prompt: idea.trim(), provider: activeProvider.id, catalog, autofix: true };
+      : genMode === 'template'
+        ? { mode: 'template-edit', prompt: idea.trim(), provider: activeProvider.id, catalog, autofix: true }
+        : { prompt: idea.trim(), provider: activeProvider.id, catalog, autofix: true };
     try {
       const res = await fetch(`${api}/api/generate`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -131,6 +147,7 @@ export function CreationWizard({
           manifest: data.manifest ?? data.blueprint,
           attempts: data.attempts ?? 1,
           fixedErrors: data.fixed_errors ?? [],
+          template: data.template,
         });
       } else {
         setPhase({ k: 'error', message: data.error ?? '生成失败', rawErrors: data.fixed_errors ?? [] });
@@ -138,7 +155,7 @@ export function CreationWizard({
     } catch (e: unknown) {
       setPhase({ k: 'error', message: e instanceof Error ? e.message : String(e), rawErrors: [] });
     }
-  }, [activeProvider, mode, currentManifest, instruction, idea, catalog, api]);
+  }, [activeProvider, mode, currentManifest, instruction, idea, genMode, catalog, api]);
 
   const save = useCallback(async (manifest: unknown) => {
     setPhase({ k: 'saving' });
@@ -222,6 +239,25 @@ export function CreationWizard({
                     style={inputStyle}
                   />
                 </Field>
+                <Field label="生成方式">
+                  <div role="radiogroup" aria-label="生成方式" style={{ display: 'flex', gap: 8 }}>
+                    <GenModeChip
+                      active={genMode === 'template'} disabled={phase.k === 'generating'}
+                      onClick={() => setGenMode('template')}
+                      title="从模板改" sub="推荐·各档模型都稳"
+                    />
+                    <GenModeChip
+                      active={genMode === 'free'} disabled={phase.k === 'generating'}
+                      onClick={() => setGenMode('free')}
+                      title="自由生成" sub="从零·适合强模型"
+                    />
+                  </div>
+                  <span style={{ fontSize: 11.5, color: SHELL.dim }}>
+                    {genMode === 'template'
+                      ? '按创意关键词挑一个能跑的模板做增量修改——输出小、通过率高。'
+                      : '不用模板、从空白生成（词表更大，弱模型更易失败）。'}
+                  </span>
+                </Field>
                 <Field label="一句话创意">
                   <textarea
                     value={idea} onChange={(e) => setIdea(e.target.value)}
@@ -297,6 +333,11 @@ export function CreationWizard({
           <>
             <div style={{ fontSize: 13, color: SHELL.sub }}>
               预览试玩
+              {phase.template && (
+                <span style={{ color: SHELL.dim, marginLeft: 8, fontSize: 12 }}>
+                  · 基于「{TEMPLATE_LABELS[phase.template] ?? phase.template}」模板修改
+                </span>
+              )}
               {phase.attempts > 1 && (
                 <span style={{ color: SHELL.jade, marginLeft: 8, fontSize: 12 }}>
                   · 自动修正了 {phase.attempts - 1} 次后通过校验
@@ -329,6 +370,26 @@ export function CreationWizard({
         )}
       </div>
     </div>
+  );
+}
+
+function GenModeChip({ active, disabled, onClick, title, sub }: {
+  active: boolean; disabled: boolean; onClick: () => void; title: string; sub: string;
+}) {
+  return (
+    <button
+      type="button" role="radio" aria-checked={active} onClick={onClick} disabled={disabled}
+      style={{
+        flex: 1, textAlign: 'left', padding: '9px 12px', borderRadius: 9, cursor: disabled ? 'default' : 'pointer',
+        background: active ? `${SHELL.jade}1f` : SHELL.bg0,
+        border: `1px solid ${active ? SHELL.jade : SHELL.line}`,
+        color: SHELL.text, fontFamily: SHELL.fontUi, outline: 'none',
+        display: 'flex', flexDirection: 'column', gap: 2,
+      }}
+    >
+      <span style={{ fontSize: 13, fontWeight: 700, color: active ? SHELL.jade : SHELL.text }}>{title}</span>
+      <span style={{ fontSize: 11, color: SHELL.dim }}>{sub}</span>
+    </button>
   );
 }
 

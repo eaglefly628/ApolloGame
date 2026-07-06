@@ -8,6 +8,8 @@ apollo-*-rk3562.tar.gz
 .apollo/registry.json
 # 设计草稿·未定名（创作中间态持久化·用户数据·随会话产生，不入引擎仓；定名后随卡带落 library/ 亦已 gitignore）
 .apollo/design-drafts/
+# LLM 交互日志（每次生成往返落一行 JSONL·排障用·随会话产生·API key 绝不落盘·不入引擎仓）
+.apollo/llm-logs/
 .claude/worktrees/
 __pycache__/
 *.pyc

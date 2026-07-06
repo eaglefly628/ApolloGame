@@ -98,6 +98,37 @@ describe('CreationWizard · create 新建', () => {
     expect(saved).toBe('my-game');
   });
 
+  it('默认「从模板改」→ 生成请求 mode:template-edit + 预览标注模板；切「自由生成」→ 无 mode（从零）', async () => {
+    const calls = mockFetch([
+      ['POST', '/api/generate', { success: true, manifest: MANIFEST, attempts: 1, fixed_errors: [], template: 'dice' }],
+    ]);
+    await act(async () => {
+      root.render(<CreationWizard api="" mode="create" providers={PROVIDERS} catalog="CAT" onClose={() => {}} onSaved={() => {}} />);
+    });
+    // 默认生成方式 = 从模板改（推荐）
+    expect(container.textContent).toContain('从模板改');
+    expect(container.textContent).toContain('自由生成');
+    const name = container.querySelector('input') as HTMLInputElement;
+    const idea = container.querySelector('textarea') as HTMLTextAreaElement;
+    await act(async () => { typeInto(name, '骰子游戏'); typeInto(idea, '两人投骰子比大小'); });
+    await act(async () => { findButton(container, '开始生成')!.click(); });
+    await flush();
+    const gen1 = calls.find((c) => c.url.includes('/api/generate'));
+    expect((gen1!.body as { mode?: string }).mode).toBe('template-edit');
+    expect((gen1!.body as { prompt: string }).prompt).toBe('两人投骰子比大小');
+    // 预览态标注了模板来源
+    expect(container.textContent).toContain('模板修改');
+
+    // 回输入态 → 切「自由生成」→ 再生成：无 mode（从零自由生成）
+    await act(async () => { findButton(container, '弃掉重来')!.click(); });
+    await act(async () => { findButton(container, '自由生成')!.click(); });
+    await act(async () => { findButton(container, '开始生成')!.click(); });
+    await flush();
+    const gens = calls.filter((c) => c.url.includes('/api/generate'));
+    expect((gens[gens.length - 1].body as { mode?: string }).mode).toBeUndefined();
+    expect((gens[gens.length - 1].body as { prompt: string }).prompt).toBe('两人投骰子比大小');
+  });
+
   it('生成失败 → 人话提示 + 原始校验错误可折叠 + 可换说法重试', async () => {
     mockFetch([
       ['POST', '/api/generate', { success: false, error: '自动修正 3 次后仍未通过校验，换个说法再试试。', fixed_errors: ['manifest: bad', 'manifest: still bad'] }],
