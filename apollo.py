@@ -1413,20 +1413,23 @@ def handle_asset_import(body: dict) -> dict:
         pass
     return {'success': True, 'written': written, 'indexAdded': len(entries)}
 
-# ── AI 文本生成资产（tripo 文本→3D · qwen 文本→2D）──────────────────────────────
+# ── AI 文本生成资产（tripo·meshy 文本→3D · qwen 文本→2D）──────────────────────────
 # 生成"大脑"在 PA 车道的 scripts/ai-gen.mjs（它落文件 + upsert index.json）；本端点只是薄胶水：
 # 校验入参 → shell 调脚本（--mock --json）→ 回机读结果给库刷新。真调 API 走脚本内的 env key + 放宽网络。
+# 适配器闭集与脚本 ADAPTERS 对齐（新增 provider 两处同改：脚本注册 + 此白名单）。
+
+GEN_ADAPTERS = ('tripo', 'meshy', 'qwen')
 
 def handle_asset_generate(body: dict) -> dict:
-    """POST /api/assets/generate。body = { adapter:'tripo'|'qwen', prompt:str, game?:str }。
+    """POST /api/assets/generate。body = { adapter:'tripo'|'meshy'|'qwen', prompt:str, game?:str }。
     默认 mock（本环境 GitHub-only 真调被挡）；脚本自行按 env key 决定 mock/真调。
     人审门（M2.5·宪法）：产物**落待审区**（pending.json，不进 index.json）·返回预览 URL；人经
     /api/assets/review approve 才登记入库。生成**绝不**自动入库。"""
     adapter = str(body.get('adapter', '')).strip()
     prompt = str(body.get('prompt', '')).strip()
     game = body.get('game')
-    if adapter not in ('tripo', 'qwen'):
-        return {'success': False, 'error': f'未知适配器: {adapter or "(空)"}（支持 tripo/qwen）'}
+    if adapter not in GEN_ADAPTERS:
+        return {'success': False, 'error': f'未知适配器: {adapter or "(空)"}（支持 {"/".join(GEN_ADAPTERS)}）'}
     if not prompt:
         return {'success': False, 'error': 'prompt 不能为空'}
     if len(prompt) > 500:

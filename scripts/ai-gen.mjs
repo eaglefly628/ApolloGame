@@ -1,4 +1,4 @@
-// AI 资产生成框架 —— 文本→资产。适配器：tripo(文本→3D glb)· qwen(文本→2D png，走 DashScope 万相)。
+// AI 资产生成框架 —— 文本→资产。适配器：tripo·meshy(文本→3D glb)· qwen(文本→2D png，走 DashScope 万相)。
 //
 // 架构（同 src/services/aigp 端口哲学）：外部**非确定性 AI 服务**走旁路；产物 = 提交进库的**固定资产**（带
 //   provenance：厂商/prompt/模型/日期/许可），**不碰 sim/hash**（渲染层数据·确定性不受威胁）。
@@ -64,6 +64,30 @@ export const ADAPTERS = {
       if (!url) throw new Error('tripo: 轮询超时');
       const buffer = Buffer.from(await fetch(url).then((r) => r.arrayBuffer()));
       return { buffer, model: 'tripo-text-to-model', mock: false, spec: { scale: 1, genCollision: 'hull' } };
+    },
+  },
+  meshy: {
+    kind: 'mesh', ext: 'glb', envKey: 'MESHY_API_KEY', license: 'Meshy (按订阅商用授权)',
+    async generate(prompt, { mock, apiKey }) {
+      if (mock || !apiKey) {
+        const cube = join(ROOT, 'assets', 'meshes', 'cube.glb'); // 复用现成基础体作占位 glb
+        return { buffer: existsSync(cube) ? readFileSync(cube) : Buffer.alloc(0), model: 'meshy-mock', mock: true, spec: { scale: 1, genCollision: 'hull' } };
+      }
+      // 真调（网络门控·Meshy v2 openapi text-to-3d·preview 阶段产基础 glb）：submit → poll → download glb
+      const base = 'https://api.meshy.ai/openapi/v2/text-to-3d';
+      const H = { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' };
+      const sub = await fetch(base, { method: 'POST', headers: H, body: JSON.stringify({ mode: 'preview', prompt }) }).then((r) => r.json());
+      const taskId = sub?.result; if (!taskId) throw new Error('meshy: 无 task id ' + JSON.stringify(sub));
+      let url = null;
+      for (let i = 0; i < 60; i++) {
+        const st = await fetch(`${base}/${taskId}`, { headers: { authorization: `Bearer ${apiKey}` } }).then((r) => r.json());
+        const s = st?.status; if (s === 'SUCCEEDED') { url = st.model_urls?.glb; break; }
+        if (s === 'FAILED' || s === 'CANCELED') throw new Error('meshy 任务失败: ' + s);
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+      if (!url) throw new Error('meshy: 轮询超时');
+      const buffer = Buffer.from(await fetch(url).then((r) => r.arrayBuffer()));
+      return { buffer, model: 'meshy-preview-text-to-3d', mock: false, spec: { scale: 1, genCollision: 'hull' } };
     },
   },
   qwen: {

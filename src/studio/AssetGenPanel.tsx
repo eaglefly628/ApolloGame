@@ -36,14 +36,16 @@ interface GenResult {
 /** 人审结果（approve 入库 / reject 弃置）。 */
 type Reviewed = { action: 'approve' | 'reject'; ok: boolean; error?: string };
 
-const ADAPTER_META: Record<string, { label: string; hint: string }> = {
+type AdapterId = 'tripo' | 'meshy' | 'qwen';
+const ADAPTER_META: Record<AdapterId, { label: string; hint: string }> = {
   tripo: { label: '🧊 Tripo · 文本→3D', hint: '生成 .glb 网格（可 vendor 进游戏 models/）' },
+  meshy: { label: '🗿 Meshy · 文本→3D', hint: '生成 .glb 网格（外链 Meshy·可 vendor 进游戏 models/）' },
   qwen: { label: '🖼 千问万相 · 文本→2D', hint: '生成 .png 贴图/图标（DashScope 万相）' },
 };
 
 export function AssetGenPanel({ onClose, onCommitted }: { onClose: () => void; onCommitted: () => void }) {
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [adapter, setAdapter] = useState<'tripo' | 'qwen'>('qwen');
+  const [adapter, setAdapter] = useState<AdapterId>('qwen');
   const [prompt, setPrompt] = useState('');
   const [game, setGame] = useState(''); // 空=共享货架 assets/ai/；填=游戏本地 public/games/<g>/art/ai/
   const [busy, setBusy] = useState(false);
@@ -116,7 +118,7 @@ export function AssetGenPanel({ onClose, onCommitted }: { onClose: () => void; o
         {/* ① 适配器 */}
         <div style={sLabel}>① 选生成方式</div>
         <div style={{ display: 'flex', gap: 10, margin: '8px 0 18px', flexWrap: 'wrap' }}>
-          {(['qwen', 'tripo'] as const).map((a) => (
+          {(['qwen', 'tripo', 'meshy'] as const).map((a) => (
             <button
               key={a}
               onClick={() => setAdapter(a)}
@@ -148,7 +150,7 @@ export function AssetGenPanel({ onClose, onCommitted }: { onClose: () => void; o
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder={adapter === 'tripo' ? '例：a wooden treasure chest with iron bands' : '例：pixel fire sword icon, transparent background'}
+          placeholder={adapter === 'qwen' ? '例：pixel fire sword icon, transparent background' : '例：a wooden treasure chest with iron bands'}
           rows={3}
           style={{ ...sInput(), width: '100%', margin: '8px 0 18px', resize: 'vertical', fontFamily: SHELL.fontMono }}
         />

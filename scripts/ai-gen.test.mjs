@@ -6,9 +6,10 @@ import { join } from 'node:path';
 import { ADAPTERS, buildEntry, mockImage, encodePng, providerSettings, demo, writePending, reviewPending, listPending, locations, provenanceMissing } from './ai-gen.mjs';
 
 describe('ai-gen 框架 · 适配器注册表', () => {
-  it('注册了 tripo(3D) + qwen(2D)，各带 kind/envKey/license', () => {
-    expect(Object.keys(ADAPTERS).sort()).toEqual(['qwen', 'tripo']);
+  it('注册了 tripo·meshy(3D) + qwen(2D)，各带 kind/envKey/license', () => {
+    expect(Object.keys(ADAPTERS).sort()).toEqual(['meshy', 'qwen', 'tripo']);
     expect(ADAPTERS.tripo).toMatchObject({ kind: 'mesh', ext: 'glb', envKey: 'TRIPO_API_KEY' });
+    expect(ADAPTERS.meshy).toMatchObject({ kind: 'mesh', ext: 'glb', envKey: 'MESHY_API_KEY' });
     expect(ADAPTERS.qwen).toMatchObject({ kind: 'texture', ext: 'png', envKey: 'DASHSCOPE_API_KEY' });
   });
 });
@@ -19,6 +20,14 @@ describe('ai-gen 框架 · mock 生成产合法资产', () => {
     expect(g.mock).toBe(true);
     expect(g.buffer.length).toBeGreaterThan(20);
     expect(g.buffer.readUInt32LE(0)).toBe(0x46546c67); // glTF magic
+    expect(g.spec).toMatchObject({ scale: 1, genCollision: 'hull' });
+  });
+
+  it('meshy mock → 合法 glb（magic + spec·model 标 meshy-mock）', async () => {
+    const g = await ADAPTERS.meshy.generate('a stone golem', { mock: true });
+    expect(g.mock).toBe(true);
+    expect(g.buffer.readUInt32LE(0)).toBe(0x46546c67); // glTF magic
+    expect(g.model).toBe('meshy-mock');
     expect(g.spec).toMatchObject({ scale: 1, genCollision: 'hull' });
   });
 

@@ -38,6 +38,7 @@ describe('AssetGenPanel 渲染回归（美术库直达的 AI 生成入口）', (
     const html = renderToString(<AssetGenPanel onClose={() => {}} onCommitted={() => {}} />);
     expect(html).toContain('AI 生成资产');
     expect(html).toContain('Tripo');
+    expect(html).toContain('Meshy'); // 菜单已接入 meshy(文本→3D)
     expect(html).toContain('千问万相');
     expect(html).toContain('描述你要的资产');
     // 人审门（M2.5）：生成落待审区，不再「生成即登记」。
