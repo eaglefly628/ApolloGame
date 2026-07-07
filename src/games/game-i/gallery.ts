@@ -5,6 +5,7 @@
 // 母法：docs/design/apollo-ui-contract.md（控件契约总表）。
 
 import type { LayoutNode } from '@ui/components/index.js';
+import { uiTextureUrl, SKIN_METAL, SKIN_WOOD, SKIN_STONE, SKIN_SCROLL } from './ui-assets.js';
 import { THEME_OPTIONS } from './themes.js';
 import { buildShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { buildPickHand, INITIAL_PICK, type PickState } from './pickcards.js';
@@ -37,10 +38,12 @@ function divider(id: string): LayoutNode {
 const DOT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="1.6" fill="#9cd2c5" fill-opacity="0.30"/></svg>';
 export const TEXTURE_URI = `data:image/svg+xml,${encodeURIComponent(DOT_SVG)}`;
 
-// 贴图按钮皮（自包含 SVG data-URI·**无 ()、无单引号**→过得了 skinCss 的净化；同 TEXTURE_URI 套路）。
-// 金属铆钉板 / 木纹板——演示 Button.skin（真实项目里换成 resolveAsset 解析出的资产 URL）。
-const SKIN_METAL = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><rect width="200" height="80" fill="#4a5262"/><rect width="200" height="26" fill="#5a6474"/><rect x="3" y="3" width="194" height="74" fill="none" stroke="#aab4c6" stroke-width="2"/><circle cx="14" cy="14" r="4" fill="#cdd6e4"/><circle cx="186" cy="14" r="4" fill="#cdd6e4"/><circle cx="14" cy="66" r="4" fill="#cdd6e4"/><circle cx="186" cy="66" r="4" fill="#cdd6e4"/></svg>');
-const SKIN_WOOD = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><rect width="200" height="80" fill="#5a3a1e"/><rect y="10" width="200" height="4" fill="#7a5230"/><rect y="34" width="200" height="3" fill="#8a6038"/><rect y="60" width="200" height="4" fill="#3e2712"/></svg>');
+// 贴图按钮皮 = **登记进本地资产索引的正规资产**（资产手册 §6·owner 2026-07-07「入库」）：按 key 引用 → uiTextureUrl 解析成
+// 站点绝对 URL 喂 Button.skin（已解析 URL·同 Image.src 约定）。真相在 public/games/game-i/art/index.json；不再内联 data-URI 硬编码。
+const SKIN_METAL_URL = uiTextureUrl(SKIN_METAL);
+const SKIN_WOOD_URL = uiTextureUrl(SKIN_WOOD);
+const SKIN_STONE_URL = uiTextureUrl(SKIN_STONE);
+const SKIN_SCROLL_URL = uiTextureUrl(SKIN_SCROLL);
 
 // ── 页 1 · 容器与布局 ────────────────────────────────────────
 const pageLayout: LayoutNode = {
@@ -901,12 +904,13 @@ function buildPageNew(controls: ControlsState): LayoutNode {
         })) },
 
       divider('d-skin'),
-      sectionTitle('t-skin', 'BUTTON.skin · 贴图按钮（已解析图 URL·同 Image.src 约定·配 shape=异形贴图键）'),
-      { type: 'Panel', id: 'skin-row', props: {}, layout: { direction: 'grid', cols: 3, gap: 14, padding: 18 },
+      sectionTitle('t-skin', 'BUTTON.skin · 贴图按钮（资产 key→uiTextureUrl 解析→已解析 URL·入库自 public/games/game-i/art·配 shape=异形贴图键）'),
+      { type: 'Panel', id: 'skin-row', props: {}, layout: { direction: 'grid', cols: 4, gap: 14, padding: 18 },
         children: ([
-          ['sk-metal', '金属板', SKIN_METAL, undefined], ['sk-wood-rib', '木纹绶带', SKIN_WOOD, 'ribbon'],
-          ['sk-metal-sh', '金属盾', SKIN_METAL, 'shield'], ['sk-wood-hex', '木纹六边', SKIN_WOOD, 'hexagon'],
-          ['sk-metal-cut', '金属切角', SKIN_METAL, 'cut'], ['sk-wood-tag', '木纹标签', SKIN_WOOD, 'tag'],
+          ['sk-metal', '金属板', SKIN_METAL_URL, undefined], ['sk-wood-rib', '木纹绶带', SKIN_WOOD_URL, 'ribbon'],
+          ['sk-stone-hex', '石纹六边', SKIN_STONE_URL, 'hexagon'], ['sk-scroll-tag', '卷轴标签', SKIN_SCROLL_URL, 'tag'],
+          ['sk-metal-sh', '金属盾', SKIN_METAL_URL, 'shield'], ['sk-wood-cut', '木纹切角', SKIN_WOOD_URL, 'cut'],
+          ['sk-stone-dia', '石纹菱形', SKIN_STONE_URL, 'diamond'], ['sk-scroll-pill', '卷轴胶囊', SKIN_SCROLL_URL, 'pill'],
         ] as const).map(([id, label, skin, shape]): LayoutNode => ({
           type: 'Button', id,
           props: { label, skin, ...(shape ? { shape } : {}), action: 'click', actionArg: id },

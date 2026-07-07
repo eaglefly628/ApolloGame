@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "tex/skin-metal",
+      "type": "texture",
+      "description": "金属铆钉板按钮皮（贴图 UI sample·程序化自产 SVG）",
+      "status": "filled",
+      "path": "/games/game-i/art/textures/skin-metal.svg",
+      "spec": { "usage": "sprite", "width": 220, "height": 88, "transparent": true },
+      "category": "ui.button-skin",
+      "tags": ["skin", "button", "metal", "plate", "rivet", "ui"],
+      "style": "realistic.material",
+      "license": "CC0",
+      "source": "src/games/game-i (自产)"
+    },
+    {
+      "id": "tex/skin-wood",
+      "type": "texture",
+      "description": "木纹板按钮皮（贴图 UI sample·程序化自产 SVG）",
+      "status": "filled",
+      "path": "/games/game-i/art/textures/skin-wood.svg",
+      "spec": { "usage": "sprite", "width": 220, "height": 88, "transparent": true },
+      "category": "ui.button-skin",
+      "tags": ["skin", "button", "wood", "grain", "ui"],
+      "style": "realistic.material",
+      "license": "CC0",
+      "source": "src/games/game-i (自产)"
+    },
+    {
+      "id": "tex/skin-stone",
+      "type": "texture",
+      "description": "花岗岩石纹按钮皮（贴图 UI sample·程序化自产 SVG）",
+      "status": "filled",
+      "path": "/games/game-i/art/textures/skin-stone.svg",
+      "spec": { "usage": "sprite", "width": 220, "height": 88, "transparent": true },
+      "category": "ui.button-skin",
+      "tags": ["skin", "button", "stone", "granite", "ui"],
+      "style": "realistic.material",
+      "license": "CC0",
+      "source": "src/games/game-i (自产)"
+    },
+    {
+      "id": "tex/skin-scroll",
+      "type": "texture",
+      "description": "卷轴羊皮按钮皮（贴图 UI sample·程序化自产 SVG）",
+      "status": "filled",
+      "path": "/games/game-i/art/textures/skin-scroll.svg",
+      "spec": { "usage": "sprite", "width": 220, "height": 88, "transparent": true },
+      "category": "ui.button-skin",
+      "tags": ["skin", "button", "scroll", "parchment", "ui"],
+      "style": "realistic.material",
+      "license": "CC0",
+      "source": "src/games/game-i (自产)"
+    }
+  ]
+}
