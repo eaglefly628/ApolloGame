@@ -162,6 +162,279 @@
       }
     },
     {
+      "id": "tex/cartoon-astronaut",
+      "type": "texture",
+      "description": "Astronaut 0o7w · undraw",
+      "status": "filled",
+      "path": "/games/game-i/art/undraw/Astronaut_0o7w.svg",
+      "spec": {
+        "format": "svg",
+        "width": 699,
+        "height": 747,
+        "transparent": true
+      },
+      "category": "illustration",
+      "tags": [
+        "Astronaut",
+        "0o7w",
+        "undraw",
+        "illustration",
+        "scene",
+        "flat"
+      ],
+      "style": "cartoon.flat",
+      "license": "MIT",
+      "source": "undraw",
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/Astronaut_0o7w"
+      }
+    },
+    {
+      "id": "tex/cartoon-birthday",
+      "type": "texture",
+      "description": "happy birthday s72n · undraw",
+      "status": "filled",
+      "path": "/games/game-i/art/undraw/happy_birthday_s72n.svg",
+      "spec": {
+        "format": "svg",
+        "width": 839,
+        "height": 727,
+        "transparent": true
+      },
+      "category": "illustration",
+      "tags": [
+        "happy",
+        "birthday",
+        "s72n",
+        "undraw",
+        "illustration",
+        "scene",
+        "flat"
+      ],
+      "style": "cartoon.flat",
+      "license": "MIT",
+      "source": "undraw",
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/happy_birthday_s72n"
+      }
+    },
+    {
+      "id": "tex/cartoon-camping",
+      "type": "texture",
+      "description": "camping j8s0 · undraw",
+      "status": "filled",
+      "path": "/games/game-i/art/undraw/camping_j8s0.svg",
+      "spec": {
+        "format": "svg",
+        "width": 896,
+        "height": 687,
+        "transparent": true
+      },
+      "category": "illustration",
+      "tags": [
+        "camping",
+        "j8s0",
+        "undraw",
+        "illustration",
+        "scene",
+        "flat"
+      ],
+      "style": "cartoon.flat",
+      "license": "MIT",
+      "source": "undraw",
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/camping_j8s0"
+      }
+    },
+    {
+      "id": "tex/cartoon-cat",
+      "type": "texture",
+      "description": "playful cat ql3n · undraw",
+      "status": "filled",
+      "path": "/games/game-i/art/undraw/playful_cat_ql3n.svg",
+      "spec": {
+        "format": "svg",
+        "width": 937,
+        "height": 812,
+        "transparent": true
+      },
+      "category": "illustration",
+      "tags": [
+        "playful",
+        "cat",
+        "ql3n",
+        "undraw",
+        "illustration",
+        "scene",
+        "flat"
+      ],
+      "style": "cartoon.flat",
+      "license": "MIT",
+      "source": "undraw",
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/playful_cat_ql3n"
+      }
+    },
+    {
+      "id": "tex/cartoon-dog",
+      "type": "texture",
+      "description": "good doggy 4wfq · undraw",
+      "status": "filled",
+      "path": "/games/game-i/art/undraw/good_doggy_4wfq.svg",
+      "spec": {
+        "format": "svg",
+        "width": 955,
+        "height": 681,
+        "transparent": true
+      },
+      "category": "illustration",
+      "tags": [
+        "good",
+        "doggy",
+        "4wfq",
+        "undraw",
+        "illustration",
+        "scene",
+        "flat"
+      ],
+      "style": "cartoon.flat",
+      "license": "MIT",
+      "source": "undraw",
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/good_doggy_4wfq"
+      }
+    },
+    {
+      "id": "tex/cartoon-gaming",
+      "type": "texture",
+      "description": "gaming 6oy3 · undraw",
+      "status": "filled",
+      "path": "/games/game-i/art/undraw/gaming_6oy3.svg",
+      "spec": {
+        "format": "svg",
+        "width": 977,
+        "height": 840,
+        "transparent": true
+      },
+      "category": "illustration",
+      "tags": [
+        "gaming",
+        "6oy3",
+        "undraw",
+        "illustration",
+        "scene",
+        "flat"
+      ],
+      "style": "cartoon.flat",
+      "license": "MIT",
+      "source": "undraw",
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/gaming_6oy3"
+      }
+    },
+    {
+      "id": "tex/cartoon-music",
+      "type": "texture",
+      "description": "music r1se · undraw",
+      "status": "filled",
+      "path": "/games/game-i/art/undraw/music_r1se.svg",
+      "spec": {
+        "format": "svg",
+        "width": 1106,
+        "height": 813,
+        "transparent": true
+      },
+      "category": "illustration",
+      "tags": [
+        "music",
+        "r1se",
+        "undraw",
+        "illustration",
+        "scene",
+        "flat"
+      ],
+      "style": "cartoon.flat",
+      "license": "MIT",
+      "source": "undraw",
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/music_r1se"
+      }
+    },
+    {
+      "id": "tex/cartoon-robot",
+      "type": "texture",
+      "description": "robotics kep0 · undraw",
+      "status": "filled",
+      "path": "/games/game-i/art/undraw/robotics_kep0.svg",
+      "spec": {
+        "format": "svg",
+        "width": 1076,
+        "height": 733,
+        "transparent": true
+      },
+      "category": "illustration",
+      "tags": [
+        "robotics",
+        "kep0",
+        "undraw",
+        "illustration",
+        "scene",
+        "flat"
+      ],
+      "style": "cartoon.flat",
+      "license": "MIT",
+      "source": "undraw",
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/robotics_kep0"
+      }
+    },
+    {
+      "id": "tex/cartoon-travel",
+      "type": "texture",
+      "description": "travel pb6m · undraw",
+      "status": "filled",
+      "path": "/games/game-i/art/undraw/travel_pb6m.svg",
+      "spec": {
+        "format": "svg",
+        "width": 914,
+        "height": 757,
+        "transparent": true
+      },
+      "category": "illustration",
+      "tags": [
+        "travel",
+        "pb6m",
+        "undraw",
+        "illustration",
+        "scene",
+        "flat"
+      ],
+      "style": "cartoon.flat",
+      "license": "MIT",
+      "source": "undraw",
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/travel_pb6m"
+      }
+    },
+    {
       "id": "tex/skin-metal",
       "type": "texture",
       "description": "金属铆钉板按钮皮（贴图 UI sample·程序化自产 SVG）",

@@ -50,6 +50,16 @@ const BTN_GREEN_URL = uiTextureUrl(BTN_GREEN);
 const BTN_RED_URL = uiTextureUrl(BTN_RED);
 const BTN_YELLOW_URL = uiTextureUrl(BTN_YELLOW);
 const BTN_GREY_URL = uiTextureUrl(BTN_GREY);
+// vendored 卡通插画（undraw·MIT·内容丰富的彩色卡通场景）
+const CARTOON_ASTRO = uiTextureUrl('tex/cartoon-astronaut');
+const CARTOON_CAT = uiTextureUrl('tex/cartoon-cat');
+const CARTOON_DOG = uiTextureUrl('tex/cartoon-dog');
+const CARTOON_CAMP = uiTextureUrl('tex/cartoon-camping');
+const CARTOON_GAME = uiTextureUrl('tex/cartoon-gaming');
+const CARTOON_MUSIC = uiTextureUrl('tex/cartoon-music');
+const CARTOON_BDAY = uiTextureUrl('tex/cartoon-birthday');
+const CARTOON_ROBOT = uiTextureUrl('tex/cartoon-robot');
+const CARTOON_TRAVEL = uiTextureUrl('tex/cartoon-travel');
 
 // ── 页 1 · 容器与布局 ────────────────────────────────────────
 const pageLayout: LayoutNode = {
@@ -930,6 +940,21 @@ function buildPageNew(controls: ControlsState): LayoutNode {
         ] as const).map(([id, label, skin]): LayoutNode => ({
           type: 'Button', id, props: { label, skin, action: 'click', actionArg: id },
           layout: { width: 140, height: 44 }, // 贴合 Kenney 190×45 原始比例
+        })) },
+
+      divider('d-cartoon'),
+      sectionTitle('t-cartoon', 'IMAGE · 卡通美术画廊（vendored 自 undraw·MIT·内容丰富的彩色卡通场景插画·按资产 key 解析喂 Image）'),
+      { type: 'Panel', id: 'cartoon-row', props: {}, layout: { direction: 'grid', cols: 3, gap: 12, padding: 16 },
+        children: ([
+          [CARTOON_ASTRO, '宇航员'], [CARTOON_CAT, '顽皮猫'], [CARTOON_DOG, '遛狗'],
+          [CARTOON_CAMP, '露营'], [CARTOON_GAME, '游戏手柄'], [CARTOON_MUSIC, '听歌起舞'],
+          [CARTOON_BDAY, '生日气球'], [CARTOON_ROBOT, '机器人'], [CARTOON_TRAVEL, '邮轮旅行'],
+        ] as const).map(([url, label]): LayoutNode => ({
+          type: 'Panel', id: `ct-${label}`, props: { bg: 'sunken' }, layout: { direction: 'column', gap: 4, padding: 8, align: 'center' },
+          children: [
+            { type: 'Image', id: `ct-img-${label}`, props: { src: url, alt: label, fit: 'contain', radius: 8 }, layout: { width: 200, height: 128 } },
+            { type: 'Label', id: `ct-lbl-${label}`, props: { text: label, size: 'xs', color: 'sub' } },
+          ],
         })) },
 
       divider('d-fill'),

@@ -16,12 +16,24 @@ export const BTN_GREEN = 'tex/btn-green';
 export const BTN_RED = 'tex/btn-red';
 export const BTN_YELLOW = 'tex/btn-yellow';
 export const BTN_GREY = 'tex/btn-grey';
+// vendored 卡通插画（undraw·MIT·内容丰富的彩色卡通场景·经 Image 控件展示）
+export const CARTOON = ['astronaut', 'cat', 'dog', 'camping', 'gaming', 'music', 'birthday', 'robot', 'travel'] as const;
+export type CartoonKey = `tex/cartoon-${(typeof CARTOON)[number]}`;
 
 const kenneyBtn = (id: string, color: string, file: string): Record<string, unknown> => ({
   id, type: 'texture', status: 'filled', path: `/games/game-i/art/kenney-ui/${file}.png`,
   description: `${color} button05 · kenney-ui`, spec: { usage: 'sprite', width: 190, height: 45 },
   category: 'icon.ui', license: 'CC0-1.0', source: 'kenney-ui',
   provenance: { repo: 'ereborstudios/kenney-ui-pack', ref: 'main', vendoredFrom: `kenney-ui/${file}` },
+});
+const CARTOON_FILE: Record<string, string> = {
+  astronaut: 'Astronaut_0o7w', cat: 'playful_cat_ql3n', dog: 'good_doggy_4wfq', camping: 'camping_j8s0',
+  gaming: 'gaming_6oy3', music: 'music_r1se', birthday: 'happy_birthday_s72n', robot: 'robotics_kep0', travel: 'travel_pb6m',
+};
+const cartoon = (key: string): Record<string, unknown> => ({
+  id: `tex/cartoon-${key}`, type: 'texture', status: 'filled', path: `/games/game-i/art/undraw/${CARTOON_FILE[key]}.svg`,
+  description: `${key} · undraw 卡通插画`, spec: { usage: 'sprite' }, category: 'illustration', license: 'MIT', source: 'undraw',
+  provenance: { repo: 'cuuupid/undraw-illustrations', ref: 'master', vendoredFrom: `undraw/${CARTOON_FILE[key]}` },
 });
 
 /** game-i 本地贴图 UI 索引（与 public/games/game-i/art/index.json 同源·闭集 spec 校验通过）。 */
@@ -37,6 +49,7 @@ export const GAME_I_UI_INDEX: AssetIndex = parseAssetIndex({
     kenneyBtn(BTN_RED, 'red', 'red-button05'),
     kenneyBtn(BTN_YELLOW, 'yellow', 'yellow-button05'),
     kenneyBtn(BTN_GREY, 'grey', 'grey-button05'),
+    ...CARTOON.map((k) => cartoon(k)),
   ],
 });
 
