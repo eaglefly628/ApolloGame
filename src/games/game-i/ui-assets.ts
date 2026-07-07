@@ -5,10 +5,24 @@
 // 真相文件：`public/games/game-i/art/index.json`（同一份·供站点服务 + vendor 自检测试）；此处 inline 一份供构建期消费。
 import { parseAssetIndex, type AssetIndex } from '@assets/index.js';
 
+// 自产程序化 SVG 皮（零外部素材·"游戏=数据"路径）
 export const SKIN_METAL = 'tex/skin-metal';
 export const SKIN_WOOD = 'tex/skin-wood';
 export const SKIN_STONE = 'tex/skin-stone';
 export const SKIN_SCROLL = 'tex/skin-scroll';
+// vendored 真美术素材（Kenney UI Pack·CC0·经 scripts/vendor-asset.mjs 从共享货架 copy 进本地·带 vendoredFrom 溯源）
+export const BTN_BLUE = 'tex/btn-blue';
+export const BTN_GREEN = 'tex/btn-green';
+export const BTN_RED = 'tex/btn-red';
+export const BTN_YELLOW = 'tex/btn-yellow';
+export const BTN_GREY = 'tex/btn-grey';
+
+const kenneyBtn = (id: string, color: string, file: string): Record<string, unknown> => ({
+  id, type: 'texture', status: 'filled', path: `/games/game-i/art/kenney-ui/${file}.png`,
+  description: `${color} button05 · kenney-ui`, spec: { usage: 'sprite', width: 190, height: 45 },
+  category: 'icon.ui', license: 'CC0-1.0', source: 'kenney-ui',
+  provenance: { repo: 'ereborstudios/kenney-ui-pack', ref: 'main', vendoredFrom: `kenney-ui/${file}` },
+});
 
 /** game-i 本地贴图 UI 索引（与 public/games/game-i/art/index.json 同源·闭集 spec 校验通过）。 */
 export const GAME_I_UI_INDEX: AssetIndex = parseAssetIndex({
@@ -18,6 +32,11 @@ export const GAME_I_UI_INDEX: AssetIndex = parseAssetIndex({
     { id: SKIN_WOOD, type: 'texture', status: 'filled', path: '/games/game-i/art/textures/skin-wood.svg', description: '木纹板按钮皮', spec: { usage: 'sprite', width: 220, height: 88 }, category: 'ui.button-skin', license: 'CC0', source: 'src/games/game-i (自产)' },
     { id: SKIN_STONE, type: 'texture', status: 'filled', path: '/games/game-i/art/textures/skin-stone.svg', description: '花岗岩石纹按钮皮', spec: { usage: 'sprite', width: 220, height: 88 }, category: 'ui.button-skin', license: 'CC0', source: 'src/games/game-i (自产)' },
     { id: SKIN_SCROLL, type: 'texture', status: 'filled', path: '/games/game-i/art/textures/skin-scroll.svg', description: '卷轴羊皮按钮皮', spec: { usage: 'sprite', width: 220, height: 88 }, category: 'ui.button-skin', license: 'CC0', source: 'src/games/game-i (自产)' },
+    kenneyBtn(BTN_BLUE, 'blue', 'blue-button05'),
+    kenneyBtn(BTN_GREEN, 'green', 'green-button05'),
+    kenneyBtn(BTN_RED, 'red', 'red-button05'),
+    kenneyBtn(BTN_YELLOW, 'yellow', 'yellow-button05'),
+    kenneyBtn(BTN_GREY, 'grey', 'grey-button05'),
   ],
 });
 

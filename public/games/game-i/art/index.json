@@ -2,40 +2,186 @@
   "version": 1,
   "assets": [
     {
+      "id": "tex/btn-blue",
+      "type": "texture",
+      "description": "blue button05 · kenney-ui",
+      "status": "filled",
+      "path": "/games/game-i/art/kenney-ui/blue-button05.png",
+      "spec": {
+        "format": "png",
+        "width": 190,
+        "height": 45,
+        "transparent": true
+      },
+      "category": "icon.ui",
+      "tags": [
+        "blue",
+        "button05",
+        "kenney-ui",
+        "ui",
+        "button",
+        "panel",
+        "kenney",
+        "game-ui"
+      ],
+      "style": "cartoon.flat",
+      "license": "CC0-1.0",
+      "source": "kenney-ui",
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/blue-button05"
+      }
+    },
+    {
+      "id": "tex/btn-green",
+      "type": "texture",
+      "description": "green button05 · kenney-ui",
+      "status": "filled",
+      "path": "/games/game-i/art/kenney-ui/green-button05.png",
+      "spec": {
+        "format": "png",
+        "width": 190,
+        "height": 45,
+        "transparent": true
+      },
+      "category": "icon.ui",
+      "tags": [
+        "green",
+        "button05",
+        "kenney-ui",
+        "ui",
+        "button",
+        "panel",
+        "kenney",
+        "game-ui"
+      ],
+      "style": "cartoon.flat",
+      "license": "CC0-1.0",
+      "source": "kenney-ui",
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/green-button05"
+      }
+    },
+    {
+      "id": "tex/btn-grey",
+      "type": "texture",
+      "description": "grey button05 · kenney-ui",
+      "status": "filled",
+      "path": "/games/game-i/art/kenney-ui/grey-button05.png",
+      "spec": {
+        "format": "png",
+        "width": 195,
+        "height": 49,
+        "transparent": true
+      },
+      "category": "icon.ui",
+      "tags": [
+        "grey",
+        "button05",
+        "kenney-ui",
+        "ui",
+        "button",
+        "panel",
+        "kenney",
+        "game-ui"
+      ],
+      "style": "cartoon.flat",
+      "license": "CC0-1.0",
+      "source": "kenney-ui",
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/grey-button05"
+      }
+    },
+    {
+      "id": "tex/btn-red",
+      "type": "texture",
+      "description": "red button05 · kenney-ui",
+      "status": "filled",
+      "path": "/games/game-i/art/kenney-ui/red-button05.png",
+      "spec": {
+        "format": "png",
+        "width": 49,
+        "height": 45,
+        "transparent": true
+      },
+      "category": "icon.ui",
+      "tags": [
+        "red",
+        "button05",
+        "kenney-ui",
+        "ui",
+        "button",
+        "panel",
+        "kenney",
+        "game-ui"
+      ],
+      "style": "cartoon.flat",
+      "license": "CC0-1.0",
+      "source": "kenney-ui",
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/red-button05"
+      }
+    },
+    {
+      "id": "tex/btn-yellow",
+      "type": "texture",
+      "description": "yellow button05 · kenney-ui",
+      "status": "filled",
+      "path": "/games/game-i/art/kenney-ui/yellow-button05.png",
+      "spec": {
+        "format": "png",
+        "width": 190,
+        "height": 45,
+        "transparent": true
+      },
+      "category": "icon.ui",
+      "tags": [
+        "yellow",
+        "button05",
+        "kenney-ui",
+        "ui",
+        "button",
+        "panel",
+        "kenney",
+        "game-ui"
+      ],
+      "style": "cartoon.flat",
+      "license": "CC0-1.0",
+      "source": "kenney-ui",
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/yellow-button05"
+      }
+    },
+    {
       "id": "tex/skin-metal",
       "type": "texture",
       "description": "金属铆钉板按钮皮（贴图 UI sample·程序化自产 SVG）",
       "status": "filled",
       "path": "/games/game-i/art/textures/skin-metal.svg",
-      "spec": { "usage": "sprite", "width": 220, "height": 88, "transparent": true },
+      "spec": {
+        "usage": "sprite",
+        "width": 220,
+        "height": 88,
+        "transparent": true
+      },
       "category": "ui.button-skin",
-      "tags": ["skin", "button", "metal", "plate", "rivet", "ui"],
-      "style": "realistic.material",
-      "license": "CC0",
-      "source": "src/games/game-i (自产)"
-    },
-    {
-      "id": "tex/skin-wood",
-      "type": "texture",
-      "description": "木纹板按钮皮（贴图 UI sample·程序化自产 SVG）",
-      "status": "filled",
-      "path": "/games/game-i/art/textures/skin-wood.svg",
-      "spec": { "usage": "sprite", "width": 220, "height": 88, "transparent": true },
-      "category": "ui.button-skin",
-      "tags": ["skin", "button", "wood", "grain", "ui"],
-      "style": "realistic.material",
-      "license": "CC0",
-      "source": "src/games/game-i (自产)"
-    },
-    {
-      "id": "tex/skin-stone",
-      "type": "texture",
-      "description": "花岗岩石纹按钮皮（贴图 UI sample·程序化自产 SVG）",
-      "status": "filled",
-      "path": "/games/game-i/art/textures/skin-stone.svg",
-      "spec": { "usage": "sprite", "width": 220, "height": 88, "transparent": true },
-      "category": "ui.button-skin",
-      "tags": ["skin", "button", "stone", "granite", "ui"],
+      "tags": [
+        "skin",
+        "button",
+        "metal",
+        "plate",
+        "rivet",
+        "ui"
+      ],
       "style": "realistic.material",
       "license": "CC0",
       "source": "src/games/game-i (自产)"
@@ -46,9 +192,68 @@
       "description": "卷轴羊皮按钮皮（贴图 UI sample·程序化自产 SVG）",
       "status": "filled",
       "path": "/games/game-i/art/textures/skin-scroll.svg",
-      "spec": { "usage": "sprite", "width": 220, "height": 88, "transparent": true },
+      "spec": {
+        "usage": "sprite",
+        "width": 220,
+        "height": 88,
+        "transparent": true
+      },
       "category": "ui.button-skin",
-      "tags": ["skin", "button", "scroll", "parchment", "ui"],
+      "tags": [
+        "skin",
+        "button",
+        "scroll",
+        "parchment",
+        "ui"
+      ],
+      "style": "realistic.material",
+      "license": "CC0",
+      "source": "src/games/game-i (自产)"
+    },
+    {
+      "id": "tex/skin-stone",
+      "type": "texture",
+      "description": "花岗岩石纹按钮皮（贴图 UI sample·程序化自产 SVG）",
+      "status": "filled",
+      "path": "/games/game-i/art/textures/skin-stone.svg",
+      "spec": {
+        "usage": "sprite",
+        "width": 220,
+        "height": 88,
+        "transparent": true
+      },
+      "category": "ui.button-skin",
+      "tags": [
+        "skin",
+        "button",
+        "stone",
+        "granite",
+        "ui"
+      ],
+      "style": "realistic.material",
+      "license": "CC0",
+      "source": "src/games/game-i (自产)"
+    },
+    {
+      "id": "tex/skin-wood",
+      "type": "texture",
+      "description": "木纹板按钮皮（贴图 UI sample·程序化自产 SVG）",
+      "status": "filled",
+      "path": "/games/game-i/art/textures/skin-wood.svg",
+      "spec": {
+        "usage": "sprite",
+        "width": 220,
+        "height": 88,
+        "transparent": true
+      },
+      "category": "ui.button-skin",
+      "tags": [
+        "skin",
+        "button",
+        "wood",
+        "grain",
+        "ui"
+      ],
       "style": "realistic.material",
       "license": "CC0",
       "source": "src/games/game-i (自产)"

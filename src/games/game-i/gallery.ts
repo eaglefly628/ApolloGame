@@ -5,7 +5,7 @@
 // 母法：docs/design/apollo-ui-contract.md（控件契约总表）。
 
 import type { LayoutNode } from '@ui/components/index.js';
-import { uiTextureUrl, SKIN_METAL, SKIN_WOOD, SKIN_STONE, SKIN_SCROLL } from './ui-assets.js';
+import { uiTextureUrl, SKIN_METAL, SKIN_WOOD, SKIN_STONE, SKIN_SCROLL, BTN_BLUE, BTN_GREEN, BTN_RED, BTN_YELLOW, BTN_GREY } from './ui-assets.js';
 import { THEME_OPTIONS } from './themes.js';
 import { buildShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { buildPickHand, INITIAL_PICK, type PickState } from './pickcards.js';
@@ -44,6 +44,12 @@ const SKIN_METAL_URL = uiTextureUrl(SKIN_METAL);
 const SKIN_WOOD_URL = uiTextureUrl(SKIN_WOOD);
 const SKIN_STONE_URL = uiTextureUrl(SKIN_STONE);
 const SKIN_SCROLL_URL = uiTextureUrl(SKIN_SCROLL);
+// vendored 真美术素材（Kenney UI Pack·CC0）
+const BTN_BLUE_URL = uiTextureUrl(BTN_BLUE);
+const BTN_GREEN_URL = uiTextureUrl(BTN_GREEN);
+const BTN_RED_URL = uiTextureUrl(BTN_RED);
+const BTN_YELLOW_URL = uiTextureUrl(BTN_YELLOW);
+const BTN_GREY_URL = uiTextureUrl(BTN_GREY);
 
 // ── 页 1 · 容器与布局 ────────────────────────────────────────
 const pageLayout: LayoutNode = {
@@ -915,6 +921,15 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           type: 'Button', id,
           props: { label, skin, ...(shape ? { shape } : {}), action: 'click', actionArg: id },
           layout: { width: 150, height: 60 },
+        })) },
+      { type: 'Label', id: 't-skin-vendored', props: { text: '↓ vendored 真美术素材 · Kenney UI Pack（CC0）· scripts/vendor-asset.mjs 从共享货架搬进本地库 · 带 vendoredFrom 溯源', size: 'sm', color: 'sub' } },
+      { type: 'Panel', id: 'skin-kenney-row', props: {}, layout: { direction: 'grid', cols: 5, gap: 14, padding: 18 },
+        children: ([
+          ['sk-k-blue', '蓝', BTN_BLUE_URL], ['sk-k-green', '绿', BTN_GREEN_URL], ['sk-k-red', '红', BTN_RED_URL],
+          ['sk-k-yellow', '黄', BTN_YELLOW_URL], ['sk-k-grey', '灰', BTN_GREY_URL],
+        ] as const).map(([id, label, skin]): LayoutNode => ({
+          type: 'Button', id, props: { label, skin, action: 'click', actionArg: id },
+          layout: { width: 140, height: 44 }, // 贴合 Kenney 190×45 原始比例
         })) },
 
       divider('d-fill'),

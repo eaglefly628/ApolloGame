@@ -21,7 +21,7 @@
 
 - 机制说明：`src/assembly/resolve-art-refs.ts`（`art:` 解析 + `ArtResolution` 留痕）、`derive-asset-index.ts`。
 - 真实用法：`src/games/game-e/assets.ts`+`cards-atlas.ts`（牌面图集）、`src/games/game-g/art-textures.ts`。
-- **2D UI 贴图皮入库范例**：`src/games/game-i/ui-assets.ts` + `public/games/game-i/art/index.json`（贴图皮=`type:'texture'`·`usage:'sprite'` 正规资产·按 key `uiTextureUrl` 解析成 URL 喂 `Button.skin`·`ui-assets.test.ts` 自检）——2D DOM UI 侧「资产 key→已解析 URL」样板，**替代内联 data-URI 硬编码**。
+- **2D UI 贴图皮入库范例**：`src/games/game-i/ui-assets.ts` + `public/games/game-i/art/index.json`（贴图皮=`type:'texture'`·`usage:'sprite'` 正规资产·按 key `uiTextureUrl` 解析成 URL 喂 `Button.skin`·`ui-assets.test.ts` 自检）——2D DOM UI 侧「资产 key→已解析 URL」样板，**替代内联 data-URI 硬编码**。两条素材路径都在此示范：**自产程序化 SVG**（零外部文件·"游戏=数据"）+ **vendor 真美术**（Kenney UI Pack·CC0·`node scripts/vendor-asset.mjs kenney-ui/blue-button05 game-i --as tex/btn-blue`·带 `vendoredFrom` 溯源）。
 - 索引/类型：`src/assets/index.ts`（`ASSET_TYPES`/`AssetIndex`）、`assets/index.json`、`assets/FreeArtLib/index.json`。
 
 ## ③ 本线红线
