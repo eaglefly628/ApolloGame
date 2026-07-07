@@ -95,6 +95,34 @@
 
 **改造顺序（修订版）**：**M2.5 人审门**（小·最先——生成产物改进「待审区」，人点入库才登记，provenance 升硬校验）→ M1 货架可视化 → M2 导入/接线 UI → M3 修复/变体闭集+风格锚 → M4 3D 打磨。原 M0-M4 分期框架不变，只是起点从零改为从现台长出。
 
+## 八、threejs-game-skills 对照与吸收（owner 2026-07-06 给源·Lead 调研）
+
+> 源：github.com/majidmanzarpour/threejs-game-skills（9 个 skill：director 路由 + gameplay/图形/UI/调试/QA + 3D/图像/音频三条生成线·Tripo/Gemini/ElevenLabs BYO-key）。
+> **定性**：它是「LLM 写 three.js 代码」路线的质量护栏——生成代码这条路线本身与我们宪法相反（游戏=数据），**不可整套采用；吸收的是护栏纪律，不是路线**。
+
+**它凭什么敢喊 AAA（不是描述词，是四道机器化的门）**：
+1. **视觉评分卡门**：10 维（艺术方向/主角形体/障碍/奖励/世界密度/材质/渲染管线/VFX/UI 美术/性能证据）每维 0-3 分，**全部 ≥2 才许自称 premium**；
+2. **证据台账**：资产来源台账（每个主角面必须记录 程序化/图生/3D生/混合 的选择+产物路径或 blocker）、凭证探针（说"没 key 跳过"必须先贴探针输出）、前后对比截图+渲染器诊断；
+3. **反捷径工艺律**：「禁止给方块加 glow 冒充 AAA——先造型、再材质、再光照、最后特效」；**主角面禁纯程序化**（除非记录 blocker）；
+4. **canvas 像素级 QA**（inspect-threejs-canvas.mjs）：读像素做机器断言，不认"未验证的截图"。
+
+**对照裁决**：
+| 类 | 内容 | 裁决 |
+|---|---|---|
+| 他有我无·吸收 | 视觉评分卡门 | ✅ 移植 Apollo 版（见下 A）——正是我们 MANUAL CHECK 项的结构化载体 |
+| 他有我无·吸收 | canvas 像素断言 | ✅ 升级 `shoot-game.mjs`（3D 线截图人审 → 机器断言可进门禁） |
+| 他有我无·吸收 | 音频生成线 | ✅ 我们声音货架=1 条（最大资产空洞）·补 audio adapter 进 ai-gen（BYO-key·mock 兜底·人审门） |
+| 他有我无·吸收 | 资产来源台账+反捷径律+凭证探针 | ✅ 台账并进人审门 provenance；工艺律一行进 playbooks/3d.md 红线；探针纪律进生成日志 |
+| 他有我也有 | 3D/图像生成（Tripo/图生） | ➡ 已有（ai-gen tripo+qwen）·不动 |
+| 他有我更强 | director 路由 | ➡ 我们 playbooks 索引+角色协议+模板选路已覆盖·不换 |
+| 我有他无 | 确定性引擎/回放/数据宪法/index 治理/许可 provenance/棘轮门禁/sim 标定 | 🏰 我们的护城河·他的资产落盘无库存治理 |
+
+**吸收计划（A-D·排队待 owner 批）**：
+- **A. Apollo 视觉评分卡**（新 `docs/playbooks/visual-scorecard.md`·≤80 行）：维度裁成我们的（艺术方向/主角面/世界密度/材质/渲染管线/VFX/UI 美术/性能证据），0-3 分制·premium 线=全维 ≥2；挂两处：P3D 视觉验收 + PS 出货内门（替代散文式 MANUAL CHECK）。
+- **B. 音频生成线（工坊 M3.5）**：`ai-gen.mjs` 加 audio adapter（SFX/环境音/UI 音·BYO-key·无 key mock·人审门+provenance 同 2D/3D）；声音货架从 1 起步补齐；SynthAudioPort（合成）与采样并存。
+- **C. shoot-game 像素断言**：非黑占比/对比度/帧活动三断言 + 判词 token——3D 视觉 smoke 从人审升级为可进门禁（P3D 域）。
+- **D. 手册回填**：playbooks/3d.md 加工艺顺序红线+主角面禁纯程序化；生成端点日志补凭证探针纪律。
+
 ## 六、下一步
 
 owner 审本稿 → 拍板后 **M2.5 人审门先行起单**（小·PST/PA 域），M1 随后；spec 由 Lead 出。界面视觉稿另附（SendUserFile 交付·不入库）。
