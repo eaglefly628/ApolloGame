@@ -16,13 +16,17 @@ export const BTN_GREEN = 'tex/btn-green';
 export const BTN_RED = 'tex/btn-red';
 export const BTN_YELLOW = 'tex/btn-yellow';
 export const BTN_GREY = 'tex/btn-grey';
+// 卡通按钮款式变体（同 Kenney UI 包·不同款式：圆润/高光/描边幽灵）
+export const BTN_ROUND = 'tex/btn-round';
+export const BTN_GLOSSY = 'tex/btn-glossy';
+export const BTN_GHOST = 'tex/btn-ghost';
 // vendored 卡通插画（undraw·MIT·内容丰富的彩色卡通场景·经 Image 控件展示）
 export const CARTOON = ['astronaut', 'cat', 'dog', 'camping', 'gaming', 'music', 'birthday', 'robot', 'travel'] as const;
 export type CartoonKey = `tex/cartoon-${(typeof CARTOON)[number]}`;
 
-const kenneyBtn = (id: string, color: string, file: string): Record<string, unknown> => ({
+const kenneyBtn = (id: string, file: string): Record<string, unknown> => ({
   id, type: 'texture', status: 'filled', path: `/games/game-i/art/kenney-ui/${file}.png`,
-  description: `${color} button05 · kenney-ui`, spec: { usage: 'sprite', width: 190, height: 45 },
+  description: `${file} · kenney-ui`, spec: { usage: 'sprite', width: 190, height: 48 },
   category: 'icon.ui', license: 'CC0-1.0', source: 'kenney-ui',
   provenance: { repo: 'ereborstudios/kenney-ui-pack', ref: 'main', vendoredFrom: `kenney-ui/${file}` },
 });
@@ -44,11 +48,14 @@ export const GAME_I_UI_INDEX: AssetIndex = parseAssetIndex({
     { id: SKIN_WOOD, type: 'texture', status: 'filled', path: '/games/game-i/art/textures/skin-wood.svg', description: '木纹板按钮皮', spec: { usage: 'sprite', width: 220, height: 88 }, category: 'ui.button-skin', license: 'CC0', source: 'src/games/game-i (自产)' },
     { id: SKIN_STONE, type: 'texture', status: 'filled', path: '/games/game-i/art/textures/skin-stone.svg', description: '花岗岩石纹按钮皮', spec: { usage: 'sprite', width: 220, height: 88 }, category: 'ui.button-skin', license: 'CC0', source: 'src/games/game-i (自产)' },
     { id: SKIN_SCROLL, type: 'texture', status: 'filled', path: '/games/game-i/art/textures/skin-scroll.svg', description: '卷轴羊皮按钮皮', spec: { usage: 'sprite', width: 220, height: 88 }, category: 'ui.button-skin', license: 'CC0', source: 'src/games/game-i (自产)' },
-    kenneyBtn(BTN_BLUE, 'blue', 'blue-button05'),
-    kenneyBtn(BTN_GREEN, 'green', 'green-button05'),
-    kenneyBtn(BTN_RED, 'red', 'red-button05'),
-    kenneyBtn(BTN_YELLOW, 'yellow', 'yellow-button05'),
-    kenneyBtn(BTN_GREY, 'grey', 'grey-button05'),
+    kenneyBtn(BTN_BLUE, 'blue-button05'),
+    kenneyBtn(BTN_GREEN, 'green-button05'),
+    kenneyBtn(BTN_RED, 'red-button01'),
+    kenneyBtn(BTN_YELLOW, 'yellow-button05'),
+    kenneyBtn(BTN_GREY, 'grey-button05'),
+    kenneyBtn(BTN_ROUND, 'blue-button00'),
+    kenneyBtn(BTN_GLOSSY, 'green-button03'),
+    kenneyBtn(BTN_GHOST, 'yellow-button13'),
     ...CARTOON.map((k) => cartoon(k)),
   ],
 });

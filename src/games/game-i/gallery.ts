@@ -5,7 +5,7 @@
 // 母法：docs/design/apollo-ui-contract.md（控件契约总表）。
 
 import type { LayoutNode } from '@ui/components/index.js';
-import { uiTextureUrl, SKIN_METAL, SKIN_WOOD, SKIN_STONE, SKIN_SCROLL, BTN_BLUE, BTN_GREEN, BTN_RED, BTN_YELLOW, BTN_GREY } from './ui-assets.js';
+import { uiTextureUrl, SKIN_METAL, SKIN_WOOD, SKIN_STONE, SKIN_SCROLL, BTN_BLUE, BTN_GREEN, BTN_RED, BTN_YELLOW, BTN_GREY, BTN_ROUND, BTN_GLOSSY, BTN_GHOST } from './ui-assets.js';
 import { THEME_OPTIONS } from './themes.js';
 import { buildShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { buildPickHand, INITIAL_PICK, type PickState } from './pickcards.js';
@@ -50,6 +50,9 @@ const BTN_GREEN_URL = uiTextureUrl(BTN_GREEN);
 const BTN_RED_URL = uiTextureUrl(BTN_RED);
 const BTN_YELLOW_URL = uiTextureUrl(BTN_YELLOW);
 const BTN_GREY_URL = uiTextureUrl(BTN_GREY);
+const BTN_ROUND_URL = uiTextureUrl(BTN_ROUND);
+const BTN_GLOSSY_URL = uiTextureUrl(BTN_GLOSSY);
+const BTN_GHOST_URL = uiTextureUrl(BTN_GHOST);
 // vendored 卡通插画（undraw·MIT·内容丰富的彩色卡通场景）
 const CARTOON_ASTRO = uiTextureUrl('tex/cartoon-astronaut');
 const CARTOON_CAT = uiTextureUrl('tex/cartoon-cat');
@@ -932,14 +935,22 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           props: { label, skin, ...(shape ? { shape } : {}), action: 'click', actionArg: id },
           layout: { width: 150, height: 60 },
         })) },
-      { type: 'Label', id: 't-skin-vendored', props: { text: '↓ vendored 真美术素材 · Kenney UI Pack（CC0）· scripts/vendor-asset.mjs 从共享货架搬进本地库 · 带 vendoredFrom 溯源', size: 'sm', color: 'sub' } },
+      { type: 'Label', id: 't-skin-vendored', props: { text: '↓ 卡通风格按钮 · vendored 自 Kenney UI Pack（CC0）· scripts/vendor-asset.mjs 从共享货架搬进本地库 · 带 vendoredFrom 溯源', size: 'sm', color: 'sub' } },
       { type: 'Panel', id: 'skin-kenney-row', props: {}, layout: { direction: 'grid', cols: 5, gap: 14, padding: 18 },
         children: ([
           ['sk-k-blue', '蓝', BTN_BLUE_URL], ['sk-k-green', '绿', BTN_GREEN_URL], ['sk-k-red', '红', BTN_RED_URL],
           ['sk-k-yellow', '黄', BTN_YELLOW_URL], ['sk-k-grey', '灰', BTN_GREY_URL],
         ] as const).map(([id, label, skin]): LayoutNode => ({
           type: 'Button', id, props: { label, skin, action: 'click', actionArg: id },
-          layout: { width: 140, height: 44 }, // 贴合 Kenney 190×45 原始比例
+          layout: { width: 140, height: 44 }, // 贴合 Kenney 190×48 原始比例
+        })) },
+      { type: 'Label', id: 't-skin-styles', props: { text: '同包不同款式（弱 LLM 换 skin key 即换风格·数据不改结构）：圆润 / 高光 / 描边幽灵', size: 'xs', color: 'dim' } },
+      { type: 'Panel', id: 'skin-style-row', props: {}, layout: { direction: 'grid', cols: 3, gap: 14, padding: 18 },
+        children: ([
+          ['sk-s-round', '圆润 round', BTN_ROUND_URL], ['sk-s-glossy', '高光 glossy', BTN_GLOSSY_URL], ['sk-s-ghost', '描边 ghost', BTN_GHOST_URL],
+        ] as const).map(([id, label, skin]): LayoutNode => ({
+          type: 'Button', id, props: { label, skin, action: 'click', actionArg: id },
+          layout: { width: 150, height: 46 },
         })) },
 
       divider('d-cartoon'),

@@ -34,6 +34,70 @@
       }
     },
     {
+      "id": "tex/btn-ghost",
+      "type": "texture",
+      "description": "yellow button13 · kenney-ui",
+      "status": "filled",
+      "path": "/games/game-i/art/kenney-ui/yellow-button13.png",
+      "spec": {
+        "format": "png",
+        "width": 190,
+        "height": 49,
+        "transparent": true
+      },
+      "category": "icon.ui",
+      "tags": [
+        "yellow",
+        "button13",
+        "kenney-ui",
+        "ui",
+        "button",
+        "panel",
+        "kenney",
+        "game-ui"
+      ],
+      "style": "cartoon.flat",
+      "license": "CC0-1.0",
+      "source": "kenney-ui",
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/yellow-button13"
+      }
+    },
+    {
+      "id": "tex/btn-glossy",
+      "type": "texture",
+      "description": "green button03 · kenney-ui",
+      "status": "filled",
+      "path": "/games/game-i/art/kenney-ui/green-button03.png",
+      "spec": {
+        "format": "png",
+        "width": 190,
+        "height": 45,
+        "transparent": true
+      },
+      "category": "icon.ui",
+      "tags": [
+        "green",
+        "button03",
+        "kenney-ui",
+        "ui",
+        "button",
+        "panel",
+        "kenney",
+        "game-ui"
+      ],
+      "style": "cartoon.flat",
+      "license": "CC0-1.0",
+      "source": "kenney-ui",
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/green-button03"
+      }
+    },
+    {
       "id": "tex/btn-green",
       "type": "texture",
       "description": "green button05 · kenney-ui",
@@ -100,19 +164,19 @@
     {
       "id": "tex/btn-red",
       "type": "texture",
-      "description": "red button05 · kenney-ui",
+      "description": "red button01 · kenney-ui",
       "status": "filled",
-      "path": "/games/game-i/art/kenney-ui/red-button05.png",
+      "path": "/games/game-i/art/kenney-ui/red-button01.png",
       "spec": {
         "format": "png",
-        "width": 49,
-        "height": 45,
+        "width": 190,
+        "height": 49,
         "transparent": true
       },
       "category": "icon.ui",
       "tags": [
         "red",
-        "button05",
+        "button01",
         "kenney-ui",
         "ui",
         "button",
@@ -126,7 +190,39 @@
       "provenance": {
         "repo": "ereborstudios/kenney-ui-pack",
         "ref": "main",
-        "vendoredFrom": "kenney-ui/red-button05"
+        "vendoredFrom": "kenney-ui/red-button01"
+      }
+    },
+    {
+      "id": "tex/btn-round",
+      "type": "texture",
+      "description": "blue button00 · kenney-ui",
+      "status": "filled",
+      "path": "/games/game-i/art/kenney-ui/blue-button00.png",
+      "spec": {
+        "format": "png",
+        "width": 190,
+        "height": 49,
+        "transparent": true
+      },
+      "category": "icon.ui",
+      "tags": [
+        "blue",
+        "button00",
+        "kenney-ui",
+        "ui",
+        "button",
+        "panel",
+        "kenney",
+        "game-ui"
+      ],
+      "style": "cartoon.flat",
+      "license": "CC0-1.0",
+      "source": "kenney-ui",
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/blue-button00"
       }
     },
     {
