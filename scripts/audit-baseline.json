@@ -8,6 +8,7 @@
     "game-h": { "nakedRandom": 1, "innerHTML": 0, "createElement": 2 },
     "game-i": { "nakedRandom": 0, "innerHTML": 0, "createElement": 5 },
     "game-x": { "nakedRandom": 0, "innerHTML": 0, "createElement": 3 },
-    "game-z": { "nakedRandom": 0, "innerHTML": 0, "createElement": 4 }
+    "game-z": { "nakedRandom": 0, "innerHTML": 0, "createElement": 4 },
+    "game-q": { "nakedRandom": 0, "innerHTML": 0, "createElement": 5 }
   }
 }

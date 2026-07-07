@@ -130,6 +130,16 @@ const GAMES: GameEntry[] = [
     icon: '🎲',
     status: 'playable',
   },
+  {
+    id: 'game-q',
+    title: 'Game Q: Neon Siege',
+    subtitle: '霓虹要塞 · 未来主义塔防',
+    description: '一波波几何无人机沿发光电路道扑向能量核心——用金币在道旁造脉冲塔/轨道炮，塔自动索敌抛射能量弹清怪，漏怪扣核心生命，清完全部波次即胜。造塔/寻路/波次/索敌/经济/胜负全由通用能力（pathfind/timeline/prefab/self-rule/launch/hitbox/craft-recipe/flow）涌现，零塔防专属系统代码。买塔→点场部署，弹道即射程，塔位定成败。',
+    color: '#07130f',
+    accentColor: '#38bdf8',
+    icon: '🗼',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
@@ -707,6 +717,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-x': () => import('./games/game-x/game-x.js'),
       'game-z': () => import('./games/game-z/game-z.js'),
       'game-d': () => import('./games/game-d/game-d.js'),
+      'game-q': () => import('./games/game-q/game-q.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;

@@ -11,6 +11,12 @@
 
 ## 待处理 / 进行中
 
+### REQ-Q-击杀记账（on-kill credit）· 塔防赏金/击杀计分通用缺口 · [2026-07-07] · LEAD（game-q 立项）→ Lead 排期 · status: **open（真缺口·已记债·循环层用清波经济绕过·非阻塞）** · 类型: 通用战斗能力下沉候选
+> **缺口**：`t2-hitbox` 只写**目标本地**资源（`hitbox.ts` `queueResourceMod(...,'local')`）；`t2-mortal` 的 `dropTemplate` 对**任何死因无差别**触发。→ 无法用单个 Mortal 区分「被塔击杀→给全局/攻击者记赏金」与「抵达大本营漏怪→扣命·不发赏金」。这是塔防经济（逐怪赏金）唯一表达不了的点，也是**击杀计分/连击表/赏金**一类通用需求的共性缺口（非塔防专属）。
+> **game-q 现绕法（已落地·不依赖本单）**：经济走「开局金 + 清波奖金（timeline resource-cue / `effect-apply` on `timeline:done:<wave>`）+ 波中缓速涓流」——全组合现有能力、确定性、无缺口依赖；逐怪赏金暂缓。
+> **建议下沉（待 Lead 排期·勿抢跑）**：择一——① `Hitbox.creditResource:{id,amount,scope:'global'|'caster'}`：命中/致死时给具名全局或攻击者（`PrefabOrigin.source`）资源记账；② `Mortal` 按致死资源/tag 分支 `dropTemplate`（塔杀 vs 漏怪不同掉落）。落地后 game-q 逐怪赏金 + 击杀计分一并干净接入。**证明它的测试**：塔杀敌→gold+N；漏怪→lives−1 且 gold 不变。
+> **裁决记录**：game-q 能力总览已 ✅（`docs/design/game-q/capability-plan.md §6`）——本单是其唯一记债项，不阻塞 game-q 出货。
+
 ### REQ-G-主将牌面「将」艺术字·顶部小浮标→牌面正中大字 · [2026-07-06] · owner R22 → **指派：程序B（turn-battle-screen.ts 牌面渲染·LayoutNode 表现）** · status: **open** · 类型: UI 表现重排（主将身份标·程序B 域·基座件已够·非新能力）
 > **owner 原话**：「（关1）那两个（主将）就是敌将和我们的主将，那两个字太小了在上面，应该在牌面上还是有一些表示的——大一点的、牌面中间有个『将』字。艺术字，用那个艺术字来表示。」
 > **现状**：主将身份现在只是牌顶一个 `size:8` 的小浮标 `⭐主将`/`☠敌将`（`turn-battle-screen.ts:249` 场上兵·`:336` 手牌·`y:-12` 飘在角上）——太小、不显眼。牌**正中**现在是大花色字（`:243` `size:30`）。
