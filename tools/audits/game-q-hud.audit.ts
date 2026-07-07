@@ -7,7 +7,7 @@ import { buildTopBar, buildBottomBar } from '../../src/games/game-q/hud.js';
 import { NEON_THEME } from '../../src/games/game-q/theme.js';
 
 // 低血量 + pending 态（触发 danger 色 + hero/glow 强调 → 覆盖最"吃紧"配色）
-const s = { lives: 5, gold: 300, enemies: 4, pending: 'pulse' as const, status: 'playing' as const };
+const s = { lives: 5, gold: 300, enemies: 4, pending: 'pulse' as const, status: 'playing' as const, muted: false };
 const page: LayoutNode = {
   type: 'Screen', id: 'q-hud-audit', props: { bg: 'panel' },
   layout: { direction: 'column', justify: 'between', padding: 0 },

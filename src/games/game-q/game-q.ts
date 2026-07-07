@@ -8,10 +8,11 @@ import { CanvasRenderer } from '@renderer/index.js';
 import { QueuedInputSource, canvasPointerToScreen } from '@net/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap } from '@ui/components/index.js';
-import type { GameFlow, Resource, Flag } from '@engine/protocol/components.js';
+import type { GameFlow, Resource, Flag, Tag } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildTopBar, buildBottomBar, buildOverlay, type HudState } from './hud.js';
-import { NEON_THEME, FIELD_W, FIELD_H, TOP_BAR_H, BOTTOM_BAR_H, START_GOLD, START_LIVES } from './theme.js';
+import { playQSfx, isMuted, setMuted } from './sounds.js';
+import { NEON_THEME, FIELD_W, FIELD_H, TOP_BAR_H, BOTTOM_BAR_H, START_GOLD, START_LIVES, TOWER } from './theme.js';
 
 const GRID_BG =
   'radial-gradient(circle at 50% 42%, #0d1a33 0%, #070c17 68%, #04070f 100%),' +
@@ -43,7 +44,7 @@ export function mount(container: HTMLElement): () => void {
   // ── 稳定输入源（跨重开不变 → HUD sink 始终有效）──────────────────────────
   const input = new QueuedInputSource('q');
 
-  const initial: HudState = { lives: START_LIVES, gold: START_GOLD, enemies: 0, pending: null, status: 'playing' };
+  const initial: HudState = { lives: START_LIVES, gold: START_GOLD, enemies: 0, pending: null, status: 'playing', muted: isMuted() };
 
   // ── HUD 读态：从 world 资源/旗/流程投影出 HudState（纯读·outcome-first）──────
   function readState(engine: Engine): HudState {
@@ -57,11 +58,36 @@ export function mount(container: HTMLElement): () => void {
       enemies: Math.round(res('livecount')),
       pending: flag('flag-pending-pulse') ? 'pulse' : flag('flag-pending-cannon') ? 'cannon' : null,
       status: cur === 'victory' ? 'victory' : cur === 'defeat' ? 'defeat' : 'playing',
+      muted: isMuted(),
     };
+  }
+  function countTowers(engine: Engine): number {
+    let n = 0;
+    for (const [id] of engine.world.query('Tag')) {
+      const t = engine.world.getComponent<Tag>(id, 'Tag');
+      if (t && (t.flags & TOWER) !== 0) n++;
+    }
+    return n;
+  }
+
+  // ── 音效同步（outcome-first·纯读世界 diff → 合成端口·不碰 sim/hash）─────────
+  let prevA = { towers: 0, lives: START_LIVES, enemies: 0, status: 'playing' as HudState['status'] };
+  function syncAudio(st: HudState, towers: number): void {
+    if (st.status !== prevA.status) {
+      if (st.status === 'victory') playQSfx('win');
+      else if (st.status === 'defeat') playQSfx('lose');
+    }
+    if (towers > prevA.towers) playQSfx('build');
+    if (st.lives < prevA.lives) playQSfx('leak');
+    else if (st.enemies < prevA.enemies) playQSfx('kill'); // 敌减 & 未漏 ≈ 塔杀
+    prevA = { towers, lives: st.lives, enemies: st.enemies, status: st.status };
   }
 
   // ── HUD 挂载（稳定·input 作 ActionSink：无本地 handler 的 action → 信号入队 → sim）──
-  const handlers: HandlerMap = { restart: () => restart() };
+  const handlers: HandlerMap = {
+    restart: () => restart(),
+    toggle_mute: () => { setMuted(!isMuted()); if (sim) refreshHud(sim.engine); },
+  };
   const topUi: MountHandle = mountUI(topHost, buildTopBar(initial), handlers, NEON_THEME, input);
   const bottomUi: MountHandle = mountUI(bottomHost, buildBottomBar(initial), handlers, NEON_THEME, input);
   let overlayUi: MountHandle | null = null;
@@ -69,7 +95,8 @@ export function mount(container: HTMLElement): () => void {
   let lastSig = '';
   function refreshHud(engine: Engine): void {
     const st = readState(engine);
-    const sig = `${st.lives}|${st.gold}|${st.enemies}|${st.pending}|${st.status}`;
+    syncAudio(st, countTowers(engine));
+    const sig = `${st.lives}|${st.gold}|${st.enemies}|${st.pending}|${st.status}|${st.muted}`;
     if (sig !== lastSig) {
       lastSig = sig;
       topUi.update(buildTopBar(st), NEON_THEME);
@@ -112,6 +139,7 @@ export function mount(container: HTMLElement): () => void {
     const unsub = engine.subscribe(() => refreshHud(engine));
     engine.start();
     lastSig = '';
+    prevA = { towers: 0, lives: START_LIVES, enemies: 0, status: 'playing' };
     refreshHud(engine);
     sim = { engine, renderer, canvas, onDown, unsub };
   }

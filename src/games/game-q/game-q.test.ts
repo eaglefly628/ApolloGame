@@ -88,10 +88,10 @@ describe('Game Q · Neon Siege（数据驱动塔防）', () => {
 
   it('HUD 是合法 LayoutNode（validate 零 issue·多态覆盖）', () => {
     const states: HudState[] = [
-      { lives: 20, gold: 300, enemies: 3, pending: null, status: 'playing' },
-      { lives: 4, gold: 55, enemies: 0, pending: 'pulse', status: 'playing' },
-      { lives: 0, gold: 999, enemies: 2, pending: 'cannon', status: 'defeat' },
-      { lives: 20, gold: 120, enemies: 0, pending: null, status: 'victory' },
+      { lives: 20, gold: 300, enemies: 3, pending: null, status: 'playing', muted: false },
+      { lives: 4, gold: 55, enemies: 0, pending: 'pulse', status: 'playing', muted: true },
+      { lives: 0, gold: 999, enemies: 2, pending: 'cannon', status: 'defeat', muted: false },
+      { lives: 20, gold: 120, enemies: 0, pending: null, status: 'victory', muted: false },
     ];
     for (const s of states) {
       expect(validateLayoutNode(buildTopBar(s))).toEqual([]);

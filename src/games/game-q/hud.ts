@@ -10,6 +10,7 @@ export interface HudState {
   enemies: number;
   pending: 'pulse' | 'cannon' | null;
   status: 'playing' | 'victory' | 'defeat';
+  muted: boolean;
 }
 
 // ── 顶部状态条 ──────────────────────────────────────────────────────────────
@@ -30,6 +31,7 @@ export function buildTopBar(s: HudState): LayoutNode {
           stat('q-lives', '♥', String(s.lives), s.lives <= 5 ? 'danger' : 'ok'),
           stat('q-gold', '⬡', String(s.gold), 'gold'),
           stat('q-threat', '☣', String(s.enemies), s.enemies > 0 ? 'warn' : 'dim'),
+          { type: 'Button', id: 'q-mute', props: { label: s.muted ? '🔇' : '🔊', kind: 'ghost', action: 'toggle_mute' } },
         ],
       },
     ],
