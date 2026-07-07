@@ -18,7 +18,7 @@ import type { Camera3D, RandomSeed, Card } from '@engine/protocol/components.js'
 import type { Component } from '@engine/core/types.js';
 import { nextRandom } from '@skills/atoms/random/index.js';
 import { evaluateHand, rankMaxCount } from '@skills/tier3/poker-hand.js';
-import { baseBlueprint, genRoom, roomMeta, ROOM_SPACING, ACTS } from './rooms.js';
+import { baseBlueprint, genRoom, roomMeta, ROOM_SPACING, ACTS, type ThemeArt } from './rooms.js';
 import { GAME_D_ASSETS } from './assets.js';
 import {
   ELEM_INFO, ELEMS, rollPool, makeDie, dieDef, startLibrary, DICE_CATALOG, sizeCn,
@@ -168,6 +168,21 @@ export function mount(container: HTMLElement): () => void {
     ['gd-side-die-l', -2.58, 0.02, 0.2, 0.42, 1.05, 0.4, 0.30, -0.24], // 左·偏高·X 顺 Y 逆
     ['gd-side-die-r', 2.82, -1.0, 0.15, 0.42, 0.35, 2.1, -0.19, 0.35], // 右·偏低（上下错位）·X 逆 Y 顺（与左相反 → 绝不同向）·同大小（owner「同样的小的」）
   ];
+  // 当前层主题美术（owner 2026-07-06「很多肉鸽关卡·要主题性美术」）：globalRoom(1 起)→ 房序(0 起)→ 层 → ACTS[act].art。
+  const themeArt = (globalRoom: number): ThemeArt => ACTS[roomMeta(globalRoom - 1).act % ACTS.length]!.art;
+  // 应用当前层主题的**天空/灯光/IBL/背景**（盒庭随层换氛围·翠庭暖阳/古殿苍蓝/熔心炽红/晶顶霜白）。setMood(盒庭支) + beginRoom 调。
+  const applyArenaTheme = (): void => {
+    const a = themeArt(S.globalRoom);
+    const s = engine.world.getComponent<{ type: 'Sky3D'; top: number; bottom: number; env?: number; clouds?: boolean }>('sky', 'Sky3D');
+    if (s) { s.top = a.sky.top; s.bottom = a.sky.bottom; s.env = a.sky.env; s.clouds = false; }
+    const amb = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number }>('amb', 'Light3D');
+    if (amb) { amb.color = a.light.amb; amb.intensity = a.light.ambI; }
+    const sun = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number }>('sun', 'Light3D');
+    if (sun) { sun.color = a.light.sun; sun.intensity = a.light.sunI; }
+    const fill = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number }>('fillDir', 'Light3D');
+    if (fill) { fill.color = a.light.fill; fill.intensity = a.light.fillI; }
+    // 背景由 beginRoom 的 skyArt 逐层贴图管（别在此 setBackground·会盖掉那张按层天空图）。
+  };
   const setMood = (dark: boolean): void => {
     // Title=**清新冷调蓝灰天穹**（照原型参考图 01-title：雾霭黎明·浅蓝灰渐变·非暗紫非暖黄·owner 2026-07-02「太黄·要清新」）；
     // 盒庭=浅暖。相机在天空盒球内 → 用 Sky3D 渐变穹顶。Title 开 env（中性 studio IBL）给玻璃骰反射高级感；盒庭不开。
@@ -192,6 +207,7 @@ export function mount(container: HTMLElement): () => void {
     if (sun) { sun.color = dark ? 0xf5f8ff : 0xf4f6f9; sun.intensity = dark ? 1.0 : 1.05; sun.dirX = dark ? -3 : -6; sun.dirY = dark ? -4 : -11; sun.dirZ = -5; sun.castShadow = true; } // Title/盒庭均中性冷白主光（owner 去暖黄改铁皮）
     const fillDir = engine.world.getComponent<{ type: 'Light3D'; color: number; intensity: number; dirX: number; dirY: number; dirZ: number }>('fillDir', 'Light3D');
     if (fillDir) { fillDir.color = 0x6f7cff; fillDir.intensity = dark ? 0 : 0.18; fillDir.dirX = 5; fillDir.dirY = -4; fillDir.dirZ = 4; } // 盒庭降冷蓝补光（暖调·别把暖场压冷）
+    if (!dark) applyArenaTheme(); // 盒庭：上面的中性冷灰只作后备 → 立即用当前层主题覆盖天空/灯光/IBL/背景（owner 主题美术）
     // 相机：Title=**参考原型正面透视**（fov 38·pos (0,0.2,6.3)·lookAt 原点 → yaw 0 / pitch 0.032 / dist 6.3）；盒庭=近俯视 ortho。
     const c = engine.world.getComponent<Camera3D>('cam', 'Camera3D');
     if (c) {
@@ -214,11 +230,12 @@ export function mount(container: HTMLElement): () => void {
   const ARENA_DUST = 'gd-arena-dust';
   const spawnArenaDust = (roomZ: number): void => {
     try { engine.world.destroyEntity(ARENA_DUST); } catch { /* noop */ }
+    const d = themeArt(S.globalRoom).dust; // 尘埃色随层主题（翠庭花粉/古殿冷尘/熔心余烬/晶顶紫辉）
     engine.world.createEntity(ARENA_DUST);
     engine.world.addComponent(ARENA_DUST, { type: 'Vfx3D', x: 0, y: 1.0, z: roomZ, shape: 'sphere', emitRadius: 2.4, rate: 2.5, lifetime: 2.4, lifeVar: 0.7,
-      speed: 0.3, speedVar: 0.2, gravity: 0, drag: 0.7, size: 0.24, max: 6, blend: 'add', // 少（max6）· 小（size .24·比 Title 小很多）· add 发光（暗金属地上才显·萤火感）
+      speed: 0.3, speedVar: 0.2, gravity: 0, drag: 0.7, size: 0.24, max: 6, blend: 'add', // 少（max6）· 小（size .24·比 Title 小很多）· add 发光（萤火感）
       sizeCurve: { keys: [{ t: 0, v: 0 }, { t: 0.2, v: 1 }, { t: 0.8, v: 1 }, { t: 1, v: 0 }], mode: 'smooth' },
-      colorGradient: { stops: [{ t: 0, color: 0xffe6c0, alpha: 0 }, { t: 0.45, color: 0xffe0b0, alpha: 0.85 }, { t: 1, color: 0xffd090, alpha: 0 }] }, // 暖金萤火·跟金属场一致
+      colorGradient: { stops: [{ t: 0, color: d[0], alpha: 0 }, { t: 0.45, color: d[1], alpha: 0.85 }, { t: 1, color: d[2], alpha: 0 }] }, // 主题尘埃渐变
     } as unknown as Component);
   };
   const showTitleDie = (): void => {
@@ -799,7 +816,8 @@ export function mount(container: HTMLElement): () => void {
     S.foe = newFoe(S.globalRoom); S.thrown = false; S.rolled = []; S.selected.clear(); S.disabled.clear(); S.rerolls = REROLLS;
     throw3d.clear(); // 撤走上一房残留的物理骰
     bgRoom = S.globalRoom - 1; streamTo(bgRoom);
-    spawnArenaDust(bgRoom * ROOM_SPACING); // 战场少量小尘埃（跟鼠标·跟房 Z 重建）
+    applyArenaTheme(); // 换层换主题氛围（天空穹/灯光/IBL·owner 主题美术）——跨层推进时更新
+    spawnArenaDust(bgRoom * ROOM_SPACING); // 战场少量小尘埃（跟鼠标·跟房 Z 重建·色随主题）
     renderer.setBackgroundTexture(skyArt(Math.floor((S.globalRoom - 1) / 3), 'warm')); // 换层换天空图
   };
   const rewardChoices = (): string[] => {
