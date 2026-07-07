@@ -17,7 +17,7 @@ import {
   overlapDetectCapability, timerCapability, resourceCapability, flagCapability,
   tagCapability, relationCapability, destroyCapability, colorCapability, randomCapability,
 } from '@atom-skills/index.js';
-import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability } from '@skills/tier1/index.js';
+import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, tweenCapability } from '@skills/tier1/index.js';
 import {
   pathfindCapability, triggerZoneCapability, hitboxCapability, mortalCapability, overTimeCapability,
   eventWhenCapability, effectApplyCapability, craftRecipeCapability, clickableCapability,
@@ -74,15 +74,36 @@ function towerTemplate(def: TowerDef): { entities: Record<string, Record<string,
 function boltTemplate(def: TowerDef): { entities: Record<string, Record<string, unknown>> } {
   return {
     entities: {
+      glow: { // 能量光晕（render-only·先建=画在弹芯下）
+        Hierarchy: { parentId: '@local:b', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 },
+        Transform: { ...XF0 },
+        Shape: { kind: 'circle', radius: def.bolt.radius * 2.2 },
+        Color: { tint: def.bolt.tint, alpha: 0.28 },
+      },
       b: {
         Transform: { ...XF0 },
         Velocity: { vx: 0, vy: 0, angular: 0 },
         Launch: { speed: def.bolt.speed, toward: 'target', targetMask: ENEMY }, // 出膛锁最近敌·直飞
         Shape: { kind: 'circle', radius: def.bolt.radius },
-        Color: { tint: def.bolt.tint, alpha: 1 },
+        Color: { tint: 0xffffff, alpha: 1 },
         Tag: { flags: ZONE },                                       // 伤害区
         Hitbox: { resource: 'hp', amount: def.bolt.dmg, targetMask: ENEMY },
         Timer: { id: 'life', elapsed: 0, duration: def.bolt.life, loop: false }, // 到寿命自毁（=射程）
+      },
+    },
+  };
+}
+
+// 死亡爆闪（render-only·塔杀/漏怪皆放·纯表现无资源 → 不涉击杀记账缺口）：亮环随 alpha 淡出。
+function burstTemplate(tint: number, r: number): { entities: Record<string, Record<string, unknown>> } {
+  return {
+    entities: {
+      f: {
+        Transform: { x: 0, y: 0, rotation: 0, scaleX: 1.7, scaleY: 1.7 },
+        Shape: { kind: 'circle', radius: r },
+        Color: { tint, alpha: 0.9 },
+        Tween: { target: 'Color.alpha', from: 0.9, to: 0, elapsed: 0, duration: 16, easing: 'easeOut', done: false },
+        Timer: { id: 'life', elapsed: 0, duration: 16, loop: false },
       },
     },
   };
@@ -100,7 +121,7 @@ function enemyTemplate(def: EnemyDef): { entities: Record<string, Record<string,
         Shape: { kind: 'circle', radius: def.radius },
         Color: { tint: def.tint, alpha: 1 },
         Resource: { id: 'hp', current: def.hp, min: 0, max: def.hp },
-        Mortal: { resource: 'hp', atOrBelow: 0 },                  // hp≤0 自毁（塔杀 or 大本营 kill-zone）
+        Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: `burst_${def.key}` }, // hp≤0 自毁 + 死亡爆闪
       },
       hpbar: { // 头顶血条（gauge 写 Shape.width + Hierarchy.localX）
         Hierarchy: { parentId: '@local:body', localX: 0, localY: -(def.radius + 9), localRotation: 0, localScaleX: 1, localScaleY: 1 },
@@ -124,29 +145,47 @@ function enemyTemplate(def: EnemyDef): { entities: Record<string, Record<string,
 // ── 车道轨道（render-only 装饰·NavGraph 的可视化）────────────────────────────
 function laneTrackEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
-  LANE_EDGES.forEach((e, i) => {
-    const a = LANE_NODES[e.a], b = LANE_NODES[e.b];
-    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-    const len = Math.hypot(b.x - a.x, b.y - a.y);
-    const ang = Math.atan2(b.y - a.y, b.x - a.x);
+  const seg = (i: number): { mx: number; my: number; len: number; ang: number } => {
+    const a = LANE_NODES[LANE_EDGES[i].a], b = LANE_NODES[LANE_EDGES[i].b];
+    return { mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, len: Math.hypot(b.x - a.x, b.y - a.y), ang: Math.atan2(b.y - a.y, b.x - a.x) };
+  };
+  // pass 1：霓虹辉光底（更宽·亮青·低 alpha·画在最底）
+  LANE_EDGES.forEach((_, i) => {
+    const s = seg(i);
+    out[`track-glow-${i}`] = {
+      Transform: { x: s.mx, y: s.my, rotation: s.ang, scaleX: 1, scaleY: 1 },
+      Shape: { kind: 'box', width: s.len, height: LANE_WIDTH + 12 },
+      Color: { tint: TINT.laneEdge, alpha: 0.16 },
+    };
+  });
+  LANE_NODES.forEach((n, i) => {
+    out[`track-nglow-${i}`] = {
+      Transform: { x: n.x, y: n.y, rotation: 0, scaleX: 1, scaleY: 1 },
+      Shape: { kind: 'circle', radius: LANE_WIDTH / 2 + 6 },
+      Color: { tint: TINT.laneEdge, alpha: 0.16 },
+    };
+  });
+  // pass 2：道面填充（画在辉光之上、单位之下）
+  LANE_EDGES.forEach((_, i) => {
+    const s = seg(i);
     out[`track-seg-${i}`] = {
-      Transform: { x: mx, y: my, rotation: ang, scaleX: 1, scaleY: 1 },
-      Shape: { kind: 'box', width: len, height: LANE_WIDTH },
-      Color: { tint: TINT.laneFill, alpha: 0.9 },
+      Transform: { x: s.mx, y: s.my, rotation: s.ang, scaleX: 1, scaleY: 1 },
+      Shape: { kind: 'box', width: s.len, height: LANE_WIDTH },
+      Color: { tint: TINT.laneFill, alpha: 0.96 },
     };
   });
   LANE_NODES.forEach((n, i) => {
     out[`track-node-${i}`] = {
       Transform: { x: n.x, y: n.y, rotation: 0, scaleX: 1, scaleY: 1 },
       Shape: { kind: 'circle', radius: LANE_WIDTH / 2 },
-      Color: { tint: TINT.laneFill, alpha: 0.9 },
+      Color: { tint: TINT.laneFill, alpha: 0.96 },
     };
   });
   // 出生传送门（装饰）
   out['spawn-portal'] = {
     Transform: { x: SPAWN.x, y: SPAWN.y, rotation: 0, scaleX: 1, scaleY: 1 },
     Shape: { kind: 'circle', radius: 18 },
-    Color: { tint: TINT.enemyBasic, alpha: 0.35 },
+    Color: { tint: TINT.enemyBasic, alpha: 0.4 },
   };
   return out;
 }
@@ -300,6 +339,9 @@ export function buildBlueprint(): WorldBlueprint {
           enemy_basic: enemyTemplate(ENEMIES.basic),
           enemy_fast: enemyTemplate(ENEMIES.fast),
           enemy_tank: enemyTemplate(ENEMIES.tank),
+          burst_basic: burstTemplate(ENEMIES.basic.tint, ENEMIES.basic.radius * 1.5),
+          burst_fast: burstTemplate(ENEMIES.fast.tint, ENEMIES.fast.radius * 1.5),
+          burst_tank: burstTemplate(ENEMIES.tank.tint, ENEMIES.tank.radius * 1.5),
         },
       },
     },
@@ -315,7 +357,7 @@ export function buildBlueprint(): WorldBlueprint {
       overlapDetectCapability, timerCapability, resourceCapability, flagCapability,
       tagCapability, relationCapability, destroyCapability, colorCapability, randomCapability,
       // tier1
-      motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
+      motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, tweenCapability,
       // tier2
       pathfindCapability, triggerZoneCapability, hitboxCapability, mortalCapability, overTimeCapability,
       eventWhenCapability, effectApplyCapability, craftRecipeCapability, clickableCapability,

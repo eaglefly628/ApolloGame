@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { applyCommands, QueuedInputSource } from '@net/index.js';
+import { validateLayoutNode } from '@ui/components/index.js';
 import type { Resource, Tag } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
+import { buildTopBar, buildBottomBar, buildOverlay, type HudState } from './hud.js';
 import { ENEMY, TOWER, START_GOLD, TOWERS } from './theme.js';
 
 function res(e: Engine, eid: string): number {
@@ -82,5 +84,19 @@ describe('Game Q · Neon Siege（数据驱动塔防）', () => {
     e.load(buildBlueprint());
     expect(res(e, 'gold')).toBe(START_GOLD);
     expect(res(e, 'base')).toBeGreaterThan(0);
+  });
+
+  it('HUD 是合法 LayoutNode（validate 零 issue·多态覆盖）', () => {
+    const states: HudState[] = [
+      { lives: 20, gold: 300, enemies: 3, pending: null, status: 'playing' },
+      { lives: 4, gold: 55, enemies: 0, pending: 'pulse', status: 'playing' },
+      { lives: 0, gold: 999, enemies: 2, pending: 'cannon', status: 'defeat' },
+      { lives: 20, gold: 120, enemies: 0, pending: null, status: 'victory' },
+    ];
+    for (const s of states) {
+      expect(validateLayoutNode(buildTopBar(s))).toEqual([]);
+      expect(validateLayoutNode(buildBottomBar(s))).toEqual([]);
+      expect(validateLayoutNode(buildOverlay(s))).toEqual([]);
+    }
   });
 });

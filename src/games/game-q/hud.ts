@@ -47,10 +47,9 @@ function buildButton(key: 'pulse' | 'cannon', s: HudState): LayoutNode {
     id: `q-buy-${key}`,
     props: {
       label: `${def.name}  ⬡${def.cost}`,
-      kind: pending ? 'hero' : 'primary',
+      kind: 'primary', // 令牌化 jade 底/字（对比可量·换皮自适应）；pending 强调走 glow fx，不用 hero 金渐变（渐变底测不了对比）
       disabled,
       action: `buy_${key}`,
-      sub: key === 'pulse' ? 'fast · light' : 'slow · heavy',
     },
     layout: pending ? { fx: [{ kind: 'glow', color: 'jade' }] } : undefined,
   };

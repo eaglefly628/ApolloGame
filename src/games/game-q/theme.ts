@@ -31,8 +31,8 @@ export const WAVE_SCHEDULE: SpawnRow[] = [
 
 // ── 调色板（Color.tint 十六进制数·霓虹/合成波）───────────────────────────
 export const TINT = {
-  laneFill: 0x14263f,
-  laneEdge: 0x1f6f8b,
+  laneFill: 0x1c3a5c,
+  laneEdge: 0x33c2e8,
   base: 0x34d399,
   baseCore: 0x6ee7b7,
   enemyBasic: 0xff5c7a,
