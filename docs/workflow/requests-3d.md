@@ -394,7 +394,7 @@
 >
 > 通用要求：逐件独立提交全绿（tsc+vitest+build）；新组件入闭集+registry describe；**每件落地同提交回填 `docs/playbooks/3d.md`**（手册铁律）；拾取件加无头测试（ray 求交纯函数部分）+ 真浏览器点选自证。完工逐件标 ✅。
 
-## REQ-3D-像素断言 · shoot-game.mjs 从人审升级为机器断言（TGS 吸收 C 件·owner 2026-07-06 批） · [2026-07-07] · Lead 图纸 → **指派：P3D** · status: open（排 P3D 队·不阻塞现活） · 优先级: P2 · 类型: 3D QA 基建
+## REQ-3D-像素断言 · shoot-game.mjs 从人审升级为机器断言（TGS 吸收 C 件·owner 2026-07-06 批） · [2026-07-07] · Lead 图纸 → **指派：P3D** · status: open（排 P3D 队·**7·29 冲刺后再动**——REQ-DEMO-0729 队列重排） · 优先级: P2 · 类型: 3D QA 基建
 
 > **背景**：`docs/design/art-pipeline-vision-2026-07.md §八` 对照裁决——canvas 像素级 QA 是 TGS 四道门里我们缺的一道；现 `scripts/shoot-game.mjs` 截图只能人审，判定不进机器。
 > **spec（Lead 图纸）**：

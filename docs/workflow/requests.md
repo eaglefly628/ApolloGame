@@ -11,6 +11,30 @@
 
 ## 待处理 / 进行中
 
+### REQ-DEMO-0729-审核冲刺总纲 · 自然语言→playable·30 款/周换皮量产·美术 API 自动接线 · [2026-07-07] · **owner 定向（7/29-30 审核）** → Lead 出纲领 · status: **in-progress（冲刺主线·压过一切非冲刺工单）** · 优先级: **P0（死线级）** · 类型: 产品化冲刺（纲领=`docs/design/demo-sprint-2026-07-29.md`）
+> 审核口径：引擎能否用自然语言快速生成 playable 游戏；量化=周产 ~30 款、换皮为主力、基本玩法 OK 即可。最大缺口=美术（game-q 实证零真资产）。
+> **核心判断（Lead）**：`art:` 引用已是弱 LLM 数据接口（`src/assembly/resolve-art-refs.ts`），缺的只是「库查不到→自动调生成 API」的编排步——**全在服务层，不动引擎**。
+> **人审门两轨制裁决（Lead 2026-07-07·报 owner 知情、可否决）**：游戏本地轨=生成资产直接接线该游戏（provenance 硬字段照旧+标 unreviewed·立即可玩）；共享货架轨=进共享 index 仍必须过 M2.5 人审门。原则未破：人审门守的是共享库，本地资产有评分卡+审计兜底。
+> 分单：T1（下条·PST+PA·7/13）→ T2 换皮（下下条·7/18）→ T3 批量冒烟（Opus·7/20）→ T4 3D 线待拉动（P3D 知会·不进关键路径）→ T5 彩排（Lead 主持·7/27）。
+> **队列重排（冲刺期有效）**：PST=T1→心跳余项（并入 T1 进度灯）→T2；**音频 B 件、M1 货架墙、REQ-3D-像素断言、REQ-CAP-改掷收编一律冲刺后**；引擎域冻结非必要改动。
+
+### REQ-DEMO-T1-美术自动生成接线 · 生成流自动调美术 API（千问 2D 先行·Tripo/Meshy 插槽） · [2026-07-07] · Lead 图纸 → **指派：PST（生成流编排）·PA 会审契约** · status: **open（即刻开工·冲刺 P0）** · 优先级: **P0** · 期限: 7/13 · 类型: 产品化·美术管线
+> **spec（Lead 图纸）**：
+> ① **风格锚**：manifest meta 层新纯数据块 `artStyle:{stylePrompt, palette?, mode:'library'|'generate'|'auto'}`（默认 auto）；模板库每款补默认锚。弱 LLM 零新负担——不填也能跑。
+> ② **美术编排步（apollo.py 服务层·绝不碰 src/assembly）**：生成/保存时扫 manifest 全部 `art:` 引用——auto 模式：库命中分 ≥阈值→直接用（免费秒回）；否则调 `scripts/ai-gen.mjs` 千问 wanx（prompt=风格锚+查询词）→产物落游戏本地美术目录 + provenance 硬字段（model/prompt/date/license）+ 标 unreviewed + 登记游戏本地索引 → 该引用**钉死成具体资产 id**（构建期解析·留痕形制同 `resolveArtRefs` 的 resolutions）。
+> ③ **无 key 不阻塞**：先贴凭证探针输出再走 mock 兜底（确定性占位图+MOCK 标）——绝不静默顶替（`docs/playbooks/testing.md` 红线）。
+> ④ **内容寻址缓存**：hash(provider+prompt+参数) 命中→复用已生成资产——换皮批量的成本闸。
+> ⑤ **模板/系统提示改口径**：主体视觉实体默认 Sprite+`art:` 引用（Shape/Color 仅特效与占位）——**换皮的前提是有皮肤槽**（game-q 全程序化色块=反面教材）。
+> ⑥ **进度可视化**：生成进度加「美术 n/m」阶段灯（与 REQ-STUDIO 心跳余项并一批施工）。
+> ⑦ **测试**：smoke 全链（mock 生成→本地登记→引用钉死→parseManifest 零 error）+ 缓存命中例 + 无 key 探针例；门禁全绿直推。
+> 边界：Meshy=adapter 插槽预留（owner 有 key 再开真调）；PA 会审=本地索引登记 shape / provenance 口径 / 缓存键设计。完工标 ✅ 待 Lead 验收（真 key 端到端一款 + 真浏览器可玩）。
+
+### REQ-DEMO-T2-换皮流水线 · 一键 reskin：同玩法 × 新风格锚 = 新卡带 · [2026-07-07] · Lead 图纸 → **指派：PST** · status: open（T1 完工后接） · 优先级: P0 · 期限: 7/18 · 类型: 产品化·量产乘法器
+> **spec**：① studio 选已有卡带 → 输入新风格锚 → **只重跑 T1 美术编排**（玩法 manifest 一字不改）→ 存新卡带（slug-v2·meta 记 reskinOf 谱系）。② 批量模式：一套玩法 × N 风格锚一次出 N 款。③ 换皮结果并排预览（原/新）。④ 测试：reskin 后 parseManifest 零 error、玩法数据 diff=空、美术引用全部换新；smoke 进批量冒烟。完工标 ✅ 待 Lead 验收。
+
+### REQ-DEMO-T3-批量吞吐冒烟 · 周产 30 款的机器证据 · [2026-07-07] · Lead 图纸 → **指派：Opus 档 session/子代理** · status: open（T1 完工后接） · 优先级: P1 · 期限: 7/20 · 类型: 冲刺 QA
+> **spec**：① 新建批量冒烟脚本（scripts 下·batch-gen-smoke）：mock LLM+mock 美术连出 N=10 款 e2e——生成→美术编排→parseManifest 零 error→audit 无新红旗；判词 token `BATCH: PASS|FAIL`+退出码；fail-fast（哪款第几步死点名）。② 真 key 抽 3 款全真跑通，记录单款耗时/成本/token 写进回执（demo 出示件·折算周产能）。③ 照 `docs/playbooks/testing.md` 三禁（mock 路径零外部 IO·种子固定）。完工标 ✅ 待 Lead 验收。
+
 ### REQ-Q-击杀记账（on-kill credit）· 塔防赏金/击杀计分通用缺口 · [2026-07-07] · LEAD（game-q 立项）→ Lead 排期 · status: **open（真缺口·已记债·循环层用清波经济绕过·非阻塞）** · 类型: 通用战斗能力下沉候选
 > **缺口**：`t2-hitbox` 只写**目标本地**资源（`hitbox.ts` `queueResourceMod(...,'local')`）；`t2-mortal` 的 `dropTemplate` 对**任何死因无差别**触发。→ 无法用单个 Mortal 区分「被塔击杀→给全局/攻击者记赏金」与「抵达大本营漏怪→扣命·不发赏金」。这是塔防经济（逐怪赏金）唯一表达不了的点，也是**击杀计分/连击表/赏金**一类通用需求的共性缺口（非塔防专属）。
 > **game-q 现绕法（已落地·不依赖本单）**：经济走「开局金 + 清波奖金（timeline resource-cue / `effect-apply` on `timeline:done:<wave>`）+ 波中缓速涓流」——全组合现有能力、确定性、无缺口依赖；逐怪赏金暂缓。
@@ -142,7 +166,7 @@
 > **③ 三方对账 CLI（M1 数据面前置）**：`scripts/asset-reconcile.mjs`——引用（各游戏 manifest/代码里的资产 key）↔ 登记（index）↔ 磁盘 三方对账；孤儿登记/悬空引用各成一类 finding（行 schema：位置|期望|实际）；判词 token `RECONCILE: PASS|WARNINGS|FAIL`+退出码（照 docs-ref-guard 模式）；M1 报表直接吃它的 `--json` 输出。
 > **④ 配方格式草案（M2/M3 前置）**：把 gen-textures/pack-atlas 收编为「recipe 纯数据」的格式草案 ≤2 页（op 闭集/参数 schema/可重跑语义）交 Lead 审——过审前不动现有 CLI。
 
-### REQ-ART-TGS吸收四件 · threejs-game-skills 对照吸收（视觉评分卡/音频线/像素QA/手册红线） · [2026-07-06] · owner 给源 → Lead 调研裁决（`art-pipeline-vision §八`）→ **owner 已批（2026-07-06）** · status: **落地中：A+D ✅ done（Lead 亲笔 2026-07-07）· B spec 就绪→指派 PST · C spec 已移 `docs/workflow/requests-3d.md`（P3D 域）** · 优先级: P2 · 类型: 质量护栏吸收（不采其代码生成路线·宪法相反）
+### REQ-ART-TGS吸收四件 · threejs-game-skills 对照吸收（视觉评分卡/音频线/像素QA/手册红线） · [2026-07-06] · owner 给源 → Lead 调研裁决（`art-pipeline-vision §八`）→ **owner 已批（2026-07-06）** · status: **落地中：A+D ✅ done（Lead 亲笔 2026-07-07）· B spec 就绪→指派 PST（**冲刺后**·被 REQ-DEMO-0729 队列重排压后）· C spec 已移 `docs/workflow/requests-3d.md`（P3D 域·同被压后）** · 优先级: P2 · 类型: 质量护栏吸收（不采其代码生成路线·宪法相反）
 > 一句话：他家"AAA"不是描述词，是四道门（评分卡全维≥2/证据台账/反捷径工艺律/canvas 像素断言）——护栏纪律照单吸收，代码生成路线回驳。详见愿景稿 §八对照表。
 > **A ✅（Lead 亲笔）**：新 `docs/playbooks/visual-scorecard.md`（8 维 0-3 分·premium=全维≥2·证据台账+资产来源台账+凭证探针·反捷径工艺律·判词 `VISUAL: n/24 · PREMIUM: YES|NO`）；挂点=playbooks/index 一行 + P3D 视觉验收（3d.md 红线区指回）+ PS 出货内门（PS-steam-finish-list 阶段区一行）。
 > **D ✅（Lead 亲笔·手册回填）**：`docs/playbooks/3d.md` 红线区加工艺顺序律（先造型→材质→光照→特效·禁 glow 冒充）+ 主角面禁纯程序化（无 blocker 记录不豁免）；`docs/playbooks/testing.md` 红线区加凭证探针（空口 skip 不采信）+ 做X表挂评分卡行。
