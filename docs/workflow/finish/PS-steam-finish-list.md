@@ -22,6 +22,8 @@
 
 ## 阶段（每阶段独立验收，绿了再下一步）
 
+> **出货内门（owner 2026-07-06 批·TGS 吸收）**：Set Live / 上架材料自称 premium 前，先过 `docs/playbooks/visual-scorecard.md`（8 维全 ≥2 + 证据台账），判词 `VISUAL: n/24` 记入验收。
+
 - [x] **P0 选型锁定 + 依赖落地 + init 自检骨架** — ✅ 代码全绿（tsc+vitest 1682+build）。落地：
       - `steam_appid.txt(480)`；`package.json` optionalDependencies 加 `steamworks.js`。
       - 主进程绑定 `electron/steam.cjs`（防御式 init，无 Steam→available:false 不崩）+ `electron/preload.cjs`（contextBridge 注入 `window.__APOLLO_STEAM__`）+ `electron/main.cjs`（IPC 两端 + 自检 log）。

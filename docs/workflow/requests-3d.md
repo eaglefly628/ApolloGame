@@ -393,3 +393,14 @@
 > **Tier3 不做清单（owner 2026-07-03 YAGNI 判决·固化防自作主张）**：⛔ 视锥/遮挡剔除+LOD（场景规模未到·W1-E 域）、point/spot 阴影、真 DoF/vignette/SSR、NPR 描边（本池已有 ⏸ 条目·待法线缓冲版）。需求变化时 owner 重开，任何 session 勿擅启。
 >
 > 通用要求：逐件独立提交全绿（tsc+vitest+build）；新组件入闭集+registry describe；**每件落地同提交回填 `docs/playbooks/3d.md`**（手册铁律）；拾取件加无头测试（ray 求交纯函数部分）+ 真浏览器点选自证。完工逐件标 ✅。
+
+## REQ-3D-像素断言 · shoot-game.mjs 从人审升级为机器断言（TGS 吸收 C 件·owner 2026-07-06 批） · [2026-07-07] · Lead 图纸 → **指派：P3D** · status: open（排 P3D 队·不阻塞现活） · 优先级: P2 · 类型: 3D QA 基建
+
+> **背景**：`docs/design/art-pipeline-vision-2026-07.md §八` 对照裁决——canvas 像素级 QA 是 TGS 四道门里我们缺的一道；现 `scripts/shoot-game.mjs` 截图只能人审，判定不进机器。
+> **spec（Lead 图纸）**：
+> 1. `scripts/shoot-game.mjs` 截图后读像素做三断言：**非黑占比**（渲染真出画·防黑屏假绿）、**对比度**（亮度直方图动态范围·防糊成一团）、**帧活动**（间隔两帧 diff 非零·防冻结假活）。
+> 2. 阈值：先对存量 3D 场景（game-z + game-i three3d 展台各块）跑标定，取实测分布定草案值（标「草案·标定数据见本单回执」），**绝不拍脑袋写死**。
+> 3. 判词 token `PIXELQA: PASS|FAIL` + 退出码（照 docs-ref-guard 模式）；FAIL 点名哪条断言 + 实测值 vs 阈值。
+> 4. **先独立命令跑稳（全量并发下连过 3 次）再议进门禁**——吸取 flow-walk flaky 教训，不许一步塞进推送门禁。
+> 5. 同提交回填 `docs/playbooks/3d.md` 一行 + `docs/playbooks/testing.md` 对拍行更新；证据挂 `docs/playbooks/visual-scorecard.md` 维 8（性能证据）。
+> 6. 门禁全绿直推；完工标 ✅ 待 Lead 验收（我会拿一个故意黑屏/冻结的场景做红测）。

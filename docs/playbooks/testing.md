@@ -14,7 +14,8 @@
 | 真浏览器旅程 | playwright-core e2e（`scripts/studio-*-e2e.mjs` 模式·chromium=/opt/pw-browsers） | 脚本退出码 |
 | 产品线冒烟 | `scripts/*-smoke.py`（library / studio / **steam 发行编排**·后者 `steam-publish-smoke.py` 无真账号用 480 验 VDF/命令/plan · **AI 生成人审门** `art-review-smoke.py` 全链 generate→pending→approve/reject + provenance 硬校验·进程内 API·快照恢复零污染） | 退出码 |
 | 游戏体检 | `node scripts/game-skill-audit.mjs <game>` | 零红旗 |
-| 3D 截图对拍 | `scripts/shoot-game.mjs`（P3D harness） | 人审 |
+| 3D 截图对拍 | `scripts/shoot-game.mjs`（P3D harness） | 人审（像素断言升级=REQ-3D-像素断言·排队） |
+| 视觉里程碑验收 / 出货 | `docs/playbooks/visual-scorecard.md`（8 维评分卡） | 全维 ≥2 = premium |
 
 ## 红线（一体适用）
 
@@ -24,6 +25,7 @@
 - **缺基线判黄不判绿**：sim 缺目标带、bench 缺 prior、AC 不可测 → CONCERNS / MANUAL CHECK 交 owner；绝不默认过、绝不编造目标值。
 - **存档/回放改动必测边界**：旧版本档载入（save-port migrate 链）+ 损坏档优雅拒绝（`CorruptSaveError` 基座已给）。
 - **冒烟脚本 fail-fast**：前置缺失（无 build/无 manifest）立即非零退出 + 指出补救命令，禁静默跳过造假绿。
+- **凭证探针（TGS 吸收·owner 2026-07-06 批）**：任何「无 key/无环境所以跳过」的回执必须附探针输出（缺哪个 env、调用返回什么）——空口 skip 不采信，视同未测。
 - **红旗棘轮（只降不升·进门禁）**：8 款游戏的裸随机/innerHTML/createElement 计数以 `scripts/audit-baseline.json` 为机读基线，任一超基线 → `scripts/game-skill-audit.mjs` 打 `RATCHET: FAIL` + 退出码 1，`scripts/audit-ratchet.test.mjs` 在 vitest 里守着。降基线是还债仪式（消灭红旗必须同提交改 baseline）；抬基线唯一合法姿势=给该游戏条目挂 `reason:"REQ-xxx"` 缺口单号。
 
 ## 验收纪律（Lead / 判官侧）
