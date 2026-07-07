@@ -73,7 +73,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'size', type: 'enum-or-number', values: SIZE, default: 'md', describe: '字号档（具名令牌 xs10..xxxl34·保和谐默认）或裸 px 数字（复刻像素稿精确字号·8→任意大）' },
       { name: 'color', type: 'enum', values: COLOR, default: 'text', describe: '颜色令牌' },
       { name: 'bold', type: 'boolean', describe: '加粗' },
-      { name: 'font', type: 'enum', values: ['ui', 'mono', 'pixel', 'display', 'serif'], describe: '字体槽（serif=衬线·UITheme.fontSerif）' },
+      { name: 'font', type: 'enum', values: ['ui', 'mono', 'pixel', 'display', 'serif', 'impact', 'heavy', 'epic', 'fantasy', 'elegant', 'script', 'hand', 'scifi', 'terminal', 'comic', 'stencil', 'western', 'retro', 'marker', 'bubbly', 'gothic', 'fashion', 'shadow'], describe: '字体槽：基础 ui/mono/pixel/display/serif + 18 款内嵌艺术字（OFL·art-fonts.ts）' },
       { name: 'bind', type: 'string', describe: '绑 Resource id（resolveBindings 接 current）' },
       { name: 'typewriter', type: 'number', describe: '打字机每字 ms' },
       { name: 'tween', type: 'object', describe: '数字滚动 {from,to,ms,decimals}' },

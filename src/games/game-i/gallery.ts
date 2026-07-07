@@ -1027,9 +1027,9 @@ function buildPageNew(controls: ControlsState): LayoutNode {
         ] },
 
       divider('d-fontwall'),
-      sectionTitle('t-artfont', 'LABEL · 艺术字体墙（内嵌 Google Fonts·OFL 开源·11 款闭集艺术字·真渲染不回退）'),
+      sectionTitle('t-artfont', 'LABEL · 艺术字体墙（内嵌 Google Fonts·OFL 开源·18 款闭集艺术字·真渲染不回退）'),
       { type: 'Label', id: 'artfont-note', props: {
-        text: '之前 font 槽只是字体名栈、靠系统装字（多数机器回退成单调系统字）。现在 11 款艺术字 woff2 已 base64 内嵌 @font-face——真渲染、离线自带。中文/缺字自动回退主字体。', color: 'sub', size: 'sm' } },
+        text: '之前 font 槽只是字体名栈、靠系统装字（多数机器回退成单调系统字）。现在 18 款艺术字 woff2 已 base64 内嵌 @font-face——真渲染、离线自带。中文/缺字自动回退主字体。', color: 'sub', size: 'sm' } },
       { type: 'Panel', id: 'artfont-wall', props: {}, layout: { direction: 'column', gap: 6, padding: 16 },
         children: ([
           ['impact', 'IMPACT · Bebas Neue 冲击标题', 'gold'],
@@ -1042,6 +1042,14 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           ['scifi', 'SCIFI · Orbitron 科幻界面 2026', 'ok'],
           ['terminal', 'TERMINAL · VT323 复古终端 > run', 'ok'],
           ['comic', 'COMIC · Bangers 漫画拟声 BOOM!', 'warn'],
+          ['stencil', 'STENCIL · Black Ops One 军械镂空', 'text'],
+          ['western', 'WESTERN · Rye 西部通缉令', 'gold'],
+          ['retro', 'RETRO · Monoton 复古霓虹', 'jade'],
+          ['marker', 'Marker · Permanent Marker 记号笔涂鸦', 'danger'],
+          ['bubbly', 'BUBBLY · Baloo 2 圆润可爱', 'ok'],
+          ['gothic', 'Gothic · Pirata One 哥特海盗', 'text'],
+          ['fashion', 'Fashion · Abril Fatface 时尚粗衬', 'gold'],
+          ['shadow', 'SHADOW · Bungee Shade 立体投影', 'jade'],
         ] as const).map(([f, txt, color]): LayoutNode =>
           ({ type: 'Label', id: `af-${f}`, props: { text: txt, size: 'xl', font: f, color } })) },
 

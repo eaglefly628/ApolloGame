@@ -60,7 +60,8 @@ describe('UI Components · validate 收 serif / glass 闭集', () => {
     expect(validateLayoutNode(panel({ glass: true })).filter((i) => i.kind === 'bad-enum')).toHaveLength(0);
   });
   it('font 非法值 → bad-enum', () => {
-    const issues = validateLayoutNode({ type: 'Label', id: 'l', props: { text: 'x', font: 'comic' } } as LayoutNode);
+    // 'comic' 等 18 款艺术字现是合法 font 槽（catalog 已补全机读真相）→ 用真·闭集外的值验拦截。
+    const issues = validateLayoutNode({ type: 'Label', id: 'l', props: { text: 'x', font: 'wingdings' } } as unknown as LayoutNode);
     expect(issues.some((i) => i.kind === 'bad-enum' && i.detail.includes('font'))).toBe(true);
   });
 });
