@@ -60,7 +60,20 @@
 | 生成质量翻车 | 本地轨不挡可玩性；评分卡抽检+精加工阶段人工换料（M2.5 轨） |
 | deepseek/低模生成不稳 | 已有低模四件（模板起步+词汇裁剪+错误指令化）；demo 用稳定 provider，低模路线另测 |
 
-## 六、demo 判定口径（彩排即照此验收）
+## 六、API key 采购清单（owner 采买·env 名=代码实认口径）
+
+| 优先 | 买什么 | env 名（写 .env·绝不入库） | 干什么用 |
+|---|---|---|---|
+| **P0** | 阿里云百炼 DashScope | `DASHSCOPE_API_KEY` | **一key两用**：千问 LLM 生成 manifest + 万相 wanx 文生图（2D 皮=demo 主力） |
+| **P0** | Anthropic | `ANTHROPIC_API_KEY` | 现场 demo 用最强模型出 manifest（质量保险·低模路线另测） |
+| **P1** | Tripo | `TRIPO_API_KEY` | 文生 3D 模型（adapter 已通） |
+| P2 | Meshy | `MESHY_API_KEY` | 3D 第二供应商（adapter 已在 `scripts/ai-gen.mjs`·冗余/比质量） |
+| 已有 | DeepSeek | `DEEPSEEK_API_KEY` | 批量成本测试（30 款/周经济性用它算账） |
+| 不买 | 音频类（ElevenLabs 等） | — | 音频线冲刺后再动（B 件已压后） |
+
+> key 写仓库根 .env（gitignored）后重启 apollo 服务即生效；日志层只记「key 是否存在」，key 本体绝不落盘（既有纪律）。
+
+## 七、demo 判定口径（彩排即照此验收）
 
 1. 现场输入一句自然语言 → 出可玩卡带（含真美术皮）——端到端耗时记录在案。
 2. 同一款玩法现场换 2-3 套皮，各成独立卡带。
