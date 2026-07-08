@@ -119,7 +119,12 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-fx-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(calc(-1 * var(--fx-amp,4px)))}60%{transform:translateX(var(--fx-amp,4px))}}
 @keyframes apollo-fx-flash{0%{opacity:0}25%{opacity:.7}100%{opacity:0}}
 @keyframes apollo-fx-fade{from{opacity:1}to{opacity:0}}
-[data-fx~="flash"]::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:var(--fx-flash,#d3897a);mix-blend-mode:screen;animation:apollo-fx-flash var(--fx-flash-ms,420ms) ease-out both}`;
+[data-fx~="flash"]::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:var(--fx-flash,#d3897a);mix-blend-mode:screen;animation:apollo-fx-flash var(--fx-flash-ms,420ms) ease-out both}
+[data-apollo-btn]{transition:transform .07s ease,filter .12s ease,box-shadow .12s ease}
+[data-apollo-btn]:not([disabled]):hover{filter:brightness(1.07)}
+[data-apollo-btn]:not([disabled]):active{transform:translateY(1px);filter:brightness(.9)}
+[data-apollo-skin]:not([disabled]):hover{filter:brightness(1.08)}
+[data-apollo-skin]:not([disabled]):active{transform:translateY(2px);filter:brightness(.85)}`;
 /**
  * 幂等注入引擎 UI 关键帧 + fx 叠层 CSS（anim 预设 / sheen·flash 的 ::after·::before / flipcard）。
  * mountUI 自动调；**renderNode-only 屏（如 game-g 战斗屏走 innerHTML·非 mountUI）须自己调一次**，

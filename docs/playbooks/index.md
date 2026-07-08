@@ -15,7 +15,7 @@
 
 | 生产线 | 手册 | 基座核心 | 负责角色/agent |
 |---|---|---|---|
-| UI / HUD / 菜单 | `docs/design/ui-playbook.md`（先读）+ `playbooks/ui.md`（接线图） | LayoutNode 34 控件闭集 · mountUI 信号 · Label.font 艺术字 10 款(OFL 内嵌) · 色库三态填充(令牌/预设/custom·非裸 hex) · 异形按钮 8 形 | 各游戏 PE；活范例=game-i |
+| UI / HUD / 菜单 | `docs/design/ui-playbook.md`（先读）+ `playbooks/ui.md`（接线图） | LayoutNode 34 控件闭集 · mountUI 信号 · Label.font 艺术字 18 款(OFL 内嵌) · 色库三态填充(令牌/预设/custom·非裸 hex) · 异形按钮 8 形 + 贴图皮 + 按压反馈 | 各游戏 PE；活范例=game-i |
 | 渲染与特效（2D） | `playbooks/rendering-fx.md` | Sprite/Color/Frame/Gauge · EffectKind 闭集 · 主题令牌 | 各游戏 PE |
 | 3D（盒庭线） | `playbooks/3d.md` | Mesh3D/Transform3D/Camera3D/Light3D/Post3D/Vfx3D/Model3D… | **P3D 独占域**；逐特性消费活范例=`game-i/three3d.ts` |
 | 运动与寻路 | `playbooks/movement-pathfinding.md` | motion/tween/steering/grid-move(hex A*)/pathfind | 各游戏 PE |

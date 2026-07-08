@@ -70,3 +70,14 @@ describe('Button.skin · 贴图皮（已解析 URL·同 Image.src 约定）', ()
     expect(html).not.toContain('center/cover');
   });
 });
+
+describe('Button · 交互态标记（按压/悬停反馈·配 server.ts 注入的 [data-apollo-btn] CSS）', () => {
+  it('每个按钮带 data-apollo-btn（供全局 :hover/:active 反馈规则命中）', () => {
+    expect(renderNode({ type: 'Button', id: 'b', props: { label: 'x' } })).toContain('data-apollo-btn');
+    expect(renderNode({ type: 'Button', id: 'b', props: { label: 'x', kind: 'hero' } })).toContain('data-apollo-btn');
+  });
+  it('贴图按钮额外带 data-apollo-skin（按压更深）', () => {
+    expect(renderNode({ type: 'Button', id: 'b', props: { label: 'x', skin: '/a.png' } })).toContain('data-apollo-skin');
+    expect(renderNode({ type: 'Button', id: 'b', props: { label: 'x' } })).not.toContain('data-apollo-skin');
+  });
+});
