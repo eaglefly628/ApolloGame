@@ -60,10 +60,11 @@ Free Library（共享 `assets/index.json` + `FreeArtLib/`）= **货架·只被 c
 
 ## ⑧ AI 文本生成资产（外部服务·框架 `scripts/ai-gen.mjs`）
 
-文本→资产，落进资产库（带 provenance）。哲学同 `src/services/aigp`：外部**非确定性** AI 走旁路，产物=固定数据，不碰 sim/hash。
-- 用法：`node scripts/ai-gen.mjs <tripo|qwen> "<prompt>" [--game <g>] [--id <id>] [--mock]`；`node scripts/ai-gen.mjs providers` 看设置视图。
+文本→资产，**先落待审区、人审入库**（带 provenance）。哲学同 `src/services/aigp`：外部**非确定性** AI 走旁路，产物=固定数据，不碰 sim/hash。
+- 用法：`node scripts/ai-gen.mjs <tripo|meshy|qwen> "<prompt>" [--game <g>] [--id <id>] [--mock]`；`node scripts/ai-gen.mjs providers` 看设置视图。
 - **想先看 mock 流程长啥样**：`node scripts/ai-gen.mjs demo`——两适配器各 mock 生成一个到临时目录、打印落库条目 shape + 设置视图、跑完自动清理（零仓库污染·零网络），用来一眼确认框架跑通。
-- 适配器（可扩·加一条进 `ADAPTERS`）：**tripo** 文本→3D glb（`TRIPO_API_KEY`）· **qwen** 文本→2D png（DashScope 万相·`DASHSCOPE_API_KEY`）。
+- 适配器（可扩·加一条进 `ADAPTERS`·apollo.py `GEN_ADAPTERS` 白名单同改）：**tripo**·**meshy** 文本→3D glb（`TRIPO_API_KEY`／`MESHY_API_KEY`·meshy 走 v2 openapi text-to-3d preview）· **qwen** 文本→2D png（DashScope 万相·`DASHSCOPE_API_KEY`）。
 - 密钥走 env、**绝不入库**；缺 key 或 `--mock` → mock（产合法占位·prompt 播种）。**本环境 GitHub-only·真调 API 被挡 → 用 `--mock`**；真调等放宽网络的 session。
-- 落库：`--game` 给了=游戏本地 `art/ai/`；否则共享货架 `assets/ai/`。
-- **软件内直达入口**：Studio 资源库（launcher→🗃 资源库）工具栏 **✨ AI 生成** 按钮 → `AssetGenPanel`（选适配器 + prompt + 落点 → 生成 → 库自动刷新显示）。后端 `POST /api/assets/generate`（apollo.py·薄胶水·shell 调本脚本 `--mock --json`）+ `GET /api/assets/generate/providers`（key 状态·打码）。生成大脑仍全在本脚本，UI/后端零逻辑重复。
+- **人审门（M2.5·宪法「无自动入库」）**：生成产物落**待审区**——`--game` 给了=游戏本地 `art/ai/pending/`；否则共享货架 `assets/ai/pending/`（各 + 独立 `pending.json`·**绝不进 index.json**）。人审 approve 才移出待审 + 登记 index，**provenance 硬校验**（model/prompt/date/license 缺一拒登记）；reject 删待审文件+清项。命令：`node scripts/ai-gen.mjs review <id> <approve|reject> [--game <g>]`·`pending [--game <g>]`。
+- **软件内直达入口**：Studio 资源库（launcher→🗃 资源库）工具栏 **✨ AI 生成** 按钮 → `AssetGenPanel`（选适配器 + prompt + 落点 → 生成 → **预览 + 「✓ 入库 / ✕ 弃置」**）；工具栏 **🕒 待审区** 入口 + 待审计数 badge（`AssetPendingReview`·列待审·provenance·双按钮）。后端 `POST /api/assets/generate`（落待审）+ `POST /api/assets/review`（审核·唯一入 index 的门）+ `GET /api/assets/pending`（聚合共享+各游戏待审）+ `GET /api/assets/generate/providers`（key 状态·打码），apollo.py 薄胶水·shell 调本脚本，生成/审核大脑全在脚本，UI/后端零逻辑重复。
+- 全链自证：单测 `scripts/ai-gen.test.mjs` + 冒烟 `scripts/art-review-smoke.py`（17 断言）+ 真浏览器 `scripts/studio-m25-review-e2e.mjs`（16 断言）。
