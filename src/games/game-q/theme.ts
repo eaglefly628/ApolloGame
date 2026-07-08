@@ -1,100 +1,91 @@
 // Game Q · Neon Siege —— 视觉常量 + 数值配置 + UITheme（纯数据·无逻辑）。
-// 玩法规则不在这里；这里只是「填给引擎能力的数字」与「HUD 的换皮令牌」。
 import type { UITheme } from '@ui/components/index.js';
 
 // ── 画布逻辑尺寸（CanvasRenderer·世界坐标 1:1·无相机）──────────────────────
 export const FIELD_W = 960;
 export const FIELD_H = 560;
-export const TOP_BAR_H = 56;   // 顶部状态条（覆盖画布顶部·play-field 让出）
-export const BOTTOM_BAR_H = 98; // 底部建造条
+export const TOP_BAR_H = 56;
+export const BOTTOM_BAR_H = 98;
 
-// ── Tag 位掩码（bit0 = ZONE_FLAG 为引擎 trigger-zone 保留·我方从 bit1 起）─────
-export const ZONE = 1 << 0; // 引擎保留：触发区
+// ── Tag 位掩码（bit0 = ZONE_FLAG 引擎 trigger-zone 保留）─────────────────────
+export const ZONE = 1 << 0;
 export const ENEMY = 1 << 1;
 export const TOWER = 1 << 2;
 export const BASE = 1 << 3;
-export const TICKET = 1 << 4; // 生怪票据（self-rule 定时展开一只怪·数据驱动波次）
+export const TICKET = 1 << 4;
 
-// ── 波次表（每条 = 一张生怪票·at tick 展开一只怪·纯数据）─────────────────────
+// ── 波次表（每条 = 一张生怪票·纯数据）───────────────────────────────────────
 export interface SpawnRow { at: number; key: 'basic' | 'fast' | 'tank' }
 export const WAVE_SCHEDULE: SpawnRow[] = [
-  // 第一波：6 基础
-  ...[90, 150, 210, 270, 330, 390].map((at): SpawnRow => ({ at, key: 'basic' })),
-  // 第二波：5 基础 + 3 快速
-  ...[560, 600, 640, 680, 720].map((at): SpawnRow => ({ at, key: 'basic' })),
-  ...[580, 650, 715].map((at): SpawnRow => ({ at, key: 'fast' })),
-  // 第三波：6 基础 + 2 快速 + 2 重甲
-  ...[900, 942, 984, 1026, 1068, 1110].map((at): SpawnRow => ({ at, key: 'basic' })),
-  ...[1000, 1055].map((at): SpawnRow => ({ at, key: 'fast' })),
-  ...[960, 1095].map((at): SpawnRow => ({ at, key: 'tank' })),
+  ...[90, 150, 210, 270, 330, 390, 450].map((at): SpawnRow => ({ at, key: 'basic' })),
+  ...[560, 600, 640, 680, 720, 760].map((at): SpawnRow => ({ at, key: 'basic' })),
+  ...[585, 655, 725, 795].map((at): SpawnRow => ({ at, key: 'fast' })),
+  ...[930, 972, 1014, 1056, 1098, 1140].map((at): SpawnRow => ({ at, key: 'basic' })),
+  ...[1000, 1070, 1150].map((at): SpawnRow => ({ at, key: 'fast' })),
+  ...[960, 1090, 1200].map((at): SpawnRow => ({ at, key: 'tank' })),
 ];
 
-// ── 调色板（Color.tint 十六进制数·霓虹/合成波）───────────────────────────
+// ── 调色板（Color.tint·霓虹/合成波）─────────────────────────────────────────
 export const TINT = {
   laneFill: 0x1c3a5c,
   laneEdge: 0x33c2e8,
-  base: 0x34d399,
-  baseCore: 0x6ee7b7,
-  enemyBasic: 0xff5c7a,
-  enemyFast: 0xffd23f,
-  enemyTank: 0xc084fc,
+  padRim: 0x2b6f86,
+  padCore: 0x9fe8ff,
+  padGlow: 0x33c2e8,
+  base: 0x2fbf87,
+  baseRim: 0x1c6f52,
+  baseCore: 0x8effc9,
+  enemyBasic: 0xff5c7a, enemyBasicIn: 0xffb3c2,
+  enemyFast: 0xffd23f, enemyFastIn: 0xfff0b0,
+  enemyTank: 0xc084fc, enemyTankIn: 0xe6ccff,
   hpBar: 0x4ade80,
-  hpBack: 0x0b1a12,
-  pulse: 0x38bdf8,
-  cannon: 0xf472b6,
-  boltPulse: 0x7dd3fc,
-  boltCannon: 0xfbcfe8,
-  ghost: 0x38bdf8,
+  pulse: 0x38bdf8, pulseCore: 0xd6f4ff,
+  cannon: 0xf472b6, cannonCore: 0xffe0f2,
+  zapPulse: 0xbdf0ff,
+  zapCannon: 0xffd6f0,
 } as const;
 
-// ── 塔档（消费 self-rule/launch/hitbox·range = boltSpeed × boltLife）─────────
+// ── 塔档（命中制·range=Perception.sightRadius·单发结算 consumeOnHit）─────────
 export interface TowerDef {
   key: 'pulse' | 'cannon';
   name: string;
   cost: number;
   tint: number;
-  reload: number;    // Timer.duration（tick·越小射速越快）
-  radius: number;    // 塔体半径（渲染 + 命中）
-  bolt: { speed: number; life: number; dmg: number; radius: number; tint: number };
+  coreTint: number;
+  reload: number;   // Timer.duration（tick）
+  range: number;    // Perception.sightRadius（像素）
+  radius: number;
+  dmg: number;
+  zapTint: number;
 }
-
 export const TOWERS: Record<'pulse' | 'cannon', TowerDef> = {
-  pulse: {
-    key: 'pulse', name: 'PULSE', cost: 55, tint: TINT.pulse,
-    reload: 26, radius: 15,
-    bolt: { speed: 6.4, life: 46, dmg: 11, radius: 5, tint: TINT.boltPulse }, // range ≈ 294
-  },
-  cannon: {
-    key: 'cannon', name: 'RAIL', cost: 120, tint: TINT.cannon,
-    reload: 68, radius: 18,
-    bolt: { speed: 5.2, life: 80, dmg: 46, radius: 8, tint: TINT.boltCannon }, // range ≈ 416
-  },
+  pulse: { key: 'pulse', name: 'PULSE', cost: 50, tint: TINT.pulse, coreTint: TINT.pulseCore, reload: 20, range: 132, radius: 15, dmg: 9, zapTint: TINT.zapPulse },
+  cannon: { key: 'cannon', name: 'RAIL', cost: 115, tint: TINT.cannon, coreTint: TINT.cannonCore, reload: 56, range: 208, radius: 18, dmg: 58, zapTint: TINT.zapCannon },
 };
 
-// ── 敌档（消费 pathfind/mortal·speed=NavAgent 模长·hp=Resource）────────────
+// ── 敌档（pathfind·类型差异化轮廓）─────────────────────────────────────────
 export interface EnemyDef {
   key: 'basic' | 'fast' | 'tank';
   hp: number;
   speed: number;
   radius: number;
   tint: number;
+  inTint: number;
+  shape: 'circle' | 'diamond' | 'hex';
 }
 export const ENEMIES: Record<'basic' | 'fast' | 'tank', EnemyDef> = {
-  basic: { key: 'basic', hp: 40, speed: 1.3, radius: 12, tint: TINT.enemyBasic },
-  fast: { key: 'fast', hp: 26, speed: 2.2, radius: 9, tint: TINT.enemyFast },
-  tank: { key: 'tank', hp: 200, speed: 0.85, radius: 15, tint: TINT.enemyTank },
+  basic: { key: 'basic', hp: 58, speed: 1.35, radius: 12, tint: TINT.enemyBasic, inTint: TINT.enemyBasicIn, shape: 'circle' },
+  fast: { key: 'fast', hp: 34, speed: 2.35, radius: 10, tint: TINT.enemyFast, inTint: TINT.enemyFastIn, shape: 'diamond' },
+  tank: { key: 'tank', hp: 300, speed: 0.82, radius: 16, tint: TINT.enemyTank, inTint: TINT.enemyTankIn, shape: 'hex' },
 };
 
 // ── 经济 / 局面 ────────────────────────────────────────────────────────────
-export const START_GOLD = 300;
+export const START_GOLD = 245;
 export const START_LIVES = 20;
-export const INCOME_PER = 8;    // 金币涓流：每 INCOME_EVERY tick +INCOME_PER（over-time 被动收入）
-export const INCOME_EVERY = 60;
+export const INCOME_PER = 9;
+export const INCOME_EVERY = 54;
 
-// ── 车道（NavGraph 数据·enemies 沿它走向 base）+ 出生/大本营几何 ────────────
-// 世界坐标；y 落在 [TOP_BAR_H, FIELD_H-BOTTOM_BAR_H] 之间，避免被 HUD 条盖住。
-// 单调右进的锯齿道（x 严格递增）——pathfind 按「最近节点」入图，若后继节点在几何上落到智能体身后，
-// repath 会让它掉头（早期回字形道踩过：敌人在 y 平行道间反复横跳）。x 单调 → 任一次重锚都指向前方 → 不倒走。
+// ── 车道（NavGraph·x 单调右进防 pathfind 倒走）+ 出生/大本营几何 ────────────
 export const LANE_NODES: Array<{ x: number; y: number }> = [
   { x: -40, y: 180 },
   { x: 170, y: 180 },
@@ -106,13 +97,26 @@ export const LANE_NODES: Array<{ x: number; y: number }> = [
 export const LANE_EDGES: Array<{ a: number; b: number }> = [
   { a: 0, b: 1 }, { a: 1, b: 2 }, { a: 2, b: 3 }, { a: 3, b: 4 }, { a: 4, b: 5 },
 ];
-export const SPAWN = { x: 10, y: 180 };       // 敌人出生点（node0 附近·屏内）
-export const BASE_POS = { x: 900, y: 290 };   // 大本营（车道终点右侧·node5 水平引入）
+export const SPAWN = { x: 10, y: 180 };
+export const BASE_POS = { x: 900, y: 290 };
 export const LANE_WIDTH = 26;
-export const PROBE_R = 14;                    // 漏怪探针半径（几何见 blueprint 注释）
-export const ARRIVE_RANGE = 12;               // NavAgent 到点停距
+export const PROBE_R = 16;
+export const ARRIVE_RANGE = 14;
 
-// ── HUD 霓虹主题（UITheme 全字段·换皮即改这里）─────────────────────────────
+// ── 建造位（数据·手摆在车道旁的合法空位·只此可布塔）───────────────────────
+// 每个 spot 紧贴某段车道(~40px)以进塔射程；避开车道折线本身与彼此。落地后按截图微调。
+export const PAD_SPOTS: Array<{ x: number; y: number }> = [
+  { x: 92, y: 138 }, { x: 92, y: 224 },
+  { x: 250, y: 250 },
+  { x: 330, y: 300 },
+  { x: 410, y: 250 },
+  { x: 500, y: 246 },
+  { x: 590, y: 250 },
+  { x: 700, y: 306 },
+  { x: 760, y: 224 },
+];
+
+// ── HUD 霓虹主题（UITheme 全字段）──────────────────────────────────────────
 export const NEON_THEME: UITheme = {
   bg0: '#05070f', bg1: '#0b1322', bg2: '#111d33', bg3: '#1a2947', pageBg: '#05070f',
   line: 'rgba(56,189,248,0.22)',

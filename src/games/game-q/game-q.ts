@@ -12,7 +12,7 @@ import type { GameFlow, Resource, Flag, Tag } from '@engine/protocol/components.
 import { buildBlueprint } from './blueprint.js';
 import { buildTopBar, buildBottomBar, buildOverlay, type HudState } from './hud.js';
 import { playQSfx, isMuted, setMuted } from './sounds.js';
-import { NEON_THEME, FIELD_W, FIELD_H, TOP_BAR_H, BOTTOM_BAR_H, START_GOLD, START_LIVES, TOWER } from './theme.js';
+import { NEON_THEME, FIELD_W, FIELD_H, TOP_BAR_H, BOTTOM_BAR_H, START_GOLD, START_LIVES, TOWER, WAVE_SCHEDULE } from './theme.js';
 
 const GRID_BG =
   'radial-gradient(circle at 50% 42%, #0d1a33 0%, #070c17 68%, #04070f 100%),' +
@@ -44,7 +44,7 @@ export function mount(container: HTMLElement): () => void {
   // ── 稳定输入源（跨重开不变 → HUD sink 始终有效）──────────────────────────
   const input = new QueuedInputSource('q');
 
-  const initial: HudState = { lives: START_LIVES, gold: START_GOLD, enemies: 0, pending: null, status: 'playing', muted: isMuted() };
+  const initial: HudState = { lives: START_LIVES, gold: START_GOLD, remaining: WAVE_SCHEDULE.length, pending: null, status: 'playing', muted: isMuted() };
 
   // ── HUD 读态：从 world 资源/旗/流程投影出 HudState（纯读·outcome-first）──────
   function readState(engine: Engine): HudState {
@@ -55,7 +55,7 @@ export function mount(container: HTMLElement): () => void {
     return {
       lives: Math.round(res('base')),
       gold: Math.round(res('gold')),
-      enemies: Math.round(res('livecount')),
+      remaining: Math.round(res('ticketcount') + res('livecount')),
       pending: flag('flag-pending-pulse') ? 'pulse' : flag('flag-pending-cannon') ? 'cannon' : null,
       status: cur === 'victory' ? 'victory' : cur === 'defeat' ? 'defeat' : 'playing',
       muted: isMuted(),
@@ -71,7 +71,7 @@ export function mount(container: HTMLElement): () => void {
   }
 
   // ── 音效同步（outcome-first·纯读世界 diff → 合成端口·不碰 sim/hash）─────────
-  let prevA = { towers: 0, lives: START_LIVES, enemies: 0, status: 'playing' as HudState['status'] };
+  let prevA = { towers: 0, lives: START_LIVES, remaining: WAVE_SCHEDULE.length, status: 'playing' as HudState['status'] };
   function syncAudio(st: HudState, towers: number): void {
     if (st.status !== prevA.status) {
       if (st.status === 'victory') playQSfx('win');
@@ -79,8 +79,8 @@ export function mount(container: HTMLElement): () => void {
     }
     if (towers > prevA.towers) playQSfx('build');
     if (st.lives < prevA.lives) playQSfx('leak');
-    else if (st.enemies < prevA.enemies) playQSfx('kill'); // 敌减 & 未漏 ≈ 塔杀
-    prevA = { towers, lives: st.lives, enemies: st.enemies, status: st.status };
+    else if (st.remaining < prevA.remaining) playQSfx('kill'); // 剩余减 & 未漏 ≈ 塔杀
+    prevA = { towers, lives: st.lives, remaining: st.remaining, status: st.status };
   }
 
   // ── HUD 挂载（稳定·input 作 ActionSink：无本地 handler 的 action → 信号入队 → sim）──
@@ -96,7 +96,7 @@ export function mount(container: HTMLElement): () => void {
   function refreshHud(engine: Engine): void {
     const st = readState(engine);
     syncAudio(st, countTowers(engine));
-    const sig = `${st.lives}|${st.gold}|${st.enemies}|${st.pending}|${st.status}|${st.muted}`;
+    const sig = `${st.lives}|${st.gold}|${st.remaining}|${st.pending}|${st.status}|${st.muted}`;
     if (sig !== lastSig) {
       lastSig = sig;
       topUi.update(buildTopBar(st), NEON_THEME);
@@ -109,6 +109,7 @@ export function mount(container: HTMLElement): () => void {
       } else {
         overlayUi.update(buildOverlay(st), NEON_THEME);
       }
+      engine.stop(); // 局终冻结 sim（浮层已盖·省 CPU·停止后 subscribe 不再触发·幂等）
     } else if (overlayUi) {
       overlayUi();
       overlayUi = null;
@@ -139,7 +140,7 @@ export function mount(container: HTMLElement): () => void {
     const unsub = engine.subscribe(() => refreshHud(engine));
     engine.start();
     lastSig = '';
-    prevA = { towers: 0, lives: START_LIVES, enemies: 0, status: 'playing' };
+    prevA = { towers: 0, lives: START_LIVES, remaining: WAVE_SCHEDULE.length, status: 'playing' };
     refreshHud(engine);
     sim = { engine, renderer, canvas, onDown, unsub };
   }

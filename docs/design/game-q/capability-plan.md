@@ -18,26 +18,23 @@
 | `t2-over-time`（OverTime·局部 ResourceModify） | 金币被动涓流收入（gold 每 N tick +X） | ✅ 现有 |
 | `t1-lifetime`（Timer id "life" → destroy） | 能量弹/生怪票到寿命自毁 | ✅ 现有 |
 | `t3-prefab`（PrefabLibrary/SpawnRequest） | 敌人/塔/能量弹/特效按模板实例化 | ✅ 现有 |
-| `t3-aggro`（Perception→Relation target） | 塔锁定射程内最近敌人（供瞄准/朝向） | ✅ 现有 |
-| `t3-caster`（Caster onSignal→SpawnRequest） | 塔按信号从自身位置发射能量弹 prefab | ✅ 现有 |
-| `t2-launch`（Launch toward:target） | 能量弹出膛即锁最近敌人写速度、直飞（fire-and-forget） | ✅ 现有 |
-| `t2-hitbox`（Hitbox+Sensor+ZONE_FLAG） | 能量弹命中敌人结算伤害；核心 kill-zone 清漏怪 | ✅ 现有 |
+| `t3-aggro`（Perception{sightRadius}→Relation target） | 塔按**射程**索敌最近敌（仅射程内）→ self-rule spawn `at:'target'` 命中制开火（无敌不发·杜绝空炮/满图狙） | ✅ 现有 |
+| `t3-caster`（Caster onSignal→SpawnRequest·at:'self'） | **建造位**点击→在该位生成塔 prefab（放置桥） | ✅ 现有 |
+| `t2-hitbox`（Hitbox+Sensor+ZONE_FLAG·**consumeOnHit**） | zap 命中区**单发结算**精确 dmg（consumeOnHit·消 5×多帧累伤 bug）；核心 kill-zone 清漏怪 | ✅ 现有 |
 | `d1-overlap-detect` + `t2-trigger-zone` | 命中检测 → Trigger（zone×非zone） | ✅ 现有 |
 | `t2-mortal`（Mortal atOrBelow） | 敌 hp≤0 → DestroyRequest（+可选掉落模板） | ✅ 现有 |
 | `k2-destroy`（DestroyRequest） | 实体移除 | ✅ 现有 |
 | `f1-resource` / `f2-flag` / `string`（态） | gold/lives/hp/wave/enemies_alive + 各布尔旗 | ✅ 现有 |
 | `t2-craft-recipe`（costs/gains/grantsFlag） | 花金币造塔 / 升级（原子扣费·全或无） | ✅ 现有 |
-| `t2-clickable`（onlyFlag 门控） | 点道旁空位造塔、点塔升级（世界实体命中→信号） | ✅ 现有 |
-| `t2-event-when`（edge/level + ConditionExpr） | always-edge 一次性开波；timer-edge 塔装弹节拍 | ✅ 现有 |
-| `t2-effect-apply`（set-flag/modify-resource/reset-timer） | 波完信号→置旗/发金；升级→改 Timer.duration（射速） | ✅ 现有 |
+| `t2-clickable`（onlyFlag 门控·各建造位唯一信号） | **只在道旁建造位 pad 可点**造塔（防布路面/防叠·点非法处无效）；pad 落塔即自毁=占位 | ✅ 现有 |
+| `t2-effect-apply`（set-flag/destroy·@signal-source/定 id） | 放置副作用：清 pending 旗 + 销毁同位两建造钮（占位·数据接线·无新能力） | ✅ 现有 |
 | `t2-group-count`（countResource+requiredTag） | 统计存活敌数 → 胜利条件读 | ✅ 现有 |
 | `t3-flow`（GameFlow states+ConditionExpr） | 整局状态机：playing→victory/defeat | ✅ 现有 |
 | `t2-gauge`（Resource→Shape.width 子实体） | 敌人血条 / 核心护盾条 | ✅ 现有 |
 | `t2-text-binding`（Resource→Text） | HUD 世界层数字（如需）；HUD 主体走 LayoutNode | ✅ 现有 |
 | `a2-hierarchy`(+cascade) | 血条/漏怪探针挂敌人、随之移动/销毁 | ✅ 现有 |
-| `t1-tween` + `e1-timer` + `t1-lifetime` | 命中/发射/爆炸表现 prefab（短寿·淡出·缩放） | ✅ 现有 |
-| `w1-random`（RandomSeed/nextRandom） | 一切随机（此作以 `Effect.chance` 数据门为主）；**游戏层禁裸 Math.random** | ✅ 现有 |
-| 渲染原子 `l1-sprite`/`l2-color`/`a1-transform`/`shape` | play-field 几何/贴图渲染（CanvasRenderer） | ✅ 现有 |
+| `t1-tween` + `e1-timer` + `t1-lifetime` | 命中闪/死亡爆闪淡出 + 塔核/大本营核呼吸（pingpong）；短寿 prefab 自毁 | ✅ 现有 |
+| 渲染原子 `l1-sprite`/`l2-color`/`a1-transform`/`shape`(circle/box/polygon) | play-field 几何渲染（塔=六边+核+射程环·怪按类型 circle/diamond/hex 差异化轮廓·CanvasRenderer） | ✅ 现有 |
 | UI：`LayoutNode` 34 控件闭集 + `mountUI` | HUD/建造面板/开波钮/胜负屏（**UI 铁律·纯数据**） | ✅ 现有 |
 
 > **零新增引擎 capability**：塔防完整循环全部由上表现有能力组合涌现——正是宣言要的「新品类=数据」结果。
@@ -68,15 +65,15 @@
 
 ## 5. 确定性声明
 
-- **随机源**：引擎种子 PRNG `w1-random`（世界放 `RandomSeed{seed,sequence}` 单例）。本作随机面很窄（主要 `Effect.chance` 概率门，如减速触发），生怪位置/波次均为**定数据**（timeline 固定坐标）→ 天然可回放。
-- **回放 / lockstep**：sim 全走整数/枚举 + 种子 PRNG + 按 entity id 定序（clickable 命中并列取 id 最小、launch 取最近敌并列取 id）；`InputQueue` 世界坐标在采集期定死（`canvasPointerToScreen`，无相机=identity）→ 命令流确定。目标 hash 稳定。
-- **非确定性风险点**：命中/发射/爆炸的 tween 表现 prefab（Color.alpha/scale）纯表现、由 tween+timer 驱动、不被 Condition 读、不进胜负判定 → 不破 hash。渲染层不回灌 sim。
+- **无随机**：本作生怪位置/波次/伤害全为**定数据**（生怪票固定坐标·hitscan 精确 dmg），不含任何随机 → 已删 `w1-random`，天然可回放。
+- **回放 / lockstep**：sim 全走整数/枚举 + 按 entity id 定序（clickable/aggro/self-rule 命中并列取 id 最小）；`InputQueue` 世界坐标在采集期定死（`canvasPointerToScreen`，无相机=identity）→ 命令流确定；确定性双跑同 hash 有测试钉死。
+- **非确定性风险点**：命中闪/死亡爆闪/呼吸核的 tween（Color.alpha）纯表现、不被 Condition 读、不进胜负判定 → 不破 hash。渲染层不回灌 sim。
 
 ## 6. 真缺口 · 记债（走 requests.md）
 
 - **REQ-Q-击杀记账（on-kill credit）**：`Hitbox` 只写目标**本地**资源、`Mortal.dropTemplate` 对**任何死因无差别**触发 →
   无法用单个 Mortal 区分「被塔击杀→发赏金」与「抵达核心漏怪→扣命·不发赏金」。
-  - **本作循环层绕法（不下沉即跑通）**：经济改走「**开局金 + 清波奖金（timeline resource-cue / effect-apply on `timeline:done`）+ 波中缓速涓流**」——完全组合现有能力、确定性、无缺口依赖。逐怪赏金暂不做。
+  - **本作循环层绕法（不下沉即跑通）**：经济走「**开局金 + `t2-over-time` 涓流收入**」——完全组合现有能力、确定性、无缺口依赖。逐怪赏金暂不做。
   - **建议下沉（记债·待 owner/Lead 排期）**：`Hitbox.creditResource`（命中/击杀时给具名 global/攻击者资源记账）或 `Mortal` 按「哪个资源/tag 致死」分支掉落。属通用战斗能力（赏金/击杀计分/连击表都用），非塔防专属。落地后逐怪赏金即可干净接入。
 
 ## 设计记录（落地时的两处发现）
@@ -88,8 +85,12 @@
    金币收入同理走 `t2-over-time`（局部 ResourceModify），不走 timeline resource-cue。
 2. **车道必须 x 单调**：pathfind 按「最近节点」入图，回字形道会让智能体在平行 y 道间反复横跳（repath 重锚到身后节点）；
    单调右进的锯齿道保证任一次重锚都指向前方，敌人稳定前进。
+3. **v2 对抗性 QA 整改（owner 复盘"塔能布路上=粗糙"后·子代理审出全表 bug）**：
+   - **放置约束**（genre 核心）：弃"整块 field clickable + caster at:pointer 任意落塔"，改**道旁离散建造位 pad**——只 pad 可点（防布路面/防叠/防出界·点非法处无效），各 pad 唯一信号（防串发），落塔即销毁同位两建造钮（占位）。全组合 clickable/caster/effect·零新能力。
+   - **命中制**（消两 bug）：塔 firing 由"launch 抛射(锁全图最近·无射程·多帧累伤·穿透)"改为"`aggro`(Perception sightRadius 射程索敌)→ self-rule spawn `at:'target'`(仅射程内发·无空炮) → zap `Hitbox{consumeOnHit}`(单发精确 dmg)"。删 `t2-launch`。
+   - **清理**：删死代码 `w1-random`/`t2-event-when`/`t2-timeline`/胜负旗；局终 `engine.stop()` 省 CPU；HUD 防重复买（pending 时两钮皆禁）；补测试（放置合法性/占位/塔杀敌/胜/败/防重复买）。
 
 ## 7. 评审记录
 
-- 提交人 / 日期：LEAD（本 session · game-q 立项 + 落地） / 2026-07-07
-- Lead 裁决：✅ **通过并落地**（零新增引擎能力·完整循环全组合现有能力·门禁全绿·bench 95/100；唯一真缺口=击杀记账，循环层用清波/涓流经济绕过、记债 REQ-Q-击杀记账 待排期）。
+- 提交人 / 日期：LEAD（本 session · game-q 立项 + 落地 + v2 QA 整改） / 2026-07-07
+- Lead 裁决：✅ **通过并落地**（零新增引擎能力·完整循环全组合现有能力·门禁全绿·bench 95/100；v2 修全表 QA bug）；唯一真缺口=击杀记账，循环层用涓流经济绕过、记债 REQ-Q-击杀记账 待排期。
