@@ -90,7 +90,62 @@
    - **命中制**（消两 bug）：塔 firing 由"launch 抛射(锁全图最近·无射程·多帧累伤·穿透)"改为"`aggro`(Perception sightRadius 射程索敌)→ self-rule spawn `at:'target'`(仅射程内发·无空炮) → zap `Hitbox{consumeOnHit}`(单发精确 dmg)"。删 `t2-launch`。
    - **清理**：删死代码 `w1-random`/`t2-event-when`/`t2-timeline`/胜负旗；局终 `engine.stop()` 省 CPU；HUD 防重复买（pending 时两钮皆禁）；补测试（放置合法性/占位/塔杀敌/胜/败/防重复买）。
 
+## 8. 3D 盒庭化改造（owner「换成 3D 版本」· 2026-07-08）
+
+> **口径：换渲染方法、不改玩法。** sim（pathfind/命中制/经济/放置/胜负）**一字未动**——只在蓝图加 render-only 3D 组件，
+> 靠引擎「2D→3D 桥」把带 `Mesh3D` 的 2D 实体 `groundPose` 落到地面（sim x→世界 X、sim y→世界 Z、地面 y=0）。
+> 全部 3D 组件（Camera3D/Mesh3D/Material3D/Light3D/Sky3D/Fog3D/Post3D/Glow3D/Transform3D）皆 render-only·不进 hash·不被 Condition 读
+> → **确定性/回放/lockstep 与 2D 版逐 tick 同哈希**（`确定性双跑同 hash` 测试仍绿·2337 测试全过）。零新增引擎能力（消费的是既有 3D 渲染线，P3D 域）。
+
+### 8.1 加了什么（全在 blueprint.ts 数据层·`scene3dEntities()`）
+
+| 单例/组件 | 用途 |
+|---|---|
+| `Camera3D`（ortho·yaw 0.6·pitch 0.72） | 对角微俯正交盒庭机位（Captain-Toad 桌面微缩感·露深度+塔高） |
+| `Light3D`×3（sun 投软影 + fill 冷紫补 + ambient 冷蓝） | 数据化光照·霓虹夜掠光 |
+| `Sky3D`（暗渐变 + env 0.2 IBL）·`Fog3D`（暗蓝距离雾） | 天穹 + 金属微反射 + 纵深 |
+| `Post3D`（bloom + tilt-shift + AO + SMAA·**刻意不挂 grade**） | 泛光=霓虹辉光·移轴=微缩·见 §8.2 |
+| `ground`（Transform3D + Mesh3D box + Material3D matte+surface） | 近黑霓虹地台（出框·消悬浮卡片边） |
+| 塔/敌/大本营/车道/pad/FX 挂 `Mesh3D` + `Material3D`(+`Glow3D`) | 见 §8.3 主角面台账 |
+
+### 8.2 落地时的 4 处发现（截图验证·scratchpad/*.png）
+
+1. **`Visibility{visible:false,active:true}` 隐形 sim-only 判定区**（killzone/漏怪探针/zap 命中区/隐形建造钮）——裸 Shape 否则在盒庭里渲成竖立方块；Hitbox/Clickable 仍 sim 生效（沿 game-f/combat 先例）。
+2. **grade 色彩分级 pass 在此暗场把地台上翻成灰橄榄浊底**——逐 pass 隔离截图证实（bloom-only 干净、tiltShift-only 干净、加 grade 即糊）→ 弃 grade（霓虹自发光已够饱和）。
+3. **env(IBL) 在掠射角把近黑地台 Fresnel 反射成暖橄榄**（RoomEnvironment 是暖影室）→ env 压到 0.2（够金属微反射·不泛白）。
+4. **浮空核心用「height=2×塔高」骗 groundPose**（`groundPose` 恒把网格心置于 y=height/2）→ 小发光球被抬到塔尖（塔身/敌 body 无法真堆叠——见 §8.4 缺口）。
+
+### 8.3 主角面资产来源台账（scorecard 维 2 要求）
+
+| 主角面 | 来源 | 产物 | 说明 |
+|---|---|---|---|
+| 脉冲塔 PULSE | `procedural`(hybrid) | cone + 浮空核心球 + 发光平台盘·steel PBR + 青自发光 | **精修图元组合**（3 件套·非裸盒） |
+| 轨道炮 RAIL | `procedural`(hybrid) | cylinder + 核心 + 平台盘·steel + 品红自发光 | 同上·与脉冲塔剪影区分 |
+| 敌 basic/fast/tank | `procedural` | sphere / cone / cylinder·plastic·steel + 各自自发光 | 三型剪影差异化 |
+| 大本营 | `procedural` | 三层堆叠（Transform3D·台+柱+核）+ Glow3D 绿光晕 | authored 静态·真三维堆叠 |
+| **blocker** | — | — | **无 AI 资产生成 key**（TRIPO/MESHY/DASHSCOPE·env 未配·网络 000 实测）→ 无法产 bespoke glTF/贴图·退**精修图元组合**（scorecard 维 2 底线·台账已记 blocker） |
+
+### 8.4 3D 化引入的缺口（记债）
+
+- **敌人血条落 3D 世界锚缺口**：`Gauge` 写 2D `Shape.width`，在盒庭里会渲成竖立 billboard（脱离落地面的敌体）；`WorldUI3D` v1 只静态文字、**无动态 HP 绑定** → 本版**暂去掉逐敌血条**（大本营生命走 HUD 顶条）。建议 P3D 域记 **REQ-3D-WorldUI3D 动态绑定**（Resource→头顶条）后干净接回。
+- **spawned 实体无法真垂直堆叠**：caster `at:'self'` 生成的塔只得 2D Transform（继承落点）→ 子件 `groundPose` 全压地面（无高度偏移），故塔身用单尊图元 + 浮空核心 trick，非多层堆叠（静态大本营用 Transform3D 才堆得起来）。属 groundPose 语义限制·非缺陷·记录备查。
+
+### 8.5 视觉自评分（scorecard 八维·截图/bench 为证）
+
+> `VISUAL: 19/24 · PREMIUM: YES`（全维 ≥2·唯维 2 系"精修图元组合 + blocker 已记"的达标·非 3 分 bespoke 模型）
+
+| 维 | 分 | 证据 / 理由 |
+|---|---|---|
+| 1 艺术方向 | 3 | 统一合成波霓虹夜（青/品红/绿 + 暗台 + 自发光语言）·三截图同一款（mount-hud/final-late） |
+| 2 主角面 | 2 | 精修图元组合（塔=体+核+盘·PBR+自发光·剪影区分）·**blocker 已记**（无资产生成 key）·路径到 3=真 glTF 英雄模型 |
+| 3 世界密度 | 2 | 地台(带 surface) + 车道(道面+节点盘+出生门) + 塔/敌/大本营 ≥3 层·无裸色空地（偏简·可加环境装饰件） |
+| 4 材质 | 2 | 全主体挂 Material3D（steel/plastic/emissive）+ 地台 surface 噪声·非全场 flat（env 压低换掉暖染·金属反射偏弱=取舍） |
+| 5 渲染管线 | 3 | 主光+补光+环境有意图·Sky/Fog/Post(bloom+移轴+AO+SMAA) 全调过（非默认值·逐 pass 截图调参） |
+| 6 VFX | 2 | 三关键时刻有反馈（建塔/命中闪/死亡爆闪·落地淡出发光球+bloom）·不喧宾（简·可升 Vfx3D 粒子） |
+| 7 UI 美术 | 2 | HUD 走 LayoutNode + NEON_THEME 令牌（霓虹标题/♥⬡⚔ 芯片/PULSE·RAIL 钮）·非默认灰控件 |
+| 8 性能证据 | 3 | bench PASS：mean 0.077ms·p99 0.255ms（预算 16.667ms）；2337 测试全绿；build OK |
+
 ## 7. 评审记录
 
-- 提交人 / 日期：LEAD（本 session · game-q 立项 + 落地 + v2 QA 整改） / 2026-07-07
-- Lead 裁决：✅ **通过并落地**（零新增引擎能力·完整循环全组合现有能力·门禁全绿·bench 95/100；v2 修全表 QA bug）；唯一真缺口=击杀记账，循环层用涓流经济绕过、记债 REQ-Q-击杀记账 待排期。
+- 提交人 / 日期：LEAD（本 session · game-q 立项 + 落地 + v2 QA 整改 + 3D 盒庭化） / 2026-07-08
+- Lead 裁决：✅ **通过并落地**（零新增引擎能力·完整循环全组合现有能力·门禁全绿·bench 95/100；v2 修全表 QA bug；3D 化纯 render-only·sim 同哈希）；唯一真缺口=击杀记账，循环层用涓流经济绕过、记债 REQ-Q-击杀记账 待排期。3D 化引入 2 缺口（血条世界锚 / 英雄模型资产）见 §8.4·记债待 P3D/owner 排期。
