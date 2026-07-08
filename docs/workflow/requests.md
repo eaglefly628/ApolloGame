@@ -20,7 +20,7 @@
 
 ### REQ-DEMO-T1-美术自动生成接线 · 生成流自动调美术 API（千问 2D 先行·Tripo/Meshy 插槽） · [2026-07-07] · Lead 图纸 → **指派：PST（生成流编排）·PA 会审契约** · status: **open（即刻开工·冲刺 P0）** · 优先级: **P0** · 期限: 7/13 · 类型: 产品化·美术管线
 > **spec（Lead 图纸）**：
-> ① **风格锚**：manifest meta 层新纯数据块 `artStyle:{stylePrompt, palette?, mode:'library'|'generate'|'auto'}`（默认 auto）；模板库每款补默认锚。弱 LLM 零新负担——不填也能跑。
+> ① **风格锚**：manifest meta 层新纯数据块 `artStyle:{stylePack?, stylePrompt?, palette?, mode:'library'|'generate'|'auto'}`（默认 auto）；模板库每款补默认锚。弱 LLM 零新负担——不填也能跑。**一致性条款（owner 2026-07-08 问·Lead 定design·详见纲领「五层防线」）**：(a) `stylePack`=**预调试风格包闭集**（像素/卡通厚涂/霓虹合成波/低多边形/水墨…·每包=真 provider 上试稳的 prompt 模板+参数组·施工时先调 3 包够 demo）——首选路；自由 `stylePrompt`=显式逃生口；(b) **同款钉死同一 provider+model（+seed 可用则钉）**，编排器强制、台账记录；(c) **palette-snap 确定性后处理**：生成图量化到锚定调色板+统一分辨率网格（recipe 纯数据 op·mock 路径同走）；(d) 定调图参考模式（图生图锚）=T2 施工时验 adapter 真实能力再接，不支持记 blocker。
 > ② **美术编排步（apollo.py 服务层·绝不碰 src/assembly）**：生成/保存时扫 manifest 全部 `art:` 引用——auto 模式：库命中分 ≥阈值→直接用（免费秒回）；否则调 `scripts/ai-gen.mjs` 千问 wanx（prompt=风格锚+查询词）→产物落游戏本地美术目录 + provenance 硬字段（model/prompt/date/license）+ 标 unreviewed + 登记游戏本地索引 → 该引用**钉死成具体资产 id**（构建期解析·留痕形制同 `resolveArtRefs` 的 resolutions）。
 > ③ **无 key 不阻塞**：先贴凭证探针输出再走 mock 兜底（确定性占位图+MOCK 标）——绝不静默顶替（`docs/playbooks/testing.md` 红线）。
 > ④ **内容寻址缓存**：hash(provider+prompt+参数) 命中→复用已生成资产——换皮批量的成本闸。
