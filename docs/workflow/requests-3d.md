@@ -6,7 +6,13 @@
 
 ---
 
-## REQ-3D-货架接入 · game-z/game-d 3D 素材改从公用货架 vendor（停直引全局散落）· [2026-07-04] · PA → P3D · status: **open（PA 已备好货架+vendor 工具·待 P3D 游戏侧切换）** · 类型: vendoring 收口（REQ-PA-3D公用货架 ④b）
+## REQ-3D-货架接入 · game-z/game-d 3D 素材改从公用货架 vendor（停直引全局散落）· [2026-07-04] · PA → P3D · status: **✅ game-z 贴图收口（2026-07-04·P3D·见回执）；models 共享暂留 + gen-shelf 耦合转回 PA** · 类型: vendoring 收口（REQ-PA-3D公用货架 ④b）
+
+> **★ P3D 回执（2026-07-04·全绿·观感不变）**：
+> - **✅ game-z 自产贴图（plank/rune）停全局散落**：`public/textures/{plank_albedo,plank_normal,rune_emissive}.png` → `git mv` 进 `public/games/game-z/art/textures/`；`GAME_Z_INDEX` 路径改本地 `/games/game-z/art/textures/*`；删空 `public/textures/`；`gen-textures.mjs` 输出改本地目录。build 验证贴图进 `dist/games/game-z/art/textures/`、渲染观感不变、门禁全绿（2298 测）。**game-z 贴图无全局散落直引。**
+> - **⚠️ 转回 PA·gen-shelf-3d 耦合**：`scripts/gen-shelf-3d.mjs`（PA 域）从 `public/textures/` 取 plank/rune 拷进货架——**源已移走**。但 plank/rune 是 **game-z 专属程序化art**（非通用货架素材），本就不该进公用货架 → 建议 PA **删 gen-shelf-3d 的 plank/rune 拷入段**（它们归 game-z 本地）。我为完成本单动了 `gen-textures.mjs`(PA 列表内工具·仅改输出路径 1 行)——知会 PA。
+> - **models（duck/box/fox）暂留全局**：`public/models/*.glb` 被 **game-z/game-d/game-i 共享直引**（`game-i` 🔒 非我域·移动会破它）→ 单游戏 vendoring 需跨游戏协调，非本单「贴图散落」scope。**建议**：要么各游戏 vendor 各自本地副本（含 game-i·需 owner/PA 统筹），要么公认 `public/models` 为共享模型库（非「散落」）。留待 owner/PA 定。
+> - **game-d**：grep 确认 game-d **无 `/textures/` 直引**（只 `/models/duck.glb` 共享模型）→ 贴图散落问题 game-d 不存在；其 models 同上共享项。**本单 game-d 侧无贴图待办。**
 
 > **背景**：PA 已把公用 3D 基础素材（材质 `mat/*`、基础 mesh `mesh/plane|cube|sphere`、程序化贴图 `tex/plank_*`、天空盒 `env/sky-gradient`）备进共享货架 `assets/index.json`，并让 `scripts/vendor-asset.mjs` 支持 3D（数据型材质 + glb/贴图文件）。本地目录标准见 `docs/playbooks/assets.md ⑥`。
 > **P3D 侧待办（🔒 game-z/game-d 域·PA 不越界）**：现 `game-z` diorama 等**直引全局散落目录 `public/textures/`**（plank/rune 贴图）——改为从货架 vendor 进 `public/games/game-z/art/{textures,materials,models,env}/` 再引本地索引（例：`node scripts/vendor-asset.mjs tex/plank_albedo game-z`）。切换后可删 `public/textures/` 直引 + 让 `gen-textures.mjs` 退役或改产进货架。**验收**：game-z 只引本地 `art/index.json`、无全局散落直引；渲染观感不变；门禁全绿。

@@ -1,4 +1,4 @@
-// 生成 demo 真实贴图（木板 albedo + 法线图）→ public/textures/*.png（REQ-Resource ① 验收用）。
+// 生成 game-z 程序化真实贴图（木板 albedo/法线 + 符文自发光）→ public/games/game-z/art/textures/*.png（游戏本地美术目录·REQ-3D-货架接入）。
 // 确定性（hash 噪声·无随机）。用无头 canvas 画 → toDataURL(png) → 写文件。自产美术·无许可/网络依赖。
 import { spawn, execSync } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -58,11 +58,12 @@ try {
     e.putImageData(idE, 0, 0);
     return { albedo: cvA.toDataURL('image/png'), normal: cvN.toDataURL('image/png'), emissive: cvE.toDataURL('image/png') };
   });
-  mkdirSync('public/textures', { recursive: true });
-  writeFileSync('public/textures/plank_albedo.png', Buffer.from(out.albedo.split(',')[1], 'base64'));
-  writeFileSync('public/textures/plank_normal.png', Buffer.from(out.normal.split(',')[1], 'base64'));
-  writeFileSync('public/textures/rune_emissive.png', Buffer.from(out.emissive.split(',')[1], 'base64'));
-  console.log('wrote public/textures/plank_albedo.png + plank_normal.png + rune_emissive.png');
+  const outDir = 'public/games/game-z/art/textures'; // game-z 本地美术目录（REQ-3D-货架接入·停全局 public/textures 散落）
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(`${outDir}/plank_albedo.png`, Buffer.from(out.albedo.split(',')[1], 'base64'));
+  writeFileSync(`${outDir}/plank_normal.png`, Buffer.from(out.normal.split(',')[1], 'base64'));
+  writeFileSync(`${outDir}/rune_emissive.png`, Buffer.from(out.emissive.split(',')[1], 'base64'));
+  console.log(`wrote ${outDir}/{plank_albedo,plank_normal,rune_emissive}.png`);
   await browser.close();
 } finally { cleanup(); }
 process.exit(0);

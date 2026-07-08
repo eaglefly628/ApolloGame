@@ -1,7 +1,9 @@
 import { ImageAssetLoader, ModelAssetLoader, parseAssetIndex, buildMaterialCatalog, type AssetIndex, type AssetLoader, type AssetDescriptor, type AssetHandle } from '@assets/index.js';
 
-// Game Z 基础 3D 资产（glTF/glb 模型 + 真实贴图）。文件在 public/{models,textures}/——vite 从根服·path 用站点绝对路径故 baseUrl=''。
-// 出处与许可见 public/models/CREDITS.md。蓝图只持 key（保纯·可哈希回滚）；真实字节由对应 loader 取，ThreeRenderer 解析。
+// Game Z 基础 3D 资产（glTF/glb 模型 + 真实贴图）。**贴图=game-z 本地美术目录** `public/games/game-z/art/textures/`
+// （REQ-3D-货架接入·停全局 public/textures 散落直引·自产贴图归本地）；模型 duck/box/fox 在 public/models/（**game-z/d/i 共享**·
+// 暂留全局·移动会破 game-i·见 requests-3d 货架接入说明）。vite 从根服·path 用站点绝对路径故 baseUrl=''。出处/许可见 public/models/CREDITS.md。
+// 蓝图只持 key（保纯·可哈希回滚）；真实字节由对应 loader 取，ThreeRenderer 解析。
 export const MODEL_DUCK = 'duck';
 export const MODEL_BOX = 'box';
 export const MODEL_FOX = 'fox'; // 带骨骼动画（Survey/Walk/Run）·骨骼动画 demo 用
@@ -28,9 +30,9 @@ export const GAME_Z_INDEX: AssetIndex = parseAssetIndex({
     { id: MODEL_DUCK, type: 'mesh', status: 'filled', path: '/models/duck.glb', description: '鸭子模型', source: 'public/models/CREDITS.md' },
     { id: MODEL_BOX, type: 'mesh', status: 'filled', path: '/models/box.glb', description: '箱子模型', source: 'public/models/CREDITS.md' },
     { id: MODEL_FOX, type: 'mesh', status: 'filled', path: '/models/fox.glb', description: '狐狸模型（骨骼动画 Survey/Walk/Run）', source: 'public/models/CREDITS.md' },
-    { id: TEX_PLANK_ALBEDO, type: 'texture', status: 'filled', path: '/textures/plank_albedo.png', description: '木板反照率贴图（程序化自产）', spec: { usage: 'albedo', width: 256, height: 256 }, source: 'scripts/gen-textures.mjs' },
-    { id: TEX_PLANK_NORMAL, type: 'texture', status: 'filled', path: '/textures/plank_normal.png', description: '木板法线贴图（程序化自产）', spec: { usage: 'normal', width: 256, height: 256 }, source: 'scripts/gen-textures.mjs' },
-    { id: TEX_RUNE_EMISSIVE, type: 'texture', status: 'filled', path: '/textures/rune_emissive.png', description: '符文自发光贴图（程序化自产）', spec: { usage: 'emissive', width: 256, height: 256 }, source: 'scripts/gen-textures.mjs' },
+    { id: TEX_PLANK_ALBEDO, type: 'texture', status: 'filled', path: '/games/game-z/art/textures/plank_albedo.png', description: '木板反照率贴图（程序化自产·本地美术目录）', spec: { usage: 'albedo', width: 256, height: 256 }, source: 'scripts/gen-textures.mjs' },
+    { id: TEX_PLANK_NORMAL, type: 'texture', status: 'filled', path: '/games/game-z/art/textures/plank_normal.png', description: '木板法线贴图（程序化自产·本地美术目录）', spec: { usage: 'normal', width: 256, height: 256 }, source: 'scripts/gen-textures.mjs' },
+    { id: TEX_RUNE_EMISSIVE, type: 'texture', status: 'filled', path: '/games/game-z/art/textures/rune_emissive.png', description: '符文自发光贴图（程序化自产·本地美术目录）', spec: { usage: 'emissive', width: 256, height: 256 }, source: 'scripts/gen-textures.mjs' },
     // 材质数据资产（REQ-Resource ④）：无文件·数据全在 spec·引上面 texture key。物件 Material3D{materialRef} 引它。
     { id: MAT_PLANK_WOOD, type: 'material', status: 'filled', description: '木板材质（wood 预设 + 木板 albedo/法线贴图）', spec: { preset: 'wood', map: TEX_PLANK_ALBEDO, normalMap: TEX_PLANK_NORMAL } },
     { id: MAT_STONE, type: 'material', status: 'filled', description: '石材质（花岗岩灰·rock 预设·场景复用）', spec: { preset: 'rock', color: 0x8b8178 } },
