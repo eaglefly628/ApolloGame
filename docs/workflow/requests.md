@@ -14,7 +14,7 @@
 ### REQ-DEMO-0729-审核冲刺总纲 · 自然语言→playable·30 款/周换皮量产·美术 API 自动接线 · [2026-07-07] · **owner 定向（7/29-30 审核）** → Lead 出纲领 · status: **in-progress（冲刺主线·压过一切非冲刺工单）** · 优先级: **P0（死线级）** · 类型: 产品化冲刺（纲领=`docs/design/demo-sprint-2026-07-29.md`）
 > 审核口径：引擎能否用自然语言快速生成 playable 游戏；量化=周产 ~30 款、换皮为主力、基本玩法 OK 即可。最大缺口=美术（game-q 实证零真资产）。
 > **核心判断（Lead）**：`art:` 引用已是弱 LLM 数据接口（`src/assembly/resolve-art-refs.ts`），缺的只是「库查不到→自动调生成 API」的编排步——**全在服务层，不动引擎**。
-> **人审门两轨制裁决（Lead 2026-07-07·报 owner 知情、可否决）**：游戏本地轨=生成资产直接接线该游戏（provenance 硬字段照旧+标 unreviewed·立即可玩）；共享货架轨=进共享 index 仍必须过 M2.5 人审门。原则未破：人审门守的是共享库，本地资产有评分卡+审计兜底。
+> **归置与优化闭环（owner 2026-07-07 拍板·替代 Lead 原「两轨制」提法）**：①自动生成直接落**该游戏自己的资产目录**+本地索引（provenance+unreviewed 标·立即可玩）——owner 认可可行；②**硬要求**：每游戏出**美术台账**（资产编号 art-01…·槽位语义·prompt·来源·缩略图），studio 可浏览、可**按编号点名替换**（重生成/库内换/上传换）——「做完以后需要有一个完整的浏览和优化的流程」；③共享货架不变：进共享 index 仍过 M2.5 人审门。
 > 分单：T1（下条·PST+PA·7/13）→ T2 换皮（下下条·7/18）→ T3 批量冒烟（Opus·7/20）→ T4 3D 线待拉动（P3D 知会·不进关键路径）→ T5 彩排（Lead 主持·7/27）。
 > **队列重排（冲刺期有效）**：PST=T1→心跳余项（并入 T1 进度灯）→T2；**音频 B 件、M1 货架墙、REQ-3D-像素断言、REQ-CAP-改掷收编一律冲刺后**；引擎域冻结非必要改动。
 
@@ -27,10 +27,11 @@
 > ⑤ **模板/系统提示改口径**：主体视觉实体默认 Sprite+`art:` 引用（Shape/Color 仅特效与占位）——**换皮的前提是有皮肤槽**（game-q 全程序化色块=反面教材）。
 > ⑥ **进度可视化**：生成进度加「美术 n/m」阶段灯（与 REQ-STUDIO 心跳余项并一批施工）。
 > ⑦ **测试**：smoke 全链（mock 生成→本地登记→引用钉死→parseManifest 零 error）+ 缓存命中例 + 无 key 探针例；门禁全绿直推。
-> 边界：Meshy=adapter 插槽预留（owner 有 key 再开真调）；PA 会审=本地索引登记 shape / provenance 口径 / 缓存键设计。完工标 ✅ 待 Lead 验收（真 key 端到端一款 + 真浏览器可玩）。
+> ⑧ **美术台账（owner 2026-07-07 硬要求·编号真相）**：编排步同时产出该游戏的台账文件（art-ledger.json·游戏美术目录下）：每条 `{no:'art-01', slot:{entity,component,field}, query, prompt, source:'library'|'generated'|'mock', assetId, provenance, thumb}`；**编号按槽位排序确定性分配、重跑不漂移**（新增槽位追加编号，绝不重排旧号）——人要能念出「art-03 重做」。浏览/替换面板在 T2。
+> 边界：Meshy=adapter 插槽预留（owner 有 key 再开真调）；PA 会审=本地索引登记 shape / provenance 口径 / 缓存键设计 / **台账 schema**。完工标 ✅ 待 Lead 验收（真 key 端到端一款 + 真浏览器可玩）。
 
-### REQ-DEMO-T2-换皮流水线 · 一键 reskin：同玩法 × 新风格锚 = 新卡带 · [2026-07-07] · Lead 图纸 → **指派：PST** · status: open（T1 完工后接） · 优先级: P0 · 期限: 7/18 · 类型: 产品化·量产乘法器
-> **spec**：① studio 选已有卡带 → 输入新风格锚 → **只重跑 T1 美术编排**（玩法 manifest 一字不改）→ 存新卡带（slug-v2·meta 记 reskinOf 谱系）。② 批量模式：一套玩法 × N 风格锚一次出 N 款。③ 换皮结果并排预览（原/新）。④ 测试：reskin 后 parseManifest 零 error、玩法数据 diff=空、美术引用全部换新；smoke 进批量冒烟。完工标 ✅ 待 Lead 验收。
+### REQ-DEMO-T2-换皮流水线+台账浏览/单槽替换 · 同玩法×新风格锚=新卡带；按编号点名优化 · [2026-07-07] · Lead 图纸 → **指派：PST** · status: open（T1 完工后接） · 优先级: P0 · 期限: 7/18 · 类型: 产品化·量产乘法器+优化闭环
+> **spec**：① **单槽重解析机制（地基·换皮与优化共用）**：T1 编排器支持指定槽位子集重跑——换皮=全槽、点名优化=单槽；重跑即重钉引用+更新台账+新 provenance。② **换皮**：studio 选已有卡带→输入新风格锚→只重跑美术编排（玩法 manifest 一字不改）→存新卡带（slug-v2·meta 记 reskinOf 谱系）；批量模式=一套玩法 × N 风格锚一次出 N 款。③ **台账浏览面板（owner 硬要求）**：逐游戏缩略图墙——每格显编号（art-01…）+槽位语义+来源标（generated/library/MOCK·unreviewed 角标）；点开看 prompt/provenance。④ **按编号三式替换**：重新生成（可改 prompt）/ 从共享库选换 / 上传替换——三式都走单槽重解析，台账留替换历史。⑤ 换皮结果并排预览（原/新）。⑥ 测试：reskin 后 parseManifest 零 error、玩法数据 diff=空、美术引用全换新；单槽替换后其余槽位引用与编号不动（断言编号稳定）；smoke 进批量冒烟。完工标 ✅ 待 Lead 验收（真浏览器走「浏览→点名 art-N→重生成→游戏里换上」全旅程）。
 
 ### REQ-DEMO-T3-批量吞吐冒烟 · 周产 30 款的机器证据 · [2026-07-07] · Lead 图纸 → **指派：Opus 档 session/子代理** · status: open（T1 完工后接） · 优先级: P1 · 期限: 7/20 · 类型: 冲刺 QA
 > **spec**：① 新建批量冒烟脚本（scripts 下·batch-gen-smoke）：mock LLM+mock 美术连出 N=10 款 e2e——生成→美术编排→parseManifest 零 error→audit 无新红旗；判词 token `BATCH: PASS|FAIL`+退出码；fail-fast（哪款第几步死点名）。② 真 key 抽 3 款全真跑通，记录单款耗时/成本/token 写进回执（demo 出示件·折算周产能）。③ 照 `docs/playbooks/testing.md` 三禁（mock 路径零外部 IO·种子固定）。完工标 ✅ 待 Lead 验收。
