@@ -6,16 +6,17 @@
   "instances": 65,
   "rows": [
     {
+      "skinKey": "q/base",
       "no": "art-01",
       "kind": "sprite",
       "slot": {
         "entity": "base",
-        "component": "Shape",
-        "field": "art"
+        "component": "Sprite",
+        "field": "textureKey"
       },
       "query": "base",
       "placeholder": {
-        "current": "2D 色块（box·#2fbf87）",
+        "current": "皮肤槽 q/base（未填时回退 2D 色块 box·#2fbf87）",
         "source": "procedural",
         "count": 1,
         "instances": [
@@ -29,10 +30,11 @@
         "displayH": 120,
         "transparent": true
       },
-      "context": "美术需求：「base」（场景实体·单例）·2D 平面·当前占位=2D 色块（box·#2fbf87）·需透明底",
+      "context": "美术需求：「base」（场景实体·单例）·2D 平面·当前占位=皮肤槽 q/base（未填时回退 2D 色块 box·#2fbf87）·需透明底",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "prompt": "top-down 2D game sprite, neon synthwave sci-fi, Tron-like, dark background, emissive glowing edges, clean vector shapes, high contrast, centered, transparent background, energy core home base, jade-green #2fbf87 glowing reactor structure, hexagonal, imposing, tall vertical structure, viewed directly from above"
     },
     {
       "no": "art-02",
@@ -122,16 +124,17 @@
       "provenance": null
     },
     {
+      "skinKey": "q/pad",
       "no": "art-05",
       "kind": "sprite",
       "slot": {
         "entity": "pad-0-p",
-        "component": "Shape",
-        "field": "art"
+        "component": "Sprite",
+        "field": "textureKey"
       },
       "query": "pad p",
       "placeholder": {
-        "current": "2D 色块（polygon·#2b6f86）",
+        "current": "皮肤槽 q/pad（未填时回退 2D 色块 polygon·#2b6f86）",
         "source": "procedural",
         "count": 9,
         "instances": [
@@ -152,10 +155,11 @@
         "displayH": 64,
         "transparent": true
       },
-      "context": "美术需求：「pad p」（场景实体·×9 实例）·2D 平面·当前占位=2D 色块（polygon·#2b6f86）·需透明底",
+      "context": "美术需求：「pad p」（场景实体·×9 实例）·2D 平面·当前占位=皮肤槽 q/pad（未填时回退 2D 色块 polygon·#2b6f86）·需透明底",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "prompt": "top-down 2D game sprite, neon synthwave sci-fi, Tron-like, dark background, emissive glowing edges, clean vector shapes, high contrast, centered, transparent background, circular build pad platform, dark hexagon with cyan #33c2e8 glowing rim and a bright center node, viewed directly from above"
     },
     {
       "no": "art-06",
@@ -281,16 +285,17 @@
       "provenance": null
     },
     {
+      "skinKey": "q/enemy-basic",
       "no": "art-10",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:enemy_basic:body",
-        "component": "Shape",
-        "field": "art"
+        "component": "Sprite",
+        "field": "textureKey"
       },
       "query": "enemy basic body",
       "placeholder": {
-        "current": "2D 色块（circle·#ff5c7a）",
+        "current": "皮肤槽 q/enemy-basic（未填时回退 2D 色块 circle·#ff5c7a）",
         "source": "procedural",
         "count": 1,
         "instances": [
@@ -304,10 +309,11 @@
         "displayH": 24,
         "transparent": true
       },
-      "context": "美术需求：「enemy basic body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#ff5c7a）·需透明底",
+      "context": "美术需求：「enemy basic body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 q/enemy-basic（未填时回退 2D 色块 circle·#ff5c7a）·需透明底",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "prompt": "top-down 2D game sprite, neon synthwave sci-fi, Tron-like, dark background, emissive glowing edges, clean vector shapes, high contrast, centered, transparent background, small hostile drone enemy, round pink-red #ff5c7a glowing orb with a darker core, simple, viewed directly from above"
     },
     {
       "no": "art-11",
@@ -368,16 +374,17 @@
       "provenance": null
     },
     {
+      "skinKey": "q/enemy-fast",
       "no": "art-13",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:enemy_fast:body",
-        "component": "Shape",
-        "field": "art"
+        "component": "Sprite",
+        "field": "textureKey"
       },
       "query": "enemy fast body",
       "placeholder": {
-        "current": "2D 色块（polygon·#ffd23f）",
+        "current": "皮肤槽 q/enemy-fast（未填时回退 2D 色块 polygon·#ffd23f）",
         "source": "procedural",
         "count": 1,
         "instances": [
@@ -391,10 +398,11 @@
         "displayH": 64,
         "transparent": true
       },
-      "context": "美术需求：「enemy fast body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（polygon·#ffd23f）·需透明底",
+      "context": "美术需求：「enemy fast body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 q/enemy-fast（未填时回退 2D 色块 polygon·#ffd23f）·需透明底",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "prompt": "top-down 2D game sprite, neon synthwave sci-fi, Tron-like, dark background, emissive glowing edges, clean vector shapes, high contrast, centered, transparent background, fast scout enemy drone, amber #ffd23f glowing diamond dart shape, sleek and pointed, viewed directly from above"
     },
     {
       "no": "art-14",
@@ -455,16 +463,17 @@
       "provenance": null
     },
     {
+      "skinKey": "q/enemy-tank",
       "no": "art-16",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:enemy_tank:body",
-        "component": "Shape",
-        "field": "art"
+        "component": "Sprite",
+        "field": "textureKey"
       },
       "query": "enemy tank body",
       "placeholder": {
-        "current": "2D 色块（polygon·#c084fc）",
+        "current": "皮肤槽 q/enemy-tank（未填时回退 2D 色块 polygon·#c084fc）",
         "source": "procedural",
         "count": 1,
         "instances": [
@@ -478,10 +487,11 @@
         "displayH": 64,
         "transparent": true
       },
-      "context": "美术需求：「enemy tank body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（polygon·#c084fc）·需透明底",
+      "context": "美术需求：「enemy tank body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 q/enemy-tank（未填时回退 2D 色块 polygon·#c084fc）·需透明底",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "prompt": "top-down 2D game sprite, neon synthwave sci-fi, Tron-like, dark background, emissive glowing edges, clean vector shapes, high contrast, centered, transparent background, heavy tank enemy drone, purple #c084fc glowing hexagonal armored hull, chunky and bulky, viewed directly from above"
     },
     {
       "no": "art-17",
@@ -542,16 +552,17 @@
       "provenance": null
     },
     {
+      "skinKey": "q/tower-cannon",
       "no": "art-19",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:tower_cannon:body",
-        "component": "Shape",
-        "field": "art"
+        "component": "Sprite",
+        "field": "textureKey"
       },
       "query": "tower cannon body",
       "placeholder": {
-        "current": "2D 色块（polygon·#f472b6）",
+        "current": "皮肤槽 q/tower-cannon（未填时回退 2D 色块 polygon·#f472b6）",
         "source": "procedural",
         "count": 1,
         "instances": [
@@ -565,10 +576,11 @@
         "displayH": 64,
         "transparent": true
       },
-      "context": "美术需求：「tower cannon body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（polygon·#f472b6）·需透明底",
+      "context": "美术需求：「tower cannon body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 q/tower-cannon（未填时回退 2D 色块 polygon·#f472b6）·需透明底",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "prompt": "top-down 2D game sprite, neon synthwave sci-fi, Tron-like, dark background, emissive glowing edges, clean vector shapes, high contrast, centered, transparent background, heavy rail cannon turret, magenta #f472b6 glowing, twin energy barrels, bulky armored base, symmetrical, viewed directly from above"
     },
     {
       "no": "art-20",
@@ -629,16 +641,17 @@
       "provenance": null
     },
     {
+      "skinKey": "q/tower-pulse",
       "no": "art-22",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:tower_pulse:body",
-        "component": "Shape",
-        "field": "art"
+        "component": "Sprite",
+        "field": "textureKey"
       },
       "query": "tower pulse body",
       "placeholder": {
-        "current": "2D 色块（polygon·#38bdf8）",
+        "current": "皮肤槽 q/tower-pulse（未填时回退 2D 色块 polygon·#38bdf8）",
         "source": "procedural",
         "count": 1,
         "instances": [
@@ -652,10 +665,11 @@
         "displayH": 64,
         "transparent": true
       },
-      "context": "美术需求：「tower pulse body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（polygon·#38bdf8）·需透明底",
+      "context": "美术需求：「tower pulse body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 q/tower-pulse（未填时回退 2D 色块 polygon·#38bdf8）·需透明底",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "prompt": "top-down 2D game sprite, neon synthwave sci-fi, Tron-like, dark background, emissive glowing edges, clean vector shapes, high contrast, centered, transparent background, neon defense tower, cyan #38bdf8 glowing hexagonal turret with a bright glowing core, symmetrical, viewed directly from above"
     },
     {
       "no": "art-23",

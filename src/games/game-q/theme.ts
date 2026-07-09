@@ -57,10 +57,11 @@ export interface TowerDef {
   radius: number;
   dmg: number;
   zapTint: number;
+  skin: string;     // 皮肤槽 key（本地美术 index 登记此 id 即换装·未填时渲染器回退 Shape 色块）
 }
 export const TOWERS: Record<'pulse' | 'cannon', TowerDef> = {
-  pulse: { key: 'pulse', name: 'PULSE', cost: 50, tint: TINT.pulse, coreTint: TINT.pulseCore, reload: 20, range: 132, radius: 15, dmg: 9, zapTint: TINT.zapPulse },
-  cannon: { key: 'cannon', name: 'RAIL', cost: 115, tint: TINT.cannon, coreTint: TINT.cannonCore, reload: 56, range: 208, radius: 18, dmg: 58, zapTint: TINT.zapCannon },
+  pulse: { key: 'pulse', name: 'PULSE', cost: 50, tint: TINT.pulse, coreTint: TINT.pulseCore, reload: 20, range: 132, radius: 15, dmg: 9, zapTint: TINT.zapPulse, skin: 'q/tower-pulse' },
+  cannon: { key: 'cannon', name: 'RAIL', cost: 115, tint: TINT.cannon, coreTint: TINT.cannonCore, reload: 56, range: 208, radius: 18, dmg: 58, zapTint: TINT.zapCannon, skin: 'q/tower-cannon' },
 };
 
 // ── 敌档（pathfind·类型差异化轮廓）─────────────────────────────────────────
@@ -72,12 +73,17 @@ export interface EnemyDef {
   tint: number;
   inTint: number;
   shape: 'circle' | 'diamond' | 'hex';
+  skin: string;     // 皮肤槽 key（同 TowerDef.skin）
 }
 export const ENEMIES: Record<'basic' | 'fast' | 'tank', EnemyDef> = {
-  basic: { key: 'basic', hp: 58, speed: 1.35, radius: 12, tint: TINT.enemyBasic, inTint: TINT.enemyBasicIn, shape: 'circle' },
-  fast: { key: 'fast', hp: 34, speed: 2.35, radius: 10, tint: TINT.enemyFast, inTint: TINT.enemyFastIn, shape: 'diamond' },
-  tank: { key: 'tank', hp: 300, speed: 0.82, radius: 16, tint: TINT.enemyTank, inTint: TINT.enemyTankIn, shape: 'hex' },
+  basic: { key: 'basic', hp: 58, speed: 1.35, radius: 12, tint: TINT.enemyBasic, inTint: TINT.enemyBasicIn, shape: 'circle', skin: 'q/enemy-basic' },
+  fast: { key: 'fast', hp: 34, speed: 2.35, radius: 10, tint: TINT.enemyFast, inTint: TINT.enemyFastIn, shape: 'diamond', skin: 'q/enemy-fast' },
+  tank: { key: 'tank', hp: 300, speed: 0.82, radius: 16, tint: TINT.enemyTank, inTint: TINT.enemyTankIn, shape: 'hex', skin: 'q/enemy-tank' },
 };
+
+// ── 皮肤槽 key（场景件·R2 ①）：本地美术 index 登记这些 id 即换装（chooseRenderMode：
+// 贴图就绪盖过 Shape·未就绪回退现程序化观感——观感一字不变是硬承诺）。
+export const SKIN = { base: 'q/base', pad: 'q/pad' } as const;
 
 // ── 经济 / 局面 ────────────────────────────────────────────────────────────
 export const START_GOLD = 245;

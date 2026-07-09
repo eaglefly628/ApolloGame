@@ -1,5 +1,8 @@
 # game-q《Neon Siege》美术生成单（完整·可直接喂管线）
 
+> **⚠ 只读视图（Lead 2026-07-09·需求真相合一）**：机器真相=`public/games/game-q/art/art-ledger.json`（本文的手拼提示词已按 skinKey 回填台账行 `prompt` 字段·管线/平台只读台账）。**勿再手改本文当真相**——改提示词去美术平台按编号改，或改台账行。私有编号 q-spr-NN 已废弃，以 art-NN 为准。
+
+
 > 2D 俯视塔防的全部美术需求。每条=**已拼好的完整英文提示词**（copy 即用）+ 尺寸 + spec + 优先级。
 > 生成器：`node scripts/ai-gen.mjs qwen "<提示词>" --game game-q --id <编号>`（wanx·1024² PNG）。
 > 统一负向提示词（每条都带）：

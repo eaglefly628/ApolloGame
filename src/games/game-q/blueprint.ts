@@ -26,7 +26,7 @@ import { prefabCapability, casterCapability, aggroCapability, flowCapability } f
 import {
   FIELD_W, ZONE, ENEMY, TOWER, BASE, TICKET, TINT, TOWERS, ENEMIES,
   START_GOLD, START_LIVES, INCOME_PER, INCOME_EVERY, WAVE_SCHEDULE, LANE_NODES, LANE_EDGES,
-  SPAWN, BASE_POS, LANE_WIDTH, PROBE_R, ARRIVE_RANGE, PAD_SPOTS, type TowerDef, type EnemyDef,
+  SPAWN, BASE_POS, LANE_WIDTH, PROBE_R, ARRIVE_RANGE, PAD_SPOTS, SKIN, type TowerDef, type EnemyDef,
 } from './theme.js';
 
 const XF0 = { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
@@ -58,6 +58,7 @@ function towerTemplate(def: TowerDef): { entities: Record<string, Record<string,
         Transform: { ...XF0 },
         Tag: { flags: TOWER },
         Shape: { kind: 'polygon', vertices: hexVerts(def.radius) },
+        Sprite: { textureKey: def.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 0 }, // 皮肤槽：贴图就绪即换装·否则回退六边色块
         Color: { tint: def.tint, alpha: 1 },
         Perception: { targetTag: ENEMY, sightRadius: def.range },        // aggro → Relation(target)（仅射程内）
         Timer: { id: 'reload', elapsed: 0, duration: def.reload, loop: true },
@@ -115,6 +116,7 @@ function enemyTemplate(def: EnemyDef): { entities: Record<string, Record<string,
         Relation: { kind: 'target', targetId: 'base' },
         Tag: { flags: ENEMY },
         Shape: enemyBodyShape(def),
+        Sprite: { textureKey: def.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 0 }, // 皮肤槽
         Color: { tint: def.tint, alpha: 1 },
         Resource: { id: 'hp', current: def.hp, min: 0, max: def.hp },
         Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: `burst_${def.key}` },
@@ -184,6 +186,7 @@ function padEntities(): Record<string, EntityBlueprint> {
     out[P] = {
       Transform: { x: s.x, y: s.y, rotation: 0, scaleX: 1, scaleY: 1 },
       Shape: { kind: 'polygon', vertices: hexVerts(18) },
+      Sprite: { textureKey: SKIN.pad, anchorX: 0.5, anchorY: 0.5, zOrder: 0 }, // 皮肤槽（8 个建造位共用一套皮）
       Color: { tint: TINT.padRim, alpha: 0.9 },
       Clickable: { action: `pp${n}`, onlyFlag: 'pending_pulse' },
       Caster: { onSignal: `pp${n}`, at: 'self', template: 'tower_pulse' },
@@ -248,6 +251,7 @@ export function buildBlueprint(): WorldBlueprint {
     base: {
       Transform: { x: BASE_POS.x, y: BASE_POS.y, rotation: 0, scaleX: 1, scaleY: 1 },
       Shape: { kind: 'box', width: 56, height: 120 },
+      Sprite: { textureKey: SKIN.base, anchorX: 0.5, anchorY: 0.5, zOrder: 0 }, // 皮肤槽
       Color: { tint: TINT.base, alpha: 0.9 },
       Tag: { flags: BASE },
       Resource: { id: 'lives', current: START_LIVES, min: 0, max: START_LIVES },

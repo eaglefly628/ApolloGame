@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { StudioInspector } from './studio/StudioInspector.js';
-import { GameQArtCockpit } from './studio/GameQArtCockpit.js';
 import { AssetLibrary } from './studio/AssetLibrary.js';
 import { SHELL, sGearBtn, sMenuPanel, sMenuItem } from './ui/shell-theme.js';
 import { resolveArtRefs } from './assembly/resolve-art-refs.js';
@@ -768,7 +767,6 @@ export function Launcher() {
     setLaunchedState(id);
   }, []);
   const [studio, setStudio] = useState(false);
-  const [cockpit, setCockpit] = useState(false); // 🔬 数据透视器 → game-q 美术工坊（重设计版）
   const [artlib, setArtlib] = useState(false);
   const [studioExtra, setStudioExtra] = useState<{ id: string; title: string; build: () => WorldBlueprint } | null>(null);
 
@@ -921,10 +919,6 @@ export function Launcher() {
 
   const statusLight = providerStatus(providers ?? []);
 
-  if (cockpit) {
-    return <GameQArtCockpit onBack={() => setCockpit(false)} />;
-  }
-
   if (studio) {
     return (
       <StudioInspector
@@ -997,7 +991,7 @@ export function Launcher() {
         {!playerMode && (
           <>
             <button
-              onClick={() => setCockpit(true)}
+              onClick={() => setArtLedger({ slug: 'game-q', title: 'Neon Siege · 编译期游戏' })}
               style={{
                 marginTop: 14,
                 padding: '7px 18px',
@@ -1012,7 +1006,7 @@ export function Launcher() {
                 outline: 'none',
               }}
             >
-              🔬 数据透视器
+              🎨 美术平台（game-q）
             </button>
             <button
               onClick={() => setArtlib(true)}

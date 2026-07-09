@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot } from './art-replace.mjs';
+import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger } from './art-replace.mjs';
 import { STYLE_PACKS, STYLE_PACK_IDS } from './style-packs.mjs';
 
 const MANIFEST = {
@@ -179,5 +179,74 @@ describe('T1 风格包库', () => {
       expect(Array.isArray(p.palette) && p.palette.length).toBeTruthy();
       expect(['qwen', 'tripo', 'meshy']).toContain(p.params.provider);
     }
+  });
+});
+
+describe('编号 append-only（owner 07-09「ID 错位」定案·mergeLedger）', () => {
+  it('加槽位重跑：旧号全不动·新槽位取 max+1 顺延', () => {
+    const prev = deriveLedger(MANIFEST, { game: 'g' }); // art-01..04
+    const bigger = JSON.parse(JSON.stringify(MANIFEST));
+    bigger.entities.aaa_new = { Sprite: { type: 'Sprite', textureKey: 'art:new thing' }, Shape: { type: 'Shape', width: 8, height: 8 } };
+    const merged = mergeLedger(prev, deriveLedger(bigger, { game: 'g' }));
+    // aaa_new 排序在最前，但编号必须是 art-05（追加），background 保持 art-01
+    expect(merged.rows.find((r) => r.slot.entity === 'aaa_new').no).toBe('art-05');
+    expect(merged.rows.find((r) => r.slot.entity === 'background').no).toBe('art-01');
+    expect(merged.rows.map((r) => r.no)).toEqual(['art-01', 'art-02', 'art-03', 'art-04', 'art-05']);
+  });
+  it('删槽位重跑：墓碑 retired 保号·编号不复用；再加新槽位继续顺延', () => {
+    const prev = deriveLedger(MANIFEST, { game: 'g' });
+    const smaller = JSON.parse(JSON.stringify(MANIFEST));
+    delete smaller.entities.hero; // hero 原 art-03
+    const merged = mergeLedger(prev, deriveLedger(smaller, { game: 'g' }));
+    const hero = merged.rows.find((r) => r.slot.entity === 'hero');
+    expect(hero.status).toBe('retired'); // 墓碑
+    expect(hero.no).toBe('art-03'); // 保号
+    const withNew = JSON.parse(JSON.stringify(smaller));
+    withNew.entities.zzz = { Sprite: { type: 'Sprite', textureKey: 'art:late comer' }, Shape: { type: 'Shape', width: 8, height: 8 } };
+    const m2 = mergeLedger(merged, deriveLedger(withNew, { game: 'g' }));
+    expect(m2.rows.find((r) => r.slot.entity === 'zzz').no).toBe('art-05'); // max(4)+1·不占 hero 的 3
+  });
+  it('已生成状态/provenance/prompt 在重跑合并后保留', async () => {
+    await withRoot(async (root) => {
+      const prev = deriveLedger(MANIFEST, { game: 'g' });
+      await batchGenerate(prev, 'pixel-retro', { root, game: 'g', mock: true });
+      prev.rows[0].prompt = '手工精调提示词';
+      const merged = mergeLedger(prev, deriveLedger(MANIFEST, { game: 'g' }));
+      expect(merged.rows[0].status).toBe('generated');
+      expect(merged.rows[0].prompt).toBe('手工精调提示词');
+      expect(merged.rows[0].provenance?.model).toBeTruthy();
+    });
+  });
+});
+
+describe('皮肤槽写回（编译期游戏线·R2 ①）', () => {
+  const SKINNED = {
+    entities: {
+      body: { Sprite: { type: 'Sprite', textureKey: 'q/hero', anchorX: 0.5, anchorY: 0.5, zOrder: 0 }, Shape: { type: 'Shape', width: 24, height: 24 }, Color: { type: 'Color', tint: 0x112233, alpha: 1 } },
+    },
+  };
+  it('deriveRequirements 识别皮肤槽 → 行带 skinKey', () => {
+    const l = deriveRequirements(SKINNED, { game: 'g' });
+    expect(l.rows).toHaveLength(1);
+    expect(l.rows[0].skinKey).toBe('q/hero');
+    expect(l.rows[0].placeholder.current).toContain('皮肤槽 q/hero');
+  });
+  it('batchGenerate 对带 skinKey 的行双登记：gen id + 皮肤别名（写回=登记别名）', async () => {
+    await withRoot(async (root) => {
+      const l = deriveRequirements(SKINNED, { game: 'g' });
+      const res = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true, only: l.rows[0].no });
+      expect(res.summary.generated).toBe(1);
+      const idx = JSON.parse(readFileSync(join(root, 'public', 'games', 'g', 'art', 'index.json'), 'utf8'));
+      const ids = idx.assets.map((a) => a.id);
+      expect(ids).toContain('gen/' + l.rows[0].no);
+      expect(ids).toContain('q/hero'); // 别名=游戏消费的皮肤 key
+      expect(idx.assets.find((a) => a.id === 'q/hero').tags).toContain('skin');
+    });
+  });
+  it('dialectPrompt：行内 prompt（手拼回填）整体替代 query 作主体', () => {
+    const pack = STYLE_PACKS['pixel-retro'];
+    const row = { no: 'art-01', kind: 'sprite', query: 'hero', prompt: 'a very specific hand-tuned prompt' };
+    expect(dialectPrompt(row, pack)).toContain('a very specific hand-tuned prompt');
+    expect(dialectPrompt(row, pack)).not.toMatch(/^hero,/);
   });
 });

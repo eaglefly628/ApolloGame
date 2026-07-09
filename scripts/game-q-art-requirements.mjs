@@ -3,15 +3,18 @@
 // vite-node 跑（import game-q 的 TS buildBlueprint）。用法：npx vite-node scripts/game-q-art-requirements.mjs [--gen]
 //   --gen：额外把需求表喂批处理（mock·pixel-retro 风格包·无 key→占位），产物落 scratch root（不碰仓库 game-q）。
 import { buildBlueprint } from '../src/games/game-q/index.ts';
-import { deriveRequirements, batchGenerate } from './art-replace.mjs';
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { deriveRequirements, batchGenerate, mergeLedger } from './art-replace.mjs';
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const bp = buildBlueprint();
-const ledger = deriveRequirements({ entities: bp.entities }, { game: 'game-q' });
+// append-only（owner 07-09「ID 错位」定案）：重跑并入现台账——旧槽位保原编号/状态/prompt，新槽位顺延，消失槽位墓碑保号。
+const PREV_FILE = join(ROOT, 'public', 'games', 'game-q', 'art', 'art-ledger.json');
+const prev = existsSync(PREV_FILE) ? JSON.parse(readFileSync(PREV_FILE, 'utf8')) : null;
+const ledger = mergeLedger(prev, deriveRequirements({ entities: bp.entities }, { game: 'game-q' }));
 
 // 台账落**游戏正规美术目录**（美术替换工作流 §三：每游戏一份 art-ledger.json·`public/games/<game>/art/`·
 // 控制台美术台账工具读此路径 GET /api/art/ledger?slug=game-q）。md 预览仍落 scratchpad（人读·非工具消费）。

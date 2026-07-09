@@ -40,9 +40,16 @@ export interface SettingsProvider {
   hasConfigKey: boolean;
   keyAvailable: boolean;
 }
+export interface SettingsGenKey {
+  envKey: string;
+  apiKeyMasked: string;
+  hasConfigKey: boolean;
+  keyAvailable: boolean;
+}
 export interface SettingsView {
   providers: SettingsProvider[];
   default?: string | null;
+  genKeys?: SettingsGenKey[];
 }
 
 type TestState = { k: 'idle' } | { k: 'testing' } | { k: 'ok' } | { k: 'fail'; error: string };
@@ -61,6 +68,8 @@ export function SettingsPanel({ api, onClose, onSaved }: {
   const [models, setModels] = useState<Record<string, string>>({});
   const [defaultId, setDefaultId] = useState<string | undefined>(undefined);
   const [test, setTest] = useState<Record<string, TestState>>({});
+  const [genInputs, setGenInputs] = useState<Record<string, string>>({}); // 美术生成 key（DASHSCOPE/TRIPO/MESHY）新填明文
+  const [genDirty, setGenDirty] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [saveErr, setSaveErr] = useState<string | null>(null);
   const [savedTick, setSavedTick] = useState(0); // 保存成功一闪提示
@@ -71,6 +80,8 @@ export function SettingsPanel({ api, onClose, onSaved }: {
     setDefaultId(v.default ?? undefined);
     setKeyInputs({});
     setKeyDirty({});
+    setGenInputs({});
+    setGenDirty({});
   }, []);
 
   useEffect(() => {
@@ -91,8 +102,10 @@ export function SettingsPanel({ api, onClose, onSaved }: {
       if (models[p.id]) patch.model = models[p.id];
       if (Object.keys(patch).length) providers[p.id] = patch;
     }
-    return { providers, default: defaultId };
-  }, [view, keyDirty, keyInputs, models, defaultId]);
+    const genKeys: Record<string, string> = {};
+    for (const g of view?.genKeys ?? []) if (genDirty[g.envKey]) genKeys[g.envKey] = genInputs[g.envKey] ?? '';
+    return { providers, default: defaultId, ...(Object.keys(genKeys).length ? { genKeys } : {}) };
+  }, [view, keyDirty, keyInputs, models, defaultId, genDirty, genInputs]);
 
   const persist = useCallback(async (): Promise<boolean> => {
     setSaving(true);
@@ -251,6 +264,32 @@ export function SettingsPanel({ api, onClose, onSaved }: {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* 美术生成 key（R1 ②c·文生图/文生3D·与 LLM 聊天 key 分开）：保存后由服务端注入生成子进程 env。 */}
+        {view !== null && (view.genKeys?.length ?? 0) > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: SHELL.violet, marginBottom: 4 }}>🎨 美术生成 API Key</div>
+            <div style={{ fontSize: 11.5, color: SHELL.dim, lineHeight: 1.6, marginBottom: 8 }}>
+              万相文生图（DASHSCOPE·千问聊天 key 可复用不必重填）/ Tripo / Meshy 文生 3D。没配 key 时生成自动走
+              mock 占位并附探针说明，绝不静默顶替。
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(view.genKeys ?? []).map((g) => (
+                <div key={g.envKey} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${SHELL.line}`, borderRadius: 8 }}>
+                  <code style={{ fontSize: 11, color: SHELL.sub, minWidth: 160 }}>{g.envKey}</code>
+                  <input
+                    type="password"
+                    value={genInputs[g.envKey] ?? ''}
+                    onChange={(e) => { setGenInputs((m) => ({ ...m, [g.envKey]: e.target.value })); setGenDirty((m) => ({ ...m, [g.envKey]: true })); }}
+                    placeholder={g.apiKeyMasked ? `已存：${g.apiKeyMasked}（留空=不改）` : (g.keyAvailable ? '已由环境/千问 key 提供（可覆盖）' : '粘贴 API Key')}
+                    style={{ flex: 1, padding: '7px 10px', background: SHELL.bg2, color: SHELL.text, border: `1px solid ${SHELL.line}`, borderRadius: 6, fontSize: 12, outline: 'none' }}
+                  />
+                  <span style={{ fontSize: 11, color: g.keyAvailable ? SHELL.ok : SHELL.dim }}>{g.keyAvailable ? '● 可用' : '○ 未配'}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

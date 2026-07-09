@@ -1,5 +1,8 @@
 # game-q《Neon Siege》资产需求规格表（2D 版 · 对 PST 美术自动生成管线 · REQ-DEMO-T1）
 
+> **⚠ 只读视图（Lead 2026-07-09·需求真相合一）**：机器真相=`public/games/game-q/art/art-ledger.json`（本文的手拼提示词已按 skinKey 回填台账行 `prompt` 字段·管线/平台只读台账）。**勿再手改本文当真相**——改提示词去美术平台按编号改，或改台账行。私有编号 q-spr-NN 已废弃，以 art-NN 为准。
+
+
 > 立：LEAD（game-q 建造者本人）· 2026-07-08 · owner「先解决 2D 资产描述 + 把游戏变回 2D」。
 > **game-q 已变回 2D**（CanvasRenderer·俯视·Shape/Color 图元·commit 见 git log）——3D 盒庭版停在历史（`git show 8de5a11c`），本表是 2D 版的资产皮肤槽规格。
 > **为何 2D 更贴管线**：冲刺主力=2D wanx。2D 塔防每个主体=**一张俯视精灵**（`art:`→`Sprite.textureKey`·单图·无 PBR 套图/无法线/无 HDRI）——这才是「有皮肤槽→换皮」的教科书样例。3D 版逼着做 PBR 贴图落在关键路径外，故退回。

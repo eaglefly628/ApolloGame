@@ -306,6 +306,24 @@ def _config_model(pid: str):
     m = _config_provider(pid).get('model')
     return m if isinstance(m, str) and m.strip() else None
 
+GEN_KEY_NAMES = ('DASHSCOPE_API_KEY', 'TRIPO_API_KEY', 'MESHY_API_KEY')
+
+def _gen_env() -> dict:
+    """美术生成子进程的 env：进程 env + 设置面板配置的生成 key（config.genKeys；千问缺省回退
+    providers.qwen.apiKey——DashScope 一 key 两用）。env 已有的**不覆盖**（显式 env 优先）。key 绝不打印/落日志。"""
+    env = dict(os.environ)
+    cfg = _load_config()
+    gk = cfg.get('genKeys') if isinstance(cfg.get('genKeys'), dict) else {}
+    for name in GEN_KEY_NAMES:
+        v = gk.get(name)
+        if isinstance(v, str) and v.strip() and not env.get(name):
+            env[name] = v.strip()
+    if not env.get('DASHSCOPE_API_KEY'):
+        q = _config_api_key('qwen')
+        if q:
+            env['DASHSCOPE_API_KEY'] = q
+    return env
+
 def get_api_key(provider: str) -> str | None:
     if provider == 'mock':
         return 'mock' if _mock_enabled() else None
@@ -1072,7 +1090,17 @@ def _settings_view() -> dict:
             'hasConfigKey': cfg_key is not None,
             'keyAvailable': get_api_key(pid) is not None,
         })
-    return {'providers': providers, 'default': cfg.get('default')}
+    gk = cfg.get('genKeys') if isinstance(cfg.get('genKeys'), dict) else {}
+    gen_keys = []
+    for name in GEN_KEY_NAMES:
+        cfg_v = gk.get(name) if isinstance(gk.get(name), str) and str(gk.get(name)).strip() else None
+        gen_keys.append({
+            'envKey': name,
+            'apiKeyMasked': _mask_key(cfg_v) if cfg_v else '',
+            'hasConfigKey': cfg_v is not None,
+            'keyAvailable': bool(os.environ.get(name) or cfg_v or (name == 'DASHSCOPE_API_KEY' and _config_api_key('qwen'))),
+        })
+    return {'providers': providers, 'default': cfg.get('default'), 'genKeys': gen_keys}
 
 def handle_settings_get() -> dict:
     return _settings_view()
@@ -1098,6 +1126,18 @@ def handle_settings_put(body: dict) -> dict:
             if 'model' in patch and isinstance(patch.get('model'), str) and patch['model'].strip():
                 cur['model'] = patch['model'].strip()
             cfg['providers'][pid] = cur
+    gen_in = body.get('genKeys')
+    if isinstance(gen_in, dict):  # 生成 key（美术 API·R1 ②c）：送了才改；空串=清除
+        cur = cfg.get('genKeys') if isinstance(cfg.get('genKeys'), dict) else {}
+        cur = dict(cur)
+        for name in GEN_KEY_NAMES:
+            if name in gen_in:
+                v = gen_in.get(name)
+                if isinstance(v, str) and v.strip():
+                    cur[name] = v.strip()
+                else:
+                    cur.pop(name, None)
+        cfg['genKeys'] = cur
     if 'default' in body:
         d = body.get('default')
         if isinstance(d, str) and d:
@@ -1422,7 +1462,7 @@ GEN_ADAPTERS = ('tripo', 'meshy', 'qwen')
 
 def handle_asset_generate(body: dict) -> dict:
     """POST /api/assets/generate。body = { adapter:'tripo'|'meshy'|'qwen', prompt:str, game?:str }。
-    默认 mock（本环境 GitHub-only 真调被挡）；脚本自行按 env key 决定 mock/真调。
+    mock 仅在显式 body.mock=true 时传（R1 ②a·去无条件 --mock）；无 key 时脚本自行探针+mock 兜底，绝不静默顶替。
     人审门（M2.5·宪法）：产物**落待审区**（pending.json，不进 index.json）·返回预览 URL；人经
     /api/assets/review approve 才登记入库。生成**绝不**自动入库。"""
     adapter = str(body.get('adapter', '')).strip()
@@ -1434,14 +1474,14 @@ def handle_asset_generate(body: dict) -> dict:
         return {'success': False, 'error': 'prompt 不能为空'}
     if len(prompt) > 500:
         return {'success': False, 'error': 'prompt 过长（≤500 字）'}
-    cmd = ['node', 'scripts/ai-gen.mjs', adapter, prompt, '--mock', '--json']
+    cmd = ['node', 'scripts/ai-gen.mjs', adapter, prompt, '--json'] + (['--mock'] if body.get('mock') else [])
     if game:
         g = str(game)
         if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', g):  # 白名单：防注入/路径穿越
             return {'success': False, 'error': f'非法 game 名: {g}'}
         cmd += ['--game', g]
     try:
-        proc = subprocess.run(**_spawn(cmd), cwd=ROOT, capture_output=True, timeout=180)
+        proc = subprocess.run(**_spawn(cmd), cwd=ROOT, capture_output=True, timeout=180, env=_gen_env())
     except subprocess.TimeoutExpired:
         return {'success': False, 'error': '生成超时（>180s）'}
     out = proc.stdout.decode('utf-8', 'replace').strip()
@@ -1460,7 +1500,7 @@ def handle_asset_generate(body: dict) -> dict:
 def handle_asset_generate_providers() -> dict:
     """GET /api/assets/generate/providers。列出各生成 provider 的 envKey / 是否已配 key（脚本打码·绝不回明文）。"""
     try:
-        proc = subprocess.run(**_spawn(['node', 'scripts/ai-gen.mjs', 'providers']), cwd=ROOT, capture_output=True, timeout=30)
+        proc = subprocess.run(**_spawn(['node', 'scripts/ai-gen.mjs', 'providers']), cwd=ROOT, capture_output=True, timeout=30, env=_gen_env())
         return {'providers': json.loads(proc.stdout.decode('utf-8', 'replace'))}
     except Exception as e:  # 脚本缺失/解析失败不炸端点
         return {'providers': [], 'error': str(e)}
@@ -1481,45 +1521,6 @@ def handle_games_list() -> dict:
                 has_art = (ROOT / 'public' / 'games' / d.name / 'art' / 'index.json').exists()
                 games.append({'id': d.name, 'hasLocalArt': has_art})
     return {'games': games}
-
-
-# ── 引擎 sample 游戏的美术需求台账「填回生成结果」（数据透视器 cockpit 用·PA 域）─────────────
-# 台账文件 = public/games/<game>/art/<game>-art-ledger.json（deriveRequirements 产物·区别于 PST
-# T2 的 library 游戏 art-ledger.json）。cockpit 里某需求行经 ai-gen(千问) 生成+人审入库后，
-# 把生成 id/servedPath 写回该行（gen + status=filled）——即 owner「数据和 ID 都对应，重回游戏目录」。
-
-_ART_NO_RE2 = re.compile(r'art-\d+')
-
-def handle_art_needs_fill(body: dict) -> dict:
-    """POST /api/art/needs-fill { game, no, gen?:{id,servedPath,at} }。gen 省略/空=清回 needs-art。"""
-    game = str(body.get('game', '')).strip()
-    no = str(body.get('no', '')).strip()
-    gen = body.get('gen')
-    if not GAME_RE.fullmatch(game):
-        return {'success': False, 'error': f'非法 game: {game or "(空)"}'}
-    if not _ART_NO_RE2.fullmatch(no):
-        return {'success': False, 'error': f'非法编号: {no or "(空)"}'}
-    # 台账路径：优先标准 art-ledger.json（game-q 域/PST T2 约定），回退 materialize 的 <game>-art-ledger.json。
-    art = ROOT / 'public' / 'games' / game / 'art'
-    f = next((p for p in [art / 'art-ledger.json', art / f'{game}-art-ledger.json'] if p.is_file()), None)
-    if f is None:
-        return {'success': False, 'error': '无台账（art-ledger.json）'}
-    try:
-        ledger = json.loads(f.read_text('utf-8'))
-    except Exception as e:
-        return {'success': False, 'error': f'台账读取失败: {e}'}
-    row = next((r for r in ledger.get('rows', []) if r.get('no') == no), None)
-    if row is None:
-        return {'success': False, 'error': f'台账无 {no}'}
-    if isinstance(gen, dict) and gen.get('id'):
-        row['gen'] = {'id': str(gen.get('id')), 'servedPath': gen.get('servedPath'), 'at': str(gen.get('at', ''))}
-        row['status'] = 'filled'
-    else:
-        row['gen'] = None
-        row['status'] = 'needs-art'
-    f.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    print(c("  [ART]", 'g'), f"{game} {no} → {row['status']}")
-    return {'success': True, 'no': no, 'status': row['status'], 'gen': row['gen']}
 
 
 def handle_asset_vendor(body: dict) -> dict:
@@ -1620,7 +1621,7 @@ def handle_asset_review(body: dict) -> dict:
 def _art_replace_cli(args: list) -> dict:
     """shell scripts/art-replace.mjs → 解析末行 JSON（前面可能有 warn）。"""
     try:
-        proc = subprocess.run(**_spawn(['node', 'scripts/art-replace.mjs', *args]), cwd=ROOT, capture_output=True, timeout=300)
+        proc = subprocess.run(**_spawn(['node', 'scripts/art-replace.mjs', *args]), cwd=ROOT, capture_output=True, timeout=300, env=_gen_env())
     except subprocess.TimeoutExpired:
         return {'ok': False, 'error': '美术工作流超时'}
     out = proc.stdout.decode('utf-8', 'replace').strip()
@@ -1661,7 +1662,7 @@ def handle_art_batch(body: dict) -> dict:
     """POST /api/art/batch {slug, packId, mock?}。按风格包整批生成（默认 mock·断点续跑·无 key 行探针+mock）。"""
     slug = str(body.get('slug', '')).strip()
     pack = str(body.get('packId', '')).strip()
-    mock = body.get('mock', True)  # 本环境 GitHub-only·默认 mock；真调需放宽网络 + key
+    mock = bool(body.get('mock', False))  # 显式才 mock（R1 ②）；无 key 时脚本探针+mock 兜底
     if not _valid_slug(slug):
         return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
     if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', pack):  # 白名单：防注入
@@ -1709,19 +1710,29 @@ def _art_save_manifest(slug: str, res: dict, note: str, extra: dict) -> dict:
 def handle_art_regenerate(body: dict) -> dict:
     """POST /api/art/regenerate {slug, no, packId, query?, mock?}。点名单槽重新生成（可改 prompt）。"""
     slug = str(body.get('slug', '')).strip(); no = str(body.get('no', '')).strip()
-    pack = str(body.get('packId', '')).strip(); query = body.get('query'); mock = body.get('mock', True)
+    pack = str(body.get('packId', '')).strip(); query = body.get('query'); mock = bool(body.get('mock', False))
     if not _valid_slug(slug):
         return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
     if not _ART_NO_RE.fullmatch(no):
         return {'success': False, 'error': f'非法编号: {no or "(空)"}'}
     if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', pack):
         return {'success': False, 'error': f'非法 packId: {pack or "(空)"}'}
-    args = ['regen', slug, no, pack]
+    # 平台双数据源（R1 ①）：library 卡带走 regen（重钉 manifest）；编译期游戏（无 manifest·有台账）走 fill
+    # （写回=skinKey 别名登记本地 index·蓝图零改动）。同一端点同一 UI，差异收在这里。
+    is_game = not (LIBRARY_DIR / slug / 'manifest.json').is_file() and \
+        (ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json').is_file()
+    cmdname = 'fill' if is_game else 'regen'
+    args = [cmdname, slug, no, pack]
     if isinstance(query, str) and query.strip():
         args += ['--query', query.strip()]
     if mock:
         args.append('--mock')
     res = _art_replace_cli(args)
+    if is_game:
+        if res.get('ok'):
+            print(c("  [ART]", 'g'), f"fill {slug} {no}·{pack}")
+        return {'success': bool(res.get('ok')), 'no': no, 'row': res.get('row'), 'summary': res.get('summary'),
+                **({} if res.get('ok') else {'error': res.get('error', 'fill 失败')})}
     return _art_save_manifest(slug, res, f'美术点名重生成 {no}', {'no': no, 'row': res.get('row'), 'summary': res.get('summary')})
 
 def handle_art_swap(body: dict) -> dict:
@@ -1751,6 +1762,16 @@ def handle_art_upload(body: dict) -> dict:
         return {'success': False, 'error': 'dataBase64 解码失败'}
     if not raw:
         return {'success': False, 'error': '上传内容为空'}
+    # 内容嗅探（R1 ④·非仅扩展名）：magic bytes 与扩展名不符即拒。
+    magic_ok = {
+        'png': raw.startswith(b'\x89PNG\r\n\x1a\n'),
+        'webp': raw.startswith(b'RIFF') and raw[8:12] == b'WEBP',
+        'jpg': raw.startswith(b'\xff\xd8\xff'),
+        'jpeg': raw.startswith(b'\xff\xd8\xff'),
+        'glb': raw.startswith(b'glTF'),
+    }.get(ext, False)
+    if not magic_ok:
+        return {'success': False, 'error': f'文件内容与扩展名 .{ext} 不符（magic bytes 校验失败）'}
     rel = f'gen/{no}-up.{ext}'
     abs_path = ROOT / 'public' / 'games' / slug / 'art' / rel
     abs_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1767,6 +1788,32 @@ def handle_art_upload(body: dict) -> dict:
         'license': '用户上传', 'source': 'upload',
         'provenance': {'generator': 'upload', 'prompt': '', 'model': 'user-upload', 'mock': False, 'generatedAt': ''},
     }]
+    # 编译期游戏（无 manifest·有台账）：写回=skinKey 别名登记 + 台账行直更（无 manifest 可钉）。
+    is_game = not (LIBRARY_DIR / slug / 'manifest.json').is_file()
+    led_f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    if is_game:
+        if not led_f.is_file():
+            return {'success': False, 'error': '无台账（编译期游戏需先产 art-ledger.json）'}
+        ledger = json.loads(led_f.read_text('utf-8'))
+        row = next((r for r in ledger.get('rows', []) if r.get('no') == no), None)
+        if row is None:
+            return {'success': False, 'error': f'台账无 {no}'}
+        skin = row.get('skinKey')
+        if skin:  # 别名=游戏消费的皮肤 key → 贴图即上画面
+            idx['assets'] = [a for a in idx['assets'] if a.get('id') != skin] + [{
+                'id': skin, 'type': 'mesh' if ext == 'glb' else 'texture', 'description': f'上传替换 {no}（皮肤槽 {skin}）',
+                'status': 'filled', 'path': f'/games/{slug}/art/{rel}', 'category': 'ai-gen', 'tags': ['upload', no, 'skin'],
+                'license': '用户上传', 'source': 'upload',
+                'provenance': {'generator': 'upload', 'prompt': '', 'model': 'user-upload', 'mock': False, 'generatedAt': ''},
+            }]
+        idx['assets'].sort(key=lambda a: a.get('id', ''))
+        _write_json(idx_f, idx)
+        row.setdefault('history', []).append({'action': 'upload', 'assetId': local_id})
+        row['status'] = 'replaced'
+        row['gen'] = {'source': 'upload', 'localId': local_id, 'servedPath': f'/games/{slug}/art/{rel}'}
+        row['provenance'] = {'model': 'user-upload', 'prompt': row.get('query', ''), 'date': '', 'license': '用户上传'}
+        led_f.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        return {'success': True, 'no': no, 'localId': local_id, 'row': row}
     idx['assets'].sort(key=lambda a: a.get('id', ''))
     _write_json(idx_f, idx)
     res = _art_replace_cli(['swap', slug, no, local_id, '--upload'])
@@ -1775,7 +1822,7 @@ def handle_art_upload(body: dict) -> dict:
 def handle_art_reskin(body: dict) -> dict:
     """POST /api/art/reskin {slug, packId, newSlug?, mock?}。同玩法换风格包 → 存新卡带（meta.reskinOf 谱系）。"""
     slug = str(body.get('slug', '')).strip(); pack = str(body.get('packId', '')).strip()
-    new_slug = str(body.get('newSlug', '')).strip(); mock = body.get('mock', True)
+    new_slug = str(body.get('newSlug', '')).strip(); mock = bool(body.get('mock', False))
     if not _valid_slug(slug):
         return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
     if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', pack):
@@ -2628,11 +2675,6 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_art_replace(body)
             except Exception as e:
                 data = {'success': False, 'error': f'replace 异常: {e}'}
-        elif path == '/api/art/needs-fill':
-            try:
-                data = handle_art_needs_fill(body)
-            except Exception as e:
-                data = {'success': False, 'error': f'needs-fill 异常: {e}'}
         elif path == '/api/art/regenerate':
             try:
                 data = handle_art_regenerate(body)

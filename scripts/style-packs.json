@@ -1,0 +1,84 @@
+{
+  "neon-synthwave": {
+    "packId": "neon-synthwave",
+    "name": "霓虹合成波",
+    "promptZh": "霓虹合成波风格，赛博朋克，深紫黑底＋品红青光晕，扫描线，80 年代复古未来，高对比霓虹描边",
+    "promptEn": "neon synthwave style, cyberpunk, deep purple-black background with magenta and cyan glow, retro-futuristic 80s, high-contrast neon rim light",
+    "palette": [
+      852513,
+      2495559,
+      7996651,
+      16722541,
+      383464,
+      13760511
+    ],
+    "negative": {
+      "zh": "写实照片，杂乱背景，低对比，土黄",
+      "en": "photorealistic, cluttered background, low contrast, muddy brown"
+    },
+    "post": {
+      "paletteSnap": true
+    },
+    "params": {
+      "provider": "qwen",
+      "model": "wanx2.1-t2i-turbo",
+      "seed": 1770
+    }
+  },
+  "pixel-retro": {
+    "packId": "pixel-retro",
+    "name": "像素复古",
+    "promptZh": "16 位像素风，复古掌机调色板，硬边像素，清晰轮廓，透明底，游戏精灵图标",
+    "promptEn": "16-bit pixel art, retro handheld palette, hard-edged pixels, crisp silhouette, transparent background, game sprite icon",
+    "palette": [
+      1711148,
+      6104925,
+      11615827,
+      15695191,
+      16764277,
+      11006064,
+      3716964,
+      4302582
+    ],
+    "negative": {
+      "zh": "模糊，抗锯齿，渐变噪点，写实",
+      "en": "blurry, anti-aliased, gradient noise, photorealistic"
+    },
+    "post": {
+      "paletteSnap": true,
+      "pixelGrid": 32
+    },
+    "params": {
+      "provider": "qwen",
+      "model": "wanx2.1-t2i-turbo",
+      "seed": 1771
+    }
+  },
+  "cartoon-thick": {
+    "packId": "cartoon-thick",
+    "name": "厚描边卡通",
+    "promptZh": "厚描边卡通风格，明快饱和色，扁平上色，粗黑轮廓线，友好可爱，干净白底",
+    "promptEn": "thick-outline cartoon style, bright saturated colors, flat shading, bold black outlines, friendly and cute, clean white background",
+    "palette": [
+      2829114,
+      16777215,
+      16739179,
+      16767293,
+      7064439,
+      5084927,
+      10182117
+    ],
+    "negative": {
+      "zh": "写实，暗沉，噪点，细碎纹理",
+      "en": "photorealistic, dark, noisy, fine cluttered texture"
+    },
+    "post": {
+      "paletteSnap": true
+    },
+    "params": {
+      "provider": "qwen",
+      "model": "wanx2.1-t2i-turbo",
+      "seed": 1772
+    }
+  }
+}

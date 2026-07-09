@@ -5,6 +5,7 @@
 // 玩法规则一律在 blueprint.ts 的数据 + 引擎能力里（见其头注）。
 import { Engine } from '../../runtime/engine.js';
 import { CanvasRenderer } from '@renderer/index.js';
+import { AssetManager, ImageAssetLoader, parseAssetIndex, registerAssetIndex } from '@assets/index.js';
 import { QueuedInputSource, canvasPointerToScreen } from '@net/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap } from '@ui/components/index.js';
@@ -120,10 +121,22 @@ export function mount(container: HTMLElement): () => void {
   // ── sim 生命周期（可重开）：engine + renderer + 画布指针胶水 + 逐帧 HUD 投影 ──
   let sim: { engine: Engine; renderer: CanvasRenderer; canvas: HTMLCanvasElement; onDown: (e: PointerEvent) => void; unsub: () => void } | null = null;
 
+  // 皮肤资产（R2 ①·美术替换工作流写回端）：拉本地美术 index → 皮肤 key（q/tower-pulse…）就绪即换装；
+  // 无 index/加载失败 = 纯程序化观感照旧（chooseRenderMode 回退 Shape）——美术是增量，不是依赖。
+  const skinAssets = new AssetManager(new ImageAssetLoader());
+  void (async () => {
+    try {
+      const r = await fetch('/games/game-q/art/index.json', { cache: 'no-store' });
+      if (!r.ok) return;
+      registerAssetIndex(skinAssets, parseAssetIndex(await r.json())); // path 已是站点绝对路径 → baseUrl ''
+      await skinAssets.loadAll();
+    } catch { /* 无美术目录/解析失败 → 回退程序化观感·不炸游戏 */ }
+  })();
+
   function startSim(): void {
     const engine = new Engine({ input });
     engine.load(buildBlueprint());
-    const renderer = new CanvasRenderer({ width: FIELD_W, height: FIELD_H, background: 'transparent' });
+    const renderer = new CanvasRenderer({ width: FIELD_W, height: FIELD_H, background: 'transparent', assets: skinAssets });
     engine.attachRenderer(renderer, scene);
     const canvas = scene.querySelector('canvas') as HTMLCanvasElement;
     canvas.style.zIndex = '0';
