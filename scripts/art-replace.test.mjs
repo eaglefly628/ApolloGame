@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb } from './art-replace.mjs';
+import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot } from './art-replace.mjs';
 import { STYLE_PACKS, STYLE_PACK_IDS } from './style-packs.mjs';
 
 const MANIFEST = {
@@ -119,6 +119,55 @@ describe('T1 ⑤ 对位替换', () => {
     expect(r.summary.cached).toBe(3); // 其余 3 行命中缓存不动（不重扣费）
     expect(r.summary.generated).toBe(1); // 只重生成 art-03
   }));
+});
+
+describe('需求推导（retrofit·色块游戏无 art: 槽位时）', () => {
+  const Q_MANIFEST = {
+    entities: {
+      base: { Mesh3D: { shape: 'sphere' }, Color: { tint: 0x8effc9 }, Material3D: { emissive: 0x8effc9 } },
+      hidden: { Shape: { kind: 'box', width: 50, height: 50 }, Visibility: { visible: false } }, // 隐形碰撞体不计
+      logic: { Resource: { id: 'gold', current: 0 } }, // 纯逻辑不计
+      'pad-0-p': { Mesh3D: { shape: 'cylinder', frontTint: 0x2b6f86 } },
+      'pad-1-p': { Mesh3D: { shape: 'cylinder', frontTint: 0x2b6f86 } },
+      'pad-2-p': { Mesh3D: { shape: 'cylinder', frontTint: 0x2b6f86 } },
+      lib: { PrefabLibrary: { templates: { enemy_basic: { entities: { body: { Mesh3D: { shape: 'sphere', frontTint: 0xff0000 }, Material3D: { emissive: 0xff0000 } } } } } } },
+    },
+  };
+  it('扫视觉实体+预制模板·归并结构等价实例·跳过隐形/纯逻辑', () => {
+    const r = deriveRequirements(Q_MANIFEST, { game: 'q' });
+    expect(r.mode).toBe('requirements');
+    expect(r.instances).toBe(5); // base + 3 pads + prefab body（hidden/logic 不计）
+    expect(r.count).toBe(3); // base · pad-p(×3 归一) · prefab enemy body
+    const pad = r.rows.find((x) => x.query.includes('pad'));
+    expect(pad.placeholder.count).toBe(3); // 3 个 pad 归成一条
+    expect(r.rows.every((x) => x.kind === 'model3d')).toBe(true); // 全 Mesh3D → model3d
+    expect(r.rows.every((x) => x.status === 'needs-art' && x.context.includes('美术需求'))).toBe(true);
+  });
+});
+
+describe('T2 单槽重解析地基（点名优化/三式替换）', () => {
+  it('resetRow：单行打回待生成·可改 query·留 history', () => {
+    const l = deriveLedger(MANIFEST, { game: 'g' });
+    l.rows[0].status = 'generated'; l.rows[0].gen = { cacheKey: 'x' };
+    const r = resetRow(l, l.rows[0].no, { query: 'new prompt' });
+    expect(r.ok).toBe(true);
+    expect(l.rows[0].status).toBe('placeholder');
+    expect(l.rows[0].query).toBe('new prompt');
+    expect(l.rows[0].gen).toBeNull();
+    expect(l.rows[0].history[0].action).toBe('regen');
+    expect(resetRow(l, 'art-99', {}).ok).toBe(false); // 无此编号
+  });
+  it('swapSlot：把某槽引用直接钉到已存在资产 id·status→replaced·原 manifest 不改', () => {
+    const l = deriveLedger(MANIFEST, { game: 'g' });
+    const heroRow = l.rows.find((x) => x.slot.entity === 'hero');
+    const r = swapSlot(MANIFEST, l, heroRow.no, 'dungeon/knight_blue', { source: 'library' });
+    expect(r.ok).toBe(true);
+    expect(r.manifest.entities.hero.Sprite.textureKey).toBe('dungeon/knight_blue');
+    expect(MANIFEST.entities.hero.Sprite.textureKey).toBe('art:brave knight'); // 原不改
+    expect(heroRow.status).toBe('replaced');
+    expect(heroRow.gen.source).toBe('library');
+    expect(heroRow.history.some((h) => h.action === 'swap-library')).toBe(true);
+  });
 });
 
 describe('T1 风格包库', () => {
