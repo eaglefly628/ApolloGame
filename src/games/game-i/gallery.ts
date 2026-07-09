@@ -5,7 +5,7 @@
 // 母法：docs/design/apollo-ui-contract.md（控件契约总表）。
 
 import type { LayoutNode } from '@ui/components/index.js';
-import { uiTextureUrl, SKIN_METAL, SKIN_WOOD, SKIN_STONE, SKIN_SCROLL, BTN_BLUE, BTN_GREEN, BTN_RED, BTN_YELLOW, BTN_GREY, BTN_ROUND, BTN_GLOSSY, BTN_GHOST } from './ui-assets.js';
+import { uiTextureUrl, SKIN_METAL, SKIN_WOOD, SKIN_STONE, SKIN_SCROLL, BTN_BLUE, BTN_GREEN, BTN_RED, BTN_YELLOW, BTN_GREY, BTN_ROUND, BTN_GLOSSY, BTN_GHOST, CARD_JOKER, CARD_FLOWER } from './ui-assets.js';
 import { THEME_OPTIONS } from './themes.js';
 import { buildShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { buildPickHand, INITIAL_PICK, type PickState } from './pickcards.js';
@@ -53,6 +53,9 @@ const BTN_GREY_URL = uiTextureUrl(BTN_GREY);
 const BTN_ROUND_URL = uiTextureUrl(BTN_ROUND);
 const BTN_GLOSSY_URL = uiTextureUrl(BTN_GLOSSY);
 const BTN_GHOST_URL = uiTextureUrl(BTN_GHOST);
+// 贴图=一张卡的按钮（fluentui 卡牌·MIT）
+const CARD_JOKER_URL = uiTextureUrl(CARD_JOKER);
+const CARD_FLOWER_URL = uiTextureUrl(CARD_FLOWER);
 // vendored 卡通插画（undraw·MIT·内容丰富的彩色卡通场景）
 const CARTOON_ASTRO = uiTextureUrl('tex/cartoon-astronaut');
 const CARTOON_CAT = uiTextureUrl('tex/cartoon-cat');
@@ -952,6 +955,13 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           type: 'Button', id, props: { label, skin, action: 'click', actionArg: id },
           layout: { width: 150, height: 46 },
         })) },
+      { type: 'Label', id: 't-skin-card', props: { text: '贴图=一张卡的按钮（skin 直接贴一张卡牌图·牌面即按钮·卡牌比例·fluentui 卡牌·MIT）', size: 'xs', color: 'dim' } },
+      { type: 'Panel', id: 'skin-card-row', props: { bare: true }, layout: { direction: 'row', gap: 16, padding: 18, align: 'center' },
+        children: [
+          { type: 'Button', id: 'sk-card-joker', props: { label: '', skin: CARD_JOKER_URL, action: 'click', actionArg: 'card-joker' }, layout: { width: 120, height: 168 } },
+          { type: 'Button', id: 'sk-card-flower', props: { label: '', skin: CARD_FLOWER_URL, action: 'click', actionArg: 'card-flower' }, layout: { width: 120, height: 168 } },
+          { type: 'Button', id: 'sk-card-play', props: { label: '出 王牌', skin: CARD_JOKER_URL, action: 'click', actionArg: 'card-play' }, layout: { width: 120, height: 168 } },
+        ] },
 
       divider('d-cartoon'),
       sectionTitle('t-cartoon', 'IMAGE · 卡通美术画廊（vendored 自 undraw·MIT·内容丰富的彩色卡通场景插画·按资产 key 解析喂 Image）'),

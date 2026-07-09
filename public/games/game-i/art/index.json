@@ -258,6 +258,66 @@
       }
     },
     {
+      "id": "tex/card-flower",
+      "type": "texture",
+      "description": "flower playing cards flat · fluentui-emoji",
+      "status": "filled",
+      "path": "/games/game-i/art/fluentui/flower_playing_cards_flat.svg",
+      "spec": {
+        "format": "svg",
+        "width": 32,
+        "height": 32,
+        "transparent": true
+      },
+      "category": "emoji",
+      "tags": [
+        "flower",
+        "playing",
+        "cards",
+        "flat",
+        "fluentui-emoji",
+        "emoji",
+        "color"
+      ],
+      "style": "cartoon.flat",
+      "license": "MIT",
+      "source": "fluentui-emoji",
+      "provenance": {
+        "repo": "microsoft/fluentui-emoji",
+        "ref": "main",
+        "vendoredFrom": "fluentui/flower_playing_cards_flat"
+      }
+    },
+    {
+      "id": "tex/card-joker",
+      "type": "texture",
+      "description": "joker flat · fluentui-emoji",
+      "status": "filled",
+      "path": "/games/game-i/art/fluentui/joker_flat.svg",
+      "spec": {
+        "format": "svg",
+        "width": 32,
+        "height": 32,
+        "transparent": true
+      },
+      "category": "emoji",
+      "tags": [
+        "joker",
+        "flat",
+        "fluentui-emoji",
+        "emoji",
+        "color"
+      ],
+      "style": "cartoon.flat",
+      "license": "MIT",
+      "source": "fluentui-emoji",
+      "provenance": {
+        "repo": "microsoft/fluentui-emoji",
+        "ref": "main",
+        "vendoredFrom": "fluentui/joker_flat"
+      }
+    },
+    {
       "id": "tex/cartoon-astronaut",
       "type": "texture",
       "description": "Astronaut 0o7w · undraw",

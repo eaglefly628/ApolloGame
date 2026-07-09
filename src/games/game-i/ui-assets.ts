@@ -23,6 +23,9 @@ export const BTN_GHOST = 'tex/btn-ghost';
 // vendored 卡通插画（undraw·MIT·内容丰富的彩色卡通场景·经 Image 控件展示）
 export const CARTOON = ['astronaut', 'cat', 'dog', 'camping', 'gaming', 'music', 'birthday', 'robot', 'travel'] as const;
 export type CartoonKey = `tex/cartoon-${(typeof CARTOON)[number]}`;
+// vendored 卡牌贴图（fluentui·MIT·彩色卡通牌面·贴到 Button.skin 上=贴图按钮=一张卡）
+export const CARD_JOKER = 'tex/card-joker';
+export const CARD_FLOWER = 'tex/card-flower';
 
 const kenneyBtn = (id: string, file: string): Record<string, unknown> => ({
   id, type: 'texture', status: 'filled', path: `/games/game-i/art/kenney-ui/${file}.png`,
@@ -57,6 +60,8 @@ export const GAME_I_UI_INDEX: AssetIndex = parseAssetIndex({
     kenneyBtn(BTN_GLOSSY, 'green-button03'),
     kenneyBtn(BTN_GHOST, 'yellow-button13'),
     ...CARTOON.map((k) => cartoon(k)),
+    { id: CARD_JOKER, type: 'texture', status: 'filled', path: '/games/game-i/art/fluentui/joker_flat.svg', description: '小丑牌·fluentui', spec: { usage: 'sprite', width: 32, height: 32 }, category: 'icon.ui', license: 'MIT', source: 'fluentui', provenance: { repo: 'microsoft/fluentui-emoji', ref: 'main', vendoredFrom: 'fluentui/joker_flat' } },
+    { id: CARD_FLOWER, type: 'texture', status: 'filled', path: '/games/game-i/art/fluentui/flower_playing_cards_flat.svg', description: '花札牌·fluentui', spec: { usage: 'sprite', width: 32, height: 32 }, category: 'icon.ui', license: 'MIT', source: 'fluentui', provenance: { repo: 'microsoft/fluentui-emoji', ref: 'main', vendoredFrom: 'fluentui/flower_playing_cards_flat' } },
   ],
 });
 
