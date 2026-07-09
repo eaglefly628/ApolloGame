@@ -173,7 +173,7 @@ function laneTrackEntities(): Record<string, EntityBlueprint> {
   LANE_NODES.forEach((n, i) => { out[`track-nglow-${i}`] = { Transform: { x: n.x, y: n.y, rotation: 0, scaleX: 1, scaleY: 1 }, Shape: { kind: 'circle', radius: LANE_WIDTH / 2 + 6 }, Color: { tint: TINT.laneEdge, alpha: 0.16 } }; });
   LANE_EDGES.forEach((_, i) => { const s = seg(i); out[`track-seg-${i}`] = { Transform: { x: s.mx, y: s.my, rotation: s.ang, scaleX: 1, scaleY: 1 }, Shape: { kind: 'box', width: s.len, height: LANE_WIDTH }, Color: { tint: TINT.laneFill, alpha: 0.96 } }; });
   LANE_NODES.forEach((n, i) => { out[`track-node-${i}`] = { Transform: { x: n.x, y: n.y, rotation: 0, scaleX: 1, scaleY: 1 }, Shape: { kind: 'circle', radius: LANE_WIDTH / 2 }, Color: { tint: TINT.laneFill, alpha: 0.96 } }; });
-  out['spawn-portal'] = { Transform: { x: SPAWN.x, y: SPAWN.y, rotation: 0, scaleX: 1, scaleY: 1 }, Shape: { kind: 'circle', radius: 18 }, Color: { tint: TINT.enemyBasic, alpha: 0.4 } };
+  out['spawn-portal'] = { Transform: { x: SPAWN.x, y: SPAWN.y, rotation: 0, scaleX: 1, scaleY: 1 }, Shape: { kind: 'circle', radius: 18 }, Sprite: { textureKey: SKIN.spawn, anchorX: 0.5, anchorY: 0.5, zOrder: 0 }, Color: { tint: TINT.enemyBasic, alpha: 0.4 } }; // 皮肤槽（PA 会审建议·出生门=场景焦点值真美术）
   return out;
 }
 

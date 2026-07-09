@@ -18,11 +18,20 @@
 > 分单：T1（下条·PST+PA·7/13）→ T2 换皮（下下条·7/18）→ T3 批量冒烟（Opus·7/20）→ T4 3D 线待拉动（P3D 知会·不进关键路径）→ T5 彩排（Lead 主持·7/27）。
 > **队列重排（冲刺期有效）**：PST=T1→心跳余项（并入 T1 进度灯）→T2；**音频 B 件、M1 货架墙、REQ-3D-像素断言、REQ-CAP-改掷收编一律冲刺后**；引擎域冻结非必要改动。
 
-### NOTE-PA→game-q · game-q 台账 24/31 行无 skinKey → 平台填不回，确认是否有意 · [2026-07-09] · PA 契约会审派生（`art-platform-handoff-2026-07-09.md` §致 PA·观察 3）→ **待 game-q 程序员确认** · status: **open（非缺陷·求确认·不阻塞）** · 类型: 覆盖度知会（game-q 域自决）
+### NOTE-PA→game-q · game-q 台账 24/31 行无 skinKey → 平台填不回，确认是否有意 · [2026-07-09] · PA 契约会审派生（`art-platform-handoff-2026-07-09.md` §致 PA·观察 3）→ **game-q 已回复（见末行）** · status: **closed（spawn-portal 采纳·余有意·2026-07-09）** · 类型: 覆盖度知会（game-q 域自决）
 > **背景**：PA 会审美术平台契约时对了 `public/games/game-q/art/art-ledger.json`——31 行需求里**只有 7 行带 `skinKey`**（base·pad·3 敌体·2 塔体），其余 **24 行无 skinKey**。按终态档 §五，编译期游戏线写回=**skinKey 别名登记**，故**这 24 行现无法经平台生成/填回**（fill/upload 的 skinKey 别名无锚点）。
 > **无 skinKey 的 24 行**（都是次要/子部件·多半有意不上皮）：base-core/rim/shield、pad-0-pc、burst_*/zap_*:flash（FX）、enemy_*:hpbar/inner、tower_*:core/ring、spawn-portal、track-glow/nglow/node/seg。
 > **求确认（二选一·你的域你定）**：① **有意**（这些是程序化 FX/轨段/子部件·不需换皮）→ 无需动作，回此条标「有意·closed」即可；② **该可换皮的漏了**（如 spawn-portal / tower core 你想上真美术）→ 照交接档「加可换皮实体三行」给对应视觉实体加 `Sprite` 皮肤槽（theme skin key → blueprint `Sprite` 行 → `npx vite-node scripts/game-q-art-requirements.mjs` 重跑·编号 append-only 旧号不动·新行自带 skinKey）。
 > **PA 立场**：schema 本身无缺陷（四项契约会审全 PASS）；这纯是 game-q 的皮肤槽**覆盖度**取舍，故只知会不开实现单、不直改你的蓝图。
+> **game-q 回复（2026-07-09·域自决）**：② 采纳 **spawn-portal**（独立场景焦点=敌出生门·值真美术）——已加皮肤槽（`theme SKIN.spawn` + `blueprint` Sprite 行·重跑台账 append-only：art-27 得 `skinKey=q/spawn`·旧号零变·现 8 行带皮）。tower core 不采（子部件·并入 `q/tower-*` 塔皮）。余 22 行确认 **①有意·保留程序化**：FX（burst/zap flash·主题色驱动随调色板换皮）、Gauge 血条（hpbar/base-shield·会缩放不能静态皮）、子部件（base-core/rim、pad-pc、enemy inner·并入父皮）、射程环（玩法提示）、车道（track-*·NavGraph 绘制+调色板换皮）。谢 PA 会审。**closed**。
+
+### NOTE-game-q→PST · 美术台账平台两处可用性缺口（owner 现场）：卡面无描述 + 未生成行无占位图 · [2026-07-09] · game-q 程序员（owner 现场反馈）→ **PST（ArtLedgerPanel 域）** · status: **open** · 类型: 平台 UX 缺口（数据已齐·纯 ArtLedgerPanel 渲染·不改台账数据）
+> **owner 现场痛点**：美术台账平台里「无法知道什么是什么」——卡片只有编号，看不出这条需求是什么；描述词/提示词也看不到。
+> **根因（读 `ArtLedgerPanel.tsx` 定位·数据都在台账里·纯渲染缺口·非数据缺口）**：
+> ① 卡面（`:153-165`）只渲染 `no`+来源标+缩略图+`kind`——**不显 `query`/`context`**（描述在 `:176` 详情面板·要点开才见）→ 一屏「art-01 sprite / art-02 sprite」分不清。
+> ② `thumbUrl`（`:44-47`）只认 `gen.servedPath` → **未生成行（needs-art）无任何缩略图**；详情「占位/原始」框（`:191`）只显 `placeholder.current` **文本**（「2D 色块（circle·#ff5c7a）」）不是图。
+> **建议（都在 ArtLedgerPanel·台账数据无需加）**：A. 卡面加一行 `query`（或 `context` 截断）→ 一眼辨认；B. 未生成行画**占位色块图**：`placeholder.current` 已含形状+色（或让 `deriveRequirements` 顺带补结构化 `placeholder:{shape,tint,w,h}`），panel 据此画 SVG 圆/方色块当占位缩略图；C. 详情/重生成默认词用 `prompt||query`（现 `:155` 只取 `query`·忽略回填的 `prompt`）。
+> **game-q 可配合**：若要真占位图（非 SVG 色块），我可在 game-q 侧把各实体 Shape+Color 渲成占位 PNG 落 `art/placeholders/` 并在台账加 `placeholder.thumb`——PST 定方案我照做（不越域直改平台）。
 
 ### REQ-DEMO-T1-美术替换工作流·产线段 · placeholder 先行+替换列表推导+批量生成+对位替换 · [2026-07-07·07-08 owner 定形两段式] · Lead 图纸=`docs/design/art-replacement-workflow.md`（**唯一权威·本条只摘要**） → **指派：PST（施工）·PA 会审契约（风格包库/台账 schema/缓存键）** · status: **✅ done（PST 产线段 2026-07-08 + Lead 亲手收口 2026-07-09·终态=`docs/design/art-platform-2026-07-09.md`·整改三单 R1/R2/R3 owner 撤单由 Lead 合并落地：平台归一双数据源/去 mock 硬编码/key 配置面+注入/编号 append-only/game-q 皮肤槽写回/风格包迁数据文件·真 key 端到端待 owner key）** · 优先级: **P0** · 期限: 7/13 · 类型: 产品化·美术管线
 > **owner 2026-07-08 定形（替代 07-07 初稿「库查不到就地生成」）**：先出可玩游戏（art: 一律解析到免费库=placeholder）→ 游戏输出**替换列表**（2D/3D/声音/启动画/粒子全类型登记·每条编号/规格/表现描述·**机器从组件数据推导**）→ 配风格包 → 调万相/Tripo/Meshy **整批产出风格统一美术** → 按编号对位替换。换皮/单槽优化=同一机制重跑（工作流档 §二）。

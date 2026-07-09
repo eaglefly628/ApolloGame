@@ -83,7 +83,7 @@ export const ENEMIES: Record<'basic' | 'fast' | 'tank', EnemyDef> = {
 
 // ── 皮肤槽 key（场景件·R2 ①）：本地美术 index 登记这些 id 即换装（chooseRenderMode：
 // 贴图就绪盖过 Shape·未就绪回退现程序化观感——观感一字不变是硬承诺）。
-export const SKIN = { base: 'q/base', pad: 'q/pad' } as const;
+export const SKIN = { base: 'q/base', pad: 'q/pad', spawn: 'q/spawn' } as const;
 
 // ── 经济 / 局面 ────────────────────────────────────────────────────────────
 export const START_GOLD = 245;
