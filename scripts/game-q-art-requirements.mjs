@@ -13,14 +13,17 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const bp = buildBlueprint();
 const ledger = deriveRequirements({ entities: bp.entities }, { game: 'game-q' });
 
-// 台账落 scratchpad（不污染仓库 game-q 目录）
+// 台账落**游戏正规美术目录**（美术替换工作流 §三：每游戏一份 art-ledger.json·`public/games/<game>/art/`·
+// 控制台美术台账工具读此路径 GET /api/art/ledger?slug=game-q）。md 预览仍落 scratchpad（人读·非工具消费）。
+const LEDGER_FILE = join(ROOT, 'public', 'games', 'game-q', 'art', 'art-ledger.json');
 const OUT = process.env.ARTREQ_OUT || join(tmpdir(), 'game-q-artreq');
+mkdirSync(dirname(LEDGER_FILE), { recursive: true });
 mkdirSync(OUT, { recursive: true });
-writeFileSync(join(OUT, 'game-q-art-ledger.json'), JSON.stringify(ledger, null, 2) + '\n');
+writeFileSync(LEDGER_FILE, JSON.stringify(ledger, null, 2) + '\n');
 
 if (process.argv.includes('--gen')) {
   const r = await batchGenerate(ledger, 'pixel-retro', { root: OUT, game: 'game-q', mock: true });
-  writeFileSync(join(OUT, 'game-q-art-ledger.json'), JSON.stringify(ledger, null, 2) + '\n');
+  writeFileSync(LEDGER_FILE, JSON.stringify(ledger, null, 2) + '\n');
   console.error('[gen]', JSON.stringify(r.summary));
 }
 
@@ -34,7 +37,7 @@ for (const r of ledger.rows) {
   const spec = r.kind === 'model3d' ? `scale ${r.spec.scale}·poly≤${r.spec.polyBudget}` : `${r.spec.w}×${r.spec.h}${r.spec.transparent ? '·透明底' : '·满幅'}`;
   lines.push(`| ${r.no} | ${r.kind} | ${esc(r.slot.entity)} | ${esc(r.placeholder.current)} | ${esc(r.context)} | ${spec} |`);
 }
-lines.push(`\n共 ${ledger.rows.length} 项。台账 JSON：${join(OUT, 'game-q-art-ledger.json')}`);
+lines.push(`\n共 ${ledger.rows.length} 项。台账 JSON（工具读此路径）：public/games/game-q/art/art-ledger.json`);
 const md = lines.join('\n');
 console.log(md);
 writeFileSync(join(OUT, 'game-q-art-requirements.md'), md + '\n');

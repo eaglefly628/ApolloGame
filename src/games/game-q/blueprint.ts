@@ -86,6 +86,7 @@ function zapTemplate(def: TowerDef): { entities: Record<string, Record<string, u
     entities: {
       hit: {
         Transform: { ...XF0 },
+        Visibility: { visible: false, active: true }, // 隐形单发判定区（不渲染·非美术需求·Hitbox 仍 sim 生效）
         Shape: { kind: 'circle', radius: 11 },
         Color: { tint: 0xffffff, alpha: 0 },
         Sensor: {},
@@ -134,6 +135,7 @@ function enemyTemplate(def: EnemyDef): { entities: Record<string, Record<string,
       probe: {
         Hierarchy: { parentId: '@local:body', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 },
         Transform: { ...XF0 },
+        Visibility: { visible: false, active: true }, // 隐形漏怪探针（不渲染·非美术需求·Hitbox 仍 sim 生效）
         Shape: { kind: 'circle', radius: PROBE_R },
         Color: { tint: 0xffffff, alpha: 0 },
         Sensor: {},
@@ -195,6 +197,7 @@ function padEntities(): Record<string, EntityBlueprint> {
     };
     out[C] = {
       Transform: { x: s.x, y: s.y, rotation: 0, scaleX: 1, scaleY: 1 },
+      Visibility: { visible: false, active: true }, // 隐形 cannon 建造钮（同位·不渲染·非美术需求·Clickable 仍生效）
       Shape: { kind: 'polygon', vertices: hexVerts(18) },
       Color: { tint: 0xffffff, alpha: 0 },
       Clickable: { action: `pc${n}`, onlyFlag: 'pending_cannon' },
@@ -254,6 +257,7 @@ export function buildBlueprint(): WorldBlueprint {
     'base-shield': { Hierarchy: { parentId: 'base', localX: 0, localY: -74, localRotation: 0, localScaleX: 1, localScaleY: 1 }, Transform: { ...XF0 }, Shape: { kind: 'box', width: 60, height: 6 }, Color: { tint: TINT.base, alpha: 1 }, Gauge: { resourceId: 'lives', fromParent: true, width: 60 } },
     killzone: {
       Transform: { x: 940, y: BASE_POS.y, rotation: 0, scaleX: 1, scaleY: 1 },
+      Visibility: { visible: false, active: true }, // 隐形大本营清怪区（不渲染·非美术需求·Hitbox 仍 sim 生效）
       Shape: { kind: 'box', width: 120, height: 150 },
       Color: { tint: 0xffffff, alpha: 0 },
       Sensor: {},
