@@ -21,6 +21,7 @@ export interface LedgerRow {
   readonly kind: string;
   readonly slot: { entity: string; component: string; field: string };
   readonly query: string;
+  readonly prompt?: string; // 回填的完整提示词（skinKey 行有·needs-art 行 null）
   readonly placeholder?: { ref?: string; current?: string; source?: string; count?: number };
   readonly spec?: Record<string, unknown>;
   readonly context?: string;
@@ -44,6 +45,18 @@ const SOURCE_BADGE = (r: LedgerRow): { text: string; tone: 'ok' | 'warn' | 'dim'
 function thumbUrl(r: LedgerRow): string | null {
   if (r.kind !== 'model3d' && r.gen?.servedPath) return r.gen.servedPath;
   return null;
+}
+// 占位色块图（未生成时的默认「这长啥样」缩略图）：从 placeholder.current 里的「形状·#色」画个 SVG 色块 →
+// 一眼认出「粉圆=基础敌」「品红多边=炮塔」，配卡面 query 就不再是「一屏全 art-NN 分不清」。解析不出→null 退回图标。
+function swatchDataUri(r: LedgerRow): string | null {
+  const m = /([a-z]+)·(#[0-9a-fA-F]{6})/.exec(r.placeholder?.current ?? '');
+  if (!m) return null;
+  const [, shape, color] = m;
+  const inner = shape === 'circle' ? `<circle cx='23' cy='23' r='19' fill='${color}'/>`
+    : shape === 'box' ? `<rect x='5' y='5' width='36' height='36' rx='3' fill='${color}'/>`
+      : `<polygon points='23,3 40,13 40,33 23,43 6,33 6,13' fill='${color}'/>`; // polygon（含 hex/diamond）→ 六边形
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='46' height='46' viewBox='0 0 46 46'>${inner}</svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
 export function ArtLedgerPanel({ slug, title, onBack, onChanged }: { slug: string; title?: string; onBack: () => void; onChanged?: () => void }) {
@@ -150,19 +163,20 @@ export function ArtLedgerPanel({ slug, title, onBack, onChanged }: { slug: strin
           {loading ? <div style={{ color: SHELL.dim }}>加载台账…</div>
             : rows.length === 0 ? <div style={{ color: SHELL.dim, fontSize: 13 }}>无台账（先在生成流水线里 derive 这个游戏）</div>
               : rows.map((r) => {
-                const b = SOURCE_BADGE(r); const thumb = thumbUrl(r); const active = selNo === r.no;
+                const b = SOURCE_BADGE(r); const thumb = thumbUrl(r); const swatch = swatchDataUri(r); const active = selNo === r.no;
                 return (
-                  <div key={r.no} onClick={() => { setSelNo(r.no); setRegenPrompt(r.query || ''); setSwapId(''); }} style={{ width: 132, padding: 8, borderRadius: 9, cursor: 'pointer', background: active ? SHELL.jadeWash : 'rgba(255,255,255,0.02)', border: `1px solid ${active ? SHELL.jadeLine : SHELL.line}`, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <div key={r.no} onClick={() => { setSelNo(r.no); setRegenPrompt(r.prompt || r.query || ''); setSwapId(''); }} style={{ width: 132, padding: 8, borderRadius: 9, cursor: 'pointer', background: active ? SHELL.jadeWash : 'rgba(255,255,255,0.02)', border: `1px solid ${active ? SHELL.jadeLine : SHELL.line}`, display: 'flex', flexDirection: 'column', gap: 5 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <span style={{ fontFamily: SHELL.fontMono, fontSize: 11, color: SHELL.jade, fontWeight: 700 }}>{r.no}</span>
                       <span style={{ ...sBadge(b.tone), fontSize: 9, marginLeft: 'auto' }}>{b.text}</span>
                     </div>
                     <div style={{ ...sChecker, width: '100%', height: 96, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: `1px solid ${SHELL.line}` }}>
                       {thumb ? <img src={thumb} alt={r.no} style={{ maxWidth: '92%', maxHeight: '92%', imageRendering: 'pixelated' }} />
-                        : <span style={{ fontSize: 30, opacity: 0.55 }}>{r.kind === 'model3d' ? '🧊' : '🎨'}</span>}
+                        : swatch ? <img src={swatch} alt={r.query} title="占位（当前程序化色块·未生成美术）" style={{ maxWidth: '58%', maxHeight: '58%' }} />
+                          : <span style={{ fontSize: 30, opacity: 0.55 }}>{r.kind === 'model3d' ? '🧊' : '🎨'}</span>}
                     </div>
-                    <div style={{ fontSize: 10.5, color: SHELL.sub, wordBreak: 'break-all', lineHeight: 1.3, maxHeight: 26, overflow: 'hidden' }}>{r.slot.entity}</div>
-                    <div style={{ fontSize: 9, color: SHELL.dim }}>{r.kind}{r.placeholder?.count && r.placeholder.count > 1 ? ` ·×${r.placeholder.count}` : ''}</div>
+                    <div title={r.query} style={{ fontSize: 11, color: SHELL.sub, fontWeight: 600, lineHeight: 1.25, maxHeight: 28, overflow: 'hidden' }}>{r.query || r.slot.entity}</div>
+                    <div style={{ fontSize: 9, color: SHELL.dim, wordBreak: 'break-all', lineHeight: 1.2, maxHeight: 22, overflow: 'hidden' }}>{r.slot.entity} · {r.kind}{r.placeholder?.count && r.placeholder.count > 1 ? ` ×${r.placeholder.count}` : ''}</div>
                   </div>
                 );
               })}
@@ -188,12 +202,13 @@ export function ArtLedgerPanel({ slug, title, onBack, onChanged }: { slug: strin
                 );
                 return (
                   <div style={{ display: 'flex', gap: 8 }}>
-                    {box('占位/原始', null, sel.placeholder?.current || sel.placeholder?.ref || '—')}
+                    {box('占位/原始', swatchDataUri(sel), sel.placeholder?.current || sel.placeholder?.ref || '—')}
                     {box('现用', cur, cur ? '' : (sel.gen?.localId || '待生成'))}
                   </div>
                 );
               })()}
-              {sel.provenance?.prompt && <div style={{ fontSize: 10, color: SHELL.dim, wordBreak: 'break-all' }}>prompt: {sel.provenance.prompt}</div>}
+              {sel.prompt && <div style={{ fontSize: 10, color: SHELL.sub, wordBreak: 'break-all', lineHeight: 1.45 }}>📝 提示词: {sel.prompt}</div>}
+              {sel.provenance?.prompt && <div style={{ fontSize: 10, color: SHELL.dim, wordBreak: 'break-all' }}>已生成 prompt: {sel.provenance.prompt}</div>}
               {(sel.history?.length ?? 0) > 0 && <div style={{ fontSize: 10, color: SHELL.faint }}>历史: {sel.history!.map((h) => h.action).join(' → ')}</div>}
 
               {/* 🔄 重新生成 */}

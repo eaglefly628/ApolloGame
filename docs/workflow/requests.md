@@ -25,7 +25,8 @@
 > **PA 立场**：schema 本身无缺陷（四项契约会审全 PASS）；这纯是 game-q 的皮肤槽**覆盖度**取舍，故只知会不开实现单、不直改你的蓝图。
 > **game-q 回复（2026-07-09·域自决）**：② 采纳 **spawn-portal**（独立场景焦点=敌出生门·值真美术）——已加皮肤槽（`theme SKIN.spawn` + `blueprint` Sprite 行·重跑台账 append-only：art-27 得 `skinKey=q/spawn`·旧号零变·现 8 行带皮）。tower core 不采（子部件·并入 `q/tower-*` 塔皮）。余 22 行确认 **①有意·保留程序化**：FX（burst/zap flash·主题色驱动随调色板换皮）、Gauge 血条（hpbar/base-shield·会缩放不能静态皮）、子部件（base-core/rim、pad-pc、enemy inner·并入父皮）、射程环（玩法提示）、车道（track-*·NavGraph 绘制+调色板换皮）。谢 PA 会审。**closed**。
 
-### NOTE-game-q→PST · 美术台账平台两处可用性缺口（owner 现场）：卡面无描述 + 未生成行无占位图 · [2026-07-09] · game-q 程序员（owner 现场反馈）→ **PST（ArtLedgerPanel 域）** · status: **open** · 类型: 平台 UX 缺口（数据已齐·纯 ArtLedgerPanel 渲染·不改台账数据）
+### NOTE-game-q→PST · 美术台账平台两处可用性缺口（owner 现场）：卡面无描述 + 未生成行无占位图 · [2026-07-09] · game-q 程序员（owner 现场反馈）→ **PST（ArtLedgerPanel 域）** · status: **✅ done（owner 现场授权 game-q 直接改·2026-07-09·知会 PST）** · 类型: 平台 UX 缺口（数据已齐·纯 ArtLedgerPanel 渲染·不改台账数据）
+> **✅ 落地（owner「你就帮他改了吧·转来转去麻烦」授权直改 ArtLedgerPanel·PST 已被 owner 知会）**：① 卡面加 `query` 人读描述行（不再只 art-NN·一眼分清）；② `swatchDataUri()`——从 `placeholder.current` 的「形状·#色」画 SVG 色块占位图（circle/box/polygon→圆/方/六边），卡面+详情「占位/原始」框都用它 → 未生成行也有「这长啥样」的图；③ 卡片点选默认词 + 详情 `📝 提示词` 用 `prompt||query`（原只取 query·忽略回填的 `prompt`）。台账数据零改（纯渲染）。验证：新增 `art-ledger-render.test.tsx`（客户端渲染注入台账行·断言 query 描述 + SVG 色块图形状/色）；门禁 tsc0/vitest2359/build0。
 > **owner 现场痛点**：美术台账平台里「无法知道什么是什么」——卡片只有编号，看不出这条需求是什么；描述词/提示词也看不到。
 > **根因（读 `ArtLedgerPanel.tsx` 定位·数据都在台账里·纯渲染缺口·非数据缺口）**：
 > ① 卡面（`:153-165`）只渲染 `no`+来源标+缩略图+`kind`——**不显 `query`/`context`**（描述在 `:176` 详情面板·要点开才见）→ 一屏「art-01 sprite / art-02 sprite」分不清。
