@@ -200,11 +200,11 @@ shapes. This catalog is the single source of truth for the vocabulary — do not
 fields, and unknown capability ids are rejected on load.
 {CAPABILITY_CATALOG}
 
-## Art assets (optional — use for richer visuals)
-- Any Sprite.textureKey may be written as "art:<english keywords>", e.g. "art:skeleton warrior".
-- The engine deterministically resolves it against a CC0 32x32 sprite library (4800+ tagged assets); the same query always picks the same sprite. Unresolvable queries fall back to a placeholder, never crash.
+## Art assets (give every visual entity a skin slot — REQUIRED for the reskin pipeline)
+- Every entity that represents something a player looks at (characters, enemies, items, terrain tiles, projectiles, backgrounds) SHOULD carry a Sprite whose textureKey is an "art:<english keywords>" reference — e.g. "art:skeleton warrior", "art:forest floor tile". That art: reference IS the replaceable skin slot the art pipeline later swaps for generated art. A game made of only shape+color blocks (no art: slots) cannot be reskinned — avoid that.
+- The engine deterministically resolves "art:" against a CC0 32x32 sprite library (4800+ tagged assets); the same query always picks the same sprite. Unresolvable queries fall back to a placeholder, never crash.
 - Useful keywords — monsters: undead/skeleton/zombie/demon/dragon/animal/wolf/spider/boss/flying/fire/ice/poison; terrain: floor/wall/grass/lava/water/door/altar/trap; items: sword/axe/bow/armor/shield/potion/book/gold; fx: arrow/bolt/cloud.
-- Entities with a Sprite still need a Transform (and a Shape if they collide). If no art fits the theme, use a shape + color instead.
+- Entities with a Sprite still need a Transform (and a Shape if they collide). Use shape+color only for pure abstractions (HUD bars, hitboxes) that genuinely have no art.
 
 ## Rules
 - Canvas is 640x400, origin top-left. Include one camera entity centered on the canvas (offsetX 320, offsetY 200) so world coordinates map 1:1 to the screen and entities are visible.
@@ -1573,6 +1573,83 @@ def handle_asset_review(body: dict) -> dict:
     print(c("  [AI-GEN]", 'g'), f"review {action} → {asset_id}")
     return {'success': True, **res}
 
+# ── 美术替换工作流（REQ-DEMO-T1·工作流档 docs/design/art-replacement-workflow.md）───────
+# 大脑在 scripts/art-replace.mjs（derive/batch/replace）+ style-packs.mjs·src/assembly 引擎不动。
+# 本端点薄胶水 shell 调：derive=扫 manifest 推台账；batch=按风格包批量生成（默认 mock·断点续跑·凭证探针）；
+# replace=按编号重钉 manifest 引用，**落盘前过 parseManifest 零 error 铁律**（复用 library_put_manifest）。
+
+def _art_replace_cli(args: list) -> dict:
+    """shell scripts/art-replace.mjs → 解析末行 JSON（前面可能有 warn）。"""
+    try:
+        proc = subprocess.run(**_spawn(['node', 'scripts/art-replace.mjs', *args]), cwd=ROOT, capture_output=True, timeout=300)
+    except subprocess.TimeoutExpired:
+        return {'ok': False, 'error': '美术工作流超时'}
+    out = proc.stdout.decode('utf-8', 'replace').strip()
+    line = out.splitlines()[-1] if out else ''
+    try:
+        return json.loads(line)
+    except Exception:
+        err = proc.stderr.decode('utf-8', 'replace').strip() or out
+        return {'ok': False, 'error': f'解析失败: {err[:400]}'}
+
+def handle_art_packs() -> dict:
+    """GET /api/art/style-packs。列风格包（packId/名称/palette/provider/post）。"""
+    return _art_replace_cli(['packs'])
+
+def handle_art_derive(body: dict) -> dict:
+    """POST /api/art/derive {slug}。扫 library/<slug>/manifest.json 美术槽位 → 台账 art-ledger.json。"""
+    slug = str(body.get('slug', '')).strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    res = _art_replace_cli(['derive', slug])
+    if res.get('ok'):
+        print(c("  [ART]", 'g'), f"derive {slug} → {res.get('rows')} 槽位")
+    return {'success': bool(res.get('ok')), **res}
+
+def handle_art_ledger(slug: str) -> dict:
+    """GET /api/art/ledger?slug=<slug>。读该游戏台账（=替换列表·同一份文件两视角）。"""
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    if not f.is_file():
+        return {'success': False, 'error': '无台账（先 /api/art/derive）'}
+    try:
+        return {'success': True, **json.loads(f.read_text('utf-8'))}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def handle_art_batch(body: dict) -> dict:
+    """POST /api/art/batch {slug, packId, mock?}。按风格包整批生成（默认 mock·断点续跑·无 key 行探针+mock）。"""
+    slug = str(body.get('slug', '')).strip()
+    pack = str(body.get('packId', '')).strip()
+    mock = body.get('mock', True)  # 本环境 GitHub-only·默认 mock；真调需放宽网络 + key
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', pack):  # 白名单：防注入
+        return {'success': False, 'error': f'非法 packId: {pack or "(空)"}'}
+    args = ['batch', slug, pack] + (['--mock'] if mock else [])
+    res = _art_replace_cli(args)
+    if res.get('ok'):
+        s = res.get('summary', {})
+        print(c("  [ART]", 'g'), f"batch {slug}·{pack} → 生成 {s.get('generated')} 缓存 {s.get('cached')} mock {s.get('mock')}")
+    return {'success': bool(res.get('ok')), **res}
+
+def handle_art_replace(body: dict) -> dict:
+    """POST /api/art/replace {slug}。按编号重钉 manifest 引用 → **过 parseManifest 零 error** → 落盘 + 版本化。"""
+    slug = str(body.get('slug', '')).strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    res = _art_replace_cli(['replace', slug])
+    if not res.get('ok'):
+        return {'success': False, **res}
+    manifest = res.get('manifest')
+    if not isinstance(manifest, dict):
+        return {'success': False, 'error': '替换未产出 manifest'}
+    status, data = library_put_manifest(slug, {'manifest': manifest, 'note': '美术批量替换（art-replace）'})  # 零 error 铁律 + 版本化
+    if data.get('success'):
+        print(c("  [ART]", 'g'), f"replace {slug} → 重钉 {res.get('replaced')} 引用·已落盘")
+    return {'success': bool(data.get('success')), 'replaced': res.get('replaced'), **data}
+
 # ── 资产自动标注（入库主动扫描 / 存量回填共用一条管线；Claude 视觉打语义标签）──
 
 AUTOTAG_SYSTEM = """You tag 2D game sprites for an asset library's search index.
@@ -2288,6 +2365,11 @@ class APIHandler(BaseHTTPRequestHandler):
             data = handle_asset_generate_providers()
         elif path == '/api/assets/pending':
             data = handle_asset_pending()
+        elif path == '/api/art/style-packs':
+            data = handle_art_packs()
+        elif path == '/api/art/ledger':
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            data = handle_art_ledger((qs.get('slug') or [''])[0])
         elif path == '/api/games':
             data = handle_games_list()
         elif path == '/api/settings':
@@ -2369,6 +2451,21 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_asset_review(body)
             except Exception as e:  # 防御：单次审核失败不拖死 API 进程
                 data = {'success': False, 'error': f'审核异常: {e}'}
+        elif path == '/api/art/derive':
+            try:
+                data = handle_art_derive(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'derive 异常: {e}'}
+        elif path == '/api/art/batch':
+            try:
+                data = handle_art_batch(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'batch 异常: {e}'}
+        elif path == '/api/art/replace':
+            try:
+                data = handle_art_replace(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'replace 异常: {e}'}
         else:
             data = {'error': 'Unknown POST endpoint'}
 
