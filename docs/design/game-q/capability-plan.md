@@ -90,8 +90,10 @@
    - **命中制**（消两 bug）：塔 firing 由"launch 抛射(锁全图最近·无射程·多帧累伤·穿透)"改为"`aggro`(Perception sightRadius 射程索敌)→ self-rule spawn `at:'target'`(仅射程内发·无空炮) → zap `Hitbox{consumeOnHit}`(单发精确 dmg)"。删 `t2-launch`。
    - **清理**：删死代码 `w1-random`/`t2-event-when`/`t2-timeline`/胜负旗；局终 `engine.stop()` 省 CPU；HUD 防重复买（pending 时两钮皆禁）；补测试（放置合法性/占位/塔杀敌/胜/败/防重复买）。
 
-## 8. 3D 盒庭化改造（owner「换成 3D 版本」· 2026-07-08）
+## 8. 3D 盒庭化改造（owner「换成 3D 版本」· 2026-07-08）—— ⚠️ **已回退 2D（owner 同日「变回 2D」）·本节留作历史记录**
 
+> **回退说明（2026-07-08）**：为贴 PST 2D-first 美术管线（`art:`→Sprite 换皮·2D 塔防每主体=一张俯视精灵天生契合），3D 版已**回退成 2D**（CanvasRenderer·commit 见 git log）。3D 实现停在 `git show 8de5a11c`·随时可取回。以下 §8=3D 版历史记录（口径/发现仍有参考·勿据以为现状）；现行 2D 资产规格见 `asset-requirements.md`。
+>
 > **口径：换渲染方法、不改玩法。** sim（pathfind/命中制/经济/放置/胜负）**一字未动**——只在蓝图加 render-only 3D 组件，
 > 靠引擎「2D→3D 桥」把带 `Mesh3D` 的 2D 实体 `groundPose` 落到地面（sim x→世界 X、sim y→世界 Z、地面 y=0）。
 > 全部 3D 组件（Camera3D/Mesh3D/Material3D/Light3D/Sky3D/Fog3D/Post3D/Glow3D/Transform3D）皆 render-only·不进 hash·不被 Condition 读

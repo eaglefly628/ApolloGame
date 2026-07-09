@@ -46,8 +46,6 @@ export const TINT = {
 } as const;
 
 // ── 塔档（命中制·range=Perception.sightRadius·单发结算 consumeOnHit）─────────
-// mesh/mat = 3D 盒庭渲染描述（render-only·groundPose 落地面·bloom 拾取 emissive 发霓虹光）。
-export interface Mesh3DSpec { shape: 'box' | 'sphere' | 'cylinder' | 'cone'; w: number; h: number }
 export interface TowerDef {
   key: 'pulse' | 'cannon';
   name: string;
@@ -59,13 +57,10 @@ export interface TowerDef {
   radius: number;
   dmg: number;
   zapTint: number;
-  mesh: Mesh3DSpec;  // 3D 塔身图元
-  mat: string;       // PBR 预设（闭集·见 assets/pbr-materials）
-  emissive: number;  // 自发光色（霓虹辉光·bloom 拾取）
 }
 export const TOWERS: Record<'pulse' | 'cannon', TowerDef> = {
-  pulse: { key: 'pulse', name: 'PULSE', cost: 50, tint: TINT.pulse, coreTint: TINT.pulseCore, reload: 20, range: 132, radius: 15, dmg: 9, zapTint: TINT.zapPulse, mesh: { shape: 'cone', w: 30, h: 52 }, mat: 'steel', emissive: 0x1892d6 },
-  cannon: { key: 'cannon', name: 'RAIL', cost: 115, tint: TINT.cannon, coreTint: TINT.cannonCore, reload: 56, range: 208, radius: 18, dmg: 58, zapTint: TINT.zapCannon, mesh: { shape: 'cylinder', w: 40, h: 42 }, mat: 'steel', emissive: 0xd63e9a },
+  pulse: { key: 'pulse', name: 'PULSE', cost: 50, tint: TINT.pulse, coreTint: TINT.pulseCore, reload: 20, range: 132, radius: 15, dmg: 9, zapTint: TINT.zapPulse },
+  cannon: { key: 'cannon', name: 'RAIL', cost: 115, tint: TINT.cannon, coreTint: TINT.cannonCore, reload: 56, range: 208, radius: 18, dmg: 58, zapTint: TINT.zapCannon },
 };
 
 // ── 敌档（pathfind·类型差异化轮廓）─────────────────────────────────────────
@@ -73,18 +68,15 @@ export interface EnemyDef {
   key: 'basic' | 'fast' | 'tank';
   hp: number;
   speed: number;
-  radius: number;   // 碰撞半径（2D Shape·sensor 命中）
+  radius: number;
   tint: number;
   inTint: number;
-  shape: 'circle' | 'diamond' | 'hex';  // 2D 碰撞轮廓
-  mesh: Mesh3DSpec; // 3D 盒庭图元（groundPose 落地面）
-  mat: string;      // PBR 预设
-  emissive: number; // 自发光（bloom 霓虹）
+  shape: 'circle' | 'diamond' | 'hex';
 }
 export const ENEMIES: Record<'basic' | 'fast' | 'tank', EnemyDef> = {
-  basic: { key: 'basic', hp: 58, speed: 1.35, radius: 12, tint: TINT.enemyBasic, inTint: TINT.enemyBasicIn, shape: 'circle', mesh: { shape: 'sphere', w: 26, h: 26 }, mat: 'plastic', emissive: 0xff5c7a },
-  fast: { key: 'fast', hp: 34, speed: 2.35, radius: 10, tint: TINT.enemyFast, inTint: TINT.enemyFastIn, shape: 'diamond', mesh: { shape: 'cone', w: 22, h: 32 }, mat: 'plastic', emissive: 0xffd23f },
-  tank: { key: 'tank', hp: 300, speed: 0.82, radius: 16, tint: TINT.enemyTank, inTint: TINT.enemyTankIn, shape: 'hex', mesh: { shape: 'cylinder', w: 40, h: 30 }, mat: 'steel', emissive: 0xc084fc },
+  basic: { key: 'basic', hp: 58, speed: 1.35, radius: 12, tint: TINT.enemyBasic, inTint: TINT.enemyBasicIn, shape: 'circle' },
+  fast: { key: 'fast', hp: 34, speed: 2.35, radius: 10, tint: TINT.enemyFast, inTint: TINT.enemyFastIn, shape: 'diamond' },
+  tank: { key: 'tank', hp: 300, speed: 0.82, radius: 16, tint: TINT.enemyTank, inTint: TINT.enemyTankIn, shape: 'hex' },
 };
 
 // ── 经济 / 局面 ────────────────────────────────────────────────────────────
@@ -123,45 +115,6 @@ export const PAD_SPOTS: Array<{ x: number; y: number }> = [
   { x: 700, y: 306 },
   { x: 760, y: 224 },
 ];
-
-// ── 3D 盒庭渲染（render-only·2D→3D 桥：Camera3D 在场 → 2D sim 实体 groundPose 落地面）──────────
-// 世界单位 = 2D 像素坐标（sim x→X 右、sim y→Z 景深、地面 y=0）。相机/灯/天/雾/后处理皆 render-only 单例·不进 hash。
-export const FIELD_CX = FIELD_W / 2;   // 场地中心 X (=480)
-export const FIELD_CZ = FIELD_H / 2;   // 场地中心 Z (=280)
-
-// 轨道相机：对角微俯正交盒庭（Captain-Toad 桌面微缩感·yaw 斜看露深度 + 塔高）。
-export const CAMERA_3D = {
-  yaw: 0.6, pitch: 0.72, projection: 'ortho' as const,
-  orthoSize: 450, distance: 1500,
-  pivotX: FIELD_CX, pivotY: 6, pivotZ: FIELD_CZ,
-  near: 1, far: 3800,
-};
-
-// 数据化光照：冷白主光（投软影·斜掠·压低强度让暗底沉下去）+ 对侧冷紫补 + 弱冷蓝环境（霓虹夜靠自发光起亮）。
-export const SUN_3D = { color: 0xdce8ff, intensity: 0.95, dirX: -0.5, dirY: -1, dirZ: -0.35 };
-export const FILL_3D = { color: 0x5a6cff, intensity: 0.32, dirX: 0.6, dirY: -0.5, dirZ: 0.45 };
-export const AMBIENT_3D = { color: 0x24406a, intensity: 0.55 };
-
-// 天空盒（霓虹夜渐变·压暗地平线消除亮穹 + 弱 IBL env·金属微反射不泛白·关调色以免暖染上翻）。
-export const SKY_3D = { top: 0x02040b, bottom: 0x081020, env: 0.2 };
-// 距离雾（远处柔化·"装在玻璃盒里"的纵深·暗蓝隐去天穹）。
-export const FOG_3D = { color: 0x05091a, near: 1150, far: 2350 };
-// 后处理：泛光（**仅最亮的自发光核心辉光**·高阈值防糊底）+ 轻移轴（微缩感·不糊全场）+ AO + SMAA。
-// 刻意不挂 grade 色彩分级：分级 pass 在此暗场把地台上翻成灰橄榄浊底（截图验证）——霓虹自发光已够饱和，无需分级。
-export const POST_3D = {
-  bloom: { strength: 0.5, radius: 0.5, threshold: 0.72 },
-  tiltShift: { focus: 0.56, intensity: 1.0 },
-  ao: { intensity: 0.55, radius: 42, scale: 1 },
-  aa: true,
-} as const;
-
-// 地台（大平板·顶在 y=0·下沉 box·加大到出框·消除"悬浮卡片"边·近黑霓虹底让霓虹跳出 + 极轻起伏）。
-export const GROUND_3D = { w: 1600, d: 1160, h: 28, top: 0x05080f, side: 0x03050b };
-
-// 大本营 3D 堡（Transform3D 真三维·多层堆叠·authored 静态·独立于碰撞 base 实体）。
-export const BASE_3D = { w: 60, h: 46, d: 92 };
-
-// HUD 屏幕留白（3D 满幅画布·顶/底 HUD 叠加·相机取景已居中·此处仅注释口径）。
 
 // ── HUD 霓虹主题（UITheme 全字段）──────────────────────────────────────────
 export const NEON_THEME: UITheme = {
