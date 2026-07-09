@@ -5,6 +5,7 @@ import { AssetLibrary } from './AssetLibrary.js';
 import { AssetImportWizard } from './AssetImportWizard.js';
 import { AssetGenPanel } from './AssetGenPanel.js';
 import { AssetPendingReview } from './AssetPendingReview.js';
+import { ArtLedgerPanel } from './ArtLedgerPanel.js';
 
 // renderToString 不跑 useEffect（不 fetch/不碰 canvas）→ 渲染初始态，专抓导入/渲染期崩溃（白屏教训）。
 describe('AssetLibrary 渲染回归', () => {
@@ -57,5 +58,14 @@ describe('AssetPendingReview 渲染回归（AI 生成人审门·待审区）', (
     const html = renderToString(<AssetPendingReview onBack={() => {}} onReviewed={() => {}} />);
     expect(html).toContain('待审区');
     expect(html).toContain('人审门'); // 宪法「无自动入库」的落地面
+  });
+});
+
+describe('ArtLedgerPanel 渲染回归（美术台账浏览墙·T2）', () => {
+  it('renderToString 不抛异常（含换皮 + 编号浏览骨架）', () => {
+    const html = renderToString(<ArtLedgerPanel slug="demo-game" title="Demo" onBack={() => {}} />);
+    expect(html).toContain('美术台账');
+    expect(html).toContain('一键换皮'); // 换皮入口
+    expect(html).toContain('Demo');
   });
 });

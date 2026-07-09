@@ -148,12 +148,13 @@ export function LibraryShelf({ entries, installing, onNewGame, onInstallSample, 
 }
 
 // ── 选中 library 卡带的操作条（spec ③·替代内置卡带的单个 LAUNCH 大按钮区域）──
-export function LibActionBar({ entry, onStart, onContinue, onHistory, onBench }: {
+export function LibActionBar({ entry, onStart, onContinue, onHistory, onBench, onLedger }: {
   entry: GameEntry;
   onStart: () => void;
   onContinue: () => void;
   onHistory: () => void;
   onBench?: () => void;
+  onLedger?: () => void;
 }) {
   const playable = entry.status === 'playable';
   return (
@@ -178,6 +179,7 @@ export function LibActionBar({ entry, onStart, onContinue, onHistory, onBench }:
           🩺 体检
         </button>
       )}
+      {onLedger && <button onClick={onLedger} title="美术台账：浏览本局所需美术·按编号点名重生成/换库/上传·一键换皮" style={opBtn(false)}>🎨 美术台账</button>}
       <button disabled title="即将支持" style={{ ...opBtn(false), opacity: 0.4, cursor: 'default' }}>⤓ 导出</button>
     </div>
   );
