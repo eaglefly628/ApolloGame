@@ -13,25 +13,26 @@
 
 ### REQ-DEMO-0729-审核冲刺总纲 · 自然语言→playable·30 款/周换皮量产·美术 API 自动接线 · [2026-07-07] · **owner 定向（7/29-30 审核）** → Lead 出纲领 · status: **in-progress（冲刺主线·压过一切非冲刺工单）** · 优先级: **P0（死线级）** · 类型: 产品化冲刺（纲领=`docs/design/demo-sprint-2026-07-29.md`）
 > 审核口径：引擎能否用自然语言快速生成 playable 游戏；量化=周产 ~30 款、换皮为主力、基本玩法 OK 即可。最大缺口=美术（game-q 实证零真资产）。
-> **核心判断（Lead）**：`art:` 引用已是弱 LLM 数据接口（`src/assembly/resolve-art-refs.ts`），缺的只是「库查不到→自动调生成 API」的编排步——**全在服务层，不动引擎**。
+> **核心判断（Lead）**：`art:` 引用已是弱 LLM 数据接口（`src/assembly/resolve-art-refs.ts`）——**全在服务层，不动引擎**。**工作流定形（owner 2026-07-08·两段式）**：placeholder 先行（免费库·秒可玩）→替换列表→整批风格统一生成→对位替换；正式档=`docs/design/art-replacement-workflow.md`。
 > **归置与优化闭环（owner 2026-07-07 拍板·替代 Lead 原「两轨制」提法）**：①自动生成直接落**该游戏自己的资产目录**+本地索引（provenance+unreviewed 标·立即可玩）——owner 认可可行；②**硬要求**：每游戏出**美术台账**（资产编号 art-01…·槽位语义·prompt·来源·缩略图），studio 可浏览、可**按编号点名替换**（重生成/库内换/上传换）——「做完以后需要有一个完整的浏览和优化的流程」；③共享货架不变：进共享 index 仍过 M2.5 人审门。
 > 分单：T1（下条·PST+PA·7/13）→ T2 换皮（下下条·7/18）→ T3 批量冒烟（Opus·7/20）→ T4 3D 线待拉动（P3D 知会·不进关键路径）→ T5 彩排（Lead 主持·7/27）。
 > **队列重排（冲刺期有效）**：PST=T1→心跳余项（并入 T1 进度灯）→T2；**音频 B 件、M1 货架墙、REQ-3D-像素断言、REQ-CAP-改掷收编一律冲刺后**；引擎域冻结非必要改动。
 
-### REQ-DEMO-T1-美术自动生成接线 · 生成流自动调美术 API（千问 2D 先行·Tripo/Meshy 插槽） · [2026-07-07] · Lead 图纸 → **指派：PST（生成流编排）·PA 会审契约** · status: **open（即刻开工·冲刺 P0）** · 优先级: **P0** · 期限: 7/13 · 类型: 产品化·美术管线
-> **spec（Lead 图纸）**：
-> ① **风格锚**：manifest meta 层新纯数据块 `artStyle:{stylePack?, stylePrompt?, palette?, mode:'library'|'generate'|'auto'}`（默认 auto）；模板库每款补默认锚。弱 LLM 零新负担——不填也能跑。**一致性条款（owner 2026-07-08 问·Lead 定design·详见纲领「五层防线」）**：(a) `stylePack`=**预调试风格包闭集**（像素/卡通厚涂/霓虹合成波/低多边形/水墨…·每包=真 provider 上试稳的 prompt 模板+参数组·施工时先调 3 包够 demo）——首选路；自由 `stylePrompt`=显式逃生口；(b) **同款钉死同一 provider+model（+seed 可用则钉）**，编排器强制、台账记录；(c) **palette-snap 确定性后处理**：生成图量化到锚定调色板+统一分辨率网格（recipe 纯数据 op·mock 路径同走）；(d) 定调图参考模式（图生图锚）=T2 施工时验 adapter 真实能力再接，不支持记 blocker。
-> ② **美术编排步（apollo.py 服务层·绝不碰 src/assembly）**：生成/保存时扫 manifest 全部 `art:` 引用——auto 模式：库命中分 ≥阈值→直接用（免费秒回）；否则调 `scripts/ai-gen.mjs` 千问 wanx（prompt=风格锚+查询词）→产物落游戏本地美术目录 + provenance 硬字段（model/prompt/date/license）+ 标 unreviewed + 登记游戏本地索引 → 该引用**钉死成具体资产 id**（构建期解析·留痕形制同 `resolveArtRefs` 的 resolutions）。
-> ③ **无 key 不阻塞**：先贴凭证探针输出再走 mock 兜底（确定性占位图+MOCK 标）——绝不静默顶替（`docs/playbooks/testing.md` 红线）。
-> ④ **内容寻址缓存**：hash(provider+prompt+参数) 命中→复用已生成资产——换皮批量的成本闸。
-> ⑤ **模板/系统提示改口径**：主体视觉实体默认 Sprite+`art:` 引用（Shape/Color 仅特效与占位）——**换皮的前提是有皮肤槽**（game-q 全程序化色块=反面教材）。
-> ⑥ **进度可视化**：生成进度加「美术 n/m」阶段灯（与 REQ-STUDIO 心跳余项并一批施工）。
-> ⑦ **测试**：smoke 全链（mock 生成→本地登记→引用钉死→parseManifest 零 error）+ 缓存命中例 + 无 key 探针例；门禁全绿直推。
-> ⑧ **美术台账（owner 2026-07-07 硬要求·编号真相）**：编排步同时产出该游戏的台账文件（art-ledger.json·游戏美术目录下）：每条 `{no:'art-01', slot:{entity,component,field}, query, prompt, source:'library'|'generated'|'mock', assetId, provenance, thumb}`；**编号按槽位排序确定性分配、重跑不漂移**（新增槽位追加编号，绝不重排旧号）——人要能念出「art-03 重做」。浏览/替换面板在 T2。
-> 边界：Meshy=adapter 插槽预留（owner 有 key 再开真调）；PA 会审=本地索引登记 shape / provenance 口径 / 缓存键设计 / **台账 schema**。完工标 ✅ 待 Lead 验收（真 key 端到端一款 + 真浏览器可玩）。
+### REQ-DEMO-T1-美术替换工作流·产线段 · placeholder 先行+替换列表推导+批量生成+对位替换 · [2026-07-07·07-08 owner 定形两段式] · Lead 图纸=`docs/design/art-replacement-workflow.md`（**唯一权威·本条只摘要**） → **指派：PST（施工）·PA 会审契约（风格包库/台账 schema/缓存键）** · status: **open（即刻开工·冲刺 P0）** · 优先级: **P0** · 期限: 7/13 · 类型: 产品化·美术管线
+> **owner 2026-07-08 定形（替代 07-07 初稿「库查不到就地生成」）**：先出可玩游戏（art: 一律解析到免费库=placeholder）→ 游戏输出**替换列表**（2D/3D/声音/启动画/粒子全类型登记·每条编号/规格/表现描述·**机器从组件数据推导**）→ 配风格包 → 调万相/Tripo/Meshy **整批产出风格统一美术** → 按编号对位替换。换皮/单槽优化=同一机制重跑（工作流档 §二）。
+> **施工件（详 spec=工作流档 §三-§六·此处点名交付物）**：
+> ① **列表推导器**（apollo.py 编排步）：扫 manifest 美术槽位 → art-replace-list.json（**与美术台账合一·一份文件两个视角**·编号 art-01… 确定性分配重跑不漂移·spec/context 从 Shape/Transform/Model3D 等组件数据推导）；
+> ② **风格包库** style-packs 纯数据文件（闭集·demo 前调稳 3 包·中英双方言 prompt+palette+negative+params 钉死 provider/model(+seed)·refImage 定调图槽·**PA 会审 schema**）；
+> ③ **批量生成器**（apollo.py 端点 + `scripts/ai-gen.mjs` 既有 wanx/tripo/meshy adapters）：并发·内容寻址缓存 hash(provider+prompt+参数)·**断点续跑（status 即断点·replaced 行不重扣费）**·无 key 行=凭证探针输出+mock 占位（绝不静默顶替）；
+> ④ **确定性后处理**：palette-snap（量化到风格包调色板）+ 按 spec 缩放/栅格（mock 路径同走）；
+> ⑤ **对位替换**：按编号重钉 manifest 引用（落盘前 parseManifest 零 error 铁律不变）+ status 流转 + provenance 硬字段（model/prompt/date/license）；
+> ⑥ **模板/系统提示改口径**：主体视觉实体默认 Sprite+art: 引用（换皮前提=有皮肤槽·game-q 全程序化色块=反面教材）；
+> ⑦ **进度可视化**：批处理「美术 n/m」阶段灯（与 REQ-STUDIO 心跳余项并一批）；
+> ⑧ **测试**：工作流档 §六 四条验收口径全数落 smoke（mock 全链 / 断点续跑 / 真 key 一款端到端 / 编号稳定性断言）；门禁全绿直推。
+> 边界：src/assembly 引擎不动；sfx/music 列表登记但冲刺期不生成（声音走合成数据 `docs/playbooks/audio.md`·采样=冲刺后 B 件）；particle=配置槽不生成图。完工标 ✅ 待 Lead 验收（真 key 一款 placeholder→整批换装→真浏览器可玩且风格成套）。
 
 ### REQ-DEMO-T2-换皮流水线+台账浏览/单槽替换 · 同玩法×新风格锚=新卡带；按编号点名优化 · [2026-07-07] · Lead 图纸 → **指派：PST** · status: open（T1 完工后接） · 优先级: P0 · 期限: 7/18 · 类型: 产品化·量产乘法器+优化闭环
-> **spec**：① **单槽重解析机制（地基·换皮与优化共用）**：T1 编排器支持指定槽位子集重跑——换皮=全槽、点名优化=单槽；重跑即重钉引用+更新台账+新 provenance。② **换皮**：studio 选已有卡带→输入新风格锚→只重跑美术编排（玩法 manifest 一字不改）→存新卡带（slug-v2·meta 记 reskinOf 谱系）；批量模式=一套玩法 × N 风格锚一次出 N 款。③ **台账浏览面板（owner 硬要求）**：逐游戏缩略图墙——每格显编号（art-01…）+槽位语义+来源标（generated/library/MOCK·unreviewed 角标）；点开看 prompt/provenance。④ **按编号三式替换**：重新生成（可改 prompt）/ 从共享库选换 / 上传替换——三式都走单槽重解析，台账留替换历史。⑤ 换皮结果并排预览（原/新）。⑥ 测试：reskin 后 parseManifest 零 error、玩法数据 diff=空、美术引用全换新；单槽替换后其余槽位引用与编号不动（断言编号稳定）；smoke 进批量冒烟。完工标 ✅ 待 Lead 验收（真浏览器走「浏览→点名 art-N→重生成→游戏里换上」全旅程）。
+> **spec**：① **单槽重解析机制（地基·换皮与优化共用）**：T1 编排器支持指定槽位子集重跑——换皮=全槽、点名优化=单槽；重跑即重钉引用+更新台账+新 provenance。② **换皮**：studio 选已有卡带→换风格包→对**同一张替换列表**整批重跑批处理（玩法 manifest 一字不改·工作流档 §二）→存新卡带（slug-v2·meta 记 reskinOf 谱系）；批量模式=一套玩法 × N 风格包一次出 N 款。③ **台账浏览面板（owner 硬要求）**：逐游戏缩略图墙——每格显编号（art-01…）+槽位语义+来源标（generated/library/MOCK·unreviewed 角标）；点开看 prompt/provenance。④ **按编号三式替换**：重新生成（可改 prompt）/ 从共享库选换 / 上传替换——三式都走单槽重解析，台账留替换历史。⑤ 换皮结果并排预览（原/新）。⑥ 测试：reskin 后 parseManifest 零 error、玩法数据 diff=空、美术引用全换新；单槽替换后其余槽位引用与编号不动（断言编号稳定）；smoke 进批量冒烟。完工标 ✅ 待 Lead 验收（真浏览器走「浏览→点名 art-N→重生成→游戏里换上」全旅程）。
 
 ### REQ-DEMO-T3-批量吞吐冒烟 · 周产 30 款的机器证据 · [2026-07-07] · Lead 图纸 → **指派：Opus 档 session/子代理** · status: open（T1 完工后接） · 优先级: P1 · 期限: 7/20 · 类型: 冲刺 QA
 > **spec**：① 新建批量冒烟脚本（scripts 下·batch-gen-smoke）：mock LLM+mock 美术连出 N=10 款 e2e——生成→美术编排→parseManifest 零 error→audit 无新红旗；判词 token `BATCH: PASS|FAIL`+退出码；fail-fast（哪款第几步死点名）。② 真 key 抽 3 款全真跑通，记录单款耗时/成本/token 写进回执（demo 出示件·折算周产能）。③ 照 `docs/playbooks/testing.md` 三禁（mock 路径零外部 IO·种子固定）。完工标 ✅ 待 Lead 验收。
