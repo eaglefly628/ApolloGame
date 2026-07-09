@@ -18,6 +18,12 @@
 > 分单：T1（下条·PST+PA·7/13）→ T2 换皮（下下条·7/18）→ T3 批量冒烟（Opus·7/20）→ T4 3D 线待拉动（P3D 知会·不进关键路径）→ T5 彩排（Lead 主持·7/27）。
 > **队列重排（冲刺期有效）**：PST=T1→心跳余项（并入 T1 进度灯）→T2；**音频 B 件、M1 货架墙、REQ-3D-像素断言、REQ-CAP-改掷收编一律冲刺后**；引擎域冻结非必要改动。
 
+### NOTE-PA→game-q · game-q 台账 24/31 行无 skinKey → 平台填不回，确认是否有意 · [2026-07-09] · PA 契约会审派生（`art-platform-handoff-2026-07-09.md` §致 PA·观察 3）→ **待 game-q 程序员确认** · status: **open（非缺陷·求确认·不阻塞）** · 类型: 覆盖度知会（game-q 域自决）
+> **背景**：PA 会审美术平台契约时对了 `public/games/game-q/art/art-ledger.json`——31 行需求里**只有 7 行带 `skinKey`**（base·pad·3 敌体·2 塔体），其余 **24 行无 skinKey**。按终态档 §五，编译期游戏线写回=**skinKey 别名登记**，故**这 24 行现无法经平台生成/填回**（fill/upload 的 skinKey 别名无锚点）。
+> **无 skinKey 的 24 行**（都是次要/子部件·多半有意不上皮）：base-core/rim/shield、pad-0-pc、burst_*/zap_*:flash（FX）、enemy_*:hpbar/inner、tower_*:core/ring、spawn-portal、track-glow/nglow/node/seg。
+> **求确认（二选一·你的域你定）**：① **有意**（这些是程序化 FX/轨段/子部件·不需换皮）→ 无需动作，回此条标「有意·closed」即可；② **该可换皮的漏了**（如 spawn-portal / tower core 你想上真美术）→ 照交接档「加可换皮实体三行」给对应视觉实体加 `Sprite` 皮肤槽（theme skin key → blueprint `Sprite` 行 → `npx vite-node scripts/game-q-art-requirements.mjs` 重跑·编号 append-only 旧号不动·新行自带 skinKey）。
+> **PA 立场**：schema 本身无缺陷（四项契约会审全 PASS）；这纯是 game-q 的皮肤槽**覆盖度**取舍，故只知会不开实现单、不直改你的蓝图。
+
 ### REQ-DEMO-T1-美术替换工作流·产线段 · placeholder 先行+替换列表推导+批量生成+对位替换 · [2026-07-07·07-08 owner 定形两段式] · Lead 图纸=`docs/design/art-replacement-workflow.md`（**唯一权威·本条只摘要**） → **指派：PST（施工）·PA 会审契约（风格包库/台账 schema/缓存键）** · status: **✅ done（PST 产线段 2026-07-08 + Lead 亲手收口 2026-07-09·终态=`docs/design/art-platform-2026-07-09.md`·整改三单 R1/R2/R3 owner 撤单由 Lead 合并落地：平台归一双数据源/去 mock 硬编码/key 配置面+注入/编号 append-only/game-q 皮肤槽写回/风格包迁数据文件·真 key 端到端待 owner key）** · 优先级: **P0** · 期限: 7/13 · 类型: 产品化·美术管线
 > **owner 2026-07-08 定形（替代 07-07 初稿「库查不到就地生成」）**：先出可玩游戏（art: 一律解析到免费库=placeholder）→ 游戏输出**替换列表**（2D/3D/声音/启动画/粒子全类型登记·每条编号/规格/表现描述·**机器从组件数据推导**）→ 配风格包 → 调万相/Tripo/Meshy **整批产出风格统一美术** → 按编号对位替换。换皮/单槽优化=同一机制重跑（工作流档 §二）。
 > **施工件（详 spec=工作流档 §三-§六·此处点名交付物）**：
