@@ -20,7 +20,7 @@ import {
 } from './studio/DataCartridgeRunner.js';
 import { CreationWizard, type WizardMode } from './studio/CreationWizard.js';
 import { DesignStudio, EntryChoice, ContinueChoice } from './studio/DesignStudio.js';
-import { ArtLedgerPanel } from './studio/ArtLedgerPanel.js';
+import { ArtLedgerPanel, ArtGamePicker } from './studio/ArtLedgerPanel.js';
 import { SettingsPanel } from './studio/SettingsPanel.js';
 
 const API = 'http://localhost:4000';
@@ -785,7 +785,8 @@ export function Launcher() {
   // 体检浮层（M4·架上操作条 🩺 打开）：五轴分 + 总分 + 及格线。
   const [libBench, setLibBench] = useState<{ slug: string; title: string } | null>(null);
   // 美术台账浏览墙（REQ-DEMO-T2·库卡带「🎨 美术台账」打开）：浏览+点名三式替换+换皮。
-  const [artLedger, setArtLedger] = useState<{ slug: string; title: string } | null>(null);
+  const [artLedger, setArtLedger] = useState<{ slug: string; title: string; kind?: 'builtin' | 'library' } | null>(null);
+  const [artPicker, setArtPicker] = useState(false); // 🎨 美术平台入口=先选游戏目录（owner review ③）
   // 设置面板（M3·状态灯点开）：BYO key + 测试连接。
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [installing, setInstalling] = useState(false);
@@ -912,7 +913,7 @@ export function Launcher() {
         onContinue={() => continueCreate(selected)}
         onHistory={() => setLibHistory({ slug })}
         onBench={() => setLibBench({ slug, title: selected.title })}
-        onLedger={() => setArtLedger({ slug, title: selected.title })}
+        onLedger={() => setArtLedger({ slug, title: selected.title, kind: 'library' })}
       />
     );
   }, [openLibCartridge, continueCreate]);
@@ -936,7 +937,11 @@ export function Launcher() {
   }
 
   if (artLedger) {
-    return <ArtLedgerPanel slug={artLedger.slug} title={artLedger.title} onBack={() => setArtLedger(null)} onChanged={() => setLibRefresh((n) => n + 1)} />;
+    return <ArtLedgerPanel slug={artLedger.slug} title={artLedger.title} kind={artLedger.kind} onBack={() => setArtLedger(null)} onChanged={() => setLibRefresh((n) => n + 1)} />;
+  }
+
+  if (artPicker) {
+    return <ArtGamePicker onBack={() => setArtPicker(false)} onPick={(g) => { setArtPicker(false); setArtLedger(g); }} />;
   }
 
   if (launched) {
@@ -991,7 +996,7 @@ export function Launcher() {
         {!playerMode && (
           <>
             <button
-              onClick={() => setArtLedger({ slug: 'game-q', title: 'Neon Siege · 编译期游戏' })}
+              onClick={() => setArtPicker(true)}
               style={{
                 marginTop: 14,
                 padding: '7px 18px',
@@ -1006,7 +1011,7 @@ export function Launcher() {
                 outline: 'none',
               }}
             >
-              🎨 美术平台（game-q）
+              🎨 美术平台
             </button>
             <button
               onClick={() => setArtlib(true)}

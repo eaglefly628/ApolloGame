@@ -56,7 +56,10 @@
 | `query` | 生成用关键词（=原 art: 查询串） | 机器（LLM 已产出） |
 | `placeholder` | 现占位 `{assetId, source:'freelib'}` | 机器 |
 | `spec` | 规格：`{w,h,displayW,displayH,transparent?}`（2D）/`{polyBudget,scale}`（3D）/`{durationS}`（音频）——**从组件数据推导** | 机器·人可改 |
-| `context` | 表现描述：用途/画面占比/动静态/视角（如「塔防炮塔·俯视·画面占比小·需透明底」） | 机器推导底稿·**人可补** |
+| `context` | 表现描述（中文·人读）：用途/画面占比/动静态/视角 | 机器推导底稿·**人可补** |
+| `desc` | **生成用详细描述**（英文·喂模型）：形体/主色 hex/行为角色（从 sim 组件推）/占比/视角/透明底 | 机器推导·人可改 |
+| `prompt` | 人工精调提示词（有则整体替代 query+desc 作生成主体） | 人 |
+| 头字段 `artStyle` | `{stylePrompt?, packId?}` 每游戏整体风格锚——自动拼进每行（风格包之后） | 人（平台头部编辑） |
 | `status` | `placeholder→queued→generated→replaced→approved` | 工作流 |
 | `gen` | `{provider, model, prompt, cacheKey}`（生成后回填） | 工作流 |
 | `provenance` | `{model, prompt, date, license}` 硬字段（同 M2.5 口径） | 工作流 |

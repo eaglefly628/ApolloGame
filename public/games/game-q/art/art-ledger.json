@@ -8,6 +8,7 @@
     {
       "skinKey": "q/base",
       "no": "art-01",
+      "desc": "base, rectangular shape, main color #2fbf87, home base structure to defend, small on screen (56x120), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "base",
@@ -38,6 +39,7 @@
     },
     {
       "no": "art-02",
+      "desc": "base core, round shape, main color #8effc9, small on screen (38x38), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "base-core",
@@ -67,6 +69,7 @@
     },
     {
       "no": "art-03",
+      "desc": "base rim, hexagonal shape, main color #1c6f52, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "base-rim",
@@ -96,6 +99,7 @@
     },
     {
       "no": "art-04",
+      "desc": "base shield, rectangular shape, main color #2fbf87, with a status bar, small on screen (60x6), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "base-shield",
@@ -126,6 +130,7 @@
     {
       "skinKey": "q/pad",
       "no": "art-05",
+      "desc": "pad p, hexagonal shape, main color #2b6f86, interactive build spot, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "pad-0-p",
@@ -163,6 +168,7 @@
     },
     {
       "no": "art-06",
+      "desc": "pad pc, round shape, main color #9fe8ff, small on screen (12x12), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "pad-0-pc",
@@ -199,6 +205,7 @@
     },
     {
       "no": "art-07",
+      "desc": "burst basic f, round shape, main color #ff5c7a, small on screen (36x36), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:burst_basic:f",
@@ -228,6 +235,7 @@
     },
     {
       "no": "art-08",
+      "desc": "burst fast f, round shape, main color #ffd23f, small on screen (30x30), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:burst_fast:f",
@@ -257,6 +265,7 @@
     },
     {
       "no": "art-09",
+      "desc": "burst tank f, round shape, main color #c084fc, small on screen (48x48), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:burst_tank:f",
@@ -287,6 +296,7 @@
     {
       "skinKey": "q/enemy-basic",
       "no": "art-10",
+      "desc": "enemy basic body, round shape, main color #ff5c7a, moving enemy unit walking along a path, small on screen (24x24), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:enemy_basic:body",
@@ -317,6 +327,7 @@
     },
     {
       "no": "art-11",
+      "desc": "enemy basic hpbar, rectangular shape, main color #4ade80, with a status bar, small on screen (24x4), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:enemy_basic:hpbar",
@@ -346,6 +357,7 @@
     },
     {
       "no": "art-12",
+      "desc": "enemy basic inner, round shape, main color #ffb3c2, small on screen (10x10), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:enemy_basic:inner",
@@ -376,6 +388,7 @@
     {
       "skinKey": "q/enemy-fast",
       "no": "art-13",
+      "desc": "enemy fast body, diamond shape, main color #ffd23f, moving enemy unit walking along a path, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:enemy_fast:body",
@@ -406,6 +419,7 @@
     },
     {
       "no": "art-14",
+      "desc": "enemy fast hpbar, rectangular shape, main color #4ade80, with a status bar, small on screen (20x4), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:enemy_fast:hpbar",
@@ -435,6 +449,7 @@
     },
     {
       "no": "art-15",
+      "desc": "enemy fast inner, round shape, main color #fff0b0, small on screen (10x10), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:enemy_fast:inner",
@@ -465,6 +480,7 @@
     {
       "skinKey": "q/enemy-tank",
       "no": "art-16",
+      "desc": "enemy tank body, hexagonal shape, main color #c084fc, moving enemy unit walking along a path, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:enemy_tank:body",
@@ -495,6 +511,7 @@
     },
     {
       "no": "art-17",
+      "desc": "enemy tank hpbar, rectangular shape, main color #4ade80, with a status bar, small on screen (32x4), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:enemy_tank:hpbar",
@@ -524,6 +541,7 @@
     },
     {
       "no": "art-18",
+      "desc": "enemy tank inner, round shape, main color #e6ccff, small on screen (14x14), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:enemy_tank:inner",
@@ -554,6 +572,7 @@
     {
       "skinKey": "q/tower-cannon",
       "no": "art-19",
+      "desc": "tower cannon body, hexagonal shape, main color #f472b6, defensive turret that senses and attacks enemies in range, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:tower_cannon:body",
@@ -584,6 +603,7 @@
     },
     {
       "no": "art-20",
+      "desc": "tower cannon core, round shape, main color #ffe0f2, small on screen (18x18), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:tower_cannon:core",
@@ -613,6 +633,7 @@
     },
     {
       "no": "art-21",
+      "desc": "tower cannon ring, round shape, main color #f472b6, small on screen (54x54), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:tower_cannon:ring",
@@ -643,6 +664,7 @@
     {
       "skinKey": "q/tower-pulse",
       "no": "art-22",
+      "desc": "tower pulse body, hexagonal shape, main color #38bdf8, defensive turret that senses and attacks enemies in range, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:tower_pulse:body",
@@ -673,6 +695,7 @@
     },
     {
       "no": "art-23",
+      "desc": "tower pulse core, round shape, main color #d6f4ff, small on screen (16x16), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:tower_pulse:core",
@@ -702,6 +725,7 @@
     },
     {
       "no": "art-24",
+      "desc": "tower pulse ring, round shape, main color #38bdf8, small on screen (46x46), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:tower_pulse:ring",
@@ -731,6 +755,7 @@
     },
     {
       "no": "art-25",
+      "desc": "zap cannon flash, round shape, main color #ffd6f0, small on screen (26x26), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:zap_cannon:flash",
@@ -760,6 +785,7 @@
     },
     {
       "no": "art-26",
+      "desc": "zap pulse flash, round shape, main color #bdf0ff, small on screen (26x26), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "prefab:zap_pulse:flash",
@@ -790,6 +816,7 @@
     {
       "skinKey": "q/spawn",
       "no": "art-27",
+      "desc": "spawn portal, round shape, main color #ff5c7a, small on screen (36x36), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "spawn-portal",
@@ -819,6 +846,7 @@
     },
     {
       "no": "art-28",
+      "desc": "track glow, rectangular shape, main color #33c2e8, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "track-glow-0",
@@ -852,6 +880,7 @@
     },
     {
       "no": "art-29",
+      "desc": "track nglow, round shape, main color #33c2e8, small on screen (38x38), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "track-nglow-0",
@@ -886,6 +915,7 @@
     },
     {
       "no": "art-30",
+      "desc": "track node, round shape, main color #1c3a5c, small on screen (26x26), top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "track-node-0",
@@ -920,6 +950,7 @@
     },
     {
       "no": "art-31",
+      "desc": "track seg, rectangular shape, main color #1c3a5c, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "kind": "sprite",
       "slot": {
         "entity": "track-seg-0",

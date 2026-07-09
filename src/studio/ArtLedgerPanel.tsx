@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SHELL, sBtn, sInput, sBadge, sChecker, sLabel } from '../ui/shell-theme.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -59,7 +59,7 @@ function swatchDataUri(r: LedgerRow): string | null {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
-export function ArtLedgerPanel({ slug, title, onBack, onChanged }: { slug: string; title?: string; onBack: () => void; onChanged?: () => void }) {
+export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug: string; title?: string; kind?: 'builtin' | 'library'; onBack: () => void; onChanged?: () => void }) {
   const [rows, setRows] = useState<LedgerRow[]>([]);
   const [packs, setPacks] = useState<Pack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,15 +73,32 @@ export function ArtLedgerPanel({ slug, title, onBack, onChanged }: { slug: strin
   const [reskinPack, setReskinPack] = useState('neon-synthwave');
   const [mockRun, setMockRun] = useState(false); // 显式才 mock（R1 ②）；不勾=真调尝试·无 key 服务端自动探针+mock
   const [mode, setMode] = useState<'library' | 'game'>('library'); // 双数据源：library 卡带 / 编译期游戏（requirements）
+  const [stylePrompt, setStylePrompt] = useState(''); // 每游戏整体风格锚（台账头 artStyle·owner review ②）
+  const [styleDirty, setStyleDirty] = useState(false);
+  const [genProvider, setGenProvider] = useState(''); // ''=风格包默认；否则点名覆盖 qwen/tripo/meshy（owner review ④）
+  const triedDerive = useRef(false); // library 卡带缺台账 → 自动 derive 一次（防循环）
 
   const load = useCallback(() => {
     setLoading(true);
     fetch(`${API}/api/art/ledger?slug=${encodeURIComponent(slug)}`)
       .then((r) => r.json())
-      .then((j) => { setRows(j?.success ? (j.rows ?? []) : []); setMode(j?.mode === 'requirements' ? 'game' : 'library'); })
+      .then(async (j) => {
+        if (!j?.success && kind !== 'builtin' && !triedDerive.current) {
+          // library 卡带没台账 → 自动初始化（derive）一次再读——「每个游戏都应该有目录」
+          triedDerive.current = true;
+          const d = await fetch(`${API}/api/art/derive`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug }) }).then((r) => r.json()).catch(() => null);
+          if (d?.success) {
+            const j2 = await fetch(`${API}/api/art/ledger?slug=${encodeURIComponent(slug)}`).then((r) => r.json()).catch(() => null);
+            if (j2?.success) { setRows(j2.rows ?? []); setMode(j2.mode === 'requirements' ? 'game' : 'library'); if (!styleDirty) setStylePrompt(j2.artStyle?.stylePrompt ?? ''); return; }
+          }
+        }
+        setRows(j?.success ? (j.rows ?? []) : []);
+        setMode(j?.mode === 'requirements' ? 'game' : 'library');
+        if (j?.success && !styleDirty) setStylePrompt(j.artStyle?.stylePrompt ?? '');
+      })
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, kind, styleDirty]);
   useEffect(() => load(), [load]);
   useEffect(() => {
     fetch(`${API}/api/art/style-packs`).then((r) => r.json()).then((j) => { const p = (j?.packs ?? []) as Pack[]; setPacks(p); if (p[0]) { setRegenPack(p[0].packId); setReskinPack(p[1]?.packId ?? p[0].packId); } }).catch(() => setPacks([]));
@@ -101,7 +118,8 @@ export function ArtLedgerPanel({ slug, title, onBack, onChanged }: { slug: strin
     finally { setBusy(false); }
   }, [busy, load, onChanged]);
 
-  const doRegen = () => sel && act('/api/art/regenerate', { slug, no: sel.no, packId: regenPack, query: regenPrompt.trim() || undefined, mock: mockRun }, `✓ 重生成 ${sel.no}`);
+  const doRegen = () => sel && act('/api/art/regenerate', { slug, no: sel.no, packId: regenPack, query: regenPrompt.trim() || undefined, mock: mockRun, ...(genProvider ? { provider: genProvider } : {}) }, `✓ 重生成 ${sel.no}`);
+  const doSaveStyle = () => act('/api/art/style', { slug, stylePrompt: stylePrompt.trim() }, '✓ 风格锚已存').then(() => setStyleDirty(false));
   const doSwap = () => sel && swapId.trim() && act('/api/art/swap', { slug, no: sel.no, assetId: swapId.trim() }, `✓ 换库 ${sel.no}`);
   const doReskin = () => act('/api/art/reskin', { slug, packId: reskinPack, mock: mockRun }, `✓ 换皮 ${reskinPack}`);
   // 一键全量：整表批量生成（断点续跑·缓存命中不重扣费）；library 线随后重钉 manifest（replace）。
@@ -109,7 +127,7 @@ export function ArtLedgerPanel({ slug, title, onBack, onChanged }: { slug: strin
     if (busy) return;
     setBusy(true);
     try {
-      const b = await fetch(`${API}/api/art/batch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, packId: reskinPack, mock: mockRun }) }).then((r) => r.json() as Promise<{ success?: boolean; error?: string; summary?: { generated?: number; cached?: number; mock?: number } }>);
+      const b = await fetch(`${API}/api/art/batch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, packId: reskinPack, mock: mockRun, ...(genProvider ? { provider: genProvider } : {}) }) }).then((r) => r.json() as Promise<{ success?: boolean; error?: string; summary?: { generated?: number; cached?: number; mock?: number } }>);
       if (!b.success) { flash(false, `✕ ${b.error ?? '批量失败'}`); return; }
       if (mode === 'library') {
         const rep = await fetch(`${API}/api/art/replace`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug }) }).then((r) => r.json() as Promise<{ success?: boolean; error?: string }>);
@@ -151,17 +169,36 @@ export function ArtLedgerPanel({ slug, title, onBack, onChanged }: { slug: strin
         <select value={reskinPack} onChange={(e) => setReskinPack(e.target.value)} style={{ ...sInput(), padding: '6px 8px' }}>
           {packs.map((p) => <option key={p.packId} value={p.packId}>{p.name}</option>)}
         </select>
+        <span style={{ fontSize: 12, color: SHELL.dim }}>模型：</span>
+        <select value={genProvider} onChange={(e) => setGenProvider(e.target.value)} style={{ ...sInput(), padding: '6px 8px' }} title="默认=风格包钉死的供应商（同款成套的保证）；点名覆盖只在需要时用">
+          <option value="">默认（随风格包）</option>
+          <option value="qwen">🖼 千问万相 2D</option>
+          <option value="tripo">🧊 Tripo 3D</option>
+          <option value="meshy">🗿 Meshy 3D</option>
+        </select>
         <button onClick={doBatchAll} disabled={busy} style={{ ...sBtn('primary'), opacity: busy ? 0.5 : 1 }} title="整表批量生成（断点续跑·缓存命中不重扣费）">⚡ 一键全量</button>
         {mode === 'library' && <button onClick={doReskin} disabled={busy} style={{ ...sBtn('primary'), opacity: busy ? 0.5 : 1 }} title="同玩法换风格包 → 存新卡带">🎭 一键换皮</button>}
         <button onClick={load} style={sBtn('quiet')}>↻</button>
         <button onClick={onBack} style={sBtn('ghost')}>← 返回</button>
       </div>
 
+      {/* 整体风格锚（owner review ②）：本游戏专属风格提示词·自动拼进每行生成 prompt（风格包之后） */}
+      <div style={{ padding: '8px 20px', borderBottom: `1px solid ${SHELL.line}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 12, color: SHELL.dim, flex: 'none' }}>🎯 本游戏整体风格：</span>
+        <input
+          value={stylePrompt}
+          onChange={(e) => { setStylePrompt(e.target.value); setStyleDirty(true); }}
+          placeholder="如：暗黑哥特风，血红与铁灰主色，粗粝质感（留空=只用风格包）"
+          style={{ ...sInput(), flex: 1, fontSize: 12 }}
+        />
+        <button onClick={doSaveStyle} disabled={busy || !styleDirty} style={{ ...sBtn('ghost'), opacity: busy || !styleDirty ? 0.5 : 1 }}>存风格锚</button>
+      </div>
+
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         {/* 缩略图墙 */}
         <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', flexWrap: 'wrap', gap: 10, alignContent: 'flex-start', minWidth: 0 }}>
           {loading ? <div style={{ color: SHELL.dim }}>加载台账…</div>
-            : rows.length === 0 ? <div style={{ color: SHELL.dim, fontSize: 13 }}>无台账（先在生成流水线里 derive 这个游戏）</div>
+            : rows.length === 0 ? <div style={{ color: SHELL.dim, fontSize: 13 }}>{kind === 'builtin' ? '编译期游戏未初始化美术库——照 game-q 样板跑一次 requirements 推导脚本（见交接档 game-q 节）' : '无台账（自动初始化失败——确认 library 卡带 manifest 可读后点 ↻）'}</div>
               : rows.map((r) => {
                 const b = SOURCE_BADGE(r); const thumb = thumbUrl(r); const swatch = swatchDataUri(r); const active = selNo === r.no;
                 return (
@@ -239,6 +276,59 @@ export function ArtLedgerPanel({ slug, title, onBack, onChanged }: { slug: strin
       </div>
 
       {toast && <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 50, padding: '9px 18px', borderRadius: 8, fontSize: 13, background: SHELL.bg2, border: `1px solid ${toast.ok ? SHELL.jadeLine : SHELL.danger}`, color: toast.ok ? SHELL.ok : SHELL.danger, boxShadow: SHELL.shadow }}>{toast.msg}</div>}
+    </div>
+  );
+}
+
+// ═══ 游戏选择器（owner 07-09 review ③）：美术平台入口=先选游戏目录——内置（src/games）+ library 卡带全列，
+// 每个游戏一个美术资料库。点击进入该游戏的台账面板（library 缺台账会自动 derive 初始化）。 ═══
+export function ArtGamePicker({ onPick, onBack }: {
+  onPick: (g: { slug: string; title: string; kind: 'builtin' | 'library' }) => void;
+  onBack: () => void;
+}) {
+  const [builtin, setBuiltin] = useState<Array<{ id: string; hasLocalArt?: boolean }>>([]);
+  const [carts, setCarts] = useState<Array<{ slug: string; meta?: { name?: string } }>>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API}/api/games`).then((r) => r.json()).catch(() => null),
+      fetch(`${API}/api/library`).then((r) => r.json()).catch(() => null),
+    ]).then(([g, l]) => {
+      setBuiltin(Array.isArray(g?.games) ? g.games : []);
+      const arr = Array.isArray(l?.games) ? l.games : Array.isArray(l) ? l : [];
+      setCarts(arr);
+    }).finally(() => setLoading(false));
+  }, []);
+  const card = (key: string, title: string, sub: string, badge: string, onClick: () => void) => (
+    <div key={key} onClick={onClick} style={{ width: 200, padding: 14, borderRadius: 10, cursor: 'pointer', background: 'rgba(255,255,255,0.03)', border: `1px solid ${SHELL.line}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: SHELL.text }}>🎨 {title}</div>
+      <div style={{ fontSize: 11, color: SHELL.dim }}>{sub}</div>
+      <span style={{ ...sBadge('ok'), alignSelf: 'flex-start', fontSize: 9 }}>{badge}</span>
+    </div>
+  );
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: SHELL.appBg, color: SHELL.text, fontFamily: SHELL.fontUi, zIndex: 400, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '12px 20px', borderBottom: `1px solid ${SHELL.line}`, display: 'flex', alignItems: 'center', gap: 14 }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: SHELL.violet }}>🎨 美术平台 · 选择游戏</span>
+        <span style={{ fontSize: 12, color: SHELL.dim }}>每个游戏一个美术资料库（需求台账+生成产物+本地索引）</span>
+        <button onClick={onBack} style={{ ...sBtn('ghost'), marginLeft: 'auto' }}>← 返回</button>
+      </div>
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+        {loading ? <div style={{ color: SHELL.dim }}>加载游戏列表…</div> : (
+          <>
+            <div style={{ ...sLabel, marginBottom: 8 }}>内置游戏（src/games）</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
+              {builtin.map((g) => card(g.id, g.id, g.hasLocalArt ? '已有本地美术目录' : '尚无本地美术目录', '编译期', () => onPick({ slug: g.id, title: g.id, kind: 'builtin' })))}
+              {builtin.length === 0 && <div style={{ color: SHELL.dim, fontSize: 12 }}>（无）</div>}
+            </div>
+            <div style={{ ...sLabel, marginBottom: 8 }}>游戏库卡带（library·创作台产出）</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              {carts.map((c) => card(c.slug, c.meta?.name || c.slug, c.slug, '卡带', () => onPick({ slug: c.slug, title: c.meta?.name || c.slug, kind: 'library' })))}
+              {carts.length === 0 && <div style={{ color: SHELL.dim, fontSize: 12 }}>（空库·先在创作台生成一款）</div>}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

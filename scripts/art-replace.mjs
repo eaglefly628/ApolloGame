@@ -62,6 +62,37 @@ function deriveSpec(kind, comps) {
   return { w: Math.round(w), h: Math.round(h), displayW: Math.round(w * sx), displayH: Math.round(h * sy), transparent: kind !== 'bg' && kind !== 'splash' };
 }
 
+// 生成用详细描述（owner 07-09 review ①「图片描述没有很详细的信息」）：从组件数据推形体/颜色/
+// 行为角色/画面占比/视角——英文（wanx/Tripo/Meshy 通吃），人可在台账改。row.prompt（手拼）仍最优先。
+export function deriveDesc(comps, kind, name) {
+  const c = comps || {};
+  const hex = (t) => (typeof t === 'number' ? '#' + (t >>> 0).toString(16).padStart(6, '0').slice(-6) : null);
+  const parts = [];
+  // 形体（无 kind 时从字段推：radius→圆·width/height→矩形）
+  const sh = c.Shape || {};
+  const kindGuess = sh.kind ?? (num(sh.radius) != null ? 'circle' : (num(sh.width) != null || num(sh.height) != null) ? 'box' : null);
+  if (kindGuess === 'circle') parts.push('round shape');
+  else if (kindGuess === 'box') parts.push('rectangular shape');
+  else if (kindGuess === 'polygon') {
+    const n = Array.isArray(sh.vertices) ? sh.vertices.length / 2 : 0;
+    parts.push(n === 6 ? 'hexagonal shape' : n === 4 ? 'diamond shape' : 'polygonal shape');
+  }
+  const col = hex(c.Color?.tint);
+  if (col) parts.push(`main color ${col}`);
+  // 行为角色（从 sim 组件推——这就是「游戏知道它是什么」）
+  if (c.Perception) parts.push('defensive turret that senses and attacks enemies in range');
+  else if (c.NavAgent) parts.push('moving enemy unit walking along a path');
+  else if (c.Resource && c.Resource.id === 'lives') parts.push('home base structure to defend');
+  else if (c.Clickable) parts.push('interactive build spot');
+  if (c.Gauge) parts.push('with a status bar');
+  // 画面占比 + 视角
+  const spec = deriveSpec(kind, c);
+  if (kind !== 'model3d' && spec.w != null) parts.push(spec.w >= 256 ? 'large on screen' : spec.w >= 64 ? 'medium size on screen' : `small on screen (${spec.w}x${spec.h})`);
+  parts.push(kind === 'model3d' ? 'game-ready 3d model' : 'top-down 2d game view');
+  if (spec.transparent) parts.push('isolated subject, transparent background');
+  return `${name ? name + ', ' : ''}${parts.join(', ')}`;
+}
+
 function deriveContext(kind, entity, query, spec) {
   const area = (kind === 'bg' || kind === 'splash') ? '全屏' : ((spec.w ?? 0) >= 256 ? '画面占比大' : '画面占比小');
   const view = kind === 'model3d' ? '3D 模型' : '2D 平面';
@@ -92,7 +123,7 @@ export function deriveLedger(manifest, { game = '' } = {}) {
       no: 'art-' + String(i + 1).padStart(2, '0'),
       kind, slot: { entity: s.entity, component: s.component, field: s.field }, query: s.query,
       placeholder: { ref: ART_PREFIX + s.query, source: 'freelib' },
-      spec, context: deriveContext(kind, s.entity, s.query, spec),
+      spec, desc: deriveDesc(s.comps, kind, s.query), context: deriveContext(kind, s.entity, s.query, spec),
       status: 'placeholder', gen: null, provenance: null,
     };
   });
@@ -179,6 +210,7 @@ export function deriveRequirements(manifest, { game = '' } = {}) {
     return {
       ...(skin ? { skinKey: skin } : {}),
       no: 'art-' + String(i + 1).padStart(2, '0'),
+      desc: deriveDesc(n.comps, kind, name.toLowerCase()),
       kind,
       slot: { entity: n.path, component: n.comps.Sprite ? 'Sprite' : (n.comps.Model3D ? 'Model3D' : (n.comps.Mesh3D ? 'Mesh3D' : 'Shape')), field: n.comps.Sprite ? 'textureKey' : (n.comps.Model3D ? 'modelKey' : 'art') },
       query: name.toLowerCase(),
@@ -229,20 +261,25 @@ export function mergeLedger(prev, fresh) {
     if (!seen.has(rowIdentity(p, mode))) rows.push({ ...p, status: 'retired' });
   }
   rows.sort((a, b) => noNum(a.no) - noNum(b.no));
-  return { ...fresh, ...(fresh.count != null ? { count: rows.length } : {}), rows };
+  const artStyle = prev.artStyle ?? fresh.artStyle;
+  return { ...fresh, ...(artStyle ? { artStyle } : {}), ...(fresh.count != null ? { count: rows.length } : {}), rows };
 }
 
 // ═══ ③④ 风格方言 + 缓存 + 后处理（工作流档 §四·§二④）═══
 
-export function dialectPrompt(row, pack) {
+export function dialectPrompt(row, pack, gameStyle = '') {
   const provider = pack.params.provider;
   const base = provider === 'qwen' ? pack.promptZh : pack.promptEn;
   const kindWord = provider === 'qwen'
     ? ({ sprite: '精灵图', texture: '贴图', bg: '背景图', splash: '启动画', model3d: '3D 模型' }[row.kind] || '图')
     : ({ sprite: 'game sprite', texture: 'texture', bg: 'background', splash: 'splash screen', model3d: '3d model' }[row.kind] || 'image');
-  // row.prompt = 人工精调提示词（如 game-q art-list 回填·机器真相在台账行内），有则整体替代 query 作主体描述。
-  const subject = (typeof row.prompt === 'string' && row.prompt.trim()) ? row.prompt.trim() : (row.query || '');
-  return `${subject}, ${kindWord}, ${base}`.trim();
+  // 主体优先级：row.prompt（人工精调·整体替代）> query+desc（机器推导详细描述）> query。
+  const subject = (typeof row.prompt === 'string' && row.prompt.trim())
+    ? row.prompt.trim()
+    : [row.query || '', row.desc || ''].filter(Boolean).join(', ');
+  // gameStyle = 每游戏整体风格锚（台账头 artStyle.stylePrompt·owner 07-09 review ②），拼在风格包之后。
+  const styleTail = (typeof gameStyle === 'string' && gameStyle.trim()) ? `, ${gameStyle.trim()}` : '';
+  return `${subject}, ${kindWord}, ${base}${styleTail}`.trim();
 }
 
 /** 内容寻址缓存键 = hash(provider + prompt + model + seed)。命中 → 不重扣费（断点续跑）。 */
@@ -281,12 +318,21 @@ function mockRawRgb(prompt, w, h, pixelGrid) {
 
 const LICENSE = { qwen: 'Qwen/DashScope 万相 (按订阅授权)', tripo: 'Tripo (按订阅商用授权)', meshy: 'Meshy (按订阅商用授权)' };
 const ENVKEY = { qwen: 'DASHSCOPE_API_KEY', tripo: 'TRIPO_API_KEY', meshy: 'MESHY_API_KEY' };
-const provFor = (row, pack) => (row.kind === 'model3d' ? (['tripo', 'meshy'].includes(pack.params.provider) ? pack.params.provider : 'meshy') : pack.params.provider);
+// provider 选择：默认=风格包钉死（一致性层2）；override=平台菜单点名覆盖（owner 07-09 review ④）——
+// 3D 行只认 tripo/meshy，2D 行只认 qwen（wanx 是当前唯一 2D adapter），不兼容的覆盖忽略回默认。
+const provFor = (row, pack, override = null) => {
+  if (row.kind === 'model3d') {
+    if (override && ['tripo', 'meshy'].includes(override)) return override;
+    return ['tripo', 'meshy'].includes(pack.params.provider) ? pack.params.provider : 'meshy';
+  }
+  if (override === 'qwen') return 'qwen';
+  return pack.params.provider;
+};
 
 /** 单行产资产（2D：mock→palette-snap+按 spec 尺寸·真调→adapter；3D：tripo/meshy adapter）。 */
-export async function genRowAsset(row, pack, { mock = true, apiKey = null } = {}) {
-  const provider = provFor(row, pack);
-  const prompt = dialectPrompt(row, pack);
+export async function genRowAsset(row, pack, { mock = true, apiKey = null, gameStyle = '', provider: providerOverride = null } = {}) {
+  const provider = provFor(row, pack, providerOverride);
+  const prompt = dialectPrompt(row, pack, gameStyle);
   const ck = cacheKey(provider, prompt, pack.params);
   if (row.kind === 'model3d') {
     const g = await ADAPTERS[provider].generate(prompt, { mock, apiKey });
@@ -305,7 +351,7 @@ export async function genRowAsset(row, pack, { mock = true, apiKey = null } = {}
 // ═══ ④ 批量生成器（并发留给 apollo 层·此处确定性顺序·缓存/续跑/探针）═══
 
 /** 逐行生成落盘 + 登记游戏本地 index + 更新台账。断点续跑=命中缓存(cacheKey+文件在)不重扣费；无 key=探针+mock。 */
-export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = true, env = process.env, at = new Date().toISOString(), only = null } = {}) {
+export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = true, env = process.env, at = new Date().toISOString(), only = null, provider: providerOverride = null } = {}) {
   const pack = STYLE_PACKS[packId];
   if (!pack) return { ok: false, error: `未知风格包: ${packId}` };
   if (!game) return { ok: false, error: 'batchGenerate 需要 game' };
@@ -314,22 +360,23 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
   if (!Array.isArray(index.assets)) index.assets = [];
   const byId = new Map(index.assets.map((a) => [a.id, a]));
   const summary = { total: 0, generated: 0, cached: 0, mock: 0, failed: 0, skipped: 0, probes: [] };
+  const gameStyle = (ledger.artStyle && typeof ledger.artStyle.stylePrompt === 'string') ? ledger.artStyle.stylePrompt : '';
   for (const row of ledger.rows) {
     if (only && row.no !== only) { summary.skipped++; continue; } // 单槽点名（fill/regen）
     if (row.status === 'retired') { summary.skipped++; continue; } // 墓碑行（编号保留·槽位已消失）
     if (['sfx', 'music', 'particle'].includes(row.kind)) { summary.skipped++; continue; } // 冲刺期只登记不生成
     summary.total++;
-    const provider = provFor(row, pack);
+    const provider = provFor(row, pack, providerOverride);
     const ext = row.kind === 'model3d' ? 'glb' : 'png';
     const outRel = `gen/${row.no}.${ext}`;
     const outAbs = genAbs(root, game, outRel);
-    const ck = cacheKey(provider, dialectPrompt(row, pack), pack.params);
+    const ck = cacheKey(provider, dialectPrompt(row, pack, gameStyle), pack.params);
     if (['generated', 'replaced'].includes(row.status) && row.gen?.cacheKey === ck && existsSync(outAbs)) { summary.cached++; continue; } // 命中·不重扣费
     const apiKey = env[ENVKEY[provider]] || null;
     if (!mock && !apiKey) summary.probes.push({ no: row.no, provider, envKey: ENVKEY[provider], configured: false, note: '未配 key → mock 占位（绝不静默顶替）' });
     const useMock = mock || !apiKey;
     let a;
-    try { a = await genRowAsset(row, pack, { mock: useMock, apiKey }); }
+    try { a = await genRowAsset(row, pack, { mock: useMock, apiKey, gameStyle, provider: providerOverride }); }
     catch (e) { row.status = 'failed'; row.gen = { provider, error: String(e).slice(0, 200) }; summary.failed++; continue; }
     mkdirSync(dirname(outAbs), { recursive: true }); writeFileSync(outAbs, a.buffer);
     const id = `gen/${row.no}`;
@@ -432,18 +479,19 @@ async function run(argv) {
     if (!ledger) { console.error(`无台账: public/games/${slug}/art/art-ledger.json`); process.exit(1); }
     const rr = resetRow(ledger, no, { query });
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
-    const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no });
+    const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg });
     if (!b.ok) { console.log(JSON.stringify(b)); process.exit(1); }
     writeJson(ledgerFile(ROOT, slug), ledger);
     console.log(JSON.stringify({ ok: true, slug, no, summary: b.summary, row: ledger.rows.find((r) => r.no === no) }));
     return;
   }
+  const pvi = argv.indexOf('--provider'); const providerArg = pvi >= 0 ? argv[pvi + 1] : null;
   if (cmd === 'batch') {
     const packId = argv[2];
     const mock = argv.includes('--mock');
     const ledger = readJson(ledgerFile(ROOT, slug), null);
     if (!ledger) { console.error(`无台账: 先 derive ${slug}`); process.exit(1); }
-    const res = await batchGenerate(ledger, packId, { game: slug, mock });
+    const res = await batchGenerate(ledger, packId, { game: slug, mock, provider: providerArg });
     if (res.ok) writeJson(ledgerFile(ROOT, slug), res.ledger);
     console.log(JSON.stringify(res.ok ? { ok: true, slug, packId, summary: res.summary } : res));
     if (!res.ok) process.exit(1);
@@ -467,7 +515,7 @@ async function run(argv) {
     if (!mf || !ledger) { console.error('缺 manifest 或台账'); process.exit(1); }
     const rr = resetRow(ledger, no, { query });
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
-    const b = await batchGenerate(ledger, packId, { game: slug, mock });
+    const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg });
     if (!b.ok) { console.log(JSON.stringify(b)); process.exit(1); }
     const rep = applyReplacements(mf, ledger);
     writeJson(ledgerFile(ROOT, slug), ledger);

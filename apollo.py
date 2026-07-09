@@ -202,6 +202,7 @@ fields, and unknown capability ids are rejected on load.
 
 ## Art assets (give every visual entity a skin slot — REQUIRED for the reskin pipeline)
 - Every entity that represents something a player looks at (characters, enemies, items, terrain tiles, projectiles, backgrounds) SHOULD carry a Sprite whose textureKey is an "art:<english keywords>" reference — e.g. "art:skeleton warrior", "art:forest floor tile". That art: reference IS the replaceable skin slot the art pipeline later swaps for generated art. A game made of only shape+color blocks (no art: slots) cannot be reskinned — avoid that.
+- Write art: queries as DETAILED image briefs, not bare nouns: subject + distinguishing features + color/mood + view angle, 4-10 words. Good: "art:armored skeleton knight, glowing red eyes, top-down". Bad: "art:enemy". The art pipeline feeds these words straight to a text-to-image model — the richer the query, the better every generated skin.
 - The engine deterministically resolves "art:" against a CC0 32x32 sprite library (4800+ tagged assets); the same query always picks the same sprite. Unresolvable queries fall back to a placeholder, never crash.
 - Useful keywords — monsters: undead/skeleton/zombie/demon/dragon/animal/wolf/spider/boss/flying/fire/ice/poison; terrain: floor/wall/grass/lava/water/door/altar/trap; items: sword/axe/bow/armor/shield/potion/book/gold; fx: arrow/bolt/cloud.
 - Entities with a Sprite still need a Transform (and a Shape if they collide). Use shape+color only for pure abstractions (HUD bars, hitboxes) that genuinely have no art.
@@ -1668,6 +1669,9 @@ def handle_art_batch(body: dict) -> dict:
     if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', pack):  # 白名单：防注入
         return {'success': False, 'error': f'非法 packId: {pack or "(空)"}'}
     args = ['batch', slug, pack] + (['--mock'] if mock else [])
+    prov = str(body.get('provider', '')).strip()
+    if prov and GEN_PROVIDER_RE.fullmatch(prov):
+        args += ['--provider', prov]
     res = _art_replace_cli(args)
     if res.get('ok'):
         s = res.get('summary', {})
@@ -1707,6 +1711,41 @@ def _art_save_manifest(slug: str, res: dict, note: str, extra: dict) -> dict:
     status, data = library_put_manifest(slug, {'manifest': manifest, 'note': note})
     return {'success': bool(data.get('success')), **extra, **data}
 
+def handle_art_style(body: dict) -> dict:
+    """POST /api/art/style {slug, stylePrompt?, packId?}。设该游戏的整体美术风格锚（台账头 artStyle·
+    owner 07-09 review ②「整体美术风格提示词没地方设置」）。空串=清除。批量/单槽生成自动拼进每行 prompt。"""
+    slug = str(body.get('slug', '')).strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    if not f.is_file():
+        return {'success': False, 'error': '无台账（先初始化该游戏的美术库）'}
+    try:
+        ledger = json.loads(f.read_text('utf-8'))
+    except Exception as e:
+        return {'success': False, 'error': f'台账读取失败: {e}'}
+    style = ledger.get('artStyle') if isinstance(ledger.get('artStyle'), dict) else {}
+    if 'stylePrompt' in body:
+        sp = body.get('stylePrompt')
+        if isinstance(sp, str) and sp.strip():
+            if len(sp) > 500:
+                return {'success': False, 'error': 'stylePrompt 过长（≤500 字）'}
+            style['stylePrompt'] = sp.strip()
+        else:
+            style.pop('stylePrompt', None)
+    if 'packId' in body:
+        pk = body.get('packId')
+        if isinstance(pk, str) and re.fullmatch(r'[a-z0-9][a-z0-9-]*', pk):
+            style['packId'] = pk
+        else:
+            style.pop('packId', None)
+    ledger['artStyle'] = style
+    f.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    print(c("  [ART]", 'g'), f"style {slug} → 锚更新")
+    return {'success': True, 'artStyle': style}
+
+GEN_PROVIDER_RE = re.compile(r'qwen|tripo|meshy')
+
 def handle_art_regenerate(body: dict) -> dict:
     """POST /api/art/regenerate {slug, no, packId, query?, mock?}。点名单槽重新生成（可改 prompt）。"""
     slug = str(body.get('slug', '')).strip(); no = str(body.get('no', '')).strip()
@@ -1725,6 +1764,9 @@ def handle_art_regenerate(body: dict) -> dict:
     args = [cmdname, slug, no, pack]
     if isinstance(query, str) and query.strip():
         args += ['--query', query.strip()]
+    prov = str(body.get('provider', '')).strip()
+    if prov and GEN_PROVIDER_RE.fullmatch(prov):
+        args += ['--provider', prov]
     if mock:
         args.append('--mock')
     res = _art_replace_cli(args)
@@ -2675,6 +2717,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_art_replace(body)
             except Exception as e:
                 data = {'success': False, 'error': f'replace 异常: {e}'}
+        elif path == '/api/art/style':
+            try:
+                data = handle_art_style(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'style 异常: {e}'}
         elif path == '/api/art/regenerate':
             try:
                 data = handle_art_regenerate(body)

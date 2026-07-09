@@ -13,7 +13,7 @@
 
 | 入口 | 打开什么 |
 |---|---|
-| 主屏 🎨 美术平台（game-q）按钮（dev 模式） | 编译期游戏线台账（game-q） |
+| 主屏 🎨 美术平台按钮（dev 模式） | **游戏选择器**（owner review ③）：内置+library 全列·每游戏一个美术资料库·点进即该游戏台账（library 缺台账自动初始化） |
 | 游戏库卡带操作条 「🎨 美术台账」 | library 卡带线台账 |
 | 设置面板 「🎨 美术生成 API Key」区 | 配 DASHSCOPE / TRIPO / MESHY key（存 .apollo-config.json·打码回显） |
 
@@ -27,10 +27,12 @@
 
 ## 四、台账=唯一真相（canonical 行 schema）
 
-`public/games/<slug>/art/art-ledger.json`，行=`{no, kind, slot, query, prompt?, skinKey?, placeholder, spec, context, status, gen, provenance, history?}`。
+`public/games/<slug>/art/art-ledger.json`，头带 `artStyle:{stylePrompt?, packId?}`（**每游戏整体风格锚**·owner review ②·平台头部可编辑·自动拼进每行生成 prompt），行=`{no, kind, slot, query, prompt?, desc, skinKey?, placeholder, spec, context, status, gen, provenance, history?}`。
 
 - **编号 append-only（owner 07-09 定案）**：重跑推导走 `mergeLedger`——已有槽位**保原 no**（连同状态/生成/prompt/history），新槽位取 max+1 顺延，消失槽位标 `status:'retired'` **墓碑保号永不复用**。「art-03」今天明天都是同一个东西。
 - `prompt` = 人工精调提示词（game-q 的 7 个主角面已从 art-list.md 回填），有则整体替代 query 作生成主体；docs 下两份 md 已降级只读视图，**勿再手改 md 当真相**。
+- `desc` = **机器推导的详细描述**（owner review ①）：形体/主色 hex/行为角色（塔=索敌炮台·NavAgent=沿路移动敌·lives=大本营…全从 sim 组件推）/画面占比/视角/透明底——无手拼 prompt 时自动拼进生成主体。生成主体优先级：`prompt` > `query+desc` > `query`。
+- 生成 provider：默认=风格包钉死（成套保证）；平台「模型」菜单可点名覆盖 千问万相/Tripo/Meshy（owner review ④·3D 行只认 tripo/meshy·2D 行只认 qwen·覆盖记进 gen.provider）。
 - `status` 流转：`needs-art|placeholder → generated → replaced/filled → approved`；`retired`=墓碑。
 
 ## 五、写回=怎么让生成的图真出现在游戏里
@@ -62,7 +64,7 @@
 
 ## 九、验证记录（2026-07-09 收口时）
 
-tsc 0 · vitest 2358（313 文件·含 mergeLedger 编号三测/皮肤槽写回三测）· build 0 · `art-replace-smoke.py` 33/33 ·
+tsc 0 · vitest 全绿（art-replace 23 测：编号三测/皮肤槽三测/review 四条修正三测）· build 0 · `art-replace-smoke.py` 33/33 ·
 `art-review-smoke.py` 17/17 · game-q RATCHET PASS（AUDIT FAIL=存量 createElement×5 基线债·未新增）·
 mock 单槽 fill 全链自证（prompt 回填生效/gen+皮肤别名双登记/provenance 全）。
 **真 key 端到端待 owner key 到位**（清单=冲刺纲领 §六）：填设置面板→平台不勾 mock→一键全量即真图。

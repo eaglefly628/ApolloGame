@@ -3,6 +3,7 @@
 > owner 指示全员读。**共同必读（先读这两份再看自己那节）**：
 > ① 终态一页 `docs/design/art-platform-2026-07-09.md`（现状唯一权威：平台/台账/写回/真调/退役清单）；
 > ② 工作流全文 `docs/design/art-replacement-workflow.md`（五步流程/schema/风格包对齐表）。
+> **07-09 晚追补（owner review 四条·Lead 已修）**：①台账行新增 `desc`=机器推导详细描述（生成主体自动用）+ 生成流系统提示词要求 LLM 写 art: 时带主体/特征/颜色/视角；②每游戏**风格锚** `artStyle.stylePrompt`（平台头部编辑·POST /api/art/style）；③🎨 入口=**游戏选择器**（内置+library 全列·每游戏一库·library 自动初始化台账）；④平台加**模型菜单**（默认随风格包·可点名 千问/Tripo/Meshy）。终态档已同步。
 > 你们三条线的活**都没有白做**——推导器/台账/三式/换皮/人审衔接/需求规格全部收进了终态；收口收掉的只是**重复实现与断头**。有异议走 `docs/workflow/requests.md`，不要直接改回去。
 
 ## ── 致 PST（studio/平台线）──

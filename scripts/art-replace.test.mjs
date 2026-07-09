@@ -250,3 +250,36 @@ describe('皮肤槽写回（编译期游戏线·R2 ①）', () => {
     expect(dialectPrompt(row, pack)).not.toMatch(/^hero,/);
   });
 });
+
+describe('owner 07-09 review 四条修正', () => {
+  it('① deriveDesc：行为角色/形体/色值/视角进详细描述（deriveLedger 与 deriveRequirements 都带 desc）', () => {
+    const l = deriveLedger(MANIFEST, { game: 'g' });
+    expect(l.rows.find((r) => r.slot.entity === 'hero').desc).toContain('rectangular shape');
+    const REQ = { entities: { turret: { Shape: { type: 'Shape', radius: 10 }, Color: { type: 'Color', tint: 0x38bdf8 }, Perception: { targetTag: 1, sightRadius: 100 } } } };
+    const r = deriveRequirements(REQ, { game: 'g' }).rows[0];
+    expect(r.desc).toContain('defensive turret');
+    expect(r.desc).toContain('#38bdf8');
+    // 无手拼 prompt 时，desc 拼进生成主体
+    expect(dialectPrompt(r, STYLE_PACKS['pixel-retro'])).toContain('defensive turret');
+  });
+  it('② 每游戏风格锚：ledger.artStyle.stylePrompt 拼进 prompt·merge 保留', () => {
+    const pack = STYLE_PACKS['pixel-retro'];
+    const row = { no: 'art-01', kind: 'sprite', query: 'hero' };
+    expect(dialectPrompt(row, pack, '暗黑哥特风，血红铁灰')).toContain('暗黑哥特风');
+    const prev = deriveLedger(MANIFEST, { game: 'g' });
+    prev.artStyle = { stylePrompt: '暗黑哥特风' };
+    const merged = mergeLedger(prev, deriveLedger(MANIFEST, { game: 'g' }));
+    expect(merged.artStyle?.stylePrompt).toBe('暗黑哥特风');
+  });
+  it('④ provider 点名覆盖：3D 行认 tripo/meshy 切换·2D 行不吃 3D 覆盖', async () => {
+    await withRoot(async (root) => {
+      const l = deriveLedger(MANIFEST, { game: 'g' });
+      const res = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true, provider: 'tripo' });
+      expect(res.ok).toBe(true);
+      const m3d = l.rows.find((r) => r.kind === 'model3d');
+      expect(m3d.gen.provider).toBe('tripo'); // 默认 meshy → 点名 tripo
+      const spr = l.rows.find((r) => r.kind === 'sprite');
+      expect(spr.gen.provider).toBe('qwen'); // 2D 行不吃 3D 覆盖·回默认
+    });
+  });
+});
