@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { MatchBoard, BoardCell, Signal, Resource, RandomSeed } from '@engine/protocol/components.js';
+import type { MatchBoard, BoardCell, Signal, Resource, RandomSeed, Sprite } from '@engine/protocol/components.js';
 import { resourceCapability } from '@atom-skills/index.js';
 import { match3BoardCapability, findMatches, applyGravity, adjacent } from './match3-board.js';
 
@@ -65,11 +65,12 @@ describe('T3 match3-board — 消除产料（接 resource-apply → 升级链）
     // row0 三个 0（red），无其它连线
     const w = loadBoard([0, 0, 0, 1, 2, 1, 2, 1, 2], { phase: 'match' }, true);
     w.tick(); // match → clear
-    w.tick(); // clear：发 ResourceModify + 置 -1；resource-apply 同 tick 结算
-    expect(resVal(w, 'red')).toBe(3); // 三格 red 各 +matAmount(1)
-    expect(resVal(w, 'coin')).toBe(3); // 三格各 +coinPerTile(1)
+    w.tick(); // clear：发 ResourceModify + 置 -1 → fall
     expect(board(w).cells.slice(0, 3)).toEqual([-1, -1, -1]);
     expect(board(w).phase).toBe('fall');
+    w.tick(); // 下一拍 resource-apply 结算（R10 修订：一拍延迟·断四系统环）
+    expect(resVal(w, 'red')).toBe(3); // 三格 red 各 +matAmount(1)
+    expect(resVal(w, 'coin')).toBe(3); // 三格各 +coinPerTile(1)
   });
 });
 
@@ -131,5 +132,38 @@ describe('T3 match3-board — 全流程终止 + 确定性', () => {
       return board(w).cells;
     };
     expect(run()).toEqual(run());
+  });
+});
+
+describe('T3 match3-board — game-j 扩展（movesResource + kindSkinEntities·可选缺省关）', () => {
+  it('合法交换（产生连线）扣 1 步；非法步弹回不扣', () => {
+    const w = loadBoard([0, 0, 0, 1, 2, 1, 2, 1, 2], { phase: 'swapped', swapA: 2, swapB: 5, movesResource: 'moves' }, true);
+    w.createEntity('res:moves');
+    w.addComponent('res:moves', { type: 'Resource', id: 'moves', current: 20, min: 0, max: 99 } as Resource);
+    w.tick(); // swapped→clear：合法步发 -1
+    w.tick(); // 下一拍结算（一拍延迟）
+    expect(w.getComponent<Resource>('res:moves', 'Resource')!.current).toBe(19);
+    // 非法步：换回 idle·不扣
+    const w2 = loadBoard([0, 1, 2, 1, 2, 0, 2, 0, 1], { phase: 'swapped', swapA: 0, swapB: 1, movesResource: 'moves' }, true);
+    w2.createEntity('res:moves');
+    w2.addComponent('res:moves', { type: 'Resource', id: 'moves', current: 20, min: 0, max: 99 } as Resource);
+    w2.tick();
+    w2.tick();
+    expect(w2.getComponent<Resource>('res:moves', 'Resource')!.current).toBe(20);
+  });
+  it('kindSkinEntities：BoardCell 的 Sprite.textureKey 按种类同步自皮肤定义实体（空格清空）', () => {
+    const w = loadBoard([1, 0, 2, 0, 2, 1, 2, 1, 0], { kindSkinEntities: ['def0', 'def1', 'def2'] });
+    for (const [i, key] of [['def0', 'skin/red'], ['def1', 'skin/green'], ['def2', 'skin/blue']] as Array<[string, string]>) {
+      w.createEntity(i);
+      w.addComponent(i, { type: 'Sprite', textureKey: key, anchorX: 0.5, anchorY: 0.5, zOrder: 0 } as Sprite);
+    }
+    w.createEntity('bc0');
+    w.addComponent('bc0', { type: 'BoardCell', boardId: 'board', index: 0 } as BoardCell);
+    w.addComponent('bc0', { type: 'Sprite', textureKey: '', anchorX: 0.5, anchorY: 0.5, zOrder: 0 } as Sprite);
+    w.tick();
+    expect(w.getComponent<Sprite>('bc0', 'Sprite')!.textureKey).toBe('skin/green'); // cells[0]=1 → def1
+    board(w).cells[0] = -1; // 置空 → 清 key（回退 Shape 观感）
+    w.tick();
+    expect(w.getComponent<Sprite>('bc0', 'Sprite')!.textureKey).toBe('');
   });
 });

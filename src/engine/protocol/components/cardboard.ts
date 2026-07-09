@@ -28,6 +28,10 @@ export interface MatchBoard extends Component {
   stepTimer: number; // 相位推进节拍计数
   stepDelay: number; // 相位间等待 tick 数（让连锁可见；0=即时）
   selectAction: string; // 选中格的信号名（clickable 命中格子时发的 Signal.name）
+  // ── 可选扩展（game-j 三消彩排·2026-07-09·向后兼容缺省关）──
+  movesResource?: string; // 步数 Resource id：**合法交换**（产生连线）时 -1（非法步弹回不扣）。''/缺省=不限步
+  kindSkinEntities?: string[]; // 种类→皮肤定义实体 id（该实体持 Sprite{textureKey:'art:…'}·加载期已解析）：
+  // view-sync 把其 textureKey 写到 BoardCell 的 Sprite——糖果式图片皮；缺省=纯色块+文字视图不变
 }
 
 // ── match3-board 视图格 ── 把逻辑格 index 绑到一个可点/可显示的实体（纯数据，游戏蓝图静态建好）。

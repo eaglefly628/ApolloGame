@@ -80,5 +80,33 @@
       "model": "wanx2.1-t2i-turbo",
       "seed": 1772
     }
+  },
+  "disney-supercell": {
+    "packId": "disney-supercell",
+    "name": "迪斯尼×Supercell",
+    "promptZh": "迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨",
+    "promptEn": "Disney animation charm fused with Supercell mobile game polish: chunky 3d-ish cartoon, candy-bright saturated colors, rounded friendly shapes, soft top light with warm bounce, clean thick white outline, premium mobile game icon quality",
+    "palette": [
+      16642808,
+      15680580,
+      16436245,
+      3900150,
+      2278750,
+      11032055,
+      16347926,
+      1120295
+    ],
+    "negative": {
+      "zh": "写实照片，恐怖，暗沉，噪点，锯齿，粗糙涂鸦",
+      "en": "photorealistic, horror, dark and muddy, noisy, jagged edges, rough doodle"
+    },
+    "post": {
+      "paletteSnap": false
+    },
+    "params": {
+      "provider": "qwen",
+      "model": "wanx2.1-t2i-turbo",
+      "seed": 1773
+    }
   }
 }

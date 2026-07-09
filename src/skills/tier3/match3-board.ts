@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { MatchBoard, BoardCell, Signal, Color, Text, ResourceModify, RandomSeed } from '@engine/protocol/components.js';
+import type { MatchBoard, BoardCell, Signal, Color, Text, ResourceModify, RandomSeed, Sprite } from '@engine/protocol/components.js';
 import { findByComponentId } from '@engine/core/query.js';
 import { randomInt } from '@atom-skills/index.js';
 
@@ -168,6 +168,8 @@ export const match3BoardCapability = defineCapability({
           stepTimer: { type: 'number', describe: '相位节拍计数' },
           stepDelay: { type: 'number', describe: '相位间等待 tick（0=即时）' },
           selectAction: { type: 'string', describe: '选中格的信号名（clickable 发的 Signal.name）' },
+          movesResource: { type: 'string', describe: '可选·步数 Resource id：合法交换（产生连线）-1，非法步弹回不扣；缺省/空=不限步' },
+          kindSkinEntities: { type: 'string[]', describe: '可选·种类→皮肤定义实体 id（各持 Sprite{textureKey:"art:…"}）：view-sync 把已解析贴图 key 写到 BoardCell.Sprite——糖果式图片皮；缺省=色块+文字' },
         },
       },
       BoardCell: {
@@ -193,9 +195,10 @@ export const match3BoardCapability = defineCapability({
       reads: ['MatchBoard', 'BoardCell', 'Signal', 'RandomSeed', 'Resource'],
       writes: ['MatchBoard', 'ResourceModify'],
       consumes: [],
-      // R10：本系统读 Resource（按 id 定位材料实体）又产 ResourceModify → 与 resource-apply 在 Resource 上
-      // 互为前驱判成伪环；显式排在它之前打破（与 dialogue/effect 同纪律），产料同 tick 被结算。
-      runsBefore: ['resource-apply'],
+      // 定序（R10 修订·game-j 撞出四系统环 resource-apply→event-when→clickable→match-resolve→resource-apply）：
+      // 显式排在 resource-apply **之后**压制 writer→consumer 自动边——产料/扣步**下一拍**被结算
+      // （离散反馈一拍延迟=引擎教义·effect-apply 同款）；与 event-when/clickable 共存的世界不再成环。
+      runsAfter: ['resource-apply'],
       execute(world: IWorld) {
         for (const [bid] of world.query('MatchBoard')) {
           const b = world.getComponent<MatchBoard>(bid, 'MatchBoard')!;
@@ -215,6 +218,7 @@ export const match3BoardCapability = defineCapability({
           switch (b.phase) {
             case 'swapped': {
               if (findMatches(b.cells, b.cols, b.rows).size > 0) {
+                emitResourceModify(world, b.movesResource ?? '', -1); // 合法步扣 1（movesResource 缺省''=不限步）
                 b.phase = 'clear';
               } else {
                 // 无连线 → 回退交换（非法步）。
@@ -272,12 +276,14 @@ export const match3BoardCapability = defineCapability({
       // 视图同步：把逻辑 cells 写到各 BoardCell 视图实体的 Color.tint/Text.content。Commit 相位（最终表现写入）。
       id: 'match-view-sync',
       phase: SystemPhase.Commit,
-      reads: ['MatchBoard', 'BoardCell'],
-      writes: ['Color', 'Text'],
+      reads: ['MatchBoard', 'BoardCell', 'Sprite'],
+      writes: ['Color', 'Text', 'Sprite'],
       consumes: [],
       execute(world: IWorld) {
         for (const [bid] of world.query('MatchBoard')) {
           const b = world.getComponent<MatchBoard>(bid, 'MatchBoard')!;
+          // 皮肤定义实体（可选）：种类→已解析贴图 key（美术管线换装即换全盘·糖果式图片皮）
+          const skins = (b.kindSkinEntities ?? []).map((defId) => world.getComponent<Sprite>(defId, 'Sprite')?.textureKey ?? '');
           for (const [eid] of world.query('BoardCell')) {
             const bc = world.getComponent<BoardCell>(eid, 'BoardCell')!;
             if (bc.boardId !== bid) continue;
@@ -286,6 +292,8 @@ export const match3BoardCapability = defineCapability({
             if (color && kind >= 0 && kind < b.kindTint.length) color.tint = b.kindTint[kind];
             const text = world.getComponent<Text>(eid, 'Text');
             if (text) text.content = kind >= 0 && kind < b.kindLabel.length ? b.kindLabel[kind] : '';
+            const sp = world.getComponent<Sprite>(eid, 'Sprite');
+            if (sp && skins.length) sp.textureKey = kind >= 0 && kind < skins.length ? skins[kind] : '';
           }
         }
       },

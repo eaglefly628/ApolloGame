@@ -2199,6 +2199,125 @@ def _touch_meta(game_dir: Path) -> None:
     meta['updatedAt'] = _now_iso()
     _write_json(p, meta)
 
+def _match3_preset() -> dict:
+    """game-j《Candy Kingdom》三消官方示例（owner 2026-07-09 点单彩排）——纯数据组合 t3-match3-board，
+    零专属系统。42 格视图实体由本函数生成（模板起步=低模策略：用户/LLM 不必手写 42 实体）。
+    美术=6 个 tiledef 皮肤槽（art: 详细引用·迪斯尼×Supercell 风）+ 背景槽；kindSkinEntities 同步上盘。
+    初始盘面=确定性搜索（固定种子递增试，直到「无初始 3 连且至少一步合法交换」——糖果开局硬性质）。"""
+    cols, rows, cell = 7, 6, 46
+    x0, y0 = 64, 86
+
+    def _has_run(c):
+        for r0 in range(rows):
+            for c0 in range(cols - 2):
+                a = c[r0 * cols + c0]
+                if a >= 0 and a == c[r0 * cols + c0 + 1] == c[r0 * cols + c0 + 2]:
+                    return True
+        for c0 in range(cols):
+            for r0 in range(rows - 2):
+                a = c[r0 * cols + c0]
+                if a >= 0 and a == c[(r0 + 1) * cols + c0] == c[(r0 + 2) * cols + c0]:
+                    return True
+        return False
+
+    def _has_move(c):
+        for i in range(cols * rows):
+            for j in (i + 1, i + cols):
+                if j >= cols * rows or (i % cols == cols - 1 and j == i + 1):
+                    continue
+                d = list(c)
+                d[i], d[j] = d[j], d[i]
+                if _has_run(d):
+                    return True
+        return False
+
+    def _gen_cells():
+        import random as _rnd
+        for seed in range(1, 10000):
+            rng = _rnd.Random(seed)
+            c = [rng.randrange(6) for _ in range(cols * rows)]
+            if not _has_run(c) and _has_move(c):
+                return c
+        raise RuntimeError('match3 开局搜索失败')
+
+    board_cells = _gen_cells()
+    tiles = [
+        'glossy strawberry hard candy, ruby red, rounded heart shape, thick white outline, cute glossy highlight',
+        'lemon drop candy, bright sunny yellow, teardrop shape, thick white outline, glossy sparkle',
+        'blueberry gummy candy, deep blue, plump round berry, thick white outline, soft glossy shine',
+        'green apple jelly candy, vivid green, apple silhouette with tiny leaf, thick white outline, juicy gloss',
+        'grape swirl lollipop candy, royal purple, spiral swirl disc, thick white outline, candy gloss',
+        'orange citrus gem candy, warm orange, faceted gem wedge, thick white outline, sugary sparkle',
+    ]
+    tints = [0xef4444, 0xfacc15, 0x3b82f6, 0x22c55e, 0xa855f7, 0xf97316]
+    ents = {
+        'background': {
+            'Transform': {'x': 320, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+            'Shape': {'kind': 'box', 'width': 640, 'height': 400},
+            'Color': {'tint': 0xfdf2f8, 'alpha': 1},
+            'Sprite': {'textureKey': 'art:candy kingdom meadow, pastel pink sky, rolling sugar hills, lollipop trees, soft clouds, storybook wide background', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': -10},
+        },
+        'camera': dict(_CAM),
+        'board': {
+            'MatchBoard': {
+                'cols': cols, 'rows': rows, 'kindCount': 6,
+                'cells': board_cells,
+                'kindResource': ['score'] * 6, 'matAmount': 10, 'coinResource': '', 'coinPerTile': 0,
+                'kindTint': tints, 'kindLabel': ['', '', '', '', '', ''],
+                'phase': 'idle', 'selIndex': -1, 'swapA': -1, 'swapB': -1, 'stepTimer': 0, 'stepDelay': 4,
+                'selectAction': 'cell', 'movesResource': 'moves',
+                'kindSkinEntities': [f'tiledef-{k}' for k in range(6)],
+            },
+            'RandomSeed': {'seed': 20260709, 'sequence': 0},
+        },
+        'res-score': {'Resource': {'id': 'score', 'current': 0, 'min': 0, 'max': 999999}},
+        'res-moves': {'Resource': {'id': 'moves', 'current': 20, 'min': 0, 'max': 99}},
+        'flag-playing': {'Flag': {'id': 'playing', 'active': True}},
+    }
+    for k in range(6):
+        ents[f'tiledef-{k}'] = {'Sprite': {'textureKey': f'art:{tiles[k]}, top-down 2d match-3 game tile icon', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': 0}}
+    idx = 0
+    for r in range(rows):
+        for c in range(cols):
+            ents[f'cell-{idx}'] = {
+                'Transform': {'x': x0 + c * cell, 'y': y0 + r * cell, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+                'Shape': {'kind': 'box', 'width': 44, 'height': 44},
+                'Color': {'tint': 0xffffff, 'alpha': 1},
+                'Sprite': {'textureKey': '', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': 1},
+                'BoardCell': {'boardId': 'board', 'index': idx},
+                'Clickable': {'action': 'cell', 'onlyFlag': 'playing'},
+            }
+            idx += 1
+    txt = lambda content, size: {'content': content, 'fontSize': size, 'fontFamily': 'sans-serif', 'anchor': 'center', 'lineSpacing': 0}
+    ents.update({
+        'hud-title': {'Transform': {'x': 500, 'y': 64, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('CANDY KINGDOM', 20), 'Color': {'tint': 0xdb2777, 'alpha': 1}},
+        'hud-score-label': {'Transform': {'x': 500, 'y': 128, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('SCORE / 1000', 12), 'Color': {'tint': 0x9d174d, 'alpha': 0.8}},
+        'hud-score': {'Transform': {'x': 500, 'y': 156, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('0', 24), 'Color': {'tint': 0x111827, 'alpha': 1}, 'TextBinding': {'resourceId': 'score'}},
+        'hud-moves-label': {'Transform': {'x': 500, 'y': 210, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('MOVES', 12), 'Color': {'tint': 0x9d174d, 'alpha': 0.8}},
+        'hud-moves': {'Transform': {'x': 500, 'y': 238, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('20', 24), 'Color': {'tint': 0x111827, 'alpha': 1}, 'TextBinding': {'resourceId': 'moves'}},
+        'win-when': {'EventWhen': {'signal': 'win', 'when': {'kind': 'resource', 'id': 'score', 'cmp': 'gte', 'value': 1000}, 'mode': 'edge', 'armed': False}},
+        'lose-when': {'EventWhen': {'signal': 'lose', 'when': {'kind': 'and', 'of': [
+            {'kind': 'resource', 'id': 'moves', 'cmp': 'lte', 'value': 0},
+            {'kind': 'not', 'of': {'kind': 'resource', 'id': 'score', 'cmp': 'gte', 'value': 1000}},
+        ]}, 'mode': 'edge', 'armed': False}},
+        'eff-win-banner': {'Effect': {'onSignal': 'win', 'kind': 'set-visible', 'targetEntity': 'banner-win', 'value': True}},
+        'eff-win-lock': {'Effect': {'onSignal': 'win', 'kind': 'set-flag', 'targetId': 'playing', 'value': False}},
+        'eff-lose-banner': {'Effect': {'onSignal': 'lose', 'kind': 'set-visible', 'targetEntity': 'banner-lose', 'value': True}},
+        'eff-lose-lock': {'Effect': {'onSignal': 'lose', 'kind': 'set-flag', 'targetId': 'playing', 'value': False}},
+        'banner-win': {'Transform': {'x': 320, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('SWEET VICTORY!', 36), 'Color': {'tint': 0x16a34a, 'alpha': 1}, 'Visibility': {'visible': False, 'active': True}},
+        'banner-lose': {'Transform': {'x': 320, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('OUT OF MOVES…', 36), 'Color': {'tint': 0xdc2626, 'alpha': 1}, 'Visibility': {'visible': False, 'active': True}},
+    })
+    return {
+        'name': 'Candy Kingdom (game-j)',
+        'description': '三消示例：点相邻两格交换，3 连消除得分；20 步内拿 1000 分。迪斯尼×Supercell 风皮肤槽已就位。',
+        'capabilities': ['a1-transform', 'c1-shape', 'l2-color', 'l1-sprite', 'l6-text', 'l5-camera', 'h1-visibility',
+                         'w1-random', 'f1-resource', 'f2-flag', 't2-clickable', 't2-event-when',
+                         't2-effect-apply', 't2-text-binding', 't3-match3-board'],
+        'entities': ents,
+    }
+
+PRESET_BLUEPRINTS['match3'] = _match3_preset()
+
 def _preset_manifest(preset: dict) -> dict:
     """PRESET_BLUEPRINTS 条目 → 纯规范 manifest（只留 capabilities + entities，name/描述归 meta）。"""
     return {'capabilities': list(preset.get('capabilities', [])), 'entities': preset.get('entities', {})}

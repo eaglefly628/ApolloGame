@@ -42,6 +42,7 @@ export const clickableCapability = defineCapability({
         describe: '声明「指针命中本实体 Shape 时产出 Signal{name:action}」。phase 指定触发相位（缺省 down）。',
         fields: {
           action: { type: 'string', describe: '命中时产出的 Signal.name' },
+          onlyFlag: { type: 'string', describe: '可选·相位门：设了且全局 Flag 非真 → 点击不产信号（模式化点击）' },
           phase: { type: 'string', describe: "触发的指针相位 'down'|'up'（缺省 'down'）" },
         },
       },
