@@ -38,6 +38,7 @@ def check(cond, label):
 SLUG = 'art-replace-smoke'
 LIBDIR = ROOT / 'library' / SLUG
 PUBDIR = ROOT / 'public' / 'games' / SLUG
+CLEAN = []  # reskin 产出的新卡带 (lib, pub) 对·结束清理
 
 MANIFEST = {
     'name': 'Art Replace Smoke',
@@ -123,12 +124,47 @@ try:
     st, lg = req('GET', f'/api/art/ledger?slug={SLUG}')
     check([r['no'] for r in lg.get('rows', [])] == nos0, '编号与初次 derive 一致')
 
+    print('⑦ T2 点名重生成单槽（改 prompt·其余不动）')
+    st, rg = req('POST', '/api/art/regenerate', {'slug': SLUG, 'no': 'art-01', 'packId': 'pixel-retro', 'query': 'dark forest night', 'mock': True})
+    check(st == 200 and rg.get('success'), f'regenerate art-01 成功 · {rg.get("error", "")[:80]}')
+    st, lg = req('GET', f'/api/art/ledger?slug={SLUG}')
+    rows = {r['no']: r for r in lg.get('rows', [])}
+    check(rows['art-01']['query'] == 'dark forest night', 'art-01 query 已改')
+    check(any(h.get('action') == 'regen' for h in rows['art-01'].get('history', [])), 'art-01 台账留 regen 历史')
+    check([r['no'] for r in lg.get('rows', [])] == nos0, '§六④ 其余行编号不动')
+    check(rows['art-02']['status'] == 'replaced' and rows['art-03']['status'] == 'replaced', '其余行仍 replaced（未受影响）')
+
+    print('⑧ T2 从共享库选换单槽（不重生成·直接钉资产 id）')
+    st, sw = req('POST', '/api/art/swap', {'slug': SLUG, 'no': 'art-02', 'assetId': 'dungeon/monsters/orc'})
+    check(st == 200 and sw.get('success'), f'swap art-02 成功 · {sw.get("error", "")[:80]}')
+    mf = json.loads((LIBDIR / 'manifest.json').read_text(encoding='utf-8'))
+    check(mf['entities']['enemy']['Sprite']['textureKey'] == 'dungeon/monsters/orc', 'art-02 槽位已钉到库资产 id')
+    st, lg = req('GET', f'/api/art/ledger?slug={SLUG}')
+    r2 = next(r for r in lg['rows'] if r['no'] == 'art-02')
+    check(r2['gen'].get('source') == 'library' and any(h.get('action') == 'swap-library' for h in r2.get('history', [])), 'swap 台账留 source=library + 历史')
+
+    print('⑨ T2 换皮（同玩法换风格包 → 新卡带·reskinOf 谱系）')
+    st, rk = req('POST', '/api/art/reskin', {'slug': SLUG, 'packId': 'neon-synthwave', 'mock': True})
+    check(st == 200 and rk.get('success'), f'reskin 成功 · {rk.get("error", "")[:80]}')
+    NEW = rk.get('newSlug'); NEW_LIB = ROOT / 'library' / (NEW or '_none'); NEW_PUB = ROOT / 'public' / 'games' / (NEW or '_none')
+    CLEAN.append((NEW_LIB, NEW_PUB))
+    check(bool(NEW) and (NEW_LIB / 'manifest.json').is_file(), f'新卡带落盘 library/{NEW}')
+    new_meta = json.loads((NEW_LIB / 'meta.json').read_text(encoding='utf-8'))
+    check(new_meta.get('reskinOf') == SLUG, 'meta.reskinOf 记谱系')
+    new_mf = json.loads((NEW_LIB / 'manifest.json').read_text(encoding='utf-8'))
+    # 玩法数据 diff 空：非美术字段（Shape/Transform 等）与源一致
+    check(new_mf['entities']['hero']['Shape'] == mf['entities']['hero']['Shape'], '换皮后玩法数据 diff=空（Shape 不变）')
+    check(new_mf['entities']['hero']['Sprite']['textureKey'].startswith('gen/'), '换皮后美术引用全换新（gen/ 本地 id）')
+
 except Exception as e:
     FAIL += 1
     print(f"  \033[31m✗ 冒烟异常\033[0m: {e}")
 finally:
     shutil.rmtree(LIBDIR, ignore_errors=True)
     shutil.rmtree(PUBDIR, ignore_errors=True)
+    for lib, pub in CLEAN:
+        shutil.rmtree(lib, ignore_errors=True)
+        shutil.rmtree(pub, ignore_errors=True)
 
 print(f"\n{'=' * 48}\n美术替换工作流冒烟：{PASS} 过 / {FAIL} 失败")
 sys.exit(1 if FAIL else 0)

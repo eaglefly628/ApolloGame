@@ -1650,6 +1650,129 @@ def handle_art_replace(body: dict) -> dict:
         print(c("  [ART]", 'g'), f"replace {slug} → 重钉 {res.get('replaced')} 引用·已落盘")
     return {'success': bool(data.get('success')), 'replaced': res.get('replaced'), **data}
 
+# ── T2 点名替换（三式）+ 换皮（REQ-DEMO-T2）───────────────────────────────────────
+# 单槽重解析地基：regenerate=重新生成(可改prompt)·swap=从共享库选换·upload=上传替换；三式都过
+# parseManifest 零 error 落盘（复用 library_put_manifest）。reskin=同玩法换风格包 → 存新卡带(reskinOf)。
+
+_ART_NO_RE = re.compile(r'art-\d+')
+_ASSET_ID_RE = re.compile(r'[A-Za-z0-9][A-Za-z0-9/_.\-]*')
+
+def _art_save_manifest(slug: str, res: dict, note: str, extra: dict) -> dict:
+    """CLI 产出 manifest → 过 parseManifest 零 error 落盘 + 版本化。"""
+    if not res.get('ok'):
+        return {'success': False, **res}
+    manifest = res.get('manifest')
+    if not isinstance(manifest, dict):
+        return {'success': False, 'error': '未产出 manifest'}
+    status, data = library_put_manifest(slug, {'manifest': manifest, 'note': note})
+    return {'success': bool(data.get('success')), **extra, **data}
+
+def handle_art_regenerate(body: dict) -> dict:
+    """POST /api/art/regenerate {slug, no, packId, query?, mock?}。点名单槽重新生成（可改 prompt）。"""
+    slug = str(body.get('slug', '')).strip(); no = str(body.get('no', '')).strip()
+    pack = str(body.get('packId', '')).strip(); query = body.get('query'); mock = body.get('mock', True)
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    if not _ART_NO_RE.fullmatch(no):
+        return {'success': False, 'error': f'非法编号: {no or "(空)"}'}
+    if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', pack):
+        return {'success': False, 'error': f'非法 packId: {pack or "(空)"}'}
+    args = ['regen', slug, no, pack]
+    if isinstance(query, str) and query.strip():
+        args += ['--query', query.strip()]
+    if mock:
+        args.append('--mock')
+    res = _art_replace_cli(args)
+    return _art_save_manifest(slug, res, f'美术点名重生成 {no}', {'no': no, 'row': res.get('row'), 'summary': res.get('summary')})
+
+def handle_art_swap(body: dict) -> dict:
+    """POST /api/art/swap {slug, no, assetId}。从共享库/已有资产选换某槽（不重生成）。"""
+    slug = str(body.get('slug', '')).strip(); no = str(body.get('no', '')).strip(); asset_id = str(body.get('assetId', '')).strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    if not _ART_NO_RE.fullmatch(no):
+        return {'success': False, 'error': f'非法编号: {no or "(空)"}'}
+    if not asset_id or not _ASSET_ID_RE.fullmatch(asset_id) or '..' in asset_id:
+        return {'success': False, 'error': f'非法 assetId: {asset_id or "(空)"}'}
+    res = _art_replace_cli(['swap', slug, no, asset_id])
+    return _art_save_manifest(slug, res, f'美术换库 {no}→{asset_id}', {'no': no, 'row': res.get('row')})
+
+def handle_art_upload(body: dict) -> dict:
+    """POST /api/art/upload {slug, no, dataBase64, ext}。上传一张图/模型替换某槽（写盘+登记本地 index+钉引用）。"""
+    slug = str(body.get('slug', '')).strip(); no = str(body.get('no', '')).strip(); ext = str(body.get('ext', 'png')).strip().lower()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    if not _ART_NO_RE.fullmatch(no):
+        return {'success': False, 'error': f'非法编号: {no or "(空)"}'}
+    if ext not in ('png', 'webp', 'jpg', 'jpeg', 'glb'):
+        return {'success': False, 'error': f'非法扩展名: {ext}（png/webp/jpg/glb）'}
+    try:
+        raw = base64.b64decode(str(body.get('dataBase64', '')))
+    except Exception:
+        return {'success': False, 'error': 'dataBase64 解码失败'}
+    if not raw:
+        return {'success': False, 'error': '上传内容为空'}
+    rel = f'gen/{no}-up.{ext}'
+    abs_path = ROOT / 'public' / 'games' / slug / 'art' / rel
+    abs_path.parent.mkdir(parents=True, exist_ok=True)
+    abs_path.write_bytes(raw)
+    # 登记本地 index（上传物 = filled·provenance 记 user-upload）
+    idx_f = ROOT / 'public' / 'games' / slug / 'art' / 'index.json'
+    idx = json.loads(idx_f.read_text('utf-8')) if idx_f.is_file() else {'version': 1, 'assets': []}
+    if not isinstance(idx.get('assets'), list):
+        idx['assets'] = []
+    local_id = f'gen/{no}-up'
+    idx['assets'] = [a for a in idx['assets'] if a.get('id') != local_id] + [{
+        'id': local_id, 'type': 'mesh' if ext == 'glb' else 'texture', 'description': f'上传替换 {no}',
+        'status': 'filled', 'path': f'/games/{slug}/art/{rel}', 'category': 'ai-gen', 'tags': ['upload', no],
+        'license': '用户上传', 'source': 'upload',
+        'provenance': {'generator': 'upload', 'prompt': '', 'model': 'user-upload', 'mock': False, 'generatedAt': ''},
+    }]
+    idx['assets'].sort(key=lambda a: a.get('id', ''))
+    _write_json(idx_f, idx)
+    res = _art_replace_cli(['swap', slug, no, local_id, '--upload'])
+    return _art_save_manifest(slug, res, f'美术上传替换 {no}', {'no': no, 'localId': local_id, 'row': res.get('row')})
+
+def handle_art_reskin(body: dict) -> dict:
+    """POST /api/art/reskin {slug, packId, newSlug?, mock?}。同玩法换风格包 → 存新卡带（meta.reskinOf 谱系）。"""
+    slug = str(body.get('slug', '')).strip(); pack = str(body.get('packId', '')).strip()
+    new_slug = str(body.get('newSlug', '')).strip(); mock = body.get('mock', True)
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', pack):
+        return {'success': False, 'error': f'非法 packId: {pack or "(空)"}'}
+    src = _game_dir(slug)
+    if not src.is_dir():
+        return {'success': False, 'error': f'源卡带不存在: {slug}'}
+    new_slug = _dedup_slug(new_slug if _valid_slug(new_slug) else f'{slug}-{pack}')
+    dst = LIBRARY_DIR / new_slug
+    try:
+        shutil.copytree(src, dst)  # 复制玩法 manifest + meta（玩法一字不改）
+    except Exception as e:
+        return {'success': False, 'error': f'复制卡带失败: {e}'}
+    try:
+        meta = json.loads((dst / 'meta.json').read_text('utf-8')) if (dst / 'meta.json').is_file() else {}
+    except Exception:
+        meta = {}
+    meta['reskinOf'] = slug
+    _write_json(dst / 'meta.json', meta)
+    # 确保源有台账（提供 slot 定义），复制给新卡带
+    src_led = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    if not src_led.is_file():
+        _art_replace_cli(['derive', slug])
+    if src_led.is_file():
+        dst_led = ROOT / 'public' / 'games' / new_slug / 'art' / 'art-ledger.json'
+        dst_led.parent.mkdir(parents=True, exist_ok=True)
+        dst_led.write_bytes(src_led.read_bytes())
+    args = ['reskin', new_slug, pack] + (['--mock'] if mock else [])
+    res = _art_replace_cli(args)
+    out = _art_save_manifest(new_slug, res, f'换皮 {pack}（reskinOf {slug}）', {'newSlug': new_slug, 'summary': res.get('summary')})
+    if out.get('success'):
+        print(c("  [ART]", 'g'), f"reskin {slug}·{pack} → {new_slug}")
+    else:
+        shutil.rmtree(dst, ignore_errors=True)  # 失败回滚新卡带
+    return out
+
 # ── 资产自动标注（入库主动扫描 / 存量回填共用一条管线；Claude 视觉打语义标签）──
 
 AUTOTAG_SYSTEM = """You tag 2D game sprites for an asset library's search index.
@@ -2466,6 +2589,26 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_art_replace(body)
             except Exception as e:
                 data = {'success': False, 'error': f'replace 异常: {e}'}
+        elif path == '/api/art/regenerate':
+            try:
+                data = handle_art_regenerate(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'regenerate 异常: {e}'}
+        elif path == '/api/art/swap':
+            try:
+                data = handle_art_swap(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'swap 异常: {e}'}
+        elif path == '/api/art/upload':
+            try:
+                data = handle_art_upload(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'upload 异常: {e}'}
+        elif path == '/api/art/reskin':
+            try:
+                data = handle_art_reskin(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'reskin 异常: {e}'}
         else:
             data = {'error': 'Unknown POST endpoint'}
 
