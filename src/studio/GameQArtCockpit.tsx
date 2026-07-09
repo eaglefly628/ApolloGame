@@ -1,6 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { SHELL, sBtn, sLabel, sChip, sBadge } from '../ui/shell-theme.js';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SHELL, sBtn, sInput, sLabel, sChip, sBadge } from '../ui/shell-theme.js';
 import { mount as mountGameQ } from '../games/game-q/index.js';
+
+const API = 'http://localhost:4000';
+const GAME = 'game-q';
+async function postJson(path: string, body: unknown): Promise<Record<string, unknown>> {
+  return fetch(`${API}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
+}
+// 3D 需求默认走 3D 适配器（tripo），2D 需求走千问。
+function defaultAdapter(kind: string): 'qwen' | 'tripo' | 'meshy' {
+  return kind === 'model3d' ? 'tripo' : 'qwen';
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  game-q 美术工坊（数据透视器·重设计版·标杆）—— 把「游戏=数据」做成看得见的美术管线入口。
@@ -21,7 +31,7 @@ interface Need {
   readonly spec?: Record<string, unknown>;
   readonly context: string;
   readonly status: string;
-  readonly gen?: unknown;
+  readonly gen?: { id?: string; servedPath?: string; at?: string } | null;
   readonly provenance?: unknown;
 }
 interface Ledger {
@@ -45,6 +55,26 @@ export function GameQArtCockpit({ onBack }: { onBack: () => void }) {
   const [ledger, setLedger] = useState<Ledger | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [sel, setSel] = useState<string | null>(null);
+  // 每行 AI 生成（走千问 ai-gen + 人审门）：适配器 / 待审预览 / 忙 / 错。
+  const [adapter, setAdapter] = useState<'qwen' | 'tripo' | 'meshy'>('qwen');
+  const [pending, setPending] = useState<{ id: string; previewPath: string; no: string } | null>(null);
+  const [genBusy, setGenBusy] = useState(false);
+  const [genErr, setGenErr] = useState<string | null>(null);
+
+  // 台账路径：优先标准 `art-ledger.json`（game-q 域产出·与 PST T2 同约定），回退我materialize 的
+  // `game-q-art-ledger.json`。no-store：入库填 ID 后读到最新（否则浏览器缓存旧版·UI 不刷新）。
+  const reloadLedger = useCallback(async () => {
+    const bust = `?t=${Date.now()}`; // 强制新鲜（vite 静态文件 no-store 不够·填 ID 后必须读到最新）
+    for (const name of ['art-ledger.json', `${GAME}-art-ledger.json`]) {
+      try {
+        const r = await fetch(`/games/${GAME}/art/${name}${bust}`, { cache: 'no-store' });
+        if (!r.ok) continue;
+        const j = await r.json();
+        if (j && Array.isArray(j.rows)) { setLedger(j as Ledger); setLoadErr(null); return; }
+      } catch { /* 试下一个 */ }
+    }
+    setLoadErr('台账加载失败（需 python3 apollo.py 起 vite·或 game-q 尚未产台账）');
+  }, []);
 
   // ① 加载 game-q 活场景（卡带 mount → cleanup；ThreeRenderer 自建·失败不炸壳）。
   useEffect(() => {
@@ -63,12 +93,48 @@ export function GameQArtCockpit({ onBack }: { onBack: () => void }) {
   }, []);
 
   // ② 拉这局的美术需求台账（标准游戏美术目录·可 fetch）。
-  useEffect(() => {
-    fetch('/games/game-q/art/game-q-art-ledger.json')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((j) => setLedger(j as Ledger))
-      .catch((e) => setLoadErr(`台账加载失败：${String(e)}（需 python3 apollo.py 起 vite）`));
+  useEffect(() => { void reloadLedger(); }, [reloadLedger]);
+
+  // 选一行需求：默认适配器按类型、清掉上一行的待审预览。
+  const pick = useCallback((row: Need) => {
+    setSel(row.no);
+    setAdapter(defaultAdapter(row.kind));
+    setPending(null);
+    setGenErr(null);
   }, []);
+
+  // ✨ 生成此项：走千问 ai-gen（--game game-q·prompt=需求查询词）→ 落待审区、出预览（不入库）。
+  const genRow = useCallback(async (row: Need) => {
+    if (genBusy) return;
+    setGenBusy(true); setGenErr(null); setPending(null);
+    try {
+      const res = await postJson('/api/assets/generate', { adapter, prompt: row.query, game: GAME });
+      if (res.success && res.pending) setPending({ id: String(res.id), previewPath: String(res.previewPath), no: row.no });
+      else setGenErr(String(res.error ?? '生成失败'));
+    } catch (e) { setGenErr(String(e)); } finally { setGenBusy(false); }
+  }, [adapter, genBusy]);
+
+  // ✓ 入库：人审 approve → 资产落 game-q/art + 登记 index → 把生成 id 填回该需求行（数据+ID 对应）。
+  const approveRow = useCallback(async (row: Need) => {
+    if (!pending || genBusy) return;
+    setGenBusy(true); setGenErr(null);
+    try {
+      const rev = await postJson('/api/assets/review', { id: pending.id, action: 'approve', game: GAME });
+      if (!rev.success) { setGenErr(String(rev.error ?? '入库失败')); return; }
+      const gen = { id: String(rev.id), servedPath: (rev.servedPath as string) ?? undefined, at: '' };
+      await postJson('/api/art/needs-fill', { game: GAME, no: row.no, gen });
+      setPending(null);
+      // 乐观更新：直接从 approve 回执把该行标 filled（避免 re-fetch 竞态/缓存）；reloadLedger 再对账。
+      setLedger((prev) => (prev ? { ...prev, rows: prev.rows.map((r) => (r.no === row.no ? { ...r, status: 'filled', gen } : r)) } : prev));
+      void reloadLedger();
+    } catch (e) { setGenErr(String(e)); } finally { setGenBusy(false); }
+  }, [pending, genBusy, reloadLedger]);
+
+  // ✕ 弃：人审 reject → 删待审、不入库、不留痕。
+  const rejectRow = useCallback(async () => {
+    const p = pending; setPending(null);
+    if (p) { try { await postJson('/api/assets/review', { id: p.id, action: 'reject', game: GAME }); } catch { /* noop */ } }
+  }, [pending]);
 
   // 按类型分组（3D/精灵/贴图/UI…）。
   const groups = useMemo(() => {
@@ -119,7 +185,7 @@ export function GameQArtCockpit({ onBack }: { onBack: () => void }) {
                   return (
                     <div
                       key={r.no}
-                      onClick={() => setSel(r.no)}
+                      onClick={() => pick(r)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 12,
                         background: active ? SHELL.violetWash : 'transparent',
@@ -147,9 +213,37 @@ export function GameQArtCockpit({ onBack }: { onBack: () => void }) {
               <Row label="当前占位">{selected.placeholder.current}（{selected.placeholder.source}）</Row>
               <Row label="用在">{selected.placeholder.instances.join('、')}</Row>
               {selected.spec && <Row label="规格">{Object.entries(selected.spec).map(([k, v]) => `${k}:${String(v)}`).join(' · ')}</Row>}
+              {selected.gen?.id && (
+                <Row label="已生成"><span style={{ color: SHELL.ok }}>{selected.gen.id}</span></Row>
+              )}
               <div style={{ fontSize: 11, color: SHELL.dim, marginTop: 8, lineHeight: 1.5 }}>{selected.context}</div>
-              <div style={{ marginTop: 10, fontSize: 11, color: SHELL.dim }}>
-                生成/替换（重生成·选换·上传）走 T2 管线 —— 接线随 REQ-DEMO-T2 收口。
+
+              {/* ── AI 生成此项（千问 ai-gen + 人审门·生成落 game-q 目录·填回 ID）── */}
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${SHELL.line}` }}>
+                <div style={sLabel}>AI 生成此项（第三方·人审入库）</div>
+                {!pending ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                    <select value={adapter} onChange={(e) => setAdapter(e.target.value as typeof adapter)} style={{ ...sInput(), padding: '5px 8px', background: SHELL.bg2, color: SHELL.sub }}>
+                      <option value="qwen">🖼 千问 2D</option>
+                      <option value="tripo">🧊 Tripo 3D</option>
+                      <option value="meshy">🗿 Meshy 3D</option>
+                    </select>
+                    <button onClick={() => genRow(selected)} disabled={genBusy} style={{ ...sBtn('primary'), background: SHELL.violetWash, color: SHELL.violet, border: `1px solid ${SHELL.violetLine}`, opacity: genBusy ? 0.5 : 1 }}>
+                      {genBusy ? '⏳ 生成中…' : selected.status === 'filled' ? '✨ 重新生成' : '✨ 生成此项'}
+                    </button>
+                    <span style={{ fontSize: 10, color: SHELL.dim }}>prompt=「{selected.query}」</span>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ fontSize: 12, color: SHELL.violet, marginBottom: 6 }}>🔍 待人审（未入库）</div>
+                    <img src={pending.previewPath} alt={pending.id} style={{ width: 120, height: 120, imageRendering: 'pixelated', border: `1px solid ${SHELL.line}`, borderRadius: 6, background: '#000' }} />
+                    <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                      <button onClick={() => approveRow(selected)} disabled={genBusy} style={{ ...sBtn('primary'), opacity: genBusy ? 0.5 : 1 }}>{genBusy ? '⏳…' : '✓ 入库并填 ID'}</button>
+                      <button onClick={rejectRow} disabled={genBusy} style={{ ...sBtn('ghost'), color: SHELL.danger, borderColor: SHELL.danger }}>✕ 弃</button>
+                    </div>
+                  </div>
+                )}
+                {genErr && <div style={{ marginTop: 8, fontSize: 12, color: SHELL.danger }}>✕ {genErr}</div>}
               </div>
             </div>
           )}

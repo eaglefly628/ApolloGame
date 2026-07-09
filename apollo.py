@@ -1483,6 +1483,45 @@ def handle_games_list() -> dict:
     return {'games': games}
 
 
+# ── 引擎 sample 游戏的美术需求台账「填回生成结果」（数据透视器 cockpit 用·PA 域）─────────────
+# 台账文件 = public/games/<game>/art/<game>-art-ledger.json（deriveRequirements 产物·区别于 PST
+# T2 的 library 游戏 art-ledger.json）。cockpit 里某需求行经 ai-gen(千问) 生成+人审入库后，
+# 把生成 id/servedPath 写回该行（gen + status=filled）——即 owner「数据和 ID 都对应，重回游戏目录」。
+
+_ART_NO_RE2 = re.compile(r'art-\d+')
+
+def handle_art_needs_fill(body: dict) -> dict:
+    """POST /api/art/needs-fill { game, no, gen?:{id,servedPath,at} }。gen 省略/空=清回 needs-art。"""
+    game = str(body.get('game', '')).strip()
+    no = str(body.get('no', '')).strip()
+    gen = body.get('gen')
+    if not GAME_RE.fullmatch(game):
+        return {'success': False, 'error': f'非法 game: {game or "(空)"}'}
+    if not _ART_NO_RE2.fullmatch(no):
+        return {'success': False, 'error': f'非法编号: {no or "(空)"}'}
+    # 台账路径：优先标准 art-ledger.json（game-q 域/PST T2 约定），回退 materialize 的 <game>-art-ledger.json。
+    art = ROOT / 'public' / 'games' / game / 'art'
+    f = next((p for p in [art / 'art-ledger.json', art / f'{game}-art-ledger.json'] if p.is_file()), None)
+    if f is None:
+        return {'success': False, 'error': '无台账（art-ledger.json）'}
+    try:
+        ledger = json.loads(f.read_text('utf-8'))
+    except Exception as e:
+        return {'success': False, 'error': f'台账读取失败: {e}'}
+    row = next((r for r in ledger.get('rows', []) if r.get('no') == no), None)
+    if row is None:
+        return {'success': False, 'error': f'台账无 {no}'}
+    if isinstance(gen, dict) and gen.get('id'):
+        row['gen'] = {'id': str(gen.get('id')), 'servedPath': gen.get('servedPath'), 'at': str(gen.get('at', ''))}
+        row['status'] = 'filled'
+    else:
+        row['gen'] = None
+        row['status'] = 'needs-art'
+    f.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    print(c("  [ART]", 'g'), f"{game} {no} → {row['status']}")
+    return {'success': True, 'no': no, 'status': row['status'], 'gen': row['gen']}
+
+
 def handle_asset_vendor(body: dict) -> dict:
     """POST /api/assets/vendor。body = { id:str（共享库资产 id）, game:str, as?:str（本地 id 覆盖）}。"""
     asset_id = str(body.get('id', '')).strip()
@@ -2589,6 +2628,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_art_replace(body)
             except Exception as e:
                 data = {'success': False, 'error': f'replace 异常: {e}'}
+        elif path == '/api/art/needs-fill':
+            try:
+                data = handle_art_needs_fill(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'needs-fill 异常: {e}'}
         elif path == '/api/art/regenerate':
             try:
                 data = handle_art_regenerate(body)
