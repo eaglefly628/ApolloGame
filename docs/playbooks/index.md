@@ -24,6 +24,7 @@
 | 卡牌 | `playbooks/cards.md` | card-pile/card-play/poker-hand(wild)/card-scoring | 各游戏 PE；正样例=game-e 计分核 |
 | 随机与确定性 | `playbooks/randomness.md` | RandomSeed/nextRandom/seededShuffle · **裸 Math.random=红线** | 全员必读（最短的一本） |
 | 资产 | `playbooks/assets.md` | art:检索/AssetManifest/asset-index | **asset-manager agent** / resource-manager 技能 |
+| **美术管线（配美术/换皮）** | `playbooks/art-pipeline.md` | 美术平台+台账 art-NN+风格包+批量生成/写回（终态档=唯一权威） | 全员（做游戏必读）；平台=PST |
 | 音频 | `playbooks/audio.md` | SynthAudioPort/SfxSpec（声音=数据） | 各游戏 PE；正样例=game-g |
 | 存档与平台 | `playbooks/save-platform.md` | storage/platform-hooks（云存档/成就） | 各游戏 PE；发布=**game-publisher agent** |
 | **测试与验收** | `playbooks/testing.md` | vitest·registry-guard·ApolloBench·数值 sim·e2e·smoke·game-skill-audit | **全员（交付前必过）**；验收纪律=Lead |
