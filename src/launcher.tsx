@@ -833,15 +833,21 @@ export function Launcher() {
   }, [libRefresh]);
 
   // 空库态「装入官方示例卡带」：POST 后刷新列表。
+  const [installMsg, setInstallMsg] = useState<string | null>(null); // 装示例回执（owner 2026-07-10：失败绝不静默）
   const installSample = useCallback(async () => {
     setInstalling(true);
+    setInstallMsg(null);
     try {
-      await fetch(`${API}/api/library/install-sample`, {
+      const r = await fetch(`${API}/api/library/install-sample`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preset: 'all' }), // 全套官方示例（platformer/三消 game-j/换装 game-m·幂等）
-      });
-    } catch { /* API 离线：静默，刷新后仍空态 */ }
+        body: JSON.stringify({ preset: 'all' }), // 全套官方示例（platformer/三消 game-j/换装 game-m/pong·幂等）
+      }).then((x) => x.json() as Promise<{ success?: boolean; installed?: string[]; skipped?: string[]; error?: string }>);
+      if (r.success) setInstallMsg(`✓ 新装 ${r.installed?.length ?? 0} 张${(r.skipped?.length ?? 0) > 0 ? `（${r.skipped!.length} 张已在架）` : ''}：${[...(r.installed ?? [])].join(' / ') || '无新增'}`);
+      else setInstallMsg(`✕ ${r.error ?? '安装失败'}`);
+    } catch {
+      setInstallMsg('✕ 创作服务未启动——请用 python3 apollo.py 启动（它会一并拉起页面服务），别只跑 npm run dev');
+    }
     setInstalling(false);
     setLibRefresh((k) => k + 1);
   }, []);
@@ -1003,9 +1009,31 @@ export function Launcher() {
           {playerMode ? '我的游戏架' : 'Game Library'}
         </h1>
         <div style={{ width: 180, height: 1, background: `linear-gradient(90deg, transparent, ${SHELL.lineStrong}, transparent)`, margin: '14px auto 0' }} />
+        {!playerMode && installMsg && <div style={{ marginTop: 8, fontSize: 12, color: installMsg.startsWith('✓') ? SHELL.ok : SHELL.danger }}>{installMsg}</div>}
         {/* dev 工具入口仅开发模式显示（玩家模式=纯净创作台） */}
         {!playerMode && (
           <>
+            <button
+              onClick={installSample}
+              disabled={installing}
+              style={{
+                marginTop: 14,
+                marginRight: 10,
+                padding: '7px 18px',
+                background: SHELL.jadeWash,
+                color: SHELL.jade,
+                border: `1px solid ${SHELL.jadeLine}`,
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: 1,
+                cursor: 'pointer',
+                outline: 'none',
+                opacity: installing ? 0.5 : 1,
+              }}
+            >
+              {installing ? '⏳ 装入中…' : '📦 装入官方示例（三消/换装…）'}
+            </button>
             <button
               onClick={() => setArtPicker(true)}
               style={{
