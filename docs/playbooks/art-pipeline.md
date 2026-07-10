@@ -14,6 +14,7 @@
 | 5 | 一键全量：逐行拼 prompt（`prompt`>`query+desc`>`query` + 类型词 + 包方言 + 游戏锚）→ 调 API → palette-snap+按规格缩放 → 落游戏资产目录+provenance；断点续跑·缓存不重扣费·无 key=探针+mock | 平台「⚡ 一键全量」（大脑=`scripts/art-replace.mjs`） |
 | 6 | 写回：按编号重钉 manifest art: 引用→**parseManifest 零 error 才落盘**（玩法零改） | 平台自动（library 线 batch 后 replace） |
 | 7 | 优化：缩略图墙按编号三式——重生成(可改 prompt)/库选换/上传（magic-bytes 嗅探）——只动那一行 | 平台详情面板 |
+| 7.5 | **人审复核（double verify 人门）**：逐行/全部「☑ 复核通过」→ approved——五步流程条全绿才算这条线走完 | 平台流程条+复核按钮 |
 | 8 | 换皮量产：同玩法 × 换风格包整批重跑 → 新卡带（记 reskinOf 谱系） | 平台「🎭 一键换皮」 |
 
 ## 编译期游戏线（src/games·如 game-q）· 差异只在两处

@@ -50,6 +50,10 @@
 - **无 key 不阻塞**：自动探针输出（缺哪个 env）+ mock 占位 + MOCK 标——绝不静默顶替（`docs/playbooks/testing.md` 凭证探针红线）。
 - 成本闸：内容寻址缓存 hash(provider+prompt+model+seed)——命中不重扣费；断点续跑以 status 为断点。
 
+## 六五、五步流程条（owner 2026-07-10「工作流进 UI·每步 double verify」）
+
+平台顶部常驻流程条：**①需求台账 → ②风格锚 → ③批量生成 → ④写回替换 → ⑤人审复核**——状态与证据全部从台账推导（灰=未到·黄=进行中/带 MOCK·绿=完成），LLM 长流程漂移由 UI 结构钉死。double verify=每张图两道门：机器门（③探针/④parseManifest）+ **人门（⑤ `approved`·平台「☑ 复核通过」单行/全部·POST /api/art/approve·只许已写回行复核）**。
+
 ## 七、风格与人审
 
 - 风格包=**纯数据文件 `scripts/style-packs.json`**（3 包·中英双方言+palette+负面词+钉死 provider/model/seed）；扩包=加一条 JSON，不改代码。refImage 参考图字段保留，adapters 参考图入参待真 key 验证（blocker 已记）。

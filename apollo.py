@@ -1761,6 +1761,31 @@ def handle_art_style(body: dict) -> dict:
 
 GEN_PROVIDER_RE = re.compile(r'qwen|tripo|meshy')
 
+def handle_art_approve(body: dict) -> dict:
+    """POST /api/art/approve {slug, no|'all'}。人审复核（double verify 第二道门·owner 2026-07-10）：
+    replaced/filled 行 → approved。只许已写回的行复核；'all'=批量过全部可复核行。"""
+    slug = str(body.get('slug', '')).strip()
+    no = str(body.get('no', '')).strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    if not f.is_file():
+        return {'success': False, 'error': '无台账'}
+    ledger = json.loads(f.read_text('utf-8'))
+    hit = 0
+    for r in ledger.get('rows', []):
+        if no != 'all' and r.get('no') != no:
+            continue
+        if r.get('status') in ('replaced', 'filled'):
+            r['status'] = 'approved'
+            r.setdefault('history', []).append({'action': 'approve'})
+            hit += 1
+        elif no != 'all':
+            return {'success': False, 'error': f"{no} 状态={r.get('status')}——只有已写回（replaced/filled）的行可复核"}
+    f.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    print(c("  [ART]", 'g'), f"approve {slug} {no} → {hit} 行复核通过")
+    return {'success': True, 'approved': hit}
+
 def handle_art_regenerate(body: dict) -> dict:
     """POST /api/art/regenerate {slug, no, packId, query?, mock?}。点名单槽重新生成（可改 prompt）。"""
     slug = str(body.get('slug', '')).strip(); no = str(body.get('no', '')).strip()
@@ -2755,6 +2780,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_art_style(body)
             except Exception as e:
                 data = {'success': False, 'error': f'style 异常: {e}'}
+        elif path == '/api/art/approve':
+            try:
+                data = handle_art_approve(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'approve 异常: {e}'}
         elif path == '/api/art/regenerate':
             try:
                 data = handle_art_regenerate(body)

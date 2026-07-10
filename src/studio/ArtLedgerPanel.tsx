@@ -36,6 +36,7 @@ interface Pack { readonly packId: string; readonly name: string; readonly palett
 const SOURCE_BADGE = (r: LedgerRow): { text: string; tone: 'ok' | 'warn' | 'dim' } => {
   const s = r.gen?.source;
   if (r.status === 'retired') return { text: '🪦 退役', tone: 'dim' }; // 墓碑：槽位已消失·编号保留不复用
+  if (r.status === 'approved') return { text: '✅ 已复核', tone: 'ok' }; // double verify 第二道门（人）
   if (s === 'library') return { text: '📚 库', tone: 'ok' };
   if (s === 'upload') return { text: '⬆ 上传', tone: 'ok' };
   if (r.status === 'replaced' || r.status === 'generated' || r.status === 'filled') return { text: r.gen?.model?.includes('mock') ? '⚙ MOCK' : '✨ 生成', tone: r.gen?.model?.includes('mock') ? 'warn' : 'ok' };
@@ -57,6 +58,39 @@ function swatchDataUri(r: LedgerRow): string | null {
       : `<polygon points='23,3 40,13 40,33 23,43 6,33 6,13' fill='${color}'/>`; // polygon（含 hex/diamond）→ 六边形
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='46' height='46' viewBox='0 0 46 46'>${inner}</svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+// ═══ 五步流程条（owner 2026-07-10「工作流放进 UI·每步 double verify」）═══
+// 状态全部从台账推导（零新真相）：①需求台账 ②风格锚 ③批量生成（机器门=探针/MOCK 标）
+// ④写回替换（机器门=parseManifest）⑤人审复核（人门=approved）。灰=未到·黄=进行中/带 MOCK·绿=完成。
+function PipelineSteps({ rows, stylePrompt, packSet }: { rows: LedgerRow[]; stylePrompt: string; packSet: boolean }) {
+  const live = rows.filter((r) => r.status !== 'retired');
+  const genLike = live.filter((r) => ['generated', 'replaced', 'filled', 'approved'].includes(r.status));
+  const mockN = live.filter((r) => r.gen?.model?.includes('mock')).length;
+  const wroteN = live.filter((r) => ['replaced', 'filled', 'approved'].includes(r.status)).length;
+  const okN = live.filter((r) => r.status === 'approved').length;
+  const steps: Array<{ name: string; tone: 'ok' | 'warn' | 'dim'; note: string }> = [
+    { name: '① 需求台账', tone: live.length ? 'ok' : 'dim', note: live.length ? `${live.length} 槽位` : '未推导' },
+    { name: '② 风格锚', tone: packSet || stylePrompt ? 'ok' : 'dim', note: stylePrompt ? '包+锚已设' : packSet ? '仅风格包' : '未配置' },
+    { name: '③ 批量生成', tone: genLike.length === 0 ? 'dim' : mockN > 0 ? 'warn' : 'ok', note: `${genLike.length}/${live.length}${mockN ? ` · MOCK ${mockN}` : ''}` },
+    { name: '④ 写回替换', tone: wroteN === 0 ? 'dim' : wroteN === live.length ? 'ok' : 'warn', note: `${wroteN}/${live.length} 已钉·过校验门` },
+    { name: '⑤ 人审复核', tone: okN === 0 ? 'dim' : okN === live.length ? 'ok' : 'warn', note: `${okN}/${live.length} 复核通过` },
+  ];
+  const C = { ok: SHELL.ok, warn: SHELL.warn, dim: SHELL.dim } as const;
+  return (
+    <div style={{ padding: '8px 20px', borderBottom: `1px solid ${SHELL.line}`, display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap' }}>
+      {steps.map((st, i) => (
+        <React.Fragment key={st.name}>
+          {i > 0 && <span style={{ color: SHELL.faint, margin: '0 8px' }}>→</span>}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 4, background: C[st.tone], display: 'inline-block' }} />
+            <span style={{ fontSize: 12, color: st.tone === 'dim' ? SHELL.dim : SHELL.text }}>{st.name}</span>
+            <span style={{ fontSize: 10.5, color: SHELL.dim }}>{st.note}</span>
+          </span>
+        </React.Fragment>
+      ))}
+    </div>
+  );
 }
 
 export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug: string; title?: string; kind?: 'builtin' | 'library'; onBack: () => void; onChanged?: () => void }) {
@@ -120,6 +154,7 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
 
   const doRegen = () => sel && act('/api/art/regenerate', { slug, no: sel.no, packId: regenPack, query: regenPrompt.trim() || undefined, mock: mockRun, ...(genProvider ? { provider: genProvider } : {}) }, `✓ 重生成 ${sel.no}`);
   const doSaveStyle = () => act('/api/art/style', { slug, stylePrompt: stylePrompt.trim() }, '✓ 风格锚已存').then(() => setStyleDirty(false));
+  const doApprove = (no: string) => act('/api/art/approve', { slug, no }, no === 'all' ? '✓ 全部复核通过' : `✓ ${no} 复核通过`);
   const doSwap = () => sel && swapId.trim() && act('/api/art/swap', { slug, no: sel.no, assetId: swapId.trim() }, `✓ 换库 ${sel.no}`);
   const doReskin = () => act('/api/art/reskin', { slug, packId: reskinPack, mock: mockRun }, `✓ 换皮 ${reskinPack}`);
   // 一键全量：整表批量生成（断点续跑·缓存命中不重扣费）；library 线随后重钉 manifest（replace）。
@@ -177,10 +212,13 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
           <option value="meshy">🗿 Meshy 3D</option>
         </select>
         <button onClick={doBatchAll} disabled={busy} style={{ ...sBtn('primary'), opacity: busy ? 0.5 : 1 }} title="整表批量生成（断点续跑·缓存命中不重扣费）">⚡ 一键全量</button>
+        <button onClick={() => doApprove('all')} disabled={busy} style={{ ...sBtn('ghost'), opacity: busy ? 0.5 : 1 }} title="人审复核（double verify 第二道门）：全部已写回的行 → 复核通过">☑ 全部复核</button>
         {mode === 'library' && <button onClick={doReskin} disabled={busy} style={{ ...sBtn('primary'), opacity: busy ? 0.5 : 1 }} title="同玩法换风格包 → 存新卡带">🎭 一键换皮</button>}
         <button onClick={load} style={sBtn('quiet')}>↻</button>
         <button onClick={onBack} style={sBtn('ghost')}>← 返回</button>
       </div>
+
+      <PipelineSteps rows={rows} stylePrompt={stylePrompt} packSet={packs.length > 0 && rows.some((r) => r.gen?.pack != null)} />
 
       {/* 整体风格锚（owner review ②）：本游戏专属风格提示词·自动拼进每行生成 prompt（风格包之后） */}
       <div style={{ padding: '8px 20px', borderBottom: `1px solid ${SHELL.line}`, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -248,6 +286,9 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
               {sel.provenance?.prompt && <div style={{ fontSize: 10, color: SHELL.dim, wordBreak: 'break-all' }}>已生成 prompt: {sel.provenance.prompt}</div>}
               {(sel.history?.length ?? 0) > 0 && <div style={{ fontSize: 10, color: SHELL.faint }}>历史: {sel.history!.map((h) => h.action).join(' → ')}</div>}
 
+              {(sel.status === 'replaced' || sel.status === 'filled') && (
+                <button onClick={() => doApprove(sel.no)} disabled={busy} style={{ ...sBtn('primary'), opacity: busy ? 0.5 : 1 }}>☑ 复核通过（{sel.no}）</button>
+              )}
               {/* 🔄 重新生成 */}
               <div style={{ borderTop: `1px solid ${SHELL.line}`, paddingTop: 10 }}>
                 <div style={sLabel}>🔄 重新生成（可改描述）</div>
