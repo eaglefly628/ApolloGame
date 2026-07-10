@@ -1,5 +1,7 @@
 # 能力总览 Capability Plan — 模板
 
+> **适用范围裁定（Lead 2026-07-10·自查 game-j/m 口径差后成文）**：**代码游戏**（src/games 有游戏层代码）必须交本 plan 过审才动工；**纯数据卡带**（library manifest·零游戏层代码，如官方示例 game-j/game-m）免正式 plan 文档——能力组合与美术接入记在 preset/manifest 注释即可，但 §4.5 美术接入的红线一体适用。
+
 > **用法（CLAUDE.md「游戏能力总览铁律」）**：任何新游戏 / 新玩法系统**开工前**，复制本模板到
 > `docs/design/<game>/capability-plan.md` 填好，交 Lead 评审通过后才许写游戏层代码。
 > 实现落地后用 `node scripts/game-skill-audit.mjs <game>` 核对偏差；plan 与实现不一致 = 债，要么改实现要么改 plan（重审）。
