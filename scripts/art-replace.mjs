@@ -114,6 +114,26 @@ export function deriveLedger(manifest, { game = '' } = {}) {
         }
       }
     }
+    // prefab 模板内的 art: 槽位（game-m 换装撞出的共性洞）：spawn 出来的实体也要有皮。
+    // entity 路径='prefab:<宿主>:<模板>:<实体>'（与 resolveArtRefs/applyReplacements 同径）。
+    const tpls = comps.PrefabLibrary && comps.PrefabLibrary.templates;
+    if (tpls && typeof tpls === 'object') {
+      for (const [tname, tpl] of Object.entries(tpls)) {
+        const tents = tpl && tpl.entities;
+        if (!tents || typeof tents !== 'object') continue;
+        for (const [teid, tcomps] of Object.entries(tents)) {
+          if (!tcomps || typeof tcomps !== 'object') continue;
+          for (const [cname, data] of Object.entries(tcomps)) {
+            if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
+            for (const [field, value] of Object.entries(data)) {
+              if (typeof value === 'string' && value.startsWith(ART_PREFIX)) {
+                slots.push({ entity: `prefab:${eid}:${tname}:${teid}`, component: cname, field, query: value.slice(ART_PREFIX.length).trim(), comps: tcomps });
+              }
+            }
+          }
+        }
+      }
+    }
   }
   slots.sort((a, b) => slotKey(a).localeCompare(slotKey(b)));
   const rows = slots.map((s, i) => {
@@ -258,7 +278,11 @@ export function mergeLedger(prev, fresh) {
     }
   }
   for (const p of prev.rows) {
-    if (!seen.has(rowIdentity(p, mode))) rows.push({ ...p, status: 'retired' });
+    if (seen.has(rowIdentity(p, mode))) continue;
+    // 已钉死的槽位（replaced/filled/approved）从 fresh 消失是**正常态**——art: 引用已被替换成真资产 id，
+    // 推导自然扫不到；保留原行原状态。只有未完成行（placeholder/needs-art/generated）消失才是真墓碑。
+    if (['replaced', 'filled', 'approved'].includes(p.status)) rows.push({ ...p });
+    else rows.push({ ...p, status: 'retired' });
   }
   rows.sort((a, b) => noNum(a.no) - noNum(b.no));
   const artStyle = prev.artStyle ?? fresh.artStyle;
@@ -410,7 +434,14 @@ export function applyReplacements(manifest, ledger) {
   for (const row of ledger.rows) {
     if (row.status !== 'generated' || !row.gen?.localId) continue;
     const { entity, component, field } = row.slot;
-    const comp = m.entities && m.entities[entity] && m.entities[entity][component];
+    let comp = null;
+    if (entity.startsWith('prefab:')) {
+      // 嵌套寻径：prefab:<宿主>:<模板>:<实体> → entities[宿主].PrefabLibrary.templates[模板].entities[实体]
+      const [, owner, tname, teid] = entity.split(':');
+      comp = m.entities?.[owner]?.PrefabLibrary?.templates?.[tname]?.entities?.[teid]?.[component];
+    } else {
+      comp = m.entities && m.entities[entity] && m.entities[entity][component];
+    }
     if (comp && typeof comp === 'object' && !Array.isArray(comp)) { comp[field] = row.gen.localId; row.status = 'replaced'; replaced++; }
   }
   return { manifest: m, ledger, replaced };

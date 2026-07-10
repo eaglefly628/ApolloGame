@@ -37,7 +37,7 @@
 
 ## 五、写回=怎么让生成的图真出现在游戏里
 
-- **library 线**：`applyReplacements` 把 art: 引用钉成 `gen/art-NN` 本地资产 id → parseManifest 校验 → 落盘。
+- **library 线**：`applyReplacements` 把 art: 引用钉成 `gen/art-NN` 本地资产 id → parseManifest 校验 → 落盘。**prefab 模板内的 art: 同样解析/登记/钉回**（路径=prefab:宿主:模板:实体·game-m 换装撞出后补齐）——spawn 出来的实体（衣服/技能特效/掉落物）也有皮；已钉死槽位重推导不墓碑。
 - **编译期游戏线**：蓝图视觉实体带 `Sprite:{textureKey:'q/xxx'}` 皮肤槽（与 Shape 并存）；引擎 `chooseRenderMode`
   规则=**贴图就绪盖过 Shape、未就绪回退 Shape**——所以没美术时观感一字不变。生成/上传时按 `skinKey`
   把产物**别名登记**进 `public/games/<g>/art/index.json`；游戏 mount 拉本地 index（`registerAssetIndex`），

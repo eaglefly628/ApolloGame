@@ -1,0 +1,603 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "gen/art-01",
+      "type": "texture",
+      "description": "seaside boardwalk at golden hour, pastel sky, distant ferris wheel, dreamy shoujo illustration wide background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-01.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "bg",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "seaside boardwalk at golden hour, pastel sky, distant ferris wheel, dreamy shoujo illustration wide background, seaside boardwalk at golden hour, pastel sky, distant ferris wheel, dreamy shoujo illustration wide background, rectangular shape, main color #fff1f2, large on screen, top-down 2d game view, 背景图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-02",
+      "type": "texture",
+      "description": "cute anime fashion doll base figure, neutral pose, big sparkling eyes, simple underclothes, full body front view · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-02.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "cute anime fashion doll base figure, neutral pose, big sparkling eyes, simple underclothes, full body front view, cute anime fashion doll base figure, neutral pose, big sparkling eyes, simple underclothes, full body front view, rectangular shape, main color #fde68a, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-03",
+      "type": "texture",
+      "description": "navy and white sailor dress with pleated skirt, seaside school style, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-03.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "navy and white sailor dress with pleated skirt, seaside school style, isolated garment piece for a dress-up game, front view, transparent background, navy and white sailor dress with pleated skirt, seaside school style, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #e9d5ff, interactive build spot, small on screen (54x54), top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-04",
+      "type": "texture",
+      "description": "wine red evening gown with satin sheen and long flowing skirt, formal elegant, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-04.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "wine red evening gown with satin sheen and long flowing skirt, formal elegant, isolated garment piece for a dress-up game, front view, transparent background, wine red evening gown with satin sheen and long flowing skirt, formal elegant, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #e9d5ff, interactive build spot, small on screen (54x54), top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-05",
+      "type": "texture",
+      "description": "floral countryside sundress, pastel flowers on cream fabric, gentle, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-05.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "floral countryside sundress, pastel flowers on cream fabric, gentle, isolated garment piece for a dress-up game, front view, transparent background, floral countryside sundress, pastel flowers on cream fabric, gentle, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #e9d5ff, interactive build spot, small on screen (54x54), top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-06",
+      "type": "texture",
+      "description": "long golden wavy princess hair wig, soft curls, elegant shine, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-06.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "long golden wavy princess hair wig, soft curls, elegant shine, isolated garment piece for a dress-up game, front view, transparent background, long golden wavy princess hair wig, soft curls, elegant shine, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #fbcfe8, interactive build spot, small on screen (54x54), top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-07",
+      "type": "texture",
+      "description": "silver white high ponytail hair wig, sporty and energetic, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-07.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "silver white high ponytail hair wig, sporty and energetic, isolated garment piece for a dress-up game, front view, transparent background, silver white high ponytail hair wig, sporty and energetic, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #fbcfe8, interactive build spot, small on screen (54x54), top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-08",
+      "type": "texture",
+      "description": "pink twin-tail hair wig with ribbon bows, adorable and sweet, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-08.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "pink twin-tail hair wig with ribbon bows, adorable and sweet, isolated garment piece for a dress-up game, front view, transparent background, pink twin-tail hair wig with ribbon bows, adorable and sweet, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #fbcfe8, interactive build spot, small on screen (54x54), top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-09",
+      "type": "texture",
+      "description": "white mary jane shoes with round toe and strap, cute and neat, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-09.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "white mary jane shoes with round toe and strap, cute and neat, isolated garment piece for a dress-up game, front view, transparent background, white mary jane shoes with round toe and strap, cute and neat, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #bae6fd, interactive build spot, small on screen (54x54), top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-10",
+      "type": "texture",
+      "description": "crystal high heel shoes, slender and glamorous, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-10.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "crystal high heel shoes, slender and glamorous, isolated garment piece for a dress-up game, front view, transparent background, crystal high heel shoes, slender and glamorous, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #bae6fd, interactive build spot, small on screen (54x54), top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-11",
+      "type": "texture",
+      "description": "canvas sneakers with colorful laces, casual and playful, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-11.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "canvas sneakers with colorful laces, casual and playful, isolated garment piece for a dress-up game, front view, transparent background, canvas sneakers with colorful laces, casual and playful, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #bae6fd, interactive build spot, small on screen (54x54), top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-12",
+      "type": "texture",
+      "description": "navy and white sailor dress with pleated skirt, seaside school style, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-12.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "navy and white sailor dress with pleated skirt, seaside school style, isolated garment piece for a dress-up game, front view, transparent background, navy and white sailor dress with pleated skirt, seaside school style, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #f9a8d4, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-13",
+      "type": "texture",
+      "description": "long golden wavy princess hair wig, soft curls, elegant shine, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-13.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "long golden wavy princess hair wig, soft curls, elegant shine, isolated garment piece for a dress-up game, front view, transparent background, long golden wavy princess hair wig, soft curls, elegant shine, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #f9a8d4, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-14",
+      "type": "texture",
+      "description": "white mary jane shoes with round toe and strap, cute and neat, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-14.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "white mary jane shoes with round toe and strap, cute and neat, isolated garment piece for a dress-up game, front view, transparent background, white mary jane shoes with round toe and strap, cute and neat, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #f9a8d4, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:12:35.140Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-15",
+      "type": "texture",
+      "description": "navy and white sailor dress with pleated skirt, seaside school style, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-15.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "navy and white sailor dress with pleated skirt, seaside school style, isolated garment piece for a dress-up game, front view, transparent background, navy and white sailor dress with pleated skirt, seaside school style, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #f9a8d4, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:16:21.391Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-16",
+      "type": "texture",
+      "description": "wine red evening gown with satin sheen and long flowing skirt, formal elegant, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-16.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "wine red evening gown with satin sheen and long flowing skirt, formal elegant, isolated garment piece for a dress-up game, front view, transparent background, wine red evening gown with satin sheen and long flowing skirt, formal elegant, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #f9a8d4, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:16:21.391Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-17",
+      "type": "texture",
+      "description": "floral countryside sundress, pastel flowers on cream fabric, gentle, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-17.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "floral countryside sundress, pastel flowers on cream fabric, gentle, isolated garment piece for a dress-up game, front view, transparent background, floral countryside sundress, pastel flowers on cream fabric, gentle, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #f9a8d4, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:16:21.391Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-18",
+      "type": "texture",
+      "description": "long golden wavy princess hair wig, soft curls, elegant shine, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-18.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "long golden wavy princess hair wig, soft curls, elegant shine, isolated garment piece for a dress-up game, front view, transparent background, long golden wavy princess hair wig, soft curls, elegant shine, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #f9a8d4, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:16:21.391Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-19",
+      "type": "texture",
+      "description": "silver white high ponytail hair wig, sporty and energetic, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-19.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "silver white high ponytail hair wig, sporty and energetic, isolated garment piece for a dress-up game, front view, transparent background, silver white high ponytail hair wig, sporty and energetic, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #f9a8d4, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:16:21.391Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-20",
+      "type": "texture",
+      "description": "pink twin-tail hair wig with ribbon bows, adorable and sweet, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-20.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "pink twin-tail hair wig with ribbon bows, adorable and sweet, isolated garment piece for a dress-up game, front view, transparent background, pink twin-tail hair wig with ribbon bows, adorable and sweet, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #f9a8d4, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:16:21.391Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-21",
+      "type": "texture",
+      "description": "white mary jane shoes with round toe and strap, cute and neat, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-21.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "white mary jane shoes with round toe and strap, cute and neat, isolated garment piece for a dress-up game, front view, transparent background, white mary jane shoes with round toe and strap, cute and neat, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #f9a8d4, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:16:21.391Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-22",
+      "type": "texture",
+      "description": "crystal high heel shoes, slender and glamorous, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-22.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "crystal high heel shoes, slender and glamorous, isolated garment piece for a dress-up game, front view, transparent background, crystal high heel shoes, slender and glamorous, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #f9a8d4, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:16:21.391Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    },
+    {
+      "id": "gen/art-23",
+      "type": "texture",
+      "description": "canvas sneakers with colorful laces, casual and playful, isolated garment piece for a dress-up game, front view, transparent background · 生成(dreamy-pastel·mock)",
+      "status": "filled",
+      "path": "/games/game-m/art/gen/art-23.png",
+      "category": "ai-gen",
+      "tags": [
+        "gen",
+        "dreamy-pastel",
+        "sprite",
+        "mock"
+      ],
+      "license": "Qwen/DashScope 万相 (按订阅授权)",
+      "source": "gen:qwen",
+      "provenance": {
+        "generator": "qwen",
+        "prompt": "canvas sneakers with colorful laces, casual and playful, isolated garment piece for a dress-up game, front view, transparent background, canvas sneakers with colorful laces, casual and playful, isolated garment piece for a dress-up game, front view, transparent background, rectangular shape, main color #f9a8d4, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘, one coherent seaside-holiday fashion collection, every garment belongs to the same shoujo wardrobe set",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "mock": true,
+        "generatedAt": "2026-07-10T01:16:21.391Z",
+        "pack": "dreamy-pastel",
+        "style": "梦幻少女（暖暖系）",
+        "vendoredFrom": null
+      }
+    }
+  ]
+}

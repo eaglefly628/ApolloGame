@@ -283,3 +283,18 @@ describe('owner 07-09 review 四条修正', () => {
     });
   });
 });
+
+describe('已替换槽位 re-derive 不墓碑（game-m 撞出·2026-07-09）', () => {
+  it('replace 钉死后重推导：replaced 行保留原状·不标 retired', async () => {
+    await withRoot(async (root) => {
+      const prev = deriveLedger(MANIFEST, { game: 'g' });
+      await batchGenerate(prev, 'pixel-retro', { root, game: 'g', mock: true });
+      const rep = applyReplacements(JSON.parse(JSON.stringify(MANIFEST)), prev);
+      // 重推导：替换后的 manifest 里 art: 引用已消失
+      const merged = mergeLedger(prev, deriveLedger(rep.manifest, { game: 'g' }));
+      const hero = merged.rows.find((r) => r.slot.entity === 'hero');
+      expect(hero.status).toBe('replaced'); // 不是 retired
+      expect(hero.gen?.localId).toBeTruthy(); // 生成信息保留
+    });
+  });
+});

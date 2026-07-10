@@ -88,6 +88,43 @@ export function resolveArtRefs(raw: unknown, records: readonly LibraryRecord[]):
     entitiesChanged ||= compChanged;
   }
 
-  const manifest = entitiesChanged ? { ...raw, entities: newEntities } : raw;
+  // ── prefab 模板内的 art: 引用（game-m 换装撞出的共性洞·2026-07-09）──
+  // PrefabLibrary.templates.*.entities.*.<Comp>.<field> 里的 "art:…" 同样解析：运行期 spawn 出来的实体
+  // （衣服图层/技能特效/掉落物）才有皮。entity 路径记 'prefab:<宿主>:<模板>:<实体>'（对位替换按此寻径）。
+  for (const [ownerId, comps] of Object.entries(newEntities)) {
+    if (!isObj(comps)) continue;
+    let lib = (comps as Record<string, unknown>).PrefabLibrary;
+    if (!isObj(lib) || !isObj(lib.templates)) continue;
+    if (!JSON.stringify(lib.templates).includes('"' + ART_REF_PREFIX)) continue; // 无 art: 引用·零拷贝快路
+    // 纯函数契约：newEntities 里可能仍是输入的原引用（宿主顶层无 art: 时未拷贝）——改模板前先深拷贝宿主。
+    const cloned = JSON.parse(JSON.stringify(comps)) as Record<string, unknown>;
+    newEntities[ownerId] = cloned;
+    lib = cloned.PrefabLibrary as Record<string, unknown>;
+    for (const [tname, tpl] of Object.entries((lib as { templates: Record<string, unknown> }).templates)) {
+      if (!isObj(tpl) || !isObj(tpl.entities)) continue;
+      for (const [teid, tcomps] of Object.entries(tpl.entities as Record<string, unknown>)) {
+        if (!isObj(tcomps)) continue;
+        for (const [cname, data] of Object.entries(tcomps)) {
+          if (!isObj(data)) continue;
+          for (const [field, value] of Object.entries(data)) {
+            if (typeof value !== 'string' || !value.startsWith(ART_REF_PREFIX)) continue;
+            const query = value.slice(ART_REF_PREFIX.length).trim();
+            const ranked = query ? rankRecords(records, query) : [];
+            const top = ranked[0];
+            resolutions.push({
+              entity: `prefab:${ownerId}:${tname}:${teid}`,
+              component: cname, field, query,
+              id: top ? top.record.id : null,
+              score: top?.score ?? 0,
+              candidates: ranked.slice(0, 3).map((x) => x.record.id),
+            });
+            if (top) (data as Record<string, unknown>)[field] = top.record.id; // 模板是新拷贝内的嵌套对象·可原位改
+          }
+        }
+      }
+    }
+  }
+
+  const manifest = entitiesChanged || resolutions.some((r) => r.entity.startsWith('prefab:')) ? { ...raw, entities: newEntities } : raw;
   return { manifest, resolutions };
 }

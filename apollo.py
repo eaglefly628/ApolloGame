@@ -2316,7 +2316,128 @@ def _match3_preset() -> dict:
         'entities': ents,
     }
 
+def _dressup_preset() -> dict:
+    """game-m《Wardrobe Voyage 衣橱环游》换装示例（owner 2026-07-09 点单·暖暖环游世界式初始框架）。
+    零专属系统·纯数据组合：穿戴=实体生灭（caster 生成衣服图层+属性粒子·destroy-tagged 按姐妹件位清槽·
+    永不误杀自己=无竞态）；评分=group-count 数在场属性粒子（每帧从穿着状态重算·路径无关）；
+    衣柜=Clickable 缩略图（can_X 旗防重复穿）；主题达标=event-when 对称亮/灭星级横幅。"""
+    HAIR, DRESS, SHOES = ('h', 'd', 's')
+    ELEG, LIVELY, SWEET = 512, 1024, 2048
+    ATTR_BIT = {'eleg': ELEG, 'lively': LIVELY, 'sweet': SWEET}
+    # (id, 槽, 位, 属性, 衣柜行, 详细 art 描述)
+    ITEMS = [
+        ('h0', HAIR, 1, {'eleg': 2, 'sweet': 1}, 'long golden wavy princess hair wig, soft curls, elegant shine'),
+        ('h1', HAIR, 2, {'lively': 2}, 'silver white high ponytail hair wig, sporty and energetic'),
+        ('h2', HAIR, 4, {'sweet': 3}, 'pink twin-tail hair wig with ribbon bows, adorable and sweet'),
+        ('d0', DRESS, 8, {'lively': 2, 'sweet': 2}, 'navy and white sailor dress with pleated skirt, seaside school style'),
+        ('d1', DRESS, 16, {'eleg': 4}, 'wine red evening gown with satin sheen and long flowing skirt, formal elegant'),
+        ('d2', DRESS, 32, {'sweet': 2, 'eleg': 1}, 'floral countryside sundress, pastel flowers on cream fabric, gentle'),
+        ('s0', SHOES, 64, {'sweet': 2}, 'white mary jane shoes with round toe and strap, cute and neat'),
+        ('s1', SHOES, 128, {'eleg': 2}, 'crystal high heel shoes, slender and glamorous'),
+        ('s2', SHOES, 256, {'lively': 2}, 'canvas sneakers with colorful laces, casual and playful'),
+    ]
+    SLOT_OF = {i[0]: i[1] for i in ITEMS}
+    BIT_OF = {i[0]: i[2] for i in ITEMS}
+    ART_TAIL = ', isolated garment piece for a dress-up game, front view, transparent background'
+    DOLL = (220, 218)
+    LAYER = {HAIR: (-92, 4), DRESS: (6, 3), SHOES: (118, 2)}   # (y 偏移, zOrder：鞋<裙<发)
+    THUMB_ROW = {HAIR: 92, DRESS: 180, SHOES: 268}
+
+    def layer_ents(iid, slot, bit, attrs, art):
+        dy, z = LAYER[slot]
+        ents = {'layer': {
+            'Transform': {'x': 0, 'y': dy, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+            'Shape': {'kind': 'box', 'width': 96 if slot == DRESS else 64, 'height': 120 if slot == DRESS else 40},
+            'Color': {'tint': 0xf9a8d4, 'alpha': 0.9},
+            'Sprite': {'textureKey': f'art:{art}{ART_TAIL}', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': z},
+            'Tag': {'flags': bit},
+        }}
+        n = 0
+        for a, amt in attrs.items():
+            for _ in range(amt):
+                ents[f'p{n}'] = {'Tag': {'flags': bit | ATTR_BIT[a]}}
+                n += 1
+        return ents
+
+    ents = {
+        'background': {
+            'Transform': {'x': 320, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+            'Shape': {'kind': 'box', 'width': 640, 'height': 400},
+            'Color': {'tint': 0xfff1f2, 'alpha': 1},
+            'Sprite': {'textureKey': 'art:seaside boardwalk at golden hour, pastel sky, distant ferris wheel, dreamy shoujo illustration wide background', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': -10},
+        },
+        'camera': dict(_CAM),
+        'doll-base': {
+            'Transform': {'x': DOLL[0], 'y': DOLL[1], 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+            'Shape': {'kind': 'box', 'width': 110, 'height': 300},
+            'Color': {'tint': 0xfde68a, 'alpha': 0.55},
+            'Sprite': {'textureKey': 'art:cute anime fashion doll base figure, neutral pose, big sparkling eyes, simple underclothes, full body front view', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': 1},
+        },
+        'res-eleg': {'Resource': {'id': 'elegance', 'current': 0, 'min': 0, 'max': 99}, 'GroupCount': {'countResource': 'elegance', 'requiredTag': ELEG}},
+        'res-lively': {'Resource': {'id': 'lively', 'current': 0, 'min': 0, 'max': 99}, 'GroupCount': {'countResource': 'lively', 'requiredTag': LIVELY}},
+        'res-sweet': {'Resource': {'id': 'sweet', 'current': 0, 'min': 0, 'max': 99}, 'GroupCount': {'countResource': 'sweet', 'requiredTag': SWEET}},
+    }
+    tpls = {}
+    txt = lambda content, size: {'content': content, 'fontSize': size, 'fontFamily': 'sans-serif', 'anchor': 'center', 'lineSpacing': 0}
+    for iid, slot, bit, attrs, art in ITEMS:
+        sib = [j for j in ITEMS if j[1] == slot and j[0] != iid]
+        tpls[f'tpl_{iid}'] = {'entities': layer_ents(iid, slot, bit, attrs, art)}
+        col = {HAIR: 0, DRESS: 1, SHOES: 2}[slot]
+        row_i = [j[0] for j in ITEMS if j[1] == slot].index(iid)
+        ents[f'thumb-{iid}'] = {
+            'Transform': {'x': 452 + row_i * 62, 'y': THUMB_ROW[slot], 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+            'Shape': {'kind': 'box', 'width': 54, 'height': 54},
+            'Color': {'tint': [0xfbcfe8, 0xe9d5ff, 0xbae6fd][col], 'alpha': 1},
+            'Sprite': {'textureKey': f'art:{art}{ART_TAIL}', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': 5},
+            'Clickable': {'action': f'wear_{iid}', 'onlyFlag': f'can_{iid}'},
+        }
+        ents[f'cast-{iid}'] = {
+            'Transform': {'x': DOLL[0], 'y': DOLL[1], 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
+            'Caster': {'onSignal': f'wear_{iid}', 'template': f'tpl_{iid}', 'at': 'self'},
+        }
+        for k, (sid, _, sbit, _a, _art) in enumerate(sib):
+            ents[f'eff-{iid}-clr{k}'] = {'Effect': {'onSignal': f'wear_{iid}', 'kind': 'destroy-tagged', 'targetId': '', 'value': sbit}}
+        ents[f'eff-{iid}-lock'] = {'Effect': {'onSignal': f'wear_{iid}', 'kind': 'set-flag', 'targetId': f'can_{iid}', 'value': False}}
+        for k, (sid, _, _b, _a, _art) in enumerate(sib):
+            ents[f'eff-{iid}-un{k}'] = {'Effect': {'onSignal': f'wear_{iid}', 'kind': 'set-flag', 'targetId': f'can_{sid}', 'value': True}}
+        ents[f'flag-can-{iid}'] = {'Flag': {'id': f'can_{iid}', 'active': iid not in ('h0', 'd0', 's0')}}
+    # 默认穿搭（h0/d0/s0）：与模板同构的常驻实体（位置=绝对坐标）
+    for iid in ('h0', 'd0', 's0'):
+        it = next(i for i in ITEMS if i[0] == iid)
+        for name, e in layer_ents(iid, it[1], it[2], it[3], it[4]).items():
+            e2 = json.loads(json.dumps(e))
+            if 'Transform' in e2:
+                e2['Transform']['x'] += DOLL[0]
+                e2['Transform']['y'] += DOLL[1]
+            ents[f'worn-{iid}-{name}'] = e2
+    ents['wardrobe-lib'] = {'PrefabLibrary': {'templates': tpls}}
+    ents.update({
+        'hud-title': {'Transform': {'x': 508, 'y': 40, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('海滨假日 · WARDROBE', 17), 'Color': {'tint': 0xbe185d, 'alpha': 1}},
+        'hud-goal': {'Transform': {'x': 508, 'y': 330, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('主题目标：优雅≥4 且 甜美≥4', 12), 'Color': {'tint': 0x9d174d, 'alpha': 0.9}},
+        'hud-e': {'Transform': {'x': 452, 'y': 358, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('0', 16), 'Color': {'tint': 0x7c3aed, 'alpha': 1}, 'TextBinding': {'resourceId': 'elegance', 'prefix': '优雅 '}},
+        'hud-l': {'Transform': {'x': 528, 'y': 358, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('0', 16), 'Color': {'tint': 0xf59e0b, 'alpha': 1}, 'TextBinding': {'resourceId': 'lively', 'prefix': '活泼 '}},
+        'hud-s': {'Transform': {'x': 600, 'y': 358, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('0', 16), 'Color': {'tint': 0xec4899, 'alpha': 1}, 'TextBinding': {'resourceId': 'sweet', 'prefix': '甜美 '}},
+        'star-when': {'EventWhen': {'signal': 'starred', 'when': {'kind': 'and', 'of': [
+            {'kind': 'resource', 'id': 'elegance', 'cmp': 'gte', 'value': 4},
+            {'kind': 'resource', 'id': 'sweet', 'cmp': 'gte', 'value': 4}]}, 'mode': 'edge', 'armed': False}},
+        'unstar-when': {'EventWhen': {'signal': 'unstarred', 'when': {'kind': 'not', 'of': {'kind': 'and', 'of': [
+            {'kind': 'resource', 'id': 'elegance', 'cmp': 'gte', 'value': 4},
+            {'kind': 'resource', 'id': 'sweet', 'cmp': 'gte', 'value': 4}]}}, 'mode': 'edge', 'armed': False}},
+        'eff-star-on': {'Effect': {'onSignal': 'starred', 'kind': 'set-visible', 'targetEntity': 'banner-star', 'value': True}},
+        'eff-star-off': {'Effect': {'onSignal': 'unstarred', 'kind': 'set-visible', 'targetEntity': 'banner-star', 'value': False}},
+        'banner-star': {'Transform': {'x': 320, 'y': 34, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('★★★ 主题达成 PERFECT!', 24), 'Color': {'tint': 0xd97706, 'alpha': 1}, 'Visibility': {'visible': False, 'active': True}},
+    })
+    return {
+        'name': 'Wardrobe Voyage (game-m)',
+        'description': '暖暖式换装：点右侧衣柜给娃娃穿搭，三维属性实时评分，达成主题目标亮星。穿戴=实体生灭·评分=群计数，零专属系统。',
+        'capabilities': ['a1-transform', 'c1-shape', 'l2-color', 'l1-sprite', 'l6-text', 'l5-camera', 'h1-visibility',
+                         'g1-tag', 'k2-destroy', 'f1-resource', 'f2-flag', 't2-clickable', 't2-event-when',
+                         't2-effect-apply', 't2-text-binding', 't2-group-count', 't3-prefab', 't3-caster'],
+        'entities': ents,
+    }
+
 PRESET_BLUEPRINTS['match3'] = _match3_preset()
+PRESET_BLUEPRINTS['dressup'] = _dressup_preset()
 
 def _preset_manifest(preset: dict) -> dict:
     """PRESET_BLUEPRINTS 条目 → 纯规范 manifest（只留 capabilities + entities，name/描述归 meta）。"""

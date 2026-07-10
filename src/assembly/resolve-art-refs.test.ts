@@ -84,3 +84,20 @@ describe('resolveArtRefs — manifest 里的 art: 引用', () => {
     expect(resolveArtRefs({ name: 'x' }, records).resolutions).toHaveLength(0);
   });
 });
+
+describe('prefab 模板内 art: 解析（game-m 换装共性洞·2026-07-09）', () => {
+  it('templates.*.entities 里的 art: 同样解析·输入不被污染·路径=prefab:宿主:模板:实体', () => {
+    const raw = {
+      entities: {
+        lib: { PrefabLibrary: { templates: { tpl_d1: { entities: { layer: { Sprite: { textureKey: 'art:skeleton warrior' } } } } } } },
+      },
+    };
+    const before = JSON.stringify(raw);
+    const { manifest, resolutions } = resolveArtRefs(raw, records);
+    expect(JSON.stringify(raw)).toBe(before); // 纯函数：输入零污染
+    const r = resolutions.find((x) => x.entity === 'prefab:lib:tpl_d1:layer');
+    expect(r?.id).toBe('monster/undead/skeleton_warrior');
+    const m = manifest as typeof raw;
+    expect(m.entities.lib.PrefabLibrary.templates.tpl_d1.entities.layer.Sprite.textureKey).toBe('monster/undead/skeleton_warrior');
+  });
+});

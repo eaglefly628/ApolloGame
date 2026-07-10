@@ -108,5 +108,33 @@
       "model": "wanx2.1-t2i-turbo",
       "seed": 1773
     }
+  },
+  "dreamy-pastel": {
+    "packId": "dreamy-pastel",
+    "name": "梦幻少女（暖暖系）",
+    "promptZh": "日系少女向换装游戏插画：水彩柔光，粉彩糖果色，蕾丝与缎带细节，梦幻光斑，精致时装质感，干净轮廓，高品质手游立绘",
+    "promptEn": "japanese shoujo dress-up game illustration: watercolor soft light, pastel candy palette, lace and ribbon details, dreamy bokeh sparkle, refined fashion fabric rendering, clean silhouette, premium mobile game art",
+    "palette": [
+      16773618,
+      16502760,
+      16361684,
+      15324671,
+      12248829,
+      16639626,
+      12458077,
+      2042167
+    ],
+    "negative": {
+      "zh": "写实照片，硬阴影，暗黑恐怖，粗糙线条，男性化",
+      "en": "photorealistic, harsh shadows, dark horror, rough sketchy lines, masculine"
+    },
+    "post": {
+      "paletteSnap": false
+    },
+    "params": {
+      "provider": "qwen",
+      "model": "wanx2.1-t2i-turbo",
+      "seed": 1774
+    }
   }
 }
