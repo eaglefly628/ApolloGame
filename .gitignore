@@ -33,3 +33,7 @@ library/
 
 # 创作台 v1 BYO-key 设置（用户自带 API key·明文本地存储，绝不入引擎仓）
 .apollo-config.json
+
+# mock 试跑产物（owner 2026-07-10「Mock 数据不该这样做」：仅平台墙预览·永不写回/入库；
+# 真图 gen/art-NN 是游戏观感一部分该入库，mock 命名空间 gen/mock/ 机械挡在仓外）
+public/games/*/art/gen/mock/

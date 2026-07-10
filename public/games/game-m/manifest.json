@@ -38,7 +38,7 @@
         "alpha": 1
       },
       "Sprite": {
-        "textureKey": "gen/art-01",
+        "textureKey": "art:seaside boardwalk at golden hour, pastel sky, distant ferris wheel, dreamy shoujo illustration wide background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": -10
@@ -72,7 +72,7 @@
         "alpha": 0.55
       },
       "Sprite": {
-        "textureKey": "gen/art-02",
+        "textureKey": "art:cute anime fashion doll base figure, neutral pose, big sparkling eyes, simple underclothes, full body front view",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 1
@@ -132,7 +132,7 @@
         "alpha": 1
       },
       "Sprite": {
-        "textureKey": "gen/art-06",
+        "textureKey": "art:long golden wavy princess hair wig, soft curls, elegant shine, isolated garment piece for a dress-up game, front view, transparent background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 5
@@ -220,7 +220,7 @@
         "alpha": 1
       },
       "Sprite": {
-        "textureKey": "gen/art-07",
+        "textureKey": "art:silver white high ponytail hair wig, sporty and energetic, isolated garment piece for a dress-up game, front view, transparent background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 5
@@ -308,7 +308,7 @@
         "alpha": 1
       },
       "Sprite": {
-        "textureKey": "gen/art-08",
+        "textureKey": "art:pink twin-tail hair wig with ribbon bows, adorable and sweet, isolated garment piece for a dress-up game, front view, transparent background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 5
@@ -396,7 +396,7 @@
         "alpha": 1
       },
       "Sprite": {
-        "textureKey": "gen/art-03",
+        "textureKey": "art:navy and white sailor dress with pleated skirt, seaside school style, isolated garment piece for a dress-up game, front view, transparent background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 5
@@ -484,7 +484,7 @@
         "alpha": 1
       },
       "Sprite": {
-        "textureKey": "gen/art-04",
+        "textureKey": "art:wine red evening gown with satin sheen and long flowing skirt, formal elegant, isolated garment piece for a dress-up game, front view, transparent background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 5
@@ -572,7 +572,7 @@
         "alpha": 1
       },
       "Sprite": {
-        "textureKey": "gen/art-05",
+        "textureKey": "art:floral countryside sundress, pastel flowers on cream fabric, gentle, isolated garment piece for a dress-up game, front view, transparent background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 5
@@ -660,7 +660,7 @@
         "alpha": 1
       },
       "Sprite": {
-        "textureKey": "gen/art-09",
+        "textureKey": "art:white mary jane shoes with round toe and strap, cute and neat, isolated garment piece for a dress-up game, front view, transparent background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 5
@@ -748,7 +748,7 @@
         "alpha": 1
       },
       "Sprite": {
-        "textureKey": "gen/art-10",
+        "textureKey": "art:crystal high heel shoes, slender and glamorous, isolated garment piece for a dress-up game, front view, transparent background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 5
@@ -836,7 +836,7 @@
         "alpha": 1
       },
       "Sprite": {
-        "textureKey": "gen/art-11",
+        "textureKey": "art:canvas sneakers with colorful laces, casual and playful, isolated garment piece for a dress-up game, front view, transparent background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 5
@@ -924,7 +924,7 @@
         "alpha": 0.9
       },
       "Sprite": {
-        "textureKey": "gen/art-13",
+        "textureKey": "art:long golden wavy princess hair wig, soft curls, elegant shine, isolated garment piece for a dress-up game, front view, transparent background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 4
@@ -966,7 +966,7 @@
         "alpha": 0.9
       },
       "Sprite": {
-        "textureKey": "gen/art-12",
+        "textureKey": "art:navy and white sailor dress with pleated skirt, seaside school style, isolated garment piece for a dress-up game, front view, transparent background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 3
@@ -1013,7 +1013,7 @@
         "alpha": 0.9
       },
       "Sprite": {
-        "textureKey": "gen/art-14",
+        "textureKey": "art:white mary jane shoes with round toe and strap, cute and neat, isolated garment piece for a dress-up game, front view, transparent background",
         "anchorX": 0.5,
         "anchorY": 0.5,
         "zOrder": 2
@@ -1055,7 +1055,7 @@
                   "alpha": 0.9
                 },
                 "Sprite": {
-                  "textureKey": "gen/art-18",
+                  "textureKey": "art:long golden wavy princess hair wig, soft curls, elegant shine, isolated garment piece for a dress-up game, front view, transparent background",
                   "anchorX": 0.5,
                   "anchorY": 0.5,
                   "zOrder": 4
@@ -1101,7 +1101,7 @@
                   "alpha": 0.9
                 },
                 "Sprite": {
-                  "textureKey": "gen/art-19",
+                  "textureKey": "art:silver white high ponytail hair wig, sporty and energetic, isolated garment piece for a dress-up game, front view, transparent background",
                   "anchorX": 0.5,
                   "anchorY": 0.5,
                   "zOrder": 4
@@ -1142,7 +1142,7 @@
                   "alpha": 0.9
                 },
                 "Sprite": {
-                  "textureKey": "gen/art-20",
+                  "textureKey": "art:pink twin-tail hair wig with ribbon bows, adorable and sweet, isolated garment piece for a dress-up game, front view, transparent background",
                   "anchorX": 0.5,
                   "anchorY": 0.5,
                   "zOrder": 4
@@ -1188,7 +1188,7 @@
                   "alpha": 0.9
                 },
                 "Sprite": {
-                  "textureKey": "gen/art-15",
+                  "textureKey": "art:navy and white sailor dress with pleated skirt, seaside school style, isolated garment piece for a dress-up game, front view, transparent background",
                   "anchorX": 0.5,
                   "anchorY": 0.5,
                   "zOrder": 3
@@ -1239,7 +1239,7 @@
                   "alpha": 0.9
                 },
                 "Sprite": {
-                  "textureKey": "gen/art-16",
+                  "textureKey": "art:wine red evening gown with satin sheen and long flowing skirt, formal elegant, isolated garment piece for a dress-up game, front view, transparent background",
                   "anchorX": 0.5,
                   "anchorY": 0.5,
                   "zOrder": 3
@@ -1290,7 +1290,7 @@
                   "alpha": 0.9
                 },
                 "Sprite": {
-                  "textureKey": "gen/art-17",
+                  "textureKey": "art:floral countryside sundress, pastel flowers on cream fabric, gentle, isolated garment piece for a dress-up game, front view, transparent background",
                   "anchorX": 0.5,
                   "anchorY": 0.5,
                   "zOrder": 3
@@ -1336,7 +1336,7 @@
                   "alpha": 0.9
                 },
                 "Sprite": {
-                  "textureKey": "gen/art-21",
+                  "textureKey": "art:white mary jane shoes with round toe and strap, cute and neat, isolated garment piece for a dress-up game, front view, transparent background",
                   "anchorX": 0.5,
                   "anchorY": 0.5,
                   "zOrder": 2
@@ -1377,7 +1377,7 @@
                   "alpha": 0.9
                 },
                 "Sprite": {
-                  "textureKey": "gen/art-22",
+                  "textureKey": "art:crystal high heel shoes, slender and glamorous, isolated garment piece for a dress-up game, front view, transparent background",
                   "anchorX": 0.5,
                   "anchorY": 0.5,
                   "zOrder": 2
@@ -1418,7 +1418,7 @@
                   "alpha": 0.9
                 },
                 "Sprite": {
-                  "textureKey": "gen/art-23",
+                  "textureKey": "art:canvas sneakers with colorful laces, casual and playful, isolated garment piece for a dress-up game, front view, transparent background",
                   "anchorX": 0.5,
                   "anchorY": 0.5,
                   "zOrder": 2

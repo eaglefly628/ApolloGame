@@ -50,10 +50,11 @@ function playOneSwap(): { score: number; moves: number; cells: number[] } {
 }
 
 describe('game-j Candy Kingdom（manifest 走查）', () => {
-  it('manifest 解析零 error·美术引用全部已钉死（无残留 art:）', () => {
+  it('manifest 解析零 error·出厂态=art: 详细引用（placeholder 真相·mock 永不写回）', () => {
     const bp = parseManifest(raw) as { errors?: unknown[] };
     expect(bp.errors ?? []).toHaveLength(0);
-    expect(JSON.stringify(raw)).not.toContain('"art:');
+    expect(JSON.stringify(raw)).toContain('"art:'); // 真图生成前保持原始引用（owner 2026-07-10）
+    expect(JSON.stringify(raw)).not.toContain('gen/art-'); // 不许任何 mock/生成物预钉进出厂 manifest
   });
   it('真输入路径：点两相邻格交换 → 消除得分·扣 1 步·盘面补满', () => {
     const r = playOneSwap();

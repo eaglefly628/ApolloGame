@@ -46,6 +46,13 @@
 ## 六、真调 / mock 语义（demo 死穴已除）
 
 - **mock 只在显式勾选**（平台「mock 试跑」勾选框）或显式 env 才走；服务端已无任何硬编码 `--mock`。
+- **mock 永不上画面（owner 2026-07-10「Mock 数据不该这样做」·三道闸+一条沟）**：mock 产物**只落独立命名空间
+  `public/games/<g>/art/gen/mock/`（gitignored）**供平台墙预览（⚙MOCK 标·台账 `gen.mock:true` 明标）。
+  闸① 写回：`applyReplacements` 默认跳过 mock 行（返回 `skippedMock` 明数·manifest 保持原始 art:/placeholder 引用）；
+  闸② 别名：mock 不登记 skinKey 皮肤别名（编译期游戏画面不吃 mock）；
+  闸③ 人门：`/api/art/approve` 拒 mock 行（真图生成后才过复核）。
+  沟=命名空间：mock 文件/index id 绝不与真图 `gen/art-NN` 同名——已钉死真图的游戏跑 mock 批**不会被覆盖**（后门已封）。
+  机械验证走 CLI `--allow-mock`（冒烟/测试专用·端点永不传）。**真图到位前，游戏观感=原始 placeholder，一字不变。**
 - 真调 key 顺序：进程 env > 设置面板 genKeys（.apollo-config.json）> 千问聊天 key 复用（DASHSCOPE 一 key 两用）；由 `_gen_env()` 注入生成子进程，key 绝不落日志。
 - **无 key 不阻塞**：自动探针输出（缺哪个 env）+ mock 占位 + MOCK 标——绝不静默顶替（`docs/playbooks/testing.md` 凭证探针红线）。
 - 成本闸：内容寻址缓存 hash(provider+prompt+model+seed)——命中不重扣费；断点续跑以 status 为断点。
@@ -66,9 +73,8 @@
 - ❌ `public/games/game-q/art/game-q-art-ledger.json`（已删）——唯一台账=art-ledger.json。
 - ❌ art-list.md 的 q-spr-NN 私有编号——以台账 art-NN 为准。
 
-## 九、验证记录（2026-07-09 收口时）
+## 九、验证记录（2026-07-10 mock 政策收口时）
 
-tsc 0 · vitest 全绿（art-replace 23 测：编号三测/皮肤槽三测/review 四条修正三测）· build 0 · `art-replace-smoke.py` 33/33 ·
-`art-review-smoke.py` 17/17 · game-q RATCHET PASS（AUDIT FAIL=存量 createElement×5 基线债·未新增）·
-mock 单槽 fill 全链自证（prompt 回填生效/gen+皮肤别名双登记/provenance 全）。
+tsc 0 · vitest 全绿（art-replace 27 测：编号三测/皮肤槽三测/review 四条修正三测/mock 政策三测含覆盖后门回归）· build 0 ·
+`art-replace-smoke.py` 45/45（含 mock 三道闸腿）· `art-review-smoke.py` 17/17 · game-q RATCHET PASS（AUDIT FAIL=存量 createElement×5 基线债·未新增）。
 **真 key 端到端待 owner key 到位**（清单=冲刺纲领 §六）：填设置面板→平台不勾 mock→一键全量即真图。

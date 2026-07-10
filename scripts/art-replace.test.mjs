@@ -1,7 +1,7 @@
 // 美术替换工作流大脑自检（REQ-DEMO-T1·工作流档 §六 部分口径的单测层）：
 // 列表推导（kind/spec/编号确定性）· palette-snap · 批量 mock 生成 + 缓存续跑 · 对位替换。
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger } from './art-replace.mjs';
@@ -17,7 +17,8 @@ const MANIFEST = {
     silent: { Sprite: { type: 'Sprite', textureKey: 'hero_idle' } }, // 非 art: → 不入台账
   },
 };
-const withRoot = (fn) => { const r = mkdtempSync(join(tmpdir(), 'artrep-')); try { return fn(r); } finally { rmSync(r, { recursive: true, force: true }); } };
+// 注意 await：fn 是 async 时若同步 finally，rmSync 会在测试跑到一半时把临时根删掉（预置文件消失的假阴/假阳）。
+const withRoot = async (fn) => { const r = mkdtempSync(join(tmpdir(), 'artrep-')); try { return await fn(r); } finally { rmSync(r, { recursive: true, force: true }); } };
 
 describe('T1 ① 列表推导', () => {
   it('只收 art: 槽位·编号按槽位标识确定性分配（重跑不漂移）', () => {
@@ -70,10 +71,10 @@ describe('T1 ④ 批量生成 + 断点续跑', () => {
     const r = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true, at: '2026-07-09T00:00:00Z' });
     expect(r.ok).toBe(true);
     expect(r.summary).toMatchObject({ total: 4, generated: 4, cached: 0, failed: 0 });
-    expect(existsSync(join(root, 'public/games/g/art/gen/art-03.png'))).toBe(true); // hero sprite
-    expect(existsSync(join(root, 'public/games/g/art/gen/art-02.glb'))).toBe(true); // coin3d model
+    expect(existsSync(join(root, 'public/games/g/art/gen/mock/art-03.png'))).toBe(true); // hero sprite（mock 独立命名空间）
+    expect(existsSync(join(root, 'public/games/g/art/gen/mock/art-02.glb'))).toBe(true); // coin3d model
     const idx = JSON.parse(readFileSync(join(root, 'public/games/g/art/index.json'), 'utf8'));
-    expect(idx.assets.some((a) => a.id === 'gen/art-03')).toBe(true);
+    expect(idx.assets.some((a) => a.id === 'gen/mock/art-03')).toBe(true);
     const row = l.rows.find((x) => x.no === 'art-03');
     expect(row.status).toBe('generated');
     expect(row.provenance).toMatchObject({ date: '2026-07-09T00:00:00Z' });
@@ -99,10 +100,10 @@ describe('T1 ⑤ 对位替换', () => {
   it('generated 行重钉 manifest 引用为本地 id·status→replaced·原 manifest 不改', () => withRoot(async (root) => {
     const l = deriveLedger(MANIFEST, { game: 'g' });
     await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true });
-    const rep = applyReplacements(MANIFEST, l);
+    const rep = applyReplacements(MANIFEST, l, { allowMock: true }); // 机械验证：钉回路径本身（生产端点默认拒 mock）
     expect(rep.replaced).toBe(4);
-    expect(rep.manifest.entities.hero.Sprite.textureKey).toBe('gen/art-03'); // 不再是 art:
-    expect(rep.manifest.entities.coin3d.Model3D.modelKey).toBe('gen/art-02');
+    expect(rep.manifest.entities.hero.Sprite.textureKey).toBe('gen/mock/art-03'); // 不再是 art:（mock 钉的是 mock 命名空间）
+    expect(rep.manifest.entities.coin3d.Model3D.modelKey).toBe('gen/mock/art-02');
     expect(rep.manifest.entities.silent.Sprite.textureKey).toBe('hero_idle'); // 非 art: 不动
     expect(MANIFEST.entities.hero.Sprite.textureKey).toBe('art:brave knight'); // 原 manifest 未改
     expect(l.rows.every((r) => r.status === 'replaced')).toBe(true);
@@ -118,6 +119,42 @@ describe('T1 ⑤ 对位替换', () => {
     expect(l.rows.map((x) => x.no)).toEqual(beforeNos); // 编号全不动
     expect(r.summary.cached).toBe(3); // 其余 3 行命中缓存不动（不重扣费）
     expect(r.summary.generated).toBe(1); // 只重生成 art-03
+  }));
+});
+
+describe('mock 永不写回（owner 2026-07-10「Mock 数据不该这样做」·生产默认）', () => {
+  it('默认 applyReplacements 跳过 mock 行：manifest 保持原始 art: 引用·skippedMock 计数', () => withRoot(async (root) => {
+    const l = deriveLedger(MANIFEST, { game: 'g' });
+    await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true });
+    const rep = applyReplacements(MANIFEST, l); // 无 allowMock=生产语义
+    expect(rep.replaced).toBe(0);
+    expect(rep.skippedMock).toBe(4);
+    expect(rep.manifest.entities.hero.Sprite.textureKey).toBe('art:brave knight'); // 观感=原始 placeholder
+    expect(l.rows.every((r) => r.status === 'generated')).toBe(true); // 墙上可见（⚙MOCK）但不上画面
+  }));
+  it('mock 行不登记 skinKey 别名（编译期游戏画面不吃 mock）', () => withRoot(async (root) => {
+    const SKINNED = { entities: { body: { Sprite: { type: 'Sprite', textureKey: 'q/hero', anchorX: 0.5, anchorY: 0.5, zOrder: 0 }, Shape: { type: 'Shape', width: 24, height: 24 }, Color: { type: 'Color', tint: 0x112233, alpha: 1 } } } };
+    const l = deriveRequirements(SKINNED, { game: 'g' });
+    await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true, only: l.rows[0].no });
+    const idx = JSON.parse(readFileSync(join(root, 'public', 'games', 'g', 'art', 'index.json'), 'utf8'));
+    const ids = idx.assets.map((a) => a.id);
+    expect(ids).toContain('gen/mock/' + l.rows[0].no); // 产物在（墙预览用·mock 命名空间）
+    expect(ids).not.toContain('q/hero'); // 别名不登记 → 游戏保持原始观感
+  }));
+  it('mock 产物独立命名空间：绝不覆盖已存在的真图文件与 index 条目（后门回归）', () => withRoot(async (root) => {
+    // 伪造一份"真图"占据 gen/art-03（已钉死游戏正在消费的文件与 id）
+    const genDir = join(root, 'public', 'games', 'g', 'art', 'gen');
+    mkdirSync(genDir, { recursive: true });
+    writeFileSync(join(genDir, 'art-03.png'), 'REAL-ART-BYTES');
+    const idxFile = join(root, 'public', 'games', 'g', 'art', 'index.json');
+    writeFileSync(idxFile, JSON.stringify({ version: 1, assets: [{ id: 'gen/art-03', type: 'texture', description: '真图', path: '/games/g/art/gen/art-03.png', provenance: { mock: false } }] }));
+    const l = deriveLedger(MANIFEST, { game: 'g' });
+    await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true });
+    expect(readFileSync(join(genDir, 'art-03.png'), 'utf8')).toBe('REAL-ART-BYTES'); // 真图文件一字未动
+    const idx = JSON.parse(readFileSync(idxFile, 'utf8'));
+    const real = idx.assets.find((a) => a.id === 'gen/art-03');
+    expect(real.description).toBe('真图'); // 真图 index 条目未被 mock 顶替
+    expect(idx.assets.some((a) => a.id === 'gen/mock/art-03')).toBe(true); // mock 落在自己的命名空间
   }));
 });
 
@@ -231,14 +268,14 @@ describe('皮肤槽写回（编译期游戏线·R2 ①）', () => {
     expect(l.rows[0].skinKey).toBe('q/hero');
     expect(l.rows[0].placeholder.current).toContain('皮肤槽 q/hero');
   });
-  it('batchGenerate 对带 skinKey 的行双登记：gen id + 皮肤别名（写回=登记别名）', async () => {
+  it('batchGenerate 对带 skinKey 的行双登记：gen id + 皮肤别名（写回=登记别名·机械验证 allowMock）', async () => {
     await withRoot(async (root) => {
       const l = deriveRequirements(SKINNED, { game: 'g' });
-      const res = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true, only: l.rows[0].no });
+      const res = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true, only: l.rows[0].no, allowMock: true });
       expect(res.summary.generated).toBe(1);
       const idx = JSON.parse(readFileSync(join(root, 'public', 'games', 'g', 'art', 'index.json'), 'utf8'));
       const ids = idx.assets.map((a) => a.id);
-      expect(ids).toContain('gen/' + l.rows[0].no);
+      expect(ids).toContain('gen/mock/' + l.rows[0].no);
       expect(ids).toContain('q/hero'); // 别名=游戏消费的皮肤 key
       expect(idx.assets.find((a) => a.id === 'q/hero').tags).toContain('skin');
     });
@@ -289,7 +326,7 @@ describe('已替换槽位 re-derive 不墓碑（game-m 撞出·2026-07-09）', (
     await withRoot(async (root) => {
       const prev = deriveLedger(MANIFEST, { game: 'g' });
       await batchGenerate(prev, 'pixel-retro', { root, game: 'g', mock: true });
-      const rep = applyReplacements(JSON.parse(JSON.stringify(MANIFEST)), prev);
+      const rep = applyReplacements(JSON.parse(JSON.stringify(MANIFEST)), prev, { allowMock: true });
       // 重推导：替换后的 manifest 里 art: 引用已消失
       const merged = mergeLedger(prev, deriveLedger(rep.manifest, { game: 'g' }));
       const hero = merged.rows.find((r) => r.slot.entity === 'hero');

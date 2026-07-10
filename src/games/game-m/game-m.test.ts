@@ -40,17 +40,18 @@ function play(): { t0: number[]; afterDress: number[]; afterHair: [number, numbe
   let wornSkin = '';
   for (const [eid] of w.query('Sprite', 'Tag')) {
     const sp = w.getComponent<Sprite>(eid, 'Sprite')!;
-    if (sp.textureKey.startsWith('gen/')) wornSkin = sp.textureKey;
+    if (sp.textureKey.startsWith('gen/') || sp.textureKey.startsWith('art:')) wornSkin = sp.textureKey;
   }
   click('thumb-h0'); // 换回金卷发 → 失标
   return { t0, afterDress, afterHair, afterBack: star(), wornSkin };
 }
 
 describe('game-m Wardrobe Voyage（manifest 走查）', () => {
-  it('manifest 解析零 error·prefab 模板内美术引用也已钉死', () => {
+  it('manifest 解析零 error·出厂态=art: 详细引用（含 prefab 模板槽·mock 永不写回）', () => {
     const bp = parseManifest(raw) as { errors?: unknown[] };
     expect(bp.errors ?? []).toHaveLength(0);
-    expect(JSON.stringify(raw)).not.toContain('"art:');
+    expect(JSON.stringify(raw)).toContain('"art:');
+    expect(JSON.stringify(raw)).not.toContain('gen/art-');
   });
   it('穿脱=实体生灭·属性=群计数重算·主题达标星亮/失标星灭·上身新衣带钉死资产', () => {
     const r = play();
@@ -58,7 +59,7 @@ describe('game-m Wardrobe Voyage（manifest 走查）', () => {
     expect(r.afterDress).toEqual([6, 0, 3]); // 晚礼服替水手裙
     expect(r.afterHair).toEqual([4, 5, true]); // 达标（优雅≥4 且 甜美≥4）
     expect(r.afterBack).toBe(false); // 失标即灭
-    expect(r.wornSkin).toMatch(/^gen\//); // prefab 皮肤闭环
+    expect(r.wornSkin).toMatch(/^art:/); // 出厂态：上身新衣=原始引用（真图写回后变 gen/·由管线测试守） 
   });
   it('确定性：双跑一致', () => {
     expect(play()).toEqual(play());

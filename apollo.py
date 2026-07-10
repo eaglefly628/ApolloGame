@@ -1691,8 +1691,8 @@ def handle_art_replace(body: dict) -> dict:
         return {'success': False, 'error': '替换未产出 manifest'}
     data = _put_manifest_anywhere(slug, manifest, '美术批量替换（art-replace）')  # 零 error 铁律（library 版本化/内置直写）
     if data.get('success'):
-        print(c("  [ART]", 'g'), f"replace {slug} → 重钉 {res.get('replaced')} 引用·已落盘")
-    return {'success': bool(data.get('success')), 'replaced': res.get('replaced'), **data}
+        print(c("  [ART]", 'g'), f"replace {slug} → 重钉 {res.get('replaced')} 引用·跳过 mock {res.get('skippedMock', 0)}·已落盘")
+    return {'success': bool(data.get('success')), 'replaced': res.get('replaced'), 'skippedMock': res.get('skippedMock', 0), **data}
 
 # ── T2 点名替换（三式）+ 换皮（REQ-DEMO-T2）───────────────────────────────────────
 # 单槽重解析地基：regenerate=重新生成(可改prompt)·swap=从共享库选换·upload=上传替换；三式都过
@@ -1777,6 +1777,10 @@ def handle_art_approve(body: dict) -> dict:
         if no != 'all' and r.get('no') != no:
             continue
         if r.get('status') in ('replaced', 'filled'):
+            if (r.get('gen') or {}).get('mock'):
+                if no != 'all':
+                    return {'success': False, 'error': f'{no} 是 mock 占位——mock 产物不可复核（真图生成后再过人门）'}
+                continue
             r['status'] = 'approved'
             r.setdefault('history', []).append({'action': 'approve'})
             hit += 1

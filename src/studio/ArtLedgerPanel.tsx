@@ -14,7 +14,7 @@ import { SHELL, sBtn, sInput, sBadge, sChecker, sLabel } from '../ui/shell-theme
 const API = 'http://localhost:4000';
 
 interface Provenance { readonly model?: string; readonly prompt?: string; readonly date?: string; readonly license?: string }
-interface Gen { readonly provider?: string; readonly source?: string; readonly model?: string; readonly prompt?: string; readonly servedPath?: string; readonly localId?: string; readonly pack?: string }
+interface Gen { readonly provider?: string; readonly source?: string; readonly model?: string; readonly prompt?: string; readonly servedPath?: string; readonly localId?: string; readonly pack?: string; readonly mock?: boolean }
 interface Hist { readonly action?: string; readonly at?: string; readonly assetId?: string }
 export interface LedgerRow {
   readonly no: string;
@@ -39,7 +39,7 @@ const SOURCE_BADGE = (r: LedgerRow): { text: string; tone: 'ok' | 'warn' | 'dim'
   if (r.status === 'approved') return { text: '✅ 已复核', tone: 'ok' }; // double verify 第二道门（人）
   if (s === 'library') return { text: '📚 库', tone: 'ok' };
   if (s === 'upload') return { text: '⬆ 上传', tone: 'ok' };
-  if (r.status === 'replaced' || r.status === 'generated' || r.status === 'filled') return { text: r.gen?.model?.includes('mock') ? '⚙ MOCK' : '✨ 生成', tone: r.gen?.model?.includes('mock') ? 'warn' : 'ok' };
+  if (r.status === 'replaced' || r.status === 'generated' || r.status === 'filled') { const mk = r.gen?.mock || r.gen?.model?.includes('mock'); return { text: mk ? '⚙ MOCK' : '✨ 生成', tone: mk ? 'warn' : 'ok' }; }
   return { text: r.status === 'needs-art' ? '待配' : '占位', tone: 'dim' };
 };
 // 缩略图 URL：生成的 2D 走 servedPath；其它退化为图标。
@@ -66,7 +66,7 @@ function swatchDataUri(r: LedgerRow): string | null {
 function PipelineSteps({ rows, stylePrompt, packSet }: { rows: LedgerRow[]; stylePrompt: string; packSet: boolean }) {
   const live = rows.filter((r) => r.status !== 'retired');
   const genLike = live.filter((r) => ['generated', 'replaced', 'filled', 'approved'].includes(r.status));
-  const mockN = live.filter((r) => r.gen?.model?.includes('mock')).length;
+  const mockN = live.filter((r) => r.gen?.mock || r.gen?.model?.includes('mock')).length;
   const wroteN = live.filter((r) => ['replaced', 'filled', 'approved'].includes(r.status)).length;
   const okN = live.filter((r) => r.status === 'approved').length;
   const steps: Array<{ name: string; tone: 'ok' | 'warn' | 'dim'; note: string }> = [
@@ -164,11 +164,14 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
     try {
       const b = await fetch(`${API}/api/art/batch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, packId: reskinPack, mock: mockRun, ...(genProvider ? { provider: genProvider } : {}) }) }).then((r) => r.json() as Promise<{ success?: boolean; error?: string; summary?: { generated?: number; cached?: number; mock?: number } }>);
       if (!b.success) { flash(false, `✕ ${b.error ?? '批量失败'}`); return; }
+      let mockSkipNote = '';
       if (mode === 'library') {
-        const rep = await fetch(`${API}/api/art/replace`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug }) }).then((r) => r.json() as Promise<{ success?: boolean; error?: string }>);
+        const rep = await fetch(`${API}/api/art/replace`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug }) }).then((r) => r.json() as Promise<{ success?: boolean; error?: string; skippedMock?: number }>);
         if (!rep.success) { flash(false, `✕ 重钉引用失败: ${rep.error ?? ''}`); return; }
+        // mock 永不写回（owner 07-10）：明说而非装作钉了——游戏保持原始 placeholder 观感，真图后自动钉。
+        if ((rep.skippedMock ?? 0) > 0) mockSkipNote = ` · MOCK ${rep.skippedMock} 不写回（仅墙预览·真图后再钉）`;
       }
-      flash(true, `✓ 全量：生成 ${b.summary?.generated ?? 0} · 缓存 ${b.summary?.cached ?? 0}${(b.summary?.mock ?? 0) > 0 ? ` · MOCK ${b.summary?.mock}` : ''}`);
+      flash(true, `✓ 全量：生成 ${b.summary?.generated ?? 0} · 缓存 ${b.summary?.cached ?? 0}${(b.summary?.mock ?? 0) > 0 ? ` · MOCK ${b.summary?.mock}` : ''}${mockSkipNote}`);
       load(); onChanged?.();
     } catch (e) { flash(false, `✕ ${String(e)}`); }
     finally { setBusy(false); }

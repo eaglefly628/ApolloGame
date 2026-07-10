@@ -98,7 +98,7 @@
 
 ## 六、验收口径
 
-1. 全链 smoke（mock）：生成游戏→列表推导（行数=manifest 美术槽数·spec 字段非空）→批量 mock 生成→全部 status=replaced→parseManifest 零 error→游戏可玩。
+1. 全链 smoke（mock）：生成游戏→列表推导（行数=manifest 美术槽数·spec 字段非空）→批量 mock 生成（落独立命名空间 gen/mock/·台账 generated+gen.mock 明标）→**生产端点 0 写回**（mock 永不重钉/不登皮肤别名/不可复核——owner 2026-07-10「Mock 数据不该这样做」，真图前游戏保持原始 placeholder 观感）→重钉机械路径由 CLI `--allow-mock` 冒烟专用腿单独自证（parseManifest 零 error 照旧）→游戏可玩且观感与替换前一字不变。
 2. 断点续跑：批处理中途杀进程→重跑→只补 queued/失败行，replaced 行不重扣费（缓存命中）。
 3. 真 key 一款端到端：placeholder 版可玩 → 批量换装后可玩且风格成套（缩略图墙人验）。
 4. 编号稳定性断言：改一行重跑，其余行编号与资产不动。

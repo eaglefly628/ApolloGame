@@ -26,7 +26,7 @@
 
 - **禁纯色块游戏**：主体视觉实体必须有皮肤槽（art: 或 Sprite+skinKey）——没槽=不可换皮=生成线白搭（game-q 初版=反面教材）。
 - **编号 append-only**：台账编号永不挪号（重跑合并·墓碑保号）；改提示词改台账行，**勿手改 md 当真相**。
-- **mock 只许显式**：不勾=真调尝试；无 key 必须见探针输出——静默顶替=假绿（testing.md 红线）。
+- **mock 只许显式，且永不上画面（owner 07-10）**：不勾=真调尝试；无 key 必须见探针输出——静默顶替=假绿（testing.md 红线）。mock 产物只落独立命名空间 `gen/mock/`（gitignored）供平台墙预览（⚙MOCK 标）：**不写回 manifest、不登记 skinKey 别名、不可 approve**——真图到位前游戏保持原始 placeholder 观感。把 mock 钉进游戏=事故（game-j/m 2026-07-10 反面教材）。
 - **写回必过校验门**：library 线 parseManifest 零 error；编译期线只走别名登记，**绝不改蓝图代码来换皮**。
 - key 只进设置面板/.env（打码回显·不落日志）；进**共享货架**仍必须 M2.5 人审门。
 

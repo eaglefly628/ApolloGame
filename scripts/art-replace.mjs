@@ -379,7 +379,7 @@ export async function genRowAsset(row, pack, { mock = true, apiKey = null, gameS
 // ═══ ④ 批量生成器（并发留给 apollo 层·此处确定性顺序·缓存/续跑/探针）═══
 
 /** 逐行生成落盘 + 登记游戏本地 index + 更新台账。断点续跑=命中缓存(cacheKey+文件在)不重扣费；无 key=探针+mock。 */
-export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = true, env = process.env, at = new Date().toISOString(), only = null, provider: providerOverride = null } = {}) {
+export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = true, env = process.env, at = new Date().toISOString(), only = null, provider: providerOverride = null, allowMock = false } = {}) {
   const pack = STYLE_PACKS[packId];
   if (!pack) return { ok: false, error: `未知风格包: ${packId}` };
   if (!game) return { ok: false, error: 'batchGenerate 需要 game' };
@@ -396,18 +396,20 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     summary.total++;
     const provider = provFor(row, pack, providerOverride);
     const ext = row.kind === 'model3d' ? 'glb' : 'png';
-    const outRel = `gen/${row.no}.${ext}`;
-    const outAbs = genAbs(root, game, outRel);
-    const ck = cacheKey(provider, dialectPrompt(row, pack, gameStyle), pack.params);
-    if (['generated', 'replaced'].includes(row.status) && row.gen?.cacheKey === ck && existsSync(outAbs)) { summary.cached++; continue; } // 命中·不重扣费
     const apiKey = env[ENVKEY[provider]] || null;
     if (!mock && !apiKey) summary.probes.push({ no: row.no, provider, envKey: ENVKEY[provider], configured: false, note: '未配 key → mock 占位（绝不静默顶替）' });
     const useMock = mock || !apiKey;
+    // mock 产物独立命名空间 gen/mock/*（owner 2026-07-10「Mock 数据不该这样做」）：mock 的文件路径与
+    // index id 绝不与真图 gen/art-NN 同名——否则已钉死真图的游戏一跑 mock 批就被覆盖上画面（后门泄漏）。
+    const outRel = useMock ? `gen/mock/${row.no}.${ext}` : `gen/${row.no}.${ext}`;
+    const outAbs = genAbs(root, game, outRel);
+    const ck = cacheKey(provider, dialectPrompt(row, pack, gameStyle), pack.params);
+    if (['generated', 'replaced'].includes(row.status) && row.gen?.cacheKey === ck && existsSync(outAbs)) { summary.cached++; continue; } // 命中·不重扣费
     let a;
     try { a = await genRowAsset(row, pack, { mock: useMock, apiKey, gameStyle, provider: providerOverride }); }
     catch (e) { row.status = 'failed'; row.gen = { provider, error: String(e).slice(0, 200) }; summary.failed++; continue; }
     mkdirSync(dirname(outAbs), { recursive: true }); writeFileSync(outAbs, a.buffer);
-    const id = `gen/${row.no}`;
+    const id = useMock ? `gen/mock/${row.no}` : `gen/${row.no}`;
     const servedPath = `/games/${game}/art/${outRel}`;
     const entry = {
       id, type: row.kind === 'model3d' ? 'mesh' : 'texture', description: `${row.query} · 生成(${packId}${a.mock ? '·mock' : ''})`,
@@ -418,9 +420,11 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     byId.set(id, entry);
     // 写回=登记别名（编译期游戏线）：行带 skinKey → 同产物再登记一条 id=skinKey；游戏 mount 时按
     // skinKey resolve → chooseRenderMode 贴图就绪即盖过 Shape 上画面。蓝图零改动（工作流档 §二⑤）。
-    if (row.skinKey) byId.set(row.skinKey, { ...entry, id: row.skinKey, description: `${row.query} · 皮肤槽(${row.skinKey})`, tags: [...entry.tags, 'skin'] });
+    // mock 不上画面（owner 2026-07-10「Mock 数据不该这样做」）：皮肤别名只在真图时登记——
+    // 真图前游戏保持原始观感（Shape 回退/freelib placeholder）。mock 产物仅供平台墙预览。
+    if (row.skinKey && (!a.mock || allowMock)) byId.set(row.skinKey, { ...entry, id: row.skinKey, description: `${row.query} · 皮肤槽(${row.skinKey})`, tags: [...entry.tags, 'skin'] });
     row.status = 'generated';
-    row.gen = { provider: a.provider, model: a.model, prompt: a.prompt, cacheKey: ck, pack: packId, servedPath, localId: id };
+    row.gen = { provider: a.provider, model: a.model, prompt: a.prompt, cacheKey: ck, pack: packId, servedPath, localId: id, mock: !!a.mock };
     row.provenance = { model: a.model, prompt: a.prompt, date: at, license: LICENSE[a.provider] }; // M2.5 口径硬字段
     summary.generated++; if (a.mock) summary.mock++;
   }
@@ -432,11 +436,13 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
 // ═══ ⑤ 对位替换（按编号重钉 manifest 引用·工作流档 §二⑤）═══
 
 /** 把 generated 行的 manifest 落点从 art: 串重钉为生成资产的本地 id；status→replaced。纯函数·不改输入 manifest。 */
-export function applyReplacements(manifest, ledger) {
+export function applyReplacements(manifest, ledger, { allowMock = false } = {}) {
   const m = JSON.parse(JSON.stringify(manifest));
   let replaced = 0;
+  let skippedMock = 0;
   for (const row of ledger.rows) {
     if (row.status !== 'generated' || !row.gen?.localId) continue;
+    if (row.gen.mock && !allowMock) { skippedMock++; continue; } // mock 永不写回（真图前保持原始 placeholder 观感）
     const { entity, component, field } = row.slot;
     let comp = null;
     if (entity.startsWith('prefab:')) {
@@ -448,7 +454,7 @@ export function applyReplacements(manifest, ledger) {
     }
     if (comp && typeof comp === 'object' && !Array.isArray(comp)) { comp[field] = row.gen.localId; row.status = 'replaced'; replaced++; }
   }
-  return { manifest: m, ledger, replaced };
+  return { manifest: m, ledger, replaced, skippedMock };
 }
 
 // ═══ T2 ① 单槽重解析（换皮/点名优化共用地基）+ ④ 三式替换 ═══
@@ -521,6 +527,7 @@ async function run(argv) {
     return;
   }
   const pvi = argv.indexOf('--provider'); const providerArg = pvi >= 0 ? argv[pvi + 1] : null;
+  const allowMock = argv.includes('--allow-mock'); // 仅测试/冒烟机械验证·端点永不传
   if (cmd === 'batch') {
     const packId = argv[2];
     const mock = argv.includes('--mock');
@@ -536,9 +543,9 @@ async function run(argv) {
     const mf = readJson(manifestFile(ROOT, slug), null);
     const ledger = readJson(ledgerFile(ROOT, slug), null);
     if (!mf || !ledger) { console.error('缺 manifest 或台账'); process.exit(1); }
-    const res = applyReplacements(mf, ledger);
+    const res = applyReplacements(mf, ledger, { allowMock });
     writeJson(ledgerFile(ROOT, slug), res.ledger);
-    console.log(JSON.stringify({ ok: true, slug, replaced: res.replaced, manifest: res.manifest }));
+    console.log(JSON.stringify({ ok: true, slug, replaced: res.replaced, skippedMock: res.skippedMock, manifest: res.manifest }));
     return;
   }
   // T2 点名「重新生成」单槽（可改 query）：reset 该行 → 批处理只重跑它 → 重钉引用。
@@ -552,7 +559,7 @@ async function run(argv) {
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
     const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg });
     if (!b.ok) { console.log(JSON.stringify(b)); process.exit(1); }
-    const rep = applyReplacements(mf, ledger);
+    const rep = applyReplacements(mf, ledger, { allowMock });
     writeJson(ledgerFile(ROOT, slug), ledger);
     console.log(JSON.stringify({ ok: true, slug, no, summary: b.summary, manifest: rep.manifest, row: ledger.rows.find((r) => r.no === no) }));
     return;
@@ -577,7 +584,7 @@ async function run(argv) {
     ledger.game = slug; resetAllRows(ledger);
     const b = await batchGenerate(ledger, packId, { game: slug, mock });
     if (!b.ok) { console.log(JSON.stringify(b)); process.exit(1); }
-    const rep = applyReplacements(mf, ledger);
+    const rep = applyReplacements(mf, ledger, { allowMock });
     writeJson(ledgerFile(ROOT, slug), ledger);
     console.log(JSON.stringify({ ok: true, slug, packId, summary: b.summary, manifest: rep.manifest }));
     return;

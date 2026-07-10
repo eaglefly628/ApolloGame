@@ -24,25 +24,16 @@
       },
       "desc": "candy kingdom meadow, pastel pink sky, rolling sugar hills, lollipop trees, soft clouds, storybook wide background, rectangular shape, main color #fdf2f8, large on screen, top-down 2d game view",
       "context": "用途=bg·实体「background」·查询「candy kingdom meadow, pastel pink sky, rolling sugar hills, lollipop trees, soft clouds, storybook wide background」·2D 平面·全屏·不透明满幅",
-      "status": "approved",
-      "gen": {
-        "provider": "qwen",
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "candy kingdom meadow, pastel pink sky, rolling sugar hills, lollipop trees, soft clouds, storybook wide background, candy kingdom meadow, pastel pink sky, rolling sugar hills, lollipop trees, soft clouds, storybook wide background, rectangular shape, main color #fdf2f8, large on screen, top-down 2d game view, 背景图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "cacheKey": "0660fb0b0c5fa42f",
-        "pack": "disney-supercell",
-        "servedPath": "/games/game-j/art/gen/art-01.png",
-        "localId": "gen/art-01"
-      },
-      "provenance": {
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "candy kingdom meadow, pastel pink sky, rolling sugar hills, lollipop trees, soft clouds, storybook wide background, candy kingdom meadow, pastel pink sky, rolling sugar hills, lollipop trees, soft clouds, storybook wide background, rectangular shape, main color #fdf2f8, large on screen, top-down 2d game view, 背景图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "date": "2026-07-09T17:01:13.755Z",
-        "license": "Qwen/DashScope 万相 (按订阅授权)"
-      },
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null,
       "history": [
         {
           "action": "approve"
+        },
+        {
+          "action": "mock-purge",
+          "note": "owner 2026-07-10：mock 不该成为观感·退回原始 placeholder"
         }
       ]
     },
@@ -68,22 +59,9 @@
       },
       "desc": "glossy strawberry hard candy, ruby red, rounded heart shape, thick white outline, cute glossy highlight, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "context": "用途=sprite·实体「tiledef-0」·查询「glossy strawberry hard candy, ruby red, rounded heart shape, thick white outline, cute glossy highlight, top-down 2d match-3 game tile icon」·2D 平面·画面占比小·需透明底",
-      "status": "approved",
-      "gen": {
-        "provider": "qwen",
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "glossy strawberry hard candy, ruby red, rounded heart shape, thick white outline, cute glossy highlight, top-down 2d match-3 game tile icon, glossy strawberry hard candy, ruby red, rounded heart shape, thick white outline, cute glossy highlight, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "cacheKey": "81e0489a07692500",
-        "pack": "disney-supercell",
-        "servedPath": "/games/game-j/art/gen/art-02.png",
-        "localId": "gen/art-02"
-      },
-      "provenance": {
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "glossy strawberry hard candy, ruby red, rounded heart shape, thick white outline, cute glossy highlight, top-down 2d match-3 game tile icon, glossy strawberry hard candy, ruby red, rounded heart shape, thick white outline, cute glossy highlight, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "date": "2026-07-10T03:22:00.582Z",
-        "license": "Qwen/DashScope 万相 (按订阅授权)"
-      },
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null,
       "history": [
         {
           "action": "regen",
@@ -93,6 +71,10 @@
         },
         {
           "action": "approve"
+        },
+        {
+          "action": "mock-purge",
+          "note": "owner 2026-07-10：mock 不该成为观感·退回原始 placeholder"
         }
       ]
     },
@@ -118,25 +100,16 @@
       },
       "desc": "lemon drop candy, bright sunny yellow, teardrop shape, thick white outline, glossy sparkle, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "context": "用途=sprite·实体「tiledef-1」·查询「lemon drop candy, bright sunny yellow, teardrop shape, thick white outline, glossy sparkle, top-down 2d match-3 game tile icon」·2D 平面·画面占比小·需透明底",
-      "status": "approved",
-      "gen": {
-        "provider": "qwen",
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "lemon drop candy, bright sunny yellow, teardrop shape, thick white outline, glossy sparkle, top-down 2d match-3 game tile icon, lemon drop candy, bright sunny yellow, teardrop shape, thick white outline, glossy sparkle, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "cacheKey": "9d6e695e39891204",
-        "pack": "disney-supercell",
-        "servedPath": "/games/game-j/art/gen/art-03.png",
-        "localId": "gen/art-03"
-      },
-      "provenance": {
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "lemon drop candy, bright sunny yellow, teardrop shape, thick white outline, glossy sparkle, top-down 2d match-3 game tile icon, lemon drop candy, bright sunny yellow, teardrop shape, thick white outline, glossy sparkle, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "date": "2026-07-09T17:01:13.755Z",
-        "license": "Qwen/DashScope 万相 (按订阅授权)"
-      },
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null,
       "history": [
         {
           "action": "approve"
+        },
+        {
+          "action": "mock-purge",
+          "note": "owner 2026-07-10：mock 不该成为观感·退回原始 placeholder"
         }
       ]
     },
@@ -162,25 +135,16 @@
       },
       "desc": "blueberry gummy candy, deep blue, plump round berry, thick white outline, soft glossy shine, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "context": "用途=sprite·实体「tiledef-2」·查询「blueberry gummy candy, deep blue, plump round berry, thick white outline, soft glossy shine, top-down 2d match-3 game tile icon」·2D 平面·画面占比小·需透明底",
-      "status": "approved",
-      "gen": {
-        "provider": "qwen",
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "blueberry gummy candy, deep blue, plump round berry, thick white outline, soft glossy shine, top-down 2d match-3 game tile icon, blueberry gummy candy, deep blue, plump round berry, thick white outline, soft glossy shine, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "cacheKey": "8480b4df1eb7dd0d",
-        "pack": "disney-supercell",
-        "servedPath": "/games/game-j/art/gen/art-04.png",
-        "localId": "gen/art-04"
-      },
-      "provenance": {
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "blueberry gummy candy, deep blue, plump round berry, thick white outline, soft glossy shine, top-down 2d match-3 game tile icon, blueberry gummy candy, deep blue, plump round berry, thick white outline, soft glossy shine, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "date": "2026-07-09T17:01:13.755Z",
-        "license": "Qwen/DashScope 万相 (按订阅授权)"
-      },
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null,
       "history": [
         {
           "action": "approve"
+        },
+        {
+          "action": "mock-purge",
+          "note": "owner 2026-07-10：mock 不该成为观感·退回原始 placeholder"
         }
       ]
     },
@@ -206,25 +170,16 @@
       },
       "desc": "green apple jelly candy, vivid green, apple silhouette with tiny leaf, thick white outline, juicy gloss, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "context": "用途=sprite·实体「tiledef-3」·查询「green apple jelly candy, vivid green, apple silhouette with tiny leaf, thick white outline, juicy gloss, top-down 2d match-3 game tile icon」·2D 平面·画面占比小·需透明底",
-      "status": "approved",
-      "gen": {
-        "provider": "qwen",
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "green apple jelly candy, vivid green, apple silhouette with tiny leaf, thick white outline, juicy gloss, top-down 2d match-3 game tile icon, green apple jelly candy, vivid green, apple silhouette with tiny leaf, thick white outline, juicy gloss, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "cacheKey": "8cbbfa75d3bfa8bd",
-        "pack": "disney-supercell",
-        "servedPath": "/games/game-j/art/gen/art-05.png",
-        "localId": "gen/art-05"
-      },
-      "provenance": {
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "green apple jelly candy, vivid green, apple silhouette with tiny leaf, thick white outline, juicy gloss, top-down 2d match-3 game tile icon, green apple jelly candy, vivid green, apple silhouette with tiny leaf, thick white outline, juicy gloss, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "date": "2026-07-09T17:01:13.755Z",
-        "license": "Qwen/DashScope 万相 (按订阅授权)"
-      },
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null,
       "history": [
         {
           "action": "approve"
+        },
+        {
+          "action": "mock-purge",
+          "note": "owner 2026-07-10：mock 不该成为观感·退回原始 placeholder"
         }
       ]
     },
@@ -250,25 +205,16 @@
       },
       "desc": "grape swirl lollipop candy, royal purple, spiral swirl disc, thick white outline, candy gloss, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "context": "用途=sprite·实体「tiledef-4」·查询「grape swirl lollipop candy, royal purple, spiral swirl disc, thick white outline, candy gloss, top-down 2d match-3 game tile icon」·2D 平面·画面占比小·需透明底",
-      "status": "approved",
-      "gen": {
-        "provider": "qwen",
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "grape swirl lollipop candy, royal purple, spiral swirl disc, thick white outline, candy gloss, top-down 2d match-3 game tile icon, grape swirl lollipop candy, royal purple, spiral swirl disc, thick white outline, candy gloss, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "cacheKey": "d3e457e06ad55ae0",
-        "pack": "disney-supercell",
-        "servedPath": "/games/game-j/art/gen/art-06.png",
-        "localId": "gen/art-06"
-      },
-      "provenance": {
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "grape swirl lollipop candy, royal purple, spiral swirl disc, thick white outline, candy gloss, top-down 2d match-3 game tile icon, grape swirl lollipop candy, royal purple, spiral swirl disc, thick white outline, candy gloss, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "date": "2026-07-09T17:01:13.755Z",
-        "license": "Qwen/DashScope 万相 (按订阅授权)"
-      },
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null,
       "history": [
         {
           "action": "approve"
+        },
+        {
+          "action": "mock-purge",
+          "note": "owner 2026-07-10：mock 不该成为观感·退回原始 placeholder"
         }
       ]
     },
@@ -294,25 +240,16 @@
       },
       "desc": "orange citrus gem candy, warm orange, faceted gem wedge, thick white outline, sugary sparkle, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background",
       "context": "用途=sprite·实体「tiledef-5」·查询「orange citrus gem candy, warm orange, faceted gem wedge, thick white outline, sugary sparkle, top-down 2d match-3 game tile icon」·2D 平面·画面占比小·需透明底",
-      "status": "approved",
-      "gen": {
-        "provider": "qwen",
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "orange citrus gem candy, warm orange, faceted gem wedge, thick white outline, sugary sparkle, top-down 2d match-3 game tile icon, orange citrus gem candy, warm orange, faceted gem wedge, thick white outline, sugary sparkle, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "cacheKey": "560e48fa7caab5eb",
-        "pack": "disney-supercell",
-        "servedPath": "/games/game-j/art/gen/art-07.png",
-        "localId": "gen/art-07"
-      },
-      "provenance": {
-        "model": "wanx2.1-t2i-turbo·mock",
-        "prompt": "orange citrus gem candy, warm orange, faceted gem wedge, thick white outline, sugary sparkle, top-down 2d match-3 game tile icon, orange citrus gem candy, warm orange, faceted gem wedge, thick white outline, sugary sparkle, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "date": "2026-07-09T17:01:13.755Z",
-        "license": "Qwen/DashScope 万相 (按订阅授权)"
-      },
+      "status": "placeholder",
+      "gen": null,
+      "provenance": null,
       "history": [
         {
           "action": "approve"
+        },
+        {
+          "action": "mock-purge",
+          "note": "owner 2026-07-10：mock 不该成为观感·退回原始 placeholder"
         }
       ]
     }
