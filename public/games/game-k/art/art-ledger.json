@@ -1,0 +1,339 @@
+{
+  "version": 1,
+  "game": "game-k",
+  "mode": "requirements",
+  "count": 10,
+  "instances": 10,
+  "rows": [
+    {
+      "skinKey": "k/sym-a",
+      "no": "art-01",
+      "desc": "ace, rectangular shape, main color #df5d49, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "ace",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "ace",
+      "placeholder": {
+        "current": "皮肤槽 k/sym-a（未填时回退 2D 色块 box·#df5d49）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "ace"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 120,
+        "displayW": 120,
+        "displayH": 120,
+        "transparent": true
+      },
+      "context": "美术需求：「ace」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-a（未填时回退 2D 色块 box·#df5d49）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a carved glowing tombstone tile engraved with the letter 'A', necrotic red #ff6b6b inner glow, cracked mossy gravestone",
+      "negative": "text, watermark, signature, realistic gore, photorealistic, muted colors, cluttered, drop shadow, background scenery, extra limbs"
+    },
+    {
+      "skinKey": "k/sym-scat",
+      "no": "art-02",
+      "desc": "biohazard scatter, rectangular shape, main color #a8df49, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "biohazard-scatter",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "biohazard scatter",
+      "placeholder": {
+        "current": "皮肤槽 k/sym-scat（未填时回退 2D 色块 box·#a8df49）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "biohazard-scatter"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 120,
+        "displayW": 120,
+        "displayH": 120,
+        "transparent": true
+      },
+      "context": "美术需求：「biohazard scatter」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-scat（未填时回退 2D 色块 box·#a8df49）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a glowing biohazard toxin vial disc, radioactive green #b6f03a trefoil hazard symbol, translucent glass with inner glow, banner reading FREE SPINS, scatter symbol",
+      "negative": "text, watermark, signature, realistic gore, photorealistic, muted colors, cluttered, drop shadow, background scenery, extra limbs"
+    },
+    {
+      "skinKey": "k/sym-j",
+      "no": "art-03",
+      "desc": "jack, rectangular shape, main color #4994df, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "jack",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "jack",
+      "placeholder": {
+        "current": "皮肤槽 k/sym-j（未填时回退 2D 色块 box·#4994df）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "jack"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 120,
+        "displayW": 120,
+        "displayH": 120,
+        "transparent": true
+      },
+      "context": "美术需求：「jack」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-j（未填时回退 2D 色块 box·#4994df）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a carved glowing tombstone tile engraved with the letter 'J', necrotic blue #6aa8ff inner glow, cracked mossy gravestone",
+      "negative": "text, watermark, signature, realistic gore, photorealistic, muted colors, cluttered, drop shadow, background scenery, extra limbs"
+    },
+    {
+      "skinKey": "k/sym-k",
+      "no": "art-04",
+      "desc": "king, rectangular shape, main color #dfb249, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "king",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "king",
+      "placeholder": {
+        "current": "皮肤槽 k/sym-k（未填时回退 2D 色块 box·#dfb249）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "king"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 120,
+        "displayW": 120,
+        "displayH": 120,
+        "transparent": true
+      },
+      "context": "美术需求：「king」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-k（未填时回退 2D 色块 box·#dfb249）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a carved glowing tombstone tile engraved with the letter 'K', necrotic amber #ffd166 inner glow, cracked mossy gravestone",
+      "negative": "text, watermark, signature, realistic gore, photorealistic, muted colors, cluttered, drop shadow, background scenery, extra limbs"
+    },
+    {
+      "skinKey": "k/sym-doc",
+      "no": "art-05",
+      "desc": "mad scientist, rectangular shape, main color #dfcb49, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "mad-scientist",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "mad scientist",
+      "placeholder": {
+        "current": "皮肤槽 k/sym-doc（未填时回退 2D 色块 box·#dfcb49）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "mad-scientist"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 120,
+        "displayW": 120,
+        "displayH": 120,
+        "transparent": true
+      },
+      "context": "美术需求：「mad scientist」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-doc（未填时回退 2D 色块 box·#dfcb49）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a quirky zombie mad scientist, sallow amber-green #ffd166 face, wild frizzy white hair, cracked glowing goggles, manic toothy grin",
+      "negative": "text, watermark, signature, realistic gore, photorealistic, muted colors, cluttered, drop shadow, background scenery, extra limbs"
+    },
+    {
+      "skinKey": "k/sym-q",
+      "no": "art-06",
+      "desc": "queen, rectangular shape, main color #ad49df, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "queen",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "queen",
+      "placeholder": {
+        "current": "皮肤槽 k/sym-q（未填时回退 2D 色块 box·#ad49df）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "queen"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 120,
+        "displayW": 120,
+        "displayH": 120,
+        "transparent": true
+      },
+      "context": "美术需求：「queen」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-q（未填时回退 2D 色块 box·#ad49df）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a carved glowing tombstone tile engraved with the letter 'Q', necrotic purple #b45ef0 inner glow, cracked mossy gravestone",
+      "negative": "text, watermark, signature, realistic gore, photorealistic, muted colors, cluttered, drop shadow, background scenery, extra limbs"
+    },
+    {
+      "skinKey": "k/sym-t",
+      "no": "art-07",
+      "desc": "ten, rectangular shape, main color #49dfd5, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "ten",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "ten",
+      "placeholder": {
+        "current": "皮肤槽 k/sym-t（未填时回退 2D 色块 box·#49dfd5）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "ten"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 120,
+        "displayW": 120,
+        "displayH": 120,
+        "transparent": true
+      },
+      "context": "美术需求：「ten」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-t（未填时回退 2D 色块 box·#49dfd5）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a carved glowing tombstone tile engraved with '10', necrotic teal #5ef0d0 inner glow, cracked mossy gravestone",
+      "negative": "text, watermark, signature, realistic gore, photorealistic, muted colors, cluttered, drop shadow, background scenery, extra limbs"
+    },
+    {
+      "skinKey": "k/sym-girl",
+      "no": "art-08",
+      "desc": "undead bride, rectangular shape, main color #df49df, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "undead-bride",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "undead bride",
+      "placeholder": {
+        "current": "皮肤槽 k/sym-girl（未填时回退 2D 色块 box·#df49df）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "undead-bride"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 120,
+        "displayW": 120,
+        "displayH": 120,
+        "transparent": true
+      },
+      "context": "美术需求：「undead bride」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-girl（未填时回退 2D 色块 box·#df49df）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, an adorable undead bride girl, pale translucent purple #b45ef0 skin with subsurface glow, huge sparkling Disney eyes, flower crown, stitched sweet smile, rosy cheeks, veil",
+      "negative": "text, watermark, signature, realistic gore, photorealistic, muted colors, cluttered, drop shadow, background scenery, extra limbs"
+    },
+    {
+      "skinKey": "k/sym-dog",
+      "no": "art-09",
+      "desc": "zombie hound, rectangular shape, main color #85df49, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "zombie-hound",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "zombie hound",
+      "placeholder": {
+        "current": "皮肤槽 k/sym-dog（未填时回退 2D 色块 box·#85df49）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "zombie-hound"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 120,
+        "displayW": 120,
+        "displayH": 120,
+        "transparent": true
+      },
+      "context": "美术需求：「zombie hound」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-dog（未填时回退 2D 色块 box·#85df49）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, an adorable undead zombie puppy head, toxic-green #5ef08a flesh, stitched patch, lolling pink tongue, one little fang, big mismatched puppy-dog eyes, floppy ears",
+      "negative": "text, watermark, signature, realistic gore, photorealistic, muted colors, cluttered, drop shadow, background scenery, extra limbs"
+    },
+    {
+      "skinKey": "k/sym-wild",
+      "no": "art-10",
+      "desc": "zombie king wild, rectangular shape, main color #49df49, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "zombie-king-wild",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "zombie king wild",
+      "placeholder": {
+        "current": "皮肤槽 k/sym-wild（未填时回退 2D 色块 box·#49df49）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "zombie-king-wild"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 120,
+        "displayW": 120,
+        "displayH": 120,
+        "transparent": true
+      },
+      "context": "美术需求：「zombie king wild」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-wild（未填时回退 2D 色块 box·#49df49）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a charming undead zombie king head, decayed toxic-green #5ef08a flesh with bright glowing green eyes, exposed pink brain on top, tiny bone crown, stitched jaw, cute but spooky, banner reading WILD",
+      "negative": "text, watermark, signature, realistic gore, photorealistic, muted colors, cluttered, drop shadow, background scenery, extra limbs"
+    }
+  ]
+}

@@ -11,11 +11,33 @@ import type { Resource, RolledDice, LineWins } from '@engine/protocol/components
 import { buildBlueprint } from './blueprint.js';
 import { buildTopBar, buildBottomBar, buildOverlay, type HudState, type OverlayKind } from './hud.js';
 import { playKSfx, isMuted, setMuted } from './sounds.js';
-import { drawSymbol, prewarm } from './art.js';
+import { drawSymbol, prewarm, registerSkin } from './art.js';
 import {
   FIELD_W, FIELD_H, TOP_BAR_H, BOTTOM_BAR_H, REELS, ROWS, PAYLINES, REEL_WEIGHTS,
-  ZOMBIE_THEME, BET_MIN, winTier,
+  ZOMBIE_THEME, BET_MIN, winTier, SYMBOLS,
 } from './theme.js';
+
+// 皮肤槽加载（美术替换工作流 · fail-soft）：拉本地 art index → 按 skinKey 匹配符号 → 载真图 registerSkin
+// （就绪即换装·盖过程序化占位）。无 index / 404 / 解析失败 → 程序化观感照旧，绝不炸游戏。
+function loadSkins(): void {
+  if (typeof fetch === 'undefined') return;
+  void (async () => {
+    try {
+      const r = await fetch('/games/game-k/art/index.json', { cache: 'no-store' });
+      if (!r.ok) return;
+      const raw = await r.json();
+      const entries: Array<{ id?: string; path?: string }> = Array.isArray(raw) ? raw : Array.isArray(raw?.entries) ? raw.entries : [];
+      const byId = new Map(entries.filter((e) => e.id && e.path).map((e) => [e.id as string, e.path as string]));
+      for (const s of SYMBOLS) {
+        const path = byId.get(s.skin);
+        if (!path) continue;
+        const img = new Image();
+        img.onload = () => registerSkin(s.id, img);
+        img.src = path;
+      }
+    } catch { /* 无美术目录/解析失败 → 回退程序化·不炸游戏 */ }
+  })();
+}
 
 const STAGE_BG =
   'radial-gradient(circle at 50% 30%, #16281a 0%, #0a130c 62%, #05080600 100%),' +
@@ -23,6 +45,7 @@ const STAGE_BG =
 
 export function mount(container: HTMLElement): () => void {
   prewarm();
+  loadSkins();
 
   // ── DOM 骨架（host 容器·非 sim）：wrapper > scene > [reelCanvas(z0) + 三个 HUD host] ──
   const wrapper = document.createElement('div');

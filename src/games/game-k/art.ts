@@ -196,8 +196,15 @@ function baked(id: number): HTMLCanvasElement {
   return cv;
 }
 
-/** 把符号绘入 (x,y,size,size) 方格（缩放贴烘焙图）。 */
+// ── 皮肤槽（fail-soft）：美术平台生成真图后经 registerSkin 注入 → drawSymbol 优先贴真图，否则回退程序化。
+// 红线「主体视觉实体必须有皮肤槽」的宿主画布版：符号=视觉实体，skin 就绪即换装、零资产照跑（同 game-q chooseRenderMode）。
+const skins: Record<number, HTMLImageElement> = {};
+export function registerSkin(id: number, img: HTMLImageElement): void { skins[id] = img; }
+
+/** 把符号绘入 (x,y,size,size) 方格：有皮肤真图贴真图，否则贴程序化烘焙图。 */
 export function drawSymbol(ctx: CanvasRenderingContext2D, id: number, x: number, y: number, size: number): void {
-  ctx.drawImage(baked(id), x, y, size, size);
+  const skin = skins[id];
+  if (skin && skin.complete && skin.naturalWidth > 0) ctx.drawImage(skin, x, y, size, size);
+  else ctx.drawImage(baked(id), x, y, size, size);
 }
 export function prewarm(): void { for (const k of Object.keys(DRAW)) baked(Number(k)); }

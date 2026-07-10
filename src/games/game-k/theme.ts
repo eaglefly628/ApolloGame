@@ -12,18 +12,19 @@ export const SYM = {
 } as const;
 export type SymId = (typeof SYM)[keyof typeof SYM];
 
-export interface SymMeta { id: number; key: string; name: string; hue: number; tier: 'low' | 'high' | 'wild' | 'scatter'; }
+// skin = 皮肤槽 key（美术平台生成物按此 id 登记进 public/games/game-k/art/index.json → 就绪即盖过程序化占位）。
+export interface SymMeta { id: number; key: string; name: string; hue: number; tier: 'low' | 'high' | 'wild' | 'scatter'; skin: string; }
 export const SYMBOLS: SymMeta[] = [
-  { id: SYM.T, key: 'T', name: 'Ten', hue: 176, tier: 'low' },
-  { id: SYM.J, key: 'J', name: 'Jack', hue: 210, tier: 'low' },
-  { id: SYM.Q, key: 'Q', name: 'Queen', hue: 280, tier: 'low' },
-  { id: SYM.K, key: 'K', name: 'King', hue: 42, tier: 'low' },
-  { id: SYM.A, key: 'A', name: 'Ace', hue: 8, tier: 'low' },
-  { id: SYM.DOG, key: 'DOG', name: 'Zombie Hound', hue: 96, tier: 'high' },
-  { id: SYM.GIRL, key: 'GIRL', name: 'Undead Bride', hue: 300, tier: 'high' },
-  { id: SYM.DOC, key: 'DOC', name: 'Mad Scientist', hue: 52, tier: 'high' },
-  { id: SYM.WILD, key: 'WILD', name: 'Zombie King (Wild)', hue: 120, tier: 'wild' },
-  { id: SYM.SCAT, key: 'SCAT', name: 'Biohazard (Scatter)', hue: 82, tier: 'scatter' },
+  { id: SYM.T, key: 'T', name: 'Ten', hue: 176, tier: 'low', skin: 'k/sym-t' },
+  { id: SYM.J, key: 'J', name: 'Jack', hue: 210, tier: 'low', skin: 'k/sym-j' },
+  { id: SYM.Q, key: 'Q', name: 'Queen', hue: 280, tier: 'low', skin: 'k/sym-q' },
+  { id: SYM.K, key: 'K', name: 'King', hue: 42, tier: 'low', skin: 'k/sym-k' },
+  { id: SYM.A, key: 'A', name: 'Ace', hue: 8, tier: 'low', skin: 'k/sym-a' },
+  { id: SYM.DOG, key: 'DOG', name: 'Zombie Hound', hue: 96, tier: 'high', skin: 'k/sym-dog' },
+  { id: SYM.GIRL, key: 'GIRL', name: 'Undead Bride', hue: 300, tier: 'high', skin: 'k/sym-girl' },
+  { id: SYM.DOC, key: 'DOC', name: 'Mad Scientist', hue: 52, tier: 'high', skin: 'k/sym-doc' },
+  { id: SYM.WILD, key: 'WILD', name: 'Zombie King (Wild)', hue: 120, tier: 'wild', skin: 'k/sym-wild' },
+  { id: SYM.SCAT, key: 'SCAT', name: 'Biohazard (Scatter)', hue: 82, tier: 'scatter', skin: 'k/sym-scat' },
 ];
 export const SYM_META: Record<number, SymMeta> = Object.fromEntries(SYMBOLS.map((s) => [s.id, s]));
 
