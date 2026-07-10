@@ -113,12 +113,15 @@ describe('Game K · Zombie Slots（数据驱动老虎机）', () => {
   });
 
   it('HUD 是合法 LayoutNode（validate 零 issue·多态覆盖）', () => {
+    const skins = { logo: '/games/game-k/art/gen/art-24.png', panel: '/games/game-k/art/gen/art-23.png', btnSpin: '/x/spin.png', btnPlus: '/x/p.png', btnMinus: '/x/m.png', btnMute: '/x/mute.png', btnInfo: '/x/i.png' };
     const states: HudState[] = [
       { balance: 5000, bet: 20, win: 0, free: 0, spinning: false, muted: false, overlay: null },
       { balance: 3200, bet: 100, win: 450, free: 8, spinning: true, muted: true, overlay: null },
       { balance: 0, bet: 20, win: 0, free: 0, spinning: false, muted: false, overlay: { kind: 'broke', amount: 0, free: 0 } },
       { balance: 9000, bet: 40, win: 4000, free: 0, spinning: false, muted: false, overlay: { kind: 'zombie', amount: 4000, free: 0 } },
       { balance: 5000, bet: 20, win: 40, free: 10, spinning: false, muted: false, overlay: { kind: 'free', amount: 40, free: 10 } },
+      // 皮肤槽全就绪：Logo/按钮/面板/横幅走 Image/skin/bgTexture 路径（validate 仍零 issue）
+      { balance: 7500, bet: 200, win: 1200, free: 3, spinning: false, muted: false, skins, overlay: { kind: 'mega', amount: 1200, free: 0, banner: '/games/game-k/art/gen/art-13.png' } },
     ];
     for (const s of states) {
       expect(validateLayoutNode(buildTopBar(s))).toEqual([]);

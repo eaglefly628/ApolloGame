@@ -28,6 +28,29 @@ export const SYMBOLS: SymMeta[] = [
 ];
 export const SYM_META: Record<number, SymMeta> = Object.fromEntries(SYMBOLS.map((s) => [s.id, s]));
 
+// ── 非符号美术槽（完整老虎机 BOM·背景/机台/UI/横幅/特效）──────────────────────
+// 每项 = 一个皮肤槽 key + 规格 + 用途。宿主 fail-soft 消费（真图就绪即用·否则程序化/CSS 占位）。
+export interface ArtSlot { skin: string; name: string; kind: 'sprite' | 'bg' | 'texture'; w: number; h: number; transparent: boolean; use: string; }
+export const CHROME_ART: ArtSlot[] = [
+  { skin: 'k/bg-main', name: 'Main Background', kind: 'bg', w: 960, h: 640, transparent: false, use: '主场景背景（墓园/月夜）· 宿主 scene 底' },
+  { skin: 'k/bg-free', name: 'Free Spins Background', kind: 'bg', w: 960, h: 640, transparent: false, use: '免费旋转背景变体（血月/尸潮）· freespins>0 时切' },
+  { skin: 'k/reel-frame', name: 'Reel Cabinet Frame', kind: 'sprite', w: 760, h: 470, transparent: true, use: '转轴机台框（罩在 5×3 网格外）' },
+  { skin: 'k/sym-tile', name: 'Symbol Cell Tile', kind: 'texture', w: 128, h: 128, transparent: true, use: '每格符号底板（衬在符号下）' },
+  { skin: 'k/logo', name: 'Zombie Slots Logo', kind: 'sprite', w: 420, h: 120, transparent: true, use: '顶栏 Logo（替代文字标题）' },
+  { skin: 'k/coin', name: 'Coin Particle', kind: 'sprite', w: 96, h: 96, transparent: true, use: '中奖金币迸溅粒子' },
+  { skin: 'k/hud-panel', name: 'HUD Panel Frame', kind: 'texture', w: 512, h: 128, transparent: true, use: '顶/底 HUD 条底纹' },
+  { skin: 'k/banner-big', name: 'Big Win Banner', kind: 'sprite', w: 640, h: 220, transparent: true, use: 'BIG WIN 横幅' },
+  { skin: 'k/banner-mega', name: 'Mega Win Banner', kind: 'sprite', w: 640, h: 220, transparent: true, use: 'MEGA WIN 横幅' },
+  { skin: 'k/banner-zombie', name: 'Zombie Apocalypse Banner', kind: 'sprite', w: 720, h: 240, transparent: true, use: 'ZOMBIE APOCALYPSE 横幅' },
+  { skin: 'k/banner-free', name: 'Free Spins Banner', kind: 'sprite', w: 640, h: 220, transparent: true, use: 'FREE SPINS 横幅' },
+  { skin: 'k/btn-spin', name: 'Spin Button', kind: 'sprite', w: 240, h: 100, transparent: true, use: 'SPIN 按钮皮' },
+  { skin: 'k/btn-plus', name: 'Bet Plus Button', kind: 'sprite', w: 72, h: 72, transparent: true, use: '加注按钮皮' },
+  { skin: 'k/btn-minus', name: 'Bet Minus Button', kind: 'sprite', w: 72, h: 72, transparent: true, use: '减注按钮皮' },
+  { skin: 'k/btn-mute', name: 'Mute Button', kind: 'sprite', w: 64, h: 64, transparent: true, use: '静音按钮皮' },
+  { skin: 'k/btn-info', name: 'Paytable Button', kind: 'sprite', w: 64, h: 64, transparent: true, use: '赔付表按钮皮' },
+];
+export const CHROME = Object.fromEntries(CHROME_ART.map((a) => [a.skin.replace('k/', '').replace(/-/g, '_'), a.skin])) as Record<string, string>;
+
 // ── 赔付表：symbolId → { 连线数(3/4/5) → 线注倍率 }。SCAT 为分散(×总注) ────────
 export const PAYTABLE: Record<number, Record<number, number>> = {
   [SYM.T]: { 3: 5, 4: 15, 5: 40 },

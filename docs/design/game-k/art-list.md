@@ -1,59 +1,150 @@
-# game-k《Zombie Slots》美术生成单（完整·可直接喂管线）
+# game-k《Zombie Slots》完整美术生成单（26 项·可直接喂管线）
 
-> **⚠ 只读视图（需求真相合一）**：机读真相=`public/games/game-k/art/art-ledger.json`（提示词已回填台账行 `prompt`·平台只读台账）。**勿改本文当真相**。
-> 风格：迪士尼亲和 × 次表面散射柔光。生成：美术平台「⚡一键全量」或 `npx vite-node scripts/game-k-art-requirements.mjs` 后逐行喂 `scripts/ai-gen.mjs`。
-> 统一负向（每条都带）：`text, watermark, signature, realistic gore, photorealistic, muted colors, cluttered, drop shadow, background scenery, extra limbs`
-> 规格：全款 1024²·透明底·usage:sprite·显示 120×120。皮肤就绪按 skinKey 登记 `index.json` 即换装（蓝图零改）。
-
+> **⚠ 只读视图**：机读真相=`public/games/game-k/art/art-ledger.json`（提示词回填台账行 `prompt`·平台只读台账）。**勿改本文当真相**。
+> 风格包=**disney-supercell（迪士尼×Supercell）**·owner 点题。生成：美术平台「⚡一键全量」或 `npx vite-node scripts/game-k-art-requirements.mjs --gen`（mock smoke·scratch 不入库）。
+> 完整老虎机 BOM：符号 + 背景 + 机台框 + 符号底板 + Logo + 按钮 + 中奖横幅 + 金币 + HUD 面板。宿主 fail-soft 消费皮肤槽（真图就绪即用·否则程序化/CSS 占位·游戏始终可玩）。
+> 统一负向：`photorealistic, horror gore, dark and muddy, noisy, jagged edges, rough doodle, text watermark`
 ---
 
-**art-10 · zombie king wild** · 皮肤槽 `k/sym-wild` · 显示 120×120 · 透明底
+## 符号（10）
+
+**art-17 · sym ace** · 皮肤槽 `k/sym-a` · 120×120·透明底 · 精灵/图标
 ```
-2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a charming undead zombie king head, decayed toxic-green #5ef08a flesh with bright glowing green eyes, exposed pink brain on top, tiny bone crown, stitched jaw, cute but spooky, banner reading WILD
+a chunky cartoon glowing gravestone game icon tile engraved with the big letter 'A', red glow, cracked mossy tombstone
 ```
 
-**art-02 · biohazard scatter** · 皮肤槽 `k/sym-scat` · 显示 120×120 · 透明底
+**art-18 · sym biohazard scatter** · 皮肤槽 `k/sym-scat` · 120×120·透明底 · 精灵/图标
 ```
-2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a glowing biohazard toxin vial disc, radioactive green #b6f03a trefoil hazard symbol, translucent glass with inner glow, banner reading FREE SPINS, scatter symbol
-```
-
-**art-08 · undead bride** · 皮肤槽 `k/sym-girl` · 显示 120×120 · 透明底
-```
-2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, an adorable undead bride girl, pale translucent purple #b45ef0 skin with subsurface glow, huge sparkling Disney eyes, flower crown, stitched sweet smile, rosy cheeks, veil
+a glowing biohazard toxin jar icon, bright green radioactive trefoil hazard symbol, bubbling ooze, banner reading FREE SPINS, scatter symbol
 ```
 
-**art-09 · zombie hound** · 皮肤槽 `k/sym-dog` · 显示 120×120 · 透明底
+**art-19 · sym jack** · 皮肤槽 `k/sym-j` · 120×120·透明底 · 精灵/图标
 ```
-2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, an adorable undead zombie puppy head, toxic-green #5ef08a flesh, stitched patch, lolling pink tongue, one little fang, big mismatched puppy-dog eyes, floppy ears
-```
-
-**art-05 · mad scientist** · 皮肤槽 `k/sym-doc` · 显示 120×120 · 透明底
-```
-2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a quirky zombie mad scientist, sallow amber-green #ffd166 face, wild frizzy white hair, cracked glowing goggles, manic toothy grin
+a chunky cartoon glowing gravestone game icon tile engraved with the big letter 'J', blue glow, cracked mossy tombstone
 ```
 
-**art-01 · ace** · 皮肤槽 `k/sym-a` · 显示 120×120 · 透明底
+**art-20 · sym king** · 皮肤槽 `k/sym-k` · 120×120·透明底 · 精灵/图标
 ```
-2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a carved glowing tombstone tile engraved with the letter 'A', necrotic red #ff6b6b inner glow, cracked mossy gravestone
-```
-
-**art-04 · king** · 皮肤槽 `k/sym-k` · 显示 120×120 · 透明底
-```
-2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a carved glowing tombstone tile engraved with the letter 'K', necrotic amber #ffd166 inner glow, cracked mossy gravestone
+a chunky cartoon glowing gravestone game icon tile engraved with the big letter 'K', amber glow, cracked mossy tombstone
 ```
 
-**art-06 · queen** · 皮肤槽 `k/sym-q` · 显示 120×120 · 透明底
+**art-21 · sym mad scientist** · 皮肤槽 `k/sym-doc` · 120×120·透明底 · 精灵/图标
 ```
-2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a carved glowing tombstone tile engraved with the letter 'Q', necrotic purple #b45ef0 inner glow, cracked mossy gravestone
-```
-
-**art-03 · jack** · 皮肤槽 `k/sym-j` · 显示 120×120 · 透明底
-```
-2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a carved glowing tombstone tile engraved with the letter 'J', necrotic blue #6aa8ff inner glow, cracked mossy gravestone
+a wacky cartoon zombie mad scientist character head, green face, wild frizzy white hair, cracked round goggles, big toothy grin
 ```
 
-**art-07 · ten** · 皮肤槽 `k/sym-t` · 显示 120×120 · 透明底
+**art-22 · sym queen** · 皮肤槽 `k/sym-q` · 120×120·透明底 · 精灵/图标
 ```
-2D game slot symbol icon, Disney-style character appeal, big expressive eyes, rounded friendly silhouette, subsurface scattering glow, soft translucent glowing undead flesh, warm inner light bleeding through, cool rim light, gooey highlights, centered, transparent background, high contrast, clean render, a carved glowing tombstone tile engraved with '10', necrotic teal #5ef0d0 inner glow, cracked mossy gravestone
+a chunky cartoon glowing gravestone game icon tile engraved with the big letter 'Q', purple glow, cracked mossy tombstone
+```
+
+**art-23 · sym ten** · 皮肤槽 `k/sym-t` · 120×120·透明底 · 精灵/图标
+```
+a chunky cartoon glowing gravestone game icon tile engraved with '10', teal glow, cracked mossy tombstone
+```
+
+**art-24 · sym undead bride** · 皮肤槽 `k/sym-girl` · 120×120·透明底 · 精灵/图标
+```
+a cute cartoon undead zombie bride girl character, pale purple skin, huge sparkly eyes, flower crown, stitched sweet smile, rosy cheeks, veil
+```
+
+**art-25 · sym zombie hound** · 皮肤槽 `k/sym-dog` · 120×120·透明底 · 精灵/图标
+```
+a cute cartoon zombie puppy character head, green fur, floppy ears, big adorable puppy eyes, one little fang, lolling pink tongue, stitched patch
+```
+
+**art-26 · sym zombie king wild** · 皮肤槽 `k/sym-wild` · 120×120·透明底 · 精灵/图标
+```
+a friendly cartoon undead zombie king character head, green skin, big glowing eyes, exposed pink brain, small golden crown, stitched jaw, spooky but adorable, banner reading WILD
+```
+
+## 背景（2）
+
+**art-05 · free spins background** · 皮肤槽 `k/bg-free` · 960×640·满幅 · 全屏背景
+```
+a spooky-cute cartoon graveyard background under a blood-red moon, zombie horde silhouettes rising from graves, eerie green glow, wide game background, no characters
+```
+
+**art-06 · main background** · 皮肤槽 `k/bg-main` · 960×640·满幅 · 全屏背景
+```
+a spooky-cute cartoon graveyard scene background at night, big full moon, purple sky, rows of tombstones, bare dead trees, low mist, wide game background, no characters
+```
+
+## 机台/底板/面板
+
+**art-13 · hud panel frame** · 皮肤槽 `k/hud-panel` · 512×128·透明底 · 平铺纹理
+```
+a dark carved stone UI panel bar texture with green glowing trim and rivets, cartoon game HUD frame, seamless horizontal, transparent ends
+```
+
+**art-15 · reel cabinet frame** · 皮肤槽 `k/reel-frame` · 760×470·透明底 · 精灵/图标
+```
+an ornate cartoon slot machine cabinet frame, carved tombstone stone with green glowing runes, bones and vines around the edges, large rounded rectangular window opening in the center, game UI frame, transparent center and background
+```
+
+**art-16 · symbol cell tile** · 皮肤槽 `k/sym-tile` · 128×128·透明底 · 平铺纹理
+```
+a dark rounded square slot cell tile socket, subtle green inner glow, carved stone, seamless game icon backing, soft transparent edges
+```
+
+## 品牌/特效
+
+**art-12 · coin particle** · 皮肤槽 `k/coin` · 96×96·透明底 · 精灵/图标
+```
+a shiny golden coin with an embossed biohazard skull, cartoon mobile game coin icon, thick white outline, transparent background
+```
+
+**art-14 · zombie slots logo** · 皮肤槽 `k/logo` · 420×120·透明底 · 精灵/图标
+```
+a glossy cartoon game logo lettering reading 'ZOMBIE SLOTS', dripping green slime, little bones, spooky-cute, thick clean white outline, transparent background
+```
+
+## 中奖横幅（4）
+
+**art-01 · big win banner** · 皮肤槽 `k/banner-big` · 640×220·透明底 · 精灵/图标
+```
+a ribbon banner reading 'BIG WIN', gold and toxic green, little bones, spooky-cute cartoon, thick white outline, transparent background
+```
+
+**art-02 · free spins banner** · 皮肤槽 `k/banner-free` · 640×220·透明底 · 精灵/图标
+```
+a banner reading 'FREE SPINS', purple and green, bats and a full moon, spooky-cute cartoon, thick white outline, transparent background
+```
+
+**art-03 · mega win banner** · 皮肤槽 `k/banner-mega` · 640×220·透明底 · 精灵/图标
+```
+a large ribbon banner reading 'MEGA WIN', bursting gold explosion and green slime, cartoon, thick white outline, transparent background
+```
+
+**art-04 · zombie apocalypse banner** · 皮肤槽 `k/banner-zombie` · 720×240·透明底 · 精灵/图标
+```
+an epic dramatic banner reading 'ZOMBIE APOCALYPSE', gold and toxic green, bursting brains and coins, cartoon, transparent background
+```
+
+## 按钮（5）
+
+**art-07 · paytable button** · 皮肤槽 `k/btn-info` · 64×64·透明底 · 精灵/图标
+```
+a small round glossy cartoon info (i) paytable button, green, mobile game UI button, transparent background
+```
+
+**art-08 · bet minus button** · 皮肤槽 `k/btn-minus` · 72×72·透明底 · 精灵/图标
+```
+a small round glossy cartoon minus (-) button, green, mobile game UI button, thick white outline, transparent background
+```
+
+**art-09 · mute button** · 皮肤槽 `k/btn-mute` · 64×64·透明底 · 精灵/图标
+```
+a small round glossy cartoon speaker sound toggle button, green, mobile game UI button, transparent background
+```
+
+**art-10 · bet plus button** · 皮肤槽 `k/btn-plus` · 72×72·透明底 · 精灵/图标
+```
+a small round glossy cartoon plus (+) button, green, mobile game UI button, thick white outline, transparent background
+```
+
+**art-11 · spin button** · 皮肤槽 `k/btn-spin` · 240×100·透明底 · 精灵/图标
+```
+a big round glossy cartoon SPIN button, green and gold, biohazard motif, premium mobile game button, thick white outline, transparent background
 ```
 

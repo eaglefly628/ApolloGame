@@ -14,29 +14,48 @@ import { playKSfx, isMuted, setMuted } from './sounds.js';
 import { drawSymbol, prewarm, registerSkin } from './art.js';
 import {
   FIELD_W, FIELD_H, TOP_BAR_H, BOTTOM_BAR_H, REELS, ROWS, PAYLINES, REEL_WEIGHTS,
-  ZOMBIE_THEME, BET_MIN, winTier, SYMBOLS,
+  ZOMBIE_THEME, BET_MIN, winTier, SYMBOLS, CHROME_ART, CHROME,
 } from './theme.js';
 
-// 皮肤槽加载（美术替换工作流 · fail-soft）：拉本地 art index → 按 skinKey 匹配符号 → 载真图 registerSkin
-// （就绪即换装·盖过程序化占位）。无 index / 404 / 解析失败 → 程序化观感照旧，绝不炸游戏。
-function loadSkins(): void {
+// ── 皮肤槽注册表（美术替换工作流 · fail-soft·宿主表现层）───────────────────────
+// 符号皮肤经 art.registerSkin；非符号（背景/机台/UI/横幅/金币）存这里。真图就绪即用·无则程序化/CSS 占位。
+const CHROME_IMG: Record<string, HTMLImageElement> = {};   // skinKey → 已载图
+const SKIN_URL: Record<string, string> = {};               // skinKey → url（供 LayoutNode Button.skin / Image.src）
+let skinsDirty = true;                                      // 有新皮到位 → 触发 HUD 重建
+const cimg = (key: string): HTMLImageElement | null => { const i = CHROME_IMG[key]; return i && i.complete && i.naturalWidth > 0 ? i : null; };
+
+// 拉本地 art index → 按 skinKey 匹配符号/chrome → 载真图。无 index/404/解析失败 → 程序化照旧，绝不炸游戏。
+function loadSkins(onLoad: () => void): void {
   if (typeof fetch === 'undefined') return;
   void (async () => {
     try {
       const r = await fetch('/games/game-k/art/index.json', { cache: 'no-store' });
       if (!r.ok) return;
       const raw = await r.json();
-      const entries: Array<{ id?: string; path?: string }> = Array.isArray(raw) ? raw : Array.isArray(raw?.entries) ? raw.entries : [];
+      // index 形态：{version, assets:[{id,path,...}]}（batchGenerate 写回·同 game-j/game-m）。兼容裸数组/entries。
+      const entries: Array<{ id?: string; path?: string }> = Array.isArray(raw) ? raw : Array.isArray(raw?.assets) ? raw.assets : Array.isArray(raw?.entries) ? raw.entries : [];
       const byId = new Map(entries.filter((e) => e.id && e.path).map((e) => [e.id as string, e.path as string]));
-      for (const s of SYMBOLS) {
-        const path = byId.get(s.skin);
-        if (!path) continue;
+      const symBySkin = new Map(SYMBOLS.map((s) => [s.skin, s.id]));
+      for (const [id, path] of byId) {
+        SKIN_URL[id] = path;
         const img = new Image();
-        img.onload = () => registerSkin(s.id, img);
+        img.onload = () => {
+          const symId = symBySkin.get(id);
+          if (symId !== undefined) registerSkin(symId, img); else CHROME_IMG[id] = img;
+          skinsDirty = true; onLoad();
+        };
         img.src = path;
       }
     } catch { /* 无美术目录/解析失败 → 回退程序化·不炸游戏 */ }
   })();
+}
+// 供 hud 读的皮肤 URL（LayoutNode 数据·仅在真图就绪时带上·否则控件走主题色）。
+function hudSkins(): { logo?: string; panel?: string; btnSpin?: string; btnPlus?: string; btnMinus?: string; btnMute?: string; btnInfo?: string } {
+  return {
+    logo: SKIN_URL[CHROME.logo], panel: SKIN_URL[CHROME.hud_panel],
+    btnSpin: SKIN_URL[CHROME.btn_spin], btnPlus: SKIN_URL[CHROME.btn_plus], btnMinus: SKIN_URL[CHROME.btn_minus],
+    btnMute: SKIN_URL[CHROME.btn_mute], btnInfo: SKIN_URL[CHROME.btn_info],
+  };
 }
 
 const STAGE_BG =
@@ -45,7 +64,7 @@ const STAGE_BG =
 
 export function mount(container: HTMLElement): () => void {
   prewarm();
-  loadSkins();
+  loadSkins(() => { if (sim) { skinsDirty = false; lastSig = ''; refreshHud(sim.engine); } });
 
   // ── DOM 骨架（host 容器·非 sim）：wrapper > scene > [reelCanvas(z0) + 三个 HUD host] ──
   const wrapper = document.createElement('div');
@@ -81,6 +100,7 @@ export function mount(container: HTMLElement): () => void {
   let pending: { total: number; tier: ReturnType<typeof winTier>; triggeredFree: number; scatter: number } | null = null;
   let overlay: HudState['overlay'] = null;
   let autoTimer: ReturnType<typeof setTimeout> | null = null;
+  let inFree = false; // 免费旋转态（驱动血月背景切换·纯表现）
 
   const now = (): number => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
@@ -90,14 +110,17 @@ export function mount(container: HTMLElement): () => void {
     return undefined;
   }
   function readState(engine: Engine): HudState {
+    const free = Math.round(res(engine, 'freespins')?.current ?? 0);
+    inFree = free > 0;
     return {
       balance: Math.round(res(engine, 'balance')?.current ?? 0),
       bet: Math.round(res(engine, 'bet')?.current ?? 0),
       win: Math.round(res(engine, 'win')?.current ?? 0),
-      free: Math.round(res(engine, 'freespins')?.current ?? 0),
+      free,
       spinning,
       muted: isMuted(),
       overlay,
+      skins: hudSkins(),
     };
   }
 
@@ -125,9 +148,12 @@ export function mount(container: HTMLElement): () => void {
 
     const p = pending; pending = null;
     if (!p) return;
+    if (p.total > 0) spawnCoins(p.tier === 'zombie' ? 90 : p.tier === 'mega' ? 60 : p.tier === 'big' ? 40 : 18); // 金币迸溅按档
+    const bannerKey: Record<string, string> = { big: CHROME.banner_big, mega: CHROME.banner_mega, zombie: CHROME.banner_zombie, free: CHROME.banner_free };
+    const bannerOf = (k: OverlayKind): string | undefined => SKIN_URL[bannerKey[k]];
     if (p.scatter >= 3) playKSfx('scatter');
-    if (p.triggeredFree > 0) { playKSfx('free'); overlay = { kind: 'free', amount: p.total, free: Math.round(res(engine, 'freespins')?.current ?? 0) }; }
-    else if (p.tier === 'zombie' || p.tier === 'mega' || p.tier === 'big') { playKSfx('bigwin'); overlay = { kind: p.tier as OverlayKind, amount: p.total, free: 0 }; }
+    if (p.triggeredFree > 0) { playKSfx('free'); overlay = { kind: 'free', amount: p.total, free: Math.round(res(engine, 'freespins')?.current ?? 0), banner: bannerOf('free') }; }
+    else if (p.tier === 'zombie' || p.tier === 'mega' || p.tier === 'big') { playKSfx('bigwin'); const k = p.tier as OverlayKind; overlay = { kind: k, amount: p.total, free: 0, banner: bannerOf(k) }; }
     else if (p.total > 0) playKSfx('win');
     refreshHud(engine);
     if (!overlay) afterIdle(engine);
@@ -165,14 +191,23 @@ export function mount(container: HTMLElement): () => void {
 
   function drawFrame(): void {
     ctx.clearRect(0, 0, FIELD_W, FIELD_H);
-    // 机台底框
-    ctx.save();
-    roundRect(ctx, GRID_L - 16, GRID_TOP - 16, GRID_W + 32, GRID_H + 32, 20);
-    const g = ctx.createLinearGradient(0, GRID_TOP, 0, GRID_BOT);
-    g.addColorStop(0, '#14251a'); g.addColorStop(1, '#0b160e');
-    ctx.fillStyle = g; ctx.fill();
-    ctx.strokeStyle = 'rgba(94,240,138,0.5)'; ctx.lineWidth = 3; ctx.stroke();
-    ctx.restore();
+    // 皮肤槽·背景（fail-soft）：真图铺满 scene；freespins 用血月变体；无图 → 透明（CSS STAGE_BG 打底）。
+    const bg = cimg(inFree ? CHROME.bg_free : CHROME.bg_main) || cimg(CHROME.bg_main);
+    if (bg) ctx.drawImage(bg, 0, 0, FIELD_W, FIELD_H);
+
+    // 皮肤槽·机台框（fail-soft）：真图罩在网格外；无图 → 程序化底框。
+    const frame = cimg(CHROME.reel_frame);
+    if (frame) {
+      ctx.drawImage(frame, GRID_L - 24, GRID_TOP - 24, GRID_W + 48, GRID_H + 48);
+    } else {
+      ctx.save();
+      roundRect(ctx, GRID_L - 16, GRID_TOP - 16, GRID_W + 32, GRID_H + 32, 20);
+      const g = ctx.createLinearGradient(0, GRID_TOP, 0, GRID_BOT);
+      g.addColorStop(0, '#14251a'); g.addColorStop(1, '#0b160e');
+      ctx.fillStyle = g; ctx.fill();
+      ctx.strokeStyle = 'rgba(94,240,138,0.5)'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.restore();
+    }
 
     const t = now();
     for (let r = 0; r < REELS; r++) {
@@ -200,15 +235,19 @@ export function mount(container: HTMLElement): () => void {
         }
       }
       ctx.restore();
-      // 列分隔光
-      if (r > 0) { ctx.strokeStyle = 'rgba(94,240,138,0.14)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, GRID_TOP); ctx.lineTo(cx, GRID_BOT); ctx.stroke(); }
+      // 列分隔光（仅程序化框时·真机台框自带分隔）
+      if (r > 0 && !cimg(CHROME.reel_frame)) { ctx.strokeStyle = 'rgba(94,240,138,0.14)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, GRID_TOP); ctx.lineTo(cx, GRID_BOT); ctx.stroke(); }
     }
+    drawCoins(t);
   }
 
   function drawCell(x: number, y: number, w: number, h: number, sym: number, glow: boolean): void {
     const pad = Math.min(w, h) * 0.08;
     const s = Math.min(w, h) - pad * 2;
     const px = x + (w - s) / 2, py = y + (h - s) / 2;
+    // 皮肤槽·符号底板（fail-soft）：真图衬在符号下。
+    const tile = cimg(CHROME.sym_tile);
+    if (tile) ctx.drawImage(tile, x + 2, y + 2, w - 4, h - 4);
     if (glow) {
       ctx.save();
       const pulse = 0.5 + 0.5 * Math.sin(now() / 140);
@@ -223,6 +262,32 @@ export function mount(container: HTMLElement): () => void {
 
   function roundRect(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
     c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+
+  // ── 中奖金币迸溅（皮肤槽 k/coin·fail-soft 回退画金圆）─────────────────────────
+  let coins: Array<{ x: number; y: number; vx: number; vy: number; rot: number; vr: number; t0: number }> = [];
+  let coinsPrev = now();
+  function spawnCoins(n: number): void {
+    const cx = FIELD_W / 2, cy = GRID_TOP + GRID_H / 2;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2, sp = 3 + (i % 5) * 0.7;
+      coins.push({ x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 4, rot: a, vr: 0.2 - (i % 4) * 0.1, t0: now() });
+    }
+    if (coins.length > 160) coins = coins.slice(-160);
+  }
+  function drawCoins(t: number): void {
+    if (!coins.length) return;
+    const dt = Math.min(40, t - coinsPrev); coinsPrev = t;
+    const coin = cimg(CHROME.coin);
+    coins = coins.filter((c) => t - c.t0 < 1400);
+    for (const c of coins) {
+      c.vy += 0.02 * dt; c.x += c.vx * dt * 0.06; c.y += c.vy * dt * 0.06; c.rot += c.vr * dt * 0.06;
+      const life = 1 - (t - c.t0) / 1400, sz = 26;
+      ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, life * 1.6)); ctx.translate(c.x, c.y); ctx.rotate(c.rot);
+      if (coin) ctx.drawImage(coin, -sz / 2, -sz / 2, sz, sz);
+      else { const g = ctx.createRadialGradient(-3, -3, 2, 0, 0, sz / 2); g.addColorStop(0, '#fff6c0'); g.addColorStop(0.5, '#ffd166'); g.addColorStop(1, '#b8860b'); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, sz / 2 * (0.6 + 0.4 * Math.abs(Math.cos(c.rot))), sz / 2, 0, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+    }
   }
 
   // ── HUD 挂载 ──
