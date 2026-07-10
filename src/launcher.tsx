@@ -21,6 +21,7 @@ import {
 import { CreationWizard, type WizardMode } from './studio/CreationWizard.js';
 import { DesignStudio, EntryChoice, ContinueChoice } from './studio/DesignStudio.js';
 import { ArtLedgerPanel, ArtGamePicker } from './studio/ArtLedgerPanel.js';
+import { GamePipelinePanel } from './studio/GamePipelinePanel.js';
 import { SettingsPanel } from './studio/SettingsPanel.js';
 
 const API = 'http://localhost:4000';
@@ -820,6 +821,9 @@ export function Launcher() {
   // 美术台账浏览墙（REQ-DEMO-T2·库卡带「🎨 美术台账」打开）：浏览+点名三式替换+换皮。
   const [artLedger, setArtLedger] = useState<{ slug: string; title: string; kind?: 'builtin' | 'library' } | null>(null);
   const [artPicker, setArtPicker] = useState(false); // 🎨 美术平台入口=先选游戏目录（owner review ③）
+  // 🏭 生产流程板（owner 07-10「N 步拆分·每步 review」）：同一游戏选择器进入，逐游戏八阶段双验看板。
+  const [pipePicker, setPipePicker] = useState(false);
+  const [pipeGame, setPipeGame] = useState<{ slug: string; title: string; kind?: 'builtin' | 'library' } | null>(null);
   // 设置面板（M3·状态灯点开）：BYO key + 测试连接。
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [installing, setInstalling] = useState(false);
@@ -983,6 +987,14 @@ export function Launcher() {
     return <ArtGamePicker onBack={() => setArtPicker(false)} onPick={(g) => { setArtPicker(false); setArtLedger(g); }} />;
   }
 
+  if (pipeGame) {
+    return <GamePipelinePanel slug={pipeGame.slug} title={pipeGame.title} onBack={() => setPipeGame(null)} onOpenArt={() => { const g = pipeGame; setPipeGame(null); setArtLedger(g); }} />;
+  }
+
+  if (pipePicker) {
+    return <ArtGamePicker onBack={() => setPipePicker(false)} onPick={(g) => { setPipePicker(false); setPipeGame(g); }} />;
+  }
+
   if (launched) {
     return <GameRunner gameId={launched} onBack={() => setLaunched(null)} />;
   }
@@ -1073,6 +1085,26 @@ export function Launcher() {
               }}
             >
               🎨 美术平台
+            </button>
+            <button
+              onClick={() => setPipePicker(true)}
+              title="逐游戏八阶段生产看板：每步机器门（真跑·证据带内容指纹）+人门（review 落账）——治 LLM 长流程漂移"
+              style={{
+                marginTop: 14,
+                marginLeft: 10,
+                padding: '7px 18px',
+                background: SHELL.violetWash,
+                color: SHELL.violet,
+                border: `1px solid ${SHELL.violetLine}`,
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: 1,
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              🏭 生产流程
             </button>
             <button
               onClick={() => setArtlib(true)}

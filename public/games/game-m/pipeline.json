@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "slug": "game-m",
+  "concept": {
+    "name": "Wardrobe Voyage 衣橱环游",
+    "pitch": "换装休闲·暖暖环游世界式初始框架·caster/destroy-tagged/group-count 组合纯数据",
+    "planWaiver": "纯数据内置游戏·零游戏层系统代码（template §适用范围裁定）"
+  },
+  "signoffs": {
+    "S1": {
+      "by": "LEAD",
+      "note": "立项=owner 07-09 点名（Game m 换装·模仿暖暖初始框架）",
+      "at": "2026-07-10T09:58:17.636Z"
+    },
+    "S2": {
+      "by": "LEAD",
+      "note": "免正式 plan 裁决：纯数据卡带零游戏层代码·能力=caster/destroy-tagged/group-count/event-when 全registry实名",
+      "at": "2026-07-10T09:58:17.691Z"
+    }
+  },
+  "evidence": {
+    "S3": {
+      "exit": 0,
+      "summary": "parseManifest 零 error",
+      "at": "2026-07-10T09:58:18.786Z",
+      "gameHash": "4a48f1bd58e0f013"
+    },
+    "S5": {
+      "exit": 0,
+      "summary": "AUDIT: PASS · RATCHET: PASS",
+      "at": "2026-07-10T09:58:18.999Z",
+      "gameHash": "4a48f1bd58e0f013"
+    },
+    "S4": {
+      "exit": 0,
+      "summary": " Test Files  1 passed (1) ·       Tests  3 passed (3)",
+      "at": "2026-07-10T09:58:39.236Z",
+      "gameHash": "4a48f1bd58e0f013"
+    }
+  },
+  "history": [
+    {
+      "action": "concept",
+      "at": "2026-07-10T09:58:17.580Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S1",
+      "at": "2026-07-10T09:58:17.636Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S2",
+      "at": "2026-07-10T09:58:17.691Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-07-10T09:58:18.786Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-07-10T09:58:18.999Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-10T09:58:39.236Z"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "slug": "game-j",
+  "concept": {
+    "name": "Candy Kingdom 糖果王国",
+    "pitch": "三消·迪斯尼×Supercell 风·t3-match3-board 纯数据卡带",
+    "planWaiver": "纯数据内置游戏·零游戏层系统代码（template §适用范围裁定）"
+  },
+  "signoffs": {
+    "S1": {
+      "by": "LEAD",
+      "note": "立项=owner 07-09 点名彩排单（模仿用户平台流程）",
+      "at": "2026-07-10T09:53:27.696Z"
+    },
+    "S2": {
+      "by": "LEAD",
+      "note": "免正式 plan 裁决：纯数据卡带零游戏层代码·三消核=t3-match3-board（+movesResource/kindSkinEntities 两个可选扩展已下沉引擎）",
+      "at": "2026-07-10T09:58:17.747Z"
+    }
+  },
+  "evidence": {
+    "S3": {
+      "exit": 0,
+      "summary": "parseManifest 零 error",
+      "at": "2026-07-10T09:53:27.442Z",
+      "gameHash": "28315bf2b2a08a3c"
+    },
+    "S5": {
+      "exit": 0,
+      "summary": "AUDIT: PASS · RATCHET: PASS",
+      "at": "2026-07-10T09:53:27.562Z",
+      "gameHash": "28315bf2b2a08a3c"
+    },
+    "S4": {
+      "exit": 0,
+      "summary": " Test Files  1 passed (1) ·       Tests  3 passed (3)",
+      "at": "2026-07-10T09:53:42.452Z",
+      "gameHash": "28315bf2b2a08a3c"
+    }
+  },
+  "history": [
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-07-10T09:53:27.442Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-07-10T09:53:27.562Z"
+    },
+    {
+      "action": "concept",
+      "at": "2026-07-10T09:53:27.635Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S1",
+      "at": "2026-07-10T09:53:27.696Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-10T09:53:42.452Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S2",
+      "at": "2026-07-10T09:58:17.747Z"
+    }
+  ]
+}
