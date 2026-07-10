@@ -253,3 +253,49 @@ export interface RolledDice extends Component {
   readonly type: 'RolledDice';
   results: RolledDie[];
 }
+
+// ── slot-payout（t3-slot-payout·REQ-K 下沉）── 网格连线赔付 + 老虎机经济（确定性解释器）─────
+// 真缺口：dice-roll 只掷出符号网格（RolledDice），random 原子只给 [0,1)；没有「按 20 条线左起连消
+// （百搭代入）+ 分散计数 → 查赔付表 → 记账下注/赢分/免费旋转」的能力。line-eval 是带**有序线扫描 +
+// 前缀连数 + 百搭代入**的算法，Condition→Event→Effect / 聚合计数都表达不了——正是周期表缺的「Line-Eval」格。
+// 通用性：任何老虎机 / 连线消除 / 连珠计分都消费它（非 game-k 专属）。确定性：纯整数扫描，不掷随机（随机在 dice-roll）。
+// 分工（严守 manifesto）：掷轮=dice-roll(RolledDice)；触发哪拍结算=Signal(clickable/keybind 重组)；
+//   下注/赢分/余额=Resource；免费旋转态=Resource(freeResource>0)。本能力只补「判线赔付 + 老虎机记账」真缺口。
+export interface SlotMachine extends Component {
+  readonly type: 'SlotMachine';
+  source: EntityId;        // 持 RolledDice 的实体（轮结果来源）
+  reels: number;           // 列数（轮数）
+  rows: number;            // 行数（每轮可见格）
+  // 赔付线：每条 = 每轮的行号(0..rows-1)，长度 = reels，左→右。
+  lines: number[][];
+  // 赔付表：symbolId(字符串键) → { 连数(3/4/5 字符串键) → 线注倍率 }。
+  pay: Record<string, Record<string, number>>;
+  wild: number;            // 百搭符号 value（代入除分散外任意符号）
+  scatter: number;         // 分散符号 value（任意位置计数）
+  scatterMin: number;      // 触发分散赔付/免费旋转的最少命中数（通常 3）
+  scatterPay: Record<string, number>; // 命中数(字符串键) → 总注倍率
+  spinSignal: string;      // 收到此信号当拍解算一次旋转（与 dice-roll 同拍·读后于其）
+  betResource: string;     // 总注资源 id
+  balanceResource: string; // 余额资源 id（扣注 / 记赢）
+  winResource?: string;    // 可选：写入本旋总赢（HUD「上次赢」）
+  // 免费旋转经济（可选）：freeResource>0 时本旋不扣注、线赢×freeMultiplier；≥scatterMin 分散则 +freeAward。
+  freeResource?: string;
+  freeAward?: number;
+  freeMultiplier?: number;
+  // 下注升降（可选·数据驱动）：收到信号时按 betStep 调 betResource，钳制 [betMin,betMax]。
+  betUpSignal?: string;
+  betDownSignal?: string;
+  betStep?: number;
+  betMin?: number;
+  betMax?: number;
+}
+// ── LineWins（event）── 一次旋转的结算结果（供 HUD/演出层 outcome-first 投影）。由 slot-payout 写在机器实体上。
+export interface LineWin { line: number; symbol: number; count: number; pay: number; }
+export interface LineWins extends Component {
+  readonly type: 'LineWins';
+  spin: number;            // 结算序号（每解算一次 +1；宿主据此识别新结果）
+  total: number;           // 本旋总赢（线赢×倍率 + 分散赢）
+  scatterCount: number;    // 分散命中数
+  triggeredFree: number;   // 本旋触发/再触发赠送的免费旋转数（0=未触发）
+  wins: LineWin[];         // 各中奖线
+}

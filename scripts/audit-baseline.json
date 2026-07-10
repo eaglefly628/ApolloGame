@@ -9,6 +9,7 @@
     "game-i": { "nakedRandom": 0, "innerHTML": 0, "createElement": 5 },
     "game-x": { "nakedRandom": 0, "innerHTML": 0, "createElement": 3 },
     "game-z": { "nakedRandom": 0, "innerHTML": 0, "createElement": 4 },
-    "game-q": { "nakedRandom": 0, "innerHTML": 0, "createElement": 5 }
+    "game-q": { "nakedRandom": 0, "innerHTML": 0, "createElement": 5 },
+    "game-k": { "nakedRandom": 0, "innerHTML": 0, "createElement": 7, "reason": "宿主容器骨架 6（wrapper/scene/reel-canvas/top/bottom/overlay·同 game-q/game-i host 层）+ art.ts 离屏烘焙画布 1（符号程序化美术·表现层 outcome-first 投影·不碰 sim/hash）。玩法规则全在 blueprint 数据 + t3-slot-payout/dice-roll 能力。详见 docs/design/game-k/capability-plan.md §4。" }
   }
 }

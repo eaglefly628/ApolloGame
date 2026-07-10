@@ -51,3 +51,7 @@ export { mergeRuleCapability } from './merge-rule.js';
 // timeline（REQ-CAP 下沉）：演出时间线——确定性 tick 调度器。Timeline{cues:[{at,do}],playOnSignal,skipOnSignal?}
 // 编排「第 N tick 发什么」，cue 只发 signal/写 flag/写 resource/发 spawn 四闭集动作；表现层订阅信号自行演。
 export { timelineCapability } from './timeline.js';
+// slot-payout（REQ-K 下沉）：网格连线赔付 + 老虎机经济解释器——按赔付线左起连消（百搭代入）+ 分散计数
+// → 查赔付表 → 扣注/记赢/免费旋转。dice-roll 掷轮，本能力判线记账；周期表缺的「Line-Eval」格。任何老虎机/连线消除复用。
+export { slotPayoutCapability, evaluateSlot } from './slot-payout.js';
+export type { SlotEvalResult } from './slot-payout.js';

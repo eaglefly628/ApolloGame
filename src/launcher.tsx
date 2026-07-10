@@ -141,6 +141,16 @@ const GAMES: GameEntry[] = [
     icon: '🗼',
     status: 'playable',
   },
+  {
+    id: 'game-k',
+    title: 'Game K: Zombie Slots',
+    subtitle: '僵尸老虎机 · 5×3 · 20 线',
+    description: '迪士尼亲和 × 次表面散射柔光的僵尸主题老虎机：5×3 转轴、20 条赔付线、僵尸王百搭、生化分散触发 10 次免费旋转（线赢 ×2）。转轴=dice-roll 掷加权符号网格（种子 PRNG·确定可回放），判线赔付/扣注/免费旋转经济由下沉的通用能力 t3-slot-payout 涌现，零老虎机专属系统代码。符号美术全程序化生成（分层径向渐变伪造次表面通透 + 圆润大眼卡通轮廓）。',
+    color: '#0a130c',
+    accentColor: '#5ef08a',
+    icon: '🧟',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
@@ -719,6 +729,7 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-z': () => import('./games/game-z/game-z.js'),
       'game-d': () => import('./games/game-d/game-d.js'),
       'game-q': () => import('./games/game-q/game-q.js'),
+      'game-k': () => import('./games/game-k/game-k.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;
