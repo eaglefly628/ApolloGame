@@ -64,7 +64,7 @@ function audit(game) {
       // 能力接入面：skills / atoms 的 import（含别名与相对路径）
       const im = ln.match(/from\s+['"]([^'"]*(?:@atom-skills|@skills|\/skills\/)[^'"]*)['"]/);
       if (im) capImports.add(im[1].replace(/^.*\/skills\//, 'skills/'));
-      if (/\b(parseManifest|WorldBlueprint|createWorld|new World\b)/.test(ln)) usesWorldOrManifest++;
+      if (/\b(parseManifest|WorldBlueprint|createWorld|new World\b|mountManifestGame)/.test(ln)) usesWorldOrManifest++;
       // 红旗（游戏层禁区）
       if (/\bMath\.random\s*\(/.test(ln)) flags.mathRandom.push(`${f}:${i + 1}`);
       if (/\binnerHTML\b/.test(ln)) flags.innerHTML.push(`${f}:${i + 1}`);
@@ -73,7 +73,8 @@ function audit(game) {
       if (/\bbg:\s*['"](#[0-9a-fA-F]|linear-gradient|radial-gradient|url\()/.test(ln)) flags.nakedFill.push(`${f}:${i + 1}`);
     }
   }
-  flags.zeroCap = capImports.size === 0;
+  // 纯数据游戏（parseManifest/World 接入=经 manifest 消费能力体系·数据宪法正道）不算零接入。
+  flags.zeroCap = capImports.size === 0 && usesWorldOrManifest === 0;
 
   return { game, files: src.length, loc, tests: tests.length, capImports, usesWorldOrManifest, flags };
 }

@@ -1689,7 +1689,7 @@ def handle_art_replace(body: dict) -> dict:
     manifest = res.get('manifest')
     if not isinstance(manifest, dict):
         return {'success': False, 'error': '替换未产出 manifest'}
-    status, data = library_put_manifest(slug, {'manifest': manifest, 'note': '美术批量替换（art-replace）'})  # 零 error 铁律 + 版本化
+    data = _put_manifest_anywhere(slug, manifest, '美术批量替换（art-replace）')  # 零 error 铁律（library 版本化/内置直写）
     if data.get('success'):
         print(c("  [ART]", 'g'), f"replace {slug} → 重钉 {res.get('replaced')} 引用·已落盘")
     return {'success': bool(data.get('success')), 'replaced': res.get('replaced'), **data}
@@ -1701,14 +1701,29 @@ def handle_art_replace(body: dict) -> dict:
 _ART_NO_RE = re.compile(r'art-\d+')
 _ASSET_ID_RE = re.compile(r'[A-Za-z0-9][A-Za-z0-9/_.\-]*')
 
+def _put_manifest_anywhere(slug: str, manifest: dict, note: str) -> dict:
+    """统一落盘门：library 卡带走 library_put_manifest（校验+版本化）；内置纯数据游戏
+    （public/games/<slug>/manifest.json·tracked·owner 2026-07-10）同过 parseManifest 零 error 门后直写。"""
+    if (LIBRARY_DIR / slug).is_dir():
+        status, data = library_put_manifest(slug, {'manifest': manifest, 'note': note})
+        return data
+    pub = ROOT / 'public' / 'games' / slug / 'manifest.json'
+    if not pub.is_file():
+        return {'success': False, 'error': f'游戏不存在（library 与 public 均无 manifest）: {slug}'}
+    ok, msg = _run_manifest_check(manifest)
+    if not ok:
+        return {'success': False, 'error': msg}
+    _write_json(pub, manifest)
+    return {'success': True, 'builtin': True}
+
 def _art_save_manifest(slug: str, res: dict, note: str, extra: dict) -> dict:
-    """CLI 产出 manifest → 过 parseManifest 零 error 落盘 + 版本化。"""
+    """CLI 产出 manifest → 过 parseManifest 零 error 落盘（library 版本化 / 内置直写）。"""
     if not res.get('ok'):
         return {'success': False, **res}
     manifest = res.get('manifest')
     if not isinstance(manifest, dict):
         return {'success': False, 'error': '未产出 manifest'}
-    status, data = library_put_manifest(slug, {'manifest': manifest, 'note': note})
+    data = _put_manifest_anywhere(slug, manifest, note)
     return {'success': bool(data.get('success')), **extra, **data}
 
 def handle_art_style(body: dict) -> dict:
@@ -1758,8 +1773,9 @@ def handle_art_regenerate(body: dict) -> dict:
         return {'success': False, 'error': f'非法 packId: {pack or "(空)"}'}
     # 平台双数据源（R1 ①）：library 卡带走 regen（重钉 manifest）；编译期游戏（无 manifest·有台账）走 fill
     # （写回=skinKey 别名登记本地 index·蓝图零改动）。同一端点同一 UI，差异收在这里。
-    is_game = not (LIBRARY_DIR / slug / 'manifest.json').is_file() and \
-        (ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json').is_file()
+    has_manifest = (LIBRARY_DIR / slug / 'manifest.json').is_file() or \
+        (ROOT / 'public' / 'games' / slug / 'manifest.json').is_file()  # 内置数据游戏也走 manifest 线
+    is_game = (not has_manifest) and (ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json').is_file()
     cmdname = 'fill' if is_game else 'regen'
     args = [cmdname, slug, no, pack]
     if isinstance(query, str) and query.strip():
@@ -1871,6 +1887,8 @@ def handle_art_reskin(body: dict) -> dict:
         return {'success': False, 'error': f'非法 packId: {pack or "(空)"}'}
     src = _game_dir(slug)
     if not src.is_dir():
+        if (ROOT / 'public' / 'games' / slug / 'manifest.json').is_file():
+            return {'success': False, 'error': '内置数据游戏暂不支持一键换皮（先在创作台另存为卡带）'}
         return {'success': False, 'error': f'源卡带不存在: {slug}'}
     new_slug = _dedup_slug(new_slug if _valid_slug(new_slug) else f'{slug}-{pack}')
     dst = LIBRARY_DIR / new_slug
@@ -2199,247 +2217,8 @@ def _touch_meta(game_dir: Path) -> None:
     meta['updatedAt'] = _now_iso()
     _write_json(p, meta)
 
-def _match3_preset() -> dict:
-    """game-j《Candy Kingdom》三消官方示例（owner 2026-07-09 点单彩排）——纯数据组合 t3-match3-board，
-    零专属系统。42 格视图实体由本函数生成（模板起步=低模策略：用户/LLM 不必手写 42 实体）。
-    美术=6 个 tiledef 皮肤槽（art: 详细引用·迪斯尼×Supercell 风）+ 背景槽；kindSkinEntities 同步上盘。
-    初始盘面=确定性搜索（固定种子递增试，直到「无初始 3 连且至少一步合法交换」——糖果开局硬性质）。"""
-    cols, rows, cell = 7, 6, 46
-    x0, y0 = 64, 86
-
-    def _has_run(c):
-        for r0 in range(rows):
-            for c0 in range(cols - 2):
-                a = c[r0 * cols + c0]
-                if a >= 0 and a == c[r0 * cols + c0 + 1] == c[r0 * cols + c0 + 2]:
-                    return True
-        for c0 in range(cols):
-            for r0 in range(rows - 2):
-                a = c[r0 * cols + c0]
-                if a >= 0 and a == c[(r0 + 1) * cols + c0] == c[(r0 + 2) * cols + c0]:
-                    return True
-        return False
-
-    def _has_move(c):
-        for i in range(cols * rows):
-            for j in (i + 1, i + cols):
-                if j >= cols * rows or (i % cols == cols - 1 and j == i + 1):
-                    continue
-                d = list(c)
-                d[i], d[j] = d[j], d[i]
-                if _has_run(d):
-                    return True
-        return False
-
-    def _gen_cells():
-        import random as _rnd
-        for seed in range(1, 10000):
-            rng = _rnd.Random(seed)
-            c = [rng.randrange(6) for _ in range(cols * rows)]
-            if not _has_run(c) and _has_move(c):
-                return c
-        raise RuntimeError('match3 开局搜索失败')
-
-    board_cells = _gen_cells()
-    tiles = [
-        'glossy strawberry hard candy, ruby red, rounded heart shape, thick white outline, cute glossy highlight',
-        'lemon drop candy, bright sunny yellow, teardrop shape, thick white outline, glossy sparkle',
-        'blueberry gummy candy, deep blue, plump round berry, thick white outline, soft glossy shine',
-        'green apple jelly candy, vivid green, apple silhouette with tiny leaf, thick white outline, juicy gloss',
-        'grape swirl lollipop candy, royal purple, spiral swirl disc, thick white outline, candy gloss',
-        'orange citrus gem candy, warm orange, faceted gem wedge, thick white outline, sugary sparkle',
-    ]
-    tints = [0xef4444, 0xfacc15, 0x3b82f6, 0x22c55e, 0xa855f7, 0xf97316]
-    ents = {
-        'background': {
-            'Transform': {'x': 320, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-            'Shape': {'kind': 'box', 'width': 640, 'height': 400},
-            'Color': {'tint': 0xfdf2f8, 'alpha': 1},
-            'Sprite': {'textureKey': 'art:candy kingdom meadow, pastel pink sky, rolling sugar hills, lollipop trees, soft clouds, storybook wide background', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': -10},
-        },
-        'camera': dict(_CAM),
-        'board': {
-            'MatchBoard': {
-                'cols': cols, 'rows': rows, 'kindCount': 6,
-                'cells': board_cells,
-                'kindResource': ['score'] * 6, 'matAmount': 10, 'coinResource': '', 'coinPerTile': 0,
-                'kindTint': tints, 'kindLabel': ['', '', '', '', '', ''],
-                'phase': 'idle', 'selIndex': -1, 'swapA': -1, 'swapB': -1, 'stepTimer': 0, 'stepDelay': 4,
-                'selectAction': 'cell', 'movesResource': 'moves',
-                'kindSkinEntities': [f'tiledef-{k}' for k in range(6)],
-            },
-            'RandomSeed': {'seed': 20260709, 'sequence': 0},
-        },
-        'res-score': {'Resource': {'id': 'score', 'current': 0, 'min': 0, 'max': 999999}},
-        'res-moves': {'Resource': {'id': 'moves', 'current': 20, 'min': 0, 'max': 99}},
-        'flag-playing': {'Flag': {'id': 'playing', 'active': True}},
-    }
-    for k in range(6):
-        ents[f'tiledef-{k}'] = {'Sprite': {'textureKey': f'art:{tiles[k]}, top-down 2d match-3 game tile icon', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': 0}}
-    idx = 0
-    for r in range(rows):
-        for c in range(cols):
-            ents[f'cell-{idx}'] = {
-                'Transform': {'x': x0 + c * cell, 'y': y0 + r * cell, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-                'Shape': {'kind': 'box', 'width': 44, 'height': 44},
-                'Color': {'tint': 0xffffff, 'alpha': 1},
-                'Sprite': {'textureKey': '', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': 1},
-                'BoardCell': {'boardId': 'board', 'index': idx},
-                'Clickable': {'action': 'cell', 'onlyFlag': 'playing'},
-            }
-            idx += 1
-    txt = lambda content, size: {'content': content, 'fontSize': size, 'fontFamily': 'sans-serif', 'anchor': 'center', 'lineSpacing': 0}
-    ents.update({
-        'hud-title': {'Transform': {'x': 500, 'y': 64, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('CANDY KINGDOM', 20), 'Color': {'tint': 0xdb2777, 'alpha': 1}},
-        'hud-score-label': {'Transform': {'x': 500, 'y': 128, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('SCORE / 1000', 12), 'Color': {'tint': 0x9d174d, 'alpha': 0.8}},
-        'hud-score': {'Transform': {'x': 500, 'y': 156, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('0', 24), 'Color': {'tint': 0x111827, 'alpha': 1}, 'TextBinding': {'resourceId': 'score'}},
-        'hud-moves-label': {'Transform': {'x': 500, 'y': 210, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('MOVES', 12), 'Color': {'tint': 0x9d174d, 'alpha': 0.8}},
-        'hud-moves': {'Transform': {'x': 500, 'y': 238, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('20', 24), 'Color': {'tint': 0x111827, 'alpha': 1}, 'TextBinding': {'resourceId': 'moves'}},
-        'win-when': {'EventWhen': {'signal': 'win', 'when': {'kind': 'resource', 'id': 'score', 'cmp': 'gte', 'value': 1000}, 'mode': 'edge', 'armed': False}},
-        'lose-when': {'EventWhen': {'signal': 'lose', 'when': {'kind': 'and', 'of': [
-            {'kind': 'resource', 'id': 'moves', 'cmp': 'lte', 'value': 0},
-            {'kind': 'not', 'of': {'kind': 'resource', 'id': 'score', 'cmp': 'gte', 'value': 1000}},
-        ]}, 'mode': 'edge', 'armed': False}},
-        'eff-win-banner': {'Effect': {'onSignal': 'win', 'kind': 'set-visible', 'targetEntity': 'banner-win', 'value': True}},
-        'eff-win-lock': {'Effect': {'onSignal': 'win', 'kind': 'set-flag', 'targetId': 'playing', 'value': False}},
-        'eff-lose-banner': {'Effect': {'onSignal': 'lose', 'kind': 'set-visible', 'targetEntity': 'banner-lose', 'value': True}},
-        'eff-lose-lock': {'Effect': {'onSignal': 'lose', 'kind': 'set-flag', 'targetId': 'playing', 'value': False}},
-        'banner-win': {'Transform': {'x': 320, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('SWEET VICTORY!', 36), 'Color': {'tint': 0x16a34a, 'alpha': 1}, 'Visibility': {'visible': False, 'active': True}},
-        'banner-lose': {'Transform': {'x': 320, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('OUT OF MOVES…', 36), 'Color': {'tint': 0xdc2626, 'alpha': 1}, 'Visibility': {'visible': False, 'active': True}},
-    })
-    return {
-        'slug': 'game-j',
-        'name': 'Candy Kingdom (game-j)',
-        'description': '三消示例：点相邻两格交换，3 连消除得分；20 步内拿 1000 分。迪斯尼×Supercell 风皮肤槽已就位。',
-        'capabilities': ['a1-transform', 'c1-shape', 'l2-color', 'l1-sprite', 'l6-text', 'l5-camera', 'h1-visibility',
-                         'w1-random', 'f1-resource', 'f2-flag', 't2-clickable', 't2-event-when',
-                         't2-effect-apply', 't2-text-binding', 't3-match3-board'],
-        'entities': ents,
-    }
-
-def _dressup_preset() -> dict:
-    """game-m《Wardrobe Voyage 衣橱环游》换装示例（owner 2026-07-09 点单·暖暖环游世界式初始框架）。
-    零专属系统·纯数据组合：穿戴=实体生灭（caster 生成衣服图层+属性粒子·destroy-tagged 按姐妹件位清槽·
-    永不误杀自己=无竞态）；评分=group-count 数在场属性粒子（每帧从穿着状态重算·路径无关）；
-    衣柜=Clickable 缩略图（can_X 旗防重复穿）；主题达标=event-when 对称亮/灭星级横幅。"""
-    HAIR, DRESS, SHOES = ('h', 'd', 's')
-    ELEG, LIVELY, SWEET = 512, 1024, 2048
-    ATTR_BIT = {'eleg': ELEG, 'lively': LIVELY, 'sweet': SWEET}
-    # (id, 槽, 位, 属性, 衣柜行, 详细 art 描述)
-    ITEMS = [
-        ('h0', HAIR, 1, {'eleg': 2, 'sweet': 1}, 'long golden wavy princess hair wig, soft curls, elegant shine'),
-        ('h1', HAIR, 2, {'lively': 2}, 'silver white high ponytail hair wig, sporty and energetic'),
-        ('h2', HAIR, 4, {'sweet': 3}, 'pink twin-tail hair wig with ribbon bows, adorable and sweet'),
-        ('d0', DRESS, 8, {'lively': 2, 'sweet': 2}, 'navy and white sailor dress with pleated skirt, seaside school style'),
-        ('d1', DRESS, 16, {'eleg': 4}, 'wine red evening gown with satin sheen and long flowing skirt, formal elegant'),
-        ('d2', DRESS, 32, {'sweet': 2, 'eleg': 1}, 'floral countryside sundress, pastel flowers on cream fabric, gentle'),
-        ('s0', SHOES, 64, {'sweet': 2}, 'white mary jane shoes with round toe and strap, cute and neat'),
-        ('s1', SHOES, 128, {'eleg': 2}, 'crystal high heel shoes, slender and glamorous'),
-        ('s2', SHOES, 256, {'lively': 2}, 'canvas sneakers with colorful laces, casual and playful'),
-    ]
-    SLOT_OF = {i[0]: i[1] for i in ITEMS}
-    BIT_OF = {i[0]: i[2] for i in ITEMS}
-    ART_TAIL = ', isolated garment piece for a dress-up game, front view, transparent background'
-    DOLL = (220, 218)
-    LAYER = {HAIR: (-92, 4), DRESS: (6, 3), SHOES: (118, 2)}   # (y 偏移, zOrder：鞋<裙<发)
-    THUMB_ROW = {HAIR: 92, DRESS: 180, SHOES: 268}
-
-    def layer_ents(iid, slot, bit, attrs, art):
-        dy, z = LAYER[slot]
-        ents = {'layer': {
-            'Transform': {'x': 0, 'y': dy, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-            'Shape': {'kind': 'box', 'width': 96 if slot == DRESS else 64, 'height': 120 if slot == DRESS else 40},
-            'Color': {'tint': 0xf9a8d4, 'alpha': 0.9},
-            'Sprite': {'textureKey': f'art:{art}{ART_TAIL}', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': z},
-            'Tag': {'flags': bit},
-        }}
-        n = 0
-        for a, amt in attrs.items():
-            for _ in range(amt):
-                ents[f'p{n}'] = {'Tag': {'flags': bit | ATTR_BIT[a]}}
-                n += 1
-        return ents
-
-    ents = {
-        'background': {
-            'Transform': {'x': 320, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-            'Shape': {'kind': 'box', 'width': 640, 'height': 400},
-            'Color': {'tint': 0xfff1f2, 'alpha': 1},
-            'Sprite': {'textureKey': 'art:seaside boardwalk at golden hour, pastel sky, distant ferris wheel, dreamy shoujo illustration wide background', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': -10},
-        },
-        'camera': dict(_CAM),
-        'doll-base': {
-            'Transform': {'x': DOLL[0], 'y': DOLL[1], 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-            'Shape': {'kind': 'box', 'width': 110, 'height': 300},
-            'Color': {'tint': 0xfde68a, 'alpha': 0.55},
-            'Sprite': {'textureKey': 'art:cute anime fashion doll base figure, neutral pose, big sparkling eyes, simple underclothes, full body front view', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': 1},
-        },
-        'res-eleg': {'Resource': {'id': 'elegance', 'current': 0, 'min': 0, 'max': 99}, 'GroupCount': {'countResource': 'elegance', 'requiredTag': ELEG}},
-        'res-lively': {'Resource': {'id': 'lively', 'current': 0, 'min': 0, 'max': 99}, 'GroupCount': {'countResource': 'lively', 'requiredTag': LIVELY}},
-        'res-sweet': {'Resource': {'id': 'sweet', 'current': 0, 'min': 0, 'max': 99}, 'GroupCount': {'countResource': 'sweet', 'requiredTag': SWEET}},
-    }
-    tpls = {}
-    txt = lambda content, size: {'content': content, 'fontSize': size, 'fontFamily': 'sans-serif', 'anchor': 'center', 'lineSpacing': 0}
-    for iid, slot, bit, attrs, art in ITEMS:
-        sib = [j for j in ITEMS if j[1] == slot and j[0] != iid]
-        tpls[f'tpl_{iid}'] = {'entities': layer_ents(iid, slot, bit, attrs, art)}
-        col = {HAIR: 0, DRESS: 1, SHOES: 2}[slot]
-        row_i = [j[0] for j in ITEMS if j[1] == slot].index(iid)
-        ents[f'thumb-{iid}'] = {
-            'Transform': {'x': 452 + row_i * 62, 'y': THUMB_ROW[slot], 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-            'Shape': {'kind': 'box', 'width': 54, 'height': 54},
-            'Color': {'tint': [0xfbcfe8, 0xe9d5ff, 0xbae6fd][col], 'alpha': 1},
-            'Sprite': {'textureKey': f'art:{art}{ART_TAIL}', 'anchorX': 0.5, 'anchorY': 0.5, 'zOrder': 5},
-            'Clickable': {'action': f'wear_{iid}', 'onlyFlag': f'can_{iid}'},
-        }
-        ents[f'cast-{iid}'] = {
-            'Transform': {'x': DOLL[0], 'y': DOLL[1], 'rotation': 0, 'scaleX': 1, 'scaleY': 1},
-            'Caster': {'onSignal': f'wear_{iid}', 'template': f'tpl_{iid}', 'at': 'self'},
-        }
-        for k, (sid, _, sbit, _a, _art) in enumerate(sib):
-            ents[f'eff-{iid}-clr{k}'] = {'Effect': {'onSignal': f'wear_{iid}', 'kind': 'destroy-tagged', 'targetId': '', 'value': sbit}}
-        ents[f'eff-{iid}-lock'] = {'Effect': {'onSignal': f'wear_{iid}', 'kind': 'set-flag', 'targetId': f'can_{iid}', 'value': False}}
-        for k, (sid, _, _b, _a, _art) in enumerate(sib):
-            ents[f'eff-{iid}-un{k}'] = {'Effect': {'onSignal': f'wear_{iid}', 'kind': 'set-flag', 'targetId': f'can_{sid}', 'value': True}}
-        ents[f'flag-can-{iid}'] = {'Flag': {'id': f'can_{iid}', 'active': iid not in ('h0', 'd0', 's0')}}
-    # 默认穿搭（h0/d0/s0）：与模板同构的常驻实体（位置=绝对坐标）
-    for iid in ('h0', 'd0', 's0'):
-        it = next(i for i in ITEMS if i[0] == iid)
-        for name, e in layer_ents(iid, it[1], it[2], it[3], it[4]).items():
-            e2 = json.loads(json.dumps(e))
-            if 'Transform' in e2:
-                e2['Transform']['x'] += DOLL[0]
-                e2['Transform']['y'] += DOLL[1]
-            ents[f'worn-{iid}-{name}'] = e2
-    ents['wardrobe-lib'] = {'PrefabLibrary': {'templates': tpls}}
-    ents.update({
-        'hud-title': {'Transform': {'x': 508, 'y': 40, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('海滨假日 · WARDROBE', 17), 'Color': {'tint': 0xbe185d, 'alpha': 1}},
-        'hud-goal': {'Transform': {'x': 508, 'y': 330, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('主题目标：优雅≥4 且 甜美≥4', 12), 'Color': {'tint': 0x9d174d, 'alpha': 0.9}},
-        'hud-e': {'Transform': {'x': 452, 'y': 358, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('0', 16), 'Color': {'tint': 0x7c3aed, 'alpha': 1}, 'TextBinding': {'resourceId': 'elegance', 'prefix': '优雅 '}},
-        'hud-l': {'Transform': {'x': 528, 'y': 358, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('0', 16), 'Color': {'tint': 0xf59e0b, 'alpha': 1}, 'TextBinding': {'resourceId': 'lively', 'prefix': '活泼 '}},
-        'hud-s': {'Transform': {'x': 600, 'y': 358, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('0', 16), 'Color': {'tint': 0xec4899, 'alpha': 1}, 'TextBinding': {'resourceId': 'sweet', 'prefix': '甜美 '}},
-        'star-when': {'EventWhen': {'signal': 'starred', 'when': {'kind': 'and', 'of': [
-            {'kind': 'resource', 'id': 'elegance', 'cmp': 'gte', 'value': 4},
-            {'kind': 'resource', 'id': 'sweet', 'cmp': 'gte', 'value': 4}]}, 'mode': 'edge', 'armed': False}},
-        'unstar-when': {'EventWhen': {'signal': 'unstarred', 'when': {'kind': 'not', 'of': {'kind': 'and', 'of': [
-            {'kind': 'resource', 'id': 'elegance', 'cmp': 'gte', 'value': 4},
-            {'kind': 'resource', 'id': 'sweet', 'cmp': 'gte', 'value': 4}]}}, 'mode': 'edge', 'armed': False}},
-        'eff-star-on': {'Effect': {'onSignal': 'starred', 'kind': 'set-visible', 'targetEntity': 'banner-star', 'value': True}},
-        'eff-star-off': {'Effect': {'onSignal': 'unstarred', 'kind': 'set-visible', 'targetEntity': 'banner-star', 'value': False}},
-        'banner-star': {'Transform': {'x': 320, 'y': 34, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('★★★ 主题达成 PERFECT!', 24), 'Color': {'tint': 0xd97706, 'alpha': 1}, 'Visibility': {'visible': False, 'active': True}},
-    })
-    return {
-        'slug': 'game-m',
-        'name': 'Wardrobe Voyage (game-m)',
-        'description': '暖暖式换装：点右侧衣柜给娃娃穿搭，三维属性实时评分，达成主题目标亮星。穿戴=实体生灭·评分=群计数，零专属系统。',
-        'capabilities': ['a1-transform', 'c1-shape', 'l2-color', 'l1-sprite', 'l6-text', 'l5-camera', 'h1-visibility',
-                         'g1-tag', 'k2-destroy', 'f1-resource', 'f2-flag', 't2-clickable', 't2-event-when',
-                         't2-effect-apply', 't2-text-binding', 't2-group-count', 't3-prefab', 't3-caster'],
-        'entities': ents,
-    }
-
-PRESET_BLUEPRINTS['match3'] = _match3_preset()
-PRESET_BLUEPRINTS['dressup'] = _dressup_preset()
+# match3/dressup 已升级为内置数据游戏（public/games/game-j|game-m/manifest.json·owner 2026-07-10）
+# ——装示例位留给未来精选好游戏。
 
 def _preset_manifest(preset: dict) -> dict:
     """PRESET_BLUEPRINTS 条目 → 纯规范 manifest（只留 capabilities + entities，name/描述归 meta）。"""

@@ -76,9 +76,17 @@
       "provenance": {
         "model": "wanx2.1-t2i-turbo·mock",
         "prompt": "glossy strawberry hard candy, ruby red, rounded heart shape, thick white outline, cute glossy highlight, top-down 2d match-3 game tile icon, glossy strawberry hard candy, ruby red, rounded heart shape, thick white outline, cute glossy highlight, top-down 2d match-3 game tile icon, medium size on screen, top-down 2d game view, isolated subject, transparent background, 精灵图, 迪士尼动画质感与 Supercell 手游风融合：厚涂立体卡通，糖果般饱和明快配色，圆润造型，柔和顶光与温暖环境色，干净厚白描边，高品质手游图标级打磨, unified candy fairytale kingdom look, every piece belongs to the same premium match-3 set",
-        "date": "2026-07-09T17:01:13.755Z",
+        "date": "2026-07-10T03:22:00.582Z",
         "license": "Qwen/DashScope 万相 (按订阅授权)"
-      }
+      },
+      "history": [
+        {
+          "action": "regen",
+          "at": "2026-07-10T03:22:00.582Z",
+          "prevQuery": "glossy strawberry hard candy, ruby red, rounded heart shape, thick white outline, cute glossy highlight, top-down 2d match-3 game tile icon",
+          "newQuery": "glossy strawberry hard candy, ruby red, rounded heart shape, thick white outline, cute glossy highlight, top-down 2d match-3 game tile icon"
+        }
+      ]
     },
     {
       "no": "art-03",

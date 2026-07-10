@@ -52,6 +52,26 @@ interface CmdResult {
 
 const GAMES: GameEntry[] = [
   {
+    id: 'game-j',
+    title: 'Game J: Candy Kingdom',
+    subtitle: '糖果三消 · 纯数据游戏',
+    description: '点相邻两格交换，3 连消除得分，20 步内拿 1000 分。游戏本体=一份 manifest 纯 JSON（零游戏层代码），三消相位机=t3-match3-board 通用能力。美术走美术平台（台账 7 槽·迪斯尼×Supercell 风格包）。',
+    color: '#2a1226',
+    accentColor: '#ec4899',
+    icon: '🍬',
+    status: 'playable',
+  },
+  {
+    id: 'game-m',
+    title: 'Game M: Wardrobe Voyage',
+    subtitle: '衣橱环游 · 换装（暖暖式）',
+    description: '点右侧衣柜给娃娃穿搭：穿戴=实体生灭（caster/destroy-tagged），三维属性=群计数实时重算，达成主题目标亮星。游戏本体=一份 manifest 纯 JSON（零游戏层代码）。美术台账 23 槽（含 prefab 模板槽）·梦幻少女风格包。',
+    color: '#26121f',
+    accentColor: '#f9a8d4',
+    icon: '👗',
+    status: 'playable',
+  },
+  {
     id: 'game-e',
     title: 'Game E: Balatro-like',
     subtitle: '小丑牌 · 卡牌构建',
@@ -729,6 +749,8 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
       'game-z': () => import('./games/game-z/game-z.js'),
       'game-d': () => import('./games/game-d/game-d.js'),
       'game-q': () => import('./games/game-q/game-q.js'),
+      'game-j': () => import('./games/game-j/game-j.js'),
+      'game-m': () => import('./games/game-m/game-m.js'),
       'game-k': () => import('./games/game-k/game-k.js'),
     };
     const loader = loaders[gameId];
@@ -841,7 +863,7 @@ export function Launcher() {
       const r = await fetch(`${API}/api/library/install-sample`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preset: 'all' }), // 全套官方示例（platformer/三消 game-j/换装 game-m/pong·幂等）
+        body: JSON.stringify({ preset: 'all' }), // 全套官方示例（幂等·此位留给精选好游戏——owner 2026-07-10）
       }).then((x) => x.json() as Promise<{ success?: boolean; installed?: string[]; skipped?: string[]; error?: string }>);
       if (r.success) setInstallMsg(`✓ 新装 ${r.installed?.length ?? 0} 张${(r.skipped?.length ?? 0) > 0 ? `（${r.skipped!.length} 张已在架）` : ''}：${[...(r.installed ?? [])].join(' / ') || '无新增'}`);
       else setInstallMsg(`✕ ${r.error ?? '安装失败'}`);
@@ -1032,7 +1054,7 @@ export function Launcher() {
                 opacity: installing ? 0.5 : 1,
               }}
             >
-              {installing ? '⏳ 装入中…' : '📦 装入官方示例（三消/换装…）'}
+              {installing ? '⏳ 装入中…' : '📦 装入官方示例'}
             </button>
             <button
               onClick={() => setArtPicker(true)}

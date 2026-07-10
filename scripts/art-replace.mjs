@@ -20,7 +20,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ART_PREFIX = 'art:';
 
 // ── 路径 ──
-const manifestFile = (root, slug) => join(root, 'library', slug, 'manifest.json');
+const manifestFile = (root, slug) => {
+  const lib = join(root, 'library', slug, 'manifest.json'); // 用户卡带优先
+  if (existsSync(lib)) return lib;
+  return join(root, 'public', 'games', slug, 'manifest.json'); // 内置纯数据游戏（tracked·owner 2026-07-10）
+};
 const ledgerFile = (root, slug) => join(root, 'public', 'games', slug, 'art', 'art-ledger.json');
 const localIndexFile = (root, slug) => join(root, 'public', 'games', slug, 'art', 'index.json');
 const genAbs = (root, slug, rel) => join(root, 'public', 'games', slug, 'art', rel);
