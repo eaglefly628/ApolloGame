@@ -57,6 +57,11 @@
 ### REQ-DEMO-T3-批量吞吐冒烟 · 周产 30 款的机器证据 · [2026-07-07] · Lead 图纸 → **指派：Opus 档 session/子代理** · status: open（T1 完工后接） · 优先级: P1 · 期限: 7/20 · 类型: 冲刺 QA
 > **spec**：① 新建批量冒烟脚本（scripts 下·batch-gen-smoke）：mock LLM+mock 美术连出 N=10 款 e2e——生成→美术编排→parseManifest 零 error→audit 无新红旗；判词 token `BATCH: PASS|FAIL`+退出码；fail-fast（哪款第几步死点名）。② 真 key 抽 3 款全真跑通，记录单款耗时/成本/token 写进回执（demo 出示件·折算周产能）。③ 照 `docs/playbooks/testing.md` 三禁（mock 路径零外部 IO·种子固定）。完工标 ✅ 待 Lead 验收。
 
+### REQ-K-美术管线接入 · 老虎机手写 canvas 绕基座（owner 2026-07-10 点名「为什么没有美术需求表」） · [2026-07-10] · Lead 问责定性 → **指派：game-k 程序员** · status: open · 优先级: P1（冲刺内·每游戏一库=owner 硬要求） · 类型: 手册整改（编译期游戏美术接入）
+> **问责定性（按 07-03 铁律：不问谁绕的·只问手册哪没接住）**：`game-k/art.ts` 全程手写 canvas 程序化美术（注释自豪"零外部图片"）——直接绕过美术管线；`docs/playbooks/art-pipeline.md` 红线明文「主体视觉实体必须有皮肤槽」但当时**无门禁抓**。手册的牙已补：`game-skill-audit` 现对无 art-ledger 的游戏打 🟡「无美术台账」黄旗（全库存量一起点名·还债各归各主）。
+> **要做（按 art-pipeline.md 编译期三行·game-q 样板）**：① 主体视觉实体（转轮符号/机身/拉杆/背景）加 `Sprite` 皮肤槽（与现程序化观感并存·未填资产观感零变——程序化烘焙可作回退保留，皮肤就绪即盖过）；② 照 `scripts/game-q-art-requirements.mjs` 写 game-k 推导脚本产台账；③ mount 拉本地 index 注册 AssetManager。完工=美术平台选 game-k 出台账·audit 黄旗消。
+> 备注：t3-slot-payout 下沉本身是好活（Lead 后补验收）；本单只管美术接入。
+
 ### REQ-Q-击杀记账（on-kill credit）· 塔防赏金/击杀计分通用缺口 · [2026-07-07] · LEAD（game-q 立项）→ Lead 排期 · status: **open（真缺口·已记债·循环层用清波经济绕过·非阻塞）** · 类型: 通用战斗能力下沉候选
 > **缺口**：`t2-hitbox` 只写**目标本地**资源（`hitbox.ts` `queueResourceMod(...,'local')`）；`t2-mortal` 的 `dropTemplate` 对**任何死因无差别**触发。→ 无法用单个 Mortal 区分「被塔击杀→给全局/攻击者记赏金」与「抵达大本营漏怪→扣命·不发赏金」。这是塔防经济（逐怪赏金）唯一表达不了的点，也是**击杀计分/连击表/赏金**一类通用需求的共性缺口（非塔防专属）。
 > **game-q 现绕法（已落地·不依赖本单）**：经济走「开局金 + 清波奖金（timeline resource-cue / `effect-apply` on `timeline:done:<wave>`）+ 波中缓速涓流」——全组合现有能力、确定性、无缺口依赖；逐怪赏金暂缓。

@@ -839,7 +839,7 @@ export function Launcher() {
       await fetch(`${API}/api/library/install-sample`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ preset: 'all' }), // 全套官方示例（platformer/三消 game-j/换装 game-m·幂等）
       });
     } catch { /* API 离线：静默，刷新后仍空态 */ }
     setInstalling(false);

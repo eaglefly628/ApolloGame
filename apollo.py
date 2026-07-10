@@ -2308,6 +2308,7 @@ def _match3_preset() -> dict:
         'banner-lose': {'Transform': {'x': 320, 'y': 200, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('OUT OF MOVES…', 36), 'Color': {'tint': 0xdc2626, 'alpha': 1}, 'Visibility': {'visible': False, 'active': True}},
     })
     return {
+        'slug': 'game-j',
         'name': 'Candy Kingdom (game-j)',
         'description': '三消示例：点相邻两格交换，3 连消除得分；20 步内拿 1000 分。迪斯尼×Supercell 风皮肤槽已就位。',
         'capabilities': ['a1-transform', 'c1-shape', 'l2-color', 'l1-sprite', 'l6-text', 'l5-camera', 'h1-visibility',
@@ -2428,6 +2429,7 @@ def _dressup_preset() -> dict:
         'banner-star': {'Transform': {'x': 320, 'y': 34, 'rotation': 0, 'scaleX': 1, 'scaleY': 1}, 'Text': txt('★★★ 主题达成 PERFECT!', 24), 'Color': {'tint': 0xd97706, 'alpha': 1}, 'Visibility': {'visible': False, 'active': True}},
     })
     return {
+        'slug': 'game-m',
         'name': 'Wardrobe Voyage (game-m)',
         'description': '暖暖式换装：点右侧衣柜给娃娃穿搭，三维属性实时评分，达成主题目标亮星。穿戴=实体生灭·评分=群计数，零专属系统。',
         'capabilities': ['a1-transform', 'c1-shape', 'l2-color', 'l1-sprite', 'l6-text', 'l5-camera', 'h1-visibility',
@@ -2451,6 +2453,10 @@ def _scaffold(slug: str, name: str, manifest: dict, provider: str, meta_override
     _write_json(game_dir / 'manifest.json', manifest)
     meta = _write_meta(game_dir, name, provider, meta_overrides)
     versioned = _version_save(game_dir, manifest, commit_msg)
+    try:  # 落库即台账（owner 2026-07-10「为什么老虎机没有美术需求表」→ 机器化：新卡带自动 derive）
+        _art_replace_cli(['derive', slug])
+    except Exception:
+        pass  # 台账推导失败不阻塞建库（打开美术平台仍会自动初始化兜底）
     return game_dir, meta, versioned
 
 def _run_manifest_check(manifest: dict) -> tuple:
@@ -2553,14 +2559,22 @@ def library_create(body: dict) -> tuple:
     return (200, {'success': True, 'slug': slug, 'meta': meta, 'versioned': versioned})
 
 def library_install_sample(body: dict) -> tuple:
-    preset_name = str(body.get('preset') or 'platformer')
-    if preset_name not in PRESET_BLUEPRINTS:
-        return (400, {'success': False, 'error': f'未知 preset: {preset_name}（可选: {", ".join(PRESET_BLUEPRINTS)}）'})
-    preset = PRESET_BLUEPRINTS[preset_name]
-    slug = _dedup_slug(_slugify(f'sample-{preset_name}'))
-    _, meta, versioned = _scaffold(slug, preset.get('name', preset_name), _preset_manifest(preset),
-                                   'sample', None, f'install sample {preset_name}')
-    return (200, {'success': True, 'slug': slug, 'meta': meta, 'versioned': versioned})
+    """装官方示例卡带。preset='all'（或缺省）=全套幂等安装（已存在的跳过）；指定单个 preset 也幂等。
+    slug 取 preset 首选名（match3→game-j·dressup→game-m），无首选名回退 sample-<preset>。"""
+    preset_name = str(body.get('preset') or 'all')
+    names = list(PRESET_BLUEPRINTS) if preset_name == 'all' else [preset_name]
+    if any(n not in PRESET_BLUEPRINTS for n in names):
+        return (400, {'success': False, 'error': f'未知 preset: {preset_name}（可选: all, {", ".join(PRESET_BLUEPRINTS)}）'})
+    installed, skipped = [], []
+    for n in names:
+        preset = PRESET_BLUEPRINTS[n]
+        slug = preset.get('slug') or _slugify(f'sample-{n}')
+        if _game_dir(slug).is_dir():  # 幂等：已装过不重装不重号
+            skipped.append(slug)
+            continue
+        _scaffold(slug, preset.get('name', n), _preset_manifest(preset), 'sample', None, f'install sample {n}')
+        installed.append(slug)
+    return (200, {'success': True, 'installed': installed, 'skipped': skipped, 'slug': (installed + skipped)[0] if (installed or skipped) else None})
 
 def library_put_manifest(slug: str, body: dict) -> tuple:
     game_dir = _game_dir(slug)

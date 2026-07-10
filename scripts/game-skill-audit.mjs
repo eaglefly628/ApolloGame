@@ -48,6 +48,7 @@ function audit(game) {
   const src = files.filter((f) => !/\.test\.ts$/.test(f));
   const tests = files.filter((f) => /\.test\.ts$/.test(f));
 
+
   let loc = 0;
   const capImports = new Set(); // 引擎能力/原子导入源
   const flags = { mathRandom: [], innerHTML: [], createElement: [], nakedFill: [], zeroCap: false };
@@ -101,6 +102,8 @@ function yellowBits(r) {
   const bits = [];
   if (r.flags.zeroCap) bits.push('零能力接入');
   if (r.tests === 0) bits.push('零测试');
+  try { statSync(join(GAMES_DIR, '..', '..', 'public', 'games', r.game, 'art', 'art-ledger.json')); }
+  catch { bits.push('无美术台账(art-pipeline.md 编译期三行接入)'); }
   return bits;
 }
 /** ⚠ 建议（非红线·不进判词）文字列表 */
