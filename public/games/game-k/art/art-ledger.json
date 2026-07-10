@@ -529,8 +529,8 @@
       },
       "query": "sym ace",
       "placeholder": {
-        "current": "皮肤槽 k/sym-a（未填时回退 2D 色块 box·#df5d49）",
-        "source": "procedural",
+        "current": "程序化占位真图（Ace）",
+        "source": "procedural-bake",
         "count": 1,
         "instances": [
           "sym-ace"
@@ -544,8 +544,14 @@
         "transparent": true
       },
       "context": "美术需求：「sym ace」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-a（未填时回退 2D 色块 box·#df5d49）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "placeholder",
+      "gen": {
+        "provider": "procedural",
+        "model": "game-k/art.ts",
+        "prompt": "a chunky cartoon glowing gravestone game icon tile engraved with the big letter 'A', red glow, cracked mossy tombstone",
+        "servedPath": "/games/game-k/art/placeholder/sym-a.png",
+        "localId": "k/sym-a"
+      },
       "provenance": null,
       "prompt": "a chunky cartoon glowing gravestone game icon tile engraved with the big letter 'A', red glow, cracked mossy tombstone"
     },
@@ -561,8 +567,8 @@
       },
       "query": "sym biohazard scatter",
       "placeholder": {
-        "current": "皮肤槽 k/sym-scat（未填时回退 2D 色块 box·#a8df49）",
-        "source": "procedural",
+        "current": "程序化占位真图（Biohazard (Scatter)）",
+        "source": "procedural-bake",
         "count": 1,
         "instances": [
           "sym-biohazard-scatter"
@@ -576,8 +582,14 @@
         "transparent": true
       },
       "context": "美术需求：「sym biohazard scatter」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-scat（未填时回退 2D 色块 box·#a8df49）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "placeholder",
+      "gen": {
+        "provider": "procedural",
+        "model": "game-k/art.ts",
+        "prompt": "a glowing biohazard toxin jar icon, bright green radioactive trefoil hazard symbol, bubbling ooze, banner reading FREE SPINS, scatter symbol",
+        "servedPath": "/games/game-k/art/placeholder/sym-scat.png",
+        "localId": "k/sym-scat"
+      },
       "provenance": null,
       "prompt": "a glowing biohazard toxin jar icon, bright green radioactive trefoil hazard symbol, bubbling ooze, banner reading FREE SPINS, scatter symbol"
     },
@@ -593,8 +605,8 @@
       },
       "query": "sym jack",
       "placeholder": {
-        "current": "皮肤槽 k/sym-j（未填时回退 2D 色块 box·#4994df）",
-        "source": "procedural",
+        "current": "程序化占位真图（Jack）",
+        "source": "procedural-bake",
         "count": 1,
         "instances": [
           "sym-jack"
@@ -608,8 +620,14 @@
         "transparent": true
       },
       "context": "美术需求：「sym jack」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-j（未填时回退 2D 色块 box·#4994df）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "placeholder",
+      "gen": {
+        "provider": "procedural",
+        "model": "game-k/art.ts",
+        "prompt": "a chunky cartoon glowing gravestone game icon tile engraved with the big letter 'J', blue glow, cracked mossy tombstone",
+        "servedPath": "/games/game-k/art/placeholder/sym-j.png",
+        "localId": "k/sym-j"
+      },
       "provenance": null,
       "prompt": "a chunky cartoon glowing gravestone game icon tile engraved with the big letter 'J', blue glow, cracked mossy tombstone"
     },
@@ -625,8 +643,8 @@
       },
       "query": "sym king",
       "placeholder": {
-        "current": "皮肤槽 k/sym-k（未填时回退 2D 色块 box·#dfb249）",
-        "source": "procedural",
+        "current": "程序化占位真图（King）",
+        "source": "procedural-bake",
         "count": 1,
         "instances": [
           "sym-king"
@@ -640,8 +658,14 @@
         "transparent": true
       },
       "context": "美术需求：「sym king」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-k（未填时回退 2D 色块 box·#dfb249）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "placeholder",
+      "gen": {
+        "provider": "procedural",
+        "model": "game-k/art.ts",
+        "prompt": "a chunky cartoon glowing gravestone game icon tile engraved with the big letter 'K', amber glow, cracked mossy tombstone",
+        "servedPath": "/games/game-k/art/placeholder/sym-k.png",
+        "localId": "k/sym-k"
+      },
       "provenance": null,
       "prompt": "a chunky cartoon glowing gravestone game icon tile engraved with the big letter 'K', amber glow, cracked mossy tombstone"
     },
@@ -657,8 +681,8 @@
       },
       "query": "sym mad scientist",
       "placeholder": {
-        "current": "皮肤槽 k/sym-doc（未填时回退 2D 色块 box·#dfcb49）",
-        "source": "procedural",
+        "current": "程序化占位真图（Mad Scientist）",
+        "source": "procedural-bake",
         "count": 1,
         "instances": [
           "sym-mad-scientist"
@@ -672,8 +696,14 @@
         "transparent": true
       },
       "context": "美术需求：「sym mad scientist」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-doc（未填时回退 2D 色块 box·#dfcb49）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "placeholder",
+      "gen": {
+        "provider": "procedural",
+        "model": "game-k/art.ts",
+        "prompt": "a wacky cartoon zombie mad scientist character head, green face, wild frizzy white hair, cracked round goggles, big toothy grin",
+        "servedPath": "/games/game-k/art/placeholder/sym-doc.png",
+        "localId": "k/sym-doc"
+      },
       "provenance": null,
       "prompt": "a wacky cartoon zombie mad scientist character head, green face, wild frizzy white hair, cracked round goggles, big toothy grin"
     },
@@ -689,8 +719,8 @@
       },
       "query": "sym queen",
       "placeholder": {
-        "current": "皮肤槽 k/sym-q（未填时回退 2D 色块 box·#ad49df）",
-        "source": "procedural",
+        "current": "程序化占位真图（Queen）",
+        "source": "procedural-bake",
         "count": 1,
         "instances": [
           "sym-queen"
@@ -704,8 +734,14 @@
         "transparent": true
       },
       "context": "美术需求：「sym queen」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-q（未填时回退 2D 色块 box·#ad49df）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "placeholder",
+      "gen": {
+        "provider": "procedural",
+        "model": "game-k/art.ts",
+        "prompt": "a chunky cartoon glowing gravestone game icon tile engraved with the big letter 'Q', purple glow, cracked mossy tombstone",
+        "servedPath": "/games/game-k/art/placeholder/sym-q.png",
+        "localId": "k/sym-q"
+      },
       "provenance": null,
       "prompt": "a chunky cartoon glowing gravestone game icon tile engraved with the big letter 'Q', purple glow, cracked mossy tombstone"
     },
@@ -721,8 +757,8 @@
       },
       "query": "sym ten",
       "placeholder": {
-        "current": "皮肤槽 k/sym-t（未填时回退 2D 色块 box·#49dfd5）",
-        "source": "procedural",
+        "current": "程序化占位真图（Ten）",
+        "source": "procedural-bake",
         "count": 1,
         "instances": [
           "sym-ten"
@@ -736,8 +772,14 @@
         "transparent": true
       },
       "context": "美术需求：「sym ten」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-t（未填时回退 2D 色块 box·#49dfd5）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "placeholder",
+      "gen": {
+        "provider": "procedural",
+        "model": "game-k/art.ts",
+        "prompt": "a chunky cartoon glowing gravestone game icon tile engraved with '10', teal glow, cracked mossy tombstone",
+        "servedPath": "/games/game-k/art/placeholder/sym-t.png",
+        "localId": "k/sym-t"
+      },
       "provenance": null,
       "prompt": "a chunky cartoon glowing gravestone game icon tile engraved with '10', teal glow, cracked mossy tombstone"
     },
@@ -753,8 +795,8 @@
       },
       "query": "sym undead bride",
       "placeholder": {
-        "current": "皮肤槽 k/sym-girl（未填时回退 2D 色块 box·#df49df）",
-        "source": "procedural",
+        "current": "程序化占位真图（Undead Bride）",
+        "source": "procedural-bake",
         "count": 1,
         "instances": [
           "sym-undead-bride"
@@ -768,8 +810,14 @@
         "transparent": true
       },
       "context": "美术需求：「sym undead bride」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-girl（未填时回退 2D 色块 box·#df49df）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "placeholder",
+      "gen": {
+        "provider": "procedural",
+        "model": "game-k/art.ts",
+        "prompt": "a cute cartoon undead zombie bride girl character, pale purple skin, huge sparkly eyes, flower crown, stitched sweet smile, rosy cheeks, veil",
+        "servedPath": "/games/game-k/art/placeholder/sym-girl.png",
+        "localId": "k/sym-girl"
+      },
       "provenance": null,
       "prompt": "a cute cartoon undead zombie bride girl character, pale purple skin, huge sparkly eyes, flower crown, stitched sweet smile, rosy cheeks, veil"
     },
@@ -785,8 +833,8 @@
       },
       "query": "sym zombie hound",
       "placeholder": {
-        "current": "皮肤槽 k/sym-dog（未填时回退 2D 色块 box·#85df49）",
-        "source": "procedural",
+        "current": "程序化占位真图（Zombie Hound）",
+        "source": "procedural-bake",
         "count": 1,
         "instances": [
           "sym-zombie-hound"
@@ -800,8 +848,14 @@
         "transparent": true
       },
       "context": "美术需求：「sym zombie hound」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-dog（未填时回退 2D 色块 box·#85df49）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "placeholder",
+      "gen": {
+        "provider": "procedural",
+        "model": "game-k/art.ts",
+        "prompt": "a cute cartoon zombie puppy character head, green fur, floppy ears, big adorable puppy eyes, one little fang, lolling pink tongue, stitched patch",
+        "servedPath": "/games/game-k/art/placeholder/sym-dog.png",
+        "localId": "k/sym-dog"
+      },
       "provenance": null,
       "prompt": "a cute cartoon zombie puppy character head, green fur, floppy ears, big adorable puppy eyes, one little fang, lolling pink tongue, stitched patch"
     },
@@ -817,8 +871,8 @@
       },
       "query": "sym zombie king wild",
       "placeholder": {
-        "current": "皮肤槽 k/sym-wild（未填时回退 2D 色块 box·#49df49）",
-        "source": "procedural",
+        "current": "程序化占位真图（Zombie King (Wild)）",
+        "source": "procedural-bake",
         "count": 1,
         "instances": [
           "sym-zombie-king-wild"
@@ -832,8 +886,14 @@
         "transparent": true
       },
       "context": "美术需求：「sym zombie king wild」（场景实体·单例）·2D 平面·当前占位=皮肤槽 k/sym-wild（未填时回退 2D 色块 box·#49df49）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "placeholder",
+      "gen": {
+        "provider": "procedural",
+        "model": "game-k/art.ts",
+        "prompt": "a friendly cartoon undead zombie king character head, green skin, big glowing eyes, exposed pink brain, small golden crown, stitched jaw, spooky but adorable, banner reading WILD",
+        "servedPath": "/games/game-k/art/placeholder/sym-wild.png",
+        "localId": "k/sym-wild"
+      },
       "provenance": null,
       "prompt": "a friendly cartoon undead zombie king character head, green skin, big glowing eyes, exposed pink brain, small golden crown, stitched jaw, spooky but adorable, banner reading WILD"
     }

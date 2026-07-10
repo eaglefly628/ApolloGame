@@ -33,7 +33,15 @@
 - **调色**：毒绿 `#5ef08a` · 腐紫 `#b45ef0` · 骨白 `#eafff0` · 琥珀 `#ffd166` · 血 `#ff6b6b`。
 - 提示词=**主体 subject**（风格交给风格包·不手拼风格词）；完整逐行见 `art-list.md` / 台账 `prompt`。
 
-## 4. 规格
+## 4. 占位真图（工作流「placeholder=库内真图」）
+
+- 平台缩略图只认真图（台账 `gen.servedPath`）·纯程序化占位无图片 → 平台只显示色块 swatch、看不到「替换前长啥样」。故**符号程序化美术烘焙成 PNG 占位真图**：
+  - `node scripts/game-k-bake-placeholders.mjs`（headless 渲染 art.ts drawSymbol → 每符号一张 256² PNG）→ `public/games/game-k/art/placeholder/sym-*.png`；
+  - 登记进 `index.json`（游戏 loader 加载·观感不变）+ 回填台账符号行 `status=placeholder` + `gen.servedPath`（平台即显示真实图标·仍标「占位」待替换）。
+- **符号 10 项 = 占位（有真图缩略图）**；**chrome 16 项 = 待配（当前 CSS/主题占位·无独立图·平台显示色块/🎨）**——需真图时一键全量生成。
+- 一键全量 / 单槽重生成 → 生成物按 skinKey 登记覆盖 index.json → 游戏 + 平台同步换装。**蓝图/玩法零改动**。
+
+## 5. 规格
 
 - sprite/texture：透明底 PNG·usage:sprite/texture·wrap:clamp；bg：满幅不透明。显示足印见台账 `spec`。
-- 编号 **art-01..26**（append-only·墓碑保号）。第一遍 mock smoke（工作流 §六.1）：`--gen`（落 scratch·**不入库**）。真图 = 带 key/放宽网络 session 一键全量。
+- 编号 **art-01..26**（append-only·墓碑保号）。第一遍 mock smoke（工作流 §六.1）：`game-k-art-requirements.mjs --gen`（落 scratch·**不入库**）。真图 = 带 key/放宽网络 session 一键全量。
