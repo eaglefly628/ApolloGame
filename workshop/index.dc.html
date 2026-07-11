@@ -51,6 +51,10 @@
           </button>
           <button onClick="{{ goAssets }}" style="{{ navAssetsStyle }}">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M4 17 l5-4 4 3 3-2 4 3"/></svg>
+            <span>游戏美术库</span>
+          </button>
+          <button onClick="{{ goMatlib }}" style="{{ navMatlibStyle }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
             <span>素材库</span>
           </button>
           <button onClick="{{ goPublish }}" style="{{ navPublishStyle }}">
@@ -107,6 +111,19 @@
                 <button onClick="{{ f.pick }}" style="{{ f.style }}">{{ f.label }}</button>
               </sc-for>
             </div>
+            <!-- toolbar：视图切换 + 状态 filter（来源 filter=上方 gameFilters·不重复） -->
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+              <div style="display:flex;gap:6px">
+                <sc-for list="{{ gameViewChips }}" as="v" hint-placeholder-count="2"><button onClick="{{ v.pick }}" style="{{ v.style }}">{{ v.label }}</button></sc-for>
+              </div>
+              <span style="width:3px;height:22px;background:rgba(58,35,18,.22);border-radius:2px"></span>
+              <span style="font-family:'Fredoka';font-weight:700;font-size:11px;color:rgba(26,79,110,.85)">状态</span>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <sc-for list="{{ gameStatusChips }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</button></sc-for>
+              </div>
+            </div>
+            <!-- 图标模式（网格卡片） -->
+            <sc-if value="{{ gameGrid }}" hint-placeholder-val="{{ true }}">
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
               <!-- new game ghost card FIRST -->
               <button onClick="{{ goNewGame }}" style="border-radius:20px;border:4px dashed rgba(58,35,18,.45);background:rgba(255,255,255,.4);min-height:214px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;transition:transform .12s" style-hover="{{ cardHover }}">
@@ -135,6 +152,29 @@
                 </div>
               </sc-for>
             </div>
+            </sc-if>
+            <!-- 列表模式（紧凑行） -->
+            <sc-if value="{{ gameList }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <button onClick="{{ goNewGame }}" style="{{ listNewStyle }}">
+                <span style="width:30px;height:30px;border-radius:8px;background:linear-gradient(180deg,#8fe05a,#6cbf37);border:3px solid #3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;font-size:20px;display:flex;align-items:center;justify-content:center;flex:none">＋</span>
+                <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312">新建游戏</span>
+                <span style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#8a5a2c;letter-spacing:.06em">AI · TEMPLATE</span>
+              </button>
+              <sc-for list="{{ gameListRows }}" as="g" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:12px;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:9px 12px;box-shadow:0 4px 0 rgba(58,35,18,.2)">
+                  <div style="{{ g.thumbStyle }}"><div style="width:38px;height:32px;display:flex;align-items:center;justify-content:center">{{ g.cover }}</div></div>
+                  <div style="min-width:0;flex:1">
+                    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312;line-height:1.1">{{ g.cn }}</div>
+                    <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#b0723a;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ g.meta }}</div>
+                  </div>
+                  <span style="background:rgba(58,35,18,.6);border:2px solid #3a2312;border-radius:8px;padding:2px 9px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db;flex:none">{{ g.tag }}</span>
+                  <span style="{{ g.badgeStyle }}">{{ g.status }}</span>
+                  <button onClick="{{ g.edit }}" style="{{ editBtnStyle }}" style-active="{{ editBtnActive }}">编辑</button>
+                </div>
+              </sc-for>
+            </div>
+            </sc-if>
           </sc-if>
 
           <!-- ---------- NEW GAME CHOOSER ---------- -->
@@ -367,7 +407,7 @@
             </div>
           </sc-if>
 
-          <!-- ---------- ASSETS（素材库·接真美术台账·owner 07-10 点名） ---------- -->
+          <!-- ---------- GAME ART（游戏美术库·接真美术台账·按种类折叠树·owner 07-10 点名） ---------- -->
           <sc-if value="{{ isAssets }}" hint-placeholder-val="{{ false }}">
             <div style="display:inline-flex;align-items:center;gap:8px;background:#37b6ef;border:3px solid #3a2312;border-radius:12px;padding:6px 14px;box-shadow:0 4px 0 #1f86bd;margin-bottom:14px">
               <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">每游戏一本美术台账（编号 art-NN）· 生成/换图/复核在旧工作台「🎨 美术平台」</span>
@@ -377,19 +417,115 @@
                 <button onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button>
               </sc-for>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px">
-              <sc-for list="{{ assetRows }}" as="a" hint-placeholder-count="12">
-                <div style="border-radius:16px;overflow:hidden;border:3px solid #ffd257;box-shadow:0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312;background:#fff">
-                  <div style="{{ a.coverStyle }}"></div>
-                  <div style="padding:6px 6px 8px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
-                    <div style="font-family:'Fredoka';font-weight:700;color:#3a2312;font-size:11px">{{ a.no }} <span style="{{ a.badgeStyle }}">{{ a.badge }}</span></div>
-                    <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:10px;line-height:1.2;overflow:hidden;max-height:24px">{{ a.q }}</div>
-                  </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ artGroups }}" as="grp" hint-placeholder-count="3">
+                <div>
+                  <button onClick="{{ grp.toggle }}" style="{{ grp.headerStyle }}">
+                    <span style="font-size:15px;width:16px;flex:none">{{ grp.chevron }}</span>
+                    <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px">{{ grp.label }}</span>
+                    <span style="{{ grp.countStyle }}">{{ grp.count }}</span>
+                  </button>
+                  <sc-if value="{{ grp.open }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:10px">
+                      <sc-for list="{{ grp.rows }}" as="a" hint-placeholder-count="6">
+                        <div style="border-radius:16px;overflow:hidden;border:3px solid #ffd257;box-shadow:0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312;background:#fff">
+                          <div style="{{ a.coverStyle }}"></div>
+                          <div style="padding:6px 6px 8px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
+                            <div style="font-family:'Fredoka';font-weight:700;color:#3a2312;font-size:11px">{{ a.no }} <span style="{{ a.badgeStyle }}">{{ a.badge }}</span></div>
+                            <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:10px;line-height:1.2;overflow:hidden;max-height:24px">{{ a.q }}</div>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <sc-if value="{{ grp.moreText }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;margin-top:8px;padding-left:4px">{{ grp.moreText }}</div>
+                    </sc-if>
+                  </sc-if>
                 </div>
               </sc-for>
             </div>
             <sc-if value="{{ assetsEmptyText }}" hint-placeholder-val="{{ false }}">
               <div style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:13px;background:rgba(255,255,255,.5);border:3px dashed rgba(58,35,18,.35);border-radius:14px;padding:18px;text-align:center">{{ assetsEmptyText }}</div>
+            </sc-if>
+          </sc-if>
+
+          <!-- ---------- MATLIB（素材库·共享免费资产库 FreeArtLib·2 级折叠树 + 标签搜索） ---------- -->
+          <sc-if value="{{ isMatlib }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+              <div style="display:inline-flex;align-items:center;gap:8px;background:#37b6ef;border:3px solid #3a2312;border-radius:12px;padding:6px 14px;box-shadow:0 4px 0 #1f86bd">
+                <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">{{ matlibBanner }}</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+              <input value="{{ flQuery }}" onInput="{{ flType }}" placeholder="按标签 / 名称搜索共享素材（如 skeleton / sword / dungeon）…" style="flex:1;min-width:240px;max-width:460px;border:3px solid #3a2312;border-radius:12px;padding:9px 14px;font-family:'Noto Sans SC';font-weight:600;font-size:13px;background:#fff;color:#3a2312;outline:none">
+              <sc-if value="{{ flQuery }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ flClear }}" style="{{ flClearStyle }}">✕ 清除</button>
+              </sc-if>
+            </div>
+            <sc-if value="{{ flLoading }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.5);border:3px dashed rgba(58,35,18,.35);border-radius:14px;padding:18px">
+                <span style="width:24px;height:24px;border:4px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span>
+                <span style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:13px">加载共享资产库（4892 项·首次略等）…</span>
+              </div>
+            </sc-if>
+            <!-- 搜索结果（扁平网格） -->
+            <sc-if value="{{ flSearching }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:13px;margin-bottom:10px">{{ flResultLabel }}</div>
+              <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px">
+                <sc-for list="{{ flResults }}" as="it" hint-placeholder-count="12">
+                  <div style="border-radius:14px;overflow:hidden;border:3px solid #ffd257;box-shadow:0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312;background:#fff">
+                    <div style="{{ it.thumbStyle }}"></div>
+                    <div style="padding:5px 6px 7px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
+                      <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:10px;line-height:1.2;overflow:hidden;max-height:24px">{{ it.caption }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ flNoResult }}" hint-placeholder-val="{{ false }}">
+                <div style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:13px;background:rgba(255,255,255,.5);border:3px dashed rgba(58,35,18,.35);border-radius:14px;padding:18px;text-align:center">{{ flNoResult }}</div>
+              </sc-if>
+            </sc-if>
+            <!-- 分类折叠树（cat → sub → 缩略图网格） -->
+            <sc-if value="{{ flTreeShown }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ flCats }}" as="cat" hint-placeholder-count="6">
+                  <div>
+                    <button onClick="{{ cat.toggle }}" style="{{ cat.headerStyle }}">
+                      <span style="font-size:15px;width:16px;flex:none">{{ cat.chevron }}</span>
+                      <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px">{{ cat.label }}</span>
+                      <span style="{{ cat.countStyle }}">{{ cat.count }}</span>
+                    </button>
+                    <sc-if value="{{ cat.open }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;padding-left:16px">
+                        <sc-for list="{{ cat.subs }}" as="sub" hint-placeholder-count="3">
+                          <div>
+                            <button onClick="{{ sub.toggle }}" style="{{ sub.headerStyle }}">
+                              <span style="font-size:13px;width:14px;flex:none">{{ sub.chevron }}</span>
+                              <span style="font-family:'Noto Sans SC';font-weight:700;font-size:13px">{{ sub.label }}</span>
+                              <span style="{{ sub.countStyle }}">{{ sub.count }}</span>
+                            </button>
+                            <sc-if value="{{ sub.open }}" hint-placeholder-val="{{ false }}">
+                              <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:8px">
+                                <sc-for list="{{ sub.items }}" as="it" hint-placeholder-count="6">
+                                  <div style="border-radius:14px;overflow:hidden;border:3px solid #ffd257;box-shadow:0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312;background:#fff">
+                                    <div style="{{ it.thumbStyle }}"></div>
+                                    <div style="padding:5px 6px 7px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
+                                      <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:10px;line-height:1.2;overflow:hidden;max-height:24px">{{ it.caption }}</div>
+                                    </div>
+                                  </div>
+                                </sc-for>
+                              </div>
+                              <sc-if value="{{ sub.moreText }}" hint-placeholder-val="{{ false }}">
+                                <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;margin-top:8px;padding-left:4px">{{ sub.moreText }}</div>
+                              </sc-if>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
             </sc-if>
           </sc-if>
 
@@ -491,6 +627,8 @@
 class Component extends DCLogic {
   state = {
     screen: 'games', gameFilter: 'all',
+    // 我的游戏库·视图切换 + 状态筛选（Feature A·来源筛选复用既有 gameFilter）
+    gameView: 'grid', gameStatus: 'all',
     liveGames: null, carts: null, version: null, settings: null,
     coins: 12480, gems: 340,
     prompt: '一款太空题材的竖版飞机大战，卡通风，有护盾和火力道具，一个大 Boss。',
@@ -504,8 +642,8 @@ class Component extends DCLogic {
     chatRole: 'gd', chats: { gd: [], pe: [], art: [] }, chatInput: '', chatBusy: false, chatLive: null,
     editModel: 'opus', editEffort: 'high',
     pending: null, pendingErr: null, artHints: [],
-    // 素材库 / 设置 / 调试日志
-    assetsSlug: null, ledger: null, llmLogs: null,
+    // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
+    assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null,
     tokenInput: '', genKeyInputs: {}, defaultProv: null, saving: false,
     toast: null
   };
@@ -624,10 +762,22 @@ class Component extends DCLogic {
       .catch(() => {});
   }
   pickAssetGame(slug) {
-    this.setState({ assetsSlug: slug, ledger: null });
+    this.setState({ assetsSlug: slug, ledger: null, artOpen: {} });
     fetch('/api/art/ledger?slug=' + encodeURIComponent(slug)).then(r => r.json())
       .then(d => { if (this.state.assetsSlug === slug) this.setState({ ledger: (d && d.success) ? d : { rows: [] } }); })
       .catch(() => this.setState({ ledger: { rows: [] } }));
+  }
+  // 共享免费资产库（FreeArtLib·4892 项）——首次进「素材库」屏时惰性拉一次。
+  // 真数据顶层是 { ..., assets:[...] }（不是裸数组）；两种形状都容错取出资产数组。
+  ensureFreeLib() {
+    if (this.state.freeLib !== null || this._flLoading) return;
+    this._flLoading = true;
+    fetch('/assets/FreeArtLib/index.json').then(r => r.json())
+      .then(d => {
+        const arr = Array.isArray(d) ? d : (d && Array.isArray(d.assets) ? d.assets : []);
+        this._flLoading = false; this.setState({ freeLib: arr });
+      })
+      .catch(() => { this._flLoading = false; this.setState({ freeLib: [] }); });
   }
   sendChat() {
     const st = this.state;
@@ -804,7 +954,8 @@ class Component extends DCLogic {
       templates: ['模板库', 'TEMPLATE LIBRARY · 品类灵感'],
       create: ['AI 新建', 'DESCRIBE → GENERATE（真生成·入库即可编辑）'],
       edit: ['编辑工坊', 'WORKSHOP · 策划 / 程序 对白编辑'],
-      assets: ['素材库', 'ASSET LEDGERS · 每游戏一本美术台账'],
+      assets: ['游戏美术库', 'GAME ART · 每游戏一本美术台账'],
+      matlib: ['素材库', 'ASSET LIBRARY · 共享免费资产库'],
       publish: ['发布', 'EXPORT · 下载包'],
       settings: ['设置', 'SETTINGS · LLM 通道 + 文生图 API']
     };
@@ -869,12 +1020,29 @@ class Component extends DCLogic {
     })));
     const statusColor = { '可编辑': ['#7ecb45', '#fff5db', '#4e8a24'], '损坏': ['#ef5138', '#fff5db', '#a03222'],
       '有美术': ['#7ecb45', '#fff5db', '#4e8a24'], '待接美术': ['#ffd257', '#3a2312', '#c98a1e'] };
-    const myGames = mgDefs.map(g => ({
+    // 视图切换 chip（图标/列表）——来源筛选=上方 gameFilters·此处不重复（owner spec Part A）。
+    const gameViewChips = [{ k: 'grid', label: '▦ 图标' }, { k: 'list', label: '≣ 列表' }].map(v => ({
+      label: v.label, style: chipStyle(s.gameView === v.k), pick: () => this.setState({ gameView: v.k }) }));
+    // 状态 chip 只列 mgDefs（已过来源筛选）里真实存在的状态，固定顺序。
+    const STATUS_ORDER = ['可编辑', '损坏', '有美术', '待接美术'];
+    const presentStatuses = STATUS_ORDER.filter(st3 => mgDefs.some(g => g.status === st3));
+    const gameStatusChips = [{ k: 'all', label: '全部' }].concat(presentStatuses.map(st3 => ({ k: st3, label: st3 }))).map(c => ({
+      label: c.label, style: chipStyle(s.gameStatus === c.k), pick: () => this.setState({ gameStatus: c.k }) }));
+    // 状态筛选叠加在来源筛选（gameFilter→cartList/liveList→mgDefs）之上。
+    const mgFiltered = mgDefs.filter(g => s.gameStatus === 'all' || g.status === s.gameStatus);
+    const myGames = mgFiltered.map(g => ({
       cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: cv[g.k], edit: g.edit,
       coverStyle: { position: 'relative', height: '118px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '3px solid #3a2312', background: 'linear-gradient(180deg,' + g.sc[0] + ',' + g.sc[1] + ')' },
       badgeStyle: { position: 'absolute', top: '8px', right: '8px', background: statusColor[g.status][0], color: statusColor[g.status][1], border: '2.5px solid #3a2312', borderRadius: '9px', padding: '2px 9px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '10px', boxShadow: '0 2px 0 ' + statusColor[g.status][2] },
       progStyle: { height: '100%', width: g.prog + '%', background: g.done ? 'linear-gradient(180deg,#aef07a,#7ecb45)' : 'linear-gradient(180deg,#ffe08a,#f5b731)', borderRadius: '999px' }
     }));
+    // 列表模式行：小缩略图 + 名字 + 来源 tag + 状态徽章（非绝对定位）+ 编辑
+    const gameListRows = mgFiltered.map(g => ({
+      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: cv[g.k], edit: g.edit,
+      thumbStyle: { width: '52px', height: '46px', flex: 'none', borderRadius: '10px', border: '2.5px solid #3a2312', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,' + g.sc[0] + ',' + g.sc[1] + ')' },
+      badgeStyle: { flex: 'none', background: statusColor[g.status][0], color: statusColor[g.status][1], border: '2.5px solid #3a2312', borderRadius: '9px', padding: '3px 10px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '11px', boxShadow: '0 2px 0 ' + statusColor[g.status][2] }
+    }));
+    const listNewStyle = { display: 'flex', alignItems: 'center', gap: '12px', width: '100%', textAlign: 'left', background: 'rgba(255,255,255,.5)', border: '3px dashed rgba(58,35,18,.45)', borderRadius: '14px', padding: '9px 12px', cursor: 'pointer' };
 
     // create（真生成）——阶段文案跟真实链路步骤走（不再按百分比猜·治「卡在 92%」误导），附耗时。
     const genBtn = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 20);
@@ -925,8 +1093,27 @@ class Component extends DCLogic {
       pick: () => this.pickAssetGame(slug) }));
     const stBadge = { placeholder: ['占位', '#c8c8c8'], 'needs-art': ['待配', '#c8c8c8'], generated: ['已生成', '#ffd257'],
       replaced: ['已写回', '#7ecb45'], filled: ['已填回', '#7ecb45'], approved: ['已复核', '#7ecb45'], retired: ['退役', '#8f8f8f'], failed: ['失败', '#ef5138'] };
-    const ledRows = ((s.ledger && s.ledger.rows) || []).filter(r => r.status !== 'retired').slice(0, 48);
-    const assetRows = ledRows.map(r => {
+    // 共享折叠树样式（游戏美术库 + 素材库两屏复用）
+    const countBadgeStyle = { marginLeft: '4px', background: 'rgba(58,35,18,.16)', border: '2px solid #3a2312', borderRadius: '999px', padding: '1px 9px', fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: '11px', color: '#3a2312' };
+    const treeHeaderStyle = (open) => ({ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', textAlign: 'left', cursor: 'pointer',
+      border: '3px solid #3a2312', borderRadius: '13px', padding: '9px 14px', color: '#3a2312',
+      background: open ? 'linear-gradient(180deg,#ffe08a,#f5b731)' : 'linear-gradient(180deg,#fffdf5,#fff0cf)',
+      boxShadow: open ? '0 4px 0 #c98a1e' : '0 3px 0 rgba(58,35,18,.18)' });
+    const subHeaderStyle = (open) => ({ display: 'flex', alignItems: 'center', gap: '7px', width: '100%', textAlign: 'left', cursor: 'pointer',
+      border: '2.5px solid #3a2312', borderRadius: '11px', padding: '6px 12px', color: '#3a2312',
+      background: open ? 'linear-gradient(180deg,#d6f1ff,#a9e0fb)' : 'rgba(255,255,255,.55)',
+      boxShadow: open ? '0 3px 0 #5c8fd2' : '0 2px 0 rgba(58,35,18,.16)' });
+    // 游戏美术库·按种类分组折叠（真字段 kind + slot.entity 推导·优先级见 spec）
+    const ledRowsAll = ((s.ledger && s.ledger.rows) || []).filter(r => r.status !== 'retired');
+    const artKindOf = (r) => {
+      const ent = (r.slot && r.slot.entity) || '';
+      if (/^(chrome|hud|ui|btn|panel|logo|banner)/i.test(ent)) return 'UI/HUD';
+      if (r.kind === 'bg' || ent === 'background') return '背景';
+      if (r.kind === 'model3d') return '3D 模型';
+      if (r.kind === 'texture') return '贴图';
+      return '精灵/角色';
+    };
+    const mkArtCell = (r) => {
       const served = r.gen && r.gen.servedPath;
       const badge = stBadge[r.status] || [r.status, '#c8c8c8'];
       return { no: r.no, q: r.query || (r.slot && r.slot.entity) || '', badge: badge[0],
@@ -934,10 +1121,82 @@ class Component extends DCLogic {
         coverStyle: Object.assign({ height: '78px', borderBottom: '2px solid #3a2312' }, served
           ? { backgroundImage: 'url(' + served + ')', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#f2ead8' }
           : { background: 'linear-gradient(180deg,#f2ead8,#e2d2b0)' }) };
+    };
+    const ART_KIND_ORDER = ['精灵/角色', '背景', 'UI/HUD', '贴图', '3D 模型'];
+    const artGrouped = {};
+    ledRowsAll.forEach(r => { const k = artKindOf(r); (artGrouped[k] || (artGrouped[k] = [])).push(r); });
+    const presentKinds = ART_KIND_ORDER.filter(k => artGrouped[k] && artGrouped[k].length);
+    const artDefaultOpen = presentKinds[0];   // 默认展开首个非空组，其余收起
+    const ART_CAP = 60;
+    const artGroups = presentKinds.map(k => {
+      const open = (k in s.artOpen) ? !!s.artOpen[k] : (k === artDefaultOpen);
+      const all = artGrouped[k];
+      const rows = open ? all.slice(0, ART_CAP).map(mkArtCell) : [];
+      const moreText = (open && all.length > ART_CAP) ? ('…还有 ' + (all.length - ART_CAP) + ' 项（完整台账在旧工作台）') : '';
+      return { label: k, count: all.length, open, chevron: open ? '▾' : '▸', rows, moreText,
+        headerStyle: treeHeaderStyle(open), countStyle: countBadgeStyle,
+        toggle: () => this.setState(cur => {
+          const co = (k in cur.artOpen) ? !!cur.artOpen[k] : (k === artDefaultOpen);
+          return { artOpen: Object.assign({}, cur.artOpen, { [k]: !co }) };
+        }) };
     });
     const assetsEmptyText = s.assetsSlug
-      ? (s.ledger && (!s.ledger.rows || !ledRows.length) ? '这款游戏还没有美术台账行——保存一次 manifest 会自动推导（PUT 即台账）' : '')
+      ? (s.ledger && (!s.ledger.rows || !ledRowsAll.length) ? '这款游戏还没有美术台账行——保存一次 manifest 会自动推导（PUT 即台账）' : '')
       : '点上面的游戏页签查看它的美术台账';
+
+    // ── 素材库（共享 FreeArtLib·Feature C）: cat → sub 两级折叠 + 标签搜索 ──
+    const flAll = Array.isArray(s.freeLib) ? s.freeLib : [];
+    const flLoading = s.freeLib === null;
+    const flThumbStyle = (r) => {
+      const sub = (r.sub || '') ? (r.sub + '/') : '';
+      const url = encodeURI('/assets/FreeArtLib/' + (r.cat || '') + '/' + sub + (r.sample || ''));
+      return r.sample
+        ? { height: '78px', borderBottom: '2px solid #3a2312', backgroundImage: 'url(' + url + ')', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#f2ead8', imageRendering: 'pixelated' }
+        : { height: '78px', borderBottom: '2px solid #3a2312', background: 'linear-gradient(180deg,#f2ead8,#e2d2b0)' };
+    };
+    const mkFlItem = (r) => ({ caption: r.subject || r.id || '', thumbStyle: flThumbStyle(r) });
+    const flQ = (s.flQuery || '').trim().toLowerCase();
+    const flSearching = !!flQ && !flLoading;
+    const FL_SEARCH_CAP = 120;
+    let flResults = [], flResultLabel = '', flNoResult = '';
+    if (flSearching) {
+      const hits = flAll.filter(r => (((r.id || '') + ' ' + (r.subject || '') + ' ' + (r.sub || '') + ' ' + ((r.tags || []).join(' '))).toLowerCase().indexOf(flQ) >= 0));
+      flResults = hits.slice(0, FL_SEARCH_CAP).map(mkFlItem);
+      flResultLabel = '搜索「' + (s.flQuery || '').trim() + '」：' + hits.length + ' 个结果' + (hits.length > FL_SEARCH_CAP ? '（显示前 ' + FL_SEARCH_CAP + '）' : '');
+      flNoResult = hits.length ? '' : '没有匹配的素材——换个关键词（英文标签命中率更高，如 skeleton / sword / floor）';
+    }
+    // cat → sub 分组（每次渲染重算·4892 项遍历很快；仅为「已展开」的 sub 构建缩略图，收起的置空以省渲染）
+    const FL_CAT_ZH = { monster: '怪物 Monster', player: '玩家 Player', dungeon: '地牢 Dungeon', item: '道具 Item',
+      gui: '界面 GUI', misc: '杂项 Misc', cardgame: '卡牌 Cardgame', effect: '特效 Effect', emissaries: '使者 Emissaries' };
+    const flTreeShown = !flSearching && !flLoading && flAll.length > 0;
+    const catMap = {};
+    flAll.forEach(r => {
+      const cat = r.cat || '未分类';
+      const cm = catMap[cat] || (catMap[cat] = { subs: {}, count: 0 });
+      const subKey = (r.sub || '') || '（通用）';
+      (cm.subs[subKey] || (cm.subs[subKey] = [])).push(r);
+      cm.count++;
+    });
+    const FL_SUB_CAP = 60;
+    const flCats = Object.keys(catMap).sort((a, b) => catMap[b].count - catMap[a].count).map(cat => {
+      const cm = catMap[cat];
+      const catOpen = !!s.flCat[cat];
+      const subKeys = Object.keys(cm.subs).sort((a, b) => cm.subs[b].length - cm.subs[a].length);
+      const subs = catOpen ? subKeys.map(sk => {
+        const key = cat + '/' + sk;
+        const list = cm.subs[sk];
+        const subOpen = !!s.flSub[key];
+        const items = subOpen ? list.slice(0, FL_SUB_CAP).map(mkFlItem) : [];
+        const moreText = (subOpen && list.length > FL_SUB_CAP) ? ('…更多 ' + (list.length - FL_SUB_CAP) + ' 项（用上方搜索精确定位）') : '';
+        return { label: sk, count: list.length, open: subOpen, chevron: subOpen ? '▾' : '▸', items, moreText,
+          headerStyle: subHeaderStyle(subOpen), countStyle: countBadgeStyle,
+          toggle: () => this.setState(cur => ({ flSub: Object.assign({}, cur.flSub, { [key]: !cur.flSub[key] }) })) };
+      }) : [];
+      return { label: FL_CAT_ZH[cat] || cat, count: cm.count, open: catOpen, chevron: catOpen ? '▾' : '▸', subs,
+        headerStyle: treeHeaderStyle(catOpen), countStyle: countBadgeStyle,
+        toggle: () => this.setState(cur => ({ flCat: Object.assign({}, cur.flCat, { [cat]: !cur.flCat[cat] }) })) };
+    });
+    const flClearBtn = { border: '3px solid #3a2312', borderRadius: '11px', padding: '8px 14px', cursor: 'pointer', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '12px', background: 'linear-gradient(180deg,#fffdf5,#fff0cf)', color: '#3a2312', boxShadow: '0 3px 0 rgba(58,35,18,.18)' };
 
     // publish（下载包）
     const dl = this.jelly('#5fcdf5', '#37b6ef', '#1f86bd', 15); dl.style.padding = '10px 18px';
@@ -1014,14 +1273,19 @@ class Component extends DCLogic {
       versionLabel: 'Version ' + (s.version || '0.1.0'), versionShort: 'v' + (s.version || '0.1.0'),
       isGames: s.screen === 'games', isNewGame: s.screen === 'newgame',
       isTemplates: s.screen === 'templates', isCreate: s.screen === 'create', isEdit: s.screen === 'edit',
-      isAssets: s.screen === 'assets', isPublish: s.screen === 'publish', isSettings: s.screen === 'settings',
+      isAssets: s.screen === 'assets', isMatlib: s.screen === 'matlib', isPublish: s.screen === 'publish', isSettings: s.screen === 'settings',
       navGamesStyle: navBase(['games', 'newgame', 'templates', 'create', 'edit'].indexOf(s.screen) >= 0),
-      navAssetsStyle: navBase(s.screen === 'assets'), navPublishStyle: navBase(s.screen === 'publish'), navSettingsStyle: navBase(s.screen === 'settings'),
+      navAssetsStyle: navBase(s.screen === 'assets'), navMatlibStyle: navBase(s.screen === 'matlib'), navPublishStyle: navBase(s.screen === 'publish'), navSettingsStyle: navBase(s.screen === 'settings'),
       goGames: () => this.setState({ screen: 'games' }), goNewGame: () => this.setState({ screen: 'newgame' }),
       goTemplates: () => this.setState({ screen: 'templates' }), goCreate: () => this.setState({ screen: 'create' }),
       goAssets: () => { this.setState({ screen: 'assets' }); if (!s.assetsSlug && mergedSlugs.length) this.pickAssetGame(mergedSlugs[0]); },
+      goMatlib: () => { this.setState({ screen: 'matlib' }); this.ensureFreeLib(); },
       goPublish: () => this.setState({ screen: 'publish' }), goSettings: () => { this.setState({ screen: 'settings' }); this.refreshSettings(); this.refreshLogs(); },
-      myGames, gameFilters, editBtnStyle: edit.style, editBtnActive: edit.active, backBtnStyle: back.style, backBtnActive: back.active,
+      myGames, gameFilters,
+      // 我的游戏库·视图切换 + 状态筛选（Feature A）
+      gameGrid: s.gameView === 'grid', gameList: s.gameView === 'list',
+      gameViewChips, gameStatusChips, gameListRows, listNewStyle,
+      editBtnStyle: edit.style, editBtnActive: edit.active, backBtnStyle: back.style, backBtnActive: back.active,
       templates, cardHover: { transform: 'translateY(-6px)' }, useBtnStyle: use.style, useBtnActive: use.active,
       promptText: s.prompt, promptType: (e) => this.setState({ prompt: e.target.value }),
       generating: s.generating, genPct: s.genPct, genStage, genFillStyle, genLiveText, genErrText: s.genErr || '',
@@ -1079,8 +1343,13 @@ class Component extends DCLogic {
       chatPlaceholder: { gd: '跟策划聊：玩法手感 / 数值 / 关卡 / 节奏…', art: '跟美术聊：风格方向 / 点名 art-NN 重做 / 换皮肤槽…', pe: '跟程序聊：加实体 / 组件 / 能力接线…' }[s.chatRole],
       sendChat: () => this.sendChat(), sendBtnStyle: send.style, sendBtnActive: send.active,
       applyBtnStyle: apply.style, applyBtnActive: apply.active,
-      // assets
-      assetGameTabs, assetRows, assetsEmptyText,
+      // 游戏美术库（按种类折叠树·Feature B）
+      assetGameTabs, artGroups, assetsEmptyText,
+      // 素材库（共享 FreeArtLib·Feature C）
+      matlibBanner: '共享免费资产库（CC0·' + (flAll.length || 4892) + ' 项）· 展开分类浏览，或用标签搜索',
+      flQuery: s.flQuery, flType: (e) => this.setState({ flQuery: e.target.value }),
+      flClear: () => this.setState({ flQuery: '' }), flClearStyle: flClearBtn,
+      flLoading, flSearching, flResults, flResultLabel, flNoResult, flTreeShown, flCats,
       // publish
       publishRows, dlBtnStyle: dl.style, dlBtnActive: dl.active, publishHint,
       // settings

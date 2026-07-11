@@ -3328,6 +3328,22 @@ class APIHandler(BaseHTTPRequestHandler):
                  '.glb': 'model/gltf-binary'}.get(target.suffix.lower(), 'application/octet-stream')
         self._send_file(target, ctype)
 
+    def _serve_assets(self, path: str) -> None:
+        """GET /assets/... → 只读伺服 assets/**（素材库屏共享免费资产库 FreeArtLib 的 index.json +
+        缩略图同源可取）。路径穿越防护同 _serve_public_games（relative_to 校验解析后仍在 assets/ 内）。"""
+        base = (ROOT / 'assets').resolve()
+        target = (base / path[len('/assets/'):]).resolve()
+        try:
+            target.relative_to(base)
+        except ValueError:
+            self.send_response(403); self.end_headers(); return
+        if not target.is_file():
+            self.send_response(404); self.end_headers(); return
+        ctype = {'.json': 'application/json; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp',
+                 '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml',
+                 '.glb': 'model/gltf-binary'}.get(target.suffix.lower(), 'application/octet-stream')
+        self._send_file(target, ctype)
+
     def _serve_export(self, slug: str) -> None:
         """GET /api/library/<slug>/export → 下载包 zip（owner 2026-07-11「发布=一个下载包」）。
         内容：卡带本体（manifest/meta/design）+ 游戏资产侧（public/games/<slug>·**排除 gen/mock 预览物**
@@ -3373,6 +3389,11 @@ class APIHandler(BaseHTTPRequestHandler):
         # 游戏资产只读伺服（壳的缩略图/manifest 同源可取·REQ-WORKSHOP A）。
         if path.startswith('/games/'):
             self._serve_public_games(path)
+            return
+
+        # 共享免费资产库只读伺服（素材库屏·FreeArtLib index.json + 缩略图同源可取）。
+        if path.startswith('/assets/'):
+            self._serve_assets(path)
             return
 
         # 下载包导出（发布屏=下载包·binary 出，先于 library JSON 分派）。
