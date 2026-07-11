@@ -130,6 +130,24 @@ try:
     _, lst1 = req('GET', '/api/library')
     check(next((x for x in lst1 if x.get('slug') == SLUG), {}).get('empty') is False, '落盘玩法后空卡带旗撤销')
 
+    print('②b 落盘装载门（owner 07-11「能存必须能跑」·parse 过但引擎装不起来=拒）')
+    # Tilemap 缺 layers：parse 全绿（缺字段只告警），tick 时 tile-collision 炸——批14 前这类稿能落盘、
+    # 运行器白屏「无法加载」。现在 manifest-check 装载门（Engine.load+空跑2tick）必须把它拦在门外。
+    crash_mf = {
+        'capabilities': ['t2-tilemap'],
+        'entities': {
+            'map': {'Tilemap': {'cols': 4, 'rows': 4, 'tileSize': 16, 'originX': 0, 'originY': 0}},
+            'hero': {'Transform': {'x': 8, 'y': 8, 'scaleX': 1, 'scaleY': 1},
+                     'Shape': {'kind': 'box', 'width': 10, 'height': 10},
+                     'Velocity': {'vx': 0, 'vy': 0}},
+        },
+    }
+    st, bad = req('PUT', f'/api/library/{SLUG}/manifest', {'manifest': crash_mf, 'note': '坏稿'})
+    check(st == 400 and bad.get('success') is False, '装载会炸的稿被拒（HTTP 400）')
+    check('装载失败' in str(bad.get('error', '')), f'错误文本点名装载失败（供回喂 LLM 修）· 实得: {str(bad.get("error", ""))[:80]}')
+    cur = json.loads((ROOT / 'library' / SLUG / 'manifest.json').read_text('utf-8'))
+    check(cur == tweaked, '坏稿未落盘（盘上仍是上一版好稿）')
+
     print('③ 立项卡端点（/api/pipeline/concept）')
     st, cc = req('POST', '/api/pipeline/concept', {'slug': SLUG, 'pitch': '改口：竖版跳跳乐'})
     check(st == 200 and cc.get('success'), 'concept 改写成功')

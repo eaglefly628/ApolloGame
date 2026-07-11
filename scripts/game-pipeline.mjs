@@ -210,7 +210,7 @@ function gateRun(slug, stage, form) {
     const mf = manifestPath(ROOT, slug, form);
     if (!mf) return { exit: 0, summary: '编译期游戏免 manifest 校验' };
     const r = run('npx', ['vite-node', 'scripts/manifest-check.mjs'], { input: readFileSync(mf, 'utf8') });
-    return { exit: r.status ?? 1, summary: r.status === 0 ? 'parseManifest 零 error' : (r.stderr || r.stdout || '').trim().slice(0, 300) };
+    return { exit: r.status ?? 1, summary: r.status === 0 ? 'parse+引擎装载（load+2tick）零 error' : (r.stderr || r.stdout || '').trim().slice(0, 300) };
   }
   if (stage === 'S4') {
     if (form === 'cart') {

@@ -15,6 +15,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { parseManifestDetailed } from '../src/assembly/manifest.ts';
+import { Engine } from '../src/runtime/engine.ts';
 
 function readStdin() {
   return new Promise((resolve, reject) => {
@@ -49,6 +50,20 @@ async function main() {
   } catch (e) {
     // 引擎判定的真错（结构/基元类型不符）→ 拒绝落盘。
     process.stderr.write(`${e && e.message ? e.message : e}\n`);
+    process.exit(1);
+  }
+
+  // 真装载检查（owner 07-11「能存必须能跑」·实证：AI 改稿过 parse 却在运行器装载时炸）：
+  // parse 只验结构；引擎 load + 空跑 2 tick 才暴露装配期/首帧的运行错（系统 setup 抛错、
+  // 组件数据在系统里立刻炸等）。Engine.load/world.tick 无 DOM 依赖（渲染器另挂），node 侧可跑。
+  // 装载失败=拒绝落盘（错误文本回喂 LLM 修）。
+  try {
+    const eng = new Engine({ tickRate: 60 });
+    eng.load(result.blueprint);
+    eng.world.tick();
+    eng.world.tick();
+  } catch (e) {
+    process.stderr.write(`装载失败（parse 通过但引擎装不起来）: ${e && e.message ? e.message : e}\n`);
     process.exit(1);
   }
 

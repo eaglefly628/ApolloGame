@@ -1318,6 +1318,17 @@ to the game, append the COMPLETE updated manifest as exactly one fenced block:
 ```
 Always the FULL manifest (never a fragment or diff); no other fenced json blocks; if you are only
 discussing, output no json block at all.
+
+## Apollo House Rules（项目准则摘要——落盘门按此执行，违反即被拒）
+1. 游戏=纯数据 manifest（{capabilities:[id…], entities:{实体id:{组件:字段}}}）。没有代码、脚本或
+   自由逻辑——一切行为只能来自引擎 capability 的组合。
+2. 词表封闭：capability id / 组件名 / 字段名只准用目录（catalog）里已有的，绝不发明；未知 id 落盘即拒。
+3. 落盘门=「能存必须能跑」：JSON 解析 → 引擎 parseManifest → **真引擎 load + 空跑 2 tick**。
+   收到门禁错误文本时，按错误修正 manifest 重发完整版，不要辩解。
+4. 组件数据必须是 {字段:值} 对象（绝不能是数组）；系统要消费的嵌套结构必须写全
+   （如 Tilemap 必须带 layers）——缺了它 parse 能过、装载会炸，同样被拒。
+5. 贴图/素材字段用 "art:<英文关键词>" 槽语法，引擎确定性选材；绝不发明资产 id 或文件路径。
+6. 改动优先调现有字段的值；新增实体/组件要克制、说明理由。
 """
 
 AGENT_PE_SYSTEM = AGENT_CHAT_COMMON + """

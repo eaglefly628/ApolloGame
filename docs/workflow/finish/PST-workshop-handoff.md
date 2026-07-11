@@ -29,6 +29,10 @@
 - `GET /api/library` → **裸数组** `[{slug, meta{name,description,…}, valid, hasDesign}]`
 - `POST /api/library/create` `{name, description?, provider?}` → `{success, slug, meta}`（description ≤300：一处来源两处受益=meta 副标题+S1 pitch）
 - `PUT /api/library/<slug>/manifest` `{manifest, note}` → 先 `_run_manifest_check` 后落盘+版本化+**自动重 derive 台账**（mergeLedger append-only·编号不漂移）
+  - **落盘门=「能存必须能跑」（owner 07-11 批14）**：manifest-check = JSON → parseManifest → **真引擎 load+空跑2tick**
+    ——parse 过但装载炸（实证：Tilemap 缺 layers）一律 400 拒、错误文本供回喂；生产板 S3/S8 gate 同一脚本自动同步。
+    运行器侧 `RunOnly` 带同款装载探针+`onError`：装不起来=「卡带装入失败」+原因+修复建议（粘给「程序」对话/历史回滚），不再静默白屏。
+    Agent 侧 `AGENT_CHAT_COMMON` 注入 House Rules 准则摘要（词表封闭/能存必须能跑/组件=对象非数组/art: 槽/改值优先）——三角色同吃。
 - `GET /api/pipeline?slug=` → `{success, stages:[{id,title,status: ok|warn|fail|dim, machine{state,detail}, human}], concept{name,pitch,…}, gameHash, next}`
 - `GET /api/art/ledger?slug=` → `{success, rows:[{no, status, query, slot, gen{servedPath,mock,…}}]}`（servedPath=/games/… 正好走静态路由）
 - `POST /api/agent/chat` `{slug, role: gd|pe|art, messages[≤40·末条须 user], provider?, model?, effort?, catalog?}` →

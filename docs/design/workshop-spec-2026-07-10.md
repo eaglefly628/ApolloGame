@@ -131,6 +131,16 @@
   （8 屏×空/满态+provider 决策+事件处理器）；服务端 curl 自证 10 腿（mock 生成链→create→PUT→board→双角色 chat→applyPending→ledger→export→settings 打码/清除）。
 - **维护交接**：`docs/workflow/finish/PST-workshop-handoff.md`（部件地图/接口契约/红线/验证方法/已知债）。
 
+### §八.5 验收批 14（owner 2026-07-11 续·「能存必须能跑」定则）
+
+owner 实证：AI 卡带对话改稿后「无法加载游戏」且无原因——「它对自己能加载起来的检查是不存在的」。三刀：
+① **落盘装载门**：`scripts/manifest-check.mjs` 升级为 JSON→parseManifest→**真引擎 Engine.load+空跑2tick**
+（实证坏稿类：Tilemap 缺 layers——parse 全绿、首 tick 炸）；一切落盘口（PUT/生成/对话应用/板 S3·S8 gate）自动同步。
+② **运行器明报**：`RunOnly` 同款装载探针+try——「卡带装入失败」+原因明文+修复建议（粘给「程序」对话/历史回滚），
+预览（ManifestPreview）同享；fetch 非 200 也明说。③ **agent House Rules**：`AGENT_CHAT_COMMON` 注入准则摘要
+（游戏=纯数据/词表封闭/能存必须能跑/组件=对象非数组/嵌套结构写全/art: 槽/改值优先）——三角色每轮自带，
+正面回答 owner「他们会不会 follow 我们的文档」：agent 不读仓库文档，靠**每轮注入的准则+硬门禁**保证遵守。
+
 ### §八.1 验收修订（owner 2026-07-11 真机验收六条·当日落地）
 
 1. **三对话入口**：策划(gd)/**美术(art·新)**/程序(pe)——改写 §一「两入口·策划兼美术」定稿；美术角色系统词以台账 digest 为核、点名 art-NN、皮肤槽/风格锚归它。

@@ -376,23 +376,39 @@ export function VersionHistoryOverlay({ api, slug, onClose, onRolledBack }: {
 // ── 纯运行：build 引擎 + CanvasRenderer 跑 WorldBlueprint（无检查器面板）──
 const RUN_VP = { w: 960, h: 600 };
 
-function RunOnly({ blueprint, vp = RUN_VP }: { blueprint: WorldBlueprint; vp?: { w: number; h: number } }) {
+function RunOnly({ blueprint, vp = RUN_VP, onError }: {
+  blueprint: WorldBlueprint;
+  vp?: { w: number; h: number };
+  /** 装载/首帧崩溃时回调错误文本（owner 07-11「告诉我为什么没法加载」——没有它就是静默白屏）。 */
+  onError?: (message: string) => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const div = ref.current;
     if (!div) return;
     div.innerHTML = '';
-    const engine = new Engine({ tickRate: 60 });
-    engine.load(blueprint);
-    const renderer = new CanvasRenderer({ width: vp.w, height: vp.h });
-    engine.attachRenderer(renderer, div);
-    engine.start();
-    return () => {
-      engine.stop();
-      renderer.destroy();
-      div.innerHTML = '';
-    };
-  }, [blueprint, vp.w, vp.h]);
+    try {
+      // 装载探针：一次性引擎 load + 空跑 2 tick（与落盘门 manifest-check 同一套检查）。
+      // 坏稿的首 tick 崩溃发生在 rAF 循环里、try 不住——先在这里同步引爆，错误浮出成明文。
+      const probe = new Engine({ tickRate: 60 });
+      probe.load(blueprint);
+      probe.world.tick();
+      probe.world.tick();
+      const engine = new Engine({ tickRate: 60 });
+      engine.load(blueprint);
+      const renderer = new CanvasRenderer({ width: vp.w, height: vp.h });
+      engine.attachRenderer(renderer, div);
+      engine.start();
+      return () => {
+        engine.stop();
+        renderer.destroy();
+        div.innerHTML = '';
+      };
+    } catch (e: unknown) {
+      onError?.(e instanceof Error ? e.message : String(e));
+      return;
+    }
+  }, [blueprint, vp.w, vp.h, onError]);
   return <div ref={ref} style={{ width: vp.w, height: vp.h, maxWidth: '100%' }} />;
 }
 
@@ -411,16 +427,17 @@ export function ManifestPreview({ manifest, resolveArt, vp = { w: 640, h: 400 } 
       return { ok: false, message: e instanceof Error ? e.message : String(e) };
     }
   }, [manifest, resolveArt]);
-  if (!parsed.ok) {
+  const [runError, setRunError] = React.useState<string | null>(null);
+  if (!parsed.ok || runError) {
     return (
       <div style={{ padding: 24, textAlign: 'center', color: SHELL.danger, fontSize: 13, lineHeight: 1.6 }}>
-        预览无法加载：{parsed.message}
+        预览无法加载：{parsed.ok ? runError : parsed.message}
       </div>
     );
   }
   return (
     <div style={{ display: 'flex', justifyContent: 'center' }}>
-      <RunOnly blueprint={parsed.bp} vp={vp} />
+      <RunOnly blueprint={parsed.bp} vp={vp} onError={setRunError} />
     </div>
   );
 }
@@ -447,6 +464,7 @@ export function DataCartridgeRunner({ slug, entry, api, resolveArt, onBack }: {
     (async () => {
       try {
         const res = await fetch(`${api}/api/library/${slug}/manifest`);
+        if (!res.ok) throw new Error(`服务器未返回卡带 manifest（HTTP ${res.status}）——API(:3000) 是否在跑、卡带是否还在库里？`);
         const raw = await res.json();
         const manifest = resolveArt ? resolveArt(raw) : raw;
         const bp = parseManifest(manifest);
@@ -457,6 +475,8 @@ export function DataCartridgeRunner({ slug, entry, api, resolveArt, onBack }: {
     })();
     return () => { dead = true; };
   }, [api, slug, resolveArt]);
+  // RunOnly 装载/首帧崩溃 → 同一错误态（原因明文，不再静默白屏）。
+  const onRunError = useCallback((message: string) => setState({ phase: 'error', message }), []);
 
   return (
     <div style={{
@@ -471,12 +491,16 @@ export function DataCartridgeRunner({ slug, entry, api, resolveArt, onBack }: {
         </div>
       )}
       {state.phase === 'error' && (
-        <div style={{ textAlign: 'center', maxWidth: 480 }}>
+        <div style={{ textAlign: 'center', maxWidth: 520 }}>
           <div style={{ color: SHELL.danger, fontSize: 14, marginBottom: 8 }}>卡带装入失败</div>
           <div style={{ color: SHELL.sub, fontSize: 13, lineHeight: 1.6 }}>{state.message}</div>
+          <div style={{ color: SHELL.dim, fontSize: 12, lineHeight: 1.7, marginTop: 12 }}>
+            多为 AI 改稿引入——回创作台在「程序」对话里粘贴上面的错误让它修复；
+            或在「版本历史」回滚到上一个能跑的版本。
+          </div>
         </div>
       )}
-      {state.phase === 'running' && <RunOnly blueprint={state.bp} />}
+      {state.phase === 'running' && <RunOnly blueprint={state.bp} onError={onRunError} />}
       <button onClick={onBack} style={backBtnStyle}>← 返回架上</button>
     </div>
   );

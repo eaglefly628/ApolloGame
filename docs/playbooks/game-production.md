@@ -29,7 +29,7 @@
 |---|---|---|---|---|
 | S1 立项卡 | 名字+一句话玩法+参考+风格意向 | concept 字段非空 | owner/Lead 签 | `docs/llm-onboarding.md` |
 | S2 能力计划 | capability-plan 过审（纯数据卡带可记免 plan 裁决） | plan 在档 或 裁决在案 | Lead 签 | `docs/design/capability-plan-template.md` |
-| S3 骨架关 | manifest 立起来、引擎吃得下 | parseManifest 零 error（gate） | 挂载目击签 | `docs/playbooks/index.md`（找对应线） |
+| S3 骨架关 | manifest 立起来、引擎吃得下 | parseManifest 零 error **+ 真引擎装载 load+空跑2tick**（gate·「能存必须能跑」owner 07-11） | 挂载目击签 | `docs/playbooks/index.md`（找对应线） |
 | S4 玩法关 | 胜负/重开/核心循环闭环 | 该游戏 walkthrough vitest 绿；卡带=bench 五轴（gate） | 试玩签 | `docs/playbooks/testing.md` |
 | S5 UI 关 | HUD/菜单守 LayoutNode 纪律 | game-skill-audit 红旗零（gate）；卡带天然免 | /check-ui 结论签 | `docs/playbooks/ui.md` |
 | S6 美术关 | 台账→风格锚→生成→写回→复核 | 台账推导（MOCK 不算完成） | **已内嵌**=平台逐行 ☑ 复核 | `docs/playbooks/art-pipeline.md` |
@@ -46,6 +46,9 @@
 
 ## 红线
 
+- **落盘门=「能存必须能跑」（owner 07-11 定则）**：一切 manifest 落盘（PUT/生成/对话应用改动/板 gate）都过
+  `scripts/manifest-check.mjs` = JSON → parseManifest → **真引擎 load + 空跑 2 tick**。parse 过但装载炸的稿
+  （如 Tilemap 缺 layers）一律拒收、错误文本回喂修——绝不让「存得进去、跑不起来」的卡带进库。
 - **不许代签**：signoff 是人门——LLM 只能把「待人审」摆上看板，不得自己 signoff 冒充 owner/Lead（gate 随便跑，签核必须真人指令）。
 - **S6 的 MOCK 行不算完成**：mock 永不上画面（终态档 §六），流程板同口径。
 - **S8 过期即重跑**：rebase/新提交后 S8 证据自动过期——推送前必须净树重跑（呼应 CLAUDE.md 推送门禁）。
