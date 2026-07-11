@@ -229,10 +229,19 @@ _FALLBACK_CATALOG = (
 )
 
 LLM_PROVIDERS = {
+    # 订阅通道（owner 2026-07-10 拍板「不买 API·不花新钱」·spec=workshop-spec-2026-07-10.md §2.1）：
+    # 走本机 Claude Code CLI headless（`claude -p`），凭订阅（已登录）或 setup-token（CLAUDE_CODE_OAUTH_TOKEN）。
+    # 档位=CLI 模型别名（opus=默认主力·fable=展示档更强·sonnet=量产档），不硬编日期型号。
+    'claude-code': {
+        'name': 'Claude Code（订阅·零 API 费）',
+        'env_key': 'CLAUDE_CODE_OAUTH_TOKEN',
+        'models': ['opus', 'fable', 'sonnet'],
+    },
     'anthropic': {
-        'name': 'Claude (Anthropic)',
+        'name': 'Claude (Anthropic API·BYO key)',
+        # 弃用型号修复（claude-sonnet-4-20250514 已 2026-06-15 退役）→ 当前代次
         'env_key': 'ANTHROPIC_API_KEY',
-        'models': ['claude-sonnet-4-20250514', 'claude-haiku-4-5-20251001'],
+        'models': ['claude-opus-4-8', 'claude-sonnet-5', 'claude-haiku-4-5'],
     },
     'qwen': {
         'name': 'Qwen (Alibaba DashScope)',
@@ -343,6 +352,8 @@ def get_api_key(provider: str) -> str | None:
             for line in env_file.read_text().splitlines():
                 if line.startswith(f'{env_key}='):
                     key = line.split('=', 1)[1].strip().strip('"').strip("'")
+    if not key and provider == 'claude-code' and shutil.which('claude'):
+        return 'cli'  # 本机 CLI 已登录即可用（订阅凭据在 CLI 侧·无需 token）——sentinel 不是密钥不入日志
     return key or None
 
 def get_available_providers() -> list[dict]:
@@ -419,6 +430,64 @@ _OPENAI_COMPAT_URLS = {
     'deepseek': 'https://api.deepseek.com/chat/completions',
 }
 
+# ── Claude Code 订阅通道（owner 2026-07-10「不买 API·不花新钱」·spec=workshop-spec §2.1）──────
+# 机制：spawn 本机 Claude Code CLI headless（`claude -p`·prompt 走 stdin 防 ARG_MAX·JSON 出）。
+# 凭据：CLAUDE_CODE_OAUTH_TOKEN（`claude setup-token` 产出·config>env>.env）或 CLI 已登录（sentinel 'cli'）。
+# 安全铁律（spec §四）：子进程只当**纯文本生成器**——内建工具全禁 + 单轮 + 空工作目录（三重闸：
+# 即使某闸失效也无仓库可读可写）；token 只进子进程 env，绝不落日志/回显。
+_CLAUDE_CODE_TOOLS_OFF = 'Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Task,NotebookEdit,TodoWrite'
+_CLAUDE_CODE_CWD = ROOT / '.apollo' / 'claude-code-cwd'  # 专用空目录（gitignore 的 .apollo 下）
+
+def _claude_code_args(model: str) -> list:
+    """CLI 参数（纯函数·冒烟断言工具面全禁/单轮/JSON 出）。"""
+    return ['claude', '-p', '--output-format', 'json', '--model', model,
+            '--max-turns', '1', '--disallowedTools', _CLAUDE_CODE_TOOLS_OFF]
+
+def _claude_code_transcript(system: str, messages: list) -> str:
+    """system + 多轮 messages → 单段 stdin 文本（v1 确定性拼接·好测；SDK session/resume 记 v2）。"""
+    lines = [system or '', '', '--- 以下是对话记录（续写最后一个 [助手] 回合·直接输出回复内容） ---', '']
+    for m in messages:
+        lines.append('[用户]' if m.get('role') == 'user' else '[助手]')
+        lines.append(str(m.get('content', '')))
+        lines.append('')
+    lines.append('[助手]')
+    return '\n'.join(lines)
+
+def _claude_code_request(api_key: str, model: str, system: str, messages: list) -> dict:
+    if not shutil.which('claude'):
+        return {'success': False, 'error': '未找到 claude CLI——装 Claude Code 后 `claude setup-token`（订阅通道·workshop-spec §2.1）'}
+    env = dict(os.environ)
+    if api_key and api_key != 'cli':
+        env['CLAUDE_CODE_OAUTH_TOKEN'] = api_key
+    _CLAUDE_CODE_CWD.mkdir(parents=True, exist_ok=True)
+    try:
+        proc = subprocess.run(**_spawn(_claude_code_args(model)), input=_claude_code_transcript(system, messages),
+                              capture_output=True, encoding='utf-8', errors='replace',
+                              timeout=300, cwd=_CLAUDE_CODE_CWD, env=env)
+    except subprocess.TimeoutExpired:
+        return {'success': False, 'error': 'Claude Code 订阅通道超时（300s）——深思考/大 manifest·稍后重试'}
+    except Exception as e:
+        return {'success': False, 'error': f'Claude Code 启动失败: {e}'}
+    out = (proc.stdout or '').strip()
+    if proc.returncode != 0:
+        tail = ((proc.stderr or '').strip() or out)[-400:]
+        low = tail.lower()
+        if 'limit' in low or 'rate' in low or 'usage' in low or '额度' in tail:
+            return {'success': False, 'error': f'订阅额度暂满或受限（额度窗恢复后重试）: {tail[:200]}'}
+        return {'success': False, 'error': f'Claude Code 退出码 {proc.returncode}: {tail[:300]}'}
+    try:
+        data = json.loads(out)
+    except Exception:
+        try:  # 兜底：偶发前置告警行 → 取末行 JSON
+            data = json.loads(out.splitlines()[-1])
+        except Exception:
+            return {'success': False, 'error': f'Claude Code 输出解析失败: {out[:200]}'}
+    text = data.get('result') if isinstance(data, dict) else None
+    if not isinstance(text, str):
+        return {'success': False, 'error': f'Claude Code 无 result 字段: {str(data)[:200]}'}
+    usage = data.get('usage') if isinstance(data.get('usage'), dict) else None
+    return {'success': True, 'text': text, 'usage': usage}
+
 def _provider_request(provider: str, api_key: str, model: str, system: str, messages: list,
                       max_tokens: int = 4096) -> dict:
     # 度量（供 _llm_log）：promptChars = system + 全 messages 内容字节；elapsedMs = 本轮墙钟；
@@ -434,12 +503,22 @@ def _provider_request(provider: str, api_key: str, model: str, system: str, mess
 
     if provider == 'mock':
         return _meta(_mock_response(system, messages))
+    if provider == 'claude-code':
+        return _meta(_claude_code_request(api_key, model, system, messages))
     try:
         if provider == 'anthropic':
             url = 'https://api.anthropic.com/v1/messages'
             headers = {'Content-Type': 'application/json', 'x-api-key': api_key, 'anthropic-version': '2023-06-01'}
-            body = json.dumps({'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': messages}).encode()
-            fmt, timeout = 'anthropic', 60
+            # 当前代次合规（4.7+·spec §2.2）：adaptive thinking；不发采样参数（发即 400）；
+            # system 尾块打 cache_control（catalog 大而稳·多轮编辑省输入费）；max_tokens 抬底
+            # （thinking 计入输出预算·太小会把 manifest 掐半截）。
+            body = json.dumps({
+                'model': model, 'max_tokens': max(max_tokens, 16000),
+                'thinking': {'type': 'adaptive'},
+                'system': [{'type': 'text', 'text': system, 'cache_control': {'type': 'ephemeral'}}],
+                'messages': messages,
+            }).encode()
+            fmt, timeout = 'anthropic', 300
         elif provider == 'local':
             url = os.environ.get('OLLAMA_URL', 'http://localhost:11434') + '/api/chat'
             headers = {'Content-Type': 'application/json'}
@@ -458,7 +537,11 @@ def _provider_request(provider: str, api_key: str, model: str, system: str, mess
             data = json.loads(resp.read().decode())
         usage = None
         if fmt == 'anthropic':
-            text = data.get('content', [{}])[0].get('text', '')
+            # 4.7+ 响应可含 thinking 块——遍历 blocks 取 text，绝不假设 content[0] 是文本；
+            # refusal 明报错不静默（安全分类器拒答=HTTP 200·stop_reason='refusal'）。
+            if data.get('stop_reason') == 'refusal':
+                return _meta({'success': False, 'error': 'Claude 安全分类器拒答（refusal）——换个说法或换模型档再试'})
+            text = ''.join(b.get('text', '') for b in data.get('content', []) if b.get('type') == 'text')
             usage = data.get('usage')
         elif fmt == 'ollama':
             text = data.get('message', {}).get('content', '')
@@ -1053,10 +1136,190 @@ def handle_generate(body: dict) -> dict:
     return _generate_with_autofix(provider, api_key, model, system, user_msg, autofix,
                                   log_mode='revise' if mode == 'revise' else 'generate')
 
+# ── Workshop 双角色对话（POST /api/agent/chat·REQ-WORKSHOP B·spec=workshop-spec §2.3）────
+# 策划（gd）/程序（pe）两入口共用编排：全量 messages + 当前 manifest 上下文 → 网关（订阅通道
+# claude-code / BYO key 皆可）。回复=对白 reply；模型提出具体改动时输出**完整 manifest** 的
+# ```json 块——服务端过 _run_manifest_check（一轮错误回喂修正）后才回传 manifest 字段。
+# **绝不代落盘**——「应用改动」是前端显式 PUT（spec §四红线：对话是入口，工件是唯一真相）。
+
+AGENT_CHAT_COMMON = """You are the Apollo Workshop copilot for the game "{GAME_NAME}" (slug: {GAME_SLUG}).
+Reply in Chinese, conversationally and concretely. When — and ONLY when — you propose a concrete change
+to the game, append the COMPLETE updated manifest as exactly one fenced block:
+```json
+(the full manifest object)
+```
+Always the FULL manifest (never a fragment or diff); no other fenced json blocks; if you are only
+discussing, output no json block at all.
+"""
+
+AGENT_PE_SYSTEM = AGENT_CHAT_COMMON + """
+## Your role: 程序（engine-side programmer）
+You own manifest STRUCTURE: entities, components, capabilities wiring. The capability catalog below is
+the single source of truth for vocabulary — never invent components/fields; unknown ids are rejected on load.
+
+## Capability catalog
+{CAPABILITY_CATALOG}
+
+## Current manifest
+{CURRENT_MANIFEST}
+"""
+
+AGENT_GD_SYSTEM = AGENT_CHAT_COMMON + """
+## Your role: 策划（game designer·兼美术）
+You own gameplay feel: tuning existing numeric fields, content/text, pacing, and ART direction.
+Prefer changing VALUES of existing fields over adding new components; structural additions belong to the
+程序 tab — suggest switching if the ask is structural. For art work, reference ledger rows by their number
+(e.g. art-03) so the UI can deep-link the art platform; suggest style-anchor wording when asked about looks.
+
+## Art ledger digest (this game)
+{ART_DIGEST}
+
+## Current manifest
+{CURRENT_MANIFEST}
+"""
+
+_AGENT_ROLES = ('gd', 'pe')
+
+def _agent_art_digest(slug: str, cap: int = 40) -> str:
+    """gd 角色的美术台账摘要：编号/状态/查询词/皮肤槽 + 风格锚。缺台账=明说（不是空串）。"""
+    f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    if not f.is_file():
+        return '(no art ledger yet — it is derived automatically when the manifest is saved)'
+    try:
+        led = json.loads(f.read_text('utf-8'))
+    except Exception:
+        return '(art ledger unreadable)'
+    lines = []
+    style = led.get('artStyle') or {}
+    if style.get('stylePrompt') or style.get('packId'):
+        lines.append(f"style anchor: pack={style.get('packId') or '-'} · prompt={style.get('stylePrompt') or '-'}")
+    for r in (led.get('rows') or [])[:cap]:
+        skin = f" skin={r.get('skinKey')}" if r.get('skinKey') else ''
+        lines.append(f"{r.get('no')} [{r.get('status')}] {r.get('query', '')}{skin}")
+    return '\n'.join(lines) or '(empty ledger)'
+
+def _split_reply_manifest(text: str):
+    """回复文本 → (对白部分, manifest JSON 串或 None)。只认 ```json 围栏且顶层含 entities 的对象。"""
+    if '```json' not in (text or ''):
+        return (text or '').strip(), None
+    pre, rest = text.split('```json', 1)
+    block, _, post = rest.partition('```')
+    block = block.strip()
+    try:
+        cand = json.loads(block)
+        if isinstance(cand, dict) and isinstance(cand.get('entities'), dict):
+            return (pre + post).strip(), block
+    except Exception:
+        pass
+    return (text or '').strip(), None
+
+def handle_agent_chat(body: dict) -> dict:
+    """POST /api/agent/chat {slug, role: 'gd'|'pe', messages:[{role,content}…], provider?, model?, catalog?}。"""
+    slug = str(body.get('slug', '')).strip()
+    role = str(body.get('role', '')).strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    if role not in _AGENT_ROLES:
+        return {'success': False, 'error': f"role 必须是 {'/'.join(_AGENT_ROLES)}（策划=gd·程序=pe）"}
+    raw_msgs = body.get('messages')
+    if not isinstance(raw_msgs, list) or not raw_msgs:
+        return {'success': False, 'error': 'messages 必填（非空数组）'}
+    if len(raw_msgs) > 40:
+        return {'success': False, 'error': '对话过长（≤40 条·新起话题或摘要后继续）'}
+    messages = []
+    for m in raw_msgs:
+        r = m.get('role') if isinstance(m, dict) else None
+        content = m.get('content') if isinstance(m, dict) else None
+        if r not in ('user', 'assistant') or not isinstance(content, str):
+            return {'success': False, 'error': 'messages 每条须为 {role: user|assistant, content: 字符串}'}
+        if len(content) > 8000:
+            return {'success': False, 'error': '单条消息过长（≤8000 字）'}
+        messages.append({'role': r, 'content': content})
+    if messages[-1]['role'] != 'user':
+        return {'success': False, 'error': '最后一条须是用户消息'}
+    # 当前 manifest（library 优先·内置数据游戏回退 public）——对话上下文的唯一真相
+    mf_path = LIBRARY_DIR / slug / 'manifest.json'
+    if not mf_path.is_file():
+        mf_path = ROOT / 'public' / 'games' / slug / 'manifest.json'
+    if not mf_path.is_file():
+        return {'success': False, 'error': f'游戏不存在（library 与 public 均无 manifest）: {slug}'}
+    try:
+        current = json.loads(mf_path.read_text('utf-8'))
+    except Exception as e:
+        return {'success': False, 'error': f'manifest 解析失败: {e}'}
+    try:
+        game_name = json.loads((LIBRARY_DIR / slug / 'meta.json').read_text('utf-8')).get('name') or slug
+    except Exception:
+        game_name = slug
+
+    provider = body.get('provider') or _load_config().get('default') or 'claude-code'
+    if provider != 'mock' and provider not in LLM_PROVIDERS:
+        return {'success': False, 'error': f'Unknown provider: {provider}'}
+    api_key = get_api_key(provider)
+    if not api_key:
+        env_key = LLM_PROVIDERS.get(provider, {}).get('env_key', '?')
+        return {'success': False, 'error': f'{provider} 无可用凭据（配置 {env_key} 或在设置里填）'}
+    models = LLM_PROVIDERS.get(provider, {}).get('models') or ['mock']
+    model = body.get('model') or _config_model(provider) or models[0]
+
+    # mock 短路（APOLLO_MOCK_LLM=1·冒烟/e2e 全链）：确定性染色微调 + 过真校验门
+    if provider == 'mock':
+        revised = _mock_revise(current)
+        ok, msg = _run_manifest_check(revised)
+        out = {'success': True, 'reply': '（mock）已按要求做一处演示微调：把首个可见实体染红。点「应用改动」落盘。',
+               'attempts': 1, 'provider': provider, 'model': model, 'role': role}
+        if ok:
+            out['manifest'] = revised
+        else:
+            out['manifestError'] = msg
+        if role == 'gd':
+            out['artHints'] = []
+        return out
+
+    tpl = AGENT_GD_SYSTEM if role == 'gd' else AGENT_PE_SYSTEM
+    system = (tpl.replace('{GAME_NAME}', str(game_name)).replace('{GAME_SLUG}', slug)
+              .replace('{CURRENT_MANIFEST}', json.dumps(current, ensure_ascii=False))
+              .replace('{CAPABILITY_CATALOG}', str(body.get('catalog') or _FALLBACK_CATALOG))
+              .replace('{ART_DIGEST}', _agent_art_digest(slug) if role == 'gd' else ''))
+
+    attempts = 0
+    reply_text, manifest_out, manifest_err = '', None, None
+    cur_messages = messages
+    while attempts < 2:  # 首轮 + 至多一轮校验错误回喂
+        attempts += 1
+        r = _provider_request(provider, api_key, model, system, cur_messages, max_tokens=16000)
+        _llm_log(provider=provider, model=model, mode=f'agent-{role}' if attempts == 1 else f'agent-{role}-fix',
+                 req=r, validation=None if r.get('success') else 'error',
+                 errors=[] if r.get('success') else [r.get('error')], prompt_full=system)
+        if not r.get('success'):
+            return {'success': False, 'error': r.get('error', 'LLM 请求失败'), 'attempts': attempts}
+        text = r['text']
+        reply_text, block = _split_reply_manifest(text)
+        if block is None:
+            manifest_out, manifest_err = None, None
+            break  # 纯对白轮：合法结果
+        candidate = json.loads(block)  # _split_reply_manifest 已保证可解析
+        ok, msg = _run_manifest_check(candidate)
+        if ok:
+            manifest_out, manifest_err = candidate, None
+            break
+        manifest_err = msg
+        instr, _unknown = _llm_ify_error(msg, candidate)
+        cur_messages = messages + [{'role': 'assistant', 'content': text},
+                                   {'role': 'user', 'content': instr + ' 修好后重发完整回复（对白 + 一个完整 manifest 的 ```json 块）。'}]
+    out = {'success': True, 'reply': reply_text, 'attempts': attempts, 'provider': provider, 'model': model, 'role': role}
+    if manifest_out is not None:
+        out['manifest'] = manifest_out
+    elif manifest_err:
+        out['manifestError'] = manifest_err
+    if role == 'gd':
+        out['artHints'] = sorted(set(re.findall(r'\bart-\d{2,3}\b', reply_text)))
+    return out
+
 # ── 设置端点（BYO key 面板 · M3）────────────────────────────────────────
 # 面板 provider 顺序：千问第一，anthropic/deepseek/openai 兼容随后，ollama（本地·免 key）末位；
 # mock 仅 env 开启时追加。GET 打码回显（绝不回传原文），PUT 写 .apollo-config.json（gitignore）。
-SETTINGS_PROVIDER_ORDER = ['qwen', 'anthropic', 'deepseek', 'openai', 'local']
+SETTINGS_PROVIDER_ORDER = ['claude-code', 'qwen', 'anthropic', 'deepseek', 'openai', 'local']
 
 def _mask_key(key: str) -> str:
     """打码：前3位***尾4位；短 key（<8）整体星号。绝不回传原文。"""
@@ -2984,6 +3247,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_pipeline_concept(body)
             except Exception as e:
                 data = {'success': False, 'error': f'pipeline concept 异常: {e}'}
+        elif path == '/api/agent/chat':
+            try:
+                data = handle_agent_chat(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'agent chat 异常: {e}'}
         else:
             data = {'error': 'Unknown POST endpoint'}
 

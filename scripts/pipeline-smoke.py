@@ -8,16 +8,21 @@
   ④ 换皮谱系：reskin(mock) → 新卡带 concept 带「换皮·包·源」
   ⑤ 装示例：install-sample 幂等 + 自带立项卡
   ⑥ cart-S8 轻量终检：mock 债 → gate 红且点名 MOCK；清债 → 绿（manifest-check+bench）且证据绑 gameHash
+  ⑦ 双角色对话通道（REQ-WORKSHOP B）：claude-code 子进程工具面全禁（纯函数断言）；/api/agent/chat
+     防护（坏 role/坏 slug/坏 messages 全拒）+ mock 全链（reply+过校验门的 manifest·不代落盘）
 任一断言失败 exit 1。造的 library/* + public/games/* 结束清理（零仓库污染）。
 
 用法：python3 scripts/pipeline-smoke.py
 """
+import os
 import sys
 import json
 import socket
 import shutil
 import http.client
 from pathlib import Path
+
+os.environ['APOLLO_MOCK_LLM'] = '1'  # ⑦ 的 mock 通道（_mock_enabled 运行时读·对生产不可见）
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -160,6 +165,30 @@ try:
     check(bool(ev.get('gameHash')) and 'head' not in ev, 'cart S8 证据绑 gameHash（非 git HEAD）')
     b = board(SAMPLE)
     check(stage(b, 'S8')['machine']['state'] == 'ok', 'board S8 机器门绿（证据新鲜）')
+
+    print('⑦ 双角色对话通道（claude-code 安全面 + /api/agent/chat）')
+    args = apollo._claude_code_args('opus')
+    joined = ' '.join(args)
+    check('--max-turns 1' in joined and '--output-format json' in joined, 'CLI 单轮 + JSON 出')
+    off = args[args.index('--disallowedTools') + 1]
+    check(all(t in off for t in ('Bash', 'Edit', 'Write', 'Read', 'WebFetch', 'Task')), f'工具面全禁（spec §四红线）· {off[:60]}…')
+    tr = apollo._claude_code_transcript('SYS', [{'role': 'user', 'content': '你好'}, {'role': 'assistant', 'content': '在'}])
+    check(tr.startswith('SYS') and '[用户]' in tr and tr.rstrip().endswith('[助手]'), 'transcript 渲染（system+角色标注+续写钩）')
+    _, a1 = req('POST', '/api/agent/chat', {'slug': SLUG, 'role': 'boss', 'messages': [{'role': 'user', 'content': 'x'}]})
+    check(a1.get('success') is False, '坏 role 拒')
+    _, a2 = req('POST', '/api/agent/chat', {'slug': '../etc', 'role': 'gd', 'messages': [{'role': 'user', 'content': 'x'}]})
+    check(a2.get('success') is False, '坏 slug 拒')
+    _, a3 = req('POST', '/api/agent/chat', {'slug': SLUG, 'role': 'gd', 'messages': [{'role': 'assistant', 'content': 'x'}]})
+    check(a3.get('success') is False, '末条非 user 拒')
+    _, a4 = req('POST', '/api/agent/chat', {'slug': SLUG, 'role': 'gd', 'provider': 'mock',
+                                            'messages': [{'role': 'user', 'content': '把主角调醒目一点'}]})
+    check(a4.get('success') is True and 'mock' in (a4.get('reply') or ''), 'mock 全链：对白 reply 到手')
+    check(isinstance(a4.get('manifest'), dict) and a4.get('artHints') == [], 'mock 全链：manifest 过校验门回传（gd 带 artHints）')
+    cur_mf = json.loads((ROOT / 'library' / SLUG / 'manifest.json').read_text('utf-8'))
+    check(cur_mf != a4.get('manifest'), '未代落盘（应用改动=前端显式 PUT·红线）')
+    st, sv = req('GET', '/api/settings')
+    pids = [p.get('id') for p in (sv.get('providers') or [])]
+    check(pids and pids[0] == 'claude-code', f'设置面板 claude-code 居首（订阅主力档）· {pids[:3]}')
 
 except Exception as e:
     FAIL += 1
