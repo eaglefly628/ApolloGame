@@ -255,7 +255,21 @@ const noNum = (no) => parseInt(String(no).replace(/^art-/, ''), 10) || 0;
 
 /** 把 fresh 推导并进 prev 台账：已有身份**保原 no**、保状态/生成/provenance/prompt/history，只刷新推导字段；
  *  新身份取 max+1 顺延；消失的身份留墓碑 `status:'retired'`（保号·编号永不复用）。 */
-export function mergeLedger(prev, fresh) {
+/** slot 路径是否仍存在于 manifest（不管值是不是 art: 引用）。区分「实体真被删」与「引用已钉死/待真图」。 */
+function slotExists(m, slot) {
+  if (!m || !slot) return false;
+  const { entity, component, field } = slot;
+  let comp = null;
+  if (String(entity).startsWith('prefab:')) {
+    const [, owner, tname, teid] = String(entity).split(':');
+    comp = m.entities?.[owner]?.PrefabLibrary?.templates?.[tname]?.entities?.[teid]?.[component];
+  } else {
+    comp = m.entities?.[entity]?.[component];
+  }
+  return !!(comp && typeof comp === 'object' && !Array.isArray(comp) && field in comp);
+}
+
+export function mergeLedger(prev, fresh, manifest = null) {
   if (!prev || !Array.isArray(prev.rows) || prev.rows.length === 0) return fresh;
   const mode = fresh.mode || prev.mode || '';
   const prevByKey = new Map(prev.rows.map((r) => [rowIdentity(r, mode), r]));
@@ -285,8 +299,11 @@ export function mergeLedger(prev, fresh) {
     if (seen.has(rowIdentity(p, mode))) continue;
     // 已钉死的槽位（replaced/filled/approved）从 fresh 消失是**正常态**——art: 引用已被替换成真资产 id，
     // 推导自然扫不到；保留原行原状态。只有未完成行（placeholder/needs-art/generated）消失才是真墓碑。
-    if (['replaced', 'filled', 'approved'].includes(p.status)) rows.push({ ...p });
-    else rows.push({ ...p, status: 'retired' });
+    if (['replaced', 'filled', 'approved'].includes(p.status)) { rows.push({ ...p }); continue; }
+    // slot 仍在 manifest（引用只是非 art:——已钉死等真图/mock regen 中）→ 不是真消失，保留原行
+    // （REQ-WORKSHOP C1 回归：PUT 即自动 derive 后，误墓碑会吃掉 mock regen 的 generated 行）。
+    if (manifest && slotExists(manifest, p.slot)) { rows.push({ ...p }); continue; }
+    rows.push({ ...p, status: 'retired' });
   }
   rows.sort((a, b) => noNum(a.no) - noNum(b.no));
   const artStyle = prev.artStyle ?? fresh.artStyle;
@@ -506,7 +523,7 @@ async function run(argv) {
     const mf = readJson(manifestFile(ROOT, slug), null);
     if (!mf) { console.error(`无 manifest: library/${slug}/manifest.json`); process.exit(1); }
     const prev = readJson(ledgerFile(ROOT, slug), null); // append-only：重跑并入现台账·编号不漂移
-    const ledger = mergeLedger(prev, deriveLedger(mf, { game: slug }));
+    const ledger = mergeLedger(prev, deriveLedger(mf, { game: slug }), mf); // 带 manifest：slot 还在只是已钉死 ≠ 墓碑
     writeJson(ledgerFile(ROOT, slug), ledger);
     console.log(JSON.stringify({ ok: true, slug, rows: ledger.rows.length, ledger }));
     return;

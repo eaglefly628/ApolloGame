@@ -9,7 +9,7 @@ const API = 'http://localhost:4000';
 
 interface Gatey { state: string; detail: string }
 interface Stage { id: string; title: string; handbook: string; gate: string | null; machine: Gatey; human: Gatey; status: 'ok' | 'warn' | 'fail' | 'dim' }
-interface Board { success?: boolean; error?: string; slug?: string; form?: string; stages?: Stage[]; next?: string | null }
+interface Board { success?: boolean; error?: string; slug?: string; form?: string; concept?: { name?: string; pitch?: string }; stages?: Stage[]; next?: string | null }
 
 const DOT: Record<Stage['status'], string> = { ok: SHELL.ok, warn: SHELL.warn, fail: SHELL.danger, dim: SHELL.faint };
 
@@ -25,12 +25,26 @@ export function GamePipelinePanel({ slug, title, onBack, onOpenArt }: {
   const [by, setBy] = useState('owner');
   const [busy, setBusy] = useState<string | null>(null); // 正在跑的 gate 阶段 id
   const [msg, setMsg] = useState('');
+  // S1 立项卡编辑（REQ-WORKSHOP C1：concept 从此有 UI 通道·随 board 预填）
+  const [cName, setCName] = useState('');
+  const [cPitch, setCPitch] = useState('');
 
   const load = useCallback(() => {
     fetch(`${API}/api/pipeline?slug=${encodeURIComponent(slug)}`).then((r) => r.json() as Promise<Board>)
-      .then(setBoard).catch((e) => setBoard({ success: false, error: String(e) }));
+      .then((b) => { setBoard(b); setCName(b.concept?.name ?? ''); setCPitch(b.concept?.pitch ?? ''); })
+      .catch((e) => setBoard({ success: false, error: String(e) }));
   }, [slug]);
   useEffect(() => { load(); }, [load]);
+
+  const saveConcept = useCallback(async () => {
+    if (busy || (!cName.trim() && !cPitch.trim())) return;
+    setBusy('S1');
+    try {
+      const r = await fetch(`${API}/api/pipeline/concept`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, name: cName.trim(), pitch: cPitch.trim() }) }).then((x) => x.json() as Promise<{ success?: boolean; error?: string }>);
+      setMsg(r.success ? '✓ 立项卡已落账' : `✕ ${r.error ?? '立项卡保存失败'}`);
+    } catch (e) { setMsg(`✕ ${String(e)}`); }
+    finally { setBusy(null); load(); }
+  }, [busy, slug, cName, cPitch, load]);
 
   const doGate = useCallback(async (stage: string) => {
     if (busy) return;
@@ -96,6 +110,14 @@ export function GamePipelinePanel({ slug, title, onBack, onOpenArt }: {
               <div style={{ fontSize: 11, color: SHELL.sub, lineHeight: 1.5 }}>📖 本步唯一必读手册：<span style={{ fontFamily: SHELL.fontMono, color: SHELL.text }}>{selStage.handbook}</span></div>
               <div style={{ fontSize: 11, color: SHELL.sub, lineHeight: 1.5 }}>机器门：{selStage.machine.detail}</div>
               <div style={{ fontSize: 11, color: SHELL.sub, lineHeight: 1.5 }}>人　门：{selStage.human.detail}</div>
+              {selStage.id === 'S1' && (
+                <>
+                  <div style={sLabel}>立项卡（机器门=名字+一句话玩法·创作台建库自动带）</div>
+                  <input value={cName} onChange={(e) => setCName(e.target.value)} placeholder="游戏名" maxLength={80} style={sInput()} />
+                  <textarea value={cPitch} onChange={(e) => setCPitch(e.target.value)} placeholder="一句话玩法（pitch）" rows={3} maxLength={300} style={{ ...sInput(), resize: 'vertical', fontFamily: 'inherit' }} />
+                  <button onClick={saveConcept} disabled={!!busy || (!cName.trim() && !cPitch.trim())} style={{ ...sBtn('primary'), opacity: busy || (!cName.trim() && !cPitch.trim()) ? 0.5 : 1 }}>💾 保存立项卡</button>
+                </>
+              )}
               {selStage.gate && (
                 <button onClick={() => doGate(selStage.id)} disabled={!!busy} style={{ ...sBtn('primary'), opacity: busy ? 0.5 : 1 }}>
                   {busy === selStage.id ? '⏳ 跑门中…' : `▶ 跑机器门（${selStage.gate}）`}

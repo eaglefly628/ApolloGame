@@ -1733,6 +1733,10 @@ def _put_manifest_anywhere(slug: str, manifest: dict, note: str) -> dict:
     if not ok:
         return {'success': False, 'error': msg}
     _write_json(pub, manifest)
+    try:  # 内置数据游戏同享「落盘即台账刷新」（REQ-WORKSHOP C1·library 线在 library_put_manifest 已加）
+        _art_replace_cli(['derive', slug])
+    except Exception:
+        pass
     return {'success': True, 'builtin': True}
 
 def _art_save_manifest(slug: str, res: dict, note: str, extra: dict) -> dict:
@@ -1963,6 +1967,15 @@ def handle_art_reskin(body: dict) -> dict:
     out = _art_save_manifest(new_slug, res, f'换皮 {pack}（reskinOf {slug}）', {'newSlug': new_slug, 'summary': res.get('summary')})
     if out.get('success'):
         print(c("  [ART]", 'g'), f"reskin {slug}·{pack} → {new_slug}")
+        try:  # 换皮谱系立项卡（REQ-WORKSHOP C1）：新皮卡带 S1 开箱绿·谱系可读
+            src_pf = ROOT / 'public' / 'games' / slug / 'pipeline.json'
+            src_pitch = ''
+            if src_pf.is_file():
+                src_pitch = str((json.loads(src_pf.read_text('utf-8')).get('concept') or {}).get('pitch') or '')
+            pitch = (f'{src_pitch}（换皮·{pack}·源 {slug}）' if src_pitch else f'换皮自 {slug}（{pack}）')[:300]
+            _pipeline_cli(['concept', new_slug, '--name', str(meta.get('name') or new_slug), '--pitch', pitch])
+        except Exception:
+            pass  # 谱系立项卡失败不回滚换皮
     else:
         shutil.rmtree(dst, ignore_errors=True)  # 失败回滚新卡带
     return out
@@ -2004,6 +2017,27 @@ def handle_pipeline_gate(body: dict) -> dict:
     res = _pipeline_cli(['gate', slug, stage], timeout=900)
     if res.get('ok'):
         print(c("  [PIPE]", 'g'), f"gate {slug} {stage} → {res.get('summary', '')[:80]}")
+    return {'success': bool(res.get('ok')), **res}
+
+def handle_pipeline_concept(body: dict) -> dict:
+    """POST /api/pipeline/concept {slug, name?, pitch?, refs?, style?, planWaiver?}。写/改立项卡
+    （≥1 个字段·REQ-WORKSHOP C1：S1 从此有 UI 通道·CLI 同语义）。"""
+    slug = str(body.get('slug', '')).strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    fields = [('name', '--name', 80), ('pitch', '--pitch', 300), ('refs', '--refs', 300),
+              ('style', '--style', 300), ('planWaiver', '--plan-waiver', 300)]
+    args = ['concept', slug]
+    for key, flag, cap in fields:
+        if key not in body:
+            continue
+        val = str(body.get(key) or '').strip()
+        if len(val) > cap:
+            return {'success': False, 'error': f'{key} 过长（≤{cap} 字）'}
+        args += [flag, val]
+    if len(args) == 2:
+        return {'success': False, 'error': '至少提供一个立项卡字段（name/pitch/refs/style/planWaiver）'}
+    res = _pipeline_cli(args)
     return {'success': bool(res.get('ok')), **res}
 
 def handle_pipeline_signoff(body: dict) -> dict:
@@ -2298,6 +2332,7 @@ def _write_meta(game_dir: Path, name: str, provider: str, overrides: dict | None
     meta = {
         'name': name,
         'subtitle': '',
+        'description': '',  # 一句话玩法（REQ-WORKSHOP C1：立项卡 pitch 的持久位·前端 library-model 已消费）
         'color': '#1e293b',
         'accentColor': '#38bdf8',
         'icon': '🎮',
@@ -2327,7 +2362,7 @@ def _preset_manifest(preset: dict) -> dict:
     return {'capabilities': list(preset.get('capabilities', [])), 'entities': preset.get('entities', {})}
 
 def _scaffold(slug: str, name: str, manifest: dict, provider: str, meta_overrides: dict | None,
-              commit_msg: str) -> tuple:
+              commit_msg: str, pitch: str = '') -> tuple:
     """新建游戏目录：写 manifest + meta，落首个版本。返回 (game_dir, meta, versioned)。"""
     game_dir = _game_dir(slug)
     game_dir.mkdir(parents=True, exist_ok=False)
@@ -2338,6 +2373,11 @@ def _scaffold(slug: str, name: str, manifest: dict, provider: str, meta_override
         _art_replace_cli(['derive', slug])
     except Exception:
         pass  # 台账推导失败不阻塞建库（打开美术平台仍会自动初始化兜底）
+    if pitch:  # 建库即立项卡（REQ-WORKSHOP C1：S1 机器门开箱绿·生产板/Workshop 免手填）
+        try:
+            _pipeline_cli(['concept', slug, '--name', name, '--pitch', pitch])
+        except Exception:
+            pass  # 立项卡失败不阻塞建库（生产板 S1 侧栏仍可手填兜底）
     return game_dir, meta, versioned
 
 def _run_manifest_check(manifest: dict) -> tuple:
@@ -2435,8 +2475,13 @@ def library_create(body: dict) -> tuple:
     else:
         manifest = {'capabilities': [], 'entities': {}}
     slug = _dedup_slug(_slugify(name))
+    # 一句话玩法（REQ-WORKSHOP C1）：一处来源两处受益——meta.description（卡带架副标题）+ concept.pitch（S1 立项卡）。
+    desc = str(body.get('description') or '').strip()[:300]
+    meta_over = dict(body.get('meta') or {})
+    if desc:
+        meta_over['description'] = desc
     _, meta, versioned = _scaffold(slug, name, manifest, str(body.get('provider') or 'user'),
-                                   body.get('meta'), 'create')
+                                   meta_over, 'create', pitch=desc)
     return (200, {'success': True, 'slug': slug, 'meta': meta, 'versioned': versioned})
 
 def library_install_sample(body: dict) -> tuple:
@@ -2453,7 +2498,9 @@ def library_install_sample(body: dict) -> tuple:
         if _game_dir(slug).is_dir():  # 幂等：已装过不重装不重号
             skipped.append(slug)
             continue
-        _scaffold(slug, preset.get('name', n), _preset_manifest(preset), 'sample', None, f'install sample {n}')
+        _scaffold(slug, preset.get('name', n), _preset_manifest(preset), 'sample',
+                  {'description': str(preset.get('description') or '')}, f'install sample {n}',
+                  pitch=str(preset.get('description') or ''))
         installed.append(slug)
     return (200, {'success': True, 'installed': installed, 'skipped': skipped, 'slug': (installed + skipped)[0] if (installed or skipped) else None})
 
@@ -2470,6 +2517,10 @@ def library_put_manifest(slug: str, body: dict) -> tuple:
     _write_json(game_dir / 'manifest.json', manifest)  # 后落盘
     _touch_meta(game_dir)
     versioned = _version_save(game_dir, manifest, str(body.get('note') or 'update'))
+    try:  # PUT 即台账刷新（REQ-WORKSHOP C1：manifest 变了美术需求跟着变·mergeLedger append-only 保号不伤已钉行）
+        _art_replace_cli(['derive', slug])
+    except Exception:
+        pass  # 刷新失败不阻塞落盘（美术平台打开时客户端 derive 兜底仍在）
     return (200, {'success': True, 'slug': slug, 'versioned': versioned, 'warnings': msg})
 
 def library_rollback(slug: str, body: dict) -> tuple:
@@ -2928,6 +2979,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_pipeline_signoff(body)
             except Exception as e:
                 data = {'success': False, 'error': f'pipeline signoff 异常: {e}'}
+        elif path == '/api/pipeline/concept':
+            try:
+                data = handle_pipeline_concept(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'pipeline concept 异常: {e}'}
         else:
             data = {'error': 'Unknown POST endpoint'}
 

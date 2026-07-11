@@ -321,6 +321,34 @@ describe('owner 07-09 review 四条修正', () => {
   });
 });
 
+describe('mergeLedger 带 manifest：slot 还在只是已钉死 ≠ 墓碑（REQ-WORKSHOP C1 回归·PUT 自动 derive 撞出）', () => {
+  it('generated(mock) 行 + 槽位已钉死（非 art:）→ 保留原行；实体真删 → 仍墓碑', async () => {
+    await withRoot(async (root) => {
+      const prev = deriveLedger(MANIFEST, { game: 'g' });
+      await batchGenerate(prev, 'pixel-retro', { root, game: 'g', mock: true }); // 全行 generated·mock
+      const pinned = applyReplacements(JSON.parse(JSON.stringify(MANIFEST)), JSON.parse(JSON.stringify(prev)), { allowMock: true }).manifest;
+      // 场景：manifest 已钉死（refs 非 art:），行还停在 generated（= mock regen 等真图的生产态）
+      const merged = mergeLedger(prev, deriveLedger(pinned, { game: 'g' }), pinned);
+      expect(merged.rows.find((r) => r.slot.entity === 'hero').status).toBe('generated'); // 不墓碑
+      expect(merged.rows.find((r) => r.slot.entity === 'hero').gen?.mock).toBe(true); // 生成信息保留
+      // 实体真删：即使带 manifest 也墓碑
+      const smaller = JSON.parse(JSON.stringify(pinned));
+      delete smaller.entities.hero;
+      const merged2 = mergeLedger(prev, deriveLedger(smaller, { game: 'g' }), smaller);
+      expect(merged2.rows.find((r) => r.slot.entity === 'hero').status).toBe('retired');
+    });
+  });
+  it('prefab 模板内槽位同享判定（钉死不墓碑）', () => {
+    const PRE = { entities: { lib: { PrefabLibrary: { templates: { coat: { entities: { body: { Sprite: { type: 'Sprite', textureKey: 'art:red coat' }, Shape: { type: 'Shape', width: 8, height: 8 } } } } } } } } };
+    const prev = deriveLedger(PRE, { game: 'g' });
+    prev.rows[0].status = 'generated'; prev.rows[0].gen = { mock: true, localId: 'gen/mock/art-01' };
+    const pinned = JSON.parse(JSON.stringify(PRE));
+    pinned.entities.lib.PrefabLibrary.templates.coat.entities.body.Sprite.textureKey = 'gen/mock/art-01';
+    const merged = mergeLedger(prev, deriveLedger(pinned, { game: 'g' }), pinned);
+    expect(merged.rows[0].status).toBe('generated'); // prefab 槽位仍在 → 保留
+  });
+});
+
 describe('已替换槽位 re-derive 不墓碑（game-m 撞出·2026-07-09）', () => {
   it('replace 钉死后重推导：replaced 行保留原状·不标 retired', async () => {
     await withRoot(async (root) => {

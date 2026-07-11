@@ -88,6 +88,24 @@ export const GATE_STAGES = STAGES.filter((s) => s.gate).map((s) => s.id);
 
 const led = (root, slug) => readJson(join(root, 'public', 'games', slug, 'art', 'art-ledger.json'), null);
 
+/** mock 债：live 行（非 retired）里 gen.mock 的计数——「mock 永不上画面」在终检关的机器化表达。无台账=0（纯免费库 placeholder 也算清账）。 */
+export function mockDebt(root, slug) {
+  const l = led(root, slug);
+  if (!l || !Array.isArray(l.rows)) return 0;
+  return l.rows.filter((r) => r.status !== 'retired' && r.gen?.mock).length;
+}
+
+/** 立项卡写入（字段级合并·只覆盖出现的字段）。CLI concept 与 /api/pipeline/concept 共用。 */
+export function writeConcept(root, slug, fields) {
+  const pf = readJson(pipelineFile(root, slug), { version: 1, slug, concept: {}, signoffs: {}, evidence: {} });
+  for (const k of ['name', 'pitch', 'refs', 'style', 'planWaiver']) {
+    if (fields[k] !== undefined) pf.concept[k] = fields[k];
+  }
+  (pf.history ||= []).push({ action: 'concept', at: new Date().toISOString() });
+  writeJson(pipelineFile(root, slug), pf);
+  return pf.concept;
+}
+
 /** 美术关子状态（复用美术平台五步条口径·纯推导）：MOCK 行不算完成——mock 永不上画面（owner 07-10）。 */
 export function artSubState(root, slug) {
   const l = led(root, slug);
@@ -163,6 +181,7 @@ export function boardFor(root, slug) {
         break;
       case 'S8':
         machine = evalEvidence(pf.evidence?.S8, hashNow, head);
+        if (machine.state === 'dim') machine.detail = form === 'cart' ? '未跑（gate=manifest-check+bench+MOCK 清账·卡带轻量终检）' : '未跑（gate=tsc+vitest+build 三绿）';
         break;
       default:
         machine = { state: 'dim', detail: '' };
@@ -180,7 +199,7 @@ export function boardFor(root, slug) {
     return { id: st.id, title: st.title, handbook: st.handbook, gate: st.gate, machine, human, status };
   });
   const next = stages.find((s) => s.status !== 'ok');
-  return { ok: true, slug, form, gameHash: hashNow, stages, next: next ? next.id : null };
+  return { ok: true, slug, form, gameHash: hashNow, concept: c, stages, next: next ? next.id : null };
 }
 
 // ── 机器门执行（gate 子命令·真跑·记证据）──────────────────────────────
@@ -212,6 +231,21 @@ function gateRun(slug, stage, form) {
     return { exit: r.status ?? 1, summary: verdict || (r.stderr || '').slice(0, 200) };
   }
   if (stage === 'S8') {
+    if (form === 'cart') {
+      // 卡带轻量终检（REQ-WORKSHOP C2·Lead 裁决）：纯数据卡带不背全仓门——
+      // mock 债清零（「mock 永不上画面」的终检表达）∧ 完整性（manifest-check）∧ 可玩健康（bench 五轴）。
+      // 债最便宜先查（不给 mock 未清的卡带白跑重门）。
+      const debt = mockDebt(ROOT, slug);
+      if (debt > 0) return { exit: 1, summary: `✗ MOCK 债 ${debt} 行未清（mock 不算真图·重生成或清账后再终检）` };
+      const mf = manifestPath(ROOT, slug, form);
+      const chk = run('npx', ['vite-node', 'scripts/manifest-check.mjs'], { input: readFileSync(mf, 'utf8') });
+      if ((chk.status ?? 1) !== 0) return { exit: chk.status ?? 1, summary: `✗ manifest-check · ${(chk.stderr || chk.stdout || '').trim().slice(0, 200)}` };
+      const b = run('npx', ['vite-node', 'scripts/bench-manifest.mjs'], { input: readFileSync(mf, 'utf8') });
+      let pass = false, score = '?';
+      try { const j = JSON.parse((b.stdout || '').trim().split('\n').pop()); pass = !!j.pass; score = j.score; } catch { /* 输出非 JSON 即失败 */ }
+      if (!pass) return { exit: 1, summary: `✗ bench 五轴 score=${score}` };
+      return { exit: 0, summary: `cart 终检：MOCK 0 · manifest-check=0 · bench score=${score}` };
+    }
     const steps = [
       ['npx', ['tsc', '--noEmit']],
       ['npx', ['vitest', 'run', '--silent']],
@@ -257,7 +291,8 @@ if (isMain) {
     const res = gateRun(slug, stage, form);
     const pf = readJson(pipelineFile(ROOT, slug), { version: 1, slug, concept: {}, signoffs: {}, evidence: {} });
     const ev = { exit: res.exit, summary: res.summary, at: new Date().toISOString() };
-    if (stage === 'S8') {
+    if (stage === 'S8' && form !== 'cart') {
+      // 全仓门证据绑仓库位置（引擎一动即过期）；cart 轻量门只看游戏自身内容 → 绑 gameHash（C2）
       ev.head = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout?.trim() || '';
       ev.dirty = (spawnSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' }).stdout || '').trim().length > 0;
     } else {
@@ -283,14 +318,13 @@ if (isMain) {
     process.exit(0);
   }
   if (cmd === 'concept') {
-    const pf = readJson(pipelineFile(ROOT, slug), { version: 1, slug, concept: {}, signoffs: {}, evidence: {} });
+    const fields = {};
     for (const [k, flag] of [['name', '--name'], ['pitch', '--pitch'], ['refs', '--refs'], ['style', '--style'], ['planWaiver', '--plan-waiver']]) {
       const v = opt(flag);
-      if (v !== undefined) pf.concept[k] = v;
+      if (v !== undefined) fields[k] = v;
     }
-    (pf.history ||= []).push({ action: 'concept', at: new Date().toISOString() });
-    writeJson(pipelineFile(ROOT, slug), pf);
-    console.log(JSON.stringify({ ok: true, slug, concept: pf.concept }));
+    const concept = writeConcept(ROOT, slug, fields);
+    console.log(JSON.stringify({ ok: true, slug, concept }));
     process.exit(0);
   }
   console.error(`未知子命令: ${cmd}`);
