@@ -516,6 +516,13 @@ export function swapSlot(manifest, ledger, no, assetId, { source = 'library', at
 
 // ═══ CLI（apollo.py/smoke 薄胶水调用）═══
 
+// 台账推导（美术库地基）：优先 deriveLedger（扫 art: 皮肤槽）；纯色块生成游戏无 art: 槽 → 会空 →
+// 回退 deriveRequirements（扫所有视觉实体·连色块都列出「该配什么美术」）。让美术库对任何生成的游戏都有内容。
+export function deriveForGame(manifest, game = '') {
+  const led = deriveLedger(manifest, { game });
+  return led.rows.length ? led : deriveRequirements(manifest, { game });
+}
+
 async function run(argv) {
   const cmd = argv[0], slug = argv[1];
   if (cmd === 'packs') { console.log(JSON.stringify({ packs: listStylePacks() })); return; }
@@ -523,7 +530,8 @@ async function run(argv) {
     const mf = readJson(manifestFile(ROOT, slug), null);
     if (!mf) { console.error(`无 manifest: library/${slug}/manifest.json`); process.exit(1); }
     const prev = readJson(ledgerFile(ROOT, slug), null); // append-only：重跑并入现台账·编号不漂移
-    const ledger = mergeLedger(prev, deriveLedger(mf, { game: slug }), mf); // 带 manifest：slot 还在只是已钉死 ≠ 墓碑
+    // deriveForGame：art: 槽为主，纯色块游戏回退需求推导（owner 2026-07-11「生成的游戏美术库空」）。
+    const ledger = mergeLedger(prev, deriveForGame(mf, slug), mf); // 带 manifest：slot 还在只是已钉死 ≠ 墓碑
     writeJson(ledgerFile(ROOT, slug), ledger);
     console.log(JSON.stringify({ ok: true, slug, rows: ledger.rows.length, ledger }));
     return;

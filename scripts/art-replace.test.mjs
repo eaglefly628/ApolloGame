@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger } from './art-replace.mjs';
+import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame } from './art-replace.mjs';
 import { STYLE_PACKS, STYLE_PACK_IDS } from './style-packs.mjs';
 
 const MANIFEST = {
@@ -361,5 +361,25 @@ describe('已替换槽位 re-derive 不墓碑（game-m 撞出·2026-07-09）', (
       expect(hero.status).toBe('replaced'); // 不是 retired
       expect(hero.gen?.localId).toBeTruthy(); // 生成信息保留
     });
+  });
+});
+
+describe('deriveForGame：art: 槽为主，纯色块生成游戏回退需求推导（owner 2026-07-11「生成的游戏美术库空」）', () => {
+  it('有 art: 皮肤槽 → 走 deriveLedger（不回退）', () => {
+    const led = deriveForGame(MANIFEST, 'g');
+    // MANIFEST 有 4 个 art: 槽（hero/slime/background/coin3d）→ deriveLedger 出 4 行、非空
+    expect(led.rows.length).toBe(deriveLedger(MANIFEST, { game: 'g' }).rows.length);
+    expect(led.rows.length).toBeGreaterThan(0);
+  });
+  it('纯色块（无 art: 无 Sprite 引用）→ deriveLedger 空 → 回退 deriveRequirements 出需求行', () => {
+    const shapeOnly = { entities: {
+      player: { Transform: { x: 1, y: 1 }, Shape: { kind: 'rect', width: 20, height: 20 }, Color: { tint: 0x38bdf8 } },
+      enemy: { Transform: { x: 5, y: 1 }, Shape: { kind: 'circle', radius: 8 }, Color: { tint: 0xef4444 } },
+      score: { Resource: { value: 0 } }, // 纯逻辑实体不算视觉
+    } };
+    expect(deriveLedger(shapeOnly, { game: 'g' }).rows.length).toBe(0);           // 老路：空
+    const led = deriveForGame(shapeOnly, 'g');
+    expect(led.rows.length).toBe(2);                                              // 回退：player + enemy（score 不计）
+    expect(led.rows.every((r) => r.slot && r.slot.entity)).toBe(true);
   });
 });
