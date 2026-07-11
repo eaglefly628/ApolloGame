@@ -22,6 +22,7 @@ import shutil
 import base64
 import tempfile
 import re
+import hashlib
 import unicodedata
 import uuid
 from pathlib import Path
@@ -450,21 +451,28 @@ _CLAUDE_CODE_CWD = ROOT / '.apollo' / 'claude-code-cwd'  # 专用空目录（git
 
 _CLAUDE_EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
 
-def _claude_code_args(model: str, effort: str = 'high') -> list:
+def _claude_code_args(model: str, effort: str = 'high', resume: str = None) -> list:
     """CLI 参数（纯函数·冒烟断言工具面全禁/单轮/流式出）。effort 默认 high（owner 07-11「默认 4.8 high」）。
-    stream-json + 部分消息：思考/正文 delta 逐行吐出 → 实时活动注册表（owner 07-11「卡 82% 不知道在干什么」）。"""
+    stream-json + 部分消息：思考/正文 delta 逐行吐出 → 实时活动注册表；resume=原生 session 续聊
+    （owner 07-11「跟 Claude Code 一致」·方案 A）——上下文在 CC 侧完整延续，只发增量。"""
     if effort not in _CLAUDE_EFFORTS:
         effort = 'high'
-    return ['claude', '-p', '--output-format', 'stream-json', '--include-partial-messages', '--verbose',
+    args = ['claude', '-p', '--output-format', 'stream-json', '--include-partial-messages', '--verbose',
             '--model', model, '--effort', effort, '--append-system-prompt', _CLAUDE_CODE_SYSTEM_PIN,
             '--max-turns', '1', '--disallowedTools', _CLAUDE_CODE_TOOLS_OFF]
+    if resume and re.fullmatch(r'[0-9a-fA-F-]{8,64}', resume):
+        args += ['--resume', resume]
+    return args
 
-def _claude_code_args_legacy(model: str, effort: str = 'high') -> list:
+def _claude_code_args_legacy(model: str, effort: str = 'high', resume: str = None) -> list:
     """旧版 CLI 兼容参数（不认 --include-partial-messages/--effort 的版本）：非流式 json 出——
     功能可用但无实况（owner 07-11 v2.1.87 auto-update failed 实证）。检测到即整进程降级并提示升级。"""
-    return ['claude', '-p', '--output-format', 'json', '--model', model,
+    args = ['claude', '-p', '--output-format', 'json', '--model', model,
             '--append-system-prompt', _CLAUDE_CODE_SYSTEM_PIN,
             '--max-turns', '1', '--disallowedTools', _CLAUDE_CODE_TOOLS_OFF]
+    if resume and re.fullmatch(r'[0-9a-fA-F-]{8,64}', resume):
+        args += ['--resume', resume]
+    return args
 
 _CLAUDE_CODE_LEGACY = {'on': False}  # 一旦检测旧 CLI 就记住（本进程内），后续直接走兼容路径
 
@@ -494,7 +502,7 @@ def _claude_code_transcript(system: str, messages: list) -> str:
     lines.append('[助手]')
     return '\n'.join(lines)
 
-def _claude_code_request(api_key: str, model: str, system: str, messages: list, effort: str = 'high') -> dict:
+def _claude_code_request(api_key: str, model: str, system: str, messages: list, effort: str = 'high', session: dict = None) -> dict:
     """订阅通道·流式版：Popen + stream-json 逐行读——思考/正文 delta 实时进 _LLM_LIVE（前端可见「在干什么」），
     result 行收尾。存活判据=心跳非闹钟（owner 07-11「边生成边看到就不用超时杀」）：只要还在吐流就不杀，
     180s 无任何输出=停滞收割；1800s 绝对上限只作跑飞保险。"""
@@ -504,10 +512,14 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
     if api_key and api_key != 'cli':
         env['CLAUDE_CODE_OAUTH_TOKEN'] = api_key
     _CLAUDE_CODE_CWD.mkdir(parents=True, exist_ok=True)
+    resume_id = (session or {}).get('id')
+    # resume=原生续聊：session 里已有系统词与全部历史——只发最新一条（增量）；首轮才发全量 transcript。
+    payload = messages[-1]['content'] if resume_id else _claude_code_transcript(system, messages)
+
     def _legacy_run():  # 旧版 CLI 兼容路径：非流式一发（无实况·功能不断）
         try:
-            lp = subprocess.run(**_spawn(_claude_code_args_legacy(model, effort)),
-                                input=_claude_code_transcript(system, messages), capture_output=True,
+            lp = subprocess.run(**_spawn(_claude_code_args_legacy(model, effort, resume_id)),
+                                input=payload, capture_output=True,
                                 encoding='utf-8', errors='replace', timeout=1800, cwd=_CLAUDE_CODE_CWD, env=env)
         except subprocess.TimeoutExpired:
             return {'success': False, 'error': '订阅通道超时（30 分钟·旧版 CLI 兼容模式）'}
@@ -527,6 +539,8 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
         ltext = ldata.get('result') if isinstance(ldata, dict) else None
         if not isinstance(ltext, str):
             return {'success': False, 'error': f'Claude Code 无 result 字段: {str(ldata)[:200]}'}
+        if session is not None and isinstance(ldata.get('session_id'), str):
+            session['id'] = ldata['session_id']
         return {'success': True, 'text': ltext, 'usage': ldata.get('usage') if isinstance(ldata.get('usage'), dict) else None}
 
     if _CLAUDE_CODE_LEGACY['on']:
@@ -540,7 +554,7 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
     proc = None
     try:
         try:
-            proc = subprocess.Popen(**_spawn(_claude_code_args(model, effort)),
+            proc = subprocess.Popen(**_spawn(_claude_code_args(model, effort, resume_id)),
                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                     encoding='utf-8', errors='replace', cwd=_CLAUDE_CODE_CWD, env=env)
         except Exception as e:
@@ -566,9 +580,10 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
                 return
         threading.Thread(target=_watch, daemon=True).start()
         result_text, text_acc, usage, raw_lines = None, [], None, []
+        captured_sid = None
         try:
             try:
-                proc.stdin.write(_claude_code_transcript(system, messages))
+                proc.stdin.write(payload)
                 proc.stdin.close()
             except Exception:
                 pass  # 进程可能已死——由退出码分支报错
@@ -579,6 +594,8 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
                     ev = json.loads(line)
                 except Exception:
                     continue
+                if isinstance(ev.get('session_id'), str):
+                    captured_sid = ev['session_id']
                 t = ev.get('type')
                 if t == 'stream_event':  # 部分消息 delta：thinking/text 都算「活着的进度」
                     delta = ((ev.get('event') or {}).get('delta') or {})
@@ -610,19 +627,27 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
                 _CLAUDE_CODE_LEGACY['on'] = True  # 旧版 CLI 不认流式旗标 → 本进程降级非流式（功能不断·无实况）
                 print(c('  [LLM]', 'y'), '检测到旧版 claude CLI（不认流式旗标）——已降级兼容模式；升级 CLI 可获实况（claude doctor）', flush=True)
                 return _legacy_run()
+            if resume_id and 'limit' not in low and 'rate' not in low:
+                # session 丢失/过期（CC 侧清理等）→ 清 id 回落全量重放一次（体验降一轮·不断链）
+                print(c('  [LLM]', 'y'), f'resume 失败（{tail[:80]}）——回落全量重放并新开 session', flush=True)
+                if session is not None:
+                    session['id'] = None
+                return _claude_code_request(api_key, model, system, messages, effort, session)
             if 'limit' in low or 'rate' in low or 'usage' in low or '额度' in tail:
                 return {'success': False, 'error': f'订阅额度暂满或受限（额度窗恢复后重试）: {tail[:200]}'}
             return {'success': False, 'error': f'Claude Code 退出码 {proc.returncode}: {tail[:300]}'}
         text = result_text if isinstance(result_text, str) else (''.join(text_acc) or None)
         if not isinstance(text, str) or not text.strip():
             return {'success': False, 'error': f'Claude Code 无 result 字段: {"".join(raw_lines)[:200]}'}
+        if session is not None and captured_sid:
+            session['id'] = captured_sid
         return {'success': True, 'text': text, 'usage': usage}
     finally:
         with _LLM_LIVE_LOCK:
             _LLM_LIVE.pop(rid, None)
 
 def _provider_request(provider: str, api_key: str, model: str, system: str, messages: list,
-                      max_tokens: int = 4096, effort: str = 'high') -> dict:
+                      max_tokens: int = 4096, effort: str = 'high', session: dict = None) -> dict:
     # 度量（供 _llm_log）：promptChars = system + 全 messages 内容字节；elapsedMs = 本轮墙钟；
     # usage = provider 回的 token 数（若有）。这些是 additive，不改任何调用方语义。
     prompt_chars = len(system or '') + sum(len(str(m.get('content', ''))) for m in messages)
@@ -645,7 +670,7 @@ def _provider_request(provider: str, api_key: str, model: str, system: str, mess
     if provider == 'mock':
         return _meta(_mock_response(system, messages))
     if provider == 'claude-code':
-        return _meta(_claude_code_request(api_key, model, system, messages, effort))
+        return _meta(_claude_code_request(api_key, model, system, messages, effort, session))
     try:
         if provider == 'anthropic':
             url = 'https://api.anthropic.com/v1/messages'
@@ -1487,12 +1512,27 @@ def handle_agent_chat(body: dict) -> dict:
               .replace('{DESIGN_DOCS}', _agent_design_digest(slug) if role == 'gd' else '')
               .replace('{ART_DIGEST}', _agent_art_digest(slug) if role in ('gd', 'art') else ''))
 
+    # 方案 A（owner 07-11 拍板）：订阅通道用 CC 原生 session——首轮全量注入并抓 session_id，
+    # 续轮 --resume 只发增量；manifest 变了（应用改动后）随增量附最新全文。工件仍是唯一真相。
+    session = None
+    mf_hash = None
+    if provider == 'claude-code':
+        mf_hash = hashlib.sha1(json.dumps(current, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16]
+        store = _ws_file_load(slug)
+        sid = (store.get('sessions') or {}).get(role)
+        session = {'id': sid if isinstance(sid, str) else None}
+        if session['id']:
+            note = ''
+            if (store.get('ctxHash') or {}).get(role) != mf_hash:
+                note = ('【提示】游戏 manifest 已更新为最新版（以下为准·此前版本作废）：\n```json\n'
+                        + json.dumps(current, ensure_ascii=False) + '\n```\n\n')
+            messages = [{'role': 'user', 'content': note + messages[-1]['content']}]  # 续轮=只发增量
     attempts = 0
     reply_text, manifest_out, manifest_err = '', None, None
     cur_messages = messages
     while attempts < 2:  # 首轮 + 至多一轮校验错误回喂
         attempts += 1
-        r = _provider_request(provider, api_key, model, system, cur_messages, max_tokens=16000, effort=effort)
+        r = _provider_request(provider, api_key, model, system, cur_messages, max_tokens=16000, effort=effort, session=session)
         _llm_log(provider=provider, model=model, mode=f'agent-{role}' if attempts == 1 else f'agent-{role}-fix',
                  req=r, validation=None if r.get('success') else 'error',
                  errors=[] if r.get('success') else [r.get('error')], prompt_full=system)
@@ -1510,8 +1550,14 @@ def handle_agent_chat(body: dict) -> dict:
             break
         manifest_err = msg
         instr, _unknown = _llm_ify_error(msg, candidate)
-        cur_messages = messages + [{'role': 'assistant', 'content': text},
-                                   {'role': 'user', 'content': instr + ' 修好后重发完整回复（对白 + 一个完整 manifest 的 ```json 块）。'}]
+        if session is not None and session.get('id'):
+            # resume 态：assistant 回合已在 session 里——回喂只发修正指令（增量）
+            cur_messages = [{'role': 'user', 'content': instr + ' 修好后重发完整回复（对白 + 一个完整 manifest 的 ```json 块）。'}]
+        else:
+            cur_messages = messages + [{'role': 'assistant', 'content': text},
+                                       {'role': 'user', 'content': instr + ' 修好后重发完整回复（对白 + 一个完整 manifest 的 ```json 块）。'}]
+    if session is not None and session.get('id'):
+        _ws_sessions_save(slug, role, session['id'], mf_hash)  # 下轮 --resume 续聊（CC 侧管窗口/压缩）
     if role == 'gd':  # 底案更新提议（owner 07-11：提纲=活底案·对话可持续修订·确认才落盘）
         reply_text, dpath, dcontent = _split_design_patch(reply_text)
         if dpath:
@@ -2124,6 +2170,24 @@ def handle_generate_jobs_list() -> dict:
 
 _WORKSHOP_CHATS_DIR = ROOT / '.apollo' / 'workshop-chats'
 
+def _ws_file_load(slug: str) -> dict:
+    f = _WORKSHOP_CHATS_DIR / f'{slug}.json'
+    try:
+        d = json.loads(f.read_text('utf-8'))
+        return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+def _ws_sessions_save(slug: str, role: str, sid: str, ctx_hash: str) -> None:
+    """记该卡带该角色的原生 CC session id + 上次注入的 manifest 指纹（方案 A·resume）。"""
+    d = _ws_file_load(slug)
+    d.setdefault('version', 1)
+    d['slug'] = slug
+    d.setdefault('sessions', {})[role] = sid
+    d.setdefault('ctxHash', {})[role] = ctx_hash
+    _WORKSHOP_CHATS_DIR.mkdir(parents=True, exist_ok=True)
+    (_WORKSHOP_CHATS_DIR / f'{slug}.json').write_text(json.dumps(d, ensure_ascii=False, indent=1), 'utf-8')
+
 def handle_agent_chats_get(slug: str) -> dict:
     """GET /api/agent/chats?slug=<slug>。工坊对话历史（每卡带每角色·owner 07-11「session 持久性」）。
     存 .apollo/workshop-chats/<slug>.json（gitignored·不进卡带版本史——聊天是工作台状态不是游戏数据）。"""
@@ -2164,8 +2228,12 @@ def handle_agent_chats_put(body: dict) -> dict:
                 clean.append(row)
         out[r] = clean
     _WORKSHOP_CHATS_DIR.mkdir(parents=True, exist_ok=True)
-    (_WORKSHOP_CHATS_DIR / f'{slug}.json').write_text(
-        json.dumps({'version': 1, 'slug': slug, 'chats': out}, ensure_ascii=False, indent=1), 'utf-8')
+    keep = _ws_file_load(slug)  # 保留 sessions/ctxHash（resume 台账·勿被对话覆盖抹掉）
+    payload = {'version': 1, 'slug': slug, 'chats': out}
+    for k in ('sessions', 'ctxHash'):
+        if isinstance(keep.get(k), dict):
+            payload[k] = keep[k]
+    (_WORKSHOP_CHATS_DIR / f'{slug}.json').write_text(json.dumps(payload, ensure_ascii=False, indent=1), 'utf-8')
     return {'success': True, 'counts': {r: len(out[r]) for r in _AGENT_ROLES}}
 
 

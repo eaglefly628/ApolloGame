@@ -356,6 +356,16 @@ try:
     lg_args = ' '.join(apollo._claude_code_args_legacy('opus'))
     check('--output-format json' in lg_args and '--include-partial-messages' not in lg_args
           and '--disallowedTools' in lg_args, '旧 CLI 兼容参数（非流式·工具面仍全禁）')
+    # 方案 A·原生 session resume（owner 07-11 拍板「跟 Claude Code 一致」）
+    ra = ' '.join(apollo._claude_code_args('opus', 'high', 'abc123def456'))
+    check('--resume abc123def456' in ra and '--disallowedTools' in ra, 'resume 参数（工具面钉子不松）')
+    check('--resume' not in ' '.join(apollo._claude_code_args('opus', 'high', '../inject; rm')), 'resume id 白名单（非法不带）')
+    apollo._ws_sessions_save(SLUG, 'gd', 'f00dbabe-cafe', 'hash-1')
+    st13, cp2 = req('PUT', '/api/agent/chats', {'slug': SLUG, 'chats': {'gd': [{'role': 'user', 'content': 'x'}], 'pe': [], 'art': []}})
+    fdata = json.loads((ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json').read_text('utf-8'))
+    check(cp2.get('success') and fdata.get('sessions', {}).get('gd') == 'f00dbabe-cafe'
+          and fdata.get('ctxHash', {}).get('gd') == 'hash-1', '对话覆盖存盘不抹 session 台账')
+    (ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json').unlink()
 
     print('⑫ 删卡带（owner 07-11·只删库卡带·内置永远 404）')
     _, dc1 = req('POST', '/api/library/create', {'name': 'Delete Me', 'description': '待删'})

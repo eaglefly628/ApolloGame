@@ -57,6 +57,10 @@
   URL 直启）+ `&from=workshop`（运行器返回键改回创作台）
 - **slug 编号兜底**：中文名 slugify 为空 → `game-NNN` 唯一编号（`_next_game_no` 扫两目录取 max+1）
 - **旧版 CLI 自动降级**：流式旗标遭 `unknown option` → 本进程降级非流式兼容模式（功能不断·无实况·控制台黄字提示升级）
+- **原生 session resume（方案 A·owner 07-11 拍板「跟 Claude Code 一致」）**：每卡带每角色绑一个 CC session
+  （id+manifest 指纹存 `workshop-chats/<slug>.json` 的 sessions/ctxHash·chats PUT 不许抹）——首轮全量注入抓
+  session_id，续轮 `--resume` 只发增量；「应用改动」后 manifest 指纹变 → 增量前附最新全文（工件仍唯一真相）；
+  校验回喂在 resume 态只发修正指令；resume 失败自动回落全量重放并新开 session（不断链）。窗口/压缩由 CC 侧管理
 - **订阅通道形态（改流式后勿回退）**：`stream-json --include-partial-messages --verbose` + `--append-system-prompt`
   纯文本生成器钉子 + 禁用名单含计划/提问/技能类（07-11 实证：CLI 代理人格调工具→tool_use 吃回合→空 result）；
   **心跳看门狗非闹钟**：任何输出行=心跳，180s 零输出=停滞收割、1800s 绝对上限（推进中的长思考永不打断——owner 07-11 拍板）；result 缺失时打捞已流出的 text delta
