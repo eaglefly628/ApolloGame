@@ -476,7 +476,8 @@ def _llm_live_view() -> list:
     with _LLM_LIVE_LOCK:
         now = time.time()
         return [{'id': v['id'], 'provider': v['provider'], 'model': v['model'],
-                 'elapsedSec': int(now - v['startedAt']), 'chars': v['chars'], 'tail': v['tail']}
+                 'elapsedSec': int(now - v['startedAt']), 'chars': v['chars'], 'tail': v['tail'],
+                 'trace': v.get('trace', '')}
                 for v in sorted(_LLM_LIVE.values(), key=lambda x: x['startedAt'])]
 
 def handle_llm_live() -> dict:
@@ -534,7 +535,7 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
     rid = uuid.uuid4().hex[:8]
     with _LLM_LIVE_LOCK:
         _LLM_LIVE[rid] = {'id': rid, 'provider': 'claude-code', 'model': model,
-                          'startedAt': time.time(), 'chars': 0, 'tail': ''}
+                          'startedAt': time.time(), 'chars': 0, 'tail': '', 'trace': ''}
     killed = {'v': None}  # None=正常 · 'stall'=停滞收割 · 'cap'=绝对上限
     proc = None
     try:
@@ -589,6 +590,7 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
                             if rid in _LLM_LIVE:
                                 _LLM_LIVE[rid]['chars'] += len(piece)
                                 _LLM_LIVE[rid]['tail'] = (piece.replace('\n', ' '))[-120:]
+                                _LLM_LIVE[rid]['trace'] = (_LLM_LIVE[rid].get('trace', '') + piece)[-12000:]  # 滚动 trace 窗（owner 07-11）
                 elif t == 'result':
                     if isinstance(ev.get('result'), str):
                         result_text = ev['result']
@@ -2071,6 +2073,7 @@ def _gen_job_view(j: dict) -> dict:
         if live:
             top = max(live, key=lambda x: x['chars'])
             out['liveChars'], out['liveTail'] = top['chars'], top['tail']
+            out['liveTrace'] = top.get('trace', '')
     return out
 
 def handle_generate_job_start(body: dict) -> dict:
