@@ -1,0 +1,120 @@
+# Workshop 统一工作台 + 整链打通 · 规范（**已定稿 2026-07-10·owner 三问已拍板** → PST 施工）
+
+> owner 2026-07-10 三条口径：①把整套东西打通（创作台→卡带库→八阶段生产板→美术平台→换皮量产，评委路径单人单屏全 UI 无 CLI）；②把创作台收进 Workshop 做成**完整编辑器**（状态机：未创建=对话生成模式·已创建=对白编辑模式·内嵌美术台等·延续 SHELL 风格）；③编辑对话「跟平常对话框一致·接 Claude Message」，且 **Claude 通道=订阅 + setup-token + Agent SDK 原封不动——不买 API、不花新钱**（owner 07-10 追加拍板）。
+> 流程：Lead 出本规范 → owner 讨论定稿 → PST 施工（REQ-WORKSHOP）→ Lead 对抗性验收。
+> 已拍板：生产板全模式可见；退役旧 GameCreator。
+
+## 〇、打通的断点清单（三路探索核实·本规范的靶子）
+
+| # | 断点 | 位置 |
+|---|---|---|
+| 1 | generate 纯函数不落盘；「一句话玩法」无持久位 | apollo.py:999,611；_write_meta:2277 无 description |
+| 2 | S1 立项卡只能 CLI 填（无端点无 UI） | game-pipeline.mjs concept 段；GamePipelinePanel 无表单 |
+| 3 | manifest 落盘后台账不自动重 derive（靠美术面板打开兜底） | library_put_manifest:2441；ArtLedgerPanel.tsx:113 |
+| 4 | 保存成功后无「下一步」引导；卡带操作条无 🏭 | onWizardSaved launcher:922；LibActionBar |
+| 5 | 生产板→美术平台单向（回不来） | launcher:991 |
+| 6 | cart 的 S8 终检=全仓 tsc+vitest+build 过重·证据绑 git HEAD 易过期 | game-pipeline.mjs gateRun S8 |
+| 7 | dev 旧 GameCreator 生成不入库=迷途点 | launcher:1284 起 |
+| 8 | llm-onboarding 五步与八阶段流程板互不引用 | llm-onboarding §2 |
+| 9 | anthropic 供应商配的 `claude-sonnet-4-20250514` 已弃用（2026-06-15 退役） | apollo.py:235 |
+
+## 〇.五、与既有 Workshop 壳的对齐（2026-07-11 rebase 增补·载体修正）
+
+另一施工 session 已落 Workshop 地基（`c3dd4743`/`69e2f849`/`66744bea`）：**Workshop=`workshop/index.dc.html`+`support.js` 原版设计壳**（Claude Design 产出·apollo.py `/workshop` 静态伺服·同源免跨域·`python apollo.py workshop` 一键启动），owner 已拍板**豁免 LayoutNode 铁律**（开发工具/展示台非游戏 UI）。游戏库屏已接真 `/api/games`。据此修正本规范：
+
+- **§一 的载体改为 workshop/ 壳**：A 批=在壳上接线，**不新建 src/studio/Workshop.tsx**；「ChatPane 从 DesignStudio 抽取」作废——对话 UI 用壳的原版对话屏（「跟平常对话框一致」即指它），共享的是 §二服务端协议。
+- **端点命名对齐**：壳侧待接线清单叫 `/api/agent/chat`——即本规范 §2.3 的 revise-chat 编排层，**统一用 `/api/agent/chat`**（携带 mode/role/messages 字段语义照 §2.3）。
+- **切换按钮的实现形态**：旧 launcher 货架照旧可起（完整 launcher）；workshop 壳内放「⇄ 旧工作台」链接、launcher 放「⇄ Workshop」——两入口并存即 owner 要的过渡对比。
+- **素材库屏**（owner 07-10 点名）：壳的素材库屏接 `/api/art/ledger`+共享货架端点（壳侧清单已列）。
+- **测试口径修正**：壳是独立 HTML/JS（不进 vitest jsdom）——A 批验收改为**端点级测试 + curl 自证**（照 `c3dd4743` 门禁先例）+ 真浏览器走查；§五的 render 测试项仅保留 launcher/studio 侧改动部分。
+- launcher 侧原 A 批项（LibActionBar 加 🏭、保存态导流、生产板↔美术平台返回栈）**不变**——旧视图过渡期仍在用，两边都要通。
+
+## 一、Workshop 统一工作台（A 段·载体=workshop/ 壳，见 §〇.五）
+
+**状态机（每游戏推导·不另存真相·判据=`library/<slug>/manifest.json` 是否存在，复用 detectForm 口径）**：
+
+```
+[未创建] --对话生成（design-chat 讨论流 / 快速向导流·二选一收编现有回路）--> [已创建·placeholder 可玩]
+[已创建] --对白编辑（revise-chat 多轮·§二）--> 迭代循环
+              每次「应用改动」= PUT manifest（parseManifest 零 error 门 + git 版本化）
+        └-- 旁路入口（顶部工具条）：🎨 美术台账 · 🗃 素材库(共享货架 AssetLibrary·owner 07-10 点名接上) · 🏭 生产板 · 🩺 体检 · ⟲ 历史 · ▶ 试玩 · ⤓ 导出(禁用占位)
+```
+
+- **布局**（全屏编辑器·SHELL 主题延续，禁自造色/字）：左=游戏上下文栏（卡带名/立项卡/八阶段状态灯摘要——GET /api/pipeline 推导，只读摘要，详情跳生产板）；中=预览区（DataCartridgeRunner 嵌入试玩 / ManifestPreview）；右=对话栏（ChatPane·双角色）。
+- **入口形态（owner 已拍板）**：**主进入接口直接走 Workshop**（Workshop=未来主界面）；旧卡带货架视图**保留**，顶部一颗「⇄ 切回货架视图」切换按钮供过渡期对比（美术库等链路跑顺前不删旧视图）；旧视图里对应加「⇄ 进 Workshop」。
+- **双角色对话（owner 已拍板·对应现有 GD/PE 分工搬进产品）**：ChatPane 顶部两个入口 tab——**「🎨 策划」**与**「🔧 程序」**，各自独立消息流（两份 transcript）、共享同一工件真相（同一 manifest/台账）。
+  - 策划：玩法/数值/内容/关卡口径，**兼管美术更换**——系统提示词含美术台账上下文（编号/状态/风格锚），v1 可发起「跳美术平台并带定位」（点名 art-NN/风格锚建议），对话直接驱动美术端点记 v2；**素材库接通（owner 07-10 点名）**：工具条 🗃 直开共享货架 AssetLibrary；策划对话的「库选换」建议引导到美术平台既有 swap 三式（不另造第二条换图通道）；
+  - 程序：manifest 结构/组件接线/能力使用（catalog 注入为主）；
+  - **不多开**：同一时刻仅一个对话请求在飞、仅一条「应用改动」通道（两 tab 共用同一 PUT 门串行化）——防并发改稿互踩。
+- **ChatPane 共用组件**：从 DesignStudio 聊天 UI（ChatMsg[]·DesignStudio.tsx:36,201-269）提炼 `src/studio/ChatPane.tsx`——消息列表+输入框+busy 态+滚动锚。创建模式与两个编辑角色共用（「跟平常对话框一致」的机械保证）。
+- **收编与退役**：CreationWizard/DesignStudio 的生成与保存回路**复用不重写**（save 流 CreationWizard.tsx:160-188 原样迁移）；旧 GameCreator 删除，dev 模式接「＋新建游戏」同一入口；dev 的 continueCreate 旧 seed 分支（launcher:913-920）改走统一路径。
+- 「应用改动」（owner 已拍板·与现流程一致）：**显式按钮确认**后落盘，不随对话每轮自动直写——对话是入口，工件是唯一真相（§四红线）。
+
+## 二、对话协议（B 段·接 Claude Message·apollo.py）
+
+### 2.1 Claude 通道 = 订阅 + setup-token + Agent SDK（主通道·owner 拍板「不买 API·不花新钱」）
+
+- **机制原封不动**：owner 机器上 `claude setup-token` 产出长期 OAuth token（`sk-ant-oat01-…`）→ 存 `.apollo-config.json`（gitignored）新字段或 env `CLAUDE_CODE_OAUTH_TOKEN`；apollo.py 新增 provider **`claude-code`**：`_llm_call` 分支 spawn 子进程调 Claude Agent SDK / Claude Code CLI headless（`claude -p --output-format json --model <档位>`），token 经环境注入——**走订阅额度，零 API 计费**。
+- **安全铁律（必须写死）**：该子进程只当**纯文本生成器**用——**工具面全禁**（`--tools ""`/`--disallowedTools` 全量禁用，工作目录指向空目录）；绝不许它读写仓库文件。token 同 key 纪律：打码回显、不落日志、不入库。
+- **多轮**：v1 把 messages 数组转写为 transcript 文本拼进 prompt（确定性·好测）；SDK session/resume 机制记 v2。
+- **档位（owner 已拍板）**：默认 **Opus 4.8**（订阅版主力档）；菜单可切 **Fable 5**（展示档·现场 demo 更强）与 **Sonnet**（量产批量档）——档位名走 Claude Code 的模型别名（opus/fable/sonnet），不硬编日期型号；订阅套餐没有该档时网关明报错回落默认档（不静默降级不提示）。
+- **限流语义**：订阅额度窗（5h 窗）用尽→网关明报错透传 UI（「订阅额度暂满·N 分钟后重试」），绝不静默兜底。
+- **超时**：该通道 300s（opus+大 manifest）。
+- **采购清单联动**：demo-sprint §六 的 `ANTHROPIC_API_KEY` P0 条目改为「**不采购**——LLM 出 manifest 走订阅通道（setup-token）」；美术 API（DASHSCOPE P0 / TRIPO P1 / MESHY P2）**照旧采购**（那些不是 Claude）。
+
+### 2.2 BYO-key 备用通道（raw API·存量 bug 修复，不新增面）
+
+- anthropic raw-API 供应商保留给 BYO key 用户；**修存量弃用型号**：models 列表 `claude-sonnet-4-20250514` → `claude-opus-4-8`（默认）/`claude-sonnet-5`/`claude-haiku-4-5`。
+- **当前代次合规（4.7+ 硬约束·发错即 400）**：不发 temperature/top_p/top_k（网关按 provider 剥离）；加 `thinking:{"type":"adaptive"}`；响应**遍历 content blocks 取 type=="text"**（不再假设 content[0]）；`stop_reason=="refusal"` 明报错；system catalog 尾块打 `cache_control:{type:"ephemeral"}`（多轮编辑省输入费）；max_tokens 16000 起步、超时 300s；流式 SSE=v2。
+
+### 2.3 revise-chat 模式（两通道共用的编排层·双角色）
+
+- 新 mode `revise-chat`：请求 `{mode, slug, role: 'gd'|'pe', messages:[{role,content}…], provider, catalog}`；服务端按 `role` 拼系统提示词（`pe`=catalog 注入为主·manifest 结构域；`gd`=玩法/数值/内容+美术台账上下文注入——读该游戏 art-ledger 的编号/状态/风格锚拼进 system）+ 全量 messages 调网关；响应 `{reply, manifest?, artHints?}`——manifest 仅在过 `_run_manifest_check` 自动修正环后返回；`artHints`（gd 角色可选）=结构化美术建议（点名 art-NN/风格锚文案），前端渲染为「跳美术平台」引导。前端「应用改动」→ PUT manifest。
+- 地基已在：网关已消化 anthropic messages 形态（apollo.py:438-460）；design-chat 已传多轮（DesignStudio.tsx:257）。**这是扩展不是新建。**
+
+## 三、数据桥与语义修正（C 段·apollo.py + scripts/game-pipeline.mjs）
+
+1. **meta.description**：`_write_meta`（apollo.py:2277）加默认字段；前端 library-model.ts:54 已备好消费，零改。
+2. **建库自动写立项卡**：`library_create` 收 `description`（≤300）→ 写 meta + 传 `_scaffold(pitch=…)` → `_pipeline_cli(['concept', slug, '--name', …, '--pitch', …])` best-effort（照 :2318-2321 derive 先例）；`library_install_sample` 传 `preset.description`。**不走 PUT 捎带**（revise 不该反复动立项卡）。
+3. **`POST /api/pipeline/concept`**：字段 name/pitch/refs/style/planWaiver（≥1 个·name≤80 其余≤300·slug/长度守门照 signoff 先例）；`boardFor` 返回体加 `concept`；生产板 S1 侧栏加 name/pitch 编辑（签核表单保留——机器绿≠人门绿）。
+4. **manifest 落盘自动重 derive 台账**：`library_put_manifest` 与 `_put_manifest_anywhere` builtin 分支各加 best-effort `_art_replace_cli(['derive', slug])`。安全前提=mergeLedger append-only（编号保号/replaced 不墓碑/artStyle 保留）已有测试钉死；**回归硬门=art-replace-smoke 45 断言整跑**（防美术写回链二次 derive 互踩）。
+5. **换皮谱系立项卡**：`handle_art_reskin` 成功后对新 slug 写 concept（pitch=`源pitch（换皮·<pack>·源 <slug>）`；源无 concept 则 `换皮自 <slug>（<pack>）`）。
+6. **cart-S8 轻量终检**：cart 形态门=manifest-check 零 error ∧ bench 五轴 pass ∧ **mock 债=0**（新导出纯函数 `mockDebt(root,slug)`=live 行 gen.mock 计数·口径同 artSubState）；证据绑 gameHash 非 git HEAD（evalEvidence 双轨已自适应）；**不含「全行 approved」**——逐行复核是 S6 人门职责，机器门不越权；builtin/compiled 保持全仓三绿。
+7. **导流补线**：保存成功态双按钮（「下一步→🏭 生产板」/「回卡带架」）；LibActionBar 加 🏭（**全模式**·owner 拍板）；生产板↔美术平台返回栈（launcher:991 的 onOpenArt 去掉 `setPipeGame(null)`——渲染优先级 artLedger>pipeGame 天然成栈；ArtLedgerPanel 加 `backLabel` prop 显「← 生产板」）。
+
+## 四、防漂移红线（D 段）
+
+- **不做一键全自动跑八关**——板是编排器，人门必须真人签（不许代签红线见 game-production.md）。
+- Workshop 对白编辑每次落盘必过 parseManifest 零 error 门 + git 版本化——**对话是入口，工件是唯一真相**。
+- mock 永不上画面（三道闸+gen/mock 命名空间沟）不因 Workshop 改变。
+- claude-code 子进程工具面全禁（§2.1）——LLM 通道绝不获得本地文件读写。
+- 引擎目录（src/{engine,skills,assembly,renderer,services,net}）零触碰；全部改动限 studio/launcher/apollo/scripts/docs。
+
+## 五、测试与验收（E 段·PST 交付门）
+
+- **`scripts/pipeline-smoke.py`** 新冒烟（照 art-replace-smoke 进程内起服模式·finally 清理零污染）：①create 带 description→meta+concept 落盘+board S1 机器绿；②PUT manifest→免手动 derive 台账即在·再 PUT 编号不漂移；③concept 端点合法改写/非法拒（坏 slug/超长/零字段）；④reskin mock→新卡带 concept 带谱系；⑤install-sample 幂等带 concept；⑥cart-S8：带 mock 台账 gate→fail 且 summary 点名 MOCK·清债→pass 且证据带 gameHash。
+- **`game-pipeline.test.mjs` 扩**：mockDebt 三例（无台账/有 mock/retired 不计）·writeConcept 字段合并·cart-S8 证据 gameHash 过期与 builtin head 双轨回归。
+- **revise-chat/claude-code 通道**：网关分支单测（claude-code spawn 参数含工具全禁·anthropic raw 分支请求体无采样参数·content blocks 遍历·refusal 分支）；smoke 一腿用 local/mock provider 走 revise-chat 全链（不依赖真订阅）。
+- **render 测试**：Workshop 两态渲染、策划/程序双 tab 切换（transcript 隔离·busy 单飞）、货架⇄Workshop 切换按钮、ChatPane 共用、保存成功态双按钮（creation-wizard/design-studio 各一条）。
+- **全门禁**：tsc/vitest/build/art-replace-smoke/art-review-smoke/pipeline-smoke/docs-ref-guard 全绿；真浏览器评委路径走查：一句话→可玩→板 S1 绿→S6 进美术→返回板→换皮→新卡 S1 绿。
+- **文档回填**：playbooks/game-production.md（S8 cart 口径+立项卡自动化+Workshop 入口行）；llm-onboarding §2 加八阶段回指（禁单会话跑完五步）；SESSION-HANDOFF 刷新冲刺指针。
+
+## 六、分工与批次（F 段）
+
+| 批 | 内容 | 依赖 |
+|---|---|---|
+| C1 | 数据桥（§三 1-5,7）+ pipeline-smoke 骨架 | 无 |
+| C2 | cart-S8 语义（§三 6）+ 单测 + smoke S8 腿 | 无（与 C1 并行） |
+| B | claude-code 订阅通道 + raw 通道合规修 + revise-chat | 无（与 C 并行） |
+| A | Workshop UI（状态机/ChatPane/收编/退役旧面板/导流） | B、C1 |
+| E | 测试补全 + 文档回填 + 评委路径走查 | 全部 |
+
+- **PST 施工**（本规范即 spec）；**Lead**：cart-S8 语义裁决（已下）、对抗性验收 diff、订阅通道首跑护航。
+- **不并入本单**：批处理进度灯（PST 既有心跳队列单）、T3 吞吐（Opus 单）、美术真 key/refImage（owner 采购）、电子导出（原 M5 后置）。
+
+## 七、定稿记录（owner 2026-07-10 三问拍板）
+
+1. **入口形态**：主进入接口直接走 Workshop（未来主界面）；旧货架视图保留，顶部「⇄」切换按钮过渡期对比，链路跑顺后再议退役。
+2. **应用改动**：显式按钮确认落盘（与现流程一致）；**不多开**——同一时刻单对话请求、单落盘通道；对话编辑分**策划/程序两个入口**（策划兼美术更换）。
+3. **档位策略**：默认 Opus 4.8（订阅版）；Fable 5 作展示档可选；Sonnet 作量产档可选。
+4. **Claude 通道**：订阅 + setup-token + Agent SDK 原封不动——不买 API、不花新钱（§2.1）。
