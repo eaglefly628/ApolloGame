@@ -2679,8 +2679,39 @@ class APIHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
+    def _send_file(self, abs_path, content_type: str) -> None:
+        self.send_response(200)
+        self.send_header('Content-Type', content_type)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(abs_path.read_bytes())
+
+    def _serve_workshop(self, path: str) -> None:
+        """GET /workshop[/...] → 端出原版工作台（workshop/·同源→前端 fetch /api/* 免跨域）。
+        原版 .dc.html + support.js 原样伺服（运行时自 boot）；路径穿越防护。"""
+        if path == '/workshop':
+            self.send_response(301); self.send_header('Location', '/workshop/'); self.end_headers(); return
+        rel = 'index.dc.html' if path == '/workshop/' else path[len('/workshop/'):]
+        base = (ROOT / 'workshop').resolve()
+        target = (base / rel).resolve()
+        try:
+            target.relative_to(base)
+        except ValueError:
+            self.send_response(403); self.end_headers(); return
+        if not target.is_file():
+            self.send_response(404); self.end_headers(); return
+        ctype = {'.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8',
+                 '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8',
+                 '.png': 'image/png', '.svg': 'image/svg+xml'}.get(target.suffix.lower(), 'application/octet-stream')
+        self._send_file(target, ctype)
+
     def do_GET(self):
         path = self.path.split('?')[0]
+
+        # 原版工作台静态伺服（owner 2026-07-11：对外展示台用原版设计代码 + 嵌我们的接口）。
+        if path == '/workshop' or path.startswith('/workshop/'):
+            self._serve_workshop(path)
+            return
 
         # 库端点（可变状态码：400 越界 / 404 缺失）——先于遗留 200 端点分派。
         if path == '/api/library' or path.startswith('/api/library/'):
