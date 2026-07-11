@@ -146,7 +146,7 @@
 1. **生成=服务端后台任务**：`POST /api/generate/job {prompt|mode:'prototype'+slug}` → 线程跑
    目录→生成→建库→落盘全链；`GET /api/generate/job?id=`/`/jobs` 看板轮询——**切屏/刷新/关页不丢，完成自动入库**
    （状态放在会话之外·与八阶段板同一防漂移纪律）。壳启动自动恢复活跃任务看板。
-2. **订阅通道两个实证修复**：①300s 超时掐（llm-logs 抓到 300.0s error）→ watchdog 600s；
+2. **订阅通道两个实证修复**：①300s 超时掐（llm-logs 抓到 300.0s error）→ **心跳看门狗**（owner 追加拍板：只要还在吐流就不杀——180s 零输出=停滞收割·1800s 绝对上限只作跑飞保险）；
    ②`stop_reason=tool_use + error_max_turns`（CLI 代理人格想调工具吃掉唯一回合）→ 三刀根治：
    `--append-system-prompt` 钉纯文本生成器 + 禁用名单补全（AskUserQuestion/EnterPlanMode/SlashCommand/Skill/Agent…）+ 流式打捞正文。
 3. **思考实况可见**：通道改 `stream-json --include-partial-messages` 流式读——thinking/text delta 进

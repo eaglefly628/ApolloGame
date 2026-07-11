@@ -486,7 +486,8 @@ def _claude_code_transcript(system: str, messages: list) -> str:
 
 def _claude_code_request(api_key: str, model: str, system: str, messages: list, effort: str = 'high') -> dict:
     """订阅通道·流式版：Popen + stream-json 逐行读——思考/正文 delta 实时进 _LLM_LIVE（前端可见「在干什么」），
-    result 行收尾。600s watchdog（owner 07-11 实测 Opus 高思考出整份 manifest 超 300s）。"""
+    result 行收尾。存活判据=心跳非闹钟（owner 07-11「边生成边看到就不用超时杀」）：只要还在吐流就不杀，
+    180s 无任何输出=停滞收割；1800s 绝对上限只作跑飞保险。"""
     if not shutil.which('claude'):
         return {'success': False, 'error': '未找到 claude CLI——装 Claude Code 后 `claude setup-token`（订阅通道·workshop-spec §2.1）'}
     env = dict(os.environ)
@@ -497,7 +498,7 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
     with _LLM_LIVE_LOCK:
         _LLM_LIVE[rid] = {'id': rid, 'provider': 'claude-code', 'model': model,
                           'startedAt': time.time(), 'chars': 0, 'tail': ''}
-    killed = {'v': False}
+    killed = {'v': None}  # None=正常 · 'stall'=停滞收割 · 'cap'=绝对上限
     proc = None
     try:
         try:
@@ -507,14 +508,25 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
         except Exception as e:
             return {'success': False, 'error': f'Claude Code 启动失败: {e}'}
 
-        def _kill():
-            killed['v'] = True
-            try:
-                proc.kill()
-            except Exception:
-                pass
-        watchdog = threading.Timer(600, _kill)
-        watchdog.start()
+        beat = {'last': time.time()}
+        t0 = time.time()
+
+        def _watch():  # 心跳看门狗：停滞（180s 零输出）或绝对上限（1800s）才杀——推进中的长思考不打断
+            while proc.poll() is None:
+                now = time.time()
+                if now - beat['last'] > 180:
+                    killed['v'] = 'stall'
+                elif now - t0 > 1800:
+                    killed['v'] = 'cap'
+                else:
+                    time.sleep(5)
+                    continue
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+                return
+        threading.Thread(target=_watch, daemon=True).start()
         result_text, text_acc, usage, raw_lines = None, [], None, []
         try:
             try:
@@ -523,6 +535,7 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
             except Exception:
                 pass  # 进程可能已死——由退出码分支报错
             for line in proc.stdout:
+                beat['last'] = time.time()  # 任何一行输出都是心跳（thinking/text/系统事件）
                 raw_lines.append(line)
                 try:
                     ev = json.loads(line)
@@ -546,9 +559,11 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
                         usage = ev['usage']
             proc.wait()
         finally:
-            watchdog.cancel()
-        if killed['v']:
-            return {'success': False, 'error': 'Claude Code 订阅通道超时（600s）——降低思考档/简化描述后重试'}
+            beat['last'] = time.time()  # 收尾后停表（watch 线程随 proc 退出自然结束）
+        if killed['v'] == 'stall':
+            return {'success': False, 'error': '订阅通道停滞（180s 零输出）——多为网络/CLI 卡住，重试即可（推进中的长思考不会被杀）'}
+        if killed['v'] == 'cap':
+            return {'success': False, 'error': '订阅通道超过绝对上限（30 分钟）——简化描述或降思考档后重试'}
         if proc.returncode != 0:
             tail = ((proc.stderr.read() or '').strip() or ''.join(raw_lines).strip())[-400:]
             low = tail.lower()
