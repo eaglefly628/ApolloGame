@@ -1979,10 +1979,22 @@ def _gen_job_view(j: dict) -> dict:
     return out
 
 def handle_generate_job_start(body: dict) -> dict:
-    """POST /api/generate/job {prompt, provider?, model?} → {success, id}。凭据前置校验（早失败早报）。"""
+    """POST /api/generate/job。两种链：{prompt}=快速直出；{mode:'prototype', slug}=按设计稿出原型
+    （07-11 实证 bug：原型链曾被 prompt 必填卡死）。凭据前置校验（早失败早报）。"""
+    mode = str(body.get('mode') or 'create')
+    if mode not in ('create', 'prototype'):
+        return {'success': False, 'error': f'未知任务模式: {mode}（create/prototype）'}
     prompt = str(body.get('prompt') or '').strip()
-    if not prompt:
-        return {'success': False, 'error': 'prompt 必填（一句话创意）'}
+    slug = str(body.get('slug') or '').strip() or None
+    if mode == 'create':
+        if not prompt:
+            return {'success': False, 'error': 'prompt 必填（一句话创意）'}
+    else:
+        if not slug or not _valid_slug(slug):
+            return {'success': False, 'error': f'原型任务需要合法 slug（实得: {slug or "(空)"}）'}
+        if not (LIBRARY_DIR / slug).is_dir():
+            return {'success': False, 'error': f'游戏不存在: {slug}'}
+        prompt = f'原型生成（按设计稿）: {slug}'
     provider = str(body.get('provider') or _load_config().get('default') or 'claude-code')
     if provider != 'mock' and provider not in LLM_PROVIDERS:
         return {'success': False, 'error': f'Unknown provider: {provider}'}
@@ -1994,9 +2006,10 @@ def handle_generate_job_start(body: dict) -> dict:
         for old in sorted(_GEN_JOBS.values(), key=lambda x: x['startedAt'])[:-19]:  # 只留最近 20 条记录
             _GEN_JOBS.pop(old['id'], None)
         _GEN_JOBS[jid] = {'id': jid, 'prompt': prompt[:120], 'provider': provider, 'step': 0,
-                          'done': False, 'error': None, 'slug': None, 'name': None, 'startedAt': time.time()}
-    threading.Thread(target=_run_gen_job, args=(jid, prompt, provider, body.get('model')), daemon=True).start()
-    print(c('  [GEN]', 'b'), f'job {jid} start · {provider} · {prompt[:40]}')
+                          'done': False, 'error': None, 'slug': slug if mode == 'prototype' else None,
+                          'name': None, 'startedAt': time.time()}
+    threading.Thread(target=_run_gen_job, args=(jid, prompt, provider, body.get('model'), mode, slug), daemon=True).start()
+    print(c('  [GEN]', 'b'), f'job {jid} start · {mode} · {provider} · {prompt[:40]}')
     return {'success': True, 'id': jid}
 
 def handle_generate_job_get(jid: str) -> dict:
@@ -2053,6 +2066,45 @@ def handle_agent_chats_put(body: dict) -> dict:
     (_WORKSHOP_CHATS_DIR / f'{slug}.json').write_text(
         json.dumps({'version': 1, 'slug': slug, 'chats': out}, ensure_ascii=False, indent=1), 'utf-8')
     return {'success': True, 'counts': {r: len(out[r]) for r in _AGENT_ROLES}}
+
+
+_WS_DRAFT_FILE = _WORKSHOP_CHATS_DIR / '_design-draft.json'
+
+def handle_ws_draft_get() -> dict:
+    """GET /api/workshop/draft。设计先行现场（聊天/阶段/名字/slug）——杀服务/刷新回来接着干
+    （owner 07-11「杀掉重开还要重来吗」）。单槽：本机单人工作台，一次只推进一个新游戏构想。"""
+    if not _WS_DRAFT_FILE.is_file():
+        return {'success': True, 'draft': None}
+    try:
+        return {'success': True, 'draft': json.loads(_WS_DRAFT_FILE.read_text('utf-8'))}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def handle_ws_draft_put(body: dict) -> dict:
+    """PUT /api/workshop/draft {draft: {...}|null}。null=清槽（原型入库后）。守门：形状白名单+长度上限。"""
+    draft = body.get('draft')
+    if draft is None:
+        _WS_DRAFT_FILE.unlink(missing_ok=True)
+        return {'success': True, 'cleared': True}
+    if not isinstance(draft, dict):
+        return {'success': False, 'error': 'draft 必须是对象或 null'}
+    phase = draft.get('phase')
+    if phase not in ('chat', 'docs'):
+        return {'success': False, 'error': "phase 必须是 chat/docs"}
+    slug = draft.get('slug')
+    if slug is not None and not _valid_slug(str(slug)):
+        return {'success': False, 'error': f'非法 slug: {slug}'}
+    msgs = []
+    for m in (draft.get('msgs') if isinstance(draft.get('msgs'), list) else [])[-60:]:
+        r = m.get('role') if isinstance(m, dict) else None
+        content = m.get('content') if isinstance(m, dict) else None
+        if r in ('user', 'assistant') and isinstance(content, str) and len(content) <= 8000:
+            msgs.append({'role': r, 'content': content})
+    clean = {'version': 1, 'phase': phase, 'name': str(draft.get('name') or '')[:80],
+             'slug': slug, 'ready': bool(draft.get('ready')), 'msgs': msgs}
+    _WORKSHOP_CHATS_DIR.mkdir(parents=True, exist_ok=True)
+    _WS_DRAFT_FILE.write_text(json.dumps(clean, ensure_ascii=False, indent=1), 'utf-8')
+    return {'success': True}
 
 
 def handle_llm_logs(n: int = 50) -> dict:
@@ -3499,6 +3551,8 @@ class APIHandler(BaseHTTPRequestHandler):
         elif path == '/api/agent/chats':
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_agent_chats_get((qs.get('slug') or [''])[0])
+        elif path == '/api/workshop/draft':
+            data = handle_ws_draft_get()
         elif path == '/api/settings':
             data = handle_settings_get()
         else:
@@ -3664,6 +3718,9 @@ class APIHandler(BaseHTTPRequestHandler):
             return
         if path == '/api/agent/chats':
             self._send_json(200, handle_agent_chats_put(body))
+            return
+        if path == '/api/workshop/draft':
+            self._send_json(200, handle_ws_draft_put(body))
             return
         # 设计草稿 upsert（未定名/定名自动分流·可变状态码）——先于 design/manifest 分派。
         if path.startswith('/api/design-drafts/'):

@@ -286,6 +286,37 @@ try:
     check(jbad.get('success') is False, '空 prompt 拒')
     _, jmiss = req('GET', '/api/generate/job?id=nope')
     check(jmiss.get('success') is False, '未知 job 404 语义')
+    # 原型链（07-11 实证 bug：曾被「prompt 必填」卡死）：无 slug 拒 / 坏 slug 拒 / 合法 slug 全链跑通
+    _, p1 = req('POST', '/api/generate/job', {'mode': 'prototype', 'provider': 'mock'})
+    check(p1.get('success') is False and 'slug' in (p1.get('error') or ''), '原型链无 slug 拒（不再误报 prompt 必填）')
+    _, p2 = req('POST', '/api/generate/job', {'mode': 'prototype', 'slug': 'no-such-cart', 'provider': 'mock'})
+    check(p2.get('success') is False, '原型链缺卡带拒')
+    _, dsg = req('PUT', f'/api/library/{SLUG}/design/overview.md', {'content': '# 总览\n横版跳跳乐', 'note': 'smoke 设计稿'})
+    check(dsg.get('success'), '设计稿落盘（原型链前置）')
+    _, p3 = req('POST', '/api/generate/job', {'mode': 'prototype', 'slug': SLUG, 'provider': 'mock'})
+    check(p3.get('success') and p3.get('id'), '原型链启动 OK')
+    deadline = time.time() + 30
+    pj = None
+    while time.time() < deadline:
+        _, pr3 = req('GET', f"/api/generate/job?id={p3['id']}")
+        pj = pr3.get('job') or {}
+        if pj.get('done'):
+            break
+        time.sleep(0.3)
+    check(bool(pj and pj.get('done') and not pj.get('error') and pj.get('slug') == SLUG), f"原型链落盘回原 slug · {pj.get('slug')}")
+
+    print('⑩ 设计先行现场草稿（杀服务/刷新可续）')
+    st10, dput = req('PUT', '/api/workshop/draft', {'draft': {'phase': 'chat', 'name': '森林消消乐', 'ready': True,
+        'msgs': [{'role': 'user', 'content': '想做三消'}, {'role': 'assistant', 'content': '可以了'}], 'slug': None}})
+    check(st10 == 200 and dput.get('success'), '现场 PUT 存盘')
+    _, dget = req('GET', '/api/workshop/draft')
+    dd = dget.get('draft') or {}
+    check(dd.get('phase') == 'chat' and dd.get('ready') is True and len(dd.get('msgs', [])) == 2, '现场 GET 恢复（阶段/ready/对话）')
+    _, dbad = req('PUT', '/api/workshop/draft', {'draft': {'phase': 'flying'}})
+    check(dbad.get('success') is False, '坏 phase 拒')
+    _, dclr = req('PUT', '/api/workshop/draft', {'draft': None})
+    _, dget2 = req('GET', '/api/workshop/draft')
+    check(dclr.get('success') and dget2.get('draft') is None, '清槽（原型入库后现场归零）')
 
 except Exception as e:
     FAIL += 1

@@ -52,6 +52,13 @@
 - `GET/PUT /api/settings` → `{providers:[{id,name,models,model,apiKeyMasked,hasConfigKey,keyAvailable,…}], genKeys:[{envKey,apiKeyMasked,hasConfigKey,keyAvailable}], default}`
   - PUT 只送 dirty 字段；**空串=清除**；`genKeys` 三把=`DASHSCOPE_API_KEY / TRIPO_API_KEY / MESHY_API_KEY`（owner 07-11 收编旧美术台配置）
 
+## 2.5 UI 纪律：等模型必挂心跳实况（owner 07-11 立规）
+
+**壳里任何等待 LLM 的状态，必须显示实况行**（spinner + `chatBusyText`=「已流出 N 字 · X 秒」，数据源
+`/api/llm-live` 轮询 `watchChatLive`；后台任务则用 job 视图的 liveChars/liveTail）。「工作中…/修订中…」
+这种纯文案盲等**禁止**——用户分不清深思考和卡死。现有五处：三角色对话 / 设计聊 / 提纲按钮 / 修订按钮 /
+生成进度卡（🧠 行）。新增任何 LLM 交互点照此办理。
+
 ## 3. 红线（动之前读三遍）
 
 1. **claude-code 子进程工具面全禁**：`_claude_code_args` 的 `--disallowedTools Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Task,NotebookEdit,TodoWrite` + `--max-turns 1` + 空目录 cwd（`.apollo/claude-code-cwd`）——**一个都不许放开**（安全红线·spec §四）。transcript 走 stdin（防 ARG_MAX）。

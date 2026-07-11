@@ -229,8 +229,12 @@
           <!-- ---------- CREATE（设计先行=默认·快速直出=备选·owner 07-11「先提纲再对齐再生成」） ---------- -->
           <sc-if value="{{ isCreate }}" hint-placeholder-val="{{ false }}">
             <button onClick="{{ goNewGame }}" style="{{ backBtnStyle }}" style-active="{{ backBtnActive }}">← 返回选择</button>
-            <div style="display:flex;gap:8px;margin:6px 0 14px;flex-wrap:wrap">
+            <div style="display:flex;gap:8px;margin:6px 0 14px;flex-wrap:wrap;align-items:center">
               <sc-for list="{{ createModes }}" as="cm" hint-placeholder-count="2"><button onClick="{{ cm.pick }}" style="{{ cm.style }}">{{ cm.label }}</button></sc-for>
+              <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#1a4f6e;margin-left:10px">模型</span>
+              <sc-for list="{{ modelChips }}" as="mc" hint-placeholder-count="3"><button onClick="{{ mc.pick }}" title="{{ mc.tip }}" style="{{ mc.style }}">{{ mc.label }}</button></sc-for>
+              <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#1a4f6e;margin-left:6px">思考</span>
+              <sc-for list="{{ effortChips }}" as="ec" hint-placeholder-count="3"><button onClick="{{ ec.pick }}" style="{{ ec.style }}">{{ ec.label }}</button></sc-for>
             </div>
 
             <!-- 设计先行 · 第一步：讨论 -->
@@ -279,6 +283,9 @@
                     <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#3a2312;margin-bottom:5px">对这篇不满意？说怎么改：</div>
                     <input value="{{ dsRev }}" onInput="{{ dsRevType }}" placeholder="例：把节奏改慢些 / 加一个 Boss 阶段…" style="width:100%;border:2.5px solid #3a2312;border-radius:9px;padding:8px 10px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;background:#fff;color:#3a2312;outline:none;margin-bottom:8px">
                     <button onClick="{{ dsRevise }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ dsRevLabel }}</button>
+                    <sc-if value="{{ dsRevising }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="width:16px;height:16px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e">{{ chatBusyText }}</span></div>
+                    </sc-if>
                   </div>
                   <div style="margin-top:12px;background:linear-gradient(180deg,#fff3cf,#ffe9ae);border:4px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25)">
                     <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e;margin-bottom:10px">提纲对齐满意后，按它生成可玩原型（后台任务·切屏刷新都不丢）：</div>
@@ -567,6 +574,11 @@
                 <div style="display:flex;gap:8px">
                   <input value="{{ tokenInput }}" onInput="{{ tokenType }}" type="password" placeholder="sk-ant-oat01-…（只在要更换时填）" style="flex:1;border:3px solid #3a2312;border-radius:10px;padding:9px 12px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fff;color:#3a2312;outline:none">
                 </div>
+                <div style="display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap">
+                  <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#3a2312">默认模型</span>
+                  <sc-for list="{{ cfgModelChips }}" as="cm2" hint-placeholder-count="3"><button onClick="{{ cm2.pick }}" title="{{ cm2.tip }}" style="{{ cm2.style }}">{{ cm2.label }}</button></sc-for>
+                  <span style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#8a5a2c">存本机作持久默认（保存后生效）；创建/编辑各屏可临时切。展示要快选 Sonnet 5。</span>
+                </div>
               </div>
               <!-- 默认 LLM 通道 -->
               <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:12px">
@@ -647,7 +659,7 @@ class Component extends DCLogic {
     pending: null, pendingErr: null, artHints: [],
     // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
     assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null,
-    tokenInput: '', genKeyInputs: {}, defaultProv: null, saving: false,
+    tokenInput: '', genKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
     toast: null
   };
 
@@ -663,6 +675,18 @@ class Component extends DCLogic {
       .then(d => this.setState({ version: (d && d.version) || '0.1.0' }))
       .catch(() => this.setState({ version: '0.1.0' }));
     this.refreshSettings();
+    // 设计先行现场恢复（owner 07-11「杀掉重开不重来」）：聊天/阶段/名字落盘于 .apollo/workshop-chats/_design-draft.json
+    fetch('/api/workshop/draft').then(r => r.json()).then(d => {
+      const dr = d && d.success && d.draft;
+      if (!dr || !(dr.msgs || []).length) return;
+      this.setState({ createMode: 'design', dsPhase: dr.phase || 'chat', dsName: dr.name || '',
+        dsReady: !!dr.ready, dsSlug: dr.slug || null, dsMsgs: dr.msgs || [] });
+      if (dr.phase === 'docs' && dr.slug) {
+        fetch('/api/library/' + dr.slug + '/design').then(r => r.json())
+          .then(fd => { const files = (fd && fd.files) || {}; this.setState({ dsFiles: files, dsSel: Object.keys(files)[0] || null }); })
+          .catch(() => {});
+      }
+    }).catch(() => {});
     // 刷新页面恢复「生成中」看板（任务在服务端跑·状态放在会话之外）
     fetch('/api/generate/jobs').then(r => r.json()).then(d => {
       const active = d && d.success && (d.jobs || []).find(j => !j.done);
@@ -696,6 +720,10 @@ class Component extends DCLogic {
           this.setState({ generating: false, genPct: 100, done: true, genLive: null, genErr: null });
           this.refreshCarts();
           this.showToast('已生成并入库：' + (j.name || j.slug));
+          if (this.state.dsSlug && j.slug === this.state.dsSlug) {  // 设计先行走完 → 清现场草稿
+            this.setState({ dsPhase: 'chat', dsMsgs: [], dsName: '', dsReady: false, dsSlug: null, dsFiles: null, dsSel: null, dsRev: '' });
+            this.saveDraft(true);
+          }
           if (this.state.screen === 'create') this.openEdit(j.slug, j.name, '');
         }
       }).catch(() => {});
@@ -720,9 +748,16 @@ class Component extends DCLogic {
   }
   refreshSettings() {
     fetch('/api/settings').then(r => r.json())
-      .then(d => this.setState({ settings: d || null, defaultProv: (d && d.default) || null }))
+      .then(d => {
+        const cc = d && (d.providers || []).find(p => p.id === 'claude-code');
+        const m = cc && cc.model;
+        this.setState({ settings: d || null, defaultProv: (d && d.default) || null,
+          editModel: ['opus', 'fable', 'sonnet'].indexOf(m) >= 0 ? m : this.state.editModel });
+      })
       .catch(() => {});
   }
+  // 当前订阅通道的模型选择（chips 全局生效·仅 claude-code 通道随请求下发）。
+  ccModel() { return this.provider() === 'claude-code' ? this.state.editModel : undefined; }
   // 默认通道解析：设置里的 default（有凭据才认）→ claude-code（订阅主力）→ 首个有凭据的。
   provider() {
     const st = this.state.settings;
@@ -753,6 +788,12 @@ class Component extends DCLogic {
       .then(d => { if (this.state.editSlug === slug && d && d.success && d.chats)
         this.setState({ chats: { gd: d.chats.gd || [], pe: d.chats.pe || [], art: d.chats.art || [] } }, () => this.scrollChat()); })
       .catch(() => {});
+  }
+  // 设计先行现场存盘（fire-and-forget）；clear=true 清槽（原型入库后）。
+  saveDraft(clear) {
+    const st = this.state;
+    fetch('/api/workshop/draft', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ draft: clear ? null : { phase: st.dsPhase, name: st.dsName, slug: st.dsSlug, ready: st.dsReady, msgs: st.dsMsgs } }) }).catch(() => {});
   }
   // 每轮回复后整份覆盖存盘（fire-and-forget·失败不打断对话——下轮再存）。
   saveChats(slug) {
@@ -825,12 +866,12 @@ class Component extends DCLogic {
     this.setState({ dsMsgs: msgs, dsInput: '', dsBusy: true }, () => this.scrollChat());
     this.watchChatLive(true);
     fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: 'design-chat', messages: msgs, provider: this.provider() }) })
+      body: JSON.stringify({ mode: 'design-chat', messages: msgs, provider: this.provider(), model: this.ccModel() }) })
       .then(r => r.json()).then(d => {
         this.watchChatLive(false);
         if (!d || !d.success) throw new Error((d && d.error) || '讨论失败');
         this.setState(cur => ({ dsBusy: false, dsReady: cur.dsReady || !!d.ready,
-          dsMsgs: msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）' }]) }), () => this.scrollChat());
+          dsMsgs: msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）' }]) }), () => { this.scrollChat(); this.saveDraft(); });
       }).catch(e => {
         this.watchChatLive(false);
         this.setState({ dsBusy: false,
@@ -857,12 +898,12 @@ class Component extends DCLogic {
       this.refreshCarts();
       return this.catalog().then(cat =>
         fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode: 'design-breakdown', slug: cd.slug, messages: this.state.dsMsgs, catalog: cat || undefined, provider: prov }) }).then(r => r.json()));
+          body: JSON.stringify({ mode: 'design-breakdown', slug: cd.slug, messages: this.state.dsMsgs, catalog: cat || undefined, provider: prov, model: this.ccModel() }) }).then(r => r.json()));
     }).then(d => {
       this.watchChatLive(false);
       if (!d || !d.success) throw new Error((d && d.error) || '提纲生成失败');
       const files = d.files || {};
-      this.setState({ dsBusy: false, dsPhase: 'docs', dsFiles: files, dsSel: Object.keys(files)[0] || null });
+      this.setState({ dsBusy: false, dsPhase: 'docs', dsFiles: files, dsSel: Object.keys(files)[0] || null }, () => this.saveDraft());
       this.showToast('设计提纲已落盘：library/' + this.state.dsSlug + '/design/');
     }).catch(e => {
       this.watchChatLive(false);
@@ -878,7 +919,7 @@ class Component extends DCLogic {
     this.watchChatLive(true);
     fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode: 'design-revise', file_path: st.dsSel, current_content: st.dsFiles[st.dsSel] || '',
-        instruction: instr, provider: this.provider() }) })
+        instruction: instr, provider: this.provider(), model: this.ccModel() }) })
       .then(r => r.json()).then(d => {
         if (!d || !d.success || typeof d.content !== 'string') throw new Error((d && d.error) || '修订失败');
         return fetch('/api/library/' + st.dsSlug + '/design/' + st.dsSel, { method: 'PUT',
@@ -900,7 +941,7 @@ class Component extends DCLogic {
     const st = this.state;
     if (!st.dsSlug || st.generating) return;
     fetch('/api/generate/job', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: 'prototype', slug: st.dsSlug, provider: this.provider() }) })
+      body: JSON.stringify({ mode: 'prototype', slug: st.dsSlug, provider: this.provider(), model: this.ccModel() }) })
       .then(r => r.json()).then(d => {
         if (!d || !d.success) throw new Error((d && d.error) || '任务启动失败');
         this.setState({ generating: true, genJobId: d.id, genStep: 0, genSec: 0, genPct: 2, done: false, genErr: null });
@@ -1253,6 +1294,9 @@ class Component extends DCLogic {
 
     // 模型/思考档 chips（默认 Opus 4.8·high——owner 07-11；Fable 5=另计费档·7/12 前限免）
     const mcDefs = [['opus', 'Opus 4.8', '订阅内·默认'], ['fable', 'Fable 5', '更强·订阅外另计费（usage credits）'], ['sonnet', 'Sonnet 5', '量产快档·订阅内']];
+    const cfgSel = s.cfgModel || (ccProv && ccProv.model) || 'opus';
+    const cfgModelChips = mcDefs.map(([id, label, tip]) => ({ label: cfgSel === id ? label + ' ●' : label, tip,
+      style: chipStyle(cfgSel === id), pick: () => this.setState({ cfgModel: id }) }));
     const modelChips = mcDefs.map(([id, label, tip]) => ({ label: s.editModel === id ? label + ' ●' : label, tip,
       style: chipStyle(s.editModel === id), pick: () => this.setState({ editModel: id }) }));
     const ecDefs = [['high', '高（默认）'], ['xhigh', '更深'], ['max', '最深']];
@@ -1370,7 +1414,10 @@ class Component extends DCLogic {
       saveSettings: () => {
         if (s.saving) return;
         const payload = {};
-        if ((s.tokenInput || '').trim()) payload.providers = { 'claude-code': { apiKey: s.tokenInput.trim() } };
+        const ccPatch = {};
+        if ((s.tokenInput || '').trim()) ccPatch.apiKey = s.tokenInput.trim();
+        if (s.cfgModel) ccPatch.model = s.cfgModel;  // 持久默认模型（服务端 _config_model 全链生效）
+        if (Object.keys(ccPatch).length) payload.providers = { 'claude-code': ccPatch };
         const gk = {};
         Object.keys(s.genKeyInputs || {}).forEach(k => { if ((s.genKeyInputs[k] || '').trim()) gk[k] = s.genKeyInputs[k].trim(); });
         if (Object.keys(gk).length) payload.genKeys = gk;
@@ -1379,12 +1426,12 @@ class Component extends DCLogic {
         this.setState({ saving: true });
         fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
           .then(r => r.json()).then(d => {
-            this.setState({ saving: false, tokenInput: '', genKeyInputs: {}, settings: d && d.providers ? d : this.state.settings });
+            this.setState({ saving: false, tokenInput: '', genKeyInputs: {}, cfgModel: null, settings: d && d.providers ? d : this.state.settings });
             this.showToast('设置已保存（key 打码存本机）'); this.refreshSettings();
           }).catch(() => { this.setState({ saving: false }); this.showToast('✕ 保存失败'); });
       },
       saveBtnStyle: saveB.style, saveBtnActive: saveB.active, savingLabel: s.saving ? '保存中…' : '💾 保存设置',
-      logRows, logsEmptyText, refreshLogs: () => this.refreshLogs(), logRefreshStyle: logRefresh,
+      logRows, logsEmptyText, refreshLogs: () => this.refreshLogs(), logRefreshStyle: logRefresh, cfgModelChips,
       toast: s.toast,
       generate: () => {
         // 快速直出=服务端后台任务（owner 07-11：切屏/刷新不丢·浏览器只做看板）。
@@ -1392,7 +1439,7 @@ class Component extends DCLogic {
         const prompt = (s.prompt || '').trim();
         if (!prompt) { this.showToast('先写一句创意'); return; }
         fetch('/api/generate/job', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, provider: this.provider() }) })
+          body: JSON.stringify({ prompt, provider: this.provider(), model: this.ccModel() }) })
           .then(r => r.json()).then(d => {
             if (!d || !d.success) throw new Error((d && d.error) || '任务启动失败');
             this.setState({ generating: true, genJobId: d.id, genStep: 0, genSec: 0, genPct: 2, done: false, genErr: null });
