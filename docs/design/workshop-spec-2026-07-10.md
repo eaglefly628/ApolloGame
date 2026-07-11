@@ -130,3 +130,13 @@
   200/403/404·export zip 头+排除 mock/.git/snapshots·/api/catalog 形状）；art-replace-smoke 45 断言；壳 Component node 冒烟
   （8 屏×空/满态+provider 决策+事件处理器）；服务端 curl 自证 10 腿（mock 生成链→create→PUT→board→双角色 chat→applyPending→ledger→export→settings 打码/清除）。
 - **维护交接**：`docs/workflow/finish/PST-workshop-handoff.md`（部件地图/接口契约/红线/验证方法/已知债）。
+
+### §八.1 验收修订（owner 2026-07-11 真机验收六条·当日落地）
+
+1. **三对话入口**：策划(gd)/**美术(art·新)**/程序(pe)——改写 §一「两入口·策划兼美术」定稿；美术角色系统词以台账 digest 为核、点名 art-NN、皮肤槽/风格锚归它。
+2. **对话持久化**：每卡带每角色历史存 `.apollo/workshop-chats/<slug>.json`（GET/PUT `/api/agent/chats`·进工坊自动恢复）——对齐 Claude Code 的 session 体验。
+3. **模型/思考档可调**：对话屏 chips——模型 Opus 4.8（默认·订阅）/Fable 5（**另计费**·usage credits）/Sonnet 5；思考 high（默认）/xhigh/max（CLI `--effort`）。
+4. **debug 日志对齐**：传输层 `[LLM] →/←` 控制台打点 + `GET /api/llm-logs`（度量行·不出全文）+ 壳设置页🐞调试日志块；全文=`APOLLO_LOG_VERBOSE=1` 落 `.apollo/llm-logs/`。
+5. **games filter**：全部/卡带/引擎内置三 chips（不影响素材库页签与发布列表）。
+6. **生成进度真话**：阶段文案跟真实链路步骤走（读目录→生成→建库→落盘）+秒表——治「卡在 92%」误导（假进度封顶时真相是 Opus 深思考中）。
+   另：编辑工坊项目卡显示落盘路径（library/<slug> + public/games/<slug>）。

@@ -10,6 +10,10 @@ apollo-*-rk3562.tar.gz
 .apollo/design-drafts/
 # LLM 交互日志（每次生成往返落一行 JSONL·排障用·随会话产生·API key 绝不落盘·不入引擎仓）
 .apollo/llm-logs/
+# 工坊对话历史（每卡带每角色·工作台状态非游戏数据·owner 07-11 session 持久化）
+.apollo/workshop-chats/
+# 订阅通道子进程空 cwd（安全隔离目录·运行时产生）
+.apollo/claude-code-cwd/
 .claude/worktrees/
 __pycache__/
 *.pyc

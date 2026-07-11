@@ -103,6 +103,9 @@
               <div style="display:inline-flex;align-items:center;gap:8px;background:#37b6ef;border:3px solid #3a2312;border-radius:12px;padding:6px 14px;box-shadow:0 4px 0 #1f86bd">
                 <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">卡带=可对白编辑 · 引擎内置游戏在旧工作台开发</span>
               </div>
+              <sc-for list="{{ gameFilters }}" as="f" hint-placeholder-count="3">
+                <button onClick="{{ f.pick }}" style="{{ f.style }}">{{ f.label }}</button>
+              </sc-for>
             </div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
               <!-- new game ghost card FIRST -->
@@ -231,7 +234,8 @@
                     <div style="width:54px;height:54px;border-radius:14px;border:3px solid #3a2312;background:linear-gradient(180deg,#ffe08a,#f5b731);display:flex;align-items:center;justify-content:center;font-size:26px;flex:none">🎮</div>
                     <div style="min-width:0"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#3a2312;line-height:1.05">{{ editName }}</div>
                     <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#b0723a">{{ editSlug }}</div>
-                    <div style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#8a5a2c;margin-top:2px">{{ editPitch }}</div></div>
+                    <div style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#8a5a2c;margin-top:2px">{{ editPitch }}</div>
+                    <div title="卡带本体（manifest/meta/design·独立 git 版本化）在 library/；美术资产与生产台账在 public/games/" style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#b0723a;margin-top:3px">📁 library/{{ editSlug }} · public/games/{{ editSlug }}</div></div>
                   </div>
                   <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#3a2312;margin-bottom:6px">生产八关（详情在旧工作台 🏭 生产板）</div>
                   <div style="display:flex;gap:6px;align-items:center;background:rgba(58,35,18,.08);border:2.5px solid #3a2312;border-radius:12px;padding:9px 12px;margin-bottom:12px;flex-wrap:wrap">
@@ -258,12 +262,20 @@
                   <div style="margin-top:14px;background:#ffe1d6;border:3px solid #3a2312;border-radius:14px;padding:12px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#7a2a12;line-height:1.5">⚠ 模型提议未过校验门：{{ pendingErrText }}</div>
                 </sc-if>
               </div>
-              <!-- right: dual-role chat -->
+              <!-- right: triple-role chat（owner 07-11 三入口：策划/美术/程序） -->
               <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:20px;box-shadow:0 6px 0 rgba(58,35,18,.28);display:flex;flex-direction:column;height:600px">
                 <div style="display:flex;gap:8px;padding:12px 14px;border-bottom:3px solid #3a2312;background:linear-gradient(180deg,#f7e6c0,#efd79e)">
-                  <button onClick="{{ pickGd }}" style="{{ gdTabStyle }}">🎨 策划</button>
+                  <button onClick="{{ pickGd }}" style="{{ gdTabStyle }}">📐 策划</button>
+                  <button onClick="{{ pickArt }}" style="{{ artTabStyle }}">🎨 美术</button>
                   <button onClick="{{ pickPe }}" style="{{ peTabStyle }}">🔧 程序</button>
                   <span style="margin-left:auto;font-family:'Fredoka';font-weight:700;font-size:10px;color:#8a5a2c;align-self:center">{{ chatRoleHint }}</span>
+                </div>
+                <!-- 模型/思考档（默认 Opus 4.8 · high·owner 07-11）——仅订阅通道生效 -->
+                <div style="display:flex;gap:6px;align-items:center;padding:8px 14px;border-bottom:2.5px solid #3a2312;background:#fffdf5;flex-wrap:wrap">
+                  <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c">模型</span>
+                  <sc-for list="{{ modelChips }}" as="mc" hint-placeholder-count="3"><button onClick="{{ mc.pick }}" title="{{ mc.tip }}" style="{{ mc.style }}">{{ mc.label }}</button></sc-for>
+                  <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c;margin-left:8px">思考</span>
+                  <sc-for list="{{ effortChips }}" as="ec" hint-placeholder-count="3"><button onClick="{{ ec.pick }}" style="{{ ec.style }}">{{ ec.label }}</button></sc-for>
                 </div>
                 <div class="scr" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
                   <sc-for list="{{ chatMsgs }}" as="m" hint-placeholder-count="2">
@@ -370,6 +382,22 @@
               <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
                 <button onClick="{{ saveSettings }}" style="{{ saveBtnStyle }}" style-active="{{ saveBtnActive }}">{{ savingLabel }}</button>
               </div>
+              <!-- 调试日志（owner 07-11「详细 debug 日志对齐」）：LLM 往返度量·新在前 -->
+              <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:12px">
+                <div style="display:flex;align-items:center;margin-bottom:8px">
+                  <span style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px">🐞 调试日志（今天的 LLM 往返）</span>
+                  <button onClick="{{ refreshLogs }}" style="{{ logRefreshStyle }}">↻ 刷新</button>
+                </div>
+                <div class="scr" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:3px">
+                  <sc-for list="{{ logRows }}" as="lg" hint-placeholder-count="4">
+                    <div style="{{ lg.style }}">{{ lg.text }}</div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ logsEmptyText }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px">{{ logsEmptyText }}</div>
+                </sc-if>
+                <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;margin-top:8px">逐笔明细在 <span style="font-family:ui-monospace,Menlo,monospace">.apollo/llm-logs/</span>（JSONL）· 要含全文 prompt/response 用 <span style="font-family:ui-monospace,Menlo,monospace">APOLLO_LOG_VERBOSE=1</span> 起服 · 服务终端有 [LLM] 进出打点</div>
+              </div>
               <div style="text-align:center;font-family:'Fredoka';font-weight:600;color:rgba(26,79,110,.8);font-size:12px;padding:4px 0 0">爱萌互动 APOLLO ENGINE {{ versionShort }} · key 明文只存本机 .apollo-config.json（gitignored）· 回显一律打码</div>
             </div>
           </sc-if>
@@ -391,17 +419,18 @@
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800}}">
 class Component extends DCLogic {
   state = {
-    screen: 'games',
+    screen: 'games', gameFilter: 'all',
     liveGames: null, carts: null, version: null, settings: null,
     coins: 12480, gems: 340,
     prompt: '一款太空题材的竖版飞机大战，卡通风，有护盾和火力道具，一个大 Boss。',
-    generating: false, genPct: 0, done: false,
-    // 对白编辑（REQ-WORKSHOP A·spec §一）
+    generating: false, genPct: 0, genStep: 0, genSec: 0, done: false,
+    // 对白编辑（REQ-WORKSHOP A·spec §一）——三角色（owner 07-11）+ 模型/思考档 + 服务端持久化
     editSlug: null, editName: '', editPitch: '', board: null,
-    chatRole: 'gd', chats: { gd: [], pe: [] }, chatInput: '', chatBusy: false,
+    chatRole: 'gd', chats: { gd: [], pe: [], art: [] }, chatInput: '', chatBusy: false,
+    editModel: 'opus', editEffort: 'high',
     pending: null, pendingErr: null, artHints: [],
-    // 素材库 / 设置
-    assetsSlug: null, ledger: null,
+    // 素材库 / 设置 / 调试日志
+    assetsSlug: null, ledger: null, llmLogs: null,
     tokenInput: '', genKeyInputs: {}, defaultProv: null, saving: false,
     toast: null
   };
@@ -452,9 +481,19 @@ class Component extends DCLogic {
 
   openEdit(slug, name, pitch) {
     this.setState({ screen: 'edit', editSlug: slug, editName: name || slug, editPitch: pitch || '',
-      board: null, chats: { gd: [], pe: [] }, chatRole: 'gd', chatInput: '', chatBusy: false,
+      board: null, chats: { gd: [], pe: [], art: [] }, chatRole: 'gd', chatInput: '', chatBusy: false,
       pending: null, pendingErr: null, artHints: [] });
     this.refreshBoard(slug);
+    // 对话持久化（owner 07-11「session 持久性」）：进工坊即恢复该卡带三角色历史（服务端 .apollo/workshop-chats/）。
+    fetch('/api/agent/chats?slug=' + encodeURIComponent(slug)).then(r => r.json())
+      .then(d => { if (this.state.editSlug === slug && d && d.success && d.chats)
+        this.setState({ chats: { gd: d.chats.gd || [], pe: d.chats.pe || [], art: d.chats.art || [] } }); })
+      .catch(() => {});
+  }
+  // 每轮回复后整份覆盖存盘（fire-and-forget·失败不打断对话——下轮再存）。
+  saveChats(slug) {
+    fetch('/api/agent/chats', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, chats: this.state.chats }) }).catch(() => {});
   }
   refreshBoard(slug) {
     fetch('/api/pipeline?slug=' + encodeURIComponent(slug)).then(r => r.json())
@@ -472,10 +511,16 @@ class Component extends DCLogic {
     const text = (st.chatInput || '').trim();
     if (!text || st.chatBusy || !st.editSlug) return;
     const role = st.chatRole;
+    const slug = st.editSlug;
     const msgs = (st.chats[role] || []).concat([{ role: 'user', content: text }]);
     this.setState({ chats: Object.assign({}, st.chats, { [role]: msgs }), chatInput: '', chatBusy: true });
+    const prov = this.provider();
+    const cc = prov === 'claude-code'; // 模型/思考档仅订阅通道生效（其他通道用其设置页型号）
     const post = (cat) => fetch('/api/agent/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: st.editSlug, role, provider: this.provider(), messages: msgs, catalog: cat || undefined }) }).then(r => r.json());
+      body: JSON.stringify({ slug, role, provider: prov,
+        model: cc ? st.editModel : undefined, effort: cc ? st.editEffort : undefined,
+        messages: msgs.slice(-30),  // 服务端上限 40 条——送末 30，完整历史在本地持久层
+        catalog: cat || undefined }) }).then(r => r.json());
     (role === 'pe' ? this.catalog().then(post) : post(undefined)).then(d => {
       if (!d || !d.success) throw new Error((d && d.error) || '对话失败');
       const withReply = msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）' }]);
@@ -484,11 +529,17 @@ class Component extends DCLogic {
         pending: d.manifest ? d.manifest : cur.pending,
         pendingErr: d.manifest ? null : (d.manifestError || cur.pendingErr),
         artHints: (d.artHints && d.artHints.length) ? d.artHints : cur.artHints
-      }));
+      }), () => this.saveChats(slug));
     }).catch(e => {
       this.setState(cur => ({ chatBusy: false,
-        chats: Object.assign({}, cur.chats, { [role]: (cur.chats[role] || []).concat([{ role: 'assistant', content: '✕ ' + ((e && e.message) || '请求失败') }]) }) }));
+        chats: Object.assign({}, cur.chats, { [role]: (cur.chats[role] || []).concat([{ role: 'assistant', content: '✕ ' + ((e && e.message) || '请求失败') }]) }) }),
+        () => this.saveChats(slug));
     });
+  }
+  refreshLogs() {
+    fetch('/api/llm-logs?n=20').then(r => r.json())
+      .then(d => this.setState({ llmLogs: (d && d.success) ? d : { lines: [] } }))
+      .catch(() => this.setState({ llmLogs: { lines: [] } }));
   }
   fmt(n) { return n.toLocaleString('en-US'); }
   showToast(msg) { clearTimeout(this._t); this.setState({ toast: msg }); this._t = setTimeout(() => this.setState({ toast: null }), 2600); }
@@ -571,13 +622,21 @@ class Component extends DCLogic {
       use: () => { this.setState({ screen: 'create', prompt: d.p }); this.showToast('已选用「' + d.cn + '」灵感，去描述细节'); }
     }));
 
-    // my games：卡带（可对白编辑）在前 + 引擎内置游戏（旧工作台开发）在后。
+    // my games：卡带（可对白编辑）在前 + 引擎内置游戏（旧工作台开发）在后；filter=全部/卡带/引擎内置（owner 07-11）。
     const edit = this.jelly('#5fcdf5', '#37b6ef', '#1f86bd', 14); edit.style.padding = '7px 14px';
     const back = this.jelly('#fffdf5', '#efe0c0', '#c9b98f', 14); back.style.padding = '8px 16px'; back.style.color = '#3a2312'; back.style.textShadow = 'none'; back.style.marginBottom = '4px';
     const coverKeys = ['m3', 'td', 'shmup', 'runner', 'merge', 'bubble', 'n2048', 'idle', 'brick', 'farm'];
     const coverGrads = [['#ffd0e4', '#ff9ec4'], ['#bfe6a0', '#7ecb45'], ['#3a2a6a', '#5b3fa0'], ['#8fb6e0', '#5c8fd2'], ['#d6f7b0', '#9ee063'], ['#c9f2ff', '#5cc0f2'], ['#fff0c2', '#ffd257'], ['#f4e0b0', '#e0b85a'], ['#d6f1ff', '#a9e0fb'], ['#bfe6ff', '#8fd858']];
-    const cartList = Array.isArray(s.carts) ? s.carts : [];
-    const liveList = Array.isArray(s.liveGames) ? s.liveGames : [];
+    const allCarts = Array.isArray(s.carts) ? s.carts : [];
+    const allLive = Array.isArray(s.liveGames) ? s.liveGames : [];
+    const cartList = s.gameFilter === 'builtin' ? [] : allCarts;
+    const liveList = s.gameFilter === 'cart' ? [] : allLive;
+    const chipStyle = (on) => ({ border: '3px solid #3a2312', borderRadius: '11px', padding: '6px 13px', cursor: 'pointer',
+      fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '12px',
+      background: on ? 'linear-gradient(180deg,#8fe05a,#6cbf37)' : 'linear-gradient(180deg,#fffdf5,#fff0cf)',
+      color: on ? '#fff5db' : '#3a2312', boxShadow: on ? '0 3px 0 #4e8a24' : '0 3px 0 rgba(58,35,18,.18)' });
+    const gameFilters = [['all', '全部 ' + (allCarts.length + allLive.length)], ['cart', '🎮 卡带 ' + allCarts.length], ['builtin', '🏗 引擎内置 ' + allLive.length]]
+      .map(([id, label]) => ({ label, style: chipStyle(s.gameFilter === id), pick: () => this.setState({ gameFilter: id }) }));
     const mgDefs = cartList.map((cc, i) => {
       const name = (cc.meta && cc.meta.name) || cc.slug;
       const desc = (cc.meta && cc.meta.description) || '';
@@ -599,11 +658,11 @@ class Component extends DCLogic {
       progStyle: { height: '100%', width: g.prog + '%', background: g.done ? 'linear-gradient(180deg,#aef07a,#7ecb45)' : 'linear-gradient(180deg,#ffe08a,#f5b731)', borderRadius: '999px' }
     }));
 
-    // create（真生成）
+    // create（真生成）——阶段文案跟真实链路步骤走（不再按百分比猜·治「卡在 92%」误导），附耗时。
     const genBtn = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 20);
     const genFillStyle = { height: '100%', width: s.genPct + '%', background: 'linear-gradient(180deg,#aef07a,#7ecb45)', borderRadius: '999px', boxShadow: 'inset 0 3px 0 rgba(255,255,255,.6)', transition: 'width .2s' };
-    const stages = ['解析创意…', '生成 manifest…', '引擎校验（autofix）…', '入库落盘…'];
-    const genStage = s.done ? '完成！已入库，可对白编辑 🎉' : stages[Math.min(3, Math.floor(s.genPct / 25))];
+    const stages = ['读能力目录…', '生成 manifest（Opus 深思考·1~5 分钟正常）…', '建库（含 S1 立项卡）…', '落盘（引擎校验+版本化+台账推导）…'];
+    const genStage = s.done ? '完成！已入库，可对白编辑 🎉' : stages[Math.min(3, s.genStep)] + ' 已 ' + s.genSec + 's';
     const ideaData = [
       { emoji: '🍬', text: '森林里的糖果三消，每 10 关一个 Boss 果冻。', c: '#ff9ec4' },
       { emoji: '🏰', text: '中世纪王国塔防，5 种塔、精灵入侵、雪地关卡。', c: '#7ecb45' },
@@ -639,7 +698,7 @@ class Component extends DCLogic {
       : '';
 
     // assets（真台账墙）
-    const mergedSlugs = cartList.map(cc => cc.slug).concat(liveList.map(gg => gg.id)).slice(0, 12);
+    const mergedSlugs = allCarts.map(cc => cc.slug).concat(allLive.map(gg => gg.id)).slice(0, 12); // 素材库页签不受 games filter 影响
     const assetGameTabs = mergedSlugs.map(slug => ({ label: slug,
       style: { border: '3px solid #3a2312', borderRadius: '12px', padding: '8px 16px', cursor: 'pointer', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '13px',
         background: s.assetsSlug === slug ? 'linear-gradient(180deg,#8fe05a,#6cbf37)' : 'linear-gradient(180deg,#fffdf5,#fff0cf)',
@@ -664,7 +723,7 @@ class Component extends DCLogic {
 
     // publish（下载包）
     const dl = this.jelly('#5fcdf5', '#37b6ef', '#1f86bd', 15); dl.style.padding = '10px 18px';
-    const publishRows = cartList.filter(cc => cc.valid).map(cc => ({
+    const publishRows = allCarts.filter(cc => cc.valid).map(cc => ({
       cn: (cc.meta && cc.meta.name) || cc.slug, slug: cc.slug,
       desc: ((cc.meta && cc.meta.description) || '卡带').slice(0, 30),
       download: () => { window.open('/api/library/' + cc.slug + '/export', '_blank'); this.showToast('打包中——浏览器将开始下载 ' + cc.slug + '.zip'); }
@@ -691,6 +750,28 @@ class Component extends DCLogic {
     }));
     const saveB = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 17); saveB.style.padding = '11px 26px';
 
+    // 调试日志块（/api/llm-logs 度量行·新在前）
+    const logRows = ((s.llmLogs && s.llmLogs.lines) || []).slice(0, 12).map(rec => {
+      const bad = rec.error || rec.validation === 'fail' || rec.validation === 'error';
+      const t = [(rec.ts || '').slice(11), rec.mode, (rec.provider || '') + '/' + (rec.model || ''),
+        ((rec.elapsedMs || 0) / 1000).toFixed(1) + 's', rec.validation || '',
+        rec.error ? '✗ ' + rec.error : ''].filter(Boolean).join(' · ');
+      return { text: t, style: { fontFamily: 'ui-monospace,Menlo,monospace', fontSize: '10px', lineHeight: '1.5',
+        color: bad ? '#a03222' : '#5a3d1e', background: bad ? '#ffe1d6' : 'rgba(58,35,18,.05)',
+        border: '1.5px solid rgba(58,35,18,.25)', borderRadius: '6px', padding: '3px 8px' } };
+    });
+    const logsEmptyText = s.llmLogs && !logRows.length ? '今天还没有 LLM 往返记录——去生成/对话一轮再回来看' : '';
+    const logRefresh = { border: '2.5px solid #3a2312', borderRadius: '9px', padding: '4px 10px', cursor: 'pointer', marginLeft: 'auto',
+      fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '11px', background: 'linear-gradient(180deg,#fffdf5,#fff0cf)', color: '#3a2312', boxShadow: '0 2px 0 rgba(58,35,18,.18)' };
+
+    // 模型/思考档 chips（默认 Opus 4.8·high——owner 07-11；Fable 5=另计费档·7/12 前限免）
+    const mcDefs = [['opus', 'Opus 4.8', '订阅内·默认'], ['fable', 'Fable 5', '更强·订阅外另计费（usage credits）'], ['sonnet', 'Sonnet 5', '量产快档·订阅内']];
+    const modelChips = mcDefs.map(([id, label, tip]) => ({ label: s.editModel === id ? label + ' ●' : label, tip,
+      style: chipStyle(s.editModel === id), pick: () => this.setState({ editModel: id }) }));
+    const ecDefs = [['high', '高（默认）'], ['xhigh', '更深'], ['max', '最深']];
+    const effortChips = ecDefs.map(([id, label]) => ({ label,
+      style: chipStyle(s.editEffort === id), pick: () => this.setState({ editEffort: id }) }));
+
     return {
       pageTitle: titles[s.screen][0], pageSub: titles[s.screen][1],
       coinsFmt: this.fmt(s.coins), gemsFmt: this.fmt(s.gems),
@@ -703,8 +784,8 @@ class Component extends DCLogic {
       goGames: () => this.setState({ screen: 'games' }), goNewGame: () => this.setState({ screen: 'newgame' }),
       goTemplates: () => this.setState({ screen: 'templates' }), goCreate: () => this.setState({ screen: 'create' }),
       goAssets: () => { this.setState({ screen: 'assets' }); if (!s.assetsSlug && mergedSlugs.length) this.pickAssetGame(mergedSlugs[0]); },
-      goPublish: () => this.setState({ screen: 'publish' }), goSettings: () => { this.setState({ screen: 'settings' }); this.refreshSettings(); },
-      myGames, editBtnStyle: edit.style, editBtnActive: edit.active, backBtnStyle: back.style, backBtnActive: back.active,
+      goPublish: () => this.setState({ screen: 'publish' }), goSettings: () => { this.setState({ screen: 'settings' }); this.refreshSettings(); this.refreshLogs(); },
+      myGames, gameFilters, editBtnStyle: edit.style, editBtnActive: edit.active, backBtnStyle: back.style, backBtnActive: back.active,
       templates, cardHover: { transform: 'translateY(-6px)' }, useBtnStyle: use.style, useBtnActive: use.active,
       promptText: s.prompt, promptType: (e) => this.setState({ prompt: e.target.value }),
       generating: s.generating, genPct: s.genPct, genStage, genFillStyle,
@@ -730,15 +811,16 @@ class Component extends DCLogic {
       },
       dropPending: () => this.setState({ pending: null }),
       pendingErrText: s.pendingErr || '',
-      pickGd: () => this.setState({ chatRole: 'gd' }), pickPe: () => this.setState({ chatRole: 'pe' }),
-      gdTabStyle: s.chatRole === 'gd' ? tabOn : tabOff, peTabStyle: s.chatRole === 'pe' ? tabOn : tabOff,
-      chatRoleHint: s.chatRole === 'gd' ? '玩法 / 数值 / 内容 · 兼美术更换' : '结构 / 组件 / 能力接线',
+      pickGd: () => this.setState({ chatRole: 'gd' }), pickPe: () => this.setState({ chatRole: 'pe' }), pickArt: () => this.setState({ chatRole: 'art' }),
+      gdTabStyle: s.chatRole === 'gd' ? tabOn : tabOff, peTabStyle: s.chatRole === 'pe' ? tabOn : tabOff, artTabStyle: s.chatRole === 'art' ? tabOn : tabOff,
+      chatRoleHint: { gd: '玩法 / 数值 / 内容 / 节奏', art: '风格 / 台账 art-NN / 皮肤槽', pe: '结构 / 组件 / 能力接线' }[s.chatRole],
+      modelChips, effortChips,
       chatMsgs, chatBusy: s.chatBusy,
       artHintText: (s.artHints || []).join('、'),
       chatInput: s.chatInput,
       chatType: (e) => this.setState({ chatInput: e.target.value }),
       chatKey: (e) => { if (e.key === 'Enter') this.sendChat(); },
-      chatPlaceholder: s.chatRole === 'gd' ? '跟策划聊：玩法手感 / 数值 / 关卡 / 美术方向…' : '跟程序聊：加实体 / 组件 / 能力接线…',
+      chatPlaceholder: { gd: '跟策划聊：玩法手感 / 数值 / 关卡 / 节奏…', art: '跟美术聊：风格方向 / 点名 art-NN 重做 / 换皮肤槽…', pe: '跟程序聊：加实体 / 组件 / 能力接线…' }[s.chatRole],
       sendChat: () => this.sendChat(), sendBtnStyle: send.style, sendBtnActive: send.active,
       applyBtnStyle: apply.style, applyBtnActive: apply.active,
       // assets
@@ -765,26 +847,35 @@ class Component extends DCLogic {
           }).catch(() => { this.setState({ saving: false }); this.showToast('✕ 保存失败'); });
       },
       saveBtnStyle: saveB.style, saveBtnActive: saveB.active, savingLabel: s.saving ? '保存中…' : '💾 保存设置',
+      logRows, logsEmptyText, refreshLogs: () => this.refreshLogs(), logRefreshStyle: logRefresh,
       toast: s.toast,
       generate: () => {
         if (s.generating) return;
         const prompt = (s.prompt || '').trim();
         if (!prompt) { this.showToast('先写一句创意'); return; }
         clearInterval(this._g);
-        this.setState({ generating: true, genPct: 4, done: false });
-        this._g = setInterval(() => this.setState(st => ({ genPct: Math.min(92, st.genPct + (st.genPct < 60 ? 2 : 1)) })), 400);
+        // 阶段=真实链路步骤（0 目录 → 1 生成 → 2 建库 → 3 落盘）；进度条按步封顶只作观感，文案+秒表是真的。
+        const CAP = [12, 82, 92, 97];
+        this._t0 = Date.now();
+        this.setState({ generating: true, genPct: 2, genStep: 0, genSec: 0, done: false });
+        this._g = setInterval(() => this.setState(st => ({
+          genSec: Math.round((Date.now() - this._t0) / 1000),
+          genPct: Math.min(CAP[Math.min(3, st.genStep)], st.genPct + 1) })), 500);
         const prov = this.provider();
-        this.catalog().then(cat =>
-          fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, provider: prov, autofix: true, catalog: cat || undefined }) }).then(r => r.json())
-        ).then(d => {
+        this.catalog().then(cat => {
+          this.setState(st => ({ genStep: 1, genPct: Math.max(st.genPct, 13) }));
+          return fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, provider: prov, autofix: true, catalog: cat || undefined }) }).then(r => r.json());
+        }).then(d => {
           if (!d || !d.success || !(d.manifest || d.blueprint)) throw new Error((d && d.error) || '生成失败');
           const mf = d.manifest || d.blueprint;
           const name = (mf.name || '新游戏').slice(0, 40);
+          this.setState(st => ({ genStep: 2, genPct: Math.max(st.genPct, 84) }));
           return fetch('/api/library/create', { method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, description: prompt.slice(0, 300), provider: prov }) }).then(r => r.json())
             .then(cd => {
               if (!cd || !cd.success) throw new Error((cd && cd.error) || '建库失败');
+              this.setState(st => ({ genStep: 3, genPct: Math.max(st.genPct, 93) }));
               return fetch('/api/library/' + cd.slug + '/manifest', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ manifest: mf, note: '初版生成（workshop）' }) }).then(r => r.json())
                 .then(pd => { if (!pd || !pd.success) throw new Error((pd && pd.error) || '落盘校验失败'); return { slug: cd.slug, name }; });
@@ -797,7 +888,7 @@ class Component extends DCLogic {
           this.openEdit(res.slug, res.name, prompt.slice(0, 60));
         }).catch(e => {
           clearInterval(this._g);
-          this.setState({ generating: false, genPct: 0, done: false });
+          this.setState({ generating: false, genPct: 0, genStep: 0, done: false });
           this.showToast('✕ ' + ((e && e.message) || '生成失败').slice(0, 80));
         });
       }

@@ -440,9 +440,13 @@ _OPENAI_COMPAT_URLS = {
 _CLAUDE_CODE_TOOLS_OFF = 'Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Task,NotebookEdit,TodoWrite'
 _CLAUDE_CODE_CWD = ROOT / '.apollo' / 'claude-code-cwd'  # 专用空目录（gitignore 的 .apollo 下）
 
-def _claude_code_args(model: str) -> list:
-    """CLI 参数（纯函数·冒烟断言工具面全禁/单轮/JSON 出）。"""
-    return ['claude', '-p', '--output-format', 'json', '--model', model,
+_CLAUDE_EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
+
+def _claude_code_args(model: str, effort: str = 'high') -> list:
+    """CLI 参数（纯函数·冒烟断言工具面全禁/单轮/JSON 出）。effort 默认 high（owner 07-11「默认 4.8 high」）。"""
+    if effort not in _CLAUDE_EFFORTS:
+        effort = 'high'
+    return ['claude', '-p', '--output-format', 'json', '--model', model, '--effort', effort,
             '--max-turns', '1', '--disallowedTools', _CLAUDE_CODE_TOOLS_OFF]
 
 def _claude_code_transcript(system: str, messages: list) -> str:
@@ -455,7 +459,7 @@ def _claude_code_transcript(system: str, messages: list) -> str:
     lines.append('[助手]')
     return '\n'.join(lines)
 
-def _claude_code_request(api_key: str, model: str, system: str, messages: list) -> dict:
+def _claude_code_request(api_key: str, model: str, system: str, messages: list, effort: str = 'high') -> dict:
     if not shutil.which('claude'):
         return {'success': False, 'error': '未找到 claude CLI——装 Claude Code 后 `claude setup-token`（订阅通道·workshop-spec §2.1）'}
     env = dict(os.environ)
@@ -463,7 +467,7 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list) 
         env['CLAUDE_CODE_OAUTH_TOKEN'] = api_key
     _CLAUDE_CODE_CWD.mkdir(parents=True, exist_ok=True)
     try:
-        proc = subprocess.run(**_spawn(_claude_code_args(model)), input=_claude_code_transcript(system, messages),
+        proc = subprocess.run(**_spawn(_claude_code_args(model, effort)), input=_claude_code_transcript(system, messages),
                               capture_output=True, encoding='utf-8', errors='replace',
                               timeout=300, cwd=_CLAUDE_CODE_CWD, env=env)
     except subprocess.TimeoutExpired:
@@ -491,22 +495,30 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list) 
     return {'success': True, 'text': text, 'usage': usage}
 
 def _provider_request(provider: str, api_key: str, model: str, system: str, messages: list,
-                      max_tokens: int = 4096) -> dict:
+                      max_tokens: int = 4096, effort: str = 'high') -> dict:
     # 度量（供 _llm_log）：promptChars = system + 全 messages 内容字节；elapsedMs = 本轮墙钟；
     # usage = provider 回的 token 数（若有）。这些是 additive，不改任何调用方语义。
     prompt_chars = len(system or '') + sum(len(str(m.get('content', ''))) for m in messages)
     t0 = time.time()
+    # 控制台打点（owner 07-11「详细 debug 日志对齐」）：传输层唯一咽喉——所有 LLM 往返（生成/对话/autofix）
+    # 都过这里，进出各一行即可对齐「卡在哪」。逐笔 JSONL 明细照旧在 .apollo/llm-logs/。
+    if provider != 'mock':
+        print(c('  [LLM]', 'b'), f'→ {provider}/{model} · prompt {prompt_chars:,} 字 · {len(messages)} msg', flush=True)
 
     def _meta(d: dict) -> dict:
         d.setdefault('promptChars', prompt_chars)
         d.setdefault('responseChars', len(d.get('text', '') or ''))
         d.setdefault('elapsedMs', int((time.time() - t0) * 1000))
+        if provider != 'mock':
+            tag = ('  [LLM]', 'g') if d.get('success') else ('  [LLM]', 'r')
+            what = f"回 {d['responseChars']:,} 字" if d.get('success') else f"✗ {str(d.get('error', ''))[:120]}"
+            print(c(*tag), f'← {provider}/{model} · {d["elapsedMs"] / 1000:.1f}s · {what}', flush=True)
         return d
 
     if provider == 'mock':
         return _meta(_mock_response(system, messages))
     if provider == 'claude-code':
-        return _meta(_claude_code_request(api_key, model, system, messages))
+        return _meta(_claude_code_request(api_key, model, system, messages, effort))
     try:
         if provider == 'anthropic':
             url = 'https://api.anthropic.com/v1/messages'
@@ -1167,11 +1179,26 @@ the single source of truth for vocabulary — never invent components/fields; un
 """
 
 AGENT_GD_SYSTEM = AGENT_CHAT_COMMON + """
-## Your role: 策划（game designer·兼美术）
-You own gameplay feel: tuning existing numeric fields, content/text, pacing, and ART direction.
+## Your role: 策划（game designer）
+You own gameplay feel: tuning existing numeric fields, content/text, pacing, win/lose balance.
 Prefer changing VALUES of existing fields over adding new components; structural additions belong to the
-程序 tab — suggest switching if the ask is structural. For art work, reference ledger rows by their number
-(e.g. art-03) so the UI can deep-link the art platform; suggest style-anchor wording when asked about looks.
+程序 tab, art direction belongs to the 美术 tab — suggest switching when the ask is theirs.
+
+## Art ledger digest (this game · for context only — art changes go to the 美术 tab)
+{ART_DIGEST}
+
+## Current manifest
+{CURRENT_MANIFEST}
+"""
+
+# 美术角色（owner 2026-07-11 改三入口：策划/美术/程序·spec §八修订）——台账为核心上下文。
+AGENT_ART_SYSTEM = AGENT_CHAT_COMMON + """
+## Your role: 美术（art director）
+You own the game's LOOK: style direction, the art ledger, and skin slots. Reference ledger rows by their
+number (e.g. art-03) so the UI can deep-link the art platform; suggest style-anchor wording (style pack /
+stylePrompt) when asked about looks. Manifest changes you may propose: Sprite/skin-slot fields, colors,
+sizes — gameplay numbers belong to 策划, structure to 程序. Generation itself runs on the art platform
+(旧工作台 🎨) — you direct it via ledger row numbers, you do not fabricate image data.
 
 ## Art ledger digest (this game)
 {ART_DIGEST}
@@ -1180,7 +1207,7 @@ Prefer changing VALUES of existing fields over adding new components; structural
 {CURRENT_MANIFEST}
 """
 
-_AGENT_ROLES = ('gd', 'pe')
+_AGENT_ROLES = ('gd', 'pe', 'art')
 
 def _agent_art_digest(slug: str, cap: int = 40) -> str:
     """gd 角色的美术台账摘要：编号/状态/查询词/皮肤槽 + 风格锚。缺台账=明说（不是空串）。"""
@@ -1222,7 +1249,7 @@ def handle_agent_chat(body: dict) -> dict:
     if not _valid_slug(slug):
         return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
     if role not in _AGENT_ROLES:
-        return {'success': False, 'error': f"role 必须是 {'/'.join(_AGENT_ROLES)}（策划=gd·程序=pe）"}
+        return {'success': False, 'error': f"role 必须是 {'/'.join(_AGENT_ROLES)}（策划=gd·程序=pe·美术=art）"}
     raw_msgs = body.get('messages')
     if not isinstance(raw_msgs, list) or not raw_msgs:
         return {'success': False, 'error': 'messages 必填（非空数组）'}
@@ -1263,6 +1290,11 @@ def handle_agent_chat(body: dict) -> dict:
         return {'success': False, 'error': f'{provider} 无可用凭据（配置 {env_key} 或在设置里填）'}
     models = LLM_PROVIDERS.get(provider, {}).get('models') or ['mock']
     model = body.get('model') or _config_model(provider) or models[0]
+    if body.get('model') and provider != 'mock' and body['model'] not in models:
+        return {'success': False, 'error': f'{provider} 不认识型号 {body["model"]}（可选: {", ".join(models)}）'}
+    effort = body.get('effort') or 'high'  # 思考档（owner 07-11「默认 high·可调」·仅订阅通道生效）
+    if effort not in _CLAUDE_EFFORTS:
+        return {'success': False, 'error': f'effort 必须是 {"/".join(_CLAUDE_EFFORTS)}'}
 
     # mock 短路（APOLLO_MOCK_LLM=1·冒烟/e2e 全链）：确定性染色微调 + 过真校验门
     if provider == 'mock':
@@ -1274,22 +1306,22 @@ def handle_agent_chat(body: dict) -> dict:
             out['manifest'] = revised
         else:
             out['manifestError'] = msg
-        if role == 'gd':
+        if role in ('gd', 'art'):
             out['artHints'] = []
         return out
 
-    tpl = AGENT_GD_SYSTEM if role == 'gd' else AGENT_PE_SYSTEM
+    tpl = {'gd': AGENT_GD_SYSTEM, 'pe': AGENT_PE_SYSTEM, 'art': AGENT_ART_SYSTEM}[role]
     system = (tpl.replace('{GAME_NAME}', str(game_name)).replace('{GAME_SLUG}', slug)
               .replace('{CURRENT_MANIFEST}', json.dumps(current, ensure_ascii=False))
               .replace('{CAPABILITY_CATALOG}', str(body.get('catalog') or _FALLBACK_CATALOG))
-              .replace('{ART_DIGEST}', _agent_art_digest(slug) if role == 'gd' else ''))
+              .replace('{ART_DIGEST}', _agent_art_digest(slug) if role in ('gd', 'art') else ''))
 
     attempts = 0
     reply_text, manifest_out, manifest_err = '', None, None
     cur_messages = messages
     while attempts < 2:  # 首轮 + 至多一轮校验错误回喂
         attempts += 1
-        r = _provider_request(provider, api_key, model, system, cur_messages, max_tokens=16000)
+        r = _provider_request(provider, api_key, model, system, cur_messages, max_tokens=16000, effort=effort)
         _llm_log(provider=provider, model=model, mode=f'agent-{role}' if attempts == 1 else f'agent-{role}-fix',
                  req=r, validation=None if r.get('success') else 'error',
                  errors=[] if r.get('success') else [r.get('error')], prompt_full=system)
@@ -1314,7 +1346,7 @@ def handle_agent_chat(body: dict) -> dict:
         out['manifest'] = manifest_out
     elif manifest_err:
         out['manifestError'] = manifest_err
-    if role == 'gd':
+    if role in ('gd', 'art'):
         out['artHints'] = sorted(set(re.findall(r'\bart-\d{2,3}\b', reply_text)))
     return out
 
@@ -1802,6 +1834,71 @@ def handle_catalog() -> dict:
         except Exception:
             _CATALOG_CACHE = ''
     return {'success': bool(_CATALOG_CACHE), 'catalog': _CATALOG_CACHE or None}
+
+_WORKSHOP_CHATS_DIR = ROOT / '.apollo' / 'workshop-chats'
+
+def handle_agent_chats_get(slug: str) -> dict:
+    """GET /api/agent/chats?slug=<slug>。工坊对话历史（每卡带每角色·owner 07-11「session 持久性」）。
+    存 .apollo/workshop-chats/<slug>.json（gitignored·不进卡带版本史——聊天是工作台状态不是游戏数据）。"""
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    empty = {r: [] for r in _AGENT_ROLES}
+    f = _WORKSHOP_CHATS_DIR / f'{slug}.json'
+    if not f.is_file():
+        return {'success': True, 'chats': empty}
+    try:
+        data = json.loads(f.read_text('utf-8'))
+        chats = data.get('chats') if isinstance(data, dict) else None
+        out = {r: (chats.get(r) if isinstance(chats, dict) and isinstance(chats.get(r), list) else []) for r in _AGENT_ROLES}
+        return {'success': True, 'chats': out}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def handle_agent_chats_put(body: dict) -> dict:
+    """PUT /api/agent/chats {slug, chats:{gd|pe|art: [{role,content}…]}}。整份覆盖写（壳每轮回复后自动存）。
+    守门：角色白名单·每条 {user|assistant, str≤8000}·每角色只留末 80 条（防无限膨胀）。"""
+    slug = str(body.get('slug', '')).strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    chats_in = body.get('chats')
+    if not isinstance(chats_in, dict):
+        return {'success': False, 'error': 'chats 必填（对象 {gd|pe|art: 消息数组}）'}
+    out = {}
+    for r in _AGENT_ROLES:
+        msgs = chats_in.get(r)
+        clean = []
+        for m in (msgs if isinstance(msgs, list) else [])[-80:]:
+            role = m.get('role') if isinstance(m, dict) else None
+            content = m.get('content') if isinstance(m, dict) else None
+            if role in ('user', 'assistant') and isinstance(content, str) and len(content) <= 8000:
+                clean.append({'role': role, 'content': content})
+        out[r] = clean
+    _WORKSHOP_CHATS_DIR.mkdir(parents=True, exist_ok=True)
+    (_WORKSHOP_CHATS_DIR / f'{slug}.json').write_text(
+        json.dumps({'version': 1, 'slug': slug, 'chats': out}, ensure_ascii=False, indent=1), 'utf-8')
+    return {'success': True, 'counts': {r: len(out[r]) for r in _AGENT_ROLES}}
+
+
+def handle_llm_logs(n: int = 50) -> dict:
+    """GET /api/llm-logs[?n=50]。今天的 LLM 交互日志尾部（新在前·壳设置页「调试日志」块消费）。
+    全文 prompt/response 不出端点（文件里才有·APOLLO_LOG_VERBOSE=1 时落）——端点只回度量行。"""
+    n = max(1, min(int(n or 50), 200))
+    f = LLM_LOGS_DIR / (time.strftime('%Y-%m-%d') + '.jsonl')
+    lines = []
+    if f.is_file():
+        try:
+            for raw in f.read_text('utf-8').splitlines()[-n:]:
+                try:
+                    rec = json.loads(raw)
+                except Exception:
+                    continue
+                rec.pop('prompt', None); rec.pop('response', None)  # 全文只留文件·不出线
+                lines.append(rec)
+        except Exception as e:
+            return {'success': False, 'error': str(e), 'file': str(f)}
+    lines.reverse()
+    return {'success': True, 'file': str(f), 'verbose': _log_verbose(), 'lines': lines}
+
 
 def handle_version() -> dict:
     """GET /api/version。发布版本单一真相：优先最近 git tag（发布态）→ 无 tag 回退 package.json version。
@@ -3188,6 +3285,16 @@ class APIHandler(BaseHTTPRequestHandler):
             data = handle_version()
         elif path == '/api/catalog':
             data = handle_catalog()
+        elif path == '/api/llm-logs':
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            try:
+                nn = int(qs.get('n', ['50'])[0])
+            except ValueError:
+                nn = 50
+            data = handle_llm_logs(nn)
+        elif path == '/api/agent/chats':
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            data = handle_agent_chats_get((qs.get('slug') or [''])[0])
         elif path == '/api/settings':
             data = handle_settings_get()
         else:
@@ -3346,6 +3453,9 @@ class APIHandler(BaseHTTPRequestHandler):
             return
         if path == '/api/settings':
             self._send_json(200, handle_settings_put(body))
+            return
+        if path == '/api/agent/chats':
+            self._send_json(200, handle_agent_chats_put(body))
             return
         # 设计草稿 upsert（未定名/定名自动分流·可变状态码）——先于 design/manifest 分派。
         if path.startswith('/api/design-drafts/'):

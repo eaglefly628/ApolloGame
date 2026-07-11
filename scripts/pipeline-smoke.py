@@ -168,10 +168,13 @@ try:
     b = board(SAMPLE)
     check(stage(b, 'S8')['machine']['state'] == 'ok', 'board S8 机器门绿（证据新鲜）')
 
-    print('⑦ 双角色对话通道（claude-code 安全面 + /api/agent/chat）')
+    print('⑦ 三角色对话通道（claude-code 安全面 + /api/agent/chat）')
     args = apollo._claude_code_args('opus')
     joined = ' '.join(args)
     check('--max-turns 1' in joined and '--output-format json' in joined, 'CLI 单轮 + JSON 出')
+    check('--effort high' in joined, '思考档默认 high（owner 07-11「默认 4.8 high」）')
+    check('--effort max' in ' '.join(apollo._claude_code_args('opus', 'max')) and
+          '--effort high' in ' '.join(apollo._claude_code_args('opus', '注入;rm')), 'effort 白名单（非法回落 high）')
     off = args[args.index('--disallowedTools') + 1]
     check(all(t in off for t in ('Bash', 'Edit', 'Write', 'Read', 'WebFetch', 'Task')), f'工具面全禁（spec §四红线）· {off[:60]}…')
     tr = apollo._claude_code_transcript('SYS', [{'role': 'user', 'content': '你好'}, {'role': 'assistant', 'content': '在'}])
@@ -188,6 +191,25 @@ try:
     check(isinstance(a4.get('manifest'), dict) and a4.get('artHints') == [], 'mock 全链：manifest 过校验门回传（gd 带 artHints）')
     cur_mf = json.loads((ROOT / 'library' / SLUG / 'manifest.json').read_text('utf-8'))
     check(cur_mf != a4.get('manifest'), '未代落盘（应用改动=前端显式 PUT·红线）')
+    _, a5 = req('POST', '/api/agent/chat', {'slug': SLUG, 'role': 'art', 'provider': 'mock',
+                                            'messages': [{'role': 'user', 'content': 'art-01 重做成像素风'}]})
+    check(a5.get('success') is True and 'artHints' in a5, '美术角色通（owner 07-11 三入口·art 带 artHints）')
+    _, a6 = req('POST', '/api/agent/chat', {'slug': SLUG, 'role': 'gd', 'provider': 'mock', 'effort': 'ultra',
+                                            'messages': [{'role': 'user', 'content': 'x'}]})
+    check(a6.get('success') is False, '坏 effort 拒')
+    # 对话持久化（owner 07-11「session 持久性」）：PUT 存 → GET 回 → 守门（坏 slug/超限裁剪）
+    st, cp = req('PUT', '/api/agent/chats', {'slug': SLUG, 'chats': {
+        'gd': [{'role': 'user', 'content': '留个记号'}, {'role': 'assistant', 'content': '记住了'}],
+        'art': [{'role': 'user', 'content': 'art 线'}], 'pe': [], 'boss': [{'role': 'user', 'content': '野角色'}]}})
+    check(st == 200 and cp.get('success') and cp.get('counts', {}).get('gd') == 2, '对话历史 PUT 存盘')
+    _, cg = req('GET', f'/api/agent/chats?slug={SLUG}')
+    check(cg.get('success') and cg['chats']['gd'][1]['content'] == '记住了' and cg['chats']['art'][0]['content'] == 'art 线'
+          and 'boss' not in cg['chats'], '对话历史 GET 恢复（角色白名单·野角色不落）')
+    _, cbad = req('GET', '/api/agent/chats?slug=../etc')
+    check(cbad.get('success') is False, 'chats 坏 slug 拒')
+    chatf = ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json'
+    check(chatf.is_file(), '落 .apollo/workshop-chats/（gitignored·不进卡带版本史）')
+    chatf.unlink()
     st, sv = req('GET', '/api/settings')
     pids = [p.get('id') for p in (sv.get('providers') or [])]
     check(pids and pids[0] == 'claude-code', f'设置面板 claude-code 居首（订阅主力档）· {pids[:3]}')
@@ -224,6 +246,10 @@ try:
     # 能力目录端点形状（壳 catalog() 消费）——不强求 vite-node 成功（冷环境可空），只验形状与缓存字段
     st8, cat = req('GET', '/api/catalog')
     check(st8 == 200 and 'catalog' in cat and 'success' in cat, f'/api/catalog 形状 OK（success={cat.get("success")}）')
+    # 调试日志端点（owner 07-11「debug 日志对齐」）：形状 + 不泄全文（prompt/response 只留文件）
+    st8, lg = req('GET', '/api/llm-logs?n=5')
+    check(st8 == 200 and lg.get('success') and isinstance(lg.get('lines'), list), '/api/llm-logs 形状 OK')
+    check(all('prompt' not in r and 'response' not in r for r in lg['lines']), 'llm-logs 不出全文（全文只留本机文件）')
 
 except Exception as e:
     FAIL += 1

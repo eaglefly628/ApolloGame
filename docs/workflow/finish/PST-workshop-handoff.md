@@ -31,11 +31,18 @@
 - `PUT /api/library/<slug>/manifest` `{manifest, note}` → 先 `_run_manifest_check` 后落盘+版本化+**自动重 derive 台账**（mergeLedger append-only·编号不漂移）
 - `GET /api/pipeline?slug=` → `{success, stages:[{id,title,status: ok|warn|fail|dim, machine{state,detail}, human}], concept{name,pitch,…}, gameHash, next}`
 - `GET /api/art/ledger?slug=` → `{success, rows:[{no, status, query, slot, gen{servedPath,mock,…}}]}`（servedPath=/games/… 正好走静态路由）
-- `POST /api/agent/chat` `{slug, role: gd|pe, messages[≤40·末条须 user], provider?, model?, catalog?}` →
-  `{success, reply, manifest?|manifestError?, artHints?(仅 gd), attempts, provider, model}`
+- `POST /api/agent/chat` `{slug, role: gd|pe|art, messages[≤40·末条须 user], provider?, model?, effort?, catalog?}` →
+  `{success, reply, manifest?|manifestError?, artHints?(gd/art), attempts, provider, model}`
+  - **三角色**（owner 07-11 改三入口）：gd=玩法数值 · art=美术方向/台账/皮肤槽（系统词带台账 digest）· pe=结构接线
+  - `model`=该 provider models 白名单（claude-code: opus/fable/sonnet）；`effort`=low/medium/high/xhigh/max（默认 high·仅订阅通道生效）
   - 服务端**绝不代落盘**：manifest 只是提议——壳「✔ 应用改动」显式 PUT 才落
   - 校验失败自动回喂一轮（`_llm_ify_error`）；仍败则回 `manifestError`
   - mock 短路（`APOLLO_MOCK_LLM=1`）：`_mock_revise` 确定性微调·过真校验门——冒烟/e2e 全链用
+- `GET/PUT /api/agent/chats` `?slug=` / `{slug, chats:{gd|pe|art:[…]}}`——工坊对话历史持久化（owner 07-11）：
+  存 `.apollo/workshop-chats/<slug>.json`（gitignored·**不进卡带版本史**）；守门=角色白名单·每条 ≤8000 字·每角色留末 80 条；
+  壳 openEdit 恢复、每轮回复后整份覆盖存
+- `GET /api/llm-logs?n=`——今天的 LLM 往返度量尾部（新在前·壳设置页🐞调试日志块消费）；**绝不出全文**
+  （全文只在 `.apollo/llm-logs/*.jsonl`·须 `APOLLO_LOG_VERBOSE=1` 才落）；服务终端另有 `[LLM] →/←` 进出打点（传输层唯一咽喉）
 - `GET/PUT /api/settings` → `{providers:[{id,name,models,model,apiKeyMasked,hasConfigKey,keyAvailable,…}], genKeys:[{envKey,apiKeyMasked,hasConfigKey,keyAvailable}], default}`
   - PUT 只送 dirty 字段；**空串=清除**；`genKeys` 三把=`DASHSCOPE_API_KEY / TRIPO_API_KEY / MESHY_API_KEY`（owner 07-11 收编旧美术台配置）
 
@@ -64,8 +71,9 @@ npx tsc --noEmit && npx vitest run && npx vite build
 - **T3 批量吞吐冒烟**（Opus 单·requests.md）；**进度灯**（PST 既有心跳队列单）
 - 真 key 采购=owner（DASHSCOPE P0 / TRIPO P1 / MESHY P2）——到货后壳设置屏直接能填
 - 壳 `/api/catalog` 首调冷启动 ~10-20s（vite-node）·失败缓存为空不重试——若成痛点提单加重试/预热
-- 对白编辑历史不落盘（刷新即清）——spec 记 v2 候选；VN/shell 退役等旧债各归各主
-- Fable 5 展示档在 claude-code 通道 models 里可选（owner：展示更强）——量产默认 Opus 4.8（订阅）
+- ~~对白编辑历史不落盘~~ ✅ 已落（07-11 owner 点名·`/api/agent/chats` 持久化）
+- **Fable 5 计费告警**：Max 订阅**不含** Fable 5——走 usage credits 另计费（$10/$50 每 M token·2026-07-12 前有限免促销）；
+  壳模型 chips 的 tip 已标注。量产/默认=Opus 4.8 + effort high（订阅内零新钱）
 
 ## 6. 变更纪律
 
