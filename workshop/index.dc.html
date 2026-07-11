@@ -65,8 +65,8 @@
         <div style="flex:1"></div>
         <!-- account -->
         <div style="display:flex;align-items:center;gap:9px;background:rgba(58,35,18,.35);border:2.5px solid #3a2312;border-radius:14px;padding:8px 10px">
-          <span style="width:36px;height:36px;border-radius:10px;border:2.5px solid #3a2312;background:linear-gradient(180deg,#5fcdf5,#37b6ef);display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:16px;flex:none">豆</span>
-          <div style="line-height:1.15"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:14px;color:#fff5db;-webkit-text-stroke:2px #3a2312;paint-order:stroke fill">豆包工作室</div><div style="font-family:'Fredoka';font-weight:700;font-size:9px;color:#f3e2c4">Lv.14 · Studio</div></div>
+          <span style="width:36px;height:36px;border-radius:10px;border:2.5px solid #3a2312;background:linear-gradient(180deg,#5fcdf5,#37b6ef);display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:16px;flex:none">爱</span>
+          <div style="line-height:1.15"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:14px;color:#fff5db;-webkit-text-stroke:2px #3a2312;paint-order:stroke fill">爱萌互动</div><div style="font-family:'Fredoka';font-weight:700;font-size:9px;color:#f3e2c4">{{ versionLabel }}</div></div>
         </div>
       </div>
 
@@ -282,8 +282,8 @@
           <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
             <div style="max-width:720px">
               <div style="display:flex;align-items:center;gap:14px;background:repeating-linear-gradient(180deg,#c88a52 0 10px,#bd7f47 10px 20px);border:4px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.3),inset 0 -6px 0 rgba(0,0,0,.18);margin-bottom:16px">
-                <div style="width:56px;height:56px;border-radius:14px;border:3px solid #3a2312;background:linear-gradient(180deg,#5fcdf5,#37b6ef);display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:24px;flex:none">豆</div>
-                <div><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:19px;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill">豆包工作室</div><div style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:12px;opacity:.9">Lv.14 · Studio 版</div></div>
+                <div style="width:56px;height:56px;border-radius:14px;border:3px solid #3a2312;background:linear-gradient(180deg,#5fcdf5,#37b6ef);display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:24px;flex:none">爱</div>
+                <div><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:19px;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill">爱萌互动</div><div style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:12px;opacity:.9">{{ versionLabel }}</div></div>
               </div>
               <div style="display:flex;align-items:center;gap:10px;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:12px">
                 <div style="flex:1"><div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px">API 密钥</div><div style="font-family:ui-monospace,Menlo,monospace;color:#8a5a2c;font-size:13px;letter-spacing:.04em">sk-cloud-••••••••3a2f</div></div>
@@ -303,7 +303,7 @@
                   <sc-for list="{{ quality }}" as="q" hint-placeholder-count="3"><button onClick="{{ q.pick }}" style="{{ q.style }}">{{ q.label }}</button></sc-for>
                 </div>
               </div>
-              <div style="text-align:center;font-family:'Fredoka';font-weight:600;color:rgba(26,79,110,.8);font-size:12px;padding:16px 0 0">爱萌互动 APOLLO ENGINE v1.0 · Supercell × Disney · 全部模板共用同一套令牌</div>用同一套令牌</div>
+              <div style="text-align:center;font-family:'Fredoka';font-weight:600;color:rgba(26,79,110,.8);font-size:12px;padding:16px 0 0">爱萌互动 APOLLO ENGINE {{ versionShort }} · Supercell × Disney · 全部模板共用同一套令牌</div>
             </div>
           </sc-if>
 
@@ -326,6 +326,7 @@ class Component extends DCLogic {
   state = {
     screen: 'games',
     liveGames: null,
+    version: null,
     coins: 12480, gems: 340,
     prompt: '一款太空题材的竖版飞机大战，卡通风，有护盾和火力道具，一个大 Boss。',
     generating: false, genPct: 0, done: false,
@@ -343,6 +344,10 @@ class Component extends DCLogic {
     fetch('/api/games').then(r => r.json())
       .then(d => this.setState({ liveGames: (d && d.games) || [] }))
       .catch(() => this.setState({ liveGames: [] }));
+    // 发布版本（优先 git tag → 回退 package.json）——账号卡/页脚显示真值，不写死。
+    fetch('/api/version').then(r => r.json())
+      .then(d => this.setState({ version: (d && d.version) || '0.1.0' }))
+      .catch(() => this.setState({ version: '0.1.0' }));
   }
 
   jelly(top, bottom, edge, fs) {
@@ -520,6 +525,7 @@ class Component extends DCLogic {
     return {
       pageTitle: titles[s.screen][0], pageSub: titles[s.screen][1],
       coinsFmt: this.fmt(s.coins), gemsFmt: this.fmt(s.gems),
+      versionLabel: 'Version ' + (s.version || '0.1.0'), versionShort: 'v' + (s.version || '0.1.0'),
       isGames: s.screen === 'games', isNewGame: s.screen === 'newgame',
       isTemplates: s.screen === 'templates', isCreate: s.screen === 'create', isAssets: s.screen === 'assets', isPublish: s.screen === 'publish', isSettings: s.screen === 'settings',
       navGamesStyle: navBase(s.screen === 'games' || s.screen === 'newgame' || s.screen === 'templates' || s.screen === 'create'), navAssetsStyle: navBase(s.screen === 'assets'), navPublishStyle: navBase(s.screen === 'publish'), navSettingsStyle: navBase(s.screen === 'settings'),

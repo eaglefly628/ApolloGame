@@ -1523,6 +1523,25 @@ def handle_games_list() -> dict:
                 games.append({'id': d.name, 'hasLocalArt': has_art})
     return {'games': games}
 
+def handle_version() -> dict:
+    """GET /api/version。发布版本单一真相：优先最近 git tag（发布态）→ 无 tag 回退 package.json version。
+    工作台账号卡/页脚显示的版本走此端点，随发布自动更新（不写死）。"""
+    version, tag = None, None
+    try:
+        r = subprocess.run(['git', 'describe', '--tags', '--abbrev=0'],
+                           cwd=ROOT, capture_output=True, text=True, timeout=3)
+        if r.returncode == 0 and r.stdout.strip():
+            tag = r.stdout.strip()
+            version = tag.lstrip('vV')
+    except Exception:
+        pass
+    if not version:
+        try:
+            version = json.loads((ROOT / 'package.json').read_text())['version']
+        except Exception:
+            version = '0.1.0'
+    return {'version': version, 'tag': tag}
+
 
 def handle_asset_vendor(body: dict) -> dict:
     """POST /api/assets/vendor。body = { id:str（共享库资产 id）, game:str, as?:str（本地 id 覆盖）}。"""
@@ -2773,6 +2792,8 @@ class APIHandler(BaseHTTPRequestHandler):
             data = handle_pipeline_board((qs.get('slug') or [''])[0])
         elif path == '/api/games':
             data = handle_games_list()
+        elif path == '/api/version':
+            data = handle_version()
         elif path == '/api/settings':
             data = handle_settings_get()
         else:
