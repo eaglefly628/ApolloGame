@@ -46,6 +46,17 @@
 - `POST /api/generate/job` `{prompt}` 或 `{mode:'prototype', slug}`——**生成=服务端后台任务**（切屏/刷新不丢·完成自动入库）；
   `GET /api/generate/job?id=` / `GET /api/generate/jobs` 看板轮询（壳启动自动恢复活跃任务）；进程内注册表留 20 条
 - `GET /api/llm-live`——进行中请求的流式度量（chars/tail·空闲=空数组）；job 视图自带 liveChars/liveTail
+- `DELETE /api/library/<slug>`——删卡带（owner 07-11）：library/ + public/games/ + 工坊对话历史三处清；
+  **只删库卡带**（slug 不在 library/ 即 404·引擎内置永远删不到）；壳 🗑 走 window.confirm 二次确认
+- `GET/PUT /api/workshop/draft`——设计先行现场草稿（单槽·`_design-draft.json`）：聊天/阶段/名字/slug，
+  杀服/刷新可续；原型入库后壳自动清槽
+- **底案协议（owner 07-11「提纲=活底案」）**：gd 系统词注入设计稿全文（`_agent_design_digest`·≤6k 字截断）；
+  模型用 ` ```design <rel.md> ` 围栏提议全文更新 → 服务端 `_split_design_patch` 校验路径 → 回 `designPatch`
+  ——**绝不代落盘**，壳「✔ 更新底案」PUT design 端点才写。编辑工坊左列常驻底案卡（页签+只读查看）
+- **▶ 运行直达**：壳卡片/编辑工坊 ▶ → 旧工作台 `/?game=<id>`（内置）或 `/?game=lib:<slug>`（卡带·launcher 已扩
+  URL 直启）+ `&from=workshop`（运行器返回键改回创作台）
+- **slug 编号兜底**：中文名 slugify 为空 → `game-NNN` 唯一编号（`_next_game_no` 扫两目录取 max+1）
+- **旧版 CLI 自动降级**：流式旗标遭 `unknown option` → 本进程降级非流式兼容模式（功能不断·无实况·控制台黄字提示升级）
 - **订阅通道形态（改流式后勿回退）**：`stream-json --include-partial-messages --verbose` + `--append-system-prompt`
   纯文本生成器钉子 + 禁用名单含计划/提问/技能类（07-11 实证：CLI 代理人格调工具→tool_use 吃回合→空 result）；
   **心跳看门狗非闹钟**：任何输出行=心跳，180s 零输出=停滞收割、1800s 绝对上限（推进中的长思考永不打断——owner 07-11 拍板）；result 缺失时打捞已流出的 text delta

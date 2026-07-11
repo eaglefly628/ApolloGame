@@ -145,7 +145,10 @@
                         <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312;line-height:1.05">{{ g.cn }}</div>
                         <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#b0723a">{{ g.meta }}</div>
                       </div>
-                      <button onClick="{{ g.edit }}" style="{{ editBtnStyle }}" style-active="{{ editBtnActive }}">编辑</button>
+                      <div style="display:flex;gap:6px;flex:none">
+                        <button onClick="{{ g.run }}" title="直接运行（跳旧工作台运行器·返回键回创作台）" style="{{ runBtnStyle }}" style-active="{{ editBtnActive }}">▶</button>
+                        <button onClick="{{ g.edit }}" style="{{ editBtnStyle }}" style-active="{{ editBtnActive }}">编辑</button>
+                      </div>
                     </div>
                     <div style="height:9px;background:#e7d9b8;border:2px solid #3a2312;border-radius:999px;overflow:hidden;margin-top:9px"><div style="{{ g.progStyle }}"></div></div>
                   </div>
@@ -170,6 +173,7 @@
                   </div>
                   <span style="background:rgba(58,35,18,.6);border:2px solid #3a2312;border-radius:8px;padding:2px 9px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db;flex:none">{{ g.tag }}</span>
                   <span style="{{ g.badgeStyle }}">{{ g.status }}</span>
+                  <button onClick="{{ g.run }}" title="直接运行（返回键回创作台）" style="{{ runBtnStyle }}" style-active="{{ editBtnActive }}">▶</button>
                   <button onClick="{{ g.edit }}" style="{{ editBtnStyle }}" style-active="{{ editBtnActive }}">编辑</button>
                 </div>
               </sc-for>
@@ -365,10 +369,31 @@
                     </sc-for>
                   </div>
                   <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button onClick="{{ runCart }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">▶ 运行</button>
                     <button onClick="{{ downloadPack }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⬇ 下载包</button>
                     <button onClick="{{ openOldBench }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⇄ 旧工作台（试玩 / 美术台）</button>
+                    <button onClick="{{ deleteCart }}" title="删除这盘卡带（不可恢复·会二次确认）" style="{{ delBtnStyle }}" style-active="{{ miniBtnActive }}">🗑 删除</button>
                   </div>
                 </div>
+                <sc-if value="{{ hasDocs }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:14px;background:#fffdf5;border:4px solid #3a2312;border-radius:18px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25)">
+                    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312;margin-bottom:8px">📑 设计底案（跟策划说就能改）</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+                      <sc-for list="{{ editDocTabs }}" as="dt" hint-placeholder-count="3"><button onClick="{{ dt.pick }}" style="{{ dt.style }}">{{ dt.label }}</button></sc-for>
+                    </div>
+                    <div class="scr" style="max-height:170px;overflow-y:auto;font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.6;color:#3a2312;white-space:pre-wrap;word-break:break-word;background:rgba(58,35,18,.05);border:1.5px solid rgba(58,35,18,.25);border-radius:8px;padding:8px 10px">{{ editDocContent }}</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ hasPendingDesign }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:14px;background:linear-gradient(180deg,#d6f1ff,#bfe3f7);border:4px solid #3a2312;border-radius:18px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25);animation:pop .18s ease-out both">
+                    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312;margin-bottom:6px">📑 底案更新提议：{{ pendingDesignPath }}</div>
+                    <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#1a4f6e;margin-bottom:10px">策划提议修订这篇设计稿——确认后落盘（git 版本化），放弃则不动。</div>
+                    <div style="display:flex;gap:8px">
+                      <button onClick="{{ applyDesign }}" style="{{ applyBtnStyle }}" style-active="{{ applyBtnActive }}">✔ 更新底案（落盘）</button>
+                      <button onClick="{{ dropDesign }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">✕ 放弃</button>
+                    </div>
+                  </div>
+                </sc-if>
                 <sc-if value="{{ hasPending }}" hint-placeholder-val="{{ false }}">
                   <div style="margin-top:14px;background:linear-gradient(180deg,#fff3cf,#ffe9ae);border:4px solid #3a2312;border-radius:18px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25);animation:pop .18s ease-out both">
                     <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312;margin-bottom:6px">⚙ 有待应用的改动（已过引擎校验）</div>
@@ -656,7 +681,7 @@ class Component extends DCLogic {
     editSlug: null, editName: '', editPitch: '', board: null,
     chatRole: 'gd', chats: { gd: [], pe: [], art: [] }, chatInput: '', chatBusy: false, chatLive: null,
     editModel: 'opus', editEffort: 'high',
-    pending: null, pendingErr: null, artHints: [],
+    pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null,
     // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
     assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null,
     tokenInput: '', genKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
@@ -781,8 +806,9 @@ class Component extends DCLogic {
   openEdit(slug, name, pitch) {
     this.setState({ screen: 'edit', editSlug: slug, editName: name || slug, editPitch: pitch || '',
       board: null, chats: { gd: [], pe: [], art: [] }, chatRole: 'gd', chatInput: '', chatBusy: false,
-      pending: null, pendingErr: null, artHints: [] });
+      pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null });
     this.refreshBoard(slug);
+    this.refreshDocs(slug);
     // 对话持久化（owner 07-11「session 持久性」）：进工坊即恢复该卡带三角色历史（服务端 .apollo/workshop-chats/）。
     fetch('/api/agent/chats?slug=' + encodeURIComponent(slug)).then(r => r.json())
       .then(d => { if (this.state.editSlug === slug && d && d.success && d.chats)
@@ -803,6 +829,12 @@ class Component extends DCLogic {
   refreshBoard(slug) {
     fetch('/api/pipeline?slug=' + encodeURIComponent(slug)).then(r => r.json())
       .then(b => { if (this.state.editSlug === slug && b && b.success !== false) this.setState({ board: b, editPitch: (b.concept && b.concept.pitch) || this.state.editPitch }); })
+      .catch(() => {});
+  }
+  refreshDocs(slug) {
+    fetch('/api/library/' + encodeURIComponent(slug) + '/design').then(r => r.json())
+      .then(d => { const files = (d && d.files) || {}; if (this.state.editSlug === slug)
+        this.setState({ editDocs: files, editDocSel: Object.keys(files)[0] || null }); })
       .catch(() => {});
   }
   pickAssetGame(slug) {
@@ -847,6 +879,7 @@ class Component extends DCLogic {
         chats: Object.assign({}, cur.chats, { [role]: withReply }), chatBusy: false,
         pending: d.manifest ? d.manifest : cur.pending,
         pendingErr: d.manifest ? null : (d.manifestError || cur.pendingErr),
+        pendingDesign: d.designPatch ? d.designPatch : cur.pendingDesign,
         artHints: (d.artHints && d.artHints.length) ? d.artHints : cur.artHints
       }), () => { this.saveChats(slug); this.scrollChat(); });
     }).catch(e => {
@@ -1062,11 +1095,13 @@ class Component extends DCLogic {
       const desc = (cc.meta && cc.meta.description) || '';
       return { k: coverKeys[i % coverKeys.length], cn: name, tag: '卡带', sc: coverGrads[i % coverGrads.length],
         status: cc.valid ? '可编辑' : '损坏', meta: desc ? desc.slice(0, 24) : cc.slug, prog: 100, done: !!cc.valid,
+        run: () => cc.valid ? window.open('http://localhost:3000/?game=lib%3A' + cc.slug + '&from=workshop', '_blank') : this.showToast('卡带 manifest 损坏，先修再玩'),
         edit: () => cc.valid ? this.openEdit(cc.slug, name, desc) : this.showToast('卡带 manifest 损坏，先在旧工作台修') };
     }).concat(liveList.map((gg, i) => ({
       k: coverKeys[(cartList.length + i) % coverKeys.length], cn: gg.id, tag: '引擎内置', sc: coverGrads[(cartList.length + i) % coverGrads.length],
       status: gg.hasLocalArt ? '有美术' : '待接美术', meta: gg.hasLocalArt ? '本地美术就绪' : '零美术 · 程序色块',
       prog: gg.hasLocalArt ? 100 : 40, done: !!gg.hasLocalArt,
+      run: () => window.open('http://localhost:3000/?game=' + gg.id + '&from=workshop', '_blank'),
       edit: () => this.showToast('引擎内置游戏在旧工作台（源码）开发')
     })));
     const statusColor = { '可编辑': ['#7ecb45', '#fff5db', '#4e8a24'], '损坏': ['#ef5138', '#fff5db', '#a03222'],
@@ -1082,14 +1117,14 @@ class Component extends DCLogic {
     // 状态筛选叠加在来源筛选（gameFilter→cartList/liveList→mgDefs）之上。
     const mgFiltered = mgDefs.filter(g => s.gameStatus === 'all' || g.status === s.gameStatus);
     const myGames = mgFiltered.map(g => ({
-      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: cv[g.k], edit: g.edit,
+      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: cv[g.k], edit: g.edit, run: g.run,
       coverStyle: { position: 'relative', height: '118px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '3px solid #3a2312', background: 'linear-gradient(180deg,' + g.sc[0] + ',' + g.sc[1] + ')' },
       badgeStyle: { position: 'absolute', top: '8px', right: '8px', background: statusColor[g.status][0], color: statusColor[g.status][1], border: '2.5px solid #3a2312', borderRadius: '9px', padding: '2px 9px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '10px', boxShadow: '0 2px 0 ' + statusColor[g.status][2] },
       progStyle: { height: '100%', width: g.prog + '%', background: g.done ? 'linear-gradient(180deg,#aef07a,#7ecb45)' : 'linear-gradient(180deg,#ffe08a,#f5b731)', borderRadius: '999px' }
     }));
     // 列表模式行：小缩略图 + 名字 + 来源 tag + 状态徽章（非绝对定位）+ 编辑
     const gameListRows = mgFiltered.map(g => ({
-      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: cv[g.k], edit: g.edit,
+      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: cv[g.k], edit: g.edit, run: g.run,
       thumbStyle: { width: '52px', height: '46px', flex: 'none', borderRadius: '10px', border: '2.5px solid #3a2312', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,' + g.sc[0] + ',' + g.sc[1] + ')' },
       badgeStyle: { flex: 'none', background: statusColor[g.status][0], color: statusColor[g.status][1], border: '2.5px solid #3a2312', borderRadius: '9px', padding: '3px 10px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '11px', boxShadow: '0 2px 0 ' + statusColor[g.status][2] }
     }));
@@ -1130,6 +1165,9 @@ class Component extends DCLogic {
         background: m.role === 'user' ? 'linear-gradient(180deg,#ffe08a,#f5b731)' : '#fff',
         fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 600, fontSize: '13px', color: '#3a2312', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }
     }));
+    const editDocTabs = Object.keys(s.editDocs || {}).map(f => ({ label: f,
+      style: Object.assign(chipStyle(s.editDocSel === f), { fontFamily: 'ui-monospace,Menlo,monospace', fontSize: '10px', padding: '4px 9px' }),
+      pick: () => this.setState({ editDocSel: f }) }));
     const pendingSummary = s.pending
       ? ('实体 ' + Object.keys((s.pending.entities || {})).length + ' 个 · 能力 ' + ((s.pending.capabilities || []).length) + ' 项 —— 确认后写回卡带（过 parseManifest 门 + git 版本化）')
       : '';
@@ -1340,6 +1378,7 @@ class Component extends DCLogic {
       gameGrid: s.gameView === 'grid', gameList: s.gameView === 'list',
       gameViewChips, gameStatusChips, gameListRows, listNewStyle,
       editBtnStyle: edit.style, editBtnActive: edit.active, backBtnStyle: back.style, backBtnActive: back.active,
+      runBtnStyle: Object.assign({}, edit.style, { background: 'linear-gradient(180deg,#8fe05a,#6cbf37)', boxShadow: String(edit.style.boxShadow).replace('#1f86bd', '#4e8a24') }),
       templates, cardHover: { transform: 'translateY(-6px)' }, useBtnStyle: use.style, useBtnActive: use.active,
       promptText: s.prompt, promptType: (e) => this.setState({ prompt: e.target.value }),
       generating: s.generating, genPct: s.genPct, genStage, genFillStyle, genLiveText, genErrText: s.genErr || '',
@@ -1385,6 +1424,38 @@ class Component extends DCLogic {
       },
       dropPending: () => this.setState({ pending: null }),
       pendingErrText: s.pendingErr || '',
+      // 底案（设计稿=活工件·owner 07-11）
+      hasDocs: !!(s.editDocs && Object.keys(s.editDocs).length), editDocTabs,
+      editDocContent: (s.editDocs && s.editDocSel && s.editDocs[s.editDocSel]) || '',
+      hasPendingDesign: !!s.pendingDesign,
+      pendingDesignPath: (s.pendingDesign && s.pendingDesign.path) || '',
+      applyDesign: () => {
+        const st = this.state;
+        if (!st.pendingDesign || !st.editSlug) return;
+        fetch('/api/library/' + st.editSlug + '/design/' + st.pendingDesign.path, { method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: st.pendingDesign.content, note: 'workshop 底案修订（gd 对话）' }) })
+          .then(r => r.json()).then(d => {
+            if (!d || !d.success) throw new Error((d && d.error) || '落盘失败');
+            this.showToast('底案已更新：' + st.pendingDesign.path);
+            this.setState({ pendingDesign: null });
+            this.refreshDocs(st.editSlug);
+          }).catch(e => this.showToast('✕ ' + ((e && e.message) || '落盘失败')));
+      },
+      dropDesign: () => this.setState({ pendingDesign: null }),
+      runCart: () => { if (s.editSlug) window.open('http://localhost:3000/?game=lib%3A' + s.editSlug + '&from=workshop', '_blank'); },
+      delBtnStyle: Object.assign({}, mini.style, { color: '#a03222' }),
+      deleteCart: () => {
+        const slug = s.editSlug;
+        if (!slug) return;
+        if (!window.confirm('确认删除卡带「' + (s.editName || slug) + '」？\n将删除 library/' + slug + ' 与 public/games/' + slug + '（含设计稿/台账/版本历史），不可恢复。')) return;
+        fetch('/api/library/' + slug, { method: 'DELETE' }).then(r => r.json()).then(d => {
+          if (!d || !d.success) throw new Error((d && d.error) || '删除失败');
+          this.showToast('已删除：' + slug);
+          this.setState({ screen: 'games', editSlug: null });
+          this.refreshCarts();
+        }).catch(e => this.showToast('✕ ' + ((e && e.message) || '删除失败')));
+      },
       pickGd: () => this.setState({ chatRole: 'gd' }, () => this.scrollChat()),
       pickPe: () => this.setState({ chatRole: 'pe' }, () => this.scrollChat()),
       pickArt: () => this.setState({ chatRole: 'art' }, () => this.scrollChat()),

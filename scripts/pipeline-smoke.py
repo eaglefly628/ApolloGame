@@ -12,11 +12,15 @@
      防护（坏 role/坏 slug/坏 messages 全拒）+ mock 全链（reply+过校验门的 manifest·不代落盘）
   ⑧ Workshop 壳伺服面（REQ-WORKSHOP A）：/workshop/ 端出壳；/games/* 只读静态（穿越 403·缺失 404）；
      /api/library/<slug>/export 下载包（zip 头+排除 mock/.git/snapshots）；/api/catalog 能力目录形状
+  ⑨ 后台生成任务：快速链 mock 全链入库+立项卡；原型链（slug 校验+设计稿前置+落盘回原 slug）；防护腿
+  ⑩ 设计先行现场草稿：PUT/GET/清槽/坏 phase 拒（杀服可续）
+  ⑪ 底案协议（```design 围栏解析/非法路径拒/mock 提议不代落盘）+ 中文名编号兜底 + 旧 CLI 兼容参数
 任一断言失败 exit 1。造的 library/* + public/games/* 结束清理（零仓库污染）。
 
 用法：python3 scripts/pipeline-smoke.py
 """
 import os
+import re
 import sys
 import json
 import time
@@ -317,6 +321,40 @@ try:
     _, dclr = req('PUT', '/api/workshop/draft', {'draft': None})
     _, dget2 = req('GET', '/api/workshop/draft')
     check(dclr.get('success') and dget2.get('draft') is None, '清槽（原型入库后现场归零）')
+
+    print('⑪ 底案协议 + 编号兜底 + 旧 CLI 兼容')
+    rest, dp, dc = apollo._split_design_patch('好的，改慢节奏。\n```design overview.md\n# 总览 v3\n```\n以上。')
+    check(dp == 'overview.md' and dc.startswith('# 总览 v3') and '```' not in rest, '底案围栏解析（路径+全文+对白剥净）')
+    rest2, dp2, _ = apollo._split_design_patch('```design ../../etc/passwd\nx\n```')
+    check(dp2 is None, '底案非法路径拒（当没提议·对白保留）')
+    rest3, dp3, _ = apollo._split_design_patch('纯对白没有围栏')
+    check(dp3 is None and rest3 == '纯对白没有围栏', '无围栏=纯对白')
+    _, a7 = req('POST', '/api/agent/chat', {'slug': SLUG, 'role': 'gd', 'provider': 'mock',
+                                            'messages': [{'role': 'user', 'content': '更新一下底案提纲'}]})
+    check(isinstance(a7.get('designPatch'), dict) and a7['designPatch'].get('path') == 'overview.md',
+          'mock 全链：底案提议回传（gd）')
+    ov = (ROOT / 'library' / SLUG / 'design' / 'overview.md').read_text('utf-8')
+    check('mock 修订' not in ov, '底案未代落盘（确认才写·红线）')
+    check(re.fullmatch(r'game-\d{3}', apollo._slugify('森林消消乐')), '中文名 → 唯一编号 game-NNN（不再裸 game）')
+    check(apollo._slugify('Space Shooter') == 'space-shooter', '英文名照旧可读 slug')
+    lg_args = ' '.join(apollo._claude_code_args_legacy('opus'))
+    check('--output-format json' in lg_args and '--include-partial-messages' not in lg_args
+          and '--disallowedTools' in lg_args, '旧 CLI 兼容参数（非流式·工具面仍全禁）')
+
+    print('⑫ 删卡带（owner 07-11·只删库卡带·内置永远 404）')
+    _, dc1 = req('POST', '/api/library/create', {'name': 'Delete Me', 'description': '待删'})
+    DEL = dc1.get('slug')
+    CLEAN.append(_dirs(DEL or '_none'))
+    st12, dd = req('DELETE', f'/api/library/{DEL}')
+    check(st12 == 200 and dd.get('success'), f'删除成功 · {DEL}')
+    check(not (ROOT / 'library' / (DEL or '_')).exists() and not (ROOT / 'public' / 'games' / (DEL or '_')).exists(),
+          '两侧目录都清（library + public/games）')
+    st12, dd2 = req('DELETE', f'/api/library/{DEL}')
+    check(st12 == 404, '再删 404（幂等语义）')
+    st12, dd3 = req('DELETE', '/api/library/game-d')
+    check(st12 == 404, '引擎内置游戏删不到（不在 library/ 即 404）')
+    st12, _dd4 = req('DELETE', '/api/library/BAD..SLUG')
+    check(st12 in (400, 404), '坏 slug 拒')
 
 except Exception as e:
     FAIL += 1

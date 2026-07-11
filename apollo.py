@@ -459,6 +459,15 @@ def _claude_code_args(model: str, effort: str = 'high') -> list:
             '--model', model, '--effort', effort, '--append-system-prompt', _CLAUDE_CODE_SYSTEM_PIN,
             '--max-turns', '1', '--disallowedTools', _CLAUDE_CODE_TOOLS_OFF]
 
+def _claude_code_args_legacy(model: str, effort: str = 'high') -> list:
+    """旧版 CLI 兼容参数（不认 --include-partial-messages/--effort 的版本）：非流式 json 出——
+    功能可用但无实况（owner 07-11 v2.1.87 auto-update failed 实证）。检测到即整进程降级并提示升级。"""
+    return ['claude', '-p', '--output-format', 'json', '--model', model,
+            '--append-system-prompt', _CLAUDE_CODE_SYSTEM_PIN,
+            '--max-turns', '1', '--disallowedTools', _CLAUDE_CODE_TOOLS_OFF]
+
+_CLAUDE_CODE_LEGACY = {'on': False}  # 一旦检测旧 CLI 就记住（本进程内），后续直接走兼容路径
+
 # 实时活动注册表：订阅通道请求进行中的流式度量（chars/tail）——生成看板与对话气泡的「在干什么」。
 _LLM_LIVE: dict = {}
 _LLM_LIVE_LOCK = threading.Lock()
@@ -494,6 +503,34 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
     if api_key and api_key != 'cli':
         env['CLAUDE_CODE_OAUTH_TOKEN'] = api_key
     _CLAUDE_CODE_CWD.mkdir(parents=True, exist_ok=True)
+    def _legacy_run():  # 旧版 CLI 兼容路径：非流式一发（无实况·功能不断）
+        try:
+            lp = subprocess.run(**_spawn(_claude_code_args_legacy(model, effort)),
+                                input=_claude_code_transcript(system, messages), capture_output=True,
+                                encoding='utf-8', errors='replace', timeout=1800, cwd=_CLAUDE_CODE_CWD, env=env)
+        except subprocess.TimeoutExpired:
+            return {'success': False, 'error': '订阅通道超时（30 分钟·旧版 CLI 兼容模式）'}
+        except Exception as e:
+            return {'success': False, 'error': f'Claude Code 启动失败: {e}'}
+        lout = (lp.stdout or '').strip()
+        if lp.returncode != 0:
+            ltail = ((lp.stderr or '').strip() or lout)[-400:]
+            return {'success': False, 'error': f'Claude Code 退出码 {lp.returncode}: {ltail[:300]}'}
+        try:
+            ldata = json.loads(lout)
+        except Exception:
+            try:
+                ldata = json.loads(lout.splitlines()[-1])
+            except Exception:
+                return {'success': False, 'error': f'Claude Code 输出解析失败: {lout[:200]}'}
+        ltext = ldata.get('result') if isinstance(ldata, dict) else None
+        if not isinstance(ltext, str):
+            return {'success': False, 'error': f'Claude Code 无 result 字段: {str(ldata)[:200]}'}
+        return {'success': True, 'text': ltext, 'usage': ldata.get('usage') if isinstance(ldata.get('usage'), dict) else None}
+
+    if _CLAUDE_CODE_LEGACY['on']:
+        return _legacy_run()
+
     rid = uuid.uuid4().hex[:8]
     with _LLM_LIVE_LOCK:
         _LLM_LIVE[rid] = {'id': rid, 'provider': 'claude-code', 'model': model,
@@ -567,6 +604,10 @@ def _claude_code_request(api_key: str, model: str, system: str, messages: list, 
         if proc.returncode != 0:
             tail = ((proc.stderr.read() or '').strip() or ''.join(raw_lines).strip())[-400:]
             low = tail.lower()
+            if 'unknown option' in low or 'unknown argument' in low or 'unrecognized' in low:
+                _CLAUDE_CODE_LEGACY['on'] = True  # 旧版 CLI 不认流式旗标 → 本进程降级非流式（功能不断·无实况）
+                print(c('  [LLM]', 'y'), '检测到旧版 claude CLI（不认流式旗标）——已降级兼容模式；升级 CLI 可获实况（claude doctor）', flush=True)
+                return _legacy_run()
             if 'limit' in low or 'rate' in low or 'usage' in low or '额度' in tail:
                 return {'success': False, 'error': f'订阅额度暂满或受限（额度窗恢复后重试）: {tail[:200]}'}
             return {'success': False, 'error': f'Claude Code 退出码 {proc.returncode}: {tail[:300]}'}
@@ -1265,9 +1306,19 @@ the single source of truth for vocabulary — never invent components/fields; un
 
 AGENT_GD_SYSTEM = AGENT_CHAT_COMMON + """
 ## Your role: 策划（game designer）
-You own gameplay feel: tuning existing numeric fields, content/text, pacing, win/lose balance.
+You own gameplay feel: tuning existing numeric fields, content/text, pacing, win/lose balance —
+AND the design docs (底案) below. The design docs are the living baseline of this game: when a discussion
+changes direction/rules/pacing, propose an update to the relevant doc by appending exactly one fenced block:
+```design <relative-path.md>
+(the FULL updated content of that one doc)
+```
+Only one design block per reply; full content (never a fragment); only paths that already exist below or a
+new top-level `*.md` / `systems/*.md`. The user confirms before anything is written — never assume it's saved.
 Prefer changing VALUES of existing fields over adding new components; structural additions belong to the
 程序 tab, art direction belongs to the 美术 tab — suggest switching when the ask is theirs.
+
+## Design docs (底案·this game)
+{DESIGN_DOCS}
 
 ## Art ledger digest (this game · for context only — art changes go to the 美术 tab)
 {ART_DIGEST}
@@ -1311,6 +1362,36 @@ def _agent_art_digest(slug: str, cap: int = 40) -> str:
         skin = f" skin={r.get('skinKey')}" if r.get('skinKey') else ''
         lines.append(f"{r.get('no')} [{r.get('status')}] {r.get('query', '')}{skin}")
     return '\n'.join(lines) or '(empty ledger)'
+
+def _agent_design_digest(slug: str, cap_chars: int = 6000) -> str:
+    """gd 角色的底案全文注入（超预算按文件截断·文件清单永远完整）。库缺失=明说。"""
+    game_dir = LIBRARY_DIR / slug
+    if not game_dir.is_dir():
+        return '(no design docs — this is a builtin game or docs not created yet)'
+    files = _read_design(game_dir)
+    if not files:
+        return '(no design docs yet — 设计先行流的提纲会落在这里)'
+    parts, used = [f"files: {', '.join(files)}"], 0
+    for rel, content in files.items():
+        take = content if used + len(content) <= cap_chars else content[:max(0, cap_chars - used)] + '\n…(truncated)'
+        used += len(take)
+        parts.append(f'### {rel}\n{take}')
+        if used >= cap_chars:
+            break
+    return '\n\n'.join(parts)
+
+_DESIGN_BLOCK_RE = re.compile(r'```design[ \t]+([^\n`]+)\n(.*?)```', re.S)
+
+def _split_design_patch(text: str):
+    """回复文本 → (剩余文本, path|None, content|None)。只认 ```design <rel.md> 围栏 + 合法 design 相对路径。"""
+    m = _DESIGN_BLOCK_RE.search(text or '')
+    if not m:
+        return (text or '').strip(), None, None
+    rel, content = m.group(1).strip(), m.group(2)
+    rest = (text[:m.start()] + text[m.end():]).strip()
+    if not _valid_design_relpath(rel):
+        return rest, None, None  # 非法路径：当没提议（对白保留·不惊扰）
+    return rest, rel, content.strip() + '\n'
 
 def _split_reply_manifest(text: str):
     """回复文本 → (对白部分, manifest JSON 串或 None)。只认 ```json 围栏且顶层含 entities 的对象。"""
@@ -1393,12 +1474,15 @@ def handle_agent_chat(body: dict) -> dict:
             out['manifestError'] = msg
         if role in ('gd', 'art'):
             out['artHints'] = []
+        if role == 'gd' and any(k in messages[-1]['content'] for k in ('底案', '提纲')):  # mock 底案提议（冒烟全链）
+            out['designPatch'] = {'path': 'overview.md', 'content': '# 总览（mock 修订）\n'}
         return out
 
     tpl = {'gd': AGENT_GD_SYSTEM, 'pe': AGENT_PE_SYSTEM, 'art': AGENT_ART_SYSTEM}[role]
     system = (tpl.replace('{GAME_NAME}', str(game_name)).replace('{GAME_SLUG}', slug)
               .replace('{CURRENT_MANIFEST}', json.dumps(current, ensure_ascii=False))
               .replace('{CAPABILITY_CATALOG}', str(body.get('catalog') or _FALLBACK_CATALOG))
+              .replace('{DESIGN_DOCS}', _agent_design_digest(slug) if role == 'gd' else '')
               .replace('{ART_DIGEST}', _agent_art_digest(slug) if role in ('gd', 'art') else ''))
 
     attempts = 0
@@ -1426,11 +1510,21 @@ def handle_agent_chat(body: dict) -> dict:
         instr, _unknown = _llm_ify_error(msg, candidate)
         cur_messages = messages + [{'role': 'assistant', 'content': text},
                                    {'role': 'user', 'content': instr + ' 修好后重发完整回复（对白 + 一个完整 manifest 的 ```json 块）。'}]
+    if role == 'gd':  # 底案更新提议（owner 07-11：提纲=活底案·对话可持续修订·确认才落盘）
+        reply_text, dpath, dcontent = _split_design_patch(reply_text)
+        if dpath:
+            design_patch = {'path': dpath, 'content': dcontent}
+        else:
+            design_patch = None
+    else:
+        design_patch = None
     out = {'success': True, 'reply': reply_text, 'attempts': attempts, 'provider': provider, 'model': model, 'role': role}
     if manifest_out is not None:
         out['manifest'] = manifest_out
     elif manifest_err:
         out['manifestError'] = manifest_err
+    if design_patch:
+        out['designPatch'] = design_patch
     if role in ('gd', 'art'):
         out['artHints'] = sorted(set(re.findall(r'\bart-\d{2,3}\b', reply_text)))
     return out
@@ -2787,10 +2881,23 @@ def _valid_slug(slug) -> bool:
     return isinstance(slug, str) and 0 < len(slug) <= 64 and '..' not in slug and _SLUG_RE.match(slug) is not None
 
 def _slugify(name: str) -> str:
-    """名称 → slug：ascii 化 + 小写 + 非字母数字折成 '-' + 去首尾/合并连字符。空则 'game'。"""
+    """名称 → slug：ascii 化 + 小写 + 非字母数字折成 '-' + 去首尾/合并连字符。
+    转不出字母（中文名等）→ 唯一数字编号 game-001/002…（owner 07-11：库里要有唯一代号，别落光秃秃的 game）。"""
     s = unicodedata.normalize('NFKD', str(name)).encode('ascii', 'ignore').decode('ascii').lower()
     s = re.sub(r'[^a-z0-9]+', '-', s).strip('-')
-    return s or 'game'
+    return s or _next_game_no()
+
+def _next_game_no() -> str:
+    """下一个空闲编号 slug：扫 library/ 与 public/games/ 的 game-NNN（含裸 game 视为占用），取 max+1。"""
+    top = 0
+    for base in (LIBRARY_DIR, ROOT / 'public' / 'games'):
+        if not base.is_dir():
+            continue
+        for d in base.iterdir():
+            m = re.fullmatch(r'game-(\d{3,})', d.name)
+            if m:
+                top = max(top, int(m.group(1)))
+    return f'game-{top + 1:03d}'
 
 def _dedup_slug(base: str) -> str:
     """已存在则加 -2/-3… 后缀直到不冲突。"""
@@ -3069,6 +3176,26 @@ def library_design_put(slug: str, rel: str, body: dict) -> tuple:
     _touch_meta(game_dir)
     versioned = _version_save_all(game_dir, str(body.get('note') or f'design: {rel}'))
     return (200, {'success': True, 'slug': slug, 'path': rel, 'versioned': versioned})
+
+def library_delete(slug: str) -> tuple:
+    """DELETE /api/library/<slug>。删卡带（owner 07-11）：library/<slug> + public/games/<slug> + 工坊对话历史。
+    只删**库卡带**——slug 不在 library/ 下（引擎内置游戏）一律 404，永远删不到源码游戏。不可恢复，前端必须确认。"""
+    game_dir = _game_dir(slug)  # 防越界（非法 → ValueError → 400）
+    if not game_dir.is_dir():
+        return (404, {'success': False, 'error': f'卡带不存在（引擎内置游戏不可删）: {slug}'})
+    removed = []
+    shutil.rmtree(game_dir, ignore_errors=True)
+    removed.append(f'library/{slug}')
+    pub = ROOT / 'public' / 'games' / slug
+    if pub.is_dir():
+        shutil.rmtree(pub, ignore_errors=True)
+        removed.append(f'public/games/{slug}')
+    chat = _WORKSHOP_CHATS_DIR / f'{slug}.json'
+    if chat.is_file():
+        chat.unlink()
+        removed.append('workshop-chats')
+    print(c('  [LIB]', 'y'), f'删除卡带 {slug} · {"+".join(removed)}')
+    return (200, {'success': True, 'slug': slug, 'removed': removed})
 
 def library_create(body: dict) -> tuple:
     name = str(body.get('name') or '').strip()
@@ -3746,6 +3873,10 @@ class APIHandler(BaseHTTPRequestHandler):
         if path.startswith('/api/design-drafts/'):
             did = _draft_id_from_path(path)
             self._send_json(*_lib_dispatch(lambda: design_draft_delete(did)))
+            return
+        m_del = re.fullmatch(r'/api/library/([a-z0-9][a-z0-9-]*)', path)
+        if m_del:  # 删卡带（owner 07-11·只删库卡带·内置 404）
+            self._send_json(*_lib_dispatch(lambda: library_delete(m_del.group(1))))
             return
         self._send_json(404, {'error': 'Unknown DELETE endpoint'})
 

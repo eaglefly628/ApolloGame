@@ -790,6 +790,12 @@ export function Launcher() {
     const q = new URLSearchParams(window.location.search).get('game');
     return q && GAMES.some((g) => g.id === q && g.status === 'playable') ? q : null;
   });
+  // Workshop ▶ 直达（REQ-WORKSHOP 续·owner 07-11）：?game=lib:<slug> 直启卡带；from=workshop 时返回=回创作台。
+  const fromWorkshop = React.useMemo(
+    () => new URLSearchParams(window.location.search).get('from') === 'workshop', []);
+  const backToWorkshop = useCallback(() => { window.location.href = `${API}/workshop/`; }, []);
+  const pendingLibLaunch = React.useRef<string | null>(
+    (() => { const q = new URLSearchParams(window.location.search).get('game'); return q && q.startsWith(LIB_ID_PREFIX) ? q : null; })());
   const setLaunched = useCallback((id: string | null) => {
     const url = new URL(window.location.href);
     if (id) url.searchParams.set('game', id);
@@ -919,11 +925,20 @@ export function Launcher() {
   // 库条目 → 卡带 GameEntry（玩家模式独占轮播；dev 模式追加在内置之后）。
   const libGameEntries = React.useMemo(() => (libEntries ?? []).map(metaToGameEntry), [libEntries]);
 
+
   // 打开某盘库卡带（直接携带 entry，不再查另一份状态——缺陷 #1 的修法）。
   const openLibCartridge = useCallback((entry: GameEntry) => {
     const slug = libSlug(entry.id);
     if (slug) setLibRunner({ slug, entry });
   }, []);
+  // ?game=lib:<slug> 直启卡带（Workshop ▶ 跳转用）：库列表就绪后消化一次。
+  useEffect(() => {
+    const want = pendingLibLaunch.current;
+    if (!want) return;
+    const entry = libGameEntries.find((g) => g.id === want);
+    if (entry) { pendingLibLaunch.current = null; openLibCartridge(entry); }
+  }, [libGameEntries, openLibCartridge]);
+
 
   // 卡带启动分流（默认 LAUNCH 按钮 / 键盘 Enter 走这里）：库卡带 → 运行器；内置 game-* → GameRunner。
   const onLaunchCartridge = useCallback((id: string) => {
@@ -978,7 +993,7 @@ export function Launcher() {
   }
 
   if (launched) {
-    return <GameRunner gameId={launched} onBack={() => setLaunched(null)} />;
+    return <GameRunner gameId={launched} onBack={() => { if (fromWorkshop) { backToWorkshop(); return; } setLaunched(null); }} />;
   }
 
   if (libRunner) {
@@ -988,7 +1003,7 @@ export function Launcher() {
         entry={libRunner.entry}
         api={API}
         resolveArt={resolveArt}
-        onBack={() => setLibRunner(null)}
+        onBack={() => { if (fromWorkshop) { backToWorkshop(); return; } setLibRunner(null); }}
       />
     );
   }

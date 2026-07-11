@@ -141,6 +141,15 @@
 6. **生成进度真话**：阶段文案跟真实链路步骤走（读目录→生成→建库→落盘）+秒表——治「卡在 92%」误导（假进度封顶时真相是 Opus 深思考中）。
    另：编辑工坊项目卡显示落盘路径（library/<slug> + public/games/<slug>）。
 
+### §八.3 验收批 3-4（owner 2026-07-11 续测·当日落地·摘要）
+
+对话区：自动滚底 + textarea（Enter 发送/Shift+Enter 换行）+ 修订实况行 + 「等模型必挂心跳」立规（交接档 §2.5）。
+模型选择全局化：CREATE/编辑双处 chips + 设置页持久默认（providers.claude-code.model）。
+原型 job「prompt 必填」卡死修复（mode=prototype 走 slug 校验）。设计现场草稿（/api/workshop/draft·杀服可续）。
+底案=活工件：gd 注入设计稿全文 + ```design 围栏提议 → 确认落盘；编辑工坊左列底案卡。
+▶ 运行直达（壳→旧工作台运行器·from=workshop 返回创作台·launcher 扩 ?game=lib:<slug>）。
+中文名 slug 编号兜底 game-NNN。旧版 CLI 自动降级非流式（升级 CLI 恢复实况）。design-chat/revise 思考档 medium。
+
 ### §八.2 验收批 2（owner 2026-07-11 续测四条·当日落地）
 
 1. **生成=服务端后台任务**：`POST /api/generate/job {prompt|mode:'prototype'+slug}` → 线程跑
