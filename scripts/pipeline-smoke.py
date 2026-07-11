@@ -10,6 +10,8 @@
   ⑥ cart-S8 轻量终检：mock 债 → gate 红且点名 MOCK；清债 → 绿（manifest-check+bench）且证据绑 gameHash
   ⑦ 双角色对话通道（REQ-WORKSHOP B）：claude-code 子进程工具面全禁（纯函数断言）；/api/agent/chat
      防护（坏 role/坏 slug/坏 messages 全拒）+ mock 全链（reply+过校验门的 manifest·不代落盘）
+  ⑧ Workshop 壳伺服面（REQ-WORKSHOP A）：/workshop/ 端出壳；/games/* 只读静态（穿越 403·缺失 404）；
+     /api/library/<slug>/export 下载包（zip 头+排除 mock/.git/snapshots）；/api/catalog 能力目录形状
 任一断言失败 exit 1。造的 library/* + public/games/* 结束清理（零仓库污染）。
 
 用法：python3 scripts/pipeline-smoke.py
@@ -189,6 +191,39 @@ try:
     st, sv = req('GET', '/api/settings')
     pids = [p.get('id') for p in (sv.get('providers') or [])]
     check(pids and pids[0] == 'claude-code', f'设置面板 claude-code 居首（订阅主力档）· {pids[:3]}')
+
+    print('⑧ Workshop 壳伺服面（壳/静态/下载包/能力目录）')
+
+    def raw(method, path):
+        c = http.client.HTTPConnection('127.0.0.1', PORT, timeout=600)
+        c.request(method, path)
+        r = c.getresponse(); data = r.read(); hdrs = dict(r.getheaders()); c.close()
+        return r.status, hdrs, data
+
+    st8, h8, d8 = raw('GET', '/workshop/')
+    check(st8 == 200 and b'x-dc' in d8 and b'DCLogic' in d8, '/workshop/ 端出壳（x-dc + DCLogic 在体）')
+    st8, h8, _ = raw('GET', '/workshop/support.js')
+    check(st8 == 200 and 'javascript' in h8.get('Content-Type', ''), '/workshop/support.js 伺服')
+    # /games/* 只读静态：真文件 200 · 穿越 403 · 缺失 404（壳台账缩略图 servedPath 同源）
+    art_rel = f'/games/{SLUG}/art/art-ledger.json'
+    st8, h8, _ = raw('GET', art_rel)
+    check(st8 == 200 and 'json' in h8.get('Content-Type', ''), f'静态 200 · {art_rel}')
+    st8, _, _ = raw('GET', '/games/../../apollo.py')
+    check(st8 == 403, '路径穿越 403')
+    st8, _, _ = raw('GET', '/games/no-such/x.png')
+    check(st8 == 404, '缺失 404')
+    # 下载包：zip 头 + Content-Disposition + 排除 mock/.git/snapshots（mock 债在身的 SLUG 正好验排除）
+    import io as _io, zipfile as _zip
+    st8, h8, d8 = raw('GET', f'/api/library/{SLUG}/export')
+    check(st8 == 200 and h8.get('Content-Type') == 'application/zip' and SLUG in h8.get('Content-Disposition', ''), '下载包 zip 头 + 文件名')
+    names = _zip.ZipFile(_io.BytesIO(d8)).namelist()
+    check(any(n.endswith('manifest.json') for n in names), '包内含 manifest')
+    check(not any(p in ('mock', '.git', 'snapshots') for n in names for p in n.split('/')), '包排除 mock/.git/snapshots')
+    st8, _, _ = raw('GET', '/api/library/no-such-cart/export')
+    check(st8 == 404, '缺卡带 404')
+    # 能力目录端点形状（壳 catalog() 消费）——不强求 vite-node 成功（冷环境可空），只验形状与缓存字段
+    st8, cat = req('GET', '/api/catalog')
+    check(st8 == 200 and 'catalog' in cat and 'success' in cat, f'/api/catalog 形状 OK（success={cat.get("success")}）')
 
 except Exception as e:
     FAIL += 1

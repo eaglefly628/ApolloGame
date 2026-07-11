@@ -100,7 +100,8 @@ describe('Launcher · 玩家模式整线集成', () => {
     expect(findButton(container, '版本历史')).toBeTruthy();
     const exportBtn = findButton(container, '导出');
     expect(exportBtn).toBeTruthy();
-    expect(exportBtn!.disabled).toBe(true);
+    expect(exportBtn!.disabled).toBe(false); // REQ-WORKSHOP A：⤓ 导出=真下载包（/api/library/<slug>/export）
+    expect(findButton(container, '生产板')).toBeTruthy(); // 🏭 全模式可达（REQ-WORKSHOP C1 ⑦ 导流）
     expect(findButton(container, 'LAUNCH')).toBeUndefined();
 
     // ▶ 开始游戏 → 数据卡带运行器全屏纯运行：引擎 canvas 挂载 + 左上返回。

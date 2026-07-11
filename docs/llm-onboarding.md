@@ -36,6 +36,10 @@ Manifest(纯 JSON) ──parseManifest──▶ WorldBlueprint ──engine.load
 
 **红线**（audit 硬红旗，出货不豁免）：游戏层禁写自由代码 / 禁手写 DOM / 禁裸 `Math.random`；数据表必须有现成解释器消费（禁"虚胖数据"——填了文案没有效果比没数据更糟）；零测试不出货。
 
+**过程编排**：五步是"怎么做"，**做到哪一步/门过没过**由每游戏的八阶段生产流程板管
+（`docs/playbooks/game-production.md`·状态从工件推导·机器门+人门双验）——一个会话只领一个非绿阶段，
+禁止一口气跑完全程（防上下文漂移·owner 2026-07-10 拍板）。
+
 ## 3. 分层阅读协议（token 价签）
 
 | 层 | 何时读 | 内容 | 约 token |

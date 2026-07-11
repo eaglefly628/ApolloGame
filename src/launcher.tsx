@@ -6,11 +6,8 @@ import { SHELL, sGearBtn, sMenuPanel, sMenuItem } from './ui/shell-theme.js';
 import { resolveArtRefs } from './assembly/resolve-art-refs.js';
 import { artlibRecords, type LibraryRecord } from '@assets/index.js';
 import type { ArtLibIndex } from '@assets/artlib.js';
-import { parseManifest } from './assembly/manifest.js';
-import { deriveAssetIndex } from './assembly/derive-asset-index.js';
 import { buildCapabilityCatalog } from './assembly/capability-catalog.js';
 import { ALL_CAPABILITIES } from './assembly/capability-registry.js';
-import type { WorldBlueprint } from './assembly/demo.assembly.js';
 import {
   metaToGameEntry, libSlug, providerStatus, LIB_ID_PREFIX,
   type GameEntry, type LibraryEntry, type ProviderInfo,
@@ -802,7 +799,6 @@ export function Launcher() {
   }, []);
   const [studio, setStudio] = useState(false);
   const [artlib, setArtlib] = useState(false);
-  const [studioExtra, setStudioExtra] = useState<{ id: string; title: string; build: () => WorldBlueprint } | null>(null);
 
   // 玩家模式（?mode=player）：面向 To-C 用户——隐藏内置 GAMES 与 DevTools，卡带架数据源=用户游戏库。
   const playerMode = React.useMemo(
@@ -832,9 +828,7 @@ export function Launcher() {
   //   故设置页保存后 bump providersRefresh 重拉即更新状态灯（M3 增强，无需前端另判 config）。
   const [providers, setProviders] = useState<ProviderInfo[] | null>(null);
   const [providersRefresh, setProvidersRefresh] = useState(0);
-  // 「新建游戏 / 继续创作」→ 打开 GameCreator 并预置游戏名（dev 模式沿用旧面板）。nonce 变更触发展开+填词。
-  const [creatorSeed, setCreatorSeed] = useState<{ prompt: string; nonce: number } | null>(null);
-  // M2 创作向导（玩家模式·⚡ 快速模式）：create=新建 / revise=继续创作某盘卡带。
+  // M2 创作向导（两模式共用·⚡ 快速模式）：create=新建 / revise=继续创作某盘卡带。
   const [wizard, setWizard] = useState<{ mode: WizardMode; slug?: string; name?: string } | null>(null);
   // 设计先行流：新建入口双选卡（🗣 设计 / ⚡ 快速）+ 设计工作台 + 继续创作双选（改设计 / 快改数值）。
   const [entryChoice, setEntryChoice] = useState(false);
@@ -900,30 +894,23 @@ export function Launcher() {
     return resolved;
   }, []);
 
-  // 「在透视器里打开」：把生成的 manifest(原始 JSON)接进透视器。build 每次重新 parseManifest
-  // (而非 clone——蓝图含 capability 函数对象，structuredClone/JSON 都会坏)，重置/重跑安全。
-  const openInStudio = useCallback((name: string, raw: unknown) => {
-    const manifest = resolveArt(raw);
-    setStudioExtra({ id: 'generated', title: `生成 · ${name}`, build: () => parseManifest(manifest) });
-    setStudio(true);
-  }, [resolveArt]);
-
-  // 「继续创作」：玩家模式下——有设计稿 → 双选（改设计 / 快改数值）；无设计稿 → 直接 M2 revise。
-  // dev 模式 → 沿用旧 GameCreator 面板。
+  // 「继续创作」（两模式同流·REQ-WORKSHOP A 退役旧 GameCreator）：
+  // 有设计稿 → 双选（改设计 / 快改数值）；无设计稿 → 直接 M2 revise。
   const continueCreate = useCallback((entry: GameEntry) => {
     setLibRunner(null);
     const slug = libSlug(entry.id);
-    if (playerMode && slug) {
-      if (entry.hasDesign) setContinueChoice({ slug, name: entry.title });
-      else setWizard({ mode: 'revise', slug, name: entry.title });
-    } else setCreatorSeed({ prompt: entry.title, nonce: Date.now() });
-  }, [playerMode]);
+    if (!slug) return; // 只有库卡带有「继续创作」（内置卡带走源码）
+    if (entry.hasDesign) setContinueChoice({ slug, name: entry.title });
+    else setWizard({ mode: 'revise', slug, name: entry.title });
+  }, []);
 
-  // 向导 / 设计工作台保存成功 → 关面板、刷卡带架、请求选中新卡带。
+  // 向导 / 设计工作台保存成功 → 关面板、刷卡带架、请求选中新卡带 + 「下一步 → 🏭」引导条（REQ-WORKSHOP C1 导流）。
+  const [savedNext, setSavedNext] = useState<{ slug: string } | null>(null);
   const onWizardSaved = useCallback((slug: string) => {
     setWizard(null);
     setDesignStudio(null);
     setSelectSlug(`${LIB_ID_PREFIX}${slug}`);
+    setSavedNext({ slug });
     setLibRefresh((k) => k + 1);
   }, []);
   // 轮播跳转完成 → 清 selectSlug（一次性，之后刷架不再强跳）。
@@ -957,6 +944,8 @@ export function Launcher() {
         onHistory={() => setLibHistory({ slug })}
         onBench={() => setLibBench({ slug, title: selected.title })}
         onLedger={() => setArtLedger({ slug, title: selected.title, kind: 'library' })}
+        onPipeline={() => setPipeGame({ slug, title: selected.title, kind: 'library' })}
+        onExport={() => window.open(`${API}/api/library/${slug}/export`, '_blank')}
       />
     );
   }, [openLibCartridge, continueCreate]);
@@ -964,15 +953,7 @@ export function Launcher() {
   const statusLight = providerStatus(providers ?? []);
 
   if (studio) {
-    return (
-      <StudioInspector
-        onBack={() => {
-          setStudio(false);
-          setStudioExtra(null);
-        }}
-        extraGame={studioExtra ?? undefined}
-      />
-    );
+    return <StudioInspector onBack={() => setStudio(false)} />;
   }
 
   if (artlib) {
@@ -988,7 +969,8 @@ export function Launcher() {
   }
 
   if (pipeGame) {
-    return <GamePipelinePanel slug={pipeGame.slug} title={pipeGame.title} onBack={() => setPipeGame(null)} onOpenArt={() => { const g = pipeGame; setPipeGame(null); setArtLedger(g); }} />;
+    // S6 进美术平台不清 pipeGame：artLedger 分支在前，台账 ← 返回即回到生产板（返回栈·REQ-WORKSHOP C1 ⑦）。
+    return <GamePipelinePanel slug={pipeGame.slug} title={pipeGame.title} onBack={() => setPipeGame(null)} onOpenArt={() => setArtLedger(pipeGame)} />;
   }
 
   if (pipePicker) {
@@ -1125,8 +1107,59 @@ export function Launcher() {
             >
               🗃 资源库
             </button>
+            <button
+              onClick={() => setEntryChoice(true)}
+              title="新建游戏（设计先行 / 快速生成）——旧 GameCreator 已退役，两模式同流"
+              style={{
+                marginTop: 14,
+                marginLeft: 10,
+                padding: '7px 18px',
+                background: SHELL.jadeWash,
+                color: SHELL.jade,
+                border: `1px solid ${SHELL.jadeLine}`,
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: 1,
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              ＋ 新建游戏
+            </button>
+            <button
+              onClick={() => setStudio(true)}
+              title="数据透视器：内置游戏装配/组件/系统逐帧检视"
+              style={{
+                marginTop: 14,
+                marginLeft: 10,
+                padding: '7px 18px',
+                background: SHELL.violetWash,
+                color: SHELL.violet,
+                border: `1px solid ${SHELL.violetLine}`,
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: 1,
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              🔬 透视器
+            </button>
           </>
         )}
+        {/* ⇄ Workshop（对外展示壳·owner 07-10：未来主界面，过渡期两入口互切对比） */}
+        <div style={{ marginTop: 10 }}>
+          <a
+            href={`${API}/workshop/`}
+            target="_blank"
+            rel="noreferrer"
+            style={{ fontSize: 11, letterSpacing: 1, color: SHELL.faint, textDecoration: 'none' }}
+          >
+            ⇄ Workshop 工作台（python apollo.py workshop）
+          </a>
+        </div>
       </div>
 
       {/* Game Carousel —— 玩家模式：库卡带架（空态=欢迎+新建）；dev 模式：内置 + 库卡带追加 */}
@@ -1158,6 +1191,39 @@ export function Launcher() {
             }}
           >
             ＋ 新建游戏
+          </button>
+        </div>
+      )}
+
+      {/* 保存成功引导条（REQ-WORKSHOP C1 ⑦ 导流）：入库后给「下一步 → 🏭 生产板」一条明路。 */}
+      {savedNext && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12, marginTop: 16,
+          padding: '10px 18px', borderRadius: 9,
+          background: SHELL.jadeWash, border: `1px solid ${SHELL.jadeLine}`,
+          color: SHELL.jade, fontSize: 13, fontFamily: SHELL.fontUi,
+        }}>
+          <span>✓ 已入库 <b>{libGameEntries.find((g) => libSlug(g.id) === savedNext.slug)?.title ?? savedNext.slug}</b></span>
+          <button
+            onClick={() => {
+              const title = libGameEntries.find((g) => libSlug(g.id) === savedNext.slug)?.title ?? savedNext.slug;
+              setSavedNext(null);
+              setPipeGame({ slug: savedNext.slug, title, kind: 'library' });
+            }}
+            style={{
+              padding: '5px 14px', borderRadius: 7, cursor: 'pointer', outline: 'none',
+              background: SHELL.violetWash, color: SHELL.violet, border: `1px solid ${SHELL.violetLine}`,
+              fontSize: 12, fontWeight: 600, fontFamily: SHELL.fontUi,
+            }}
+          >
+            下一步 → 🏭 生产板（八关走查）
+          </button>
+          <button
+            onClick={() => setSavedNext(null)}
+            aria-label="关闭引导"
+            style={{ background: 'none', border: 'none', color: SHELL.dim, cursor: 'pointer', fontSize: 16, lineHeight: 1 }}
+          >
+            ×
           </button>
         </div>
       )}
@@ -1240,13 +1306,6 @@ export function Launcher() {
         />
       )}
 
-      {/* Game Creator (AI Generate) —— dev 模式沿用旧面板；玩家模式走上方创作向导（不显示此条） */}
-      {!playerMode && (
-        <div style={{ width: '100%', maxWidth: 880, marginBottom: 12 }}>
-          <GameCreator onOpenInStudio={openInStudio} seed={creatorSeed} />
-        </div>
-      )}
-
       {/* Dev Tools —— 玩家模式隐藏 */}
       {!playerMode && (
       <div style={{ width: '100%', maxWidth: 880 }}>
@@ -1270,330 +1329,6 @@ export function Launcher() {
   );
 }
 
-// ══════════════════════════════════════
-//  Game Creator (AI Generate)
-// ══════════════════════════════════════
-
-interface LLMProvider {
-  id: string;
-  name: string;
-  models: string[];
-  available: boolean;
-}
-
-function GameCreator({ onOpenInStudio, seed }: {
-  onOpenInStudio: (name: string, raw: unknown) => void;
-  /** 「新建游戏」/「继续创作」触发：nonce 变更 → 展开面板并预置 prompt。 */
-  seed?: { prompt: string; nonce: number } | null;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const [prompt, setPrompt] = useState('');
-  const [generating, setGenerating] = useState(false);
-  const [provider, setProvider] = useState('anthropic');
-  const [providers, setProviders] = useState<LLMProvider[]>([]);
-  const [presets, setPresets] = useState<Record<string, { name: string; description: string }>>({});
-  const [result, setResult] = useState<{ success: boolean; error?: string; blueprint?: any; warnings?: string[] } | null>(null);
-  const [apiOk, setApiOk] = useState(false);
-
-  useEffect(() => {
-    Promise.all([
-      apiCall('/api/generate/providers').then(d => { setProviders(d); setApiOk(true); }).catch(() => {}),
-      apiCall('/api/generate/presets').then(d => setPresets(d)).catch(() => {}),
-    ]);
-  }, []);
-
-  // 外部（新建/继续创作）驱动：展开面板 + 预置游戏名。
-  useEffect(() => {
-    if (!seed) return;
-    setExpanded(true);
-    setPrompt(seed.prompt);
-  }, [seed?.nonce]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const generate = useCallback(async () => {
-    if (!prompt.trim()) return;
-    setGenerating(true);
-    setResult(null);
-    try {
-      const res = await fetch(`${API}/api/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // 从引擎 ALL_CAPABILITIES 自动派生能力目录随请求送出 → apollo.py 注入 System Prompt。
-        // 引擎自描述：任何能力（hitbox/prefab/…）登记即对生成器可见，零 prompt 维护、不漂移。
-        body: JSON.stringify({ prompt, provider, catalog: buildCapabilityCatalog(ALL_CAPABILITIES) }),
-      });
-      const data = await res.json();
-      setResult(data);
-    } catch (e: any) {
-      setResult({ success: false, error: e.message });
-    }
-    setGenerating(false);
-  }, [prompt, provider]);
-
-  const loadPreset = useCallback(async (name: string) => {
-    setGenerating(true);
-    setResult(null);
-    try {
-      const data = await apiCall(`/api/generate/preset/${name}`);
-      setResult(data);
-    } catch (e: any) {
-      setResult({ success: false, error: e.message });
-    }
-    setGenerating(false);
-  }, []);
-
-  const availableProviders = providers.filter(p => p.available);
-
-  const EXAMPLES = [
-    '做一个双人平台跳跃游戏，有重力和弹跳',
-    'Make a pong game with two paddles',
-    '一个小球在方块间弹跳的物理沙盒',
-    '两个玩家抢夺中间金币的对战游戏',
-  ];
-
-  return (
-    <div style={{
-      background: 'linear-gradient(135deg, rgba(167,139,250,0.08), rgba(56,189,248,0.08))',
-      borderRadius: 10,
-      border: '1px solid rgba(167,139,250,0.15)',
-      padding: 16,
-    }}>
-      <div
-        onClick={() => setExpanded(!expanded)}
-        style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          cursor: 'pointer', userSelect: 'none',
-        }}
-      >
-        <span style={{ fontSize: 14, fontWeight: 600 }}>
-          <span style={{ color: '#a78bfa' }}>Create Game</span>
-          <span style={{ color: '#64748b', fontWeight: 400, marginLeft: 8, fontSize: 12 }}>
-            Describe a game, AI builds it
-          </span>
-        </span>
-        <span style={{ color: '#475569', fontSize: 18 }}>{expanded ? '−' : '+'}</span>
-      </div>
-
-      {expanded && (
-        <div style={{ marginTop: 16 }}>
-          {/* Provider selector */}
-          {availableProviders.length > 0 && (
-            <div style={{ marginBottom: 12, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ color: '#64748b', fontSize: 12 }}>AI Provider:</span>
-              {providers.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => p.available && setProvider(p.id)}
-                  style={{
-                    padding: '3px 10px',
-                    background: provider === p.id ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)',
-                    color: p.available ? (provider === p.id ? '#a78bfa' : '#94a3b8') : '#334155',
-                    border: `1px solid ${provider === p.id ? 'rgba(167,139,250,0.3)' : 'rgba(255,255,255,0.08)'}`,
-                    borderRadius: 4,
-                    fontSize: 12,
-                    cursor: p.available ? 'pointer' : 'default',
-                    opacity: p.available ? 1 : 0.4,
-                  }}
-                >
-                  {p.name}{!p.available ? ' (no key)' : ''}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Prompt input */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !generating && generate()}
-              placeholder="Describe your game in one sentence..."
-              style={{
-                flex: 1, padding: '10px 14px',
-                background: 'rgba(0,0,0,0.3)',
-                color: '#e2e8f0',
-                border: '1px solid rgba(167,139,250,0.2)',
-                borderRadius: 8,
-                fontSize: 14,
-                outline: 'none',
-              }}
-            />
-            <button
-              onClick={generate}
-              disabled={generating || !prompt.trim()}
-              style={{
-                padding: '10px 20px',
-                background: generating ? 'rgba(167,139,250,0.1)' : 'linear-gradient(135deg, #a78bfa, #38bdf8)',
-                color: generating ? '#64748b' : '#0f172a',
-                border: 'none',
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: generating ? 'wait' : 'pointer',
-                whiteSpace: 'nowrap' as const,
-              }}
-            >
-              {generating ? 'Generating...' : 'Generate'}
-            </button>
-          </div>
-
-          {/* Example prompts */}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-            {EXAMPLES.map((ex, i) => (
-              <button
-                key={i}
-                onClick={() => setPrompt(ex)}
-                style={{
-                  padding: '4px 10px',
-                  background: 'rgba(255,255,255,0.04)',
-                  color: '#64748b',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: 12,
-                  fontSize: 11,
-                  cursor: 'pointer',
-                }}
-              >
-                {ex}
-              </button>
-            ))}
-          </div>
-
-          {/* Presets */}
-          {Object.keys(presets).length > 0 && (
-            <div style={{ marginTop: 12 }}>
-              <div style={{ color: '#64748b', fontSize: 12, marginBottom: 6 }}>Quick presets (no API needed):</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {Object.entries(presets).map(([key, p]) => (
-                  <button
-                    key={key}
-                    onClick={() => loadPreset(key)}
-                    style={{
-                      padding: '6px 14px',
-                      background: 'rgba(255,255,255,0.06)',
-                      color: '#94a3b8',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: 6,
-                      fontSize: 12,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Result */}
-          {result && (
-            <div style={{
-              marginTop: 12, padding: 12,
-              background: result.success ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-              border: `1px solid ${result.success ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
-              borderRadius: 8,
-            }}>
-              {result.success ? (
-                <div>
-                  <div style={{ color: '#22c55e', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>
-                    Generated: {result.blueprint?.name}
-                  </div>
-                  <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>
-                    {result.blueprint?.description} · {result.blueprint?.entities?.length ?? 0} entities
-                  </div>
-                  {/* R9 乙：从 AI 生成的蓝图自动派生「本局所需资产」清单（key 与逻辑同源，缺图自动占位）。 */}
-                  {(() => {
-                    try {
-                      const bp = parseManifest(result.blueprint);
-                      const idx = deriveAssetIndex(bp.capabilities, bp.entities);
-                      if (idx.assets.length === 0) return null;
-                      return (
-                        <div style={{
-                          color: '#a78bfa', fontSize: 11, marginBottom: 8,
-                          padding: '6px 10px', background: 'rgba(167,139,250,0.08)',
-                          borderRadius: 4, border: '1px solid rgba(167,139,250,0.15)',
-                        }}>
-                          🎨 引擎自动提取本局所需资产 {idx.assets.length} 项（待填充，缺图自动占位）：{idx.assets.map(a => a.id).join('、')}
-                        </div>
-                      );
-                    } catch { return null; }
-                  })()}
-                  {result.warnings && result.warnings.length > 0 && (
-                    <div style={{
-                      color: '#fbbf24', fontSize: 11, marginBottom: 8,
-                      padding: '6px 10px', background: 'rgba(251,191,36,0.08)',
-                      borderRadius: 4, border: '1px solid rgba(251,191,36,0.15)',
-                    }}>
-                      {result.warnings.map((w, i) => <div key={i}>Warning: {w}</div>)}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      onClick={() => {
-                        const blob = new Blob([JSON.stringify(result.blueprint, null, 2)], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url; a.download = `${result.blueprint?.name || 'game'}.json`;
-                        a.click(); URL.revokeObjectURL(url);
-                      }}
-                      style={{
-                        padding: '6px 14px', background: 'rgba(34,197,94,0.15)', color: '#22c55e',
-                        border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, fontSize: 12, cursor: 'pointer',
-                      }}
-                    >
-                      Download Blueprint
-                    </button>
-                    <button
-                      onClick={() => navigator.clipboard?.writeText(JSON.stringify(result.blueprint, null, 2))}
-                      style={{
-                        padding: '6px 14px', background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
-                        border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, fontSize: 12, cursor: 'pointer',
-                      }}
-                    >
-                      Copy JSON
-                    </button>
-                    <button
-                      onClick={() => {
-                        try {
-                          parseManifest(result.blueprint); // 先校验可加载
-                          onOpenInStudio(result.blueprint?.name || 'game', result.blueprint);
-                        } catch (e: any) {
-                          setResult({ success: false, error: '无法加载到透视器：' + (e?.message ?? String(e)) });
-                        }
-                      }}
-                      style={{
-                        padding: '6px 14px', background: 'rgba(167,139,250,0.18)', color: '#a78bfa',
-                        border: '1px solid rgba(167,139,250,0.4)', borderRadius: 6, fontSize: 12, cursor: 'pointer',
-                      }}
-                    >
-                      🔬 在透视器里打开
-                    </button>
-                  </div>
-                  <details style={{ marginTop: 8 }}>
-                    <summary style={{ color: '#64748b', fontSize: 11, cursor: 'pointer' }}>View Blueprint JSON</summary>
-                    <pre style={{ color: '#94a3b8', fontSize: 11, lineHeight: 1.4, marginTop: 4, maxHeight: 200, overflow: 'auto' }}>
-                      {JSON.stringify(result.blueprint, null, 2)}
-                    </pre>
-                  </details>
-                </div>
-              ) : (
-                <div style={{ color: '#ef4444', fontSize: 13 }}>
-                  Error: {result.error}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* API status hint */}
-          {!apiOk && (
-            <div style={{ marginTop: 8, color: '#475569', fontSize: 11 }}>
-              Start with <code style={{ color: '#94a3b8' }}>python3 apollo.py</code> to enable AI generation.
-              Presets work without API.
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ══════════════════════════════════════
 //  Mount

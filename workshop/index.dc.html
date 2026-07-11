@@ -63,6 +63,8 @@
           </button>
         </div>
         <div style="flex:1"></div>
+        <!-- ⇄ 旧工作台（过渡期对比·owner 拍板保留两入口） -->
+        <a href="http://localhost:3000" target="_blank" style="display:block;text-align:center;font-family:'Fredoka';font-weight:700;font-size:11px;color:#f3e2c4;margin-bottom:10px;opacity:.9">⇄ 旧工作台（完整开发端 :3000）</a>
         <!-- account -->
         <div style="display:flex;align-items:center;gap:9px;background:rgba(58,35,18,.35);border:2.5px solid #3a2312;border-radius:14px;padding:8px 10px">
           <span style="width:36px;height:36px;border-radius:10px;border:2.5px solid #3a2312;background:linear-gradient(180deg,#5fcdf5,#37b6ef);display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:16px;flex:none">爱</span>
@@ -79,11 +81,6 @@
             <div style="font-family:'Fredoka';font-weight:700;font-size:11px;color:rgba(26,79,110,.85);letter-spacing:.08em;margin-top:3px">{{ pageSub }}</div>
           </div>
           <div style="flex:1"></div>
-          <!-- search -->
-          <div style="display:flex;align-items:center;gap:8px;background:linear-gradient(180deg,#f7e6c0,#efd79e);border:3px solid #3a2312;border-radius:12px;padding:8px 14px;width:220px;box-shadow:inset 0 2px 4px rgba(58,35,18,.2)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a5a2c" stroke-width="3" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15.5" y2="15.5"/></svg>
-            <span style="font-family:'Noto Sans SC';font-weight:600;color:#a07a45;font-size:13px">搜索模板 / 素材…</span>
-          </div>
           <!-- currencies -->
           <div style="display:flex;gap:8px;align-items:center">
             <div style="display:flex;align-items:center;gap:6px;background:linear-gradient(180deg,#4a3320,#2e1d0e);border:3px solid #3a2312;border-radius:999px;padding:4px 7px 4px 5px;box-shadow:0 4px 0 rgba(0,0,0,.35)">
@@ -104,7 +101,7 @@
           <sc-if value="{{ isGames }}" hint-placeholder-val="{{ true }}">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
               <div style="display:inline-flex;align-items:center;gap:8px;background:#37b6ef;border:3px solid #3a2312;border-radius:12px;padding:6px 14px;box-shadow:0 4px 0 #1f86bd">
-                <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">在研项目 · 点「新建游戏」从 AI 或模板库开始</span>
+                <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">卡带=可对白编辑 · 引擎内置游戏在旧工作台开发</span>
               </div>
             </div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
@@ -128,7 +125,7 @@
                         <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312;line-height:1.05">{{ g.cn }}</div>
                         <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#b0723a">{{ g.meta }}</div>
                       </div>
-                      <button style="{{ editBtnStyle }}" style-active="{{ editBtnActive }}">编辑</button>
+                      <button onClick="{{ g.edit }}" style="{{ editBtnStyle }}" style-active="{{ editBtnActive }}">编辑</button>
                     </div>
                     <div style="height:9px;background:#e7d9b8;border:2px solid #3a2312;border-radius:999px;overflow:hidden;margin-top:9px"><div style="{{ g.progStyle }}"></div></div>
                   </div>
@@ -149,13 +146,13 @@
               <button onClick="{{ goCreate }}" style="text-align:center;border-radius:24px;border:4px solid #3a2312;background:linear-gradient(180deg,#c9b6f0,#9a7ce0);padding:30px 22px 26px;cursor:pointer;box-shadow:0 7px 0 #6a4fb0,0 14px 20px rgba(0,0,0,.2),0 0 26px rgba(180,140,255,.4);transition:transform .12s" style-hover="{{ cardHover }}">
                 <div style="width:88px;height:88px;margin:0 auto 14px;border-radius:22px;border:4px solid #3a2312;background:linear-gradient(180deg,#efe0ff,#d8bdf5);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.6)"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#8f2fa8" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3 l2.2 5.8 L20 11 l-5.8 2.2 L12 19 l-2.2-5.8 L4 11 l5.8-2.2 Z"/></svg></div>
                 <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:22px;color:#fff5db;-webkit-text-stroke:3px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #6a4fb0">AI 新建</div>
-                <div style="font-family:'Noto Sans SC';font-weight:600;font-size:13px;color:#3a2360;line-height:1.5;margin-top:8px">说一句创意，引擎自动生成美术、关卡与玩法框架</div>
+                <div style="font-family:'Noto Sans SC';font-weight:600;font-size:13px;color:#3a2360;line-height:1.5;margin-top:8px">说一句创意，引擎自动生成关卡与玩法框架（真生成·入库即可编辑）</div>
               </button>
               <!-- template path -->
               <button onClick="{{ goTemplates }}" style="text-align:center;border-radius:24px;border:4px solid #3a2312;background:linear-gradient(180deg,#bfe6a0,#7ecb45);padding:30px 22px 26px;cursor:pointer;box-shadow:0 7px 0 #4e8a24,0 14px 20px rgba(0,0,0,.2);transition:transform .12s" style-hover="{{ cardHover }}">
                 <div style="width:88px;height:88px;margin:0 auto 14px;border-radius:22px;border:4px solid #3a2312;background:linear-gradient(180deg,#eafbe0,#cbeeb2);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.6)"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#4e8a24" stroke-width="2.4" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
                 <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:22px;color:#fff5db;-webkit-text-stroke:3px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #4e8a24">从模板库选择</div>
-                <div style="font-family:'Noto Sans SC';font-weight:600;font-size:13px;color:#2c5a18;line-height:1.5;margin-top:8px">挑一个品类 sample（三消 / 塔防 / 卡牌…）快速起步</div>
+                <div style="font-family:'Noto Sans SC';font-weight:600;font-size:13px;color:#2c5a18;line-height:1.5;margin-top:8px">挑一个品类灵感（三消 / 塔防 / 卡牌…）快速起步</div>
               </button>
             </div>
           </sc-if>
@@ -164,7 +161,7 @@
           <sc-if value="{{ isTemplates }}" hint-placeholder-val="{{ false }}">
             <button onClick="{{ goNewGame }}" style="{{ backBtnStyle }}" style-active="{{ backBtnActive }}">← 返回选择</button>
             <div style="display:inline-flex;align-items:center;gap:8px;background:#37b6ef;border:3px solid #3a2312;border-radius:12px;padding:6px 14px;box-shadow:0 4px 0 #1f86bd;margin:6px 0 18px">
-              <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">选一个品类 sample 开始开发 · 全部套用同一套 Supercell × Disney 混搭基调</span>
+              <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">选一个品类灵感开始 · 全部套用同一套 Supercell × Disney 混搭基调</span>
             </div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
               <sc-for list="{{ templates }}" as="t" hint-placeholder-count="9">
@@ -172,7 +169,7 @@
                   <div style="{{ t.coverStyle }}">
                     <div style="width:120px;height:96px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 0 rgba(58,35,18,.35))">{{ t.cover }}</div>
                     <span style="position:absolute;top:8px;left:8px;background:#fff5db;border:2.5px solid #3a2312;border-radius:9px;padding:2px 9px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#3a2312">{{ t.tag }}</span>
-                    <span style="position:absolute;top:8px;right:8px;background:#7ecb45;border:2.5px solid #3a2312;border-radius:9px;padding:2px 8px;font-family:'Noto Sans SC';font-weight:700;font-size:10px;color:#fff5db">sample</span>
+                    <span style="position:absolute;top:8px;right:8px;background:#7ecb45;border:2.5px solid #3a2312;border-radius:9px;padding:2px 8px;font-family:'Noto Sans SC';font-weight:700;font-size:10px;color:#fff5db">灵感</span>
                   </div>
                   <div style="padding:12px 13px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:linear-gradient(180deg,#fffdf5,#fff0cf);border-top:3px solid #3a2312">
                     <div style="min-width:0">
@@ -193,7 +190,7 @@
               <div>
                 <div style="background:linear-gradient(180deg,#f7e6c0,#efd79e);border:4px solid #3a2312;border-radius:22px;padding:20px;box-shadow:0 6px 0 rgba(58,35,18,.3),inset 0 3px 0 rgba(255,255,255,.4)">
                   <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#5a3d1e;margin-bottom:10px">说一句创意，引擎来生成 →</div>
-                  <div style="min-height:96px;font-family:'Noto Sans SC';font-weight:600;color:#5a3d1e;font-size:16px;line-height:1.55;background:rgba(255,255,255,.4);border:2px dashed rgba(58,35,18,.3);border-radius:12px;padding:12px">{{ promptText }}</div>
+                  <textarea value="{{ promptText }}" onInput="{{ promptType }}" rows="4" style="width:100%;min-height:96px;font-family:'Noto Sans SC';font-weight:600;color:#5a3d1e;font-size:16px;line-height:1.55;background:rgba(255,255,255,.55);border:2px dashed rgba(58,35,18,.3);border-radius:12px;padding:12px;outline:none;resize:vertical"></textarea>
                   <div style="display:flex;justify-content:flex-end;margin-top:12px">
                     <button style="{{ genBtnStyle }}" style-active="{{ genBtnActive }}" onClick="{{ generate }}"><span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px">{{ genLabel }}</span></button>
                   </div>
@@ -223,87 +220,157 @@
             </div>
           </sc-if>
 
-          <!-- ---------- ASSETS ---------- -->
+          <!-- ---------- EDIT (对白编辑工坊·REQ-WORKSHOP A) ---------- -->
+          <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ goGames }}" style="{{ backBtnStyle }}" style-active="{{ backBtnActive }}">← 返回游戏库</button>
+            <div style="display:grid;grid-template-columns:.9fr 1.1fr;gap:20px;align-items:start;margin-top:6px">
+              <!-- left: project card + 8-stage lamps + actions + pending -->
+              <div>
+                <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:20px;padding:16px;box-shadow:0 6px 0 rgba(58,35,18,.28)">
+                  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                    <div style="width:54px;height:54px;border-radius:14px;border:3px solid #3a2312;background:linear-gradient(180deg,#ffe08a,#f5b731);display:flex;align-items:center;justify-content:center;font-size:26px;flex:none">🎮</div>
+                    <div style="min-width:0"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#3a2312;line-height:1.05">{{ editName }}</div>
+                    <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#b0723a">{{ editSlug }}</div>
+                    <div style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#8a5a2c;margin-top:2px">{{ editPitch }}</div></div>
+                  </div>
+                  <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#3a2312;margin-bottom:6px">生产八关（详情在旧工作台 🏭 生产板）</div>
+                  <div style="display:flex;gap:6px;align-items:center;background:rgba(58,35,18,.08);border:2.5px solid #3a2312;border-radius:12px;padding:9px 12px;margin-bottom:12px;flex-wrap:wrap">
+                    <sc-for list="{{ stageLamps }}" as="l" hint-placeholder-count="8">
+                      <span title="{{ l.tip }}" style="{{ l.style }}">{{ l.label }}</span>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button onClick="{{ downloadPack }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⬇ 下载包</button>
+                    <button onClick="{{ openOldBench }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⇄ 旧工作台（试玩 / 美术台）</button>
+                  </div>
+                </div>
+                <sc-if value="{{ hasPending }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:14px;background:linear-gradient(180deg,#fff3cf,#ffe9ae);border:4px solid #3a2312;border-radius:18px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25);animation:pop .18s ease-out both">
+                    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312;margin-bottom:6px">⚙ 有待应用的改动（已过引擎校验）</div>
+                    <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e;margin-bottom:10px">{{ pendingSummary }}</div>
+                    <div style="display:flex;gap:8px">
+                      <button onClick="{{ applyPending }}" style="{{ applyBtnStyle }}" style-active="{{ applyBtnActive }}">✔ 应用改动（落盘+版本化）</button>
+                      <button onClick="{{ dropPending }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">✕ 放弃</button>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ pendingErrText }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:14px;background:#ffe1d6;border:3px solid #3a2312;border-radius:14px;padding:12px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#7a2a12;line-height:1.5">⚠ 模型提议未过校验门：{{ pendingErrText }}</div>
+                </sc-if>
+              </div>
+              <!-- right: dual-role chat -->
+              <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:20px;box-shadow:0 6px 0 rgba(58,35,18,.28);display:flex;flex-direction:column;height:600px">
+                <div style="display:flex;gap:8px;padding:12px 14px;border-bottom:3px solid #3a2312;background:linear-gradient(180deg,#f7e6c0,#efd79e)">
+                  <button onClick="{{ pickGd }}" style="{{ gdTabStyle }}">🎨 策划</button>
+                  <button onClick="{{ pickPe }}" style="{{ peTabStyle }}">🔧 程序</button>
+                  <span style="margin-left:auto;font-family:'Fredoka';font-weight:700;font-size:10px;color:#8a5a2c;align-self:center">{{ chatRoleHint }}</span>
+                </div>
+                <div class="scr" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+                  <sc-for list="{{ chatMsgs }}" as="m" hint-placeholder-count="2">
+                    <div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div></div>
+                  </sc-for>
+                  <sc-if value="{{ chatBusy }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#8a5a2c">思考中…（订阅通道深思考可能要一会儿）</span></div>
+                  </sc-if>
+                  <sc-if value="{{ artHintText }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#1a4f6e;background:#d6f1ff;border:2.5px solid #3a2312;border-radius:10px;padding:8px 10px">🎨 点名了 {{ artHintText }} —— 到旧工作台「🎨 美术平台」按编号处理</div>
+                  </sc-if>
+                </div>
+                <div style="display:flex;gap:8px;padding:12px;border-top:3px solid #3a2312">
+                  <input value="{{ chatInput }}" onInput="{{ chatType }}" onKeyDown="{{ chatKey }}" placeholder="{{ chatPlaceholder }}" style="flex:1;border:3px solid #3a2312;border-radius:12px;padding:10px 12px;font-family:'Noto Sans SC';font-weight:600;font-size:14px;background:#fff;color:#3a2312;outline:none">
+                  <button onClick="{{ sendChat }}" style="{{ sendBtnStyle }}" style-active="{{ sendBtnActive }}">发送</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ---------- ASSETS（素材库·接真美术台账·owner 07-10 点名） ---------- -->
           <sc-if value="{{ isAssets }}" hint-placeholder-val="{{ false }}">
+            <div style="display:inline-flex;align-items:center;gap:8px;background:#37b6ef;border:3px solid #3a2312;border-radius:12px;padding:6px 14px;box-shadow:0 4px 0 #1f86bd;margin-bottom:14px">
+              <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">每游戏一本美术台账（编号 art-NN）· 生成/换图/复核在旧工作台「🎨 美术平台」</span>
+            </div>
             <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
-              <sc-for list="{{ catTabs }}" as="t" hint-placeholder-count="5">
+              <sc-for list="{{ assetGameTabs }}" as="t" hint-placeholder-count="5">
                 <button onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button>
               </sc-for>
             </div>
             <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px">
-              <sc-for list="{{ assets }}" as="a" hint-placeholder-count="12">
+              <sc-for list="{{ assetRows }}" as="a" hint-placeholder-count="12">
                 <div style="border-radius:16px;overflow:hidden;border:3px solid #ffd257;box-shadow:0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312;background:#fff">
-                  <div style="{{ a.coverStyle }}"><svg width="46" height="50" viewBox="0 0 100 110"><polygon points="50,6 88,36 70,104 30,104 12,36" fill="{{ a.glyph }}" stroke="#3a2312" stroke-width="7" stroke-linejoin="round"/><polygon points="50,9 84,36 50,47 16,36" fill="rgba(255,255,255,.55)"/></svg></div>
+                  <div style="{{ a.coverStyle }}"></div>
                   <div style="padding:6px 6px 8px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
-                    <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:12px;line-height:1.1">{{ a.cn }}</div>
-                    <div style="font-family:'Fredoka';font-weight:700;color:#b0723a;font-size:9px">{{ a.cat }} · PNG</div>
+                    <div style="font-family:'Fredoka';font-weight:700;color:#3a2312;font-size:11px">{{ a.no }} <span style="{{ a.badgeStyle }}">{{ a.badge }}</span></div>
+                    <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:10px;line-height:1.2;overflow:hidden;max-height:24px">{{ a.q }}</div>
                   </div>
                 </div>
               </sc-for>
             </div>
+            <sc-if value="{{ assetsEmptyText }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:13px;background:rgba(255,255,255,.5);border:3px dashed rgba(58,35,18,.35);border-radius:14px;padding:18px;text-align:center">{{ assetsEmptyText }}</div>
+            </sc-if>
           </sc-if>
 
-          <!-- ---------- PUBLISH ---------- -->
+          <!-- ---------- PUBLISH（发布=导出下载包·owner 07-11 拍板） ---------- -->
           <sc-if value="{{ isPublish }}" hint-placeholder-val="{{ false }}">
             <div style="max-width:840px">
-              <div style="display:flex;align-items:center;gap:14px;background:#fffdf5;border:3px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 4px 0 rgba(58,35,18,.2);margin-bottom:20px">
-                <div style="width:60px;height:60px;border-radius:14px;border:3px solid #3a2312;background:linear-gradient(180deg,#ffd0e4,#ff9ec4);display:flex;align-items:center;justify-content:center;flex:none"><svg width="40" height="34" viewBox="0 0 90 72"><g stroke="#3a2312" stroke-width="5"><circle cx="24" cy="24" r="14" fill="#ef5138"/><circle cx="60" cy="24" r="14" fill="#ffd257"/><circle cx="42" cy="52" r="14" fill="#37b6ef"/></g></svg></div>
-                <div style="flex:1"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#3a2312">糖果消消乐 · 项目</div><div style="font-family:'Fredoka';font-weight:700;color:#7ecb45;font-size:12px">v1.2 · 60 关 · 就绪</div></div>
+              <div style="display:inline-flex;align-items:center;gap:8px;background:#37b6ef;border:3px solid #3a2312;border-radius:12px;padding:6px 14px;box-shadow:0 4px 0 #1f86bd;margin-bottom:18px">
+                <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">发布 = 导出可分发的下载包（zip：卡带本体 + 游戏资产·不含 mock 预览物）</span>
               </div>
-              <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#fff5db;-webkit-text-stroke:3px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e;margin-bottom:12px">选择导出平台</div>
-              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
-                <sc-for list="{{ platforms }}" as="p" hint-placeholder-count="4">
-                  <button onClick="{{ p.toggle }}" style="{{ p.style }}" style-active="{{ p.active }}">
-                    <span style="font-size:30px;line-height:1">{{ p.icon }}</span>
-                    <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px">{{ p.cn }}</span>
-                    <span style="{{ p.checkStyle }}">✓</span>
-                  </button>
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <sc-for list="{{ publishRows }}" as="p" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:14px;background:#fffdf5;border:3px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 4px 0 rgba(58,35,18,.2)">
+                    <div style="width:52px;height:52px;border-radius:13px;border:3px solid #3a2312;background:linear-gradient(180deg,#ffd0e4,#ff9ec4);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none">📦</div>
+                    <div style="flex:1;min-width:0"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#3a2312">{{ p.cn }}</div><div style="font-family:'Fredoka';font-weight:700;color:#b0723a;font-size:11px">{{ p.slug }} · {{ p.desc }}</div></div>
+                    <button onClick="{{ p.download }}" style="{{ dlBtnStyle }}" style-active="{{ dlBtnActive }}">⬇ 下载包</button>
+                  </div>
                 </sc-for>
               </div>
-              <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:16px;padding:18px;box-shadow:0 4px 0 rgba(58,35,18,.2);margin-bottom:20px">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative">
-                  <div style="position:absolute;top:11px;left:15%;right:15%;height:4px;background:rgba(58,35,18,.2);border-radius:4px"></div>
-                  <sc-for list="{{ lamps }}" as="l" hint-placeholder-count="3">
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;position:relative">
-                      <span style="{{ l.dotStyle }}"></span>
-                      <span style="font-family:'Noto Sans SC';font-weight:700;font-size:13px;color:#3a2312">{{ l.cn }}</span>
-                    </div>
-                  </sc-for>
-                </div>
-              </div>
-              <button style="{{ publishBtnStyle }}" style-active="{{ publishBtnActive }}" onClick="{{ startPublish }}">
-                <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:24px">{{ publishLabel }}</span>
-                <span style="font-family:'Fredoka';font-weight:700;font-size:12px;opacity:.85">EXPORT &amp; PUBLISH</span>
-              </button>
+              <sc-if value="{{ publishHint }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:14px;font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:13px;background:rgba(255,255,255,.5);border:3px dashed rgba(58,35,18,.35);border-radius:14px;padding:18px;text-align:center">{{ publishHint }}</div>
+              </sc-if>
             </div>
           </sc-if>
 
-          <!-- ---------- SETTINGS ---------- -->
+          <!-- ---------- SETTINGS（LLM 通道 + 文生图 API·owner 07-11 点名收编） ---------- -->
           <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
             <div style="max-width:720px">
               <div style="display:flex;align-items:center;gap:14px;background:repeating-linear-gradient(180deg,#c88a52 0 10px,#bd7f47 10px 20px);border:4px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.3),inset 0 -6px 0 rgba(0,0,0,.18);margin-bottom:16px">
                 <div style="width:56px;height:56px;border-radius:14px;border:3px solid #3a2312;background:linear-gradient(180deg,#5fcdf5,#37b6ef);display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:24px;flex:none">爱</div>
                 <div><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:19px;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill">爱萌互动</div><div style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:12px;opacity:.9">{{ versionLabel }}</div></div>
               </div>
-              <div style="display:flex;align-items:center;gap:10px;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:12px">
-                <div style="flex:1"><div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px">API 密钥</div><div style="font-family:ui-monospace,Menlo,monospace;color:#8a5a2c;font-size:13px;letter-spacing:.04em">sk-cloud-••••••••3a2f</div></div>
-                <button style="{{ copyBtnStyle }}" style-active="{{ copyBtnActive }}" onClick="{{ copyKey }}">{{ copyLabel }}</button>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:14px">
-                <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="3">
-                  <div style="display:flex;align-items:center;justify-content:space-between;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:13px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18)">
-                    <div><span style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px">{{ t.cn }}</span> <span style="font-family:'Fredoka';font-weight:700;color:#b0723a;font-size:10px">{{ t.en }}</span></div>
-                    <button onClick="{{ t.flip }}" style="{{ t.trackStyle }}"><span style="{{ t.knobStyle }}"></span></button>
-                  </div>
-                </sc-for>
-              </div>
-              <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18)">
-                <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px;margin-bottom:10px">画质 Quality</div>
-                <div style="display:flex;gap:6px;background:#efd79e;border:2px solid #3a2312;border-radius:12px;padding:4px">
-                  <sc-for list="{{ quality }}" as="q" hint-placeholder-count="3"><button onClick="{{ q.pick }}" style="{{ q.style }}">{{ q.label }}</button></sc-for>
+              <!-- Claude 订阅通道 -->
+              <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:12px">
+                <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px;margin-bottom:4px">Claude 订阅通道（零 API 费）</div>
+                <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;margin-bottom:8px">终端跑 <span style="font-family:ui-monospace,Menlo,monospace">claude setup-token</span> 把产出的 token 填这里；本机 Claude Code 已登录则免填。当前：{{ ccStatus }}</div>
+                <div style="display:flex;gap:8px">
+                  <input value="{{ tokenInput }}" onInput="{{ tokenType }}" type="password" placeholder="sk-ant-oat01-…（只在要更换时填）" style="flex:1;border:3px solid #3a2312;border-radius:10px;padding:9px 12px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fff;color:#3a2312;outline:none">
                 </div>
               </div>
-              <div style="text-align:center;font-family:'Fredoka';font-weight:600;color:rgba(26,79,110,.8);font-size:12px;padding:16px 0 0">爱萌互动 APOLLO ENGINE {{ versionShort }} · Supercell × Disney · 全部模板共用同一套令牌</div>
+              <!-- 默认 LLM 通道 -->
+              <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:12px">
+                <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px;margin-bottom:10px">默认 LLM 通道（生成 / 对白编辑用）</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <sc-for list="{{ providerChips }}" as="c" hint-placeholder-count="4"><button onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</button></sc-for>
+                </div>
+              </div>
+              <!-- 文生图 API（美术生成·从旧美术台收编） -->
+              <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:12px">
+                <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px;margin-bottom:4px">文生图 / 文生 3D API（美术生成）</div>
+                <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;margin-bottom:10px">千问万相（DashScope·2D 主力）· Tripo / Meshy（3D）。没配走 mock 占位，绝不静默顶替。</div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ genKeyRows }}" as="r" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span style="font-family:'Fredoka';font-weight:700;font-size:11px;color:#3a2312;width:150px;flex:none">{{ r.label }}</span>
+                      <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#8a5a2c;width:110px;flex:none">{{ r.masked }}</span>
+                      <input value="{{ r.value }}" onInput="{{ r.type }}" type="password" placeholder="新 key（要更换时填）" style="flex:1;border:2.5px solid #3a2312;border-radius:9px;padding:7px 10px;font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#fff;color:#3a2312;outline:none">
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+                <button onClick="{{ saveSettings }}" style="{{ saveBtnStyle }}" style-active="{{ saveBtnActive }}">{{ savingLabel }}</button>
+              </div>
+              <div style="text-align:center;font-family:'Fredoka';font-weight:600;color:rgba(26,79,110,.8);font-size:12px;padding:4px 0 0">爱萌互动 APOLLO ENGINE {{ versionShort }} · key 明文只存本机 .apollo-config.json（gitignored）· 回显一律打码</div>
             </div>
           </sc-if>
 
@@ -325,30 +392,106 @@
 class Component extends DCLogic {
   state = {
     screen: 'games',
-    liveGames: null,
-    version: null,
+    liveGames: null, carts: null, version: null, settings: null,
     coins: 12480, gems: 340,
     prompt: '一款太空题材的竖版飞机大战，卡通风，有护盾和火力道具，一个大 Boss。',
     generating: false, genPct: 0, done: false,
-    activeCat: '全部',
-    platforms: { iOS: true, Android: true, Web: false, MP: false },
-    publishing: false, publishStep: 0,
-    sound: true, notif: true, autosave: true,
-    quality: '高', copied: false, toast: null
+    // 对白编辑（REQ-WORKSHOP A·spec §一）
+    editSlug: null, editName: '', editPitch: '', board: null,
+    chatRole: 'gd', chats: { gd: [], pe: [] }, chatInput: '', chatBusy: false,
+    pending: null, pendingErr: null, artHints: [],
+    // 素材库 / 设置
+    assetsSlug: null, ledger: null,
+    tokenInput: '', genKeyInputs: {}, defaultProv: null, saving: false,
+    toast: null
   };
 
-  componentWillUnmount() { clearInterval(this._g); clearInterval(this._p); clearTimeout(this._t); }
+  componentWillUnmount() { clearInterval(this._g); clearTimeout(this._t); }
 
-  // 嵌入我们的接口：挂载时拉真游戏列表（apollo.py GET /api/games·同源）。失败/空则空列表（不回退假数据）。
+  // 嵌入我们的接口：真游戏列表（卡带=/api/library·引擎游戏=/api/games）+ 版本 + 设置（打码视图）。
   componentDidMount() {
+    this.refreshCarts();
     fetch('/api/games').then(r => r.json())
       .then(d => this.setState({ liveGames: (d && d.games) || [] }))
       .catch(() => this.setState({ liveGames: [] }));
-    // 发布版本（优先 git tag → 回退 package.json）——账号卡/页脚显示真值，不写死。
     fetch('/api/version').then(r => r.json())
       .then(d => this.setState({ version: (d && d.version) || '0.1.0' }))
       .catch(() => this.setState({ version: '0.1.0' }));
+    this.refreshSettings();
   }
+
+  refreshCarts() {
+    fetch('/api/library').then(r => r.json())
+      .then(d => this.setState({ carts: Array.isArray(d) ? d : [] }))
+      .catch(() => this.setState({ carts: [] }));
+  }
+  refreshSettings() {
+    fetch('/api/settings').then(r => r.json())
+      .then(d => this.setState({ settings: d || null, defaultProv: (d && d.default) || null }))
+      .catch(() => {});
+  }
+  // 默认通道解析：设置里的 default（有凭据才认）→ claude-code（订阅主力）→ 首个有凭据的。
+  provider() {
+    const st = this.state.settings;
+    const provs = (st && st.providers) || [];
+    const byId = (id) => provs.find(p => p.id === id);
+    const d = st && st.default;
+    if (d && byId(d) && byId(d).keyAvailable) return d;
+    const cc = byId('claude-code');
+    if (cc && cc.keyAvailable) return 'claude-code';
+    const first = provs.find(p => p.keyAvailable);
+    return first ? first.id : 'claude-code';
+  }
+  // 能力目录（/api/catalog·进程内缓存·pe 对话与生成共用）。
+  catalog() {
+    if (this._catalog != null) return Promise.resolve(this._catalog);
+    return fetch('/api/catalog').then(r => r.json())
+      .then(d => { this._catalog = (d && d.catalog) || ''; return this._catalog; })
+      .catch(() => { this._catalog = ''; return ''; });
+  }
+
+  openEdit(slug, name, pitch) {
+    this.setState({ screen: 'edit', editSlug: slug, editName: name || slug, editPitch: pitch || '',
+      board: null, chats: { gd: [], pe: [] }, chatRole: 'gd', chatInput: '', chatBusy: false,
+      pending: null, pendingErr: null, artHints: [] });
+    this.refreshBoard(slug);
+  }
+  refreshBoard(slug) {
+    fetch('/api/pipeline?slug=' + encodeURIComponent(slug)).then(r => r.json())
+      .then(b => { if (this.state.editSlug === slug && b && b.success !== false) this.setState({ board: b, editPitch: (b.concept && b.concept.pitch) || this.state.editPitch }); })
+      .catch(() => {});
+  }
+  pickAssetGame(slug) {
+    this.setState({ assetsSlug: slug, ledger: null });
+    fetch('/api/art/ledger?slug=' + encodeURIComponent(slug)).then(r => r.json())
+      .then(d => { if (this.state.assetsSlug === slug) this.setState({ ledger: (d && d.success) ? d : { rows: [] } }); })
+      .catch(() => this.setState({ ledger: { rows: [] } }));
+  }
+  sendChat() {
+    const st = this.state;
+    const text = (st.chatInput || '').trim();
+    if (!text || st.chatBusy || !st.editSlug) return;
+    const role = st.chatRole;
+    const msgs = (st.chats[role] || []).concat([{ role: 'user', content: text }]);
+    this.setState({ chats: Object.assign({}, st.chats, { [role]: msgs }), chatInput: '', chatBusy: true });
+    const post = (cat) => fetch('/api/agent/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: st.editSlug, role, provider: this.provider(), messages: msgs, catalog: cat || undefined }) }).then(r => r.json());
+    (role === 'pe' ? this.catalog().then(post) : post(undefined)).then(d => {
+      if (!d || !d.success) throw new Error((d && d.error) || '对话失败');
+      const withReply = msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）' }]);
+      this.setState(cur => ({
+        chats: Object.assign({}, cur.chats, { [role]: withReply }), chatBusy: false,
+        pending: d.manifest ? d.manifest : cur.pending,
+        pendingErr: d.manifest ? null : (d.manifestError || cur.pendingErr),
+        artHints: (d.artHints && d.artHints.length) ? d.artHints : cur.artHints
+      }));
+    }).catch(e => {
+      this.setState(cur => ({ chatBusy: false,
+        chats: Object.assign({}, cur.chats, { [role]: (cur.chats[role] || []).concat([{ role: 'assistant', content: '✕ ' + ((e && e.message) || '请求失败') }]) }) }));
+    });
+  }
+  fmt(n) { return n.toLocaleString('en-US'); }
+  showToast(msg) { clearTimeout(this._t); this.setState({ toast: msg }); this._t = setTimeout(() => this.setState({ toast: null }), 2600); }
 
   jelly(top, bottom, edge, fs) {
     return {
@@ -356,12 +499,10 @@ class Component extends DCLogic {
         padding: '12px 26px', borderRadius: '16px', border: '3px solid #3a2312',
         background: 'linear-gradient(180deg,' + top + ',' + bottom + ')', color: '#fff5db', cursor: 'pointer', lineHeight: '1',
         boxShadow: '0 6px 0 ' + edge + ', 0 10px 12px rgba(0,0,0,.26), inset 0 3px 0 rgba(255,255,255,.55), inset 0 -6px 0 rgba(0,0,0,.18)',
-        textShadow: '0 2px 0 rgba(0,0,0,.28)', transition: 'transform .06s, box-shadow .06s', transform: 'translateY(0)', fontSize: (fs || 18) + 'px' },
+        textShadow: '0 2px 0 rgba(0,0,0,.28)', transition: 'transform .06s, box-shadow .06s', transform: 'translateY(0)', fontSize: (fs || 18) + 'px', fontFamily: "'ZCOOL KuaiLe','Fredoka',sans-serif" },
       active: { transform: 'translateY(4px)', boxShadow: '0 2px 0 ' + edge + ', 0 3px 6px rgba(0,0,0,.28), inset 0 3px 0 rgba(255,255,255,.5), inset 0 -4px 0 rgba(0,0,0,.18)' }
     };
   }
-  fmt(n) { return n.toLocaleString('en-US'); }
-  showToast(msg) { clearTimeout(this._t); this.setState({ toast: msg }); this._t = setTimeout(() => this.setState({ toast: null }), 2200); }
 
   covers() {
     const h = React.createElement;
@@ -389,13 +530,14 @@ class Component extends DCLogic {
   renderVals() {
     const s = this.state;
     const titles = {
-      games: ['我的游戏库', 'MY GAMES · 在研项目'],
+      games: ['我的游戏库', 'MY GAMES · 卡带与在研项目'],
       newgame: ['新建游戏', 'NEW GAME · 选择起点'],
-      templates: ['模板库', 'TEMPLATE LIBRARY · 品类 sample'],
-      create: ['AI 新建', 'DESCRIBE → GENERATE'],
-      assets: ['素材库', 'ASSET LIBRARY · 统一基调'],
-      publish: ['发布', 'EXPORT & PUBLISH'],
-      settings: ['设置', 'SETTINGS']
+      templates: ['模板库', 'TEMPLATE LIBRARY · 品类灵感'],
+      create: ['AI 新建', 'DESCRIBE → GENERATE（真生成·入库即可编辑）'],
+      edit: ['编辑工坊', 'WORKSHOP · 策划 / 程序 对白编辑'],
+      assets: ['素材库', 'ASSET LEDGERS · 每游戏一本美术台账'],
+      publish: ['发布', 'EXPORT · 下载包'],
+      settings: ['设置', 'SETTINGS · LLM 通道 + 文生图 API']
     };
 
     const navBase = (active) => ({
@@ -426,37 +568,42 @@ class Component extends DCLogic {
     const templates = tdefs.map(d => ({
       cn: d.cn, en: d.en, tag: d.tag, cover: cv[d.k],
       coverStyle: { position: 'relative', height: '128px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '3px solid #3a2312', background: 'linear-gradient(180deg,' + d.cover[0] + ',' + d.cover[1] + ')' },
-      use: () => { this.setState({ screen: 'create', prompt: d.p }); this.showToast('已选用「' + d.cn + '」模板，去描述细节'); }
+      use: () => { this.setState({ screen: 'create', prompt: d.p }); this.showToast('已选用「' + d.cn + '」灵感，去描述细节'); }
     }));
 
-    // my games (in-development projects)
+    // my games：卡带（可对白编辑）在前 + 引擎内置游戏（旧工作台开发）在后。
     const edit = this.jelly('#5fcdf5', '#37b6ef', '#1f86bd', 14); edit.style.padding = '7px 14px';
     const back = this.jelly('#fffdf5', '#efe0c0', '#c9b98f', 14); back.style.padding = '8px 16px'; back.style.color = '#3a2312'; back.style.textShadow = 'none'; back.style.marginBottom = '4px';
-    // 真数据映射：/api/games 每个 game-* → 一张卡（封面循环用设计图元，徽章反映本地美术就绪度）。
     const coverKeys = ['m3', 'td', 'shmup', 'runner', 'merge', 'bubble', 'n2048', 'idle', 'brick', 'farm'];
     const coverGrads = [['#ffd0e4', '#ff9ec4'], ['#bfe6a0', '#7ecb45'], ['#3a2a6a', '#5b3fa0'], ['#8fb6e0', '#5c8fd2'], ['#d6f7b0', '#9ee063'], ['#c9f2ff', '#5cc0f2'], ['#fff0c2', '#ffd257'], ['#f4e0b0', '#e0b85a'], ['#d6f1ff', '#a9e0fb'], ['#bfe6ff', '#8fd858']];
+    const cartList = Array.isArray(s.carts) ? s.carts : [];
     const liveList = Array.isArray(s.liveGames) ? s.liveGames : [];
-    const mgDefs = liveList.map((gg, i) => ({
-      k: coverKeys[i % coverKeys.length], cn: gg.id, tag: gg.id.replace('game-', ''),
-      status: gg.hasLocalArt ? '有美术' : '待接美术',
-      sc: coverGrads[i % coverGrads.length],
-      meta: gg.hasLocalArt ? '本地美术就绪' : '零美术 · 程序色块',
-      prog: gg.hasLocalArt ? 100 : 40, done: !!gg.hasLocalArt
-    }));
-    const statusColor = { '有美术': ['#7ecb45', '#fff5db', '#4e8a24'], '待接美术': ['#ffd257', '#3a2312', '#c98a1e'],
-      '开发中': ['#ffd257', '#3a2312', '#c98a1e'], '已发布': ['#7ecb45', '#fff5db', '#4e8a24'], '草稿': ['#c8c8c8', '#3a2312', '#8f8f8f'] };
+    const mgDefs = cartList.map((cc, i) => {
+      const name = (cc.meta && cc.meta.name) || cc.slug;
+      const desc = (cc.meta && cc.meta.description) || '';
+      return { k: coverKeys[i % coverKeys.length], cn: name, tag: '卡带', sc: coverGrads[i % coverGrads.length],
+        status: cc.valid ? '可编辑' : '损坏', meta: desc ? desc.slice(0, 24) : cc.slug, prog: 100, done: !!cc.valid,
+        edit: () => cc.valid ? this.openEdit(cc.slug, name, desc) : this.showToast('卡带 manifest 损坏，先在旧工作台修') };
+    }).concat(liveList.map((gg, i) => ({
+      k: coverKeys[(cartList.length + i) % coverKeys.length], cn: gg.id, tag: '引擎内置', sc: coverGrads[(cartList.length + i) % coverGrads.length],
+      status: gg.hasLocalArt ? '有美术' : '待接美术', meta: gg.hasLocalArt ? '本地美术就绪' : '零美术 · 程序色块',
+      prog: gg.hasLocalArt ? 100 : 40, done: !!gg.hasLocalArt,
+      edit: () => this.showToast('引擎内置游戏在旧工作台（源码）开发')
+    })));
+    const statusColor = { '可编辑': ['#7ecb45', '#fff5db', '#4e8a24'], '损坏': ['#ef5138', '#fff5db', '#a03222'],
+      '有美术': ['#7ecb45', '#fff5db', '#4e8a24'], '待接美术': ['#ffd257', '#3a2312', '#c98a1e'] };
     const myGames = mgDefs.map(g => ({
-      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: cv[g.k],
+      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: cv[g.k], edit: g.edit,
       coverStyle: { position: 'relative', height: '118px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '3px solid #3a2312', background: 'linear-gradient(180deg,' + g.sc[0] + ',' + g.sc[1] + ')' },
       badgeStyle: { position: 'absolute', top: '8px', right: '8px', background: statusColor[g.status][0], color: statusColor[g.status][1], border: '2.5px solid #3a2312', borderRadius: '9px', padding: '2px 9px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '10px', boxShadow: '0 2px 0 ' + statusColor[g.status][2] },
       progStyle: { height: '100%', width: g.prog + '%', background: g.done ? 'linear-gradient(180deg,#aef07a,#7ecb45)' : 'linear-gradient(180deg,#ffe08a,#f5b731)', borderRadius: '999px' }
     }));
 
-    // create
+    // create（真生成）
     const genBtn = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 20);
     const genFillStyle = { height: '100%', width: s.genPct + '%', background: 'linear-gradient(180deg,#aef07a,#7ecb45)', borderRadius: '999px', boxShadow: 'inset 0 3px 0 rgba(255,255,255,.6)', transition: 'width .2s' };
-    const stages = ['解析创意…', '生成美术资产…', '搭建关卡…', '打包预览…'];
-    const genStage = s.done ? '完成！预览已就绪 🎉' : stages[Math.min(3, Math.floor(s.genPct / 25))];
+    const stages = ['解析创意…', '生成 manifest…', '引擎校验（autofix）…', '入库落盘…'];
+    const genStage = s.done ? '完成！已入库，可对白编辑 🎉' : stages[Math.min(3, Math.floor(s.genPct / 25))];
     const ideaData = [
       { emoji: '🍬', text: '森林里的糖果三消，每 10 关一个 Boss 果冻。', c: '#ff9ec4' },
       { emoji: '🏰', text: '中世纪王国塔防，5 种塔、精灵入侵、雪地关卡。', c: '#7ecb45' },
@@ -467,99 +614,193 @@ class Component extends DCLogic {
       iconStyle: { flex: 'none', width: '42px', height: '42px', borderRadius: '11px', border: '3px solid #3a2312', background: d.c, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', boxShadow: 'inset 0 2px 0 rgba(255,255,255,.4)' },
       pick: () => this.setState({ prompt: d.text }) }));
 
-    // assets
-    const cats = ['全部', '角色', '场景', '道具', '特效'];
-    const catTabs = cats.map(c => ({ label: c,
-      style: { border: '3px solid #3a2312', borderRadius: '12px', padding: '8px 16px', cursor: 'pointer', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '14px',
-        background: s.activeCat === c ? 'linear-gradient(180deg,#8fe05a,#6cbf37)' : 'linear-gradient(180deg,#fffdf5,#fff0cf)',
-        color: s.activeCat === c ? '#fff5db' : '#3a2312',
-        boxShadow: s.activeCat === c ? '0 4px 0 #4e8a24' : '0 3px 0 rgba(58,35,18,.18)', textShadow: s.activeCat === c ? '0 1px 0 rgba(0,0,0,.25)' : 'none' },
-      pick: () => this.setState({ activeCat: c }) }));
-    const glyphByCat = { '角色': '#7ecb45', '场景': '#5cc0f2', '道具': '#ffd257', '特效': '#c14fe0' };
-    const coverByCat = { '角色': ['#eafbe0', '#c9f0aa'], '场景': ['#d6f1ff', '#a9e0fb'], '道具': ['#fff3cf', '#ffe08a'], '特效': ['#f4dcfb', '#e4b6f5'] };
-    const allAssets = [
-      { cn: '骑士', cat: '角色' }, { cn: '弓箭手', cat: '角色' }, { cn: '哥布林', cat: '角色' }, { cn: '法师', cat: '角色' },
-      { cn: '雪地', cat: '场景' }, { cn: '森林', cat: '场景' }, { cn: '城堡', cat: '场景' }, { cn: '海边', cat: '场景' },
-      { cn: '金币袋', cat: '道具' }, { cn: '护盾', cat: '道具' }, { cn: '炸弹', cat: '道具' }, { cn: '钥匙', cat: '道具' },
-      { cn: '爆炸', cat: '特效' }, { cn: '连击星', cat: '特效' }, { cn: '治疗光', cat: '特效' }, { cn: '升级环', cat: '特效' }
-    ];
-    const assets = allAssets.filter(a => s.activeCat === '全部' || a.cat === s.activeCat).map(a => ({
-      cn: a.cn, cat: a.cat, glyph: glyphByCat[a.cat],
-      coverStyle: { height: '78px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '2px solid #3a2312', background: 'linear-gradient(180deg,' + coverByCat[a.cat][0] + ',' + coverByCat[a.cat][1] + ')' }
+    // edit（对白编辑工坊）
+    const mini = this.jelly('#fffdf5', '#efe0c0', '#c9b98f', 13); mini.style.padding = '8px 14px'; mini.style.color = '#3a2312'; mini.style.textShadow = 'none';
+    const apply = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 15); apply.style.padding = '9px 16px';
+    const send = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 16); send.style.padding = '10px 20px';
+    const lampColor = { ok: '#7ecb45', warn: '#ffd257', fail: '#ef5138', dim: '#c8c8c8' };
+    const stageLamps = ((s.board && s.board.stages) || []).map(st2 => ({
+      label: st2.id, tip: st2.title + '：' + (st2.machine && st2.machine.detail || ''),
+      style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '34px', padding: '3px 6px', borderRadius: '9px', border: '2.5px solid #3a2312',
+        background: lampColor[st2.status] || '#c8c8c8', color: st2.status === 'warn' ? '#3a2312' : '#fff5db',
+        fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: '11px', boxShadow: 'inset 0 2px 0 rgba(255,255,255,.4)' }
     }));
+    const tabOn = { border: '3px solid #3a2312', borderRadius: '11px', padding: '7px 16px', cursor: 'pointer', fontFamily: "'ZCOOL KuaiLe','Fredoka',sans-serif", fontSize: '15px', background: 'linear-gradient(180deg,#ffe08a,#f5b731)', color: '#3a2312', boxShadow: '0 3px 0 #c98a1e' };
+    const tabOff = { border: '3px solid transparent', borderRadius: '11px', padding: '7px 16px', cursor: 'pointer', fontFamily: "'ZCOOL KuaiLe','Fredoka',sans-serif", fontSize: '15px', background: 'rgba(58,35,18,.12)', color: '#5a3d1e' };
+    const chatMsgs = ((s.chats[s.chatRole]) || []).map((m, idx) => ({
+      text: m.content,
+      rowStyle: { display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' },
+      bubbleStyle: { maxWidth: '85%', padding: '9px 13px', borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px', border: '2.5px solid #3a2312',
+        background: m.role === 'user' ? 'linear-gradient(180deg,#ffe08a,#f5b731)' : '#fff',
+        fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 600, fontSize: '13px', color: '#3a2312', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }
+    }));
+    const pendingSummary = s.pending
+      ? ('实体 ' + Object.keys((s.pending.entities || {})).length + ' 个 · 能力 ' + ((s.pending.capabilities || []).length) + ' 项 —— 确认后写回卡带（过 parseManifest 门 + git 版本化）')
+      : '';
 
-    // publish
-    const pdefs = [{ k: 'iOS', cn: 'iOS', icon: '📱', c: ['#a9b0b8', '#7d858e'], ec: '#4a5058' }, { k: 'Android', cn: '安卓', icon: '🤖', c: ['#8fe05a', '#6cbf37'], ec: '#4e8a24' }, { k: 'Web', cn: 'Web', icon: '🌐', c: ['#5fcdf5', '#37b6ef'], ec: '#1f86bd' }, { k: 'MP', cn: '小程序', icon: '🧩', c: ['#ffdd6e', '#f5b731'], ec: '#c98a1e' }];
-    const platforms = pdefs.map(p => { const on = s.platforms[p.k]; return {
-      cn: p.cn, icon: p.icon,
-      style: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', padding: '18px 10px', borderRadius: '16px', cursor: 'pointer', border: '3px solid #3a2312', color: '#fff5db',
-        background: 'linear-gradient(180deg,' + p.c[0] + ',' + p.c[1] + ')',
-        boxShadow: on ? '0 5px 0 ' + p.ec + ', 0 0 0 3px #ffd257, inset 0 3px 0 rgba(255,255,255,.5)' : '0 5px 0 ' + p.ec + ', inset 0 3px 0 rgba(255,255,255,.5)',
-        opacity: on ? 1 : .7, transition: 'all .12s', textShadow: '0 2px 0 rgba(0,0,0,.28)' },
-      active: { transform: 'translateY(3px)' },
-      checkStyle: { position: 'absolute', top: '-9px', right: '-9px', width: '28px', height: '28px', borderRadius: '50%', background: on ? '#7ecb45' : '#c8c8c8', border: '3px solid #3a2312', color: '#fff5db', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Fredoka'", fontWeight: 700, fontSize: '14px', boxShadow: '0 2px 0 rgba(0,0,0,.3)' },
-      toggle: () => this.setState(st => ({ platforms: { ...st.platforms, [p.k]: !st.platforms[p.k] } })) }; });
+    // assets（真台账墙）
+    const mergedSlugs = cartList.map(cc => cc.slug).concat(liveList.map(gg => gg.id)).slice(0, 12);
+    const assetGameTabs = mergedSlugs.map(slug => ({ label: slug,
+      style: { border: '3px solid #3a2312', borderRadius: '12px', padding: '8px 16px', cursor: 'pointer', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '13px',
+        background: s.assetsSlug === slug ? 'linear-gradient(180deg,#8fe05a,#6cbf37)' : 'linear-gradient(180deg,#fffdf5,#fff0cf)',
+        color: s.assetsSlug === slug ? '#fff5db' : '#3a2312',
+        boxShadow: s.assetsSlug === slug ? '0 4px 0 #4e8a24' : '0 3px 0 rgba(58,35,18,.18)' },
+      pick: () => this.pickAssetGame(slug) }));
+    const stBadge = { placeholder: ['占位', '#c8c8c8'], 'needs-art': ['待配', '#c8c8c8'], generated: ['已生成', '#ffd257'],
+      replaced: ['已写回', '#7ecb45'], filled: ['已填回', '#7ecb45'], approved: ['已复核', '#7ecb45'], retired: ['退役', '#8f8f8f'], failed: ['失败', '#ef5138'] };
+    const ledRows = ((s.ledger && s.ledger.rows) || []).filter(r => r.status !== 'retired').slice(0, 48);
+    const assetRows = ledRows.map(r => {
+      const served = r.gen && r.gen.servedPath;
+      const badge = stBadge[r.status] || [r.status, '#c8c8c8'];
+      return { no: r.no, q: r.query || (r.slot && r.slot.entity) || '', badge: badge[0],
+        badgeStyle: { background: badge[1], border: '2px solid #3a2312', borderRadius: '7px', padding: '1px 6px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '9px', color: '#3a2312', marginLeft: '4px' },
+        coverStyle: Object.assign({ height: '78px', borderBottom: '2px solid #3a2312' }, served
+          ? { backgroundImage: 'url(' + served + ')', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#f2ead8' }
+          : { background: 'linear-gradient(180deg,#f2ead8,#e2d2b0)' }) };
+    });
+    const assetsEmptyText = s.assetsSlug
+      ? (s.ledger && (!s.ledger.rows || !ledRows.length) ? '这款游戏还没有美术台账行——保存一次 manifest 会自动推导（PUT 即台账）' : '')
+      : '点上面的游戏页签查看它的美术台账';
 
-    const lampDefs = [{ cn: '打包', step: 1 }, { cn: '审核', step: 2 }, { cn: '上架', step: 3 }];
-    const lamps = lampDefs.map(l => { const active = s.publishStep >= l.step; const doing = s.publishing && s.publishStep === l.step - 1; return {
-      cn: l.cn, dotStyle: { width: '24px', height: '24px', borderRadius: '50%', border: '3px solid #3a2312',
-        background: active ? '#7ecb45' : (doing ? '#ffd257' : '#c8c8c8'),
-        boxShadow: active ? '0 0 10px rgba(126,203,69,.8), inset 0 2px 0 rgba(255,255,255,.5)' : 'inset 0 2px 0 rgba(255,255,255,.4)',
-        animation: doing ? 'bob 0.6s ease-in-out infinite' : 'none' } }; });
-    const pubBtn = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 24);
-    pubBtn.style.padding = '14px 44px';
+    // publish（下载包）
+    const dl = this.jelly('#5fcdf5', '#37b6ef', '#1f86bd', 15); dl.style.padding = '10px 18px';
+    const publishRows = cartList.filter(cc => cc.valid).map(cc => ({
+      cn: (cc.meta && cc.meta.name) || cc.slug, slug: cc.slug,
+      desc: ((cc.meta && cc.meta.description) || '卡带').slice(0, 30),
+      download: () => { window.open('/api/library/' + cc.slug + '/export', '_blank'); this.showToast('打包中——浏览器将开始下载 ' + cc.slug + '.zip'); }
+    }));
+    const publishHint = publishRows.length ? '' : '还没有可发布的卡带——先到「新建游戏」生成一款';
 
-    // settings
-    const togDefs = [{ k: 'sound', cn: '音效', en: 'SOUND' }, { k: 'notif', cn: '通知', en: 'NOTIFY' }, { k: 'autosave', cn: '自动保存', en: 'AUTO-SAVE' }];
-    const toggles = togDefs.map(t => { const on = s[t.k]; return {
-      cn: t.cn, en: t.en,
-      trackStyle: { position: 'relative', width: '60px', height: '33px', borderRadius: '999px', border: '3px solid #3a2312', cursor: 'pointer', padding: 0,
-        background: on ? 'linear-gradient(180deg,#8fe05a,#6cbf37)' : 'linear-gradient(180deg,#c8c8c8,#a8a8a8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,.3)', transition: 'background .15s' },
-      knobStyle: { position: 'absolute', top: '1px', left: on ? '28px' : '1px', width: '25px', height: '25px', borderRadius: '50%', background: '#fff5db', border: '2.5px solid #3a2312', boxShadow: '0 2px 0 rgba(0,0,0,.25)', transition: 'left .15s' },
-      flip: () => this.setState({ [t.k]: !s[t.k] }) }; });
-    const quality = ['低', '中', '高'].map(q => ({ label: q, style: { flex: '1', border: 'none', borderRadius: '9px', padding: '9px 0', cursor: 'pointer', fontFamily: "'Noto Sans SC'", fontWeight: 700, fontSize: '14px',
-      background: s.quality === q ? 'linear-gradient(180deg,#8fe05a,#6cbf37)' : 'transparent', color: s.quality === q ? '#fff5db' : '#8a5a2c', boxShadow: s.quality === q ? '0 3px 0 #4e8a24' : 'none' }, pick: () => this.setState({ quality: q }) }));
-    const copyBtn = this.jelly('#5fcdf5', '#37b6ef', '#1f86bd', 14);
-    copyBtn.style.padding = '9px 16px';
+    // settings（LLM 通道 + 文生图 key·真数据）
+    const provs = (s.settings && s.settings.providers) || [];
+    const ccProv = provs.find(p => p.id === 'claude-code');
+    const ccStatus = ccProv ? (ccProv.hasConfigKey ? ('token 已配 ' + ccProv.apiKeyMasked) : (ccProv.keyAvailable ? 'CLI 已登录 / env 已配（免填）' : '未配置——跑 claude setup-token')) : '…';
+    const providerChips = provs.filter(p => p.id !== 'mock').map(p => ({
+      label: p.name + (p.keyAvailable ? ' ●' : ' ○'),
+      style: { border: '3px solid #3a2312', borderRadius: '11px', padding: '7px 13px', cursor: 'pointer', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '12px',
+        background: (s.defaultProv || 'claude-code') === p.id ? 'linear-gradient(180deg,#8fe05a,#6cbf37)' : 'linear-gradient(180deg,#fffdf5,#fff0cf)',
+        color: (s.defaultProv || 'claude-code') === p.id ? '#fff5db' : '#3a2312',
+        boxShadow: (s.defaultProv || 'claude-code') === p.id ? '0 3px 0 #4e8a24' : '0 3px 0 rgba(58,35,18,.18)', opacity: p.keyAvailable ? 1 : .65 },
+      pick: () => this.setState({ defaultProv: p.id }) }));
+    const genLabels = { DASHSCOPE_API_KEY: '千问万相（2D 主力）', TRIPO_API_KEY: 'Tripo（3D）', MESHY_API_KEY: 'Meshy（3D 备选）' };
+    const genKeyRows = ((s.settings && s.settings.genKeys) || []).map(g => ({
+      label: genLabels[g.envKey] || g.envKey,
+      masked: g.hasConfigKey ? g.apiKeyMasked : (g.keyAvailable ? 'env 已配' : '未配置'),
+      value: s.genKeyInputs[g.envKey] || '',
+      type: (e) => { const v = e.target.value; this.setState(cur => ({ genKeyInputs: Object.assign({}, cur.genKeyInputs, { [g.envKey]: v }) })); }
+    }));
+    const saveB = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 17); saveB.style.padding = '11px 26px';
 
     return {
       pageTitle: titles[s.screen][0], pageSub: titles[s.screen][1],
       coinsFmt: this.fmt(s.coins), gemsFmt: this.fmt(s.gems),
       versionLabel: 'Version ' + (s.version || '0.1.0'), versionShort: 'v' + (s.version || '0.1.0'),
       isGames: s.screen === 'games', isNewGame: s.screen === 'newgame',
-      isTemplates: s.screen === 'templates', isCreate: s.screen === 'create', isAssets: s.screen === 'assets', isPublish: s.screen === 'publish', isSettings: s.screen === 'settings',
-      navGamesStyle: navBase(s.screen === 'games' || s.screen === 'newgame' || s.screen === 'templates' || s.screen === 'create'), navAssetsStyle: navBase(s.screen === 'assets'), navPublishStyle: navBase(s.screen === 'publish'), navSettingsStyle: navBase(s.screen === 'settings'),
+      isTemplates: s.screen === 'templates', isCreate: s.screen === 'create', isEdit: s.screen === 'edit',
+      isAssets: s.screen === 'assets', isPublish: s.screen === 'publish', isSettings: s.screen === 'settings',
+      navGamesStyle: navBase(['games', 'newgame', 'templates', 'create', 'edit'].indexOf(s.screen) >= 0),
+      navAssetsStyle: navBase(s.screen === 'assets'), navPublishStyle: navBase(s.screen === 'publish'), navSettingsStyle: navBase(s.screen === 'settings'),
       goGames: () => this.setState({ screen: 'games' }), goNewGame: () => this.setState({ screen: 'newgame' }),
-      goTemplates: () => this.setState({ screen: 'templates' }), goCreate: () => this.setState({ screen: 'create' }), goAssets: () => this.setState({ screen: 'assets' }), goPublish: () => this.setState({ screen: 'publish' }), goSettings: () => this.setState({ screen: 'settings' }),
+      goTemplates: () => this.setState({ screen: 'templates' }), goCreate: () => this.setState({ screen: 'create' }),
+      goAssets: () => { this.setState({ screen: 'assets' }); if (!s.assetsSlug && mergedSlugs.length) this.pickAssetGame(mergedSlugs[0]); },
+      goPublish: () => this.setState({ screen: 'publish' }), goSettings: () => { this.setState({ screen: 'settings' }); this.refreshSettings(); },
       myGames, editBtnStyle: edit.style, editBtnActive: edit.active, backBtnStyle: back.style, backBtnActive: back.active,
       templates, cardHover: { transform: 'translateY(-6px)' }, useBtnStyle: use.style, useBtnActive: use.active,
-      promptText: s.prompt, generating: s.generating, genPct: s.genPct, genStage, genFillStyle,
+      promptText: s.prompt, promptType: (e) => this.setState({ prompt: e.target.value }),
+      generating: s.generating, genPct: s.genPct, genStage, genFillStyle,
       genLabel: s.generating ? '生成中…' : '生成游戏', genBtnStyle: genBtn.style, genBtnActive: genBtn.active,
       ideas,
-      catTabs, assets,
-      platforms, lamps,
-      publishLabel: s.publishStep >= 3 ? '已上架 ✓' : (s.publishing ? '发布中…' : '一键发布'), publishBtnStyle: pubBtn.style, publishBtnActive: pubBtn.active,
-      toggles, quality, copyLabel: s.copied ? '已复制' : '复制', copyBtnStyle: copyBtn.style, copyBtnActive: copyBtn.active,
+      // edit screen
+      editName: s.editName, editSlug: s.editSlug || '', editPitch: s.editPitch || '（立项卡待填——S1 侧栏或对话里补）',
+      stageLamps, miniBtnStyle: mini.style, miniBtnActive: mini.active,
+      downloadPack: () => { if (s.editSlug) { window.open('/api/library/' + s.editSlug + '/export', '_blank'); this.showToast('打包中——浏览器将开始下载'); } },
+      openOldBench: () => window.open('http://localhost:3000', '_blank'),
+      hasPending: !!s.pending, pendingSummary,
+      applyPending: () => {
+        const st = this.state;
+        if (!st.pending || !st.editSlug) return;
+        fetch('/api/library/' + st.editSlug + '/manifest', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ manifest: st.pending, note: 'workshop 对白编辑应用改动（' + st.chatRole + '）' }) })
+          .then(r => r.json()).then(d => {
+            if (!d || !d.success) throw new Error((d && d.error) || '落盘失败');
+            this.showToast('改动已落盘（过校验 + 版本化）');
+            this.setState({ pending: null, pendingErr: null });
+            this.refreshBoard(st.editSlug); this.refreshCarts();
+          }).catch(e => this.showToast('✕ ' + ((e && e.message) || '落盘失败')));
+      },
+      dropPending: () => this.setState({ pending: null }),
+      pendingErrText: s.pendingErr || '',
+      pickGd: () => this.setState({ chatRole: 'gd' }), pickPe: () => this.setState({ chatRole: 'pe' }),
+      gdTabStyle: s.chatRole === 'gd' ? tabOn : tabOff, peTabStyle: s.chatRole === 'pe' ? tabOn : tabOff,
+      chatRoleHint: s.chatRole === 'gd' ? '玩法 / 数值 / 内容 · 兼美术更换' : '结构 / 组件 / 能力接线',
+      chatMsgs, chatBusy: s.chatBusy,
+      artHintText: (s.artHints || []).join('、'),
+      chatInput: s.chatInput,
+      chatType: (e) => this.setState({ chatInput: e.target.value }),
+      chatKey: (e) => { if (e.key === 'Enter') this.sendChat(); },
+      chatPlaceholder: s.chatRole === 'gd' ? '跟策划聊：玩法手感 / 数值 / 关卡 / 美术方向…' : '跟程序聊：加实体 / 组件 / 能力接线…',
+      sendChat: () => this.sendChat(), sendBtnStyle: send.style, sendBtnActive: send.active,
+      applyBtnStyle: apply.style, applyBtnActive: apply.active,
+      // assets
+      assetGameTabs, assetRows, assetsEmptyText,
+      // publish
+      publishRows, dlBtnStyle: dl.style, dlBtnActive: dl.active, publishHint,
+      // settings
+      ccStatus, tokenInput: s.tokenInput, tokenType: (e) => this.setState({ tokenInput: e.target.value }),
+      providerChips, genKeyRows,
+      saveSettings: () => {
+        if (s.saving) return;
+        const payload = {};
+        if ((s.tokenInput || '').trim()) payload.providers = { 'claude-code': { apiKey: s.tokenInput.trim() } };
+        const gk = {};
+        Object.keys(s.genKeyInputs || {}).forEach(k => { if ((s.genKeyInputs[k] || '').trim()) gk[k] = s.genKeyInputs[k].trim(); });
+        if (Object.keys(gk).length) payload.genKeys = gk;
+        if (s.defaultProv) payload.default = s.defaultProv;
+        if (!Object.keys(payload).length) { this.showToast('没有要保存的改动'); return; }
+        this.setState({ saving: true });
+        fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+          .then(r => r.json()).then(d => {
+            this.setState({ saving: false, tokenInput: '', genKeyInputs: {}, settings: d && d.providers ? d : this.state.settings });
+            this.showToast('设置已保存（key 打码存本机）'); this.refreshSettings();
+          }).catch(() => { this.setState({ saving: false }); this.showToast('✕ 保存失败'); });
+      },
+      saveBtnStyle: saveB.style, saveBtnActive: saveB.active, savingLabel: s.saving ? '保存中…' : '💾 保存设置',
       toast: s.toast,
       generate: () => {
         if (s.generating) return;
-        clearInterval(this._g); this.setState({ generating: true, genPct: 0, done: false });
-        this._g = setInterval(() => this.setState(st => {
-          const n = st.genPct + 4;
-          if (n >= 100) { clearInterval(this._g); return { genPct: 100, done: true }; }
-          return { genPct: n };
-        }), 110);
-      },
-      startPublish: () => {
-        if (s.publishing || s.publishStep >= 3) { if (s.publishStep >= 3) this.showToast('游戏已上架！'); return; }
-        clearInterval(this._p); this.setState({ publishing: true, publishStep: 0 });
-        this._p = setInterval(() => this.setState(st => {
-          const n = st.publishStep + 1;
-          if (n >= 3) { clearInterval(this._p); this.showToast('发布成功，已上架！'); return { publishStep: 3, publishing: false }; }
-          return { publishStep: n };
-        }), 800);
-      },
-      copyKey: () => { this.setState({ copied: true }); clearTimeout(this._c); this._c = setTimeout(() => this.setState({ copied: false }), 1500); }
+        const prompt = (s.prompt || '').trim();
+        if (!prompt) { this.showToast('先写一句创意'); return; }
+        clearInterval(this._g);
+        this.setState({ generating: true, genPct: 4, done: false });
+        this._g = setInterval(() => this.setState(st => ({ genPct: Math.min(92, st.genPct + (st.genPct < 60 ? 2 : 1)) })), 400);
+        const prov = this.provider();
+        this.catalog().then(cat =>
+          fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, provider: prov, autofix: true, catalog: cat || undefined }) }).then(r => r.json())
+        ).then(d => {
+          if (!d || !d.success || !(d.manifest || d.blueprint)) throw new Error((d && d.error) || '生成失败');
+          const mf = d.manifest || d.blueprint;
+          const name = (mf.name || '新游戏').slice(0, 40);
+          return fetch('/api/library/create', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description: prompt.slice(0, 300), provider: prov }) }).then(r => r.json())
+            .then(cd => {
+              if (!cd || !cd.success) throw new Error((cd && cd.error) || '建库失败');
+              return fetch('/api/library/' + cd.slug + '/manifest', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ manifest: mf, note: '初版生成（workshop）' }) }).then(r => r.json())
+                .then(pd => { if (!pd || !pd.success) throw new Error((pd && pd.error) || '落盘校验失败'); return { slug: cd.slug, name }; });
+            });
+        }).then(res => {
+          clearInterval(this._g);
+          this.setState({ generating: false, genPct: 100, done: true });
+          this.showToast('已生成并入库：' + res.name);
+          this.refreshCarts();
+          this.openEdit(res.slug, res.name, prompt.slice(0, 60));
+        }).catch(e => {
+          clearInterval(this._g);
+          this.setState({ generating: false, genPct: 0, done: false });
+          this.showToast('✕ ' + ((e && e.message) || '生成失败').slice(0, 80));
+        });
+      }
     };
   }
 }

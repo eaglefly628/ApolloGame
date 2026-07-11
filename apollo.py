@@ -12,6 +12,8 @@ Python 入口，同时启动:
 import subprocess
 import sys
 import os
+import io
+import zipfile
 import signal
 import time
 import webbrowser
@@ -1786,6 +1788,21 @@ def handle_games_list() -> dict:
                 games.append({'id': d.name, 'hasLocalArt': has_art})
     return {'games': games}
 
+_CATALOG_CACHE = None
+
+def handle_catalog() -> dict:
+    """GET /api/catalog。引擎全量能力目录（buildCapabilityCatalog 服务端 parity·进程内缓存）——
+    Workshop 壳无 vite 侧 import，生成/程序对话的词汇表从这取（REQ-WORKSHOP A）。"""
+    global _CATALOG_CACHE
+    if _CATALOG_CACHE is None:
+        try:
+            proc = subprocess.run(**_spawn(['npx', 'vite-node', 'scripts/dump-capability-catalog.mjs']),
+                                  cwd=ROOT, capture_output=True, encoding='utf-8', errors='replace', timeout=120)
+            _CATALOG_CACHE = proc.stdout if proc.returncode == 0 and (proc.stdout or '').strip() else ''
+        except Exception:
+            _CATALOG_CACHE = ''
+    return {'success': bool(_CATALOG_CACHE), 'catalog': _CATALOG_CACHE or None}
+
 def handle_version() -> dict:
     """GET /api/version。发布版本单一真相：优先最近 git tag（发布态）→ 无 tag 回退 package.json version。
     工作台账号卡/页脚显示的版本走此端点，随发布自动更新（不写死）。"""
@@ -3038,12 +3055,73 @@ class APIHandler(BaseHTTPRequestHandler):
                  '.png': 'image/png', '.svg': 'image/svg+xml'}.get(target.suffix.lower(), 'application/octet-stream')
         self._send_file(target, ctype)
 
+    def _serve_public_games(self, path: str) -> None:
+        """GET /games/<slug>/... → 只读伺服 public/games/**（REQ-WORKSHOP A：壳的素材缩略图/台账
+        servedPath 同源可显）。路径穿越防护同 _serve_workshop。"""
+        base = (ROOT / 'public' / 'games').resolve()
+        target = (base / path[len('/games/'):]).resolve()
+        try:
+            target.relative_to(base)
+        except ValueError:
+            self.send_response(403); self.end_headers(); return
+        if not target.is_file():
+            self.send_response(404); self.end_headers(); return
+        ctype = {'.json': 'application/json; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp',
+                 '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml',
+                 '.glb': 'model/gltf-binary'}.get(target.suffix.lower(), 'application/octet-stream')
+        self._send_file(target, ctype)
+
+    def _serve_export(self, slug: str) -> None:
+        """GET /api/library/<slug>/export → 下载包 zip（owner 2026-07-11「发布=一个下载包」）。
+        内容：卡带本体（manifest/meta/design）+ 游戏资产侧（public/games/<slug>·**排除 gen/mock 预览物**
+        与 pipeline.json 台账）。内存 zip·不落盘。"""
+        if not _valid_slug(slug):
+            self._send_json(400, {'success': False, 'error': f'非法 slug: {slug}'}); return
+        lib = LIBRARY_DIR / slug
+        pub = ROOT / 'public' / 'games' / slug
+        if not (lib / 'manifest.json').is_file() and not (pub / 'manifest.json').is_file():
+            self._send_json(404, {'success': False, 'error': f'游戏不存在: {slug}'}); return
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
+            def _add_tree(root_dir, arc_prefix):
+                if not root_dir.is_dir():
+                    return
+                for p in sorted(root_dir.rglob('*')):
+                    if not p.is_file():
+                        continue
+                    rel = p.relative_to(root_dir)
+                    parts = rel.parts
+                    if '.git' in parts or 'snapshots' in parts or 'mock' in parts:  # 版本库/快照/mock 预览物不进包
+                        continue
+                    z.write(p, f'{slug}/{arc_prefix}{rel.as_posix()}')
+            _add_tree(lib, '')
+            _add_tree(pub, 'assets/' if lib.is_dir() else '')
+        data = buf.getvalue()
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/zip')
+        self.send_header('Content-Disposition', f'attachment; filename="{slug}.zip"')
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_GET(self):
         path = self.path.split('?')[0]
 
         # 原版工作台静态伺服（owner 2026-07-11：对外展示台用原版设计代码 + 嵌我们的接口）。
         if path == '/workshop' or path.startswith('/workshop/'):
             self._serve_workshop(path)
+            return
+
+        # 游戏资产只读伺服（壳的缩略图/manifest 同源可取·REQ-WORKSHOP A）。
+        if path.startswith('/games/'):
+            self._serve_public_games(path)
+            return
+
+        # 下载包导出（发布屏=下载包·binary 出，先于 library JSON 分派）。
+        m_export = re.fullmatch(r'/api/library/([a-z0-9][a-z0-9-]*)/export', path)
+        if m_export:
+            self._serve_export(m_export.group(1))
             return
 
         # 库端点（可变状态码：400 越界 / 404 缺失）——先于遗留 200 端点分派。
@@ -3108,6 +3186,8 @@ class APIHandler(BaseHTTPRequestHandler):
             data = handle_games_list()
         elif path == '/api/version':
             data = handle_version()
+        elif path == '/api/catalog':
+            data = handle_catalog()
         elif path == '/api/settings':
             data = handle_settings_get()
         else:

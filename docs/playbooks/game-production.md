@@ -13,11 +13,15 @@
 
 | 入口 | 用法 |
 |---|---|
-| UI：主屏「🏭 生产流程」（dev 模式） | 选游戏 → 八阶段看板 → 每行可「▶ 跑机器门」「☑ 人门通过（note 必填）」 |
+| UI：主屏「🏭 生产流程」（两模式）/ 架上操作条「🏭 生产板」/ 保存成功条「下一步→🏭」 | 选游戏 → 八阶段看板 → 每行可「▶ 跑机器门」「☑ 人门通过（note 必填）」；S1 侧栏可直接填改立项卡 |
+| Workshop 壳（`python apollo.py workshop` → 编辑工坊） | 八关灯摘要 + ⬇下载包；详情跳旧工作台生产板 |
 | CLI：`node scripts/game-pipeline.mjs board <slug>` | 看板（会话开工第一命令） |
 | CLI：`gate <slug> <S3\|S4\|S5\|S8>` | 真跑该阶段机器门 → 记证据（退出码+游戏内容指纹） |
 | CLI：`signoff <slug> <SN> --note "…" [--by 名]` | 人门落账（review 内容必填·不许空签） |
-| CLI：`concept <slug> --name --pitch [--plan-waiver 理由]` | 填立项卡 / 记免 plan 裁决 |
+| CLI：`concept <slug> --name --pitch [--plan-waiver 理由]` | 填立项卡 / 记免 plan 裁决（UI 同语义=`POST /api/pipeline/concept`） |
+
+**立项卡自动化（REQ-WORKSHOP C1）**：建库（create 带 description）/ 装示例 / 换皮（谱系 pitch）都会
+**自动写 S1 立项卡**；PUT manifest 即自动重推美术台账（编号不漂移）。手填只剩改口与补参考/风格。
 
 ## 八阶段（每步唯一必读=手册列·每本 ≤80 行）
 
@@ -30,7 +34,7 @@
 | S5 UI 关 | HUD/菜单守 LayoutNode 纪律 | game-skill-audit 红旗零（gate）；卡带天然免 | /check-ui 结论签 | `docs/playbooks/ui.md` |
 | S6 美术关 | 台账→风格锚→生成→写回→复核 | 台账推导（MOCK 不算完成） | **已内嵌**=平台逐行 ☑ 复核 | `docs/playbooks/art-pipeline.md` |
 | S7 品质关 | 视觉评分卡打分 | —（以人门为主） | 得分记 note 签 | `docs/playbooks/visual-scorecard.md` |
-| S8 终检关 | 全库门禁+复盘回填 | tsc+vitest+build 三绿（gate） | 手册缺口回填/提单记 note 签 | `docs/playbooks/testing.md` |
+| S8 终检关 | 全库门禁+复盘回填 | **卡带**=MOCK 债 0+manifest-check+bench 五轴（轻量终检·证据绑 gameHash）；**内置/编译游戏**=tsc+vitest+build 三绿（gate·证据绑 git HEAD+净树位） | 手册缺口回填/提单记 note 签 | `docs/playbooks/testing.md` |
 
 ## 防漂移三律（为什么这样设计）
 

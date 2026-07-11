@@ -118,3 +118,15 @@
 2. **应用改动**：显式按钮确认落盘（与现流程一致）；**不多开**——同一时刻单对话请求、单落盘通道；对话编辑分**策划/程序两个入口**（策划兼美术更换）。
 3. **档位策略**：默认 Opus 4.8（订阅版）；Fable 5 作展示档可选；Sonnet 作量产档可选。
 4. **Claude 通道**：订阅 + setup-token + Agent SDK 原封不动——不买 API、不花新钱（§2.1）。
+
+## 八、验证记录（Lead 亲手施工·2026-07-11 完工）
+
+- **owner 07-11 改派+追加**：授权 Lead 亲手施工（「有足够 token…不要留下 bug」），完工移交 PST 维护；追加三条已并入——
+  ①发布=**下载包**（非 iOS/Web 上架）→ `GET /api/library/<slug>/export`；②设置收编**文生图 API**（千问万相/Tripo/Meshy 三把 genKeys）；
+  ③壳内新 UI **风格保持与壳一致**（延续原版设计语言·非 SHELL 主题）。
+- **落地与 spec 的偏差（三处·均有由）**：A 批载体=壳 `workshop/index.dc.html` 上接线（§〇.五载体对齐·非新建 React Workshop.tsx 一族）；
+  对话端点=`/api/agent/chat`（双角色 gd/pe·统一取代 revise-chat mode 命名·语义同 §2.3）；ChatPane 抽件不再需要（壳自带对话 UI）。
+- **门禁实数**：tsc 0 err；vitest 318 文件/2398 测试；build 绿；pipeline-smoke **44 断言**（⑧=壳伺服面：/workshop/ 端出壳·/games/* 静态
+  200/403/404·export zip 头+排除 mock/.git/snapshots·/api/catalog 形状）；art-replace-smoke 45 断言；壳 Component node 冒烟
+  （8 屏×空/满态+provider 决策+事件处理器）；服务端 curl 自证 10 腿（mock 生成链→create→PUT→board→双角色 chat→applyPending→ledger→export→settings 打码/清除）。
+- **维护交接**：`docs/workflow/finish/PST-workshop-handoff.md`（部件地图/接口契约/红线/验证方法/已知债）。

@@ -148,13 +148,15 @@ export function LibraryShelf({ entries, installing, onNewGame, onInstallSample, 
 }
 
 // ── 选中 library 卡带的操作条（spec ③·替代内置卡带的单个 LAUNCH 大按钮区域）──
-export function LibActionBar({ entry, onStart, onContinue, onHistory, onBench, onLedger }: {
+export function LibActionBar({ entry, onStart, onContinue, onHistory, onBench, onLedger, onPipeline, onExport }: {
   entry: GameEntry;
   onStart: () => void;
   onContinue: () => void;
   onHistory: () => void;
   onBench?: () => void;
   onLedger?: () => void;
+  onPipeline?: () => void;
+  onExport?: () => void;
 }) {
   const playable = entry.status === 'playable';
   return (
@@ -180,7 +182,10 @@ export function LibActionBar({ entry, onStart, onContinue, onHistory, onBench, o
         </button>
       )}
       {onLedger && <button onClick={onLedger} title="美术台账：浏览本局所需美术·按编号点名重生成/换库/上传·一键换皮" style={opBtn(false)}>🎨 美术台账</button>}
-      <button disabled title="即将支持" style={{ ...opBtn(false), opacity: 0.4, cursor: 'default' }}>⤓ 导出</button>
+      {onPipeline && <button onClick={onPipeline} title="生产流程板：八阶段双验看板（机器门真跑+人门 review 落账）" style={opBtn(false)}>🏭 生产板</button>}
+      {onExport
+        ? <button onClick={onExport} title="导出下载包（zip：卡带本体 + 游戏资产·不含 mock 预览物）" style={opBtn(false)}>⤓ 导出</button>
+        : <button disabled title="即将支持" style={{ ...opBtn(false), opacity: 0.4, cursor: 'default' }}>⤓ 导出</button>}
     </div>
   );
 }

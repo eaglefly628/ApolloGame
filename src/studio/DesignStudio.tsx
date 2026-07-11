@@ -275,9 +275,11 @@ export function DesignStudio({
     try {
       let s = slug;
       if (!s) {
+        // description=设计讨论的第一条用户消息（一句话玩法·REQ-WORKSHOP C1）→ meta 副标题 + S1 立项卡 pitch。
+        const pitch = (messages.find((m) => m.role === 'user')?.content ?? '').trim().slice(0, 300);
         const cr = await fetch(`${api}/api/library/create`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name.trim(), provider: provider.id }),
+          body: JSON.stringify({ name: name.trim(), description: pitch, provider: provider.id }),
         });
         const cd = await cr.json();
         if (!cd?.success || !cd?.slug) throw new Error(cd?.error ?? '建库失败');

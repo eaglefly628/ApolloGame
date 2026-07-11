@@ -165,7 +165,8 @@ export function CreationWizard({
       if (mode === 'create') {
         const cr = await fetch(`${api}/api/library/create`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name.trim(), provider: activeProvider?.id ?? 'user' }),
+          // description=一句话玩法（REQ-WORKSHOP C1）：一处来源两处受益——meta 副标题 + S1 立项卡 pitch。
+          body: JSON.stringify({ name: name.trim(), description: idea.trim().slice(0, 300), provider: activeProvider?.id ?? 'user' }),
         });
         const cd = await cr.json();
         if (!cd?.success || !cd?.slug) throw new Error(cd?.error ?? '建库失败');
@@ -185,7 +186,7 @@ export function CreationWizard({
       // 回到预览态让用户可重试保存 / 弃掉。
       setPhase((p) => (p.k === 'saving' ? { k: 'preview', manifest, attempts: 1, fixedErrors: [] } : p));
     }
-  }, [api, mode, slug, name, instruction, activeProvider, onSaved]);
+  }, [api, mode, slug, name, idea, instruction, activeProvider, onSaved]);
 
   const title = mode === 'create' ? '＋ 新建游戏' : '✎ 继续创作';
 
