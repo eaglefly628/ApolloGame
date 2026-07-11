@@ -28,12 +28,18 @@ describe('metaToGameEntry · meta.json → 卡带 GameEntry', () => {
       icon: '🎲',
       status: 'playable',
       hasDesign: true,
+      hasLogic: false,
     });
   });
 
   it('hasDesign 缺省 → false（无设计稿的老卡带）', () => {
     const entry: LibraryEntry = { slug: 'x', meta: {}, valid: true };
     expect(metaToGameEntry(entry).hasDesign).toBe(false);
+  });
+
+  it('hasLogic 透传（TS 例外卡带旗·owner 07-11）', () => {
+    expect(metaToGameEntry({ slug: 'x', meta: {}, valid: true, hasLogic: true }).hasLogic).toBe(true);
+    expect(metaToGameEntry({ slug: 'x', meta: {}, valid: true }).hasLogic).toBe(false);
   });
 
   it('缺省 meta：色/图标兜底为暗蓝 + 默认卡带图标，title 回退 slug', () => {

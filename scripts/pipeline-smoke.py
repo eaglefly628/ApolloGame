@@ -416,6 +416,52 @@ try:
     st12, _dd4 = req('DELETE', '/api/library/BAD..SLUG')
     check(st12 in (400, 404), '坏 slug 拒')
 
+    print('⑬ TS 例外开关 + capgap 快速通道（owner 07-11 双拍板·REQ-ARCH）')
+    # 功能开关默认态：capgap 开、tsCarts 关（隐藏开关）
+    _, ft = req('GET', '/api/features')
+    check(ft.get('success') and ft.get('capgap') is True and ft.get('tsCarts') is False,
+          'features 默认态（capgap 开 · tsCarts 关=隐藏）')
+    st13, _f1 = req('POST', f'/api/library/{SLUG}/flags', {'allowTs': True})
+    check(st13 == 403, 'tsCarts 关时打勾被拒（403）')
+    st13, _l0 = req('PUT', f'/api/library/{SLUG}/logic', {'content': 'x'})
+    check(st13 == 403, 'tsCarts 关时 PUT logic 被拒（403）')
+    # capgap：围栏解析（纯函数）+ mock 全链记台账
+    rest, gap = apollo._split_capgap('说不行。\n```capgap\n{"title": "T", "need": "N", "proposal": "P", "acceptance": "A"}\n```\n完。')
+    check(gap and gap['title'] == 'T' and '说不行' in rest and 'capgap' not in rest, 'capgap 围栏解析（对白剥净）')
+    _, gap2 = apollo._split_capgap('```capgap\n{"title": ""}\n```')
+    check(gap2 is None, 'capgap 缺 title/need 当没提议')
+    _, ac = req('POST', '/api/agent/chat', {'slug': SLUG, 'role': 'pe', 'provider': 'mock',
+                                            'messages': [{'role': 'user', 'content': '这个机制做不了吧——能力缺口'}]})
+    check(ac.get('success') and (ac.get('capGap') or {}).get('title'), 'mock 对话产 capGap 并记台账')
+    _, gl = req('GET', '/api/capgaps')
+    check(gl.get('success') and any(g.get('slug') == SLUG for g in gl.get('gaps', [])), '/api/capgaps 能查到该缺口')
+    # 开启 tsCarts（环境旗=运行时读）→ 打勾 → mock pe 产 logicPatch → PUT 过真装载门落盘
+    os.environ['APOLLO_FEATURE_TSCARTS'] = '1'
+    try:
+        _, ft2 = req('GET', '/api/features')
+        check(ft2.get('tsCarts') is True, '环境旗开启 tsCarts（运行时生效）')
+        st13, f2 = req('POST', f'/api/library/{SLUG}/flags', {'allowTs': True})
+        check(st13 == 200 and f2.get('allowTs') is True, '卡带打勾 allowTs')
+        _, lst13 = req('GET', '/api/library')
+        row13 = next((x for x in lst13 if x.get('slug') == SLUG), {})
+        check(row13.get('allowTs') is True and row13.get('hasLogic') is False, '列表带 allowTs 旗（尚无 logic）')
+        _, tc = req('POST', '/api/agent/chat', {'slug': SLUG, 'role': 'pe', 'provider': 'mock',
+                                                'messages': [{'role': 'user', 'content': '给我写一段 logic 漂移逻辑'}]})
+        lp = (tc.get('logicPatch') or {}).get('content', '')
+        check(tc.get('success') and 'cartCapability' in lp and f'cart-{SLUG}' in lp, 'mock pe 产 logicPatch（合契约）')
+        st13, lput = req('PUT', f'/api/library/{SLUG}/logic', {'content': lp, 'note': 'smoke logic'})
+        check(st13 == 200 and lput.get('success'), 'PUT logic 过真装载门落盘（vite-node cart-logic-check）')
+        check((ROOT / 'library' / SLUG / 'logic.ts').is_file(), 'logic.ts 在盘上')
+        _, lst14 = req('GET', '/api/library')
+        check(next((x for x in lst14 if x.get('slug') == SLUG), {}).get('hasLogic') is True, '列表 hasLogic 旗亮')
+        st13, lbad = req('PUT', f'/api/library/{SLUG}/logic', {'content': 'export const nope = 1;\n'})
+        check(st13 == 400 and '契约' in str(lbad.get('error', '')), '不合契约的 logic 被装载门拒（400）')
+        st13, lrm = req('PUT', f'/api/library/{SLUG}/logic', {'content': ''})
+        check(st13 == 200 and lrm.get('removed') is True and not (ROOT / 'library' / SLUG / 'logic.ts').exists(),
+              '空串=撤除 logic.ts（退出例外）')
+    finally:
+        os.environ.pop('APOLLO_FEATURE_TSCARTS', None)
+
 except Exception as e:
     FAIL += 1
     print(f"  \033[31m✗ 冒烟异常\033[0m: {e}")

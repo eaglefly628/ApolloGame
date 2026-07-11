@@ -49,6 +49,10 @@
 - **落盘门=「能存必须能跑」（owner 07-11 定则）**：一切 manifest 落盘（PUT/生成/对话应用改动/板 gate）都过
   `scripts/manifest-check.mjs` = JSON → parseManifest → **真引擎 load + 空跑 2 tick**。parse 过但装载炸的稿
   （如 Tilemap 缺 layers）一律拒收、错误文本回喂修——绝不让「存得进去、跑不起来」的卡带进库。
+- **TS 例外卡带=受控逃生门（owner 07-11 拍板·记债）**：`features.tsCarts`（默认关）+卡带 ⚡ 打勾才允许
+  `library/<slug>/logic.ts`（cartCapability 契约·cart-logic-check 装载门·git 版本化）；该卡带**退出
+  回放/换皮/bench 保证**（列表 allowTs/hasLogic 旗明示）。正道仍是 capgap 提案→能力下沉（TS 进引擎）；
+  绝不把代码塞进 manifest JSON、绝不绕装载门。
 - **不许代签**：signoff 是人门——LLM 只能把「待人审」摆上看板，不得自己 signoff 冒充 owner/Lead（gate 随便跑，签核必须真人指令）。
 - **S6 的 MOCK 行不算完成**：mock 永不上画面（终态档 §六），流程板同口径。
 - **S8 过期即重跑**：rebase/新提交后 S8 证据自动过期——推送前必须净树重跑（呼应 CLAUDE.md 推送门禁）。

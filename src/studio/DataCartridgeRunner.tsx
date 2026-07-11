@@ -467,14 +467,31 @@ export function DataCartridgeRunner({ slug, entry, api, resolveArt, onBack }: {
         if (!res.ok) throw new Error(`服务器未返回卡带 manifest（HTTP ${res.status}）——API(:3000) 是否在跑、卡带是否还在库里？`);
         const raw = await res.json();
         const manifest = resolveArt ? resolveArt(raw) : raw;
-        const bp = parseManifest(manifest);
+        let bp = parseManifest(manifest);
+        if (entry.hasLogic) {
+          // TS 例外卡带（owner 07-11 拍板·记债）：logic.ts 经 vite 管线动态装载成附加 capability
+          // 与数据蓝图合体。只在 dev 线可跑（静态包无 vite transform）；装不上=明报不白屏。
+          try {
+            const mod = (await import(/* @vite-ignore */ `/library/${slug}/logic.ts?v=${Date.now()}`)) as {
+              cartCapability?: WorldBlueprint['capabilities'][number];
+            };
+            const cap = mod.cartCapability;
+            if (!cap || typeof cap.id !== 'string' || !Array.isArray(cap.systems)) {
+              throw new Error('logic.ts 未导出合契约的 cartCapability');
+            }
+            bp = { ...bp, capabilities: [...bp.capabilities, cap] };
+          } catch (e: unknown) {
+            const m = e instanceof Error ? e.message : String(e);
+            throw new Error(`TS 逻辑装载失败（此卡带是 TS 例外·logic.ts）：${m}——仅 dev 线（vite）可跑；可回创作台让「程序」修，或撤除 TS 逻辑。`);
+          }
+        }
         if (!dead) setState({ phase: 'running', bp });
       } catch (e: unknown) {
         if (!dead) setState({ phase: 'error', message: e instanceof Error ? e.message : String(e) });
       }
     })();
     return () => { dead = true; };
-  }, [api, slug, resolveArt]);
+  }, [api, slug, resolveArt, entry.hasLogic]);
   // RunOnly 装载/首帧崩溃 → 同一错误态（原因明文，不再静默白屏）。
   const onRunError = useCallback((message: string) => setState({ phase: 'error', message }), []);
 

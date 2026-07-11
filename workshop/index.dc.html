@@ -390,6 +390,12 @@
                     <button onClick="{{ openOldBench }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⇄ 旧工作台（试玩 / 美术台）</button>
                     <button onClick="{{ deleteCart }}" title="删除这盘卡带（不可恢复·会二次确认）" style="{{ delBtnStyle }}" style-active="{{ miniBtnActive }}">🗑 删除</button>
                   </div>
+                  <sc-if value="{{ tsFeatureOn }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:10px;background:rgba(160,50,34,.07);border:2px dashed #a03222;border-radius:10px;padding:7px 10px">
+                      <button onClick="{{ toggleAllowTs }}" title="展示例外（owner 07-11）：打勾后「程序」对话可提议本卡带的 logic.ts——记债：该卡带退出回放/换皮/bench 保证" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ allowTsLabel }}</button>
+                      <span style="font-family:'Noto Sans SC';font-weight:600;font-size:10px;color:#a03222">{{ tsDebtNote }}</span>
+                    </div>
+                  </sc-if>
                 </div>
                 <sc-if value="{{ hasDocs }}" hint-placeholder-val="{{ false }}">
                   <div style="margin-top:14px;background:#fffdf5;border:4px solid #3a2312;border-radius:18px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25)">
@@ -429,6 +435,19 @@
                 </sc-if>
                 <sc-if value="{{ pendingErrText }}" hint-placeholder-val="{{ false }}">
                   <div style="margin-top:14px;background:#ffe1d6;border:3px solid #3a2312;border-radius:14px;padding:12px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#7a2a12;line-height:1.5">⚠ 模型提议未过校验门：{{ pendingErrText }}</div>
+                </sc-if>
+                <sc-if value="{{ hasPendingLogic }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:14px;background:linear-gradient(180deg,#ffe3e0,#ffd0c9);border:4px solid #3a2312;border-radius:18px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25);animation:pop .18s ease-out both">
+                    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312;margin-bottom:6px">⚡ TS 逻辑提议（已过引擎装载门·例外记债）</div>
+                    <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#7a2a12;margin-bottom:10px">程序提议本卡带的 logic.ts（{{ pendingLogicLines }} 行）——确认落盘（git 版本化）；此卡带将标 ⚡ 例外。</div>
+                    <div style="display:flex;gap:8px">
+                      <button onClick="{{ applyLogic }}" style="{{ applyBtnStyle }}" style-active="{{ applyBtnActive }}">✔ 应用 TS 逻辑（落盘）</button>
+                      <button onClick="{{ dropLogic }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">✕ 放弃</button>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ logicErrText }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:14px;background:#ffe1d6;border:3px solid #3a2312;border-radius:14px;padding:12px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#7a2a12;line-height:1.5">⚠ TS 逻辑未过装载门：{{ logicErrText }}</div>
                 </sc-if>
               </div>
               <!-- right: triple-role chat（owner 07-11 三入口：策划/美术/程序） -->
@@ -711,6 +730,7 @@ class Component extends DCLogic {
     chatRole: 'gd', chats: { gd: [], pe: [], art: [] }, chatInput: '', chatBusy: false, chatLive: null,
     editModel: 'opus', editEffort: 'high',
     pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, edRev: '', edRevising: false, editStats: null,
+    features: null, pendingLogic: null, logicErr: null, editAllowTs: false, editHasLogic: false,
     // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
     assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null, traceLog: '', llmLegacy: false,
     tokenInput: '', genKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
@@ -722,6 +742,9 @@ class Component extends DCLogic {
   // 嵌入我们的接口：真游戏列表（卡带=/api/library·引擎游戏=/api/games）+ 版本 + 设置（打码视图）。
   componentDidMount() {
     this.refreshCarts();
+    fetch('/api/features').then(r => r.json())  // 功能开关（capgap/tsCarts·owner 07-11）
+      .then(d => this.setState({ features: d && d.success ? d : null }))
+      .catch(() => {});
     fetch('/api/games').then(r => r.json())
       .then(d => this.setState({ liveGames: (d && d.games) || [] }))
       .catch(() => this.setState({ liveGames: [] }));
@@ -839,7 +862,10 @@ class Component extends DCLogic {
   openEdit(slug, name, pitch) {
     this.setState({ screen: 'edit', editSlug: slug, editName: name || slug, editPitch: pitch || '',
       board: null, chats: { gd: [], pe: [], art: [] }, chatRole: 'gd', chatInput: '', chatBusy: false,
-      pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, editStats: null });
+      pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, editStats: null,
+      pendingLogic: null, logicErr: null,
+      editAllowTs: !!(this.state.carts || []).filter(c => c && c.slug === slug).map(c => c.allowTs)[0],
+      editHasLogic: !!(this.state.carts || []).filter(c => c && c.slug === slug).map(c => c.hasLogic)[0] });
     this.refreshBoard(slug);
     this.refreshDocs(slug);
     fetch('/api/library/' + encodeURIComponent(slug) + '/stats').then(r => r.json())
@@ -941,12 +967,17 @@ class Component extends DCLogic {
       const tok = (u.input_tokens || u.output_tokens) ? (' · ↑' + this.fmt(u.input_tokens || 0) + ' ↓' + this.fmt(u.output_tokens || 0) + ' tok') : '';
       const meta = d.elapsedMs ? ('⏱ ' + (d.elapsedMs / 1000).toFixed(1) + 's' + tok) : '';
       const withReply = msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）', meta: meta || undefined }]);
+      if (d.capGap) {  // 能力缺口台账即录（capgap 快速通道·owner 07-11 批准）——对话里留痕
+        withReply.push({ role: 'assistant', content: '🧩 能力缺口已记录：' + (d.capGap.title || '') + '（进 .apollo/cap-gaps 台账·主程下沉成引擎能力后即可用数据引用）' });
+      }
       this.watchChatLive(false);
       this.setState(cur => ({
         chats: Object.assign({}, cur.chats, { [role]: withReply }), chatBusy: false,
         pending: d.manifest ? d.manifest : cur.pending,
         pendingErr: d.manifest ? null : (d.manifestError || cur.pendingErr),
         pendingDesign: d.designPatch ? d.designPatch : cur.pendingDesign,
+        pendingLogic: d.logicPatch ? d.logicPatch : cur.pendingLogic,
+        logicErr: d.logicPatch ? null : (d.logicError || cur.logicErr),
         artHints: (d.artHints && d.artHints.length) ? d.artHints : cur.artHints
       }), () => { this.saveChats(slug); this.scrollChat(); });
     }).catch(e => {
@@ -1525,6 +1556,40 @@ class Component extends DCLogic {
           }).catch(e => this.showToast('✕ ' + ((e && e.message) || '落盘失败')));
       },
       dropDesign: () => this.setState({ pendingDesign: null }),
+      // TS 例外（owner 07-11·features.tsCarts 默认关=隐藏开关；打勾后 pe 对话可提议 logic.ts）
+      tsFeatureOn: !!(s.features && s.features.tsCarts),
+      allowTsLabel: s.editAllowTs ? '⚡ TS 例外：已开' : '⚡ TS 例外：关',
+      tsDebtNote: s.editAllowTs
+        ? ('记债例外：退出回放/换皮/bench 保证' + (s.editHasLogic ? ' · 盘上已有 logic.ts' : ' · 跟「程序」说需求可产 logic.ts'))
+        : '展示例外开关（记债）——打开后「程序」对话可为本卡带写 TS 逻辑',
+      toggleAllowTs: () => {
+        const st = this.state;
+        if (!st.editSlug) return;
+        fetch('/api/library/' + st.editSlug + '/flags', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ allowTs: !st.editAllowTs }) })
+          .then(r => r.json()).then(d => {
+            if (!d || !d.success) throw new Error((d && d.error) || '设置失败');
+            this.showToast(d.allowTs ? '⚡ TS 例外已开（记债）' : 'TS 例外已关');
+            this.setState({ editAllowTs: !!d.allowTs });
+            this.refreshCarts();
+          }).catch(e => this.showToast('✕ ' + ((e && e.message) || '设置失败')));
+      },
+      hasPendingLogic: !!s.pendingLogic,
+      pendingLogicLines: s.pendingLogic ? String((s.pendingLogic.content || '').split('\n').length) : '0',
+      applyLogic: () => {
+        const st = this.state;
+        if (!st.pendingLogic || !st.editSlug) return;
+        fetch('/api/library/' + st.editSlug + '/logic', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: st.pendingLogic.content, note: 'workshop TS 逻辑（pe 对话·例外记债）' }) })
+          .then(r => r.json()).then(d => {
+            if (!d || !d.success) throw new Error((d && d.error) || '落盘失败');
+            this.showToast('logic.ts 已落盘（过装载门 + git 版本化）');
+            this.setState({ pendingLogic: null, logicErr: null, editHasLogic: true });
+            this.refreshCarts();
+          }).catch(e => this.showToast('✕ ' + ((e && e.message) || '落盘失败')));
+      },
+      dropLogic: () => this.setState({ pendingLogic: null }),
+      logicErrText: s.logicErr || '',
       edRev: s.edRev, edRevType: (e) => this.setState({ edRev: e.target.value }),
       edRevKey: (e) => { if (e.key === 'Enter') { if (e.preventDefault) e.preventDefault(); this.edRevise(); } },
       edRevise: () => this.edRevise(), edRevLabel: s.edRevising ? '修订中…' : '✎ 修订',

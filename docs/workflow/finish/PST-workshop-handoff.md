@@ -68,6 +68,14 @@
 - **订阅通道形态（改流式后勿回退）**：`stream-json --include-partial-messages --verbose` + `--append-system-prompt`
   纯文本生成器钉子 + 禁用名单含计划/提问/技能类（07-11 实证：CLI 代理人格调工具→tool_use 吃回合→空 result）；
   **心跳看门狗非闹钟**：任何输出行=心跳，180s 零输出=停滞收割、1800s 绝对上限（推进中的长思考永不打断——owner 07-11 拍板）；result 缺失时打捞已流出的 text delta
+- **批15（owner 07-11 双拍板·REQ-ARCH）**：`GET /api/features` → `{capgap, tsCarts}`（配置 `features` 键或
+  `APOLLO_FEATURE_*` 环境旗·运行时读）。**capgap**：agent 回复的 ```capgap 围栏 → `_split_capgap` →
+  `.apollo/cap-gaps.jsonl`（gitignored）+ `GET /api/capgaps?n=` + chat 出参 `capGap`。**tsCarts（默认关=隐藏）**：
+  `POST /api/library/<slug>/flags {allowTs}`（403 除非 feature 开）→ pe 系统词注入 `_TS_RULES_ON`（含当前 logic.ts）
+  → ```ts 围栏 → `_run_cart_logic_check`（scripts/cart-logic-check.mjs：模块装载+cartCapability 契约+合体 2 tick）
+  → chat 出参 `logicPatch|logicError` → 壳 ✔ 应用 `PUT /api/library/<slug>/logic {content}`（版本化·空串=撤除）。
+  列表带 `allowTs/hasLogic`；运行器 hasLogic → `import('/library/<slug>/logic.ts')` 合体（仅 dev 线·vite transform）。
+  红线：绝不 eval；TS 绝不进 manifest JSON；记债旗必须可见。
 - `GET/PUT /api/settings` → `{providers:[{id,name,models,model,apiKeyMasked,hasConfigKey,keyAvailable,…}], genKeys:[{envKey,apiKeyMasked,hasConfigKey,keyAvailable}], default}`
   - PUT 只送 dirty 字段；**空串=清除**；`genKeys` 三把=`DASHSCOPE_API_KEY / TRIPO_API_KEY / MESHY_API_KEY`（owner 07-11 收编旧美术台配置）
 

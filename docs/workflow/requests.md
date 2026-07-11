@@ -65,7 +65,11 @@
 > **批次（spec §六·C1/C2/B 可并行→A→E）**：C1 数据桥（meta.description/建库自动立项卡/POST /api/pipeline/concept/PUT 后自动 derive 台账/换皮谱系/导流补线）+ pipeline-smoke 骨架；C2 cart-S8 轻量终检（manifest-check∧bench∧mock债=0·证据绑 gameHash·mockDebt/writeConcept 导出+单测）；B claude-code 订阅通道（**子进程工具面全禁**·token 打码不落日志）+ anthropic raw 通道弃用型号修复与 4.7+ 合规 + `/api/agent/chat` 双角色编排；A Workshop 壳接线（状态机两态/双角色对话屏/**素材库屏接 `/api/art/*` 与共享货架（owner 07-10 点名）**/设置屏/⇄ 旧工作台互切/launcher 侧导流补线/退役旧 GameCreator）；E 测试文档（spec §五门禁·壳侧=端点级+curl 自证+真浏览器评委路径走查+手册回填）。
 > **红线（spec §四）**：不做一键跑八关；落盘必过 parseManifest 门+版本化；mock 三道闸不变；引擎目录零触碰。每批完工回执照 T1/T2 格式附门禁实数；Lead 对抗性验收 diff。
 
-### REQ-ARCH-卡带要不要放开自带 TS · [2026-07-11] · owner 提问 → Lead 评判 · status: **deferred（owner 原话「这先滞后，我们先把它跑起来再说」·未裁决不施工）** · 类型: 架构方向讨论（宪法级）
+### REQ-ARCH-卡带要不要放开自带 TS · [2026-07-11] · owner 提问 → Lead 评判 → **owner 双拍板·Lead 当日施工（批15）** · status: **✅ 落地（受控形态）——自由 TS 常态化仍不开** · 类型: 架构方向（宪法级）
+> **裁决与落地（owner 07-11 三连拍板·批15 `pipeline-smoke ⑬` 钉死）**：①owner「我怕到29号没累积到能力，是不是有个开关可以隐藏一下，对一些展示游戏打个勾允许生产 ts 逻辑」＋②「你说的这个管线（缺口→强模型下沉快速通道）我也批准，但也做成一个配置能关」→ Lead 落两件：
+> - **capgap 快速通道**（`features.capgap` 默认开可关）：三角色 agent 遇词表表达不了 → ```capgap 结构化提案围栏 → `.apollo/cap-gaps.jsonl` 台账 + `GET /api/capgaps` + 对话留痕；下沉仍走 Lead 裁决→派工（通道只是机器直达，不代裁决）。
+> - **TS 例外开关（受控逃生门·非自由 TS）**：`features.tsCarts` **默认关=隐藏开关**（配置 `{"features":{"tsCarts":true}}` 或 `APOLLO_FEATURE_TSCARTS=1` 才现形）→ 编辑工坊每卡带 ⚡ 打勾（`meta.allowTs`）→「程序」对话可提议 `library/<slug>/logic.ts`（契约=`export cartCapability`·defineCapability·id=cart-<slug>）→ **cart-logic-check 独立装载门**（模块装载+契约+与 manifest 合体真引擎 2 tick）→ 壳「✔ 应用」PUT `/api/library/<slug>/logic` 落盘（git 版本化·空串=撤除）。运行器 hasLogic 合体装载（dev 线·vite 管线）。**记债明示**：列表 allowTs/hasLogic 旗、该卡带退出回放/换皮/bench 保证。**manifest 仍纯数据、TS 绝不进 JSON。**
+> - **红线保持**：绝不 eval 字符串；logic.ts 走与引擎系统同一 ESM/装载/定序管线；确定性纪律写进 agent 系统词（禁 Math.random/Date.now/DOM）。
 > **owner 原话**：「AI卡带生成的游戏没有TS，为什么要这样限制他们？纯靠数据驱动做成是不是非常困难？该写TS就写TS啊。」
 > **Lead 立场（详见 07-11 当日汇报·宪法=data-driven-manifesto）**：不建议给卡带开自由 TS。①确定性/回放/lockstep/bench/换皮量产全建立在「引擎解释纯数据」上，卡带进代码=整套门禁与台账体系失效；②AI 生成的代码直接在玩家页执行=任意代码执行面；③每款游戏变成一个要 tsc/review/依赖管理的软件项目，弱模型档位直接出局（manifesto 尺子）；④「该写 TS 就写 TS」的正道**已经存在**——数据表达不了的缺口下沉为引擎 capability（TS 写在引擎里·词表增长·所有游戏受益），而非散进单个游戏（game-d 绕引擎=前车之鉴）。owner 感到的「纯数据很难」实证上主要是**坏稿无门+失败无因**（07-11 批14 已治），其次是词表缺口（走下沉通道）。
 > **重启时点**：owner 想再议时，Lead 出一页三路对比（纯数据 vs 卡带自带TS vs 受限DSL/沙箱脚本）附代价收益与迁移成本，再拍板。

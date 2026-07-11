@@ -320,6 +320,25 @@ def _config_model(pid: str):
     m = _config_provider(pid).get('model')
     return m if isinstance(m, str) and m.strip() else None
 
+# ── 功能开关（owner 07-11 双拍板·REQ-ARCH）──────────────────────────
+# capgap：agent 遇词表表达不了 → 产结构化能力提案（缺口→强模型下沉快速通道）。默认开、可关。
+# tsCarts：TS 例外卡带（展示游戏打勾允许 logic.ts）。默认关——这就是 owner 要的「隐藏开关」：
+#   配置 .apollo-config.json {"features":{"tsCarts":true}} 或环境 APOLLO_FEATURE_TSCARTS=1 才现形。
+_FEATURE_DEFAULTS = {'capgap': True, 'tsCarts': False}
+
+def _features() -> dict:
+    cfg = _load_config().get('features')
+    cfg = cfg if isinstance(cfg, dict) else {}
+    out = {}
+    for k, dflt in _FEATURE_DEFAULTS.items():
+        env = os.environ.get(f'APOLLO_FEATURE_{k.upper()}')
+        if env is not None:
+            out[k] = env not in ('', '0', 'false', 'off')
+        else:
+            v = cfg.get(k)
+            out[k] = bool(v) if isinstance(v, bool) else dflt
+    return out
+
 GEN_KEY_NAMES = ('DASHSCOPE_API_KEY', 'TRIPO_API_KEY', 'MESHY_API_KEY', 'SEEDANCE_API_KEY', 'NANO_BANANA_API_KEY')
 # 文生图/文生 3D key 的显示名（数据驱动·/api/settings 随 genKeys 回 label·壳读 label 即可，
 # 以后加新 key 只改这里、无需动壳）。owner 2026-07-11：Seedance（字节·主力）+ Nano Banana（Google 图像）。
@@ -1335,18 +1354,80 @@ discussing, output no json block at all.
    （如 Tilemap 必须带 layers）——缺了它 parse 能过、装载会炸，同样被拒。
 5. 贴图/素材字段用 "art:<英文关键词>" 槽语法，引擎确定性选材；绝不发明资产 id 或文件路径。
 6. 改动优先调现有字段的值；新增实体/组件要克制、说明理由。
+{CAPGAP_RULES}"""
+
+# capgap 段（features.capgap 开时注入 COMMON·三角色同吃）
+_CAPGAP_RULES_ON = """
+## 能力缺口上报（catalog 词表表达不了时的唯一正路）
+如果用户要的机制用目录里的 capability 组合**确实表达不了**：不要发明组件、不要硬凑近似方案后沉默。
+在对白里说明缺口，并追加恰好一个围栏（每次回复最多一个）：
+```capgap
+{"title": "缺口一句话名", "need": "玩家/设计上要什么（具体行为）", "proposal": "建议的通用能力形状（组件+系统语义·非游戏专属）", "acceptance": "证明它的测试怎么写"}
+```
+它会被记录进能力缺口台账，由主程评审后下沉成引擎能力——之后你就能用一行数据引用它。
 """
 
 AGENT_PE_SYSTEM = AGENT_CHAT_COMMON + """
 ## Your role: 程序（engine-side programmer）
 You own manifest STRUCTURE: entities, components, capabilities wiring. The capability catalog below is
 the single source of truth for vocabulary — never invent components/fields; unknown ids are rejected on load.
-
+{TS_RULES}
 ## Capability catalog
 {CAPABILITY_CATALOG}
 
 ## Current manifest
 {CURRENT_MANIFEST}
+"""
+
+# mock 通道的 TS 提议样例（冒烟全链用·与 cart-logic-check 契约一致；runsAfter 引用的系统
+# 不在场时会被引擎忽略——对任意卡带 manifest 都装得起来）。
+_MOCK_LOGIC_TS = """import { defineCapability } from '@engine/core/define-capability.js';
+import { SystemPhase } from '@engine/core/types.js';
+import type { IWorld } from '@engine/core/types.js';
+import type { Transform } from '@engine/protocol/components.js';
+
+export const cartCapability = defineCapability({
+  id: 'cart-__SLUG__',
+  version: '1.0.0',
+  describe: { name: 'cart logic', summary: 'mock drift', semantic: ['cart'], whenToUse: 'demo', examples: [] },
+  components: { provides: {}, reads: ['Transform'], writes: ['Transform'], consumes: [] },
+  config: {},
+  systems: [{
+    id: 'cart-mock-drift',
+    phase: SystemPhase.Update,
+    runsAfter: ['motion-apply', 'overlap-detect'],
+    reads: ['Transform'],
+    writes: ['Transform'],
+    consumes: [],
+    execute(world: IWorld) {
+      for (const [id] of world.query('Transform')) {
+        const t = world.getComponent<Transform>(id, 'Transform')!;
+        t.x += 0.01;
+      }
+    },
+  }],
+});
+"""
+
+# TS 例外段（features.tsCarts 开 且 该卡带 meta.allowTs 打勾时·只注入 pe 角色）。
+# 契约钉死：一个 ```ts 围栏=logic.ts 全文；cartCapability=defineCapability 形状；确定性红线照抄引擎纪律。
+_TS_RULES_ON = """
+## TS 例外（本卡带已被 owner 打勾允许自带逻辑——这是记债的展示例外，不是常态）
+数据表达不了、且没时间等能力下沉时，你可以提议本卡带的 `logic.ts`（引擎会把它当一个附加 capability 装载）。
+规则：
+- 每次回复最多一个 ```ts 围栏，内容=**logic.ts 完整全文**（不是片段；修订=整文件重发）。
+- 必须 `export const cartCapability = defineCapability({...})`，`id` 固定为 "cart-{GAME_SLUG}"，
+  `systems` 非空。从 '@engine/core/define-capability.js' 引 defineCapability，
+  '@engine/core/types.js' 引 SystemPhase 与 IWorld 类型，'@engine/protocol/components.js' 引组件类型。
+- 系统形状（与引擎内置系统同构）：
+  { id: 'cart-xxx', phase: SystemPhase.Update, runsAfter: ['motion-apply'], reads: [...], writes: [...],
+    consumes: [], execute(world: IWorld) { for (const [id] of world.query('Transform')) { const t =
+    world.getComponent<Transform>(id, 'Transform')!; t.x += 1; } } }
+  两个系统读改写同一组件必须用 runsAfter/runsBefore 显式定序，否则装载报"Circular dependency"。
+- 确定性红线：禁 Math.random / Date.now / DOM / fetch / setTimeout —— 一切状态放组件里，随机用
+  组件里存的种子数值自行演算。渲染仍归引擎（你只改世界数据）。
+- 落盘前会过真引擎装载门（模块装载+契约+与 manifest 合体空跑 2 tick），错误文本会回给你修。
+- 能用 catalog 数据表达的仍然优先数据；logic.ts 只装真差的那块逻辑，越小越好。
 """
 
 AGENT_GD_SYSTEM = AGENT_CHAT_COMMON + """
@@ -1453,6 +1534,149 @@ def _split_reply_manifest(text: str):
         pass
     return (text or '').strip(), None
 
+# ── capgap 协议（owner 07-11 批准「缺口→强模型下沉快速通道」·features.capgap 可关）────
+# agent 遇到目录词表表达不了的机制：不发明、不硬凑——产一个 ```capgap 结构化提案围栏。
+# 服务端校验落 .apollo/cap-gaps.jsonl（追加型台账），壳出卡片；下沉仍走 Lead 裁决→派工，
+# 通道只是把「发现缺口→立单」从口口相传变成机器直达。
+_CAPGAP_BLOCK_RE = re.compile(r'```capgap[ \t]*\n(.*?)```', re.S)
+_CAPGAP_FIELDS = ('title', 'need', 'proposal', 'acceptance')
+
+def _split_capgap(text: str):
+    """回复文本 → (剩余文本, gap dict|None)。只认 ```capgap 围栏内含 title/need 的 JSON 对象。"""
+    m = _CAPGAP_BLOCK_RE.search(text or '')
+    if not m:
+        return (text or '').strip(), None
+    rest = (text[:m.start()] + text[m.end():]).strip()
+    try:
+        cand = json.loads(m.group(1))
+    except Exception:
+        return rest, None  # 非法 JSON：当没提议（对白保留）
+    if not isinstance(cand, dict) or not str(cand.get('title', '')).strip() or not str(cand.get('need', '')).strip():
+        return rest, None
+    gap = {k: str(cand.get(k, '')).strip()[:1200] for k in _CAPGAP_FIELDS}
+    return rest, gap
+
+def _capgap_file() -> Path:
+    return APOLLO_DIR / 'cap-gaps.jsonl'  # APOLLO_DIR 定义在后文——调用期取（模块序无碍）
+
+def _capgap_record(slug: str, role: str, gap: dict) -> dict:
+    entry = {'id': f'gap-{int(time.time())}-{slug}', 'slug': slug, 'role': role, 'at': _now_iso(),
+             'status': 'open', **gap}
+    f_path = _capgap_file()
+    f_path.parent.mkdir(parents=True, exist_ok=True)
+    with f_path.open('a', encoding='utf-8') as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+    return entry
+
+def handle_capgaps_list(n: int = 50) -> dict:
+    f_path = _capgap_file()
+    if not f_path.is_file():
+        return {'success': True, 'gaps': []}
+    try:
+        lines = f_path.read_text('utf-8').strip().splitlines()
+    except Exception:
+        return {'success': True, 'gaps': []}
+    gaps = []
+    for ln in lines[-max(1, min(n, 200)):]:
+        try:
+            gaps.append(json.loads(ln))
+        except Exception:
+            continue
+    return {'success': True, 'gaps': list(reversed(gaps))}
+
+# ── TS 例外卡带（owner 07-11 拍板「展示游戏打勾允许生产 TS 逻辑」·features.tsCarts 默认关）────
+# 形态=最小伤害：TS 绝不进 manifest（工件仍纯数据），住在 library/<slug>/logic.ts，
+# 契约=export cartCapability（defineCapability·id 固定 cart-<slug>），落盘过 cart-logic-check
+# 独立装载门（模块装载+契约+与 manifest 合体真引擎 2 tick）。记债：该卡带退出回放/换皮/bench 保证，
+# 列表带 allowTs/hasLogic 旗供 UI 明示。发布=dev 线（vite 管线装载）；静态包不执行 logic。
+_TS_BLOCK_RE = re.compile(r'```ts[ \t]*\n(.*?)```', re.S)
+
+def _split_reply_ts(text: str):
+    """回复文本 → (剩余文本, logic.ts 全文|None)。只认第一个 ```ts 围栏且内含 cartCapability 导出。"""
+    m = _TS_BLOCK_RE.search(text or '')
+    if not m:
+        return (text or '').strip(), None
+    content = m.group(1).strip() + '\n'
+    rest = (text[:m.start()] + text[m.end():]).strip()
+    if 'export const cartCapability' not in content:
+        return rest, None  # 不合契约：当没提议
+    return rest, content
+
+def _ts_cart_enabled(slug: str) -> bool:
+    """全局 features.tsCarts 开 且 该卡带 meta.allowTs 打了勾。"""
+    if not _features().get('tsCarts'):
+        return False
+    try:
+        meta = json.loads((LIBRARY_DIR / slug / 'meta.json').read_text('utf-8'))
+        return bool(meta.get('allowTs'))
+    except Exception:
+        return False
+
+def _run_cart_logic_check(slug: str, content: str) -> tuple:
+    """logic.ts 候选 → 写 pending → cart-logic-check 装载门。返回 (ok, message)。pending 用后即清。"""
+    pending = LIBRARY_DIR / slug / 'logic.pending.ts'
+    try:
+        pending.write_text(content, encoding='utf-8')
+        proc = subprocess.run(
+            **_spawn(['npx', 'vite-node', 'scripts/cart-logic-check.mjs', slug, 'logic.pending.ts']),
+            cwd=ROOT, capture_output=True, encoding='utf-8', errors='replace', timeout=180,
+        )
+        if proc.returncode == 0:
+            return True, (proc.stdout or '').strip()
+        return False, (proc.stderr or proc.stdout or 'logic 校验失败（无输出）').strip()
+    finally:
+        try:
+            pending.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+def library_put_logic(slug: str, body: dict) -> tuple:
+    """PUT /api/library/<slug>/logic {content, note?}。content 空串=撤除 logic.ts（退出例外）。"""
+    if not _features().get('tsCarts'):
+        return (403, {'success': False, 'error': 'TS 例外功能未开启（features.tsCarts）'})
+    game_dir = LIBRARY_DIR / slug
+    if not _valid_slug(slug) or not game_dir.is_dir():
+        return (404, {'success': False, 'error': f'卡带不存在: {slug}'})
+    content = body.get('content')
+    if not isinstance(content, str):
+        return (400, {'success': False, 'error': 'content 必须是字符串（logic.ts 全文；空串=撤除）'})
+    logic = game_dir / 'logic.ts'
+    if content.strip() == '':
+        logic.unlink(missing_ok=True)
+        _touch_meta(game_dir)
+        _git_commit_all(game_dir, 'logic: removed')
+        return (200, {'success': True, 'slug': slug, 'removed': True})
+    if not _ts_cart_enabled(slug):
+        return (403, {'success': False, 'error': '该卡带未开 TS 例外勾（meta.allowTs）'})
+    if len(content) > 65536:
+        return (400, {'success': False, 'error': 'logic.ts 过大（≤64k）'})
+    ok, msg = _run_cart_logic_check(slug, content)  # 先装载门
+    if not ok:
+        return (400, {'success': False, 'error': msg})
+    logic.write_text(content if content.endswith('\n') else content + '\n', encoding='utf-8')
+    _touch_meta(game_dir)
+    _git_commit_all(game_dir, str(body.get('note') or 'logic: update'))
+    return (200, {'success': True, 'slug': slug, 'gate': msg})
+
+def library_set_flags(slug: str, body: dict) -> tuple:
+    """POST /api/library/<slug>/flags {allowTs: bool}。仅 features.tsCarts 开时可用。"""
+    if not _features().get('tsCarts'):
+        return (403, {'success': False, 'error': 'TS 例外功能未开启（features.tsCarts）'})
+    game_dir = LIBRARY_DIR / slug
+    if not _valid_slug(slug) or not game_dir.is_dir():
+        return (404, {'success': False, 'error': f'卡带不存在: {slug}'})
+    if not isinstance(body.get('allowTs'), bool):
+        return (400, {'success': False, 'error': 'allowTs 必须是布尔'})
+    p = game_dir / 'meta.json'
+    try:
+        meta = json.loads(p.read_text('utf-8'))
+    except Exception:
+        return (500, {'success': False, 'error': 'meta.json 不可读'})
+    meta['allowTs'] = body['allowTs']
+    meta['updatedAt'] = _now_iso()
+    _write_json(p, meta)
+    return (200, {'success': True, 'slug': slug, 'allowTs': meta['allowTs']})
+
 def handle_agent_chat(body: dict) -> dict:
     """POST /api/agent/chat {slug, role: 'gd'|'pe', messages:[{role,content}…], provider?, model?, catalog?}。"""
     slug = str(body.get('slug', '')).strip()
@@ -1521,10 +1745,27 @@ def handle_agent_chat(body: dict) -> dict:
             out['artHints'] = []
         if role == 'gd' and any(k in messages[-1]['content'] for k in ('底案', '提纲')):  # mock 底案提议（冒烟全链）
             out['designPatch'] = {'path': 'overview.md', 'content': '# 总览（mock 修订）\n'}
+        if _features().get('capgap') and '能力缺口' in messages[-1]['content']:  # mock capgap（冒烟全链）
+            out['capGap'] = _capgap_record(slug, role, {'title': 'mock 缺口', 'need': '冒烟演示',
+                                                        'proposal': '通用能力形状', 'acceptance': '一条测试'})
+        if role == 'pe' and _ts_cart_enabled(slug) and 'logic' in messages[-1]['content']:  # mock TS 提议（冒烟全链）
+            out['logicPatch'] = {'content': _MOCK_LOGIC_TS.replace('__SLUG__', slug)}
         return out
 
     tpl = {'gd': AGENT_GD_SYSTEM, 'pe': AGENT_PE_SYSTEM, 'art': AGENT_ART_SYSTEM}[role]
-    system = (tpl.replace('{GAME_NAME}', str(game_name)).replace('{GAME_SLUG}', slug)
+    ts_on = role == 'pe' and _ts_cart_enabled(slug)  # TS 例外（owner 07-11·features.tsCarts+卡带勾）
+    ts_rules = ''
+    if ts_on:
+        ts_rules = _TS_RULES_ON
+        lf = LIBRARY_DIR / slug / 'logic.ts'
+        if lf.is_file():
+            try:
+                ts_rules += f"\n### Current logic.ts（修订=整文件重发）\n```ts\n{lf.read_text('utf-8')[:20000]}```\n"
+            except Exception:
+                pass
+    system = (tpl.replace('{TS_RULES}', ts_rules)
+              .replace('{CAPGAP_RULES}', _CAPGAP_RULES_ON if _features().get('capgap') else '')
+              .replace('{GAME_NAME}', str(game_name)).replace('{GAME_SLUG}', slug)
               .replace('{CURRENT_MANIFEST}', json.dumps(current, ensure_ascii=False))
               .replace('{CAPABILITY_CATALOG}', str(body.get('catalog') or _FALLBACK_CATALOG))
               .replace('{DESIGN_DOCS}', _agent_design_digest(slug) if role == 'gd' else '')
@@ -1584,6 +1825,23 @@ def handle_agent_chat(body: dict) -> dict:
             design_patch = None
     else:
         design_patch = None
+    # TS 例外：pe 的 ```ts 提议先过装载门（cart-logic-check），过了才回 logicPatch——绝不代落盘，
+    # 壳「✔ 应用 TS 逻辑」PUT /api/library/<slug>/logic 才写（与 manifest/底案同一红线）。
+    logic_patch, logic_err = None, None
+    if ts_on:
+        reply_text, ts_content = _split_reply_ts(reply_text)
+        if ts_content:
+            okl, msgl = _run_cart_logic_check(slug, ts_content)
+            if okl:
+                logic_patch = {'content': ts_content}
+            else:
+                logic_err = msgl
+    # capgap：结构化能力缺口提案 → 台账即录（这是记录不是落盘工件·下沉仍走 Lead 裁决）。
+    capgap_entry = None
+    if _features().get('capgap'):
+        reply_text, gap = _split_capgap(reply_text)
+        if gap:
+            capgap_entry = _capgap_record(slug, role, gap)
     out = {'success': True, 'reply': reply_text, 'attempts': attempts, 'provider': provider, 'model': model, 'role': role,
            'elapsedMs': r.get('elapsedMs'), 'usage': r.get('usage')}
     if manifest_out is not None:
@@ -1592,6 +1850,12 @@ def handle_agent_chat(body: dict) -> dict:
         out['manifestError'] = manifest_err
     if design_patch:
         out['designPatch'] = design_patch
+    if logic_patch:
+        out['logicPatch'] = logic_patch
+    elif logic_err:
+        out['logicError'] = logic_err
+    if capgap_entry:
+        out['capGap'] = capgap_entry
     if role in ('gd', 'art'):
         out['artHints'] = sorted(set(re.findall(r'\bart-\d{2,3}\b', reply_text)))
     return out
@@ -3258,7 +3522,9 @@ def _list_library() -> list:
             valid = False
         ddir = d / 'design'
         has_design = ddir.is_dir() and any(ddir.rglob('*.md'))
-        out.append({'slug': d.name, 'meta': meta, 'valid': valid, 'empty': empty, 'hasDesign': has_design})
+        out.append({'slug': d.name, 'meta': meta, 'valid': valid, 'empty': empty, 'hasDesign': has_design,
+                    # TS 例外旗（owner 07-11·记债可见）：allowTs=打了勾；hasLogic=盘上真有 logic.ts
+                    'allowTs': bool(meta.get('allowTs')), 'hasLogic': (d / 'logic.ts').is_file()})
     return out
 
 def _history(game_dir: Path) -> dict:
@@ -3852,6 +4118,15 @@ class APIHandler(BaseHTTPRequestHandler):
             data = handle_agent_chats_get((qs.get('slug') or [''])[0])
         elif path == '/api/workshop/draft':
             data = handle_ws_draft_get()
+        elif path == '/api/features':
+            data = {'success': True, **_features()}
+        elif path == '/api/capgaps':
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            try:
+                gn = int(qs.get('n', ['50'])[0])
+            except ValueError:
+                gn = 50
+            data = handle_capgaps_list(gn)
         elif path == '/api/settings':
             data = handle_settings_get()
         else:
@@ -3887,6 +4162,10 @@ class APIHandler(BaseHTTPRequestHandler):
         if path.startswith('/api/library/') and path.endswith('/bench'):
             slug, _ = _lib_parts(path)
             self._send_json(*_lib_dispatch(lambda: library_bench(slug)))
+            return
+        m_flags = re.fullmatch(r'/api/library/([a-z0-9][a-z0-9-]*)/flags', path)
+        if m_flags:  # TS 例外勾（owner 07-11·仅 features.tsCarts 开时可用）
+            self._send_json(*_lib_dispatch(lambda: library_set_flags(m_flags.group(1), body)))
             return
         if path == '/api/settings/test':
             self._send_json(200, handle_settings_test(body))
@@ -4036,6 +4315,9 @@ class APIHandler(BaseHTTPRequestHandler):
         slug, action = _lib_parts(path)
         if path.startswith('/api/library/') and action == 'manifest' and slug:
             self._send_json(*_lib_dispatch(lambda: library_put_manifest(slug, body)))
+            return
+        if path.startswith('/api/library/') and action == 'logic' and slug:  # TS 例外 logic.ts（装载门后落盘）
+            self._send_json(*_lib_dispatch(lambda: library_put_logic(slug, body)))
             return
         self._send_json(404, {'error': 'Unknown PUT endpoint'})
 
