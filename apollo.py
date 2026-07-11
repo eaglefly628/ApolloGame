@@ -26,7 +26,7 @@ import hashlib
 import unicodedata
 import uuid
 from pathlib import Path
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 import threading
 import urllib.request
 import urllib.parse
@@ -3230,14 +3230,17 @@ def _list_library() -> list:
             meta = json.loads((d / 'meta.json').read_text(encoding='utf-8'))
         except Exception:
             meta = {}
+        empty = False
         try:
-            json.loads((d / 'manifest.json').read_text(encoding='utf-8'))
+            mf = json.loads((d / 'manifest.json').read_text(encoding='utf-8'))
             valid = True
+            ents = mf.get('entities') if isinstance(mf, dict) else None
+            empty = not (isinstance(ents, dict) and len(ents) > 0)  # 空卡带=没生成过玩法内容（07-11：别放行到运行器黑屏）
         except Exception:
             valid = False
         ddir = d / 'design'
         has_design = ddir.is_dir() and any(ddir.rglob('*.md'))
-        out.append({'slug': d.name, 'meta': meta, 'valid': valid, 'hasDesign': has_design})
+        out.append({'slug': d.name, 'meta': meta, 'valid': valid, 'empty': empty, 'hasDesign': has_design})
     return out
 
 def _history(game_dir: Path) -> dict:
@@ -4042,7 +4045,11 @@ class APIHandler(BaseHTTPRequestHandler):
         pass
 
 def start_api_server():
-    server = HTTPServer(('127.0.0.1', API_PORT), APIHandler)
+    # ThreadingHTTPServer（07-11 破案）：对话是分钟级长请求，单线程服务器会让 /api/llm-live 轮询
+    # 全部排队——对话期间实况/trace 永远出不来（生成走后台任务所以没事）。共享态已有锁
+    # （_LLM_LIVE/_GEN_JOBS）；单人本机工作台，其余文件写入无并发压力。
+    server = ThreadingHTTPServer(('127.0.0.1', API_PORT), APIHandler)
+    server.daemon_threads = True
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     print(c("  [API]", 'g'), f"Dev tools API on http://localhost:{API_PORT}")

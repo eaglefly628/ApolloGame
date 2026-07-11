@@ -108,6 +108,9 @@ try:
     check(meta.get('description') == '横版跳跳乐·吃金币过关', 'meta.description 落盘（卡带架副标题可用）')
     pf = json.loads((ROOT / 'public' / 'games' / SLUG / 'pipeline.json').read_text('utf-8'))
     check(pf.get('concept', {}).get('name') == 'Pipeline Smoke' and pf['concept'].get('pitch') == '横版跳跳乐·吃金币过关', 'concept 立项卡自动落盘（name+pitch）')
+    _, lst0 = req('GET', '/api/library')
+    row0 = next((x for x in lst0 if x.get('slug') == SLUG), {})
+    check(row0.get('empty') is True, '未生成内容=空卡带旗（▶ 拦截提示的依据）')
     b = board(SLUG)
     check(b.get('success') and stage(b, 'S1')['machine']['state'] == 'ok', 'board S1 机器门开箱绿')
     check(b.get('concept', {}).get('pitch') == '横版跳跳乐·吃金币过关', 'board 返回体带 concept（S1 编辑预填）')
@@ -124,6 +127,8 @@ try:
     st, pu2 = req('PUT', f'/api/library/{SLUG}/manifest', {'manifest': tweaked, 'note': '微调'})
     rows1 = json.loads(ledf.read_text('utf-8')).get('rows', [])
     check(pu2.get('success') and [r['no'] for r in rows1] == nos0, '再 PUT 编号不漂移（mergeLedger append-only）')
+    _, lst1 = req('GET', '/api/library')
+    check(next((x for x in lst1 if x.get('slug') == SLUG), {}).get('empty') is False, '落盘玩法后空卡带旗撤销')
 
     print('③ 立项卡端点（/api/pipeline/concept）')
     st, cc = req('POST', '/api/pipeline/concept', {'slug': SLUG, 'pitch': '改口：竖版跳跳乐'})
@@ -371,6 +376,12 @@ try:
     check(cp2.get('success') and fdata.get('sessions', {}).get('gd') == 'f00dbabe-cafe'
           and fdata.get('ctxHash', {}).get('gd') == 'hash-1', '对话覆盖存盘不抹 session 台账')
     (ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json').unlink()
+
+    import http.server as _hs
+    check(apollo.start_api_server.__doc__ is None or True, '')  # 占位防误删
+    PASS -= 1  # 上一行不计数
+    check('ThreadingHTTPServer' in open(ROOT / 'apollo.py', encoding='utf-8').read().split('def start_api_server')[1][:400],
+          'API 服务多线程（对话长请求不再堵死实况轮询·07-11 破案）')
 
     print('⑫ 删卡带（owner 07-11·只删库卡带·内置永远 404）')
     _, dc1 = req('POST', '/api/library/create', {'name': 'Delete Me', 'description': '待删'})

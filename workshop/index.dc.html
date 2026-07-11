@@ -1168,8 +1168,10 @@ class Component extends DCLogic {
       const name = (cc.meta && cc.meta.name) || cc.slug;
       const desc = (cc.meta && cc.meta.description) || '';
       return { k: coverKeys[i % coverKeys.length], cn: name, tag: '卡带', sc: coverGrads[i % coverGrads.length],
-        status: cc.valid ? '可编辑' : '损坏', meta: desc ? desc.slice(0, 24) : cc.slug, prog: 100, done: !!cc.valid,
-        run: () => cc.valid ? window.open('/bench?to=' + encodeURIComponent('/?game=lib:' + cc.slug + '&from=workshop&bare=1'), '_blank') : this.showToast('卡带 manifest 损坏，先修再玩'),
+        status: !cc.valid ? '损坏' : (cc.empty ? '空卡带' : '可编辑'), meta: desc ? desc.slice(0, 24) : cc.slug, prog: cc.empty ? 15 : 100, done: !!cc.valid && !cc.empty,
+        run: () => !cc.valid ? this.showToast('卡带 manifest 损坏，先修再玩')
+          : cc.empty ? this.showToast('⚠ 这盘还没生成玩法内容——点「编辑」，用设计先行出原型或快速直出')
+          : window.open('/bench?to=' + encodeURIComponent('/?game=lib:' + cc.slug + '&from=workshop&bare=1'), '_blank'),
         edit: () => cc.valid ? this.openEdit(cc.slug, name, desc) : this.showToast('卡带 manifest 损坏，先在旧工作台修') };
     }).concat(liveList.map((gg, i) => ({
       k: coverKeys[(cartList.length + i) % coverKeys.length], cn: gg.id, tag: '引擎内置', sc: coverGrads[(cartList.length + i) % coverGrads.length],
@@ -1178,7 +1180,7 @@ class Component extends DCLogic {
       run: () => window.open('/bench?to=' + encodeURIComponent('/?game=' + gg.id + '&from=workshop&bare=1'), '_blank'),
       edit: () => this.showToast('引擎内置游戏在旧工作台（源码）开发')
     })));
-    const statusColor = { '可编辑': ['#7ecb45', '#fff5db', '#4e8a24'], '损坏': ['#ef5138', '#fff5db', '#a03222'],
+    const statusColor = { '可编辑': ['#7ecb45', '#fff5db', '#4e8a24'], '损坏': ['#ef5138', '#fff5db', '#a03222'], '空卡带': ['#ffd257', '#3a2312', '#c98a1e'],
       '有美术': ['#7ecb45', '#fff5db', '#4e8a24'], '待接美术': ['#ffd257', '#3a2312', '#c98a1e'] };
     // 视图切换 chip（图标/列表）——来源筛选=上方 gameFilters·此处不重复（owner spec Part A）。
     const gameViewChips = [{ k: 'grid', label: '▦ 图标' }, { k: 'list', label: '≣ 列表' }].map(v => ({
