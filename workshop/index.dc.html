@@ -186,41 +186,112 @@
             </div>
           </sc-if>
 
-          <!-- ---------- CREATE ---------- -->
+          <!-- ---------- CREATE（设计先行=默认·快速直出=备选·owner 07-11「先提纲再对齐再生成」） ---------- -->
           <sc-if value="{{ isCreate }}" hint-placeholder-val="{{ false }}">
             <button onClick="{{ goNewGame }}" style="{{ backBtnStyle }}" style-active="{{ backBtnActive }}">← 返回选择</button>
-            <div style="display:grid;grid-template-columns:1.15fr .85fr;gap:22px;align-items:start;margin-top:6px">
-              <div>
-                <div style="background:linear-gradient(180deg,#f7e6c0,#efd79e);border:4px solid #3a2312;border-radius:22px;padding:20px;box-shadow:0 6px 0 rgba(58,35,18,.3),inset 0 3px 0 rgba(255,255,255,.4)">
-                  <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#5a3d1e;margin-bottom:10px">说一句创意，引擎来生成 →</div>
-                  <textarea value="{{ promptText }}" onInput="{{ promptType }}" rows="4" style="width:100%;min-height:96px;font-family:'Noto Sans SC';font-weight:600;color:#5a3d1e;font-size:16px;line-height:1.55;background:rgba(255,255,255,.55);border:2px dashed rgba(58,35,18,.3);border-radius:12px;padding:12px;outline:none;resize:vertical"></textarea>
-                  <div style="display:flex;justify-content:flex-end;margin-top:12px">
-                    <button style="{{ genBtnStyle }}" style-active="{{ genBtnActive }}" onClick="{{ generate }}"><span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px">{{ genLabel }}</span></button>
+            <div style="display:flex;gap:8px;margin:6px 0 14px;flex-wrap:wrap">
+              <sc-for list="{{ createModes }}" as="cm" hint-placeholder-count="2"><button onClick="{{ cm.pick }}" style="{{ cm.style }}">{{ cm.label }}</button></sc-for>
+            </div>
+
+            <!-- 设计先行 · 第一步：讨论 -->
+            <sc-if value="{{ dsPhaseChat }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:start">
+                <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:20px;box-shadow:0 6px 0 rgba(58,35,18,.28);display:flex;flex-direction:column;height:520px">
+                  <div style="padding:10px 14px;border-bottom:3px solid #3a2312;background:linear-gradient(180deg,#f7e6c0,#efd79e);font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312">🗣 第一步 · 聊想法（策划顾问）</div>
+                  <div class="scr" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+                    <sc-for list="{{ dsChatMsgs }}" as="m" hint-placeholder-count="2">
+                      <div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div></div>
+                    </sc-for>
+                    <sc-if value="{{ dsBusy }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#8a5a2c">{{ chatBusyText }}</span></div>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;gap:8px;padding:12px;border-top:3px solid #3a2312">
+                    <input value="{{ dsInput }}" onInput="{{ dsType }}" onKeyDown="{{ dsKey }}" placeholder="说说你想做什么游戏：题材 / 玩法 / 感觉…" style="flex:1;border:3px solid #3a2312;border-radius:12px;padding:10px 12px;font-family:'Noto Sans SC';font-weight:600;font-size:14px;background:#fff;color:#3a2312;outline:none">
+                    <button onClick="{{ dsSend }}" style="{{ sendBtnStyle }}" style-active="{{ sendBtnActive }}">发送</button>
                   </div>
                 </div>
-                <sc-if value="{{ generating }}" hint-placeholder-val="{{ false }}">
-                  <div style="margin-top:18px;background:#fffdf5;border:3px solid #3a2312;border-radius:18px;padding:18px;box-shadow:0 5px 0 rgba(58,35,18,.2)">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-                      <span style="width:28px;height:28px;border:4px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span>
-                      <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#3a2312">{{ genStage }}</span>
-                      <span style="margin-left:auto;font-family:'Fredoka';font-weight:700;color:#7ecb45;font-size:18px">{{ genPct }}%</span>
+                <div style="background:linear-gradient(180deg,#f7e6c0,#efd79e);border:4px solid #3a2312;border-radius:20px;padding:18px;box-shadow:0 6px 0 rgba(58,35,18,.3)">
+                  <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#5a3d1e;margin-bottom:8px">流程：聊想法 → 出设计提纲 → 对齐修订 → 生成原型</div>
+                  <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#8a5a2c;line-height:1.6;margin-bottom:12px">聊到想法成熟（顾问会说可以了），给游戏起个名，生成设计提纲——提纲是几篇 MD 设计稿，落在 library/&lt;游戏&gt;/design/，下一步就能看能改。</div>
+                  <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#3a2312;margin-bottom:5px">游戏名</div>
+                  <input value="{{ dsName }}" onInput="{{ dsNameType }}" placeholder="给游戏起个名字" style="width:100%;border:3px solid #3a2312;border-radius:10px;padding:9px 12px;font-family:'Noto Sans SC';font-weight:600;font-size:14px;background:#fff;color:#3a2312;outline:none;margin-bottom:12px">
+                  <button onClick="{{ dsBreakdown }}" style="{{ dsBdStyle }}" style-active="{{ genBtnActive }}">{{ dsBdLabel }}</button>
+                  <sc-if value="{{ dsReadyHint }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:8px;font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#4e8a24">✅ 顾问认为想法已成熟，可以出提纲了</div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- 设计先行 · 第二步：提纲对齐（MD 可见可修订）→ 第三步：原型 -->
+            <sc-if value="{{ dsPhaseDocs }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:.42fr .58fr;gap:16px;align-items:start">
+                <div>
+                  <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:18px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25)">
+                    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312;margin-bottom:8px">📑 设计提纲 · {{ dsSlugLabel }}</div>
+                    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+                      <sc-for list="{{ dsFileTabs }}" as="ft" hint-placeholder-count="4"><button onClick="{{ ft.pick }}" style="{{ ft.style }}">{{ ft.label }}</button></sc-for>
                     </div>
-                    <div style="height:24px;background:linear-gradient(180deg,#3a2312,#5a4028);border:3px solid #3a2312;border-radius:999px;overflow:hidden;box-shadow:inset 0 3px 4px rgba(0,0,0,.5)"><div style="{{ genFillStyle }}"></div></div>
+                    <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#3a2312;margin-bottom:5px">对这篇不满意？说怎么改：</div>
+                    <input value="{{ dsRev }}" onInput="{{ dsRevType }}" placeholder="例：把节奏改慢些 / 加一个 Boss 阶段…" style="width:100%;border:2.5px solid #3a2312;border-radius:9px;padding:8px 10px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;background:#fff;color:#3a2312;outline:none;margin-bottom:8px">
+                    <button onClick="{{ dsRevise }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ dsRevLabel }}</button>
                   </div>
+                  <div style="margin-top:12px;background:linear-gradient(180deg,#fff3cf,#ffe9ae);border:4px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25)">
+                    <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e;margin-bottom:10px">提纲对齐满意后，按它生成可玩原型（后台任务·切屏刷新都不丢）：</div>
+                    <button onClick="{{ dsPrototype }}" style="{{ genBtnStyle }}" style-active="{{ genBtnActive }}"><span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px">🎮 生成可玩原型</span></button>
+                  </div>
+                </div>
+                <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:18px;box-shadow:0 5px 0 rgba(58,35,18,.25);display:flex;flex-direction:column;height:560px">
+                  <div style="padding:10px 14px;border-bottom:3px solid #3a2312;background:linear-gradient(180deg,#f7e6c0,#efd79e);font-family:'Fredoka';font-weight:700;font-size:12px;color:#3a2312">{{ dsSelName }}</div>
+                  <div class="scr" style="flex:1;overflow-y:auto;padding:14px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.65;color:#3a2312;white-space:pre-wrap;word-break:break-word">{{ dsSelContent }}</div>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- 快速直出（原一发链·现走后台任务） -->
+            <sc-if value="{{ isQuickMode }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:1.15fr .85fr;gap:22px;align-items:start">
+                <div>
+                  <div style="background:linear-gradient(180deg,#f7e6c0,#efd79e);border:4px solid #3a2312;border-radius:22px;padding:20px;box-shadow:0 6px 0 rgba(58,35,18,.3),inset 0 3px 0 rgba(255,255,255,.4)">
+                    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#5a3d1e;margin-bottom:10px">说一句创意，引擎来生成 →</div>
+                    <textarea value="{{ promptText }}" onInput="{{ promptType }}" rows="4" style="width:100%;min-height:96px;font-family:'Noto Sans SC';font-weight:600;color:#5a3d1e;font-size:16px;line-height:1.55;background:rgba(255,255,255,.55);border:2px dashed rgba(58,35,18,.3);border-radius:12px;padding:12px;outline:none;resize:vertical"></textarea>
+                    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+                      <button style="{{ genBtnStyle }}" style-active="{{ genBtnActive }}" onClick="{{ generate }}"><span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px">{{ genLabel }}</span></button>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#fff5db;-webkit-text-stroke:3px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e;margin-bottom:12px">灵感示例 · 点一下填入</div>
+                  <div style="display:flex;flex-direction:column;gap:11px">
+                    <sc-for list="{{ ideas }}" as="i" hint-placeholder-count="4">
+                      <button onClick="{{ i.pick }}" style="text-align:left;display:flex;align-items:center;gap:12px;background:#fffdf5;border:3px solid #3a2312;border-radius:16px;padding:12px 14px;cursor:pointer;box-shadow:0 4px 0 rgba(58,35,18,.18)">
+                        <span style="{{ i.iconStyle }}">{{ i.emoji }}</span>
+                        <span style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:14px;line-height:1.4">{{ i.text }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- 生成进度（快速链与原型链共用·后台任务看板：切屏/刷新都还在） -->
+            <sc-if value="{{ generating }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:18px;background:#fffdf5;border:3px solid #3a2312;border-radius:18px;padding:18px;box-shadow:0 5px 0 rgba(58,35,18,.2)">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                  <span style="width:28px;height:28px;border:4px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span>
+                  <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#3a2312">{{ genStage }}</span>
+                  <span style="margin-left:auto;font-family:'Fredoka';font-weight:700;color:#7ecb45;font-size:18px">{{ genPct }}%</span>
+                </div>
+                <div style="height:24px;background:linear-gradient(180deg,#3a2312,#5a4028);border:3px solid #3a2312;border-radius:999px;overflow:hidden;box-shadow:inset 0 3px 4px rgba(0,0,0,.5)"><div style="{{ genFillStyle }}"></div></div>
+                <sc-if value="{{ genLiveText }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:10px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#5a3d1e;background:rgba(58,35,18,.06);border:1.5px solid rgba(58,35,18,.25);border-radius:8px;padding:6px 10px;line-height:1.5">🧠 {{ genLiveText }}</div>
                 </sc-if>
               </div>
-              <div>
-                <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#fff5db;-webkit-text-stroke:3px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e;margin-bottom:12px">灵感示例 · 点一下填入</div>
-                <div style="display:flex;flex-direction:column;gap:11px">
-                  <sc-for list="{{ ideas }}" as="i" hint-placeholder-count="4">
-                    <button onClick="{{ i.pick }}" style="text-align:left;display:flex;align-items:center;gap:12px;background:#fffdf5;border:3px solid #3a2312;border-radius:16px;padding:12px 14px;cursor:pointer;box-shadow:0 4px 0 rgba(58,35,18,.18)">
-                      <span style="{{ i.iconStyle }}">{{ i.emoji }}</span>
-                      <span style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:14px;line-height:1.4">{{ i.text }}</span>
-                    </button>
-                  </sc-for>
-                </div>
-              </div>
-            </div>
+            </sc-if>
+            <sc-if value="{{ genErrText }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:14px;background:#ffe1d6;border:3px solid #3a2312;border-radius:14px;padding:12px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#7a2a12;line-height:1.5">✕ 生成失败：{{ genErrText }}（详情看设置页🐞调试日志）</div>
+            </sc-if>
           </sc-if>
 
           <!-- ---------- EDIT (对白编辑工坊·REQ-WORKSHOP A) ---------- -->
@@ -282,7 +353,7 @@
                     <div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div></div>
                   </sc-for>
                   <sc-if value="{{ chatBusy }}" hint-placeholder-val="{{ false }}">
-                    <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#8a5a2c">思考中…（订阅通道深思考可能要一会儿）</span></div>
+                    <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#8a5a2c">{{ chatBusyText }}</span></div>
                   </sc-if>
                   <sc-if value="{{ artHintText }}" hint-placeholder-val="{{ false }}">
                     <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#1a4f6e;background:#d6f1ff;border:2.5px solid #3a2312;border-radius:10px;padding:8px 10px">🎨 点名了 {{ artHintText }} —— 到旧工作台「🎨 美术平台」按编号处理</div>
@@ -423,10 +494,14 @@ class Component extends DCLogic {
     liveGames: null, carts: null, version: null, settings: null,
     coins: 12480, gems: 340,
     prompt: '一款太空题材的竖版飞机大战，卡通风，有护盾和火力道具，一个大 Boss。',
-    generating: false, genPct: 0, genStep: 0, genSec: 0, done: false,
+    // 生成=服务端后台任务（owner 07-11·切屏/刷新不丢）：本地只是看板状态
+    generating: false, genPct: 0, genStep: 0, genSec: 0, done: false, genJobId: null, genLive: null, genErr: null,
+    // 创建双模式（owner 07-11「先提纲再对齐再生成」）：design=设计先行（默认）· quick=快速直出
+    createMode: 'design', dsPhase: 'chat', dsName: '', dsMsgs: [], dsInput: '', dsBusy: false, dsReady: false,
+    dsSlug: null, dsFiles: null, dsSel: null, dsRev: '', dsRevising: false,
     // 对白编辑（REQ-WORKSHOP A·spec §一）——三角色（owner 07-11）+ 模型/思考档 + 服务端持久化
     editSlug: null, editName: '', editPitch: '', board: null,
-    chatRole: 'gd', chats: { gd: [], pe: [], art: [] }, chatInput: '', chatBusy: false,
+    chatRole: 'gd', chats: { gd: [], pe: [], art: [] }, chatInput: '', chatBusy: false, chatLive: null,
     editModel: 'opus', editEffort: 'high',
     pending: null, pendingErr: null, artHints: [],
     // 素材库 / 设置 / 调试日志
@@ -435,7 +510,7 @@ class Component extends DCLogic {
     toast: null
   };
 
-  componentWillUnmount() { clearInterval(this._g); clearTimeout(this._t); }
+  componentWillUnmount() { clearInterval(this._g); clearInterval(this._cl); clearTimeout(this._t); }
 
   // 嵌入我们的接口：真游戏列表（卡带=/api/library·引擎游戏=/api/games）+ 版本 + 设置（打码视图）。
   componentDidMount() {
@@ -447,6 +522,54 @@ class Component extends DCLogic {
       .then(d => this.setState({ version: (d && d.version) || '0.1.0' }))
       .catch(() => this.setState({ version: '0.1.0' }));
     this.refreshSettings();
+    // 刷新页面恢复「生成中」看板（任务在服务端跑·状态放在会话之外）
+    fetch('/api/generate/jobs').then(r => r.json()).then(d => {
+      const active = d && d.success && (d.jobs || []).find(j => !j.done);
+      if (active) {
+        this.setState({ generating: true, genJobId: active.id, genStep: active.step,
+          genSec: active.elapsedSec, genPct: [10, 40, 86, 94][Math.min(3, active.step)], done: false, genErr: null });
+        this.watchJob(active.id);
+      }
+    }).catch(() => {});
+  }
+
+  // 后台生成任务看板轮询（快速链与原型链共用）。
+  watchJob(id) {
+    clearInterval(this._g);
+    const CAP = [12, 82, 92, 97];
+    this._g = setInterval(() => {
+      fetch('/api/generate/job?id=' + encodeURIComponent(id)).then(r => r.json()).then(d => {
+        if (!d || !d.success || this.state.genJobId !== id) return;
+        const j = d.job;
+        if (!j.done) {
+          this.setState(st => ({ genStep: j.step, genSec: j.elapsedSec,
+            genLive: j.liveChars ? { chars: j.liveChars, tail: j.liveTail || '' } : st.genLive,
+            genPct: Math.min(CAP[Math.min(3, j.step)], st.genPct + 1) }));
+          return;
+        }
+        clearInterval(this._g);
+        if (j.error) {
+          this.setState({ generating: false, genPct: 0, genStep: 0, genLive: null, genErr: j.error });
+          this.showToast('✕ ' + j.error.slice(0, 80));
+        } else {
+          this.setState({ generating: false, genPct: 100, done: true, genLive: null, genErr: null });
+          this.refreshCarts();
+          this.showToast('已生成并入库：' + (j.name || j.slug));
+          if (this.state.screen === 'create') this.openEdit(j.slug, j.name, '');
+        }
+      }).catch(() => {});
+    }, 1500);
+  }
+  // 对话进行中：轮询 /api/llm-live 让「思考中」有实况（已流出多少字）。
+  watchChatLive(on) {
+    clearInterval(this._cl);
+    if (!on) { this.setState({ chatLive: null }); return; }
+    this._cl = setInterval(() => {
+      fetch('/api/llm-live').then(r => r.json()).then(d => {
+        const top = d && d.success && (d.live || [])[0];
+        this.setState({ chatLive: top ? { chars: top.chars, sec: top.elapsedSec } : null });
+      }).catch(() => {});
+    }, 1500);
   }
 
   refreshCarts() {
@@ -521,9 +644,11 @@ class Component extends DCLogic {
         model: cc ? st.editModel : undefined, effort: cc ? st.editEffort : undefined,
         messages: msgs.slice(-30),  // 服务端上限 40 条——送末 30，完整历史在本地持久层
         catalog: cat || undefined }) }).then(r => r.json());
+    this.watchChatLive(true);
     (role === 'pe' ? this.catalog().then(post) : post(undefined)).then(d => {
       if (!d || !d.success) throw new Error((d && d.error) || '对话失败');
       const withReply = msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）' }]);
+      this.watchChatLive(false);
       this.setState(cur => ({
         chats: Object.assign({}, cur.chats, { [role]: withReply }), chatBusy: false,
         pending: d.manifest ? d.manifest : cur.pending,
@@ -531,10 +656,103 @@ class Component extends DCLogic {
         artHints: (d.artHints && d.artHints.length) ? d.artHints : cur.artHints
       }), () => this.saveChats(slug));
     }).catch(e => {
+      this.watchChatLive(false);
       this.setState(cur => ({ chatBusy: false,
         chats: Object.assign({}, cur.chats, { [role]: (cur.chats[role] || []).concat([{ role: 'assistant', content: '✕ ' + ((e && e.message) || '请求失败') }]) }) }),
         () => this.saveChats(slug));
     });
+  }
+
+  // ── 设计先行流（owner 07-11「先提纲→对齐→再生成」·服务端四模式既有）────────
+  dsSend() {
+    const st = this.state;
+    const text = (st.dsInput || '').trim();
+    if (!text || st.dsBusy) return;
+    const msgs = st.dsMsgs.concat([{ role: 'user', content: text }]);
+    this.setState({ dsMsgs: msgs, dsInput: '', dsBusy: true });
+    this.watchChatLive(true);
+    fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'design-chat', messages: msgs, provider: this.provider() }) })
+      .then(r => r.json()).then(d => {
+        this.watchChatLive(false);
+        if (!d || !d.success) throw new Error((d && d.error) || '讨论失败');
+        this.setState(cur => ({ dsBusy: false, dsReady: cur.dsReady || !!d.ready,
+          dsMsgs: msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）' }]) }));
+      }).catch(e => {
+        this.watchChatLive(false);
+        this.setState({ dsBusy: false,
+          dsMsgs: msgs.concat([{ role: 'assistant', content: '✕ ' + ((e && e.message) || '请求失败') }]) });
+      });
+  }
+  dsBreakdown() {
+    const st = this.state;
+    const name = (st.dsName || '').trim();
+    if (st.dsBusy || st.generating) return;
+    if (!name) { this.showToast('先给游戏起个名字'); return; }
+    if (!st.dsMsgs.some(m => m.role === 'user')) { this.showToast('先聊两句想法再出提纲'); return; }
+    const pitch = (st.dsMsgs.find(m => m.role === 'user') || {}).content || '';
+    this.setState({ dsBusy: true });
+    this.watchChatLive(true);
+    const prov = this.provider();
+    const create = st.dsSlug
+      ? Promise.resolve({ success: true, slug: st.dsSlug })
+      : fetch('/api/library/create', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description: pitch.slice(0, 300), provider: prov }) }).then(r => r.json());
+    create.then(cd => {
+      if (!cd || !cd.success || !cd.slug) throw new Error((cd && cd.error) || '建库失败');
+      this.setState({ dsSlug: cd.slug });
+      this.refreshCarts();
+      return this.catalog().then(cat =>
+        fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'design-breakdown', slug: cd.slug, messages: this.state.dsMsgs, catalog: cat || undefined, provider: prov }) }).then(r => r.json()));
+    }).then(d => {
+      this.watchChatLive(false);
+      if (!d || !d.success) throw new Error((d && d.error) || '提纲生成失败');
+      const files = d.files || {};
+      this.setState({ dsBusy: false, dsPhase: 'docs', dsFiles: files, dsSel: Object.keys(files)[0] || null });
+      this.showToast('设计提纲已落盘：library/' + this.state.dsSlug + '/design/');
+    }).catch(e => {
+      this.watchChatLive(false);
+      this.setState({ dsBusy: false });
+      this.showToast('✕ ' + ((e && e.message) || '提纲失败').slice(0, 80));
+    });
+  }
+  dsRevise() {
+    const st = this.state;
+    const instr = (st.dsRev || '').trim();
+    if (!instr || st.dsRevising || !st.dsSel || !st.dsSlug || !st.dsFiles) return;
+    this.setState({ dsRevising: true });
+    this.watchChatLive(true);
+    fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'design-revise', file_path: st.dsSel, current_content: st.dsFiles[st.dsSel] || '',
+        instruction: instr, provider: this.provider() }) })
+      .then(r => r.json()).then(d => {
+        if (!d || !d.success || typeof d.content !== 'string') throw new Error((d && d.error) || '修订失败');
+        return fetch('/api/library/' + st.dsSlug + '/design/' + st.dsSel, { method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: d.content, note: instr.slice(0, 50) }) }).then(r => r.json())
+          .then(pd => { if (!pd || !pd.success) throw new Error((pd && pd.error) || '落盘失败'); return d.content; });
+      }).then(content => {
+        this.watchChatLive(false);
+        this.setState(cur => ({ dsRevising: false, dsRev: '',
+          dsFiles: Object.assign({}, cur.dsFiles, { [cur.dsSel]: content }) }));
+        this.showToast('已修订并落盘：' + st.dsSel);
+      }).catch(e => {
+        this.watchChatLive(false);
+        this.setState({ dsRevising: false });
+        this.showToast('✕ ' + ((e && e.message) || '修订失败').slice(0, 80));
+      });
+  }
+  dsPrototype() {
+    const st = this.state;
+    if (!st.dsSlug || st.generating) return;
+    fetch('/api/generate/job', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'prototype', slug: st.dsSlug, provider: this.provider() }) })
+      .then(r => r.json()).then(d => {
+        if (!d || !d.success) throw new Error((d && d.error) || '任务启动失败');
+        this.setState({ generating: true, genJobId: d.id, genStep: 0, genSec: 0, genPct: 2, done: false, genErr: null });
+        this.watchJob(d.id);
+      }).catch(e => this.showToast('✕ ' + ((e && e.message) || '任务启动失败').slice(0, 80)));
   }
   refreshLogs() {
     fetch('/api/llm-logs?n=20').then(r => r.json())
@@ -772,6 +990,24 @@ class Component extends DCLogic {
     const effortChips = ecDefs.map(([id, label]) => ({ label,
       style: chipStyle(s.editEffort === id), pick: () => this.setState({ editEffort: id }) }));
 
+    // 创建双模式 + 设计先行派生（气泡样式与编辑工坊同一套）
+    const bubble = (m) => ({
+      text: m.content,
+      rowStyle: { display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' },
+      bubbleStyle: { maxWidth: '85%', padding: '9px 13px', borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px', border: '2.5px solid #3a2312',
+        background: m.role === 'user' ? 'linear-gradient(180deg,#ffe08a,#f5b731)' : '#fff',
+        fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 600, fontSize: '13px', color: '#3a2312', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }
+    });
+    const createModes = [['design', '🗣 设计先行（提纲→对齐→原型·推荐）'], ['quick', '⚡ 快速直出（一句话）']]
+      .map(([id, label]) => ({ label, style: chipStyle(s.createMode === id), pick: () => this.setState({ createMode: id }) }));
+    const dsChatMsgs = s.dsMsgs.map(bubble);
+    const dsFileTabs = Object.keys(s.dsFiles || {}).map(f => ({ label: f,
+      style: Object.assign(chipStyle(s.dsSel === f), { textAlign: 'left', fontFamily: 'ui-monospace,Menlo,monospace', fontSize: '11px' }),
+      pick: () => this.setState({ dsSel: f }) }));
+    const dsBd = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 16); dsBd.style.padding = '10px 20px';
+    const liveBits = s.chatLive ? ('思考中… 已流出 ' + this.fmt(s.chatLive.chars) + ' 字 · ' + s.chatLive.sec + 's') : '思考中…（订阅通道深思考·实况稍后跟上）';
+    const genLiveText = s.genLive ? ('模型实况 · 已流出 ' + this.fmt(s.genLive.chars) + ' 字 · ' + (s.genLive.tail || '')) : '';
+
     return {
       pageTitle: titles[s.screen][0], pageSub: titles[s.screen][1],
       coinsFmt: this.fmt(s.coins), gemsFmt: this.fmt(s.gems),
@@ -788,9 +1024,29 @@ class Component extends DCLogic {
       myGames, gameFilters, editBtnStyle: edit.style, editBtnActive: edit.active, backBtnStyle: back.style, backBtnActive: back.active,
       templates, cardHover: { transform: 'translateY(-6px)' }, useBtnStyle: use.style, useBtnActive: use.active,
       promptText: s.prompt, promptType: (e) => this.setState({ prompt: e.target.value }),
-      generating: s.generating, genPct: s.genPct, genStage, genFillStyle,
+      generating: s.generating, genPct: s.genPct, genStage, genFillStyle, genLiveText, genErrText: s.genErr || '',
       genLabel: s.generating ? '生成中…' : '生成游戏', genBtnStyle: genBtn.style, genBtnActive: genBtn.active,
       ideas,
+      // create 双模式 + 设计先行
+      createModes, isQuickMode: s.createMode === 'quick',
+      dsPhaseChat: s.createMode === 'design' && s.dsPhase === 'chat',
+      dsPhaseDocs: s.createMode === 'design' && s.dsPhase === 'docs',
+      dsChatMsgs, dsBusy: s.dsBusy,
+      dsInput: s.dsInput, dsType: (e) => this.setState({ dsInput: e.target.value }),
+      dsKey: (e) => { if (e.key === 'Enter') this.dsSend(); },
+      dsSend: () => this.dsSend(),
+      dsName: s.dsName, dsNameType: (e) => this.setState({ dsName: e.target.value }),
+      dsBreakdown: () => this.dsBreakdown(),
+      dsBdStyle: Object.assign({}, dsBd.style, s.dsBusy ? { opacity: .55, cursor: 'wait' } : {}),
+      dsBdLabel: s.dsBusy ? '工作中…' : '📑 生成设计提纲',
+      dsReadyHint: s.dsReady,
+      dsSlugLabel: s.dsSlug || '',
+      dsFileTabs, dsSelName: s.dsSel || '（选左侧一篇）',
+      dsSelContent: (s.dsFiles && s.dsSel && s.dsFiles[s.dsSel]) || '',
+      dsRev: s.dsRev, dsRevType: (e) => this.setState({ dsRev: e.target.value }),
+      dsRevise: () => this.dsRevise(), dsRevLabel: s.dsRevising ? '修订中…' : '✎ 修订这篇（落盘）',
+      dsPrototype: () => this.dsPrototype(),
+      chatBusyText: liveBits,
       // edit screen
       editName: s.editName, editSlug: s.editSlug || '', editPitch: s.editPitch || '（立项卡待填——S1 侧栏或对话里补）',
       stageLamps, miniBtnStyle: mini.style, miniBtnActive: mini.active,
@@ -850,47 +1106,17 @@ class Component extends DCLogic {
       logRows, logsEmptyText, refreshLogs: () => this.refreshLogs(), logRefreshStyle: logRefresh,
       toast: s.toast,
       generate: () => {
+        // 快速直出=服务端后台任务（owner 07-11：切屏/刷新不丢·浏览器只做看板）。
         if (s.generating) return;
         const prompt = (s.prompt || '').trim();
         if (!prompt) { this.showToast('先写一句创意'); return; }
-        clearInterval(this._g);
-        // 阶段=真实链路步骤（0 目录 → 1 生成 → 2 建库 → 3 落盘）；进度条按步封顶只作观感，文案+秒表是真的。
-        const CAP = [12, 82, 92, 97];
-        this._t0 = Date.now();
-        this.setState({ generating: true, genPct: 2, genStep: 0, genSec: 0, done: false });
-        this._g = setInterval(() => this.setState(st => ({
-          genSec: Math.round((Date.now() - this._t0) / 1000),
-          genPct: Math.min(CAP[Math.min(3, st.genStep)], st.genPct + 1) })), 500);
-        const prov = this.provider();
-        this.catalog().then(cat => {
-          this.setState(st => ({ genStep: 1, genPct: Math.max(st.genPct, 13) }));
-          return fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, provider: prov, autofix: true, catalog: cat || undefined }) }).then(r => r.json());
-        }).then(d => {
-          if (!d || !d.success || !(d.manifest || d.blueprint)) throw new Error((d && d.error) || '生成失败');
-          const mf = d.manifest || d.blueprint;
-          const name = (mf.name || '新游戏').slice(0, 40);
-          this.setState(st => ({ genStep: 2, genPct: Math.max(st.genPct, 84) }));
-          return fetch('/api/library/create', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description: prompt.slice(0, 300), provider: prov }) }).then(r => r.json())
-            .then(cd => {
-              if (!cd || !cd.success) throw new Error((cd && cd.error) || '建库失败');
-              this.setState(st => ({ genStep: 3, genPct: Math.max(st.genPct, 93) }));
-              return fetch('/api/library/' + cd.slug + '/manifest', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ manifest: mf, note: '初版生成（workshop）' }) }).then(r => r.json())
-                .then(pd => { if (!pd || !pd.success) throw new Error((pd && pd.error) || '落盘校验失败'); return { slug: cd.slug, name }; });
-            });
-        }).then(res => {
-          clearInterval(this._g);
-          this.setState({ generating: false, genPct: 100, done: true });
-          this.showToast('已生成并入库：' + res.name);
-          this.refreshCarts();
-          this.openEdit(res.slug, res.name, prompt.slice(0, 60));
-        }).catch(e => {
-          clearInterval(this._g);
-          this.setState({ generating: false, genPct: 0, genStep: 0, done: false });
-          this.showToast('✕ ' + ((e && e.message) || '生成失败').slice(0, 80));
-        });
+        fetch('/api/generate/job', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, provider: this.provider() }) })
+          .then(r => r.json()).then(d => {
+            if (!d || !d.success) throw new Error((d && d.error) || '任务启动失败');
+            this.setState({ generating: true, genJobId: d.id, genStep: 0, genSec: 0, genPct: 2, done: false, genErr: null });
+            this.watchJob(d.id);
+          }).catch(e => this.showToast('✕ ' + ((e && e.message) || '任务启动失败').slice(0, 80)));
       }
     };
   }

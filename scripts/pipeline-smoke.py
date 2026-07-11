@@ -19,6 +19,7 @@
 import os
 import sys
 import json
+import time
 import socket
 import shutil
 import http.client
@@ -171,10 +172,16 @@ try:
     print('⑦ 三角色对话通道（claude-code 安全面 + /api/agent/chat）')
     args = apollo._claude_code_args('opus')
     joined = ' '.join(args)
-    check('--max-turns 1' in joined and '--output-format json' in joined, 'CLI 单轮 + JSON 出')
+    check('--max-turns 1' in joined and '--output-format stream-json' in joined and '--include-partial-messages' in joined,
+          'CLI 单轮 + 流式出（思考实况可见）')
     check('--effort high' in joined, '思考档默认 high（owner 07-11「默认 4.8 high」）')
     check('--effort max' in ' '.join(apollo._claude_code_args('opus', 'max')) and
           '--effort high' in ' '.join(apollo._claude_code_args('opus', '注入;rm')), 'effort 白名单（非法回落 high）')
+    check('--append-system-prompt' in joined and '绝不调用任何工具' in ' '.join(args),
+          '代理人格钉死为纯文本生成器（07-11 实证 tool_use 吃回合根治①）')
+    off = args[args.index('--disallowedTools') + 1]
+    check(all(t in off for t in ('AskUserQuestion', 'EnterPlanMode', 'SlashCommand', 'Skill', 'Agent')),
+          '计划/提问/技能类工具也禁（根治②）')
     off = args[args.index('--disallowedTools') + 1]
     check(all(t in off for t in ('Bash', 'Edit', 'Write', 'Read', 'WebFetch', 'Task')), f'工具面全禁（spec §四红线）· {off[:60]}…')
     tr = apollo._claude_code_transcript('SYS', [{'role': 'user', 'content': '你好'}, {'role': 'assistant', 'content': '在'}])
@@ -250,6 +257,35 @@ try:
     st8, lg = req('GET', '/api/llm-logs?n=5')
     check(st8 == 200 and lg.get('success') and isinstance(lg.get('lines'), list), '/api/llm-logs 形状 OK')
     check(all('prompt' not in r and 'response' not in r for r in lg['lines']), 'llm-logs 不出全文（全文只留本机文件）')
+    st8, lv = req('GET', '/api/llm-live')
+    check(st8 == 200 and lv.get('success') and isinstance(lv.get('live'), list), '/api/llm-live 形状 OK（空闲=空数组）')
+
+    print('⑨ 后台生成任务（owner 07-11 切屏/刷新不丢·mock 全链）')
+    _, jb = req('POST', '/api/generate/job', {'prompt': '像素海盗跑酷，吃金币躲炮弹', 'provider': 'mock'})
+    check(jb.get('success') and jb.get('id'), f"job 启动 · id={jb.get('id')}")
+    jid = jb.get('id')
+    deadline = time.time() + 30
+    job = None
+    while time.time() < deadline:
+        _, jr = req('GET', f'/api/generate/job?id={jid}')
+        job = jr.get('job') or {}
+        if job.get('done'):
+            break
+        time.sleep(0.3)
+    check(bool(job and job.get('done')), 'job 跑完（30s 内·mock）')
+    check(not job.get('error') and bool(job.get('slug')), f"job 成功入库 · slug={job.get('slug')} · {job.get('name')}")
+    JOB_SLUG = job.get('slug')
+    if JOB_SLUG:
+        CLEAN.append(_dirs(JOB_SLUG))
+        check((ROOT / 'library' / JOB_SLUG / 'manifest.json').is_file(), '成品 manifest 落 library/<slug>/')
+        pfj = json.loads((ROOT / 'public' / 'games' / JOB_SLUG / 'pipeline.json').read_text('utf-8'))
+        check(pfj.get('concept', {}).get('pitch', '').startswith('像素海盗'), 'job 链自动带 S1 立项卡')
+    _, jlist = req('GET', '/api/generate/jobs')
+    check(jlist.get('success') and any(j.get('id') == jid for j in jlist.get('jobs', [])), 'jobs 列表可查（刷新恢复用）')
+    _, jbad = req('POST', '/api/generate/job', {'prompt': '', 'provider': 'mock'})
+    check(jbad.get('success') is False, '空 prompt 拒')
+    _, jmiss = req('GET', '/api/generate/job?id=nope')
+    check(jmiss.get('success') is False, '未知 job 404 语义')
 
 except Exception as e:
     FAIL += 1

@@ -43,6 +43,12 @@
   壳 openEdit 恢复、每轮回复后整份覆盖存
 - `GET /api/llm-logs?n=`——今天的 LLM 往返度量尾部（新在前·壳设置页🐞调试日志块消费）；**绝不出全文**
   （全文只在 `.apollo/llm-logs/*.jsonl`·须 `APOLLO_LOG_VERBOSE=1` 才落）；服务终端另有 `[LLM] →/←` 进出打点（传输层唯一咽喉）
+- `POST /api/generate/job` `{prompt}` 或 `{mode:'prototype', slug}`——**生成=服务端后台任务**（切屏/刷新不丢·完成自动入库）；
+  `GET /api/generate/job?id=` / `GET /api/generate/jobs` 看板轮询（壳启动自动恢复活跃任务）；进程内注册表留 20 条
+- `GET /api/llm-live`——进行中请求的流式度量（chars/tail·空闲=空数组）；job 视图自带 liveChars/liveTail
+- **订阅通道形态（改流式后勿回退）**：`stream-json --include-partial-messages --verbose` + `--append-system-prompt`
+  纯文本生成器钉子 + 禁用名单含计划/提问/技能类（07-11 实证：CLI 代理人格调工具→tool_use 吃回合→空 result）；
+  watchdog 600s（Opus 高思考出整份 manifest 实测超 300s）；result 缺失时打捞已流出的 text delta
 - `GET/PUT /api/settings` → `{providers:[{id,name,models,model,apiKeyMasked,hasConfigKey,keyAvailable,…}], genKeys:[{envKey,apiKeyMasked,hasConfigKey,keyAvailable}], default}`
   - PUT 只送 dirty 字段；**空串=清除**；`genKeys` 三把=`DASHSCOPE_API_KEY / TRIPO_API_KEY / MESHY_API_KEY`（owner 07-11 收编旧美术台配置）
 

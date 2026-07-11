@@ -140,3 +140,18 @@
 5. **games filter**：全部/卡带/引擎内置三 chips（不影响素材库页签与发布列表）。
 6. **生成进度真话**：阶段文案跟真实链路步骤走（读目录→生成→建库→落盘）+秒表——治「卡在 92%」误导（假进度封顶时真相是 Opus 深思考中）。
    另：编辑工坊项目卡显示落盘路径（library/<slug> + public/games/<slug>）。
+
+### §八.2 验收批 2（owner 2026-07-11 续测四条·当日落地）
+
+1. **生成=服务端后台任务**：`POST /api/generate/job {prompt|mode:'prototype'+slug}` → 线程跑
+   目录→生成→建库→落盘全链；`GET /api/generate/job?id=`/`/jobs` 看板轮询——**切屏/刷新/关页不丢，完成自动入库**
+   （状态放在会话之外·与八阶段板同一防漂移纪律）。壳启动自动恢复活跃任务看板。
+2. **订阅通道两个实证修复**：①300s 超时掐（llm-logs 抓到 300.0s error）→ watchdog 600s；
+   ②`stop_reason=tool_use + error_max_turns`（CLI 代理人格想调工具吃掉唯一回合）→ 三刀根治：
+   `--append-system-prompt` 钉纯文本生成器 + 禁用名单补全（AskUserQuestion/EnterPlanMode/SlashCommand/Skill/Agent…）+ 流式打捞正文。
+3. **思考实况可见**：通道改 `stream-json --include-partial-messages` 流式读——thinking/text delta 进
+   `_LLM_LIVE` 注册表（`GET /api/llm-live`）；生成看板显示「🧠 已流出 N 字 + 尾巴」，对话「思考中」带实况字数——治「卡 82% 不知道在干什么」。
+4. **设计先行流上壳**（owner「先提纲→对齐→再生成」）：CREATE 屏双模式——**设计先行（默认）**=
+   聊想法(design-chat)→起名出提纲(建库+design-breakdown→`library/<slug>/design/*.md` 壳内可见)→逐篇对话修订
+   (design-revise+PUT 落盘)→生成可玩原型（prototype 后台任务）；**快速直出**=原一句话链（也走后台任务）。
+   服务端四模式零新建——纯壳上编排（manifesto §4 先重组）。
