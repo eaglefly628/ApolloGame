@@ -3639,9 +3639,9 @@ class APIHandler(BaseHTTPRequestHandler):
         body = ('<!doctype html><meta charset="utf-8"><title>旧工作台未启动</title>'
                 '<body style="font-family:system-ui;background:#0f1722;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh">'
                 '<div style="max-width:560px;line-height:1.8"><h2>旧工作台（vite dev）还没启动</h2>'
-                '<p>回到终端跑：<code style="background:#1e293b;padding:2px 8px;border-radius:6px">python apollo.py</code>'
-                '（会一并拉起页面服务，默认 :5173），或 <code style="background:#1e293b;padding:2px 8px;border-radius:6px">npm run dev</code>。</p>'
-                '<p>启动后回来重按一次 ▶ 即可。</p></div>').encode('utf-8')
+                '<p>回终端 Ctrl+C 后重启：<code style="background:#1e293b;padding:2px 8px;border-radius:6px">python apollo.py workshop</code>'
+                '——新版会<b>一并拉起页面服务</b>（:5173），以后 ▶ 一直直达。</p>'
+                '<p>起好后回来重按一次 ▶ 即可。</p></div>').encode('utf-8')
         self.send_response(200)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.send_header('Content-Length', str(len(body)))
@@ -4133,9 +4133,15 @@ def cmd_player():
 
 def cmd_workshop():
     """对外展示工作台一键入口：python apollo.py workshop。
-    只起 API 服务器（:4000）+ 开浏览器到原版工作台 /workshop/——**不弹老 launcher/electron**。
-    （owner 2026-07-11：原版设计对外展示台·VS Code「Apollo 工作台」启动项走这条。）"""
+    起 API 服务器（:4000）+ **一并拉起页面服务（vite :5173·owner 07-11 高优先级：▶ 运行永远直达，
+    不再要求开第二个终端）** + 开浏览器到 /workshop/——不弹老 launcher/electron。"""
     url = f"http://localhost:{API_PORT}/workshop/"
+    # 页面服务（旧工作台/运行器载体）：没在跑才拉起——已有 vite（重复跑本命令/npm run dev 在跑）不重复起。
+    if not any(is_port_in_use(pt) for pt in (VITE_PORT, 3000)):
+        check_env()
+        start_vite()
+    else:
+        print(c("  [INFO]", 'dim'), "页面服务已在运行（▶ 运行走 /bench 自动定位）")
     # API 端口已占（如完整 launcher 已在跑）→ 不重复起服务，直接开工作台页。
     if is_port_in_use(API_PORT):
         print(c("  [INFO]", 'y'), f"API 已在运行 → 直接打开 {c(url, 'c')}")
@@ -4149,7 +4155,7 @@ def cmd_workshop():
     ).start()
     print(c("  [INFO]", 'dim'), "工作台服务启动中，就绪即自动开页…（Ctrl+C 停止）")
     try:
-        threading.Event().wait()  # 无 vite 进程可 wait，阻塞主线程直到 Ctrl+C
+        threading.Event().wait()  # 阻塞主线程直到 Ctrl+C（vite 子进程随 _cleanup 一并收掉）
     except KeyboardInterrupt:
         _cleanup()
 
