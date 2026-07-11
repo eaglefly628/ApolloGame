@@ -372,7 +372,10 @@
                     <div style="min-width:0"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#3a2312;line-height:1.05">{{ editName }}</div>
                     <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#b0723a">{{ editSlug }}</div>
                     <div style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#8a5a2c;margin-top:2px">{{ editPitch }}</div>
-                    <div title="卡带本体（manifest/meta/design·独立 git 版本化）在 library/；美术资产与生产台账在 public/games/" style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#b0723a;margin-top:3px">📁 library/{{ editSlug }} · public/games/{{ editSlug }}</div></div>
+                    <div title="卡带本体（manifest/meta/design·独立 git 版本化）在 library/；美术资产与生产台账在 public/games/" style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#b0723a;margin-top:3px">📁 library/{{ editSlug }} · public/games/{{ editSlug }}</div>
+                    <sc-if value="{{ editStatsText }}" hint-placeholder-val="{{ false }}">
+                      <div title="卡带体量：文本工件（manifest/设计稿/台账）的文件数与行数" style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#8a5a2c;margin-top:2px">📊 {{ editStatsText }}</div>
+                    </sc-if></div>
                   </div>
                   <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#3a2312;margin-bottom:6px">生产八关（详情在旧工作台 🏭 生产板）</div>
                   <div style="display:flex;gap:6px;align-items:center;background:rgba(58,35,18,.08);border:2.5px solid #3a2312;border-radius:12px;padding:9px 12px;margin-bottom:12px;flex-wrap:wrap">
@@ -382,6 +385,7 @@
                   </div>
                   <div style="display:flex;gap:8px;flex-wrap:wrap">
                     <button onClick="{{ runCart }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">▶ 运行</button>
+                    <button onClick="{{ goArtFor }}" title="打开游戏美术库并定位到这盘游戏" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">🎨 美术库</button>
                     <button onClick="{{ downloadPack }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⬇ 下载包</button>
                     <button onClick="{{ openOldBench }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⇄ 旧工作台（试玩 / 美术台）</button>
                     <button onClick="{{ deleteCart }}" title="删除这盘卡带（不可恢复·会二次确认）" style="{{ delBtnStyle }}" style-active="{{ miniBtnActive }}">🗑 删除</button>
@@ -706,7 +710,7 @@ class Component extends DCLogic {
     editSlug: null, editName: '', editPitch: '', board: null,
     chatRole: 'gd', chats: { gd: [], pe: [], art: [] }, chatInput: '', chatBusy: false, chatLive: null,
     editModel: 'opus', editEffort: 'high',
-    pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, edRev: '', edRevising: false,
+    pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, edRev: '', edRevising: false, editStats: null,
     // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
     assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null, traceLog: '',
     tokenInput: '', genKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
@@ -834,9 +838,12 @@ class Component extends DCLogic {
   openEdit(slug, name, pitch) {
     this.setState({ screen: 'edit', editSlug: slug, editName: name || slug, editPitch: pitch || '',
       board: null, chats: { gd: [], pe: [], art: [] }, chatRole: 'gd', chatInput: '', chatBusy: false,
-      pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null });
+      pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, editStats: null });
     this.refreshBoard(slug);
     this.refreshDocs(slug);
+    fetch('/api/library/' + encodeURIComponent(slug) + '/stats').then(r => r.json())
+      .then(d => { if (this.state.editSlug === slug && d && d.success) this.setState({ editStats: d }); })
+      .catch(() => {});
     // 对话持久化（owner 07-11「session 持久性」）：进工坊即恢复该卡带三角色历史（服务端 .apollo/workshop-chats/）。
     fetch('/api/agent/chats?slug=' + encodeURIComponent(slug)).then(r => r.json())
       .then(d => { if (this.state.editSlug === slug && d && d.success && d.chats)
@@ -1520,6 +1527,8 @@ class Component extends DCLogic {
       edRevise: () => this.edRevise(), edRevLabel: s.edRevising ? '修订中…' : '✎ 修订',
       edRevising: s.edRevising,
       runCart: () => { if (s.editSlug) window.open('/bench?to=' + encodeURIComponent('/?game=lib:' + s.editSlug + '&from=workshop'), '_blank'); },
+      goArtFor: () => { const slug = s.editSlug; this.setState({ screen: 'assets' }); if (slug) this.pickAssetGame(slug); },
+      editStatsText: s.editStats ? (this.fmt(s.editStats.files) + ' 文件 · ' + this.fmt(s.editStats.lines) + ' 行 · ' + Math.round((s.editStats.bytes || 0) / 1024) + ' KB') : '',
       delBtnStyle: Object.assign({}, mini.style, { color: '#a03222' }),
       deleteCart: () => {
         const slug = s.editSlug;

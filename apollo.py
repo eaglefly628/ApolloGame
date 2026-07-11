@@ -2279,6 +2279,43 @@ def handle_ws_draft_put(body: dict) -> dict:
     return {'success': True}
 
 
+def handle_library_stats(slug: str) -> dict:
+    """GET /api/library/<slug>/stats。卡带体量一览（owner 07-11「游戏该有个代码统计」）：
+    游戏=纯数据——统计的是 manifest/设计稿/台账这些文本工件的文件数与行数（.git/snapshots 不计；
+    二进制只计文件数不计行）。"""
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    lib = LIBRARY_DIR / slug
+    pub = ROOT / 'public' / 'games' / slug
+    if not lib.is_dir() and not pub.is_dir():
+        return {'success': False, 'error': f'游戏不存在: {slug}'}
+    text_ext = {'.json', '.md', '.txt', '.csv'}
+    out = {'files': 0, 'lines': 0, 'bytes': 0, 'breakdown': []}
+    for base, label in ((lib, 'library'), (pub, 'assets')):
+        if not base.is_dir():
+            continue
+        for f in sorted(base.rglob('*')):
+            if not f.is_file():
+                continue
+            parts = f.relative_to(base).parts
+            if '.git' in parts or 'snapshots' in parts:
+                continue
+            out['files'] += 1
+            try:
+                out['bytes'] += f.stat().st_size
+            except OSError:
+                pass
+            if f.suffix.lower() in text_ext:
+                try:
+                    n_lines = f.read_text('utf-8', errors='replace').count('\n') + 1
+                except Exception:
+                    continue
+                out['lines'] += n_lines
+                out['breakdown'].append({'path': f'{label}/{f.relative_to(base).as_posix()}', 'lines': n_lines})
+    out['breakdown'] = sorted(out['breakdown'], key=lambda x: -x['lines'])[:20]
+    return {'success': True, 'slug': slug, **out}
+
+
 def handle_llm_logs(n: int = 50) -> dict:
     """GET /api/llm-logs[?n=50]。今天的 LLM 交互日志尾部（新在前·壳设置页「调试日志」块消费）。
     全文 prompt/response 不出端点（文件里才有·APOLLO_LOG_VERBOSE=1 时落）——端点只回度量行。"""
@@ -3703,6 +3740,11 @@ class APIHandler(BaseHTTPRequestHandler):
         m_export = re.fullmatch(r'/api/library/([a-z0-9][a-z0-9-]*)/export', path)
         if m_export:
             self._serve_export(m_export.group(1))
+            return
+
+        m_stats = re.fullmatch(r'/api/library/([a-z0-9][a-z0-9-]*)/stats', path)
+        if m_stats:
+            self._send_json(200, handle_library_stats(m_stats.group(1)))
             return
 
         # 库端点（可变状态码：400 越界 / 404 缺失）——先于遗留 200 端点分派。

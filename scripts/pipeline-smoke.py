@@ -360,6 +360,11 @@ try:
     ra = ' '.join(apollo._claude_code_args('opus', 'high', 'abc123def456'))
     check('--resume abc123def456' in ra and '--disallowedTools' in ra, 'resume 参数（工具面钉子不松）')
     check('--resume' not in ' '.join(apollo._claude_code_args('opus', 'high', '../inject; rm')), 'resume id 白名单（非法不带）')
+    st14, sta = req('GET', f'/api/library/{SLUG}/stats')
+    check(st14 == 200 and sta.get('success') and sta.get('files', 0) > 0 and sta.get('lines', 0) > 0,
+          f"代码统计端点 · {sta.get('files')} 文件 {sta.get('lines')} 行")
+    _, sbad = req('GET', '/api/library/no-such-x/stats')
+    check(sbad.get('success') is False, 'stats 缺游戏拒')
     apollo._ws_sessions_save(SLUG, 'gd', 'f00dbabe-cafe', 'hash-1')
     st13, cp2 = req('PUT', '/api/agent/chats', {'slug': SLUG, 'chats': {'gd': [{'role': 'user', 'content': 'x'}], 'pe': [], 'art': []}})
     fdata = json.loads((ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json').read_text('utf-8'))
