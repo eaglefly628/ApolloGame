@@ -1047,7 +1047,8 @@ def _handle_design_chat(provider: str, api_key: str, model: str, body: dict) -> 
             for m in messages if isinstance(m, dict) and m.get('role') in ('user', 'assistant')]
     if not msgs:
         return {'success': False, 'error': 'messages 里没有有效对话轮次'}
-    r = _provider_request(provider, api_key, model, DESIGN_CHAT_SYSTEM, msgs)
+    # effort=medium：构想讨论是对话不是产工件——回话快优先（owner 07-11「回馈快速返还」）；提纲/原型仍 high。
+    r = _provider_request(provider, api_key, model, DESIGN_CHAT_SYSTEM, msgs, effort='medium')
     _llm_log(provider=provider, model=model, mode='chat', req=r,
              validation='n/a' if r.get('success') else 'error',
              errors=[] if r.get('success') else [r.get('error')],
@@ -1141,7 +1142,7 @@ def _handle_design_revise(provider: str, api_key: str, model: str, body: dict) -
     user_msg = (f'## Current document ({file_path})\n{current}\n\n'
                 f'## Revision instruction\n{instruction}\n\n'
                 'Output the COMPLETE revised document as markdown (no code fences, no explanation).')
-    r = _provider_request(provider, api_key, model, DESIGN_REVISE_SYSTEM, [{'role': 'user', 'content': user_msg}])
+    r = _provider_request(provider, api_key, model, DESIGN_REVISE_SYSTEM, [{'role': 'user', 'content': user_msg}], effort='medium')  # 单篇修订=快回优先
     _llm_log(provider=provider, model=model, mode='design-revise', req=r,
              validation='n/a' if r.get('success') else 'error',
              errors=[] if r.get('success') else [r.get('error')],

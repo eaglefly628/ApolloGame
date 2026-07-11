@@ -238,7 +238,7 @@
               <div style="display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:start">
                 <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:20px;box-shadow:0 6px 0 rgba(58,35,18,.28);display:flex;flex-direction:column;height:520px">
                   <div style="padding:10px 14px;border-bottom:3px solid #3a2312;background:linear-gradient(180deg,#f7e6c0,#efd79e);font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312">🗣 第一步 · 聊想法（策划顾问）</div>
-                  <div class="scr" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+                  <div class="scr chat-scroll" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
                     <sc-for list="{{ dsChatMsgs }}" as="m" hint-placeholder-count="2">
                       <div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div></div>
                     </sc-for>
@@ -246,9 +246,9 @@
                       <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#8a5a2c">{{ chatBusyText }}</span></div>
                     </sc-if>
                   </div>
-                  <div style="display:flex;gap:8px;padding:12px;border-top:3px solid #3a2312">
-                    <input value="{{ dsInput }}" onInput="{{ dsType }}" onKeyDown="{{ dsKey }}" placeholder="说说你想做什么游戏：题材 / 玩法 / 感觉…" style="flex:1;border:3px solid #3a2312;border-radius:12px;padding:10px 12px;font-family:'Noto Sans SC';font-weight:600;font-size:14px;background:#fff;color:#3a2312;outline:none">
-                    <button onClick="{{ dsSend }}" style="{{ sendBtnStyle }}" style-active="{{ sendBtnActive }}">发送</button>
+                  <div style="display:flex;gap:8px;padding:12px;border-top:3px solid #3a2312;align-items:flex-end">
+                    <textarea value="{{ dsInput }}" onInput="{{ dsType }}" onKeyDown="{{ dsKey }}" placeholder="说说你想做什么游戏：题材 / 玩法 / 感觉…" rows="2" style="flex:1;border:3px solid #3a2312;border-radius:12px;padding:10px 12px;font-family:'Noto Sans SC';font-weight:600;font-size:14px;line-height:1.5;background:#fff;color:#3a2312;outline:none;resize:none;max-height:120px;overflow-y:auto"></textarea>
+                    <button onClick="{{ dsSend }}" title="Enter 发送 · Shift+Enter 换行" style="{{ sendBtnStyle }}" style-active="{{ sendBtnActive }}">发送</button>
                   </div>
                 </div>
                 <div style="background:linear-gradient(180deg,#f7e6c0,#efd79e);border:4px solid #3a2312;border-radius:20px;padding:18px;box-shadow:0 6px 0 rgba(58,35,18,.3)">
@@ -257,6 +257,9 @@
                   <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#3a2312;margin-bottom:5px">游戏名</div>
                   <input value="{{ dsName }}" onInput="{{ dsNameType }}" placeholder="给游戏起个名字" style="width:100%;border:3px solid #3a2312;border-radius:10px;padding:9px 12px;font-family:'Noto Sans SC';font-weight:600;font-size:14px;background:#fff;color:#3a2312;outline:none;margin-bottom:12px">
                   <button onClick="{{ dsBreakdown }}" style="{{ dsBdStyle }}" style-active="{{ genBtnActive }}">{{ dsBdLabel }}</button>
+                  <sc-if value="{{ dsBusy }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="width:16px;height:16px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e">{{ chatBusyText }}</span></div>
+                  </sc-if>
                   <sc-if value="{{ dsReadyHint }}" hint-placeholder-val="{{ false }}">
                     <div style="margin-top:8px;font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#4e8a24">✅ 顾问认为想法已成熟，可以出提纲了</div>
                   </sc-if>
@@ -388,7 +391,7 @@
                   <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c;margin-left:8px">思考</span>
                   <sc-for list="{{ effortChips }}" as="ec" hint-placeholder-count="3"><button onClick="{{ ec.pick }}" style="{{ ec.style }}">{{ ec.label }}</button></sc-for>
                 </div>
-                <div class="scr" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+                <div class="scr chat-scroll" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
                   <sc-for list="{{ chatMsgs }}" as="m" hint-placeholder-count="2">
                     <div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div></div>
                   </sc-for>
@@ -399,9 +402,9 @@
                     <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#1a4f6e;background:#d6f1ff;border:2.5px solid #3a2312;border-radius:10px;padding:8px 10px">🎨 点名了 {{ artHintText }} —— 到旧工作台「🎨 美术平台」按编号处理</div>
                   </sc-if>
                 </div>
-                <div style="display:flex;gap:8px;padding:12px;border-top:3px solid #3a2312">
-                  <input value="{{ chatInput }}" onInput="{{ chatType }}" onKeyDown="{{ chatKey }}" placeholder="{{ chatPlaceholder }}" style="flex:1;border:3px solid #3a2312;border-radius:12px;padding:10px 12px;font-family:'Noto Sans SC';font-weight:600;font-size:14px;background:#fff;color:#3a2312;outline:none">
-                  <button onClick="{{ sendChat }}" style="{{ sendBtnStyle }}" style-active="{{ sendBtnActive }}">发送</button>
+                <div style="display:flex;gap:8px;padding:12px;border-top:3px solid #3a2312;align-items:flex-end">
+                  <textarea value="{{ chatInput }}" onInput="{{ chatType }}" onKeyDown="{{ chatKey }}" placeholder="{{ chatPlaceholder }}" rows="2" style="flex:1;border:3px solid #3a2312;border-radius:12px;padding:10px 12px;font-family:'Noto Sans SC';font-weight:600;font-size:14px;line-height:1.5;background:#fff;color:#3a2312;outline:none;resize:none;max-height:120px;overflow-y:auto"></textarea>
+                  <button onClick="{{ sendChat }}" title="Enter 发送 · Shift+Enter 换行" style="{{ sendBtnStyle }}" style-active="{{ sendBtnActive }}">发送</button>
                 </div>
               </div>
             </div>
@@ -748,7 +751,7 @@ class Component extends DCLogic {
     // 对话持久化（owner 07-11「session 持久性」）：进工坊即恢复该卡带三角色历史（服务端 .apollo/workshop-chats/）。
     fetch('/api/agent/chats?slug=' + encodeURIComponent(slug)).then(r => r.json())
       .then(d => { if (this.state.editSlug === slug && d && d.success && d.chats)
-        this.setState({ chats: { gd: d.chats.gd || [], pe: d.chats.pe || [], art: d.chats.art || [] } }); })
+        this.setState({ chats: { gd: d.chats.gd || [], pe: d.chats.pe || [], art: d.chats.art || [] } }, () => this.scrollChat()); })
       .catch(() => {});
   }
   // 每轮回复后整份覆盖存盘（fire-and-forget·失败不打断对话——下轮再存）。
@@ -786,7 +789,7 @@ class Component extends DCLogic {
     const role = st.chatRole;
     const slug = st.editSlug;
     const msgs = (st.chats[role] || []).concat([{ role: 'user', content: text }]);
-    this.setState({ chats: Object.assign({}, st.chats, { [role]: msgs }), chatInput: '', chatBusy: true });
+    this.setState({ chats: Object.assign({}, st.chats, { [role]: msgs }), chatInput: '', chatBusy: true }, () => this.scrollChat());
     const prov = this.provider();
     const cc = prov === 'claude-code'; // 模型/思考档仅订阅通道生效（其他通道用其设置页型号）
     const post = (cat) => fetch('/api/agent/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -804,12 +807,12 @@ class Component extends DCLogic {
         pending: d.manifest ? d.manifest : cur.pending,
         pendingErr: d.manifest ? null : (d.manifestError || cur.pendingErr),
         artHints: (d.artHints && d.artHints.length) ? d.artHints : cur.artHints
-      }), () => this.saveChats(slug));
+      }), () => { this.saveChats(slug); this.scrollChat(); });
     }).catch(e => {
       this.watchChatLive(false);
       this.setState(cur => ({ chatBusy: false,
         chats: Object.assign({}, cur.chats, { [role]: (cur.chats[role] || []).concat([{ role: 'assistant', content: '✕ ' + ((e && e.message) || '请求失败') }]) }) }),
-        () => this.saveChats(slug));
+        () => { this.saveChats(slug); this.scrollChat(); });
     });
   }
 
@@ -819,7 +822,7 @@ class Component extends DCLogic {
     const text = (st.dsInput || '').trim();
     if (!text || st.dsBusy) return;
     const msgs = st.dsMsgs.concat([{ role: 'user', content: text }]);
-    this.setState({ dsMsgs: msgs, dsInput: '', dsBusy: true });
+    this.setState({ dsMsgs: msgs, dsInput: '', dsBusy: true }, () => this.scrollChat());
     this.watchChatLive(true);
     fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode: 'design-chat', messages: msgs, provider: this.provider() }) })
@@ -827,11 +830,11 @@ class Component extends DCLogic {
         this.watchChatLive(false);
         if (!d || !d.success) throw new Error((d && d.error) || '讨论失败');
         this.setState(cur => ({ dsBusy: false, dsReady: cur.dsReady || !!d.ready,
-          dsMsgs: msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）' }]) }));
+          dsMsgs: msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）' }]) }), () => this.scrollChat());
       }).catch(e => {
         this.watchChatLive(false);
         this.setState({ dsBusy: false,
-          dsMsgs: msgs.concat([{ role: 'assistant', content: '✕ ' + ((e && e.message) || '请求失败') }]) });
+          dsMsgs: msgs.concat([{ role: 'assistant', content: '✕ ' + ((e && e.message) || '请求失败') }]) }, () => this.scrollChat());
       });
   }
   dsBreakdown() {
@@ -911,6 +914,13 @@ class Component extends DCLogic {
   }
   fmt(n) { return n.toLocaleString('en-US'); }
   showToast(msg) { clearTimeout(this._t); this.setState({ toast: msg }); this._t = setTimeout(() => this.setState({ toast: null }), 2600); }
+  // 新消息后把对话区滚到底（渲染帧后执行·编辑工坊与设计先行两处 .chat-scroll 共用）。
+  scrollChat() {
+    const doc = typeof document !== 'undefined' ? document : null;
+    if (!doc) return;
+    const roll = () => doc.querySelectorAll('.chat-scroll').forEach(el => { el.scrollTop = el.scrollHeight; });
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(roll); else setTimeout(roll, 0);
+  }
 
   jelly(top, bottom, edge, fs) {
     return {
@@ -1297,7 +1307,7 @@ class Component extends DCLogic {
       dsPhaseDocs: s.createMode === 'design' && s.dsPhase === 'docs',
       dsChatMsgs, dsBusy: s.dsBusy,
       dsInput: s.dsInput, dsType: (e) => this.setState({ dsInput: e.target.value }),
-      dsKey: (e) => { if (e.key === 'Enter') this.dsSend(); },
+      dsKey: (e) => { if (e.key === 'Enter' && !e.shiftKey) { if (e.preventDefault) e.preventDefault(); this.dsSend(); } }, // Shift+Enter=换行
       dsSend: () => this.dsSend(),
       dsName: s.dsName, dsNameType: (e) => this.setState({ dsName: e.target.value }),
       dsBreakdown: () => this.dsBreakdown(),
@@ -1331,7 +1341,9 @@ class Component extends DCLogic {
       },
       dropPending: () => this.setState({ pending: null }),
       pendingErrText: s.pendingErr || '',
-      pickGd: () => this.setState({ chatRole: 'gd' }), pickPe: () => this.setState({ chatRole: 'pe' }), pickArt: () => this.setState({ chatRole: 'art' }),
+      pickGd: () => this.setState({ chatRole: 'gd' }, () => this.scrollChat()),
+      pickPe: () => this.setState({ chatRole: 'pe' }, () => this.scrollChat()),
+      pickArt: () => this.setState({ chatRole: 'art' }, () => this.scrollChat()),
       gdTabStyle: s.chatRole === 'gd' ? tabOn : tabOff, peTabStyle: s.chatRole === 'pe' ? tabOn : tabOff, artTabStyle: s.chatRole === 'art' ? tabOn : tabOff,
       chatRoleHint: { gd: '玩法 / 数值 / 内容 / 节奏', art: '风格 / 台账 art-NN / 皮肤槽', pe: '结构 / 组件 / 能力接线' }[s.chatRole],
       modelChips, effortChips,
@@ -1339,7 +1351,7 @@ class Component extends DCLogic {
       artHintText: (s.artHints || []).join('、'),
       chatInput: s.chatInput,
       chatType: (e) => this.setState({ chatInput: e.target.value }),
-      chatKey: (e) => { if (e.key === 'Enter') this.sendChat(); },
+      chatKey: (e) => { if (e.key === 'Enter' && !e.shiftKey) { if (e.preventDefault) e.preventDefault(); this.sendChat(); } }, // Shift+Enter=换行
       chatPlaceholder: { gd: '跟策划聊：玩法手感 / 数值 / 关卡 / 节奏…', art: '跟美术聊：风格方向 / 点名 art-NN 重做 / 换皮肤槽…', pe: '跟程序聊：加实体 / 组件 / 能力接线…' }[s.chatRole],
       sendChat: () => this.sendChat(), sendBtnStyle: send.style, sendBtnActive: send.active,
       applyBtnStyle: apply.style, applyBtnActive: apply.active,
