@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@500;600;700;800&family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:'Baloo 2','Noto Sans SC',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:#1f86bd;text-decoration:none}a:hover{color:#37b6ef}
+  ::selection{background:#ffd257;color:#3a2312}
+  .scr::-webkit-scrollbar{width:10px}.scr::-webkit-scrollbar-track{background:transparent}.scr::-webkit-scrollbar-thumb{background:rgba(58,35,18,.28);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+  @keyframes drift{from{transform:translateX(0)}to{transform:translateX(50px)}}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pop{0%{transform:scale(.85);opacity:0}70%{transform:scale(1.03)}100%{transform:scale(1);opacity:1}}
+  @keyframes toastin{0%{transform:translate(-50%,20px);opacity:0}100%{transform:translate(-50%,0);opacity:1}}
+</style>
+</helmet>
+
+<div style="position:relative;min-height:100%;background:linear-gradient(180deg,#7dd3fb 0%,#5cc0f2 60%,#84d0f4 100%);overflow:hidden;font-family:'Baloo 2','Noto Sans SC',sans-serif;display:flex;justify-content:center;align-items:flex-start;padding:30px 20px 46px">
+  <div style="position:absolute;top:70px;left:-30px;width:220px;height:66px;background:rgba(255,255,255,.8);border-radius:60px;animation:drift 11s ease-in-out infinite alternate;pointer-events:none"></div>
+  <div style="position:absolute;top:300px;right:-20px;width:160px;height:52px;background:rgba(255,255,255,.6);border-radius:50px;animation:drift 13s ease-in-out infinite alternate;pointer-events:none"></div>
+
+  <!-- ===== DESKTOP WINDOW ===== -->
+  <div style="position:relative;width:1280px;max-width:100%;height:800px;background:#2a1a0d;border:5px solid #3a2312;border-radius:26px;padding:5px;box-shadow:0 16px 0 rgba(0,0,0,.32),0 34px 60px rgba(0,0,0,.42);flex:none">
+    <div style="width:100%;height:100%;border-radius:21px;overflow:hidden;display:flex">
+
+      <!-- ===== SIDEBAR ===== -->
+      <div style="flex:none;width:236px;background:repeating-linear-gradient(180deg,#c88a52 0 11px,#bd7f47 11px 22px);border-right:4px solid #3a2312;box-shadow:inset -6px 0 0 rgba(0,0,0,.18),inset 0 4px 0 rgba(255,255,255,.25);display:flex;flex-direction:column;padding:20px 16px">
+        <!-- logo -->
+        <div style="text-align:center;margin-bottom:22px">
+          <div style="display:inline-block;background:linear-gradient(180deg,#ffe08a,#f5b731);border:3px solid #3a2312;border-radius:14px;padding:9px 16px;box-shadow:0 5px 0 #c98a1e,inset 0 2px 0 rgba(255,255,255,.6)">
+            <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:24px;line-height:1;color:#fff5db;-webkit-text-stroke:3px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e">爱萌互动</div>
+            <div style="font-family:'Fredoka';font-weight:700;font-size:9px;letter-spacing:.14em;color:#8a5a1c;margin-top:2px">APOLLO ENGINE</div>
+          </div>
+        </div>
+        <!-- nav -->
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <button onClick="{{ goGames }}" style="{{ navGamesStyle }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"><path d="M3 11 L12 4 L21 11"/><path d="M5 10 V20 H19 V10"/></svg>
+            <span>我的游戏库</span>
+          </button>
+          <button onClick="{{ goAssets }}" style="{{ navAssetsStyle }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M4 17 l5-4 4 3 3-2 4 3"/></svg>
+            <span>素材库</span>
+          </button>
+          <button onClick="{{ goPublish }}" style="{{ navPublishStyle }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3 C16 6 17 11 15 16 H9 C7 11 8 6 12 3 Z"/><circle cx="12" cy="9" r="1.6"/><path d="M9 16 L6 20 M15 16 L18 20"/></svg>
+            <span>发布</span>
+          </button>
+          <button onClick="{{ goSettings }}" style="{{ navSettingsStyle }}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><circle cx="12" cy="12" r="3.4"/><path d="M12 2 v3 M12 19 v3 M2 12 h3 M19 12 h3 M5 5 l2 2 M17 17 l2 2 M19 5 l-2 2 M7 17 l-2 2"/></svg>
+            <span>设置</span>
+          </button>
+        </div>
+        <div style="flex:1"></div>
+        <!-- account -->
+        <div style="display:flex;align-items:center;gap:9px;background:rgba(58,35,18,.35);border:2.5px solid #3a2312;border-radius:14px;padding:8px 10px">
+          <span style="width:36px;height:36px;border-radius:10px;border:2.5px solid #3a2312;background:linear-gradient(180deg,#5fcdf5,#37b6ef);display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:16px;flex:none">豆</span>
+          <div style="line-height:1.15"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:14px;color:#fff5db;-webkit-text-stroke:2px #3a2312;paint-order:stroke fill">豆包工作室</div><div style="font-family:'Fredoka';font-weight:700;font-size:9px;color:#f3e2c4">Lv.14 · Studio</div></div>
+        </div>
+      </div>
+
+      <!-- ===== MAIN ===== -->
+      <div style="flex:1;display:flex;flex-direction:column;background:linear-gradient(180deg,#8ad4f7,#5cc0f2 45%,#8fd0f5)">
+        <!-- topbar -->
+        <div style="flex:none;display:flex;align-items:center;gap:14px;padding:16px 22px;border-bottom:4px solid #3a2312;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,.12))">
+          <div style="min-width:0">
+            <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:24px;line-height:1;color:#fff5db;-webkit-text-stroke:3.5px #3a2312;paint-order:stroke fill;text-shadow:0 3px 0 #c98a1e,0 5px 5px rgba(0,0,0,.22)">{{ pageTitle }}</div>
+            <div style="font-family:'Fredoka';font-weight:700;font-size:11px;color:rgba(26,79,110,.85);letter-spacing:.08em;margin-top:3px">{{ pageSub }}</div>
+          </div>
+          <div style="flex:1"></div>
+          <!-- search -->
+          <div style="display:flex;align-items:center;gap:8px;background:linear-gradient(180deg,#f7e6c0,#efd79e);border:3px solid #3a2312;border-radius:12px;padding:8px 14px;width:220px;box-shadow:inset 0 2px 4px rgba(58,35,18,.2)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a5a2c" stroke-width="3" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15.5" y2="15.5"/></svg>
+            <span style="font-family:'Noto Sans SC';font-weight:600;color:#a07a45;font-size:13px">搜索模板 / 素材…</span>
+          </div>
+          <!-- currencies -->
+          <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;align-items:center;gap:6px;background:linear-gradient(180deg,#4a3320,#2e1d0e);border:3px solid #3a2312;border-radius:999px;padding:4px 7px 4px 5px;box-shadow:0 4px 0 rgba(0,0,0,.35)">
+              <span style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe89a,#ffd257 55%,#e0a71f);border:2.5px solid #3a2312;display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#a06a12;font-size:13px">$</span>
+              <span style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:14px;min-width:46px">{{ coinsFmt }}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;background:linear-gradient(180deg,#4a3320,#2e1d0e);border:3px solid #3a2312;border-radius:999px;padding:4px 7px 4px 5px;box-shadow:0 4px 0 rgba(0,0,0,.35)">
+              <span style="width:26px;height:26px;border-radius:50%;background:#3a2312;border:2.5px solid #3a2312;display:flex;align-items:center;justify-content:center"><svg width="16" height="17" viewBox="0 0 100 110"><polygon points="50,5 89,35 70,105 30,105 11,35" fill="#37b6ef" stroke="#0e4f73" stroke-width="7" stroke-linejoin="round"/><polygon points="50,8 84,35 50,46 16,35" fill="rgba(255,255,255,.55)"/></svg></span>
+              <span style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:14px;min-width:30px">{{ gemsFmt }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- content -->
+        <div class="scr" style="flex:1;overflow-y:auto;padding:24px 26px 34px">
+
+          <!-- ---------- MY GAMES (home) ---------- -->
+          <sc-if value="{{ isGames }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+              <div style="display:inline-flex;align-items:center;gap:8px;background:#37b6ef;border:3px solid #3a2312;border-radius:12px;padding:6px 14px;box-shadow:0 4px 0 #1f86bd">
+                <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">在研项目 · 点「新建游戏」从 AI 或模板库开始</span>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+              <!-- new game ghost card FIRST -->
+              <button onClick="{{ goNewGame }}" style="border-radius:20px;border:4px dashed rgba(58,35,18,.45);background:rgba(255,255,255,.4);min-height:214px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;transition:transform .12s" style-hover="{{ cardHover }}">
+                <span style="width:64px;height:64px;border-radius:50%;background:linear-gradient(180deg,#8fe05a,#6cbf37);border:4px solid #3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;font-size:38px;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 0 #4e8a24,inset 0 2px 0 rgba(255,255,255,.5)">＋</span>
+                <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:19px;color:#3a2312">新建游戏</span>
+                <span style="font-family:'Fredoka';font-weight:700;font-size:11px;color:#8a5a2c;letter-spacing:.06em">AI · TEMPLATE</span>
+              </button>
+              <!-- existing projects -->
+              <sc-for list="{{ myGames }}" as="g" hint-placeholder-count="5">
+                <div style="border-radius:20px;overflow:hidden;background:#fff;border:4px solid #3a2312;box-shadow:0 6px 0 rgba(58,35,18,.28),0 12px 18px rgba(0,0,0,.16);transition:transform .12s" style-hover="{{ cardHover }}">
+                  <div style="{{ g.coverStyle }}">
+                    <div style="width:110px;height:88px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 0 rgba(58,35,18,.35))">{{ g.cover }}</div>
+                    <span style="{{ g.badgeStyle }}">{{ g.status }}</span>
+                    <span style="position:absolute;bottom:8px;left:8px;background:rgba(58,35,18,.6);border:2px solid #3a2312;border-radius:8px;padding:2px 8px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db">{{ g.tag }}</span>
+                  </div>
+                  <div style="padding:11px 13px 12px;background:linear-gradient(180deg,#fffdf5,#fff0cf);border-top:3px solid #3a2312">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                      <div style="min-width:0">
+                        <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312;line-height:1.05">{{ g.cn }}</div>
+                        <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#b0723a">{{ g.meta }}</div>
+                      </div>
+                      <button style="{{ editBtnStyle }}" style-active="{{ editBtnActive }}">编辑</button>
+                    </div>
+                    <div style="height:9px;background:#e7d9b8;border:2px solid #3a2312;border-radius:999px;overflow:hidden;margin-top:9px"><div style="{{ g.progStyle }}"></div></div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- ---------- NEW GAME CHOOSER ---------- -->
+          <sc-if value="{{ isNewGame }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ goGames }}" style="{{ backBtnStyle }}" style-active="{{ backBtnActive }}">← 返回游戏库</button>
+            <div style="text-align:center;margin:8px 0 26px">
+              <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:26px;color:#fff5db;-webkit-text-stroke:3.5px #3a2312;paint-order:stroke fill;text-shadow:0 3px 0 #c98a1e">怎么开始你的新游戏？</div>
+              <div style="font-family:'Fredoka';font-weight:700;font-size:13px;color:rgba(26,79,110,.85);margin-top:4px">CHOOSE A STARTING POINT</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:760px;margin:0 auto">
+              <!-- AI path -->
+              <button onClick="{{ goCreate }}" style="text-align:center;border-radius:24px;border:4px solid #3a2312;background:linear-gradient(180deg,#c9b6f0,#9a7ce0);padding:30px 22px 26px;cursor:pointer;box-shadow:0 7px 0 #6a4fb0,0 14px 20px rgba(0,0,0,.2),0 0 26px rgba(180,140,255,.4);transition:transform .12s" style-hover="{{ cardHover }}">
+                <div style="width:88px;height:88px;margin:0 auto 14px;border-radius:22px;border:4px solid #3a2312;background:linear-gradient(180deg,#efe0ff,#d8bdf5);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.6)"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#8f2fa8" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3 l2.2 5.8 L20 11 l-5.8 2.2 L12 19 l-2.2-5.8 L4 11 l5.8-2.2 Z"/></svg></div>
+                <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:22px;color:#fff5db;-webkit-text-stroke:3px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #6a4fb0">AI 新建</div>
+                <div style="font-family:'Noto Sans SC';font-weight:600;font-size:13px;color:#3a2360;line-height:1.5;margin-top:8px">说一句创意，引擎自动生成美术、关卡与玩法框架</div>
+              </button>
+              <!-- template path -->
+              <button onClick="{{ goTemplates }}" style="text-align:center;border-radius:24px;border:4px solid #3a2312;background:linear-gradient(180deg,#bfe6a0,#7ecb45);padding:30px 22px 26px;cursor:pointer;box-shadow:0 7px 0 #4e8a24,0 14px 20px rgba(0,0,0,.2);transition:transform .12s" style-hover="{{ cardHover }}">
+                <div style="width:88px;height:88px;margin:0 auto 14px;border-radius:22px;border:4px solid #3a2312;background:linear-gradient(180deg,#eafbe0,#cbeeb2);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.6)"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#4e8a24" stroke-width="2.4" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+                <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:22px;color:#fff5db;-webkit-text-stroke:3px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #4e8a24">从模板库选择</div>
+                <div style="font-family:'Noto Sans SC';font-weight:600;font-size:13px;color:#2c5a18;line-height:1.5;margin-top:8px">挑一个品类 sample（三消 / 塔防 / 卡牌…）快速起步</div>
+              </button>
+            </div>
+          </sc-if>
+
+          <!-- ---------- TEMPLATES ---------- -->
+          <sc-if value="{{ isTemplates }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ goNewGame }}" style="{{ backBtnStyle }}" style-active="{{ backBtnActive }}">← 返回选择</button>
+            <div style="display:inline-flex;align-items:center;gap:8px;background:#37b6ef;border:3px solid #3a2312;border-radius:12px;padding:6px 14px;box-shadow:0 4px 0 #1f86bd;margin:6px 0 18px">
+              <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">选一个品类 sample 开始开发 · 全部套用同一套 Supercell × Disney 混搭基调</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+              <sc-for list="{{ templates }}" as="t" hint-placeholder-count="9">
+                <div style="border-radius:20px;overflow:hidden;background:#fff;border:4px solid #3a2312;box-shadow:0 6px 0 rgba(58,35,18,.28),0 12px 18px rgba(0,0,0,.16);transition:transform .12s" style-hover="{{ cardHover }}">
+                  <div style="{{ t.coverStyle }}">
+                    <div style="width:120px;height:96px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 0 rgba(58,35,18,.35))">{{ t.cover }}</div>
+                    <span style="position:absolute;top:8px;left:8px;background:#fff5db;border:2.5px solid #3a2312;border-radius:9px;padding:2px 9px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#3a2312">{{ t.tag }}</span>
+                    <span style="position:absolute;top:8px;right:8px;background:#7ecb45;border:2.5px solid #3a2312;border-radius:9px;padding:2px 8px;font-family:'Noto Sans SC';font-weight:700;font-size:10px;color:#fff5db">sample</span>
+                  </div>
+                  <div style="padding:12px 13px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:linear-gradient(180deg,#fffdf5,#fff0cf);border-top:3px solid #3a2312">
+                    <div style="min-width:0">
+                      <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#3a2312;line-height:1.05">{{ t.cn }}</div>
+                      <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#b0723a;letter-spacing:.04em">{{ t.en }}</div>
+                    </div>
+                    <button style="{{ useBtnStyle }}" style-active="{{ useBtnActive }}" onClick="{{ t.use }}">选用</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- ---------- CREATE ---------- -->
+          <sc-if value="{{ isCreate }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ goNewGame }}" style="{{ backBtnStyle }}" style-active="{{ backBtnActive }}">← 返回选择</button>
+            <div style="display:grid;grid-template-columns:1.15fr .85fr;gap:22px;align-items:start;margin-top:6px">
+              <div>
+                <div style="background:linear-gradient(180deg,#f7e6c0,#efd79e);border:4px solid #3a2312;border-radius:22px;padding:20px;box-shadow:0 6px 0 rgba(58,35,18,.3),inset 0 3px 0 rgba(255,255,255,.4)">
+                  <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#5a3d1e;margin-bottom:10px">说一句创意，引擎来生成 →</div>
+                  <div style="min-height:96px;font-family:'Noto Sans SC';font-weight:600;color:#5a3d1e;font-size:16px;line-height:1.55;background:rgba(255,255,255,.4);border:2px dashed rgba(58,35,18,.3);border-radius:12px;padding:12px">{{ promptText }}</div>
+                  <div style="display:flex;justify-content:flex-end;margin-top:12px">
+                    <button style="{{ genBtnStyle }}" style-active="{{ genBtnActive }}" onClick="{{ generate }}"><span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px">{{ genLabel }}</span></button>
+                  </div>
+                </div>
+                <sc-if value="{{ generating }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:18px;background:#fffdf5;border:3px solid #3a2312;border-radius:18px;padding:18px;box-shadow:0 5px 0 rgba(58,35,18,.2)">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                      <span style="width:28px;height:28px;border:4px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span>
+                      <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#3a2312">{{ genStage }}</span>
+                      <span style="margin-left:auto;font-family:'Fredoka';font-weight:700;color:#7ecb45;font-size:18px">{{ genPct }}%</span>
+                    </div>
+                    <div style="height:24px;background:linear-gradient(180deg,#3a2312,#5a4028);border:3px solid #3a2312;border-radius:999px;overflow:hidden;box-shadow:inset 0 3px 4px rgba(0,0,0,.5)"><div style="{{ genFillStyle }}"></div></div>
+                  </div>
+                </sc-if>
+              </div>
+              <div>
+                <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#fff5db;-webkit-text-stroke:3px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e;margin-bottom:12px">灵感示例 · 点一下填入</div>
+                <div style="display:flex;flex-direction:column;gap:11px">
+                  <sc-for list="{{ ideas }}" as="i" hint-placeholder-count="4">
+                    <button onClick="{{ i.pick }}" style="text-align:left;display:flex;align-items:center;gap:12px;background:#fffdf5;border:3px solid #3a2312;border-radius:16px;padding:12px 14px;cursor:pointer;box-shadow:0 4px 0 rgba(58,35,18,.18)">
+                      <span style="{{ i.iconStyle }}">{{ i.emoji }}</span>
+                      <span style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:14px;line-height:1.4">{{ i.text }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- ---------- ASSETS ---------- -->
+          <sc-if value="{{ isAssets }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+              <sc-for list="{{ catTabs }}" as="t" hint-placeholder-count="5">
+                <button onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px">
+              <sc-for list="{{ assets }}" as="a" hint-placeholder-count="12">
+                <div style="border-radius:16px;overflow:hidden;border:3px solid #ffd257;box-shadow:0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312;background:#fff">
+                  <div style="{{ a.coverStyle }}"><svg width="46" height="50" viewBox="0 0 100 110"><polygon points="50,6 88,36 70,104 30,104 12,36" fill="{{ a.glyph }}" stroke="#3a2312" stroke-width="7" stroke-linejoin="round"/><polygon points="50,9 84,36 50,47 16,36" fill="rgba(255,255,255,.55)"/></svg></div>
+                  <div style="padding:6px 6px 8px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
+                    <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:12px;line-height:1.1">{{ a.cn }}</div>
+                    <div style="font-family:'Fredoka';font-weight:700;color:#b0723a;font-size:9px">{{ a.cat }} · PNG</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- ---------- PUBLISH ---------- -->
+          <sc-if value="{{ isPublish }}" hint-placeholder-val="{{ false }}">
+            <div style="max-width:840px">
+              <div style="display:flex;align-items:center;gap:14px;background:#fffdf5;border:3px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 4px 0 rgba(58,35,18,.2);margin-bottom:20px">
+                <div style="width:60px;height:60px;border-radius:14px;border:3px solid #3a2312;background:linear-gradient(180deg,#ffd0e4,#ff9ec4);display:flex;align-items:center;justify-content:center;flex:none"><svg width="40" height="34" viewBox="0 0 90 72"><g stroke="#3a2312" stroke-width="5"><circle cx="24" cy="24" r="14" fill="#ef5138"/><circle cx="60" cy="24" r="14" fill="#ffd257"/><circle cx="42" cy="52" r="14" fill="#37b6ef"/></g></svg></div>
+                <div style="flex:1"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#3a2312">糖果消消乐 · 项目</div><div style="font-family:'Fredoka';font-weight:700;color:#7ecb45;font-size:12px">v1.2 · 60 关 · 就绪</div></div>
+              </div>
+              <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#fff5db;-webkit-text-stroke:3px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e;margin-bottom:12px">选择导出平台</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+                <sc-for list="{{ platforms }}" as="p" hint-placeholder-count="4">
+                  <button onClick="{{ p.toggle }}" style="{{ p.style }}" style-active="{{ p.active }}">
+                    <span style="font-size:30px;line-height:1">{{ p.icon }}</span>
+                    <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px">{{ p.cn }}</span>
+                    <span style="{{ p.checkStyle }}">✓</span>
+                  </button>
+                </sc-for>
+              </div>
+              <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:16px;padding:18px;box-shadow:0 4px 0 rgba(58,35,18,.2);margin-bottom:20px">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative">
+                  <div style="position:absolute;top:11px;left:15%;right:15%;height:4px;background:rgba(58,35,18,.2);border-radius:4px"></div>
+                  <sc-for list="{{ lamps }}" as="l" hint-placeholder-count="3">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;position:relative">
+                      <span style="{{ l.dotStyle }}"></span>
+                      <span style="font-family:'Noto Sans SC';font-weight:700;font-size:13px;color:#3a2312">{{ l.cn }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <button style="{{ publishBtnStyle }}" style-active="{{ publishBtnActive }}" onClick="{{ startPublish }}">
+                <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:24px">{{ publishLabel }}</span>
+                <span style="font-family:'Fredoka';font-weight:700;font-size:12px;opacity:.85">EXPORT &amp; PUBLISH</span>
+              </button>
+            </div>
+          </sc-if>
+
+          <!-- ---------- SETTINGS ---------- -->
+          <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+            <div style="max-width:720px">
+              <div style="display:flex;align-items:center;gap:14px;background:repeating-linear-gradient(180deg,#c88a52 0 10px,#bd7f47 10px 20px);border:4px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.3),inset 0 -6px 0 rgba(0,0,0,.18);margin-bottom:16px">
+                <div style="width:56px;height:56px;border-radius:14px;border:3px solid #3a2312;background:linear-gradient(180deg,#5fcdf5,#37b6ef);display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:24px;flex:none">豆</div>
+                <div><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:19px;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill">豆包工作室</div><div style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:12px;opacity:.9">Lv.14 · Studio 版</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:12px">
+                <div style="flex:1"><div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px">API 密钥</div><div style="font-family:ui-monospace,Menlo,monospace;color:#8a5a2c;font-size:13px;letter-spacing:.04em">sk-cloud-••••••••3a2f</div></div>
+                <button style="{{ copyBtnStyle }}" style-active="{{ copyBtnActive }}" onClick="{{ copyKey }}">{{ copyLabel }}</button>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:14px">
+                <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;justify-content:space-between;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:13px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18)">
+                    <div><span style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px">{{ t.cn }}</span> <span style="font-family:'Fredoka';font-weight:700;color:#b0723a;font-size:10px">{{ t.en }}</span></div>
+                    <button onClick="{{ t.flip }}" style="{{ t.trackStyle }}"><span style="{{ t.knobStyle }}"></span></button>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18)">
+                <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px;margin-bottom:10px">画质 Quality</div>
+                <div style="display:flex;gap:6px;background:#efd79e;border:2px solid #3a2312;border-radius:12px;padding:4px">
+                  <sc-for list="{{ quality }}" as="q" hint-placeholder-count="3"><button onClick="{{ q.pick }}" style="{{ q.style }}">{{ q.label }}</button></sc-for>
+                </div>
+              </div>
+              <div style="text-align:center;font-family:'Fredoka';font-weight:600;color:rgba(26,79,110,.8);font-size:12px;padding:16px 0 0">爱萌互动 APOLLO ENGINE v1.0 · Supercell × Disney · 全部模板共用同一套令牌</div>用同一套令牌</div>
+            </div>
+          </sc-if>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- toast -->
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;bottom:28px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,#fffdf5,#fff0cf);border:4px solid #3a2312;border-radius:16px;padding:13px 24px;box-shadow:0 7px 0 rgba(58,35,18,.3),0 14px 20px rgba(0,0,0,.3);display:flex;align-items:center;gap:12px;animation:toastin .25s ease-out both;z-index:60">
+        <span style="width:30px;height:30px;border-radius:50%;background:#7ecb45;border:3px solid #3a2312;color:#fff5db;display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;font-size:16px">✓</span>
+        <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312">{{ toast }}</span>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'games',
+    coins: 12480, gems: 340,
+    prompt: '一款太空题材的竖版飞机大战，卡通风，有护盾和火力道具，一个大 Boss。',
+    generating: false, genPct: 0, done: false,
+    activeCat: '全部',
+    platforms: { iOS: true, Android: true, Web: false, MP: false },
+    publishing: false, publishStep: 0,
+    sound: true, notif: true, autosave: true,
+    quality: '高', copied: false, toast: null
+  };
+
+  componentWillUnmount() { clearInterval(this._g); clearInterval(this._p); clearTimeout(this._t); }
+
+  jelly(top, bottom, edge, fs) {
+    return {
+      style: { display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: '12px 26px', borderRadius: '16px', border: '3px solid #3a2312',
+        background: 'linear-gradient(180deg,' + top + ',' + bottom + ')', color: '#fff5db', cursor: 'pointer', lineHeight: '1',
+        boxShadow: '0 6px 0 ' + edge + ', 0 10px 12px rgba(0,0,0,.26), inset 0 3px 0 rgba(255,255,255,.55), inset 0 -6px 0 rgba(0,0,0,.18)',
+        textShadow: '0 2px 0 rgba(0,0,0,.28)', transition: 'transform .06s, box-shadow .06s', transform: 'translateY(0)', fontSize: (fs || 18) + 'px' },
+      active: { transform: 'translateY(4px)', boxShadow: '0 2px 0 ' + edge + ', 0 3px 6px rgba(0,0,0,.28), inset 0 3px 0 rgba(255,255,255,.5), inset 0 -4px 0 rgba(0,0,0,.18)' }
+    };
+  }
+  fmt(n) { return n.toLocaleString('en-US'); }
+  showToast(msg) { clearTimeout(this._t); this.setState({ toast: msg }); this._t = setTimeout(() => this.setState({ toast: null }), 2200); }
+
+  covers() {
+    const h = React.createElement;
+    const S = { width: '100%', height: '100%' };
+    const vb = (v, kids) => h('svg', { viewBox: v, style: S, preserveAspectRatio: 'xMidYMid meet' }, kids);
+    const P = (props) => Object.assign({ stroke: '#3a2312', strokeWidth: 5, strokeLinejoin: 'round' }, props);
+    const c = (cx, cy, r, f) => h('circle', P({ key: cx + '-' + cy + '-' + r, cx, cy, r, fill: f }));
+    const rc = (x, y, w, hh, f, rx) => h('rect', P({ key: 'r' + x + y + w, x, y, width: w, height: hh, fill: f, rx: rx || 3 }));
+    const pg = (pts, f, k) => h('polygon', P({ key: k || pts.slice(0, 6), points: pts, fill: f }));
+    const t = (x, y, s, f, fs) => h('text', { key: 't' + s, x, y, fill: f, fontFamily: 'Fredoka, sans-serif', fontWeight: 700, fontSize: fs || 30, textAnchor: 'middle', stroke: '#3a2312', strokeWidth: 1.5 }, s);
+    return {
+      m3: vb('0 0 100 100', [c(28, 30, 15, '#ef5138'), c(70, 28, 15, '#ffd257'), c(30, 72, 15, '#7ecb45'), c(72, 70, 15, '#37b6ef')]),
+      td: vb('0 0 100 100', [rc(30, 40, 40, 46, '#a9b0b8'), rc(24, 30, 14, 14, '#a9b0b8'), rc(62, 30, 14, 14, '#a9b0b8'), pg('50,10 74,36 26,36', '#ef5138')]),
+      shmup: vb('0 0 100 100', [pg('50,8 78,74 50,58 22,74', '#37b6ef'), pg('50,58 66,88 34,88', '#ffd257')]),
+      runner: vb('0 0 100 100', [pg('40,10 60,10 82,92 18,92', '#3a2a4a', 'road'), h('line', { key: 'ln', x1: 50, y1: 20, x2: 50, y2: 88, stroke: '#ffd257', strokeWidth: 5, strokeDasharray: '8 8' }), c(50, 46, 15, '#ffd257')]),
+      merge: vb('0 0 100 100', [c(26, 66, 12, '#7ecb45'), c(50, 54, 16, '#8fe05a'), c(76, 40, 20, '#aef07a'), pg('80,10 84,22 96,26 84,30 80,42 76,30 64,26 76,22', '#ffd257', 'spark')]),
+      bubble: vb('0 0 100 100', [c(28, 32, 16, '#ef5138'), c(66, 26, 16, '#7ecb45'), c(46, 64, 16, '#ffd257'), c(78, 62, 13, '#c14fe0'), h('ellipse', { key: 'sh', cx: 22, cy: 26, rx: 4, ry: 2.5, fill: 'rgba(255,255,255,.8)' })]),
+      n2048: vb('0 0 100 100', [rc(20, 22, 60, 56, '#ffd257', 14), t(50, 60, '2048', '#fff5db', 26)]),
+      idle: vb('0 0 100 100', [c(50, 44, 24, '#ffd257'), t(50, 54, '$', '#a06a12', 30), c(24, 82, 10, '#ffd257'), c(76, 82, 10, '#ffd257'), c(50, 88, 10, '#ffd257')]),
+      brick: vb('0 0 100 100', [rc(14, 20, 22, 12, '#ef5138'), rc(40, 20, 22, 12, '#ffd257'), rc(66, 20, 20, 12, '#37b6ef'), c(50, 58, 9, '#fff5db'), rc(30, 82, 40, 10, '#7ecb45', 5)]),
+      farm: vb('0 0 100 100', [c(24, 56, 13, '#ef5138'), rc(20, 36, 8, 10, '#7ecb45'), c(52, 60, 11, '#ffd257'), c(78, 56, 13, '#c14fe0'), rc(74, 36, 8, 10, '#7ecb45')])
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const titles = {
+      games: ['我的游戏库', 'MY GAMES · 在研项目'],
+      newgame: ['新建游戏', 'NEW GAME · 选择起点'],
+      templates: ['模板库', 'TEMPLATE LIBRARY · 品类 sample'],
+      create: ['AI 新建', 'DESCRIBE → GENERATE'],
+      assets: ['素材库', 'ASSET LIBRARY · 统一基调'],
+      publish: ['发布', 'EXPORT & PUBLISH'],
+      settings: ['设置', 'SETTINGS']
+    };
+
+    const navBase = (active) => ({
+      display: 'flex', alignItems: 'center', gap: '11px', padding: '11px 14px', borderRadius: '13px', cursor: 'pointer',
+      border: active ? '3px solid #3a2312' : '3px solid transparent',
+      background: active ? 'linear-gradient(180deg,#ffe08a,#f5b731)' : 'rgba(58,35,18,.12)',
+      color: active ? '#3a2312' : '#fff5db',
+      fontFamily: "'ZCOOL KuaiLe','Fredoka',sans-serif", fontSize: '17px',
+      boxShadow: active ? '0 4px 0 #c98a1e, inset 0 2px 0 rgba(255,255,255,.5)' : 'none',
+      textShadow: active ? 'none' : '0 1px 0 rgba(0,0,0,.4)', transition: 'all .12s'
+    });
+
+    const use = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 15);
+    use.style.padding = '9px 16px';
+    const tdefs = [
+      { k: 'm3', cn: '三消消除', en: 'MATCH-3', tag: '休闲', cover: ['#ffd0e4', '#ff9ec4'], p: '一款森林糖果三消，每 10 关一个 Boss 果冻。' },
+      { k: 'td', cn: '王国塔防', en: 'TOWER DEFENSE', tag: '策略', cover: ['#bfe6a0', '#7ecb45'], p: '中世纪王国塔防，5 种塔、精灵入侵、雪地关卡。' },
+      { k: 'shmup', cn: '飞机大战', en: 'SHMUP', tag: '射击', cover: ['#3a2a6a', '#5b3fa0'], p: '太空竖版飞机大战，护盾与火力道具，一个大 Boss。' },
+      { k: 'runner', cn: '跑酷', en: 'ENDLESS RUNNER', tag: '动作', cover: ['#8fb6e0', '#5c8fd2'], p: '地铁跑酷，三跑道躲火车，金币磁铁加速道具。' },
+      { k: 'merge', cn: '合成', en: 'MERGE', tag: '休闲', cover: ['#d6f7b0', '#9ee063'], p: '合成龙蛋，三条演进链，清障云雾解锁地块。' },
+      { k: 'bubble', cn: '泡泡龙', en: 'BUBBLE SHOOTER', tag: '休闲', cover: ['#c9f2ff', '#5cc0f2'], p: '深海泡泡龙，射相同颜色泡泡救小鱼。' },
+      { k: 'n2048', cn: '数字合成', en: '2048', tag: '益智', cover: ['#fff0c2', '#ffd257'], p: '宝石风 2048，4×4 棋盘，连击提示与撤销。' },
+      { k: 'idle', cn: '放置挂机', en: 'IDLE / CLICKER', tag: '放置', cover: ['#f4e0b0', '#e0b85a'], p: '挂机矿工，点击挖矿，离线收益与转生加成。' },
+      { k: 'brick', cn: '打砖块', en: 'BRICK BREAKER', tag: '动作', cover: ['#d6f1ff', '#a9e0fb'], p: '弹球打砖块，多球激光加宽道具，多硬度砖阵。' },
+      { k: 'farm', cn: '农场经营', en: 'FARM SIM', tag: '经营', cover: ['#bfe6ff', '#8fd858'], p: '海边小农场，种菜养鸡，订单板与仓库商店。' }
+    ];
+    const cv = this.covers();
+    const templates = tdefs.map(d => ({
+      cn: d.cn, en: d.en, tag: d.tag, cover: cv[d.k],
+      coverStyle: { position: 'relative', height: '128px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '3px solid #3a2312', background: 'linear-gradient(180deg,' + d.cover[0] + ',' + d.cover[1] + ')' },
+      use: () => { this.setState({ screen: 'create', prompt: d.p }); this.showToast('已选用「' + d.cn + '」模板，去描述细节'); }
+    }));
+
+    // my games (in-development projects)
+    const edit = this.jelly('#5fcdf5', '#37b6ef', '#1f86bd', 14); edit.style.padding = '7px 14px';
+    const back = this.jelly('#fffdf5', '#efe0c0', '#c9b98f', 14); back.style.padding = '8px 16px'; back.style.color = '#3a2312'; back.style.textShadow = 'none'; back.style.marginBottom = '4px';
+    const mgDefs = [
+      { k: 'm3', cn: '糖果消消乐', tag: '三消', status: '开发中', sc: ['#ffd0e4', '#ff9ec4'], meta: 'v1.2 · 60 关', prog: 78, done: false },
+      { k: 'td', cn: '王国塔防', tag: '塔防', status: '开发中', sc: ['#bfe6a0', '#7ecb45'], meta: 'v0.9 · 24 波', prog: 56, done: false },
+      { k: 'bubble', cn: '泡泡传说', tag: '泡泡', status: '已发布', sc: ['#c9f2ff', '#5cc0f2'], meta: 'v2.0 · 上架', prog: 100, done: true },
+      { k: 'merge', cn: '合成龙蛋', tag: '合成', status: '草稿', sc: ['#d6f7b0', '#9ee063'], meta: '概念 · 待完善', prog: 22, done: false },
+      { k: 'shmup', cn: '星际战机', tag: '飞机', status: '草稿', sc: ['#3a2a6a', '#5b3fa0'], meta: '概念 · AI 生成', prog: 34, done: false }
+    ];
+    const statusColor = { '开发中': ['#ffd257', '#3a2312', '#c98a1e'], '已发布': ['#7ecb45', '#fff5db', '#4e8a24'], '草稿': ['#c8c8c8', '#3a2312', '#8f8f8f'] };
+    const myGames = mgDefs.map(g => ({
+      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: cv[g.k],
+      coverStyle: { position: 'relative', height: '118px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '3px solid #3a2312', background: 'linear-gradient(180deg,' + g.sc[0] + ',' + g.sc[1] + ')' },
+      badgeStyle: { position: 'absolute', top: '8px', right: '8px', background: statusColor[g.status][0], color: statusColor[g.status][1], border: '2.5px solid #3a2312', borderRadius: '9px', padding: '2px 9px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '10px', boxShadow: '0 2px 0 ' + statusColor[g.status][2] },
+      progStyle: { height: '100%', width: g.prog + '%', background: g.done ? 'linear-gradient(180deg,#aef07a,#7ecb45)' : 'linear-gradient(180deg,#ffe08a,#f5b731)', borderRadius: '999px' }
+    }));
+
+    // create
+    const genBtn = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 20);
+    const genFillStyle = { height: '100%', width: s.genPct + '%', background: 'linear-gradient(180deg,#aef07a,#7ecb45)', borderRadius: '999px', boxShadow: 'inset 0 3px 0 rgba(255,255,255,.6)', transition: 'width .2s' };
+    const stages = ['解析创意…', '生成美术资产…', '搭建关卡…', '打包预览…'];
+    const genStage = s.done ? '完成！预览已就绪 🎉' : stages[Math.min(3, Math.floor(s.genPct / 25))];
+    const ideaData = [
+      { emoji: '🍬', text: '森林里的糖果三消，每 10 关一个 Boss 果冻。', c: '#ff9ec4' },
+      { emoji: '🏰', text: '中世纪王国塔防，5 种塔、精灵入侵、雪地关卡。', c: '#7ecb45' },
+      { emoji: '🚜', text: '海边小农场，种菜养鸡，帮邻居完成订单。', c: '#ffd257' },
+      { emoji: '🫧', text: '深海泡泡龙，射相同颜色泡泡救小鱼。', c: '#37b6ef' }
+    ];
+    const ideas = ideaData.map(d => ({ emoji: d.emoji, text: d.text,
+      iconStyle: { flex: 'none', width: '42px', height: '42px', borderRadius: '11px', border: '3px solid #3a2312', background: d.c, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', boxShadow: 'inset 0 2px 0 rgba(255,255,255,.4)' },
+      pick: () => this.setState({ prompt: d.text }) }));
+
+    // assets
+    const cats = ['全部', '角色', '场景', '道具', '特效'];
+    const catTabs = cats.map(c => ({ label: c,
+      style: { border: '3px solid #3a2312', borderRadius: '12px', padding: '8px 16px', cursor: 'pointer', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '14px',
+        background: s.activeCat === c ? 'linear-gradient(180deg,#8fe05a,#6cbf37)' : 'linear-gradient(180deg,#fffdf5,#fff0cf)',
+        color: s.activeCat === c ? '#fff5db' : '#3a2312',
+        boxShadow: s.activeCat === c ? '0 4px 0 #4e8a24' : '0 3px 0 rgba(58,35,18,.18)', textShadow: s.activeCat === c ? '0 1px 0 rgba(0,0,0,.25)' : 'none' },
+      pick: () => this.setState({ activeCat: c }) }));
+    const glyphByCat = { '角色': '#7ecb45', '场景': '#5cc0f2', '道具': '#ffd257', '特效': '#c14fe0' };
+    const coverByCat = { '角色': ['#eafbe0', '#c9f0aa'], '场景': ['#d6f1ff', '#a9e0fb'], '道具': ['#fff3cf', '#ffe08a'], '特效': ['#f4dcfb', '#e4b6f5'] };
+    const allAssets = [
+      { cn: '骑士', cat: '角色' }, { cn: '弓箭手', cat: '角色' }, { cn: '哥布林', cat: '角色' }, { cn: '法师', cat: '角色' },
+      { cn: '雪地', cat: '场景' }, { cn: '森林', cat: '场景' }, { cn: '城堡', cat: '场景' }, { cn: '海边', cat: '场景' },
+      { cn: '金币袋', cat: '道具' }, { cn: '护盾', cat: '道具' }, { cn: '炸弹', cat: '道具' }, { cn: '钥匙', cat: '道具' },
+      { cn: '爆炸', cat: '特效' }, { cn: '连击星', cat: '特效' }, { cn: '治疗光', cat: '特效' }, { cn: '升级环', cat: '特效' }
+    ];
+    const assets = allAssets.filter(a => s.activeCat === '全部' || a.cat === s.activeCat).map(a => ({
+      cn: a.cn, cat: a.cat, glyph: glyphByCat[a.cat],
+      coverStyle: { height: '78px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '2px solid #3a2312', background: 'linear-gradient(180deg,' + coverByCat[a.cat][0] + ',' + coverByCat[a.cat][1] + ')' }
+    }));
+
+    // publish
+    const pdefs = [{ k: 'iOS', cn: 'iOS', icon: '📱', c: ['#a9b0b8', '#7d858e'], ec: '#4a5058' }, { k: 'Android', cn: '安卓', icon: '🤖', c: ['#8fe05a', '#6cbf37'], ec: '#4e8a24' }, { k: 'Web', cn: 'Web', icon: '🌐', c: ['#5fcdf5', '#37b6ef'], ec: '#1f86bd' }, { k: 'MP', cn: '小程序', icon: '🧩', c: ['#ffdd6e', '#f5b731'], ec: '#c98a1e' }];
+    const platforms = pdefs.map(p => { const on = s.platforms[p.k]; return {
+      cn: p.cn, icon: p.icon,
+      style: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', padding: '18px 10px', borderRadius: '16px', cursor: 'pointer', border: '3px solid #3a2312', color: '#fff5db',
+        background: 'linear-gradient(180deg,' + p.c[0] + ',' + p.c[1] + ')',
+        boxShadow: on ? '0 5px 0 ' + p.ec + ', 0 0 0 3px #ffd257, inset 0 3px 0 rgba(255,255,255,.5)' : '0 5px 0 ' + p.ec + ', inset 0 3px 0 rgba(255,255,255,.5)',
+        opacity: on ? 1 : .7, transition: 'all .12s', textShadow: '0 2px 0 rgba(0,0,0,.28)' },
+      active: { transform: 'translateY(3px)' },
+      checkStyle: { position: 'absolute', top: '-9px', right: '-9px', width: '28px', height: '28px', borderRadius: '50%', background: on ? '#7ecb45' : '#c8c8c8', border: '3px solid #3a2312', color: '#fff5db', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Fredoka'", fontWeight: 700, fontSize: '14px', boxShadow: '0 2px 0 rgba(0,0,0,.3)' },
+      toggle: () => this.setState(st => ({ platforms: { ...st.platforms, [p.k]: !st.platforms[p.k] } })) }; });
+
+    const lampDefs = [{ cn: '打包', step: 1 }, { cn: '审核', step: 2 }, { cn: '上架', step: 3 }];
+    const lamps = lampDefs.map(l => { const active = s.publishStep >= l.step; const doing = s.publishing && s.publishStep === l.step - 1; return {
+      cn: l.cn, dotStyle: { width: '24px', height: '24px', borderRadius: '50%', border: '3px solid #3a2312',
+        background: active ? '#7ecb45' : (doing ? '#ffd257' : '#c8c8c8'),
+        boxShadow: active ? '0 0 10px rgba(126,203,69,.8), inset 0 2px 0 rgba(255,255,255,.5)' : 'inset 0 2px 0 rgba(255,255,255,.4)',
+        animation: doing ? 'bob 0.6s ease-in-out infinite' : 'none' } }; });
+    const pubBtn = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 24);
+    pubBtn.style.padding = '14px 44px';
+
+    // settings
+    const togDefs = [{ k: 'sound', cn: '音效', en: 'SOUND' }, { k: 'notif', cn: '通知', en: 'NOTIFY' }, { k: 'autosave', cn: '自动保存', en: 'AUTO-SAVE' }];
+    const toggles = togDefs.map(t => { const on = s[t.k]; return {
+      cn: t.cn, en: t.en,
+      trackStyle: { position: 'relative', width: '60px', height: '33px', borderRadius: '999px', border: '3px solid #3a2312', cursor: 'pointer', padding: 0,
+        background: on ? 'linear-gradient(180deg,#8fe05a,#6cbf37)' : 'linear-gradient(180deg,#c8c8c8,#a8a8a8)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,.3)', transition: 'background .15s' },
+      knobStyle: { position: 'absolute', top: '1px', left: on ? '28px' : '1px', width: '25px', height: '25px', borderRadius: '50%', background: '#fff5db', border: '2.5px solid #3a2312', boxShadow: '0 2px 0 rgba(0,0,0,.25)', transition: 'left .15s' },
+      flip: () => this.setState({ [t.k]: !s[t.k] }) }; });
+    const quality = ['低', '中', '高'].map(q => ({ label: q, style: { flex: '1', border: 'none', borderRadius: '9px', padding: '9px 0', cursor: 'pointer', fontFamily: "'Noto Sans SC'", fontWeight: 700, fontSize: '14px',
+      background: s.quality === q ? 'linear-gradient(180deg,#8fe05a,#6cbf37)' : 'transparent', color: s.quality === q ? '#fff5db' : '#8a5a2c', boxShadow: s.quality === q ? '0 3px 0 #4e8a24' : 'none' }, pick: () => this.setState({ quality: q }) }));
+    const copyBtn = this.jelly('#5fcdf5', '#37b6ef', '#1f86bd', 14);
+    copyBtn.style.padding = '9px 16px';
+
+    return {
+      pageTitle: titles[s.screen][0], pageSub: titles[s.screen][1],
+      coinsFmt: this.fmt(s.coins), gemsFmt: this.fmt(s.gems),
+      isGames: s.screen === 'games', isNewGame: s.screen === 'newgame',
+      isTemplates: s.screen === 'templates', isCreate: s.screen === 'create', isAssets: s.screen === 'assets', isPublish: s.screen === 'publish', isSettings: s.screen === 'settings',
+      navGamesStyle: navBase(s.screen === 'games' || s.screen === 'newgame' || s.screen === 'templates' || s.screen === 'create'), navAssetsStyle: navBase(s.screen === 'assets'), navPublishStyle: navBase(s.screen === 'publish'), navSettingsStyle: navBase(s.screen === 'settings'),
+      goGames: () => this.setState({ screen: 'games' }), goNewGame: () => this.setState({ screen: 'newgame' }),
+      goTemplates: () => this.setState({ screen: 'templates' }), goCreate: () => this.setState({ screen: 'create' }), goAssets: () => this.setState({ screen: 'assets' }), goPublish: () => this.setState({ screen: 'publish' }), goSettings: () => this.setState({ screen: 'settings' }),
+      myGames, editBtnStyle: edit.style, editBtnActive: edit.active, backBtnStyle: back.style, backBtnActive: back.active,
+      templates, cardHover: { transform: 'translateY(-6px)' }, useBtnStyle: use.style, useBtnActive: use.active,
+      promptText: s.prompt, generating: s.generating, genPct: s.genPct, genStage, genFillStyle,
+      genLabel: s.generating ? '生成中…' : '生成游戏', genBtnStyle: genBtn.style, genBtnActive: genBtn.active,
+      ideas,
+      catTabs, assets,
+      platforms, lamps,
+      publishLabel: s.publishStep >= 3 ? '已上架 ✓' : (s.publishing ? '发布中…' : '一键发布'), publishBtnStyle: pubBtn.style, publishBtnActive: pubBtn.active,
+      toggles, quality, copyLabel: s.copied ? '已复制' : '复制', copyBtnStyle: copyBtn.style, copyBtnActive: copyBtn.active,
+      toast: s.toast,
+      generate: () => {
+        if (s.generating) return;
+        clearInterval(this._g); this.setState({ generating: true, genPct: 0, done: false });
+        this._g = setInterval(() => this.setState(st => {
+          const n = st.genPct + 4;
+          if (n >= 100) { clearInterval(this._g); return { genPct: 100, done: true }; }
+          return { genPct: n };
+        }), 110);
+      },
+      startPublish: () => {
+        if (s.publishing || s.publishStep >= 3) { if (s.publishStep >= 3) this.showToast('游戏已上架！'); return; }
+        clearInterval(this._p); this.setState({ publishing: true, publishStep: 0 });
+        this._p = setInterval(() => this.setState(st => {
+          const n = st.publishStep + 1;
+          if (n >= 3) { clearInterval(this._p); this.showToast('发布成功，已上架！'); return { publishStep: 3, publishing: false }; }
+          return { publishStep: n };
+        }), 800);
+      },
+      copyKey: () => { this.setState({ copied: true }); clearTimeout(this._c); this._c = setTimeout(() => this.setState({ copied: false }), 1500); }
+    };
+  }
+}
+</script>
+</body>
+</html>

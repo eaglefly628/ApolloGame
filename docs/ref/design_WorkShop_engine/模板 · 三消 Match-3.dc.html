@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@500;600;700;800&family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}html,body{margin:0;padding:0}
+  body{font-family:'Baloo 2','Noto Sans SC',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#eaf6fd}
+  a{color:#1f86bd}a:hover{color:#37b6ef}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  @keyframes pop{0%{transform:scale(.85)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+  @keyframes twinkle{0%,100%{transform:scale(.5);opacity:.3}50%{transform:scale(1);opacity:1}}
+</style>
+</helmet>
+
+<div style="min-height:100%;background:radial-gradient(circle at 30% 0%,#8ad4f7,#5cc0f2 70%);padding:40px 46px 60px;font-family:'Baloo 2','Noto Sans SC',sans-serif">
+
+  <!-- HEADER -->
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:30px;flex-wrap:wrap">
+    <div style="width:66px;height:66px;border-radius:18px;border:4px solid #3a2312;background:linear-gradient(180deg,#ffd0e4,#ff9ec4);display:flex;align-items:center;justify-content:center;box-shadow:0 5px 0 rgba(58,35,18,.3)">
+      <svg width="40" height="36" viewBox="0 0 90 72"><g stroke="#3a2312" stroke-width="5"><circle cx="24" cy="24" r="14" fill="#ef5138"/><circle cx="60" cy="24" r="14" fill="#ffd257"/><circle cx="42" cy="52" r="14" fill="#37b6ef"/></g></svg>
+    </div>
+    <div>
+      <h1 style="margin:0;font-family:'ZCOOL KuaiLe','Fredoka';font-size:44px;line-height:1;color:#fff5db;-webkit-text-stroke:7px #3a2312;paint-order:stroke fill;text-shadow:0 5px 0 #c98a1e,0 8px 10px rgba(0,0,0,.28)">三消 · 糖果消消乐</h1>
+      <div style="font-family:'Fredoka';font-weight:700;font-size:16px;color:#1c4f6e;letter-spacing:.06em;margin-top:6px">MATCH-3 TEMPLATE · UI 框架 + HUD 标注 + 美术资源清单 · Supercell 基调</div>
+    </div>
+  </div>
+
+  <!-- ============ SCREENS ROW ============ -->
+  <div style="display:flex;gap:44px;flex-wrap:wrap;align-items:flex-start;margin-bottom:20px">
+
+    <!-- ---- PORTRAIT ---- -->
+    <div>
+      <div style="display:inline-block;background:#37b6ef;color:#fff5db;font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;border:3px solid #3a2312;border-radius:10px;padding:5px 14px;box-shadow:0 4px 0 #1f86bd;margin-bottom:14px">竖屏主界面 · 1080×1920</div>
+      <div style="display:flex;gap:22px;align-items:flex-start">
+        <!-- phone -->
+        <div style="position:relative;width:340px;height:604px;background:#2a1a0d;border-radius:38px;padding:9px;box-shadow:0 14px 0 rgba(0,0,0,.3),0 26px 44px rgba(0,0,0,.4);flex:none">
+          <div style="width:100%;height:100%;border-radius:30px;overflow:hidden;background:linear-gradient(180deg,#bfe6a0,#8fd066);display:flex;flex-direction:column">
+            <!-- HUD -->
+            <div style="flex:none;padding:16px 14px 12px;background:linear-gradient(180deg,#7ecb45,#5aa62f);border-bottom:4px solid #3a2312;box-shadow:inset 0 3px 0 rgba(255,255,255,.3)">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="position:relative">
+                  <button style="width:38px;height:38px;border-radius:11px;border:3px solid #3a2312;background:linear-gradient(180deg,#fffdf5,#efe0c0);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 rgba(58,35,18,.25);cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a2312" stroke-width="3" stroke-linecap="round"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+                  <span style="position:absolute;top:-9px;left:-6px;background:#37b6ef;border:2px solid #3a2312;border-radius:7px;padding:0 5px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db">①</span>
+                </div>
+                <!-- score/level -->
+                <div style="flex:1;text-align:center;position:relative">
+                  <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:15px;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e">第 24 关</div>
+                  <div style="font-family:'Fredoka';font-weight:700;font-size:22px;color:#fff5db;-webkit-text-stroke:3px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e;line-height:1">{{ score }}</div>
+                  <span style="position:absolute;top:-9px;right:6px;background:#37b6ef;border:2px solid #3a2312;border-radius:7px;padding:0 5px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db">②</span>
+                </div>
+                <!-- moves -->
+                <div style="position:relative;width:52px;height:52px;border-radius:14px;border:3px solid #3a2312;background:linear-gradient(180deg,#fffdf5,#efe0c0);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 0 rgba(58,35,18,.25)">
+                  <span style="font-family:'Fredoka';font-weight:700;font-size:22px;color:#ef5138;line-height:1">{{ moves }}</span>
+                  <span style="font-family:'Noto Sans SC';font-weight:700;font-size:9px;color:#8a5a2c">步数</span>
+                  <span style="position:absolute;top:-9px;right:-6px;background:#37b6ef;border:2px solid #3a2312;border-radius:7px;padding:0 5px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db">③</span>
+                </div>
+              </div>
+              <!-- target -->
+              <div style="position:relative;display:flex;align-items:center;gap:8px;justify-content:center;margin-top:10px;background:rgba(58,35,18,.22);border:2px solid #3a2312;border-radius:12px;padding:6px 10px">
+                <span style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#fff5db">目标</span>
+                <sc-for list="{{ targets }}" as="t" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:4px;background:#fff5db;border:2.5px solid #3a2312;border-radius:9px;padding:2px 7px 2px 3px">
+                    <span style="width:22px;height:22px">{{ t.el }}</span>
+                    <span style="font-family:'Fredoka';font-weight:700;font-size:13px;color:#3a2312">{{ t.count }}</span>
+                  </div>
+                </sc-for>
+                <span style="position:absolute;top:-9px;left:-6px;background:#37b6ef;border:2px solid #3a2312;border-radius:7px;padding:0 5px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db">④</span>
+              </div>
+            </div>
+            <!-- BOARD -->
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:12px;position:relative">
+              <div style="position:absolute;inset:0;pointer-events:none;opacity:.7">{{ sparkBoardP }}</div>
+              <span style="position:absolute;top:6px;right:8px;background:#37b6ef;border:2px solid #3a2312;border-radius:7px;padding:0 5px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db;z-index:2">⑤</span>
+              <div style="background:rgba(58,35,18,.28);border:4px solid #3a2312;border-radius:16px;padding:6px;box-shadow:inset 0 3px 8px rgba(0,0,0,.35)">
+                <div style="display:grid;grid-template-columns:repeat(8,32px);grid-auto-rows:32px;gap:2px">
+                  <sc-for list="{{ board }}" as="c" hint-placeholder-count="64">
+                    <div style="{{ c.cellStyle }}"><div style="width:88%;height:88%">{{ c.el }}</div></div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <!-- BOOSTERS -->
+            <div style="flex:none;padding:12px 16px 18px;background:linear-gradient(180deg,#7ecb45,#5aa62f);border-top:4px solid #3a2312;position:relative">
+              <span style="position:absolute;top:-9px;left:16px;background:#37b6ef;border:2px solid #3a2312;border-radius:7px;padding:0 5px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db">⑥</span>
+              <div style="display:flex;justify-content:space-around;gap:10px">
+                <sc-for list="{{ boosters }}" as="b" hint-placeholder-count="3">
+                  <button style="{{ b.style }}" style-active="{{ b.active }}">
+                    <span style="width:30px;height:30px">{{ b.el }}</span>
+                    <span style="position:absolute;bottom:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#ef5138;border:2.5px solid #3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center">{{ b.n }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- portrait legend -->
+        <div style="width:210px;display:flex;flex-direction:column;gap:9px;padding-top:40px">
+          <sc-for list="{{ legend }}" as="l" hint-placeholder-count="6">
+            <div style="display:flex;gap:9px;align-items:flex-start">
+              <span style="flex:none;width:22px;height:22px;border-radius:50%;background:#37b6ef;border:2.5px solid #3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center">{{ l.n }}</span>
+              <div><div style="font-family:'Noto Sans SC';font-weight:700;font-size:13px;color:#3a2312;line-height:1.2">{{ l.cn }}</div><div style="font-family:'Fredoka';font-weight:600;font-size:11px;color:#5a7a8c">{{ l.en }}</div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- LANDSCAPE ---- -->
+    <div>
+      <div style="display:inline-block;background:#c14fe0;color:#fff5db;font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;border:3px solid #3a2312;border-radius:10px;padding:5px 14px;box-shadow:0 4px 0 #8f2fa8;margin-bottom:14px">横屏主界面 · 1920×1080</div>
+      <div style="position:relative;width:620px;height:352px;background:#2a1a0d;border-radius:26px;padding:8px;box-shadow:0 14px 0 rgba(0,0,0,.3),0 26px 44px rgba(0,0,0,.4)">
+        <div style="width:100%;height:100%;border-radius:19px;overflow:hidden;background:linear-gradient(180deg,#bfe6a0,#8fd066);display:flex">
+          <!-- left HUD panel -->
+          <div style="flex:none;width:150px;padding:14px 12px;background:linear-gradient(180deg,#7ecb45,#5aa62f);border-right:4px solid #3a2312;display:flex;flex-direction:column;gap:10px">
+            <div style="text-align:center;background:rgba(58,35,18,.22);border:2px solid #3a2312;border-radius:12px;padding:8px 6px">
+              <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:13px;color:#fff5db;-webkit-text-stroke:2px #3a2312;paint-order:stroke fill">第 24 关</div>
+              <div style="font-family:'Fredoka';font-weight:700;font-size:24px;color:#fff5db;-webkit-text-stroke:3px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e;line-height:1.1">{{ score }}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;background:#fffdf5;border:3px solid #3a2312;border-radius:12px;padding:6px 10px;box-shadow:0 3px 0 rgba(58,35,18,.2)">
+              <span style="font-family:'Fredoka';font-weight:700;font-size:24px;color:#ef5138;line-height:1">{{ moves }}</span>
+              <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c">步数</span>
+            </div>
+            <div style="background:rgba(58,35,18,.22);border:2px solid #3a2312;border-radius:12px;padding:7px 8px">
+              <div style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#fff5db;margin-bottom:5px">目标</div>
+              <div style="display:flex;gap:6px">
+                <sc-for list="{{ targets }}" as="t" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:3px;background:#fff5db;border:2.5px solid #3a2312;border-radius:8px;padding:2px 6px 2px 2px">
+                    <span style="width:20px;height:20px">{{ t.el }}</span><span style="font-family:'Fredoka';font-weight:700;font-size:12px;color:#3a2312">{{ t.count }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <button style="margin-top:auto;width:38px;height:38px;border-radius:11px;border:3px solid #3a2312;background:linear-gradient(180deg,#fffdf5,#efe0c0);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 rgba(58,35,18,.25);cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a2312" stroke-width="3" stroke-linecap="round"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+          </div>
+          <!-- board center -->
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;position:relative">
+            <div style="position:absolute;inset:0;pointer-events:none;opacity:.7">{{ sparkBoardL }}</div>
+            <div style="position:relative;background:rgba(58,35,18,.28);border:4px solid #3a2312;border-radius:14px;padding:5px;box-shadow:inset 0 3px 8px rgba(0,0,0,.35)">
+              <div style="display:grid;grid-template-columns:repeat(8,32px);grid-auto-rows:32px;gap:2px">
+                <sc-for list="{{ board }}" as="c" hint-placeholder-count="64">
+                  <div style="{{ c.cellStyle }}"><div style="width:88%;height:88%">{{ c.el }}</div></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <!-- right boosters -->
+          <div style="flex:none;width:90px;padding:14px 10px;background:linear-gradient(180deg,#7ecb45,#5aa62f);border-left:4px solid #3a2312;display:flex;flex-direction:column;gap:12px;align-items:center">
+            <sc-for list="{{ boosters }}" as="b" hint-placeholder-count="3">
+              <button style="{{ b.style }}" style-active="{{ b.active }}">
+                <span style="width:30px;height:30px">{{ b.el }}</span>
+                <span style="position:absolute;bottom:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#ef5138;border:2.5px solid #3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center">{{ b.n }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#1c4f6e;margin-top:12px;max-width:620px;line-height:1.6">横屏把竖屏的顶部 HUD 拆成<strong>左信息栏</strong>（关卡/分数/步数/目标）+ 棋盘居中 + <strong>右道具栏</strong>；棋盘尺寸不变，两端留安全区。同一套精灵与令牌，无需重画美术。</div>
+    </div>
+  </div>
+
+  <!-- ============ SECONDARY SCREENS ============ -->
+  <div style="margin-top:34px">
+    <div style="display:inline-block;background:#ffd257;color:#3a2312;font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;border:3px solid #3a2312;border-radius:10px;padding:5px 14px;box-shadow:0 4px 0 #c98a1e;margin-bottom:18px">其他屏 · 关卡地图 / 结算 / 失败</div>
+    <div style="display:flex;gap:26px;flex-wrap:wrap">
+      <!-- level map -->
+      <div style="width:230px">
+        <div style="width:100%;height:300px;border:4px solid #3a2312;border-radius:22px;overflow:hidden;background:linear-gradient(180deg,#8ad4f7,#7ecb45);position:relative;box-shadow:0 6px 0 rgba(58,35,18,.25)">
+          <svg width="100%" height="100%" viewBox="0 0 230 300" style="position:absolute;inset:0"><path d="M40 280 C 120 250, 40 210, 130 190 S 60 130, 170 110 S 90 60, 150 30" fill="none" stroke="#c88a52" stroke-width="16" stroke-linecap="round"/><path d="M40 280 C 120 250, 40 210, 130 190 S 60 130, 170 110 S 90 60, 150 30" fill="none" stroke="#3a2312" stroke-width="20" stroke-linecap="round" opacity=".25"/></svg>
+          <sc-for list="{{ mapNodes }}" as="m" hint-placeholder-count="5">
+            <div style="{{ m.style }}">{{ m.label }}</div>
+          </sc-for>
+        </div>
+        <div style="text-align:center;font-family:'ZCOOL KuaiLe','Fredoka';font-size:15px;color:#3a2312;margin-top:8px">关卡地图 · Level Map</div>
+      </div>
+      <!-- win popup -->
+      <div style="width:250px">
+        <div style="width:100%;height:300px;border:4px solid #3a2312;border-radius:22px;background:rgba(20,10,4,.5);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 rgba(58,35,18,.25);overflow:hidden">
+          <div style="position:relative;width:200px;background:linear-gradient(180deg,#fffdf5,#fff0cf);border:4px solid #3a2312;border-radius:20px;padding:34px 16px 16px;box-shadow:0 8px 0 rgba(58,35,18,.3),0 0 26px rgba(255,220,130,.55)">
+            <div style="position:absolute;inset:0;overflow:hidden;border-radius:16px;pointer-events:none">{{ sparkWin }}</div>
+            <span style="position:absolute;top:-9px;left:-9px;width:42px;height:42px">{{ cornerA }}</span>
+            <span style="position:absolute;top:-9px;right:-9px;width:42px;height:42px;transform:scaleX(-1)">{{ cornerA }}</span>
+            <div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,#ffe08a,#f5b731);border:3px solid #3a2312;border-radius:12px;padding:6px 18px;box-shadow:0 4px 0 #c98a1e;white-space:nowrap"><span style="position:absolute;left:-12px;top:6px;width:15px;height:20px">{{ ribbonL }}</span><span style="position:absolute;right:-12px;top:6px;width:15px;height:20px;transform:scaleX(-1)">{{ ribbonR }}</span><span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e">关卡完成</span></div>
+            <div style="position:absolute;top:-14px;right:-10px;width:30px;height:30px;border-radius:50%;background:linear-gradient(180deg,#ff7a5f,#ef5138);border:3px solid #3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 #b8341f;font-size:15px">✕</div>
+            <div style="display:flex;justify-content:center;gap:4px;margin-bottom:12px"><span style="font-size:26px;filter:drop-shadow(0 2px 0 #c98a1e)">⭐</span><span style="font-size:34px;filter:drop-shadow(0 2px 0 #c98a1e)">⭐</span><span style="font-size:26px;filter:drop-shadow(0 2px 0 #c98a1e)">⭐</span></div>
+            <div style="text-align:center;font-family:'Fredoka';font-weight:700;font-size:22px;color:#3a2312;-webkit-text-stroke:1px #3a2312;margin-bottom:14px">{{ score }}</div>
+            <button style="{{ nextBtnStyle }}" style-active="{{ nextBtnActive }}">下一关</button>
+          </div>
+        </div>
+        <div style="text-align:center;font-family:'ZCOOL KuaiLe','Fredoka';font-size:15px;color:#3a2312;margin-top:8px">结算弹窗 · Win</div>
+      </div>
+      <!-- lose popup -->
+      <div style="width:250px">
+        <div style="width:100%;height:300px;border:4px solid #3a2312;border-radius:22px;background:rgba(20,10,4,.5);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 rgba(58,35,18,.25);overflow:hidden">
+          <div style="position:relative;width:200px;background:linear-gradient(180deg,#fffdf5,#fff0cf);border:4px solid #3a2312;border-radius:20px;padding:34px 16px 16px;box-shadow:0 8px 0 rgba(58,35,18,.3),0 0 26px rgba(242,120,159,.5)">
+            <div style="position:absolute;inset:0;overflow:hidden;border-radius:16px;pointer-events:none">{{ sparkLose }}</div>
+            <span style="position:absolute;top:-9px;left:-9px;width:42px;height:42px">{{ cornerA }}</span>
+            <span style="position:absolute;top:-9px;right:-9px;width:42px;height:42px;transform:scaleX(-1)">{{ cornerA }}</span>
+            <div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,#ff9a86,#ef5138);border:3px solid #3a2312;border-radius:12px;padding:6px 18px;box-shadow:0 4px 0 #b8341f;white-space:nowrap"><span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #b8341f">步数用尽</span></div>
+            <div style="text-align:center;font-family:'Noto Sans SC';font-weight:700;font-size:13px;color:#8a5a2c;margin:6px 0 12px">再来一次继续挑战</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:6px;background:#fff5db;border:2.5px solid #3a2312;border-radius:12px;padding:6px;margin-bottom:14px">
+              <span style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe89a,#ffd257 55%,#e0a71f);border:2.5px solid #3a2312;display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#a06a12;font-size:13px">$</span>
+              <span style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#3a2312">+5 步 · 900</span>
+            </div>
+            <button style="{{ retryBtnStyle }}" style-active="{{ retryBtnActive }}">再来一次</button>
+          </div>
+        </div>
+        <div style="text-align:center;font-family:'ZCOOL KuaiLe','Fredoka';font-size:15px;color:#3a2312;margin-top:8px">失败弹窗 · Lose</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ART ASSET LIST ============ -->
+  <div style="margin-top:36px;background:linear-gradient(180deg,#fffdf5,#fff0cf);border:4px solid #3a2312;border-radius:26px;padding:26px 30px 34px;box-shadow:0 10px 0 rgba(58,35,18,.22),0 20px 30px rgba(0,0,0,.18)">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:12px;background:linear-gradient(180deg,#d987ee,#c14fe0);border:3px solid #3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;font-size:19px;box-shadow:0 4px 0 #8f2fa8">B1</span>
+      <div><h3 style="margin:0;font-family:'ZCOOL KuaiLe','Fredoka';font-size:26px;color:#3a2312;line-height:1">美术资源清单</h3><div style="font-family:'Fredoka';font-weight:600;color:#8a5a2c;font-size:12px;letter-spacing:.06em">ART ASSET LIST · PNG 透明 · 命名 m3_&lt;类别&gt;_&lt;名称&gt;_&lt;状态&gt;</div></div>
+    </div>
+
+    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312;margin-bottom:10px">消除元素 · 6 色（各带高光）</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:22px">
+      <sc-for list="{{ candySamples }}" as="a" hint-placeholder-count="6">
+        <div style="width:104px;background:#fff;border:3px solid #3a2312;border-radius:14px;overflow:hidden;box-shadow:0 4px 0 rgba(58,35,18,.18)">
+          <div style="height:74px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0/20px 20px;border-bottom:2px solid #3a2312"><div style="width:52px;height:52px">{{ a.el }}</div></div>
+          <div style="padding:5px 6px;text-align:center"><div style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#3a2312">{{ a.name }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312;margin-bottom:10px">特殊块 & 特效 & 场景</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:22px">
+      <sc-for list="{{ specialSamples }}" as="a" hint-placeholder-count="6">
+        <div style="width:118px;background:#fff;border:3px solid #3a2312;border-radius:14px;overflow:hidden;box-shadow:0 4px 0 rgba(58,35,18,.18)">
+          <div style="{{ a.coverStyle }}"><div style="width:52px;height:52px">{{ a.el }}</div></div>
+          <div style="padding:5px 6px;text-align:center"><div style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#3a2312">{{ a.cn }}</div><div style="font-family:ui-monospace,Menlo,monospace;font-size:9px;color:#8a5a2c">{{ a.name }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- 9-slice -->
+    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312;margin-bottom:10px">可拉伸面板 · 九宫格切图标注</div>
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+      <div style="position:relative;width:220px;height:120px;border:4px solid #3a2312;border-radius:18px;background:linear-gradient(180deg,#fffdf5,#fff0cf);box-shadow:inset 0 3px 0 rgba(255,255,255,.7)">
+        <div style="position:absolute;left:40px;right:40px;top:0;bottom:0;border-left:2px dashed #ef5138;border-right:2px dashed #ef5138"></div>
+        <div style="position:absolute;top:34px;bottom:34px;left:0;right:0;border-top:2px dashed #ef5138;border-bottom:2px dashed #ef5138"></div>
+        <span style="position:absolute;top:6px;left:50%;transform:translateX(-50%);font-family:'Fredoka';font-weight:700;font-size:11px;color:#ef5138;background:#fff5db;padding:0 4px">↔ 横向拉伸区</span>
+        <span style="position:absolute;left:6px;top:50%;transform:translateY(-50%) rotate(-90deg);font-family:'Fredoka';font-weight:700;font-size:11px;color:#ef5138;background:#fff5db;padding:0 4px">↔ 纵向拉伸</span>
+        <span style="position:absolute;top:4px;left:4px;width:32px;height:26px;border:2px solid #37b6ef;border-radius:6px"></span>
+      </div>
+      <div style="max-width:360px;font-family:'Noto Sans SC';font-weight:600;font-size:13px;color:#3a2312;line-height:1.7">
+        面板 / 弹窗 / 缎带用<strong>九宫格（9-slice）</strong>导出：四角固定不缩放，边缘单向拉伸，中心双向拉伸。<br>
+        <span style="color:#8a5a2c">命名：<code style="font-family:ui-monospace">m3_panel_hud_9s</code> · <code style="font-family:ui-monospace">m3_ui_ribbon_9s</code></span><br>
+        图标另出 <code style="font-family:ui-monospace">@1x/@2x/@3x</code>；所有件套用墨棕描边 #3a2312 + 顶光/底暗，保证与平台一眼同源。
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:1500}}">
+class Component extends DCLogic {
+  state = { score: 12840, moves: 18 };
+
+  h() { return React.createElement; }
+  candy(type) {
+    const h = React.createElement;
+    const S = { width: '100%', height: '100%' };
+    const wrap = (kids) => h('svg', { viewBox: '0 0 100 100', style: S, preserveAspectRatio: 'xMidYMid meet' }, kids);
+    const st = { stroke: '#3a2312', strokeWidth: 6, strokeLinejoin: 'round' };
+    const gloss = h('ellipse', { key: 'g', cx: 36, cy: 30, rx: 13, ry: 7, fill: 'rgba(255,255,255,.72)' });
+    switch (type) {
+      case 0: return wrap([h('circle', { key: 'c', cx: 50, cy: 52, r: 37, fill: '#ef5138', ...st }), gloss]);
+      case 1: return wrap([h('rect', { key: 'r', x: 16, y: 18, width: 68, height: 68, rx: 20, fill: '#ff9a3c', ...st }), gloss]);
+      case 2: return wrap([h('ellipse', { key: 'e', cx: 50, cy: 53, rx: 33, ry: 39, fill: '#ffd257', ...st }), gloss]);
+      case 3: return wrap([h('polygon', { key: 'p', points: '50,12 88,52 50,92 12,52', fill: '#7ecb45', ...st }), gloss]);
+      case 4: return wrap([h('polygon', { key: 'p', points: '50,12 86,33 86,71 50,92 14,71 14,33', fill: '#37b6ef', ...st }), gloss]);
+      case 5: return wrap([h('circle', { key: 'c', cx: 50, cy: 52, r: 37, fill: '#c14fe0', ...st }), h('circle', { key: 'i', cx: 50, cy: 52, r: 15, fill: '#fff5db', stroke: '#3a2312', strokeWidth: 4 }), gloss]);
+      case 'stripeH': return wrap([h('rect', { key: 'r', x: 14, y: 20, width: 72, height: 60, rx: 16, fill: '#37b6ef', ...st }), h('rect', { key: 's1', x: 14, y: 36, width: 72, height: 7, fill: '#fff5db' }), h('rect', { key: 's2', x: 14, y: 57, width: 72, height: 7, fill: '#fff5db' })]);
+      case 'stripeV': return wrap([h('rect', { key: 'r', x: 20, y: 14, width: 60, height: 72, rx: 16, fill: '#7ecb45', ...st }), h('rect', { key: 's1', x: 36, y: 14, width: 7, height: 72, fill: '#fff5db' }), h('rect', { key: 's2', x: 57, y: 14, width: 7, height: 72, fill: '#fff5db' })]);
+      case 'bomb': return wrap([h('circle', { key: 'c', cx: 50, cy: 52, r: 37, fill: '#ef5138', ...st }), h('polygon', { key: 'star', points: '50,26 57,45 78,45 61,58 68,80 50,66 32,80 39,58 22,45 43,45', fill: '#ffd257', stroke: '#3a2312', strokeWidth: 3 })]);
+      case 'color': return wrap([h('circle', { key: 'c', cx: 50, cy: 52, r: 37, fill: '#241033', ...st }), h('circle', { key: 'd1', cx: 38, cy: 40, r: 8, fill: '#ef5138' }), h('circle', { key: 'd2', cx: 62, cy: 40, r: 8, fill: '#7ecb45' }), h('circle', { key: 'd3', cx: 38, cy: 63, r: 8, fill: '#ffd257' }), h('circle', { key: 'd4', cx: 62, cy: 63, r: 8, fill: '#37b6ef' })]);
+      case 'combo': return wrap([h('polygon', { key: 's', points: '50,6 61,38 95,38 67,58 78,92 50,72 22,92 33,58 5,38 39,38', fill: '#ffd257', stroke: '#3a2312', strokeWidth: 5, strokeLinejoin: 'round' }), h('text', { key: 't', x: 50, y: 60, fill: '#3a2312', fontFamily: 'Fredoka', fontWeight: 700, fontSize: 26, textAnchor: 'middle' }, 'x4')]);
+      case 'burst': return wrap([...[0, 45, 90, 135, 180, 225, 270, 315].map((a, i) => h('circle', { key: 'b' + i, cx: 50 + 34 * Math.cos(a * Math.PI / 180), cy: 50 + 34 * Math.sin(a * Math.PI / 180), r: i % 2 ? 6 : 9, fill: i % 2 ? '#ffd257' : '#ff9a3c', stroke: '#3a2312', strokeWidth: 3 })), h('circle', { key: 'core', cx: 50, cy: 50, r: 14, fill: '#fff5db', stroke: '#3a2312', strokeWidth: 4 })]);
+      default: return wrap([h('circle', { key: 'c', cx: 50, cy: 52, r: 37, fill: '#ccc', ...st })]);
+    }
+  }
+
+  jelly(top, bottom, edge) {
+    return {
+      style: { position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '54px', height: '54px', borderRadius: '15px', border: '3px solid #3a2312', background: 'linear-gradient(180deg,' + top + ',' + bottom + ')', cursor: 'pointer', boxShadow: '0 5px 0 ' + edge + ', inset 0 3px 0 rgba(255,255,255,.5), inset 0 -5px 0 rgba(0,0,0,.15)', transition: 'transform .06s, box-shadow .06s', transform: 'translateY(0)' },
+      active: { transform: 'translateY(3px)', boxShadow: '0 2px 0 ' + edge + ', inset 0 3px 0 rgba(255,255,255,.5)' }
+    };
+  }
+  jellyText(top, bottom, edge) {
+    return {
+      style: { width: '100%', border: '3px solid #3a2312', borderRadius: '14px', padding: '9px 0', background: 'linear-gradient(180deg,' + top + ',' + bottom + ')', color: '#fff5db', cursor: 'pointer', fontFamily: "'ZCOOL KuaiLe','Fredoka',sans-serif", fontSize: '17px', textShadow: '0 2px 0 rgba(0,0,0,.28)', boxShadow: '0 5px 0 ' + edge + ', inset 0 3px 0 rgba(255,255,255,.5), inset 0 -5px 0 rgba(0,0,0,.16)', transition: 'transform .06s, box-shadow .06s', transform: 'translateY(0)' },
+      active: { transform: 'translateY(3px)', boxShadow: '0 2px 0 ' + edge + ', inset 0 3px 0 rgba(255,255,255,.5)' }
+    };
+  }
+
+  sparkleField(seed, n) {
+    const h = React.createElement;
+    let s = seed; const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+    const pts = [];
+    for (let i = 0; i < n; i++) { const x = 4 + rnd() * 92, y = 4 + rnd() * 92, sz = 7 + rnd() * 11, d = rnd() * 2;
+      pts.push(h('div', { key: i, style: { position: 'absolute', left: x + '%', top: y + '%', width: sz + 'px', height: sz + 'px', animation: 'twinkle ' + (1.6 + rnd() * 1.6).toFixed(2) + 's ease-in-out ' + d.toFixed(2) + 's infinite' } }, h('svg', { viewBox: '0 0 100 100', style: { width: '100%', height: '100%' } }, [h('path', { key: 'p', d: 'M50,4 C54,40 60,46 96,50 C60,54 54,60 50,96 C46,60 40,54 4,50 C40,46 46,40 50,4 Z', fill: '#fff5db' }), h('circle', { key: 'c', cx: 50, cy: 50, r: 6, fill: '#fff' })]))); }
+    return h('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none' } }, pts);
+  }
+  corner() {
+    const h = React.createElement;
+    const d = 'M8,44 C8,24 24,8 44,8 M14,40 C14,28 28,14 40,14 M40,14 C30,14 28,22 34,24 C40,26 40,18 34,18 M14,40 C14,30 22,28 24,34 C26,40 18,40 18,34';
+    return h('svg', { viewBox: '0 0 52 52', style: { width: '100%', height: '100%' } }, [h('path', { key: 'o', d, fill: 'none', stroke: '#3a2312', strokeWidth: 9, strokeLinecap: 'round', strokeLinejoin: 'round' }), h('path', { key: 'i', d, fill: 'none', stroke: '#ffd257', strokeWidth: 5, strokeLinecap: 'round', strokeLinejoin: 'round' })]);
+  }
+  ribbonTail() {
+    const h = React.createElement;
+    return h('svg', { viewBox: '0 0 20 26', style: { width: '100%', height: '100%' } }, h('path', { d: 'M18,2 C6,4 2,10 6,14 C10,18 4,22 16,24 L18,24 Z', fill: '#c98a1e', stroke: '#3a2312', strokeWidth: 3, strokeLinejoin: 'round' }));
+  }
+
+  renderVals() {
+    const T = [
+      0, 1, 2, 3, 4, 5, 0, 1,
+      2, 3, 'stripeH', 5, 0, 1, 2, 3,
+      4, 5, 0, 1, 2, 3, 4, 5,
+      1, 2, 3, 4, 'bomb', 0, 1, 2,
+      5, 0, 1, 2, 3, 4, 5, 0,
+      3, 4, 5, 'color', 1, 2, 3, 4,
+      0, 1, 2, 3, 4, 5, 0, 1,
+      2, 3, 4, 'stripeV', 0, 1, 2, 3
+    ];
+    const board = T.map((t, i) => {
+      const r = Math.floor(i / 8), c = i % 8;
+      const dark = (r + c) % 2 === 0;
+      return { key: i, el: this.candy(t),
+        cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', background: dark ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.30)' } };
+    });
+
+    const targets = [{ el: this.candy(0), count: '32' }, { el: this.candy(3), count: '28' }];
+
+    const bDefs = [{ t: 'bomb', n: '2', c: ['#ff7a5f', '#ef5138', '#b8341f'] }, { t: 'color', n: '1', c: ['#d987ee', '#c14fe0', '#8f2fa8'] }, { t: 'stripeH', n: '3', c: ['#5fcdf5', '#37b6ef', '#1f86bd'] }];
+    const boosters = bDefs.map(b => { const j = this.jelly(b.c[0], b.c[1], b.c[2]); return { el: this.candy(b.t), n: b.n, style: j.style, active: j.active }; });
+
+    const legend = [
+      { n: '①', cn: '暂停 / 设置', en: 'Pause / Settings' },
+      { n: '②', cn: '关卡号 + 实时分数', en: 'Level & Score' },
+      { n: '③', cn: '剩余步数', en: 'Moves left' },
+      { n: '④', cn: '关卡目标（收集图标）', en: 'Level targets' },
+      { n: '⑤', cn: '8×8 棋盘 + 格底', en: '8×8 board + tile base' },
+      { n: '⑥', cn: '道具栏（三种助力）', en: 'Booster bar' }
+    ];
+
+    const mapDefs = [
+      { x: 26, y: 258, label: '22', done: true }, { x: 108, y: 196, label: '23', done: true },
+      { x: 150, y: 150, label: '24', cur: true }, { x: 148, y: 96, label: '25' }, { x: 130, y: 34, label: '26' }
+    ];
+    const mapNodes = mapDefs.map(m => ({ label: m.label, style: {
+      position: 'absolute', left: m.x + 'px', top: m.y + 'px', width: m.cur ? '44px' : '36px', height: m.cur ? '44px' : '36px', borderRadius: '50%',
+      border: '3px solid #3a2312', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: "'Fredoka'", fontWeight: 700, fontSize: m.cur ? '18px' : '15px', color: '#fff5db',
+      background: m.cur ? 'linear-gradient(180deg,#ffe08a,#f5b731)' : (m.done ? 'linear-gradient(180deg,#8fe05a,#6cbf37)' : 'linear-gradient(180deg,#b7b7b7,#8f8f8f)'),
+      boxShadow: (m.cur ? '0 5px 0 #c98a1e' : (m.done ? '0 4px 0 #4e8a24' : '0 4px 0 #6a6a6a')) + ', inset 0 2px 0 rgba(255,255,255,.5)',
+      textShadow: '0 2px 0 rgba(0,0,0,.3)', animation: m.cur ? 'bob 2.4s ease-in-out infinite' : 'none', zIndex: 2 } }));
+
+    const csDefs = [['#ef5138', 0, 'm3_candy_red'], ['#ff9a3c', 1, 'm3_candy_orange'], ['#ffd257', 2, 'm3_candy_yellow'], ['#7ecb45', 3, 'm3_candy_green'], ['#37b6ef', 4, 'm3_candy_blue'], ['#c14fe0', 5, 'm3_candy_purple']];
+    const candySamples = csDefs.map(d => ({ el: this.candy(d[1]), name: d[2] }));
+
+    const spDefs = [
+      { t: 'stripeH', cn: '直线块', name: 'm3_special_stripe', cover: ['#eafaff', '#c9edff'] },
+      { t: 'bomb', cn: '炸弹块', name: 'm3_special_bomb', cover: ['#ffe9e4', '#ffc9bd'] },
+      { t: 'color', cn: '彩球', name: 'm3_special_colorball', cover: ['#efe0ff', '#d8bdf5'] },
+      { t: 'combo', cn: '连击特效', name: 'm3_fx_combo', cover: ['#fff5db', '#ffe8a8'] },
+      { t: 'burst', cn: '爆炸粒子', name: 'm3_fx_burst', cover: ['#fff0e0', '#ffdcae'] },
+      { t: 0, cn: '目标图标', name: 'm3_ui_target', cover: ['#eafbe0', '#cbeeb2'] }
+    ];
+    const specialSamples = spDefs.map(d => ({ el: this.candy(d.t), cn: d.cn, name: d.name,
+      coverStyle: { height: '74px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '2px solid #3a2312', background: 'linear-gradient(180deg,' + d.cover[0] + ',' + d.cover[1] + ')' } }));
+
+    const nextBtn = this.jellyText('#8fe05a', '#6cbf37', '#4e8a24');
+    const retryBtn = this.jellyText('#ffdd6e', '#f5b731', '#c98a1e');
+
+    return {
+      score: this.state.score.toLocaleString('en-US'), moves: this.state.moves,
+      board, targets, boosters, legend, mapNodes, candySamples, specialSamples,
+      sparkWin: this.sparkleField(15, 8), sparkLose: this.sparkleField(31, 6),
+      sparkBoardP: this.sparkleField(43, 7), sparkBoardL: this.sparkleField(51, 6),
+      cornerA: this.corner(), ribbonL: this.ribbonTail(), ribbonR: this.ribbonTail(),
+      nextBtnStyle: nextBtn.style, nextBtnActive: nextBtn.active,
+      retryBtnStyle: retryBtn.style, retryBtnActive: retryBtn.active
+    };
+  }
+}
+</script>
+</body>
+</html>

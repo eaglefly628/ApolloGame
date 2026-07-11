@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@500;600;700;800&family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}html,body{margin:0;padding:0}
+  body{font-family:'Baloo 2','Noto Sans SC',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#0f1e3a}
+  a{color:#9ad0ff}a:hover{color:#c9e6ff}
+  @keyframes twinkle{0%,100%{transform:scale(.5);opacity:.3}50%{transform:scale(1);opacity:1}}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+</style>
+</helmet>
+
+<div style="min-height:100%;background:radial-gradient(circle at 50% -10%,#3a2a6a,#1a1140 55%,#0f0a2a);padding:44px 50px 64px;font-family:'Baloo 2','Noto Sans SC',sans-serif">
+
+  <!-- HEADER -->
+  <div style="text-align:center;margin-bottom:14px">
+    <h1 style="margin:0;font-family:'ZCOOL KuaiLe','Fredoka';font-size:52px;line-height:1.05;color:#fff5db;-webkit-text-stroke:8px #3a2312;paint-order:stroke fill;text-shadow:0 6px 0 #c98a1e,0 10px 18px rgba(255,215,120,.4)">风格混搭探索</h1>
+    <div style="font-family:'Fredoka';font-weight:700;font-size:17px;color:#ffd257;letter-spacing:.1em;margin-top:8px">SUPERCELL × DISNEY · 骨架不变，叠一层魔法装饰</div>
+  </div>
+  <p style="max-width:760px;margin:0 auto 40px;text-align:center;color:#cdd6ee;font-weight:500;font-size:15px;line-height:1.6">左 = 纯 Supercell 基调；右 = 叠加迪士尼装饰层。<strong style="color:#fff5db">墨棕厚描边、饱满体积、果冻 UI、固定九色底板全部保留</strong>，只在其上加：金藤花纹、精灵尘星芒、梦幻柔光、角色「有神」、华丽缎带。一眼同源，气质升级。</p>
+
+  <!-- ========== COMPARISON ROWS ========== -->
+  <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:30px">
+
+    <!-- ROW 1 · TITLE -->
+    <div style="background:rgba(255,255,255,.06);border:2px solid rgba(255,215,120,.3);border-radius:24px;padding:22px 24px">
+      <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#fff5db;margin-bottom:16px">① 招牌字效 · Title Lockup</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <!-- supercell -->
+        <div style="text-align:center;background:linear-gradient(180deg,#8ad4f7,#5cc0f2);border:3px solid #3a2312;border-radius:18px;padding:34px 16px 20px;position:relative">
+          <span style="position:absolute;top:10px;left:12px;background:#3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;font-size:11px;border-radius:8px;padding:2px 9px">纯 Supercell</span>
+          <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:52px;line-height:1;color:#fff5db;-webkit-text-stroke:8px #3a2312;paint-order:stroke fill;text-shadow:0 5px 0 #c98a1e,0 8px 10px rgba(0,0,0,.3)">魔法</div>
+          <div style="font-family:'Fredoka';font-weight:700;font-size:22px;color:#fff5db;-webkit-text-stroke:4px #3a2312;paint-order:stroke fill;text-shadow:0 3px 0 #c98a1e;margin-top:4px">MAGIC</div>
+        </div>
+        <!-- disney -->
+        <div style="text-align:center;background:linear-gradient(180deg,#6a5ac9,#3a2a6a);border:3px solid #3a2312;border-radius:18px;padding:34px 16px 20px;position:relative;overflow:hidden">
+          <span style="position:absolute;top:10px;left:12px;background:linear-gradient(180deg,#ffe08a,#f5b731);color:#3a2312;font-family:'Fredoka';font-weight:700;font-size:11px;border-radius:8px;padding:2px 9px;border:2px solid #3a2312;z-index:3">× Disney 混搭</span>
+          <div style="position:absolute;inset:0;pointer-events:none">{{ sparkles }}</div>
+          <div style="position:relative;display:inline-block">
+            <span style="position:absolute;left:-46px;top:50%;transform:translateY(-50%);width:44px;height:56px">{{ filigreeL }}</span>
+            <span style="position:absolute;right:-46px;top:50%;transform:translateY(-50%);width:44px;height:56px">{{ filigreeR }}</span>
+            <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:52px;line-height:1;color:#ffe08a;-webkit-text-stroke:8px #3a2312;paint-order:stroke fill;text-shadow:0 5px 0 #a8791a,0 0 18px rgba(255,220,130,.9),0 0 30px rgba(255,220,130,.6)">魔法</div>
+          </div>
+          <div style="font-family:'Fredoka';font-weight:700;font-size:22px;color:#fff5db;-webkit-text-stroke:4px #3a2312;paint-order:stroke fill;text-shadow:0 3px 0 #a8791a;margin-top:4px;letter-spacing:.04em">MAGIC</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:12px;font-size:12.5px;color:#cdd6ee;font-weight:500">
+        <div style="flex:1;text-align:center">奶油实填 + 金下沿</div>
+        <div style="flex:1;text-align:center;color:#ffe6a0">+ 金渐变闪填 · 外发光 · 两侧金藤 · 星芒</div>
+      </div>
+    </div>
+
+    <!-- ROW 2 · FRAME/POPUP -->
+    <div style="background:rgba(255,255,255,.06);border:2px solid rgba(255,215,120,.3);border-radius:24px;padding:22px 24px">
+      <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#fff5db;margin-bottom:16px">② 弹窗 / 相框 · Frame</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center;justify-items:center">
+        <!-- supercell frame -->
+        <div style="position:relative;width:240px;background:linear-gradient(180deg,#fffdf5,#fff0cf);border:5px solid #3a2312;border-radius:22px;padding:40px 18px 20px;box-shadow:0 8px 0 rgba(58,35,18,.3),0 0 0 4px #ffd257">
+          <span style="position:absolute;top:-30px;left:12px;background:#3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;font-size:11px;border-radius:8px;padding:2px 9px">纯 Supercell</span>
+          <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,#ffe08a,#f5b731);border:3px solid #3a2312;border-radius:12px;padding:5px 20px;box-shadow:0 4px 0 #c98a1e;white-space:nowrap"><span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e">奖励</span></div>
+          <div style="text-align:center;font-family:'Noto Sans SC';font-weight:700;color:#8a5a2c;font-size:13px">金框 + 缎带 + 红叉</div>
+          <div style="display:flex;justify-content:center;gap:6px;margin:12px 0"><span style="font-size:28px">⭐</span><span style="font-size:34px">⭐</span><span style="font-size:28px">⭐</span></div>
+        </div>
+        <!-- disney frame -->
+        <div style="position:relative;width:240px;background:linear-gradient(180deg,#fffdf5,#f7e8ff);border:5px solid #3a2312;border-radius:22px;padding:40px 18px 20px;box-shadow:0 8px 0 rgba(58,35,18,.3),0 0 0 4px #ffd257,0 0 26px rgba(180,140,255,.5)">
+          <span style="position:absolute;top:-30px;left:12px;background:linear-gradient(180deg,#ffe08a,#f5b731);color:#3a2312;font-family:'Fredoka';font-weight:700;font-size:11px;border-radius:8px;padding:2px 9px;border:2px solid #3a2312">× Disney 混搭</span>
+          <!-- filigree corners -->
+          <span style="position:absolute;top:-8px;left:-8px;width:46px;height:46px">{{ corner1 }}</span>
+          <span style="position:absolute;top:-8px;right:-8px;width:46px;height:46px;transform:scaleX(-1)">{{ corner2 }}</span>
+          <span style="position:absolute;bottom:-8px;left:-8px;width:46px;height:46px;transform:scaleY(-1)">{{ corner3 }}</span>
+          <span style="position:absolute;bottom:-8px;right:-8px;width:46px;height:46px;transform:scale(-1)">{{ corner4 }}</span>
+          <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:18px">{{ sparkles2 }}</div>
+          <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,#ffe08a,#f5b731);border:3px solid #3a2312;border-radius:12px;padding:5px 22px;box-shadow:0 4px 0 #c98a1e;white-space:nowrap;z-index:3">
+            <span style="position:absolute;left:-13px;top:6px;width:16px;height:20px">{{ ribbonL }}</span>
+            <span style="position:absolute;right:-13px;top:6px;width:16px;height:20px;transform:scaleX(-1)">{{ ribbonR }}</span>
+            <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e">奖励</span>
+          </div>
+          <div style="position:relative;text-align:center;font-family:'Noto Sans SC';font-weight:700;color:#8a5a2c;font-size:13px;z-index:2">+ 四角金藤 · 缎带卷尾 · 柔紫光 · 星尘</div>
+          <div style="position:relative;display:flex;justify-content:center;gap:6px;margin:12px 0;z-index:2"><span style="font-size:28px;filter:drop-shadow(0 0 6px rgba(255,220,130,.9))">⭐</span><span style="font-size:34px;filter:drop-shadow(0 0 8px rgba(255,220,130,.9))">⭐</span><span style="font-size:28px;filter:drop-shadow(0 0 6px rgba(255,220,130,.9))">⭐</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3 · CHARACTER -->
+    <div style="background:rgba(255,255,255,.06);border:2px solid rgba(255,215,120,.3);border-radius:24px;padding:22px 24px">
+      <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#fff5db;margin-bottom:16px">③ 角色 · Character Appeal</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;justify-items:center">
+        <div style="position:relative;width:100%;text-align:center;background:linear-gradient(180deg,#bfe6a0,#8fd066);border:3px solid #3a2312;border-radius:18px;padding:30px 16px 18px">
+          <span style="position:absolute;top:10px;left:12px;background:#3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;font-size:11px;border-radius:8px;padding:2px 9px">纯 Supercell</span>
+          <div style="width:150px;height:150px;margin:0 auto;animation:floaty 3s ease-in-out infinite">{{ critterSC }}</div>
+          <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a5a20;font-size:13px;margin-top:6px">厚描边 · 体积 · 简单眼</div>
+        </div>
+        <div style="position:relative;width:100%;text-align:center;background:linear-gradient(180deg,#c9b6f0,#9a7ce0);border:3px solid #3a2312;border-radius:18px;padding:30px 16px 18px;overflow:hidden">
+          <span style="position:absolute;top:10px;left:12px;background:linear-gradient(180deg,#ffe08a,#f5b731);color:#3a2312;font-family:'Fredoka';font-weight:700;font-size:11px;border-radius:8px;padding:2px 9px;border:2px solid #3a2312;z-index:3">× Disney 混搭</span>
+          <div style="position:absolute;inset:0;pointer-events:none">{{ sparkles3 }}</div>
+          <div style="width:150px;height:150px;margin:0 auto;animation:floaty 3s ease-in-out infinite;filter:drop-shadow(0 0 16px rgba(255,235,180,.7))">{{ critterDisney }}</div>
+          <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2360;font-size:13px;margin-top:6px">+ 大眼高光 · 睫毛 · 腮红 · 魔法光晕</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== RECIPE ========== -->
+  <div style="max-width:1000px;margin:34px auto 0;background:linear-gradient(180deg,#fffdf5,#fff0cf);border:4px solid #3a2312;border-radius:24px;padding:24px 28px 28px;box-shadow:0 8px 0 rgba(58,35,18,.3)">
+    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:24px;color:#3a2312;margin-bottom:6px">混搭配方 · Mashup Recipe</div>
+    <div style="font-family:'Fredoka';font-weight:600;color:#8a5a2c;font-size:12px;margin-bottom:18px">规则：Supercell 决定「结构与可读性」，Disney 只做「装饰与情感」——绝不牺牲小尺寸剪影清晰。</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <sc-for list="{{ recipe }}" as="r" hint-placeholder-count="6">
+        <div style="display:flex;gap:12px;align-items:flex-start;background:#fff;border:3px solid #3a2312;border-radius:14px;padding:12px 14px;box-shadow:0 4px 0 rgba(58,35,18,.16)">
+          <span style="flex:none;width:34px;height:34px;border-radius:10px;border:3px solid #3a2312;background:{{ r.c }};display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:inset 0 2px 0 rgba(255,255,255,.4)">{{ r.emoji }}</span>
+          <div><div style="font-family:'Noto Sans SC';font-weight:700;font-size:14px;color:#3a2312;line-height:1.2">{{ r.cn }}</div><div style="font-family:'Fredoka';font-weight:600;font-size:11px;color:#8a5a2c;line-height:1.4;margin-top:2px">{{ r.en }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:18px;background:#fff5db;border:2px dashed #c98a1e;border-radius:12px;padding:12px 16px;font-family:'Noto Sans SC';font-weight:600;font-size:13px;color:#8a5a2c;line-height:1.6">
+      <strong style="color:#3a2312">候选扩展色（需你批准）：</strong>玫瑰粉 <code style="font-family:ui-monospace">#f2789f</code> · 薰衣草 <code style="font-family:ui-monospace">#b47ce6</code> · 薄荷青 <code style="font-family:ui-monospace">#5fe0d0</code>。均贴近固定九色（危险红/圣杯紫/宝石蓝），仅用于魔法光效/星尘，<strong style="color:#3a2312">主底板与描边仍是原九色</strong>，保证同源。
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1100,&quot;height&quot;:1500}}">
+class Component extends DCLogic {
+  sparkleField(seed, n) {
+    const h = React.createElement;
+    const pts = [];
+    let s = seed;
+    const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+    for (let i = 0; i < n; i++) {
+      const x = 6 + rnd() * 88, y = 6 + rnd() * 88, sz = 8 + rnd() * 12, d = rnd() * 2;
+      pts.push(h('div', { key: i, style: { position: 'absolute', left: x + '%', top: y + '%', width: sz + 'px', height: sz + 'px', animation: 'twinkle ' + (1.6 + rnd() * 1.6).toFixed(2) + 's ease-in-out ' + d.toFixed(2) + 's infinite' } },
+        h('svg', { viewBox: '0 0 100 100', style: { width: '100%', height: '100%' } }, [
+          h('path', { key: 'p', d: 'M50,4 C54,40 60,46 96,50 C60,54 54,60 50,96 C46,60 40,54 4,50 C40,46 46,40 50,4 Z', fill: '#fff5db' }),
+          h('circle', { key: 'c', cx: 50, cy: 50, r: 6, fill: '#fff' })
+        ])));
+    }
+    return h('div', { style: { position: 'absolute', inset: 0 } }, pts);
+  }
+
+  filigree(dir) {
+    const h = React.createElement;
+    const st = { fill: 'none', stroke: '#ffd257', strokeWidth: 7, strokeLinecap: 'round' };
+    const st2 = { fill: 'none', stroke: '#3a2312', strokeWidth: 11, strokeLinecap: 'round' };
+    const d = 'M40,4 C40,20 8,16 8,32 C8,44 24,44 24,34 C24,28 16,30 18,36 M40,4 C40,30 30,52 30,52';
+    return h('svg', { viewBox: '0 0 48 56', style: { width: '100%', height: '100%', transform: dir === 'r' ? 'scaleX(-1)' : 'none' } }, [
+      h('path', { key: 'o', d, ...st2 }), h('path', { key: 'i', d, ...st })
+    ]);
+  }
+
+  corner() {
+    const h = React.createElement;
+    const d = 'M8,44 C8,24 24,8 44,8 M14,40 C14,28 28,14 40,14 M40,14 C30,14 28,22 34,24 C40,26 40,18 34,18 M14,40 C14,30 22,28 24,34 C26,40 18,40 18,34';
+    return h('svg', { viewBox: '0 0 52 52', style: { width: '100%', height: '100%' } }, [
+      h('path', { key: 'o', d, fill: 'none', stroke: '#3a2312', strokeWidth: 9, strokeLinecap: 'round', strokeLinejoin: 'round' }),
+      h('path', { key: 'i', d, fill: 'none', stroke: '#ffd257', strokeWidth: 5, strokeLinecap: 'round', strokeLinejoin: 'round' })
+    ]);
+  }
+
+  ribbonTail() {
+    const h = React.createElement;
+    return h('svg', { viewBox: '0 0 20 26', style: { width: '100%', height: '100%' } },
+      h('path', { d: 'M18,2 C6,4 2,10 6,14 C10,18 4,22 16,24 L18,24 Z', fill: '#c98a1e', stroke: '#3a2312', strokeWidth: 3, strokeLinejoin: 'round' }));
+  }
+
+  critter(disney) {
+    const h = React.createElement;
+    const S = { width: '100%', height: '100%' };
+    const st = { stroke: '#3a2312', strokeWidth: 6, strokeLinejoin: 'round' };
+    const kids = [
+      h('ellipse', { key: 'sh', cx: 50, cy: 92, rx: 26, ry: 6, fill: 'rgba(0,0,0,.18)' }),
+      h('path', { key: 'w1', d: 'M24,48 C4,30 6,58 22,62 Z', fill: '#5fcdf5', ...st }),
+      h('path', { key: 'w2', d: 'M76,48 C96,30 94,58 78,62 Z', fill: '#5fcdf5', ...st }),
+      h('ellipse', { key: 'b', cx: 50, cy: 56, rx: 30, ry: 32, fill: '#7ecb45', ...st }),
+      h('path', { key: 'horn1', d: 'M38,26 L34,10 L46,24 Z', fill: '#ffd257', ...st }),
+      h('path', { key: 'horn2', d: 'M62,26 L66,10 L54,24 Z', fill: '#ffd257', ...st }),
+      h('ellipse', { key: 'belly', cx: 50, cy: 64, rx: 16, ry: 18, fill: '#eafbe0' })
+    ];
+    if (!disney) {
+      kids.push(h('circle', { key: 'e1', cx: 41, cy: 50, r: 7, fill: '#fff', stroke: '#3a2312', strokeWidth: 3 }));
+      kids.push(h('circle', { key: 'e2', cx: 59, cy: 50, r: 7, fill: '#fff', stroke: '#3a2312', strokeWidth: 3 }));
+      kids.push(h('circle', { key: 'p1', cx: 41, cy: 51, r: 3.5, fill: '#3a2312' }));
+      kids.push(h('circle', { key: 'p2', cx: 59, cy: 51, r: 3.5, fill: '#3a2312' }));
+      kids.push(h('path', { key: 'm', d: 'M43,66 Q50,71 57,66', fill: 'none', stroke: '#3a2312', strokeWidth: 4, strokeLinecap: 'round' }));
+    } else {
+      // big sparkly eyes
+      kids.push(h('ellipse', { key: 'e1', cx: 40, cy: 50, rx: 10, ry: 12, fill: '#fff', stroke: '#3a2312', strokeWidth: 3 }));
+      kids.push(h('ellipse', { key: 'e2', cx: 60, cy: 50, rx: 10, ry: 12, fill: '#fff', stroke: '#3a2312', strokeWidth: 3 }));
+      kids.push(h('circle', { key: 'p1', cx: 41, cy: 52, r: 6.5, fill: '#3a2a5a' }));
+      kids.push(h('circle', { key: 'p2', cx: 61, cy: 52, r: 6.5, fill: '#3a2a5a' }));
+      kids.push(h('circle', { key: 'ch1', cx: 38, cy: 48, r: 2.6, fill: '#fff' }));
+      kids.push(h('circle', { key: 'ch2', cx: 58, cy: 48, r: 2.6, fill: '#fff' }));
+      kids.push(h('circle', { key: 'cl1', cx: 43, cy: 56, r: 1.6, fill: 'rgba(255,255,255,.8)' }));
+      kids.push(h('circle', { key: 'cl2', cx: 63, cy: 56, r: 1.6, fill: 'rgba(255,255,255,.8)' }));
+      // eyelashes
+      kids.push(h('path', { key: 'l1', d: 'M31,44 l-5,-3 M32,47 l-6,-1', stroke: '#3a2312', strokeWidth: 2.5, strokeLinecap: 'round' }));
+      kids.push(h('path', { key: 'l2', d: 'M69,44 l5,-3 M68,47 l6,-1', stroke: '#3a2312', strokeWidth: 2.5, strokeLinecap: 'round' }));
+      // rosy cheeks
+      kids.push(h('ellipse', { key: 'r1', cx: 30, cy: 62, rx: 6, ry: 4, fill: 'rgba(242,120,159,.7)' }));
+      kids.push(h('ellipse', { key: 'r2', cx: 70, cy: 62, rx: 6, ry: 4, fill: 'rgba(242,120,159,.7)' }));
+      kids.push(h('path', { key: 'm', d: 'M42,68 Q50,75 58,68', fill: 'none', stroke: '#3a2312', strokeWidth: 4, strokeLinecap: 'round' }));
+      // tiny sparkle near horn
+      kids.push(h('path', { key: 'sp', d: 'M78,22 C79,28 80,29 86,30 C80,31 79,32 78,38 C77,32 76,31 70,30 C76,29 77,28 78,22 Z', fill: '#fff5db' }));
+    }
+    return h('svg', { viewBox: '0 0 100 100', style: S, preserveAspectRatio: 'xMidYMid meet' }, kids);
+  }
+
+  renderVals() {
+    const recipe = [
+      { emoji: '🖋️', c: '#c88a52', cn: '金藤花纹描边', en: 'Gold filigree on frames / titles — 童话相框卷草' },
+      { emoji: '✨', c: '#ffd257', cn: '精灵尘 · 星芒', en: 'Pixie-dust sparkles & 4-point glints, animated twinkle' },
+      { emoji: '🌙', c: '#37b6ef', cn: '梦幻柔光晕', en: 'Soft outer glow / bloom on gold & highlights' },
+      { emoji: '👀', c: '#7ecb45', cn: '角色「有神」', en: 'Bigger eyes + catchlights + lashes + rosy cheeks' },
+      { emoji: '🎀', c: '#ef5138', cn: '华丽缎带卷尾', en: 'Ornate ribbon banners with curled tails' },
+      { emoji: '💎', c: '#c14fe0', cn: '珐琅宝石质感', en: 'Enamel / jewel gloss on chips & currencies' }
+    ];
+    return {
+      sparkles: this.sparkleField(7, 9),
+      sparkles2: this.sparkleField(13, 7),
+      sparkles3: this.sparkleField(29, 8),
+      filigreeL: this.filigree('l'), filigreeR: this.filigree('r'),
+      corner1: this.corner(), corner2: this.corner(), corner3: this.corner(), corner4: this.corner(),
+      ribbonL: this.ribbonTail(), ribbonR: this.ribbonTail(),
+      critterSC: this.critter(false), critterDisney: this.critter(true),
+      recipe
+    };
+  }
+}
+</script>
+</body>
+</html>

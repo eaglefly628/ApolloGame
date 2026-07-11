@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@500;600;700;800&family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}html,body{margin:0;padding:0}
+  body{font-family:'Baloo 2','Noto Sans SC',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#eaf6fd}
+  a{color:#1f86bd}a:hover{color:#37b6ef}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  @keyframes walk{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-3px) rotate(3deg)}}
+  @keyframes twinkle{0%,100%{transform:scale(.5);opacity:.3}50%{transform:scale(1);opacity:1}}
+</style>
+</helmet>
+
+<div style="min-height:100%;background:radial-gradient(circle at 30% 0%,#8ad4f7,#5cc0f2 70%);padding:40px 46px 60px;font-family:'Baloo 2','Noto Sans SC',sans-serif">
+
+  <!-- HEADER -->
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:30px;flex-wrap:wrap">
+    <div style="width:66px;height:66px;border-radius:18px;border:4px solid #3a2312;background:linear-gradient(180deg,#bfe6a0,#7ecb45);display:flex;align-items:center;justify-content:center;box-shadow:0 5px 0 rgba(58,35,18,.3)">
+      <svg width="42" height="44" viewBox="0 0 70 80"><g stroke="#3a2312" stroke-width="4" stroke-linejoin="round"><rect x="20" y="30" width="30" height="34" fill="#a9b0b8"/><rect x="16" y="22" width="10" height="10" fill="#a9b0b8"/><rect x="44" y="22" width="10" height="10" fill="#a9b0b8"/><polygon points="35,8 52,26 18,26" fill="#ef5138"/></g></svg>
+    </div>
+    <div>
+      <h1 style="margin:0;font-family:'ZCOOL KuaiLe','Fredoka';font-size:44px;line-height:1;color:#fff5db;-webkit-text-stroke:7px #3a2312;paint-order:stroke fill;text-shadow:0 5px 0 #c98a1e,0 8px 10px rgba(0,0,0,.28)">塔防 · 王国塔防</h1>
+      <div style="font-family:'Fredoka';font-weight:700;font-size:16px;color:#1c4f6e;letter-spacing:.06em;margin-top:6px">TOWER DEFENSE TEMPLATE · UI 框架 + HUD 标注 + 美术资源清单 · Supercell 基调</div>
+    </div>
+  </div>
+
+  <!-- ============ SCREENS ROW ============ -->
+  <div style="display:flex;gap:44px;flex-wrap:wrap;align-items:flex-start;margin-bottom:20px">
+
+    <!-- ---- PORTRAIT ---- -->
+    <div>
+      <div style="display:inline-block;background:#37b6ef;color:#fff5db;font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;border:3px solid #3a2312;border-radius:10px;padding:5px 14px;box-shadow:0 4px 0 #1f86bd;margin-bottom:14px">竖屏主界面 · 1080×1920</div>
+      <div style="display:flex;gap:22px;align-items:flex-start">
+        <div style="position:relative;width:340px;height:604px;background:#2a1a0d;border-radius:38px;padding:9px;box-shadow:0 14px 0 rgba(0,0,0,.3),0 26px 44px rgba(0,0,0,.4);flex:none">
+          <div style="width:100%;height:100%;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;background:#7ecb45">
+            <!-- top HUD -->
+            <div style="flex:none;display:flex;align-items:center;gap:7px;padding:14px 12px 10px;background:linear-gradient(180deg,rgba(58,35,18,.35),rgba(58,35,18,.15));position:relative">
+              <button style="width:36px;height:36px;border-radius:10px;border:3px solid #3a2312;background:linear-gradient(180deg,#fffdf5,#efe0c0);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 rgba(58,35,18,.25);cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a2312" stroke-width="3" stroke-linecap="round"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+              <div style="display:flex;align-items:center;gap:4px;background:linear-gradient(180deg,#4a3320,#2e1d0e);border:2.5px solid #3a2312;border-radius:999px;padding:3px 9px 3px 4px"><span style="width:22px;height:22px">{{ heartEl }}</span><span style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:15px">{{ lives }}</span></div>
+              <div style="display:flex;align-items:center;gap:4px;background:linear-gradient(180deg,#4a3320,#2e1d0e);border:2.5px solid #3a2312;border-radius:999px;padding:3px 9px 3px 4px"><span style="width:22px;height:22px">{{ coinEl }}</span><span style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:15px">{{ coins }}</span></div>
+              <div style="margin-left:auto;text-align:center;background:linear-gradient(180deg,#ffe08a,#f5b731);border:3px solid #3a2312;border-radius:11px;padding:3px 11px;box-shadow:0 3px 0 #c98a1e"><div style="font-family:'Fredoka';font-weight:700;font-size:14px;color:#fff5db;-webkit-text-stroke:2px #3a2312;paint-order:stroke fill;line-height:1">{{ wave }}</div><div style="font-family:'Noto Sans SC';font-weight:700;font-size:8px;color:#8a5a1c;line-height:1">波次</div></div>
+              <span style="position:absolute;top:-2px;left:50px;background:#37b6ef;border:2px solid #3a2312;border-radius:7px;padding:0 5px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db;z-index:3">①</span>
+            </div>
+            <!-- battlefield -->
+            <div style="flex:1;position:relative;background:linear-gradient(160deg,#8fd066,#6cbf37);overflow:hidden">
+              <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.14) 2px,transparent 2px);background-size:22px 22px"></div>
+              <div style="position:absolute;inset:0;pointer-events:none;opacity:.6;z-index:1">{{ sparkFieldP }}</div>
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><path d="{{ pathP }}" fill="none" stroke="#3a2312" stroke-width="15" stroke-linecap="round"/><path d="{{ pathP }}" fill="none" stroke="#c88a52" stroke-width="11" stroke-linecap="round"/><path d="{{ pathP }}" fill="none" stroke="#b57a44" stroke-width="11" stroke-linecap="round" stroke-dasharray="1 9"/></svg>
+              <sc-for list="{{ plotsP }}" as="p" hint-placeholder-count="3"><div style="{{ p.style }}"></div></sc-for>
+              <sc-for list="{{ towersP }}" as="t" hint-placeholder-count="2"><div style="{{ t.style }}">{{ t.el }}</div></sc-for>
+              <sc-for list="{{ enemiesP }}" as="e" hint-placeholder-count="3"><div style="{{ e.style }}"><div style="width:100%;height:5px;background:#3a2312;border-radius:3px;margin-bottom:2px;overflow:hidden;border:1px solid #3a2312"><div style="{{ e.hpStyle }}"></div></div><div style="width:30px;height:30px;animation:walk .7s ease-in-out infinite">{{ e.el }}</div></div></sc-for>
+              <div style="{{ castleP }}">{{ castleEl }}</div>
+              <span style="position:absolute;top:8px;right:10px;background:#37b6ef;border:2px solid #3a2312;border-radius:7px;padding:0 5px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db">②</span>
+              <span style="position:absolute;bottom:8px;right:10px;background:#37b6ef;border:2px solid #3a2312;border-radius:7px;padding:0 5px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db">③</span>
+            </div>
+            <!-- tower shop -->
+            <div style="flex:none;padding:10px 12px 16px;background:linear-gradient(180deg,#c88a52,#a56a38);border-top:4px solid #3a2312;box-shadow:inset 0 3px 0 rgba(255,255,255,.25);position:relative">
+              <span style="position:absolute;top:-9px;left:14px;background:#37b6ef;border:2px solid #3a2312;border-radius:7px;padding:0 5px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db">④</span>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:14px;color:#fff5db;-webkit-text-stroke:2px #3a2312;paint-order:stroke fill">建造防御塔</span>
+                <button style="{{ waveBtnStyle }}" style-active="{{ waveBtnActive }}">▶ 下一波</button>
+              </div>
+              <div style="display:flex;gap:8px">
+                <sc-for list="{{ shop }}" as="s" hint-placeholder-count="4">
+                  <button style="{{ s.style }}" style-active="{{ s.active }}">
+                    <div style="width:34px;height:34px">{{ s.el }}</div>
+                    <div style="display:flex;align-items:center;gap:2px;margin-top:2px"><span style="width:13px;height:13px">{{ coinEl }}</span><span style="font-family:'Fredoka';font-weight:700;font-size:11px;color:#fff5db">{{ s.cost }}</span></div>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- legend -->
+        <div style="width:210px;display:flex;flex-direction:column;gap:11px;padding-top:30px">
+          <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
+            <div style="display:flex;gap:9px;align-items:flex-start">
+              <span style="flex:none;width:22px;height:22px;border-radius:50%;background:#37b6ef;border:2.5px solid #3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center">{{ l.n }}</span>
+              <div><div style="font-family:'Noto Sans SC';font-weight:700;font-size:13px;color:#3a2312;line-height:1.2">{{ l.cn }}</div><div style="font-family:'Fredoka';font-weight:600;font-size:11px;color:#5a7a8c">{{ l.en }}</div></div>
+            </div>
+          </sc-for>
+          <div style="margin-top:6px;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:10px 12px;box-shadow:0 4px 0 rgba(58,35,18,.18)">
+            <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#3a2312;margin-bottom:4px">红点 = 敌兵血条</div>
+            <div style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#8a5a2c;line-height:1.5">虚线圈 = 空的可放点，点击建造；已建塔可点击升级。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- LANDSCAPE ---- -->
+    <div>
+      <div style="display:inline-block;background:#c14fe0;color:#fff5db;font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;border:3px solid #3a2312;border-radius:10px;padding:5px 14px;box-shadow:0 4px 0 #8f2fa8;margin-bottom:14px">横屏主界面 · 1920×1080</div>
+      <div style="position:relative;width:640px;height:360px;background:#2a1a0d;border-radius:26px;padding:8px;box-shadow:0 14px 0 rgba(0,0,0,.3),0 26px 44px rgba(0,0,0,.4)">
+        <div style="width:100%;height:100%;border-radius:19px;overflow:hidden;display:flex;flex-direction:column;background:#7ecb45">
+          <!-- top HUD bar -->
+          <div style="flex:none;display:flex;align-items:center;gap:8px;padding:9px 12px;background:linear-gradient(180deg,rgba(58,35,18,.4),rgba(58,35,18,.18))">
+            <button style="width:34px;height:34px;border-radius:10px;border:3px solid #3a2312;background:linear-gradient(180deg,#fffdf5,#efe0c0);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 rgba(58,35,18,.25);cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3a2312" stroke-width="3" stroke-linecap="round"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+            <div style="display:flex;align-items:center;gap:4px;background:linear-gradient(180deg,#4a3320,#2e1d0e);border:2.5px solid #3a2312;border-radius:999px;padding:3px 9px 3px 4px"><span style="width:22px;height:22px">{{ heartEl }}</span><span style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:15px">{{ lives }}</span></div>
+            <div style="display:flex;align-items:center;gap:4px;background:linear-gradient(180deg,#4a3320,#2e1d0e);border:2.5px solid #3a2312;border-radius:999px;padding:3px 9px 3px 4px"><span style="width:22px;height:22px">{{ coinEl }}</span><span style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:15px">{{ coins }}</span></div>
+            <div style="margin-left:auto;text-align:center;background:linear-gradient(180deg,#ffe08a,#f5b731);border:3px solid #3a2312;border-radius:11px;padding:3px 14px;box-shadow:0 3px 0 #c98a1e"><span style="font-family:'Fredoka';font-weight:700;font-size:15px;color:#fff5db;-webkit-text-stroke:2px #3a2312;paint-order:stroke fill">波次 {{ wave }}</span></div>
+            <button style="{{ waveBtnStyle }}" style-active="{{ waveBtnActive }}">▶ 下一波</button>
+          </div>
+          <!-- battlefield -->
+          <div style="flex:1;position:relative;background:linear-gradient(160deg,#8fd066,#6cbf37);overflow:hidden">
+            <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.14) 2px,transparent 2px);background-size:24px 24px"></div>
+            <div style="position:absolute;inset:0;pointer-events:none;opacity:.6;z-index:1">{{ sparkFieldL }}</div>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><path d="{{ pathL }}" fill="none" stroke="#3a2312" stroke-width="13" stroke-linecap="round"/><path d="{{ pathL }}" fill="none" stroke="#c88a52" stroke-width="9.5" stroke-linecap="round"/><path d="{{ pathL }}" fill="none" stroke="#b57a44" stroke-width="9.5" stroke-linecap="round" stroke-dasharray="1 9"/></svg>
+            <sc-for list="{{ plotsL }}" as="p" hint-placeholder-count="3"><div style="{{ p.style }}"></div></sc-for>
+            <sc-for list="{{ towersL }}" as="t" hint-placeholder-count="2"><div style="{{ t.style }}">{{ t.el }}</div></sc-for>
+            <sc-for list="{{ enemiesL }}" as="e" hint-placeholder-count="3"><div style="{{ e.style }}"><div style="width:100%;height:5px;background:#3a2312;border-radius:3px;margin-bottom:2px;overflow:hidden;border:1px solid #3a2312"><div style="{{ e.hpStyle }}"></div></div><div style="width:30px;height:30px;animation:walk .7s ease-in-out infinite">{{ e.el }}</div></div></sc-for>
+            <div style="{{ castleL }}">{{ castleEl }}</div>
+          </div>
+          <!-- bottom tower rail -->
+          <div style="flex:none;display:flex;align-items:center;gap:8px;padding:8px 12px;background:linear-gradient(180deg,#c88a52,#a56a38);border-top:4px solid #3a2312;box-shadow:inset 0 3px 0 rgba(255,255,255,.25)">
+            <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:13px;color:#fff5db;-webkit-text-stroke:2px #3a2312;paint-order:stroke fill;white-space:nowrap">建造</span>
+            <div style="display:flex;gap:8px">
+              <sc-for list="{{ shop }}" as="s" hint-placeholder-count="4">
+                <button style="{{ s.style }}" style-active="{{ s.active }}">
+                  <div style="width:32px;height:32px">{{ s.el }}</div>
+                  <div style="display:flex;align-items:center;gap:2px;margin-top:1px"><span style="width:12px;height:12px">{{ coinEl }}</span><span style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db">{{ s.cost }}</span></div>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#1c4f6e;margin-top:12px;max-width:640px;line-height:1.6">横屏路径改为<strong>左进右出</strong>、战场更宽视野更好；HUD 收成顶部一条，塔栏铺在<strong>底部横条</strong>。塔/敌兵/城堡精灵与竖屏完全通用。</div>
+    </div>
+  </div>
+
+  <!-- ============ SECONDARY SCREENS ============ -->
+  <div style="margin-top:34px">
+    <div style="display:inline-block;background:#ffd257;color:#3a2312;font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;border:3px solid #3a2312;border-radius:10px;padding:5px 14px;box-shadow:0 4px 0 #c98a1e;margin-bottom:18px">其他屏 · 升级弹窗 / 结算 / 失败</div>
+    <div style="display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start">
+      <!-- upgrade popup -->
+      <div style="width:270px">
+        <div style="width:100%;border:4px solid #3a2312;border-radius:22px;background:rgba(20,10,4,.5);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 rgba(58,35,18,.25);padding:20px 0;min-height:300px">
+          <div style="position:relative;width:220px;background:linear-gradient(180deg,#fffdf5,#fff0cf);border:4px solid #3a2312;border-radius:20px;padding:34px 16px 16px;box-shadow:0 8px 0 rgba(58,35,18,.3),0 0 26px rgba(255,220,130,.5)">
+            <div style="position:absolute;inset:0;overflow:hidden;border-radius:16px;pointer-events:none">{{ sparkUp }}</div>
+            <span style="position:absolute;top:-9px;left:-9px;width:42px;height:42px">{{ cornerA }}</span>
+            <span style="position:absolute;top:-9px;right:-9px;width:42px;height:42px;transform:scaleX(-1)">{{ cornerA }}</span>
+            <div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,#ffe08a,#f5b731);border:3px solid #3a2312;border-radius:12px;padding:6px 18px;box-shadow:0 4px 0 #c98a1e;white-space:nowrap"><span style="position:absolute;left:-12px;top:6px;width:15px;height:20px">{{ ribbonL }}</span><span style="position:absolute;right:-12px;top:6px;width:15px;height:20px;transform:scaleX(-1)">{{ ribbonR }}</span><span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e">箭塔 · Lv.2</span></div>
+            <div style="position:absolute;top:-14px;right:-10px;width:30px;height:30px;border-radius:50%;background:linear-gradient(180deg,#ff7a5f,#ef5138);border:3px solid #3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 #b8341f;font-size:15px">✕</div>
+            <div style="display:flex;justify-content:center;margin-bottom:10px"><div style="width:60px;height:60px;background:#eafbe0;border:3px solid #3a2312;border-radius:14px;display:flex;align-items:center;justify-content:center"><div style="width:44px;height:44px">{{ archerEl }}</div></div></div>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+              <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
+                <div><div style="display:flex;justify-content:space-between;font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#3a2312;margin-bottom:2px"><span>{{ s.cn }}</span><span style="color:#7ecb45">{{ s.up }}</span></div><div style="height:12px;background:#3a2312;border-radius:6px;overflow:hidden"><div style="{{ s.barStyle }}"></div></div></div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button style="{{ sellBtnStyle }}" style-active="{{ sellBtnActive }}">出售</button>
+              <button style="{{ upBtnStyle }}" style-active="{{ upBtnActive }}"><span style="width:14px;height:14px;display:inline-block;vertical-align:-2px">{{ coinEl }}</span> 升级 120</button>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:center;font-family:'ZCOOL KuaiLe','Fredoka';font-size:15px;color:#3a2312;margin-top:8px">升级弹窗 · Upgrade</div>
+      </div>
+      <!-- victory -->
+      <div style="width:250px">
+        <div style="width:100%;min-height:300px;border:4px solid #3a2312;border-radius:22px;background:rgba(20,10,4,.5);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 rgba(58,35,18,.25);padding:20px 0">
+          <div style="position:relative;width:200px;background:linear-gradient(180deg,#fffdf5,#fff0cf);border:4px solid #3a2312;border-radius:20px;padding:34px 16px 16px;box-shadow:0 8px 0 rgba(58,35,18,.3),0 0 28px rgba(255,220,130,.6)">
+            <div style="position:absolute;inset:0;overflow:hidden;border-radius:16px;pointer-events:none">{{ sparkVic }}</div>
+            <span style="position:absolute;top:-9px;left:-9px;width:42px;height:42px">{{ cornerA }}</span>
+            <span style="position:absolute;top:-9px;right:-9px;width:42px;height:42px;transform:scaleX(-1)">{{ cornerA }}</span>
+            <div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,#ffe08a,#f5b731);border:3px solid #3a2312;border-radius:12px;padding:6px 16px;box-shadow:0 4px 0 #c98a1e;white-space:nowrap"><span style="position:absolute;left:-12px;top:6px;width:15px;height:20px">{{ ribbonL }}</span><span style="position:absolute;right:-12px;top:6px;width:15px;height:20px;transform:scaleX(-1)">{{ ribbonR }}</span><span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e">守城成功</span></div>
+            <div style="display:flex;justify-content:center;gap:4px;margin-bottom:12px"><span style="font-size:26px;filter:drop-shadow(0 2px 0 #c98a1e)">⭐</span><span style="font-size:34px;filter:drop-shadow(0 2px 0 #c98a1e)">⭐</span><span style="font-size:26px;filter:drop-shadow(0 2px 0 #c98a1e)">⭐</span></div>
+            <div style="display:flex;justify-content:center;gap:8px;margin-bottom:14px">
+              <div style="display:flex;align-items:center;gap:4px;background:#fff5db;border:2.5px solid #3a2312;border-radius:10px;padding:4px 10px"><span style="width:20px;height:20px">{{ coinEl }}</span><span style="font-family:'Fredoka';font-weight:700;color:#3a2312;font-size:14px">+300</span></div>
+              <div style="display:flex;align-items:center;gap:4px;background:#fff5db;border:2.5px solid #3a2312;border-radius:10px;padding:4px 10px"><span style="width:18px;height:20px">{{ gemEl }}</span><span style="font-family:'Fredoka';font-weight:700;color:#3a2312;font-size:14px">+3</span></div>
+            </div>
+            <button style="{{ nextBtnStyle }}" style-active="{{ nextBtnActive }}">下一关</button>
+          </div>
+        </div>
+        <div style="text-align:center;font-family:'ZCOOL KuaiLe','Fredoka';font-size:15px;color:#3a2312;margin-top:8px">结算 · Victory</div>
+      </div>
+      <!-- defeat -->
+      <div style="width:250px">
+        <div style="width:100%;min-height:300px;border:4px solid #3a2312;border-radius:22px;background:rgba(20,10,4,.5);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 rgba(58,35,18,.25);padding:20px 0">
+          <div style="position:relative;width:200px;background:linear-gradient(180deg,#fffdf5,#fff0cf);border:4px solid #3a2312;border-radius:20px;padding:34px 16px 16px;box-shadow:0 8px 0 rgba(58,35,18,.3),0 0 26px rgba(242,120,159,.5)">
+            <div style="position:absolute;inset:0;overflow:hidden;border-radius:16px;pointer-events:none">{{ sparkDef }}</div>
+            <span style="position:absolute;top:-9px;left:-9px;width:42px;height:42px">{{ cornerA }}</span>
+            <span style="position:absolute;top:-9px;right:-9px;width:42px;height:42px;transform:scaleX(-1)">{{ cornerA }}</span>
+            <div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,#ff9a86,#ef5138);border:3px solid #3a2312;border-radius:12px;padding:6px 16px;box-shadow:0 4px 0 #b8341f;white-space:nowrap"><span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #b8341f">城池失守</span></div>
+            <div style="display:flex;justify-content:center;margin:6px 0 12px"><div style="width:64px;height:64px;opacity:.55;filter:grayscale(.4)">{{ castleSmallEl }}</div></div>
+            <div style="text-align:center;font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#8a5a2c;margin-bottom:14px">敌人攻破了城门…</div>
+            <button style="{{ retryBtnStyle }}" style-active="{{ retryBtnActive }}">再来一次</button>
+          </div>
+        </div>
+        <div style="text-align:center;font-family:'ZCOOL KuaiLe','Fredoka';font-size:15px;color:#3a2312;margin-top:8px">失败 · Defeat</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ART ASSET LIST ============ -->
+  <div style="margin-top:36px;background:linear-gradient(180deg,#fffdf5,#fff0cf);border:4px solid #3a2312;border-radius:26px;padding:26px 30px 34px;box-shadow:0 10px 0 rgba(58,35,18,.22),0 20px 30px rgba(0,0,0,.18)">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:12px;background:linear-gradient(180deg,#d987ee,#c14fe0);border:3px solid #3a2312;color:#fff5db;font-family:'Fredoka';font-weight:700;font-size:19px;box-shadow:0 4px 0 #8f2fa8">B5</span>
+      <div><h3 style="margin:0;font-family:'ZCOOL KuaiLe','Fredoka';font-size:26px;color:#3a2312;line-height:1">美术资源清单</h3><div style="font-family:'Fredoka';font-weight:600;color:#8a5a2c;font-size:12px;letter-spacing:.06em">ART ASSET LIST · PNG 透明 · 命名 td_&lt;类别&gt;_&lt;名称&gt;_&lt;状态&gt;</div></div>
+    </div>
+
+    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312;margin-bottom:10px">防御塔 · 4 种 × 3 级外观</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:22px">
+      <sc-for list="{{ towerRows }}" as="row" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:70px;font-family:'Noto Sans SC';font-weight:700;font-size:13px;color:#3a2312">{{ row.cn }}</div>
+          <div style="display:flex;gap:10px">
+            <sc-for list="{{ row.levels }}" as="lv" hint-placeholder-count="3">
+              <div style="width:78px;background:#fff;border:3px solid #3a2312;border-radius:12px;overflow:hidden;box-shadow:0 4px 0 rgba(58,35,18,.16)">
+                <div style="height:60px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0/16px 16px;border-bottom:2px solid #3a2312"><div style="width:46px;height:46px">{{ lv.el }}</div></div>
+                <div style="padding:3px;text-align:center;font-family:ui-monospace,Menlo,monospace;font-size:9px;color:#3a2312">{{ lv.name }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312;margin-bottom:10px">敌兵 · 5 型 + Boss</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px">
+      <sc-for list="{{ enemySamples }}" as="a" hint-placeholder-count="6">
+        <div style="width:92px;background:#fff;border:3px solid #3a2312;border-radius:12px;overflow:hidden;box-shadow:0 4px 0 rgba(58,35,18,.16)">
+          <div style="{{ a.coverStyle }}"><div style="width:48px;height:48px">{{ a.el }}</div></div>
+          <div style="padding:4px;text-align:center"><div style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#3a2312">{{ a.cn }}</div><div style="font-family:ui-monospace,Menlo,monospace;font-size:8px;color:#8a5a2c">{{ a.name }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312;margin-bottom:10px">地块 tileset · 特效 · HUD 图标 · 基地</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px">
+      <sc-for list="{{ miscSamples }}" as="a" hint-placeholder-count="6">
+        <div style="width:100px;background:#fff;border:3px solid #3a2312;border-radius:12px;overflow:hidden;box-shadow:0 4px 0 rgba(58,35,18,.16)">
+          <div style="{{ a.coverStyle }}"><div style="{{ a.iconWrap }}">{{ a.el }}</div></div>
+          <div style="padding:4px;text-align:center"><div style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#3a2312">{{ a.cn }}</div><div style="font-family:ui-monospace,Menlo,monospace;font-size:8px;color:#8a5a2c">{{ a.name }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- 9-slice -->
+    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312;margin-bottom:10px">可拉伸面板 · 九宫格切图标注</div>
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+      <div style="position:relative;width:220px;height:120px;border:4px solid #3a2312;border-radius:18px;background:linear-gradient(180deg,#fffdf5,#fff0cf);box-shadow:inset 0 3px 0 rgba(255,255,255,.7)">
+        <div style="position:absolute;left:40px;right:40px;top:0;bottom:0;border-left:2px dashed #ef5138;border-right:2px dashed #ef5138"></div>
+        <div style="position:absolute;top:34px;bottom:34px;left:0;right:0;border-top:2px dashed #ef5138;border-bottom:2px dashed #ef5138"></div>
+        <span style="position:absolute;top:6px;left:50%;transform:translateX(-50%);font-family:'Fredoka';font-weight:700;font-size:11px;color:#ef5138;background:#fff5db;padding:0 4px">↔ 横向拉伸区</span>
+        <span style="position:absolute;top:4px;left:4px;width:32px;height:26px;border:2px solid #37b6ef;border-radius:6px"></span>
+      </div>
+      <div style="max-width:380px;font-family:'Noto Sans SC';font-weight:600;font-size:13px;color:#3a2312;line-height:1.7">
+        波次条 / 升级弹窗 / 缎带用<strong>九宫格</strong>导出：四角固定、边缘单向拉伸、中心双向。<br>
+        <span style="color:#8a5a2c">命名：<code style="font-family:ui-monospace">td_panel_wave_9s</code> · <code style="font-family:ui-monospace">td_ui_ribbon_9s</code></span><br>
+        塔各级差异靠<strong>底座配色（铜/银/金）+ 顶饰</strong>区分；图标出 <code style="font-family:ui-monospace">@1x/@2x/@3x</code>，全套墨棕描边 #3a2312。
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:1560}}">
+class Component extends DCLogic {
+  state = { lives: 18, coins: 640, wave: '5/12' };
+
+  tower(type, lvl) {
+    const h = React.createElement;
+    const S = { width: '100%', height: '100%' };
+    const svg = (k) => h('svg', { viewBox: '0 0 100 100', style: S, preserveAspectRatio: 'xMidYMid meet' }, k);
+    const st = { stroke: '#3a2312', strokeWidth: 5, strokeLinejoin: 'round' };
+    const trim = ['#cd8836', '#cfd4d8', '#ffd257'][lvl - 1];
+    const shadow = h('ellipse', { key: 'sh', cx: 50, cy: 90, rx: 26, ry: 7, fill: 'rgba(0,0,0,.22)' });
+    const base = h('rect', { key: 'b', x: 30, y: 52, width: 40, height: 36, rx: 5, fill: '#a9b0b8', ...st });
+    const band = h('rect', { key: 'bd', x: 30, y: 62, width: 40, height: 8, fill: trim });
+    const battle = h('path', { key: 'bt', d: 'M28,52 v-8 h8 v6 h6 v-6 h8 v6 h6 v-6 h8 v8 z', fill: '#8a9096', ...st });
+    let top;
+    if (type === 'archer') top = [h('polygon', { key: 't', points: '50,10 68,40 32,40', fill: '#7ecb45', ...st }), h('rect', { key: 'p', x: 48, y: 6, width: 4, height: 10, fill: '#3a2312' }), h('polygon', { key: 'f', points: '52,6 66,10 52,14', fill: '#ef5138' })];
+    else if (type === 'cannon') top = [h('circle', { key: 'w', cx: 50, cy: 40, r: 15, fill: '#4a4f55', ...st }), h('rect', { key: 'br', x: 46, y: 12, width: 8, height: 22, rx: 3, fill: '#4a4f55', ...st })];
+    else if (type === 'magic') top = [h('circle', { key: 'o', cx: 50, cy: 34, r: 16, fill: '#c14fe0', ...st }), h('circle', { key: 'g', cx: 44, cy: 28, r: 5, fill: 'rgba(255,255,255,.7)' })];
+    else top = [h('polygon', { key: 'c', points: '50,10 62,34 50,50 38,34', fill: '#5fcdf5', ...st }), h('ellipse', { key: 'g', cx: 45, cy: 24, rx: 3, ry: 6, fill: 'rgba(255,255,255,.8)' })];
+    return svg([shadow, base, band, battle, ...top]);
+  }
+
+  enemy(type) {
+    const h = React.createElement;
+    const S = { width: '100%', height: '100%' };
+    const svg = (k) => h('svg', { viewBox: '0 0 100 100', style: S, preserveAspectRatio: 'xMidYMid meet' }, k);
+    const st = { stroke: '#3a2312', strokeWidth: 5, strokeLinejoin: 'round' };
+    const shadow = h('ellipse', { key: 'sh', cx: 50, cy: 90, rx: 24, ry: 6, fill: 'rgba(0,0,0,.2)' });
+    const eyes = (cx1, cx2, cy) => [h('circle', { key: 'e1', cx: cx1, cy, r: 8.5, fill: '#fff', stroke: '#3a2312', strokeWidth: 3 }), h('circle', { key: 'e2', cx: cx2, cy, r: 8.5, fill: '#fff', stroke: '#3a2312', strokeWidth: 3 }), h('circle', { key: 'p1', cx: cx1 + 1, cy: cy + 1, r: 4, fill: '#241a12' }), h('circle', { key: 'p2', cx: cx2 + 1, cy: cy + 1, r: 4, fill: '#241a12' }), h('circle', { key: 'cl1', cx: cx1 - 1.5, cy: cy - 1.5, r: 1.7, fill: '#fff' }), h('circle', { key: 'cl2', cx: cx2 - 1.5, cy: cy - 1.5, r: 1.7, fill: '#fff' })];
+    switch (type) {
+      case 'goblin': return svg([shadow, h('polygon', { key: 'ea', points: '22,40 8,26 26,34', fill: '#5aa62f', ...st }), h('polygon', { key: 'eb', points: '78,40 92,26 74,34', fill: '#5aa62f', ...st }), h('circle', { key: 'b', cx: 50, cy: 52, r: 30, fill: '#7ecb45', ...st }), ...eyes(40, 60, 48)]);
+      case 'orc': return svg([shadow, h('rect', { key: 'b', x: 20, y: 30, width: 60, height: 54, rx: 20, fill: '#ef5138', ...st }), ...eyes(38, 62, 48), h('polygon', { key: 'tk1', points: '40,66 44,80 48,66', fill: '#fff', stroke: '#3a2312', strokeWidth: 2 }), h('polygon', { key: 'tk2', points: '52,66 56,80 60,66', fill: '#fff', stroke: '#3a2312', strokeWidth: 2 })]);
+      case 'bat': return svg([shadow, h('polygon', { key: 'w1', points: '30,44 4,30 8,58 30,60', fill: '#8f3fb0', ...st }), h('polygon', { key: 'w2', points: '70,44 96,30 92,58 70,60', fill: '#8f3fb0', ...st }), h('circle', { key: 'b', cx: 50, cy: 52, r: 24, fill: '#c14fe0', ...st }), ...eyes(42, 58, 48)]);
+      case 'slime': return svg([shadow, h('path', { key: 'b', d: 'M18,78 C14,44 30,34 50,34 C70,34 86,44 82,78 Z', fill: '#37b6ef', ...st }), ...eyes(41, 59, 56), h('ellipse', { key: 'g', cx: 36, cy: 46, rx: 6, ry: 3, fill: 'rgba(255,255,255,.6)' })]);
+      case 'skeleton': return svg([shadow, h('circle', { key: 'b2', cx: 50, cy: 44, r: 26, fill: '#f0ede3', ...st }), h('ellipse', { key: 's1', cx: 40, cy: 42, rx: 6, ry: 8, fill: '#3a2312' }), h('ellipse', { key: 's2', cx: 60, cy: 42, rx: 6, ry: 8, fill: '#3a2312' }), h('rect', { key: 'j', x: 38, y: 62, width: 24, height: 10, rx: 3, fill: '#f0ede3', stroke: '#3a2312', strokeWidth: 3 }), h('line', { key: 'jl', x1: 44, y1: 62, x2: 44, y2: 72, stroke: '#3a2312', strokeWidth: 2 }), h('line', { key: 'jl2', x1: 56, y1: 62, x2: 56, y2: 72, stroke: '#3a2312', strokeWidth: 2 })]);
+      case 'boss': return svg([shadow, h('polygon', { key: 'h1', points: '26,26 14,6 34,20', fill: '#7a4a2a', ...st }), h('polygon', { key: 'h2', points: '74,26 86,6 66,20', fill: '#7a4a2a', ...st }), h('circle', { key: 'b', cx: 50, cy: 54, r: 34, fill: '#a56a38', ...st }), ...eyes(38, 62, 48), h('path', { key: 'm', d: 'M38,70 Q50,80 62,70', fill: 'none', stroke: '#3a2312', strokeWidth: 4, strokeLinecap: 'round' }), h('polygon', { key: 'tk1', points: '40,70 43,82 47,70', fill: '#fff', stroke: '#3a2312', strokeWidth: 2 }), h('polygon', { key: 'tk2', points: '53,70 57,82 60,70', fill: '#fff', stroke: '#3a2312', strokeWidth: 2 })]);
+      default: return svg([shadow, h('circle', { key: 'b', cx: 50, cy: 52, r: 28, fill: '#ccc', ...st })]);
+    }
+  }
+
+  castle(scale) {
+    const h = React.createElement;
+    const S = { width: '100%', height: '100%' };
+    const st = { stroke: '#3a2312', strokeWidth: 5, strokeLinejoin: 'round' };
+    return h('svg', { viewBox: '0 0 100 100', style: S, preserveAspectRatio: 'xMidYMid meet' }, [
+      h('ellipse', { key: 'sh', cx: 50, cy: 92, rx: 34, ry: 7, fill: 'rgba(0,0,0,.22)' }),
+      h('rect', { key: 'keep', x: 30, y: 42, width: 40, height: 46, fill: '#c2c7cc', ...st }),
+      h('rect', { key: 'lt', x: 14, y: 34, width: 20, height: 54, fill: '#a9b0b8', ...st }),
+      h('rect', { key: 'rt', x: 66, y: 34, width: 20, height: 54, fill: '#a9b0b8', ...st }),
+      h('polygon', { key: 'lr', points: '10,34 24,16 38,34', fill: '#ef5138', ...st }),
+      h('polygon', { key: 'rr', points: '62,34 76,16 90,34', fill: '#ef5138', ...st }),
+      h('path', { key: 'kb', d: 'M28,42 v-8 h8 v6 h6 v-6 h8 v6 h6 v-6 h8 v8 z', fill: '#b0b6bb', ...st }),
+      h('path', { key: 'gate', d: 'M42,88 v-16 a8 8 0 0 1 16 0 v16 z', fill: '#6a4a2a', stroke: '#3a2312', strokeWidth: 4 }),
+      h('rect', { key: 'fp', x: 48, y: 6, width: 3, height: 12, fill: '#3a2312' }),
+      h('polygon', { key: 'fl', points: '51,6 64,10 51,14', fill: '#ffd257', stroke: '#3a2312', strokeWidth: 2 })
+    ]);
+  }
+
+  icon(type) {
+    const h = React.createElement;
+    const S = { width: '100%', height: '100%' };
+    const svg = (k, vb) => h('svg', { viewBox: vb || '0 0 100 100', style: S, preserveAspectRatio: 'xMidYMid meet' }, k);
+    if (type === 'heart') return svg([h('path', { key: 'h', d: 'M50,86 C10,58 18,20 42,28 C48,30 50,36 50,36 C50,36 52,30 58,28 C82,20 90,58 50,86 Z', fill: '#ef5138', stroke: '#3a2312', strokeWidth: 6, strokeLinejoin: 'round' }), h('ellipse', { key: 'g', cx: 36, cy: 42, rx: 6, ry: 4, fill: 'rgba(255,255,255,.6)' })]);
+    if (type === 'coin') return svg([h('circle', { key: 'c', cx: 50, cy: 50, r: 40, fill: '#e0a71f', stroke: '#3a2312', strokeWidth: 6 }), h('circle', { key: 'c2', cx: 50, cy: 50, r: 28, fill: '#ffd257', stroke: '#b07d12', strokeWidth: 4 }), h('text', { key: 't', x: 50, y: 64, fill: '#a06a12', fontFamily: 'Fredoka', fontWeight: 700, fontSize: 34, textAnchor: 'middle' }, '$'), h('ellipse', { key: 'g', cx: 38, cy: 34, rx: 7, ry: 4, fill: 'rgba(255,255,255,.6)' })]);
+    if (type === 'gem') return svg([h('polygon', { key: 'p', points: '50,6 89,36 70,96 30,96 11,36', fill: '#37b6ef', stroke: '#3a2312', strokeWidth: 6, strokeLinejoin: 'round' }), h('polygon', { key: 'g', points: '50,9 84,36 50,48 16,36', fill: 'rgba(255,255,255,.55)' })]);
+    if (type === 'path') return svg([h('rect', { key: 'g', x: 4, y: 4, width: 92, height: 92, rx: 8, fill: '#6cbf37', stroke: '#3a2312', strokeWidth: 5 }), h('rect', { key: 'p', x: 4, y: 34, width: 92, height: 32, fill: '#c88a52' }), h('rect', { key: 'p2', x: 4, y: 34, width: 92, height: 4, fill: '#b57a44' })]);
+    if (type === 'grass') return svg([h('rect', { key: 'g', x: 4, y: 4, width: 92, height: 92, rx: 8, fill: '#7ecb45', stroke: '#3a2312', strokeWidth: 5 }), h('path', { key: 'b', d: 'M24,60 l4,-14 l4,14 M46,66 l4,-16 l4,16 M68,60 l4,-14 l4,14', fill: 'none', stroke: '#5aa62f', strokeWidth: 4, strokeLinecap: 'round' })]);
+    if (type === 'plot') return svg([h('rect', { key: 'g', x: 4, y: 4, width: 92, height: 92, rx: 8, fill: '#8fd066', stroke: '#3a2312', strokeWidth: 5 }), h('circle', { key: 'c', cx: 50, cy: 50, r: 26, fill: 'none', stroke: '#3a2312', strokeWidth: 4, strokeDasharray: '8 8' }), h('path', { key: 'pl', d: 'M50,38 v24 M38,50 h24', stroke: '#3a2312', strokeWidth: 4, strokeLinecap: 'round' })]);
+    if (type === 'hit') return svg([...[0, 60, 120, 180, 240, 300].map((a, i) => h('polygon', { key: 'r' + i, points: '50,50 ' + (50 + 40 * Math.cos((a - 8) * Math.PI / 180)) + ',' + (50 + 40 * Math.sin((a - 8) * Math.PI / 180)) + ' ' + (50 + 40 * Math.cos((a + 8) * Math.PI / 180)) + ',' + (50 + 40 * Math.sin((a + 8) * Math.PI / 180)), fill: '#ffd257', stroke: '#3a2312', strokeWidth: 3 })), h('circle', { key: 'c', cx: 50, cy: 50, r: 14, fill: '#fff5db', stroke: '#3a2312', strokeWidth: 4 })]);
+    if (type === 'arrow') return svg([h('line', { key: 'l', x1: 20, y1: 80, x2: 78, y2: 22, stroke: '#6a4a2a', strokeWidth: 7, strokeLinecap: 'round' }), h('polygon', { key: 'h', points: '78,22 66,28 72,34', fill: '#a9b0b8', stroke: '#3a2312', strokeWidth: 3 }), h('polygon', { key: 'f', points: '20,80 30,74 26,86', fill: '#ef5138', stroke: '#3a2312', strokeWidth: 2 })]);
+    return svg([h('circle', { key: 'c', cx: 50, cy: 50, r: 30, fill: '#ccc' })]);
+  }
+
+  jellyIcon(top, bottom, edge, w) {
+    return { style: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: (w || 56) + 'px', padding: '7px 4px', borderRadius: '13px', border: '3px solid #3a2312', background: 'linear-gradient(180deg,' + top + ',' + bottom + ')', cursor: 'pointer', boxShadow: '0 5px 0 ' + edge + ', inset 0 2px 0 rgba(255,255,255,.5), inset 0 -4px 0 rgba(0,0,0,.14)', transition: 'transform .06s, box-shadow .06s', transform: 'translateY(0)' }, active: { transform: 'translateY(3px)', boxShadow: '0 2px 0 ' + edge + ', inset 0 2px 0 rgba(255,255,255,.5)' } };
+  }
+  jellyText(top, bottom, edge, fs) {
+    return { style: { border: '3px solid #3a2312', borderRadius: '12px', padding: '7px 14px', background: 'linear-gradient(180deg,' + top + ',' + bottom + ')', color: '#fff5db', cursor: 'pointer', fontFamily: "'ZCOOL KuaiLe','Fredoka',sans-serif", fontSize: (fs || 14) + 'px', textShadow: '0 2px 0 rgba(0,0,0,.28)', boxShadow: '0 4px 0 ' + edge + ', inset 0 2px 0 rgba(255,255,255,.5)', transition: 'transform .06s, box-shadow .06s', transform: 'translateY(0)', whiteSpace: 'nowrap' }, active: { transform: 'translateY(3px)', boxShadow: '0 2px 0 ' + edge + ', inset 0 2px 0 rgba(255,255,255,.5)' } };
+  }
+
+  place(x, y, w, extra) { return Object.assign({ position: 'absolute', left: x + '%', top: y + '%', width: (w || 44) + 'px', transform: 'translate(-50%,-70%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }, extra || {}); }
+
+  sparkleField(seed, n) {
+    const h = React.createElement;
+    let s = seed; const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+    const pts = [];
+    for (let i = 0; i < n; i++) { const x = 4 + rnd() * 92, y = 4 + rnd() * 92, sz = 7 + rnd() * 11, d = rnd() * 2;
+      pts.push(h('div', { key: i, style: { position: 'absolute', left: x + '%', top: y + '%', width: sz + 'px', height: sz + 'px', animation: 'twinkle ' + (1.6 + rnd() * 1.6).toFixed(2) + 's ease-in-out ' + d.toFixed(2) + 's infinite' } }, h('svg', { viewBox: '0 0 100 100', style: { width: '100%', height: '100%' } }, [h('path', { key: 'p', d: 'M50,4 C54,40 60,46 96,50 C60,54 54,60 50,96 C46,60 40,54 4,50 C40,46 46,40 50,4 Z', fill: '#fff5db' }), h('circle', { key: 'c', cx: 50, cy: 50, r: 6, fill: '#fff' })]))); }
+    return h('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none' } }, pts);
+  }
+  corner() {
+    const h = React.createElement;
+    const d = 'M8,44 C8,24 24,8 44,8 M14,40 C14,28 28,14 40,14 M40,14 C30,14 28,22 34,24 C40,26 40,18 34,18 M14,40 C14,30 22,28 24,34 C26,40 18,40 18,34';
+    return h('svg', { viewBox: '0 0 52 52', style: { width: '100%', height: '100%' } }, [h('path', { key: 'o', d, fill: 'none', stroke: '#3a2312', strokeWidth: 9, strokeLinecap: 'round', strokeLinejoin: 'round' }), h('path', { key: 'i', d, fill: 'none', stroke: '#ffd257', strokeWidth: 5, strokeLinecap: 'round', strokeLinejoin: 'round' })]);
+  }
+  ribbonTail() {
+    const h = React.createElement;
+    return h('svg', { viewBox: '0 0 20 26', style: { width: '100%', height: '100%' } }, h('path', { d: 'M18,2 C6,4 2,10 6,14 C10,18 4,22 16,24 L18,24 Z', fill: '#c98a1e', stroke: '#3a2312', strokeWidth: 3, strokeLinejoin: 'round' }));
+  }
+
+  renderVals() {
+    const heartEl = this.icon('heart'), coinEl = this.icon('coin'), gemEl = this.icon('gem');
+
+    const shopDefs = [{ t: 'archer', cost: 100, c: ['#8fe05a', '#6cbf37', '#4e8a24'] }, { t: 'cannon', cost: 180, c: ['#ff9a86', '#ef5138', '#b8341f'] }, { t: 'magic', cost: 220, c: ['#d987ee', '#c14fe0', '#8f2fa8'] }, { t: 'frost', cost: 160, c: ['#5fcdf5', '#37b6ef', '#1f86bd'] }];
+    const shop = shopDefs.map((s, i) => { const j = this.jellyIcon(s.c[0], s.c[1], s.c[2]); if (i === 0) { j.style.boxShadow += ', 0 0 0 3px #ffd257'; } return { el: this.tower(s.t, 1), cost: s.cost, style: j.style, active: j.active }; });
+
+    // portrait path + placements (0-100 space, preserveAspectRatio none)
+    const pathP = 'M12,4 C12,26 86,22 86,44 C86,66 14,62 14,82 C14,92 55,92 82,90';
+    const plotsP = [[46, 22], [58, 52], [34, 74]].map(p => ({ style: { position: 'absolute', left: p[0] + '%', top: p[1] + '%', width: '34px', height: '34px', transform: 'translate(-50%,-50%)', borderRadius: '50%', border: '3px dashed rgba(58,35,18,.55)', background: 'rgba(255,255,255,.18)' } }));
+    const towersP = [{ x: 30, y: 15, t: 'archer' }, { x: 84, y: 44, t: 'cannon' }].map(t => ({ el: this.tower(t.t, t.x > 50 ? 2 : 1), style: this.place(t.x, t.y, 46, { zIndex: 3, filter: 'drop-shadow(0 3px 0 rgba(58,35,18,.3))' }) }));
+    const enemiesP = [{ x: 14, y: 10, t: 'goblin', hp: 80 }, { x: 60, y: 33, t: 'orc', hp: 55 }, { x: 26, y: 70, t: 'bat', hp: 90 }].map(e => ({ el: this.enemy(e.t), style: this.place(e.x, e.y, 34, { zIndex: 4 }), hpStyle: { height: '100%', width: e.hp + '%', background: '#7ecb45' } }));
+    const castleP = this.place(84, 90, 60, { zIndex: 2, transform: 'translate(-50%,-78%)' });
+
+    // landscape
+    const pathL = 'M2,50 C18,50 20,20 40,20 C60,20 60,80 78,80 C86,80 90,54 98,50';
+    const plotsL = [[32, 44], [54, 46], [70, 60]].map(p => ({ style: { position: 'absolute', left: p[0] + '%', top: p[1] + '%', width: '30px', height: '30px', transform: 'translate(-50%,-50%)', borderRadius: '50%', border: '3px dashed rgba(58,35,18,.55)', background: 'rgba(255,255,255,.18)' } }));
+    const towersL = [{ x: 40, y: 20, t: 'magic' }, { x: 78, y: 80, t: 'archer' }].map(t => ({ el: this.tower(t.t, 2), style: this.place(t.x, t.y, 44, { zIndex: 3, filter: 'drop-shadow(0 3px 0 rgba(58,35,18,.3))' }) }));
+    const enemiesL = [{ x: 8, y: 50, t: 'slime', hp: 70 }, { x: 40, y: 20, t: 'goblin', hp: 90 }, { x: 66, y: 66, t: 'skeleton', hp: 45 }].map(e => ({ el: this.enemy(e.t), style: this.place(e.x, e.y, 32, { zIndex: 4 }), hpStyle: { height: '100%', width: e.hp + '%', background: '#7ecb45' } }));
+    const castleL = this.place(94, 50, 58, { zIndex: 2, transform: 'translate(-50%,-64%)' });
+
+    const legend = [
+      { n: '①', cn: '生命 / 金币 / 波次 HUD', en: 'Lives · Coins · Wave' },
+      { n: '②', cn: '进军路径 + 可放点', en: 'Path & tower plots' },
+      { n: '③', cn: '基地城堡（防守目标）', en: 'Base castle' },
+      { n: '④', cn: '塔选建造栏 + 开波按钮', en: 'Tower shop & start wave' }
+    ];
+
+    const wave = this.jellyText('#8fe05a', '#6cbf37', '#4e8a24', 13);
+    const next = this.jellyText('#8fe05a', '#6cbf37', '#4e8a24', 17); next.style.width = '100%'; next.style.padding = '9px 0'; next.style.textAlign = 'center';
+    const retry = this.jellyText('#ffdd6e', '#f5b731', '#c98a1e', 17); retry.style.width = '100%'; retry.style.padding = '9px 0'; retry.style.textAlign = 'center';
+    const up = this.jellyText('#8fe05a', '#6cbf37', '#4e8a24', 14); up.style.flex = '1'; up.style.textAlign = 'center';
+    const sell = this.jellyText('#ff9a86', '#ef5138', '#b8341f', 14); sell.style.flex = 'none';
+
+    const stats = [{ cn: '伤害', pct: 62, up: '+20' }, { cn: '射程', pct: 48, up: '+10' }, { cn: '攻速', pct: 74, up: '+15' }].map(s => ({ cn: s.cn, up: s.up, barStyle: { height: '100%', width: s.pct + '%', background: 'linear-gradient(180deg,#aef07a,#7ecb45)', borderRadius: '6px' } }));
+
+    // asset list
+    const twDefs = [{ t: 'archer', cn: '箭塔', key: 'archer' }, { t: 'cannon', cn: '炮塔', key: 'cannon' }, { t: 'magic', cn: '魔法塔', key: 'magic' }, { t: 'frost', cn: '冰塔', key: 'frost' }];
+    const towerRows = twDefs.map(d => ({ cn: d.cn, levels: [1, 2, 3].map(lv => ({ el: this.tower(d.t, lv), name: 'td_tower_' + d.key + '_l' + lv })) }));
+
+    const enDefs = [{ t: 'goblin', cn: '哥布林', c: ['#eafbe0', '#c9f0aa'] }, { t: 'orc', cn: '兽人', c: ['#ffe9e4', '#ffc9bd'] }, { t: 'bat', cn: '蝙蝠', c: ['#efe0ff', '#d8bdf5'] }, { t: 'slime', cn: '史莱姆', c: ['#e0f5ff', '#b8e6fb'] }, { t: 'skeleton', cn: '骷髅', c: ['#f2f0ea', '#e0ddd2'] }, { t: 'boss', cn: 'Boss 巨魔', c: ['#f5e6d2', '#e8cfa8'] }];
+    const enemySamples = enDefs.map(d => ({ el: this.enemy(d.t), cn: d.cn, name: 'td_enemy_' + d.t, coverStyle: { height: '58px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '2px solid #3a2312', background: 'linear-gradient(180deg,' + d.c[0] + ',' + d.c[1] + ')' } }));
+
+    const miscDefs = [
+      { t: 'path', cn: '路径地块', name: 'td_tile_path', full: true }, { t: 'grass', cn: '草地地块', name: 'td_tile_grass', full: true }, { t: 'plot', cn: '可放点', name: 'td_tile_plot', full: true },
+      { t: 'arrow', cn: '攻击弹道', name: 'td_fx_arrow' }, { t: 'hit', cn: '命中特效', name: 'td_fx_hit' },
+      { t: 'heart', cn: '生命图标', name: 'td_ui_heart' }, { t: 'coin', cn: '金币图标', name: 'td_ui_coin' }, { t: 'castle', cn: '基地城堡', name: 'td_base_castle' }
+    ];
+    const miscSamples = miscDefs.map(d => ({ el: d.t === 'castle' ? this.castle() : this.icon(d.t), cn: d.cn, name: d.name,
+      coverStyle: { height: '62px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '2px solid #3a2312', background: d.full ? '#fff' : 'repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0/14px 14px' },
+      iconWrap: { width: d.full ? '48px' : (d.t === 'castle' ? '54px' : '40px'), height: d.full ? '48px' : (d.t === 'castle' ? '54px' : '40px') } }));
+
+    return {
+      lives: this.state.lives, coins: this.state.coins, wave: this.state.wave,
+      heartEl, coinEl, gemEl,
+      sparkUp: this.sparkleField(11, 7), sparkVic: this.sparkleField(23, 8), sparkDef: this.sparkleField(37, 6),
+      sparkFieldP: this.sparkleField(47, 6), sparkFieldL: this.sparkleField(59, 7),
+      cornerA: this.corner(), ribbonL: this.ribbonTail(), ribbonR: this.ribbonTail(),
+      shop, pathP, plotsP, towersP, enemiesP, castleP,
+      pathL, plotsL, towersL, enemiesL, castleL,
+      castleEl: this.castle(), archerEl: this.tower('archer', 2), castleSmallEl: this.castle(),
+      legend, stats,
+      towerRows, enemySamples, miscSamples,
+      waveBtnStyle: wave.style, waveBtnActive: wave.active,
+      nextBtnStyle: next.style, nextBtnActive: next.active,
+      retryBtnStyle: retry.style, retryBtnActive: retry.active,
+      upBtnStyle: up.style, upBtnActive: up.active,
+      sellBtnStyle: sell.style, sellBtnActive: sell.active
+    };
+  }
+}
+</script>
+</body>
+</html>
