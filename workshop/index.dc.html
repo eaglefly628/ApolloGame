@@ -761,7 +761,7 @@ class Component extends DCLogic {
     this._cl = setInterval(() => {
       fetch('/api/llm-live').then(r => r.json()).then(d => {
         const top = d && d.success && (d.live || [])[0];
-        this.setState({ chatLive: top ? { chars: top.chars, sec: top.elapsedSec } : null });
+        this.setState({ chatLive: top ? { chars: top.chars, sec: top.elapsedSec, tail: top.tail || '' } : null });
       }).catch(() => {});
     }, 1500);
   }
@@ -873,7 +873,10 @@ class Component extends DCLogic {
     this.watchChatLive(true);
     (role === 'pe' ? this.catalog().then(post) : post(undefined)).then(d => {
       if (!d || !d.success) throw new Error((d && d.error) || '对话失败');
-      const withReply = msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）' }]);
+      const u = d.usage || {};
+      const tok = (u.input_tokens || u.output_tokens) ? (' · ↑' + this.fmt(u.input_tokens || 0) + ' ↓' + this.fmt(u.output_tokens || 0) + ' tok') : '';
+      const meta = d.elapsedMs ? ('⏱ ' + (d.elapsedMs / 1000).toFixed(1) + 's' + tok) : '';
+      const withReply = msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）', meta: meta || undefined }]);
       this.watchChatLive(false);
       this.setState(cur => ({
         chats: Object.assign({}, cur.chats, { [role]: withReply }), chatBusy: false,
@@ -1159,7 +1162,7 @@ class Component extends DCLogic {
     const tabOn = { border: '3px solid #3a2312', borderRadius: '11px', padding: '7px 16px', cursor: 'pointer', fontFamily: "'ZCOOL KuaiLe','Fredoka',sans-serif", fontSize: '15px', background: 'linear-gradient(180deg,#ffe08a,#f5b731)', color: '#3a2312', boxShadow: '0 3px 0 #c98a1e' };
     const tabOff = { border: '3px solid transparent', borderRadius: '11px', padding: '7px 16px', cursor: 'pointer', fontFamily: "'ZCOOL KuaiLe','Fredoka',sans-serif", fontSize: '15px', background: 'rgba(58,35,18,.12)', color: '#5a3d1e' };
     const chatMsgs = ((s.chats[s.chatRole]) || []).map((m, idx) => ({
-      text: m.content,
+      text: m.meta ? (m.content + '\n' + m.meta) : m.content,
       rowStyle: { display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' },
       bubbleStyle: { maxWidth: '85%', padding: '9px 13px', borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px', border: '2.5px solid #3a2312',
         background: m.role === 'user' ? 'linear-gradient(180deg,#ffe08a,#f5b731)' : '#fff',
@@ -1319,8 +1322,11 @@ class Component extends DCLogic {
     // 调试日志块（/api/llm-logs 度量行·新在前）
     const logRows = ((s.llmLogs && s.llmLogs.lines) || []).slice(0, 12).map(rec => {
       const bad = rec.error || rec.validation === 'fail' || rec.validation === 'error';
+      const u = rec.usage || {};
       const t = [(rec.ts || '').slice(11), rec.mode, (rec.provider || '') + '/' + (rec.model || ''),
-        ((rec.elapsedMs || 0) / 1000).toFixed(1) + 's', rec.validation || '',
+        ((rec.elapsedMs || 0) / 1000).toFixed(1) + 's',
+        (u.input_tokens || u.output_tokens) ? ('↑' + (u.input_tokens || 0) + ' ↓' + (u.output_tokens || 0) + ' tok') : '',
+        rec.validation || '',
         rec.error ? '✗ ' + rec.error : ''].filter(Boolean).join(' · ');
       return { text: t, style: { fontFamily: 'ui-monospace,Menlo,monospace', fontSize: '10px', lineHeight: '1.5',
         color: bad ? '#a03222' : '#5a3d1e', background: bad ? '#ffe1d6' : 'rgba(58,35,18,.05)',
@@ -1343,7 +1349,7 @@ class Component extends DCLogic {
 
     // 创建双模式 + 设计先行派生（气泡样式与编辑工坊同一套）
     const bubble = (m) => ({
-      text: m.content,
+      text: m.meta ? (m.content + '\n' + m.meta) : m.content,
       rowStyle: { display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' },
       bubbleStyle: { maxWidth: '85%', padding: '9px 13px', borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px', border: '2.5px solid #3a2312',
         background: m.role === 'user' ? 'linear-gradient(180deg,#ffe08a,#f5b731)' : '#fff',
@@ -1356,7 +1362,9 @@ class Component extends DCLogic {
       style: Object.assign(chipStyle(s.dsSel === f), { textAlign: 'left', fontFamily: 'ui-monospace,Menlo,monospace', fontSize: '11px' }),
       pick: () => this.setState({ dsSel: f }) }));
     const dsBd = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 16); dsBd.style.padding = '10px 20px';
-    const liveBits = s.chatLive ? ('思考中… 已流出 ' + this.fmt(s.chatLive.chars) + ' 字 · ' + s.chatLive.sec + 's') : '思考中…（订阅通道深思考·实况稍后跟上）';
+    const liveBits = s.chatLive
+      ? ('🧠 已流出 ' + this.fmt(s.chatLive.chars) + ' 字 · ' + s.chatLive.sec + 's' + (s.chatLive.tail ? ' · ' + s.chatLive.tail.slice(-48) : ''))
+      : '思考中…（订阅通道深思考·实况稍后跟上）';
     const genLiveText = s.genLive ? ('模型实况 · 已流出 ' + this.fmt(s.genLive.chars) + ' 字 · ' + (s.genLive.tail || '')) : '';
 
     return {

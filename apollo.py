@@ -1518,7 +1518,8 @@ def handle_agent_chat(body: dict) -> dict:
             design_patch = None
     else:
         design_patch = None
-    out = {'success': True, 'reply': reply_text, 'attempts': attempts, 'provider': provider, 'model': model, 'role': role}
+    out = {'success': True, 'reply': reply_text, 'attempts': attempts, 'provider': provider, 'model': model, 'role': role,
+           'elapsedMs': r.get('elapsedMs'), 'usage': r.get('usage')}
     if manifest_out is not None:
         out['manifest'] = manifest_out
     elif manifest_err:
@@ -2154,7 +2155,10 @@ def handle_agent_chats_put(body: dict) -> dict:
             role = m.get('role') if isinstance(m, dict) else None
             content = m.get('content') if isinstance(m, dict) else None
             if role in ('user', 'assistant') and isinstance(content, str) and len(content) <= 8000:
-                clean.append({'role': role, 'content': content})
+                row = {'role': role, 'content': content}
+                if isinstance(m.get('meta'), str) and len(m['meta']) <= 200:
+                    row['meta'] = m['meta']  # 用量小字（⏱/tokens）随史保留
+                clean.append(row)
         out[r] = clean
     _WORKSHOP_CHATS_DIR.mkdir(parents=True, exist_ok=True)
     (_WORKSHOP_CHATS_DIR / f'{slug}.json').write_text(
@@ -2193,7 +2197,10 @@ def handle_ws_draft_put(body: dict) -> dict:
         r = m.get('role') if isinstance(m, dict) else None
         content = m.get('content') if isinstance(m, dict) else None
         if r in ('user', 'assistant') and isinstance(content, str) and len(content) <= 8000:
-            msgs.append({'role': r, 'content': content})
+            row = {'role': r, 'content': content}
+            if isinstance(m.get('meta'), str) and len(m['meta']) <= 200:
+                row['meta'] = m['meta']
+            msgs.append(row)
     clean = {'version': 1, 'phase': phase, 'name': str(draft.get('name') or '')[:80],
              'slug': slug, 'ready': bool(draft.get('ready')), 'msgs': msgs}
     _WORKSHOP_CHATS_DIR.mkdir(parents=True, exist_ok=True)
