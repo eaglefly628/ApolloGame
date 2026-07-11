@@ -3517,6 +3517,32 @@ class APIHandler(BaseHTTPRequestHandler):
                  '.png': 'image/png', '.svg': 'image/svg+xml'}.get(target.suffix.lower(), 'application/octet-stream')
         self._send_file(target, ctype)
 
+    def _serve_bench_redirect(self) -> None:
+        """GET /bench[?to=/path]。跳到旧工作台（vite dev）——探测 5173/3000 谁活着跳谁
+        （07-11 实证：壳写死 :3000 而 apollo 起的 vite 在 :5173 → ▶ 运行跳进空页）。
+        都没活 → 200 提示页（怎么启动），绝不跳死链。to 必须以 / 开头（防开放跳转）。"""
+        qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+        to = (qs.get('to') or ['/'])[0]
+        if not to.startswith('/') or to.startswith('//'):
+            to = '/'
+        port = next((p for p in (VITE_PORT, 3000) if is_port_in_use(p)), None)
+        if port:
+            self.send_response(302)
+            self.send_header('Location', f'http://localhost:{port}{to}')
+            self.end_headers()
+            return
+        body = ('<!doctype html><meta charset="utf-8"><title>旧工作台未启动</title>'
+                '<body style="font-family:system-ui;background:#0f1722;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh">'
+                '<div style="max-width:560px;line-height:1.8"><h2>旧工作台（vite dev）还没启动</h2>'
+                '<p>回到终端跑：<code style="background:#1e293b;padding:2px 8px;border-radius:6px">python apollo.py</code>'
+                '（会一并拉起页面服务，默认 :5173），或 <code style="background:#1e293b;padding:2px 8px;border-radius:6px">npm run dev</code>。</p>'
+                '<p>启动后回来重按一次 ▶ 即可。</p></div>').encode('utf-8')
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def _serve_public_games(self, path: str) -> None:
         """GET /games/<slug>/... → 只读伺服 public/games/**（REQ-WORKSHOP A：壳的素材缩略图/台账
         servedPath 同源可显）。路径穿越防护同 _serve_workshop。"""
@@ -3589,6 +3615,10 @@ class APIHandler(BaseHTTPRequestHandler):
         # 原版工作台静态伺服（owner 2026-07-11：对外展示台用原版设计代码 + 嵌我们的接口）。
         if path == '/workshop' or path.startswith('/workshop/'):
             self._serve_workshop(path)
+            return
+
+        if path == '/bench':
+            self._serve_bench_redirect()
             return
 
         # 游戏资产只读伺服（壳的缩略图/manifest 同源可取·REQ-WORKSHOP A）。

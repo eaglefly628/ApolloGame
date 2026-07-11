@@ -27,6 +27,7 @@ import time
 import socket
 import shutil
 import http.client
+import urllib.parse
 from pathlib import Path
 
 os.environ['APOLLO_MOCK_LLM'] = '1'  # ⑦ 的 mock 通道（_mock_enabled 运行时读·对生产不可见）
@@ -254,6 +255,21 @@ try:
     check(not any(p in ('mock', '.git', 'snapshots') for n in names for p in n.split('/')), '包排除 mock/.git/snapshots')
     st8, _, _ = raw('GET', '/api/library/no-such-cart/export')
     check(st8 == 404, '缺卡带 404')
+    # /bench 智能跳转（07-11 实证：壳写死 :3000 而 vite 在 :5173 → 空页）：活口 302 / 无 vite 200 提示页；防开放跳转
+    def raw2(pth):
+        c2 = http.client.HTTPConnection('127.0.0.1', PORT, timeout=30)
+        c2.request('GET', pth)
+        r2 = c2.getresponse(); data2 = r2.read(); hdrs2 = dict(r2.getheaders()); c2.close()
+        return r2.status, hdrs2, data2
+    stb, hb, db = raw2('/bench?to=' + urllib.parse.quote('/?game=lib:x&from=workshop'))
+    check(stb in (200, 302), f'/bench 可用（{stb}=无 vite 提示页/有 vite 302）')
+    if stb == 302:
+        check(hb.get('Location', '').startswith('http://localhost:') and '/?game=lib:x' in hb.get('Location', ''), '302 目标带原路径')
+    else:
+        check('旧工作台' in db.decode('utf-8'), '提示页说明怎么启动')
+    stb2, hb2, _ = raw2('/bench?to=' + urllib.parse.quote('//evil.com/x'))
+    check(stb2 != 302 or 'evil.com' not in hb2.get('Location', ''), '防开放跳转（// 打回 /）')
+
     # 能力目录端点形状（壳 catalog() 消费）——不强求 vite-node 成功（冷环境可空），只验形状与缓存字段
     st8, cat = req('GET', '/api/catalog')
     check(st8 == 200 and 'catalog' in cat and 'success' in cat, f'/api/catalog 形状 OK（success={cat.get("success")}）')

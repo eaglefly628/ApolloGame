@@ -68,7 +68,7 @@
         </div>
         <div style="flex:1"></div>
         <!-- ⇄ 旧工作台（过渡期对比·owner 拍板保留两入口） -->
-        <a href="http://localhost:3000" target="_blank" style="display:block;text-align:center;font-family:'Fredoka';font-weight:700;font-size:11px;color:#f3e2c4;margin-bottom:10px;opacity:.9">⇄ 旧工作台（完整开发端 :3000）</a>
+        <a href="/bench" target="_blank" style="display:block;text-align:center;font-family:'Fredoka';font-weight:700;font-size:11px;color:#f3e2c4;margin-bottom:10px;opacity:.9">⇄ 旧工作台（完整开发端）</a>
         <!-- account -->
         <div style="display:flex;align-items:center;gap:9px;background:rgba(58,35,18,.35);border:2.5px solid #3a2312;border-radius:14px;padding:8px 10px">
           <span style="width:36px;height:36px;border-radius:10px;border:2.5px solid #3a2312;background:linear-gradient(180deg,#5fcdf5,#37b6ef);display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:16px;flex:none">爱</span>
@@ -394,6 +394,13 @@
                       <sc-for list="{{ editDocTabs }}" as="dt" hint-placeholder-count="3"><button onClick="{{ dt.pick }}" style="{{ dt.style }}">{{ dt.label }}</button></sc-for>
                     </div>
                     <div class="scr" style="max-height:170px;overflow-y:auto;font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.6;color:#3a2312;white-space:pre-wrap;word-break:break-word;background:rgba(58,35,18,.05);border:1.5px solid rgba(58,35,18,.25);border-radius:8px;padding:8px 10px">{{ editDocContent }}</div>
+                    <div style="display:flex;gap:6px;margin-top:8px;align-items:flex-end">
+                      <input value="{{ edRev }}" onInput="{{ edRevType }}" onKeyDown="{{ edRevKey }}" placeholder="继续修改这篇：说怎么改（Enter 提交）…" style="flex:1;border:2.5px solid #3a2312;border-radius:9px;padding:8px 10px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;background:#fff;color:#3a2312;outline:none">
+                      <button onClick="{{ edRevise }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ edRevLabel }}</button>
+                    </div>
+                    <sc-if value="{{ edRevising }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="width:16px;height:16px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e">{{ chatBusyText }}</span></div>
+                    </sc-if>
                   </div>
                 </sc-if>
                 <sc-if value="{{ hasPendingDesign }}" hint-placeholder-val="{{ false }}">
@@ -699,7 +706,7 @@ class Component extends DCLogic {
     editSlug: null, editName: '', editPitch: '', board: null,
     chatRole: 'gd', chats: { gd: [], pe: [], art: [] }, chatInput: '', chatBusy: false, chatLive: null,
     editModel: 'opus', editEffort: 'high',
-    pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null,
+    pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, edRev: '', edRevising: false,
     // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
     assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null, traceLog: '',
     tokenInput: '', genKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
@@ -857,6 +864,34 @@ class Component extends DCLogic {
       .then(d => { const files = (d && d.files) || {}; if (this.state.editSlug === slug)
         this.setState({ editDocs: files, editDocSel: Object.keys(files)[0] || null }); })
       .catch(() => {});
+  }
+  // 编辑工坊·底案直改（owner 07-11「再进去也能继续修改框架 MD」）：design-revise → 确认即落盘。
+  edRevise() {
+    const st = this.state;
+    const instr = (st.edRev || '').trim();
+    if (!instr || st.edRevising || !st.editDocSel || !st.editSlug || !st.editDocs) return;
+    const slug = st.editSlug, sel = st.editDocSel;
+    this.setState({ edRevising: true });
+    this.watchChatLive(true);
+    fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'design-revise', file_path: sel, current_content: st.editDocs[sel] || '',
+        instruction: instr, provider: this.provider(), model: this.ccModel() }) })
+      .then(r => r.json()).then(d => {
+        if (!d || !d.success || typeof d.content !== 'string') throw new Error((d && d.error) || '修订失败');
+        return fetch('/api/library/' + slug + '/design/' + sel, { method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: d.content, note: instr.slice(0, 50) }) }).then(r => r.json())
+          .then(pd => { if (!pd || !pd.success) throw new Error((pd && pd.error) || '落盘失败'); });
+      }).then(() => {
+        this.watchChatLive(false);
+        this.setState({ edRevising: false, edRev: '' });
+        this.showToast('底案已修订并落盘：' + sel);
+        this.refreshDocs(slug);
+      }).catch(e => {
+        this.watchChatLive(false);
+        this.setState({ edRevising: false });
+        this.showToast('✕ ' + ((e && e.message) || '修订失败').slice(0, 80));
+      });
   }
   pickAssetGame(slug) {
     this.setState({ assetsSlug: slug, ledger: null, artOpen: {} });
@@ -1126,13 +1161,13 @@ class Component extends DCLogic {
       const desc = (cc.meta && cc.meta.description) || '';
       return { k: coverKeys[i % coverKeys.length], cn: name, tag: '卡带', sc: coverGrads[i % coverGrads.length],
         status: cc.valid ? '可编辑' : '损坏', meta: desc ? desc.slice(0, 24) : cc.slug, prog: 100, done: !!cc.valid,
-        run: () => cc.valid ? window.open('http://localhost:3000/?game=lib%3A' + cc.slug + '&from=workshop', '_blank') : this.showToast('卡带 manifest 损坏，先修再玩'),
+        run: () => cc.valid ? window.open('/bench?to=' + encodeURIComponent('/?game=lib:' + cc.slug + '&from=workshop'), '_blank') : this.showToast('卡带 manifest 损坏，先修再玩'),
         edit: () => cc.valid ? this.openEdit(cc.slug, name, desc) : this.showToast('卡带 manifest 损坏，先在旧工作台修') };
     }).concat(liveList.map((gg, i) => ({
       k: coverKeys[(cartList.length + i) % coverKeys.length], cn: gg.id, tag: '引擎内置', sc: coverGrads[(cartList.length + i) % coverGrads.length],
       status: gg.hasLocalArt ? '有美术' : '待接美术', meta: gg.hasLocalArt ? '本地美术就绪' : '零美术 · 程序色块',
       prog: gg.hasLocalArt ? 100 : 40, done: !!gg.hasLocalArt,
-      run: () => window.open('http://localhost:3000/?game=' + gg.id + '&from=workshop', '_blank'),
+      run: () => window.open('/bench?to=' + encodeURIComponent('/?game=' + gg.id + '&from=workshop'), '_blank'),
       edit: () => this.showToast('引擎内置游戏在旧工作台（源码）开发')
     })));
     const statusColor = { '可编辑': ['#7ecb45', '#fff5db', '#4e8a24'], '损坏': ['#ef5138', '#fff5db', '#a03222'],
@@ -1445,7 +1480,7 @@ class Component extends DCLogic {
       editName: s.editName, editSlug: s.editSlug || '', editPitch: s.editPitch || '（立项卡待填——S1 侧栏或对话里补）',
       stageLamps, miniBtnStyle: mini.style, miniBtnActive: mini.active,
       downloadPack: () => { if (s.editSlug) { window.open('/api/library/' + s.editSlug + '/export', '_blank'); this.showToast('打包中——浏览器将开始下载'); } },
-      openOldBench: () => window.open('http://localhost:3000', '_blank'),
+      openOldBench: () => window.open('/bench', '_blank'),
       hasPending: !!s.pending, pendingSummary,
       applyPending: () => {
         const st = this.state;
@@ -1480,7 +1515,11 @@ class Component extends DCLogic {
           }).catch(e => this.showToast('✕ ' + ((e && e.message) || '落盘失败')));
       },
       dropDesign: () => this.setState({ pendingDesign: null }),
-      runCart: () => { if (s.editSlug) window.open('http://localhost:3000/?game=lib%3A' + s.editSlug + '&from=workshop', '_blank'); },
+      edRev: s.edRev, edRevType: (e) => this.setState({ edRev: e.target.value }),
+      edRevKey: (e) => { if (e.key === 'Enter') { if (e.preventDefault) e.preventDefault(); this.edRevise(); } },
+      edRevise: () => this.edRevise(), edRevLabel: s.edRevising ? '修订中…' : '✎ 修订',
+      edRevising: s.edRevising,
+      runCart: () => { if (s.editSlug) window.open('/bench?to=' + encodeURIComponent('/?game=lib:' + s.editSlug + '&from=workshop'), '_blank'); },
       delBtnStyle: Object.assign({}, mini.style, { color: '#a03222' }),
       deleteCart: () => {
         const slug = s.editSlug;
