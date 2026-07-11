@@ -2,6 +2,17 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "🎨 Apollo 工作台 (Workshop)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/apollo.py",
+      "args": [
+        "workshop"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
       "name": "Apollo 创作台 (player mode)",
       "type": "debugpy",
       "request": "launch",

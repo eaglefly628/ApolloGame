@@ -3050,6 +3050,28 @@ def cmd_player():
     # 创作台玩家模式一键入口：python apollo.py player
     cmd_launcher(player=True)
 
+def cmd_workshop():
+    """对外展示工作台一键入口：python apollo.py workshop。
+    只起 API 服务器（:4000）+ 开浏览器到原版工作台 /workshop/——**不弹老 launcher/electron**。
+    （owner 2026-07-11：原版设计对外展示台·VS Code「Apollo 工作台」启动项走这条。）"""
+    url = f"http://localhost:{API_PORT}/workshop/"
+    # API 端口已占（如完整 launcher 已在跑）→ 不重复起服务，直接开工作台页。
+    if is_port_in_use(API_PORT):
+        print(c("  [INFO]", 'y'), f"API 已在运行 → 直接打开 {c(url, 'c')}")
+        webbrowser.open(url)
+        return
+    start_api_server()
+    threading.Thread(
+        target=_open_browser_when_ready,
+        args=(url, f"http://127.0.0.1:{API_PORT}"),
+        daemon=True,
+    ).start()
+    print(c("  [INFO]", 'dim'), "工作台服务启动中，就绪即自动开页…（Ctrl+C 停止）")
+    try:
+        threading.Event().wait()  # 无 vite 进程可 wait，阻塞主线程直到 Ctrl+C
+    except KeyboardInterrupt:
+        _cleanup()
+
 def cmd_test():
     check_env()
     sys.exit(subprocess.call(**_spawn(['npx', 'vitest', 'run']), cwd=ROOT))
@@ -3084,6 +3106,7 @@ def cmd_help():
     print(c("  Commands:", 'w'))
     print(f"    {c('(default)', 'c').ljust(30)} Launch Game Library + Dev Tools")
     print(f"    {c('player', 'c').ljust(30)} 创作台玩家模式（空卡带架+创作向导·To-C）")
+    print(f"    {c('workshop', 'c').ljust(30)} 对外展示工作台（原版设计·:4000/workshop/·不弹老界面）")
     print(f"    {c('test', 'c').ljust(30)} Run all tests")
     print(f"    {c('typecheck', 'c').ljust(30)} TypeScript type check")
     print(f"    {c('build', 'c').ljust(30)} Production build")
@@ -3100,8 +3123,9 @@ def main():
         return
 
     dispatch = {
-        'launcher': cmd_launcher, 'player': cmd_player, 'test': cmd_test, 'typecheck': cmd_typecheck,
-        'build': cmd_build, 'bench': cmd_bench, 'status': cmd_status, 'help': cmd_help, '-h': cmd_help,
+        'launcher': cmd_launcher, 'player': cmd_player, 'workshop': cmd_workshop, 'test': cmd_test,
+        'typecheck': cmd_typecheck, 'build': cmd_build, 'bench': cmd_bench, 'status': cmd_status,
+        'help': cmd_help, '-h': cmd_help,
     }
     cmd = args[0]
     if cmd in dispatch:

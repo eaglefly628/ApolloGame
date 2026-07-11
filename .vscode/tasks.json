@@ -2,6 +2,15 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "🎨 workshop (对外展示工作台)",
+      "detail": "只起 API + 开原版工作台 → http://localhost:4000/workshop/（不弹老界面）",
+      "type": "shell",
+      "command": "python3 apollo.py workshop",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
       "label": "dev (frontend)",
       "detail": "Vite 开发服务器 → http://localhost:5173/",
       "type": "shell",
