@@ -793,6 +793,10 @@ export function Launcher() {
   // Workshop ▶ 直达（REQ-WORKSHOP 续·owner 07-11）：?game=lib:<slug> 直启卡带；from=workshop 时返回=回创作台。
   const fromWorkshop = React.useMemo(
     () => new URLSearchParams(window.location.search).get('from') === 'workshop', []);
+  // bare=1（owner 07-11「直接启动游戏，别经过旧工作台」）：本页只当游戏运行器用——
+  // 装载期显示 splash，绝不渲染货架/DevTools 等旧工作台界面。
+  const bareMode = React.useMemo(
+    () => new URLSearchParams(window.location.search).get('bare') === '1', []);
   const backToWorkshop = useCallback(() => { window.location.href = `${API}/workshop/`; }, []);
   const pendingLibLaunch = React.useRef<string | null>(
     (() => { const q = new URLSearchParams(window.location.search).get('game'); return q && q.startsWith(LIB_ID_PREFIX) ? q : null; })());
@@ -1005,6 +1009,24 @@ export function Launcher() {
         resolveArt={resolveArt}
         onBack={() => { if (fromWorkshop) { backToWorkshop(); return; } setLibRunner(null); }}
       />
+    );
+  }
+
+  if (bareMode) {
+    // 纯运行模式装载页：runner 就绪前不闪任何旧工作台界面；卡带无效/不存在时给明话+回创作台。
+    const bad = libEntries !== null && pendingLibLaunch.current !== null
+      && !libGameEntries.some((g) => g.id === pendingLibLaunch.current);
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', justifyContent: 'center', background: SHELL.appBg, color: SHELL.sub, fontFamily: SHELL.fontUi, fontSize: 14 }}>
+        {bad ? (
+          <>
+            <div>这盘卡带不存在或已删除</div>
+            <button onClick={backToWorkshop} style={{ padding: '8px 20px', borderRadius: 8, background: SHELL.jadeWash, color: SHELL.jade, border: `1px solid ${SHELL.jadeLine}`, cursor: 'pointer', fontFamily: SHELL.fontUi }}>← 回创作台</button>
+          </>
+        ) : (
+          <div>🎮 正在装载游戏…</div>
+        )}
+      </div>
     );
   }
 

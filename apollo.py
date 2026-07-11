@@ -3630,7 +3630,7 @@ class APIHandler(BaseHTTPRequestHandler):
         to = (qs.get('to') or ['/'])[0]
         if not to.startswith('/') or to.startswith('//'):
             to = '/'
-        port = next((p for p in (VITE_PORT, 3000) if is_port_in_use(p)), None)
+        port = VITE_PORT if is_port_in_use(VITE_PORT) else None  # 只认规范端口——3000 上可能是无关服务（07-11 实证）
         if port:
             self.send_response(302)
             self.send_header('Location', f'http://localhost:{port}{to}')
@@ -4137,7 +4137,7 @@ def cmd_workshop():
     不再要求开第二个终端）** + 开浏览器到 /workshop/——不弹老 launcher/electron。"""
     url = f"http://localhost:{API_PORT}/workshop/"
     # 页面服务（旧工作台/运行器载体）：没在跑才拉起——已有 vite（重复跑本命令/npm run dev 在跑）不重复起。
-    if not any(is_port_in_use(pt) for pt in (VITE_PORT, 3000)):
+    if not is_port_in_use(VITE_PORT):  # 只认 :5173——3000 可能被无关服务占着（07-11 实证·勿误判已就绪）
         check_env()
         start_vite()
     else:

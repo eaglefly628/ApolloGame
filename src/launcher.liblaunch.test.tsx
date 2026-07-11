@@ -68,6 +68,22 @@ describe('Workshop ▶ URL 直启卡带', () => {
     expect(container.textContent).toContain('返回');
   });
 
+  it('bare=1 纯运行模式：装载期不闪货架 chrome → runner 挂载（owner「直接启动游戏」）', async () => {
+    window.history.replaceState(null, '', '/?game=lib%3Agame001&from=workshop&bare=1');
+    mockFetch([
+      ['/manifest', { capabilities: ['a1-transform'], entities: { e: { Transform: { x: 1, y: 2 } } } }],
+      ['/history', { mode: 'git', entries: [] }],
+      ['/api/library', [CART]],
+      ['/api/generate/providers', []],
+      ['/api/generate/presets', {}],
+      ['/assets/FreeArtLib', {}],
+    ]);
+    await act(async () => { root.render(<Launcher />); });
+    expect(container.textContent).not.toContain('APOLLO'); // 装载期无旧工作台铭牌
+    await flush();
+    expect(container.querySelector('canvas')).toBeTruthy();
+  });
+
   it('dev 模式（无 mode=player）同样直启', async () => {
     window.history.replaceState(null, '', '/?game=lib%3Agame001');
     mockFetch([

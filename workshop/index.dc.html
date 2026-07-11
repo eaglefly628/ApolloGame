@@ -1168,13 +1168,13 @@ class Component extends DCLogic {
       const desc = (cc.meta && cc.meta.description) || '';
       return { k: coverKeys[i % coverKeys.length], cn: name, tag: '卡带', sc: coverGrads[i % coverGrads.length],
         status: cc.valid ? '可编辑' : '损坏', meta: desc ? desc.slice(0, 24) : cc.slug, prog: 100, done: !!cc.valid,
-        run: () => cc.valid ? window.open('/bench?to=' + encodeURIComponent('/?game=lib:' + cc.slug + '&from=workshop'), '_blank') : this.showToast('卡带 manifest 损坏，先修再玩'),
+        run: () => cc.valid ? window.open('/bench?to=' + encodeURIComponent('/?game=lib:' + cc.slug + '&from=workshop&bare=1'), '_blank') : this.showToast('卡带 manifest 损坏，先修再玩'),
         edit: () => cc.valid ? this.openEdit(cc.slug, name, desc) : this.showToast('卡带 manifest 损坏，先在旧工作台修') };
     }).concat(liveList.map((gg, i) => ({
       k: coverKeys[(cartList.length + i) % coverKeys.length], cn: gg.id, tag: '引擎内置', sc: coverGrads[(cartList.length + i) % coverGrads.length],
       status: gg.hasLocalArt ? '有美术' : '待接美术', meta: gg.hasLocalArt ? '本地美术就绪' : '零美术 · 程序色块',
       prog: gg.hasLocalArt ? 100 : 40, done: !!gg.hasLocalArt,
-      run: () => window.open('/bench?to=' + encodeURIComponent('/?game=' + gg.id + '&from=workshop'), '_blank'),
+      run: () => window.open('/bench?to=' + encodeURIComponent('/?game=' + gg.id + '&from=workshop&bare=1'), '_blank'),
       edit: () => this.showToast('引擎内置游戏在旧工作台（源码）开发')
     })));
     const statusColor = { '可编辑': ['#7ecb45', '#fff5db', '#4e8a24'], '损坏': ['#ef5138', '#fff5db', '#a03222'],
@@ -1526,7 +1526,7 @@ class Component extends DCLogic {
       edRevKey: (e) => { if (e.key === 'Enter') { if (e.preventDefault) e.preventDefault(); this.edRevise(); } },
       edRevise: () => this.edRevise(), edRevLabel: s.edRevising ? '修订中…' : '✎ 修订',
       edRevising: s.edRevising,
-      runCart: () => { if (s.editSlug) window.open('/bench?to=' + encodeURIComponent('/?game=lib:' + s.editSlug + '&from=workshop'), '_blank'); },
+      runCart: () => { if (s.editSlug) window.open('/bench?to=' + encodeURIComponent('/?game=lib:' + s.editSlug + '&from=workshop&bare=1'), '_blank'); },
       goArtFor: () => { const slug = s.editSlug; this.setState({ screen: 'assets' }); if (slug) this.pickAssetGame(slug); },
       editStatsText: s.editStats ? (this.fmt(s.editStats.files) + ' 文件 · ' + this.fmt(s.editStats.lines) + ' 行 · ' + Math.round((s.editStats.bytes || 0) / 1024) + ' KB') : '',
       delBtnStyle: Object.assign({}, mini.style, { color: '#a03222' }),
