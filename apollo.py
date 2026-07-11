@@ -320,7 +320,13 @@ def _config_model(pid: str):
     m = _config_provider(pid).get('model')
     return m if isinstance(m, str) and m.strip() else None
 
-GEN_KEY_NAMES = ('DASHSCOPE_API_KEY', 'TRIPO_API_KEY', 'MESHY_API_KEY')
+GEN_KEY_NAMES = ('DASHSCOPE_API_KEY', 'TRIPO_API_KEY', 'MESHY_API_KEY', 'SEEDANCE_API_KEY', 'NANO_BANANA_API_KEY')
+# 文生图/文生 3D key 的显示名（数据驱动·/api/settings 随 genKeys 回 label·壳读 label 即可，
+# 以后加新 key 只改这里、无需动壳）。owner 2026-07-11：Seedance（字节·主力）+ Nano Banana（Google 图像）。
+GEN_KEY_LABELS = {
+    'DASHSCOPE_API_KEY': '千问万相（2D 主力）', 'TRIPO_API_KEY': 'Tripo（3D）', 'MESHY_API_KEY': 'Meshy（3D 备选）',
+    'SEEDANCE_API_KEY': 'Seedance（字节·文生图/视频·主力）', 'NANO_BANANA_API_KEY': 'Nano Banana（Google Gemini 图像）',
+}
 
 def _gen_env() -> dict:
     """美术生成子进程的 env：进程 env + 设置面板配置的生成 key（config.genKeys；千问缺省回退
@@ -1634,6 +1640,7 @@ def _settings_view() -> dict:
         cfg_v = gk.get(name) if isinstance(gk.get(name), str) and str(gk.get(name)).strip() else None
         gen_keys.append({
             'envKey': name,
+            'label': GEN_KEY_LABELS.get(name, name),
             'apiKeyMasked': _mask_key(cfg_v) if cfg_v else '',
             'hasConfigKey': cfg_v is not None,
             'keyAvailable': bool(os.environ.get(name) or cfg_v or (name == 'DASHSCOPE_API_KEY' and _config_api_key('qwen'))),
