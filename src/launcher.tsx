@@ -781,6 +781,24 @@ function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) 
 //  Main Launcher
 // ══════════════════════════════════════
 
+// bare 装载页的等待护栏：每 2s 促发一次库列表重拉；15s 仍未就绪给明报（多为 :4000 创作服务没起）。
+function BareListRetry({ onStuck, onRetry, onBack }: { onStuck: () => void; onRetry: () => void; onBack: () => void }) {
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const t = setInterval(onRetry, 2000);
+    const dead = setTimeout(() => { setStuck(true); onStuck(); }, 15000);
+    return () => { clearInterval(t); clearTimeout(dead); };
+  }, [onRetry, onStuck]);
+  if (!stuck) return null;
+  return (
+    <div style={{ textAlign: 'center', fontSize: 12, color: SHELL.warn, lineHeight: 1.8 }}>
+      15 秒没等到游戏库——多半是创作服务（:4000）没在跑。<br />
+      终端确认 <code>python apollo.py workshop</code> 还活着，然后
+      <button onClick={onBack} style={{ marginLeft: 8, padding: '4px 12px', borderRadius: 6, background: SHELL.jadeWash, color: SHELL.jade, border: `1px solid ${SHELL.jadeLine}`, cursor: 'pointer' }}>← 回创作台</button>
+    </div>
+  );
+}
+
 export function Launcher() {
   useKeyframes();
   // 「正在玩哪个游戏」进 URL（?game=id）：游戏选择若只是 React 状态，任何全页 reload
@@ -1013,18 +1031,28 @@ export function Launcher() {
   }
 
   if (bareMode) {
-    // 纯运行模式装载页：runner 就绪前不闪任何旧工作台界面；卡带无效/不存在时给明话+回创作台。
-    const bad = libEntries !== null && pendingLibLaunch.current !== null
-      && !libGameEntries.some((g) => g.id === pendingLibLaunch.current);
+    // 纯运行模式装载页（自诊版·07-11「永远卡住」排障）：明示在等哪条腿；库列表 15s 未就绪=明报不干等。
+    const want = pendingLibLaunch.current;
+    const bad = (libEntries !== null && want !== null && !libGameEntries.some((g) => g.id === want))
+      || (want === null && !launched);  // 既非卡带亦非内置=URL 参数不对
+    const waitingList = libEntries === null;
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', justifyContent: 'center', background: SHELL.appBg, color: SHELL.sub, fontFamily: SHELL.fontUi, fontSize: 14 }}>
         {bad ? (
           <>
-            <div>这盘卡带不存在或已删除</div>
+            <div>{want === null ? '启动参数不完整（缺游戏标识）' : `卡带不存在或已删除：${want}`}</div>
             <button onClick={backToWorkshop} style={{ padding: '8px 20px', borderRadius: 8, background: SHELL.jadeWash, color: SHELL.jade, border: `1px solid ${SHELL.jadeLine}`, cursor: 'pointer', fontFamily: SHELL.fontUi }}>← 回创作台</button>
           </>
         ) : (
-          <div>🎮 正在装载游戏…</div>
+          <>
+            <div>🎮 正在装载游戏…</div>
+            <div style={{ fontSize: 11, color: SHELL.faint, fontFamily: 'ui-monospace,Menlo,monospace' }}>
+              目标 {want ?? '(内置)'} · 库列表{waitingList ? '拉取中（创作服务 :4000）' : `已到 ${libGameEntries.length} 张`}
+            </div>
+            {waitingList && (
+              <BareListRetry onStuck={() => { /* 15s 未就绪由子组件显示明报 */ }} onRetry={() => setLibRefresh((k) => k + 1)} onBack={backToWorkshop} />
+            )}
+          </>
         )}
       </div>
     );

@@ -712,7 +712,7 @@ class Component extends DCLogic {
     editModel: 'opus', editEffort: 'high',
     pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, edRev: '', edRevising: false, editStats: null,
     // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
-    assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null, traceLog: '',
+    assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null, traceLog: '', llmLegacy: false,
     tokenInput: '', genKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
     toast: null
   };
@@ -793,6 +793,7 @@ class Component extends DCLogic {
       fetch('/api/llm-live').then(r => r.json()).then(d => {
         const top = d && d.success && (d.live || [])[0];
         this.setState(cur => ({ chatLive: top ? { chars: top.chars, sec: top.elapsedSec, tail: top.tail || '' } : cur.chatLive,
+          llmLegacy: !!(d && d.legacy),
           traceLog: (top && top.trace) || cur.traceLog }), () => this.scrollTrace());
       }).catch(() => {});
     }, 1500);
@@ -1434,7 +1435,7 @@ class Component extends DCLogic {
     const dsBd = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 16); dsBd.style.padding = '10px 20px';
     const liveBits = s.chatLive
       ? ('🧠 已流出 ' + this.fmt(s.chatLive.chars) + ' 字 · ' + s.chatLive.sec + 's' + (s.chatLive.tail ? ' · ' + s.chatLive.tail.slice(-48) : ''))
-      : '思考中…（订阅通道深思考·实况稍后跟上）';
+      : (s.llmLegacy ? '⚠ 旧版 claude CLI 兼容模式：无实况可显——终端跑 claude doctor 升级后恢复' : '思考中…（订阅通道深思考·实况稍后跟上）');
     const genLiveText = s.genLive ? ('模型实况 · 已流出 ' + this.fmt(s.genLive.chars) + ' 字') : '';
     const traceLogText = s.traceLog || '';
 

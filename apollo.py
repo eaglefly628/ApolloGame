@@ -489,8 +489,9 @@ def _llm_live_view() -> list:
                 for v in sorted(_LLM_LIVE.values(), key=lambda x: x['startedAt'])]
 
 def handle_llm_live() -> dict:
-    """GET /api/llm-live。进行中的 LLM 请求流式度量（空数组=此刻没有请求在跑）。"""
-    return {'success': True, 'live': _llm_live_view()}
+    """GET /api/llm-live。进行中的 LLM 请求流式度量（空数组=此刻没有请求在跑）。
+    legacy=True 表示已降级旧版 CLI 兼容模式（无实况可给·壳明示"升级 CLI 恢复实况"而不是干等）。"""
+    return {'success': True, 'live': _llm_live_view(), 'legacy': _CLAUDE_CODE_LEGACY['on']}
 
 def _claude_code_transcript(system: str, messages: list) -> str:
     """system + 多轮 messages → 单段 stdin 文本（v1 确定性拼接·好测；SDK session/resume 记 v2）。"""
