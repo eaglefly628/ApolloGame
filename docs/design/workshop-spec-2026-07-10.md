@@ -154,6 +154,18 @@ manifest 仍纯数据；自由 TS（代码进 JSON/绕门）仍是禁区。冒�
 `scripts/library-doctor.mjs`（逐盘 JSON→parse→引擎 load+2tick+logic 合体·坏盘 [DOCTOR] 台账日志）+
 壳游戏库屏 🩺 按钮报告卡（坏盘=红行原因·好盘只计数·告警黄行）。冒烟 ⑭ 3 断言（117→120）。
 
+### §八.7 验收批 17（owner 07-11「按箭头/AD 不动」·输入链双修）
+
+实测根因**双杀**（「程序」agent 的壳层假设对了一半、manifest 假设错了）：
+① **运行器无输入**：`RunOnly` 建引擎从没传 `input`——一切数据卡带天生收不到键盘（编译游戏线走
+StudioInspector 的 makeInput 才有）。修：`cartInputFor(bp)` 按 Controllable.playerId 自动接
+KeyboardInputSource（单人=方向键+WASD+空格；双人=玩家1 方向键+Space、玩家2 WASD+左Shift·
+MultiInputSource 合并；无 Controllable 不挂监听器）。② **词表盲区**：把键盘变移动的真契约是运行时
+applyMovement 路由 `Controllable{playerId,speed}`，但该组件此前无任何 capability 提供——目录查不到、
+推断推不出，AI 只能瞎猜 i1/i2（纯契约原子·声明不产行为）。修：新契约原子 **`i3-controllable`**
+（provides Controllable·systems:[]·describe 写明运行时语义与键位约定）+ House Rules 第 7 条输入接线
+规则。测试：i3 provider/推断/告警消除 + playerIds 发现 5 断言。
+
 ### §八.1 验收修订（owner 2026-07-11 真机验收六条·当日落地）
 
 1. **三对话入口**：策划(gd)/**美术(art·新)**/程序(pe)——改写 §一「两入口·策划兼美术」定稿；美术角色系统词以台账 digest 为核、点名 art-NN、皮肤槽/风格锚归它。

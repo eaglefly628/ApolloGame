@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  Atom Skills — 核心原子统一导出（29 核心 + 1 扩展；唯一真相=本文件导出表）
+//  Atom Skills — 核心原子统一导出（30 核心 + 1 扩展；唯一真相=本文件导出表）
 //  参见 wiki/atom-skill-periodic-table.md
 // ═══════════════════════════════════════════════════════════════
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
@@ -22,6 +22,7 @@ import { relationCapability } from './relation/index.js';
 import { visibilityCapability } from './visibility/index.js';
 import { inputCaptureCapability } from './input-capture/index.js';
 import { actionMapCapability } from './action-map/index.js';
+import { controllableCapability } from './controllable/index.js';
 import { stateCapability } from './state/index.js';
 import { spawnCapability } from './spawn/index.js';
 import { destroyCapability } from './destroy/index.js';
@@ -56,6 +57,7 @@ export {
   visibilityCapability,
   inputCaptureCapability,
   actionMapCapability,
+  controllableCapability,
   stateCapability,
   spawnCapability,
   destroyCapability,
@@ -74,7 +76,7 @@ export {
 export { nextRandom, randomInt, chancePass, mulberry32, seededShuffle } from './random/index.js';
 export { queryRange, queryNearest } from './spatial-query/index.js';
 
-// 全部核心原子（29 个；用于注册到 World 或 assembly 蓝图）
+// 全部核心原子（30 个；用于注册到 World 或 assembly 蓝图）
 export const allAtomCapabilities: CapabilityDefinition[] = [
   transformCapability,
   hierarchyCapability,
@@ -94,6 +96,7 @@ export const allAtomCapabilities: CapabilityDefinition[] = [
   visibilityCapability,
   inputCaptureCapability,
   actionMapCapability,
+  controllableCapability,
   stateCapability,
   spawnCapability,
   destroyCapability,

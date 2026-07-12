@@ -1365,6 +1365,10 @@ discussing, output no json block at all.
    （如 Tilemap 必须带 layers）——缺了它 parse 能过、装载会炸，同样被拒。
 5. 贴图/素材字段用 "art:<英文关键词>" 槽语法，引擎确定性选材；绝不发明资产 id 或文件路径。
 6. 改动优先调现有字段的值；新增实体/组件要克制、说明理由。
+7. 玩家要能用键盘操控：给实体挂 **Controllable{playerId:"p1", speed:N} + Velocity**（capability
+   `i3-controllable` + `b1-velocity` + `t1-motion-apply`）——运行器自动按 playerId 接键盘
+   （单人=方向键+WASD+空格；双人=玩家1 方向键、玩家2 WASD）。跳跃再加 `t2-jump`（Space）。
+   注意 i1-input-capture / i2-action-map 是纯契约原子（systems 为空），只声明它们实体不会动。
 {CAPGAP_RULES}"""
 
 # capgap 段（features.capgap 开时注入 COMMON·三角色同吃）
