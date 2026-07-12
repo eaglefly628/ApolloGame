@@ -142,7 +142,7 @@
               </button>
               <!-- existing projects -->
               <sc-for list="{{ myGames }}" as="g" hint-placeholder-count="5">
-                <div style="border-radius:20px;overflow:hidden;background:#fff;border:4px solid #3a2312;box-shadow:0 6px 0 rgba(58,35,18,.28),0 12px 18px rgba(0,0,0,.16);transition:transform .12s" style-hover="{{ cardHover }}">
+                <div title="{{ g.desc }}" style="border-radius:20px;overflow:hidden;background:#fff;border:4px solid #3a2312;box-shadow:0 6px 0 rgba(58,35,18,.28),0 12px 18px rgba(0,0,0,.16);transition:transform .12s" style-hover="{{ cardHover }}">
                   <div style="{{ g.coverStyle }}">
                     <div style="width:110px;height:88px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 0 rgba(58,35,18,.35))">{{ g.cover }}</div>
                     <span style="{{ g.badgeStyle }}">{{ g.status }}</span>
@@ -174,7 +174,7 @@
                 <span style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#8a5a2c;letter-spacing:.06em">AI · TEMPLATE</span>
               </button>
               <sc-for list="{{ gameListRows }}" as="g" hint-placeholder-count="5">
-                <div style="display:flex;align-items:center;gap:12px;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:9px 12px;box-shadow:0 4px 0 rgba(58,35,18,.2)">
+                <div title="{{ g.desc }}" style="display:flex;align-items:center;gap:12px;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:9px 12px;box-shadow:0 4px 0 rgba(58,35,18,.2)">
                   <div style="{{ g.thumbStyle }}"><div style="width:38px;height:32px;display:flex;align-items:center;justify-content:center">{{ g.cover }}</div></div>
                   <div style="min-width:0;flex:1">
                     <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312;line-height:1.1">{{ g.cn }}</div>
@@ -1388,15 +1388,17 @@ class Component extends DCLogic {
     const mgDefs = cartList.map((cc, i) => {
       const name = (cc.meta && cc.meta.name) || cc.slug;
       const desc = (cc.meta && cc.meta.description) || '';
-      return { k: coverKeys[i % coverKeys.length], cn: name, tag: '卡带', sc: coverGrads[i % coverGrads.length],
+      return { k: coverKeys[i % coverKeys.length], cn: name, tag: '卡带', sc: coverGrads[i % coverGrads.length], icon: '', desc: desc || (name + '（还没写简介）'),
         status: !cc.valid ? '损坏' : (cc.empty ? '空卡带' : '可编辑'), meta: desc ? desc.slice(0, 24) : cc.slug, prog: cc.empty ? 15 : 100, done: !!cc.valid && !cc.empty,
         run: () => !cc.valid ? this.showToast('卡带 manifest 损坏，先修再玩')
           : cc.empty ? this.showToast('⚠ 这盘还没生成玩法内容——点「编辑」，用设计先行出原型或快速直出')
           : window.open('/bench?to=' + encodeURIComponent('/?game=lib:' + cc.slug + '&from=workshop&bare=1'), '_blank'),
         edit: () => cc.valid ? this.openEdit(cc.slug, name, desc) : this.showToast('卡带 manifest 损坏，先在旧工作台修') };
     }).concat(liveList.map((gg, i) => ({
-      k: coverKeys[(cartList.length + i) % coverKeys.length], cn: gg.id, tag: '引擎内置', sc: coverGrads[(cartList.length + i) % coverGrads.length],
-      status: gg.hasLocalArt ? '有美术' : '待接美术', meta: gg.hasLocalArt ? '本地美术就绪' : '零美术 · 程序色块',
+      // 引擎内置：显示各自真图标 + 真名 + 题材副标 + 简介浮标（元信息来自 launcher.tsx·apollo /api/games 透出）
+      k: coverKeys[(cartList.length + i) % coverKeys.length], cn: gg.title || gg.id, tag: '引擎内置', sc: coverGrads[(cartList.length + i) % coverGrads.length],
+      icon: gg.icon || '', desc: gg.description || (gg.title || gg.id),
+      status: gg.hasLocalArt ? '有美术' : '待接美术', meta: gg.subtitle || (gg.hasLocalArt ? '本地美术就绪' : '零美术 · 程序色块'),
       prog: gg.hasLocalArt ? 100 : 40, done: !!gg.hasLocalArt,
       run: () => window.open('/bench?to=' + encodeURIComponent('/?game=' + gg.id + '&from=workshop&bare=1'), '_blank'),
       edit: () => this.showToast('引擎内置游戏在旧工作台（源码）开发')
@@ -1414,14 +1416,14 @@ class Component extends DCLogic {
     // 状态筛选叠加在来源筛选（gameFilter→cartList/liveList→mgDefs）之上。
     const mgFiltered = mgDefs.filter(g => s.gameStatus === 'all' || g.status === s.gameStatus);
     const myGames = mgFiltered.map(g => ({
-      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: cv[g.k], edit: g.edit, run: g.run,
+      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: g.icon || cv[g.k], desc: g.desc, edit: g.edit, run: g.run,
       coverStyle: { position: 'relative', height: '118px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '3px solid #3a2312', background: 'linear-gradient(180deg,' + g.sc[0] + ',' + g.sc[1] + ')' },
       badgeStyle: { position: 'absolute', top: '8px', right: '8px', background: statusColor[g.status][0], color: statusColor[g.status][1], border: '2.5px solid #3a2312', borderRadius: '9px', padding: '2px 9px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '10px', boxShadow: '0 2px 0 ' + statusColor[g.status][2] },
       progStyle: { height: '100%', width: g.prog + '%', background: g.done ? 'linear-gradient(180deg,#aef07a,#7ecb45)' : 'linear-gradient(180deg,#ffe08a,#f5b731)', borderRadius: '999px' }
     }));
     // 列表模式行：小缩略图 + 名字 + 来源 tag + 状态徽章（非绝对定位）+ 编辑
     const gameListRows = mgFiltered.map(g => ({
-      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: cv[g.k], edit: g.edit, run: g.run,
+      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: g.icon || cv[g.k], desc: g.desc, edit: g.edit, run: g.run,
       thumbStyle: { width: '52px', height: '46px', flex: 'none', borderRadius: '10px', border: '2.5px solid #3a2312', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,' + g.sc[0] + ',' + g.sc[1] + ')' },
       badgeStyle: { flex: 'none', background: statusColor[g.status][0], color: statusColor[g.status][1], border: '2.5px solid #3a2312', borderRadius: '9px', padding: '3px 10px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '11px', boxShadow: '0 2px 0 ' + statusColor[g.status][2] }
     }));

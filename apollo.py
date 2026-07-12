@@ -2431,15 +2431,55 @@ def handle_asset_generate_providers() -> dict:
 
 GAME_RE = re.compile(r'game-[a-z0-9]+')
 
+_BUILTIN_META_CACHE = None
+
+def _builtin_games_meta() -> dict:
+    """从 src/launcher.tsx 的 `GAMES: GameEntry[]` 解析内置游戏元信息（icon/title/subtitle/description…）
+    —— 单一真相在 launcher（只读解析·不改它）。壳的「引擎内置」卡片据此显示图标+简介，
+    而非只剩一个编号（owner 07-12「内置游戏的图标/介绍没了」）。解析失败则回落空 dict（退化=只显 id）。"""
+    global _BUILTIN_META_CACHE
+    if _BUILTIN_META_CACHE is not None:
+        return _BUILTIN_META_CACHE
+    meta: dict = {}
+    try:
+        src = (ROOT / 'src' / 'launcher.tsx').read_text('utf-8')
+        m = re.search(r'const\s+GAMES\s*:\s*GameEntry\[\]\s*=\s*\[(.*?)\n\]', src, re.S)
+        body = m.group(1) if m else ''
+        # 单引号字符串（容忍转义 \'）——逐对象按 id 切
+        def _field(obj: str, key: str) -> str:
+            fm = re.search(key + r"\s*:\s*'((?:[^'\\]|\\.)*)'", obj)
+            return fm.group(1).replace("\\'", "'") if fm else ''
+        # 以 `id: '...'` 为锚把 body 切成若干对象块
+        ids = list(re.finditer(r"id\s*:\s*'([a-z0-9-]+)'", body))
+        for i, mm in enumerate(ids):
+            gid = mm.group(1)
+            start = mm.start()
+            end = ids[i + 1].start() if i + 1 < len(ids) else len(body)
+            obj = body[start:end]
+            meta[gid] = {'title': _field(obj, 'title'), 'subtitle': _field(obj, 'subtitle'),
+                         'description': _field(obj, 'description'), 'icon': _field(obj, 'icon'),
+                         'color': _field(obj, 'color'), 'accentColor': _field(obj, 'accentColor'),
+                         'status': _field(obj, 'status')}
+    except Exception as e:
+        print(c('  [GAMES]', 'y'), f'内置游戏元信息解析失败（退化为只显 id）: {e}')
+    _BUILTIN_META_CACHE = meta
+    return meta
+
 def handle_games_list() -> dict:
-    """GET /api/games。枚举 src/games/game-* 为权威游戏列表（标注是否已建本地美术目录）。"""
+    """GET /api/games。枚举 src/games/game-* 为权威游戏列表（标注是否已建本地美术目录 +
+    内置游戏元信息 icon/title/description·从 launcher.tsx 解析）。"""
     games = []
     gdir = ROOT / 'src' / 'games'
+    bmeta = _builtin_games_meta()
     if gdir.is_dir():
         for d in sorted(gdir.iterdir()):
             if d.is_dir() and GAME_RE.fullmatch(d.name):
                 has_art = (ROOT / 'public' / 'games' / d.name / 'art' / 'index.json').exists()
-                games.append({'id': d.name, 'hasLocalArt': has_art})
+                entry = {'id': d.name, 'hasLocalArt': has_art}
+                minfo = bmeta.get(d.name)
+                if minfo:
+                    entry.update({k: v for k, v in minfo.items() if v})  # 只并非空字段
+                games.append(entry)
     return {'games': games}
 
 _CATALOG_CACHE = None
