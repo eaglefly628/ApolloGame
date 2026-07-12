@@ -76,6 +76,10 @@
   → chat 出参 `logicPatch|logicError` → 壳 ✔ 应用 `PUT /api/library/<slug>/logic {content}`（版本化·空串=撤除）。
   列表带 `allowTs/hasLogic`；运行器 hasLogic → `import('/library/<slug>/logic.ts')` 合体（仅 dev 线·vite transform）。
   红线：绝不 eval；TS 绝不进 manifest JSON；记债旗必须可见。
+- `GET /api/library/doctor` → **全库装载体检**（owner 07-11「把加载失败的错误都 log 出来」）：
+  `scripts/library-doctor.mjs` 逐盘（library + 内置数据游戏）跑 JSON→parse→引擎 load+2tick（含 logic 合体），
+  逐盘 `{slug, where, ok, stage: read|json|parse|logic|load|ok, error, warnings}`；坏盘打 `[DOCTOR]` 服务台日志；
+  壳游戏库屏「🩺 体检」按钮出报告卡。只读不写——门在 manifest-check/cart-logic-check，体检是普查。
 - `GET/PUT /api/settings` → `{providers:[{id,name,models,model,apiKeyMasked,hasConfigKey,keyAvailable,…}], genKeys:[{envKey,apiKeyMasked,hasConfigKey,keyAvailable}], default}`
   - PUT 只送 dirty 字段；**空串=清除**；`genKeys` 三把=`DASHSCOPE_API_KEY / TRIPO_API_KEY / MESHY_API_KEY`（owner 07-11 收编旧美术台配置）
 

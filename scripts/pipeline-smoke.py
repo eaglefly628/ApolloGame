@@ -462,6 +462,27 @@ try:
     finally:
         os.environ.pop('APOLLO_FEATURE_TSCARTS', None)
 
+    print('⑭ 全库装载体检（owner 07-11「把加载失败的错误都 log 出来」）')
+    # 直写盘造一盘「parse 过但装载炸」的旧账坏卡带（模拟批14 门禁上线前混进库的稿——不走 PUT 门）
+    bad_dir = ROOT / 'library' / 'doctor-bad'
+    CLEAN.append(_dirs('doctor-bad'))
+    bad_dir.mkdir(parents=True, exist_ok=True)
+    (bad_dir / 'manifest.json').write_text(json.dumps({
+        'capabilities': ['t2-tilemap'],
+        'entities': {
+            'map': {'Tilemap': {'cols': 4, 'rows': 4, 'tileSize': 16, 'originX': 0, 'originY': 0}},
+            'hero': {'Transform': {'x': 8, 'y': 8, 'scaleX': 1, 'scaleY': 1},
+                     'Shape': {'kind': 'box', 'width': 10, 'height': 10},
+                     'Velocity': {'vx': 0, 'vy': 0}}}}, ensure_ascii=False), encoding='utf-8')
+    (bad_dir / 'meta.json').write_text(json.dumps({'name': 'Doctor Bad'}, ensure_ascii=False), encoding='utf-8')
+    _, doc = req('GET', '/api/library/doctor')
+    check(doc.get('success') and doc.get('total', 0) >= 2, f'体检跑通 · {doc.get("total")} 盘')
+    rows = {r.get('slug'): r for r in doc.get('results', [])}
+    bad_row = rows.get('doctor-bad') or {}
+    check(bad_row.get('ok') is False and bad_row.get('stage') == 'load' and '装载失败' in str(bad_row.get('error', '')),
+          f'坏盘点名+原因（stage=load）· {str(bad_row.get("error", ""))[:60]}')
+    check((rows.get(SLUG) or {}).get('ok') is True, '好盘体检绿（冒烟主卡带）')
+
 except Exception as e:
     FAIL += 1
     print(f"  \033[31m✗ 冒烟异常\033[0m: {e}")

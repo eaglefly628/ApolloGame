@@ -1658,6 +1658,33 @@ def library_put_logic(slug: str, body: dict) -> tuple:
     _git_commit_all(game_dir, str(body.get('note') or 'logic: update'))
     return (200, {'success': True, 'slug': slug, 'gate': msg})
 
+def handle_library_doctor() -> dict:
+    """GET /api/library/doctor —— 全库装载体检（owner 07-11「把加载失败的错误都 log 出来」）。
+    跑 scripts/library-doctor.mjs：每盘卡带/内置数据游戏走与运行器同一套 JSON→parse→引擎 load+2tick
+    （含 TS 例外 logic 合体）；逐盘结果回 JSON，坏盘打 [DOCTOR] 控制台日志。只读不写。"""
+    t0 = time.time()
+    try:
+        proc = subprocess.run(
+            **_spawn(['npx', 'vite-node', 'scripts/library-doctor.mjs']),
+            cwd=ROOT, capture_output=True, encoding='utf-8', errors='replace', timeout=300,
+        )
+    except subprocess.TimeoutExpired:
+        return {'success': False, 'error': '体检超时（300s）'}
+    if proc.returncode != 0:
+        return {'success': False, 'error': (proc.stderr or proc.stdout or '体检脚本失败').strip()[:2000]}
+    try:
+        data = json.loads((proc.stdout or '').strip().splitlines()[-1])
+    except Exception as e:
+        return {'success': False, 'error': f'体检输出解析失败: {e}'}
+    for r in data.get('results', []):
+        if not r.get('ok'):
+            print(c('  [DOCTOR]', 'r'), f"✗ [{r.get('where')}] {r.get('slug')} · {r.get('stage')} · {str(r.get('error'))[:200]}")
+    print(c('  [DOCTOR]', 'g' if data.get('ok') else 'y'),
+          f"体检完 {data.get('total')} 盘 · {(data.get('total') or 0) - (data.get('bad') or 0)} 好 · {data.get('bad')} 坏 · {time.time() - t0:.1f}s")
+    data['success'] = True
+    data['elapsedMs'] = int((time.time() - t0) * 1000)
+    return data
+
 def library_set_flags(slug: str, body: dict) -> tuple:
     """POST /api/library/<slug>/flags {allowTs: bool}。仅 features.tsCarts 开时可用。"""
     if not _features().get('tsCarts'):
@@ -4033,6 +4060,10 @@ class APIHandler(BaseHTTPRequestHandler):
         m_stats = re.fullmatch(r'/api/library/([a-z0-9][a-z0-9-]*)/stats', path)
         if m_stats:
             self._send_json(200, handle_library_stats(m_stats.group(1)))
+            return
+
+        if path == '/api/library/doctor':  # 全库装载体检（先于泛 library 分派——doctor 不是 slug）
+            self._send_json(200, handle_library_doctor())
             return
 
         # 库端点（可变状态码：400 越界 / 404 缺失）——先于遗留 200 端点分派。

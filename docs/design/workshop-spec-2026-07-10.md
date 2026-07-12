@@ -150,6 +150,9 @@ owner 实证：AI 卡带对话改稿后「无法加载游戏」且无原因—�
 契约·系统词带世界 API 样例与确定性红线）→ **cart-logic-check 装载门**（模块+契约+合体 2 tick）→
 ✔ 应用 PUT logic（版本化·空串撤除）→ 运行器 hasLogic 合体装载（dev 线）。记债明示（列表旗+勾旁红字）。
 manifest 仍纯数据；自由 TS（代码进 JSON/绕门）仍是禁区。冒烟 ⑬ 16 断言（101→117）。
+同批追加 **全库装载体检**（owner「把加载失败的错误都 log 出来」）：`GET /api/library/doctor` +
+`scripts/library-doctor.mjs`（逐盘 JSON→parse→引擎 load+2tick+logic 合体·坏盘 [DOCTOR] 台账日志）+
+壳游戏库屏 🩺 按钮报告卡（坏盘=红行原因·好盘只计数·告警黄行）。冒烟 ⑭ 3 断言（117→120）。
 
 ### §八.1 验收修订（owner 2026-07-11 真机验收六条·当日落地）
 

@@ -110,7 +110,16 @@
               <sc-for list="{{ gameFilters }}" as="f" hint-placeholder-count="3">
                 <button onClick="{{ f.pick }}" style="{{ f.style }}">{{ f.label }}</button>
               </sc-for>
+              <button onClick="{{ runDoctor }}" title="全库装载体检：每盘卡带/内置数据游戏过真引擎装载（与运行器同一套检查），坏盘逐条给原因" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ doctorLabel }}</button>
             </div>
+            <sc-if value="{{ doctorCard }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-bottom:18px;background:#fffdf5;border:4px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25)">
+                <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312;margin-bottom:8px">🩺 全库装载体检 · {{ doctorSummary }}</div>
+                <sc-for list="{{ doctorRows }}" as="dr" hint-placeholder-count="2">
+                  <div style="{{ dr.style }}">{{ dr.text }}</div>
+                </sc-for>
+              </div>
+            </sc-if>
             <!-- toolbar：视图切换 + 状态 filter（来源 filter=上方 gameFilters·不重复） -->
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
               <div style="display:flex;gap:6px">
@@ -703,7 +712,7 @@
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800}}">
 class Component extends DCLogic {
   state = {
-    screen: 'games', gameFilter: 'all',
+    screen: 'games', gameFilter: 'all', doctor: null, doctorBusy: false,
     // 我的游戏库·视图切换 + 状态筛选（Feature A·来源筛选复用既有 gameFilter）
     gameView: 'grid', gameStatus: 'all',
     liveGames: null, carts: null, version: null, settings: null,
@@ -1184,6 +1193,14 @@ class Component extends DCLogic {
       color: on ? '#fff5db' : '#3a2312', boxShadow: on ? '0 3px 0 #4e8a24' : '0 3px 0 rgba(58,35,18,.18)' });
     const gameFilters = [['all', '全部 ' + (allCarts.length + allLive.length)], ['cart', '🎮 卡带 ' + allCarts.length], ['builtin', '🏗 引擎内置 ' + allLive.length]]
       .map(([id, label]) => ({ label, style: chipStyle(s.gameFilter === id), pick: () => this.setState({ gameFilter: id }) }));
+    // 全库装载体检（owner 07-11「把加载失败的错误都 log 出来」）——真引擎逐盘检查，坏盘给原因。
+    const doctorRows = ((s.doctor && s.doctor.results) || [])
+      .filter(r => !r.ok || (r.warnings || []).length)
+      .map(r => ({
+        text: (r.ok ? '⚠ ' : '✗ ') + '[' + r.where + '] ' + r.slug + ' · '
+          + (r.ok ? ((r.warnings || []).length + ' 条告警：' + (r.warnings || []).join('；')) : (r.stage + ' · ' + (r.error || ''))),
+        style: 'font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.7;word-break:break-all;color:' + (r.ok ? '#8a5a2c' : '#a03222'),
+      }));
     const mgDefs = cartList.map((cc, i) => {
       const name = (cc.meta && cc.meta.name) || cc.slug;
       const desc = (cc.meta && cc.meta.description) || '';
@@ -1476,6 +1493,20 @@ class Component extends DCLogic {
       goMatlib: () => { this.setState({ screen: 'matlib' }); this.ensureFreeLib(); },
       goPublish: () => this.setState({ screen: 'publish' }), goSettings: () => { this.setState({ screen: 'settings' }); this.refreshSettings(); this.refreshLogs(); },
       myGames, gameFilters,
+      doctorLabel: s.doctorBusy ? '🩺 体检中…' : '🩺 体检',
+      doctorCard: !!s.doctor,
+      doctorSummary: s.doctor ? (s.doctor.total + ' 盘 · ' + (s.doctor.total - s.doctor.bad) + ' 好 · ' + s.doctor.bad + ' 坏'
+        + (s.doctor.bad === 0 ? ' —— 全部装得起来 ✓' : '（坏盘原因如下·粘给「程序」对话即可修）')
+        + (doctorRows.length === 0 ? ' · 零告警' : '')) : '',
+      doctorRows,
+      runDoctor: () => {
+        if (this.state.doctorBusy) return;
+        this.setState({ doctorBusy: true });
+        fetch('/api/library/doctor').then(r => r.json()).then(d => {
+          if (!d || !d.success) throw new Error((d && d.error) || '体检失败');
+          this.setState({ doctor: d, doctorBusy: false });
+        }).catch(e => { this.setState({ doctorBusy: false }); this.showToast('✕ ' + ((e && e.message) || '体检失败')); });
+      },
       // 我的游戏库·视图切换 + 状态筛选（Feature A）
       gameGrid: s.gameView === 'grid', gameList: s.gameView === 'list',
       gameViewChips, gameStatusChips, gameListRows, listNewStyle,
