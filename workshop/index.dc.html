@@ -687,14 +687,27 @@
           <sc-if value="{{ isPublish }}" hint-placeholder-val="{{ false }}">
             <div style="max-width:840px">
               <div style="display:inline-flex;align-items:center;gap:8px;background:#37b6ef;border:3px solid #3a2312;border-radius:12px;padding:6px 14px;box-shadow:0 4px 0 #1f86bd;margin-bottom:18px">
-                <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">发布 = 导出可分发的下载包（zip：卡带本体 + 游戏资产·不含 mock 预览物）</span>
+                <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">发布 = 每个游戏选平台「打包」→ 就绪后「下载」可运行产物（网页版=双击即玩·Mac=.dmg）</span>
               </div>
-              <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;flex-direction:column;gap:14px">
                 <sc-for list="{{ publishRows }}" as="p" hint-placeholder-count="3">
-                  <div style="display:flex;align-items:center;gap:14px;background:#fffdf5;border:3px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 4px 0 rgba(58,35,18,.2)">
-                    <div style="width:52px;height:52px;border-radius:13px;border:3px solid #3a2312;background:linear-gradient(180deg,#ffd0e4,#ff9ec4);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none">📦</div>
-                    <div style="flex:1;min-width:0"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#3a2312">{{ p.cn }}</div><div style="font-family:'Fredoka';font-weight:700;color:#b0723a;font-size:11px">{{ p.slug }} · {{ p.desc }}</div></div>
-                    <button onClick="{{ p.download }}" style="{{ dlBtnStyle }}" style-active="{{ dlBtnActive }}">⬇ 下载包</button>
+                  <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 4px 0 rgba(58,35,18,.2)">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px">
+                      <div style="width:46px;height:46px;border-radius:12px;border:3px solid #3a2312;background:linear-gradient(180deg,#ffd0e4,#ff9ec4);display:flex;align-items:center;justify-content:center;font-size:23px;flex:none">{{ p.icon }}</div>
+                      <div style="flex:1;min-width:0"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#3a2312">{{ p.cn }}</div><div style="font-family:'Fredoka';font-weight:700;color:#b0723a;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ p.slug }} · {{ p.desc }}</div></div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:7px">
+                      <sc-for list="{{ p.platforms }}" as="p2" hint-placeholder-count="5">
+                        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.6);border:2px solid rgba(58,35,18,.32);border-radius:11px;padding:7px 11px">
+                          <div style="flex:1;min-width:0">
+                            <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:13px">{{ p2.label }}</div>
+                            <div style="{{ p2.statusStyle }}">{{ p2.statusText }}</div>
+                          </div>
+                          <button onClick="{{ p2.pkg }}" style="{{ pkgBtnStyle }}" style-active="{{ pkgBtnActive }}">{{ p2.pkgLabel }}</button>
+                          <button onClick="{{ p2.dl }}" style="{{ dlBtnStyle }}" style-active="{{ dlBtnActive }}">⬇ 下载</button>
+                        </div>
+                      </sc-for>
+                    </div>
                   </div>
                 </sc-for>
               </div>
@@ -797,6 +810,7 @@ class Component extends DCLogic {
     gameView: 'grid', gameStatus: 'all',
     liveGames: null, carts: null, version: null, settings: null,
     coins: 5000, gems: 340,   // 虚拟金币经济：初始 5000·生成按 token 扣（1万 tok=100 币）·点金币充 +1000
+    pkgJobs: {},              // 打包任务态：{ 'slug:platform': {status:idle|building|ready|error, id, name, error} }
     prompt: '一款太空题材的竖版飞机大战，卡通风，有护盾和火力道具，一个大 Boss。',
     // 生成=服务端后台任务（owner 07-11·切屏/刷新不丢）：本地只是看板状态
     generating: false, genPct: 0, genStep: 0, genSec: 0, done: false, genJobId: null, genLive: null, genErr: null,
@@ -819,7 +833,7 @@ class Component extends DCLogic {
     toast: null
   };
 
-  componentWillUnmount() { clearInterval(this._g); clearInterval(this._cl); clearTimeout(this._t); }
+  componentWillUnmount() { clearInterval(this._g); clearInterval(this._cl); clearTimeout(this._t); Object.values(this._pk || {}).forEach(clearInterval); }
 
   // 嵌入我们的接口：真游戏列表（卡带=/api/library·引擎游戏=/api/games）+ 版本 + 设置（打码视图）。
   componentDidMount() {
@@ -1268,6 +1282,48 @@ class Component extends DCLogic {
   }
   // 点金币=虚拟充值 +1000（owner「点金币充值·一次充 1000」）。
   topUp() { this.setState(st => ({ coins: st.coins + 1000 })); this.showToast('💰 充值成功 +1000 金币'); }
+  // 打包（发布屏·每游戏×平台）：POST 起后台任务 → 轮询 → 就绪后「下载」按钮取产物。
+  _pkgKey(slug, platform) { return slug + ':' + platform; }
+  startPackage(slug, platform) {
+    const key = this._pkgKey(slug, platform);
+    const cur = (this.state.pkgJobs || {})[key];
+    if (cur && cur.status === 'building') { this.showToast('打包中，请稍候…'); return; }
+    this.setState(st => ({ pkgJobs: Object.assign({}, st.pkgJobs, { [key]: { status: 'building' } }) }));
+    this.showToast('开始打包：' + platform);
+    fetch('/api/package/job', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, platform }) }).then(r => r.json()).then(d => {
+      if (!d || !d.success) throw new Error((d && d.error) || '打包启动失败');
+      this.watchPkgJob(key, d.id);
+    }).catch(e => {
+      this.setState(st => ({ pkgJobs: Object.assign({}, st.pkgJobs, { [key]: { status: 'error', error: (e.message || '失败') } }) }));
+      this.showToast('✕ ' + (e.message || '打包失败').slice(0, 80));
+    });
+  }
+  watchPkgJob(key, id) {
+    this._pk = this._pk || {};
+    clearInterval(this._pk[key]);
+    this._pk[key] = setInterval(() => {
+      fetch('/api/package/job?id=' + encodeURIComponent(id)).then(r => r.json()).then(d => {
+        if (!d || !d.success) return;
+        const j = d.job;
+        if (!j.done) return;
+        clearInterval(this._pk[key]);
+        if (j.error) {
+          this.setState(st => ({ pkgJobs: Object.assign({}, st.pkgJobs, { [key]: { status: 'error', error: j.error } }) }));
+          this.showToast('✕ ' + j.error.slice(0, 90));
+        } else {
+          this.setState(st => ({ pkgJobs: Object.assign({}, st.pkgJobs, { [key]: { status: 'ready', id, name: j.artifactName } }) }));
+          this.showToast('✓ 打包完成：' + (j.artifactName || key));
+        }
+      }).catch(() => {});
+    }, 1200);
+  }
+  downloadPackage(slug, platform) {
+    const jb = (this.state.pkgJobs || {})[this._pkgKey(slug, platform)];
+    if (jb && jb.status === 'ready' && jb.id) window.open('/api/package/download?id=' + encodeURIComponent(jb.id), '_blank');
+    else if (jb && jb.status === 'building') this.showToast('打包中，请稍候…');
+    else this.showToast('请先点「打包」生成产物');
+  }
   // trace 窗滚到底（实况轮询每拍调用）。
   scrollTrace() {
     const doc = typeof document !== 'undefined' ? document : null;
@@ -1609,14 +1665,38 @@ class Component extends DCLogic {
     });
     const flClearBtn = { border: '3px solid #3a2312', borderRadius: '11px', padding: '8px 14px', cursor: 'pointer', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '12px', background: 'linear-gradient(180deg,#fffdf5,#fff0cf)', color: '#3a2312', boxShadow: '0 3px 0 rgba(58,35,18,.18)' };
 
-    // publish（下载包）
-    const dl = this.jelly('#5fcdf5', '#37b6ef', '#1f86bd', 15); dl.style.padding = '10px 18px';
-    const publishRows = allCarts.filter(cc => cc.valid).map(cc => ({
-      cn: (cc.meta && cc.meta.name) || cc.slug, slug: cc.slug,
-      desc: ((cc.meta && cc.meta.description) || '卡带').slice(0, 30),
-      download: () => { window.open('/api/library/' + cc.slug + '/export', '_blank'); this.showToast('打包中——浏览器将开始下载 ' + cc.slug + '.zip'); }
-    }));
-    const publishHint = publishRows.length ? '' : '还没有可发布的卡带——先到「新建游戏」生成一款';
+    // publish（每游戏 × 每平台：打包 · 下载 并列·owner 07-12）
+    const pkgB = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 12); pkgB.style.padding = '7px 15px'; pkgB.style.minWidth = '58px';
+    const dlB = this.jelly('#5fcdf5', '#37b6ef', '#1f86bd', 12); dlB.style.padding = '7px 13px';
+    const PKG_PLATFORMS = [
+      { key: 'web', label: '🌐 网页版 · 单文件（双击即玩）' },
+      { key: 'mac', label: '🍎 Mac 桌面版 · .dmg' },
+      { key: 'win', label: '🪟 Windows 桌面版 · .zip' },
+      { key: 'handheld', label: '🎮 掌机版 · 单 HTML' },
+      { key: 'zip', label: '📦 工程包 · .zip（卡带+资产）' },
+    ];
+    const pkgState = s.pkgJobs || {};
+    const mkPkgGame = (slug, cn, desc, icon) => ({
+      cn, slug, icon: icon || '📦', desc: (desc || '').slice(0, 42) || slug,
+      platforms: PKG_PLATFORMS.map(pl => {
+        const jb = pkgState[slug + ':' + pl.key] || {};
+        const st3 = jb.status || 'idle';
+        const stTxt = st3 === 'building' ? '⏳ 打包中…'
+          : st3 === 'ready' ? ('✓ 就绪：' + (jb.name || '产物') + '（点「下载」）')
+          : st3 === 'error' ? ('✕ ' + (jb.error || '失败'))
+          : '未打包 · 点「打包」生成产物';
+        const stColor = st3 === 'error' ? '#a03222' : st3 === 'ready' ? '#4e8a24' : '#8a5a2c';
+        return { label: pl.label, statusText: stTxt,
+          statusStyle: "font-family:'Noto Sans SC',sans-serif;font-weight:600;font-size:10.5px;line-height:1.4;margin-top:2px;word-break:break-word;color:" + stColor,
+          pkgLabel: st3 === 'building' ? '打包中' : '打包',
+          pkg: () => this.startPackage(slug, pl.key),
+          dl: () => this.downloadPackage(slug, pl.key) };
+      })
+    });
+    const publishRows = allCarts.filter(cc => cc.valid)
+      .map(cc => mkPkgGame(cc.slug, (cc.meta && cc.meta.name) || cc.slug, (cc.meta && cc.meta.description) || '', '🎮'))
+      .concat(allLive.map(gg => mkPkgGame(gg.id, gg.title || gg.id, gg.description || '', gg.icon || '🏗')));
+    const publishHint = publishRows.length ? '' : '还没有游戏——先到「新建游戏」生成一款';
 
     // settings（LLM 通道 + 文生图 key·真数据）
     const provs = (s.settings && s.settings.providers) || [];
@@ -1915,7 +1995,7 @@ class Component extends DCLogic {
       flClear: () => this.setState({ flQuery: '' }), flClearStyle: flClearBtn,
       flLoading, flSearching, flResults, flResultLabel, flNoResult, flTreeShown, flCats,
       // publish
-      publishRows, dlBtnStyle: dl.style, dlBtnActive: dl.active, publishHint,
+      publishRows, publishHint, pkgBtnStyle: pkgB.style, pkgBtnActive: pkgB.active, dlBtnStyle: dlB.style, dlBtnActive: dlB.active,
       // settings
       ccStatus, tokenInput: s.tokenInput, tokenType: (e) => this.setState({ tokenInput: e.target.value }),
       providerChips, genKeyRows,

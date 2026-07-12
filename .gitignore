@@ -1,6 +1,8 @@
 node_modules/
 dist/
 dist-cartridge/
+release/
+apollo-*-rk3562.html
 apollo-*-rk3562.tar.gz
 .env
 *.log
