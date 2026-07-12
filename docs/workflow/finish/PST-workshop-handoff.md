@@ -76,6 +76,11 @@
   → chat 出参 `logicPatch|logicError` → 壳 ✔ 应用 `PUT /api/library/<slug>/logic {content}`（版本化·空串=撤除）。
   列表带 `allowTs/hasLogic`；运行器 hasLogic → `import('/library/<slug>/logic.ts')` 合体（仅 dev 线·vite transform）。
   红线：绝不 eval；TS 绝不进 manifest JSON；记债旗必须可见。
+- **批18（owner 07-12 美术工作流重设）**：台账=**按素材去重**（deriveLedger 归并 (kind·组件·字段·query)·
+  行带 `slots[]`·applyReplacements 扇出·mergeLedger 吸收零资产旧重复行——改台账语义前先读
+  `scripts/art-replace.test.mjs` 去重三测）。工坊素材屏=一站式（详情卡/改词/风格包/文生图模型/
+  ⚡regen/▶batch/⤵replace·打开即 derive 自愈）。美术 agent → ```art-ops 围栏（regen/batch/replace ≤10 条）
+  → `_split_art_ops` 校验 → chat 出参 `artOps` → 壳确认卡串行执行——**服务端绝不代执行**。
 - `GET /api/library/doctor` → **全库装载体检**（owner 07-11「把加载失败的错误都 log 出来」）：
   `scripts/library-doctor.mjs` 逐盘（library + 内置数据游戏）跑 JSON→parse→引擎 load+2tick（含 logic 合体），
   逐盘 `{slug, where, ok, stage: read|json|parse|logic|load|ok, error, warnings}`；坏盘打 `[DOCTOR]` 服务台日志；

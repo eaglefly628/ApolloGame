@@ -446,6 +446,21 @@
                 <sc-if value="{{ logicErrText }}" hint-placeholder-val="{{ false }}">
                   <div style="margin-top:14px;background:#ffe1d6;border:3px solid #3a2312;border-radius:14px;padding:12px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#7a2a12;line-height:1.5">⚠ TS 逻辑未过装载门：{{ logicErrText }}</div>
                 </sc-if>
+                <sc-if value="{{ hasArtOps }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:14px;background:linear-gradient(180deg,#ffe9f2,#ffd3e5);border:4px solid #3a2312;border-radius:18px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25);animation:pop .18s ease-out both">
+                    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312;margin-bottom:6px">🎨 美术操作提议（确认后在工坊直接执行）</div>
+                    <sc-for list="{{ artOpsRows }}" as="ao" hint-placeholder-count="2">
+                      <div style="font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.7;color:#7a2a4a;word-break:break-all">{{ ao.text }}</div>
+                    </sc-for>
+                    <div style="display:flex;gap:8px;margin-top:10px">
+                      <button onClick="{{ execArtOps }}" style="{{ applyBtnStyle }}" style-active="{{ applyBtnActive }}">✔ 执行全部</button>
+                      <button onClick="{{ dropArtOps }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">✕ 放弃</button>
+                    </div>
+                    <sc-if value="{{ artBusyText }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="width:16px;height:16px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e">{{ artBusyText }}</span></div>
+                    </sc-if>
+                  </div>
+                </sc-if>
               </div>
               <!-- right: triple-role chat（owner 07-11 三入口：策划/美术/程序） -->
               <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:20px;box-shadow:0 6px 0 rgba(58,35,18,.28);display:flex;flex-direction:column;height:600px">
@@ -502,11 +517,11 @@
                   <sc-if value="{{ grp.open }}" hint-placeholder-val="{{ false }}">
                     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:10px">
                       <sc-for list="{{ grp.rows }}" as="a" hint-placeholder-count="6">
-                        <div style="border-radius:16px;overflow:hidden;border:3px solid #ffd257;box-shadow:0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312;background:#fff">
+                        <div onClick="{{ a.pick }}" title="{{ a.q }}" style="{{ a.cardStyle }}">
                           <div style="{{ a.coverStyle }}"></div>
                           <div style="padding:6px 6px 8px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
                             <div style="font-family:'Fredoka';font-weight:700;color:#3a2312;font-size:11px">{{ a.no }} <span style="{{ a.badgeStyle }}">{{ a.badge }}</span></div>
-                            <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:10px;line-height:1.2;overflow:hidden;max-height:24px">{{ a.q }}</div>
+                            <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:10px;line-height:1.3;word-break:break-word;overflow:hidden;max-height:26px">{{ a.q }}</div>
                           </div>
                         </div>
                       </sc-for>
@@ -518,6 +533,36 @@
                 </div>
               </sc-for>
             </div>
+            <sc-if value="{{ artSelOn }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:16px;background:#fffdf5;border:4px solid #3a2312;border-radius:18px;padding:16px;box-shadow:0 6px 0 rgba(58,35,18,.28);animation:pop .18s ease-out both">
+                <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+                  <div style="{{ artSelCover }}"></div>
+                  <div style="flex:1;min-width:280px">
+                    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312">{{ artSelTitle }}</div>
+                    <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e;line-height:1.75;white-space:pre-wrap;word-break:break-word;margin-top:6px">{{ artSelInfo }}</div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+                      <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c;flex:none">提示词</span>
+                      <input value="{{ artQ }}" onInput="{{ artQType }}" placeholder="改这里再点「重新生成」即换词出图…" style="flex:1;min-width:240px;border:2.5px solid #3a2312;border-radius:9px;padding:8px 10px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;background:#fff;color:#3a2312;outline:none">
+                    </div>
+                    <div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap">
+                      <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c">风格包</span>
+                      <sc-for list="{{ artPackChips }}" as="pc" hint-placeholder-count="3"><button onClick="{{ pc.pick }}" style="{{ pc.style }}">{{ pc.label }}</button></sc-for>
+                      <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c;margin-left:10px">文生图模型</span>
+                      <sc-for list="{{ artProvChips }}" as="pv" hint-placeholder-count="3"><button onClick="{{ pv.pick }}" title="{{ pv.tip }}" style="{{ pv.style }}">{{ pv.label }}</button></sc-for>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+                      <button onClick="{{ artRegen }}" style="{{ applyBtnStyle }}" style-active="{{ applyBtnActive }}">⚡ 重新生成这张</button>
+                      <button onClick="{{ artBatchGen }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">▶ 生成全部占位</button>
+                      <button onClick="{{ artApplyBack }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⤵ 替换写回 manifest</button>
+                      <button onClick="{{ artSelClose }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">✕ 收起</button>
+                    </div>
+                    <sc-if value="{{ artBusyText }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:10px;display:flex;align-items:center;gap:8px"><span style="width:16px;height:16px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e">{{ artBusyText }}</span></div>
+                    </sc-if>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
             <sc-if value="{{ assetsEmptyText }}" hint-placeholder-val="{{ false }}">
               <div style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:13px;background:rgba(255,255,255,.5);border:3px dashed rgba(58,35,18,.35);border-radius:14px;padding:18px;text-align:center">{{ assetsEmptyText }}</div>
             </sc-if>
@@ -728,9 +773,11 @@ class Component extends DCLogic {
     chatRole: 'gd', chats: { gd: [], pe: [], art: [] }, chatInput: '', chatBusy: false, chatLive: null,
     editModel: 'opus', editEffort: 'high',
     pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, edRev: '', edRevising: false, editStats: null,
-    features: null, pendingLogic: null, logicErr: null, editAllowTs: false, editHasLogic: false,
+    features: null, pendingLogic: null, logicErr: null, editAllowTs: false, editHasLogic: false, pendingArtOps: null,
     // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
     assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null, traceLog: '', llmLegacy: false,
+    // 美术一站式（owner 07-12「占位/提示词/模型/替换都在工坊」）：选中行 + 风格包/文生图模型 + 忙碌标
+    artSel: null, artQ: '', artPack: null, artProv: '', artBusy: null, artPacks: null, genProviders: null,
     tokenInput: '', genKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
     toast: null
   };
@@ -862,7 +909,7 @@ class Component extends DCLogic {
     this.setState({ screen: 'edit', editSlug: slug, editName: name || slug, editPitch: pitch || '',
       board: null, chats: { gd: [], pe: [], art: [] }, chatRole: 'gd', chatInput: '', chatBusy: false,
       pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, editStats: null,
-      pendingLogic: null, logicErr: null,
+      pendingLogic: null, logicErr: null, pendingArtOps: null,
       editAllowTs: !!(this.state.carts || []).filter(c => c && c.slug === slug).map(c => c.allowTs)[0],
       editHasLogic: !!(this.state.carts || []).filter(c => c && c.slug === slug).map(c => c.hasLogic)[0] });
     this.refreshBoard(slug);
@@ -927,10 +974,66 @@ class Component extends DCLogic {
       });
   }
   pickAssetGame(slug) {
-    this.setState({ assetsSlug: slug, ledger: null, artOpen: {} });
-    fetch('/api/art/ledger?slug=' + encodeURIComponent(slug)).then(r => r.json())
+    this.setState({ assetsSlug: slug, ledger: null, artOpen: {}, artSel: null, artBusy: null });
+    const readLedger = () => fetch('/api/art/ledger?slug=' + encodeURIComponent(slug)).then(r => r.json())
       .then(d => { if (this.state.assetsSlug === slug) this.setState({ ledger: (d && d.success) ? d : { rows: [] } }); })
-      .catch(() => this.setState({ ledger: { rows: [] } }));
+      .catch(() => { if (this.state.assetsSlug === slug) this.setState({ ledger: { rows: [] } }); });
+    // 先重推导再读（07-12 去重自愈）：老账里的重复行在 derive+merge 里自动并成一素材一行，
+    // owner 无需手动 retire。derive 失败不挡读账（best-effort）。
+    fetch('/api/art/derive', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug }) }).then(() => readLedger()).catch(() => readLedger());
+    this.ensureArtMeta();
+  }
+  // 风格包/文生图 provider 清单（懒取一次·素材屏与 art-ops 执行共用）。
+  ensureArtMeta() {
+    if (this.state.artPacks === null) {
+      fetch('/api/art/style-packs').then(r => r.json())
+        .then(d => this.setState({ artPacks: (d && d.packs) || [] })).catch(() => this.setState({ artPacks: [] }));
+    }
+    if (this.state.genProviders === null) {
+      fetch('/api/assets/generate/providers').then(r => r.json())
+        .then(d => this.setState({ genProviders: (d && d.providers) || [] })).catch(() => this.setState({ genProviders: [] }));
+    }
+  }
+  // art-ops 执行链（07-12 工作流重设）：美术 agent 开方子 → 用户确认 → 逐条串行执行既有端点。
+  runArtOps(ops, slug) {
+    if (this.state.artBusy || !slug || !Array.isArray(ops) || !ops.length) return;
+    const pack = this.state.artPack || (((this.state.artPacks || [])[0] || {}).id) || 'pixel';
+    let done = 0, fail = 0;
+    const step = (i) => {
+      if (i >= ops.length) {
+        this.setState({ artBusy: null, pendingArtOps: null });
+        this.showToast('美术操作执行完：成功 ' + done + ' / 失败 ' + fail);
+        this.refreshBoard(slug);
+        if (this.state.assetsSlug === slug) this.pickAssetGame(slug);
+        return;
+      }
+      const o = ops[i];
+      const [path, body] = o.op === 'regen'
+        ? ['/api/art/regenerate', { slug, no: o.no, packId: o.packId || pack, query: o.query || undefined }]
+        : o.op === 'batch'
+          ? ['/api/art/batch', { slug, packId: o.packId || pack }]
+          : ['/api/art/replace', { slug }];
+      this.setState({ artBusy: '执行 ' + (i + 1) + '/' + ops.length + '：' + o.op + (o.no ? ' ' + o.no : '') });
+      fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        .then(r => r.json()).then(d => { (d && d.success !== false) ? done++ : fail++; step(i + 1); })
+        .catch(() => { fail++; step(i + 1); });
+    };
+    this.setState({ artBusy: '美术操作执行中' });
+    step(0);
+  }
+  // 美术台操作统一走这（生成/替换=分钟级——busy 标+完成刷新台账；一次一件防重入）。
+  artCall(label, path, body) {
+    if (this.state.artBusy) return;
+    const slug = this.state.assetsSlug;
+    this.setState({ artBusy: label });
+    fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(r => r.json()).then(d => {
+        if (!d || d.success === false) throw new Error((d && d.error) || (label + '失败'));
+        this.showToast(label + ' ✓');
+        this.setState({ artBusy: null });
+        if (this.state.assetsSlug === slug) this.pickAssetGame(slug);
+      }).catch(e => { this.setState({ artBusy: null }); this.showToast('✕ ' + ((e && e.message) || (label + '失败'))); });
   }
   // 共享免费资产库（FreeArtLib·4892 项）——首次进「素材库」屏时惰性拉一次。
   // 真数据顶层是 { ..., assets:[...] }（不是裸数组）；两种形状都容错取出资产数组。
@@ -978,6 +1081,7 @@ class Component extends DCLogic {
         pendingDesign: d.designPatch ? d.designPatch : cur.pendingDesign,
         pendingLogic: d.logicPatch ? d.logicPatch : cur.pendingLogic,
         logicErr: d.logicPatch ? null : (d.logicError || cur.logicErr),
+        pendingArtOps: (d.artOps && d.artOps.length) ? d.artOps : cur.pendingArtOps,
         artHints: (d.artHints && d.artHints.length) ? d.artHints : cur.artHints
       }), () => { this.saveChats(slug); this.scrollChat(); });
     }).catch(e => {
@@ -1329,6 +1433,10 @@ class Component extends DCLogic {
       const served = r.gen && r.gen.servedPath;
       const badge = stBadge[r.status] || [r.status, '#c8c8c8'];
       return { no: r.no, q: r.query || (r.slot && r.slot.entity) || '', badge: badge[0],
+        pick: () => this.setState({ artSel: r.no, artQ: r.query || '' }),  // 点开详情卡（一站式处理·07-12）
+        cardStyle: { borderRadius: '16px', overflow: 'hidden', cursor: 'pointer',
+          border: '3px solid ' + (s.artSel === r.no ? '#7ecb45' : '#ffd257'),
+          boxShadow: '0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312', background: '#fff' },
         badgeStyle: { background: badge[1], border: '2px solid #3a2312', borderRadius: '7px', padding: '1px 6px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '9px', color: '#3a2312', marginLeft: '4px' },
         coverStyle: Object.assign({ height: '78px', borderBottom: '2px solid #3a2312' }, served
           ? { backgroundImage: 'url(' + served + ')', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#f2ead8' }
@@ -1355,6 +1463,16 @@ class Component extends DCLogic {
     const assetsEmptyText = s.assetsSlug
       ? (s.ledger && (!s.ledger.rows || !ledRowsAll.length) ? '这款游戏还没有美术台账行——保存一次 manifest 会自动推导（PUT 即台账）' : '')
       : '点上面的游戏页签查看它的美术台账';
+
+    // ── 美术详情卡（owner 07-12「占位/提示词/模型/替换全在工坊」）──
+    const artSelRow = s.artSel ? ledRowsAll.find(r => r.no === s.artSel) : null;
+    const artPacksArr = Array.isArray(s.artPacks) ? s.artPacks : [];
+    const artCurPack = s.artPack || (artPacksArr[0] && artPacksArr[0].id) || '';
+    const artWantKind = artSelRow && artSelRow.kind === 'model3d' ? 'mesh' : 'image';
+    const artProvsArr = (Array.isArray(s.genProviders) ? s.genProviders : []).filter(p => !p.kind || p.kind === artWantKind);
+    const artSelServed = artSelRow && artSelRow.gen && artSelRow.gen.servedPath;
+    const artStBadge = artSelRow ? (stBadge[artSelRow.status] || [artSelRow.status, '#c8c8c8']) : ['', ''];
+    const artSlotN = artSelRow ? ((artSelRow.slots && artSelRow.slots.length) || 1) : 0;
 
     // ── 素材库（共享 FreeArtLib·Feature C）: cat → sub 两级折叠 + 标签搜索 ──
     const flAll = Array.isArray(s.freeLib) ? s.freeLib : [];
@@ -1620,6 +1738,15 @@ class Component extends DCLogic {
       },
       dropLogic: () => this.setState({ pendingLogic: null }),
       logicErrText: s.logicErr || '',
+      // art-ops 提议卡（07-12 工作流重设：美术 agent 开方子·确认即执行·不再去旧平台手动）
+      hasArtOps: !!(s.pendingArtOps && s.pendingArtOps.length),
+      artOpsRows: (s.pendingArtOps || []).map((o, i) => ({
+        text: (i + 1) + '. ' + (o.op === 'regen' ? ('重生成 ' + o.no + (o.query ? '（新词：' + o.query + '）' : ''))
+          : o.op === 'batch' ? ('批量生成全部占位' + (o.packId ? '（风格包 ' + o.packId + '）' : ''))
+            : '替换写回 manifest'),
+      })),
+      execArtOps: () => { this.ensureArtMeta(); this.runArtOps(s.pendingArtOps || [], s.editSlug); },
+      dropArtOps: () => this.setState({ pendingArtOps: null }),
       edRev: s.edRev, edRevType: (e) => this.setState({ edRev: e.target.value }),
       edRevKey: (e) => { if (e.key === 'Enter') { if (e.preventDefault) e.preventDefault(); this.edRevise(); } },
       edRevise: () => this.edRevise(), edRevLabel: s.edRevising ? '修订中…' : '✎ 修订',
@@ -1655,6 +1782,31 @@ class Component extends DCLogic {
       applyBtnStyle: apply.style, applyBtnActive: apply.active,
       // 游戏美术库（按种类折叠树·Feature B）
       assetGameTabs, artGroups, assetsEmptyText,
+      artSelOn: !!artSelRow,
+      artSelCover: Object.assign({ width: '160px', height: '160px', flex: 'none', borderRadius: '14px', border: '3px solid #3a2312' },
+        artSelServed
+          ? { backgroundImage: 'url(' + artSelServed + ')', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#f2ead8' }
+          : { background: 'linear-gradient(180deg,#f2ead8,#e2d2b0)' }),
+      artSelTitle: artSelRow ? (artSelRow.no + ' · ' + artStBadge[0] + ' · ' + (artSelRow.kind || '')) : '',
+      artSelInfo: artSelRow ? [
+        '提示词全文：' + (artSelRow.query || '（无）'),
+        artSelRow.prompt ? '成图 prompt：' + artSelRow.prompt : '',
+        artSelRow.desc ? '需求：' + artSelRow.desc : '',
+        artSelRow.context ? '上下文：' + artSelRow.context : '',
+        '槽位：' + artSlotN + ' 处' + (artSlotN > 1 ? '（一张图生成后自动写回全部）' : '') + ' · 首槽 ' + ((artSelRow.slot && artSelRow.slot.entity) || ''),
+        artSelRow.status === 'placeholder' ? '状态：还没出过图——占位=文字描述槽位，点「⚡ 重新生成」才有真贴图' : '',
+      ].filter(Boolean).join('\n') : '',
+      artQ: s.artQ, artQType: (e) => this.setState({ artQ: e.target.value }),
+      artPackChips: artPacksArr.map(p => ({ label: p.id, style: chipStyle(artCurPack === p.id), pick: () => this.setState({ artPack: p.id }) })),
+      artProvChips: [{ id: '', label: '自动', tip: '按风格包默认的生成通道' }]
+        .concat(artProvsArr.map(p => ({ id: p.id, label: p.id + (p.keyConfigured === false ? ' ⚠' : ''), tip: p.keyConfigured === false ? ('未配 key（' + (p.envKey || '') + '）——设置页可填') : (p.license || '') })))
+        .map(p => ({ label: p.label, tip: p.tip, style: chipStyle((s.artProv || '') === p.id), pick: () => this.setState({ artProv: p.id }) })),
+      artRegen: () => { if (artSelRow) this.artCall('重新生成 ' + artSelRow.no, '/api/art/regenerate',
+        { slug: s.assetsSlug, no: artSelRow.no, packId: artCurPack, query: (s.artQ || '').trim() || undefined, provider: s.artProv || undefined }); },
+      artBatchGen: () => this.artCall('批量生成占位行', '/api/art/batch', { slug: s.assetsSlug, packId: artCurPack, provider: s.artProv || undefined }),
+      artApplyBack: () => this.artCall('替换写回', '/api/art/replace', { slug: s.assetsSlug }),
+      artSelClose: () => this.setState({ artSel: null }),
+      artBusyText: s.artBusy ? (s.artBusy + ' 中…（生成走文生图服务·分钟级·完成自动刷新台账）') : '',
       // 素材库（共享 FreeArtLib·Feature C）
       matlibBanner: '共享免费资产库（CC0·' + (flAll.length || 4892) + ' 项）· 展开分类浏览，或用标签搜索',
       flQuery: s.flQuery, flType: (e) => this.setState({ flQuery: e.target.value }),

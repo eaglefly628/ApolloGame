@@ -1472,10 +1472,20 @@ Prefer changing VALUES of existing fields over adding new components; structural
 AGENT_ART_SYSTEM = AGENT_CHAT_COMMON + """
 ## Your role: 美术（art director）
 You own the game's LOOK: style direction, the art ledger, and skin slots. Reference ledger rows by their
-number (e.g. art-03) so the UI can deep-link the art platform; suggest style-anchor wording (style pack /
-stylePrompt) when asked about looks. Manifest changes you may propose: Sprite/skin-slot fields, colors,
-sizes — gameplay numbers belong to 策划, structure to 程序. Generation itself runs on the art platform
-(旧工作台 🎨) — you direct it via ledger row numbers, you do not fabricate image data.
+number (e.g. art-03). Manifest changes you may propose: Sprite/skin-slot fields, colors, sizes —
+gameplay numbers belong to 策划, structure to 程序. You do not fabricate image data.
+
+## 你能直接提议执行的操作（owner 07-12 工作流重设——不再让用户去旧平台手动）
+台账语义：**一行=一种素材**（同 query 的多个实体共用一行·slots 记全部槽位·生成一张自动写回全部）；
+重复行由系统自动去重合并，永远不要建议用户手动 retire/删行。
+当用户要「生成/换词重生成/批量出图/替换写回」时，追加恰好一个围栏（每次回复最多一个）：
+```art-ops
+[{"op": "regen", "no": "art-03", "query": "stone brick platform, mossy, pixel"},
+ {"op": "batch", "packId": "pixel-dark"},
+ {"op": "replace"}]
+```
+op 三式：regen（点名单行·可带新 query）· batch（全部占位行批量生成·可带 packId）· replace（生成好的
+写回 manifest）。清单会显示给用户确认后才执行——你只管开方子，不要声称已执行。
 
 ## Art ledger digest (this game)
 {ART_DIGEST}
@@ -1598,6 +1608,44 @@ def handle_capgaps_list(n: int = 50) -> dict:
         except Exception:
             continue
     return {'success': True, 'gaps': list(reversed(gaps))}
+
+# ── art-ops 协议（owner 07-12「工作流要重新设计」——美术 agent 从只会建议到能出手）────
+# 美术角色用 ```art-ops 围栏提议操作清单（JSON 数组·regen/batch/replace 三式），服务端只校验形状
+# 回 artOps 字段——**绝不代执行**：壳出「美术操作提议」卡，用户 ✔ 确认后逐条调既有 /api/art/* 端点。
+_ART_OPS_RE = re.compile(r'```art-ops[ \t]*\n(.*?)```', re.S)
+_ART_OPS_KINDS = ('regen', 'batch', 'replace')
+_ART_NO_OPS_RE = re.compile(r'art-\d{2,3}')
+
+def _split_art_ops(text: str):
+    """回复文本 → (剩余文本, ops 列表|None)。只认 ```art-ops 围栏内合法 JSON 数组（≤10 条）。"""
+    m = _ART_OPS_RE.search(text or '')
+    if not m:
+        return (text or '').strip(), None
+    rest = (text[:m.start()] + text[m.end():]).strip()
+    try:
+        cand = json.loads(m.group(1))
+    except Exception:
+        return rest, None
+    if not isinstance(cand, list) or not cand:
+        return rest, None
+    ops = []
+    for o in cand[:10]:
+        if not isinstance(o, dict) or o.get('op') not in _ART_OPS_KINDS:
+            continue
+        entry = {'op': o['op']}
+        if o['op'] == 'regen':
+            no = str(o.get('no', '')).strip()
+            if not _ART_NO_OPS_RE.fullmatch(no):
+                continue
+            entry['no'] = no
+            q = o.get('query')
+            if isinstance(q, str) and q.strip():
+                entry['query'] = q.strip()[:300]
+        pk = o.get('packId')
+        if isinstance(pk, str) and re.fullmatch(r'[a-z0-9][a-z0-9-]*', pk):
+            entry['packId'] = pk
+        ops.append(entry)
+    return rest, (ops or None)
 
 # ── TS 例外卡带（owner 07-11 拍板「展示游戏打勾允许生产 TS 逻辑」·features.tsCarts 默认关）────
 # 形态=最小伤害：TS 绝不进 manifest（工件仍纯数据），住在 library/<slug>/logic.ts，
@@ -1792,6 +1840,8 @@ def handle_agent_chat(body: dict) -> dict:
                                                         'proposal': '通用能力形状', 'acceptance': '一条测试'})
         if role == 'pe' and _ts_cart_enabled(slug) and 'logic' in messages[-1]['content']:  # mock TS 提议（冒烟全链）
             out['logicPatch'] = {'content': _MOCK_LOGIC_TS.replace('__SLUG__', slug)}
+        if role == 'art' and '生成' in messages[-1]['content']:  # mock art-ops 提议（冒烟全链·07-12 工作流重设）
+            out['artOps'] = [{'op': 'batch'}, {'op': 'replace'}]
         return out
 
     tpl = {'gd': AGENT_GD_SYSTEM, 'pe': AGENT_PE_SYSTEM, 'art': AGENT_ART_SYSTEM}[role]
@@ -1878,6 +1928,10 @@ def handle_agent_chat(body: dict) -> dict:
                 logic_patch = {'content': ts_content}
             else:
                 logic_err = msgl
+    # art-ops：美术操作提议（07-12 工作流重设）——只校验回传，壳确认后才逐条执行（不代执行红线）。
+    art_ops = None
+    if role == 'art':
+        reply_text, art_ops = _split_art_ops(reply_text)
     # capgap：结构化能力缺口提案 → 台账即录（这是记录不是落盘工件·下沉仍走 Lead 裁决）。
     capgap_entry = None
     if _features().get('capgap'):
@@ -1898,6 +1952,8 @@ def handle_agent_chat(body: dict) -> dict:
         out['logicError'] = logic_err
     if capgap_entry:
         out['capGap'] = capgap_entry
+    if art_ops:
+        out['artOps'] = art_ops
     if role in ('gd', 'art'):
         out['artHints'] = sorted(set(re.findall(r'\bart-\d{2,3}\b', reply_text)))
     return out

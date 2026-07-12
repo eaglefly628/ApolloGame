@@ -383,3 +383,56 @@ describe('deriveForGame：art: 槽为主，纯色块生成游戏回退需求推�
     expect(led.rows.every((r) => r.slot && r.slot.entity)).toBe(true);
   });
 });
+
+describe('台账按素材去重（owner 2026-07-12「100 平台共图却出 40 行」）', () => {
+  // 100 个平台共用同一 art: 查询 + 1 个玩家 → 台账 2 行，不是 101 行。
+  const many = () => {
+    const entities = { player: { Sprite: { type: 'Sprite', textureKey: 'art:pixel hero' }, Shape: { type: 'Shape', width: 32, height: 32 } } };
+    for (let i = 0; i < 100; i++) {
+      entities['f' + i] = { Sprite: { type: 'Sprite', textureKey: 'art:stone brick platform' }, Shape: { type: 'Shape', width: 96, height: 16 } };
+    }
+    return { capabilities: ['l2-color'], entities };
+  };
+
+  it('同 (kind·组件·字段·query) 归并为一行·slots 背全量槽位·context 标共用数', () => {
+    const l = deriveLedger(many(), { game: 'g' });
+    expect(l.rows).toHaveLength(2);
+    const plat = l.rows.find((r) => r.query === 'stone brick platform');
+    expect(plat.slots).toHaveLength(100);
+    expect(plat.slot).toEqual(plat.slots[0]); // 代表槽位=首槽（编号身份不漂移）
+    expect(plat.context).toContain('共 100 处槽位共用');
+    const hero = l.rows.find((r) => r.query === 'pixel hero');
+    expect(hero.slots).toHaveLength(1);
+  });
+
+  it('applyReplacements 对去重行扇出：一张图写回全部 100 个槽位', () => {
+    const mf = many();
+    const l = deriveLedger(mf, { game: 'g' });
+    const plat = l.rows.find((r) => r.query === 'stone brick platform');
+    plat.status = 'generated';
+    plat.gen = { localId: 'gen/art-01', mock: false };
+    const res = applyReplacements(mf, l, { allowMock: false });
+    expect(res.replaced).toBe(100);
+    expect(res.manifest.entities.f0.Sprite.textureKey).toBe('gen/art-01');
+    expect(res.manifest.entities.f99.Sprite.textureKey).toBe('gen/art-01');
+    expect(res.manifest.entities.player.Sprite.textureKey).toBe('art:pixel hero'); // 别行不动
+  });
+
+  it('mergeLedger 吸收旧重复行：40 行旧账并进去重推导 → 收敛，零资产旧行不留墓碑', () => {
+    const mf = many();
+    // 旧世界：每槽位一行（模拟去重前的台账·全 placeholder）
+    const prevRows = Object.keys(mf.entities).sort().map((eid, i) => ({
+      no: 'art-' + String(i + 1).padStart(2, '0'), kind: 'sprite',
+      slot: { entity: eid, component: 'Sprite', field: 'textureKey' },
+      query: eid === 'player' ? 'pixel hero' : 'stone brick platform',
+      spec: {}, desc: '', context: '', status: 'placeholder', gen: null, provenance: null,
+    }));
+    const merged = mergeLedger({ version: 1, game: 'g', rows: prevRows }, deriveLedger(mf, { game: 'g' }), mf);
+    expect(merged.rows).toHaveLength(2); // 101 行旧账收敛到 2
+    expect(merged.rows.every((r) => r.status !== 'retired')).toBe(true); // 吸收=删，不是墓碑
+    // 已生成的旧重复行不吸收（有资产投入·保留待人裁）
+    const prev2 = prevRows.map((r) => (r.no === 'art-05' ? { ...r, status: 'generated', gen: { localId: 'gen/x', mock: false } } : r));
+    const merged2 = mergeLedger({ version: 1, game: 'g', rows: prev2 }, deriveLedger(mf, { game: 'g' }), mf);
+    expect(merged2.rows.some((r) => r.gen && r.gen.localId === 'gen/x')).toBe(true);
+  });
+});

@@ -140,14 +140,26 @@ export function deriveLedger(manifest, { game = '' } = {}) {
     }
   }
   slots.sort((a, b) => slotKey(a).localeCompare(slotKey(b)));
-  const rows = slots.map((s, i) => {
+  // 按素材去重（owner 07-12「100 个平台共用一张图却出 40 行」）：台账=美术需求表，一行=一种素材。
+  // 同 (kind·组件·字段·query) 的槽位归并成一行——首槽位当代表（slot·编号身份不漂移），全量槽位记
+  // slots[]（applyReplacements 据它扇出回写到每个实体）。不同 query/kind 仍各占一行。
+  const groups = new Map();
+  for (const s of slots) {
     const kind = deriveKind(s.component, s.field, s.entity);
-    const spec = deriveSpec(kind, s.comps);
+    const key = [kind, s.component, s.field, s.query].join(' ');
+    if (!groups.has(key)) groups.set(key, { kind, first: s, members: [] });
+    groups.get(key).members.push({ entity: s.entity, component: s.component, field: s.field });
+  }
+  const rows = [...groups.values()].map((g, i) => {
+    const s = g.first;
+    const spec = deriveSpec(g.kind, s.comps);
+    const ctx = deriveContext(g.kind, s.entity, s.query, spec)
+      + (g.members.length > 1 ? `·共 ${g.members.length} 处槽位共用` : '');
     return {
       no: 'art-' + String(i + 1).padStart(2, '0'),
-      kind, slot: { entity: s.entity, component: s.component, field: s.field }, query: s.query,
+      kind: g.kind, slot: g.members[0], slots: g.members, query: s.query,
       placeholder: { ref: ART_PREFIX + s.query, source: 'freelib' },
-      spec, desc: deriveDesc(s.comps, kind, s.query), context: deriveContext(kind, s.entity, s.query, spec),
+      spec, desc: deriveDesc(s.comps, g.kind, s.query), context: ctx,
       status: 'placeholder', gen: null, provenance: null,
     };
   });
@@ -295,11 +307,17 @@ export function mergeLedger(prev, fresh, manifest = null) {
       rows.push({ ...f, no: 'art-' + String(maxNo).padStart(2, '0') });
     }
   }
+  // 去重吸收（07-12「40 行该是 5 行」）：fresh 行现在背 slots[]——它已覆盖的槽位集合。
+  const covered = new Set();
+  for (const f of fresh.rows) for (const s of (Array.isArray(f.slots) ? f.slots : [f.slot])) covered.add(slotKey(s));
   for (const p of prev.rows) {
     if (seen.has(rowIdentity(p, mode))) continue;
     // 已钉死的槽位（replaced/filled/approved）从 fresh 消失是**正常态**——art: 引用已被替换成真资产 id，
     // 推导自然扫不到；保留原行原状态。只有未完成行（placeholder/needs-art/generated）消失才是真墓碑。
     if (['replaced', 'filled', 'approved'].includes(p.status)) { rows.push({ ...p }); continue; }
+    // 被去重行吸收的旧重复行（同素材另一槽位·零资产零人工投入）→ 直接删（不留墓碑：需求没消失，
+    // 只是并进了代表行；留墓碑反而把台账又撑回 40 行）。有人工痕迹（history）的不吸收，保留待人裁。
+    if (p.status in { placeholder: 1, 'needs-art': 1 } && covered.has(slotKey(p.slot)) && !(Array.isArray(p.history) && p.history.length)) continue;
     // slot 仍在 manifest（引用只是非 art:——已钉死等真图/mock regen 中）→ 不是真消失，保留原行
     // （REQ-WORKSHOP C1 回归：PUT 即自动 derive 后，误墓碑会吃掉 mock regen 的 generated 行）。
     if (manifest && slotExists(manifest, p.slot)) { rows.push({ ...p }); continue; }
@@ -460,16 +478,21 @@ export function applyReplacements(manifest, ledger, { allowMock = false } = {}) 
   for (const row of ledger.rows) {
     if (row.status !== 'generated' || !row.gen?.localId) continue;
     if (row.gen.mock && !allowMock) { skippedMock++; continue; } // mock 永不写回（真图前保持原始 placeholder 观感）
-    const { entity, component, field } = row.slot;
-    let comp = null;
-    if (entity.startsWith('prefab:')) {
-      // 嵌套寻径：prefab:<宿主>:<模板>:<实体> → entities[宿主].PrefabLibrary.templates[模板].entities[实体]
-      const [, owner, tname, teid] = entity.split(':');
-      comp = m.entities?.[owner]?.PrefabLibrary?.templates?.[tname]?.entities?.[teid]?.[component];
-    } else {
-      comp = m.entities && m.entities[entity] && m.entities[entity][component];
+    // 去重台账：一行可背多个槽位（slots[]·07-12），逐槽位扇出回写；旧单槽行照旧走 row.slot。
+    const targets = Array.isArray(row.slots) && row.slots.length ? row.slots : [row.slot];
+    let hit = 0;
+    for (const { entity, component, field } of targets) {
+      let comp = null;
+      if (entity.startsWith('prefab:')) {
+        // 嵌套寻径：prefab:<宿主>:<模板>:<实体> → entities[宿主].PrefabLibrary.templates[模板].entities[实体]
+        const [, owner, tname, teid] = entity.split(':');
+        comp = m.entities?.[owner]?.PrefabLibrary?.templates?.[tname]?.entities?.[teid]?.[component];
+      } else {
+        comp = m.entities && m.entities[entity] && m.entities[entity][component];
+      }
+      if (comp && typeof comp === 'object' && !Array.isArray(comp)) { comp[field] = row.gen.localId; hit++; }
     }
-    if (comp && typeof comp === 'object' && !Array.isArray(comp)) { comp[field] = row.gen.localId; row.status = 'replaced'; replaced++; }
+    if (hit > 0) { row.status = 'replaced'; replaced += hit; }
   }
   return { manifest: m, ledger, replaced, skippedMock };
 }

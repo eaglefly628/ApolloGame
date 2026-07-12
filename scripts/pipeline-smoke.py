@@ -483,6 +483,33 @@ try:
           f'坏盘点名+原因（stage=load）· {str(bad_row.get("error", ""))[:60]}')
     check((rows.get(SLUG) or {}).get('ok') is True, '好盘体检绿（冒烟主卡带）')
 
+    print('⑮ art-ops 协议 + 台账按素材去重（owner 07-12 工作流重设）')
+    rest15, ops15 = apollo._split_art_ops(
+        '好的，这就安排。\n```art-ops\n[{"op":"regen","no":"art-03","query":"mossy stone"},'
+        '{"op":"batch","packId":"pixel"},{"op":"replace"},{"op":"hack"}]\n```')
+    check(ops15 is not None and len(ops15) == 3 and ops15[0]['no'] == 'art-03' and '这就安排' in rest15
+          and 'art-ops' not in rest15, 'art-ops 围栏解析（非法 op 过滤·对白剥净）')
+    _, nops15 = apollo._split_art_ops('```art-ops\nnot json\n```')
+    check(nops15 is None, '坏 JSON 当没提议')
+    _, ao15 = req('POST', '/api/agent/chat', {'slug': SLUG, 'role': 'art', 'provider': 'mock',
+                                              'messages': [{'role': 'user', 'content': '帮我把占位都生成了'}]})
+    check(ao15.get('success') and isinstance(ao15.get('artOps'), list) and ao15['artOps'][0]['op'] == 'batch',
+          'mock 美术对话产 artOps 提议（壳确认卡的数据源）')
+    dup_mf = {'capabilities': ['a1-transform', 'c1-shape', 'l2-color'], 'entities': {
+        'p1': {'Transform': {'x': 0, 'y': 0}, 'Shape': {'kind': 'box', 'width': 32, 'height': 8}, 'Sprite': {'textureKey': 'art:stone platform'}},
+        'p2': {'Transform': {'x': 40, 'y': 0}, 'Shape': {'kind': 'box', 'width': 32, 'height': 8}, 'Sprite': {'textureKey': 'art:stone platform'}},
+        'p3': {'Transform': {'x': 80, 'y': 0}, 'Shape': {'kind': 'box', 'width': 32, 'height': 8}, 'Sprite': {'textureKey': 'art:stone platform'}},
+        'hero': {'Transform': {'x': 120, 'y': 0}, 'Shape': {'kind': 'box', 'width': 16, 'height': 16}, 'Sprite': {'textureKey': 'art:pixel hero'}},
+    }}
+    st15, pu15 = req('PUT', f'/api/library/{SLUG}/manifest', {'manifest': dup_mf, 'note': '去重腿'})
+    check(st15 == 200 and pu15.get('success'), '同词多槽稿 PUT 落盘（自动重 derive）')
+    led15 = json.loads((ROOT / 'public' / 'games' / SLUG / 'art' / 'art-ledger.json').read_text('utf-8'))
+    live15 = [r for r in led15.get('rows', []) if r.get('status') != 'retired']
+    plat15 = next((r for r in live15 if r.get('query') == 'stone platform'), None)
+    check(plat15 is not None and len(plat15.get('slots') or []) == 3,
+          f'台账按素材去重（3 同词槽合 1 行·slots 扇出回写）· 实得 slots={len((plat15 or {}).get("slots") or [])}')
+    check(len([r for r in live15 if r.get('query') == 'pixel hero']) == 1, '不同素材各占一行')
+
 except Exception as e:
     FAIL += 1
     print(f"  \033[31m✗ 冒烟异常\033[0m: {e}")

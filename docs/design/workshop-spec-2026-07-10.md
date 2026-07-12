@@ -166,6 +166,18 @@ applyMovement 路由 `Controllable{playerId,speed}`，但该组件此前无任�
 （provides Controllable·systems:[]·describe 写明运行时语义与键位约定）+ House Rules 第 7 条输入接线
 规则。测试：i3 provider/推断/告警消除 + playerIds 发现 5 断言。
 
+### §八.8 验收批 18（owner 07-12 三连·美术工作流重设）
+
+① **台账按素材去重**（「100 平台共图却 40 行」）：deriveLedger 按 (kind·组件·字段·query) 归并——
+一行=一种素材、slots[] 记全部槽位、applyReplacements 扇出写回、mergeLedger 自动吸收旧重复行
+（零资产零人工的直接删不留墓碑·有 history/资产的保留）；工坊素材屏打开即 derive 自愈（旧账免手术）。
+② **工坊美术一站式**（「占位/提示词/模型/替换都在这个软件里」）：台账卡可点开详情卡——提示词全文
+（修截断）/改词/风格包 chips/文生图模型 chips（/api/assets/generate/providers·未配 key 标 ⚠）/
+⚡ 单张重生成 / ▶ 批量生成 / ⤵ 替换写回，全走既有 /api/art/* 端点。③ **art-ops 执行器**
+（「工作流要重新设计」——美术 agent 只会「给建议叫用户去旧台手动」=废话产能）：美术角色可产
+```art-ops 围栏（regen/batch/replace ≤10 条·服务端只校验形状回 artOps），壳出「🎨 美术操作提议」
+确认卡 → ✔ 逐条串行执行 → 完成刷新台账/八关灯。冒烟 ⑮ 6 断言（120→126）+ art-replace.test 34。
+
 ### §八.1 验收修订（owner 2026-07-11 真机验收六条·当日落地）
 
 1. **三对话入口**：策划(gd)/**美术(art·新)**/程序(pe)——改写 §一「两入口·策划兼美术」定稿；美术角色系统词以台账 digest 为核、点名 art-NN、皮肤槽/风格锚归它。
