@@ -409,7 +409,7 @@ try:
     import http.server as _hs
     check(apollo.start_api_server.__doc__ is None or True, '')  # 占位防误删
     PASS -= 1  # 上一行不计数
-    check('ThreadingHTTPServer' in open(ROOT / 'apollo.py', encoding='utf-8').read().split('def start_api_server')[1][:400],
+    check('ThreadingHTTPServer' in open(ROOT / 'main_entry' / 'server.py', encoding='utf-8').read().split('def start_api_server')[1][:400],
           'API 服务多线程（对话长请求不再堵死实况轮询·07-11 破案）')
 
     print('⑫ 删卡带（owner 07-11·只删库卡带·内置永远 404）')
