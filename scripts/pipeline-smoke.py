@@ -396,6 +396,14 @@ try:
     _, cg2 = req('GET', f'/api/agent/chats?slug={SLUG}')
     check(cg2.get('success') and (cg2.get('sessions') or {}).get('gd') == 'f00dbabe-cafe'
           and (cg2.get('sessions') or {}).get('pe') is None, 'GET 回各角色 session id（壳标题栏亮牌·07-12）')
+    _, rs = req('POST', '/api/agent/session/reset', {'slug': SLUG, 'role': 'gd'})
+    fdata2 = json.loads((ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json').read_text('utf-8'))
+    check(rs.get('success') and rs.get('hadSession') is True and 'gd' not in (fdata2.get('sessions') or {})
+          and (fdata2.get('chats') or {}).get('gd'), '归档重开：解绑 session·聊天记录保留（07-12）')
+    _, rs2 = req('POST', '/api/agent/session/reset', {'slug': SLUG, 'role': 'gd'})
+    check(rs2.get('success') and rs2.get('hadSession') is False, '再重开=幂等（无 session 也成功）')
+    _, rs3 = req('POST', '/api/agent/session/reset', {'slug': SLUG, 'role': 'boss'})
+    check(rs3.get('success') is False, '坏 role 拒')
     (ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json').unlink()
 
     import http.server as _hs

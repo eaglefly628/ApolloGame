@@ -257,7 +257,7 @@
                   <div style="padding:10px 14px;border-bottom:3px solid #3a2312;background:linear-gradient(180deg,#f7e6c0,#efd79e);font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312">🗣 第一步 · 聊想法（策划顾问）</div>
                   <div class="scr chat-scroll" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
                     <sc-for list="{{ dsChatMsgs }}" as="m" hint-placeholder-count="2">
-                      <div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div></div>
+                      <div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div><button onClick="{{ m.copy }}" title="复制这条内容" style="{{ m.copyStyle }}">⧉</button></div>
                     </sc-for>
                     <sc-if value="{{ dsBusy }}" hint-placeholder-val="{{ false }}">
                       <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#8a5a2c">{{ chatBusyText }}</span></div>
@@ -495,8 +495,13 @@
                   <button onClick="{{ pickPe }}" style="{{ peTabStyle }}">🔧 程序</button>
                   <span style="margin-left:auto;font-family:'Fredoka';font-weight:700;font-size:10px;color:#8a5a2c;align-self:center">{{ chatRoleHint }}</span>
                 </div>
-                <!-- 各角色独立 CC session（owner 07-12 亮牌）：当前角色的 session id -->
-                <div title="三个角色=三个独立 Claude Code session（每盘卡带各一套·--resume 各续各的记忆）" style="padding:4px 14px;border-bottom:2.5px solid #3a2312;background:#fbf6e8;font-family:ui-monospace,Menlo,monospace;font-size:9px;color:#8a5a2c;word-break:break-all">{{ chatSessionLine }}</div>
+                <!-- 各角色独立 CC session（owner 07-12 亮牌+可归档重开） -->
+                <div title="三个角色=三个独立 Claude Code session（每盘卡带各一套·--resume 各续各的记忆）" style="display:flex;align-items:center;gap:8px;padding:4px 14px;border-bottom:2.5px solid #3a2312;background:#fbf6e8">
+                  <span style="flex:1;font-family:ui-monospace,Menlo,monospace;font-size:9px;color:#8a5a2c;word-break:break-all">{{ chatSessionLine }}</span>
+                  <sc-if value="{{ hasChatSession }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ resetChatSession }}" title="归档重开：解绑当前 session，聊天记录保留；下一轮自动开新 session 并带着末 30 条历史+底案+manifest 全量重注入（=干净的上下文压实）" style="border:2px solid rgba(58,35,18,.35);border-radius:7px;background:rgba(255,255,255,.75);cursor:pointer;font-size:10px;padding:2px 8px;color:#5a3d1e;font-family:'Noto Sans SC';font-weight:700;flex:none">♻ 重开</button>
+                  </sc-if>
+                </div>
                 <!-- 模型/思考档（默认 Opus 4.8 · high·owner 07-11）——仅订阅通道生效 -->
                 <div style="display:flex;gap:6px;align-items:center;padding:8px 14px;border-bottom:2.5px solid #3a2312;background:#fffdf5;flex-wrap:wrap">
                   <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c">模型</span>
@@ -506,7 +511,7 @@
                 </div>
                 <div class="scr chat-scroll" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
                   <sc-for list="{{ chatMsgs }}" as="m" hint-placeholder-count="2">
-                    <div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div></div>
+                    <div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div><button onClick="{{ m.copy }}" title="复制这条内容" style="{{ m.copyStyle }}">⧉</button></div>
                   </sc-for>
                   <sc-if value="{{ chatBusy }}" hint-placeholder-val="{{ false }}">
                     <div style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#8a5a2c">{{ chatBusyText }}</span></div>
@@ -1142,6 +1147,20 @@ class Component extends DCLogic {
     if (!q.length || this.state.chatBusy) return;
     this.setState({ chatQueue: [] }, () => this.sendChat(q.join('\n')));
   }
+  // 复制一条对话内容（owner 07-12「每条对话要有 copy 图标」）：clipboard API + 旧浏览器兜底。
+  copyText(t) {
+    const done = () => this.showToast('已复制');
+    const fallback = () => {
+      const ta = document.createElement('textarea');
+      ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { this.showToast('✕ 复制失败'); }
+      ta.remove();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(done).catch(fallback);
+    } else fallback();
+  }
 
   // ── 设计先行流（owner 07-11「先提纲→对齐→再生成」·服务端四模式既有）────────
   dsSend() {
@@ -1436,8 +1455,13 @@ class Component extends DCLogic {
     }));
     const tabOn = { border: '3px solid #3a2312', borderRadius: '11px', padding: '7px 16px', cursor: 'pointer', fontFamily: "'ZCOOL KuaiLe','Fredoka',sans-serif", fontSize: '15px', background: 'linear-gradient(180deg,#ffe08a,#f5b731)', color: '#3a2312', boxShadow: '0 3px 0 #c98a1e' };
     const tabOff = { border: '3px solid transparent', borderRadius: '11px', padding: '7px 16px', cursor: 'pointer', fontFamily: "'ZCOOL KuaiLe','Fredoka',sans-serif", fontSize: '15px', background: 'rgba(58,35,18,.12)', color: '#5a3d1e' };
+    const copyBtnStyle = { alignSelf: 'flex-end', flex: 'none', marginLeft: '5px', width: '24px', height: '24px',
+      border: '2px solid rgba(58,35,18,.35)', borderRadius: '7px', background: 'rgba(255,255,255,.75)',
+      cursor: 'pointer', fontSize: '12px', lineHeight: '1', color: '#5a3d1e', padding: '0' };
     const chatMsgs = ((s.chats[s.chatRole]) || []).map((m, idx) => ({
       text: m.meta ? (m.content + '\n' + m.meta) : m.content,
+      copy: () => this.copyText(m.content),
+      copyStyle: copyBtnStyle,
       rowStyle: { display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' },
       bubbleStyle: { maxWidth: '85%', padding: '9px 13px', borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px', border: '2.5px solid #3a2312',
         background: m.role === 'user' ? 'linear-gradient(180deg,#ffe08a,#f5b731)' : '#fff',
@@ -1643,6 +1667,8 @@ class Component extends DCLogic {
     // 创建双模式 + 设计先行派生（气泡样式与编辑工坊同一套）
     const bubble = (m) => ({
       text: m.meta ? (m.content + '\n' + m.meta) : m.content,
+      copy: () => this.copyText(m.content),
+      copyStyle: copyBtnStyle,
       rowStyle: { display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' },
       bubbleStyle: { maxWidth: '85%', padding: '9px 13px', borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px', border: '2.5px solid #3a2312',
         background: m.role === 'user' ? 'linear-gradient(180deg,#ffe08a,#f5b731)' : '#fff',
@@ -1827,6 +1853,17 @@ class Component extends DCLogic {
       gdTabStyle: s.chatRole === 'gd' ? tabOn : tabOff, peTabStyle: s.chatRole === 'pe' ? tabOn : tabOff, artTabStyle: s.chatRole === 'art' ? tabOn : tabOff,
       chatRoleHint: { gd: '玩法 / 数值 / 内容 / 节奏', art: '风格 / 台账 art-NN / 皮肤槽', pe: '结构 / 组件 / 能力接线' }[s.chatRole],
       chatSessionLine: 'session: ' + (((s.chatSessions || {})[s.chatRole]) || '（首轮对话后分配·仅订阅通道·三角色各自独立）'),
+      hasChatSession: !!((s.chatSessions || {})[s.chatRole]) && !s.chatBusy,
+      resetChatSession: () => {
+        const slug = s.editSlug, role = s.chatRole;
+        if (!slug) return;
+        fetch('/api/agent/session/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug, role }) }).then(r => r.json()).then(d => {
+            if (!d || !d.success) throw new Error((d && d.error) || '重开失败');
+            this.showToast('♻ 已归档重开——聊天记录保留，下一轮自动开新 session');
+            this.setState(cur => ({ chatSessions: Object.assign({}, cur.chatSessions, { [role]: null }) }));
+          }).catch(e => this.showToast('✕ ' + ((e && e.message) || '重开失败')));
+      },
       // 底案全屏（owner 07-12 Zoom in/out）
       docZoomOn: !!s.docZoom,
       openDocZoom: () => this.setState({ docZoom: true }),

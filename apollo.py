@@ -2584,6 +2584,25 @@ def _ws_sessions_save(slug: str, role: str, sid: str, ctx_hash: str) -> None:
     _WORKSHOP_CHATS_DIR.mkdir(parents=True, exist_ok=True)
     (_WORKSHOP_CHATS_DIR / f'{slug}.json').write_text(json.dumps(d, ensure_ascii=False, indent=1), 'utf-8')
 
+def handle_agent_session_reset(body: dict) -> dict:
+    """POST /api/agent/session/reset {slug, role}。归档重开（owner 07-12「session 越开越多·要能 archive」）：
+    只解绑该角色的 CC session id+指纹——聊天记录保留；下一轮自动开新 session 并全量重注入
+    （system+末 30 条历史+底案+manifest），等于一次干净的上下文压实。旧 session 文件留在 CC 侧无害。"""
+    slug = str(body.get('slug', '')).strip()
+    role = str(body.get('role', '')).strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    if role not in _AGENT_ROLES:
+        return {'success': False, 'error': f"role 必须是 {'/'.join(_AGENT_ROLES)}"}
+    d = _ws_file_load(slug)
+    had = bool((d.get('sessions') or {}).get(role))
+    if had:
+        d['sessions'].pop(role, None)
+        (d.get('ctxHash') or {}).pop(role, None)
+        _WORKSHOP_CHATS_DIR.mkdir(parents=True, exist_ok=True)
+        (_WORKSHOP_CHATS_DIR / f'{slug}.json').write_text(json.dumps(d, ensure_ascii=False, indent=1), 'utf-8')
+    return {'success': True, 'slug': slug, 'role': role, 'hadSession': had}
+
 def handle_agent_chats_get(slug: str) -> dict:
     """GET /api/agent/chats?slug=<slug>。工坊对话历史（每卡带每角色·owner 07-11「session 持久性」）。
     存 .apollo/workshop-chats/<slug>.json（gitignored·不进卡带版本史——聊天是工作台状态不是游戏数据）。"""
@@ -4394,6 +4413,8 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_pipeline_concept(body)
             except Exception as e:
                 data = {'success': False, 'error': f'pipeline concept 异常: {e}'}
+        elif path == '/api/agent/session/reset':
+            data = handle_agent_session_reset(body)
         elif path == '/api/agent/chat':
             try:
                 data = handle_agent_chat(body)
