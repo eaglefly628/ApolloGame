@@ -1940,6 +1940,8 @@ def handle_agent_chat(body: dict) -> dict:
             capgap_entry = _capgap_record(slug, role, gap)
     out = {'success': True, 'reply': reply_text, 'attempts': attempts, 'provider': provider, 'model': model, 'role': role,
            'elapsedMs': r.get('elapsedMs'), 'usage': r.get('usage')}
+    if session is not None and session.get('id'):
+        out['sessionId'] = session['id']  # 该角色当前 CC session（owner 07-12 亮到壳上）
     if manifest_out is not None:
         out['manifest'] = manifest_out
     elif manifest_err:
@@ -2584,7 +2586,10 @@ def handle_agent_chats_get(slug: str) -> dict:
         data = json.loads(f.read_text('utf-8'))
         chats = data.get('chats') if isinstance(data, dict) else None
         out = {r: (chats.get(r) if isinstance(chats, dict) and isinstance(chats.get(r), list) else []) for r in _AGENT_ROLES}
-        return {'success': True, 'chats': out}
+        # 各角色当前 CC session id（owner 07-12「标题栏下亮出来」）——三角色三独立 session 的可见证据。
+        sess = data.get('sessions') if isinstance(data, dict) else None
+        sessions = {r: (sess.get(r) if isinstance(sess, dict) and isinstance(sess.get(r), str) else None) for r in _AGENT_ROLES}
+        return {'success': True, 'chats': out, 'sessions': sessions}
     except Exception as e:
         return {'success': False, 'error': str(e)}
 

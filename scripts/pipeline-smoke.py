@@ -393,6 +393,9 @@ try:
     fdata = json.loads((ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json').read_text('utf-8'))
     check(cp2.get('success') and fdata.get('sessions', {}).get('gd') == 'f00dbabe-cafe'
           and fdata.get('ctxHash', {}).get('gd') == 'hash-1', '对话覆盖存盘不抹 session 台账')
+    _, cg2 = req('GET', f'/api/agent/chats?slug={SLUG}')
+    check(cg2.get('success') and (cg2.get('sessions') or {}).get('gd') == 'f00dbabe-cafe'
+          and (cg2.get('sessions') or {}).get('pe') is None, 'GET 回各角色 session id（壳标题栏亮牌·07-12）')
     (ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json').unlink()
 
     import http.server as _hs

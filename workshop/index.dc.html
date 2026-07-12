@@ -470,6 +470,8 @@
                   <button onClick="{{ pickPe }}" style="{{ peTabStyle }}">🔧 程序</button>
                   <span style="margin-left:auto;font-family:'Fredoka';font-weight:700;font-size:10px;color:#8a5a2c;align-self:center">{{ chatRoleHint }}</span>
                 </div>
+                <!-- 各角色独立 CC session（owner 07-12 亮牌）：当前角色的 session id -->
+                <div title="三个角色=三个独立 Claude Code session（每盘卡带各一套·--resume 各续各的记忆）" style="padding:4px 14px;border-bottom:2.5px solid #3a2312;background:#fbf6e8;font-family:ui-monospace,Menlo,monospace;font-size:9px;color:#8a5a2c;word-break:break-all">{{ chatSessionLine }}</div>
                 <!-- 模型/思考档（默认 Opus 4.8 · high·owner 07-11）——仅订阅通道生效 -->
                 <div style="display:flex;gap:6px;align-items:center;padding:8px 14px;border-bottom:2.5px solid #3a2312;background:#fffdf5;flex-wrap:wrap">
                   <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c">模型</span>
@@ -774,6 +776,7 @@ class Component extends DCLogic {
     editModel: 'opus', editEffort: 'high',
     pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, edRev: '', edRevising: false, editStats: null,
     features: null, pendingLogic: null, logicErr: null, editAllowTs: false, editHasLogic: false, pendingArtOps: null,
+    chatSessions: {},  // 各角色当前 CC session id（三角色三独立 session·owner 07-12 亮牌）
     // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
     assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null, traceLog: '', llmLegacy: false,
     // 美术一站式（owner 07-12「占位/提示词/模型/替换都在工坊」）：选中行 + 风格包/文生图模型 + 忙碌标
@@ -909,7 +912,7 @@ class Component extends DCLogic {
     this.setState({ screen: 'edit', editSlug: slug, editName: name || slug, editPitch: pitch || '',
       board: null, chats: { gd: [], pe: [], art: [] }, chatRole: 'gd', chatInput: '', chatBusy: false,
       pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, editStats: null,
-      pendingLogic: null, logicErr: null, pendingArtOps: null,
+      pendingLogic: null, logicErr: null, pendingArtOps: null, chatSessions: {},
       editAllowTs: !!(this.state.carts || []).filter(c => c && c.slug === slug).map(c => c.allowTs)[0],
       editHasLogic: !!(this.state.carts || []).filter(c => c && c.slug === slug).map(c => c.hasLogic)[0] });
     this.refreshBoard(slug);
@@ -920,7 +923,8 @@ class Component extends DCLogic {
     // 对话持久化（owner 07-11「session 持久性」）：进工坊即恢复该卡带三角色历史（服务端 .apollo/workshop-chats/）。
     fetch('/api/agent/chats?slug=' + encodeURIComponent(slug)).then(r => r.json())
       .then(d => { if (this.state.editSlug === slug && d && d.success && d.chats)
-        this.setState({ chats: { gd: d.chats.gd || [], pe: d.chats.pe || [], art: d.chats.art || [] } }, () => this.scrollChat()); })
+        this.setState({ chats: { gd: d.chats.gd || [], pe: d.chats.pe || [], art: d.chats.art || [] },
+          chatSessions: (d.sessions && typeof d.sessions === 'object') ? d.sessions : {} }, () => this.scrollChat()); })
       .catch(() => {});
   }
   // 设计先行现场存盘（fire-and-forget）；clear=true 清槽（原型入库后）。
@@ -1082,6 +1086,7 @@ class Component extends DCLogic {
         pendingLogic: d.logicPatch ? d.logicPatch : cur.pendingLogic,
         logicErr: d.logicPatch ? null : (d.logicError || cur.logicErr),
         pendingArtOps: (d.artOps && d.artOps.length) ? d.artOps : cur.pendingArtOps,
+        chatSessions: d.sessionId ? Object.assign({}, cur.chatSessions, { [role]: d.sessionId }) : cur.chatSessions,
         artHints: (d.artHints && d.artHints.length) ? d.artHints : cur.artHints
       }), () => { this.saveChats(slug); this.scrollChat(); });
     }).catch(e => {
@@ -1771,6 +1776,7 @@ class Component extends DCLogic {
       pickArt: () => this.setState({ chatRole: 'art' }, () => this.scrollChat()),
       gdTabStyle: s.chatRole === 'gd' ? tabOn : tabOff, peTabStyle: s.chatRole === 'pe' ? tabOn : tabOff, artTabStyle: s.chatRole === 'art' ? tabOn : tabOff,
       chatRoleHint: { gd: '玩法 / 数值 / 内容 / 节奏', art: '风格 / 台账 art-NN / 皮肤槽', pe: '结构 / 组件 / 能力接线' }[s.chatRole],
+      chatSessionLine: 'session: ' + (((s.chatSessions || {})[s.chatRole]) || '（首轮对话后分配·仅订阅通道·三角色各自独立）'),
       modelChips, effortChips,
       chatMsgs, chatBusy: s.chatBusy,
       artHintText: (s.artHints || []).join('、'),
