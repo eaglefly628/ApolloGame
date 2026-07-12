@@ -802,6 +802,20 @@
                   <sc-for list="{{ providerChips }}" as="c" hint-placeholder-count="4"><button onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</button></sc-for>
                 </div>
               </div>
+              <!-- BYO 模型 key（owner 07-12「LLM 配置里没有填 key 的地方」）——存本机 .apollo-config.json -->
+              <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:12px">
+                <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px;margin-bottom:4px">大模型 API key（BYO·DeepSeek / 千问 / Anthropic / OpenAI）</div>
+                <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;margin-bottom:10px">填了 key 的通道才能在上方「默认 LLM 通道」启用。key 只存本机（.apollo-config.json·gitignored·打码回显·绝不入库/落日志）。</div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ providerKeyRows }}" as="pk" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span style="font-family:'Fredoka';font-weight:700;font-size:11px;color:#3a2312;width:150px;flex:none">{{ pk.label }}</span>
+                      <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#8a5a2c;width:110px;flex:none">{{ pk.masked }}</span>
+                      <input value="{{ pk.value }}" onInput="{{ pk.type }}" type="password" placeholder="新 key（要换/首配时填·空=不动）" style="flex:1;border:2.5px solid #3a2312;border-radius:9px;padding:7px 10px;font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#fff;color:#3a2312;outline:none">
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
               <!-- 文生图 API（美术生成·从旧美术台收编） -->
               <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:12px">
                 <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px;margin-bottom:4px">文生图 / 文生 3D API（美术生成）</div>
@@ -889,7 +903,7 @@ class Component extends DCLogic {
     mlGroups: null, mlOpen: {}, artResolve: {},  // 虚拟分组 + 占位图解析（owner 07-12）
     // 美术一站式（owner 07-12「占位/提示词/模型/替换都在工坊」）：选中行 + 风格包/文生图模型 + 忙碌标
     artSel: null, artQ: '', artPack: null, artProv: '', artBusy: null, artPacks: null, genProviders: null,
-    tokenInput: '', genKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
+    tokenInput: '', genKeyInputs: {}, provKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
     toast: null
   };
 
@@ -2156,13 +2170,29 @@ class Component extends DCLogic {
       // settings
       ccStatus, tokenInput: s.tokenInput, tokenType: (e) => this.setState({ tokenInput: e.target.value }),
       providerChips, genKeyRows,
+      // BYO 模型 key 行（owner 07-12「没有配置 key 的地方」）：qwen/anthropic/deepseek/openai——
+      // claude-code 走上方订阅 token 块，local(Ollama) 免 key。
+      providerKeyRows: ((s.settings && s.settings.providers) || [])
+        .filter(p => ['qwen', 'anthropic', 'deepseek', 'openai'].indexOf(p.id) >= 0)
+        .map(p => ({
+          label: (p.name || p.id) + (p.keyAvailable ? ' ✓' : ''),
+          masked: p.apiKeyMasked || (p.keyAvailable ? '（环境变量）' : '（未配）'),
+          value: (s.provKeyInputs || {})[p.id] || '',
+          type: (e) => { const v = e.target.value; this.setState(cur => ({ provKeyInputs: Object.assign({}, cur.provKeyInputs, { [p.id]: v }) })); },
+        })),
       saveSettings: () => {
         if (s.saving) return;
         const payload = {};
+        const provPatches = {};
         const ccPatch = {};
         if ((s.tokenInput || '').trim()) ccPatch.apiKey = s.tokenInput.trim();
         if (s.cfgModel) ccPatch.model = s.cfgModel;  // 持久默认模型（服务端 _config_model 全链生效）
-        if (Object.keys(ccPatch).length) payload.providers = { 'claude-code': ccPatch };
+        if (Object.keys(ccPatch).length) provPatches['claude-code'] = ccPatch;
+        Object.keys(s.provKeyInputs || {}).forEach(pid => {  // BYO key（DeepSeek 等）——只送用户真填过的
+          const v = (s.provKeyInputs[pid] || '').trim();
+          if (v) provPatches[pid] = Object.assign({}, provPatches[pid], { apiKey: v });
+        });
+        if (Object.keys(provPatches).length) payload.providers = provPatches;
         const gk = {};
         Object.keys(s.genKeyInputs || {}).forEach(k => { if ((s.genKeyInputs[k] || '').trim()) gk[k] = s.genKeyInputs[k].trim(); });
         if (Object.keys(gk).length) payload.genKeys = gk;
@@ -2171,7 +2201,7 @@ class Component extends DCLogic {
         this.setState({ saving: true });
         fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
           .then(r => r.json()).then(d => {
-            this.setState({ saving: false, tokenInput: '', genKeyInputs: {}, cfgModel: null, settings: d && d.providers ? d : this.state.settings });
+            this.setState({ saving: false, tokenInput: '', genKeyInputs: {}, provKeyInputs: {}, cfgModel: null, settings: d && d.providers ? d : this.state.settings });
             this.showToast('设置已保存（key 打码存本机）'); this.refreshSettings();
           }).catch(() => { this.setState({ saving: false }); this.showToast('✕ 保存失败'); });
       },
