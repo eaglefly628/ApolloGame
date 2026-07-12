@@ -12,7 +12,10 @@ const GAMES: Record<string, { title: string; subtitle: string }> = {
 
 // Statically-analyzable import chain — Rollup can DCE dead branches when
 // __TARGET_GAME__ is replaced by a string literal at build time.
+//   '__inline__' = 数据卡带离线单文件：跑 window.__APOLLO_INLINE_CART__ 内联 manifest
+//   （scripts/package-web.mjs 打包库卡带走此分支；工程游戏各自静态 import 不受牵连、不进数据运行时）。
 function startLoad(id: string): Promise<GameModule> {
+  if (id === '__inline__') return import('./cartridge-inline-run.js') as Promise<GameModule>;
   if (id === 'game-e') return import('./game-e.js') as Promise<GameModule>;
   if (id === 'game-f') return import('./games/game-f/game-f.js') as Promise<GameModule>;
   if (id === 'game-g') return import('./games/game-g/game-g.js') as Promise<GameModule>;
@@ -46,14 +49,19 @@ function updateClock() {
 
 async function main() {
   const gameId = __TARGET_GAME__;
-  const meta = GAMES[gameId] ?? { title: gameId.toUpperCase(), subtitle: '' };
+  // 内联数据卡带：标题/副标题由 package-web.mjs 注入的 __APOLLO_INLINE_META__ 提供（无静态 GAMES 条目）。
+  const inlineMeta = gameId === '__inline__' ? (window.__APOLLO_INLINE_META__ ?? {}) : undefined;
+  const meta = inlineMeta
+    ? { title: inlineMeta.title || 'APOLLO CARTRIDGE', subtitle: inlineMeta.subtitle || '数据驱动卡带' }
+    : (GAMES[gameId] ?? { title: gameId.toUpperCase(), subtitle: '' });
+  const cartLabel = inlineMeta ? (meta.title || 'CARTRIDGE') : gameId.toUpperCase();
 
   updateClock();
   setInterval(updateClock, 15_000);
 
   el('cart-title').textContent = meta.title;
   el('cart-subtitle').textContent = meta.subtitle;
-  el('cart-id').textContent = `${gameId.toUpperCase()} · APOLLO ENGINE`;
+  el('cart-id').textContent = `${cartLabel} · APOLLO ENGINE`;
 
   // Fire game load immediately (parallel with animation)
   const gamePromise = startLoad(gameId);
@@ -65,7 +73,7 @@ async function main() {
   log('SYSTEM INITIALIZED');
 
   await sleep(280);
-  log(`CARTRIDGE: ${gameId.toUpperCase()}`);
+  log(`CARTRIDGE: ${cartLabel}`);
 
   await sleep(320);
   log('ENGINE CHECKSUM... OK');

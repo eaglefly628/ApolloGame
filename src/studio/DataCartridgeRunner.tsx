@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Engine } from '../runtime/engine.js';
-import { CanvasRenderer } from '@renderer/canvas-renderer.js';
-import { KeyboardInputSource, MultiInputSource, DEFAULT_KEYMAP, type InputSource, type KeyMap } from '@net/index.js';
 import { parseManifest } from '../assembly/manifest.js';
 import { SHELL } from '../ui/shell-theme.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import type { GameEntry, LibraryEntry } from './library-model.js';
+import { runBlueprintInto, controllablePlayerIds, RUN_VP } from './cart-run-core.js';
+
+// 引擎运行核已抽到 cart-run-core（供离线单文件 cartridge-inline-run 复用同一路径）。
+// 兼容既有引用：controllable.test.ts 仍从本模块导入 controllablePlayerIds。
+export { controllablePlayerIds };
 
 // ═══════════════════════════════════════════════════════════════
 //  创作台 v1 · 卡带架接库前端（玩家模式）
@@ -374,43 +376,8 @@ export function VersionHistoryOverlay({ api, slug, onClose, onRolledBack }: {
   );
 }
 
-// ── 纯运行：build 引擎 + CanvasRenderer 跑 WorldBlueprint（无检查器面板）──
-const RUN_VP = { w: 960, h: 600 };
-
-/** 蓝图里出现过的玩家 id（Controllable.playerId 去重升序）。导出供单测。 */
-export function controllablePlayerIds(bp: WorldBlueprint): string[] {
-  const ids = new Set<string>();
-  for (const comps of Object.values(bp.entities)) {
-    const c = (comps as Record<string, unknown>).Controllable as { playerId?: unknown } | undefined;
-    if (c && typeof c.playerId === 'string' && c.playerId) ids.add(c.playerId);
-  }
-  return [...ids].sort();
-}
-
-// 双人键位（与 platformer2p 同理·卡带线固定约定）：玩家1=方向键+空格跳；玩家2=WASD+左Shift跳。
-const P1_KEYMAP: KeyMap = {
-  ArrowUp: { dy: -1 }, ArrowDown: { dy: 1 }, ArrowLeft: { dx: -1 }, ArrowRight: { dx: 1 }, Space: { jump: true },
-};
-const P2_KEYMAP: KeyMap = {
-  KeyW: { dy: -1 }, KeyS: { dy: 1 }, KeyA: { dx: -1 }, KeyD: { dx: 1 }, ShiftLeft: { jump: true },
-};
-
-// 卡带键盘接线（owner 07-11「按箭头/AD 不动」根因之一：RunOnly 建引擎从没传 input——
-// 数据卡带天生收不到键盘）。按蓝图里的 Controllable.playerId 自动配源：
-// 单人=方向键+WASD 都归他；双人=玩家1 方向键、玩家2 WASD。无 Controllable=不挂（省监听器）。
-function cartInputFor(bp: WorldBlueprint): { input?: InputSource; dispose: () => void } {
-  const players = controllablePlayerIds(bp);
-  if (players.length === 0) return { dispose: () => {} };
-  if (players.length === 1) {
-    const src = new KeyboardInputSource(players[0], window, DEFAULT_KEYMAP);
-    return { input: src, dispose: () => src.dispose() };
-  }
-  const s1 = new KeyboardInputSource(players[0], window, P1_KEYMAP);
-  const s2 = new KeyboardInputSource(players[1], window, P2_KEYMAP);
-  const multi = new MultiInputSource([s1, s2]);
-  return { input: multi, dispose: () => multi.dispose() };
-}
-
+// ── 纯运行：build 引擎 + CanvasRenderer 跑 WorldBlueprint（无检查器面板）。
+//    引擎生命周期/键盘接线/装载探针已抽到 cart-run-core.runBlueprintInto（与离线单文件共用）。──
 function RunOnly({ blueprint, vp = RUN_VP, onError }: {
   blueprint: WorldBlueprint;
   vp?: { w: number; h: number };
@@ -421,26 +388,9 @@ function RunOnly({ blueprint, vp = RUN_VP, onError }: {
   useEffect(() => {
     const div = ref.current;
     if (!div) return;
-    div.innerHTML = '';
     try {
-      // 装载探针：一次性引擎 load + 空跑 2 tick（与落盘门 manifest-check 同一套检查）。
-      // 坏稿的首 tick 崩溃发生在 rAF 循环里、try 不住——先在这里同步引爆，错误浮出成明文。
-      const probe = new Engine({ tickRate: 60 });
-      probe.load(blueprint);
-      probe.world.tick();
-      probe.world.tick();
-      const io = cartInputFor(blueprint); // 键盘→Controllable 实体（owner 07-11 修：卡带此前无输入）
-      const engine = new Engine({ tickRate: 60, input: io.input });
-      engine.load(blueprint);
-      const renderer = new CanvasRenderer({ width: vp.w, height: vp.h });
-      engine.attachRenderer(renderer, div);
-      engine.start();
-      return () => {
-        engine.stop();
-        renderer.destroy();
-        io.dispose();
-        div.innerHTML = '';
-      };
+      // 装载探针（load + 空跑 2 tick）先同步引爆坏稿·成功则建引擎+渲染器跑起来，返回清理函数。
+      return runBlueprintInto(div, blueprint, vp);
     } catch (e: unknown) {
       onError?.(e instanceof Error ? e.message : String(e));
       return;

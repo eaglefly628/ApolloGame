@@ -18,6 +18,7 @@
 | 无原生壳降级 | `NullPlatformPort` | `isAvailable()=false`，游戏据此静默降级不报错 |
 | 成就数据同步 | `AchievementSync`/`ACHIEVEMENTS` | 从 sim Flag/Resource 派生成就解锁 |
 | 打包 / Steam 上架 | `game-publisher` agent | web/cartridge/electron + steam-publisher（AppID/Depot→VDF→上传→Set Live） |
+| 生成的库卡带打成单文件·双击即玩（离线自包含 HTML） | `scripts/package-web.mjs` + 引擎内联钩子 `cartridge-inline-run` | `node scripts/package-web.mjs <slug> [out]` → manifest 内联进 `window.__APOLLO_INLINE_CART__`·VITE_SINGLEFILE 单文件·零外链；apollo 发布屏 web 平台对库卡带自动走此路（工程游戏 e/f/g/i/x 仍走 VITE_TARGET_GAME 静态 import） |
 
 ## ② 样例指针
 
@@ -25,6 +26,7 @@
 - **正样例·存档层**：`src/games/game-g/game-g-save.ts`（纯数据 Save 类型 + 迁移，除 localStorage 外纯函数·可无头测）。
 - **创作台库版本化**：`src/studio/library-model.ts`（`LibraryMeta`/`GameEntry`·library/<slug>/meta.json）——用户游戏库前端数据模型（纯函数可单测）。
 - 无真账号测试：`resetMockSteam`/`createMockSteamBridge`（`src/services/platform/index.ts`）。
+- **离线单文件打包**：`scripts/package-web.mjs`（库卡带 manifest → 自包含 HTML）+ 引擎钩子 `src/cartridge-inline-run.ts`（读 `window.__APOLLO_INLINE_CART__` 走既有 parseManifest+load 跑·与在线 `DataCartridgeRunner` 共用 `cart-run-core.runBlueprintInto`）；端到端真构建冒烟 `scripts/package-web-smoke.mjs`（opt-in·不进默认门禁）。**注**：未解析的 `art:` 引用离线退化占位（art: 打包期解析 + 资产内联=后续件）。
 
 ## ③ 本线红线
 

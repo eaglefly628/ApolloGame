@@ -2649,8 +2649,9 @@ def handle_generate_jobs_list() -> dict:
 
 # ── 打包任务（发布屏：每游戏×每平台 一次「打包」→ 出可分发产物 →「下载」·owner 07-12）──────
 # 平台闭集：web=单文件自包含 HTML（双击即玩）· mac=.dmg · win=.zip · handheld=掌机单HTML+tar.gz。
-# 现管线只认内置 src/games 游戏（e/f/g/x 有卡带工程）；生成的库卡带走「工程 zip」直到引擎内联钩子落地
-# （见 requests.md 缺口）。打包串行（共享 dist-cartridge/·避免并发互踩），一次一个。
+# 内置 src/games 游戏（e/f/g/i/x 有卡带工程）走 VITE_TARGET_GAME 静态 import；生成的库卡带（纯数据
+# manifest）web 平台走 scripts/package-web.mjs（内联 manifest 打自包含单 HTML·REQ-PKG 引擎内联钩子已落地）。
+# 打包串行（共享 dist-cartridge/·避免并发互踩），一次一个。
 _PKG_JOBS: dict = {}
 _PKG_JOBS_LOCK = threading.Lock()
 _PKG_BUILD_LOCK = threading.Lock()  # 串行化真实构建（vite/electron 共享输出目录）
@@ -2669,6 +2670,8 @@ _PKG_BUILTIN_META = {
     'game-g': ('FateflipPoker', 'com.apollo.gameg'),
     'game-x': ('RemnantPocket', 'com.apollo.gamex'),
 }
+# cartridge-entry 能静态 import 的工程游戏（与其 startLoad 分支一致）——不在此集内的 slug=库卡带（纯数据）。
+_CARTRIDGE_ENGINE_GAMES = {'game-e', 'game-f', 'game-g', 'game-i', 'game-x'}
 
 def _pkg_job_update(jid: str, **kw) -> None:
     with _PKG_JOBS_LOCK:
@@ -2741,16 +2744,22 @@ def _pkg_build_platform(slug: str, platform: str):
     """内置工程游戏的真实构建。web=卡带单文件 HTML；handheld=掌机单HTML；mac/win=electron-builder。"""
     env = os.environ.copy()
     if platform == 'web':
-        env['VITE_TARGET_GAME'] = slug
-        env['VITE_SINGLEFILE'] = '1'
-        subprocess.run(['npx', 'tsc', '--noEmit'], cwd=ROOT, check=True)
-        subprocess.run(['npx', 'vite', 'build', '--config', 'vite.config.cartridge.ts'],
-                       cwd=ROOT, check=True, env=env)
-        src = ROOT / 'dist-cartridge' / 'cartridge.html'
         out_dir = ROOT / 'release' / slug; out_dir.mkdir(parents=True, exist_ok=True)
         out = out_dir / f'{slug}.html'
-        if src.exists():
-            shutil.copy2(src, out)
+        if slug in _CARTRIDGE_ENGINE_GAMES:
+            # 工程游戏：VITE_TARGET_GAME 静态 import + 单文件。
+            env['VITE_TARGET_GAME'] = slug
+            env['VITE_SINGLEFILE'] = '1'
+            subprocess.run(['npx', 'tsc', '--noEmit'], cwd=ROOT, check=True)
+            subprocess.run(['npx', 'vite', 'build', '--config', 'vite.config.cartridge.ts'],
+                           cwd=ROOT, check=True, env=env)
+            src = ROOT / 'dist-cartridge' / 'cartridge.html'
+            if src.exists():
+                shutil.copy2(src, out)
+        else:
+            # 库卡带（纯数据 manifest）：package-web 内联 manifest → 自包含单 HTML（REQ-PKG 引擎内联钩子）。
+            subprocess.run(['node', str(ROOT / 'scripts' / 'package-web.mjs'), slug, str(out)],
+                           cwd=ROOT, check=True)
         return out
     if platform == 'handheld':
         subprocess.run([sys.executable, str(ROOT / 'scripts' / 'build_game.py'), slug], cwd=ROOT, check=True)
