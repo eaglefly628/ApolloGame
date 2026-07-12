@@ -258,12 +258,6 @@
                     <textarea value="{{ dsInput }}" onInput="{{ dsType }}" onKeyDown="{{ dsKey }}" placeholder="说说你想做什么游戏：题材 / 玩法 / 感觉…" rows="2" style="flex:1;border:3px solid #3a2312;border-radius:12px;padding:10px 12px;font-family:'Noto Sans SC';font-weight:600;font-size:14px;line-height:1.5;background:#fff;color:#3a2312;outline:none;resize:none;max-height:120px;overflow-y:auto"></textarea>
                     <button onClick="{{ dsSend }}" title="Enter 发送 · Shift+Enter 换行" style="{{ sendBtnStyle }}" style-active="{{ sendBtnActive }}">发送</button>
                   </div>
-                  <sc-if value="{{ traceLogText }}" hint-placeholder-val="{{ false }}">
-                    <div style="padding:0 12px 12px">
-                      <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#8a5a2c;margin-bottom:4px">LLM TRACE（本轮/上一轮已流出·新一轮自动清）</div>
-                      <div class="scr trace-scroll" style="max-height:460px;overflow-y:auto;font-family:ui-monospace,Menlo,monospace;font-size:10px;line-height:1.6;color:#5a3d1e;background:rgba(58,35,18,.06);border:1.5px solid rgba(58,35,18,.25);border-radius:10px;padding:8px 10px;white-space:pre-wrap;word-break:break-word">{{ traceLogText }}</div>
-                    </div>
-                  </sc-if>
                 </div>
                 <div style="background:linear-gradient(180deg,#f7e6c0,#efd79e);border:4px solid #3a2312;border-radius:20px;padding:18px;box-shadow:0 6px 0 rgba(58,35,18,.3)">
                   <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;color:#5a3d1e;margin-bottom:8px">流程：聊想法 → 出设计提纲 → 对齐修订 → 生成原型</div>
@@ -295,9 +289,6 @@
                     <button onClick="{{ dsRevise }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ dsRevLabel }}</button>
                     <sc-if value="{{ dsRevising }}" hint-placeholder-val="{{ false }}">
                       <div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="width:16px;height:16px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e">{{ chatBusyText }}</span></div>
-                      <sc-if value="{{ traceLogText }}" hint-placeholder-val="{{ false }}">
-                        <div class="scr trace-scroll" style="margin-top:8px;max-height:300px;overflow-y:auto;font-family:ui-monospace,Menlo,monospace;font-size:10px;line-height:1.6;color:#5a3d1e;background:rgba(58,35,18,.06);border:1.5px solid rgba(58,35,18,.25);border-radius:10px;padding:8px 10px;white-space:pre-wrap;word-break:break-word">{{ traceLogText }}</div>
-                      </sc-if>
                     </sc-if>
                   </div>
                   <div style="margin-top:12px;background:linear-gradient(180deg,#fff3cf,#ffe9ae);border:4px solid #3a2312;border-radius:16px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25)">
@@ -349,9 +340,6 @@
                 <div style="height:24px;background:linear-gradient(180deg,#3a2312,#5a4028);border:3px solid #3a2312;border-radius:999px;overflow:hidden;box-shadow:inset 0 3px 4px rgba(0,0,0,.5)"><div style="{{ genFillStyle }}"></div></div>
                 <sc-if value="{{ genLiveText }}" hint-placeholder-val="{{ false }}">
                   <div style="margin-top:10px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#5a3d1e;background:rgba(58,35,18,.06);border:1.5px solid rgba(58,35,18,.25);border-radius:8px;padding:6px 10px;line-height:1.5">🧠 {{ genLiveText }}</div>
-                </sc-if>
-                <sc-if value="{{ traceLogText }}" hint-placeholder-val="{{ false }}">
-                  <div class="scr trace-scroll" style="margin-top:8px;max-height:460px;overflow-y:auto;font-family:ui-monospace,Menlo,monospace;font-size:10px;line-height:1.6;color:#5a3d1e;background:rgba(58,35,18,.06);border:1.5px solid rgba(58,35,18,.25);border-radius:10px;padding:8px 10px;white-space:pre-wrap;word-break:break-word">{{ traceLogText }}</div>
                 </sc-if>
               </div>
             </sc-if>
@@ -480,12 +468,6 @@
                   <textarea value="{{ chatInput }}" onInput="{{ chatType }}" onKeyDown="{{ chatKey }}" placeholder="{{ chatPlaceholder }}" rows="2" style="flex:1;border:3px solid #3a2312;border-radius:12px;padding:10px 12px;font-family:'Noto Sans SC';font-weight:600;font-size:14px;line-height:1.5;background:#fff;color:#3a2312;outline:none;resize:none;max-height:120px;overflow-y:auto"></textarea>
                   <button onClick="{{ sendChat }}" title="Enter 发送 · Shift+Enter 换行" style="{{ sendBtnStyle }}" style-active="{{ sendBtnActive }}">发送</button>
                 </div>
-                <sc-if value="{{ traceLogText }}" hint-placeholder-val="{{ false }}">
-                  <div style="padding:0 12px 12px">
-                    <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#8a5a2c;margin-bottom:4px">LLM TRACE（本轮/上一轮已流出·新一轮自动清）</div>
-                    <div class="scr trace-scroll" style="max-height:460px;overflow-y:auto;font-family:ui-monospace,Menlo,monospace;font-size:10px;line-height:1.6;color:#5a3d1e;background:rgba(58,35,18,.06);border:1.5px solid rgba(58,35,18,.25);border-radius:10px;padding:8px 10px;white-space:pre-wrap;word-break:break-word">{{ traceLogText }}</div>
-                  </div>
-                </sc-if>
               </div>
             </div>
           </sc-if>
@@ -698,6 +680,13 @@
           </sc-if>
 
         </div>
+        <!-- LLM TRACE 独立底栏（owner 2026-07-11 bug 修：从对话面板抽出·固定高·自带滚动·不挤压任何面板） -->
+        <sc-if value="{{ traceLogText }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:none;border-top:4px solid #3a2312;background:rgba(58,35,18,.08);padding:7px 22px 9px">
+            <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#8a5a2c;margin-bottom:4px">🔎 LLM TRACE（本轮/上一轮已流出·新一轮自动清·独立滚动，不影响上方布局）</div>
+            <div class="scr trace-scroll" style="max-height:150px;overflow-y:auto;font-family:ui-monospace,Menlo,monospace;font-size:10px;line-height:1.6;color:#5a3d1e;background:#fff;border:1.5px solid rgba(58,35,18,.25);border-radius:8px;padding:8px 10px;white-space:pre-wrap;word-break:break-word">{{ traceLogText }}</div>
+          </div>
+        </sc-if>
       </div>
     </div>
 
