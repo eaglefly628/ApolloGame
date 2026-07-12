@@ -279,6 +279,28 @@ async function run(argv) {
     console.log(JSON.stringify({ pending: listPending({ game }) }));
     return;
   }
+  // 游戏封面/图标（表现资产·非美术台账·不过人审门——它替换的是「我的游戏库」卡片外观，不是 manifest 引用的美术）：
+  //   node scripts/ai-gen.mjs cover <slug> "<prompt>" [--mock] [--json] → 写 public/games/<slug>/cover.png
+  if (adapterName === 'cover') {
+    const slug = argv[1];
+    const asJson = argv.includes('--json');
+    if (!slug || !/^[a-z0-9][a-z0-9-]*$/.test(slug)) { console.error('cover: 需要合法 slug'); process.exit(1); }
+    const mock = argv.includes('--mock');
+    const prompt = argv.slice(2).filter((a) => !a.startsWith('--')).join(' ').trim();
+    if (!prompt) { console.error('cover: 缺 prompt'); process.exit(1); }
+    const A = ADAPTERS.qwen; // 2D 文生图（seedance/nano-banana 适配器待接·当前走 qwen 或 mock 兜底）
+    const apiKey = process.env[A.envKey];
+    if (!mock && !apiKey) console.warn(`⚠ 未设 ${A.envKey}，改走 mock（真调需 key + 放宽网络）`);
+    const g = await A.generate(prompt, { mock, apiKey });
+    const rel = `public/games/${slug}/cover.png`;
+    const abs = join(ROOT, rel);
+    mkdirSync(dirname(abs), { recursive: true });
+    writeFileSync(abs, g.buffer);
+    const res = { ok: true, slug, coverPath: rel, coverUrl: `/games/${slug}/cover.png`, mock: !!g.mock, model: g.model };
+    if (asJson) console.log(JSON.stringify(res));
+    else console.log(`✓ 封面 → ${rel}${g.mock ? ' (mock)' : ''}·卡片外观即用（刷新看到）`);
+    return;
+  }
   // 人审：node scripts/ai-gen.mjs review <id> <approve|reject> [--game <g>] [--json]
   if (adapterName === 'review') {
     const id = argv[1]; const action = argv[2];

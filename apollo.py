@@ -2465,9 +2465,48 @@ def _builtin_games_meta() -> dict:
     _BUILTIN_META_CACHE = meta
     return meta
 
+def _game_cover_url(slug: str):
+    """游戏封面/图标（AI 文生图产物·public/games/<slug>/cover.png）的站点 URL——带 mtime 破缓存
+    （重生成后卡片即刷新）。无则 None（卡片回落 emoji 图标/默认矢量）。owner 07-12。"""
+    p = ROOT / 'public' / 'games' / slug / 'cover.png'
+    if p.is_file():
+        try:
+            return f'/games/{slug}/cover.png?t={int(p.stat().st_mtime)}'
+        except Exception:
+            return f'/games/{slug}/cover.png'
+    return None
+
+def handle_game_cover_generate(slug: str, body: dict) -> dict:
+    """POST /api/games/<slug>/cover {prompt, mock?}。文生图（qwen 2D·无 key/显式 mock 走占位）生成
+    游戏封面/图标 → public/games/<slug>/cover.png（表现资产·不进美术台账）→ 我的游戏库卡片外观即用
+    （替换默认 emoji/矢量图标·owner 07-12）。"""
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug}'}
+    prompt = str(body.get('prompt') or '').strip()
+    if not prompt:
+        return {'success': False, 'error': '封面提示词不能为空'}
+    if len(prompt) > 500:
+        return {'success': False, 'error': 'prompt 过长（≤500 字）'}
+    cmd = ['node', 'scripts/ai-gen.mjs', 'cover', slug, prompt, '--json'] + (['--mock'] if body.get('mock') else [])
+    try:
+        proc = subprocess.run(**_spawn(cmd), cwd=ROOT, capture_output=True, timeout=180, env=_gen_env())
+    except subprocess.TimeoutExpired:
+        return {'success': False, 'error': '封面生成超时（>180s）'}
+    out = proc.stdout.decode('utf-8', 'replace').strip()
+    if proc.returncode != 0:
+        err = proc.stderr.decode('utf-8', 'replace').strip() or out
+        return {'success': False, 'error': f'封面生成失败: {err[:400]}'}
+    line = out.splitlines()[-1] if out else ''
+    try:
+        res = json.loads(line)
+    except Exception:
+        return {'success': False, 'error': f'解析结果失败: {out[:200]}'}
+    print(c("  [COVER]", 'g'), f"{slug} → cover.png{' ·mock' if res.get('mock') else ''}")
+    return {'success': True, 'coverUrl': _game_cover_url(slug), 'mock': res.get('mock')}
+
 def handle_games_list() -> dict:
     """GET /api/games。枚举 src/games/game-* 为权威游戏列表（标注是否已建本地美术目录 +
-    内置游戏元信息 icon/title/description·从 launcher.tsx 解析）。"""
+    内置游戏元信息 icon/title/description·从 launcher.tsx 解析 + 封面 coverUrl 若已生成）。"""
     games = []
     gdir = ROOT / 'src' / 'games'
     bmeta = _builtin_games_meta()
@@ -2479,6 +2518,9 @@ def handle_games_list() -> dict:
                 minfo = bmeta.get(d.name)
                 if minfo:
                     entry.update({k: v for k, v in minfo.items() if v})  # 只并非空字段
+                cover = _game_cover_url(d.name)
+                if cover:
+                    entry['coverUrl'] = cover
                 games.append(entry)
     return {'games': games}
 
@@ -3856,9 +3898,13 @@ def _list_library() -> list:
             valid = False
         ddir = d / 'design'
         has_design = ddir.is_dir() and any(ddir.rglob('*.md'))
-        out.append({'slug': d.name, 'meta': meta, 'valid': valid, 'empty': empty, 'hasDesign': has_design,
-                    # TS 例外旗（owner 07-11·记债可见）：allowTs=打了勾；hasLogic=盘上真有 logic.ts
-                    'allowTs': bool(meta.get('allowTs')), 'hasLogic': (d / 'logic.ts').is_file()})
+        entry = {'slug': d.name, 'meta': meta, 'valid': valid, 'empty': empty, 'hasDesign': has_design,
+                 # TS 例外旗（owner 07-11·记债可见）：allowTs=打了勾；hasLogic=盘上真有 logic.ts
+                 'allowTs': bool(meta.get('allowTs')), 'hasLogic': (d / 'logic.ts').is_file()}
+        cover = _game_cover_url(d.name)
+        if cover:
+            entry['coverUrl'] = cover  # AI 文生图封面（若已生成）→ 卡片外观
+        out.append(entry)
     return out
 
 def _history(game_dir: Path) -> dict:
@@ -4540,6 +4586,10 @@ class APIHandler(BaseHTTPRequestHandler):
         m_flags = re.fullmatch(r'/api/library/([a-z0-9][a-z0-9-]*)/flags', path)
         if m_flags:  # TS 例外勾（owner 07-11·仅 features.tsCarts 开时可用）
             self._send_json(*_lib_dispatch(lambda: library_set_flags(m_flags.group(1), body)))
+            return
+        m_cover = re.fullmatch(r'/api/games/([a-z0-9][a-z0-9-]*)/cover', path)
+        if m_cover:  # 游戏封面/图标文生图（owner 07-12·替换卡片默认矢量图标）
+            self._send_json(200, handle_game_cover_generate(m_cover.group(1), body))
             return
         if path == '/api/settings/test':
             self._send_json(200, handle_settings_test(body))

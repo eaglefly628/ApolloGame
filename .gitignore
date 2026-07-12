@@ -4,6 +4,7 @@ dist-cartridge/
 release/
 apollo-*-rk3562.html
 apollo-*-rk3562.tar.gz
+public/games/*/cover.png
 .env
 *.log
 .DS_Store

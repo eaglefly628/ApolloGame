@@ -144,7 +144,8 @@
               <sc-for list="{{ myGames }}" as="g" hint-placeholder-count="5">
                 <div title="{{ g.desc }}" style="border-radius:20px;overflow:hidden;background:#fff;border:4px solid #3a2312;box-shadow:0 6px 0 rgba(58,35,18,.28),0 12px 18px rgba(0,0,0,.16);transition:transform .12s" style-hover="{{ cardHover }}">
                   <div style="{{ g.coverStyle }}">
-                    <div style="width:110px;height:88px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 0 rgba(58,35,18,.35))">{{ g.cover }}</div>
+                    <sc-if value="{{ g.coverUrl }}" hint-placeholder-val="{{ false }}"><img src="{{ g.coverUrl }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></sc-if>
+                    <sc-if value="{{ g.noCover }}" hint-placeholder-val="{{ true }}"><div style="width:110px;height:88px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 0 rgba(58,35,18,.35))">{{ g.cover }}</div></sc-if>
                     <span style="{{ g.badgeStyle }}">{{ g.status }}</span>
                     <span style="position:absolute;bottom:8px;left:8px;background:rgba(58,35,18,.6);border:2px solid #3a2312;border-radius:8px;padding:2px 8px;font-family:'Fredoka';font-weight:700;font-size:10px;color:#fff5db">{{ g.tag }}</span>
                   </div>
@@ -175,7 +176,10 @@
               </button>
               <sc-for list="{{ gameListRows }}" as="g" hint-placeholder-count="5">
                 <div title="{{ g.desc }}" style="display:flex;align-items:center;gap:12px;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:9px 12px;box-shadow:0 4px 0 rgba(58,35,18,.2)">
-                  <div style="{{ g.thumbStyle }}"><div style="width:38px;height:32px;display:flex;align-items:center;justify-content:center">{{ g.cover }}</div></div>
+                  <div style="{{ g.thumbStyle }}">
+                    <sc-if value="{{ g.coverUrl }}" hint-placeholder-val="{{ false }}"><img src="{{ g.coverUrl }}" style="width:100%;height:100%;object-fit:cover;border-radius:7px"></sc-if>
+                    <sc-if value="{{ g.noCover }}" hint-placeholder-val="{{ true }}"><div style="width:38px;height:32px;display:flex;align-items:center;justify-content:center">{{ g.cover }}</div></sc-if>
+                  </div>
                   <div style="min-width:0;flex:1">
                     <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312;line-height:1.1">{{ g.cn }}</div>
                     <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#b0723a;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ g.meta }}</div>
@@ -541,6 +545,23 @@
                 <button onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button>
               </sc-for>
             </div>
+            <!-- 游戏封面/图标（文生图）·生成后替换「我的游戏库」卡片外观（owner 07-12） -->
+            <sc-if value="{{ assetsSlug }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:14px;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:13px 15px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:16px">
+                <div style="width:74px;height:74px;border-radius:13px;border:3px solid #3a2312;overflow:hidden;background:linear-gradient(180deg,#ffe0ef,#ff9ec4);display:flex;align-items:center;justify-content:center;font-size:33px;flex:none">
+                  <sc-if value="{{ coverPreview }}" hint-placeholder-val="{{ false }}"><img src="{{ coverPreview }}" style="width:100%;height:100%;object-fit:cover"></sc-if>
+                  <sc-if value="{{ coverNone }}" hint-placeholder-val="{{ true }}"><span>{{ coverPlaceholder }}</span></sc-if>
+                </div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312">游戏封面 / 图标（文生图）</div>
+                  <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;margin-bottom:8px">生成后替换「我的游戏库」卡片外观（不再用默认矢量图标）· qwen 文生图 · 无 key 走占位图</div>
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <input value="{{ coverPrompt }}" onInput="{{ coverType }}" placeholder="描述封面：如「太空飞机大战·霓虹卡通厚涂·竖版」…" style="flex:1;min-width:220px;border:3px solid #3a2312;border-radius:10px;padding:9px 12px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;background:#fff;color:#3a2312;outline:none">
+                    <button onClick="{{ coverGen }}" style="{{ coverBtnStyle }}" style-active="{{ coverBtnActive }}">{{ coverBtnLabel }}</button>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
             <div style="display:flex;flex-direction:column;gap:10px">
               <sc-for list="{{ artGroups }}" as="grp" hint-placeholder-count="3">
                 <div>
@@ -827,6 +848,7 @@ class Component extends DCLogic {
     chatQueue: [], docZoom: false,  // 生成中追加排队 + 底案全屏（owner 07-12）
     // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
     assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null, traceLog: '', llmLegacy: false,
+    coverPrompt: '', coverBusy: false,   // 游戏封面/图标文生图（owner 07-12·替换卡片默认矢量图标）
     // 美术一站式（owner 07-12「占位/提示词/模型/替换都在工坊」）：选中行 + 风格包/文生图模型 + 忙碌标
     artSel: null, artQ: '', artPack: null, artProv: '', artBusy: null, artPacks: null, genProviders: null,
     tokenInput: '', genKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
@@ -836,14 +858,17 @@ class Component extends DCLogic {
   componentWillUnmount() { clearInterval(this._g); clearInterval(this._cl); clearTimeout(this._t); Object.values(this._pk || {}).forEach(clearInterval); }
 
   // 嵌入我们的接口：真游戏列表（卡带=/api/library·引擎游戏=/api/games）+ 版本 + 设置（打码视图）。
+  refreshGames() {
+    fetch('/api/games').then(r => r.json())
+      .then(d => this.setState({ liveGames: (d && d.games) || [] }))
+      .catch(() => this.setState({ liveGames: [] }));
+  }
   componentDidMount() {
     this.refreshCarts();
     fetch('/api/features').then(r => r.json())  // 功能开关（capgap/tsCarts·owner 07-11）
       .then(d => this.setState({ features: d && d.success ? d : null }))
       .catch(() => {});
-    fetch('/api/games').then(r => r.json())
-      .then(d => this.setState({ liveGames: (d && d.games) || [] }))
-      .catch(() => this.setState({ liveGames: [] }));
+    this.refreshGames();
     fetch('/api/version').then(r => r.json())
       .then(d => this.setState({ version: (d && d.version) || '0.1.0' }))
       .catch(() => this.setState({ version: '0.1.0' }));
@@ -1024,6 +1049,24 @@ class Component extends DCLogic {
         this.setState({ edRevising: false });
         this.showToast('✕ ' + ((e && e.message) || '修订失败').slice(0, 80));
       });
+  }
+  coverType(e) { this.setState({ coverPrompt: e.target.value }); }
+  // 游戏封面/图标文生图（owner 07-12）：POST → 生成 cover.png → 刷新 carts/liveGames 使卡片外观即换。
+  coverGen() {
+    const slug = this.state.assetsSlug;
+    const prompt = (this.state.coverPrompt || '').trim();
+    if (!slug) { this.showToast('先选一个游戏'); return; }
+    if (!prompt) { this.showToast('先写封面提示词'); return; }
+    if (this.state.coverBusy) return;
+    this.setState({ coverBusy: true });
+    this.showToast('🎨 生成封面中…');
+    fetch('/api/games/' + encodeURIComponent(slug) + '/cover', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }) }).then(r => r.json()).then(d => {
+      this.setState({ coverBusy: false });
+      if (!d || !d.success) throw new Error((d && d.error) || '封面生成失败');
+      this.refreshCarts(); this.refreshGames();   // 卡片 coverUrl 即刷新
+      this.showToast('✓ 封面已生成' + (d.mock ? '（占位·配 DASHSCOPE_API_KEY 出真图）' : '') + '——已替换卡片外观');
+    }).catch(e => { this.setState({ coverBusy: false }); this.showToast('✕ ' + (e.message || '生成失败').slice(0, 80)); });
   }
   pickAssetGame(slug) {
     this.setState({ assetsSlug: slug, ledger: null, artOpen: {}, artSel: null, artBusy: null });
@@ -1444,7 +1487,7 @@ class Component extends DCLogic {
     const mgDefs = cartList.map((cc, i) => {
       const name = (cc.meta && cc.meta.name) || cc.slug;
       const desc = (cc.meta && cc.meta.description) || '';
-      return { k: coverKeys[i % coverKeys.length], cn: name, tag: '卡带', sc: coverGrads[i % coverGrads.length], icon: '', desc: desc || (name + '（还没写简介）'),
+      return { k: coverKeys[i % coverKeys.length], cn: name, tag: '卡带', sc: coverGrads[i % coverGrads.length], icon: '', coverUrl: cc.coverUrl || '', desc: desc || (name + '（还没写简介）'),
         status: !cc.valid ? '损坏' : (cc.empty ? '空卡带' : '可编辑'), meta: desc ? desc.slice(0, 24) : cc.slug, prog: cc.empty ? 15 : 100, done: !!cc.valid && !cc.empty,
         run: () => !cc.valid ? this.showToast('卡带 manifest 损坏，先修再玩')
           : cc.empty ? this.showToast('⚠ 这盘还没生成玩法内容——点「编辑」，用设计先行出原型或快速直出')
@@ -1453,7 +1496,7 @@ class Component extends DCLogic {
     }).concat(liveList.map((gg, i) => ({
       // 引擎内置：显示各自真图标 + 真名 + 题材副标 + 简介浮标（元信息来自 launcher.tsx·apollo /api/games 透出）
       k: coverKeys[(cartList.length + i) % coverKeys.length], cn: gg.title || gg.id, tag: '引擎内置', sc: coverGrads[(cartList.length + i) % coverGrads.length],
-      icon: gg.icon || '', desc: gg.description || (gg.title || gg.id),
+      icon: gg.icon || '', coverUrl: gg.coverUrl || '', desc: gg.description || (gg.title || gg.id),
       status: gg.hasLocalArt ? '有美术' : '待接美术', meta: gg.subtitle || (gg.hasLocalArt ? '本地美术就绪' : '零美术 · 程序色块'),
       prog: gg.hasLocalArt ? 100 : 40, done: !!gg.hasLocalArt,
       run: () => window.open('/bench?to=' + encodeURIComponent('/?game=' + gg.id + '&from=workshop&bare=1'), '_blank'),
@@ -1472,14 +1515,14 @@ class Component extends DCLogic {
     // 状态筛选叠加在来源筛选（gameFilter→cartList/liveList→mgDefs）之上。
     const mgFiltered = mgDefs.filter(g => s.gameStatus === 'all' || g.status === s.gameStatus);
     const myGames = mgFiltered.map(g => ({
-      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: g.icon || cv[g.k], desc: g.desc, edit: g.edit, run: g.run,
+      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: g.icon || cv[g.k], coverUrl: g.coverUrl, noCover: !g.coverUrl, desc: g.desc, edit: g.edit, run: g.run,
       coverStyle: { position: 'relative', height: '118px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '3px solid #3a2312', background: 'linear-gradient(180deg,' + g.sc[0] + ',' + g.sc[1] + ')' },
       badgeStyle: { position: 'absolute', top: '8px', right: '8px', background: statusColor[g.status][0], color: statusColor[g.status][1], border: '2.5px solid #3a2312', borderRadius: '9px', padding: '2px 9px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '10px', boxShadow: '0 2px 0 ' + statusColor[g.status][2] },
       progStyle: { height: '100%', width: g.prog + '%', background: g.done ? 'linear-gradient(180deg,#aef07a,#7ecb45)' : 'linear-gradient(180deg,#ffe08a,#f5b731)', borderRadius: '999px' }
     }));
     // 列表模式行：小缩略图 + 名字 + 来源 tag + 状态徽章（非绝对定位）+ 编辑
     const gameListRows = mgFiltered.map(g => ({
-      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: g.icon || cv[g.k], desc: g.desc, edit: g.edit, run: g.run,
+      cn: g.cn, tag: g.tag, status: g.status, meta: g.meta, cover: g.icon || cv[g.k], coverUrl: g.coverUrl, noCover: !g.coverUrl, desc: g.desc, edit: g.edit, run: g.run,
       thumbStyle: { width: '52px', height: '46px', flex: 'none', borderRadius: '10px', border: '2.5px solid #3a2312', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,' + g.sc[0] + ',' + g.sc[1] + ')' },
       badgeStyle: { flex: 'none', background: statusColor[g.status][0], color: statusColor[g.status][1], border: '2.5px solid #3a2312', borderRadius: '9px', padding: '3px 10px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '11px', boxShadow: '0 2px 0 ' + statusColor[g.status][2] }
     }));
@@ -1540,6 +1583,12 @@ class Component extends DCLogic {
         color: s.assetsSlug === slug ? '#fff5db' : '#3a2312',
         boxShadow: s.assetsSlug === slug ? '0 4px 0 #4e8a24' : '0 3px 0 rgba(58,35,18,.18)' },
       pick: () => this.pickAssetGame(slug) }));
+    // 游戏封面/图标文生图面板（owner 07-12）：当前选中游戏的封面预览 + 提示词 + 生成
+    const _covCart = allCarts.find(cc => cc.slug === s.assetsSlug);
+    const _covLive = allLive.find(gg => gg.id === s.assetsSlug);
+    const coverPreview = (_covCart && _covCart.coverUrl) || (_covLive && _covLive.coverUrl) || '';
+    const coverPlaceholder = (_covLive && _covLive.icon) || (_covCart ? '🎮' : '📦');
+    const coverBtn = this.jelly('#c98ef0', '#a94ee0', '#7a2fb0', 13); coverBtn.style.padding = '9px 17px'; coverBtn.style.whiteSpace = 'nowrap';
     const stBadge = { placeholder: ['占位', '#c8c8c8'], 'needs-art': ['待配', '#c8c8c8'], generated: ['已生成', '#ffd257'],
       replaced: ['已写回', '#7ecb45'], filled: ['已填回', '#7ecb45'], approved: ['已复核', '#7ecb45'], retired: ['退役', '#8f8f8f'], failed: ['失败', '#ef5138'] };
     // 共享折叠树样式（游戏美术库 + 素材库两屏复用）
@@ -1963,7 +2012,10 @@ class Component extends DCLogic {
       sendChat: () => this.sendChat(), sendBtnStyle: send.style, sendBtnActive: send.active,
       applyBtnStyle: apply.style, applyBtnActive: apply.active,
       // 游戏美术库（按种类折叠树·Feature B）
-      assetGameTabs, artGroups, assetsEmptyText,
+      assetGameTabs, artGroups, assetsEmptyText, assetsSlug: s.assetsSlug,
+      coverPrompt: s.coverPrompt, coverPreview, coverNone: !coverPreview, coverPlaceholder,
+      coverType: (e) => this.coverType(e), coverGen: () => this.coverGen(),
+      coverBtnStyle: coverBtn.style, coverBtnActive: coverBtn.active, coverBtnLabel: s.coverBusy ? '生成中…' : '🎨 生成封面',
       artSelOn: !!artSelRow,
       artSelCover: Object.assign({ width: '160px', height: '160px', flex: 'none', borderRadius: '14px', border: '3px solid #3a2312' },
         artSelServed
