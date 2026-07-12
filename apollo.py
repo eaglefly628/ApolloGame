@@ -883,6 +883,14 @@ def _mock_design_revise(messages: list) -> str:
     return f'{body}\n\n> 修订：{instr or "（细化）"}'
 
 # ── 生成管线：单轮生成 + 服务端 autofix 重试（落地 ai-dev-pipeline §7-5）─────
+def _usage_tokens(usage) -> int:
+    """provider usage dict → 总 token（input+output）。claude 用 input_tokens/output_tokens，
+    ollama 用 prompt_eval_count/eval_count；都没有则 0。虚拟金币经济按它扣费（10000 tok=100 币）。"""
+    if not isinstance(usage, dict):
+        return 0
+    return (int(usage.get('input_tokens') or usage.get('prompt_eval_count') or 0)
+            + int(usage.get('output_tokens') or usage.get('eval_count') or 0))
+
 def _generate_with_autofix(provider: str, api_key: str, model: str, system: str,
                            user_msg: str, autofix: bool, max_attempts: int = 3,
                            *, log_mode: str = 'generate', rebuild_system=None) -> dict:
@@ -900,6 +908,7 @@ def _generate_with_autofix(provider: str, api_key: str, model: str, system: str,
     cur_system = system
     last_assistant = None
     last_instruction = None
+    total_tokens = 0                   # 累计本次生成全轮 token（虚拟金币经济按它扣费）
     limit = max_attempts if autofix else 1
     while attempts < limit:
         attempts += 1
@@ -912,12 +921,13 @@ def _generate_with_autofix(provider: str, api_key: str, model: str, system: str,
                         {'role': 'user', 'content': last_instruction}]
         mode_label = log_mode if attempts == 1 else f'autofix-{attempts}'
         r = _provider_request(provider, api_key, model, cur_system, messages)
+        total_tokens += _usage_tokens(r.get('usage'))
         if not r.get('success'):
             _llm_log(provider=provider, model=model, mode=mode_label, req=r,
                      validation='error', errors=[r.get('error')], prompt_full=cur_system)
             return {'success': False, 'error': r.get('error', 'LLM 请求失败'),
                     'blueprint': None, 'attempts': attempts, 'fixed_errors': fixed_errors,
-                    'fix_instructions': fix_instructions}
+                    'fix_instructions': fix_instructions, 'tokens': total_tokens}
         text = r['text']
         try:
             manifest = json.loads(_extract_json(text))
@@ -930,7 +940,7 @@ def _generate_with_autofix(provider: str, api_key: str, model: str, system: str,
             if not autofix:
                 return {'success': False, 'error': f'Invalid JSON from LLM: {e}',
                         'blueprint': None, 'attempts': attempts, 'fixed_errors': fixed_errors,
-                        'fix_instructions': fix_instructions}
+                        'fix_instructions': fix_instructions, 'tokens': total_tokens}
             fixed_errors.append(raw)
             fix_instructions.append(instr)
             last_assistant, last_instruction = text, instr
@@ -941,7 +951,7 @@ def _generate_with_autofix(provider: str, api_key: str, model: str, system: str,
             warnings = _validate_blueprint(manifest)
             return {'success': True, 'error': None, 'blueprint': manifest, 'manifest': manifest,
                     'warnings': warnings, 'attempts': attempts, 'fixed_errors': fixed_errors,
-                    'fix_instructions': fix_instructions}
+                    'fix_instructions': fix_instructions, 'tokens': total_tokens}
         ok, msg = _run_manifest_check(manifest)
         _llm_log(provider=provider, model=model, mode=mode_label, req=r,
                  validation='pass' if ok else 'fail', errors=[] if ok else [msg],
@@ -950,7 +960,7 @@ def _generate_with_autofix(provider: str, api_key: str, model: str, system: str,
             warnings = _validate_blueprint(manifest)
             return {'success': True, 'error': None, 'blueprint': manifest, 'manifest': manifest,
                     'warnings': warnings, 'attempts': attempts, 'fixed_errors': fixed_errors,
-                    'fix_instructions': fix_instructions}
+                    'fix_instructions': fix_instructions, 'tokens': total_tokens}
         instr, unknown_ids = _llm_ify_error(msg, manifest)
         fixed_errors.append(msg)
         fix_instructions.append(instr)
@@ -961,7 +971,8 @@ def _generate_with_autofix(provider: str, api_key: str, model: str, system: str,
         last_assistant, last_instruction = text, instr
     return {'success': False, 'error': f'自动修正 {attempts} 次后仍未通过校验，换个说法再试试。',
             'blueprint': None, 'attempts': attempts, 'fixed_errors': fixed_errors,
-            'fix_instructions': fix_instructions, 'raw_error': fixed_errors[-1] if fixed_errors else None}
+            'fix_instructions': fix_instructions, 'tokens': total_tokens,
+            'raw_error': fixed_errors[-1] if fixed_errors else None}
 
 # ── 低模生成四件（REQ-STUDIO·让弱模型不在 81 项词表里从零作曲）─────────────────
 # ③ 校验错误 LLM 化：把 manifest-check 的机读错误改写成「一句可执行修改指令」（指名 entity/字段 +
@@ -2396,6 +2407,7 @@ def _run_gen_job(jid: str, prompt: str, provider: str, model, mode: str = 'creat
             g = handle_generate({'mode': 'prototype', 'slug': slug, 'provider': provider, 'model': model, 'catalog': cat})
         else:
             g = handle_generate({'prompt': prompt, 'provider': provider, 'model': model, 'autofix': True, 'catalog': cat})
+        _gen_job_update(jid, tokens=int(g.get('tokens') or 0))  # 落 token 数（虚拟金币经济按它扣费）
         mf = g.get('manifest') or g.get('blueprint')
         if not g.get('success') or not isinstance(mf, dict):
             _gen_job_update(jid, done=True, error=str(g.get('error') or '生成失败')[:300]); return
@@ -2423,7 +2435,8 @@ def _run_gen_job(jid: str, prompt: str, provider: str, model, mode: str = 'creat
 def _gen_job_view(j: dict) -> dict:
     out = {'id': j['id'], 'prompt': j['prompt'], 'provider': j['provider'], 'step': j['step'],
            'stepLabel': _GEN_JOB_STEPS[min(3, j['step'])], 'done': j['done'], 'error': j['error'],
-           'slug': j['slug'], 'name': j['name'], 'elapsedSec': int(time.time() - j['startedAt'])}
+           'slug': j['slug'], 'name': j['name'], 'tokens': j.get('tokens') or 0,
+           'elapsedSec': int(time.time() - j['startedAt'])}
     if not j['done']:
         live = _llm_live_view()  # 生成步的实时流量（thinking/text delta 计数）——看板一处拿全
         if live:

@@ -87,7 +87,7 @@
           <div style="flex:1"></div>
           <!-- currencies -->
           <div style="display:flex;gap:8px;align-items:center">
-            <div style="display:flex;align-items:center;gap:6px;background:linear-gradient(180deg,#4a3320,#2e1d0e);border:3px solid #3a2312;border-radius:999px;padding:4px 7px 4px 5px;box-shadow:0 4px 0 rgba(0,0,0,.35)">
+            <div onClick="{{ topUp }}" title="点击充值 +1000 金币" style="cursor:pointer;display:flex;align-items:center;gap:6px;background:linear-gradient(180deg,#4a3320,#2e1d0e);border:3px solid #3a2312;border-radius:999px;padding:4px 7px 4px 5px;box-shadow:0 4px 0 rgba(0,0,0,.35)">
               <span style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe89a,#ffd257 55%,#e0a71f);border:2.5px solid #3a2312;display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#a06a12;font-size:13px">$</span>
               <span style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:14px;min-width:46px">{{ coinsFmt }}</span>
             </div>
@@ -716,7 +716,7 @@ class Component extends DCLogic {
     // 我的游戏库·视图切换 + 状态筛选（Feature A·来源筛选复用既有 gameFilter）
     gameView: 'grid', gameStatus: 'all',
     liveGames: null, carts: null, version: null, settings: null,
-    coins: 12480, gems: 340,
+    coins: 5000, gems: 340,   // 虚拟金币经济：初始 5000·生成按 token 扣（1万 tok=100 币）·点金币充 +1000
     prompt: '一款太空题材的竖版飞机大战，卡通风，有护盾和火力道具，一个大 Boss。',
     // 生成=服务端后台任务（owner 07-11·切屏/刷新不丢）：本地只是看板状态
     generating: false, genPct: 0, genStep: 0, genSec: 0, done: false, genJobId: null, genLive: null, genErr: null,
@@ -794,8 +794,9 @@ class Component extends DCLogic {
           this.showToast('✕ ' + j.error.slice(0, 80));
         } else {
           this.setState({ generating: false, genPct: 100, done: true, genLive: null, genErr: null });
+          this.chargeTokens(j.tokens || 0);  // 生成按本次 token 扣金币（1万 tok=100 币）
           this.refreshCarts();
-          this.showToast('已生成并入库：' + (j.name || j.slug));
+          this.showToast('已生成并入库：' + (j.name || j.slug) + (j.tokens ? ('（-' + Math.round(j.tokens / 100) + ' 金币）') : ''));
           if (this.state.dsSlug && j.slug === this.state.dsSlug) {  // 设计先行走完 → 清现场草稿
             this.setState({ dsPhase: 'chat', dsMsgs: [], dsName: '', dsReady: false, dsSlug: null, dsFiles: null, dsSel: null, dsRev: '' });
             this.saveDraft(true);
@@ -962,6 +963,7 @@ class Component extends DCLogic {
     (role === 'pe' ? this.catalog().then(post) : post(undefined)).then(d => {
       if (!d || !d.success) throw new Error((d && d.error) || '对话失败');
       const u = d.usage || {};
+      this.chargeTokens((u.input_tokens || 0) + (u.output_tokens || 0));  // 对白也按 token 扣金币
       const tok = (u.input_tokens || u.output_tokens) ? (' · ↑' + this.fmt(u.input_tokens || 0) + ' ↓' + this.fmt(u.output_tokens || 0) + ' tok') : '';
       const meta = d.elapsedMs ? ('⏱ ' + (d.elapsedMs / 1000).toFixed(1) + 's' + tok) : '';
       const withReply = msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）', meta: meta || undefined }]);
@@ -1084,6 +1086,14 @@ class Component extends DCLogic {
   }
   fmt(n) { return n.toLocaleString('en-US'); }
   showToast(msg) { clearTimeout(this._t); this.setState({ toast: msg }); this._t = setTimeout(() => this.setState({ toast: null }), 2600); }
+  // 虚拟金币经济：按 token 扣费（1万 tok=100 币 → tok/100，四舍五入），扣到 0 封底。
+  chargeTokens(tokens) {
+    const cost = Math.round((tokens || 0) / 100);
+    if (cost <= 0) return;
+    this.setState(st => ({ coins: Math.max(0, st.coins - cost) }));
+  }
+  // 点金币=虚拟充值 +1000（owner「点金币充值·一次充 1000」）。
+  topUp() { this.setState(st => ({ coins: st.coins + 1000 })); this.showToast('💰 充值成功 +1000 金币'); }
   // trace 窗滚到底（实况轮询每拍调用）。
   scrollTrace() {
     const doc = typeof document !== 'undefined' ? document : null;
@@ -1480,7 +1490,7 @@ class Component extends DCLogic {
 
     return {
       pageTitle: titles[s.screen][0], pageSub: titles[s.screen][1],
-      coinsFmt: this.fmt(s.coins), gemsFmt: this.fmt(s.gems),
+      coinsFmt: this.fmt(s.coins), gemsFmt: this.fmt(s.gems), topUp: () => this.topUp(),
       versionLabel: 'Version ' + (s.version || '0.1.0'), versionShort: 'v' + (s.version || '0.1.0'),
       isGames: s.screen === 'games', isNewGame: s.screen === 'newgame',
       isTemplates: s.screen === 'templates', isCreate: s.screen === 'create', isEdit: s.screen === 'edit',
