@@ -329,7 +329,13 @@
     onfocus: "onFocus",
     onblur: "onBlur",
     ondoubleclick: "onDoubleClick",
-    oncontextmenu: "onContextMenu"
+    oncontextmenu: "onContextMenu",
+    // HTML5 拖拽（素材库虚拟分组·owner 07-12「拖拽分组」）——additive，不影响既有事件
+    ondragstart: "onDragStart",
+    ondragover: "onDragOver",
+    ondragleave: "onDragLeave",
+    ondrop: "onDrop",
+    ondragend: "onDragEnd"
   };
   var ATTRS = `(?:[^>"']|"[^"]*"|'[^']*')*`;
   var IMPORT_SELF_CLOSE_RE = new RegExp(

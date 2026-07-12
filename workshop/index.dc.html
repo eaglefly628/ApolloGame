@@ -643,12 +643,49 @@
                 <span style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:13px">加载共享资产库（4892 项·首次略等）…</span>
               </div>
             </sc-if>
+            <!-- 我的分组（owner 07-12 虚拟分组·拖素材进组·不动真目录） -->
+            <div style="margin-bottom:16px">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312">📁 我的分组（虚拟·把素材拖进组名即可收藏）</span>
+                <button onClick="{{ mlNewGroup }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">＋ 新建分组</button>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ mlGroupRows }}" as="mg" hint-placeholder-count="2">
+                  <div>
+                    <div style="display:flex;align-items:center;gap:6px">
+                      <button onClick="{{ mg.toggle }}" onDragOver="{{ mg.dragOver }}" onDrop="{{ mg.drop }}" style="{{ mg.headerStyle }}">
+                        <span style="font-size:15px;width:16px;flex:none">{{ mg.chevron }}</span>
+                        <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:15px">📁 {{ mg.name }}</span>
+                        <span style="{{ mg.countStyle }}">{{ mg.count }}</span>
+                      </button>
+                      <button onClick="{{ mg.del }}" title="删除分组（素材本体不受影响）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">🗑</button>
+                    </div>
+                    <sc-if value="{{ mg.open }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:8px;padding-left:16px">
+                        <sc-for list="{{ mg.items }}" as="gi" hint-placeholder-count="3">
+                          <div title="{{ gi.caption }}" style="border-radius:14px;overflow:hidden;border:3px solid #7ecb45;box-shadow:0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312;background:#fff;position:relative">
+                            <div style="{{ gi.thumbStyle }}"></div>
+                            <button onClick="{{ gi.remove }}" title="移出分组" style="position:absolute;top:4px;right:4px;width:20px;height:20px;border:2px solid #3a2312;border-radius:6px;background:rgba(255,255,255,.85);cursor:pointer;font-size:10px;line-height:1;padding:0">✕</button>
+                            <div style="padding:5px 6px 7px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
+                              <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:10px;line-height:1.2;overflow:hidden;max-height:24px">{{ gi.caption }}</div>
+                            </div>
+                          </div>
+                        </sc-for>
+                      </div>
+                      <sc-if value="{{ mg.emptyText }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;margin-top:6px;padding-left:16px">{{ mg.emptyText }}</div>
+                      </sc-if>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
             <!-- 搜索结果（扁平网格） -->
             <sc-if value="{{ flSearching }}" hint-placeholder-val="{{ false }}">
               <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:13px;margin-bottom:10px">{{ flResultLabel }}</div>
               <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px">
                 <sc-for list="{{ flResults }}" as="it" hint-placeholder-count="12">
-                  <div style="border-radius:14px;overflow:hidden;border:3px solid #ffd257;box-shadow:0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312;background:#fff">
+                  <div draggable="true" onDragStart="{{ it.drag }}" title="{{ it.caption }}（拖到上方分组可收藏）" style="border-radius:14px;overflow:hidden;border:3px solid #ffd257;box-shadow:0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312;background:#fff;cursor:grab">
                     <div style="{{ it.thumbStyle }}"></div>
                     <div style="padding:5px 6px 7px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
                       <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:10px;line-height:1.2;overflow:hidden;max-height:24px">{{ it.caption }}</div>
@@ -682,7 +719,7 @@
                             <sc-if value="{{ sub.open }}" hint-placeholder-val="{{ false }}">
                               <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:8px">
                                 <sc-for list="{{ sub.items }}" as="it" hint-placeholder-count="6">
-                                  <div style="border-radius:14px;overflow:hidden;border:3px solid #ffd257;box-shadow:0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312;background:#fff">
+                                  <div draggable="true" onDragStart="{{ it.drag }}" title="{{ it.caption }}（拖到上方分组可收藏）" style="border-radius:14px;overflow:hidden;border:3px solid #ffd257;box-shadow:0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312;background:#fff;cursor:grab">
                                     <div style="{{ it.thumbStyle }}"></div>
                                     <div style="padding:5px 6px 7px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
                                       <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:10px;line-height:1.2;overflow:hidden;max-height:24px">{{ it.caption }}</div>
@@ -849,6 +886,7 @@ class Component extends DCLogic {
     // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
     assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null, traceLog: '', llmLegacy: false,
     coverPrompt: '', coverBusy: false,   // 游戏封面/图标文生图（owner 07-12·替换卡片默认矢量图标）
+    mlGroups: null, mlOpen: {}, artResolve: {},  // 虚拟分组 + 占位图解析（owner 07-12）
     // 美术一站式（owner 07-12「占位/提示词/模型/替换都在工坊」）：选中行 + 风格包/文生图模型 + 忙碌标
     artSel: null, artQ: '', artPack: null, artProv: '', artBusy: null, artPacks: null, genProviders: null,
     tokenInput: '', genKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
@@ -1069,10 +1107,17 @@ class Component extends DCLogic {
     }).catch(e => { this.setState({ coverBusy: false }); this.showToast('✕ ' + (e.message || '生成失败').slice(0, 80)); });
   }
   pickAssetGame(slug) {
-    this.setState({ assetsSlug: slug, ledger: null, artOpen: {}, artSel: null, artBusy: null });
+    this.setState({ assetsSlug: slug, ledger: null, artOpen: {}, artSel: null, artBusy: null, artResolve: {} });
     const readLedger = () => fetch('/api/art/ledger?slug=' + encodeURIComponent(slug)).then(r => r.json())
       .then(d => { if (this.state.assetsSlug === slug) this.setState({ ledger: (d && d.success) ? d : { rows: [] } }); })
       .catch(() => { if (this.state.assetsSlug === slug) this.setState({ ledger: { rows: [] } }); });
+    // 占位图解析（07-12「显示游戏当前实际在用的图」）：引擎真解析器·按 manifest 指纹缓存·异步补图
+    fetch('/api/art/resolve?slug=' + encodeURIComponent(slug)).then(r => r.json()).then(d => {
+      if (this.state.assetsSlug !== slug || !d || !d.success) return;
+      const map = {};
+      (d.resolutions || []).forEach(x => { if (x.thumb && !(x.query in map)) map[x.query] = x.thumb; });
+      this.setState({ artResolve: map });
+    }).catch(() => {});
     // 先重推导再读（07-12 去重自愈）：老账里的重复行在 derive+merge 里自动并成一素材一行，
     // owner 无需手动 retire。derive 失败不挡读账（best-effort）。
     fetch('/api/art/derive', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1140,13 +1185,25 @@ class Component extends DCLogic {
       .then(d => (Array.isArray(d) ? d : (d && Array.isArray(d.assets) ? d.assets : []))).catch(() => []);
     const eng = fetch('/assets/index.json').then(r => r.json())
       .then(d => ((d && Array.isArray(d.assets)) ? d.assets : []))
-      .then(arr => arr.filter(a => a && a.status === 'filled' && a.path).map(a => ({
-        id: a.id, cat: 'int:' + (a.category || 'misc'), sub: a.source || String(a.path).split('/')[0] || '',
-        subject: a.description || a.id, tags: a.tags || [], thumbUrl: '/assets/' + a.path,
-      }))).catch(() => []);
+      .then(arr => arr.filter(a => a && a.status === 'filled' && a.path).map(a => {
+        const video = /\.(mp4|webm)$/i.test(String(a.path));  // 视频素材（爱诗 PixVerse 线·07-12）
+        return { id: a.id, cat: 'int:' + (a.category || 'misc'), sub: a.source || String(a.path).split('/')[0] || '',
+          subject: (video ? '🎬 ' : '') + (a.description || a.id), tags: a.tags || [],
+          thumbUrl: video ? null : ('/assets/' + a.path) };
+      })).catch(() => []);
     Promise.all([fl, eng]).then(([a, b]) => {
       this._flLoading = false; this.setState({ freeLib: a.concat(b) });
     });
+    if (this.state.mlGroups === null) {  // 虚拟分组（07-12 拖拽分组）——懒取一次
+      fetch('/api/matlib/groups').then(r => r.json())
+        .then(d => this.setState({ mlGroups: (d && d.groups) || [] })).catch(() => this.setState({ mlGroups: [] }));
+    }
+  }
+  // 虚拟分组存盘（fire-and-forget·工作台状态非游戏数据）。
+  saveGroups(groups) {
+    this.setState({ mlGroups: groups });
+    fetch('/api/matlib/groups', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groups }) }).catch(() => {});
   }
   sendChat(textArg) {
     const st = this.state;
@@ -1612,7 +1669,8 @@ class Component extends DCLogic {
       return '精灵/角色';
     };
     const mkArtCell = (r) => {
-      const served = r.gen && r.gen.servedPath;
+      // 封面优先级：真生成图 > 占位解析图（=游戏画面当前实际在用的免费库图·07-12） > 灰底
+      const served = (r.gen && r.gen.servedPath) || (r.status === 'placeholder' ? (s.artResolve || {})[r.query] : null);
       const badge = stBadge[r.status] || [r.status, '#c8c8c8'];
       return { no: r.no, q: r.query || (r.slot && r.slot.entity) || '', badge: badge[0],
         pick: () => this.setState({ artSel: r.no, artQ: r.query || '' }),  // 点开详情卡（一站式处理·07-12）
@@ -1652,7 +1710,8 @@ class Component extends DCLogic {
     const artCurPack = s.artPack || (artPacksArr[0] && artPacksArr[0].id) || '';
     const artWantKind = artSelRow && artSelRow.kind === 'model3d' ? 'mesh' : 'image';
     const artProvsArr = (Array.isArray(s.genProviders) ? s.genProviders : []).filter(p => !p.kind || p.kind === artWantKind);
-    const artSelServed = artSelRow && artSelRow.gen && artSelRow.gen.servedPath;
+    const artSelServed = artSelRow && ((artSelRow.gen && artSelRow.gen.servedPath)
+      || (artSelRow.status === 'placeholder' ? (s.artResolve || {})[artSelRow.query] : null));
     const artStBadge = artSelRow ? (stBadge[artSelRow.status] || [artSelRow.status, '#c8c8c8']) : ['', ''];
     const artSlotN = artSelRow ? ((artSelRow.slots && artSelRow.slots.length) || 1) : 0;
 
@@ -1667,7 +1726,8 @@ class Component extends DCLogic {
         ? { height: '78px', borderBottom: '2px solid #3a2312', backgroundImage: 'url(' + url + ')', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#f2ead8', imageRendering: 'pixelated' }
         : { height: '78px', borderBottom: '2px solid #3a2312', background: 'linear-gradient(180deg,#f2ead8,#e2d2b0)' };
     };
-    const mkFlItem = (r) => ({ caption: r.subject || r.id || '', thumbStyle: flThumbStyle(r) });
+    const mkFlItem = (r) => ({ caption: r.subject || r.id || '', thumbStyle: flThumbStyle(r),
+      drag: () => { this._dragAsset = r.id; } });  // 拖拽源（07-12 虚拟分组）——记 id·drop 时消费
     const flQ = (s.flQuery || '').trim().toLowerCase();
     const flSearching = !!flQ && !flLoading;
     const FL_SEARCH_CAP = 120;
@@ -1713,6 +1773,42 @@ class Component extends DCLogic {
         toggle: () => this.setState(cur => ({ flCat: Object.assign({}, cur.flCat, { [cat]: !cur.flCat[cat] }) })) };
     });
     const flClearBtn = { border: '3px solid #3a2312', borderRadius: '11px', padding: '8px 14px', cursor: 'pointer', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '12px', background: 'linear-gradient(180deg,#fffdf5,#fff0cf)', color: '#3a2312', boxShadow: '0 3px 0 rgba(58,35,18,.18)' };
+
+    // ── 虚拟分组（owner 07-12「拖拽分组·虚拟层级·不动真目录」）──
+    const flById = new Map(flAll.map(r => [r.id, r]));
+    const mlGroupsArr = Array.isArray(s.mlGroups) ? s.mlGroups : [];
+    const mlSave = (groups) => this.saveGroups(groups);
+    const mlGroupRows = mlGroupsArr.map(g => {
+      const open = !!s.mlOpen[g.id];
+      return {
+        name: g.name, count: (g.items || []).length, open, chevron: open ? '▾' : '▸',
+        headerStyle: treeHeaderStyle(open), countStyle: countBadgeStyle,
+        toggle: () => this.setState(cur => ({ mlOpen: Object.assign({}, cur.mlOpen, { [g.id]: !cur.mlOpen[g.id] }) })),
+        dragOver: (e) => { if (e && e.preventDefault) e.preventDefault(); },
+        drop: (e) => {
+          if (e && e.preventDefault) e.preventDefault();
+          const id = this._dragAsset;
+          this._dragAsset = null;
+          if (!id) return;
+          if ((g.items || []).indexOf(id) >= 0) { this.showToast('已在「' + g.name + '」里'); return; }
+          mlSave(mlGroupsArr.map(x => x.id === g.id ? Object.assign({}, x, { items: (x.items || []).concat([id]) }) : x));
+          this.showToast('已加入分组「' + g.name + '」');
+        },
+        del: () => {
+          if (!window.confirm('删除分组「' + g.name + '」？（素材本体不受影响）')) return;
+          mlSave(mlGroupsArr.filter(x => x.id !== g.id));
+        },
+        emptyText: (g.items || []).length ? '' : '（空组——从下面的分类树或搜索结果把素材拖到组名上）',
+        items: open ? (g.items || []).slice(0, 60).map(id => {
+          const r = flById.get(id);
+          return {
+            caption: (r && (r.subject || r.id)) || id,
+            thumbStyle: r ? flThumbStyle(r) : { height: '78px', borderBottom: '2px solid #3a2312', background: 'linear-gradient(180deg,#f2ead8,#e2d2b0)' },
+            remove: () => mlSave(mlGroupsArr.map(x => x.id === g.id ? Object.assign({}, x, { items: (x.items || []).filter(i => i !== id) }) : x)),
+          };
+        }) : [],
+      };
+    });
 
     // publish（每游戏 × 每平台：打包 · 下载 并列·owner 07-12）
     const pkgB = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 12); pkgB.style.padding = '7px 15px'; pkgB.style.minWidth = '58px';
@@ -2028,7 +2124,9 @@ class Component extends DCLogic {
         artSelRow.desc ? '需求：' + artSelRow.desc : '',
         artSelRow.context ? '上下文：' + artSelRow.context : '',
         '槽位：' + artSlotN + ' 处' + (artSlotN > 1 ? '（一张图生成后自动写回全部）' : '') + ' · 首槽 ' + ((artSelRow.slot && artSelRow.slot.entity) || ''),
-        artSelRow.status === 'placeholder' ? '状态：还没出过图——占位=文字描述槽位，点「⚡ 重新生成」才有真贴图' : '',
+        artSelRow.status === 'placeholder' ? ((s.artResolve || {})[artSelRow.query]
+          ? '状态：占位中——左图=游戏画面当前实际在用的免费库图（同查询词永远同图）；点「⚡ 重新生成」换成 AI 真图'
+          : '状态：还没出过图，查询词在免费库也无命中（游戏里退化为色块）——点「⚡ 重新生成」出真图') : '',
       ].filter(Boolean).join('\n') : '',
       artQ: s.artQ, artQType: (e) => this.setState({ artQ: e.target.value }),
       artPackChips: artPacksArr.map(p => ({ label: p.id, style: chipStyle(artCurPack === p.id), pick: () => this.setState({ artPack: p.id }) })),
@@ -2043,6 +2141,13 @@ class Component extends DCLogic {
       artBusyText: s.artBusy ? (s.artBusy + ' 中…（生成走文生图服务·分钟级·完成自动刷新台账）') : '',
       // 素材库（共享 FreeArtLib·Feature C）
       matlibBanner: '素材库（对内展示·双源 ' + (flAll.length || '…') + ' 项 = 共享 CC0 + 🏠引擎内库图标/emoji/插画）· 展开分类浏览，或用标签搜索',
+      mlGroupRows,
+      mlNewGroup: () => {
+        const name = (window.prompt('分组名（如：子弹 / 运动精灵 / UI 图标）：') || '').trim();
+        if (!name) return;
+        this.saveGroups(mlGroupsArr.concat([{ id: 'g' + (mlGroupsArr.length + 1) + '-' + name.toLowerCase().replace(/[^a-z0-9一-鿿]+/g, '-').slice(0, 20), name: name.slice(0, 40), items: [] }]));
+        this.showToast('分组已建：' + name);
+      },
       flQuery: s.flQuery, flType: (e) => this.setState({ flQuery: e.target.value }),
       flClear: () => this.setState({ flQuery: '' }), flClearStyle: flClearBtn,
       flLoading, flSearching, flResults, flResultLabel, flNoResult, flTreeShown, flCats,

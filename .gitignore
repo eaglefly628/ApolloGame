@@ -17,6 +17,8 @@ public/games/*/cover.png
 .apollo/workshop-chats/
 # 能力缺口台账（capgap 快速通道·运行时追加·下沉裁决以 requests.md 为准）
 .apollo/cap-gaps.jsonl
+# 素材库虚拟分组（工作台状态·收藏夹式引用·不动素材本体）
+.apollo/matlib-groups.json
 # 订阅通道子进程空 cwd（安全隔离目录·运行时产生）
 .apollo/claude-code-cwd/
 .claude/worktrees/

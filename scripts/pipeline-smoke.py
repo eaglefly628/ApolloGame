@@ -524,6 +524,23 @@ try:
           and '{DESIGN_DOCS}' in apollo.AGENT_GD_SYSTEM,
           '三角色系统词都带设计底案区块（07-12「程序凭名字瞎猜」修——底案=spec 谁施工谁必读）')
 
+    print('⑯ 素材虚拟分组 + 占位图解析 + 视频 key 槽位（owner 07-12）')
+    st16, gp = req('PUT', '/api/matlib/groups', {'groups': [{'id': 'g1', 'name': '子弹', 'items': ['a', 'b']}]})
+    check(st16 == 200 and gp.get('success') and gp.get('count') == 1, '分组 PUT 存盘')
+    _, gg = req('GET', '/api/matlib/groups')
+    check(gg.get('success') and gg['groups'][0]['name'] == '子弹' and gg['groups'][0]['items'] == ['a', 'b'], '分组 GET 回读（虚拟层级·素材本体不动）')
+    _, gbad = req('PUT', '/api/matlib/groups', {'groups': [{'id': '', 'name': '', 'items': []}]})
+    check(gbad.get('success') is False, '坏组拒（缺 id/name）')
+    req('PUT', '/api/matlib/groups', {'groups': []})  # 清盘（工作台状态·不留冒烟残留）
+    _, rv = req('GET', f'/api/art/resolve?slug={SLUG}')
+    check(rv.get('success') and isinstance(rv.get('resolutions'), list),
+          f'占位解析端点跑通（引擎真解析器·与运行器同图）· {len(rv.get("resolutions", []))} 条')
+    _, rv2 = req('GET', f'/api/art/resolve?slug={SLUG}')
+    check(rv2.get('success') and rv2.get('cached') is True, '解析结果按 manifest 指纹缓存（重开零成本）')
+    _, stg16 = req('GET', '/api/settings')
+    check(any(k.get('envKey') == 'PIXVERSE_API_KEY' for k in (stg16.get('genKeys') or [])),
+          '爱诗 PixVerse 视频 key 槽位在设置（adapter=后续单·同 Seedance 先例）')
+
 except Exception as e:
     FAIL += 1
     print(f"  \033[31m✗ 冒烟异常\033[0m: {e}")

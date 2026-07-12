@@ -146,7 +146,7 @@ export function deriveLedger(manifest, { game = '' } = {}) {
   const groups = new Map();
   for (const s of slots) {
     const kind = deriveKind(s.component, s.field, s.entity);
-    const key = [kind, s.component, s.field, s.query].join(' ');
+    const key = [kind, s.component, s.field, s.query].join('|');
     if (!groups.has(key)) groups.set(key, { kind, first: s, members: [] });
     groups.get(key).members.push({ entity: s.entity, component: s.component, field: s.field });
   }

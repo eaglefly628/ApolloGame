@@ -339,12 +339,13 @@ def _features() -> dict:
             out[k] = bool(v) if isinstance(v, bool) else dflt
     return out
 
-GEN_KEY_NAMES = ('DASHSCOPE_API_KEY', 'TRIPO_API_KEY', 'MESHY_API_KEY', 'SEEDANCE_API_KEY', 'NANO_BANANA_API_KEY')
+GEN_KEY_NAMES = ('DASHSCOPE_API_KEY', 'TRIPO_API_KEY', 'MESHY_API_KEY', 'SEEDANCE_API_KEY', 'NANO_BANANA_API_KEY', 'PIXVERSE_API_KEY')
 # 文生图/文生 3D key 的显示名（数据驱动·/api/settings 随 genKeys 回 label·壳读 label 即可，
 # 以后加新 key 只改这里、无需动壳）。owner 2026-07-11：Seedance（字节·主力）+ Nano Banana（Google 图像）。
 GEN_KEY_LABELS = {
     'DASHSCOPE_API_KEY': '千问万相（2D 主力）', 'TRIPO_API_KEY': 'Tripo（3D）', 'MESHY_API_KEY': 'Meshy（3D 备选）',
     'SEEDANCE_API_KEY': 'Seedance（字节·文生图/视频·主力）', 'NANO_BANANA_API_KEY': 'Nano Banana（Google Gemini 图像）',
+    'PIXVERSE_API_KEY': '爱诗 PixVerse（文生视频·owner 07-12）',
 }
 
 def _gen_env() -> dict:
@@ -2825,6 +2826,82 @@ def _ws_sessions_save(slug: str, role: str, sid: str, ctx_hash: str) -> None:
     _WORKSHOP_CHATS_DIR.mkdir(parents=True, exist_ok=True)
     (_WORKSHOP_CHATS_DIR / f'{slug}.json').write_text(json.dumps(d, ensure_ascii=False, indent=1), 'utf-8')
 
+# ── 素材库虚拟分组（owner 07-12「拖拽分组·虚拟层级·不动真目录」）────────────────
+# 纯工作台状态（gitignored）：{groups:[{id,name,items:[assetId…]}]}。素材本体一动不动——
+# 分组只是收藏夹式的引用列表，同一素材可进多组、删组不删素材。
+_MATLIB_GROUPS_FILE = None  # 延迟求值（APOLLO_DIR 定义在后文）
+
+def _matlib_groups_file() -> Path:
+    return APOLLO_DIR / 'matlib-groups.json'
+
+def handle_matlib_groups_get() -> dict:
+    f = _matlib_groups_file()
+    if not f.is_file():
+        return {'success': True, 'groups': []}
+    try:
+        d = json.loads(f.read_text('utf-8'))
+        g = d.get('groups') if isinstance(d, dict) else None
+        return {'success': True, 'groups': g if isinstance(g, list) else []}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def handle_matlib_groups_put(body: dict) -> dict:
+    groups = body.get('groups')
+    if not isinstance(groups, list) or len(groups) > 200:
+        return {'success': False, 'error': 'groups 必须是数组（≤200 组）'}
+    clean = []
+    for g in groups:
+        if not isinstance(g, dict):
+            return {'success': False, 'error': '每组必须是 {id, name, items}'}
+        name = str(g.get('name', '')).strip()[:40]
+        gid = str(g.get('id', '')).strip()[:40]
+        items = g.get('items')
+        if not name or not gid or not isinstance(items, list) or len(items) > 10000:
+            return {'success': False, 'error': '组要有 id/name·items ≤10000'}
+        clean.append({'id': gid, 'name': name,
+                      'items': [str(i)[:200] for i in items if isinstance(i, str) and i.strip()]})
+    f = _matlib_groups_file()
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps({'version': 1, 'groups': clean}, ensure_ascii=False, indent=1), 'utf-8')
+    return {'success': True, 'count': len(clean)}
+
+# ── 占位图解析（owner 07-12「占位符应显示游戏当前实际在用的图」）────────────────
+# art: 查询在运行器里被 resolveArtRefs 确定性解析到免费库第一名——台账也该显示同一张。
+# 走 vite-node 跑引擎真解析器（scripts/art-resolve.mjs·与运行器同一套 rankRecords），
+# 结果按 manifest 指纹缓存（同稿同图·重复打开零成本）。
+_ART_RESOLVE_CACHE: dict = {}
+
+def handle_art_resolve(slug: str) -> dict:
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    mf_path = LIBRARY_DIR / slug / 'manifest.json'
+    if not mf_path.is_file():
+        mf_path = ROOT / 'public' / 'games' / slug / 'manifest.json'
+    if not mf_path.is_file():
+        return {'success': False, 'error': f'无 manifest: {slug}'}
+    try:
+        mh = hashlib.sha1(mf_path.read_bytes()).hexdigest()[:16]
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+    hit = _ART_RESOLVE_CACHE.get(slug)
+    if hit and hit[0] == mh:
+        return {'success': True, 'cached': True, **hit[1]}
+    try:
+        proc = subprocess.run(
+            **_spawn(['npx', 'vite-node', 'scripts/art-resolve.mjs', slug]),
+            cwd=ROOT, capture_output=True, encoding='utf-8', errors='replace', timeout=120,
+        )
+    except subprocess.TimeoutExpired:
+        return {'success': False, 'error': '解析超时（120s）'}
+    if proc.returncode != 0:
+        return {'success': False, 'error': (proc.stderr or proc.stdout or '解析失败').strip()[:500]}
+    try:
+        data = json.loads((proc.stdout or '').strip().splitlines()[-1])
+    except Exception as e:
+        return {'success': False, 'error': f'解析输出坏形: {e}'}
+    _ART_RESOLVE_CACHE[slug] = (mh, data)
+    return {'success': True, 'cached': False, **data}
+
 def handle_agent_session_reset(body: dict) -> dict:
     """POST /api/agent/session/reset {slug, role}。归档重开（owner 07-12「session 越开越多·要能 archive」）：
     只解绑该角色的 CC session id+指纹——聊天记录保留；下一轮自动开新 session 并全量重注入
@@ -4345,7 +4422,10 @@ class APIHandler(BaseHTTPRequestHandler):
             self.send_response(404); self.end_headers(); return
         ctype = {'.json': 'application/json; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp',
                  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml',
-                 '.glb': 'model/gltf-binary'}.get(target.suffix.lower(), 'application/octet-stream')
+                 '.glb': 'model/gltf-binary',
+                 # 视频/音频（owner 07-12：素材库要包含视频·爱诗 PixVerse 线）
+                 '.mp4': 'video/mp4', '.webm': 'video/webm', '.mp3': 'audio/mpeg', '.wav': 'audio/wav',
+                 '.ogg': 'audio/ogg'}.get(target.suffix.lower(), 'application/octet-stream')
         self._send_file(target, ctype)
 
     def _serve_package_download(self, jid: str) -> None:
@@ -4540,6 +4620,11 @@ class APIHandler(BaseHTTPRequestHandler):
             data = handle_ws_draft_get()
         elif path == '/api/features':
             data = {'success': True, **_features()}
+        elif path == '/api/matlib/groups':
+            data = handle_matlib_groups_get()
+        elif path == '/api/art/resolve':
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            data = handle_art_resolve((qs.get('slug') or [''])[0])
         elif path == '/api/capgaps':
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             try:
@@ -4729,6 +4814,9 @@ class APIHandler(BaseHTTPRequestHandler):
             return
         if path == '/api/workshop/draft':
             self._send_json(200, handle_ws_draft_put(body))
+            return
+        if path == '/api/matlib/groups':
+            self._send_json(200, handle_matlib_groups_put(body))
             return
         # 设计草稿 upsert（未定名/定名自动分流·可变状态码）——先于 design/manifest 分派。
         if path.startswith('/api/design-drafts/'):
