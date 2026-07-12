@@ -512,6 +512,9 @@ try:
     check(plat15 is not None and len(plat15.get('slots') or []) == 3,
           f'台账按素材去重（3 同词槽合 1 行·slots 扇出回写）· 实得 slots={len((plat15 or {}).get("slots") or [])}')
     check(len([r for r in live15 if r.get('query') == 'pixel hero']) == 1, '不同素材各占一行')
+    check('{DESIGN_DOCS}' in apollo.AGENT_PE_SYSTEM and '{DESIGN_DOCS}' in apollo.AGENT_ART_SYSTEM
+          and '{DESIGN_DOCS}' in apollo.AGENT_GD_SYSTEM,
+          '三角色系统词都带设计底案区块（07-12「程序凭名字瞎猜」修——底案=spec 谁施工谁必读）')
 
 except Exception as e:
     FAIL += 1

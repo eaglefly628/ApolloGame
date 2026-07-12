@@ -1386,7 +1386,12 @@ AGENT_PE_SYSTEM = AGENT_CHAT_COMMON + """
 ## Your role: 程序（engine-side programmer）
 You own manifest STRUCTURE: entities, components, capabilities wiring. The capability catalog below is
 the single source of truth for vocabulary — never invent components/fields; unknown ids are rejected on load.
+Build to the design docs below — they ARE the spec（owner 07-12：不许再凭名字瞎猜玩法）; when the ask
+conflicts with them, say so instead of silently drifting.
 {TS_RULES}
+## Design docs (底案·this game — the gameplay spec you implement)
+{DESIGN_DOCS}
+
 ## Capability catalog
 {CAPABILITY_CATALOG}
 
@@ -1486,6 +1491,9 @@ gameplay numbers belong to 策划, structure to 程序. You do not fabricate ima
 ```
 op 三式：regen（点名单行·可带新 query）· batch（全部占位行批量生成·可带 packId）· replace（生成好的
 写回 manifest）。清单会显示给用户确认后才执行——你只管开方子，不要声称已执行。
+
+## Design docs (底案·this game — theme/mood/world context for art direction)
+{DESIGN_DOCS}
 
 ## Art ledger digest (this game)
 {ART_DIGEST}
@@ -1855,28 +1863,31 @@ def handle_agent_chat(body: dict) -> dict:
                 ts_rules += f"\n### Current logic.ts（修订=整文件重发）\n```ts\n{lf.read_text('utf-8')[:20000]}```\n"
             except Exception:
                 pass
+    design_digest = _agent_design_digest(slug)  # 三角色同吃（owner 07-12「程序凭名字瞎猜」——底案=spec，谁施工谁必读）
     system = (tpl.replace('{TS_RULES}', ts_rules)
               .replace('{CAPGAP_RULES}', _CAPGAP_RULES_ON if _features().get('capgap') else '')
               .replace('{GAME_NAME}', str(game_name)).replace('{GAME_SLUG}', slug)
               .replace('{CURRENT_MANIFEST}', json.dumps(current, ensure_ascii=False))
               .replace('{CAPABILITY_CATALOG}', str(body.get('catalog') or _FALLBACK_CATALOG))
-              .replace('{DESIGN_DOCS}', _agent_design_digest(slug) if role == 'gd' else '')
+              .replace('{DESIGN_DOCS}', design_digest)
               .replace('{ART_DIGEST}', _agent_art_digest(slug) if role in ('gd', 'art') else ''))
 
     # 方案 A（owner 07-11 拍板）：订阅通道用 CC 原生 session——首轮全量注入并抓 session_id，
-    # 续轮 --resume 只发增量；manifest 变了（应用改动后）随增量附最新全文。工件仍是唯一真相。
+    # 续轮 --resume 只发增量；manifest/底案变了（应用改动/修订底案后）随增量附最新全文。工件仍是唯一真相。
     session = None
     mf_hash = None
     if provider == 'claude-code':
-        mf_hash = hashlib.sha1(json.dumps(current, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16]
+        # 指纹盖 manifest+底案（07-12 扩）：底案更新也要推给已开的 session——老 session 不用重开即可拿到 spec。
+        mf_hash = hashlib.sha1((json.dumps(current, ensure_ascii=False, sort_keys=True) + '\n' + design_digest).encode()).hexdigest()[:16]
         store = _ws_file_load(slug)
         sid = (store.get('sessions') or {}).get(role)
         session = {'id': sid if isinstance(sid, str) else None}
         if session['id']:
             note = ''
             if (store.get('ctxHash') or {}).get(role) != mf_hash:
-                note = ('【提示】游戏 manifest 已更新为最新版（以下为准·此前版本作废）：\n```json\n'
-                        + json.dumps(current, ensure_ascii=False) + '\n```\n\n')
+                note = ('【提示】游戏 manifest 与设计底案已更新为最新版（以下为准·此前版本作废）：\n```json\n'
+                        + json.dumps(current, ensure_ascii=False) + '\n```\n\n### 设计底案（spec·施工以此为准）\n'
+                        + design_digest + '\n\n')
             messages = [{'role': 'user', 'content': note + messages[-1]['content']}]  # 续轮=只发增量
     attempts = 0
     reply_text, manifest_out, manifest_err = '', None, None
