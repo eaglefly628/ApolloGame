@@ -252,6 +252,9 @@
               <sc-for list="{{ modelChips }}" as="mc" hint-placeholder-count="3"><button onClick="{{ mc.pick }}" title="{{ mc.tip }}" style="{{ mc.style }}">{{ mc.label }}</button></sc-for>
               <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#1a4f6e;margin-left:6px">思考</span>
               <sc-for list="{{ effortChips }}" as="ec" hint-placeholder-count="3"><button onClick="{{ ec.pick }}" style="{{ ec.style }}">{{ ec.label }}</button></sc-for>
+              <sc-if value="{{ dsHasWork }}" hint-placeholder-val="{{ false }}">
+                <span style="margin-left:auto"><button onClick="{{ dsAbandon }}" title="放弃当前想法（清对话/提纲现场·会二次确认）——重新从一张白纸开始" style="{{ delBtnStyle }}" style-active="{{ miniBtnActive }}">🗑 放弃当前想法·重新来过</button></span>
+              </sc-if>
             </div>
 
             <!-- 设计先行 · 第一步：讨论 -->
@@ -1969,6 +1972,17 @@ class Component extends DCLogic {
       ideas,
       // create 双模式 + 设计先行
       createModes, isQuickMode: s.createMode === 'quick',
+      // 放弃当前想法（owner 07-12「做一半不想做了没有放弃按钮」）：清对话/提纲现场+服务端草稿槽。
+      // 已建库的卡带（提纲落库后）保留在游戏库——放弃的是「创作现场」，不代删工件。
+      dsHasWork: !!((s.dsMsgs && s.dsMsgs.length) || s.dsName || s.dsSlug || (s.prompt || '').trim()),
+      dsAbandon: () => {
+        const extra = s.dsSlug ? ('\n\n注意：提纲已落库为卡带「' + s.dsSlug + '」——它会保留在游戏库（不想要可去那里 🗑 删除）。') : '';
+        if (!window.confirm('放弃当前想法？对话与创作现场将清空，从一张白纸重新开始。' + extra)) return;
+        this.setState({ dsPhase: 'chat', dsMsgs: [], dsInput: '', dsName: '', dsReady: false, dsSlug: null,
+          dsFiles: null, dsSel: null, dsRev: '', dsBusy: false, prompt: '' });
+        this.saveDraft(true);
+        this.showToast('已放弃——重新来过');
+      },
       dsPhaseChat: s.createMode === 'design' && s.dsPhase === 'chat',
       dsPhaseDocs: s.createMode === 'design' && s.dsPhase === 'docs',
       dsChatMsgs, dsBusy: s.dsBusy,
