@@ -577,7 +577,7 @@
                     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:10px">
                       <sc-for list="{{ grp.rows }}" as="a" hint-placeholder-count="6">
                         <div onClick="{{ a.pick }}" title="{{ a.q }}" style="{{ a.cardStyle }}">
-                          <div style="{{ a.coverStyle }}"></div>
+                          <div style="{{ a.coverStyle }}"><div style="{{ a.swatchStyle }}">{{ a.swatchText }}</div></div>
                           <div style="padding:6px 6px 8px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
                             <div style="font-family:'Fredoka';font-weight:700;color:#3a2312;font-size:11px">{{ a.no }} <span style="{{ a.badgeStyle }}">{{ a.badge }}</span></div>
                             <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:10px;line-height:1.3;word-break:break-word;overflow:hidden;max-height:26px">{{ a.q }}</div>
@@ -1689,15 +1689,26 @@ class Component extends DCLogic {
       // 封面优先级：真生成图 > 占位解析图（=游戏画面当前实际在用的免费库图·07-12） > 灰底
       const served = (r.gen && r.gen.servedPath) || (r.status === 'placeholder' ? (s.artResolve || {})[r.query] : null);
       const badge = stBadge[r.status] || [r.status, '#c8c8c8'];
-      return { no: r.no, q: r.query || (r.slot && r.slot.entity) || '', badge: badge[0],
+      // 原始占位可视化（owner 07-13「新建卡袋看不到在用的占位图」）：没生成真图的行，把引擎实际渲染的
+      // 程序化占位（Color.tint 色块 + 形体）画成 swatch——所见=游戏里现在真渲染的样子（非空白）。
+      const dtext = (r.desc || '') + ' ' + ((r.placeholder && r.placeholder.current) || '');
+      const cm = dtext.match(/#[0-9a-fA-F]{6}/);
+      const phColor = cm ? cm[0] : '';
+      const round = /round shape|circle|圆形|圆/i.test(dtext);
+      const cover = served
+        ? { backgroundImage: 'url(' + served + ')', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#f2ead8' }
+        : { background: 'repeating-conic-gradient(#ececec 0% 25%, #f8f8f8 0% 50%) 50% / 14px 14px' };  // 透明棋盘底=占位语义
+      const swatchStyle = served ? { display: 'none' }
+        : phColor ? { width: '46px', height: '40px', background: phColor, borderRadius: round ? '50%' : '9px', border: '2.5px solid rgba(58,35,18,.55)', boxShadow: 'inset 0 -4px 0 rgba(0,0,0,.2)' }
+        : { fontFamily: "'Noto Sans SC',sans-serif", fontSize: '10px', fontWeight: 700, color: '#b0723a', padding: '4px 8px', background: 'rgba(255,255,255,.7)', borderRadius: '7px', border: '2px dashed rgba(58,35,18,.35)' };
+      const swatchText = (served || phColor) ? '' : '程序占位';
+      return { no: r.no, q: r.query || (r.slot && r.slot.entity) || '', badge: badge[0], swatchStyle, swatchText,
         pick: () => this.setState({ artSel: r.no, artQ: r.query || '' }),  // 点开详情卡（一站式处理·07-12）
         cardStyle: { borderRadius: '16px', overflow: 'hidden', cursor: 'pointer',
           border: '3px solid ' + (s.artSel === r.no ? '#7ecb45' : '#ffd257'),
           boxShadow: '0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312', background: '#fff' },
         badgeStyle: { background: badge[1], border: '2px solid #3a2312', borderRadius: '7px', padding: '1px 6px', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '9px', color: '#3a2312', marginLeft: '4px' },
-        coverStyle: Object.assign({ height: '78px', borderBottom: '2px solid #3a2312' }, served
-          ? { backgroundImage: 'url(' + served + ')', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#f2ead8' }
-          : { background: 'linear-gradient(180deg,#f2ead8,#e2d2b0)' }) };
+        coverStyle: Object.assign({ height: '78px', borderBottom: '2px solid #3a2312', display: 'flex', alignItems: 'center', justifyContent: 'center' }, cover) };
     };
     const ART_KIND_ORDER = ['精灵/角色', '背景', 'UI/HUD', '贴图', '3D 模型'];
     const artGrouped = {};
