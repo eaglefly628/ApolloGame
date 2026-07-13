@@ -90,7 +90,10 @@ def handle_games_list() -> dict:
         for d in sorted(gdir.iterdir()):
             if d.is_dir() and GAME_RE.fullmatch(d.name):
                 has_art = (ROOT / 'public' / 'games' / d.name / 'art' / 'index.json').exists()
-                entry = {'id': d.name, 'hasLocalArt': has_art}
+                # 数据 manifest / 美术台账在否——壳据此给准确的空台账文案（代码游戏 vs 数据游戏未生成）
+                has_manifest = (ROOT / 'public' / 'games' / d.name / 'manifest.json').is_file()
+                has_ledger = (ROOT / 'public' / 'games' / d.name / 'art' / 'art-ledger.json').is_file()
+                entry = {'id': d.name, 'hasLocalArt': has_art, 'hasManifest': has_manifest, 'hasLedger': has_ledger}
                 minfo = bmeta.get(d.name)
                 if minfo:
                     entry.update({k: v for k, v in minfo.items() if v})  # 只并非空字段
