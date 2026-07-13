@@ -178,6 +178,17 @@ applyMovement 路由 `Controllable{playerId,speed}`，但该组件此前无任�
 ```art-ops 围栏（regen/batch/replace ≤10 条·服务端只校验形状回 artOps），壳出「🎨 美术操作提议」
 确认卡 → ✔ 逐条串行执行 → 完成刷新台账/八关灯。冒烟 ⑮ 6 断言（120→126）+ art-replace.test 34。
 
+### §八.9 原型链一致性审计+代码驱动分叉（owner 07-12「生成原型必须严格从提纲·全管线一致·唯一区别=数据/代码驱动」）
+
+审计结论（逐环核·全过）：①**提纲严格性**——prototype 只从磁盘 `design/*.md` 全文出发（无设计稿直接拒
+「先分解设计稿再生成原型」），不吃自由 prompt；②**自动迭代**——`_generate_with_autofix` 校验错误回喂
+（manifest-check 逐轮·未知能力点名换 system）；③**落盘门**——library_put_manifest = parse+真引擎
+load+2tick；④**台账**——PUT 即自动 derive（去重版）。与对话产游戏=同一套门/台账/校验回喂 ✓。
+**补的缺口=owner 点名的唯一分叉**：⚡ TS 例外卡带的原型此前只出纯数据——现在 manifest 定稿落盘后自动跑
+**代码驱动第二相**：底案+定稿 manifest+目录 → logic.ts（cartCapability 契约·同一 cart-logic-check 门·
+一轮错误回喂·mock 短路），过门即落盘 git 版本化；失败不废 manifest，job 带 warning 明报（壳 toast）。
+冒烟 ⑰ 4 断言（137→141）。
+
 ### §八.1 验收修订（owner 2026-07-11 真机验收六条·当日落地）
 
 1. **三对话入口**：策划(gd)/**美术(art·新)**/程序(pe)——改写 §一「两入口·策划兼美术」定稿；美术角色系统词以台账 digest 为核、点名 art-NN、皮肤槽/风格锚归它。

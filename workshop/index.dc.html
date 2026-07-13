@@ -974,6 +974,7 @@ class Component extends DCLogic {
           this.setState({ generating: false, genPct: 100, done: true, genLive: null, genErr: null });
           this.chargeTokens(j.tokens || 0);  // 生成按本次 token 扣金币（1万 tok=100 币）
           this.refreshCarts();
+          if (j.warning) this.showToast('⚠ ' + j.warning.slice(0, 110));  // 代码驱动相失败明报（manifest 已入库）
           this.showToast('已生成并入库：' + (j.name || j.slug) + (j.tokens ? ('（-' + Math.round(j.tokens / 100) + ' 金币）') : ''));
           if (this.state.dsSlug && j.slug === this.state.dsSlug) {  // 设计先行走完 → 清现场草稿
             this.setState({ dsPhase: 'chat', dsMsgs: [], dsName: '', dsReady: false, dsSlug: null, dsFiles: null, dsSel: null, dsRev: '' });

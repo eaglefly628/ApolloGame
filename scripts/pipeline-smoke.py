@@ -541,6 +541,27 @@ try:
     check(any(k.get('envKey') == 'PIXVERSE_API_KEY' for k in (stg16.get('genKeys') or [])),
           '爱诗 PixVerse 视频 key 槽位在设置（adapter=后续单·同 Seedance 先例）')
 
+    print('⑰ 原型链代码驱动分叉（owner 07-12「唯一区别=数据/代码驱动」·⚡卡带原型自动补 logic.ts）')
+    os.environ['APOLLO_FEATURE_TSCARTS'] = '1'
+    try:
+        req('POST', f'/api/library/{SLUG}/flags', {'allowTs': True})
+        st17, jb17 = req('POST', '/api/generate/job', {'mode': 'prototype', 'slug': SLUG, 'provider': 'mock'})
+        check(st17 == 200 and jb17.get('success') and jb17.get('id'), '⚡卡带原型任务启动（mock）')
+        j17 = {}
+        for _ in range(240):
+            _, jv17 = req('GET', f'/api/generate/job?id={jb17.get("id")}')
+            j17 = (jv17 or {}).get('job') or {}
+            if j17.get('done'):
+                break
+            time.sleep(0.5)
+        check(j17.get('done') and not j17.get('error'), f'原型任务完成 · warning={j17.get("warning")}')
+        check((ROOT / 'library' / SLUG / 'logic.ts').is_file(), '代码驱动相：logic.ts 自动落盘（同一装载门）')
+        check(not j17.get('warning'), '逻辑相无 warning（mock 逻辑过门）')
+        req('PUT', f'/api/library/{SLUG}/logic', {'content': ''})  # 收尾撤 logic（不污染后续）
+        req('POST', f'/api/library/{SLUG}/flags', {'allowTs': False})
+    finally:
+        os.environ.pop('APOLLO_FEATURE_TSCARTS', None)
+
 except Exception as e:
     FAIL += 1
     print(f"  \033[31m✗ 冒烟异常\033[0m: {e}")
