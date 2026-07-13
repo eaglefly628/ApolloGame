@@ -55,3 +55,9 @@ export { timelineCapability } from './timeline.js';
 // → 查赔付表 → 扣注/记赢/免费旋转。dice-roll 掷轮，本能力判线记账；周期表缺的「Line-Eval」格。任何老虎机/连线消除复用。
 export { slotPayoutCapability, evaluateSlot } from './slot-payout.js';
 export type { SlotEvalResult } from './slot-payout.js';
+
+// block-grid（REQ-CAP-block-grid）：算法/解释器型机制——方块网格棋盘（多格 polyomino 落点判定/整行整列
+// 消除/托盘确定性补形/无子可落判负），config 驱动、确定性。Condition→Event→Effect 表达不了带网格扫描的
+// 落点合法性+消除算法；t2-drag-place 只吸附六边格、t3-match3-board 是交换/三连/重力正交规则——真缺口。
+// Block Blast/Woodoku/俄罗斯方块类复用。配套输入桥 grid-drag-square（方形吸附+polyomino 预览）另立。
+export { blockGridCapability, bgIndex, canPlace, applyPlace, fullLines, clearLines, canPlaceAnywhere, anyTrayPlaceable } from './block-grid.js';

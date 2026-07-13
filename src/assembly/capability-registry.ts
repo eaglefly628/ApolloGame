@@ -46,7 +46,7 @@ import {
   trayCapability,
   modifierStackCapability,
 } from '@skills/tier2/index.js';
-import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability } from '@skills/tier3/index.js';
+import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability, blockGridCapability } from '@skills/tier3/index.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  能力注册表 (Capability Registry) —— manifest 加载的地基
@@ -119,6 +119,7 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   mergeRuleCapability,
   timelineCapability,
   slotPayoutCapability,
+  blockGridCapability,
 ];
 
 export const CAPABILITY_REGISTRY: ReadonlyMap<string, CapabilityDefinition> = (() => {

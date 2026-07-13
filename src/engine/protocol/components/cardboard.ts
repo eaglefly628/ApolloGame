@@ -299,3 +299,42 @@ export interface LineWins extends Component {
   triggeredFree: number;   // 本旋触发/再触发赠送的免费旋转数（0=未触发）
   wins: LineWin[];         // 各中奖线
 }
+
+// ── block-grid ── 方块网格棋盘机制（REQ-CAP-block-grid）：多格 polyomino 落点判定 + 整行整列消除 +
+// 无子可落判负。Condition→Event→Effect 表达不了这类「多格落点合法性 + 网格扫描消除」算法；t2-drag-place
+// 只吸附六边格、t3-match3-board 是交换/三连/重力的正交规则——Block Blast/Woodoku/俄罗斯方块类的通用缺口。
+// 确定性：整数网格 + RandomSeed 整数 PRNG 补托盘。视图复用 match3 的 BoardCell（据 cells 写 Color.tint）。
+
+// 形状定义（polyomino·非组件·被 BlockGrid.shapes 持有的纯数据，如 Card 之于 PlayedHand）。
+// cells = 扁平相对偏移 [dc0,dr0,dc1,dr1,…]（锚点为 (0,0)，向右下为正）；tint = 落子后底色。
+export interface BlockShapeDef {
+  id: string;
+  cells: number[];
+  tint?: number;
+}
+
+// 棋盘单例：占位网格 + 形状目录 + 托盘 + 计分/判负配置。cells 长 cols*rows，-1=空、≥0=已填（值=底色 tint）。
+export interface BlockGrid extends Component {
+  readonly type: 'BlockGrid';
+  cols: number;
+  rows: number;
+  cells: number[];
+  shapes: BlockShapeDef[];
+  tray: number[];              // shapes 下标数组，-1=该槽已用空
+  traySize: number;            // 托盘槽数（全空时确定性补这么多个）
+  scoreResource?: string;      // 计分 Resource id（空=不计分）
+  cellScore?: number;          // 每落一格给的分
+  lineScore?: number;          // 每清一行/列给的分
+  gameOverFlag?: string;       // 判负 Flag id（托盘全形状无处可落时置真；空=不判负）
+  fillTint?: number;           // 可选·已填格视图底色（cells 值为占位 1 时用）
+  emptyTint?: number;          // 可选·空格视图底色
+}
+
+// 放置意图（Intent·一次性被 block-place 消费）：把 tray[slot] 的形状落到锚点 (col,row)。
+// 由 grid-drag-square 输入桥 / 点击 / 测试产生——本能力只判定+结算，不管拖拽输入。
+export interface PlaceBlockIntent extends Component {
+  readonly type: 'PlaceBlockIntent';
+  slot: number;
+  col: number;
+  row: number;
+}
