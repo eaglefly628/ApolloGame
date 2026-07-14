@@ -22,6 +22,26 @@ import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
 import { mountUI } from '@ui/components/index.js'; // 引擎数据驱动 UI 解释器（采纳·替手写 DOM）
 import type { LayoutNode, ButtonProps, LabelProps, PanelProps, ScreenProps } from '@ui/components/types.js';
 import { GG_THEME_ONYX } from './ui-theme.js'; // game-g 古风主题（数据·喂引擎 UI 解释器换皮）
+import { registerPortraitOverrides } from './portraits.js'; // 立绘美术库覆盖（步2·渲染指向索引）
+
+// 载入 game-g 美术库索引里**真图替换**的立绘条目（source 非 procedural）→ { 'sA': url }（owner 07-13 步2）。
+// 只收真替换图·程序化 .svg 条目不进（等于没换）。失败/无索引=空（回退程序化·观感零变）。
+async function loadHeroArtOverrides(slug: string): Promise<Record<string, string>> {
+  try {
+    const r = await fetch(`/games/${slug}/art/index.json`, { cache: 'no-cache' });
+    if (!r.ok) return {};
+    const idx = (await r.json()) as { assets?: Array<{ id?: string; path?: string; source?: string }> };
+    const map: Record<string, string> = {};
+    for (const a of idx.assets ?? []) {
+      if (typeof a.id === 'string' && a.id.startsWith(`${slug}/hero/`) && a.path
+        && !(typeof a.source === 'string' && a.source.startsWith('procedural'))) {
+        const key = a.id.split('/').pop(); // 'sA'
+        if (key) map[key] = a.path;
+      }
+    }
+    return map;
+  } catch { return {}; }
+}
 import { ggOnBattleWon } from './platform-hooks.js'; // 平台触点（Steam/假 Steam·胜利成就/排行/富状态）
 
 // 公共 API 再导出（保旧 import 路径不变·勿删）：deck-wiring 测 ← buildPickDeck/bossHeroCard；live-combat 测 ← aggregateTengang/tengangFxOf；freshSave 历史导出。
@@ -939,8 +959,14 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     }
   }
 
+  // 步2「没加载完就不画」（owner 07-13）：大厅无立绘 → 同步渲染（保运行器/集成测的同步契约）；
+  // 立绘只在 牌组/收藏/改造坊 子屏出现（导航后才画）——在此之前后台载入美术库真图覆盖，等它们被打开时覆盖早已就绪，
+  // 真图替换的立绘绝不先闪程序化版。载入失败/无索引=空覆盖=回退程序化（观感零变·帧回归绿）。
   showLobby();
+  let disposed = false;
+  loadHeroArtOverrides('game-g').then((map) => { if (!disposed) registerPortraitOverrides(map); }).catch(() => {});
   return () => {
+    disposed = true;
     container.removeEventListener('pointerdown', bgmKick);
     stopBgm();
     teardownMatch();

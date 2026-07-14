@@ -6,6 +6,19 @@ export type Suit = '♠' | '♥' | '♦' | '♣';
 type Region = 'cn' | 'classical' | 'steppe' | 'euro' | 'mideast' | 'jp';
 
 const SUIT_HEX: Record<Suit, string> = { '♠': '#6b8fc4', '♥': '#e0635f', '♦': '#e6a24a', '♣': '#56be84' };
+const SUIT_KEY: Record<Suit, string> = { '♠': 's', '♥': 'h', '♦': 'd', '♣': 'c' };
+
+// ── 美术库覆盖（owner 07-13 步2「渲染指向索引」）：立绘先查美术库登记的真图（矢量↔真图统一间接层）。
+// 默认空 = 走程序化矢量（观感零变·帧回归全绿）；mount 载入 game-g 美术索引里**非程序化**的条目 → 覆盖对应槽。
+// key = 花色字母+军衔（如 'sA' 'hK'·与 hero-codex 一一对应）。owner 定「没加载完就不画」→ 由 mount 门控首帧。
+const _portraitOverrides = new Map<string, string>();
+/** 登记真图覆盖（{ 'sA': url, ... }）。只收真替换图·程序化 .svg 条目不进（否则等于没换）。 */
+export function registerPortraitOverrides(map: Record<string, string>): void {
+  for (const [k, v] of Object.entries(map)) if (v) _portraitOverrides.set(k, v);
+}
+/** 清空覆盖（测试/换库用·保帧回归确定性）。 */
+export function clearPortraitOverrides(): void { _portraitOverrides.clear(); }
+export function portraitOverrideCount(): number { return _portraitOverrides.size; }
 
 // 从 era/civ 文案推断地域风格（关键字匹配·缺则古典）。
 function regionOf(era: string): Region {
@@ -49,8 +62,11 @@ function weapon(r: Region, accent: string): string {
   }
 }
 
-/** 立绘 SVG → data URI（喂引擎 PlayingCard.art 的 <img src>·纯字符串·确定性）。供牌库/牌谱/改造坊牌面立绘用。 */
+/** 立绘 SVG → data URI（喂引擎 PlayingCard.art 的 <img src>·纯字符串·确定性）。供牌库/牌谱/改造坊牌面立绘用。
+ *  先查美术库覆盖（真图 URL·owner 07-13 步2）——命中即用真图；未命中回退程序化矢量（默认·观感零变）。 */
 export function heroPortraitUri(suit: Suit, era: string, rank: string, rar = 'white'): string {
+  const ov = _portraitOverrides.get(SUIT_KEY[suit] + rank);
+  if (ov) return ov;
   return `data:image/svg+xml;utf8,${encodeURIComponent(heroPortrait(suit, era, rank, rar))}`;
 }
 
