@@ -328,6 +328,10 @@ export interface BlockGrid extends Component {
   gameOverFlag?: string;       // 判负 Flag id（托盘全形状无处可落时置真；空=不判负）
   fillTint?: number;           // 可选·已填格视图底色（cells 值为占位 1 时用）
   emptyTint?: number;          // 可选·空格视图底色
+  // ── 方形网格像素几何（grid-drag-square 输入桥用·像素↔格；缺省=无几何，走点击/测试直接写意图）──
+  originX?: number;            // 格 (0,0) 中心的世界 x
+  originY?: number;            // 格 (0,0) 中心的世界 y
+  cellSize?: number;           // 单格边长（世界像素）
 }
 
 // 放置意图（Intent·一次性被 block-place 消费）：把 tray[slot] 的形状落到锚点 (col,row)。
@@ -337,4 +341,12 @@ export interface PlaceBlockIntent extends Component {
   slot: number;
   col: number;
   row: number;
+}
+
+// ── grid-drag-square 托盘块 ── 把一个可拖拽的托盘形状实体绑到 (棋盘, 槽位)。蓝图静态建（Transform+Shape 命中体）。
+// grid-drag-square 命中 drag 起点所在的托盘块 → 取 slot；drag 终点吸附方格 → 写 PlaceBlockIntent{slot,col,row}。
+export interface BlockTrayPiece extends Component {
+  readonly type: 'BlockTrayPiece';
+  boardId: EntityId;   // 所属 BlockGrid 实体 id（取其像素几何做吸附）
+  slot: number;        // 对应 BlockGrid.tray 的槽下标
 }

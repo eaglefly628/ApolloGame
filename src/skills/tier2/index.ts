@@ -50,6 +50,9 @@ export { textBindingCapability } from './text-binding.js';
 // drag-place（REQ-F-045）：拖拽摆放输入桥——壳层合成 drag 动作→命中 Draggable→hex 吸附/回席/限额（摆子/放塔通用）。
 export { dragPlaceCapability } from './drag-place.js';
 export { trayCapability } from './tray.js';
+// grid-drag-square（REQ-CAP·Block Blast 机制②）：方形网格 polyomino 拖放输入桥——命中托盘块取 slot、
+// 终点吸附方格 → 写 PlaceBlockIntent（block-grid 消费）。区别于 drag-place 的六边+移子（此为方形+盖章）。
+export { gridDragSquareCapability, squarePointToCell } from './grid-drag-square.js';
 export { hexCellToPoint, hexPointToCell } from './grid-move.js';
 // modifier-stack（REQ-CAP 下沉）：修正聚合栈——全场 ModifierSource（字段表+合并策略+门控）→ ModifierTotals。
 // stats 的超集（逐字段混合 add/mul/max/min/or/floor + ConditionExpr 门控）；下沉小丑计分/天罡/地煞三处同构聚合。
