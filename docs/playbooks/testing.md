@@ -14,6 +14,7 @@
 | 真浏览器旅程 | playwright-core e2e（`scripts/studio-*-e2e.mjs` 模式·chromium=/opt/pw-browsers） | 脚本退出码 |
 | 产品线冒烟 | `scripts/*-smoke.py`（library / studio / **steam 发行编排**·后者 `steam-publish-smoke.py` 无真账号用 480 验 VDF/命令/plan · **AI 生成人审门** `art-review-smoke.py` 全链 generate→pending→approve/reject + provenance 硬校验 · **美术替换工作流** `art-replace-smoke.py` 全链 derive→batch(mock)→replace(parseManifest 零 error)+断点续跑+编号稳定·进程内 API·快照恢复零污染） | 退出码 |
 | 游戏体检 | `node scripts/game-skill-audit.mjs <game>` | 零红旗 |
+| 系统调度积木稳定性 | `npx vite-node scripts/system-graph-audit.mjs [capId…]`（悬空定序边/重复 system id/Tarjan 切最小 SCC+破环建议·`src/assembly/system-graph.test.ts` 守硬不变量） | `SYSTEM-GRAPH: PASS` |
 | 3D 截图对拍 | `scripts/shoot-game.mjs`（P3D harness） | 人审（像素断言升级=REQ-3D-像素断言·排队） |
 | 视觉里程碑验收 / 出货 | `docs/playbooks/visual-scorecard.md`（8 维评分卡） | 全维 ≥2 = premium |
 
