@@ -83,6 +83,15 @@
 > **要做（按 art-pipeline.md 编译期三行·game-q 样板）**：① 主体视觉实体（转轮符号/机身/拉杆/背景）加 `Sprite` 皮肤槽（与现程序化观感并存·未填资产观感零变——程序化烘焙可作回退保留，皮肤就绪即盖过）；② 照 `scripts/game-q-art-requirements.mjs` 写 game-k 推导脚本产台账；③ mount 拉本地 index 注册 AssetManager。完工=美术平台选 game-k 出台账·audit 黄旗消。
 > 备注：t3-slot-payout 下沉本身是好活（Lead 后补验收）；本单只管美术接入。
 
+### REQ-G-美术台账接入 · game-g 美术资源数据配置驱动到台账（PST 2026-07-13 提·Lead 评审通过） · [2026-07-13] · PST 提需求 → **指派：Opus 档 session（game-g 程序B 域·LayoutNode 表现层）** · status: **open** · 优先级: **P1（出口游戏=D+G·7·29 美术线·audit 黄旗存量欠账）** · 类型: 手册整改（编译期游戏美术接入·REQ-K 同款）
+> **Lead 评审**：该做。game-g 现状=纯程序化 SVG 底纹（`art-textures.ts` data-URI 喂 Panel.bgTexture/牌面·双皮=fill/stroke 令牌）——零台账零皮肤槽，与 game-k 整改前同模式；07-13 的通用工具（`scripts/game-blueprint-to-ledger.mjs`·58539995）已实证 game-g「代码驱动无单一蓝图」走不了干净路径，必须 per-game 接线。**无新引擎能力需求**，全程照 `docs/playbooks/art-pipeline.md` 编译期三行 + game-q/game-k 样板施工。
+> **spec（照图施工·完工标 ✅ 待 Lead 验收）**：
+> ① **台账推导脚本** `scripts/game-g-art-requirements.mjs`（照 `game-q-art-requirements.mjs` 样板）：枚举视觉件清单——主页牌桌底纹/牌面（军衔×玄铁金+锦霞双皮）/主将「将」艺术字衬底/对决三栏特写件/3D 骰（model3d 类·列行即可）/战役图/HUD 面板底纹（来源=art-textures.ts 各导出 + home-screen/turn-battle-screen/campaign-screen 的视觉消费点）→ 产 `public/games/game-g/art/art-ledger.json`（deriveRequirements schema·status='needs-art'·每行详细英文描述+规格+当前程序化占位描述）。
+> ② **皮肤槽接线（双形态·观感零变铁律）**：(a) play-field world 实体若有可 Sprite 化对象 → `Sprite{textureKey}` 与 Shape 并存；(b) **LayoutNode/Panel 纹理类**（bgTexture/牌面/衬底=game-g 主体）→ skinKey 别名登记本地 `public/games/game-g/art/index.json`，mount 拉起注册 AssetManager（照 game-k `skinAssets` 样板）——真图就绪自动盖过程序化回退，**未填=观感零字节变化**（程序化烘焙保留为回退·REQ-K 同语义）。
+> ③ **写回=fill 线**：编译期游戏走 regenerate→fill 既有端点语义（重钉 manifest 的动作平台自动隐藏）；**绝不改蓝图/渲染代码来换皮**（art-pipeline 红线）。
+> ④ **边界**：`clash-dice-3d` 3D 骰=P3D 独占域——台账列行可以，3D 侧接线动作先知会 P3D（P3D-game-z-handoff §0.1）；turn-battle-screen 牌面属程序B 域正好同域。
+> ⑤ **验收**：美术平台/工坊素材屏选 game-g 出台账（行行有详细描述·规格·占位说明）；`node scripts/game-skill-audit.mjs game-g`「无美术台账」黄旗消；未生成真图前游戏观感零变（前后截图对比）；/check-ui 过；tsc+vitest+build 三绿。
+
 ### REQ-Q-击杀记账（on-kill credit）· 塔防赏金/击杀计分通用缺口 · [2026-07-07] · LEAD（game-q 立项）→ Lead 排期 · status: **open（真缺口·已记债·循环层用清波经济绕过·非阻塞）** · 类型: 通用战斗能力下沉候选
 > **缺口**：`t2-hitbox` 只写**目标本地**资源（`hitbox.ts` `queueResourceMod(...,'local')`）；`t2-mortal` 的 `dropTemplate` 对**任何死因无差别**触发。→ 无法用单个 Mortal 区分「被塔击杀→给全局/攻击者记赏金」与「抵达大本营漏怪→扣命·不发赏金」。这是塔防经济（逐怪赏金）唯一表达不了的点，也是**击杀计分/连击表/赏金**一类通用需求的共性缺口（非塔防专属）。
 > **game-q 现绕法（已落地·不依赖本单）**：经济走「开局金 + 清波奖金（timeline resource-cue / `effect-apply` on `timeline:done:<wave>`）+ 波中缓速涓流」——全组合现有能力、确定性、无缺口依赖；逐怪赏金暂缓。
