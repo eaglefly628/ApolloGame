@@ -83,7 +83,7 @@
 > **要做（按 art-pipeline.md 编译期三行·game-q 样板）**：① 主体视觉实体（转轮符号/机身/拉杆/背景）加 `Sprite` 皮肤槽（与现程序化观感并存·未填资产观感零变——程序化烘焙可作回退保留，皮肤就绪即盖过）；② 照 `scripts/game-q-art-requirements.mjs` 写 game-k 推导脚本产台账；③ mount 拉本地 index 注册 AssetManager。完工=美术平台选 game-k 出台账·audit 黄旗消。
 > 备注：t3-slot-payout 下沉本身是好活（Lead 后补验收）；本单只管美术接入。
 
-### REQ-G-美术台账接入 · game-g 美术资源数据配置驱动到台账（PST 2026-07-13 提·Lead 评审通过） · [2026-07-13] · PST 提需求 → **指派：Opus 档 session（game-g 程序B 域·LayoutNode 表现层）** · status: **open** · 优先级: **P1（出口游戏=D+G·7·29 美术线·audit 黄旗存量欠账）** · 类型: 手册整改（编译期游戏美术接入·REQ-K 同款）
+### REQ-G-美术台账接入 · game-g 美术资源数据配置驱动到台账（PST 2026-07-13 提·Lead 评审通过） · [2026-07-13] · PST 提需求 → **指派：PST（其 session 已自行开工·763738c5 步1=SVG 落盘+索引脚本·后续步照本 spec 对齐）·Lead 验收** · status: **open（施工中）** · 优先级: **P1（出口游戏=D+G·7·29 美术线·audit 黄旗存量欠账）** · 类型: 手册整改（编译期游戏美术接入·REQ-K 同款）
 > **Lead 评审**：该做。game-g 现状=纯程序化 SVG 底纹（`art-textures.ts` data-URI 喂 Panel.bgTexture/牌面·双皮=fill/stroke 令牌）——零台账零皮肤槽，与 game-k 整改前同模式；07-13 的通用工具（`scripts/game-blueprint-to-ledger.mjs`·58539995）已实证 game-g「代码驱动无单一蓝图」走不了干净路径，必须 per-game 接线。**无新引擎能力需求**，全程照 `docs/playbooks/art-pipeline.md` 编译期三行 + game-q/game-k 样板施工。
 > **spec（照图施工·完工标 ✅ 待 Lead 验收）**：
 > ① **台账推导脚本** `scripts/game-g-art-requirements.mjs`（照 `game-q-art-requirements.mjs` 样板）：枚举视觉件清单——主页牌桌底纹/牌面（军衔×玄铁金+锦霞双皮）/主将「将」艺术字衬底/对决三栏特写件/3D 骰（model3d 类·列行即可）/战役图/HUD 面板底纹（来源=art-textures.ts 各导出 + home-screen/turn-battle-screen/campaign-screen 的视觉消费点）→ 产 `public/games/game-g/art/art-ledger.json`（deriveRequirements schema·status='needs-art'·每行详细英文描述+规格+当前程序化占位描述）。
