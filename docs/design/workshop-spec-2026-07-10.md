@@ -146,7 +146,7 @@ owner 实证：AI 卡带对话改稿后「无法加载游戏」且无原因—�
 背景：owner 把「能出复杂的东西」升为第一要素（弱模型尺子降级），怕 7·29 前词表累积不够。两件：
 ① **capgap 快速通道**（features.capgap 可关）：agent 表达不了 → ```capgap 提案围栏 → cap-gaps 台账 +
 `GET /api/capgaps` + 对话留痕——「发现缺口→立单」机器直达，下沉仍归 Lead 裁决。② **TS 例外开关**
-（features.tsCarts **默认关=隐藏**）：卡带 ⚡ 打勾（POST flags）→ pe 对话可提议 logic.ts（cartCapability
+（features.tsCarts **默认关=隐藏；07-13 转正=默认开·常驻卡带选项·打开弹记债 warning**）：卡带 ⚡ 打勾（POST flags）→ pe 对话可提议 logic.ts（cartCapability
 契约·系统词带世界 API 样例与确定性红线）→ **cart-logic-check 装载门**（模块+契约+合体 2 tick）→
 ✔ 应用 PUT logic（版本化·空串撤除）→ 运行器 hasLogic 合体装载（dev 线）。记债明示（列表旗+勾旁红字）。
 manifest 仍纯数据；自由 TS（代码进 JSON/绕门）仍是禁区。冒烟 ⑬ 16 断言（101→117）。

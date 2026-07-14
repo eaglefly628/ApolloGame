@@ -427,15 +427,19 @@ try:
     st12, _dd4 = req('DELETE', '/api/library/BAD..SLUG')
     check(st12 in (400, 404), '坏 slug 拒')
 
-    print('⑬ TS 例外开关 + capgap 快速通道（owner 07-11 双拍板·REQ-ARCH）')
-    # 功能开关默认态：capgap 开、tsCarts 关（隐藏开关）
+    print('⑬ TS 例外开关 + capgap 快速通道（owner 07-11 双拍板·07-13 开关转正=默认开）')
+    # 功能开关默认态：capgap 开、tsCarts 开（owner 07-13「放进卡带选项」·仍可配置/环境关停）
     _, ft = req('GET', '/api/features')
-    check(ft.get('success') and ft.get('capgap') is True and ft.get('tsCarts') is False,
-          'features 默认态（capgap 开 · tsCarts 关=隐藏）')
-    st13, _f1 = req('POST', f'/api/library/{SLUG}/flags', {'allowTs': True})
-    check(st13 == 403, 'tsCarts 关时打勾被拒（403）')
-    st13, _l0 = req('PUT', f'/api/library/{SLUG}/logic', {'content': 'x'})
-    check(st13 == 403, 'tsCarts 关时 PUT logic 被拒（403）')
+    check(ft.get('success') and ft.get('capgap') is True and ft.get('tsCarts') is True,
+          'features 默认态（capgap 开 · tsCarts 开=卡带选项级·壳打开时弹 warning）')
+    os.environ['APOLLO_FEATURE_TSCARTS'] = '0'  # 显式关停仍然有效（配置可关原则）
+    try:
+        st13, _f1 = req('POST', f'/api/library/{SLUG}/flags', {'allowTs': True})
+        check(st13 == 403, '显式关停时打勾被拒（403）')
+        st13, _l0 = req('PUT', f'/api/library/{SLUG}/logic', {'content': 'x'})
+        check(st13 == 403, '显式关停时 PUT logic 被拒（403）')
+    finally:
+        os.environ.pop('APOLLO_FEATURE_TSCARTS', None)
     # capgap：围栏解析（纯函数）+ mock 全链记台账
     rest, gap = apollo._split_capgap('说不行。\n```capgap\n{"title": "T", "need": "N", "proposal": "P", "acceptance": "A"}\n```\n完。')
     check(gap and gap['title'] == 'T' and '说不行' in rest and 'capgap' not in rest, 'capgap 围栏解析（对白剥净）')

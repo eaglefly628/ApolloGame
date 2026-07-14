@@ -2070,6 +2070,12 @@ class Component extends DCLogic {
       toggleAllowTs: () => {
         const st = this.state;
         if (!st.editSlug) return;
+        // 打开时 warning（owner 07-13「放进卡带选项·打开提一句 warning」）；关闭不拦。
+        if (!st.editAllowTs && !window.confirm(
+          '⚠ 打开 TS 例外？\n\n允许 AI 为这盘卡带写 logic.ts（代码驱动）。代价：\n' +
+          '· 这盘游戏退出回放 / 一键换皮 / bench 体检保证（记债）\n' +
+          '· 代码只在开发线（vite）可跑，静态发布包不执行\n' +
+          '· 落盘仍过引擎装载门，坏代码进不了库\n\n数据表达得了的尽量还是用数据。确定打开？')) return;
         fetch('/api/library/' + st.editSlug + '/flags', { method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ allowTs: !st.editAllowTs }) })
           .then(r => r.json()).then(d => {

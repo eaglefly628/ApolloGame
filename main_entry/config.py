@@ -41,9 +41,10 @@ def _config_model(pid: str):
 
 # ── 功能开关（owner 07-11 双拍板·REQ-ARCH）──────────────────────────
 # capgap：agent 遇词表表达不了 → 产结构化能力提案（缺口→强模型下沉快速通道）。默认开、可关。
-# tsCarts：TS 例外卡带（展示游戏打勾允许 logic.ts）。默认关——这就是 owner 要的「隐藏开关」：
-#   配置 .apollo-config.json {"features":{"tsCarts":true}} 或环境 APOLLO_FEATURE_TSCARTS=1 才现形。
-_FEATURE_DEFAULTS = {'capgap': True, 'tsCarts': False}
+# tsCarts：TS 例外卡带（打勾允许 logic.ts）。owner 07-13 转正：默认开=开关常驻卡带选项
+#   （打开时壳弹 warning 提示记债）；仍可全局关停：配置 {"features":{"tsCarts":false}}
+#   或环境 APOLLO_FEATURE_TSCARTS=0（配置可关原则不变）。
+_FEATURE_DEFAULTS = {'capgap': True, 'tsCarts': True}
 
 def _features() -> dict:
     cfg = _load_config().get('features')
