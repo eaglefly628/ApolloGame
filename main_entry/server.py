@@ -145,6 +145,22 @@ class APIHandler(BaseHTTPRequestHandler):
                  '.ogg': 'audio/ogg'}.get(target.suffix.lower(), 'application/octet-stream')
         self._send_file(target, ctype)
 
+    def _serve_public_art(self, path: str) -> None:
+        """GET /art/... → 只读伺服 public/art/**（内置代码游戏按 URL 引用的真美术·如 game-d 的
+        /art/game-d/dice/*.png·美术台账 servedPath 同源可显）。路径穿越防护同 _serve_public_games。"""
+        base = (ROOT / 'public' / 'art').resolve()
+        target = (base / path[len('/art/'):]).resolve()
+        try:
+            target.relative_to(base)
+        except ValueError:
+            self.send_response(403); self.end_headers(); return
+        if not target.is_file():
+            self.send_response(404); self.end_headers(); return
+        ctype = {'.json': 'application/json; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp',
+                 '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml',
+                 '.glb': 'model/gltf-binary'}.get(target.suffix.lower(), 'application/octet-stream')
+        self._send_file(target, ctype)
+
     def _serve_package_download(self, jid: str) -> None:
         """GET /api/package/download?id=<jid> → 已打包产物（按 jid 取 job['artifact']）。
         job 未完成/失败/无产物 → JSON 报错；成功 → 按扩展名给 content-type + attachment 下发。"""
@@ -224,6 +240,10 @@ class APIHandler(BaseHTTPRequestHandler):
             return
 
         # 共享免费资产库只读伺服（素材库屏·FreeArtLib index.json + 缩略图同源可取）。
+        if path.startswith('/art/'):
+            self._serve_public_art(path)
+            return
+
         if path.startswith('/assets/'):
             self._serve_assets(path)
             return

@@ -1,0 +1,3330 @@
+{
+  "version": 1,
+  "game": "game-d",
+  "mode": "authored-inventory",
+  "count": 83,
+  "instances": 83,
+  "rows": [
+    {
+      "no": "art-01",
+      "desc": "暗珠 元素法阵图标（圆形符号·法阵环）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "elements/an",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "元素法阵图标 an",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/elements/an.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "elements/an"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》元素法阵图标·暗珠 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/elements/an.png",
+        "localId": "game-d/elements/an"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "暗珠 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-02",
+      "desc": "风纹 元素法阵图标（圆形符号·法阵环）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "elements/feng",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "元素法阵图标 feng",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/elements/feng.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "elements/feng"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》元素法阵图标·风纹 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/elements/feng.png",
+        "localId": "game-d/elements/feng"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "风纹 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-03",
+      "desc": "火焰 元素法阵图标（圆形符号·法阵环）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "elements/huo",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "元素法阵图标 huo",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/elements/huo.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "elements/huo"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》元素法阵图标·火焰 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/elements/huo.png",
+        "localId": "game-d/elements/huo"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "火焰 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-04",
+      "desc": "闪电 元素法阵图标（圆形符号·法阵环）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "elements/lei",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "元素法阵图标 lei",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/elements/lei.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "elements/lei"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》元素法阵图标·闪电 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/elements/lei.png",
+        "localId": "game-d/elements/lei"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "闪电 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-05",
+      "desc": "木叶 元素法阵图标（圆形符号·法阵环）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "elements/mu",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "元素法阵图标 mu",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/elements/mu.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "elements/mu"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》元素法阵图标·木叶 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/elements/mu.png",
+        "localId": "game-d/elements/mu"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "木叶 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-06",
+      "desc": "水波 元素法阵图标（圆形符号·法阵环）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "elements/shui",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "元素法阵图标 shui",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/elements/shui.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "elements/shui"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》元素法阵图标·水波 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/elements/shui.png",
+        "localId": "game-d/elements/shui"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "水波 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-07",
+      "desc": "暗珠 元素法阵图标（圆形符号·法阵环）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "element-runes/an",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "元素法阵图标 an",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/element-runes/an.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "element-runes/an"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》元素法阵图标·暗珠 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/element-runes/an.png",
+        "localId": "game-d/element-runes/an"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "暗珠 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-08",
+      "desc": "风纹 元素法阵图标（圆形符号·法阵环）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "element-runes/feng",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "元素法阵图标 feng",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/element-runes/feng.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "element-runes/feng"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》元素法阵图标·风纹 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/element-runes/feng.png",
+        "localId": "game-d/element-runes/feng"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "风纹 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-09",
+      "desc": "火焰 元素法阵图标（圆形符号·法阵环）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "element-runes/huo",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "元素法阵图标 huo",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/element-runes/huo.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "element-runes/huo"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》元素法阵图标·火焰 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/element-runes/huo.png",
+        "localId": "game-d/element-runes/huo"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "火焰 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-10",
+      "desc": "闪电 元素法阵图标（圆形符号·法阵环）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "element-runes/lei",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "元素法阵图标 lei",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/element-runes/lei.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "element-runes/lei"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》元素法阵图标·闪电 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/element-runes/lei.png",
+        "localId": "game-d/element-runes/lei"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "闪电 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-11",
+      "desc": "木叶 元素法阵图标（圆形符号·法阵环）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "element-runes/mu",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "元素法阵图标 mu",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/element-runes/mu.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "element-runes/mu"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》元素法阵图标·木叶 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/element-runes/mu.png",
+        "localId": "game-d/element-runes/mu"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "木叶 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-12",
+      "desc": "水波 元素法阵图标（圆形符号·法阵环）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "element-runes/shui",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "元素法阵图标 shui",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/element-runes/shui.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "element-runes/shui"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》元素法阵图标·水波 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/element-runes/shui.png",
+        "localId": "game-d/element-runes/shui"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "水波 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-13",
+      "desc": "暗珠 元素骰面·点数 1",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/an_1",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 an_1",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/an_1.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/an_1"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·暗珠 元素骰面·点数 1·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/an_1.png",
+        "localId": "game-d/dice/an_1"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "暗珠 元素骰面·点数 1，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-14",
+      "desc": "暗珠 元素骰面·点数 2",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/an_2",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 an_2",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/an_2.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/an_2"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·暗珠 元素骰面·点数 2·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/an_2.png",
+        "localId": "game-d/dice/an_2"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "暗珠 元素骰面·点数 2，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-15",
+      "desc": "暗珠 元素骰面·点数 3",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/an_3",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 an_3",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/an_3.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/an_3"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·暗珠 元素骰面·点数 3·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/an_3.png",
+        "localId": "game-d/dice/an_3"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "暗珠 元素骰面·点数 3，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-16",
+      "desc": "暗珠 元素骰面·点数 4",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/an_4",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 an_4",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/an_4.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/an_4"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·暗珠 元素骰面·点数 4·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/an_4.png",
+        "localId": "game-d/dice/an_4"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "暗珠 元素骰面·点数 4，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-17",
+      "desc": "暗珠 元素骰面·点数 5",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/an_5",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 an_5",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/an_5.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/an_5"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·暗珠 元素骰面·点数 5·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/an_5.png",
+        "localId": "game-d/dice/an_5"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "暗珠 元素骰面·点数 5，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-18",
+      "desc": "暗珠 元素骰面·点数 6",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/an_6",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 an_6",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/an_6.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/an_6"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·暗珠 元素骰面·点数 6·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/an_6.png",
+        "localId": "game-d/dice/an_6"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "暗珠 元素骰面·点数 6，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-19",
+      "desc": "风纹 元素骰面·点数 1",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/feng_1",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 feng_1",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/feng_1.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/feng_1"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·风纹 元素骰面·点数 1·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/feng_1.png",
+        "localId": "game-d/dice/feng_1"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "风纹 元素骰面·点数 1，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-20",
+      "desc": "风纹 元素骰面·点数 2",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/feng_2",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 feng_2",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/feng_2.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/feng_2"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·风纹 元素骰面·点数 2·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/feng_2.png",
+        "localId": "game-d/dice/feng_2"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "风纹 元素骰面·点数 2，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-21",
+      "desc": "风纹 元素骰面·点数 3",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/feng_3",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 feng_3",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/feng_3.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/feng_3"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·风纹 元素骰面·点数 3·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/feng_3.png",
+        "localId": "game-d/dice/feng_3"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "风纹 元素骰面·点数 3，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-22",
+      "desc": "风纹 元素骰面·点数 4",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/feng_4",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 feng_4",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/feng_4.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/feng_4"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·风纹 元素骰面·点数 4·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/feng_4.png",
+        "localId": "game-d/dice/feng_4"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "风纹 元素骰面·点数 4，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-23",
+      "desc": "风纹 元素骰面·点数 5",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/feng_5",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 feng_5",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/feng_5.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/feng_5"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·风纹 元素骰面·点数 5·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/feng_5.png",
+        "localId": "game-d/dice/feng_5"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "风纹 元素骰面·点数 5，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-24",
+      "desc": "风纹 元素骰面·点数 6",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/feng_6",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 feng_6",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/feng_6.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/feng_6"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·风纹 元素骰面·点数 6·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/feng_6.png",
+        "localId": "game-d/dice/feng_6"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "风纹 元素骰面·点数 6，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-25",
+      "desc": "火焰 元素骰面·点数 1",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/huo_1",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 huo_1",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/huo_1.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/huo_1"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·火焰 元素骰面·点数 1·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/huo_1.png",
+        "localId": "game-d/dice/huo_1"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "火焰 元素骰面·点数 1，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-26",
+      "desc": "火焰 元素骰面·点数 2",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/huo_2",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 huo_2",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/huo_2.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/huo_2"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·火焰 元素骰面·点数 2·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/huo_2.png",
+        "localId": "game-d/dice/huo_2"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "火焰 元素骰面·点数 2，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-27",
+      "desc": "火焰 元素骰面·点数 3",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/huo_3",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 huo_3",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/huo_3.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/huo_3"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·火焰 元素骰面·点数 3·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/huo_3.png",
+        "localId": "game-d/dice/huo_3"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "火焰 元素骰面·点数 3，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-28",
+      "desc": "火焰 元素骰面·点数 4",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/huo_4",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 huo_4",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/huo_4.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/huo_4"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·火焰 元素骰面·点数 4·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/huo_4.png",
+        "localId": "game-d/dice/huo_4"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "火焰 元素骰面·点数 4，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-29",
+      "desc": "火焰 元素骰面·点数 5",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/huo_5",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 huo_5",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/huo_5.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/huo_5"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·火焰 元素骰面·点数 5·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/huo_5.png",
+        "localId": "game-d/dice/huo_5"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "火焰 元素骰面·点数 5，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-30",
+      "desc": "火焰 元素骰面·点数 6",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/huo_6",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 huo_6",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/huo_6.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/huo_6"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·火焰 元素骰面·点数 6·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/huo_6.png",
+        "localId": "game-d/dice/huo_6"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "火焰 元素骰面·点数 6，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-31",
+      "desc": "闪电 元素骰面·点数 1",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/lei_1",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 lei_1",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/lei_1.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/lei_1"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·闪电 元素骰面·点数 1·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/lei_1.png",
+        "localId": "game-d/dice/lei_1"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "闪电 元素骰面·点数 1，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-32",
+      "desc": "闪电 元素骰面·点数 2",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/lei_2",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 lei_2",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/lei_2.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/lei_2"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·闪电 元素骰面·点数 2·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/lei_2.png",
+        "localId": "game-d/dice/lei_2"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "闪电 元素骰面·点数 2，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-33",
+      "desc": "闪电 元素骰面·点数 3",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/lei_3",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 lei_3",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/lei_3.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/lei_3"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·闪电 元素骰面·点数 3·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/lei_3.png",
+        "localId": "game-d/dice/lei_3"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "闪电 元素骰面·点数 3，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-34",
+      "desc": "闪电 元素骰面·点数 4",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/lei_4",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 lei_4",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/lei_4.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/lei_4"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·闪电 元素骰面·点数 4·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/lei_4.png",
+        "localId": "game-d/dice/lei_4"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "闪电 元素骰面·点数 4，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-35",
+      "desc": "闪电 元素骰面·点数 5",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/lei_5",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 lei_5",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/lei_5.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/lei_5"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·闪电 元素骰面·点数 5·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/lei_5.png",
+        "localId": "game-d/dice/lei_5"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "闪电 元素骰面·点数 5，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-36",
+      "desc": "闪电 元素骰面·点数 6",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/lei_6",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 lei_6",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/lei_6.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/lei_6"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·闪电 元素骰面·点数 6·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/lei_6.png",
+        "localId": "game-d/dice/lei_6"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "闪电 元素骰面·点数 6，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-37",
+      "desc": "木叶 元素骰面·点数 1",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/mu_1",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 mu_1",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/mu_1.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/mu_1"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·木叶 元素骰面·点数 1·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/mu_1.png",
+        "localId": "game-d/dice/mu_1"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "木叶 元素骰面·点数 1，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-38",
+      "desc": "木叶 元素骰面·点数 2",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/mu_2",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 mu_2",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/mu_2.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/mu_2"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·木叶 元素骰面·点数 2·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/mu_2.png",
+        "localId": "game-d/dice/mu_2"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "木叶 元素骰面·点数 2，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-39",
+      "desc": "木叶 元素骰面·点数 3",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/mu_3",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 mu_3",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/mu_3.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/mu_3"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·木叶 元素骰面·点数 3·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/mu_3.png",
+        "localId": "game-d/dice/mu_3"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "木叶 元素骰面·点数 3，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-40",
+      "desc": "木叶 元素骰面·点数 4",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/mu_4",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 mu_4",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/mu_4.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/mu_4"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·木叶 元素骰面·点数 4·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/mu_4.png",
+        "localId": "game-d/dice/mu_4"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "木叶 元素骰面·点数 4，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-41",
+      "desc": "木叶 元素骰面·点数 5",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/mu_5",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 mu_5",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/mu_5.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/mu_5"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·木叶 元素骰面·点数 5·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/mu_5.png",
+        "localId": "game-d/dice/mu_5"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "木叶 元素骰面·点数 5，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-42",
+      "desc": "木叶 元素骰面·点数 6",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/mu_6",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 mu_6",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/mu_6.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/mu_6"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·木叶 元素骰面·点数 6·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/mu_6.png",
+        "localId": "game-d/dice/mu_6"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "木叶 元素骰面·点数 6，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-43",
+      "desc": "水波 元素骰面·点数 1",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/shui_1",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 shui_1",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/shui_1.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/shui_1"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·水波 元素骰面·点数 1·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/shui_1.png",
+        "localId": "game-d/dice/shui_1"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "水波 元素骰面·点数 1，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-44",
+      "desc": "水波 元素骰面·点数 2",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/shui_2",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 shui_2",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/shui_2.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/shui_2"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·水波 元素骰面·点数 2·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/shui_2.png",
+        "localId": "game-d/dice/shui_2"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "水波 元素骰面·点数 2，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-45",
+      "desc": "水波 元素骰面·点数 3",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/shui_3",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 shui_3",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/shui_3.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/shui_3"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·水波 元素骰面·点数 3·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/shui_3.png",
+        "localId": "game-d/dice/shui_3"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "水波 元素骰面·点数 3，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-46",
+      "desc": "水波 元素骰面·点数 4",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/shui_4",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 shui_4",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/shui_4.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/shui_4"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·水波 元素骰面·点数 4·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/shui_4.png",
+        "localId": "game-d/dice/shui_4"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "水波 元素骰面·点数 4，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-47",
+      "desc": "水波 元素骰面·点数 5",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/shui_5",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 shui_5",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/shui_5.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/shui_5"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·水波 元素骰面·点数 5·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/shui_5.png",
+        "localId": "game-d/dice/shui_5"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "水波 元素骰面·点数 5，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-48",
+      "desc": "水波 元素骰面·点数 6",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/shui_6",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 shui_6",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/shui_6.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/shui_6"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·水波 元素骰面·点数 6·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/shui_6.png",
+        "localId": "game-d/dice/shui_6"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "水波 元素骰面·点数 6，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-49",
+      "desc": "百搭 骰面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "dice/wild",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "骰面 wild",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/dice/wild.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "dice/wild"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》骰面·百搭 骰面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/dice/wild.png",
+        "localId": "game-d/dice/wild"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "百搭 骰面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-50",
+      "desc": "翠庭 层天空背景·暗调",
+      "kind": "bg",
+      "slot": {
+        "entity": "sky/cuiting_dark",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "天空背景 cuiting_dark",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/sky/cuiting_dark.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "sky/cuiting_dark"
+        ]
+      },
+      "spec": {
+        "w": 512,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》天空背景·翠庭 层天空背景·暗调·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/sky/cuiting_dark.png",
+        "localId": "game-d/sky/cuiting_dark"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "翠庭 层天空背景·暗调，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-51",
+      "desc": "翠庭 层天空背景·暖调",
+      "kind": "bg",
+      "slot": {
+        "entity": "sky/cuiting_warm",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "天空背景 cuiting_warm",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/sky/cuiting_warm.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "sky/cuiting_warm"
+        ]
+      },
+      "spec": {
+        "w": 512,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》天空背景·翠庭 层天空背景·暖调·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/sky/cuiting_warm.png",
+        "localId": "game-d/sky/cuiting_warm"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "翠庭 层天空背景·暖调，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-52",
+      "desc": "古殿 层天空背景·暗调",
+      "kind": "bg",
+      "slot": {
+        "entity": "sky/gudian_dark",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "天空背景 gudian_dark",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/sky/gudian_dark.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "sky/gudian_dark"
+        ]
+      },
+      "spec": {
+        "w": 512,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》天空背景·古殿 层天空背景·暗调·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/sky/gudian_dark.png",
+        "localId": "game-d/sky/gudian_dark"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "古殿 层天空背景·暗调，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-53",
+      "desc": "古殿 层天空背景·暖调",
+      "kind": "bg",
+      "slot": {
+        "entity": "sky/gudian_warm",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "天空背景 gudian_warm",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/sky/gudian_warm.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "sky/gudian_warm"
+        ]
+      },
+      "spec": {
+        "w": 512,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》天空背景·古殿 层天空背景·暖调·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/sky/gudian_warm.png",
+        "localId": "game-d/sky/gudian_warm"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "古殿 层天空背景·暖调，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-54",
+      "desc": "晶顶 层天空背景·暗调",
+      "kind": "bg",
+      "slot": {
+        "entity": "sky/jinding_dark",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "天空背景 jinding_dark",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/sky/jinding_dark.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "sky/jinding_dark"
+        ]
+      },
+      "spec": {
+        "w": 512,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》天空背景·晶顶 层天空背景·暗调·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/sky/jinding_dark.png",
+        "localId": "game-d/sky/jinding_dark"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "晶顶 层天空背景·暗调，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-55",
+      "desc": "晶顶 层天空背景·暖调",
+      "kind": "bg",
+      "slot": {
+        "entity": "sky/jinding_warm",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "天空背景 jinding_warm",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/sky/jinding_warm.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "sky/jinding_warm"
+        ]
+      },
+      "spec": {
+        "w": 512,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》天空背景·晶顶 层天空背景·暖调·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/sky/jinding_warm.png",
+        "localId": "game-d/sky/jinding_warm"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "晶顶 层天空背景·暖调，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-56",
+      "desc": "熔心 层天空背景·暗调",
+      "kind": "bg",
+      "slot": {
+        "entity": "sky/rongxin_dark",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "天空背景 rongxin_dark",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/sky/rongxin_dark.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "sky/rongxin_dark"
+        ]
+      },
+      "spec": {
+        "w": 512,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》天空背景·熔心 层天空背景·暗调·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/sky/rongxin_dark.png",
+        "localId": "game-d/sky/rongxin_dark"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "熔心 层天空背景·暗调，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-57",
+      "desc": "熔心 层天空背景·暖调",
+      "kind": "bg",
+      "slot": {
+        "entity": "sky/rongxin_warm",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "天空背景 rongxin_warm",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/sky/rongxin_warm.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "sky/rongxin_warm"
+        ]
+      },
+      "spec": {
+        "w": 512,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》天空背景·熔心 层天空背景·暖调·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/sky/rongxin_warm.png",
+        "localId": "game-d/sky/rongxin_warm"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "熔心 层天空背景·暖调，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-58",
+      "desc": "翠庭 层体素贴图·侧面",
+      "kind": "texture",
+      "slot": {
+        "entity": "tiles/cuiting_side",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "体素贴图 cuiting_side",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/tiles/cuiting_side.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "tiles/cuiting_side"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》体素贴图·翠庭 层体素贴图·侧面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/tiles/cuiting_side.png",
+        "localId": "game-d/tiles/cuiting_side"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "翠庭 层体素贴图·侧面，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-59",
+      "desc": "翠庭 层体素贴图·顶面",
+      "kind": "texture",
+      "slot": {
+        "entity": "tiles/cuiting_top",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "体素贴图 cuiting_top",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/tiles/cuiting_top.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "tiles/cuiting_top"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》体素贴图·翠庭 层体素贴图·顶面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/tiles/cuiting_top.png",
+        "localId": "game-d/tiles/cuiting_top"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "翠庭 层体素贴图·顶面，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-60",
+      "desc": "翠庭 层体素贴图·墙体",
+      "kind": "texture",
+      "slot": {
+        "entity": "tiles/cuiting_wall",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "体素贴图 cuiting_wall",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/tiles/cuiting_wall.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "tiles/cuiting_wall"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》体素贴图·翠庭 层体素贴图·墙体·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/tiles/cuiting_wall.png",
+        "localId": "game-d/tiles/cuiting_wall"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "翠庭 层体素贴图·墙体，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-61",
+      "desc": "古殿 层体素贴图·侧面",
+      "kind": "texture",
+      "slot": {
+        "entity": "tiles/gudian_side",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "体素贴图 gudian_side",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/tiles/gudian_side.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "tiles/gudian_side"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》体素贴图·古殿 层体素贴图·侧面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/tiles/gudian_side.png",
+        "localId": "game-d/tiles/gudian_side"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "古殿 层体素贴图·侧面，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-62",
+      "desc": "古殿 层体素贴图·顶面",
+      "kind": "texture",
+      "slot": {
+        "entity": "tiles/gudian_top",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "体素贴图 gudian_top",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/tiles/gudian_top.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "tiles/gudian_top"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》体素贴图·古殿 层体素贴图·顶面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/tiles/gudian_top.png",
+        "localId": "game-d/tiles/gudian_top"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "古殿 层体素贴图·顶面，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-63",
+      "desc": "古殿 层体素贴图·墙体",
+      "kind": "texture",
+      "slot": {
+        "entity": "tiles/gudian_wall",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "体素贴图 gudian_wall",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/tiles/gudian_wall.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "tiles/gudian_wall"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》体素贴图·古殿 层体素贴图·墙体·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/tiles/gudian_wall.png",
+        "localId": "game-d/tiles/gudian_wall"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "古殿 层体素贴图·墙体，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-64",
+      "desc": "晶顶 层体素贴图·侧面",
+      "kind": "texture",
+      "slot": {
+        "entity": "tiles/jinding_side",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "体素贴图 jinding_side",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/tiles/jinding_side.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "tiles/jinding_side"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》体素贴图·晶顶 层体素贴图·侧面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/tiles/jinding_side.png",
+        "localId": "game-d/tiles/jinding_side"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "晶顶 层体素贴图·侧面，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-65",
+      "desc": "晶顶 层体素贴图·顶面",
+      "kind": "texture",
+      "slot": {
+        "entity": "tiles/jinding_top",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "体素贴图 jinding_top",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/tiles/jinding_top.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "tiles/jinding_top"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》体素贴图·晶顶 层体素贴图·顶面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/tiles/jinding_top.png",
+        "localId": "game-d/tiles/jinding_top"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "晶顶 层体素贴图·顶面，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-66",
+      "desc": "晶顶 层体素贴图·墙体",
+      "kind": "texture",
+      "slot": {
+        "entity": "tiles/jinding_wall",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "体素贴图 jinding_wall",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/tiles/jinding_wall.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "tiles/jinding_wall"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》体素贴图·晶顶 层体素贴图·墙体·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/tiles/jinding_wall.png",
+        "localId": "game-d/tiles/jinding_wall"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "晶顶 层体素贴图·墙体，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-67",
+      "desc": "熔心 层体素贴图·侧面",
+      "kind": "texture",
+      "slot": {
+        "entity": "tiles/rongxin_side",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "体素贴图 rongxin_side",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/tiles/rongxin_side.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "tiles/rongxin_side"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》体素贴图·熔心 层体素贴图·侧面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/tiles/rongxin_side.png",
+        "localId": "game-d/tiles/rongxin_side"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "熔心 层体素贴图·侧面，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-68",
+      "desc": "熔心 层体素贴图·顶面",
+      "kind": "texture",
+      "slot": {
+        "entity": "tiles/rongxin_top",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "体素贴图 rongxin_top",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/tiles/rongxin_top.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "tiles/rongxin_top"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》体素贴图·熔心 层体素贴图·顶面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/tiles/rongxin_top.png",
+        "localId": "game-d/tiles/rongxin_top"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "熔心 层体素贴图·顶面，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-69",
+      "desc": "熔心 层体素贴图·墙体",
+      "kind": "texture",
+      "slot": {
+        "entity": "tiles/rongxin_wall",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "体素贴图 rongxin_wall",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/tiles/rongxin_wall.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "tiles/rongxin_wall"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": false
+      },
+      "context": "game-d《骰途》体素贴图·熔心 层体素贴图·墙体·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/tiles/rongxin_wall.png",
+        "localId": "game-d/tiles/rongxin_wall"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "熔心 层体素贴图·墙体，骰途《Dice & Dungeons》水墨卡通风，满幅"
+    },
+    {
+      "no": "art-70",
+      "desc": "技能·背包 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/ability_bag",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 ability_bag",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/ability_bag.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/ability_bag"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·技能·背包 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/ability_bag.png",
+        "localId": "game-d/cards/ability_bag"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "技能·背包 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-71",
+      "desc": "ability_fire 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/ability_fire",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 ability_fire",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/ability_fire.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/ability_fire"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·ability_fire 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/ability_fire.png",
+        "localId": "game-d/cards/ability_fire"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "ability_fire 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-72",
+      "desc": "技能·重投 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/ability_reroll",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 ability_reroll",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/ability_reroll.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/ability_reroll"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·技能·重投 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/ability_reroll.png",
+        "localId": "game-d/cards/ability_reroll"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "技能·重投 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-73",
+      "desc": "技能·护盾 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/ability_shield",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 ability_shield",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/ability_shield.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/ability_shield"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·技能·护盾 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/ability_shield.png",
+        "localId": "game-d/cards/ability_shield"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "技能·护盾 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-74",
+      "desc": "卡背 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/back",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 back",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/back.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/back"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·卡背 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/back.png",
+        "localId": "game-d/cards/back"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "卡背 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-75",
+      "desc": "百搭骰 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/baida",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 baida",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/baida.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/baida"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·百搭骰 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/baida.png",
+        "localId": "game-d/cards/baida"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "百搭骰 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-76",
+      "desc": "冷静骰 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/lengjing",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 lengjing",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/lengjing.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/lengjing"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·冷静骰 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/lengjing.png",
+        "localId": "game-d/cards/lengjing"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "冷静骰 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-77",
+      "desc": "连锁骰 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/liansuo",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 liansuo",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/liansuo.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/liansuo"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·连锁骰 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/liansuo.png",
+        "localId": "game-d/cards/liansuo"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "连锁骰 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-78",
+      "desc": "熔岩骰 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/rongyan",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 rongyan",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/rongyan.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/rongyan"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·熔岩骰 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/rongyan.png",
+        "localId": "game-d/cards/rongyan"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "熔岩骰 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-79",
+      "desc": "守护骰 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/shouhu",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 shouhu",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/shouhu.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/shouhu"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·守护骰 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/shouhu.png",
+        "localId": "game-d/cards/shouhu"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "守护骰 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-80",
+      "desc": "双子骰 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/shuangzi",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 shuangzi",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/shuangzi.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/shuangzi"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·双子骰 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/shuangzi.png",
+        "localId": "game-d/cards/shuangzi"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "双子骰 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-81",
+      "desc": "增幅骰 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/zengfu",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 zengfu",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/zengfu.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/zengfu"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·增幅骰 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/zengfu.png",
+        "localId": "game-d/cards/zengfu"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "增幅骰 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-82",
+      "desc": "转化骰 卡面",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cards/zhuanhua",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "战利品卡面 zhuanhua",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/cards/zhuanhua.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "cards/zhuanhua"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 588,
+        "transparent": true
+      },
+      "context": "game-d《骰途》战利品卡面·转化骰 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/cards/zhuanhua.png",
+        "localId": "game-d/cards/zhuanhua"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "转化骰 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    },
+    {
+      "no": "art-83",
+      "desc": "加性辉光贴图（柔光）",
+      "kind": "texture",
+      "slot": {
+        "entity": "fx/glow",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "特效贴图 glow",
+      "placeholder": {
+        "current": "已交付真手绘图（/art/game-d/fx/glow.png）",
+        "source": "authored",
+        "count": 1,
+        "instances": [
+          "fx/glow"
+        ]
+      },
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "context": "game-d《骰途》特效贴图·加性辉光贴图（柔光）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "authored",
+        "model": "Cloud Design（骰途委托）",
+        "prompt": null,
+        "servedPath": "/art/game-d/fx/glow.png",
+        "localId": "game-d/fx/glow"
+      },
+      "provenance": {
+        "generator": "game-d-authored",
+        "prompt": null,
+        "model": "Cloud Design",
+        "mock": false
+      },
+      "prompt": "加性辉光贴图（柔光），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+    }
+  ],
+  "artStyle": "水墨卡通·骰途《Dice & Dungeons》"
+}
