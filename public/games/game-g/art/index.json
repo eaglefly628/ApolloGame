@@ -1,0 +1,1223 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "game-g/hero/sA",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/AS.svg",
+      "description": "孙武（兵圣·春秋·齐/吴）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "sA"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/hA",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/AH.svg",
+      "description": "成吉思汗（一代天骄·13C·蒙古）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "hA"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/dA",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/AD.svg",
+      "description": "亚历山大大帝（征服者·BC4C·马其顿）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "dA"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/cA",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/AC.svg",
+      "description": "拿破仑（战争之神·18–19C·法国）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "cA"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/sK",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/KS.svg",
+      "description": "凯撒（高卢征服者·BC1C·罗马）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "sK"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/hK",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/KH.svg",
+      "description": "汉尼拔（战略之父·BC3C·迦太基）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "hK"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/dK",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/KD.svg",
+      "description": "韩信（兵仙·BC3C·汉）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "dK"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/cK",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/KC.svg",
+      "description": "白起（杀神·BC3C·秦）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "cK"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/sQ",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/QS.svg",
+      "description": "哈立德·伊本·瓦利德（真主之剑·7C·阿拉伯）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "sQ"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/hQ",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/QH.svg",
+      "description": "居鲁士大帝（万王之王·BC6C·波斯）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "hQ"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/dQ",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/QD.svg",
+      "description": "帖木儿（跛足征服者·14C·中亚）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "dQ"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/cQ",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/QC.svg",
+      "description": "速不台（常胜先锋·13C·蒙古）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "cQ"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/sJ",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/JS.svg",
+      "description": "腓特烈大帝（军事天才·18C·普鲁士）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "sJ"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/hJ",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/JH.svg",
+      "description": "西庇阿（征非者·BC3C·罗马）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "hJ"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/dJ",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/JD.svg",
+      "description": "苏沃洛夫（不败统帅·18C·俄国）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "dJ"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/cJ",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/JC.svg",
+      "description": "李靖（大唐军神·7C·唐）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "cJ"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/s10",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/10S.svg",
+      "description": "萨拉丁（伊斯兰之盾·12C·阿尤布）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "s10"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/h10",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/10H.svg",
+      "description": "古斯塔夫二世（近代战争之父·17C·瑞典）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "h10"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/d10",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/10D.svg",
+      "description": "霍去病（冠军侯·BC2C·汉）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "d10"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/c10",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/10C.svg",
+      "description": "李世民（天可汗·7C·唐）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "c10"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/s9",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/9S.svg",
+      "description": "朱可夫（胜利元帅·20C·苏联）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "s9"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/h9",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/9H.svg",
+      "description": "隆美尔（沙漠之狐·20C·德国）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "h9"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/d9",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/9D.svg",
+      "description": "项羽（西楚霸王·BC3C·楚）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "d9"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/c9",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/9C.svg",
+      "description": "贝利撒留（最后的罗马人·6C·拜占庭）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "c9"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/s8",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/8S.svg",
+      "description": "阿提拉（上帝之鞭·5C·匈人）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "s8"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/h8",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/8H.svg",
+      "description": "穆罕默德二世（征服者·15C·奥斯曼）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "h8"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/d8",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/8D.svg",
+      "description": "曼施坦因（闪击战策划·20C·德国）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "d8"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/c8",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/8C.svg",
+      "description": "岳飞（精忠武穆·12C·南宋）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "c8"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/s7",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/7S.svg",
+      "description": "威灵顿公爵（铁公爵·19C·英国）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "s7"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/h7",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/7H.svg",
+      "description": "纳尔逊（海上之王·18–19C·英国）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "h7"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/d7",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/7D.svg",
+      "description": "戚继光（抗倭名将·16C·明）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "d7"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/c7",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/7C.svg",
+      "description": "诸葛亮（卧龙·智圣·3C·蜀汉）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "c7"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/s6",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/6S.svg",
+      "description": "扬·杰士卡（独眼不败·15C·波希米亚）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "s6"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/h6",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/6H.svg",
+      "description": "马尔伯勒公爵（常胜公爵·18C·英国）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "h6"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/d6",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/6D.svg",
+      "description": "织田信长（第六天魔王·16C·日本）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "d6"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/c6",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/6C.svg",
+      "description": "卫青（长平侯·BC2C·汉）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "c6"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/s5",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/5S.svg",
+      "description": "查理曼（欧洲之父·8–9C·法兰克）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "s5"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/h5",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/5H.svg",
+      "description": "图拉真（最佳元首·2C·罗马）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "h5"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/d5",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/5D.svg",
+      "description": "苏莱曼大帝（立法者·16C·奥斯曼）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "d5"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/c5",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/5C.svg",
+      "description": "曹操（魏武·3C·汉/魏）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "c5"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/s4",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/4S.svg",
+      "description": "埃帕米农达斯（斜阵之父·BC4C·底比斯）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "s4"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/h4",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/4H.svg",
+      "description": "皮洛士（险胜之王·BC3C·伊庇鲁斯）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "h4"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/d4",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/4D.svg",
+      "description": "武田信玄（甲斐之虎·16C·日本）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "d4"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/c4",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/4C.svg",
+      "description": "吴起（兵家亚圣·BC4C·魏/楚）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "c4"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/s3",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/3S.svg",
+      "description": "列奥尼达（温泉关之王·BC5C·斯巴达）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "s3"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/h3",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/3H.svg",
+      "description": "罗伯特·李（南军统帅·19C·美国）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "h3"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/d3",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/3D.svg",
+      "description": "孙膑（智囊·BC4C·齐）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "d3"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/c3",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/3C.svg",
+      "description": "巴布尔（莫卧儿奠基者·16C·莫卧儿）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "c3"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/s2",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/2S.svg",
+      "description": "斯巴达克斯（角斗士之王·BC1C·罗马）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "s2"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/h2",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/2H.svg",
+      "description": "维钦托利（高卢之王·BC1C·高卢）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "h2"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/d2",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/2D.svg",
+      "description": "沙卡·祖鲁（非洲战王·19C·祖鲁）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "d2"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/hero/c2",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/portraits/2C.svg",
+      "description": "狮心王理查（狮心·12C·英格兰）名将立绘",
+      "category": "sprite.hero",
+      "tags": [
+        "game-g",
+        "hero",
+        "portrait",
+        "vector",
+        "c2"
+      ],
+      "source": "procedural(portraits.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "id": "game-g/tex/felt-brocade",
+      "type": "texture",
+      "status": "filled",
+      "path": "/games/game-g/art/textures/felt-brocade.svg",
+      "description": "绿呢牌桌底纹·钱币锁子纹",
+      "category": "texture.background",
+      "tags": [
+        "game-g",
+        "texture",
+        "felt",
+        "vector"
+      ],
+      "source": "procedural(art-textures.ts)",
+      "license": "proprietary",
+      "style": "vector.ink",
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "art-textures.ts",
+        "mock": false
+      }
+    }
+  ]
+}

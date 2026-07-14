@@ -1,0 +1,14 @@
+<svg viewBox="0 0 120 150" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <radialGradient id="hpcAeurobg" cx="50%" cy="34%" r="72%"><stop offset="0%" stop-color="#56be84" stop-opacity=".34"/><stop offset="62%" stop-color="#56be84" stop-opacity=".10"/><stop offset="100%" stop-color="#0c0f14" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect x="0" y="0" width="120" height="150" rx="10" fill="url(#hpcAeurobg)"/>
+    <line x1="90" y1="22" x2="72" y2="92" stroke="#2a2018" stroke-width="3" stroke-linecap="round"/><rect x="85" y="16" width="10" height="3" rx="1" fill="#56be84"/><path d="M89 18v6" stroke="#56be84" stroke-width="2"/>
+    <path d="M30 150v-18q0-26 30-30q30 4 30 30v18z" fill="#56be84" opacity=".22"/>
+    <path d="M40 150v-14q0-18 20-22q20 4 20 22v14z" fill="#56be84" opacity=".45"/>
+    <ellipse cx="60" cy="58" rx="13" ry="15" fill="#caa985"/>
+    <rect x="54" y="68" width="12" height="10" fill="#b8966f"/>
+    <path d="M42 44h36v14a18 18 0 0 1-36 0z" fill="#56be84"/><rect x="44" y="48" width="32" height="3" fill="#0c0f14"/><rect x="58" y="56" width="4" height="8" fill="#0c0f14"/><path d="M60 24l5 16h-10z" fill="#e8cd82"/>
+    <ellipse cx="55" cy="58" rx="2" ry="2.4" fill="#2a2018" opacity=".85"/><ellipse cx="65" cy="58" rx="2" ry="2.4" fill="#2a2018" opacity=".85"/>
+    <path d="M48 150v-2h24v2z" fill="#e8cd82" opacity=".6"/>
+  </svg>

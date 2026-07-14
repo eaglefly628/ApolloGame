@@ -1,0 +1,2077 @@
+{
+  "version": 1,
+  "game": "game-g",
+  "mode": "procedural-index",
+  "count": 53,
+  "instances": 53,
+  "rows": [
+    {
+      "no": "art-01",
+      "desc": "孙武（兵圣·春秋·齐/吴）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/AS",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "孙武 兵圣",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/AS"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》A♠ 名将立绘·孙武（兵圣·春秋·齐/吴）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/AS.svg",
+        "localId": "game-g/hero/sA"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "孙武（兵圣），春秋·齐/吴 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-02",
+      "desc": "成吉思汗（一代天骄·13C·蒙古）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/AH",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "成吉思汗 一代天骄",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/AH"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》A♥ 名将立绘·成吉思汗（一代天骄·13C·蒙古）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/AH.svg",
+        "localId": "game-g/hero/hA"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "成吉思汗（一代天骄），13C·蒙古 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-03",
+      "desc": "亚历山大大帝（征服者·BC4C·马其顿）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/AD",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "亚历山大大帝 征服者",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/AD"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》A♦ 名将立绘·亚历山大大帝（征服者·BC4C·马其顿）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/AD.svg",
+        "localId": "game-g/hero/dA"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "亚历山大大帝（征服者），BC4C·马其顿 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-04",
+      "desc": "拿破仑（战争之神·18–19C·法国）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/AC",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "拿破仑 战争之神",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/AC"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》A♣ 名将立绘·拿破仑（战争之神·18–19C·法国）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/AC.svg",
+        "localId": "game-g/hero/cA"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "拿破仑（战争之神），18–19C·法国 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-05",
+      "desc": "凯撒（高卢征服者·BC1C·罗马）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/KS",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "凯撒 高卢征服者",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/KS"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》K♠ 名将立绘·凯撒（高卢征服者·BC1C·罗马）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/KS.svg",
+        "localId": "game-g/hero/sK"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "凯撒（高卢征服者），BC1C·罗马 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-06",
+      "desc": "汉尼拔（战略之父·BC3C·迦太基）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/KH",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "汉尼拔 战略之父",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/KH"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》K♥ 名将立绘·汉尼拔（战略之父·BC3C·迦太基）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/KH.svg",
+        "localId": "game-g/hero/hK"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "汉尼拔（战略之父），BC3C·迦太基 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-07",
+      "desc": "韩信（兵仙·BC3C·汉）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/KD",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "韩信 兵仙",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/KD"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》K♦ 名将立绘·韩信（兵仙·BC3C·汉）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/KD.svg",
+        "localId": "game-g/hero/dK"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "韩信（兵仙），BC3C·汉 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-08",
+      "desc": "白起（杀神·BC3C·秦）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/KC",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "白起 杀神",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/KC"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》K♣ 名将立绘·白起（杀神·BC3C·秦）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/KC.svg",
+        "localId": "game-g/hero/cK"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "白起（杀神），BC3C·秦 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-09",
+      "desc": "哈立德·伊本·瓦利德（真主之剑·7C·阿拉伯）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/QS",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "哈立德·伊本·瓦利德 真主之剑",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/QS"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》Q♠ 名将立绘·哈立德·伊本·瓦利德（真主之剑·7C·阿拉伯）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/QS.svg",
+        "localId": "game-g/hero/sQ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "哈立德·伊本·瓦利德（真主之剑），7C·阿拉伯 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-10",
+      "desc": "居鲁士大帝（万王之王·BC6C·波斯）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/QH",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "居鲁士大帝 万王之王",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/QH"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》Q♥ 名将立绘·居鲁士大帝（万王之王·BC6C·波斯）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/QH.svg",
+        "localId": "game-g/hero/hQ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "居鲁士大帝（万王之王），BC6C·波斯 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-11",
+      "desc": "帖木儿（跛足征服者·14C·中亚）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/QD",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "帖木儿 跛足征服者",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/QD"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》Q♦ 名将立绘·帖木儿（跛足征服者·14C·中亚）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/QD.svg",
+        "localId": "game-g/hero/dQ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "帖木儿（跛足征服者），14C·中亚 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-12",
+      "desc": "速不台（常胜先锋·13C·蒙古）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/QC",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "速不台 常胜先锋",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/QC"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》Q♣ 名将立绘·速不台（常胜先锋·13C·蒙古）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/QC.svg",
+        "localId": "game-g/hero/cQ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "速不台（常胜先锋），13C·蒙古 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-13",
+      "desc": "腓特烈大帝（军事天才·18C·普鲁士）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/JS",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "腓特烈大帝 军事天才",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/JS"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》J♠ 名将立绘·腓特烈大帝（军事天才·18C·普鲁士）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/JS.svg",
+        "localId": "game-g/hero/sJ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "腓特烈大帝（军事天才），18C·普鲁士 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-14",
+      "desc": "西庇阿（征非者·BC3C·罗马）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/JH",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "西庇阿 征非者",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/JH"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》J♥ 名将立绘·西庇阿（征非者·BC3C·罗马）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/JH.svg",
+        "localId": "game-g/hero/hJ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "西庇阿（征非者），BC3C·罗马 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-15",
+      "desc": "苏沃洛夫（不败统帅·18C·俄国）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/JD",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "苏沃洛夫 不败统帅",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/JD"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》J♦ 名将立绘·苏沃洛夫（不败统帅·18C·俄国）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/JD.svg",
+        "localId": "game-g/hero/dJ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "苏沃洛夫（不败统帅），18C·俄国 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-16",
+      "desc": "李靖（大唐军神·7C·唐）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/JC",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "李靖 大唐军神",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/JC"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》J♣ 名将立绘·李靖（大唐军神·7C·唐）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/JC.svg",
+        "localId": "game-g/hero/cJ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "李靖（大唐军神），7C·唐 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-17",
+      "desc": "萨拉丁（伊斯兰之盾·12C·阿尤布）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/10S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "萨拉丁 伊斯兰之盾",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/10S"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》10♠ 名将立绘·萨拉丁（伊斯兰之盾·12C·阿尤布）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/10S.svg",
+        "localId": "game-g/hero/s10"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "萨拉丁（伊斯兰之盾），12C·阿尤布 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-18",
+      "desc": "古斯塔夫二世（近代战争之父·17C·瑞典）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/10H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "古斯塔夫二世 近代战争之父",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/10H"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》10♥ 名将立绘·古斯塔夫二世（近代战争之父·17C·瑞典）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/10H.svg",
+        "localId": "game-g/hero/h10"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "古斯塔夫二世（近代战争之父），17C·瑞典 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-19",
+      "desc": "霍去病（冠军侯·BC2C·汉）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/10D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "霍去病 冠军侯",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/10D"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》10♦ 名将立绘·霍去病（冠军侯·BC2C·汉）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/10D.svg",
+        "localId": "game-g/hero/d10"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "霍去病（冠军侯），BC2C·汉 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-20",
+      "desc": "李世民（天可汗·7C·唐）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/10C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "李世民 天可汗",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/10C"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》10♣ 名将立绘·李世民（天可汗·7C·唐）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/10C.svg",
+        "localId": "game-g/hero/c10"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "李世民（天可汗），7C·唐 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-21",
+      "desc": "朱可夫（胜利元帅·20C·苏联）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/9S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "朱可夫 胜利元帅",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/9S"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》9♠ 名将立绘·朱可夫（胜利元帅·20C·苏联）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/9S.svg",
+        "localId": "game-g/hero/s9"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "朱可夫（胜利元帅），20C·苏联 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-22",
+      "desc": "隆美尔（沙漠之狐·20C·德国）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/9H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "隆美尔 沙漠之狐",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/9H"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》9♥ 名将立绘·隆美尔（沙漠之狐·20C·德国）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/9H.svg",
+        "localId": "game-g/hero/h9"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "隆美尔（沙漠之狐），20C·德国 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-23",
+      "desc": "项羽（西楚霸王·BC3C·楚）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/9D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "项羽 西楚霸王",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/9D"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》9♦ 名将立绘·项羽（西楚霸王·BC3C·楚）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/9D.svg",
+        "localId": "game-g/hero/d9"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "项羽（西楚霸王），BC3C·楚 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-24",
+      "desc": "贝利撒留（最后的罗马人·6C·拜占庭）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/9C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "贝利撒留 最后的罗马人",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/9C"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》9♣ 名将立绘·贝利撒留（最后的罗马人·6C·拜占庭）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/9C.svg",
+        "localId": "game-g/hero/c9"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "贝利撒留（最后的罗马人），6C·拜占庭 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-25",
+      "desc": "阿提拉（上帝之鞭·5C·匈人）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/8S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "阿提拉 上帝之鞭",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/8S"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》8♠ 名将立绘·阿提拉（上帝之鞭·5C·匈人）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/8S.svg",
+        "localId": "game-g/hero/s8"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "阿提拉（上帝之鞭），5C·匈人 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-26",
+      "desc": "穆罕默德二世（征服者·15C·奥斯曼）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/8H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "穆罕默德二世 征服者",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/8H"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》8♥ 名将立绘·穆罕默德二世（征服者·15C·奥斯曼）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/8H.svg",
+        "localId": "game-g/hero/h8"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "穆罕默德二世（征服者），15C·奥斯曼 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-27",
+      "desc": "曼施坦因（闪击战策划·20C·德国）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/8D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "曼施坦因 闪击战策划",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/8D"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》8♦ 名将立绘·曼施坦因（闪击战策划·20C·德国）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/8D.svg",
+        "localId": "game-g/hero/d8"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "曼施坦因（闪击战策划），20C·德国 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-28",
+      "desc": "岳飞（精忠武穆·12C·南宋）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/8C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "岳飞 精忠武穆",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/8C"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》8♣ 名将立绘·岳飞（精忠武穆·12C·南宋）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/8C.svg",
+        "localId": "game-g/hero/c8"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "岳飞（精忠武穆），12C·南宋 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-29",
+      "desc": "威灵顿公爵（铁公爵·19C·英国）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/7S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "威灵顿公爵 铁公爵",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/7S"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》7♠ 名将立绘·威灵顿公爵（铁公爵·19C·英国）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/7S.svg",
+        "localId": "game-g/hero/s7"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "威灵顿公爵（铁公爵），19C·英国 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-30",
+      "desc": "纳尔逊（海上之王·18–19C·英国）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/7H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "纳尔逊 海上之王",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/7H"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》7♥ 名将立绘·纳尔逊（海上之王·18–19C·英国）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/7H.svg",
+        "localId": "game-g/hero/h7"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "纳尔逊（海上之王），18–19C·英国 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-31",
+      "desc": "戚继光（抗倭名将·16C·明）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/7D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "戚继光 抗倭名将",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/7D"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》7♦ 名将立绘·戚继光（抗倭名将·16C·明）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/7D.svg",
+        "localId": "game-g/hero/d7"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "戚继光（抗倭名将），16C·明 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-32",
+      "desc": "诸葛亮（卧龙·智圣·3C·蜀汉）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/7C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "诸葛亮 卧龙·智圣",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/7C"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》7♣ 名将立绘·诸葛亮（卧龙·智圣·3C·蜀汉）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/7C.svg",
+        "localId": "game-g/hero/c7"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "诸葛亮（卧龙·智圣），3C·蜀汉 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-33",
+      "desc": "扬·杰士卡（独眼不败·15C·波希米亚）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/6S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "扬·杰士卡 独眼不败",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/6S"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》6♠ 名将立绘·扬·杰士卡（独眼不败·15C·波希米亚）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/6S.svg",
+        "localId": "game-g/hero/s6"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "扬·杰士卡（独眼不败），15C·波希米亚 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-34",
+      "desc": "马尔伯勒公爵（常胜公爵·18C·英国）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/6H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "马尔伯勒公爵 常胜公爵",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/6H"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》6♥ 名将立绘·马尔伯勒公爵（常胜公爵·18C·英国）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/6H.svg",
+        "localId": "game-g/hero/h6"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "马尔伯勒公爵（常胜公爵），18C·英国 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-35",
+      "desc": "织田信长（第六天魔王·16C·日本）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/6D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "织田信长 第六天魔王",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/6D"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》6♦ 名将立绘·织田信长（第六天魔王·16C·日本）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/6D.svg",
+        "localId": "game-g/hero/d6"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "织田信长（第六天魔王），16C·日本 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-36",
+      "desc": "卫青（长平侯·BC2C·汉）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/6C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "卫青 长平侯",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/6C"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》6♣ 名将立绘·卫青（长平侯·BC2C·汉）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/6C.svg",
+        "localId": "game-g/hero/c6"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "卫青（长平侯），BC2C·汉 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-37",
+      "desc": "查理曼（欧洲之父·8–9C·法兰克）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/5S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "查理曼 欧洲之父",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/5S"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》5♠ 名将立绘·查理曼（欧洲之父·8–9C·法兰克）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/5S.svg",
+        "localId": "game-g/hero/s5"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "查理曼（欧洲之父），8–9C·法兰克 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-38",
+      "desc": "图拉真（最佳元首·2C·罗马）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/5H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "图拉真 最佳元首",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/5H"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》5♥ 名将立绘·图拉真（最佳元首·2C·罗马）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/5H.svg",
+        "localId": "game-g/hero/h5"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "图拉真（最佳元首），2C·罗马 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-39",
+      "desc": "苏莱曼大帝（立法者·16C·奥斯曼）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/5D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "苏莱曼大帝 立法者",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/5D"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》5♦ 名将立绘·苏莱曼大帝（立法者·16C·奥斯曼）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/5D.svg",
+        "localId": "game-g/hero/d5"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "苏莱曼大帝（立法者），16C·奥斯曼 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-40",
+      "desc": "曹操（魏武·3C·汉/魏）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/5C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "曹操 魏武",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/5C"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》5♣ 名将立绘·曹操（魏武·3C·汉/魏）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/5C.svg",
+        "localId": "game-g/hero/c5"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "曹操（魏武），3C·汉/魏 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-41",
+      "desc": "埃帕米农达斯（斜阵之父·BC4C·底比斯）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/4S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "埃帕米农达斯 斜阵之父",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/4S"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》4♠ 名将立绘·埃帕米农达斯（斜阵之父·BC4C·底比斯）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/4S.svg",
+        "localId": "game-g/hero/s4"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "埃帕米农达斯（斜阵之父），BC4C·底比斯 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-42",
+      "desc": "皮洛士（险胜之王·BC3C·伊庇鲁斯）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/4H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "皮洛士 险胜之王",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/4H"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》4♥ 名将立绘·皮洛士（险胜之王·BC3C·伊庇鲁斯）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/4H.svg",
+        "localId": "game-g/hero/h4"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "皮洛士（险胜之王），BC3C·伊庇鲁斯 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-43",
+      "desc": "武田信玄（甲斐之虎·16C·日本）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/4D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "武田信玄 甲斐之虎",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/4D"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》4♦ 名将立绘·武田信玄（甲斐之虎·16C·日本）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/4D.svg",
+        "localId": "game-g/hero/d4"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "武田信玄（甲斐之虎），16C·日本 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-44",
+      "desc": "吴起（兵家亚圣·BC4C·魏/楚）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/4C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "吴起 兵家亚圣",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/4C"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》4♣ 名将立绘·吴起（兵家亚圣·BC4C·魏/楚）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/4C.svg",
+        "localId": "game-g/hero/c4"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "吴起（兵家亚圣），BC4C·魏/楚 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-45",
+      "desc": "列奥尼达（温泉关之王·BC5C·斯巴达）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/3S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "列奥尼达 温泉关之王",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/3S"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》3♠ 名将立绘·列奥尼达（温泉关之王·BC5C·斯巴达）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/3S.svg",
+        "localId": "game-g/hero/s3"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "列奥尼达（温泉关之王），BC5C·斯巴达 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-46",
+      "desc": "罗伯特·李（南军统帅·19C·美国）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/3H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "罗伯特·李 南军统帅",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/3H"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》3♥ 名将立绘·罗伯特·李（南军统帅·19C·美国）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/3H.svg",
+        "localId": "game-g/hero/h3"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "罗伯特·李（南军统帅），19C·美国 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-47",
+      "desc": "孙膑（智囊·BC4C·齐）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/3D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "孙膑 智囊",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/3D"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》3♦ 名将立绘·孙膑（智囊·BC4C·齐）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/3D.svg",
+        "localId": "game-g/hero/d3"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "孙膑（智囊），BC4C·齐 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-48",
+      "desc": "巴布尔（莫卧儿奠基者·16C·莫卧儿）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/3C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "巴布尔 莫卧儿奠基者",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/3C"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》3♣ 名将立绘·巴布尔（莫卧儿奠基者·16C·莫卧儿）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/3C.svg",
+        "localId": "game-g/hero/c3"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "巴布尔（莫卧儿奠基者），16C·莫卧儿 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-49",
+      "desc": "斯巴达克斯（角斗士之王·BC1C·罗马）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/2S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "斯巴达克斯 角斗士之王",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/2S"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》2♠ 名将立绘·斯巴达克斯（角斗士之王·BC1C·罗马）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/2S.svg",
+        "localId": "game-g/hero/s2"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "斯巴达克斯（角斗士之王），BC1C·罗马 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-50",
+      "desc": "维钦托利（高卢之王·BC1C·高卢）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/2H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "维钦托利 高卢之王",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/2H"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》2♥ 名将立绘·维钦托利（高卢之王·BC1C·高卢）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/2H.svg",
+        "localId": "game-g/hero/h2"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "维钦托利（高卢之王），BC1C·高卢 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-51",
+      "desc": "沙卡·祖鲁（非洲战王·19C·祖鲁）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/2D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "沙卡·祖鲁 非洲战王",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/2D"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》2♦ 名将立绘·沙卡·祖鲁（非洲战王·19C·祖鲁）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/2D.svg",
+        "localId": "game-g/hero/d2"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "沙卡·祖鲁（非洲战王），19C·祖鲁 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-52",
+      "desc": "狮心王理查（狮心·12C·英格兰）名将立绘",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/2C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "狮心王理查 狮心",
+      "placeholder": {
+        "current": "程序化矢量立绘（SVG 剪影·portraits.ts 按 时代/花色/军衔 拼盔甲半身像）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "hero/2C"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 150,
+        "transparent": true
+      },
+      "context": "game-g《翻命扑克》2♣ 名将立绘·狮心王理查（狮心·12C·英格兰）名将立绘·当前=程序矢量·可替换真图（矢量也是美术资源）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/portraits/2C.svg",
+        "localId": "game-g/hero/c2"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      },
+      "prompt": "狮心王理查（狮心），12C·英格兰 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘"
+    },
+    {
+      "no": "art-53",
+      "desc": "绿呢牌桌底纹·玄铁金钱币锁子纹（无缝平铺）",
+      "kind": "texture",
+      "slot": {
+        "entity": "table/felt",
+        "component": "Panel",
+        "field": "bgTexture"
+      },
+      "query": "绿呢牌桌底纹",
+      "placeholder": {
+        "current": "程序化矢量底纹（art-textures.ts coinLatticeTile·古钱币锁子纹）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "table/felt"
+        ]
+      },
+      "spec": {
+        "w": 64,
+        "h": 64,
+        "transparent": true
+      },
+      "context": "game-g 主页/战场绿呢牌桌底纹·当前=程序矢量·双皮(玄铁金/锦霞)走参数·可替换真贴图",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "art-textures.ts",
+        "prompt": null,
+        "servedPath": "/games/game-g/art/textures/felt-brocade.svg",
+        "localId": "game-g/tex/felt-brocade"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "art-textures.ts",
+        "mock": false
+      },
+      "prompt": "古钱币锁子纹无缝平铺底纹，玄铁金线，暗绿呢牌桌质感，低对比 subtle，可平铺"
+    }
+  ],
+  "artStyle": "古风拟人矢量·翻命扑克"
+}
