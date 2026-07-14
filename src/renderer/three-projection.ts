@@ -173,18 +173,47 @@ export function orbitCamera(
   };
 }
 
-// ── Anim3D 通道求值（纯函数·render-only·壁钟驱动）──────────────────────────────────────────
-// spin：field = 初值 + rate(rad/秒)·t（匀速自转·帧率无关·不累积漂移）。
-// bob ：field = 初值 + amp·sin(t·freq + phase)（绕初值正弦浮动/呼吸）。
-// base = 该分量的**作者初值**（系统首见实体时从 Transform3D 捕获）；t = 壁钟经过秒。
-export function anim3dField(
-  ch: { kind: 'spin'; rate: number } | { kind: 'bob'; amp: number; freq: number; phase?: number },
-  tSec: number,
-  base: number,
-): number {
-  if (ch.kind === 'spin') return base + ch.rate * tSec;
-  return base + ch.amp * Math.sin(tSec * ch.freq + (ch.phase ?? 0));
+// ── 程序化动画方法·通道求值（纯函数·render-only·壁钟驱动·帧率无关·不累积漂移）─────────────────────
+// loop（绕初值 base·t=经过秒）：spin=初值+rate·t / bob=初值+amp·sin / osc=初值+amp·wave / noise=初值+amp·噪声。
+// once（绝对值·不绕初值）：ease=from→to 经 dur 秒（delay 后起·curve 缓动）·播完保持 to。
+// base = 该分量作者初值（系统首见捕获）。**ease 返回绝对值**（系统按 delta=返回值−base 叠加·故 ease 独占时 = 覆写）。
+type AnimChReduced =
+  | { kind: 'spin'; rate: number }
+  | { kind: 'bob'; amp: number; freq: number; phase?: number }
+  | { kind: 'osc'; wave: 'sine' | 'triangle' | 'saw' | 'square'; amp: number; freq: number; phase?: number }
+  | { kind: 'noise'; amp: number; freq: number; seed?: number }
+  | { kind: 'ease'; from: number; to: number; dur: number; curve?: 'linear' | 'cubicOut' | 'outBack'; delay?: number };
+
+export function anim3dField(ch: AnimChReduced, tSec: number, base: number): number {
+  switch (ch.kind) {
+    case 'spin': return base + ch.rate * tSec;
+    case 'bob': return base + ch.amp * Math.sin(tSec * ch.freq + (ch.phase ?? 0));
+    case 'osc': return base + ch.amp * animWave(ch.wave, tSec * ch.freq + (ch.phase ?? 0));
+    case 'noise': return base + ch.amp * (noise1(tSec * ch.freq + (ch.seed ?? 0)) * 2 - 1);
+    case 'ease': {
+      const p = clamp01((tSec - (ch.delay ?? 0)) / Math.max(1e-6, ch.dur), 1); // 归一进度 0..1（delay 前=0·超 dur=1 保持）
+      const c = ch.curve === 'linear' ? p : ch.curve === 'outBack' ? easeOutBack(p) : easeCubicOut(p);
+      return ch.from + (ch.to - ch.from) * c;
+    }
+  }
 }
+
+// 周期波形（归一 [-1,1]·输入 x 视作弧度·**与 sine 同相**：x=0 过零上升·x=π/2 达峰·三角/方波峰对齐 sine）。
+function animWave(wave: 'sine' | 'triangle' | 'saw' | 'square', x: number): number {
+  if (wave === 'sine') return Math.sin(x);
+  if (wave === 'square') return Math.sin(x) >= 0 ? 1 : -1;
+  if (wave === 'triangle') return (2 / Math.PI) * Math.asin(Math.sin(x)); // asin(sin) = 与 sine 同相三角波
+  return 2 * ((x / (2 * Math.PI) + 0.5) - Math.floor(x / (2 * Math.PI) + 0.5)) - 1; // saw：x=0→0 上升·x=π 跳变·[-1,1)
+}
+// 1D 确定性平滑值噪声 [0,1]（hash 格点 + smoothstep·帧率无关·同 t 同值）。
+function noise1(x: number): number {
+  const xi = Math.floor(x), f = x - xi;
+  const u = f * f * (3 - 2 * f);
+  const h = (i: number): number => { let n = Math.imul(i | 0, 374761393) >>> 0; n = Math.imul(n ^ (n >>> 13), 1274126177) >>> 0; return ((n ^ (n >>> 16)) >>> 0) / 4294967296; };
+  return h(xi) * (1 - u) + h(xi + 1) * u;
+}
+// clamp 到 [0,hi]（复用给 ease 进度；hi 默认 1）。
+function clamp01(v: number, hi = 1): number { return v < 0 ? 0 : v > hi ? hi : v; }
 
 // ── 缓动（纯函数·Cloud Design 3d-motion-spec 只用这两个）──────────────────────────────────────
 // cubic-out：`1-(1-p)³`（落场/减速·§E 掷骰弧）。eOutBack：带回弹过冲（§F 骰壳 grow-in / 新场展开）。

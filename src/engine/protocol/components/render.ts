@@ -103,17 +103,25 @@ export interface AnimState3D extends Component {
 }
 
 // ── Anim3D（render-only，程序化位姿动画驱动 · 3D 后端）────────────────────────────────────────
-// 让实体的 Transform3D 分量按**数据描述的运动通道**随壁钟自动演化——把「title 骰匀速自转 / 物件上下浮 / 宝石自转」
-// 这类循环动画从游戏层 `engine.subscribe` 手写逐帧改分量（绕过引擎）**下沉成纯数据**（Cloud Design 3d-motion-spec §A/§C）。
-// 闭集两种通道：`spin`(匀速自转·rad/秒) · `bob`(正弦浮动·绕初值摆)。渲染器 Anim3DSystem 每帧据初值 + 壁钟经过秒算目标分量写回。
-// 红线：**纯表现**——绝不进 sim/hash（render-only·入 NON_DETERMINISTIC）。弱 LLM 只填 field/rate/amp/freq 标量·填不了插值代码。
+// **底层程序化动画方法集**（owner 2026-07-06）：让实体的 Transform3D 分量按**数据描述的运动通道**随壁钟自动演化——
+// 把「自转 / 浮动 / 摆动 / 入场弹出 / 有机漂移」这类动画从游戏层手写逐帧改分量（绕基座）**下沉成纯数据**（可组合）。
+// 两类通道：**循环(loop·随壁钟持续)** = spin/bob/osc/noise（绕作者初值演化）；**一次性(once·播一遍保持终值)** = ease（入场/强调）。
+//   同 field 多通道**叠加(compose)** → 组合出复杂运动（如 x/z 两 osc 相位差 π/2 = 环绕；spin+bob 同 rotY = 变速自转）。
+// 红线：**纯表现**——绝不进 sim/hash（render-only·入 NON_DETERMINISTIC）。弱 LLM 只填 field/波形/标量·填不了插值代码。
 export type Anim3DField = 'x' | 'y' | 'z' | 'rotX' | 'rotY' | 'rotZ' | 'scale';
+export type Anim3DWave = 'sine' | 'triangle' | 'saw' | 'square'; // osc 周期波形（皆归一 [-1,1]）
+export type Anim3DCurve = 'linear' | 'cubicOut' | 'outBack'; // ease 缓动曲线（outBack=带回弹过冲·弹出感）
 export type Anim3DChannel =
-  | { kind: 'spin'; field: 'rotX' | 'rotY' | 'rotZ'; rate: number } // field = 初值 + rate(rad/秒)·t —— 匀速自转
-  | { kind: 'bob'; field: Anim3DField; amp: number; freq: number; phase?: number }; // field = 初值 + amp·sin(t·freq + phase) —— 正弦浮动/呼吸
+  // ── 循环通道（loop·绕作者初值·t=经过秒）──
+  | { kind: 'spin'; field: 'rotX' | 'rotY' | 'rotZ'; rate: number } // 初值 + rate(rad/秒)·t —— 匀速自转
+  | { kind: 'bob'; field: Anim3DField; amp: number; freq: number; phase?: number } // 初值 + amp·sin(t·freq+phase) —— 正弦浮动（= osc sine 简写）
+  | { kind: 'osc'; field: Anim3DField; wave: Anim3DWave; amp: number; freq: number; phase?: number } // 初值 + amp·wave(t·freq+phase) —— 通用周期振荡（摆动/机械/闪烁）
+  | { kind: 'noise'; field: Anim3DField; amp: number; freq: number; seed?: number } // 初值 + amp·noise(t·freq+seed) —— 确定性噪声漂移（有机游走·神经质待机）
+  // ── 一次性通道（once·播一遍→保持终值·入场/强调）──
+  | { kind: 'ease'; field: Anim3DField; from: number; to: number; dur: number; curve?: Anim3DCurve; delay?: number }; // from→to 经 dur 秒（delay 后起·curve 缺省 cubicOut）·**绝对值**（不绕初值）
 export interface Anim3D extends Component {
   readonly type: 'Anim3D';
-  channels: Anim3DChannel[]; // 多通道叠加（如骰子 rotX + rotY 双 spin·物件 y-bob + rotY-spin）
+  channels: Anim3DChannel[]; // 多通道叠加（loop 绕初值加·ease 覆写绝对值·同 field 求和）
 }
 
 // ── Pivot3D（render-only，3D 父合成/层级）──────────────────────────────────────────────────────

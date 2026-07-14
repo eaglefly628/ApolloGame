@@ -40,7 +40,9 @@ export class Anim3DSystem {
         delta.set(ch.field, (delta.get(ch.field) ?? 0) + (anim3dField(ch, tSec, base) - base));
       }
       for (const [f, d] of delta) setField(t3, f, (st.bases.get(f) ?? 0) + d);
-      live++;
+      // 活跃判定：有任一 **loop 通道**（spin/bob/osc/noise·永远在动）或任一 **ease 未播完** → 该实体仍活跃（渲染器须重渲）。
+      // 全是已播完的 ease → 终值已写、不再变 → 不计活跃（渲染器可转 idle·省帧）。
+      if (anim.channels.some((ch) => ch.kind !== 'ease' || tSec < (ch.delay ?? 0) + ch.dur)) live++;
     }
     // 卸载已消失实体的动画态（title 骰销毁 / 房间流式卸载）。
     for (const id of [...this.state.keys()]) if (!seen.has(id)) this.state.delete(id);

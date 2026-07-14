@@ -17,6 +17,35 @@ describe('anim3dField（纯函数·spin/bob）', () => {
     const tPeak = Math.PI / 2 / 1.8;
     expect(anim3dField({ kind: 'bob', amp: 0.13, freq: 1.8 }, tPeak, 0.78)).toBeCloseTo(0.78 + 0.13);
   });
+
+  it('osc 波形（sine/triangle/saw/square 归一 [-1,1]）', () => {
+    const at = (wave: 'sine' | 'triangle' | 'saw' | 'square', x: number) => anim3dField({ kind: 'osc', wave, amp: 1, freq: 1, phase: 0 }, x, 0);
+    // x=π/2：sine=1·triangle=峰1·saw≈0.5·square=1
+    expect(at('sine', Math.PI / 2)).toBeCloseTo(1);
+    expect(at('triangle', Math.PI / 2)).toBeCloseTo(1); // 三角在 1/4 周期到峰
+    expect(at('square', Math.PI / 2)).toBe(1);
+    expect(at('square', -Math.PI / 2)).toBe(-1);
+    expect(at('saw', Math.PI / 2)).toBeCloseTo(0.5); // 锯齿 1/4 周期 = 0.5（x=0 过零上升）
+    expect(Math.abs(at('sine', 0))).toBeLessThan(1e-9); // 原点 0
+  });
+
+  it('noise：确定性（同 t 同值）+ 在 [初值±amp] 内', () => {
+    const n = (t: number) => anim3dField({ kind: 'noise', amp: 0.5, freq: 2, seed: 7 }, t, 3);
+    expect(n(1.3)).toBe(n(1.3)); // 确定性
+    for (const t of [0, 0.5, 1.7, 4.2]) { expect(n(t)).toBeGreaterThanOrEqual(3 - 0.5); expect(n(t)).toBeLessThanOrEqual(3 + 0.5); }
+  });
+
+  it('ease：from→to 经 dur（delay 后起·超 dur 保持 to·绝对值不绕初值）', () => {
+    const e = { kind: 'ease' as const, from: 0, to: 2, dur: 1, curve: 'linear' as const, delay: 0.5 };
+    expect(anim3dField(e, 0, 99)).toBe(0); // delay 前 = from（不绕 base 99）
+    expect(anim3dField(e, 0.5, 99)).toBe(0); // 起点
+    expect(anim3dField(e, 1.0, 99)).toBeCloseTo(1); // 半程（linear）= 1
+    expect(anim3dField(e, 1.5, 99)).toBeCloseTo(2); // 终点
+    expect(anim3dField(e, 5.0, 99)).toBeCloseTo(2); // 超 dur 保持 to
+    // outBack 回弹过冲：中段可能 >to 或 <from
+    const ob = anim3dField({ kind: 'ease', from: 0, to: 1, dur: 1, curve: 'outBack' }, 0.7, 0);
+    expect(ob).toBeGreaterThan(1); // 过冲峰 >1
+  });
 });
 
 describe('Anim3DSystem（据壁钟改 Transform3D·render-only）', () => {
@@ -66,6 +95,21 @@ describe('Anim3DSystem（据壁钟改 Transform3D·render-only）', () => {
     expect(rotY()).toBeCloseTo(0.5);
     sys.sync(w, 2000); // tSec1：0.5 + spin(1.0·1) + bob(0.4·sin2) = 0.5 + 1.0 + 0.4·sin(2)
     expect(rotY()).toBeCloseTo(0.5 + 1.0 + 0.4 * Math.sin(2)); // 叠加·非覆盖（旧行为=后通道覆盖=只 bob）
+  });
+
+  it('一次性 ease 播完 → 不再计活跃（渲染器可 idle）·终值保持', () => {
+    const w = new World();
+    w.createEntity('p');
+    w.addComponent('p', { type: 'Transform3D', x: 0, y: 0, z: 0, scale: 1 } as Transform3D);
+    w.addComponent('p', { type: 'Anim3D', channels: [{ kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'linear' }] } as Anim3D);
+    const sys = new Anim3DSystem();
+    const sc = (): number => w.getComponent<Transform3D>('p', 'Transform3D')!.scale!;
+    expect(sys.sync(w, 1000)).toBe(1); // t0：ease 进行中 → 活跃·scale=0
+    expect(sc()).toBeCloseTo(0);
+    expect(sys.sync(w, 1250)).toBe(1); // t0.25：半程·仍活跃
+    expect(sc()).toBeCloseTo(0.5);
+    expect(sys.sync(w, 1600)).toBe(0); // t0.6>dur：播完 → **不计活跃**（idle）
+    expect(sc()).toBeCloseTo(1); // 保持终值 to
   });
 
   it('空场返回 0；实体消失后清理动画态（流式卸载安全）', () => {

@@ -6,6 +6,16 @@
 
 ---
 
+## REQ-3D-程序化动画方法集 · Anim3D 扩为底层可组合运动原语（osc/noise/ease）· [2026-07-06] · owner → P3D · status: **✅ done（P3D 2026-07-06·已推·见回执）** · 类型: 渲染能力补全（程序化动画底座）
+
+> **owner 2026-07-06**：「游戏若有程序化动画需求，开发一套底层的程序化动画方法」。
+> **P3D 评判（CORE RULE）**：`Anim3D`(spin/bob + 同 field 叠加) 是好底子 → **扩成完整闭集方法集**，只补真缺口：
+> - **真缺口·已加**：`osc{wave:sine|triangle|saw|square}`（bob 泛化·机械/摆动/闪烁·波形与 sine 同相）· `noise{amp,freq,seed}`（确定性 1D 平滑噪声·有机漂移·正弦重组不出来）· **`ease{from,to,dur,curve:linear|cubicOut|outBack,delay}`**（**一次性 once**·入场弹出/强调·当前最大缺口——之前全无一次性动画·绝对值不绕初值·播完保持终值）。
+> - **回驳（现有叠加可重组·不加）**：orbit=x/z 双 osc 相位差 π/2；pulse 变速自转=spin+bob 叠加（骰盅 P18 已证）。
+> - **保留**：spin/bob（向后兼容·bob=osc sine 简写）。**loop+once 共存**、**同 field 叠加**、帧率无关（壁钟绝对秒·不累积漂移）、render-only 不进 hash。
+> **实现**：`render.ts`(Anim3DChannel 扩 osc/noise/ease + Wave/Curve 枚举)·`three-projection.ts`(anim3dField 全 kind + animWave/noise1 纯函数)·`anim3d.ts`(ease 播完不计活跃→渲染器可 idle)。**测试** +5（波形/噪声确定性/ease 进度·delay·hold·outBack 过冲/系统 idle）。**demo** game-z prim-* 入场弹出(错峰 ease)+ 三角波弹跳 + rune-slab noise 漂移。回填 `playbooks/3d.md`。tsc+vitest+build 全绿。
+> **后续可长**（按需·不先造）：wave 更多（如 expo）、ease 更多曲线、`shake`（衰减振荡·冲击反馈）——有真需求再加。
+
 ## REQ-3D-货架接入 · game-z/game-d 3D 素材改从公用货架 vendor（停直引全局散落）· [2026-07-04] · PA → P3D · status: **✅ game-z 贴图收口（2026-07-04·P3D·见回执）；models 共享暂留 + gen-shelf 耦合转回 PA** · 类型: vendoring 收口（REQ-PA-3D公用货架 ④b）
 
 > **★ P3D 回执（2026-07-04·全绿·观感不变）**：

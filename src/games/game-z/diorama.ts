@@ -185,35 +185,38 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 🧱 新特性活展台（南侧一排·本会话新能力集中展示）：四种新图元(②) × 各挂不同 PBR 材质 × Anim3D 程序化动画
       // (自转/浮动) × Pickable3D 点选拾取(①·证明拾取在新图元 + 动画物件上也命中)。全纯数据·零专属代码·零新资产。
       // · cylinder：拉丝钢(PBR 金属+surface) + 匀速自转 + 可拾取
+      // Anim3D 方法集展示（owner 2026-07-06）：各图元叠加**入场 ease(scale 0→1·outBack 弹出·错峰 delay)** + 循环通道
+      //   （spin 自转 / osc 波形振荡 / noise 有机漂移）——同 field 叠加、loop+once 共存，全纯数据。
       'prim-cylinder': {
         Transform3D: { x: -22, y: 4, z: 46 }, Mesh3D: { shape: 'cylinder', width: 6, height: 8, frontTint: 0xc4c7c7 },
         Material3D: { preset: 'steel', surface: { pattern: 'scratches', tiles: 3, normal: 0.5, rough: 0.6 } },
-        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.9 }] }, Pickable3D: { signal: 'poke' },
+        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.9 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'outBack', delay: 0.0 }] }, Pickable3D: { signal: 'poke' },
       },
-      // · cone：自发光 + Glow3D 暖光晕 + 自转 + 可拾取（emissive 预设 + 加性辉光·发光锥）
+      // · cone：自发光 + Glow3D 暖光晕 + 自转 + 入场弹出 + 可拾取
       'prim-cone': {
         Transform3D: { x: -8, y: 4.5, z: 46 }, Mesh3D: { shape: 'cone', width: 7, height: 9, frontTint: 0xfff0a0 },
         Material3D: { preset: 'emissive' }, Glow3D: { color: 0xffe08a, scale: 16, opacity: 0.55 },
-        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 1.2 }] }, Pickable3D: { signal: 'poke' },
+        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 1.2 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'outBack', delay: 0.15 }] }, Pickable3D: { signal: 'poke' },
       },
-      // · capsule：铜(PBR 金属) + 上下浮动(bob) + 可拾取（展示 Anim3D bob 通道·浮动药丸）
+      // · capsule：铜(PBR) + **osc 三角波**上下弹跳(机械感·区别正弦 bob) + 入场弹出 + 可拾取
       'prim-capsule': {
         Transform3D: { x: 6, y: 6.5, z: 46 }, Mesh3D: { shape: 'capsule', width: 5, height: 11, frontTint: 0xf7bd9e },
         Material3D: { preset: 'copper', surface: { pattern: 'bumps', tiles: 5, normal: 0.4, rough: 0.35 } },
-        Anim3D: { channels: [{ kind: 'bob', field: 'y', amp: 1.0, freq: 1.8 }] }, Pickable3D: { signal: 'poke' },
+        Anim3D: { channels: [{ kind: 'osc', field: 'y', wave: 'triangle', amp: 1.0, freq: 1.6 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'outBack', delay: 0.3 }] }, Pickable3D: { signal: 'poke' },
       },
-      // · torus：金(PBR) + 绕 Y 自转(倾斜旋转环) + 可拾取
+      // · torus：金(PBR) + 倾斜自转 + 入场弹出 + 可拾取
       'prim-torus': {
         Transform3D: { x: 20, y: 6, z: 46, rotX: 1.2 }, Mesh3D: { shape: 'torus', width: 9, height: 9, frontTint: 0xffd991, tube: 0.35 },
         Material3D: { preset: 'gold', surface: { pattern: 'bumps', tiles: 6, normal: 0.4, rough: 0.28 } },
-        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 1.4 }] }, Pickable3D: { signal: 'poke' },
+        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 1.4 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'outBack', delay: 0.45 }] }, Pickable3D: { signal: 'poke' },
       },
 
       // · 符文发光板（REQ-3D ④ emissiveMap 展示·暗底 box + 自发光贴图→符文处发青光）+ 缓慢自转 + 可拾取。
       'rune-slab': {
         Transform3D: { x: 34, y: 5, z: 46 }, Mesh3D: { shape: 'box', width: 8, height: 8, depth: 3, frontTint: 0x0e1419 },
         Material3D: { preset: 'matte', materialRef: MAT_RUNE, tiling: { repeat: 1 } },
-        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.6 }] }, Pickable3D: { signal: 'poke' },
+        // 自转 + **noise 有机漂移**(y·神经质浮动·非正弦) + 入场弹出——展示 loop(spin/noise)+once(ease) 叠加。
+        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.6 }, { kind: 'noise', field: 'y', amp: 0.6, freq: 1.3, seed: 3 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.6, curve: 'outBack', delay: 0.6 }] }, Pickable3D: { signal: 'poke' },
       },
 
       // 北侧 PBR 材质陈列台（材质球·大字标名·调试面板「🔬 看材质」一键看）。
