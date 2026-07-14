@@ -27,6 +27,10 @@
 ## 编译期游戏线（src/games·如 game-q）· 差异只在两处
 
 - **接入**（一次性·三行）：theme 定 skin key → 蓝图视觉实体加 `Sprite:{textureKey,anchorX:0.5,anchorY:0.5,zOrder:0}`（**必与 Shape 并存**·未就绪回退 Shape=观感零变）→ 照 game-q 样板写 requirements 推导脚本。mount 拉本地 index 注册 AssetManager（`game-q.ts` skinAssets 样板）。
+- **程序矢量=索引一等公民（REQ-VECTOR-ART 步3·07-13）**：参数化程序美术不留在渲染代码里——索引条目
+  `type:'texture'+spec.generator:{name,params}`（免 path·params=纯数据·双皮=两组 params），game 模块
+  `registerTextureGenerator(name, fn)`（确定性纯函数→data-URI）**先登记后 registerAssetIndex**；
+  热替换=同 id 条目在 `path`(raster)↔`spec.generator`(矢量) 间只改索引数据，textureKey/调用点零改。
 - **写回**：不钉 manifest——生成/上传按 `skinKey` **别名登记**进 `public/games/<g>/art/index.json`，资产就绪自动换装。其余步骤与卡带线相同（换库/换皮动作在平台自动隐藏）。
 
 ## 红线

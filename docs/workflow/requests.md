@@ -164,7 +164,7 @@
 > **接缝（给缺口②）**：放置意图走 `PlaceBlockIntent` 组件——**配套输入桥 `grid-drag-square`（方形吸附+polyomino 预览+合法/非法高亮）作为缺口②另立**，写同一 Intent 即插入；本能力只管「判定+结算」，现可由点击/测试直接驱动。
 > **治理提示**：Block Blast 的 `capability-plan`（`docs/design/<game>/capability-plan.md`）我在库里**没找到**——按铁律新游戏开工前须交能力总览过审，请补齐（本次先下沉了无争议的通用缺口①·符合 owner 07-11 capgap 快速通道 + 「能出复杂的东西=第一要素」价值序）。缺口②`grid-drag-square` 待 GD/PE 正式报单，我再评审下沉。
 
-### REQ-VECTOR-ART-美术资源统一「贴图 | 程序矢量」一等 resolver · [2026-07-13] · owner 提出统一抽象 → PST 评审接受·建步1 proof · status: **open（步1 索引化已落 game-g·PST；步3 引擎 resolver 待 Lead 下沉；步2 渲染指向索引待接）** · 优先级: P1（owner 主诉·代码游戏安全换皮的地基） · 类型: 能力下沉候选（引擎资产 resolver·Lead 域）
+### REQ-VECTOR-ART-美术资源统一「贴图 | 程序矢量」一等 resolver · [2026-07-13] · owner 提出统一抽象 → PST 评审接受·建步1 proof · status: **open（步1 ✅PST；步3 ✅Lead 2026-07-13 亲手落地——texture-generators 注册表+asset-index generator 条目+registerAssetIndex 解析·5 测·手册已回填；步2 渲染指向索引=PST 接续·golden 帧保命）** · 优先级: P1（owner 主诉·代码游戏安全换皮的地基） · 类型: 能力下沉候选（引擎资产 resolver·Lead 域）
 > **owner 洞见（PST 评审=对·宪法方向）**：美术资源 = 一个**统一间接层**——台账/索引里一个条目 resolve 出来的可以是 ①raster 贴图 也可以是 ②procedural/vector 矢量描述；**底层两者一回事**（都是"这个槽当前长这样"）。把游戏当前所有矢量图**变成索引条目**（指向矢量描述），美术资源统一、可安全热替换。
 > **现状（机读真相）**：`src/assets/asset-index.ts` 的 `AssetType` = texture/mesh/material/sound/animation/video/font——**无 procedural/vector 一等类型**；`resolveArtRefs` 只解 `art:<query>`→FreeArtLib 精灵（raster）。程序化美术（如 game-g `art-textures.ts`/`portraits.ts`）活在渲染代码里·不进索引·渲染直接调=二等公民。**统一抽象底层未落地=真缺口。**
 > **三步安全落地（帧回归兜底·数据驱动·绝不改蓝图逻辑）**：

@@ -1,5 +1,6 @@
 import type { AssetManager } from './asset-manager.js';
 import type { TextureDescriptor, AtlasDescriptor, SpriteSheetDescriptor, Rect } from './asset-types.js';
+import { generatorSpecOf, resolveGeneratedSrc } from './texture-generators.js';
 
 // 原始资产存储索引（`assets/index.json`）的读取/校验/桥接。
 //
@@ -75,8 +76,13 @@ export function parseAssetIndex(raw: unknown): AssetIndex {
     if (typeof e.description !== 'string') fail(`assets[${i}] "${e.id}".description 必须是字符串`);
     if (e.status !== 'tbf' && e.status !== 'filled')
       fail(`assets[${i}] "${e.id}".status 必须是 tbf|filled`);
-    // material 是**数据型资产**（无文件·数据全在 spec·REQ-Resource ④）→ 免 path；其余 filled 必带 path。
-    if (e.status === 'filled' && e.type !== 'material' && (typeof e.path !== 'string' || e.path.length === 0))
+    // material 是**数据型资产**（无文件·数据全在 spec·REQ-Resource ④）→ 免 path；
+    // texture 带 spec.generator（程序矢量·REQ-VECTOR-ART 步3）同为数据型 → 免 path；其余 filled 必带 path。
+    const hasGenerator = e.type === 'texture'
+      && !!e.spec && typeof e.spec === 'object' && !Array.isArray(e.spec)
+      && (e.spec as Record<string, unknown>).generator !== undefined;
+    if (e.status === 'filled' && e.type !== 'material' && !hasGenerator
+      && (typeof e.path !== 'string' || e.path.length === 0))
       fail(`assets[${i}] "${e.id}" 已 filled 但缺 path`);
     if (e.spec !== undefined && (typeof e.spec !== 'object' || e.spec === null))
       fail(`assets[${i}] "${e.id}".spec 必须是对象`);
@@ -216,6 +222,22 @@ function validateSpec(type: AssetType, spec: Record<string, unknown> | undefined
     if (spec.colorSpace !== undefined && !inSet(COLOR_SPACES, spec.colorSpace)) badEnum('colorSpace', COLOR_SPACES);
     if (spec.wrap !== undefined && !inSet(TEXTURE_WRAPS, spec.wrap)) badEnum('wrap', TEXTURE_WRAPS);
     mustNum('tiling');
+    // 程序矢量生成器（REQ-VECTOR-ART 步3）：{name, params?}·params 值限 number|string|boolean（纯数据）。
+    // 只验形状——name 是否已登记在 registerAssetIndex 期查（生成器由 game 模块 import 期登记·晚于 parse）。
+    if (spec.generator !== undefined) {
+      const g = spec.generator as Record<string, unknown>;
+      if (typeof g !== 'object' || g === null || Array.isArray(g))
+        fail(`assets[${i}] "${id}".spec.generator 必须是 {name, params?} 对象`);
+      if (typeof g.name !== 'string' || !g.name)
+        fail(`assets[${i}] "${id}".spec.generator.name 必须是非空字符串`);
+      if (g.params !== undefined) {
+        if (typeof g.params !== 'object' || g.params === null || Array.isArray(g.params))
+          fail(`assets[${i}] "${id}".spec.generator.params 必须是对象`);
+        for (const [pk, pv] of Object.entries(g.params as Record<string, unknown>))
+          if (!['number', 'string', 'boolean'].includes(typeof pv))
+            fail(`assets[${i}] "${id}".spec.generator.params.${pk} 必须是 number|string|boolean（纯数据）`);
+      }
+    }
   } else if (type === 'mesh') {
     mustNum('scale');
     if (spec.genCollision !== undefined && !inSet(MESH_COLLISIONS, spec.genCollision)) badEnum('genCollision', MESH_COLLISIONS);
@@ -250,8 +272,11 @@ export function registerAssetIndex(manager: AssetManager, index: AssetIndex, bas
   // 防御性拼接：baseUrl 非空且不以 '/' 结尾时补一个，避免 "assets/tex" + "hero.png" = "assets/texhero.png"（Gemini code review）。
   const sep = baseUrl && !baseUrl.endsWith('/') ? '/' : '';
   for (const e of index.assets) {
-    if (e.status !== 'filled' || !e.path) continue;
-    const src = baseUrl + sep + e.path;
+    // 程序矢量条目（REQ-VECTOR-ART 步3）：filled + spec.generator（免 path）→ 注册期解析成 data-URI。
+    // generator 与 path 并存时 generator 胜（热替换=只改索引：加 generator 即切矢量·删之即回 raster）。
+    const gen = e.type === 'texture' && e.status === 'filled' ? generatorSpecOf(e.spec) : null;
+    if (e.status !== 'filled' || (!e.path && !gen)) continue;
+    const src = gen ? resolveGeneratedSrc(gen) : baseUrl + sep + e.path;
     if (e.type === 'texture') {
       const frames = e.spec?.frames as Record<string, Rect> | undefined;
       const sheet = sheetSpecOf(e.spec);

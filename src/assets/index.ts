@@ -47,6 +47,17 @@ export {
   type TextureWrap,
   type MeshCollision,
 } from './asset-index.js';
+// 贴图生成器注册表（REQ-VECTOR-ART 步3：texture + spec.generator=程序矢量一等公民）
+export {
+  registerTextureGenerator,
+  hasTextureGenerator,
+  listTextureGenerators,
+  generatorSpecOf,
+  resolveGeneratedSrc,
+  type TextureGeneratorFn,
+  type TextureGeneratorParams,
+  type GeneratorSpec,
+} from './texture-generators.js';
 // 资源库统一模型（浏览器/搜索用；三来源适配成一种记录）
 export {
   LIBRARY_TAXONOMY,
