@@ -420,3 +420,12 @@
 > 4. **先独立命令跑稳（全量并发下连过 3 次）再议进门禁**——吸取 flow-walk flaky 教训，不许一步塞进推送门禁。
 > 5. 同提交回填 `docs/playbooks/3d.md` 一行 + `docs/playbooks/testing.md` 对拍行更新；证据挂 `docs/playbooks/visual-scorecard.md` 维 8（性能证据）。
 > 6. 门禁全绿直推；完工标 ✅ 待 Lead 验收（我会拿一个故意黑屏/冻结的场景做红测）。
+
+## REQ-3D-世界空间 UI 表达 · WorldUI3D 超越飘字（owner 2026-07-07「3D UI 表达·两者都要」） · [2026-07-14] · 提出：UI/game-i session → **待 P3D 评估** · status: open · 优先级: P2 · 类型: 3D UI 能力
+
+> **背景**：owner 要「开发 3D UI 表达」，明确「两者都要」——① 2D LayoutNode 加 CSS-3D 变换（透视倾斜/景深叠层/悬停立体抬起）**已由 UI 域落地**（`LayoutConstraints.rotateX/rotateY/perspective/z/tilt3d`·game-i `t-3d` 段·见 transform3d.test）；② **世界空间 UI**=UI 面板/HUD 挂进真 3D 场景，属 P3D 独占域，本单提交 P3D 评估。
+> **诉求（待 P3D 按 manifesto 评判：能否用现有 WorldUI3D 组合表达 / 真缺口才下沉）**：现 `WorldUI3D` 只有世界空间**飘字**（text/offsetY/size/glow）。商业 3D 游戏的「世界空间 UI」还含：
+> 1. **世界空间面板**（3D 空间里的一块信息板/菜单·可 billboard 朝相机或固定朝向）——承载多行文字/图标/进度条，而非单行飘字。是否值得一个 `Panel3D{ layout 数据? / 贴图? }`，还是让 LayoutNode 渲成纹理贴到 Mesh3D 面片（UI-as-texture）？
+> 2. **屏幕空间锚定到世界物件**（血条/名牌跟随 3D 单位、投影到屏幕叠 LayoutNode HUD）——本池 UI↔世界锚 seam（screenToWorld）是否已够，缺的是把 2D LayoutNode 定位到世界物件的屏幕投影点的桥？
+> 3. **diegetic UI**（UI 是场景的一部分：控制台屏幕、卡牌摆在 3D 桌面上）——大概率 = LayoutNode→CanvasTexture→Material3D.map 的管线，值得评估。
+> **边界**：这是 render-only 表现层（不进 sim/hash）。**不预设做法**——P3D 评估是重组现有能力还是下沉新组件；若下沉，闭集数据+registry describe+回填 `docs/playbooks/3d.md`（手册铁律）。owner 无 deadline，排 P3D 队自主定档。

@@ -103,11 +103,18 @@ function layoutStyle(c?: LayoutConstraints, t?: UITheme): string {
     p.push(`max-width:${num(c.maxWidth)}px`, 'margin-left:auto', 'margin-right:auto');
     if (c.width === undefined) p.push('width:100%');
   }
-  // Transform（旋转/缩放）：声明式数据 → CSS transform。扇形手牌/选中放大等。
+  // Transform（2D 旋转/缩放 + 3D 倾斜/景深）：声明式数据 → CSS transform。扇形手牌/选中放大/透视 UI/真 3D 翻面/景深叠层。
+  // 3D：perspective() 必须最前；有 rotateX/rotateY/z 任一 → 自动补 perspective（缺省 800px）+ preserve-3d（让子层景深合成）。
+  const has3d = c.rotateX !== undefined || c.rotateY !== undefined || c.z !== undefined || c.perspective !== undefined;
   const tf: string[] = [];
-  if (c.rotate !== undefined) tf.push(`rotate(${num(c.rotate)}deg)`);
-  if (c.scale  !== undefined) tf.push(`scale(${num(c.scale)})`);
+  if (has3d) tf.push(`perspective(${num(c.perspective, 800)}px)`);
+  if (c.rotateX !== undefined) tf.push(`rotateX(${num(c.rotateX)}deg)`);
+  if (c.rotateY !== undefined) tf.push(`rotateY(${num(c.rotateY)}deg)`);
+  if (c.rotate  !== undefined) tf.push(`rotate(${num(c.rotate)}deg)`);
+  if (c.scale   !== undefined) tf.push(`scale(${num(c.scale)})`);
+  if (c.z       !== undefined) tf.push(`translateZ(${num(c.z)}px)`);
   if (tf.length) p.push(`transform:${tf.join(' ')}`);
+  if (has3d) p.push('transform-style:preserve-3d');
   // 倒角切角（clip-path 八边形·扑克/art-deco 美学）。切角 px 过 num 防注入。
   if (c.chamfer !== undefined) {
     const k = num(c.chamfer);
@@ -790,12 +797,13 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
   const html = renderDispatch(node, theme);
   const c = node.layout;
   const fxData = c?.fx?.length ? fxToCss(c.fx, theme).dataFx : ''; // sheen/flash 等叠层 token
-  if (c && (c.draggable || c.dropZone || c.anchor || c.sheen || fxData)) {
+  if (c && (c.draggable || c.dropZone || c.anchor || c.sheen || c.tilt3d || fxData)) {
     const a: string[] = [];
     if (c.draggable) a.push(`draggable="true" data-drag="${esc(node.id)}"`);
     if (c.dropZone)  a.push(`data-drop="${esc(c.dropZone)}"`);
     if (c.anchor)    a.push(`data-anchor="${esc(c.anchor)}"`); // 新手引导 spotlight 锚点（OnboardingOverlay 定位）
     if (c.sheen)     a.push('data-sheen'); // 流光层（CSS 注入 ::after·apollo-sheen-sweep）
+    if (c.tilt3d)    a.push('data-tilt3d'); // 交互 3D 倾斜（悬停立体抬起·CSS 注入 :hover 变换）
     if (fxData)      a.push(`data-fx="${esc(fxData)}"`); // 特效叠层（sheen/flash → ::after/::before）
     return html.replace(/^(\s*<[a-zA-Z][\w-]*)/, `$1 ${a.join(' ')}`);
   }

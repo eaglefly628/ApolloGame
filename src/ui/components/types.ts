@@ -35,10 +35,20 @@ export interface LayoutConstraints {
   justify?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly';
   padding?: number;
   margin?: number;
-  /** 旋转角度（度·CSS transform rotate）。扇形手牌/卡牌斜摆填这一个数即得。 */
+  /** 旋转角度（度·CSS transform rotate=绕 Z 轴/平面内旋）。扇形手牌/卡牌斜摆填这一个数即得。 */
   rotate?: number;
   /** 缩放倍率（CSS transform scale）。选中态放大、强调用。 */
   scale?: number;
+  /** 3D 绕 X 轴倾角（度·前后翻·CSS rotateX）。透视 UI/卡牌前倾/翻面。填了 3D 值自动补 perspective。owner 2026-07-07 3D UI 表达。 */
+  rotateX?: number;
+  /** 3D 绕 Y 轴倾角（度·左右翻·CSS rotateY）。真 3D 翻面（比 flipcard 假 scaleX 真）·菜单侧旋入场。 */
+  rotateY?: number;
+  /** 透视深度（px·CSS perspective·越小越夸张·缺省 800）。有 rotateX/Y/z 时自动加；单独填只设景深基准。 */
+  perspective?: number;
+  /** Z 轴位移（px·CSS translateZ·景深叠层：正=朝屏幕外凸、负=退后）。叠牌/悬浮层的立体分层。需父级 preserve-3d（本件带 3D 变换即自动开）。 */
+  z?: number;
+  /** 交互 3D 倾斜（悬停时朝内立体抬起·render-only·同 data-tilt3d CSS）。给卡/面板/按钮加"活的立体感"。 */
+  tilt3d?: boolean;
   /** 入场/强调动画预设名（引擎内建关键帧·mountUI 注入）：fadeIn/slideUp/pop/shake/dealIn/flyIn。 */
   anim?: string;
   /** 动画时长 ms（缺省 360）。 */

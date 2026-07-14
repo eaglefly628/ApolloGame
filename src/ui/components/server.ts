@@ -124,7 +124,9 @@ const APOLLO_KEYFRAMES = `
 [data-apollo-btn]:not([disabled]):hover{filter:brightness(1.07)}
 [data-apollo-btn]:not([disabled]):active{transform:translateY(1px);filter:brightness(.9)}
 [data-apollo-skin]:not([disabled]):hover{filter:brightness(1.08)}
-[data-apollo-skin]:not([disabled]):active{transform:translateY(2px);filter:brightness(.85)}`;
+[data-apollo-skin]:not([disabled]):active{transform:translateY(2px);filter:brightness(.85)}
+[data-tilt3d]{transition:transform .18s cubic-bezier(.2,.7,.3,1);transform-style:preserve-3d}
+[data-tilt3d]:hover{transform:perspective(800px) rotateX(7deg) rotateY(-9deg) translateZ(16px)}`;
 /**
  * 幂等注入引擎 UI 关键帧 + fx 叠层 CSS（anim 预设 / sheen·flash 的 ::after·::before / flipcard）。
  * mountUI 自动调；**renderNode-only 屏（如 game-g 战斗屏走 innerHTML·非 mountUI）须自己调一次**，

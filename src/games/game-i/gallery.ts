@@ -963,6 +963,27 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           { type: 'Button', id: 'sk-card-play', props: { label: '出 王牌', skin: CARD_JOKER_URL, action: 'click', actionArg: 'card-play' }, layout: { width: 120, height: 168 } },
         ] },
 
+      divider('d-3d'),
+      sectionTitle('t-3d', 'LAYOUT · 3D UI 表达（CSS-3D 通用化·rotateX/Y 透视倾斜 · z 景深叠层 · tilt3d 悬停立体抬起 · 把 CoinFlip 的 3D 通用成任意面板）'),
+      { type: 'Panel', id: '3d-row', props: { bare: true }, layout: { direction: 'row', gap: 48, padding: 24, align: 'center' },
+        children: [
+          // ① 静态透视倾斜面板
+          { type: 'Panel', id: '3d-tilt', props: { bg: 'jade-sheen', title: '透视倾斜' }, layout: { width: 150, height: 100, padding: 14, rotateX: 14, rotateY: -18 },
+            children: [{ type: 'Label', id: '3d-tilt-l', props: { text: 'rotateX:14\nrotateY:-18', size: 'sm', color: 'text' } }] },
+          // ② 景深叠层（三张卡 translateZ 递增·朝外凸）
+          { type: 'Panel', id: '3d-depth', props: { bare: true }, layout: { width: 150, height: 150, rotateY: 18 },
+            children: [
+              { type: 'Panel', id: '3d-d1', props: { bg: 'steel' }, layout: { x: 0, y: 0, width: 92, height: 128, radius: 10, z: 0 }, children: [] },
+              { type: 'Panel', id: '3d-d2', props: { bg: 'ink-deep' }, layout: { x: 14, y: 10, width: 92, height: 128, radius: 10, z: 28 }, children: [] },
+              { type: 'Panel', id: '3d-d3', props: { bg: 'gold-sheen' }, layout: { x: 28, y: 20, width: 92, height: 128, radius: 10, z: 56, align: 'center', justify: 'center', padding: 0 },
+                children: [{ type: 'Label', id: '3d-d3-l', props: { text: 'z:56\n凸出', size: 'sm', bold: true, color: 'ink' } }] },
+            ] },
+          // ③ 交互 3D 倾斜（悬停立体抬起·贴卡牌皮）
+          { type: 'Button', id: '3d-tilt-card', props: { label: '', skin: CARD_JOKER_URL, action: 'click', actionArg: 'tilt-card' }, layout: { width: 110, height: 154, tilt3d: true } },
+          { type: 'Panel', id: '3d-tilt-panel', props: { bg: 'void', title: 'tilt3d' }, layout: { width: 130, height: 100, padding: 14, tilt3d: true, align: 'center', justify: 'center' },
+            children: [{ type: 'Label', id: '3d-tilt-panel-l', props: { text: '悬停我\n→ 立体抬起', size: 'sm', color: 'text' } }] },
+        ] },
+
       divider('d-cartoon'),
       sectionTitle('t-cartoon', 'IMAGE · 卡通美术画廊（vendored 自 undraw·MIT·内容丰富的彩色卡通场景插画·按资产 key 解析喂 Image）'),
       { type: 'Panel', id: 'cartoon-row', props: {}, layout: { direction: 'grid', cols: 3, gap: 12, padding: 16 },
