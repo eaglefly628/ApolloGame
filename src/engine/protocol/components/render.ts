@@ -335,6 +335,13 @@ export interface Material3D extends Component {
   ormMap?: string; // ORM 打包图（一图三通道 R=AO/G=Roughness/B=Metalness·线性）→ 同图挂 ao/rough/metal 三槽（three 惯例）；显式单图覆盖对应通道
   // UV 平铺（render-only）：repeat=各轴重复次数（缺省 1）；offset=[x,y] UV 偏移。作用于本材质所有贴图槽。
   tiling?: { repeat?: number; offset?: readonly [number, number] };
+  // UV 动画（render-only·壁钟驱动·休闲通用）：让贴图随时间动——scroll=UV 匀速滚动（水面/岩浆/传送带/瀑布/能量条）；
+  //   flipbook=序列帧（sprite-sheet·cols×rows 网格·按 fps 逐格播·动态自发光/爆炸/传送门）。渲染器给本材质**克隆**独立贴图
+  //   逐帧改 offset/repeat（不影响共享同图的其他物件）。scroll 与 flipbook 二选一（同时给则 flipbook 优先）。
+  uvAnim?: {
+    scrollX?: number; scrollY?: number; // UV 每秒滚动速度（scroll 模式·作用于本材质所有贴图槽）
+    fps?: number; cols?: number; rows?: number; // 序列帧（flipbook 模式·fps>0 且 cols/rows≥1 启用·逐格循环）
+  };
 }
 
 // 程序化表面细节（render-only·TA Phase 5）：渲染器据参数生成 normal + roughness 贴图（DataTexture）—— **不需美术贴图文件**，
