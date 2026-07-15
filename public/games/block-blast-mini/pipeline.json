@@ -12,20 +12,20 @@
     "S3": {
       "exit": 0,
       "summary": "parse+引擎装载（load+2tick）零 error",
-      "at": "2026-07-15T06:40:45.130Z",
-      "gameHash": "d785658ffe05fedb"
+      "at": "2026-07-15T06:48:19.465Z",
+      "gameHash": "4000c29c210c1b90"
     },
     "S4": {
       "exit": 0,
       "summary": " Test Files  1 passed (1) ·       Tests  8 passed (8)",
-      "at": "2026-07-15T06:40:47.163Z",
-      "gameHash": "d785658ffe05fedb"
+      "at": "2026-07-15T06:48:21.409Z",
+      "gameHash": "4000c29c210c1b90"
     },
     "S5": {
       "exit": 0,
       "summary": "AUDIT: WARNINGS · RATCHET: PASS",
-      "at": "2026-07-15T06:40:47.271Z",
-      "gameHash": "d785658ffe05fedb"
+      "at": "2026-07-15T06:48:21.522Z",
+      "gameHash": "4000c29c210c1b90"
     },
     "S8": {
       "exit": 0,
@@ -63,6 +63,24 @@
       "stage": "S8",
       "exit": 0,
       "at": "2026-07-15T06:47:25.776Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-07-15T06:48:19.465Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-15T06:48:21.409Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-07-15T06:48:21.522Z"
     }
   ]
 }
