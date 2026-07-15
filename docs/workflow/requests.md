@@ -855,3 +855,12 @@
 > **为何现在必现**（owner 2026-07-06 改「胜者守原位·不追击」+ 兵仍每回合自动推进）：胜者不再占腾出格、但仍自动前进 → 兵**滑过**彼此成为常态 → 互穿→出界→无限march。旧「突深边角」单只补了单侧突深；此为**双侧互穿**的更严重版·整个碰撞/破家几何在"互穿"下崩。
 > **程序A 待修（spec·GD 报缺·代码归程序A）**：① **兵越过 goal（我 slot>8 / 敌 slot<0）必须触发破家离场**（不论该路是否还有敌兵）——破家判据改「按每兵是否越 goal」逐兵结算·别用「整路无敌」当门。② **互穿几何**：两前锋一旦交错（我方 slot ≥ 敌方 slot），要么判碰撞掷命、要么各自继续奔各自的 goal 破家——**绝不能 clamp 到身后的敌前锋**。③ 加**互穿/出界回归测试**（双方前锋交错后·断言无 slot 越界、每兵越 goal 即破家离场、有限回合内分胜负）。④ turnHash 变=有意·更新。
 > **GD 附注**：此 bug 直接造成 owner「30回合不知在玩什么」的空转。**修它是关1可玩的前置**（比任何平衡都优先）。它也暴露"胜者守原位+自动推进"的几何没想清——见下方核心循环讨论。
+
+### REQ-UI-积木接口完备性批（Gemini review → P3D 复核裁决 · 交主程/UI）· [2026-07-15] · P3D 转交 → 主程/UI 域（src/ui/components·🔒） · status: open · 优先级: P3（接口稳健性·非阻塞·无正确性 bug） · 类型: UI 校验/类型收紧
+> **来源**：owner 让 Gemini review 全量 UI 积木接口（types/catalog/validate）。P3D 逐条对抗性复核（对照 render.ts 实现事实），采纳下列 4 项，回驳 2 项。**归 UI 域·P3D 不改·此单交主程/UI 裁工。**
+> **① scroll + 3D flatten 联立校验（低优）**：祖先 `overflow≠visible`（如 Panel `scroll:true`）会把 `transform-style` 算成 `flat`，子树 `z/rotateX/rotateY` 失效。裁：validate 加跨字段警告——节点/祖先 `scroll:true` 且子项带 3D layout(`z/rotateX/rotateY`) → warn。
+> **② PanelFill 裸串逃生舱收紧（最该修·与 UI 铁律同向）**：`PanelFill = SurfaceToken|FillPreset|{custom:string}|(string & {})` 的裸 `(string&{})` + catalog 把 `bg` 定成 `type:'string'` → validate 完全不校验 `bg`，弱模型易吐脏串致 fallback 失败。`{custom}` 已是显式逃生口·裸串冗余且弱化闭集（我们自己注释也承认「裸串仍收 back-compat」=自由逃生）。裁：validate 对 `bg` 裸串做警告（非 `#/rgb/rgba/linear-gradient` 前缀即 `bad-enum` 提示）；类型层逐步弃 `(string&{})`。走警告不硬删（护存量数据）。
+> **③ fx/anim 误塞 props 定向 lint**：validate 只校验 `node.layout.fx`；误写 `props.fx`/`props.anim` 静默失效。现策略对未列字段宽容（有意防误报）——但对**已知 layout 专用词**（fx/anim/radius/rotate/rotateX/rotateY/z/scale/tilt3d/perspective）出现在 props 定向拦截，零误报高价值。裁：加 `bad-layout-placement` 警告，引导移入 layout。
+> **④ Slider debounce 声明（低优）**：UI 铁律禁 handler 塞逻辑（只入队 action 信号）→ 防抖**除做成声明式 prop 别无表达路径**，故天然合法（非过度设计）。当前无拥堵实锤·低优。裁：高频控件（Slider…）可加 `debounce?:number` prop 声明·由消费侧节流。
+> **【P3D 回驳·不做】⑤ 异形按钮包围盒误触**：Gemini 前提事实反了——现代浏览器 `clip-path` **会**裁命中测试（透明角点击穿透·不误触），那句"命中区仍是矩形包围盒"只对 border-radius 成立。渲染器异形全走 `clip-path:polygon`（render.ts:165-171）→ 命中区本就正确·**无 bug**。唯一真收获：render.ts:162 注释「命中区仍是元素包围盒」是过期错误·误导后人——**建议主程改掉这句注释**（不改行为）。
+> **【P3D 暂缓·YAGNI】⑥ bind → BindingExpression（player.gold 嵌套路径）**：无具名消费者·8 款游戏 flat ResourceId 够用·path 迷你文法=无驱动者的 DSL 扩张（违反 CORE RULE 避免过度设计）。等真有游戏需嵌套绑定再开。
