@@ -45,6 +45,7 @@ import type {
   HexPos,
   Hierarchy,
   Hitbox,
+  Impulse3D,
   InputQueue,
   KeyBinding,
   Launch,
@@ -163,6 +164,7 @@ export interface ComponentDataMap {
   HexPos: Omit<HexPos, 'type'>;
   Hierarchy: Omit<Hierarchy, 'type'>;
   Hitbox: Omit<Hitbox, 'type'>;
+  Impulse3D: Omit<Impulse3D, 'type'>;
   InputQueue: Omit<InputQueue, 'type'>;
   KeyBinding: Omit<KeyBinding, 'type'>;
   Launch: Omit<Launch, 'type'>;

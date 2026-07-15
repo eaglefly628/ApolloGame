@@ -435,6 +435,13 @@ export class ThreeRenderer implements RendererBackend {
   // 掷骰子（游戏层调·render-only 表现物理）：置位 → 下帧 sync 里把所有刚体抬高 + 随机翻滚重掷。
   rollDice(): void { this.rollPending = true; this.invalidate(); }
 
+  // 运行时对某刚体施力（render-only·输入胶水用）：拖拽甩球/点击弹射等**输入时算出方向**的冲量走这条命令式接口
+  //   （同 pick/rollDice 先例）；纯数据的定向施力用 `Impulse3D` 组件（bump trigger）。物理未就绪则 no-op。
+  applyImpulse(id: string, ix: number, iy: number, iz: number, torque?: readonly [number, number, number], mode: 'impulse' | 'velocity' = 'impulse'): void {
+    this.physics?.applyImpulse(id, ix, iy, iz, torque, mode);
+    this.invalidate();
+  }
+
   // 屏坐标 → 世界坐标（通用 screen→world seam·render-only 输入胶水）：把光标/触点投射到世界某**轴平面**上的点。
   // axis='z'（缺省·平面 z=coord·透视正视场景用）· 'y'（平面 y=coord·**俯视/顶视场景**取地面点用）· 'x'。
   // 用当前激活相机（透视/正交都对·Raycaster.setFromCamera）。给「粒子跟随鼠标（Vfx3D.attractor）」「点世界拾取」等游戏层输入用——

@@ -188,6 +188,19 @@ export interface RigidBody3D extends Component {
   avx?: number; avy?: number; avz?: number; // 初角速度（翻滚）
 }
 
+// ── Impulse3D（render-only·不进 hash·运行时施力）── 给同实体 RigidBody3D 施加一次冲量/速度（弹/射/跳/击退/风）。
+// **nonce 触发范式**（同 Camera3D.shake / Post3D.flash）：游戏在要施力时 **bump `trigger`**（任意变化数）→ 物理系统据 x/y/z
+// 施一次线性冲量（mode:'impulse'·缺省·Δv=J/m）或直接设速度（mode:'velocity'·发射固定初速）+ 可选 torque 角冲量。
+// 不 bump 不施力（缺省）。这是「运行时施力 = 数据触发」的可复用原语——弹球/敲击/跳跃/击退全用它，无需游戏层碰物理引擎。
+// 输入时算出方向的弹射（拖拽甩球）另有渲染器 `applyImpulse(id,...)` 命令式接口（同 roll/pick 输入胶水先例）。
+export interface Impulse3D extends Component {
+  readonly type: 'Impulse3D';
+  trigger: number; // bump 即施加一次（nonce）
+  x?: number; y?: number; z?: number; // 线性冲量/速度（世界向量·缺省 0）
+  torque?: readonly [number, number, number]; // 角冲量（叠加进角速度·翻滚/旋转·可选）
+  mode?: 'impulse' | 'velocity'; // impulse=叠加冲量(缺省)；velocity=直接设速度（发射固定初速·如跳跃钳定 y 速）
+}
+
 // ── Camera3D（render-only，3D 盒庭轨道相机 · 单例）─────────────────────────────────────────
 // 3D 后端的取景：绕场景中心(或 pivot)的轨道相机。yaw/pitch 定观察角(弧度)，distance 定远近(缺省=自适配包围盒)。
 // 挂一个带 Camera3D 的实体即进「盒庭模式」：相机不再强制俯视，而是按角度环绕、开柔和阴影（Captain Toad 风）。

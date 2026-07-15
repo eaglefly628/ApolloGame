@@ -1,6 +1,6 @@
 import type * as CANNON from 'cannon-es';
 import type { IWorld } from '@engine/core/types.js';
-import type { RigidBody3D, Mesh3D, Transform3D } from '@engine/protocol/components.js';
+import type { RigidBody3D, Mesh3D, Transform3D, Impulse3D } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  three/PhysicsSystem —— 真物理刚体（cannon-es 驱动·TA·**纯表现**）。
@@ -27,6 +27,7 @@ export async function preloadPhysics(): Promise<void> { if (!C) C = await import
 export class PhysicsSystem {
   private world: CANNON.World | null = null;
   private readonly bodies = new Map<string, CANNON.Body>();
+  private readonly impulseSeen = new Map<string, number>(); // Impulse3D 已施加的 trigger（同 shake/flash 触发范式·防每帧重复施力）
   private last = 0;
 
   // 每帧步进 + 写回 Transform3D。返回活跃刚体数（>0 → 渲染器把帧号折进 renderSig 持续重渲）。nowMs=performance.now()。
@@ -41,7 +42,15 @@ export class PhysicsSystem {
       seen.add(id);
       if (!this.bodies.has(id)) this.spawn(world, id);
     }
-    for (const [id, b] of this.bodies) if (!seen.has(id)) { cw.removeBody(b); this.bodies.delete(id); }
+    for (const [id, b] of this.bodies) if (!seen.has(id)) { cw.removeBody(b); this.bodies.delete(id); this.impulseSeen.delete(id); }
+    // 数据驱动施力（Impulse3D·nonce 触发）：trigger 变即施加一次线性/角冲量或直接设速度——弹/射/跳/击退的可复用原语。
+    for (const [id] of ents) {
+      const imp = world.getComponent<Impulse3D>(id, 'Impulse3D');
+      if (!imp) continue;
+      if (this.impulseSeen.get(id) === imp.trigger) continue;
+      this.impulseSeen.set(id, imp.trigger);
+      this.applyImpulse(id, imp.x ?? 0, imp.y ?? 0, imp.z ?? 0, imp.torque, imp.mode);
+    }
     const dt = this.last ? Math.min(0.05, (nowMs - this.last) / 1000) : STEP;
     this.last = nowMs;
     cw.step(STEP, dt, 4);
@@ -64,6 +73,17 @@ export class PhysicsSystem {
       b.angularVelocity.set((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20);
       b.wakeUp();
     }
+  }
+
+  // 运行时施力核（可复用·render-only）：对某刚体施加线性冲量（mode='impulse'·缺省）或直接设速度（mode='velocity'·发射固定初速），
+  // 可选角冲量 torque（翻滚/旋转）。body 不存在/物理未就绪 → no-op。供 ① Impulse3D 数据触发 ② 渲染器输入胶水（拖拽弹射）共用。
+  applyImpulse(id: string, ix: number, iy: number, iz: number, torque?: readonly [number, number, number], mode: 'impulse' | 'velocity' = 'impulse'): void {
+    const b = this.bodies.get(id);
+    if (!b || !C) return;
+    if (mode === 'velocity') b.velocity.set(ix, iy, iz);
+    else b.applyImpulse(new C.Vec3(ix, iy, iz)); // 质心冲量（Δv = J/m）
+    if (torque) b.angularVelocity.set(b.angularVelocity.x + torque[0], b.angularVelocity.y + torque[1], b.angularVelocity.z + torque[2]);
+    b.wakeUp();
   }
 
   private initWorld(): void {
