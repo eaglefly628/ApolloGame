@@ -423,6 +423,18 @@ export interface Trail3D extends Component {
   blend?: 'add' | 'alpha'; // 混合（add=发光残影·alpha=实体拖尾·缺省 alpha）
 }
 
+// ── Decal3D（render-only·不进 hash·休闲通用地面贴花）── 在实体地面投影处铺一张水平贴片·随实体 XZ 跟随。
+// kind:'blob'=软阴影（便宜的接触阴影·真阴影关了也有立体感）·'ring'=空心环（选中/目标标记）·'disc'=实心圆（高亮/落点 splat）。
+// 形状=程序化 alpha 遮罩（按 kind 生成缓存·零美术文件）；颜色/不透明度/半径走参数（改这些不重建贴图）。**纯表现**。
+export interface Decal3D extends Component {
+  readonly type: 'Decal3D';
+  kind?: 'blob' | 'ring' | 'disc'; // 缺省 blob（软阴影）
+  radius?: number; // 半径（世界单位·缺省 3）
+  color?: number; // 颜色 0xRRGGBB（缺省 blob=黑·ring/disc=白）
+  opacity?: number; // 不透明度 0..1（缺省 blob=0.35·ring/disc=0.7）
+  y?: number; // 贴地高度（缺省 0.05·防 z-fighting）
+}
+
 export interface Color extends Component {
   readonly type: 'Color';
   tint: number;

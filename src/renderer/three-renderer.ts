@@ -21,6 +21,7 @@ import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
 import { VfxSystem } from './three/vfx.js';
 import { TrailSystem } from './three/trail.js';
+import { DecalSystem } from './three/decal.js';
 import { Anim3DSystem } from './three/anim3d.js';
 import { pivotMatrix, applyPivot } from './three/pivot.js';
 import { WorldUiLayer } from './three/world-ui.js';
@@ -78,6 +79,7 @@ export class ThreeRenderer implements RendererBackend {
   private debugNav = false;
   private readonly vfx = new VfxSystem(); // 数据驱动粒子（TA Phase 1·render-only）
   private readonly trails = new TrailSystem(); // 运动拖尾（Trail3D·render-only·超休闲残影）
+  private readonly decals = new DecalSystem(); // 地面贴花（Decal3D·blob 阴影/环/圆·render-only）
   private readonly anim3d = new Anim3DSystem(); // 程序化位姿动画（Anim3D·spin/bob·render-only·把 title 骰自转等从游戏层手写下沉成数据）
   private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
   private physics: PhysicsSystem | null = null; // 真物理刚体（cannon-es·render-only·**懒加载**·仅有 RigidBody3D 时）
@@ -243,6 +245,8 @@ export class ThreeRenderer implements RendererBackend {
     const vfxLive = this.vfx.sync(this.scene, world, performance.now());
     // 运动拖尾采样（Trail3D·render-only）：据实体世界位更新位置历史（相机后才建几何）。有位移的拖尾数 >0 → 折进 renderSig。
     const trailLive = this.trails.sample(world);
+    // 地面贴花（Decal3D·render-only·不需相机·世界空间贴地）：管理贴片网格 + 跟随实体地面位。有变化 >0 → 折进 renderSig。
+    const decalLive = this.decals.sync(this.scene, world);
     // 程序化位姿动画（Anim3D·render-only）：据壁钟改 Transform3D 分量（spin/bob）——须在 collect 前（渲染读更新后的位姿）。
     const animPoseLive = this.anim3d.sync(world, performance.now());
     // Pivot3D 父合成（render-only）：把整组子实体位姿合成到 pivot 变换下 → 整场当一个单元转/缩/移（骰钟转场 §F）。
@@ -356,7 +360,7 @@ export class ThreeRenderer implements RendererBackend {
     } else { this.followDamp.reset(); }
     // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
     const flashAmt = this.flash.update(post?.flash, performance.now());
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${trailLive > 0 ? this.frame : 't0'}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -514,6 +518,7 @@ export class ThreeRenderer implements RendererBackend {
     this.navDebug.dispose(this.scene);
     this.vfx.dispose(this.scene);
     this.trails.dispose(this.scene);
+    this.decals.dispose(this.scene);
     this.anim3d.dispose();
     this.camShake.dispose();
     this.flash.dispose();

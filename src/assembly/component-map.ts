@@ -24,6 +24,7 @@ import type {
   Color,
   Controllable,
   CraftRecipe,
+  Decal3D,
   DestroyRequest,
   DicePool,
   Draggable,
@@ -143,6 +144,7 @@ export interface ComponentDataMap {
   Color: Omit<Color, 'type'>;
   Controllable: Omit<Controllable, 'type'>;
   CraftRecipe: Omit<CraftRecipe, 'type'>;
+  Decal3D: Omit<Decal3D, 'type'>;
   DestroyRequest: Omit<DestroyRequest, 'type'>;
   DicePool: Omit<DicePool, 'type'>;
   Draggable: Omit<Draggable, 'type'>;
