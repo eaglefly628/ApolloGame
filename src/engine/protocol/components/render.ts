@@ -419,16 +419,18 @@ export interface WorldUI3D extends Component {
   glow?: boolean; // 发光（text 简写用）
 }
 
-// ── Diegetic3D（render-only·不进 hash·UI 贴 3D 面）── 把一棵 **LayoutNode** 渲成贴图·贴到同实体 Mesh3D 的面上
-// （in-world 屏幕/告示牌/机台面板/仪表盘）。区别 WorldUI3D（屏幕叠层 billboard·永朝相机）——diegetic 是**真贴在 3D 面上**：
-// 随物体转、被遮挡、进透视。渲染器经引擎 UI 库把 node 渲成 DOM → 栅格成 CanvasTexture → 挂材质 map + 自发光（屏自亮·任意光照可读）。
-// **UI 铁律**：仍是 LayoutNode 经真 UI 库渲染（不手写 DOM）。配 Mesh3D plane + Material3D 用；建议 shading:'flat' 或靠自发光。
+// ── Diegetic3D（render-only·不进 hash·UI 贴进 3D 空间）── 把一棵 **LayoutNode** 作为**真 DOM 面片**放进 3D 场景
+// （in-world 屏幕/告示牌/机台面板/仪表盘）：定位在实体 Transform3D、按其欧拉角朝向、随相机投影旋转/透视。经 CSS3DRenderer 叠层渲染
+// （真 DOM·文字锐利·Chromium 稳；区别贴图路线——foreignObject 栅格在 Chromium 渲空白故不用）。**代价**：DOM 叠层不进 WebGL 深度
+// → 不被 3D 物体遮挡、不吃后处理（适合"给人看的"面板）。**UI 铁律**：仍是 LayoutNode 经真 UI 库渲染（不手写 DOM）。无需 Mesh3D。
 export interface Diegetic3D extends Component {
   readonly type: 'Diegetic3D';
-  node: LayoutNode; // 贴到 3D 面的 UI 树（走引擎 UI 库渲染）
-  pxWidth?: number; // 贴图像素宽（缺省 512·越大越清晰越贵）
-  pxHeight?: number; // 贴图像素高（缺省 512）
-  bg?: string; // 画布底色（CSS 色·缺省透明）
+  node: LayoutNode; // 面片上的 UI 树（走引擎 UI 库渲染）
+  pxWidth?: number; // DOM 像素宽（决定清晰度·缺省 512）
+  pxHeight?: number; // DOM 像素高（缺省 512）
+  worldWidth?: number; // 世界宽（缺省 8·DOM 按 worldWidth/pxWidth 缩放到世界尺度）
+  worldHeight?: number; // 世界高（缺省=worldWidth·pxHeight/pxWidth·保像素比）
+  bg?: string; // 面片底色（CSS 色·缺省透明）
 }
 
 // ── TA 地基（Phase 0）：曲线 / 渐变（render-only 值类型·随寿命/时间演化的 TA 通用原语）──────────────

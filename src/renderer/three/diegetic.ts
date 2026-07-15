@@ -1,111 +1,89 @@
 import * as THREE from 'three';
+import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Diegetic3D } from '@engine/protocol/components.js';
+import type { Diegetic3D, Transform3D } from '@engine/protocol/components.js';
 import { mountUI, ensureUiKeyframes, type MountHandle } from '@ui/components/index.js';
 
 // ═══════════════════════════════════════════════════════════════
-//  three/DiegeticSystem —— UI 贴 3D 面（Diegetic3D·render-only·不进 hash·消费方=contents 展示台）。
-//  把一棵 LayoutNode 经**引擎 UI 库**渲成离屏 DOM → 栅格成 CanvasTexture → 挂到同实体 Mesh3D 的材质 map + 自发光
-//  （屏自亮·任意光照可读）。区别 WorldUI3D（屏幕叠层 billboard）——diegetic 真贴在 3D 面·随物体转/被遮挡/进透视。
-//  栅格器可注入（默认 DOM→SVG foreignObject→Image·浏览器）；node 用内联样式 + 同源/data-URI 资源（foreignObject 约束）。
+//  three/DiegeticLayer —— UI 贴进 3D 空间（Diegetic3D·render-only·不进 hash·消费方=contents 展示台）。
+//  每个 Diegetic3D = 一个 **CSS3DObject（真 DOM 面片）**：经引擎 UI 库 mountUI 渲 LayoutNode → 定位在实体 Transform3D、
+//  按其欧拉角朝向、按 worldWidth/pxWidth 缩放到世界尺度 → CSS3DRenderer 用**同一相机**投影（随相机转/透视）。
+//  真 DOM → 文字锐利、Chromium 稳（区别贴图路线：foreignObject 栅格在 Chromium 渲空白）。代价：叠层不进 WebGL 深度（不被遮挡/不吃后处理）。
+//  UI 铁律：仍是 LayoutNode 经真 UI 库渲染（不手写 DOM）。DOM 层覆在 canvas 上（pointer-events:none 不挡交互）。
 // ═══════════════════════════════════════════════════════════════
 
-export type Rasterizer = (host: HTMLElement, w: number, h: number) => Promise<CanvasImageSource>;
+interface Item { host: HTMLElement; ui: MountHandle; obj: CSS3DObject; sig: string; }
 
-// 默认栅格器：DOM → SVG foreignObject → Image。约束：内联样式（本 UI 库满足）；外部字体/图需同源或 data-URI（否则字体回退/污染）。
-export function defaultRasterizer(host: HTMLElement, w: number, h: number): Promise<CanvasImageSource> {
-  const xml = new XMLSerializer().serializeToString(host);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><foreignObject width="100%" height="100%">${xml}</foreignObject></svg>`;
-  const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-  return new Promise((resolve, reject) => {
-    const img = new Image(w, h);
-    img.onload = () => resolve(img);
-    img.onerror = (e) => reject(e);
-    img.src = url;
-  });
-}
-
-type ScreenMat = THREE.Material & { map?: THREE.Texture | null; emissiveMap?: THREE.Texture | null; emissive?: THREE.Color; emissiveIntensity?: number; needsUpdate: boolean };
-interface DState { host: HTMLElement; ui: MountHandle; canvas: HTMLCanvasElement; tex: THREE.CanvasTexture; sig: string; rendering: boolean; pendingRedraw: boolean; }
-
-export class DiegeticSystem {
+export class DiegeticLayer {
+  private renderer: CSS3DRenderer | null = null;
+  private readonly cssScene = new THREE.Scene(); // 装 CSS3DObject 的独立场景（CSS3DRenderer 遍历它）
+  private readonly items = new Map<string, Item>();
   private doc: Document | null = null;
-  private overlay: HTMLElement | null = null; // 离屏宿主（渲染 DOM 用·移出视口）
-  private readonly items = new Map<string, DState>();
-  private readonly rasterize: Rasterizer;
 
-  constructor(rasterize: Rasterizer = defaultRasterizer) { this.rasterize = rasterize; }
-
-  init(container: HTMLElement): void {
+  init(container: HTMLElement, width: number, height: number): void {
     this.doc = container.ownerDocument;
-    const o = this.doc.createElement('div');
-    o.style.cssText = 'position:absolute;left:-99999px;top:0;pointer-events:none';
-    (this.doc.body ?? container).appendChild(o);
-    this.overlay = o;
+    const r = new CSS3DRenderer();
+    r.setSize(width, height);
+    r.domElement.style.cssText = 'position:absolute;left:0;top:0;pointer-events:none;overflow:hidden';
+    container.appendChild(r.domElement);
+    this.renderer = r;
     ensureUiKeyframes(this.doc);
   }
 
-  // 逐帧：node 变 → 重挂 UI + 重栅格；栅格好把 CanvasTexture 挂 mesh 材质。返回**需持续重渲**的数（node 变 / 栅格在途 / 栅格刚完成）。
-  sync(world: IWorld, meshes: ReadonlyMap<string, THREE.Mesh>): number {
-    if (!this.doc || !this.overlay) return 0;
-    const seen = new Set<string>();
-    let live = 0;
+  resize(width: number, height: number): void { this.renderer?.setSize(width, height); }
+
+  // 内容签名（供渲染脏标·相机前调）：node/尺寸/底色变即变 → 折进 renderSig 触发重渲更新 DOM。相机移动另由 camSig 触发。
+  contentSig(world: IWorld): string {
+    let s = '';
     for (const [id] of world.query('Diegetic3D')) {
       const d = world.getComponent<Diegetic3D>(id, 'Diegetic3D');
-      const mesh = meshes.get(id);
-      if (!d || !mesh) continue;
-      seen.add(id);
-      const w = d.pxWidth ?? 512, h = d.pxHeight ?? 512;
-      const sig = `${w}x${h}|${d.bg ?? ''}|${JSON.stringify(d.node)}`;
-      let st = this.items.get(id);
-      if (!st) { st = this.make(w, h); this.items.set(id, st); }
-      if (st.sig !== sig) {
-        st.host.style.cssText = `width:${w}px;height:${h}px;overflow:hidden;background:${d.bg ?? 'transparent'}`;
-        st.ui.update(d.node);
-        if (st.canvas.width !== w || st.canvas.height !== h) { st.canvas.width = w; st.canvas.height = h; }
-        st.sig = sig;
-        this.rasterizeInto(st, w, h);
-      }
-      this.assign(mesh, st.tex); // mesh 可能重建（材质换新）→ 每帧确保 tex 挂着
-      if (st.rendering) live++;
-      if (st.pendingRedraw) { st.pendingRedraw = false; live++; } // 栅格刚完成 → 这帧重渲上传新贴图
+      if (d) s += `${id}:${d.pxWidth ?? ''}x${d.pxHeight ?? ''}:${d.bg ?? ''}:${JSON.stringify(d.node)};`;
     }
-    for (const [id, st] of this.items) if (!seen.has(id)) { st.ui(); st.host.remove(); st.tex.dispose(); this.items.delete(id); live++; }
-    return live;
+    return s;
   }
 
-  private make(w: number, h: number): DState {
+  // 每帧（相机就绪后·渲染路径内调）：同步各 DOM 面片（node 变重挂·位姿从 Transform3D）+ 用相机渲染 CSS 层。
+  sync(world: IWorld, camera: THREE.Camera): void {
+    if (!this.renderer || !this.doc) return;
+    const seen = new Set<string>();
+    for (const [id] of world.query('Diegetic3D')) {
+      const d = world.getComponent<Diegetic3D>(id, 'Diegetic3D');
+      const t = world.getComponent<Transform3D>(id, 'Transform3D');
+      if (!d || !t) continue;
+      seen.add(id);
+      const pxW = d.pxWidth ?? 512, pxH = d.pxHeight ?? 512;
+      const worldW = d.worldWidth ?? 8, worldH = d.worldHeight ?? worldW * pxH / pxW;
+      const sig = `${pxW}x${pxH}|${d.bg ?? ''}|${JSON.stringify(d.node)}`;
+      let it = this.items.get(id);
+      if (!it) { it = this.make(pxW, pxH, d); this.items.set(id, it); this.cssScene.add(it.obj); }
+      if (it.sig !== sig) {
+        it.host.style.cssText = hostCss(pxW, pxH, d.bg);
+        it.ui.update(d.node);
+        it.sig = sig;
+      }
+      // 位姿：世界位 + 欧拉朝向 + 缩放（px→world·各轴等比按宽；worldHeight 覆盖时按高另算 y 缩放）。
+      it.obj.position.set(t.x, t.y, t.z);
+      it.obj.rotation.set(t.rotX ?? 0, t.rotY ?? 0, t.rotZ ?? 0);
+      it.obj.scale.set(worldW / pxW, worldH / pxH, 1);
+    }
+    for (const [id, it] of this.items) if (!seen.has(id)) { it.ui(); it.obj.parent?.remove(it.obj); it.host.remove(); this.items.delete(id); }
+    this.renderer.render(this.cssScene, camera);
+  }
+
+  private make(pxW: number, pxH: number, d: Diegetic3D): Item {
     const host = this.doc!.createElement('div');
-    host.style.cssText = `width:${w}px;height:${h}px;overflow:hidden`;
-    this.overlay!.appendChild(host);
-    const ui = mountUI(host, { type: 'Panel', id: 'diegetic-root', props: {} });
-    const canvas = this.doc!.createElement('canvas'); canvas.width = w; canvas.height = h;
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return { host, ui, canvas, tex, sig: '', rendering: false, pendingRedraw: false };
-  }
-
-  private rasterizeInto(st: DState, w: number, h: number): void {
-    if (st.rendering) return; // 上一次还在栅格 → 让它完成（sig 已更新·下次 sync 会再触发到最新）
-    st.rendering = true;
-    this.rasterize(st.host, w, h).then((img) => {
-      const ctx = st.canvas.getContext('2d');
-      if (ctx) { ctx.clearRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h); st.tex.needsUpdate = true; st.pendingRedraw = true; }
-    }).catch(() => { /* 栅格失败（如外源污染）→ 保留上次贴图 */ }).finally(() => { st.rendering = false; });
-  }
-
-  private assign(mesh: THREE.Mesh, tex: THREE.CanvasTexture): void {
-    const mat = mesh.material as ScreenMat;
-    if (mat.map === tex) return;
-    mat.map = tex;
-    if ('emissiveMap' in mat) { mat.emissiveMap = tex; mat.emissive?.setHex(0xffffff); mat.emissiveIntensity = 1; } // 屏自亮·任意光照可读
-    mat.needsUpdate = true;
+    host.style.cssText = hostCss(pxW, pxH, d.bg);
+    const ui = mountUI(host, d.node);
+    const obj = new CSS3DObject(host);
+    return { host, ui, obj, sig: '' };
   }
 
   dispose(): void {
-    for (const [, st] of this.items) { st.ui(); st.host.remove(); st.tex.dispose(); }
+    for (const [, it] of this.items) { it.ui(); it.obj.parent?.remove(it.obj); it.host.remove(); }
     this.items.clear();
-    this.overlay?.remove();
-    this.overlay = null;
+    this.renderer?.domElement.remove();
+    this.renderer = null;
   }
 }
+
+const hostCss = (pxW: number, pxH: number, bg?: string): string => `width:${pxW}px;height:${pxH}px;overflow:hidden;background:${bg ?? 'transparent'}`;

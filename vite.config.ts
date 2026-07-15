@@ -97,6 +97,8 @@ export default defineConfig({
       'three/addons/postprocessing/SMAAPass.js',
       'three/addons/shaders/HorizontalTiltShiftShader.js',
       'three/addons/shaders/VerticalTiltShiftShader.js',
+      'three/addons/math/ConvexHull.js', // convex 碰撞形（physics.ts）
+      'three/addons/renderers/CSS3DRenderer.js', // Diegetic3D UI 贴 3D 面
     ],
   },
   test: {

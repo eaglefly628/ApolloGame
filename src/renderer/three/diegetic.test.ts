@@ -1,56 +1,59 @@
 // @vitest-environment happy-dom
-// Diegetic3D UI 贴 3D 面（render-only）：渲 LayoutNode → 栅格（mock）→ 挂 CanvasTexture 到材质 + 生命周期 + 不进 hash。
+// Diegetic3D UI 贴进 3D 空间（render-only）：CSS3DObject 定位/朝向/缩放 from Transform3D + 生命周期 + contentSig 脏标 + 不进 hash。
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { DiegeticSystem } from './diegetic.js';
+import { DiegeticLayer } from './diegetic.js';
 import { World } from '@engine/core/world.js';
 import { hashSnapshot } from '@net/index.js';
-import type { Diegetic3D } from '@engine/protocol/components.js';
+import type { Diegetic3D, Transform3D } from '@engine/protocol/components.js';
 
-// mock 栅格器：不真渲染·返回一个占位 canvas（避开浏览器 SVG/Image 依赖·只验数据管路）。
-const mockRaster = (): Promise<CanvasImageSource> => { const c = document.createElement('canvas'); c.width = 4; c.height = 4; return Promise.resolve(c); };
 const NODE = (t: string): Diegetic3D['node'] => ({ type: 'Panel', id: 'p', props: {}, children: [{ type: 'Label', id: 'l', props: { text: t } }] });
+const cam = (): THREE.PerspectiveCamera => { const c = new THREE.PerspectiveCamera(50, 2, 0.1, 100); c.position.set(0, 0, 10); c.lookAt(0, 0, 0); c.updateMatrixWorld(); return c; };
 
-describe('DiegeticSystem（UI→贴图→材质·render-only）', () => {
-  it('渲 node → 给 mesh 材质挂 CanvasTexture（map + 自发光 emissiveMap）', () => {
+describe('DiegeticLayer（CSS3DObject 真 DOM 面片·render-only）', () => {
+  it('据 Transform3D 定位/朝向/缩放（worldWidth/pxWidth）', () => {
     const container = document.createElement('div'); document.body.appendChild(container);
-    const sys = new DiegeticSystem(mockRaster);
-    sys.init(container);
+    const layer = new DiegeticLayer();
+    layer.init(container, 800, 400);
     const w = new World(); w.createEntity('screen');
-    w.addComponent('screen', { type: 'Diegetic3D', node: NODE('HELLO'), pxWidth: 64, pxHeight: 64 } as Diegetic3D);
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial());
-    const meshes = new Map([['screen', mesh]]);
-    const live = sys.sync(w, meshes);
-    const mat = mesh.material as THREE.MeshStandardMaterial;
-    expect(mat.map).toBeInstanceOf(THREE.CanvasTexture); // 贴图挂上
-    expect(mat.emissiveMap).toBe(mat.map);               // 自亮（任意光照可读）
-    expect(mat.emissive.getHex()).toBe(0xffffff);
-    expect(live).toBeGreaterThan(0);                     // 首帧 + 栅格在途 → 持续重渲
-    sys.dispose();
+    w.addComponent('screen', { type: 'Transform3D', x: 3, y: 2, z: -1, rotY: 0.5 } as Transform3D);
+    w.addComponent('screen', { type: 'Diegetic3D', node: NODE('HELLO'), pxWidth: 400, pxHeight: 200, worldWidth: 8 } as Diegetic3D);
+    layer.sync(w, cam());
+    // CSS3DObject 挂进 css 场景·位姿来自 Transform3D
+    const obj = (layer as unknown as { cssScene: THREE.Scene }).cssScene.children[0]!;
+    expect(obj.position.toArray()).toEqual([3, 2, -1]);
+    expect(obj.rotation.y).toBeCloseTo(0.5);
+    expect(obj.scale.x).toBeCloseTo(8 / 400); // worldWidth/pxWidth
+    expect(obj.scale.y).toBeCloseTo((8 * 200 / 400) / 200); // worldHeight(缺省=保像素比)/pxHeight
+    layer.dispose();
   });
-  it('node 变 → 重挂重栅格（sig 变）；静止不重复；实体消失清理', () => {
+  it('contentSig：node 变即变（相机前脏标）·相同稳定', () => {
     const container = document.createElement('div'); document.body.appendChild(container);
-    const sys = new DiegeticSystem(mockRaster);
-    sys.init(container);
+    const layer = new DiegeticLayer(); layer.init(container, 800, 400);
     const w = new World(); w.createEntity('s');
-    w.addComponent('s', { type: 'Diegetic3D', node: NODE('A'), pxWidth: 32, pxHeight: 32 } as Diegetic3D);
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial());
-    const meshes = new Map([['s', mesh]]);
-    sys.sync(w, meshes);
-    // 改 node → 有变化
+    w.addComponent('s', { type: 'Transform3D', x: 0, y: 0, z: 0 } as Transform3D);
+    w.addComponent('s', { type: 'Diegetic3D', node: NODE('A') } as Diegetic3D);
+    const s1 = layer.contentSig(w);
+    expect(layer.contentSig(w)).toBe(s1); // 稳定
     w.removeComponent('s', 'Diegetic3D');
-    w.addComponent('s', { type: 'Diegetic3D', node: NODE('B'), pxWidth: 32, pxHeight: 32 } as Diegetic3D);
-    expect(sys.sync(w, meshes)).toBeGreaterThan(0);
-    // 实体消失 → 清理（材质 tex 释放·宿主移除不崩）
-    w.destroyEntity('s');
-    expect(sys.sync(w, meshes)).toBeGreaterThan(0); // 清理算一次变化
-    sys.dispose();
+    w.addComponent('s', { type: 'Diegetic3D', node: NODE('B') } as Diegetic3D);
+    expect(layer.contentSig(w)).not.toBe(s1); // node 变 → 签名变
+    layer.dispose();
   });
-  it('无 doc（未 init）→ sync 返回 0（headless 安全）', () => {
-    const sys = new DiegeticSystem(mockRaster);
+  it('实体消失 → 清理面片（不崩）；无 init → sync no-op', () => {
+    const container = document.createElement('div'); document.body.appendChild(container);
+    const layer = new DiegeticLayer(); layer.init(container, 800, 400);
     const w = new World(); w.createEntity('s');
+    w.addComponent('s', { type: 'Transform3D', x: 0, y: 0, z: 0 } as Transform3D);
     w.addComponent('s', { type: 'Diegetic3D', node: NODE('X') } as Diegetic3D);
-    expect(sys.sync(w, new Map())).toBe(0);
+    layer.sync(w, cam());
+    expect((layer as unknown as { cssScene: THREE.Scene }).cssScene.children.length).toBe(1);
+    w.destroyEntity('s');
+    layer.sync(w, cam());
+    expect((layer as unknown as { cssScene: THREE.Scene }).cssScene.children.length).toBe(0); // 清理
+    layer.dispose();
+    // 未 init 的层 sync 安全
+    expect(() => new DiegeticLayer().sync(w, cam())).not.toThrow();
   });
 });
 
