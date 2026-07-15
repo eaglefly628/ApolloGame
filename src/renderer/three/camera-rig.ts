@@ -28,6 +28,7 @@ export class CameraShake {
 
   update(shake: { trigger?: number; amp?: number; freq?: number; decay?: number } | undefined, nowMs: number): ShakeOffset {
     if (!shake) { this.trauma = 0; this.lastTrigger = undefined; return NO_SHAKE; }
+    if (this.lastTrigger === undefined) { this.lastTrigger = shake.trigger; return NO_SHAKE; } // 首见=基线·不注入（静态带 trigger 的场景装载不白震·bump 才震）
     if (shake.trigger !== this.lastTrigger) { this.lastTrigger = shake.trigger; this.trauma = 1; this.t0 = nowMs; }
     const decay = shake.decay ?? 2;
     const elapsed = (nowMs - this.t0) / 1000;

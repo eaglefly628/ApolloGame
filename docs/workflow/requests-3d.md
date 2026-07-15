@@ -435,7 +435,9 @@
 > 3. **diegetic UI**（UI 是场景的一部分：控制台屏幕、卡牌摆在 3D 桌面上）——大概率 = LayoutNode→CanvasTexture→Material3D.map 的管线，值得评估。
 > **边界**：这是 render-only 表现层（不进 sim/hash）。**不预设做法**——P3D 评估是重组现有能力还是下沉新组件；若下沉，闭集数据+registry describe+回填 `docs/playbooks/3d.md`（手册铁律）。owner 无 deadline，排 P3D 队自主定档。
 
-## REQ-3D-震屏首见基线 · CameraShake 装载首帧白震一次 · [2026-07-15] · Lead 验收超休闲六连批时发现 → **指派：P3D** · status: open · 优先级: P2 · 类型: 小修（camera-rig.ts + 一条测试）
+## REQ-3D-震屏首见基线 · CameraShake 装载首帧白震一次 · [2026-07-15] · Lead 验收超休闲六连批时发现 → **指派：P3D** · status: **✅ done（P3D 2026-07-15）·连带修 flash/impulse 同类** · 优先级: P2 · 类型: 小修（camera-rig.ts + 一条测试）
+
+> **P3D 落地（2026-07-15）**：照 Lead 一行级修法落 `CameraShake.update`（首见=基线不注入）。**同类扩查**：`FlashDecay`（Post3D.flash）与 `Impulse3D`（physics·`impulseSeen` 首见 `undefined!==0` 同样自触发）是**同一 nonce 范式的孪生 bug**——一并修（各加首见基线分支）。impulse 语义定：出生初速用 `RigidBody3D.vx`·Impulse 只在 bump 时施力。三处各加钉死测试（静态 trigger 首帧不触发·bump 才触发）。game-z demo 静态带 `shake/flash:{trigger:0}` 装载不再白震/白闪。
 
 > **验收背景**：超休闲缺口批六连（手感三件套 778df8dd + Decal3D 5bb6409e + UI 三补 7c902aa0 + uvAnim f41b1b7e + Path3D 2ff1a909 + Billboard3D/tween 692024b7）Lead 对抗性验收 **✅ 全部放行**——render-only 纯净（新解释器零 world 回写·零裸 Math.random·震屏噪声=确定性 sin 合成可复现）、三个新组件 NON_DETERMINISTIC+component-map 成对登记无漏、协议扩展全 additive 闭集、件件带测试、合树 2588 测全绿。唯此一条真问题开单：
 > **问题**：`CameraShake.update` 的 `lastTrigger` 初始 `undefined`——蓝图**静态带** `shake:{trigger:0,...}` 的场景，装载后第一帧 `0 !== undefined` 即注入 trauma=1 → **无事件白震一次**。语义应是「bump=变化才震」，首见值该只作基线。

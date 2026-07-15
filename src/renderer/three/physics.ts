@@ -47,8 +47,10 @@ export class PhysicsSystem {
     for (const [id] of ents) {
       const imp = world.getComponent<Impulse3D>(id, 'Impulse3D');
       if (!imp) continue;
-      if (this.impulseSeen.get(id) === imp.trigger) continue;
+      const prev = this.impulseSeen.get(id);
+      if (prev === imp.trigger) continue; // 同 trigger 不重复施力
       this.impulseSeen.set(id, imp.trigger);
+      if (prev === undefined) continue; // 首见=基线·不施力（静态带 trigger 的场景装载不自射；出生初速用 RigidBody3D.vx·bump 才施力）
       this.applyImpulse(id, imp.x ?? 0, imp.y ?? 0, imp.z ?? 0, imp.torque, imp.mode);
     }
     const dt = this.last ? Math.min(0.05, (nowMs - this.last) / 1000) : STEP;

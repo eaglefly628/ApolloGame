@@ -48,6 +48,7 @@ export class FlashDecay {
   private t0 = 0; private amt = 0;
   update(flash: { trigger?: number; decay?: number } | undefined, nowMs: number): number {
     if (!flash) { this.amt = 0; this.last = undefined; return 0; }
+    if (this.last === undefined) { this.last = flash.trigger; return 0; } // 首见=基线·不闪（静态带 trigger 的场景装载不白闪·bump 才闪）
     if (flash.trigger !== this.last) { this.last = flash.trigger; this.t0 = nowMs; this.amt = 1; }
     this.amt = Math.max(0, 1 - (nowMs - this.t0) / 1000 * (flash.decay ?? 3));
     return this.amt;

@@ -31,7 +31,13 @@ describe('Transform3D / Camera3D 纯函数（盒庭位姿 + 轨道相机）', ()
   it('CameraShake：trigger bump 注入 trauma·按 decay 衰减·归零回正（render-only 打击反馈）', () => {
     const sh = new CameraShake();
     expect(sh.update(undefined, 0).active).toBe(false);        // 无 shake 数据 → 不抖
+    // 首见基线（REQ-3D-震屏首见基线）：静态带 trigger 的场景装载首帧不白震·同 trigger 续帧也不震
+    const stat = new CameraShake();
+    expect(stat.update({ trigger: 0, amp: 1 }, 1000).active).toBe(false); // 首见=基线
+    expect(stat.update({ trigger: 0, amp: 1 }, 1016).active).toBe(false); // 同 trigger 仍不震
+    expect(stat.update({ trigger: 1, amp: 1 }, 1032).active).toBe(true);  // bump 才震
     const s2 = new CameraShake();
+    s2.update({ trigger: 0, amp: 1, freq: 30, decay: 2 }, 999); // 建立基线（首见不震）
     const f0 = s2.update({ trigger: 1, amp: 1, freq: 30, decay: 2 }, 1000); // bump → trauma=1·active
     expect(f0.active).toBe(true);
     expect(Math.hypot(f0.rx, f0.uy)).toBeGreaterThan(0);        // 有位移

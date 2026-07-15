@@ -75,6 +75,20 @@ describe('PhysicsSystem：真物理刚体（cannon-es·render-only 表现）', (
     phys.dispose();
   });
 
+  it('Impulse3D 首见基线：静态带 trigger 的场景装载不自射（出生初速用 vx）', () => {
+    const w = new World();
+    w.createEntity('ball');
+    w.addComponent('ball', { type: 'Transform3D', x: 0, y: 3, z: 0 } as Transform3D);
+    w.addComponent('ball', { type: 'Mesh3D', shape: 'sphere', width: 2, height: 2, frontTint: 0xffffff } as Mesh3D);
+    w.addComponent('ball', { type: 'RigidBody3D', shape: 'sphere', mass: 1 } as RigidBody3D);
+    w.addComponent('ball', { type: 'Impulse3D', trigger: 5, x: 20, y: 0, z: 0 } as Impulse3D); // 静态非零冲量·trigger 从未 bump
+    const phys = new PhysicsSystem();
+    const t = (): Transform3D => w.getComponent<Transform3D>('ball', 'Transform3D')!;
+    for (let i = 1; i <= 30; i++) phys.sync(w, i * 16.7);
+    expect(Math.abs(t().x)).toBeLessThan(0.5); // 没被水平弹出（首见=基线·不施力）
+    phys.dispose();
+  });
+
   it('applyImpulse 命令式接口（输入胶水甩球）：直接对刚体施冲量', () => {
     const w = new World();
     w.createEntity('b');
