@@ -421,7 +421,10 @@
 > 5. 同提交回填 `docs/playbooks/3d.md` 一行 + `docs/playbooks/testing.md` 对拍行更新；证据挂 `docs/playbooks/visual-scorecard.md` 维 8（性能证据）。
 > 6. 门禁全绿直推；完工标 ✅ 待 Lead 验收（我会拿一个故意黑屏/冻结的场景做红测）。
 
-## REQ-3D-世界空间 UI 表达 · WorldUI3D 超越飘字（owner 2026-07-07「3D UI 表达·两者都要」） · [2026-07-14] · 提出：UI/game-i session → P3D · status: **✅ #1#2 done（P3D 2026-07-14·重组·见裁决）；#3 diegetic 真缺口·暂缓待消费者** · 优先级: P2 · 类型: 3D UI 能力
+## REQ-3D-世界空间 UI 表达 · WorldUI3D 超越飘字（owner 2026-07-07「3D UI 表达·两者都要」） · [2026-07-14] · 提出：UI/game-i session → P3D · status: **✅ #1#2 done（P3D 2026-07-14）；#3 diegetic ✅ done（P3D 2026-07-15·消费方=展示台·CSS3D 路线）** · 优先级: P2 · 类型: 3D UI 能力
+
+> **#3 diegetic 落地（P3D 2026-07-15·owner 点名 + 消费方=contents 展示台 → 解除"暂缓待消费者"）**：新组件 `Diegetic3D{node,pxWidth,pxHeight,worldWidth,worldHeight,bg}`。
+> **实现选型经一次纠偏**：先按 owner 原话「LayoutNode→贴图→材质」走 foreignObject 栅格路线（26949c25）——**game-z 截图实证在 Chromium 渲空白**（浏览器安全限制·SVG foreignObject 画进 canvas 仅 Firefox 可用）。改用 **CSS3DRenderer 真 DOM 面片**（c5323dd9）：CSS3DObject 定位 Transform3D·同相机投影·文字锐利 Chromium 稳（截图实证渲出标题+进度条）。**代价**：DOM 叠层不进 WebGL 深度→不被遮挡/不吃后处理（适合"给人看的"面板·非需遮挡场景）。若日后要"可被遮挡的真贴图 diegetic"→ 需引擎为 LayoutNode 子集写 Canvas2D 解释器（另立单）。
 
 > **★ P3D 裁决（2026-07-14·按 manifesto 尺子·能重组则重组·真缺口才下沉）**：
 > - **#1 世界空间面板 + #2 屏幕锚定跟随单位 = ✅ 重组（不新建 Panel3D）**：`WorldUiLayer` 本就做「世界锚点→屏幕投影→挂 LayoutNode→随实体每帧跟随→背相机/出屏自动隐」——**#2 的机制已在**，#1 的「billboard 面板」也正是这条路。唯一缺口=`WorldUI3D` 只吃单 `text`。→ **加 `WorldUI3D.node?: LayoutNode`**（富内容·面板/血条 ProgressBar/名牌/多行·仍走 UI 库·UI 铁律），`text` 保留为简写。一处小扩展覆盖 #1+#2。**不新建 `Panel3D`**（会与 WorldUI3D 重复）。demo：game-z 狐狸名牌（Label+ProgressBar·随奔跑跟随）。测试 + 回填手册。全绿。
