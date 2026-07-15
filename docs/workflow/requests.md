@@ -895,3 +895,16 @@
 > - **🟡 bg 收紧走 warn 不走 hard-fail**（②既定·护 back-compat 存量裸串数据）；Gemini 把它做成 `bad-format` 硬 issue=破坏性变更。且令牌表应从 types 单一源导入·勿复制进 validate（防漂移）。
 > - **🟢 3D flatten 检测**：`scroll`/overflow→flatten 铁对；**`glass`/backdrop-filter→flatten 存疑**（CSS flatten 列表明确的是 `filter`·backdrop-filter 未定论）·真浏览器验证前勿断言 glass。渲染器是「谁有3D谁自带 preserve-3d」(render.ts:117)·故 flatten 仅嵌套3D 才咬人=低频·符合①低优定级。`has3DTransformsInSubtree` 每节点重扫=O(n²)·宜一趟自底向上。
 > - **⚪ 杂**：删 `// cite:` 噪声·收敛 `any`·新增 kind(`constraint-conflict`/`bad-format`) 同步进 `UiIssue` 联合。
+
+### REQ-3D-展示台接入·超休闲能力样例（8 已有 + 6 新缺口 A-F）· [2026-07-15] · P3D → **指派：展示台程序** · status: open · 优先级: P2 · 类型: 展示台样例接入
+> **背景**：owner 让把超休闲 3D 能力做成展示台 sample。P3D 已把 6 缺口(A-F) 全实装并推（`17749db9`·全 render-only）。展示台已支持 3D → 请把下列能力各做一个可见 sample 加进展示（P3D 只出 API + 样例数据·展示台程序接入渲染场）。**都是纯数据 component·挂在带 `Transform3D` 的实体上即可。**
+>
+> **A 挤压拉伸**（落地压扁）：`Anim3D{channels:[{kind:'ease',field:'scaleY',from:1,to:0.6,dur:0.15,curve:'outBack'},{kind:'ease',field:'scaleX',from:1,to:1.3,dur:0.15,curve:'outBack'}]}`（分轴独立·保体积观感）。
+> **B 震屏**：`Camera3D{...,shake:{trigger:N,amp:0.4,freq:30,decay:2}}`——展示台每隔一会 bump `trigger`（+1）即抖一次。
+> **C 跟随柔化**：`Camera3D{mode:'follow',target:'ball',follow:{lag:0.25,lookAhead:0.15}}`——配一个来回移动的 target 实体，看镜头软跟。
+> **D 运动拖尾**：移动实体挂 `Trail3D{segments:24,width:0.3,color:0x33ccff,minDist:0.05,blend:'add'}`——球滚出发光残影。
+> **E 暗角 + 命中闪白**：`Post3D{vignette:{intensity:0.5,smoothness:0.4},flash:{trigger:N,color:0xffffff,decay:3}}`——暗角常驻·bump flash.trigger 全屏闪一下。
+> **F 平涂/卡通**：物件挂 `Material3D{preset:'jade',shading:'toon',toonSteps:3}`（cel 阶梯）或 `{preset:'gold',shading:'flat'}`（无光纯亮色·Helix 观感）。
+>
+> **已有 8 能力（无需新造·同法各摆一样例）**：人群实例化(同签名 Mesh3D 多实体)、数字飘字(`WorldUI3D{node:LayoutNode}`+`Label.tween`)、撞击粒子/纸屑(`Vfx3D`)、出生弹入(`Anim3D ease scale 0→1 outBack`)、堆叠掉落(`RigidBody3D`)、跟随相机(`Camera3D mode:'follow'`)、拾取(`Pickable3D`)、微缩景深/泛光(`Post3D tiltShift/bloom`)。
+> **契约**：各 component 语义/字段以 `docs/playbooks/3d.md` 表 + `src/engine/protocol/components/render.ts` 注释为准；有疑问回 `requests-3d.md` 问 P3D，勿改 three-renderer/three/**（P3D 独占域）。
