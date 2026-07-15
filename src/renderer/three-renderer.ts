@@ -24,6 +24,7 @@ import { TrailSystem } from './three/trail.js';
 import { DecalSystem } from './three/decal.js';
 import { UvAnimSystem } from './three/uv-anim.js';
 import { Anim3DSystem } from './three/anim3d.js';
+import { PathSystem } from './three/path.js';
 import { pivotMatrix, applyPivot } from './three/pivot.js';
 import { WorldUiLayer } from './three/world-ui.js';
 import type { PhysicsSystem } from './three/physics.js'; // 运行时**懒加载**（见 ensurePhysics）：physics.ts 依赖 cannon-es 重包·仅在有 RigidBody3D 时才进图，无刚体的游戏(如 game-d)不连带解析 cannon-es（修 vite dev「Failed to resolve cannon-es」）
@@ -83,6 +84,7 @@ export class ThreeRenderer implements RendererBackend {
   private readonly decals = new DecalSystem(); // 地面贴花（Decal3D·blob 阴影/环/圆·render-only）
   private readonly uvAnim = new UvAnimSystem(); // 材质 UV 动画（Material3D.uvAnim·滚动/序列帧·render-only）
   private readonly anim3d = new Anim3DSystem(); // 程序化位姿动画（Anim3D·spin/bob·render-only·把 title 骰自转等从游戏层手写下沉成数据）
+  private readonly paths = new PathSystem(); // 路径跟随（Path3D·沿控制点走·移动平台/巡逻/dolly·render-only）
   private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
   private physics: PhysicsSystem | null = null; // 真物理刚体（cannon-es·render-only·**懒加载**·仅有 RigidBody3D 时）
   private physicsLoading = false;
@@ -251,6 +253,8 @@ export class ThreeRenderer implements RendererBackend {
     const decalLive = this.decals.sync(this.scene, world);
     // 程序化位姿动画（Anim3D·render-only）：据壁钟改 Transform3D 分量（spin/bob）——须在 collect 前（渲染读更新后的位姿）。
     const animPoseLive = this.anim3d.sync(world, performance.now());
+    // 路径跟随（Path3D·render-only）：据壁钟沿控制点写 Transform3D 位（移动平台/巡逻/dolly）——须在 collect 前。
+    const pathLive = this.paths.sync(world, performance.now());
     // Pivot3D 父合成（render-only）：把整组子实体位姿合成到 pivot 变换下 → 整场当一个单元转/缩/移（骰钟转场 §F）。
     // 无 Pivot3D → 空 map·pivotPose 恒等返回·零开销（向后兼容）。
     const pivotMap = new Map<string, THREE.Matrix4>();
@@ -364,7 +368,7 @@ export class ThreeRenderer implements RendererBackend {
     } else { this.followDamp.reset(); }
     // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
     const flashAmt = this.flash.update(post?.flash, performance.now());
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${uvLive > 0 ? this.frame : 'uv0'}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${uvLive > 0 ? this.frame : 'uv0'}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -525,6 +529,7 @@ export class ThreeRenderer implements RendererBackend {
     this.decals.dispose(this.scene);
     this.uvAnim.dispose();
     this.anim3d.dispose();
+    this.paths.dispose();
     this.camShake.dispose();
     this.flash.dispose();
     this.physics?.dispose();

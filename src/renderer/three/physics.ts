@@ -101,11 +101,14 @@ export class PhysicsSystem {
     const rb = world.getComponent<RigidBody3D>(id, 'RigidBody3D')!;
     const m = world.getComponent<Mesh3D>(id, 'Mesh3D');
     const t = world.getComponent<Transform3D>(id, 'Transform3D');
-    const shape = rb.shape ?? (m?.shape === 'sphere' ? 'sphere' : 'box');
+    const shape = rb.shape ?? (m?.shape === 'sphere' ? 'sphere' : m?.shape === 'cylinder' ? 'cylinder' : 'box');
     const w = m?.width ?? 4, h = m?.height ?? 4;
+    const r = Math.max(0.1, w / 2);
     const cshape: CANNON.Shape = shape === 'sphere'
-      ? new C!.Sphere(Math.max(0.1, w / 2))
-      : new C!.Box(new C!.Vec3(w / 2, h / 2, (m?.depth ?? w) / 2)); // 体素与渲染盒一致（PBR 路径 depth=m.depth??width）
+      ? new C!.Sphere(r)
+      : shape === 'cylinder'
+        ? new C!.Cylinder(r, r, Math.max(0.1, h), 12) // 立柱：半径=width/2·高=height·12 段（桶/冰球/硬币）
+        : new C!.Box(new C!.Vec3(w / 2, h / 2, (m?.depth ?? w) / 2)); // 体素与渲染盒一致（PBR 路径 depth=m.depth??width）
     const body = new C!.Body({ mass: rb.mass ?? 1, shape: cshape });
     body.position.set(t?.x ?? 0, t?.y ?? 10, t?.z ?? 0);
     if (rb.vx || rb.vy || rb.vz) body.velocity.set(rb.vx ?? 0, rb.vy ?? 0, rb.vz ?? 0);

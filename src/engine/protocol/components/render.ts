@@ -126,6 +126,19 @@ export interface Anim3D extends Component {
   channels: Anim3DChannel[]; // 多通道叠加（loop 绕初值加·ease 覆写绝对值·同 field 求和）
 }
 
+// ── Path3D（render-only·不进 hash·休闲通用路径跟随）── 让实体 Transform3D 沿一串控制点定义的路径按壁钟匀速走。
+// 移动平台/巡逻/金币抛物线/传送带物件/相机轨道 dolly。linear=折线·smooth=Catmull-Rom 平滑；loop=none(停)/loop(闭环)/pingpong(往复)。
+// 「按绝对经过秒算」→ 帧率无关无漂移。与 Anim3D 正交（Anim3D=绕初值周期振荡；Path3D=沿空间路径行进）。纯表现·只写 Transform3D。
+export interface Path3D extends Component {
+  readonly type: 'Path3D';
+  points: ReadonlyArray<readonly [number, number, number]>; // 控制点（世界坐标·≥2）
+  duration: number; // 走完全程秒数
+  loop?: 'none' | 'loop' | 'pingpong'; // 到头行为（缺省 loop·闭环首尾相接）
+  mode?: 'linear' | 'smooth'; // 折线 or Catmull-Rom 平滑（缺省 smooth）
+  faceDir?: boolean; // 朝运动切线方向（写 rotY·缺省 false）
+  delay?: number; // 起步延迟秒（缺省 0）
+}
+
 // ── Pivot3D（render-only，3D 父合成/层级）──────────────────────────────────────────────────────
 // 让一组子实体的 Transform3D 位姿在渲染前**合成到本实体（pivot）的变换下**——即把「整座竞技场 + 骰壳 + 柔光」
 // 当作**一个单元**一起转/缩/移（Cloud Design 骰钟转场 §F：旧场裹进骰壳、整体螺旋升走换层）。
@@ -180,7 +193,7 @@ export interface Pickable3D extends Component {
 // 体形/尺寸默认取同实体 Mesh3D（box→半尺寸·sphere→半径）；mass=0=静态。红线：render-only 自由区，可用随机/时间。
 export interface RigidBody3D extends Component {
   readonly type: 'RigidBody3D';
-  shape?: 'box' | 'sphere'; // 缺省取 Mesh3D.shape（box/sphere）
+  shape?: 'box' | 'sphere' | 'cylinder'; // 缺省取 Mesh3D.shape（box/sphere/cylinder）·cylinder=桶/冰球/硬币立柱（半径=width/2·高=height）
   mass?: number; // 质量·缺省 1（0=静态不动）
   restitution?: number; // 弹性 0..1·缺省 0.3
   friction?: number; // 摩擦·缺省 0.4

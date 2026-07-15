@@ -67,6 +67,7 @@ import type {
   OverTime,
   Overlap,
   Overlap3D,
+  Path3D,
   PerCardRetrigger,
   Pickable3D,
   Post3D,
@@ -187,6 +188,7 @@ export interface ComponentDataMap {
   OverTime: Omit<OverTime, 'type'>;
   Overlap: Omit<Overlap, 'type'>;
   Overlap3D: Omit<Overlap3D, 'type'>;
+  Path3D: Omit<Path3D, 'type'>;
   PerCardRetrigger: Omit<PerCardRetrigger, 'type'>;
   Post3D: Omit<Post3D, 'type'>;
   Pickable3D: Omit<Pickable3D, 'type'>;

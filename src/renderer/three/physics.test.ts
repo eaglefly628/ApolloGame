@@ -25,6 +25,20 @@ describe('PhysicsSystem：真物理刚体（cannon-es·render-only 表现）', (
     phys.dispose();
   });
 
+  it('cylinder 碰撞形（桶/冰球）：下落落地不穿地', () => {
+    const w = new World();
+    w.createEntity('cyl');
+    w.addComponent('cyl', { type: 'Transform3D', x: 0, y: 18, z: 0 } as Transform3D);
+    w.addComponent('cyl', { type: 'Mesh3D', shape: 'cylinder', width: 4, height: 3, frontTint: 0xffffff } as Mesh3D);
+    w.addComponent('cyl', { type: 'RigidBody3D', shape: 'cylinder', mass: 1 } as RigidBody3D);
+    const phys = new PhysicsSystem();
+    const t = (): Transform3D => w.getComponent<Transform3D>('cyl', 'Transform3D')!;
+    for (let i = 1; i <= 240; i++) phys.sync(w, i * 16.7);
+    expect(t().y).toBeGreaterThan(0.3); // 落地·没穿地（高 3·半高 1.5 左右稳住）
+    expect(t().y).toBeLessThan(6);
+    phys.dispose();
+  });
+
   it('无刚体时 sync 返回 0（不建物理世界）；有则返回刚体数', () => {
     const w = new World();
     const phys = new PhysicsSystem();
