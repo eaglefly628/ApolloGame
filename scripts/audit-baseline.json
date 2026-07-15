@@ -1,6 +1,11 @@
 {
   "_doc": "红旗棘轮基线（REQ-QA-红旗棘轮·owner 2026-07-04 拍板）。每游戏三红旗计数只许降不许升：game-skill-audit.mjs 实测任一计数高于基线 → RATCHET: FAIL + 退出码 1；低于 → 提示同提交降基线；等于 → 静默。数值=灌入时 HEAD 的 audit 实测（存量既往不咎）。抬基线唯一合法姿势=给该游戏加 reason:\"REQ-xxx\" 字段挂缺口单号（机器不验单号真伪·diff 验收时一眼可见）。降基线是还债仪式，必须与消灭红旗的提交同提交改本文件。",
   "games": {
+    "block-blast-mini": {
+      "nakedRandom": 0,
+      "innerHTML": 0,
+      "createElement": 0
+    },
     "game-d": {
       "nakedRandom": 0,
       "innerHTML": 0,

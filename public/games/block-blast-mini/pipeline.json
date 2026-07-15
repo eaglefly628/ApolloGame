@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "slug": "block-blast-mini",
+  "concept": {
+    "name": "方块消除·初版",
+    "pitch": "Block Blast-like：托盘拖多格方块进 8×8 棋盘，满行/列即消得分，无处可落终局。全数据 manifest·零游戏层代码·验证 t3-block-grid + t2-grid-drag-square 两块新积木",
+    "refs": "Block Blast / Woodoku",
+    "style": "初版程序化色块（S6 美术关换皮·plan §4.5 有条件通过）"
+  },
+  "signoffs": {},
+  "evidence": {
+    "S3": {
+      "exit": 0,
+      "summary": "parse+引擎装载（load+2tick）零 error",
+      "at": "2026-07-15T06:40:45.130Z",
+      "gameHash": "d785658ffe05fedb"
+    },
+    "S4": {
+      "exit": 0,
+      "summary": " Test Files  1 passed (1) ·       Tests  8 passed (8)",
+      "at": "2026-07-15T06:40:47.163Z",
+      "gameHash": "d785658ffe05fedb"
+    },
+    "S5": {
+      "exit": 0,
+      "summary": "AUDIT: WARNINGS · RATCHET: PASS",
+      "at": "2026-07-15T06:40:47.271Z",
+      "gameHash": "d785658ffe05fedb"
+    }
+  },
+  "history": [
+    {
+      "action": "concept",
+      "at": "2026-07-15T06:40:43.862Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-07-15T06:40:45.130Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-15T06:40:47.163Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-07-15T06:40:47.271Z"
+    }
+  ]
+}

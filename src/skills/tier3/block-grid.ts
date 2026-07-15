@@ -149,6 +149,17 @@ export const blockGridCapability = defineCapability({
           gameOverFlag: { type: 'string', describe: '判负 Flag id：托盘所有形状全盘无处可落时置真（空=不判负）' },
           fillTint: { type: 'number', describe: '可选·已填格视图底色（cells 值缺省时用；一般 cells 值本身即 tint）' },
           emptyTint: { type: 'number', describe: '可选·空格视图底色' },
+          originX: { type: 'number', describe: '可选·格(0,0)中心世界 x（grid-drag-square 吸附几何；缺省=无几何走点击/测试意图）' },
+          originY: { type: 'number', describe: '可选·格(0,0)中心世界 y' },
+          cellSize: { type: 'number', describe: '可选·单格边长（世界像素）' },
+        },
+      },
+      BoardCell: {
+        category: 'render',
+        describe: '视图格（与 match3-board 同一接口共用）：把逻辑格 index 绑到一个可显示实体，block-view-sync 据 cells 写其 Color.tint。蓝图静态建。',
+        fields: {
+          boardId: { type: 'EntityId', describe: '所属 BlockGrid 实体 id' },
+          index: { type: 'number', describe: '逻辑格下标（row*cols+col）' },
         },
       },
       PlaceBlockIntent: {
