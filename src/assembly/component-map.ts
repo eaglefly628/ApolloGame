@@ -112,6 +112,7 @@ import type {
   Tray,
   TraySeat,
   Trigger,
+  Trail3D,
   Tween,
   Velocity,
   Vfx3D,
@@ -229,6 +230,7 @@ export interface ComponentDataMap {
   Tray: Omit<Tray, 'type'>;
   TraySeat: Omit<TraySeat, 'type'>;
   Trigger: Omit<Trigger, 'type'>;
+  Trail3D: Omit<Trail3D, 'type'>;
   Tween: Omit<Tween, 'type'>;
   Velocity: Omit<Velocity, 'type'>;
   Vfx3D: Omit<Vfx3D, 'type'>;

@@ -110,14 +110,17 @@ export function dioramaBlueprint(): WorldBlueprint {
     capabilities: [motionApplyCapability, overlapDetect3dCapability, collisionResolve3dCapability, navmeshBakeCapability, pathfindCapability],
     entities: {
       // 相机：**跟随鸭子**（mode:'follow'·跑酷视角）。F 切环绕、O 切正交、按钮切总览/看材质。
-      cam: { Camera3D: { yaw: 0.7, pitch: 0.72, distance: 98, pivotX: 0, pivotY: 3, pivotZ: 0, fov: 44, mode: 'follow', target: 'hero', pitchMin: 0.12, pitchMax: 1.45 } },
+      // 缺口 C 跟随柔化：follow{lag,lookAhead} → 镜头软跟鸭子（不硬贴·朝跑动方向轻预读）。
+      // 缺口 B 震屏：shake{trigger} → 点物件时 game-z.ts bump trigger 抖一下（打击反馈）。
+      cam: { Camera3D: { yaw: 0.7, pitch: 0.72, distance: 98, pivotX: 0, pivotY: 3, pivotZ: 0, fov: 44, mode: 'follow', target: 'hero', pitchMin: 0.12, pitchMax: 1.45, follow: { lag: 0.22, lookAhead: 0.18 }, shake: { trigger: 0, amp: 0.55, freq: 28, decay: 2.2 } } },
 
       // 数据化光照：暖白太阳（投软影）+ 冷蓝环境补光。
       sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: 1.05, castShadow: true } },
       fill: { Light3D: { kind: 'ambient', color: 0xbfd2ff, intensity: 0.55 } },
 
       // 后处理：AO + 色彩分级 + SMAA（intensity=AO 不透明度 0..1·渲染器钳死防黑屏）。
-      post: { Post3D: { ao: { intensity: 0.85, radius: 5, scale: 1 }, grade: { exposure: 1.02, contrast: 1.08, saturation: 1.12, brightness: 0, tint: 0xfff6ec }, aa: true } },
+      // 缺口 E：vignette 暗角常驻聚焦 + flash 命中闪白（点物件时 game-z.ts bump flash.trigger 全屏闪一下·与震屏同触发）。
+      post: { Post3D: { ao: { intensity: 0.85, radius: 5, scale: 1 }, grade: { exposure: 1.02, contrast: 1.08, saturation: 1.12, brightness: 0, tint: 0xfff6ec }, aa: true, vignette: { intensity: 0.42, smoothness: 0.5 }, flash: { trigger: 0, color: 0xffffff, decay: 3 } } },
       // 距离雾（远处柔化·配缩小后的竞技场）。
       fog: { Fog3D: { color: 0xcfe9f7, near: 130, far: 420 } },
       // 天空盒 + IBL（env=环境光照强度·PBR 金属/玻璃靠它反射成像）。
@@ -131,6 +134,7 @@ export function dioramaBlueprint(): WorldBlueprint {
         Model3D: { modelKey: MODEL_FOX, scale: 0.09 }, // Fox 模型尺度大(~70u)→缩到盒庭尺度
         AnimState3D: { clip: 'Run', speed: 1.5 }, // 播奔跑动画（骨骼）
         Collider3D: { kind: 'capsule', radius: 2, height: 6 },
+        Trail3D: { segments: 30, width: 1.8, color: 0x66e0ff, minDist: 0.4, blend: 'add' }, // 缺口 D：奔跑发光拖尾（绕赛道留青蓝残影·TrailSystem 读 2D Transform 地面位）
         // 富世界空间 UI（REQ-3D-世界空间 UI·#1 面板 + #2 跟随单位）：名牌 Panel（名字 Label + 体力 ProgressBar）
         // 挂 LayoutNode·随奔跑的狐狸每帧跟随投影（血条跟单位·背相机/出屏自动隐）。证明「世界 UI = 富 LayoutNode 锚世界物件」。
         WorldUI3D: { offsetY: 10, node: {
@@ -225,6 +229,48 @@ export function dioramaBlueprint(): WorldBlueprint {
         Material3D: { preset: 'matte', materialRef: MAT_RUNE, tiling: { repeat: 1 } },
         // 自转 + **noise 有机漂移**(y·神经质浮动·非正弦) + 入场弹出——展示 loop(spin/noise)+once(ease) 叠加。
         Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.6 }, { kind: 'noise', field: 'y', amp: 0.6, freq: 1.3, seed: 3 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.6, curve: 'outBack', delay: 0.6 }] }, Pickable3D: { signal: 'poke' },
+      },
+
+      // 🎮 超休闲手感展台（南侧二排·本会话缺口 A-F 活样例·全 render-only 纯数据）：
+      // 缺口 A 挤压拉伸：弹跳球——osc y 弹起 + osc scaleY/scaleX 反相（底部压扁·保体积）。分轴非等比缩放的活证。
+      'fx-squash': {
+        Transform3D: { x: -30, y: 5, z: 62 },
+        Mesh3D: { shape: 'sphere', width: 5, height: 5, frontTint: 0xff5252 },
+        Material3D: { preset: 'plastic', color: 0xff5252 },
+        Anim3D: { channels: [
+          { kind: 'osc', field: 'y', wave: 'sine', amp: 3.2, freq: 3.0, phase: 0 },                    // 弹跳高度
+          { kind: 'osc', field: 'scaleY', wave: 'sine', amp: 0.28, freq: 3.0, phase: Math.PI / 2 },     // 落地压扁（相位对齐底部）
+          { kind: 'osc', field: 'scaleX', wave: 'sine', amp: -0.28, freq: 3.0, phase: Math.PI / 2 },     // 反相 → 横向鼓（保体积）
+        ] },
+        WorldUI3D: { text: 'A 挤压拉伸', offsetY: 6, size: 'sm', color: 'warn' },
+      },
+      // 缺口 F 卡通着色：MeshToonMaterial（gradientMap 3 阶·硬分段明暗·cel 观感）+ 自转。
+      'fx-toon': {
+        Transform3D: { x: -16, y: 5, z: 62 },
+        Mesh3D: { shape: 'sphere', width: 6, height: 6, frontTint: 0xffffff },
+        Material3D: { preset: 'jade', shading: 'toon', toonSteps: 3 },
+        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.8 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'outBack', delay: 0.2 }] },
+        WorldUI3D: { text: 'F 卡通 toon', offsetY: 6, size: 'sm', color: 'jade' },
+      },
+      // 缺口 F 平涂着色：MeshBasicMaterial（无光·纯亮色·超休闲 Helix 招牌观感）。
+      'fx-flat': {
+        Transform3D: { x: -2, y: 5, z: 62 },
+        Mesh3D: { shape: 'sphere', width: 6, height: 6, frontTint: 0xffffff },
+        Material3D: { preset: 'gold', shading: 'flat', color: 0xffca28 },
+        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.8 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'outBack', delay: 0.35 }] },
+        WorldUI3D: { text: 'F 平涂 flat', offsetY: 6, size: 'sm', color: 'gold' },
+      },
+      // 缺口 D 拖尾（静态展台版）：绕小圈飞的发光球留丝带——osc x/z 相位差 π/2 = 环绕运动 + Trail3D。
+      'fx-trail': {
+        Transform3D: { x: 16, y: 7, z: 62 },
+        Mesh3D: { shape: 'sphere', width: 3, height: 3, frontTint: 0xffe082 },
+        Material3D: { preset: 'emissive' }, Glow3D: { color: 0xffe082, scale: 10, opacity: 0.5 },
+        Anim3D: { channels: [
+          { kind: 'osc', field: 'x', wave: 'sine', amp: 7, freq: 1.6, phase: 0 },
+          { kind: 'osc', field: 'z', wave: 'sine', amp: 7, freq: 1.6, phase: Math.PI / 2 }, // x/z 相位差 π/2 = 圆周
+        ] },
+        Trail3D: { segments: 40, width: 1.2, color: 0xffd54f, minDist: 0.15, blend: 'add' },
+        WorldUI3D: { text: 'D 拖尾', offsetY: 5, size: 'sm', color: 'gold' },
       },
 
       // 北侧 PBR 材质陈列台（材质球·大字标名·调试面板「🔬 看材质」一键看）。

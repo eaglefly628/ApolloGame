@@ -25,6 +25,7 @@ function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean, 
     { type: 'Label', id: 'gz-sub', props: { text: '鸭子 AI 绕赛道自动跑 · 三只追兵循寻路追逐 · 一切皆动', size: 'sm' } },
     { type: 'Label', id: 'gz-hint', props: { text: 'WASD 控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随 · P 剖析 · C 碰撞 · N 寻路 · 点物件拾取', size: 'sm' } },
     { type: 'Label', id: 'gz-show', props: { text: '🧱 南侧展台：新图元(柱/锥/胶囊/环) × PBR 材质 × Anim3D 自转浮动 × 点选拾取', size: 'sm', color: 'jade' } },
+    { type: 'Label', id: 'gz-show2', props: { text: '🎮 手感展台：A 挤压拉伸 · D 拖尾 · F 卡通/平涂 ｜ 相机=C 软跟随 ｜ 点任意物件=B 震屏+E 闪白', size: 'sm', color: 'gold' } },
     { type: 'Label', id: 'gz-zone', props: { text: '🔴 追逐中', size: 'sm', glow: true, color: 'warn' } },
   ];
   if (picked) children.push({ type: 'Label', id: 'gz-pick', props: { text: `🎯 拾取：${picked}`, size: 'sm', glow: true, color: 'jade' } }); // Pickable3D 拾取自证
@@ -199,6 +200,15 @@ export function mount(container: HTMLElement): () => void {
   let lastY = 0;
   let downX = 0, downY = 0; // 按下点（判 click vs drag：位移小=点选拾取，大=旋转相机）
   let lastPicked: string | null = null; // 最近拾取到的实体 id（Pickable3D 自证·显 HUD）
+  // 缺口 B+E 打击反馈：点物件命中 → bump 相机 shake.trigger（震屏）+ 后处理 flash.trigger（全屏闪白）。
+  // 皆 render-only 组件字段·bump 任意变化数即触发一次 trauma 衰减（渲染器解释）。
+  let fxPulse = 0;
+  const hitFx = (): void => {
+    fxPulse += 1;
+    const c = cam(); if (c?.shake) c.shake.trigger = fxPulse;
+    const p = post(); if (p?.flash) p.flash.trigger = fxPulse;
+    renderer.invalidate();
+  };
   const onPointerDown = (e: PointerEvent): void => { dragging = true; lastX = e.clientX; lastY = e.clientY; downX = e.clientX; downY = e.clientY; stage.setPointerCapture?.(e.pointerId); };
   const onPointerMove = (e: PointerEvent): void => {
     if (!dragging) return;
@@ -216,7 +226,7 @@ export function mount(container: HTMLElement): () => void {
     // 位移小 = 点选（非旋转拖拽）→ 3D 对象拾取（Pickable3D）。命中 → 显 HUD（真游戏则 enqueueAction(hit.signal,{arg:hit.arg})→Signal→sim）。
     if (Math.abs(e.clientX - downX) < 5 && Math.abs(e.clientY - downY) < 5) {
       const hit = renderer.pick(e.clientX, e.clientY);
-      if (hit) { lastPicked = `${hit.entityId}（signal:${hit.signal}）`; ui.update(hudTree(Math.round(fps), showProfiler ? renderer.readStats() : null, showProfiler, lastPicked)); }
+      if (hit) { lastPicked = `${hit.entityId}（signal:${hit.signal}）`; hitFx(); ui.update(hudTree(Math.round(fps), showProfiler ? renderer.readStats() : null, showProfiler, lastPicked)); }
     }
   };
   const onWheel = (e: WheelEvent): void => {
