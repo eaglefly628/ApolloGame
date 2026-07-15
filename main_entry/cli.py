@@ -1,4 +1,5 @@
 """端口/Vite 服务器 + 命令 + main()。"""
+import os
 import subprocess
 import sys
 import time
@@ -13,8 +14,11 @@ from . import server
 # ── Vite 服务器 ──
 
 def start_vite():
+    # 启动提速（07-15 诊断根因#3）：npx 壳税 0.4s(Linux 热)~2s(Windows)——bin 在则直连，不在才回退 npx。
+    vite_bin = ROOT / 'node_modules' / '.bin' / ('vite.cmd' if os.name == 'nt' else 'vite')
+    cmd = ([str(vite_bin)] if vite_bin.exists() else ['npx', 'vite']) + ['--port', str(VITE_PORT)]
     proc = subprocess.Popen(
-        **_spawn(['npx', 'vite', '--port', str(VITE_PORT)]),
+        **_spawn(cmd),
         cwd=ROOT,
     )
     _processes.append(proc)

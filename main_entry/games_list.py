@@ -107,13 +107,18 @@ _CATALOG_CACHE = None
 
 def handle_catalog() -> dict:
     """GET /api/catalog。引擎全量能力目录（buildCapabilityCatalog 服务端 parity·进程内缓存）——
-    Workshop 壳无 vite 侧 import，生成/程序对话的词汇表从这取（REQ-WORKSHOP A）。"""
+    Workshop 壳无 vite 侧 import，生成/程序对话的词汇表从这取（REQ-WORKSHOP A）。
+    07-15 启动提速：失败**不落缓存**（旧行为缓存空串永不重试=PST 交接自认的坑）——下次调用重试；
+    成功缓存后由 server 启动预热线程先跑一遍，工坊开屏拿热缓存（冷跑 owner 机 10-20s 不再挡开屏）。"""
     global _CATALOG_CACHE
     if _CATALOG_CACHE is None:
         try:
             proc = subprocess.run(**_spawn(['npx', 'vite-node', 'scripts/dump-capability-catalog.mjs']),
                                   cwd=ROOT, capture_output=True, encoding='utf-8', errors='replace', timeout=120)
-            _CATALOG_CACHE = proc.stdout if proc.returncode == 0 and (proc.stdout or '').strip() else ''
+            out = proc.stdout if proc.returncode == 0 and (proc.stdout or '').strip() else None
         except Exception:
-            _CATALOG_CACHE = ''
-    return {'success': bool(_CATALOG_CACHE), 'catalog': _CATALOG_CACHE or None}
+            out = None
+        if out is None:
+            return {'success': False, 'catalog': None}
+        _CATALOG_CACHE = out
+    return {'success': True, 'catalog': _CATALOG_CACHE}

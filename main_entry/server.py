@@ -608,4 +608,13 @@ def start_api_server():
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     print(c("  [API]", 'g'), f"Dev tools API on http://localhost:{API_PORT}")
+    # 预热能力目录（07-15 启动提速·诊断根因#2）：/api/catalog 首调冷起 vite-node（本机 3s·owner 机 10-20s），
+    # 串在工坊开屏路径上——启动即后台预热，开屏拿热缓存。失败无害（handle_catalog 失败不落缓存·下次调用重试）。
+    def _prewarm_catalog():
+        try:
+            from .games_list import handle_catalog
+            handle_catalog()
+        except Exception:
+            pass
+    threading.Thread(target=_prewarm_catalog, daemon=True).start()
     return server

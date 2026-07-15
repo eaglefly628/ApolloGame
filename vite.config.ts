@@ -5,6 +5,24 @@ import { copyUsedAssets } from './vite.assets';
 
 export default defineConfig({
   plugins: [react(), copyUsedAssets(__dirname, 'dist')],
+  // 启动提速（owner 07-15「老开发库启动要好久」·诊断根因#1）：chokidar 缺省盯全仓 39,283 个文件，
+  // 其中 assets/ 素材库就 37,004 个——listen 后初扫风暴把事件循环饿死（"ready in 270ms" 但首响应 6.6s，
+  // 冷盘机器分钟级）。这些目录全是运行时 HTTP fetch 消费、无 HMR 价值 → 不监听（A/B 实测 6.63s→1.74s，
+  // inotify 39,283→1,451）。用绝对路径钉根目录，**不误伤 src/assets（引擎代码要 HMR）**。
+  // 代价（接受）：手改 public/games 下 JSON 不再自动整页刷新（工坊走 API 写、运行器 no-cache fetch，无感）；
+  // library/<slug>/logic.ts 装载带 ?v= 版本参——PUT 后新 URL 重新 transform，不靠 watch。
+  server: {
+    watch: {
+      ignored: [
+        resolve(__dirname, 'assets') + '/**',
+        resolve(__dirname, 'public/games') + '/**',
+        resolve(__dirname, 'docs') + '/**',
+        resolve(__dirname, 'wiki') + '/**',
+        resolve(__dirname, 'library') + '/**',
+        resolve(__dirname, '.apollo') + '/**',
+      ],
+    },
+  },
   resolve: {
     alias: {
       '@engine': resolve(__dirname, 'src/engine'),

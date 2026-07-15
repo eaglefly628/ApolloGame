@@ -83,10 +83,34 @@ def library_put_logic(slug: str, body: dict) -> tuple:
     _git_commit_all(game_dir, str(body.get('note') or 'logic: update'))
     return (200, {'success': True, 'slug': slug, 'gate': msg})
 
+_DOCTOR_CACHE = {'key': None, 'data': None}
+
+def _doctor_cache_key():
+    """体检结果缓存键 = 两库里 manifest/logic/meta 文件的 (路径,mtime) 指纹。
+    07-15 启动提速（诊断根因#2）：doctor 每次全价冷起 vite-node 1.7s+·工坊开屏就调——库没动就直接回缓存。
+    诚实边界：键只盯卡带文件，引擎源码变了不失效（装载语义变化极少·重启进程即清）。"""
+    sig = []
+    for root in (ROOT / 'library', ROOT / 'public' / 'games'):
+        if not root.exists():
+            continue
+        for p in root.rglob('*'):
+            if p.name in ('manifest.json', 'logic.ts', 'logic.pending.ts', 'meta.json'):
+                try:
+                    sig.append((str(p.relative_to(ROOT)), int(p.stat().st_mtime)))
+                except OSError:
+                    pass
+    return tuple(sorted(sig))
+
 def handle_library_doctor() -> dict:
     """GET /api/library/doctor —— 全库装载体检（owner 07-11「把加载失败的错误都 log 出来」）。
     跑 scripts/library-doctor.mjs：每盘卡带/内置数据游戏走与运行器同一套 JSON→parse→引擎 load+2tick
-    （含 TS 例外 logic 合体）；逐盘结果回 JSON，坏盘打 [DOCTOR] 控制台日志。只读不写。"""
+    （含 TS 例外 logic 合体）；逐盘结果回 JSON，坏盘打 [DOCTOR] 控制台日志。只读不写。
+    07-15：结果按库文件指纹缓存（命中回 cached:true）——库没动的重复体检不再重花 vite-node 冷启动。"""
+    key = _doctor_cache_key()
+    if _DOCTOR_CACHE['data'] is not None and _DOCTOR_CACHE['key'] == key:
+        cached = dict(_DOCTOR_CACHE['data'])
+        cached['cached'] = True
+        return cached
     t0 = time.time()
     try:
         proc = subprocess.run(
@@ -108,6 +132,8 @@ def handle_library_doctor() -> dict:
           f"体检完 {data.get('total')} 盘 · {(data.get('total') or 0) - (data.get('bad') or 0)} 好 · {data.get('bad')} 坏 · {time.time() - t0:.1f}s")
     data['success'] = True
     data['elapsedMs'] = int((time.time() - t0) * 1000)
+    _DOCTOR_CACHE['key'] = key
+    _DOCTOR_CACHE['data'] = dict(data)  # 只缓存成功结果；失败/超时不缓存（下次重试）
     return data
 
 def library_set_flags(slug: str, body: dict) -> tuple:
