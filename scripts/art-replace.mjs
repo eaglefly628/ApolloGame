@@ -548,6 +548,9 @@ export function deriveForGame(manifest, game = '') {
 
 async function run(argv) {
   const cmd = argv[0], slug = argv[1];
+  // 全命令共享的开关（提前声明·避免 fill 分支在 const 声明前引用 → TDZ ReferenceError）。
+  const pvi = argv.indexOf('--provider'); const providerArg = pvi >= 0 ? argv[pvi + 1] : null;
+  const allowMock = argv.includes('--allow-mock'); // 仅测试/冒烟机械验证·端点永不传
   if (cmd === 'packs') { console.log(JSON.stringify({ packs: listStylePacks() })); return; }
   if (cmd === 'derive') {
     const mf = readJson(manifestFile(ROOT, slug), null);
@@ -574,8 +577,6 @@ async function run(argv) {
     console.log(JSON.stringify({ ok: true, slug, no, summary: b.summary, row: ledger.rows.find((r) => r.no === no) }));
     return;
   }
-  const pvi = argv.indexOf('--provider'); const providerArg = pvi >= 0 ? argv[pvi + 1] : null;
-  const allowMock = argv.includes('--allow-mock'); // 仅测试/冒烟机械验证·端点永不传
   if (cmd === 'batch') {
     const packId = argv[2];
     const mock = argv.includes('--mock');
