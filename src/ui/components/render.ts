@@ -10,7 +10,7 @@ import type {
   TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
   CardProps, PlayingCardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
   RatingProps, ComboboxProps, DrawerProps, VirtualListProps, ContextMenuProps,
-  CoinFlipProps, VersusProps, VideoProps,
+  CoinFlipProps, VersusProps, VideoProps, ParticlesProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -20,8 +20,8 @@ const esc = (s: string): string =>
 // （如 "0;background:url(x)"）→ 直接插进 style 串即 CSS 注入。统一过 num() 只取有限数字。
 const num = (v: unknown, d = 0): number => { const n = Number(v); return Number.isFinite(n) ? n : d; };
 // anim 预设白名单（mountUI 注入的关键帧名）：拒绝任意字符串插入 animation。
-const ANIM_PRESETS = new Set(['fadeIn', 'slideUp', 'pop', 'shake', 'dealIn', 'flyIn']); // 一次性入场
-const LOOP_PRESETS = new Set(['float', 'glow', 'pulse', 'spin']);                        // 持续循环（浮动/发光/脉冲/自旋·环境动效·infinite）
+const ANIM_PRESETS = new Set(['fadeIn', 'slideUp', 'pop', 'shake', 'dealIn', 'flyIn', 'fadeOut', 'popOut']); // 一次性入场/退场
+const LOOP_PRESETS = new Set(['float', 'glow', 'pulse', 'spin', 'floatUp']);             // 持续循环（浮动/发光/脉冲/自旋/升冒·环境动效·infinite）
 // justify 主轴分布枚举 → CSS justify-content（闭集映射·拒绝任意串注入）。
 const JUSTIFY_MAP: Record<string, string> = {
   start: 'flex-start', center: 'center', end: 'flex-end',
@@ -69,6 +69,8 @@ function fxToCss(fx: readonly VisualEffect[], t: UITheme): { css: string; dataFx
       filter.push(`drop-shadow(0 0 ${4 * r}px ${col}) drop-shadow(0 0 ${10 * r}px ${col})`);
     } else if (e.kind === 'sheen') {
       dataFx.push('sheen');
+    } else if (e.kind === 'holo') {
+      dataFx.push('holo'); // 全息箔·彩虹叠层（CSS 注入 ::after·apollo-holo）
     } else if (e.kind === 'flash') {
       vars.push(`--fx-flash:${fxColor(t, e.color ?? 'danger')}`);
       if (ms) vars.push(`--fx-flash-ms:${ms}ms`);
@@ -272,6 +274,8 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
     // 仅当文本含换行符时保留换行（\n→实换行·多段说明/手册用）；无换行的单行 label 不加·HTML 字节不变（不动既有 golden）。
     (typeof p.text === 'string' && p.text.includes('\n')) ? 'white-space:pre-line' : '',
     p.glow ? `text-shadow:0 0 8px ${cl},0 0 2px ${cl}` : '',
+    // 描边字（comic outline·卡通粗轮廓）：深色描边在填色之下（paint-order:stroke fill 保填色/可读）。可与 glow 叠。
+    p.stroke ? `-webkit-text-stroke:2px ${t.bg0};paint-order:stroke fill` : '',
     p.tracking !== undefined ? `letter-spacing:${p.tracking}px` : '',
     ls,
   ].filter(Boolean).join(';');
@@ -508,6 +512,17 @@ function renderProgressBar(id: string, p: ProgressBarProps, ls: string, t: UIThe
   const fillColor: Record<string, string> = { accent: t.jade, gold: t.gold, ok: t.ok, warn: t.warn, danger: t.danger };
   const fill = fillColor[p.tone ?? 'accent'] ?? t.jade;
   const valTxt = max === 1 ? `${Math.round(pct)}%` : `${p.value}/${max}`;
+  // 环形/径向进度（shape:'ring'·体力/耐力/每日目标/冷却环）：conic 弧 + 中心镂空显 value/label。
+  if (p.shape === 'ring') {
+    const d = num(p.size, 64);
+    const deg = Math.round(pct / 100 * 360);
+    const inner = Math.round(d * 0.66);
+    const center = p.showValue ? valTxt : (p.label ?? '');
+    return `<div id="${esc(id)}" style="width:${d}px;height:${d}px;border-radius:50%;background:conic-gradient(${fill} ${deg}deg,${t.bg3} ${deg}deg 360deg);display:inline-flex;align-items:center;justify-content:center;flex:none;${ls}">` +
+      `<div style="width:${inner}px;height:${inner}px;border-radius:50%;background:${t.bg1};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px">` +
+      `${center ? `<span style="font-size:${Math.round(d / 5.5)}px;font-weight:700;color:${t.text};font-family:${t.fontMono}">${esc(center)}</span>` : ''}` +
+      `${p.label && p.showValue ? `<span style="font-size:9px;color:${t.dim};font-family:${t.fontUi}">${esc(p.label)}</span>` : ''}</div></div>`;
+  }
   const header = (p.label || p.showValue)
     ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">${p.label ? `<span style="font-size:11px;color:${t.sub};font-family:${t.fontUi}">${esc(p.label)}</span>` : '<span></span>'}${p.showValue ? `<span style="font-size:11px;color:${t.dim};font-family:${t.fontMono}">${esc(valTxt)}</span>` : ''}</div>`
     : '';
@@ -830,6 +845,45 @@ function renderVideo(id: string, p: VideoProps, ls: string, t: UITheme): string 
   return `<video id="${esc(id)}"${src}${poster}${flags} style="${style}"></video>`;
 }
 
+// ── Particles（UI 层庆祝粒子叠层·render-only）：喷一把 N 个小片，位置/延迟由 index 确定式派生（无 Math.random·可回归）。
+// 铺满父容器·pointer-events:none。confetti/coins=下落雨；stars=径向爆；sparkle=原地微光闪。CSS keyframes 见 server.ts。
+const PARTICLE_COLORS = ['#e94f5a', '#f5a623', '#7ed957', '#4a90d9', '#9b59b6', '#ff7ab0'];
+function renderParticles(id: string, p: ParticlesProps, ls: string, t: UITheme): string {
+  const kind = p.kind;
+  const count = Math.max(1, Math.min(60, num(p.count, kind === 'confetti' ? 26 : 16)));
+  const loop = p.loop !== false; // 缺省循环（展示/环境）
+  const iter = loop ? 'infinite' : '1';
+  const fill = loop ? 'both' : 'forwards';
+  const pieces: string[] = [];
+  for (let i = 0; i < count; i++) {
+    // 确定式伪随机（index 派生·同输入同输出·可测·非裸 Math.random）：几个互质数取模摊开。
+    const px = (i * 61) % 100;             // 起始横位 %
+    const drift = ((i * 37) % 60) - 30;    // 横漂 px
+    const delay = (i * 53) % 1400;         // 延迟 ms
+    const dur = 1600 + ((i * 29) % 1400);  // 时长 ms
+    const rot = 360 + ((i * 47) % 540);    // 自转
+    const sz = 6 + (i % 4) * 2;            // 片大小
+    const col = PARTICLE_COLORS[i % PARTICLE_COLORS.length]!;
+    if (kind === 'sparkle') {
+      const py = (i * 43) % 100;
+      pieces.push(`<span style="position:absolute;left:${px}%;top:${py}%;width:${sz}px;height:${sz}px;border-radius:50%;background:${t.gold};box-shadow:0 0 6px ${t.gold};animation:apollo-p-twinkle ${dur}ms ease-in-out ${delay}ms ${iter} ${fill}"></span>`);
+    } else if (kind === 'stars') {
+      const ang = (i / count) * 6.283;
+      const dist = 40 + ((i * 31) % 60);
+      const dx = Math.round(Math.cos(ang) * dist), dy = Math.round(Math.sin(ang) * dist);
+      pieces.push(`<span style="position:absolute;left:50%;top:50%;font-size:${sz + 8}px;line-height:1;color:${t.gold};--dx:${dx}px;--dy:${dy}px;animation:apollo-p-burst ${dur}ms cubic-bezier(.2,.7,.3,1) ${delay}ms ${iter} ${fill}">★</span>`);
+    } else {
+      // confetti(彩片) / coins(金圆)
+      const isCoin = kind === 'coins';
+      const shape = isCoin
+        ? `width:${sz + 2}px;height:${sz + 2}px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a8,${t.gold})`
+        : `width:${sz}px;height:${sz + 3}px;border-radius:1px;background:${col}`;
+      pieces.push(`<span style="position:absolute;left:${px}%;top:-8%;${shape};--dx:${drift}px;--rot:${rot}deg;animation:apollo-p-fall ${dur}ms linear ${delay}ms ${iter} ${fill}"></span>`);
+    }
+  }
+  return `<div id="${esc(id)}" style="position:relative;overflow:hidden;pointer-events:none;${ls}">${pieces.join('')}</div>`;
+}
+
 export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
   const html = renderDispatch(node, theme);
   const c = node.layout;
@@ -886,6 +940,7 @@ function renderDispatch(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'VirtualList':return renderVirtualList(node.id, node.props as VirtualListProps, ls, t);
     case 'ContextMenu':return renderContextMenu(node.id, node.props as ContextMenuProps, node.children ?? [], ls, t);
     case 'Video':      return renderVideo(node.id, node.props as VideoProps, ls, t);
+    case 'Particles':  return renderParticles(node.id, node.props as ParticlesProps, ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }

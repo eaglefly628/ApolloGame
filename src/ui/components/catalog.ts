@@ -74,6 +74,8 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'color', type: 'enum', values: COLOR, default: 'text', describe: '颜色令牌' },
       { name: 'bold', type: 'boolean', describe: '加粗' },
       { name: 'font', type: 'enum', values: ['ui', 'mono', 'pixel', 'display', 'serif', 'impact', 'heavy', 'epic', 'fantasy', 'elegant', 'script', 'hand', 'scifi', 'terminal', 'comic', 'stencil', 'western', 'retro', 'marker', 'bubbly', 'gothic', 'fashion', 'shadow'], describe: '字体槽：基础 ui/mono/pixel/display/serif + 18 款内嵌艺术字（OFL·art-fonts.ts）' },
+      { name: 'glow', type: 'boolean', describe: '磷光发光（按 color 描柔光）' },
+      { name: 'stroke', type: 'boolean', describe: '描边字（comic 深色粗轮廓·卡通标题·可与 glow 叠）' },
       { name: 'bind', type: 'string', describe: '绑 Resource id（resolveBindings 接 current）' },
       { name: 'typewriter', type: 'number', describe: '打字机每字 ms' },
       { name: 'tween', type: 'object', describe: '数字滚动 {from,to,ms,decimals}' },
@@ -113,6 +115,15 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'autoplay', type: 'boolean', describe: '自动播（补 muted）' },
     ],
     sample: { type: 'Video', id: 's-video', props: { src: '/intro.mp4', controls: true } },
+  },
+  {
+    type: 'Particles', summary: 'UI 庆祝粒子叠层', whenToUse: '通关撒纸屑/领奖金币雨/星光爆/环境微光。铺满父容器(给父 width/height + position)。render-only·不进 sim。', children: 'none',
+    props: [
+      { name: 'kind', type: 'enum', values: ['confetti', 'coins', 'stars', 'sparkle'], required: true, describe: '纸屑雨/金币雨/星光爆(径向)/环境微光' },
+      { name: 'count', type: 'number', describe: '粒子数(缺省 confetti 26·余 16·上限 60)' },
+      { name: 'loop', type: 'boolean', default: true, describe: 'true=持续循环(展示/环境)·false=播一次(庆祝一次性)' },
+    ],
+    sample: { type: 'Particles', id: 's-particles', props: { kind: 'confetti' }, layout: { width: 200, height: 120 } },
   },
   // ── 按钮 / 输入 ──────────────────────────────────────────────
   {
@@ -220,12 +231,14 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
     sample: { type: 'Tag', id: 's-tag', props: { label: '黑桃 ♠', active: true, action: 'filterSuit', actionArg: 'spade' } },
   },
   {
-    type: 'ProgressBar', summary: '比例条（血/蓝/经验/进度）', whenToUse: '展示比例。value/max；绑世界用 bind。', children: 'none',
+    type: 'ProgressBar', summary: '比例条 / 环形进度（血/蓝/经验/体力环/冷却环）', whenToUse: '展示比例。value/max；线性条缺省，环形/径向用 shape:ring(体力/每日目标/冷却环)；绑世界用 bind。', children: 'none',
     props: [
       { name: 'value', type: 'number', required: true, describe: '当前值' },
       { name: 'max', type: 'number', default: 1, describe: '满值' },
       { name: 'tone', type: 'enum', values: ['accent', 'gold', 'ok', 'warn', 'danger'], describe: '着色' },
       { name: 'label', type: 'string', describe: '标签' }, { name: 'showValue', type: 'boolean', describe: '显数值' },
+      { name: 'shape', type: 'enum', values: ['bar', 'ring'], default: 'bar', describe: 'bar=线性条 / ring=环形径向(conic·中心显值)' },
+      { name: 'size', type: 'number', default: 64, describe: '环直径 px(shape:ring 用)' },
       { name: 'bind', type: 'string', describe: '绑 Resource id' },
     ],
     sample: { type: 'ProgressBar', id: 's-progress', props: { value: 30, max: 120, tone: 'danger', label: '生命', showValue: true } },

@@ -110,6 +110,12 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-glow{0%,100%{box-shadow:0 0 22px rgba(232,205,130,.5)}50%{box-shadow:0 0 50px rgba(232,205,130,.95)}}
 @keyframes apollo-pulse{0%,100%{opacity:.55}50%{opacity:1}}
 @keyframes apollo-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes apollo-fadeOut{from{opacity:1}to{opacity:0}}
+@keyframes apollo-popOut{0%{transform:scale(1);opacity:1}100%{transform:scale(.55);opacity:0}}
+@keyframes apollo-floatUp{0%{opacity:0;transform:translateY(6px)}20%{opacity:1}100%{opacity:0;transform:translateY(-26px)}}
+@keyframes apollo-p-fall{0%{transform:translate(0,0) rotate(0);opacity:0}8%{opacity:1}100%{transform:translate(var(--dx,0),260px) rotate(var(--rot,540deg));opacity:.15}}
+@keyframes apollo-p-burst{0%{transform:translate(-50%,-50%) scale(.2);opacity:0}20%{opacity:1}100%{transform:translate(calc(-50% + var(--dx,0)),calc(-50% + var(--dy,0))) scale(1);opacity:0}}
+@keyframes apollo-p-twinkle{0%,100%{transform:scale(.3);opacity:.2}50%{transform:scale(1);opacity:1}}
 [data-flipcard]{perspective:1000px;transition:transform .35s ease}
 [data-flipcard]:hover{transform:scale(1.06)}
 [data-flipcard] [data-flip-front],[data-flipcard] [data-flip-back]{transition:transform .55s cubic-bezier(.2,.75,.25,1);backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-origin:50% 50%;will-change:transform}
@@ -126,6 +132,8 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-sheen-sweep{0%{background-position:220% 0}100%{background-position:-60% 0}}
 [data-sheen]{position:relative}
 [data-sheen]::after,[data-fx~="sheen"]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.4) 50%,transparent 58%);background-size:250% 100%;animation:apollo-sheen-sweep 3.2s ease-in-out infinite}
+@keyframes apollo-holo{0%{background-position:0% 50%}100%{background-position:220% 50%}}
+[data-fx~="holo"]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,transparent 18%,rgba(255,80,180,.42),rgba(150,90,255,.42),rgba(80,200,255,.42),rgba(120,255,170,.42),transparent 82%);background-size:220% 100%;mix-blend-mode:screen;animation:apollo-holo 3s linear infinite}
 @keyframes apollo-fx-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(calc(-1 * var(--fx-amp,4px)))}60%{transform:translateX(var(--fx-amp,4px))}}
 @keyframes apollo-fx-flash{0%{opacity:0}25%{opacity:.7}100%{opacity:0}}
 @keyframes apollo-fx-fade{from{opacity:1}to{opacity:0}}

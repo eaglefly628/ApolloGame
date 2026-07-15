@@ -10,11 +10,11 @@ const ALL_TYPES: ComponentType[] = [
   'Panel', 'Button', 'Label', 'Dropdown', 'Badge', 'Input', 'Divider', 'Checkbox', 'Toggle', 'RadioGroup',
   'Image', 'Screen', 'Slider', 'Table', 'Tabs', 'ProgressBar', 'Tag', 'Modal', 'Toast', 'Tooltip',
   'Card', 'PlayingCard', 'Stepper', 'Segmented', 'Avatar', 'Accordion', 'Rating', 'Combobox', 'Drawer',
-  'VirtualList', 'ContextMenu', 'CoinFlip', 'Versus', 'Video',
+  'VirtualList', 'ContextMenu', 'CoinFlip', 'Versus', 'Video', 'Particles',
 ];
 
 describe('UI 自描述目录 catalog', () => {
-  it('覆盖全部 34 个 ComponentType（无遗漏·校验器/sample 集才完整）', () => {
+  it('覆盖全部 35 个 ComponentType（无遗漏·校验器/sample 集才完整）', () => {
     const cataloged = new Set(UI_CATALOG.map((s) => s.type));
     expect(ALL_TYPES.filter((t) => !cataloged.has(t))).toEqual([]);
     expect(UI_CATALOG.length).toBe(ALL_TYPES.length); // 无重复

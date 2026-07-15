@@ -1178,7 +1178,7 @@ function buildPage3dUi(controls: ControlsState): LayoutNode {
     layout: { direction: 'column', gap: 18, padding: 20 },
     children: [
       { type: 'Label', id: '3dui-intro', props: {
-        text: '3D UI = 2D LayoutNode 挂 CSS-3D 变换（透视/景深/翻面/自旋/按压）——全是数据字段（rotateX/rotateY/rotate/z/perspective/tilt3d/press3d/flipOnHover/flipped + anim:spin），弱 LLM 只填数不写 CSS。真 3D 合成（preserve-3d）·非贴图假 3D。休闲刚需一网打尽。',
+        text: '3D UI = 2D LayoutNode 挂 CSS-3D 变换（透视/景深/翻面/自旋/按压）+ 休闲 juice（庆祝粒子/退场/环形进度/全息箔/描边字）——全是数据字段，弱 LLM 只填数不写 CSS。真 3D 合成（preserve-3d）·非贴图假 3D。往下滚看 🎉 Juice 段。',
         color: 'sub', size: 'sm' } },
 
       divider('d-3du1'),
@@ -1308,6 +1308,78 @@ function buildPage3dUi(controls: ControlsState): LayoutNode {
           { type: 'Panel', id: 'press-tile', props: { bg: 'jade-sheen', action: 'click', actionArg: 'press-tile' }, layout: { width: 120, height: 72, padding: 12, press3d: true, align: 'center', justify: 'center' },
             children: [{ type: 'Label', id: 'press-tile-l', props: { text: '可按面板', size: 'sm', color: 'text' } }] },
           { type: 'Label', id: '3dui-press-l', props: { text: '一个 press3d:true 字段 = 常驻底唇（厚度）+ 按下沉 Z、底唇收缩。走 :active → 触屏点按也触发（对照 tilt3d 只 hover）。按钮/面板/卡牌通用。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
+      // ══════ 🎉 Juice / 反馈五补（休闲刚需·render-only·纯数据）══════
+      divider('d-3du9'),
+      { type: 'Label', id: 'juice-hdr', props: { text: '🎉 Juice / 反馈（庆祝粒子 · 退场动画 · 环形进度 · 全息箔 · 描边字——休闲游戏的"爽感"层）', size: 'md', bold: true, color: 'gold' } },
+
+      sectionTitle('t-3dui-particles', '★ UI 庆祝粒子 PARTICLES（通关撒纸屑 / 领奖金币雨 / 星光爆 / 环境微光·fx 无法喷 N 粒子·UI 层发射器）'),
+      { type: 'Panel', id: '3dui-particles-row', props: { bare: true }, layout: { direction: 'row', gap: 18, padding: 20, align: 'center' },
+        children: ([
+          ['confetti', '纸屑雨 confetti', 'sunken'], ['coins', '金币雨 coins', 'ink'],
+          ['stars', '星光爆 stars', 'sunken'], ['sparkle', '环境微光 sparkle', 'ink'],
+        ] as const).map(([kind, cap, bg]): LayoutNode => ({
+          type: 'Panel', id: `pt-col-${kind}`, props: { bare: true }, layout: { direction: 'column', gap: 6, align: 'center' },
+          children: [
+            { type: 'Panel', id: `pt-stage-${kind}`, props: { bg }, layout: { width: 150, height: 116, padding: 0, align: 'center', justify: 'center' },
+              children: [{ type: 'Particles', id: `pt-${kind}`, props: { kind }, layout: { width: 150, height: 116 } }] },
+            { type: 'Label', id: `pt-cap-${kind}`, props: { text: cap, size: 'xs', color: 'dim' } },
+          ],
+        })).concat([
+          { type: 'Label', id: '3dui-particles-l', props: { text: '一个 Particles{kind} = 一台 UI 层发射器（世界层对等件=Vfx3D）。粒子位置确定式派生·无裸 Math.random·可回归。loop:false=庆祝播一次。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ]) },
+
+      divider('d-3du10'),
+      sectionTitle('t-3dui-exit', '★ 退场 / 飘字动画 anim（fadeOut·popOut 一次性退场 + floatUp 循环升冒·+N 收益飘字）'),
+      { type: 'Panel', id: '3dui-exit-row', props: { bare: true }, layout: { direction: 'row', gap: 40, padding: 24, align: 'center' },
+        children: [
+          // floatUp 循环（可见）：一叠 +N 收益数字持续升起淡出。
+          { type: 'Panel', id: 'floatup-stage', props: { bg: 'sunken' }, layout: { width: 160, height: 120, padding: 0, align: 'center', justify: 'center' },
+            children: [
+              { type: 'Label', id: 'fu-1', props: { text: '+50', size: 'lg', bold: true, color: 'gold', glow: true }, layout: { anim: 'floatUp', animMs: 1800 } },
+              { type: 'Label', id: 'fu-2', props: { text: '+120', size: 'md', bold: true, color: 'ok' }, layout: { x: 90, y: 40, anim: 'floatUp', animMs: 2100, animDelay: 600 } },
+              { type: 'Label', id: 'fu-3', props: { text: '+8', size: 'md', bold: true, color: 'jade' }, layout: { x: 30, y: 60, anim: 'floatUp', animMs: 1600, animDelay: 300 } },
+            ] },
+          { type: 'Label', id: 'exit-fu-l', props: { text: 'floatUp（循环）= +N 收益飘字升起淡出（挂 animDelay 错峰成一串·idle/消除游戏刚需）。', color: 'sub', size: 'sm' }, layout: { width: 200 } },
+          // 一次性退场（进本页播一次·both 停末态）。
+          { type: 'Panel', id: 'exit-once', props: { bare: true }, layout: { direction: 'column', gap: 10, align: 'center' },
+            children: [
+              { type: 'Badge', id: 'exit-fade', props: { text: 'fadeOut', tone: 'warn' }, layout: { anim: 'fadeOut', animMs: 1400 } },
+              { type: 'Badge', id: 'exit-pop', props: { text: 'popOut', tone: 'danger' }, layout: { anim: 'popOut', animMs: 1400 } },
+            ] },
+          { type: 'Label', id: 'exit-once-l', props: { text: '← fadeOut / popOut（一次性退场·both 停末态）：toast 消失、弹窗关闭、三消物消除。补齐入场(fadeIn/pop)的退场对称位。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
+      divider('d-3du11'),
+      sectionTitle('t-3dui-ring', '★ 环形 / 径向进度 PROGRESSBAR.shape:"ring"（体力环 / 每日目标 / 冷却环·休闲常见·补线性条之外）'),
+      { type: 'Panel', id: '3dui-ring-row', props: { bare: true }, layout: { direction: 'row', gap: 32, padding: 24, align: 'center' },
+        children: [
+          { type: 'ProgressBar', id: 'ring-sta', props: { value: 0.72, shape: 'ring', size: 88, tone: 'ok', showValue: true, label: '体力' } },
+          { type: 'ProgressBar', id: 'ring-goal', props: { value: 0.45, shape: 'ring', size: 88, tone: 'gold', showValue: true, label: '日目标' } },
+          { type: 'ProgressBar', id: 'ring-cd', props: { value: 0.9, shape: 'ring', size: 88, tone: 'accent', showValue: true, label: '冷却' } },
+          { type: 'ProgressBar', id: 'ring-hp', props: { value: 0.3, shape: 'ring', size: 72, tone: 'danger', showValue: true } },
+          { type: 'Label', id: '3dui-ring-l', props: { text: 'shape:"ring" = conic 弧 + 中心镂空显值。同 value/max/tone 语义，换个 shape 就从线性条变径向环。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
+      divider('d-3du12'),
+      sectionTitle('t-3dui-holo', '★ 全息箔 fx:"holo"（彩虹光随角度流动·收集 / gacha 稀有卡演出·比 sheen 白斜扫更炫）'),
+      { type: 'Panel', id: '3dui-holo-row', props: { bare: true }, layout: { direction: 'row', gap: 24, padding: 24, align: 'center' },
+        children: [
+          { type: 'PlayingCard', id: 'holo-card', props: { rank: 'A', suit: '♠', label: '★ 传说 赵子龙', size: 'lg' }, layout: { fx: [{ kind: 'holo' }] } },
+          { type: 'Panel', id: 'holo-panel', props: { bg: 'gold-sheen', title: 'SSR' }, layout: { width: 150, height: 120, padding: 14, fx: [{ kind: 'holo' }], align: 'center', justify: 'center' },
+            children: [{ type: 'Label', id: 'holo-p-l', props: { text: '稀有度箔光', size: 'sm', color: 'ink', bold: true } }] },
+          { type: 'Label', id: '3dui-holo-l', props: { text: '新增 fx kind（闭集扩展=替代"开关爆炸"的正道）。holo 与 sheen/glow 可叠加。挂任意卡/面板/按钮。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
+      divider('d-3du13'),
+      sectionTitle('t-3dui-stroke', '★ 描边字 LABEL.stroke（comic 深色粗轮廓·卡通 / 休闲标题·paint-order 保填色可读）'),
+      { type: 'Panel', id: '3dui-stroke-row', props: { bare: true }, layout: { direction: 'row', gap: 26, padding: 24, align: 'center' },
+        children: [
+          { type: 'Label', id: 'stroke-1', props: { text: 'LEVEL UP!', size: 'xxl', bold: true, color: 'gold', stroke: true, font: 'comic' } },
+          { type: 'Label', id: 'stroke-2', props: { text: '大 吉', size: 'xxl', bold: true, color: 'danger', stroke: true, font: 'bubbly' } },
+          { type: 'Label', id: 'stroke-3', props: { text: 'COMBO ×8', size: 'xl', bold: true, color: 'ok', stroke: true, glow: true } },
+          { type: 'Label', id: '3dui-stroke-l', props: { text: 'stroke:true = 深色粗描边（paint-order:stroke fill 保填色不被盖）。可与 glow / 艺术字 font 叠——卡通爆字标配。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
         ] },
     ],
   };

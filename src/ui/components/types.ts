@@ -10,7 +10,7 @@ export type ComponentType =
   | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast' | 'Tooltip'
   | 'Card' | 'PlayingCard' | 'Stepper' | 'Segmented' | 'Avatar' | 'Accordion'
   | 'Rating' | 'Combobox' | 'Drawer' | 'VirtualList' | 'ContextMenu'
-  | 'CoinFlip' | 'Versus' | 'Video';
+  | 'CoinFlip' | 'Versus' | 'Video' | 'Particles';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -93,7 +93,8 @@ export type EffectKind =
   | 'glow'    // 外发光（buff/可交互/选中·color=光色）
   | 'sheen'   // 流光斜扫（高级感/稀有/新到）
   | 'flash'   // 整体闪色（受击冒红/暴击闪白/警告·color=闪色·常配 once）
-  | 'fade';   // 半透明淡出消失（消耗/消退/移除·opacity→0·一次性·REQ-UI-fx源泉消退）
+  | 'fade'    // 半透明淡出消失（消耗/消退/移除·opacity→0·一次性·REQ-UI-fx源泉消退）
+  | 'holo';   // 全息箔（彩虹光随角度流动·收集/gacha 稀有卡·比 sheen 白斜扫更炫·render-only 叠层）
 export type EffectColor = 'danger' | 'gold' | 'jade' | 'warn' | 'ok' | 'white'; // 语义色 → 主题令牌（闭集·防注入）
 // 容器描边语义色（闭集·主题令牌解析·REQ-UI-容器描边形）。Panel.edge 用：语义/阵营框色·绝不收自由 hex。
 // mine/foe = 通用「我方/敌方」阵营色（主题 mine/foe 令牌·缺省回退暖/冷）；其余复用既有语义令牌（jade/gold/ok/warn/danger）。
@@ -161,6 +162,8 @@ export interface LabelProps {
     | 'stencil' | 'western' | 'retro' | 'marker' | 'bubbly' | 'gothic' | 'fashion' | 'shadow';
   /** 磷光发光(text-shadow·琥珀时钟/霓虹标题)：true 时按当前 color 描一圈柔光。纯表现。 */
   glow?: boolean;
+  /** 描边字(comic outline·卡通/休闲粗描边标题)：true 时字外描一圈深色轮廓(text-stroke·paint-order:stroke fill 保填色可读)。纯表现·与 glow 可叠。 */
+  stroke?: boolean;
   /** 字距 px(letter-spacing·Silkscreen 全大写微标常用)。纯表现·只收数字(最弱 LLM 能填)。 */
   tracking?: number;
   /** 世界绑定(收编 GameShell stat)：resourceId·resolveBindings 时把 Resource.current 接到 text 后（text 作前缀/标签）。 */
@@ -310,8 +313,21 @@ export interface ProgressBarProps {
   value: number; max?: number;
   tone?: 'accent' | 'gold' | 'ok' | 'warn' | 'danger';
   label?: string; showValue?: boolean;
+  /** 形态(缺省 bar=线性条·向后兼容)：ring=环形/径向进度(conic 弧·体力/耐力/每日目标/冷却环·休闲常见)。中心显 value/label。 */
+  shape?: 'bar' | 'ring';
+  /** 环直径 px(shape:'ring' 用·缺省 64)。 */
+  size?: number;
   /** 世界绑定(收编 GameShell bar)：resourceId·resolveBindings 时 value/max 取自 Resource.current/max。 */
   bind?: string;
+}
+
+// ── Particles（UI 层庆祝粒子叠层·render-only·下沉自「休闲 juice 缺口」owner 2026-07-15）───────────
+// 通关撒纸屑 / 领奖金币雨 / 星光爆 / 环境微光——fx 是 per-node 无法喷「一把 N 个粒子」，这是 UI 层发射器（世界层对等件=Vfx3D）。
+// render-only 表现层：不进 sim/hash，粒子位置/延迟由 index 确定式派生（无裸 Math.random·可回归测）。铺满父容器·pointer-events:none。
+export interface ParticlesProps {
+  kind: 'confetti' | 'coins' | 'stars' | 'sparkle'; // 纸屑雨 / 金币雨 / 星光爆(径向) / 环境微光(原地闪)
+  count?: number;   // 粒子数(缺省 confetti 26·其余 16·上限 60 防过载)
+  loop?: boolean;   // true=持续循环(缺省·环境/展示)；false=播一次即停(庆祝一次性·配退场)
 }
 
 // ── Tag（可点过滤标签/词条·筛选条大量用）：active 高亮；可点(action·arg=actionArg)；可删(removable 显 ×)。──
@@ -467,7 +483,7 @@ export type ComponentProps =
   | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps | ToastProps | TooltipProps
   | CardProps | PlayingCardProps | StepperProps | SegmentedProps | AvatarProps | AccordionProps
   | RatingProps | ComboboxProps | DrawerProps | VirtualListProps | ContextMenuProps
-  | CoinFlipProps | VersusProps | VideoProps
+  | CoinFlipProps | VersusProps | VideoProps | ParticlesProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */
