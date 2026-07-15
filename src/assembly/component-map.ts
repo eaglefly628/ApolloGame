@@ -49,6 +49,7 @@ import type {
   Hitbox,
   Impulse3D,
   InputQueue,
+  Joint3D,
   KeyBinding,
   Launch,
   Light3D,
@@ -171,6 +172,7 @@ export interface ComponentDataMap {
   Hitbox: Omit<Hitbox, 'type'>;
   Impulse3D: Omit<Impulse3D, 'type'>;
   InputQueue: Omit<InputQueue, 'type'>;
+  Joint3D: Omit<Joint3D, 'type'>;
   KeyBinding: Omit<KeyBinding, 'type'>;
   Launch: Omit<Launch, 'type'>;
   Light3D: Omit<Light3D, 'type'>;

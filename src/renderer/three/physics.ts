@@ -1,6 +1,6 @@
 import type * as CANNON from 'cannon-es';
 import type { IWorld } from '@engine/core/types.js';
-import type { RigidBody3D, Mesh3D, Transform3D, Impulse3D } from '@engine/protocol/components.js';
+import type { RigidBody3D, Mesh3D, Transform3D, Impulse3D, Joint3D } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  three/PhysicsSystem —— 真物理刚体（cannon-es 驱动·TA·**纯表现**）。
@@ -28,6 +28,7 @@ export class PhysicsSystem {
   private world: CANNON.World | null = null;
   private readonly bodies = new Map<string, CANNON.Body>();
   private readonly impulseSeen = new Map<string, number>(); // Impulse3D 已施加的 trigger（同 shake/flash 触发范式·防每帧重复施力）
+  private readonly joints = new Map<string, { c: CANNON.Constraint; anchor?: CANNON.Body; sig: string }>(); // Joint3D 约束池
   private last = 0;
 
   // 每帧步进 + 写回 Transform3D。返回活跃刚体数（>0 → 渲染器把帧号折进 renderSig 持续重渲）。nowMs=performance.now()。
@@ -53,6 +54,7 @@ export class PhysicsSystem {
       if (prev === undefined) continue; // 首见=基线·不施力（静态带 trigger 的场景装载不自射；出生初速用 RigidBody3D.vx·bump 才施力）
       this.applyImpulse(id, imp.x ?? 0, imp.y ?? 0, imp.z ?? 0, imp.torque, imp.mode);
     }
+    this.syncJoints(world); // 物理关节（Joint3D·两刚体间/本体↔世界锚·绳/秋千/布娃娃）——须在刚体 spawn 后（两端就绪才建）。
     const dt = this.last ? Math.min(0.05, (nowMs - this.last) / 1000) : STEP;
     this.last = nowMs;
     cw.step(STEP, dt, 4);
@@ -86,6 +88,57 @@ export class PhysicsSystem {
     else b.applyImpulse(new C.Vec3(ix, iy, iz)); // 质心冲量（Δv = J/m）
     if (torque) b.angularVelocity.set(b.angularVelocity.x + torque[0], b.angularVelocity.y + torque[1], b.angularVelocity.z + torque[2]);
     b.wakeUp();
+  }
+
+  // 物理关节同步（Joint3D→cannon 约束）：两端刚体就绪才建；参数变重建；实体/组件消失移除。缺失 bodyB → 下帧重试。
+  private syncJoints(world: IWorld): void {
+    const cw = this.world!;
+    const seen = new Set<string>();
+    for (const [id] of world.query('Joint3D')) {
+      const j = world.getComponent<Joint3D>(id, 'Joint3D');
+      if (!j) continue;
+      const bodyA = this.bodies.get(id);
+      const bodyB = j.bodyB ? this.bodies.get(j.bodyB) : undefined;
+      if (!bodyA || (j.bodyB && !bodyB)) { if (this.joints.has(id)) this.removeJoint(id); continue; } // 端点未就绪/已消失 → 拆约束(防悬垂引用崩)·等重建
+      const sig = jointSig(j);
+      const cur = this.joints.get(id);
+      if (cur) { if (cur.sig === sig) { seen.add(id); continue; } this.removeJoint(id); } // 参数变 → 重建
+      const built = this.buildJoint(j, bodyA, bodyB);
+      if (built) { cw.addConstraint(built.c); this.joints.set(id, { ...built, sig }); seen.add(id); }
+    }
+    for (const [id] of [...this.joints]) if (!seen.has(id)) this.removeJoint(id);
+  }
+
+  private buildJoint(j: Joint3D, bodyA: CANNON.Body, bodyB?: CANNON.Body): { c: CANNON.Constraint; anchor?: CANNON.Body } | null {
+    const cw = this.world!;
+    const maxForce = j.maxForce ?? 1e6;
+    const pivotA = vec(j.pivotA), pivotB = vec(j.pivotB), axis = vec(j.axis ?? [0, 1, 0]);
+    let bB = bodyB, anchor: CANNON.Body | undefined;
+    if (!bB) { // 世界固定锚：mass-0 静态体（无 shape·仅作约束端点）
+      anchor = new C!.Body({ mass: 0 });
+      const a = j.anchor ?? [bodyA.position.x, bodyA.position.y, bodyA.position.z];
+      anchor.position.set(a[0], a[1], a[2]);
+      cw.addBody(anchor);
+      bB = anchor;
+    }
+    let c: CANNON.Constraint;
+    switch (j.kind) {
+      case 'point': c = new C!.PointToPointConstraint(bodyA, pivotA, bB, pivotB, maxForce); break;
+      case 'hinge': c = new C!.HingeConstraint(bodyA, bB, { pivotA, pivotB, axisA: axis, axisB: axis, maxForce }); break;
+      case 'distance': c = new C!.DistanceConstraint(bodyA, bB, j.distance as number, maxForce); break;
+      case 'lock': c = new C!.LockConstraint(bodyA, bB, { maxForce }); break;
+      case 'cone': c = new C!.ConeTwistConstraint(bodyA, bB, { pivotA, pivotB, axisA: axis, axisB: axis, maxForce }); break;
+      default: if (anchor) cw.removeBody(anchor); return null;
+    }
+    return { c, anchor };
+  }
+
+  private removeJoint(id: string): void {
+    const j = this.joints.get(id);
+    if (!j) return;
+    this.world?.removeConstraint(j.c);
+    if (j.anchor) this.world?.removeBody(j.anchor);
+    this.joints.delete(id);
   }
 
   private initWorld(): void {
@@ -122,11 +175,20 @@ export class PhysicsSystem {
 
   private disposeWorld(): void {
     if (!this.world) return;
+    for (const [id] of [...this.joints]) this.removeJoint(id); // 先拆约束（含世界锚体）再移刚体
     for (const [, b] of this.bodies) this.world.removeBody(b);
     this.bodies.clear();
+    this.impulseSeen.clear();
     this.world = null;
     this.last = 0;
   }
 
   dispose(): void { this.disposeWorld(); }
+}
+
+// Joint3D 局部向量 → cannon Vec3（缺省 0）。
+function vec(a?: readonly [number, number, number]): CANNON.Vec3 { return new C!.Vec3(a?.[0] ?? 0, a?.[1] ?? 0, a?.[2] ?? 0); }
+// 关节参数签名（供重建脏标）。
+function jointSig(j: Joint3D): string {
+  return `${j.kind}|${j.bodyB ?? ''}|${(j.pivotA ?? []).join(',')}|${(j.pivotB ?? []).join(',')}|${(j.anchor ?? []).join(',')}|${(j.axis ?? []).join(',')}|${j.distance ?? ''}|${j.maxForce ?? ''}`;
 }

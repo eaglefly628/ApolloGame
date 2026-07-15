@@ -202,6 +202,21 @@ export interface RigidBody3D extends Component {
   avx?: number; avy?: number; avz?: number; // 初角速度（翻滚）
 }
 
+// ── Joint3D（render-only·不进 hash·物理关节/约束）── 在两个 RigidBody3D 之间（或本体↔世界固定锚）建 cannon 约束：绳/秋千/吊桥/布娃娃/铰链门。
+// 挂在**本体（bodyA）**实体上（须带 RigidBody3D）。bodyB 指另一实体（须带 RigidBody3D）；缺省则连到世界固定锚点 anchor。
+// kind：point=球铰（绳结/摆锤·最常用）·hinge=铰链绕轴（门/轮）·distance=定距（绳段/连杆）·lock=完全固连（刚性拼接）·cone=锥摆（布娃娃关节）。纯表现物理·不进 sim/hash。
+export interface Joint3D extends Component {
+  readonly type: 'Joint3D';
+  kind: 'point' | 'hinge' | 'distance' | 'lock' | 'cone';
+  bodyB?: string; // 连接的另一实体 id（须带 RigidBody3D）；缺省=连世界固定锚点 anchor
+  pivotA?: readonly [number, number, number]; // 本体上的连接点（局部坐标·缺省 0,0,0）
+  pivotB?: readonly [number, number, number]; // bodyB 上的连接点（局部坐标·缺省 0,0,0）
+  anchor?: readonly [number, number, number]; // 无 bodyB 时的世界固定锚点（缺省本体当前位）
+  axis?: readonly [number, number, number]; // hinge/cone 的转轴（缺省 0,1,0）
+  distance?: number; // distance 约束的目标距离（缺省=建时两连接点距）
+  maxForce?: number; // 约束最大力（缺省 1e6·越小越"软"易被拉断/拉伸）
+}
+
 // ── Impulse3D（render-only·不进 hash·运行时施力）── 给同实体 RigidBody3D 施加一次冲量/速度（弹/射/跳/击退/风）。
 // **nonce 触发范式**（同 Camera3D.shake / Post3D.flash）：游戏在要施力时 **bump `trigger`**（任意变化数）→ 物理系统据 x/y/z
 // 施一次线性冲量（mode:'impulse'·缺省·Δv=J/m）或直接设速度（mode:'velocity'·发射固定初速）+ 可选 torque 角冲量。
