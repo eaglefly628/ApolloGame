@@ -9,7 +9,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
-import { textureOverrideUri } from './art-textures.js'; // 背景板槽（07-14 全面台账化·真图=cover·无=主题色）
+import { textureOverrideUri, iconUri } from './art-textures.js'; // 背景板槽（07-14 全面台账化·真图=cover·无=主题色）+ 套装图标（07-15 skull/deck 接线）
 import { STAGE_CAMPAIGN, type StageCampaign } from './campaign-data.js';
 import { stageDisha } from './disha.js';
 import { dishaNumberLine } from './lobby-types.js';
@@ -46,7 +46,7 @@ function buildStageCard(c: StageCampaign, cur: number, maxReached: number): Layo
     children.push(
       { type: 'Label', id: `camp-${c.stage}-bl-open`, props: { text: `🗣️ 开场「${c.bossLines.open}」`, size: 'md', color: 'sub' } },
       { type: 'Label', id: `camp-${c.stage}-bl-mid`, props: { text: `⚔️ 劣势「${c.bossLines.mid}」`, size: 'md', color: 'sub' } },
-      { type: 'Label', id: `camp-${c.stage}-bl-lose`, props: { text: `💀 败北「${c.bossLines.lose}」`, size: 'md', color: 'sub' } },
+      { type: 'Label', id: `camp-${c.stage}-bl-lose`, props: { size: 'md', color: 'sub', spans: [iconUri('skull') ? { text: `败北「${c.bossLines.lose}」`, img: iconUri('skull')!, color: 'sub' } : { text: `💀 败北「${c.bossLines.lose}」`, color: 'sub' }] } }, // 套装图标（07-15 skull·icon 在场→span.img·无=原 emoji·观感零变）
     );
   }
   children.push({ type: 'Label', id: `camp-${c.stage}-fh`,
@@ -61,7 +61,7 @@ function buildStageCard(c: StageCampaign, cur: number, maxReached: number): Layo
   children.push({ type: 'Panel', id: `camp-${c.stage}-fiends`, props: { bare: true }, layout: { direction: 'grid', cols: 3, gap: 8 }, children: fiendCards });
   // 明牌 counter-pick 情报（boss-config「核心乐趣」）：牌组主题 + ≤5 明牌天罡 + 克制提示。
   if (c.deckTheme) children.push({ type: 'Label', id: `camp-${c.stage}-theme`,
-    props: { size: 13, color: 'sub', spans: [{ text: '🃏 Boss 牌组：' }, { text: c.deckTheme, color: 'text' }] } });
+    props: { size: 13, color: 'sub', spans: [iconUri('deck') ? { text: 'Boss 牌组：', img: iconUri('deck')! } : { text: '🃏 Boss 牌组：' }, { text: c.deckTheme, color: 'text' }] } }); // 套装图标（07-15 deck·icon 在场→span.img·无=原 emoji·观感零变）
   if (c.bossTiangang?.length) children.push({ type: 'Label', id: `camp-${c.stage}-tg`,
     props: { size: 13, color: 'sub', spans: [{ text: '⚡ 明牌天罡（counter-pick 靶）：' }, { text: c.bossTiangang.join(' · '), color: 'gold', bold: true }] } });
   if (c.counterTip) children.push({ type: 'Label', id: `camp-${c.stage}-counter`,

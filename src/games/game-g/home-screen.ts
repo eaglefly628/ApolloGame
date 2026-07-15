@@ -11,7 +11,7 @@ import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { stageDisha } from './disha.js';
 import { dishaNumberLine } from './lobby-types.js';
-import { feltBrocadeUri, textureOverrideUri } from './art-textures.js';
+import { feltBrocadeUri, textureOverrideUri, iconUri } from './art-textures.js'; // 背景板/felt 底纹 + 套装图标（07-15 fortune/target 接线）
 import type { LobbyView } from './lobby-types.js';
 
 /** 主页内容 → LayoutNode（纯数据·保真原版绿呢牌桌·owner 2026-06-25「和原版一样」）。
@@ -78,7 +78,8 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
         children: [
           { type: 'Panel', id: 'home-fortune', props: {}, layout: { direction: 'row', align: 'center', gap: 8, padding: 8 },
             children: [
-              { type: 'Label', id: 'home-fortune-t', props: { text: '🎴 今日卦象', size: 13, color: 'sub' } },
+              // 套装图标（07-15）：icon 覆盖在场→span.img·无=原 emoji 文本（观感零变）。token=台账 game-g/icon/fortune。
+              { type: 'Label', id: 'home-fortune-t', props: { size: 13, color: 'sub', spans: [iconUri('fortune') ? { text: '今日卦象', img: iconUri('fortune')!, color: 'sub' } : { text: '🎴 今日卦象', color: 'sub' }] } },
               { type: 'Label', id: 'home-fortune-v', props: { text: keptFortune != null ? String(keptFortune) : '掷', size: 'xxxl', color: 'gold', bold: true, font: 'display' } },
             ] },
           duel,
@@ -124,7 +125,7 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
       ] : []),
       ...(c?.counterTip ? [
         { type: 'Label' as const, id: 'home-counter',
-          props: { size: 11 as const, color: 'ok' as const, spans: [{ text: '🎯 克制：', bold: true }, { text: c.counterTip }] } },
+          props: { size: 11 as const, color: 'ok' as const, spans: [iconUri('target') ? { text: '克制：', img: iconUri('target')!, bold: true } : { text: '🎯 克制：', bold: true }, { text: c.counterTip }] } },
       ] : []),
       { type: 'Label', id: 'home-unlock',
         props: { text: c ? `🏆 打赢 = 破其诅咒 · 通关解锁天罡 ${c.unlock}` : '', size: 11, color: 'gold' } },

@@ -70,6 +70,7 @@ function topbar(view: LobbyView): LayoutNode {
       iconPill('tb-coin', 'coin', '🪙', String(view.coin), 'recharge'),
       iconPill('tb-dia', 'diamond', '💎', String(view.diamond ?? 0), 'recharge'),
       iconPill('tb-shard', 'shard-dizhi', '🧩', String(view.dizhiShards ?? 0), 'recharge'),
+      iconPill('tb-shardtg', 'shard-tiangang', '🔶', String(view.tiangangShards ?? 0), 'recharge'),
       iconPill('tb-foil', 'foil', '✨', String(view.foilCount), 'shopFoil'),
       iconPill('tb-man', 'manual', '📚', '手册', 'man', 'accent', undefined, 'help'),
       iconPill('tb-settings', 'settings', '⚙', '', 'settings'),

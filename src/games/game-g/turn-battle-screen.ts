@@ -10,7 +10,7 @@ import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fon
 import { heroNameOf } from './hero-codex.js'; // 场上牌悬浮显其对应武将名（owner 2026-06-21·数据已在 HERO_CARDS）
 import { renderNode, ensureUiKeyframes, type LayoutNode, type VisualEffect } from '@ui/components/index.js'; // 数据驱动 UI 库：HUD chrome 由 LayoutNode 描述、renderNode 出串（UI 铁律·战斗屏 HUD 迁移）。ensureUiKeyframes=手动注入 fx 关键帧（战斗走 renderNode+innerHTML 不经 mountUI·主程导出·REQ-UI-fx控件叠层②）
 import { GG_BATTLE_THEME } from './ui-theme.js'; // 桥接 CSS 变量的引擎组件主题 → renderNode 片段随玄铁/锦霞皮自动换色
-import { textureOverrideUri } from './art-textures.js'; // 对战屏背景板槽（台账 art-57 game-g/tex/battle-backdrop·批29 接线）
+import { textureOverrideUri, iconUri } from './art-textures.js'; // 对战屏背景板槽（台账 art-57 game-g/tex/battle-backdrop·批29 接线）+ 套装图标（07-15 dice/shield/mana 接线）
 import type { ClashDie3DHandle } from './clash-dice-3d.js'; // 掷命 3D 战力骰（引擎 ThreeRenderer + Transform3D/Mesh3D/Vfx3D 数据驱动·非 CSS 3D·owner 2026-07-03·REQ-3D-骰盅）·**动态 import**（three 600KB 只在首次掷命时才拉·不压 game-g 首屏）
 
 type Style = Record<string, string | number | undefined>;
@@ -249,7 +249,7 @@ function unitNode(s: TurnSlotView): LayoutNode {
   ];
   if (isGen) children.push({ type: 'Label', id: `u-${id}-gen`, props: { text: s.mine ? '⭐主将' : '☠敌将', size: 8, color: 'gold', bold: true }, layout: { y: -12, x: 14 } });
   if (s.fatiguePm) children.push({ type: 'Label', id: `u-${id}-ws`, props: { text: `💢${Math.round(s.fatiguePm / 10)}%`, size: 8, color: 'warn', bold: true }, layout: { y: -12, x: -14 } }); // 疲劳徽（owner 2026-07-06·连续疲劳条·显当前疲劳%·战力被折·休整回血让玩家看清哪张已疲劳）
-  if (s.held) children.push({ type: 'Label', id: `u-${id}-hold`, props: { text: '🛡', size: 15, glow: true, color: 'jade' }, layout: { y: 30, x: -9 } }); // 坚守徽（owner 2026-07-04·本轮没走的牌·斯巴达/坚守/被挡=原地固守 → 亮盾）
+  if (s.held) children.push({ type: 'Label', id: `u-${id}-hold`, props: { size: 15, glow: true, color: 'jade', spans: [iconUri('shield') ? { text: '', img: iconUri('shield')!, color: 'jade' } : { text: '🛡', color: 'jade' }] }, layout: { y: 30, x: -9 } }); // 坚守徽（owner 2026-07-04·本轮没走的牌·斯巴达/坚守/被挡=原地固守 → 亮盾）·套装图标（07-15 shield·icon 在场→span.img·无=原 🛡·观感零变）
   return { type: 'Panel', id: `u-${id}`, props: { bg: sideFace(s.mine), edge: isGen ? 'gold' : (s.mine ? 'mine' : 'foe') }, layout: { flex: 1, direction: 'column', justify: 'between', align: 'center', padding: 4, radius: 10, ...(isGen ? { fx: [{ kind: 'glow', color: 'gold', ms: 1400 }] } : {}) }, children };
 }
 // 磨砂详情浮层内容（战力拆解·场上兵 hover 气泡·owner 2026-06-29 ⑥）。
@@ -496,7 +496,7 @@ function clashNode(cv: TurnClashView): LayoutNode {
       ] },
       revealed
         ? { type: 'Button', id: 'clash-ok', props: { label: '看明白了 · 继续 ▸', kind: 'hero', action: 'clash-ok' }, layout: { anchor: 'combat-roll' } }
-        : { type: 'Button', id: 'clash-roll-btn', props: { label: '🎲 掷战力骰 ▸', kind: 'hero', action: 'clash-roll' }, layout: { anchor: 'combat-roll', fx: [{ kind: 'pulse', ms: 1000 }] } },
+        : { type: 'Button', id: 'clash-roll-btn', props: { ...(iconUri('dice') ? { label: '掷战力骰 ▸', icon: iconUri('dice')! } : { label: '🎲 掷战力骰 ▸' }), kind: 'hero', action: 'clash-roll' }, layout: { anchor: 'combat-roll', fx: [{ kind: 'pulse', ms: 1000 }] } }, // 套装图标（07-15 dice·icon 在场→Button.icon·无=原 🎲 label·观感零变）
     ],
   });
 
@@ -722,7 +722,7 @@ function waterBarNode(view: TurnBattleView, litCells: number, halfCell: boolean,
   const plus: LayoutNode = { type: 'Panel', id: 'water-plus', props: { bg: { custom: 'rgba(70,209,122,.18)' }, edge: 'ok' }, layout: { radius: 99, padding: 4 }, children: [{ type: 'Label', id: 'water-plus-l', props: { text: `本回合 +${view.waterGain}`, size: 11, color: 'ok', bold: true } }] };
   return { type: 'Panel', id: 'water-bar', props: {}, layout: { direction: 'row', align: 'center', gap: 12, padding: 9, radius: 14 }, children: [
     cap,
-    { type: 'Label', id: 'water-title', props: { text: '召唤源泉 · SUMMON FONT', size: 10, color: 'sub', tracking: 1.6 } },
+    { type: 'Label', id: 'water-title', props: { size: 10, color: 'sub', tracking: 1.6, spans: [iconUri('mana') ? { text: '召唤源泉 · SUMMON FONT', img: iconUri('mana')!, color: 'sub' } : { text: '召唤源泉 · SUMMON FONT', color: 'sub' }] } }, // 套装图标（07-15 mana·源泉资源名标·icon 在场→span.img·无=原文本·观感零变）
     tube,
     { type: 'Label', id: 'water-level', props: { text: litLabel, size: 22, color: 'text', mono: true, glow: true } },
     deckCol,
