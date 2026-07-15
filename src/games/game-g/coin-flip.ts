@@ -1,3 +1,4 @@
+import { textureOverrideUri } from './art-textures.js'; // 硬币面贴图槽（07-14 全面台账化）
 // coin-flip.ts —— 战胜硬币「人面/字面」3D 抛掷表现（owner 2026-06-21）。纯表现·零判定：
 //   一枚硬币 3D 翻腾抛向空中 → 落定 人面(留场继续) / 字面(回牌库+返还源泉)。结果来自 ClashEvent.winStays(种子化·已定)，
 //   硬币只把既定结果演出来（玩家"操作"一下=点掷·AI 方自动掷）；**投掷之后才揭晓**·明细里不剧透（owner 2026-06-21·要仪式感）。
@@ -50,6 +51,11 @@ export function mountCoinFlip(host: HTMLElement, opts: CoinFlipOpts, onDone: () 
   const coin = ov.querySelector('.gg-coin') as HTMLElement;
   const cap = ov.querySelector('.gg-coin-cap') as HTMLElement;
   const btns = ov.querySelector('.gg-coin-btns') as HTMLElement;
+  // 硬币双面贴图槽（07-14 全面台账化：game-g/tex/coin-heads|tails）：真图=cover 圆面·无覆盖=CSS 渐变（观感零变）。
+  const headsArt = textureOverrideUri('game-g/tex/coin-heads');
+  const tailsArt = textureOverrideUri('game-g/tex/coin-tails');
+  if (headsArt) (ov.querySelector('.face.heads') as HTMLElement).style.background = `center/cover no-repeat url("${headsArt}")`;
+  if (tailsArt) (ov.querySelector('.face.tails') as HTMLElement).style.background = `center/cover no-repeat url("${tailsArt}")`;
   const destroy = (): void => { for (const t of timers) clearTimeout(t); timers.length = 0; ov.remove(); };
 
   const flip = (): void => {

@@ -9,6 +9,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
+import { textureOverrideUri } from './art-textures.js'; // 背景板槽（07-14 全面台账化·真图=cover·无=主题色）
 import { STAGE_CAMPAIGN, type StageCampaign } from './campaign-data.js';
 import { stageDisha } from './disha.js';
 import { dishaNumberLine } from './lobby-types.js';
@@ -94,7 +95,11 @@ export function buildCampaignScreen(view: LobbyView): LayoutNode {
   };
 
   return {
-    type: 'Screen', id: 'campaign-screen', props: { bg: GG_LOBBY_THEME.pageBg },
+    type: 'Screen', id: 'campaign-screen',
+    props: {
+      bg: GG_LOBBY_THEME.pageBg,
+      ...(textureOverrideUri('game-g/tex/campaign-backdrop') ? { image: textureOverrideUri('game-g/tex/campaign-backdrop')! } : {}),
+    },
     layout: { direction: 'column', padding: 16 },
     children: [list],
   };

@@ -83,7 +83,7 @@
 > **要做（按 art-pipeline.md 编译期三行·game-q 样板）**：① 主体视觉实体（转轮符号/机身/拉杆/背景）加 `Sprite` 皮肤槽（与现程序化观感并存·未填资产观感零变——程序化烘焙可作回退保留，皮肤就绪即盖过）；② 照 `scripts/game-q-art-requirements.mjs` 写 game-k 推导脚本产台账；③ mount 拉本地 index 注册 AssetManager。完工=美术平台选 game-k 出台账·audit 黄旗消。
 > 备注：t3-slot-payout 下沉本身是好活（Lead 后补验收）；本单只管美术接入。
 
-### REQ-G-美术台账接入 · game-g 美术资源数据配置驱动到台账（PST 2026-07-13 提·Lead 评审通过） · [2026-07-13] · PST 提需求 → **指派：PST（其 session 已自行开工·763738c5 步1=SVG 落盘+索引脚本·后续步照本 spec 对齐）·Lead 验收** · status: **open（施工中）** · 优先级: **P1（出口游戏=D+G·7·29 美术线·audit 黄旗存量欠账）** · 类型: 手册整改（编译期游戏美术接入·REQ-K 同款）
+### REQ-G-美术台账接入 · game-g 美术资源数据配置驱动到台账（PST 2026-07-13 提·Lead 评审通过） · [2026-07-13] · PST 提需求 → PST 步1/步2 + **Lead 亲手批28 完成全面台账化（owner 07-14 全权授权）** · status: **✅ done（2026-07-14）** · 优先级: **P1（出口游戏=D+G·7·29 美术线·audit 黄旗存量欠账）** · 类型: 手册整改（编译期游戏美术接入·REQ-K 同款）
 > **Lead 评审**：该做。game-g 现状=纯程序化 SVG 底纹（`art-textures.ts` data-URI 喂 Panel.bgTexture/牌面·双皮=fill/stroke 令牌）——零台账零皮肤槽，与 game-k 整改前同模式；07-13 的通用工具（`scripts/game-blueprint-to-ledger.mjs`·58539995）已实证 game-g「代码驱动无单一蓝图」走不了干净路径，必须 per-game 接线。**无新引擎能力需求**，全程照 `docs/playbooks/art-pipeline.md` 编译期三行 + game-q/game-k 样板施工。
 > **spec（照图施工·完工标 ✅ 待 Lead 验收）**：
 > ① **台账推导脚本** `scripts/game-g-art-requirements.mjs`（照 `game-q-art-requirements.mjs` 样板）：枚举视觉件清单——主页牌桌底纹/牌面（军衔×玄铁金+锦霞双皮）/主将「将」艺术字衬底/对决三栏特写件/3D 骰（model3d 类·列行即可）/战役图/HUD 面板底纹（来源=art-textures.ts 各导出 + home-screen/turn-battle-screen/campaign-screen 的视觉消费点）→ 产 `public/games/game-g/art/art-ledger.json`（deriveRequirements schema·status='needs-art'·每行详细英文描述+规格+当前程序化占位描述）。
@@ -91,6 +91,14 @@
 > ③ **写回=fill 线**：编译期游戏走 regenerate→fill 既有端点语义（重钉 manifest 的动作平台自动隐藏）；**绝不改蓝图/渲染代码来换皮**（art-pipeline 红线）。
 > ④ **边界**：`clash-dice-3d` 3D 骰=P3D 独占域——台账列行可以，3D 侧接线动作先知会 P3D（P3D-game-z-handoff §0.1）；turn-battle-screen 牌面属程序B 域正好同域。
 > ⑤ **验收**：美术平台/工坊素材屏选 game-g 出台账（行行有详细描述·规格·占位说明）；`node scripts/game-skill-audit.mjs game-g`「无美术台账」黄旗消；未生成真图前游戏观感零变（前后截图对比）；/check-ui 过；tsc+vitest+build 三绿。
+> **✅ 完工回执（Lead 亲手·批28·2026-07-14）**：台账=`scripts/game-g-art-requirements.mjs` → 60 行（53 行保号保现身
+> ——PST 现况账升级：skinKey+富英文描述词+规格刷新·replaced 现身=程序化 svg；+7 新槽：主页/战役/对战背景板·
+> 硬币双面·牌背·3D 骰）。消费点接线四处：牌桌呢面 feltBrocadeUri 覆盖优先（home-screen）、主页/战役屏 Screen.image
+> cover 背景板（覆盖在场才生效）、硬币双面贴图、覆盖装载泛化（game-g.tsx 双通道 hero+tex·大厅在场时真图到位重绘一次）。
+> 全部消费点=真图未到观感零字节变化（game-g 219 测绿·含帧回归）。**剩两处待接**：对战屏背景板（战斗屏根节点·下一批）、
+> 牌背（引擎 PlayingCard 无 back prop·已提 REQ-UI-PlayingCard-back 缺口单）；3D 骰=行已立·接线归 P3D。
+> **换皮操作口径（owner 美术升级用）**：工坊素材屏选 game-g → 逐行 ⚡ 重新生成（描述词已备好可直接出图/可改词）→
+> ⤵ 替换写回=fill 别名登记 → 游戏即换（立绘/呢面/背景/硬币全线）。
 
 ### REQ-Q-击杀记账（on-kill credit）· 塔防赏金/击杀计分通用缺口 · [2026-07-07] · LEAD（game-q 立项）→ Lead 排期 · status: **open（真缺口·已记债·循环层用清波经济绕过·非阻塞）** · 类型: 通用战斗能力下沉候选
 > **缺口**：`t2-hitbox` 只写**目标本地**资源（`hitbox.ts` `queueResourceMod(...,'local')`）；`t2-mortal` 的 `dropTemplate` 对**任何死因无差别**触发。→ 无法用单个 Mortal 区分「被塔击杀→给全局/攻击者记赏金」与「抵达大本营漏怪→扣命·不发赏金」。这是塔防经济（逐怪赏金）唯一表达不了的点，也是**击杀计分/连击表/赏金**一类通用需求的共性缺口（非塔防专属）。
@@ -111,6 +119,10 @@
 > **修法（程序B·择一）**：① **把 FLIP 限定到真移动的兵**——`:1000` 遍历里，若 `u.id` 不在 `orderOf`（=justMoved 集·`:999` 从 `moveOrder` 建）则 `return` 跳过（静止牌即便屏幕漂也不套 g-march）。这是最干净的：g-march 只该给逻辑上真换格的兵。② 或收紧漂移阈值/改用逻辑位移判据（但 ① 更本质）。
 > **不是程序A/不是逻辑**：掷命/移动/碰撞逻辑（turn-combat.ts）与 `justMovedIds` 数据流**均正确**·此条纯 FLIP 表现误判。
 > **验收**：敌方推进相邻我方前锋时，我方静止牌**纹丝不动**（不再升落）；真移动的兵行军动画不受影响（错峰逐跳照旧）。
+
+### REQ-UI-PlayingCard-back 牌背贴图 prop · [2026-07-14] · Lead（game-g 台账化撞到控件缺口）→ 主程（ui/components 控件集） · status: **open（缺口已立·台账行 art-60 牌背图先出·prop 到位即接）** · 类型: 基座控件扩 prop（additive·非逃生）
+> **缺口**：引擎 `PlayingCard` 控件只有正面 `art`，无牌背贴图 prop——game-g 台账 art-60（牌背图）出图后无处消费。
+> **要做（主程·render.ts+types）**：`PlayingCardProps` 加可选 `backArt?: string`（已解析 URL·背面替代现程序化背纹·缺省观感零变）；翻面/背面渲染点接入；加一条 render 测试。到位后 game-g 覆盖装载已有的 tex 通道直接接。
 
 ### REQ-UI-PlayingCard-xl尺寸 · [2026-07-06] · PG（game-g 绝命对决 R21 布局重置）→ 主程（ui/components 控件集） · status: **open（控件缺口·PG 不擅改 render.ts）** · 类型: 基座控件扩尺寸档（闭集加一档·additive·非逃生）
 > **源起**：owner R21「布局重置」要绝命对决特写忠实设计稿（`design/UI/Game G 绝命对决.dc.html`）——设计稿对决双方扑克牌 **118×142**；现 `PlayingCard` 尺寸闭集 `PCARD_DIMS`（`src/ui/components/render.ts:584`）最大档 `lg=[82,116,18,46]`，比设计小一圈。PG 已把特写用到 `lg`（当前最大），仍不足。

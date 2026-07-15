@@ -29,3 +29,25 @@ export function coinLatticeTile(stroke = '#e8cd82', opacity = 0.1, size = 64): s
 
 /** 主页绿呢牌桌底纹（玄铁金钱币纹·subtle）。 */
 export const FELT_BROCADE = coinLatticeTile('#e8cd82', 0.09, 64);
+
+// ── 美术库贴图覆盖（owner 07-14「game-g 全面台账化替换」·与 portraits 覆盖同一模式）──
+// 台账行生成真图 → fill 别名登记进 game-g 本地索引 → mount 载入注册到这里；
+// 消费点（牌桌/背景板/硬币面）先查覆盖、未命中回退程序化——真图未到=观感零字节变化。
+const _texOverrides = new Map<string, string>();
+
+/** 登记贴图覆盖（{ 'game-g/tex/felt-brocade': url, … }）。只收非空 URL。 */
+export function registerTextureOverrides(map: Record<string, string>): void {
+  for (const [k, v] of Object.entries(map)) if (v) _texOverrides.set(k, v);
+}
+/** 查某贴图槽当前真图 URL；无覆盖=null（消费点回退程序化）。 */
+export function textureOverrideUri(key: string): string | null {
+  return _texOverrides.get(key) ?? null;
+}
+/** 清空覆盖（测试用·保帧回归确定性）。 */
+export function clearTextureOverridesForTest(): void { _texOverrides.clear(); }
+export function textureOverrideCount(): number { return _texOverrides.size; }
+
+/** 牌桌呢面贴图（台账槽 game-g/tex/felt-brocade）：真图覆盖优先·回退程序化钱币纹。 */
+export function feltBrocadeUri(): string {
+  return textureOverrideUri('game-g/tex/felt-brocade') ?? FELT_BROCADE;
+}
