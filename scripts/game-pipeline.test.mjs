@@ -62,8 +62,8 @@ describe('美术关子状态（复用五步条口径·MOCK 不算完成）', () 
   }));
 });
 
-describe('看板推导（机器门×人门双验）', () => {
-  it('证据新鲜+签核=绿；只有机器绿=黄；exit≠0=红；指纹变=过期黄', () => withRoot(async (root) => {
+describe('看板推导（机器门×复查门×人门三验·REQ-QC-三门）', () => {
+  it('证据新鲜+复查+签核=绿；缺复查=黄；exit≠0=红；指纹变=过期黄', () => withRoot(async (root) => {
     put(root, 'public/games/g/manifest.json', MANIFEST);
     const h = gameHash(root, 'g');
     put(root, pipelineFile(root, 'g').slice(root.length + 1), {
@@ -71,14 +71,15 @@ describe('看板推导（机器门×人门双验）', () => {
       concept: { name: 'G', pitch: '测试', planWaiver: '纯数据' },
       signoffs: { S1: { by: 'o', note: 'n', at: '2026-07-10T00:00:00Z' }, S3: { by: 'o', note: 'n', at: '2026-07-10T00:00:00Z' } },
       evidence: { S3: { exit: 0, gameHash: h, at: '2026-07-10T00:00:00Z' }, S4: { exit: 1, gameHash: h, at: '2026-07-10T00:00:00Z' } },
+      reviews: { S3: { verdict: 'PASS', note: '逐条核过', by: 'r', at: '2026-07-10T00:00:00Z', gameHash: h } },
     });
     let b = boardFor(root, 'g');
     const by = (id) => b.stages.find((s) => s.id === id);
-    expect(by('S1').status).toBe('ok'); // 机器 ok + 签核 ok
-    expect(by('S2').status).toBe('warn'); // 免 plan 裁决在案但未签核
-    expect(by('S3').status).toBe('ok'); // 证据绿 + 签核
+    expect(by('S1').status).toBe('ok'); // 机器 ok + 签核 ok（S1 免复查）
+    expect(by('S2').status).toBe('warn'); // 免 plan 裁决在案但未复查未签核
+    expect(by('S3').status).toBe('ok'); // 证据绿 + 复查 PASS + 签核 → 三门齐才绿
     expect(by('S4').status).toBe('fail'); // exit 1 = 红
-    expect(by('S8').status).toBe('dim'); // 未跑未签
+    expect(by('S8').status).toBe('dim'); // 未跑未查未签
     expect(b.next).toBe('S2'); // 第一个非绿即下一步
     // 游戏文件一动 → S3 证据过期（绿不是永久绿）
     put(root, 'public/games/g/manifest.json', { ...MANIFEST, name: 'G3' });

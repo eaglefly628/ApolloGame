@@ -7,7 +7,9 @@
 ## 一句话
 
 **每款游戏一张生产流程板**（八阶段·状态从工件推导·证据带内容指纹）——新会话开工先看板，
-只做第一个非绿阶段；做完过机器门+人门再往前走。台账=`public/games/<slug>/pipeline.json`。
+只做第一个非绿阶段；做完过**三道门**（机器门+复查门+人门·REQ-QC-三门 owner 2026-07-15）再往前走。
+复查门=另一 session 按清单对抗性核证（`docs/playbooks/review-gates.md`）；S7 品质关的复查形态=
+八维评分卡落账（任一维 0 分=红灯·全维≥2 才 premium——品质下限由这道门抬）。台账=`public/games/<slug>/pipeline.json`。
 
 ## 入口
 
@@ -17,6 +19,8 @@
 | Workshop 壳（`python apollo.py workshop` → 编辑工坊） | 八关灯摘要 + ⬇下载包；详情跳旧工作台生产板 |
 | CLI：`node scripts/game-pipeline.mjs board <slug>` | 看板（会话开工第一命令） |
 | CLI：`gate <slug> <S3\|S4\|S5\|S8>` | 真跑该阶段机器门 → 记证据（退出码+游戏内容指纹） |
+| CLI：`checklist <slug> <SN>` → 核证 → `review <slug> <SN> --verdict … --note … --by 复查人` | **复查门**（另一 session 照单对抗性核证·空 note 不收·绑内容指纹） |
+| CLI：`scorecard <slug> --scores "八维:0-3" --by 复查人 --note 证据` | S7 评分卡落账（任一维 0=红·全维≥2=premium） |
 | CLI：`signoff <slug> <SN> --note "…" [--by 名]` | 人门落账（review 内容必填·不许空签） |
 | CLI：`concept <slug> --name --pitch [--plan-waiver 理由]` | 填立项卡 / 记免 plan 裁决（UI 同语义=`POST /api/pipeline/concept`） |
 

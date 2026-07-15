@@ -17,7 +17,8 @@
 | 系统调度积木稳定性 | `npx vite-node scripts/system-graph-audit.mjs [capId…]`（悬空定序边/重复 system id/Tarjan 切最小 SCC+破环建议·`src/assembly/system-graph.test.ts` 守硬不变量） | `SYSTEM-GRAPH: PASS` |
 | 共同零件（组件）清单漂移 | `node scripts/component-manifest-guard.mjs`（扫全部 `readonly type:'X'` 对比冻结基线·加/改名/删组件须同提交 `--update`·`scripts/component-manifest-guard.test.mjs` 守门） | `COMPONENT-MANIFEST: PASS` |
 | 3D 截图对拍 | `scripts/shoot-game.mjs`（P3D harness） | 人审（像素断言升级=REQ-3D-像素断言·排队） |
-| 视觉里程碑验收 / 出货 | `docs/playbooks/visual-scorecard.md`（8 维评分卡） | 全维 ≥2 = premium |
+| 视觉里程碑验收 / 出货 | `docs/playbooks/visual-scorecard.md`（8 维评分卡）→ **落账进流程板** `game-pipeline.mjs scorecard`（任一维 0=S7 红灯） | 全维 ≥2 = premium |
+| 阶段复查（三门制·复查人≠施工人） | `game-pipeline.mjs checklist <SN>` → 对抗核证 → `review --verdict --note --by`（`docs/playbooks/review-gates.md`） | PASS/CONCERNS/FAIL |
 
 ## 红线（一体适用）
 

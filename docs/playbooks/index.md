@@ -15,7 +15,8 @@
 
 | 生产线 | 手册 | 基座核心 | 负责角色/agent |
 |---|---|---|---|
-| **游戏生产总线（八阶段流程板）** | `playbooks/game-production.md` | 生产流程板 pipeline.json · 每步机器门+人门双验 · `scripts/game-pipeline.mjs` | **全员（任何新游戏/续做先看板）**；判官=Lead |
+| **游戏生产总线（八阶段流程板）** | `playbooks/game-production.md` | 生产流程板 pipeline.json · 每步三门（机器+复查+人）· `scripts/game-pipeline.mjs` | **全员（任何新游戏/续做先看板）**；判官=Lead |
+| **复查门（三门制·每关另一双眼睛）** | `playbooks/review-gates.md` | checklist→对抗核证→review 落账 · S7=八维评分卡（任一维 0=红） | **复查 session（复查人≠施工人）**；裁=Lead |
 | UI / HUD / 菜单 | `docs/design/ui-playbook.md`（先读）+ `playbooks/ui.md`（接线图） | LayoutNode 34 控件闭集 · mountUI 信号 · Label.font 艺术字 18 款(OFL 内嵌) · 色库三态填充(令牌/预设/custom·非裸 hex) · 异形按钮 8 形 + 贴图皮 + 按压反馈 | 各游戏 PE；活范例=game-i |
 | 渲染与特效（2D） | `playbooks/rendering-fx.md` | Sprite/Color/Frame/Gauge · EffectKind 闭集 · 主题令牌 | 各游戏 PE |
 | 3D（盒庭线） | `playbooks/3d.md` | Mesh3D/Transform3D/Camera3D/Light3D/Post3D/Vfx3D/Model3D… | **P3D 独占域**；逐特性消费活范例=`game-i/three3d.ts` |
