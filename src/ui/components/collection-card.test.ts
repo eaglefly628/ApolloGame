@@ -44,12 +44,14 @@ describe('UI Components · ① PlayingCard 悬停翻面（flipOnHover + backFace
     const html = renderNode({ type: 'PlayingCard', id: 'pc', props: { rank: 'A', suit: '♠' } });
     expect(html).not.toContain('data-flipcard'); expect(html).not.toContain('data-flip-back');
   });
-  it('mountUI 注入了 flip 悬停规则（CSS·front↔back scaleX）', () => {
+  it('mountUI 注入了 flip 悬停规则（CSS·front↔back 真 3D rotateY 翻面·带 perspective）', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     const teardown = mountUI(host, { type: 'PlayingCard', id: 'pc', props: { rank: 'K', suit: '♥', flipOnHover: true, backFace: hero } } as LayoutNode);
     const kf = document.getElementById('apollo-ui-keyframes')?.textContent ?? '';
     expect(kf).toContain('[data-flipcard]:hover [data-flip-front]');
-    expect(kf).toContain('scaleX(0)'); expect(kf).toContain('scaleX(1)');
+    expect(kf).toContain('perspective:1000px'); // 真 3D：容器透视
+    expect(kf).toContain('rotateY(-180deg)'); expect(kf).toContain('rotateY(0deg)'); // 绕 Y 轴真翻（非 scaleX 假压扁）
+    expect(kf).toContain('backface-visibility:hidden'); // 背面隐藏
     teardown(); host.remove();
   });
 });

@@ -109,10 +109,13 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 @keyframes apollo-glow{0%,100%{box-shadow:0 0 22px rgba(232,205,130,.5)}50%{box-shadow:0 0 50px rgba(232,205,130,.95)}}
 @keyframes apollo-pulse{0%,100%{opacity:.55}50%{opacity:1}}
-[data-flipcard] [data-flip-front],[data-flipcard] [data-flip-back]{transition:transform .3s cubic-bezier(.4,0,.2,1);backface-visibility:hidden;transform-origin:50% 50%}
-[data-flipcard] [data-flip-back]{transform:scaleX(0)}
-[data-flipcard]:hover [data-flip-front]{transform:scaleX(0)}
-[data-flipcard]:hover [data-flip-back]{transform:scaleX(1)}
+[data-flipcard]{perspective:1000px;transition:transform .35s ease}
+[data-flipcard]:hover{transform:scale(1.06)}
+[data-flipcard] [data-flip-front],[data-flipcard] [data-flip-back]{transition:transform .55s cubic-bezier(.2,.75,.25,1);backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-origin:50% 50%;will-change:transform}
+[data-flipcard] [data-flip-front]{transform:rotateY(0deg)}
+[data-flipcard] [data-flip-back]{transform:rotateY(180deg)}
+[data-flipcard]:hover [data-flip-front]{transform:rotateY(-180deg)}
+[data-flipcard]:hover [data-flip-back]{transform:rotateY(0deg)}
 @keyframes apollo-sheen-sweep{0%{background-position:220% 0}100%{background-position:-60% 0}}
 [data-sheen]{position:relative}
 [data-sheen]::after,[data-fx~="sheen"]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.4) 50%,transparent 58%);background-size:250% 100%;animation:apollo-sheen-sweep 3.2s ease-in-out infinite}
