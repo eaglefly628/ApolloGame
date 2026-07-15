@@ -633,10 +633,11 @@
                     </div>
                     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
                       <button onClick="{{ artRegen }}" style="{{ applyBtnStyle }}" style-active="{{ applyBtnActive }}">⚡ 重新生成这张</button>
+                      <button onClick="{{ artUpload }}" title="用本地图片（如自己用 Gemini 生成的）直接替换这张——无需 API、无需 manifest，编译期游戏（game-d/g）也能写回台账·游戏内即用" style="{{ uploadBtnStyle }}" style-active="{{ uploadBtnActive }}">⬆ 上传本地图替换</button>
                       <button onClick="{{ artCopyPrompt }}" title="复制提示词全文（外部文生图用·词已含透明底等要求·尺寸看上方规格行在工具里设）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⧉ 复制提示词</button>
                       <button onClick="{{ artCopyBrief }}" title="复制完整出图任务书：提示词 + 确定尺寸 + 底格式 + 编号（发给美术/外部工具一步到位）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⧉ 提示词+规格</button>
                       <button onClick="{{ artBatchGen }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">▶ 生成全部占位</button>
-                      <button onClick="{{ artApplyBack }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⤵ 替换写回 manifest</button>
+                      <button onClick="{{ artApplyBack }}" title="把已生成的替换图批量写回卡带 manifest——仅数据卡带（有 manifest）适用；game-d/g/f 等编译期游戏无 manifest，请用左侧「⬆ 上传本地图替换」写回台账" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⤵ 写回 manifest（数据卡带）</button>
                       <button onClick="{{ artSelClose }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">✕ 收起</button>
                     </div>
                     <sc-if value="{{ artBusyText }}" hint-placeholder-val="{{ false }}">
@@ -1173,6 +1174,43 @@ class Component extends DCLogic {
     const l = this.state.ledger; const a = l && l.artStyle;
     return (a && typeof a === 'object' && typeof a.stylePrompt === 'string') ? a.stylePrompt : (typeof a === 'string' ? a : '');
   }
+  // 本地图写回（owner 07-15「我本地用 Gemini 生成了图，想把这三个图标写回·没走 API 时也支持本地图替代写回」）：
+  // 无 API/无 manifest 也能替换——选一张本地图 → base64 上传 /api/art/upload（编译期游戏 game-d/g 走台账直更+钉皮肤 key）。
+  // 走临时 input 元素（与壳里 window.prompt/window.open/FileReader 同一档浏览器 API·非游戏 DOM），最稳，不依赖运行时渲染 file input。
+  artUpload() {
+    const slug = this.state.assetsSlug;
+    const no = this.state.artSel;
+    if (!slug || !no) { this.showToast('先点开一张台账美术再上传'); return; }
+    if (this.state.artBusy) return;
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'image/png,image/webp,image/jpeg';
+    inp.onchange = () => {
+      const f = inp.files && inp.files[0];
+      if (!f) return;
+      let ext = (String(f.name).split('.').pop() || '').toLowerCase();
+      if (ext === 'jpeg') ext = 'jpg';
+      if (['png', 'webp', 'jpg'].indexOf(ext) < 0) ext = f.type === 'image/webp' ? 'webp' : (f.type === 'image/jpeg' ? 'jpg' : 'png');
+      if (f.size > 12 * 1024 * 1024) { this.showToast('✕ 图太大（>12MB），换张小的'); return; }
+      const reader = new FileReader();
+      reader.onerror = () => this.showToast('✕ 读图失败');
+      reader.onload = () => {
+        const durl = String(reader.result || ''); const c = durl.indexOf(',');
+        const b64 = c >= 0 ? durl.slice(c + 1) : '';
+        if (!b64) { this.showToast('✕ 读图为空'); return; }
+        this.setState({ artBusy: '上传本地图替换 ' + no });
+        fetch('/api/art/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug, no, dataBase64: b64, ext }) }).then(r => r.json()).then(d => {
+          if (!d || d.success === false) throw new Error((d && d.error) || '上传失败');
+          this.setState({ artBusy: null });
+          this.showToast('✓ 本地图已写回 ' + no + '（台账更新·游戏内即用·无需 manifest）');
+          if (this.state.assetsSlug === slug) this.pickAssetGame(slug);
+        }).catch(e => { this.setState({ artBusy: null }); this.showToast('✕ ' + ((e && e.message) || '上传失败').slice(0, 80)); });
+      };
+      reader.readAsDataURL(f);
+    };
+    inp.click();
+  }
   // 台账美术图片预览灯箱 + 放大缩小（owner 07-13）。
   openArtPreview(url) { if (url) this.setState({ artPreview: url, artZoom: 1 }); }
   closeArtPreview() { this.setState({ artPreview: null, artZoom: 1 }); }
@@ -1691,6 +1729,7 @@ class Component extends DCLogic {
 
     // edit（对白编辑工坊）
     const mini = this.jelly('#fffdf5', '#efe0c0', '#c9b98f', 13); mini.style.padding = '8px 14px'; mini.style.color = '#3a2312'; mini.style.textShadow = 'none';
+    const upload = this.jelly('#bfe3ff', '#93c9f5', '#5a93c9', 13); upload.style.padding = '8px 14px'; upload.style.color = '#123a5a'; upload.style.textShadow = 'none';
     const apply = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 15); apply.style.padding = '9px 16px';
     const send = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 16); send.style.padding = '10px 20px';
     const lampColor = { ok: '#7ecb45', warn: '#ffd257', fail: '#ef5138', dim: '#c8c8c8' };
@@ -2315,6 +2354,8 @@ class Component extends DCLogic {
         { slug: s.assetsSlug, no: artSelRow.no, packId: artCurPack, query: (s.artQ || '').trim() || undefined, provider: s.artProv || undefined }); },
       artBatchGen: () => this.artCall('批量生成占位行', '/api/art/batch', { slug: s.assetsSlug, packId: artCurPack, provider: s.artProv || undefined }),
       artApplyBack: () => this.artCall('替换写回', '/api/art/replace', { slug: s.assetsSlug }),
+      artUpload: () => this.artUpload(),
+      uploadBtnStyle: upload.style, uploadBtnActive: upload.active,
       artSelClose: () => this.setState({ artSel: null }),
       artBusyText: s.artBusy ? (s.artBusy + ' 中…（生成走文生图服务·分钟级·完成自动刷新台账）') : '',
       // 素材库（共享 FreeArtLib·Feature C）
