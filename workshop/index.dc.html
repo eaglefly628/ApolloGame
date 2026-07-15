@@ -571,6 +571,17 @@
                 <span style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#8a5a2c">每行任务=编号+尺寸+透明底要求+提示词·出图后回这里逐行 ⤵ 替换</span>
               </div>
             </sc-if>
+            <!-- 本游戏整体美术风格锚（owner 07-13·拼进每张生成提示词·统一画风） -->
+            <sc-if value="{{ assetsSlug }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:13px 15px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:16px">
+                <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312">本游戏整体美术风格</div>
+                <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;margin-bottom:8px">这段风格会自动拼进每一张美术件的生成提示词（连同各件自己的需求一起扔给文生图）→ 整套画风统一。例：「迪士尼×皮克斯厚涂·暖色·圆润·卡通」。</div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <input value="{{ artStyleVal }}" onInput="{{ artStyleType }}" placeholder="描述本游戏整体画风：如「水墨国风·留白·线描」/「霓虹赛博·高对比」…" style="flex:1;min-width:260px;border:3px solid #3a2312;border-radius:10px;padding:9px 12px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;background:#fff;color:#3a2312;outline:none">
+                  <button onClick="{{ saveArtStyle }}" style="{{ artStyleBtnStyle }}" style-active="{{ artStyleBtnActive }}">{{ artStyleBtnLabel }}</button>
+                </div>
+              </div>
+            </sc-if>
             <div style="display:flex;flex-direction:column;gap:10px">
               <sc-for list="{{ artGroups }}" as="grp" hint-placeholder-count="3">
                 <div>
@@ -602,7 +613,7 @@
             <sc-if value="{{ artSelOn }}" hint-placeholder-val="{{ false }}">
               <div style="margin-top:16px;background:#fffdf5;border:4px solid #3a2312;border-radius:18px;padding:16px;box-shadow:0 6px 0 rgba(58,35,18,.28);animation:pop .18s ease-out both">
                 <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-                  <div style="{{ artSelCover }}"></div>
+                  <div onClick="{{ openSelPreview }}" title="🔍 点击放大预览（可缩放）" style="{{ artSelCover }}"><sc-if value="{{ artHasImg }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;bottom:4px;right:4px;background:rgba(58,35,18,.72);color:#fff5db;border-radius:7px;padding:1px 7px;font-family:'Noto Sans SC';font-weight:700;font-size:10px">🔍 放大</div></sc-if></div>
                   <div style="flex:1;min-width:280px">
                     <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:17px;color:#3a2312">{{ artSelTitle }}</div>
                     <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e;line-height:1.75;white-space:pre-wrap;word-break:break-word;margin-top:6px">{{ artSelInfo }}</div>
@@ -633,6 +644,24 @@
             </sc-if>
             <sc-if value="{{ assetsEmptyText }}" hint-placeholder-val="{{ false }}">
               <div style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:13px;background:rgba(255,255,255,.5);border:3px dashed rgba(58,35,18,.35);border-radius:14px;padding:18px;text-align:center">{{ assetsEmptyText }}</div>
+            </sc-if>
+            <!-- 图片预览灯箱 + 放大缩小（owner 07-13·点台账图/详情预览框 → 全屏看真 size·可缩放） -->
+            <sc-if value="{{ artPreviewOn }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ closeArtPreview }}" style="position:fixed;inset:0;z-index:9999;background:rgba(18,11,4,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+                <div onClick="{{ previewStop }}" style="display:flex;flex-direction:column;align-items:center;gap:16px;max-width:92vw;max-height:92vh">
+                  <div style="overflow:auto;max-width:90vw;max-height:78vh;display:flex;align-items:center;justify-content:center">
+                    <img onClick="{{ zoomStep }}" src="{{ artPreviewUrl }}" style="{{ artPreviewImgStyle }}">
+                  </div>
+                  <div style="display:flex;gap:10px;align-items:center;background:rgba(58,35,18,.92);border:2.5px solid #3a2312;border-radius:999px;padding:8px 16px;box-shadow:0 5px 0 rgba(0,0,0,.4)">
+                    <button onClick="{{ zoomOut }}" title="缩小" style="{{ lbBtnStyle }}">－</button>
+                    <span style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:13px;min-width:54px;text-align:center">{{ artZoomLabel }}</span>
+                    <button onClick="{{ zoomIn }}" title="放大" style="{{ lbBtnStyle }}">＋</button>
+                    <button onClick="{{ zoomReset }}" title="还原 100%" style="{{ lbBtnStyle }}">⟲</button>
+                    <button onClick="{{ closeArtPreview }}" style="{{ lbCloseStyle }}">✕ 关闭</button>
+                  </div>
+                  <div style="font-family:'Noto Sans SC';font-weight:600;color:rgba(255,245,219,.7);font-size:11px">点图片放大 · 点空白处关闭</div>
+                </div>
+              </div>
             </sc-if>
           </sc-if>
 
@@ -915,6 +944,8 @@ class Component extends DCLogic {
     mlGroups: null, mlOpen: {}, artResolve: {},  // 虚拟分组 + 占位图解析（owner 07-12）
     // 美术一站式（owner 07-12「占位/提示词/模型/替换都在工坊」）：选中行 + 风格包/文生图模型 + 忙碌标
     artSel: null, artQ: '', artPack: null, artProv: '', artBusy: null, artPacks: null, genProviders: null,
+    artStyleInput: null, artStyleBusy: false,   // 本游戏整体美术风格锚（owner 07-13·拼进每张生成提示词·后端 dialectPrompt 已支持）
+    artPreview: null, artZoom: 1,                // 台账美术图片预览灯箱 + 放大缩小（owner 07-13）
     tokenInput: '', genKeyInputs: {}, provKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
     toast: null
   };
@@ -1116,6 +1147,32 @@ class Component extends DCLogic {
       });
   }
   coverType(e) { this.setState({ coverPrompt: e.target.value }); }
+  // 本游戏整体美术风格锚（owner 07-13）：存台账头 artStyle.stylePrompt·后端 dialectPrompt 自动拼进每张生成提示词 → 统一画风。
+  artStyleType(e) { this.setState({ artStyleInput: e.target.value }); }
+  saveArtStyle() {
+    const slug = this.state.assetsSlug;
+    if (!slug) { this.showToast('先选一个游戏'); return; }
+    if (this.state.artStyleBusy) return;
+    const sp = (this.state.artStyleInput != null ? this.state.artStyleInput : this._curArtStyle()).trim();
+    this.setState({ artStyleBusy: true });
+    fetch('/api/art/style', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, stylePrompt: sp }) }).then(r => r.json()).then(d => {
+      this.setState({ artStyleBusy: false });
+      if (!d || !d.success) throw new Error((d && d.error) || '保存失败');
+      this.setState({ artStyleInput: null });
+      this.pickAssetGame(slug); // 重读台账（artStyle 已更新）
+      this.showToast('✓ 整体美术风格已保存——之后每张生成都会自动拼进这段风格');
+    }).catch(e => { this.setState({ artStyleBusy: false }); this.showToast('✕ ' + (e.message || '保存失败').slice(0, 80)); });
+  }
+  _curArtStyle() { // 台账里现有的整体风格（对象.stylePrompt 或旧字符串形式）
+    const l = this.state.ledger; const a = l && l.artStyle;
+    return (a && typeof a === 'object' && typeof a.stylePrompt === 'string') ? a.stylePrompt : (typeof a === 'string' ? a : '');
+  }
+  // 台账美术图片预览灯箱 + 放大缩小（owner 07-13）。
+  openArtPreview(url) { if (url) this.setState({ artPreview: url, artZoom: 1 }); }
+  closeArtPreview() { this.setState({ artPreview: null, artZoom: 1 }); }
+  artZoomBy(d) { this.setState(st => ({ artZoom: Math.max(0.25, Math.min(6, +(st.artZoom + d).toFixed(2))) })); }
+  artZoomStep() { this.setState(st => ({ artZoom: st.artZoom >= 3 ? 1 : +(st.artZoom + 1).toFixed(2) })); } // 点图循环 1→2→3→1
   // 游戏封面/图标文生图（owner 07-12）：POST → 生成 cover.png → 刷新 carts/liveGames 使卡片外观即换。
   coverGen() {
     const slug = this.state.assetsSlug;
@@ -1134,7 +1191,7 @@ class Component extends DCLogic {
     }).catch(e => { this.setState({ coverBusy: false }); this.showToast('✕ ' + (e.message || '生成失败').slice(0, 80)); });
   }
   pickAssetGame(slug) {
-    this.setState({ assetsSlug: slug, ledger: null, artOpen: {}, artSel: null, artBusy: null, artResolve: {} });
+    this.setState({ assetsSlug: slug, ledger: null, artOpen: {}, artSel: null, artBusy: null, artResolve: {}, artStyleInput: null, artPreview: null, artZoom: 1 });
     const readLedger = () => fetch('/api/art/ledger?slug=' + encodeURIComponent(slug)).then(r => r.json())
       .then(d => { if (this.state.assetsSlug === slug) this.setState({ ledger: (d && d.success) ? d : { rows: [] } }); })
       .catch(() => { if (this.state.assetsSlug === slug) this.setState({ ledger: { rows: [] } }); });
@@ -2186,7 +2243,7 @@ class Component extends DCLogic {
       coverPrompt: s.coverPrompt, coverPreview, coverNone: !coverPreview, coverPlaceholder,
       coverType: (e) => this.coverType(e), coverGen: () => this.coverGen(),
       coverBtnStyle: coverBtn.style, coverBtnActive: coverBtn.active, coverBtnLabel: s.coverBusy ? '生成中…' : '🎨 生成封面',
-      // 全量出图任务导出（owner 07-15「我需要出台账的提示词+每张确定尺寸」）：**全部行**都导——
+      // 全量出图任务导出（owner 07-15「我需要出台账的提示词+每张确定尺寸」）：全部行都导——
       // replaced 行现身只是程序化 svg 占位质量，正是美术升级要重出的主力（52 立绘）；每行带状态标区分。
       artExportOn: ledRowsAll.length > 0,
       artExportCount: ledRowsAll.length,
@@ -2200,8 +2257,22 @@ class Component extends DCLogic {
         });
         this.copyText(['# ' + s.assetsSlug + ' 出图任务清单 · ' + ledRowsAll.length + ' 张（编号|状态|规格|需求|提示词·出图后回工坊逐行⤵替换）', ...lines].join('\n'));
       },
+      // 本游戏整体美术风格锚（owner 07-13·拼进每张生成提示词·统一画风）
+      artStyleVal: s.artStyleInput != null ? s.artStyleInput
+        : ((s.ledger && s.ledger.artStyle && typeof s.ledger.artStyle === 'object' && s.ledger.artStyle.stylePrompt) ? s.ledger.artStyle.stylePrompt
+          : (s.ledger && typeof s.ledger.artStyle === 'string' ? s.ledger.artStyle : '')),
+      artStyleType: (e) => this.artStyleType(e), saveArtStyle: () => this.saveArtStyle(),
+      artStyleBtnStyle: coverBtn.style, artStyleBtnActive: coverBtn.active, artStyleBtnLabel: s.artStyleBusy ? '保存中…' : '💾 保存风格',
+      // 图片预览灯箱 + 放大缩小（owner 07-13）
+      openSelPreview: () => this.openArtPreview(artSelServed), artHasImg: !!artSelServed,
+      artPreviewOn: !!s.artPreview, artPreviewUrl: s.artPreview || '', artZoomLabel: Math.round((s.artZoom || 1) * 100) + '%',
+      artPreviewImgStyle: { width: 'min(86vw, 420px)', height: 'auto', maxHeight: '72vh', objectFit: 'contain', transform: 'scale(' + (s.artZoom || 1) + ')', transformOrigin: 'center center', transition: 'transform .12s ease', cursor: 'zoom-in', userSelect: 'none', boxShadow: '0 10px 40px rgba(0,0,0,.55)', borderRadius: '10px', border: '3px solid #3a2312', padding: '10px', background: '#fdfbf5' },
+      zoomIn: () => this.artZoomBy(0.5), zoomOut: () => this.artZoomBy(-0.5), zoomStep: () => this.artZoomStep(), zoomReset: () => this.setState({ artZoom: 1 }), closeArtPreview: () => this.closeArtPreview(),
+      previewStop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+      lbBtnStyle: { border: '2px solid #fff5db', borderRadius: '999px', background: 'rgba(255,245,219,.14)', color: '#fff5db', cursor: 'pointer', fontFamily: "'Fredoka'", fontWeight: 700, fontSize: '15px', width: '34px', height: '34px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
+      lbCloseStyle: { border: '2px solid #fff5db', borderRadius: '999px', background: 'rgba(255,245,219,.14)', color: '#fff5db', cursor: 'pointer', fontFamily: "'Noto Sans SC'", fontWeight: 700, fontSize: '12px', padding: '0 14px', height: '34px' },
       artSelOn: !!artSelRow,
-      artSelCover: Object.assign({ width: '160px', height: '160px', flex: 'none', borderRadius: '14px', border: '3px solid #3a2312' },
+      artSelCover: Object.assign({ position: 'relative', width: '160px', height: '160px', flex: 'none', borderRadius: '14px', border: '3px solid #3a2312', cursor: artSelServed ? 'zoom-in' : 'default' },
         artSelServed
           ? { backgroundImage: 'url(' + artSelServed + ')', backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: '#f2ead8' }
           : { background: 'linear-gradient(180deg,#f2ead8,#e2d2b0)' }),
