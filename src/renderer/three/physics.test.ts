@@ -39,6 +39,55 @@ describe('PhysicsSystem：真物理刚体（cannon-es·render-only 表现）', (
     phys.dispose();
   });
 
+  it('capsule 碰撞形（角色）：下落立地不穿地', () => {
+    const w = new World();
+    w.createEntity('cap');
+    w.addComponent('cap', { type: 'Transform3D', x: 0, y: 20, z: 0 } as Transform3D);
+    w.addComponent('cap', { type: 'Mesh3D', shape: 'capsule', width: 2, height: 5, frontTint: 0xffffff } as Mesh3D);
+    w.addComponent('cap', { type: 'RigidBody3D', shape: 'capsule', mass: 1 } as RigidBody3D);
+    const phys = new PhysicsSystem();
+    const t = (): Transform3D => w.getComponent<Transform3D>('cap', 'Transform3D')!;
+    for (let i = 1; i <= 240; i++) phys.sync(w, i * 16.7);
+    expect(t().y).toBeGreaterThan(0.8); // 底半球坐地·没穿地（半径 1）
+    expect(t().y).toBeLessThan(4);
+    phys.dispose();
+  });
+
+  it('heightfield 地形（静态·恒 mass0）：球落在抬高的地形上·高于基础地面', () => {
+    const w = new World();
+    w.createEntity('terrain');
+    w.addComponent('terrain', { type: 'Transform3D', x: 0, y: 0, z: 0 } as Transform3D);
+    const heights = [[5, 5, 5, 5], [5, 5, 5, 5], [5, 5, 5, 5], [5, 5, 5, 5]]; // 平抬高台 y=5
+    w.addComponent('terrain', { type: 'RigidBody3D', shape: 'heightfield', mass: 3, heights, elementSize: 4 } as RigidBody3D); // mass 给了也强制静态
+    w.createEntity('ball');
+    w.addComponent('ball', { type: 'Transform3D', x: 6, y: 20, z: -6 } as Transform3D); // 落在地形网格足迹内（世界 x∈[0,12]·z∈[0,-12]）
+    w.addComponent('ball', { type: 'Mesh3D', shape: 'sphere', width: 2, height: 2, frontTint: 0xffffff } as Mesh3D);
+    w.addComponent('ball', { type: 'RigidBody3D', shape: 'sphere', mass: 1 } as RigidBody3D);
+    const phys = new PhysicsSystem();
+    const tb = (): Transform3D => w.getComponent<Transform3D>('ball', 'Transform3D')!;
+    for (let i = 1; i <= 300; i++) phys.sync(w, i * 16.7);
+    expect(tb().y).toBeGreaterThan(4); // 停在抬高地形(5)之上·而非落到基础地面(y≈1)
+    phys.dispose();
+  });
+
+  it('convex 凸包（不规则道具）：由 hull 顶点算凸面·下落立地不穿地', () => {
+    const w = new World();
+    w.createEntity('rock');
+    w.addComponent('rock', { type: 'Transform3D', x: 0, y: 20, z: 0 } as Transform3D);
+    // 立方体 8 角 → 凸包 = 2×2×2 盒
+    const hull: Array<[number, number, number]> = [
+      [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
+      [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1],
+    ];
+    w.addComponent('rock', { type: 'RigidBody3D', shape: 'convex', mass: 1, hull } as RigidBody3D);
+    const phys = new PhysicsSystem();
+    const t = (): Transform3D => w.getComponent<Transform3D>('rock', 'Transform3D')!;
+    for (let i = 1; i <= 240; i++) phys.sync(w, i * 16.7);
+    expect(t().y).toBeGreaterThan(0.5); // 凸包坐地·没穿地（半高 1）
+    expect(t().y).toBeLessThan(3);
+    phys.dispose();
+  });
+
   it('无刚体时 sync 返回 0（不建物理世界）；有则返回刚体数', () => {
     const w = new World();
     const phys = new PhysicsSystem();

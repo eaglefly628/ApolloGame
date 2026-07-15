@@ -194,7 +194,11 @@ export interface Pickable3D extends Component {
 // 体形/尺寸默认取同实体 Mesh3D（box→半尺寸·sphere→半径）；mass=0=静态。红线：render-only 自由区，可用随机/时间。
 export interface RigidBody3D extends Component {
   readonly type: 'RigidBody3D';
-  shape?: 'box' | 'sphere' | 'cylinder'; // 缺省取 Mesh3D.shape（box/sphere/cylinder）·cylinder=桶/冰球/硬币立柱（半径=width/2·高=height）
+  // 碰撞形（缺省取 Mesh3D.shape）：box/sphere/cylinder(桶/冰球) · capsule(角色·Y向圆柱+两端半球) · convex(不规则凸包·须给 hull) · heightfield(地形网格·须给 heights·恒静态)。
+  shape?: 'box' | 'sphere' | 'cylinder' | 'capsule' | 'convex' | 'heightfield';
+  heights?: ReadonlyArray<ReadonlyArray<number>>; // heightfield 高度网格 [i][j]（世界 Y 高度·≥2×2）
+  elementSize?: number; // heightfield 网格点间距（缺省 1）
+  hull?: ReadonlyArray<readonly [number, number, number]>; // convex 凸包顶点（局部坐标·≥4·渲染器算凸面）
   mass?: number; // 质量·缺省 1（0=静态不动）
   restitution?: number; // 弹性 0..1·缺省 0.3
   friction?: number; // 摩擦·缺省 0.4

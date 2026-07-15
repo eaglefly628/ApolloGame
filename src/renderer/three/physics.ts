@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+import { ConvexHull } from 'three/addons/math/ConvexHull.js';
 import type * as CANNON from 'cannon-es';
 import type { IWorld } from '@engine/core/types.js';
 import type { RigidBody3D, Mesh3D, Transform3D, Impulse3D, Joint3D } from '@engine/protocol/components.js';
@@ -159,13 +161,26 @@ export class PhysicsSystem {
     const shape = rb.shape ?? (m?.shape === 'sphere' ? 'sphere' : m?.shape === 'cylinder' ? 'cylinder' : 'box');
     const w = m?.width ?? 4, h = m?.height ?? 4;
     const r = Math.max(0.1, w / 2);
-    const cshape: CANNON.Shape = shape === 'sphere'
-      ? new C!.Sphere(r)
-      : shape === 'cylinder'
-        ? new C!.Cylinder(r, r, Math.max(0.1, h), 12) // 立柱：半径=width/2·高=height·12 段（桶/冰球/硬币）
-        : new C!.Box(new C!.Vec3(w / 2, h / 2, (m?.depth ?? w) / 2)); // 体素与渲染盒一致（PBR 路径 depth=m.depth??width）
-    const body = new C!.Body({ mass: rb.mass ?? 1, shape: cshape });
+    // 地形（heightfield）恒静态（mass 0）；其余取 rb.mass。
+    const body = new C!.Body({ mass: shape === 'heightfield' ? 0 : (rb.mass ?? 1) });
     body.position.set(t?.x ?? 0, t?.y ?? 10, t?.z ?? 0);
+    if (shape === 'capsule') { // 胶囊=Y 向圆柱 + 两端半球（角色控制器·cannon 无原生胶囊）
+      const cylH = Math.max(0.01, h - 2 * r);
+      body.addShape(new C!.Cylinder(r, r, cylH, 12));
+      body.addShape(new C!.Sphere(r), new C!.Vec3(0, cylH / 2, 0));
+      body.addShape(new C!.Sphere(r), new C!.Vec3(0, -cylH / 2, 0));
+    } else if (shape === 'heightfield' && rb.heights && rb.heights.length > 1) { // 地形网格（静态·高度沿世界 Y）
+      body.addShape(new C!.Heightfield(rb.heights as number[][], { elementSize: rb.elementSize ?? 1 }));
+      body.quaternion.setFromEuler(-Math.PI / 2, 0, 0); // 网格平铺（同 ground plane·局部 Z 高度→世界 Y）
+    } else if (shape === 'convex' && rb.hull && rb.hull.length >= 4) { // 任意凸包（不规则道具·三 ConvexHull 算面）
+      body.addShape(convexFromHull(rb.hull));
+    } else if (shape === 'sphere') {
+      body.addShape(new C!.Sphere(r));
+    } else if (shape === 'cylinder') {
+      body.addShape(new C!.Cylinder(r, r, Math.max(0.1, h), 12)); // 立柱（桶/冰球/硬币）
+    } else {
+      body.addShape(new C!.Box(new C!.Vec3(w / 2, h / 2, (m?.depth ?? w) / 2))); // 盒（体素与渲染盒一致）
+    }
     if (rb.vx || rb.vy || rb.vz) body.velocity.set(rb.vx ?? 0, rb.vy ?? 0, rb.vz ?? 0);
     if (rb.avx || rb.avy || rb.avz) body.angularVelocity.set(rb.avx ?? 0, rb.avy ?? 0, rb.avz ?? 0);
     body.allowSleep = true; body.sleepSpeedLimit = 0.6; body.sleepTimeLimit = 0.4; // 静下来就睡（省算力·色子停稳）
@@ -184,6 +199,27 @@ export class PhysicsSystem {
   }
 
   dispose(): void { this.disposeWorld(); }
+}
+
+// 凸包顶点 → cannon ConvexPolyhedron（三 ConvexHull 算面·去重顶点·任意不规则凸形）。
+function convexFromHull(pts: ReadonlyArray<readonly [number, number, number]>): CANNON.ConvexPolyhedron {
+  const hull = new ConvexHull().setFromPoints(pts.map((p) => new THREE.Vector3(p[0], p[1], p[2])));
+  const vertices: CANNON.Vec3[] = [];
+  const vmap = new Map<string, number>();
+  const idxOf = (v: THREE.Vector3): number => {
+    const key = `${v.x.toFixed(5)},${v.y.toFixed(5)},${v.z.toFixed(5)}`;
+    let i = vmap.get(key);
+    if (i === undefined) { i = vertices.length; vmap.set(key, i); vertices.push(new C!.Vec3(v.x, v.y, v.z)); }
+    return i;
+  };
+  const faces: number[][] = [];
+  for (const face of hull.faces) {
+    const idxs: number[] = [];
+    let e = face.edge;
+    do { idxs.push(idxOf(e.head().point)); e = e.next; } while (e !== face.edge);
+    faces.push(idxs);
+  }
+  return new C!.ConvexPolyhedron({ vertices, faces });
 }
 
 // Joint3D 局部向量 → cannon Vec3（缺省 0）。
