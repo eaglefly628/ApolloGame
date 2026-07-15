@@ -6,6 +6,7 @@
 // 用法：npx vite-node scripts/game-g-art-requirements.mjs
 // append-only：重跑 mergeLedger 并入现台账——保编号/状态/prompt/history；台账落 public/games/game-g/art/。
 import { HERO_CARDS } from '../src/games/game-g/hero-codex.ts';
+import { STORY_OPENING } from '../src/games/game-g/campaign-data.ts';
 import { mergeLedger } from './art-replace.mjs';
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -71,7 +72,50 @@ const TEX_ROWS = [
     { w: 256, h: 256, transparent: true }, '战胜硬币·字面（回库）·现=CSS 渐变+文字', '消费点=coin-flip .face.tails 背景（覆盖在场才换）'],
   ['game-g/tex/card-back', 'sprite', 'ornate playing card back design, chinese brocade pattern, gold on deep lacquer red, symmetrical, rectangular game card back',
     { w: 480, h: 640, transparent: false }, '牌背图（批29 引擎 PlayingCard.backArt prop 落地·已接线）', '消费点=home-screen duel-back PlayingCard.backArt（整面 cover·覆盖在场才换·无=原棋盘格纹）'],
+  // ── 批30（owner 07-15「全部美术台账加升级」）：剩余四屏 + 大厅整壳 + 三选一 的背景板全部立行接线 ──
+  ['game-g/tex/lobby-backdrop', 'bg', 'imperial chinese gambling hall interior, ornate wooden pillars, hanging red lanterns, subdued dark ambience, wide game lobby background',
+    { w: 1280, h: 720, transparent: false }, '大厅整壳背景板（罩五 tab 最外层·现=纯主题色）', '消费点=lobby-dd Screen.image（cover·覆盖在场才生效）'],
+  ['game-g/tex/collection-backdrop', 'bg', 'ancient chinese archive hall, wooden card cabinets and scroll shelves, warm candlelight, subdued wide game background',
+    { w: 1280, h: 720, transparent: false }, '收藏屏背景板（现=纯主题色）', '消费点=collection-screen Screen.image（cover·覆盖在场才生效）'],
+  ['game-g/tex/deck-backdrop', 'bg', 'war council tent interior, campaign maps and banners on long table, strategic candlelit atmosphere, subdued wide game background',
+    { w: 1280, h: 720, transparent: false }, '牌组屏背景板（现=纯主题色）', '消费点=deck-screen Screen.image（cover·覆盖在场才生效）'],
+  ['game-g/tex/craft-backdrop', 'bg', 'mystic chinese forge workshop, zodiac talismans on walls, ember glow over anvil, subdued wide game background',
+    { w: 1280, h: 720, transparent: false }, '改造坊屏背景板（现=纯主题色）', '消费点=craft-screen Screen.image（cover·覆盖在场才生效）'],
+  ['game-g/tex/between-backdrop', 'bg', 'victorious army camp at night, bonfire and war banners, three glowing reward pedestals, wide game background, celebratory but subdued',
+    { w: 1280, h: 720, transparent: false }, '战间三选一屏背景板（现=纯主题底）', '消费点=game-g.tsx showBetween Screen.image（cover·覆盖在场才生效）'],
 ];
+
+// 开场故事逐幕插画（批30·6 幕）：storyModal 真图在场才插 Image 节点（16:9 cover）·无=原纯旁白。
+const STORY_QUERY = [
+  'dim casino at night, green felt card table, an antique deck glowing faintly in shadows, cinematic game illustration',
+  'close-up of a hand flipping an ancient brass switch beneath a card table, dramatic chiaroscuro, cinematic game illustration',
+  'lights extinguished, a whole deck of cards levitating in a blinding burst of light, supernatural, cinematic game illustration',
+  'silhouettes of legendary ancient generals flashing across floating card faces, epic montage, cinematic game illustration',
+  'two regal joker dealers materializing at the far end of a card table, ominous golden mist, cinematic game illustration',
+  'a chosen card master seizing a glowing deck of destiny, heroic wide shot, cinematic game illustration',
+];
+const storyRows = STORY_OPENING.map((b, i) => ({
+  skinKey: `game-g/story/beat-${i + 1}`, kind: 'bg',
+  slot: { entity: `story:beat-${i + 1}`, component: 'Image', field: 'src' },
+  query: `${STORY_QUERY[i] ?? STORY_QUERY[0]}, chinese ink-and-gold palette`, prompt: null,
+  spec: { w: 1024, h: 576, transparent: false },
+  desc: `开场故事插画 · 第${i + 1}幕「${b.scene}」（现=纯旁白无图）`,
+  context: `幕旁白="${b.text.slice(0, 30)}…"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）`,
+  status: 'needs-art', gen: null, provenance: null,
+}));
+
+// 商城卡池 banner（批30·2 条）：poolPanel 真图在场才插 Image。
+const shopRows = [
+  ['game-g/shop/banner-tiangang', 'gacha banner, fanned thunder talisman cards, gold lightning motif on dark lacquer, wide game shop banner',
+    '天罡卡池 banner（现=纯文案面板）', '消费点=overlays shopModal poolPanel tiangang（Image·覆盖在场才插）'],
+  ['game-g/shop/banner-dizhi', 'gacha banner, twelve chinese zodiac animals in a circle, jade and bronze motif, wide game shop banner',
+    '地支卡池 banner（现=纯文案面板）', '消费点=overlays shopModal poolPanel dizhi（Image·覆盖在场才插）'],
+].map(([skinKey, query, desc, context]) => ({
+  skinKey, kind: 'sprite',
+  slot: { entity: `shop:${skinKey.split('/').pop()}`, component: 'Image', field: 'src' },
+  query, prompt: null, spec: { w: 640, h: 200, transparent: false }, desc, context,
+  status: 'needs-art', gen: null, provenance: null,
+}));
 const texRows = TEX_ROWS.map(([skinKey, kind, query, spec, desc, context]) => ({
   skinKey, kind,
   // felt 对齐现况账身份 table/felt（保号保现身）；其余为新槽位（顺延新号）。
@@ -110,14 +154,74 @@ const diceRow = {
   status: 'needs-art', gen: null, provenance: null,
 };
 
-// uiRows 排在 diceRow 后（新行顺延 art-61+·不动既有 60 行编号——mergeLedger 老行保号、新行 maxNo 顺延）。
-const rows = [...heroRows, ...texRows, diceRow, ...uiRows].map((r, i) => ({ no: 'art-' + String(i + 1).padStart(2, '0'), ...r }));
+// ── 占位图（owner 07-15「art-54~63 没有预览占位符」）：给每个未出真图的行生成**当前游戏实际观感**的
+// 确定性 SVG 快照（主题色底/CSS 金币渐变/棋盘格牌背/按钮现皮近似）→ 工坊行封面回落 placeholder.servedPath。
+// 语义与 gen 分开：gen=生成的真图（fill 流水线写）；placeholder=现况快照（本脚本重跑即重derive·不进 gen）。
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const svgDoc = (w, h, body) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">${body}</svg>\n`;
+const backdropPh = (w, h, label) => svgDoc(w, h,
+  `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0c0a07"/><stop offset="1" stop-color="#171109"/></linearGradient></defs>`
+  + `<rect width="${w}" height="${h}" fill="url(#g)"/><rect x="8" y="8" width="${w - 16}" height="${h - 16}" fill="none" stroke="#d4bd8a" stroke-opacity=".22" stroke-width="2"/>`
+  + `<text x="50%" y="46%" text-anchor="middle" fill="#e8cd82" font-size="${Math.round(h / 16)}" font-family="serif">${esc(label)}</text>`
+  + `<text x="50%" y="58%" text-anchor="middle" fill="#7c6e54" font-size="${Math.round(h / 26)}" font-family="serif">现况：纯主题色底 · 出图后整幅替换</text>`);
+const coinPh = (label, inner, outer) => svgDoc(256, 256,
+  `<defs><radialGradient id="c" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="${inner}"/><stop offset="1" stop-color="${outer}"/></radialGradient></defs>`
+  + `<circle cx="128" cy="128" r="118" fill="url(#c)" stroke="#f1d792" stroke-width="6"/>`
+  + `<text x="50%" y="55%" text-anchor="middle" fill="#2a1a08" font-size="88" font-weight="bold" font-family="serif">${esc(label)}</text>`);
+const cardBackPh = () => svgDoc(480, 640,
+  `<defs><linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b34a4a"/><stop offset="1" stop-color="#8c3535"/></linearGradient>`
+  + `<pattern id="ck" width="24" height="24" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#ffffff" opacity=".06"/><rect x="12" y="12" width="12" height="12" fill="#ffffff" opacity=".06"/></pattern></defs>`
+  + `<rect width="480" height="640" rx="24" fill="url(#b)"/><rect width="480" height="640" rx="24" fill="url(#ck)"/>`
+  + `<rect x="14" y="14" width="452" height="612" rx="16" fill="none" stroke="#f1d792" stroke-opacity=".5" stroke-width="3"/>`
+  + `<text x="50%" y="53%" text-anchor="middle" fill="#e3c275" font-size="120" font-family="serif">❖</text>`);
+const btnPh = (w, h, kind) => {
+  if (kind === 'hero') return svgDoc(w, h,
+    `<defs><linearGradient id="h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1d792"/><stop offset="1" stop-color="#dcbb79"/></linearGradient></defs>`
+    + `<polygon points="26,0 ${w},0 ${w},${h - 26} ${w - 26},${h} 0,${h} 0,26" fill="url(#h)"/>`
+    + `<text x="50%" y="60%" text-anchor="middle" fill="#2a1a08" font-size="${Math.round(h / 3)}" font-weight="bold" font-family="serif">⚔ 出征</text>`);
+  const fill = kind === 'primary' ? 'rgba(227,194,117,.14)' : 'rgba(255,255,255,.04)';
+  const line = kind === 'primary' ? '#e3c275' : '#5a4f3d';
+  const txt = kind === 'primary' ? '主按钮' : '次按钮';
+  return svgDoc(w, h, `<rect width="${w}" height="${h}" rx="10" fill="#14100a"/><rect width="${w}" height="${h}" rx="10" fill="${fill}" stroke="${line}" stroke-width="3"/>`
+    + `<text x="50%" y="62%" text-anchor="middle" fill="${kind === 'primary' ? '#e3c275' : '#bda984'}" font-size="${Math.round(h / 3)}" font-family="serif">${txt}</text>`);
+};
+const dicePh = () => svgDoc(256, 256,
+  `<rect x="28" y="28" width="200" height="200" rx="34" fill="#3a332a" stroke="#8a7a5c" stroke-width="6"/>`
+  + [[78, 78], [178, 78], [128, 128], [78, 178], [178, 178]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="16" fill="#e8cd82"/>`).join('')
+  );
+const bannerPh = (label) => svgDoc(640, 200,
+  `<rect width="640" height="200" fill="#171109"/><rect x="6" y="6" width="628" height="188" fill="none" stroke="#d4bd8a" stroke-opacity=".3" stroke-width="2"/>`
+  + `<text x="50%" y="56%" text-anchor="middle" fill="#e8cd82" font-size="34" font-family="serif">${esc(label)}</text>`);
+function placeholderFor(r) {
+  const k = r.skinKey;
+  if (k === 'game-g/tex/coin-heads') return [coinPh('正', '#f6e3a8', '#8a6a20'), '现况=CSS 金渐变圆+文字'];
+  if (k === 'game-g/tex/coin-tails') return [coinPh('反', '#e7e7ea', '#6f7480'), '现况=CSS 银渐变圆+文字'];
+  if (k === 'game-g/tex/card-back') return [cardBackPh(), '现况=红底棋盘格程序纹+❖'];
+  if (k === 'game-g/model/clash-dice') return [dicePh(), '现况=程序化 3D 图元骰'];
+  if (k.startsWith('game-g/ui/btn-')) return [btnPh(r.spec?.w ?? 240, r.spec?.h ?? 80, k.split('btn-')[1]), '现况=引擎 kind 底（CSS）'];
+  if (k.startsWith('game-g/shop/banner-')) return [bannerPh(r.desc.split('（')[0]), '现况=纯文案面板无图'];
+  if (k.startsWith('game-g/story/')) return [backdropPh(1024, 576, r.desc.split('（')[0]), '现况=纯旁白无插画'];
+  return [backdropPh(r.spec?.w ?? 1280, r.spec?.h ?? 720, r.desc.split('（')[0]), '现况=纯主题色底'];
+}
+
+// uiRows/storyRows/shopRows 排在 diceRow 后（新行顺延·不动既有编号——mergeLedger 老行保号、新行 maxNo 顺延）。
+const rows = [...heroRows, ...texRows, diceRow, ...uiRows, ...storyRows, ...shopRows].map((r, i) => ({ no: 'art-' + String(i + 1).padStart(2, '0'), ...r }));
 const fresh = { version: 1, game: 'game-g', mode: 'requirements', count: rows.length, rows };
 
 const LEDGER_FILE = join(ROOT, 'public', 'games', 'game-g', 'art', 'art-ledger.json');
+const PH_DIR = join(ROOT, 'public', 'games', 'game-g', 'art', 'placeholder');
 const prev = existsSync(LEDGER_FILE) ? JSON.parse(readFileSync(LEDGER_FILE, 'utf8')) : null;
 const merged = mergeLedger(prev, fresh, null);
-mkdirSync(dirname(LEDGER_FILE), { recursive: true });
+mkdirSync(PH_DIR, { recursive: true });
+let phN = 0;
+for (const r of merged.rows) {
+  if (r.gen || r.status === 'replaced' || r.status === 'retired') continue; // 有真图/现身图的行不需要占位快照
+  const [svg, current] = placeholderFor(r);
+  const base = r.skinKey.split('/').slice(1).join('-') + '.svg';
+  writeFileSync(join(PH_DIR, base), svg);
+  r.placeholder = { servedPath: `/games/game-g/art/placeholder/${base}`, current };
+  phN += 1;
+}
 writeFileSync(LEDGER_FILE, JSON.stringify(merged, null, 2) + '\n');
-console.error(`[game-g artreq] ${merged.rows.length} 行台账 → ${LEDGER_FILE}`);
-console.log(JSON.stringify({ ok: true, rows: merged.rows.length }));
+console.error(`[game-g artreq] ${merged.rows.length} 行台账（${phN} 行带现况占位快照）→ ${LEDGER_FILE}`);
+console.log(JSON.stringify({ ok: true, rows: merged.rows.length, placeholders: phN }));

@@ -7,6 +7,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
+import { textureOverrideUri } from './art-textures.js'; // 大厅整壳背景板槽（批30·罩五 tab 的最外层）
 import { LOBBY_CSS } from './lobby-styles.js';
 import { isSfxMuted, setSfxMuted } from './sfx.js';
 import { toggleBgm } from './bgm.js';
@@ -103,7 +104,10 @@ export function buildLobby(view: LobbyView, st: LobbyDDState): LayoutNode {
     children: [topbar(view), { type: 'Divider', id: 'lobby-hdr-div', props: {} }, nav, content],
   };
   return {
-    type: 'Screen', id: 'lobby-screen-dd', props: { bg: GG_LOBBY_THEME.pageBg },
+    type: 'Screen', id: 'lobby-screen-dd', props: {
+      bg: GG_LOBBY_THEME.pageBg,
+      ...(textureOverrideUri('game-g/tex/lobby-backdrop') ? { image: textureOverrideUri('game-g/tex/lobby-backdrop')! } : {}),
+    },
     layout: { direction: 'column', padding: 0 },
     children: [frame],
   };

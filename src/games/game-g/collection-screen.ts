@@ -10,6 +10,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
+import { textureOverrideUri } from './art-textures.js'; // 背景板槽（批30 全屏台账化·真图=cover·无=主题色）
 import { HERO_CARDS, type HeroCard, type HeroRar } from './hero-codex.js';
 import { heroPortraitUri } from './portraits.js';
 import { EARTH_FIENDS, STAGE_CAMPAIGN } from './campaign-data.js';
@@ -206,7 +207,10 @@ export function buildCollectionScreen(view: LobbyView, st: CollectionState = INI
     children: [heroesPage(st), fiendsPage(view), collectPage(view)],
   };
   return {
-    type: 'Screen', id: 'collection-screen', props: { bg: GG_LOBBY_THEME.pageBg },
+    type: 'Screen', id: 'collection-screen', props: {
+      bg: GG_LOBBY_THEME.pageBg,
+      ...(textureOverrideUri('game-g/tex/collection-backdrop') ? { image: textureOverrideUri('game-g/tex/collection-backdrop')! } : {}),
+    },
     layout: { direction: 'column', padding: 16 }, children: [tabs],
   };
 }

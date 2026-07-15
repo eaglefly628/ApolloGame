@@ -2,7 +2,7 @@
   "version": 1,
   "game": "game-g",
   "mode": "requirements",
-  "count": 63,
+  "count": 76,
   "rows": [
     {
       "no": "art-01",
@@ -1720,7 +1720,11 @@
       "context": "消费点=home-screen Screen.image（cover 整图·覆盖在场才生效）",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/tex-home-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
     },
     {
       "no": "art-55",
@@ -1742,7 +1746,11 @@
       "context": "消费点=campaign-screen Screen.image（cover·覆盖在场才生效）",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/tex-campaign-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
     },
     {
       "no": "art-56",
@@ -1764,7 +1772,11 @@
       "context": "消费点=turn-battle-screen buildTurnBattleHTML 根（底色叠 cover·覆盖在场才生效）",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/tex-battle-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
     },
     {
       "no": "art-57",
@@ -1786,7 +1798,11 @@
       "context": "消费点=coin-flip .face.heads 背景（覆盖在场才换·文字仍叠显）",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/tex-coin-heads.svg",
+        "current": "现况=CSS 金渐变圆+文字"
+      }
     },
     {
       "no": "art-58",
@@ -1808,7 +1824,11 @@
       "context": "消费点=coin-flip .face.tails 背景（覆盖在场才换）",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/tex-coin-tails.svg",
+        "current": "现况=CSS 银渐变圆+文字"
+      }
     },
     {
       "no": "art-59",
@@ -1830,7 +1850,11 @@
       "context": "消费点=home-screen duel-back PlayingCard.backArt（整面 cover·覆盖在场才换·无=原棋盘格纹）",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/tex-card-back.svg",
+        "current": "现况=红底棋盘格程序纹+❖"
+      }
     },
     {
       "no": "art-60",
@@ -1851,7 +1875,11 @@
       "context": "用途=model3d·对决特写掷骰·现=程序化 3D 图元；替换=P3D 接 Model3D（P3D-game-z-handoff §0.1 边界）",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/model-clash-dice.svg",
+        "current": "现况=程序化 3D 图元骰"
+      }
     },
     {
       "no": "art-61",
@@ -1873,7 +1901,11 @@
       "context": "消费点=主题级 buttonSkins.hero（GG 三主题 getter·所有 hero 键一体换：出征/掷骰/结束回合）",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/ui-btn-hero.svg",
+        "current": "现况=引擎 kind 底（CSS）"
+      }
     },
     {
       "no": "art-62",
@@ -1895,7 +1927,11 @@
       "context": "消费点=主题级 buttonSkins.primary（确认/继续/完成类主键一体换·边饰限外缘 10px）",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/ui-btn-primary.svg",
+        "current": "现况=引擎 kind 底（CSS）"
+      }
     },
     {
       "no": "art-63",
@@ -1917,7 +1953,349 @@
       "context": "消费点=主题级 buttonSkins.ghost（返回/取消/工具类次键一体换·边饰限外缘 10px）",
       "status": "needs-art",
       "gen": null,
-      "provenance": null
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/ui-btn-ghost.svg",
+        "current": "现况=引擎 kind 底（CSS）"
+      }
+    },
+    {
+      "no": "art-64",
+      "skinKey": "game-g/tex/lobby-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:lobby-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "imperial chinese gambling hall interior, ornate wooden pillars, hanging red lanterns, subdued dark ambience, wide game lobby background",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "大厅整壳背景板（罩五 tab 最外层·现=纯主题色）",
+      "context": "消费点=lobby-dd Screen.image（cover·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/tex-lobby-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-65",
+      "skinKey": "game-g/tex/collection-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:collection-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "ancient chinese archive hall, wooden card cabinets and scroll shelves, warm candlelight, subdued wide game background",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "收藏屏背景板（现=纯主题色）",
+      "context": "消费点=collection-screen Screen.image（cover·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/tex-collection-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-66",
+      "skinKey": "game-g/tex/deck-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:deck-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "war council tent interior, campaign maps and banners on long table, strategic candlelit atmosphere, subdued wide game background",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "牌组屏背景板（现=纯主题色）",
+      "context": "消费点=deck-screen Screen.image（cover·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/tex-deck-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-67",
+      "skinKey": "game-g/tex/craft-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:craft-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "mystic chinese forge workshop, zodiac talismans on walls, ember glow over anvil, subdued wide game background",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "改造坊屏背景板（现=纯主题色）",
+      "context": "消费点=craft-screen Screen.image（cover·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/tex-craft-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-68",
+      "skinKey": "game-g/tex/between-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:between-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "victorious army camp at night, bonfire and war banners, three glowing reward pedestals, wide game background, celebratory but subdued",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "战间三选一屏背景板（现=纯主题底）",
+      "context": "消费点=game-g.tsx showBetween Screen.image（cover·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/tex-between-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-69",
+      "skinKey": "game-g/story/beat-1",
+      "kind": "bg",
+      "slot": {
+        "entity": "story:beat-1",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "dim casino at night, green felt card table, an antique deck glowing faintly in shadows, cinematic game illustration, chinese ink-and-gold palette",
+      "prompt": null,
+      "spec": {
+        "w": 1024,
+        "h": 576,
+        "transparent": false
+      },
+      "desc": "开场故事插画 · 第1幕「夜 · 赌场」（现=纯旁白无图）",
+      "context": "幕旁白=\"传说，世上最伟大的将军，从未真正死去——他们只是，在等一个执…\"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/story-beat-1.svg",
+        "current": "现况=纯旁白无插画"
+      }
+    },
+    {
+      "no": "art-70",
+      "skinKey": "game-g/story/beat-2",
+      "kind": "bg",
+      "slot": {
+        "entity": "story:beat-2",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "close-up of a hand flipping an ancient brass switch beneath a card table, dramatic chiaroscuro, cinematic game illustration, chinese ink-and-gold palette",
+      "prompt": null,
+      "spec": {
+        "w": 1024,
+        "h": 576,
+        "transparent": false
+      },
+      "desc": "开场故事插画 · 第2幕「开关」（现=纯旁白无图）",
+      "context": "幕旁白=\"一只手无意间拨动了牌桌下一枚古旧的黄铜开关。咔哒。…\"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/story-beat-2.svg",
+        "current": "现况=纯旁白无插画"
+      }
+    },
+    {
+      "no": "art-71",
+      "skinKey": "game-g/story/beat-3",
+      "kind": "bg",
+      "slot": {
+        "entity": "story:beat-3",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "lights extinguished, a whole deck of cards levitating in a blinding burst of light, supernatural, cinematic game illustration, chinese ink-and-gold palette",
+      "prompt": null,
+      "spec": {
+        "w": 1024,
+        "h": 576,
+        "transparent": false
+      },
+      "desc": "开场故事插画 · 第3幕「异变」（现=纯旁白无图）",
+      "context": "幕旁白=\"灯火骤灭，整副扑克腾空、光芒大作。远古以来，五十二位最负盛名…\"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/story-beat-3.svg",
+        "current": "现况=纯旁白无插画"
+      }
+    },
+    {
+      "no": "art-72",
+      "skinKey": "game-g/story/beat-4",
+      "kind": "bg",
+      "slot": {
+        "entity": "story:beat-4",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "silhouettes of legendary ancient generals flashing across floating card faces, epic montage, cinematic game illustration, chinese ink-and-gold palette",
+      "prompt": null,
+      "spec": {
+        "w": 1024,
+        "h": 576,
+        "transparent": false
+      },
+      "desc": "开场故事插画 · 第4幕「群像」（现=纯旁白无图）",
+      "context": "幕旁白=\"孙武、成吉思汗、亚历山大、项羽……剪影在牌面一一闪现。他们困…\"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/story-beat-4.svg",
+        "current": "现况=纯旁白无插画"
+      }
+    },
+    {
+      "no": "art-73",
+      "skinKey": "game-g/story/beat-5",
+      "kind": "bg",
+      "slot": {
+        "entity": "story:beat-5",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "two regal joker dealers materializing at the far end of a card table, ominous golden mist, cinematic game illustration, chinese ink-and-gold palette",
+      "prompt": null,
+      "spec": {
+        "w": 1024,
+        "h": 576,
+        "transparent": false
+      },
+      "desc": "开场故事插画 · 第5幕「庄家」（现=纯旁白无图）",
+      "context": "幕旁白=\"牌桌尽头，大王与小王缓缓浮现——执掌这副命运之牌的两位庄家。…\"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/story-beat-5.svg",
+        "current": "现况=纯旁白无插画"
+      }
+    },
+    {
+      "no": "art-74",
+      "skinKey": "game-g/story/beat-6",
+      "kind": "bg",
+      "slot": {
+        "entity": "story:beat-6",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "a chosen card master seizing a glowing deck of destiny, heroic wide shot, cinematic game illustration, chinese ink-and-gold palette",
+      "prompt": null,
+      "spec": {
+        "w": 1024,
+        "h": 576,
+        "transparent": false
+      },
+      "desc": "开场故事插画 · 第6幕「召唤」（现=纯旁白无图）",
+      "context": "幕旁白=\"你，无意间成了执掌命运之人。重打这五十二场命运之战、翻动他们…\"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/story-beat-6.svg",
+        "current": "现况=纯旁白无插画"
+      }
+    },
+    {
+      "no": "art-75",
+      "skinKey": "game-g/shop/banner-tiangang",
+      "kind": "sprite",
+      "slot": {
+        "entity": "shop:banner-tiangang",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "gacha banner, fanned thunder talisman cards, gold lightning motif on dark lacquer, wide game shop banner",
+      "prompt": null,
+      "spec": {
+        "w": 640,
+        "h": 200,
+        "transparent": false
+      },
+      "desc": "天罡卡池 banner（现=纯文案面板）",
+      "context": "消费点=overlays shopModal poolPanel tiangang（Image·覆盖在场才插）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/shop-banner-tiangang.svg",
+        "current": "现况=纯文案面板无图"
+      }
+    },
+    {
+      "no": "art-76",
+      "skinKey": "game-g/shop/banner-dizhi",
+      "kind": "sprite",
+      "slot": {
+        "entity": "shop:banner-dizhi",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "gacha banner, twelve chinese zodiac animals in a circle, jade and bronze motif, wide game shop banner",
+      "prompt": null,
+      "spec": {
+        "w": 640,
+        "h": 200,
+        "transparent": false
+      },
+      "desc": "地支卡池 banner（现=纯文案面板）",
+      "context": "消费点=overlays shopModal poolPanel dizhi（Image·覆盖在场才插）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/shop-banner-dizhi.svg",
+        "current": "现况=纯文案面板无图"
+      }
     }
   ],
   "artStyle": "古风拟人矢量·翻命扑克"

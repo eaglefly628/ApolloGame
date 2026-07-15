@@ -1687,8 +1687,9 @@ class Component extends DCLogic {
       return '精灵/角色';
     };
     const mkArtCell = (r) => {
-      // 封面优先级：真生成图 > 占位解析图（=游戏画面当前实际在用的免费库图·07-12） > 灰底
-      const served = (r.gen && r.gen.servedPath) || (r.status === 'placeholder' ? (s.artResolve || {})[r.query] : null);
+      // 封面优先级：真生成图 > 现况占位快照（row.placeholder.servedPath·07-15 needs-art 行也有脸） > 占位解析图（07-12） > 灰底
+      const served = (r.gen && r.gen.servedPath) || (r.placeholder && r.placeholder.servedPath)
+        || (r.status === 'placeholder' ? (s.artResolve || {})[r.query] : null);
       const badge = stBadge[r.status] || [r.status, '#c8c8c8'];
       // 原始占位可视化（owner 07-13「新建卡袋看不到在用的占位图」）：没生成真图的行，把引擎实际渲染的
       // 程序化占位（Color.tint 色块 + 形体）画成 swatch——所见=游戏里现在真渲染的样子（非空白）。
@@ -1749,6 +1750,7 @@ class Component extends DCLogic {
     const artWantKind = artSelRow && artSelRow.kind === 'model3d' ? 'mesh' : 'image';
     const artProvsArr = (Array.isArray(s.genProviders) ? s.genProviders : []).filter(p => !p.kind || p.kind === artWantKind);
     const artSelServed = artSelRow && ((artSelRow.gen && artSelRow.gen.servedPath)
+      || (artSelRow.placeholder && artSelRow.placeholder.servedPath)
       || (artSelRow.status === 'placeholder' ? (s.artResolve || {})[artSelRow.query] : null));
     const artStBadge = artSelRow ? (stBadge[artSelRow.status] || [artSelRow.status, '#c8c8c8']) : ['', ''];
     const artSlotN = artSelRow ? ((artSelRow.slots && artSelRow.slots.length) || 1) : 0;

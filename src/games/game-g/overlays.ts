@@ -8,6 +8,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
+import { textureOverrideUri } from './art-textures.js'; // 插画/banner 槽（批30：故事逐幕插画+卡池 banner·真图在场才插节点）
 import { GACHA, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, DIZHI_ZODIACS, STORY_OPENING, type StoryBeat } from './blueprint.js';
 import { luckyFromVal, luckyBattleBuff } from './lobby-types.js'; // 纯函数复用（卦值→吉凶档 + 战场加成）
 import type { LuckyRoll } from './lobby-util.js';
@@ -113,6 +114,10 @@ function shopModal(view: LobbyView, st: OverlayState): LayoutNode {
   const poolPanel = (pool: 'tiangang' | 'dizhi', title: string, sub: string): LayoutNode => ({
     type: 'Panel', id: `pool-${pool}`, props: { title }, layout: { direction: 'column', gap: 6, padding: 10 },
     children: [
+      // 卡池 banner 槽（台账 game-g/shop/banner-*·批30）：真图在场才插 Image 节点·无=原纯文案（观感零变）
+      ...(textureOverrideUri(`game-g/shop/banner-${pool}`) ? [
+        { type: 'Image' as const, id: `pool-${pool}-banner`, props: { src: textureOverrideUri(`game-g/shop/banner-${pool}`)!, fit: 'cover' as const, radius: 8 }, layout: { height: 96 } },
+      ] : []),
       { type: 'Label', id: `pool-${pool}-sub`, props: { text: sub, size: 'md', color: 'sub' } },
       { type: 'Panel', id: `pool-${pool}-btns`, props: {}, layout: { direction: 'row', gap: 6 }, children: [drawBtn(pool, 1, 'gold'), drawBtn(pool, 1, 'diamond'), drawBtn(pool, 10, 'gold'), drawBtn(pool, 10, 'diamond')] },
     ],
@@ -220,6 +225,10 @@ function storyModal(beats: StoryBeat[], idx: number): LayoutNode {
       type: 'Panel', id: 'story-body', props: {}, layout: { direction: 'column', gap: 10, padding: 6 },
       children: [
         { type: 'Label', id: 'story-scene', props: { text: `〔 ${b.scene} 〕`, size: 'lg', color: 'gold', bold: true } },
+        // 逐幕插画槽（台账 game-g/story/beat-N·批30）：真图在场才插 Image（16:9 cover）·无=原纯旁白（观感零变）
+        ...(textureOverrideUri(`game-g/story/beat-${i + 1}`) ? [
+          { type: 'Image' as const, id: 'story-art', props: { src: textureOverrideUri(`game-g/story/beat-${i + 1}`)!, fit: 'cover' as const, radius: 8 }, layout: { height: 200 } },
+        ] : []),
         { type: 'Label', id: 'story-text', props: { text: b.text, size: 'md', color: 'text', typewriter: 24 } },
         { type: 'Label', id: 'story-dots', props: { text: `${i + 1} / ${beats.length}`, size: 'sm', color: 'dim' } },
         { type: 'Panel', id: 'story-btns', props: {}, layout: { direction: 'row', gap: 10 }, children: [

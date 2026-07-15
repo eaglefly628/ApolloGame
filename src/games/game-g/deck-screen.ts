@@ -9,6 +9,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
+import { textureOverrideUri } from './art-textures.js'; // 背景板槽（批30 全屏台账化·真图=cover·无=主题色）
 import { HERO_CARDS, type HeroCard } from './hero-codex.js';
 import { heroPortraitUri, type Suit } from './portraits.js';
 import { DIZHI_ZODIACS, DIZHI_TIER_NM, dizhiTopTier, dizhiTotal, deployCost, POKER_PICK_SIZE } from './blueprint.js';
@@ -181,7 +182,10 @@ export function buildDeckScreen(view: LobbyView, picks?: Set<string>): LayoutNod
     layout: { flex: 1 }, children: [pokerPage(view, p), tiangangPage(view), dizhiPage(view)],
   };
   return {
-    type: 'Screen', id: 'deck-screen', props: { bg: GG_LOBBY_THEME.pageBg },
+    type: 'Screen', id: 'deck-screen', props: {
+      bg: GG_LOBBY_THEME.pageBg,
+      ...(textureOverrideUri('game-g/tex/deck-backdrop') ? { image: textureOverrideUri('game-g/tex/deck-backdrop')! } : {}),
+    },
     layout: { direction: 'column', padding: 16, gap: 10 }, children: [deckSelector(view), tabs],
   };
 }

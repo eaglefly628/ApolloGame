@@ -656,11 +656,15 @@ function renderCoinFlip(id: string, p: CoinFlipProps, ls: string, t: UITheme): s
   const spin = p.spinning
     ? `animation:apollo-coin-${tails ? 'tails' : 'heads'} ${ms}ms ease-out both;`
     : `transform:rotateX(${tails ? 180 : 0}deg);`;
-  const face = (label: string, bg: string, rot: number): string =>
-    `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:50%;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateX(${rot}deg);background:${bg};border:3px solid ${t.gold};color:${t.bg0};font-family:${t.fontUi};font-weight:700;font-size:${Math.round(d / 5)}px">${esc(label)}</div>`;
+  // 面贴图（批29b）：art 有 → 面底=图 cover（叠在原底色上）+ 白字投影保可读；无 → 原金/暖底逐字节不变。
+  const face = (label: string, bg: string, rot: number, art?: string): string => {
+    const fill = art ? `${bg} url('${esc(String(art).replace(/['"()\\\s]/g, ''))}') center/cover no-repeat` : bg;
+    const ink = art ? 'color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85)' : `color:${t.bg0}`;
+    return `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:50%;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateX(${rot}deg);background:${fill};border:3px solid ${t.gold};${ink};font-family:${t.fontUi};font-weight:700;font-size:${Math.round(d / 5)}px">${esc(label)}</div>`;
+  };
   return `<div id="${esc(id)}"${action} style="width:${d}px;height:${d}px;perspective:600px;${cursor}${ls}">` +
     `<div style="position:relative;width:100%;height:100%;transform-style:preserve-3d;${spin}">` +
-    face(p.headsLabel ?? '正', t.gold, 0) + face(p.tailsLabel ?? '反', t.warn, 180) +
+    face(p.headsLabel ?? '正', t.gold, 0, p.headsArt) + face(p.tailsLabel ?? '反', t.warn, 180, p.tailsArt) +
     `</div></div>`;
 }
 

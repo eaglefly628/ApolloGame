@@ -59,6 +59,13 @@ describe('UI Components · CoinFlip 掷币', () => {
     const html = renderNode({ type: 'CoinFlip', id: 'c2', props: { outcome: 'heads', headsLabel: '正·活', tailsLabel: '反·亡' } });
     expect(html).toContain('正·活'); expect(html).toContain('反·亡');
   });
+  it('面贴图 headsArt/tailsArt（批30 硬币也可换）：面底=图 cover+白字投影；无 art=原底不回归', () => {
+    const html = renderNode({ type: 'CoinFlip', id: 'c3', props: { outcome: 'heads', headsArt: '/a/coin.png', headsLabel: '掷' } });
+    expect(html).toContain("url('/a/coin.png') center/cover no-repeat");
+    expect(html).toContain('text-shadow'); expect(html).toContain('掷');
+    const plain = renderNode({ type: 'CoinFlip', id: 'c4', props: { outcome: 'heads' } });
+    expect(plain).not.toContain('url('); expect(plain).not.toContain('text-shadow');
+  });
 });
 
 describe('UI Components · Versus 对决特写', () => {

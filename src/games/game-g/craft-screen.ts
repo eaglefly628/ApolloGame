@@ -7,6 +7,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
+import { textureOverrideUri } from './art-textures.js'; // 背景板槽（批30 全屏台账化·真图=cover·无=主题色）
 import { HERO_CARDS } from './hero-codex.js';
 import { heroPortraitUri, type Suit } from './portraits.js';
 import { DIZHI_ZODIACS, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, INLAY_MAX, inlayBonus, type InlayEntry } from './blueprint.js';
@@ -144,7 +145,10 @@ export function buildCraftScreen(view: LobbyView, craftSel = ''): LayoutNode {
   const children: LayoutNode[] = [enchantPanel(view, craftSel), tiangangShelf(view)];
   if (selected) children.push(enchantModal(view, +craftSel));
   return {
-    type: 'Screen', id: 'craft-screen', props: { bg: GG_LOBBY_THEME.pageBg },
+    type: 'Screen', id: 'craft-screen', props: {
+      bg: GG_LOBBY_THEME.pageBg,
+      ...(textureOverrideUri('game-g/tex/craft-backdrop') ? { image: textureOverrideUri('game-g/tex/craft-backdrop')! } : {}),
+    },
     layout: { direction: 'column', padding: 16, gap: 12 },
     children,
   };

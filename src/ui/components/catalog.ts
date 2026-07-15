@@ -334,6 +334,8 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'outcome', type: 'enum', values: ['heads', 'tails'], required: true, describe: '结果' },
       { name: 'spinning', type: 'boolean', describe: '播翻转动画' }, { name: 'size', type: 'number', default: 92, describe: '直径 px' },
       { name: 'headsLabel', type: 'string', describe: '正面字' }, { name: 'tailsLabel', type: 'string', describe: '反面字' },
+      { name: 'headsArt', type: 'string', describe: '正面贴图 URL（面底=图 cover·字白字投影叠显）' },
+      { name: 'tailsArt', type: 'string', describe: '反面贴图 URL（同 headsArt）' },
     ],
     sample: { type: 'CoinFlip', id: 's-coin', props: { outcome: 'heads', spinning: true, headsLabel: '正·活', tailsLabel: '反·亡' } },
   },

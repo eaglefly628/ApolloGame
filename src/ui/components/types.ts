@@ -430,6 +430,7 @@ export interface ContextMenuProps {
 export interface CoinFlipProps {
   outcome: 'heads' | 'tails';            // 结果（确定性·游戏侧算好）
   headsLabel?: string; tailsLabel?: string; // 两面文字（缺省 正/反）
+  headsArt?: string; tailsArt?: string;  // 两面贴图（已解析 URL·面底=图 cover·文字白字投影叠显·批29b「硬币也可换」）。缺省=原金/暖底零变。
   spinning?: boolean;                    // true=播翻转动画落定；false=静态显示结果
   size?: number;                         // 直径 px（缺省 92）
   durationMs?: number;                   // 翻转时长（缺省 1100）
