@@ -11,16 +11,21 @@ import { VerticalTiltShiftShader } from 'three/addons/shaders/VerticalTiltShiftS
 import type { Post3D } from '@engine/protocol/components.js';
 import { clamp01, posOr, fin } from './num-guard.js';
 
-// 色彩分级 shader（绘本调色板·TA Phase 4）：曝光×→亮度+→对比(绕中灰)→饱和(向亮度 mix)→染色×。
+// 色彩分级 + 暗角 + 命中闪白 shader（TA Phase 4 + 超休闲缺口 E）：
+//   曝光×→亮度+→对比(绕中灰)→饱和(向亮度 mix)→染色× → 暗角(边缘趋 vigColor) → 命中闪白(全屏朝 flashColor 混合)。
+//   三者共用这一个 pass（零额外 pass 开销）：不需要时 uniform 取中性值（vigIntensity=0 / flashAmount=0）即无副作用。
 const ColorGradeShader = {
   uniforms: {
     tDiffuse: { value: null as THREE.Texture | null },
     exposure: { value: 1 }, contrast: { value: 1 }, saturation: { value: 1 }, brightness: { value: 0 },
     tint: { value: new THREE.Color(1, 1, 1) },
+    vigIntensity: { value: 0 }, vigSmooth: { value: 0.5 }, vigColor: { value: new THREE.Color(0, 0, 0) },
+    flashColor: { value: new THREE.Color(1, 1, 1) }, flashAmount: { value: 0 },
   },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
   fragmentShader: `
     uniform sampler2D tDiffuse; uniform float exposure, contrast, saturation, brightness; uniform vec3 tint;
+    uniform float vigIntensity, vigSmooth, flashAmount; uniform vec3 vigColor, flashColor;
     varying vec2 vUv;
     void main(){
       vec4 c = texture2D(tDiffuse, vUv);
@@ -28,9 +33,27 @@ const ColorGradeShader = {
       col = (col - 0.5) * contrast + 0.5;
       float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
       col = mix(vec3(l), col, saturation) * tint;
+      float d = distance(vUv, vec2(0.5)) * 1.41421356;              // 0 中心 ~1 角
+      float vig = 1.0 - vigIntensity * smoothstep(vigSmooth, 1.0, d);
+      col = mix(vigColor, col, clamp(vig, 0.0, 1.0));               // 边缘趋 vigColor
+      col = mix(col, flashColor, clamp(flashAmount, 0.0, 1.0));     // 命中全屏闪白
       gl_FragColor = vec4(col, c.a);
     }`,
 };
+
+// ── FlashDecay（Post3D.flash 解释器·trauma 式·render-only）─────────────────────────────────────
+// 游戏 bump `trigger` → 注入 amount=1；按 decay(/秒) 线性衰减到 0。返回当前闪白量（渲染器折进 renderSig 持续重渲直至归零）。
+export class FlashDecay {
+  private last: number | undefined = undefined;
+  private t0 = 0; private amt = 0;
+  update(flash: { trigger?: number; decay?: number } | undefined, nowMs: number): number {
+    if (!flash) { this.amt = 0; this.last = undefined; return 0; }
+    if (flash.trigger !== this.last) { this.last = flash.trigger; this.t0 = nowMs; this.amt = 1; }
+    this.amt = Math.max(0, 1 - (nowMs - this.t0) / 1000 * (flash.decay ?? 3));
+    return this.amt;
+  }
+  dispose(): void { this.amt = 0; this.last = undefined; }
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  three/PostPipeline —— 后处理子系统（EffectComposer·懒建）。
@@ -62,7 +85,8 @@ export class PostPipeline {
   }
 
   // 据 Post3D 渲染一帧（懒建管线 + 设参数 + composer.render）。camera 可能在透视/正交间切换 → 每帧更新 RenderPass。
-  render(scene: THREE.Scene, camera: THREE.Camera, post: Post3D): void {
+  // flashAmount = 渲染器算好的命中闪白量 [0,1]（trauma 式衰减·由 FlashDecay 据 post.flash.trigger 维护）。
+  render(scene: THREE.Scene, camera: THREE.Camera, post: Post3D, flashAmount = 0): void {
     this.ensure(scene, camera);
     this.renderPass!.camera = camera;
     // 环境光遮蔽（GTAO·接触阴影/缝隙压暗）。相机可能透视/正交切换 → 每帧更新。
@@ -97,17 +121,25 @@ export class PostPipeline {
       this.bloom!.radius = bl.radius ?? 0.4;
       this.bloom!.threshold = bl.threshold ?? 0.85;
     }
-    // 色彩分级（绘本调色板）。
-    const gr = post.grade;
-    this.grade!.enabled = !!gr;
-    if (gr) {
+    // 色彩分级 + 暗角 + 命中闪白（共用一 pass·任一在用即启）。
+    const gr = post.grade, vig = post.vignette;
+    const flashAmt = Math.max(0, Math.min(1, Number.isFinite(flashAmount) ? flashAmount : 0));
+    this.grade!.enabled = !!gr || !!vig || flashAmt > 0;
+    if (this.grade!.enabled) {
       const u = this.grade!.uniforms;
-      // finite 兜底（同 AO：NaN 进分级 shader 会让对比/曝光算出 NaN → 全黑）。
-      u['exposure']!.value = fin(gr.exposure, 1);
-      u['contrast']!.value = fin(gr.contrast, 1);
-      u['saturation']!.value = fin(gr.saturation, 1);
-      u['brightness']!.value = fin(gr.brightness, 0);
-      (u['tint']!.value as THREE.Color).setHex((Number.isFinite(gr.tint) ? (gr.tint as number) : 0xffffff) & 0xffffff);
+      // 分级：无 grade → 中性（不改画面）。finite 兜底（NaN 进 shader → 全黑）。
+      u['exposure']!.value = fin(gr?.exposure, 1);
+      u['contrast']!.value = fin(gr?.contrast, 1);
+      u['saturation']!.value = fin(gr?.saturation, 1);
+      u['brightness']!.value = fin(gr?.brightness, 0);
+      (u['tint']!.value as THREE.Color).setHex((Number.isFinite(gr?.tint) ? (gr!.tint as number) : 0xffffff) & 0xffffff);
+      // 暗角：无 vignette → intensity 0（无副作用）。
+      u['vigIntensity']!.value = clamp01(vig?.intensity, 0);
+      u['vigSmooth']!.value = clamp01(vig?.smoothness, 0.5);
+      (u['vigColor']!.value as THREE.Color).setHex((Number.isFinite(vig?.color) ? (vig!.color as number) : 0x000000) & 0xffffff);
+      // 命中闪白：amount 由渲染器传入·color 取 post.flash.color。
+      u['flashAmount']!.value = flashAmt;
+      (u['flashColor']!.value as THREE.Color).setHex((Number.isFinite(post.flash?.color) ? (post.flash!.color as number) : 0xffffff) & 0xffffff);
     }
     // 抗锯齿（SMAA·清 toon 硬边）。
     this.smaa!.enabled = !!post.aa;

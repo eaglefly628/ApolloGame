@@ -47,6 +47,42 @@ export function applyMaterialRef(mat: Material3D, spec: MaterialSpec | undefined
   };
 }
 
+// 卡通渐变 LUT（gradientMap·N 阶阶梯·NearestFilter → 硬分段明暗）。缓存按阶数复用。
+const toonGradients = new Map<number, THREE.DataTexture>();
+export function toonGradient(steps = 3): THREE.DataTexture {
+  const n = Math.max(2, Math.min(8, Math.round(steps)));
+  let tex = toonGradients.get(n);
+  if (tex) return tex;
+  const data = new Uint8Array(n);
+  for (let i = 0; i < n; i++) data[i] = Math.round((i / (n - 1)) * 255);
+  tex = new THREE.DataTexture(data, n, 1, THREE.RedFormat);
+  tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+  tex.needsUpdate = true;
+  toonGradients.set(n, tex);
+  return tex;
+}
+
+// 平涂/卡通着色（超休闲缺口 F·render-only）：'flat'=无光 MeshBasicMaterial（纯亮色·完全不受光）；
+//   'toon'=MeshToonMaterial（gradientMap 阶梯明暗·cel 观感·支持 normal/ao/emissive 贴图·不吃 metal/rough）。
+export function buildShadedMaterial(def: PbrMaterialDef, shading: 'toon' | 'flat', steps?: number, surface?: SurfaceDetail, maps?: PbrMaps): THREE.Material {
+  if (shading === 'flat') {
+    const m = new THREE.MeshBasicMaterial({ color: def.color & 0xffffff });
+    if (maps?.map) { m.map = maps.map; m.color.setHex(0xffffff); } // albedo 图供色 → 基色置白
+    return m;
+  }
+  const m = new THREE.MeshToonMaterial({ color: def.color & 0xffffff, gradientMap: toonGradient(steps ?? 3) });
+  if (def.emissive !== undefined) { m.emissive.setHex(def.emissive & 0xffffff); m.emissiveIntensity = def.emissiveIntensity ?? 1; }
+  if (surface) { const s = buildSurfaceMaps(surface, def.roughness); m.normalMap = s.normalMap; m.normalScale = new THREE.Vector2(surface.normal ?? 1, surface.normal ?? 1); }
+  if (maps) {
+    if (maps.map) { m.map = maps.map; m.color.setHex(0xffffff); }
+    if (maps.normalMap) { m.normalMap = maps.normalMap; m.normalScale = new THREE.Vector2(1, 1); }
+    if (maps.aoMap) m.aoMap = maps.aoMap;
+    if (maps.emissiveMap) { m.emissiveMap = maps.emissiveMap; m.emissive.setHex(0xffffff); m.emissiveIntensity = def.emissiveIntensity ?? 1; }
+    m.needsUpdate = true;
+  }
+  return m;
+}
+
 // 预设 → three 材质。surface 在场 → 程序化生成 normal/roughness 挂上；**显式 maps 覆盖同通道**（真实贴图优先·render-only）。
 export function buildPbrMaterial(def: PbrMaterialDef, surface?: SurfaceDetail, maps?: PbrMaps): THREE.MeshStandardMaterial {
   let m: THREE.MeshStandardMaterial;
@@ -89,9 +125,12 @@ export function buildPbrMesh3D(m: Mesh3D, mat: Material3D, maps?: PbrMaps): THRE
   if ((maps?.aoMap || maps?.ormMap) && geo.attributes['uv'] && !geo.attributes['uv2']) {
     geo.setAttribute('uv2', geo.attributes['uv']!); // aoMap/ORM 的 AO 通道走第二套 UV·盒/球无 uv2 → 复用 uv
   }
-  const mesh = new THREE.Mesh(geo, buildPbrMaterial(def, mat.surface, maps));
+  const material = mat.shading
+    ? buildShadedMaterial(def, mat.shading, mat.toonSteps, mat.surface, maps) // 平涂/卡通着色（超休闲）
+    : buildPbrMaterial(def, mat.surface, maps); // PBR 物理（缺省）
+  const mesh = new THREE.Mesh(geo, material);
   mesh.castShadow = true;
-  mesh.receiveShadow = true;
+  mesh.receiveShadow = mat.shading !== 'flat'; // 无光平涂不吃阴影（MeshBasicMaterial 不响应光）
   return mesh;
 }
 
@@ -101,5 +140,5 @@ export function pbrSig(m: Mesh3D, mat: Material3D): string {
   const ss = s ? `${s.pattern}.${s.tiles ?? ''}.${s.normal ?? ''}.${s.rough ?? ''}.${s.scale ?? ''}` : '';
   const mk = `${mat.map ?? ''}.${mat.normalMap ?? ''}.${mat.roughnessMap ?? ''}.${mat.aoMap ?? ''}.${mat.metalnessMap ?? ''}.${mat.emissiveMap ?? ''}.${mat.ormMap ?? ''}`;
   const tl = mat.tiling ? `${mat.tiling.repeat ?? ''}.${mat.tiling.offset?.[0] ?? ''}.${mat.tiling.offset?.[1] ?? ''}` : '';
-  return `pbr|${mat.preset}|${mat.color ?? ''}|${mat.roughness ?? ''}|${mat.metalness ?? ''}|${mat.emissive ?? ''}|${m.shape}|${m.width}|${m.height}|${m.depth ?? ''}|${ss}|${mk}|${tl}`;
+  return `pbr|${mat.preset}|${mat.shading ?? ''}|${mat.toonSteps ?? ''}|${mat.color ?? ''}|${mat.roughness ?? ''}|${mat.metalness ?? ''}|${mat.emissive ?? ''}|${m.shape}|${m.width}|${m.height}|${m.depth ?? ''}|${ss}|${mk}|${tl}`;
 }

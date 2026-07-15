@@ -1,7 +1,7 @@
 // PBR 材质消费端（REQ-Resource ①·真实贴图走 texture-key 路线）：map 签名 + 贴图挂载 + 色彩空间/基色处理。
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { buildPbrMaterial, pbrSig, applyMaterialRef, type PbrMaps } from './material.js';
+import { buildPbrMaterial, buildShadedMaterial, toonGradient, pbrSig, applyMaterialRef, type PbrMaps } from './material.js';
 import { resolvePbr, type MaterialSpec } from '@assets/index.js';
 import type { Mesh3D, Material3D } from '@engine/protocol/components.js';
 
@@ -77,6 +77,32 @@ describe('REQ-Resource ④ 材质数据资产（applyMaterialRef）', () => {
     expect(eff.metalnessMap).toBe('tex/m');
     expect(eff.emissiveMap).toBe('tex/e');
     expect(eff.ormMap).toBe('tex/orm');
+  });
+});
+
+describe('超休闲缺口 F 平涂/卡通着色（buildShadedMaterial + shading 进 pbrSig）', () => {
+  it("shading:'flat' → 无光 MeshBasicMaterial（纯亮色·map 供色置白基）", () => {
+    const m = buildShadedMaterial(resolvePbr('gold'), 'flat');
+    expect(m).toBeInstanceOf(THREE.MeshBasicMaterial);
+    const withMap = buildShadedMaterial(resolvePbr('gold'), 'flat', undefined, undefined, { map: new THREE.Texture() });
+    expect((withMap as THREE.MeshBasicMaterial).color.getHex()).toBe(0xffffff);
+  });
+  it("shading:'toon' → MeshToonMaterial 带 gradientMap（N 阶 LUT）", () => {
+    const m = buildShadedMaterial(resolvePbr('jade'), 'toon', 4) as THREE.MeshToonMaterial;
+    expect(m).toBeInstanceOf(THREE.MeshToonMaterial);
+    expect(m.gradientMap).not.toBeNull();
+  });
+  it('toonGradient：阶数 → LUT 宽度（缓存复用同阶）·钳 [2,8]', () => {
+    expect(toonGradient(3).image.width).toBe(3);
+    expect(toonGradient(3)).toBe(toonGradient(3)); // 同阶缓存复用
+    expect(toonGradient(99).image.width).toBe(8);  // 上钳
+    expect(toonGradient(1).image.width).toBe(2);   // 下钳
+  });
+  it('shading/toonSteps 进 pbrSig（改着色模型 → 重建 mesh）', () => {
+    const base: Material3D = { type: 'Material3D', preset: 'jade' };
+    expect(pbrSig(mesh(), base)).not.toBe(pbrSig(mesh(), { ...base, shading: 'toon' }));
+    expect(pbrSig(mesh(), { ...base, shading: 'toon', toonSteps: 3 })).not.toBe(pbrSig(mesh(), { ...base, shading: 'toon', toonSteps: 5 }));
+    expect(pbrSig(mesh(), { ...base, shading: 'flat' })).not.toBe(pbrSig(mesh(), { ...base, shading: 'toon' }));
   });
 });
 

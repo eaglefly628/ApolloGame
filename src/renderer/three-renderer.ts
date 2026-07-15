@@ -13,13 +13,14 @@ import { mesh3dPose, applyPose, buildMesh3D, buildDieMesh3D, dieMode, buildVoxel
 import { buildPbrMesh3D, pbrSig, applyMaterialRef, type PbrMaps } from './three/material.js';
 import { hashPoses, camSig, postSig } from './three/stats.js';
 import { LightRig } from './three/lights.js';
-import { PostPipeline } from './three/post.js';
+import { PostPipeline, FlashDecay } from './three/post.js';
 import { ModelPool } from './three/models.js';
 import { InstancedBatches, type InstGroups } from './three/batches.js';
 import { CameraRig, CameraShake, FollowDamper, type DampedCenter } from './three/camera-rig.js';
 import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
 import { VfxSystem } from './three/vfx.js';
+import { TrailSystem } from './three/trail.js';
 import { Anim3DSystem } from './three/anim3d.js';
 import { pivotMatrix, applyPivot } from './three/pivot.js';
 import { WorldUiLayer } from './three/world-ui.js';
@@ -62,6 +63,7 @@ export class ThreeRenderer implements RendererBackend {
   private cameras!: CameraRig; // 相机解释器（透视/正交·REQ-3D-Camera）
   private readonly camShake = new CameraShake(); // 震屏 trauma 解释器（Camera3D.shake·render-only·超休闲打击反馈）
   private readonly followDamp = new FollowDamper(); // 跟随柔化解释器（Camera3D.follow·lag/lookAhead·render-only）
+  private readonly flash = new FlashDecay(); // 命中闪白 trauma 解释器（Post3D.flash·render-only·超休闲打击反馈）
   private lights!: LightRig;
   private post!: PostPipeline;
   private models!: ModelPool;
@@ -71,6 +73,7 @@ export class ThreeRenderer implements RendererBackend {
   private readonly navDebug = new NavDebug(); // 导航图/路径（debug·开关见 setDebugNav）
   private debugNav = false;
   private readonly vfx = new VfxSystem(); // 数据驱动粒子（TA Phase 1·render-only）
+  private readonly trails = new TrailSystem(); // 运动拖尾（Trail3D·render-only·超休闲残影）
   private readonly anim3d = new Anim3DSystem(); // 程序化位姿动画（Anim3D·spin/bob·render-only·把 title 骰自转等从游戏层手写下沉成数据）
   private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
   private physics: PhysicsSystem | null = null; // 真物理刚体（cannon-es·render-only·**懒加载**·仅有 RigidBody3D 时）
@@ -210,6 +213,8 @@ export class ThreeRenderer implements RendererBackend {
     const physLive = this.physics ? this.physics.sync(world, performance.now()) : 0;
     // VFX 粒子（TA Phase 1·render-only）：每帧 CPU 模拟推进。存活粒子数 >0 → 折进 renderSig 强制重渲（粒子在动）。
     const vfxLive = this.vfx.sync(this.scene, world, performance.now());
+    // 运动拖尾采样（Trail3D·render-only）：据实体世界位更新位置历史（相机后才建几何）。有位移的拖尾数 >0 → 折进 renderSig。
+    const trailLive = this.trails.sample(world);
     // 程序化位姿动画（Anim3D·render-only）：据壁钟改 Transform3D 分量（spin/bob）——须在 collect 前（渲染读更新后的位姿）。
     const animPoseLive = this.anim3d.sync(world, performance.now());
     // Pivot3D 父合成（render-only）：把整组子实体位姿合成到 pivot 变换下 → 整场当一个单元转/缩/移（骰钟转场 §F）。
@@ -321,7 +326,9 @@ export class ThreeRenderer implements RendererBackend {
     if (cam3d && cam3d.mode === 'follow' && followPose) {
       followCenter = this.followDamp.update({ x: followPose.x, y: followPose.y, z: followPose.z }, cam3d.follow, performance.now());
     } else { this.followDamp.reset(); }
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${this.fogSig}`;
+    // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
+    const flashAmt = this.flash.update(post?.flash, performance.now());
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${trailLive > 0 ? this.frame : 't0'}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -372,7 +379,8 @@ export class ThreeRenderer implements RendererBackend {
 
     // 渲染：有 Post3D → EffectComposer 管线；否则直渲（向后兼容）。用 CameraRig 当前激活相机（透视/正交）。
     const cam = this.cameras.current;
-    if (post) this.post.render(this.scene, cam, post);
+    this.trails.build(this.scene, world, cam); // 运动拖尾几何：据历史 + 相机方位重建「朝相机带状」（须相机就绪后·渲染前）。
+    if (post) this.post.render(this.scene, cam, post, flashAmt);
     else this.gl.render(this.scene, cam);
     this.worldUi.sync(world, cam, this.width, this.height); // 头顶飘字：锚点投影 + 定位 LayoutNode 宿主（相机就绪后）
     this.rendered = true;
@@ -470,8 +478,10 @@ export class ThreeRenderer implements RendererBackend {
     this.colliderDebug.dispose(this.scene);
     this.navDebug.dispose(this.scene);
     this.vfx.dispose(this.scene);
+    this.trails.dispose(this.scene);
     this.anim3d.dispose();
     this.camShake.dispose();
+    this.flash.dispose();
     this.physics?.dispose();
     this.worldUi.dispose();
     this.models.dispose(this.scene);

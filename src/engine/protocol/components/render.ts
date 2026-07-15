@@ -280,6 +280,12 @@ export interface Post3D extends Component {
   grade?: { exposure?: number; contrast?: number; saturation?: number; brightness?: number; tint?: number };
   // 抗锯齿（TA Phase 4·SMAA·清 toon 硬边锯齿）。
   aa?: boolean;
+  // 暗角（vignette·超休闲聚焦感）：intensity=边缘压暗强度 0..1(缺省 0)·smoothness=渐变起点半径 0..1(越小暗角越大·缺省 0.5)·
+  //   color=边缘趋向色 0xRRGGBB(缺省黑)。静态·并入色彩分级 pass（零额外开销）。
+  vignette?: { intensity?: number; smoothness?: number; color?: number };
+  // 命中闪白（hit flash·超休闲打击/得分/失败全屏瞬闪）：游戏 bump `trigger` → 渲染器注入 amount=1·按 decay(/秒·缺省 3)衰减·
+  //   全屏朝 color(缺省白)混合。trauma 式·折进 renderSig 持续重渲直至归零。不设 trigger 则不闪。
+  flash?: { trigger?: number; color?: number; decay?: number };
 }
 
 // ── Material3D（render-only·TA Phase 5）── 物件 PBR 材质：从**封闭预设集**（assets/pbr-materials）选一种 + 微调。
@@ -289,6 +295,10 @@ export interface Post3D extends Component {
 export interface Material3D extends Component {
   readonly type: 'Material3D';
   preset: string; // PBR 预设名（闭集·见 assets/pbr-materials）；materialRef 在场时作后备（材质资源无 preset 才用它）
+  // 着色模型（超休闲平涂观感·缺省 PBR 物理）：'toon'=分段卡通(MeshToonMaterial·gradientMap 阶梯明暗·cel 描边观感)；
+  //   'flat'=无光平涂(MeshBasicMaterial·完全不受光·纯亮色·Helix/超休闲招牌观感)。preset 仍供基色·着色模型只换光照算法。
+  shading?: 'toon' | 'flat';
+  toonSteps?: number; // toon 明暗阶数（缺省 3·越大越接近平滑·越小越硬卡通）
   // 材质数据资产引用（REQ-Resource ④·render-only·= 索引 type:'material' 条目 id）：渲染器据它从材质目录
   // （buildMaterialCatalog）查 MaterialSpec 作基底，下面的 inline 字段（已定义者）覆盖之 → 合成有效材质。
   // 缺省或查无 → 纯用 inline preset/参数（向后兼容）。材质 = 引 texture key 的数据·非硬编码预设。
@@ -385,6 +395,19 @@ export interface Vfx3D extends Component {
   // 发射器世界位（缺省读同实体 Transform3D，否则 2D Transform(x→X,y→Z)+baseY）
   x?: number; y?: number; z?: number;
   baseY?: number; // 2D Transform 情形的离地高度
+}
+
+// ── Trail3D（render-only·不进 hash·超休闲拖尾）── 运动拖尾/丝带：挂在移动实体上 → 渲染器记录其近 N 帧世界位、
+// 连成一条**朝相机的带状**（头端满宽满不透明·尾端按 fade 收窄淡出）。球滚拖尾/滑动划过/冲刺残影。
+// 采样：位移超 minDist 才落一个节点（静止不堆点）。TrailSystem 持位置历史·据相机每帧重建带几何。**纯表现**。
+export interface Trail3D extends Component {
+  readonly type: 'Trail3D';
+  segments?: number; // 拖尾节点上限（缺省 20·越大越长）
+  width?: number; // 带宽（世界单位·缺省 0.3）
+  color?: number; // 拖尾色 0xRRGGBB（缺省白 0xffffff）
+  minDist?: number; // 采样最小位移（世界单位·缺省 0.05·避免静止堆点）
+  fade?: number; // 尾端不透明度 0..1（缺省 0=尾端全透明淡出；1=尾端也不淡）
+  blend?: 'add' | 'alpha'; // 混合（add=发光残影·alpha=实体拖尾·缺省 alpha）
 }
 
 export interface Color extends Component {

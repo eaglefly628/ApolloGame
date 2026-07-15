@@ -42,6 +42,8 @@ export function camSig(c: Camera3D | null): string {
 // 后处理签名（参与渲染脏标）。
 export function postSig(p: Post3D | null): string {
   if (!p) return '';
-  const t = p.tiltShift, b = p.bloom;
-  return `${t?.focus ?? -1},${t?.intensity ?? -1},${b?.strength ?? -1},${b?.radius ?? -1},${b?.threshold ?? -1}`;
+  const t = p.tiltShift, b = p.bloom, v = p.vignette;
+  return `${t?.focus ?? -1},${t?.intensity ?? -1},${b?.strength ?? -1},${b?.radius ?? -1},${b?.threshold ?? -1}` +
+    `,${v?.intensity ?? -1},${v?.smoothness ?? -1},${v?.color ?? -1},${p.flash?.trigger ?? -1}`; // 暗角(静态)+闪白触发帧
+
 }
