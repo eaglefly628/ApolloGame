@@ -53,6 +53,10 @@ export interface ThreeRendererOptions {
   zStep?: number; // zOrder → z 深度步长
   assets?: AssetManager; // 提供则 sprite 画真实贴图，否则占位
   materials?: ReadonlyMap<string, MaterialSpec>; // 材质资源目录（REQ-Resource ④·buildMaterialCatalog）：Material3D.materialRef 查此表
+  // ── 画质/性能（render-only·不影响 sim）─────────────────────────────────────────
+  antialias?: boolean; // 基础上下文 MSAA（缺省 true）。用后处理（SMAA）时置 **false** 省一块多采样后备缓冲（composer 输出不经默认帧缓冲·MSAA 白费）。
+  dprCap?: number; // devicePixelRatio 上限（缺省 2）。retina 上每 pass 按 dpr² 放大像素——降到 1.5/1 是**最大单点提帧**（略糊·SMAA 补）。运行时可改（setPixelRatioCap）。
+  shadowMapSize?: number; // 主阴影贴图边长（缺省 2048）。**动态场景每帧重算阴影**→降到 1024 直接省一半阴影开销。运行时可改（setShadowMapSize）。
 }
 
 export class ThreeRenderer implements RendererBackend {
@@ -106,6 +110,9 @@ export class ThreeRenderer implements RendererBackend {
   private height: number;
   private resizeObserver?: ResizeObserver; // 容器尺寸观察者（init 挂·destroy 断）
   private background: number;
+  private antialias = true; // 基础 MSAA（用 SMAA 时置 false 省缓冲）
+  private dprCap = 2; // devicePixelRatio 上限（运行时可改·提帧最大单点）
+  private shadowMapSize = 2048; // 主阴影贴图边长（运行时可改）
   private readonly fov: number;
   private readonly zStep: number;
   private readonly assets?: AssetManager;
@@ -119,16 +126,19 @@ export class ThreeRenderer implements RendererBackend {
     this.zStep = opts.zStep ?? 0.01;
     this.assets = opts.assets;
     this.materials = opts.materials;
+    this.antialias = opts.antialias ?? true;
+    this.dprCap = opts.dprCap ?? 2;
+    this.shadowMapSize = opts.shadowMapSize ?? 2048;
   }
 
   init(container: HTMLElement): void {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(this.background);
     this.cameras = new CameraRig(this.fov, this.width / this.height); // 透视 + 正交两台·按 Camera3D 选
-    this.lights = new LightRig(this.scene); // 暖白主光（投软影）+ 冷蓝补光（Light3D 在场则数据驱动）
-    this.gl = new THREE.WebGLRenderer({ antialias: true });
+    this.lights = new LightRig(this.scene, this.shadowMapSize); // 暖白主光（投软影）+ 冷蓝补光（Light3D 在场则数据驱动）
+    this.gl = new THREE.WebGLRenderer({ antialias: this.antialias });
     this.gl.setSize(this.width, this.height);
-    this.gl.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, 2)); // W1-D：retina 不糊·上限 2 防超采样
+    this.gl.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, this.dprCap)); // W1-D：retina 不糊·上限 dprCap 防超采样（运行时可降提帧）
     this.gl.toneMapping = THREE.ACESFilmicToneMapping; // W1-D：PBR 通透不削顶（天空盒材质 toneMapped:false 保色）
     this.gl.toneMappingExposure = 1.05;
     this.gl.shadowMap.enabled = true;
@@ -162,9 +172,27 @@ export class ThreeRenderer implements RendererBackend {
     this.width = w;
     this.height = h;
     this.gl.setSize(w, h);
-    this.gl.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, 2)); // retina 上限 2·同 init
+    this.gl.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, this.dprCap)); // retina 上限 dprCap·同 init
     this.post.resize(w, h);
     this.lastRenderSig = ''; // 尺寸变但场景签名可能没变 → 强制下帧重渲·别被脏标跳渲留旧缓冲（拉伸/错位）
+  }
+
+  /** 运行时改 devicePixelRatio 上限（画质/性能档·render-only）。降 dprCap = 提帧最大单点（每 pass 像素按 dpr² 缩）。 */
+  setPixelRatioCap(cap: number): void {
+    this.dprCap = Math.max(0.5, cap);
+    if (!this.gl) return;
+    this.gl.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, this.dprCap));
+    this.gl.setSize(this.width, this.height); // 重设让新 pixelRatio 生效
+    this.post.resize(this.width, this.height);
+    this.lastRenderSig = '';
+  }
+
+  /** 运行时改主阴影贴图边长（画质/性能档·render-only）。动态场景每帧重算阴影 → 降边长直接省一半开销（1024 vs 2048）。 */
+  setShadowMapSize(size: number): void {
+    this.shadowMapSize = Math.max(256, Math.round(size));
+    this.lights?.setShadowMapSize(this.shadowMapSize);
+    this.lastShadowSig = ''; // 强制下帧重算阴影贴图（新分辨率生效）
+    this.lastRenderSig = '';
   }
 
   // 懒加载物理子系统：仅当场上出现 RigidBody3D 才 `import('./three/physics.js')`（连带 cannon-es 进独立 chunk）。

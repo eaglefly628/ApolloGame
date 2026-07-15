@@ -19,18 +19,26 @@ export class LightRig {
   shadowDir?: { x: number; y: number; z: number }; // 主阴影灯朝向提示（Light3D 给·缺省盒庭暖侧光向）
   lightSig = 'default'; // 灯光签名（供脏标）
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, shadowMapSize = 2048) {
     // 暖白主光（投柔和阴影·盒庭模式每帧随场景重定位）。
     this.key = new THREE.DirectionalLight(0xfff1d6, 1.5);
     this.key.position.set(2, 4, 6);
     this.key.castShadow = true;
-    this.key.shadow.mapSize.set(2048, 2048);
+    this.key.shadow.mapSize.set(shadowMapSize, shadowMapSize);
     this.key.shadow.bias = -0.0004;
     scene.add(this.key);
     scene.add(this.key.target);
     // 环境补光压低（0.4）→ 让接触阴影看得见、对比出体积；过高会把影子洗掉。Light3D 在场时由数据覆盖。
     this.ambient = new THREE.AmbientLight(0xbfd2ff, 0.4);
     scene.add(this.ambient);
+  }
+
+  // 运行时改主阴影贴图边长（画质/性能档）：换掉旧 shadow map（dispose 触发下次重建）。
+  setShadowMapSize(size: number): void {
+    if (this.key.shadow.mapSize.x === size) return;
+    this.key.shadow.mapSize.set(size, size);
+    this.key.shadow.map?.dispose();
+    this.key.shadow.map = null; // three 下次渲染按新边长重建
   }
 
   // 据 Light3D 数据驱动灯（首盏 castShadow 平行光=主阴影灯；其余平行光 + point/spot 局部光池管理；ambient 补亮）。

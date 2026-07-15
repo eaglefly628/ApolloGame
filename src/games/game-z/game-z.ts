@@ -60,7 +60,8 @@ export function mount(container: HTMLElement): () => void {
 
   const engine = new Engine();
   engine.load(dioramaBlueprint());
-  const renderer = new ThreeRenderer({ width: w, height: h, background: 0x0b1020, assets, materials: GAME_Z_MATERIALS }); // fov 现由 Camera3D 数据驱动·materials=材质资源目录（REQ-Resource ④）
+  // 画质/性能默认=「均衡」（targets 60fps）：SMAA 做 AA → 基础 MSAA 关(省缓冲)·DPR 上限 1.5(retina 提帧最大单点)·阴影 1024(动态场景每帧重算·减半开销)。
+  const renderer = new ThreeRenderer({ width: w, height: h, background: 0x0b1020, assets, materials: GAME_Z_MATERIALS, antialias: false, dprCap: 1.5, shadowMapSize: 1024 }); // fov 现由 Camera3D 数据驱动·materials=材质资源目录（REQ-Resource ④）
   engine.attachRenderer(renderer, stage);
 
   // HUD 叠加层（LayoutNode 纯数据·UI 铁律）。
@@ -85,7 +86,16 @@ export function mount(container: HTMLElement): () => void {
   menuHost.style.cssText = 'position:absolute;left:14px;bottom:12px;pointer-events:auto;max-height:90%;overflow:auto;width:220px';
   wrapper.appendChild(menuHost);
 
-  // 设置态（初值对齐蓝图 Post3D/Fog3D）。
+  // 画质档（render-only·提帧）：性能≈100fps / 均衡≈60fps(默认) / 画质=原满配。缩放 DPR + 阴影边长 + AO + SMAA（GPU 大头）。
+  const QUALITY = {
+    perf: { label: '性能', dpr: 1.0, shadow: 1024, ao: false, aa: false }, // AO(GTAO) 最贵→关；DPR1=1/4 像素；无 AA
+    balanced: { label: '均衡', dpr: 1.5, shadow: 1024, ao: true, aa: true }, // 60 目标：保 AO/SMAA·DPR/阴影减档
+    quality: { label: '画质', dpr: 2.0, shadow: 2048, ao: true, aa: true }, // 满配（原始）
+  } as const;
+  type QKey = keyof typeof QUALITY;
+  let qTier: QKey = 'balanced';
+
+  // 设置态（初值对齐蓝图 Post3D/Fog3D + 均衡档：ao 开·aa 开）。
   const S = { col: false, nav: false, aoOn: true, aoInt: 0.85, aoRad: 5, fogOn: true, fogNear: 190, fogFar: 520, gradeOn: true, exp: 1.02, con: 1.08, sat: 1.12, aa: true };
   const post = (): Post3D | undefined => engine.world.getComponent<Post3D>('post', 'Post3D');
   const fog = (): Fog3D | undefined => engine.world.getComponent<Fog3D>('fog', 'Fog3D');
@@ -106,12 +116,28 @@ export function mount(container: HTMLElement): () => void {
     } else if (fog()) engine.world.removeComponent('fog', 'Fog3D');
     renderer.invalidate();
   };
+  // 切画质档：调 render-only 渲染器旋钮（DPR/阴影）+ 蓝图 Post3D（AO/SMAA）→ 即时提帧·无副作用。
+  const setQuality = (k: QKey): void => {
+    qTier = k;
+    const q = QUALITY[k];
+    renderer.setPixelRatioCap(q.dpr);
+    renderer.setShadowMapSize(q.shadow);
+    S.aoOn = q.ao; S.aa = q.aa;
+    apply(); refresh();
+  };
   const tog = (id: string, label: string, on: boolean, action: string): LayoutNode => ({ type: 'Toggle', id, props: { label, checked: on, action } });
   const sld = (id: string, label: string, value: number, min: number, max: number, step: number, action: string): LayoutNode => ({ type: 'Slider', id, props: { label, value, min, max, step, action } });
   const tree = (): LayoutNode => ({
     type: 'Panel', id: 'gz-set', props: { bare: true }, layout: { gap: 3 },
     children: [
       { type: 'Label', id: 'gz-set-t', props: { text: '⚙ 渲染调试', size: 'sm', glow: true } },
+      // 画质档（提帧·render-only）：性能≈100 / 均衡≈60 / 画质=满配。当前档高亮。
+      { type: 'Label', id: 'gz-q-t', props: { text: `── 画质档（当前：${QUALITY[qTier].label}）──`, size: 'xs', color: 'dim' } },
+      { type: 'Panel', id: 'gz-q-row', props: { bare: true }, layout: { direction: 'row', gap: 4 }, children: [
+        { type: 'Button', id: 'gz-q-perf', props: { label: '性能', kind: qTier === 'perf' ? 'primary' : 'ghost', action: 'qPerf' } },
+        { type: 'Button', id: 'gz-q-bal', props: { label: '均衡', kind: qTier === 'balanced' ? 'primary' : 'ghost', action: 'qBal' } },
+        { type: 'Button', id: 'gz-q-hi', props: { label: '画质', kind: qTier === 'quality' ? 'primary' : 'ghost', action: 'qHi' } },
+      ] },
       tog('gz-col', '碰撞体线框', S.col, 'tCol'),
       tog('gz-nav', '导航网格', S.nav, 'tNav'),
       tog('gz-ao', 'AO 遮蔽', S.aoOn, 'tAo'),
@@ -145,6 +171,7 @@ export function mount(container: HTMLElement): () => void {
     sAoI: sS('aoInt'), sAoR: sS('aoRad'), sFn: sS('fogNear'), sFf: sS('fogFar'), sEx: sS('exp'), sCo: sS('con'), sSa: sS('sat'),
     camBoard: () => applyCam(BOARD_CAM), camHome: () => applyCam(HOME_CAM),
     roll: () => renderer.rollDice(),
+    qPerf: () => setQuality('perf'), qBal: () => setQuality('balanced'), qHi: () => setQuality('quality'),
   });
   const setColliders = (on: boolean): void => { S.col = on; apply(); refresh(); };
   const setNav = (on: boolean): void => { S.nav = on; apply(); refresh(); };
