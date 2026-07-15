@@ -370,7 +370,7 @@ export interface PlayingCardProps {
   back?: string;                         // 牌背中央纹样字符（缺省 ♠ 暗纹）
   art?: string;                          // 立绘槽（已解析 URL/SVG）：正面时居中显名将立绘剪影、替代中央大花色（角标点数花色仍在）。游戏经 resolveAsset 把资产 key 解析后填（sim 持 key 保纯）。复用面：所有卡牌游戏。
   fluid?: boolean;                       // 流式卡：width:100% 充满父格 + 维持 5:7 aspect-ratio（替代固定 sm/md/lg 档）。配 Panel grid cols:N → 严格 N 列、卡填满、零卡间空隙（REQ-UI-G收藏卡②）。
-  flipOnHover?: boolean;                 // 悬停翻面：配 backFace·鼠标悬停时 front→back scaleX 翻转，露出背面信息子树（CSS 注入·REQ-UI-G收藏卡①）。
+  flipOnHover?: boolean;                 // 悬停翻面：配 backFace·鼠标悬停时 front→back 绕 Y 轴真 3D 翻转（rotateY 180°+backface-hidden），露出背面信息子树（CSS 注入·REQ-UI-G收藏卡①）。
   backFace?: LayoutNode;                 // 背面内容子树（通常 Panel(column) 装 名/朝代/简介，同 Tooltip.bubble 思路）。仅 flipOnHover 时渲。
   backPattern?: 'checker' | 'stripe';    // 牌背程序化纹理（faceUp:false 时叠·原版红牌背棋盘格条纹·REQ-UI-G流光底纹②）。
   backArt?: string;                      // 牌背贴图（已解析 URL·faceUp:false 时整面 cover·替代纹样字符/程序化纹理）。REQ-UI-PlayingCard-back（07-14 缺口单·07-15 批29 落地）。

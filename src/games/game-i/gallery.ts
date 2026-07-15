@@ -973,24 +973,11 @@ function buildPageNew(controls: ControlsState): LayoutNode {
         ] },
 
       divider('d-3d'),
-      sectionTitle('t-3d', 'LAYOUT · 3D UI 表达（CSS-3D 通用化·rotateX/Y 透视倾斜 · z 景深叠层 · tilt3d 悬停立体抬起 · 把 CoinFlip 的 3D 通用成任意面板）'),
-      { type: 'Panel', id: '3d-row', props: { bare: true }, layout: { direction: 'row', gap: 48, padding: 24, align: 'center' },
+      sectionTitle('t-3d-ptr', 'LAYOUT · 3D UI 表达 → 已独立成「🧊 3D UI」子 tab（透视倾斜 / 景深叠层 / 3D 旋转木马 / 真 3D 翻面卡 / tilt3d 悬停抬起）'),
+      { type: 'Panel', id: '3d-ptr', props: { bg: 'sunken' }, layout: { direction: 'row', gap: 10, padding: 14, align: 'center' },
         children: [
-          // ① 静态透视倾斜面板
-          { type: 'Panel', id: '3d-tilt', props: { bg: 'jade-sheen', title: '透视倾斜' }, layout: { width: 150, height: 100, padding: 14, rotateX: 14, rotateY: -18 },
-            children: [{ type: 'Label', id: '3d-tilt-l', props: { text: 'rotateX:14\nrotateY:-18', size: 'sm', color: 'text' } }] },
-          // ② 景深叠层（三张卡 translateZ 递增·朝外凸）
-          { type: 'Panel', id: '3d-depth', props: { bare: true }, layout: { width: 150, height: 150, rotateY: 18 },
-            children: [
-              { type: 'Panel', id: '3d-d1', props: { bg: 'steel' }, layout: { x: 0, y: 0, width: 92, height: 128, radius: 10, z: 0 }, children: [] },
-              { type: 'Panel', id: '3d-d2', props: { bg: 'ink-deep' }, layout: { x: 14, y: 10, width: 92, height: 128, radius: 10, z: 28 }, children: [] },
-              { type: 'Panel', id: '3d-d3', props: { bg: 'gold-sheen' }, layout: { x: 28, y: 20, width: 92, height: 128, radius: 10, z: 56, align: 'center', justify: 'center', padding: 0 },
-                children: [{ type: 'Label', id: '3d-d3-l', props: { text: 'z:56\n凸出', size: 'sm', bold: true, color: 'ink' } }] },
-            ] },
-          // ③ 交互 3D 倾斜（悬停立体抬起·贴卡牌皮）
-          { type: 'Button', id: '3d-tilt-card', props: { label: '', skin: CARD_JOKER_URL, action: 'click', actionArg: 'tilt-card' }, layout: { width: 110, height: 154, tilt3d: true } },
-          { type: 'Panel', id: '3d-tilt-panel', props: { bg: 'void', title: 'tilt3d' }, layout: { width: 130, height: 100, padding: 14, tilt3d: true, align: 'center', justify: 'center' },
-            children: [{ type: 'Label', id: '3d-tilt-panel-l', props: { text: '悬停我\n→ 立体抬起', size: 'sm', color: 'text' } }] },
+          { type: 'Badge', id: '3d-ptr-b', props: { text: '🧊 3D UI', tone: 'accent' } },
+          { type: 'Label', id: '3d-ptr-l', props: { text: 'CSS-3D 通用化的 3D UI 控件已聚到上方「🧊 3D UI」标签页——点过去看完整一组。', color: 'sub', size: 'sm' } },
         ] },
 
       divider('d-cartoon'),
@@ -1171,7 +1158,90 @@ function buildPageNew(controls: ControlsState): LayoutNode {
   };
 }
 
-/** UI 控件模块（6 个 UI 子 tab：容器/展示/输入/新特性/商店/选牌）。 */
+// ── 页 · 3D UI 表达（CSS-3D 通用化·把 rotateX/Y/z/perspective/翻面 组合成一组 3D 数据控件）─────────
+// 全是既有 LayoutConstraints（rotateX/rotateY/z/perspective/tilt3d）+ PlayingCard.flipOnHover 的**重组**，
+// 无新引擎能力（showcase 职责=把底座能力排成活样例）。控件仍是纯数据·经真 UI 库渲染·UI 铁律。
+function buildPage3dUi(): LayoutNode {
+  // 旋转木马一张卡：绕 Y 轴按位次倾 + 朝外/朝内推（z），共享父 perspective → 卡组呈 3D 扇形。
+  const coverCard = (id: string, rank: string, suit: string, name: string, rotY: number, z: number, sel = false): LayoutNode =>
+    ({ type: 'PlayingCard', id, props: { rank, suit, label: name, size: 'md', selected: sel }, layout: { rotateY: rotY, z } });
+  return {
+    type: 'Panel', id: 'page-3dui', props: { scroll: true },
+    layout: { direction: 'column', gap: 18, padding: 20 },
+    children: [
+      { type: 'Label', id: '3dui-intro', props: {
+        text: '3D UI = 2D LayoutNode 挂 CSS-3D 变换（透视/景深/翻面）——全是数据字段（rotateX/rotateY/z/perspective/tilt3d/flipOnHover），弱 LLM 只填数不写 CSS。真 3D 合成（preserve-3d）·非贴图假 3D。',
+        color: 'sub', size: 'sm' } },
+
+      divider('d-3du1'),
+      sectionTitle('t-3dui-carousel', '★ 3D 卡牌旋转木马 / cover-flow（LAYOUT.rotateY + z·共享父 perspective → 卡组扇形铺开·中间凸出·两翼后旋）'),
+      { type: 'Panel', id: '3dui-carousel', props: { bare: true }, layout: { direction: 'row', gap: 0, padding: 48, align: 'center', justify: 'center', perspective: 720 },
+        children: [
+          coverCard('cf-1', 'J', '♣', '张辽', 55, -90),
+          coverCard('cf-2', 'Q', '♦', '马超', 32, -40),
+          coverCard('cf-3', 'A', '♠', '赵子龙', 0, 60, true),
+          coverCard('cf-4', 'K', '♥', '关云长', -32, -40),
+          coverCard('cf-5', '10', '♣', '黄忠', -55, -90),
+        ] },
+      { type: 'Label', id: '3dui-carousel-l', props: { text: '五张同结构卡·只有 rotateY/z 两个数不同 → 摆成 cover-flow。换牌组=换数据，结构一字不改。', color: 'dim', size: 'xs' } },
+
+      divider('d-3du2'),
+      sectionTitle('t-3dui-flip', '★ 真 3D 翻面卡（PLAYINGCARD.flipOnHover + backFace·rotateY 180°+backface-hidden·悬停翻到背面信息）'),
+      { type: 'Panel', id: '3dui-flip-row', props: { bare: true }, layout: { direction: 'row', gap: 28, padding: 24, align: 'center' },
+        children: [
+          { type: 'PlayingCard', id: 'flip-1', props: {
+            rank: 'A', suit: '♠', label: '赵子龙', size: 'lg', flipOnHover: true,
+            backFace: { type: 'Panel', id: 'flip-1-back', props: { bare: true }, layout: { direction: 'column', gap: 6, padding: 10, align: 'center', justify: 'center' },
+              children: [
+                { type: 'Label', id: 'flip-1-b-n', props: { text: '常山赵子龙', size: 'md', bold: true, color: 'gold' } },
+                { type: 'Label', id: 'flip-1-b-d', props: { text: '蜀 · 五虎上将', size: 'xs', color: 'jade' } },
+                { type: 'Label', id: 'flip-1-b-t', props: { text: '一身是胆·长坂坡七进七出', size: 'xs', color: 'sub' } },
+              ] } } },
+          { type: 'PlayingCard', id: 'flip-2', props: {
+            rank: 'K', suit: '♥', label: '关云长', size: 'lg', flipOnHover: true,
+            backFace: { type: 'Panel', id: 'flip-2-back', props: { bare: true }, layout: { direction: 'column', gap: 6, padding: 10, align: 'center', justify: 'center' },
+              children: [
+                { type: 'Label', id: 'flip-2-b-n', props: { text: '美髯公 关羽', size: 'md', bold: true, color: 'gold' } },
+                { type: 'Label', id: 'flip-2-b-d', props: { text: '蜀 · 五虎之首', size: 'xs', color: 'jade' } },
+                { type: 'Label', id: 'flip-2-b-t', props: { text: '过五关斩六将·水淹七军', size: 'xs', color: 'sub' } },
+              ] } } },
+          { type: 'Label', id: '3dui-flip-l', props: { text: '← 悬停卡牌：前后两面绕 Y 轴真翻转（backface-hidden 藏反面）。背面挂任意 LayoutNode 信息子树。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
+      divider('d-3du3'),
+      sectionTitle('t-3dui-tilt', 'LAYOUT.rotateX/Y · 透视倾斜面板（静态摆进 3D 空间·像 sci-fi 斜置 HUD）'),
+      { type: 'Panel', id: '3dui-tilt-row', props: { bare: true }, layout: { direction: 'row', gap: 48, padding: 24, align: 'center', perspective: 1000 },
+        children: [
+          { type: 'Panel', id: '3dui-tilt-a', props: { bg: 'jade-sheen', title: '左倾 HUD' }, layout: { width: 170, height: 116, padding: 14, rotateX: 12, rotateY: 26 },
+            children: [{ type: 'Label', id: '3dui-tilt-a-l', props: { text: 'rotateX:12\nrotateY:26', size: 'sm', color: 'text' } }] },
+          { type: 'Panel', id: '3dui-tilt-b', props: { bg: 'gold-sheen', title: '右倾 HUD' }, layout: { width: 170, height: 116, padding: 14, rotateX: 12, rotateY: -26 },
+            children: [{ type: 'Label', id: '3dui-tilt-b-l', props: { text: 'rotateX:12\nrotateY:-26', size: 'sm', color: 'ink' } }] },
+        ] },
+
+      divider('d-3du4'),
+      sectionTitle('t-3dui-depth', 'LAYOUT.z · 景深叠层（子面板各挂不同 z·真 translateZ 分层·朝屏幕凸出）'),
+      { type: 'Panel', id: '3dui-depth', props: { bare: true }, layout: { width: 220, height: 180, padding: 20, rotateY: 20, perspective: 900 },
+        children: [
+          { type: 'Panel', id: '3dui-d1', props: { bg: 'steel' }, layout: { x: 0, y: 0, width: 104, height: 144, radius: 10, z: 0 }, children: [] },
+          { type: 'Panel', id: '3dui-d2', props: { bg: 'ink-deep' }, layout: { x: 18, y: 12, width: 104, height: 144, radius: 10, z: 34 }, children: [] },
+          { type: 'Panel', id: '3dui-d3', props: { bg: 'gold-sheen' }, layout: { x: 36, y: 24, width: 104, height: 144, radius: 10, z: 68, align: 'center', justify: 'center', padding: 0 },
+            children: [{ type: 'Label', id: '3dui-d3-l', props: { text: 'z:68\n最前', size: 'sm', bold: true, color: 'ink' } }] },
+        ] },
+
+      divider('d-3du5'),
+      sectionTitle('t-3dui-hover', 'LAYOUT.tilt3d · 悬停立体抬起（交互 3D·鼠标悬停时面板/卡牌抬离屏幕·CSS 注入 :hover 变换）'),
+      { type: 'Panel', id: '3dui-hover-row', props: { bare: true }, layout: { direction: 'row', gap: 40, padding: 24, align: 'center' },
+        children: [
+          { type: 'Button', id: '3dui-tilt-card', props: { label: '', skin: CARD_JOKER_URL, action: 'click', actionArg: 'tilt-card' }, layout: { width: 120, height: 168, tilt3d: true } },
+          { type: 'Panel', id: '3dui-tilt-panel', props: { bg: 'void', title: 'tilt3d' }, layout: { width: 150, height: 116, padding: 14, tilt3d: true, align: 'center', justify: 'center' },
+            children: [{ type: 'Label', id: '3dui-tilt-panel-l', props: { text: '悬停我\n→ 立体抬起', size: 'sm', color: 'text' } }] },
+          { type: 'Label', id: '3dui-hover-l', props: { text: '一个 tilt3d:true 字段 = 悬停时透视抬起 + 柔影。任意面板/按钮/卡牌都能挂。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+    ],
+  };
+}
+
+/** UI 控件模块（7 个 UI 子 tab：容器/展示/输入/3D UI/新特性/商店/选牌）。 */
 function buildUIModule(shop: ShopState, pick: PickState, activeTab: string, controls: ControlsState): LayoutNode {
   return {
     type: 'Tabs', id: 'gallery-tabs',
@@ -1180,6 +1250,7 @@ function buildUIModule(shop: ShopState, pick: PickState, activeTab: string, cont
         { id: 'tab-layout', label: '容器与布局' },
         { id: 'tab-display', label: '数据展示' },
         { id: 'tab-input', label: '输入与交互' },
+        { id: 'tab-3dui', label: '🧊 3D UI' },
         { id: 'tab-new', label: '🆕 新控件/特性' },
         { id: 'tab-shop', label: '🧩 组合演示·商店' },
         { id: 'tab-pick', label: '🎴 组合演示·选牌' },
@@ -1188,7 +1259,7 @@ function buildUIModule(shop: ShopState, pick: PickState, activeTab: string, cont
       action: 'switchTab',
     },
     layout: { flex: 1 },
-    children: [pageLayout, pageDisplay, buildPageInput(controls), buildPageNew(controls), buildShop(shop), buildPickHand(pick)],
+    children: [pageLayout, pageDisplay, buildPageInput(controls), buildPage3dUi(), buildPageNew(controls), buildShop(shop), buildPickHand(pick)],
   };
 }
 

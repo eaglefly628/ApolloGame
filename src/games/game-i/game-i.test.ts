@@ -26,9 +26,20 @@ describe('Game I gallery', () => {
     expect(html).toContain('data-tabpage="tab-layout"');
     expect(html).toContain('data-tabpage="tab-display"');
     expect(html).toContain('data-tabpage="tab-input"');
+    expect(html).toContain('data-tabpage="tab-3dui"');   // 3D UI 表达（专属 tab）
     expect(html).toContain('data-tabpage="tab-shop"');   // 组合演示·商店
     expect(html).toContain('data-tabpage="tab-pick"');   // 组合演示·选牌
     expect(html).toContain('data-action="exitModule"');  // 顶栏返回展台
+  });
+
+  it('3D UI tab carries real CSS-3D controls (cover-flow rotateY + z·真 3D 翻面卡)', () => {
+    const html = renderNode(buildGallery('onyx', 'mod-ui'), onyx);
+    expect(html).toContain('data-tabpage="tab-3dui"');
+    expect(html).toContain('id="3dui-carousel"');        // 3D 旋转木马
+    expect(html).toContain('perspective(720px)');        // 共享父 perspective → 真 3D 合成
+    expect(html).toMatch(/rotateY\(-?55deg\)/);          // cover-flow 两翼强旋（±55）
+    expect(html).toContain('data-flipcard');             // 真 3D 翻面卡（flipOnHover）
+    expect(html).toContain('preserve-3d');               // 景深叠层子层 3D 合成
   });
 
   it('lists ALL 30 engine components (showcase coverage gate)', () => {
