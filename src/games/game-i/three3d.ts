@@ -419,6 +419,113 @@ export function worldui3dBlueprint(): WorldBlueprint {
   };
 }
 
+// ── ⑯ 卡通描边 toon（P3D·Material3D.shading:'toon' + outline·超休闲平涂招牌观感）：一排图元走分段卡通着色
+//      （MeshToonMaterial 阶梯明暗）+ inverted-hull 描边（法线外扩背面壳=一圈实色轮廓）。缓转看轮廓。零美术文件。
+export function toon3dBlueprint(): WorldBlueprint {
+  const toon = (x: number, shape: Prim, color: number, steps: number, extra: Record<string, unknown> = {}): Ent => ({
+    Transform3D: { x, y: 7, z: 0, rotY: 0.3 },
+    Mesh3D: { shape, width: 11, height: 12, frontTint: color, backTint: color, edgeTint: color, ...extra },
+    Material3D: { preset: 'plastic', color, shading: 'toon', toonSteps: steps, outline: { width: 0.28, color: 0x1a1a1a } },
+    Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.5 }] },
+  });
+  return {
+    capabilities: [transformCapability],
+    entities: {
+      ...sceneBase(),
+      cam: { Camera3D: { yaw: 0.58, pitch: 0.4, distance: 122, pivotY: 6, fov: 40, pitchMin: 0.1, pitchMax: 1.42 } },
+      // 平涂大亮色 + 黑描边 = 超休闲招牌观感。toonSteps 2/3/4 看明暗阶数差。
+      'tn-sphere': toon(-40, 'sphere', 0xff6b6b, 3),
+      'tn-box': toon(-24, 'box', 0x4dabf7, 3, { depth: 11 }),
+      'tn-cyl': toon(-8, 'cylinder', 0x51cf66, 2),
+      'tn-cone': toon(8, 'cone', 0xffd43b, 4),
+      'tn-cap': toon(24, 'capsule', 0xda77f2, 3),
+      'tn-torus': toon(40, 'torus', 0xff922b, 3, { tube: 0.4 }),
+    },
+  };
+}
+
+// ── ⑰ 世界广告牌 Billboard3D + 地面贴花 Decal3D（P3D·休闲拾取物经典组合）：一圈始终朝相机的发光金币
+//      （Billboard3D add 混合·无贴图=纯色 quad）+ Anim3D bob 上下浮 + 脚下 Decal3D blob 软阴影（便宜接触阴影）。
+export function billboard3dBlueprint(): WorldBlueprint {
+  const coin = (x: number, z: number, color: number, phase: number): Ent => ({
+    Transform3D: { x, y: 6, z },
+    Billboard3D: { size: 7, color, blend: 'alpha', opacity: 1 }, // 实心朝相机金片（add 在亮天空下会洗白）
+    Anim3D: { channels: [{ kind: 'bob', field: 'y', amp: 1.6, freq: 2, phase }] },
+    Decal3D: { kind: 'blob', radius: 3.4, opacity: 0.32, y: 0.05 }, // 脚下软阴影（贴地·随金币在原地）
+  });
+  const ring = (x: number, z: number): Ent => ({
+    Transform3D: { x, y: 0, z },
+    Decal3D: { kind: 'ring', radius: 5.5, color: 0x4dd0e1, opacity: 0.8, y: 0.06 }, // 目标标记环
+  });
+  return {
+    capabilities: [transformCapability],
+    entities: {
+      ...sceneBase(),
+      cam: { Camera3D: { yaw: 0.7, pitch: 0.5, distance: 96, pivotY: 4, fov: 40, pitchMin: 0.12, pitchMax: 1.45 } },
+      'coin-1': coin(-22, -6, 0xffd86b, 0), 'coin-2': coin(-8, 8, 0xffe08a, 1.2),
+      'coin-3': coin(8, -8, 0xffd86b, 2.4), 'coin-4': coin(22, 6, 0xffe08a, 3.6),
+      'coin-5': coin(0, 0, 0xfff0b0, 0.6),
+      'mark-1': ring(-15, 14), 'mark-2': ring(15, 14), // 落点/目标标记环（disc/ring 贴花）
+      'splat': { Transform3D: { x: 0, y: 0, z: 16 }, Decal3D: { kind: 'disc', radius: 6, color: 0x66bb6a, opacity: 0.55, y: 0.05 } },
+    },
+  };
+}
+
+// ── ⑱ 路径跟随 Path3D（P3D·移动平台/巡逻/轨道/传送带·render-only 沿路径匀速走·帧率无关）：巡逻平台走矩形折线、
+//      金币沿平滑闭环绕飞、盒子往复传送。faceDir 让巡逻兵朝运动方向。Path3D 只写 Transform3D，与场景正交。
+export function path3dBlueprint(): WorldBlueprint {
+  return {
+    capabilities: [transformCapability],
+    entities: {
+      ...sceneBase(),
+      cam: { Camera3D: { yaw: 0.66, pitch: 0.62, distance: 108, pivotY: 3, fov: 42, pitchMin: 0.12, pitchMax: 1.45 } },
+      // 巡逻平台：矩形折线闭环（linear·移动平台/传送带）。
+      'platform': {
+        Transform3D: { x: 0, y: 2, z: 0 },
+        Mesh3D: { shape: 'box', width: 15, height: 2, depth: 15, frontTint: 0x8d6e63, backTint: 0x8d6e63, edgeTint: 0x5d4037 },
+        Path3D: { points: [[-26, 2, -18], [26, 2, -18], [26, 2, 18], [-26, 2, 18]], duration: 9, loop: 'loop', mode: 'linear' },
+      },
+      // 巡逻兵：朝运动方向（faceDir·smooth 平滑绕行）。
+      'patroller': {
+        Transform3D: { x: 0, y: 5, z: 0 },
+        Mesh3D: { shape: 'capsule', width: 5, height: 8, frontTint: 0x26c6da, backTint: 0x26c6da, edgeTint: 0x00838f },
+        Path3D: { points: [[-20, 5, 0], [0, 5, -20], [20, 5, 0], [0, 5, 20]], duration: 6, loop: 'loop', mode: 'smooth', faceDir: true },
+      },
+      // 轨道金币：小球沿高空平滑闭环绕飞。
+      'orbiter': {
+        Transform3D: { x: 0, y: 16, z: 0 },
+        Billboard3D: { size: 5, color: 0xffd86b, blend: 'add' },
+        Path3D: { points: [[-18, 16, -18], [18, 16, -14], [16, 20, 16], [-16, 14, 14]], duration: 5, loop: 'loop', mode: 'smooth' },
+      },
+    },
+  };
+}
+
+// ── ⑲ 弹簧动画 Anim3D spring（P3D·spawn 弹入/吸附 juice·解析阻尼弹簧·欠阻尼过冲回弹）：一排盒子进本页时
+//      scale 0→1 + 从高处 y 落定，各带不同 damping（0.12 弹久 → 0.55 硬）——看回弹次数差。零缓动代码·只填 damping/freq。
+export function spring3dBlueprint(): WorldBlueprint {
+  const springy = (x: number, damping: number, color: number, edge: number): Ent => ({
+    Transform3D: { x, y: 6, z: 0 },
+    Mesh3D: { shape: 'box', width: 11, height: 11, depth: 11, frontTint: color, backTint: color, edgeTint: edge },
+    Anim3D: { channels: [
+      { kind: 'spring', field: 'scale', from: 0, to: 1, damping, freq: 3.2 },   // pop-in 弹入
+      { kind: 'spring', field: 'y', from: 26, to: 6, damping, freq: 2.6 },      // 从高处落定带过冲
+    ] },
+  });
+  return {
+    capabilities: [transformCapability],
+    entities: {
+      ...sceneBase(),
+      cam: { Camera3D: { yaw: 0.6, pitch: 0.44, distance: 116, pivotY: 6, fov: 40, pitchMin: 0.1, pitchMax: 1.42 } },
+      'sp-1': springy(-38, 0.12, 0xff6b6b, 0xc92a2a),  // 弹久
+      'sp-2': springy(-19, 0.24, 0xffd43b, 0xe67700),
+      'sp-3': springy(0, 0.35, 0x51cf66, 0x2b8a3e),    // 缺省
+      'sp-4': springy(19, 0.45, 0x4dabf7, 0x1971c2),
+      'sp-5': springy(38, 0.55, 0xda77f2, 0x9c36b5),   // 硬
+    },
+  };
+}
+
 // ── ⑤ 3D 粒子（prefab→Mesh3D·复用 2D 库B 套路·ThreeRenderer 渲染）：定时引爆一圈小盒火花，平面放射 + 寿命自毁；叠泛光发光。
 //      说明：粒子走 2D motion-apply（planar）渲成 3D 小盒；体积运动(升空/重力)是 P3D 后续（设计取舍·非缺口）。
 export function particle3dBlueprint(): WorldBlueprint {

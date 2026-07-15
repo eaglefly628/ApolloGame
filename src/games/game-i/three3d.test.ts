@@ -1,7 +1,7 @@
 // 3D 能力展台蓝图：纯数据加载 + tick 不抛；nav 蓝图真能寻路（追兵被 pathfind 写出位移）；粒子真生成。
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
-import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint, primitives3dBlueprint, worldui3dBlueprint } from './three3d.js';
+import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint, primitives3dBlueprint, worldui3dBlueprint, toon3dBlueprint, billboard3dBlueprint, path3dBlueprint, spring3dBlueprint } from './three3d.js';
 
 function run(bp: ReturnType<typeof light3dBlueprint>, ticks: number): Engine {
   const e = new Engine();
@@ -11,10 +11,26 @@ function run(bp: ReturnType<typeof light3dBlueprint>, ticks: number): Engine {
 }
 
 describe('Game I · 3D 能力展台蓝图', () => {
-  it('十五个蓝图都纯数据加载 + 长跑 tick 不抛错', () => {
-    for (const bp of [light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint, primitives3dBlueprint, worldui3dBlueprint]) {
+  it('十九个蓝图都纯数据加载 + 长跑 tick 不抛错', () => {
+    for (const bp of [light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint, primitives3dBlueprint, worldui3dBlueprint, toon3dBlueprint, billboard3dBlueprint, path3dBlueprint, spring3dBlueprint]) {
       expect(() => run(bp(), 120)).not.toThrow();
     }
+  });
+
+  it('P3D 超休闲六连批接入：toon 描边 / 广告牌+贴花 / 路径 / 弹簧 组件在蓝图里', () => {
+    const tn = new Engine(); tn.load(toon3dBlueprint());
+    const mat = tn.world.getComponent('tn-sphere', 'Material3D') as unknown as { shading?: string; outline?: unknown };
+    expect(mat.shading).toBe('toon'); expect(mat.outline).toBeTruthy(); // 卡通着色 + 描边
+    const bb = new Engine(); bb.load(billboard3dBlueprint());
+    expect(bb.world.query('Billboard3D').length).toBeGreaterThanOrEqual(5); // 朝相机金币
+    expect(bb.world.query('Decal3D').length).toBeGreaterThanOrEqual(5);     // 地面贴花（阴影/环/splat）
+    const pa = new Engine(); pa.load(path3dBlueprint());
+    expect(pa.world.query('Path3D').length).toBe(3);                        // 巡逻/绕行/轨道
+    const faced = pa.world.getComponent('patroller', 'Path3D') as unknown as { faceDir?: boolean };
+    expect(faced.faceDir).toBe(true);
+    const sp = new Engine(); sp.load(spring3dBlueprint());
+    const anim = sp.world.getComponent('sp-1', 'Anim3D') as unknown as { channels: Array<{ kind: string }> };
+    expect(anim.channels.some((c) => c.kind === 'spring')).toBe(true);      // 弹簧通道
   });
 
   it('圆润图元蓝图含 box 之外的全部 6 种 three 图元（cyl/cone/capsule/torus/plane/sphere）', () => {

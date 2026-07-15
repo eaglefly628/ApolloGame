@@ -723,6 +723,10 @@ export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; 
   { id: 'mod-3d-fog', glyph: '🌫', label: '距离雾', desc: 'Fog3D · 远处渐隐纵深', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-pointlight', glyph: '🔦', label: '点光源 / 聚光灯', desc: 'Light3D point·spot · 动态局部光', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-surface', glyph: '🪨', label: '程序化表面细节', desc: 'Material3D.surface · 凹凸/划痕贴图', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-toon', glyph: '🖍', label: '卡通描边 toon', desc: 'Material3D.shading:toon + outline', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-billboard', glyph: '🪙', label: '广告牌 + 贴花', desc: 'Billboard3D 朝相机 + Decal3D 地阴影', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-path', glyph: '🛤', label: '路径跟随', desc: 'Path3D · 巡逻/轨道/移动平台', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-spring', glyph: '🟢', label: '弹簧动画', desc: 'Anim3D spring · 弹入/落定过冲', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-model', glyph: '🦆', label: 'glTF 模型导入', desc: 'Model3D · 真模型 + 自带材质/软影', tone: 'normal' as const, dim: '3d' },
 ];
 
@@ -1460,6 +1464,18 @@ function moduleBody(
     case 'mod-3d-material': return buildSimStage('3dmat', '🧱', 'PBR 材质预设 · Material3D + IBL',
       '材质是数据：一排盒各挂一个 Material3D 预设——金/钢/铜（IBL 环境反射出真金属光泽）、玻璃（透射折射）、木/岩（哑光）、自发光。Sky3D.env 开 IBL（中性影室环境贴图）金属才有反射可照。叠 Post3D 调色 + 抗锯齿。',
       ['Material3D', 'PBR', 'IBL·Sky3D.env', 'grade', 'aa']);
+    case 'mod-3d-toon': return buildSimStage('3dtoon', '🖍', '卡通描边 · Material3D.shading:toon + outline',
+      '超休闲平涂招牌观感：一排图元走分段卡通着色（MeshToonMaterial 阶梯明暗·toonSteps 控阶数）+ inverted-hull 描边（沿法线外扩的背面壳=一圈实色轮廓）。大亮色 + 黑描边 = 卡通感。零美术文件·纯数据选着色模型。',
+      ['Material3D.shading:toon', 'outline', 'toonSteps', 'inverted-hull']);
+    case 'mod-3d-billboard': return buildSimStage('3dbb', '🪙', '世界广告牌 + 地面贴花 · Billboard3D / Decal3D',
+      '休闲拾取物经典组合：一圈始终朝相机的发光金币（Billboard3D·add 混合·参与深度排序会被遮挡·区别于 WorldUI3D 永在最上）+ Anim3D bob 上下浮 + 脚下 Decal3D blob 软阴影（便宜接触阴影·零美术文件）。另有 ring/disc 贴花做目标标记环/落点 splat。',
+      ['Billboard3D', 'Decal3D·blob/ring/disc', 'Anim3D·bob', '朝相机+深度排序']);
+    case 'mod-3d-path': return buildSimStage('3dpath', '🛤', '路径跟随 · Path3D',
+      '沿一串控制点按壁钟匀速走（帧率无关无漂移·render-only 只写 Transform3D）：巡逻平台走矩形折线（linear·移动平台/传送带）、巡逻兵朝运动方向平滑绕行（smooth + faceDir）、金币沿高空平滑闭环绕飞。loop=loop/pingpong/none。与 Anim3D 正交（一个沿路径行进·一个绕初值振荡）。',
+      ['Path3D', 'linear/smooth', 'faceDir', 'loop/pingpong']);
+    case 'mod-3d-spring': return buildSimStage('3dspring', '🟢', '弹簧动画 · Anim3D spring',
+      '解析阻尼弹簧（欠阻尼带过冲回弹·spawn 弹入/吸附 juice）：进本页时一排盒子 scale 0→1 弹入 + 从高处 y 落定，各带不同 damping（0.12 弹久 → 0.55 硬）看回弹次数差。零缓动代码·只填 damping/freq/from/to。',
+      ['Anim3D·spring', 'damping', '过冲回弹', 'spawn juice']);
     case 'mod-3d-surface': return buildSimStage('3dsurf', '🪨', '程序化表面细节 · Material3D.surface',
       '零美术文件的表面质感：渲染器按数据生成 normal/roughness 贴图——凸点 bumps / 噪声 noise / 划痕 scratches 三种程序化图案 + 平铺/法线强度/粗糙起伏。最左是光面对照，右三块依次凹凸/磨砂/拉丝。同天空盒程序化纹理先例。',
       ['Material3D.surface', '程序化 normal/rough', 'bumps/noise/scratches']);

@@ -33,7 +33,7 @@ import { combatBlueprint } from './combat-lab.js';
 import { spawnBlueprint } from './spawn-lab.js';
 import { fxBlueprint } from './fx-lab.js';
 import { fsmBlueprint } from './fsm-lab.js';
-import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint, primitives3dBlueprint, worldui3dBlueprint } from './three3d.js';
+import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint, primitives3dBlueprint, worldui3dBlueprint, toon3dBlueprint, billboard3dBlueprint, path3dBlueprint, spring3dBlueprint } from './three3d.js';
 import { AssetManager, ModelAssetLoader } from '@assets/index.js';
 import { GAME_I_ASSETS } from './assets3d.js';
 
@@ -57,6 +57,10 @@ const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'c
   'mod-3d-fog': { blueprint: fog3dBlueprint, backend: 'three' },           // 距离雾 Fog3D
   'mod-3d-pointlight': { blueprint: pointlight3dBlueprint, backend: 'three' }, // 点光源/聚光灯 Light3D point·spot
   'mod-3d-surface': { blueprint: surface3dBlueprint, backend: 'three' },       // 程序化表面细节 Material3D.surface
+  'mod-3d-toon': { blueprint: toon3dBlueprint, backend: 'three' },             // 卡通描边 Material3D.shading:toon+outline
+  'mod-3d-billboard': { blueprint: billboard3dBlueprint, backend: 'three' },   // 世界广告牌 Billboard3D + 贴花 Decal3D
+  'mod-3d-path': { blueprint: path3dBlueprint, backend: 'three' },             // 路径跟随 Path3D
+  'mod-3d-spring': { blueprint: spring3dBlueprint, backend: 'three' },         // 弹簧动画 Anim3D spring
   'mod-3d-model': { blueprint: model3dBlueprint, backend: 'three', assets: true }, // glTF 模型导入 Model3D（需 AssetManager）
   'mod-physics': { blueprint: physicsBlueprint, backend: 'canvas' },
   'mod-combat': { blueprint: combatBlueprint, backend: 'canvas' },
