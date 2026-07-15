@@ -37,6 +37,9 @@ function divider(id: string): LayoutNode {
 // encodeURIComponent 把空格/引号/尖括号全转 %XX → 过得了净化。配 bgTexture/bgScroll 即得「贴图底 + 滚动」。
 const DOT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="1.6" fill="#9cd2c5" fill-opacity="0.30"/></svg>';
 export const TEXTURE_URI = `data:image/svg+xml,${encodeURIComponent(DOT_SVG)}`;
+// 带透明色的贴图（不透明金片 + 大片透明间隙）：铺在 bg:'transparent' 面上 → 间隙透见身后（see-through 演示）。
+const ALPHA_TILE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34"><rect x="5" y="5" width="24" height="24" rx="7" fill="#ffd86b"/></svg>';
+const ALPHA_TILE_URI = `data:image/svg+xml,${encodeURIComponent(ALPHA_TILE_SVG)}`;
 
 // 贴图按钮皮 = **登记进本地资产索引的正规资产**（资产手册 §6·owner 2026-07-07「入库」）：按 key 引用 → uiTextureUrl 解析成
 // 站点绝对 URL 喂 Button.skin（已解析 URL·同 Image.src 约定）。真相在 public/games/game-i/art/index.json；不再内联 data-URI 硬编码。
@@ -974,6 +977,15 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           { type: 'Button', id: 'sk-9-cover', props: { label: 'cover 糊角', skin: BTN_BLUE_URL, action: 'click', actionArg: '9-cover' }, layout: { width: 180, height: 110 } },
           { type: 'Button', id: 'sk-9-slice', props: { label: '9-slice 清晰', skin: BTN_GREEN_URL, skinSlice: 9, action: 'click', actionArg: '9-slice' }, layout: { width: 180, height: 110 } },
           { type: 'Button', id: 'sk-9-big', props: { label: '任意尺寸不变形', skin: BTN_GREEN_URL, skinSlice: 9, action: 'click', actionArg: '9-big' }, layout: { width: 240, height: 72 } },
+        ] },
+
+      { type: 'Label', id: 't-skin-alpha', props: { text: '带透明色的贴图（透明处 see-through）：默认框面=不透明底吃掉透明（左·间隙显面色）vs bg:"transparent" 令牌=透明底保边框透见身后（右·间隙透见彩底）。贴图按钮/Image 本就透明·框面加此令牌即可。', size: 'xs', color: 'dim' } },
+      // 彩色底衬（custom 渐变）→ 上面两块框面各铺同一张「金片+透明间隙」贴图：左默认底吃掉透明、右 transparent 令牌透见彩底。
+      { type: 'Panel', id: 'skin-alpha-wrap', props: { bg: { custom: 'linear-gradient(120deg,#22d3ee,#7c3aed 55%,#ec4899)' } }, layout: { direction: 'row', gap: 22, padding: 20, align: 'center' },
+        children: [
+          { type: 'Panel', id: 'alpha-opaque', props: { title: '默认底(吃透明)', bgTexture: ALPHA_TILE_URI, bgTextureSize: 34 }, layout: { width: 190, height: 120, padding: 10 }, children: [] },
+          { type: 'Panel', id: 'alpha-see', props: { title: 'bg:transparent(透见)', bg: 'transparent', bgTexture: ALPHA_TILE_URI, bgTextureSize: 34 }, layout: { width: 190, height: 120, padding: 10 }, children: [] },
+          { type: 'Button', id: 'alpha-skinbtn', props: { label: '皮·透明角', skin: BTN_ROUND_URL, action: 'click', actionArg: 'alpha-skin' }, layout: { width: 120, height: 120 } },
         ] },
 
       divider('d-3d'),

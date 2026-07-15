@@ -112,8 +112,10 @@ export interface VisualEffect {
  *  owner 2026-07-04「异形 UI」需求下沉——见 docs/playbooks/ui.md「异形」行。 */
 export type ShapeToken = 'pill' | 'hexagon' | 'diamond' | 'shield' | 'ribbon' | 'chevron' | 'tag' | 'cut';
 
-/** 面色语义令牌（闭集·映射 UITheme·**随主题换皮自适应**·弱 LLM 选名不填 hex）。owner 2026-07-04 色库化需求下沉。 */
-export type SurfaceToken = 'panel' | 'raised' | 'sunken' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger' | 'ink';
+/** 面色语义令牌（闭集·映射 UITheme·**随主题换皮自适应**·弱 LLM 选名不填 hex）。owner 2026-07-04 色库化需求下沉。
+ *  `transparent`=**透明底/无填充**（see-through·带透明色贴图 UI 用：`bg:'transparent'` + `bgTexture` 透明 PNG → 贴图透明处
+ *  透见身后·仍保边框/圆角/描边；区别 `bare`=连框都不画）。owner 2026-07-15 透明贴图 UI 需求下沉。 */
+export type SurfaceToken = 'panel' | 'raised' | 'sunken' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger' | 'ink' | 'transparent';
 /** 预设配色（闭集·引擎内建渐变·8 组主动配色·owner 2026-07-04 拍板·**固定观感·不随主题变**）。 */
 export type FillPreset = 'jade-sheen' | 'gold-sheen' | 'ink-deep' | 'steel' | 'blood' | 'frost' | 'ember' | 'void';
 /** 面填充（三态·色库优先·custom 显式逃生）：

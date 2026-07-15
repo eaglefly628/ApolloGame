@@ -45,6 +45,16 @@ describe('Panel.bg · 面填充三态（色库化）', () => {
     const html = renderNode({ type: 'Panel', id: 'p', props: {}, children: [] }, apolloOnyx);
     expect(html).toContain(`background:${apolloOnyx.bg1}`);
   });
+  it("SurfaceToken 'transparent' → 透明底（带透明色贴图 UI·see-through·仍保边框）", () => {
+    // 透明底：贴图透明处透见身后。框面基色=transparent（非 bg1 不透明底）。
+    const tex = renderNode({ type: 'Panel', id: 'p', props: { bg: 'transparent', bgTexture: 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E' }, children: [] }, apolloOnyx);
+    expect(tex).toContain('repeat, transparent'); // 贴图层叠在透明底上（透明处 see-through）
+    expect(tex).not.toContain(`, ${apolloOnyx.bg1}`); // 不再落不透明底（对照默认吃透明）
+    expect(tex).toContain('border:1px solid'); // 仍保边框（区别 bare）
+    // 默认框面（对照）：贴图叠在不透明 bg1 上 → 透明处显面色（吃掉透明）。
+    const opaque = renderNode({ type: 'Panel', id: 'p', props: { bgTexture: 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E' }, children: [] }, apolloOnyx);
+    expect(opaque).toContain(`, ${apolloOnyx.bg1}`);
+  });
   it('Screen.bg 同三态：preset 解析渐变·{custom} 逃生', () => {
     const pre = renderNode({ type: 'Screen', id: 's', props: { bg: 'void' }, children: [] }, apolloOnyx);
     expect(pre).toContain('linear-gradient(160deg,#2a1a3a,#170f28)');

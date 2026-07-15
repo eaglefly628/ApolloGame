@@ -198,6 +198,7 @@ const SURFACE_TOKEN: Record<string, (t: UITheme) => string> = {
   panel: (t) => t.bg1, raised: (t) => t.bg2, sunken: (t) => t.bg0,
   jade: (t) => t.jadeWash, gold: (t) => t.gold, ok: (t) => t.okWash,
   warn: (t) => t.warnWash, danger: (t) => t.danger, ink: (t) => t.ink ?? t.bg0,
+  transparent: () => 'transparent', // 透明底/无填充（带透明色贴图 UI·see-through·仍保边框）
 };
 const PRESET_FILL: Record<string, string> = {
   'jade-sheen': 'linear-gradient(180deg,#1f4a3a,#123528)',
