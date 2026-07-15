@@ -9,7 +9,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
-import { textureOverrideUri } from './art-textures.js'; // 背景板槽（批30 全屏台账化·真图=cover·无=主题色）
+import { textureOverrideUri, iconUri } from './art-textures.js'; // 背景板槽（批30 全屏台账化·真图=cover·无=主题色）+ 套装图标（07-15 tiangang 接线）
 import { HERO_CARDS, type HeroCard } from './hero-codex.js';
 import { heroPortraitUri, type Suit } from './portraits.js';
 import { DIZHI_ZODIACS, DIZHI_TIER_NM, dizhiTopTier, dizhiTotal, deployCost, POKER_PICK_SIZE } from './blueprint.js';
@@ -134,7 +134,7 @@ function tiangangPage(view: LobbyView): LayoutNode {
   const slots: LayoutNode[] = inDeck.map((j) => ({
     type: 'Tooltip', id: `tgt-${j.id}`, props: { block: true, placement: 'top', bubble: tiangangBubble(j) },
     children: [{
-      type: 'Card', id: `tg-${j.id}`, props: { title: `⚡ ${j.name}`, sub: j.sub, corner: j.power ? '⭐'.repeat(Math.min(j.power, 5)) : undefined, tone: 'accent', action: 'toggleTiangang', actionArg: j.id },
+      type: 'Card', id: `tg-${j.id}`, props: { ...(iconUri('tiangang') ? { media: iconUri('tiangang')! } : {}), title: iconUri('tiangang') ? j.name : `⚡ ${j.name}`, sub: j.sub, corner: j.power ? '⭐'.repeat(Math.min(j.power, 5)) : undefined, tone: 'accent', action: 'toggleTiangang', actionArg: j.id },
     }],
   }));
   const emptyN = Math.max(0, size - inDeck.length);

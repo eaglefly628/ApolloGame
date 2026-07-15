@@ -183,7 +183,7 @@ function collectPage(view: LobbyView): LayoutNode {
   const ownedT = view.tiangangs.filter((j) => j.owned).length;
   const ownedF = view.foils.filter((f) => f.owned).length;
   const tCards: LayoutNode[] = view.tiangangs.map((j) => ({ type: 'Card', id: `col-t-${j.id}`,
-    props: { title: `⚡ ${j.name}`, sub: stripEn(j.sub), tone: (j.owned ? 'normal' : 'locked') as 'normal' | 'locked' } }));
+    props: { ...(iconUri('tiangang') ? { media: iconUri('tiangang')! } : {}), title: iconUri('tiangang') ? j.name : `⚡ ${j.name}`, sub: stripEn(j.sub), tone: (j.owned ? 'normal' : 'locked') as 'normal' | 'locked' } }));
   const fCards: LayoutNode[] = view.foils.map((f) => ({ type: 'Card', id: `col-f-${f.id}`,
     props: { title: `✨ ${f.name}`, sub: stripEn(f.sub), tone: (f.owned ? 'accent' : 'locked') as 'accent' | 'locked' } }));
   // 外层 coll-collect + 内层 grid 都 bare（去掉多余框·owner「多了一个框」）；标题用 Label 不靠 Panel chrome。

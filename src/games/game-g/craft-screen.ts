@@ -7,7 +7,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
-import { textureOverrideUri, zodiacIconUri } from './art-textures.js'; // 背景板槽（批30）+ 生肖套装图标（批32）
+import { textureOverrideUri, zodiacIconUri, iconUri } from './art-textures.js'; // 背景板槽（批30）+ 生肖套装图标（批32）+ 套装图标（07-15 tiangang 接线）
 import { HERO_CARDS } from './hero-codex.js';
 import { heroPortraitUri, type Suit } from './portraits.js';
 import { DIZHI_ZODIACS, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, INLAY_MAX, inlayBonus, type InlayEntry } from './blueprint.js';
@@ -129,7 +129,7 @@ function tiangangShelf(view: LobbyView): LayoutNode {
     else if (j.locked) { sub = `🔒 通关第 ${us} 关解锁（💎${us} 速解）`; tone = 'locked'; action = 'diamondUnlock'; actionArg = j.id; }
     else { sub = `🪙 ${j.cost}`; tone = 'normal'; action = 'buyTiangang'; actionArg = j.id; }
     return { type: 'Card', id: `craft-tg-${j.id}`,
-      props: { title: `⚡ ${j.name}`, sub, corner: j.power ? '⭐'.repeat(Math.min(j.power, 5)) : `关${us}`, tone, action, actionArg } };
+      props: { ...(iconUri('tiangang') ? { media: iconUri('tiangang')! } : {}), title: iconUri('tiangang') ? j.name : `⚡ ${j.name}`, sub, corner: j.power ? '⭐'.repeat(Math.min(j.power, 5)) : `关${us}`, tone, action, actionArg } };
   });
   return {
     type: 'Panel', id: 'craft-shelf', props: { title: '⚡ 天罡牌 · 购买（局内法术·买入后到「牌组」屏编入）', scroll: true },

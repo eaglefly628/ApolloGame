@@ -634,6 +634,7 @@
                     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
                       <button onClick="{{ artRegen }}" style="{{ applyBtnStyle }}" style-active="{{ applyBtnActive }}">⚡ 重新生成这张</button>
                       <button onClick="{{ artUpload }}" title="用本地图片（如自己用 Gemini 生成的）直接替换这张——无需 API、无需 manifest，编译期游戏（game-d/g）也能写回台账·游戏内即用" style="{{ uploadBtnStyle }}" style-active="{{ uploadBtnActive }}">⬆ 上传本地图替换</button>
+                      <sc-if value="{{ artCanRestore }}" hint-placeholder-val="{{ false }}"><button onClick="{{ artRestore }}" title="一键还原这张到原始美术（撤销上传/生成的替换·游戏回退内置立绘/图标）——你上传的原图文件保留、不删，随时能再写回" style="{{ restoreBtnStyle }}" style-active="{{ restoreBtnActive }}">↩ 还原原图</button></sc-if>
                       <button onClick="{{ artCopyPrompt }}" title="复制提示词全文（外部文生图用·词已含透明底等要求·尺寸看上方规格行在工具里设）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⧉ 复制提示词</button>
                       <button onClick="{{ artCopyBrief }}" title="复制完整出图任务书：提示词 + 确定尺寸 + 底格式 + 编号（发给美术/外部工具一步到位）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⧉ 提示词+规格</button>
                       <button onClick="{{ artBatchGen }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">▶ 生成全部占位</button>
@@ -1211,6 +1212,23 @@ class Component extends DCLogic {
     };
     inp.click();
   }
+  // 一键还原原始美术（owner 07-15「要有个键一键还原原来的数据」）：撤销 upload/生成写回 →
+  // 游戏回退内置（程序化立绘/emoji 图标）·台账行按快照精确复位·上传原图文件保留不删。
+  artRestore() {
+    const slug = this.state.assetsSlug;
+    const no = this.state.artSel;
+    if (!slug || !no) return;
+    if (this.state.artBusy) return;
+    if (!window.confirm('还原这张到原始美术？会撤销你上传/生成的替换（游戏回退内置立绘/图标）。你上传的原图文件保留、不删，之后可再写回。')) return;
+    this.setState({ artBusy: '还原 ' + no });
+    fetch('/api/art/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, no }) }).then(r => r.json()).then(d => {
+      if (!d || d.success === false) throw new Error((d && d.error) || '还原失败');
+      this.setState({ artBusy: null });
+      this.showToast('↩ 已还原 ' + no + '（游戏回退内置美术·原图文件保留）');
+      if (this.state.assetsSlug === slug) this.pickAssetGame(slug);
+    }).catch(e => { this.setState({ artBusy: null }); this.showToast('✕ ' + ((e && e.message) || '还原失败').slice(0, 80)); });
+  }
   // 台账美术图片预览灯箱 + 放大缩小（owner 07-13）。
   openArtPreview(url) { if (url) this.setState({ artPreview: url, artZoom: 1 }); }
   closeArtPreview() { this.setState({ artPreview: null, artZoom: 1 }); }
@@ -1730,6 +1748,7 @@ class Component extends DCLogic {
     // edit（对白编辑工坊）
     const mini = this.jelly('#fffdf5', '#efe0c0', '#c9b98f', 13); mini.style.padding = '8px 14px'; mini.style.color = '#3a2312'; mini.style.textShadow = 'none';
     const upload = this.jelly('#bfe3ff', '#93c9f5', '#5a93c9', 13); upload.style.padding = '8px 14px'; upload.style.color = '#123a5a'; upload.style.textShadow = 'none';
+    const restore = this.jelly('#f6e2c2', '#e3c48f', '#c39a5a', 13); restore.style.padding = '8px 14px'; restore.style.color = '#5a3d1e'; restore.style.textShadow = 'none';
     const apply = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 15); apply.style.padding = '9px 16px';
     const send = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 16); send.style.padding = '10px 20px';
     const lampColor = { ok: '#7ecb45', warn: '#ffd257', fail: '#ef5138', dim: '#c8c8c8' };
@@ -2356,6 +2375,12 @@ class Component extends DCLogic {
       artApplyBack: () => this.artCall('替换写回', '/api/art/replace', { slug: s.assetsSlug }),
       artUpload: () => this.artUpload(),
       uploadBtnStyle: upload.style, uploadBtnActive: upload.active,
+      artRestore: () => this.artRestore(),
+      restoreBtnStyle: restore.style, restoreBtnActive: restore.active,
+      // 能还原=当前行有用户写回的覆盖（上传 or 真 AI 生成·非程序化/authored/mock）→ 显「↩ 还原原图」。
+      artCanRestore: !!(artSelRow && (artSelRow.orig || (artSelRow.gen && (
+        artSelRow.gen.source === 'upload' ||
+        (artSelRow.gen.provider && artSelRow.gen.provider !== 'procedural' && artSelRow.gen.provider !== 'authored' && !artSelRow.gen.mock))))),
       artSelClose: () => this.setState({ artSel: null }),
       artBusyText: s.artBusy ? (s.artBusy + ' 中…（生成走文生图服务·分钟级·完成自动刷新台账）') : '',
       // 素材库（共享 FreeArtLib·Feature C）

@@ -32,7 +32,7 @@ from .placeholder import handle_art_resolve
 from .protocols import handle_capgaps_list
 from .settings_api import handle_settings_get, handle_settings_put, handle_settings_test
 from .sysutil import ROOT, VITE_PORT, c, get_project_status, handle_version, is_port_in_use, run_command
-from .t2_replace import handle_art_approve, handle_art_regenerate, handle_art_reskin, handle_art_style, handle_art_swap, handle_art_upload
+from .t2_replace import handle_art_approve, handle_art_regenerate, handle_art_reskin, handle_art_restore, handle_art_style, handle_art_swap, handle_art_upload
 from .ts_carts import handle_library_doctor, library_put_logic, library_set_flags
 from .workshop_state import handle_agent_chats_get, handle_agent_chats_put, handle_agent_session_reset, handle_ws_draft_get, handle_ws_draft_put
 
@@ -504,6 +504,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_art_upload(body)
             except Exception as e:
                 data = {'success': False, 'error': f'upload 异常: {e}'}
+        elif path == '/api/art/restore':
+            try:
+                data = handle_art_restore(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'restore 异常: {e}'}
         elif path == '/api/art/reskin':
             try:
                 data = handle_art_reskin(body)

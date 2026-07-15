@@ -206,6 +206,11 @@ def handle_art_upload(body: dict) -> dict:
         if row is None:
             return {'success': False, 'error': f'台账无 {no}'}
         skin = row.get('skinKey')
+        # 首次写回快照原始态（供「一键还原」·保存原 status/gen + 原 index 皮肤条目·此刻 idx 里 skin 仍是原条目）。
+        if 'orig' not in row:
+            _orig_entry = next((a for a in idx['assets'] if a.get('id') == skin), None) if skin else None
+            row['orig'] = {'status': row.get('status'), 'gen': row.get('gen'),
+                           'indexEntry': json.loads(json.dumps(_orig_entry)) if _orig_entry else None}
         if skin:  # 别名=游戏消费的皮肤 key → 贴图即上画面
             idx['assets'] = [a for a in idx['assets'] if a.get('id') != skin] + [{
                 'id': skin, 'type': 'mesh' if ext == 'glb' else 'texture', 'description': f'上传替换 {no}（皮肤槽 {skin}）',
@@ -225,6 +230,50 @@ def handle_art_upload(body: dict) -> dict:
     _write_json(idx_f, idx)
     res = _art_replace_cli(['swap', slug, no, local_id, '--upload'])
     return _art_save_manifest(slug, res, f'美术上传替换 {no}', {'no': no, 'localId': local_id, 'row': res.get('row')})
+
+def handle_art_restore(body: dict) -> dict:
+    """POST /api/art/restore {slug, no}。一键还原某槽到原始（撤销 upload/AI 生成写回·owner 07-15）。
+    去掉本地 index 覆盖别名 + gen 产物条目 → 游戏回退内置美术（程序化立绘 / emoji 图标）；台账行按
+    首次写回快照 row.orig 精确复位（含工作台缩略图）；无快照（本更新前写回的行）=回退占位、游戏仍正确。
+    编译期游戏（无 manifest·有台账）线。上传的原图文件不删（保留原始图·仅解除引用）。"""
+    slug = str(body.get('slug', '')).strip(); no = str(body.get('no', '')).strip()
+    if not _valid_slug(slug):
+        return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
+    if not _ART_NO_RE.fullmatch(no):
+        return {'success': False, 'error': f'非法编号: {no or "(空)"}'}
+    led_f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    if not led_f.is_file():
+        return {'success': False, 'error': '无台账'}
+    if (LIBRARY_DIR / slug / 'manifest.json').is_file():
+        return {'success': False, 'error': '数据卡带请用 manifest 版本回退（还原=编译期游戏台账线）'}
+    ledger = json.loads(led_f.read_text('utf-8'))
+    row = next((r for r in ledger.get('rows', []) if r.get('no') == no), None)
+    if row is None:
+        return {'success': False, 'error': f'台账无 {no}'}
+    skin = row.get('skinKey')
+    idx_f = ROOT / 'public' / 'games' / slug / 'art' / 'index.json'
+    idx = json.loads(idx_f.read_text('utf-8')) if idx_f.is_file() else {'version': 1, 'assets': []}
+    if not isinstance(idx.get('assets'), list):
+        idx['assets'] = []
+    drop_ids = {f'gen/{no}-up', f'gen/{no}'}  # 上传/生成的本地条目
+    # 去覆盖：删本地产物条目 + 皮肤别名（皮肤别名下面按快照可能重登记回原程序化条目）
+    idx['assets'] = [a for a in idx['assets'] if a.get('id') not in drop_ids and (not skin or a.get('id') != skin)]
+    orig = row.get('orig')
+    if isinstance(orig, dict):  # 有快照 → 精确复位
+        row['status'] = orig.get('status')
+        row['gen'] = orig.get('gen')
+        oe = orig.get('indexEntry')
+        if isinstance(oe, dict):  # 原皮肤条目（多为程序化图）重登记 → 工作台缩略图也回原样
+            idx['assets'].append(oe)
+        row.pop('orig', None)
+    else:  # 无快照（本更新前写回）→ 回退占位；游戏无覆盖=内置程序化/emoji 正确
+        row['status'] = 'needs-art'
+        row['gen'] = None
+    row.pop('history', None)
+    idx['assets'].sort(key=lambda a: a.get('id', ''))
+    _write_json(idx_f, idx)
+    led_f.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    return {'success': True, 'no': no, 'row': row, 'restored': 'snapshot' if isinstance(orig, dict) else 'fallback'}
 
 def handle_art_reskin(body: dict) -> dict:
     """POST /api/art/reskin {slug, packId, newSlug?, mock?}。同玩法换风格包 → 存新卡带（meta.reskinOf 谱系）。"""

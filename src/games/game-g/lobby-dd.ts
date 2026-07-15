@@ -111,10 +111,18 @@ export function buildLobby(view: LobbyView, st: LobbyDDState): LayoutNode {
     type: 'Panel', id: 'lobby-frame', props: {}, layout: { direction: 'column', gap: 10, padding: 14, maxWidth: 1340, flex: 1 },
     children: [topbar(view), { type: 'Divider', id: 'lobby-hdr-div', props: {} }, nav, content],
   };
+  // 背景板（07-15 修 row-54）：tabContent 剥了各页 Screen 外壳 → 各页 build*Screen 里的 per-tab
+  // 背景板 image 被丢。这里按 active tab 把该页背景板接到大厅外层 Screen（无=回退 lobby-backdrop·再无=纯主题色）。
+  const TAB_BACKDROP: Record<string, string> = {
+    campaign: 'game-g/tex/campaign-backdrop', coll: 'game-g/tex/collection-backdrop',
+    decks: 'game-g/tex/deck-backdrop', craft: 'game-g/tex/craft-backdrop', home: 'game-g/tex/home-backdrop',
+  };
+  const tabKey = TAB_BACKDROP[st.tab];
+  const backdrop = (tabKey ? textureOverrideUri(tabKey) : null) ?? textureOverrideUri('game-g/tex/lobby-backdrop');
   return {
     type: 'Screen', id: 'lobby-screen-dd', props: {
       bg: GG_LOBBY_THEME.pageBg,
-      ...(textureOverrideUri('game-g/tex/lobby-backdrop') ? { image: textureOverrideUri('game-g/tex/lobby-backdrop')! } : {}),
+      ...(backdrop ? { image: backdrop } : {}),
     },
     layout: { direction: 'column', padding: 0 },
     children: [frame],
