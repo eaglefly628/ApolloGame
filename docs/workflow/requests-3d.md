@@ -434,3 +434,11 @@
 > 2. **屏幕空间锚定到世界物件**（血条/名牌跟随 3D 单位、投影到屏幕叠 LayoutNode HUD）——本池 UI↔世界锚 seam（screenToWorld）是否已够，缺的是把 2D LayoutNode 定位到世界物件的屏幕投影点的桥？
 > 3. **diegetic UI**（UI 是场景的一部分：控制台屏幕、卡牌摆在 3D 桌面上）——大概率 = LayoutNode→CanvasTexture→Material3D.map 的管线，值得评估。
 > **边界**：这是 render-only 表现层（不进 sim/hash）。**不预设做法**——P3D 评估是重组现有能力还是下沉新组件；若下沉，闭集数据+registry describe+回填 `docs/playbooks/3d.md`（手册铁律）。owner 无 deadline，排 P3D 队自主定档。
+
+## REQ-3D-震屏首见基线 · CameraShake 装载首帧白震一次 · [2026-07-15] · Lead 验收超休闲六连批时发现 → **指派：P3D** · status: open · 优先级: P2 · 类型: 小修（camera-rig.ts + 一条测试）
+
+> **验收背景**：超休闲缺口批六连（手感三件套 778df8dd + Decal3D 5bb6409e + UI 三补 7c902aa0 + uvAnim f41b1b7e + Path3D 2ff1a909 + Billboard3D/tween 692024b7）Lead 对抗性验收 **✅ 全部放行**——render-only 纯净（新解释器零 world 回写·零裸 Math.random·震屏噪声=确定性 sin 合成可复现）、三个新组件 NON_DETERMINISTIC+component-map 成对登记无漏、协议扩展全 additive 闭集、件件带测试、合树 2588 测全绿。唯此一条真问题开单：
+> **问题**：`CameraShake.update` 的 `lastTrigger` 初始 `undefined`——蓝图**静态带** `shake:{trigger:0,...}` 的场景，装载后第一帧 `0 !== undefined` 即注入 trauma=1 → **无事件白震一次**。语义应是「bump=变化才震」，首见值该只作基线。
+> **修法（一行级）**：首见（`this.lastTrigger === undefined` 且 shake 在场）只记基线不注入：`if (this.lastTrigger === undefined) { this.lastTrigger = shake.trigger; return NO_SHAKE; }`。加一条测试钉死：静态 trigger 首帧 `active:false`、随后 bump 才震。
+> **附 P3 备注（不挡·记档）**：① FollowDamper 速度估计=raw 帧差/壁钟 dt，sim tick 与渲染帧不同步时 lookAhead 速度在「阶跃/0」间抖（现被指数平滑吸收大半）——真游戏若见预读抖动，对速度也做一层平滑即可；② `camSig` 不含 `follow` 参数（改 lag 不触发重渲·收敛态视觉无差·接受）。
+> **边界记录**：7c902aa0 动了 `src/ui/components/{types,render,server,catalog}.ts`（主程域）——实现合格照单全收（闭集+引擎注入 CSS+测试齐），但交验清单只报了 three*/render.ts/determinism/component-map 四处。**下回动 🔶/主程域文件请在知会里列全。**
