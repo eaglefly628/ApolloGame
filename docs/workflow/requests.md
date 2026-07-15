@@ -868,3 +868,10 @@
 > **④ Slider debounce 声明（低优）**：UI 铁律禁 handler 塞逻辑（只入队 action 信号）→ 防抖**除做成声明式 prop 别无表达路径**，故天然合法（非过度设计）。当前无拥堵实锤·低优。裁：高频控件（Slider…）可加 `debounce?:number` prop 声明·由消费侧节流。
 > **【P3D 回驳·不做】⑤ 异形按钮包围盒误触**：Gemini 前提事实反了——现代浏览器 `clip-path` **会**裁命中测试（透明角点击穿透·不误触），那句"命中区仍是矩形包围盒"只对 border-radius 成立。渲染器异形全走 `clip-path:polygon`（render.ts:165-171）→ 命中区本就正确·**无 bug**。唯一真收获：render.ts:162 注释「命中区仍是元素包围盒」是过期错误·误导后人——**建议主程改掉这句注释**（不改行为）。
 > **【P3D 暂缓·YAGNI】⑥ bind → BindingExpression（player.gold 嵌套路径）**：无具名消费者·8 款游戏 flat ResourceId 够用·path 迷你文法=无驱动者的 DSL 扩张（违反 CORE RULE 避免过度设计）。等真有游戏需嵌套绑定再开。
+>
+> **【P3D 施工红线·2026-07-15·Gemini 给了具体 validate.ts 重构·复核后：思路采纳·代码勿照抄】**
+> Gemini 后续交了整份重构 validate.ts。P3D 对照 render.ts/catalog.ts 实测复核，**决定性缺陷**记此，施工者（主程/UI）务必规避：
+> - **🔴 props 污染检查的黑名单会误杀合法 props**：Gemini 的 `layoutOnlyKeys` 含 `radius`（=Image 圆角 prop·catalog:90）、`height`（=VirtualList 视口高 prop·catalog:246·默认320），以及 `width/align/justify/opacity/cols/gap/padding/flex/scale/rotate/x/y/margin/direction`——这些既是 LayoutConstraints 名又是真实 prop 名。按名一刀切会**判 catalog 自己的 VirtualList sample(`height:140`) 非法**·违反 validate「不误报未列合法字段」纪律。**正解**：只拦严格 layout-only 且绝不做 prop 名的键——`fx/anim/animMs/rotateX/rotateY/tilt3d/perspective/z/sheen/chamfer/draggable/dropZone`；或按该组件 catalog spec 白名单减集。
+> - **🟡 bg 收紧走 warn 不走 hard-fail**（②既定·护 back-compat 存量裸串数据）；Gemini 把它做成 `bad-format` 硬 issue=破坏性变更。且令牌表应从 types 单一源导入·勿复制进 validate（防漂移）。
+> - **🟢 3D flatten 检测**：`scroll`/overflow→flatten 铁对；**`glass`/backdrop-filter→flatten 存疑**（CSS flatten 列表明确的是 `filter`·backdrop-filter 未定论）·真浏览器验证前勿断言 glass。渲染器是「谁有3D谁自带 preserve-3d」(render.ts:117)·故 flatten 仅嵌套3D 才咬人=低频·符合①低优定级。`has3DTransformsInSubtree` 每节点重扫=O(n²)·宜一趟自底向上。
+> - **⚪ 杂**：删 `// cite:` 噪声·收敛 `any`·新增 kind(`constraint-conflict`/`bad-format`) 同步进 `UiIssue` 联合。
