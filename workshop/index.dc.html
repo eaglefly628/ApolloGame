@@ -565,6 +565,12 @@
                 </div>
               </div>
             </sc-if>
+            <sc-if value="{{ artExportOn }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+                <button onClick="{{ artExportBriefs }}" title="把所有待出图行导成任务清单（编号+确定尺寸+底格式+提示词全文·一行一任务）复制到剪贴板——直接发给美术或外部文生图工具" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⧉ 导出全部出图任务（{{ artExportCount }}）</button>
+                <span style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#8a5a2c">每行任务=编号+尺寸+透明底要求+提示词·出图后回这里逐行 ⤵ 替换</span>
+              </div>
+            </sc-if>
             <div style="display:flex;flex-direction:column;gap:10px">
               <sc-for list="{{ artGroups }}" as="grp" hint-placeholder-count="3">
                 <div>
@@ -580,6 +586,7 @@
                           <div style="{{ a.coverStyle }}"><div style="{{ a.swatchStyle }}">{{ a.swatchText }}</div></div>
                           <div style="padding:6px 6px 8px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
                             <div style="font-family:'Fredoka';font-weight:700;color:#3a2312;font-size:11px">{{ a.no }} <span style="{{ a.badgeStyle }}">{{ a.badge }}</span></div>
+                            <div style="font-family:'Fredoka';font-weight:700;color:#2e6b8a;font-size:10px;margin-top:1px">{{ a.specText }}</div>
                             <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:10px;line-height:1.3;word-break:break-word;overflow:hidden;max-height:26px">{{ a.q }}</div>
                           </div>
                         </div>
@@ -611,6 +618,8 @@
                     </div>
                     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
                       <button onClick="{{ artRegen }}" style="{{ applyBtnStyle }}" style-active="{{ applyBtnActive }}">⚡ 重新生成这张</button>
+                      <button onClick="{{ artCopyPrompt }}" title="复制提示词全文（外部文生图用·词已含透明底等要求·尺寸看上方规格行在工具里设）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⧉ 复制提示词</button>
+                      <button onClick="{{ artCopyBrief }}" title="复制完整出图任务书：提示词 + 确定尺寸 + 底格式 + 编号（发给美术/外部工具一步到位）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⧉ 提示词+规格</button>
                       <button onClick="{{ artBatchGen }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">▶ 生成全部占位</button>
                       <button onClick="{{ artApplyBack }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⤵ 替换写回 manifest</button>
                       <button onClick="{{ artSelClose }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">✕ 收起</button>
@@ -1686,6 +1695,13 @@ class Component extends DCLogic {
       if (r.kind === 'texture') return '贴图';
       return '精灵/角色';
     };
+    // 出图规格一句话（owner 07-15「每张 2D 图要确定尺寸」）：2D=宽×高·透明底/实底；3D=面数预算。台账行 spec 是机读真相。
+    const artSpecText = (r) => {
+      const sp = r.spec || {};
+      if (r.kind === 'model3d') return sp.polyBudget ? ('≤' + sp.polyBudget + ' 面 · low-poly') : '3D 模型';
+      if (sp.w && sp.h) return sp.w + '×' + sp.h + ' px · ' + (sp.transparent ? '透明底 PNG' : '实底');
+      return '';
+    };
     const mkArtCell = (r) => {
       // 封面优先级：真生成图 > 现况占位快照（row.placeholder.servedPath·07-15 needs-art 行也有脸） > 占位解析图（07-12） > 灰底
       const served = (r.gen && r.gen.servedPath) || (r.placeholder && r.placeholder.servedPath)
@@ -1705,6 +1721,7 @@ class Component extends DCLogic {
         : { fontFamily: "'Noto Sans SC',sans-serif", fontSize: '10px', fontWeight: 700, color: '#b0723a', padding: '4px 8px', background: 'rgba(255,255,255,.7)', borderRadius: '7px', border: '2px dashed rgba(58,35,18,.35)' };
       const swatchText = (served || phColor) ? '' : '程序占位';
       return { no: r.no, q: r.query || (r.slot && r.slot.entity) || '', badge: badge[0], swatchStyle, swatchText,
+        specText: artSpecText(r),  // 出图规格（owner 07-15「没有尺寸让我文生图怎么干」）：行卡就亮尺寸·不用点开
         pick: () => this.setState({ artSel: r.no, artQ: r.query || '' }),  // 点开详情卡（一站式处理·07-12）
         cardStyle: { borderRadius: '16px', overflow: 'hidden', cursor: 'pointer',
           border: '3px solid ' + (s.artSel === r.no ? '#7ecb45' : '#ffd257'),
@@ -2169,6 +2186,20 @@ class Component extends DCLogic {
       coverPrompt: s.coverPrompt, coverPreview, coverNone: !coverPreview, coverPlaceholder,
       coverType: (e) => this.coverType(e), coverGen: () => this.coverGen(),
       coverBtnStyle: coverBtn.style, coverBtnActive: coverBtn.active, coverBtnLabel: s.coverBusy ? '生成中…' : '🎨 生成封面',
+      // 全量出图任务导出（owner 07-15「我需要出台账的提示词+每张确定尺寸」）：**全部行**都导——
+      // replaced 行现身只是程序化 svg 占位质量，正是美术升级要重出的主力（52 立绘）；每行带状态标区分。
+      artExportOn: ledRowsAll.length > 0,
+      artExportCount: ledRowsAll.length,
+      artExportBriefs: () => {
+        const lines = ledRowsAll.map(r => {
+          const sp = r.spec || {};
+          const size = r.kind === 'model3d' ? ('低模3D·≤' + (sp.polyBudget || 3000) + '面')
+            : ((sp.w && sp.h) ? (sp.w + 'x' + sp.h + 'px·' + (sp.transparent ? '透明底PNG' : '不透明')) : '尺寸未定');
+          const st = r.status === 'replaced' ? '升级替换(现=程序图)' : '待出图';
+          return r.no + ' | ' + st + ' | ' + size + ' | ' + (r.desc || '') + ' | 提示词: ' + (r.query || '');
+        });
+        this.copyText(['# ' + s.assetsSlug + ' 出图任务清单 · ' + ledRowsAll.length + ' 张（编号|状态|规格|需求|提示词·出图后回工坊逐行⤵替换）', ...lines].join('\n'));
+      },
       artSelOn: !!artSelRow,
       artSelCover: Object.assign({ width: '160px', height: '160px', flex: 'none', borderRadius: '14px', border: '3px solid #3a2312' },
         artSelServed
@@ -2176,6 +2207,8 @@ class Component extends DCLogic {
           : { background: 'linear-gradient(180deg,#f2ead8,#e2d2b0)' }),
       artSelTitle: artSelRow ? (artSelRow.no + ' · ' + artStBadge[0] + ' · ' + (artSelRow.kind || '')) : '',
       artSelInfo: artSelRow ? [
+        // 出图规格置顶（owner 07-15「每张 2D 图要确定尺寸·没有尺寸让我文生图怎么干」）：尺寸/底格式是硬约束，先于提示词。
+        '📐 出图规格：' + (artSpecText(artSelRow) || '（未定·联系主程补台账 spec）'),
         '提示词全文：' + (artSelRow.query || '（无）'),
         artSelRow.prompt ? '成图 prompt：' + artSelRow.prompt : '',
         artSelRow.desc ? '需求：' + artSelRow.desc : '',
@@ -2190,6 +2223,18 @@ class Component extends DCLogic {
       artProvChips: [{ id: '', label: '自动', tip: '按风格包默认的生成通道' }]
         .concat(artProvsArr.map(p => ({ id: p.id, label: p.id + (p.keyConfigured === false ? ' ⚠' : ''), tip: p.keyConfigured === false ? ('未配 key（' + (p.envKey || '') + '）——设置页可填') : (p.license || '') })))
         .map(p => ({ label: p.label, tip: p.tip, style: chipStyle((s.artProv || '') === p.id), pick: () => this.setState({ artProv: p.id }) })),
+      // 复制提示词/完整任务书（owner 07-15「要提示词+确定尺寸·外部文生图」）：提示词=编辑框现词(改过就复制改过的)。
+      artCopyPrompt: () => { if (artSelRow) this.copyText(((s.artQ || '').trim() || artSelRow.query || '')); },
+      artCopyBrief: () => {
+        if (!artSelRow) return;
+        const sp = artSelRow.spec || {};
+        const size = artSelRow.kind === 'model3d'
+          ? ('低模 3D · 面数预算 ≤' + (sp.polyBudget || 3000))
+          : ((sp.w && sp.h) ? (sp.w + 'x' + sp.h + ' px · ' + (sp.transparent ? '透明背景 PNG' : '不透明')) : '（尺寸未定）');
+        this.copyText(['【' + artSelRow.no + ' · ' + s.assetsSlug + '】' + (artSelRow.desc || ''),
+          '出图规格：' + size,
+          '提示词：' + ((s.artQ || '').trim() || artSelRow.query || '')].join('\n'));
+      },
       artRegen: () => { if (artSelRow) this.artCall('重新生成 ' + artSelRow.no, '/api/art/regenerate',
         { slug: s.assetsSlug, no: artSelRow.no, packId: artCurPack, query: (s.artQ || '').trim() || undefined, provider: s.artProv || undefined }); },
       artBatchGen: () => this.artCall('批量生成占位行', '/api/art/batch', { slug: s.assetsSlug, packId: artCurPack, provider: s.artProv || undefined }),
