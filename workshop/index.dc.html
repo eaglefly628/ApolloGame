@@ -1680,7 +1680,7 @@ class Component extends DCLogic {
     const ledRowsAll = ((s.ledger && s.ledger.rows) || []).filter(r => r.status !== 'retired');
     const artKindOf = (r) => {
       const ent = (r.slot && r.slot.entity) || '';
-      if (/^(chrome|hud|ui|btn|panel|logo|banner)/i.test(ent)) return 'UI/HUD';
+      if (/^(chrome|hud|ui|btn|panel|logo|banner|icon)/i.test(ent)) return 'UI/HUD';
       if (r.kind === 'bg' || ent === 'background') return '背景';
       if (r.kind === 'model3d') return '3D 模型';
       if (r.kind === 'texture') return '贴图';

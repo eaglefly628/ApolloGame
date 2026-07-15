@@ -27,23 +27,31 @@ describe('贴图槽覆盖注册表（art-textures）', () => {
   });
 });
 
-describe('game-g 美术台账契约（76 行·行行可替换·needs-art 行行有现况占位快照）', () => {
+describe('game-g 美术台账契约（110 行·行行可替换·needs-art 行行有现况占位快照）', () => {
   const led = JSON.parse(readFileSync(join(process.cwd(), 'public/games/game-g/art/art-ledger.json'), 'utf8')) as {
     rows: Array<{ no: string; skinKey?: string; status: string; query: string; kind: string; gen?: unknown;
       placeholder?: { servedPath?: string; current?: string } }>;
   };
 
-  it('76 行·skinKey 全带且唯一（一行一素材·fill 写回的别名依据）', () => {
-    expect(led.rows.length).toBe(76);
+  it('110 行·skinKey 全带且唯一（一行一素材·fill 写回的别名依据）', () => {
+    expect(led.rows.length).toBe(110);
     const keys = led.rows.map((r) => r.skinKey);
     expect(keys.every((k) => typeof k === 'string' && k!.startsWith('game-g/'))).toBe(true);
-    expect(new Set(keys).size).toBe(76);
+    expect(new Set(keys).size).toBe(110);
   });
 
-  it('53 行现况保号保现身（replaced·程序化 svg）+ 23 个新槽需求行；描述词全英文可生成', () => {
+  it('53 行现况保号保现身（replaced·程序化 svg）+ 57 个新槽需求行；描述词全英文可生成', () => {
     expect(led.rows.filter((r) => r.status === 'replaced').length).toBe(53);
-    expect(led.rows.filter((r) => r.status === 'needs-art').length).toBe(23);
+    expect(led.rows.filter((r) => r.status === 'needs-art').length).toBe(57);
     for (const r of led.rows) expect(r.query.length).toBeGreaterThan(20);
+  });
+
+  it('套装图标 34 枚（批32「统一风格升级」）：统一风格锚写死 query 尾·生肖 12 全·编号 art-77~110', () => {
+    const icons = led.rows.filter((r) => r.skinKey!.startsWith('game-g/icon/'));
+    expect(icons.length).toBe(34);
+    expect(icons.every((r) => r.query.includes('unified icon set'))).toBe(true); // 成套出图不跑风格的锚
+    expect(icons.filter((r) => r.skinKey!.startsWith('game-g/icon/zodiac-')).length).toBe(12);
+    expect(icons[0]!.no).toBe('art-77'); expect(icons[icons.length - 1]!.no).toBe('art-110');
   });
 
   it('UI 按钮皮三行（批29「按键也可换」）：hero/primary/ghost·主题级 buttonSkins 消费·编号顺延不动老账', () => {

@@ -8,7 +8,18 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
-import { textureOverrideUri } from './art-textures.js'; // 插画/banner 槽（批30：故事逐幕插画+卡池 banner·真图在场才插节点）
+import { textureOverrideUri, iconUri } from './art-textures.js'; // 插画/banner 槽（批30）+ 套装图标（批32）
+
+/** 套装图标按钮 props（批32）：icon 覆盖在场 → Button.icon 图 + 纯文字 label；无 → 原「emoji 前缀」（观感零变）。 */
+function iconBtnProps(token: string, emoji: string, text: string): { label: string; icon?: string } {
+  const ic = iconUri(token);
+  return ic ? { label: text, icon: ic } : { label: `${emoji} ${text}` };
+}
+/** 套装图标计数段（批32）：icon 在场 → span.img+数字；无 → 原「emoji+数字」文本段。 */
+function iconSpan(token: string, emoji: string, text: string): { text: string; img?: string } {
+  const ic = iconUri(token);
+  return ic ? { text, img: ic } : { text: `${emoji} ${text}` };
+}
 import { GACHA, RECHARGE_PACKS, rechargeTotal, DIAMOND_EXCHANGES, DIZHI_SHARD_PACKS, DIZHI_ZODIACS, STORY_OPENING, type StoryBeat } from './blueprint.js';
 import { luckyFromVal, luckyBattleBuff } from './lobby-types.js'; // 纯函数复用（卦值→吉凶档 + 战场加成）
 import type { LuckyRoll } from './lobby-util.js';
@@ -167,11 +178,12 @@ function shopModal(view: LobbyView, st: OverlayState): LayoutNode {
     children: [{
       type: 'Panel', id: 'shop-body', props: { bare: true }, layout: { direction: 'column', gap: 8, padding: 0 },
       children: [
+        // 余额条套装图标接线（批32）：icon 在场→span.img·无=原 emoji 文本（观感零变）。
         { type: 'Panel', id: 'shop-bal', props: { bare: true }, layout: { direction: 'row', gap: 14, align: 'center', padding: 0 }, children: [
-          { type: 'Label', id: 'shop-bal-coin', props: { text: `🪙 ${view.coin}`, size: 'md', color: 'text' } },
-          { type: 'Label', id: 'shop-bal-dia', props: { text: `💎 ${dia}`, size: 'md', color: 'sub' } },
-          { type: 'Label', id: 'shop-bal-tsh', props: { text: `🔶 ${tShards} 天罡碎片`, size: 'md', color: 'warn' } },
-          { type: 'Label', id: 'shop-bal-dsh', props: { text: `🧩 ${shards} 地支碎片`, size: 'md', color: 'warn' } },
+          { type: 'Label', id: 'shop-bal-coin', props: { size: 'md', color: 'text', spans: [iconSpan('coin', '🪙', String(view.coin))] } },
+          { type: 'Label', id: 'shop-bal-dia', props: { size: 'md', color: 'sub', spans: [iconSpan('diamond', '💎', String(dia))] } },
+          { type: 'Label', id: 'shop-bal-tsh', props: { size: 'md', color: 'warn', spans: [iconSpan('shard-tiangang', '🔶', `${tShards} 天罡碎片`)] } },
+          { type: 'Label', id: 'shop-bal-dsh', props: { size: 'md', color: 'warn', spans: [iconSpan('shard-dizhi', '🧩', `${shards} 地支碎片`)] } },
         ] },
         { type: 'Tabs', id: 'shop-tabs', props: { tabs: [{ id: 'gacha', label: '🎴 抽卡' }, { id: 'foil', label: '✨ 皮肤' }, { id: 'wallet', label: '💎 钱包' }], active: st.shopTab, action: 'shopTab' },
           children: [gachaPage, foilPage, walletPage] },
@@ -249,11 +261,12 @@ export function buildOverlayLauncher(): LayoutNode {
       type: 'Panel', id: 'launch-panel', props: { title: '🪟 大厅浮层 · Modal/Drawer（点开各浮层）' },
       layout: { direction: 'row', gap: 10, padding: 14 },
       children: [
-        { type: 'Button', id: 'open-help', props: { label: '📖 帮助中心', kind: 'ghost', action: 'openHelp' } },
-        { type: 'Button', id: 'open-settings', props: { label: '⚙ 设置', kind: 'ghost', action: 'openSettings' } },
-        { type: 'Button', id: 'open-shop', props: { label: '🛒 商城', kind: 'ghost', action: 'openShop' } },
-        { type: 'Button', id: 'open-lucky', props: { label: '🎴 今日卦象', kind: 'ghost', action: 'openLucky' } },
-        { type: 'Button', id: 'open-story', props: { label: '📜 开场故事', kind: 'ghost', action: 'openStory' } },
+        // 套装图标接线（批32）：icon 覆盖在场即换（emoji→美术图标）·无覆盖=原样。
+        { type: 'Button', id: 'open-help', props: { ...iconBtnProps('manual', '📖', '帮助中心'), kind: 'ghost', action: 'openHelp' } },
+        { type: 'Button', id: 'open-settings', props: { ...iconBtnProps('settings', '⚙', '设置'), kind: 'ghost', action: 'openSettings' } },
+        { type: 'Button', id: 'open-shop', props: { ...iconBtnProps('shop', '🛒', '商城'), kind: 'ghost', action: 'openShop' } },
+        { type: 'Button', id: 'open-lucky', props: { ...iconBtnProps('fortune', '🎴', '今日卦象'), kind: 'ghost', action: 'openLucky' } },
+        { type: 'Button', id: 'open-story', props: { ...iconBtnProps('story', '📜', '开场故事'), kind: 'ghost', action: 'openStory' } },
       ],
     }],
   };

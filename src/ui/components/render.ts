@@ -226,17 +226,19 @@ function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): strin
   // 皮解析（批29 owner 07-15「按键也可换」）：node 级 skin 优先（含 skin:'' 显式关皮逃生）；未给则落主题级
   // buttonSkins[kind]——一个 kind 一张皮、全游戏按钮一体换，游戏零逐点改。两边都无 = 原 kind 底（字节不变）。
   const sk = p.skin !== undefined ? { skin: p.skin, skinSlice: p.skinSlice } : t.buttonSkins?.[kind] ?? { skin: undefined, skinSlice: undefined };
+  // 键首内联图标（批32 图标统一升级）：1em 随字号·居 label 前。无 icon=纯文字零变。
+  const iconImg = p.icon ? `<img src="${esc(p.icon)}" alt="" style="height:1.05em;width:1.05em;object-fit:contain;vertical-align:-0.18em;margin-right:6px">` : '';
   const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
   // hero：金色倒角 sheen 大 CTA（下沉自 game-g 出征键）。倒角 clip-path + 流光 span(apollo-sheen 关键帧) + 可选副标。
   if (kind === 'hero') {
     const hbase = `position:relative;overflow:hidden;padding:14px 30px;border:0;border-radius:4px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};outline:none;background:linear-gradient(180deg,${t.gold},${t.warn});color:${t.bg0};font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.45);clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px);opacity:${p.disabled ? 0.4 : 1}`;
     const sheen = `<span style="position:absolute;top:0;bottom:0;left:-60%;width:45%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);animation:apollo-sheen 2.6s ease-in-out infinite;pointer-events:none"></span>`;
-    const big = `<span style="display:block;font-size:17px;line-height:1.15">${esc(p.label)}</span>`;
+    const big = `<span style="display:block;font-size:17px;line-height:1.15">${iconImg}${esc(p.label)}</span>`;
     const sub = p.sub ? `<span style="display:block;font-size:11px;font-weight:600;opacity:.8;margin-top:2px">${esc(p.sub)}</span>` : '';
     return `<button id="${esc(id)}" data-apollo-btn${sk.skin ? ' data-apollo-skin' : ''}${action}${p.disabled ? ' disabled' : ''} style="${hbase};${ls}${shapeCss(p.shape)}${skinCss(sk.skin, sk.skinSlice)}">${sheen}${big}${sub}</button>`;
   }
   const base = `padding:6px 14px;border-radius:7px;font-size:12px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};outline:none;transition:all .15s;opacity:${p.disabled ? 0.4 : 1}`;
-  return `<button id="${esc(id)}" data-apollo-btn${sk.skin ? ' data-apollo-skin' : ''}${action}${p.disabled ? ' disabled' : ''} style="${base};${kindStyle[kind]};${ls}${shapeCss(p.shape)}${skinCss(sk.skin, sk.skinSlice)}">${esc(p.label)}</button>`;
+  return `<button id="${esc(id)}" data-apollo-btn${sk.skin ? ' data-apollo-skin' : ''}${action}${p.disabled ? ' disabled' : ''} style="${base};${kindStyle[kind]};${ls}${shapeCss(p.shape)}${skinCss(sk.skin, sk.skinSlice)}">${iconImg}${esc(p.label)}</button>`;
 }
 
 function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string {
@@ -273,8 +275,9 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
   ].filter(Boolean).join(';');
   // 富文本多段着色(render-only·有 spans 忽略 text)：逐段自带 color(令牌)/bold，外层保字号/字体。
   if (p.spans) {
+    // 段首内联图标（批32 图标统一升级）：img=已解析 URL·1em 随字号。无 img 段=原输出字节不变。
     const inner = p.spans.map((s) =>
-      `<span style="color:${colorMap[s.color ?? 'text'] ?? cl}${s.bold ? ';font-weight:700' : ''}">${esc(s.text)}</span>`,
+      `<span style="color:${colorMap[s.color ?? 'text'] ?? cl}${s.bold ? ';font-weight:700' : ''}">${s.img ? `<img src="${esc(s.img)}" alt="" style="height:1em;width:1em;object-fit:contain;vertical-align:-0.15em${s.text ? ';margin-right:4px' : ''}">` : ''}${esc(s.text)}</span>`,
     ).join('');
     return `<span id="${esc(id)}" style="${style}">${inner}</span>`;
   }
@@ -520,10 +523,12 @@ function renderTag(id: string, p: TagProps, ls: string, t: UITheme): string {
   const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
   const cursor = p.action ? 'cursor:pointer;' : '';
   const x = p.removable ? '<span style="margin-left:6px;opacity:.7">×</span>' : '';
+  // 首部内联图标（批32 图标统一升级）：1em 随字号。无 icon=原输出字节不变。
+  const tagIcon = p.icon ? `<img src="${esc(p.icon)}" alt="" style="height:1.1em;width:1.1em;object-fit:contain;margin-right:5px">` : '';
   // 尺寸档：md=原默认(向后兼容)；lg=大气药丸(货币计数等·≈2x 体量)；sm=紧凑。[padding, font-size, radius]。
   const TAG_DIMS: Record<string, [string, number, number]> = { sm: ['2px 8px', 10, 10], md: ['3px 10px', 11, 12], lg: ['7px 15px', 16, 16] };
   const [pad, fs, rad] = TAG_DIMS[p.size ?? 'md'] ?? TAG_DIMS['md']!;
-  return `<span id="${esc(id)}"${action} style="display:inline-flex;align-items:center;padding:${pad};font-size:${fs}px;border-radius:${rad}px;background:${bg};color:${fg};border:1px solid ${border};font-family:${t.fontUi};white-space:nowrap;${cursor}${ls}">${esc(p.label)}${x}</span>`;
+  return `<span id="${esc(id)}"${action} style="display:inline-flex;align-items:center;padding:${pad};font-size:${fs}px;border-radius:${rad}px;background:${bg};color:${fg};border:1px solid ${border};font-family:${t.fontUi};white-space:nowrap;${cursor}${ls}">${tagIcon}${esc(p.label)}${x}</span>`;
 }
 
 // 飘字提示药丸：tone 着色（语义令牌）。挂载器 showToast() 复用它做定时自消浮层。
@@ -594,9 +599,15 @@ function renderCard(id: string, p: CardProps, children: LayoutNode[], ls: string
   const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
   const cursor = p.action ? 'cursor:pointer;' : '';
   const corner = p.corner ? `<span style="position:absolute;top:7px;right:8px;font-size:9px;padding:1px 6px;border-radius:7px;background:${t.jadeWash};color:${t.jade};font-family:${t.fontUi}">${esc(p.corner)}</span>` : '';
+  // media URL 检测（批32 图标统一升级·additive）：'/x.png'|'http…'|'data:…' → 图片媒体；其余照旧当字形字符（零回归）。
+  const mediaHtml = p.media
+    ? (/^(\/|https?:|data:)/.test(p.media)
+      ? `<div style="text-align:center;margin-bottom:6px"><img src="${esc(p.media)}" alt="" style="height:34px;width:34px;object-fit:contain"></div>`
+      : `<div style="font-size:26px;text-align:center;margin-bottom:6px">${esc(p.media)}</div>`)
+    : '';
   const body = children.length
     ? children.map((ch) => renderNode(ch, t)).join('')
-    : `${p.media ? `<div style="font-size:26px;text-align:center;margin-bottom:6px">${esc(p.media)}</div>` : ''}${p.title ? `<div style="font-size:12px;font-weight:700;color:${t.text};font-family:${t.fontUi};text-align:center;line-height:1.3">${esc(p.title)}</div>` : ''}${p.sub ? `<div style="font-size:10px;color:${t.dim};font-family:${t.fontUi};text-align:center;margin-top:3px">${esc(p.sub)}</div>` : ''}`;
+    : `${mediaHtml}${p.title ? `<div style="font-size:12px;font-weight:700;color:${t.text};font-family:${t.fontUi};text-align:center;line-height:1.3">${esc(p.title)}</div>` : ''}${p.sub ? `<div style="font-size:10px;color:${t.dim};font-family:${t.fontUi};text-align:center;margin-top:3px">${esc(p.sub)}</div>` : ''}`;
   return `<div id="${esc(id)}"${action} style="position:relative;display:flex;flex-direction:column;justify-content:center;padding:12px 10px;border-radius:10px;background:${t.bg2};border:1px solid ${border};font-family:${t.fontUi};${dimmed}${cursor}${ls}">${corner}${body}</div>`;
 }
 

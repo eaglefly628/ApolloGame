@@ -142,6 +142,61 @@ const uiRows = UI_ROWS.map(([skinKey, query, spec, desc, context]) => ({
   query, prompt: null, spec, desc, context, status: 'needs-art', gen: null, provenance: null,
 }));
 
+// ── 套装图标 34 枚（批32 owner 07-15「很多图标我都要统一风格升级」）：界面 emoji 记号（🪙💎⚡🀄…）+
+// 生肖 12 枚全部图标化。**统一风格锚**写死在每条 query 尾（成套出图不跑风格）；消费=引擎四个图文位
+// （Button.icon/Tag.icon/Label span.img/Card.media URL）+ game-g iconUri 注册表——覆盖在场才换、无=原 emoji。
+// 排印记号（→ ← ✓ ✗ ★ ⚠ 🔒）**不图标化**——那是文字排版，不是美术。
+const ICON_STYLE = 'engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style';
+const ICON_ROWS = [
+  // 资源（5）
+  ['coin', '🪙', 'round gold coin with square hole, chinese ancient currency', '金币', '已接：顶栏/商城余额（Tag.icon+span.img）'],
+  ['diamond', '💎', 'faceted precious gemstone', '钻石', '已接：顶栏/商城余额'],
+  ['shard-tiangang', '🔶', 'glowing amber talisman shard', '天罡碎片', '已接：商城余额条'],
+  ['shard-dizhi', '🧩', 'carved jade puzzle shard', '地支碎片', '已接：顶栏/商城余额'],
+  ['mana', '💧', 'glowing water droplet, summoning spring essence', '召唤源泉', '接线待战斗屏改造（行先立·图先出）'],
+  // 徽记（17）
+  ['battle', '⚔', 'crossed chinese dao sabers', '出征/战斗', '已接：顶栏战役 pill；后续出征键 Button.icon'],
+  ['fortune', '🎴', 'ornate fate card with mystic glyph', '卦象/命运牌', '已接：浮层启动器'],
+  ['deck', '🃏', 'fanned playing cards', '牌组', '接线随屏改造（tab 导航）'],
+  ['dice', '🎲', 'six-sided battle die showing pips', '战力骰', '接线随屏改造（战斗屏）'],
+  ['shield', '🛡', 'round bronze war shield', '防御/守护', '接线随屏改造'],
+  ['tiangang', '⚡', 'thunderbolt talisman emblem', '天罡', '接线随屏改造（收藏/牌组卡标）'],
+  ['dizhi', '🀄', 'mahjong-style zodiac tile', '地支', '接线随屏改造'],
+  ['foil', '✨', 'four-point radiant sparkle', '闪艺', '已接：顶栏+收藏页头'],
+  ['trophy', '🏆', 'bronze victory cup', '战利品/天梯', '接线随屏改造'],
+  ['skull', '💀', 'ancient warrior skull', '阵亡/败北', '接线随屏改造（战斗屏）'],
+  ['shop', '🛒', 'market stall with hanging coins', '商城', '已接：顶栏+浮层启动器'],
+  ['settings', '⚙', 'bronze mechanical gear', '设置', '已接：顶栏+浮层启动器'],
+  ['manual', '📖', 'open bound war manual', '手册/帮助', '已接：顶栏+浮层启动器'],
+  ['story', '📜', 'unrolled ancient scroll', '开场故事', '已接：浮层启动器'],
+  ['craft', '🔨', 'smith hammer over anvil', '改造坊', '接线随屏改造（tab 导航）'],
+  ['collection', '🗃', 'card archive chest', '收藏', '已接：收藏页头'],
+  ['target', '🎯', 'archery target with arrow', '克制提示', '接线随屏改造'],
+  // 生肖（12·改造坊镶嵌/卡包 chips 已接 Tag.icon·商城兑换随屏改造）
+  ['zodiac-rat', '🐀', 'rat head emblem, chinese zodiac', '生肖·鼠', '已接：改造坊生肖 chips（Tag.icon）'],
+  ['zodiac-ox', '🐂', 'ox head emblem, chinese zodiac', '生肖·牛', '已接：改造坊生肖 chips'],
+  ['zodiac-tiger', '🐅', 'tiger head emblem, chinese zodiac', '生肖·虎', '已接：改造坊生肖 chips'],
+  ['zodiac-rabbit', '🐇', 'rabbit head emblem, chinese zodiac', '生肖·兔', '已接：改造坊生肖 chips'],
+  ['zodiac-dragon', '🐉', 'dragon head emblem, chinese zodiac', '生肖·龙', '已接：改造坊生肖 chips'],
+  ['zodiac-snake', '🐍', 'snake head emblem, chinese zodiac', '生肖·蛇', '已接：改造坊生肖 chips'],
+  ['zodiac-horse', '🐎', 'horse head emblem, chinese zodiac', '生肖·马', '已接：改造坊生肖 chips'],
+  ['zodiac-goat', '🐑', 'goat head emblem, chinese zodiac', '生肖·羊', '已接：改造坊生肖 chips'],
+  ['zodiac-monkey', '🐒', 'monkey head emblem, chinese zodiac', '生肖·猴', '已接：改造坊生肖 chips'],
+  ['zodiac-rooster', '🐓', 'rooster head emblem, chinese zodiac', '生肖·鸡', '已接：改造坊生肖 chips'],
+  ['zodiac-dog', '🐕', 'dog head emblem, chinese zodiac', '生肖·狗', '已接：改造坊生肖 chips'],
+  ['zodiac-pig', '🐖', 'pig head emblem, chinese zodiac', '生肖·猪', '已接：改造坊生肖 chips'],
+];
+const ICON_EMOJI = Object.fromEntries(ICON_ROWS.map(([tok, emoji]) => [`game-g/icon/${tok}`, emoji]));
+const iconRows = ICON_ROWS.map(([token, emoji, subject, name, wired]) => ({
+  skinKey: `game-g/icon/${token}`, kind: 'sprite',
+  slot: { entity: `icon:${token}`, component: 'Icon', field: 'src' },
+  query: `${subject}, ${ICON_STYLE}`, prompt: null,
+  spec: { w: 128, h: 128, transparent: true },
+  desc: `套装图标·${name}（现=emoji ${emoji}）`,
+  context: `统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('${token}')·${wired}`,
+  status: 'needs-art', gen: null, provenance: null,
+}));
+
 const diceRow = {
   skinKey: 'game-g/model/clash-dice',
   kind: 'model3d',
@@ -189,6 +244,9 @@ const dicePh = () => svgDoc(256, 256,
   `<rect x="28" y="28" width="200" height="200" rx="34" fill="#3a332a" stroke="#8a7a5c" stroke-width="6"/>`
   + [[78, 78], [178, 78], [128, 128], [78, 178], [178, 178]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="16" fill="#e8cd82"/>`).join('')
   );
+const iconPh = (emoji) => svgDoc(128, 128,
+  `<rect width="128" height="128" rx="24" fill="#171109" stroke="#d4bd8a" stroke-opacity=".3" stroke-width="3"/>`
+  + `<text x="50%" y="58%" text-anchor="middle" font-size="64">${esc(emoji)}</text>`);
 const bannerPh = (label) => svgDoc(640, 200,
   `<rect width="640" height="200" fill="#171109"/><rect x="6" y="6" width="628" height="188" fill="none" stroke="#d4bd8a" stroke-opacity=".3" stroke-width="2"/>`
   + `<text x="50%" y="56%" text-anchor="middle" fill="#e8cd82" font-size="34" font-family="serif">${esc(label)}</text>`);
@@ -199,13 +257,14 @@ function placeholderFor(r) {
   if (k === 'game-g/tex/card-back') return [cardBackPh(), '现况=红底棋盘格程序纹+❖'];
   if (k === 'game-g/model/clash-dice') return [dicePh(), '现况=程序化 3D 图元骰'];
   if (k.startsWith('game-g/ui/btn-')) return [btnPh(r.spec?.w ?? 240, r.spec?.h ?? 80, k.split('btn-')[1]), '现况=引擎 kind 底（CSS）'];
+  if (k.startsWith('game-g/icon/')) return [iconPh(ICON_EMOJI[k] ?? '❓'), `现况=emoji ${ICON_EMOJI[k] ?? ''} 记号`];
   if (k.startsWith('game-g/shop/banner-')) return [bannerPh(r.desc.split('（')[0]), '现况=纯文案面板无图'];
   if (k.startsWith('game-g/story/')) return [backdropPh(1024, 576, r.desc.split('（')[0]), '现况=纯旁白无插画'];
   return [backdropPh(r.spec?.w ?? 1280, r.spec?.h ?? 720, r.desc.split('（')[0]), '现况=纯主题色底'];
 }
 
-// uiRows/storyRows/shopRows 排在 diceRow 后（新行顺延·不动既有编号——mergeLedger 老行保号、新行 maxNo 顺延）。
-const rows = [...heroRows, ...texRows, diceRow, ...uiRows, ...storyRows, ...shopRows].map((r, i) => ({ no: 'art-' + String(i + 1).padStart(2, '0'), ...r }));
+// uiRows/storyRows/shopRows/iconRows 排在 diceRow 后（新行顺延·不动既有编号——mergeLedger 老行保号、新行 maxNo 顺延）。
+const rows = [...heroRows, ...texRows, diceRow, ...uiRows, ...storyRows, ...shopRows, ...iconRows].map((r, i) => ({ no: 'art-' + String(i + 1).padStart(2, '0'), ...r }));
 const fresh = { version: 1, game: 'game-g', mode: 'requirements', count: rows.length, rows };
 
 const LEDGER_FILE = join(ROOT, 'public', 'games', 'game-g', 'art', 'art-ledger.json');

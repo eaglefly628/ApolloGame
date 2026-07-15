@@ -127,6 +127,7 @@ export interface ButtonProps {
   action?: string;
   actionArg?: string;
   sub?: string; // hero 键副标（小字第二行·如「挑战 曹操 · 难度 ★★」）
+  icon?: string; // 键首内联图标（已解析 URL·1em 随字号·居 label 前）。批32「图标统一升级」：'⚔ 出征' 的 emoji 记号可换成套装美术图标。缺省无=纯文字零变。
   /** 异形轮廓（闭集 ShapeToken·如 hexagon/diamond/shield）。缺省=矩形。命中区：clip-path 多边形**按形裁**（透明角点击穿透·不误触）；
    *  pill 走 border-radius=矩形包围盒。（P3D 复核更正原「命中区=包围盒」旧注·2026-07-15。） */
   shape?: ShapeToken;
@@ -169,7 +170,8 @@ export interface LabelProps {
   tween?: { from: number; to: number; ms?: number; decimals?: number };
   /** 富文本多段着色(render-only·词条高亮/分色说明)：替代单色 text，逐段自带 color(同 Label 令牌)/bold。
    *  纯数据(段数组)·最弱 LLM 能填；有 spans 时忽略 text。 */
-  spans?: Array<{ text: string; color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger'; bold?: boolean }>;
+  /** 富文本分段（render-only）。img=段首内联图标（已解析 URL·1em 随字号·批32「图标统一升级」：emoji 记号可换成成套美术图标）。 */
+  spans?: Array<{ text: string; color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger'; bold?: boolean; img?: string }>;
 }
 
 export interface DropdownProps {
@@ -314,6 +316,7 @@ export interface ProgressBarProps {
 export interface TagProps {
   label: string; active?: boolean; tone?: 'normal' | 'accent' | 'dim';
   action?: string; actionArg?: string; removable?: boolean;
+  icon?: string; // 首部内联图标（已解析 URL·1em 随字号）。批32：货币/生肖 pill 的 emoji 可换成套装美术图标。缺省无=纯文字零变。
   /** 尺寸档（缺省 md=原默认·向后兼容）：sm 紧凑筛选条 / md 默认 / lg「大气药丸」(货币计数 💎/💰、稀有度等需醒目的 pill·≈2x)。
    *  Tag 无 children 逃生、Label 无药丸 chrome——pill 缩放只能靠这一档（同 Modal/PlayingCard.size 体系）。 */
   size?: 'sm' | 'md' | 'lg';

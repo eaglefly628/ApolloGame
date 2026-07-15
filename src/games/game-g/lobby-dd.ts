@@ -7,7 +7,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
-import { textureOverrideUri } from './art-textures.js'; // 大厅整壳背景板槽（批30·罩五 tab 的最外层）
+import { textureOverrideUri, iconUri } from './art-textures.js'; // 大厅整壳背景板槽（批30）+ 套装图标（批32）
 import { LOBBY_CSS } from './lobby-styles.js';
 import { isSfxMuted, setSfxMuted } from './sfx.js';
 import { toggleBgm } from './bgm.js';
@@ -40,6 +40,13 @@ function pill(id: string, label: string, action: string, tone: 'normal' | 'accen
   // size:'lg'=大气药丸（主程下沉 Tag.size·owner「货币 pill 太小·要≈2x」）。
   return { type: 'Tag', id, props: { label, tone, action, size: 'lg', ...(arg ? { actionArg: arg } : {}) }, ...(anchor ? { layout: { anchor } } : {}) };
 }
+/** 套装图标 pill（批32）：icon 覆盖在场 → Tag.icon 图 + 纯文字 label；无 → 原「emoji 前缀」label（观感零变）。 */
+function iconPill(id: string, token: string, emoji: string, text: string, action: string, tone: 'normal' | 'accent' = 'normal', arg?: string, anchor?: string): LayoutNode {
+  const ic = iconUri(token);
+  const node = pill(id, ic ? text : (text ? `${emoji} ${text}` : emoji), action, tone, arg, anchor);
+  if (ic) (node.props as Record<string, unknown>).icon = ic;
+  return node;
+}
 function topbar(view: LobbyView): LayoutNode {
   const who: LayoutNode = {
     type: 'Panel', id: 'tb-who', props: { bare: true }, layout: { direction: 'column', gap: 1 },
@@ -54,17 +61,18 @@ function topbar(view: LobbyView): LayoutNode {
     type: 'Panel', id: 'tb-left', props: { bare: true }, layout: { direction: 'row', gap: 10, align: 'center', flex: 1 },
     children: [{ type: 'Avatar', id: 'tb-seal', props: { name: '♠', shape: 'rounded', size: 42 } }, who],
   };
-  const stage: LayoutNode = pill('tb-stage', `⚔ ${view.stageLabel}`, 'tab', 'normal', 'campaign');
+  // 套装图标接线（批32）：icon 覆盖在场即换（emoji→美术图标）·无覆盖=原样。token 对台账 game-g/icon/*。
+  const stage: LayoutNode = iconPill('tb-stage', 'battle', '⚔', view.stageLabel, 'tab', 'normal', 'campaign');
   const right: LayoutNode = {
     type: 'Panel', id: 'tb-right', props: { bare: true }, layout: { direction: 'row', gap: 6, align: 'center', justify: 'end', flex: 1 },
     children: [
-      pill('tb-shop', '🛒 商城', 'openShop', 'accent'),
-      pill('tb-coin', `🪙 ${view.coin}`, 'recharge'),
-      pill('tb-dia', `💎 ${view.diamond ?? 0}`, 'recharge'),
-      pill('tb-shard', `🧩 ${view.dizhiShards ?? 0}`, 'recharge'),
-      pill('tb-foil', `✨ ${view.foilCount}`, 'shopFoil'),
-      pill('tb-man', '📚 手册', 'man', 'accent', undefined, 'help'),
-      pill('tb-settings', '⚙', 'settings'),
+      iconPill('tb-shop', 'shop', '🛒', '商城', 'openShop', 'accent'),
+      iconPill('tb-coin', 'coin', '🪙', String(view.coin), 'recharge'),
+      iconPill('tb-dia', 'diamond', '💎', String(view.diamond ?? 0), 'recharge'),
+      iconPill('tb-shard', 'shard-dizhi', '🧩', String(view.dizhiShards ?? 0), 'recharge'),
+      iconPill('tb-foil', 'foil', '✨', String(view.foilCount), 'shopFoil'),
+      iconPill('tb-man', 'manual', '📚', '手册', 'man', 'accent', undefined, 'help'),
+      iconPill('tb-settings', 'settings', '⚙', '', 'settings'),
     ],
   };
   return {

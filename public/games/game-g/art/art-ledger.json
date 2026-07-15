@@ -2,7 +2,7 @@
   "version": 1,
   "game": "game-g",
   "mode": "requirements",
-  "count": 76,
+  "count": 110,
   "rows": [
     {
       "no": "art-01",
@@ -2295,6 +2295,890 @@
       "placeholder": {
         "servedPath": "/games/game-g/art/placeholder/shop-banner-dizhi.svg",
         "current": "现况=纯文案面板无图"
+      }
+    },
+    {
+      "no": "art-77",
+      "skinKey": "game-g/icon/coin",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:coin",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "round gold coin with square hole, chinese ancient currency, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·金币（现=emoji 🪙）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('coin')·已接：顶栏/商城余额（Tag.icon+span.img）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-coin.svg",
+        "current": "现况=emoji 🪙 记号"
+      }
+    },
+    {
+      "no": "art-78",
+      "skinKey": "game-g/icon/diamond",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:diamond",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "faceted precious gemstone, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·钻石（现=emoji 💎）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('diamond')·已接：顶栏/商城余额",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-diamond.svg",
+        "current": "现况=emoji 💎 记号"
+      }
+    },
+    {
+      "no": "art-79",
+      "skinKey": "game-g/icon/shard-tiangang",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:shard-tiangang",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "glowing amber talisman shard, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·天罡碎片（现=emoji 🔶）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('shard-tiangang')·已接：商城余额条",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-shard-tiangang.svg",
+        "current": "现况=emoji 🔶 记号"
+      }
+    },
+    {
+      "no": "art-80",
+      "skinKey": "game-g/icon/shard-dizhi",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:shard-dizhi",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "carved jade puzzle shard, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·地支碎片（现=emoji 🧩）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('shard-dizhi')·已接：顶栏/商城余额",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-shard-dizhi.svg",
+        "current": "现况=emoji 🧩 记号"
+      }
+    },
+    {
+      "no": "art-81",
+      "skinKey": "game-g/icon/mana",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:mana",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "glowing water droplet, summoning spring essence, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·召唤源泉（现=emoji 💧）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('mana')·接线待战斗屏改造（行先立·图先出）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-mana.svg",
+        "current": "现况=emoji 💧 记号"
+      }
+    },
+    {
+      "no": "art-82",
+      "skinKey": "game-g/icon/battle",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:battle",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "crossed chinese dao sabers, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·出征/战斗（现=emoji ⚔）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('battle')·已接：顶栏战役 pill；后续出征键 Button.icon",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-battle.svg",
+        "current": "现况=emoji ⚔ 记号"
+      }
+    },
+    {
+      "no": "art-83",
+      "skinKey": "game-g/icon/fortune",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:fortune",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "ornate fate card with mystic glyph, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·卦象/命运牌（现=emoji 🎴）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('fortune')·已接：浮层启动器",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-fortune.svg",
+        "current": "现况=emoji 🎴 记号"
+      }
+    },
+    {
+      "no": "art-84",
+      "skinKey": "game-g/icon/deck",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:deck",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "fanned playing cards, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·牌组（现=emoji 🃏）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('deck')·接线随屏改造（tab 导航）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-deck.svg",
+        "current": "现况=emoji 🃏 记号"
+      }
+    },
+    {
+      "no": "art-85",
+      "skinKey": "game-g/icon/dice",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:dice",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "six-sided battle die showing pips, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·战力骰（现=emoji 🎲）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('dice')·接线随屏改造（战斗屏）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-dice.svg",
+        "current": "现况=emoji 🎲 记号"
+      }
+    },
+    {
+      "no": "art-86",
+      "skinKey": "game-g/icon/shield",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:shield",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "round bronze war shield, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·防御/守护（现=emoji 🛡）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('shield')·接线随屏改造",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-shield.svg",
+        "current": "现况=emoji 🛡 记号"
+      }
+    },
+    {
+      "no": "art-87",
+      "skinKey": "game-g/icon/tiangang",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:tiangang",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "thunderbolt talisman emblem, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·天罡（现=emoji ⚡）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('tiangang')·接线随屏改造（收藏/牌组卡标）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-tiangang.svg",
+        "current": "现况=emoji ⚡ 记号"
+      }
+    },
+    {
+      "no": "art-88",
+      "skinKey": "game-g/icon/dizhi",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:dizhi",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "mahjong-style zodiac tile, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·地支（现=emoji 🀄）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('dizhi')·接线随屏改造",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-dizhi.svg",
+        "current": "现况=emoji 🀄 记号"
+      }
+    },
+    {
+      "no": "art-89",
+      "skinKey": "game-g/icon/foil",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:foil",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "four-point radiant sparkle, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·闪艺（现=emoji ✨）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('foil')·已接：顶栏+收藏页头",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-foil.svg",
+        "current": "现况=emoji ✨ 记号"
+      }
+    },
+    {
+      "no": "art-90",
+      "skinKey": "game-g/icon/trophy",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:trophy",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "bronze victory cup, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·战利品/天梯（现=emoji 🏆）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('trophy')·接线随屏改造",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-trophy.svg",
+        "current": "现况=emoji 🏆 记号"
+      }
+    },
+    {
+      "no": "art-91",
+      "skinKey": "game-g/icon/skull",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:skull",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "ancient warrior skull, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·阵亡/败北（现=emoji 💀）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('skull')·接线随屏改造（战斗屏）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-skull.svg",
+        "current": "现况=emoji 💀 记号"
+      }
+    },
+    {
+      "no": "art-92",
+      "skinKey": "game-g/icon/shop",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:shop",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "market stall with hanging coins, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·商城（现=emoji 🛒）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('shop')·已接：顶栏+浮层启动器",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-shop.svg",
+        "current": "现况=emoji 🛒 记号"
+      }
+    },
+    {
+      "no": "art-93",
+      "skinKey": "game-g/icon/settings",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:settings",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "bronze mechanical gear, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·设置（现=emoji ⚙）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('settings')·已接：顶栏+浮层启动器",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-settings.svg",
+        "current": "现况=emoji ⚙ 记号"
+      }
+    },
+    {
+      "no": "art-94",
+      "skinKey": "game-g/icon/manual",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:manual",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "open bound war manual, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·手册/帮助（现=emoji 📖）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('manual')·已接：顶栏+浮层启动器",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-manual.svg",
+        "current": "现况=emoji 📖 记号"
+      }
+    },
+    {
+      "no": "art-95",
+      "skinKey": "game-g/icon/story",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:story",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "unrolled ancient scroll, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·开场故事（现=emoji 📜）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('story')·已接：浮层启动器",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-story.svg",
+        "current": "现况=emoji 📜 记号"
+      }
+    },
+    {
+      "no": "art-96",
+      "skinKey": "game-g/icon/craft",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:craft",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "smith hammer over anvil, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·改造坊（现=emoji 🔨）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('craft')·接线随屏改造（tab 导航）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-craft.svg",
+        "current": "现况=emoji 🔨 记号"
+      }
+    },
+    {
+      "no": "art-97",
+      "skinKey": "game-g/icon/collection",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:collection",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "card archive chest, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·收藏（现=emoji 🗃）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('collection')·已接：收藏页头",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-collection.svg",
+        "current": "现况=emoji 🗃 记号"
+      }
+    },
+    {
+      "no": "art-98",
+      "skinKey": "game-g/icon/target",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:target",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "archery target with arrow, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·克制提示（现=emoji 🎯）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('target')·接线随屏改造",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-target.svg",
+        "current": "现况=emoji 🎯 记号"
+      }
+    },
+    {
+      "no": "art-99",
+      "skinKey": "game-g/icon/zodiac-rat",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-rat",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "rat head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·鼠（现=emoji 🐀）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-rat')·已接：改造坊生肖 chips（Tag.icon）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-zodiac-rat.svg",
+        "current": "现况=emoji 🐀 记号"
+      }
+    },
+    {
+      "no": "art-100",
+      "skinKey": "game-g/icon/zodiac-ox",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-ox",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "ox head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·牛（现=emoji 🐂）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-ox')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-zodiac-ox.svg",
+        "current": "现况=emoji 🐂 记号"
+      }
+    },
+    {
+      "no": "art-101",
+      "skinKey": "game-g/icon/zodiac-tiger",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-tiger",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "tiger head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·虎（现=emoji 🐅）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-tiger')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-zodiac-tiger.svg",
+        "current": "现况=emoji 🐅 记号"
+      }
+    },
+    {
+      "no": "art-102",
+      "skinKey": "game-g/icon/zodiac-rabbit",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-rabbit",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "rabbit head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·兔（现=emoji 🐇）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-rabbit')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-zodiac-rabbit.svg",
+        "current": "现况=emoji 🐇 记号"
+      }
+    },
+    {
+      "no": "art-103",
+      "skinKey": "game-g/icon/zodiac-dragon",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-dragon",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "dragon head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·龙（现=emoji 🐉）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-dragon')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-zodiac-dragon.svg",
+        "current": "现况=emoji 🐉 记号"
+      }
+    },
+    {
+      "no": "art-104",
+      "skinKey": "game-g/icon/zodiac-snake",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-snake",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "snake head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·蛇（现=emoji 🐍）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-snake')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-zodiac-snake.svg",
+        "current": "现况=emoji 🐍 记号"
+      }
+    },
+    {
+      "no": "art-105",
+      "skinKey": "game-g/icon/zodiac-horse",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-horse",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "horse head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·马（现=emoji 🐎）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-horse')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-zodiac-horse.svg",
+        "current": "现况=emoji 🐎 记号"
+      }
+    },
+    {
+      "no": "art-106",
+      "skinKey": "game-g/icon/zodiac-goat",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-goat",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "goat head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·羊（现=emoji 🐑）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-goat')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-zodiac-goat.svg",
+        "current": "现况=emoji 🐑 记号"
+      }
+    },
+    {
+      "no": "art-107",
+      "skinKey": "game-g/icon/zodiac-monkey",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-monkey",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "monkey head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·猴（现=emoji 🐒）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-monkey')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-zodiac-monkey.svg",
+        "current": "现况=emoji 🐒 记号"
+      }
+    },
+    {
+      "no": "art-108",
+      "skinKey": "game-g/icon/zodiac-rooster",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-rooster",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "rooster head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·鸡（现=emoji 🐓）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-rooster')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-zodiac-rooster.svg",
+        "current": "现况=emoji 🐓 记号"
+      }
+    },
+    {
+      "no": "art-109",
+      "skinKey": "game-g/icon/zodiac-dog",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-dog",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "dog head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·狗（现=emoji 🐕）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-dog')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-zodiac-dog.svg",
+        "current": "现况=emoji 🐕 记号"
+      }
+    },
+    {
+      "no": "art-110",
+      "skinKey": "game-g/icon/zodiac-pig",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-pig",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "pig head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·猪（现=emoji 🐖）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-pig')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game-g/art/placeholder/icon-zodiac-pig.svg",
+        "current": "现况=emoji 🐖 记号"
       }
     }
   ],

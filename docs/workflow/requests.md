@@ -100,6 +100,19 @@
 > **换皮操作口径（owner 美术升级用）**：工坊素材屏选 game-g → 逐行 ⚡ 重新生成（描述词已备好可直接出图/可改词）→
 > ⤵ 替换写回=fill 别名登记 → 游戏即换（立绘/呢面/背景/硬币全线）。
 
+### REQ-G-ART-v2 全部美术台账化 + 图标统一升级 · [2026-07-15] · owner 口头三连（「全部美术的台账加升级」「很多图标统一风格升级」「54~63 没有预览占位符」）→ Lead 亲手 · status: **✅ done（批30-32·2026-07-15）** · 类型: 台账扩面 + 引擎图文位下沉
+> **交付**：game-g 台账 63→**110 行**（52 立绘 + 呢面 + 8 屏背景板全 + 硬币双面 + 牌背 + 3D 骰 + 3 按钮皮 +
+> 6 幕故事插画 + 2 卡池 banner + **34 枚套装图标**·统一风格锚写死 query 尾·生肖 12 全）。
+> **引擎下沉（批29-32 累计）**：UITheme.buttonSkins 主题级按钮皮 / PlayingCard.backArt / CoinFlip.headsArt+tailsArt /
+> Button.icon / Tag.icon / Label spans[].img / Card.media URL 检测——全 additive·不填零回归。
+> **占位快照**：57 个 needs-art 行全部生成「当前实际观感」确定性 SVG（emoji/CSS 渐变/主题底近似）→
+> row.placeholder.servedPath·工坊行封面回落——台账行行有脸。
+> **接线**：图标 v1 五处（顶栏 7 pill/浮层启动器 5 键/商城余额 4/改造坊生肖 chips/收藏页头）——覆盖在场才换、
+> 无=原 emoji（观感零变）；长尾 emoji 槽随屏改造逐步接（消费模式已定型=iconUri/iconPill/iconBtnProps/iconSpan）。
+> **去腐**：icons.ts（4 枚内联 SVG·41k token·lobby-screen 退役后孤儿）删除。
+> **诚实边界（未台账化·候选下一批）**：战斗屏 bespoke 兵牌面/棋盘装饰（接 hero 覆盖需 owner 点头设计）、
+> 正文行内 emoji 长尾、天罡 38 张逐张牌面 art（现按 kind 图标覆盖）、发布封面（发布线已有独立文生图）。
+
 ### REQ-Q-击杀记账（on-kill credit）· 塔防赏金/击杀计分通用缺口 · [2026-07-07] · LEAD（game-q 立项）→ Lead 排期 · status: **open（真缺口·已记债·循环层用清波经济绕过·非阻塞）** · 类型: 通用战斗能力下沉候选
 > **缺口**：`t2-hitbox` 只写**目标本地**资源（`hitbox.ts` `queueResourceMod(...,'local')`）；`t2-mortal` 的 `dropTemplate` 对**任何死因无差别**触发。→ 无法用单个 Mortal 区分「被塔击杀→给全局/攻击者记赏金」与「抵达大本营漏怪→扣命·不发赏金」。这是塔防经济（逐怪赏金）唯一表达不了的点，也是**击杀计分/连击表/赏金**一类通用需求的共性缺口（非塔防专属）。
 > **game-q 现绕法（已落地·不依赖本单）**：经济走「开局金 + 清波奖金（timeline resource-cue / `effect-apply` on `timeline:done:<wave>`）+ 波中缓速涓流」——全组合现有能力、确定性、无缺口依赖；逐怪赏金暂缓。

@@ -7,7 +7,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
-import { textureOverrideUri } from './art-textures.js'; // 背景板槽（批30 全屏台账化·真图=cover·无=主题色）
+import { textureOverrideUri, zodiacIconUri } from './art-textures.js'; // 背景板槽（批30）+ 生肖套装图标（批32）
 import { HERO_CARDS } from './hero-codex.js';
 import { heroPortraitUri, type Suit } from './portraits.js';
 import { DIZHI_ZODIACS, DIZHI_TIER_NM, DIZHI_TIER_CAP, DIZHI_INLAY_FAVOR, INLAY_MAX, inlayBonus, type InlayEntry } from './blueprint.js';
@@ -46,8 +46,10 @@ function enchantModal(view: LobbyView, idx: number): LayoutNode {
   const sockets: LayoutNode[] = [];
   for (let k = 0; k < INLAY_MAX; k++) {
     const e = inlaid[k] as InlayEntry | undefined;
+    // 生肖套装图标（批32）：icon 覆盖在场 → Tag.icon 图；无 = 原纯文字（观感零变）。
     sockets.push(e
-      ? { type: 'Tag', id: `ench-slot-${k}`, props: { label: `${zodOf(e.b)?.animal ?? e.b}·${DIZHI_TIER_NM[e.t]} ✕`, tone: 'accent', size: 'md', action: 'removeInlay', actionArg: `${idx}:${k}` } }
+      ? { type: 'Tag', id: `ench-slot-${k}`, props: { label: `${zodOf(e.b)?.animal ?? e.b}·${DIZHI_TIER_NM[e.t]} ✕`, tone: 'accent', size: 'md', action: 'removeInlay', actionArg: `${idx}:${k}`,
+          ...(zodiacIconUri(e.b) ? { icon: zodiacIconUri(e.b)! } : {}) } }
       : { type: 'Tag', id: `ench-slot-e${k}`, props: { label: '◇ 空槽', tone: 'dim', size: 'md' } });
   }
 
@@ -67,7 +69,8 @@ function enchantModal(view: LobbyView, idx: number): LayoutNode {
     for (const z of DIZHI_ZODIACS) for (let t = DIZHI_TIER_CAP; t >= 1; t--) {
       const n = (bag[z.branch] ?? [])[t - 1] ?? 0;
       if (n > 0) picks.push({ type: 'Tag', id: `ench-pick-${z.branch}-${t}`,
-        props: { label: `${z.animal}·${DIZHI_TIER_NM[t]} ×${Math.min(n, 3)} (+${DIZHI_INLAY_FAVOR[t]})`, tone: 'normal', size: 'md', action: 'inlay', actionArg: `${idx}:${z.branch}:${t}` } });
+        props: { label: `${z.animal}·${DIZHI_TIER_NM[t]} ×${Math.min(n, 3)} (+${DIZHI_INLAY_FAVOR[t]})`, tone: 'normal', size: 'md', action: 'inlay', actionArg: `${idx}:${z.branch}:${t}`,
+          ...(zodiacIconUri(z.branch) ? { icon: zodiacIconUri(z.branch)! } : {}) } });
     }
     pickKids.push({ type: 'Label', id: 'ench-pick-h', props: { text: picks.length ? '点卡包里的地支镶入（消耗一张·真提升战力）：' : '卡包里没有地支了——去商城抽取：', size: 13, color: 'sub' } });
     if (picks.length) pickKids.push({ type: 'Panel', id: 'ench-picks', props: { bare: true }, layout: { direction: 'grid', minCol: 120, gap: 6, padding: 0 }, children: picks });

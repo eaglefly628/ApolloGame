@@ -21,6 +21,7 @@
 | 贴图按钮（自定义皮） | `Button.skin`（**已解析图 URL**·同 `Image.src` 约定）+ `skinSlice`（9-slice） | 按钮底=该图 cover + 白字投影保可读；配 `shape` 或透明 PNG 可做任意异形贴图键。**皮换尺寸变形→加 `skinSlice`（源边距 px）走 9-slice 无损缩放**（border-image·四角固定·边中拉伸·任意尺寸不糊·商业 UI 标配·样例 game-i `t-skin-9slice`）。**sim 持资产 key·游戏经 `resolveAsset` 解析后填**（key 不进画面·保 sim 纯）——同 Image.src/Avatar.src/PlayingCard.art 一脉。命中区=包围盒（alpha 命中是二期）。贴图资产走**资产手册**（asset-manager agent），**绝不把 base64/外链二进制塞进 sim** |
 | 全游戏按钮一体换皮 | `UITheme.buttonSkins`（主题级皮槽·批29） | kind(`hero/primary/ghost/quiet`)→`{skin,skinSlice}`——**一个 kind 一张皮，全游戏按钮零逐点改**；node 级 `Button.skin` 优先（`skin:''`=显式关皮逃生）；不填=原 kind 底零变化。美术替换场景（台账按钮皮行）用这个，别去逐个 Button 塞 skin。样例=game-g `ui-theme.ts`（getter 渲染时求值·真图到位即换） |
 | 牌背贴图 | `PlayingCard.backArt`（已解析 URL·批29） | `faceUp:false` 时整面 cover、替代 `back` 纹样字符与 `backPattern`；不填=原程序化牌背零变化。正面立绘仍走 `art`。样例=game-g home-screen duel-back |
+| 图标（emoji→套装美术图标） | `Button.icon` / `Tag.icon` / `Label spans[].img` / `Card.media`(URL 自动按图渲)（批32） | 四个图文位·全 additive：不填=纯文字零回归。界面 emoji 记号（🪙💎⚡🀄…）逐槽换成台账套装图标（统一风格锚成套生成）；排印记号（→ ✓ ★ ⚠）**不图标化**。样例=game-g lobby-dd `iconPill`/overlays `iconBtnProps`（覆盖在场才换·观感零变式接线） |
 
 ## ② 样例指针
 

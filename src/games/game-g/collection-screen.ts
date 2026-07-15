@@ -10,7 +10,7 @@
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
-import { textureOverrideUri } from './art-textures.js'; // 背景板槽（批30 全屏台账化·真图=cover·无=主题色）
+import { textureOverrideUri, iconUri } from './art-textures.js'; // 背景板槽（批30）+ 套装图标（批32）
 import { HERO_CARDS, type HeroCard, type HeroRar } from './hero-codex.js';
 import { heroPortraitUri } from './portraits.js';
 import { EARTH_FIENDS, STAGE_CAMPAIGN } from './campaign-data.js';
@@ -190,9 +190,16 @@ function collectPage(view: LobbyView): LayoutNode {
   return {
     type: 'Panel', id: 'coll-collect', props: { bare: true, scroll: true }, layout: { direction: 'column', gap: 10, padding: 4 },
     children: [
-      { type: 'Label', id: 'col-t-h', props: { text: `🗃 天罡牌 · 收藏 ${ownedT}/${view.tiangangs.length}（到「牌组」屏编入出战）`, size: 'md', color: 'gold' } },
+      // 页头套装图标（批32）：icon 在场→span.img·无=原 emoji 文本（观感零变）。
+      { type: 'Label', id: 'col-t-h', props: { size: 'md', color: 'gold', spans: [
+        iconUri('collection') ? { text: `天罡牌 · 收藏 ${ownedT}/${view.tiangangs.length}（到「牌组」屏编入出战）`, img: iconUri('collection')! }
+          : { text: `🗃 天罡牌 · 收藏 ${ownedT}/${view.tiangangs.length}（到「牌组」屏编入出战）` },
+      ] } },
       { type: 'Panel', id: 'col-t-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 180, gap: 8 }, children: tCards },
-      { type: 'Label', id: 'col-f-h', props: { text: `✨ 闪艺 · ${ownedF}/${view.foils.length}（纯装饰收集）`, size: 'md', color: 'gold' } },
+      { type: 'Label', id: 'col-f-h', props: { size: 'md', color: 'gold', spans: [
+        iconUri('foil') ? { text: `闪艺 · ${ownedF}/${view.foils.length}（纯装饰收集）`, img: iconUri('foil')! }
+          : { text: `✨ 闪艺 · ${ownedF}/${view.foils.length}（纯装饰收集）` },
+      ] } },
       { type: 'Panel', id: 'col-f-grid', props: { bare: true }, layout: { direction: 'grid', minCol: 180, gap: 8 }, children: fCards },
     ],
   };

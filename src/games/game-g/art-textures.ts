@@ -51,3 +51,21 @@ export function textureOverrideCount(): number { return _texOverrides.size; }
 export function feltBrocadeUri(): string {
   return textureOverrideUri('game-g/tex/felt-brocade') ?? FELT_BROCADE;
 }
+
+/** 套装图标查询（批32 owner「很多图标统一风格升级」）：台账 game-g/icon/<token> 行出真图后，
+ *  界面 emoji 记号（🪙💎⚡🀄…）逐槽换成套装美术图标（Button.icon/Tag.icon/Label span.img 消费）。
+ *  无覆盖=null → 消费点保留原 emoji（观感零变）。token 词表见台账 ICON_ROWS（34 枚·统一风格锚）。 */
+export function iconUri(token: string): string | null {
+  return textureOverrideUri(`game-g/icon/${token}`);
+}
+
+/** 地支 branch → 套装图标 token（台账 game-g/icon/zodiac-*·12 生肖·批32）。 */
+export const ZODIAC_ICON_TOKEN: Record<string, string> = {
+  子: 'zodiac-rat', 丑: 'zodiac-ox', 寅: 'zodiac-tiger', 卯: 'zodiac-rabbit', 辰: 'zodiac-dragon', 巳: 'zodiac-snake',
+  午: 'zodiac-horse', 未: 'zodiac-goat', 申: 'zodiac-monkey', 酉: 'zodiac-rooster', 戌: 'zodiac-dog', 亥: 'zodiac-pig',
+};
+/** 生肖图标查询：branch（子丑寅…）→ 真图 URL 或 null（回退 emoji/文字）。 */
+export function zodiacIconUri(branch: string): string | null {
+  const tok = ZODIAC_ICON_TOKEN[branch];
+  return tok ? iconUri(tok) : null;
+}
