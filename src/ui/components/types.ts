@@ -132,6 +132,9 @@ export interface ButtonProps {
   /** 自定义贴图皮（**已解析图 URL**·同 Image.src 约定：sim 持资产 key·游戏经 resolveAsset 解析后填·key 不进画面）。
    *  设了则按钮底=该图 cover·文字叠白字投影保可读；配 shape 可做透明 PNG 异形贴图键。命中区=包围盒。owner 2026-07-04 异形/贴图按钮需求。 */
   skin?: string;
+  /** 9-slice 无损缩放（源图四边保留边距·px）。设了则 skin 走 border-image 九宫格：四角固定·边中拉伸——
+   *  按钮任意尺寸皮都不变形（治好 cover 的拉伸/裁切）。商业 UI 皮标配。缺省=cover。owner 2026-07-07。 */
+  skinSlice?: number;
 }
 
 export interface LabelProps {

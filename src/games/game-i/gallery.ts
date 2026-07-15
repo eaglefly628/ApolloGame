@@ -962,6 +962,13 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           { type: 'Button', id: 'sk-card-flower', props: { label: '', skin: CARD_FLOWER_URL, action: 'click', actionArg: 'card-flower' }, layout: { width: 120, height: 168 } },
           { type: 'Button', id: 'sk-card-play', props: { label: '出 王牌', skin: CARD_JOKER_URL, action: 'click', actionArg: 'card-play' }, layout: { width: 120, height: 168 } },
         ] },
+      { type: 'Label', id: 't-skin-9slice', props: { text: '9-slice 无损缩放（skinSlice=源边距 px）：cover 拉大糊角（左）vs 九宫格四角始终清晰（右）——商业 UI 皮标配', size: 'xs', color: 'dim' } },
+      { type: 'Panel', id: 'skin-9slice-row', props: { bare: true }, layout: { direction: 'row', gap: 24, padding: 18, align: 'center' },
+        children: [
+          { type: 'Button', id: 'sk-9-cover', props: { label: 'cover 糊角', skin: BTN_BLUE_URL, action: 'click', actionArg: '9-cover' }, layout: { width: 180, height: 110 } },
+          { type: 'Button', id: 'sk-9-slice', props: { label: '9-slice 清晰', skin: BTN_GREEN_URL, skinSlice: 9, action: 'click', actionArg: '9-slice' }, layout: { width: 180, height: 110 } },
+          { type: 'Button', id: 'sk-9-big', props: { label: '任意尺寸不变形', skin: BTN_GREEN_URL, skinSlice: 9, action: 'click', actionArg: '9-big' }, layout: { width: 240, height: 72 } },
+        ] },
 
       divider('d-3d'),
       sectionTitle('t-3d', 'LAYOUT · 3D UI 表达（CSS-3D 通用化·rotateX/Y 透视倾斜 · z 景深叠层 · tilt3d 悬停立体抬起 · 把 CoinFlip 的 3D 通用成任意面板）'),

@@ -69,6 +69,17 @@ describe('Button.skin · 贴图皮（已解析 URL·同 Image.src 约定）', ()
     const html = renderNode({ type: 'Button', id: 'b', props: { label: 'x' } });
     expect(html).not.toContain('center/cover');
   });
+  it('skinSlice → 9-slice border-image（四角固定·任意尺寸不变形）·非 cover', () => {
+    const html = renderNode({ type: 'Button', id: 'b', props: { label: 'x', skin: '/a.png', skinSlice: 8 } });
+    expect(html).toContain("border-image:url('/a.png') 8 fill / 8px / 0 stretch");
+    expect(html).toContain('border-width:8px');
+    expect(html).not.toContain('center/cover'); // 9-slice 不用 cover
+  });
+  it('skin 无 skinSlice → 仍 cover（不回归）', () => {
+    const html = renderNode({ type: 'Button', id: 'b', props: { label: 'x', skin: '/a.png' } });
+    expect(html).toContain('center/cover');
+    expect(html).not.toContain('border-image');
+  });
 });
 
 describe('Button · 交互态标记（按压/悬停反馈·配 server.ts 注入的 [data-apollo-btn] CSS）', () => {
