@@ -1161,16 +1161,24 @@ function buildPageNew(controls: ControlsState): LayoutNode {
 // ── 页 · 3D UI 表达（CSS-3D 通用化·把 rotateX/Y/z/perspective/翻面 组合成一组 3D 数据控件）─────────
 // 全是既有 LayoutConstraints（rotateX/rotateY/z/perspective/tilt3d）+ PlayingCard.flipOnHover 的**重组**，
 // 无新引擎能力（showcase 职责=把底座能力排成活样例）。控件仍是纯数据·经真 UI 库渲染·UI 铁律。
-function buildPage3dUi(): LayoutNode {
+function buildPage3dUi(controls: ControlsState): LayoutNode {
   // 旋转木马一张卡：绕 Y 轴按位次倾 + 朝外/朝内推（z），共享父 perspective → 卡组呈 3D 扇形。
   const coverCard = (id: string, rank: string, suit: string, name: string, rotY: number, z: number, sel = false): LayoutNode =>
     ({ type: 'PlayingCard', id, props: { rank, suit, label: name, size: 'md', selected: sel }, layout: { rotateY: rotY, z } });
+  // 名将背面信息子树（翻面卡共用）。
+  const heroBack = (bid: string, name: string, era: string, tag: string): LayoutNode =>
+    ({ type: 'Panel', id: bid, props: { bare: true }, layout: { direction: 'column', gap: 6, padding: 10, align: 'center', justify: 'center' },
+      children: [
+        { type: 'Label', id: `${bid}-n`, props: { text: name, size: 'md', bold: true, color: 'gold' } },
+        { type: 'Label', id: `${bid}-e`, props: { text: era, size: 'xs', color: 'jade' } },
+        { type: 'Label', id: `${bid}-t`, props: { text: tag, size: 'xs', color: 'sub' } },
+      ] });
   return {
     type: 'Panel', id: 'page-3dui', props: { scroll: true },
     layout: { direction: 'column', gap: 18, padding: 20 },
     children: [
       { type: 'Label', id: '3dui-intro', props: {
-        text: '3D UI = 2D LayoutNode 挂 CSS-3D 变换（透视/景深/翻面）——全是数据字段（rotateX/rotateY/z/perspective/tilt3d/flipOnHover），弱 LLM 只填数不写 CSS。真 3D 合成（preserve-3d）·非贴图假 3D。',
+        text: '3D UI = 2D LayoutNode 挂 CSS-3D 变换（透视/景深/翻面/自旋/按压）——全是数据字段（rotateX/rotateY/rotate/z/perspective/tilt3d/press3d/flipOnHover/flipped + anim:spin），弱 LLM 只填数不写 CSS。真 3D 合成（preserve-3d）·非贴图假 3D。休闲刚需一网打尽。',
         color: 'sub', size: 'sm' } },
 
       divider('d-3du1'),
@@ -1235,7 +1243,71 @@ function buildPage3dUi(): LayoutNode {
           { type: 'Button', id: '3dui-tilt-card', props: { label: '', skin: CARD_JOKER_URL, action: 'click', actionArg: 'tilt-card' }, layout: { width: 120, height: 168, tilt3d: true } },
           { type: 'Panel', id: '3dui-tilt-panel', props: { bg: 'void', title: 'tilt3d' }, layout: { width: 150, height: 116, padding: 14, tilt3d: true, align: 'center', justify: 'center' },
             children: [{ type: 'Label', id: '3dui-tilt-panel-l', props: { text: '悬停我\n→ 立体抬起', size: 'sm', color: 'text' } }] },
-          { type: 'Label', id: '3dui-hover-l', props: { text: '一个 tilt3d:true 字段 = 悬停时透视抬起 + 柔影。任意面板/按钮/卡牌都能挂。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+          { type: 'Label', id: '3dui-hover-l', props: { text: '一个 tilt3d:true 字段 = 悬停时透视抬起 + 柔影（仅桌面 hover）。触屏点按反馈见下方 press3d。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
+      divider('d-3du6'),
+      sectionTitle('t-3dui-wheel', '★ 幸运转盘 / spinner 加载 / 旋转勋章（LAYOUT.rotate 既有 Z 轴 + anim:"spin" 新循环预设·休闲刚需·非新增轴）'),
+      { type: 'Panel', id: '3dui-wheel-row', props: { bare: true }, layout: { direction: 'row', gap: 56, padding: 24, align: 'center' },
+        children: [
+          // 幸运转盘：conic-gradient 分段圆盘 + 连续自旋 + 顶部指针。
+          { type: 'Panel', id: 'wheel-col', props: { bare: true }, layout: { direction: 'column', gap: 2, align: 'center' },
+            children: [
+              { type: 'Label', id: 'wheel-ptr', props: { text: '▼', size: 'lg', color: 'gold' } },
+              { type: 'Panel', id: 'wheel-disc', props: { bg: { custom: 'conic-gradient(#e94f5a 0deg 45deg,#f5a623 45deg 90deg,#7ed957 90deg 135deg,#4a90d9 135deg 180deg,#9b59b6 180deg 225deg,#f5a623 225deg 270deg,#7ed957 270deg 315deg,#4a90d9 315deg 360deg)' } },
+                layout: { width: 168, height: 168, radius: 84, anim: 'spin', animMs: 6000, align: 'center', justify: 'center', padding: 0 },
+                children: [{ type: 'Panel', id: 'wheel-hub', props: { bg: 'raised' }, layout: { width: 40, height: 40, radius: 20 }, children: [] }] },
+              { type: 'Label', id: 'wheel-lbl', props: { text: '每日转盘（rotate + spin）', size: 'xs', color: 'dim' } },
+            ] },
+          // spinner 加载环：conic 弧 + 快速自旋。
+          { type: 'Panel', id: 'spin-col', props: { bare: true }, layout: { direction: 'column', gap: 8, align: 'center' },
+            children: [
+              { type: 'Panel', id: 'spin-ring', props: { bg: { custom: 'conic-gradient(#6cc6a0 0deg,rgba(108,198,160,0) 300deg 360deg)' } },
+                layout: { width: 60, height: 60, radius: 30, anim: 'spin', animMs: 900, align: 'center', justify: 'center', padding: 0 },
+                children: [{ type: 'Panel', id: 'spin-hole', props: { bg: 'sunken' }, layout: { width: 38, height: 38, radius: 19 }, children: [] }] },
+              { type: 'Label', id: 'spin-lbl', props: { text: '加载中…', size: 'xs', color: 'dim' } },
+            ] },
+          // 旋转勋章：金圆 + ★（自旋让对称件也读得出转动）。
+          { type: 'Panel', id: 'medal-col', props: { bare: true }, layout: { direction: 'column', gap: 8, align: 'center' },
+            children: [
+              { type: 'Panel', id: 'medal', props: { bg: 'gold-sheen' }, layout: { width: 74, height: 74, radius: 37, anim: 'spin', animMs: 3200, align: 'center', justify: 'center', padding: 0 },
+                children: [{ type: 'Label', id: 'medal-star', props: { text: '★', size: 'xl', bold: true, color: 'ink' } }] },
+              { type: 'Label', id: 'medal-lbl', props: { text: '旋转勋章', size: 'xs', color: 'dim' } },
+            ] },
+          { type: 'Label', id: '3dui-wheel-l', props: { text: 'Z 轴自旋既有（LAYOUT.rotate）；缺的是连续循环预设——补 anim:"spin"（linear·匀速）即解锁转盘/加载环/自旋徽章一大类休闲件。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
+      divider('d-3du7'),
+      sectionTitle('t-3dui-tapflip', '★ 状态驱动翻面 PLAYINGCARD.flipped（点按/state 翻·非 hover·触屏可用——记忆翻牌/卡牌对战/刮刮乐）'),
+      { type: 'Panel', id: '3dui-tapflip-row', props: { bare: true }, layout: { direction: 'row', gap: 30, padding: 24, align: 'center' },
+        children: [
+          // 交互：flipped 绑 controls.flag，点下方 Toggle 实时翻（state 驱动·非 hover）。
+          { type: 'Panel', id: 'tapflip-live', props: { bare: true }, layout: { direction: 'column', gap: 10, align: 'center' },
+            children: [
+              { type: 'PlayingCard', id: 'tapflip-card', props: {
+                rank: 'A', suit: '♠', label: '赵子龙', size: 'lg', flipped: controls.flag,
+                backFace: heroBack('tapflip-back', '常山赵子龙', '蜀 · 五虎上将', '一身是胆 · 长坂坡') } },
+              { type: 'Toggle', id: 'tapflip-tg', props: { label: '点我翻牌（flipped=state）', checked: controls.flag, action: 'setFlag' } },
+            ] },
+          // 静态两态对照（同字段不同值）。
+          { type: 'PlayingCard', id: 'tapflip-a', props: {
+            rank: 'K', suit: '♥', label: '关云长', size: 'lg', flipped: false,
+            backFace: heroBack('tapflip-a-back', '美髯公 关羽', '蜀', '过五关斩六将') } },
+          { type: 'PlayingCard', id: 'tapflip-b', props: {
+            rank: 'K', suit: '♥', label: '关云长', size: 'lg', flipped: true,
+            backFace: heroBack('tapflip-b-back', '美髯公 关羽', '蜀', '过五关斩六将') } },
+          { type: 'Label', id: '3dui-tapflip-l', props: { text: 'flipped:false=正面 / true=背面 → 由数据决定翻到哪面（左侧绑 state·点 Toggle 实时翻）。对比 flipOnHover：这个触屏点按就能翻。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
+      divider('d-3du8'),
+      sectionTitle('t-3dui-press', '★ 按压 3D 反馈 LAYOUT.press3d（按下沉 Z + 底唇收缩·:active 触屏可用·糖果厚按钮——tilt3d 的移动端补位）'),
+      { type: 'Panel', id: '3dui-press-row', props: { bare: true }, layout: { direction: 'row', gap: 28, padding: 24, align: 'center' },
+        children: [
+          { type: 'Button', id: 'press-a', props: { label: '开始游戏', kind: 'primary', action: 'click', actionArg: 'press-a' }, layout: { press3d: true } },
+          { type: 'Button', id: 'press-b', props: { label: '领取奖励', kind: 'hero', action: 'click', actionArg: 'press-b' }, layout: { press3d: true } },
+          { type: 'Panel', id: 'press-tile', props: { bg: 'jade-sheen', action: 'click', actionArg: 'press-tile' }, layout: { width: 120, height: 72, padding: 12, press3d: true, align: 'center', justify: 'center' },
+            children: [{ type: 'Label', id: 'press-tile-l', props: { text: '可按面板', size: 'sm', color: 'text' } }] },
+          { type: 'Label', id: '3dui-press-l', props: { text: '一个 press3d:true 字段 = 常驻底唇（厚度）+ 按下沉 Z、底唇收缩。走 :active → 触屏点按也触发（对照 tilt3d 只 hover）。按钮/面板/卡牌通用。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
         ] },
     ],
   };
@@ -1259,7 +1331,7 @@ function buildUIModule(shop: ShopState, pick: PickState, activeTab: string, cont
       action: 'switchTab',
     },
     layout: { flex: 1 },
-    children: [pageLayout, pageDisplay, buildPageInput(controls), buildPage3dUi(), buildPageNew(controls), buildShop(shop), buildPickHand(pick)],
+    children: [pageLayout, pageDisplay, buildPageInput(controls), buildPage3dUi(controls), buildPageNew(controls), buildShop(shop), buildPickHand(pick)],
   };
 }
 

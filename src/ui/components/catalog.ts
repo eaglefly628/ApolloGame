@@ -260,7 +260,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
     sample: { type: 'Card', id: 's-card', props: { media: '🃏', title: '同袍', sub: '🪙 16', corner: '稀有', tone: 'accent', action: 'buy', actionArg: 'comrade' } },
   },
   {
-    type: 'PlayingCard', summary: '扑克牌原语', whenToUse: '一切扑克/卡牌牌面。流式卡墙用 fluid+Panel grid cols；悬停翻面用 flipOnHover+backFace。', children: 'none',
+    type: 'PlayingCard', summary: '扑克牌原语', whenToUse: '一切扑克/卡牌牌面。流式卡墙用 fluid+Panel grid cols；桌面悬停翻面 flipOnHover+backFace，手机/state 驱动翻面用 flipped+backFace（触屏可用）。', children: 'none',
     props: [
       { name: 'rank', type: 'string', required: true, describe: "点数 'A'/'K'/'10'…" },
       { name: 'suit', type: 'string', required: true, describe: "花色 '♠'|'♥'|'♦'|'♣'" },
@@ -269,7 +269,9 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'face', type: 'enum', values: ['dark', 'light'], describe: '暗卡/经典白牌' },
       { name: 'selected', type: 'boolean', describe: '选中金边' }, { name: 'dimmed', type: 'boolean', describe: '暗化' },
       { name: 'fluid', type: 'boolean', describe: '充满父格(5:7)·配 grid cols' },
-      { name: 'flipOnHover', type: 'boolean', describe: '悬停翻面' }, { name: 'backFace', type: 'node', describe: '背面信息子树' },
+      { name: 'flipOnHover', type: 'boolean', describe: '悬停翻面（桌面·:hover）' },
+      { name: 'flipped', type: 'boolean', describe: '状态驱动翻面（true=背面·点按/state 翻·触屏可用·与 flipOnHover 互斥）' },
+      { name: 'backFace', type: 'node', describe: '背面信息子树（flipOnHover/flipped 时渲）' },
       { name: 'backPattern', type: 'enum', values: ['checker', 'stripe'], describe: '牌背纹理（faceUp:false 时）' },
       { name: 'backArt', type: 'string', describe: '牌背贴图 URL（faceUp:false 时整面 cover·替代纹样字符/backPattern）' },
       { name: 'art', type: 'string', describe: '立绘 URL' }, { name: 'label', type: 'string', describe: '牌下标签' },

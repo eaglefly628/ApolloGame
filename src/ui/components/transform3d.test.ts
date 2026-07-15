@@ -39,4 +39,34 @@ describe('LayoutConstraints · 3D 变换', () => {
     expect(P({ tilt3d: true })).toContain('data-tilt3d');
     expect(P({ rotate: 1 })).not.toContain('data-tilt3d');
   });
+
+  // ── 休闲 3D UI 三补（rotateZ 既有=rotate·补循环自旋 / 状态翻面 / 按压反馈）──
+  it('anim:"spin" → 匀速 linear 无限循环（转盘/加载环·区别于 ease-in-out 呼吸类）', () => {
+    const html = P({ anim: 'spin' });
+    expect(html).toMatch(/animation:apollo-spin \d+ms linear infinite/);
+    // 呼吸类仍 ease-in-out（不回归）
+    expect(P({ anim: 'float' })).toMatch(/animation:apollo-float \d+ms ease-in-out infinite/);
+  });
+  it('press3d → data-press3d 标记（按压 3D·:active 触屏可用）', () => {
+    expect(P({ press3d: true })).toContain('data-press3d');
+    expect(P({ tilt3d: true })).not.toContain('data-press3d');
+  });
+  it('PlayingCard.flipped → data-flipstate + data-flipped（状态驱动·非 hover·触屏翻面）', () => {
+    const back: LayoutNode = { type: 'Label', id: 'b', props: { text: '背' } };
+    const up = renderNode({ type: 'PlayingCard', id: 'c', props: { rank: 'A', suit: '♠', flipped: false, backFace: back } });
+    const down = renderNode({ type: 'PlayingCard', id: 'c', props: { rank: 'A', suit: '♠', flipped: true, backFace: back } });
+    expect(up).toContain('data-flipstate');
+    expect(up).toContain('data-flipped="false"');
+    expect(down).toContain('data-flipped="true"');
+    expect(up).toContain('data-flip-front');
+    expect(up).toContain('data-flip-back');
+    // 状态翻面用 data-flipstate·不是 hover 的 data-flipcard
+    expect(up).not.toContain('data-flipcard');
+  });
+  it('PlayingCard.flipOnHover 仍走 data-flipcard（悬停·不回归）', () => {
+    const back: LayoutNode = { type: 'Label', id: 'b', props: { text: '背' } };
+    const html = renderNode({ type: 'PlayingCard', id: 'c', props: { rank: 'A', suit: '♠', flipOnHover: true, backFace: back } });
+    expect(html).toContain('data-flipcard');
+    expect(html).not.toContain('data-flipstate');
+  });
 });

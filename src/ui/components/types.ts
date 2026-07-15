@@ -35,7 +35,7 @@ export interface LayoutConstraints {
   justify?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly';
   padding?: number;
   margin?: number;
-  /** 旋转角度（度·CSS transform rotate=绕 Z 轴/平面内旋）。扇形手牌/卡牌斜摆填这一个数即得。 */
+  /** 旋转角度（度·CSS transform rotate=绕 Z 轴/平面内旋）。扇形手牌/卡牌斜摆填这一个数即得；配 `anim:'spin'` 循环 → 幸运转盘/spinner 加载环/旋转勋章（Z 轴自旋既有轴·非新增）。 */
   rotate?: number;
   /** 缩放倍率（CSS transform scale）。选中态放大、强调用。 */
   scale?: number;
@@ -47,9 +47,11 @@ export interface LayoutConstraints {
   perspective?: number;
   /** Z 轴位移（px·CSS translateZ·景深叠层：正=朝屏幕外凸、负=退后）。叠牌/悬浮层的立体分层。需父级 preserve-3d（本件带 3D 变换即自动开）。 */
   z?: number;
-  /** 交互 3D 倾斜（悬停时朝内立体抬起·render-only·同 data-tilt3d CSS）。给卡/面板/按钮加"活的立体感"。 */
+  /** 交互 3D 倾斜（悬停时朝内立体抬起·render-only·同 data-tilt3d CSS）。给卡/面板/按钮加"活的立体感"。**只 :hover→触屏无效**·要点按反馈用 press3d。 */
   tilt3d?: boolean;
-  /** 入场/强调动画预设名（引擎内建关键帧·mountUI 注入）：fadeIn/slideUp/pop/shake/dealIn/flyIn。 */
+  /** 按压 3D 反馈（按下沉入 Z + 底唇收缩·糖果厚按钮·render-only·同 data-press3d CSS）。走 :active → **触屏点按也触发**（tilt3d 的移动端补位）。给 Button/Panel/卡牌加"按得下去"的实体感。 */
+  press3d?: boolean;
+  /** 入场/强调动画预设名（引擎内建关键帧·mountUI 注入）：一次性 fadeIn/slideUp/pop/shake/dealIn/flyIn；循环 float/glow/pulse/spin（spin=绕 Z 连续自旋·linear·转盘/加载环）。 */
   anim?: string;
   /** 动画时长 ms（缺省 360）。 */
   animMs?: number;
@@ -370,8 +372,9 @@ export interface PlayingCardProps {
   back?: string;                         // 牌背中央纹样字符（缺省 ♠ 暗纹）
   art?: string;                          // 立绘槽（已解析 URL/SVG）：正面时居中显名将立绘剪影、替代中央大花色（角标点数花色仍在）。游戏经 resolveAsset 把资产 key 解析后填（sim 持 key 保纯）。复用面：所有卡牌游戏。
   fluid?: boolean;                       // 流式卡：width:100% 充满父格 + 维持 5:7 aspect-ratio（替代固定 sm/md/lg 档）。配 Panel grid cols:N → 严格 N 列、卡填满、零卡间空隙（REQ-UI-G收藏卡②）。
-  flipOnHover?: boolean;                 // 悬停翻面：配 backFace·鼠标悬停时 front→back 绕 Y 轴真 3D 翻转（rotateY 180°+backface-hidden），露出背面信息子树（CSS 注入·REQ-UI-G收藏卡①）。
-  backFace?: LayoutNode;                 // 背面内容子树（通常 Panel(column) 装 名/朝代/简介，同 Tooltip.bubble 思路）。仅 flipOnHover 时渲。
+  flipOnHover?: boolean;                 // 悬停翻面：配 backFace·鼠标悬停时 front→back 绕 Y 轴真 3D 翻转（rotateY 180°+backface-hidden），露出背面信息子树（CSS 注入·REQ-UI-G收藏卡①）。**只 :hover→触屏无效**·手机翻牌用 flipped。
+  flipped?: boolean;                     // 状态驱动翻面（配 backFace）：由数据/游戏 state 决定翻到哪面（true=背面），点按/state 变即翻——**非 hover·触屏可用**（记忆翻牌/卡牌对战/刮刮乐）。同一套真 3D rotateY 翻转，由 data-flipped 属性驱动。与 flipOnHover 互斥（flipped 在场优先）。
+  backFace?: LayoutNode;                 // 背面内容子树（通常 Panel(column) 装 名/朝代/简介，同 Tooltip.bubble 思路）。仅 flipOnHover / flipped 时渲。
   backPattern?: 'checker' | 'stripe';    // 牌背程序化纹理（faceUp:false 时叠·原版红牌背棋盘格条纹·REQ-UI-G流光底纹②）。
   backArt?: string;                      // 牌背贴图（已解析 URL·faceUp:false 时整面 cover·替代纹样字符/程序化纹理）。REQ-UI-PlayingCard-back（07-14 缺口单·07-15 批29 落地）。
   action?: string; actionArg?: string;   // 可点 → handlers[action](actionArg)

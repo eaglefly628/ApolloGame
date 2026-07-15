@@ -109,6 +109,7 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 @keyframes apollo-glow{0%,100%{box-shadow:0 0 22px rgba(232,205,130,.5)}50%{box-shadow:0 0 50px rgba(232,205,130,.95)}}
 @keyframes apollo-pulse{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes apollo-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 [data-flipcard]{perspective:1000px;transition:transform .35s ease}
 [data-flipcard]:hover{transform:scale(1.06)}
 [data-flipcard] [data-flip-front],[data-flipcard] [data-flip-back]{transition:transform .55s cubic-bezier(.2,.75,.25,1);backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-origin:50% 50%;will-change:transform}
@@ -116,6 +117,12 @@ const APOLLO_KEYFRAMES = `
 [data-flipcard] [data-flip-back]{transform:rotateY(180deg)}
 [data-flipcard]:hover [data-flip-front]{transform:rotateY(-180deg)}
 [data-flipcard]:hover [data-flip-back]{transform:rotateY(0deg)}
+[data-flipstate]{perspective:1000px}
+[data-flipstate] [data-flip-front],[data-flipstate] [data-flip-back]{transition:transform .5s cubic-bezier(.2,.75,.25,1);backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-origin:50% 50%;will-change:transform}
+[data-flipstate] [data-flip-front]{transform:rotateY(0deg)}
+[data-flipstate] [data-flip-back]{transform:rotateY(180deg)}
+[data-flipstate][data-flipped="true"] [data-flip-front]{transform:rotateY(-180deg)}
+[data-flipstate][data-flipped="true"] [data-flip-back]{transform:rotateY(0deg)}
 @keyframes apollo-sheen-sweep{0%{background-position:220% 0}100%{background-position:-60% 0}}
 [data-sheen]{position:relative}
 [data-sheen]::after,[data-fx~="sheen"]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.4) 50%,transparent 58%);background-size:250% 100%;animation:apollo-sheen-sweep 3.2s ease-in-out infinite}
@@ -129,7 +136,9 @@ const APOLLO_KEYFRAMES = `
 [data-apollo-skin]:not([disabled]):hover{filter:brightness(1.08)}
 [data-apollo-skin]:not([disabled]):active{transform:translateY(2px);filter:brightness(.85)}
 [data-tilt3d]{transition:transform .18s cubic-bezier(.2,.7,.3,1);transform-style:preserve-3d}
-[data-tilt3d]:hover{transform:perspective(800px) rotateX(7deg) rotateY(-9deg) translateZ(16px)}`;
+[data-tilt3d]:hover{transform:perspective(800px) rotateX(7deg) rotateY(-9deg) translateZ(16px)}
+[data-press3d]{transition:transform .09s ease,box-shadow .09s ease;box-shadow:0 6px 0 rgba(0,0,0,.32)}
+[data-press3d]:active{transform:translateY(5px);box-shadow:0 1px 0 rgba(0,0,0,.32)}`;
 /**
  * 幂等注入引擎 UI 关键帧 + fx 叠层 CSS（anim 预设 / sheen·flash 的 ::after·::before / flipcard）。
  * mountUI 自动调；**renderNode-only 屏（如 game-g 战斗屏走 innerHTML·非 mountUI）须自己调一次**，

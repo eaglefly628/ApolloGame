@@ -21,7 +21,7 @@ const esc = (s: string): string =>
 const num = (v: unknown, d = 0): number => { const n = Number(v); return Number.isFinite(n) ? n : d; };
 // anim 预设白名单（mountUI 注入的关键帧名）：拒绝任意字符串插入 animation。
 const ANIM_PRESETS = new Set(['fadeIn', 'slideUp', 'pop', 'shake', 'dealIn', 'flyIn']); // 一次性入场
-const LOOP_PRESETS = new Set(['float', 'glow', 'pulse']);                                // 持续循环（浮动/发光/脉冲·环境动效·infinite）
+const LOOP_PRESETS = new Set(['float', 'glow', 'pulse', 'spin']);                        // 持续循环（浮动/发光/脉冲/自旋·环境动效·infinite）
 // justify 主轴分布枚举 → CSS justify-content（闭集映射·拒绝任意串注入）。
 const JUSTIFY_MAP: Record<string, string> = {
   start: 'flex-start', center: 'center', end: 'flex-end',
@@ -128,7 +128,9 @@ function layoutStyle(c?: LayoutConstraints, t?: UITheme): string {
   if (c.anim && ANIM_PRESETS.has(c.anim)) {
     p.push(`animation:apollo-${c.anim} ${num(c.animMs, 360)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}both ease-out`);
   } else if (c.anim && LOOP_PRESETS.has(c.anim)) {
-    p.push(`animation:apollo-${c.anim} ${num(c.animMs, 2400)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}ease-in-out infinite`);
+    // spin=匀速自旋（linear·转盘/加载环不该忽快忽慢）；其余环境动效 ease-in-out 呼吸。
+    const spin = c.anim === 'spin';
+    p.push(`animation:apollo-${c.anim} ${num(c.animMs, spin ? 3600 : 2400)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}${spin ? 'linear' : 'ease-in-out'} infinite`);
   }
   if (c.draggable) p.push('cursor:grab');
   // 视觉特效合集（UI 特效库）：闭集 fx → 动画/滤镜/叠层 CSS。需主题取色 → 仅 t 在场时应用。
@@ -647,12 +649,14 @@ function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UIThe
   const lblColor = light ? '#5a5048' : t.sub;
   const label = p.label ? `<div style="position:absolute;bottom:3px;left:0;right:0;font-size:9px;color:${lblColor};font-family:${t.fontUi};text-align:center;${light ? '' : 'text-shadow:0 1px 2px rgba(0,0,0,.6)'}">${esc(p.label)}</div>` : '';
   const value = p.value ? `<span style="position:absolute;bottom:4px;right:6px;font-size:10px;font-weight:700;color:${t.gold};font-family:${t.fontUi}">${esc(p.value)}</span>` : '';
-  // 悬停翻面（REQ-UI-G收藏卡①）：front=牌面 / back=信息子树，hover 时 scaleX 翻（CSS 注入·见 APOLLO_KEYFRAMES 的 data-flipcard 规则）。
-  if (p.flipOnHover && p.backFace) {
+  // 翻面（REQ-UI-G收藏卡① + REQ-UI-tap翻面）：front=牌面 / back=信息子树，绕 Y 轴真 3D 翻（CSS 注入·见 server.ts data-flipcard/data-flipstate 规则）。
+  //   flipped(状态驱动·触屏可用·优先) → data-flipstate + data-flipped；flipOnHover(悬停·桌面) → data-flipcard。二选一。
+  if ((p.flipped !== undefined || p.flipOnHover) && p.backFace) {
     const face = `position:absolute;inset:0;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:2px solid ${selBorder};font-family:${t.fontUi};${glow}${dimmed}`;
     const front = `<div data-flip-front style="${face};background:${faceBg}">${inner}${label}${value}</div>`;
     const back = `<div data-flip-back style="${face};background:${t.bg2};padding:7px;overflow:hidden">${renderNode(p.backFace, t)}</div>`;
-    return `<div id="${esc(id)}"${action} data-flipcard style="position:relative;${dim};${cursor}${ls}">${front}${back}</div>`;
+    const marker = p.flipped !== undefined ? `data-flipstate data-flipped="${p.flipped ? 'true' : 'false'}"` : 'data-flipcard';
+    return `<div id="${esc(id)}"${action} ${marker} style="position:relative;${dim};${cursor}${ls}">${front}${back}</div>`;
   }
   return `<div id="${esc(id)}"${action} style="position:relative;display:inline-flex;align-items:center;justify-content:center;${dim};border-radius:8px;background:${faceBg};border:2px solid ${selBorder};font-family:${t.fontUi};${glow}${dimmed}${cursor}${ls}">${inner}${label}${value}</div>`;
 }
@@ -830,13 +834,14 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
   const html = renderDispatch(node, theme);
   const c = node.layout;
   const fxData = c?.fx?.length ? fxToCss(c.fx, theme).dataFx : ''; // sheen/flash 等叠层 token
-  if (c && (c.draggable || c.dropZone || c.anchor || c.sheen || c.tilt3d || fxData)) {
+  if (c && (c.draggable || c.dropZone || c.anchor || c.sheen || c.tilt3d || c.press3d || fxData)) {
     const a: string[] = [];
     if (c.draggable) a.push(`draggable="true" data-drag="${esc(node.id)}"`);
     if (c.dropZone)  a.push(`data-drop="${esc(c.dropZone)}"`);
     if (c.anchor)    a.push(`data-anchor="${esc(c.anchor)}"`); // 新手引导 spotlight 锚点（OnboardingOverlay 定位）
     if (c.sheen)     a.push('data-sheen'); // 流光层（CSS 注入 ::after·apollo-sheen-sweep）
     if (c.tilt3d)    a.push('data-tilt3d'); // 交互 3D 倾斜（悬停立体抬起·CSS 注入 :hover 变换）
+    if (c.press3d)   a.push('data-press3d'); // 按压 3D 反馈（按下沉 Z + 底唇·CSS 注入 :active·触屏可用）
     if (fxData)      a.push(`data-fx="${esc(fxData)}"`); // 特效叠层（sheen/flash → ::after/::before）
     return html.replace(/^(\s*<[a-zA-Z][\w-]*)/, `$1 ${a.join(' ')}`);
   }
