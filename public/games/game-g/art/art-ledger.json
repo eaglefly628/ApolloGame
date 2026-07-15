@@ -2,7 +2,7 @@
   "version": 1,
   "game": "game-g",
   "mode": "requirements",
-  "count": 60,
+  "count": 63,
   "rows": [
     {
       "no": "art-01",
@@ -1760,8 +1760,8 @@
         "h": 720,
         "transparent": false
       },
-      "desc": "对战屏背景板（**接线待定**：战斗屏根节点在 game-g.tsx 战局挂载处·下一批接）",
-      "context": "消费点=待接（turn-battle 屏根 Screen.image）——行先立·描述先审",
+      "desc": "对战屏背景板（批29 已接线·画框外衬底）",
+      "context": "消费点=turn-battle-screen buildTurnBattleHTML 根（底色叠 cover·覆盖在场才生效）",
       "status": "needs-art",
       "gen": null,
       "provenance": null
@@ -1826,8 +1826,8 @@
         "h": 640,
         "transparent": false
       },
-      "desc": "牌背图（**控件缺口**：引擎 PlayingCard 暂无 back 贴图 prop——REQ-UI 提缺口后接线）",
-      "context": "消费点=待引擎控件扩 back prop（requests.md 记缺口）——行先立·美术可先出图",
+      "desc": "牌背图（批29 引擎 PlayingCard.backArt prop 落地·已接线）",
+      "context": "消费点=home-screen duel-back PlayingCard.backArt（整面 cover·覆盖在场才换·无=原棋盘格纹）",
       "status": "needs-art",
       "gen": null,
       "provenance": null
@@ -1849,6 +1849,72 @@
       },
       "desc": "对决 3D 骰（P3D 独占域：clash-dice-3d.ts——台账行先立·3D 接线动作知会 P3D）",
       "context": "用途=model3d·对决特写掷骰·现=程序化 3D 图元；替换=P3D 接 Model3D（P3D-game-z-handoff §0.1 边界）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-61",
+      "skinKey": "game-g/ui/btn-hero",
+      "kind": "sprite",
+      "slot": {
+        "entity": "ui:btn-hero",
+        "component": "Button",
+        "field": "skin"
+      },
+      "query": "gilded ornate banner button, chinese bronze coin motif, gold gradient on dark lacquer, chamfered corners, game UI hero call-to-action button, wide rectangle",
+      "prompt": null,
+      "spec": {
+        "w": 480,
+        "h": 160,
+        "transparent": true
+      },
+      "desc": "出征大 CTA 按钮皮（kind:hero·整图 cover）",
+      "context": "消费点=主题级 buttonSkins.hero（GG 三主题 getter·所有 hero 键一体换：出征/掷骰/结束回合）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-62",
+      "skinKey": "game-g/ui/btn-primary",
+      "kind": "sprite",
+      "slot": {
+        "entity": "ui:btn-primary",
+        "component": "Button",
+        "field": "skin"
+      },
+      "query": "antique gold frame button, subtle jade inlay border, dark parchment center, ornament confined to outer 10px edge, seamless stretchable middle, game UI button, 9-slice",
+      "prompt": null,
+      "spec": {
+        "w": 240,
+        "h": 80,
+        "transparent": false
+      },
+      "desc": "主按钮皮（kind:primary·9-slice slice=10）",
+      "context": "消费点=主题级 buttonSkins.primary（确认/继续/完成类主键一体换·边饰限外缘 10px）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-63",
+      "skinKey": "game-g/ui/btn-ghost",
+      "kind": "sprite",
+      "slot": {
+        "entity": "ui:btn-ghost",
+        "component": "Button",
+        "field": "skin"
+      },
+      "query": "thin bronze outline button, translucent dark center, faint gold hairline border, ornament confined to outer 10px edge, understated game UI secondary button, 9-slice",
+      "prompt": null,
+      "spec": {
+        "w": 240,
+        "h": 80,
+        "transparent": true
+      },
+      "desc": "次按钮皮（kind:ghost·9-slice slice=10）",
+      "context": "消费点=主题级 buttonSkins.ghost（返回/取消/工具类次键一体换·边饰限外缘 10px）",
       "status": "needs-art",
       "gen": null,
       "provenance": null

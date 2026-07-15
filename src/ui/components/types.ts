@@ -369,6 +369,7 @@ export interface PlayingCardProps {
   flipOnHover?: boolean;                 // 悬停翻面：配 backFace·鼠标悬停时 front→back scaleX 翻转，露出背面信息子树（CSS 注入·REQ-UI-G收藏卡①）。
   backFace?: LayoutNode;                 // 背面内容子树（通常 Panel(column) 装 名/朝代/简介，同 Tooltip.bubble 思路）。仅 flipOnHover 时渲。
   backPattern?: 'checker' | 'stripe';    // 牌背程序化纹理（faceUp:false 时叠·原版红牌背棋盘格条纹·REQ-UI-G流光底纹②）。
+  backArt?: string;                      // 牌背贴图（已解析 URL·faceUp:false 时整面 cover·替代纹样字符/程序化纹理）。REQ-UI-PlayingCard-back（07-14 缺口单·07-15 批29 落地）。
   action?: string; actionArg?: string;   // 可点 → handlers[action](actionArg)
 }
 
@@ -539,4 +540,8 @@ export interface UITheme {
   texture?: string;
   /** 背景晕染叠层（vignette/wash·盖在 texture 之上的柔光/暗角）。同 texture：主题作者填。 */
   wash?: string;
+  /** 主题级按钮皮槽（owner 07-15 批29「按键/背景/牌面都可换」）：kind → 贴图皮（skin=已解析图 URL·
+   *  skinSlice=源边 px 走 9-slice 无损缩放，缺省整图 cover）。一个 kind 一张皮、全游戏按钮一体换——
+   *  node 级 ButtonProps.skin 优先（含 skin:'' 显式关皮逃生）；缺省无 = 原 kind 底（老主题零变化）。 */
+  buttonSkins?: Partial<Record<'hero' | 'primary' | 'ghost' | 'quiet', { skin: string; skinSlice?: number }>>;
 }

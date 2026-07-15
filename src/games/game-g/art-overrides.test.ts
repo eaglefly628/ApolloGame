@@ -27,22 +27,29 @@ describe('贴图槽覆盖注册表（art-textures）', () => {
   });
 });
 
-describe('game-g 美术台账契约（60 行·行行可替换）', () => {
+describe('game-g 美术台账契约（63 行·行行可替换）', () => {
   const led = JSON.parse(readFileSync(join(process.cwd(), 'public/games/game-g/art/art-ledger.json'), 'utf8')) as {
     rows: Array<{ no: string; skinKey?: string; status: string; query: string; kind: string; gen?: unknown }>;
   };
 
-  it('60 行·skinKey 全带且唯一（一行一素材·fill 写回的别名依据）', () => {
-    expect(led.rows.length).toBe(60);
+  it('63 行·skinKey 全带且唯一（一行一素材·fill 写回的别名依据）', () => {
+    expect(led.rows.length).toBe(63);
     const keys = led.rows.map((r) => r.skinKey);
     expect(keys.every((k) => typeof k === 'string' && k!.startsWith('game-g/'))).toBe(true);
-    expect(new Set(keys).size).toBe(60);
+    expect(new Set(keys).size).toBe(63);
   });
 
-  it('53 行现况保号保现身（replaced·程序化 svg）+ 7 个新槽需求行；描述词全英文可生成', () => {
+  it('53 行现况保号保现身（replaced·程序化 svg）+ 10 个新槽需求行；描述词全英文可生成', () => {
     expect(led.rows.filter((r) => r.status === 'replaced').length).toBe(53);
-    expect(led.rows.filter((r) => r.status === 'needs-art').length).toBe(7);
+    expect(led.rows.filter((r) => r.status === 'needs-art').length).toBe(10);
     for (const r of led.rows) expect(r.query.length).toBeGreaterThan(20);
+  });
+
+  it('UI 按钮皮三行（批29「按键也可换」）：hero/primary/ghost·主题级 buttonSkins 消费·编号顺延不动老账', () => {
+    const ui = led.rows.filter((r) => r.skinKey!.startsWith('game-g/ui/'));
+    expect(ui.map((r) => [r.no, r.skinKey])).toEqual([
+      ['art-61', 'game-g/ui/btn-hero'], ['art-62', 'game-g/ui/btn-primary'], ['art-63', 'game-g/ui/btn-ghost'],
+    ]);
   });
 
   it('立绘行覆盖键与 portraits 一致（game-g/hero/<花色字母+军衔>·消费端能对上）', () => {

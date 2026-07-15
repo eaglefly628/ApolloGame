@@ -10,6 +10,7 @@ import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fon
 import { heroNameOf } from './hero-codex.js'; // 场上牌悬浮显其对应武将名（owner 2026-06-21·数据已在 HERO_CARDS）
 import { renderNode, ensureUiKeyframes, type LayoutNode, type VisualEffect } from '@ui/components/index.js'; // 数据驱动 UI 库：HUD chrome 由 LayoutNode 描述、renderNode 出串（UI 铁律·战斗屏 HUD 迁移）。ensureUiKeyframes=手动注入 fx 关键帧（战斗走 renderNode+innerHTML 不经 mountUI·主程导出·REQ-UI-fx控件叠层②）
 import { GG_BATTLE_THEME } from './ui-theme.js'; // 桥接 CSS 变量的引擎组件主题 → renderNode 片段随玄铁/锦霞皮自动换色
+import { textureOverrideUri } from './art-textures.js'; // 对战屏背景板槽（台账 art-57 game-g/tex/battle-backdrop·批29 接线）
 import type { ClashDie3DHandle } from './clash-dice-3d.js'; // 掷命 3D 战力骰（引擎 ThreeRenderer + Transform3D/Mesh3D/Vfx3D 数据驱动·非 CSS 3D·owner 2026-07-03·REQ-3D-骰盅）·**动态 import**（three 600KB 只在首次掷命时才拉·不压 game-g 首屏）
 
 type Style = Record<string, string | number | undefined>;
@@ -791,7 +792,9 @@ export function buildTurnFrameHTML(view: TurnBattleView, drain: { from: number; 
 
 /** 出回合制战斗屏 HTML（整页·忠实端口设计稿；静息态 + 可选 clash 覆盖层）。root 上挂双皮 token。 */
 export function buildTurnBattleHTML(view: TurnBattleView): string {
-  const rootStyle: Style = { ...(THEMES[view.theme] ?? THEMES.onyx), minHeight: '100vh', background: '#0c0a08', padding: '22px', display: 'flex', justifyContent: 'center', fontFamily: 'var(--fb)' };
+  // 对战屏背景板槽（台账 art-57·批29 接线）：真图=底色上叠 cover 整图（画框外的衬底·画框自身不透）；无=纯 #0c0a08（观感零变·golden 不变）。
+  const backdrop = textureOverrideUri('game-g/tex/battle-backdrop');
+  const rootStyle: Style = { ...(THEMES[view.theme] ?? THEMES.onyx), minHeight: '100vh', background: backdrop ? `#0c0a08 url('${backdrop.replace(/['"()\\\s]/g, '')}') center/cover no-repeat` : '#0c0a08', padding: '22px', display: 'flex', justifyContent: 'center', fontFamily: 'var(--fb)' };
   return `<div style="${st(rootStyle)}">${buildTurnFrameHTML(view)}</div>`;
 }
 

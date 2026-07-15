@@ -20,6 +20,13 @@ describe('UI Components · PlayingCard 扑克牌原语', () => {
     const back = renderNode({ type: 'PlayingCard', id: 'bk', props: { rank: 'A', suit: '♠', faceUp: false, back: '❖' } });
     expect(back).toContain('❖');
   });
+  it('牌背贴图 backArt（REQ-UI-PlayingCard-back·批29）：faceUp:false 整面 cover·替代纹样字符', () => {
+    const back = renderNode({ type: 'PlayingCard', id: 'ba', props: { rank: 'A', suit: '♠', faceUp: false, back: '❖', backPattern: 'checker', backArt: '/art/back.png' } });
+    expect(back).toContain('src="/art/back.png"'); expect(back).toContain('object-fit:cover');
+    expect(back).not.toContain('❖'); expect(back).not.toContain('repeating-conic-gradient'); // 贴图替代字符+程序化纹理
+    const face = renderNode({ type: 'PlayingCard', id: 'fa', props: { rank: 'A', suit: '♠', faceUp: true, backArt: '/art/back.png' } });
+    expect(face).not.toContain('/art/back.png'); // 正面不受牌背贴图影响
+  });
   it('选中态 selected → 金边发光；label/value 显示', () => {
     const html = renderNode({ type: 'PlayingCard', id: 's', props: { rank: '10', suit: '♦', selected: true, label: '孙武', value: '66' } });
     expect(html).toContain('box-shadow'); expect(html).toContain('孙武'); expect(html).toContain('66');

@@ -222,6 +222,9 @@ function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): strin
     quiet:   `background:transparent;color:${t.dim};border:1px solid transparent`,
   };
   const kind = p.kind ?? 'ghost';
+  // 皮解析（批29 owner 07-15「按键也可换」）：node 级 skin 优先（含 skin:'' 显式关皮逃生）；未给则落主题级
+  // buttonSkins[kind]——一个 kind 一张皮、全游戏按钮一体换，游戏零逐点改。两边都无 = 原 kind 底（字节不变）。
+  const sk = p.skin !== undefined ? { skin: p.skin, skinSlice: p.skinSlice } : t.buttonSkins?.[kind] ?? { skin: undefined, skinSlice: undefined };
   const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
   // hero：金色倒角 sheen 大 CTA（下沉自 game-g 出征键）。倒角 clip-path + 流光 span(apollo-sheen 关键帧) + 可选副标。
   if (kind === 'hero') {
@@ -229,10 +232,10 @@ function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): strin
     const sheen = `<span style="position:absolute;top:0;bottom:0;left:-60%;width:45%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);animation:apollo-sheen 2.6s ease-in-out infinite;pointer-events:none"></span>`;
     const big = `<span style="display:block;font-size:17px;line-height:1.15">${esc(p.label)}</span>`;
     const sub = p.sub ? `<span style="display:block;font-size:11px;font-weight:600;opacity:.8;margin-top:2px">${esc(p.sub)}</span>` : '';
-    return `<button id="${esc(id)}" data-apollo-btn${p.skin ? ' data-apollo-skin' : ''}${action}${p.disabled ? ' disabled' : ''} style="${hbase};${ls}${shapeCss(p.shape)}${skinCss(p.skin, p.skinSlice)}">${sheen}${big}${sub}</button>`;
+    return `<button id="${esc(id)}" data-apollo-btn${sk.skin ? ' data-apollo-skin' : ''}${action}${p.disabled ? ' disabled' : ''} style="${hbase};${ls}${shapeCss(p.shape)}${skinCss(sk.skin, sk.skinSlice)}">${sheen}${big}${sub}</button>`;
   }
   const base = `padding:6px 14px;border-radius:7px;font-size:12px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};outline:none;transition:all .15s;opacity:${p.disabled ? 0.4 : 1}`;
-  return `<button id="${esc(id)}" data-apollo-btn${p.skin ? ' data-apollo-skin' : ''}${action}${p.disabled ? ' disabled' : ''} style="${base};${kindStyle[kind]};${ls}${shapeCss(p.shape)}${skinCss(p.skin, p.skinSlice)}">${esc(p.label)}</button>`;
+  return `<button id="${esc(id)}" data-apollo-btn${sk.skin ? ' data-apollo-skin' : ''}${action}${p.disabled ? ' disabled' : ''} style="${base};${kindStyle[kind]};${ls}${shapeCss(p.shape)}${skinCss(sk.skin, sk.skinSlice)}">${esc(p.label)}</button>`;
 }
 
 function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string {
@@ -621,9 +624,13 @@ function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UIThe
   const backPat = (!faceUp && p.backPattern)
     ? `<div style="position:absolute;inset:0;border-radius:8px;pointer-events:none;background:${p.backPattern === 'checker' ? 'repeating-conic-gradient(rgba(255,255,255,.06) 0% 25%,transparent 0% 50%) 0 0 / 12px 12px' : 'repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 2px,transparent 2px 9px)'}"></div>`
     : '';
+  // 牌背贴图（REQ-UI-PlayingCard-back·批29）：backArt=已解析 URL → 背面整面 cover（替代纹样字符+程序化纹理）；
+  // 无 backArt=原样（观感零变）。圆角 6px 贴容器 8px 圆角内缘（2px 边框内）；边框/选中金边仍在外层。
   const inner = faceUp
     ? `${pip('top:5px;left:6px')}${center}${pip('bottom:5px;right:6px;transform:rotate(180deg)')}`
-    : `${backPat}<span style="font-size:${big}px;color:${t.jade};opacity:.5">${esc(p.back ?? '♠')}</span>`;
+    : p.backArt
+      ? `<img src="${esc(p.backArt)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px;pointer-events:none">`
+      : `${backPat}<span style="font-size:${big}px;color:${t.jade};opacity:.5">${esc(p.back ?? '♠')}</span>`;
   const faceBg = faceUp ? (light ? 'linear-gradient(160deg,#fefdfb,#eceae3)' : t.bg2) : (light ? 'linear-gradient(160deg,#b34a4a,#8c3535)' : t.bg3);
   const lblColor = light ? '#5a5048' : t.sub;
   const label = p.label ? `<div style="position:absolute;bottom:3px;left:0;right:0;font-size:9px;color:${lblColor};font-family:${t.fontUi};text-align:center;${light ? '' : 'text-shadow:0 1px 2px rgba(0,0,0,.6)'}">${esc(p.label)}</div>` : '';

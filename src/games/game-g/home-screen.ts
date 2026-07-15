@@ -45,8 +45,12 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
       tiltFloat('duel-a', { rank: 'A', suit: '♠', face: 'light' }, -9),
       // 中间圆「掷」徽章：照原版 .vs 64px 金色圆币——用 CoinFlip(圆形金币·headsLabel 掷·可点掷卦)，非矩形按钮 + 流光。
       { type: 'CoinFlip', id: 'duel-roll', props: { outcome: 'heads', headsLabel: '掷', size: 64, action: 'lucky' }, layout: { anim: 'glow', sheen: true } },
-      // 红牌背 backPattern:'checker'（原版 .dback i 棋盘格条纹质感）。
-      tiltFloat('duel-back', { rank: 'A', suit: '♠', face: 'light', faceUp: false, back: '❖', backPattern: 'checker' }, 9),
+      // 红牌背 backPattern:'checker'（原版 .dback i 棋盘格条纹质感）；牌背贴图槽（台账 game-g/tex/card-back·
+      // 批29 引擎 backArt prop 落地）：真图=整面 cover 替代纹样·无=原棋盘格（观感零变）。
+      tiltFloat('duel-back', {
+        rank: 'A', suit: '♠', face: 'light', faceUp: false, back: '❖', backPattern: 'checker',
+        ...(textureOverrideUri('game-g/tex/card-back') ? { backArt: textureOverrideUri('game-g/tex/card-back')! } : {}),
+      }, 9),
     ],
   };
 

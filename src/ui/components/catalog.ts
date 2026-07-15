@@ -269,6 +269,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'fluid', type: 'boolean', describe: '充满父格(5:7)·配 grid cols' },
       { name: 'flipOnHover', type: 'boolean', describe: '悬停翻面' }, { name: 'backFace', type: 'node', describe: '背面信息子树' },
       { name: 'backPattern', type: 'enum', values: ['checker', 'stripe'], describe: '牌背纹理（faceUp:false 时）' },
+      { name: 'backArt', type: 'string', describe: '牌背贴图 URL（faceUp:false 时整面 cover·替代纹样字符/backPattern）' },
       { name: 'art', type: 'string', describe: '立绘 URL' }, { name: 'label', type: 'string', describe: '牌下标签' },
       { name: 'action', type: 'string', describe: '点击信号' },
     ],

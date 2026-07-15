@@ -4,7 +4,8 @@
 import { describe, it, expect } from 'vitest';
 import { renderNode } from './index.js';
 import { validateLayoutNode } from './validate.js';
-import type { LayoutNode } from './index.js';
+import { SHELL } from '../shell-theme.js';
+import type { LayoutNode, UITheme } from './index.js';
 
 describe('Button.shape · 异形轮廓（闭集 clip-path）', () => {
   it('hexagon → clip-path 六边形多边形', () => {
@@ -79,6 +80,32 @@ describe('Button.skin · 贴图皮（已解析 URL·同 Image.src 约定）', ()
     const html = renderNode({ type: 'Button', id: 'b', props: { label: 'x', skin: '/a.png' } });
     expect(html).toContain('center/cover');
     expect(html).not.toContain('border-image');
+  });
+});
+
+describe('UITheme.buttonSkins · 主题级按钮皮（批29 owner 07-15「按键也可换」·一个 kind 一张皮）', () => {
+  const skinned: UITheme = { ...SHELL, buttonSkins: { hero: { skin: '/a/hero.png' }, ghost: { skin: '/a/ghost.png', skinSlice: 10 } } };
+  it('kind 命中主题皮 → 该 kind 全部按钮换皮（hero=cover·ghost=9-slice）', () => {
+    const hero = renderNode({ type: 'Button', id: 'b', props: { label: '出征', kind: 'hero' } }, skinned);
+    expect(hero).toContain("url('/a/hero.png') center/cover");
+    expect(hero).toContain('data-apollo-skin');
+    const ghost = renderNode({ type: 'Button', id: 'b', props: { label: 'x' } }, skinned); // 缺省 kind=ghost
+    expect(ghost).toContain("border-image:url('/a/ghost.png') 10 fill / 10px / 0 stretch");
+  });
+  it('kind 未配主题皮 → 原 kind 底不变（primary 无皮）', () => {
+    const html = renderNode({ type: 'Button', id: 'b', props: { label: 'x', kind: 'primary' } }, skinned);
+    expect(html).not.toContain('url(');
+    expect(html).not.toContain('data-apollo-skin');
+  });
+  it('node 级 skin 优先于主题皮；skin:\'\' 显式关皮逃生', () => {
+    const own = renderNode({ type: 'Button', id: 'b', props: { label: 'x', kind: 'hero', skin: '/mine.png' } }, skinned);
+    expect(own).toContain("url('/mine.png')"); expect(own).not.toContain('hero.png');
+    const off = renderNode({ type: 'Button', id: 'b', props: { label: 'x', kind: 'hero', skin: '' } }, skinned);
+    expect(off).not.toContain('url('); expect(off).not.toContain('data-apollo-skin');
+  });
+  it('主题无 buttonSkins → 输出与从前逐字节一致（不回归）', () => {
+    const before = renderNode({ type: 'Button', id: 'b', props: { label: 'x', kind: 'primary' } }, SHELL);
+    expect(before).not.toContain('url('); expect(before).toContain('data-apollo-btn');
   });
 });
 

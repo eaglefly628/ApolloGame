@@ -2,6 +2,7 @@
 // game-g=代码驱动无单一蓝图（58539995 实证），台账=**手工枚举视觉面**（照 game-k 先例·行带 skinKey）：
 //   · 54 将立绘（hero-codex 富字段合成生成描述·skinKey=game-g/hero/<键>·真图经 fill 别名登记→步2 覆盖即上画面）
 //   · 7 个贴图/模型槽（牌桌呢面/三块背景板/硬币双面/3D 骰）——消费点已接覆盖（07-14 批28）
+//   · 3 个 UI 按钮皮（hero/primary/ghost·主题级 UITheme.buttonSkins 一体换）+ 牌背/对战背景接线（07-15 批29）
 // 用法：npx vite-node scripts/game-g-art-requirements.mjs
 // append-only：重跑 mergeLedger 并入现台账——保编号/状态/prompt/history；台账落 public/games/game-g/art/。
 import { HERO_CARDS } from '../src/games/game-g/hero-codex.ts';
@@ -63,13 +64,13 @@ const TEX_ROWS = [
   ['game-g/tex/campaign-backdrop', 'bg', 'ancient asian campaign map on aged parchment, mountains rivers passes, ink wash style, wide game background',
     { w: 1280, h: 720, transparent: false }, '战役选关屏背景板（现=纯主题色）', '消费点=campaign-screen Screen.image（cover·覆盖在场才生效）'],
   ['game-g/tex/battle-backdrop', 'bg', 'ancient battlefield plain at dusk, war banners, distant fortress walls, dramatic sky, wide game background',
-    { w: 1280, h: 720, transparent: false }, '对战屏背景板（**接线待定**：战斗屏根节点在 game-g.tsx 战局挂载处·下一批接）', '消费点=待接（turn-battle 屏根 Screen.image）——行先立·描述先审'],
+    { w: 1280, h: 720, transparent: false }, '对战屏背景板（批29 已接线·画框外衬底）', '消费点=turn-battle-screen buildTurnBattleHTML 根（底色叠 cover·覆盖在场才生效）'],
   ['game-g/tex/coin-heads', 'sprite', 'antique gold coin face, embossed imperial chinese warrior profile, ornate rim, game coin art, circular, transparent background',
     { w: 256, h: 256, transparent: true }, '战胜硬币·人面（留场）·现=CSS 渐变+文字', '消费点=coin-flip .face.heads 背景（覆盖在场才换·文字仍叠显）'],
   ['game-g/tex/coin-tails', 'sprite', 'antique silver coin back, embossed chinese calligraphy character, ornate rim, game coin art, circular, transparent background',
     { w: 256, h: 256, transparent: true }, '战胜硬币·字面（回库）·现=CSS 渐变+文字', '消费点=coin-flip .face.tails 背景（覆盖在场才换）'],
   ['game-g/tex/card-back', 'sprite', 'ornate playing card back design, chinese brocade pattern, gold on deep lacquer red, symmetrical, rectangular game card back',
-    { w: 480, h: 640, transparent: false }, '牌背图（**控件缺口**：引擎 PlayingCard 暂无 back 贴图 prop——REQ-UI 提缺口后接线）', '消费点=待引擎控件扩 back prop（requests.md 记缺口）——行先立·美术可先出图'],
+    { w: 480, h: 640, transparent: false }, '牌背图（批29 引擎 PlayingCard.backArt prop 落地·已接线）', '消费点=home-screen duel-back PlayingCard.backArt（整面 cover·覆盖在场才换·无=原棋盘格纹）'],
 ];
 const texRows = TEX_ROWS.map(([skinKey, kind, query, spec, desc, context]) => ({
   skinKey, kind,
@@ -77,6 +78,23 @@ const texRows = TEX_ROWS.map(([skinKey, kind, query, spec, desc, context]) => ({
   slot: skinKey === 'game-g/tex/felt-brocade'
     ? { entity: 'table/felt', component: 'Panel', field: 'bgTexture' }
     : { entity: `tex:${skinKey.split('/').pop()}`, component: 'Sprite', field: 'textureKey' },
+  query, prompt: null, spec, desc, context, status: 'needs-art', gen: null, provenance: null,
+}));
+
+// UI 按钮皮三行（批29 owner 07-15「按键/背景/牌面都可换」）：一个 kind 一张皮——引擎 UITheme.buttonSkins
+// 主题级槽（ui-theme.ts getter 消费），全游戏 35+ 按钮一体换、零逐点改。9-slice 契约：边饰须画在源图外缘 10px 内
+// （接线 skinSlice=10·任意尺寸不变形）；hero 大 CTA=整图 cover（480×160 横幅·配倒角 clip-path）。
+const UI_ROWS = [
+  ['game-g/ui/btn-hero', 'gilded ornate banner button, chinese bronze coin motif, gold gradient on dark lacquer, chamfered corners, game UI hero call-to-action button, wide rectangle',
+    { w: 480, h: 160, transparent: true }, '出征大 CTA 按钮皮（kind:hero·整图 cover）', '消费点=主题级 buttonSkins.hero（GG 三主题 getter·所有 hero 键一体换：出征/掷骰/结束回合）'],
+  ['game-g/ui/btn-primary', 'antique gold frame button, subtle jade inlay border, dark parchment center, ornament confined to outer 10px edge, seamless stretchable middle, game UI button, 9-slice',
+    { w: 240, h: 80, transparent: false }, '主按钮皮（kind:primary·9-slice slice=10）', '消费点=主题级 buttonSkins.primary（确认/继续/完成类主键一体换·边饰限外缘 10px）'],
+  ['game-g/ui/btn-ghost', 'thin bronze outline button, translucent dark center, faint gold hairline border, ornament confined to outer 10px edge, understated game UI secondary button, 9-slice',
+    { w: 240, h: 80, transparent: true }, '次按钮皮（kind:ghost·9-slice slice=10）', '消费点=主题级 buttonSkins.ghost（返回/取消/工具类次键一体换·边饰限外缘 10px）'],
+];
+const uiRows = UI_ROWS.map(([skinKey, query, spec, desc, context]) => ({
+  skinKey, kind: 'sprite',
+  slot: { entity: `ui:${skinKey.split('/').pop()}`, component: 'Button', field: 'skin' },
   query, prompt: null, spec, desc, context, status: 'needs-art', gen: null, provenance: null,
 }));
 
@@ -92,7 +110,8 @@ const diceRow = {
   status: 'needs-art', gen: null, provenance: null,
 };
 
-const rows = [...heroRows, ...texRows, diceRow].map((r, i) => ({ no: 'art-' + String(i + 1).padStart(2, '0'), ...r }));
+// uiRows 排在 diceRow 后（新行顺延 art-61+·不动既有 60 行编号——mergeLedger 老行保号、新行 maxNo 顺延）。
+const rows = [...heroRows, ...texRows, diceRow, ...uiRows].map((r, i) => ({ no: 'art-' + String(i + 1).padStart(2, '0'), ...r }));
 const fresh = { version: 1, game: 'game-g', mode: 'requirements', count: rows.length, rows };
 
 const LEDGER_FILE = join(ROOT, 'public', 'games', 'game-g', 'art', 'art-ledger.json');

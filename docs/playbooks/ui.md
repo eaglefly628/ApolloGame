@@ -19,6 +19,8 @@
 | 异形按钮 | `Button.shape`（闭集 `ShapeToken`·非自由 clip-path） | **8 款**：pill(胶囊)/hexagon(六边)/diamond(菱形)/shield(盾徽)/ribbon(绶带)/chevron(箭头)/tag(标签)/cut(八边切角)——引擎预置 clip-path·`render.ts SHAPE_CSS`。缺省不填=矩形。**异形须给足 width/height**（六边/菱形尤其）避免裁掉文字。命中区=元素包围盒（透明角不可点是二期）。缺形状→提 requests 让主程加**一个枚举**，绝不塞自由 clip-path 坐标。矩形切角另有 `layout.chamfer`（八边形单值）。样例=game-i `t-shape` 段 |
 | 3D UI 变换（2D 层） | `layout.rotateX/rotateY/perspective/z/tilt3d`（闭集标量·CSS-3D） | 透视倾斜(rotateX/Y·度)·景深叠层(z=translateZ·px·需件带 3D 值自动开 preserve-3d)·自动补 perspective(缺省 800·可自定义)·`tilt3d:true`=悬停立体抬起(交互·同 data-tilt3d CSS)。给任意面板/卡/按钮加立体感——把 CoinFlip 的 CSS-3D 通用化。样例=game-i `t-3d` 段。**世界空间 3D UI**(面板挂进真 3D 场景)=P3D 域·见 `requests-3d.md REQ-3D-世界空间UI表达` |
 | 贴图按钮（自定义皮） | `Button.skin`（**已解析图 URL**·同 `Image.src` 约定）+ `skinSlice`（9-slice） | 按钮底=该图 cover + 白字投影保可读；配 `shape` 或透明 PNG 可做任意异形贴图键。**皮换尺寸变形→加 `skinSlice`（源边距 px）走 9-slice 无损缩放**（border-image·四角固定·边中拉伸·任意尺寸不糊·商业 UI 标配·样例 game-i `t-skin-9slice`）。**sim 持资产 key·游戏经 `resolveAsset` 解析后填**（key 不进画面·保 sim 纯）——同 Image.src/Avatar.src/PlayingCard.art 一脉。命中区=包围盒（alpha 命中是二期）。贴图资产走**资产手册**（asset-manager agent），**绝不把 base64/外链二进制塞进 sim** |
+| 全游戏按钮一体换皮 | `UITheme.buttonSkins`（主题级皮槽·批29） | kind(`hero/primary/ghost/quiet`)→`{skin,skinSlice}`——**一个 kind 一张皮，全游戏按钮零逐点改**；node 级 `Button.skin` 优先（`skin:''`=显式关皮逃生）；不填=原 kind 底零变化。美术替换场景（台账按钮皮行）用这个，别去逐个 Button 塞 skin。样例=game-g `ui-theme.ts`（getter 渲染时求值·真图到位即换） |
+| 牌背贴图 | `PlayingCard.backArt`（已解析 URL·批29） | `faceUp:false` 时整面 cover、替代 `back` 纹样字符与 `backPattern`；不填=原程序化牌背零变化。正面立绘仍走 `art`。样例=game-g home-screen duel-back |
 
 ## ② 样例指针
 

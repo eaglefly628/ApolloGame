@@ -120,9 +120,13 @@
 > **不是程序A/不是逻辑**：掷命/移动/碰撞逻辑（turn-combat.ts）与 `justMovedIds` 数据流**均正确**·此条纯 FLIP 表现误判。
 > **验收**：敌方推进相邻我方前锋时，我方静止牌**纹丝不动**（不再升落）；真移动的兵行军动画不受影响（错峰逐跳照旧）。
 
-### REQ-UI-PlayingCard-back 牌背贴图 prop · [2026-07-14] · Lead（game-g 台账化撞到控件缺口）→ 主程（ui/components 控件集） · status: **open（缺口已立·台账行 art-60 牌背图先出·prop 到位即接）** · 类型: 基座控件扩 prop（additive·非逃生）
-> **缺口**：引擎 `PlayingCard` 控件只有正面 `art`，无牌背贴图 prop——game-g 台账 art-60（牌背图）出图后无处消费。
+### REQ-UI-PlayingCard-back 牌背贴图 prop · [2026-07-14] · Lead（game-g 台账化撞到控件缺口）→ 主程（ui/components 控件集） · status: **✅ done（主程亲手·批29·2026-07-15）** · 类型: 基座控件扩 prop（additive·非逃生）
+> **缺口**：引擎 `PlayingCard` 控件只有正面 `art`，无牌背贴图 prop——game-g 台账 art-59（牌背图）出图后无处消费。
 > **要做（主程·render.ts+types）**：`PlayingCardProps` 加可选 `backArt?: string`（已解析 URL·背面替代现程序化背纹·缺省观感零变）；翻面/背面渲染点接入；加一条 render 测试。到位后 game-g 覆盖装载已有的 tex 通道直接接。
+> **✅ 完工回执（批29·owner 07-15「不只立绘，还有按键/背景/牌面」）**：`backArt?: string` 落 types+render+catalog（faceUp:false
+> 整面 cover·替代纹样字符与 backPattern·无=原样零变）；render 测试 2 断言组（playing-card.test）；game-g 主页 duel-back 已接
+> （覆盖在场才设）。同批一并下沉 **UITheme.buttonSkins 主题级按钮皮槽**（kind→{skin,skinSlice}·node 级 skin 优先·一个 kind
+> 一张皮全游戏一体换），game-g 三主题挂 getter、台账扩 art-61~63（btn-hero/primary/ghost）、对战屏背景板 art-56 接线毕。
 
 ### REQ-UI-PlayingCard-xl尺寸 · [2026-07-06] · PG（game-g 绝命对决 R21 布局重置）→ 主程（ui/components 控件集） · status: **open（控件缺口·PG 不擅改 render.ts）** · 类型: 基座控件扩尺寸档（闭集加一档·additive·非逃生）
 > **源起**：owner R21「布局重置」要绝命对决特写忠实设计稿（`design/UI/Game G 绝命对决.dc.html`）——设计稿对决双方扑克牌 **118×142**；现 `PlayingCard` 尺寸闭集 `PCARD_DIMS`（`src/ui/components/render.ts:584`）最大档 `lg=[82,116,18,46]`，比设计小一圈。PG 已把特写用到 `lg`（当前最大），仍不足。

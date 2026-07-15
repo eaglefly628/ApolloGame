@@ -25,8 +25,8 @@ import { GG_THEME_ONYX } from './ui-theme.js'; // game-g 古风主题（数据·
 import { registerPortraitOverrides } from './portraits.js'; // 立绘美术库覆盖（步2·渲染指向索引）
 import { registerTextureOverrides } from './art-textures.js'; // 贴图槽覆盖（07-14 全面台账化）
 
-// 载入 game-g 美术库索引里**真图替换**的条目（source 非 procedural）→ 双通道覆盖（owner 07-13 步2·07-14 扩贴图）：
-//   heroes: { 'sA': url }（立绘·portraits 覆盖键）· textures: { 'game-g/tex/felt-brocade': url }（贴图槽·全 id）
+// 载入 game-g 美术库索引里**真图替换**的条目（source 非 procedural）→ 双通道覆盖（owner 07-13 步2·07-14 扩贴图·07-15 批29 扩 UI 皮）：
+//   heroes: { 'sA': url }（立绘·portraits 覆盖键）· textures: { 'game-g/tex/felt-brocade' | 'game-g/ui/btn-hero': url }（贴图/按钮皮槽·全 id）
 // 只收真替换图·程序化 .svg 条目不进（等于没换）。失败/无索引=空（回退程序化·观感零变）。
 async function loadArtOverrides(slug: string): Promise<{ heroes: Record<string, string>; textures: Record<string, string> }> {
   const out = { heroes: {} as Record<string, string>, textures: {} as Record<string, string> };
@@ -39,8 +39,8 @@ async function loadArtOverrides(slug: string): Promise<{ heroes: Record<string, 
       if (a.id.startsWith(`${slug}/hero/`)) {
         const key = a.id.split('/').pop(); // 'sA'
         if (key) out.heroes[key] = a.path;
-      } else if (a.id.startsWith(`${slug}/tex/`)) {
-        out.textures[a.id] = a.path;
+      } else if (a.id.startsWith(`${slug}/tex/`) || a.id.startsWith(`${slug}/ui/`)) {
+        out.textures[a.id] = a.path; // ui/btn-* 按钮皮与 tex/* 同通道（覆盖注册表全 id 键·主题 buttonSkins getter 消费）
       }
     }
     return out;
