@@ -7,7 +7,7 @@ export { UI_CATALOG, catalogSpec } from './catalog.js';
 export type { UiComponentSpec, UiPropSpec } from './catalog.js';
 export { COMPOSED_SAMPLES } from './composed-samples.js';
 export type { ComposedSample } from './composed-samples.js';
-export { validateLayoutNode, isValidLayoutNode } from './validate.js';
+export { validateLayoutNode, isValidLayoutNode, lintLayoutNode } from './validate.js';
 export type { UiIssue } from './validate.js';
 export { apolloOnyx, apolloBrocade, APOLLO_KIT } from './apollo-kit.js';
 export { solveLayout } from './layout-solver.js';

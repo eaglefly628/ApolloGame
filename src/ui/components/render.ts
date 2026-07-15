@@ -159,7 +159,8 @@ function texLayer(url?: string, size?: number): string {
 }
 
 // 异形轮廓（闭集 ShapeToken → 引擎预置 clip-path/border-radius·弱 LLM 只选名·不收自由坐标）。
-// pill=全圆胶囊；其余=固定多边形 clip-path（命中区仍是元素包围盒）。附加在 base 之后→后写覆盖既有圆角/切角。
+// pill=全圆胶囊（border-radius·命中区仍是矩形包围盒）；其余=固定多边形 clip-path——现代浏览器 clip-path **会裁命中测试**：
+// 透明角点击穿透到背后、不误触（P3D 复核 Gemini review 更正·2026-07-15）。附加在 base 之后→后写覆盖既有圆角/切角。
 const SHAPE_CSS: Record<string, string> = {
   pill:     'border-radius:999px',
   hexagon:  'clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)',

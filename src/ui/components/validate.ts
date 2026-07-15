@@ -10,8 +10,10 @@ import { catalogSpec } from './catalog.js';
 export interface UiIssue {
   path: string;   // 节点路径（如 root/children[2]/bubble），定位用
   type: string;   // 组件 type
-  kind: 'unknown-type' | 'missing-required' | 'bad-enum' | 'children-rule' | 'missing-id';
+  kind: 'unknown-type' | 'missing-required' | 'bad-enum' | 'children-rule' | 'missing-id'
+    | 'naked-fill' | 'bad-layout-placement' | 'flatten-3d'; // ↑硬错 · ↓软建议（lintLayoutNode 专属·非阻塞）
   detail: string;
+  severity?: 'error' | 'warn'; // 缺省=error（validateLayoutNode 全是硬错）；lint 的建议=warn（不进零 issue 门）
 }
 
 // 视觉特效合集（layout.fx）闭集：kind/color 枚举·防拼错与注入（与 types.ts EffectKind/EffectColor 同源）。
@@ -87,4 +89,56 @@ export function validateLayoutNode(node: LayoutNode, path = 'root'): UiIssue[] {
 /** 便捷：树是否合法（零 issue）。 */
 export function isValidLayoutNode(node: LayoutNode): boolean {
   return validateLayoutNode(node).length === 0;
+}
+
+// ── 软建议（lintLayoutNode·REQ-UI-积木接口完备性批·P3D 复核 Gemini review 采纳）──────────────
+// validateLayoutNode 是硬门（挡弱模型产废）；lint 是**非阻塞建议**（接口稳健性·不进零 issue 门·/check-ui 选择性用）。
+// 与 render.ts 单一真相镜像（漂移低·闭集小）：面色令牌/预设名、3D layout 词。
+const SURFACE_TOKENS = new Set(['panel', 'raised', 'sunken', 'jade', 'gold', 'ok', 'warn', 'danger', 'ink']);
+const FILL_PRESETS = new Set(['jade-sheen', 'gold-sheen', 'ink-deep', 'steel', 'blood', 'frost', 'ember', 'void']);
+// 只属 layout 的词（绝不是任何控件的合法 prop·误写进 props 静默失效）。**排除 radius**（Image/ProgressBar 真 prop·防误报）。
+const LAYOUT_ONLY = new Set(['fx', 'anim', 'animMs', 'animDelay', 'rotate', 'rotateX', 'rotateY', 'z', 'scale', 'tilt3d', 'perspective', 'chamfer', 'sheen']);
+const has3dLayout = (l: unknown): boolean => {
+  const c = l as { z?: unknown; rotateX?: unknown; rotateY?: unknown } | undefined;
+  return !!c && (c.z !== undefined || c.rotateX !== undefined || c.rotateY !== undefined);
+};
+
+/** 非阻塞软建议扫描（接口稳健性）：① bg 裸串疑似拼错令牌 ② layout 专用词误塞 props ③ scroll 祖先下的 3D 变换会被拍平失效。
+ *  返回全 severity:'warn'；与 validateLayoutNode 分离——不影响硬门/零 issue 断言。 */
+export function lintLayoutNode(node: LayoutNode, path = 'root', inScroll = false): UiIssue[] {
+  const out: UiIssue[] = [];
+  if (!node || typeof node !== 'object') return out;
+  const t = node.type as string;
+  const props = (node.props ?? {}) as Record<string, unknown>;
+
+  // ② bg 裸串：非 {custom} 对象、非已知令牌/预设、又非 raw CSS 色形（#/rgb/hsl/gradient/var/url）→ 极可能拼错令牌 → 静默 fallback。
+  const bg = props.bg;
+  if (typeof bg === 'string' && bg && !SURFACE_TOKENS.has(bg) && !FILL_PRESETS.has(bg)) {
+    if (!/^(#|rgb|hsl|linear-gradient|radial-gradient|conic-gradient|var\(|url\()/.test(bg)) {
+      out.push({ path, type: t, kind: 'naked-fill', severity: 'warn',
+        detail: `props.bg='${bg}' 既非色库令牌/预设、也非 {custom}、也非 CSS 色形——疑似拼错令牌（会静默回退底色）。用 SurfaceToken/FillPreset，特别指定色用 {custom:'…'}` });
+    }
+  }
+
+  // ③ layout 专用词误塞 props（fx/anim/rotate/z/… 写进 props 静默失效·应移入 layout）。
+  for (const k of Object.keys(props)) {
+    if (LAYOUT_ONLY.has(k)) {
+      out.push({ path, type: t, kind: 'bad-layout-placement', severity: 'warn',
+        detail: `props.${k} 应放 layout 里（'${k}' 只在 node.layout 生效·写进 props 静默无效）` });
+    }
+  }
+
+  // ① scroll 祖先拍平 3D：祖先 overflow≠visible（Panel scroll:true）会把 transform-style 算成 flat → 子树 z/rotateX/rotateY 失效。
+  if (inScroll && has3dLayout(node.layout)) {
+    out.push({ path, type: t, kind: 'flatten-3d', severity: 'warn',
+      detail: '3D layout(z/rotateX/rotateY) 在 scroll 祖先内会被 overflow 拍平（transform-style→flat）失效。3D 层别放可滚容器里，或去掉祖先 scroll' });
+  }
+  const nowInScroll = inScroll || props.scroll === true;
+
+  node.children?.forEach((ch, i) => out.push(...lintLayoutNode(ch, `${path}/children[${i}]`, nowInScroll)));
+  const spec = catalogSpec(t);
+  if (spec) for (const ps of spec.props) {
+    if (ps.type === 'node') { const sub = props[ps.name] as LayoutNode | undefined; if (sub?.type) out.push(...lintLayoutNode(sub, `${path}/${ps.name}`, nowInScroll)); }
+  }
+  return out;
 }
