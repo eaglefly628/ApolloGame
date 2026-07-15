@@ -7,6 +7,7 @@
 // 注：蓝图组件值是无 `type` 判别符的字段对象（键=组件名·同 three-lab.ts 体例）。
 
 import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
+import type { LayoutNode } from '@ui/components/index.js';
 import {
   transformCapability, velocityCapability, timerCapability, destroyCapability,
 } from '@atom-skills/index.js';
@@ -17,6 +18,8 @@ import { overlapDetect3dCapability, navmeshBakeCapability } from '@skills/atoms/
 import { MODEL_DUCK, MODEL_BOX } from './assets3d.js';
 
 type Ent = WorldBlueprint['entities'][string];
+type Prim = 'box' | 'plane' | 'sphere' | 'cylinder' | 'cone' | 'capsule' | 'torus';
+type ProgressTone = 'accent' | 'gold' | 'ok' | 'warn' | 'danger';
 const TWO_PI = 6.28318;
 
 // 静态盒（Transform3D 真 3D 定位 + Mesh3D 体）：x 右 / y 高(中心) / z 深。
@@ -339,6 +342,81 @@ export function fog3dBlueprint(): WorldBlueprint {
     ent[`pl-R${i}`] = box(22, h / 2 - 2.5, z, 8, h, 8, 0x8d6e63, 0x5d4037);
   }
   return { capabilities: [transformCapability], entities: ent };
+}
+
+// ── ⑭ 圆润图元 Mesh3D.shape（P3D REQ-3D-交互补全批②·box 之外的 4 种 three 内建原语）：一排七图元
+//      box / plane / sphere / cylinder / cone / capsule / torus 并列——圆润件走 three 内建几何(单材质单色)、各自缓转 + 头顶名牌。
+//      参数口径（render.ts 注）：圆润件 width=直径·height=柱/锥高(球忽略取 width 作正球)·torus tube=管半径占主半径比。
+export function primitives3dBlueprint(): WorldBlueprint {
+  const prim = (x: number, shape: Prim, tint: number, name: string, extra: Record<string, unknown> = {}): Ent => ({
+    Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
+    Transform3D: { x, y: 8, z: 0, rotY: 0 },
+    Mesh3D: { shape, width: 10, height: 12, frontTint: tint, backTint: tint, edgeTint: tint, ...extra },
+    Tween: { target: 'Transform3D.rotY', from: 0, to: TWO_PI, elapsed: 0, duration: 260, easing: 'linear', done: false, loop: 'restart' },
+    WorldUI3D: { text: name, offsetY: 13, size: 'sm', glow: true },
+  });
+  return {
+    capabilities: [transformCapability, tweenCapability],
+    entities: {
+      ...sceneBase(),
+      cam: { Camera3D: { yaw: 0.58, pitch: 0.38, distance: 122, pivotY: 6, fov: 40, pitchMin: 0.1, pitchMax: 1.42 } },
+      'p-box': prim(-42, 'box', 0xef5350, 'box', { depth: 10 }),        // box：有厚度·正反面可分色
+      'p-plane': prim(-28, 'plane', 0xffa726, 'plane'),                 // plane：双面薄片
+      'p-sphere': prim(-14, 'sphere', 0x66bb6a, 'sphere'),              // sphere：正球(忽略 height)
+      'p-cyl': prim(0, 'cylinder', 0x42a5f5, 'cylinder'),               // cylinder：柱(width=直径·height=柱高)
+      'p-cone': prim(14, 'cone', 0xab47bc, 'cone'),                     // cone：锥
+      'p-cap': prim(28, 'capsule', 0x26c6da, 'capsule'),               // capsule：胶囊
+      'p-torus': prim(42, 'torus', 0xffca28, 'torus', { tube: 0.42 }), // torus：环(tube=管半径比)
+    },
+  };
+}
+
+// ── ⑮ 世界空间富 UI 面板 WorldUI3D.node（P3D REQ-3D-世界空间UI·#1 面板 + #2 跟随单位）：3D 单位头顶挂**整棵 LayoutNode**
+//      （名牌 Panel = Label 名字 + ProgressBar 血条/能量·走引擎 UI 库 mountUI 渲染·UI 铁律）·锚世界物件屏幕投影·随单位每帧跟随。
+//      对比 ⑥(text3d 纯飘字)：这里是**富面板**（多控件 + 进度条 + 面板底），证明「世界空间 UI = 富 LayoutNode 锚 3D 物件屏幕投影点」。
+export function worldui3dBlueprint(): WorldBlueprint {
+  // 名牌 = 无框内容用 raised 令牌面板（色库令牌·非裸 hex）：标题 Label（发光） + 若干 ProgressBar。
+  const plate = (id: string, name: string, big: boolean, bars: LayoutNode[]): LayoutNode => ({
+    type: 'Panel', id, props: { bg: 'raised', accent: big }, layout: { gap: 3, padding: 5 },
+    children: [
+      { type: 'Label', id: `${id}-name`, props: { text: name, size: big ? 'md' : 'sm', glow: true } },
+      ...bars,
+    ],
+  });
+  const bar = (id: string, value: number, tone: ProgressTone, label: string): LayoutNode =>
+    ({ type: 'ProgressBar', id, props: { value, tone, label, showValue: true } });
+  const unit = (x: number, z: number, h: number, front: number, edge: number, node: LayoutNode, moving = false): Ent => ({
+    Transform: { x, y: z, rotation: 0, scaleX: 1, scaleY: 1 },
+    Transform3D: { x, y: h / 2, z },
+    Mesh3D: { shape: 'box', width: 8, height: h, depth: 8, frontTint: front, backTint: front, edgeTint: edge },
+    WorldUI3D: { offsetY: h / 2 + 6, node },
+    // 移动单位（tween 横扫）：证明富面板**随单位每帧跟随投影**（#2 屏幕锚定跟随）。
+    ...(moving ? { Tween: { target: 'Transform3D.x', from: x, to: x + 24, elapsed: 0, duration: 170, easing: 'easeInOut', done: false, loop: 'pingpong' } } : {}),
+  });
+  return {
+    capabilities: [transformCapability, tweenCapability],
+    entities: {
+      ...sceneBase(),
+      cam: { Camera3D: { yaw: 0.66, pitch: 0.5, distance: 92, pivotY: 6, fov: 40, pitchMin: 0.12, pitchMax: 1.45 } },
+      // Boss：大名牌（accent 高亮框）+ 血条 + 护盾条。
+      boss: unit(0, -2, 18, 0x8e44ad, 0x6c3483,
+        plate('boss-plate', '★ 暗影领主 Lv.70', true, [
+          bar('boss-hp', 0.82, 'danger', 'HP'),
+          bar('boss-sh', 0.45, 'warn', '护盾'),
+        ])),
+      // 治疗（移动·证明跟随）：血 + 蓝量。
+      healer: unit(-24, 10, 11, 0x2980b9, 0x1f618d,
+        plate('healer-plate', '艾拉娜 · 治疗', false, [
+          bar('healer-hp', 0.68, 'ok', 'HP'),
+          bar('healer-mp', 0.91, 'accent', '法力'),
+        ]), true),
+      // 精英怪：单血条名牌。
+      elite: unit(24, 8, 13, 0x27ae60, 0x1e8449,
+        plate('elite-plate', '森林守卫', false, [
+          bar('elite-hp', 0.55, 'gold', 'HP'),
+        ])),
+    },
+  };
 }
 
 // ── ⑤ 3D 粒子（prefab→Mesh3D·复用 2D 库B 套路·ThreeRenderer 渲染）：定时引爆一圈小盒火花，平面放射 + 寿命自毁；叠泛光发光。

@@ -1,7 +1,7 @@
 // 3D 能力展台蓝图：纯数据加载 + tick 不抛；nav 蓝图真能寻路（追兵被 pathfind 写出位移）；粒子真生成。
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
-import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint } from './three3d.js';
+import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint, primitives3dBlueprint, worldui3dBlueprint } from './three3d.js';
 
 function run(bp: ReturnType<typeof light3dBlueprint>, ticks: number): Engine {
   const e = new Engine();
@@ -11,9 +11,34 @@ function run(bp: ReturnType<typeof light3dBlueprint>, ticks: number): Engine {
 }
 
 describe('Game I · 3D 能力展台蓝图', () => {
-  it('十三个蓝图都纯数据加载 + 长跑 tick 不抛错', () => {
-    for (const bp of [light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint]) {
+  it('十五个蓝图都纯数据加载 + 长跑 tick 不抛错', () => {
+    for (const bp of [light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint, primitives3dBlueprint, worldui3dBlueprint]) {
       expect(() => run(bp(), 120)).not.toThrow();
+    }
+  });
+
+  it('圆润图元蓝图含 box 之外的全部 6 种 three 图元（cyl/cone/capsule/torus/plane/sphere）', () => {
+    const e = new Engine(); e.load(primitives3dBlueprint());
+    const shapes = new Set(
+      e.world.query('Mesh3D')
+        .map(([id]) => (e.world.getComponent(id, 'Mesh3D') as unknown as { shape: string }).shape),
+    );
+    for (const s of ['box', 'plane', 'sphere', 'cylinder', 'cone', 'capsule', 'torus']) {
+      expect(shapes.has(s)).toBe(true); // 七图元俱全（ground 也是 box）
+    }
+    const torus = e.world.getComponent('p-torus', 'Mesh3D') as unknown as { tube?: number };
+    expect(torus.tube).toBeGreaterThan(0); // torus 带管半径比
+  });
+
+  it('世界空间富面板蓝图：WorldUI3D.node 挂整棵 LayoutNode（Panel+ProgressBar·非纯 text）', () => {
+    const e = new Engine(); e.load(worldui3dBlueprint());
+    const uis = e.world.query('WorldUI3D')
+      .map(([id]) => e.world.getComponent(id, 'WorldUI3D') as unknown as { node?: { type: string; children?: unknown[] }; text?: string });
+    expect(uis.length).toBe(3); // Boss/治疗/精英怪
+    for (const ui of uis) {
+      expect(ui.node?.type).toBe('Panel'); // 富面板·非简写 text
+      expect(ui.text).toBeUndefined();
+      expect((ui.node?.children?.length ?? 0)).toBeGreaterThanOrEqual(2); // Label + ≥1 ProgressBar
     }
   });
 

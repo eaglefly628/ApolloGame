@@ -711,11 +711,13 @@ export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; 
   { id: 'mod-3d', glyph: '🧊', label: '3D 渲染', desc: 'Mesh3D · 翻面/翻滚 基础旋转', tone: 'accent' as const, dim: '3d' },
   { id: 'mod-3d-light', glyph: '💡', label: '数据化光照', desc: 'Light3D 定向+环境 · 投影', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-post', glyph: '🔭', label: '景深 · 泛光', desc: 'Post3D 移轴景深 + bloom', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-primitives', glyph: '🔷', label: '圆润图元', desc: 'Mesh3D 球/柱/锥/胶囊/环 7 原语', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-nav', glyph: '🧭', label: '3D 寻路', desc: 'navmesh 自动烘焙 + 绕障追逐', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-collide', glyph: '🎯', label: '3D 碰撞', desc: 'Collider3D / Overlap3D · 触发区', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-particle', glyph: '🎇', label: '3D 粒子（prefab）', desc: 'prefab → Mesh3D 火花 · 泛光', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-vfx', glyph: '🌟', label: '3D 粒子（Vfx3D）', desc: '数据驱动发射器 · 锥喷+重力+渐变', tone: 'normal' as const, dim: '3d' },
-  { id: 'mod-3d-text', glyph: '🔤', label: '头顶 3D 文字', desc: 'WorldUI3D · 世界空间 UI 标签', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-text', glyph: '🔤', label: '头顶 3D 文字', desc: 'WorldUI3D · 世界空间飘字', tone: 'normal' as const, dim: '3d' },
+  { id: 'mod-3d-worldui', glyph: '🪧', label: '世界空间面板', desc: 'WorldUI3D.node · 富 LayoutNode 名牌+血条', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-ao', glyph: '🌑', label: '环境光遮蔽 AO', desc: 'Post3D.ao · 接触/缝隙压暗', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-material', glyph: '🧱', label: 'PBR 材质', desc: 'Material3D 金/钢/玻璃 + 调色', tone: 'normal' as const, dim: '3d' },
   { id: 'mod-3d-fog', glyph: '🌫', label: '距离雾', desc: 'Fog3D · 远处渐隐纵深', tone: 'normal' as const, dim: '3d' },
@@ -1228,9 +1230,15 @@ function moduleBody(
     case 'mod-3d-vfx': return buildSimStage('3dvfx', '🌟', '3D 粒子（Vfx3D）· 数据驱动发射器',
       'TA「Niagara-lite」专门的粒子机：一个 Vfx3D 组件 = 一台发射器——锥形喷射 + 重力回落 + size/color over life 曲线/渐变 + 加色发光。三股金/玉/玫喷泉，render-only 不进 hash。比 prefab 那套更专业、参数即数据。',
       ['Vfx3D', 'cone', 'gravity', 'colorGradient', 'Post3D·bloom']);
+    case 'mod-3d-primitives': return buildSimStage('3dprim', '🔷', '圆润图元 · Mesh3D.shape',
+      'box 之外的 6 种图元：plane 双面薄片 + sphere 正球 + cylinder 柱 + cone 锥 + capsule 胶囊 + torus 环（three 内建几何·单材质单色）。一排七件各自缓转、头顶名牌标形。参数口径：圆润件 width=直径、height=柱/锥高（球忽略）、torus tube=管半径比。',
+      ['Mesh3D.shape', 'sphere/cylinder', 'cone/capsule/torus', 'tube']);
     case 'mod-3d-text': return buildSimStage('3dtext', '🔤', '头顶 3D 文字 · WorldUI3D',
-      '世界空间 UI：每个盒挂一个 WorldUI3D（头顶名字/血量/状态），渲染器把实体锚点投影到屏幕、在该处用引擎 UI 库 mountUI 挂一棵 LayoutNode Label（UI 铁律·非手写 DOM）。相机转/物体动时标签跟着头顶飘。',
-      ['WorldUI3D', 'mountUI', 'LayoutNode', '世界锚+投影']);
+      '世界空间 UI（简写飘字）：每个盒挂一个 WorldUI3D.text（头顶名字/血量/状态），渲染器把实体锚点投影到屏幕、在该处用引擎 UI 库 mountUI 挂一棵 LayoutNode Label（UI 铁律·非手写 DOM）。相机转/物体动时标签跟着头顶飘。',
+      ['WorldUI3D.text', 'mountUI', 'LayoutNode', '世界锚+投影']);
+    case 'mod-3d-worldui': return buildSimStage('3dwui', '🪧', '世界空间面板 · WorldUI3D.node',
+      '飘字进阶：WorldUI3D.node 挂**整棵 LayoutNode**——Boss/治疗/精英怪头顶各一块富名牌（Panel = Label 名字 + ProgressBar 血条/护盾/法力·raised 令牌面板·非手写 DOM），走引擎 UI 库 mountUI 渲染。治疗单位横向移动，名牌随单位每帧投影跟随（背相机/出屏自动隐）。',
+      ['WorldUI3D.node', 'Panel+ProgressBar', 'mountUI', '锚世界物+跟随']);
     case 'mod-3d-ao': return buildSimStage('3dao', '🌑', '环境光遮蔽 · Post3D.ao（GTAO）',
       '一个 Post3D.ao 启 GTAO 地面真值环境光遮蔽：紧挨的盒堆在接触缝隙/墙根处被压暗 → 厚重「接地」的盒庭玩具感（关泛光以凸显 AO）。intensity/radius/scale 全是数据。',
       ['Post3D.ao', 'GTAO', '接触压暗', '盒庭质感']);

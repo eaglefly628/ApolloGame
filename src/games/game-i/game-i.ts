@@ -33,7 +33,7 @@ import { combatBlueprint } from './combat-lab.js';
 import { spawnBlueprint } from './spawn-lab.js';
 import { fxBlueprint } from './fx-lab.js';
 import { fsmBlueprint } from './fsm-lab.js';
-import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint } from './three3d.js';
+import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint, primitives3dBlueprint, worldui3dBlueprint } from './three3d.js';
 import { AssetManager, ModelAssetLoader } from '@assets/index.js';
 import { GAME_I_ASSETS } from './assets3d.js';
 
@@ -48,7 +48,9 @@ const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'c
   'mod-3d-nav': { blueprint: nav3dBlueprint, backend: 'three', debug: 'nav' },        // 开导航图/路径线框
   'mod-3d-collide': { blueprint: collide3dBlueprint, backend: 'three', debug: 'collider' }, // 开碰撞体线框
   'mod-3d-particle': { blueprint: particle3dBlueprint, backend: 'three' },
-  'mod-3d-text': { blueprint: text3dBlueprint, backend: 'three' },        // 头顶 3D 文字 WorldUI3D
+  'mod-3d-primitives': { blueprint: primitives3dBlueprint, backend: 'three' }, // 圆润图元 Mesh3D.shape（cyl/cone/capsule/torus）
+  'mod-3d-text': { blueprint: text3dBlueprint, backend: 'three' },        // 头顶 3D 文字 WorldUI3D（纯飘字）
+  'mod-3d-worldui': { blueprint: worldui3dBlueprint, backend: 'three' },  // 世界空间富 UI 面板 WorldUI3D.node（LayoutNode）
   'mod-3d-ao': { blueprint: ao3dBlueprint, backend: 'three' },            // 环境光遮蔽 Post3D.ao
   'mod-3d-vfx': { blueprint: vfx3dBlueprint, backend: 'three' },          // 数据驱动 3D 粒子 Vfx3D
   'mod-3d-material': { blueprint: material3dBlueprint, backend: 'three' }, // PBR 材质预设 Material3D
