@@ -27,6 +27,7 @@ import type {
   CraftRecipe,
   Decal3D,
   DestroyRequest,
+  Diegetic3D,
   DicePool,
   Draggable,
   DropZone,
@@ -150,6 +151,7 @@ export interface ComponentDataMap {
   CraftRecipe: Omit<CraftRecipe, 'type'>;
   Decal3D: Omit<Decal3D, 'type'>;
   DestroyRequest: Omit<DestroyRequest, 'type'>;
+  Diegetic3D: Omit<Diegetic3D, 'type'>;
   DicePool: Omit<DicePool, 'type'>;
   Draggable: Omit<Draggable, 'type'>;
   DropZone: Omit<DropZone, 'type'>;

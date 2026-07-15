@@ -24,6 +24,7 @@ import { TrailSystem } from './three/trail.js';
 import { DecalSystem } from './three/decal.js';
 import { UvAnimSystem } from './three/uv-anim.js';
 import { BillboardSystem } from './three/billboard.js';
+import { DiegeticSystem } from './three/diegetic.js';
 import { Anim3DSystem } from './three/anim3d.js';
 import { PathSystem } from './three/path.js';
 import { pivotMatrix, applyPivot } from './three/pivot.js';
@@ -85,6 +86,7 @@ export class ThreeRenderer implements RendererBackend {
   private readonly decals = new DecalSystem(); // 地面贴花（Decal3D·blob 阴影/环/圆·render-only）
   private readonly uvAnim = new UvAnimSystem(); // 材质 UV 动画（Material3D.uvAnim·滚动/序列帧·render-only）
   private readonly billboards = new BillboardSystem(); // 世界空间贴图广告牌（Billboard3D·朝相机·深度排序·render-only）
+  private readonly diegetic = new DiegeticSystem(); // UI 贴 3D 面（Diegetic3D·LayoutNode→CanvasTexture→材质·render-only）
   private readonly anim3d = new Anim3DSystem(); // 程序化位姿动画（Anim3D·spin/bob·render-only·把 title 骰自转等从游戏层手写下沉成数据）
   private readonly paths = new PathSystem(); // 路径跟随（Path3D·沿控制点走·移动平台/巡逻/dolly·render-only）
   private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
@@ -157,6 +159,7 @@ export class ThreeRenderer implements RendererBackend {
     this.models = new ModelPool(this.assets);
     container.appendChild(this.gl.domElement);
     this.worldUi.init(container); // 世界 UI DOM 叠层（覆于 canvas 上·pointer-events:none）
+    this.diegetic.init(container); // UI 贴 3D 面（离屏 DOM 宿主·渲 LayoutNode → 栅格成贴图）
     // 视窗自适应（render-only·碰所有 3D 游戏）：观察容器盒·尺寸变即 resize。headless/无 ResizeObserver 环境跳过。
     // 容器紧贴画布（如 game-z stage·line-height:0）→ 观测值=当前画布尺寸 → resize 判定未变即空转（无害·保留原固定尺寸+居中）；
     // 容器由布局撑满（width/height:100%）→ 画布自动随视窗缩放（响应式）。
@@ -358,6 +361,8 @@ export class ThreeRenderer implements RendererBackend {
     const animLive = this.models.update(performance.now());
     // 材质 UV 动画（Material3D.uvAnim·render-only·须在 mesh 建好后）：逐帧改克隆贴图 offset/repeat（滚动/序列帧）。活跃 >0 → 持续重渲。
     const uvLive = this.uvAnim.sync(world, this.meshes, performance.now());
+    // UI 贴 3D 面（Diegetic3D·render-only·须在 mesh 建好后）：渲 LayoutNode → 栅格 CanvasTexture → 挂材质。node 变/栅格在途 → 持续重渲。
+    const diegeticLive = this.diegetic.sync(world, this.meshes);
 
     // W1-C 脏标跳渲：渲染签名（投影体姿 + 相机 + 灯 + 后处理 + 天空云飘帧 + 粒子/物理/骨骼动画活跃帧）。与上帧一致 → 跳过
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
@@ -374,7 +379,7 @@ export class ThreeRenderer implements RendererBackend {
     const camTweenActive = this.cameras.tickTween(cam3d?.tween, performance.now());
     // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
     const flashAmt = this.flash.update(post?.flash, performance.now());
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${diegeticLive > 0 ? this.frame : 'dg0'}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -542,6 +547,7 @@ export class ThreeRenderer implements RendererBackend {
     this.flash.dispose();
     this.physics?.dispose();
     this.worldUi.dispose();
+    this.diegetic.dispose();
     this.models.dispose(this.scene);
     this.lights.dispose(this.scene);
     if (this.envTex) { this.envTex.dispose(); this.envTex = null; this.scene.environment = null; }
