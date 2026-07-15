@@ -26,6 +26,13 @@
       "summary": "AUDIT: WARNINGS · RATCHET: PASS",
       "at": "2026-07-15T06:40:47.271Z",
       "gameHash": "d785658ffe05fedb"
+    },
+    "S8": {
+      "exit": 0,
+      "summary": "tsc+vitest+build 三绿（tsc=0 vitest=0 run=0）",
+      "at": "2026-07-15T06:47:25.776Z",
+      "head": "756c95128a875a9a0670eb0f6121c2186577f9e3",
+      "dirty": false
     }
   },
   "history": [
@@ -50,6 +57,12 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-07-15T06:40:47.271Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S8",
+      "exit": 0,
+      "at": "2026-07-15T06:47:25.776Z"
     }
   ]
 }
