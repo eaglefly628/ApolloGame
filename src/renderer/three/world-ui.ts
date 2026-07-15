@@ -77,12 +77,14 @@ function anchorPos(world: IWorld, id: string, offsetY: number): { x: number; y: 
   return null;
 }
 
-const sigOf = (ui: WorldUI3D): string => `${ui.text}|${ui.size ?? ''}|${ui.color ?? ''}|${ui.glow ? 1 : 0}`;
+// 变更签名：node 在场 → 序列化富内容（血条更新即变→重挂）；否则 text 简写各字段。
+const sigOf = (ui: WorldUI3D): string => ui.node ? `n:${JSON.stringify(ui.node)}` : `${ui.text ?? ''}|${ui.size ?? ''}|${ui.color ?? ''}|${ui.glow ? 1 : 0}`;
 
-// 头顶 LayoutNode：bare Panel 裹一个居中 Label（仍走主程 UI 库·UI 铁律）。
-function treeOf(ui: WorldUI3D): LayoutNode {
+// 头顶 LayoutNode：node 在场直接用（富面板/血条/名牌·UI 铁律仍走 UI 库渲染）；否则 bare Panel 裹居中 Label（text 简写）。
+export function treeOf(ui: WorldUI3D): LayoutNode {
+  if (ui.node) return ui.node;
   return {
     type: 'Panel', id: 'wui', props: { bare: true },
-    children: [{ type: 'Label', id: 'wui-l', props: { text: ui.text, size: ui.size ?? 'sm', glow: ui.glow ?? false, ...(ui.color ? { color: ui.color } : {}) } }],
+    children: [{ type: 'Label', id: 'wui-l', props: { text: ui.text ?? '', size: ui.size ?? 'sm', glow: ui.glow ?? false, ...(ui.color ? { color: ui.color } : {}) } }],
   };
 }

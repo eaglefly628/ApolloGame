@@ -421,7 +421,12 @@
 > 5. 同提交回填 `docs/playbooks/3d.md` 一行 + `docs/playbooks/testing.md` 对拍行更新；证据挂 `docs/playbooks/visual-scorecard.md` 维 8（性能证据）。
 > 6. 门禁全绿直推；完工标 ✅ 待 Lead 验收（我会拿一个故意黑屏/冻结的场景做红测）。
 
-## REQ-3D-世界空间 UI 表达 · WorldUI3D 超越飘字（owner 2026-07-07「3D UI 表达·两者都要」） · [2026-07-14] · 提出：UI/game-i session → **待 P3D 评估** · status: open · 优先级: P2 · 类型: 3D UI 能力
+## REQ-3D-世界空间 UI 表达 · WorldUI3D 超越飘字（owner 2026-07-07「3D UI 表达·两者都要」） · [2026-07-14] · 提出：UI/game-i session → P3D · status: **✅ #1#2 done（P3D 2026-07-14·重组·见裁决）；#3 diegetic 真缺口·暂缓待消费者** · 优先级: P2 · 类型: 3D UI 能力
+
+> **★ P3D 裁决（2026-07-14·按 manifesto 尺子·能重组则重组·真缺口才下沉）**：
+> - **#1 世界空间面板 + #2 屏幕锚定跟随单位 = ✅ 重组（不新建 Panel3D）**：`WorldUiLayer` 本就做「世界锚点→屏幕投影→挂 LayoutNode→随实体每帧跟随→背相机/出屏自动隐」——**#2 的机制已在**，#1 的「billboard 面板」也正是这条路。唯一缺口=`WorldUI3D` 只吃单 `text`。→ **加 `WorldUI3D.node?: LayoutNode`**（富内容·面板/血条 ProgressBar/名牌/多行·仍走 UI 库·UI 铁律），`text` 保留为简写。一处小扩展覆盖 #1+#2。**不新建 `Panel3D`**（会与 WorldUI3D 重复）。demo：game-z 狐狸名牌（Label+ProgressBar·随奔跑跟随）。测试 + 回填手册。全绿。
+> - **#3 diegetic UI（UI 贴到 3D 面片·透视正确·可遮挡）= 真缺口·暂缓**：这是**另一条渲染路**（`LayoutNode→CanvasTexture→Material3D.map`），非 WorldUI3D 的屏幕叠层 billboard 能重组。**难点**：现 UI 库渲成 **DOM**，要上 Mesh3D 面片需把 DOM 光栅化成 canvas 纹理（html2canvas 级·重且不完美）或另造**canvas 版 LayoutNode 渲染器**——工程量大。**当前无具名消费者**（无游戏要控制台屏/桌上卡牌）→ 按 YAGNI **暂不造**，记设计待真需求拉动（那时评估 canvas-UI 光栅化路）。
+> - **边界确认**：`WorldUI3D.node` 是 render-only 组件字段（住 render.ts·🔶 知会 Lead·type-only import LayoutNode·无运行时环）；world-ui.ts 是 P3D 域。**未越界 UI 库**（只消费 LayoutNode·不改控件闭集）。
 
 > **背景**：owner 要「开发 3D UI 表达」，明确「两者都要」——① 2D LayoutNode 加 CSS-3D 变换（透视倾斜/景深叠层/悬停立体抬起）**已由 UI 域落地**（`LayoutConstraints.rotateX/rotateY/perspective/z/tilt3d`·game-i `t-3d` 段·见 transform3d.test）；② **世界空间 UI**=UI 面板/HUD 挂进真 3D 场景，属 P3D 独占域，本单提交 P3D 评估。
 > **诉求（待 P3D 按 manifesto 评判：能否用现有 WorldUI3D 组合表达 / 真缺口才下沉）**：现 `WorldUI3D` 只有世界空间**飘字**（text/offsetY/size/glow）。商业 3D 游戏的「世界空间 UI」还含：

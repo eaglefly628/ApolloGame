@@ -131,7 +131,15 @@ export function dioramaBlueprint(): WorldBlueprint {
         Model3D: { modelKey: MODEL_FOX, scale: 0.09 }, // Fox 模型尺度大(~70u)→缩到盒庭尺度
         AnimState3D: { clip: 'Run', speed: 1.5 }, // 播奔跑动画（骨骼）
         Collider3D: { kind: 'capsule', radius: 2, height: 6 },
-        WorldUI3D: { text: '🦊 狐狸（骨骼动画·奔跑）', offsetY: 9, size: 'sm', glow: true },
+        // 富世界空间 UI（REQ-3D-世界空间 UI·#1 面板 + #2 跟随单位）：名牌 Panel（名字 Label + 体力 ProgressBar）
+        // 挂 LayoutNode·随奔跑的狐狸每帧跟随投影（血条跟单位·背相机/出屏自动隐）。证明「世界 UI = 富 LayoutNode 锚世界物件」。
+        WorldUI3D: { offsetY: 10, node: {
+          type: 'Panel', id: 'hero-plate', props: { bare: true }, layout: { gap: 2 },
+          children: [
+            { type: 'Label', id: 'hero-name', props: { text: '🦊 狐狸', size: 'sm', glow: true } },
+            { type: 'ProgressBar', id: 'hero-sta', props: { value: 0.72, tone: 'ok', label: '体力', showValue: true } },
+          ],
+        } },
       },
 
       // 中心信标（金属柱 + 魔法喷泉 VFX）：赛道圆心的焦点，鸭子绕它跑。锤打金面（bumps 浮雕·反射更活）。

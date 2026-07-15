@@ -2,6 +2,7 @@
 // 每帧驱动 UI/渲染的"软逻辑"组件：可见性、精灵图层、颜色、帧、血条、动画状态机、朝向、声音、相机、文字、Tween。
 // 红线：表现层只表现，**绝不驱动逻辑、绝不被 Condition 读**（Tween 浮点插值不喂逻辑数值，防跨端 1-ULP 漂移）。
 import type { Component } from '../../core/types.js';
+import type { LayoutNode } from '@ui/components/index.js'; // 仅类型（erased·无运行时环）：WorldUI3D 富内容 = LayoutNode（UI 铁律）
 
 // ── H1 visibility ── 是否可见 / 是否参与系统运算
 export interface Visibility extends Component {
@@ -327,11 +328,15 @@ export interface Fog3D extends Component {
 // v1 = 静态文字 Label（头顶飘字）；动态绑定（HP/名字变量）后续。**渲染线只做世界锚 + 投影**，控件本体归主程 UI 库。
 export interface WorldUI3D extends Component {
   readonly type: 'WorldUI3D';
-  text: string; // 头顶文字（v1 静态）
+  text?: string; // 头顶文字（简写·单 Label·node 缺省时用）
+  // 富世界空间 UI（REQ-3D-世界空间 UI·owner 2026-07-07「3D UI 表达」）：挂**任意 LayoutNode**（面板/血条/名牌/多行·
+  // 走引擎 UI 库渲染·UI 铁律）→ 锚世界点投影到屏幕·随实体每帧跟随（血条跟单位·背相机/出屏自动隐）。在场则替代 text。
+  // 这是「世界空间 UI = LayoutNode 锚到世界物件屏幕投影点」的 screen-overlay billboard 路（非贴到 3D 面片的 diegetic·那另论）。
+  node?: LayoutNode;
   offsetY?: number; // 锚点之上的高度（缺省 6）
-  size?: 'xs' | 'sm' | 'md' | 'lg'; // Label 字号（缺省 sm）
-  color?: string; // Label 颜色（UI 库语义色·缺省默认）
-  glow?: boolean; // 发光
+  size?: 'xs' | 'sm' | 'md' | 'lg'; // Label 字号（text 简写用·缺省 sm）
+  color?: string; // Label 颜色（text 简写用·UI 库语义色·缺省默认）
+  glow?: boolean; // 发光（text 简写用）
 }
 
 // ── TA 地基（Phase 0）：曲线 / 渐变（render-only 值类型·随寿命/时间演化的 TA 通用原语）──────────────
