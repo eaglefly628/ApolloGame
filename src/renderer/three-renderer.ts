@@ -23,6 +23,7 @@ import { VfxSystem } from './three/vfx.js';
 import { TrailSystem } from './three/trail.js';
 import { DecalSystem } from './three/decal.js';
 import { UvAnimSystem } from './three/uv-anim.js';
+import { BillboardSystem } from './three/billboard.js';
 import { Anim3DSystem } from './three/anim3d.js';
 import { PathSystem } from './three/path.js';
 import { pivotMatrix, applyPivot } from './three/pivot.js';
@@ -83,6 +84,7 @@ export class ThreeRenderer implements RendererBackend {
   private readonly trails = new TrailSystem(); // 运动拖尾（Trail3D·render-only·超休闲残影）
   private readonly decals = new DecalSystem(); // 地面贴花（Decal3D·blob 阴影/环/圆·render-only）
   private readonly uvAnim = new UvAnimSystem(); // 材质 UV 动画（Material3D.uvAnim·滚动/序列帧·render-only）
+  private readonly billboards = new BillboardSystem(); // 世界空间贴图广告牌（Billboard3D·朝相机·深度排序·render-only）
   private readonly anim3d = new Anim3DSystem(); // 程序化位姿动画（Anim3D·spin/bob·render-only·把 title 骰自转等从游戏层手写下沉成数据）
   private readonly paths = new PathSystem(); // 路径跟随（Path3D·沿控制点走·移动平台/巡逻/dolly·render-only）
   private readonly worldUi = new WorldUiLayer(); // 世界空间 UI 头顶飘字（TA Phase 3·render-only·走主程 UI 库）
@@ -251,6 +253,8 @@ export class ThreeRenderer implements RendererBackend {
     const trailLive = this.trails.sample(world);
     // 地面贴花（Decal3D·render-only·不需相机·世界空间贴地）：管理贴片网格 + 跟随实体地面位。有变化 >0 → 折进 renderSig。
     const decalLive = this.decals.sync(this.scene, world);
+    // 世界空间广告牌（Billboard3D·render-only·Sprite 自朝相机）：管理精灵 + 定位 + 取贴图（sRGB）。有变化 >0 → 折进 renderSig。
+    const billboardLive = this.billboards.sync(this.scene, world, (k) => this.pbrMapTexture(k, true));
     // 程序化位姿动画（Anim3D·render-only）：据壁钟改 Transform3D 分量（spin/bob）——须在 collect 前（渲染读更新后的位姿）。
     const animPoseLive = this.anim3d.sync(world, performance.now());
     // 路径跟随（Path3D·render-only）：据壁钟沿控制点写 Transform3D 位（移动平台/巡逻/dolly）——须在 collect 前。
@@ -366,9 +370,11 @@ export class ThreeRenderer implements RendererBackend {
     if (cam3d && cam3d.mode === 'follow' && followPose) {
       followCenter = this.followDamp.update({ x: followPose.x, y: followPose.y, z: followPose.z }, cam3d.follow, performance.now());
     } else { this.followDamp.reset(); }
+    // 运镜过渡：据 Camera3D.tween.trigger 算过渡进度——active 时折进 renderSig 持续重渲直至到位（applyOrbit 内做取景混合）。
+    const camTweenActive = this.cameras.tickTween(cam3d?.tween, performance.now());
     // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
     const flashAmt = this.flash.update(post?.flash, performance.now());
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${uvLive > 0 ? this.frame : 'uv0'}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -527,10 +533,12 @@ export class ThreeRenderer implements RendererBackend {
     this.vfx.dispose(this.scene);
     this.trails.dispose(this.scene);
     this.decals.dispose(this.scene);
+    this.billboards.dispose(this.scene);
     this.uvAnim.dispose();
     this.anim3d.dispose();
     this.paths.dispose();
     this.camShake.dispose();
+    this.cameras?.disposeTween();
     this.flash.dispose();
     this.physics?.dispose();
     this.worldUi.dispose();

@@ -239,6 +239,9 @@ export interface Camera3D extends Component {
   // 跟随柔化（follow 模式·render-only·超休闲跟随手感）：lag=平滑时间常数(秒·越大越"拖"·缺省 0=硬贴)；
   //   lookAhead=按 target 速度朝运动方向预读的秒数(缺省 0)。渲染器持平滑态指数逼近·帧率无关·未收敛时持续重渲·收敛回省帧。
   follow?: { lag?: number; lookAhead?: number };
+  // 运镜过渡（render-only·平滑切机位）：游戏把 Camera3D 设成目标机位并 **bump `trigger`** → 渲染器把**当前**取景（眼位+注视点·
+  //   世界空间·已含 auto 距离/pivot 解析）在 `dur` 秒内 ease 到目标机位（intro flyby / 聚焦物件 / 过场）。不 bump=硬切（缺省）。
+  tween?: { trigger: number; dur?: number; ease?: 'linear' | 'cubicOut' | 'inOut' };
   pitchMin?: number; // 俯仰夹角下/上限(弧度)·缺省不夹（行为层运镜 + 解释器都按此夹）
   pitchMax?: number;
   // 震屏（camera shake·trauma 模型·render-only·超休闲通用打击反馈）：游戏在撞击/得分/失败时 **bump `trigger`**（任意变化的数）
@@ -453,6 +456,20 @@ export interface Decal3D extends Component {
   color?: number; // 颜色 0xRRGGBB（缺省 blob=黑·ring/disc=白）
   opacity?: number; // 不透明度 0..1（缺省 blob=0.35·ring/disc=0.7）
   y?: number; // 贴地高度（缺省 0.05·防 z-fighting）
+}
+
+// ── Billboard3D（render-only·不进 hash·休闲通用）── 实体世界位放一张**始终朝相机的贴图 quad**（金币/拾取物/浮空图标/emoji/impostor）。
+// 区别 WorldUI3D（DOM 叠层·永在最上）——广告牌**在场景里·参与深度排序·会被 3D 物体遮挡**。贴图走 asset key（异步就绪前显纯色）。
+export interface Billboard3D extends Component {
+  readonly type: 'Billboard3D';
+  tex?: string; // 贴图 key（AssetManager·无则纯色 quad）
+  size?: number; // 等尺寸（世界单位·缺省 2）
+  width?: number; height?: number; // 非等比（覆盖 size）
+  color?: number; // 染色/纯色 0xRRGGBB（缺省白·有 tex 时染色贴图）
+  opacity?: number; // 不透明度 0..1（缺省 1）
+  blend?: 'add' | 'alpha'; // add=发光图标/能量·alpha=实体（缺省 alpha）
+  x?: number; y?: number; z?: number; // 显式世界位（缺省读 Transform3D，否则 2D Transform(x→X,y→Z)+baseY）
+  baseY?: number; // 2D Transform 情形的离地高度
 }
 
 export interface Color extends Component {

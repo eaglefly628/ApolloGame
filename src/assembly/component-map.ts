@@ -11,6 +11,7 @@ import type {
   Pivot3D,
   AnimState,
   AnimState3D,
+  Billboard3D,
   BoardCell,
   Bounds,
   Camera,
@@ -132,6 +133,7 @@ export interface ComponentDataMap {
   Pivot3D: Omit<Pivot3D, 'type'>;
   AnimState: Omit<AnimState, 'type'>;
   AnimState3D: Omit<AnimState3D, 'type'>;
+  Billboard3D: Omit<Billboard3D, 'type'>;
   BoardCell: Omit<BoardCell, 'type'>;
   Bounds: Omit<Bounds, 'type'>;
   Camera: Omit<Camera, 'type'>;

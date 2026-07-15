@@ -1,6 +1,7 @@
 // 盒庭 3D 渲染线 v0（Transform3D 真三维位姿 + Camera3D 轨道相机 + render-only 红线）。
 // WebGL 渲染由 ThreeRenderer 在浏览器做；此处验证纯函数几何 + 收集 + 「不进 hash」的确定性边界（node 可测）。
 import { describe, it, expect } from 'vitest';
+import * as THREE from 'three';
 import { World } from '@engine/core/world.js';
 import { collectRenderables } from './renderable.js';
 import {
@@ -8,7 +9,7 @@ import {
   clampPitch, orthoFrustum, type Pose3D,
 } from './three-projection.js';
 import { hashPoses, camSig, postSig } from './three/stats.js';
-import { CameraShake, FollowDamper } from './three/camera-rig.js';
+import { CameraShake, FollowDamper, CameraTween } from './three/camera-rig.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
 import { hashSnapshot } from '@net/index.js';
 import type { Transform3D, Camera3D, Sky3D, Mesh3D, Model3D, Light3D, Post3D } from '@engine/protocol/components.js';
@@ -69,6 +70,27 @@ describe('Transform3D / Camera3D 纯函数（盒庭位姿 + 轨道相机）', ()
   it('camSig 含 shake.trigger：bump 即改签名（渲染器捕获触发帧）', () => {
     const base: Camera3D = { type: 'Camera3D', yaw: 0, pitch: 0.6 };
     expect(camSig({ ...base, shake: { trigger: 1 } })).not.toBe(camSig({ ...base, shake: { trigger: 2 } }));
+  });
+  it('CameraTween：bump trigger → 从上一取景 ease 到目标取景（世界空间眼位/注视点）', () => {
+    const tw = new CameraTween();
+    const A = new THREE.Vector3(0, 0, 10), tgtA = new THREE.Vector3(0, 0, 0);
+    // 先无过渡：直通并记录当前取景 A 为「from 候选」
+    expect(tw.tick(undefined, 1000)).toBe(false);
+    expect(tw.apply(A.clone(), tgtA.clone()).eye.z).toBeCloseTo(10);
+    // 目标取景 B·bump trigger dur1 → 起点仍在 A（k=0）
+    const B = new THREE.Vector3(20, 0, 10), tgtB = new THREE.Vector3(20, 0, 0);
+    expect(tw.tick({ trigger: 1, dur: 1, ease: 'linear' }, 1000)).toBe(true);
+    expect(tw.apply(B.clone(), tgtB.clone()).eye.x).toBeCloseTo(0); // k0 → 停在 from(A)
+    // 半程（linear）→ 眼位 x 到 A→B 中点 10
+    expect(tw.tick({ trigger: 1, dur: 1, ease: 'linear' }, 1500)).toBe(true);
+    expect(tw.apply(B.clone(), tgtB.clone()).eye.x).toBeCloseTo(10);
+    // 到点 → inactive·直通目标 B
+    expect(tw.tick({ trigger: 1, dur: 1, ease: 'linear' }, 2000)).toBe(false);
+    expect(tw.apply(B.clone(), tgtB.clone()).eye.x).toBeCloseTo(20);
+  });
+  it('camSig 含 tween.trigger：bump 即改签名', () => {
+    const base: Camera3D = { type: 'Camera3D', yaw: 0, pitch: 0.6 };
+    expect(camSig({ ...base, tween: { trigger: 1 } })).not.toBe(camSig({ ...base, tween: { trigger: 2 } }));
   });
   it('groundPose：2D Transform → 地面（x→X、2D y→Z、Y=物高/2 坐地、rotation→绕 Y）', () => {
     const p = groundPose({ x: 12, y: -8, rotation: 0.3, scaleX: 1, scaleY: 1 }, 6);

@@ -74,10 +74,60 @@ export class FollowDamper {
   reset(): void { this.has = false; }
 }
 
+// ── CameraTween（Camera3D.tween 解释器·运镜过渡·render-only）─────────────────────────────────
+// 在**世界空间的取景（眼位 eye + 注视点 target）**层面做过渡——不碰 auto 距离/pivot 解析：
+// bump trigger → 捕获上一帧已应用的取景为 from，dur 秒内 ease 到当前（目标）取景。收敛/未触发 → 直通目标。
+// 分两步用：tick(相机前·出 active 折 renderSig) → apply(applyOrbit 内·据 k 混合 from→raw)。
+type TweenEase = 'linear' | 'cubicOut' | 'inOut';
+const easeTween = (p: number, e: TweenEase): number => {
+  if (e === 'linear') return p;
+  if (e === 'inOut') return p * p * (3 - 2 * p); // smoothstep
+  const q = 1 - p; return 1 - q * q * q;         // cubicOut（缺省·减速停靠）
+};
+export class CameraTween {
+  private lastTrigger: number | undefined = undefined;
+  private t0 = 0; private k = 1; private active = false; private pendingCapture = false; private has = false;
+  private readonly fromEye = new THREE.Vector3(); private readonly fromTgt = new THREE.Vector3();
+  private readonly lastEye = new THREE.Vector3(); private readonly lastTgt = new THREE.Vector3();
+
+  // 相机前调（只需 trigger+壁钟·算进度 k 与 active）。返回 active（折进 renderSig 持续重渲直至到位）。
+  tick(tween: { trigger: number; dur?: number; ease?: TweenEase } | undefined, nowMs: number): boolean {
+    if (!tween) { this.active = false; this.lastTrigger = undefined; return false; }
+    if (tween.trigger !== this.lastTrigger) { this.lastTrigger = tween.trigger; this.t0 = nowMs; this.pendingCapture = true; }
+    const dur = tween.dur ?? 0.6;
+    const elapsed = (nowMs - this.t0) / 1000;
+    this.k = easeTween(dur > 0 ? Math.min(1, elapsed / dur) : 1, tween.ease ?? 'cubicOut');
+    this.active = this.has && elapsed < dur;
+    return this.active;
+  }
+
+  // applyOrbit 内调：给 raw 取景（眼位/注视点）→ 返回过渡混合后的有效取景。首帧/未触发直通并记录。
+  apply(rawEye: THREE.Vector3, rawTgt: THREE.Vector3): { eye: THREE.Vector3; tgt: THREE.Vector3 } {
+    if (this.pendingCapture) { this.fromEye.copy(this.lastEye); this.fromTgt.copy(this.lastTgt); this.pendingCapture = false; }
+    let eye = rawEye, tgt = rawTgt;
+    if (this.active && this.has) {
+      eye = this.fromEye.clone().lerp(rawEye, this.k);
+      tgt = this.fromTgt.clone().lerp(rawTgt, this.k);
+    }
+    this.lastEye.copy(eye); this.lastTgt.copy(tgt); this.has = true;
+    return { eye, tgt };
+  }
+
+  dispose(): void { this.has = false; this.active = false; this.lastTrigger = undefined; }
+}
+
 export class CameraRig {
   private readonly persp: THREE.PerspectiveCamera;
   private readonly ortho: THREE.OrthographicCamera;
+  private readonly tween = new CameraTween(); // 运镜过渡（Camera3D.tween·世界空间取景 ease）
+  private readonly tmpEye = new THREE.Vector3(); private readonly tmpTgt = new THREE.Vector3();
   current: THREE.Camera; // 当前激活相机（渲染 + 后处理用）
+
+  // 运镜过渡计时（相机前调·出 active 折 renderSig）。委托内部 CameraTween。
+  tickTween(tween: { trigger: number; dur?: number; ease?: 'linear' | 'cubicOut' | 'inOut' } | undefined, nowMs: number): boolean {
+    return this.tween.tick(tween, nowMs);
+  }
+  disposeTween(): void { this.tween.dispose(); }
 
   constructor(fov: number, aspect: number) {
     this.persp = new THREE.PerspectiveCamera(fov, aspect, 0.1, 10000);
@@ -116,8 +166,10 @@ export class CameraRig {
     }
     const pitch = clampPitch(cam3d.pitch, cam3d.pitchMin, cam3d.pitchMax);
     const p = orbitCamera(center, dist, cam3d.yaw, pitch);
-    cam.position.set(p.x, p.y, p.z);
-    cam.lookAt(center.x, center.y, center.z);
+    // 运镜过渡：在世界空间取景层混合（from 上一帧应用取景 → raw 目标取景）。未触发时直通（记录当前取景供下次 from）。
+    const eff = this.tween.apply(this.tmpEye.set(p.x, p.y, p.z), this.tmpTgt.set(center.x, center.y, center.z));
+    cam.position.set(eff.eye.x, eff.eye.y, eff.eye.z);
+    cam.lookAt(eff.tgt.x, eff.tgt.y, eff.tgt.z);
     // 震屏：沿相机局部右/上轴平移眼位（保持 lookAt center → 视线轻摆 = 旋转式抖动·不晕）。
     if (shake && shake.active) {
       cam.updateMatrixWorld();
