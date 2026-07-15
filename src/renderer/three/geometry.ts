@@ -283,7 +283,11 @@ export function buildSkyTexture(sky: Sky3D): THREE.CanvasTexture {
 // 释放单 mesh 的几何 + 材质（含程序化 normal/roughness 贴图·这些是逐 mesh 生成·非共享缓存）。
 export function disposeMesh(mesh: THREE.Mesh): void {
   mesh.geometry.dispose();
-  const m = mesh.material;
+  disposeMeshMat(mesh.material);
+  // 子网格（如卡通描边 outline hull·共享父几何 → 只释放其材质·几何随父已 dispose）。
+  for (const child of mesh.children) { const cm = child as THREE.Mesh; if (cm.isMesh) disposeMeshMat(cm.material); }
+}
+function disposeMeshMat(m: THREE.Material | THREE.Material[]): void {
   (Array.isArray(m) ? m : [m]).forEach((x) => {
     const sm = x as THREE.MeshStandardMaterial;
     sm.normalMap?.dispose(); sm.roughnessMap?.dispose(); // 程序化表面贴图（surface-tex 生成·随 mesh 释放）

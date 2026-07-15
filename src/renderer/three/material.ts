@@ -115,6 +115,23 @@ export function buildPbrMaterial(def: PbrMaterialDef, surface?: SurfaceDetail, m
   return m;
 }
 
+// 卡通描边（inverted-hull·render-only）：共享父几何的**背面壳**·顶点沿法线外扩 width → 物体轮廓一圈实色边。
+// 背面渲染（BackSide）→ 只有超出主体的边缘可见；主体正面材质盖在上面。凸形/常规道具最干净。
+export function buildOutline(geo: THREE.BufferGeometry, o: { width?: number; color?: number }): THREE.Mesh {
+  const width = o.width ?? 0.03;
+  const mat = new THREE.MeshBasicMaterial({ color: (o.color ?? 0x000000) & 0xffffff, side: THREE.BackSide });
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms['outlineWidth'] = { value: width };
+    shader.vertexShader = 'uniform float outlineWidth;\n' + shader.vertexShader.replace(
+      '#include <begin_vertex>',
+      '#include <begin_vertex>\n transformed += normalize(normal) * outlineWidth;', // 沿法线外扩
+    );
+  };
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = false; mesh.receiveShadow = false; // 描边不投影/不受影
+  return mesh;
+}
+
 // Material3D + Mesh3D → 单 mesh（特征物件·不进哑光实例化批）。maps=渲染器已解析的真实贴图（色彩空间已设）。
 export function buildPbrMesh3D(m: Mesh3D, mat: Material3D, maps?: PbrMaps): THREE.Mesh {
   const def = resolvePbr(mat.preset, mat);
@@ -131,6 +148,7 @@ export function buildPbrMesh3D(m: Mesh3D, mat: Material3D, maps?: PbrMaps): THRE
   const mesh = new THREE.Mesh(geo, material);
   mesh.castShadow = true;
   mesh.receiveShadow = mat.shading !== 'flat'; // 无光平涂不吃阴影（MeshBasicMaterial 不响应光）
+  if (mat.outline) mesh.add(buildOutline(geo, mat.outline)); // 卡通描边：共享几何的背面外扩壳（子网格·随父变换）
   return mesh;
 }
 
@@ -140,5 +158,6 @@ export function pbrSig(m: Mesh3D, mat: Material3D): string {
   const ss = s ? `${s.pattern}.${s.tiles ?? ''}.${s.normal ?? ''}.${s.rough ?? ''}.${s.scale ?? ''}` : '';
   const mk = `${mat.map ?? ''}.${mat.normalMap ?? ''}.${mat.roughnessMap ?? ''}.${mat.aoMap ?? ''}.${mat.metalnessMap ?? ''}.${mat.emissiveMap ?? ''}.${mat.ormMap ?? ''}`;
   const tl = mat.tiling ? `${mat.tiling.repeat ?? ''}.${mat.tiling.offset?.[0] ?? ''}.${mat.tiling.offset?.[1] ?? ''}` : '';
-  return `pbr|${mat.preset}|${mat.shading ?? ''}|${mat.toonSteps ?? ''}|${mat.color ?? ''}|${mat.roughness ?? ''}|${mat.metalness ?? ''}|${mat.emissive ?? ''}|${m.shape}|${m.width}|${m.height}|${m.depth ?? ''}|${ss}|${mk}|${tl}`;
+  const ol = mat.outline ? `${mat.outline.width ?? ''}.${mat.outline.color ?? ''}` : '';
+  return `pbr|${mat.preset}|${mat.shading ?? ''}|${mat.toonSteps ?? ''}|${ol}|${mat.color ?? ''}|${mat.roughness ?? ''}|${mat.metalness ?? ''}|${mat.emissive ?? ''}|${m.shape}|${m.width}|${m.height}|${m.depth ?? ''}|${ss}|${mk}|${tl}`;
 }

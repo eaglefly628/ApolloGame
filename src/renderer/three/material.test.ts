@@ -1,7 +1,7 @@
 // PBR 材质消费端（REQ-Resource ①·真实贴图走 texture-key 路线）：map 签名 + 贴图挂载 + 色彩空间/基色处理。
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { buildPbrMaterial, buildShadedMaterial, toonGradient, pbrSig, applyMaterialRef, type PbrMaps } from './material.js';
+import { buildPbrMaterial, buildShadedMaterial, buildOutline, toonGradient, pbrSig, applyMaterialRef, type PbrMaps } from './material.js';
 import { resolvePbr, type MaterialSpec } from '@assets/index.js';
 import type { Mesh3D, Material3D } from '@engine/protocol/components.js';
 
@@ -103,6 +103,22 @@ describe('超休闲缺口 F 平涂/卡通着色（buildShadedMaterial + shading 
     expect(pbrSig(mesh(), base)).not.toBe(pbrSig(mesh(), { ...base, shading: 'toon' }));
     expect(pbrSig(mesh(), { ...base, shading: 'toon', toonSteps: 3 })).not.toBe(pbrSig(mesh(), { ...base, shading: 'toon', toonSteps: 5 }));
     expect(pbrSig(mesh(), { ...base, shading: 'flat' })).not.toBe(pbrSig(mesh(), { ...base, shading: 'toon' }));
+  });
+  it('卡通描边 buildOutline：背面外扩壳（BackSide·实色·法线位移 shader）', () => {
+    const geo = new THREE.SphereGeometry(1, 8, 8);
+    const om = buildOutline(geo, { width: 0.05, color: 0x101010 });
+    expect(om).toBeInstanceOf(THREE.Mesh);
+    const mat = om.material as THREE.MeshBasicMaterial;
+    expect(mat.side).toBe(THREE.BackSide);
+    expect(mat.color.getHex()).toBe(0x101010);
+    expect(om.geometry).toBe(geo);        // 共享父几何（不复制）
+    expect(om.castShadow).toBe(false);
+    expect(typeof mat.onBeforeCompile).toBe('function'); // 注入法线外扩顶点位移
+  });
+  it('outline 进 pbrSig（改描边 → 重建 mesh）', () => {
+    const base: Material3D = { type: 'Material3D', preset: 'jade' };
+    expect(pbrSig(mesh(), base)).not.toBe(pbrSig(mesh(), { ...base, outline: { width: 0.03 } }));
+    expect(pbrSig(mesh(), { ...base, outline: { width: 0.03 } })).not.toBe(pbrSig(mesh(), { ...base, outline: { width: 0.06 } }));
   });
 });
 

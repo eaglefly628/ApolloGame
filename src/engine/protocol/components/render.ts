@@ -120,7 +120,8 @@ export type Anim3DChannel =
   | { kind: 'osc'; field: Anim3DField; wave: Anim3DWave; amp: number; freq: number; phase?: number } // 初值 + amp·wave(t·freq+phase) —— 通用周期振荡（摆动/机械/闪烁）
   | { kind: 'noise'; field: Anim3DField; amp: number; freq: number; seed?: number } // 初值 + amp·noise(t·freq+seed) —— 确定性噪声漂移（有机游走·神经质待机）
   // ── 一次性通道（once·播一遍→保持终值·入场/强调）──
-  | { kind: 'ease'; field: Anim3DField; from: number; to: number; dur: number; curve?: Anim3DCurve; delay?: number }; // from→to 经 dur 秒（delay 后起·curve 缺省 cubicOut）·**绝对值**（不绕初值）
+  | { kind: 'ease'; field: Anim3DField; from: number; to: number; dur: number; curve?: Anim3DCurve; delay?: number } // from→to 经 dur 秒（delay 后起·curve 缺省 cubicOut）·**绝对值**（不绕初值）
+  | { kind: 'spring'; field: Anim3DField; to: number; from?: number; freq?: number; damping?: number }; // 解析阻尼弹簧：from(缺省初值)→to·欠阻尼带过冲回弹（spawn 弹跳/吸附 juice）·freq 频率·damping 阻尼比 0.05..1(小=弹久·缺省 0.35)
 export interface Anim3D extends Component {
   readonly type: 'Anim3D';
   channels: Anim3DChannel[]; // 多通道叠加（loop 绕初值加·ease 覆写绝对值·同 field 求和）
@@ -328,6 +329,9 @@ export interface Material3D extends Component {
   //   'flat'=无光平涂(MeshBasicMaterial·完全不受光·纯亮色·Helix/超休闲招牌观感)。preset 仍供基色·着色模型只换光照算法。
   shading?: 'toon' | 'flat';
   toonSteps?: number; // toon 明暗阶数（缺省 3·越大越接近平滑·越小越硬卡通）
+  // 卡通描边（inverted-hull·完整 toon 观感的另一半）：沿法线外扩的背面壳 → 物体轮廓一圈实色边。配 shading:'toon' 即经典卡通；
+  //   也可单独给任意材质加描边。width=边宽(世界单位·缺省 0.03)·color=边色(缺省黑)。凸形/常规道具效果最好（超休闲主体）。
+  outline?: { width?: number; color?: number };
   // 材质数据资产引用（REQ-Resource ④·render-only·= 索引 type:'material' 条目 id）：渲染器据它从材质目录
   // （buildMaterialCatalog）查 MaterialSpec 作基底，下面的 inline 字段（已定义者）覆盖之 → 合成有效材质。
   // 缺省或查无 → 纯用 inline preset/参数（向后兼容）。材质 = 引 texture key 的数据·非硬编码预设。

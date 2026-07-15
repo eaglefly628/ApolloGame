@@ -183,7 +183,8 @@ type AnimChReduced =
   | { kind: 'bob'; amp: number; freq: number; phase?: number }
   | { kind: 'osc'; wave: 'sine' | 'triangle' | 'saw' | 'square'; amp: number; freq: number; phase?: number }
   | { kind: 'noise'; amp: number; freq: number; seed?: number }
-  | { kind: 'ease'; from: number; to: number; dur: number; curve?: 'linear' | 'cubicOut' | 'outBack'; delay?: number };
+  | { kind: 'ease'; from: number; to: number; dur: number; curve?: 'linear' | 'cubicOut' | 'outBack'; delay?: number }
+  | { kind: 'spring'; to: number; from?: number; freq?: number; damping?: number };
 
 export function anim3dField(ch: AnimChReduced, tSec: number, base: number): number {
   switch (ch.kind) {
@@ -196,7 +197,28 @@ export function anim3dField(ch: AnimChReduced, tSec: number, base: number): numb
       const c = ch.curve === 'linear' ? p : ch.curve === 'outBack' ? easeOutBack(p) : easeCubicOut(p);
       return ch.from + (ch.to - ch.from) * c;
     }
+    case 'spring': return springValue(ch, tSec, base);
   }
+}
+
+// 解析阻尼弹簧（纯时间函数·帧率无关）：从 from（缺省 base 初值）弹性追赶到 to，欠阻尼(damping<1)带过冲回弹、临界(=1)不过冲。
+// freq=固有频率(Hz·越大越快·缺省 2)·damping=阻尼比 0.05..1(越小弹得越久·缺省 0.35=弹跳感)。t=0 → from·t→∞ → to。
+export function springValue(ch: { to: number; from?: number; freq?: number; damping?: number }, tSec: number, base: number): number {
+  const from = ch.from ?? base;
+  const zeta = ch.damping === undefined ? 0.35 : (ch.damping < 0.05 ? 0.05 : ch.damping > 1 ? 1 : ch.damping);
+  const w = 2 * Math.PI * (ch.freq ?? 2);
+  const dx = from - ch.to;
+  let env: number;
+  if (zeta < 1) { const wd = w * Math.sqrt(1 - zeta * zeta); env = Math.exp(-zeta * w * tSec) * (Math.cos(wd * tSec) + (zeta * w / wd) * Math.sin(wd * tSec)); }
+  else env = Math.exp(-w * tSec) * (1 + w * tSec); // 临界阻尼
+  return ch.to + dx * env;
+}
+
+// 弹簧沉降时间（~4 时间常数·98% 到位）：供活跃判定（弹簧是 once 类·settle 后不再计活跃）。
+export function springSettle(ch: { freq?: number; damping?: number }): number {
+  const zeta = ch.damping === undefined ? 0.35 : (ch.damping < 0.05 ? 0.05 : ch.damping > 1 ? 1 : ch.damping);
+  const w = 2 * Math.PI * (ch.freq ?? 2);
+  return 4 / (zeta * w);
 }
 
 // 周期波形（归一 [-1,1]·输入 x 视作弧度·**与 sine 同相**：x=0 过零上升·x=π/2 达峰·三角/方波峰对齐 sine）。

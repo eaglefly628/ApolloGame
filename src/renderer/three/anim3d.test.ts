@@ -1,7 +1,7 @@
 // Anim3D（程序化位姿动画·render-only）：纯函数求值 + 系统按壁钟改 Transform3D 分量 + 不进 hash。
 import { describe, it, expect } from 'vitest';
 import { Anim3DSystem } from './anim3d.js';
-import { anim3dField, transform3dPose } from '../three-projection.js';
+import { anim3dField, transform3dPose, springValue } from '../three-projection.js';
 import { World } from '@engine/core/world.js';
 import { hashSnapshot } from '@net/index.js';
 import type { Anim3D, Transform3D } from '@engine/protocol/components.js';
@@ -33,6 +33,23 @@ describe('anim3dField（纯函数·spin/bob）', () => {
     const n = (t: number) => anim3dField({ kind: 'noise', amp: 0.5, freq: 2, seed: 7 }, t, 3);
     expect(n(1.3)).toBe(n(1.3)); // 确定性
     for (const t of [0, 0.5, 1.7, 4.2]) { expect(n(t)).toBeGreaterThanOrEqual(3 - 0.5); expect(n(t)).toBeLessThanOrEqual(3 + 0.5); }
+  });
+
+  it('spring：t0=from·渐近 to·欠阻尼过冲（弹跳）·临界不过冲', () => {
+    const under = { to: 1, from: 0, freq: 2, damping: 0.3 };
+    expect(springValue(under, 0, 0)).toBeCloseTo(0);          // t0 = from
+    expect(springValue(under, 5, 0)).toBeCloseTo(1, 1);       // 渐近 to
+    // 欠阻尼：过程中某点越过 to（过冲 >1）
+    let overshot = false;
+    for (let t = 0; t < 1; t += 0.02) if (springValue(under, t, 0) > 1.02) overshot = true;
+    expect(overshot).toBe(true);
+    // 临界阻尼(=1)：不过冲（全程 ≤ to）
+    const crit = { to: 1, from: 0, freq: 2, damping: 1 };
+    let over = false;
+    for (let t = 0; t < 3; t += 0.02) if (springValue(crit, t, 0) > 1.0001) over = true;
+    expect(over).toBe(false);
+    // from 缺省 = base 初值
+    expect(springValue({ to: 5, freq: 2 }, 0, 2)).toBeCloseTo(2); // t0 = base
   });
 
   it('ease：from→to 经 dur（delay 后起·超 dur 保持 to·绝对值不绕初值）', () => {

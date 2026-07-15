@@ -1,6 +1,6 @@
 import type { IWorld } from '@engine/core/types.js';
 import type { Anim3D, Anim3DChannel, Anim3DField, Transform3D } from '@engine/protocol/components.js';
-import { anim3dField } from '../three-projection.js';
+import { anim3dField, springSettle } from '../three-projection.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  three/Anim3DSystem —— 程序化位姿动画（render-only·不进 hash）。
@@ -40,9 +40,8 @@ export class Anim3DSystem {
         delta.set(ch.field, (delta.get(ch.field) ?? 0) + (anim3dField(ch, tSec, base) - base));
       }
       for (const [f, d] of delta) setField(t3, f, (st.bases.get(f) ?? 0) + d);
-      // 活跃判定：有任一 **loop 通道**（spin/bob/osc/noise·永远在动）或任一 **ease 未播完** → 该实体仍活跃（渲染器须重渲）。
-      // 全是已播完的 ease → 终值已写、不再变 → 不计活跃（渲染器可转 idle·省帧）。
-      if (anim.channels.some((ch) => ch.kind !== 'ease' || tSec < (ch.delay ?? 0) + ch.dur)) live++;
+      // 活跃判定：loop 通道（spin/bob/osc/noise）永远活跃；once 通道（ease/spring）播完/沉降后不再计活跃（渲染器转 idle 省帧）。
+      if (anim.channels.some((ch) => channelLive(ch, tSec))) live++;
     }
     // 卸载已消失实体的动画态（title 骰销毁 / 房间流式卸载）。
     for (const id of [...this.state.keys()]) if (!seen.has(id)) this.state.delete(id);
@@ -50,6 +49,13 @@ export class Anim3DSystem {
   }
 
   dispose(): void { this.state.clear(); }
+}
+
+// 通道是否仍在动（loop 恒真；ease 播完/spring 沉降后为假 → 可转 idle 省帧）。
+function channelLive(ch: Anim3DChannel, tSec: number): boolean {
+  if (ch.kind === 'ease') return tSec < (ch.delay ?? 0) + ch.dur;
+  if (ch.kind === 'spring') return tSec < springSettle(ch);
+  return true; // spin/bob/osc/noise = loop·恒活跃
 }
 
 // Transform3D 分量读写（scale/scaleX/Y/Z 缺省 1·分轴缺省回退等比 scale·其余缺省 0）。
