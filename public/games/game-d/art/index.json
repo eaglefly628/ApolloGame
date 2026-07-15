@@ -6,7 +6,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/elements/an.png",
-      "description": "暗珠 元素法阵图标（圆形符号·法阵环）",
+      "description": "暗珠 元素圆珠图标（备用·当前代码未引用）",
       "category": "elements",
       "tags": [
         "game-d",
@@ -26,7 +26,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/elements/feng.png",
-      "description": "风纹 元素法阵图标（圆形符号·法阵环）",
+      "description": "风纹 元素圆珠图标（备用·当前代码未引用）",
       "category": "elements",
       "tags": [
         "game-d",
@@ -46,7 +46,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/elements/huo.png",
-      "description": "火焰 元素法阵图标（圆形符号·法阵环）",
+      "description": "火焰 元素圆珠图标（备用·当前代码未引用）",
       "category": "elements",
       "tags": [
         "game-d",
@@ -66,7 +66,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/elements/lei.png",
-      "description": "闪电 元素法阵图标（圆形符号·法阵环）",
+      "description": "闪电 元素圆珠图标（备用·当前代码未引用）",
       "category": "elements",
       "tags": [
         "game-d",
@@ -86,7 +86,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/elements/mu.png",
-      "description": "木叶 元素法阵图标（圆形符号·法阵环）",
+      "description": "木叶 元素圆珠图标（备用·当前代码未引用）",
       "category": "elements",
       "tags": [
         "game-d",
@@ -106,7 +106,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/elements/shui.png",
-      "description": "水波 元素法阵图标（圆形符号·法阵环）",
+      "description": "水波 元素圆珠图标（备用·当前代码未引用）",
       "category": "elements",
       "tags": [
         "game-d",
@@ -126,7 +126,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/element-runes/an.png",
-      "description": "暗珠 元素法阵图标（圆形符号·法阵环）",
+      "description": "暗珠 元素法阵图标（法阵环·UI 在用）",
       "category": "element-runes",
       "tags": [
         "game-d",
@@ -146,7 +146,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/element-runes/feng.png",
-      "description": "风纹 元素法阵图标（圆形符号·法阵环）",
+      "description": "风纹 元素法阵图标（法阵环·UI 在用）",
       "category": "element-runes",
       "tags": [
         "game-d",
@@ -166,7 +166,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/element-runes/huo.png",
-      "description": "火焰 元素法阵图标（圆形符号·法阵环）",
+      "description": "火焰 元素法阵图标（法阵环·UI 在用）",
       "category": "element-runes",
       "tags": [
         "game-d",
@@ -186,7 +186,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/element-runes/lei.png",
-      "description": "闪电 元素法阵图标（圆形符号·法阵环）",
+      "description": "闪电 元素法阵图标（法阵环·UI 在用）",
       "category": "element-runes",
       "tags": [
         "game-d",
@@ -206,7 +206,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/element-runes/mu.png",
-      "description": "木叶 元素法阵图标（圆形符号·法阵环）",
+      "description": "木叶 元素法阵图标（法阵环·UI 在用）",
       "category": "element-runes",
       "tags": [
         "game-d",
@@ -226,7 +226,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/element-runes/shui.png",
-      "description": "水波 元素法阵图标（圆形符号·法阵环）",
+      "description": "水波 元素法阵图标（法阵环·UI 在用）",
       "category": "element-runes",
       "tags": [
         "game-d",
@@ -1406,7 +1406,7 @@
       "type": "texture",
       "status": "filled",
       "path": "/art/game-d/cards/ability_fire.png",
-      "description": "ability_fire 卡面",
+      "description": "技能·火焰 卡面",
       "category": "cards",
       "tags": [
         "game-d",

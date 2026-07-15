@@ -7,14 +7,14 @@
   "rows": [
     {
       "no": "art-01",
-      "desc": "暗珠 元素法阵图标（圆形符号·法阵环）",
+      "desc": "暗珠 元素圆珠图标（备用·当前代码未引用）",
       "kind": "sprite",
       "slot": {
         "entity": "elements/an",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "元素法阵图标 an",
+      "query": "round element orb icon of dark violet shadow orb, glossy bead with soft inner glow, deep violet-black palette, centered, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/elements/an.png）",
         "source": "authored",
@@ -28,7 +28,7 @@
         "h": 256,
         "transparent": true
       },
-      "context": "game-d《骰途》元素法阵图标·暗珠 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》元素法阵图标·暗珠 元素圆珠图标（备用·当前代码未引用）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -43,18 +43,18 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "暗珠 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "暗珠 元素圆珠图标（备用·当前代码未引用），骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-02",
-      "desc": "风纹 元素法阵图标（圆形符号·法阵环）",
+      "desc": "风纹 元素圆珠图标（备用·当前代码未引用）",
       "kind": "sprite",
       "slot": {
         "entity": "elements/feng",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "元素法阵图标 feng",
+      "query": "round element orb icon of swirling teal wind current, glossy bead with soft inner glow, airy teal palette, centered, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/elements/feng.png）",
         "source": "authored",
@@ -68,7 +68,7 @@
         "h": 256,
         "transparent": true
       },
-      "context": "game-d《骰途》元素法阵图标·风纹 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》元素法阵图标·风纹 元素圆珠图标（备用·当前代码未引用）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -83,18 +83,18 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "风纹 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "风纹 元素圆珠图标（备用·当前代码未引用），骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-03",
-      "desc": "火焰 元素法阵图标（圆形符号·法阵环）",
+      "desc": "火焰 元素圆珠图标（备用·当前代码未引用）",
       "kind": "sprite",
       "slot": {
         "entity": "elements/huo",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "元素法阵图标 huo",
+      "query": "round element orb icon of blazing fire flame, glossy bead with soft inner glow, warm red-orange palette, centered, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/elements/huo.png）",
         "source": "authored",
@@ -108,7 +108,7 @@
         "h": 256,
         "transparent": true
       },
-      "context": "game-d《骰途》元素法阵图标·火焰 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》元素法阵图标·火焰 元素圆珠图标（备用·当前代码未引用）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -123,18 +123,18 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "火焰 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "火焰 元素圆珠图标（备用·当前代码未引用），骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-04",
-      "desc": "闪电 元素法阵图标（圆形符号·法阵环）",
+      "desc": "闪电 元素圆珠图标（备用·当前代码未引用）",
       "kind": "sprite",
       "slot": {
         "entity": "elements/lei",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "元素法阵图标 lei",
+      "query": "round element orb icon of crackling violet lightning bolt, glossy bead with soft inner glow, electric violet palette, centered, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/elements/lei.png）",
         "source": "authored",
@@ -148,7 +148,7 @@
         "h": 256,
         "transparent": true
       },
-      "context": "game-d《骰途》元素法阵图标·闪电 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》元素法阵图标·闪电 元素圆珠图标（备用·当前代码未引用）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -163,18 +163,18 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "闪电 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "闪电 元素圆珠图标（备用·当前代码未引用），骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-05",
-      "desc": "木叶 元素法阵图标（圆形符号·法阵环）",
+      "desc": "木叶 元素圆珠图标（备用·当前代码未引用）",
       "kind": "sprite",
       "slot": {
         "entity": "elements/mu",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "元素法阵图标 mu",
+      "query": "round element orb icon of verdant green leaf sprout, glossy bead with soft inner glow, fresh green palette, centered, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/elements/mu.png）",
         "source": "authored",
@@ -188,7 +188,7 @@
         "h": 256,
         "transparent": true
       },
-      "context": "game-d《骰途》元素法阵图标·木叶 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》元素法阵图标·木叶 元素圆珠图标（备用·当前代码未引用）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -203,18 +203,18 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "木叶 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "木叶 元素圆珠图标（备用·当前代码未引用），骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-06",
-      "desc": "水波 元素法阵图标（圆形符号·法阵环）",
+      "desc": "水波 元素圆珠图标（备用·当前代码未引用）",
       "kind": "sprite",
       "slot": {
         "entity": "elements/shui",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "元素法阵图标 shui",
+      "query": "round element orb icon of rippling blue water wave, glossy bead with soft inner glow, cool azure palette, centered, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/elements/shui.png）",
         "source": "authored",
@@ -228,7 +228,7 @@
         "h": 256,
         "transparent": true
       },
-      "context": "game-d《骰途》元素法阵图标·水波 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》元素法阵图标·水波 元素圆珠图标（备用·当前代码未引用）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -243,18 +243,18 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "水波 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "水波 元素圆珠图标（备用·当前代码未引用），骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-07",
-      "desc": "暗珠 元素法阵图标（圆形符号·法阵环）",
+      "desc": "暗珠 元素法阵图标（法阵环·UI 在用）",
       "kind": "sprite",
       "slot": {
         "entity": "element-runes/an",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "元素法阵图标 an",
+      "query": "circular arcane rune ring emblem of dark violet shadow orb, glowing magic circle frame with inscribed glyphs, deep violet-black palette, centered, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/element-runes/an.png）",
         "source": "authored",
@@ -268,7 +268,7 @@
         "h": 256,
         "transparent": true
       },
-      "context": "game-d《骰途》元素法阵图标·暗珠 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》元素法阵图标·暗珠 元素法阵图标（法阵环·UI 在用）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -283,18 +283,18 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "暗珠 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "暗珠 元素法阵图标（法阵环·UI 在用），骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-08",
-      "desc": "风纹 元素法阵图标（圆形符号·法阵环）",
+      "desc": "风纹 元素法阵图标（法阵环·UI 在用）",
       "kind": "sprite",
       "slot": {
         "entity": "element-runes/feng",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "元素法阵图标 feng",
+      "query": "circular arcane rune ring emblem of swirling teal wind current, glowing magic circle frame with inscribed glyphs, airy teal palette, centered, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/element-runes/feng.png）",
         "source": "authored",
@@ -308,7 +308,7 @@
         "h": 256,
         "transparent": true
       },
-      "context": "game-d《骰途》元素法阵图标·风纹 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》元素法阵图标·风纹 元素法阵图标（法阵环·UI 在用）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -323,18 +323,18 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "风纹 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "风纹 元素法阵图标（法阵环·UI 在用），骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-09",
-      "desc": "火焰 元素法阵图标（圆形符号·法阵环）",
+      "desc": "火焰 元素法阵图标（法阵环·UI 在用）",
       "kind": "sprite",
       "slot": {
         "entity": "element-runes/huo",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "元素法阵图标 huo",
+      "query": "circular arcane rune ring emblem of blazing fire flame, glowing magic circle frame with inscribed glyphs, warm red-orange palette, centered, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/element-runes/huo.png）",
         "source": "authored",
@@ -348,7 +348,7 @@
         "h": 256,
         "transparent": true
       },
-      "context": "game-d《骰途》元素法阵图标·火焰 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》元素法阵图标·火焰 元素法阵图标（法阵环·UI 在用）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -363,18 +363,18 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "火焰 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "火焰 元素法阵图标（法阵环·UI 在用），骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-10",
-      "desc": "闪电 元素法阵图标（圆形符号·法阵环）",
+      "desc": "闪电 元素法阵图标（法阵环·UI 在用）",
       "kind": "sprite",
       "slot": {
         "entity": "element-runes/lei",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "元素法阵图标 lei",
+      "query": "circular arcane rune ring emblem of crackling violet lightning bolt, glowing magic circle frame with inscribed glyphs, electric violet palette, centered, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/element-runes/lei.png）",
         "source": "authored",
@@ -388,7 +388,7 @@
         "h": 256,
         "transparent": true
       },
-      "context": "game-d《骰途》元素法阵图标·闪电 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》元素法阵图标·闪电 元素法阵图标（法阵环·UI 在用）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -403,18 +403,18 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "闪电 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "闪电 元素法阵图标（法阵环·UI 在用），骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-11",
-      "desc": "木叶 元素法阵图标（圆形符号·法阵环）",
+      "desc": "木叶 元素法阵图标（法阵环·UI 在用）",
       "kind": "sprite",
       "slot": {
         "entity": "element-runes/mu",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "元素法阵图标 mu",
+      "query": "circular arcane rune ring emblem of verdant green leaf sprout, glowing magic circle frame with inscribed glyphs, fresh green palette, centered, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/element-runes/mu.png）",
         "source": "authored",
@@ -428,7 +428,7 @@
         "h": 256,
         "transparent": true
       },
-      "context": "game-d《骰途》元素法阵图标·木叶 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》元素法阵图标·木叶 元素法阵图标（法阵环·UI 在用）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -443,18 +443,18 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "木叶 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "木叶 元素法阵图标（法阵环·UI 在用），骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-12",
-      "desc": "水波 元素法阵图标（圆形符号·法阵环）",
+      "desc": "水波 元素法阵图标（法阵环·UI 在用）",
       "kind": "sprite",
       "slot": {
         "entity": "element-runes/shui",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "元素法阵图标 shui",
+      "query": "circular arcane rune ring emblem of rippling blue water wave, glowing magic circle frame with inscribed glyphs, cool azure palette, centered, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/element-runes/shui.png）",
         "source": "authored",
@@ -468,7 +468,7 @@
         "h": 256,
         "transparent": true
       },
-      "context": "game-d《骰途》元素法阵图标·水波 元素法阵图标（圆形符号·法阵环）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》元素法阵图标·水波 元素法阵图标（法阵环·UI 在用）·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -483,7 +483,7 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "水波 元素法阵图标（圆形符号·法阵环），骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "水波 元素法阵图标（法阵环·UI 在用），骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-13",
@@ -494,7 +494,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 an_1",
+      "query": "rounded square dice face tile showing exactly 1 pip in standard die arrangement, each pip drawn as a small dark violet shadow orb emblem, deep violet-black palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/an_1.png）",
         "source": "authored",
@@ -534,7 +534,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 an_2",
+      "query": "rounded square dice face tile showing exactly 2 pips in standard die arrangement, each pip drawn as a small dark violet shadow orb emblem, deep violet-black palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/an_2.png）",
         "source": "authored",
@@ -574,7 +574,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 an_3",
+      "query": "rounded square dice face tile showing exactly 3 pips in standard die arrangement, each pip drawn as a small dark violet shadow orb emblem, deep violet-black palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/an_3.png）",
         "source": "authored",
@@ -614,7 +614,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 an_4",
+      "query": "rounded square dice face tile showing exactly 4 pips in standard die arrangement, each pip drawn as a small dark violet shadow orb emblem, deep violet-black palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/an_4.png）",
         "source": "authored",
@@ -654,7 +654,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 an_5",
+      "query": "rounded square dice face tile showing exactly 5 pips in standard die arrangement, each pip drawn as a small dark violet shadow orb emblem, deep violet-black palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/an_5.png）",
         "source": "authored",
@@ -694,7 +694,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 an_6",
+      "query": "rounded square dice face tile showing exactly 6 pips in standard die arrangement, each pip drawn as a small dark violet shadow orb emblem, deep violet-black palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/an_6.png）",
         "source": "authored",
@@ -734,7 +734,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 feng_1",
+      "query": "rounded square dice face tile showing exactly 1 pip in standard die arrangement, each pip drawn as a small swirling teal wind current emblem, airy teal palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/feng_1.png）",
         "source": "authored",
@@ -774,7 +774,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 feng_2",
+      "query": "rounded square dice face tile showing exactly 2 pips in standard die arrangement, each pip drawn as a small swirling teal wind current emblem, airy teal palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/feng_2.png）",
         "source": "authored",
@@ -814,7 +814,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 feng_3",
+      "query": "rounded square dice face tile showing exactly 3 pips in standard die arrangement, each pip drawn as a small swirling teal wind current emblem, airy teal palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/feng_3.png）",
         "source": "authored",
@@ -854,7 +854,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 feng_4",
+      "query": "rounded square dice face tile showing exactly 4 pips in standard die arrangement, each pip drawn as a small swirling teal wind current emblem, airy teal palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/feng_4.png）",
         "source": "authored",
@@ -894,7 +894,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 feng_5",
+      "query": "rounded square dice face tile showing exactly 5 pips in standard die arrangement, each pip drawn as a small swirling teal wind current emblem, airy teal palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/feng_5.png）",
         "source": "authored",
@@ -934,7 +934,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 feng_6",
+      "query": "rounded square dice face tile showing exactly 6 pips in standard die arrangement, each pip drawn as a small swirling teal wind current emblem, airy teal palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/feng_6.png）",
         "source": "authored",
@@ -974,7 +974,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 huo_1",
+      "query": "rounded square dice face tile showing exactly 1 pip in standard die arrangement, each pip drawn as a small blazing fire flame emblem, warm red-orange palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/huo_1.png）",
         "source": "authored",
@@ -1014,7 +1014,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 huo_2",
+      "query": "rounded square dice face tile showing exactly 2 pips in standard die arrangement, each pip drawn as a small blazing fire flame emblem, warm red-orange palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/huo_2.png）",
         "source": "authored",
@@ -1054,7 +1054,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 huo_3",
+      "query": "rounded square dice face tile showing exactly 3 pips in standard die arrangement, each pip drawn as a small blazing fire flame emblem, warm red-orange palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/huo_3.png）",
         "source": "authored",
@@ -1094,7 +1094,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 huo_4",
+      "query": "rounded square dice face tile showing exactly 4 pips in standard die arrangement, each pip drawn as a small blazing fire flame emblem, warm red-orange palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/huo_4.png）",
         "source": "authored",
@@ -1134,7 +1134,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 huo_5",
+      "query": "rounded square dice face tile showing exactly 5 pips in standard die arrangement, each pip drawn as a small blazing fire flame emblem, warm red-orange palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/huo_5.png）",
         "source": "authored",
@@ -1174,7 +1174,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 huo_6",
+      "query": "rounded square dice face tile showing exactly 6 pips in standard die arrangement, each pip drawn as a small blazing fire flame emblem, warm red-orange palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/huo_6.png）",
         "source": "authored",
@@ -1214,7 +1214,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 lei_1",
+      "query": "rounded square dice face tile showing exactly 1 pip in standard die arrangement, each pip drawn as a small crackling violet lightning bolt emblem, electric violet palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/lei_1.png）",
         "source": "authored",
@@ -1254,7 +1254,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 lei_2",
+      "query": "rounded square dice face tile showing exactly 2 pips in standard die arrangement, each pip drawn as a small crackling violet lightning bolt emblem, electric violet palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/lei_2.png）",
         "source": "authored",
@@ -1294,7 +1294,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 lei_3",
+      "query": "rounded square dice face tile showing exactly 3 pips in standard die arrangement, each pip drawn as a small crackling violet lightning bolt emblem, electric violet palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/lei_3.png）",
         "source": "authored",
@@ -1334,7 +1334,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 lei_4",
+      "query": "rounded square dice face tile showing exactly 4 pips in standard die arrangement, each pip drawn as a small crackling violet lightning bolt emblem, electric violet palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/lei_4.png）",
         "source": "authored",
@@ -1374,7 +1374,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 lei_5",
+      "query": "rounded square dice face tile showing exactly 5 pips in standard die arrangement, each pip drawn as a small crackling violet lightning bolt emblem, electric violet palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/lei_5.png）",
         "source": "authored",
@@ -1414,7 +1414,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 lei_6",
+      "query": "rounded square dice face tile showing exactly 6 pips in standard die arrangement, each pip drawn as a small crackling violet lightning bolt emblem, electric violet palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/lei_6.png）",
         "source": "authored",
@@ -1454,7 +1454,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 mu_1",
+      "query": "rounded square dice face tile showing exactly 1 pip in standard die arrangement, each pip drawn as a small verdant green leaf sprout emblem, fresh green palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/mu_1.png）",
         "source": "authored",
@@ -1494,7 +1494,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 mu_2",
+      "query": "rounded square dice face tile showing exactly 2 pips in standard die arrangement, each pip drawn as a small verdant green leaf sprout emblem, fresh green palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/mu_2.png）",
         "source": "authored",
@@ -1534,7 +1534,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 mu_3",
+      "query": "rounded square dice face tile showing exactly 3 pips in standard die arrangement, each pip drawn as a small verdant green leaf sprout emblem, fresh green palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/mu_3.png）",
         "source": "authored",
@@ -1574,7 +1574,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 mu_4",
+      "query": "rounded square dice face tile showing exactly 4 pips in standard die arrangement, each pip drawn as a small verdant green leaf sprout emblem, fresh green palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/mu_4.png）",
         "source": "authored",
@@ -1614,7 +1614,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 mu_5",
+      "query": "rounded square dice face tile showing exactly 5 pips in standard die arrangement, each pip drawn as a small verdant green leaf sprout emblem, fresh green palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/mu_5.png）",
         "source": "authored",
@@ -1654,7 +1654,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 mu_6",
+      "query": "rounded square dice face tile showing exactly 6 pips in standard die arrangement, each pip drawn as a small verdant green leaf sprout emblem, fresh green palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/mu_6.png）",
         "source": "authored",
@@ -1694,7 +1694,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 shui_1",
+      "query": "rounded square dice face tile showing exactly 1 pip in standard die arrangement, each pip drawn as a small rippling blue water wave emblem, cool azure palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/shui_1.png）",
         "source": "authored",
@@ -1734,7 +1734,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 shui_2",
+      "query": "rounded square dice face tile showing exactly 2 pips in standard die arrangement, each pip drawn as a small rippling blue water wave emblem, cool azure palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/shui_2.png）",
         "source": "authored",
@@ -1774,7 +1774,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 shui_3",
+      "query": "rounded square dice face tile showing exactly 3 pips in standard die arrangement, each pip drawn as a small rippling blue water wave emblem, cool azure palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/shui_3.png）",
         "source": "authored",
@@ -1814,7 +1814,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 shui_4",
+      "query": "rounded square dice face tile showing exactly 4 pips in standard die arrangement, each pip drawn as a small rippling blue water wave emblem, cool azure palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/shui_4.png）",
         "source": "authored",
@@ -1854,7 +1854,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 shui_5",
+      "query": "rounded square dice face tile showing exactly 5 pips in standard die arrangement, each pip drawn as a small rippling blue water wave emblem, cool azure palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/shui_5.png）",
         "source": "authored",
@@ -1894,7 +1894,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 shui_6",
+      "query": "rounded square dice face tile showing exactly 6 pips in standard die arrangement, each pip drawn as a small rippling blue water wave emblem, cool azure palette, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/shui_6.png）",
         "source": "authored",
@@ -1934,7 +1934,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "骰面 wild",
+      "query": "rounded square dice face tile with one large rainbow wild star emblem, iridescent sheen, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/dice/wild.png）",
         "source": "authored",
@@ -1974,7 +1974,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "天空背景 cuiting_dark",
+      "query": "wide panoramic dungeon backdrop of verdant jade garden court with mossy stone and bamboo, dim moody twilight, mysterious depth, distant layered silhouettes, 2:1 wide composition, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/sky/cuiting_dark.png）",
         "source": "authored",
@@ -2014,7 +2014,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "天空背景 cuiting_warm",
+      "query": "wide panoramic dungeon backdrop of verdant jade garden court with mossy stone and bamboo, warm golden ambient light, inviting haze, distant layered silhouettes, 2:1 wide composition, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/sky/cuiting_warm.png）",
         "source": "authored",
@@ -2054,7 +2054,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "天空背景 gudian_dark",
+      "query": "wide panoramic dungeon backdrop of ancient temple hall with weathered stone pillars and bronze fittings, dim moody twilight, mysterious depth, distant layered silhouettes, 2:1 wide composition, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/sky/gudian_dark.png）",
         "source": "authored",
@@ -2094,7 +2094,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "天空背景 gudian_warm",
+      "query": "wide panoramic dungeon backdrop of ancient temple hall with weathered stone pillars and bronze fittings, warm golden ambient light, inviting haze, distant layered silhouettes, 2:1 wide composition, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/sky/gudian_warm.png）",
         "source": "authored",
@@ -2134,7 +2134,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "天空背景 jinding_dark",
+      "query": "wide panoramic dungeon backdrop of crystal summit with translucent prism crystals and cold ice light, dim moody twilight, mysterious depth, distant layered silhouettes, 2:1 wide composition, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/sky/jinding_dark.png）",
         "source": "authored",
@@ -2174,7 +2174,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "天空背景 jinding_warm",
+      "query": "wide panoramic dungeon backdrop of crystal summit with translucent prism crystals and cold ice light, warm golden ambient light, inviting haze, distant layered silhouettes, 2:1 wide composition, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/sky/jinding_warm.png）",
         "source": "authored",
@@ -2214,7 +2214,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "天空背景 rongxin_dark",
+      "query": "wide panoramic dungeon backdrop of molten core cavern with glowing lava veins and obsidian rock, dim moody twilight, mysterious depth, distant layered silhouettes, 2:1 wide composition, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/sky/rongxin_dark.png）",
         "source": "authored",
@@ -2254,7 +2254,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "天空背景 rongxin_warm",
+      "query": "wide panoramic dungeon backdrop of molten core cavern with glowing lava veins and obsidian rock, warm golden ambient light, inviting haze, distant layered silhouettes, 2:1 wide composition, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/sky/rongxin_warm.png）",
         "source": "authored",
@@ -2294,7 +2294,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "体素贴图 cuiting_side",
+      "query": "seamless tileable game texture, block side face, straight-on orthographic view, materials of verdant jade garden court with mossy stone and bamboo, crisp readable detail, edges tile perfectly, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/tiles/cuiting_side.png）",
         "source": "authored",
@@ -2334,7 +2334,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "体素贴图 cuiting_top",
+      "query": "seamless tileable game texture, flat orthographic top-down floor tile, materials of verdant jade garden court with mossy stone and bamboo, crisp readable detail, edges tile perfectly, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/tiles/cuiting_top.png）",
         "source": "authored",
@@ -2374,7 +2374,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "体素贴图 cuiting_wall",
+      "query": "seamless tileable game texture, dungeon wall surface, straight-on orthographic view, materials of verdant jade garden court with mossy stone and bamboo, crisp readable detail, edges tile perfectly, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/tiles/cuiting_wall.png）",
         "source": "authored",
@@ -2414,7 +2414,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "体素贴图 gudian_side",
+      "query": "seamless tileable game texture, block side face, straight-on orthographic view, materials of ancient temple hall with weathered stone pillars and bronze fittings, crisp readable detail, edges tile perfectly, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/tiles/gudian_side.png）",
         "source": "authored",
@@ -2454,7 +2454,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "体素贴图 gudian_top",
+      "query": "seamless tileable game texture, flat orthographic top-down floor tile, materials of ancient temple hall with weathered stone pillars and bronze fittings, crisp readable detail, edges tile perfectly, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/tiles/gudian_top.png）",
         "source": "authored",
@@ -2494,7 +2494,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "体素贴图 gudian_wall",
+      "query": "seamless tileable game texture, dungeon wall surface, straight-on orthographic view, materials of ancient temple hall with weathered stone pillars and bronze fittings, crisp readable detail, edges tile perfectly, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/tiles/gudian_wall.png）",
         "source": "authored",
@@ -2534,7 +2534,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "体素贴图 jinding_side",
+      "query": "seamless tileable game texture, block side face, straight-on orthographic view, materials of crystal summit with translucent prism crystals and cold ice light, crisp readable detail, edges tile perfectly, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/tiles/jinding_side.png）",
         "source": "authored",
@@ -2574,7 +2574,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "体素贴图 jinding_top",
+      "query": "seamless tileable game texture, flat orthographic top-down floor tile, materials of crystal summit with translucent prism crystals and cold ice light, crisp readable detail, edges tile perfectly, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/tiles/jinding_top.png）",
         "source": "authored",
@@ -2614,7 +2614,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "体素贴图 jinding_wall",
+      "query": "seamless tileable game texture, dungeon wall surface, straight-on orthographic view, materials of crystal summit with translucent prism crystals and cold ice light, crisp readable detail, edges tile perfectly, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/tiles/jinding_wall.png）",
         "source": "authored",
@@ -2654,7 +2654,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "体素贴图 rongxin_side",
+      "query": "seamless tileable game texture, block side face, straight-on orthographic view, materials of molten core cavern with glowing lava veins and obsidian rock, crisp readable detail, edges tile perfectly, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/tiles/rongxin_side.png）",
         "source": "authored",
@@ -2694,7 +2694,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "体素贴图 rongxin_top",
+      "query": "seamless tileable game texture, flat orthographic top-down floor tile, materials of molten core cavern with glowing lava veins and obsidian rock, crisp readable detail, edges tile perfectly, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/tiles/rongxin_top.png）",
         "source": "authored",
@@ -2734,7 +2734,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "体素贴图 rongxin_wall",
+      "query": "seamless tileable game texture, dungeon wall surface, straight-on orthographic view, materials of molten core cavern with glowing lava veins and obsidian rock, crisp readable detail, edges tile perfectly, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/tiles/rongxin_wall.png）",
         "source": "authored",
@@ -2774,7 +2774,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 ability_bag",
+      "query": "loot card face illustration, adventurer satchel bag overflowing with dice, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/ability_bag.png）",
         "source": "authored",
@@ -2807,14 +2807,14 @@
     },
     {
       "no": "art-71",
-      "desc": "ability_fire 卡面",
+      "desc": "技能·火焰 卡面",
       "kind": "sprite",
       "slot": {
         "entity": "cards/ability_fire",
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 ability_fire",
+      "query": "loot card face illustration, burst of arcane fire erupting from an open palm, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/ability_fire.png）",
         "source": "authored",
@@ -2828,7 +2828,7 @@
         "h": 588,
         "transparent": true
       },
-      "context": "game-d《骰途》战利品卡面·ability_fire 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
+      "context": "game-d《骰途》战利品卡面·技能·火焰 卡面·art.ts 按 URL 引用（真图在场即用·程序化图元回退）",
       "status": "replaced",
       "gen": {
         "provider": "authored",
@@ -2843,7 +2843,7 @@
         "model": "Cloud Design",
         "mock": false
       },
-      "prompt": "ability_fire 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
+      "prompt": "技能·火焰 卡面，骰途《Dice & Dungeons》水墨卡通风，透明背景"
     },
     {
       "no": "art-72",
@@ -2854,7 +2854,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 ability_reroll",
+      "query": "loot card face illustration, circular reroll arrows spinning around a floating die, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/ability_reroll.png）",
         "source": "authored",
@@ -2894,7 +2894,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 ability_shield",
+      "query": "loot card face illustration, radiant protective barrier shield emblem, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/ability_shield.png）",
         "source": "authored",
@@ -2934,7 +2934,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 back",
+      "query": "loot card face illustration, card back with symmetrical dice-and-rune motif, deep lacquer red and gold ornament, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/back.png）",
         "source": "authored",
@@ -2974,7 +2974,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 baida",
+      "query": "loot card face illustration, rainbow wild die radiating prismatic light, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/baida.png）",
         "source": "authored",
@@ -3014,7 +3014,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 lengjing",
+      "query": "loot card face illustration, die encased in calm frost rime, serene cool light, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/lengjing.png）",
         "source": "authored",
@@ -3054,7 +3054,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 liansuo",
+      "query": "loot card face illustration, two dice linked by a glowing arcane chain, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/liansuo.png）",
         "source": "authored",
@@ -3094,7 +3094,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 rongyan",
+      "query": "loot card face illustration, die of cracked obsidian leaking molten lava light, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/rongyan.png）",
         "source": "authored",
@@ -3134,7 +3134,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 shouhu",
+      "query": "loot card face illustration, die sheltered behind a radiant guardian shield, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/shouhu.png）",
         "source": "authored",
@@ -3174,7 +3174,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 shuangzi",
+      "query": "loot card face illustration, twin mirrored dice standing side by side, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/shuangzi.png）",
         "source": "authored",
@@ -3214,7 +3214,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 zengfu",
+      "query": "loot card face illustration, die wrapped in an amplifying power aura with rising energy arrows, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/zengfu.png）",
         "source": "authored",
@@ -3254,7 +3254,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "战利品卡面 zhuanhua",
+      "query": "loot card face illustration, die mid-transmutation with elements morphing around it, ornate ink-brush card frame, portrait 5:7 composition, transparent background, chinese ink-wash cartoon game art, Dice & Dungeons dungeon crawler, clean bold shapes, soft watercolor shading, unified game art set style",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/cards/zhuanhua.png）",
         "source": "authored",
@@ -3294,7 +3294,7 @@
         "component": "Sprite",
         "field": "textureKey"
       },
-      "query": "特效贴图 glow",
+      "query": "soft white radial glow orb, feathered edges fading to full transparency, pure luminance light sprite for additive blending, no outline, no background",
       "placeholder": {
         "current": "已交付真手绘图（/art/game-d/fx/glow.png）",
         "source": "authored",
