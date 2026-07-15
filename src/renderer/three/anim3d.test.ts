@@ -1,7 +1,7 @@
 // Anim3D（程序化位姿动画·render-only）：纯函数求值 + 系统按壁钟改 Transform3D 分量 + 不进 hash。
 import { describe, it, expect } from 'vitest';
 import { Anim3DSystem } from './anim3d.js';
-import { anim3dField } from '../three-projection.js';
+import { anim3dField, transform3dPose } from '../three-projection.js';
 import { World } from '@engine/core/world.js';
 import { hashSnapshot } from '@net/index.js';
 import type { Anim3D, Transform3D } from '@engine/protocol/components.js';
@@ -110,6 +110,23 @@ describe('Anim3DSystem（据壁钟改 Transform3D·render-only）', () => {
     expect(sc()).toBeCloseTo(0.5);
     expect(sys.sync(w, 1600)).toBe(0); // t0.6>dur：播完 → **不计活跃**（idle）
     expect(sc()).toBeCloseTo(1); // 保持终值 to
+  });
+
+  it('挤压拉伸：分轴 scaleY 动画独立于 scaleX/Z（squash&stretch·分轴基准回退等比 scale）', () => {
+    const w = new World();
+    w.createEntity('sq');
+    w.addComponent('sq', { type: 'Transform3D', x: 0, y: 0, z: 0, scale: 2 } as Transform3D); // 作者等比 2
+    // 落地压扁：scaleY 1→0.6（分轴 ease·绝对值），scaleX/Z 不动（回退等比 2）
+    w.addComponent('sq', { type: 'Anim3D', channels: [{ kind: 'ease', field: 'scaleY', from: 1, to: 0.6, dur: 1, curve: 'linear' }] } as Anim3D);
+    const sys = new Anim3DSystem();
+    const t = (): Transform3D => w.getComponent<Transform3D>('sq', 'Transform3D')!;
+    sys.sync(w, 1000); // t0 → scaleY=1（ease from）
+    sys.sync(w, 2000); // t1 → scaleY=0.6（到终值）
+    expect(t().scaleY).toBeCloseTo(0.6);
+    const pose = transform3dPose(t());
+    expect(pose.sy).toBeCloseTo(0.6);   // 分轴覆盖 y
+    expect(pose.sx).toBeCloseTo(2);     // x 回退作者等比 scale
+    expect(pose.sz).toBeCloseTo(2);     // z 回退作者等比 scale
   });
 
   it('空场返回 0；实体消失后清理动画态（流式卸载安全）', () => {

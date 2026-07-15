@@ -16,7 +16,7 @@ import { LightRig } from './three/lights.js';
 import { PostPipeline } from './three/post.js';
 import { ModelPool } from './three/models.js';
 import { InstancedBatches, type InstGroups } from './three/batches.js';
-import { CameraRig } from './three/camera-rig.js';
+import { CameraRig, CameraShake, FollowDamper, type DampedCenter } from './three/camera-rig.js';
 import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
 import { VfxSystem } from './three/vfx.js';
@@ -60,6 +60,8 @@ export class ThreeRenderer implements RendererBackend {
   private frame = 0; // 帧计数（render-only·云飘等表现动画用·不进 hash）
   // 子系统
   private cameras!: CameraRig; // 相机解释器（透视/正交·REQ-3D-Camera）
+  private readonly camShake = new CameraShake(); // 震屏 trauma 解释器（Camera3D.shake·render-only·超休闲打击反馈）
+  private readonly followDamp = new FollowDamper(); // 跟随柔化解释器（Camera3D.follow·lag/lookAhead·render-only）
   private lights!: LightRig;
   private post!: PostPipeline;
   private models!: ModelPool;
@@ -312,7 +314,14 @@ export class ThreeRenderer implements RendererBackend {
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
     const post = getPost3D(world);
     const ph = hashPoses(poses);
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${this.fogSig}`;
+    // 震屏：先算 trauma 偏移（据壁钟衰减）——active 时折进 renderSig 持续重渲直至回正。
+    const shakeOff = this.camShake.update(cam3d?.shake, performance.now());
+    // 跟随柔化：follow 模式对 target 位做指数平滑 + lookAhead 预读——settling(未收敛) 时折进 renderSig 持续重渲直至贴合。
+    let followCenter: DampedCenter | null = null;
+    if (cam3d && cam3d.mode === 'follow' && followPose) {
+      followCenter = this.followDamp.update({ x: followPose.x, y: followPose.y, z: followPose.z }, cam3d.follow, performance.now());
+    } else { this.followDamp.reset(); }
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -329,12 +338,14 @@ export class ThreeRenderer implements RendererBackend {
     if (cam3d) {
       const b = poseBounds3D(poses);
       const bc = bounds3DCenter(b);
-      const center = followPose
-        ? { x: followPose.x, y: followPose.y, z: followPose.z }
-        : { x: cam3d.pivotX ?? bc.x, y: cam3d.pivotY ?? bc.y, z: cam3d.pivotZ ?? bc.z };
+      const center = followCenter
+        ? { x: followCenter.x, y: followCenter.y, z: followCenter.z } // 柔化后（follow·含 lag/lookAhead）
+        : followPose
+          ? { x: followPose.x, y: followPose.y, z: followPose.z }
+          : { x: cam3d.pivotX ?? bc.x, y: cam3d.pivotY ?? bc.y, z: cam3d.pivotZ ?? bc.z };
       const radius = Math.max(bounds3DExtent(b), 1);
       const dist = cam3d.distance ?? fitDistance3D(radius, cam3d.fov ?? this.fov);
-      this.cameras.applyOrbit(cam3d, center, dist, aspect, radius, this.fov, SKY_RADIUS);
+      this.cameras.applyOrbit(cam3d, center, dist, aspect, radius, this.fov, SKY_RADIUS, shakeOff);
       this.lights.placeShadow(center, radius);
     } else {
       this.cameras.applyFlat(poseBounds(poses), this.fov, aspect);
@@ -460,6 +471,7 @@ export class ThreeRenderer implements RendererBackend {
     this.navDebug.dispose(this.scene);
     this.vfx.dispose(this.scene);
     this.anim3d.dispose();
+    this.camShake.dispose();
     this.physics?.dispose();
     this.worldUi.dispose();
     this.models.dispose(this.scene);

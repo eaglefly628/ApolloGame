@@ -35,6 +35,7 @@ export function camSig(c: Camera3D | null): string {
     c.yaw.toFixed(4), c.pitch.toFixed(4), c.distance ?? -1, c.pivotX ?? 0, c.pivotY ?? 0, c.pivotZ ?? 0,
     c.projection ?? 'p', c.fov ?? -1, c.orthoSize ?? -1, c.near ?? -1, c.far ?? -1,
     c.mode ?? 'o', c.target ?? '', c.pitchMin ?? -9, c.pitchMax ?? -9,
+    c.shake?.trigger ?? -1, // 震屏触发（bump 即算相机数据变→捕获触发帧；衰减帧由渲染器 shake token 持续重渲）
   ].join(',');
 }
 

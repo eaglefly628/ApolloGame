@@ -25,10 +25,11 @@ export function renderablePose(r: Renderable, zStep = 0.01): Pose3D {
   return { x: r.x, y: -r.y, z: r.zOrder * zStep, rotZ: -r.rotation, sx: r.scaleX, sy: r.scaleY };
 }
 
-// 真三维位姿（盒庭）：Transform3D → 完整 3D 位姿（地面=XZ、Y=高度）。等比 scale 落到三轴。纯函数（node 可测）。
+// 真三维位姿（盒庭）：Transform3D → 完整 3D 位姿（地面=XZ、Y=高度）。等比 scale 落三轴·分轴 scaleX/Y/Z 覆盖对应轴
+// （挤压拉伸 squash&stretch·缺省回退等比）。纯函数（node 可测）。
 export function transform3dPose(t3: Transform3D): Pose3D {
   const s = t3.scale ?? 1;
-  return { x: t3.x, y: t3.y, z: t3.z, rx: t3.rotX ?? 0, ry: t3.rotY ?? 0, rotZ: t3.rotZ ?? 0, sx: s, sy: s, sz: s, ...(t3.quat ? { quat: t3.quat } : {}) };
+  return { x: t3.x, y: t3.y, z: t3.z, rx: t3.rotX ?? 0, ry: t3.rotY ?? 0, rotZ: t3.rotZ ?? 0, sx: t3.scaleX ?? s, sy: t3.scaleY ?? s, sz: t3.scaleZ ?? s, ...(t3.quat ? { quat: t3.quat } : {}) };
 }
 
 // 盒庭模式下「把 2D sim 实体投到地面」：Transform(x,y) → 地面 XZ（x→X、2D y→Z 景深），Y=物高/2（下沿坐地 y=0）。

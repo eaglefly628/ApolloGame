@@ -109,7 +109,8 @@ export interface AnimState3D extends Component {
 // 两类通道：**循环(loop·随壁钟持续)** = spin/bob/osc/noise（绕作者初值演化）；**一次性(once·播一遍保持终值)** = ease（入场/强调）。
 //   同 field 多通道**叠加(compose)** → 组合出复杂运动（如 x/z 两 osc 相位差 π/2 = 环绕；spin+bob 同 rotY = 变速自转）。
 // 红线：**纯表现**——绝不进 sim/hash（render-only·入 NON_DETERMINISTIC）。弱 LLM 只填 field/波形/标量·填不了插值代码。
-export type Anim3DField = 'x' | 'y' | 'z' | 'rotX' | 'rotY' | 'rotZ' | 'scale';
+// scale=等比三轴；scaleX/scaleY/scaleZ=**分轴缩放**（挤压拉伸 squash&stretch·超休闲第一 juice 原语：落地 y↓x↑ 保体积）。
+export type Anim3DField = 'x' | 'y' | 'z' | 'rotX' | 'rotY' | 'rotZ' | 'scale' | 'scaleX' | 'scaleY' | 'scaleZ';
 export type Anim3DWave = 'sine' | 'triangle' | 'saw' | 'square'; // osc 周期波形（皆归一 [-1,1]）
 export type Anim3DCurve = 'linear' | 'cubicOut' | 'outBack'; // ease 缓动曲线（outBack=带回弹过冲·弹出感）
 export type Anim3DChannel =
@@ -156,6 +157,9 @@ export interface Transform3D extends Component {
   rotY?: number;
   rotZ?: number;
   scale?: number; // 等比缩放·缺省 1
+  scaleX?: number; // 分轴缩放（挤压拉伸 squash&stretch）·缺省=等比 scale。x/y/z 独立 → 落地压扁(y↓x↑保体积)、拉伸弹跳。
+  scaleY?: number;
+  scaleZ?: number;
   quat?: readonly [number, number, number, number]; // 可选四元数(x,y,z,w)·在场则覆盖欧拉角（物理翻滚等需无万向锁的旋转·render-only）
 }
 
@@ -206,8 +210,15 @@ export interface Camera3D extends Component {
   far?: number; // 远裁面·缺省=distance+天空盒半径余量
   mode?: 'orbit' | 'follow'; // orbit=绕 pivot 环绕(缺省)；follow=注视/环绕 target 实体（随它走）
   target?: string; // follow 模式注视/环绕的实体 id
+  // 跟随柔化（follow 模式·render-only·超休闲跟随手感）：lag=平滑时间常数(秒·越大越"拖"·缺省 0=硬贴)；
+  //   lookAhead=按 target 速度朝运动方向预读的秒数(缺省 0)。渲染器持平滑态指数逼近·帧率无关·未收敛时持续重渲·收敛回省帧。
+  follow?: { lag?: number; lookAhead?: number };
   pitchMin?: number; // 俯仰夹角下/上限(弧度)·缺省不夹（行为层运镜 + 解释器都按此夹）
   pitchMax?: number;
+  // 震屏（camera shake·trauma 模型·render-only·超休闲通用打击反馈）：游戏在撞击/得分/失败时 **bump `trigger`**（任意变化的数）
+  //   → 渲染器注入一次 trauma=1、按 decay 随壁钟衰减、以 amp·trauma² 幅度沿相机局部右/上轴平滑抖动镜头（不碰矩阵数据·不进 hash）。
+  //   不设 trigger 则不抖（缺省）。trauma 归零自动回正（省帧）。
+  shake?: { trigger?: number; amp?: number; freq?: number; decay?: number };
 }
 
 // ── Sky3D（render-only，天空盒 · 单例）──────────────────────────────────────────────────────

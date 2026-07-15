@@ -52,10 +52,13 @@ export class Anim3DSystem {
   dispose(): void { this.state.clear(); }
 }
 
-// Transform3D 分量读写（scale 缺省 1·其余缺省 0）。
+// Transform3D 分量读写（scale/scaleX/Y/Z 缺省 1·分轴缺省回退等比 scale·其余缺省 0）。
 function fieldOf(t3: Transform3D, f: Anim3DField): number {
   const v = (t3 as unknown as Record<string, number | undefined>)[f];
-  return v ?? (f === 'scale' ? 1 : 0);
+  if (v !== undefined) return v;
+  if (f === 'scale') return 1;
+  if (f === 'scaleX' || f === 'scaleY' || f === 'scaleZ') return t3.scale ?? 1; // 分轴基准=作者等比 scale（未写则 1）
+  return 0;
 }
 function setField(t3: Transform3D, f: Anim3DField, v: number): void {
   (t3 as unknown as Record<string, number>)[f] = v;

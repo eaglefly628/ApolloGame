@@ -8,6 +8,7 @@ import {
   clampPitch, orthoFrustum, type Pose3D,
 } from './three-projection.js';
 import { hashPoses, camSig, postSig } from './three/stats.js';
+import { CameraShake, FollowDamper } from './three/camera-rig.js';
 import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
 import { hashSnapshot } from '@net/index.js';
 import type { Transform3D, Camera3D, Sky3D, Mesh3D, Model3D, Light3D, Post3D } from '@engine/protocol/components.js';
@@ -25,6 +26,49 @@ describe('Transform3D / Camera3D 纯函数（盒庭位姿 + 轨道相机）', ()
     expect(up.y).toBeCloseTo(10); expect(up.z).toBeCloseTo(0);
     const side = orbitCamera(c, 10, Math.PI / 2, 0);   // yaw 90° → +X
     expect(side.x).toBeCloseTo(10); expect(side.z).toBeCloseTo(0);
+  });
+  it('CameraShake：trigger bump 注入 trauma·按 decay 衰减·归零回正（render-only 打击反馈）', () => {
+    const sh = new CameraShake();
+    expect(sh.update(undefined, 0).active).toBe(false);        // 无 shake 数据 → 不抖
+    const s2 = new CameraShake();
+    const f0 = s2.update({ trigger: 1, amp: 1, freq: 30, decay: 2 }, 1000); // bump → trauma=1·active
+    expect(f0.active).toBe(true);
+    expect(Math.hypot(f0.rx, f0.uy)).toBeGreaterThan(0);        // 有位移
+    const fMid = s2.update({ trigger: 1, amp: 1, freq: 30, decay: 2 }, 1250); // +0.25s·decay2 → trauma0.5
+    expect(fMid.active).toBe(true);
+    const fEnd = s2.update({ trigger: 1, amp: 1, freq: 30, decay: 2 }, 1600); // +0.6s·decay2 → trauma≤0
+    expect(fEnd.active).toBe(false);                            // 回正·省帧
+    expect(fEnd.rx).toBe(0); expect(fEnd.uy).toBe(0);
+    // 再次 bump（trigger 变）→ 重新触发
+    expect(s2.update({ trigger: 2, amp: 1, freq: 30, decay: 2 }, 1700).active).toBe(true);
+  });
+  it('FollowDamper：无参直通·有 lag 指数滞后逼近·收敛后不再 settling', () => {
+    const d = new FollowDamper();
+    // 无 follow 参数 → 直通 raw·不 settling
+    expect(d.update({ x: 5, y: 0, z: 0 }, undefined, 0)).toMatchObject({ x: 5, settling: false });
+    // 有 lag：首帧硬贴 target(0)
+    const d2 = new FollowDamper();
+    expect(d2.update({ x: 0, y: 0, z: 0 }, { lag: 0.2 }, 1000)).toMatchObject({ x: 0, settling: false });
+    // target 跳到 10：后续帧滞后逼近（不瞬达），且 settling=true
+    const f1 = d2.update({ x: 10, y: 0, z: 0 }, { lag: 0.2 }, 1100); // +0.1s
+    expect(f1.x).toBeGreaterThan(0); expect(f1.x).toBeLessThan(10); expect(f1.settling).toBe(true);
+    // 多帧后收敛贴近 10·停止 settling
+    let last = f1.x, t = 1100;
+    for (let i = 0; i < 60; i++) { t += 100; last = d2.update({ x: 10, y: 0, z: 0 }, { lag: 0.2 }, t).x; }
+    expect(last).toBeCloseTo(10, 2);
+    expect(d2.update({ x: 10, y: 0, z: 0 }, { lag: 0.2 }, t + 100).settling).toBe(false); // 贴合 → 省帧
+  });
+  it('FollowDamper lookAhead：按 target 速度朝运动方向预读（超过瞬时位）', () => {
+    const d = new FollowDamper();
+    d.update({ x: 0, y: 0, z: 0 }, { lag: 0.001, lookAhead: 0.5 }, 1000); // 首帧硬贴 0
+    // 每帧 +1（速度=10/秒·dt0.1）→ lookAhead0.5 目标 = 位 + 10·0.5 = 位+5·lag 极小近瞬达
+    let r = d.update({ x: 1, y: 0, z: 0 }, { lag: 0.001, lookAhead: 0.5 }, 1100);
+    r = d.update({ x: 2, y: 0, z: 0 }, { lag: 0.001, lookAhead: 0.5 }, 1200);
+    expect(r.x).toBeGreaterThan(2); // 预读 → 领先于瞬时位 2
+  });
+  it('camSig 含 shake.trigger：bump 即改签名（渲染器捕获触发帧）', () => {
+    const base: Camera3D = { type: 'Camera3D', yaw: 0, pitch: 0.6 };
+    expect(camSig({ ...base, shake: { trigger: 1 } })).not.toBe(camSig({ ...base, shake: { trigger: 2 } }));
   });
   it('groundPose：2D Transform → 地面（x→X、2D y→Z、Y=物高/2 坐地、rotation→绕 Y）', () => {
     const p = groundPose({ x: 12, y: -8, rotation: 0.3, scaleX: 1, scaleY: 1 }, 6);
