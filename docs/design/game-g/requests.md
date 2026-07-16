@@ -12,6 +12,7 @@
 > **清单**：`docs/design/game-g/emoji-icon-inventory.md`（`node scripts/emoji-audit.mjs game-g --md` 产·**可重跑**·随转槽进度递减）。含：按 emoji（种类×次数×代表上下文×位置）+ 按文件（哪屏最多→优先）+ 逐处 file:line 明细。Top：♠♥♦♣ 花色·★ 星级·⚔💎🎴🪙🎲🛡🀄🧩⚙📖…；热点文件 hero-codex(76)/turn-battle-screen(66)/overlays(50)/game-g.tsx(38)/collection-screen(35)。
 > **给 game-g/PE**：要美术化的 emoji → 把「文本里的字形」改成「带 `skinKey` 的 `Image` 控件槽」（UI 铁律·`Image.src` 走资产 key）→ 台账 `art-requirements` 重跑即纳入生成管线，之后走占位→生成→人审→替换的既有闭环。**PA 立场**：只出清单（审计），转槽=game-g/PE 域（改蓝图/HUD），不越界代改。
 > **注**：清单已滤掉纯注释行/花色逻辑记号（581→456），留的是玩家可见 UI 文本里的 emoji；行尾注释里的零星 emoji 可能有极少量残留，人读无碍。
+> **更新（owner 2026-07-16 拍板·省掉手转槽）**：owner 决定**不逐个手转 Image 槽**——改由 **UI 库自动「文本 emoji→美术图」渲染**（`docs/workflow/requests.md` REQ-UI-emoji图渲·指派 PUI）。PA 已出映射底座：**game-g 456 处 emoji 100% 可映射到库里 Twemoji 美术图**（直中 415 + alias ⭐等 41），映射表 `docs/design/game-g/emoji-art-mapping.md`。**→ game-g/PE 这块基本无需动手**（等 PUI 渲染层落地即整体变美术图）；只有"非 emoji 的专属美术图标"才需走 Image 槽。
 
 ### REQ-G-主将牌面「将」艺术字·顶部小浮标→牌面正中大字 · [2026-07-06] · owner R22 → **指派：程序B（turn-battle-screen.ts 牌面渲染·LayoutNode 表现）** · status: **open** · 类型: UI 表现重排（主将身份标·程序B 域·基座件已够·非新能力）
 > **owner 原话**：「（关1）那两个（主将）就是敌将和我们的主将，那两个字太小了在上面，应该在牌面上还是有一些表示的——大一点的、牌面中间有个『将』字。艺术字，用那个艺术字来表示。」
