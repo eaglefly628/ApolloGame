@@ -844,7 +844,7 @@ function buildPageNew(controls: ControlsState): LayoutNode {
       // 连线：赵→关 攻击指向（arrow·danger·带伤害标）+ 关→小兵 关系线（dashed·jade）。
       { type: 'Connector', id: 'anchor-atk', props: { from: { kind: 'node', id: 'anchor-u1', at: 'right' }, to: { kind: 'node', id: 'anchor-u2', at: 'left' }, style: 'arrow', tone: 'danger', label: '−120' } },
       { type: 'Connector', id: 'anchor-rel', props: { from: { kind: 'node', id: 'anchor-u2' }, to: { kind: 'node', id: 'anchor-u3' }, style: 'dashed', tone: 'jade' } },
-      { type: 'Label', id: 't-anchor-note', props: { text: 'anchorTo:{kind:node/entity, id, at, offset} —— node=同树 LayoutNode id；entity=渲染器给实体 DOM 盖的 data-entity-anchor（游戏战场用这个·消灭手写 u-<id>）。render-only·不进 sim/hash。', color: 'dim', size: 'xs' } },
+      { type: 'Label', id: 't-anchor-note', props: { text: 'anchorTo:{kind:node/entity, id, at, offset} —— node=同树 LayoutNode id（现一律用这路·game-g 战场单位本身就是 LayoutNode）；entity=预留契约·生产端未接（2D canvas/3D WebGL 无逐实体 DOM）·别用。render-only·不进 sim/hash。', color: 'dim', size: 'xs' } },
       divider('d-anchor'),
 
       sectionTitle('t-pc', 'PLAYINGCARD · 扑克牌原语（rank/suit · 正反 · selected/dimmed · 暗卡/白扑克）'),

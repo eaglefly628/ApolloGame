@@ -144,7 +144,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
   {
     type: 'Float', summary: '锚定浮层（钉在活动目标上）', whenToUse: '头顶名牌/血条/伤害数/选中光标/战场徽标——把 children 每帧定位到目标 rect。取代手写 getElementById+getBoundingClientRect。目标消失自隐。', children: 'optional',
     props: [
-      { name: 'anchorTo', type: 'object', required: true, describe: '{kind:entity(渲染器盖 data-entity-anchor)/node(同树 LayoutNode id), id, at?:center/top/bottom/left/right, offset?:{x,y}}' },
+      { name: 'anchorTo', type: 'object', required: true, describe: '{kind:node(同树 LayoutNode id·现一律用这路)/entity(预留·生产端未接·别用), id, at?:center/top/bottom/left/right, offset?:{x,y}}' },
       { name: 'ttlTicks', type: 'number', describe: '存活帧数（缺省常驻·给了 N 帧后自隐·伤害数飘完即消）' },
     ],
     sample: { type: 'Float', id: 's-float', props: { anchorTo: { kind: 'node', id: 'some-target', at: 'top', offset: { y: -8 } } },

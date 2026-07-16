@@ -360,7 +360,8 @@ export interface LevelPathProps {
 // ── 锚定层（REQ-UI-锚定与绑定层①·owner 亲派·render-only）──────────────────────────────────────────
 // 消灭「手写 getElementById('u-'+id)+getBoundingClientRect+createElement」病（game-g 战场徽标/VS 连线全这么写）。
 // 引擎给「把浮层/连线钉在活动目标上」的**数据说法**：mountUI 每帧读目标 live rect 定位（不进 sim/hash·目标消失自隐）。
-/** 锚引用：kind=entity（渲染器给实体 DOM 盖的 `data-entity-anchor="<id>"`）/ node（同 mountUI 树里的 LayoutNode id）。 */
+/** 锚引用：kind=node（同 mountUI 树里的 LayoutNode id·**现一律用这路**）/ entity（读 `data-entity-anchor="<id>"`·**预留契约·生产端未接**·
+ *  2D canvas / 3D WebGL 无逐实体 DOM·全库零生产者→别用·用了浮层永远自隐；真消费者出现时再开引擎单·Lead 域）。 */
 export interface AnchorRef {
   kind: 'entity' | 'node';
   id: string;
