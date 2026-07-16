@@ -820,14 +820,14 @@ function comingSoon(id: string, label: string): LayoutNode {
 }
 
 // ── 页 6 · 主程新增控件 / 新特性（把库里新加的能力全摆出来）─────────────────────
-function buildPageNew(controls: ControlsState): LayoutNode {
-  const pcard = (id: string, p: Record<string, unknown>): LayoutNode => ({ type: 'PlayingCard', id, props: p });
+/** 🎨 emoji 美术 tab（REQ-UI-emoji图渲 活范例·独立顶层 tab·文本 emoji 自动成库里 Twemoji 美术图）。 */
+function buildPageEmoji(): LayoutNode {
   return {
-    type: 'Panel', id: 'page-new', props: { scroll: true },
-    layout: { direction: 'column', gap: 18, padding: 20 },
+    type: 'Panel', id: 'page-emoji', props: { scroll: true },
+    layout: { direction: 'column', gap: 16, padding: 20 },
     children: [
       sectionTitle('t-emoji', '🎮 文本 EMOJI 自动图渲（写 emoji 字形 → 渲染成库里 Twemoji 美术图·render-only·REQ-UI-emoji图渲）'),
-      { type: 'Label', id: 't-emoji-sub', props: { text: '整个展示台开了 theme.emoji（base=/games/game-i/art/emoji）——所有 Label/Button/Tag/Badge 文本里的 emoji 字形都自动换成美术图（1em·随字号·baseline）。不必逐个手转 Image 槽；一处配置覆盖全线。', color: 'sub', size: 'sm' } },
+      { type: 'Label', id: 't-emoji-sub', props: { text: '整个展示台开了 theme.emoji（base=/games/game-i/art/emoji）——所有 Label/Button/Tag/Badge/Tabs/Card 文本里的 emoji 字形都自动换成美术图（1em·随字号·baseline）。不必逐个手转 Image 槽；一处配置覆盖全线（连这个 tab 名的 🎨、上面各 tab 的 🧊🆕🎴 也都是自动成图）。', color: 'sub', size: 'sm' } },
       { type: 'Panel', id: 'emoji-demo', props: { title: '同一份文本数据·emoji 自动成图' }, layout: { direction: 'column', gap: 12, padding: 16 },
         children: [
           { type: 'Label', id: 'emoji-l1', props: { text: '大厅：🎮 开始 · 🏆 排行榜 · 💎 商店 · ⚔️ 竞技场 · 🎁 每日奖励', size: 'lg' } },
@@ -847,8 +847,16 @@ function buildPageNew(controls: ControlsState): LayoutNode {
             ] },
           { type: 'Label', id: 't-emoji-note', props: { text: 'theme.emoji={base}（游戏级开关·美术图 vendor 进本地 served 目录=hermetic）；码点解析与 PA emoji-resolve 一致（★→⭐ 等符号走 alias）；逐 Label raw:true 保字形（代码块/刻意）。缺省不配=文本 emoji 零变化。', color: 'dim', size: 'xs' } },
         ] },
-      divider('d-emoji'),
+    ],
+  };
+}
 
+function buildPageNew(controls: ControlsState): LayoutNode {
+  const pcard = (id: string, p: Record<string, unknown>): LayoutNode => ({ type: 'PlayingCard', id, props: p });
+  return {
+    type: 'Panel', id: 'page-new', props: { scroll: true },
+    layout: { direction: 'column', gap: 18, padding: 20 },
+    children: [
       sectionTitle('t-anchor', '★ 锚定层 FLOAT / CONNECTOR（把浮层/连线钉在活动目标上·取代手写 getElementById·REQ-UI-锚定①）'),
       { type: 'Label', id: 't-anchor-sub', props: { text: '下方三个单位是普通 LayoutNode（各有 id）。名牌 Float 锚在单位头顶(at:top)、每帧跟随；VS 连线 Connector 从赵→关(arrow·danger)。滚动/换 tab 时浮层自动跟随或隐藏（目标消失不悬空）。', color: 'sub', size: 'sm' } },
       { type: 'Panel', id: 'anchor-field', props: { bg: { custom: 'linear-gradient(160deg,#16402c,#0e2a1c)' }, vignette: true }, layout: { direction: 'row', gap: 40, padding: 30, justify: 'center', align: 'center', height: 160 },
@@ -1508,6 +1516,7 @@ function buildUIModule(shop: ShopState, pick: PickState, activeTab: string, cont
         { id: 'tab-display', label: '数据展示' },
         { id: 'tab-input', label: '输入与交互' },
         { id: 'tab-3dui', label: '🧊 3D UI' },
+        { id: 'tab-emoji', label: '🎨 emoji 美术' },
         { id: 'tab-new', label: '🆕 新控件/特性' },
         { id: 'tab-shop', label: '🧩 组合演示·商店' },
         { id: 'tab-pick', label: '🎴 组合演示·选牌' },
@@ -1516,7 +1525,7 @@ function buildUIModule(shop: ShopState, pick: PickState, activeTab: string, cont
       action: 'switchTab',
     },
     layout: { flex: 1 },
-    children: [pageLayout, pageDisplay, buildPageInput(controls), buildPage3dUi(controls), buildPageNew(controls), buildShop(shop), buildPickHand(pick)],
+    children: [pageLayout, pageDisplay, buildPageInput(controls), buildPage3dUi(controls), buildPageEmoji(), buildPageNew(controls), buildShop(shop), buildPickHand(pick)],
   };
 }
 

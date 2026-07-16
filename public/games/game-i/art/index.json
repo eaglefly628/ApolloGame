@@ -189,6 +189,23 @@
       }
     },
     {
+      "id": "emoji/1f3a8",
+      "type": "texture",
+      "description": "emoji 🎨(exact) (Twemoji·vendored)",
+      "status": "filled",
+      "path": "/games/game-i/art/emoji/1f3a8.png",
+      "category": "emoji",
+      "license": "CC BY 4.0",
+      "source": "twemoji",
+      "spec": {
+        "format": "png",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/art"
+      }
+    },
+    {
       "id": "emoji/1f3ac",
       "type": "texture",
       "description": "emoji 🎬(exact) (Twemoji·vendored)",
