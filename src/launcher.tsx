@@ -34,26 +34,6 @@ import { GameRunner, BareListRetry } from './launcher/game-runner.js';
 // GAMES 不拆走：main_entry/games_list.py 以正则从 src/launcher.tsx 解析本表（内置卡片元信息单一真相·只读）。
 export const GAMES: GameEntry[] = [
   {
-    id: 'game-j',
-    title: 'Game J: Candy Kingdom',
-    subtitle: '糖果三消 · 纯数据游戏',
-    description: '点相邻两格交换，3 连消除得分，20 步内拿 1000 分。游戏本体=一份 manifest 纯 JSON（零游戏层代码），三消相位机=t3-match3-board 通用能力。美术走美术平台（台账 7 槽·迪斯尼×Supercell 风格包）。',
-    color: '#2a1226',
-    accentColor: '#ec4899',
-    icon: '🍬',
-    status: 'playable',
-  },
-  {
-    id: 'game-m',
-    title: 'Game M: Wardrobe Voyage',
-    subtitle: '衣橱环游 · 换装（暖暖式）',
-    description: '点右侧衣柜给娃娃穿搭：穿戴=实体生灭（caster/destroy-tagged），三维属性=群计数实时重算，达成主题目标亮星。游戏本体=一份 manifest 纯 JSON（零游戏层代码）。美术台账 23 槽（含 prefab 模板槽）·梦幻少女风格包。',
-    color: '#26121f',
-    accentColor: '#f9a8d4',
-    icon: '👗',
-    status: 'playable',
-  },
-  {
     id: 'game-e',
     title: 'Game E: Balatro-like',
     subtitle: '小丑牌 · 卡牌构建',

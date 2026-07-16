@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "game": "smoke-test-game",
+  "mode": "requirements",
+  "count": 5,
+  "instances": 1,
+  "rows": [
+    {
+      "no": "art-01",
+      "desc": "ball, round shape, main color #4a90e2, small on screen (24x24), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "ball",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "ball",
+      "placeholder": {
+        "current": "2D 色块（circle·#4a90e2）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "ball"
+        ]
+      },
+      "spec": {
+        "w": 24,
+        "h": 24,
+        "displayW": 24,
+        "displayH": 24,
+        "transparent": true
+      },
+      "context": "美术需求：「ball」（场景实体·单例）·2D 平面·当前占位=2D 色块（circle·#4a90e2）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-02",
+      "desc": "paddle left, rectangular shape, main color #38bdf8, small on screen (12x60), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "paddle-left",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "paddle left",
+      "placeholder": {
+        "current": "2D 色块（box·#38bdf8）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "paddle-left"
+        ]
+      },
+      "spec": {
+        "w": 12,
+        "h": 60,
+        "displayW": 12,
+        "displayH": 60,
+        "transparent": true
+      },
+      "context": "美术需求：「paddle left」（场景实体·单例）·2D 平面·当前占位=2D 色块（box·#38bdf8）·需透明底",
+      "status": "retired",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-03",
+      "desc": "paddle right, rectangular shape, main color #e8618c, small on screen (12x60), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "paddle-right",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "paddle right",
+      "placeholder": {
+        "current": "2D 色块（box·#e8618c）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "paddle-right"
+        ]
+      },
+      "spec": {
+        "w": 12,
+        "h": 60,
+        "displayW": 12,
+        "displayH": 60,
+        "transparent": true
+      },
+      "context": "美术需求：「paddle right」（场景实体·单例）·2D 平面·当前占位=2D 色块（box·#e8618c）·需透明底",
+      "status": "retired",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-04",
+      "desc": "wall bottom, rectangular shape, main color #334155, large on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "wall-bottom",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "wall bottom",
+      "placeholder": {
+        "current": "2D 色块（box·#334155）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "wall-bottom"
+        ]
+      },
+      "spec": {
+        "w": 640,
+        "h": 10,
+        "displayW": 640,
+        "displayH": 10,
+        "transparent": true
+      },
+      "context": "美术需求：「wall bottom」（场景实体·单例）·2D 平面·当前占位=2D 色块（box·#334155）·需透明底",
+      "status": "retired",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-05",
+      "desc": "wall top, rectangular shape, main color #334155, large on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "wall-top",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "wall top",
+      "placeholder": {
+        "current": "2D 色块（box·#334155）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "wall-top"
+        ]
+      },
+      "spec": {
+        "w": 640,
+        "h": 10,
+        "displayW": 640,
+        "displayH": 10,
+        "transparent": true
+      },
+      "context": "美术需求：「wall top」（场景实体·单例）·2D 平面·当前占位=2D 色块（box·#334155）·需透明底",
+      "status": "retired",
+      "gen": null,
+      "provenance": null
+    }
+  ]
+}

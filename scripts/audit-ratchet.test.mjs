@@ -37,9 +37,9 @@ describe('红旗棘轮（audit-baseline.json）', () => {
     expect(stderr).not.toContain('超基线');
   }, 60000);
 
-  it('基线覆盖 d/e/f/g/i/j/m/q/x/z 全部 10 款（h/k/block-blast-mini 已删·owner 2026-07-16）', () => {
+  it('基线覆盖 d/e/f/g/i/q/x/z 全部 8 款（h/j/k/m/block-blast-mini 已删·owner 2026-07-16）', () => {
     expect([...BASELINE_GAMES].sort()).toEqual(
-      ['game-d', 'game-e', 'game-f', 'game-g', 'game-i', 'game-j', 'game-m', 'game-q', 'game-x', 'game-z'],
+      ['game-d', 'game-e', 'game-f', 'game-g', 'game-i', 'game-q', 'game-x', 'game-z'],
     );
   });
 });

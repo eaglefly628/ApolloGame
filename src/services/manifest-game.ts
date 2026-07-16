@@ -1,4 +1,4 @@
-// mountManifestGame —— 内置「纯数据游戏」通用薄宿主（owner 2026-07-10：game-j/game-m 与其他游戏并列）。
+// mountManifestGame —— 内置「纯数据游戏」通用薄宿主（源起 2026-07-10 官方示例先例·该两款 2026-07-16 已删·现消费者=game-q 等内置数据游戏）。
 //
 // 一个内置数据游戏 = public/games/<slug>/manifest.json（tracked·纯 JSON）+ 本地美术 index + 本宿主。
 // 职责（全在 sim 外·零玩法逻辑·同 game-q host 纪律）：
