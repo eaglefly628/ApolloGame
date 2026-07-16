@@ -50,6 +50,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
     type: 'Panel', summary: '容器（边框/底/圆角）或无框布局组（bare）', whenToUse: '分组/卡片/侧栏/牌桌；row/column/grid 布局都靠它。只做布局分组用 bare 避免层层框。', children: 'optional',
     props: [
       { name: 'title', type: 'string', describe: '阔字距小标题' },
+      { name: 'titleIcon', type: 'string', describe: '标题前内联图标 URL（1.05em 随字号·配台账套装图标·缺省纯文字）' },
       { name: 'scroll', type: 'boolean', describe: 'overflow-y:auto 可滚' },
       { name: 'bare', type: 'boolean', describe: '无框纯布局容器（不画边/底/圆角）' },
       { name: 'bg', type: 'string', describe: '面填充三态·色库优先：语义令牌 panel/raised/sunken/jade/gold/ok/warn/danger/ink/transparent(换皮自适应·transparent=透明底 see-through 带透明贴图) | 预设配色 jade-sheen/gold-sheen/ink-deep/steel/blood/frost/ember/void(固定观感) | {custom:"#hex"}(特别指定才用)。缺省=主题 bg1。裸串仍收但 audit 会标' },
@@ -354,7 +355,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
   {
     type: 'Tabs', summary: '多页签（引擎管切换·不重建页）', whenToUse: '多页内容切换。children 顺序对齐 tabs（tabs[i]↔children[i]）。', children: 'required',
     props: [
-      { name: 'tabs', type: 'list', required: true, describe: '[{id,label,anchor?}]（anchor=新手引导锚点）' },
+      { name: 'tabs', type: 'list', required: true, describe: '[{id,label,anchor?,icon?}]（anchor=新手引导锚点·icon=页签文字前内联图标 URL·缺省纯文字）' },
       { name: 'active', type: 'string', describe: '当前页 id' }, { name: 'action', type: 'string', describe: '切页信号' },
     ],
     sample: { type: 'Tabs', id: 's-tabs', props: { tabs: [{ id: 'a', label: '牌谱' }, { id: 'b', label: '榜单' }], active: 'a' }, children: [{ type: 'Label', id: 's-tabs-a', props: { text: '牌谱页' } }, { type: 'Label', id: 's-tabs-b', props: { text: '榜单页' } }] },

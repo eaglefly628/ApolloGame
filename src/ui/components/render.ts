@@ -386,8 +386,10 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
     ? (tex ? `background:${tex}, transparent;` : '')
     : `background:${tex ? `${tex}, ` : ''}${resolveFill(p.bg, t) ?? (p.glass ? 'rgba(20,24,32,0.5)' : t.bg1)};border:1px ${bStyle} ${border};border-radius:${rad}px;${glow}${p.glass ? 'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' : ''}`;
   const style = `${box};padding:${pad}px;${chrome}position:relative;${overflow}${ls}`;
+  // 标题图标（REQ-UI-标题图标槽）：titleIcon 在场 → 标题前 1.05em 内联图；无=纯文字标题字节不变。
+  const titleIcon = p.titleIcon ? `<img src="${esc(p.titleIcon)}" alt="" style="height:1.05em;width:1.05em;object-fit:contain;vertical-align:-0.18em;margin-right:5px">` : '';
   const title = p.title
-    ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:4px${dir === 'grid' ? ';grid-column:1/-1' : ''}">${esc(p.title)}</div>`
+    ? `<div style="font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:${t.dim};font-family:${t.fontUi};margin-bottom:4px${dir === 'grid' ? ';grid-column:1/-1' : ''}">${titleIcon}${esc(p.title)}</div>`
     : '';
   const vignette = (p.vignette && !bare)
     ? `<div style="position:absolute;inset:0;border-radius:${rad}px;pointer-events:none;background:radial-gradient(120% 100% at 50% 30%,transparent 55%,rgba(0,0,0,.45) 100%)"></div>`
@@ -518,12 +520,14 @@ function renderTable(id: string, p: TableProps, ls: string, t: UITheme): string 
 // children 顺序对齐 tabs；data-tab/data-tabpage/data-tabs 是 mountUI 切页的锚点。
 function renderTabs(id: string, p: TabsProps, children: LayoutNode[], ls: string, t: UITheme): string {
   const active = p.active ?? p.tabs[0]?.id ?? '';
-  const navBtn = (tb: { id: string; label: string; anchor?: string }): string => {
+  const navBtn = (tb: { id: string; label: string; anchor?: string; icon?: string }): string => {
     const on = tb.id === active;
     const act = p.action ? ` data-action="${esc(p.action)}" data-arg="${esc(tb.id)}"` : '';
     const anchor = tb.anchor ? ` data-anchor="${esc(tb.anchor)}"` : ''; // 新手引导锚点：spotlight 到具体页签按钮（REQ-UI-Tabs每页签锚点）
+    // 页签图标（REQ-UI-标题图标槽）：icon 在场 → 文字前 1.05em 内联图；无=纯文字页签字节不变。
+    const icon = tb.icon ? `<img src="${esc(tb.icon)}" alt="" style="height:1.05em;width:1.05em;object-fit:contain;vertical-align:-0.18em;margin-right:5px">` : '';
     const style = `padding:7px 14px;font-size:12px;cursor:pointer;background:none;outline:none;font-family:${t.fontUi};border:none;border-bottom:2px solid ${on ? t.gold : 'transparent'};color:${on ? t.gold : t.sub};transition:all .15s`;
-    return `<button data-tab="${esc(tb.id)}"${act}${anchor} style="${style}">${esc(tb.label)}</button>`;
+    return `<button data-tab="${esc(tb.id)}"${act}${anchor} style="${style}">${icon}${esc(tb.label)}</button>`;
   };
   const nav = `<div style="display:flex;gap:4px;border-bottom:1px solid ${t.line};flex-wrap:wrap">${p.tabs.map(navBtn).join('')}</div>`;
   const pages = p.tabs.map((tb, i) => {

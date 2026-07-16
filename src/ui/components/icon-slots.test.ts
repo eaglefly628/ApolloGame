@@ -23,6 +23,23 @@ describe('图标位 · Button.icon / Tag.icon（键/pill 首部内联图标）',
   });
 });
 
+describe('图标位 · Panel.titleIcon / Tabs.tab.icon（REQ-UI-标题图标槽·PST game-g 全覆盖余口）', () => {
+  it('Panel.titleIcon → 标题前 1.05em 内联图；无 titleIcon 不回归', () => {
+    const html = renderNode({ type: 'Panel', id: 'p', props: { title: '地支牌', titleIcon: '/i/dizhi.png' } });
+    expect(html).toContain('src="/i/dizhi.png"');
+    expect(html.indexOf('dizhi.png')).toBeLessThan(html.indexOf('地支牌'));
+    expect(renderNode({ type: 'Panel', id: 'p2', props: { title: '地支牌' } })).not.toContain('<img');
+  });
+  it('Tabs.tab.icon → 页签文字前内联图（active/非 active 都渲）；无 icon 不回归', () => {
+    const html = renderNode({ type: 'Tabs', id: 't', props: { tabs: [{ id: 'a', label: '改造坊', icon: '/i/craft.png' }, { id: 'b', label: '收藏' }], active: 'b' }, children: [
+      { type: 'Label', id: 'ta', props: { text: 'A' } }, { type: 'Label', id: 'tb', props: { text: 'B' } },
+    ] });
+    expect(html).toContain('src="/i/craft.png"'); // 非 active 页签也带图
+    const plain = renderNode({ type: 'Tabs', id: 't2', props: { tabs: [{ id: 'a', label: '甲' }], active: 'a' }, children: [{ type: 'Label', id: 't2a', props: { text: 'A' } }] });
+    expect(plain).not.toContain('<img');
+  });
+});
+
 describe('图标位 · Label spans[].img / Card.media URL', () => {
   it('span.img → 段首 1em 内联图（有文字带右距·纯图段无右距）；无 img 段不回归', () => {
     const html = renderNode({ type: 'Label', id: 'l', props: { spans: [{ text: '128', img: '/i/coin.png' }, { text: ' 金币' }] } });

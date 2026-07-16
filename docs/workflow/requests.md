@@ -146,11 +146,12 @@
 > **申请**：`PCARD_DIMS` 加 `xl: [118,142,22,58]`（宽,高,圆角,大字号·按 lg→md 比例外推）。纯加档·不动现有 sm/md/lg（零回归·所有现用点不受影响）。
 > **为何不 PG 自己改**：`render.ts` = LayoutNode 解释器/基座控件集（主程域）；扩控件闭集走 requests（UI铁律「表达不了→requests.md 扩控件·绝不手写逃生」）。到货后 PG 把 `clash-card-m/f` 的 `size:'lg'`→`'xl'` 切一行即忠实设计稿。
 
-### REQ-UI-标题图标槽 · Panel.title / Tabs.tab 加图标位（接受已解析 URL·emoji/文字回退） · [2026-07-15] · PST（game-g 图标全覆盖·owner「干净的美术全覆盖」撞到控件缺口）→ 主程（ui/components 控件集） · status: **open（控件缺口·PST 不擅改 render.ts）** · 类型: 基座控件扩 prop（additive·非逃生）
+### REQ-UI-标题图标槽 · Panel.title / Tabs.tab 加图标位（接受已解析 URL·emoji/文字回退） · [2026-07-15] · PST（game-g 图标全覆盖·owner「干净的美术全覆盖」撞到控件缺口）→ 主程（ui/components 控件集） · status: **✅ done（主程 2026-07-15·当日达）** · 类型: 基座控件扩 prop（additive·非逃生）
 > **源起**：owner 07-15「所有美术素材都要能替代·emoji 也要统一风格·都要有连线」。game-g 套装图标已全覆盖接线（批32 + PST 07-15 第二批：fortune/deck/dice/target/shield/skull/mana/shard-tiangang 等，走 `iconUri(token)` → `Label.span.img`/`Card.media`/`Button.icon`/`Tag.icon`），**唯 3 枚接不了**：`dizhi 🀄` / `craft 🔨` 只出现在 `Panel.title`（如 deck-screen 地支段标题、craft-screen 改造坊标题）与 `Tabs.tabs[].label`（导航标签）——这两个 prop 是**纯字符串·无内联图标位**（现有图标位只在 Label.spans[].img / Card.media / Tag·Button.icon）。硬接要么把 Panel.title 拆成额外 header Label（改结构·破布局·不"干净"）、要么塞进 Tabs 标签串（emoji 混文字·非图片）。
 > **申请（additive·闭集加位·零回归）**：① `PanelProps` 加 `titleIcon?: string`（已解析 URL）——非 bare 且有 title 时，标题前渲 `<img height:1.05em>`（同 `Button.icon`/`Card.media` 的 URL→img 口径·render.ts 已有 esc+尺寸样板）；缺省=不渲（现有所有 Panel.title 零变）。② `TabsProps.tabs[]` 加可选 `icon?: string`——active/非 active 标签文字前渲同款小 img；缺省=纯文字（现有导航零变）。
 > **到货后 PST 一行接线**：`{ title: '地支牌', titleIcon: iconUri('dizhi') ?? undefined }`、Tabs 标签 `{ id:'craft', label:'改造坊', icon: iconUri('craft') ?? undefined }`——真图在场即换、无则纯标题（观感零变），dizhi/craft 即并入"全覆盖"。**trophy 🏆** 另路（天梯行现为裸 innerHTML 串·非 LayoutNode·待 ladderLines 数据化后同法接·PST game-g 域自理，不占本单）。
 > **为何走 requests**：`render.ts`/`types.ts` = 基座控件集（主程域·UI铁律「表达不了→requests.md 扩控件·绝不手写逃生」）。这是 REQ-UI-PlayingCard-back/xl 同款「控件缺口·additive 扩 prop」。
+> **✅ 完工回执（主程）**：`PanelProps.titleIcon` + `TabsProps.tabs[].icon` 落 types+render+catalog（1.05em 随字号·同 Button.icon 口径·esc 防注入·缺省纯文字**字节不变**）；icon-slots.test +2 组断言（含零回归腿）。PST 可按单内写法接线 dizhi/craft；trophy 待 ladderLines 数据化自理（不占本单·口径确认）。
 
 ### REQ-AIGEN-软件内文本生成资产 · Tripo(3D)+千问(2D) 接入创作台 · [2026-07-04] · owner 拍板 → **PA 已建生成框架(资产侧)· 待主程/PE 做运行时+设置UI** · status: **框架 ✅ done(PA·mock 全绿)；运行时/设置UI 待主程裁域派工** · 类型: 新能力(外部 AI 服务·表现层旁路)
 > **owner 愿景**：软件内用自然语言描述 → 生成资产（3D 用 **Tripo**·2D 用 **千问/DashScope 万相**），落进资产库。先 mock 打通全框架。
