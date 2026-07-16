@@ -61,8 +61,15 @@ export function buildHomeScreen(view: LobbyView): LayoutNode {
 
   // 绿呢牌桌（felt·对齐 Designer comp 命运牌桌）：标题左上 + 花色标右上 / 中部今日卦象+漂浮对决牌 / 底部出征 CTA+手册。
   // justify:between 三段分布（头顶/中央/底），消除原先全居中导致的标题居中偏差。
+  // 主台底（owner 2026-07-06）：绿呢牌桌是**可见的那层背景**（flex:1 铺满·盖住 Screen 底）。
+  //   台账槽 `game-g/tex/home-backdrop` 放了真图 → 这层直接吃**整图 cover**当自己的贴图（容器自己的贴图·route B），
+  //   透明色本就支持——透明/半透明底图连同上面 bare 子面板一起透出（此前放图放在 Screen 上被这层绿呢盖住·看不到=owner 撞的 bug）。
+  //   无真图 → 回退原绿呢渐变 + 钱币纹（观感零变）。
+  const homeBackdrop = textureOverrideUri('game-g/tex/home-backdrop');
   const felt: LayoutNode = {
-    type: 'Panel', id: 'home-felt', props: { bg: 'var(--felt)', vignette: true, bgTexture: feltBrocadeUri(), bgTextureSize: 64 },
+    type: 'Panel', id: 'home-felt', props: homeBackdrop
+      ? { bg: { custom: `url('${homeBackdrop}') center/cover no-repeat` }, vignette: true } // 真图=整面 cover(含透明色·透出)·不再叠钱币纹免糊照片
+      : { bg: 'var(--felt)', vignette: true, bgTexture: feltBrocadeUri(), bgTextureSize: 64 },
     layout: { direction: 'column', align: 'stretch', justify: 'between', gap: 12, padding: 28, flex: 1 },
     children: [
       { type: 'Panel', id: 'home-header', props: { bare: true }, layout: { direction: 'row', align: 'start', gap: 10, padding: 0 },
