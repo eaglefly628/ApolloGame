@@ -9,7 +9,7 @@ import { ThreeRenderer, type RenderStats } from '@renderer/three-renderer.js';
 import { AssetManager, registerAssetIndex } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode } from '@ui/components/index.js';
-import type { Velocity, Camera3D, Post3D, Fog3D, Transform } from '@engine/protocol/components.js';
+import type { Velocity, Camera3D, Post3D, Fog3D, Transform, AnimState3D } from '@engine/protocol/components.js';
 import { dioramaBlueprint, HOME_CAM, PLATFORM_TWO_CAM, PLATFORM_THREE_CAM, TRACK_R } from './diorama.js';
 import { GAME_Z_INDEX, GAME_Z_MATERIALS, DioramaLoader } from './assets.js';
 
@@ -243,6 +243,22 @@ export function mount(container: HTMLElement): () => void {
     v.vy = tz * RUN + (t.y / r) * pull;
     t.rotation = -Math.atan2(v.vx, v.vy); // 朝向跑动方向（groundPose ry=-rotation；Fox 模型前向=+Z → ry=atan2(vx,vz)·rotation=-ry·无 π 偏移）
   };
+
+  // 🦊 步态同步（消滑步·render-only 写 AnimState3D.speed）：迈腿倍速 ∝ 地面移动速度——脚步循环随速度
+  // 加快、静止即冻结（不再原地跑），让迈腿节奏贴近位移、大幅减轻"滑步"（脚贴地却打滑）。写的是渲染层
+  // 组件字段（同胶水写 Camera3D/rotation·不进 hash），非引擎能力：gait-sync 通用化 YAGNI（现仅此一处骨骼位移）。
+  // 标定（Fox Run clip 实测）：clip 1.158s=0.863Hz·地速 0.58u/tick×60tps=34.8u/s·脚前后摆幅实测偏短（~5-7u）
+  // → 完全锁足需 timeScale≈5-9 会显碎步；故标定到自然快跑节奏（满速 ≈3.4·GAIN=5.9）而非硬锁，去滑与可读兼顾。
+  const GAIT_GAIN = 5.9; // timeScale / (u·tick⁻¹)：满速 0.58 → ≈3.4
+  const GAIT_IDLE = 0.02; // 低于此地速 → 冻结迈腿
+  const GAIT_MAX = 6; // 倍速上限（防异常高速迈腿糊成一片）
+  const syncGait = (): void => {
+    const v = engine.world.getComponent<Velocity>('hero', 'Velocity');
+    const a = engine.world.getComponent<AnimState3D>('hero', 'AnimState3D');
+    if (!v || !a) return;
+    const g = Math.hypot(v.vx, v.vy);
+    a.speed = g < GAIT_IDLE ? 0 : Math.min(GAIT_MAX, g * GAIT_GAIN);
+  };
   window.addEventListener('keydown', onDown);
   window.addEventListener('keyup', onUp);
   window.addEventListener('blur', onBlur);
@@ -304,6 +320,7 @@ export function mount(container: HTMLElement): () => void {
     const dt = now - lastT;
     lastT = now;
     autoRun(); // 鸭子每帧自动绕赛道跑（无 WASD 时）
+    syncGait(); // 迈腿倍速随地速（消滑步·auto/手动通用·读刚写的 Velocity）
     if (dt > 0) fps = fps * 0.9 + (1000 / dt) * 0.1;
     if (now - lastHud > 250) { lastHud = now; ui.update(hudTree(Math.round(fps), renderer.readStats(), showProfiler, lastPicked)); }
   });

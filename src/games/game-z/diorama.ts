@@ -277,7 +277,7 @@ export function dioramaBlueprint(): WorldBlueprint {
         Transform: { x: TRACK_R, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
         Velocity: { vx: 0, vy: 0, angular: 0 },
         Model3D: { modelKey: MODEL_FOX, scale: 0.09 }, // Fox 模型尺度大(~70u)→缩到盒庭尺度
-        AnimState3D: { clip: 'Run', speed: 1.5 }, // 播奔跑动画（骨骼）
+        AnimState3D: { clip: 'Run', speed: 3.4 }, // 播奔跑动画（骨骼）·初值≈满速步态同步值（game-z.ts syncGait 每帧按地速覆写·消滑步）
         Collider3D: { kind: 'capsule', radius: 2, height: 6 },
         Trail3D: { segments: 30, width: 1.8, color: 0x66e0ff, minDist: 0.4, blend: 'add' }, // 缺口 D：奔跑发光拖尾（绕赛道留青蓝残影·TrailSystem 读 2D Transform 地面位）
         // 富世界空间 UI（REQ-3D-世界空间 UI·#1 面板 + #2 跟随单位）：名牌 Panel（名字 Label + 体力 ProgressBar）
