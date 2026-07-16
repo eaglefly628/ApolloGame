@@ -31,7 +31,7 @@
 > **D ✅（Lead 亲笔·手册回填）**：`docs/playbooks/3d.md` 红线区加工艺顺序律（先造型→材质→光照→特效·禁 glow 冒充）+ 主角面禁纯程序化（无 blocker 记录不豁免）；`docs/playbooks/testing.md` 红线区加凭证探针（空口 skip 不采信）+ 做X表挂评分卡行。
 > **B spec（Lead 图纸·指派 PST·工坊 M3.5·与其他 studio 单碰 `apollo.py`/`scripts/ai-gen.mjs` 须串行——排 REQ-STUDIO 心跳余项之后）**：① `scripts/ai-gen.mjs` 加 audio adapter：类型闭集 `sfx|ambience|ui`；BYO-key provider（有 key 走真调，无 key→**先贴凭证探针输出**再走 mock 兜底=确定性占位 wav+MOCK 标记，绝不静默顶替）。② 产物一律落待审区（**复用 M2.5 人审门** writePending/reviewPending·绝不直登 index），provenance 硬字段同 2D/3D（model/prompt/date/license 缺一拒登）。③ 定位：`SynthAudioPort`/SfxSpec 合成=数据仍是首选路（见 `docs/playbooks/audio.md`）；工坊采样线只补合成表达不了的（音乐床/环境底噪）——声音货架从现存 1 条起步。④ 测试：`scripts/ai-gen.test.mjs` 增音频四例（pending/approve/reject/provenance 缺字段拒）+ `scripts/art-review-smoke.py` 扩音频类型断言。⑤ 门禁全绿直推；完工标 ✅ 待 Lead 验收 + PA 会审登记契约。
 
-### REQ-UI-锚定与绑定层 · UI 声明化二期（REQ-ARCH-ANCHOR 历史欠账收账） · [2026-07-04] · owner 亲派 → **指派：PUI（UI 基座 + 展示台程序员）** · status: **①锚定 ✅ done（PUI 2026-07-16·待 Lead 对抗性验收）；②绑定层 open（设计稿先行·未开写）** · 优先级: **P1（弱 LLM 产完整游戏的最大单一杠杆·底座终审 🔴#3）** · 类型: 引擎 UI 库能力（render-only）
+### REQ-UI-锚定与绑定层 · UI 声明化二期（REQ-ARCH-ANCHOR 历史欠账收账） · [2026-07-04] · owner 亲派 → **指派：PUI（UI 基座 + 展示台程序员）** · status: **①锚定 ✅ done（PUI 2026-07-16）·Lead 验收 CONCERNS（2026-07-16·核心放行·entity 路两尾巴·B 修完转 PASS）；②绑定层 open（设计稿先行·未开写）** · 优先级: **P1（弱 LLM 产完整游戏的最大单一杠杆·底座终审 🔴#3）** · 类型: 引擎 UI 库能力（render-only）
 
 > **✅ ①锚定完工回执（PUI·2026-07-16·请 Lead review·真浏览器 demo 已截图自证）**：
 > - **闭集新件两枚**：`Float{anchorTo:{kind:'entity'/'node',id,at?,offset?},ttlTicks?}`（children 每帧钉目标 live rect·头顶名牌/血条/伤害数）+ `Connector{from,to:anchorRef,style:solid/dashed/arrow,tone令牌,label?}`（「谁打谁」连线）。进 `ComponentType` 闭集 + `catalog`(38 覆盖门) + 校验器同步。
@@ -40,6 +40,12 @@
 > - **消灭的病**：game-g `game-g.tsx:372/411-413/440` 手写 `getElementById('u-'+id)`+`getBoundingClientRect`+`createElement`（createElement×27 红旗大源）现有数据退路——战场替换由甲/程序B 随战斗 UI 批消费（不在本单强做）。
 > - **测试与自证**：`anchor-float.test.ts`（5·渲染标记/箭头虚线/mountUI 挂载+teardown 不抛/校验器）+ `/check-ui` 过（ui-audit tabnew 0 阻断）+ **game-i「🆕 新控件/特性」`t-anchor` 段活范例**（战场三单位 + 名牌 Float + HP 条 Float + 攻击箭头 Connector + 关系虚线·swiftshader 截图已验各就位）。回填 `docs/playbooks/ui.md`「锚定层」行。tsc+vitest(2629)+build 三绿。
 > - **②绑定层**：按 spec「设计稿先行·不许直接开写」——**未动**（需与 PST 共审绑定语法闭集设计稿·过 Lead 审才施工）。
+>
+> **⚖ Lead 对抗性验收（2026-07-16·Fable 亲验）：①判 CONCERNS——实现放行，entity 路两尾巴（B 修完本条 ① 转 PASS）。**
+> - **独立复跑**（非采信自报·本容器 npm ci 全新装）：tsc ✅ · vitest 345 文件/2633 全过 ✅ · build ✅ · context-budget/docs-ref PASS。
+> - **真浏览器行为探针**（swiftshader·hub→UI 控件→新控件 tab）：名牌 Float transform=(327,245) 恰=目标 rect(286,251,82×116) 顶中点+offset(−6) ✓；HP Float (327,379)=底中点+12 ✓；Connector line (368,309)→(408,309)=赵右缘→关左缘 ✓；−120 箭头/关系虚线目检 ✓。5 点名测试/catalog 38 门/校验器/ui.md 回填/②正确克制/rebase 保 REQ-ART-TGS 均核实 ✓。
+> - **偏差A · OUT OF SCOPE（回改 spec §1·Lead 自领）**：「渲染层给实体 DOM 盖 `data-entity-anchor`」在现引擎不成立——2D play-field 是 canvas-renderer（无逐实体 DOM），3D 是 WebGL 同理；全库该属性**零生产者**（唯一消费点 `src/ui/components/server.ts:295`）。且现病灶不需要它：game-g 战场单位本身是 LayoutNode（`turn-battle-screen.ts:253`·id=`u-<id>`）→ node 路已对症。裁决：**entity 路降级为预留契约**（YAGNI·出现 canvas/WebGL 实体锚定的真消费者时再开引擎单——rect 注册表或 DOM 代理·Lead 域设计；CSS3D/Diegetic3D 面归 P3D）。spec §1 前半句作废，以本裁决为准。
+> - **偏差B · ERROR（打回一行·指派 PUI·P2 小活）**：回执/手册把 entity 路写成已通路径——`docs/playbooks/ui.md` 锚定行「游戏战场用这个」+ `catalog.ts:147` describe + `gallery.ts:847` 注记会引弱 LLM 走死路（浮层永远自隐·零报错·正是手册铁律要防的坑）。修法：三处改注「**entity=预留·生产端未接·现一律用 node 路**」。
 > **owner 2026-07-04**：「UI 锚定点加绑定层，派给 UI 程序员做，我让 UI 程序员查。」出处：底座终审 `docs/design/base-capability-review-2026-07-03.md §二🔴#3 + §四.3`（锚定与绑定**分两步**·锚定先行）。
 > **要消灭的病（现状证据）**：game-g 战场徽标/VS 连线/胜负挂牌全靠手写 `getElementById('u-'+id)` + `getBoundingClientRect` + `createElement`（`game-g.tsx:372/411-413/440`）——正是 audit 红旗 createElement×27 的一大来源；每个游戏都会再犯，因为**引擎没给「把浮层钉在活动目标上」的数据说法**。
 >
