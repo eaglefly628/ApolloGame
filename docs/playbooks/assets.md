@@ -13,6 +13,7 @@
 | 对账「引用↔登记↔磁盘」是否一致 | `scripts/asset-reconcile.mjs` | 三方对账：登记有文件但磁盘没(dangling-file)/磁盘有文件但没登记(orphan-file)/spec 贴图键悬空(dangling-key)。`node scripts/asset-reconcile.mjs [<game>\|--all\|--shared\|--json]`·判词 `RECONCILE: PASS\|WARNINGS\|FAIL`+退出码 |
 | 盘点某游戏 UI 里当图标的 emoji | `scripts/emoji-audit.mjs` | 扫运行时 UI 文本里的 emoji 字形（file:line+上下文·滤注释/逻辑记号）→ 清单，给 PE 定位。`node scripts/emoji-audit.mjs <game> [--md]` |
 | emoji 字符 → 库里美术图（Twemoji） | `scripts/emoji-resolve.mjs` | 确定性码点解析 `resolveEmoji(char)`→`{cp,id,path,match:exact/alias/none}`（库=`assets/emoji/<cp>.png`·4871 张）；`coverage(<game>)` 出覆盖表。喂 REQ-UI-emoji图渲（PUI 自动文本 emoji→图渲染的映射底座） |
+| 把某游戏用到的 emoji 图 vendor 进本地 | `scripts/emoji-vendor.mjs` | 扫游戏 UI emoji→去重解析→copy 进 `public/games/<g>/art/emoji/` + 登记本地 index（码点键·hermetic·不破本地库）。`node scripts/emoji-vendor.mjs <game> [--apply]`（默认 dry-run） |
 | 从共享库导入一个资源 | `resource-manager` 技能 | vendor（copy）进游戏本地美术目录 + 登记本地索引 |
 | 逐游戏美术需求/生成/替换/换皮 | **美术平台**（ArtLedgerPanel·主屏 🎨 / 卡带「美术台账」入口）+ 大脑 `scripts/art-replace.mjs` + 风格包 `scripts/style-packs.json` | 台账 art-NN 编号 append-only·写回=manifest 重钉或 skinKey 别名·**全员必读终态档 `docs/design/art-platform-2026-07-09.md`** |
 | 加贴图/模型/图集/精灵表 | `asset-manager` agent | 维护 `assets/index.json` 单一真相 + 按类型填 spec |
