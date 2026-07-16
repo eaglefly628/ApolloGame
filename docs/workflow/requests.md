@@ -37,7 +37,7 @@
 > **PUI 施工 spec**：① 渲染层（`Text`/`Label`/`spans`/`Button.label` 等文本路）渲染时扫文本 emoji 码点 → 内联替换成 `<img src=已解析资产>`（1em·baseline·随字号）；非 emoji 照旧、缺省零回归。**复用现有「URL 按图渲」机制**（批32：`Button.icon`/`Tag.icon`/`Label.spans[].img`/`Card.media` 已支持已解析 URL 内联图渲·`icon-slots.test.ts`）——本单是把「手动填 URL 槽」升级成「文本 emoji 自动解析」。② 取图=调 PA `resolveEmoji`。③ **资产可达（PUI+PA 会审二选一）**：(a) 直引共享 served `/assets/emoji/<cp>.png`（简单·但破本地 hermetic）；(b) build 期按游戏扫用到的 emoji → 只 vendor 那批进本地（干净·PA 可给"游戏 emoji 清单→vendor 列表"）。倾向 (b)、可先 (a) 打通。④ **opt-out**：某处要保字形（代码块/刻意）给转义开关。⑤ 红线：render-only·不进 sim/hash·尺寸/对齐走令牌·不新增控件（是渲染器增强·catalog 描述回填一行）。⑥ 测试：含 emoji 文本→渲 img src=对应资产 + 非 emoji 零变 + alias 生效 + opt-out + `/check-ui` 过 + **game-i 展示台活范例一段**。完工标 ✅ 待 Lead 真浏览器验收 + PA 会审映射接线（`resolveEmoji` 用对）。
 > **边界**：`src/ui/**` 渲染器 = PUI 独占（PA 不碰）；映射底座 `scripts/emoji-resolve.mjs` + `SYMBOL_ALIAS` + emoji 货架 = PA 维护（alias 调整/新符号 PA 会审）。**落地后 game-g 456 处 emoji 无需逐个转槽**——批32 的手动 icon-槽路只留给"非 emoji 的专属美术图标"。
 
-### REQ-UI-锚定与绑定层 · UI 声明化二期（REQ-ARCH-ANCHOR 历史欠账收账） · [2026-07-04] · owner 亲派 → **指派：PUI（UI 基座 + 展示台程序员）** · status: **①锚定 ✅ PASS（PUI 2026-07-16·Lead 验收 CONCERNS→偏差B 文档诚实化已修·转 PASS 关账）；②绑定层 open（设计稿先行·未开写）** · 优先级: **P1（弱 LLM 产完整游戏的最大单一杠杆·底座终审 🔴#3）** · 类型: 引擎 UI 库能力（render-only）
+### REQ-UI-锚定与绑定层 · UI 声明化二期（REQ-ARCH-ANCHOR 历史欠账收账） · [2026-07-04] · owner 亲派 → **指派：PUI（UI 基座 + 展示台程序员）** · status: **①锚定 ✅ PASS（PUI 2026-07-16·Lead 验收 CONCERNS→偏差B 文档诚实化已修·转 PASS 关账）；②绑定层 设计稿已交·待 Lead+PST 共审（PUI 2026-07-16·`docs/design/ui-binding-layer-2026-07-16.md`·过审才施工）** · 优先级: **P1（弱 LLM 产完整游戏的最大单一杠杆·底座终审 🔴#3）** · 类型: 引擎 UI 库能力（render-only）
 
 > **✅ ①锚定完工回执（PUI·2026-07-16·请 Lead review·真浏览器 demo 已截图自证）**：
 > - **闭集新件两枚**：`Float{anchorTo:{kind:'entity'/'node',id,at?,offset?},ttlTicks?}`（children 每帧钉目标 live rect·头顶名牌/血条/伤害数）+ `Connector{from,to:anchorRef,style:solid/dashed/arrow,tone令牌,label?}`（「谁打谁」连线）。进 `ComponentType` 闭集 + `catalog`(38 覆盖门) + 校验器同步。
@@ -64,6 +64,7 @@
 > 5. **测试与消费自证**：控件级点名测试（锚定/偏移/目标消失回收）+ `/check-ui` 过 + **game-i 展示台加一个锚定 demo 页**（活范例铁律）；game-g 战场替换由甲/程序B 随战斗 UI 批消费（不在本单强做，但本单落地后其红旗 DOM 有了退路）。
 >
 > **② 绑定层（设计稿先行·不许直接开写）**：目标=LayoutNode 属性可声明绑定世界状态（如 `text:{bind:'resource:gold', format:'金 {v}'}`·闭集表达式：resource/flag/stringVariable+格式化，**不是**自由表达式语言），让弱 LLM 不写 TS builder 也能交付活 UI。**约束**：必须与创作台 UI 生成（PST）共审设计——绑定词汇会直接进生成 prompt 词汇表；先交 ≤2 页设计稿（绑定语法闭集+更新时机+与现有 visibleWhen/tween 的关系）给 Lead 审，过审才施工。
+> **✅ ②设计稿已交（PUI 2026-07-16·待 Lead + PST 共审·未写一行代码）**：`docs/design/ui-binding-layer-2026-07-16.md`（≤2 页）。要点：**绑定层已有一半**（`resolveBindings` + `bind` 字段 + `visibleWhen`）——本设计在其上①源前缀闭集 `resource:/flag:/string:`（裸 id 向后兼容按 resource）②**可绑属性白名单**（每控件哪些 prop 可绑配哪种源·生成器只能对表内组合填 bind·校验器挡表外）③格式化=复用 `Label.format` + 模板占位闭集 `{cur}{max}{v}`（非自由插值）。**三处待 Lead 裁**：(a) 统一 `bind` 字段 vs spec 的 `text:{bind,format}` 对象形态（PUI 倾向前者·与既有一致）(b) 模板占位范围 (c) `enabledWhen` 本单纳入还是 P2。**PST 共审点**：可绑白名单表直接进生成 prompt·源 id 词表 = 游戏 capability-plan 资源/旗标清单。过审后按设计稿 §7 P1 施工。
 > 门禁全绿直推；①②各自独立提交；完工标 ✅ 待 Lead 对抗性验收（真浏览器 demo 必查）。
 
 ### REQ-STYLESET-风格库 apollo-toon · 迪士尼×Supercell×中国水墨混风·全类型 house style · [2026-07-16] · owner 拍板（全形态换装非调色·先现装可视版·其他风格收敛）→ **指派：PA（M0 台账底座）+ PUI（M0.5 现装可视版·先行）** · status: open（双线已派工 2026-07-16） · 优先级: P1 · 类型: 引擎级风格资产库 + UI 基座消费
