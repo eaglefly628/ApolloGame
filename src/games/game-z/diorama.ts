@@ -78,6 +78,77 @@ export const BOARD_CAM = { yaw: 0, pitch: 0.4, distance: 82, pivotX: -12, pivotY
 // 总览机位（「🏠 回总览」按钮）：俯瞰整个赛道竞技场。
 export const HOME_CAM = { yaw: 0.7, pitch: 0.82, distance: 168, pivotX: 0, pivotY: 2, pivotZ: 0 };
 
+// ── Platform Two（远处独立平台·「新特性展台」·传送按钮 Camera3D.tween 飞过去）──────────────────────
+// owner「不想全堆一个平台」：把最近几批新能力（关节/胶囊/弹簧/卡通描边/贴花/路径/世界屏）摆到这块远处的台上，按钮传送来看。
+export const PLATFORM2_X = 190; // 平台中心 X（远离原竞技场·传送 tween 飞越）
+export const PLATFORM_TWO_CAM = { yaw: -0.35, pitch: 0.5, distance: 96, pivotX: PLATFORM2_X, pivotY: 8, pivotZ: 0 };
+function platformTwo(): Record<string, Ent> {
+  const X = PLATFORM2_X;
+  return {
+    // 平台地台（石台·顶在 y=0 → 物理体落在此高度）。
+    'p2-base': { ...block(X, -2.5, 0, 96, 5, 96, 0x455a64, 0x2b363c), Material3D: { preset: 'rock', materialRef: MAT_STONE, surface: { pattern: 'noise', tiles: 8, normal: 0.9, rough: 0.6 } } },
+    // 世界屏（Diegetic3D·CSS3D 真 DOM·标平台名 + 说明）。
+    'p2-sign': {
+      Transform3D: { x: X - 34, y: 13, z: -26, rotY: 0.6 },
+      Diegetic3D: {
+        pxWidth: 440, pxHeight: 210, worldWidth: 22, bg: '#0e1830',
+        node: { type: 'Panel', id: 'p2s', props: { bg: 'raised' }, layout: { gap: 7, padding: 14 }, children: [
+          { type: 'Label', id: 'p2s-t', props: { text: '◈ PLATFORM TWO · 新特性展台', size: 'lg', glow: true, color: 'jade' } },
+          { type: 'Label', id: 'p2s-1', props: { text: '关节摆锤 · 胶囊 · 弹簧 · 卡通描边 · 贴花 · 路径', size: 'sm', color: 'gold' } },
+          { type: 'ProgressBar', id: 'p2s-p', props: { value: 1, tone: 'ok', label: '能力上线', showValue: true } },
+        ] },
+      },
+      WorldUI3D: { text: '🖥 Diegetic UI 贴面', offsetY: 4, size: 'sm', color: 'jade' },
+    },
+    // 关节摆锤（Joint3D distance·从水平释放绕锚摆动）+ blob 软阴影贴花。
+    'p2-pend': {
+      Transform3D: { x: X + 8, y: 22, z: 22 },
+      Mesh3D: { shape: 'sphere', width: 3.2, height: 3.2, frontTint: 0xff7043 },
+      Material3D: { preset: 'plastic', color: 0xff7043 },
+      RigidBody3D: { shape: 'sphere', mass: 1, restitution: 0.2 },
+      Joint3D: { kind: 'distance', anchor: [X, 22, 22], distance: 8 },
+      Decal3D: { kind: 'blob', radius: 3, opacity: 0.4 },
+      WorldUI3D: { text: '关节摆锤 Joint3D', offsetY: 3, size: 'sm', color: 'warn' },
+    },
+    'p2-anchor': { ...block(X, 22, 22, 1.2, 1.2, 1.2, 0xcfd8dc, 0x90a4ae), Material3D: { preset: 'steel' } }, // 锚点标记
+    // 胶囊角色（capsule 碰撞形·掉落立稳）+ 卡通描边 + blob 阴影。
+    'p2-cap': {
+      Transform3D: { x: X + 24, y: 12, z: 0 },
+      Mesh3D: { shape: 'capsule', width: 4, height: 9, frontTint: 0x66bb6a },
+      Material3D: { preset: 'jade', color: 0x66bb6a, shading: 'toon', toonSteps: 3, outline: { width: 0.12, color: 0x0a2a12 } },
+      RigidBody3D: { shape: 'capsule', mass: 1 },
+      Decal3D: { kind: 'ring', radius: 3.4, color: 0x66bb6a, opacity: 0.7 },
+      WorldUI3D: { text: '胶囊 + 卡通描边', offsetY: 7, size: 'sm', color: 'jade' },
+    },
+    // 弹簧沉降（Anim3D spring·从高处弹性落定·过冲回弹）。
+    'p2-spring': {
+      Transform3D: { x: X - 22, y: 6, z: 6 },
+      Mesh3D: { shape: 'sphere', width: 5, height: 5, frontTint: 0x42a5f5 },
+      Material3D: { preset: 'plastic', color: 0x42a5f5 },
+      Anim3D: { channels: [{ kind: 'spring', field: 'y', from: 26, to: 3, freq: 1.3, damping: 0.28 }] },
+      Decal3D: { kind: 'blob', radius: 3.2, opacity: 0.35 },
+      WorldUI3D: { text: '弹簧 spring', offsetY: 5, size: 'sm', color: 'jade' },
+    },
+    // 移动平台（Path3D·沿方形路径循环滑行·faceDir 朝行进方向）。
+    'p2-mover': {
+      Transform3D: { x: X - 10, y: 2, z: -20 },
+      Mesh3D: { shape: 'box', width: 10, height: 1.5, depth: 10, frontTint: 0x8d6e63, backTint: 0x6d4c41, edgeTint: 0xa1887f },
+      Material3D: { preset: 'wood' },
+      Path3D: { points: [[X - 20, 2, -20], [X + 20, 2, -20], [X + 20, 2, -34], [X - 20, 2, -34]], duration: 8, loop: 'loop', mode: 'linear' },
+      WorldUI3D: { text: '移动平台 Path3D', offsetY: 3, size: 'sm', color: 'gold' },
+    },
+    // 卡通描边球（完整 toon = cel 阶梯 + 黑边）+ 自转入场。
+    'p2-toon': {
+      Transform3D: { x: X + 6, y: 5, z: -8 },
+      Mesh3D: { shape: 'sphere', width: 6, height: 6, frontTint: 0xffffff },
+      Material3D: { preset: 'gold', shading: 'toon', toonSteps: 3, outline: { width: 0.1, color: 0x2a1e00 } },
+      Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.7 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.6, curve: 'outBack' }] },
+      Decal3D: { kind: 'blob', radius: 3.6, opacity: 0.35 },
+      WorldUI3D: { text: '完整卡通 toon+描边', offsetY: 6, size: 'sm', color: 'gold' },
+    },
+  };
+}
+
 // 一只追兵（NavAgent + Relation(target=hero) → pathfind 沿自动 NavGraph 追鸭子）。light 给前两只（动态光预算 2 盏）。
 function pursuer(x: number, z: number, body: number, edge: number, label: string, color: string, light?: { color: number; intensity: number; range: number }): Ent {
   return {
@@ -275,6 +346,9 @@ export function dioramaBlueprint(): WorldBlueprint {
 
       // 北侧 PBR 材质陈列台（材质球·大字标名·调试面板「🔬 看材质」一键看）。
       ...materialBoard(),
+
+      // 🚀 Platform Two（远处独立「新特性展台」·调试面板「🚀 传送」按钮 Camera3D.tween 飞过去）。
+      ...platformTwo(),
     },
   };
 }
