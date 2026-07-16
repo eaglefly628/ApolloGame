@@ -1,4 +1,7 @@
-# Apollo 风格库（house-style 共享美术库）· 结构图纸（草案 2026-07-16·Lead·待 owner 拍板）
+# Apollo 风格库（house-style 共享美术库）· 结构图纸（2026-07-16·Lead·**owner 已拍板开 M0**）
+
+> **owner 拍板（2026-07-16·两次）**：新建全类型风格库，风格=**迪士尼（圆润亲和）× Supercell（厚底唇糖果 3D 钮·高饱和）× 中国水墨（纸纹/笔触边/墨青朱砂）三合一混风**。**范围：不是换颜色——从形状（UI 异形/按钮贴图/3D 拓扑）到贴图全形态换装**；整套 UI 演示（game-i）全量对齐；其他颜色风格适当收敛（摘牌减量）。**并且不等真 key：先用现有手段（程序化皮/主题/3D 效果令牌）出全面可视版（M0.5），真 key 后按台账逐行换真图。**
+> **Lead·IP 红线**：风格锚与生成 prompt 用**描述性词**（圆润卡通/大轮廓/软两调阴影/暖饱和…），不写受商标保护的厂牌词、不生成知名角色形象；owner 若坚持用厂牌词须另行拍板担险。style-id=`apollo-toon`（对外名 owner 后定）。
 
 > owner 2026-07-16 提出：给所有游戏建**一个指定美术风格的共享库**——含 UI、特效、3D 简单拓扑与样例，用文生图一次性建库、逐个生成；像迪士尼/Subway 系——多游戏共享一种美术风格。先串结构，key 配好后慢慢生成，再用 UI 库展示游戏对齐。
 > Lead 评判：**接受**。不发明新系统——全部由既有底座重组（宪法 §4 先重组），新增件只有三个。
@@ -57,7 +60,19 @@ owner 定风格（风格包条目+参考图）
 | M3 对齐 | game-i styleset 主题 + 样例段 | **PUI** | 对齐验收=换皮下拉全景走查 |
 | M4 换装 | D/G 出口游戏 vendor 换装 | 各 PE + PA | 逐游戏、各自台账记账 |
 
-## 六、红线（防这个库自己漂移）
+## 六、首批台账清单 spec v1（M0·Lead 图纸）
+
+- **风格锚 v2（混风定稿·进风格包·owner 后续可配参考图精修·refImage 槽留位）**：
+  `rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark`（sprite 类行加 transparent background）。调色板基准 8 色（PA 定稿微调）：宣纸 #F6F0E2 / 墨 #2C2C34 / 黛青 #345C68 / 竹青 #55B08E / 朱砂 #D8503F / 缃金 #EBB54D / 天青 #7FC4D8 / 藕紫 #8A5A7A。
+- **清单分区（约 72 行·行规格 spec{w,h,transparent} 按台账既有字段）**：
+  - **ui/ ≈40 行**：按钮皮 4 kind×9-slice（源 96×96·slice 24·**形状=圆胖厚底唇**，非现皮描边替换）；面板框 9-slice 2 款；功能图标 24 枚（128×128 透明·play/pause/settings/close/back/coin/gem/heart/star/lock/check/cross/arrow×4/bag/shop/trophy/info/sound×2/plus/minus）；进度条皮 2 件（256×64·槽+填充）；滑轨+钮 2 件；背景板 3 张（1024×1024·lobby/menu/dim）；标题装饰底 2（512×128）。
+  - **fx/ ≈12 行**：hit burst / explosion / smoke puff 帧图集（512×512·4×4）；sparkle/star/coin/confetti 粒子贴图各 128×128 透明（对齐 Particles kind 闭集）；ring glow 256；trail 64×256。
+  - **3d/ ≈20 行**：低模 props 12 件（kind:mesh·Tripo 文本→glb·**拓扑=圆润夸张比例**·crate/barrel/tree/rock/coin/gem/chest/fence/lamp/bush/sign/platform-tile）；trim 贴图 2 张（512）；天空盒 1 套；地面贴花 3（对齐 Decal3D 闭集）。
+  - **examples 不进台账**（非生成物）：可跑数据样例（主菜单屏/HUD 条/商店卡 LayoutNode + Material3D 2 例 + 粒子接线 1 例）= M3 交付、进 game-i。
+- **M0 交付边界（PA·零 key·mock）**：styleset 目录 + styleset-ledger.mjs（走 art-replace 的 mergeLedger 保号·mode:library·**不改 art-replace.mjs 本体**）+ 风格包 `apollo-toon` 条目 + mock 填充跑通（texture 行=确定性程序化占位·gen/mock 分域防覆盖真图；mesh 行=mock glb 占位）+ 登记共享 index.json（provenance 硬字段+styleset 标）+ asset-reconcile 对 styleset PASS + 测试 + `docs/playbooks/assets.md` 回填一行。batch 真生成接链=M1（届时 PA+PST 会审 art-replace 的 styleset 目标扩展）。
+- **M0.5 现装可视版（PUI·先行·owner 点名"先用现有手段生成全面替换"）**：新 UITheme `apollo-toon`（全 token：混风调色板/字体/面板纸纹底+墨边/按钮四 kind **程序化 data-URI 皮**——圆胖厚底唇高光糖果钮+笔触边，配异形 shape 令牌与 press3d/tilt3d/z 3D 效果令牌·全走既有闭集**零新控件**）+ 程序化水墨背景板；game-i 换皮下拉接入并置顶，整套 gallery 段在新主题下走查一致；**收敛**：主题选单摘牌到 2-3 个（保默认 + apollo-toon + 至多 1 深色；隐藏不删码）。验收=/check-ui 全过 + 真浏览器多 tab 截图。程序化皮=占位真相：台账行 status 保 needs-art，真 key 后逐行文生图替换（M2），错觉记账（provenance:procedural）。
+
+## 七、红线（防这个库自己漂移）
 
 - 风格锚单一真相在风格包，**任何台账/文档不手抄锚全文**（引用 style-id）；
 - 库台账=机读真相，行数/状态不进任何手抄文档（本文也只写"建议 ≤120 行"这类拍板参数）；
