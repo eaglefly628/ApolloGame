@@ -3,6 +3,12 @@
 > 2026-07-03 立（owner 拍板：session 角色正规化）· 主程维护。
 > **启动协议**：owner 开新 session 时宣告「**角色=X · 任务=Y**」→ session 第一步读本文件找到角色卡照办（T0 必读自动叠加：CLAUDE.md 注入 + 宪法 + llm-onboarding）。未宣告角色 = 通用 session，按 CLAUDE.md 通例。
 > 角色卡按 `_template.md` 格式**慢慢补全**——卡不全时以「域边界 + 必读」两节为最低可用集。
+> **⚠ 标准启动词模板（Lead 2026-07-16 事故补牙·必须整段粘贴，光宣告角色赌不起）**——当天两个新 session 仅收到「角色=X·任务=Y」两行，没执行第一准则切分支，在克隆旧基线的 feature 分支上凭空瞎做（旧基线看不到新策划案）。此后 owner 开 session 启动词一律用此模板：
+> ```
+> 第一动作（先于一切）：git fetch origin claude/mainbranch && git checkout -B claude/mainbranch origin/claude/mainbranch
+> 角色=<X> · 任务=<Y>。切完分支再读 docs/roles/index.md 找角色卡照办；任务的设计文档在 docs/design/<对应目录>/ ——以 mainbranch 最新为准，你被注入的 feature 分支是旧快照、绝不在其上开工。
+> 产出直推 claude/mainbranch（fetch→rebase→tsc+vitest+build 全绿→push），绝不推 feature 分支。
+> ```
 
 ## 角色名录（8 正式 + 1 草案）
 
