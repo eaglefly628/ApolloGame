@@ -22,22 +22,28 @@ describe('context-budget-guard — 真仓库在预算内（门禁）', () => {
 });
 
 describe('context-budget-guard — 检查核语义（自证）', () => {
-  const B = { requestsPoolMaxChars: 100, t0MaxChars: { 'a.md': 50 }, playbookMaxLines: 80 };
+  const B = { requestsPoolMaxEntries: 10, requestsPoolMaxChars: 100, t0MaxChars: { 'a.md': 50 }, playbookMaxLines: 80 };
+  it('10 硬槽：第 11 条被拒（owner 2026-07-15「做不完不许加新的·先清后加」）', () => {
+    const i = checkBudget({ requestsEntries: 11, requestsChars: 1, t0Chars: { 'a.md': 10 }, playbookLines: {} }, B);
+    expect(i).toHaveLength(1);
+    expect(i[0]).toContain('硬槽');
+    expect(checkBudget({ requestsEntries: 10, requestsChars: 1, t0Chars: { 'a.md': 10 }, playbookLines: {} }, B)).toEqual([]);
+  });
   it('池超顶点名', () => {
-    const i = checkBudget({ requestsChars: 101, t0Chars: { 'a.md': 10 }, playbookLines: {} }, B);
+    const i = checkBudget({ requestsEntries: 1, requestsChars: 101, t0Chars: { 'a.md': 10 }, playbookLines: {} }, B);
     expect(i).toHaveLength(1);
     expect(i[0]).toContain('requests.md');
   });
   it('T0 超顶/缺文件点名', () => {
-    expect(checkBudget({ requestsChars: 1, t0Chars: { 'a.md': 51 }, playbookLines: {} }, B)[0]).toContain('a.md');
-    expect(checkBudget({ requestsChars: 1, t0Chars: {}, playbookLines: {} }, B)[0]).toContain('缺文件');
+    expect(checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: { 'a.md': 51 }, playbookLines: {} }, B)[0]).toContain('a.md');
+    expect(checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: {}, playbookLines: {} }, B)[0]).toContain('缺文件');
   });
   it('手册超 80 行点名', () => {
-    const i = checkBudget({ requestsChars: 1, t0Chars: { 'a.md': 10 }, playbookLines: { 'docs/playbooks/x.md': 81 } }, B);
+    const i = checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: { 'a.md': 10 }, playbookLines: { 'docs/playbooks/x.md': 81 } }, B);
     expect(i).toHaveLength(1);
     expect(i[0]).toContain('x.md');
   });
   it('全在预算内 → 空', () => {
-    expect(checkBudget({ requestsChars: 99, t0Chars: { 'a.md': 50 }, playbookLines: { 'docs/playbooks/x.md': 80 } }, B)).toEqual([]);
+    expect(checkBudget({ requestsEntries: 1, requestsChars: 99, t0Chars: { 'a.md': 50 }, playbookLines: { 'docs/playbooks/x.md': 80 } }, B)).toEqual([]);
   });
 });

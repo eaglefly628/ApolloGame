@@ -1289,3 +1289,74 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **程序A 待修（spec·GD 报缺·代码归程序A）**：突深边角下——① deploy zone 落子应避免落在**玩家前锋身后**（或允许但标记）；② `advanceColumnVsFoe` 的 `limit` clamp 需处理「己方兵已在敌前锋另一侧」——不该把它反向顶穿棋盘·应就地/正常向本方目标推进（此时该敌兵其实该走它自己那条路奔我家·或与"贴身后"的我方单位另判）；③ 碰撞判据 `:524` 同步修（方向感知·别一律 `<=`）。④ 加突深回归测试（玩家单兵打穿到贴敌家 slot7-8·敌再 deploy/move·断言无越界 slot、无反向位移）。**turnHash 若变=有意·更新断言。**
 > **GD 附注**：这是「单兵突破打穿到贴敌家」的残局边角·常规对峙不触发（故前6回合正常）·但破家临门一脚正是玩家追求的高光时刻→**值得修**（不然每次快破家都可能位置错乱/误判）。修好后 design G sim 复扫破家路径。
 
+## 2026-07-15 二次清仓（owner「只留 10 条硬需求」·done/暂缓迁入）
+
+### REQ-CTX-上下文预算三件 · 池清仓+预算封顶守卫+复查范围核查（owner「信息量大了 session 读不完·会偏离」批①②③）· [2026-07-15] · Lead 诊断+施工 · status: **✅ done（Lead 2026-07-15·门禁全绿直推）** · 优先级: P0（防偏离基建） · 类型: 流程基建
+> 实测诊断：T0 必读集健康（~1.5 万字符=窗口零头）；真炸弹=requests.md 曾 13 万字符（done 回执不归档）。落地：①**池清仓**——32 条已完结全文迁 `requests-archive.md`（池 13.1万→6.7万字符·活跃条目一条未动）；②**上下文预算守卫** `scripts/context-budget-guard.mjs`（判词 `CONTEXT-BUDGET: PASS|FAIL`·进 vitest 门禁）：requests 池封顶 9 万字符（超=红·逼归档）、T0 必读四文件各封顶、**每本手册 ≤80 行从君子约定变机器卡**；基线 `context-budget-baseline.json`（抬预算=显式改基线 diff 可见）；③**范围核查**=每关复查清单第一条（git diff 对照工单「边界」栏·越界=FAIL）+ review-gates.md 红线。测试 `context-budget-guard.test.mjs` 5 例。
+
+### REQ-UI-标题图标槽 · Panel.title / Tabs.tab 加图标位（接受已解析 URL·emoji/文字回退） · [2026-07-15] · PST（game-g 图标全覆盖·owner「干净的美术全覆盖」撞到控件缺口）→ 主程（ui/components 控件集） · status: **✅ done（主程 2026-07-15·当日达）** · 类型: 基座控件扩 prop（additive·非逃生）
+> **源起**：owner 07-15「所有美术素材都要能替代·emoji 也要统一风格·都要有连线」。game-g 套装图标已全覆盖接线（批32 + PST 07-15 第二批：fortune/deck/dice/target/shield/skull/mana/shard-tiangang 等，走 `iconUri(token)` → `Label.span.img`/`Card.media`/`Button.icon`/`Tag.icon`），**唯 3 枚接不了**：`dizhi 🀄` / `craft 🔨` 只出现在 `Panel.title`（如 deck-screen 地支段标题、craft-screen 改造坊标题）与 `Tabs.tabs[].label`（导航标签）——这两个 prop 是**纯字符串·无内联图标位**（现有图标位只在 Label.spans[].img / Card.media / Tag·Button.icon）。硬接要么把 Panel.title 拆成额外 header Label（改结构·破布局·不"干净"）、要么塞进 Tabs 标签串（emoji 混文字·非图片）。
+> **申请（additive·闭集加位·零回归）**：① `PanelProps` 加 `titleIcon?: string`（已解析 URL）——非 bare 且有 title 时，标题前渲 `<img height:1.05em>`（同 `Button.icon`/`Card.media` 的 URL→img 口径·render.ts 已有 esc+尺寸样板）；缺省=不渲（现有所有 Panel.title 零变）。② `TabsProps.tabs[]` 加可选 `icon?: string`——active/非 active 标签文字前渲同款小 img；缺省=纯文字（现有导航零变）。
+> **到货后 PST 一行接线**：`{ title: '地支牌', titleIcon: iconUri('dizhi') ?? undefined }`、Tabs 标签 `{ id:'craft', label:'改造坊', icon: iconUri('craft') ?? undefined }`——真图在场即换、无则纯标题（观感零变），dizhi/craft 即并入"全覆盖"。**trophy 🏆** 另路（天梯行现为裸 innerHTML 串·非 LayoutNode·待 ladderLines 数据化后同法接·PST game-g 域自理，不占本单）。
+> **为何走 requests**：`render.ts`/`types.ts` = 基座控件集（主程域·UI铁律「表达不了→requests.md 扩控件·绝不手写逃生」）。这是 REQ-UI-PlayingCard-back/xl 同款「控件缺口·additive 扩 prop」。
+> **✅ 完工回执（主程）**：`PanelProps.titleIcon` + `TabsProps.tabs[].icon` 落 types+render+catalog（1.05em 随字号·同 Button.icon 口径·esc 防注入·缺省纯文字**字节不变**）；icon-slots.test +2 组断言（含零回归腿）。PST 可按单内写法接线 dizhi/craft；trophy 待 ladderLines 数据化自理（不占本单·口径确认）。
+
+### REQ-ART-美术工坊愿景 · 美术库改造为「美术编辑器」（货架可视化+AI 加工+接线器）· [2026-07-04] · owner 提出 → Lead 调研出稿 · status: **✅ owner 已批（2026-07-04）·分期开工：M2.5 ✅done（PST 2026-07-06·待 Lead 验收）·M1 排队** · 优先级: P1（方向级） · 类型: 产品化·资产管线（**主责 PST·副责 PA 治理契约·风格锚素材=GD-\<game\>**）
+> 一句话：不做 DCC，做**货架管理器+AI 加工台+游戏接线器**三合一，作创作台第三面板（复用 apollo.py/BYO-key/本地 Git）。AI 铁律：修复/变体/生成全是**闭集操作+数据配方**，产物带 provenance 硬字段、**人审门后才入库**。分期 M1 货架可视化 → M2 导入/接线 UI → M3 AI 2D → M4 3D 外链；M0=REQ-PA-3D（在跑）。owner 拍板后 M1 起单派工。
+
+### REQ-026 · [2026-06-26] · PA · game-h 你造我塔/是男人就X层 · status: **⏸ 暂缓/搁置（owner 2026-07-04 拍板先移出活跃池·暂不下沉评估）** · 优先级: P1(rope/spring) P2(conveyor/respawn) · 类型: 真缺口（想象力机关 = effect 写不了 Velocity/Transform、无双体约束）
+> 【Lead 注 2026-07-04】owner 指示先搁置本条（暂不做弹簧/绳索/传送带/重生的引擎下沉评估）。记录与下方分析全保留；要重启时按现有拆解（P1 rope+spring 先做）直接接续，无需重提。game-h 现「召唤二重奏版」可玩可测，本条不阻塞。
+
+**标题**：缺"会动的平台个性"与"双体绳索"——参考 NS-SHAFT(平台有个性) + Pico Park(身体当机关) 的灵魂机关当前组合不出
+
+参考有想象力的纵向跳跃游戏后，最出彩的几样机关都卡在同一类引擎缺口（effect 只能改 flag/resource/state/sensor/visible/destroy/timer，**写不了 Velocity / Transform**；也无双实体约束）：
+
+- **弹簧/起跳台（NS-SHAFT 之魂·P1）**：踩上去被弹得很高 → 跨越普通跳够不到的大缺口。需"接触/信号 → 给该实体 `Velocity.vy = -大值`"。建议 `effect.kind:'apply-impulse'`（写 Velocity，可叠加）或一个 `Spring` 组件（contact→给踩它的实体设 vy）。
+- **传送带（P2）**：站上去被持续推向一侧。需"站立其上 → 每帧 `Velocity.vx += k`"。建议 `Conveyor{vx}` 组件（ground-sense 命中→加速）。
+- **绳索/拴绳（Pico Park 之魂·P1）**：两名玩家被绳拴住——一个坠落另一个可拉住、可借绳荡过缺口、限制别走太散。需**双实体距离约束**（`Tether{a,b,maxLen}` + 一个约束求解 system，确定性）。这是双人游戏最大的想象力来源。
+- **坠落重生/检查点（"是男人"紧张感·P2）**：掉出底部/碰危险 → 传回上一个检查点。需"信号 → 设某实体 `Transform.x/y`"（`effect.kind:'teleport'` 或 `Respawn{to}`）。配合"底部追命危险区"(zone→已可扣血)成立硬核基调。
+
+**已试/为何组合不出**：召唤台(plate→set-sensor)、相位/踩碎(timer+set-sensor)、踩头借力(REQ-003)、危险扣血(zone→modify-resource) 都能纯数据做（game-h 已用召唤台做出"你造我塔"二重奏）；但上面四样都要"改 Velocity/Transform"或"双体约束"，现有 effect/组件表达不了。
+
+**优先级**：rope + spring 先做（P1，立刻把 game-h 从"配合解谜"升级到"想象力满格"）；conveyor/respawn 次之（P2）。**不阻塞当前**（game-h 召唤二重奏版已可玩可测）。落地不口头入池。
+
+---
+
+### REQ-G-疲劳休整恢复 · [2026-07-04] · owner → design G(裁定+数值)+程序A(战斗核逻辑+AI)+程序B(恢复演出) · Game G · status: **✅ done（PG·owner 2026-07-06 当面连问三决落·见文末回执）；⚠ sim/关1 难度重标遗留 design G** · 优先级: P1(核心战斗核·压核心稳) · 类型: 战斗核疲劳模型改（离散→连续）+ 平衡重标
+> **owner 2026-07-04**：「疲劳被扣战力的牌在场上，下一轮只要不战斗，就恢复 10%，并给个效果。」
+> **程序B 评判（受资深程序员+架构师视角·CORE RULE·先审后做）——这不是纯表现、是战斗核逻辑+平衡改，回给 design G / 程序A 定，理由：**
+> 1. **现模型不支持"恢复10%"**：疲劳 = **离散 `wins` 连胜数** × `0.5^wins`（每胜战力对折·`turn-combat.ts:249`），满 `WIN_CAP=3` 光荣回库。`0.5^wins` 是整数幂·**没有可连续恢复的"疲劳值"**（owner 想的是一根可回的疲劳条·与现"连胜对折"离散模型不是一回事）。要"恢复10%"须把疲劳**从 `0.5^wins` 重构成连续疲劳量**（如 `fatigue 0..1`·`effMul=1-fatigue`·胜→`fatigue += (1-fatigue)*0.5`·休整→`fatigue -= 0.1`）。= **战斗核模型重构**，非加个字段。
+> 2. **平衡反噬**：连胜对折的**设计目的**＝「强兵越战越弱·弱兵车轮磨死它」（`turn-combat.ts:34-35`）。给恢复 = 强兵歇一轮回血 → **部分抵消车轮战**·关1/sim 胜率曲线全作废须**重标**（design G）。owner 要确认这是想要的方向。
+> 3. **确定性/turnHash**：每休整轮改疲劳=每轮状态变更→**须无 rng·整数/半整数量化**（本作 pEff 走 round·连续疲劳得定点量化）保回放/lockstep。
+> 4. **AI 连带**：`halvedEff`/AI 挑软柿子(`turn-combat.ts:271/627`)按 `0.5^wins` 估·模型变→AI 更新。
+> **待 design G 定（spec 问题）**：① "恢复10%"是 **底战力的10%** / **已失战力的10%** / **疲劳值降10个百分点**？② 与 `WIN_CAP=3 光荣回库` 交互（恢复能不能拖过 cap·或续场）？③ "不战斗"判定＝本轮该兵无 clash（`heldIds` 已有此信号可复用）？④ 恢复上限（回到满血 or 封顶）？
+> **域**：模型+数值+AI = **design G + 程序A**（战斗核·正确性关键路径·不降档）；**恢复演出（场上「休整中·战力回升」效果 + 数字回升）= 程序B**（本人·逻辑落地后接手·`heldIds`＋新疲劳字段一到就做）。
+> **建议**：先 design G 拍模型+方向（尤其平衡反噬 ②），程序A 落连续疲劳+AI+确定性回归测，再 design G sim 重标，最后程序B 补恢复效果。**别让程序B 直接往战斗核塞个拍脑袋的 10%**（会伤确定性+平衡）。
+>
+> **✅ done（PG·owner 2026-07-06 当面连问三决直接落·授权改战斗核带确定性测）**：模型/数值/演出一并落（owner 在场逐条拍板·非拍脑袋）。
+> - **模型**：`TurnUnit.fatiguePm∈[0,1000]`（战力损失千分比）替离散 `0.5^wins`。`pEff` 加整数千分比档 `×(1000−fp)/1000`（无浮点·确定性）。**胜** → `fp += round((1000−fp)×0.5)`（0→500→750→875…·有效战力仍逐胜对折·首几场逐字等价旧模型=owner「数值对了」）。
+> - **恢复（决①）**：owner 选「疲劳值降 10 个百分点」；判定＝**本轮真前进(movedNow)且没参战(foughtNow)** → `fp −= REST_RECOVER_PM(100)`（夹≥0·封顶回满）。取「前进」而非「不战」既忠 owner 原话「每走一步恢复」、又让龟缩兵不自愈。
+> - **退场（决②）**：owner「这设计过时了·没必要退场」→ **删 WIN_CAP=3 光荣回库**（无自动退场·纯疲劳条治理）。
+> - **收敛保底（决③）**：删退场+恢复 → 强兵「不死」·棋盘不轮替 → 少数对局僵持不结（AI-vs-AI+脚本活局实测复现·部分 seed 老模型即僵）。owner 选「加回合上限判胜」→ `MAX_TURNS=60` 到线按大本营血判（高者胜·平则平）。常规对局 ~20-45 回合即结·够不到此线（安全网·非平衡旋钮）。
+> - **AI**：`halvedEff` + 软柿子加权改读 `fatiguePm`；`cloneBattle` 带 `foughtNow/movedNow:[]`（EV 推演隔离）。
+> - **表现（程序B）**：场上 💢N% 疲劳徽（替 🔥N连胜）；对决明细「战损·疲劳 −N% 战力（本轮不战可回10%）」行 + extras「累计胜N·疲劳N%·歇一轮回一成」；休整回血飘绿「💚休整 +N% 战力」。
+> - **门禁**：tsc 0 · vitest 2293 · build ok · 确定性测（疲劳累加/休整回血/无退场）新增。**⚠ 遗留给 design G**：sim 胜率曲线/关1 难度须按新模型重标（REQ 原预判②·MAX_TURNS 值也待 sim 校）。
+
+---
+
+### REQ-UI-积木接口完备性批（Gemini review → P3D 复核裁决 · 交主程/UI）· [2026-07-15] · P3D 转交 → 主程/UI 域（src/ui/components·🔒） · status: **①②③✅ done（UI 域·2026-07-15）·④ 暂缓** · 优先级: P3（接口稳健性·非阻塞·无正确性 bug） · 类型: UI 校验/类型收紧
+> **【UI 回执 2026-07-15·①②③ 落地】** 新增 `lintLayoutNode`（`validate.ts`·**与 validateLayoutNode 硬门分离**·全 severity:'warn'·非阻塞·零 issue 门不受影响）：②bg 裸串疑似拼错令牌→`naked-fill` warn（合法令牌/预设/{custom}/CSS 色形不报）·③layout 专用词误塞 props→`bad-layout-placement` warn（**排除 radius** 防误报 Image）·①scroll 祖先内 3D 变换→`flatten-3d` warn。`lint-layout.test` 7 例；index 导出。**⑤ 已按 P3D 采纳改掉 render.ts:162 + types.ts:130 那两句过期「命中区=包围盒」注释**（clip-path 会裁命中区）。**④ Slider debounce 暂缓**（无拥堵实锤·涉 mountUI 输入层节流·待真需求）。类型层弃 `(string&{})` 走渐进（硬删破存量·先 lint 提示）。
+> **来源**：owner 让 Gemini review 全量 UI 积木接口（types/catalog/validate）。P3D 逐条对抗性复核（对照 render.ts 实现事实），采纳下列 4 项，回驳 2 项。**归 UI 域·P3D 不改·此单交主程/UI 裁工。**
+> **① scroll + 3D flatten 联立校验（低优）**：祖先 `overflow≠visible`（如 Panel `scroll:true`）会把 `transform-style` 算成 `flat`，子树 `z/rotateX/rotateY` 失效。裁：validate 加跨字段警告——节点/祖先 `scroll:true` 且子项带 3D layout(`z/rotateX/rotateY`) → warn。
+> **② PanelFill 裸串逃生舱收紧（最该修·与 UI 铁律同向）**：`PanelFill = SurfaceToken|FillPreset|{custom:string}|(string & {})` 的裸 `(string&{})` + catalog 把 `bg` 定成 `type:'string'` → validate 完全不校验 `bg`，弱模型易吐脏串致 fallback 失败。`{custom}` 已是显式逃生口·裸串冗余且弱化闭集（我们自己注释也承认「裸串仍收 back-compat」=自由逃生）。裁：validate 对 `bg` 裸串做警告（非 `#/rgb/rgba/linear-gradient` 前缀即 `bad-enum` 提示）；类型层逐步弃 `(string&{})`。走警告不硬删（护存量数据）。
+> **③ fx/anim 误塞 props 定向 lint**：validate 只校验 `node.layout.fx`；误写 `props.fx`/`props.anim` 静默失效。现策略对未列字段宽容（有意防误报）——但对**已知 layout 专用词**（fx/anim/radius/rotate/rotateX/rotateY/z/scale/tilt3d/perspective）出现在 props 定向拦截，零误报高价值。裁：加 `bad-layout-placement` 警告，引导移入 layout。
+> **④ Slider debounce 声明（低优）**：UI 铁律禁 handler 塞逻辑（只入队 action 信号）→ 防抖**除做成声明式 prop 别无表达路径**，故天然合法（非过度设计）。当前无拥堵实锤·低优。裁：高频控件（Slider…）可加 `debounce?:number` prop 声明·由消费侧节流。
+> **【P3D 回驳·不做】⑤ 异形按钮包围盒误触**：Gemini 前提事实反了——现代浏览器 `clip-path` **会**裁命中测试（透明角点击穿透·不误触），那句"命中区仍是矩形包围盒"只对 border-radius 成立。渲染器异形全走 `clip-path:polygon`（render.ts:165-171）→ 命中区本就正确·**无 bug**。唯一真收获：render.ts:162 注释「命中区仍是元素包围盒」是过期错误·误导后人——**建议主程改掉这句注释**（不改行为）。
+> **【P3D 暂缓·YAGNI】⑥ bind → BindingExpression（player.gold 嵌套路径）**：无具名消费者·8 款游戏 flat ResourceId 够用·path 迷你文法=无驱动者的 DSL 扩张（违反 CORE RULE 避免过度设计）。等真有游戏需嵌套绑定再开。
+>
+> **【P3D 施工红线·2026-07-15·Gemini 给了具体 validate.ts 重构·复核后：思路采纳·代码勿照抄】**
+> Gemini 后续交了整份重构 validate.ts。P3D 对照 render.ts/catalog.ts 实测复核，**决定性缺陷**记此，施工者（主程/UI）务必规避：
+> - **🔴 props 污染检查的黑名单会误杀合法 props**：Gemini 的 `layoutOnlyKeys` 含 `radius`（=Image 圆角 prop·catalog:90）、`height`（=VirtualList 视口高 prop·catalog:246·默认320），以及 `width/align/justify/opacity/cols/gap/padding/flex/scale/rotate/x/y/margin/direction`——这些既是 LayoutConstraints 名又是真实 prop 名。按名一刀切会**判 catalog 自己的 VirtualList sample(`height:140`) 非法**·违反 validate「不误报未列合法字段」纪律。**正解**：只拦严格 layout-only 且绝不做 prop 名的键——`fx/anim/animMs/rotateX/rotateY/tilt3d/perspective/z/sheen/chamfer/draggable/dropZone`；或按该组件 catalog spec 白名单减集。
+> - **🟡 bg 收紧走 warn 不走 hard-fail**（②既定·护 back-compat 存量裸串数据）；Gemini 把它做成 `bad-format` 硬 issue=破坏性变更。且令牌表应从 types 单一源导入·勿复制进 validate（防漂移）。
+> - **🟢 3D flatten 检测**：`scroll`/overflow→flatten 铁对；**`glass`/backdrop-filter→flatten 存疑**（CSS flatten 列表明确的是 `filter`·backdrop-filter 未定论）·真浏览器验证前勿断言 glass。渲染器是「谁有3D谁自带 preserve-3d」(render.ts:117)·故 flatten 仅嵌套3D 才咬人=低频·符合①低优定级。`has3DTransformsInSubtree` 每节点重扫=O(n²)·宜一趟自底向上。
+> - **⚪ 杂**：删 `// cite:` 噪声·收敛 `any`·新增 kind(`constraint-conflict`/`bad-format`) 同步进 `UiIssue` 联合。

@@ -1,11 +1,12 @@
 {
-  "_doc": "上下文预算基线（REQ-CTX·owner 2026-07-15 批）——新 session 必读集与需求池的封顶（单位=JS 字符数·守卫用 .length 度量）。超顶=CONTEXT-BUDGET: FAIL 拦推送；抬预算唯一合法姿势=同提交改本文件（diff 可见·须给理由）。requests 池超顶的正解是归档 done 条目，不是抬顶。校准（2026-07-15 清仓后实测→约 +30% 余量）：requests 67279→顶 90000；CLAUDE.md 5689→7000；宪法 2367→3000；llm-onboarding 3209→4000；playbooks/index 3271→4200。",
-  "requestsPoolMaxChars": 90000,
+  "_doc": "上下文预算基线（REQ-CTX·owner 2026-07-15 批·同日追加 10 硬槽铁律）——需求池=owner 级最多 10 条（做不完不许加新的·先清后加）+字符封顶；T0 必读各封顶；手册 ≤80 行。超顶=CONTEXT-BUDGET: FAIL 拦推送；抬预算唯一合法姿势=同提交改本文件（diff 可见·须给理由）。游戏工作票不占槽（requests-games.md）·3D 线 requests-3d.md。校准（10 槽分流后实测 14687 字符→顶 25000）。",
+  "requestsPoolMaxChars": 25000,
   "t0MaxChars": {
     "CLAUDE.md": 7000,
     "docs/design/data-driven-manifesto.md": 3000,
     "docs/llm-onboarding.md": 4000,
     "docs/playbooks/index.md": 4200
   },
-  "playbookMaxLines": 80
+  "playbookMaxLines": 80,
+  "requestsPoolMaxEntries": 10
 }

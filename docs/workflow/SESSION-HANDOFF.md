@@ -10,7 +10,7 @@
 | 项目规则/铁律 | `CLAUDE.md`（自动注入） |
 | 引擎/游戏现况·接入 | `docs/llm-onboarding.md`（唯一入口·分层阅读协议） |
 | 最近发生了什么 | `git log --oneline -30` |
-| 活跃/排队工单 | `docs/workflow/requests.md`（已完结条目在 `requests-archive.md`） |
+| 活跃/排队工单 | `docs/workflow/requests.md`（**owner 10 硬槽·满了先清后加**）；游戏工作票=`requests-games.md`；3D=`requests-3d.md`；已完结=`requests-archive.md` |
 | 各角色开工清单 | `docs/workflow/finish/`（P3D/PF/PG/PS 各自 handoff） |
 | 生产线怎么做事 | `docs/playbooks/index.md` |
 
