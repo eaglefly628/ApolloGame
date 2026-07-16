@@ -289,7 +289,10 @@ try:
     if stb == 302:
         check(hb.get('Location', '').startswith('http://localhost:') and '/?game=lib:x' in hb.get('Location', ''), '302 目标带原路径')
     else:
-        check('旧工作台' in db.decode('utf-8'), '提示页说明怎么启动')
+        # 07-15 兜底页改版（e8dcd563）：死链提示页 → 轮询 /api/bench-ready 自动跳转的转圈页——
+        # 断言对齐新语义：会自动跳（带轮询脚本）+ 仍告诉人怎么启动（apollo.py workshop）。
+        page = db.decode('utf-8')
+        check('bench-ready' in page and 'apollo.py workshop' in page, '提示页会自动跳转且说明怎么启动')
     stb2, hb2, _ = raw2('/bench?to=' + urllib.parse.quote('//evil.com/x'))
     check(stb2 != 302 or 'evil.com' not in hb2.get('Location', ''), '防开放跳转（// 打回 /）')
 
