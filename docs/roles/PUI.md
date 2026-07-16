@@ -21,7 +21,7 @@
   - `src/{engine,skills,assembly,services,net}` —— 核心 ECS/能力/服务/网络/装配（LEAD）。
   - `src/renderer/**` —— 2D canvas/ascii 后端（LEAD）+ 3D three 后端（P3D）。
   - `src/engine/protocol/**` —— ECS 组件 + 3D render-only 组件（LEAD/P3D）。
-  - 其它游戏 `src/games/game-{d,e,f,g,h,x,z}/**` —— 各 PE/P3D；**game-z/d = P3D**。
+  - 其它游戏 `src/games/game-{d,e,f,g,j,m,q,x,z}/**` —— 各 PE/P3D；**game-z/d = P3D**。
   - **特别·game-i 消费 P3D 的 3D 组件**：`game-i/three3d.ts` 写蓝图**消费** P3D 的 render-only 3D 组件（Mesh3D/Material3D/Path3D…）是数据接口消费，**不改** `renderer/three-*` 或 `protocol/components/render.ts` 的 3D 块；缺 3D 能力 → **`requests-3d.md`** 报 P3D，不自己下沉 3D。
 
 ## 2. 开工必读（按序·T0 自动叠加不重复列）

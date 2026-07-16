@@ -94,16 +94,6 @@ export const GAMES: GameEntry[] = [
     status: 'playable',
   },
   {
-    id: 'game-h',
-    title: 'Game H: 3D Blackjack',
-    subtitle: '二十一点 · 3D 俯视角赌桌',
-    description: '经典 21 点纸牌游戏的 3D 版本：俯视角赌桌、3D 渲染卡牌与筹码。玩家与庄家对赌，目标手牌总和接近 21 点不超出。纯 three.js 渲染：程序生成的 3D 模型、Canvas 纹理卡牌、彩色筹码堆。庄家 AI 全自动（17 点站住）。支持分牌与多手牌对战。',
-    color: '#1a2634',
-    accentColor: '#4ade80',
-    icon: '🎰',
-    status: 'playable',
-  },
-  {
     id: 'game-x',
     title: 'Game X: 残响 Living Companion',
     subtitle: '掌上伴侣 · 时间感知 Desk Mode',
@@ -141,16 +131,6 @@ export const GAMES: GameEntry[] = [
     color: '#07130f',
     accentColor: '#38bdf8',
     icon: '🗼',
-    status: 'playable',
-  },
-  {
-    id: 'game-k',
-    title: 'Game K: Zombie Slots',
-    subtitle: '僵尸老虎机 · 5×3 · 20 线',
-    description: '迪士尼亲和 × 次表面散射柔光的僵尸主题老虎机：5×3 转轴、20 条赔付线、僵尸王百搭、生化分散触发 10 次免费旋转（线赢 ×2）。转轴=dice-roll 掷加权符号网格（种子 PRNG·确定可回放），判线赔付/扣注/免费旋转经济由下沉的通用能力 t3-slot-payout 涌现，零老虎机专属系统代码。符号美术全程序化生成（分层径向渐变伪造次表面通透 + 圆润大眼卡通轮廓）。',
-    color: '#0a130c',
-    accentColor: '#5ef08a',
-    icon: '🧟',
     status: 'playable',
   },
 ];

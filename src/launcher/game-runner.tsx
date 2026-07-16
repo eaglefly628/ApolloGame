@@ -66,14 +66,12 @@ export function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => v
       'game-f': () => import('../games/game-f/game-f.js'),
       'game-g': () => import('../games/game-g/game-g.js'),
       'game-i': () => import('../games/game-i/game-i.js'),
-      'game-h': () => import('../games/game-h/game-h.js'),
       'game-x': () => import('../games/game-x/game-x.js'),
       'game-z': () => import('../games/game-z/game-z.js'),
       'game-d': () => import('../games/game-d/game-d.js'),
       'game-q': () => import('../games/game-q/game-q.js'),
       'game-j': () => import('../games/game-j/game-j.js'),
       'game-m': () => import('../games/game-m/game-m.js'),
-      'game-k': () => import('../games/game-k/game-k.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;

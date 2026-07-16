@@ -60,9 +60,9 @@ Manifest(纯 JSON) ──parseManifest──▶ WorldBlueprint ──engine.load
 | game-e 小丑牌 | Balatro-like；计分核+68 张数据小丑=**最佳正面教材**；1163 行手写 React=**反面教材勿模仿** | sample |
 | game-i UI Gallery | LayoutNode 纯数据展示台 | sample · UI 活范例 |
 | game-f 自走棋 | — | **owner 冻结勿动** |
-| game-h 3D 21点 / game-x 残响 / game-z 盒庭 | sample / 伴侣框架 / P3D 3D 渲染线底座 | sample·基建 |
+| game-x 残响 / game-z 盒庭 | 伴侣框架 / P3D 3D 渲染线底座 | sample·基建 |
 
-（game-a/b/c 已删除；任何文档再提到它们即为过期信号。）
+（game-a/b/c/h/k 与 block-blast-mini 已删除（h/k/bbm=owner 2026-07-16 清库）；任何文档再提到它们即为过期信号。）
 
 ## 5. 归档纪律
 
