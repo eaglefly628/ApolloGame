@@ -10,7 +10,7 @@ import { AssetManager, registerAssetIndex } from '@assets/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Velocity, Camera3D, Post3D, Fog3D, Transform } from '@engine/protocol/components.js';
-import { dioramaBlueprint, BOARD_CAM, HOME_CAM, PLATFORM_TWO_CAM, TRACK_R } from './diorama.js';
+import { dioramaBlueprint, HOME_CAM, PLATFORM_TWO_CAM, PLATFORM_THREE_CAM, TRACK_R } from './diorama.js';
 import { GAME_Z_INDEX, GAME_Z_MATERIALS, DioramaLoader } from './assets.js';
 
 const MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
@@ -24,9 +24,9 @@ function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean, 
     { type: 'Label', id: 'gz-title', props: { text: 'GAME Z · 永远追逐', size: 'xxl', glow: true } },
     { type: 'Label', id: 'gz-sub', props: { text: '鸭子 AI 绕赛道自动跑 · 三只追兵循寻路追逐 · 一切皆动', size: 'sm' } },
     { type: 'Label', id: 'gz-hint', props: { text: 'WASD 控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随 · P 剖析 · C 碰撞 · N 寻路 · 点物件拾取', size: 'sm' } },
-    { type: 'Label', id: 'gz-show', props: { text: '🧱 南侧展台：新图元(柱/锥/胶囊/环) × PBR 材质 × Anim3D 自转浮动 × 点选拾取', size: 'sm', color: 'jade' } },
-    { type: 'Label', id: 'gz-show2', props: { text: '🎮 手感展台：A 挤压拉伸 · D 拖尾 · F 卡通/平涂 ｜ 相机=C 软跟随 ｜ 点任意物件=B 震屏+E 闪白', size: 'sm', color: 'gold' } },
-    { type: 'Label', id: 'gz-show3', props: { text: '🚀 调试面板「传送」按钮 → 飞到 Platform Two 看新特性（关节/胶囊/弹簧/描边/贴花/路径/世界屏）', size: 'sm', color: 'jade' } },
+    { type: 'Label', id: 'gz-show', props: { text: '🌉 三台分布：A=追逐场 ｜ Two=手感·物理 ｜ Three=材质·渲染（追逐场已清空展示物·各归专台）', size: 'sm', color: 'jade' } },
+    { type: 'Label', id: 'gz-show2', props: { text: '🎮 相机=C 软跟随 ｜ 点任意物件=B 震屏+E 闪白 ｜ 拖拽旋转 · 滚轮缩放', size: 'sm', color: 'gold' } },
+    { type: 'Label', id: 'gz-show3', props: { text: '🚀 调试面板「传送」按钮 → Camera3D.tween 循环飞越 A→Two→Three→A 看各台特性', size: 'sm', color: 'jade' } },
     { type: 'Label', id: 'gz-zone', props: { text: '🔴 追逐中', size: 'sm', glow: true, color: 'warn' } },
   ];
   if (picked) children.push({ type: 'Label', id: 'gz-pick', props: { text: `🎯 拾取：${picked}`, size: 'sm', glow: true, color: 'jade' } }); // Pickable3D 拾取自证
@@ -72,24 +72,31 @@ export function mount(container: HTMLElement): () => void {
   let showProfiler = true; // 性能剖析面板开关（P 键切换·默认开）
   let fps = 60; // 平滑帧率（render-only·不进 sim）
   const cam = (): Camera3D | undefined => engine.world.getComponent<Camera3D>('cam', 'Camera3D'); // 取相机组件（行为层写它）
-  // 相机机位预设（render-only 写 Camera3D·瞬切视角）：HOME=赛道总览·BOARD=正对材质陈列台（皆从 diorama 导出）。
+  // 相机机位预设（render-only 写 Camera3D·瞬切视角）：HOME=赛道总览·BOARD=正对材质陈列台（在 Platform Three·皆从 diorama 导出）。
   const applyCam = (p: { yaw: number; pitch: number; distance: number; pivotX: number; pivotY: number; pivotZ: number }): void => {
     const c = cam(); if (!c) return;
     c.yaw = p.yaw; c.pitch = p.pitch; c.distance = p.distance;
     c.pivotX = p.pivotX; c.pivotY = p.pivotY; c.pivotZ = p.pivotZ;
     c.mode = 'orbit'; // 切机位时退出 follow（否则注视点被 hero 覆盖看不到陈列台）
   };
-  // 🚀 平台传送（Camera3D.tween 运镜过渡·飞越到远处 Platform Two 看新特性·再按飞回追逐场 Platform A）。
-  let platform: 'A' | 'two' = 'A';
+  // 🚀 平台循环传送（Camera3D.tween 运镜过渡·飞越 A → Two → Three → A 看不同专台·owner「循环传送看得清」）。
+  //   A=追逐场(follow 跟狐狸)、Two=手感/物理展台、Three=材质/渲染展台（皆 orbit 定机位·从 diorama 导出）。
+  const CYCLE = ['A', 'two', 'three'] as const;
+  const PLAT_CAM = { two: PLATFORM_TWO_CAM, three: PLATFORM_THREE_CAM } as const;
+  const PLAT_LABEL = { A: 'Platform A（追逐场）', two: 'Platform Two（手感·物理）', three: 'Platform Three（材质·渲染）' } as const;
+  let platIdx = 0;
   let tweenN = 0;
   const teleport = (): void => {
     const c = cam(); if (!c) return;
-    platform = platform === 'A' ? 'two' : 'A';
-    if (platform === 'two') { // 去 Platform Two（远处新特性展台·orbit 定机位）
+    platIdx = (platIdx + 1) % CYCLE.length;
+    const p = CYCLE[platIdx];
+    if (p === 'A') { c.mode = 'follow'; c.target = 'hero'; } // 回 A = 跟随小狐狸的追逐场
+    else { // 去远处专台（orbit 定机位·瞬切注视点）
+      const cp = PLAT_CAM[p];
       c.mode = 'orbit';
-      c.yaw = PLATFORM_TWO_CAM.yaw; c.pitch = PLATFORM_TWO_CAM.pitch; c.distance = PLATFORM_TWO_CAM.distance;
-      c.pivotX = PLATFORM_TWO_CAM.pivotX; c.pivotY = PLATFORM_TWO_CAM.pivotY; c.pivotZ = PLATFORM_TWO_CAM.pivotZ;
-    } else { c.mode = 'follow'; c.target = 'hero'; } // 回 Platform A = 跟随小狐狸的追逐场
+      c.yaw = cp.yaw; c.pitch = cp.pitch; c.distance = cp.distance;
+      c.pivotX = cp.pivotX; c.pivotY = cp.pivotY; c.pivotZ = cp.pivotZ;
+    }
     c.tween = { trigger: ++tweenN, dur: 1.4, ease: 'inOut' }; // 平滑飞越（运镜过渡·同时演示 Camera3D.tween）
     renderer.invalidate();
     refresh();
@@ -165,11 +172,12 @@ export function mount(container: HTMLElement): () => void {
       tog('gz-aa', '抗锯齿 SMAA', S.aa, 'tAa'),
       // 机位预设（render-only 写 Camera3D·瞬切视角看材质陈列台 / 回总览）。
       { type: 'Label', id: 'gz-cam-t', props: { text: '── 机位 ──', size: 'xs', color: 'dim' } },
-      { type: 'Button', id: 'gz-cam-board', props: { label: '🔬 看材质陈列台', kind: 'ghost', action: 'camBoard' } },
+      { type: 'Button', id: 'gz-cam-board', props: { label: '🔬 看材质陈列台（P3）', kind: 'ghost', action: 'camBoard' } },
       { type: 'Button', id: 'gz-cam-home', props: { label: '🏠 回总览', kind: 'quiet', action: 'camHome' } },
       { type: 'Button', id: 'gz-roll', props: { label: '🎲 掷骰子（真物理）', kind: 'ghost', action: 'roll' } },
-      // 平台传送（Camera3D.tween 飞越·文案随所在平台切换）。
-      { type: 'Button', id: 'gz-tp', props: { label: platform === 'A' ? '🚀 传送 → Platform Two（新特性）' : '🔙 传送 → Platform A（追逐场）', kind: 'hero', action: 'teleport' } },
+      // 平台循环传送（Camera3D.tween 飞越·文案显下一站 A→Two→Three→A）。
+      { type: 'Label', id: 'gz-tp-at', props: { text: `📍 当前：${PLAT_LABEL[CYCLE[platIdx]]}`, size: 'xs', color: 'dim' } },
+      { type: 'Button', id: 'gz-tp', props: { label: `🚀 传送 → ${PLAT_LABEL[CYCLE[(platIdx + 1) % CYCLE.length]]}`, kind: 'hero', action: 'teleport' } },
     ],
   });
   // 开关 → 改态 + 应用 + 重渲面板（更新勾选 + 显隐从属滑块）。滑块 → 改态 + 应用（**不重渲面板**·免打断拖拽）。
@@ -187,7 +195,7 @@ export function mount(container: HTMLElement): () => void {
   const menuUi = mountUI(menuHost, tree(), {
     tCol: tT('col'), tNav: tT('nav'), tAo: tT('aoOn'), tFog: tT('fogOn'), tGr: tT('gradeOn'), tAa: tT('aa'),
     sAoI: sS('aoInt'), sAoR: sS('aoRad'), sFn: sS('fogNear'), sFf: sS('fogFar'), sEx: sS('exp'), sCo: sS('con'), sSa: sS('sat'),
-    camBoard: () => applyCam(BOARD_CAM), camHome: () => applyCam(HOME_CAM),
+    camBoard: () => { applyCam(PLATFORM_THREE_CAM); platIdx = 2; refresh(); }, camHome: () => { applyCam(HOME_CAM); platIdx = 0; refresh(); },
     roll: () => renderer.rollDice(),
     teleport: () => teleport(),
     qPerf: () => setQuality('perf'), qBal: () => setQuality('balanced'), qHi: () => setQuality('quality'),
@@ -233,7 +241,7 @@ export function mount(container: HTMLElement): () => void {
     const pull = (TRACK_R - r) * 0.04; // 拉回赛道半径
     v.vx = tx * RUN + (t.x / r) * pull;
     v.vy = tz * RUN + (t.y / r) * pull;
-    t.rotation = -Math.atan2(v.vx, v.vy) + Math.PI; // 朝向跑动方向（groundPose ry=-rotation；Fox 默认朝 −Z → +π 修正）
+    t.rotation = -Math.atan2(v.vx, v.vy); // 朝向跑动方向（groundPose ry=-rotation；Fox 模型前向=+Z → ry=atan2(vx,vz)·rotation=-ry·无 π 偏移）
   };
   window.addEventListener('keydown', onDown);
   window.addEventListener('keyup', onUp);

@@ -55,17 +55,17 @@ const MAT_SAMPLES: { preset: string; label: string; color?: number; surface?: SD
   { preset: 'glass', label: '玻璃' },
   { preset: 'emissive', label: '自发光' },
 ];
-const BOARD_Z = -58; // 陈列台 Z（赛道外·北侧）
-function materialBoard(): Record<string, Ent> {
+// 材质陈列台（可放到任意平台·ox/oz 偏移·prefix 防跨平台 id 撞）。
+function materialBoard(ox = 0, oz = -58, prefix = 'mat'): Record<string, Ent> {
   const out: Record<string, Ent> = {};
   const n = MAT_SAMPLES.length;
-  const gap = 7, z = BOARD_Z, baseTop = 4, dia = 5;
+  const gap = 7, baseTop = 4, dia = 5;
   const x0 = -((n - 1) * gap) / 2;
-  out['matboard-base'] = block(0, baseTop / 2, z, n * gap + 4, baseTop, 9, 0x455a64, 0x37474f);
+  out[`${prefix}board-base`] = block(ox, baseTop / 2, oz, n * gap + 4, baseTop, 9, 0x455a64, 0x37474f);
   MAT_SAMPLES.forEach((s, i) => {
-    const x = x0 + i * gap;
-    out[`mat-${s.preset}`] = {
-      Transform3D: { x, y: baseTop + dia / 2, z }, // 球坐在石台上（中心 = 台顶 + 半径）
+    const x = ox + x0 + i * gap;
+    out[`${prefix}-${s.preset}`] = {
+      Transform3D: { x, y: baseTop + dia / 2, z: oz }, // 球坐在石台上（中心 = 台顶 + 半径）
       Mesh3D: { shape: 'sphere', width: dia, height: dia, frontTint: 0xffffff },
       Material3D: { preset: s.preset, ...(s.color !== undefined ? { color: s.color } : {}), ...(s.surface ? { surface: s.surface } : {}) },
       WorldUI3D: { text: s.label, offsetY: dia / 2 + 4, size: 'md', glow: true }, // 字号放大 xs→md（owner「字太小」）
@@ -73,8 +73,6 @@ function materialBoard(): Record<string, Ent> {
   });
   return out;
 }
-// 看材质机位（调试面板「🔬 看材质陈列台」按钮 → 切到此机位正对陈列台·render-only 写 Camera3D）。
-export const BOARD_CAM = { yaw: 0, pitch: 0.4, distance: 82, pivotX: -12, pivotY: 8, pivotZ: BOARD_Z };
 // 总览机位（「🏠 回总览」按钮）：俯瞰整个赛道竞技场。
 export const HOME_CAM = { yaw: 0.7, pitch: 0.82, distance: 168, pivotX: 0, pivotY: 2, pivotZ: 0 };
 
@@ -137,6 +135,31 @@ function platformTwo(): Record<string, Ent> {
       Path3D: { points: [[X - 20, 2, -20], [X + 20, 2, -20], [X + 20, 2, -34], [X - 20, 2, -34]], duration: 8, loop: 'loop', mode: 'linear' },
       WorldUI3D: { text: '移动平台 Path3D', offsetY: 3, size: 'sm', color: 'gold' },
     },
+    // 挤压拉伸（Anim3D 分轴 scale·弹跳压扁保体积）+ blob 阴影。
+    'p2-squash': {
+      Transform3D: { x: X - 8, y: 5, z: 18 },
+      Mesh3D: { shape: 'sphere', width: 5, height: 5, frontTint: 0xff5252 },
+      Material3D: { preset: 'plastic', color: 0xff5252 },
+      Anim3D: { channels: [
+        { kind: 'osc', field: 'y', wave: 'sine', amp: 3.2, freq: 3, phase: 0 },
+        { kind: 'osc', field: 'scaleY', wave: 'sine', amp: 0.28, freq: 3, phase: Math.PI / 2 },
+        { kind: 'osc', field: 'scaleX', wave: 'sine', amp: -0.28, freq: 3, phase: Math.PI / 2 },
+      ] },
+      Decal3D: { kind: 'blob', radius: 3, opacity: 0.35 },
+      WorldUI3D: { text: '挤压拉伸 squash', offsetY: 5, size: 'sm', color: 'warn' },
+    },
+    // 拖尾（环绕飞的发光球·osc x/z 相位差 π/2 = 圆周 + Trail3D 发光残影）。
+    'p2-trail': {
+      Transform3D: { x: X - 26, y: 8, z: -12 },
+      Mesh3D: { shape: 'sphere', width: 3, height: 3, frontTint: 0xffe082 },
+      Material3D: { preset: 'emissive' }, Glow3D: { color: 0xffe082, scale: 10, opacity: 0.5 },
+      Anim3D: { channels: [
+        { kind: 'osc', field: 'x', wave: 'sine', amp: 8, freq: 1.4, phase: 0 },
+        { kind: 'osc', field: 'z', wave: 'sine', amp: 8, freq: 1.4, phase: Math.PI / 2 },
+      ] },
+      Trail3D: { segments: 44, width: 1.2, color: 0xffd54f, minDist: 0.15, blend: 'add' },
+      WorldUI3D: { text: '拖尾 Trail3D', offsetY: 4, size: 'sm', color: 'gold' },
+    },
     // 卡通描边球（完整 toon = cel 阶梯 + 黑边）+ 自转入场。
     'p2-toon': {
       Transform3D: { x: X + 6, y: 5, z: -8 },
@@ -146,6 +169,57 @@ function platformTwo(): Record<string, Ent> {
       Decal3D: { kind: 'blob', radius: 3.6, opacity: 0.35 },
       WorldUI3D: { text: '完整卡通 toon+描边', offsetY: 6, size: 'sm', color: 'gold' },
     },
+    // 瞄准弹道预览（Line3D 虚线·发光·手算抛物线点连成朝相机带线）——展示新折线原语。
+    'p2-aim': {
+      Transform3D: { x: X + 20, y: 0.1, z: 16 }, // 载体（Line3D 用绝对 points·此 Transform 仅占位）
+      Line3D: { points: aimArc(X + 20, 1, 16, -6, 9, 12), width: 0.5, color: 0x40e0ff, dash: 1.6, gap: 1.1, blend: 'add' },
+      WorldUI3D: { text: '瞄准线 Line3D（虚线）', offsetY: 6, size: 'sm', color: 'jade' },
+    },
+  };
+}
+
+// 抛物线采样点（弹道预览用·起点 (x0,y0,z0)·水平速度 vx/vz·重力 g·采样成一串世界点·纯几何）。
+function aimArc(x0: number, y0: number, z0: number, vx: number, vz: number, steps: number): Array<[number, number, number]> {
+  const g = 12, out: Array<[number, number, number]> = [];
+  for (let i = 0; i <= steps; i++) { const t = i * 0.18; out.push([x0 + vx * t, Math.max(0.1, y0 + 10 * t - 0.5 * g * t * t), z0 + vz * t]); }
+  return out;
+}
+
+// ── Platform Three（材质 & 渲染展台·X=-190）──────────────────────────────────────────────────────
+export const PLATFORM3_X = -190;
+export const PLATFORM_THREE_CAM = { yaw: 0.4, pitch: 0.5, distance: 100, pivotX: PLATFORM3_X, pivotY: 8, pivotZ: 0 };
+function platformThree(): Record<string, Ent> {
+  const X = PLATFORM3_X;
+  return {
+    'p3-base': { ...block(X, -2.5, 0, 110, 5, 96, 0x4e5d3a, 0x2e3720), Material3D: { preset: 'matte', color: 0x6b7a4a, surface: { pattern: 'noise', tiles: 10, normal: 0.6, rough: 0.6 } } },
+    'p3-sign': {
+      Transform3D: { x: X - 40, y: 12, z: -28, rotY: 0.5 },
+      Diegetic3D: {
+        pxWidth: 420, pxHeight: 170, worldWidth: 20, bg: '#141a0e',
+        node: { type: 'Panel', id: 'p3s', props: { bg: 'raised' }, layout: { gap: 6, padding: 12 }, children: [
+          { type: 'Label', id: 'p3s-t', props: { text: '◈ PLATFORM THREE · 材质 & 渲染', size: 'lg', glow: true, color: 'gold' } },
+          { type: 'Label', id: 'p3s-1', props: { text: '材质球 · 圆润图元 · UV 水面/传送带 · 符文自发光', size: 'sm', color: 'jade' } },
+        ] },
+      },
+    },
+    // 材质陈列台（11 球·移到本平台北侧）。
+    ...materialBoard(X, -34, 'p3mat'),
+    // 圆润图元 × PBR × Anim3D（cylinder/cone/capsule/torus·南侧一排）。
+    'p3-cyl': { Transform3D: { x: X - 24, y: 4, z: 20 }, Mesh3D: { shape: 'cylinder', width: 6, height: 8, frontTint: 0xc4c7c7 }, Material3D: { preset: 'steel', surface: { pattern: 'scratches', tiles: 3, normal: 0.5, rough: 0.6 } }, Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.9 }] }, Pickable3D: { signal: 'poke' }, WorldUI3D: { text: '柱', offsetY: 6, size: 'sm' } },
+    'p3-cone': { Transform3D: { x: X - 10, y: 4.5, z: 20 }, Mesh3D: { shape: 'cone', width: 7, height: 9, frontTint: 0xfff0a0 }, Material3D: { preset: 'emissive' }, Glow3D: { color: 0xffe08a, scale: 16, opacity: 0.55 }, Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 1.2 }] }, Pickable3D: { signal: 'poke' }, WorldUI3D: { text: '锥', offsetY: 7, size: 'sm' } },
+    'p3-caps': { Transform3D: { x: X + 4, y: 6.5, z: 20 }, Mesh3D: { shape: 'capsule', width: 5, height: 11, frontTint: 0xf7bd9e }, Material3D: { preset: 'copper', surface: { pattern: 'bumps', tiles: 5, normal: 0.4, rough: 0.35 } }, Anim3D: { channels: [{ kind: 'osc', field: 'y', wave: 'triangle', amp: 1, freq: 1.6 }] }, Pickable3D: { signal: 'poke' }, WorldUI3D: { text: '胶囊', offsetY: 8, size: 'sm' } },
+    'p3-torus': { Transform3D: { x: X + 20, y: 6, z: 20, rotX: 1.2 }, Mesh3D: { shape: 'torus', width: 9, height: 9, frontTint: 0xffd991, tube: 0.35 }, Material3D: { preset: 'gold', surface: { pattern: 'bumps', tiles: 6, normal: 0.4, rough: 0.28 } }, Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 1.4 }] }, Pickable3D: { signal: 'poke' }, WorldUI3D: { text: '环', offsetY: 7, size: 'sm' } },
+    // 符文自发光板（emissiveMap）+ 自转。
+    'p3-rune': { Transform3D: { x: X + 36, y: 5, z: 20 }, Mesh3D: { shape: 'box', width: 8, height: 8, depth: 3, frontTint: 0x0e1419 }, Material3D: { preset: 'matte', materialRef: MAT_RUNE }, Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.6 }] }, Pickable3D: { signal: 'poke' }, WorldUI3D: { text: '符文自发光', offsetY: 6, size: 'sm', color: 'jade' } },
+    // UV 动画水面（Material3D.uvAnim scroll·大平面滚动 → 流水/岩浆观感）。
+    'p3-water': {
+      Transform3D: { x: X + 8, y: 0.3, z: -6, rotX: -Math.PI / 2 },
+      Mesh3D: { shape: 'plane', width: 34, height: 22, frontTint: 0x2b6fb0 },
+      Material3D: { preset: 'matte', color: 0x3a9bd6, map: MAT_PLANK_WOOD, uvAnim: { scrollX: 0.08, scrollY: 0.04 }, tiling: { repeat: 3 } },
+      WorldUI3D: { text: 'UV 动画水面 scroll', offsetY: 3, size: 'sm', color: 'jade' },
+    },
+    // 平涂无光球（flat·纯亮色）。
+    'p3-flat': { Transform3D: { x: X - 34, y: 5, z: 6 }, Mesh3D: { shape: 'sphere', width: 6, height: 6, frontTint: 0xffffff }, Material3D: { preset: 'gold', shading: 'flat', color: 0xffca28 }, Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.8 }] }, WorldUI3D: { text: '平涂 flat', offsetY: 6, size: 'sm', color: 'gold' } },
   };
 }
 
@@ -265,90 +339,13 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 材质铺陈：草地色 matte + 程序化起伏浮雕（noise·大 tiles 铺满大地面）→ 掠光下有草皮质感·不再纯平板。
       ground: { ...block(0, -2.5, 0, 160, 5, 160, 0x7cb342, 0x5d4037), Material3D: { preset: 'matte', color: 0x7cb342, surface: { pattern: 'noise', tiles: 16, normal: 0.7, rough: 0.55, scale: 1.5 } } },
 
-      // 🧱 新特性活展台（南侧一排·本会话新能力集中展示）：四种新图元(②) × 各挂不同 PBR 材质 × Anim3D 程序化动画
-      // (自转/浮动) × Pickable3D 点选拾取(①·证明拾取在新图元 + 动画物件上也命中)。全纯数据·零专属代码·零新资产。
-      // · cylinder：拉丝钢(PBR 金属+surface) + 匀速自转 + 可拾取
-      // Anim3D 方法集展示（owner 2026-07-06）：各图元叠加**入场 ease(scale 0→1·outBack 弹出·错峰 delay)** + 循环通道
-      //   （spin 自转 / osc 波形振荡 / noise 有机漂移）——同 field 叠加、loop+once 共存，全纯数据。
-      'prim-cylinder': {
-        Transform3D: { x: -22, y: 4, z: 46 }, Mesh3D: { shape: 'cylinder', width: 6, height: 8, frontTint: 0xc4c7c7 },
-        Material3D: { preset: 'steel', surface: { pattern: 'scratches', tiles: 3, normal: 0.5, rough: 0.6 } },
-        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.9 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'outBack', delay: 0.0 }] }, Pickable3D: { signal: 'poke' },
-      },
-      // · cone：自发光 + Glow3D 暖光晕 + 自转 + 入场弹出 + 可拾取
-      'prim-cone': {
-        Transform3D: { x: -8, y: 4.5, z: 46 }, Mesh3D: { shape: 'cone', width: 7, height: 9, frontTint: 0xfff0a0 },
-        Material3D: { preset: 'emissive' }, Glow3D: { color: 0xffe08a, scale: 16, opacity: 0.55 },
-        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 1.2 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'outBack', delay: 0.15 }] }, Pickable3D: { signal: 'poke' },
-      },
-      // · capsule：铜(PBR) + **osc 三角波**上下弹跳(机械感·区别正弦 bob) + 入场弹出 + 可拾取
-      'prim-capsule': {
-        Transform3D: { x: 6, y: 6.5, z: 46 }, Mesh3D: { shape: 'capsule', width: 5, height: 11, frontTint: 0xf7bd9e },
-        Material3D: { preset: 'copper', surface: { pattern: 'bumps', tiles: 5, normal: 0.4, rough: 0.35 } },
-        Anim3D: { channels: [{ kind: 'osc', field: 'y', wave: 'triangle', amp: 1.0, freq: 1.6 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'outBack', delay: 0.3 }] }, Pickable3D: { signal: 'poke' },
-      },
-      // · torus：金(PBR) + 倾斜自转 + 入场弹出 + 可拾取
-      'prim-torus': {
-        Transform3D: { x: 20, y: 6, z: 46, rotX: 1.2 }, Mesh3D: { shape: 'torus', width: 9, height: 9, frontTint: 0xffd991, tube: 0.35 },
-        Material3D: { preset: 'gold', surface: { pattern: 'bumps', tiles: 6, normal: 0.4, rough: 0.28 } },
-        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 1.4 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'outBack', delay: 0.45 }] }, Pickable3D: { signal: 'poke' },
-      },
-
-      // · 符文发光板（REQ-3D ④ emissiveMap 展示·暗底 box + 自发光贴图→符文处发青光）+ 缓慢自转 + 可拾取。
-      'rune-slab': {
-        Transform3D: { x: 34, y: 5, z: 46 }, Mesh3D: { shape: 'box', width: 8, height: 8, depth: 3, frontTint: 0x0e1419 },
-        Material3D: { preset: 'matte', materialRef: MAT_RUNE, tiling: { repeat: 1 } },
-        // 自转 + **noise 有机漂移**(y·神经质浮动·非正弦) + 入场弹出——展示 loop(spin/noise)+once(ease) 叠加。
-        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.6 }, { kind: 'noise', field: 'y', amp: 0.6, freq: 1.3, seed: 3 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.6, curve: 'outBack', delay: 0.6 }] }, Pickable3D: { signal: 'poke' },
-      },
-
-      // 🎮 超休闲手感展台（南侧二排·本会话缺口 A-F 活样例·全 render-only 纯数据）：
-      // 缺口 A 挤压拉伸：弹跳球——osc y 弹起 + osc scaleY/scaleX 反相（底部压扁·保体积）。分轴非等比缩放的活证。
-      'fx-squash': {
-        Transform3D: { x: -30, y: 5, z: 62 },
-        Mesh3D: { shape: 'sphere', width: 5, height: 5, frontTint: 0xff5252 },
-        Material3D: { preset: 'plastic', color: 0xff5252 },
-        Anim3D: { channels: [
-          { kind: 'osc', field: 'y', wave: 'sine', amp: 3.2, freq: 3.0, phase: 0 },                    // 弹跳高度
-          { kind: 'osc', field: 'scaleY', wave: 'sine', amp: 0.28, freq: 3.0, phase: Math.PI / 2 },     // 落地压扁（相位对齐底部）
-          { kind: 'osc', field: 'scaleX', wave: 'sine', amp: -0.28, freq: 3.0, phase: Math.PI / 2 },     // 反相 → 横向鼓（保体积）
-        ] },
-        WorldUI3D: { text: 'A 挤压拉伸', offsetY: 6, size: 'sm', color: 'warn' },
-      },
-      // 缺口 F 卡通着色：MeshToonMaterial（gradientMap 3 阶·硬分段明暗·cel 观感）+ 自转。
-      'fx-toon': {
-        Transform3D: { x: -16, y: 5, z: 62 },
-        Mesh3D: { shape: 'sphere', width: 6, height: 6, frontTint: 0xffffff },
-        Material3D: { preset: 'jade', shading: 'toon', toonSteps: 3 },
-        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.8 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'outBack', delay: 0.2 }] },
-        WorldUI3D: { text: 'F 卡通 toon', offsetY: 6, size: 'sm', color: 'jade' },
-      },
-      // 缺口 F 平涂着色：MeshBasicMaterial（无光·纯亮色·超休闲 Helix 招牌观感）。
-      'fx-flat': {
-        Transform3D: { x: -2, y: 5, z: 62 },
-        Mesh3D: { shape: 'sphere', width: 6, height: 6, frontTint: 0xffffff },
-        Material3D: { preset: 'gold', shading: 'flat', color: 0xffca28 },
-        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.8 }, { kind: 'ease', field: 'scale', from: 0, to: 1, dur: 0.5, curve: 'outBack', delay: 0.35 }] },
-        WorldUI3D: { text: 'F 平涂 flat', offsetY: 6, size: 'sm', color: 'gold' },
-      },
-      // 缺口 D 拖尾（静态展台版）：绕小圈飞的发光球留丝带——osc x/z 相位差 π/2 = 环绕运动 + Trail3D。
-      'fx-trail': {
-        Transform3D: { x: 16, y: 7, z: 62 },
-        Mesh3D: { shape: 'sphere', width: 3, height: 3, frontTint: 0xffe082 },
-        Material3D: { preset: 'emissive' }, Glow3D: { color: 0xffe082, scale: 10, opacity: 0.5 },
-        Anim3D: { channels: [
-          { kind: 'osc', field: 'x', wave: 'sine', amp: 7, freq: 1.6, phase: 0 },
-          { kind: 'osc', field: 'z', wave: 'sine', amp: 7, freq: 1.6, phase: Math.PI / 2 }, // x/z 相位差 π/2 = 圆周
-        ] },
-        Trail3D: { segments: 40, width: 1.2, color: 0xffd54f, minDist: 0.15, blend: 'add' },
-        WorldUI3D: { text: 'D 拖尾', offsetY: 5, size: 'sm', color: 'gold' },
-      },
-
-      // 北侧 PBR 材质陈列台（材质球·大字标名·调试面板「🔬 看材质」一键看）。
-      ...materialBoard(),
-
-      // 🚀 Platform Two（远处独立「新特性展台」·调试面板「🚀 传送」按钮 Camera3D.tween 飞过去）。
+      // 🌉 三台分布（owner 2026-07-16「追逐场东西太多·分散到专台·循环传送看得清」）：
+      //   Platform A（本台）= 纯追逐玩法（狐狸/追兵/障碍/信标/色子）——不再堆展示物。
+      //   Platform Two（X=+190）= 手感 & 物理特性（关节/胶囊/弹簧/描边/贴花/路径/拖尾/瞄准线）。
+      //   Platform Three（X=-190）= 材质 & 渲染（11 材质球/圆润图元/UV 水面/符文自发光/平涂）。
+      // 「🚀 传送」按钮 Camera3D.tween 循环飞越 A → Two → Three → A。
       ...platformTwo(),
+      ...platformThree(),
     },
   };
 }
