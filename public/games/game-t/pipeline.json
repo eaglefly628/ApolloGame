@@ -12,14 +12,14 @@
     "S3": {
       "exit": 0,
       "summary": "编译期游戏免 manifest 校验",
-      "at": "2026-07-16T17:59:58.941Z",
-      "gameHash": "f66333443758771c"
+      "at": "2026-07-16T18:17:00.392Z",
+      "gameHash": "dc06794ff1e3ea95"
     },
     "S4": {
       "exit": 0,
-      "summary": " Test Files  1 passed (1) ·       Tests  11 passed (11)",
-      "at": "2026-07-16T18:00:01.656Z",
-      "gameHash": "f66333443758771c"
+      "summary": " Test Files  1 passed (1) ·       Tests  12 passed (12)",
+      "at": "2026-07-16T18:17:03.390Z",
+      "gameHash": "dc06794ff1e3ea95"
     }
   },
   "history": [
@@ -38,6 +38,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-16T18:00:01.656Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-07-16T18:17:00.392Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-16T18:17:03.390Z"
     }
   ]
 }

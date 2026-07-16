@@ -46,6 +46,11 @@
 > **④ 棋盘手感动画层（owner 2026-07-16 补拍板·硬需求清单=game-t GDD §五点五 十条）· 架构终裁（Lead 2026-07-16）=(c) 引擎级 `MatchBoardView` 渲染器**：render-only **DOM 瓦片渲染器**（引擎渲染线新组件·非游戏代码）——读 MatchBoard 状态渲 tile DOM，内建动画通道：交换滑动/非法弹回/下落缓动+落地微弹/消除缩淡（绝不瞬消）/特殊棋子聚拢生成/收集飞向目标（可指 HUD 元素 id·沿 flyTo 语义）/CSS3D 质感（tile z 景深·按压沉降·选中抬起）。config=皮肤映射（色/特殊→资产 key 或令牌）+ 时长参数（全部可跳过）。**分叉裁决记录**：(a) canvas cell-tween 表达 3D 质感吃亏；(b) LayoutNode 板=逼出 game-g 式千行游戏层视图（违背 game-t 纯数据卡带立项）——均否。(c) 先例=Diegetic3D/CSS3D 引擎渲 DOM 之路。**红线**：全部 render-only——sim 结果先定、动画只是回放表现（跳过动画结果逐字节同·bench/回放/lockstep 零影响）；测试=渲染标记/动画 config 生效/teardown 干净/sim hash 零变化。
 > **红线与门禁**：同 REQ-M3-二期（全整数确定性/相位机纪律/可选字段向后兼容/一期+二期 37 测零回归/点名测试缺一不关单）。完工标 ✅ 待 Lead 对抗性验收。
 
+### REQ-M3-计分倍率 · t3-match3-board 连锁计分倍率 config（game-t S4 平衡阻断） · [2026-07-16] · 提出人 PE-T → 待 Lead 裁决 · status: open · 优先级: P1 · 类型: 引擎 capability 可选扩展（正确性关键·不降档）
+> **缺口**：GDD §四 与 GD-T 已交付的 30 关定标（balance-sim·200 seeds）计分口径=「单格 60 × **连锁每级 ×1.5** + 收笔」；引擎 `t3-match3-board` 今日只有平铺 `coinPerTile`——**分数型关卡（1-6/26 等）与全表星阈运行时打不到定标值**（sim 与 runtime 口径漂移·恰是 conformance test 未覆盖的 score 面）。
+> **候选（先重组已对照）**：现有 Effect.valueFrom/comboTable 均触不到相位机内的连锁级——需 config 可选字段下沉，如 `chainScale?: number`（缺省 1=现行为逐字节不变；clear 相位按 cascade 级对 coin 产出乘 `chainScale^级`，全整数化方案由 Lead 定：如 ×3/2 用整数分子分母避免 IEEE 漂移）。落地后 game-t 蓝图加一行 config 即对齐 GD 表，无需重定标。
+> **关联**：可并入 REQ-M3-三期批次施工（同文件·同红线：可选字段向后兼容+一/二期测试零回归）。game-t 侧台账=`docs/design/game-t/requests.md` T-003①。
+
 ### REQ-INPUT-拖拽交换 · 三消拖拽滑动手势（竖屏触屏主输入） · [2026-07-16] · owner 拍板（game-t）→ Lead 出图 → **派工撤回·owner 将新开 session 亲自安排（owner 2026-07-16「8和9不要做了，我新开session做」）——池内任何 session 勿动工·spec 保留供新 session 照图施工** · status: open（挂起待 owner 拉起） · 优先级: P1 · 类型: 引擎输入面（render/input-only·不进 sim/hash）
 > **目标**：在 BoardCell 上按下→向四邻方向拖过阈值（如 0.4 格）→ 释放，等价于「点选两格交换」——**产出与现有点选完全相同的选中/交换信号**（`t3-match3-board` idle 相位零改动·sim 不知道输入形态）。
 > **评判前置（先重组律）**：施工首步对照现有 `drag-place` / `grid-drag-square` / `i1-input-capture`+`i2-action-map` 能否重组表达；能则薄配置接线，不能再加最小新件（如 `dragSwap?: boolean` 挂输入映射）——**报告里必须写明重组结论**。

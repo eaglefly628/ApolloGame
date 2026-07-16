@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join, resolve } from 'node:path';
 import { Engine } from '../../runtime/engine.js';
 import { applyCommands, QueuedInputSource } from '@net/index.js';
 import { validateLayoutNode } from '@ui/components/index.js';
 import type { GameFlow, MatchBoard, Resource, Flag } from '@engine/protocol/components.js';
 import { buildLevelBlueprint } from './blueprint.js';
-import { LEVELS, type LevelSpec, levelIssues, parseLayout, goalRequirements, finalScore, starsFor, progressStates } from './levels.js';
+import { LEVELS, LEVEL_NAMES, type LevelSpec, levelIssues, parseLayout, goalRequirements, finalScore, starsFor, progressStates } from './levels.js';
 import { buildSelect, buildTopBar, buildBottomBar, buildResultOverlay, type HudState } from './hud.js';
 import { cellCenter, SETTLE_TICKS, SCORE_PER_TILE } from './theme.js';
 
@@ -60,44 +63,80 @@ function driven(spec: LevelSpec) {
 }
 
 describe('Game T ·《墨消》（数据驱动三消·骨架关）', () => {
-  it('关卡表全过 schema 校验，关型闭集五型齐（占位表·GD 换表后本关仍在）', () => {
+  it('GD 30 关表全过 schema 校验，关型闭集五型齐', () => {
+    expect(LEVELS.length).toBe(30);
     for (const lv of LEVELS) expect(levelIssues(lv)).toEqual([]);
     expect(new Set(LEVELS.map((l) => l.type))).toEqual(new Set(['score', 'collect', 'jelly', 'blocker', 'mixed']));
     // 校验器本身有牙：坏表要报
     expect(levelIssues(miniSpec({ kinds: 9 })).length).toBeGreaterThan(0);
-    expect(levelIssues({ ...LEVELS[2], goals: [{ kind: 'blocker' }] }).length).toBeGreaterThan(0);
+    const jellyLv = LEVELS.find((l) => l.type === 'jelly')!;
+    expect(levelIssues({ ...jellyLv, goals: [{ kind: 'blocker' }] }).length).toBeGreaterThan(0);
+  });
+
+  it('运行时关卡副本 ≡ docs 单一真相（levels.jsonc）· 关名 ≡ copy.md §三（防漂移守卫）', () => {
+    const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+    const docRows = JSON.parse(
+      readFileSync(join(root, 'docs/design/game-t/levels.jsonc'), 'utf8').replace(/^\s*\/\/.*$/gm, ''),
+    );
+    const dataRows = JSON.parse(readFileSync(join(root, 'src/games/game-t/levels.data.json'), 'utf8'));
+    expect(dataRows).toEqual(docRows); // GD 重跑 gen 后忘同步副本 → 此处红
+    const copy = readFileSync(join(root, 'docs/design/game-t/copy.md'), 'utf8');
+    const sec = copy.split('## 三、')[1]!.split('\n## ')[0]!;
+    const names: Record<number, string> = {};
+    for (const line of sec.split('\n')) {
+      const m = /^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|/.exec(line);
+      if (m) names[Number(m[1])] = m[2];
+    }
+    expect(names).toEqual(LEVEL_NAMES);
   });
 
   it('蓝图=纯数据可序列化：规则零 TS·消费现有能力·关键实体齐全', () => {
-    const bp = buildLevelBlueprint(LEVELS[0]);
+    const spec0 = LEVELS[0];
+    const bp = buildLevelBlueprint(spec0);
     expect(bp.capabilities.length).toBe(9);
     expect(() => JSON.stringify(bp.entities)).not.toThrow();
     const ids = Object.keys(bp.entities);
-    for (const key of ['board', 'flow', 'can-play', 'score', 'moves', 'cell-0', `cell-${7 * 9 - 1}`]) {
+    for (const key of ['board', 'flow', 'can-play', 'score', 'moves', 'cell-0', `cell-${spec0.cols * spec0.rows - 1}`]) {
       expect(ids).toContain(key);
     }
     // 墨渍关带静态底衬 + jelly config
-    const bp3 = buildLevelBlueprint(LEVELS[2]);
+    const jellyLv = LEVELS.find((l) => l.type === 'jelly')!;
+    const bp3 = buildLevelBlueprint(jellyLv);
     expect(Object.keys(bp3.entities).some((k) => k.startsWith('wash-'))).toBe(true);
     expect((bp3.entities.board.MatchBoard as { jelly?: number[] }).jelly?.some((v) => v > 0)).toBe(true);
   });
 
-  it('字符画装配映射：S=砚石(-1)·数字=瓷 hp·墨渍层数（纯转换）', () => {
-    const L = parseLayout(LEVELS[3]);
-    expect(L.blockers?.[7 * 7 + 0]).toBe(-1); // 第 8 行 'S.....S'
-    expect(L.blockers?.[3 * 7 + 1]).toBe(2); // '.2...2.'
-    const J = parseLayout(LEVELS[2]);
-    expect(J.jelly?.[4 * 7 + 3]).toBe(2); // '..121..' 中心
-    // 目标推导与摆盘一致：洗墨需求 = 总层数
-    const need = goalRequirements(LEVELS[2])[0];
-    expect(need).toEqual({ rid: 'washed', need: 10, label: '洗墨' });
+  it('字符画装配映射：S=砚石(-1)·数字=瓷 hp·墨渍层数（纯转换·固定夹具）', () => {
+    const fx = miniSpec({
+      goals: [{ kind: 'jelly' }, { kind: 'blocker' }],
+      layout: {
+        board: MINI_BOARD,
+        jelly: ['.....', '..1..', '..2..', '.....', '.....'],
+        blockers: ['S....', '..2..', '.....', '.....', '....S'],
+      },
+    });
+    const L = parseLayout(fx);
+    expect(L.blockers?.[0]).toBe(-1); // 'S....' 首格
+    expect(L.blockers?.[24]).toBe(-1);
+    expect(L.blockers?.[1 * 5 + 2]).toBe(2);
+    expect(L.jelly?.[2 * 5 + 2]).toBe(2);
+    // 目标推导与摆盘一致：洗墨需求=总层数 3；破瓷需求=总 hp 2（砚石不计）
+    expect(goalRequirements(fx)).toEqual([
+      { rid: 'washed', need: 3, label: '洗墨' },
+      { rid: 'cracked', need: 2, label: '破瓷' },
+    ]);
+    // GD 全表一致性：格层型目标推导需求必 >0
+    for (const lv of LEVELS) {
+      for (const g of goalRequirements(lv)) expect(g.need).toBeGreaterThan(0);
+    }
   });
 
   it('确定性：同关同 seed 双引擎空跑同 hash（可回放/lockstep）', () => {
+    const jellyLv = LEVELS.find((l) => l.type === 'jelly')!;
     const a = new Engine();
-    a.load(buildLevelBlueprint(LEVELS[2]));
+    a.load(buildLevelBlueprint(jellyLv));
     const b = new Engine();
-    b.load(buildLevelBlueprint(LEVELS[2]));
+    b.load(buildLevelBlueprint(jellyLv));
     for (let i = 0; i < 400; i++) {
       a.world.tick();
       b.world.tick();

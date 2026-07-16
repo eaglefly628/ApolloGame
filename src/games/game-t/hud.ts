@@ -48,19 +48,27 @@ export function buildSelect(s: SelectState): LayoutNode {
         ],
       },
       {
-        type: 'LevelPath',
-        id: 't-path',
-        props: {
-          nodes: s.nodes.map((n) => ({
-            label: String(n.no),
-            state: n.state,
-            stars: n.stars,
-            action: 'play',
-            actionArg: String(n.no),
-          })),
-          cols: 3,
-          tone: 'gold',
-        },
+        type: 'Panel',
+        id: 't-path-wrap',
+        props: { bare: true },
+        layout: { direction: 'column', padding: 14 }, // 内边距：防蛇形首尾节点贴屏缘裁切
+        children: [
+          {
+            type: 'LevelPath',
+            id: 't-path',
+            props: {
+              nodes: s.nodes.map((n) => ({
+                label: String(n.no),
+                state: n.state,
+                stars: n.stars,
+                action: 'play',
+                actionArg: String(n.no),
+              })),
+              cols: 5, // 30 关 · 五章×6 → 六排蛇形
+              tone: 'gold',
+            },
+          },
+        ],
       },
       {
         type: 'Panel',
@@ -68,7 +76,7 @@ export function buildSelect(s: SelectState): LayoutNode {
         props: {},
         layout: { direction: 'row', align: 'center', gap: 12, padding: 10 },
         children: [
-          { type: 'Label', id: 't-foot', props: { text: '占位 5 关 · 待 GD 三十关正式表（五形师父五章）', size: 'sm', color: 'text' } },
+          { type: 'Label', id: 't-foot', props: { text: '五形师父五章 · 三十关（GD 定标 · 计分倍率待引擎下沉）', size: 'sm', color: 'text' } },
           { type: 'Button', id: 't-mute', props: { label: s.muted ? '🔇 静音中' : '🔊 音效', kind: 'ghost', action: 'toggle_mute' } },
         ],
       },
