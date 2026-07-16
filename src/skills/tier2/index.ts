@@ -53,6 +53,10 @@ export { trayCapability } from './tray.js';
 // grid-drag-square（REQ-CAP·Block Blast 机制②）：方形网格 polyomino 拖放输入桥——命中托盘块取 slot、
 // 终点吸附方格 → 写 PlaceBlockIntent（block-grid 消费）。区别于 drag-place 的六边+移子（此为方形+盖章）。
 export { gridDragSquareCapability, squarePointToCell } from './grid-drag-square.js';
+// match3-drag-swap（REQ-INPUT-拖拽交换）：三消拖拽滑动手势输入桥——起点格由 clickable 按下选中、本能力补主轴方向
+// 邻格选中 Signal（与点选逐字节同形）→ t3-match3-board idle 交换。未过 0.4 格阈值=点选；idle 相位零改动·不进 hash。
+export { match3DragSwapCapability, pickSwapTarget, DRAG_SWAP_THRESHOLD_CELLS } from './match3-drag-swap.js';
+export type { NeighborCandidate } from './match3-drag-swap.js';
 export { hexCellToPoint, hexPointToCell } from './grid-move.js';
 // modifier-stack（REQ-CAP 下沉）：修正聚合栈——全场 ModifierSource（字段表+合并策略+门控）→ ModifierTotals。
 // stats 的超集（逐字段混合 add/mul/max/min/or/floor + ConditionExpr 门控）；下沉小丑计分/天罡/地煞三处同构聚合。

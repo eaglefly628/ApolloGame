@@ -45,6 +45,7 @@ import {
   dragPlaceCapability,
   trayCapability,
   gridDragSquareCapability,
+  match3DragSwapCapability,
   modifierStackCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability, blockGridCapability } from '@skills/tier3/index.js';
@@ -105,6 +106,8 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   dragPlaceCapability,
   trayCapability,
   gridDragSquareCapability,
+  // t2-match3-drag-swap（REQ-INPUT-拖拽交换）：三消拖拽滑动手势输入桥——drag 动作→主轴邻格选中 Signal（同点选形）。
+  match3DragSwapCapability,
   // t2-stats（上）= modifier-stack 的**实体属性特例**（只做 (base+Σadd)×Πmul、无字段表策略/无门控）；
   // 债记（REQ-CAP 下沉裁决）：stats 原样不动，「字段表 + max/min/or/floor 混合策略 + ConditionExpr 门控」的
   // 通用聚合走下方 t2-modifier-stack；stats 消费方若需门控/逐字段策略，后续另立 REQ 迁移到 modifier-stack。
