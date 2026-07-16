@@ -4,7 +4,7 @@
 > **启动协议**：owner 开新 session 时宣告「**角色=X · 任务=Y**」→ session 第一步读本文件找到角色卡照办（T0 必读自动叠加：CLAUDE.md 注入 + 宪法 + llm-onboarding）。未宣告角色 = 通用 session，按 CLAUDE.md 通例。
 > 角色卡按 `_template.md` 格式**慢慢补全**——卡不全时以「域边界 + 必读」两节为最低可用集。
 
-## 角色名录（8 个正式角色）
+## 角色名录（8 正式 + 1 草案）
 
 | 角色 ID | 名称 | 一句话职责 | 域（写权限） | 角色卡 |
 |---|---|---|---|---|
@@ -12,6 +12,7 @@
 | **GD-\<game\>** | 游戏策划 | 单游戏设计（实例：GD-D/GD-G·owner 2026-07-04 拍板每游戏一个 GD）：GDD/capability-plan/数值/内容表；**只产数据与文档，零代码** | **只限本游戏** `docs/design/<自己的game>/**`；共用设计目录（`docs/design/` 根的宪法/评审/模板）与别的游戏目录**不许写**——跨游戏共性走 requests.md 提 LEAD | `roles/GD.md`（通用卡）+ 策划白皮书 |
 | **PE-\<game\>** | 游戏程序员 | 单游戏 gameplay（实例：PE-G 甲乙/程序A、PF 等）；先查线手册用基座件 | `src/games/<自己的game>/**` | `roles/PE.md`（通用卡）+ 各游戏 handoff |
 | **P3D** | 3D 引擎程序员 | 3D 盒庭渲染线 + game-z/d；render-only 红线 | 见其 handoff §0.1 三档表 | `docs/workflow/finish/P3D-game-z-handoff.md`（既有卡·即角色卡） |
+| **PUI**（草案·owner 2026-07-16 设立） | UI 基座 + 展示台程序员 | UI 库渲染线（LayoutNode 控件闭集 + catalog + 校验器 + 主题）+ game-i 展示台；UI 铁律红线（**P3D 的镜像**） | ✅ `src/ui/**` + `src/games/game-i/**` + `tools/ui-audit`+`audits/**` + UI 手册；🔶 launcher game-i 两行；🔒 其余引擎/游戏（见卡三档表） | `roles/PUI.md` |
 | **PS** | 发行工程师 | 打包/Steam 上架/平台接线（成就/云存档/富状态） | `steam-publisher/**`·`electron/**`·`scripts/dist*` | `roles/PS.md` + 发行白皮书 |
 | **PA** | 资产管理员 | 美术资产导入/登记/接线；asset-index 单一真相 | `assets/**` + 资产索引 | `roles/PA.md`（薄卡：主体=asset-manager agent 定义 + resource-manager 技能） |
 | **PST** | 创作台产品工程师 | 创作台产品线（apollo.py 服务面 + launcher/studio 前端）；引擎只读 | `apollo.py`·`src/launcher.tsx`·`src/studio/**` | `roles/PST.md` |
@@ -25,6 +26,7 @@
 | GD-* | 策划白皮书 → capability-plan 模板 → llm-onboarding §4 治理态 → **本游戏** gdd | 设计先行流（创作台）·本游戏 balance-sim 脚本 | 设计文档 PR + requests.md 提能力缺口/跨游戏共性 |
 | PE-* | playbooks/index → 本线手册 → 本游戏 handoff/finish-list | game-skill-audit·/check-ui·vitest | requests.md 领单/提缺口·完成标✅ |
 | P3D | 其 handoff（§0.1 边界为纲）→ playbooks/3d.md | shoot-game.mjs 截图 harness | **requests-3d.md**（独立池） |
+| PUI | `roles/PUI.md` → ui-playbook → playbooks/ui.md + casual-toolkit.md → catalog.ts | **/check-ui**·tools/ui-audit.mjs·catalog-validate·shoot-game.mjs(game-i) | requests.md（UI 缺口·PUI 评审下沉；将来量大开 requests-ui.md） |
 | PS | 发行白皮书 → PS-steam-finish-list → steam-publisher/README | **game-publisher agent**·electron-builder·steamcmd | requests.md（发行类工单） |
 | PA | asset-manager agent 定义 → playbooks/assets.md | **asset-manager agent**·resource-manager 技能·autotag | requests.md（资产类） |
 | PST | llm-onboarding → requests.md 搜 REQ-STUDIO 系列（M0-设计先行全史）| playwright-core e2e·mock provider·studio 冒烟脚本 | requests.md（REQ-STUDIO-*） |
