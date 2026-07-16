@@ -32,6 +32,11 @@ export function checkBudget(actual, budget) {
     if (got === undefined) issues.push(`T0 必读缺文件: ${file}（改名/删除须同步基线）`);
     else if (got > max) issues.push(`${file} ${got} 字符 > 封顶 ${max}——T0 必读集变厚须显式改基线（scripts/context-budget-baseline.json）`);
   }
+  for (const [file, chars] of Object.entries(actual.gameRequestsChars ?? {})) {
+    if (budget.gameRequestsMaxChars && chars > budget.gameRequestsMaxChars) {
+      issues.push(`${file} ${chars} 字符 > 封顶 ${budget.gameRequestsMaxChars}——游戏需求单同主池纪律：done 工作票全文迁 requests-archive.md`);
+    }
+  }
   for (const [file, lines] of Object.entries(actual.playbookLines)) {
     if (lines > budget.playbookMaxLines) {
       issues.push(`${file} ${lines} 行 > ${budget.playbookMaxLines} 行——手册铁律（≤80 行·弱模型也读得完）·瘦身或拆册`);
@@ -51,10 +56,16 @@ function measure() {
   for (const f of readdirSync(join(ROOT, 'docs', 'playbooks'))) {
     if (f.endsWith('.md')) playbookLines[`docs/playbooks/${f}`] = read(`docs/playbooks/${f}`).split('\n').length;
   }
+  const gameRequestsChars = {};
+  try {
+    for (const d of readdirSync(join(ROOT, 'docs', 'design'))) {
+      try { gameRequestsChars[`docs/design/${d}/requests.md`] = read(`docs/design/${d}/requests.md`).length; } catch { /* 该游戏无需求单 */ }
+    }
+  } catch { /* docs/design 缺失（不可能·防御） */ }
   const pool = read('docs/workflow/requests.md');
   // 槽位计数：### 条目·排除模板行（### [YYYY-MM-DD]）与导航指针段（### 📦）。
   const requestsEntries = pool.split('\n').filter((l) => l.startsWith('### ') && !l.startsWith('### [') && !l.startsWith('### 📦')).length;
-  return { budget, actual: { requestsChars: pool.length, requestsEntries, t0Chars, playbookLines } };
+  return { budget, actual: { requestsChars: pool.length, requestsEntries, t0Chars, playbookLines, gameRequestsChars } };
 }
 
 function main() {

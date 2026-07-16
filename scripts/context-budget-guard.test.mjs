@@ -38,6 +38,13 @@ describe('context-budget-guard — 检查核语义（自证）', () => {
     expect(checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: { 'a.md': 51 }, playbookLines: {} }, B)[0]).toContain('a.md');
     expect(checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: {}, playbookLines: {} }, B)[0]).toContain('缺文件');
   });
+  it('游戏需求单超顶点名（owner 07-15 批②·done 票迁归档纪律）', () => {
+    const B2 = { ...B, gameRequestsMaxChars: 100 };
+    const i = checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: { 'a.md': 10 }, playbookLines: {}, gameRequestsChars: { 'docs/design/game-g/requests.md': 101 } }, B2);
+    expect(i).toHaveLength(1);
+    expect(i[0]).toContain('game-g');
+    expect(checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: { 'a.md': 10 }, playbookLines: {}, gameRequestsChars: { 'docs/design/game-g/requests.md': 100 } }, B2)).toEqual([]);
+  });
   it('手册超 80 行点名', () => {
     const i = checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: { 'a.md': 10 }, playbookLines: { 'docs/playbooks/x.md': 81 } }, B);
     expect(i).toHaveLength(1);

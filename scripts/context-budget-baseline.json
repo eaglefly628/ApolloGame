@@ -1,12 +1,15 @@
 {
-  "_doc": "上下文预算基线（REQ-CTX·owner 2026-07-15 批·同日追加 10 硬槽铁律）——需求池=owner 级最多 10 条（做不完不许加新的·先清后加）+字符封顶；T0 必读各封顶；手册 ≤80 行。超顶=CONTEXT-BUDGET: FAIL 拦推送；抬预算唯一合法姿势=同提交改本文件（diff 可见·须给理由）。游戏工作票不占槽（各游戏 docs/design/<game>/requests.md·工单随游戏走）·3D 线 requests-3d.md。校准（10 槽分流后实测 14687 字符→顶 25000）。",
+  "_doc": "上下文预算基线（REQ-CTX·owner 2026-07-15 批·同日追加 10 硬槽铁律）——需求池=owner 级最多 10 条（做不完不许加新的·先清后加）+字符封顶；T0 必读各封顶；手册 ≤80 行。超顶=CONTEXT-BUDGET: FAIL 拦推送；抬预算唯一合法姿势=同提交改本文件（diff 可见·须给理由）。游戏工作票不占槽（各游戏 docs/design/<game>/requests.md·工单随游戏走）·3D 线 requests-3d.md。校准（10 槽分流后实测 14687→顶 25000）。07-15 owner 批扩面：T0 加交接档/角色表封顶；游戏需求单各 ≤45000 字符（done 迁归档纪律一体适用）。",
   "requestsPoolMaxChars": 25000,
   "t0MaxChars": {
     "CLAUDE.md": 7000,
     "docs/design/data-driven-manifesto.md": 3000,
     "docs/llm-onboarding.md": 4000,
-    "docs/playbooks/index.md": 4200
+    "docs/playbooks/index.md": 4200,
+    "docs/workflow/SESSION-HANDOFF.md": 4500,
+    "docs/roles/index.md": 4500
   },
   "playbookMaxLines": 80,
-  "requestsPoolMaxEntries": 10
+  "requestsPoolMaxEntries": 10,
+  "gameRequestsMaxChars": 45000
 }
