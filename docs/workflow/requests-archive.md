@@ -1360,3 +1360,46 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > - **🟡 bg 收紧走 warn 不走 hard-fail**（②既定·护 back-compat 存量裸串数据）；Gemini 把它做成 `bad-format` 硬 issue=破坏性变更。且令牌表应从 types 单一源导入·勿复制进 validate（防漂移）。
 > - **🟢 3D flatten 检测**：`scroll`/overflow→flatten 铁对；**`glass`/backdrop-filter→flatten 存疑**（CSS flatten 列表明确的是 `filter`·backdrop-filter 未定论）·真浏览器验证前勿断言 glass。渲染器是「谁有3D谁自带 preserve-3d」(render.ts:117)·故 flatten 仅嵌套3D 才咬人=低频·符合①低优定级。`has3DTransformsInSubtree` 每节点重扫=O(n²)·宜一趟自底向上。
 > - **⚪ 杂**：删 `// cite:` 噪声·收敛 `any`·新增 kind(`constraint-conflict`/`bad-format`) 同步进 `UiIssue` 联合。
+
+## 2026-07-15 owner 逐槽裁定（1移除/5完成/6撤单/9压后）
+
+> 【owner 2026-07-15 裁：撤出主池】纲领文档仍在 docs/design/demo-sprint-2026-07-29.md·执行走流程板与各角色档
+### REQ-DEMO-0729-审核冲刺总纲 · 自然语言→playable·30 款/周换皮量产·美术 API 自动接线 · [2026-07-07] · **owner 定向（7/29-30 审核）** → Lead 出纲领 · status: **in-progress（冲刺主线·压过一切非冲刺工单）** · 优先级: **P0（死线级）** · 类型: 产品化冲刺（纲领=`docs/design/demo-sprint-2026-07-29.md`）
+> 审核口径：引擎能否用自然语言快速生成 playable 游戏；量化=周产 ~30 款、换皮为主力、基本玩法 OK 即可。最大缺口=美术（game-q 实证零真资产）。
+> **核心判断（Lead）**：`art:` 引用已是弱 LLM 数据接口（`src/assembly/resolve-art-refs.ts`）——**全在服务层，不动引擎**。**工作流定形（owner 2026-07-08·两段式）**：placeholder 先行（免费库·秒可玩）→替换列表→整批风格统一生成→对位替换；正式档=`docs/design/art-replacement-workflow.md`。
+> **归置与优化闭环（owner 2026-07-07 拍板·替代 Lead 原「两轨制」提法）**：①自动生成直接落**该游戏自己的资产目录**+本地索引（provenance+unreviewed 标·立即可玩）——owner 认可可行；②**硬要求**：每游戏出**美术台账**（资产编号 art-01…·槽位语义·prompt·来源·缩略图），studio 可浏览、可**按编号点名替换**（重生成/库内换/上传换）——「做完以后需要有一个完整的浏览和优化的流程」；③共享货架不变：进共享 index 仍过 M2.5 人审门。
+> 分单：T1（下条·PST+PA·7/13）→ T2 换皮（下下条·7/18）→ T3 批量冒烟（Opus·7/20）→ T4 3D 线待拉动（P3D 知会·不进关键路径）→ T5 彩排（Lead 主持·7/27）。
+> **队列重排（冲刺期有效）**：PST=T1→心跳余项（并入 T1 进度灯）→T2；**音频 B 件、M1 货架墙、REQ-3D-像素断言、REQ-CAP-改掷收编一律冲刺后**；引擎域冻结非必要改动。
+
+> 【owner 2026-07-15 裁：完成】核心（作业模型 job+轮询+elapsed 心跳）已被 Workshop 服务端异步任务批覆盖（main_entry/jobs.py）·owner 认定完成
+### REQ-STUDIO-生成进度与心跳+交互日志 · 长生成黑箱→阶段灯/心跳/秒表 + LLM 往返 JSONL 日志 · [2026-07-04·07-06 扩] · owner → **指派：PST 或 Opus（P0 存盘单完工后立即接·同 apollo.py 防并行冲突）** · status: **第 0 项 ✅ done（Opus·2026-07-06·随低模四件单同批做掉·门禁全绿）；余项（作业模型/阶段灯/BusyIndicator）排队待 PST** · 优先级: P1 · 类型: 产品体验（长任务可见性）
+> **✅ 第 0 项完工回执（Opus·2026-07-06·随 REQ-STUDIO-低模四件同批·同 apollo.py 区域合批防冲突）**：apollo.py 每次 LLM 往返落一行 JSONL 到 `.apollo/llm-logs/YYYY-MM-DD.jsonl`（新 gitignore）——覆盖全部往返模式（`chat`/`generate`/`revise`/`prototype`/`breakdown`/`template-edit`/`autofix-k`）：`{ts,provider,model,mode,promptChars,responseChars,validation,errors[截断200],elapsedMs,usage?}`。**API key 绝不落盘**；prompt/response 全文默认不落（只落长度），`APOLLO_LOG_VERBOSE=1` 才落全文（全文仍无 key）。日志接线在统一传输层 `_provider_request`（度量）+ 各 handler（mode/validation）·best-effort（异常吞掉不拖垮生成）。排障口径已随低模单落进测试。**余下 1-4 项**（作业模型 job-id 轮询·阶段闭集·BusyIndicator 统一件·延迟档 e2e）**未做**·仍属本单待 PST/后续 session 接（与已落的 apollo.py 日志无冲突）。门禁：随低模四件单一并全绿（tsc/vitest 2315/build/ast）。
+> **owner 现象**：生成稿子过程系统一直在工作，但界面无任何进度/心跳——用户不知道是活着还是死了。
+> **spec（Lead 图纸）**：
+> 0. **LLM 交互日志（owner 2026-07-06 追加「辅助诊断」·本单第 0 项·最先做）**：apollo.py 每次 LLM 往返落一行 JSONL 到 `.apollo/llm-logs/YYYY-MM-DD.jsonl`（gitignore）：`{ts, provider, model, mode(chat|generate|autofix-k), promptChars, responseChars, validation:'pass'|'fail', errors[截断], elapsedMs, usage?{provider 回的 token 数}}`——**API key 绝不落盘**；prompt/response 全文默认不落（只落长度），`APOLLO_LOG_VERBOSE=1` 才落全文（本地排障用）。排障口径回填 `docs/playbooks/testing.md` 一行。今天那种"三轮失败是什么"的问题从此 `cat` 一下就有答案。
+> 1. **作业模型（照 steam-publisher serve.py 轮询先例·弃长连接）**：生成类端点（`/api/generate`·design 各段·`/api/assets/generate`）改「提交即回 job-id → 前端轮询 `GET /api/jobs/<id>`」：`{stage, detail, elapsedMs, heartbeatAt, done?, error?}`。轮询短请求天然免疫代理断长连接——这就是"心跳维持"的正解。
+> 2. **阶段闭集（诚实进度·非百分比）**：`submitted → provider 响应中 → 校验中 → 自动修复 k/3 → 落盘 → done|error`。**禁止假百分比进度条**——LLM 无真进度，编造=对用户撒谎；给的是：阶段灯 + 已耗时秒表 + 最后心跳时间（>15s 无心跳显"可能卡住"黄条，超时显式红）。
+> 3. **前端统一件**：一个 BusyIndicator 组件（阶段灯/秒表/心跳/出错红条），DesignStudio、CreationWizard、AssetGenPanel 三处共用——别一处一套。
+> 4. **测试**：mock provider 加人为延迟档 → e2e 断言阶段灯逐段点亮、心跳时间戳在跳、错误路径出红条不丢线程（接 P0 单的"失败不降级"）；smoke 补 job 生命周期（submit→poll→done / submit→error）。
+> 5. 二期可选（本单不做）：取消按钮（DELETE job·杀子进程）——先记不实现。
+> 门禁全绿；Lead 验收=真浏览器盯一次真实生成全程（或 mock 延迟档）。
+
+> 【owner 2026-07-15 裁：B 撤单】A+D 已 done·C 在 3D 池；B（音频线）细节过期·撤单待 owner 重新分配
+### REQ-ART-TGS吸收四件 · threejs-game-skills 对照吸收（视觉评分卡/音频线/像素QA/手册红线） · [2026-07-06] · owner 给源 → Lead 调研裁决（`art-pipeline-vision §八`）→ **owner 已批（2026-07-06）** · status: **落地中：A+D ✅ done（Lead 亲笔 2026-07-07）· B spec 就绪→指派 PST（**冲刺后**·被 REQ-DEMO-0729 队列重排压后）· C spec 已移 `docs/workflow/requests-3d.md`（P3D 域·同被压后）** · 优先级: P2 · 类型: 质量护栏吸收（不采其代码生成路线·宪法相反）
+> 一句话：他家"AAA"不是描述词，是四道门（评分卡全维≥2/证据台账/反捷径工艺律/canvas 像素断言）——护栏纪律照单吸收，代码生成路线回驳。详见愿景稿 §八对照表。
+> **A ✅（Lead 亲笔）**：新 `docs/playbooks/visual-scorecard.md`（8 维 0-3 分·premium=全维≥2·证据台账+资产来源台账+凭证探针·反捷径工艺律·判词 `VISUAL: n/24 · PREMIUM: YES|NO`）；挂点=playbooks/index 一行 + P3D 视觉验收（3d.md 红线区指回）+ PS 出货内门（PS-steam-finish-list 阶段区一行）。
+> **D ✅（Lead 亲笔·手册回填）**：`docs/playbooks/3d.md` 红线区加工艺顺序律（先造型→材质→光照→特效·禁 glow 冒充）+ 主角面禁纯程序化（无 blocker 记录不豁免）；`docs/playbooks/testing.md` 红线区加凭证探针（空口 skip 不采信）+ 做X表挂评分卡行。
+> **B spec（Lead 图纸·指派 PST·工坊 M3.5·与其他 studio 单碰 `apollo.py`/`scripts/ai-gen.mjs` 须串行——排 REQ-STUDIO 心跳余项之后）**：① `scripts/ai-gen.mjs` 加 audio adapter：类型闭集 `sfx|ambience|ui`；BYO-key provider（有 key 走真调，无 key→**先贴凭证探针输出**再走 mock 兜底=确定性占位 wav+MOCK 标记，绝不静默顶替）。② 产物一律落待审区（**复用 M2.5 人审门** writePending/reviewPending·绝不直登 index），provenance 硬字段同 2D/3D（model/prompt/date/license 缺一拒登）。③ 定位：`SynthAudioPort`/SfxSpec 合成=数据仍是首选路（见 `docs/playbooks/audio.md`）；工坊采样线只补合成表达不了的（音乐床/环境底噪）——声音货架从现存 1 条起步。④ 测试：`scripts/ai-gen.test.mjs` 增音频四例（pending/approve/reject/provenance 缺字段拒）+ `scripts/art-review-smoke.py` 扩音频类型断言。⑤ 门禁全绿直推；完工标 ✅ 待 Lead 验收 + PA 会审登记契约。
+
+> 【owner 2026-07-15 裁：压后】无正式 appid·发行轨整体搁置·重启时另开单（PS 契约硬化成果在 archive/PS handoff）
+### REQ-STEAM · [2026-06-25] · 本 session 认领（平台轨·Steam 发行） · status: **in-progress（owner 指派·独立轨）** · 类型: 平台服务（非游戏数据）
+
+> **owner（junbai.li）2026-06-25 拍板：Steam 发行作为独立平台轨，由本 session 接管全部事项。** 工作清单见 `finish/PS-steam-finish-list.md`。
+>
+> **车道**：落点 `electron/`（壳内 steamworks.js 绑定）+ `src/services/platform/`（`SteamworksPlatformPort` 实体）+ `src/services/storage/`（Steam Cloud）+ `scripts/`（depot/上传）。**`PlatformPort` 接口契约不改**（已稳定），只加适配器实体；web/dev 仍走 `NullPlatformPort`。
+>
+> **与 PG/Lead 边界**：PG（game-g）只消费 PlatformPort，不碰 SDK/壳/管线；服务层原属 Lead 域，经 owner 指派由本 session 实现，登记周知避免撞车。
+>
+> **选型（已定）**：Electron（沿用，不引入 Tauri）+ steamworks.js（仅壳内）。测试用 480(SpaceWar) appid，待 owner 提供真 appid（$100 入门费）替换。
+>
+> **阶段**：P0 依赖+init 自检 → P1 成就/统计 → P2 云存档 → P3 富状态/排行榜 → P4 depot/上传管线。联机(Steam Networking)依赖 REQ-010 浮点→定点，殿后。

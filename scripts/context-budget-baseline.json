@@ -1,5 +1,5 @@
 {
-  "_doc": "上下文预算基线（REQ-CTX·owner 2026-07-15 批·同日追加 10 硬槽铁律）——需求池=owner 级最多 10 条（做不完不许加新的·先清后加）+字符封顶；T0 必读各封顶；手册 ≤80 行。超顶=CONTEXT-BUDGET: FAIL 拦推送；抬预算唯一合法姿势=同提交改本文件（diff 可见·须给理由）。游戏工作票不占槽（requests-games.md）·3D 线 requests-3d.md。校准（10 槽分流后实测 14687 字符→顶 25000）。",
+  "_doc": "上下文预算基线（REQ-CTX·owner 2026-07-15 批·同日追加 10 硬槽铁律）——需求池=owner 级最多 10 条（做不完不许加新的·先清后加）+字符封顶；T0 必读各封顶；手册 ≤80 行。超顶=CONTEXT-BUDGET: FAIL 拦推送；抬预算唯一合法姿势=同提交改本文件（diff 可见·须给理由）。游戏工作票不占槽（各游戏 docs/design/<game>/requests.md·工单随游戏走）·3D 线 requests-3d.md。校准（10 槽分流后实测 14687 字符→顶 25000）。",
   "requestsPoolMaxChars": 25000,
   "t0MaxChars": {
     "CLAUDE.md": 7000,

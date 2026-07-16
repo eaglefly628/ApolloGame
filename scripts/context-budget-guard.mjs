@@ -22,7 +22,7 @@ const BASELINE = join(ROOT, 'scripts', 'context-budget-baseline.json');
 export function checkBudget(actual, budget) {
   const issues = [];
   if (budget.requestsPoolMaxEntries && actual.requestsEntries > budget.requestsPoolMaxEntries) {
-    issues.push(`requests.md ${actual.requestsEntries} 条 > ${budget.requestsPoolMaxEntries} 硬槽（owner 2026-07-15 拍板）——10 条做不完不许加新的：先清掉（done 迁归档/游戏票迁 requests-games.md）腾槽再加`);
+    issues.push(`requests.md ${actual.requestsEntries} 条 > ${budget.requestsPoolMaxEntries} 硬槽（owner 2026-07-15 拍板）——10 条做不完不许加新的：先清掉（done 迁归档/游戏票迁 docs/design/<game>/requests.md）腾槽再加`);
   }
   if (actual.requestsChars > budget.requestsPoolMaxChars) {
     issues.push(`requests.md ${actual.requestsChars} 字符 > 封顶 ${budget.requestsPoolMaxChars}——done 条目全文迁 requests-archive.md（池只留活跃·归档纪律）`);
