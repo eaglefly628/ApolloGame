@@ -707,6 +707,13 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     };
     const runAiDecide = (): void => { // 敌方决策阶段：AI 放牌/施法/打地煞（**不推进**）→ 玩家看清敌方布阵，再单独演行动
       if (tb.winner !== 'pending') { finishTurnSeq(); return; }
+      // 新手教学·敌方按兵不动（owner 2026-07-06「教程开头那些操作别让敌人往前走很多」）：引导未毕 + 玩家还没部署任何兵 →
+      //   敌方本回合不决策/不推进（守军照旧静守），直接过回玩家——省得玩家还在学抽/打/换时敌人已长驱直入压到脸上。玩家一落子即恢复正常敌方回合。
+      if (coachStep != null && tb.lanes.every((L) => L.a.length === 0)) {
+        log('敌·按兵不动（新手教学·你先熟悉操作 → 落子后敌方恢复行动）');
+        showBanner('敌方按兵不动 · 先熟悉操作', 900, () => { endTurnFinish(tb); mounted?.update(); finishTurnSeq(); });
+        return;
+      }
       showBanner('敌方决策', 1000, () => {
         startThinking(() => {
           const before = snapSlots();
