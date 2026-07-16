@@ -1403,3 +1403,30 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **选型（已定）**：Electron（沿用，不引入 Tauri）+ steamworks.js（仅壳内）。测试用 480(SpaceWar) appid，待 owner 提供真 appid（$100 入门费）替换。
 >
 > **阶段**：P0 依赖+init 自检 → P1 成就/统计 → P2 云存档 → P3 富状态/排行榜 → P4 depot/上传管线。联机(Steam Networking)依赖 REQ-010 浮点→定点，殿后。
+
+## 2026-07-15 owner 二轮裁定（2撤单/4压后）
+
+> 【owner 2026-07-15 裁：撤单】非当前重点·随冲刺总纲一并撤·重定冲刺目标时再开
+### REQ-DEMO-T3-批量吞吐冒烟 · 周产 30 款的机器证据 · [2026-07-07] · Lead 图纸 → **指派：Opus 档 session/子代理** · status: open（T1 完工后接） · 优先级: P1 · 期限: 7/20 · 类型: 冲刺 QA
+> **spec**：① 新建批量冒烟脚本（scripts 下·batch-gen-smoke）：mock LLM+mock 美术连出 N=10 款 e2e——生成→美术编排→parseManifest 零 error→audit 无新红旗；判词 token `BATCH: PASS|FAIL`+退出码；fail-fast（哪款第几步死点名）。② 真 key 抽 3 款全真跑通，记录单款耗时/成本/token 写进回执（demo 出示件·折算周产能）。③ 照 `docs/playbooks/testing.md` 三禁（mock 路径零外部 IO·种子固定）。完工标 ✅ 待 Lead 验收。
+
+> 【owner 2026-07-15 裁：压后】随 Steam 轨整体压后（PS 后端契约成果保留在案·apollo 代理+向导页 UI 未做·重启时续)
+### REQ-PUBLISH-创作台一键发布 · player 模式内「打包→上传 Steam」一键流水线 · [2026-07-04] · owner 口头指派 → PS 转呈（跨 PS↔PST 域） · status: **裁决完毕（Lead 2026-07-04·见文末）·PS 先行硬化契约·PST 排队接 UI** · 优先级: P2（产品体验·非阻塞） · 类型: 产品化·发行管线接入创作台（后端多已存在·主要是接线）
+> **源起**：owner 2026-07-04：创作台 **player 模式**下把发布按钮/路口接好——一键打包、填自己的 Steam ID/AppID，让用户「一条流水线产出游戏」。**范围裁决（owner 当面答 PS 二选）**：① 承载面 = **创作台 player 模式（网页）**；② 深度 = **尽量一路到 Steam 上传**（能自动的自动到 steamcmd upload 为止）。
+>
+> **后端多已存在（接线，非造轮子）**：`steam-publisher/serve.py`（HTTP API：配置→build 裸目录→生成 VDF→steamcmd 上传·含实时日志轮询）、`scripts/dist.py`（打包菜单）、`electron-builder.yml`、平台接线（成就/云/富状态）均就绪。缺的是①把它接进 studio player 模式 UI ②一条 studio 能稳定调的发布 API。
+>
+> **PS 提议域切分（请 Lead 裁）**：
+> - **PST 域（UI）**：player 模式内「发布」区——选游戏/平台、填 AppID/DepotID/builder 账号（=用户 Steam ID）、进度与日志展示。走 studio 现有 React 产品面（非游戏 UI 铁律范畴）。
+> - **PS 域（管线契约）**：提供 studio 可调的稳定发布 API/CLI：`package(game,platforms)`→`genVDF(appId,depots)`→`upload(builder)`，带进度/日志流。由现有 `steam-publisher/serve.py` 端点收敛/硬化而来（apollo.py 转发 或 studio 直连本地端口）。= PS 施工物。
+>
+> **必须显式标给用户的「不能自动」三步（architect 诚实·Valve 无 API）**：① 用户自己的 $100 合作伙伴账号 + 真 AppID/DepotID；② 本机装 steamcmd + 首次缓存登录（Steam Guard 令牌需终端手输一次）；③ 上传后后台 **Set Live**（防误推线上·故意手动）。故「一路到 Steam」= 自动到 upload 为止 + 向导显式引导这三步，非黑箱全自动（细节 `steam-publisher/RELEASE-PROCESS.md`）。
+>
+> **请 Lead 裁**：a) 域切分是否如上（PST 接 UI / PS 供管线 API）；b) 接入形态——studio 直连 steam-publisher 本地端口 vs 经 apollo.py 转发 vs 内嵌重写；c) 派工。
+>
+> **Lead 裁决（2026-07-04）**：
+> a) **域切分照准**——与角色卡边界严丝合缝（PST=studio 前端+apollo.py 服务面；PS=steam-publisher 管线），无需调整。
+> b) **接入形态=经 apollo.py 转发**（薄代理 `/api/publish/*` → steam-publisher serve.py）。理由：①studio 前端现在只认一个后端缝（`/api/*` 相对路径），M5 Electron 打包正靠这条缝换传输层——直连第二个本地端口会破缝+引 CORS+双服务生命周期；②发布是危险面操作，收进 apollo.py 统一走已有的路径防护/审计口；③内嵌重写=造第二套管线，回驳。转发层**只透传不塞逻辑**（进度/日志流原样代理）。
+> c) **派工**：PS 先行（自请照准）——serve.py 编排 API 硬化成稳定契约（`package→genVDF→upload` 三段 + 进度/日志 + 判词 token 收口）+ mock/480 冒烟；PST 随后接 player 模式发布区 UI（**「三步不能自动」必须做成显式向导页**，不许藏在文档里）；两段各自门禁绿，联调验收=Lead。P2 维持（各自接在当前核心工作之后）。status 更新 → **裁决完毕·PS 可先行**。
+>
+> **PS 契约硬化完成（2026-07-04·owner「可以先做」+ Lead 裁准 PS 先行）**：`serve.py` 按 Lead c) 硬化成稳定契约——**三段命名** `stage_package/stage_genvdf/stage_upload` + `plan_pipeline` 组合 + additive `POST /api/plan`；**判词 token 收口**（段判词 `ST_OK/ST_BLOCKED`、任务判词 `JOB_IDLE/RUNNING/DONE/ERROR`·`job_status()`，接进 `/api/state`+`/api/log`，消费端不 scrape 日志）；无真账号冒烟 `scripts/steam-publish-smoke.py`（480·**24 断言**·退出码门禁·自证可红·登记 testing 手册）。apollo.py 薄代理 `/api/publish/*` 透传即用。**余：apollo.py 代理（服务面域）+ PST 接向导页 UI**。详见 `finish/PS-steam-finish-list.md`。
