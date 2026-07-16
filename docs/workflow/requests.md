@@ -18,100 +18,14 @@
 > 分单：T1（下条·PST+PA·7/13）→ T2 换皮（下下条·7/18）→ T3 批量冒烟（Opus·7/20）→ T4 3D 线待拉动（P3D 知会·不进关键路径）→ T5 彩排（Lead 主持·7/27）。
 > **队列重排（冲刺期有效）**：PST=T1→心跳余项（并入 T1 进度灯）→T2；**音频 B 件、M1 货架墙、REQ-3D-像素断言、REQ-CAP-改掷收编一律冲刺后**；引擎域冻结非必要改动。
 
-### NOTE-PA→game-q · game-q 台账 24/31 行无 skinKey → 平台填不回，确认是否有意 · [2026-07-09] · PA 契约会审派生（`art-platform-handoff-2026-07-09.md` §致 PA·观察 3）→ **game-q 已回复（见末行）** · status: **closed（spawn-portal 采纳·余有意·2026-07-09）** · 类型: 覆盖度知会（game-q 域自决）
-> **背景**：PA 会审美术平台契约时对了 `public/games/game-q/art/art-ledger.json`——31 行需求里**只有 7 行带 `skinKey`**（base·pad·3 敌体·2 塔体），其余 **24 行无 skinKey**。按终态档 §五，编译期游戏线写回=**skinKey 别名登记**，故**这 24 行现无法经平台生成/填回**（fill/upload 的 skinKey 别名无锚点）。
-> **无 skinKey 的 24 行**（都是次要/子部件·多半有意不上皮）：base-core/rim/shield、pad-0-pc、burst_*/zap_*:flash（FX）、enemy_*:hpbar/inner、tower_*:core/ring、spawn-portal、track-glow/nglow/node/seg。
-> **求确认（二选一·你的域你定）**：① **有意**（这些是程序化 FX/轨段/子部件·不需换皮）→ 无需动作，回此条标「有意·closed」即可；② **该可换皮的漏了**（如 spawn-portal / tower core 你想上真美术）→ 照交接档「加可换皮实体三行」给对应视觉实体加 `Sprite` 皮肤槽（theme skin key → blueprint `Sprite` 行 → `npx vite-node scripts/game-q-art-requirements.mjs` 重跑·编号 append-only 旧号不动·新行自带 skinKey）。
-> **PA 立场**：schema 本身无缺陷（四项契约会审全 PASS）；这纯是 game-q 的皮肤槽**覆盖度**取舍，故只知会不开实现单、不直改你的蓝图。
-> **game-q 回复（2026-07-09·域自决）**：② 采纳 **spawn-portal**（独立场景焦点=敌出生门·值真美术）——已加皮肤槽（`theme SKIN.spawn` + `blueprint` Sprite 行·重跑台账 append-only：art-27 得 `skinKey=q/spawn`·旧号零变·现 8 行带皮）。tower core 不采（子部件·并入 `q/tower-*` 塔皮）。余 22 行确认 **①有意·保留程序化**：FX（burst/zap flash·主题色驱动随调色板换皮）、Gauge 血条（hpbar/base-shield·会缩放不能静态皮）、子部件（base-core/rim、pad-pc、enemy inner·并入父皮）、射程环（玩法提示）、车道（track-*·NavGraph 绘制+调色板换皮）。谢 PA 会审。**closed**。
+### REQ-CTX-上下文预算三件 · 池清仓+预算封顶守卫+复查范围核查（owner「信息量大了 session 读不完·会偏离」批①②③）· [2026-07-15] · Lead 诊断+施工 · status: **✅ done（Lead 2026-07-15·门禁全绿直推）** · 优先级: P0（防偏离基建） · 类型: 流程基建
+> 实测诊断：T0 必读集健康（~1.5 万字符=窗口零头）；真炸弹=requests.md 曾 13 万字符（done 回执不归档）。落地：①**池清仓**——32 条已完结全文迁 `requests-archive.md`（池 13.1万→6.7万字符·活跃条目一条未动）；②**上下文预算守卫** `scripts/context-budget-guard.mjs`（判词 `CONTEXT-BUDGET: PASS|FAIL`·进 vitest 门禁）：requests 池封顶 9 万字符（超=红·逼归档）、T0 必读四文件各封顶、**每本手册 ≤80 行从君子约定变机器卡**；基线 `context-budget-baseline.json`（抬预算=显式改基线 diff 可见）；③**范围核查**=每关复查清单第一条（git diff 对照工单「边界」栏·越界=FAIL）+ review-gates.md 红线。测试 `context-budget-guard.test.mjs` 5 例。
 
-### NOTE-game-q→PST · 美术台账平台两处可用性缺口（owner 现场）：卡面无描述 + 未生成行无占位图 · [2026-07-09] · game-q 程序员（owner 现场反馈）→ **PST（ArtLedgerPanel 域）** · status: **✅ done（owner 现场授权 game-q 直接改·2026-07-09·知会 PST）** · 类型: 平台 UX 缺口（数据已齐·纯 ArtLedgerPanel 渲染·不改台账数据）
-> **✅ 落地（owner「你就帮他改了吧·转来转去麻烦」授权直改 ArtLedgerPanel·PST 已被 owner 知会）**：① 卡面加 `query` 人读描述行（不再只 art-NN·一眼分清）；② `swatchDataUri()`——从 `placeholder.current` 的「形状·#色」画 SVG 色块占位图（circle/box/polygon→圆/方/六边），卡面+详情「占位/原始」框都用它 → 未生成行也有「这长啥样」的图；③ 卡片点选默认词 + 详情 `📝 提示词` 用 `prompt||query`（原只取 query·忽略回填的 `prompt`）。台账数据零改（纯渲染）。验证：新增 `art-ledger-render.test.tsx`（客户端渲染注入台账行·断言 query 描述 + SVG 色块图形状/色）；门禁 tsc0/vitest2359/build0。
-> **owner 现场痛点**：美术台账平台里「无法知道什么是什么」——卡片只有编号，看不出这条需求是什么；描述词/提示词也看不到。
-> **根因（读 `ArtLedgerPanel.tsx` 定位·数据都在台账里·纯渲染缺口·非数据缺口）**：
-> ① 卡面（`:153-165`）只渲染 `no`+来源标+缩略图+`kind`——**不显 `query`/`context`**（描述在 `:176` 详情面板·要点开才见）→ 一屏「art-01 sprite / art-02 sprite」分不清。
-> ② `thumbUrl`（`:44-47`）只认 `gen.servedPath` → **未生成行（needs-art）无任何缩略图**；详情「占位/原始」框（`:191`）只显 `placeholder.current` **文本**（「2D 色块（circle·#ff5c7a）」）不是图。
-> **建议（都在 ArtLedgerPanel·台账数据无需加）**：A. 卡面加一行 `query`（或 `context` 截断）→ 一眼辨认；B. 未生成行画**占位色块图**：`placeholder.current` 已含形状+色（或让 `deriveRequirements` 顺带补结构化 `placeholder:{shape,tint,w,h}`），panel 据此画 SVG 圆/方色块当占位缩略图；C. 详情/重生成默认词用 `prompt||query`（现 `:155` 只取 `query`·忽略回填的 `prompt`）。
-> **game-q 可配合**：若要真占位图（非 SVG 色块），我可在 game-q 侧把各实体 Shape+Color 渲成占位 PNG 落 `art/placeholders/` 并在台账加 `placeholder.thumb`——PST 定方案我照做（不越域直改平台）。
-
-### REQ-DEMO-T1-美术替换工作流·产线段 · placeholder 先行+替换列表推导+批量生成+对位替换 · [2026-07-07·07-08 owner 定形两段式] · Lead 图纸=`docs/design/art-replacement-workflow.md`（**唯一权威·本条只摘要**） → **指派：PST（施工）·PA 会审契约（风格包库/台账 schema/缓存键）** · status: **✅ done（PST 产线段 2026-07-08 + Lead 亲手收口 2026-07-09·终态=`docs/design/art-platform-2026-07-09.md`·整改三单 R1/R2/R3 owner 撤单由 Lead 合并落地：平台归一双数据源/去 mock 硬编码/key 配置面+注入/编号 append-only/game-q 皮肤槽写回/风格包迁数据文件·真 key 端到端待 owner key）** · 优先级: **P0** · 期限: 7/13 · 类型: 产品化·美术管线
-> **owner 2026-07-08 定形（替代 07-07 初稿「库查不到就地生成」）**：先出可玩游戏（art: 一律解析到免费库=placeholder）→ 游戏输出**替换列表**（2D/3D/声音/启动画/粒子全类型登记·每条编号/规格/表现描述·**机器从组件数据推导**）→ 配风格包 → 调万相/Tripo/Meshy **整批产出风格统一美术** → 按编号对位替换。换皮/单槽优化=同一机制重跑（工作流档 §二）。
-> **施工件（详 spec=工作流档 §三-§六·此处点名交付物）**：
-> ① **列表推导器**（apollo.py 编排步）：扫 manifest 美术槽位 → art-replace-list.json（**与美术台账合一·一份文件两个视角**·编号 art-01… 确定性分配重跑不漂移·spec/context 从 Shape/Transform/Model3D 等组件数据推导）；
-> ② **风格包库** style-packs 纯数据文件（闭集·demo 前调稳 3 包·中英双方言 prompt+palette+negative+params 钉死 provider/model(+seed)·refImage 定调图槽·**PA 会审 schema**）；
-> ③ **批量生成器**（apollo.py 端点 + `scripts/ai-gen.mjs` 既有 wanx/tripo/meshy adapters）：并发·内容寻址缓存 hash(provider+prompt+参数)·**断点续跑（status 即断点·replaced 行不重扣费）**·无 key 行=凭证探针输出+mock 占位（绝不静默顶替）；
-> ④ **确定性后处理**：palette-snap（量化到风格包调色板）+ 按 spec 缩放/栅格（mock 路径同走）；
-> ⑤ **对位替换**：按编号重钉 manifest 引用（落盘前 parseManifest 零 error 铁律不变）+ status 流转 + provenance 硬字段（model/prompt/date/license）；
-> ⑥ **模板/系统提示改口径**：主体视觉实体默认 Sprite+art: 引用（换皮前提=有皮肤槽·game-q 全程序化色块=反面教材）；
-> ⑦ **进度可视化**：批处理「美术 n/m」阶段灯（与 REQ-STUDIO 心跳余项并一批）；
-> ⑧ **测试**：工作流档 §六 四条验收口径全数落 smoke（mock 全链 / 断点续跑 / 真 key 一款端到端 / 编号稳定性断言）；门禁全绿直推。
-> 边界：src/assembly 引擎不动；sfx/music 列表登记但冲刺期不生成（声音走合成数据 `docs/playbooks/audio.md`·采样=冲刺后 B 件）；particle=配置槽不生成图。完工标 ✅ 待 Lead 验收（真 key 一款 placeholder→整批换装→真浏览器可玩且风格成套）。
-> **✅ 产线段完工回执（PST·2026-07-08·全在服务/脚本层·src/assembly 引擎零改）**：大脑 `scripts/art-replace.mjs`（derive/batch/replace 纯函数导出+CLI）+ `scripts/style-packs.mjs`（②·3 包闭集·中英双方言 prompt+palette+negative+post+params·**schema 待 PA 会审**）+ apollo.py 薄胶水端点 `POST /api/art/derive|batch|replace`·`GET /api/art/style-packs|ledger`。① **列表推导器**：扫 manifest `art:` 槽位（同 resolveArtRefs 口径）→ `public/games/<slug>/art/art-ledger.json`（=替换列表·同一份文件两视角）·编号 art-01…按槽位标识确定性分配（重跑不漂移）·kind 从组件/字段推(Sprite→sprite/bg·Model3D→model3d)·spec 从 Shape/Transform/Model3D 数据推·context 底稿。③④ **批量生成器**：风格方言化 prompt→ai-gen ADAPTERS(wanx/tripo/meshy)→**palette-snap**(量化到风格包调色板·同批成套·mock 同走)+按 spec 尺寸→落 `art/gen/<no>`+登记游戏本地 index+provenance 硬字段；**内容寻址缓存** hash(provider+prompt+model+seed)·**断点续跑**(status+cacheKey+文件在=命中不重扣费)·**凭证探针**(无 key 行=探针输出+mock 占位·绝不静默顶替)。⑤ **对位替换**：按编号重钉 manifest 引用为 gen/ 本地 id→status=replaced·**落盘前过 parseManifest 零 error 铁律**(复用 library_put_manifest 的 check+版本化)。⑥ **系统提示改口径**：主体视觉实体默认 Sprite+`art:` 皮肤槽（game-q 反面教材写进 prompt）。⑧ **测试**：`art-replace.test.mjs` 11 单测(推导/编号稳定/palette-snap/缓存续跑/替换/原 manifest 不改)+全链冒烟 `art-replace-smoke.py` **20 断言**(§六①全链 derive→batch→replace 零 error·②断点续跑全缓存·④编号稳定·进程内 API·快照恢复零污染)。门禁 tsc0/vitest2348/build0。**§六③真 key 端到端**=本环境 GitHub-only 无 key 跑不了，待放宽网络 session + owner key（大脑真调路径已写·Meshy/Tripo/万相 adapters 就绪）。**余**：⑦批处理进度灯 UI（并心跳余项）+ T2 台账浏览墙/单槽点名替换（数据面已就绪·台账+status+localId 齐备）。
-> **Lead 复核（2026-07-09·对抗性审计 8 提交 + 独立复跑 tsc0/vitest 2353/build0·smoke 33 断言实数核对）REVIEW: CONCERNS**——地基收下（推导器/台账/断点续跑/palette-snap/三式/换皮全是真的且有测试），但对照 owner 三点期望有 12 处偏差（4 处死穴级：服务端无条件 --mock=UI 永远出不了真图；生成 key 不注入子进程；「写回游戏」最后一环不存在；平台对 game-q 硬编码+与台账墙双头重复）。**整改=REQ-DEMO-R1（studio 侧）+ REQ-DEMO-R2（game-q 侧）**，两单落地+真 key 端到端后 T1/T2 才关账。
-
-### REQ-DEMO-T2-换皮流水线+台账浏览/单槽替换 · 同玩法×新风格锚=新卡带；按编号点名优化 · [2026-07-07] · Lead 图纸 → **指派：PST** · status: **✅ done（PST 2026-07-08 + Lead 亲手收口 2026-07-09·台账墙升级双数据源平台=唯一美术 UI·cockpit 退役·终态=`docs/design/art-platform-2026-07-09.md`）** · 优先级: P0 · 期限: 7/18 · 类型: 产品化·量产乘法器+优化闭环
-> **✅ 完工回执（PST·2026-07-08·全在服务/脚本层 + studio 产品面·引擎零改）**：① **单槽重解析地基**（换皮/点名共用）——`art-replace.mjs` `resetRow`（单行打回·可改 prompt·留 history）/`swapSlot`（钉已存在资产 id）/`resetAllRows`（换皮整批），CLI `regen`/`swap`/`reskin`。② **换皮**——`POST /api/art/reskin`：copytree 新卡带（玩法 manifest 一字不改）+ `meta.reskinOf` 谱系 + 复制台账 + 换风格包整批重跑 + 过 parseManifest 零 error 落盘，失败回滚。③ **台账浏览墙**（owner 硬要求）——`src/studio/ArtLedgerPanel.tsx`：缩略图墙（编号 art-01…+槽位语义+来源标 generated/📚库/⬆上传/⚙MOCK+缩略图）+ 点开看 prompt/provenance/history；库卡带操作条加「🎨 美术台账」入口（`LibActionBar`）。④ **按编号三式替换**——`POST /api/art/regenerate`（改 prompt 重生成·可选风格包）/`/api/art/swap`（从共享库钉资产 id）/`/api/art/upload`（上传写盘+登记本地 index+钉引用），三式都过 parseManifest 零 error·台账留替换历史。⑤ **并排预览**（占位/现用）在详情面板。⑥ **测试**——`art-replace.test.mjs` +2（resetRow/swapSlot）·render 测（ArtLedgerPanel）·全链冒烟 `art-replace-smoke.py` 扩到 **33 断言**（⑦点名重生成改prompt其余编号不动·⑧库选换钉id+历史·⑨换皮新卡带 parseManifest零error+玩法diff空+美术全换新+reskinOf）。门禁 tsc0/vitest2352/build0。**真 key 端到端**（真浏览器点名 art-N→重生成→游戏里换上）待放宽网络 session + owner key；mock 全链已通。
-> **spec**：① **单槽重解析机制（地基·换皮与优化共用）**：T1 编排器支持指定槽位子集重跑——换皮=全槽、点名优化=单槽；重跑即重钉引用+更新台账+新 provenance。② **换皮**：studio 选已有卡带→换风格包→对**同一张替换列表**整批重跑批处理（玩法 manifest 一字不改·工作流档 §二）→存新卡带（slug-v2·meta 记 reskinOf 谱系）；批量模式=一套玩法 × N 风格包一次出 N 款。③ **台账浏览面板（owner 硬要求）**：逐游戏缩略图墙——每格显编号（art-01…）+槽位语义+来源标（generated/library/MOCK·unreviewed 角标）；点开看 prompt/provenance。④ **按编号三式替换**：重新生成（可改 prompt）/ 从共享库选换 / 上传替换——三式都走单槽重解析，台账留替换历史。⑤ 换皮结果并排预览（原/新）。⑥ 测试：reskin 后 parseManifest 零 error、玩法数据 diff=空、美术引用全换新；单槽替换后其余槽位引用与编号不动（断言编号稳定）；smoke 进批量冒烟。完工标 ✅ 待 Lead 验收（真浏览器走「浏览→点名 art-N→重生成→游戏里换上」全旅程）。
-> **Lead 复核（2026-07-09）REVIEW: CONCERNS**——三式/换皮/台账墙地基收下；偏差：①三式/换皮线**绕过人审直写**（与 cockpit 的 M2.5 姿态分叉·裁决=按 owner 07-07 归置闭环统一：单行=预览→入库确认·批量=快速通道带 unreviewed 标·共享货架仍 M2.5）②前端写死 mock:true ③upload 无内容嗅探。并入 REQ-DEMO-R1 整改。
-
-### REQ-WORKSHOP-统一工作台+整链打通 · Workshop 主界面（状态机+双角色对话+订阅通道）+ 数据桥 + cart-S8 · [2026-07-10] · **owner 定稿·Lead 出图** → **Lead 亲手施工（owner 07-11「有足够 token·你亲自做」改派）·维护移交 PST** · status: **✅ done（C1+C2+B+A+E 五批全落·待 owner 验收）** · 优先级: **P0（冲刺主线）** · 类型: 产品化·工作台与打通
-> **完工回执（Lead·2026-07-11）**：C1 数据桥七件+C2 cart-S8（`74079c77`）；B 订阅通道+anthropic 4.7+ 合规+`/api/agent/chat` 双角色（`8dcf80b9`）；A 壳接线（EDIT 对白编辑屏=策划/程序双 tab+待应用改动卡「✔应用/✕放弃」+八关灯+⬇下载包；CREATE 真生成链；ASSETS 接真台账；PUBLISH=下载包；SETTINGS=订阅 token+默认通道+**文生图 genKeys 三行（owner 07-11 追加·千问万相/Tripo/Meshy 收编）**）+ apollo 三端点（GET /games/* 静态·GET /api/library/\<slug\>/export 内存 zip·GET /api/catalog）+ launcher 导流（LibActionBar 🏭/真⤓导出·保存成功「下一步→🏭」·S6↔美术台返回栈·旧 GameCreator 退役·⇄ Workshop 链接）。
-> **门禁实数**：tsc 0 err；vitest 318 文件/2398 测试全绿；pipeline-smoke 44 断言（+⑧ 壳伺服面 10 条：壳/静态 200·穿越 403·zip 头+排除 mock/.git/snapshots·catalog 形状）；art-replace-smoke 45 断言；壳 Component node 冒烟（8 屏×空/满态+provider 决策+事件处理器）；服务端 curl 自证 10 腿（generate→create→PUT→board→双角色 chat→applyPending→ledger→export→settings 打码/清除）。维护交接档=`docs/workflow/finish/PST-workshop-handoff.md`。
-> **验收六修（owner 07-11 真机验收反馈·当日落地·spec §八.1）**：①三对话入口（+美术 art 角色·台账 digest 系统词）②对话持久化（`/api/agent/chats`·`.apollo/workshop-chats/`·进工坊恢复）③模型/思考档 chips（默认 Opus 4.8+high·Fable 5 标「另计费」·CLI `--effort`）④debug 日志对齐（`[LLM]` 传输层打点+`/api/llm-logs`+壳🐞调试块）⑤games filter 三 chips ⑥生成进度真话（真实链路分步+秒表·治「卡 92%」误导）+落盘路径上卡。pipeline-smoke 44→54 断言。
-> **验收批 2（owner 07-11 续测·当日落地·spec §八.2）**：①生成=服务端后台任务（`/api/generate/job(s)`·切屏/刷新不丢·壳启动恢复看板·mock 全链冒烟）②订阅通道两实证根治——300s 超时→心跳看门狗（吐流不杀·180s 停滞收割·1800s 保险上限）；`tool_use` 吃回合空 result→`--append-system-prompt` 钉纯文本生成器+禁用名单补全（计划/提问/技能类）+流式打捞 ③思考实况（stream-json 流式→`_LLM_LIVE`/`/api/llm-live`·看板「🧠 已流出 N 字」·对话实况字数）④设计先行流上壳（CREATE 双模式：聊想法→提纲 MD 壳内可见→逐篇修订落盘→原型后台任务·服务端四模式零新建纯重组）。pipeline-smoke 54→65 断言。
-> **验收批 3-14（owner 07-11 连续真机验收·当日全落·记录=spec §八.2-八.5）**：对话区体验/全局模型选择/原型 job 修复/设计现场持久化/底案=活工件/▶ 运行直达/删卡带/game-NNN 编号/旧 CLI 降级/用量可见/LLM TRACE 滚动窗/方案 A 原生 session resume/编辑工坊底案直改/bench 智能跳转/一条命令全起/bare 纯游戏页/装载自诊/ThreadingHTTPServer 破案/空卡带明报/**「能存必须能跑」落盘装载门+运行器错误明报+agent House Rules**（末批 `37e97f38`）。pipeline-smoke 65→101 断言。
-> **唯一 spec=`docs/design/workshop-spec-2026-07-10.md`（本条只做指针·以 spec 为准照图施工）**。owner 三问已拍板记 spec §七：主入口直接走 Workshop+旧货架保留切换按钮；对话编辑=策划/程序双入口（策划兼美术更换）·显式按钮落盘·不多开；档位默认 Opus 4.8·可切 Fable 5（展示）/Sonnet（量产）；**Claude 通道=订阅+setup-token+Agent SDK 原封不动（不买 API·不花新钱）**。
-> **载体对齐（spec §〇.五·2026-07-11）**：Workshop 壳已由 workshop 施工 session 落地基（`c3dd4743` 原版设计壳 apollo 伺服+游戏库屏接真数据·LayoutNode 豁免 owner 已拍板）——A 批=**在壳上接线**（非新建 React 面板）；对话端点统一 `/api/agent/chat`（语义=spec §2.3·mode/role/messages）；壳侧「待接线」清单（AI 新建屏 agent 循环/素材库/设置/发布）**并入本单**，workshop session 即本单施工者之一，与 PST 分批对齐勿重复施工。
-> **批次（spec §六·C1/C2/B 可并行→A→E）**：C1 数据桥（meta.description/建库自动立项卡/POST /api/pipeline/concept/PUT 后自动 derive 台账/换皮谱系/导流补线）+ pipeline-smoke 骨架；C2 cart-S8 轻量终检（manifest-check∧bench∧mock债=0·证据绑 gameHash·mockDebt/writeConcept 导出+单测）；B claude-code 订阅通道（**子进程工具面全禁**·token 打码不落日志）+ anthropic raw 通道弃用型号修复与 4.7+ 合规 + `/api/agent/chat` 双角色编排；A Workshop 壳接线（状态机两态/双角色对话屏/**素材库屏接 `/api/art/*` 与共享货架（owner 07-10 点名）**/设置屏/⇄ 旧工作台互切/launcher 侧导流补线/退役旧 GameCreator）；E 测试文档（spec §五门禁·壳侧=端点级+curl 自证+真浏览器评委路径走查+手册回填）。
-> **红线（spec §四）**：不做一键跑八关；落盘必过 parseManifest 门+版本化；mock 三道闸不变；引擎目录零触碰。每批完工回执照 T1/T2 格式附门禁实数；Lead 对抗性验收 diff。
-
-### REQ-ARCH-卡带要不要放开自带 TS · [2026-07-11] · owner 提问 → Lead 评判 → **owner 双拍板·Lead 当日施工（批15）** · status: **✅ 落地（受控形态）——自由 TS 常态化仍不开** · 类型: 架构方向（宪法级）
-> **裁决与落地（owner 07-11 三连拍板·批15 `pipeline-smoke ⑬` 钉死）**：①owner「我怕到29号没累积到能力，是不是有个开关可以隐藏一下，对一些展示游戏打个勾允许生产 ts 逻辑」＋②「你说的这个管线（缺口→强模型下沉快速通道）我也批准，但也做成一个配置能关」→ Lead 落两件：
-> - **capgap 快速通道**（`features.capgap` 默认开可关）：三角色 agent 遇词表表达不了 → ```capgap 结构化提案围栏 → `.apollo/cap-gaps.jsonl` 台账 + `GET /api/capgaps` + 对话留痕；下沉仍走 Lead 裁决→派工（通道只是机器直达，不代裁决）。
-> - **TS 例外开关（受控逃生门·非自由 TS）**：`features.tsCarts` **默认关=隐藏开关**（配置 `{"features":{"tsCarts":true}}` 或 `APOLLO_FEATURE_TSCARTS=1` 才现形）→ 编辑工坊每卡带 ⚡ 打勾（`meta.allowTs`）→「程序」对话可提议 `library/<slug>/logic.ts`（契约=`export cartCapability`·defineCapability·id=cart-<slug>）→ **cart-logic-check 独立装载门**（模块装载+契约+与 manifest 合体真引擎 2 tick）→ 壳「✔ 应用」PUT `/api/library/<slug>/logic` 落盘（git 版本化·空串=撤除）。运行器 hasLogic 合体装载（dev 线·vite 管线）。**记债明示**：列表 allowTs/hasLogic 旗、该卡带退出回放/换皮/bench 保证。**manifest 仍纯数据、TS 绝不进 JSON。**
-> - **红线保持**：绝不 eval 字符串；logic.ts 走与引擎系统同一 ESM/装载/定序管线；确定性纪律写进 agent 系统词（禁 Math.random/Date.now/DOM）。
-> **owner 原话**：「AI卡带生成的游戏没有TS，为什么要这样限制他们？纯靠数据驱动做成是不是非常困难？该写TS就写TS啊。」
-> **Lead 立场（详见 07-11 当日汇报·宪法=data-driven-manifesto）**：不建议给卡带开自由 TS。①确定性/回放/lockstep/bench/换皮量产全建立在「引擎解释纯数据」上，卡带进代码=整套门禁与台账体系失效；②AI 生成的代码直接在玩家页执行=任意代码执行面；③每款游戏变成一个要 tsc/review/依赖管理的软件项目，弱模型档位直接出局（manifesto 尺子）；④「该写 TS 就写 TS」的正道**已经存在**——数据表达不了的缺口下沉为引擎 capability（TS 写在引擎里·词表增长·所有游戏受益），而非散进单个游戏（game-d 绕引擎=前车之鉴）。owner 感到的「纯数据很难」实证上主要是**坏稿无门+失败无因**（07-11 批14 已治），其次是词表缺口（走下沉通道）。
-> **重启时点**：owner 想再议时，Lead 出一页三路对比（纯数据 vs 卡带自带TS vs 受限DSL/沙箱脚本）附代价收益与迁移成本，再拍板。
-> **⏫ owner 价值排序更新（2026-07-11 当日追加·宪法尺子待修订）**：「强模型、弱模型不是我们重点，重点是**能出东西，能出复杂的东西**。用弱语言模型能做这种事情不是第一要素了，能用强语言模型做，我们并不抵触。」——manifesto 的「最弱 LLM 也能产出同样数据」尺子降级；「复杂产出能力」升为第一要素。Lead 据此更新论证：上条③弱模型下限论**作废**；①体系论②安全论仍立（与模型强弱无关）；建议解法=「缺口→强模型下沉」快速通道（强模型写 TS 进**引擎**·非进卡带·复杂度落成可复用资产），详见当日汇报。manifesto 正文修订待本单裁决时一并做。
+### REQ-QC-UI-工坊生产板显示「复查门」+ 评分卡摘要 · [2026-07-15] · Lead（REQ-QC-三门接续·全文回执在 archive）→ **指派：PST** · status: open · 优先级: P1 · 类型: 工坊 UI（数据已通·只差显示）
+> 三门制已上线（`game-pipeline.mjs`·板 JSON 已带 `review` 字段+scorecard·端点自动透传），工坊生产板 UI 现只画机器门/人门两行——请 PST 在 GamePipelinePanel 补第三行「复查门」+ S7 评分卡判词（`VISUAL: n/24 · PREMIUM`）显示，照 CLI 版式（`board <slug>` 输出）。参考手册 `docs/playbooks/review-gates.md`。
 
 ### REQ-DEMO-T3-批量吞吐冒烟 · 周产 30 款的机器证据 · [2026-07-07] · Lead 图纸 → **指派：Opus 档 session/子代理** · status: open（T1 完工后接） · 优先级: P1 · 期限: 7/20 · 类型: 冲刺 QA
 > **spec**：① 新建批量冒烟脚本（scripts 下·batch-gen-smoke）：mock LLM+mock 美术连出 N=10 款 e2e——生成→美术编排→parseManifest 零 error→audit 无新红旗；判词 token `BATCH: PASS|FAIL`+退出码；fail-fast（哪款第几步死点名）。② 真 key 抽 3 款全真跑通，记录单款耗时/成本/token 写进回执（demo 出示件·折算周产能）。③ 照 `docs/playbooks/testing.md` 三禁（mock 路径零外部 IO·种子固定）。完工标 ✅ 待 Lead 验收。
-
-### REQ-K-美术管线接入 · 老虎机手写 canvas 绕基座（owner 2026-07-10 点名「为什么没有美术需求表」） · [2026-07-10] · Lead 问责定性 → **指派：game-k 程序员** · status: **✅ done（game-k 程序员自补 ae34696c·Lead 验收：10 行台账全带皮肤槽·「无美术台账」黄旗消·createElement×7=plan 基线登记的表现层例外）** · 优先级: P1 · 类型: 手册整改（编译期游戏美术接入）
-> **问责定性（按 07-03 铁律：不问谁绕的·只问手册哪没接住）**：`game-k/art.ts` 全程手写 canvas 程序化美术（注释自豪"零外部图片"）——直接绕过美术管线；`docs/playbooks/art-pipeline.md` 红线明文「主体视觉实体必须有皮肤槽」但当时**无门禁抓**。手册的牙已补：`game-skill-audit` 现对无 art-ledger 的游戏打 🟡「无美术台账」黄旗（全库存量一起点名·还债各归各主）。
-> **要做（按 art-pipeline.md 编译期三行·game-q 样板）**：① 主体视觉实体（转轮符号/机身/拉杆/背景）加 `Sprite` 皮肤槽（与现程序化观感并存·未填资产观感零变——程序化烘焙可作回退保留，皮肤就绪即盖过）；② 照 `scripts/game-q-art-requirements.mjs` 写 game-k 推导脚本产台账；③ mount 拉本地 index 注册 AssetManager。完工=美术平台选 game-k 出台账·audit 黄旗消。
-> 备注：t3-slot-payout 下沉本身是好活（Lead 后补验收）；本单只管美术接入。
-
-### REQ-G-美术台账接入 · game-g 美术资源数据配置驱动到台账（PST 2026-07-13 提·Lead 评审通过） · [2026-07-13] · PST 提需求 → PST 步1/步2 + **Lead 亲手批28 完成全面台账化（owner 07-14 全权授权）** · status: **✅ done（2026-07-14）** · 优先级: **P1（出口游戏=D+G·7·29 美术线·audit 黄旗存量欠账）** · 类型: 手册整改（编译期游戏美术接入·REQ-K 同款）
-> **Lead 评审**：该做。game-g 现状=纯程序化 SVG 底纹（`art-textures.ts` data-URI 喂 Panel.bgTexture/牌面·双皮=fill/stroke 令牌）——零台账零皮肤槽，与 game-k 整改前同模式；07-13 的通用工具（`scripts/game-blueprint-to-ledger.mjs`·58539995）已实证 game-g「代码驱动无单一蓝图」走不了干净路径，必须 per-game 接线。**无新引擎能力需求**，全程照 `docs/playbooks/art-pipeline.md` 编译期三行 + game-q/game-k 样板施工。
-> **spec（照图施工·完工标 ✅ 待 Lead 验收）**：
-> ① **台账推导脚本** `scripts/game-g-art-requirements.mjs`（照 `game-q-art-requirements.mjs` 样板）：枚举视觉件清单——主页牌桌底纹/牌面（军衔×玄铁金+锦霞双皮）/主将「将」艺术字衬底/对决三栏特写件/3D 骰（model3d 类·列行即可）/战役图/HUD 面板底纹（来源=art-textures.ts 各导出 + home-screen/turn-battle-screen/campaign-screen 的视觉消费点）→ 产 `public/games/game-g/art/art-ledger.json`（deriveRequirements schema·status='needs-art'·每行详细英文描述+规格+当前程序化占位描述）。
-> ② **皮肤槽接线（双形态·观感零变铁律）**：(a) play-field world 实体若有可 Sprite 化对象 → `Sprite{textureKey}` 与 Shape 并存；(b) **LayoutNode/Panel 纹理类**（bgTexture/牌面/衬底=game-g 主体）→ skinKey 别名登记本地 `public/games/game-g/art/index.json`，mount 拉起注册 AssetManager（照 game-k `skinAssets` 样板）——真图就绪自动盖过程序化回退，**未填=观感零字节变化**（程序化烘焙保留为回退·REQ-K 同语义）。
-> ③ **写回=fill 线**：编译期游戏走 regenerate→fill 既有端点语义（重钉 manifest 的动作平台自动隐藏）；**绝不改蓝图/渲染代码来换皮**（art-pipeline 红线）。
-> ④ **边界**：`clash-dice-3d` 3D 骰=P3D 独占域——台账列行可以，3D 侧接线动作先知会 P3D（P3D-game-z-handoff §0.1）；turn-battle-screen 牌面属程序B 域正好同域。
-> ⑤ **验收**：美术平台/工坊素材屏选 game-g 出台账（行行有详细描述·规格·占位说明）；`node scripts/game-skill-audit.mjs game-g`「无美术台账」黄旗消；未生成真图前游戏观感零变（前后截图对比）；/check-ui 过；tsc+vitest+build 三绿。
-> **✅ 完工回执（Lead 亲手·批28·2026-07-14）**：台账=`scripts/game-g-art-requirements.mjs` → 60 行（53 行保号保现身
-> ——PST 现况账升级：skinKey+富英文描述词+规格刷新·replaced 现身=程序化 svg；+7 新槽：主页/战役/对战背景板·
-> 硬币双面·牌背·3D 骰）。消费点接线四处：牌桌呢面 feltBrocadeUri 覆盖优先（home-screen）、主页/战役屏 Screen.image
-> cover 背景板（覆盖在场才生效）、硬币双面贴图、覆盖装载泛化（game-g.tsx 双通道 hero+tex·大厅在场时真图到位重绘一次）。
-> 全部消费点=真图未到观感零字节变化（game-g 219 测绿·含帧回归）。**剩两处待接**：对战屏背景板（战斗屏根节点·下一批）、
-> 牌背（引擎 PlayingCard 无 back prop·已提 REQ-UI-PlayingCard-back 缺口单）；3D 骰=行已立·接线归 P3D。
-> **换皮操作口径（owner 美术升级用）**：工坊素材屏选 game-g → 逐行 ⚡ 重新生成（描述词已备好可直接出图/可改词）→
-> ⤵ 替换写回=fill 别名登记 → 游戏即换（立绘/呢面/背景/硬币全线）。
-
-### REQ-G-ART-v2 全部美术台账化 + 图标统一升级 · [2026-07-15] · owner 口头三连（「全部美术的台账加升级」「很多图标统一风格升级」「54~63 没有预览占位符」）→ Lead 亲手 · status: **✅ done（批30-32·2026-07-15）** · 类型: 台账扩面 + 引擎图文位下沉
-> **交付**：game-g 台账 63→**110 行**（52 立绘 + 呢面 + 8 屏背景板全 + 硬币双面 + 牌背 + 3D 骰 + 3 按钮皮 +
-> 6 幕故事插画 + 2 卡池 banner + **34 枚套装图标**·统一风格锚写死 query 尾·生肖 12 全）。
-> **引擎下沉（批29-32 累计）**：UITheme.buttonSkins 主题级按钮皮 / PlayingCard.backArt / CoinFlip.headsArt+tailsArt /
-> Button.icon / Tag.icon / Label spans[].img / Card.media URL 检测——全 additive·不填零回归。
-> **占位快照**：57 个 needs-art 行全部生成「当前实际观感」确定性 SVG（emoji/CSS 渐变/主题底近似）→
-> row.placeholder.servedPath·工坊行封面回落——台账行行有脸。
-> **接线**：图标 v1 五处（顶栏 7 pill/浮层启动器 5 键/商城余额 4/改造坊生肖 chips/收藏页头）——覆盖在场才换、
-> 无=原 emoji（观感零变）；长尾 emoji 槽随屏改造逐步接（消费模式已定型=iconUri/iconPill/iconBtnProps/iconSpan）。
-> **去腐**：icons.ts（4 枚内联 SVG·41k token·lobby-screen 退役后孤儿）删除。
-> **诚实边界（未台账化·候选下一批）**：战斗屏 bespoke 兵牌面/棋盘装饰（接 hero 覆盖需 owner 点头设计）、
-> 正文行内 emoji 长尾、天罡 38 张逐张牌面 art（现按 kind 图标覆盖）、发布封面（发布线已有独立文生图）。
 
 ### REQ-Q-击杀记账（on-kill credit）· 塔防赏金/击杀计分通用缺口 · [2026-07-07] · LEAD（game-q 立项）→ Lead 排期 · status: **open（真缺口·已记债·循环层用清波经济绕过·非阻塞）** · 类型: 通用战斗能力下沉候选
 > **缺口**：`t2-hitbox` 只写**目标本地**资源（`hitbox.ts` `queueResourceMod(...,'local')`）；`t2-mortal` 的 `dropTemplate` 对**任何死因无差别**触发。→ 无法用单个 Mortal 区分「被塔击杀→给全局/攻击者记赏金」与「抵达大本营漏怪→扣命·不发赏金」。这是塔防经济（逐怪赏金）唯一表达不了的点，也是**击杀计分/连击表/赏金**一类通用需求的共性缺口（非塔防专属）。
@@ -133,14 +47,6 @@
 > **不是程序A/不是逻辑**：掷命/移动/碰撞逻辑（turn-combat.ts）与 `justMovedIds` 数据流**均正确**·此条纯 FLIP 表现误判。
 > **验收**：敌方推进相邻我方前锋时，我方静止牌**纹丝不动**（不再升落）；真移动的兵行军动画不受影响（错峰逐跳照旧）。
 
-### REQ-UI-PlayingCard-back 牌背贴图 prop · [2026-07-14] · Lead（game-g 台账化撞到控件缺口）→ 主程（ui/components 控件集） · status: **✅ done（主程亲手·批29·2026-07-15）** · 类型: 基座控件扩 prop（additive·非逃生）
-> **缺口**：引擎 `PlayingCard` 控件只有正面 `art`，无牌背贴图 prop——game-g 台账 art-59（牌背图）出图后无处消费。
-> **要做（主程·render.ts+types）**：`PlayingCardProps` 加可选 `backArt?: string`（已解析 URL·背面替代现程序化背纹·缺省观感零变）；翻面/背面渲染点接入；加一条 render 测试。到位后 game-g 覆盖装载已有的 tex 通道直接接。
-> **✅ 完工回执（批29·owner 07-15「不只立绘，还有按键/背景/牌面」）**：`backArt?: string` 落 types+render+catalog（faceUp:false
-> 整面 cover·替代纹样字符与 backPattern·无=原样零变）；render 测试 2 断言组（playing-card.test）；game-g 主页 duel-back 已接
-> （覆盖在场才设）。同批一并下沉 **UITheme.buttonSkins 主题级按钮皮槽**（kind→{skin,skinSlice}·node 级 skin 优先·一个 kind
-> 一张皮全游戏一体换），game-g 三主题挂 getter、台账扩 art-61~63（btn-hero/primary/ghost）、对战屏背景板 art-56 接线毕。
-
 ### REQ-UI-PlayingCard-xl尺寸 · [2026-07-06] · PG（game-g 绝命对决 R21 布局重置）→ 主程（ui/components 控件集） · status: **open（控件缺口·PG 不擅改 render.ts）** · 类型: 基座控件扩尺寸档（闭集加一档·additive·非逃生）
 > **源起**：owner R21「布局重置」要绝命对决特写忠实设计稿（`design/UI/Game G 绝命对决.dc.html`）——设计稿对决双方扑克牌 **118×142**；现 `PlayingCard` 尺寸闭集 `PCARD_DIMS`（`src/ui/components/render.ts:584`）最大档 `lg=[82,116,18,46]`，比设计小一圈。PG 已把特写用到 `lg`（当前最大），仍不足。
 > **申请**：`PCARD_DIMS` 加 `xl: [118,142,22,58]`（宽,高,圆角,大字号·按 lg→md 比例外推）。纯加档·不动现有 sm/md/lg（零回归·所有现用点不受影响）。
@@ -159,13 +65,6 @@
 > **待主程/PE（跨域·非 PA）**：① **设置 UI + server**——把 Tripo/DashScope key 接进 `apollo.py` 设置系统（现 `LLM_PROVIDERS` 是 chat 域·生成域另起一套或并入）+ 创作台设置屏（LayoutNode·UI铁律·复用 `providerSettings()` 形状与 `apiKeyMasked` 打码）。② **运行时生成 UI**——创作台输入 prompt→调生成→资产入本地库→即时可用（异步任务·pending/进度·参照 aigp 视频端口 handle 模式）。③ 浏览器侧直调需把生成逻辑做成 `src/services/ai-gen/` 端口（node 侧 `ai-gen.mjs` 是 authoring-time 参照）。
 > **真调前置**：放宽网络的环境/session（Tripo/DashScope 域名本环境 403）+ 用户付费 key（owner 已购）。许可按各家订阅商用条款（provenance 已记）。
 > **+ meshy 适配器接入（PST 2026-07-07·owner 直接要「接入 meshy 顺便接菜单」）**：`ai-gen.mjs` ADAPTERS 加第三家 `meshy`（文本→3D glb·kind:mesh·envKey `MESHY_API_KEY`·mock→cube.glb 占位·真调走 Meshy v2 openapi `POST /openapi/v2/text-to-3d` mode:preview → 轮询 `model_urls.glb`·门控同 tripo）；apollo.py 白名单 `GEN_ADAPTERS=('tripo','meshy','qwen')`（新增 provider 两处同改=脚本注册+此白名单）；创作台 `AssetGenPanel` 适配器菜单加 🗿 Meshy(3D) 一档 + provider key 状态自动列出。测试：`ai-gen.test` 注册表 + meshy mock glb·render 测断言菜单含 Meshy。门禁 tsc0/vitest2318/build0。**ai-gen.mjs=PA 框架·此 provider 扩展请 PA 会审**（真调端点/字段是否随 Meshy-6 漂移）。
-
-### REQ-PA-3D公用货架 · Free Library 增公用 3D 基础素材 + 3D vendoring + 本地目录标准 · [2026-07-04] · owner 拍板 → **指派：PA（资产侧 ①②③④a）· P3D（游戏侧切换 ④b）** · status: **PA 侧 ✅ done（①②③④a·分步全绿推）；④b 转 `requests-3d.md`「REQ-3D-货架接入」待 P3D** · 类型: 架构补全（vendoring 模型的 3D 半边·真缺口）
-> **PA 施工回执（2026-07-04·分步全绿推）**：① 货架备料工具 `scripts/gen-shelf-3d.mjs`——11 材质(数据型 `mat/*`)+3 基础 mesh(程序化 glb `mesh/plane|cube|sphere`·three GLTFLoader 实测可解析)+3 程序化贴图(`tex/plank_*`·usage 闭集)+1 渐变天空盒(`env/sky-gradient`·纯 Node PNG)。② `vendor-asset.mjs` 支持数据型(material 无 path·免 copy)+文件型(mesh glb/贴图)——`game-z` vendor 了 mat/mesh fixture，`vendor.test` 覆盖两路。③ 本地目录标准 `public/games/<game>/art/{textures,models,materials,env}/` 已写进 `playbooks/assets.md ⑥`。④a 程序化贴图产进货架。守护测 `src/assets/shelf-3d.test.ts`。
-> **owner 愿景**：Free Library = 统一货架（2D + 公用 3D 基础素材）；每游戏开工按需 vendor 到本地美术目录，一律不直引货架。
-> **现状核对（PA 2026-07-04）**：2D ✅（`vendor-asset.mjs` + 游戏本地 `art/index.json` 已通）；3D ❌——共享 `assets/index.json` 全 2D（type 仅 texture+1 sound·零 mesh/material/hdr）；程序化贴图散落 `public/textures/` 被游戏直引（=反 vendoring 例）；3D 素材各游戏自持、无公用货架。
-> **四步**：① 共享 3D 货架——登记公用数据资产进 `assets/index.json`(+spec)：基础 mesh(cube/sphere/plane glb)、材质(pbr 预设降为 `type:'material'` 数据条目)、程序化贴图(gen-textures 产物登记)、天空盒(1–2 CC0 HDRI ≤2k)。② 扩 `scripts/vendor-asset.mjs` 支持 copy mesh/material/hdr 进本地并携 spec(scale/colorSpace/genCollision)+补测(现仅测过 2D)。③ 本地目录标准 `public/games/<game>/art/{textures,models,materials,env}/` 写进 `playbooks/assets.md`(PA handoff backlog #4 收口)。④a gen-textures 产物改「产进货架」而非散落。④b（P3D 域·转 `requests-3d.md`）game-z/game-d 停直引 `public/textures/` → 改从本地 `art/` vendor。
-> **边界**：`MaterialSpec/MeshSpec` 已存在(不新增 schema)；渲染消费端已就绪(P3D render 半定稿)。PA 分步推、门禁全绿；碰渲染/游戏代码先知会 P3D。
 
 ### REQ-PUBLISH-创作台一键发布 · player 模式内「打包→上传 Steam」一键流水线 · [2026-07-04] · owner 口头指派 → PS 转呈（跨 PS↔PST 域） · status: **裁决完毕（Lead 2026-07-04·见文末）·PS 先行硬化契约·PST 排队接 UI** · 优先级: P2（产品体验·非阻塞） · 类型: 产品化·发行管线接入创作台（后端多已存在·主要是接线）
 > **源起**：owner 2026-07-04：创作台 **player 模式**下把发布按钮/路口接好——一键打包、填自己的 Steam ID/AppID，让用户「一条流水线产出游戏」。**范围裁决（owner 当面答 PS 二选）**：① 承载面 = **创作台 player 模式（网页）**；② 深度 = **尽量一路到 Steam 上传**（能自动的自动到 steamcmd upload 为止）。
@@ -187,89 +86,6 @@
 >
 > **PS 契约硬化完成（2026-07-04·owner「可以先做」+ Lead 裁准 PS 先行）**：`serve.py` 按 Lead c) 硬化成稳定契约——**三段命名** `stage_package/stage_genvdf/stage_upload` + `plan_pipeline` 组合 + additive `POST /api/plan`；**判词 token 收口**（段判词 `ST_OK/ST_BLOCKED`、任务判词 `JOB_IDLE/RUNNING/DONE/ERROR`·`job_status()`，接进 `/api/state`+`/api/log`，消费端不 scrape 日志）；无真账号冒烟 `scripts/steam-publish-smoke.py`（480·**24 断言**·退出码门禁·自证可红·登记 testing 手册）。apollo.py 薄代理 `/api/publish/*` 透传即用。**余：apollo.py 代理（服务面域）+ PST 接向导页 UI**。详见 `finish/PS-steam-finish-list.md`。
 
-### REQ-QC-三门复查·流程板加「复查门」+ S7 评分卡长机器牙齿 · [2026-07-15] · owner（「每步要有其他 session 复查/自检·品质比想象低」+「美术下限非常低·要的是原来那个自检打分管线」）→ Lead 诊断+施工 · status: **✅ done（Lead 亲手施工 2026-07-15·门禁全绿直推 mainbranch·已在 block-blast-mini 真演闭环）** · 优先级: **P0（owner 主诉·品质防线）** · 类型: 生产流程基建（质量控制层）
-> **Lead 诊断（品质为什么低）**：①机器门全测「能不能跑」不测「好不好」（bench 70=能跑≠好玩好看）；②品质所在的 S6/S7 恰是纯人门无机器牙齿——session 跑完 S3-S5 机器绿即宣布完成，S6/S7 实际被跳过；③无第二双眼睛——session 自己给自己打分（game-k 病根），唯一独立检查=owner 本人签不过来。**你给的八维评分卡（REQ-ART-TGS A）此前只挂在文档里、没接进流程当门——「美术下限低」正是这缺口。**
-> **✅ 落地（三门制）**：每关=机器门（真跑）→ **复查门（另一 session 按清单对抗性核证·落账）** → 人门（owner 签）。`game-pipeline.mjs` 新增：`checklist <slug> <SN>`（打印该关复查清单·复查 session 开工第一命令）、`review <slug> <S2|S3|S4|S5|S8> --verdict PASS|CONCERNS|FAIL --note --by`（空 note/无 by 拒收·绑内容指纹·游戏一动复查过期）、`scorecard <slug> --scores "八维:0-3" --by --note`（**S7 品质关机器牙齿=评分卡落账：任一维 0 分=该关红灯·全维≥2 才 premium·八维必须全打不得跳维**）。看板三行门态·status=三门合成（复查 FAIL=整关红）。豁免：S1（owner 亲提）、S6（复核已内嵌美术平台逐行 ☑）。新手册 `docs/playbooks/review-gates.md`（复查 session 工作法+防橡皮图章红线）；回填 game-production.md/index.md/testing.md。
-> **真演闭环（block-blast-mini·复查门首战战果）**：独立复查 agent 照单复查——S2 PASS·S3 PASS·S4 **CONCERNS**·S5 **CONCERNS**·S7 评分卡 **VISUAL: 5/24 · PREMIUM: NO**（世界密度/材质/渲染管线/VFX=0 → 板上红灯）。**复查逮出施工方（Lead 本人）没报的 5 个问题**：①游戏未注册进 launcher=玩家无入口；②终局只置 Flag 不可见+此后拖拽静默拒=软锁；③托盘槽形状不可见（与已登记的高亮预览是两回事）；④audit 对 builtin 纯数据游戏误报「零能力接入」（工具不扫 public/games manifest·待小单修）；⑤S8 证据过期须重跑。①②③=block-blast-mini 续做工作项（S4/S5 复查 note 在案）；④=审计工具小缺口（待单）。**这正是复查门的存在证明：机器门全绿的东西，另一双眼睛仍逮出一把真问题。**测试：`scripts/game-pipeline.review.test.mjs` 8 例（复查语义/评分卡语义/三门合成/FAIL 压过机器绿/指纹过期/豁免关不受扰）。
-> **给 PST 的接续单**：工坊生产板 UI 现只显示机器门/人门两行——board JSON 已加 `review` 字段（additive·端点自动透传），请 PST 在 GamePipelinePanel 补第三行「复查门」显示 + scorecard 摘要（照 CLI 版式）。**诚实边界**：复查门抬的是「纪律+品质下限」；游戏好不好玩仍靠 S7 评分卡+owner 试玩，工具替代不了人的品味。
-
-### REQ-STAB-系统调度依赖图 lint（积木稳定性工具）· [2026-07-13] · owner（「评估分层 Tier 积木稳定性」→ 批建议①）· status: **✅ done（Lead 亲手施工 2026-07-13·门禁全绿直推 mainbranch）** · 优先级: P2（架构健康基建） · 类型: 稳定性工具（引擎调度分析）
-> **背景（Lead 积木稳定性评估结论）**：分层/测试/确定性/护栏都强，唯一规模化脆点=**系统调度定序网**（42→现 83 条手动 runsBefore/runsAfter 边靠人肉维护·共享组件 RMW 易成环）。引擎 topological-sort 在 load 时硬失败兜底（不静默 desync），但报错把「环+一切被卡下游」全列出（over-report）、不指哪条边闭的环——加新积木定序费脑。此工具把「反应式 load 抛错」升级成「主动可视化 + 精确切环」。
-> **✅ 完工（Lead 2026-07-13）**：`src/assembly/system-graph.ts`——与引擎 topological-sort 边模型**逐条对齐**（组件推断边+显式覆盖+phase 分桶），**Tarjan 精确切最小 SCC**（vs 引擎 over-report）+ 点名闭环 RMW 组件 + 破环建议；检出两类恒为 bug 的形态：**悬空显式边**（runsBefore/runsAfter 指不存在系统=静默失效）、**重复 system id**。CLI `scripts/system-graph-audit.mjs`（vite-node·判词 `SYSTEM-GRAPH: PASS|FAIL`）：无参=全局体检（SCC 作信息·全局超集环非 per-game bug）；`<capId…>`=**查某游戏能力子集共装会不会 load 抛环**（这才是真问题·退出码 1）。
-> **实测**：全局 67 系统/83 显式边·**0 悬空/0 重复**·Tarjan 切出 4 个全局超集环（phase0 的 36 系统巨环=核心组件 RMW·现实从不同装）；子集 `t2-bounds-clamp t2-facing` 即报「共装会抛环·闭环组件 Transform」——工具当场逮出真实潜在定序张力。门禁：`src/assembly/system-graph.test.ts` 10 例（真数据硬不变量 0 悬空/0 重复 + 每能力自身可排 + **与引擎 topo-sort fidelity 对拍**：2元/3元环检出即引擎真抛、显式破环即不抛）。回填 testing 手册。tsc 0 · vitest **2462** · build 0。
-> **建议②（组件清单守卫）✅ done（Lead 2026-07-13·owner 批「做一张会自动报警的清单」）**：`scripts/component-manifest-guard.mjs` 扫 protocol/components 全部 `readonly type:'X'`（118 个共同零件）对比冻结基线 `component-manifest-baseline.json`；加/改名/删任一组件而没同提交 `--update` 更新基线 → `COMPONENT-MANIFEST: FAIL` 退出码 1（改动逼进 diff·防共同语言静默漂移搞坏在用它的游戏）。门禁 `scripts/component-manifest-guard.test.mjs` 5 例（当前=基线 + diff 检出自证）。回填 testing 手册。**建议③（版本纪律 semver 化）未做**·偏纪律可缓·另立待 owner 批。
-
-### REQ-CAP-grid-drag-square-方形网格拖放输入桥（Block Blast 核心机制②）· [2026-07-13] · GD/PE（Block Blast）报缺口（本地 Workshop·未走上传·owner「别等上传直接做」）→ Lead 评审下沉 · status: **✅ done（Lead 亲手施工 2026-07-13·核心落子桥·门禁全绿直推 mainbranch）** · 优先级: P1（Block Blast 核心·与①配对） · 类型: 引擎 capability 下沉（Tier2 输入桥·引擎域）
-> **Lead 评审（CORE RULE）→ 认缺口·接受**。①能否重组→不能：`t2-drag-place` 只 `snap:'hex'`（写 HexPos·移动单个持久实体上场），本机制是**方形吸附 + polyomino 盖章**（消耗托盘形状、产放置意图·非移动实体）·输出路径与坐标系全不同。②已覆盖→没有。③真缺口→下沉 Tier2 输入桥 `t2-grid-drag-square`（与 drag-place 同层同定位·方形+盖章）。
-> **✅ 完工（Lead 2026-07-13）**：`src/skills/tier2/grid-drag-square.ts`——纯函数 `squarePointToCell`（世界点→就近方格·导出可测）+ 一系统：读壳层 `drag` 动作→命中 `BlockTrayPiece` 托盘块取 slot→终点吸附方格 (col,row)→写 `PlaceBlockIntent`（block-grid 接缝·`runsBefore block-place` 同拍消费落子）。新组件 `BlockTrayPiece{boardId,slot}` + `BlockGrid` 补方格几何 `{originX,originY,cellSize}`（可选·向后兼容）。注册 tier2/index + registry（能力 85→86·registry-guard/catalog 绿）。
-> **数据驱动实证**：纯 JSON manifest（`['t2-grid-drag-square','t3-block-grid']` + 托盘块 + 注入 drag）→ 1 tick：拖起点命中托盘块→终点吸附格(2,0)→写意图→block-grid 落子该格 + 用掉槽，一拍到位。**测试**：`grid-drag-square.test.ts` 6 例（纯吸附 3 组 + 集成：命中落子/未命中不产/无几何 no-op）。门禁：tsc 0 · vitest **2452** · build 0。
-> **残项（诚实登记·未做·需你/GD 定）**：**拖拽中「合法/非法高亮预览」未做**——本引擎输入模型 `drag` 动作只在**松手**合成（起点+终点），实时 hover 需壳层开 `PointerInputSource` 的 `opts.move` 流 + 一套「预览高亮」渲染约定（引擎无先例·是新面）。当前落子桥不依赖它即完全可玩（Block Blast 无 ghost 预览也能玩·只是少一层手感）。高亮预览作独立后续件：需定 ①开 move 实时流 ②预览怎么表达成数据（临时 Color 覆盖 / 新 Preview 覆层组件）+ 走 render 组件的接法。待裁。
-
-### REQ-CAP-block-grid-方块网格棋盘能力（Block Blast 核心机制①）· [2026-07-13] · GD/PE（Block Blast）报缺口 → Lead 评审下沉 · status: **✅ done（Lead 亲手施工 2026-07-13·门禁全绿直推 mainbranch）** · 优先级: P1（Block Blast 核心·没它游戏跑不起来） · 类型: 引擎 capability 下沉（Tier3 算法机·确定性关键·引擎域）
-> **Lead 评审（CORE RULE·独立核实非照单收）→ 认缺口·接受**。①**能否重组**→不能：多格 polyomino 落点合法性 + 整行整列扫描消除 + 无子可落判负=带网格扫描/循环的算法，`Condition→Event→Effect` 反应式布尔表达不了（match3-board 当年下沉为 Tier3 的理由一字不差）。②**是否已覆盖**→没有：读码实锤 `t2-drag-place` 只支持 `snap:'hex'`（写 HexPos·单实体单格·无方形无 polyomino）；`t3-match3-board` 是「交换→三连→重力→补块」正交规则；`t2-tray` 只是一排槽位。三者都表达不了。③真缺口→下沉新 Tier3 `t3-block-grid`。④非游戏专属：Block Blast/Woodoku/俄罗斯方块类通用·config 驱动（最弱 LLM 只填棋盘尺寸+形状定义+计分参数纯数据）。
-> **✅ 完工（Lead 2026-07-13·纯数据可跑已验）**：`src/skills/tier3/block-grid.ts`——纯函数核 `canPlace/applyPlace/fullLines/clearLines/canPlaceAnywhere/anyTrayPlaceable`（导出可测·整数网格·零裸随机）+ 两系统 `block-place`（消费 `PlaceBlockIntent{slot,col,row}`→判定/落子/消整行整列/`ResourceModify` 计分/托盘 `RandomSeed` 确定性补形/`Flag` 判负）+ `block-view-sync`（据 cells 写 `BoardCell.Color.tint`）。新组件 `BlockGrid`/`BlockShapeDef`/`PlaceBlockIntent` 入 `components/cardboard.ts`；注册 `tier3/index` + `capability-registry`（ALL_CAPABILITIES 84→85·registry-guard 绿·已入 buildCapabilityCatalog 供 LLM 消费）。
-> **数据驱动实证**：纯 JSON manifest（`capabilities:['t3-block-grid']`）→ parseManifest→load→1 tick：单格落 (2,0) 补满行0→整行清空→托盘确定性补形，全绿。**测试**：`block-grid.test.ts` 17 例（纯函数 6 组 + 引擎集成：放置/消行计分/非法拒绝/确定性补形/判负/视图同步）。门禁：tsc 0 · vitest **2446** pass · build 0。
-> **接缝（给缺口②）**：放置意图走 `PlaceBlockIntent` 组件——**配套输入桥 `grid-drag-square`（方形吸附+polyomino 预览+合法/非法高亮）作为缺口②另立**，写同一 Intent 即插入；本能力只管「判定+结算」，现可由点击/测试直接驱动。
-> **治理提示**：Block Blast 的 `capability-plan`（`docs/design/<game>/capability-plan.md`）我在库里**没找到**——按铁律新游戏开工前须交能力总览过审，请补齐（本次先下沉了无争议的通用缺口①·符合 owner 07-11 capgap 快速通道 + 「能出复杂的东西=第一要素」价值序）。缺口②`grid-drag-square` 待 GD/PE 正式报单，我再评审下沉。
-
-### REQ-VECTOR-ART-美术资源统一「贴图 | 程序矢量」一等 resolver · [2026-07-13] · owner 提出统一抽象 → PST 评审接受·建步1 proof · status: **✅ 三步全落·Lead 验收通过 2026-07-14（步1 ✅PST 763738c5·步2 ✅PST 01347725·步3 ✅Lead 0474b1a4）** · 优先级: P1（owner 主诉·代码游戏安全换皮的地基） · 类型: 能力下沉候选（引擎资产 resolver·Lead 域）
-> **owner 洞见（PST 评审=对·宪法方向）**：美术资源 = 一个**统一间接层**——台账/索引里一个条目 resolve 出来的可以是 ①raster 贴图 也可以是 ②procedural/vector 矢量描述；**底层两者一回事**（都是"这个槽当前长这样"）。把游戏当前所有矢量图**变成索引条目**（指向矢量描述），美术资源统一、可安全热替换。
-> **现状（机读真相）**：`src/assets/asset-index.ts` 的 `AssetType` = texture/mesh/material/sound/animation/video/font——**无 procedural/vector 一等类型**；`resolveArtRefs` 只解 `art:<query>`→FreeArtLib 精灵（raster）。程序化美术（如 game-g `art-textures.ts`/`portraits.ts`）活在渲染代码里·不进索引·渲染直接调=二等公民。**统一抽象底层未落地=真缺口。**
-> **三步安全落地（帧回归兜底·数据驱动·绝不改蓝图逻辑）**：
-> - **步1（PST·已做·非破坏）**：把 game-g 52 名将立绘（portraits.ts）+ 绿呢底纹（art-textures.ts）**落成真 .svg 矢量文件** + 美术台账索引（`source:procedural·style:vector`）→ `public/games/game-g/art/`（`scripts/game-g-art-index.mjs`）。游戏美术库直接显示 53 条矢量美术·**只写文件不碰渲染**（game-g 211 测全绿·含帧回归）。
-> - **步2（渲染指向索引·程序B/owner 授权 PST 代做·golden 帧保命）**：art-textures/portraits 的取图改成**先查索引**（默认条目=当前程序化输出）→ 渲染"指向美术库"但观感零变（`__frames__` diff 全绿证零变）。
-> - **步3（真下沉·此单·Lead/引擎域）**：引擎加**一等 `procedural`/`vector` 资产 + resolver**——`textureKey → 索引 → (生成器 | raster 文件)` 统一解析·保参数化（如 game-g 双皮 玄铁金/锦霞）。落地后每条目**热替换**（矢量↔真图·重设计矢量·渲染代码零改）。
-> **请 Lead 裁**：a) 认不认此缺口（vs 现「贴图 data-URI 塞 path」够用）；b) resolver 契约定形（新 AssetType `vector`？还是 texture + `spec.generator`？参数化怎么带）；c) 派工。加测试证「同一 textureKey·索引指 raster vs 指 vector·渲染都对·切换零改调用点」。
-> **⚖ Lead 裁决（2026-07-13·契约定形·施工认领）**：
-> **a) 认缺口**。统一间接层方向=对（owner 洞见成立）：参数化程序矢量不进索引就永远是二等公民——换皮/热替换/台账都够不着它；「data-URI 塞 path」只覆盖**静态**矢量（步1 落盘的 .svg 文件即此类·已够用），**参数化生成器**（双皮 fill/stroke 令牌类）是真表达不了的缺口。
-> **b) 契约=texture + `spec.generator`（不加新 AssetType）**。理由：type=消费契约——渲染器拿到的一律是可绘贴图，矢量/程序化是**来源**细节不是消费类型；单独 'vector' 型会叉开每个消费开关（Sprite/皮肤槽/台账/打包全要分叉），而 spec 判别=既有先例（material 数据型免 path 同款）。定形：①索引条目 `type:'texture'` + `spec.generator = { name, params? }`（params 值限 number|string|boolean·纯数据）·带 generator 者免 path（spec 闭集 schema 注册期校验·name 必须在生成器表内）；②引擎新增 `src/assets/texture-generators.ts` **生成器注册表**：`registerTextureGenerator(name, fn)`（fn: params→data-URI·**确定性纯函数**·禁随机/时钟/IO）+ `resolveGeneratedSrc(entry)`；③接线=AssetManager register/resolve 期把 generator 条目解析成 `src=data-URI` → loader/渲染器/皮肤别名/打包全线零改；④**热替换语义**：同一 textureKey 的条目在 `path`（raster）↔ `spec.generator`（矢量）间切换=只改索引数据·调用点零改；⑤参数化=params 全在索引（game-g 双皮=同 generator 两组 params）；⑥game 专属生成器（coinLatticeTile/portraits）在 game 模块 `registerTextureGenerator` 登记（编译线），通用花纹类可后续下沉共享。
-> **✅ Lead 对抗性验收（2026-07-14·全过）**：①步1——53 条索引过引擎 parseAssetIndex 真校验、53 个 .svg 文件真身在盘、只写文件不碰渲染 ✓；②步2——覆盖注册表语义正确（命中真图/未命中回退程序化·现全程序化条目=观感零变），「没加载完就不画」时序论证成立（大厅无立绘=同步渲染保集成契约·立绘子屏打开前覆盖已后台就绪），绝对路径 path 与取用方式自洽，game-g 214 测全绿含帧回归 ✓；③game-d 台账 83 行 ✓；④审计：AUDIT FAIL=存量基线债（8/29/31 与 audit-baseline 一字不差），RATCHET PASS=本系列零新增红旗 ✓。**两条非阻塞备注**：a) game-g 索引 path 用绝对形态（与 registerAssetIndex(baseUrl) 相对约定不同——现消费端自洽；日后接 AssetManager 用 baseUrl='' 即可，勿双前缀）；b) 下一步顺理成章=双皮参数化底纹迁 `spec.generator` 条目（吃步3 契约·registerTextureGenerator 登记 coinLatticeTile 族），PST 可接。
-> **c) 派工=Lead 亲手**（引擎资产层·确定性关键·REQ-PKG 先例不下放），即刻排期。测试按 PST 原单四腿：raster/generator 同 key 都渲染、切换零改调用点、生成器确定性（同 params 同 URI）、spec 校验负腿（未注册 name/坏 params 拒）。步2（渲染指向索引·golden 帧）待步3 落地后 PST 接续。
-
-### REQ-PKG-数据游戏打成独立可运行包·引擎「从内联 manifest 启动」钩子 · [2026-07-12] · owner（workshop 发布屏「打包下载=直接可运行文件」）→ PST 建流程撞到真缺口 · status: **✅ done（Lead 亲手施工 2026-07-12·web 单文件线·门禁全绿直推 mainbranch·待 owner 真机双击验收）** · 优先级: P1（owner 主诉：要能打包"我生成的游戏"·非样例） · 类型: 能力下沉候选（发布线×引擎·game-publisher/Lead 域）
-> **✅ 完工回执（Lead·2026-07-12）**——CORE RULE 评判：**认缺口·接受**。判据：①「重组现有能力」尺子对**游戏内容**不对**发布/构建基建**（此为引擎团队代码本分·非游戏数据）；②功能未覆盖——`build:cartridge:single`(VITE_SINGLEFILE) 只认工程游戏静态 import（`VITE_TARGET_GAME`→`src/games/<id>`），库卡带是运行时 fetch 的纯数据 manifest，离线无服务器可 fetch=真表达不了；③修法=最小确定性钩子把**既有解释器**（parseManifest+Engine.load+CanvasRenderer·与 `DataCartridgeRunner` 同一条路）接到内联数据源，非新游戏逻辑、不碰引擎核。契约裁决：**a)** 认缺口；**b)** Lead 亲手施工（小·自包含·确定性关键路径），不派；**c)** 全局名/脚本契约定形见下。
-> **落地**：① 抽 `src/studio/cart-run-core.ts`（`runBlueprintInto`+键盘接线+装载探针·从 `DataCartridgeRunner.RunOnly` 抽出·在线/离线共用一条路杜绝语义漂移）；② 引擎钩子 `src/cartridge-inline-run.ts`（读 `window.__APOLLO_INLINE_CART__` manifest 对象·可选 `__APOLLO_INLINE_META__={title,subtitle}`→parseManifest→跑·未注入/坏稿明报不白屏）；③ `cartridge-entry.ts` 加 `__inline__` 分支（静态可 DCE·工程游戏不牵连进数据运行时）；④ `scripts/package-web.mjs <slug> [out]`（`VITE_TARGET_GAME=__inline__`+`VITE_SINGLEFILE=1` 构建通用外壳→内联 manifest 进 `<head>`·覆盖 title·**自包含体检**无 http(s) 外链才落盘）；⑤ apollo `_pkg_build_platform` web 分支：库卡带（不在 `_CARTRIDGE_ENGINE_GAMES`）→ 走 package-web，工程游戏路径原样。
-> **契约定形（apollo 按此调·已接）**：全局 `window.__APOLLO_INLINE_CART__`=manifest 纯对象；可选 `window.__APOLLO_INLINE_META__`={title,subtitle}；脚本 `node scripts/package-web.mjs <slug> [outFile]`（缺省 `release/<slug>/<slug>.html`）。
-> **测试**：`src/cartridge-inline-run.test.ts`（5·readInlineCart 契约+**内联 manifest 空跑 2 tick**+mount 出 canvas+坏稿引爆）；`scripts/package-web.test.mjs`（12·注入顺序/title/`</script>`转义/自包含扫描/卡带读取）；`scripts/package-web-smoke.mjs`（opt-in 端到端真构建·Lead 亲跑=**222KB 自包含单 HTML·零外链·manifest 真内联** PASS）。门禁：tsc 0 · vitest **2429** pass · build 0。
-> **残项（诚实登记·未做）**：① manifest 里 `art:` 引用**打包期未解析**→离线包退化占位（art: 解析 + FreeArtLib/资产 base64 内联=后续件·纯 Shape/Color 游戏含全部模板起步款已完全离线可跑）；② Mac/Win 桌面库卡带（electron 装该单文件）未接，本次只做 owner 主诉的「网页版单文件双击即玩」。二者可另立单。
-> **owner 诉求**：workshop 发布屏——每游戏选平台「打包」→「下载」出**直接可运行**产物（网页版=单文件双击即玩·Mac=.dmg）。**每平台一行·打包/下载并列**的 list（PST 已做）。
-> **PST 已落地（本次·apollo.py+壳·门禁绿）**：① 发布屏改造成「每游戏 × 每平台（网页版/Mac/Win/掌机/工程包）· 打包 · 下载」并列 list；② apollo 后台打包任务 `POST /api/package/job`{slug,platform} + `GET /api/package/job?id=` 轮询 + `GET /api/package/download?id=` 取产物；③ **内置工程游戏（e/f/g/x）真打包**：网页版=卡带单文件自包含 HTML（`VITE_SINGLEFILE`·实测 game-g→5.8MB·0 外链·双击即玩）、掌机=build_game.py、Mac/Win=electron-builder（非 macOS 诚实拦截给命令·不伪造）。
-> **真缺口（此单）**：**生成的库卡带（纯数据 manifest）打不成独立单文件/桌面包**——现 cartridge/electron 管线只认 `src/games/<id>` 工程游戏（`VITE_TARGET_GAME`）；生成的游戏是 `library/<slug>` 数据，运行时靠**在线 fetch** manifest（`?game=lib:<slug>`），离线单文件里没服务器可 fetch。
-> **要下沉的能力（manifesto 对味：游戏=数据·引擎=解释器；打包=引擎 bundle + 内联数据）**：**cartridge/launcher 引导层能「从内联 manifest 启动」**——读一个注入的全局（如 `window.__APOLLO_INLINE_CART__`=manifest 对象）时，走既有 parseManifest+load 路径直接跑它，跳过 fetch。配一个 `scripts/package-web.mjs <slug> <out>`：把运行时 bundle + 该 slug 的 manifest 内联进**单个自包含 HTML**（file:// 双击即玩）。落地后 apollo `_pkg_build_platform` 的 web 分支对库卡带即通，桌面同理（electron 装该单文件）。
-> **边界**：钩子在 **cartridge 引导/launcher（非 `src/{engine,skills,assembly,renderer,services,net}` 锁定引擎核）**+新 build 脚本+vite cartridge 配置=**发布线（game-publisher）/Lead 域**；PST 不擅改。**请 Lead 裁**：a) 认不认此缺口（vs 现 zip 够用）；b) 派 game-publisher 还是并入 REQ-PUBLISH；c) 全局名/脚本契约定形（apollo 按此调）。加一条测试证「输出自包含+能从内联 manifest 空跑 2 tick」。
-
-### REQ-QA-发行测试假信心修 · mock-steam 排序 / achievements 幂等 断言补全 · [2026-07-04] · 主程（测试意义性复核撞到）→ **发行工程师（PS）域** · status: **✅ done（PS 2026-07-04·两处断言补全 + 自证红·门禁全绿）** · 优先级: P2（小·非阻塞·但属「假信心」测试=比没测更糟） · 类型: 测试正确性修（断言没验测试名声称的行为）
-> **✅ 完工（PS 2026-07-04）**：① `mock-steam.test.ts` 排行榜——给 `leaderboard` 事件补 `board` 快照（经既有 `onEvent` 通道观测·不碰 SteamBridge 契约/不耦合 LS key），断言乱序上传 30/90/60 后榜单 `[90,60,30]` 降序 + 严格非递增。② `achievements.test.ts` 幂等——改为 toast 计数：同端口再解锁 + 跨持久化二次端口解锁，均断言仍恰 1 个 toast（旧断言只验 `isAvailable` 常量）。**验收自证**：临时去 mock 排序 → ① 红（`[30,90,60]≠[90,60,30]`）；临时去幂等守卫 → ② 红（`expected 2 to be 1`）；恢复后 tsc + vitest(2245) + build 全绿。边界内（仅两 `*.test.ts` + mock 事件补 `board` 字段）。
-> **源起**：主程 2026-07-04 全库测试意义性复核（4 子代理分片精查）发现两条**「假信心」测试**——测试名声称测了某行为，但断言根本没验它，被测逻辑改错也照绿。均在 `src/services/platform`（PS 域），故派 PS 修（Lead 出诊断 spec，PS 施工）。
->
-> **① `src/services/platform/mock-steam.test.ts:22-30`**：测试名意在「排行榜高分在前」，body 只 `uploadLeaderboardScore` 三个分数、**从未断言返回/查询的榜单是降序**。→ mock 若升序或不排序都不会红。
-> - **修复须证**：上传三个乱序分数后，查询榜单，断言**按分数降序**（高分 index 更靠前）；至少断言「更高分不会排在更低分之后」。若 mock 当前实现未真排序，一并把排序补上（这才是被测行为）。
->
-> **② `src/services/platform/achievements.test.ts:28-30`**：声称验「toast 幂等」，实际只断言 `port2.isAvailable() === true`（一个 mock 常量），**幂等从未被检查**。
-> - **修复须证**：对同一成就 `unlock` 两次，断言 **toast/解锁只触发一次**（数 toast 调用次数，或验解锁集合幂等/已解锁不再回调）。
->
-> **验收门槛**：改完两处断言在「故意打断被测行为」时**真会红**（PS 自证：临时把 mock 排序去掉 / 幂等去掉 → 测试应红）；tsc+vitest+build 全绿直推 mainbranch。**边界**：只动这两个 `*.test.ts`（必要时连带补 mock 的真实排序/幂等实现·仍在 PS 平台域内），不外溢。
-
-## 已结案条目 → 全文见 `requests-archive.md`
-
-> 所有 done/wontfix/作废 条目（含裁决理由与完工摘要）已归档到 `requests-archive.md`；查旧单先 grep 它。本池只留活跃 open/in-progress/排队 条目（防每读付历史 token·owner 2026-07-04 token 底盘优化）。
-
-### REQ-STUDIO-低模生成四件 · owner 用 deepseek 实测暴露「词汇灌注≠弱模友好」 · [2026-07-06] · owner 实测（3 轮校验不过·184k tokens/单局）→ Lead 诊断出图 → **指派：Opus** · status: **✅ done（Opus·2026-07-06·门禁全绿直推·待 Lead 真浏览器验收 + owner 真 deepseek 重测）** · 优先级: **P0（owner 实际堵点·创作台核心命题）** · 类型: 产品化·生成管线架构
-> **Lead 验收（2026-07-06）REVIEW: PASS**：独立复跑门禁全 0 + smoke 44/44 + 真浏览器 e2e 12/12；引擎域零触碰核实（错误改写/词汇裁剪全在 apollo.py 侧·manifest-check 一字未动=正确的分层）；词汇裁剪实测 41.9k→10.4k 字符（-75%）·重试轮仅 +1.8k（轮次裁剪生效）。**剩最后一步实测留 owner：真 deepseek key 同题重测（目标 ≤1 轮通过·对比 184k 基线）——本环境无 key。**
-> **✅ 完工回执（Opus·2026-07-06·四件 + 交互日志一批）**：
-> **① 模板起步+增量修改（默认路径·最大杠杆）**：apollo.py `TEMPLATE_LIBRARY` 6 模板（**逐个过 manifest-check 全绿**）——`bounce`(弹跳小球)/`platform-jump`(平台跳跃·收编 PRESET)/`pong`(弹球对战·收编 PRESET)/`collect`(收集金币)/`dice`(掷骰子)/`cards`(卡牌桌)。新 `mode:'template-edit'`：关键词选最近模板 → prompt=「这是能跑的基线 manifest + 用户想法 → 输出**修改后的完整 manifest**」→ autofix 硬校验回路。前端 `CreationWizard` create 态加「生成方式」双选：**「从模板改」（默认·各档模型都稳）/「自由生成」（从零·适合强模型）**；预览态标注「基于「X」模板修改」。
-> **② 词汇按题材裁剪**：关键词→模板+能力族纯数据映射（`TEMPLATE_KEYWORDS`/`CAPABILITY_FAMILIES`/`_BASE_ATOM_IDS`）；`_slice_catalog` 把前端送来的**全量** catalog（82 能力·41.9k 字符≈10k tokens）按能力 id 切块 → 只留「基础原子(13)+模板已用族+题材族」子集。**样例**：`掷骰子`→模板 `dice`·族 `[dice,ui]`→子集 **10.4k 字符≈2.6k tokens**（裁掉 ~75%，排除 match3/3D 等无关能力·字节稳定可缓存）。校验错误点名**被裁掉的真实能力**时 `rebuild_system` 下轮补该族全量（`bounce` 子集遇 `t2-dice-roll` 错误→补 `w1-random`/`t2-keybind` 整族）。
-> **③ 校验错误 LLM 化**（侵入最小=apollo.py 侧 `_llm_ify_error` 映射层·不改引擎校验器）：**对照**——① 前 `manifest: 未知 capability id: zz-bogus（不在能力注册表内）` → 后「capabilities 数组里出现了目录中没有的能力 id：\`zz-bogus\`。把它们删掉，或替换成"能力目录"里真实列出的 id」；② 前 `组件数据类型错误 —— ball.Velocity.vx —— Velocity.vx 应为 number，实为 string` → 后「实体 \`ball\` 的组件 \`Velocity\` 的字段 \`vx\` 必须是 number——把它的值改成 0 这样的纯数字（不要加引号）」。回喂只带「上轮 manifest + 本轮错误指令」，**裁掉更早轮次失败输出**；`fixed_errors` 仍留原始错误供前端「查看原始校验错误」区块。（前端半件·显著区块=前批已 done。）
-> **④ token/缓存卫生**：system+子集 catalog 逐轮字节稳定（不重排重拼·最大化 provider 前缀缓存）；每轮记 `promptChars`。**每轮对比样例**（同一次生成）：`template-edit`=17116(pass)｜坏轮 17111(fail)｜`autofix-2`=18910(pass)——**重试轮只 +1.8k**（回喂上轮 manifest+错误指令），非累积历史失败的超线性膨胀。对比 184k 基线的病根「每轮全量 catalog ~10k tokens 从零作曲」：模板路径每轮 catalog 降到 ~2.6k tokens + 只改基线（输出小、闭集内）。
-> **⑤ 交互日志（心跳单第 0 项）**：apollo.py 每次 LLM 往返落一行 JSONL 到 `.apollo/llm-logs/YYYY-MM-DD.jsonl`（新 gitignore）：`{ts,provider,model,mode(chat|generate|revise|prototype|breakdown|template-edit|autofix-k),promptChars,responseChars,validation(pass|fail|skip|n/a|error),errors[截断200],elapsedMs,usage?}`。**API key 绝不落盘**；全文默认不落，`APOLLO_LOG_VERBOSE=1` 才落 prompt/response 全文（全文仍无 key·key 只在 HTTP 头）。**样例行**：`{"ts":"…","provider":"mock","model":"mock","mode":"autofix-2","promptChars":18910,"responseChars":612,"validation":"pass","errors":[],"elapsedMs":1}`。今天「三轮失败是什么」从此 `cat` 一下就有答案。
-> **测试**：新 `scripts/studio-lowmodel-smoke.py`（**44 断言全绿**·mock·模板全绿+关键词映射+子集裁剪+家族扩+错误改写+日志 schema+**弱模基准 `APOLLO_MOCK_BAD_MANIFEST_N` 自证**：坏 manifest 一轮→指令化回喂+轮次裁剪+attempts=2 修复通过）；新 `scripts/studio-lowmodel-e2e.mjs`（playwright·**12 断言全绿**·「从模板改」全链真浏览器旅程：新建→快速生成→双选默认从模板改→骰子创意→预览 canvas+模板标注→入库→切自由生成仍可生成·零 console error）；`scripts/dump-capability-catalog.mjs`（catalog parity 工具）；vitest `creation-wizard.test.tsx` +1 例（默认 template-edit / 切自由生成无 mode / 预览标注）。**门禁**：docs-ref-guard PASS · tsc 0 · vitest **2315** pass · build 0 · `ast.parse(apollo.py)` OK · 存量 studio-design/draft-smoke 零回归。**真 deepseek 同题重测（目标 ≤1 轮修复·对比 184k）本环境无 key→留 owner/Lead**。边界：`apollo.py` + `src/studio/CreationWizard.tsx` + `.gitignore` + 3 测试/工具脚本。
-> **实测证据**：deepseek 做"最简单的游戏"——自动修复 3 轮仍未过校验；单局 184,368 tokens（输入 171k：缓存命中 122k + 未命中 49k；输出 13k）。**流程本身是"读规则"的**（system=manifest 骨架+全量自动 catalog"single source of truth, do not invent"+art 词汇+Rules+最小样例；校验错误逐轮回喂）——但对弱模型仍失败，病根=让弱模型**在 81 项词汇表里从零作曲**。
-> **spec（Lead 图纸·四件）**：
-> 1. **模板起步+增量修改（最大杠杆）**：简单请求不再从零生成——按题材选最近的**能跑模板 manifest**（示例卡带库），LLM 只做增量修改（改名/改数值/换实体/换 art 词）——输出小、闭集内、校验通过率数量级提升。生成模式二选一入口：「从模板改」（默认）/「自由生成」（强模型才建议）。
-> 2. **词汇按需裁剪**：catalog 全量≈28k 字符（~8k tokens/轮）——按请求题材注入**子集**（如卡牌请求=卡牌族+基础原子 ~3k tokens），子集选择用关键词映射表（纯数据），漏词汇时校验错误会点名→下轮自动补入该族。
-> 3. **校验错误 LLM 化 + 失败详情显性化**：manifest-check 每条错误改写成「一句可执行修改指令」（指名字段+给合法值示例）；前端「查看原始校验错误」从 11px 折叠链接升级为错误态的**显著区块**（owner 实测没找到它）。**【前端半件 ✅ done·Opus 2026-07-06·随 BUG-STUDIO-设计中间态丢失 顺手做掉】** CreationWizard 的「查看原始校验错误」已从 11px 折叠链接升级为**默认展开 + 带边框标题的显著区块**（danger 色·`⚠ 查看原始校验错误（N 条·AI 未能满足的硬约束）`）；余下服务端半件（错误 LLM 化改写成可执行指令）仍属本单，待接单实现。
-> 4. **token/缓存卫生**：system+catalog 逐轮字节稳定（最大化 provider 前缀缓存——本次 122k 命中证明有效）；autofix 回喂只带「上轮 manifest+本轮错误」，裁掉更早轮次的失败输出（防对话超线性膨胀）。
-> **验收**：mock+真 provider 各过一遍「模板改」路径；弱模型基准=deepseek 同题重测，目标 ≤1 轮修复通过；token/局记录进完工摘要对比 184k 基线。门禁全绿。
 
 ### REQ-STUDIO-生成进度与心跳+交互日志 · 长生成黑箱→阶段灯/心跳/秒表 + LLM 往返 JSONL 日志 · [2026-07-04·07-06 扩] · owner → **指派：PST 或 Opus（P0 存盘单完工后立即接·同 apollo.py 防并行冲突）** · status: **第 0 项 ✅ done（Opus·2026-07-06·随低模四件单同批做掉·门禁全绿）；余项（作业模型/阶段灯/BusyIndicator）排队待 PST** · 优先级: P1 · 类型: 产品体验（长任务可见性）
 > **✅ 第 0 项完工回执（Opus·2026-07-06·随 REQ-STUDIO-低模四件同批·同 apollo.py 区域合批防冲突）**：apollo.py 每次 LLM 往返落一行 JSONL 到 `.apollo/llm-logs/YYYY-MM-DD.jsonl`（新 gitignore）——覆盖全部往返模式（`chat`/`generate`/`revise`/`prototype`/`breakdown`/`template-edit`/`autofix-k`）：`{ts,provider,model,mode,promptChars,responseChars,validation,errors[截断200],elapsedMs,usage?}`。**API key 绝不落盘**；prompt/response 全文默认不落（只落长度），`APOLLO_LOG_VERBOSE=1` 才落全文（全文仍无 key）。日志接线在统一传输层 `_provider_request`（度量）+ 各 handler（mode/validation）·best-effort（异常吞掉不拖垮生成）。排障口径已随低模单落进测试。**余下 1-4 项**（作业模型 job-id 轮询·阶段闭集·BusyIndicator 统一件·延迟档 e2e）**未做**·仍属本单待 PST/后续 session 接（与已落的 apollo.py 日志无冲突）。门禁：随低模四件单一并全绿（tsc/vitest 2315/build/ast）。
@@ -282,26 +98,6 @@
 > 4. **测试**：mock provider 加人为延迟档 → e2e 断言阶段灯逐段点亮、心跳时间戳在跳、错误路径出红条不丢线程（接 P0 单的"失败不降级"）；smoke 补 job 生命周期（submit→poll→done / submit→error）。
 > 5. 二期可选（本单不做）：取消按钮（DELETE job·杀子进程）——先记不实现。
 > 门禁全绿；Lead 验收=真浏览器盯一次真实生成全程（或 mock 延迟档）。
-
-### BUG-STUDIO-设计中间态丢失 · 讨论模式对话一按回车蒸发+蹦出怪 sample（owner 亲测·deepseek） · [2026-07-04] · owner → **指派：Opus（owner 2026-07-06 加急「先修好存盘」·不等 PST session·PST 到岗后接维护）** · status: **✅ done（Opus 2026-07-06·门禁全绿直推·待 Lead 真浏览器验收）** · 优先级: **P0（owner 正在用的主流程·设计稿=产出物不许丢）** · 类型: 产品缺陷（状态持久化+相变纪律+降级纪律）
-> **Lead 验收注**：根因判定修正——我原诊断③「疑静默降级」只对了一半：**主触发链=launcher 全局 Enter 监听冒泡启动样例卡带**（施工方复现钉死·比我的假设更准，按偏差三分法记 INTENTIONAL-超预期）；**副病=pickProvider 把 mock 排真 provider 之前**（确实存在静默顶替路径·一并修死）。设计稿从此每轮落盘、刷新/相变/误触永不丢。
-> **✅ 完工回执（Opus·2026-07-06·"怪 sample"触发链已复现定点）**：
-> **★「怪 sample」根因坐实（复现到精确链路·非静默降级）**：`CartridgeCarousel`（`src/launcher.tsx:291`）挂了 **window 级 keydown handler**，Enter→启动当前选中的库卡带。设计台讨论模式按**裸 Enter**时事件冒泡到这个全局 handler → 启动一盘库里的 sample 卡带 → 设计台连同对话一并卸载 = owner 说的「按回车蹦出怪 sample + 此前对话全消失」。**修**：① 该 handler 加护栏——焦点在 input/textarea/contenteditable 或 `e.defaultPrevented` 一律让路；② DesignStudio/CreationWizard 模态根 `onKeyDown` stopPropagation 兜底。e2e 自证：修前裸 Enter 后设计台 count=0（被卸载）、修后仍在。
-> **① 草稿持久化（第一必达·永不丢）**：apollo.py 新端点 `GET/PUT/DELETE /api/design-drafts[/<id>]`——未定名落 `.apollo/design-drafts/<id>.json`（新 gitignore），卡带定名后随卡带迁移 `library/<slug>/design/draft.json`（旧未定名文件清掉·不留双份）；内容白名单 `{id,slug,name,provider,phase,ready,messages,files,manifest,updatedAt}`；路径防护照 `_lib_*`/design 先例（draft-id 白名单 + 归一化断言在 DRAFTS_DIR 内·`../`/斜杠/超长全 4xx·坏 JSON 跳过不炸）。前端 DesignStudio：`messages/phase/files` 变化即防抖(400ms)落盘 + 关闭/换页(beforeunload·keepalive)立即 flush；打开设计台列未完成草稿（服务端时间倒序）一键**恢复**（GET 全量回填）；「弃置草稿」二次确认显式按钮；入库成功即 DELETE 草稿。**刷新/相变/换页永不丢** e2e 验收。
-> **② 相变纪律**：聊天框裸 Enter=换行、Ctrl/⌘+Enter 才发送（原样）；改稿框补 Ctrl/⌘+Enter；游戏名 `<input>` 裸 Enter `preventDefault`；相变后（设计稿/原型态）头栏「💬 对话记录(N)」抽屉可回看讨论线程（只读·绝不销毁）；发送键提示醒目一档。
-> **③ 失败不降级**：provider 失败/不可解析 → **红条**「⚠ 出错了」(原文 `<details>` 可展开) + 线程原样保留；无静默降级路径——`pickProvider` 修好（配 key 的真云 provider 优先·mock 仅 `APOLLO_MOCK_LLM=1` 才在列且排 local 之前·UI 带醒目 **MOCK** 角标）。**这是「怪 sample」的第二嫌疑**：旧 `pickProvider` 把 mock 排最前，owner 环境若开了 mock，配了 deepseek 也被 mock 内置样例顶掉——现云 key 优先。**顺手做掉 REQ-STUDIO-低模 ③ 前端半件**：CreationWizard「查看原始校验错误」11px 折叠链接 → 默认展开·带边框标题的**显著区块**（见该单）。
-> **④ 测试**：新 e2e `scripts/studio-design-draft-e2e.mjs`（**14 断言全绿**·三例）；新 smoke `scripts/studio-design-draft-smoke.py`（**30 断言**·草稿 CRUD 生命周期+路径攻击）；vitest 补 4 例（裸 Enter 不发送/相变·provider 失败保留线程·关闭 flush 落草稿·打开列草稿一键恢复）。原 `studio-design-e2e`(19)/`studio-design-smoke`(41) 零回归。**门禁**：docs-ref-guard PASS · tsc 0 · vitest 2314 pass · build 0。边界：`apollo.py`+`src/studio/{DesignStudio,CreationWizard}.tsx`+`src/launcher.tsx`(轮播键盘护栏)+`.gitignore`+两测试脚本。
-> **owner 现象**：设计工作台·配 deepseek·讨论模式——按回车后蹦出一个"奇怪的 sample"，此前对话全部消失。
-> **Lead 根因诊断（已读码·两个结构病坐实 + 一个触发点待复现）**：
-> ① **中间态零持久化（核心病·坐实）**：`DesignStudio.tsx` 的 `messages/phase/files/name` 全在 React useState（:159-172），无任何草稿落盘、无恢复路径——任何相变/卸载/刷新=对话蒸发。owner 说的"中间态 session 不能这样打断"就是它。
-> ② **相变吞对话（坐实）**：phase 从 'chat' 切走后对话视图不可回看；相变触发点需全面审计（chat 发送=Ctrl/⌘+Enter :378 本身没错，但存在其他输入面/流程把动作系在裸 Enter 或自动推进上的嫌疑）。
-> ③ **"怪 sample"来源（待 PST 复现定点）**：嫌疑=deepseek 返回不合 schema 时被静默降级成占位/mock 形产物顶替（mock 只该在 APOLLO_MOCK_LLM=1 显式态存在）。用 deepseek 或 mock 模拟坏返回复现"回车→sample"精确触发链，回报本单。
-> **spec（Lead 图纸）**：
-> 1. **草稿持久化**：每轮 chat 往返后服务端落草稿（未定名 `.apollo/design-drafts/<id>.json`·定名后 `library/<slug>/design/draft.json`）：`{messages, phase, files, name, provider, updatedAt}`；打开设计台列未完成草稿一键恢复；弃置=显式按钮。刷新/相变/换页永不丢。
-> 2. **相变纪律**：进入分解/定稿/原型只能显式按钮触发；审计全部输入控件 Enter 语义（textarea=换行·Ctrl+Enter 发送；`<input>`/`<form>` 一律 preventDefault 不得触发相变）；相变后对话线程仍可回看（tab/抽屉），绝不销毁。
-> 3. **失败不降级**：provider 调用失败/返回不可解析 → 红条报错（原文可展开）+ 线程原样保留；mock 产物只在 APOLLO_MOCK_LLM=1 且 UI 带「MOCK」角标——**绝不无声顶替真 provider 输出**（同美术台人审门一个哲学：静默降级=假绿）。
-> 4. **测试**：e2e 三例——两轮讨论→刷新→线程在；裸 Enter 不触发任何相变；provider 500→错误条+线程保留。smoke 补草稿 CRUD。门禁全绿；Lead 真浏览器旅程验收。
-> **owner 临时自救（修复前）**：发送=Ctrl/⌘+Enter（裸回车本不该发送）；对话暂无持久化，修复前别在讨论模式攒长对话。
 
 ### REQ-PA-工坊工位四件 · PA 已做批对齐认定 + 后续任务（owner「直接给他分派」）· [2026-07-04] · Lead 裁决派单 → **指派：PA** · status: open · 优先级: P1 · 类型: 资产治理与数据面（工坊分工=主责 PST·副责 PA）
 > **对齐认定（Lead 2026-07-04）**：PA 近批（`d4a38341`→`b34ba961`：mesh/材质货架·程序化贴图+天空盒·9 品类 PBR 材质库·vendor 数据型扩展·右键 copy 入口）**全部落在愿景 M0 + M2 接线器切片上，方向零偏差**。边界更新：owner 已开 PST 角色——**工坊 UI/apollo.py 端点自此归 PST**（`b34ba961` 的右键入口移交 PST 维护）；PA 专注资产逻辑/CLI/契约（`assets/**`·`scripts/` 资产线·index 规范）。
@@ -316,23 +112,8 @@
 > **D ✅（Lead 亲笔·手册回填）**：`docs/playbooks/3d.md` 红线区加工艺顺序律（先造型→材质→光照→特效·禁 glow 冒充）+ 主角面禁纯程序化（无 blocker 记录不豁免）；`docs/playbooks/testing.md` 红线区加凭证探针（空口 skip 不采信）+ 做X表挂评分卡行。
 > **B spec（Lead 图纸·指派 PST·工坊 M3.5·与其他 studio 单碰 `apollo.py`/`scripts/ai-gen.mjs` 须串行——排 REQ-STUDIO 心跳余项之后）**：① `scripts/ai-gen.mjs` 加 audio adapter：类型闭集 `sfx|ambience|ui`；BYO-key provider（有 key 走真调，无 key→**先贴凭证探针输出**再走 mock 兜底=确定性占位 wav+MOCK 标记，绝不静默顶替）。② 产物一律落待审区（**复用 M2.5 人审门** writePending/reviewPending·绝不直登 index），provenance 硬字段同 2D/3D（model/prompt/date/license 缺一拒登）。③ 定位：`SynthAudioPort`/SfxSpec 合成=数据仍是首选路（见 `docs/playbooks/audio.md`）；工坊采样线只补合成表达不了的（音乐床/环境底噪）——声音货架从现存 1 条起步。④ 测试：`scripts/ai-gen.test.mjs` 增音频四例（pending/approve/reject/provenance 缺字段拒）+ `scripts/art-review-smoke.py` 扩音频类型断言。⑤ 门禁全绿直推；完工标 ✅ 待 Lead 验收 + PA 会审登记契约。
 
-### REQ-ART-M2.5-人审门 · AI 生成产物改「待审区」·人点入库才登记 · [2026-07-04] · Lead 图纸 → **指派：PST（owner 2026-07-04 开设 PST 角色 session·照单施工）·PA 会审登记契约** · status: **✅ done（PST 2026-07-06·门禁全绿直推·待 Lead 真浏览器验收）** · 优先级: **P1（宪法级缺口·工坊改造第一刀）** · 类型: 产品化·资产治理（不碰引擎核）
-> **spec（Lead 图纸）**：① **待审区**：`/api/assets/generate` 产物改落 `assets/ai/pending/`（游戏本地则 `public/games/<g>/art/ai/pending/`）+ 独立 `pending.json` 清单（**绝不进 assets/index.json**），返回预览 URL。② **审核端点** `POST /api/assets/review`：`{id, action:'approve'|'reject'}`——approve=移文件出 pending + 登记 index，**provenance 硬校验**（model/prompt/date/license 缺一拒绝登记）；reject=删 pending 文件+清单项。路径防护照 asset-import 先例。③ **UI**（`AssetGenPanel`/`AssetLibrary`）：生成后显示预览 + 「✓ 入库 / ✕ 弃置」双按钮（替换现"已生成并登记"直落文案）；AssetLibrary 加「待审区」入口 + 待审计数 badge。④ **测试**：smoke 走全链（mock 生成→pending 不在 index→approve→在 index 且 provenance 全→reject→pending 清空）+ 渲染测试更新；**grep 自证无任何"生成即登记"残留路径**。⑤ 门禁全绿直推；完工标 ✅ 待 Lead 验收（真浏览器过一遍生成→审→入库旅程）。出处：`docs/design/art-pipeline-vision-2026-07.md §七`。
-> **✅ 完工回执（PST·Opus·2026-07-06）**：① **待审区**——`scripts/ai-gen.mjs` `writePending()`：生成落 `assets/ai/pending/`（游戏 `public/games/<g>/art/ai/pending/`）+ `pending.json`，**绝不写 index.json**；run() 生成路径删旧「直写 index」段（唯一入 index 的门=approve）。② **端点**（apollo.py 薄胶水·PST 服务面）——`POST /api/assets/review`（approve=provenance 硬校验过才移文件入 index·`reviewPending()`；reject=删待审文件+清项）+ `GET /api/assets/pending`（聚合共享货架+各游戏待审）；入参/路径防护（非法 action、`..` 穿越 id 挡）。③ **UI**——`AssetGenPanel` 生成后预览 + ✓入库/✕弃置（替"已生成并登记"）；`AssetLibrary` 加「🕒 待审区」入口 + 待审计数 badge；新 `src/studio/AssetPendingReview.tsx`（列待审·预览·provenance·双按钮·provenance 不全禁点入库）。④ **测试**——`ai-gen.test.mjs` +7 单测（待审/approve/reject/provenance 硬校验/游戏落点/未知项）；全链冒烟 `scripts/art-review-smoke.py`（**17 断言**·进程内起 API·快照恢复零仓库污染·退出码门禁·含 provenance 缺 model→approve 被拒自证）；render 测试更新（生成到待审区 + 待审区入口 + AssetPendingReview 渲染）；**grep 自证**唯一「生成即登记」字样=测试注释里的否定引用，代码零残留（index 写仅在 approve 分支）。⑤ **门禁**：tsc 0 · vitest 2310 pass · build 0 · 冒烟 17/17。边界：`apollo.py`+`scripts/ai-gen*`+`src/studio/**`（PST 域）；`ai-gen.mjs` 属登记契约·请 **PA 会审** `writePending/reviewPending/provenanceMissing` 的条目 shape 与硬字段口径。
-
 ### REQ-ART-美术工坊愿景 · 美术库改造为「美术编辑器」（货架可视化+AI 加工+接线器）· [2026-07-04] · owner 提出 → Lead 调研出稿 · status: **✅ owner 已批（2026-07-04）·分期开工：M2.5 ✅done（PST 2026-07-06·待 Lead 验收）·M1 排队** · 优先级: P1（方向级） · 类型: 产品化·资产管线（**主责 PST·副责 PA 治理契约·风格锚素材=GD-\<game\>**）
 > 一句话：不做 DCC，做**货架管理器+AI 加工台+游戏接线器**三合一，作创作台第三面板（复用 apollo.py/BYO-key/本地 Git）。AI 铁律：修复/变体/生成全是**闭集操作+数据配方**，产物带 provenance 硬字段、**人审门后才入库**。分期 M1 货架可视化 → M2 导入/接线 UI → M3 AI 2D → M4 3D 外链；M0=REQ-PA-3D（在跑）。owner 拍板后 M1 起单派工。
-
-### REQ-QA-红旗棘轮 · audit 加基线对比——红旗计数只许降不许升·进门禁 · [2026-07-04] · 主程（owner「有规则为什么还手写了5处·要复查规则」） · status: ✅ **done（Opus 施工 2026-07-06·门禁全绿直推）** · 类型: 质量强制基建（把规则从文字变成机器）
-> **Lead 验收（2026-07-04）REVIEW: PASS**：独立复跑（AUDIT: FAIL 存量如实 + RATCHET: PASS·全套退出码亲测）+ 自做红测（篡改 game-z 基线 → RATCHET: FAIL 点名正确·恢复即绿）。验收中另撞到 flow-walk 门禁级 flaky——另立 BUG-G-flow-walk 单（与棘轮无关）。
-> **完工摘要（Opus 2026-07-06）**：① `scripts/audit-baseline.json` 已建（`{_doc, games}` 结构·数值=当前 HEAD audit 实测灌入·存量既往不咎）——基线快照：game-d `{0,0,3}`·game-e `{3,0,1}`·game-f `{0,27,14}`·game-g `{8,29,31}`·game-h `{1,0,2}`·game-i `{0,0,5}`·game-x `{0,0,3}`·game-z `{0,0,4}`（序=nakedRandom/innerHTML/createElement）。② `game-skill-audit.mjs` 加 `runRatchet` 追加段：超基线→`RATCHET: FAIL`+退出码 1+点名「游戏 指标: 基线 X → 现 Y（+N）」；低于→打印降基线提示（不红）；等于→静默。既有 `AUDIT` 判词/用法零改，最终退出码=`(anyRed||ratchetFail)?1:0`（子集调用只比对审到的游戏）。③ `scripts/audit-ratchet.test.mjs` 进 vitest（spawn CLI·断言全 8 款 `RATCHET: PASS`·基线覆盖 8 款）。④ **自证红**：临时把 game-z createElement 基线 4→3 → CLI 打 `RATCHET: FAIL` 点名 `game-z document.createElement: 基线 3 → 现 4（+1）` 退出码 1、ratchet 测试转红；恢复即绿（2 tests pass）。⑤ 回填 `docs/playbooks/testing.md` 红线区一行 + `docs/playbooks/ui.md` 棘轮行 `audit-baseline` → 反引号 `scripts/audit-baseline.json`。门禁：docs-ref-guard PASS / tsc 0 / vitest 2295 pass / build 0。抬基线唯一合法姿势=baseline 条目挂 `reason:"REQ-xxx"`（机器不验单号真伪·diff 验收可见）。
-> **为什么规则没拦住（Lead 定性·非幻觉）**：①手册有真缺口——浮层/连线/斩击特效 LayoutNode 表达不了（锚定件当时未立单）；②审计无牙——game-g 存量 62 处红旗常年 `AUDIT: FAIL`，红海里 +5 无信号（破窗效应）；③owner 现场 playtest 连发需求，速度压过"提缺口等裁决"流程。session 明知规则（新增处还写了自辩注释），是**激励失衡**不是失忆。修法=给规则装牙。
-> **spec（Lead 图纸）**：① 新建机读基线 `scripts/audit-baseline.json`：每游戏 `{nakedRandom, innerHTML, createElement}` 计数（以当前 HEAD 实测数灌入=存量既往不咎·含本批 +5）。② `game-skill-audit.mjs` 加基线对比段：任一计数 **高于基线 → `RATCHET: FAIL` 退出码 1**·点名游戏+指标+新增行；低于基线 → 提示"同提交把基线降下来"（降基线=还债的仪式感·同提交必须改 baseline 文件）。③ 薄 vitest 包装 `scripts/audit-ratchet.test.mjs`（照 docs-ref-guard.test 模式）扫全部 8 款 → **红旗增量从此挡在推送门禁里**。④ 抬基线的唯一合法姿势：baseline 条目带 `reason:"REQ-xxx"` 字段挂缺口单号（机器不验单号真伪·但 diff 在验收时一眼可见）。⑤ 回填 `playbooks/ui.md` + `testing.md` 各一行。门禁全绿直推。
-
-### BUG-G-flow-walk 满局走查临界超时（门禁级 flaky·全量并发下翻车） · [2026-07-04] · 主程（棘轮验收撞到） → **程序A/程序B（谁的演出拍谁修）** · Game G · status: **✅ done（程序B 2026-07-06·按 Lead 修法①）** · 优先级: **P1** · 类型: 测试健壮性（演出节奏拖垮走查预算）
-> **现象**：`flow-walk.test.ts` 单跑两次全绿；全量 vitest 并发负载下 ~40s 翻车（此前收敛 ~5s）。**根因链**：playtest 批把演出节奏放慢（行军 1 秒/步·每兵 2 秒起身落地·前奏 2s），满局走查跟着墙钟节奏变长 → 负载一挤过线。
-> **修法方向（Lead·二选一或并用）**：① 走查测试进 headless 时演出**快进**——timeline 拍走 `skipOnSignal` / pacing 系数=0（演出时长是表现参数，不该进 sim 测试预算；`playbooks/testing.md` 三禁「真时间等待」精神同源）；② 走查断言「N tick 内收敛」而非墙钟。修完在全量并发下连过 3 次才算数。
-> **✅ done（程序B 2026-07-06·采 Lead 修法①·演出快进）**：`game-g.tsx` 加 opt-in `window.__ggFastPerf` → `FAST_PERF`/`pT()`/`pMs()`：headless 走查把行军(walkTicks)/前奏(showClashCue DUR)/横幅(showBanner)/掷骰(doClashRoll TOTAL 42→2)/收场(clash-settle cues·zoom out)全部墙钟拍折成 ≤1 tick——演出逻辑照跑(仍捕演出抛错)·只是不再拖满 pump 预算。`flow-walk.test.ts` mount 前置 `__ggFastPerf=true`。**真机默认 1·原节奏零改**（FAST_PERF 仅 opt-in 生效）。**验收**：flow-walk 58s→2.7s；全量并发(309 files)**连过 3 次**（flow-walk 3.4s/11.9s/3.6s·worst 远低 40s 翻车线）；tsc 0 · vitest 2297 · build ok。（另：P20 的 MAX_TURNS 保底收敛同时消除了「满局不结」这一潜在超时源。）
 
 ### REQ-G-复查尾巴三件 · Lead review 2026-07-04 批产出（程序A/B 点名必读） · [2026-07-04] · 主程 → **程序A（①③）· 程序B（②）** · status: open · 优先级: P1 · 类型: 复查落地（owner 拍板「把三条尾巴给程序员A和B落地」）
 > **① 程序A·对折下限=3 落码**：owner 定案在 `REQ-G-掷骰核两bug ①`（spec/验算已写死·`Math.max(0)→3` 一行+测试）——当前代码停在临时版 `P_MIN=1`（`clash-resolve.ts:31`），定案未落。落完该单标 done。
@@ -418,6 +199,10 @@
 **优先级**：rope + spring 先做（P1，立刻把 game-h 从"配合解谜"升级到"想象力满格"）；conveyor/respawn 次之（P2）。**不阻塞当前**（game-h 召唤二重奏版已可玩可测）。落地不口头入池。
 
 ---
+
+## 已结案条目 → 全文见 `requests-archive.md`
+
+> 所有 done/wontfix/作废 条目（含裁决理由与完工摘要）已归档到 `requests-archive.md`；查旧单先 grep 它。本池只留活跃 open/in-progress/排队 条目（防每读付历史 token·owner 2026-07-04 token 底盘优化）。
 
 ## 需求模板（复制这段填写）
 
@@ -513,53 +298,6 @@
 
 ---
 
-### REQ-G-起手源泉 · [2026-06-23] · design G → 甲（引擎域·常量） · Game G · status: ✅ **done（`MANA_START=4` 已落 turn-combat.ts:24·2026-07-04 回标）** · 优先级: P1 · 类型: 已覆盖（纯常量调值·非新能力）
-
-> **owner 2026-06-23**：起手源泉 6 太高（玩家一上来铺满·开局没张力）→ 改 **4**·**双方对称**（玩家和 Boss 都起手 4）。
-> **派甲（一行改）**：`turn-combat.ts` `MANA_START = 6` → `MANA_START = 4`（`MANA_PER_TURN=1` 不变·双方同源·sim 经 `initTurnBattle` 自动继承）。
-> **无新能力**——只调常量。design G 在 4 源泉 + 两 AI 落地后重标 WR 曲线。
-
----
-
-### REQ-G-主将命数参数化 · [2026-06-23] · design G → 甲（引擎域·地煞参数） · Game G · status: ✅ **done（`lastStandGeneral` 整数命已落·turn-combat.ts:399·2026-07-04 回标）** · 优先级: P1 · 类型: 已覆盖 + 小泛化（布尔→整数）
-
-> **owner 2026-06-23**：关1 列奥尼达有"温泉关"属性 → **主将战败 3 次才退场**（噱头 + 教学：玩家学会"避开主将路·田忌赛马打别路破家"）。
-> **现状**：`disha.ts` `lastStandGeneral: boolean`（=主将硬编码 **2 命**·首负残喘退1格不亡）。
-> **派甲（小泛化·不是新能力）**：把 `lastStandGeneral` 从 `boolean` 改成 **命数 `number`**（`lastStandGeneral: 0|n`·n=主将战败几次才退）；`laststand` spec → `{ lastStandGeneral: 3 }`（关1 列奥尼达）。**老的 true 等价 2**（兼容）。明牌·玩家可见可破·不偷。
-> **为何不是新 capability**：现有 op 已表达"主将多命"·只是把写死的 2 提成参数·属 manifesto §4「已覆盖+参数化」·不新增能力面。
-
----
-
-### REQ-G-破家善后 · [2026-06-23] · design G → 甲（引擎域·战斗逻辑） · Game G · status: ✅ **done（`advanceColumnToBase` 破家后回牌库+返半费·turn-combat.ts:470-473·2026-07-04 回标）** · 优先级: P1 · 类型: 逻辑缺口补全（已覆盖·复用现成回库路径·非新能力）· 规格: `design/24-turn-based-combat-model.md §4.2.6`
-
-> **owner 2026-06-23 提的逻辑缺口**：一支兵攻进敌大本营、扣掉 1 格血后**怎么处理·原本没交代**。现行 `advanceColumnToBase`(L397-413) 是 `splice` 掉 = **凭空消失**。
-> **owner 裁决**：**回牌库**（不消失·可再抽再上）。① 逻辑更顺（破家是大功·不该蒸发·班师回库）；② **不能留场续打**（大本营不是兵·没敌前锋可对决·留场=白嫖每回合砸家·破坏平衡）。
-> **派甲（小改·复用现成）**：`advanceColumnToBase` 把"扣血后 splice 丢弃"改成**走 §4.2 掷命「人面·回库」分支**——`pokerDeck.push({该兵})` + `mana += (cost??0)/2`（**直接复用 `resolveClash` L378-382 那段回库逻辑·别另写**）。
-> **为何非新能力**：回库+半返路径已存在（掷命人面分支）·这里只是让"破家"也走同一条善后·把"消失"替成"回库"。属 manifesto §4 已覆盖。
-> **效果**：3 血大本营 = 至少 3 次独立破门突破（强牌可反复抽出再冲·每次冲完回库 → "持续攻城"节奏·非一兵无限砸穿）·吻合 homeHp=3 持久围攻设计。
-> **开放旋钮**：破家半费返还若 sim 显示攻城经济过快·可单独清零（只回库不返费）。先按"与人面一致"实装·sim 再裁。
-
----
-
-### REQ-G-开局排阵 · [2026-06-23] · design G → 甲（引擎域·init） · Game G · status: ✅ **done（`boss.startFormation` 数据能力 + `hold` 静守已落·turn-combat.ts:90/113 + level.ts·2026-07-04 回标；关1 守军 8♠/9♥ 摆隘口。张数/摆位数值仍归 design G 用 sim 标）** · 优先级: P1 · 类型: 真缺口（开局摆兵·当前不可表达）→ 下沉成数据能力 `boss.startFormation`
-
-> **owner 2026-06-23**：提难度的公平办法——与其给 Boss **偷加源泉**（已禁·不公平），不如让 Boss **开局就有 N 张牌排好在场上**。**明牌**（玩家开局看得见这堵墙·可绕可针对）→ 公平·可破。专治"守势 boss 开局攒不出场面、威胁不到玩家"。
-> **CORE RULE 评判**：① 能组合现有能力？**否**——当前两军开局空场、兵只能回合内 `deployUnit` 入场·没有"开局已在场"的表达。② 已覆盖？**否**——`thermopylae` 的"隘口守军"只是抽象 `nearBasePower +1` buff·不是真卡。③ **真缺口 → 下沉成通用数据能力**（确定性·可复用·明牌·审计过）。
-> **下沉能力**：`boss.startFormation: [{rank,suit,lane,slot?}]`（数据·写在 boss 配置）。派甲在 `initTurnBattle` 末尾按列表把这些卡**直接放到 Boss 侧对应 lane/slot**（复用 `deployUnit` 的落位逻辑·或直接 push 进 `lane.b`+设 slot）·**不花源泉**（开局既定·明牌）。纯数据驱动·零 per-boss 代码·任何 boss 可用。
-> **顺带做实"隘口守军"**：关1 列奥尼达 `startFormation = [8♠@lane?slot8, 9♥@slot7]`（2 张守军排隘口）→ 把原抽象 buff 换成场上看得见的两张墙兵（更直观·契合"300死守隘口"幻想）。
-> **关1 取 2 张**（教学关·一点开局压力）；后续关爬 3-4。**design G 用 sim 标张数 + 定每个 boss 摆哪些卡哪条路。**
-> **公平边界**：仅"开局明牌摆兵"·玩家看得见、可绕可counter（对应玩家的 out-prepare）。**不是**偷源泉/暗数值。玩家侧不需要对称开局排阵（玩家的对称优势=counter-pick）。
->
-> **★ 守军行为 = 静守不动（owner 2026-06-23 拍板·重要契约）**：开局排阵兵默认**静态死守**（守势 boss 本色·非攻势抢先一波）。甲实装这 4 条：
-> 1. **不前压**：`advanceBoth` 跳过守军·它不向玩家家推进·守在原 slot。
-> 2. **不自动冲家**：堵反直觉 bug——`advanceColumnToBase`（某路只 Boss 兵时自动行军砸玩家家·L397-413）**对守军不触发**。守军是防御单位·绝不主动冲锋。
-> 3. **接触才交战**：仅玩家兵推到守军相邻格 → 正常 `resolveClash`；玩家不进这路则守军一直静守。
-> 4. **赢了守原位**：守军赢掷命后**不走留场前推·继续守原位不追击**（死守语义）。
-> **实现建议**：给 `TurnUnit` 加 `hold?: boolean`（startFormation 守军置 true）→ advance/advanceColumnToBase/留场前推三处都 `if (u.hold) continue/skip`。**YAGNI**：当前只需 hold（守势）；将来若有攻势 boss 要"前压排阵兵"再加 advance 模式·现在不做。
-> **「看得见≠会动」**（owner 点的细节）：守军是玩家"打/绕"的**情报**·不是逼近威胁。这正是守势难度的公平来源——你看得见、可避，但想破它家就得啃过这堵墙。
-
----
-
 ### REQ-G-地煞原生战力重构 · [2026-07-01] · design G → 甲（引擎域·disha） · Game G · status: **→ 转策划（owner 2026-07-04：设计/数值归策划先定；owner 亦会另提单。落定后若需新 disha 能力再回甲下沉）** · 优先级: **P1（承接新掷战力骰核）** · 类型: 重构（win%→原生确定战力/规则）· 规格: `design/disha-native-power-redesign.md`
 
 > **背景**：owner 2026-07-01 把对决核改成**各自掷战力骰**（`[1,战力]` 比大小·vision doc §7）。现 15 张地煞仍是 win% 经 `dishaEdge=edge/5` 折算的**临时 hack**——在掷战力骰下 **+1战力 边际胜率 ≈ 1/(2P)·非常数**，edge/5 只在 P≈10 对·别处失真。owner：「所有地煞需重新设计成数值正确的行为。」
@@ -640,15 +378,6 @@
 > **程序A 已实装（logic·done·本 session）**：① `advanceSideMove`——前锋自然落点(`slot+dir*speed`)踩到/越过敌前锋才 `pending` 掷命（守军 hold/主将 pin/过门兵不撞）；实际移动仍封顶在敌前一格。② `resolveClash`——胜者留场则 `wf.slot = 敌腾出格`（守军「赢守原位」`!hold` 除外·满连胜光荣回库除外）。测试锁定（落点空走位·踩敌才战·赢了前进）。tsc+vitest+build 全绿。
 > **程序B 待做（表演·owner「一个单独的表演过程」）**：碰撞掷命毕的**生死+前进演出**——① 败者场上阵亡（斩两半·见上条 VFX）；② **胜者从「敌前一格」滑入「敌腾出的格」的前进动画**（逻辑瞬时改 `slot`→程序B 补插值滑动；旧位=敌前一格·新位=`lastClash` 后的场上兵 slot）。与掷骰特写收场衔接·全在真实场上兵位(锚 `u-<id>`)。
 
-### REQ-G-谁打谁·战前锚场 + 战后场上标结果（对决可读性）· [2026-07-03] · owner → 程序B（表现·程序A 供数据·已足） · Game G · status: **①战前锚场 done + ②战后驻留徽标 done（2026-07-04）· 余：胜者滑入推进动画归 REQ-G-碰撞才战斗②** · 优先级: P1 · 类型: 演出可读性（非新数值）
-> **程序B done（2026-07-04）**：① 战前锚场——`showClashCue` 已改板载锚点(环 `#u-<a.id>`/`#u-<b.id>` + 连线 + VS + 路名·我橙敌蓝·走 t3-timeline)，看清场上哪对要打（前 session 落地·commit 见 git log）。② 战后驻留徽标——留场胜者头顶飘现「⚔胜·连胜N」徽标锚真实兵位(`#u-<id>` 实时屏幕矩形)·**驻留 ~3s 再淡出**(补足旧对折飘字仅 1s 太快看不清·owner「可回看」)；纯 DOM 覆层·不动 tb/rng/turnHash·不churn golden。斩标(败者)走 tear VFX(同族·瞬时·败者已离场无牌可钉)。**余**：胜者「敌前一格→敌腾出格」的滑入推进位移动画——需在掷骰特写期间保持胜者显示在旧格(model/view 分离)·风险较高·归口到 `REQ-G-碰撞才战斗 §程序B②` 一并做。
-> **owner 2026-07-03**：「现在看不清楚谁要打谁就开始了」+「结算完以后，把击退/结果标在牌型展示上·我知道谁打了谁」。现状 `showClashCue`（game-g.tsx:395）是**全屏 VS 弹窗**闪 ~2s——脱离真实棋盘、看不出是场上**哪两枚**在打；结算结果也只进特写框（owner 反复说「结算框看不清」）。
-> **程序A 判断（本 session）**：这是纯**表现/演出**，逻辑侧数据已全出、无需程序A 新增——`advanceMovePhase` 返回的 `pending` 路 id = 战前哪几路要掷命、每路前锋两枚可由 `colOf(lane, a/b)[0]` 取；`lastClash`/`clashLog` 出 `a/b`(含 `id`)、`aWins`、`winStays`、`loserVacatedSlot`（胜者推进后的 slot 即在场上兵位上）。程序B 只读播、不改结果。
-> **程序B 待做**：
-> ① **战前·锚在真实棋盘**（替/补全屏弹窗）：移动相滑到位后，对每条 `pending` 路把**将交战的两枚场上兵**（锚 `u-<id>`）高亮/描边 + 二者之间画连线或悬「VS」标（我橙敌蓝·沿用 cue 配色），让 owner 一眼看出是**场上哪对**要打，再切/叠掷骰特写。全屏 VS 可保留作二级强调，但主可读性锚在场上。
-> ② **战后·结果标在牌上**：掷命结算毕，胜者牌上钉「胜·推进/戴冠」、败者「斩/败」标（与 REQ-G-满仪式 §战场阵亡/胜利 VFX 同族·同一批做）；被击退/推进用场上滑动位移表达（见上条 REQ-G-碰撞才战斗 §程序B②）。标记短暂驻留可回看，不塞进结算框。
-> **A/B 接口**：全在 `pending`(战前路 id) + `lastClash`/`clashLog`(战后 a/b/id/aWins/winStays/slot)。程序B 不需程序A 改逻辑。
-
 ### REQ-G-修正栈迁移并虚胖清算 · 天罡/地煞迁 t2-modifier-stack + 空头卡实装 · [2026-07-03] · 主程 → **指派：甲（game-g 战斗域）** · status: **① 迁移 done（程序A 2026-07-04）／ ② 空头卡清零 → 转策划全审（owner 2026-07-04「让策划都看一遍」）**
 > owner 2026-07-03 拍板：不打断当前核心工作，完成后照本单施工。**一单双得**：P0 产品 bug（18/36 天罡零效果、141/156 地煞纯文案=玩家买到空头卡，评审 §六.1）+ 新能力首战 dogfood。
 >
@@ -677,38 +406,6 @@
 > **另·战斗核越界记账**：斯巴达方阵「改真·每兵+战力」（`turn-combat.ts` phalanxPower·本属 A 战斗域）owner 当场明授权 B 改·已交全绿——请 A 知悉该 sim 改动（每兵吃方阵总加成略增·owner 已拍板）。
 
 > 【衔接备忘 2026-07-03】P3D 的 game-d 接线单（REQ-GAMED：dice-roll 接入/detectPattern 真替换/per-run 种子/打回三条）同样为**排队态**——接现 3D 渲染线核心工作完成后开工，优先级由 owner 调度。
----
-
-### REQ-G-动作模型-三行为自由 · [2026-07-03] · design G → 程序A(逻辑+AI)+程序B(UI) · Game G · status: **逻辑+AI done ／ 程序B 三行为 UI done（2026-07-04）** · 优先级: **P0（owner 拍板·核心回合模型改·压 sim/标定）** · 规格: `design/24-turn-based-combat-model.md §二`
-> **注（2026-07-04 程序A）**：`discardCard`(弃牌返0.5源泉) 仍在（game-g.tsx:594 玩家UI + player-ai 标 `void`未进搜索）——这**不是**本单要退役的"免费纯弃牌"(那个已被 swap 取代)，是另一条 0.5 返费续航微操，是否保留/进 AI 搜索归 design G 裁决。
-> **程序B done（2026-07-04·三行为 UI）**：动作菜单 4 键 → **抽/打/换 三区**（顶钮 grid cols=3·互不互斥·不再据 actionTaken 置灰）；点开哪个 → 右侧子菜单二选一各显源泉开销（抽扑克/抽天罡 各 💧1 · 部署扑克 💧按点/打天罡 💧1 · 补扑克/补天罡 免费）。换牌=选补牌库→点手里1张→弃并随机补1张(免费·1/回合·用尽后顶钮/子钮置灰·再点提示已用尽)。走 LayoutNode 底座(Button 闭集·label 内嵌开销文案·零手写 CSS/DOM)；battle-coach 文案/锚点同步(打天罡=combat-cast·部署扑克=combat-deploy·未点开回退顶钮)；旧四选一互斥+纯弃牌 UI 退役。tsc+vitest(183)+build 全绿·playwright 四态截图验收。`discardCard` 玩家 UI 入口本次由「换」取代移除(逻辑导出留存待 design G 裁 AI 侧)。
-
-> **owner 2026-07-03**：四选一 + 「放牌⊥打天罡」互斥限制太多、策略性一般 → 改 **三行为（抽/打/换）· 互不互斥 · 源泉唯一门**（源泉本就稀缺=天然闸·不必再叠动作互斥）。
-> **程序A（逻辑）**：
-> 1. **去掉动作大类互斥**：`canAct`/`actionTaken` 退役"本回合只能一类"锁——`抽(天罡/扑克)`、`打(天罡/部署扑克)` 一回合内**任意混、只要 `mana≥cost`**；攒源泉留后手照旧。
-> 2. **换牌 = 新动作**：选中手牌 1 张 → 弃 + 从选定牌库(天罡/扑克)**随机补 1 张** → **`SWAP_PER_TURN=1`（硬帽·破无限churn死循环）· `SWAP_COST=0`（免费）**。旧"免费纯弃牌"退役（被换取代）。
-> 3. **更新终极 Player-AI 动作枚举**（`player-ai.ts`）：候选动作集 = 抽/打自由混 + 换(1/回合) → 前向搜索按新合法动作枚举（这直接改变 sim 胜率·见下）。
-> 4. 确定性：turnHash 回归照绿（换牌消费 rng 抽替换牌·顺序固定）。
-> **程序B（表现/UI·走引擎 UI 基座·别手写）**：动作菜单从 4 键 → **抽 / 打 / 换 三区**：点抽/打 → 右侧子菜单高亮（抽天罡·抽扑克 / 打天罡·部署扑克）**各显源泉开销**；换牌 = 选中一张手牌触发（1/回合·免费·用完置灰）。查 `docs/playbooks/index.md` UI 线 + 交付前 `check-ui`。
-> **未来（不现做·记池）**：换牌成本可由 Boss 地煞按关加税/上锁（`swapTax`/`swapLock`·明牌杠杆·见 `disha-native-power-redesign §三·五`）。
-> ⚠ **design G 重算连带**：动作模型变 → 现关1 调参曲线（贪心11%→终极51%·~70%@bossDelta−8）**作废**；程序A 更新 AI 枚举后 **design G 用终极 AI 重扫关1 标定**。玩家自由度↑ → 大概率更强 → 关1 胜率上移。
-
-> 【程序B 附注 2026-07-03】我原拟提「通用 Timeline 演出组件」——rebase 发现**主程已下沉 `t3-timeline`**（上条 REQ-G-演出迁时间线 + tick 制确定性 cue 调度器）→ 我的请求**冗余撤回**。game-g 战斗清晰度演出（移动 g-march 浮起落下已落地 + 待做的战前配对高亮/战后斩·冠场上 VFX）**改走 `t3-timeline`**（owner「用 timeline 底座·不手写」）——与 REQ-G-演出迁时间线（指派程序A）自然衔接，我这边表现层订阅 timeline 信号自演。
-
----
-
-### REQ-G-退役机关门 + Boss自由混 · [2026-07-03] · design G → 程序A(逻辑+AI)·程序B(删门UI) · Game G · status: **逻辑 done（程序A 2026-07-04 核实：门整套已删·turnHash 无 g 段·城门令出池 36→35·aiDecide 已同规则自由混无门决策·Boss 无换牌·player-ai 无门枚举·turn-combat/turnmatch 20 测绿）／ 程序B 删门UI open ／ **design G 关1重标 ✅ done（2026-07-04·核变后 bossDelta=0 稳在 73.5% 通关/95.5% 单场·对称改没偏心公平点·见 boss-config §一末「✅✅ 核心大改后重标」）·终扫待 loader 接 16写死牌组** · 优先级: **P0（owner 拍板·地基清理·解锁关1对称标定）** · 规格: `design/24-turn-based-combat-model.md §三` + `balance-philosophy-fairness.md §五`
-> **程序B 待清（门 UI 死引用·2026-07-04 程序A 巡出）**：`turn-battle-screen.ts:705`（放牌后翻门 toast）+ `:789`（deploy sub-label「放完可点机关门翻门调度」）· `overlays.ts:35/41`（帮助文案「可顺手开关机关门 / 机关门换路」）· `sound.ts:14-15`（`gateOpen`/`gateClose` 死音效定义）· `campaign-data.ts:80` 注释（无害）。逻辑侧已无门·这些仅残留表现文案/死音效·程序B 一并清。
-
-> **owner 2026-07-03 两条**：① **机关门/换路整套退役**（不给乐趣·高复杂度低价值·旧实时CR遗留）；② **Boss 也一开始就自由混**（对称同规则·Boss 无换牌·难度只来自明牌 kit·不靠给 Boss 降规则）。
-> **程序A（逻辑）**：
-> 1. **砍机关门整套**：删 `turn-combat.ts` 的 `GATES`/`gatesOpen`/`gateMove`/`toggleGate`/`tryGate` + `advanceBoth` 里门分流(diverted) + `deployUnit` 的 `gateToggle` 参数 + `turnHash` 的 `g<gates>` 段；**天罡「城门令」从 36 池摘除**（或标退役·`game-g-build`/天罡数据）；AI(`aiDecide`) 去掉开/关门决策；`player-ai.ts` 去掉门相关枚举。清理相关测试/golden（有意行为改变·报告说明）。
-> 2. **Boss 也自由混**：`aiDecide`/`aiTakeTurn` 去掉"每回合单大类"的稳定基线限制（你上轮注释标的开关）→ **Boss 与玩家同规则自由混 抽/打**。**Boss 无换牌**（换牌是玩家专属 QoL·别给 Boss）。
-> 3. **确定性**：turnHash 回归照绿（删门段是有意改变·更新断言）。
-> **程序B**：删战斗屏的机关门 UI（门钮/门态渲染）。
-> ⚠ **design G 连带**：Boss 自由混后关1 公平配置从 54%→~14%（Boss kit 值 ~36 分）→ **design G 用"双方自由混"重跑·把关1 Boss kit（布防 4→2静守 + 地煞 + 牌力偏置）减弱到玩家 ~70%**（教学关本就该弱·见 `balance-philosophy-fairness §五`）。**程序A 改完 → design G 标定。**
-> **✅ design G 标定回填（2026-07-04）**：实测**对称核变没把公平点推离 70%**——`bossDelta=0` 时终极 AI 通关 **73.5%**（≈70% 目标）·无需减弱 Boss kit。原估「Boss 自由混→14%」是**旧口径误判**（那 14% 是 sim 的 Boss暗箱强牌 bug 所致·已由 `f9727ae5` 修·非 Boss 自由混本身）。**遗留待 owner 拍**：贪心真新手通关仅 24%（5战全胜复利·单场 78%）→ 关1 是否该 5 战 / 目标是否改按单场量（详 boss-config §一）。
-
 ---
 
 ### REQ-G-战功系统 · [2026-07-03] · design G → 程序A(逻辑·钩子+modifier)·save(save-port)·程序B(收藏屏可视) · Game G · status: **排队（收藏打磨·核心战斗稳后开工）** · 优先级: P2 · 类型: 真缺口→下沉通用"老兵/资历里程碑"能力 · 规格: `design/veteran-merit-战功.md`
@@ -750,34 +447,6 @@
 > **✅ GD 补细节完毕（owner 对齐 2026-07-04·见 `REQ-G-天罡目标op机制对齐` 答复 + tiangang-native-redesign §四·补）**：时长=混合（疾行/泥沼/驰援/舍车即时·仅铁索持久N=2回合→**程序A 不必全建 laneFx·只铁索一个全局倒计时**）；疾行=我该路即时+1格；泥沼=敌该路本回合不推进；铁索=敌全军speed−1(下限1)持续2回合；驰援=+2固定援兵(战力3无将·落部署格·不掏牌库)；舍车=弃一路回库+另两路当前兵各+X战力(快照烙兵身·+X起标8待sim)。**片C 解锁·程序A 可开工。**
 > **调试功能（owner 2026-07-04·顺带）**：程序A 已交逻辑钩子 `debugGrantTengang`/`debugAddMana` + dev 控制台全局 `__ggDebug`（.grant(id)/.mana(n)/.list()·战斗屏控制台即用·测新天罡/无限操作）。**正规「调试菜单」可视 UI 归程序B**（见 REQ-G-调试菜单）。
 
-### REQ-G-天罡目标op机制对齐（程序A → design G·施工前必答）· [2026-07-04] · 程序A → design G · Game G · status: **✅ 已答（design G + owner 对齐 2026-07-04·定案入 `design/tiangang-native-redesign.md §四·补`）** · 优先级: **P1（阻塞天罡原生重构 片C 的 5 个 op）** · 规格补充: `design/tiangang-native-redesign.md §四.3 + §四·补`
-> **✅ design G 答复（owner 对齐 2026-07-04·5 op 机制/数值全钉死·详见 tiangang-native-redesign §四·补）**：
-> - **时长模型 = 混合**（owner 拍板）：**疾行/泥沼/驰援/舍车 = 即时一次性**（无持久状态·契合"操作前置·掷骰执命"哲学·消掉 laneFx 状态机·更确定性防雪球）；**仅铁索 = 持久**（epic 全军减速墙·带 N 回合全局倒计时·单值非每路状态）。**叠加**：即时类天然叠加棋盘封顶·无需 cap；铁索刷新时长不叠深。
-> - **① 疾行**：我该路兵即时 +1格推进（epic 可 +2）。**② 泥沼**：敌该路本回合不推进（跳过 advance·单路即时）。**③ 铁索**：敌全军 speed−1（下限1）持续 N=2回合（param·epic）。**④ 驰援**：指定路 +2 固定援兵（战力3·无将·无buff·落部署格·只花天罡cost·不掏牌库·不额外源泉；兵数/战力 param）。**⑤ 舍车**：弃一路→**回牌库**（复用人面/破家回库·非销毁）+ 另两路当前兵各 +X战力（施放瞬间快照·烙兵身·永久随兵·不需 laneFx）；**+X 起标 +8·待 GD sim**。
-> - **程序A 可开工片C**：`castTengangAt(b,side,handIdx,lane)` 即时类立即应用 + 铁索全局倒计时 fx；点路 UI 归程序B。数值（舍车+X/驰援体量/铁索N）落地后 GD sim 复核。
-> **背景**：天罡原生重构 §四.3 的 5 个 op 设计意图是高层文案，**机制/数值未钉死 → 程序A 无法确定性实装**（否则=模糊数据/我替策划拍脑袋）。owner 2026-07-04 已定「目标类走玩家选路·不自动」。请 design G 逐条拍板（每条给了工程建议·选一个或改）：
->
-> **通用问题（先定·影响状态设计）**：
-> - **持续时长**：这些效果是 **①本回合限** / **②持续 N 回合** / **③整局持久**？（程序A 建议：疾行/泥沼=整局持久按路挂；驰援/舍车=即时一次性。混合最合理。）
-> - **叠加**：同一路施两张疾行 → 叠加(speed+2) 还是不叠(封顶+1)？（建议：叠加但设上限·防爆炸。）
->
-> **① 疾行 swiftmarch（该路 speed+1·抢攻）**：
-> - speed+1 作用于**该路现有兵 + 后续入场兵**（按路挂）还是只当前兵？（建议：按路挂·现有+后续都吃。）
-> - speed 机制已在（`unit.speed`）→ 直接给该路 units speed+1。**要 design G 确认：+1 够不够抢攻·还是要+2。**
->
-> **② 泥沼 mire（敌该路减速）/ 铁索 ironchain（敌全军减速·epic）**：
-> - 「减速」= **①speed−1（下限 1·永远能走 1 格）** / **②隔回合推进（该路敌每两回合才动一次）**？（建议：①speed−1 更简单可控·②隔回合更狠但要计回合状态。）design G 定哪种 + 泥沼(单路)/铁索(全军) 数值同不同。
->
-> **③ 驰援 rush（指定路凭空+2兵）**：
-> - +2 兵是**什么兵**？(a) 固定低值援兵(如 rank 3·无 buff·无 general)　(b) 从我牌库顶抽 2 张即时上场　(c) 定义一种"援兵"token(固定战力)。（建议：(a) 固定援兵最可控·不掏牌库不破经济。）
-> - 落在哪个格？（建议：我方部署格 slot 0 起·同 deployUnit 落位。）花不花额外源泉？（建议：只花天罡本身 cost·凭空=不额外。）
->
-> **④ 舍车 discard2（弃一路·另两路各+10战力·田忌）**：
-> - 「弃一路」= 那路我方兵 **①回牌库(可再抽再上·同破家/人面回库)** / **②销毁(彻底移除)**？（建议：①回库·符合"舍"非"毁"·且经济友好。）
-> - 「另两路+10战力」= 作用于**两路现有兵**还是**含后续入场**？持久还是本场？（建议：按路挂持久·现有+后续都 +10·与疾行同状态模型。）
->
-> **答完后 → 程序A 落地**：`castTengangAt(b,side,handIdx,lane)` + per-lane 效果状态（`laneFx`）；铁索(无目标)可先做。点路 UI 归程序B（另接）。
-
 ### REQ-G-调试菜单（战斗屏·dev 工具）· [2026-07-04] · owner → 程序B（表现·程序A 供逻辑钩子·已足）· Game G · status: open · 优先级: P2 · 类型: dev 工具 UI
 > **owner 2026-07-04**：战斗中要一个**调试菜单**——① 直接**召唤一张天罡到我手牌**（选卡）；② **加源泉**（无限操作）。用来测新天罡（改掷系/AOE…）。
 > **A/B 接口（程序A 已出·无需程序A 新增）**：`debugGrantTengang(b,'a',id)` 授召天罡到手牌 · `debugAddMana(b,'a',n)` 加源泉（turn-combat.ts）。战斗屏已挂 dev 全局 `__ggDebug`（.grant/.mana/.list）可控制台即用——程序B 把它做成**可视菜单**（战斗屏一角 dev-only 按钮 → 弹天罡列表 `GAME_G_TIANGANGS` 点选召唤 + 「源泉+10」按钮 · 调 `debugGrantTengang`/`debugAddMana` 后 `mounted.update()`）。dev 工具·可 gate 在调试开关后·非出货玩家 UI。
@@ -799,18 +468,6 @@
 > **注（与 `e780156a` 空中相遇）**：程序A 已按纯函数+数据行落了 game-g 版（形状合格·Lead 验过不打回）；收编时序见 REQ-CAP-改掷RollMod 更新。
 
 ---
-
-### REQ-G-突深边角·敌新兵反向传送+越界 bug（战局 log 实锤）· [2026-07-04] · owner playtest → 程序A(turn-combat 移动逻辑) · Game G · status: **✅ done（程序A 2026-07-04）** · 优先级: **P1（战斗核正确性·位置腐坏·非纯表现）** · 类型: 逻辑 bug（移动 clamp 边角）
-> **✅ 修复（程序A 2026-07-04）**：根因=前锋停敌前一格的 clamp `limit=foeFront−dir` 假设「本兵在敌前锋接近侧」，玩家突深后敌兵已被越过→反向顶穿棋盘(6S 6→8、7S 8→9 越界)。修法=**加「接近侧」守卫**（`dir>0? slot<=foeFront : slot>=foeFront`）：仅接近侧才 clamp 停敌前一格，**已突穿则不反向顶·正常朝本方目标推进**。改 3 处——`advanceColumnVsFoe` clamp（②）、`advanceSideMove` 碰撞判据（③·加同守卫防突穿后一律误判碰撞）、`advanceLaneOneStep`(疾行·同 clamp)。**① deploy 落身后**：与 ②③ 修好后位置不再腐坏，突穿侧敌新兵正常奔我家(非无限反弹)——「落身后=无效防」是玩法有效性(design 域)非崩溃，不强改 deploy(GD 「或允许但标记」)，如需避免落身后另立数值单。加突深回归测试(玩家 A@7 贴敌家·敌 6S@6 落身后→敌移动无越界 slot、突穿侧不反向)。全 206 game-g 测绿·turnHash 常规无漂移(仅突深边角行为变·有意)。design G 可 sim 复扫破家路径。
-> **owner 2026-07-04 战局 log 疑「表现 bug」**：第1战 T7 下路末次对决——「6S 从下路最后一格进攻我倒数第二位，显示成第三位打第二位·很奇怪·是不是数值对只是表现错」。**GD 逐行 trace（turn-combat.ts）结论：不是纯表现·底层 slot 真腐坏。** log 里 `移动:[6S:6→8、7S:8→9]` 精确复现（slot 9 越界·敌兵反向增格）。
-> **根因链（"玩家突深"边角·三处叠加）**：
-> 1. **突深**：我 AS 打穿到 slot7（贴敌家8·killed 9H 后占腾出格前进）。
-> 2. **敌新兵落我身后**：敌 deploy zone `[8,7,6]`（`turn-combat.ts:161`），8=7S/7=AS(占)→6S 落 **slot6·在 AS(@7) 身后**（本该挡我却落我背后·无效防）。
-> 3. **移动 clamp 反向传送**（`turn-combat.ts:479` `limit = foeFrontSlot - dir`）：敌前锋=最低格=6S@6·foeFront=AS@7。i=0：t=6+(−1)=5→`Math.max(5, 7−(−1)=8)`=**8**（6S 6→8·被往回顶到敌家·反 dir）；i=1：7S t=7→`Math.max(7, ahead8+1=9)`=**9**（越界·slot9 不存在）。`limit=foeFront−dir` 假设「敌在玩家上方往下逼近」·突深后敌在玩家**下方**→ clamp 把敌兵往上推穿棋盘。
-> 4. **碰撞误判**（`:524` `dir<0: natural<=foe[0].slot`）：敌在玩家下方时永远 `<=`·每帧误判碰撞。
-> **数值 vs 表现裁定**：**clash 配对（两路前锋对撞）+ 战力/掷骰运算本身自洽**（AS对折8掷3 vs 6S战力5掷4→6S胜·算术没错）→ 「谁打谁+胜负」结果可信；**但 slot 位置被腐坏**（6S@8/7S@9 越界）→ 渲染按 slot 画就成了「第三位打第二位」的错位。**所以：不是纯表现·是位置逻辑 bug 连累了表现。**
-> **程序A 待修（spec·GD 报缺·代码归程序A）**：突深边角下——① deploy zone 落子应避免落在**玩家前锋身后**（或允许但标记）；② `advanceColumnVsFoe` 的 `limit` clamp 需处理「己方兵已在敌前锋另一侧」——不该把它反向顶穿棋盘·应就地/正常向本方目标推进（此时该敌兵其实该走它自己那条路奔我家·或与"贴身后"的我方单位另判）；③ 碰撞判据 `:524` 同步修（方向感知·别一律 `<=`）。④ 加突深回归测试（玩家单兵打穿到贴敌家 slot7-8·敌再 deploy/move·断言无越界 slot、无反向位移）。**turnHash 若变=有意·更新断言。**
-> **GD 附注**：这是「单兵突破打穿到贴敌家」的残局边角·常规对峙不触发（故前6回合正常）·但破家临门一脚正是玩家追求的高光时刻→**值得修**（不然每次快破家都可能位置错乱/误判）。修好后 design G sim 复扫破家路径。
 
 ### REQ-G-掷骰核两bug·对折下限0 + 鬼手改掷显示缺失（571条战局log实锤）· [2026-07-04] · owner playtest → 程序A(clash/rollWithMods)+程序B(掷骰读数) · Game G · status: open · 优先级: **P1（战斗核可读性+数学正确性·教学关面目全非的一部分）** · 类型: 逻辑bug(对折下限) + 可读性bug(改掷显示)
 > **owner 2026-07-04 关1 全程 log（31回合/571条）复盘挖出**。GD 已核 turn-combat.ts 定性。

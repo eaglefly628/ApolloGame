@@ -19,6 +19,7 @@
 | 3D 截图对拍 | `scripts/shoot-game.mjs`（P3D harness） | 人审（像素断言升级=REQ-3D-像素断言·排队） |
 | 视觉里程碑验收 / 出货 | `docs/playbooks/visual-scorecard.md`（8 维评分卡）→ **落账进流程板** `game-pipeline.mjs scorecard`（任一维 0=S7 红灯） | 全维 ≥2 = premium |
 | 阶段复查（三门制·复查人≠施工人） | `game-pipeline.mjs checklist <SN>` → 对抗核证 → `review --verdict --note --by`（`docs/playbooks/review-gates.md`） | PASS/CONCERNS/FAIL |
+| 上下文预算（防信息膨胀·新 session 读得完） | `node scripts/context-budget-guard.mjs`（requests 池/T0 必读/手册行数各封顶·基线 `scripts/context-budget-baseline.json`·超顶正解=归档不是抬顶） | `CONTEXT-BUDGET: PASS` |
 
 ## 红线（一体适用）
 

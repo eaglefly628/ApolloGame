@@ -345,6 +345,7 @@ if (isMain) {
     }
     if (!REVIEW_CHECKLISTS[stage]) { console.error(`checklist 只认 ${Object.keys(REVIEW_CHECKLISTS).join('/')}/S7（S1 owner 亲提免查·S6 平台内嵌）`); process.exit(1); }
     console.log(`══ ${stage} 复查清单 · ${slug}（复查人≠施工人·另开 session 逐条对抗性核证）══`);
+    console.log(`  □ 【范围核查·每关必查】git diff 对照施工方领工声明/工单「边界」栏——碰了声明外的文件=FAIL（偏离手册的硬证据·REQ-CTX③）`);
     for (const item of REVIEW_CHECKLISTS[stage]) console.log(`  □ ${item}`);
     console.log(`落账：node scripts/game-pipeline.mjs review ${slug} ${stage} --verdict PASS|CONCERNS|FAIL --note "逐条结论（带 file:line/实数）" --by 复查人`);
     process.exit(0);
