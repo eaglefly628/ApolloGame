@@ -53,6 +53,14 @@
 >
 > **已有 8 能力（无需新造·同法各摆一样例）**：人群实例化(同签名 Mesh3D 多实体)、数字飘字(`WorldUI3D{node:LayoutNode}`+`Label.tween`)、撞击粒子/纸屑(`Vfx3D`)、出生弹入(`Anim3D ease scale 0→1 outBack`)、堆叠掉落(`RigidBody3D`)、跟随相机(`Camera3D mode:'follow'`)、拾取(`Pickable3D`)、微缩景深/泛光(`Post3D tiltShift/bloom`)。
 > **契约**：各 component 语义/字段以 `docs/playbooks/3d.md` 表 + `src/engine/protocol/components/render.ts` 注释为准；有疑问回 `requests-3d.md` 问 P3D，勿改 three-renderer/three/**（P3D 独占域）。
+>
+> **★ 补充（P3D 2026-07-16·owner「刚写的那些覆盖内容也放进展览台」）**：上批之后 P3D 又下沉了一组新原语，同样请各摆一个可见 sample（都是纯数据 component·挂带 `Transform3D` 的实体即可·已在 game-z 三台实装可参照 `src/games/game-z/diorama.ts` platformTwo/platformThree）：
+> - **世界折线 `Line3D`**（任意时间零点线·实线/虚线/宽度·朝相机带线，区别于 Trail3D 的运动残影）：`Line3D{points:[[x,y,z],…], width:0.5, color:0x40e0ff, dash:1.6, gap:1.1, blend:'add', closed?}`——瞄准线/系绳/路径预览。
+> - **物理关节 `Joint3D`**（暴露 cannon 约束·绳/秋千/布娃娃）：刚体挂 `Joint3D{kind:'distance'|'point'|'hinge'|'lock'|'cone', anchor:[x,y,z], distance?}`（配 `RigidBody3D`）——摆锤 = distance + 水平释放。
+> - **新碰撞形**（`RigidBody3D.shape`）：`capsule`（角色胶囊·掉落立稳）/`convex`（`{shape:'convex',hull:[[x,y,z]…]}`）/`heightfield`（`{shape:'heightfield',heights:[[…]],elementSize}`·地形）。
+> - **贴面世界屏 `Diegetic3D`**（LayoutNode→CSS3D 真 DOM 面片·文字锐利·适合"给人看的"信息板/菜单）：`Diegetic3D{node:LayoutNode, pxWidth, pxHeight, worldWidth, bg}`——挂 Transform3D 定位/朝向。**代价**：DOM 叠层不进 WebGL 深度（不被遮挡/不吃后处理）。
+> - **UV 动画材质**（流水/岩浆/传送带）：`Material3D{…, map:<textureKey>, uvAnim:{scrollX:0.08,scrollY:0.04}, tiling:{repeat:3}}`。
+> 契约同上（3d.md + render.ts）；勿改 three-renderer/three/**。
 
 ### REQ-I-gallery拆分 · gallery.ts 1620 行按展台分模块（token 优化③·owner 2026-07-15 批）· [2026-07-15] · Lead 转呈 → **指派：PUI（game-i 域·勿由他人代拆）** · status: open · 优先级: P2 · 类型: 结构拆分（零逻辑改）
 > 背景：owner 批「拆大文件」降低 session 读入成本（launcher.tsx 已由 Lead 拆·apollo.py 先例）。`src/games/game-i/gallery.ts` 1620 行=单文件 top1，但 game-i 是 PUI 地盘（CLAUDE.md 边界），Lead 不越界。
