@@ -73,3 +73,7 @@ Free Library（共享 `assets/index.json` + `FreeArtLib/`）= **货架·只被 c
 - **人审门（M2.5·宪法「无自动入库」）**：生成产物落**待审区**——`--game` 给了=游戏本地 `art/ai/pending/`；否则共享货架 `assets/ai/pending/`（各 + 独立 `pending.json`·**绝不进 index.json**）。人审 approve 才移出待审 + 登记 index，**provenance 硬校验**（model/prompt/date/license 缺一拒登记）；reject 删待审文件+清项。命令：`node scripts/ai-gen.mjs review <id> <approve|reject> [--game <g>]`·`pending [--game <g>]`。
 - **软件内直达入口**：Studio 资源库（launcher→🗃 资源库）工具栏 **✨ AI 生成** 按钮 → `AssetGenPanel`（选适配器 + prompt + 落点 → 生成 → **预览 + 「✓ 入库 / ✕ 弃置」**）；工具栏 **🕒 待审区** 入口 + 待审计数 badge（`AssetPendingReview`·列待审·provenance·双按钮）。后端 `POST /api/assets/generate`（落待审）+ `POST /api/assets/review`（审核·唯一入 index 的门）+ `GET /api/assets/pending`（聚合共享+各游戏待审）+ `GET /api/assets/generate/providers`（key 状态·打码），apollo.py 薄胶水·shell 调本脚本，生成/审核大脑全在脚本，UI/后端零逻辑重复。
 - 全链自证：单测 `scripts/ai-gen.test.mjs` + 冒烟 `scripts/art-review-smoke.py`（17 断言）+ 真浏览器 `scripts/studio-m25-review-e2e.mjs`（16 断言）。
+
+## ⑨ 风格库（house-style 共享库·styleset·多游戏共享一种美术风格）
+
+`node scripts/styleset-ledger.mjs build` 静态枚举首批清单→走 art-replace `mergeLedger` 保号写库级台账 `style-ledger.json`（mode:library·落 `assets/styleset/<id>/`）+ mock 占位登记共享 index（gen/mock 分域防覆盖真图·真 key 后逐行换真图=M1）；风格锚单一真相=风格包条目（`scripts/style-packs.json` 的 `stylePrompt`）；游戏消费仍 vendor 不直引。图纸 `docs/design/styleset-artlib-plan-2026-07-16.md`。

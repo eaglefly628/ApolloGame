@@ -729663,6 +729663,2495 @@
       }
     },
     {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-53",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-53.glb",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "crate",
+        "mock",
+        "mesh"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "low-poly crate prop, rounded exaggerated cartoon topology, game-ready, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "mesh",
+      "description": "3D 低模 prop·crate（圆润夸张拓扑·可换贴图） · styleset apollo-toon（mock glb 占位·待真模型）",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-54",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-54.glb",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "barrel",
+        "mock",
+        "mesh"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "low-poly barrel prop, rounded exaggerated cartoon topology, game-ready, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "mesh",
+      "description": "3D 低模 prop·barrel（圆润夸张拓扑·可换贴图） · styleset apollo-toon（mock glb 占位·待真模型）",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-55",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-55.glb",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "tree",
+        "mock",
+        "mesh"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "low-poly tree prop, rounded exaggerated cartoon topology, game-ready, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "mesh",
+      "description": "3D 低模 prop·tree（圆润夸张拓扑·可换贴图） · styleset apollo-toon（mock glb 占位·待真模型）",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-56",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-56.glb",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "rock",
+        "mock",
+        "mesh"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "low-poly rock prop, rounded exaggerated cartoon topology, game-ready, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "mesh",
+      "description": "3D 低模 prop·rock（圆润夸张拓扑·可换贴图） · styleset apollo-toon（mock glb 占位·待真模型）",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-57",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-57.glb",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "coin",
+        "mock",
+        "mesh"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "low-poly coin prop, rounded exaggerated cartoon topology, game-ready, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "mesh",
+      "description": "3D 低模 prop·coin（圆润夸张拓扑·可换贴图） · styleset apollo-toon（mock glb 占位·待真模型）",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-58",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-58.glb",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "gem",
+        "mock",
+        "mesh"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "low-poly gem prop, rounded exaggerated cartoon topology, game-ready, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "mesh",
+      "description": "3D 低模 prop·gem（圆润夸张拓扑·可换贴图） · styleset apollo-toon（mock glb 占位·待真模型）",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-59",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-59.glb",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "chest",
+        "mock",
+        "mesh"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "low-poly chest prop, rounded exaggerated cartoon topology, game-ready, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "mesh",
+      "description": "3D 低模 prop·chest（圆润夸张拓扑·可换贴图） · styleset apollo-toon（mock glb 占位·待真模型）",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-60",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-60.glb",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "fence",
+        "mock",
+        "mesh"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "low-poly fence prop, rounded exaggerated cartoon topology, game-ready, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "mesh",
+      "description": "3D 低模 prop·fence（圆润夸张拓扑·可换贴图） · styleset apollo-toon（mock glb 占位·待真模型）",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-61",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-61.glb",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "lamp",
+        "mock",
+        "mesh"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "low-poly lamp prop, rounded exaggerated cartoon topology, game-ready, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "mesh",
+      "description": "3D 低模 prop·lamp（圆润夸张拓扑·可换贴图） · styleset apollo-toon（mock glb 占位·待真模型）",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-62",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-62.glb",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "bush",
+        "mock",
+        "mesh"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "low-poly bush prop, rounded exaggerated cartoon topology, game-ready, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "mesh",
+      "description": "3D 低模 prop·bush（圆润夸张拓扑·可换贴图） · styleset apollo-toon（mock glb 占位·待真模型）",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-63",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-63.glb",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "sign",
+        "mock",
+        "mesh"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "low-poly sign prop, rounded exaggerated cartoon topology, game-ready, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "mesh",
+      "description": "3D 低模 prop·sign（圆润夸张拓扑·可换贴图） · styleset apollo-toon（mock glb 占位·待真模型）",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-64",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-64.glb",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "platform-tile",
+        "mock",
+        "mesh"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "low-poly platform tile prop, rounded exaggerated cartoon topology, game-ready, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "mesh",
+      "description": "3D 低模 prop·platform-tile（圆润夸张拓扑·可换贴图） · styleset apollo-toon（mock glb 占位·待真模型）",
+      "spec": {
+        "scale": 1,
+        "genCollision": "hull"
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-65",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-65.png",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "a",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "trim sheet texture A, tileable ink-wash panel details, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "3D trim 贴图 A（512×512·可平铺 albedo） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "albedo",
+        "colorSpace": "srgb",
+        "wrap": "repeat",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-66",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-66.png",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "b",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "trim sheet texture B, tileable jade and vermilion strips, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "3D trim 贴图 B（512×512·可平铺 albedo） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "albedo",
+        "colorSpace": "srgb",
+        "wrap": "repeat",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-67",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-67.png",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "day",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "equirectangular daytime sky, soft ink-wash clouds over warm gradient, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "3D 天空盒·日（1024×512 equirect） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "albedo",
+        "colorSpace": "srgb",
+        "wrap": "repeat",
+        "width": 1024,
+        "height": 512,
+        "transparent": false
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-68",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-68.png",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "crack",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "ground crack decal, ink-brush fracture, transparent, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "3D 地面贴花·裂纹（256×256·对齐 Decal3D 闭集） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 256,
+        "height": 256,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-69",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-69.png",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "leaves",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "scattered leaves decal, soft green ink dabs, transparent, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "3D 地面贴花·落叶（256×256·对齐 Decal3D 闭集） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 256,
+        "height": 256,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-70",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-70.png",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "splash",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "ink splash decal, vermilion splatter, transparent, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "3D 地面贴花·墨溅（256×256·对齐 Decal3D 闭集） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 256,
+        "height": 256,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-71",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-71.png",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "grass",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "tileable grass ground texture, stylized jade ink-wash, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "3D 地面·草地（512×512·可平铺 albedo） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "albedo",
+        "colorSpace": "srgb",
+        "wrap": "repeat",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/3d/gen/mock/art-72",
+      "status": "filled",
+      "path": "styleset/apollo-toon/3d/gen/mock/art-72.png",
+      "category": "styleset.3d",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "3d",
+        "stone",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "tileable stone ground texture, ink-outlined cobbles, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "3D 地面·石地（512×512·可平铺 albedo） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "albedo",
+        "colorSpace": "srgb",
+        "wrap": "repeat",
+        "width": 512,
+        "height": 512,
+        "transparent": false
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/fx/gen/mock/art-41",
+      "status": "filled",
+      "path": "styleset/apollo-toon/fx/gen/mock/art-41.png",
+      "category": "styleset.fx",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "fx",
+        "hit-burst",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "hit impact burst spritesheet, 4x4 frames, ink splash energy, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "FX 打击爆闪帧图集（512×512·4×4） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 512,
+        "height": 512,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/fx/gen/mock/art-42",
+      "status": "filled",
+      "path": "styleset/apollo-toon/fx/gen/mock/art-42.png",
+      "category": "styleset.fx",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "fx",
+        "explosion",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "explosion spritesheet, 4x4 frames, warm fire with ink smoke, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "FX 爆炸帧图集（512×512·4×4） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 512,
+        "height": 512,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/fx/gen/mock/art-43",
+      "status": "filled",
+      "path": "styleset/apollo-toon/fx/gen/mock/art-43.png",
+      "category": "styleset.fx",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "fx",
+        "smoke-puff",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "smoke puff spritesheet, 4x4 frames, soft ink-wash clouds, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "FX 烟尘帧图集（512×512·4×4） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 512,
+        "height": 512,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/fx/gen/mock/art-44",
+      "status": "filled",
+      "path": "styleset/apollo-toon/fx/gen/mock/art-44.png",
+      "category": "styleset.fx",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "fx",
+        "flash",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "flash burst spritesheet, 4x4 frames, radiant light rays, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "FX 闪光帧图集（512×512·4×4） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 512,
+        "height": 512,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/fx/gen/mock/art-45",
+      "status": "filled",
+      "path": "styleset/apollo-toon/fx/gen/mock/art-45.png",
+      "category": "styleset.fx",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "fx",
+        "shockwave",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "shockwave ring spritesheet, 4x4 frames, expanding ink ripple, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "FX 冲击波帧图集（512×512·4×4） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 512,
+        "height": 512,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/fx/gen/mock/art-46",
+      "status": "filled",
+      "path": "styleset/apollo-toon/fx/gen/mock/art-46.png",
+      "category": "styleset.fx",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "fx",
+        "confetti",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "confetti paper flake particle, bright saturated colors, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "FX 粒子·纸屑 confetti（128×128·对齐 Particles 闭集） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/fx/gen/mock/art-47",
+      "status": "filled",
+      "path": "styleset/apollo-toon/fx/gen/mock/art-47.png",
+      "category": "styleset.fx",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "fx",
+        "coins",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "gold coin particle, glossy round, ink outline, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "FX 粒子·金币 coins（128×128·对齐 Particles 闭集） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/fx/gen/mock/art-48",
+      "status": "filled",
+      "path": "styleset/apollo-toon/fx/gen/mock/art-48.png",
+      "category": "styleset.fx",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "fx",
+        "stars",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "star sparkle particle, radiant four-point star, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "FX 粒子·星光 stars（128×128·对齐 Particles 闭集） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/fx/gen/mock/art-49",
+      "status": "filled",
+      "path": "styleset/apollo-toon/fx/gen/mock/art-49.png",
+      "category": "styleset.fx",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "fx",
+        "sparkle",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "soft sparkle glint particle, warm glow dot, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "FX 粒子·微光 sparkle（128×128·对齐 Particles 闭集） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/fx/gen/mock/art-50",
+      "status": "filled",
+      "path": "styleset/apollo-toon/fx/gen/mock/art-50.png",
+      "category": "styleset.fx",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "fx",
+        "ring",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "ring glow halo, soft radial jade light, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "FX 环形光效（256×256） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 256,
+        "height": 256,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/fx/gen/mock/art-51",
+      "status": "filled",
+      "path": "styleset/apollo-toon/fx/gen/mock/art-51.png",
+      "category": "styleset.fx",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "fx",
+        "impact",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "impact glow flash, radial warm burst, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "FX 命中光晕（256×256） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 256,
+        "height": 256,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/fx/gen/mock/art-52",
+      "status": "filled",
+      "path": "styleset/apollo-toon/fx/gen/mock/art-52.png",
+      "category": "styleset.fx",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "fx",
+        "streak",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "motion trail streak, soft fading ink stroke, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "FX 拖尾条（64×256） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 64,
+        "height": 256,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-01",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-01.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "primary",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "chunky glossy primary game button skin, 9-slice, thick bottom lip, rounded candy shape, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 主按钮皮 9-slice（96×96·圆胖厚底唇糖果钮） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 96,
+        "height": 96,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-02",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-02.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "secondary",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "chunky glossy secondary game button skin, 9-slice, thick bottom lip, jade tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 次按钮皮 9-slice（96×96·竹青调） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 96,
+        "height": 96,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-03",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-03.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "danger",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "chunky glossy danger game button skin, 9-slice, thick bottom lip, vermilion tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 危险按钮皮 9-slice（96×96·朱砂调） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 96,
+        "height": 96,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-04",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-04.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "ghost",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "subtle outlined ghost game button skin, 9-slice, ink-brush border, rice-paper fill, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 幽灵按钮皮 9-slice（96×96·笔触边宣纸底） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 96,
+        "height": 96,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-05",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-05.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "frame",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "rounded panel frame, 9-slice, rice-paper fill with ink-brush border, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 面板框 9-slice（128×128·宣纸底墨边） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-06",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-06.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "inset",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "sunken inset panel frame, 9-slice, soft inner shadow, rice-paper, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 凹陷内嵌框 9-slice（128×128） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-07",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-07.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "tooltip",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "small rounded tooltip bubble frame, 9-slice, ink-brush edge, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 提示气泡框 9-slice（96×96） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 96,
+        "height": 96,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-08",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-08.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "play",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "play game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 play（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-09",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-09.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "pause",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "pause game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 pause（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-10",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-10.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "settings",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "settings game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 settings（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-11",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-11.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "close",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "close game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 close（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-12",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-12.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "back",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "back game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 back（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-13",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-13.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "coin",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "coin game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 coin（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-14",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-14.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "gem",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "gem game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 gem（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-15",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-15.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "heart",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "heart game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 heart（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-16",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-16.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "star",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "star game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 star（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-17",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-17.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "lock",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "lock game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 lock（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-18",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-18.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "check",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "check game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 check（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-19",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-19.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "cross",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "cross game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 cross（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-20",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-20.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "arrow-up",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "arrow up game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 arrow-up（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-21",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-21.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "arrow-down",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "arrow down game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 arrow-down（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-22",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-22.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "arrow-left",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "arrow left game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 arrow-left（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-23",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-23.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "arrow-right",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "arrow right game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 arrow-right（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-24",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-24.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "bag",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "bag game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 bag（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-25",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-25.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "shop",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "shop game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 shop（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-26",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-26.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "trophy",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "trophy game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 trophy（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-27",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-27.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "info",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "info game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 info（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-28",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-28.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "sound-on",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "sound on game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 sound-on（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-29",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-29.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "sound-off",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "sound off game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 sound-off（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-30",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-30.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "plus",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "plus game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 plus（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-31",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-31.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "minus",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "minus game ui icon, bold clean silhouette, flat two-tone, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 功能图标 minus（128×128 透明） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-32",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-32.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "track",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "progress bar track skin, rounded capsule, rice-paper groove, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 进度条槽皮（256×64） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 256,
+        "height": 64,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-33",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-33.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "fill",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "progress bar fill skin, glossy jade gradient, rounded capsule, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 进度条填充皮（256×64） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 256,
+        "height": 64,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-34",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-34.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "track",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "slider rail skin, thin rounded track, ink accent, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 滑轨皮（256×64） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 256,
+        "height": 64,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-35",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-35.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "knob",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "slider knob, chunky glossy round button with thick bottom lip, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 滑块钮（64×64·厚底唇） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 64,
+        "height": 64,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-36",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-36.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "lobby",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "game lobby background, warm rice-paper scene with soft ink-wash mountains, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 大厅背景板（1024×1024·宣纸水墨） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 1024,
+        "height": 1024,
+        "transparent": false
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-37",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-37.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "menu",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "game menu background, calm jade and vermilion ink-wash panel, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 菜单背景板（1024×1024） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 1024,
+        "height": 1024,
+        "transparent": false
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-38",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-38.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "dim",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "dim modal backdrop, soft dark ink vignette, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 弹窗遮罩背景板（1024×1024） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 1024,
+        "height": 1024,
+        "transparent": false
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-39",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-39.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "banner",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "title decorative banner base, ink-brush scroll ribbon, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 标题装饰底·横幅（512×128） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 512,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
+      "id": "styleset/apollo-toon/ui/gen/mock/art-40",
+      "status": "filled",
+      "path": "styleset/apollo-toon/ui/gen/mock/art-40.png",
+      "category": "styleset.ui",
+      "tags": [
+        "styleset",
+        "apollo-toon",
+        "ui",
+        "ribbon",
+        "mock",
+        "texture"
+      ],
+      "license": "CC0-1.0",
+      "source": "styleset:apollo-toon",
+      "style": "apollo-toon",
+      "provenance": {
+        "generator": "mock",
+        "styleset": "apollo-toon",
+        "prompt": "title decorative ribbon base, vermilion silk with gold trim, rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark, transparent background",
+        "model": "styleset-mock",
+        "mock": true,
+        "generatedAt": "2026-07-16T10:59:46.808Z",
+        "license": "CC0-1.0"
+      },
+      "type": "texture",
+      "description": "UI 标题装饰底·绶带（512×128） · styleset apollo-toon（mock 占位·待真图）",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "width": 512,
+        "height": 128,
+        "transparent": true
+      }
+    },
+    {
       "id": "tabler/a-b",
       "type": "texture",
       "description": "a b · tabler",

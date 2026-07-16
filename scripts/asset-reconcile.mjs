@@ -85,7 +85,7 @@ function reconcileScope({ label, indexFile, diskDir, servedPrefix, skipDirs, sha
   const NON_ASSET = (f) => {
     const base = f.split('/').pop();
     if (base.startsWith('.')) return true; // .gitkeep 等占位/隐藏文件
-    return base === 'index.json' || base.endsWith('.md') || base.endsWith('-art-ledger.json') || base === 'art-ledger.json' || base === 'pending.json';
+    return base === 'index.json' || base.endsWith('.md') || base.endsWith('-art-ledger.json') || base === 'art-ledger.json' || base === 'style-ledger.json' || base === 'pending.json';
   };
   for (const rel of listFiles(diskDir, skipDirs)) {
     if (NON_ASSET(rel)) continue;

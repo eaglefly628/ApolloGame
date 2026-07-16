@@ -136,5 +136,35 @@
       "model": "wanx2.1-t2i-turbo",
       "seed": 1774
     }
+  },
+  "apollo-toon": {
+    "packId": "apollo-toon",
+    "name": "阿波罗卡通水墨（house style）",
+    "stylePrompt": "rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+    "promptEn": "rounded cartoon fantasy meets Chinese ink-wash painting: chunky glossy game buttons with thick bottom lip, bold clean silhouettes, friendly exaggerated proportions, soft two-tone shading, warm saturated colors accented with ink black, rice-paper texture, jade and vermilion, subtle ink-brush stroke edges, high readability, game asset, no text, no watermark",
+    "promptZh": "圆润卡通奇幻融合中国水墨：厚实光泽的游戏按钮带厚底唇，大轮廓干净利落，友好夸张的比例，柔和双调阴影，暖调高饱和色点缀墨黑，宣纸纹理，竹青与朱砂，淡淡水墨笔触边缘，高辨识度，游戏素材，无文字，无水印",
+    "palette": [
+      16183522,
+      2894900,
+      3431528,
+      5615758,
+      14176319,
+      15447373,
+      8373464,
+      9067130
+    ],
+    "negative": {
+      "zh": "写实照片，暗沉，噪点，锯齿，杂乱背景，厂牌标识",
+      "en": "photorealistic, dark and muddy, noisy, jagged edges, cluttered background, brand logo"
+    },
+    "post": {
+      "paletteSnap": false
+    },
+    "params": {
+      "provider": "qwen",
+      "model": "wanx2.1-t2i-turbo",
+      "seed": 1775
+    },
+    "refImage": null
   }
 }
