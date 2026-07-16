@@ -144,7 +144,11 @@ export function mount(container: HTMLElement): () => void {
     flag: (id) => (id === 'demoFlag' ? controls.flag : false), // visibleWhen 条件显隐演示
   };
 
-  const theme = (): UITheme => THEMES[currentTheme] ?? THEMES['onyx']!;
+  // 文本 emoji 自动图渲（REQ-UI-emoji图渲·活范例）：给每套主题挂 emoji 配置——展示台里文本写的 emoji
+  // 字形（Label/Button/Tag…）渲染时自动内联成库里 Twemoji 美术图（已 vendor 进本地 served 目录）。
+  // 逐 Label 可 raw:true 逃生（见「🆕 新控件/特性」tab emoji 段的字形对照）。
+  const EMOJI_CFG = { base: '/games/game-i/art/emoji' } as const;
+  const theme = (): UITheme => ({ ...(THEMES[currentTheme] ?? THEMES['onyx']!), emoji: EMOJI_CFG });
 
   // 模态/抽屉作独立浮层挂在 overlayHost（与画廊解耦·开关不触发画廊重渲 → 不跳不黑）。
   let overlayNode: LayoutNode | null = null;

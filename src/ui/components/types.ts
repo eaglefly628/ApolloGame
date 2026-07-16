@@ -4,6 +4,8 @@
 // 引擎的工作：renderNode() + mountUI() 解释这棵树。
 // 红线：游戏层不得在此之外手写 HTML 模板或 DOM 操作。
 
+import type { EmojiConfig } from './emoji.js';
+
 export type ComponentType =
   | 'Panel' | 'Button' | 'Label' | 'Dropdown' | 'Badge' | 'Input' | 'Divider'
   | 'Checkbox' | 'Toggle' | 'RadioGroup' | 'Image' | 'Screen' | 'Slider'
@@ -189,6 +191,9 @@ export interface LabelProps {
    *  纯数据(段数组)·最弱 LLM 能填；有 spans 时忽略 text。 */
   /** 富文本分段（render-only）。img=段首内联图标（已解析 URL·1em 随字号·批32「图标统一升级」：emoji 记号可换成成套美术图标）。 */
   spans?: Array<{ text: string; color?: 'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger'; bold?: boolean; img?: string }>;
+  /** emoji 图渲逃生（REQ-UI-emoji图渲）：true=保留文本里的 emoji **字形**、不转美术图（代码块/刻意展示字形的场景）。
+   *  缺省 false=随主题 `UITheme.emoji` 配置自动图渲（未配则本就零变化）。纯表现。 */
+  raw?: boolean;
 }
 
 export interface DropdownProps {
@@ -625,4 +630,8 @@ export interface UITheme {
    *  skinSlice=源边 px 走 9-slice 无损缩放，缺省整图 cover）。一个 kind 一张皮、全游戏按钮一体换——
    *  node 级 ButtonProps.skin 优先（含 skin:'' 显式关皮逃生）；缺省无 = 原 kind 底（老主题零变化）。 */
   buttonSkins?: Partial<Record<'hero' | 'primary' | 'ghost' | 'quiet', { skin: string; skinSlice?: number }>>;
+  /** emoji 自动图渲配置（REQ-UI-emoji图渲·render-only）：设了则 Label/Button.label/spans/Tag/Badge 等显示文本里的
+   *  emoji 字形自动内联成 `<img src=`${base}/<cp>.png``>`（1em 随字号）。不设=文本 emoji 保字形（零回归）。
+   *  资产可达：base 指向 served 目录（vendor 进本地 `/games/<g>/art/emoji` 或共享 `/assets/emoji`）。逐 Label 可 `raw:true` 逃生。 */
+  emoji?: EmojiConfig;
 }

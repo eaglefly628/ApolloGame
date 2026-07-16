@@ -82,6 +82,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'tween', type: 'object', describe: '数字滚动 {from,to,ms,decimals}' },
       { name: 'format', type: 'enum', values: ['compact', 'time', 'percent', 'int'], describe: '数字格式化(作用于 tween/数字 text)：compact 1.2K/3.4M/1.5B·time mm:ss/h:mm:ss·percent 75%·int' },
       { name: 'spans', type: 'list', describe: '富文本多段 [{text,color,bold,img}]·img=段首内联图标 URL(1em 随字号)' },
+      { name: 'raw', type: 'boolean', describe: 'emoji 图渲逃生：保留文本里的 emoji 字形不转美术图（代码块/刻意展字形·仅当主题开了 emoji 图渲时有意义）' },
     ],
     sample: { type: 'Label', id: 's-label', props: { text: '战功 ', spans: [{ text: '天罡 ', color: 'gold', bold: true }, { text: '破·可克', color: 'jade' }] } },
   },

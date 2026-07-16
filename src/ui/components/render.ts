@@ -3,6 +3,7 @@
 
 import { SHELL } from '../shell-theme.js';
 import { ART_FONT_FAMILY } from './art-fonts.js';
+import { emojifyHtml } from './emoji.js';
 import type {
   LayoutNode, LayoutConstraints, UITheme, VisualEffect, EffectColor, EdgeColor,
   ButtonProps, LabelProps, DropdownProps, BadgeProps, InputProps, PanelProps,
@@ -15,6 +16,11 @@ import type {
 
 const esc = (s: string): string =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// 显示文本转义 + emoji 图渲（REQ-UI-emoji图渲）：先 esc（安全），再按主题 `emoji` 配置把 emoji 字形内联成 <img>。
+// **只用于可见内容文本**（Button.label/Label.text/spans/Tag/Badge…）——绝不用于 HTML 属性（title/value/option）。
+// 未配 t.emoji=退化成纯 esc（零回归）。emoji 字符不含 &<>"，故 esc→emojify 顺序安全。
+const escT = (s: string, t: UITheme): string => emojifyHtml(esc(s), t.emoji);
 
 // 数值强制：layout 数值字段虽类型标 number，但弱模型/外部数据运行时可能是字符串
 // （如 "0;background:url(x)"）→ 直接插进 style 串即 CSS 注入。统一过 num() 只取有限数字。
@@ -263,12 +269,12 @@ function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): strin
   if (kind === 'hero') {
     const hbase = `position:relative;overflow:hidden;padding:14px 30px;border:0;border-radius:4px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};outline:none;background:linear-gradient(180deg,${t.gold},${t.warn});color:${t.bg0};font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.45);clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px);opacity:${p.disabled ? 0.4 : 1}`;
     const sheen = `<span style="position:absolute;top:0;bottom:0;left:-60%;width:45%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);animation:apollo-sheen 2.6s ease-in-out infinite;pointer-events:none"></span>`;
-    const big = `<span style="display:block;font-size:17px;line-height:1.15">${iconImg}${esc(p.label)}</span>`;
-    const sub = p.sub ? `<span style="display:block;font-size:11px;font-weight:600;opacity:.8;margin-top:2px">${esc(p.sub)}</span>` : '';
+    const big = `<span style="display:block;font-size:17px;line-height:1.15">${iconImg}${escT(p.label, t)}</span>`;
+    const sub = p.sub ? `<span style="display:block;font-size:11px;font-weight:600;opacity:.8;margin-top:2px">${escT(p.sub, t)}</span>` : '';
     return `<button id="${esc(id)}" data-apollo-btn${sk.skin ? ' data-apollo-skin' : ''}${action}${p.disabled ? ' disabled' : ''} style="${hbase};${ls}${shapeCss(p.shape)}${skinCss(sk.skin, sk.skinSlice)}">${sheen}${big}${sub}</button>`;
   }
   const base = `padding:6px 14px;border-radius:7px;font-size:12px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};outline:none;transition:all .15s;opacity:${p.disabled ? 0.4 : 1}`;
-  return `<button id="${esc(id)}" data-apollo-btn${sk.skin ? ' data-apollo-skin' : ''}${action}${p.disabled ? ' disabled' : ''} style="${base};${kindStyle[kind]};${ls}${shapeCss(p.shape)}${skinCss(sk.skin, sk.skinSlice)}">${iconImg}${esc(p.label)}</button>`;
+  return `<button id="${esc(id)}" data-apollo-btn${sk.skin ? ' data-apollo-skin' : ''}${action}${p.disabled ? ' disabled' : ''} style="${base};${kindStyle[kind]};${ls}${shapeCss(p.shape)}${skinCss(sk.skin, sk.skinSlice)}">${iconImg}${escT(p.label, t)}</button>`;
 }
 
 function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string {
@@ -309,7 +315,7 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
   if (p.spans) {
     // 段首内联图标（批32 图标统一升级）：img=已解析 URL·1em 随字号。无 img 段=原输出字节不变。
     const inner = p.spans.map((s) =>
-      `<span style="color:${colorMap[s.color ?? 'text'] ?? cl}${s.bold ? ';font-weight:700' : ''}">${s.img ? `<img src="${esc(s.img)}" alt="" style="height:1em;width:1em;object-fit:contain;vertical-align:-0.15em${s.text ? ';margin-right:4px' : ''}">` : ''}${esc(s.text)}</span>`,
+      `<span style="color:${colorMap[s.color ?? 'text'] ?? cl}${s.bold ? ';font-weight:700' : ''}">${s.img ? `<img src="${esc(s.img)}" alt="" style="height:1em;width:1em;object-fit:contain;vertical-align:-0.15em${s.text ? ';margin-right:4px' : ''}">` : ''}${p.raw ? esc(s.text) : escT(s.text, t)}</span>`,
     ).join('');
     return `<span id="${esc(id)}" style="${style}">${inner}</span>`;
   }
@@ -324,7 +330,8 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
   // 纯数字 text + format → 渲染时格式化（idle 大数/计时/百分比·静态显示）。
   const body = (p.format && p.text !== undefined && p.text !== '' && Number.isFinite(Number(p.text)))
     ? formatNumber(Number(p.text), p.format) : (p.text ?? '');
-  return `<span id="${esc(id)}"${tw} style="${style}">${esc(body)}</span>`;
+  // 纯数字 format 值不含 emoji → esc 即可；普通文本走 escT（除非 raw 逃生）。
+  return `<span id="${esc(id)}"${tw} style="${style}">${p.raw || p.format ? esc(body) : escT(body, t)}</span>`;
 }
 
 function renderDropdown(id: string, p: DropdownProps, ls: string, t: UITheme): string {
@@ -346,7 +353,7 @@ function renderBadge(id: string, p: BadgeProps, ls: string, t: UITheme): string 
     dim:  `background:rgba(154,170,196,0.10);color:${t.dim}`,
   };
   const style = `${toneStyle[p.tone ?? 'dim']};font-size:9px;padding:1px 7px;border-radius:8px;white-space:nowrap;font-family:${t.fontUi};${ls}`;
-  return `<span id="${esc(id)}" style="${style}">${esc(p.text)}</span>`;
+  return `<span id="${esc(id)}" style="${style}">${escT(p.text, t)}</span>`;
 }
 
 function renderInput(id: string, p: InputProps, ls: string, t: UITheme): string {
@@ -529,7 +536,7 @@ function renderTabs(id: string, p: TabsProps, children: LayoutNode[], ls: string
     // 页签图标（REQ-UI-标题图标槽）：icon 在场 → 文字前 1.05em 内联图；无=纯文字页签字节不变。
     const icon = tb.icon ? `<img src="${esc(tb.icon)}" alt="" style="height:1.05em;width:1.05em;object-fit:contain;vertical-align:-0.18em;margin-right:5px">` : '';
     const style = `padding:7px 14px;font-size:12px;cursor:pointer;background:none;outline:none;font-family:${t.fontUi};border:none;border-bottom:2px solid ${on ? t.gold : 'transparent'};color:${on ? t.gold : t.sub};transition:all .15s`;
-    return `<button data-tab="${esc(tb.id)}"${act}${anchor} style="${style}">${icon}${esc(tb.label)}</button>`;
+    return `<button data-tab="${esc(tb.id)}"${act}${anchor} style="${style}">${icon}${escT(tb.label, t)}</button>`;
   };
   const nav = `<div style="display:flex;gap:4px;border-bottom:1px solid ${t.line};flex-wrap:wrap">${p.tabs.map(navBtn).join('')}</div>`;
   const pages = p.tabs.map((tb, i) => {
@@ -581,7 +588,7 @@ function renderTag(id: string, p: TagProps, ls: string, t: UITheme): string {
   // 尺寸档：md=原默认(向后兼容)；lg=大气药丸(货币计数等·≈2x 体量)；sm=紧凑。[padding, font-size, radius]。
   const TAG_DIMS: Record<string, [string, number, number]> = { sm: ['2px 8px', 10, 10], md: ['3px 10px', 11, 12], lg: ['7px 15px', 16, 16] };
   const [pad, fs, rad] = TAG_DIMS[p.size ?? 'md'] ?? TAG_DIMS['md']!;
-  return `<span id="${esc(id)}"${action} style="display:inline-flex;align-items:center;padding:${pad};font-size:${fs}px;border-radius:${rad}px;background:${bg};color:${fg};border:1px solid ${border};font-family:${t.fontUi};white-space:nowrap;${cursor}${ls}">${tagIcon}${esc(p.label)}${x}</span>`;
+  return `<span id="${esc(id)}"${action} style="display:inline-flex;align-items:center;padding:${pad};font-size:${fs}px;border-radius:${rad}px;background:${bg};color:${fg};border:1px solid ${border};font-family:${t.fontUi};white-space:nowrap;${cursor}${ls}">${tagIcon}${escT(p.label, t)}${x}</span>`;
 }
 
 // 飘字提示药丸：tone 着色（语义令牌）。挂载器 showToast() 复用它做定时自消浮层。
@@ -656,11 +663,11 @@ function renderCard(id: string, p: CardProps, children: LayoutNode[], ls: string
   const mediaHtml = p.media
     ? (/^(\/|https?:|data:)/.test(p.media)
       ? `<div style="text-align:center;margin-bottom:6px"><img src="${esc(p.media)}" alt="" style="height:34px;width:34px;object-fit:contain"></div>`
-      : `<div style="font-size:26px;text-align:center;margin-bottom:6px">${esc(p.media)}</div>`)
+      : `<div style="font-size:26px;text-align:center;margin-bottom:6px">${escT(p.media, t)}</div>`)
     : '';
   const body = children.length
     ? children.map((ch) => renderNode(ch, t)).join('')
-    : `${mediaHtml}${p.title ? `<div style="font-size:12px;font-weight:700;color:${t.text};font-family:${t.fontUi};text-align:center;line-height:1.3">${esc(p.title)}</div>` : ''}${p.sub ? `<div style="font-size:10px;color:${t.dim};font-family:${t.fontUi};text-align:center;margin-top:3px">${esc(p.sub)}</div>` : ''}`;
+    : `${mediaHtml}${p.title ? `<div style="font-size:12px;font-weight:700;color:${t.text};font-family:${t.fontUi};text-align:center;line-height:1.3">${escT(p.title, t)}</div>` : ''}${p.sub ? `<div style="font-size:10px;color:${t.dim};font-family:${t.fontUi};text-align:center;margin-top:3px">${escT(p.sub, t)}</div>` : ''}`;
   return `<div id="${esc(id)}"${action} style="position:relative;display:flex;flex-direction:column;justify-content:center;padding:12px 10px;border-radius:10px;background:${t.bg2};border:1px solid ${border};font-family:${t.fontUi};${dimmed}${cursor}${ls}">${corner}${body}</div>`;
 }
 
