@@ -10,7 +10,8 @@ export type ComponentType =
   | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast' | 'Tooltip'
   | 'Card' | 'PlayingCard' | 'Stepper' | 'Segmented' | 'Avatar' | 'Accordion'
   | 'Rating' | 'Combobox' | 'Drawer' | 'VirtualList' | 'ContextMenu'
-  | 'CoinFlip' | 'Versus' | 'Video' | 'Particles' | 'LevelPath';
+  | 'CoinFlip' | 'Versus' | 'Video' | 'Particles' | 'LevelPath'
+  | 'Float' | 'Connector';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -356,6 +357,30 @@ export interface LevelPathProps {
   tone?: 'jade' | 'gold' | 'accent'; // 已通关路径/节点主色（缺省 gold）
 }
 
+// ── 锚定层（REQ-UI-锚定与绑定层①·owner 亲派·render-only）──────────────────────────────────────────
+// 消灭「手写 getElementById('u-'+id)+getBoundingClientRect+createElement」病（game-g 战场徽标/VS 连线全这么写）。
+// 引擎给「把浮层/连线钉在活动目标上」的**数据说法**：mountUI 每帧读目标 live rect 定位（不进 sim/hash·目标消失自隐）。
+/** 锚引用：kind=entity（渲染器给实体 DOM 盖的 `data-entity-anchor="<id>"`）/ node（同 mountUI 树里的 LayoutNode id）。 */
+export interface AnchorRef {
+  kind: 'entity' | 'node';
+  id: string;
+  at?: 'center' | 'top' | 'bottom' | 'left' | 'right'; // 锚在目标包围盒哪个点（缺省 center）
+  offset?: { x?: number; y?: number };                 // 锚点再偏移 px
+}
+// Float（浮层·钉活动目标）：children 每帧定位到 anchorTo 目标——头顶名牌/血条/伤害数/选中光标/徽标。目标消失→自隐（不悬空）。
+export interface FloatProps {
+  anchorTo: AnchorRef;
+  ttlTicks?: number; // 存活帧数（缺省常驻·给了则 N 帧后自隐·如伤害数飘完即消）
+}
+// Connector（连线·「谁打谁」的数据说法）：两锚点间画线（实线/虚线/箭头），每帧跟随两端。
+export interface ConnectorProps {
+  from: AnchorRef;
+  to: AnchorRef;
+  style?: 'solid' | 'dashed' | 'arrow';               // 线型闭集
+  tone?: 'jade' | 'gold' | 'ok' | 'warn' | 'danger';  // 线色令牌（非裸 hex）
+  label?: string;                                      // 线中点标（伤害/关系）
+}
+
 // ── Tag（可点过滤标签/词条·筛选条大量用）：active 高亮；可点(action·arg=actionArg)；可删(removable 显 ×)。──
 export interface TagProps {
   label: string; active?: boolean; tone?: 'normal' | 'accent' | 'dim';
@@ -510,6 +535,7 @@ export type ComponentProps =
   | CardProps | PlayingCardProps | StepperProps | SegmentedProps | AvatarProps | AccordionProps
   | RatingProps | ComboboxProps | DrawerProps | VirtualListProps | ContextMenuProps
   | CoinFlipProps | VersusProps | VideoProps | ParticlesProps | LevelPathProps
+  | FloatProps | ConnectorProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

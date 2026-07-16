@@ -282,6 +282,64 @@ export function mountUI(
     });
   }
 
+  // 锚定浮层/连线（REQ-UI-锚定层①·render-only·不进 sim/hash）：每帧读目标 live rect → 把 Float 摆到锚点、Connector 连两端。
+  //   目标消失/隐藏(rect 0)→自隐（不悬空）。entity=渲染器盖 `data-entity-anchor` 的实体节点·node=同树 LayoutNode id。
+  //   每帧重查（稳健于 update() 重渲）；teardown 取消 rAF。happy-dom 无布局→rect 0 全隐（测试查渲染标记即可）。
+  let anchorRaf = 0;
+  const ensureAnchorLoop = (): void => {
+    if (anchorRaf) return; // 已在跑（幂等·可被 mount + 每次 update 调）
+    if (typeof document === 'undefined' || typeof requestAnimationFrame !== 'function') return;
+    if (!host.querySelector('[data-float-id],[data-conn]')) return; // 无锚定件·不起循环（省帧）
+    const esc1 = (s: string) => (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(s) : s.replace(/[^\w-]/g, '\\$&');
+    const find = (kind?: string, id?: string): Element | null => !id ? null
+      : kind === 'entity' ? document.querySelector(`[data-entity-anchor="${esc1(id)}"]`)
+        : (host.querySelector(`#${esc1(id)}`) ?? document.getElementById(id));
+    const pt = (r: DOMRect, at?: string): [number, number] => {
+      if (at === 'top') return [r.left + r.width / 2, r.top];
+      if (at === 'bottom') return [r.left + r.width / 2, r.bottom];
+      if (at === 'left') return [r.left, r.top + r.height / 2];
+      if (at === 'right') return [r.right, r.top + r.height / 2];
+      return [r.left + r.width / 2, r.top + r.height / 2];
+    };
+    const dead = (r: DOMRect) => r.width === 0 && r.height === 0; // display:none/未布局 → 隐藏浮层
+    const step = () => {
+      const floats = host.querySelectorAll<HTMLElement>('[data-float-id]');
+      const conns = host.querySelectorAll<SVGElement>('[data-conn]');
+      if (!floats.length && !conns.length) { anchorRaf = 0; return; } // 锚定件已不在树里→停（下次 update 再启）
+      floats.forEach((el) => {
+        const ttlRaw = el.dataset['floatTtl'];
+        if (ttlRaw !== undefined) { const life = Number(ttlRaw); if (life <= 0) { el.style.opacity = '0'; return; } el.dataset['floatTtl'] = String(life - 1); }
+        const target = find(el.dataset['floatKind'], el.dataset['floatId']);
+        if (!target) { el.style.opacity = '0'; return; }
+        const r = target.getBoundingClientRect();
+        if (dead(r)) { el.style.opacity = '0'; return; }
+        const [x, y] = pt(r, el.dataset['floatAt']);
+        const ox = Number(el.dataset['floatOx']) || 0, oy = Number(el.dataset['floatOy']) || 0;
+        el.style.transform = `translate(${Math.round(x + ox)}px,${Math.round(y + oy)}px) translate(-50%,-50%)`;
+        el.style.opacity = '1';
+      });
+      conns.forEach((svg) => {
+        const ds = (svg as unknown as HTMLElement).dataset;
+        const a = find(ds['connFromKind'], ds['connFromId']);
+        const b = find(ds['connToKind'], ds['connToId']);
+        const line = svg.querySelector('line');
+        if (!a || !b || !line) { (svg as unknown as HTMLElement).style.opacity = '0'; return; }
+        const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+        if (dead(ra) || dead(rb)) { (svg as unknown as HTMLElement).style.opacity = '0'; return; }
+        (svg as unknown as HTMLElement).style.opacity = '1';
+        const [x1, y1] = pt(ra, ds['connFromAt']);
+        const [x2, y2] = pt(rb, ds['connToAt']);
+        line.setAttribute('x1', String(x1)); line.setAttribute('y1', String(y1));
+        line.setAttribute('x2', String(x2)); line.setAttribute('y2', String(y2));
+        const label = svg.querySelector('[data-conn-label]');
+        if (label) { label.setAttribute('x', String((x1 + x2) / 2)); label.setAttribute('y', String((y1 + y2) / 2 - 6)); }
+      });
+      anchorRaf = requestAnimationFrame(step);
+    };
+    anchorRaf = requestAnimationFrame(step);
+  };
+  ensureAnchorLoop();
+
   // 背景 UV 滚动（render-only·滚动 UI 特效）：给带 data-bgscroll 的元素注入逐元素关键帧（平移 background-position），
   // 无限循环。配 repeating 贴图(texture)即得无缝滚动底纹；teardown 移除注入的 style。
   const scrollStyles: HTMLStyleElement[] = [];
@@ -551,6 +609,7 @@ export function mountUI(
     }
     curRoot = newRoot;
     bindVlists(); // 子树可能被替换 → 复绑 vlist 滚动监听
+    ensureAnchorLoop(); // update 引入锚定件（Float/Connector）→ 启动跟随 rAF（幂等·game-i 从 hub .update 进模块的路径）
   };
 
   const teardown = (() => {
@@ -574,6 +633,7 @@ export function mountUI(
     vlistScrolls.forEach(({ el, fn }) => el.removeEventListener('scroll', fn));
     typers.forEach((iv) => clearInterval(iv));
     scrollStyles.forEach((s) => s.remove()); // 移除背景滚动注入的 keyframe style
+    if (anchorRaf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(anchorRaf); // 停锚定跟随 rAF
     host.innerHTML = '';
   }) as MountHandle;
   teardown.update = update;

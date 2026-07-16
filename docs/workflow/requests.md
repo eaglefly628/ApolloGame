@@ -25,7 +25,21 @@
 > **③ 三方对账 CLI（M1 数据面前置）· ✅ done（PA 2026-07-16）**：`scripts/asset-reconcile.mjs` + `.test.mjs`（4 测·全绿）。三类 finding（行 schema 位置|期望|实际）：**dangling-file**（FAIL·登记 filled 有 path 但磁盘无文件·site-absolute 路径解析到 public/·相对解析到 assets/·tbf/placeholder 合法无文件不误报）、**orphan-file**（WARN·磁盘有文件但无登记·跳过 index/台账/pending/dotfile/FreeArtLib）、**dangling-key**（FAIL·材质/贴图 spec 的 map/normalMap… 或 vendoredFrom 指向不在册 id）。判词 `RECONCILE: PASS|WARNINGS|FAIL`+退出码（FAIL=1·照 docs-ref-guard）；`--json` 出结构化（M1 报表吃）。scope：`[<game>|--all|--shared|--games]`（默认 all）。实测：共享货架 30k 条 PASS·各游戏本地 70 孤儿 WARN（game-g/k placeholder·game-z shelf 贴图）。
 > **④ 配方格式草案（M2/M3 前置）**：把 gen-textures/pack-atlas 收编为「recipe 纯数据」的格式草案 ≤2 页（op 闭集/参数 schema/可重跑语义）交 Lead 审——过审前不动现有 CLI。
 
-### REQ-UI-锚定与绑定层 · UI 声明化二期（REQ-ARCH-ANCHOR 历史欠账收账） · [2026-07-04] · owner 亲派 → **指派：PUI（owner 2026-07-15 扔给新设 UI 基座角色·角色卡 docs/roles/PUI.md·Lead 图纸+验收）** · status: **open（①锚定立即施工·②绑定设计稿先行）** · 优先级: **P1（弱 LLM 产完整游戏的最大单一杠杆·底座终审 🔴#3）** · 类型: 引擎 UI 库能力（render-only）
+### REQ-ART-TGS吸收四件 · threejs-game-skills 对照吸收（视觉评分卡/音频线/像素QA/手册红线） · [2026-07-06] · owner 给源 → Lead 调研裁决（`art-pipeline-vision §八`）→ **owner 已批（2026-07-06）** · status: **落地中：A+D ✅ done（Lead 亲笔 2026-07-07）· B spec 就绪→指派 PST（**冲刺后**·被 REQ-DEMO-0729 队列重排压后）· C spec 已移 `docs/workflow/requests-3d.md`（P3D 域·同被压后）** · 优先级: P2 · 类型: 质量护栏吸收（不采其代码生成路线·宪法相反）
+> 一句话：他家"AAA"不是描述词，是四道门（评分卡全维≥2/证据台账/反捷径工艺律/canvas 像素断言）——护栏纪律照单吸收，代码生成路线回驳。详见愿景稿 §八对照表。
+> **A ✅（Lead 亲笔）**：新 `docs/playbooks/visual-scorecard.md`（8 维 0-3 分·premium=全维≥2·证据台账+资产来源台账+凭证探针·反捷径工艺律·判词 `VISUAL: n/24 · PREMIUM: YES|NO`）；挂点=playbooks/index 一行 + P3D 视觉验收（3d.md 红线区指回）+ PS 出货内门（PS-steam-finish-list 阶段区一行）。
+> **D ✅（Lead 亲笔·手册回填）**：`docs/playbooks/3d.md` 红线区加工艺顺序律（先造型→材质→光照→特效·禁 glow 冒充）+ 主角面禁纯程序化（无 blocker 记录不豁免）；`docs/playbooks/testing.md` 红线区加凭证探针（空口 skip 不采信）+ 做X表挂评分卡行。
+> **B spec（Lead 图纸·指派 PST·工坊 M3.5·与其他 studio 单碰 `apollo.py`/`scripts/ai-gen.mjs` 须串行——排 REQ-STUDIO 心跳余项之后）**：① `scripts/ai-gen.mjs` 加 audio adapter：类型闭集 `sfx|ambience|ui`；BYO-key provider（有 key 走真调，无 key→**先贴凭证探针输出**再走 mock 兜底=确定性占位 wav+MOCK 标记，绝不静默顶替）。② 产物一律落待审区（**复用 M2.5 人审门** writePending/reviewPending·绝不直登 index），provenance 硬字段同 2D/3D（model/prompt/date/license 缺一拒登）。③ 定位：`SynthAudioPort`/SfxSpec 合成=数据仍是首选路（见 `docs/playbooks/audio.md`）；工坊采样线只补合成表达不了的（音乐床/环境底噪）——声音货架从现存 1 条起步。④ 测试：`scripts/ai-gen.test.mjs` 增音频四例（pending/approve/reject/provenance 缺字段拒）+ `scripts/art-review-smoke.py` 扩音频类型断言。⑤ 门禁全绿直推；完工标 ✅ 待 Lead 验收 + PA 会审登记契约。
+
+### REQ-UI-锚定与绑定层 · UI 声明化二期（REQ-ARCH-ANCHOR 历史欠账收账） · [2026-07-04] · owner 亲派 → **指派：PUI（UI 基座 + 展示台程序员）** · status: **①锚定 ✅ done（PUI 2026-07-16·待 Lead 对抗性验收）；②绑定层 open（设计稿先行·未开写）** · 优先级: **P1（弱 LLM 产完整游戏的最大单一杠杆·底座终审 🔴#3）** · 类型: 引擎 UI 库能力（render-only）
+
+> **✅ ①锚定完工回执（PUI·2026-07-16·请 Lead review·真浏览器 demo 已截图自证）**：
+> - **闭集新件两枚**：`Float{anchorTo:{kind:'entity'/'node',id,at?,offset?},ttlTicks?}`（children 每帧钉目标 live rect·头顶名牌/血条/伤害数）+ `Connector{from,to:anchorRef,style:solid/dashed/arrow,tone令牌,label?}`（「谁打谁」连线）。进 `ComponentType` 闭集 + `catalog`(38 覆盖门) + 校验器同步。
+> - **锚源两路**：`node`=同 mountUI 树 LayoutNode id（`host.querySelector('#id')`）；`entity`=渲染层给实体 DOM 盖统一锚标 `data-entity-anchor="<id>"`（**契约·渲染器出·非游戏自造 `u-<id>`**）。`at`=center/top/bottom/left/right + `offset`。
+> - **定位机制**：`mountUI` 起 rAF 跟随循环（`ensureAnchorLoop`·mount + 每次 update 幂等启动·无锚定件自停省帧·teardown 取消）——每帧读目标 `getBoundingClientRect` 摆 Float(fixed·跟随滚动) / 连 Connector 两端；**目标消失/隐藏(rect 0)→自隐**（不悬空不报错）。**render-only·不进 sim/hash**·线色走令牌非裸 hex。
+> - **消灭的病**：game-g `game-g.tsx:372/411-413/440` 手写 `getElementById('u-'+id)`+`getBoundingClientRect`+`createElement`（createElement×27 红旗大源）现有数据退路——战场替换由甲/程序B 随战斗 UI 批消费（不在本单强做）。
+> - **测试与自证**：`anchor-float.test.ts`（5·渲染标记/箭头虚线/mountUI 挂载+teardown 不抛/校验器）+ `/check-ui` 过（ui-audit tabnew 0 阻断）+ **game-i「🆕 新控件/特性」`t-anchor` 段活范例**（战场三单位 + 名牌 Float + HP 条 Float + 攻击箭头 Connector + 关系虚线·swiftshader 截图已验各就位）。回填 `docs/playbooks/ui.md`「锚定层」行。tsc+vitest(2629)+build 三绿。
+> - **②绑定层**：按 spec「设计稿先行·不许直接开写」——**未动**（需与 PST 共审绑定语法闭集设计稿·过 Lead 审才施工）。
 > **owner 2026-07-04**：「UI 锚定点加绑定层，派给 UI 程序员做，我让 UI 程序员查。」出处：底座终审 `docs/design/base-capability-review-2026-07-03.md §二🔴#3 + §四.3`（锚定与绑定**分两步**·锚定先行）。
 > **要消灭的病（现状证据）**：game-g 战场徽标/VS 连线/胜负挂牌全靠手写 `getElementById('u-'+id)` + `getBoundingClientRect` + `createElement`（`game-g.tsx:372/411-413/440`）——正是 audit 红旗 createElement×27 的一大来源；每个游戏都会再犯，因为**引擎没给「把浮层钉在活动目标上」的数据说法**。
 >

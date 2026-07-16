@@ -141,6 +141,26 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { label: '4', state: 'locked' }, { label: '5', state: 'locked' },
     ] } },
   },
+  {
+    type: 'Float', summary: '锚定浮层（钉在活动目标上）', whenToUse: '头顶名牌/血条/伤害数/选中光标/战场徽标——把 children 每帧定位到目标 rect。取代手写 getElementById+getBoundingClientRect。目标消失自隐。', children: 'optional',
+    props: [
+      { name: 'anchorTo', type: 'object', required: true, describe: '{kind:entity(渲染器盖 data-entity-anchor)/node(同树 LayoutNode id), id, at?:center/top/bottom/left/right, offset?:{x,y}}' },
+      { name: 'ttlTicks', type: 'number', describe: '存活帧数（缺省常驻·给了 N 帧后自隐·伤害数飘完即消）' },
+    ],
+    sample: { type: 'Float', id: 's-float', props: { anchorTo: { kind: 'node', id: 'some-target', at: 'top', offset: { y: -8 } } },
+      children: [{ type: 'Badge', id: 's-float-b', props: { text: '★ BOSS', tone: 'warn' } }] },
+  },
+  {
+    type: 'Connector', summary: '锚定连线（谁打谁）', whenToUse: '两目标间连线（VS 连线/攻击指向/关系线）·每帧跟随两端。', children: 'none',
+    props: [
+      { name: 'from', type: 'object', required: true, describe: '起点锚 {kind,id,at?}' },
+      { name: 'to', type: 'object', required: true, describe: '终点锚 {kind,id,at?}' },
+      { name: 'style', type: 'enum', values: ['solid', 'dashed', 'arrow'], describe: '线型（缺省 solid）' },
+      { name: 'tone', type: 'enum', values: ['jade', 'gold', 'ok', 'warn', 'danger'], describe: '线色令牌（非裸 hex）' },
+      { name: 'label', type: 'string', describe: '线中点标（伤害/关系）' },
+    ],
+    sample: { type: 'Connector', id: 's-conn', props: { from: { kind: 'node', id: 'a' }, to: { kind: 'node', id: 'b' }, style: 'arrow', tone: 'danger', label: '−120' } },
+  },
   // ── 按钮 / 输入 ──────────────────────────────────────────────
   {
     type: 'Button', summary: '按钮（四种风格·点击发信号）', whenToUse: '一切点击动作。主 CTA 用 hero（金色倒角 sheen）。action=信号名，由 sim 能力消费。', children: 'none',

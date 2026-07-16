@@ -10,7 +10,7 @@ import type {
   TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
   CardProps, PlayingCardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
   RatingProps, ComboboxProps, DrawerProps, VirtualListProps, ContextMenuProps,
-  CoinFlipProps, VersusProps, VideoProps, ParticlesProps, LevelPathProps,
+  CoinFlipProps, VersusProps, VideoProps, ParticlesProps, LevelPathProps, FloatProps, ConnectorProps, AnchorRef,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -953,6 +953,28 @@ function renderLevelPath(id: string, p: LevelPathProps, ls: string, t: UITheme):
   return `<div id="${esc(id)}" style="position:relative;width:${W}px;height:${H}px;${ls}">${svg}${marks}</div>`;
 }
 
+// ── Float / Connector（锚定层·REQ-UI-锚定①·render-only）：渲染出带锚数据的容器/SVG，mountUI 每帧读目标 rect 定位。──
+function renderFloat(id: string, p: FloatProps, children: LayoutNode[], ls: string, t: UITheme): string {
+  const a = p.anchorTo ?? { kind: 'node', id: '' };
+  const data = `data-float-kind="${a.kind === 'entity' ? 'entity' : 'node'}" data-float-id="${esc(a.id)}" data-float-at="${esc(a.at ?? 'center')}" data-float-ox="${num(a.offset?.x, 0)}" data-float-oy="${num(a.offset?.y, 0)}"${p.ttlTicks !== undefined ? ` data-float-ttl="${num(p.ttlTicks)}"` : ''}`;
+  const inner = children.map((c) => renderNode(c, t)).join('');
+  // 初始移出屏 + 隐藏（定位前不闪）；mountUI 每帧摆到锚点、目标消失自隐。fixed=按视口 rect 定位（跟随滚动）。
+  return `<div id="${esc(id)}" ${data} style="position:fixed;left:0;top:0;z-index:60;opacity:0;transform:translate(-9999px,-9999px);${ls}">${inner}</div>`;
+}
+function renderConnector(id: string, p: ConnectorProps, t: UITheme): string {
+  const toneColor: Record<string, string> = { jade: t.jade, gold: t.gold, ok: t.ok, warn: t.warn, danger: t.danger };
+  const col = toneColor[p.tone ?? 'jade'] ?? t.jade;
+  const arrow = p.style === 'arrow';
+  const dash = p.style === 'dashed' ? ' stroke-dasharray="7 7"' : '';
+  const anc = (r: AnchorRef | undefined, pfx: string) => {
+    const rr = r ?? { kind: 'node' as const, id: '' };
+    return `data-conn-${pfx}-kind="${rr.kind === 'entity' ? 'entity' : 'node'}" data-conn-${pfx}-id="${esc(rr.id)}" data-conn-${pfx}-at="${esc(rr.at ?? 'center')}"`;
+  };
+  const mk = arrow ? `<defs><marker id="${esc(id)}-ah" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="${col}"/></marker></defs>` : '';
+  const lbl = p.label ? `<text data-conn-label fill="${col}" font-size="12" font-weight="700" font-family="${t.fontUi}" text-anchor="middle" style="paint-order:stroke;stroke:${t.bg0};stroke-width:3px">${esc(p.label)}</text>` : '';
+  return `<svg id="${esc(id)}" data-conn ${anc(p.from, 'from')} ${anc(p.to, 'to')} style="position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:59;opacity:0;overflow:visible">${mk}<line stroke="${col}" stroke-width="3" stroke-linecap="round"${dash}${arrow ? ` marker-end="url(#${esc(id)}-ah)"` : ''}/>${lbl}</svg>`;
+}
+
 export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
   const html = renderDispatch(node, theme);
   const c = node.layout;
@@ -1012,6 +1034,8 @@ function renderDispatch(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'Video':      return renderVideo(node.id, node.props as VideoProps, ls, t);
     case 'Particles':  return renderParticles(node.id, node.props as ParticlesProps, ls, t);
     case 'LevelPath':  return renderLevelPath(node.id, node.props as LevelPathProps, ls, t);
+    case 'Float':      return renderFloat(node.id, node.props as FloatProps, node.children ?? [], ls, t);
+    case 'Connector':  return renderConnector(node.id, node.props as ConnectorProps, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }

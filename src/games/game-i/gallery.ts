@@ -826,6 +826,27 @@ function buildPageNew(controls: ControlsState): LayoutNode {
     type: 'Panel', id: 'page-new', props: { scroll: true },
     layout: { direction: 'column', gap: 18, padding: 20 },
     children: [
+      sectionTitle('t-anchor', '★ 锚定层 FLOAT / CONNECTOR（把浮层/连线钉在活动目标上·取代手写 getElementById·REQ-UI-锚定①）'),
+      { type: 'Label', id: 't-anchor-sub', props: { text: '下方三个单位是普通 LayoutNode（各有 id）。名牌 Float 锚在单位头顶(at:top)、每帧跟随；VS 连线 Connector 从赵→关(arrow·danger)。滚动/换 tab 时浮层自动跟随或隐藏（目标消失不悬空）。', color: 'sub', size: 'sm' } },
+      { type: 'Panel', id: 'anchor-field', props: { bg: { custom: 'linear-gradient(160deg,#16402c,#0e2a1c)' }, vignette: true }, layout: { direction: 'row', gap: 40, padding: 30, justify: 'center', align: 'center', height: 160 },
+        children: [
+          { type: 'PlayingCard', id: 'anchor-u1', props: { rank: 'A', suit: '♠', label: '赵子龙', size: 'lg' } },
+          { type: 'PlayingCard', id: 'anchor-u2', props: { rank: 'K', suit: '♥', label: '关云长', size: 'lg', face: 'light' } },
+          { type: 'PlayingCard', id: 'anchor-u3', props: { rank: 'Q', suit: '♣', label: '小兵', size: 'md', dimmed: true } },
+        ] },
+      // 浮层：名牌钉在单位头顶（at:top·offset 上抬）·血条钉在脚下。目标 id = 上面卡的 id。
+      { type: 'Float', id: 'anchor-plate1', props: { anchorTo: { kind: 'node', id: 'anchor-u1', at: 'top', offset: { y: -6 } } },
+        children: [{ type: 'Badge', id: 'anchor-p1b', props: { text: '★ 赵子龙 Lv.9', tone: 'warn' } }] },
+      { type: 'Float', id: 'anchor-hp1', props: { anchorTo: { kind: 'node', id: 'anchor-u1', at: 'bottom', offset: { y: 12 } } },
+        children: [{ type: 'ProgressBar', id: 'anchor-hp1b', props: { value: 0.72, tone: 'ok', label: 'HP', showValue: true }, layout: { width: 96 } }] },
+      { type: 'Float', id: 'anchor-plate2', props: { anchorTo: { kind: 'node', id: 'anchor-u2', at: 'top', offset: { y: -6 } } },
+        children: [{ type: 'Badge', id: 'anchor-p2b', props: { text: '关云长 Lv.8', tone: 'ok' } }] },
+      // 连线：赵→关 攻击指向（arrow·danger·带伤害标）+ 关→小兵 关系线（dashed·jade）。
+      { type: 'Connector', id: 'anchor-atk', props: { from: { kind: 'node', id: 'anchor-u1', at: 'right' }, to: { kind: 'node', id: 'anchor-u2', at: 'left' }, style: 'arrow', tone: 'danger', label: '−120' } },
+      { type: 'Connector', id: 'anchor-rel', props: { from: { kind: 'node', id: 'anchor-u2' }, to: { kind: 'node', id: 'anchor-u3' }, style: 'dashed', tone: 'jade' } },
+      { type: 'Label', id: 't-anchor-note', props: { text: 'anchorTo:{kind:node/entity, id, at, offset} —— node=同树 LayoutNode id；entity=渲染器给实体 DOM 盖的 data-entity-anchor（游戏战场用这个·消灭手写 u-<id>）。render-only·不进 sim/hash。', color: 'dim', size: 'xs' } },
+      divider('d-anchor'),
+
       sectionTitle('t-pc', 'PLAYINGCARD · 扑克牌原语（rank/suit · 正反 · selected/dimmed · 暗卡/白扑克）'),
       { type: 'Panel', id: 'pc-row', props: {}, layout: { direction: 'row', gap: 12, padding: 14, align: 'center' },
         children: [
