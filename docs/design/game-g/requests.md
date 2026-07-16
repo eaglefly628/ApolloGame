@@ -28,10 +28,10 @@
 > **不是程序A/不是逻辑**：掷命/移动/碰撞逻辑（turn-combat.ts）与 `justMovedIds` 数据流**均正确**·此条纯 FLIP 表现误判。
 > **验收**：敌方推进相邻我方前锋时，我方静止牌**纹丝不动**（不再升落）；真移动的兵行军动画不受影响（错峰逐跳照旧）。
 
-### REQ-UI-PlayingCard-xl尺寸 · [2026-07-06] · PG（game-g 绝命对决 R21 布局重置）→ 主程（ui/components 控件集） · status: **open（控件缺口·PG 不擅改 render.ts）** · 类型: 基座控件扩尺寸档（闭集加一档·additive·非逃生）
-> **源起**：owner R21「布局重置」要绝命对决特写忠实设计稿（`design/UI/Game G 绝命对决.dc.html`）——设计稿对决双方扑克牌 **118×142**；现 `PlayingCard` 尺寸闭集 `PCARD_DIMS`（`src/ui/components/render.ts:584`）最大档 `lg=[82,116,18,46]`，比设计小一圈。PG 已把特写用到 `lg`（当前最大），仍不足。
-> **申请**：`PCARD_DIMS` 加 `xl: [118,142,22,58]`（宽,高,圆角,大字号·按 lg→md 比例外推）。纯加档·不动现有 sm/md/lg（零回归·所有现用点不受影响）。
-> **为何不 PG 自己改**：`render.ts` = LayoutNode 解释器/基座控件集（主程域）；扩控件闭集走 requests（UI铁律「表达不了→requests.md 扩控件·绝不手写逃生」）。到货后 PG 把 `clash-card-m/f` 的 `size:'lg'`→`'xl'` 切一行即忠实设计稿。
+### REQ-UI-PlayingCard/Button 控件缺口（尺寸 + 透明底图） · [2026-07-06] · PG（game-g R21 布局重置 + owner 换背景撞见）→ **指派：PUI（src/ui/** 控件集域）** · status: **open（控件写死不透明·PG/PE 不擅改 render.ts）** · 类型: 基座控件扩能（加尺寸档 + 透明底图支持·additive）
+> **① xl 尺寸档**：owner R21 要绝命对决特写忠实设计稿（`design/UI/Game G 绝命对决.dc.html`·牌 **118×142**）；现 `PlayingCard` 尺寸闭集 `PCARD_DIMS` 最大档 `lg=[82,116,18,46]` 偏小。**申请** `PCARD_DIMS` 加 `xl:[118,142,22,58]`（纯加档·零回归）。到货后 PG 把 `clash-card-m/f` `size:'lg'→'xl'` 切一行。
+> **② 透明底图支持（owner 2026-07-06 换背景撞见·实图为证）**：owner 生成了**带透明色(alpha)的牌背图**放进 `PlayingCard.backArt`，但渲出来牌边不透明——根因：`renderPlayingCard` 给牌**恒画不透明底** `faceBg`（back=`linear-gradient(#b34a4a,#8c3535)`）+ `border:2px solid` 垫在图下，所以图里透明的地方**露出的是牌自己的不透明红底、不是牌后的绿呢**（非"图片格式不对"，PNG alpha 没问题）。**申请**：`PlayingCard` 加透明模式——`art`/`backArt` 为透明图时**不画 `faceBg`/`border`**（或加 `bareFace?:boolean`/`faceBg?:'transparent'` 口子），让图的 alpha 透出牌后底。同族：`hero` Button（`renderButton` 的写死投影/内高光/`cover` 裁掉透明边）也挡透明 skin——一并请 PUI 给 hero 透明 skin 干净透出。
+> **为何不 PG 自己改**：`src/ui/**` = UI 基座控件集（**PUI 域**·owner 2026-07-16）；扩控件闭集走 requests（UI铁律「表达不了→requests.md 扩控件·绝不手写逃生」）。**现状已知规避**：game-g 大厅底图改走 Panel 自己的 cover 贴图（`home-felt`·已落 `fdffd8c4`）绕开 Screen 被盖；但牌面/按钮的透明只能等本单。
 
 ### REQ-G-复查尾巴三件 · Lead review 2026-07-04 批产出（程序A/B 点名必读） · [2026-07-04] · 主程 → **程序A（①③）· 程序B（②）** · status: open · 优先级: P1 · 类型: 复查落地（owner 拍板「把三条尾巴给程序员A和B落地」）
 > **① 程序A·对折下限=3 落码**：owner 定案在 `REQ-G-掷骰核两bug ①`（spec/验算已写死·`Math.max(0)→3` 一行+测试）——当前代码停在临时版 `P_MIN=1`（`clash-resolve.ts:31`），定案未落。落完该单标 done。
