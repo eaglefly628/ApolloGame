@@ -35,11 +35,11 @@
 | `src/renderer/renderable.ts` | 🔶 共享 | 2D+3D 后端共读的 `Renderable`/`collectRenderables`。改它影响所有后端 → **改前知会主程**（如加 render 字段）。 |
 | `src/assembly/component-map.ts` | 🔶 共享 | 主程维护的组件闭集登记。你**只加 3D 组件那一行**（import + ComponentDataMap），别动别人。 |
 | `src/net/determinism.ts` | 🔶 共享 | 你**只往 `NON_DETERMINISTIC` 加 3D render-only 组件名**，别动哈希逻辑。 |
-| `src/launcher.tsx` | 🔶 共享 | 你**只加 game-z 的 `GAMES`/`loaders` 两行**，别动壳层逻辑。 |
+| `src/launcher.tsx`(GAMES) + `src/launcher/game-runner.tsx`(loaders) | 🔶 共享 | 你**只加 game-z 的 `GAMES`/`loaders` 两行**（07-15 拆分后 loaders 在 game-runner.tsx），别动壳层逻辑。 |
 | `src/engine/core/**`、`src/skills/**`、`src/services/**`、`src/net/**`(除上行)、`src/assembly/**`(除上行) | 🔒 主程 | 核心 ECS/能力/服务/网络/装配。**走 `requests.md`**。 |
 | `src/renderer/canvas-renderer.ts`·`ascii-renderer.ts`·`frame-svg.ts`·`index.ts` | 🔒 主程 | 2D 后端 + barrel。**走 `requests.md`**。 |
 | `src/ui/**` | 🔒 主程 | UI 库。你**消费** `LayoutNode` 搭 game-z HUD，但**不改库**；缺控件 → `requests.md`。 |
-| `src/launcher.tsx` 的 game-d 两行 | ✅ 你 | 同 game-z：只加 game-d 的 `GAMES`/`loaders` 注册两行。 |
+| launcher 的 game-d 两行（GAMES 在 `src/launcher.tsx`·loaders 在 `src/launcher/game-runner.tsx`） | ✅ 你 | 同 game-z：只加 game-d 的 `GAMES`/`loaders` 注册两行。 |
 | 其它游戏 `src/games/game-{a..c,e..i,x}/**` | 🔒 别人 | 不碰（game-d 已划归 P3D·见上）。 |
 
 **三条总纲**：① 跨出「✅+🔶」范围的引擎改动 = 一律 `requests.md` 报主程评审，别直接动；② 改 🔶 共享文件**只动 3D 相关那部分**、且**改前知会**（多 session 并行，避免 rebase 互踩）；③ 任何改动**向后兼容**——不破坏 2D 后端 / three-lab / 现有游戏，**全绿才推**。
