@@ -1430,3 +1430,19 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > c) **派工**：PS 先行（自请照准）——serve.py 编排 API 硬化成稳定契约（`package→genVDF→upload` 三段 + 进度/日志 + 判词 token 收口）+ mock/480 冒烟；PST 随后接 player 模式发布区 UI（**「三步不能自动」必须做成显式向导页**，不许藏在文档里）；两段各自门禁绿，联调验收=Lead。P2 维持（各自接在当前核心工作之后）。status 更新 → **裁决完毕·PS 可先行**。
 >
 > **PS 契约硬化完成（2026-07-04·owner「可以先做」+ Lead 裁准 PS 先行）**：`serve.py` 按 Lead c) 硬化成稳定契约——**三段命名** `stage_package/stage_genvdf/stage_upload` + `plan_pipeline` 组合 + additive `POST /api/plan`；**判词 token 收口**（段判词 `ST_OK/ST_BLOCKED`、任务判词 `JOB_IDLE/RUNNING/DONE/ERROR`·`job_status()`，接进 `/api/state`+`/api/log`，消费端不 scrape 日志）；无真账号冒烟 `scripts/steam-publish-smoke.py`（480·**24 断言**·退出码门禁·自证可红·登记 testing 手册）。apollo.py 薄代理 `/api/publish/*` 透传即用。**余：apollo.py 代理（服务面域）+ PST 接向导页 UI**。详见 `finish/PS-steam-finish-list.md`。
+
+### REQ-M3-三消二期 · match3-board 特殊糖+格层+目标接线（糖果传奇级机制补全） · [2026-07-16] · owner 拍板（新三消游戏立项前置）→ Lead 出图 → **指派：Opus** · status: ✅ done·Lead 对抗性验收 PASS（2026-07-16·归档） · 优先级: P0 · 类型: 引擎 capability 二期（tier3·正确性关键·不降档）
+> **背景**：一期 `src/skills/tier3/match3-board.ts`（REQ-C-001·换/找连/消/重力/补/连锁·确定性相位机·14 测）核心健全零消费方；糖果传奇级还差特殊糖、格层（果冻/障碍）、目标接线。
+> **图纸（Lead·组件/语义/测试写死）**：
+> 1. **格编码**：cells 仍纯整数——低位=色 0..kindCount-1 + 高位 flag 闭集 `STRIPED_H/STRIPED_V/WRAPPED/COLORBOMB`（球无色·色位哨值）；导出 `makeCell/cellColor/cellSpecial` helper，全整数位运算保确定性。
+> 2. **特殊糖生成**（消除结算按 run 形状）：4 连=条纹（方向走 config `stripedOrientation:'perpendicular'|'parallel'`·缺省 perpendicular）；L/T 交叉=WRAPPED；5 连=COLORBOMB。生成位=玩家交换格优先、连锁时 run 中点。
+> 3. **触发效果**：条纹=整行/列；包装=3×3（V1 一次爆）；彩球+普通交换=全盘清该色；`comboTable` config 闭集预置 4 条（纹+纹=十字、纹+包=3行3列、包+包=5×5、球+球=全盘）；被波及特殊糖连锁引爆用**显式工作队列+已处理集**（有界·防递归）。
+> 4. **格层**：MatchBoard 加可选 `jelly?: number[]`（0/1/2·本格参与消除减 1）+ `blockers?: number[]`（>0=hp·邻接消除减 1；-1=石块不可动不可消）；重力/补块尊重石块（不落不补不滑）；层变化只改 BoardCell 外观（config 映射·不增删实体）。
+> 5. **步数与目标**：`movesResource?`——合法交换扣 1（非法步回退不扣）；果冻/障碍消除按 `jellyResource?`/`blockerResource?` 写 ResourceModify（沿 kindResource 模式）→ 胜负走现成 Condition，**不新造胜负系统**。
+> 6. **红线**：确定性（RandomSeed·整数·禁裸随机/Date）；相位机纪律不破；组件契约只加可选字段（旧 config 行为逐字节不变）；一期 14 测零回归。
+> 7. **测试点名（缺一不关单）**：编码 helper；4 连横/竖×两种 orientation；L/T 产包装；5 连产球；各效果清除集；4 条 combo；引爆队列有界；果冻减层/清零计数；障碍减 hp/石块不动不补；重力绕石块；moves 扣减+非法步不扣；目标资源写出；同 seed 全程复现；一期全量回归。
+> 8. **回填**：`docs/playbooks/casual-toolkit.md` 加三消一行。完工标 ✅ 待 Lead 对抗性验收。
+>
+> **✅ 完工回执（Opus·2026-07-16）**：`match3-board.ts`——全整数格编码(`makeCell`/`cellColor`/`cellSpecial`·旧纯色编码=自身逐字节兼容) + 特殊糖生成(4连条纹随`stripedOrientation`·L/T包装·5连彩球·生成位交换格优先/连锁取run中点) + 触发效果(行/列/3×3/全色) + **有界连锁引爆**(显式工作队列+已处理集·互指条纹环收敛) + `comboTable`组合(cross/threeRowsCols/fiveByFive/wholeBoard·彩球换普通清该色) + 格层(`jelly`减层·`blockers`邻接减hp/石块-1分段重力不落不补) + `jelly/blocker/movesResource`写ResourceModify→现成Condition判目标。组件契约 `MatchBoard` **仅加可选字段**·一期14测零回归·门禁全绿(tsc+vitest 349文件2665测·match3 由14→37+build+2 guard)。回填 casual-toolkit.md。
+>
+> **⚖ Lead 对抗性验收（2026-07-16·判 PASS·关单归档）**：独立复跑全绿（tsc·vitest 349 文件/2666·build·双守卫）；亲读核心 diff——格编码旧值逐字节兼容、`resolveClear` 有界队列（每特殊糖至多处理一次）、分段重力/障碍位不补、彩球连锁引爆确定性取全盘最多色（并列取最小色号）、L/T 并查集判交叉——实现与图纸相符；「一期测试零改动」核实（唯一删除行=import 展开）。**偏差裁决**：①comboTable 不进 describe.fields——INTENTIONAL 准许（FieldType 闭集不为单字段扩张·契约注释已记·弱 LLM 发现性受损再走 capgap）；②层视图不内建——INTENTIONAL 准许（机制/表现分离·避免臆造 config 形状），**留尾巴**：新三消游戏若首发含果冻/障碍关，S2 计划门前由 Lead 补「LayerCell 静态覆盖格」小 spec（blueprint 静态建覆盖实体·能力只改外观·沿 BoardCell 同型·零实体增删），防游戏层自写视图 system 违宪——此尾巴记入该游戏 capability-plan，不占引擎池槽。
