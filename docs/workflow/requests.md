@@ -74,6 +74,17 @@
 > **M0.5 ✅ done（PUI·2026-07-16·待 Lead 对抗性验收）**：新 UITheme `apollo-toon`「水墨玩趣」（`src/ui/apollo-toon-theme.ts`·全 token 覆盖·亮宣纸皮）——8 色板入 palette（文字色令牌取可读深变体·鲜色进皮/背景）+ 程序化 data-URI 皮 4 kind 糖果厚底唇钮（64×64·9-slice slice=12·顶高光+厚唇+墨笔触边）+ 程序化水墨远山背景（`texture`·cover）+ 柔光晕染（`wash`）+ 纸纹面（`panelTexture`）。**闭集扩展 1 处**：UITheme 加 `panelTexture?` 令牌（面板级底纹·`render.ts renderPanel` 消费·guard `!bare`·缺省字节不变）+ 回填 `ui.md`。game-i 换皮下拉接入并置顶 + 选单收敛 3 个（水墨玩趣/青瓷·墨蓝/紫·霓晶·余 5 隐藏不删码）。门禁全绿（tsc+2642 vitest+build）；check-ui：validate 零 issue + ui-audit 3 显式 tab（layout/3dui/shop）0 阻断；真浏览器截图 5 张（厚唇钮/纸纹面/水墨背景成立）。**记账**：程序化皮=占位真相（provenance:procedural·真 key 后 M2 逐行替换）。**已知缺口（提 Lead）**：①ui-audit 对 `border-image` 皮盲区——白字糖果皮在亮父面被判 1.21 假阳（真渲白字压深糖体可读）·仅「无 activeTab 全 tabpage 同显」非真状态触发·逐 tab 显式审全过；②默认 tab-layout 在**任何**亮主题（含既有 daylight）皆因 `dim` 段标题/皮 demo 白字判低对比——非本主题引入。
 > **⚖ Lead 对抗性验收（2026-07-16·双线判 PASS）**：门禁独立复跑六项全绿（tsc·vitest 349 文件/2642·build·双守卫·reconcile 三方一致）；域界核对 M0=80 文件全 PA 域、M0.5=12 文件全 PUI 域（引擎域零触碰）；真浏览器亲验（swiftshader）——选单恰 3 项且水墨玩趣置顶、切主题后三签名成立（厚底唇糖果钮/纸纹面/水墨远山）。**偏差裁决**：M0 四条（reconcile 跳台账·风格包全字段·行数落点 72·kind 词表 texture/mesh）全 INTENTIONAL 准许——kind 词表在 M1 接链时须与 art-replace 词表映射对齐；M0.5 `panelTexture` 闭集扩展 INTENTIONAL 准许（沿 texture/wash 先例·guard+点名测试+手册回填齐）。**遗留**：①ui-audit border-image 盲区 + 亮主题 dim 假阳 = PUI 工具债（非阻断·随后续批修）；②换皮**置顶未改默认**（默认仍青瓷·墨蓝）——是否连默认切 apollo-toon 留 owner 拍板（M3 对齐时顺手做）。
 
+### REQ-M3-三期 · game-t 引擎补件包（①LayerCell 层视图 ②锦鲤定向消除 ③朱印二次钤印） · [2026-07-16] · owner 拍板（game-t 首发含果冻/障碍关+后 10 关机制）→ Lead 出图 → **指派：Opus（①先行·PE-T S3 前须落地；②③可随后 10 关节奏）** · status: open · 优先级: P1 · 类型: 引擎 capability 三期（tier3·正确性关键·不降档）
+> **① LayerCell 层视图**（二期验收留的尾巴·防游戏层自写视图 system 违宪）：新 render-only 组件 `LayerCell{ boardId, index, layer:'jelly'|'blocker' }`——blueprint **静态**建覆盖实体（沿 BoardCell 同型·零实体增删），match-view-sync 每帧按 MatchBoard 的 jelly/blockers 状态改其外观（config 外观映射：层数/hp→Sprite/Color/透明度·清零→隐藏）。测试：jelly 减层外观变/清零隐、blocker hp 变化、砚石恒显、糖珠视图零回归。
+> **② 锦鲤（定向消除·CC"鱼"同构）**：新特殊棋子 flag `KOI=5`（编码位仍 bit8-10·闭集内加一）；引爆=确定性游向「最优先未完成目标格」（优先级：墨渍>冰纹瓷>随机目标色格·同级取最小 index）消除之；生成规则 config（如 goals 含 jelly 时 2×2 方连生成——照 CC 惯例·写死进 config 闭集）；combo：锦鲤+锦鲤=3 条齐发、锦鲤+条纹/包装=目标格代爆该特殊效果。
+> **③ 朱印二次钤印**：WRAPPED 引爆后**原地保留一回合再爆一次 3×3**（CC wrapped 惯例）；实现=clear 相位标记「二爆待决」队列（确定性·不进新组件），fall/refill 后于下个 match 相位补爆；config 开关 `wrappedTwice?: boolean`（缺省 false=二期行为逐字节不变）。
+> **红线与门禁**：同 REQ-M3-二期（全整数确定性/相位机纪律/可选字段向后兼容/一期+二期 37 测零回归/点名测试缺一不关单）。完工标 ✅ 待 Lead 对抗性验收。
+
+### REQ-INPUT-拖拽交换 · 三消拖拽滑动手势（竖屏触屏主输入） · [2026-07-16] · owner 拍板（game-t）→ Lead 出图 → **指派：Opus（PE-T S3 前落地·点选交换可先行）** · status: open · 优先级: P1 · 类型: 引擎输入面（render/input-only·不进 sim/hash）
+> **目标**：在 BoardCell 上按下→向四邻方向拖过阈值（如 0.4 格）→ 释放，等价于「点选两格交换」——**产出与现有点选完全相同的选中/交换信号**（`t3-match3-board` idle 相位零改动·sim 不知道输入形态）。
+> **评判前置（先重组律）**：施工首步对照现有 `drag-place` / `grid-drag-square` / `i1-input-capture`+`i2-action-map` 能否重组表达；能则薄配置接线，不能再加最小新件（如 `dragSwap?: boolean` 挂输入映射）——**报告里必须写明重组结论**。
+> **验收**：触屏/鼠标各一路测试（拖过阈值=交换信号·未过阈值=视为点选·斜向取主轴）；确定性（输入→信号纯映射·无时间随机）；不破既有点选路（game-i/现有消费零回归）。完工标 ✅ 待 Lead 对抗性验收。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
