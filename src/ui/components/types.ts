@@ -617,6 +617,10 @@ export interface UITheme {
   texture?: string;
   /** 背景晕染叠层（vignette/wash·盖在 texture 之上的柔光/暗角）。同 texture：主题作者填。 */
   wash?: string;
+  /** 面板级底纹（procedural CSS 图案 / 平铺贴图 url·叠在面板填色之上、节点 bgTexture 之下·renderPanel 合成）。
+   *  house-style 纸纹/底纹主题填（同 texture 约定：主题作者写完整 background 层·可含 CSS），区别于游戏 LayoutNode 数据。
+   *  缺省无 = 面板零变化（老主题字节不变）。REQ-STYLESET apollo-toon 纸纹面。 */
+  panelTexture?: string;
   /** 主题级按钮皮槽（owner 07-15 批29「按键/背景/牌面都可换」）：kind → 贴图皮（skin=已解析图 URL·
    *  skinSlice=源边 px 走 9-slice 无损缩放，缺省整图 cover）。一个 kind 一张皮、全游戏按钮一体换——
    *  node 级 ButtonProps.skin 优先（含 skin:'' 显式关皮逃生）；缺省无 = 原 kind 底（老主题零变化）。 */

@@ -4,7 +4,10 @@
 // 不写 CSS/DOM。同一棵 LayoutNode + 不同令牌包 = 换皮（数据驱动·零改解释器）。
 
 import { SHELL } from '@ui/shell-theme.js';
+import { apolloToon } from '@ui/apollo-toon-theme.js';
 import type { UITheme } from '@ui/components/index.js';
+
+export { apolloToon };
 
 /** 引擎缺省脸「青瓷·墨蓝」——直接取 SHELL 的 UITheme 子集。 */
 export const onyx: UITheme = {
@@ -96,13 +99,18 @@ export const sakura: UITheme = {
   fontUi: SHELL.fontUi, fontMono: SHELL.fontMono,
 };
 
-export const THEMES: Record<string, UITheme> = { onyx, brocade, frost, daylight, amethyst, forest, sakura };
+// 注册表保留全部主题（换皮下拉外仍可用·测试仍引用 brocade/frost 等）——收敛只摘选单、不删码。
+export const THEMES: Record<string, UITheme> = { 'apollo-toon': apolloToon, onyx, brocade, frost, daylight, amethyst, forest, sakura };
+// 换皮选单收敛到 3 个（owner 2026-07-16 拍板·styleset M0.5）：apollo-toon 置顶 + 默认青瓷·墨蓝 + 一深色对照。
+// 其余（暖金/冷雾/晴云白/青林/绯樱）从选单隐藏**不删码**——注释保留、可随时回。
 export const THEME_OPTIONS = [
+  { value: 'apollo-toon', label: '水墨玩趣' },
   { value: 'onyx', label: '青瓷·墨蓝' },
-  { value: 'brocade', label: '暖金·锦缎' },
-  { value: 'frost', label: '冷雾·靛蓝' },
-  { value: 'daylight', label: '晴·云白（亮）' },
   { value: 'amethyst', label: '紫·霓晶' },
-  { value: 'forest', label: '青林·墨绿' },
-  { value: 'sakura', label: '绯樱·玫瑰' },
+  // ── owner 2026-07-16 收敛·隐藏不删（去掉行首注释即恢复选单）──
+  // { value: 'brocade', label: '暖金·锦缎' },
+  // { value: 'frost', label: '冷雾·靛蓝' },
+  // { value: 'daylight', label: '晴·云白（亮）' },
+  // { value: 'forest', label: '青林·墨绿' },
+  // { value: 'sakura', label: '绯樱·玫瑰' },
 ];

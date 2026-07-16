@@ -382,9 +382,11 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const glow = (!bare && p.accent) ? `box-shadow:0 0 0 1px ${t.jadeWash},0 10px 34px rgba(0,0,0,.4);` : '';
   // 图片贴图层（平铺·叠在面板底上）。bare 但有贴图 → 只铺贴图、仍无框。
   const tex = texLayer(p.bgTexture, p.bgTextureSize);
+  // 主题级面板底纹（纸纹/底纹·house-style 主题填·叠在填色之上、节点 bgTexture 之下）。缺省无 = 老主题字节不变。
+  const panelTex = (!bare && t.panelTexture) ? t.panelTexture : '';
   const chrome = bare
     ? (tex ? `background:${tex}, transparent;` : '')
-    : `background:${tex ? `${tex}, ` : ''}${resolveFill(p.bg, t) ?? (p.glass ? 'rgba(20,24,32,0.5)' : t.bg1)};border:1px ${bStyle} ${border};border-radius:${rad}px;${glow}${p.glass ? 'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' : ''}`;
+    : `background:${tex ? `${tex}, ` : ''}${panelTex ? `${panelTex}, ` : ''}${resolveFill(p.bg, t) ?? (p.glass ? 'rgba(20,24,32,0.5)' : t.bg1)};border:1px ${bStyle} ${border};border-radius:${rad}px;${glow}${p.glass ? 'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' : ''}`;
   const style = `${box};padding:${pad}px;${chrome}position:relative;${overflow}${ls}`;
   // 标题图标（REQ-UI-标题图标槽）：titleIcon 在场 → 标题前 1.05em 内联图；无=纯文字标题字节不变。
   const titleIcon = p.titleIcon ? `<img src="${esc(p.titleIcon)}" alt="" style="height:1.05em;width:1.05em;object-fit:contain;vertical-align:-0.18em;margin-right:5px">` : '';
