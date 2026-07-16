@@ -1,4 +1,4 @@
-export { renderNode } from './render.js';
+export { renderNode, formatNumber } from './render.js';
 export { mountUI, showToast, ensureUiKeyframes, ensureWebfonts } from './server.js';
 export type { MountHandle } from './server.js';
 export { resolveBindings, isVisible } from './bindings.js';

@@ -79,6 +79,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'bind', type: 'string', describe: '绑 Resource id（resolveBindings 接 current）' },
       { name: 'typewriter', type: 'number', describe: '打字机每字 ms' },
       { name: 'tween', type: 'object', describe: '数字滚动 {from,to,ms,decimals}' },
+      { name: 'format', type: 'enum', values: ['compact', 'time', 'percent', 'int'], describe: '数字格式化(作用于 tween/数字 text)：compact 1.2K/3.4M/1.5B·time mm:ss/h:mm:ss·percent 75%·int' },
       { name: 'spans', type: 'list', describe: '富文本多段 [{text,color,bold,img}]·img=段首内联图标 URL(1em 随字号)' },
     ],
     sample: { type: 'Label', id: 's-label', props: { text: '战功 ', spans: [{ text: '天罡 ', color: 'gold', bold: true }, { text: '破·可克', color: 'jade' }] } },
@@ -124,6 +125,20 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'loop', type: 'boolean', default: true, describe: 'true=持续循环(展示/环境)·false=播一次(庆祝一次性)' },
     ],
     sample: { type: 'Particles', id: 's-particles', props: { kind: 'confetti' }, layout: { width: 200, height: 120 } },
+  },
+  {
+    type: 'LevelPath', summary: '关卡地图（蛇形蜿蜒路径 + 状态节点）', whenToUse: '休闲选关屏（Candy Crush 式）。给节点列表 + 状态，引擎排蛇形路径/画连线/渲节点。点节点发 action 选关。', children: 'none',
+    props: [
+      { name: 'nodes', type: 'list', required: true, describe: '[{label?,state?:done/current/locked,stars?:0-3,action?,actionArg?}]·节点列表(蛇形自动排)' },
+      { name: 'cols', type: 'number', default: 3, describe: '每行几个(蛇形宽度)' },
+      { name: 'tone', type: 'enum', values: ['jade', 'gold', 'accent'], default: 'gold', describe: '已通关路径/节点主色' },
+    ],
+    sample: { type: 'LevelPath', id: 's-levelpath', props: { cols: 3, tone: 'gold', nodes: [
+      { label: '1', state: 'done', stars: 3, action: 'pickLevel', actionArg: '1' },
+      { label: '2', state: 'done', stars: 2, action: 'pickLevel', actionArg: '2' },
+      { label: '3', state: 'current', action: 'pickLevel', actionArg: '3' },
+      { label: '4', state: 'locked' }, { label: '5', state: 'locked' },
+    ] } },
   },
   // ── 按钮 / 输入 ──────────────────────────────────────────────
   {

@@ -10,7 +10,7 @@ export type ComponentType =
   | 'Table' | 'Tabs' | 'ProgressBar' | 'Tag' | 'Modal' | 'Toast' | 'Tooltip'
   | 'Card' | 'PlayingCard' | 'Stepper' | 'Segmented' | 'Avatar' | 'Accordion'
   | 'Rating' | 'Combobox' | 'Drawer' | 'VirtualList' | 'ContextMenu'
-  | 'CoinFlip' | 'Versus' | 'Video' | 'Particles';
+  | 'CoinFlip' | 'Versus' | 'Video' | 'Particles' | 'LevelPath';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -51,7 +51,12 @@ export interface LayoutConstraints {
   tilt3d?: boolean;
   /** 按压 3D 反馈（按下沉入 Z + 底唇收缩·糖果厚按钮·render-only·同 data-press3d CSS）。走 :active → **触屏点按也触发**（tilt3d 的移动端补位）。给 Button/Panel/卡牌加"按得下去"的实体感。 */
   press3d?: boolean;
-  /** 入场/强调动画预设名（引擎内建关键帧·mountUI 注入）：一次性 fadeIn/slideUp/pop/shake/dealIn/flyIn；循环 float/glow/pulse/spin（spin=绕 Z 连续自旋·linear·转盘/加载环）。 */
+  /** 「飞向」奖励动画（休闲招牌·render-only）：挂载时本元素沿**弧线**从当前位飞到 `to`(目标元素 id)的屏幕中心、缩小淡出——
+   *  金币/宝石飞进钱包、卡飞进牌库、加分飞向计分板。`to`=目标节点 id（须在同一 mountUI 树里·mountUI 量两者 rect 算位移）；
+   *  ms 时长(缺省 700)·arc 弧顶抬高 px(缺省 60·0=直线)·delay 起步延迟 ms。多个飞行物挂不同 delay=拖尾成串。 */
+  flyTo?: { to: string; ms?: number; arc?: number; delay?: number };
+  /** 入场/强调动画预设名（引擎内建关键帧·mountUI 注入）：一次性 fadeIn/slideUp/pop/shake/dealIn/flyIn/fadeOut/popOut；
+   *  循环 float/glow/pulse/spin/floatUp/marquee（spin=绕 Z 自旋·linear·转盘；marquee=横向滚动·公告跑马灯）。 */
   anim?: string;
   /** 动画时长 ms（缺省 360）。 */
   animMs?: number;
@@ -94,7 +99,8 @@ export type EffectKind =
   | 'sheen'   // 流光斜扫（高级感/稀有/新到）
   | 'flash'   // 整体闪色（受击冒红/暴击闪白/警告·color=闪色·常配 once）
   | 'fade'    // 半透明淡出消失（消耗/消退/移除·opacity→0·一次性·REQ-UI-fx源泉消退）
-  | 'holo';   // 全息箔（彩虹光随角度流动·收集/gacha 稀有卡·比 sheen 白斜扫更炫·render-only 叠层）
+  | 'holo'    // 全息箔（彩虹光随角度流动·收集/gacha 稀有卡·比 sheen 白斜扫更炫·render-only 叠层）
+  | 'ripple'; // 点按涟漪（material 触感·:active 时从中心扩散一圈波·休闲触屏反馈·render-only ::after）
 export type EffectColor = 'danger' | 'gold' | 'jade' | 'warn' | 'ok' | 'white'; // 语义色 → 主题令牌（闭集·防注入）
 // 容器描边语义色（闭集·主题令牌解析·REQ-UI-容器描边形）。Panel.edge 用：语义/阵营框色·绝不收自由 hex。
 // mine/foe = 通用「我方/敌方」阵营色（主题 mine/foe 令牌·缺省回退暖/冷）；其余复用既有语义令牌（jade/gold/ok/warn/danger）。
@@ -166,6 +172,9 @@ export interface LabelProps {
   glow?: boolean;
   /** 描边字(comic outline·卡通/休闲粗描边标题)：true 时字外描一圈深色轮廓(text-stroke·paint-order:stroke fill 保填色可读)。纯表现·与 glow 可叠。 */
   stroke?: boolean;
+  /** 数字格式化(idle/休闲大数与计时)：compact=缩写(1234→1.2K·3.4M·1.5B·1.2T) / time=时:分:秒(秒数→mm:ss 或 h:mm:ss) /
+   *  percent=百分比(0.75→75%) / int=整数。作用于 tween 每帧值 + 纯数字 text。缺省=按 decimals 定点。弱模型只选枚举名。 */
+  format?: 'compact' | 'time' | 'percent' | 'int';
   /** 字距 px(letter-spacing·Silkscreen 全大写微标常用)。纯表现·只收数字(最弱 LLM 能填)。 */
   tracking?: number;
   /** 世界绑定(收编 GameShell stat)：resourceId·resolveBindings 时把 Resource.current 接到 text 后（text 作前缀/标签）。 */
@@ -332,6 +341,20 @@ export interface ParticlesProps {
   loop?: boolean;   // true=持续循环(缺省·环境/展示)；false=播一次即停(庆祝一次性·配退场)
 }
 
+// ── LevelPath（关卡地图·休闲选关屏经典·render-only·下沉自「关卡地图缺口」owner 2026-07-15）─────────────
+// 一串关卡节点自动摆成**蛇形蜿蜒路径**（Candy Crush 式）+ SVG 连接线；游戏只给节点列表 + 状态，引擎排路径 + 画连线 + 渲节点。
+// 节点状态：done=通关(实心 + ★数) / current=当前(高亮脉冲) / locked=未解锁(灰 + 🔒)。点节点发 action 信号(arg=actionArg·选关)。
+export interface LevelPathProps {
+  nodes: Array<{
+    label?: string;                            // 节点标（关号·缺省用序号）
+    state?: 'done' | 'current' | 'locked';     // 缺省 locked
+    stars?: number;                            // 0..3 星（done 时节点上方显）
+    action?: string; actionArg?: string;       // 点击信号（选关·同 Button 只发信号名）
+  }>;
+  cols?: number;   // 每行几个（蛇形宽度·缺省 3）
+  tone?: 'jade' | 'gold' | 'accent'; // 已通关路径/节点主色（缺省 gold）
+}
+
 // ── Tag（可点过滤标签/词条·筛选条大量用）：active 高亮；可点(action·arg=actionArg)；可删(removable 显 ×)。──
 export interface TagProps {
   label: string; active?: boolean; tone?: 'normal' | 'accent' | 'dim';
@@ -485,7 +508,7 @@ export type ComponentProps =
   | TableProps | TabsProps | ProgressBarProps | TagProps | ModalProps | ToastProps | TooltipProps
   | CardProps | PlayingCardProps | StepperProps | SegmentedProps | AvatarProps | AccordionProps
   | RatingProps | ComboboxProps | DrawerProps | VirtualListProps | ContextMenuProps
-  | CoinFlipProps | VersusProps | VideoProps | ParticlesProps
+  | CoinFlipProps | VersusProps | VideoProps | ParticlesProps | LevelPathProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

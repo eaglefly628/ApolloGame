@@ -10,7 +10,7 @@ import type {
   TableProps, TableColumn, TabsProps, ProgressBarProps, TagProps, ModalProps, ToastProps, TooltipProps,
   CardProps, PlayingCardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
   RatingProps, ComboboxProps, DrawerProps, VirtualListProps, ContextMenuProps,
-  CoinFlipProps, VersusProps, VideoProps, ParticlesProps,
+  CoinFlipProps, VersusProps, VideoProps, ParticlesProps, LevelPathProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -21,7 +21,29 @@ const esc = (s: string): string =>
 const num = (v: unknown, d = 0): number => { const n = Number(v); return Number.isFinite(n) ? n : d; };
 // anim 预设白名单（mountUI 注入的关键帧名）：拒绝任意字符串插入 animation。
 const ANIM_PRESETS = new Set(['fadeIn', 'slideUp', 'pop', 'shake', 'dealIn', 'flyIn', 'fadeOut', 'popOut']); // 一次性入场/退场
-const LOOP_PRESETS = new Set(['float', 'glow', 'pulse', 'spin', 'floatUp']);             // 持续循环（浮动/发光/脉冲/自旋/升冒·环境动效·infinite）
+const LOOP_PRESETS = new Set(['float', 'glow', 'pulse', 'spin', 'floatUp', 'marquee']);   // 持续循环（浮动/发光/脉冲/自旋/升冒/跑马灯·环境动效·infinite）
+
+// 数字格式化（idle/休闲大数与计时·纯函数·render + mountUI tween 共用·单一真相）。
+export function formatNumber(n: number, format?: string, dec = 0): string {
+  if (!Number.isFinite(n)) return '0';
+  if (format === 'compact') {
+    const abs = Math.abs(n);
+    const units: Array<[number, string]> = [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
+    for (const [v, u] of units) {
+      if (abs >= v) return `${(n / v).toFixed(dec > 0 ? dec : 1).replace(/\.0$/, '')}${u}`;
+    }
+    return n.toFixed(dec);
+  }
+  if (format === 'time') {
+    const total = Math.max(0, Math.floor(n));
+    const h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60), s = total % 60;
+    const p2 = (x: number) => String(x).padStart(2, '0');
+    return h > 0 ? `${h}:${p2(m)}:${p2(s)}` : `${m}:${p2(s)}`;
+  }
+  if (format === 'percent') return `${(n * 100).toFixed(dec)}%`;
+  if (format === 'int') return String(Math.round(n));
+  return n.toFixed(dec);
+}
 // justify 主轴分布枚举 → CSS justify-content（闭集映射·拒绝任意串注入）。
 const JUSTIFY_MAP: Record<string, string> = {
   start: 'flex-start', center: 'center', end: 'flex-end',
@@ -71,6 +93,8 @@ function fxToCss(fx: readonly VisualEffect[], t: UITheme): { css: string; dataFx
       dataFx.push('sheen');
     } else if (e.kind === 'holo') {
       dataFx.push('holo'); // 全息箔·彩虹叠层（CSS 注入 ::after·apollo-holo）
+    } else if (e.kind === 'ripple') {
+      dataFx.push('ripple'); // 点按涟漪（CSS 注入 ::after·:active 从中心扩散）
     } else if (e.kind === 'flash') {
       vars.push(`--fx-flash:${fxColor(t, e.color ?? 'danger')}`);
       if (ms) vars.push(`--fx-flash-ms:${ms}ms`);
@@ -130,9 +154,10 @@ function layoutStyle(c?: LayoutConstraints, t?: UITheme): string {
   if (c.anim && ANIM_PRESETS.has(c.anim)) {
     p.push(`animation:apollo-${c.anim} ${num(c.animMs, 360)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}both ease-out`);
   } else if (c.anim && LOOP_PRESETS.has(c.anim)) {
-    // spin=匀速自旋（linear·转盘/加载环不该忽快忽慢）；其余环境动效 ease-in-out 呼吸。
-    const spin = c.anim === 'spin';
-    p.push(`animation:apollo-${c.anim} ${num(c.animMs, spin ? 3600 : 2400)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}${spin ? 'linear' : 'ease-in-out'} infinite`);
+    // spin/marquee=匀速 linear（自旋/滚动不该忽快忽慢）；其余环境动效 ease-in-out 呼吸。
+    const linear = c.anim === 'spin' || c.anim === 'marquee';
+    const dur = c.anim === 'spin' ? 3600 : c.anim === 'marquee' ? 9000 : 2400;
+    p.push(`animation:apollo-${c.anim} ${num(c.animMs, dur)}ms ${c.animDelay ? `${num(c.animDelay)}ms ` : ''}${linear ? 'linear' : 'ease-in-out'} infinite`);
   }
   if (c.draggable) p.push('cursor:grab');
   // 视觉特效合集（UI 特效库）：闭集 fx → 动画/滤镜/叠层 CSS。需主题取色 → 仅 t 在场时应用。
@@ -288,14 +313,18 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
     ).join('');
     return `<span id="${esc(id)}" style="${style}">${inner}</span>`;
   }
-  // 数字滚动补间(render-only)：初值=from(按 decimals 格式化)，mountUI 读 data-tween-* 用定时器动画到 to。
+  // 数字滚动补间(render-only)：初值=from(按 format/decimals 格式化)，mountUI 读 data-tween-* 用定时器动画到 to。
   if (p.tween) {
     const dec = num(p.tween.decimals, 0);
-    const tweenAttr = ` data-tween-to="${num(p.tween.to)}" data-tween-ms="${num(p.tween.ms, 600)}" data-tween-dec="${dec}"`;
-    return `<span id="${esc(id)}"${tweenAttr} style="${style}">${esc(num(p.tween.from).toFixed(dec))}</span>`;
+    const fmtAttr = p.format ? ` data-tween-fmt="${esc(p.format)}" data-tween-from="${num(p.tween.from)}"` : '';
+    const tweenAttr = ` data-tween-to="${num(p.tween.to)}" data-tween-ms="${num(p.tween.ms, 600)}" data-tween-dec="${dec}"${fmtAttr}`;
+    return `<span id="${esc(id)}"${tweenAttr} style="${style}">${esc(formatNumber(num(p.tween.from), p.format, dec))}</span>`;
   }
   const tw = p.typewriter ? ` data-typewriter="${p.typewriter}"` : '';
-  return `<span id="${esc(id)}"${tw} style="${style}">${esc(p.text ?? '')}</span>`;
+  // 纯数字 text + format → 渲染时格式化（idle 大数/计时/百分比·静态显示）。
+  const body = (p.format && p.text !== undefined && p.text !== '' && Number.isFinite(Number(p.text)))
+    ? formatNumber(Number(p.text), p.format) : (p.text ?? '');
+  return `<span id="${esc(id)}"${tw} style="${style}">${esc(body)}</span>`;
 }
 
 function renderDropdown(id: string, p: DropdownProps, ls: string, t: UITheme): string {
@@ -885,11 +914,46 @@ function renderParticles(id: string, p: ParticlesProps, ls: string, t: UITheme):
   return `<div id="${esc(id)}" style="position:relative;overflow:hidden;pointer-events:none;${ls}">${pieces.join('')}</div>`;
 }
 
+// ── LevelPath（关卡地图·蛇形蜿蜒路径 + SVG 连线 + 状态节点）：游戏给节点列表，引擎排蛇形、画连线、渲节点。──
+function renderLevelPath(id: string, p: LevelPathProps, ls: string, t: UITheme): string {
+  const nodes = p.nodes ?? [];
+  const cols = Math.max(1, Math.min(6, num(p.cols, 3)));
+  const cellW = 100, cellH = 88, R = 26;
+  const rows = Math.max(1, Math.ceil(Math.max(1, nodes.length) / cols));
+  const W = cols * cellW, H = rows * cellH;
+  const toneColor: Record<string, string> = { jade: t.jade, gold: t.gold, accent: t.jade };
+  const lit = toneColor[p.tone ?? 'gold'] ?? t.gold;
+  // 蛇形坐标（偶数行 L→R·奇数行 R→L）。
+  const pts = nodes.map((_, i) => {
+    const row = Math.floor(i / cols), inRow = i % cols;
+    const col = row % 2 === 0 ? inRow : cols - 1 - inRow;
+    return { x: col * cellW + cellW / 2, y: row * cellH + cellH / 2 };
+  });
+  const litUpto = (() => { const c = nodes.findIndex((n) => n.state === 'current'); return c >= 0 ? c : nodes.filter((n) => n.state === 'done').length; })();
+  const lines = pts.slice(0, -1).map((a, i) => {
+    const b = pts[i + 1]!; const on = i < litUpto;
+    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${on ? lit : t.line}" stroke-width="${on ? 6 : 4}" stroke-linecap="round"${on ? '' : ' stroke-dasharray="2 9"'}/>`;
+  }).join('');
+  const svg = `<svg width="${W}" height="${H}" style="position:absolute;inset:0;pointer-events:none">${lines}</svg>`;
+  const marks = nodes.map((n, i) => {
+    const pt = pts[i]!; const state = n.state ?? 'locked';
+    const label = n.label ?? String(i + 1);
+    const act = n.action ? ` data-action="${esc(n.action)}"${n.actionArg ? ` data-arg="${esc(n.actionArg)}"` : ''}` : '';
+    const cursor = n.action ? 'cursor:pointer;' : '';
+    let bg = t.bg1, fg = t.dim, bd = t.line, inner = '🔒', extra = '';
+    if (state === 'done') { bg = lit; fg = t.bg0; bd = lit; inner = esc(label); }
+    else if (state === 'current') { bg = t.bg2; fg = lit; bd = lit; inner = esc(label); extra = `box-shadow:0 0 0 4px ${t.jadeWash};animation:apollo-pulse 1.6s ease-in-out infinite`; }
+    const stars = (state === 'done' && n.stars) ? `<div style="position:absolute;top:-15px;left:0;right:0;text-align:center;font-size:11px;color:${t.gold};white-space:nowrap;pointer-events:none">${'★'.repeat(Math.min(3, n.stars))}${'☆'.repeat(3 - Math.min(3, n.stars))}</div>` : '';
+    return `<div${act} style="position:absolute;left:${pt.x - R}px;top:${pt.y - R}px;width:${R * 2}px;height:${R * 2}px;border-radius:50%;background:${bg};color:${fg};border:3px solid ${bd};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;font-family:${t.fontUi};${extra};${cursor}">${stars}${inner}</div>`;
+  }).join('');
+  return `<div id="${esc(id)}" style="position:relative;width:${W}px;height:${H}px;${ls}">${svg}${marks}</div>`;
+}
+
 export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
   const html = renderDispatch(node, theme);
   const c = node.layout;
   const fxData = c?.fx?.length ? fxToCss(c.fx, theme).dataFx : ''; // sheen/flash 等叠层 token
-  if (c && (c.draggable || c.dropZone || c.anchor || c.sheen || c.tilt3d || c.press3d || fxData)) {
+  if (c && (c.draggable || c.dropZone || c.anchor || c.sheen || c.tilt3d || c.press3d || c.flyTo || fxData)) {
     const a: string[] = [];
     if (c.draggable) a.push(`draggable="true" data-drag="${esc(node.id)}"`);
     if (c.dropZone)  a.push(`data-drop="${esc(c.dropZone)}"`);
@@ -897,6 +961,7 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
     if (c.sheen)     a.push('data-sheen'); // 流光层（CSS 注入 ::after·apollo-sheen-sweep）
     if (c.tilt3d)    a.push('data-tilt3d'); // 交互 3D 倾斜（悬停立体抬起·CSS 注入 :hover 变换）
     if (c.press3d)   a.push('data-press3d'); // 按压 3D 反馈（按下沉 Z + 底唇·CSS 注入 :active·触屏可用）
+    if (c.flyTo)     a.push(`data-flyto-to="${esc(c.flyTo.to)}" data-flyto-ms="${num(c.flyTo.ms, 700)}" data-flyto-arc="${num(c.flyTo.arc, 60)}" data-flyto-delay="${num(c.flyTo.delay, 0)}"`); // 飞向目标（mountUI 量 rect 算位移·弧线飞）
     if (fxData)      a.push(`data-fx="${esc(fxData)}"`); // 特效叠层（sheen/flash → ::after/::before）
     return html.replace(/^(\s*<[a-zA-Z][\w-]*)/, `$1 ${a.join(' ')}`);
   }
@@ -942,6 +1007,7 @@ function renderDispatch(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'ContextMenu':return renderContextMenu(node.id, node.props as ContextMenuProps, node.children ?? [], ls, t);
     case 'Video':      return renderVideo(node.id, node.props as VideoProps, ls, t);
     case 'Particles':  return renderParticles(node.id, node.props as ParticlesProps, ls, t);
+    case 'LevelPath':  return renderLevelPath(node.id, node.props as LevelPathProps, ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }

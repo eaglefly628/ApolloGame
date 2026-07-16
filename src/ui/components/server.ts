@@ -4,7 +4,7 @@
 // server 在根节点监听冒泡，按 action key 路由到 handlers。
 // 游戏层只提供 LayoutNode（数据）+ HandlerMap（回调），无需写 DOM 代码。
 
-import { renderNode, renderVListWindow } from './render.js';
+import { renderNode, renderVListWindow, formatNumber } from './render.js';
 import { ART_FONT_CSS } from './art-fonts.js';
 import { SHELL } from '../shell-theme.js';
 import type { LayoutNode, HandlerMap, ActionSink, UITheme, ToastProps, VirtualListProps, WebFont } from './types.js';
@@ -134,6 +134,12 @@ const APOLLO_KEYFRAMES = `
 [data-sheen]::after,[data-fx~="sheen"]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.4) 50%,transparent 58%);background-size:250% 100%;animation:apollo-sheen-sweep 3.2s ease-in-out infinite}
 @keyframes apollo-holo{0%{background-position:0% 50%}100%{background-position:220% 50%}}
 [data-fx~="holo"]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,transparent 18%,rgba(255,80,180,.42),rgba(150,90,255,.42),rgba(80,200,255,.42),rgba(120,255,170,.42),transparent 82%);background-size:220% 100%;mix-blend-mode:screen;animation:apollo-holo 3s linear infinite}
+@keyframes apollo-ripple{0%{width:0;height:0;opacity:.5}100%{width:230%;height:230%;opacity:0}}
+[data-fx~="ripple"]{position:relative;overflow:hidden}
+[data-fx~="ripple"]::after{content:'';position:absolute;left:50%;top:50%;width:0;height:0;border-radius:50%;background:rgba(255,255,255,.5);transform:translate(-50%,-50%);pointer-events:none;opacity:0}
+[data-fx~="ripple"]:active::after{animation:apollo-ripple .5s ease-out}
+@keyframes apollo-marquee{from{transform:translateX(100%)}to{transform:translateX(-100%)}}
+@keyframes apollo-flyto{0%{transform:translate(0,0) scale(1);opacity:1}50%{transform:translate(calc(var(--fly-dx,0px) * .5),calc(var(--fly-dy,0px) * .5 - var(--fly-arc,60px))) scale(.9)}100%{transform:translate(var(--fly-dx,0px),var(--fly-dy,0px)) scale(.4);opacity:.1}}
 @keyframes apollo-fx-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(calc(-1 * var(--fx-amp,4px)))}60%{transform:translateX(var(--fx-amp,4px))}}
 @keyframes apollo-fx-flash{0%{opacity:0}25%{opacity:.7}100%{opacity:0}}
 @keyframes apollo-fx-fade{from{opacity:1}to{opacity:0}}
@@ -242,17 +248,39 @@ export function mountUI(
     if (!Number.isFinite(to)) return;
     const ms = Number(el.dataset['tweenMs']) || 600;
     const dec = Number(el.dataset['tweenDec']) || 0;
-    const from = Number(el.textContent) || 0;
+    const fmt = el.dataset['tweenFmt']; // 数字格式化（compact/time/percent/int·formatNumber）
+    // format 在场时 textContent 已是格式化串（不可解析）→ 从 data-tween-from 取原始初值。
+    const from = fmt !== undefined ? (Number(el.dataset['tweenFrom']) || 0) : (Number(el.textContent) || 0);
     const steps = Math.max(1, Math.round(ms / 16));
     let i = 0;
     const iv = setInterval(() => {
       i++;
       const k = i >= steps ? 1 : 1 - Math.pow(1 - i / steps, 3); // easeOutCubic
-      el.textContent = (from + (to - from) * k).toFixed(dec);
+      const v = from + (to - from) * k;
+      el.textContent = fmt !== undefined ? formatNumber(v, fmt, dec) : v.toFixed(dec);
       if (i >= steps) clearInterval(iv);
     }, 16);
     typers.push(iv);
   });
+
+  // 「飞向」奖励动画（render-only·休闲招牌）：量本元素与目标 rect → 算屏幕位移 → 注入 CSS 变量 + apollo-flyto 弧线飞。
+  // 挂载后一帧量取（等布局稳定）；目标须在同一 host 树里。teardown 无需清（animation forwards 停末态·元素随下次 update 换掉）。
+  if (typeof document !== 'undefined') {
+    host.querySelectorAll<HTMLElement>('[data-flyto-to]').forEach((el) => {
+      const targetId = el.dataset['flytoTo']; if (!targetId) return;
+      const target = host.querySelector<HTMLElement>(`[id="${CSS.escape(targetId)}"]`); if (!target) return;
+      const ms = Number(el.dataset['flytoMs']) || 700;
+      const arc = Number(el.dataset['flytoArc']) || 60;
+      const delay = Number(el.dataset['flytoDelay']) || 0;
+      const a = el.getBoundingClientRect(), b = target.getBoundingClientRect();
+      const dx = (b.left + b.width / 2) - (a.left + a.width / 2);
+      const dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+      el.style.setProperty('--fly-dx', `${Math.round(dx)}px`);
+      el.style.setProperty('--fly-dy', `${Math.round(dy)}px`);
+      el.style.setProperty('--fly-arc', `${arc}px`);
+      el.style.animation = `apollo-flyto ${ms}ms cubic-bezier(.45,0,.5,1) ${delay}ms forwards`;
+    });
+  }
 
   // 背景 UV 滚动（render-only·滚动 UI 特效）：给带 data-bgscroll 的元素注入逐元素关键帧（平移 background-position），
   // 无限循环。配 repeating 贴图(texture)即得无缝滚动底纹；teardown 移除注入的 style。

@@ -1397,6 +1397,59 @@ function buildPage3dUi(controls: ControlsState): LayoutNode {
           { type: 'Label', id: 'stroke-3', props: { text: 'COMBO ×8', size: 'xl', bold: true, color: 'ok', stroke: true, glow: true } },
           { type: 'Label', id: '3dui-stroke-l', props: { text: 'stroke:true = 深色粗描边（paint-order:stroke fill 保填色不被盖）。可与 glow / 艺术字 font 叠——卡通爆字标配。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
         ] },
+
+      // ══════ 🎁 休闲缺口补全批（数字格式化 / 飞向奖励 / 关卡地图 / 跑马灯 / 涟漪）══════
+      divider('d-3du14'),
+      { type: 'Label', id: 'gap-hdr', props: { text: '🎁 休闲缺口补全（数字格式化 · 飞向奖励 · 关卡地图 · 跑马灯 · 点按涟漪）', size: 'md', bold: true, color: 'gold' } },
+
+      sectionTitle('t-3dui-format', '★ 数字格式化 LABEL.format（idle 大数 compact / 计时 time / 百分比 percent·配 tween 滚动同格式化）'),
+      { type: 'Panel', id: '3dui-format-row', props: { bare: true }, layout: { direction: 'row', gap: 30, padding: 22, align: 'center' },
+        children: [
+          { type: 'Label', id: 'fmt-1', props: { text: '1500000', format: 'compact', size: 'xxl', bold: true, color: 'gold' } },
+          { type: 'Label', id: 'fmt-2', props: { text: '3661', format: 'time', size: 'xxl', bold: true, color: 'jade', mono: true } },
+          { type: 'Label', id: 'fmt-3', props: { text: '0.75', format: 'percent', size: 'xxl', bold: true, color: 'ok' } },
+          { type: 'Label', id: 'fmt-tw', props: { format: 'compact', tween: { from: 0, to: 9820000, ms: 1600 }, size: 'xxl', bold: true, color: 'warn' } },
+          { type: 'Label', id: '3dui-format-l', props: { text: '1500000→1.5M · 3661秒→1:01:01 · 0.75→75% · tween 滚动到 9.8M（滚的过程也走缩写）。idle/休闲大数与计时刚需。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
+      divider('d-3du15'),
+      sectionTitle('t-3dui-fly', '★ 飞向奖励 layout.flyTo（元素沿弧线飞到目标锚·金币飞进钱包·进本页触发一次）'),
+      { type: 'Panel', id: '3dui-fly-row', props: { bare: true }, layout: { direction: 'row', gap: 40, padding: 22, align: 'center', justify: 'between' },
+        children: [
+          { type: 'Panel', id: 'fly-src', props: { bare: true }, layout: { direction: 'row', gap: 10 },
+            children: [
+              { type: 'Badge', id: 'fly-c1', props: { text: '💰+50', tone: 'gold' }, layout: { flyTo: { to: 'fly-wallet', ms: 900, arc: 80, delay: 0 } } },
+              { type: 'Badge', id: 'fly-c2', props: { text: '💰+50', tone: 'gold' }, layout: { flyTo: { to: 'fly-wallet', ms: 900, arc: 80, delay: 180 } } },
+              { type: 'Badge', id: 'fly-c3', props: { text: '💎+5', tone: 'accent' }, layout: { flyTo: { to: 'fly-wallet', ms: 900, arc: 110, delay: 360 } } },
+            ] },
+          { type: 'Label', id: '3dui-fly-l', props: { text: '三枚金币/宝石从左侧沿弧线飞进右侧钱包（不同 delay=拖尾成串）。mountUI 量两者屏幕 rect 算位移·CSS 弧线飞。刷新本页重播。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+          { type: 'Badge', id: 'fly-wallet', props: { text: '👛 钱包', tone: 'ok' } },
+        ] },
+
+      divider('d-3du16'),
+      sectionTitle('t-3dui-tick', 'anim:"marquee" 跑马灯（滚动公告）+ fx:"ripple" 点按涟漪（material 触感）'),
+      { type: 'Panel', id: '3dui-tick-row', props: { bare: true }, layout: { direction: 'row', gap: 24, padding: 20, align: 'center' },
+        children: [
+          { type: 'Panel', id: 'marquee-box', props: { bg: 'sunken' }, layout: { width: 300, height: 40, padding: 0, align: 'center' },
+            children: [{ type: 'Label', id: 'marquee-txt', props: { text: '📢 限时活动：登录送 888 钻 · 新赛季开启 · 通关冲榜赢皮肤 · ', size: 'sm', color: 'gold' }, layout: { anim: 'marquee' } }] },
+          { type: 'Button', id: 'ripple-btn', props: { label: '点我涟漪', kind: 'primary', action: 'click', actionArg: 'ripple' }, layout: { fx: [{ kind: 'ripple' }] } },
+          { type: 'Label', id: '3dui-tick-l', props: { text: 'marquee=横向匀速滚动公告条；ripple=:active 从中心扩散一圈波（触屏点按反馈）。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
+      divider('d-3du17'),
+      sectionTitle('t-3dui-levelmap', '★ 关卡地图 LEVELPATH（蛇形蜿蜒路径 + 连接线 + 星 + done/current/locked 状态·选关屏）'),
+      { type: 'Panel', id: '3dui-levelmap-row', props: { bare: true }, layout: { direction: 'row', gap: 24, padding: 20, align: 'center' },
+        children: [
+          { type: 'LevelPath', id: 'demo-levelmap', props: { cols: 4, tone: 'gold', nodes: [
+            { label: '1', state: 'done', stars: 3, action: 'pickLevel', actionArg: '1' },
+            { label: '2', state: 'done', stars: 2, action: 'pickLevel', actionArg: '2' },
+            { label: '3', state: 'done', stars: 3, action: 'pickLevel', actionArg: '3' },
+            { label: '4', state: 'done', stars: 1, action: 'pickLevel', actionArg: '4' },
+            { label: '5', state: 'current', action: 'pickLevel', actionArg: '5' },
+            { label: '6', state: 'locked' }, { label: '7', state: 'locked' }, { label: '8', state: 'locked' },
+          ] } },
+          { type: 'Label', id: '3dui-levelmap-l', props: { text: '只给节点列表 + 状态，引擎自动排蛇形、画连线（通关段亮/未解锁段暗虚线）、渲节点（done 实心+星 / current 脉冲高亮 / locked 灰锁）。点节点发 pickLevel 信号选关。', color: 'sub', size: 'sm' }, layout: { flex: 1, maxWidth: 320 } },
+        ] },
     ],
   };
 }

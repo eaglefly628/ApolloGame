@@ -2,7 +2,7 @@
 // 休闲 juice 五补（owner 2026-07-15）：UI 庆祝粒子 Particles / 退场动画 fadeOut·popOut·floatUp /
 //   环形进度 ProgressBar.shape:'ring' / 全息箔 fx:'holo' / 描边字 Label.stroke。全 render-only·纯数据。
 import { describe, it, expect } from 'vitest';
-import { renderNode, validateLayoutNode } from './index.js';
+import { renderNode, validateLayoutNode, formatNumber } from './index.js';
 import type { LayoutNode } from './index.js';
 
 const P = (layout: LayoutNode['layout']): string => renderNode({ type: 'Panel', id: 'p', props: {}, layout, children: [] });
@@ -65,5 +65,45 @@ describe('休闲 juice 五补', () => {
       { type: 'Label', id: 'v3', props: { text: '标题', stroke: true } },
     ];
     for (const n of nodes) expect(validateLayoutNode(n)).toEqual([]);
+  });
+
+  // ── 休闲缺口补全批（数字格式化 / 飞向 / 关卡地图 / 跑马灯 / 涟漪）──
+  it('formatNumber：compact 缩写 / time 计时 / percent 百分比 / int 整数', () => {
+    expect(formatNumber(1234, 'compact')).toBe('1.2K');
+    expect(formatNumber(3_400_000, 'compact')).toBe('3.4M');
+    expect(formatNumber(1_500_000_000, 'compact')).toBe('1.5B');
+    expect(formatNumber(950, 'compact')).toBe('950');
+    expect(formatNumber(75, 'time')).toBe('1:15');
+    expect(formatNumber(3661, 'time')).toBe('1:01:01');
+    expect(formatNumber(0.75, 'percent')).toBe('75%');
+    expect(formatNumber(3.7, 'int')).toBe('4');
+  });
+  it('Label.format：静态数字 text 渲染即格式化 + tween 带 data-tween-fmt/from', () => {
+    expect(renderNode({ type: 'Label', id: 'l', props: { text: '1500000', format: 'compact' } })).toContain('>1.5M<');
+    const tw = renderNode({ type: 'Label', id: 'l2', props: { format: 'compact', tween: { from: 0, to: 9820, ms: 1000 } } });
+    expect(tw).toContain('data-tween-fmt="compact"');
+    expect(tw).toContain('data-tween-from="0"');
+    expect(tw).toContain('>0<'); // 初值格式化（0）
+  });
+  it('flyTo → data-flyto-*（飞向目标·mountUI 量 rect 算位移）', () => {
+    const html = renderNode({ type: 'Badge', id: 'coin', props: { text: '+50' }, layout: { flyTo: { to: 'wallet', ms: 800, arc: 40 } } });
+    expect(html).toContain('data-flyto-to="wallet"');
+    expect(html).toContain('data-flyto-ms="800"');
+    expect(html).toContain('data-flyto-arc="40"');
+  });
+  it('fx:ripple → data-fx 含 ripple；anim:marquee → apollo-marquee 匀速循环', () => {
+    expect(renderNode({ type: 'Panel', id: 'r', props: {}, layout: { fx: [{ kind: 'ripple' }] }, children: [] })).toContain('data-fx="ripple"');
+    expect(renderNode({ type: 'Label', id: 'm', props: { text: '公告' }, layout: { anim: 'marquee' } })).toMatch(/animation:apollo-marquee \d+ms .*linear infinite/);
+  });
+  it('LevelPath：蛇形节点 + SVG 连线 + 状态节点（done/current/locked）', () => {
+    const html = renderNode({ type: 'LevelPath', id: 'lp', props: { cols: 3, nodes: [
+      { label: '1', state: 'done', stars: 3, action: 'pick', actionArg: '1' },
+      { label: '2', state: 'current' }, { label: '3', state: 'locked' },
+    ] } });
+    expect(html).toContain('<svg'); expect(html).toContain('<line'); // 连接线
+    expect(html).toContain('data-action="pick"'); expect(html).toContain('data-arg="1"'); // 节点可点选关
+    expect(html).toContain('🔒'); // locked 锁
+    expect(html).toContain('★★★'); // done 三星
+    expect(validateLayoutNode({ type: 'LevelPath', id: 'v', props: { nodes: [{ label: '1' }] } })).toEqual([]);
   });
 });

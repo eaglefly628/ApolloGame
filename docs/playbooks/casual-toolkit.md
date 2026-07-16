@@ -9,12 +9,20 @@
 | 要做 | 用 | 备注 |
 |---|---|---|
 | 通关撒纸屑 / 领奖金币雨 / 星光爆 / 环境微光 | `Particles{kind:confetti/coins/stars/sparkle,count?,loop?}` | UI 层发射器（世界层对等=`Vfx3D`）·铺满父容器 |
-| 数值滚动 / +N 收益飘字 | `Label.tween{from,to,ms}` · `layout.anim:'floatUp'`（循环升冒） | 大数缩写格式化=缺口（见 requests） |
+| 数值滚动 / +N 收益飘字 | `Label.tween{from,to,ms}` · `layout.anim:'floatUp'`（循环升冒） | 配 `Label.format` 一起用 |
+| 大数缩写 / 计时 / 百分比 | `Label.format`：compact（1.2K/3.4M/1.5B）/ time（mm:ss）/ percent（75%）/ int | 作用于 tween 每帧值 + 数字 text |
+| 奖励飞向钱包 / 卡飞进牌库 | `layout.flyTo{to,ms?,arc?,delay?}`（沿弧飞到目标元素 id·mountUI 量 rect） | 多个挂不同 delay=拖尾成串 |
+| 滚动公告条 | `layout.anim:'marquee'`（横向匀速滚动·放 overflow 容器里） | |
+| 点按涟漪（触屏触感） | `layout.fx:[{kind:'ripple'}]`（:active 中心扩散一圈波） | 与 press3d 互补 |
 | 打击 / 强调 / 受击反馈 | `layout.fx:[{kind}]`：pulse/pop/glow/shake/flash | 可叠加（glow+shake）·闭集 EffectKind |
 | 按钮按下反馈（触屏） | `layout.press3d:true`（:active 沉 Z + 底唇·糖果厚按钮） | tilt3d 只 hover=桌面 |
 | 稀有 / 高级感 | `fx:'holo'`（彩虹箔）· `fx:'sheen'`（流光斜扫）· `Label.stroke`（描边爆字·配 font 艺术字） | |
 | 退场 / 消除 | `anim:'fadeOut'`/`'popOut'`（一次性·both 停末态）· `fx:'fade'`（纯 opacity） | 入场：fadeIn/slideUp/pop/dealIn/flyIn |
 | 环形进度 / 冷却 / 每日目标 | `ProgressBar.shape:'ring'`（+`size`·conic 弧 + 中心值） | 线性条=缺省 shape:'bar' |
+
+## 一·五、选关 / 进度屏（2D UI）
+- 关卡地图：`LevelPath{nodes:[{label,state:done/current/locked,stars,action}],cols?,tone?}`——蛇形蜿蜒路径 + 连接线 + 状态节点（Candy Crush 式选关屏·点节点选关）。
+- 环形进度：`ProgressBar.shape:'ring'`（见一）。星级：`Rating`。
 
 ## 二、3D UI 表达（CSS-3D · 2D LayoutNode · 非世界空间）
 - 变换：`layout.rotateX/rotateY/rotate/z/perspective`（真 3D 合成 preserve-3d·自动补透视）。
@@ -51,4 +59,4 @@
 - **纯数据**：以上全是 LayoutNode / 组件数据，写世界靠 `action` 信号（handler 绝不塞自由逻辑/CSS/DOM）；3D render-only 组件绝不被 Condition 读、不进 hash。
 - **游戏层禁**：裸 `Math.random`（用引擎种子 PRNG）· `innerHTML`/`createElement` 手写 DOM（走 LayoutNode）· 手写 Three.js（走 3D 组件数据）。
 - **查不到 ≠ 自造**：2D UI 缺口 → `docs/workflow/requests.md`；3D 缺口 → `docs/workflow/requests-3d.md`。等主程裁决（重组/下沉/回驳），落地同提交回填本页 + 对应线手册。
-- **已知缺口（超休闲·待拉动）**：大数缩写格式化 `Label.format` · 「飞向」奖励动画（元素沿弧 A→B）· 关卡地图蜿蜒路径连接线。
+- **已知缺口（超休闲·待拉动）**：跑马灯已补(marquee)；tap 涟漪已补(fx:ripple)；数字格式化/飞向/关卡地图已补。剩余次要：needle 指针仪表盘(ring 已覆盖弧)、2D 全屏震屏(fx:shake 近似)——用得少，需要再提 requests。
