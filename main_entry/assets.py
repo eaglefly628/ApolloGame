@@ -121,6 +121,63 @@ def handle_asset_generate_providers() -> dict:
     except Exception as e:  # 脚本缺失/解析失败不炸端点
         return {'providers': [], 'error': str(e)}
 
+# ── 抠图/去背 → 真 alpha（REQ-ASSET-导入抠图·PA 能力）─────────────────────────────
+# 大脑在 PA 车道的 scripts/asset-matte.mjs（flood-fill 主路 + rembg 兜底·产真 alpha PNG）；本端点薄胶水：
+# base64 图 in → shell 调脚本 → base64 图 out + provenance。导入向导调它出 before/after 预览，再走 M2.5
+# pending 人审（不静默顶替）。红线：authoring-time·纯像素变换·不碰 sim/hash。
+
+
+def handle_asset_matte(body: dict) -> dict:
+    """POST /api/assets/matte。body = { dataBase64, mode?:'flood'|'rembg', tolerance?:int, despill?:bool, seeds?:[[x,y]], mock?:bool }。"""
+    import tempfile
+    mode = str(body.get('mode', 'flood'))
+    if mode not in ('flood', 'rembg'):
+        return {'success': False, 'error': f'非法 mode: {mode}（flood/rembg）'}
+    try:
+        raw = base64.b64decode(str(body.get('dataBase64', '')))
+    except Exception:
+        return {'success': False, 'error': 'dataBase64 解码失败'}
+    if not raw:
+        return {'success': False, 'error': '空图'}
+    fd_in, in_path = tempfile.mkstemp(suffix='.png'); os.close(fd_in)
+    fd_out, out_path = tempfile.mkstemp(suffix='.png'); os.close(fd_out)
+    try:
+        with open(in_path, 'wb') as f:
+            f.write(raw)
+        cmd = ['node', 'scripts/asset-matte.mjs', in_path, out_path, '--mode', mode, '--json']
+        tol = body.get('tolerance')
+        if isinstance(tol, (int, float)) and not isinstance(tol, bool):
+            cmd += ['--tol', str(int(tol))]
+        if body.get('despill'):
+            cmd.append('--despill')
+        if body.get('mock'):
+            cmd.append('--mock')
+        for s in (body.get('seeds') or []):
+            if isinstance(s, (list, tuple)) and len(s) == 2 and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in s):
+                cmd += ['--seed', f'{int(s[0])},{int(s[1])}']
+        try:
+            proc = subprocess.run(**_spawn(cmd), cwd=ROOT, capture_output=True, timeout=120)
+        except subprocess.TimeoutExpired:
+            return {'success': False, 'error': '抠图超时（>120s）'}
+        if proc.returncode != 0:
+            err = proc.stderr.decode('utf-8', 'replace').strip() or proc.stdout.decode('utf-8', 'replace')
+            return {'success': False, 'error': f'抠图失败: {err[:400]}'}
+        with open(out_path, 'rb') as f:
+            out_png = f.read()
+        try:
+            prov = json.loads(proc.stdout.decode('utf-8', 'replace').splitlines()[-1])
+            prov.pop('out', None)  # 临时 out 路径无意义·不回传
+        except Exception:
+            prov = {}
+        print(c("  [MATTE]", 'g'), f"{mode} → {len(out_png)} 字节")
+        return {'success': True, 'dataBase64': base64.b64encode(out_png).decode(), 'provenance': prov}
+    finally:
+        for p in (in_path, out_path):
+            try:
+                os.unlink(p)
+            except Exception:
+                pass
+
 # ── Vendor：把共享库资产 copy 进某游戏的本地美术目录（右键"copy 到游戏"入口的后端）─────────
 # 能力"大脑"在 PA 车道的 scripts/vendor-asset.mjs（copy 文件 + upsert 本地索引·自动按类型归子目录·
 # 携 spec/license/provenance.vendoredFrom·幂等）；本端点只是薄胶水：校验 → shell 调 → 回机读结果。

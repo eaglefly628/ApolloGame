@@ -13,7 +13,7 @@ from .agent_chat import handle_agent_chat
 from .art_replace import handle_art_batch, handle_art_derive, handle_art_ledger, handle_art_packs, handle_art_replace
 from .art_review import handle_asset_pending, handle_asset_review
 from .asset_annotate import handle_asset_autotag
-from .assets import handle_asset_generate, handle_asset_generate_providers, handle_asset_import, handle_asset_vendor
+from .assets import handle_asset_generate, handle_asset_generate_providers, handle_asset_import, handle_asset_matte, handle_asset_vendor
 from .blueprints import PRESET_BLUEPRINTS
 from .claude_code import handle_llm_live
 from .config import _features
@@ -474,6 +474,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_asset_vendor(body)
             except Exception as e:  # 防御：单次 vendor 失败不拖死 API 进程
                 data = {'success': False, 'error': f'vendor 异常: {e}'}
+        elif path == '/api/assets/matte':
+            try:
+                data = handle_asset_matte(body)
+            except Exception as e:  # 防御：单次抠图失败不拖死 API 进程
+                data = {'success': False, 'error': f'抠图异常: {e}'}
         elif path == '/api/assets/review':
             try:
                 data = handle_asset_review(body)
