@@ -223,6 +223,86 @@ function platformThree(): Record<string, Ent> {
   };
 }
 
+// ── Platform Four（物理沙盘·「掉落砸地」展台·X=0/Z=+220）───────────────────────────────────────────
+// owner「想要一个专做物理模拟的台：3D 方块掉落砸地、跟下面交互——像三消清除时掉落的表现结果」。
+// 全 render-only 真物理（RigidBody3D/Joint3D·cannon 驱动·不进 sim/hash）·纯数据重组·零专属 system。
+// 一个带围栏的托盘（静态刚体墙拦住方块不滑出）+ 三个演示区：三消宝石雨 / 弹性对比 / 杠杆跷跷板。
+export const PLATFORM4_X = 0;
+export const PLATFORM4_Z = 220;
+export const PLATFORM_FOUR_CAM = { yaw: 0, pitch: 0.56, distance: 96, pivotX: PLATFORM4_X, pivotY: 6, pivotZ: PLATFORM4_Z };
+const GEM_COLORS = [0xef5350, 0x42a5f5, 0x66bb6a, 0xffca28, 0xab47bc, 0x26c6da]; // 宝石色轮（三消观感）
+// 一枚物理宝石方块（掉落砸地堆叠·RigidBody3D box·塑料材质）：从 y 高处落·随机初角速度翻滚。
+function gem(x: number, y: number, z: number, color: number, size = 3.6): Ent {
+  return {
+    Transform3D: { x, y, z },
+    Mesh3D: { shape: 'box', width: size, height: size, depth: size, frontTint: 0xffffff, backTint: 0xffffff, edgeTint: 0xffffff },
+    Material3D: { preset: 'plastic', color },
+    RigidBody3D: { shape: 'box', mass: 1, restitution: 0.28, friction: 0.5, avx: (x % 3) - 1, avy: (z % 3) - 1, avz: 0.5 }, // 初角速度由坐标派生（确定性·非裸 random）
+  };
+}
+function platformFour(): Record<string, Ent> {
+  const X = PLATFORM4_X, Z = PLATFORM4_Z;
+  const out: Record<string, Ent> = {};
+  // 托盘地台（顶在 y=0 → 物理体落在此高度·同全局地面）。90×70。
+  out['p4-base'] = { ...block(X, -2.5, Z, 90, 5, 70, 0x37474f, 0x263238), Material3D: { preset: 'matte', color: 0x455a64, surface: { pattern: 'noise', tiles: 8, normal: 0.5, rough: 0.7 } } };
+  // 四面静态围栏（RigidBody3D mass0·拦住方块不滑出托盘；roll 重落已豁免静态体不甩飞）。低矮暗蓝护栏。
+  const rim = (id: string, x: number, z: number, w: number, d: number): void => {
+    out[id] = { ...block(x, 3.5, z, w, 7, d, 0x5c6bc0, 0x3949ab), Material3D: { preset: 'plastic', color: 0x5c6bc0 }, RigidBody3D: { shape: 'box', mass: 0, friction: 0.5 } };
+  };
+  rim('p4-rim-n', X, Z - 34, 90, 2); rim('p4-rim-s', X, Z + 34, 90, 2);
+  rim('p4-rim-e', X + 44, Z, 2, 70); rim('p4-rim-w', X - 44, Z, 2, 70);
+  // 世界屏（Diegetic3D·标平台名 + 玩法说明）。
+  out['p4-sign'] = {
+    Transform3D: { x: X - 38, y: 14, z: Z - 30, rotY: 0.5 },
+    Diegetic3D: {
+      pxWidth: 460, pxHeight: 200, worldWidth: 23, bg: '#0d1522',
+      node: { type: 'Panel', id: 'p4s', props: { bg: 'raised' }, layout: { gap: 6, padding: 13 }, children: [
+        { type: 'Label', id: 'p4s-t', props: { text: '◈ PLATFORM FOUR · 物理沙盘', size: 'lg', glow: true, color: 'jade' } },
+        { type: 'Label', id: 'p4s-1', props: { text: '方块掉落砸地 · 堆叠 · 弹性对比 · 杠杆跷跷板', size: 'sm', color: 'gold' } },
+        { type: 'Label', id: 'p4s-2', props: { text: '「🎲 重落」按钮 → 所有方块抬起重砸（三消清除表现）', size: 'sm', color: 'jade' } },
+      ] },
+    },
+  };
+  // ① 三消宝石雨（左区·12 枚彩块从错峰高处落下 → 堆成一堆·砸地翻滚）：直给三消「消除→掉落表现」隐喻。
+  let gi = 0;
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) {
+    const x = X - 36 + c * 8, z = Z - 24 + r * 8, y = 10 + (r * 4 + c) * 1.6; // 错峰高度 → 级联下落
+    out[`p4-gem-${gi}`] = gem(x, y, z, GEM_COLORS[gi % GEM_COLORS.length]!);
+    gi++;
+  }
+  out['p4-gem-label'] = { Transform3D: { x: X - 24, y: 14, z: Z - 24 }, WorldUI3D: { text: '① 三消宝石雨（掉落堆叠）', offsetY: 0, size: 'sm', color: 'jade' } };
+  // ② 弹性对比（右区·三球同高度落·restitution 0.15/0.55/0.92 → 弹跳高度肉眼分档）：展 RigidBody3D 材质参数。
+  const bounce = (x: number, rest: number, color: number, label: string): Ent => ({
+    Transform3D: { x, y: 16, z: Z - 22 },
+    Mesh3D: { shape: 'sphere', width: 4, height: 4, frontTint: 0xffffff },
+    Material3D: { preset: 'plastic', color },
+    RigidBody3D: { shape: 'sphere', mass: 1, restitution: rest, friction: 0.3 },
+    WorldUI3D: { text: label, offsetY: 3, size: 'sm', color: 'gold' },
+  });
+  out['p4-bounce-lo'] = bounce(X + 16, 0.15, 0xe57373, '弹0.15');
+  out['p4-bounce-mid'] = bounce(X + 26, 0.55, 0xffb74d, '弹0.55');
+  out['p4-bounce-hi'] = bounce(X + 36, 0.92, 0x81c784, '弹0.92');
+  out['p4-bounce-label'] = { Transform3D: { x: X + 26, y: 15, z: Z - 30 }, WorldUI3D: { text: '② 弹性对比 restitution', offsetY: 0, size: 'sm', color: 'gold' } };
+  // ③ 杠杆跷跷板（前区·Joint3D hinge 绕支点转的木板 + 一端配重块 → 倾斜；方块砸另一端会翘动·「跟下面交互」）。
+  //    plank 中心用 hinge 钉到世界支点(y=5)·绕 z 轴转 → x 两端上下翘。配重箱压 -x 端。
+  out['p4-fulcrum'] = { ...block(X - 4, 2, Z + 20, 3, 4, 8, 0x8d6e63, 0x5d4037), Material3D: { preset: 'wood' } }; // 支点墩（视觉·静态非刚体）
+  out['p4-seesaw'] = {
+    Transform3D: { x: X - 4, y: 5, z: Z + 20 },
+    Mesh3D: { shape: 'box', width: 30, height: 1.4, depth: 6, frontTint: 0xd7a86e, backTint: 0xb5854e, edgeTint: 0xe8c79a },
+    Material3D: { preset: 'wood' },
+    RigidBody3D: { shape: 'box', mass: 1, friction: 0.7 },
+    Joint3D: { kind: 'hinge', anchor: [X - 4, 5, Z + 20], axis: [0, 0, 1] }, // 绕 z 轴 → 长边(x)两端翘
+    WorldUI3D: { text: '③ 杠杆跷跷板 Joint3D hinge', offsetY: 4, size: 'sm', color: 'warn' },
+  };
+  out['p4-weight'] = { // 配重箱压 -x 端 → 该端下沉、另一端翘起（砸方块上去会再翘动）
+    Transform3D: { x: X - 15, y: 9, z: Z + 20 },
+    Mesh3D: { shape: 'box', width: 4.5, height: 4.5, depth: 4.5, frontTint: 0x90a4ae, backTint: 0x607d8b, edgeTint: 0xcfd8dc },
+    Material3D: { preset: 'iron' },
+    RigidBody3D: { shape: 'box', mass: 2.4, friction: 0.8 },
+  };
+  return out;
+}
+
 // 一只追兵（NavAgent + Relation(target=hero) → pathfind 沿自动 NavGraph 追鸭子）。light 给前两只（动态光预算 2 盏）。
 function pursuer(x: number, z: number, body: number, edge: number, label: string, color: string, light?: { color: number; intensity: number; range: number }): Ent {
   return {
@@ -339,13 +419,15 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 材质铺陈：草地色 matte + 程序化起伏浮雕（noise·大 tiles 铺满大地面）→ 掠光下有草皮质感·不再纯平板。
       ground: { ...block(0, -2.5, 0, 160, 5, 160, 0x7cb342, 0x5d4037), Material3D: { preset: 'matte', color: 0x7cb342, surface: { pattern: 'noise', tiles: 16, normal: 0.7, rough: 0.55, scale: 1.5 } } },
 
-      // 🌉 三台分布（owner 2026-07-16「追逐场东西太多·分散到专台·循环传送看得清」）：
+      // 🌉 四台分布（owner 2026-07-16「追逐场东西太多·分散到专台·循环传送看得清」）：
       //   Platform A（本台）= 纯追逐玩法（狐狸/追兵/障碍/信标/色子）——不再堆展示物。
       //   Platform Two（X=+190）= 手感 & 物理特性（关节/胶囊/弹簧/描边/贴花/路径/拖尾/瞄准线）。
       //   Platform Three（X=-190）= 材质 & 渲染（11 材质球/圆润图元/UV 水面/符文自发光/平涂）。
-      // 「🚀 传送」按钮 Camera3D.tween 循环飞越 A → Two → Three → A。
+      //   Platform Four（Z=+220）= 物理沙盘（方块掉落砸地/堆叠/弹性对比/杠杆跷跷板·三消掉落表现）。
+      // 「🚀 传送」按钮 Camera3D.tween 循环飞越 A → Two → Three → Four → A。
       ...platformTwo(),
       ...platformThree(),
+      ...platformFour(),
     },
   };
 }

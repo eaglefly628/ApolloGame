@@ -72,6 +72,7 @@ export class PhysicsSystem {
   // 重掷（掷骰子按钮）：所有刚体抬回各自起点上方 + 随机翻滚（render-only·随机自由）。bodies 为空（未步进过）则 no-op。
   roll(world: IWorld): void {
     for (const [id, b] of this.bodies) {
+      if (b.mass === 0 || b.type === C!.Body.STATIC) continue; // 静态体（围栏/地台/地形）不重落——否则做物理沙盘的墙会被甩飞
       const t = world.getComponent<Transform3D>(id, 'Transform3D');
       b.position.set(t?.x ?? 0, 15 + Math.random() * 6, t?.z ?? 0);
       b.quaternion.setFromEuler(Math.random() * 6.283, Math.random() * 6.283, Math.random() * 6.283);

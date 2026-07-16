@@ -204,6 +204,31 @@ describe('PhysicsSystem：真物理刚体（cannon-es·render-only 表现）', (
     phys.dispose();
   });
 
+  it('roll 重落：静态体（mass0 围栏/地台）不被甩飞·动态体才重落', () => {
+    const w = new World();
+    // 静态围栏（mass0·坐地 y=3）
+    w.createEntity('wall');
+    w.addComponent('wall', { type: 'Transform3D', x: 10, y: 3, z: 0 } as Transform3D);
+    w.addComponent('wall', { type: 'Mesh3D', shape: 'box', width: 2, height: 6, depth: 20, frontTint: 0xffffff } as Mesh3D);
+    w.addComponent('wall', { type: 'RigidBody3D', shape: 'box', mass: 0 } as RigidBody3D);
+    // 动态方块（mass1·已落地）
+    w.createEntity('blk');
+    w.addComponent('blk', { type: 'Transform3D', x: 0, y: 8, z: 0 } as Transform3D);
+    w.addComponent('blk', { type: 'Mesh3D', shape: 'box', width: 4, height: 4, depth: 4, frontTint: 0xffffff } as Mesh3D);
+    w.addComponent('blk', { type: 'RigidBody3D', shape: 'box', mass: 1 } as RigidBody3D);
+    const phys = new PhysicsSystem();
+    const wallT = (): Transform3D => w.getComponent<Transform3D>('wall', 'Transform3D')!;
+    const blkT = (): Transform3D => w.getComponent<Transform3D>('blk', 'Transform3D')!;
+    for (let i = 1; i <= 180; i++) phys.sync(w, i * 16.7); // 落定
+    const wallY = wallT().y, blkYSettled = blkT().y;
+    expect(wallY).toBeCloseTo(3, 1); // 静态墙固定在 y=3
+    phys.roll(w); // 重落
+    for (let i = 181; i <= 200; i++) phys.sync(w, i * 16.7);
+    expect(wallT().y).toBeCloseTo(3, 1); // 墙仍在 y=3（未被甩飞）
+    expect(blkT().y).toBeGreaterThan(blkYSettled + 2); // 动态块被抬起重落（升到高处）
+    phys.dispose();
+  });
+
   it('RigidBody3D + Transform3D（含 quat）是 render-only（不进 hash）', () => {
     const w = new World();
     w.createEntity('d');
