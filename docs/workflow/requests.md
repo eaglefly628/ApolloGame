@@ -73,7 +73,7 @@
 > **M0.5 ✅ done（PUI·2026-07-16·待 Lead 对抗性验收）**：新 UITheme `apollo-toon`「水墨玩趣」（`src/ui/apollo-toon-theme.ts`·全 token 覆盖·亮宣纸皮）——8 色板入 palette（文字色令牌取可读深变体·鲜色进皮/背景）+ 程序化 data-URI 皮 4 kind 糖果厚底唇钮（64×64·9-slice slice=12·顶高光+厚唇+墨笔触边）+ 程序化水墨远山背景（`texture`·cover）+ 柔光晕染（`wash`）+ 纸纹面（`panelTexture`）。**闭集扩展 1 处**：UITheme 加 `panelTexture?` 令牌（面板级底纹·`render.ts renderPanel` 消费·guard `!bare`·缺省字节不变）+ 回填 `ui.md`。game-i 换皮下拉接入并置顶 + 选单收敛 3 个（水墨玩趣/青瓷·墨蓝/紫·霓晶·余 5 隐藏不删码）。门禁全绿（tsc+2642 vitest+build）；check-ui：validate 零 issue + ui-audit 3 显式 tab（layout/3dui/shop）0 阻断；真浏览器截图 5 张（厚唇钮/纸纹面/水墨背景成立）。**记账**：程序化皮=占位真相（provenance:procedural·真 key 后 M2 逐行替换）。**已知缺口（提 Lead）**：①ui-audit 对 `border-image` 皮盲区——白字糖果皮在亮父面被判 1.21 假阳（真渲白字压深糖体可读）·仅「无 activeTab 全 tabpage 同显」非真状态触发·逐 tab 显式审全过；②默认 tab-layout 在**任何**亮主题（含既有 daylight）皆因 `dim` 段标题/皮 demo 白字判低对比——非本主题引入。
 > **⚖ Lead 对抗性验收（2026-07-16·双线判 PASS）**：门禁独立复跑六项全绿（tsc·vitest 349 文件/2642·build·双守卫·reconcile 三方一致）；域界核对 M0=80 文件全 PA 域、M0.5=12 文件全 PUI 域（引擎域零触碰）；真浏览器亲验（swiftshader）——选单恰 3 项且水墨玩趣置顶、切主题后三签名成立（厚底唇糖果钮/纸纹面/水墨远山）。**偏差裁决**：M0 四条（reconcile 跳台账·风格包全字段·行数落点 72·kind 词表 texture/mesh）全 INTENTIONAL 准许——kind 词表在 M1 接链时须与 art-replace 词表映射对齐；M0.5 `panelTexture` 闭集扩展 INTENTIONAL 准许（沿 texture/wash 先例·guard+点名测试+手册回填齐）。**遗留**：①ui-audit border-image 盲区 + 亮主题 dim 假阳 = PUI 工具债（非阻断·随后续批修）；②换皮**置顶未改默认**（默认仍青瓷·墨蓝）——是否连默认切 apollo-toon 留 owner 拍板（M3 对齐时顺手做）。
 
-### REQ-M3-三消二期 · match3-board 特殊糖+格层+目标接线（糖果传奇级机制补全） · [2026-07-16] · owner 拍板（新三消游戏立项前置）→ Lead 出图 → **指派：Opus** · status: in-progress（已派工 2026-07-16） · 优先级: P0 · 类型: 引擎 capability 二期（tier3·正确性关键·不降档）
+### REQ-M3-三消二期 · match3-board 特殊糖+格层+目标接线（糖果传奇级机制补全） · [2026-07-16] · owner 拍板（新三消游戏立项前置）→ Lead 出图 → **指派：Opus** · status: ✅ done·待 Lead 对抗性验收（2026-07-16 Opus 完工） · 优先级: P0 · 类型: 引擎 capability 二期（tier3·正确性关键·不降档）
 > **背景**：一期 `src/skills/tier3/match3-board.ts`（REQ-C-001·换/找连/消/重力/补/连锁·确定性相位机·14 测）核心健全零消费方；糖果传奇级还差特殊糖、格层（果冻/障碍）、目标接线。
 > **图纸（Lead·组件/语义/测试写死）**：
 > 1. **格编码**：cells 仍纯整数——低位=色 0..kindCount-1 + 高位 flag 闭集 `STRIPED_H/STRIPED_V/WRAPPED/COLORBOMB`（球无色·色位哨值）；导出 `makeCell/cellColor/cellSpecial` helper，全整数位运算保确定性。
@@ -84,6 +84,9 @@
 > 6. **红线**：确定性（RandomSeed·整数·禁裸随机/Date）；相位机纪律不破；组件契约只加可选字段（旧 config 行为逐字节不变）；一期 14 测零回归。
 > 7. **测试点名（缺一不关单）**：编码 helper；4 连横/竖×两种 orientation；L/T 产包装；5 连产球；各效果清除集；4 条 combo；引爆队列有界；果冻减层/清零计数；障碍减 hp/石块不动不补；重力绕石块；moves 扣减+非法步不扣；目标资源写出；同 seed 全程复现；一期全量回归。
 > 8. **回填**：`docs/playbooks/casual-toolkit.md` 加三消一行。完工标 ✅ 待 Lead 对抗性验收。
+>
+> **✅ 完工回执（Opus·2026-07-16）**：`match3-board.ts`——全整数格编码(`makeCell`/`cellColor`/`cellSpecial`·旧纯色编码=自身逐字节兼容) + 特殊糖生成(4连条纹随`stripedOrientation`·L/T包装·5连彩球·生成位交换格优先/连锁取run中点) + 触发效果(行/列/3×3/全色) + **有界连锁引爆**(显式工作队列+已处理集·互指条纹环收敛) + `comboTable`组合(cross/threeRowsCols/fiveByFive/wholeBoard·彩球换普通清该色) + 格层(`jelly`减层·`blockers`邻接减hp/石块-1分段重力不落不补) + `jelly/blocker/movesResource`写ResourceModify→现成Condition判目标。组件契约 `MatchBoard` **仅加可选字段**·一期14测零回归·门禁全绿(tsc+vitest 349文件2665测·match3 由14→37+build+2 guard)。回填 casual-toolkit.md。
+> **偏差2条待裁**：①`comboTable` 因 `FieldType` 闭集无 object[]，仅在组件契约注释documented、describe.fields 略去(不影响 catalog/registry)；②图纸点4「层变化改BoardCell外观(config映射)」——本实现把格层**状态挂 MatchBoard 供游戏 config 自行映射视图**(本能力零增删实体·view-sync 保持糖果视图零回归)，未内建 jelly/stone tint 配置以免臆造 config 形状；如需引擎内建层视图配置请 Lead 指示补做。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 

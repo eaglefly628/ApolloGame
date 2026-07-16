@@ -2,7 +2,28 @@ import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { MatchBoard, BoardCell, Signal, Resource, RandomSeed, Sprite } from '@engine/protocol/components.js';
 import { resourceCapability } from '@atom-skills/index.js';
-import { match3BoardCapability, findMatches, applyGravity, adjacent } from './match3-board.js';
+import {
+  match3BoardCapability,
+  findMatches,
+  applyGravity,
+  refillEmpty,
+  adjacent,
+  makeCell,
+  cellColor,
+  cellSpecial,
+  classifySpawns,
+  effectCells,
+  resolveClear,
+  computeSwapComboClear,
+  isSwapCombo,
+  DEFAULT_COMBO_TABLE,
+  NONE,
+  STRIPED_H,
+  STRIPED_V,
+  WRAPPED,
+  COLORBOMB,
+  COLORLESS,
+} from './match3-board.js';
 
 // ── 纯算法 helper 单测 ──────────────────────────────────────────
 describe('match3 helpers — findMatches', () => {
@@ -165,5 +186,218 @@ describe('T3 match3-board — game-j 扩展（movesResource + kindSkinEntities·
     board(w).cells[0] = -1; // 置空 → 清 key（回退 Shape 观感）
     w.tick();
     expect(w.getComponent<Sprite>('bc0', 'Sprite')!.textureKey).toBe('');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  REQ-M3-三消二期：特殊糖 + 格层 + 目标接线
+// ═══════════════════════════════════════════════════════════════
+
+describe('T3 match3 二期 — 格编码 helper（纯整数位运算）', () => {
+  it('makeCell/cellColor/cellSpecial 往返；旧纯色 0..N 编码=自身（一期数据逐字节兼容）', () => {
+    expect(cellColor(makeCell(3, STRIPED_H))).toBe(3);
+    expect(cellSpecial(makeCell(3, STRIPED_H))).toBe(STRIPED_H);
+    expect(cellSpecial(makeCell(5, WRAPPED))).toBe(WRAPPED);
+    // 彩球=无色哨值
+    expect(cellColor(makeCell(COLORLESS, COLORBOMB))).toBe(COLORLESS);
+    expect(cellSpecial(makeCell(COLORLESS, COLORBOMB))).toBe(COLORBOMB);
+    // 旧纯色值编码后=自身
+    for (const c of [0, 1, 2, 5, 7]) expect(makeCell(c, NONE)).toBe(c);
+    // 空格透传
+    expect(cellColor(-1)).toBe(-1);
+    expect(cellSpecial(-1)).toBe(NONE);
+  });
+});
+
+describe('T3 match3 二期 — 特殊糖生成（按 run 形状）', () => {
+  it('横 4 连 → perpendicular=竖纹 / parallel=横纹 / 缺省=perpendicular', () => {
+    const cells = [0, 0, 0, 0, 1, 2, 1, 2]; // cols4 rows2，row0 四连横
+    expect(classifySpawns(cells, 4, 2, -1, -1, 'perpendicular')[0].special).toBe(STRIPED_V);
+    expect(classifySpawns(cells, 4, 2, -1, -1, 'parallel')[0].special).toBe(STRIPED_H);
+    expect(classifySpawns(cells, 4, 2, -1, -1)[0].special).toBe(STRIPED_V); // 缺省
+    expect(classifySpawns(cells, 4, 2, -1, -1).length).toBe(1);
+  });
+  it('竖 4 连 → perpendicular=横纹 / parallel=竖纹', () => {
+    const cells = [0, 1, 0, 2, 0, 1, 0, 2]; // cols2 rows4，col0 四连竖
+    expect(classifySpawns(cells, 2, 4, -1, -1, 'perpendicular')[0].special).toBe(STRIPED_H);
+    expect(classifySpawns(cells, 2, 4, -1, -1, 'parallel')[0].special).toBe(STRIPED_V);
+  });
+  it('生成位：玩家交换格优先，无交换取 run 中点', () => {
+    const cells = [0, 0, 0, 0, 1, 2, 1, 2];
+    expect(classifySpawns(cells, 4, 2, 1, -1)[0].index).toBe(1); // 交换格 1 在 run 内 → 优先
+    expect(classifySpawns(cells, 4, 2, -1, -1)[0].index).toBe(2); // 无交换 → run [0,1,2,3] 中点=2
+  });
+  it('L/T 交叉 → 包装糖', () => {
+    const cells = [0, 0, 0, 0, 2, 1, 0, 1, 2]; // row0 三连 + col0 三连，交于 idx0
+    const sp = classifySpawns(cells, 3, 3, -1, -1);
+    expect(sp.length).toBe(1);
+    expect(sp[0].special).toBe(WRAPPED);
+    expect(classifySpawns(cells, 3, 3, 0, -1)[0].index).toBe(0); // 交换在交叉角 → 生成于角
+  });
+  it('直线 5 连 → 彩球（无色）', () => {
+    const cells = [0, 0, 0, 0, 0]; // 5x1
+    const sp = classifySpawns(cells, 5, 1, -1, -1);
+    expect(sp[0].special).toBe(COLORBOMB);
+    expect(sp[0].color).toBe(COLORLESS);
+  });
+});
+
+describe('T3 match3 二期 — 触发效果清除集', () => {
+  it('条纹 = 整行 / 整列', () => {
+    const cells = new Array(12).fill(0); // cols4 rows3
+    expect(effectCells(cells, 4, 3, 5, STRIPED_H).sort((a, b) => a - b)).toEqual([4, 5, 6, 7]); // 横纹清 row1
+    expect(effectCells(cells, 4, 3, 5, STRIPED_V).sort((a, b) => a - b)).toEqual([1, 5, 9]); // 竖纹清 col1
+  });
+  it('包装 = 3×3（角落裁边）', () => {
+    const cells = new Array(9).fill(0);
+    expect(effectCells(cells, 3, 3, 4, WRAPPED).sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(effectCells(cells, 3, 3, 0, WRAPPED).sort((a, b) => a - b)).toEqual([0, 1, 3, 4]);
+  });
+  it('彩球（连锁引爆）= 全盘最多色', () => {
+    const cells = [0, 1, 0, 1, 0, 1, 0, 0, 0]; // 色0 计 6（主导）
+    expect(effectCells(cells, 3, 3, 4, COLORBOMB).sort((a, b) => a - b)).toEqual([0, 2, 4, 6, 7, 8]);
+  });
+});
+
+describe('T3 match3 二期 — 特殊糖组合（comboTable 4 条 + 彩球换普通）', () => {
+  const base = () => new Array(9).fill(0);
+  it('纹+纹 = 十字（行∪列）', () => {
+    const cells = base();
+    cells[4] = makeCell(0, STRIPED_H);
+    cells[5] = makeCell(0, STRIPED_V);
+    const s = computeSwapComboClear(cells, 3, 3, 4, 5, DEFAULT_COMBO_TABLE);
+    expect([...s].sort((a, b) => a - b)).toEqual([1, 3, 4, 5, 7]); // row1{3,4,5}∪col1{1,4,7}
+  });
+  it('纹+包 = 3 行 3 列（3x3 全覆盖）', () => {
+    const cells = base();
+    cells[4] = makeCell(0, STRIPED_H);
+    cells[5] = makeCell(0, WRAPPED);
+    expect(computeSwapComboClear(cells, 3, 3, 4, 5, DEFAULT_COMBO_TABLE).size).toBe(9);
+  });
+  it('包+包 = 5×5（3x3 全覆盖）', () => {
+    const cells = base();
+    cells[4] = makeCell(0, WRAPPED);
+    cells[5] = makeCell(0, WRAPPED);
+    expect(computeSwapComboClear(cells, 3, 3, 4, 5, DEFAULT_COMBO_TABLE).size).toBe(9);
+  });
+  it('球+球 = 全盘', () => {
+    const cells = base();
+    cells[0] = makeCell(COLORLESS, COLORBOMB);
+    cells[1] = makeCell(COLORLESS, COLORBOMB);
+    expect(computeSwapComboClear(cells, 3, 3, 0, 1, DEFAULT_COMBO_TABLE).size).toBe(9);
+  });
+  it('彩球 + 普通 = 清全盘该色', () => {
+    const cells = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+    cells[0] = makeCell(COLORLESS, COLORBOMB); // idx0 彩球，与 idx1（色1）交换
+    const s = computeSwapComboClear(cells, 3, 3, 0, 1, DEFAULT_COMBO_TABLE);
+    expect([...s].sort((a, b) => a - b)).toEqual([0, 1, 3, 5, 7]); // 球+被换格 + 全部色1{1,3,5,7}
+  });
+  it('isSwapCombo：双特殊糖 / 含彩球=组合；单特殊糖+普通=非组合', () => {
+    const c1 = [makeCell(0, STRIPED_H), makeCell(0, STRIPED_V)];
+    expect(isSwapCombo(c1, 0, 1)).toBe(true);
+    const c2 = [makeCell(COLORLESS, COLORBOMB), 1];
+    expect(isSwapCombo(c2, 0, 1)).toBe(true);
+    const c3 = [makeCell(0, STRIPED_H), 1];
+    expect(isSwapCombo(c3, 0, 1)).toBe(false); // 单纹+普通 → 需同色连线才合法
+  });
+});
+
+describe('T3 match3 二期 — 连锁引爆有界（互指条纹环不无界递归）', () => {
+  it('同列多条竖纹互指 → 有界终止 + 正确清除集', () => {
+    const cells = new Array(9).fill(0);
+    cells[0] = makeCell(0, STRIPED_V);
+    cells[3] = makeCell(0, STRIPED_V);
+    cells[6] = makeCell(0, STRIPED_V); // col0 三条竖纹互指同列
+    const s = resolveClear(cells, 3, 3, [0]);
+    expect([...s].sort((a, b) => a - b)).toEqual([0, 3, 6]); // 有界收敛，非死循环
+  });
+  it('条纹十字链 → 有界并覆盖三条线', () => {
+    const cells = new Array(9).fill(0);
+    cells[0] = makeCell(0, STRIPED_V); // col0 {0,3,6}
+    cells[3] = makeCell(0, STRIPED_H); // row1 {3,4,5}
+    cells[5] = makeCell(0, STRIPED_V); // col2 {2,5,8}
+    const s = resolveClear(cells, 3, 3, [0]);
+    expect([...s].sort((a, b) => a - b)).toEqual([0, 2, 3, 4, 5, 6, 8]);
+  });
+});
+
+describe('T3 match3 二期 — 格层：果冻减层', () => {
+  it('参与消除的果冻格减 1，计数写 jellyResource', () => {
+    const w = loadBoard(
+      [0, 0, 0, 1, 2, 1, 2, 1, 2],
+      { phase: 'match', jelly: [1, 1, 1, 0, 0, 0, 0, 0, 0], jellyResource: 'jel' },
+      true,
+    );
+    w.createEntity('res:jel');
+    w.addComponent('res:jel', { type: 'Resource', id: 'jel', current: 0, min: 0, max: 99 } as Resource);
+    w.tick(); // match → clear
+    w.tick(); // clear：清 row0 → jelly[0..2] 1→0，发 jel +3 → fall
+    expect(board(w).jelly).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    w.tick(); // 下一拍 resource-apply 结算
+    expect(resVal(w, 'jel')).toBe(3);
+  });
+});
+
+describe('T3 match3 二期 — 格层：障碍减 hp / 石块不动不补 / 重力绕石块', () => {
+  it('邻接消除损障碍 hp，计数写 blockerResource', () => {
+    const w = loadBoard(
+      [0, 0, 0, 1, 2, 1, 2, 1, 2],
+      { phase: 'match', blockers: [0, 0, 0, 2, 0, 0, 0, 0, 0], blockerResource: 'blk' },
+      true,
+    );
+    w.createEntity('res:blk');
+    w.addComponent('res:blk', { type: 'Resource', id: 'blk', current: 0, min: 0, max: 99 } as Resource);
+    w.tick(); // match → clear
+    w.tick(); // clear：清 row0 → idx3 障碍（与 idx0 四邻）hp 2→1，发 blk +1 → fall
+    expect(board(w).blockers![3]).toBe(1);
+    w.tick(); // resource-apply
+    expect(resVal(w, 'blk')).toBe(1);
+  });
+  it('重力绕石块：候选块只落到石块上方（不穿石块）', () => {
+    // cols3 rows4，石块在 col0 row2（idx6）。col0 顶部一块糖应落到石块正上方（idx3），下方糖不动。
+    const cells = [7, 0, 0, -1, 0, 0, 9, 0, 0, 8, 0, 0];
+    const blockers = [0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0];
+    applyGravity(cells, 3, 4, blockers);
+    expect(cells[0]).toBe(-1); // 顶空
+    expect(cells[3]).toBe(7); // 糖落到石块上方一格
+    expect(cells[6]).toBe(9); // 石块本体不动
+    expect(cells[9]).toBe(8); // 石块下方糖不动
+  });
+  it('石块不补：refill 跳过 blockers===-1 的格', () => {
+    const cells = [-1, -1, -1, -1, -1, -1];
+    const blockers = [0, -1, 0, 0, 0, 0];
+    const seed = { type: 'RandomSeed', seed: 1, sequence: 0 } as RandomSeed;
+    refillEmpty(cells, 3, seed, blockers);
+    expect(cells[1]).toBe(-1); // 石块位不补
+    expect(cells[0]).toBeGreaterThanOrEqual(0); // 其余补满
+    expect(cells[2]).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('T3 match3 二期 — 目标：步数（组合交换扣步）+ 确定性复现', () => {
+  it('特殊糖组合交换 = 合法步扣 1', () => {
+    const cells = [1, 2, 1, 2, 1, 2, 1, 2, 1];
+    cells[0] = makeCell(COLORLESS, COLORBOMB);
+    cells[1] = makeCell(COLORLESS, COLORBOMB); // 球+球（无同色连线也算合法组合步）
+    const w = loadBoard(cells, { phase: 'swapped', swapA: 0, swapB: 1, movesResource: 'moves' }, true);
+    w.createEntity('res:moves');
+    w.addComponent('res:moves', { type: 'Resource', id: 'moves', current: 20, min: 0, max: 99 } as Resource);
+    w.tick(); // swapped：isSwapCombo → 发 moves -1 → clear
+    w.tick(); // 下一拍结算
+    expect(w.getComponent<Resource>('res:moves', 'Resource')!.current).toBe(19);
+  });
+  it('同 seed → 特殊糖 + 格层全程逐字节复现（录放安全）', () => {
+    const run = (): { cells: number[]; jelly: number[] | undefined } => {
+      const w = loadBoard(
+        [0, 0, 0, 0, 1, 2, 1, 2, 2, 1, 2, 1, 1, 2, 1, 2],
+        { cols: 4, rows: 4, kindCount: 3, phase: 'match', stripedOrientation: 'perpendicular', jelly: new Array(16).fill(1), jellyResource: 'jel' },
+        true,
+      );
+      w.createEntity('res:jel');
+      w.addComponent('res:jel', { type: 'Resource', id: 'jel', current: 0, min: 0, max: 999 } as Resource);
+      for (let i = 0; i < 200 && board(w).phase !== 'idle'; i++) w.tick();
+      return { cells: [...board(w).cells], jelly: board(w).jelly ? [...board(w).jelly!] : undefined };
+    };
+    expect(run()).toEqual(run());
   });
 });

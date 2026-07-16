@@ -23,6 +23,7 @@
 ## 一·五、选关 / 进度屏（2D UI）
 - 关卡地图：`LevelPath{nodes:[{label,state:done/current/locked,stars,action}],cols?,tone?}`——蛇形蜿蜒路径 + 连接线 + 状态节点（Candy Crush 式选关屏·点节点选关）。
 - 环形进度：`ProgressBar.shape:'ring'`（见一）。星级：`Rating`。
+- 三消棋盘玩法：`MatchBoard`（t3-match3-board·config 驱动确定性相位机）——交换/找连/消除产料 + 特殊糖（4 连条纹随 `stripedOrientation`·L/T 包装·5 连彩球·`comboTable` 组合）+ 格层（`jelly` 果冻/`blockers` 障碍/石块）+ 步数目标（`movesResource`/`jellyResource`/`blockerResource` 写 ResourceModify→现成 Condition 判胜负）；视图格 `BoardCell`+Clickable。缺口走 requests.md，勿手写消除逻辑。
 
 ## 二、3D UI 表达（CSS-3D · 2D LayoutNode · 非世界空间）
 - 变换：`layout.rotateX/rotateY/rotate/z/perspective`（真 3D 合成 preserve-3d·自动补透视）。

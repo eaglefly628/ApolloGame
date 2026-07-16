@@ -29,9 +29,18 @@ export interface MatchBoard extends Component {
   stepDelay: number; // 相位间等待 tick 数（让连锁可见；0=即时）
   selectAction: string; // 选中格的信号名（clickable 命中格子时发的 Signal.name）
   // ── 可选扩展（game-j 三消彩排·2026-07-09·向后兼容缺省关）──
-  movesResource?: string; // 步数 Resource id：**合法交换**（产生连线）时 -1（非法步弹回不扣）。''/缺省=不限步
+  movesResource?: string; // 步数 Resource id：**合法交换**（产生连线/特殊糖组合）时 -1（非法步弹回不扣）。''/缺省=不限步
   kindSkinEntities?: string[]; // 种类→皮肤定义实体 id（该实体持 Sprite{textureKey:'art:…'}·加载期已解析）：
   // view-sync 把其 textureKey 写到 BoardCell 的 Sprite——糖果式图片皮；缺省=纯色块+文字视图不变
+  // ── REQ-M3-三消二期 可选扩展（特殊糖 + 格层 + 目标·2026-07-16·向后兼容缺省关）──
+  // 格编码：cells 低 8 位=色（0xFF=彩球无色哨值），bit8-10=特殊糖 flag（0 NONE/1 STRIPED_H/2 STRIPED_V/3 WRAPPED/4 COLORBOMB）。
+  // 旧纯色值 0..255 编码后=自身 → 一期数据逐字节兼容。
+  stripedOrientation?: 'perpendicular' | 'parallel'; // 4 连生成条纹的方向：perpendicular（缺省·与连线垂直）| parallel（同向）
+  comboTable?: Array<{ a: number; b: number; effect: string }>; // 特殊糖组合闭集；缺省=预置 4 条（纹+纹=cross、纹+包=threeRowsCols、包+包=fiveByFive、球+球=wholeBoard）
+  jelly?: number[]; // 果冻层（长 cols*rows·0/1/2）：本格参与消除减 1；缺省=无果冻
+  blockers?: number[]; // 障碍层（长 cols*rows）：>0=hp（邻接消除减 1，0=解锁）；-1=石块（不可动/消·重力补块绕行）；0=无；缺省=无障碍
+  jellyResource?: string; // 果冻减层写入的 Resource id（沿 kindResource 模式→现成 Condition 判目标）
+  blockerResource?: string; // 障碍减 hp 写入的 Resource id（→现成 Condition 判目标）
 }
 
 // ── match3-board 视图格 ── 把逻辑格 index 绑到一个可点/可显示的实体（纯数据，游戏蓝图静态建好）。
