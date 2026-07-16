@@ -31,6 +31,12 @@
       "innerHTML": 0,
       "createElement": 5
     },
+    "game-t": {
+      "nakedRandom": 0,
+      "innerHTML": 0,
+      "createElement": 5,
+      "reason": "宿主 DOM 骨架容器×5（game-q mount 同款先例·UI 内容全 LayoutNode 零手写视图）——REQ-M3-三期④ MatchBoardView 落地后回评能否再降"
+    },
     "game-x": {
       "nakedRandom": 0,
       "innerHTML": 0,

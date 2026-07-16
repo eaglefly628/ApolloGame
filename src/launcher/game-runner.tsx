@@ -70,6 +70,7 @@ export function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => v
       'game-z': () => import('../games/game-z/game-z.js'),
       'game-d': () => import('../games/game-d/game-d.js'),
       'game-q': () => import('../games/game-q/game-q.js'),
+      'game-t': () => import('../games/game-t/game-t.js'),
     };
     const loader = loaders[gameId];
     if (!loader) return;

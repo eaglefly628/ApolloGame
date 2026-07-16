@@ -104,6 +104,17 @@ export const GAMES: GameEntry[] = [
     status: 'playable',
   },
   {
+    id: 'game-t',
+    title: 'Game T: 墨消',
+    subtitle: '水墨三消 · 功夫闯关',
+    description:
+      '竖屏水墨三消（糖果传奇-like）：交换六品墨珠连三消除，卷轴/朱印/太极丸特殊棋子连锁，洗墨/破瓷多目标闯关。棋盘全机制=t3-match3-board config 驱动的确定性相位机，胜负=t3-flow 声明式状态机，UI 全 LayoutNode（apollo-toon 水墨玩趣皮）——规则零游戏层代码。当前=骨架关：点选交换先行（拖拽/层视图/手感动画=引擎三期单落地后接入），占位 5 关待 GD 三十关正式表。',
+    color: '#1b1712',
+    accentColor: '#d9a441',
+    icon: '🖌️',
+    status: 'playable',
+  },
+  {
     id: 'game-q',
     title: 'Game Q: Neon Siege',
     subtitle: '霓虹要塞 · 未来主义塔防',
