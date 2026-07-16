@@ -98,12 +98,25 @@ class APIHandler(BaseHTTPRequestHandler):
             self.send_header('Location', f'http://localhost:{port}{to}')
             self.end_headers()
             return
-        body = ('<!doctype html><meta charset="utf-8"><title>旧工作台未启动</title>'
+        # 兜底页不再是死链（owner 07-15）：apollo.py workshop 拉 vite 是非阻塞的·冷启动几秒——
+        # 这几秒里点 ▶ 就会撞这页。改成轮询 /api/bench-ready·vite 一就绪自动跳转（就绪前转圈·不要求重启）。
+        safe_to = json.dumps(to)
+        body = ('<!doctype html><meta charset="utf-8"><title>页面服务启动中…</title>'
                 '<body style="font-family:system-ui;background:#0f1722;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh">'
-                '<div style="max-width:560px;line-height:1.8"><h2>旧工作台（vite dev）还没启动</h2>'
-                '<p>回终端 Ctrl+C 后重启：<code style="background:#1e293b;padding:2px 8px;border-radius:6px">python apollo.py workshop</code>'
-                '——新版会<b>一并拉起页面服务</b>（:5173），以后 ▶ 一直直达。</p>'
-                '<p>起好后回来重按一次 ▶ 即可。</p></div>').encode('utf-8')
+                '<div style="max-width:560px;line-height:1.8;text-align:center">'
+                '<div style="width:34px;height:34px;margin:0 auto 18px;border:4px solid rgba(255,255,255,.15);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite"></div>'
+                '<style>@keyframes spin{to{transform:rotate(360deg)}}</style>'
+                '<h2 style="margin:0 0 8px">页面服务（vite）启动中…</h2>'
+                '<p id="hint" style="color:#94a3b8">就绪后<b>自动跳转</b>到游戏，无需操作（冷启动约几秒）。</p>'
+                '<p style="color:#64748b;font-size:13px">若长时间不动：回终端确认 <code style="background:#1e293b;padding:2px 8px;border-radius:6px">python apollo.py workshop</code> 在跑。</p>'
+                '</div>'
+                '<script>'
+                'var to=' + safe_to + ',n=0;'
+                'function poll(){fetch("/api/bench-ready").then(function(r){return r.json()}).then(function(d){'
+                'if(d&&d.ready){location.replace(to)}else{n++;if(n>40){document.getElementById("hint").textContent="页面服务还没起来——回终端确认 python apollo.py workshop 在跑（或 npm run dev）。"}setTimeout(poll,1500)}'
+                '}).catch(function(){setTimeout(poll,1500)})}'
+                'poll();'
+                '</script>').encode('utf-8')
         self.send_response(200)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.send_header('Content-Length', str(len(body)))
@@ -291,6 +304,8 @@ class APIHandler(BaseHTTPRequestHandler):
 
         if path == '/api/status':
             data = get_project_status()
+        elif path == '/api/bench-ready':  # 页面服务(vite)是否就绪——/bench 兜底页轮询它·就绪即自动跳（owner 07-15：▶ 别撞死链）
+            data = {'ready': is_port_in_use(VITE_PORT), 'port': VITE_PORT}
         elif path == '/api/test':
             data = run_command(['npx', 'vitest', 'run'])
         elif path == '/api/typecheck':
