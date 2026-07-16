@@ -54,6 +54,7 @@ import type {
   KeyBinding,
   Launch,
   Light3D,
+  Line3D,
   Mass,
   MatchBoard,
   Material3D,
@@ -178,6 +179,7 @@ export interface ComponentDataMap {
   KeyBinding: Omit<KeyBinding, 'type'>;
   Launch: Omit<Launch, 'type'>;
   Light3D: Omit<Light3D, 'type'>;
+  Line3D: Omit<Line3D, 'type'>;
   Mass: Omit<Mass, 'type'>;
   MatchBoard: Omit<MatchBoard, 'type'>;
   Material3D: Omit<Material3D, 'type'>;

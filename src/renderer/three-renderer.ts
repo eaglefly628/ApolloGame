@@ -21,6 +21,7 @@ import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
 import { VfxSystem } from './three/vfx.js';
 import { TrailSystem } from './three/trail.js';
+import { LineSystem } from './three/line3d.js';
 import { DecalSystem } from './three/decal.js';
 import { UvAnimSystem } from './three/uv-anim.js';
 import { BillboardSystem } from './three/billboard.js';
@@ -83,6 +84,7 @@ export class ThreeRenderer implements RendererBackend {
   private debugNav = false;
   private readonly vfx = new VfxSystem(); // 数据驱动粒子（TA Phase 1·render-only）
   private readonly trails = new TrailSystem(); // 运动拖尾（Trail3D·render-only·超休闲残影）
+  private readonly lines = new LineSystem(); // 世界折线（Line3D·瞄准线/牵引/路径·render-only）
   private readonly decals = new DecalSystem(); // 地面贴花（Decal3D·blob 阴影/环/圆·render-only）
   private readonly uvAnim = new UvAnimSystem(); // 材质 UV 动画（Material3D.uvAnim·滚动/序列帧·render-only）
   private readonly billboards = new BillboardSystem(); // 世界空间贴图广告牌（Billboard3D·朝相机·深度排序·render-only）
@@ -378,7 +380,7 @@ export class ThreeRenderer implements RendererBackend {
     const camTweenActive = this.cameras.tickTween(cam3d?.tween, performance.now());
     // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
     const flashAmt = this.flash.update(post?.flash, performance.now());
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${this.diegetic.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -430,6 +432,7 @@ export class ThreeRenderer implements RendererBackend {
     // 渲染：有 Post3D → EffectComposer 管线；否则直渲（向后兼容）。用 CameraRig 当前激活相机（透视/正交）。
     const cam = this.cameras.current;
     this.trails.build(this.scene, world, cam); // 运动拖尾几何：据历史 + 相机方位重建「朝相机带状」（须相机就绪后·渲染前）。
+    this.lines.build(this.scene, world, cam); // 世界折线几何：据给定点 + 相机重建「朝相机带状」（瞄准线/牵引/路径·相机就绪后）。
     if (post) this.post.render(this.scene, cam, post, flashAmt);
     else this.gl.render(this.scene, cam);
     this.worldUi.sync(world, cam, this.width, this.height); // 头顶飘字：锚点投影 + 定位 LayoutNode 宿主（相机就绪后）
@@ -537,6 +540,7 @@ export class ThreeRenderer implements RendererBackend {
     this.navDebug.dispose(this.scene);
     this.vfx.dispose(this.scene);
     this.trails.dispose(this.scene);
+    this.lines.dispose(this.scene);
     this.decals.dispose(this.scene);
     this.billboards.dispose(this.scene);
     this.uvAnim.dispose();
