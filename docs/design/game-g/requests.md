@@ -7,6 +7,12 @@
 
 ---
 
+### NOTE-PA→game-g/PE · emoji 图标清单（456 处·待转 Image 槽）· [2026-07-16] · PA 审计产出（owner「game-g 美术盘点·出遗漏 emoji 清单」）→ **待 game-g/PE 取用** · status: **open（清单已出·转槽是 game-g/PE 域·PA 不改蓝图）** · 类型: 美术盘点·遗漏面
+> **背景**：owner 盘 game-g 美术，三层现状=① 53 真美术已上（牌面 portrait）② 57 占位 SVG（needs-art·**T2 台账已有 skinKey 槽·管线可换**）③ **456 处 emoji 当图标散在 29 个 UI 文件的 LayoutNode 文本里**——这层**没被任何美术槽捕获**（emoji 是文本字形·非 Sprite/Image）→ T2 derive 抓不到、生成管线够不着。这是 owner 说的"遗漏的 svg/emoji"。
+> **清单**：`docs/design/game-g/emoji-icon-inventory.md`（`node scripts/emoji-audit.mjs game-g --md` 产·**可重跑**·随转槽进度递减）。含：按 emoji（种类×次数×代表上下文×位置）+ 按文件（哪屏最多→优先）+ 逐处 file:line 明细。Top：♠♥♦♣ 花色·★ 星级·⚔💎🎴🪙🎲🛡🀄🧩⚙📖…；热点文件 hero-codex(76)/turn-battle-screen(66)/overlays(50)/game-g.tsx(38)/collection-screen(35)。
+> **给 game-g/PE**：要美术化的 emoji → 把「文本里的字形」改成「带 `skinKey` 的 `Image` 控件槽」（UI 铁律·`Image.src` 走资产 key）→ 台账 `art-requirements` 重跑即纳入生成管线，之后走占位→生成→人审→替换的既有闭环。**PA 立场**：只出清单（审计），转槽=game-g/PE 域（改蓝图/HUD），不越界代改。
+> **注**：清单已滤掉纯注释行/花色逻辑记号（581→456），留的是玩家可见 UI 文本里的 emoji；行尾注释里的零星 emoji 可能有极少量残留，人读无碍。
+
 ### REQ-G-主将牌面「将」艺术字·顶部小浮标→牌面正中大字 · [2026-07-06] · owner R22 → **指派：程序B（turn-battle-screen.ts 牌面渲染·LayoutNode 表现）** · status: **open** · 类型: UI 表现重排（主将身份标·程序B 域·基座件已够·非新能力）
 > **owner 原话**：「（关1）那两个（主将）就是敌将和我们的主将，那两个字太小了在上面，应该在牌面上还是有一些表示的——大一点的、牌面中间有个『将』字。艺术字，用那个艺术字来表示。」
 > **现状**：主将身份现在只是牌顶一个 `size:8` 的小浮标 `⭐主将`/`☠敌将`（`turn-battle-screen.ts:249` 场上兵·`:336` 手牌·`y:-12` 飘在角上）——太小、不显眼。牌**正中**现在是大花色字（`:243` `size:30`）。
