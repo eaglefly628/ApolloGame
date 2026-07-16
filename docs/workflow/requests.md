@@ -78,6 +78,7 @@
 > **① LayerCell 层视图**（二期验收留的尾巴·防游戏层自写视图 system 违宪）：新 render-only 组件 `LayerCell{ boardId, index, layer:'jelly'|'blocker' }`——blueprint **静态**建覆盖实体（沿 BoardCell 同型·零实体增删），match-view-sync 每帧按 MatchBoard 的 jelly/blockers 状态改其外观（config 外观映射：层数/hp→Sprite/Color/透明度·清零→隐藏）。测试：jelly 减层外观变/清零隐、blocker hp 变化、砚石恒显、糖珠视图零回归。
 > **② 锦鲤（定向消除·CC"鱼"同构）**：新特殊棋子 flag `KOI=5`（编码位仍 bit8-10·闭集内加一）；引爆=确定性游向「最优先未完成目标格」（优先级：墨渍>冰纹瓷>随机目标色格·同级取最小 index）消除之；生成规则 config（如 goals 含 jelly 时 2×2 方连生成——照 CC 惯例·写死进 config 闭集）；combo：锦鲤+锦鲤=3 条齐发、锦鲤+条纹/包装=目标格代爆该特殊效果。
 > **③ 朱印二次钤印**：WRAPPED 引爆后**原地保留一回合再爆一次 3×3**（CC wrapped 惯例）；实现=clear 相位标记「二爆待决」队列（确定性·不进新组件），fall/refill 后于下个 match 相位补爆；config 开关 `wrappedTwice?: boolean`（缺省 false=二期行为逐字节不变）。
+> **④ 棋盘手感动画层（owner 2026-07-16 补拍板·硬需求清单=game-t GDD §五点五 十条）**：交换滑动/非法弹回/消除墨晕缩淡（绝不瞬消）/下落缓动+落地微弹/收集飞行拖尾/特殊棋子聚拢生成与引爆演出/方块 3D UI 质感（z 景深·press3d）。**架构分叉待 S3 前 Lead 终裁，先重组评估两路**：(a) canvas 渲染线给 BoardCell 加 cell-tween/fx 通道；(b) **棋盘视图走 LayoutNode（game-g 战场同款模式）**——直接吃 3D UI 令牌 + flyTo/popOut/Particles/juice 全家（Lead 初判倾向 (b)：零新渲染机械·复用最大）。**红线**：全部 render-only 演出——sim 结果先定、动画只是回放表现（时长参数进 config·可跳过·bench/回放/lockstep 零影响）。
 > **红线与门禁**：同 REQ-M3-二期（全整数确定性/相位机纪律/可选字段向后兼容/一期+二期 37 测零回归/点名测试缺一不关单）。完工标 ✅ 待 Lead 对抗性验收。
 
 ### REQ-INPUT-拖拽交换 · 三消拖拽滑动手势（竖屏触屏主输入） · [2026-07-16] · owner 拍板（game-t）→ Lead 出图 → **指派：Opus（PE-T S3 前落地·点选交换可先行）** · status: open · 优先级: P1 · 类型: 引擎输入面（render/input-only·不进 sim/hash）
