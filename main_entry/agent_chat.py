@@ -15,7 +15,7 @@ from .paths import LIBRARY_DIR, _run_manifest_check, _valid_design_relpath, _val
 from .protocols import _capgap_record, _split_art_ops, _split_capgap
 from .sysutil import ROOT
 from .ts_carts import _run_cart_logic_check, _split_reply_ts, _ts_cart_enabled
-from .workshop_store import _AGENT_ROLES, _ws_file_load, _ws_sessions_save
+from .workshop_store import _AGENT_ROLES, _ws_file_load, _ws_sessions_save, _ws_http_ctx_load, _ws_http_ctx_save
 
 def _agent_art_digest(slug: str, cap: int = 40) -> str:
     """gd 角色的美术台账摘要：编号/状态/查询词/皮肤槽 + 风格锚。缺台账=明说（不是空串）。"""
@@ -159,23 +159,55 @@ def handle_agent_chat(body: dict) -> dict:
 
     tpl = {'gd': AGENT_GD_SYSTEM, 'pe': AGENT_PE_SYSTEM, 'art': AGENT_ART_SYSTEM}[role]
     ts_on = role == 'pe' and _ts_cart_enabled(slug)  # TS 例外（owner 07-11·features.tsCarts+卡带勾）
-    ts_rules = ''
+    logic_text = ''
     if ts_on:
-        ts_rules = _TS_RULES_ON
         lf = LIBRARY_DIR / slug / 'logic.ts'
         if lf.is_file():
             try:
-                ts_rules += f"\n### Current logic.ts（修订=整文件重发）\n```ts\n{lf.read_text('utf-8')[:20000]}```\n"
+                logic_text = lf.read_text('utf-8')[:20000]
             except Exception:
                 pass
     design_digest = _agent_design_digest(slug)  # 三角色同吃（owner 07-12「程序凭名字瞎猜」——底案=spec，谁施工谁必读）
-    system = (tpl.replace('{TS_RULES}', ts_rules)
-              .replace('{CAPGAP_RULES}', _CAPGAP_RULES_ON if _features().get('capgap') else '')
-              .replace('{GAME_NAME}', str(game_name)).replace('{GAME_SLUG}', slug)
-              .replace('{CURRENT_MANIFEST}', json.dumps(current, ensure_ascii=False))
-              .replace('{CAPABILITY_CATALOG}', str(body.get('catalog') or _FALLBACK_CATALOG))
-              .replace('{DESIGN_DOCS}', design_digest)
-              .replace('{ART_DIGEST}', _agent_art_digest(slug) if role in ('gd', 'art') else ''))
+    manifest_json = json.dumps(current, ensure_ascii=False)
+    art_digest = _agent_art_digest(slug) if role in ('gd', 'art') else ''
+
+    # ── token 优化 P0+P1（owner 07-15 review 拍板）────────────────────────────────
+    # P0：能力目录抽成**独立首段**（≈1.1 万 token·全角色全游戏共享）→ anthropic 独立缓存断点跨对话复用、
+    #     DeepSeek 自动前缀缓存命中；模板占位换成指针句。
+    # P1：HTTP 供应商（无 --resume 的全量重发通道）用「**开局冻结上下文**」——底案/manifest/logic/美术摘要
+    #     在对话第一轮快照进 system 并全程不变（前缀稳定=多轮缓存全程命中）；中途工件变更不改 system，
+    #     改为**末条消息前附更新提示**（最新全文·以此为准），noted 指纹防重复附。CC 通道已有同范式（mf_hash）。
+    ctx = {'design': design_digest, 'manifest': manifest_json, 'art': art_digest, 'logic': logic_text}
+    ctx_hash = hashlib.sha1('|'.join([design_digest, manifest_json, art_digest, logic_text]).encode()).hexdigest()[:16]
+    if provider != 'claude-code':
+        stored = _ws_http_ctx_load(slug, role)
+        if len(messages) <= 1 or not stored.get('hash') or not isinstance(stored.get('ctx'), dict):
+            _ws_http_ctx_save(slug, role, ctx_hash, ctx, ctx_hash)  # 开局（或无快照）：冻结当前版
+        else:
+            ctx = {k: str(stored['ctx'].get(k, '')) for k in ('design', 'manifest', 'art', 'logic')}  # 用冻结版拼 system
+            if stored.get('noted') != ctx_hash:  # 工件变了且尚未传达 → 末端更新提示（system 不动·缓存前缀保命中）
+                note = ('【提示】游戏工件已更新为最新版（以下为准·开局注入的旧版作废）：\n'
+                        + f'\n### 设计底案（最新）\n{design_digest}\n'
+                        + f'\n### 当前 manifest（最新）\n```json\n{manifest_json}\n```\n'
+                        + (f'\n### Current logic.ts（最新·修订=整文件重发）\n```ts\n{logic_text}```\n' if ts_on and logic_text else '')
+                        + (f'\n### 美术台账摘要（最新）\n{art_digest}\n' if art_digest else '') + '\n')
+                messages = messages[:-1] + [{'role': 'user', 'content': note + messages[-1]['content']}]
+                _ws_http_ctx_save(slug, role, str(stored['hash']), stored['ctx'], ctx_hash)
+
+    ts_rules = ''
+    if ts_on:
+        ts_rules = _TS_RULES_ON
+        if ctx['logic']:
+            ts_rules += f"\n### Current logic.ts（修订=整文件重发）\n```ts\n{ctx['logic']}```\n"
+    catalog_seg = '### 引擎能力目录（全角色共享·能力 id/组件字段只能从这里选·机读真相）\n' + str(body.get('catalog') or _FALLBACK_CATALOG)
+    system_rest = (tpl.replace('{TS_RULES}', ts_rules)
+                   .replace('{CAPGAP_RULES}', _CAPGAP_RULES_ON if _features().get('capgap') else '')
+                   .replace('{GAME_NAME}', str(game_name)).replace('{GAME_SLUG}', slug)
+                   .replace('{CURRENT_MANIFEST}', ctx['manifest'])
+                   .replace('{CAPABILITY_CATALOG}', '（见最前『引擎能力目录』共享块——那是唯一词汇表）')
+                   .replace('{DESIGN_DOCS}', ctx['design'])
+                   .replace('{ART_DIGEST}', ctx['art']))
+    system = [catalog_seg, system_rest]  # 传输层：anthropic 逐段缓存断点·其余顺序拼接（str 调用方语义不变）
 
     # 方案 A（owner 07-11 拍板）：订阅通道用 CC 原生 session——首轮全量注入并抓 session_id，
     # 续轮 --resume 只发增量；manifest/底案变了（应用改动/修订底案后）随增量附最新全文。工件仍是唯一真相。
@@ -202,7 +234,7 @@ def handle_agent_chat(body: dict) -> dict:
         r = _provider_request(provider, api_key, model, system, cur_messages, max_tokens=16000, effort=effort, session=session)
         _llm_log(provider=provider, model=model, mode=f'agent-{role}' if attempts == 1 else f'agent-{role}-fix',
                  req=r, validation=None if r.get('success') else 'error',
-                 errors=[] if r.get('success') else [r.get('error')], prompt_full=system)
+                 errors=[] if r.get('success') else [r.get('error')], prompt_full='\n\n'.join(system))
         if not r.get('success'):
             return {'success': False, 'error': r.get('error', 'LLM 请求失败'), 'attempts': attempts}
         text = r['text']

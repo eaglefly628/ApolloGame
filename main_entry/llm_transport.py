@@ -149,11 +149,17 @@ _OPENAI_COMPAT_URLS = {
     'deepseek': 'https://api.deepseek.com/chat/completions',
 }
 
-def _provider_request(provider: str, api_key: str, model: str, system: str, messages: list,
+def _provider_request(provider: str, api_key: str, model: str, system, messages: list,
                       max_tokens: int = 4096, effort: str = 'high', session: dict = None) -> dict:
+    # system: str 或 list[str] 缓存分段（token 优化 P0·2026-07-15）：[0]=跨对话稳定大块（能力目录·全角色共享），
+    # [1]=角色规则+开局冻结上下文。anthropic 逐段独立 cache_control 断点（不同游戏/角色共享目录段缓存）
+    # + 末条消息第三断点（对话历史增量缓存·多轮只付新增 token）；其余供应商顺序拼接单 system
+    # （DeepSeek 自动前缀缓存靠「稳定在前·历史只增不改」命中）。传 str = 原语义不变（生成管线照旧）。
+    segments = [s for s in (system if isinstance(system, list) else [system]) if s]
+    system_str = '\n\n'.join(segments)
     # 度量（供 _llm_log）：promptChars = system + 全 messages 内容字节；elapsedMs = 本轮墙钟；
     # usage = provider 回的 token 数（若有）。这些是 additive，不改任何调用方语义。
-    prompt_chars = len(system or '') + sum(len(str(m.get('content', ''))) for m in messages)
+    prompt_chars = len(system_str) + sum(len(str(m.get('content', ''))) for m in messages)
     t0 = time.time()
     # 控制台打点（owner 07-11「详细 debug 日志对齐」）：传输层唯一咽喉——所有 LLM 往返（生成/对话/autofix）
     # 都过这里，进出各一行即可对齐「卡在哪」。逐笔 JSONL 明细照旧在 .apollo/llm-logs/。
@@ -171,35 +177,41 @@ def _provider_request(provider: str, api_key: str, model: str, system: str, mess
         return d
 
     if provider == 'mock':
-        return _meta(_mock_response(system, messages))
+        return _meta(_mock_response(system_str, messages))
     if provider == 'claude-code':
-        return _meta(_claude_code_request(api_key, model, system, messages, effort, session))
+        return _meta(_claude_code_request(api_key, model, system_str, messages, effort, session))
     try:
         if provider == 'anthropic':
             url = 'https://api.anthropic.com/v1/messages'
             headers = {'Content-Type': 'application/json', 'x-api-key': api_key, 'anthropic-version': '2023-06-01'}
-            # 当前代次合规（4.7+·spec §2.2）：adaptive thinking；不发采样参数（发即 400）；
-            # system 尾块打 cache_control（catalog 大而稳·多轮编辑省输入费）；max_tokens 抬底
+            # 当前代次合规（4.7+·spec §2.2）：adaptive thinking；不发采样参数（发即 400）；max_tokens 抬底
             # （thinking 计入输出预算·太小会把 manifest 掐半截）。
+            # 缓存断点（token 优化 P0·≤4 上限）：system 逐段（≤3 段·各自独立前缀断点——目录段跨游戏复用）
+            # + 末条消息尾块（对话历史增量缓存：多轮编辑只付新增 token·不再整史全价重读）。
+            sys_blocks = [{'type': 'text', 'text': s, **({'cache_control': {'type': 'ephemeral'}} if i < 3 else {})}
+                          for i, s in enumerate(segments)]
+            msgs = [dict(m) for m in messages]
+            if msgs and isinstance(msgs[-1].get('content'), str):
+                msgs[-1]['content'] = [{'type': 'text', 'text': msgs[-1]['content'], 'cache_control': {'type': 'ephemeral'}}]
             body = json.dumps({
                 'model': model, 'max_tokens': max(max_tokens, 16000),
                 'thinking': {'type': 'adaptive'},
-                'system': [{'type': 'text', 'text': system, 'cache_control': {'type': 'ephemeral'}}],
-                'messages': messages,
+                'system': sys_blocks,
+                'messages': msgs,
             }).encode()
             fmt, timeout = 'anthropic', 300
         elif provider == 'local':
             url = os.environ.get('OLLAMA_URL', 'http://localhost:11434') + '/api/chat'
             headers = {'Content-Type': 'application/json'}
             body = json.dumps({'model': model, 'stream': False,
-                               'messages': [{'role': 'system', 'content': system}, *messages]}).encode()
+                               'messages': [{'role': 'system', 'content': system_str}, *messages]}).encode()
             fmt, timeout = 'ollama', 120
         else:  # OpenAI 兼容：qwen / deepseek / openai(+兼容端)
             url = _OPENAI_COMPAT_URLS.get(provider) or (
                 os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1') + '/chat/completions')
             headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {api_key}'}
             body = json.dumps({'model': model, 'max_tokens': max_tokens,
-                               'messages': [{'role': 'system', 'content': system}, *messages]}).encode()
+                               'messages': [{'role': 'system', 'content': system_str}, *messages]}).encode()
             fmt, timeout = 'openai', 60
         req = urllib.request.Request(url, data=body, headers=headers, method='POST')
         with urllib.request.urlopen(req, timeout=timeout) as resp:
