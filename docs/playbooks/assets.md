@@ -10,6 +10,7 @@
 |---|---|---|
 | AI 合理选材（贴图字段） | `art:` 引用 → `resolveArtRefs` | manifest 里写 `"art:skeleton warrior"`；加载前 `src/assembly/resolve-art-refs.ts` 用 `rankRecords` 确定性解析成真实 id（同库同排序器） |
 | 算「这局差哪些资产」 | `deriveAssetIndex` | `src/assembly/derive-asset-index.ts` 扫蓝图所有 `assetKey` 字段 → 生成购物单（与逻辑同源，根除 key 漂移） |
+| 对账「引用↔登记↔磁盘」是否一致 | `scripts/asset-reconcile.mjs` | 三方对账：登记有文件但磁盘没(dangling-file)/磁盘有文件但没登记(orphan-file)/spec 贴图键悬空(dangling-key)。`node scripts/asset-reconcile.mjs [<game>\|--all\|--shared\|--json]`·判词 `RECONCILE: PASS\|WARNINGS\|FAIL`+退出码 |
 | 从共享库导入一个资源 | `resource-manager` 技能 | vendor（copy）进游戏本地美术目录 + 登记本地索引 |
 | 逐游戏美术需求/生成/替换/换皮 | **美术平台**（ArtLedgerPanel·主屏 🎨 / 卡带「美术台账」入口）+ 大脑 `scripts/art-replace.mjs` + 风格包 `scripts/style-packs.json` | 台账 art-NN 编号 append-only·写回=manifest 重钉或 skinKey 别名·**全员必读终态档 `docs/design/art-platform-2026-07-09.md`** |
 | 加贴图/模型/图集/精灵表 | `asset-manager` agent | 维护 `assets/index.json` 单一真相 + 按类型填 spec |
