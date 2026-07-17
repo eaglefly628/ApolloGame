@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Card } from '@engine/protocol/components.js';
-import { replayDemoHand, showdownLog, describeAction, cardStr, type GameEvent } from './game-log.js';
+import { replayDemoHand, replayFullHand, showdownLog, describeAction, cardStr, type GameEvent } from './game-log.js';
 import type { BettingConfig } from './betting-engine.js';
 
 const CFG: BettingConfig = { smallBlind: 25, bigBlind: 50 };
@@ -48,6 +48,41 @@ describe('game-c game-log — 确定性事件流（查 bug 基石）', () => {
     expect(describeAction(1, { kind: 'check' }, 0)).toBe('大姨太(座1) 过牌');
     expect(describeAction(3, { kind: 'call' }, 50)).toBe('三姨太(座3) 跟注 50');
     expect(describeAction(0, { kind: 'raise', to: 150 }, 50)).toBe('主角(座0) 加注到 150');
+  });
+});
+
+describe('game-c game-log — 完整一手 replay（牌逻辑全程：发牌→摊牌→分池）', () => {
+  it('确定性：同 seed 逐字段一致；走满四街到摊牌', () => {
+    const a = replayFullHand(20260717, CFG);
+    const b = replayFullHand(20260717, CFG);
+    expect(a.rows).toEqual(b.rows);
+    expect(a.payouts).toEqual(b.payouts);
+    expect(a.board).toHaveLength(5); // 翻+转+河 5 张公共牌
+    expect(a.events.map((e) => e.text)).toEqual(b.events.map((e) => e.text));
+  });
+
+  it('摊牌牌逻辑：六家 holdemRank 排名·赢家拿底池·筹码守恒', () => {
+    const r = replayFullHand(20260717, CFG);
+    expect(r.rows).toHaveLength(6); // 六家全摊牌（全跟到河牌）
+    expect(r.potTotal).toBe(300); // 6×50
+    expect(r.winners.length).toBeGreaterThanOrEqual(1);
+    // 排名降序：rows[0] 是赢家之一
+    expect(r.winners).toContain(r.rows[0].seat);
+    // 分池守恒：payouts 总额 = 底池
+    const paid = Object.values(r.payouts).reduce((s, n) => s + n, 0);
+    expect(paid).toBe(300);
+    // 事件流覆盖四街 + 摊牌
+    const tags = r.events.map((e) => e.tag);
+    expect(tags.filter((t) => t === 'street')).toHaveLength(3); // 翻/转/河
+    expect(tags).toContain('showdown');
+    expect(r.events[r.events.length - 1].text).toContain('赢得底池');
+  });
+
+  it('赢家成牌 5 张 + 中文牌型（摊牌屏投影用）', () => {
+    const { rows, winners } = replayFullHand(20260717, CFG);
+    const champ = rows.find((x) => winners.includes(x.seat))!;
+    expect(champ.best).toHaveLength(5);
+    expect(champ.type).toBeTruthy();
   });
 });
 

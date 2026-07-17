@@ -2,7 +2,7 @@ import type { Card } from '@engine/protocol/components.js';
 import { cardFace } from './theme.js';
 import { dealHoldem, bestOf7, HOLDEM_TYPE_ORDER, holdemRank, type HoldemDeal, type HandRank } from './holdem-eval.js';
 import {
-  startHand, act, initialPositions, type BettingConfig, type HandState, type Action,
+  startHand, act, settle, initialPositions, type BettingConfig, type HandState, type Action,
 } from './betting-engine.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -67,6 +67,56 @@ export function replayDemoHand(seed: number, cfg: BettingConfig): {
   const heroHandType = HOLDEM_TYPE_ORDER[bestOf7([...deal.holes[0], ...flop]).value[0]];
   log('info', `▶ 轮到 主角(座${st.actor}) 行动 · 当前最优成牌 ${heroHandType}`);
   return { st, deal, flop, heroHandType, events };
+}
+
+// ── 完整一手 replay（发牌→翻→转→河→摊牌·牌逻辑全程可见·摊牌屏/查bug/M2 sim 共用）─────────
+export interface ShowdownRow { seat: number; name: string; type: string; best: Card[]; value: HandRank; }
+export interface FullHandResult {
+  deal: HoldemDeal; board: Card[];
+  rows: ShowdownRow[]; winners: number[]; payouts: Record<number, number>; potTotal: number;
+  events: GameEvent[];
+}
+const CN_TYPE: Record<string, string> = {
+  'high-card': '高牌', 'pair': '一对', 'two-pair': '两对', 'three-of-a-kind': '三条', 'straight': '顺子',
+  'flush': '同花', 'full-house': '葫芦', 'four-of-a-kind': '四条', 'straight-flush': '同花顺',
+};
+
+/** 跑完整一手到摊牌（全跟全过·确定性）：betting 状态机走满四街 → 六家 holdemRank 比牌 → settle 分池。
+ *  返回摊牌排名 + 赢家 + 分池 + 全程事件流。牌逻辑（7选5/kicker/比较/平分）在此完整运作，供摊牌屏投影。 */
+export function replayFullHand(seed: number, cfg: BettingConfig): FullHandResult {
+  const events: GameEvent[] = [];
+  let seq = 0;
+  const log = (tag: GameEvent['tag'], text: string): void => { events.push({ seq: seq++, tag, text }); };
+  const deal = dealHoldem(seed, 6);
+  log('deal', `🎲 发牌 · seed ${seed} · 6 席 · 各 1000`);
+  const seats = [0, 1, 2, 3, 4, 5].map((seat) => ({ seat, stack: 1000 }));
+  const st = startHand(cfg, seats, initialPositions([0, 1, 2, 3, 4, 5], 0));
+  log('blind', `🔵 小盲 座${st.pos.sb} ${cfg.smallBlind} · 大盲 座${st.pos.bb} ${cfg.bigBlind}`);
+  const step = (seat: number, a: Action): void => {
+    const toCall = st.currentBet - st.players.find((p) => p.seat === seat)!.committed;
+    act(st, seat, a); log('action', describeAction(seat, a, toCall));
+  };
+  for (const s of [3, 4, 5, 0, 1]) step(s, { kind: 'call' });
+  step(2, { kind: 'check' });
+  log('street', `🃏 翻牌 · ${cardsStr(deal.board.slice(0, 3))}`);
+  for (const s of [1, 2, 3, 4, 5, 0]) step(s, { kind: 'check' });
+  log('street', `🎴 转牌 · ${cardStr(deal.board[3])}`);
+  for (const s of [1, 2, 3, 4, 5, 0]) step(s, { kind: 'check' });
+  log('street', `🀄 河牌 · ${cardStr(deal.board[4])}`);
+  for (const s of [1, 2, 3, 4, 5, 0]) step(s, { kind: 'check' });
+  // 摊牌：六家 holdemRank 比牌（牌逻辑核心）。
+  const rows: ShowdownRow[] = st.players.filter((p) => !p.folded).map((p) => {
+    const r = holdemRank(deal.holes[p.seat], deal.board);
+    return { seat: p.seat, name: seatName(p.seat), type: CN_TYPE[HOLDEM_TYPE_ORDER[r.value[0]]] ?? '', best: r.best, value: r.value };
+  }).sort((a, b) => { for (let i = 0; i < Math.max(a.value.length, b.value.length); i++) { const d = (b.value[i] ?? 0) - (a.value[i] ?? 0); if (d) return d; } return a.seat - b.seat; });
+  const ranksMap = new Map<number, HandRank>(rows.map((r) => [r.seat, r.value]));
+  const potTotal = st.players.reduce((a, p) => a + p.total, 0);
+  const s = settle(st, ranksMap);
+  const winners = st.players.filter((p) => (s.payouts[p.seat] ?? 0) > 0).map((p) => p.seat).sort((a, b) => a - b);
+  for (const r of rows) log('showdown', `${winners.includes(r.seat) ? '🏆' : '·'} ${r.name} · ${r.type} · ${cardsStr(r.best)}`);
+  const champ = rows.find((r) => winners.includes(r.seat))!;
+  log('info', `💰 ${champ.name} 赢得底池 ${potTotal}`);
+  return { deal, board: deal.board, rows, winners, payouts: s.payouts, potTotal, events };
 }
 
 /** 摊牌结算日志（供 M4 摊牌屏/查bug用·纯读 ranks 排名）：多席按全序值排名成行。 */

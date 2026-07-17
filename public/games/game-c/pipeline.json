@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": " Test Files  5 passed (5) ·       Tests  65 passed (65)",
-      "at": "2026-07-17T17:39:11.696Z",
-      "gameHash": "fdb89c8c240988a9"
+      "summary": " Test Files  5 passed (5) ·       Tests  68 passed (68)",
+      "at": "2026-07-17T18:01:24.617Z",
+      "gameHash": "afa06d64daba0116"
     },
     "S5": {
       "exit": 0,
@@ -175,6 +175,18 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-07-17T17:39:11.804Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "牌逻辑完整化·hash变·机器侧重跑",
+      "at": "2026-07-17T18:01:23.237Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-17T18:01:24.617Z"
     }
   ],
   "outOfOrder": [
@@ -207,6 +219,11 @@
       "stage": "S5",
       "reason": "主菜单/日志正装·audit 红旗零·复查/人门待 owner 看四屏截图签",
       "at": "2026-07-17T17:39:11.758Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "牌逻辑完整化·hash变·机器侧重跑",
+      "at": "2026-07-17T18:01:23.237Z"
     }
   ],
   "reviews": {
