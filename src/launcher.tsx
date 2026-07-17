@@ -26,6 +26,7 @@ import { API, apiCall } from './launcher/api.js';
 import { useKeyframes, CartridgeCarousel } from './launcher/carousel.js';
 import { DevTools } from './launcher/devtools.js';
 import { GameRunner, BareListRetry } from './launcher/game-runner.js';
+import { ProfileCard } from './launcher/profile-card.js';
 
 // ══════════════════════════════════════
 //  Game Registry
@@ -203,6 +204,8 @@ export function Launcher() {
   const [pipeGame, setPipeGame] = useState<{ slug: string; title: string; kind?: 'builtin' | 'library' } | null>(null);
   // 设置面板（M3·状态灯点开）：BYO key + 测试连接。
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // 玩家档案卡（REQ-C-104·👤 点开）：名字 + 预设头像 → localStorage["apollo.playerProfile"]，游戏侧只读消费。
+  const [profileOpen, setProfileOpen] = useState(false);
   const [installing, setInstalling] = useState(false);
   // 顶栏 API 状态灯：读现有 providers 端点，任一**云** provider 配了 key → 绿，否则琥珀（local 不计·见 providerStatus）。
   //   config 里配了云 key 也算已连接——get_available_providers/get_api_key 已把 config 计入（优先级 config>env>.env），
@@ -421,8 +424,20 @@ export function Launcher() {
       padding: '36px 20px',
       fontFamily: SHELL.fontUi,
     }}>
-      {/* 顶栏 API 状态灯（右上角·M3 可点击→设置面板）——读 providers 端点：有 key 绿、无 key 琥珀。 */}
-      <div style={{ position: 'absolute', top: 18, right: 20 }}>
+      {/* 顶栏（右上角）：👤 玩家档案 + API 状态灯（M3 可点击→设置面板）。 */}
+      <div style={{ position: 'absolute', top: 18, right: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button
+          onClick={() => setProfileOpen(true)}
+          title="玩家档案：设主角名字 + 头像（游戏启动时以此身份呈现）"
+          aria-label="玩家档案"
+          style={{
+            padding: '6px 12px', borderRadius: 999, cursor: 'pointer', outline: 'none',
+            background: SHELL.violetWash, color: SHELL.violet, border: `1px solid ${SHELL.violetLine}`,
+            fontSize: 12, fontWeight: 600, letterSpacing: 0.5, fontFamily: SHELL.fontUi,
+          }}
+        >
+          👤 档案
+        </button>
         <StatusLight tone={statusLight.tone} label={statusLight.label} onClick={() => setSettingsOpen(true)} />
       </div>
 
@@ -673,6 +688,11 @@ export function Launcher() {
           onClose={() => setSettingsOpen(false)}
           onSaved={() => setProvidersRefresh((k) => k + 1)}
         />
+      )}
+
+      {/* 玩家档案卡（REQ-C-104·👤 点开）：名字 + 预设头像 → localStorage，游戏侧只读 getPlayerProfile 消费。 */}
+      {profileOpen && (
+        <ProfileCard onClose={() => setProfileOpen(false)} />
       )}
 
       {/* 新建入口双选卡（🗣 设计一个游戏 推荐 / ⚡ 快速生成）。 */}

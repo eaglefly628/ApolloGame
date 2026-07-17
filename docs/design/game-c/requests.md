@@ -16,6 +16,7 @@
 > **无任何玩家档案字段**；launcher/studio/manifest-game 均无现成通道——真缺口，非重组可解。
 > **建议方案**：meta（或 launcher 全局档案）加可选 `player` 字段 → 蓝图装配层读取 → 填 `Text`（姓名）/`Sprite.textureKey`（头像）/`WorldUI3D`（桌边铭牌）。头像图走资产索引（PA 线）。
 > **游戏侧不阻塞**：game-c 装配层先留 `PlayerCard` 注入点（默认档案兜底），通道落地即接。
+> **✅ 回执（Opus·PST 域施工·2026-07-17·待 Lead 对抗性验收）**：① 只读 API `src/services/profile/{profile-port,index}.ts`——`getPlayerProfile()` 读 `localStorage["apollo.playerProfile"]`，坏档/无档/headless 一律 null 不抛；`portrait` 仅进类型不读；兼容共享卡 `avatar` 字段归一到 `avatarUrl`；**无 setter=只读**，档案不进 sim/hash。② launcher 档案卡 `src/launcher/profile-card.tsx` + 顶栏 👤 入口（名字 + 10 枚预设 emoji 头像·存同键·无新增资产文件）。③ 消费口径=游戏 adapter 调 API（游戏目录未碰，属各 PE/GD）。④ 测试 12 例（service 7·launcher 5·含往返/坏档/无档/headless/入口接线）。门禁：tsc 0 · vitest 368 文件 2928 例全绿 · build 绿 · docs-ref/context-budget/component-manifest guard PASS。**未碰** games/skills/engine/apollo.py。
 
 ### REQ-C-ART-美术拍板包 · owner 2026-07-17 三拍板 Lead 落档（台账自此可开建） · 指派：GD-C（回填 gdd §7/§11-l）+ PA（风格包条目） · status: open · 优先级: P1
 > ① **风格锚=拉斯维加斯奢华 × 维多利亚**：风格包 id `vegas-victoriana`（PA 落 `scripts/style-packs.json`·锚 v1 Lead 草拟·owner 可配参考图精修）：
