@@ -7,11 +7,11 @@
 ### B-001 · 共享角色卡格式定稿 · [2026-07-17] · GD-B → **owner** · status: open · P1
 > ⚖ 格式 owner 晚点给。game-b 消费方字段需求已交：`character-card-format-needs.md`——请定稿时合并；定稿后 PE-B 对齐 adapter（假设 schema 落差在 adapter 吸收）。
 
-### B-002 · 日语音源包 · [2026-07-17] · GD-B → **owner** · status: open · P2
-> ⚖ owner 自备。规范与事件键=`voice-pack-spec.md`；核心五键（strip_lose/riichi/ron/tsumo/deal_in）优先。不阻塞开发（占位音+字幕先行）。
+### B-002 · 语音：TTS 先行·真配音后备 · [2026-07-17·同日改口] · GD-B → GD-B（台词表）+ owner（将来可选配音） · status: open · P2
+> ⚖ owner 同日更新：**音源包没有——先用语音合成发个音**。v1=TTS 档（speechSynthesis·ja-JP 朗读日文台词·参数见 voice-pack-spec §0）；GD-B 交台词表（B-005 并轨·日文列=朗读文本兼录音台本）。将来真人/AI 配音=可选升级，按 §1 规范灌入即换档。核心五键（strip_lose/riichi/ron/tsumo/deal_in）台词优先写。
 
 ### B-003 · 引擎缺口三件提单跟踪 · [2026-07-17] · GD-B → **LEAD**（S2 审时裁槽） · status: open · P1
-> capability-plan §2.5：a 采样音频播放端口（语音刚需）/ b BT 解释器（游戏层 TS 先行·记下沉债）/ c Camera3D 机位表切换语义（先查 registry 现有语义，缺再提 requests-3d）。主池 10/10 满——按"先清后加"由 Lead 排槽（GD-B 昨日 P3 去腐单可让位）。
+> capability-plan §2.5：a **语音输出端口两档**（① TTS=speechSynthesis 即时·② 采样 wav 后备·同接口·表现层旁路 headless 降级）/ b BT 解释器（游戏层 TS 先行·记下沉债）/ c Camera3D 机位表切换语义（先查 registry 现有语义，缺再提 requests-3d）。主池 10/10 满——按"先清后加"由 Lead 排槽（GD-B 昨日 P3 去腐单可让位）。
 
 ### B-004 · S2 计划过审 + S1 卡代填 · [2026-07-17] · GD-B → **LEAD**（审）+ PE-B（落卡） · status: open · P1
 > `capability-plan.md` 送审（⚖ TS 授权已记 §6）；过审后 S3 骨架开工（PE-B 领）。
