@@ -11,7 +11,7 @@
 
 import { mountUI, showToast, resolveBindings } from '@ui/components/index.js';
 import type { UITheme, UIDataSource, LayoutNode } from '@ui/components/index.js';
-import { buildGallery, modalOverlay, drawerOverlay, INITIAL_CONTROLS, type ControlsState } from './gallery.js';
+import { buildGallery, modalOverlay, drawerOverlay, INITIAL_CONTROLS, MODULE_NO, type ControlsState } from './gallery.js';
 import { buildHandlers } from './handlers.js';
 import { THEMES } from './themes.js';
 import { applyShop, INITIAL_SHOP, type ShopState } from './shop.js';
@@ -39,7 +39,7 @@ import { GAME_I_ASSETS } from './assets3d.js';
 
 // 渲染/仿真模块 → 蓝图 + 渲染后端（canvas/three）。进模块时宿主在 #sim-stage 上 init 引擎实时绘制。
 // blueprint 收 tune=现场调参档（REQ-DEMO-调参台）；不吃调参的蓝图签名兼容（TS 允许少参函数赋值）→ 忽略 tune。
-const SIM_MODULES: Record<string, { blueprint: (tune: Record<string, string>) => WorldBlueprint; backend: 'canvas' | 'three'; debug?: 'nav' | 'collider'; assets?: boolean }> = {
+const SIM_MODULES: Record<string, { blueprint: (tune: Record<string, string>, no: number) => WorldBlueprint; backend: 'canvas' | 'three'; debug?: 'nav' | 'collider'; assets?: boolean }> = {
   'mod-anim': { blueprint: animBlueprint, backend: 'canvas' },
   'mod-ai': { blueprint: aiBlueprint, backend: 'canvas' },
   'mod-3d': { blueprint: threeBlueprint, backend: 'three' },
@@ -273,7 +273,7 @@ export function mount(container: HTMLElement): () => void {
     }
     if (want && container && !stage) {
       const engine = new Engine({ tickRate: 60 });
-      engine.load(want.blueprint(controls.tune));
+      engine.load(want.blueprint(controls.tune, MODULE_NO.get(currentModule!) ?? 0)); // 传主编号→蓝图给子物挂 <no>-<i> 标签
       let renderer: RendererBackend;
       if (want.backend === 'three') {
         // glTF 模型模块需接 AssetManager：取 .glb 字节供 ThreeRenderer 解析（未就绪本帧不画·就绪后自动现）。

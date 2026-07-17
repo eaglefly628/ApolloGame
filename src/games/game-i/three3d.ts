@@ -36,6 +36,20 @@ export function pick3d<T>(map: Record<string, T>, key: string | undefined, def: 
   return map[key ?? def] ?? map[def]!;
 }
 
+// 子效果编号（owner：外主编号-里子编号·如 12-4）：给一批演示物挂世界空间数字标签 `<no>-<i>`（i 从 1 起·render-only
+// WorldUI3D·锚实体投影到屏幕）。已有名牌的（text3d/worldui）前缀编号保留原文。no=该效果的主编号（MODULE_NO·宿主传入）。
+function numberEnts(no: number, ents: Record<string, Ent>, keys: readonly string[], offsetY = 10): void {
+  keys.forEach((k, i) => {
+    const e = ents[k] as Record<string, unknown> | undefined;
+    if (!e) return;
+    const tag = `${no}-${i + 1}`;
+    const cur = e['WorldUI3D'] as { text?: string } | undefined;
+    e['WorldUI3D'] = cur
+      ? { ...cur, text: `${tag} · ${cur.text ?? ''}`.trim() }               // 已有名牌 → 前缀编号
+      : { text: tag, offsetY, size: 'sm', color: 'gold', glow: false };     // 纯编号标签
+  });
+}
+
 // 公共场景底：轨道相机 + 主光(投影)+ 环境光 + 天空 + 草地台。各蓝图在此之上加自己的演示物。
 // opts=现场可调档覆盖（缺省=原口径·所有旧调用方 sceneBase() 零变化）。
 function sceneBase(o: { sun?: number; amb?: number; camDist?: number } = {}): Record<string, Ent> {
@@ -52,46 +66,44 @@ function sceneBase(o: { sun?: number; amb?: number; camDist?: number } = {}): Re
 
 // ── ① 数据化光照 Light3D：定向主光投影 + 环境补光，盒阵 + 一只缓转金盒（各面随光明暗·光照是数据）。
 //     tune=现场调参档（l.sun 主光强 / l.amb 环境光 / l.cam 相机距）——改档即改数据、渲染器自动读，无一行代码。
-export function light3dBlueprint(tune: Record<string, string> = {}): WorldBlueprint {
+export function light3dBlueprint(tune: Record<string, string> = {}, no = 0): WorldBlueprint {
   const sun = pick3d({ low: 0.55, mid: 1.55, high: 2.9 }, tune['l.sun'], 'mid');
   const amb = pick3d({ low: 0.12, mid: 0.42, high: 0.95 }, tune['l.amb'], 'mid');
   const camDist = pick3d({ near: 68, mid: 96, far: 132 }, tune['l.cam'], 'mid');
-  return {
-    capabilities: [transformCapability, tweenCapability],
-    entities: {
-      ...sceneBase({ sun, amb, camDist }),
-      'pillar-a': box(-18, 6, -6, 8, 16, 8, 0x8d6e63, 0x5d4037),
-      'pillar-b': box(16, 4, 8, 10, 12, 10, 0xa1887f, 0x6d4c41),
-      'slab': box(0, 1, 18, 22, 2, 8, 0xb0bec5, 0x78909c),
-      spinner: {
-        Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
-        Transform3D: { x: 0, y: 7, z: 0, rotY: 0 },
-        Mesh3D: { shape: 'box', width: 12, height: 12, depth: 12, frontTint: 0xe7c96a, backTint: 0xe7c96a, edgeTint: 0xb8932f, flipAxis: 'y' },
-        Tween: { target: 'Transform.rotation', from: 0, to: TWO_PI, elapsed: 0, duration: 200, easing: 'linear', done: false, loop: 'restart' },
-      },
+  const ents: Record<string, Ent> = {
+    ...sceneBase({ sun, amb, camDist }),
+    'pillar-a': box(-18, 6, -6, 8, 16, 8, 0x8d6e63, 0x5d4037),
+    'pillar-b': box(16, 4, 8, 10, 12, 10, 0xa1887f, 0x6d4c41),
+    'slab': box(0, 1, 18, 22, 2, 8, 0xb0bec5, 0x78909c),
+    spinner: {
+      Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
+      Transform3D: { x: 0, y: 7, z: 0, rotY: 0 },
+      Mesh3D: { shape: 'box', width: 12, height: 12, depth: 12, frontTint: 0xe7c96a, backTint: 0xe7c96a, edgeTint: 0xb8932f, flipAxis: 'y' },
+      Tween: { target: 'Transform.rotation', from: 0, to: TWO_PI, elapsed: 0, duration: 200, easing: 'linear', done: false, loop: 'restart' },
     },
   };
+  numberEnts(no, ents, ['pillar-a', 'pillar-b', 'slab', 'spinner']);
+  return { capabilities: [transformCapability, tweenCapability], entities: ents };
 }
 
 // ── ② 移轴景深 + 泛光 Post3D：同场景叠 EffectComposer——中段清晰、上下虚化(微缩盒庭感) + 亮处泛光。
-export function post3dBlueprint(): WorldBlueprint {
-  return {
-    capabilities: [transformCapability, tweenCapability],
-    entities: {
-      ...sceneBase(),
-      post: { Post3D: { tiltShift: { focus: 0.52, intensity: 3.6 }, bloom: { strength: 0.7, radius: 0.5, threshold: 0.72 } } },
-      'c1': box(-22, 3, 4, 8, 8, 8, 0xff7043, 0xe64a19),
-      'c2': box(-8, 5, -8, 8, 12, 8, 0x42a5f5, 0x1e88e5),
-      'c3': box(8, 4, 6, 8, 10, 8, 0x66bb6a, 0x43a047),
-      'c4': box(22, 6, -4, 8, 14, 8, 0xffca28, 0xffa000),
-      glow: {
-        Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
-        Transform3D: { x: 0, y: 12, z: 0 },
-        Mesh3D: { shape: 'box', width: 6, height: 6, depth: 6, frontTint: 0xfff6c0, backTint: 0xfff6c0, edgeTint: 0xffffff },
-        Tween: { target: 'Transform3D.y', from: 10, to: 16, elapsed: 0, duration: 70, easing: 'easeInOut', done: false, loop: 'pingpong' },
-      },
+export function post3dBlueprint(_tune: Record<string, string> = {}, no = 0): WorldBlueprint {
+  const ents: Record<string, Ent> = {
+    ...sceneBase(),
+    post: { Post3D: { tiltShift: { focus: 0.52, intensity: 3.6 }, bloom: { strength: 0.7, radius: 0.5, threshold: 0.72 } } },
+    'c1': box(-22, 3, 4, 8, 8, 8, 0xff7043, 0xe64a19),
+    'c2': box(-8, 5, -8, 8, 12, 8, 0x42a5f5, 0x1e88e5),
+    'c3': box(8, 4, 6, 8, 10, 8, 0x66bb6a, 0x43a047),
+    'c4': box(22, 6, -4, 8, 14, 8, 0xffca28, 0xffa000),
+    glow: {
+      Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
+      Transform3D: { x: 0, y: 12, z: 0 },
+      Mesh3D: { shape: 'box', width: 6, height: 6, depth: 6, frontTint: 0xfff6c0, backTint: 0xfff6c0, edgeTint: 0xffffff },
+      Tween: { target: 'Transform3D.y', from: 10, to: 16, elapsed: 0, duration: 70, easing: 'easeInOut', done: false, loop: 'pingpong' },
     },
   };
+  numberEnts(no, ents, ['c1', 'c2', 'c3', 'c4', 'glow']);
+  return { capabilities: [transformCapability, tweenCapability], entities: ents };
 }
 
 // ── ③ 3D 寻路 navmesh（REQ-3D-Nav 自动烘焙）：NavMesh 罩草地，障碍自动栅格化织图，追兵 NavAgent 绕障逼近巡逻目标。
@@ -189,26 +201,25 @@ export function text3dBlueprint(): WorldBlueprint {
 }
 
 // ── ⑦ 环境光遮蔽 AO（Post3D.ao·GTAO）：紧挨的盒堆，接触缝隙被压暗 → 厚重接地的盒庭玩具感。
-export function ao3dBlueprint(): WorldBlueprint {
-  return {
-    capabilities: [transformCapability],
-    entities: {
-      ...sceneBase(),
-      // 强 AO + 关泛光，凸显接触压暗（缝隙/墙根变深）。
-      post: { Post3D: { ao: { intensity: 1.4, radius: 5, scale: 1 } } },
-      // 紧挨成簇的盒堆（多接触面 = AO 最显处）。
-      'b1': box(-6, 3, -6, 10, 6, 10, 0xd7ccc8, 0xa1887f),
-      'b2': box(5, 3, -5, 9, 6, 9, 0xcfd8dc, 0x90a4ae),
-      'b3': box(-4, 3, 6, 8, 6, 8, 0xe0e0e0, 0xbdbdbd),
-      'b4': box(7, 9, 4, 7, 6, 7, 0xffe0b2, 0xffb74d),
-      'tower': box(0, 12, 0, 6, 18, 6, 0xb0bec5, 0x78909c),
-    },
+export function ao3dBlueprint(_tune: Record<string, string> = {}, no = 0): WorldBlueprint {
+  const ents: Record<string, Ent> = {
+    ...sceneBase(),
+    // 强 AO + 关泛光，凸显接触压暗（缝隙/墙根变深）。
+    post: { Post3D: { ao: { intensity: 1.4, radius: 5, scale: 1 } } },
+    // 紧挨成簇的盒堆（多接触面 = AO 最显处）。
+    'b1': box(-6, 3, -6, 10, 6, 10, 0xd7ccc8, 0xa1887f),
+    'b2': box(5, 3, -5, 9, 6, 9, 0xcfd8dc, 0x90a4ae),
+    'b3': box(-4, 3, 6, 8, 6, 8, 0xe0e0e0, 0xbdbdbd),
+    'b4': box(7, 9, 4, 7, 6, 7, 0xffe0b2, 0xffb74d),
+    'tower': box(0, 12, 0, 6, 18, 6, 0xb0bec5, 0x78909c),
   };
+  numberEnts(no, ents, ['b1', 'b2', 'b3', 'b4', 'tower']);
+  return { capabilities: [transformCapability], entities: ents };
 }
 
 // ── ⑧ 数据驱动 3D 粒子 Vfx3D（TA「Niagara-lite」·render-only）：锥形喷泉，重力回落、size/color over life、加色发光。
 //      区别于 ⑤(prefab→Mesh3D 那套)：Vfx3D 是专门的发射器闭集模块，一个组件就是一台粒子机。
-export function vfx3dBlueprint(): WorldBlueprint {
+export function vfx3dBlueprint(_tune: Record<string, string> = {}, no = 0): WorldBlueprint {
   const fountain = (x: number, z: number, color: number, speed: number): Ent => ({
     Transform3D: { x, y: 2, z },
     Vfx3D: {
@@ -220,20 +231,19 @@ export function vfx3dBlueprint(): WorldBlueprint {
       blend: 'add',
     },
   });
-  return {
-    capabilities: [transformCapability],
-    entities: {
-      ...sceneBase(),
-      // 暗暮天空衬发光粒子；bloom 收紧（radius 0.3·strength 0.7·高阈值）→ 是「亮点」不是「雾」。
-      sky: { Sky3D: { top: 0x0a0e1f, bottom: 0x241a33, clouds: false } },
-      sun: { Light3D: { kind: 'directional', color: 0x6a7fd0, intensity: 0.6, castShadow: true } },
-      fill: { Light3D: { kind: 'ambient', color: 0x2a3350, intensity: 0.55 } },
-      post: { Post3D: { bloom: { strength: 0.7, radius: 0.3, threshold: 0.82 }, aa: true } },
-      'fx-gold': fountain(-16, 0, 0xffd86b, 16),
-      'fx-jade': fountain(0, -4, 0x6cf0d0, 19),
-      'fx-rose': fountain(16, 0, 0xff7ab0, 16),
-    },
+  const ents: Record<string, Ent> = {
+    ...sceneBase(),
+    // 暗暮天空衬发光粒子；bloom 收紧（radius 0.3·strength 0.7·高阈值）→ 是「亮点」不是「雾」。
+    sky: { Sky3D: { top: 0x0a0e1f, bottom: 0x241a33, clouds: false } },
+    sun: { Light3D: { kind: 'directional', color: 0x6a7fd0, intensity: 0.6, castShadow: true } },
+    fill: { Light3D: { kind: 'ambient', color: 0x2a3350, intensity: 0.55 } },
+    post: { Post3D: { bloom: { strength: 0.7, radius: 0.3, threshold: 0.82 }, aa: true } },
+    'fx-gold': fountain(-16, 0, 0xffd86b, 16),
+    'fx-jade': fountain(0, -4, 0x6cf0d0, 19),
+    'fx-rose': fountain(16, 0, 0xff7ab0, 16),
   };
+  numberEnts(no, ents, ['fx-gold', 'fx-jade', 'fx-rose'], 6);
+  return { capabilities: [transformCapability], entities: ents };
 }
 
 // ── ⑬ 导入式 glTF 模型 Model3D（P3D·box 原语表达不了圆润模型→真模型）：几只小黄鸭（不同缩放/染色）+ 盒模型，
@@ -262,28 +272,27 @@ export function model3dBlueprint(): WorldBlueprint {
 
 // ── ⑨ PBR 材质预设 Material3D（TA Phase 5）：一排盒各挂一个 PBR 预设（金/钢/铜/玻璃/木/岩/自发光）——
 //      金属反光、玻璃透射、哑光，全是数据选预设。叠 Post3D 调色(暖电影感) + 抗锯齿。
-export function material3dBlueprint(): WorldBlueprint {
+export function material3dBlueprint(_tune: Record<string, string> = {}, no = 0): WorldBlueprint {
   const slab = (x: number, preset: string, color: number, extra: Record<string, unknown> = {}): Ent => ({
     Transform3D: { x, y: 6, z: 0 },
     Mesh3D: { shape: 'box', width: 9, height: 12, depth: 9, frontTint: color, backTint: color, edgeTint: color },
     Material3D: { preset, ...extra },
   });
-  return {
-    capabilities: [transformCapability],
-    entities: {
-      ...sceneBase(),
-      cam: { Camera3D: { yaw: 0.62, pitch: 0.34, distance: 110, pivotY: 6, fov: 38, pitchMin: 0.1, pitchMax: 1.4 } },
-      post: { Post3D: { grade: { exposure: 1.05, contrast: 1.08, saturation: 1.15, tint: 0xffe7c2 }, aa: true } },
-      // IBL 已开（sceneBase env:1）→ 纯金属预设直接反射环境、显真金属光泽，无需 metalness 绕法。
-      'm-gold': slab(-40, 'gold', 0xffc64a),
-      'm-steel': slab(-27, 'steel', 0x8a8d92),
-      'm-copper': slab(-14, 'copper', 0xb87333),
-      'm-glass': slab(-1, 'glass', 0x8fe9f0, { color: 0x8fe9f0 }),
-      'm-wood': slab(12, 'wood', 0x9c6b3f),
-      'm-rock': slab(25, 'rock', 0x8d8f92),
-      'm-emit': slab(38, 'emissive', 0x222222, { emissive: 0xffd86b, emissiveIntensity: 1.8 }),
-    },
+  const ents: Record<string, Ent> = {
+    ...sceneBase(),
+    cam: { Camera3D: { yaw: 0.62, pitch: 0.34, distance: 110, pivotY: 6, fov: 38, pitchMin: 0.1, pitchMax: 1.4 } },
+    post: { Post3D: { grade: { exposure: 1.05, contrast: 1.08, saturation: 1.15, tint: 0xffe7c2 }, aa: true } },
+    // IBL 已开（sceneBase env:1）→ 纯金属预设直接反射环境、显真金属光泽，无需 metalness 绕法。
+    'm-gold': slab(-40, 'gold', 0xffc64a),
+    'm-steel': slab(-27, 'steel', 0x8a8d92),
+    'm-copper': slab(-14, 'copper', 0xb87333),
+    'm-glass': slab(-1, 'glass', 0x8fe9f0, { color: 0x8fe9f0 }),
+    'm-wood': slab(12, 'wood', 0x9c6b3f),
+    'm-rock': slab(25, 'rock', 0x8d8f92),
+    'm-emit': slab(38, 'emissive', 0x222222, { emissive: 0xffd86b, emissiveIntensity: 1.8 }),
   };
+  numberEnts(no, ents, ['m-gold', 'm-steel', 'm-copper', 'm-glass', 'm-wood', 'm-rock', 'm-emit']);
+  return { capabilities: [transformCapability], entities: ents };
 }
 
 // ── ⑫ 程序化表面细节 Material3D.surface（TA Phase 5·零美术文件）：渲染器按数据生成 normal/roughness 贴图——
@@ -360,7 +369,7 @@ export function fog3dBlueprint(tune: Record<string, string> = {}): WorldBlueprin
 // ── ⑭ 圆润图元 Mesh3D.shape（P3D REQ-3D-交互补全批②·box 之外的 4 种 three 内建原语）：一排七图元
 //      box / plane / sphere / cylinder / cone / capsule / torus 并列——圆润件走 three 内建几何(单材质单色)、各自缓转 + 头顶名牌。
 //      参数口径（render.ts 注）：圆润件 width=直径·height=柱/锥高(球忽略取 width 作正球)·torus tube=管半径占主半径比。
-export function primitives3dBlueprint(): WorldBlueprint {
+export function primitives3dBlueprint(_tune: Record<string, string> = {}, no = 0): WorldBlueprint {
   const prim = (x: number, shape: Prim, tint: number, name: string, extra: Record<string, unknown> = {}): Ent => ({
     Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
     Transform3D: { x, y: 8, z: 0, rotY: 0 },
@@ -368,20 +377,19 @@ export function primitives3dBlueprint(): WorldBlueprint {
     Tween: { target: 'Transform3D.rotY', from: 0, to: TWO_PI, elapsed: 0, duration: 260, easing: 'linear', done: false, loop: 'restart' },
     WorldUI3D: { text: name, offsetY: 13, size: 'sm', glow: true },
   });
-  return {
-    capabilities: [transformCapability, tweenCapability],
-    entities: {
-      ...sceneBase(),
-      cam: { Camera3D: { yaw: 0.58, pitch: 0.38, distance: 122, pivotY: 6, fov: 40, pitchMin: 0.1, pitchMax: 1.42 } },
-      'p-box': prim(-42, 'box', 0xef5350, 'box', { depth: 10 }),        // box：有厚度·正反面可分色
-      'p-plane': prim(-28, 'plane', 0xffa726, 'plane'),                 // plane：双面薄片
-      'p-sphere': prim(-14, 'sphere', 0x66bb6a, 'sphere'),              // sphere：正球(忽略 height)
-      'p-cyl': prim(0, 'cylinder', 0x42a5f5, 'cylinder'),               // cylinder：柱(width=直径·height=柱高)
-      'p-cone': prim(14, 'cone', 0xab47bc, 'cone'),                     // cone：锥
-      'p-cap': prim(28, 'capsule', 0x26c6da, 'capsule'),               // capsule：胶囊
-      'p-torus': prim(42, 'torus', 0xffca28, 'torus', { tube: 0.42 }), // torus：环(tube=管半径比)
-    },
+  const ents: Record<string, Ent> = {
+    ...sceneBase(),
+    cam: { Camera3D: { yaw: 0.58, pitch: 0.38, distance: 122, pivotY: 6, fov: 40, pitchMin: 0.1, pitchMax: 1.42 } },
+    'p-box': prim(-42, 'box', 0xef5350, 'box', { depth: 10 }),        // box：有厚度·正反面可分色
+    'p-plane': prim(-28, 'plane', 0xffa726, 'plane'),                 // plane：双面薄片
+    'p-sphere': prim(-14, 'sphere', 0x66bb6a, 'sphere'),              // sphere：正球(忽略 height)
+    'p-cyl': prim(0, 'cylinder', 0x42a5f5, 'cylinder'),               // cylinder：柱(width=直径·height=柱高)
+    'p-cone': prim(14, 'cone', 0xab47bc, 'cone'),                     // cone：锥
+    'p-cap': prim(28, 'capsule', 0x26c6da, 'capsule'),               // capsule：胶囊
+    'p-torus': prim(42, 'torus', 0xffca28, 'torus', { tube: 0.42 }), // torus：环(tube=管半径比)
   };
+  numberEnts(no, ents, ['p-box', 'p-plane', 'p-sphere', 'p-cyl', 'p-cone', 'p-cap', 'p-torus']);
+  return { capabilities: [transformCapability, tweenCapability], entities: ents };
 }
 
 // ── ⑮ 世界空间富 UI 面板 WorldUI3D.node（P3D REQ-3D-世界空间UI·#1 面板 + #2 跟随单位）：3D 单位头顶挂**整棵 LayoutNode**
