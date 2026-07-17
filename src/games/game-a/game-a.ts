@@ -23,7 +23,7 @@ export function mount(container: HTMLElement): () => void {
 
   let ui: MountHandle | null = null;
   let session: GuandanSession | null = null;
-  let selected: number[] = [];
+  let selected: number[] = []; // 选中手牌**下标**（非牌码·避同码联动）
   let aiTimer: ReturnType<typeof setTimeout> | null = null;
 
   const seatSpec = (id: SeatId): SeatView['seat'] => SEATS.find((s) => s.id === id)!;
@@ -40,10 +40,16 @@ export function mount(container: HTMLElement): () => void {
     }
   }
 
+  // 选中下标 → 牌码（去重后按当前手牌取·下标越界丢弃）。
+  function selectedCodes(s: GuandanSession): number[] {
+    const hand = s.hands.hero;
+    return selected.filter((i) => i >= 0 && i < hand.length).map((i) => hand[i]);
+  }
+
   // ── 合法性投影（禁用态/原因·纯读 session·判型在 sim）──────────────────────────
   function commitState(s: GuandanSession): { canCommit: boolean; why: string } {
     if (selected.length === 0) return { canCommit: false, why: '点牌选中 · 出牌或过' };
-    const chk = s.legalCheck('hero', selected);
+    const chk = s.legalCheck('hero', selectedCodes(s));
     return { canCommit: chk.ok, why: chk.ok ? '' : (chk.why ?? '不合法') };
   }
 
@@ -135,15 +141,17 @@ export function mount(container: HTMLElement): () => void {
     'table.back': () => showMenu(),
     'hand.toggle': (arg?: string) => {
       if (!session || session.turn !== 'hero') return;
-      const code = Number(arg);
-      const i = selected.indexOf(code);
+      const idx = Number(arg); // 手牌下标（非牌码·同码牌各占独立下标·不联动）
+      if (!Number.isInteger(idx) || idx < 0 || idx >= session.hands.hero.length) return;
+      const i = selected.indexOf(idx);
       if (i >= 0) selected.splice(i, 1);
-      else selected.push(code);
+      else selected.push(idx);
       render();
     },
     'play.commit': () => {
       if (!session || session.turn !== 'hero') return;
-      if (session.act('hero', [...selected])) {
+      const codes = selectedCodes(session);
+      if (session.act('hero', codes)) {
         selected = [];
         render();
         scheduleAi();
@@ -159,8 +167,16 @@ export function mount(container: HTMLElement): () => void {
     },
     'play.hint': () => {
       if (!session || session.turn !== 'hero') return;
-      const hint = session.hint('hero');
-      selected = hint ?? [];
+      const hintCodes = session.hint('hero');
+      // 牌码 → 下标（消耗式映射·同码取不同下标·不重复选同一张）
+      selected = [];
+      if (hintCodes) {
+        const hand = session.hands.hero;
+        for (const code of hintCodes) {
+          const i = hand.findIndex((c, k) => c === code && !selected.includes(k));
+          if (i >= 0) selected.push(i);
+        }
+      }
       render();
     },
     'round.next': () => {

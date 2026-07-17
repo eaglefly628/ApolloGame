@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": " Test Files  3 passed (3) ·       Tests  27 passed (27)",
-      "at": "2026-07-17T15:09:19.922Z",
-      "gameHash": "e8a467c44dfa5461"
+      "summary": " Test Files  3 passed (3) ·       Tests  31 passed (31)",
+      "at": "2026-07-17T15:34:20.578Z",
+      "gameHash": "bececa756847a34f"
     }
   },
   "history": [
@@ -87,6 +87,18 @@
       "stage": "S4",
       "verdict": "PASS",
       "at": "2026-07-17T15:19:32.073Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE-A bug 修复批·31 测全绿（含卡死回归）；复查门待另开 session",
+      "at": "2026-07-17T15:34:18.494Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-17T15:34:20.578Z"
     }
   ],
   "reviews": {
@@ -117,6 +129,11 @@
       "stage": "S4",
       "reason": "PE-A 机器侧先行·S4 walkthrough 27 测全绿；复查门待另开复查 session（三门制·照 game-t/c 先例）",
       "at": "2026-07-17T15:09:17.803Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "PE-A bug 修复批·31 测全绿（含卡死回归）；复查门待另开 session",
+      "at": "2026-07-17T15:34:18.494Z"
     }
   ]
 }

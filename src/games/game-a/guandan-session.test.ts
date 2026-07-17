@@ -17,7 +17,8 @@ function mkTrick(seat: SeatId, codes: number[], level = 2): TrickPlay {
 }
 
 // 一局自动跑到底（三家 AI + hero 也用 AI 策略代打·纯确定性）→ 收敛到结算/终局。
-function autoRun(s: GuandanSession, cap = 4000): void {
+// 返回步数（用于卡死检测：收敛应远小于 cap）。
+function autoRun(s: GuandanSession, cap = 4000): number {
   let guard = 0;
   while (s.phase === 'playing' && guard++ < cap) {
     if (s.turn === 'hero') {
@@ -27,6 +28,12 @@ function autoRun(s: GuandanSession, cap = 4000): void {
       s.aiStep();
     }
   }
+  return guard;
+}
+
+// 活跃座 = 手里仍有牌。turn 永远指向活跃座（除非盘/run 已终）——防「轮转指向出光座 → 卡死」回归。
+function turnIsActive(s: GuandanSession): boolean {
+  return s.hands[s.turn].length > 0;
 }
 
 describe('Game A ·《掼蛋夜宴》S4 盘循环', () => {
@@ -251,6 +258,73 @@ describe('Game A ·《掼蛋夜宴》S4 盘循环', () => {
     expect(res('wallet')).toBe(s.wallets.hero);
     expect(res('level-ours')).toBe(s.levels[0]);
     expect(res('dress-west')).toBe(s.dress.west);
+  });
+
+  // ── 卡死回归（owner 报「两家出光后卡死」）──────────────────────────────────────
+  it('不卡死：50 seed 整盘自动跑均收敛（步数远小于 cap）·turn 每步指向活跃座', () => {
+    for (let seed = 1; seed <= 50; seed++) {
+      const s = new GuandanSession({ seed, tier: seed % 4 === 0 ? 'l4' : 'l2' });
+      let guard = 0;
+      while (s.phase === 'playing' && guard++ < 4000) {
+        expect(turnIsActive(s), `seed ${seed} 第 ${guard} 步 turn=${s.turn} 指向出光座`).toBe(true);
+        if (s.turn === 'hero') s.act('hero', s.hint('hero'));
+        else s.aiStep();
+      }
+      expect(guard, `seed ${seed} 未收敛（疑卡死）`).toBeLessThan(4000);
+      expect(['settled', 'run-won', 'run-lost']).toContain(s.phase);
+    }
+  });
+
+  it('不卡死：持墩者出光后队友接风·剩两家不同队继续打到盘终', () => {
+    const s = new GuandanSession({ seed: 5 });
+    // 造：hero 领出对 3 出光（模拟持墩者出光），队友/对手继续
+    s.turn = 'hero';
+    s.currentTrick = null;
+    s.hands.hero = [cardCode(0, 3), cardCode(1, 3)];
+    s.hands.partner = [cardCode(0, 5), cardCode(1, 5), cardCode(0, 9)];
+    s.hands.west = [cardCode(2, 6), cardCode(3, 6), cardCode(0, 10)];
+    s.hands.east = [cardCode(2, 8), cardCode(3, 8), cardCode(0, 13)];
+    s.act('hero', [cardCode(0, 3), cardCode(1, 3)]); // hero 出光（对 3）
+    expect(s.hands.hero.length).toBe(0);
+    // 继续跑到盘终·全程 turn 不指向 hero（已出光）
+    let guard = 0;
+    while (s.phase === 'playing' && guard++ < 500) {
+      expect(s.turn, '出光的 hero 不该再轮到').not.toBe('hero');
+      expect(turnIsActive(s)).toBe(true);
+      s.aiStep(); // 剩余全是 AI 座
+    }
+    expect(guard).toBeLessThan(500);
+    expect(s.lastResult!.ranking[0]).toBe('hero'); // hero 头游（首个出光）
+  });
+
+  // ── 三同张可出（owner 报「点三张只能出一对」根因=选牌联动·sim 层判型正确）────────
+  it('三同张 triple 领出合法·四张同点=炸弹（非三带一）', () => {
+    const s = new GuandanSession({ seed: 3 });
+    s.turn = 'hero';
+    s.currentTrick = null;
+    s.hands.hero = [cardCode(0, 9), cardCode(1, 9), cardCode(2, 9), cardCode(0, 4)];
+    // 点三张 9 → triple（sim 接受）
+    expect(s.legalCheck('hero', [cardCode(0, 9), cardCode(1, 9), cardCode(2, 9)]).match?.family).toBe('triple');
+    // 四张 9 → bomb（非三带一·四张同点是炸弹）
+    s.hands.hero = [cardCode(0, 9), cardCode(1, 9), cardCode(2, 9), cardCode(3, 9)];
+    expect(s.legalCheck('hero', [cardCode(0, 9), cardCode(1, 9), cardCode(2, 9), cardCode(3, 9)]).match?.family).toBe('bomb');
+  });
+
+  // ── 出牌日志（owner 诊断·每手一条·family/tier 正确）──────────────────────────────
+  it('playLog：每手出牌/过各记一条·family/tier 与判型一致·压过记录旧墩', () => {
+    const s = new GuandanSession({ seed: 5 });
+    s.turn = 'hero';
+    s.currentTrick = null;
+    s.hands.hero = [cardCode(0, 6), cardCode(1, 6)];
+    s.hands.west = [cardCode(2, 9), cardCode(3, 9), cardCode(0, 2)];
+    s.playLog = [];
+    s.act('hero', [cardCode(0, 6), cardCode(1, 6)]); // 领出对 6
+    s.act('west', [cardCode(2, 9), cardCode(3, 9)]); // 对 9 压过对 6
+    const lead = s.playLog[0];
+    expect(lead).toMatchObject({ seat: 'hero', action: 'lead', family: 'pair', tier: 0, beatWhat: null });
+    const follow = s.playLog[1];
+    expect(follow).toMatchObject({ seat: 'west', action: 'follow', family: 'pair', tier: 0 });
+    expect(follow.beatWhat).toContain('对子'); // 压过的旧墩描述
   });
 });
 

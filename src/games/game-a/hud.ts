@@ -198,7 +198,7 @@ export interface PlayView {
   turnName: string;
   seats: { partner: SeatView; west: SeatView; east: SeatView; hero: SeatView };
   hand: number[]; // hero 手牌牌码（已排序）
-  selected: number[]; // 已选牌码
+  selected: number[]; // 已选手牌**下标**（非牌码——两副牌同码会联动误选，故按 idx 标识）
   trick: { name: string; family: string; cards: number[] } | null; // 当前墩
   canCommit: boolean; // 选牌构成合法且能压
   commitWhy: string; // 不可出的原因（禁用提示）
@@ -213,10 +213,11 @@ function trickCard(code: number, idx: number): LayoutNode {
 }
 function handCard(code: number, idx: number, selected: boolean): LayoutNode {
   const f = cardFace(code);
+  // actionArg=手牌**下标**（非牌码）：两副牌里同花同点牌牌码相同，用牌码会让点一张联动选中同码另一张。
   return {
     type: 'PlayingCard',
     id: `a-hand-${idx}`,
-    props: { rank: f.rank, suit: f.suit, face: 'dark', size: 'md', selected, action: 'hand.toggle', actionArg: String(code) },
+    props: { rank: f.rank, suit: f.suit, face: 'dark', size: 'md', selected, action: 'hand.toggle', actionArg: String(idx) },
   };
 }
 
@@ -286,7 +287,7 @@ export function buildPlay(v: PlayView): LayoutNode {
             id: 'a-p-hand',
             props: { bare: true },
             layout: { direction: 'row', justify: 'center', gap: 2, align: 'end' },
-            children: v.hand.map((c, i) => handCard(c, i, v.selected.includes(c))),
+            children: v.hand.map((c, i) => handCard(c, i, v.selected.includes(i))),
           },
           {
             type: 'Panel',

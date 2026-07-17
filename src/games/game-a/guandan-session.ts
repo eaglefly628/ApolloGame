@@ -34,6 +34,37 @@ export const FAMILY_CN: Record<string, string> = {
   tube: '三连对', plate: '钢板', bomb: '炸弹', 'straight-flush': '同花顺', sky: '四大天王',
 };
 
+// ── 诊断日志（owner 调试期·浏览器 F12 console 对照出牌 ↔ 判型）─────────────────────
+// 浏览器默认开（owner 对照牌型）；测试环境默认静音（门禁输出干净）。运行时可 setPlayDebug 切换。
+let PLAY_DEBUG = typeof process === 'undefined' || !process.env?.VITEST;
+export function setPlayDebug(on: boolean): void {
+  PLAY_DEBUG = on;
+}
+const SUIT_GLYPH = ['♠', '♥', '♦', '♣'];
+const RANK_GLYPH: Record<number, string> = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A', 15: '小王', 16: '大王' };
+/** 牌码 → 可读（♠9 / 大王）。 */
+export function fmtCardCode(code: number): string {
+  const r = codeRank(code);
+  if (r >= 15) return RANK_GLYPH[r];
+  return `${SUIT_GLYPH[codeSuit(code)]}${RANK_GLYPH[r] ?? r}`;
+}
+/** 一手牌 → 可读串（供日志/调试）。 */
+export function fmtHand(codes: readonly number[]): string {
+  return codes.map(fmtCardCode).join(' ');
+}
+
+// 出牌日志条目（宿主可读·也 console 输出）。
+export interface PlayLogEntry {
+  round: number;
+  seat: SeatId;
+  seatName: string;
+  action: 'lead' | 'follow' | 'pass';
+  cards: number[];
+  family: string | null; // 判型（pass=null）
+  tier: number | null;
+  beatWhat: string | null; // 压过的当前墩描述（领出/pass=null）
+}
+
 export interface TrickPlay {
   seat: SeatId;
   cards: number[];
@@ -89,8 +120,10 @@ export class GuandanSession {
   lastFirstTeam: 0 | 1 = 0;
   turn: SeatId = 'hero';
   currentTrick: TrickPlay | null = null;
-  /** 本墩持牌者之后仍待表态的活动座（空=收墩）。 */
-  private stillToAct: SeatId[] = [];
+  /** 本墩已应对（过牌/被压后再表态）的座位计数。 */
+  private responded = 0;
+  /** 本墩需应对的活跃座数（=除持墩者外的活跃座）；responded 达此数即收墩。 */
+  private respondersNeeded = 0;
   tributes: TributeRecord[] = [];
   resisted = false; // 本盘抗贡
   lastResult: RoundResult | null = null;
@@ -98,6 +131,35 @@ export class GuandanSession {
   peeks: Partial<Record<SeatId, Partial<Record<SeatId, number[]>>>> = {};
   /** 头游走科的最后一手（天王炸终结彩头判定）。 */
   private winnerLastPlay: PatternMatch | null = null;
+  /** 出牌流水（owner 诊断·每手一条·宿主可读 + PLAY_DEBUG 时 console 输出）。 */
+  playLog: PlayLogEntry[] = [];
+
+  private logPlay(seat: SeatId, action: PlayLogEntry['action'], codes: number[], match: PatternMatch | null): void {
+    const beatWhat =
+      action === 'follow' && this.currentTrick
+        ? `${FAMILY_CN[this.currentTrick.match.family] ?? this.currentTrick.match.family} ${fmtHand(this.currentTrick.cards)}`
+        : null;
+    const entry: PlayLogEntry = {
+      round: this.round,
+      seat,
+      seatName: SEATS.find((s) => s.id === seat)?.name ?? seat,
+      action,
+      cards: [...codes],
+      family: match?.family ?? null,
+      tier: match?.tier ?? null,
+      beatWhat,
+    };
+    this.playLog.push(entry);
+    if (PLAY_DEBUG && typeof console !== 'undefined') {
+      if (action === 'pass') {
+        console.log(`[掼蛋·第${entry.round}盘] ${entry.seatName} 过`);
+      } else {
+        const fam = match ? `${FAMILY_CN[match.family] ?? match.family}(tier${match.tier})` : '?';
+        const tail = beatWhat ? ` ⟶ 压过 ${beatWhat}` : '（领出）';
+        console.log(`[掼蛋·第${entry.round}盘] ${entry.seatName} ${action === 'lead' ? '领出' : '跟'} ${fmtHand(codes)} = ${fam}${tail}`);
+      }
+    }
+  }
 
   constructor(opts: SessionOptions) {
     this.seed = opts.seed;
@@ -116,7 +178,8 @@ export class GuandanSession {
     this.cfg = guandanConfig(this.playLevel);
     this.finished = [];
     this.currentTrick = null;
-    this.stillToAct = [];
+    this.responded = 0;
+    this.respondersNeeded = 0;
     this.tributes = [];
     this.resisted = false;
     this.winnerLastPlay = null;
@@ -260,23 +323,20 @@ export class GuandanSession {
     if (!chk.ok) return false;
 
     if (codes === null) {
-      this.stillToAct.shift();
+      this.logPlay(seat, 'pass', [], null); // 读旧墩前记（此处 pass 无墩引用）
+      this.responded += 1;
     } else {
+      const isLead = this.currentTrick === null;
+      this.logPlay(seat, isLead ? 'lead' : 'follow', codes, chk.match!); // 记在 currentTrick 更新前（beatWhat 读旧墩）
       for (const c of codes) this.hands[seat].splice(this.hands[seat].indexOf(c), 1);
       this.currentTrick = { seat, cards: codes, match: chk.match! };
       if (this.hands[seat].length === 0) {
         this.finished.push(seat);
         if (this.finished.length === 1) this.winnerLastPlay = chk.match!;
       }
-      this.stillToAct = [];
-      let s = this.nextActiveAfter(seat);
-      while (s !== seat && this.stillToAct.length < 3) {
-        if (this.isActive(s)) this.stillToAct.push(s);
-        else break;
-        const n = this.nextActiveAfter(s);
-        if (n === s) break;
-        s = n;
-      }
+      // 新墩：除持墩者（若仍活跃）外的活跃座各需应对一轮。出光则不占分母（不在 actives 内）。
+      this.responded = 0;
+      this.respondersNeeded = this.actives().length - (this.isActive(seat) ? 1 : 0);
     }
 
     // 盘终判定：三家走科 或 一队双走科（余下名次按 手牌少→行牌序 补齐）
@@ -289,19 +349,21 @@ export class GuandanSession {
       return true;
     }
 
-    // 收墩：持牌者之后无人待表态 → 墩归持牌者；走科者赢墩=对家接风
-    if (this.stillToAct.length === 0 && this.currentTrick) {
+    // 收墩：其他活跃座全部应对完（含持墩者出光的情形）→ 墩归持墩者；
+    // 持墩者活跃=领出；出光=队友接风；队友也出光=下一活跃座领出（轮转永不指向出光座·治卡死根因）。
+    if (this.currentTrick && this.responded >= this.respondersNeeded) {
       const holder = this.currentTrick.seat;
       this.currentTrick = null;
-      const leader = this.isActive(holder)
+      this.responded = 0;
+      this.respondersNeeded = 0;
+      this.turn = this.isActive(holder)
         ? holder
         : this.isActive(partnerOf(holder))
           ? partnerOf(holder)
           : this.nextActiveAfter(holder);
-      this.turn = leader;
       return true;
     }
-    this.turn = this.stillToAct[0] ?? this.nextActiveAfter(seat);
+    this.turn = this.nextActiveAfter(seat);
     return true;
   }
 

@@ -149,7 +149,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       turn: 'hero', turnName: '你',
       seats: { partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero') },
       hand: [cardCode(0, 3), cardCode(1, 3), cardCode(0, 7), cardCode(2, 14), cardCode(0, RANK_BIG_JOKER)],
-      selected: [cardCode(0, 3), cardCode(1, 3)],
+      selected: [0, 1], // 选中前两张（下标·非牌码）
       trick: { name: '对子', family: 'pair', cards: [cardCode(2, 2), cardCode(3, 2)] },
       canCommit: true, commitWhy: '', canPass: true,
     });
