@@ -10,12 +10,15 @@
 对手 AI 用行为树；难度 = 对敌方手牌信息的读取精度（给范围、带可调误差百分比；
 简单档不许读，用常规策略 AI）。打牌特效与声音齐备。UI 完全用现有 LayoutNode 库，
 **不发明任何新东西**。先实现逻辑，界面布局待 owner 侧设计稿（cross design）到位后接。
+**⚖ owner 追加口径（2026-07-17）：本项目开发允许用 TS 写游戏层代码**（例外逐条记
+`capability-plan.md` §4；种子 PRNG/禁手写 DOM/确定性/测试等硬线不放松）。
 
 ## 状态
 
 - brief：✅（见上）
 - GDD：🟡 草案 `gdd.md`（与 owner 讨论中）
-- capability-plan：⏳ 草拟中（模板 `docs/design/capability-plan-template.md`；**plan 未过 Lead 审不得写任何游戏层代码**）
+- capability-plan：🟡 草案 v1 `capability-plan.md`（owner TS 口径已入档；待 Lead 备案评审）
+- 需求单：`requests.md`（游戏级·不占引擎池槽；现 1 条 REQ-C-104 角色卡通道→PST）
 - 生产流程板：未开（`docs/playbooks/game-production.md` 八阶段）
 
 ## 角色与通道
