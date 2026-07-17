@@ -110,13 +110,13 @@ export const MENU_H = 720;
 // ── 场景色（3D 占位件着色·线框稿取色·真美术=S6 台账 B-22/23/26~29 保号替换）────────────
 export const TINT = {
   stageBg: 0x2a1e2b, // 渲染底色（暗梅·线框稿 --bg1）
-  feltTop: 0x3f7d5a, // 桌呢（传统雀庄绿呢·牌面/红牌背都跳得出来·真美术=B-22 可换绯/樱）
-  feltEdge: 0x2f5f45,
+  feltTop: 0xcf7d96, // 桌呢樱粉（对标 ui-mockup 真稿·sakura 桌呢·B1 视觉 1:1·真美术=B-22 定稿）
+  feltEdge: 0xa85f78,
   wood: 0x4a2a20, // 桌体深木（B-23 占位）
-  tileBody: 0xf2ead2, // 牌身象牙（自家牌身 + 侧面）
+  tileBody: 0xf7f0e0, // 牌身象牙（自家牌身 + 侧面）
   tileFaceFallback: 0xfaf4e4, // 牌面回退色（贴图未就绪）
-  tileBack: 0xcf3a35, // 牌背红（back.png 红·牌山/三家一眼是背面·区别桌呢绿）
-  tileBackEdge: 0x9c2b27,
+  tileBack: 0xe0cea0, // 牌背米黄象牙（对标真稿·牌山/三家整齐墩·比牌面暖黄区分；粉呢上不糊）
+  tileBackEdge: 0xc0aa78,
   cushion: 0x7c4052, // 座垫暗绯
   tray: 0x5a3242, // 点棒托
   die: 0xfaf6ee, // 骰白
