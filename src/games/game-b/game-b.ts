@@ -8,14 +8,19 @@ import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
 import { mountHost } from '@engine/host/mount-host.js';
 import { mountUI } from '@ui/components/index.js';
+import type { HandlerMap } from '@ui/components/index.js';
 import { buildTableBlueprint } from './blueprint.js';
 import { createGameBAssets } from './assets.js';
-import { buildHud, initialHud } from './hud.js';
 import { buildMenu, initialMenu, MENU_START, MENU_CONTINUE, MENU_SETTINGS } from './menu.js';
+import {
+  startMatch, aiTurn, discard, declareTsumo, canTsumo, nextRound, isPlayerTurn, isWinLikeEnd,
+} from './core/game-state.js';
+import { buildPlayHud, PLAY_TILE, ACT_TSUMO, NEXT_ROUND, TOGGLE_LOG, BACK_MENU } from './play-ui.js';
 import { FIELD_W, FIELD_H, MENU_W, MENU_H, MENU_BG, SAKURA, NIGHT, TINT } from './theme.js';
 
-// 开局 seed（S3 摆拍固定值=可复现；S4 起由 SessionIn 传入·缺省时钟种子也走入参·gdd §十二）。
+// 开局 seed（gdd §十二·SessionIn.seed 缺省时钟种子入参化·S3 固定值可复现）。
 const S3_SEED = 20260717;
+const AI_DELAY = 560; // AI 逐步节奏（ms·让玩家看清每家摸打）
 
 // 牌桌和室夜宴底（宿主装饰层·真美术=S6 背景件）。
 const STAGE_BG = 'radial-gradient(ellipse at 50% 38%, #41283a 0%, #2a1e2b 62%, #201722 100%)';
@@ -37,11 +42,12 @@ export function mount(container: HTMLElement): () => void {
     teardown = () => { ui(); skel.teardown(); };
   }
 
-  // ── 牌桌屏（3D 世界 + sakura HUD·overlayHost 保持 none 让手牌拾取透过 canvas）─────────
+  // ── 牌桌屏（3D 氛围场景 + LayoutNode 对局 HUD·driver 驱动一局跑起来）──────────────────
   function showTable(): void {
     clear();
     const skel = mountHost(container, { fieldW: FIELD_W, fieldH: FIELD_H, sceneBackground: STAGE_BG, wrapperBackground: '#1c141d' });
 
+    // 3D 牌桌 = 氛围场景（桌/牌山/席位/手牌展示·真引擎渲染·对局交互走 HUD）。
     const { assets, ready } = createGameBAssets();
     const engine = new Engine();
     engine.load(buildTableBlueprint({ seed: S3_SEED }));
@@ -50,33 +56,42 @@ export function mount(container: HTMLElement): () => void {
       assets, antialias: false, dprCap: 1.5, shadowMapSize: 1024,
     });
     engine.attachRenderer(renderer, skel.scene);
-    void ready.then(() => renderer.invalidate()); // 贴图迟到 × 静态场景脏帧跳渲 → 就绪补一帧
-
-    const hud = initialHud();
-    const hudUi = mountUI(skel.overlayHost, buildHud(hud), {}, SAKURA);
-
-    // 手牌拾取（Pickable3D + renderer.pick·S3 自证反馈进字幕·S4 改 enqueueAction 入 sim）。
-    const canvas = skel.scene.querySelector('canvas');
-    let downX = 0;
-    let downY = 0;
-    const onDown = (e: PointerEvent): void => { downX = e.clientX; downY = e.clientY; };
-    const onUp = (e: PointerEvent): void => {
-      if (Math.abs(e.clientX - downX) > 5 || Math.abs(e.clientY - downY) > 5) return;
-      const hit = renderer.pick(e.clientX, e.clientY);
-      if (!hit) return;
-      hud.subtitle = { speaker: '拾取', line: `｢${hit.entityId}｣（signal:${hit.signal}·S4 接出牌）` };
-      hudUi.update(buildHud(hud), SAKURA);
-    };
-    canvas?.addEventListener('pointerdown', onDown);
-    canvas?.addEventListener('pointerup', onUp);
-
+    void ready.then(() => renderer.invalidate());
     engine.start();
+
+    // ── 对局状态机（headless 逻辑核·§2/③）+ HUD 投影驱动 ────────────────────────────
+    const match = startMatch(S3_SEED);
+    let logOpen = false;
+    let aiTimer: ReturnType<typeof setTimeout> | null = null;
+    skel.overlayHost.style.pointerEvents = 'auto'; // 对局 HUD 全可点
+
+    const render = (): void => { ui.update(buildPlayHud(match, { logOpen }), SAKURA); };
+    const clearAi = (): void => { if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; } };
+    // AI 席逐步推进（节奏可见）→ 到玩家/局终停。
+    const scheduleAi = (): void => {
+      clearAi();
+      if (match.cur.phase === 'playing' && match.cur.turn !== 0) {
+        aiTimer = setTimeout(() => { aiTurn(match); render(); scheduleAi(); }, AI_DELAY);
+      }
+    };
+
+    const handlers: HandlerMap = {
+      [PLAY_TILE]: (arg?: string) => { if (isPlayerTurn(match) && arg != null) { discard(match, Number(arg)); render(); scheduleAi(); } },
+      [ACT_TSUMO]: () => { if (canTsumo(match)) { declareTsumo(match); render(); } },
+      [NEXT_ROUND]: () => { if (!match.over) { nextRound(match); render(); scheduleAi(); } },
+      [TOGGLE_LOG]: () => { logOpen = !logOpen; render(); },
+      [BACK_MENU]: () => showMenu(),
+    };
+
+    const ui = mountUI(skel.overlayHost, buildPlayHud(match, { logOpen }), handlers, SAKURA);
+    scheduleAi(); // 若开局非玩家先手则自动推进（东1 庄=玩家·此处等玩家点牌）
+    render();
+
     teardown = () => {
-      canvas?.removeEventListener('pointerdown', onDown);
-      canvas?.removeEventListener('pointerup', onUp);
+      clearAi();
       engine.stop();
       renderer.destroy();
-      hudUi();
+      ui();
       skel.teardown();
     };
   }
