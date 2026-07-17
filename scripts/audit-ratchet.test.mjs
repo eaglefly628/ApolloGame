@@ -7,7 +7,8 @@
 //   ⑤ 对抗：新游戏红旗（无基线条目）→ RATCHET FAIL。
 // 判据用棘轮判词 token（RATCHET: PASS 进 stdout / FAIL 进 stderr），不看整体退出码：
 //   整体退出码本就受 AUDIT 判词影响，与棘轮是否新增红旗无关，故只断言棘轮段的判词（照 docs-ref-guard.test.mjs 的 spawn 模式）。
-// ④⑤ 用 APOLLO_AUDIT_BASELINE 指向临时固定基线（不碰真基线·搭配真 game-q 源实测红旗）。
+// ④⑤ 用 APOLLO_AUDIT_BASELINE 指向临时固定基线（不碰真基线·搭配真游戏源实测红旗：
+//    ④ game-q 基线声明豁免；⑤ game-f 冻结带红旗）。
 // 脚本纯 node/fs，故直接用 `node` 跑（不需 vite-node）。
 import { describe, it, expect, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
@@ -77,8 +78,9 @@ describe('红旗棘轮（audit-baseline.json）', () => {
   }, 60000);
 
   it('对抗·新游戏红旗：无基线条目 + 带红旗 → RATCHET: FAIL（豁免走 requests.md 找 Lead·不自加条目）', () => {
+    // 用 game-f（冻结·稳定带红旗）作被测源——game-q C 件下沉后已零红旗、不再适合此对抗。
     const bl = fixtureBaseline({ games: {} });
-    const { stdout, stderr } = runAudit(['game-q'], { APOLLO_AUDIT_BASELINE: bl });
+    const { stdout, stderr } = runAudit(['game-f'], { APOLLO_AUDIT_BASELINE: bl });
     const all = stdout + stderr;
     expect(all).toContain('RATCHET: FAIL');
     expect(all).toContain('新游戏红旗');

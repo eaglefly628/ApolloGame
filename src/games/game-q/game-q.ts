@@ -10,6 +10,7 @@ import { QueuedInputSource, canvasPointerToScreen } from '@net/index.js';
 import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap } from '@ui/components/index.js';
 import type { GameFlow, Resource, Flag, Tag } from '@engine/protocol/components.js';
+import { mountHost } from '@engine/host/mount-host.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildTopBar, buildBottomBar, buildOverlay, type HudState } from './hud.js';
 import { playQSfx, isMuted, setMuted } from './sounds.js';
@@ -21,26 +22,16 @@ const GRID_BG =
   'repeating-linear-gradient(90deg, rgba(56,189,248,0.05) 0 1px, transparent 1px 40px)';
 
 export function mount(container: HTMLElement): () => void {
-  // ── DOM 骨架（host 层容器·非 sim）：wrapper > scene(定尺缩放盒) > [stage(画布) + 三个 HUD host] ──
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText =
-    'position:absolute;inset:0;overflow:hidden;background:#04070f;display:flex;align-items:center;justify-content:center;' +
-    '-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale';
-
-  // scene = 定尺缩放盒；画布(z0·渲染器 init 时挂入) 打底 + 三个 HUD host(z10/20) 叠上。
-  const scene = document.createElement('div');
-  scene.style.cssText = `position:relative;width:${FIELD_W}px;height:${FIELD_H}px;flex:0 0 auto;transform-origin:center center;background:${GRID_BG}`;
-
-  const topHost = document.createElement('div');
-  topHost.style.cssText = `position:absolute;left:0;right:0;top:0;height:${TOP_BAR_H}px;z-index:10`;
-  const bottomHost = document.createElement('div');
-  bottomHost.style.cssText = `position:absolute;left:0;right:0;bottom:0;height:${BOTTOM_BAR_H}px;z-index:10`;
-  const overlayHost = document.createElement('div');
-  overlayHost.style.cssText = 'position:absolute;inset:0;z-index:20;pointer-events:none';
-
-  scene.append(topHost, bottomHost, overlayHost);
-  wrapper.appendChild(scene);
-  container.appendChild(wrapper);
+  // ── 宿主骨架（render-only·下沉引擎公用 helper·非 sim）：wrapper > scene(定尺缩放盒) > [画布 + 三 HUD host] ──
+  // 五容器 + 定尺缩放/卸载全在 mountHost；本层只搭渲染器/输入/HUD 胶水（见头注）。
+  const { scene, topHost, bottomHost, overlayHost, teardown } = mountHost(container, {
+    fieldW: FIELD_W,
+    fieldH: FIELD_H,
+    topBarH: TOP_BAR_H,
+    bottomBarH: BOTTOM_BAR_H,
+    sceneBackground: GRID_BG,
+    wrapperBackground: '#04070f',
+  });
 
   // ── 稳定输入源（跨重开不变 → HUD sink 始终有效）──────────────────────────
   const input = new QueuedInputSource('q');
@@ -173,28 +164,14 @@ export function mount(container: HTMLElement): () => void {
     startSim();
   }
 
-  // ── 响应式缩放（定尺场景盒等比缩进容器·指针映射经 getBoundingClientRect 自动跟随）──
-  const fit = (): void => {
-    const cw = container.clientWidth || FIELD_W;
-    const ch = container.clientHeight || FIELD_H;
-    const k = Math.min(cw / FIELD_W, ch / FIELD_H);
-    scene.style.transform = `scale(${k})`;
-  };
-  const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
-  ro?.observe(container);
-  if (typeof window !== 'undefined') window.addEventListener('resize', fit);
-  fit();
-
   startSim();
 
   // ── cleanup（launcher 卸载时调）──────────────────────────────────────────
   return () => {
     stopSim();
-    ro?.disconnect();
-    if (typeof window !== 'undefined') window.removeEventListener('resize', fit);
     overlayUi?.();
     topUi();
     bottomUi();
-    wrapper.remove();
+    teardown(); // 停 ResizeObserver + 摘 resize 监听 + 移除 wrapper（宿主骨架 helper 所有）
   };
 }
