@@ -25,7 +25,15 @@ export interface TableView {
   seats: SeatView[]; toCall: number; canRaise: boolean; minRaise: number; maxRaise: number; raiseValue: number;
   muted: boolean; openWardrobe: number | null; wardrobe?: WardrobeView;
   showLog: boolean; log: GameEvent[]; // 游戏日志（确定性事件流·查 bug·owner 2026-07-17）
+  phase: 'betting' | 'showdown' | 'gameover'; // 玩法阶段（摊牌屏/局终屏叠加）
+  isHeroTurn: boolean; // 轮到主角真人行动（行动条才显·否则等待提示）
+  showdown?: ShowdownView; finale?: FinaleView;
 }
+export interface ShowdownView {
+  rows: Array<{ name: string; type: string; best: Card[]; won: number; isWinner: boolean }>;
+  potTotal: number;
+}
+export interface FinaleView { win: boolean; hands: number; heroChips: number; heroPawned: number; }
 
 const ITEM_EMOJI: Record<string, string> = { earrings: '💎', gloves: '🧤', socks: '🧦', top: '👚', skirt: '👗', lingerie: '🎀' };
 const fmt = (n: number): string => n.toLocaleString('en-US');
@@ -412,6 +420,82 @@ function buildLogPanel(log: GameEvent[]): LayoutNode {
   };
 }
 
+// ── 公共牌浮层（桌心·实时揭示的公共牌·让玩家看清·3D 白片占位之上·真牌面 Decal3D=后续）──
+function buildCommunity(community: Card[]): LayoutNode {
+  const slots: LayoutNode[] = [];
+  for (let i = 0; i < 5; i++) slots.push(cardNode(`c-comm-${i}`, community[i] ?? null, 'md'));
+  return {
+    type: 'Panel', id: 'c-community', props: { bare: true },
+    layout: { x: Math.round(FIELD_W / 2 - 175), y: 150, width: 350, direction: 'row', gap: 7, justify: 'center' },
+    children: slots,
+  };
+}
+
+// ── 等待提示（非主角轮·行动条位置显「等待…」）─────────────────────────────────
+function buildWaiting(): LayoutNode {
+  return {
+    type: 'Panel', id: 'c-waiting', props: { glass: true },
+    layout: { x: FIELD_W - 372, y: FIELD_H - 96, width: 356, direction: 'row', justify: 'center', align: 'center', padding: 16, radius: 11 },
+    children: [{ type: 'Label', id: 'c-waiting-t', props: { text: '⏳ 等待其他玩家行动…', size: 'md', color: 'sub' } }],
+  };
+}
+
+// ── 摊牌横幅（赢家 + 牌型 + 成牌 5 张 + 赢得筹码·§5.4 D 画板·继续下一手）─────────────
+function buildShowdown(sd: ShowdownView): LayoutNode {
+  const champ = sd.rows.find((r) => r.isWinner) ?? sd.rows[0];
+  const best5: LayoutNode[] = champ.best.length
+    ? champ.best.map((c, i) => cardNode(`c-sd-card-${i}`, c, 'md'))
+    : [{ type: 'Label', id: 'c-sd-nocard', props: { text: '（对手全弃收池）', size: 'sm', color: 'sub' } }];
+  const card: LayoutNode = {
+    type: 'Panel', id: 'c-sd-card', props: { bg: { custom: 'linear-gradient(160deg,rgba(34,22,38,0.98),rgba(14,9,18,0.99))' }, edge: 'gold', accent: true },
+    layout: { x: Math.round(FIELD_W / 2 - 320), y: 190, width: 640, direction: 'column', align: 'center', gap: 14, padding: 26, radius: 16 },
+    children: [
+      { type: 'Label', id: 'c-sd-crown', props: { text: '🏆 赢家', font: 'impact', size: 22, color: 'gold', glow: true } },
+      { type: 'Label', id: 'c-sd-name', props: { text: `${champ.name} · ${champ.type}`, font: 'serif', size: 30, bold: true, color: 'text' } },
+      { type: 'Panel', id: 'c-sd-best', props: { bare: true }, layout: { direction: 'row', gap: 8, justify: 'center' }, children: best5 },
+      { type: 'Label', id: 'c-sd-won', props: { text: `+ ${fmt(champ.won || sd.potTotal)} 筹码入袋`, font: 'impact', size: 24, color: 'gold', glow: true } },
+      { type: 'Button', id: 'c-sd-next', props: { label: '继续下一手 ▶', kind: 'hero', action: 'continue_showdown' }, layout: { width: 260 } },
+    ],
+  };
+  return { type: 'Panel', id: 'c-sd-scrim', props: { bg: { custom: 'rgba(4,2,8,0.7)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children: [card] };
+}
+
+// ── 局终屏（胜=通吃满堂 / 负=输得精光 + 战绩 + 再来一局/回大厅·§5.4 E 画板）─────────────
+function buildFinale(f: FinaleView): LayoutNode {
+  const stat = (id: string, label: string, val: string): LayoutNode => ({
+    type: 'Panel', id, props: { bare: true }, layout: { direction: 'row', justify: 'between', align: 'center', padding: 4 },
+    children: [
+      { type: 'Label', id: `${id}-l`, props: { text: label, size: 'sm', color: 'sub' } },
+      { type: 'Label', id: `${id}-v`, props: { text: val, font: 'impact', size: 22, color: 'gold' } },
+    ],
+  });
+  const card: LayoutNode = {
+    type: 'Panel', id: 'c-fin-card', props: { bg: { custom: f.win ? 'linear-gradient(160deg,#2a1e0e,#160f0b)' : 'linear-gradient(160deg,#2a0f11,#160b0c)' }, edge: f.win ? 'gold' : 'danger', accent: true },
+    layout: { x: Math.round(FIELD_W / 2 - 260), y: 150, width: 520, direction: 'column', align: 'center', gap: 16, padding: 30, radius: 16 },
+    children: [
+      { type: 'Label', id: 'c-fin-sub', props: { text: f.win ? '大 获 全 胜' : '铩 羽 而 归', font: 'impact', size: 20, color: f.win ? 'gold' : 'danger' } },
+      { type: 'Label', id: 'c-fin-title', props: { text: f.win ? '通吃满堂' : '输得精光', font: 'serif', size: 52, bold: true, color: f.win ? 'gold' : 'danger', glow: true } },
+      { type: 'Label', id: 'c-fin-flavor', props: { text: f.win ? '五位姨太尽数出局 · 一桌尽归' : '筹码与衣物尽失 · 落败离席', size: 'sm', color: 'sub' } },
+      {
+        type: 'Panel', id: 'c-fin-stats', props: { bg: { custom: 'rgba(0,0,0,0.28)' } }, layout: { direction: 'column', gap: 6, padding: 14, radius: 10, width: 360 },
+        children: [
+          stat('c-fin-hands', '总手数', `${f.hands} 手`),
+          stat('c-fin-chips', '最终筹码', fmt(f.heroChips)),
+          stat('c-fin-pawn', '典当衣物', `${f.heroPawned} / ${6} 件`),
+        ],
+      },
+      {
+        type: 'Panel', id: 'c-fin-btns', props: { bare: true }, layout: { direction: 'row', gap: 12, justify: 'center' },
+        children: [
+          { type: 'Button', id: 'c-fin-again', props: { label: '再来一局', kind: 'hero', action: 'restart' }, layout: { width: 180 } },
+          { type: 'Button', id: 'c-fin-exit', props: { label: '回大厅', kind: 'ghost', action: 'back_menu' }, layout: { width: 150 } },
+        ],
+      },
+    ],
+  };
+  return { type: 'Panel', id: 'c-fin-scrim', props: { bg: { custom: 'rgba(4,2,8,0.82)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children: [card] };
+}
+
 // ── 牌桌主屏（UI 浮层·Screen 透明透出 scene 层 3D 牌房；桌/凳/公共牌/底池筹码=build3d render 组件）──
 export function buildTable(v: TableView): LayoutNode {
   const opp = OPPONENT_ANCHORS.map((a) => {
@@ -422,12 +506,15 @@ export function buildTable(v: TableView): LayoutNode {
   const hero = v.seats.find((s) => s.isHero)!;
   const heroCard = seatCard(hero, 20, FIELD_H - 168, 236, 108);
 
-  // z 序（DOM 顺序）：顶带 → 座位卡/底牌/行动条浮层（透出身后 3D 牌房）→ 日志/衣柜最上。
+  // z 序（DOM 顺序）：顶带 → 公共牌 → 座位卡/底牌 → 行动条(主角轮)/等待 → 日志/衣柜 → 摊牌/局终最上。
   const children: LayoutNode[] = [
-    buildTopBar(v), ...opp, heroCard, buildHeroCards(v), buildActionBar(v),
+    buildTopBar(v), buildCommunity(v.board), ...opp, heroCard, buildHeroCards(v),
   ];
+  if (v.phase === 'betting') children.push(v.isHeroTurn ? buildActionBar(v) : buildWaiting());
   if (v.showLog) children.push(buildLogPanel(v.log));
   if (v.openWardrobe !== null && v.wardrobe) children.push(buildWardrobe(v.wardrobe));
+  if (v.phase === 'showdown' && v.showdown) children.push(buildShowdown(v.showdown));
+  if (v.phase === 'gameover' && v.finale) children.push(buildFinale(v.finale));
 
   // Screen bg transparent → 露出 scene 层 3D 牌房（桌/六凳/公共牌/底池筹码=build3d render 组件）。
   return { type: 'Screen', id: 'c-table', props: { bg: 'transparent' }, layout: { width: FIELD_W, height: FIELD_H }, children };

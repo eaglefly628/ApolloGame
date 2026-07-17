@@ -15,8 +15,9 @@ import { ThreeRenderer } from '@renderer/three-renderer.js';
 import { FIELD_W, FIELD_H, ROOM_BG, WRAPPER_BG, GAME_C_THEME, OPPONENT_ANCHORS, HAND_NAME_CN } from './theme.js';
 import { buildTable, buildMenu, type TableView, type SeatView, type WardrobeView, type MenuView } from './hud.js';
 import { CLOTHING_ITEMS } from './wardrobe.js';
-import { legalActions, type BettingConfig } from './betting-engine.js';
-import { replayDemoHand } from './game-log.js';
+import { bestOf7, HOLDEM_TYPE_ORDER } from './holdem-eval.js';
+import type { BettingConfig } from './betting-engine.js';
+import { HoldemSession } from './game-session.js';
 import { build3DTableBlueprint } from './build3d.js';
 
 const CFG: BettingConfig = { smallBlind: 25, bigBlind: 50 }; // GDD §11.5-1 现金局默认盲注
@@ -42,84 +43,107 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   const start3D = (): void => { if (!running) { engine.start(); running = true; } };
   const stop3D = (): void => { if (running) { engine.stop(); running = false; } };
 
-  // ── M1 逻辑核 replay（确定性定格 + 游戏日志事件流·查 bug）─────────────────────
-  const { st, deal, flop, heroHandType, events } = replayDemoHand(DEMO_SEED, CFG);
+  // ── 玩法会话（真交互闭环：发牌→下注→AI→摊牌→结算→轮转→淘汰→局终·§4-d 线性编排）────
+  let session = new HoldemSession(DEMO_SEED, CFG, STARTING_STACK);
 
-  // ── 宿主本地态（非 sim·素坯生命周期）─────────────────────────────────────────
+  // ── 宿主本地态（UI 生命周期·非 sim）─────────────────────────────────────────
   let screen: 'menu' | 'table' = 'menu';
   let muted = false;
   let openWardrobe: number | null = null;
   let showLog = false;
-  let raiseValue = legalActions(st).raise?.min ?? CFG.bigBlind;
-  const pawnedBySeat: Record<number, Set<string>> = {}; // 素坯本地典当标记（M4 真接 craft-recipe）
-  const pawnedSet = (seat: number): Set<string> => (pawnedBySeat[seat] ??= new Set());
+  let raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind;
 
   const seatName = (seat: number): string =>
     seat === HERO ? '主角' : OPPONENT_ANCHORS.find((a) => a.seat === seat)?.name ?? `座位${seat}`;
-  const clothesCount = (seat: number): number => CLOTHING_ITEMS.length - pawnedSet(seat).size;
-  const pawnedValue = (seat: number): number =>
-    CLOTHING_ITEMS.filter((it) => pawnedSet(seat).has(it.id)).reduce((s, it) => s + it.value, 0);
 
   function seatView(seat: number): SeatView {
-    const p = st.players.find((x) => x.seat === seat)!;
+    const ss = session.seats[seat];
+    const stt = session.seatState(seat);
     return {
       seat, name: seatName(seat),
-      chips: p.stack + pawnedValue(seat), committed: p.committed, clothes: clothesCount(seat),
-      folded: p.folded, allIn: p.allIn, out: false,
-      isActor: st.actor === seat, isHero: seat === HERO, isButton: st.pos.button === seat,
+      chips: session.stackOf(seat), committed: session.committedOf(seat), clothes: session.wardrobeLeft(seat),
+      folded: stt.folded, allIn: stt.allIn, out: ss.eliminated,
+      isActor: session.hand?.actor === seat && session.phase === 'betting',
+      isHero: seat === HERO, isButton: session.buttonSeat === seat,
     };
   }
   function wardrobeView(seat: number): WardrobeView {
-    const pawned = pawnedSet(seat);
+    const pawned = session.seats[seat].pawned;
     return {
       seat, name: seatName(seat), isHero: seat === HERO,
       rows: CLOTHING_ITEMS.map((it) => ({ id: it.id, name: it.name, value: it.value, pawned: pawned.has(it.id) })),
     };
   }
+  function heroHandName(): string {
+    const hole = session.holeOf(HERO), comm = session.community;
+    if (hole.length < 2 || comm.length < 3) return '';
+    return HAND_NAME_CN[HOLDEM_TYPE_ORDER[bestOf7([...hole, ...comm]).value[0]]] ?? '';
+  }
   function tableView(): TableView {
-    const la = st.actor === HERO ? legalActions(st) : { fold: true as const };
+    const la = session.legalForHero();
+    if (la?.raise && (raiseValue < la.raise.min || raiseValue > la.raise.max)) raiseValue = la.raise.min;
+    const sd = session.showdown;
     return {
-      blindLabel: `${CFG.smallBlind} / ${CFG.bigBlind}`, handNo: 1,
-      pot: st.players.reduce((s, p) => s + p.total, 0),
-      board: flop, heroHole: deal.holes[HERO], heroHandName: HAND_NAME_CN[heroHandType] ?? '',
+      blindLabel: `${CFG.smallBlind} / ${CFG.bigBlind}`, handNo: session.handNo,
+      pot: session.pot(), board: session.community, heroHole: session.holeOf(HERO), heroHandName: heroHandName(),
       seats: [0, 1, 2, 3, 4, 5].map(seatView),
-      toCall: la.call ?? 0, canRaise: !!la.raise, minRaise: la.raise?.min ?? CFG.bigBlind,
-      maxRaise: la.raise?.max ?? STARTING_STACK, raiseValue, muted,
+      toCall: la?.call ?? 0, canRaise: !!la?.raise, minRaise: la?.raise?.min ?? CFG.bigBlind,
+      maxRaise: la?.raise?.max ?? STARTING_STACK, raiseValue, muted,
       openWardrobe, wardrobe: openWardrobe !== null ? wardrobeView(openWardrobe) : undefined,
-      showLog, log: events,
+      showLog, log: session.events,
+      phase: session.phase, isHeroTurn: session.isHeroTurn,
+      showdown: sd ? {
+        rows: sd.rows.map((r) => ({ name: seatName(r.seat), type: r.type, best: r.best, won: r.won, isWinner: sd.winners.includes(r.seat) })),
+        potTotal: sd.potTotal,
+      } : undefined,
+      finale: session.phase === 'gameover' ? { win: session.winnerSide === 'hero', ...session.stats() } : undefined,
     };
   }
   const menuView = (): MenuView => ({ playerName: PLAYER.name, playerChips: PLAYER.chips, blindLabel: `${CFG.smallBlind} / ${CFG.bigBlind}` });
 
   let ui: MountHandle | null = null;
   const tree = (): ReturnType<typeof buildMenu> => (screen === 'menu' ? buildMenu(menuView()) : buildTable(tableView()));
-  const rerender = (): void => ui?.update(tree()); // 屏内增量更新
-  // 切屏=重新 mountUI（换根 Screen id·diff 不适用·同 game-a enterTable/showMenu 先例）。
+  const rerender = (): void => ui?.update(tree());
   const remount = (): void => { ui?.(); ui = mountUI(overlayHost, tree(), handlers, GAME_C_THEME); };
 
+  // 主角行动 → session 推进（内部跑完 AI）→ 重渲反映新态。
+  const heroAct = (a: Parameters<HoldemSession['heroAct']>[0]): void => {
+    if (!session.isHeroTurn) return;
+    session.heroAct(a); rerender();
+  };
+  const raiseTo = (arg?: string): number => {
+    const la = session.legalForHero();
+    if (!la?.raise) return 0;
+    const pot = session.pot();
+    const to = arg === 'half' ? session.hand!.currentBet + Math.round(pot * 0.5)
+      : arg === 'twoThird' ? session.hand!.currentBet + Math.round(pot * 0.667)
+        : arg === 'pot' ? session.hand!.currentBet + pot
+          : arg === 'allin' ? la.raise.max
+            : raiseValue; // 'slider'
+    return Math.max(la.raise.min, Math.min(la.raise.max, to));
+  };
+
   const handlers: HandlerMap = {
-    // 屏切换（remount·进桌 start 3D 渲染·回菜单 stop 省算力）
+    // 屏切换
     start_game: () => { screen = 'table'; start3D(); remount(); },
     continue_game: () => { screen = 'table'; start3D(); remount(); },
     back_menu: () => { screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); remount(); },
-    menu_open: () => { screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); remount(); }, // ⚙/设置 → 回主菜单（launcher 壳退出另走 overlay 菜单）
-    // 牌桌屏内更新（update）
+    menu_open: () => { screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); remount(); },
+    // UI 开关
     sound_toggle: () => { muted = !muted; rerender(); },
     toggle_log: () => { showLog = !showLog; rerender(); },
     seat_view: (arg) => { openWardrobe = Number(arg); rerender(); },
     panel_close: () => { openWardrobe = null; rerender(); },
-    // 素坯本地典当演示（M4 改：pawn_item → enqueueAction → 引擎 t2-craft-recipe 原子扣衣加筹）。
-    pawn_item: (arg) => {
-      if (openWardrobe === null || !arg) return;
-      const set = pawnedSet(openWardrobe);
-      if (set.size < CLOTHING_ITEMS.length && CLOTHING_ITEMS.some((it) => it.id === arg)) set.add(arg);
-      rerender();
-    },
+    // 典当续命（真接 session·主角衣柜可点·扣衣加筹）
+    pawn_item: (arg) => { if (openWardrobe !== null && arg) { session.pawn(openWardrobe, arg); rerender(); } },
     set_raise: (arg) => { raiseValue = Number(arg) || raiseValue; rerender(); },
-    // 下注交互素坯期不推进（真接 betting-engine=M4·需 M2 AI 五家）——发信号占位（日志已记 M1 历史步骤）。
-    act_fold: () => { /* M4 接 sim */ },
-    act_check_call: () => { /* M4 接 sim */ },
-    act_raise: () => { /* M4 接 sim */ },
+    // 下注交互（真接 betting-engine·经 session）
+    act_fold: () => heroAct({ kind: 'fold' }),
+    act_check_call: () => { const la = session.legalForHero(); heroAct(la?.check ? { kind: 'check' } : { kind: 'call' }); },
+    act_raise: (arg) => { const to = raiseTo(arg); if (to > 0) heroAct({ kind: 'raise', to }); },
+    // 摊牌「继续」→ 下一手；局终「再来一局」→ 新会话（新 seed 派生·换局面）。
+    continue_showdown: () => { session.nextHand(); rerender(); },
+    restart: () => { session = new HoldemSession(DEMO_SEED + session.handNo * 101 + 1, CFG, STARTING_STACK); raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind; rerender(); },
   };
   void host; // launcher 壳退出钩子（游戏内经 ⚙ 回主菜单；壳级退出由 launcher overlay 菜单接）
 

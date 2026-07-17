@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": " Test Files  6 passed (6) ·       Tests  72 passed (72)",
-      "at": "2026-07-17T18:23:10.297Z",
-      "gameHash": "a9d0747aca982e5f"
+      "summary": " Test Files  7 passed (7) ·       Tests  85 passed (85)",
+      "at": "2026-07-17T18:43:38.504Z",
+      "gameHash": "ad0468d054be18b1"
     },
     "S5": {
       "exit": 0,
@@ -217,6 +217,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-17T18:23:10.297Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "阶段2 玩法闭环·hash变·85测机器侧重跑",
+      "at": "2026-07-17T18:43:36.276Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-17T18:43:38.504Z"
     }
   ],
   "outOfOrder": [
@@ -264,6 +276,11 @@
       "stage": "S4",
       "reason": "3D 阶段1·hash变·机器侧重跑",
       "at": "2026-07-17T18:23:08.487Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "阶段2 玩法闭环·hash变·85测机器侧重跑",
+      "at": "2026-07-17T18:43:36.276Z"
     }
   ],
   "reviews": {

@@ -23,6 +23,7 @@ function baseView(over: Partial<TableView> = {}): TableView {
     toCall: 0, canRaise: true, minRaise: 50, maxRaise: 950, raiseValue: 50,
     muted: false, openWardrobe: null,
     showLog: false, log: [],
+    phase: 'betting', isHeroTurn: true,
     ...over,
   };
 }
@@ -86,5 +87,27 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
 
   it('主菜单屏 SC-1 零 issue（标题/立绘/按钮/角色卡）', () => {
     expect(validateLayoutNode(buildMenu({ playerName: '夜阑君', playerChips: 12860, blindLabel: '25 / 50' }))).toEqual([]);
+  });
+
+  it('非主角轮=等待提示（行动条隐）零 issue', () => {
+    expect(validateLayoutNode(buildTable(baseView({ isHeroTurn: false })))).toEqual([]);
+  });
+
+  it('摊牌屏（赢家+成牌5张+分池）零 issue', () => {
+    const showdown = {
+      rows: [
+        { name: '主角', type: '葫芦', best: [H(0, 14), H(1, 14), H(2, 14), H(3, 13), H(0, 13)], won: 300, isWinner: true },
+        { name: '大姨太', type: '两对', best: [H(0, 9), H(1, 9), H(2, 5), H(3, 5), H(0, 2)], won: 0, isWinner: false },
+      ],
+      potTotal: 300,
+    };
+    expect(validateLayoutNode(buildTable(baseView({ phase: 'showdown', showdown })))).toEqual([]);
+  });
+
+  it('局终屏（胜/负）零 issue', () => {
+    const win = { win: true, hands: 42, heroChips: 18650, heroPawned: 0 };
+    const lose = { win: false, hands: 28, heroChips: 0, heroPawned: 6 };
+    expect(validateLayoutNode(buildTable(baseView({ phase: 'gameover', finale: win })))).toEqual([]);
+    expect(validateLayoutNode(buildTable(baseView({ phase: 'gameover', finale: lose })))).toEqual([]);
   });
 });
