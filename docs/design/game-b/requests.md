@@ -38,3 +38,5 @@
 ### B-007 · 占位包接线（⚖ owner 2026-07-17「录进文档结构供程序员参考」） · GD-B 录入 → **PE-B（S3 消费）** · status: **✅ done（PE-B 2026-07-17·S3 接线回执见下）** · P1
 > 美术占位包=`docs/design/art-placeholders-riichi-mahjong.md`（PA 备料·CC0 全套）；接线细则已录 `scene-layout-handoff.md §六` 头部（⭐ 占位包段）+ gdd §九。PE-B S3 骨架照此 vendor：牌面 PNG 贴 3D 盒（免建模）、2D UI 用 SVG、骰子复用 game-g/d 现成 3D 件、点棒/牌桌程序化（P3D 会审）；占位入台账记 placeholder 真相（provenance CC0·FluffyStuff），S6 真美术保号替换。
 > **S3 接线回执（PE-B 2026-07-17）**：①40 张 `mahjong/tex/*` 已 `vendor-asset` 进 `public/games/game-b/art/`（本地索引 40 条·provenance CC0/FluffyStuff 全在条目·vitest 钉死在档）。②**发现并修口径**：包内字形 PNG=**透明底**，直接作 Material3D.map（不透明材质无 alpha 路）透明像素渲黑——已按「缺口走程序化」出路建授权期合成工具 `scripts/game-b-compose-tiles.mjs`（无头 Chromium canvas·front.png 象牙底+字形合成不透明 albedo·就地覆写本地拷贝·CC0 派生·可重跑）；**请 PA 会审**：placeholder 文档「box 贴面」段宜补一句透明底需先合成（问责定性=包/手册缺陷·此工具可收编共享）。③骰=Mesh3D.dieFaces 现成件（对面和7）；点棒托/牌桌=程序化 Mesh3D。2D SVG 与牌河/副露=S4-S5 消费。
+
+> **⚠ owner 关注标记（2026-07-17·挂 B-009）**：owner 目检 S3 截图与 mockup 有差异——Lead 归因=S3 素坯阶段+诚实边界（控件观感以主题件为准）+截图视口非基准 1280×720+3D 透视 vs 平面线框，**非渲染能力缺口**（现无 PUI 缺件上报佐证）。**S5 复查时并排对照逐处归因裁决**（能力缺口/主题观感差/调参三分），此标记防漏。
