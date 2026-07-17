@@ -903260,6 +903260,1126 @@
         "color": "gray",
         "date": "2026-07-17"
       }
+    },
+    {
+      "id": "mahjong/tex/man-1",
+      "type": "texture",
+      "description": "riichi 万 man 1 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-1.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "1",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Man1.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/man-2",
+      "type": "texture",
+      "description": "riichi 万 man 2 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-2.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "2",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Man2.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/man-3",
+      "type": "texture",
+      "description": "riichi 万 man 3 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-3.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "3",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Man3.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/man-4",
+      "type": "texture",
+      "description": "riichi 万 man 4 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-4.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "4",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Man4.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/man-5",
+      "type": "texture",
+      "description": "riichi 万 man 5 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-5.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "5",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Man5.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/man-6",
+      "type": "texture",
+      "description": "riichi 万 man 6 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-6.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "6",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Man6.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/man-7",
+      "type": "texture",
+      "description": "riichi 万 man 7 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-7.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "7",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Man7.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/man-8",
+      "type": "texture",
+      "description": "riichi 万 man 8 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-8.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "8",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Man8.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/man-9",
+      "type": "texture",
+      "description": "riichi 万 man 9 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-9.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "9",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Man9.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/pin-1",
+      "type": "texture",
+      "description": "riichi 筒 pin 1 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-1.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "1",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Pin1.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/pin-2",
+      "type": "texture",
+      "description": "riichi 筒 pin 2 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-2.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "2",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Pin2.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/pin-3",
+      "type": "texture",
+      "description": "riichi 筒 pin 3 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-3.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "3",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Pin3.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/pin-4",
+      "type": "texture",
+      "description": "riichi 筒 pin 4 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-4.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "4",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Pin4.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/pin-5",
+      "type": "texture",
+      "description": "riichi 筒 pin 5 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-5.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "5",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Pin5.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/pin-6",
+      "type": "texture",
+      "description": "riichi 筒 pin 6 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-6.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "6",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Pin6.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/pin-7",
+      "type": "texture",
+      "description": "riichi 筒 pin 7 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-7.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "7",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Pin7.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/pin-8",
+      "type": "texture",
+      "description": "riichi 筒 pin 8 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-8.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "8",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Pin8.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/pin-9",
+      "type": "texture",
+      "description": "riichi 筒 pin 9 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-9.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "9",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Pin9.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/sou-1",
+      "type": "texture",
+      "description": "riichi 条 sou 1 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-1.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "1",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Sou1.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/sou-2",
+      "type": "texture",
+      "description": "riichi 条 sou 2 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-2.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "2",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Sou2.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/sou-3",
+      "type": "texture",
+      "description": "riichi 条 sou 3 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-3.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "3",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Sou3.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/sou-4",
+      "type": "texture",
+      "description": "riichi 条 sou 4 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-4.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "4",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Sou4.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/sou-5",
+      "type": "texture",
+      "description": "riichi 条 sou 5 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-5.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "5",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Sou5.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/sou-6",
+      "type": "texture",
+      "description": "riichi 条 sou 6 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-6.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "6",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Sou6.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/sou-7",
+      "type": "texture",
+      "description": "riichi 条 sou 7 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-7.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "7",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Sou7.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/sou-8",
+      "type": "texture",
+      "description": "riichi 条 sou 8 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-8.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "8",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Sou8.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/sou-9",
+      "type": "texture",
+      "description": "riichi 条 sou 9 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-9.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "9",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Sou9.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/man-5-red",
+      "type": "texture",
+      "description": "riichi 万 man red-five dora 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-5-red.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "red-five",
+        "dora",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Man5-Dora.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/pin-5-red",
+      "type": "texture",
+      "description": "riichi 筒 pin red-five dora 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-5-red.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "red-five",
+        "dora",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Pin5-Dora.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/sou-5-red",
+      "type": "texture",
+      "description": "riichi 条 sou red-five dora 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-5-red.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "red-five",
+        "dora",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Sou5-Dora.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/ton",
+      "type": "texture",
+      "description": "riichi honor 东风 east 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/ton.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "东风 east",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Ton.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/nan",
+      "type": "texture",
+      "description": "riichi honor 南风 south 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/nan.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "南风 south",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Nan.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/shaa",
+      "type": "texture",
+      "description": "riichi honor 西风 west 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/shaa.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "西风 west",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Shaa.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/pei",
+      "type": "texture",
+      "description": "riichi honor 北风 north 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pei.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "北风 north",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Pei.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/haku",
+      "type": "texture",
+      "description": "riichi honor 白 white-dragon 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/haku.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "白 white-dragon",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Haku.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/hatsu",
+      "type": "texture",
+      "description": "riichi honor 发 green-dragon 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/hatsu.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "发 green-dragon",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Hatsu.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/chun",
+      "type": "texture",
+      "description": "riichi honor 中 red-dragon 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/chun.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "中 red-dragon",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Chun.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/back",
+      "type": "texture",
+      "description": "riichi back 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/back.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "back",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Back.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/front",
+      "type": "texture",
+      "description": "riichi front 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/front.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "front",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Front.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/tex/blank",
+      "type": "texture",
+      "description": "riichi blank 3d-face texture (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/blank.png",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "blank",
+        "3d-face",
+        "texture"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "albedo"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular/Blank.png",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
     }
   ]
 }

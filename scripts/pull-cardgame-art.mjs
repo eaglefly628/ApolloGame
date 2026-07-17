@@ -33,10 +33,14 @@ function buildSources() {
   for (const x of ['Back', 'Front', 'Blank'])
     mj.push({ rel: `${x}.svg`, id: `mahjong/${x.toLowerCase()}`, ext: 'svg', tags: ['mahjong', 'riichi', x.toLowerCase()] });
 
+  // 麻将牌面 PNG 变体（3D 立方体贴图用·SVG 不便直贴 three）：同种牌·id 挪到 mahjong/tex/*·usage:albedo。
+  const mjPng = mj.map((f) => ({ rel: f.rel.replace('.svg', '.png'), id: f.id.replace('mahjong/', 'mahjong/tex/'), ext: 'png', tags: [...f.tags, '3d-face', 'texture'], usage: 'albedo' }));
+
   return [
     { category: 'cards', license: 'Public Domain', source: 'notpeter/Vector-Playing-Cards', base: cbase, files: cards },
     { category: 'cards', license: 'Public Domain', source: 'hayeah/playing-cards-assets', base: 'https://raw.githubusercontent.com/hayeah/playing-cards-assets/master/png', files: [{ rel: 'back.png', id: 'card/back', ext: 'png', tags: ['playing-card', 'card-back'] }] },
     { category: 'mahjong', license: 'CC0-1.0', source: 'FluffyStuff/riichi-mahjong-tiles', base: mbase, files: mj },
+    { category: 'mahjong', license: 'CC0-1.0', source: 'FluffyStuff/riichi-mahjong-tiles', base: 'https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Export/Regular', files: mjPng },
   ];
 }
 
@@ -70,7 +74,7 @@ async function main() {
       const entry = {
         id: f.id, type: 'texture', description: `${f.tags.slice(1).join(' ')} (${src.category} placeholder)`, status: 'filled',
         path: destRel, category: src.category, style: 'flat', license: src.license, source: src.source,
-        tags: [...new Set(f.tags)], spec: { format: f.ext === 'png' ? 'png' : 'svg', usage: 'sprite' },
+        tags: [...new Set(f.tags)], spec: { format: f.ext === 'png' ? 'png' : 'svg', usage: f.usage || 'sprite' },
         provenance: { pulledFrom: `${src.base}/${f.rel}`, license: src.license, date: at },
       };
       idx.assets.push(entry); have.add(f.id); added.push(entry);

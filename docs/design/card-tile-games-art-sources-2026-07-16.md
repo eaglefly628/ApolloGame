@@ -1,5 +1,6 @@
 # 三款新卡牌/麻将游戏 · 美术素材侦察 + placeholder 清单
 
+> **分游戏独立文档（转对应 dev）**：`art-placeholders-texas-holdem.md` · `art-placeholders-guandan.md` · `art-placeholders-riichi-mahjong.md`（同目录）。本文=总览。
 > PA 侦察产出（owner「德州扑克/掼蛋/日式麻将·帮我扒 placeholder·分游戏列」·2026-07-16）。
 > **已拉进共享货架**（`assets/{cards,mahjong}/` + 登记 `assets/index.json`·授权已核）——各游戏建库时 `vendor-asset` 进本地。
 > **拉取源均 GitHub raw 逐文件（本环境 codeload zip 被挡）·宽松授权**：扑克牌 = Public Domain，麻将 = CC0。
