@@ -30,6 +30,7 @@ import { Anim3DSystem } from './three/anim3d.js';
 import { PathSystem } from './three/path.js';
 import { pivotMatrix, applyPivot } from './three/pivot.js';
 import { WorldUiLayer } from './three/world-ui.js';
+import { IndexDebug } from './three/index-debug.js';
 import type { PhysicsSystem } from './three/physics.js'; // 运行时**懒加载**（见 ensurePhysics）：physics.ts 依赖 cannon-es 重包·仅在有 RigidBody3D 时才进图，无刚体的游戏(如 game-d)不连带解析 cannon-es（修 vite dev「Failed to resolve cannon-es」）
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
@@ -82,6 +83,8 @@ export class ThreeRenderer implements RendererBackend {
   private debugColliders = false;
   private readonly navDebug = new NavDebug(); // 导航图/路径（debug·开关见 setDebugNav）
   private debugNav = false;
+  private readonly indexDebug = new IndexDebug(); // 实体编号覆盖（debug·开关见 setDebugIndices）
+  private debugIndices = false;
   private readonly vfx = new VfxSystem(); // 数据驱动粒子（TA Phase 1·render-only）
   private readonly trails = new TrailSystem(); // 运动拖尾（Trail3D·render-only·超休闲残影）
   private readonly lines = new LineSystem(); // 世界折线（Line3D·瞄准线/牵引/路径·render-only）
@@ -161,6 +164,7 @@ export class ThreeRenderer implements RendererBackend {
     this.models = new ModelPool(this.assets);
     container.appendChild(this.gl.domElement);
     this.worldUi.init(container); // 世界 UI DOM 叠层（覆于 canvas 上·pointer-events:none）
+    this.indexDebug.init(container); // 实体编号 debug 叠层（同上·默认关）
     this.diegetic.init(container, this.width, this.height); // UI 贴进 3D 空间（CSS3DRenderer 叠层·真 DOM 面片）
     // 视窗自适应（render-only·碰所有 3D 游戏）：观察容器盒·尺寸变即 resize。headless/无 ResizeObserver 环境跳过。
     // 容器紧贴画布（如 game-z stage·line-height:0）→ 观测值=当前画布尺寸 → resize 判定未变即空转（无害·保留原固定尺寸+居中）；
@@ -380,7 +384,7 @@ export class ThreeRenderer implements RendererBackend {
     const camTweenActive = this.cameras.tickTween(cam3d?.tween, performance.now());
     // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
     const flashAmt = this.flash.update(post?.flash, performance.now());
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -436,6 +440,7 @@ export class ThreeRenderer implements RendererBackend {
     if (post) this.post.render(this.scene, cam, post, flashAmt);
     else this.gl.render(this.scene, cam);
     this.worldUi.sync(world, cam, this.width, this.height); // 头顶飘字：锚点投影 + 定位 LayoutNode 宿主（相机就绪后）
+    this.indexDebug.sync(world, cam, this.width, this.height, this.debugIndices); // 实体编号徽标（debug·开则画·关则清）
     this.diegetic.sync(world, cam); // UI 贴 3D 面：CSS3DObject 位姿从 Transform3D + 同相机投影渲 DOM 层（相机就绪后）
     this.rendered = true;
     this.cpuMs = this.cpuMs * 0.9 + (performance.now() - t0) * 0.1;
@@ -452,6 +457,12 @@ export class ThreeRenderer implements RendererBackend {
   // 开关导航可视化（NavGraph 航点/连边 + 路径线·render-only）。立即失效脏标 → 下帧重渲反映。
   setDebugNav(on: boolean): void {
     this.debugNav = on;
+    this.lastRenderSig = '';
+  }
+
+  // 开关实体编号 debug 徽标（每个带锚实体一枚 `#N`+id·稳定编号供指名反馈·render-only）。立即失效脏标 → 下帧反映。
+  setDebugIndices(on: boolean): void {
+    this.debugIndices = on;
     this.lastRenderSig = '';
   }
 
@@ -551,6 +562,7 @@ export class ThreeRenderer implements RendererBackend {
     this.flash.dispose();
     this.physics?.dispose();
     this.worldUi.dispose();
+    this.indexDebug.dispose();
     this.diegetic.dispose();
     this.models.dispose(this.scene);
     this.lights.dispose(this.scene);

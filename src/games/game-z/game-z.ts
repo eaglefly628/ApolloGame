@@ -23,7 +23,7 @@ function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean, 
   const children: LayoutNode[] = [
     { type: 'Label', id: 'gz-title', props: { text: 'GAME Z · 永远追逐', size: 'xxl', glow: true } },
     { type: 'Label', id: 'gz-sub', props: { text: '鸭子 AI 绕赛道自动跑 · 三只追兵循寻路追逐 · 一切皆动', size: 'sm' } },
-    { type: 'Label', id: 'gz-hint', props: { text: 'WASD 控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随 · P 剖析 · C 碰撞 · N 寻路 · 点物件拾取', size: 'sm' } },
+    { type: 'Label', id: 'gz-hint', props: { text: 'WASD 控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随 · P 剖析 · C 碰撞 · N 寻路 · I 编号 · 点物件拾取', size: 'sm' } },
     { type: 'Label', id: 'gz-show', props: { text: '🌉 四台分布：A=追逐场 ｜ Two=手感·物理 ｜ Three=材质·渲染 ｜ Four=物理沙盘（掉落砸地）', size: 'sm', color: 'jade' } },
     { type: 'Label', id: 'gz-show2', props: { text: '🎮 相机=C 软跟随 ｜ 点任意物件=B 震屏+E 闪白 ｜ 拖拽旋转 · 滚轮缩放', size: 'sm', color: 'gold' } },
     { type: 'Label', id: 'gz-show3', props: { text: '🚀 调试面板「传送」按钮 → Camera3D.tween 循环飞越 A→Two→Three→Four→A 看各台特性', size: 'sm', color: 'jade' } },
@@ -119,13 +119,14 @@ export function mount(container: HTMLElement): () => void {
   let qTier: QKey = 'balanced';
 
   // 设置态（初值对齐蓝图 Post3D/Fog3D + 均衡档：ao 开·aa 开）。
-  const S = { col: false, nav: false, aoOn: true, aoInt: 0.85, aoRad: 5, fogOn: true, fogNear: 190, fogFar: 520, gradeOn: true, exp: 1.02, con: 1.08, sat: 1.12, aa: true };
+  const S = { col: false, nav: false, idx: false, aoOn: true, aoInt: 0.85, aoRad: 5, fogOn: true, fogNear: 190, fogFar: 520, gradeOn: true, exp: 1.02, con: 1.08, sat: 1.12, aa: true };
   const post = (): Post3D | undefined => engine.world.getComponent<Post3D>('post', 'Post3D');
   const fog = (): Fog3D | undefined => engine.world.getComponent<Fog3D>('fog', 'Fog3D');
   // 把设置写进 render-only 组件 + 渲染器（实时生效·不进 hash）。
   const apply = (): void => {
     renderer.setDebugColliders(S.col);
     renderer.setDebugNav(S.nav);
+    renderer.setDebugIndices(S.idx);
     const p = post();
     if (p) {
       p.ao = S.aoOn ? { intensity: S.aoInt, radius: S.aoRad, scale: 1 } : undefined;
@@ -163,6 +164,7 @@ export function mount(container: HTMLElement): () => void {
       ] },
       tog('gz-col', '碰撞体线框', S.col, 'tCol'),
       tog('gz-nav', '导航网格', S.nav, 'tNav'),
+      tog('gz-idx', '效果编号 #（指名反馈）', S.idx, 'tIdx'),
       tog('gz-ao', 'AO 遮蔽', S.aoOn, 'tAo'),
       ...(S.aoOn ? [sld('gz-aoi', 'AO 强度', S.aoInt, 0, 1, 0.05, 'sAoI'), sld('gz-aor', 'AO 半径', S.aoRad, 1, 16, 0.5, 'sAoR')] : []),
       tog('gz-fog', '距离雾', S.fogOn, 'tFog'),
@@ -184,7 +186,7 @@ export function mount(container: HTMLElement): () => void {
   const refresh = (): void => menuUi.update(tree());
   // ⚠️ Toggle 视觉点击不更新的绕过（主程 UI 库 bug·已记 requests.md）：点 Toggle 后其隐藏 checkbox 抢焦点，
   //   UI 库 reconcile 的「焦点保护」误把 Toggle 子树当输入框跳过重建 → 视觉停在旧 checked。先 blur 焦点再重渲即可重建。
-  const tT = (k: 'col' | 'nav' | 'aoOn' | 'fogOn' | 'gradeOn' | 'aa') => (v: unknown): void => {
+  const tT = (k: 'col' | 'nav' | 'idx' | 'aoOn' | 'fogOn' | 'gradeOn' | 'aa') => (v: unknown): void => {
     S[k] = v === 'true' || v === true; apply();
     (document.activeElement as HTMLElement | null)?.blur(); // 解焦 → 让面板重建反映新 checked
     refresh();
@@ -193,7 +195,7 @@ export function mount(container: HTMLElement): () => void {
   // 若写进 render-only 组件会让后处理 shader 算出 NaN → 黑屏。非有限值丢弃（渲染器也有 finite 兜底·双保险）。
   const sS = (k: 'aoInt' | 'aoRad' | 'fogNear' | 'fogFar' | 'exp' | 'con' | 'sat') => (v: unknown): void => { const n = Number(v); if (!Number.isFinite(n)) return; S[k] = n; apply(); };
   const menuUi = mountUI(menuHost, tree(), {
-    tCol: tT('col'), tNav: tT('nav'), tAo: tT('aoOn'), tFog: tT('fogOn'), tGr: tT('gradeOn'), tAa: tT('aa'),
+    tCol: tT('col'), tNav: tT('nav'), tIdx: tT('idx'), tAo: tT('aoOn'), tFog: tT('fogOn'), tGr: tT('gradeOn'), tAa: tT('aa'),
     sAoI: sS('aoInt'), sAoR: sS('aoRad'), sFn: sS('fogNear'), sFf: sS('fogFar'), sEx: sS('exp'), sCo: sS('con'), sSa: sS('sat'),
     camBoard: () => { applyCam(PLATFORM_THREE_CAM); platIdx = 2; refresh(); }, camHome: () => { applyCam(HOME_CAM); platIdx = 0; refresh(); },
     roll: () => renderer.rollDice(),
@@ -202,6 +204,7 @@ export function mount(container: HTMLElement): () => void {
   });
   const setColliders = (on: boolean): void => { S.col = on; apply(); refresh(); };
   const setNav = (on: boolean): void => { S.nav = on; apply(); refresh(); };
+  const setIndices = (on: boolean): void => { S.idx = on; apply(); refresh(); };
 
   // 键盘 → 角色 Velocity（运行时输入胶水）：归一化对角线 + 速度；motion-apply 每 tick 把它累加进 Transform。
   const held = new Set<string>();
@@ -223,6 +226,7 @@ export function mount(container: HTMLElement): () => void {
     if (e.code === 'KeyF') { const c = cam(); if (c) { c.mode = c.mode === 'follow' ? 'orbit' : 'follow'; c.target = 'hero'; } }
     if (e.code === 'KeyC') setColliders(!S.col); // 碰撞体线框开关（同调试面板）
     if (e.code === 'KeyN') setNav(!S.nav); // 导航网格开关（同调试面板）
+    if (e.code === 'KeyI') setIndices(!S.idx); // 效果编号徽标开关（同调试面板·指名反馈）
     held.add(e.code); setVel();
   };
   const onUp = (e: KeyboardEvent): void => { held.delete(e.code); setVel(); };
