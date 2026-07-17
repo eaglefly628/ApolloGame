@@ -13,7 +13,8 @@
 - 场景/UI 布局设计交接案：✅ v1 → `ui-scene-design.md`（owner 指定交付物·待签）
 - GDD：未立（下一步·含全量规则变体表+数值案）
 - capability-plan：未立（模板 `docs/design/capability-plan-template.md`；**plan 未过 Lead 审不得写任何游戏层代码**）
-- 生产流程板：S1 立项卡**内容已备**（`brief.md` §7·**owner 已交办 Lead review**）；板工具需游戏实体才能开卡（缺口记 `requests.md` A-005）——S2 过审后随骨架落卡
+- 生产流程板：**S1 ✅ PASS**（Lead 复核判词=`requests.md` A-S1·三条件：S2 过审前零游戏层代码／牌型下沉 `t3-hand-pattern`·BT 已落地 `t2-behavior-tree`／台账 spec{w,h}+底线档逐张复核）；板工具缺口 A-005——S2 过审后随骨架落卡
+- 美术占位包：✅ PA 备料已对照入 `ui-scene-design.md` §5.1（牌面 54+牌背=PD 货架 vendor 即用；背景/图标/人设=占位路线+S6 升级路径；风格锚 `modern-manor`+`sakura-nijigen`）
 
 ## 角色与通道
 

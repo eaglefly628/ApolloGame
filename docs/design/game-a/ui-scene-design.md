@@ -162,6 +162,21 @@
 | A-ICON | 金币·名次徽章(头游~末游)·级牌流光·墩型角标 | ~10 | — |
 | A-UI-SKIN | 按钮框体·面板底·Drawer 柄 | ~6 | 走异形按钮+贴图皮机制 |
 
+### 5.1 占位包对照（PA 备料 `docs/design/art-placeholders-guandan.md` → 本案槽位 · **PE S3 起步照此表**）
+
+> 接法铁律（PA）：建游戏时 `node scripts/vendor-asset.mjs <货架id> game-a` **copy 进本地 `art/`，不直引货架**；整副 52+2 王+牌背循环 vendor。授权=Public Domain（发行前 PA 复核）。台账建行时每行补 `spec{w,h}` 消费分辨率（A-S1 条件③）。
+
+| 本案槽位 | 占位来源（起步即用） | S6 升级路径 |
+|---|---|---|
+| A-CARD-FACE 牌面 | ✅ 货架 `card/<rank>-of-<suit>`×52 + `card/joker-red`/`joker-black`（PD·SVG）；**两副=同素材引两次**；级牌/逢人配高亮=**运行时特效叠加（描边/流光），不烤进牌面** | 二次元重绘=art-replace 台账逐行替换（非阻塞·PD 版即可跑通全程） |
+| A-CARD-BACK 牌背 | ✅ 货架 `card/back`（PD·PNG） | 台账换二次元牌背 |
+| A-BG-01/02 背景 | 程序化纯色/纹理起步 | AI 生成·场景风格锚=**`modern-manor`**（style-packs 已备·等真 key） |
+| A-ICON 图标（金币/名次徽章/级牌/墩型角标） | emoji 先行（PA 建议路线） | emoji→美术图 或 AI·入台账 |
+| A-CHAR-NPC 三姨太 | 头像 emoji/程序化占位；立绘占位**不上画面**（服饰状态先由 SC-7b 计数呈现） | S6 台账 ~27 行·人物锚=**`sakura-nijigen`**（三游戏共用·owner 终字）·底线档逐张内容复核 |
+| A-CHAR-HERO 主角 | 外部角色卡 `{名字,头像}`——头像即资产 | 角色卡标准含立绘后补状态位 |
+| A-FX 特效 | 程序化（`Particles`/引擎特效）起步 | 贴图质感补强·入台账 |
+| A-UI-SKIN 控件皮 | 主题令牌+程序化皮（apollo-toon 先例） | 台账贴图皮逐行替换 |
+
 ## 6. 交接注意（下游必读）
 
 1. **S2 未过审不写游戏层代码**——本案≠开工令；capability-plan 过 Lead 后才动 S3。
