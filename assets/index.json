@@ -900490,6 +900490,2524 @@
         "repo": "erikflowers/weather-icons",
         "ref": "master"
       }
+    },
+    {
+      "id": "card/two-of-clubs",
+      "type": "texture",
+      "description": "two clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/two-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "two",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/2C.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/two-of-diamonds",
+      "type": "texture",
+      "description": "two diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/two-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "two",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/2D.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/two-of-hearts",
+      "type": "texture",
+      "description": "two hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/two-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "two",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/2H.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/two-of-spades",
+      "type": "texture",
+      "description": "two spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/two-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "two",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/2S.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/three-of-clubs",
+      "type": "texture",
+      "description": "three clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/three-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "three",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/3C.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/three-of-diamonds",
+      "type": "texture",
+      "description": "three diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/three-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "three",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/3D.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/three-of-hearts",
+      "type": "texture",
+      "description": "three hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/three-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "three",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/3H.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/three-of-spades",
+      "type": "texture",
+      "description": "three spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/three-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "three",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/3S.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/four-of-clubs",
+      "type": "texture",
+      "description": "four clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/four-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "four",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/4C.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/four-of-diamonds",
+      "type": "texture",
+      "description": "four diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/four-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "four",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/4D.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/four-of-hearts",
+      "type": "texture",
+      "description": "four hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/four-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "four",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/4H.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/four-of-spades",
+      "type": "texture",
+      "description": "four spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/four-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "four",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/4S.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/five-of-clubs",
+      "type": "texture",
+      "description": "five clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/five-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "five",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/5C.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/five-of-diamonds",
+      "type": "texture",
+      "description": "five diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/five-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "five",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/5D.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/five-of-hearts",
+      "type": "texture",
+      "description": "five hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/five-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "five",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/5H.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/five-of-spades",
+      "type": "texture",
+      "description": "five spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/five-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "five",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/5S.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/six-of-clubs",
+      "type": "texture",
+      "description": "six clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/six-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "six",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/6C.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/six-of-diamonds",
+      "type": "texture",
+      "description": "six diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/six-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "six",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/6D.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/six-of-hearts",
+      "type": "texture",
+      "description": "six hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/six-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "six",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/6H.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/six-of-spades",
+      "type": "texture",
+      "description": "six spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/six-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "six",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/6S.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/seven-of-clubs",
+      "type": "texture",
+      "description": "seven clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/seven-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "seven",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/7C.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/seven-of-diamonds",
+      "type": "texture",
+      "description": "seven diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/seven-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "seven",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/7D.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/seven-of-hearts",
+      "type": "texture",
+      "description": "seven hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/seven-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "seven",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/7H.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/seven-of-spades",
+      "type": "texture",
+      "description": "seven spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/seven-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "seven",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/7S.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/eight-of-clubs",
+      "type": "texture",
+      "description": "eight clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/eight-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "eight",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/8C.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/eight-of-diamonds",
+      "type": "texture",
+      "description": "eight diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/eight-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "eight",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/8D.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/eight-of-hearts",
+      "type": "texture",
+      "description": "eight hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/eight-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "eight",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/8H.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/eight-of-spades",
+      "type": "texture",
+      "description": "eight spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/eight-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "eight",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/8S.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/nine-of-clubs",
+      "type": "texture",
+      "description": "nine clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/nine-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "nine",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/9C.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/nine-of-diamonds",
+      "type": "texture",
+      "description": "nine diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/nine-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "nine",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/9D.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/nine-of-hearts",
+      "type": "texture",
+      "description": "nine hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/nine-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "nine",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/9H.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/nine-of-spades",
+      "type": "texture",
+      "description": "nine spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/nine-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "nine",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/9S.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/ten-of-clubs",
+      "type": "texture",
+      "description": "ten clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/ten-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "ten",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/10C.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/ten-of-diamonds",
+      "type": "texture",
+      "description": "ten diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/ten-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "ten",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/10D.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/ten-of-hearts",
+      "type": "texture",
+      "description": "ten hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/ten-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "ten",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/10H.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/ten-of-spades",
+      "type": "texture",
+      "description": "ten spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/ten-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "ten",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/10S.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/jack-of-clubs",
+      "type": "texture",
+      "description": "jack clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/jack-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "jack",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/JC.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/jack-of-diamonds",
+      "type": "texture",
+      "description": "jack diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/jack-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "jack",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/JD.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/jack-of-hearts",
+      "type": "texture",
+      "description": "jack hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/jack-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "jack",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/JH.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/jack-of-spades",
+      "type": "texture",
+      "description": "jack spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/jack-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "jack",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/JS.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/queen-of-clubs",
+      "type": "texture",
+      "description": "queen clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/queen-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "queen",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/QC.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/queen-of-diamonds",
+      "type": "texture",
+      "description": "queen diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/queen-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "queen",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/QD.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/queen-of-hearts",
+      "type": "texture",
+      "description": "queen hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/queen-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "queen",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/QH.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/queen-of-spades",
+      "type": "texture",
+      "description": "queen spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/queen-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "queen",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/QS.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/king-of-clubs",
+      "type": "texture",
+      "description": "king clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/king-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "king",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/KC.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/king-of-diamonds",
+      "type": "texture",
+      "description": "king diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/king-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "king",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/KD.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/king-of-hearts",
+      "type": "texture",
+      "description": "king hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/king-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "king",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/KH.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/king-of-spades",
+      "type": "texture",
+      "description": "king spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/king-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "king",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/KS.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/ace-of-clubs",
+      "type": "texture",
+      "description": "ace clubs poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/ace-of-clubs.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "ace",
+        "clubs",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/AC.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/ace-of-diamonds",
+      "type": "texture",
+      "description": "ace diamonds poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/ace-of-diamonds.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "ace",
+        "diamonds",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/AD.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/ace-of-hearts",
+      "type": "texture",
+      "description": "ace hearts poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/ace-of-hearts.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "ace",
+        "hearts",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/AH.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/ace-of-spades",
+      "type": "texture",
+      "description": "ace spades poker card (cards placeholder)",
+      "status": "filled",
+      "path": "cards/ace-of-spades.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "ace",
+        "spades",
+        "poker",
+        "card"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/AS.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/joker-red",
+      "type": "texture",
+      "description": "joker red (cards placeholder)",
+      "status": "filled",
+      "path": "cards/joker-red.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "joker",
+        "red"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/Joker1.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/joker-black",
+      "type": "texture",
+      "description": "joker black (cards placeholder)",
+      "status": "filled",
+      "path": "cards/joker-black.svg",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "notpeter/Vector-Playing-Cards",
+      "tags": [
+        "playing-card",
+        "joker",
+        "black"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/notpeter/Vector-Playing-Cards/master/cards-svg/Joker2.svg",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "card/back",
+      "type": "texture",
+      "description": "card-back (cards placeholder)",
+      "status": "filled",
+      "path": "cards/back.png",
+      "category": "cards",
+      "style": "flat",
+      "license": "Public Domain",
+      "source": "hayeah/playing-cards-assets",
+      "tags": [
+        "playing-card",
+        "card-back"
+      ],
+      "spec": {
+        "format": "png",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/hayeah/playing-cards-assets/master/png/back.png",
+        "license": "Public Domain",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/man-1",
+      "type": "texture",
+      "description": "riichi 万 man 1 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-1.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "1"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Man1.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/man-2",
+      "type": "texture",
+      "description": "riichi 万 man 2 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-2.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "2"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Man2.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/man-3",
+      "type": "texture",
+      "description": "riichi 万 man 3 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-3.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "3"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Man3.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/man-4",
+      "type": "texture",
+      "description": "riichi 万 man 4 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-4.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "4"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Man4.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/man-5",
+      "type": "texture",
+      "description": "riichi 万 man 5 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-5.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "5"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Man5.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/man-6",
+      "type": "texture",
+      "description": "riichi 万 man 6 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-6.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "6"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Man6.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/man-7",
+      "type": "texture",
+      "description": "riichi 万 man 7 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-7.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "7"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Man7.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/man-8",
+      "type": "texture",
+      "description": "riichi 万 man 8 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-8.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "8"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Man8.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/man-9",
+      "type": "texture",
+      "description": "riichi 万 man 9 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-9.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "9"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Man9.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/pin-1",
+      "type": "texture",
+      "description": "riichi 筒 pin 1 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-1.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "1"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Pin1.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/pin-2",
+      "type": "texture",
+      "description": "riichi 筒 pin 2 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-2.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "2"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Pin2.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/pin-3",
+      "type": "texture",
+      "description": "riichi 筒 pin 3 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-3.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "3"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Pin3.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/pin-4",
+      "type": "texture",
+      "description": "riichi 筒 pin 4 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-4.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "4"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Pin4.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/pin-5",
+      "type": "texture",
+      "description": "riichi 筒 pin 5 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-5.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "5"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Pin5.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/pin-6",
+      "type": "texture",
+      "description": "riichi 筒 pin 6 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-6.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "6"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Pin6.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/pin-7",
+      "type": "texture",
+      "description": "riichi 筒 pin 7 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-7.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "7"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Pin7.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/pin-8",
+      "type": "texture",
+      "description": "riichi 筒 pin 8 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-8.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "8"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Pin8.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/pin-9",
+      "type": "texture",
+      "description": "riichi 筒 pin 9 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-9.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "9"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Pin9.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/sou-1",
+      "type": "texture",
+      "description": "riichi 条 sou 1 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-1.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "1"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Sou1.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/sou-2",
+      "type": "texture",
+      "description": "riichi 条 sou 2 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-2.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "2"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Sou2.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/sou-3",
+      "type": "texture",
+      "description": "riichi 条 sou 3 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-3.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "3"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Sou3.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/sou-4",
+      "type": "texture",
+      "description": "riichi 条 sou 4 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-4.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "4"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Sou4.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/sou-5",
+      "type": "texture",
+      "description": "riichi 条 sou 5 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-5.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "5"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Sou5.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/sou-6",
+      "type": "texture",
+      "description": "riichi 条 sou 6 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-6.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "6"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Sou6.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/sou-7",
+      "type": "texture",
+      "description": "riichi 条 sou 7 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-7.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "7"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Sou7.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/sou-8",
+      "type": "texture",
+      "description": "riichi 条 sou 8 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-8.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "8"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Sou8.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/sou-9",
+      "type": "texture",
+      "description": "riichi 条 sou 9 (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-9.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "9"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Sou9.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/man-5-red",
+      "type": "texture",
+      "description": "riichi 万 man red-five dora (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/man-5-red.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "万 man",
+        "red-five",
+        "dora"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Man5-Dora.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/pin-5-red",
+      "type": "texture",
+      "description": "riichi 筒 pin red-five dora (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pin-5-red.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "筒 pin",
+        "red-five",
+        "dora"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Pin5-Dora.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/sou-5-red",
+      "type": "texture",
+      "description": "riichi 条 sou red-five dora (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/sou-5-red.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "条 sou",
+        "red-five",
+        "dora"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Sou5-Dora.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/ton",
+      "type": "texture",
+      "description": "riichi honor 东风 east (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/ton.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "东风 east"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Ton.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/nan",
+      "type": "texture",
+      "description": "riichi honor 南风 south (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/nan.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "南风 south"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Nan.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/shaa",
+      "type": "texture",
+      "description": "riichi honor 西风 west (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/shaa.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "西风 west"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Shaa.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/pei",
+      "type": "texture",
+      "description": "riichi honor 北风 north (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/pei.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "北风 north"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Pei.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/haku",
+      "type": "texture",
+      "description": "riichi honor 白 white-dragon (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/haku.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "白 white-dragon"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Haku.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/hatsu",
+      "type": "texture",
+      "description": "riichi honor 发 green-dragon (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/hatsu.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "发 green-dragon"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Hatsu.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/chun",
+      "type": "texture",
+      "description": "riichi honor 中 red-dragon (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/chun.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "honor",
+        "中 red-dragon"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Chun.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/back",
+      "type": "texture",
+      "description": "riichi back (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/back.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "back"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Back.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/front",
+      "type": "texture",
+      "description": "riichi front (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/front.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "front"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Front.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "mahjong/blank",
+      "type": "texture",
+      "description": "riichi blank (mahjong placeholder)",
+      "status": "filled",
+      "path": "mahjong/blank.svg",
+      "category": "mahjong",
+      "style": "flat",
+      "license": "CC0-1.0",
+      "source": "FluffyStuff/riichi-mahjong-tiles",
+      "tags": [
+        "mahjong",
+        "riichi",
+        "blank"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "pulledFrom": "https://raw.githubusercontent.com/FluffyStuff/riichi-mahjong-tiles/master/Regular/Blank.svg",
+        "license": "CC0-1.0",
+        "date": "2026-07-17"
+      }
     }
   ]
 }
