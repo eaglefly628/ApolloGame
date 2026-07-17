@@ -8,8 +8,9 @@
 
 ## 待处理
 
-### REQ-C-104 · 角色卡「玩家档案」通道：外部带入主角姓名+头像（立绘字段预留） · [2026-07-17] · 提出人 GD-C → 待 PST/Lead 裁决 · status: open · 优先级: P1（M4 前需要·不阻塞 M1 逻辑） · 类型: 创作台/卡带 meta 数据通道（跨域：PST 主责·引擎装配层读取）
+### REQ-C-104 · 角色卡「玩家档案」通道：外部带入主角姓名+头像（立绘字段预留） · [2026-07-17] · 提出人 GD-C → **⚖ Lead 接单出图（2026-07-17·owner「有需求就做掉」）→ 指派：Opus（PST 域施工）** · status: in-progress（已派工） · 优先级: P1（M4 前需要·不阻塞 M1 逻辑） · 类型: 创作台/卡带 meta 数据通道（跨域：PST 主责·引擎装配层读取）
 > **想要的行为**：游戏外部（工坊/launcher 档案）配置一张「角色卡」：`{ name, avatar(资产 key), portrait?(立绘·预留) }`；
+> **⚖ Lead 图纸（2026-07-17·三游戏共享通道·格式 v1=game-b B-001 拍板「仅 name+avatar」）**：①`src/services/profile/` 引擎侧只读 API：`getPlayerProfile(): {name:string, avatarUrl?:string} | null`——浏览器读 `localStorage["apollo.playerProfile"]`（JSON·坏档返回 null 不抛）·headless/无 window 返回 null；`portrait` 字段预留进类型不实装。②launcher 档案入口（PST 域·`src/launcher.tsx` 既有设置区加最小档案卡）：名字输入 + 头像选择（内置预设 emoji/头像框数枚·不做上传——上传走资产线属后期）；存 localStorage 同键。③三游戏消费=各自 adapter 读 API（a/b/c 已按最小集设计·零返工）；无档案时游戏用内置默认（「主角」+占位头像）。④测试：service 坏档/无档/往返各一 + launcher 档案卡渲染断言。红线：不碰游戏目录；不新立组件；档案不进 sim/hash（装配期读一次成蓝图数据）。
 > game-c 启动时读到它，主角座位铭牌/结算屏以该身份呈现。
 > **已探明现状（2026-07-17 全库探查）**：`LibraryMeta`（`src/studio/library-model.ts:22`）仅 name/subtitle/description/color/icon，
 > **无任何玩家档案字段**；launcher/studio/manifest-game 均无现成通道——真缺口，非重组可解。
