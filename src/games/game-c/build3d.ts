@@ -42,9 +42,9 @@ export function build3DTableBlueprint(): WorldBlueprint {
   entities['floor'] = { Transform3D: { x: 0, y: -0.05, z: 0 }, Mesh3D: { shape: 'box', width: 10, height: 0.1, depth: 8, frontTint: FLOOR, backTint: FLOOR, edgeTint: FLOOR_EDGE } };
   entities['wall-n'] = { Transform3D: { x: 0, y: 1.4, z: -4 }, Mesh3D: { shape: 'box', width: 10, height: 3, depth: 0.2, frontTint: WALL, backTint: WALL, edgeTint: FLOOR_EDGE } };
 
-  // 牌桌：木基圆柱 + 呢面圆柱（呢绿 §1）。
+  // 牌桌：木基圆柱 + 呢面圆柱（呢绿 §1）。呢面带**静态碰撞体**（RigidBody3D mass0）→ 物理筹码落在桌面堆叠、不穿桌。
   entities['table-base'] = { Transform3D: { x: 0, y: 0.28, z: 0 }, Mesh3D: { shape: 'cylinder', width: 3.1, height: 0.5, frontTint: RIM, edgeTint: RIM_LO } };
-  entities['table-felt'] = { Transform3D: { x: 0, y: 0.55, z: 0 }, Mesh3D: { shape: 'cylinder', width: 2.7, height: 0.06, frontTint: FELT, edgeTint: FELT_LO } };
+  entities['table-felt'] = { Transform3D: { x: 0, y: 0.55, z: 0 }, Mesh3D: { shape: 'cylinder', width: 2.7, height: 0.06, frontTint: FELT, edgeTint: FELT_LO }, RigidBody3D: { shape: 'cylinder', mass: 0, restitution: 0.2, friction: 0.7 } };
 
   // 六凳：环桌矮圆柱（主角凳暖金高亮·§5.3 出局变暗留渲染层）。
   for (let i = 0; i < SEAT_COUNT; i++) {

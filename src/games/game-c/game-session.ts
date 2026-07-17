@@ -94,6 +94,8 @@ export class HoldemSession {
   stackOf(seat: SeatId): number { const p = this.hand?.players.find((x) => x.seat === seat); return p ? p.stack : this.seats[seat].stack; }
   /** 座位本街已投入注（UI 投影·座位卡「注 N」）。 */
   committedOf(seat: SeatId): number { return this.hand?.players.find((x) => x.seat === seat)?.committed ?? 0; }
+  /** 座位本手累计投入（3D 物理筹码抛掷 diff 用·只增不减·街收池不回退）。 */
+  totalOf(seat: SeatId): number { return this.hand?.players.find((x) => x.seat === seat)?.total ?? 0; }
   /** 座位本手是否弃牌 / 全下（UI 状态徽章）。 */
   seatState(seat: SeatId): { folded: boolean; allIn: boolean } {
     const p = this.hand?.players.find((x) => x.seat === seat);

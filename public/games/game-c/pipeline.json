@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": " Test Files  7 passed (7) ·       Tests  85 passed (85)",
-      "at": "2026-07-17T18:43:38.504Z",
-      "gameHash": "ad0468d054be18b1"
+      "summary": " Test Files  8 passed (8) ·       Tests  90 passed (90)",
+      "at": "2026-07-17T18:54:49.434Z",
+      "gameHash": "765156dc3652d2be"
     },
     "S5": {
       "exit": 0,
@@ -47,6 +47,13 @@
       "summary": "编译期游戏免 manifest 校验",
       "at": "2026-07-17T18:23:08.423Z",
       "gameHash": "a9d0747aca982e5f"
+    },
+    "S8": {
+      "exit": 0,
+      "summary": "tsc+vitest+build 三绿（tsc=0 vitest=0 run=0）",
+      "at": "2026-07-17T18:56:34.199Z",
+      "head": "07b6bcd88f1950fb7df479a9ae0c688922a09334",
+      "dirty": true
     }
   },
   "history": [
@@ -229,6 +236,30 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-17T18:43:38.504Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "阶段3 物理筹码·hash变·机器侧重跑",
+      "at": "2026-07-17T18:54:47.209Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-17T18:54:49.434Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S8",
+      "reason": "三阶段完整·tsc+vitest+build 三绿·净树重跑",
+      "at": "2026-07-17T18:54:49.512Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S8",
+      "exit": 0,
+      "at": "2026-07-17T18:56:34.199Z"
     }
   ],
   "outOfOrder": [
@@ -281,6 +312,16 @@
       "stage": "S4",
       "reason": "阶段2 玩法闭环·hash变·85测机器侧重跑",
       "at": "2026-07-17T18:43:36.276Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "阶段3 物理筹码·hash变·机器侧重跑",
+      "at": "2026-07-17T18:54:47.209Z"
+    },
+    {
+      "stage": "S8",
+      "reason": "三阶段完整·tsc+vitest+build 三绿·净树重跑",
+      "at": "2026-07-17T18:54:49.512Z"
     }
   ],
   "reviews": {

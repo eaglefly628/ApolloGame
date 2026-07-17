@@ -19,6 +19,7 @@ import { bestOf7, HOLDEM_TYPE_ORDER } from './holdem-eval.js';
 import type { BettingConfig } from './betting-engine.js';
 import { HoldemSession } from './game-session.js';
 import { build3DTableBlueprint } from './build3d.js';
+import { Chip3D } from './chip3d.js';
 
 const CFG: BettingConfig = { smallBlind: 25, bigBlind: 50 }; // GDD §11.5-1 现金局默认盲注
 const DEMO_SEED = 20260717; // 素坯定格种子（确定性·同种子同牌面同日志）
@@ -42,6 +43,19 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   let running = false;
   const start3D = (): void => { if (!running) { engine.start(); running = true; } };
   const stop3D = (): void => { if (running) { engine.stop(); running = false; } };
+
+  // ── 3D 物理筹码（owner 强调「筹码 3D 真实物理扔上去」·render-only·diff 下注→抛掷·§4-e）─────
+  const chip3d = new Chip3D(engine, DEMO_SEED);
+  let chipHandNo = 0;
+  const prevTotal: Record<number, number> = {};
+  const syncChips = (): void => {
+    if (!running || screen !== 'table') return;
+    if (session.handNo !== chipHandNo) { chip3d.clear(); for (const k of Object.keys(prevTotal)) delete prevTotal[Number(k)]; chipHandNo = session.handNo; }
+    for (let seat = 0; seat < 6; seat++) {
+      const cur = session.totalOf(seat), prev = prevTotal[seat] ?? 0;
+      if (cur > prev) { chip3d.throwBet(seat, Math.ceil((cur - prev) / 50)); prevTotal[seat] = cur; } // 每 50 一枚·物理抛向底池
+    }
+  };
 
   // ── 玩法会话（真交互闭环：发牌→下注→AI→摊牌→结算→轮转→淘汰→局终·§4-d 线性编排）────
   let session = new HoldemSession(DEMO_SEED, CFG, STARTING_STACK);
@@ -103,8 +117,8 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
 
   let ui: MountHandle | null = null;
   const tree = (): ReturnType<typeof buildMenu> => (screen === 'menu' ? buildMenu(menuView()) : buildTable(tableView()));
-  const rerender = (): void => ui?.update(tree());
-  const remount = (): void => { ui?.(); ui = mountUI(overlayHost, tree(), handlers, GAME_C_THEME); };
+  const rerender = (): void => { ui?.update(tree()); syncChips(); };
+  const remount = (): void => { ui?.(); ui = mountUI(overlayHost, tree(), handlers, GAME_C_THEME); syncChips(); };
 
   // 主角行动 → session 推进（内部跑完 AI）→ 重渲反映新态。
   const heroAct = (a: Parameters<HoldemSession['heroAct']>[0]): void => {
