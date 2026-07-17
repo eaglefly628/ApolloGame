@@ -6,6 +6,13 @@
 
 ---
 
+## REQ-3D-资产就绪自动重渲 · 静态场景 × 异步贴图迟到 = 脏帧跳渲吞掉换图帧 · [2026-07-17] · PE-B 提 → P3D 评审 · status: open · 类型: 渲染健壮（W1-C 脏帧跳渲的盲区）
+
+> **现象（game-b S3 实证）**：全静态 3D 场景（无动画/无相机动）+ Material3D.map 贴图异步 fetch 迟到——`ensurePbrMesh` 在贴图就绪后按 mode 正确重建了 mesh，但 `renderSig`（位姿/相机/灯/后处理…）不含资产就绪态 → 跳渲判「画面没变」→ 新贴图永不上屏（canvas 停在旧帧）。动态场景（game-z 恒动）撞不到此坑，纯静态陈列场景必撞。
+> **game-b 侧 workaround 在案**：宿主胶水 `assets.loadAll()` 收尾后调公开 `renderer.invalidate()`（`src/games/game-b/{assets,game-b}.ts`·可参考）。
+> **提议（P3D 裁决取一）**：① renderSig 折入 AssetManager 就绪版本号（资产每 ready 一枚 version++·最通用）；② attachRenderer 侧监听 loadAll 完成自动 invalidate；③ 维持宿主手动 invalidate 但回填 `playbooks/3d.md` 一行「静态场景+异步贴图必调」（最省·先堵手册）。
+> **连带小缺口（同域顺记）**：Material3D.map 无 alpha 路（transparent/alphaTest 均不设）→ 透明底 PNG 透明像素渲黑。game-b 占位牌面已按「程序化出路」授权期合成不透明贴图绕开（`scripts/game-b-compose-tiles.mjs`）；若后续真有「透明贴花面」需求再议 `alphaTest?` opt-in，眼下不催。
+
 ## REQ-3D-程序化动画方法集 · Anim3D 扩为底层可组合运动原语（osc/noise/ease）· [2026-07-06] · owner → P3D · status: **✅ done（P3D 2026-07-06·已推·见回执）** · 类型: 渲染能力补全（程序化动画底座）
 
 > **owner 2026-07-06**：「游戏若有程序化动画需求，开发一套底层的程序化动画方法」。

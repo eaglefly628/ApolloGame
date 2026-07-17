@@ -13,7 +13,7 @@
 ### B-003 · 引擎缺口盘点与提单 · [2026-07-17] · GD-B → LEAD · status: **✅ done（2026-07-17·当日结·全文迁 requests-archive）** · P1
 > 结论：a 语音端口=真缺口→已提主池 **REQ-VOICE-语音输出端口**（P1·腾槽=自撤 REQ-VN-退役入档）；b BT=游戏层 TS 记债不占池；c 机位/拾取=回驳已覆盖（Camera3D 运镜过渡+Pickable3D·capability-plan §2/§2.5 已记实名出处）。
 
-### B-004 · S2 计划过审 + S1 卡代填 · [2026-07-17] · GD-B → **LEAD**（审）+ PE-B（落卡） · status: open · P1
+### B-004 · S2 计划过审 + S1 卡代填 · [2026-07-17] · GD-B → **LEAD**（审）+ PE-B（落卡） · status: **落卡 ✅（PE-B 2026-07-17·骨架建成后原样执行·板上 S1 机器门绿）·待 owner/Lead 人门签** · P1
 > `capability-plan.md` 送审（⚖ TS 授权已记 §6）；过审后 S3 骨架开工（PE-B 领）。
 > **S2 ✅ 有条件通过（Lead 2026-07-17·裁决全文=capability-plan §6）**：条件④规则细目/⑤衣物口径已回填 gdd（2026-07-17 关闭）；②BT 下沉/⑥VoicePort 引擎侧当日落地；剩=①麻将核测试点名清单（S4 实现 spec 附录·PE-B 开工前 GD-B 会审）+③角色卡三游戏共享通道（PST 主责·等 owner 格式）。
 > S1 立项卡：pipeline CLI 判"未知游戏"（library/public/src 三处均无·骨架前落不了卡）——PE-B 建骨架后**第一动作**原样执行：
@@ -29,10 +29,12 @@
 ### B-008 · 美术台本批产 · [2026-07-17] · GD-B 出台本（⚖ owner 点名）→ **PA/美术平台**（转机读台账·真 key 后批产） · status: open · P1
 > 台本=`art-ledger.md`（29 号位·行=尺寸/格式/英文 prompt·锚引 `sakura-nijigen` 风格包不手抄）。第一批=B-01~06 人物头像立绘+B-20 主菜单背景；占位/程序化行先行不阻塞。转正式台账时**保号 B-NN**；`spec{w,h}` 消费口径 PUI/P3D 会审（Lead S2-⑤）。批产等真 key（连 REQ-AIGEN 卡口）。
 
-### B-009 · mockups 1:1 复刻成实装 UI（⚖ owner 2026-07-17「用我们的 UI 库重新实现一份，1:1 复刻」） · GD-B 立单 → **PE-B 主责（缺件报 PUI）** · status: open · P1
+### B-009 · mockups 1:1 复刻成实装 UI（⚖ owner 2026-07-17「用我们的 UI 库重新实现一份，1:1 复刻」） · GD-B 立单 → **PE-B 主责（缺件报 PUI）** · status: open（**S3 已起步**·牌桌 HUD 壳按线框稿 1120×630 坐标 1:1 落 LayoutNode·主菜单/结算面板=S5） · P1
+> **S3 预收集的 LayoutNode 差异清单（S5 报 PUI 裁决·先记后议）**：①行动钮「异形樱瓣款」——ShapeToken 闭集（pill/hexagon/diamond/shield/ribbon/chevron/tag/cut）无花瓣形，现用 pill；②线框稿 .abtn 非对称圆角（12/20 交替）——Panel/Button 无逐角 radius，主题件观感为准；③席位卡衣物章熄灭态=Tag tone:dim（线框稿为 opacity .22+灰度——观感近似·够用）。
 > **范围**：`mockups/main-menu.dc.html`（主菜单 SC-1）+ `mockups/ui-mockup.dc.html` 的牌桌 HUD 分区/席位卡/行动按钮排/字幕条/场况角标/结算面板——用 **LayoutNode 闭集 + sakura-otome 主题**实装复刻。
 > **1:1 的口径（诚实边界）**：布局结构/信息层级/视觉基调 1:1；控件观感以主题件为准（非逐像素）；**LayoutNode 表达不了的差异逐条列清单**→缺件走 requests.md 报 PUI 裁决，**绝不手写 DOM/CSS 逃生**。dc 稿内交互小玩具（timeline 拖拽等）=设计稿自用，非游戏功能。
 > **口径警示照 `mockups/README.md`**：人名/半庄/25000/衣物件名以 gdd 为准，复刻时文案数值全部换成拍板口径。验收：/check-ui 全过 + 与 mockup 并排截图对照（S5 关证据）。
 
-### B-007 · 占位包接线（⚖ owner 2026-07-17「录进文档结构供程序员参考」） · GD-B 录入 → **PE-B（S3 消费）** · status: open · P1
+### B-007 · 占位包接线（⚖ owner 2026-07-17「录进文档结构供程序员参考」） · GD-B 录入 → **PE-B（S3 消费）** · status: **✅ done（PE-B 2026-07-17·S3 接线回执见下）** · P1
 > 美术占位包=`docs/design/art-placeholders-riichi-mahjong.md`（PA 备料·CC0 全套）；接线细则已录 `scene-layout-handoff.md §六` 头部（⭐ 占位包段）+ gdd §九。PE-B S3 骨架照此 vendor：牌面 PNG 贴 3D 盒（免建模）、2D UI 用 SVG、骰子复用 game-g/d 现成 3D 件、点棒/牌桌程序化（P3D 会审）；占位入台账记 placeholder 真相（provenance CC0·FluffyStuff），S6 真美术保号替换。
+> **S3 接线回执（PE-B 2026-07-17）**：①40 张 `mahjong/tex/*` 已 `vendor-asset` 进 `public/games/game-b/art/`（本地索引 40 条·provenance CC0/FluffyStuff 全在条目·vitest 钉死在档）。②**发现并修口径**：包内字形 PNG=**透明底**，直接作 Material3D.map（不透明材质无 alpha 路）透明像素渲黑——已按「缺口走程序化」出路建授权期合成工具 `scripts/game-b-compose-tiles.mjs`（无头 Chromium canvas·front.png 象牙底+字形合成不透明 albedo·就地覆写本地拷贝·CC0 派生·可重跑）；**请 PA 会审**：placeholder 文档「box 贴面」段宜补一句透明底需先合成（问责定性=包/手册缺陷·此工具可收编共享）。③骰=Mesh3D.dieFaces 现成件（对面和7）；点棒托/牌桌=程序化 Mesh3D。2D SVG 与牌河/副露=S4-S5 消费。

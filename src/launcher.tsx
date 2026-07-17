@@ -124,6 +124,17 @@ export const GAMES: GameEntry[] = [
     icon: '🖌️',
     status: 'playable',
   },
+  {
+    id: 'game-b',
+    title: 'Game B: 雀宴',
+    subtitle: '和风日麻陪打 · 俯视 3D 牌桌',
+    description:
+      '俯视 3D 和风雀庄陪打局：角色卡带主角与金钱入局，与三位姨太打一圈东风战日麻，直击脱衣轻演出，结果带回局外。当前=S3 骨架：3D 桌+136 牌山实例+占位牌面手牌（CC0 贴面）+主机位 Camera3D+席位卡 HUD 壳（LayoutNode·sakura 主题）——全引擎 render-only 组件纯数据，零手写 Three.js。麻将核/AI/脱衣结算=S4 接入（docs/design/game-b/gdd.md）。',
+    color: '#241a26',
+    accentColor: '#e8899e',
+    icon: '🀄',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
