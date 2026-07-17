@@ -27,14 +27,14 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": " Test Files  3 passed (3) ·       Tests  31 passed (31)",
-      "at": "2026-07-17T15:34:20.578Z",
-      "gameHash": "bececa756847a34f"
+      "summary": " Test Files  3 passed (3) ·       Tests  32 passed (32)",
+      "at": "2026-07-17T20:06:52.914Z",
+      "gameHash": "744bf31a9bafd529"
     },
     "S5": {
       "exit": 0,
       "summary": "AUDIT: WARNINGS · RATCHET: PASS",
-      "at": "2026-07-17T18:32:22.154Z",
+      "at": "2026-07-17T20:06:53.255Z",
       "gameHash": "744bf31a9bafd529"
     }
   },
@@ -129,6 +129,30 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-07-17T18:32:22.154Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE-A 完整玩法批·该游戏 vitest 32 绿",
+      "at": "2026-07-17T20:06:37.363Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-17T20:06:52.914Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "PE-A 完整玩法批·audit 盲区 A-007",
+      "at": "2026-07-17T20:06:53.076Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-07-17T20:06:53.255Z"
     }
   ],
   "reviews": {
@@ -174,6 +198,16 @@
       "stage": "S5",
       "reason": "PE-A 完整玩法：选桌/进贡反馈/记牌器/理牌·audit 盲区 A-007",
       "at": "2026-07-17T18:32:22.107Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "PE-A 完整玩法批·该游戏 vitest 32 绿",
+      "at": "2026-07-17T20:06:37.363Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "PE-A 完整玩法批·audit 盲区 A-007",
+      "at": "2026-07-17T20:06:53.076Z"
     }
   ]
 }
