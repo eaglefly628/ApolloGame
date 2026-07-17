@@ -1,0 +1,18 @@
+# Game A《掼蛋》· 游戏级工单池（工单随游戏走·不占引擎池槽）
+
+> 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
+
+### A-001 · [2026-07-17] · GD-A · 角色卡统一标准依赖 · status: ⏳ 等 owner 发放 · 类型: 外部依赖
+主角角色卡数据结构由 owner 统一下发（含头像/年龄/性格/立绘等）。当前按 `{name, portrait(立绘), avatar(头像)}` 最小集设计适配层，扩展字段预留；标准落地后内置人设卡×3 按同一结构迁移。**S3 前不阻塞**（占位规格已在 ui-scene-design §5）。
+
+### A-002 · [2026-07-17] · GD-A · 掼蛋牌型判定/压制比较 能力缺口预判 · status: 📝 S2 随 capability-plan 转引擎池 · 类型: 能力缺口候选
+判型（含三连对/钢板/炸弹族/同花顺/天王炸）+压制序+级牌逢人配。先裁 `t3-poker-hand rankingTable(wild)` 可否重组表达；不能则申请下沉。**禁游戏层自写判型解释器。**
+
+### A-003 · [2026-07-17] · GD-A · 行为树 AI 能力缺口预判 · status: 📝 S2 随 capability-plan 转引擎池 · 类型: 能力缺口候选
+owner 意向 BT。GD 方案：BT 纯数据树+通用解释器（外层策略）+候选估值表（内层出牌）；若 Lead 判「策略表+condition/flow 重组已够」则从其裁决。记牌/偷看=数据配置，全种子确定性。
+
+### A-004 · [2026-07-17] · GD-A · 四家轮转盘间流程 能力对照 · status: 📝 S2 对照 `flow` 后定 · 类型: 能力对照
+墩→圈→盘→进贡/还贡→升级 的状态机。先对照现有 `flow`/`event-when` 表达力，不够再提。
+
+### A-005 · [2026-07-17] · GD-A · 生产板无法为零代码新立项开卡 · status: 📝 待转引擎池（现 10 槽满·先清后加） · 类型: 生产线工具缺口
+`game-pipeline.mjs detectForm` 只认 library/public 的 manifest.json 或 `src/games/<slug>/` 目录——但按八阶段设计 S1 立项卡/S2 plan **先于** S3 骨架，零代码新游戏开不了板、立项卡无处落。本项目权宜：S1 内容备于 `brief.md` §7，S2 过审后随骨架由 CLI 补落卡。建议 Lead 裁：detectForm 增认 `docs/design/<slug>/`（design 态）或明文「板自 S3 起」。（按问责定性=手册/工具缺陷记录，不问谁绕。）
