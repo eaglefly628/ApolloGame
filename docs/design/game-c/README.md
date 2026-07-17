@@ -19,7 +19,27 @@
 - GDD：🟢 v1 `gdd.md`（核心八条 owner 已拍板 2026-07-17·§11.5；数值细调/立绘分级留开放）
 - capability-plan：🟡 草案 v1 `capability-plan.md`（owner TS 口径已入档；待 Lead 备案评审）
 - 需求单：`requests.md`（游戏级·不占引擎池槽；现 1 条 REQ-C-104 角色卡通道→PST）
-- 美术备料：`art-placeholders.md`（PA 货架现货：52 牌+卡背+筹码 9 面额·2026-07-17 GD-C 录档）；布局图纸：`ui-brief.md` + `layout-mockup.html`
+- 美术备料：`art-placeholders.md`（PA 货架现货：52 牌+卡背+筹码面额·2026-07-17 GD-C 录档）；布局图纸：`ui-brief.md` + `layout-mockup.html`
+- **美术参考库（Cloud Design 交付包·2026-07-17 录档）**：`cloud-design/`（布局 5 画板 + 德州/掼蛋主菜单 .dc.html + support.js·浏览器直开）·美术数据=`art-data-manual.md`·**美术台本=`art-script.md`**（台账建行底稿·双风格锚·五姨太人设五案）。**⚠ 程序 1:1 复刻基准——但界面必须 LayoutNode 重做，禁直接挪用交付 HTML（owner 口径）**
+
+## 开工词（owner 开 PE-C 施工 session 时整段粘贴·照 roles/index.md 标准模板）
+
+```
+第一动作（先于一切）：git fetch origin claude/mainbranch && git checkout -B claude/mainbranch origin/claude/mainbranch
+角色=PE-C · 任务=《六人德州》M1 逻辑核开工。切完分支先读 docs/roles/index.md 角色卡照办；
+立项档=docs/design/game-c/（README→gdd→capability-plan→art-script→ui-brief）——以 mainbranch 最新为准，
+你被注入的 feature 分支是旧快照、绝不在其上开工。
+本阶段只领 M1（八阶段流程板·一会话一阶段·板未开先按 docs/playbooks/game-production.md 开板）：
+src/games/game-c/ 实现 holdem-eval.ts（7 选 5 最优+kicker 全序+平分）与 betting-engine.ts
+（下注圈轮转/min-raise/不足额 all-in 不重开/边池切层/死按钮）+ 衣物典当接线（craft-recipe 每件一条配方·数据）
++ headless 测试钉死（边池矩阵/kicker/平分/轮转边角/同 seed 复现）。
+owner 已批本项目 TS 口径（capability-plan §4 例外表为准）；硬线不放松：种子 PRNG（禁裸 Math.random）、
+禁手写 DOM、sim 确定性、零测试不出货。
+视觉属后续阶段：M3/M4 以 docs/design/game-c/cloud-design/*.dc.html 为 1:1 复刻基准，
+但界面必须用 LayoutNode 控件闭集重做，禁止直接挪用该 HTML/CSS/JS（art-script.md §四）。
+产出直推 claude/mainbranch（fetch→rebase→tsc+vitest+build 全绿→push），绝不推 feature 分支。
+宣布「完成」必须贴 node scripts/game-pipeline.mjs board game-c 输出——不全绿只许说「做到 SN」。
+```
 - 生产流程板：未开（`docs/playbooks/game-production.md` 八阶段）
 
 ## 角色与通道

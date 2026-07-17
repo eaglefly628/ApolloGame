@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:radial-gradient(140% 120% at 50% -10%,#1c110c 0%,#160e0a 45%,#0d0806 100%);-webkit-font-smoothing:antialiased}
+  @keyframes dealIn{0%{opacity:0;transform:translateY(26px) scale(.9)}100%{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes flyChip{0%{opacity:0;transform:translate(0,0) scale(.6)}18%{opacity:1}100%{opacity:.9;transform:translate(var(--dx),var(--dy)) scale(1)}}
+  @keyframes neon{0%,100%{opacity:1;filter:drop-shadow(0 0 8px currentColor) drop-shadow(0 0 22px currentColor)}50%{opacity:.82;filter:drop-shadow(0 0 4px currentColor) drop-shadow(0 0 12px currentColor)}}
+  @keyframes stoolGlow{0%,100%{box-shadow:0 0 26px 6px rgba(127,214,176,.4),0 0 0 3px rgba(127,214,176,.5)}50%{box-shadow:0 0 46px 14px rgba(127,214,176,.7),0 0 0 3px rgba(127,214,176,.8)}}
+  input[type=range]{-webkit-appearance:none;appearance:none;background:transparent}
+  input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:6px;background:linear-gradient(90deg,#e0b458,#c8352b);box-shadow:inset 0 0 0 1px rgba(0,0,0,.5)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;margin-top:-7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#e0b458 60%,#b8860b);border:2px solid #4a2f06;box-shadow:0 3px 8px rgba(0,0,0,.6),0 0 12px rgba(224,180,88,.7);cursor:pointer}
+</style>
+</helmet>
+
+<div style="min-height:100vh;padding:36px 46px 90px;font-family:'Oswald','Noto Sans SC',sans-serif;color:#f3ece0">
+
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:28px;max-width:1280px">
+    <div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;color:#c8352b;text-transform:uppercase;margin-bottom:6px">GD-C · ui-brief v1 · Claude Design · 2026-07-17</div>
+      <h1 style="margin:0;font-family:'Bebas Neue','Noto Sans SC',sans-serif;font-size:52px;letter-spacing:2px;line-height:.95;color:#f3ece0">六人德州 · 界面布局设计文档</h1>
+      <div style="margin-top:8px;font-size:15px;color:#b8a894;max-width:760px;line-height:1.5">基线 1280×720 横屏 · 固定斜俯视 3D 视口 · 位铺百分比锚点 · 全部元素映射现有 LayoutNode 闭集与 3D 组件 · 拖拽画布可平移缩放</div>
+    </div>
+    <div style="font-family:'Noto Serif SC';font-weight:900;font-size:30px;line-height:1.05;letter-spacing:2px;color:#d8b878;text-align:right">德州<br><span style="color:#c8352b">夜宴</span></div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:24px;padding:14px 18px;border-radius:12px;background:linear-gradient(160deg,rgba(28,18,32,.85),rgba(12,8,18,.9));border:1px solid rgba(224,180,88,.25);max-width:1280px">
+    <button onClick="{{ toggleAnno }}" style="font-family:'Oswald',sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;padding:9px 16px;border-radius:8px;cursor:pointer;border:1px solid {{ annoBtnBorder }};background:{{ annoBtnBg }};color:{{ annoBtnColor }};text-transform:uppercase">◧ 工程标注 {{ annoBtnState }}</button>
+    <button onClick="{{ deal }}" style="font-family:'Oswald',sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;padding:9px 16px;border-radius:8px;cursor:pointer;border:1px solid rgba(127,214,176,.5);background:rgba(127,214,176,.1);color:#a9e6cd;text-transform:uppercase">↻ 重新发牌 · 演出</button>
+    <div style="width:1px;height:22px;background:rgba(224,180,88,.25)"></div>
+    <div style="display:flex;align-items:center;gap:16px;font-family:'Share Tech Mono',monospace;font-size:10.5px;flex-wrap:wrap">
+      <span style="display:inline-flex;align-items:center;gap:6px;color:#a9e6cd"><span style="width:11px;height:11px;border-radius:3px;background:rgba(127,214,176,.2);border:1px solid #7fd6b0"></span>LayoutNode 控件</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;color:#e0a37a"><span style="width:11px;height:11px;border-radius:3px;background:rgba(200,53,43,.2);border:1px solid #c8352b"></span>3D 组件</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;color:#ecca8a"><span style="width:11px;height:11px;border-radius:3px;background:rgba(224,180,88,.2);border:1px solid #e0b458"></span>百分比锚点</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;color:#a7f3c8"><span style="width:11px;height:11px;border-radius:3px;background:rgba(52,211,120,.2);border:1px solid #34d378"></span>写世界信号</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:60px;align-items:flex-start;margin-top:44px">
+
+    <!-- ========================= ARTBOARD A : MAIN TABLE ========================= -->
+    <figure style="margin:0;display:flex;flex-direction:column;gap:16px">
+      <figcaption style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 9px;border-radius:6px;background:#c8352b;color:#fff;letter-spacing:1px">A</span>
+        <span style="font-family:'Bebas Neue','Noto Sans SC',sans-serif;font-size:26px;letter-spacing:1px;color:#f3ece0">主对局画面</span>
+        <span style="font-size:13px;color:#8a7862">固定斜俯视 3D 视口 + UI 浮层 · 可操作</span>
+      </figcaption>
+
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:16px;border:1px solid rgba(224,180,88,.4);box-shadow:0 34px 90px rgba(0,0,0,.65),0 0 70px rgba(200,53,43,.07);background:radial-gradient(120% 100% at 50% 12%,#33221a 0%,#1c110c 44%,#0d0806 100%)">
+
+        <!-- room walls + floor ambient -->
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,14,.7) 0%,transparent 26%,transparent 62%,rgba(6,4,10,.85) 100%)"></div>
+        <div style="position:absolute;left:50%;top:34%;width:1020px;height:640px;transform:translate(-50%,-50%);background:radial-gradient(46% 40% at 50% 42%,rgba(255,206,120,.22),transparent 68%);pointer-events:none"></div>
+
+        <!-- ===== 3D STAGE (fixed tilted camera) ===== -->
+        <div style="position:absolute;inset:0;perspective:1350px;perspective-origin:50% 30%">
+          <div style="position:absolute;left:50%;top:41%;width:1040px;height:720px;transform:translate(-50%,-50%) rotateX(46deg);transform-style:preserve-3d">
+
+            <!-- floor -->
+            <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:1300px;height:1000px;border-radius:50%;background:radial-gradient(60% 60% at 50% 42%,#241a12,#120c0a 70%,#080506);box-shadow:0 0 200px 40px rgba(0,0,0,.6) inset"></div>
+
+            <!-- table base (thickness) -->
+            <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) translateZ(-34px);width:706px;height:498px;border-radius:50%;background:linear-gradient(#4a3218,#241608);box-shadow:0 30px 40px rgba(0,0,0,.6)"></div>
+            <!-- table rim -->
+            <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) translateZ(-6px);width:700px;height:492px;border-radius:50%;background:linear-gradient(#8a5f2e,#4a3218)"></div>
+            <!-- felt top -->
+            <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:660px;height:452px;border-radius:50%;transform-style:preserve-3d;background:radial-gradient(66% 66% at 50% 46%,#166f4f 0%,#0e5540 54%,#093a2c 100%);box-shadow:inset 0 0 0 3px rgba(224,180,88,.28),inset 0 0 70px rgba(0,0,0,.5)">
+              <div style="position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-family:'Noto Serif SC';font-weight:900;font-size:32px;color:rgba(224,180,88,.13);white-space:nowrap;letter-spacing:4px">德州夜宴</div>
+
+              <!-- pot chip stack (standing) -->
+              <div style="position:absolute;left:50%;top:24%;transform:translate(-50%,-50%);transform-style:preserve-3d">
+                <div style="position:absolute;left:-17px;top:-9px;width:34px;height:18px;border-radius:50%;background:conic-gradient(#e0b458 0 25%,#b8860b 0 50%,#e0b458 0 75%,#b8860b 0);border:1px solid rgba(0,0,0,.4);transform:translateZ(20px)"></div>
+                <div style="position:absolute;left:-17px;top:-9px;width:34px;height:18px;border-radius:50%;background:conic-gradient(#c0392b 0 25%,#8c1c14 0 50%,#c0392b 0 75%,#8c1c14 0);border:1px solid rgba(0,0,0,.4);transform:translateZ(13px)"></div>
+                <div style="position:absolute;left:-17px;top:-9px;width:34px;height:18px;border-radius:50%;background:conic-gradient(#1b1b22 0 25%,#3a3a48 0 50%,#1b1b22 0 75%,#3a3a48 0);border:1px solid rgba(0,0,0,.4);transform:translateZ(6px)"></div>
+                <div style="position:absolute;left:-17px;top:-9px;width:34px;height:18px;border-radius:50%;background:conic-gradient(#e0b458 0 25%,#b8860b 0 50%,#e0b458 0 75%,#b8860b 0);border:1px solid rgba(0,0,0,.4)"></div>
+              </div>
+
+              <!-- community cards (lying on felt) -->
+              <div style="position:absolute;left:50%;top:52%;width:316px;margin-left:-158px;margin-top:-39px"><div style="display:flex;gap:9px;justify-content:center;animation:{{ dealAnim }}">
+                <div style="width:56px;height:78px;border-radius:6px;background:linear-gradient(150deg,#fdfcf7,#e9e3d2);box-shadow:0 8px 16px rgba(0,0,0,.5);position:relative;flex:none"><span style="position:absolute;top:4px;left:6px;font:700 17px 'Oswald';line-height:.85;color:#1b1b22">A<br><span style="font-size:13px">♠</span></span><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;color:#1b1b22">♠</span></div>
+                <div style="width:56px;height:78px;border-radius:6px;background:linear-gradient(150deg,#fdfcf7,#e9e3d2);box-shadow:0 8px 16px rgba(0,0,0,.5);position:relative;flex:none"><span style="position:absolute;top:4px;left:6px;font:700 17px 'Oswald';line-height:.85;color:#c0392b">K<br><span style="font-size:13px">♥</span></span><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;color:#c0392b">♥</span></div>
+                <div style="width:56px;height:78px;border-radius:6px;background:linear-gradient(150deg,#fdfcf7,#e9e3d2);box-shadow:0 8px 16px rgba(0,0,0,.5);position:relative;flex:none"><span style="position:absolute;top:4px;left:6px;font:700 17px 'Oswald';line-height:.85;color:#c0392b">7<br><span style="font-size:13px">♦</span></span><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;color:#c0392b">♦</span></div>
+                <div style="width:56px;height:78px;border-radius:6px;background:linear-gradient(150deg,#fdfcf7,#e9e3d2);box-shadow:0 8px 16px rgba(0,0,0,.5);position:relative;flex:none"><span style="position:absolute;top:4px;left:6px;font:700 17px 'Oswald';line-height:.85;color:#1b1b22">4<br><span style="font-size:13px">♠</span></span><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;color:#1b1b22">♠</span></div>
+                <div style="width:56px;height:78px;border-radius:6px;background:repeating-linear-gradient(45deg,#7a1420 0 5px,#5c0f18 5px 10px);border:2px solid #e0b458;box-shadow:0 8px 16px rgba(0,0,0,.5);position:relative;flex:none"><div style="position:absolute;inset:5px;border:1px solid rgba(224,180,88,.6);border-radius:3px;display:flex;align-items:center;justify-content:center;color:#e0b458;font-family:'Bebas Neue';font-size:19px">♠</div></div>
+              </div></div>
+
+              <!-- dealer button -->
+              <div style="position:absolute;left:70%;top:66%;transform:translate(-50%,-50%) translateZ(4px);width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff,#e0e0e0);border:2px solid #b8860b;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:14px;color:#7a1420">D</div>
+            </div>
+
+            <!-- ===== STOOLS (6) ===== -->
+            <div style="position:absolute;left:520px;top:600px;transform:translate(-50%,-50%);transform-style:preserve-3d"><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:118px;height:82px;border-radius:50%;background:rgba(0,0,0,.5);filter:blur(5px)"></div><div style="width:104px;height:74px;border-radius:50%;background:radial-gradient(circle at 45% 34%,#c99a3e,#6a4a1e);box-shadow:inset 0 0 0 3px rgba(224,180,88,.3);transform:translateZ(30px)"></div></div>
+            <div style="position:absolute;left:930px;top:330px;transform:translate(-50%,-50%);transform-style:preserve-3d"><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:110px;height:76px;border-radius:50%;background:rgba(0,0,0,.5);filter:blur(5px)"></div><div style="width:96px;height:68px;border-radius:50%;background:radial-gradient(circle at 45% 34%,#8a2436,#4a1020);box-shadow:inset 0 0 0 3px rgba(224,180,88,.25);transform:translateZ(28px)"></div></div>
+            <div style="position:absolute;left:770px;top:80px;transform:translate(-50%,-50%);transform-style:preserve-3d"><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:104px;height:70px;border-radius:50%;background:rgba(0,0,0,.5);filter:blur(5px)"></div><div style="width:90px;height:62px;border-radius:50%;background:radial-gradient(circle at 45% 34%,#9a7a3e,#2a1a12);box-shadow:inset 0 0 0 3px rgba(127,214,176,.4);transform:translateZ(26px);animation:stoolGlow 1.6s ease-in-out infinite"></div></div>
+            <div style="position:absolute;left:270px;top:70px;transform:translate(-50%,-50%);transform-style:preserve-3d"><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:104px;height:70px;border-radius:50%;background:rgba(0,0,0,.5);filter:blur(5px)"></div><div style="width:90px;height:62px;border-radius:50%;background:radial-gradient(circle at 45% 34%,#4a4450,#221e28);transform:translateZ(26px);filter:grayscale(.6)"></div></div>
+            <div style="position:absolute;left:110px;top:330px;transform:translate(-50%,-50%);transform-style:preserve-3d"><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:110px;height:76px;border-radius:50%;background:rgba(0,0,0,.5);filter:blur(5px)"></div><div style="width:96px;height:68px;border-radius:50%;background:radial-gradient(circle at 45% 34%,#8a2436,#4a1020);box-shadow:inset 0 0 0 3px rgba(200,53,43,.4);transform:translateZ(28px)"></div></div>
+            <div style="position:absolute;left:280px;top:560px;transform:translate(-50%,-50%);transform-style:preserve-3d"><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:118px;height:82px;border-radius:50%;background:rgba(0,0,0,.5);filter:blur(5px)"></div><div style="width:104px;height:74px;border-radius:50%;background:radial-gradient(circle at 45% 34%,#3a3640,#1a1820);transform:translateZ(30px);filter:grayscale(1)"></div></div>
+          </div>
+        </div>
+
+        <!-- flying chips fx -->
+        {{ flyChipsNode }}
+
+        <!-- ===== TOP BAND (12%) ===== -->
+        <div style="position:absolute;left:0;right:0;top:0;height:86px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;background:linear-gradient(to bottom,rgba(8,5,14,.92),rgba(8,5,14,.2) 82%,transparent);z-index:20">
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 14px;border-radius:10px;background:linear-gradient(160deg,rgba(30,20,34,.9),rgba(14,9,18,.92));border:1px solid rgba(224,180,88,.4)">
+            <div style="width:26px;height:26px;border-radius:5px;background:linear-gradient(#c0392b,#7a1420);border:1px solid #e0b458;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:15px;color:#ecca8a">SB</div>
+            <div style="line-height:1.05"><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:#f3ece0">盲注 25 / 50</div><div style="font-size:11px;color:#8a7862">第 7 手 · 现金局</div></div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:4px;color:#e0a37a">POT · 底池</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:44px;line-height:.9;letter-spacing:1px;color:#e0b458;text-shadow:0 0 16px rgba(224,180,88,.5)">{{ potLabel }}</div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button style="width:44px;height:44px;border-radius:10px;cursor:pointer;background:linear-gradient(160deg,rgba(30,20,34,.9),rgba(14,9,18,.92));border:1px solid rgba(224,180,88,.4);color:#e0b458;font-size:19px">⚙</button>
+            <button style="width:44px;height:44px;border-radius:10px;cursor:pointer;background:linear-gradient(160deg,rgba(30,20,34,.9),rgba(14,9,18,.92));border:1px solid rgba(224,180,88,.4);color:#e0b458;font-size:19px">♪</button>
+          </div>
+        </div>
+
+        <!-- ===== SEAT CARDS (screen-anchored billboards above stools) ===== -->
+        <!-- P2 二姨太 (NE, top-right) ACTIVE -->
+        <div onClick="{{ openP2 }}" style="position:absolute;left:71%;top:9%;transform:translate(-50%,-50%);width:150px;cursor:pointer;z-index:22">
+          <div style="position:absolute;left:50%;top:-20px;transform:translateX(-50%);font-family:'Oswald';font-weight:600;font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(127,214,176,.15);border:1px solid #7fd6b0;color:#a9e6cd;white-space:nowrap">思考中…</div>
+          <div style="display:flex;gap:10px;align-items:center;padding:9px;border-radius:12px;background:linear-gradient(160deg,rgba(30,20,34,.94),rgba(14,9,18,.96));border:1px solid #7fd6b0;box-shadow:0 8px 22px rgba(0,0,0,.55),0 0 26px rgba(127,214,176,.35)">
+            <div style="position:relative;width:46px;height:46px;flex:none">
+              <svg width="46" height="46" viewBox="0 0 72 72" style="position:absolute;inset:0;transform:rotate(-90deg)"><circle cx="36" cy="36" r="32" fill="none" stroke="rgba(0,0,0,.5)" stroke-width="5"></circle><circle cx="36" cy="36" r="32" fill="none" stroke="{{ ringColor }}" stroke-width="5" stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="{{ ringOffset }}" style="transition:stroke .3s"></circle></svg>
+              <div style="position:absolute;inset:4px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#6a5a3a,#2a1a12);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:21px;color:#ecca8a">二</div>
+              <div style="position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);font-family:'Bebas Neue';font-size:15px;color:{{ ringColor }};text-shadow:0 0 6px rgba(0,0,0,.8)">{{ timeLabel }}</div>
+            </div>
+            <div><div style="font-family:'Oswald';font-weight:600;font-size:13px;color:#f3ece0">二姨太</div><div style="font-family:'Bebas Neue';font-size:18px;color:#e0b458;line-height:.95">2,850</div><div style="display:flex;gap:3px;margin-top:3px">{{ gems2 }}</div></div>
+          </div>
+        </div>
+
+        <!-- P3 三姨太 (NW, top-left) FOLDED -->
+        <div onClick="{{ openP3 }}" style="position:absolute;left:22%;top:8%;transform:translate(-50%,-50%);width:150px;cursor:pointer;opacity:.5;z-index:22">
+          <div style="position:absolute;left:50%;top:-20px;transform:translateX(-50%);font-family:'Oswald';font-weight:600;font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(120,120,130,.2);border:1px solid #6a6a78;color:#b8b8c4;white-space:nowrap">已弃 FOLD</div>
+          <div style="display:flex;gap:10px;align-items:center;padding:9px;border-radius:12px;background:linear-gradient(160deg,rgba(24,20,28,.9),rgba(12,10,15,.92));border:1px solid rgba(140,140,150,.35)">
+            <div style="width:44px;height:44px;border-radius:50%;flex:none;background:radial-gradient(circle at 40% 30%,#4a4450,#221e28);border:2px solid #6a6a78;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:21px;color:#b8b8c4;filter:grayscale(1)">三</div>
+            <div><div style="font-family:'Oswald';font-weight:600;font-size:13px;color:#c8c4cc">三姨太</div><div style="font-family:'Bebas Neue';font-size:18px;color:#9a9aa4;line-height:.95">6,400</div><div style="display:flex;gap:3px;margin-top:3px">{{ gems3g }}</div></div>
+          </div>
+        </div>
+
+        <!-- P1 大姨太 (E, right) CALLED -->
+        <div onClick="{{ openP1 }}" style="position:absolute;left:87%;top:38%;transform:translate(-50%,-50%);width:150px;cursor:pointer;z-index:22">
+          <div style="position:absolute;left:50%;top:-22px;transform:translateX(-50%);font-family:'Oswald';font-weight:600;font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(52,211,120,.15);border:1px solid #34d378;color:#a7f3c8;white-space:nowrap">CALL 150</div>
+          <div style="display:flex;gap:10px;align-items:center;padding:9px;border-radius:12px;background:linear-gradient(160deg,rgba(30,20,34,.94),rgba(14,9,18,.96));border:1px solid rgba(224,180,88,.45);box-shadow:0 8px 22px rgba(0,0,0,.55)">
+            <div style="width:44px;height:44px;border-radius:50%;flex:none;background:radial-gradient(circle at 40% 30%,#5a3d2e,#2a1a12);border:2px solid #e0b458;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:21px;color:#ecca8a">大</div>
+            <div><div style="font-family:'Oswald';font-weight:600;font-size:13px;color:#f3ece0">大姨太</div><div style="font-family:'Bebas Neue';font-size:18px;color:#e0b458;line-height:.95">4,200</div><div style="display:flex;gap:3px;margin-top:3px">{{ gems3 }}</div></div>
+          </div>
+        </div>
+
+        <!-- P4 四姨太 (W, left) ALL-IN -->
+        <div onClick="{{ openP4 }}" style="position:absolute;left:12%;top:38%;transform:translate(-50%,-50%);width:150px;cursor:pointer;z-index:22">
+          <div style="position:absolute;left:50%;top:-22px;transform:translateX(-50%);font-family:'Oswald';font-weight:700;font-size:11px;padding:3px 10px;border-radius:20px;background:linear-gradient(90deg,#c8352b,#c0392b);border:1px solid #ecca8a;color:#fff;white-space:nowrap;box-shadow:0 0 14px rgba(200,53,43,.6)">ALL-IN</div>
+          <div style="display:flex;gap:10px;align-items:center;padding:9px;border-radius:12px;background:linear-gradient(160deg,rgba(40,18,30,.95),rgba(18,9,16,.96));border:1px solid #c8352b;box-shadow:0 8px 22px rgba(0,0,0,.55),0 0 22px rgba(200,53,43,.3)">
+            <div style="width:44px;height:44px;border-radius:50%;flex:none;background:radial-gradient(circle at 40% 30%,#6a3d2e,#2a1a12);border:2px solid #c8352b;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:21px;color:#ecca8a">四</div>
+            <div><div style="font-family:'Oswald';font-weight:600;font-size:13px;color:#f3ece0">四姨太</div><div style="font-family:'Bebas Neue';font-size:18px;color:#e0a37a;line-height:.95">0</div><div style="display:flex;gap:3px;margin-top:3px">{{ gems1 }}</div></div>
+          </div>
+        </div>
+
+        <!-- P5 五姨太 (SW, lower-left) OUT -->
+        <div style="position:absolute;left:20%;top:66%;transform:translate(-50%,-50%);width:150px;opacity:.4;z-index:22">
+          <div style="position:absolute;left:50%;top:-20px;transform:translateX(-50%);font-family:'Oswald';font-weight:600;font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(80,80,88,.3);border:1px solid #55555f;color:#8a8a94;white-space:nowrap">出局 OUT</div>
+          <div style="display:flex;gap:10px;align-items:center;padding:9px;border-radius:12px;background:linear-gradient(160deg,rgba(18,16,20,.9),rgba(10,9,12,.92));border:1px solid rgba(90,90,98,.3);filter:grayscale(1)">
+            <div style="width:44px;height:44px;border-radius:50%;flex:none;background:radial-gradient(circle at 40% 30%,#3a3640,#1a1820);border:2px solid #55555f;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:21px;color:#8a8a94">五</div>
+            <div><div style="font-family:'Oswald';font-weight:600;font-size:13px;color:#9a9aa4">五姨太</div><div style="font-family:'Bebas Neue';font-size:16px;color:#77777f;line-height:.95">剥光</div></div>
+          </div>
+        </div>
+
+        <!-- ===== BOTTOM BAND ===== -->
+        <div style="position:absolute;left:0;right:0;bottom:0;height:172px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:0 24px 20px;background:linear-gradient(to top,rgba(6,4,10,.97) 30%,rgba(10,7,16,.4) 82%,transparent);z-index:24">
+          <div onClick="{{ openP0 }}" style="width:236px;cursor:pointer;display:flex;gap:12px;align-items:center;padding:12px;border-radius:14px;background:linear-gradient(160deg,rgba(40,26,44,.96),rgba(16,10,22,.97));border:1px solid rgba(224,180,88,.55);box-shadow:0 10px 30px rgba(0,0,0,.6),0 0 24px rgba(224,180,88,.12)">
+            <div style="width:60px;height:60px;border-radius:50%;flex:none;background:radial-gradient(circle at 40% 30%,#6a4a2e,#2a1a14);border:2px solid #e0b458;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:30px;color:#ecca8a;box-shadow:0 0 16px rgba(224,180,88,.4)">我</div>
+            <div style="flex:1"><div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:'Oswald';font-weight:700;font-size:17px;color:#f3ece0">主角</span><span style="font-size:10px;color:#8a7862">YOU</span></div><div style="font-family:'Bebas Neue';font-size:26px;color:#e0b458;line-height:.9;text-shadow:0 0 10px rgba(224,180,88,.4)">3,300</div><div style="display:flex;gap:3px;margin-top:5px">{{ gems4 }}</div></div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:2px">
+            <div style="display:flex;gap:12px;animation:{{ dealAnim }}">
+              <div style="width:74px;height:104px;border-radius:9px;background:linear-gradient(150deg,#fdfcf7,#e9e3d2);box-shadow:0 10px 24px rgba(0,0,0,.6),0 0 18px rgba(224,180,88,.25);position:relative;transform:rotate(-6deg)"><span style="position:absolute;top:7px;left:10px;font:700 26px 'Oswald';line-height:.85;color:#c0392b">A<br><span style="font-size:19px">♥</span></span><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:48px;color:#c0392b">♥</span></div>
+              <div style="width:74px;height:104px;border-radius:9px;background:linear-gradient(150deg,#fdfcf7,#e9e3d2);box-shadow:0 10px 24px rgba(0,0,0,.6),0 0 18px rgba(224,180,88,.25);position:relative;transform:rotate(6deg)"><span style="position:absolute;top:7px;left:10px;font:700 26px 'Oswald';line-height:.85;color:#1b1b22">A<br><span style="font-size:19px">♦</span></span><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:48px;color:#c0392b">♦</span></div>
+            </div>
+            <div style="font-family:'Oswald';font-weight:600;font-size:13px;letter-spacing:1px;padding:5px 16px;border-radius:20px;background:rgba(224,180,88,.14);border:1px solid rgba(224,180,88,.5);color:#ecca8a">最优成牌 · 三条 A</div>
+          </div>
+
+          <div style="width:432px">
+            <div style="display:flex;gap:10px;margin-bottom:10px">
+              <button onClick="{{ emitFold }}" style="flex:1;padding:14px 0;border-radius:11px;cursor:pointer;font-family:'Oswald';font-weight:700;font-size:15px;letter-spacing:1px;text-transform:uppercase;color:#f0d0c4;background:linear-gradient(160deg,#5a1a26,#3a0f18);border:1px solid #c8352b;box-shadow:0 6px 16px rgba(0,0,0,.5)">弃牌<br><span style="font-size:10px;font-weight:400;opacity:.7">FOLD</span></button>
+              <button onClick="{{ emitCall }}" style="flex:1.2;padding:14px 0;border-radius:11px;cursor:pointer;font-family:'Oswald';font-weight:700;font-size:15px;letter-spacing:1px;text-transform:uppercase;color:#d8ffe6;background:linear-gradient(160deg,#12563a,#0a3524);border:1px solid #34d378;box-shadow:0 6px 16px rgba(0,0,0,.5)">跟注 150<br><span style="font-size:10px;font-weight:400;opacity:.7">CALL</span></button>
+              <button onClick="{{ emitRaise }}" style="flex:1.2;padding:14px 0;border-radius:11px;cursor:pointer;font-family:'Oswald';font-weight:700;font-size:15px;letter-spacing:1px;text-transform:uppercase;color:#2a1600;background:linear-gradient(160deg,#f0c96a,#d3a247);border:1px solid #f6e6c0;box-shadow:0 6px 16px rgba(0,0,0,.5),0 0 18px rgba(224,180,88,.4)">加注 {{ raiseLabel }}<br><span style="font-size:10px;font-weight:400;opacity:.75">RAISE</span></button>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:9px;padding:8px 12px;border-radius:10px;background:rgba(12,8,18,.7);border:1px solid rgba(224,180,88,.25)">
+              <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#8a7862">RAISE</span>
+              <input type="range" min="100" max="3300" step="25" value="{{ raise }}" onInput="{{ onRaise }}" style="flex:1;height:22px">
+              <span style="font-family:'Bebas Neue';font-size:22px;color:#e0b458;min-width:64px;text-align:right">{{ raiseLabel }}</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button onClick="{{ half }}" style="flex:1;padding:8px 0;border-radius:8px;cursor:pointer;font-family:'Oswald';font-weight:600;font-size:12px;color:#ecca8a;background:rgba(224,180,88,.1);border:1px solid rgba(224,180,88,.4)">½ 池</button>
+              <button onClick="{{ twoThird }}" style="flex:1;padding:8px 0;border-radius:8px;cursor:pointer;font-family:'Oswald';font-weight:600;font-size:12px;color:#ecca8a;background:rgba(224,180,88,.1);border:1px solid rgba(224,180,88,.4)">⅔ 池</button>
+              <button onClick="{{ potBtn }}" style="flex:1;padding:8px 0;border-radius:8px;cursor:pointer;font-family:'Oswald';font-weight:600;font-size:12px;color:#ecca8a;background:rgba(224,180,88,.1);border:1px solid rgba(224,180,88,.4)">满池</button>
+              <button onClick="{{ allin }}" style="flex:1;padding:8px 0;border-radius:8px;cursor:pointer;font-family:'Oswald';font-weight:700;font-size:12px;color:#fff;background:linear-gradient(90deg,#c8352b,#c0392b);border:1px solid #ecca8a">ALL-IN</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- signal toast -->
+        <div style="position:absolute;left:50%;bottom:196px;transform:translateX(-50%);display:{{ sigDisplay }};font-family:'Share Tech Mono',monospace;font-size:13px;padding:9px 18px;border-radius:8px;background:rgba(52,211,120,.16);border:1px solid #34d378;color:#a7f3c8;box-shadow:0 6px 20px rgba(0,0,0,.6);z-index:60">→ 信号入队 · {{ sig }}</div>
+
+        <!-- ===== WARDROBE OVERLAY (interactive) ===== -->
+        <sc-if value="{{ wardrobe }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeW }}" style="position:absolute;inset:0;background:rgba(4,2,8,.72);backdrop-filter:blur(3px);z-index:80;display:flex;align-items:center;justify-content:center">
+            <div onClick="{{ stop }}" style="width:820px;height:520px;border-radius:16px;display:flex;overflow:hidden;background:linear-gradient(160deg,rgba(34,22,38,.98),rgba(14,9,18,.99));border:1px solid rgba(224,180,88,.55);box-shadow:0 40px 100px rgba(0,0,0,.8),0 0 60px rgba(200,53,43,.15)">
+              <div style="width:40%;position:relative;background:linear-gradient(180deg,#2a1a12,#160f0b);border-right:1px solid rgba(224,180,88,.3);display:flex;align-items:center;justify-content:center">
+                <div style="width:74%;aspect-ratio:3/4;border:2px dashed rgba(224,180,88,.4);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#8a7862;text-align:center;padding:14px">
+                  <div style="width:70px;height:70px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#5a3d2e,#2a1a12);border:2px solid #e0b458"></div>
+                  <div style="font-family:'Bebas Neue';font-size:24px;color:#ecca8a;letter-spacing:1px">{{ wardrobeName }}</div>
+                  <div style="font-size:11px;line-height:1.4">分层立绘区 · 3:4<br>按已穿图层实时叠合<br><span style="opacity:.6">（未产出前=头像大图回退）</span></div>
+                </div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;padding:22px 24px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                  <div><div style="font-family:'Bebas Neue';font-size:28px;letter-spacing:1px;color:#f3ece0">{{ wardrobeName }} · 衣柜</div><div style="font-size:11px;color:#8a7862">{{ wardrobeMode }}</div></div>
+                  <button onClick="{{ closeW }}" style="width:38px;height:38px;border-radius:9px;cursor:pointer;background:rgba(200,53,43,.12);border:1px solid #c8352b;color:#e0a37a;font-size:17px">✕</button>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:9px;overflow:auto">
+                  {{ wardrobeRows }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ ANNOTATION LAYER A ============ -->
+        <div style="position:absolute;inset:0;pointer-events:none;z-index:70;display:{{ annoDisplay }};font-family:'Share Tech Mono',monospace">
+          <div style="position:absolute;left:14px;top:96px;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(224,180,88,.16);border:1px solid #e0b458;color:#ecca8a">顶带 anchor · h=12%</div>
+          <div style="position:absolute;left:20px;top:122px;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(127,214,176,.14);border:1px solid #7fd6b0;color:#a9e6cd">Panel+Label · 盲注牌</div>
+          <div style="position:absolute;left:566px;top:120px;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(127,214,176,.14);border:1px solid #7fd6b0;color:#a9e6cd">Label(大字) · POT</div>
+          <div style="position:absolute;right:20px;top:122px;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(52,211,120,.14);border:1px solid #34d378;color:#a7f3c8">Button×2 · menu_open / sound_toggle</div>
+          <div style="position:absolute;left:50%;top:200px;transform:translateX(-50%);font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(200,53,43,.16);border:1px solid #c8352b;color:#e0a37a">Camera3D 固定斜俯视 · pitch≈46°（不切换）</div>
+          <div style="position:absolute;left:50%;top:290px;transform:translate(-50%,0);font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(200,53,43,.16);border:1px solid #c8352b;color:#e0a37a">Mesh3D box+Material3D 呢绒桌 · Decal3D 公共牌</div>
+          <div style="position:absolute;left:80%;top:24%;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(200,53,43,.16);border:1px solid #c8352b;color:#e0a37a">Mesh3D ×6 圆凳（出局变暗）</div>
+          <div style="position:absolute;left:74%;top:2%;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(127,214,176,.14);border:1px solid #7fd6b0;color:#a9e6cd">座位卡 → seat_view · Gauge 倒计时环</div>
+          <div style="position:absolute;left:1%;top:26%;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(200,53,43,.16);border:1px solid #c8352b;color:#e0a37a">Glow3D 凳前微光</div>
+          <div style="position:absolute;left:14px;bottom:150px;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(224,180,88,.16);border:1px solid #e0b458;color:#ecca8a">底带 anchor · h=12%</div>
+          <div style="position:absolute;left:18px;bottom:120px;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(127,214,176,.14);border:1px solid #7fd6b0;color:#a9e6cd">主角位 Panel · 衣物徽章 ×n</div>
+          <div style="position:absolute;left:50%;bottom:150px;transform:translateX(-50%);font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(127,214,176,.14);border:1px solid #7fd6b0;color:#a9e6cd">底牌 Panel+Image×2 · 只主角可见</div>
+          <div style="position:absolute;right:120px;bottom:150px;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(52,211,120,.14);border:1px solid #34d378;color:#a7f3c8">Button×3+Slider · act_fold / act_check_call / act_raise</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- ========================= ARTBOARD B : WARDROBE SELF ========================= -->
+    <figure style="margin:0;display:flex;flex-direction:column;gap:16px">
+      <figcaption style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 9px;border-radius:6px;background:#c8352b;color:#fff;letter-spacing:1px">B</span>
+        <span style="font-family:'Bebas Neue','Noto Sans SC',sans-serif;font-size:26px;letter-spacing:1px">衣柜面板 · 自己</span>
+        <span style="font-size:13px;color:#8a7862">点主角座位卡弹出 · 可典当换筹码</span>
+      </figcaption>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:16px;border:1px solid rgba(224,180,88,.4);box-shadow:0 34px 90px rgba(0,0,0,.65);background:radial-gradient(120% 95% at 50% 30%,#2a1a12 0%,#160f0b 46%,#0d0806 100%)">
+        <div style="position:absolute;inset:0;background:rgba(4,2,8,.55)"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:940px;height:580px;border-radius:18px;display:flex;overflow:hidden;background:linear-gradient(160deg,rgba(34,22,38,.98),rgba(14,9,18,.99));border:1px solid rgba(224,180,88,.55);box-shadow:0 40px 100px rgba(0,0,0,.8),0 0 70px rgba(200,53,43,.14)">
+          <div style="width:40%;position:relative;background:linear-gradient(180deg,#2a1a12,#160f0b);border-right:1px solid rgba(224,180,88,.3);display:flex;align-items:center;justify-content:center">
+            <div style="width:72%;aspect-ratio:3/4;border:2px dashed rgba(224,180,88,.45);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#8a7862;text-align:center;padding:18px">
+              <div style="width:88px;height:88px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#6a4a2e,#2a1a14);border:2px solid #e0b458"></div>
+              <div style="font-family:'Bebas Neue';font-size:30px;color:#ecca8a;letter-spacing:1px">主角 立绘</div>
+              <div style="font-size:12px;line-height:1.5">分层立绘区 · 面板宽 40% · 竖幅 3:4<br>按已穿图层实时叠合 · 典当逐层消失<br><span style="opacity:.6">尺度基线：不露骨（底层剪影/遮挡）</span></div>
+            </div>
+            <div style="position:absolute;left:14px;top:14px;font-family:'Share Tech Mono',monospace;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(127,214,176,.14);border:1px solid #7fd6b0;color:#a9e6cd;display:{{ annoDisplay }}">Image 分层合成 · 立绘区</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;padding:26px 28px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+              <div><div style="font-family:'Bebas Neue';font-size:34px;letter-spacing:1px;color:#f3ece0">主角 · 衣柜</div><div style="font-size:12px;color:#8a7862">自己视角 · 在穿件可典当换筹码</div></div>
+              <button style="width:42px;height:42px;border-radius:10px;cursor:pointer;background:rgba(200,53,43,.12);border:1px solid #c8352b;color:#e0a37a;font-size:18px">✕</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:11px;background:rgba(224,180,88,.06);border:1px solid rgba(224,180,88,.35)"><div style="width:42px;height:42px;border-radius:9px;background:linear-gradient(150deg,#5a3d2e,#2a1a12);border:1px solid #e0b458;display:flex;align-items:center;justify-content:center;color:#ecca8a;font-size:19px">◈</div><div style="flex:1"><div style="font-family:'Oswald';font-weight:600;font-size:16px;color:#f3ece0">锦缎旗袍</div><div style="font-size:11px;color:#8a7862">在穿 · 顶层</div></div><div style="font-family:'Bebas Neue';font-size:22px;color:#e0b458">面值 800</div><button style="padding:9px 16px;border-radius:9px;cursor:pointer;font-family:'Oswald';font-weight:700;font-size:12px;color:#2a1600;background:linear-gradient(160deg,#f0c96a,#d3a247);border:1px solid #f6e6c0">换筹码</button></div>
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:11px;background:rgba(224,180,88,.06);border:1px solid rgba(224,180,88,.35)"><div style="width:42px;height:42px;border-radius:9px;background:linear-gradient(150deg,#5a3d2e,#2a1a12);border:1px solid #e0b458;display:flex;align-items:center;justify-content:center;color:#ecca8a;font-size:19px">◈</div><div style="flex:1"><div style="font-family:'Oswald';font-weight:600;font-size:16px;color:#f3ece0">珠钗步摇</div><div style="font-size:11px;color:#8a7862">在穿 · 头饰层</div></div><div style="font-family:'Bebas Neue';font-size:22px;color:#e0b458">面值 450</div><button style="padding:9px 16px;border-radius:9px;cursor:pointer;font-family:'Oswald';font-weight:700;font-size:12px;color:#2a1600;background:linear-gradient(160deg,#f0c96a,#d3a247);border:1px solid #f6e6c0">换筹码</button></div>
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:11px;background:rgba(224,180,88,.06);border:1px solid rgba(224,180,88,.35)"><div style="width:42px;height:42px;border-radius:9px;background:linear-gradient(150deg,#5a3d2e,#2a1a12);border:1px solid #e0b458;display:flex;align-items:center;justify-content:center;color:#ecca8a;font-size:19px">◈</div><div style="flex:1"><div style="font-family:'Oswald';font-weight:600;font-size:16px;color:#f3ece0">翡翠耳坠</div><div style="font-size:11px;color:#8a7862">在穿 · 配饰层</div></div><div style="font-family:'Bebas Neue';font-size:22px;color:#e0b458">面值 300</div><button style="padding:9px 16px;border-radius:9px;cursor:pointer;font-family:'Oswald';font-weight:700;font-size:12px;color:#2a1600;background:linear-gradient(160deg,#f0c96a,#d3a247);border:1px solid #f6e6c0">换筹码</button></div>
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:11px;background:rgba(30,26,32,.5);border:1px solid rgba(120,120,130,.3);opacity:.5"><div style="width:42px;height:42px;border-radius:9px;background:linear-gradient(150deg,#3a3640,#1a1820);border:1px solid #6a6a78;display:flex;align-items:center;justify-content:center;color:#8a8a94;font-size:19px">◇</div><div style="flex:1"><div style="font-family:'Oswald';font-weight:600;font-size:16px;color:#9a9aa4">缎面绣鞋</div><div style="font-size:11px;color:#6a6a74">已当 · 立绘层消失</div></div><div style="font-family:'Bebas Neue';font-size:22px;color:#77777f">面值 220</div><div style="padding:9px 16px;font-family:'Oswald';font-weight:600;font-size:12px;color:#77777f">已典当</div></div>
+            </div>
+            <div style="position:absolute;right:16px;bottom:14px;gap:8px;font-family:'Share Tech Mono',monospace;font-size:10px;display:{{ annoFlex }}">
+              <span style="padding:3px 7px;border-radius:5px;background:rgba(52,211,120,.14);border:1px solid #34d378;color:#a7f3c8">自己行 → pawn_item(件id)</span>
+              <span style="padding:3px 7px;border-radius:5px;background:rgba(52,211,120,.14);border:1px solid #34d378;color:#a7f3c8">panel_close</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- ========================= ARTBOARD C : WARDROBE OPPONENT ========================= -->
+    <figure style="margin:0;display:flex;flex-direction:column;gap:16px">
+      <figcaption style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 9px;border-radius:6px;background:#c8352b;color:#fff;letter-spacing:1px">C</span>
+        <span style="font-family:'Bebas Neue','Noto Sans SC',sans-serif;font-size:26px;letter-spacing:1px">衣柜面板 · 对手</span>
+        <span style="font-size:13px;color:#8a7862">点对手座位卡 · 列表只读 · 立绘同步着装</span>
+      </figcaption>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:16px;border:1px solid rgba(224,180,88,.4);box-shadow:0 34px 90px rgba(0,0,0,.65);background:radial-gradient(120% 95% at 50% 30%,#2a1a12 0%,#160f0b 46%,#0d0806 100%)">
+        <div style="position:absolute;inset:0;background:rgba(4,2,8,.55)"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:940px;height:580px;border-radius:18px;display:flex;overflow:hidden;background:linear-gradient(160deg,rgba(34,22,38,.98),rgba(14,9,18,.99));border:1px solid rgba(224,180,88,.55);box-shadow:0 40px 100px rgba(0,0,0,.8)">
+          <div style="width:40%;position:relative;background:linear-gradient(180deg,#2a1a12,#160f0b);border-right:1px solid rgba(224,180,88,.3);display:flex;align-items:center;justify-content:center">
+            <div style="width:72%;aspect-ratio:3/4;border:2px dashed rgba(224,180,88,.45);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#8a7862;text-align:center;padding:18px">
+              <div style="width:88px;height:88px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#5a3d2e,#2a1a12);border:2px solid #e0b458"></div>
+              <div style="font-family:'Bebas Neue';font-size:30px;color:#ecca8a;letter-spacing:1px">大姨太 立绘</div>
+              <div style="font-size:12px;line-height:1.5">立绘同步其着装状态<br>（已当件对应层消失）</div>
+            </div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;padding:26px 28px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+              <div><div style="font-family:'Bebas Neue';font-size:34px;letter-spacing:1px;color:#f3ece0">大姨太 · 衣柜</div><div style="font-size:12px;color:#8a7862">对手视角 · 只读（件名 + 面值可见）</div></div>
+              <button style="width:42px;height:42px;border-radius:10px;cursor:pointer;background:rgba(200,53,43,.12);border:1px solid #c8352b;color:#e0a37a;font-size:18px">✕</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:11px;background:rgba(224,180,88,.05);border:1px solid rgba(224,180,88,.28)"><div style="width:42px;height:42px;border-radius:9px;background:linear-gradient(150deg,#5a3d2e,#2a1a12);border:1px solid rgba(224,180,88,.5);display:flex;align-items:center;justify-content:center;color:#ecca8a;font-size:19px">◈</div><div style="flex:1"><div style="font-family:'Oswald';font-weight:600;font-size:16px;color:#f3ece0">云锦披风</div><div style="font-size:11px;color:#8a7862">在穿</div></div><div style="font-family:'Bebas Neue';font-size:22px;color:#e0b458">面值 900</div></div>
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:11px;background:rgba(224,180,88,.05);border:1px solid rgba(224,180,88,.28)"><div style="width:42px;height:42px;border-radius:9px;background:linear-gradient(150deg,#5a3d2e,#2a1a12);border:1px solid rgba(224,180,88,.5);display:flex;align-items:center;justify-content:center;color:#ecca8a;font-size:19px">◈</div><div style="flex:1"><div style="font-family:'Oswald';font-weight:600;font-size:16px;color:#f3ece0">点翠头面</div><div style="font-size:11px;color:#8a7862">在穿</div></div><div style="font-family:'Bebas Neue';font-size:22px;color:#e0b458">面值 620</div></div>
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:11px;background:rgba(224,180,88,.05);border:1px solid rgba(224,180,88,.28)"><div style="width:42px;height:42px;border-radius:9px;background:linear-gradient(150deg,#5a3d2e,#2a1a12);border:1px solid rgba(224,180,88,.5);display:flex;align-items:center;justify-content:center;color:#ecca8a;font-size:19px">◈</div><div style="flex:1"><div style="font-family:'Oswald';font-weight:600;font-size:16px;color:#f3ece0">羊脂玉镯</div><div style="font-size:11px;color:#8a7862">在穿</div></div><div style="font-family:'Bebas Neue';font-size:22px;color:#e0b458">面值 500</div></div>
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:11px;background:rgba(30,26,32,.5);border:1px solid rgba(120,120,130,.3);opacity:.5"><div style="width:42px;height:42px;border-radius:9px;background:linear-gradient(150deg,#3a3640,#1a1820);border:1px solid #6a6a78;display:flex;align-items:center;justify-content:center;color:#8a8a94;font-size:19px">◇</div><div style="flex:1"><div style="font-family:'Oswald';font-weight:600;font-size:16px;color:#9a9aa4">丝绒绣履</div><div style="font-size:11px;color:#6a6a74">已当</div></div><div style="font-family:'Bebas Neue';font-size:22px;color:#77777f">面值 280</div></div>
+            </div>
+            <div style="margin-top:auto;padding-top:14px;font-size:11px;color:#6a6a74;font-family:'Share Tech Mono',monospace">对手列表只读 · 无「换筹码」按钮 · owner 拍板</div>
+            <div style="position:absolute;right:16px;bottom:14px;font-family:'Share Tech Mono',monospace;font-size:10px;display:{{ annoDisplay }}"><span style="padding:3px 7px;border-radius:5px;background:rgba(52,211,120,.14);border:1px solid #34d378;color:#a7f3c8">panel_close</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- ========================= ARTBOARD D : SHOWDOWN ========================= -->
+    <figure style="margin:0;display:flex;flex-direction:column;gap:16px">
+      <figcaption style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 9px;border-radius:6px;background:#c8352b;color:#fff;letter-spacing:1px">D</span>
+        <span style="font-family:'Bebas Neue','Noto Sans SC',sans-serif;font-size:26px;letter-spacing:1px">摊牌横幅</span>
+        <span style="font-size:13px;color:#8a7862">短显 · 同时 3D 收池演出 · 自动淡出</span>
+      </figcaption>
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:16px;border:1px solid rgba(224,180,88,.4);box-shadow:0 34px 90px rgba(0,0,0,.65);background:radial-gradient(120% 100% at 50% 12%,#33221a 0%,#1c110c 44%,#0d0806 100%)">
+        <div style="position:absolute;inset:0;perspective:1350px;perspective-origin:50% 30%">
+          <div style="position:absolute;left:50%;top:40%;width:1040px;height:720px;transform:translate(-50%,-50%) rotateX(46deg);transform-style:preserve-3d">
+            <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:1300px;height:1000px;border-radius:50%;background:radial-gradient(60% 60% at 50% 42%,#241a12,#120c0a 70%,#080506)"></div>
+            <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) translateZ(-6px);width:700px;height:492px;border-radius:50%;background:linear-gradient(#8a5f2e,#4a3218)"></div>
+            <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:660px;height:452px;border-radius:50%;background:radial-gradient(66% 66% at 50% 46%,#166f4f 0%,#0e5540 54%,#093a2c 100%);box-shadow:inset 0 0 0 3px rgba(224,180,88,.4),0 0 90px rgba(224,180,88,.3)"></div>
+          </div>
+        </div>
+        <div style="position:absolute;inset:0;background:radial-gradient(40% 44% at 50% 42%,rgba(224,180,88,.2),transparent 66%)"></div>
+        <div style="position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);text-align:center;width:760px;z-index:5">
+          <div style="font-family:'Noto Serif SC';font-weight:900;font-size:24px;letter-spacing:6px;color:#d8b878;animation:neon 3s ease-in-out infinite;margin-bottom:8px">赢 家</div>
+          <div style="font-family:'Bebas Neue','Noto Sans SC',sans-serif;font-size:60px;letter-spacing:2px;color:#f3ece0;line-height:.95;text-shadow:0 0 24px rgba(224,180,88,.5)">主角 赢得底池</div>
+          <div style="font-family:'Oswald';font-weight:600;font-size:20px;color:#ecca8a;margin:4px 0 26px;letter-spacing:2px">葫芦 · Full House · A A A K K</div>
+          <div style="display:flex;gap:14px;justify-content:center">
+            <div style="width:76px;height:106px;border-radius:9px;background:linear-gradient(150deg,#fdfcf7,#e9e3d2);box-shadow:0 12px 26px rgba(0,0,0,.6),0 0 22px rgba(224,180,88,.5);position:relative"><span style="position:absolute;top:7px;left:10px;font:700 26px 'Oswald';line-height:.85;color:#c0392b">A<br><span style="font-size:19px">♥</span></span><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:50px;color:#c0392b">♥</span></div>
+            <div style="width:76px;height:106px;border-radius:9px;background:linear-gradient(150deg,#fdfcf7,#e9e3d2);box-shadow:0 12px 26px rgba(0,0,0,.6),0 0 22px rgba(224,180,88,.5);position:relative"><span style="position:absolute;top:7px;left:10px;font:700 26px 'Oswald';line-height:.85;color:#1b1b22">A<br><span style="font-size:19px">♠</span></span><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:50px;color:#1b1b22">♠</span></div>
+            <div style="width:76px;height:106px;border-radius:9px;background:linear-gradient(150deg,#fdfcf7,#e9e3d2);box-shadow:0 12px 26px rgba(0,0,0,.6),0 0 22px rgba(224,180,88,.5);position:relative"><span style="position:absolute;top:7px;left:10px;font:700 26px 'Oswald';line-height:.85;color:#c0392b">A<br><span style="font-size:19px">♦</span></span><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:50px;color:#c0392b">♦</span></div>
+            <div style="width:76px;height:106px;border-radius:9px;background:linear-gradient(150deg,#fdfcf7,#e9e3d2);box-shadow:0 12px 26px rgba(0,0,0,.6),0 0 22px rgba(224,180,88,.5);position:relative"><span style="position:absolute;top:7px;left:10px;font:700 26px 'Oswald';line-height:.85;color:#c0392b">K<br><span style="font-size:19px">♥</span></span><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:50px;color:#c0392b">♥</span></div>
+            <div style="width:76px;height:106px;border-radius:9px;background:linear-gradient(150deg,#fdfcf7,#e9e3d2);box-shadow:0 12px 26px rgba(0,0,0,.6),0 0 22px rgba(224,180,88,.5);position:relative"><span style="position:absolute;top:7px;left:10px;font:700 26px 'Oswald';line-height:.85;color:#1b1b22">K<br><span style="font-size:19px">♠</span></span><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:50px;color:#1b1b22">♠</span></div>
+          </div>
+          <div style="margin-top:24px;font-family:'Bebas Neue';font-size:30px;color:#e0b458;letter-spacing:1px">+ 1,150 筹码入袋</div>
+        </div>
+        <div style="position:absolute;left:50%;top:14%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(127,214,176,.14);border:1px solid #7fd6b0;color:#a9e6cd;display:{{ annoDisplay }};z-index:6">Panel+Label(赢家/牌型)+Image(亮5张成牌) · Glow3D 赢家聚光 · 自动淡出</div>
+      </div>
+    </figure>
+
+    <!-- ========================= ARTBOARD E : ENDGAME ========================= -->
+    <figure style="margin:0;display:flex;flex-direction:column;gap:16px">
+      <figcaption style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 9px;border-radius:6px;background:#c8352b;color:#fff;letter-spacing:1px">E</span>
+        <span style="font-family:'Bebas Neue','Noto Sans SC',sans-serif;font-size:26px;letter-spacing:1px">终局屏</span>
+        <span style="font-size:13px;color:#8a7862">胜（五姨太全出局）/ 败（主角剥光）</span>
+      </figcaption>
+      <div style="display:flex;gap:44px;flex-wrap:wrap">
+        <div style="width:618px;height:720px;position:relative;overflow:hidden;border-radius:16px;border:1px solid rgba(224,180,88,.45);box-shadow:0 34px 90px rgba(0,0,0,.65),0 0 60px rgba(224,180,88,.12);background:radial-gradient(120% 90% at 50% 20%,#3a2a10 0%,#1a1206 50%,#0d0806 100%)">
+          <div style="position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 50% 30%,rgba(224,180,88,.05) 0deg 6deg,transparent 6deg 12deg)"></div>
+          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;width:80%">
+            <div style="font-family:'Noto Serif SC';font-weight:900;font-size:30px;letter-spacing:8px;color:#d8b878;animation:neon 3s ease-in-out infinite">大 获 全 胜</div>
+            <div style="font-family:'Bebas Neue','Noto Sans SC',sans-serif;font-size:66px;letter-spacing:2px;color:#f3ece0;margin:10px 0 4px;text-shadow:0 0 24px rgba(224,180,88,.5)">通吃满堂</div>
+            <div style="font-size:15px;color:#ecca8a;margin-bottom:30px">五姨太全数出局 · 一桌尽归</div>
+            <div style="display:flex;flex-direction:column;gap:10px;text-align:left;margin-bottom:34px;padding:20px;border-radius:14px;background:rgba(0,0,0,.35);border:1px solid rgba(224,180,88,.3)">
+              <div style="display:flex;justify-content:space-between;font-family:'Oswald';font-size:15px;color:#f3ece0"><span style="color:#b8a894">总手数</span><span style="font-family:'Bebas Neue';font-size:20px">42 手</span></div>
+              <div style="display:flex;justify-content:space-between;font-family:'Oswald';font-size:15px;color:#f3ece0"><span style="color:#b8a894">最终筹码</span><span style="font-family:'Bebas Neue';font-size:20px;color:#e0b458">18,650</span></div>
+              <div style="display:flex;justify-content:space-between;font-family:'Oswald';font-size:15px;color:#f3ece0"><span style="color:#b8a894">典当收益</span><span style="font-family:'Bebas Neue';font-size:20px">+ 5,270</span></div>
+            </div>
+            <div style="display:flex;gap:14px">
+              <button style="flex:1;padding:16px 0;border-radius:12px;cursor:pointer;font-family:'Oswald';font-weight:700;font-size:16px;letter-spacing:1px;color:#2a1600;background:linear-gradient(160deg,#f0c96a,#d3a247);border:1px solid #f6e6c0;box-shadow:0 0 20px rgba(224,180,88,.4)">再来一局</button>
+              <button style="flex:1;padding:16px 0;border-radius:12px;cursor:pointer;font-family:'Oswald';font-weight:700;font-size:16px;letter-spacing:1px;color:#ecca8a;background:rgba(224,180,88,.1);border:1px solid rgba(224,180,88,.5)">回大厅</button>
+            </div>
+          </div>
+          <div style="position:absolute;left:16px;top:16px;font-family:'Share Tech Mono',monospace;font-size:10px;padding:3px 7px;border-radius:5px;background:rgba(52,211,120,.14);border:1px solid #34d378;color:#a7f3c8;display:{{ annoDisplay }}">Panel 全屏 · restart / exit</div>
+        </div>
+        <div style="width:618px;height:720px;position:relative;overflow:hidden;border-radius:16px;border:1px solid rgba(200,53,43,.4);box-shadow:0 34px 90px rgba(0,0,0,.65);background:radial-gradient(120% 90% at 50% 20%,#2a1210 0%,#160b08 50%,#0d0806 100%)">
+          <div style="position:absolute;inset:0;box-shadow:inset 0 0 200px 60px rgba(0,0,0,.7)"></div>
+          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;width:80%">
+            <div style="font-family:'Noto Serif SC';font-weight:900;font-size:30px;letter-spacing:8px;color:#c8352b;animation:neon 3.4s ease-in-out infinite">铩 羽 而 归</div>
+            <div style="font-family:'Bebas Neue','Noto Sans SC',sans-serif;font-size:66px;letter-spacing:2px;color:#f0d8e2;margin:10px 0 4px">输得精光</div>
+            <div style="font-size:15px;color:#e0a37a;margin-bottom:30px">主角筹码与衣物尽失 · 落败离席</div>
+            <div style="display:flex;flex-direction:column;gap:10px;text-align:left;margin-bottom:34px;padding:20px;border-radius:14px;background:rgba(0,0,0,.4);border:1px solid rgba(200,53,43,.3)">
+              <div style="display:flex;justify-content:space-between;font-family:'Oswald';font-size:15px;color:#f0d8e2"><span style="color:#b98aa0">坚持手数</span><span style="font-family:'Bebas Neue';font-size:20px">28 手</span></div>
+              <div style="display:flex;justify-content:space-between;font-family:'Oswald';font-size:15px;color:#f0d8e2"><span style="color:#b98aa0">典当件数</span><span style="font-family:'Bebas Neue';font-size:20px;color:#e0a37a">4 / 4 件</span></div>
+              <div style="display:flex;justify-content:space-between;font-family:'Oswald';font-size:15px;color:#f0d8e2"><span style="color:#b98aa0">最大底池</span><span style="font-family:'Bebas Neue';font-size:20px">3,400</span></div>
+            </div>
+            <div style="display:flex;gap:14px">
+              <button style="flex:1;padding:16px 0;border-radius:12px;cursor:pointer;font-family:'Oswald';font-weight:700;font-size:16px;letter-spacing:1px;color:#fff;background:linear-gradient(160deg,#c8352b,#a01050);border:1px solid #ffd7e6;box-shadow:0 0 20px rgba(200,53,43,.4)">再来一局</button>
+              <button style="flex:1;padding:16px 0;border-radius:12px;cursor:pointer;font-family:'Oswald';font-weight:700;font-size:16px;letter-spacing:1px;color:#e0a37a;background:rgba(200,53,43,.1);border:1px solid rgba(200,53,43,.5)">回大厅</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+
+  <div style="margin-top:56px;max-width:1000px;font-size:13px;line-height:1.7;color:#8a7862;font-family:'Oswald','Noto Sans SC',sans-serif">
+    <span style="color:#e0a37a;font-weight:600">交付说明 ·</span> 本文即 §11-g「cross design」布局图纸。3D 视口采用固定斜俯视相机（pitch≈46°·不切换），桌面可见立体牌桌 + 六张环桌圆凳，头像座位卡以屏幕常量锚定于各凳投影上方。全部 UI 元素映射现有 LayoutNode 闭集（Panel / Label / Button / Slider / Gauge / Image），零新控件；点击写世界一律以 action 信号入队（UI 铁律）。3D 场景走盒庭线现货组件（Camera3D / Mesh3D / Material3D / Decal3D / RigidBody3D / Light3D / Glow3D）。立绘尺度基线：不露骨（底层剪影 / 遮挡处理）。
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { anno: true, raise: 300, pot: 1150, stack: 3300, timeLeft: 22, total: 22, sig: null, wardrobe: null, chips: [], dealNonce: 0 };
+
+  componentDidMount() {
+    this.timer = setInterval(() => {
+      this.setState(s => {
+        let t = s.timeLeft - 0.1;
+        if (t <= 0) t = s.total;
+        return { timeLeft: Math.round(t * 10) / 10 };
+      });
+    }, 100);
+  }
+  componentWillUnmount() { clearInterval(this.timer); if (this.chipTO) clearTimeout(this.chipTO); if (this.sigTO) clearTimeout(this.sigTO); }
+
+  emit(sig, toss) {
+    if (this.sigTO) clearTimeout(this.sigTO);
+    this.setState({ sig });
+    this.sigTO = setTimeout(() => this.setState({ sig: null }), 2400);
+    if (toss) this.tossChips();
+  }
+  tossChips() {
+    const cols = ['#c0392b', '#1b1b22', '#e0b458', '#1f8b4c', '#7b3fa0'];
+    const chips = Array.from({ length: 6 }).map((_, i) => {
+      const sx = 44 + Math.random() * 10;
+      return { id: Date.now() + '_' + i, color: cols[i % cols.length], x: sx, y: 80 + Math.random() * 6,
+        dx: (50 - sx) * 12 + (Math.random() * 40 - 20), dy: -320 - Math.random() * 30 };
+    });
+    this.setState({ chips });
+    if (this.chipTO) clearTimeout(this.chipTO);
+    this.chipTO = setTimeout(() => this.setState({ chips: [] }), 850);
+  }
+
+  gems(n, color) {
+    return Array.from({ length: n }).map((_, i) =>
+      React.createElement('span', { key: i, style: {
+        width: '10px', height: '10px', transform: 'rotate(45deg)', borderRadius: '2px',
+        background: color, boxShadow: '0 0 5px ' + color + '88', display: 'inline-block'
+      } }));
+  }
+
+  renderVals() {
+    const s = this.state;
+    const nf = n => n.toLocaleString('en-US');
+    const circ = 201;
+    const frac = s.timeLeft / s.total;
+    const ringColor = s.timeLeft < 5 ? '#c8352b' : '#7fd6b0';
+    const wardName = { P0: '主角', P1: '大姨太', P2: '二姨太', P3: '三姨太', P4: '四姨太' }[s.wardrobe] || '';
+    const isSelf = s.wardrobe === 'P0';
+
+    const flyChipsNode = React.createElement('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 55 } },
+      s.chips.map(c => React.createElement('div', { key: c.id, style: {
+        position: 'absolute', left: c.x + '%', top: c.y + '%', width: '24px', height: '24px', borderRadius: '50%',
+        background: c.color, border: '2px dashed rgba(255,255,255,.85)', boxShadow: '0 5px 12px rgba(0,0,0,.6)',
+        '--dx': c.dx + 'px', '--dy': c.dy + 'px', animation: 'flyChip .8s cubic-bezier(.3,.8,.4,1) forwards'
+      } })));
+
+    const items = [
+      { n: '锦缎旗袍', v: 800, sub: '在穿 · 顶层', worn: true },
+      { n: '珠钗步摇', v: 450, sub: '在穿 · 头饰层', worn: true },
+      { n: '缎面绣鞋', v: 220, sub: '已当 · 层消失', worn: false }
+    ];
+    const wardrobeRows = React.createElement(React.Fragment, null,
+      items.map((it, i) => React.createElement('div', { key: i, style: {
+        display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 14px', borderRadius: '10px',
+        background: it.worn ? 'rgba(224,180,88,.06)' : 'rgba(30,26,32,.5)',
+        border: '1px solid ' + (it.worn ? 'rgba(224,180,88,.35)' : 'rgba(120,120,130,.3)'),
+        opacity: it.worn ? 1 : .5
+      } },
+        React.createElement('div', { style: { width: '38px', height: '38px', borderRadius: '8px', background: 'linear-gradient(150deg,#5a3d2e,#2a1a12)', border: '1px solid ' + (it.worn ? '#e0b458' : '#6a6a78'), display: 'flex', alignItems: 'center', justifyContent: 'center', color: it.worn ? '#ecca8a' : '#8a8a94', fontSize: '17px', flex: 'none' } }, it.worn ? '◈' : '◇'),
+        React.createElement('div', { style: { flex: 1 } },
+          React.createElement('div', { style: { fontFamily: "'Oswald'", fontWeight: 600, fontSize: '15px', color: it.worn ? '#f3ece0' : '#9a9aa4' } }, it.n),
+          React.createElement('div', { style: { fontSize: '10px', color: '#8a7862' } }, it.sub)),
+        React.createElement('div', { style: { fontFamily: "'Bebas Neue'", fontSize: '20px', color: it.worn ? '#e0b458' : '#77777f' } }, '面值 ' + it.v),
+        isSelf && it.worn
+          ? React.createElement('button', { onClick: () => this.emit('pawn_item(' + it.n + ')', true), style: { padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontFamily: "'Oswald'", fontWeight: 700, fontSize: '11px', color: '#2a1600', background: 'linear-gradient(160deg,#f0c96a,#d3a247)', border: '1px solid #f6e6c0', flex: 'none' } }, '换筹码')
+          : React.createElement('div', { style: { fontSize: '11px', color: '#77777f', fontFamily: "'Oswald'", flex: 'none' } }, it.worn ? '只读' : '已典当')
+      )));
+
+    return {
+      annoDisplay: s.anno ? 'block' : 'none',
+      annoFlex: s.anno ? 'flex' : 'none',
+      annoBtnState: s.anno ? 'ON' : 'OFF',
+      annoBtnBg: s.anno ? 'rgba(200,53,43,.15)' : 'rgba(40,30,44,.6)',
+      annoBtnBorder: s.anno ? '#c8352b' : 'rgba(224,180,88,.3)',
+      annoBtnColor: s.anno ? '#e0a37a' : '#8a7862',
+      toggleAnno: () => this.setState(p => ({ anno: !p.anno })),
+      deal: () => { this.setState(p => ({ timeLeft: p.total, dealNonce: p.dealNonce + 1 })); this.tossChips(); },
+      dealAnim: 'dealIn .6s cubic-bezier(.2,.7,.3,1.1) both',
+      potLabel: nf(s.pot),
+      raise: s.raise,
+      raiseLabel: nf(s.raise),
+      onRaise: e => this.setState({ raise: +e.target.value }),
+      half: () => this.setState({ raise: Math.min(s.stack, Math.round(s.pot * 0.5 / 25) * 25) }),
+      twoThird: () => this.setState({ raise: Math.min(s.stack, Math.round(s.pot * 0.667 / 25) * 25) }),
+      potBtn: () => this.setState({ raise: Math.min(s.stack, s.pot) }),
+      allin: () => { this.setState({ raise: s.stack }); this.emit('act_raise(' + nf(s.stack) + ') · ALL-IN', true); },
+      emitFold: () => this.emit('act_fold', false),
+      emitCall: () => this.emit('act_check_call(150)', true),
+      emitRaise: () => this.emit('act_raise(' + nf(s.raise) + ')', true),
+      timeLabel: Math.ceil(s.timeLeft),
+      ringOffset: (circ * (1 - frac)).toFixed(1),
+      ringColor,
+      sig: s.sig,
+      sigDisplay: s.sig ? 'block' : 'none',
+      flyChipsNode,
+      wardrobe: s.wardrobe,
+      wardrobeName: wardName,
+      wardrobeMode: isSelf ? '自己视角 · 在穿件可典当' : '对手视角 · 只读',
+      wardrobeRows,
+      openP0: () => this.setState({ wardrobe: 'P0' }),
+      openP1: () => this.setState({ wardrobe: 'P1' }),
+      openP2: () => this.setState({ wardrobe: 'P2' }),
+      openP3: () => this.setState({ wardrobe: 'P3' }),
+      openP4: () => this.setState({ wardrobe: 'P4' }),
+      closeW: () => this.setState({ wardrobe: null }),
+      stop: e => e.stopPropagation(),
+      gems1: this.gems(1, '#e0a37a'),
+      gems2: this.gems(2, '#7fd6b0'),
+      gems3: this.gems(3, '#e0b458'),
+      gems3g: this.gems(3, '#8a8a94'),
+      gems4: this.gems(4, '#e0b458')
+    };
+  }
+}
+</script>
+</body>
+</html>

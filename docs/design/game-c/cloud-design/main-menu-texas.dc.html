@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#0d0806;-webkit-font-smoothing:antialiased}
+  @keyframes twinkle{0%,100%{opacity:.15;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  @keyframes glow{0%,100%{box-shadow:0 0 0 1px rgba(216,184,120,.4),0 0 14px rgba(200,53,43,.35)}50%{box-shadow:0 0 0 1px rgba(216,184,120,.7),0 0 26px rgba(200,53,43,.6)}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;padding:36px 46px 90px;font-family:'Noto Sans SC',sans-serif;color:#f3ece0">
+
+  <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px;max-width:1280px;margin-bottom:36px">
+    <div>
+      <div style="font-family:'Noto Sans SC';font-size:11px;letter-spacing:3px;color:#8a7862;text-transform:uppercase;margin-bottom:8px">GD-C · 六人德州 主菜单 · 同系风格复用 · 2026-07-17</div>
+      <h1 style="margin:0;font-family:'Noto Serif SC';font-weight:900;font-size:46px;letter-spacing:4px;line-height:1;color:#f3e6cf">德州<span style="color:#c8352b">夜宴</span> · 主菜单</h1>
+      <div style="margin-top:8px;font-size:14px;color:#b8a894;max-width:720px;line-height:1.6">六人环桌 · 二次元向 · 沿用夜宴系视觉规范（深胡桃 × 朱砂 × 米金）· 拖拽画布可平移缩放</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button onClick="{{ toggleLedgerTag }}" style="font-family:'Noto Sans SC';font-weight:700;font-size:13px;letter-spacing:1px;padding:10px 16px;border-radius:10px;cursor:pointer;border:1px solid {{ ledgerBtnBorder }};background:{{ ledgerBtnBg }};color:{{ ledgerBtnColor }}">▤ 台账标注 {{ ledgerBtnState }}</button>
+      <button onClick="{{ toggleReduce }}" style="font-family:'Noto Sans SC';font-weight:700;font-size:13px;letter-spacing:1px;padding:10px 16px;border-radius:10px;cursor:pointer;border:1px solid rgba(216,184,120,.4);background:rgba(30,20,14,.85);color:#ecca8a">✦ 简化特效 {{ reduceBtnState }}</button>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:60px;align-items:flex-start">
+
+    <!-- ===================== MAIN MENU ===================== -->
+    <figure style="margin:0;display:flex;flex-direction:column;gap:16px">
+      <figcaption style="display:flex;align-items:baseline;gap:12px">
+        <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;padding:4px 9px;border-radius:6px;background:#c8352b;color:#fff;letter-spacing:1px">SC-1</span>
+        <span style="font-family:'Noto Serif SC';font-weight:700;font-size:24px;letter-spacing:2px;color:#f3e6cf">主菜单</span>
+        <span style="font-size:13px;color:#8a7862">1280×720 · 可操作</span>
+      </figcaption>
+
+      <div style="width:1280px;height:720px;position:relative;overflow:hidden;border-radius:16px;border:1px solid rgba(216,184,120,.3);box-shadow:0 34px 90px rgba(0,0,0,.6);font-family:'Noto Sans SC';background:radial-gradient(90% 120% at 78% 30%,#33221a,#160e0a 75%)">
+
+        <div style="position:absolute;inset:0;box-shadow:inset 0 0 180px 50px rgba(0,0,0,.55)"></div>
+        <div style="position:absolute;left:60%;top:-10%;width:820px;height:620px;background:radial-gradient(45% 45% at 50% 50%,rgba(240,201,106,.1),transparent 70%);pointer-events:none"></div>
+
+        <!-- stars -->
+        {{ stars }}
+
+        <!-- ledger tag: bg -->
+        <div style="position:absolute;left:22px;top:20px;display:{{ ledgerDisplay }};font-family:'Noto Sans SC';font-weight:700;font-size:10px;letter-spacing:1px;padding:4px 9px;border-radius:6px;background:rgba(216,184,120,.12);border:1px dashed rgba(216,184,120,.5);color:#ecca8a;z-index:8">C-BG-01 · 背景占位</div>
+
+        <!-- ===== character 立绘 placeholder ===== -->
+        <div style="position:absolute;left:96px;top:132px;width:300px;height:440px;border-radius:14px;border:1.5px dashed rgba(216,184,120,.55);background:repeating-linear-gradient(45deg,rgba(216,184,120,.055) 0 9px,transparent 9px 18px),linear-gradient(160deg,rgba(30,20,14,.7),rgba(22,15,11,.5));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:26px;box-sizing:border-box">
+          <div style="display:{{ ledgerDisplay }};position:absolute;left:12px;top:12px;font-weight:700;font-size:10px;letter-spacing:1px;padding:4px 8px;border-radius:6px;background:rgba(200,53,43,.18);border:1px solid rgba(216,184,120,.5);color:#ecca8a">C-CHAR-HERO</div>
+          <div style="font-size:44px;color:rgba(236,202,138,.6);line-height:1">▤</div>
+          <div style="font-family:'Noto Serif SC';font-weight:700;font-size:22px;letter-spacing:2px;color:#f3e6cf">主角立绘</div>
+          <div style="font-size:11px;letter-spacing:1px;padding:5px 12px;border-radius:20px;background:rgba(216,184,120,.14);border:1px solid rgba(216,184,120,.4);color:#ecca8a">尺寸 300 × 440 · 竖幅</div>
+          <div style="font-size:11px;line-height:1.6;color:#b8a894;max-width:230px">EN prompt · <span style="color:#8a7862">protagonist, tailored suit, warm casino light, anime cel-shading, waist-up, confident, soft rim light</span></div>
+          <div style="font-size:10.5px;letter-spacing:1px;color:#7fd6b0">风格锚 · 二次元 / 柔光 / 暖夜 · 不露骨</div>
+        </div>
+
+        <!-- ===== bottom-left: avatar + name + money ===== -->
+        <div style="position:absolute;left:96px;bottom:34px;display:flex;align-items:center;gap:14px;z-index:6">
+          <div style="width:64px;height:64px;border-radius:50%;flex:none;background:linear-gradient(145deg,#5a3d2e,#39251b);border:2px solid #d8b878;display:flex;align-items:center;justify-content:center;font-family:'Noto Serif SC';font-weight:900;font-size:30px;color:#f3e6cf;box-shadow:0 4px 14px rgba(0,0,0,.5)">君</div>
+          <div>
+            <div style="font-family:'Noto Serif SC';font-weight:700;font-size:19px;letter-spacing:1px;color:#f3ece0;margin-bottom:6px">夜阑君</div>
+            <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:14px;background:linear-gradient(#f0c96a,#d8a94e);color:#241009;font-family:'Noto Serif SC';font-weight:900;font-size:15px;letter-spacing:1px;box-shadow:0 3px 10px rgba(0,0,0,.35)"><span style="font-size:13px">◉</span> 12,860</div>
+          </div>
+        </div>
+
+        <!-- ===== title (top-right) ===== -->
+        <div style="position:absolute;right:80px;top:74px;text-align:right;z-index:6">
+          <div style="display:inline-flex;align-items:center;gap:10px;justify-content:flex-end;margin-bottom:14px">
+            <span style="font-size:12px;letter-spacing:2px;color:#b8a894">本局盲注</span>
+            <span style="font-family:'Noto Serif SC';font-weight:900;font-size:16px;letter-spacing:1px;color:#f3e6cf;padding:6px 14px;border-radius:10px;background:linear-gradient(160deg,rgba(200,53,43,.85),rgba(122,26,18,.9));animation:glow 2.4s ease-in-out infinite;animation-play-state:{{ playState }}">25 / <span style="color:#f0c96a">50</span></span>
+          </div>
+          <h2 style="margin:0;font-family:'Noto Serif SC';font-weight:900;font-size:88px;letter-spacing:6px;line-height:.98;color:#f3e6cf;text-shadow:0 3px 0 #7a1a12,0 6px 20px rgba(0,0,0,.6)">德州<span style="color:{{ accent }}">夜宴</span></h2>
+          <div style="margin-top:12px;font-size:15px;letter-spacing:4px;color:#b8a894">六人环桌 · 押注见真章 · 步步为局</div>
+        </div>
+
+        <!-- ===== button column ===== -->
+        <div style="position:absolute;right:80px;top:352px;width:240px;display:flex;flex-direction:column;gap:14px;z-index:6">
+          <div style="position:absolute;right:6px;top:-46px;display:{{ tipDisplay }};font-size:12px;font-weight:700;letter-spacing:1px;color:#241009;padding:6px 14px;border-radius:20px;background:linear-gradient(#f0c96a,#d8a94e);box-shadow:0 4px 12px rgba(0,0,0,.4);animation:bob 3s ease-in-out infinite;animation-play-state:{{ playState }}">每日首局 +88 红包<div style="position:absolute;left:50%;bottom:-5px;transform:translateX(-50%) rotate(45deg);width:10px;height:10px;background:#e0b458"></div></div>
+
+          <button onClick="{{ startGame }}" style="font-family:'Noto Serif SC';font-weight:700;font-size:18px;letter-spacing:3px;color:#241009;background:linear-gradient(#f0c96a,#d3a247);border:none;border-radius:12px;padding:15px 0;box-shadow:0 5px 16px rgba(0,0,0,.45);cursor:pointer;transition:transform .12s,filter .12s" style-hover="filter:brightness(1.08);transform:translateY(-2px)" style-active="transform:translateY(1px);filter:brightness(.95)">开始上桌</button>
+          <button onClick="{{ resume }}" style="font-family:'Noto Serif SC';font-weight:700;font-size:16px;letter-spacing:3px;color:#ecca8a;background:rgba(30,20,14,.85);border:1px solid rgba(216,184,120,.4);border-radius:12px;padding:13px 0;cursor:pointer;transition:border-color .12s,color .12s" style-hover="border-color:rgba(216,184,120,.75);color:#f3e6cf" style-active="transform:translateY(1px)">继续上局</button>
+          <button onClick="{{ toggleSettings }}" style="font-family:'Noto Serif SC';font-weight:700;font-size:16px;letter-spacing:3px;color:#ecca8a;background:rgba(30,20,14,.85);border:1px solid rgba(216,184,120,.4);border-radius:12px;padding:13px 0;cursor:pointer;transition:border-color .12s,color .12s" style-hover="border-color:rgba(216,184,120,.75);color:#f3e6cf" style-active="transform:translateY(1px)">设置</button>
+        </div>
+
+        <div style="position:absolute;right:80px;bottom:30px;font-size:11px;letter-spacing:1px;color:#8a7862;z-index:6">v0.1.0 · build 2026-07-17 · 盒庭线</div>
+
+        <!-- toast -->
+        <div style="position:absolute;left:50%;bottom:120px;transform:translateX(-50%);display:{{ toastDisplay }};font-size:13px;letter-spacing:1px;padding:9px 18px;border-radius:10px;background:rgba(30,20,14,.94);border:1px solid rgba(216,184,120,.5);color:#ecca8a;box-shadow:0 6px 20px rgba(0,0,0,.6);z-index:20">→ 信号 · {{ toast }}</div>
+
+        <!-- settings popover -->
+        <sc-if value="{{ settingsOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeSettings }}" style="position:absolute;inset:0;background:rgba(6,3,2,.6);backdrop-filter:blur(2px);z-index:30;display:flex;align-items:center;justify-content:center">
+            <div onClick="{{ stop }}" style="width:360px;border-radius:16px;background:linear-gradient(160deg,#1e140e,#160f0b);border:1px solid rgba(216,184,120,.4);box-shadow:0 30px 70px rgba(0,0,0,.7);padding:24px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+                <div style="font-family:'Noto Serif SC';font-weight:900;font-size:22px;letter-spacing:2px;color:#f3e6cf">设置</div>
+                <button onClick="{{ closeSettings }}" style="width:34px;height:34px;border-radius:9px;cursor:pointer;background:rgba(200,53,43,.15);border:1px solid rgba(216,184,120,.4);color:#ecca8a;font-size:15px">✕</button>
+              </div>
+              <div onClick="{{ toggleReduce }}" style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(216,184,120,.15);cursor:pointer">
+                <div><div style="font-weight:700;font-size:15px;color:#f3ece0">简化特效</div><div style="font-size:11px;color:#8a7862;margin-top:2px">关闭星点/呼吸动画 · 降档省电</div></div>
+                <div style="width:48px;height:26px;border-radius:14px;flex:none;background:{{ reduceTrackBg }};position:relative;transition:background .2s"><div style="position:absolute;top:3px;left:{{ reduceKnobX }};width:20px;height:20px;border-radius:50%;background:#f3e6cf;transition:left .2s;box-shadow:0 2px 5px rgba(0,0,0,.4)"></div></div>
+              </div>
+              <div onClick="{{ toggleLedgerTag }}" style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;cursor:pointer">
+                <div><div style="font-weight:700;font-size:15px;color:#f3ece0">台账标注</div><div style="font-size:11px;color:#8a7862;margin-top:2px">显示占位编号（C-BG-01 等）</div></div>
+                <div style="width:48px;height:26px;border-radius:14px;flex:none;background:{{ ledgerTrackBg }};position:relative;transition:background .2s"><div style="position:absolute;top:3px;left:{{ ledgerKnobX }};width:20px;height:20px;border-radius:50%;background:#f3e6cf;transition:left .2s;box-shadow:0 2px 5px rgba(0,0,0,.4)"></div></div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </figure>
+
+  </div>
+
+  <div style="margin-top:52px;max-width:1000px;font-size:13px;line-height:1.7;color:#8a7862;font-family:'Noto Sans SC'">
+    <span style="color:#c8352b;font-weight:700">复用说明 ·</span> 沿用「夜宴系」统一规范：色板、双字体（Noto Serif SC 标题 / Noto Sans SC 正文）、金色 CTA + 胡桃描边次级、金币 Badge、金边圆头像、占位台账框、克制动效（bob / glow / twinkle）均保持不变。本款仅替换：标题「德州夜宴」、副标题定调、级牌位改为盲注位、立绘提示词、台账编号前缀 C-。
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:720},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#c8352b&quot;,&quot;options&quot;:[&quot;#c8352b&quot;,&quot;#cf3b2e&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;强调色&quot;},&quot;reduceMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;动效&quot;},&quot;showLedgerTags&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;标注&quot;}}">
+class Component extends DCLogic {
+  state = { reduceMotion: false, showLedger: true, settingsOpen: false, toast: null };
+
+  componentDidMount() {
+    this.setState({ reduceMotion: !!this.props.reduceMotion, showLedger: this.props.showLedgerTags !== false });
+  }
+  componentDidUpdate(prev) {
+    if (prev.reduceMotion !== this.props.reduceMotion) this.setState({ reduceMotion: !!this.props.reduceMotion });
+    if (prev.showLedgerTags !== this.props.showLedgerTags) this.setState({ showLedger: this.props.showLedgerTags !== false });
+  }
+  componentWillUnmount() { if (this.toastTO) clearTimeout(this.toastTO); }
+
+  fire(sig) {
+    if (this.toastTO) clearTimeout(this.toastTO);
+    this.setState({ toast: sig });
+    this.toastTO = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const reduce = s.reduceMotion;
+    const accent = this.props.accent || '#c8352b';
+
+    const starNode = React.createElement('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2 } },
+      Array.from({ length: 46 }).map((_, i) => {
+        const x = (i * 83) % 100, y = (i * 47 + 13) % 100, sz = 1.5 + (i % 3);
+        return React.createElement('div', { key: i, style: {
+          position: 'absolute', left: x + '%', top: (y * 0.9) + '%', width: sz + 'px', height: sz + 'px',
+          borderRadius: '50%', background: i % 5 === 0 ? '#f0c96a' : 'rgba(236,202,138,.75)',
+          boxShadow: '0 0 6px rgba(240,201,106,.7)',
+          animation: 'twinkle ' + (2.4 + (i % 4) * 0.7) + 's ease-in-out infinite',
+          animationDelay: (i % 6) * 0.4 + 's',
+          animationPlayState: reduce ? 'paused' : 'running',
+          opacity: reduce ? 0.5 : undefined
+        } });
+      }));
+
+    return {
+      stars: starNode,
+      accent,
+      playState: reduce ? 'paused' : 'running',
+      tipDisplay: reduce ? 'none' : 'block',
+      ledgerDisplay: s.showLedger ? 'block' : 'none',
+      ledgerBtnState: s.showLedger ? 'ON' : 'OFF',
+      ledgerBtnBg: s.showLedger ? 'rgba(200,53,43,.15)' : 'rgba(30,20,14,.85)',
+      ledgerBtnBorder: s.showLedger ? 'rgba(200,53,43,.7)' : 'rgba(216,184,120,.4)',
+      ledgerBtnColor: s.showLedger ? '#e8a89a' : '#8a7862',
+      reduceBtnState: reduce ? 'ON' : 'OFF',
+      toggleLedgerTag: () => this.setState(p => ({ showLedger: !p.showLedger })),
+      toggleReduce: () => this.setState(p => ({ reduceMotion: !p.reduceMotion })),
+      toggleSettings: () => this.setState(p => ({ settingsOpen: !p.settingsOpen })),
+      closeSettings: () => this.setState({ settingsOpen: false }),
+      stop: e => e.stopPropagation(),
+      settingsOpen: s.settingsOpen,
+      startGame: () => this.fire('enter_table'),
+      resume: () => this.fire('resume_match'),
+      toast: s.toast,
+      toastDisplay: s.toast ? 'block' : 'none',
+      reduceTrackBg: reduce ? '#c8352b' : 'rgba(216,184,120,.25)',
+      reduceKnobX: reduce ? '25px' : '3px',
+      ledgerTrackBg: s.showLedger ? '#c8352b' : 'rgba(216,184,120,.25)',
+      ledgerKnobX: s.showLedger ? '25px' : '3px'
+    };
+  }
+}
+</script>
+</body>
+</html>
