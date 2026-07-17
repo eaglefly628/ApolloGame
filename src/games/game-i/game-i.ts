@@ -38,7 +38,8 @@ import { AssetManager, ModelAssetLoader } from '@assets/index.js';
 import { GAME_I_ASSETS } from './assets3d.js';
 
 // 渲染/仿真模块 → 蓝图 + 渲染后端（canvas/three）。进模块时宿主在 #sim-stage 上 init 引擎实时绘制。
-const SIM_MODULES: Record<string, { blueprint: () => WorldBlueprint; backend: 'canvas' | 'three'; debug?: 'nav' | 'collider'; assets?: boolean }> = {
+// blueprint 收 tune=现场调参档（REQ-DEMO-调参台）；不吃调参的蓝图签名兼容（TS 允许少参函数赋值）→ 忽略 tune。
+const SIM_MODULES: Record<string, { blueprint: (tune: Record<string, string>) => WorldBlueprint; backend: 'canvas' | 'three'; debug?: 'nav' | 'collider'; assets?: boolean }> = {
   'mod-anim': { blueprint: animBlueprint, backend: 'canvas' },
   'mod-ai': { blueprint: aiBlueprint, backend: 'canvas' },
   'mod-3d': { blueprint: threeBlueprint, backend: 'three' },
@@ -132,7 +133,7 @@ export function mount(container: HTMLElement): () => void {
   let aishe: AisheState = INITIAL_AISHE;     // 爱诗视频样例状态（宿主调 AishePort → 句柄）
   const aishePort = new NullAishePort();     // 占位后端（不发网络·即时 ready 占位句柄）
   // 渲染舞台（第二种宿主）：sim 模块激活时把引擎渲染器挂到 #sim-stage；退出/换皮重挂时拆掉重建。
-  let stage: { engine: Engine; renderer: RendererBackend; module: string; container: HTMLElement } | null = null;
+  let stage: { engine: Engine; renderer: RendererBackend; module: string; container: HTMLElement; sig: string } | null = null;
 
   // 声音测试播放器（Web Audio·宿主胶水）。音量/声像/静音/混响全在 controls state。
   const player = makeSoundPlayer();
@@ -197,6 +198,13 @@ export function mount(container: HTMLElement): () => void {
       const text = { ok: '操作成功 ✓', warn: '请注意 ⚠', danger: '出错了 ✕' }[tone ?? 'ok'] ?? '提示';
       showToast(root, text, { tone: tone as 'ok' | 'warn' | 'danger' | undefined, theme: theme() });
     },
+    tune3d: (arg) => {
+      // 现场调参台：arg=`key:档`（如 'l.sun:high'）→ 写 controls.tune → rerender（内含 syncStage）→ 3D 舞台 sig 变 → 重建蓝图。
+      const [key, val] = (arg ?? '').split(':');
+      if (!key || val === undefined) return;
+      controls = { ...controls, tune: { ...controls.tune, [key]: val } };
+      rerender();
+    },
     hurt: (n) => { world.hp.current = Math.max(0, world.hp.current - n); rerender(); },
     heal: (n) => { world.hp.current = Math.min(world.hp.max, world.hp.current + n); world.gold.current += n; rerender(); },
     shopDispatch: (kind, arg) => {
@@ -259,12 +267,13 @@ export function mount(container: HTMLElement): () => void {
     if (typeof document === 'undefined' || typeof requestAnimationFrame === 'undefined') return;
     const want = currentModule ? SIM_MODULES[currentModule] : undefined;
     const container = want ? galleryHost.querySelector<HTMLElement>('#sim-stage') : null;
-    if (stage && (!want || stage.module !== currentModule || stage.container !== container || !container)) {
+    const wantSig = JSON.stringify(controls.tune); // 现场调参档变 → 舞台重建（蓝图按新数据重烘）
+    if (stage && (!want || stage.module !== currentModule || stage.container !== container || !container || stage.sig !== wantSig)) {
       teardownStage();
     }
     if (want && container && !stage) {
       const engine = new Engine({ tickRate: 60 });
-      engine.load(want.blueprint());
+      engine.load(want.blueprint(controls.tune));
       let renderer: RendererBackend;
       if (want.backend === 'three') {
         // glTF 模型模块需接 AssetManager：取 .glb 字节供 ThreeRenderer 解析（未就绪本帧不画·就绪后自动现）。
@@ -283,7 +292,7 @@ export function mount(container: HTMLElement): () => void {
       }
       engine.attachRenderer(renderer, container);
       engine.start();
-      stage = { engine, renderer, module: currentModule!, container };
+      stage = { engine, renderer, module: currentModule!, container, sig: wantSig };
     }
   }
 

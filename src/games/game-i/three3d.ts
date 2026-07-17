@@ -30,12 +30,19 @@ function box(x: number, y: number, z: number, w: number, h: number, d: number, f
   };
 }
 
+// 现场调参预设解析（REQ-DEMO-调参台·client demo「数据即渲染」）：闭集离散档 → 蓝图数值。
+// key 不填/不识别 → 回落 def 档（老口径零变化）。纯数据映射·弱模型也能扩。
+export function pick3d<T>(map: Record<string, T>, key: string | undefined, def: string): T {
+  return map[key ?? def] ?? map[def]!;
+}
+
 // 公共场景底：轨道相机 + 主光(投影)+ 环境光 + 天空 + 草地台。各蓝图在此之上加自己的演示物。
-function sceneBase(): Record<string, Ent> {
+// opts=现场可调档覆盖（缺省=原口径·所有旧调用方 sceneBase() 零变化）。
+function sceneBase(o: { sun?: number; amb?: number; camDist?: number } = {}): Record<string, Ent> {
   return {
-    cam: { Camera3D: { yaw: 0.72, pitch: 0.62, distance: 96, pivotX: 0, pivotY: 4, pivotZ: 0, fov: 40, pitchMin: 0.12, pitchMax: 1.45 } },
-    sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: 1.55, castShadow: true } },
-    fill: { Light3D: { kind: 'ambient', color: 0xbfd2ff, intensity: 0.42 } },
+    cam: { Camera3D: { yaw: 0.72, pitch: 0.62, distance: o.camDist ?? 96, pivotX: 0, pivotY: 4, pivotZ: 0, fov: 40, pitchMin: 0.12, pitchMax: 1.45 } },
+    sun: { Light3D: { kind: 'directional', color: 0xfff1d6, intensity: o.sun ?? 1.55, castShadow: true } },
+    fill: { Light3D: { kind: 'ambient', color: 0xbfd2ff, intensity: o.amb ?? 0.42 } },
     // env:1 开 IBL（中性影室环境贴图）→ PBR 金属/玻璃有反射可照（P3D TA Phase5·REQ-3D-PBR-IBL 已交付）。
     sky: { Sky3D: { top: 0x4a90d9, bottom: 0xcfe9f7, clouds: true, cloudTint: 0xffffff, scroll: 0.6, env: 1 } },
     // 草地台：Mesh3D 的 edgeTint=「边+顶」色 → 顶面草绿、front=四周泥土侧（盒庭草坡观感）。
@@ -44,11 +51,15 @@ function sceneBase(): Record<string, Ent> {
 }
 
 // ── ① 数据化光照 Light3D：定向主光投影 + 环境补光，盒阵 + 一只缓转金盒（各面随光明暗·光照是数据）。
-export function light3dBlueprint(): WorldBlueprint {
+//     tune=现场调参档（l.sun 主光强 / l.amb 环境光 / l.cam 相机距）——改档即改数据、渲染器自动读，无一行代码。
+export function light3dBlueprint(tune: Record<string, string> = {}): WorldBlueprint {
+  const sun = pick3d({ low: 0.55, mid: 1.55, high: 2.9 }, tune['l.sun'], 'mid');
+  const amb = pick3d({ low: 0.12, mid: 0.42, high: 0.95 }, tune['l.amb'], 'mid');
+  const camDist = pick3d({ near: 68, mid: 96, far: 132 }, tune['l.cam'], 'mid');
   return {
     capabilities: [transformCapability, tweenCapability],
     entities: {
-      ...sceneBase(),
+      ...sceneBase({ sun, amb, camDist }),
       'pillar-a': box(-18, 6, -6, 8, 16, 8, 0x8d6e63, 0x5d4037),
       'pillar-b': box(16, 4, 8, 10, 12, 10, 0xa1887f, 0x6d4c41),
       'slab': box(0, 1, 18, 22, 2, 8, 0xb0bec5, 0x78909c),
@@ -327,11 +338,13 @@ export function pointlight3dBlueprint(): WorldBlueprint {
 }
 
 // ── ⑩ 距离雾 Fog3D（TA Phase 4）：一长列尖塔向远处退去、渐隐入雾——盒庭「装在玻璃盒里」的纵深。
-export function fog3dBlueprint(): WorldBlueprint {
+// tune=现场调参档（f.den 雾浓度：薄/中/浓 → 改 Fog3D.far 远端全雾距·近处始终清晰）。
+export function fog3dBlueprint(tune: Record<string, string> = {}): WorldBlueprint {
+  const far = pick3d({ thin: 300, mid: 210, thick: 120 }, tune['f.den'], 'mid');
   const ent: Record<string, Ent> = {
     ...sceneBase(),
     cam: { Camera3D: { yaw: 0.0, pitch: 0.28, distance: 130, pivotX: 0, pivotY: 6, pivotZ: -40, fov: 46, pitchMin: 0.08, pitchMax: 1.3 } },
-    fog: { Fog3D: { color: 0xcfe9f7, near: 40, far: 210 } }, // 雾色取天际·近清晰远全雾
+    fog: { Fog3D: { color: 0xcfe9f7, near: 40, far } }, // 雾色取天际·近清晰远全雾（far 越小雾越浓）
     ground: box(0, -2.5, -60, 64, 5, 260, 0x6d4c41, 0x7cb342),
   };
   // 两列尖塔夹道向远处延伸（z 越负越远 → 渐隐入雾）。

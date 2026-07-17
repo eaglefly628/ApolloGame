@@ -17,6 +17,25 @@ describe('Game I · 3D 能力展台蓝图', () => {
     }
   });
 
+  it('现场调参台（REQ-DEMO-调参台）：tune 档改蓝图数据（Light3D 强度 / Camera3D 距 / Fog3D 浓度）·缺省零变', () => {
+    const comp = <T>(bp: ReturnType<typeof light3dBlueprint>, ent: string, type: string): T => {
+      const e = new Engine(); e.load(bp); return e.world.getComponent(ent, type) as unknown as T;
+    };
+    const sun = (bp: ReturnType<typeof light3dBlueprint>): number => comp<{ intensity: number }>(bp, 'sun', 'Light3D').intensity;
+    // 主光强度 弱/中/强 单调递增；缺省=中档（老口径不变）。
+    expect(sun(light3dBlueprint({ 'l.sun': 'low' }))).toBeLessThan(sun(light3dBlueprint({})));
+    expect(sun(light3dBlueprint({ 'l.sun': 'high' }))).toBeGreaterThan(sun(light3dBlueprint({})));
+    expect(sun(light3dBlueprint({}))).toBe(sun(light3dBlueprint({ 'l.sun': 'mid' }))); // 缺省=mid 档
+    // 相机距离 近<远。
+    const camDist = (bp: ReturnType<typeof light3dBlueprint>): number => comp<{ distance: number }>(bp, 'cam', 'Camera3D').distance;
+    expect(camDist(light3dBlueprint({ 'l.cam': 'near' }))).toBeLessThan(camDist(light3dBlueprint({ 'l.cam': 'far' })));
+    // 雾浓度：浓档 far 更小（雾更近）。
+    const fogFar = (bp: ReturnType<typeof fog3dBlueprint>): number => comp<{ far: number }>(bp, 'fog', 'Fog3D').far;
+    expect(fogFar(fog3dBlueprint({ 'f.den': 'thick' }))).toBeLessThan(fogFar(fog3dBlueprint({ 'f.den': 'thin' })));
+    // 未知档回落缺省（弱模型乱填不炸）。
+    expect(sun(light3dBlueprint({ 'l.sun': 'bogus' }))).toBe(sun(light3dBlueprint({})));
+  });
+
   it('P3D 超休闲六连批接入：toon 描边 / 广告牌+贴花 / 路径 / 弹簧 组件在蓝图里', () => {
     const tn = new Engine(); tn.load(toon3dBlueprint());
     const mat = tn.world.getComponent('tn-sphere', 'Material3D') as unknown as { shading?: string; outline?: unknown };

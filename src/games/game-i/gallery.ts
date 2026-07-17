@@ -18,8 +18,31 @@ import { SOUNDS, BGM } from './sounds.js';
 export interface ControlsState {
   flag: boolean; sound: boolean; speed: string; view: string; qty: number; rating: number; city: string;
   muted: boolean; reverb: boolean; vol: number; pan: number;
+  /** 现场调参台（REQ-DEMO-调参台）：sim 模块的离散可调档（key→选中档·如 'l.sun'→'high'）。空=各参走蓝图缺省档。 */
+  tune: Record<string, string>;
 }
-export const INITIAL_CONTROLS: ControlsState = { flag: true, sound: true, speed: '1', view: 'grid', qty: 3, rating: 3, city: '', muted: false, reverb: false, vol: 70, pan: 0 };
+export const INITIAL_CONTROLS: ControlsState = { flag: true, sound: true, speed: '1', view: 'grid', qty: 3, rating: 3, city: '', muted: false, reverb: false, vol: 70, pan: 0, tune: {} };
+
+/** 一个可现场调节的离散参数（闭集档·Segmented 呈现·选中档编码进 value=`key:档`）。 */
+export interface TuneSpec { key: string; label: string; def: string; opts: Array<{ v: string; label: string }>; }
+/** 「现场调参台」面板：一排 Segmented，客户点档即改蓝图数据→渲染器实时换画（数据即渲染的活证）。 */
+function tuneDeck(id: string, specs: TuneSpec[], c: ControlsState): LayoutNode {
+  return {
+    type: 'Panel', id: `${id}-tune`, props: { bg: 'jade', title: '🎛 现场调参台 · 改数据即改渲染（无一行代码）' },
+    layout: { direction: 'column', gap: 8, padding: 12 },
+    children: specs.map((s): LayoutNode => ({
+      type: 'Panel', id: `${id}-tr-${s.key}`, props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 10 },
+      children: [
+        { type: 'Label', id: `${id}-tl-${s.key}`, props: { text: s.label, size: 'sm', color: 'sub' }, layout: { width: 96 } },
+        { type: 'Segmented', id: `${id}-ts-${s.key}`, props: {
+          value: `${s.key}:${c.tune[s.key] ?? s.def}`,
+          options: s.opts.map((o) => ({ value: `${s.key}:${o.v}`, label: o.label })),
+          action: 'tune3d',
+        } },
+      ],
+    })),
+  };
+}
 
 // 自包含演示图：内联 data-URI SVG（纯数据·不依赖外部资源文件），用于 Image 控件展示。
 const DEMO_IMG =
@@ -737,7 +760,7 @@ export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; 
  * 渲染舞台样例（canvas/three 宿主挂载点）：标题条（图标 + LIVE）+ 说明 + 高亮框住的 #sim-stage 视口
  * + 「组合能力」标签条。chrome 全是 LayoutNode 数据（accent Panel / Badge / Tag），不手写 CSS。
  */
-function buildSimStage(id: string, glyph: string, title: string, desc: string, caps: string[]): LayoutNode {
+function buildSimStage(id: string, glyph: string, title: string, desc: string, caps: string[], tune?: LayoutNode): LayoutNode {
   return {
     type: 'Panel', id: `${id}-mod`, props: {},
     layout: { direction: 'column', gap: 12, padding: 18 },
@@ -749,6 +772,8 @@ function buildSimStage(id: string, glyph: string, title: string, desc: string, c
           { type: 'Badge', id: `${id}-live`, props: { text: '● LIVE', tone: 'ok' } },
         ] },
       { type: 'Label', id: `${id}-desc`, props: { text: desc, color: 'sub', size: 'sm' } },
+      // 现场调参台（可选·REQ-DEMO-调参台）：客户点档即改蓝图数据 → 渲染舞台实时换画。
+      ...(tune ? [tune] : []),
       // #sim-stage：高亮框住的活动视口（宿主在此 init 引擎渲染器·canvas 实时绘制·非 DOM）。
       { type: 'Panel', id: 'sim-stage', props: { accent: true, bg: { custom: '#0a0f1e' } }, layout: { width: 656, height: 416, padding: 8, align: 'center' } },
       // 「组合能力」标签条：本样例由哪些现成 capability 拼出来（信息 + 装饰·强化数据驱动叙事）。
@@ -1550,8 +1575,13 @@ function moduleBody(
       '引擎 ThreeRenderer 实时渲染：翻面卡 / 翻滚立方 / 倾转薄面，由 tween 转 Transform.rotation 当翻面角驱动。同一份 collectRenderables 换 three 后端即换维度。',
       ['Mesh3D', 'tween', 'ThreeRenderer']);
     case 'mod-3d-light': return buildSimStage('3dlight', '💡', '数据化光照 · Light3D',
-      '光照是数据：一盏 Light3D 定向主光（castShadow 投影）+ 一盏环境补光，照亮盒阵 + 一只缓转金盒（转动时各面随光明暗）。配 Sky3D 程序天空 + Camera3D 轨道相机。全部纯组件数据，渲染器自动读。',
-      ['Light3D', 'Sky3D', 'Camera3D', 'Mesh3D']);
+      '光照是数据：一盏 Light3D 定向主光（castShadow 投影）+ 一盏环境补光，照亮盒阵 + 一只缓转金盒（转动时各面随光明暗）。配 Sky3D 程序天空 + Camera3D 轨道相机。全部纯组件数据，渲染器自动读。点下方调参台改档，实时看画面随数据变。',
+      ['Light3D', 'Sky3D', 'Camera3D', 'Mesh3D'],
+      tuneDeck('3dlight', [
+        { key: 'l.sun', label: '主光强度', def: 'mid', opts: [{ v: 'low', label: '弱' }, { v: 'mid', label: '中' }, { v: 'high', label: '强' }] },
+        { key: 'l.amb', label: '环境补光', def: 'mid', opts: [{ v: 'low', label: '暗' }, { v: 'mid', label: '中' }, { v: 'high', label: '亮' }] },
+        { key: 'l.cam', label: '相机距离', def: 'mid', opts: [{ v: 'near', label: '近' }, { v: 'mid', label: '中' }, { v: 'far', label: '远' }] },
+      ], controls));
     case 'mod-3d-post': return buildSimStage('3dpost', '🔭', '景深 · 泛光 · Post3D',
       '后处理是数据：一个 Post3D 启 EffectComposer——移轴景深（中段清晰、上下虚化=微缩盒庭感）+ bloom 泛光（亮处发光）。同场景换不换 Post3D = 换不换后处理，蓝图一字不改。',
       ['Post3D', 'tiltShift', 'bloom', 'Light3D']);
@@ -1601,8 +1631,11 @@ function moduleBody(
       'box/plane 原语表达不了圆润模型 → 导入真 glTF：居中主鸭缓转 + 左右两只染色鸭（同模板多实例·共享几何各自染色）+ 一个盒模型。模型自带材质 + 受软影。蓝图只持 modelKey（保纯·可哈希），ModelAssetLoader 取字节、ThreeRenderer 解析、未就绪本帧不画。',
       ['Model3D', 'glTF 导入', 'AssetManager', '多实例 clone']);
     case 'mod-3d-fog': return buildSimStage('3dfog', '🌫', '距离雾 · Fog3D',
-      '一个 Fog3D（雾色取天际·near 清晰 far 全雾）：两列尖塔夹道向远处退去、渐隐入雾——盒庭「装在玻璃盒里」的纵深感。天空盒不受雾影响。color/near/far 三个数。',
-      ['Fog3D', '距离雾', '纵深', 'scene.fog']);
+      '一个 Fog3D（雾色取天际·near 清晰 far 全雾）：两列尖塔夹道向远处退去、渐隐入雾——盒庭「装在玻璃盒里」的纵深感。天空盒不受雾影响。color/near/far 三个数。点调参台改雾浓度看纵深随数据变。',
+      ['Fog3D', '距离雾', '纵深', 'scene.fog'],
+      tuneDeck('3dfog', [
+        { key: 'f.den', label: '雾浓度', def: 'mid', opts: [{ v: 'thin', label: '薄' }, { v: 'mid', label: '中' }, { v: 'thick', label: '浓' }] },
+      ], controls));
     case 'mod-3d-pointlight': return buildSimStage('3dpl', '🔦', '点光源 / 聚光灯 · Light3D point·spot',
       'TA Phase 2 动态局部光：暗场里一盏移动暖点光（挂 Transform3D·tween 横扫白盒阵）+ 一盏冷聚光锥（从高处朝下·有锥角/半影）。点光随实体走、按 range/decay 衰减；叠 bloom 让光源发光。',
       ['Light3D·point', 'Light3D·spot', 'range/decay', '可移动']);

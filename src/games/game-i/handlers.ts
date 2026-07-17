@@ -28,6 +28,8 @@ export interface GalleryHooks {
   pickDispatch: (kind: string, arg?: string) => void;
   /** 自定义画选中态的控件改值（kind=flag/sound/speed/view/qty/rating/city）→ 宿主改 state + 局部更新。 */
   setControl: (kind: string, arg?: string) => void;
+  /** 现场调参台（REQ-DEMO-调参台）：arg=`key:档`（如 'l.sun:high'）→ 宿主改 controls.tune + 重挂 → 3D 舞台按新数据重建。 */
+  tune3d: (arg?: string) => void;
   /** 切 Tab 后回调（带新 tab id）：mountUI 已就地显示新页·宿主记住当前 tab + 强制重绘。 */
   afterTabSwitch: (tabId?: string) => void;
   /** 进某模块子菜单（展台积木点击·arg=模块 id）。 */
@@ -63,6 +65,8 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     setQty: (a) => { L('setQty', a); hooks.setControl('qty', a); },
     setCity: (a) => { L('setCity', a); hooks.setControl('city', a); },
     setRating: (a) => { L('setRating', a); hooks.setControl('rating', a); },
+    tune3d: (a) => { L('tune3d', a); hooks.tune3d(a); }, // 现场调参台：a=`key:档` → 宿主改 tune + 3D 舞台重建
+
     // 声音测试：单音 / 混音 / 立体声 / 背景乐 / 混响 / 音量 / 静音。
     playSound: (a) => { L('playSound', a); hooks.playSound(a); },
     playChord: (a) => { L('playChord', a); hooks.playChord(a); },
