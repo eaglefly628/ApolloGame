@@ -13,7 +13,7 @@
 ### B-003 · 引擎缺口盘点与提单 · [2026-07-17] · GD-B → LEAD · status: **✅ done（2026-07-17·当日结·全文迁 requests-archive）** · P1
 > 结论：a 语音端口=真缺口→已提主池 **REQ-VOICE-语音输出端口**（P1·腾槽=自撤 REQ-VN-退役入档）；b BT=游戏层 TS 记债不占池；c 机位/拾取=回驳已覆盖（Camera3D 运镜过渡+Pickable3D·capability-plan §2/§2.5 已记实名出处）。
 
-### B-004 · S2 计划过审 + S1 卡代填 · [2026-07-17] · GD-B → **LEAD**（审）+ PE-B（落卡） · status: **落卡 ✅（PE-B 2026-07-17·骨架建成后原样执行·板上 S1 机器门绿）·待 owner/Lead 人门签** · P1
+### B-004 · S2 计划过审 + S1 卡代填 · [2026-07-17] · GD-B → **LEAD**（审）+ PE-B（落卡） · status: **✅ S1-S3 三关全绿（落卡+复查/人门已按 owner 会话指令落账 2026-07-17）；S2 条件①清单已交=`mahjong-core-tests.md`（15 模块逐条点名+10 裁决行）·待 GD-B 会审圈定 R 行** · P1
 > `capability-plan.md` 送审（⚖ TS 授权已记 §6）；过审后 S3 骨架开工（PE-B 领）。
 > **S2 ✅ 有条件通过（Lead 2026-07-17·裁决全文=capability-plan §6）**：条件④规则细目/⑤衣物口径已回填 gdd（2026-07-17 关闭）；②BT 下沉/⑥VoicePort 引擎侧当日落地；剩=①麻将核测试点名清单（S4 实现 spec 附录·PE-B 开工前 GD-B 会审）+③角色卡三游戏共享通道（PST 主责·等 owner 格式）。
 > S1 立项卡：pipeline CLI 判"未知游戏"（library/public/src 三处均无·骨架前落不了卡）——PE-B 建骨架后**第一动作**原样执行：
