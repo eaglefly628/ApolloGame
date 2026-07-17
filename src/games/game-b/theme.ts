@@ -1,7 +1,7 @@
-// Game B ·《雀宴》—— 视觉常量 + sakura UITheme + 机位表（纯数据·无逻辑）。
-// 规格真相：docs/design/game-b/scene-layout-handoff.md（场景）+ docs/design/game-b/ui-mockup.html（HUD 1:1）。
-// 主题基调=库内 sakura-otome 樱花乙女（src/ui/themes/sakura-otome/spec.md 色板）映射成 UITheme 令牌；
-// 深底浮层（场况/字幕）取线框稿的暗梅色。⚖ owner 2026-07-17：全部从库取、不自己发明。
+// Game B ·《雀宴》—— 视觉常量 + UITheme（夜宴暗紫主菜单 + sakura 亮纸 HUD）+ 机位表（纯数据·无逻辑）。
+// 规格真相：docs/design/game-b/mockups/（Claude Design 参考稿·⚖ owner 点名 1:1 复刻）+ scene-layout-handoff.md。
+// 两套色调（对标参考包）：主菜单/演出=夜宴暗紫（NIGHT·凤翎粉金）；牌桌 HUD 席位卡=sakura 亮纸面。
+// 游戏层 UITheme 数据合法（game-q/g/d 先例）；凤翎 texture=主题作者写（apolloToon MOUNTAINS 先例）。
 import type { UITheme } from '@ui/components/index.js';
 
 // ── 画面（mockup 线框稿坐标系 1:1：stage 1120×630·16:9·mountHost 等比信箱化）────────
@@ -37,7 +37,56 @@ export const SAKURA: UITheme = {
   inputBg: '#fff8fa',
   fontUi: "'Noto Sans SC','Zen Maru Gothic','Hiragino Sans',system-ui,sans-serif",
   fontMono: "'JetBrains Mono','Fira Code',Consolas,monospace",
+  fontSerif: "'Shippori Mincho','Noto Serif SC','Songti SC','Yu Mincho',serif",
 };
+
+// ── 夜宴暗紫主题（NIGHT·主菜单/演出·对标 mockups/main-menu.dc.html 精致度）─────────────
+// 凤翎暗纹 SVG（从参考稿提取·孔雀翎径向扇 + 星点）→ 程序化 data-uri texture（主题作者写·apolloToon MOUNTAINS 先例）。
+function feather(rot: number, eye: boolean): string {
+  return `<g transform="rotate(${rot})"><path d="M0,0 C7,-42 7,-120 0,-172 C-7,-120 -7,-42 0,0 Z"/>`
+    + (eye ? `<ellipse cx="0" cy="-150" rx="6" ry="11" fill="#d94a6a" fill-opacity="0.32" stroke="#ffc9de" stroke-opacity="0.5"/>` : '')
+    + `</g>`;
+}
+const FAN1 = [-6, -22, -38, -54, -70, -86, -102].map((r) => feather(r, true)).join('');
+const FAN2 = [-30, -52, -74].map((r) => feather(r, true)).join('');
+const STAR_SEED: Array<[number, number, number]> = [
+  [12, 18, 2], [22, 54, 3], [34, 12, 2], [46, 72, 2], [58, 22, 3], [63, 60, 2], [71, 14, 2], [77, 48, 3],
+  [84, 68, 2], [90, 28, 2], [95, 54, 2], [17, 84, 2], [41, 40, 2], [52, 88, 3], [68, 80, 2], [88, 88, 2],
+];
+const STARS = STAR_SEED.map(([x, y, s]) => `<circle cx="${(x * 12.8).toFixed(0)}" cy="${(y * 7.2).toFixed(0)}" r="${s}" fill="#f6d0a8" opacity="0.5"/>`).join('');
+const PHOENIX_SVG =
+  `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">`
+  + `<defs><linearGradient id="qf" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#d94a6a" stop-opacity="0"/><stop offset="1" stop-color="#f6a8c4" stop-opacity="0.5"/></linearGradient></defs>`
+  + STARS
+  + `<g transform="translate(1160,772) scale(1.75)" opacity="0.15" fill="url(#qf)" stroke="#f6a8c4" stroke-width="0.8" stroke-opacity="0.5">${FAN1}</g>`
+  + `<g transform="translate(96,-40) scale(1.05) rotate(150)" opacity="0.08" fill="url(#qf)" stroke="#f6a8c4" stroke-width="0.8" stroke-opacity="0.5">${FAN2}</g>`
+  + `</svg>`;
+const NIGHT_TEXTURE = `url("data:image/svg+xml,${encodeURIComponent(PHOENIX_SVG)}") center/cover no-repeat`;
+
+export const NIGHT: UITheme = {
+  bg0: '#160d1b', bg1: '#241528', bg2: '#2e1a34', bg3: '#3a2338',
+  pageBg: 'radial-gradient(100% 120% at 78% 26%, #3a2338, #241528 46%, #160d1b 82%)',
+  line: 'rgba(246,168,196,0.20)',
+  text: '#f7ecdd', sub: 'rgba(247,236,221,0.62)', dim: 'rgba(247,236,221,0.42)',
+  jade: '#f6a8c4', jadeWash: 'rgba(246,168,196,0.12)', jadeLine: 'rgba(246,168,196,0.38)',
+  gold: '#f2c98a',
+  ok: '#81c784', okWash: 'rgba(129,199,132,0.15)',
+  warn: '#f2c98a', warnWash: 'rgba(242,201,138,0.15)',
+  danger: '#d94a6a',
+  ink: '#2a1020',
+  inputBg: 'rgba(20,12,26,0.6)',
+  fontUi: "'Zen Kaku Gothic New','Noto Sans SC','Hiragino Sans',system-ui,sans-serif",
+  fontMono: "'JetBrains Mono','Fira Code',Consolas,monospace",
+  fontSerif: "'Shippori Mincho','Noto Serif SC','Songti SC','Yu Mincho',serif",
+  texture: NIGHT_TEXTURE,
+  wash: 'radial-gradient(120% 80% at 70% -6%, rgba(120,50,90,0.40), transparent 55%)',
+};
+
+// 主菜单宿主背景层（凤翎 texture 叠深紫渐变·game-t sceneBackground 先例·宿主装饰层）。
+export const MENU_BG = `${NIGHT_TEXTURE}, ${NIGHT.pageBg}`;
+// 主菜单画面尺寸（对标 mockups/main-menu.dc.html·1280×720）。
+export const MENU_W = 1280;
+export const MENU_H = 720;
 
 // ── 场景色（3D 占位件着色·线框稿取色·真美术=S6 台账 B-22/23/26~29 保号替换）────────────
 export const TINT = {
