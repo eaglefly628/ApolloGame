@@ -66,6 +66,7 @@
 > **B·完成口径 ✅ done（Lead 亲笔本批）**：game-production.md 红线区+启动词模板——宣布完成必须附 board 全绿，否则只许说「做到 SN」。
 > **C·宿主骨架下沉（A 落地后同代理续做）**：game-q/game-t 重复的 5 容器 mount 骨架（wrapper/scene/topHost/bottomHost/overlayHost+定尺缩放）下沉引擎公用 helper（render-only·API 取两家现状交集）；迁移 game-q 消费自证；**game-t 迁移归 PE-T（T-005②·勿代改）**；迁移后基线 createElement 归零、撤 approvedBy。测试：helper 单测 + game-q 零回归。
 > 完工标 ✅ 待 Lead 对抗性验收。
+> **A ✅ done（Opus·2026-07-16·待 Lead 对抗性验收·commit 本提交）**：`game-skill-audit.mjs` 判词收敛=「未被 Lead 批注基线覆盖的红旗才 FAIL」（AUDIT+RATCHET 双段同解 S5 编译期宿主恒红·被批红旗显示但不红判）；`audit-baseline.json` 9 条红旗>0 全补 `approvedBy:"LEAD"`+date+reason（game-q/game-t=宿主骨架 2026-07-16·余 7 款=存量既往不咎 2026-07-04 执行落档），缺批注/新游戏红旗/超基线三态即 RATCHET FAIL；旧「请加入基线」邀请语删除。`audit-ratchet.test.mjs` +3 测（真基线全批注静态查 + 自写豁免/新游戏红旗两对抗·`APOLLO_AUDIT_BASELINE` 固定基线跑真源）。门禁全绿 tsc0/vitest2752/build0/双守卫。**偏差**：①加 `APOLLO_AUDIT_BASELINE` env 覆盖（仅对抗测试用·真跑默认真基线）；②7 款存量批注为「既往不咎」=落档非新豁免（Lead 可复核）。
 
 ### REQ-GATE-硬化 · 注册即有板 + 阶段顺序闸（Lead 全链漏洞复查 E/F 件） · [2026-07-16] · owner「影响照手册交付的全是 P1·马上落地」→ Lead 出图 → **指派：Opus** · status: in-progress（已派工 2026-07-16） · 优先级: P1 · 类型: 质量门禁基建
 > **E·注册即有板**：新 vitest 守卫（`scripts/pipeline-registry-guard.test.mjs`）——`src/launcher.tsx` GAMES 注册的每款非冻结游戏必须有 `public/games/<slug>/pipeline.json` 且 S1 立项卡字段非空；**没进生产线就上不了架**。存量缺板游戏先盘点进白名单（带日期·逐步清偿·白名单不许新增）。

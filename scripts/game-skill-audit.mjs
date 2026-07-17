@@ -8,7 +8,9 @@
 //        裸 Math.random（须用引擎种子 PRNG）· innerHTML · document.createElement（手写 DOM，须走 LayoutNode）。
 //   🟡 黄 = 缺失防线（未破线但少了护栏）：零能力接入（绕开 capabilities 体系）· 零测试。
 //   ⚠ 建议 = 非红线的迁移提示（bg 裸色串→色库）：只提示、不进判词、不改退出码。
-//   判词：任一红 → FAIL（退出码 1）；无红有黄 → WARNINGS（退出码 0）；全清 → PASS（退出码 0）。
+//   判词（REQ-AUDIT-守门·owner 2026-07-16）：任一**未被 Lead 批注基线覆盖**的红 → FAIL（退出码 1）；
+//        红旗全被 Lead 批注基线覆盖（approvedBy:"LEAD"+date+reason·计数未超）→ 仍显示但不红判；
+//        无未覆盖红 · 有黄 → WARNINGS（退出码 0）；全清 → PASS（退出码 0）。
 //
 // 「自写解释器 / 虚胖数据」（数据表 + 游戏层自写解释器）也属红类，但**无法可靠 regex 检测**
 //   （合法的小枚举 switch 与真·绕引擎解释器难以机械区分，见 game-e/jokers.ts 的经济结算 switch）——
@@ -113,7 +115,39 @@ function adviceBits(r) {
   if (r.flags.nakedFill.length) bits.push(`裸bg色×${r.flags.nakedFill.length}`);
   return bits;
 }
-const anyRed = rows.some((r) => redBits(r).length);
+// ── 红旗棘轮基线（机读·随本工具同目录·APOLLO_AUDIT_BASELINE 可覆盖供对抗测试用固定基线）──
+const BASELINE_PATH = process.env.APOLLO_AUDIT_BASELINE || join('scripts', 'audit-baseline.json');
+/** 基线三指标 → audit flags 键 → 展示名。 */
+const RATCHET_METRICS = [
+  ['nakedRandom', 'mathRandom', '裸Math.random'],
+  ['innerHTML', 'innerHTML', 'innerHTML'],
+  ['createElement', 'createElement', 'document.createElement'],
+];
+/** 读基线 games 表（失败=null·棘轮段判 FAIL）。 */
+const baseline = (() => {
+  try { return JSON.parse(readFileSync(BASELINE_PATH, 'utf8')).games ?? {}; }
+  catch { return null; }
+})();
+/** 基线条目是否带 Lead 批注（approvedBy:"LEAD" + date + reason 三者齐全·违规者不得自写豁免）。 */
+function isAnnotated(b) {
+  return !!b && b.approvedBy === 'LEAD' && !!b.date && !!b.reason;
+}
+/**
+ * 某游戏当前红旗是否「被 Lead 批注基线覆盖」（REQ-AUDIT-守门）：
+ * 有基线条目 + 三字段批注齐全 + 每项当前计数 ≤ 基线计数（无超额）→ 覆盖（显示但不红判）。
+ * 基线缺失（新游戏）/ 未批注（自写豁免）/ 任一超额（新增红旗）→ 未覆盖（判 FAIL）。
+ */
+function isRedCovered(r) {
+  if (!baseline) return false;
+  const b = baseline[r.game];
+  if (!isAnnotated(b)) return false;
+  for (const [baseKey, flagKey] of RATCHET_METRICS) {
+    if (r.flags[flagKey].length > (b[baseKey] ?? 0)) return false;
+  }
+  return true;
+}
+// 判词只看「未被批注基线覆盖的红旗」——被 Lead 批注覆盖的红旗仍显示、不进 FAIL。
+const anyUncoveredRed = rows.some((r) => redBits(r).length && !isRedCovered(r));
 const anyYellow = rows.some((r) => yellowBits(r).length);
 
 // ── 汇总表 ──
@@ -126,8 +160,9 @@ for (const r of rows) {
   const red = redBits(r);
   const yellow = yellowBits(r);
   const advice = adviceBits(r);
+  const covered = red.length > 0 && isRedCovered(r);
   const cells = [];
-  if (red.length) cells.push('🔴 ' + red.join('·'));
+  if (red.length) cells.push((covered ? '🔵 ' : '🔴 ') + red.join('·') + (covered ? '（批注覆盖）' : ''));
   if (yellow.length) cells.push('🟡 ' + yellow.join('·'));
   if (advice.length) cells.push('⚠ ' + advice.join('·'));
   console.log(
@@ -170,12 +205,16 @@ for (const r of rows) {
 
 // ── 分层收口 ──
 console.log('\n── 分层汇总 ──');
-const redGames = rows.filter((r) => redBits(r).length);
+const uncoveredRedGames = rows.filter((r) => redBits(r).length && !isRedCovered(r));
+const coveredRedGames = rows.filter((r) => redBits(r).length && isRedCovered(r));
 const yellowGames = rows.filter((r) => !redBits(r).length && yellowBits(r).length);
-if (redGames.length) {
-  console.log('  🔴 已破不变量: ' + redGames.map((r) => `${r.game}(${redBits(r).join(',')})`).join('  '));
+if (uncoveredRedGames.length) {
+  console.log('  🔴 未覆盖红旗（判 FAIL·无 Lead 批注/超基线/新游戏）: ' + uncoveredRedGames.map((r) => `${r.game}(${redBits(r).join(',')})`).join('  '));
 } else {
-  console.log('  🔴 已破不变量: 无');
+  console.log('  🔴 未覆盖红旗: 无');
+}
+if (coveredRedGames.length) {
+  console.log('  🔵 批注覆盖红旗（Lead 批注·仍显示不红判·C 件下沉后归零撤批注）: ' + coveredRedGames.map((r) => `${r.game}(${redBits(r).join(',')})`).join('  '));
 }
 if (yellowGames.length) {
   console.log('  🟡 缺失防线: ' + yellowGames.map((r) => `${r.game}(${yellowBits(r).join(',')})`).join('  '));
@@ -188,70 +227,92 @@ if (adviceGames.length) {
 }
 
 // ── 判词 token + 退出码（⚠ 建议不参与） ──
-const verdict = anyRed ? 'FAIL' : anyYellow ? 'WARNINGS' : 'PASS';
+const verdict = anyUncoveredRed ? 'FAIL' : anyYellow ? 'WARNINGS' : 'PASS';
 console.log(`\nAUDIT: ${verdict}`);
 
-// ── 红旗棘轮：与机读基线对比（REQ-QA-红旗棘轮·owner 2026-07-04 拍板）──────
-// 三红旗计数（裸Math.random / innerHTML / document.createElement）只许降不许升。
-// 任一游戏任一指标高于基线 → RATCHET: FAIL + 退出码 1（点名游戏/指标/超额数）；
-// 低于基线 → 提示"同提交把基线降下来"（还债仪式·不红）；等于 → 静默。
-// 存量既往不咎（基线=灌入时 HEAD 实测），只挡「新增红旗」。RATCHET 是 AUDIT 的追加段，
-// 既有 AUDIT 判词与退出码语义完全兼容——最终退出码 = (anyRed || ratchetFail) ? 1 : 0。
-
-/** 红旗棘轮基线（机读·随本工具同目录）。 */
-const BASELINE_PATH = join('scripts', 'audit-baseline.json');
-/** 基线三指标 → audit flags 键 → 展示名。 */
-const RATCHET_METRICS = [
-  ['nakedRandom', 'mathRandom', '裸Math.random'],
-  ['innerHTML', 'innerHTML', 'innerHTML'],
-  ['createElement', 'createElement', 'document.createElement'],
-];
+// ── 红旗棘轮：与机读基线对比（REQ-QA-红旗棘轮·owner 2026-07-04；REQ-AUDIT-守门 防自基线·owner 2026-07-16）──
+// 三红旗计数（裸Math.random / innerHTML / document.createElement）只许降不许升，且豁免须 Lead 亲批。
+// FAIL 三条（退出码 1·点名游戏/指标）：
+//   ① 超基线（cur > base·新增红旗）；
+//   ② 自写豁免（基线条目红旗计数>0 但缺 approvedBy:"LEAD"+date+reason·违规者不得自写豁免）；
+//   ③ 新游戏红旗（无基线条目 + 带红旗·不再是「请加入基线」的邀请，而是即刻 FAIL·豁免走 requests.md 找 Lead）。
+// 低于基线 → 提示「同提交把基线降下来」（还债仪式·不红）；等于且已批注 → 覆盖（显示但不红判）。
+// 事故记档：旧提示语「无基线条目（新游戏？请加入 audit-baseline.json）」曾亲口教施工 session 自写基线
+//   （PE-T 6142237d 把自己 createElement:5 写进基线·棘轮空转），本次收敛。
+// baseline/BASELINE_PATH/RATCHET_METRICS/isAnnotated 均在文件上部定义（判词段共用）。
+// 最终退出码 = (anyUncoveredRed || ratchetFail) ? 1 : 0。
 
 const ratchetFail = runRatchet(rows);
 
-process.exit(anyRed || ratchetFail ? 1 : 0);
+process.exit(anyUncoveredRed || ratchetFail ? 1 : 0);
 
 /**
- * 对比机读基线，打印棘轮段，返回是否 FAIL（有任一指标超基线）。
- * 只比对本次实际审计到的游戏（rows）——支持子集调用。
+ * 对比机读基线，打印棘轮段，返回是否 FAIL（超基线 / 自写豁免 / 新游戏红旗 任一）。
+ * 只比对本次实际审计到的游戏（rows）——支持子集调用（S5 逐游戏门用）。
  */
 function runRatchet(rows) {
-  let baseline;
-  try {
-    baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8')).games;
-  } catch (e) {
-    console.error(`\n── 红旗棘轮 ──`);
-    console.error(`  基线文件读取失败（${BASELINE_PATH}）：${e.message}`);
+  console.log(`\n── 红旗棘轮（对比基线 ${BASELINE_PATH}·只降不升·豁免须 Lead 批注）──`);
+  if (!baseline) {
+    console.error(`  基线文件读取失败（${BASELINE_PATH}）`);
     console.error(`\nRATCHET: FAIL`);
     return true;
   }
-  const overages = []; // 超基线（新增红旗·致命）
-  const drops = [];    // 低于基线（该降基线还债）
-  const missing = [];  // 无基线条目（新游戏）
+  const overages = [];     // ① cur > base（新增红旗·致命）
+  const drops = [];        // 低于基线（该降基线还债·不红）
+  const unannotated = [];  // ② 基线红旗>0 但缺 Lead 批注（自写豁免·致命）
+  const newGameRed = [];   // ③ 无基线条目 + 带红旗（新游戏红旗·致命）
+  const covered = [];      // 批注覆盖（不红判·仅提示）
   for (const r of rows) {
     const b = baseline[r.game];
-    if (!b) { missing.push(r.game); continue; }
+    const hasRed = redBits(r).length > 0;
+    if (!b) {
+      if (hasRed) newGameRed.push({ game: r.game, bits: redBits(r) });
+      continue;
+    }
+    const baseTotal = RATCHET_METRICS.reduce((s, [k]) => s + (b[k] ?? 0), 0);
+    if (baseTotal > 0 && !isAnnotated(b)) {
+      const miss = [];
+      if (b.approvedBy !== 'LEAD') miss.push('approvedBy:"LEAD"');
+      if (!b.date) miss.push('date');
+      if (!b.reason) miss.push('reason');
+      unannotated.push({ game: r.game, miss });
+    }
+    let over = false;
     for (const [baseKey, flagKey, label] of RATCHET_METRICS) {
       const cur = r.flags[flagKey].length;
       const base = b[baseKey] ?? 0;
-      if (cur > base) overages.push({ game: r.game, label, base, cur });
+      if (cur > base) { overages.push({ game: r.game, label, base, cur }); over = true; }
       else if (cur < base) drops.push({ game: r.game, label, base, cur });
     }
+    if (hasRed && isAnnotated(b) && !over) covered.push({ game: r.game, bits: redBits(r) });
   }
-  console.log(`\n── 红旗棘轮（对比基线 ${BASELINE_PATH}·只降不升）──`);
-  if (missing.length) {
-    console.log(`  ⚠ 无基线条目（新游戏？请加入 audit-baseline.json）: ${missing.join(', ')}`);
+  if (covered.length) {
+    console.log('  🔵 批注覆盖（Lead 已批·不红判·C 件下沉后应归零并撤 approvedBy）:');
+    for (const c of covered) console.log(`      ${c.game}: ${c.bits.join('·')}`);
   }
   if (drops.length) {
     console.log('  ⬇ 低于基线（记得同提交把基线降下来·还债仪式）:');
     for (const d of drops) console.log(`      ${d.game} ${d.label}: ${d.base} → ${d.cur}（-${d.base - d.cur}）`);
+  }
+  const fail = overages.length > 0 || unannotated.length > 0 || newGameRed.length > 0;
+  if (newGameRed.length) {
+    console.error('  🔺 新游戏红旗（无基线条目·门禁红）:');
+    for (const n of newGameRed) console.error(`      ${n.game}: ${n.bits.join('·')}`);
+    console.error('  新游戏带红旗即 FAIL——豁免不自写基线，走 docs/workflow/requests.md 找 Lead 裁决。');
+  }
+  if (unannotated.length) {
+    console.error('  🔺 自写豁免（基线红旗>0 缺 Lead 批注·门禁红）:');
+    for (const u of unannotated) console.error(`      ${u.game}: 缺 ${u.miss.join('、')}`);
+    console.error('  违规者不得自写豁免——基线红旗条目须 Lead 亲批 approvedBy:"LEAD"+date+reason。');
   }
   if (overages.length) {
     console.error('  🔺 超基线（新增红旗·门禁红）:');
     for (const o of overages) {
       console.error(`      ${o.game} ${o.label}: 基线 ${o.base} → 现 ${o.cur}（+${o.cur - o.base}）`);
     }
-    console.error('  抬基线唯一合法姿势：给该游戏 baseline 条目挂 reason:"REQ-xxx"（缺口单号）。');
+    console.error('  抬基线唯一合法姿势：走 requests.md 找 Lead 裁决，给条目挂 approvedBy:"LEAD"+date+reason。');
+  }
+  if (fail) {
     console.error('\nRATCHET: FAIL');
     return true;
   }
