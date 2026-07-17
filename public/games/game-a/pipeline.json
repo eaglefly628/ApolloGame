@@ -7,7 +7,23 @@
     "refs": "game-e 卡牌数据链（card-pile/计分/数据牌目录）· 蓝本 docs/design/game-a/guandan-lite-mockup.html",
     "style": "二次元原生自产 · 现代私宅夜局（modern-manor × sakura-nijigen）"
   },
-  "signoffs": {},
+  "signoffs": {
+    "S1": {
+      "by": "owner(junbai.li)",
+      "note": "owner 2026-07-17 本轮口谕「签字放行·继续S4」·经 Lead session 代录（复查门 S2/S3 已 PASS·S1 立项 owner 亲提）",
+      "at": "2026-07-17T14:39:10.607Z"
+    },
+    "S2": {
+      "by": "owner(junbai.li)",
+      "note": "owner 2026-07-17 本轮口谕「签字放行·继续S4」·经 Lead session 代录（复查门 S2/S3 已 PASS·S1 立项 owner 亲提）",
+      "at": "2026-07-17T14:39:10.691Z"
+    },
+    "S3": {
+      "by": "owner(junbai.li)",
+      "note": "owner 2026-07-17 本轮口谕「签字放行·继续S4」·经 Lead session 代录（复查门 S2/S3 已 PASS·S1 立项 owner 亲提）",
+      "at": "2026-07-17T14:39:10.779Z"
+    }
+  },
   "evidence": {},
   "history": [
     {
@@ -25,6 +41,21 @@
       "stage": "S3",
       "verdict": "PASS",
       "at": "2026-07-17T14:30:27.492Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S1",
+      "at": "2026-07-17T14:39:10.607Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S2",
+      "at": "2026-07-17T14:39:10.691Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S3",
+      "at": "2026-07-17T14:39:10.779Z"
     }
   ],
   "reviews": {
