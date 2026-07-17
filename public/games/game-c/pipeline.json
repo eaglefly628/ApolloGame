@@ -32,15 +32,15 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": " Test Files  4 passed (4) ·       Tests  56 passed (56)",
-      "at": "2026-07-17T17:19:44.939Z",
-      "gameHash": "43416aecd8a8ab0d"
+      "summary": " Test Files  5 passed (5) ·       Tests  65 passed (65)",
+      "at": "2026-07-17T17:39:11.696Z",
+      "gameHash": "fdb89c8c240988a9"
     },
     "S5": {
       "exit": 0,
       "summary": "AUDIT: WARNINGS · RATCHET: PASS",
-      "at": "2026-07-17T17:19:45.044Z",
-      "gameHash": "43416aecd8a8ab0d"
+      "at": "2026-07-17T17:39:11.804Z",
+      "gameHash": "fdb89c8c240988a9"
     }
   },
   "history": [
@@ -151,6 +151,30 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-07-17T17:19:45.044Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "主菜单+日志新增·hash 变·56+测机器侧重跑",
+      "at": "2026-07-17T17:39:10.190Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-17T17:39:11.696Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "主菜单/日志正装·audit 红旗零·复查/人门待 owner 看四屏截图签",
+      "at": "2026-07-17T17:39:11.758Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-07-17T17:39:11.804Z"
     }
   ],
   "outOfOrder": [
@@ -173,6 +197,16 @@
       "stage": "S5",
       "reason": "S5 正装 audit 红旗零·复查/人门待 owner 看正装截图签",
       "at": "2026-07-17T17:19:44.999Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "主菜单+日志新增·hash 变·56+测机器侧重跑",
+      "at": "2026-07-17T17:39:10.190Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "主菜单/日志正装·audit 红旗零·复查/人门待 owner 看四屏截图签",
+      "at": "2026-07-17T17:39:11.758Z"
     }
   ],
   "reviews": {

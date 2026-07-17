@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { validateLayoutNode } from '@ui/components/validate.js';
 import type { Card } from '@engine/protocol/components.js';
-import { buildTable, type TableView } from './hud.js';
+import { buildTable, buildMenu, type TableView } from './hud.js';
 import { CLOTHING_ITEMS } from './wardrobe.js';
 import { OPPONENT_ANCHORS } from './theme.js';
 
@@ -22,6 +22,7 @@ function baseView(over: Partial<TableView> = {}): TableView {
     })),
     toCall: 0, canRaise: true, minRaise: 50, maxRaise: 950, raiseValue: 50,
     muted: false, openWardrobe: null,
+    showLog: false, log: [],
     ...over,
   };
 }
@@ -72,5 +73,18 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     walk(table);
     for (const seat of [0, 1, 2, 3, 4, 5]) expect(ids.has(`c-seat-${seat}`)).toBe(true);
     expect(OPPONENT_ANCHORS.map((a) => a.name)).toEqual(['大姨太', '二姨太', '三姨太', '四姨太', '五姨太']);
+  });
+
+  it('游戏日志面板打开（事件流渲染）零 issue', () => {
+    const log = [
+      { seq: 0, tag: 'deal' as const, text: '🎲 发牌 · seed 42' },
+      { seq: 1, tag: 'action' as const, text: '主角(座0) 跟注 50' },
+      { seq: 2, tag: 'street' as const, text: '🃏 翻牌 · A♠ K♥ 5♦' },
+    ];
+    expect(validateLayoutNode(buildTable(baseView({ showLog: true, log })))).toEqual([]);
+  });
+
+  it('主菜单屏 SC-1 零 issue（标题/立绘/按钮/角色卡）', () => {
+    expect(validateLayoutNode(buildMenu({ playerName: '夜阑君', playerChips: 12860, blindLabel: '25 / 50' }))).toEqual([]);
   });
 });

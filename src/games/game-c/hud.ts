@@ -10,6 +10,7 @@ import type { Card } from '@engine/protocol/components.js';
 import {
   FELT_BG, OPPONENT_ANCHORS, anchorTopLeft, cardFace, SEAT_W, SEAT_H, FIELD_W, FIELD_H,
 } from './theme.js';
+import type { GameEvent } from './game-log.js';
 
 // ── 视图数据（宿主从 M1 sim 状态纯读投影·outcome-first）─────────────────────────
 export interface SeatView {
@@ -23,6 +24,7 @@ export interface TableView {
   board: Card[]; heroHole: Card[]; heroHandName: string;
   seats: SeatView[]; toCall: number; canRaise: boolean; minRaise: number; maxRaise: number; raiseValue: number;
   muted: boolean; openWardrobe: number | null; wardrobe?: WardrobeView;
+  showLog: boolean; log: GameEvent[]; // 游戏日志（确定性事件流·查 bug·owner 2026-07-17）
 }
 
 const ITEM_EMOJI: Record<string, string> = { earrings: '💎', gloves: '🧤', socks: '🧦', top: '👚', skirt: '👗', lingerie: '🎀' };
@@ -147,6 +149,7 @@ function buildTopBar(v: TableView): LayoutNode {
       {
         type: 'Panel', id: 'c-menu', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' },
         children: [
+          { type: 'Button', id: 'c-log', props: { label: '📋', kind: v.showLog ? 'primary' : 'ghost', action: 'toggle_log' } },
           { type: 'Button', id: 'c-sound', props: { label: v.muted ? '🔇' : '♪', kind: 'ghost', action: 'sound_toggle' } },
           { type: 'Button', id: 'c-gear', props: { label: '⚙', kind: 'ghost', action: 'menu_open' } },
         ],
@@ -309,7 +312,107 @@ function buildWardrobe(w: WardrobeView): LayoutNode {
   };
 }
 
-// ── 牌桌主屏（组装·绝对定位坐标零改动·z 序：felt→底池→公共牌→顶带→座位→底牌→行动条→衣柜）──
+// ── 主菜单屏 SC-1（对齐 texas-main-menu 稿·左立绘 + 右标题按钮 + 左下角色卡）──────────────
+export interface MenuView { playerName: string; playerChips: number; blindLabel: string; }
+export function buildMenu(m: MenuView): LayoutNode {
+  const portrait: LayoutNode = {
+    type: 'Panel', id: 'c-menu-portrait', props: { bare: true, dashed: true, edge: 'gold' },
+    layout: { direction: 'column', align: 'center', justify: 'center', gap: 12, padding: 22, width: 300, height: 440, radius: 12 },
+    children: [
+      { type: 'Label', id: 'c-menu-p-badge', props: { text: 'C-CHAR-HERO', font: 'mono', size: 'xs', color: 'warn' } },
+      { type: 'Avatar', id: 'c-menu-p-face', props: { name: m.playerName.slice(0, 1), size: 96, shape: 'rounded' } },
+      { type: 'Label', id: 'c-menu-p-title', props: { text: '· 主角立绘', font: 'impact', size: 26, color: 'gold' } },
+      { type: 'Label', id: 'c-menu-p-size', props: { text: '尺寸 300 × 440 · 竖幅', size: 'xs', color: 'sub' } },
+      { type: 'Label', id: 'c-menu-p-anchor', props: { text: '风格锚 · 二次元 / 柔光 / 暖夜 / 不露骨', size: 'xs', color: 'dim' } },
+    ],
+  };
+  const right: LayoutNode = {
+    type: 'Panel', id: 'c-menu-right', props: { bare: true },
+    layout: { direction: 'column', align: 'end', gap: 14, width: 440 },
+    children: [
+      {
+        type: 'Panel', id: 'c-menu-title-row', props: { bare: true },
+        layout: { direction: 'row', gap: 4, align: 'end', justify: 'end' },
+        children: [
+          { type: 'Label', id: 'c-menu-t1', props: { text: '德州', font: 'serif', size: 72, bold: true, color: 'text' } },
+          { type: 'Label', id: 'c-menu-t2', props: { text: '夜宴', font: 'serif', size: 72, bold: true, color: 'danger' } },
+        ],
+      },
+      { type: 'Label', id: 'c-menu-sub', props: { text: '六人环桌 · 押注见真章 · 步步为局', size: 'md', color: 'sub' } },
+      {
+        type: 'Panel', id: 'c-menu-blind', props: { bg: { custom: 'linear-gradient(160deg,#c0392b,#7a1420)' }, edge: 'gold' },
+        layout: { direction: 'row', gap: 8, align: 'center', padding: 7, radius: 8 },
+        children: [
+          { type: 'Label', id: 'c-menu-blind-l', props: { text: '本局盲注', size: 'xs', color: 'gold' } },
+          { type: 'Label', id: 'c-menu-blind-v', props: { text: m.blindLabel, font: 'impact', size: 18, color: 'gold' } },
+        ],
+      },
+      {
+        type: 'Panel', id: 'c-menu-redpack', props: { bg: { custom: 'linear-gradient(90deg,rgba(224,180,88,0.2),rgba(200,53,43,0.15))' }, edge: 'warn' },
+        layout: { direction: 'row', justify: 'center', padding: 6, radius: 16 },
+        children: [{ type: 'Label', id: 'c-menu-rp-t', props: { text: '🧧 每日首局 +88 红包', size: 'sm', color: 'gold' } }],
+      },
+      { type: 'Button', id: 'c-menu-start', props: { label: '开始上桌', kind: 'hero', action: 'start_game' }, layout: { width: 280 } },
+      { type: 'Button', id: 'c-menu-continue', props: { label: '继续上局', kind: 'ghost', action: 'continue_game' }, layout: { width: 280 } },
+      { type: 'Button', id: 'c-menu-settings', props: { label: '设置', kind: 'ghost', action: 'menu_open' }, layout: { width: 280 } },
+    ],
+  };
+  const roleCard: LayoutNode = {
+    type: 'Panel', id: 'c-menu-role', props: { bg: { custom: CARD_FILL }, edge: 'gold' },
+    layout: { x: 40, y: FIELD_H - 130, width: 240, direction: 'row', gap: 12, align: 'center', padding: 12, radius: 12 },
+    children: [
+      { type: 'Avatar', id: 'c-menu-role-av', props: { name: m.playerName.slice(0, 1), size: 52, shape: 'circle' } },
+      {
+        type: 'Panel', id: 'c-menu-role-col', props: { bare: true }, layout: { direction: 'column', gap: 2 },
+        children: [
+          { type: 'Label', id: 'c-menu-role-name', props: { text: m.playerName, size: 'md', bold: true, color: 'text' } },
+          { type: 'Label', id: 'c-menu-role-chips', props: { text: `◉ ${fmt(m.playerChips)}`, font: 'impact', size: 20, color: 'gold', glow: true } },
+        ],
+      },
+    ],
+  };
+  return {
+    type: 'Screen', id: 'c-menu', props: { bg: { custom: 'radial-gradient(ellipse at 50% 26%,#33221a 0%,#1c110c 46%,#0d0806 82%)' } },
+    layout: { width: FIELD_W, height: FIELD_H },
+    children: [
+      {
+        type: 'Panel', id: 'c-menu-stage', props: { bare: true },
+        layout: { x: 90, y: 130, width: FIELD_W - 180, height: 460, direction: 'row', align: 'center', justify: 'between' },
+        children: [portrait, right],
+      },
+      roleCard,
+      { type: 'Label', id: 'c-menu-ver', props: { text: 'v0.1.0 · 盒庭线', font: 'mono', size: 'xs', color: 'dim' }, layout: { x: FIELD_W - 200, y: FIELD_H - 40, width: 180 } },
+    ],
+  };
+}
+
+// ── 游戏日志面板（owner 2026-07-17 查 bug·确定性事件流·右侧可开关滚动）──────────────
+const LOG_TAG_COLOR: Record<GameEvent['tag'], 'sub' | 'text' | 'gold' | 'warn' | 'ok'> = {
+  deal: 'ok', blind: 'sub', action: 'text', street: 'gold', showdown: 'gold', pawn: 'warn', info: 'ok',
+};
+function buildLogPanel(log: GameEvent[]): LayoutNode {
+  const rows: LayoutNode[] = log.map((e) => ({
+    type: 'Label', id: `c-log-${e.seq}`, props: { text: e.text, font: 'mono', size: 'xs', color: LOG_TAG_COLOR[e.tag] },
+  }));
+  return {
+    type: 'Panel', id: 'c-logpanel', props: { bg: { custom: 'linear-gradient(160deg,rgba(20,14,26,0.97),rgba(10,7,16,0.98))' }, edge: 'gold', scroll: true },
+    layout: { x: FIELD_W - 366, y: 84, width: 350, height: 456, direction: 'column', gap: 6, padding: 14 },
+    children: [
+      {
+        type: 'Panel', id: 'c-log-hdr', props: { bare: true }, layout: { direction: 'row', justify: 'between', align: 'center' },
+        children: [
+          { type: 'Label', id: 'c-log-title', props: { text: '📋 牌局日志 · 查 bug', font: 'impact', size: 18, color: 'gold' } },
+          { type: 'Button', id: 'c-log-close', props: { label: '✕', kind: 'ghost', action: 'toggle_log' } },
+        ],
+      },
+      { type: 'Label', id: 'c-log-seed', props: { text: '确定性事件流 · 同 seed 同日志', size: 'xs', color: 'dim' } },
+      { type: 'Divider', id: 'c-log-div', props: {} },
+      { type: 'Panel', id: 'c-log-rows', props: { bare: true, scroll: true }, layout: { direction: 'column', gap: 5, flex: 1 }, children: rows },
+    ],
+  };
+}
+
+// ── 牌桌主屏（组装·绝对定位坐标零改动·z 序：felt→底池→公共牌→顶带→座位→底牌→行动条→日志→衣柜）──
 export function buildTable(v: TableView): LayoutNode {
   const feltTable: LayoutNode = {
     type: 'Panel', id: 'c-felt', props: { bg: { custom: FELT_BG }, vignette: true, edge: 'gold' },
@@ -336,6 +439,7 @@ export function buildTable(v: TableView): LayoutNode {
     feltTable, potChips, buildBoard(v), buildTopBar(v),
     ...opp, heroCard, buildHeroCards(v), buildActionBar(v),
   ];
+  if (v.showLog) children.push(buildLogPanel(v.log));
   if (v.openWardrobe !== null && v.wardrobe) children.push(buildWardrobe(v.wardrobe));
 
   return { type: 'Screen', id: 'c-table', props: {}, layout: { width: FIELD_W, height: FIELD_H }, children };
