@@ -68,7 +68,7 @@
 > ④ **三接口**（纯函数·全整数）：`matchPattern(cards,cfg)`（判型）；`beats(a,b,cfg)`（成对压制）；`legalResponses(hand,target,cfg)`（合法应对枚举·**确定性排序·首个=最小合法压牌**——game-a 提示按钮与 AI 候选共用）。
 > ⑤ 红线与测试：poker-hand 零改动；tier3 落位+registry 注册；conformance=淮安全套逐族判型/压制矩阵/级牌重映射/逢人配枚举/应对枚举含最小合法首位/同 seed 复现/空手牌与不可压边角。game-a 淮安 config 作 fixture。开工先读 `wiki/skills/` 卡牌类知识库。
 
-### REQ-BT-行为树 · 通用行为树能力（纯数据树+确定性解释器·先裁 condition/flow 可否重组） · [2026-07-17] · 提出人 GD-A（《掼蛋夜宴》AI·owner 意向 BT）→ 待 Lead 裁决 · status: open · 优先级: P1 · 类型: 能力缺口候选（通用向·非单游戏拓宽）
+### REQ-BT-行为树 · 通用行为树能力（纯数据树+确定性解释器·先裁 condition/flow 可否重组） · [2026-07-17] · 提出人 GD-A（《掼蛋夜宴》AI·owner 意向 BT）→ 指派 Opus · status: **施工 ✅ 待 Lead 对抗性验收** · 优先级: P1 · 类型: 能力缺口候选（通用向·非单游戏拓宽）
 > - 想实现：AI 外层策略=**纯数据行为树**（selector/sequence/condition/action 节点闭集）+ 通用确定性解释器。掼蛋消费面：记牌四档（记忆保真度分档）、宗师开局偷看 2 张、性格标签（稳健/激进/多变）→ 行为权重；内层出牌=候选生成+估值表（数据）。
 > - 已有能力对照：condition/flow/event-when 可表达简单分支——「树形优先级+运行时黑板+跨游戏复用」疑似缺口；请 Lead 裁①重组是否够②不够则通用下沉（独立于掼蛋·NPC/敌 AI 皆可复用）。`wiki/skills/ai-behavior.md` 有行业知识。
 > - 要求：全种子 PRNG·无裸随机·AI 决策进确定性轨可回放；spec 细化随 game-a S2 capability-plan。
@@ -82,6 +82,8 @@
 > ④ **确定性**：tick 制逐帧重评估（selector 优先级语义）；一切随机经传入 RandomSeed；同 seed 同黑板→同决策轨（回放/万手 sim 依据）。
 > ⑤ **与 condition/flow 的关系**（收录进能力注释防误用）：BT=每 tick 重评估的优先级策略树；t3-flow=状态驻留流转机——互补不替代。
 > ⑥ 测试：五节点语义各一/invert/深树有界/未注册叶装载错/seed 复现/三游戏形状 fixture（a 记牌档权重·b 三姨太人设·c 五性格模板——只作数据形状用例·不实装游戏逻辑）。开工先读 `wiki/skills/ai-behavior.md`（裁决铁律）。
+> **✅ Opus 完工回执（2026-07-17·待 Lead 对抗性验收）**：`src/skills/tier2/behavior-tree.ts`（+`.test.ts` 18 测绿）——五节点闭集解释器（selector 优先级／sequence 全过／invert 取反／condition／action）+ 装载校验（结构／深度上限 `MAX_BT_DEPTH=64`／叶名在册·抛出版+清单版）+ 叶注册表 `registerBTLeaves(gameId,{name:fn})`（分域·按名查表·迭代序不影响求值）+ 确定性 `tickBehaviorTree(tree,gameId,world,entity,seed?)`（随机经**传入 RandomSeed**·同 seed 同黑板同决策轨）。桶出口 + registry 注册齐。三游戏形状 fixture（a/b/c·仅数据形状 stub·不实装逻辑）。
+> **偏差（据实报回）**：设计稿①②未明示引擎组件/系统——按「黑板复用既有 Resource/Flag/StringVar·不新立存储」「游戏层只产 BT 数据·各游戏本地薄实现」「随机传入」三口径，落为**无组件（`provides:{}`·component-manifest 126 未变）无系统的纯解释器 capability**：消费方在自己决策点调 `tickBehaviorTree`（牌桌按回合决策·非引擎每帧驱动·避免 turn-based 每帧误触发）；action 叶可返 `BTAction` 载荷·解释器沿成功路径 surface 决策；未注册叶=装载校验抛错（硬拦）／运行时 fail-closed。门禁：tsc0 · vitest 2804 · build0 · component-manifest PASS。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 

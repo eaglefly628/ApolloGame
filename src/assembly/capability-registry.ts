@@ -47,6 +47,7 @@ import {
   gridDragSquareCapability,
   match3DragSwapCapability,
   modifierStackCapability,
+  behaviorTreeCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability, blockGridCapability } from '@skills/tier3/index.js';
 
@@ -112,6 +113,9 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   // 债记（REQ-CAP 下沉裁决）：stats 原样不动，「字段表 + max/min/or/floor 混合策略 + ConditionExpr 门控」的
   // 通用聚合走下方 t2-modifier-stack；stats 消费方若需门控/逐字段策略，后续另立 REQ 迁移到 modifier-stack。
   modifierStackCapability,
+  // t2-behavior-tree（REQ-BT）：通用行为树·纯数据树（五节点闭集）+ 确定性解释器；黑板复用既有 Resource/Flag/StringVar
+  // （不新立组件·provides 空）；叶=消费方注册表（TS 例外口径）；随机经传入 RandomSeed→回放/万手 sim 安全。
+  behaviorTreeCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,

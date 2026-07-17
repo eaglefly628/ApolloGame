@@ -62,3 +62,20 @@ export { hexCellToPoint, hexPointToCell } from './grid-move.js';
 // stats 的超集（逐字段混合 add/mul/max/min/or/floor + ConditionExpr 门控）；下沉小丑计分/天罡/地煞三处同构聚合。
 export { modifierStackCapability, aggregateModifiers, modifierCtx } from './modifier-stack.js';
 export type { ModifierRow, ModifierCtx } from './modifier-stack.js';
+// behavior-tree（REQ-BT）：通用行为树——纯数据树（selector/sequence/invert/condition/action 五节点闭集）+ 确定性解释器。
+// 黑板复用既有 Resource/Flag/StringVar（不新立组件）；叶=消费方注册表 registerBTLeaves；随机经传入 RandomSeed→同 seed 同决策轨。
+export {
+  behaviorTreeCapability,
+  registerBTLeaves,
+  getBTLeaf,
+  hasBTLeaf,
+  registeredLeafNames,
+  clearBTLeaves,
+  collectBTLeafNames,
+  checkBehaviorTree,
+  validateBehaviorTree,
+  validateBehaviorTreeForGame,
+  tickBehaviorTree,
+  MAX_BT_DEPTH,
+} from './behavior-tree.js';
+export type { BTNode, BTNodeType, BTStatus, BTAction, BTLeafResult, BTLeafFn, BTLeafTable, BTTickResult, BehaviorTree, BTValidateOptions } from './behavior-tree.js';
