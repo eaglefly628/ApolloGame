@@ -61,3 +61,10 @@ export type { SlotEvalResult } from './slot-payout.js';
 // 落点合法性+消除算法；t2-drag-place 只吸附六边格、t3-match3-board 是交换/三连/重力正交规则——真缺口。
 // Block Blast/Woodoku/俄罗斯方块类复用。配套输入桥 grid-drag-square（方形吸附+polyomino 预览）另立。
 export { blockGridCapability, bgIndex, canPlace, applyPlace, fullLines, clearLines, canPlaceAnywhere, anyTrayPlaceable } from './block-grid.js';
+
+// hand-pattern（REQ-GUANDAN-牌型 下沉）：通用「变长牌族」判型 + 跨型压制序 + 逢人配的确定性解释器。
+// 牌族 DSL 闭集（ntuple/sequence/tuple-sequence/flush-sequence/fixed-set）+ 压制数值阶表 + 级牌重映射（全 config）。
+// 三纯函数：matchPattern（判型）/beats（成对压制）/legalResponses（合法应对枚举·首个=最小合法压牌）。
+// 与 t3-poker-hand 分工：poker-hand=Balatro 计分域；本能力=出牌类判定/压制/应对域（掼蛋/斗地主/跑得快通用）。
+export { handPatternCapability, matchPattern, beats, legalResponses, effRank, resolveTier, compareMatches } from './hand-pattern.js';
+export type { HandPatternConfig, HandFamily, FamilyKind, PatternMatch } from './hand-pattern.js';

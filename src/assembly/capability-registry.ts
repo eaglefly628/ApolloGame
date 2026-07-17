@@ -49,7 +49,7 @@ import {
   modifierStackCapability,
   behaviorTreeCapability,
 } from '@skills/tier2/index.js';
-import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability, blockGridCapability } from '@skills/tier3/index.js';
+import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability, blockGridCapability, handPatternCapability } from '@skills/tier3/index.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  能力注册表 (Capability Registry) —— manifest 加载的地基
@@ -129,6 +129,8 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   timelineCapability,
   slotPayoutCapability,
   blockGridCapability,
+  // t3-hand-pattern（REQ-GUANDAN-牌型）：变长牌族判型 + 跨型压制序 + 逢人配确定性解释器（掼蛋/斗地主/跑得快通用）。
+  handPatternCapability,
 ];
 
 export const CAPABILITY_REGISTRY: ReadonlyMap<string, CapabilityDefinition> = (() => {

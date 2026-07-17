@@ -67,6 +67,7 @@
 > ③ **级牌语义**（config）：`{levelRank, wildCard:{suit:'heart',rank:levelRank}}`——rank 序重映射（级牌插 A 之上小王之下）；逢人配=有界确定性枚举取最优（**借鉴 poker-hand wild 枚举技法**·并列取枚举序首解）。
 > ④ **三接口**（纯函数·全整数）：`matchPattern(cards,cfg)`（判型）；`beats(a,b,cfg)`（成对压制）；`legalResponses(hand,target,cfg)`（合法应对枚举·**确定性排序·首个=最小合法压牌**——game-a 提示按钮与 AI 候选共用）。
 > ⑤ 红线与测试：poker-hand 零改动；tier3 落位+registry 注册；conformance=淮安全套逐族判型/压制矩阵/级牌重映射/逢人配枚举/应对枚举含最小合法首位/同 seed 复现/空手牌与不可压边角。game-a 淮安 config 作 fixture。开工先读 `wiki/skills/` 卡牌类知识库。
+> **✅ 施工完成（Opus 2026-07-17·待 Lead 对抗性验收）**：`src/skills/tier3/hand-pattern.ts`（三接口 matchPattern/beats/legalResponses·全整数纯函数·无 ECS 系统=编译期 TS 游戏直 import）+ `.test.ts`（36 测·淮安全套 conformance）+ index 桶出口 + registry 注册（`t3-hand-pattern`）。5 kind 闭集（ntuple/sequence/tuple-sequence/flush-sequence/fixed-set）+ 压制阶 config 数据（`tier:number|{byLength}`）+ 级牌 eff 重映射 + 逢人配有界枚举（借鉴 poker-hand·并列取枚举序首解）；legalResponses 升序·首个=最小合法压牌·偏好少用逢人配。poker-hand 本体零改动。**偏差（据实报 Lead）**：①三带二/炸弹的组结构统一收进 `ntuple`（composition 固定多组 / n 变长单组）——图纸①把「三带二(composition[3,2])」与「炸弹(ntuple)」并列，实现按此不新增 kind、维持 5 闭集；②legalResponses 排序键补「用逢人配数」维度（提示不浪费逢人配）；③掼蛋 config 为**测试 fixture**（未从能力导出·守「能力游戏无关」），game-a 自带同形 config。门禁：tsc0/vitest 2840/build0。
 
 ### REQ-BT-行为树 · 通用行为树能力（纯数据树+确定性解释器·先裁 condition/flow 可否重组） · [2026-07-17] · 提出人 GD-A（《掼蛋夜宴》AI·owner 意向 BT）→ 指派 Opus · status: **施工 ✅ 待 Lead 对抗性验收** · 优先级: P1 · 类型: 能力缺口候选（通用向·非单游戏拓宽）
 > - 想实现：AI 外层策略=**纯数据行为树**（selector/sequence/condition/action 节点闭集）+ 通用确定性解释器。掼蛋消费面：记牌四档（记忆保真度分档）、宗师开局偷看 2 张、性格标签（稳健/激进/多变）→ 行为权重；内层出牌=候选生成+估值表（数据）。
