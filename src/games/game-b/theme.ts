@@ -42,11 +42,13 @@ export const SAKURA: UITheme = {
 // ── 场景色（3D 占位件着色·线框稿取色·真美术=S6 台账 B-22/23/26~29 保号替换）────────────
 export const TINT = {
   stageBg: 0x2a1e2b, // 渲染底色（暗梅·线框稿 --bg1）
-  feltTop: 0x8e2f45, // 桌呢绯红（B-22 占位）
+  feltTop: 0x3f7d5a, // 桌呢（传统雀庄绿呢·牌面/红牌背都跳得出来·真美术=B-22 可换绯/樱）
+  feltEdge: 0x2f5f45,
   wood: 0x4a2a20, // 桌体深木（B-23 占位）
-  tileFace: 0xfaf4e4, // 牌面象牙白（立牌正面底·贴图未就绪时的回退）
-  tileBack: 0xefe6d8, // 牌背象牙（线框稿 .wall 亮条）
-  tileEdge: 0xd9cdbb, // 牌侧（线框稿 .wall 暗条）
+  tileBody: 0xf2ead2, // 牌身象牙（自家牌身 + 侧面）
+  tileFaceFallback: 0xfaf4e4, // 牌面回退色（贴图未就绪）
+  tileBack: 0xcf3a35, // 牌背红（back.png 红·牌山/三家一眼是背面·区别桌呢绿）
+  tileBackEdge: 0x9c2b27,
   cushion: 0x7c4052, // 座垫暗绯
   tray: 0x5a3242, // 点棒托
   die: 0xfaf6ee, // 骰白
@@ -85,12 +87,13 @@ export function orbitFromEye(
   return { yaw: Math.atan2(dx, dz), pitch: Math.atan2(dy, horiz), distance };
 }
 
-// 主机位：位 (0,3.2,2.6)·看向 (0,0,0.3)·俯角 ~55°·FOV 40（交接档 §二·归一单位 × U）。
-const MAIN_ORBIT = orbitFromEye({ x: 0, y: 3.2 * U, z: 2.6 * U }, { x: 0, y: 0, z: 0.3 * U });
+// 主机位（雀魂式·压低聚焦自家手牌）：位 (0,2.05,2.75)·看向桌心偏南 (0,0,0.15)·俯角 ~41°·FOV 42
+// ——比纯 55° 俯视更平，让屏幕底部那排自家手牌立面正对镜头、看得清万筒索（owner「手上没看到牌」修正）。
+const MAIN_ORBIT = orbitFromEye({ x: 0, y: 2.05 * U, z: 2.75 * U }, { x: 0, y: 0, z: 0.15 * U });
 // 掷骰特写：俯视桌心 (0,2.2,0.6)（开局定亲/开杠翻宝牌复用；跟骰=S4 接 tween/follow）。
 const DICE_ORBIT = orbitFromEye({ x: 0, y: 2.2 * U, z: 0.6 * U }, { x: 0, y: 0, z: 0 });
 
-export const CAM_MAIN: CamPreset = { ...MAIN_ORBIT, pivotX: 0, pivotY: 0, pivotZ: 0.3 * U, fov: 40 };
+export const CAM_MAIN: CamPreset = { ...MAIN_ORBIT, pivotX: 0, pivotY: 0, pivotZ: 0.15 * U, fov: 42 };
 export const CAM_DICE: CamPreset = { ...DICE_ORBIT, pivotX: 0, pivotY: 0, pivotZ: 0, fov: 40 };
 
 // 相对运镜（立直推近/和牌俯冲/脱衣特写·向该席平移+拉近·S4 依席位换算成 Camera3D+tween）。

@@ -1,6 +1,6 @@
 // Game B ·《雀宴》S3 骨架关测试 —— 真引擎装载 + 空跑 2 tick（生产板 S3 机器门语义）
-// + 确定性（同 seed 同 hash·种子 PRNG 序列可复现）+ 主机位口径（~55° 俯角）+ 牌山/手牌摆位
-// + HUD 壳（LayoutNode 校验零 issue·线框稿 1:1 结构·gdd 数值口径）+ 占位资产索引在档。
+// + 确定性（同 seed 同 hash·种子 PRNG 序列可复现）+ 主机位口径 + 四家牌局摆位
+// + HUD 壳（LayoutNode 校验零 issue·线框稿 1:1·gdd 数值）+ 占位资产索引在档。
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -11,14 +11,14 @@ import { nextRandom, type RandomSeed } from '@atom-skills/random/index.js';
 import { parseAssetIndex } from '@assets/index.js';
 import { validateLayoutNode, type LayoutNode } from '@ui/components/index.js';
 import { buildTableBlueprint, HAND_PICK_SIGNAL } from './blueprint.js';
-import { wallLayout, handLayout, DEMO_HAND, DEMO_TSUMO, texKey, TILE_W, TILE_H, TILE_D } from './tiles.js';
+import { wallLayout, handLayout, sideHandLayout, riverLayout, DEMO_HAND, DEMO_TSUMO, RIVER_DEMO, texKey, HAND_H, SM_D } from './tiles.js';
 import { buildHud, initialHud, CLOTH_ITEMS } from './hud.js';
 import { U, CAM_MAIN, orbitFromEye, SAKURA } from './theme.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 describe('game-b S3 骨架 · 真引擎装载 + 空跑', () => {
-  it('蓝图装进真 Engine·空跑 2 tick 不炸·实体齐全', () => {
+  it('蓝图装进真 Engine·空跑 2 tick 不炸·四家牌局实体齐全', () => {
     const engine = new Engine();
     engine.load(buildTableBlueprint({ seed: 1 }));
     engine.world.tick();
@@ -28,16 +28,17 @@ describe('game-b S3 骨架 · 真引擎装载 + 空跑', () => {
     expect(w.getComponent('cam', 'Camera3D')).toBeTruthy();
     expect(w.getComponent('rng', 'RandomSeed')).toBeTruthy();
     expect(w.getComponent('felt', 'Material3D')).toBeTruthy();
-    // 牌山 136 + 手牌 14
-    let wall = 0;
-    let hand = 0;
-    for (const [eid] of w.query('Mesh3D')) {
-      if (eid.startsWith('wall-')) wall++;
-      if (eid.startsWith('hand-')) hand++;
-    }
-    expect(wall).toBe(136);
-    expect(hand).toBe(14);
-    // 手牌可拾取（Pickable3D 信号在档）
+
+    const ids: string[] = [];
+    for (const [eid] of w.query('Mesh3D')) ids.push(eid);
+    const count = (re: RegExp): number => ids.filter((id) => re.test(id)).length;
+    expect(count(/^wall-[nsew]-\d+-\d+$/)).toBe(136); // 牌山 136
+    expect(count(/^hand-\d+$/)).toBe(14); // 自家手牌 body 13+摸
+    expect(count(/^hand-\d+-face$/)).toBe(14); // 自家手牌正面牌面 plane
+    expect(count(/^hand-(north|east|west)-\d+$/)).toBe(39); // 三家各 13
+    expect(count(/^river-(south|north|east|west)-\d+$/)).toBe(24); // 各家河 6
+
+    // 自家手牌可拾取（Pickable3D 挂 body）
     const pick = w.getComponent<Pickable3D>('hand-0', 'Pickable3D');
     expect(pick?.signal).toBe(HAND_PICK_SIGNAL);
   });
@@ -65,19 +66,17 @@ describe('game-b S3 骨架 · 真引擎装载 + 空跑', () => {
   });
 });
 
-describe('game-b 主机位（交接档 §二 口径）', () => {
-  it('俯角 ~55°·距离≈3.94U·FOV 40', () => {
+describe('game-b 主机位（雀魂式·压低聚焦手牌）', () => {
+  it('俯角 ~38°（比纯 55° 平·看清手牌立面）·FOV 42', () => {
     const deg = (CAM_MAIN.pitch * 180) / Math.PI;
-    expect(deg).toBeGreaterThan(53);
-    expect(deg).toBeLessThan(56);
-    expect(CAM_MAIN.distance).toBeCloseTo(3.9408 * U, 1);
-    expect(CAM_MAIN.fov).toBe(40);
-    expect(CAM_MAIN.pivotZ).toBeCloseTo(0.3 * U, 6);
+    expect(deg).toBeGreaterThan(35);
+    expect(deg).toBeLessThan(42);
+    expect(CAM_MAIN.fov).toBe(42);
   });
 
   it('orbitFromEye 与渲染器球面约定互逆（eye = pivot + 球面(yaw,pitch,dist)）', () => {
-    const eye = { x: 0, y: 3.2 * U, z: 2.6 * U };
-    const pivot = { x: 0, y: 0, z: 0.3 * U };
+    const eye = { x: 0, y: 2.05 * U, z: 2.75 * U };
+    const pivot = { x: 0, y: 0, z: 0.15 * U };
     const o = orbitFromEye(eye, pivot);
     const horiz = o.distance * Math.cos(o.pitch);
     expect(pivot.x + horiz * Math.sin(o.yaw)).toBeCloseTo(eye.x, 6);
@@ -86,28 +85,29 @@ describe('game-b 主机位（交接档 §二 口径）', () => {
   });
 });
 
-describe('game-b 摆位（纯函数·交接档 §二）', () => {
+describe('game-b 摆位（纯函数·四家牌局）', () => {
   it('牌山：四边各 17×2 共 136·全在桌呢内·平躺两层', () => {
     const wall = wallLayout();
     expect(wall).toHaveLength(136);
     for (const side of ['e', 's', 'w', 'n'] as const) {
       expect(wall.filter((t) => t.side === side)).toHaveLength(34);
     }
-    const feltHalf = 0.9 * U;
+    const feltHalf = 0.91 * U;
     for (const t of wall) {
       expect(Math.abs(t.x)).toBeLessThan(feltHalf);
       expect(Math.abs(t.z)).toBeLessThan(feltHalf);
-      expect([TILE_D / 2, TILE_D * 1.5]).toContainEqual(t.y);
+      expect([SM_D / 2, SM_D * 1.5]).toContainEqual(t.y); // 两层堆叠
+      expect(t.rotX).toBeCloseTo(Math.PI / 2, 6); // 平躺牌背朝上
     }
   });
 
-  it('手牌：13+摸牌位（右离一档）·立于南边·线框稿示意手 1:1', () => {
+  it('自家手牌：13+摸牌位（右离一档）·立于南边·线框稿示意手 1:1', () => {
     const hand = handLayout();
     expect(hand).toHaveLength(14);
     expect(hand[13].tsumo).toBe(true);
     const step = hand[1].x - hand[0].x;
-    expect(hand[13].x - hand[12].x).toBeGreaterThan(step);
-    expect(hand.every((p) => p.z === 0.85 * U && p.y === TILE_H / 2)).toBe(true);
+    expect(hand[13].x - hand[12].x).toBeGreaterThan(step); // 摸牌离一档
+    expect(hand.every((p) => p.z === 0.72 * U && p.y === HAND_H / 2)).toBe(true);
     expect(DEMO_HAND).toHaveLength(13);
     expect([...DEMO_HAND, DEMO_TSUMO]).toEqual([
       'man-1', 'man-2', 'man-3', 'pin-4', 'pin-5', 'pin-6',
@@ -115,10 +115,23 @@ describe('game-b 摆位（纯函数·交接档 §二）', () => {
     ]);
   });
 
-  it('牌比例≈真实（宽:高:厚 = 0.072:0.096:0.052 × U）', () => {
-    expect(TILE_W).toBeCloseTo(0.72, 6);
-    expect(TILE_H).toBeCloseTo(0.96, 6);
-    expect(TILE_D).toBeCloseTo(0.52, 6);
+  it('三家手牌：对家北 + 东西各 13·围三面·立牌', () => {
+    for (const seat of ['north', 'east', 'west'] as const) {
+      const s = sideHandLayout(seat);
+      expect(s).toHaveLength(13);
+      if (seat === 'north') expect(s.every((p) => p.z < 0)).toBe(true);
+      if (seat === 'east') expect(s.every((p) => p.x > 0)).toBe(true);
+      if (seat === 'west') expect(s.every((p) => p.x < 0)).toBe(true);
+    }
+  });
+
+  it('牌河：四家各 6 张·牌面朝上（rotX=-π/2·俯视看得到弃牌）', () => {
+    for (const seat of ['south', 'north', 'east', 'west'] as const) {
+      const r = riverLayout(seat);
+      expect(r).toHaveLength(6);
+      expect(RIVER_DEMO[seat]).toHaveLength(6);
+      for (const p of r) expect(p.rotX).toBeCloseTo(-Math.PI / 2, 6);
+    }
   });
 });
 
@@ -184,7 +197,6 @@ describe('game-b 占位资产（B-007 vendor 包）', () => {
       const file = join(ROOT, 'public', entry!.path!.replace(/^\//, ''));
       expect(existsSync(file), `文件缺失 ${entry!.path}`).toBe(true);
     }
-    // 溯源纪律：占位=placeholder 真相入账（CC0·FluffyStuff）
     const one = byId.get('mahjong/tex/man-1')!;
     expect(one.license).toBe('CC0-1.0');
     expect(one.source).toContain('FluffyStuff');
