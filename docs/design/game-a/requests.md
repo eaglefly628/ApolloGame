@@ -11,8 +11,13 @@
 ### A-003 · [2026-07-17] · GD-A · 行为树 AI 能力缺口预判 · status: ✅ 已转引擎池 **REQ-BT-行为树**（07-17·owner 清池授权） · 类型: 能力缺口候选
 owner 意向 BT。GD 方案：BT 纯数据树+通用解释器（外层策略）+候选估值表（内层出牌）；若 Lead 判「策略表+condition/flow 重组已够」则从其裁决。记牌/偷看=数据配置，全种子确定性。（裁决落地 07-17：**引擎已交付 `t2-behavior-tree`**（`0c021546`）——S2 plan 实名消费。）
 
-### A-004 · [2026-07-17] · GD-A · 四家轮转盘间流程 能力对照 · status: 📝 S2 对照 `flow` 后定 · 类型: 能力对照
+### A-004 · [2026-07-17] · GD-A · 四家轮转盘间流程 能力对照 · status: **✅ 结案（Lead 对照结论·2026-07-17·随 S4 复查落档）** · 类型: 能力对照
 墩→圈→盘→进贡/还贡→升级 的状态机。先对照现有 `flow`/`event-when` 表达力，不够再提。
+> **⚖ Lead 对照结论**：`flow` **能**表达盘/run 粗粒度生命周期（dealing→playing→settle→run-check·flag/resource 守卫转移——有平行施工变体实证可行·约 189 行宿主即可收墩圈轮转）；**不能**自然表达逐座墩圈轮转与进贡矩阵（事件形状不合·硬塞=数据造假）。落地版取**线性过程化 session 脚本**形态（照 game-e session.ts 先例·规则语义全在引擎 hand-pattern/BT/数据表，脚本只做顺序编排）——Lead 准许该形态（见 capability-plan §4① 裁决补正），**代价记债**：编排脚本 419 行 > 例外①预估 200 行，偿还计划照旧=b（麻将）/c（德州）牌桌轮转同构攒齐后下沉通用 `turn-flow`/`table-session` capability（b S4 已开工·c 有 betting-engine——同构证据在快速积累，此债优先级会自然上浮）。
+
+### A-101 · S4 玩法关施工记录（领工声明·Lead 复查代录·2026-07-17） · status: 施工记录
+> **记账缘由（问责定性=制度刚立没接住·不问人）**：S4 落地提交 `d1c2934f`（PE-A session `01Wa2igGxHXZ9w9PmPUyeVAK`）未先写领工声明——「复查基准=领工声明」铁律当日刚由 review-gates 回填（`b305672d`），施工与立律赛跑。Lead 复查时按**提交自带域注+全文件清单**代录边界并逐一核对：`src/games/game-a/**`（guandan-session/ai/hud/game-a+双测试）+ `tools/audits/game-a-{play,result}.audit.ts`（PUI 域·域注知会·照 game-t 先例）+ `public/games/game-a/pipeline.json`——**零声明外文件**。后续 S5-S8 施工按铁律先写声明再动工。
+> **并发撞车记录**：Lead 派工的 S4 施工代理与 PE-A session 平行施工同关——PE-A 版先落地且功能更全（含进贡/还贡/抗贡 G1-G4），代理版未推送（并发纪律：不覆盖已落地工作），其「flow 粗粒度重组」设计洞见已收进 A-004 对照结论。**派工流程教训记档**：同关派工前先查在施 session，避免双工。
 
 ### A-005 · [2026-07-17] · GD-A · 生产板无法为零代码新立项开卡 · status: 📝 待转引擎池（现 10 槽满·先清后加） · 类型: 生产线工具缺口
 `game-pipeline.mjs detectForm` 只认 library/public 的 manifest.json 或 `src/games/<slug>/` 目录——但按八阶段设计 S1 立项卡/S2 plan **先于** S3 骨架，零代码新游戏开不了板、立项卡无处落。本项目权宜：S1 内容备于 `brief.md` §7，S2 过审后随骨架由 CLI 补落卡。建议 Lead 裁：detectForm 增认 `docs/design/<slug>/`（design 态）或明文「板自 S3 起」。（按问责定性=手册/工具缺陷记录，不问谁绕。）
