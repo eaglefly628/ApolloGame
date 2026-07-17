@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#120c17;font-family:"Zen Kaku Gothic New",system-ui,sans-serif;color:#f7ecdd;-webkit-font-smoothing:antialiased}
+  a{color:#f6a8c4;text-decoration:none}a:hover{color:#ffc9de}
+  ::-webkit-scrollbar{width:11px;height:11px}::-webkit-scrollbar-thumb{background:rgba(246,168,196,.28);border-radius:6px}::-webkit-scrollbar-track{background:transparent}
+  @keyframes petalfall{0%{transform:translateY(-12px) rotate(0);opacity:0}15%{opacity:.9}100%{transform:translateY(70px) rotate(220deg);opacity:0}}
+  @keyframes glowpulse{0%,100%{box-shadow:0 0 0 0 rgba(246,168,196,.5)}50%{box-shadow:0 0 0 6px rgba(246,168,196,0)}}
+</style>
+</helmet>
+
+<div style="min-height:100%;padding:46px 54px 80px;max-width:1520px;margin:0 auto;background:radial-gradient(1200px 700px at 70% -10%, rgba(90,40,70,.45), transparent 60%),radial-gradient(900px 600px at 8% 30%, rgba(60,32,74,.4), transparent 55%),#120c17">
+
+  <header style="display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap;border-bottom:1px solid rgba(246,168,196,.16);padding-bottom:26px;margin-bottom:40px">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="width:6px;height:44px;background:linear-gradient(180deg,#f6a8c4,#d94a6a);border-radius:3px"></span>
+        <div>
+          <div style="font-family:'Shippori Mincho',serif;font-weight:800;font-size:40px;letter-spacing:.06em;line-height:1;background:linear-gradient(90deg,#ffd9e6,#f6a8c4 55%,#f2c98a);-webkit-background-clip:text;background-clip:text;color:transparent">雀宴 — 场景布局线框稿</div>
+          <div style="margin-top:8px;font-size:13px;color:rgba(247,236,221,.6);letter-spacing:.14em">SCENE LAYOUT MOCKUP · 和室雀庄·夜 · sakura-otome</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+        <span style="font-size:11.5px;padding:4px 11px;border:1px solid rgba(246,168,196,.3);border-radius:99px;color:#f6a8c4;background:rgba(246,168,196,.08)">§四 HUD 分区</span>
+        <span style="font-size:11.5px;padding:4px 11px;border:1px solid rgba(246,168,196,.3);border-radius:99px;color:#f6a8c4;background:rgba(246,168,196,.08)">席位卡</span>
+        <span style="font-size:11.5px;padding:4px 11px;border:1px solid rgba(246,168,196,.3);border-radius:99px;color:#f6a8c4;background:rgba(246,168,196,.08)">脱衣演出条</span>
+        <span style="font-size:11.5px;padding:4px 11px;border:1px solid rgba(246,168,196,.3);border-radius:99px;color:#f6a8c4;background:rgba(246,168,196,.08)">结算面板</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;text-align:right">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;padding:7px 13px;border-radius:8px;background:rgba(217,74,106,.14);border:1px solid rgba(217,74,106,.4);color:#ffb6c8">⚠ 设计示意 · 非实装 UI</div>
+      <div style="font-size:12px;color:rgba(247,236,221,.5);line-height:1.6">GD-B 2026-07-17 · 横屏 16:9<br>数值＝可调默认值（写进 config）</div>
+    </div>
+  </header>
+
+  <!-- ══ CARD 1 · HUD 全景分区 ══ -->
+  <section style="margin-bottom:46px">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:16px">
+      <span style="font-family:'Shippori Mincho',serif;font-weight:700;font-size:15px;color:#f2c98a;letter-spacing:.1em">01</span>
+      <h2 style="margin:0;font-family:'Shippori Mincho',serif;font-weight:700;font-size:23px;letter-spacing:.04em">HUD 全景分区 · LayoutNode over 3D 世界</h2>
+      <button onClick="{{ toggleAnno }}" style="{{ annoBtnStyle }}">{{ annoLabel }}</button>
+    </div>
+    <p style="margin:0 0 18px;font-size:13.5px;line-height:1.7;color:rgba(247,236,221,.62);max-width:920px">三层独立叠加：① 3D 世界（桌/牌/骰/点棒/背景件）② 2D 立绘浮层（演出滑入）③ LayoutNode UI 层。UI 绝不进 3D。下方为常态主机位下的 UI 分区示意 —— 虚线框＝UI 落位，中央透视区＝ Camera3D 主机位 (0, 3.2, 2.6)·俯角 55°·FOV 40。</p>
+
+    <div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;border:1px solid rgba(246,168,196,.2);box-shadow:0 30px 70px -30px rgba(0,0,0,.8),inset 0 0 120px rgba(0,0,0,.5);background:radial-gradient(120% 90% at 50% 8%, #3a2338 0%, #241528 45%, #160d1b 100%)">
+
+      <!-- 背景件 -->
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 78px,rgba(246,168,196,.05) 78px 80px);opacity:.5"></div>
+      <div style="position:absolute;top:5%;left:50%;transform:translateX(-50%);width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,#fff6e0,#f2c98a 55%,transparent 72%);opacity:.5;filter:blur(1px)"></div>
+      <div style="position:absolute;top:12%;left:8%;width:36px;height:64px;border-radius:8px;background:linear-gradient(180deg,#f7b26a,#d9683a);opacity:.55;box-shadow:0 0 30px rgba(242,150,80,.6)"></div>
+      <div style="position:absolute;top:12%;right:8%;width:36px;height:64px;border-radius:8px;background:linear-gradient(180deg,#f7b26a,#d9683a);opacity:.55;box-shadow:0 0 30px rgba(242,150,80,.6)"></div>
+
+      <!-- 3D 座椅 + 立绘位 (对手三席) -->
+      <sc-for list="{{ chairs }}" as="c" hint-placeholder-count="3">
+        <div style="{{ c.wrap }}">
+          <div style="{{ portraitBox }}"><span style="{{ portraitLabel }}">立绘位<br>{{ c.name }}</span></div>
+          <div style="{{ backrest }}"><span style="{{ tuft }}"></span></div>
+          <div style="{{ seat }}"></div>
+        </div>
+      </sc-for>
+
+      <!-- 3D 麻将桌 (固定视角·透视绘制) -->
+      <div style="position:absolute;left:50%;top:51%;transform:translate(-50%,-50%) perspective(1000px) rotateX(56deg);width:50%;aspect-ratio:1/1;border-radius:20px;background:{{ feltBg }};box-shadow:0 10px 0 #4a2e22,0 20px 0 #402720,0 30px 0 #35201a,0 40px 0 #2b1913,0 50px 0 #23140f,0 66px 74px rgba(0,0,0,.62),inset 0 0 70px rgba(0,0,0,.4),inset 0 0 34px rgba(255,220,180,.22);border:9px solid #55362a;outline:2px solid rgba(255,220,235,.22);z-index:2">
+        <div style="position:absolute;inset:14%;border-radius:8px;border:1.5px dashed rgba(255,255,255,.16)"></div>
+        <!-- 各家手牌门口 · 单排 13 格 (清晰标记 Slot 位) -->
+        <div style="position:absolute;top:9%;left:50%;transform:translate(-50%,0) rotate(180deg);display:flex;gap:2px">
+          <sc-for list="{{ hand13 }}" as="h" hint-placeholder-count="13"><div style="{{ slotFrame }}"><div style="{{ backInner }}"></div></div></sc-for>
+        </div>
+        <div style="position:absolute;bottom:9%;left:50%;transform:translateX(-50%);display:flex;gap:2px">
+          <sc-for list="{{ hand13 }}" as="h" hint-placeholder-count="13"><div style="{{ slotFrame }}"><span style="{{ slotNum }}">{{ h.n }}</span><div style="{{ backInner }}"></div></div></sc-for>
+        </div>
+        <div style="position:absolute;right:11%;top:50%;transform:translate(50%,-50%) rotate(-90deg);display:flex;gap:2px">
+          <sc-for list="{{ hand13 }}" as="h" hint-placeholder-count="13"><div style="{{ slotFrame }}"><div style="{{ backInner }}"></div></div></sc-for>
+        </div>
+        <div style="position:absolute;left:11%;top:50%;transform:translate(-50%,-50%) rotate(90deg);display:flex;gap:2px">
+          <sc-for list="{{ hand13 }}" as="h" hint-placeholder-count="13"><div style="{{ slotFrame }}"><div style="{{ backInner }}"></div></div></sc-for>
+        </div>
+        <!-- 牌河 四家 -->
+        <div style="position:absolute;top:27%;left:50%;transform:translateX(-50%) rotate(180deg);display:grid;grid-template-columns:repeat(3,1fr);gap:2px">
+          <sc-for list="{{ riverN }}" as="r" hint-placeholder-count="6"><div style="{{ r.style }}"><span style="{{ r.fs }}">{{ r.face }}</span></div></sc-for>
+        </div>
+        <div style="position:absolute;bottom:27%;left:50%;transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,1fr);gap:2px">
+          <sc-for list="{{ riverS }}" as="r" hint-placeholder-count="6"><div style="{{ r.style }}"><span style="{{ r.fs }}">{{ r.face }}</span></div></sc-for>
+        </div>
+        <div style="position:absolute;right:25%;top:50%;transform:translateY(-50%) rotate(-90deg);display:grid;grid-template-columns:repeat(2,1fr);gap:2px">
+          <sc-for list="{{ riverE }}" as="r" hint-placeholder-count="4"><div style="{{ r.style }}"><span style="{{ r.fs }}">{{ r.face }}</span></div></sc-for>
+        </div>
+        <div style="position:absolute;left:25%;top:50%;transform:translateY(-50%) rotate(90deg);display:grid;grid-template-columns:repeat(2,1fr);gap:2px">
+          <sc-for list="{{ riverW }}" as="r" hint-placeholder-count="4"><div style="{{ r.style }}"><span style="{{ r.fs }}">{{ r.face }}</span></div></sc-for>
+        </div>
+        <!-- 骰 ×2 -->
+        <div style="position:absolute;left:55%;top:47%;display:flex;gap:4px"><div style="{{ diceStyle }}">⚄</div><div style="{{ diceStyle }}">⚂</div></div>
+        <!-- 供托 立直棒 -->
+        <div style="position:absolute;left:41%;top:53%;width:34px;height:6px;border-radius:3px;background:linear-gradient(180deg,#fff,#e2e2e2);box-shadow:0 2px 4px rgba(0,0,0,.4)"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:#d0243f"></span></div>
+      </div>
+
+      <!-- 摸牌控制 (细节演出: 摸一张少一张) -->
+      <div style="position:absolute;top:13.5%;right:2.4%;z-index:4;display:flex;flex-direction:column;gap:6px;align-items:center;padding:9px 12px;border-radius:12px;background:rgba(20,12,26,.82);border:1px solid rgba(246,168,196,.3);backdrop-filter:blur(6px)">
+        <div style="font-size:10px;letter-spacing:.12em;color:rgba(247,236,221,.6)">摸牌牌堆</div>
+        <div style="font-family:'Shippori Mincho',serif;font-size:22px;line-height:1;color:#f2c98a">余 {{ drawRemain }}</div>
+        <div style="font-size:9.5px;color:rgba(247,236,221,.45)">已摸 {{ drawnCount }} / 34</div>
+        <div style="display:flex;gap:6px">
+          <button onClick="{{ drawOne }}" style="font-family:'Shippori Mincho',serif;font-size:13px;padding:6px 14px;border-radius:99px;border:none;cursor:pointer;background:linear-gradient(160deg,#f6a8c4,#d94a6a);color:#2a1020;box-shadow:0 4px 10px -4px rgba(217,74,106,.8)">摸牌</button>
+          <button onClick="{{ resetWall }}" style="font-size:11px;padding:6px 10px;border-radius:99px;cursor:pointer;background:transparent;border:1px solid rgba(246,168,196,.35);color:#f6a8c4">复位</button>
+        </div>
+      </div>
+
+      <!-- 顶光池 -->
+      <div style="position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);width:60%;height:52%;border-radius:50%;background:radial-gradient(circle, rgba(255,242,214,.5), rgba(255,220,180,.12) 45%, transparent 70%);mix-blend-mode:screen;pointer-events:none;z-index:3"></div>
+
+      <!-- self hand tiles -->
+      <div style="position:absolute;left:50%;bottom:15%;transform:translateX(-50%);display:flex;gap:4px;align-items:flex-end;z-index:4">
+        <sc-for list="{{ handTiles }}" as="t" hint-placeholder-count="14"><div style="{{ t.style }}"><span style="{{ t.faceStyle }}">{{ t.face }}</span></div></sc-for>
+      </div>
+
+      <!-- UI overlay zones -->
+      <div data-anno="{{ annoOn }}" style="{{ annoWrap }}">
+        <!-- 场况角标 左上 -->
+        <div style="position:absolute;top:3.2%;left:2.4%;{{ annoBox }}"><span style="{{ annoTag }}">场况角标</span>
+          <div style="padding:9px 13px;border-radius:11px;background:rgba(28,18,34,.82);border:1px solid rgba(246,168,196,.3);backdrop-filter:blur(6px);font-size:11.5px;line-height:1.5;min-width:150px">
+            <div style="font-family:'Shippori Mincho',serif;color:#f2c98a;font-size:13px">東 1 局 · 2 本場</div>
+            <div style="color:rgba(247,236,221,.7);margin-top:2px">供托 2 · 余牌 70 · <span style="color:#ff9db4">宝 🀛</span></div>
+          </div>
+        </div>
+        <!-- 设置 右上 -->
+        <div style="position:absolute;top:3.2%;right:2.4%;{{ annoBox }}"><span style="{{ annoTag }}">设置</span>
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(28,18,34,.82);border:1px solid rgba(246,168,196,.3);display:flex;align-items:center;justify-content:center;font-size:16px">⚙</div>
+        </div>
+        <!-- 北席位卡 顶中 -->
+        <div style="position:absolute;top:2.6%;left:50%;transform:translateX(-50%);{{ annoBox }}"><span style="{{ annoTag }}">北席位卡</span>
+          <div style="{{ miniSeat }}"><div style="{{ miniAv }}">雪</div><div><div style="font-size:12px;font-weight:700">雪乃 <span style="{{ windChipN }}">北</span></div><div style="font-size:11px;color:#f2c98a">25,000</div></div></div>
+        </div>
+        <!-- 西席位卡 左中 -->
+        <div style="position:absolute;top:44%;left:2.4%;{{ annoBox }}"><span style="{{ annoTag }}">西席位卡</span>
+          <div style="{{ miniSeat }}"><div style="{{ miniAv }}">椿</div><div><div style="font-size:12px;font-weight:700">椿 <span style="{{ windChipN }}">西</span></div><div style="font-size:11px;color:#f2c98a">25,000</div></div></div>
+        </div>
+        <!-- 东席位卡 右中 -->
+        <div style="position:absolute;top:44%;right:2.4%;{{ annoBox }}"><span style="{{ annoTag }}">东席位卡</span>
+          <div style="{{ miniSeat }}"><div style="{{ miniAv }}">紅</div><div><div style="font-size:12px;font-weight:700">紅葉 <span style="{{ windChipN }}">東</span></div><div style="font-size:11px;color:#f2c98a">25,000</div></div></div>
+        </div>
+        <!-- 字幕条 -->
+        <div style="position:absolute;bottom:26%;left:50%;transform:translateX(-50%);{{ annoBox }}"><span style="{{ annoTag }}">字幕条 · 语音同步</span>
+          <div style="padding:8px 22px;border-radius:99px;background:rgba(20,12,26,.78);border:1px solid rgba(246,168,196,.25);font-family:'Shippori Mincho',serif;font-size:14px;color:#ffe9f0;text-align:center">「あら、もう聴牌かしら？」</div>
+        </div>
+        <!-- 自席位卡 左下 -->
+        <div style="position:absolute;bottom:3.4%;left:2.4%;{{ annoBox }}"><span style="{{ annoTag }}">自席位卡</span>
+          <div style="{{ miniSeat }}"><div style="{{ miniAv }}">主</div><div><div style="font-size:12px;font-weight:700">あなた <span style="{{ windChipS }}">南</span></div><div style="font-size:11px;color:#f2c98a">25,000</div></div></div>
+        </div>
+        <!-- 行动按钮排 底中 -->
+        <div style="position:absolute;bottom:3.4%;left:50%;transform:translateX(-50%);{{ annoBox }}"><span style="{{ annoTag }}">行动按钮排 · 仅合法亮起</span>
+          <div style="display:flex;gap:7px;align-items:center">
+            <sc-for list="{{ miniActions }}" as="a" hint-placeholder-count="5"><div style="{{ a.style }}">{{ a.label }}</div></sc-for>
+          </div>
+        </div>
+        <!-- 手牌托盘角标 -->
+        <div style="position:absolute;bottom:3.4%;right:2.4%;{{ annoBox }}"><span style="{{ annoTag }}">托盘</span>
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(28,18,34,.82);border:1px solid rgba(246,168,196,.3);display:flex;align-items:center;justify-content:center;font-size:17px">🀄</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 双列：席位卡 + 演出条 ══ -->
+  <div style="display:grid;grid-template-columns:minmax(360px,1fr) minmax(360px,1.15fr);gap:32px;margin-bottom:46px;align-items:start">
+
+    <!-- CARD 2 · 席位卡拆解 -->
+    <section>
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:16px">
+        <span style="font-family:'Shippori Mincho',serif;font-weight:700;font-size:15px;color:#f2c98a;letter-spacing:.1em">02</span>
+        <h2 style="margin:0;font-family:'Shippori Mincho',serif;font-weight:700;font-size:23px;letter-spacing:.04em">席位卡拆解 ×4</h2>
+      </div>
+      <p style="margin:0 0 18px;font-size:13px;line-height:1.7;color:rgba(247,236,221,.62)">Panel + 既有控件组合。衣物图标列 5 件＝轻表示·逐件熄灭。<span style="color:#f6a8c4">点击图标切换点亮/熄灭</span>以预览状态。</p>
+
+      <div style="padding:22px;border-radius:16px;background:linear-gradient(160deg,rgba(48,30,56,.7),rgba(28,18,34,.7));border:1px solid rgba(246,168,196,.2);box-shadow:0 20px 50px -25px rgba(0,0,0,.7)">
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <div style="position:relative;width:92px;height:92px;border-radius:14px;overflow:hidden;flex:none;background:linear-gradient(150deg,#5a3350,#2a1a30);border:1px solid rgba(255,220,235,.25);display:flex;align-items:center;justify-content:center">
+            <span style="font-family:'Shippori Mincho',serif;font-size:34px;color:rgba(255,220,235,.85)">紅</span>
+            <span style="position:absolute;bottom:0;left:0;right:0;font-size:9px;text-align:center;padding:3px 0;background:rgba(0,0,0,.55);color:rgba(247,236,221,.6)">头像资产位</span>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:9px">
+              <span style="font-family:'Shippori Mincho',serif;font-size:22px;font-weight:700">紅葉</span>
+              <span style="{{ windChipBig }}">東</span>
+              <span style="margin-left:auto;font-size:11px;padding:3px 9px;border-radius:99px;background:rgba(217,74,106,.2);border:1px solid rgba(217,74,106,.5);color:#ff9db4;animation:glowpulse 2s infinite">立直</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-top:8px">
+              <span style="font-family:'Shippori Mincho',serif;font-size:28px;color:#f2c98a;letter-spacing:.02em">25,000</span>
+              <span style="font-size:12px;color:#7fd99a">+3,900</span>
+            </div>
+            <div style="margin-top:14px">
+              <div style="font-size:10.5px;color:rgba(247,236,221,.5);letter-spacing:.14em;margin-bottom:6px">衣物 · 5 件</div>
+              <div style="display:flex;gap:8px">
+                <sc-for list="{{ clothing }}" as="c" hint-placeholder-count="5">
+                  <button onClick="{{ c.toggle }}" title="{{ c.name }}" style="{{ c.style }}">{{ c.kanji }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:18px;padding-top:14px;border-top:1px dashed rgba(246,168,196,.2);display:grid;grid-template-columns:repeat(2,1fr);gap:8px 20px;font-size:11.5px;color:rgba(247,236,221,.55)">
+          <div>• 头像＝方图·来自角色卡/内置卡</div>
+          <div>• 风位 東南西北 chip</div>
+          <div>• 点数＝飞点动画目标（PUI 控件）</div>
+          <div>• 衣物件图标走 S6 台账资产</div>
+        </div>
+      </div>
+
+      <!-- 四席状态缩略 -->
+      <div style="margin-top:16px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+        <sc-for list="{{ seats }}" as="s" hint-placeholder-count="4">
+          <div style="padding:12px 14px;border-radius:12px;background:rgba(28,18,34,.55);border:1px solid rgba(246,168,196,.14);display:flex;align-items:center;gap:11px">
+            <div style="{{ s.avStyle }}">{{ s.face }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:700">{{ s.name }} <span style="{{ s.windStyle }}">{{ s.wind }}</span></div>
+              <div style="font-size:11px;color:#f2c98a">{{ s.pts }}</div>
+              <div style="display:flex;gap:4px;margin-top:5px">
+                <sc-for list="{{ s.cloth }}" as="on" hint-placeholder-count="5"><span style="{{ on.dot }}"></span></sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- CARD 3 · 脱衣演出条 -->
+    <section>
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:16px">
+        <span style="font-family:'Shippori Mincho',serif;font-weight:700;font-size:15px;color:#f2c98a;letter-spacing:.1em">03</span>
+        <h2 style="margin:0;font-family:'Shippori Mincho',serif;font-weight:700;font-size:23px;letter-spacing:.04em">脱衣演出条 · timeline 回放</h2>
+      </div>
+      <p style="margin:0 0 18px;font-size:13px;line-height:1.7;color:rgba(247,236,221,.62)">§五 时序：sim 已定，以下全是回放表现（全 timeline 数据·非玩法逻辑）。拖动或播放预览事件对齐。</p>
+
+      <div style="padding:22px;border-radius:16px;background:linear-gradient(160deg,rgba(48,30,56,.7),rgba(28,18,34,.7));border:1px solid rgba(246,168,196,.2);box-shadow:0 20px 50px -25px rgba(0,0,0,.7)">
+        <!-- stage preview -->
+        <div style="position:relative;height:172px;border-radius:12px;overflow:hidden;background:radial-gradient(120% 100% at 70% 20%, #3a2238, #1a0f20);border:1px solid rgba(246,168,196,.14)">
+          <div style="position:absolute;inset:0;background:#000;opacity:{{ dimOpacity }};transition:opacity .3s"></div>
+          <div style="position:absolute;right:0;bottom:0;top:14px;width:120px;transform:translateX({{ tachieX }});transition:transform .4s cubic-bezier(.22,1,.36,1);background:linear-gradient(180deg,rgba(246,168,196,.9),rgba(217,74,106,.7));border-radius:60px 60px 0 0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;color:rgba(30,14,26,.7);font-size:10px">立绘滑入</div>
+          <div style="position:absolute;left:16px;bottom:14px;padding:6px 16px;border-radius:99px;background:rgba(20,12,26,.8);border:1px solid rgba(246,168,196,.25);font-family:'Shippori Mincho',serif;font-size:13px;opacity:{{ subOpacity }};transition:opacity .3s">「そんな…！」</div>
+          <div data-petals="{{ petalsOn }}" style="{{ petalsWrap }}">
+            <span style="position:absolute;left:78%;top:0;font-size:16px;animation:petalfall 1.4s linear infinite">🌸</span>
+            <span style="position:absolute;left:70%;top:0;font-size:12px;animation:petalfall 1.7s .3s linear infinite">🌸</span>
+            <span style="position:absolute;left:84%;top:0;font-size:13px;animation:petalfall 1.5s .6s linear infinite">🌸</span>
+          </div>
+          <div style="position:absolute;left:16px;top:14px;font-size:11px;color:rgba(247,236,221,.55)">机位：{{ camLabel }}</div>
+        </div>
+
+        <!-- scrubber -->
+        <div style="margin-top:18px;display:flex;align-items:center;gap:12px">
+          <button onClick="{{ playToggle }}" style="width:42px;height:42px;flex:none;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(160deg,#f6a8c4,#d94a6a);color:#2a1020;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px -6px rgba(217,74,106,.8)">{{ playIcon }}</button>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:rgba(247,236,221,.5);margin-bottom:5px"><span>t0.0</span><span style="color:#f2c98a;font-family:'Shippori Mincho',serif">t{{ tLabel }}s</span><span>t2.5</span></div>
+            <input type="range" min="0" max="25" value="{{ tRaw }}" onInput="{{ onScrub }}" style="width:100%;accent-color:#f6a8c4;cursor:pointer">
+          </div>
+        </div>
+
+        <!-- event rows -->
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:6px">
+          <sc-for list="{{ events }}" as="e" hint-placeholder-count="5">
+            <div style="{{ e.row }}">
+              <span style="font-family:'Shippori Mincho',serif;font-size:12px;width:44px;flex:none;color:{{ e.tColor }}">t{{ e.t }}</span>
+              <span style="width:8px;height:8px;flex:none;border-radius:50%;background:{{ e.dot }}"></span>
+              <span style="font-size:12px">{{ e.text }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ══ CARD 4 · 行动按钮 + 字幕 specimens ══ -->
+  <section style="margin-bottom:46px">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:16px">
+      <span style="font-family:'Shippori Mincho',serif;font-weight:700;font-size:15px;color:#f2c98a;letter-spacing:.1em">04</span>
+      <h2 style="margin:0;font-family:'Shippori Mincho',serif;font-weight:700;font-size:23px;letter-spacing:.04em">控件规格 · 行动按钮排 / 字幕条 / 场况角标</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:24px;align-items:start">
+      <div style="padding:22px;border-radius:16px;background:linear-gradient(160deg,rgba(48,30,56,.7),rgba(28,18,34,.7));border:1px solid rgba(246,168,196,.2)">
+        <div style="font-size:11px;color:rgba(247,236,221,.5);letter-spacing:.14em;margin-bottom:14px">行动按钮排 · 樱瓣形 · 仅合法亮起 · 全部＝action 信号入队</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <sc-for list="{{ bigActions }}" as="a" hint-placeholder-count="7"><div style="{{ a.style }}"><span style="font-family:'Shippori Mincho',serif;font-size:17px">{{ a.label }}</span></div></sc-for>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:18px;font-size:11px;color:rgba(247,236,221,.55)">
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:linear-gradient(160deg,#f6a8c4,#d94a6a);vertical-align:-1px;margin-right:5px"></span>合法·亮起</span>
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:rgba(120,100,120,.4);vertical-align:-1px;margin-right:5px"></span>非法·熄灭</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="padding:18px;border-radius:16px;background:linear-gradient(160deg,rgba(48,30,56,.7),rgba(28,18,34,.7));border:1px solid rgba(246,168,196,.2)">
+          <div style="font-size:11px;color:rgba(247,236,221,.5);letter-spacing:.14em;margin-bottom:12px">字幕条 · 和风字体 · 语音同步</div>
+          <div style="padding:9px 22px;border-radius:99px;background:rgba(20,12,26,.78);border:1px solid rgba(246,168,196,.25);font-family:'Shippori Mincho',serif;font-size:15px;color:#ffe9f0;text-align:center">「あなたには負けないわ」</div>
+        </div>
+        <div style="padding:18px;border-radius:16px;background:linear-gradient(160deg,rgba(48,30,56,.7),rgba(28,18,34,.7));border:1px solid rgba(246,168,196,.2)">
+          <div style="font-size:11px;color:rgba(247,236,221,.5);letter-spacing:.14em;margin-bottom:12px">场况角标 · Panel</div>
+          <div style="display:inline-block;padding:11px 15px;border-radius:12px;background:rgba(20,12,26,.78);border:1px solid rgba(246,168,196,.28)">
+            <div style="font-family:'Shippori Mincho',serif;color:#f2c98a;font-size:15px">東 1 局 · 2 本場</div>
+            <div style="color:rgba(247,236,221,.7);font-size:12px;margin-top:3px">供托 2 · 余牌 70 · 宝 🀛</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CARD 5 · 结算面板 ══ -->
+  <section style="margin-bottom:40px">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:16px">
+      <span style="font-family:'Shippori Mincho',serif;font-weight:700;font-size:15px;color:#f2c98a;letter-spacing:.1em">05</span>
+      <h2 style="margin:0;font-family:'Shippori Mincho',serif;font-weight:700;font-size:23px;letter-spacing:.04em">结算面板 · 全屏 Modal</h2>
+    </div>
+    <div style="position:relative;border-radius:16px;overflow:hidden;border:1px solid rgba(246,168,196,.2);background:radial-gradient(100% 120% at 50% 0%, #2c1a30, #150d1a)">
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 40px,rgba(246,168,196,.04) 40px 42px)"></div>
+      <div style="position:relative;padding:34px 40px;display:grid;grid-template-columns:1.4fr 1fr;gap:36px">
+        <div>
+          <div style="font-family:'Shippori Mincho',serif;font-size:15px;color:#f2c98a;letter-spacing:.1em;margin-bottom:4px">和了 · 荣和</div>
+          <div style="font-family:'Shippori Mincho',serif;font-size:38px;font-weight:800;letter-spacing:.04em;background:linear-gradient(90deg,#ffd9e6,#f6a8c4);-webkit-background-clip:text;background-clip:text;color:transparent">跳満 · 12,000</div>
+          <div style="margin-top:20px;display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ yaku }}" as="y" hint-placeholder-count="5">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:8px;border-bottom:1px dashed rgba(246,168,196,.16)">
+                <span style="font-family:'Shippori Mincho',serif;font-size:16px">{{ y.name }}</span>
+                <span style="font-size:13px;color:#f2c98a">{{ y.han }}</span>
+              </div>
+            </sc-for>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:13px;color:rgba(247,236,221,.7)"><span>符 · 番</span><span>40 符 · 6 番</span></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div>
+            <div style="font-size:11px;color:rgba(247,236,221,.5);letter-spacing:.14em;margin-bottom:10px">点数移动 · 飞点动画</div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <sc-for list="{{ scores }}" as="p" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+                  <div style="{{ p.avStyle }}">{{ p.face }}</div>
+                  <span style="flex:1">{{ p.name }}</span>
+                  <span style="font-family:'Shippori Mincho',serif;font-size:15px">{{ p.pts }}</span>
+                  <span style="width:56px;text-align:right;color:{{ p.deltaColor }}">{{ p.delta }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding:14px;border-radius:12px;background:rgba(217,74,106,.1);border:1px solid rgba(217,74,106,.3)">
+            <div style="font-size:11px;color:#ff9db4;letter-spacing:.14em;margin-bottom:8px">本局脱衣汇总</div>
+            <div style="display:flex;align-items:center;gap:12px;font-size:13px"><div style="{{ loseAvStyle }}">椿</div><span style="flex:1">椿 · 失 <b style="color:#ff9db4">1 件</b>（帯）</span><span style="font-size:11px;color:rgba(247,236,221,.55)">残 3 / 5</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="position:relative;padding:0 40px 30px;display:flex;justify-content:flex-end;gap:12px">
+        <div style="padding:11px 30px;border-radius:99px;background:linear-gradient(160deg,#f6a8c4,#d94a6a);color:#2a1020;font-family:'Shippori Mincho',serif;font-size:15px;font-weight:700;box-shadow:0 8px 20px -8px rgba(217,74,106,.8)">次 局 へ</div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="margin-top:38px;padding-top:22px;border-top:1px solid rgba(246,168,196,.14);display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;font-size:11.5px;color:rgba(247,236,221,.45);line-height:1.7">
+    <div style="max-width:640px">红线：写世界只走 <b style="color:#f6a8c4">action 信号入队</b>；缺控件 → requests.md 报 PUI，绝不手写 DOM/CSS。3D 物走 render-only 组件；人物无 3D 模型 —— 头像/立绘＝2D 浮层。交付前 /check-ui 全过。</div>
+    <div style="text-align:right">坐标系：桌心＝原点 · +Z 朝南 · 单位＝桌半宽归一（桌 2×2）<br>sakura-otome · 女性向二次元·和风夜宴·樱色暖灯</div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1520,&quot;height&quot;:2400},&quot;feltColor&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;crimson&quot;,&quot;sakura&quot;],&quot;default&quot;:&quot;sakura&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;主题&quot;}}">
+class Component extends DCLogic {
+  state = {
+    anno: true,
+    drawn: 0,           // tiles drawn from the live wall (0..34)
+    t: 0,               // tenths of a second, 0..25
+    playing: false,
+    // clothing lit state for the big detail card (true = worn/lit)
+    cloth: [true, true, false, true, true],
+  };
+
+  componentWillUnmount() { clearInterval(this._iv); }
+
+  tick = () => {
+    this.setState(s => {
+      let nt = s.t + 1;
+      if (nt > 25) { clearInterval(this._iv); this._iv = null; return { t: 25, playing: false }; }
+      return { t: nt };
+    });
+  };
+
+  renderVals() {
+    const s = this.state;
+    const t = s.t / 10; // seconds
+
+    // ---- annotation styling ----
+    const on = s.anno;
+    const annoBox = on
+      ? "border:1px dashed rgba(246,168,196,.55);border-radius:12px;padding:14px 4px 4px;background:rgba(246,168,196,.05)"
+      : "";
+    const annoTag = on
+      ? "position:absolute;top:-9px;left:8px;font-size:9.5px;letter-spacing:.1em;color:#2a1020;background:#f6a8c4;padding:2px 7px;border-radius:5px;white-space:nowrap"
+      : "display:none";
+
+    const feltColor = this.props.feltColor ?? "crimson";
+    const feltBg = feltColor === "sakura"
+      ? "radial-gradient(circle at 50% 40%, #ffb7d0, #e77aa0 55%, #c85a82 100%)"
+      : "radial-gradient(circle at 50% 40%, #e05a76, #b83156 55%, #8e2340 100%)";
+
+    const miniSeat = "display:flex;align-items:center;gap:8px;padding:6px 11px 6px 6px;border-radius:11px;background:rgba(28,18,34,.82);border:1px solid rgba(246,168,196,.3);backdrop-filter:blur(6px)";
+    const miniAv = "width:30px;height:30px;flex:none;border-radius:8px;background:linear-gradient(150deg,#5a3350,#2a1a30);display:flex;align-items:center;justify-content:center;font-family:'Shippori Mincho',serif;font-size:14px;color:rgba(255,220,235,.9)";
+    const windBase = "font-size:10px;padding:1px 6px;border-radius:5px;font-family:'Shippori Mincho',serif";
+    const windChipN = windBase + ";background:rgba(246,168,196,.2);color:#f6a8c4";
+    const windChipS = windBase + ";background:rgba(242,201,138,.22);color:#f2c98a";
+    const windChipBig = "font-size:13px;padding:2px 9px;border-radius:6px;font-family:'Shippori Mincho',serif;background:rgba(242,201,138,.22);color:#f2c98a";
+
+    // mini action pills for HUD card
+    const mkPill = (label, live) => ({
+      label,
+      style: live
+        ? "font-size:12px;padding:5px 12px;border-radius:99px 99px 99px 99px/70% 70% 40% 40%;background:linear-gradient(160deg,#f6a8c4,#d94a6a);color:#2a1020;font-family:'Shippori Mincho',serif;box-shadow:0 4px 10px -4px rgba(217,74,106,.8)"
+        : "font-size:12px;padding:5px 12px;border-radius:99px 99px 99px 99px/70% 70% 40% 40%;background:rgba(120,100,120,.22);color:rgba(247,236,221,.4);font-family:'Shippori Mincho',serif;border:1px solid rgba(246,168,196,.12)",
+    });
+    const miniActions = [mkPill("吃", false), mkPill("碰", true), mkPill("杠", false), mkPill("立直", true), mkPill("跳過", true)];
+
+    const bigActions = ["吃", "碰", "杠", "立直", "荣和", "自摸", "跳過"].map((label, i) => {
+      const live = [false, true, false, true, true, false, true][i];
+      return {
+        label,
+        style: (live
+          ? "background:linear-gradient(160deg,#f6a8c4,#d94a6a);color:#2a1020;box-shadow:0 8px 18px -8px rgba(217,74,106,.8)"
+          : "background:rgba(120,100,120,.2);color:rgba(247,236,221,.38);border:1px solid rgba(246,168,196,.14)")
+          + ";display:flex;align-items:center;justify-content:center;min-width:64px;padding:12px 18px;border-radius:60% 60% 55% 55%/75% 75% 45% 45%",
+      };
+    });
+
+    // readable hand: face glyph + suit color; last tile is the drawn tile (slightly raised)
+    const handFaces = [
+      { f: "一", c: "#c0392b" }, { f: "二", c: "#c0392b" }, { f: "三", c: "#c0392b" },
+      { f: "④", c: "#1f6fb2" }, { f: "⑤", c: "#1f6fb2" }, { f: "⑥", c: "#1f6fb2" },
+      { f: "七", c: "#1f6fb2" }, { f: "８", c: "#1f6fb2" },
+      { f: "２", c: "#2e8b57" }, { f: "３", c: "#2e8b57" }, { f: "４", c: "#2e8b57" },
+      { f: "發", c: "#2e8b57" }, { f: "發", c: "#2e8b57" },
+      { f: "中", c: "#c0392b" },
+    ];
+    const handTiles = handFaces.map((h, i) => {
+      const drawn = i === handFaces.length - 1;
+      return {
+        face: h.f,
+        style: "position:relative;width:32px;height:46px;border-radius:5px;display:flex;align-items:center;justify-content:center;"
+          + "background:linear-gradient(180deg,#fffaf1,#ecdcc2);box-shadow:0 4px 8px rgba(0,0,0,.55),inset 0 -4px 0 rgba(0,0,0,.12),inset 0 2px 0 rgba(255,255,255,.8);"
+          + "border:1px solid rgba(0,0,0,.12);" + (drawn ? "margin-left:12px;transform:translateY(-6px)" : ""),
+        faceStyle: "font-family:'Shippori Mincho',serif;font-weight:700;font-size:22px;line-height:1;color:" + h.c,
+      };
+    });
+
+    // ---- 3D table dressing (fixed camera · faux-3D) ----
+    const backTile = "width:14px;height:20px;border-radius:2px;background:linear-gradient(160deg,#f2e0c2,#d6bd93);box-shadow:0 3px 0 #ab916a,0 5px 5px rgba(0,0,0,.45);border:1px solid rgba(0,0,0,.15)";
+    const wallH = Array.from({ length: 12 });
+    const wallV = Array.from({ length: 8 });
+    // ---- 活牌山 · 摸牌牌堆 (double-tier · depletes on draw) ----
+    const WCOLS = 17, WTOT = WCOLS * 2;
+    const dn = Math.min(s.drawn || 0, WTOT);
+    const drawRemain = 70 - dn;
+    const upperTier = "width:14px;height:15px;border-radius:2px;background:linear-gradient(160deg,#e4d0ad,#c5a97e);box-shadow:0 2px 0 #97805c,0 3px 4px rgba(0,0,0,.4);border:1px solid rgba(0,0,0,.15)";
+    const lowerTier = "width:14px;height:15px;border-radius:2px;background:linear-gradient(160deg,#f4e2c4,#d8bf96);box-shadow:0 3px 0 #ab916a,0 5px 5px rgba(0,0,0,.4);border:1px solid rgba(0,0,0,.15)";
+    const emptySlot = "width:14px;height:15px;border-radius:2px;background:rgba(0,0,0,.16);border:1px dashed rgba(255,255,255,.12);box-shadow:none";
+    const drawWall = Array.from({ length: WCOLS }, (_, c) => {
+      const topIdx = c * 2, botIdx = c * 2 + 1;   // draw from left: upper tier first
+      const nextTop = topIdx === dn;              // tile about to be drawn (highlight)
+      return {
+        topStyle: (topIdx >= dn ? upperTier : emptySlot) + (nextTop ? ";outline:1.5px solid #ffd94a;outline-offset:1px" : ""),
+        botStyle: botIdx >= dn ? lowerTier : emptySlot,
+      };
+    });
+    const rf = (face, c) => ({
+      face,
+      style: "width:21px;height:28px;border-radius:3px;background:linear-gradient(180deg,#fffaf1,#ecdcc2);box-shadow:0 3px 0 #c9b48f,0 4px 4px rgba(0,0,0,.35);border:1px solid rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center",
+      fs: "font-family:'Shippori Mincho',serif;font-weight:700;font-size:17px;line-height:1;color:" + c,
+    });
+    const riverN = [rf("東","#333"),rf("一","#c0392b"),rf("⑨","#1f6fb2"),rf("５","#2e8b57"),rf("南","#333"),rf("中","#c0392b")];
+    const riverS = [rf("九","#c0392b"),rf("②","#1f6fb2"),rf("７","#2e8b57"),rf("白","#333"),rf("北","#333"),rf("④","#1f6fb2")];
+    const riverE = [rf("三","#c0392b"),rf("⑥","#1f6fb2"),rf("１","#2e8b57"),rf("西","#333")];
+    const riverW = [rf("八","#c0392b"),rf("⑤","#1f6fb2"),rf("９","#2e8b57"),rf("發","#2e8b57")];
+    const diceStyle = "width:15px;height:15px;border-radius:3px;background:linear-gradient(150deg,#fff,#dcdcdc);box-shadow:0 3px 0 #b0b0b0,0 4px 5px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;color:#c0392b";
+
+    // ---- 3D legless zaisu chairs + 立绘 slots (opponents only) ----
+    const backrest = "position:absolute;bottom:34px;left:12px;right:12px;height:88px;border-radius:26px 26px 10px 10px;background:linear-gradient(160deg,#f0a0bd,#c94e73 60%,#8f3253);box-shadow:inset 0 4px 10px rgba(255,255,255,.55),inset 0 -12px 16px rgba(0,0,0,.35),0 12px 22px rgba(0,0,0,.5);border:1px solid rgba(255,220,235,.4);z-index:1";
+    const tuft = "position:absolute;top:12px;left:50%;transform:translateX(-50%);width:2px;height:56px;background:rgba(0,0,0,.18);border-radius:2px";
+    const seat = "position:absolute;bottom:4px;left:2px;right:2px;height:34px;border-radius:50%/58% 58% 46% 46%;background:linear-gradient(180deg,#f6b0c8,#c9506f);box-shadow:inset 0 5px 10px rgba(255,255,255,.55),inset 0 -8px 12px rgba(0,0,0,.35),0 14px 22px rgba(0,0,0,.55);border:1px solid rgba(255,220,235,.35);z-index:3";
+    const portraitBox = "position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:60px;height:96px;border-radius:30px 30px 8px 8px;background:linear-gradient(180deg,rgba(30,16,26,.55),rgba(217,74,106,.28));border:2px dashed rgba(255,205,222,.85);display:flex;align-items:center;justify-content:center;z-index:2;box-shadow:0 8px 18px rgba(0,0,0,.45)";
+    const portraitLabel = "font-size:9.5px;text-align:center;color:#ffe4f0;line-height:1.5;font-family:'Shippori Mincho',serif;text-shadow:0 1px 3px rgba(0,0,0,.7)";
+    const chairs = [
+      { name: "雪乃 · 北", wrap: "position:absolute;top:1%;left:50%;transform:translateX(-50%) scale(.85);width:96px;height:150px;z-index:5" },
+      { name: "椿 · 西",   wrap: "position:absolute;top:27%;left:2.5%;transform:scale(.95);width:96px;height:150px;z-index:5" },
+      { name: "紅葉 · 東", wrap: "position:absolute;top:27%;right:2.5%;transform:scale(.95);width:96px;height:150px;z-index:5" },
+    ];
+
+    // ---- clothing detail (interactive) ----
+    const clothNames = ["羽織", "帯", "着物", "簪", "足袋"];
+    const clothing = clothNames.map((name, i) => {
+      const lit = s.cloth[i];
+      return {
+        name, kanji: name[0],
+        toggle: () => this.setState(st => { const c = st.cloth.slice(); c[i] = !c[i]; return { cloth: c }; }),
+        style: (lit
+          ? "background:linear-gradient(160deg,rgba(246,168,196,.9),rgba(217,74,106,.85));color:#2a1020;border:1px solid rgba(255,220,235,.5);box-shadow:0 3px 10px -4px rgba(217,74,106,.7)"
+          : "background:rgba(60,48,64,.5);color:rgba(247,236,221,.3);border:1px solid rgba(246,168,196,.12);text-decoration:line-through")
+          + ";width:36px;height:36px;border-radius:9px;cursor:pointer;font-family:'Shippori Mincho',serif;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .18s",
+      };
+    });
+
+    // ---- four-seat thumbnails ----
+    const dot = lit => "width:9px;height:9px;border-radius:50%;background:" + (lit ? "linear-gradient(160deg,#f6a8c4,#d94a6a)" : "rgba(120,100,120,.4)");
+    const avS = "width:34px;height:34px;flex:none;border-radius:9px;background:linear-gradient(150deg,#5a3350,#2a1a30);display:flex;align-items:center;justify-content:center;font-family:'Shippori Mincho',serif;font-size:16px;color:rgba(255,220,235,.9)";
+    const wS = (c) => windBase + ";background:rgba(242,201,138,.2);color:" + c;
+    const mkCloth = arr => arr.map(v => ({ dot: dot(v) }));
+    const seats = [
+      { name: "紅葉", wind: "東", pts: "28,900", face: "紅", cloth: mkCloth([true,false,true,true,true]) },
+      { name: "雪乃", wind: "北", pts: "22,100", face: "雪", cloth: mkCloth([true,true,true,true,true]) },
+      { name: "椿",   wind: "西", pts: "19,000", face: "椿", cloth: mkCloth([true,false,true,false,true]) },
+      { name: "あなた", wind: "南", pts: "30,000", face: "主", cloth: mkCloth([true,true,true,true,true]) },
+    ].map(x => ({ ...x, avStyle: avS, windStyle: wS("#f2c98a") }));
+
+    // ---- strip timeline (§五) ----
+    const evDefs = [
+      { t: "0.0", text: "镜头→脱衣特写机位 · 全局光 -30%" },
+      { t: "0.3", text: "该席立绘滑入 + 语音 strip_lose_N + 字幕条" },
+      { t: "1.5", text: "衣物图标熄灭（樱瓣粒子 · 飘落 0.8s）" },
+      { t: "2.5", text: "立绘滑出 · 灯光复位 · 镜头回主机位" },
+    ];
+    const events = evDefs.map(e => {
+      const active = t + 1e-6 >= parseFloat(e.t);
+      return {
+        t: e.t, text: e.text,
+        tColor: active ? "#f2c98a" : "rgba(247,236,221,.4)",
+        dot: active ? "linear-gradient(160deg,#f6a8c4,#d94a6a)" : "rgba(120,100,120,.4)",
+        row: "display:flex;align-items:center;gap:10px;padding:7px 11px;border-radius:9px;transition:all .2s;"
+          + (active ? "background:rgba(246,168,196,.1);border:1px solid rgba(246,168,196,.22)" : "background:rgba(28,18,34,.4);border:1px solid transparent"),
+      };
+    });
+
+    const dimOpacity = (t >= 0.0 && t < 2.5) ? 0.3 : 0;
+    const tachieX = (t >= 0.3 && t < 2.5) ? "0px" : "140px";
+    const subOpacity = (t >= 0.3 && t < 2.5) ? 1 : 0;
+    const petalsOn = (t >= 1.5 && t < 2.5);
+    const petalsWrap = petalsOn ? "position:absolute;inset:0;pointer-events:none" : "display:none";
+    let camLabel = "主机位";
+    if (t >= 0.0 && t < 2.5) camLabel = "脱衣特写 (推近 35% · 背景微暗)";
+
+    // ---- settlement ----
+    const yaku = [
+      { name: "立直", han: "1 番" },
+      { name: "一発", han: "1 番" },
+      { name: "門前清自摸和", han: "1 番" },
+      { name: "ドラ 2", han: "2 番" },
+      { name: "赤ドラ 1", han: "1 番" },
+    ];
+    const scAv = "width:26px;height:26px;flex:none;border-radius:7px;background:linear-gradient(150deg,#5a3350,#2a1a30);display:flex;align-items:center;justify-content:center;font-family:'Shippori Mincho',serif;font-size:13px;color:rgba(255,220,235,.9)";
+    const scores = [
+      { name: "あなた", face: "主", pts: "42,000", delta: "+12,000", deltaColor: "#7fd99a" },
+      { name: "紅葉", face: "紅", pts: "16,900", delta: "-12,000", deltaColor: "#ff9db4" },
+      { name: "雪乃", face: "雪", pts: "22,100", delta: "±0", deltaColor: "rgba(247,236,221,.5)" },
+      { name: "椿",   face: "椿", pts: "19,000", delta: "±0", deltaColor: "rgba(247,236,221,.5)" },
+    ].map(x => ({ ...x, avStyle: scAv }));
+
+    return {
+      annoOn: on, annoWrap: "position:absolute;inset:0;z-index:6", annoBox, annoTag,
+      toggleAnno: () => this.setState(st => ({ anno: !st.anno })),
+      annoLabel: on ? "隐藏标注" : "显示标注",
+      annoBtnStyle: "margin-left:auto;font-size:12px;padding:6px 14px;border-radius:99px;cursor:pointer;border:1px solid rgba(246,168,196,.35);background:" + (on ? "rgba(246,168,196,.15)" : "transparent") + ";color:#f6a8c4",
+      feltBg, miniSeat, miniAv, windChipN, windChipS, windChipBig,
+      miniActions, bigActions, handTiles,
+      backTile, wallH, wallV, riverN, riverS, riverE, riverW, diceStyle,
+      drawWall, drawRemain, drawnCount: dn,
+      fullH: Array.from({ length: 12 }, () => ({ topStyle: upperTier, botStyle: lowerTier })),
+      fullV: Array.from({ length: 8 }, () => ({ topStyle: upperTier, botStyle: lowerTier })),
+      hand13: Array.from({ length: 13 }, (_, i) => ({ n: i + 1 })),
+      slotFrame: "position:relative;width:16px;height:22px;border-radius:3px;border:1px dashed rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center",
+      backInner: "width:13px;height:19px;border-radius:2px;background:linear-gradient(160deg,#f2e0c2,#d6bd93);box-shadow:0 2px 0 #ab916a,0 3px 3px rgba(0,0,0,.4);border:1px solid rgba(0,0,0,.15)",
+      slotNum: "position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-size:7px;color:rgba(255,255,255,.4);font-family:ui-monospace,monospace",
+      drawOne: () => this.setState(st => ({ drawn: Math.min(WTOT, (st.drawn || 0) + 1) })),
+      resetWall: () => this.setState({ drawn: 0 }),
+      backrest, tuft, seat, portraitBox, portraitLabel, chairs,
+      clothing, seats,
+      // timeline
+      tRaw: s.t, tLabel: (s.t / 10).toFixed(1),
+      onScrub: (e) => { clearInterval(this._iv); this._iv = null; this.setState({ t: +e.target.value, playing: false }); },
+      playToggle: () => {
+        if (this.state.playing) { clearInterval(this._iv); this._iv = null; this.setState({ playing: false }); }
+        else { const start = this.state.t >= 25 ? 0 : this.state.t; this.setState({ playing: true, t: start }); this._iv = setInterval(this.tick, 60); }
+      },
+      playIcon: s.playing ? "❚❚" : "▶",
+      events, dimOpacity, tachieX, subOpacity, petalsOn, petalsWrap, camLabel,
+      yaku, scores,
+      loseAvStyle: scAv,
+    };
+  }
+}
+</script>
+</body>
+</html>

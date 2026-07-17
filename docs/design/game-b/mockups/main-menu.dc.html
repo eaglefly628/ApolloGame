@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#120c17;font-family:"Zen Kaku Gothic New",system-ui,sans-serif;color:#f7ecdd}
+  a{color:#f6a8c4;text-decoration:none}a:hover{color:#ffc9de}
+  @keyframes twinkle{0%,100%{opacity:.18}50%{opacity:.95}}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+</style>
+</helmet>
+
+<div style="position:relative;width:1280px;height:720px;overflow:hidden;background:radial-gradient(100% 120% at 78% 26%, #3a2338, #241528 46%, #160d1b 82%);font-family:'Zen Kaku Gothic New',sans-serif">
+
+  <!-- 凤凰/孔雀翎 暗纹 -->
+  <svg width="1280" height="720" viewBox="0 0 1280 720" style="position:absolute;inset:0;pointer-events:none;z-index:0" aria-hidden="true">
+    <defs>
+      <linearGradient id="qy-feather" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#d94a6a" stop-opacity="0"></stop>
+        <stop offset="1" stop-color="#f6a8c4" stop-opacity="0.55"></stop>
+      </linearGradient>
+    </defs>
+    <g transform="translate(1160,772) scale(1.75)" opacity="0.15" fill="url(#qy-feather)" stroke="#f6a8c4" stroke-width="0.8" stroke-opacity="0.5">
+      <g transform="rotate(-6)"><path d="M0,0 C7,-42 7,-120 0,-172 C-7,-120 -7,-42 0,0 Z"></path><line x1="0" y1="-8" x2="0" y2="-158" stroke-opacity="0.35"></line><ellipse cx="0" cy="-150" rx="6" ry="11" fill="#d94a6a" fill-opacity="0.35" stroke="#ffc9de" stroke-opacity="0.5"></ellipse></g>
+      <g transform="rotate(-22)"><path d="M0,0 C7,-42 7,-120 0,-172 C-7,-120 -7,-42 0,0 Z"></path><line x1="0" y1="-8" x2="0" y2="-158" stroke-opacity="0.35"></line><ellipse cx="0" cy="-150" rx="6" ry="11" fill="#d94a6a" fill-opacity="0.35" stroke="#ffc9de" stroke-opacity="0.5"></ellipse></g>
+      <g transform="rotate(-38)"><path d="M0,0 C7,-42 7,-120 0,-172 C-7,-120 -7,-42 0,0 Z"></path><line x1="0" y1="-8" x2="0" y2="-158" stroke-opacity="0.35"></line><ellipse cx="0" cy="-150" rx="6" ry="11" fill="#d94a6a" fill-opacity="0.35" stroke="#ffc9de" stroke-opacity="0.5"></ellipse></g>
+      <g transform="rotate(-54)"><path d="M0,0 C7,-42 7,-120 0,-172 C-7,-120 -7,-42 0,0 Z"></path><line x1="0" y1="-8" x2="0" y2="-158" stroke-opacity="0.35"></line><ellipse cx="0" cy="-150" rx="6" ry="11" fill="#d94a6a" fill-opacity="0.35" stroke="#ffc9de" stroke-opacity="0.5"></ellipse></g>
+      <g transform="rotate(-70)"><path d="M0,0 C7,-42 7,-120 0,-172 C-7,-120 -7,-42 0,0 Z"></path><line x1="0" y1="-8" x2="0" y2="-158" stroke-opacity="0.35"></line><ellipse cx="0" cy="-150" rx="6" ry="11" fill="#d94a6a" fill-opacity="0.35" stroke="#ffc9de" stroke-opacity="0.5"></ellipse></g>
+      <g transform="rotate(-86)"><path d="M0,0 C7,-42 7,-120 0,-172 C-7,-120 -7,-42 0,0 Z"></path><line x1="0" y1="-8" x2="0" y2="-158" stroke-opacity="0.35"></line><ellipse cx="0" cy="-150" rx="6" ry="11" fill="#d94a6a" fill-opacity="0.35" stroke="#ffc9de" stroke-opacity="0.5"></ellipse></g>
+      <g transform="rotate(-102)"><path d="M0,0 C7,-42 7,-120 0,-172 C-7,-120 -7,-42 0,0 Z"></path><line x1="0" y1="-8" x2="0" y2="-158" stroke-opacity="0.35"></line><ellipse cx="0" cy="-150" rx="6" ry="11" fill="#d94a6a" fill-opacity="0.35" stroke="#ffc9de" stroke-opacity="0.5"></ellipse></g>
+    </g>
+    <g transform="translate(96,-40) scale(1.05) rotate(150)" opacity="0.08" fill="url(#qy-feather)" stroke="#f6a8c4" stroke-width="0.8" stroke-opacity="0.5">
+      <g transform="rotate(-30)"><path d="M0,0 C7,-42 7,-120 0,-172 C-7,-120 -7,-42 0,0 Z"></path><ellipse cx="0" cy="-150" rx="6" ry="11" fill="#d94a6a" fill-opacity="0.3"></ellipse></g>
+      <g transform="rotate(-52)"><path d="M0,0 C7,-42 7,-120 0,-172 C-7,-120 -7,-42 0,0 Z"></path><ellipse cx="0" cy="-150" rx="6" ry="11" fill="#d94a6a" fill-opacity="0.3"></ellipse></g>
+      <g transform="rotate(-74)"><path d="M0,0 C7,-42 7,-120 0,-172 C-7,-120 -7,-42 0,0 Z"></path><ellipse cx="0" cy="-150" rx="6" ry="11" fill="#d94a6a" fill-opacity="0.3"></ellipse></g>
+    </g>
+  </svg>
+
+  <!-- 星点 -->
+  <sc-for list="{{ stars }}" as="s" hint-placeholder-count="16"><div style="{{ s.style }}"></div></sc-for>
+
+  <!-- 背景台账签 -->
+  <sc-if value="{{ showLedger }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;left:22px;top:20px;font-family:ui-monospace,monospace;font-size:10.5px;letter-spacing:1px;color:rgba(247,236,221,.5);border:1px dashed rgba(246,168,196,.35);border-radius:6px;padding:4px 9px;background:rgba(40,28,50,.5)">A-BG-01 · 背景占位</div>
+  </sc-if>
+
+  <!-- 主角立绘占位台账框 -->
+  <div style="position:absolute;left:84px;top:150px;width:300px;height:440px;border:1.5px dashed rgba(246,168,196,.5);border-radius:16px;background:linear-gradient(160deg,#2a1a30,#1a1020);background-image:repeating-linear-gradient(45deg,transparent 0 11px,rgba(246,168,196,.06) 11px 22px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;padding:26px;text-align:center;box-shadow:0 24px 60px -30px rgba(0,0,0,.8)">
+    <sc-if value="{{ showLedger }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;left:12px;top:11px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.5px;color:#f6a8c4;background:rgba(246,168,196,.14);border-radius:5px;padding:2px 7px">A-CHAR-HERO</div>
+    </sc-if>
+    <div style="font-size:40px;color:rgba(246,168,196,.7);line-height:1">▤</div>
+    <div style="font-family:'Shippori Mincho',serif;font-weight:700;font-size:20px;letter-spacing:3px;color:#f6a8c4">主角立绘</div>
+    <div style="font-family:ui-monospace,monospace;font-size:11px;letter-spacing:1px;color:#2a1020;background:linear-gradient(135deg,#f6a8c4,#d94a6a);border-radius:99px;padding:3px 12px">300 × 440</div>
+    <div style="font-size:11.5px;line-height:1.7;color:rgba(247,236,221,.62);max-width:220px">elegant young hostess · kimono · warm night parlor · anime key visual · true alpha PNG</div>
+    <div style="font-size:11px;letter-spacing:1px;color:#f2c98a;border:1px solid rgba(242,201,138,.4);border-radius:8px;padding:4px 10px">风格锚：女性向二次元·和风夜宴</div>
+  </div>
+
+  <!-- 底部左：头像 + 名字 + 点数 Badge -->
+  <div style="position:absolute;left:84px;bottom:38px;display:flex;align-items:center;gap:14px">
+    <div style="width:62px;height:62px;border-radius:50%;background:linear-gradient(150deg,#5a3350,#2a1a30);border:2px solid #f6a8c4;display:flex;align-items:center;justify-content:center;font-family:'Shippori Mincho',serif;font-weight:700;font-size:27px;color:#ffe9f0;box-shadow:0 4px 12px rgba(0,0,0,.5)">華</div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <div style="font-family:'Shippori Mincho',serif;font-weight:700;font-size:18px;letter-spacing:2px;color:#f7ecdd">夜華</div>
+      <div style="display:inline-flex;align-items:center;gap:6px;align-self:flex-start;font-family:'Zen Kaku Gothic New',sans-serif;font-weight:700;font-size:14px;color:#2a1020;background:linear-gradient(135deg,#f2c98a,#e0a85a);border-radius:14px;padding:5px 13px">◉ 88,600</div>
+    </div>
+  </div>
+
+  <!-- 标题区 右上 -->
+  <div style="position:absolute;right:76px;top:70px;text-align:right">
+    <div style="font-family:'Shippori Mincho',serif;font-weight:800;font-size:98px;letter-spacing:8px;line-height:1;color:#f7ecdd;text-shadow:0 3px 0 #7a1a2e,0 6px 22px rgba(0,0,0,.6)">雀<span style="color:#d94a6a">宴</span></div>
+    <div style="margin-top:18px;font-family:'Zen Kaku Gothic New',sans-serif;font-size:15px;letter-spacing:4px;color:rgba(247,236,221,.6)">四人半庄 · 立直麻将 · 暖夜和室雀庄</div>
+  </div>
+
+  <!-- 按钮列 右侧竖排 -->
+  <div style="position:absolute;right:76px;top:324px;width:240px;display:flex;flex-direction:column;gap:15px">
+    <div style="align-self:center;margin-bottom:2px">
+      <div style="{{ tipStyle }}">荷官已就位，请上桌 ▾</div>
+    </div>
+    <button style="width:100%;font-family:'Shippori Mincho',serif;font-weight:700;font-size:18px;letter-spacing:3px;color:#2a1020;background:linear-gradient(160deg,#f6a8c4,#d94a6a);border:none;border-radius:12px;padding:15px 0;box-shadow:0 5px 18px -4px rgba(217,74,106,.7);cursor:pointer;transition:all .16s" style-hover="filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 9px 26px -6px rgba(217,74,106,.8)" style-active="transform:translateY(1px);filter:brightness(.96)">开始上桌</button>
+    <button style="width:100%;font-family:'Shippori Mincho',serif;font-weight:700;font-size:16px;letter-spacing:3px;color:#f6a8c4;background:rgba(40,28,50,.85);border:1px solid rgba(246,168,196,.38);border-radius:12px;padding:13px 0;cursor:pointer;transition:all .16s" style-hover="border-color:rgba(246,168,196,.75);color:#ffc9de;background:rgba(52,34,60,.9)">继续上局</button>
+    <button style="width:100%;font-family:'Shippori Mincho',serif;font-weight:700;font-size:16px;letter-spacing:3px;color:#f6a8c4;background:rgba(40,28,50,.85);border:1px solid rgba(246,168,196,.38);border-radius:12px;padding:13px 0;cursor:pointer;transition:all .16s" style-hover="border-color:rgba(246,168,196,.75);color:#ffc9de;background:rgba(52,34,60,.9)">设置</button>
+  </div>
+
+  <!-- 版本号 右下 -->
+  <div style="position:absolute;right:78px;bottom:34px;font-family:'Zen Kaku Gothic New',sans-serif;font-size:12px;letter-spacing:2px;color:rgba(247,236,221,.4)">v0.3.1 · 内部测试</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:720},&quot;reduceFx&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;动效&quot;},&quot;showLedger&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;占位&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const reduceFx = this.props.reduceFx ?? false;
+    const showLedger = this.props.showLedger ?? true;
+
+    const seed = [[12,18,2],[22,54,3],[34,12,2],[46,72,2],[58,22,3],[63,60,2],[71,14,2],[77,48,3],[84,68,2],[90,28,2],[95,54,2],[17,84,2],[41,40,2],[52,88,3],[68,80,2],[88,88,2]];
+    const stars = seed.map(([x, y, s], i) => ({
+      style: "position:absolute;left:" + x + "%;top:" + y + "%;width:" + s + "px;height:" + s + "px;border-radius:50%;background:#f6d0a8;box-shadow:0 0 6px #f6c9a8;opacity:.4;z-index:0"
+        + (reduceFx ? "" : ";animation:twinkle " + (2 + (i % 4) * 0.5) + "s " + (i % 5) * 0.6 + "s infinite"),
+    }));
+
+    const tipStyle = "font-family:'Zen Kaku Gothic New',sans-serif;font-size:12px;letter-spacing:2px;color:#ffe9f0;background:rgba(40,28,50,.9);border:1px solid rgba(246,168,196,.35);border-radius:10px;padding:6px 13px;white-space:nowrap"
+      + (reduceFx ? "" : ";animation:bob 3s ease-in-out infinite");
+
+    return { stars, tipStyle, showLedger };
+  }
+}
+</script>
+</body>
+</html>
