@@ -903008,6 +903008,258 @@
         "license": "CC0-1.0",
         "date": "2026-07-17"
       }
+    },
+    {
+      "id": "chip/1-white",
+      "type": "texture",
+      "description": "poker chip 1 (white)",
+      "status": "filled",
+      "path": "chips/1-white.svg",
+      "category": "chip",
+      "style": "flat",
+      "license": "CC0 (自产)",
+      "source": "apollo-procedural",
+      "tags": [
+        "poker-chip",
+        "chip",
+        "casino",
+        "white",
+        "1"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "generator": "gen-chips",
+        "denom": 1,
+        "color": "white",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "chip/5-red",
+      "type": "texture",
+      "description": "poker chip 5 (red)",
+      "status": "filled",
+      "path": "chips/5-red.svg",
+      "category": "chip",
+      "style": "flat",
+      "license": "CC0 (自产)",
+      "source": "apollo-procedural",
+      "tags": [
+        "poker-chip",
+        "chip",
+        "casino",
+        "red",
+        "5"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "generator": "gen-chips",
+        "denom": 5,
+        "color": "red",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "chip/10-blue",
+      "type": "texture",
+      "description": "poker chip 10 (blue)",
+      "status": "filled",
+      "path": "chips/10-blue.svg",
+      "category": "chip",
+      "style": "flat",
+      "license": "CC0 (自产)",
+      "source": "apollo-procedural",
+      "tags": [
+        "poker-chip",
+        "chip",
+        "casino",
+        "blue",
+        "10"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "generator": "gen-chips",
+        "denom": 10,
+        "color": "blue",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "chip/25-green",
+      "type": "texture",
+      "description": "poker chip 25 (green)",
+      "status": "filled",
+      "path": "chips/25-green.svg",
+      "category": "chip",
+      "style": "flat",
+      "license": "CC0 (自产)",
+      "source": "apollo-procedural",
+      "tags": [
+        "poker-chip",
+        "chip",
+        "casino",
+        "green",
+        "25"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "generator": "gen-chips",
+        "denom": 25,
+        "color": "green",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "chip/50-orange",
+      "type": "texture",
+      "description": "poker chip 50 (orange)",
+      "status": "filled",
+      "path": "chips/50-orange.svg",
+      "category": "chip",
+      "style": "flat",
+      "license": "CC0 (自产)",
+      "source": "apollo-procedural",
+      "tags": [
+        "poker-chip",
+        "chip",
+        "casino",
+        "orange",
+        "50"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "generator": "gen-chips",
+        "denom": 50,
+        "color": "orange",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "chip/100-black",
+      "type": "texture",
+      "description": "poker chip 100 (black)",
+      "status": "filled",
+      "path": "chips/100-black.svg",
+      "category": "chip",
+      "style": "flat",
+      "license": "CC0 (自产)",
+      "source": "apollo-procedural",
+      "tags": [
+        "poker-chip",
+        "chip",
+        "casino",
+        "black",
+        "100"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "generator": "gen-chips",
+        "denom": 100,
+        "color": "black",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "chip/500-purple",
+      "type": "texture",
+      "description": "poker chip 500 (purple)",
+      "status": "filled",
+      "path": "chips/500-purple.svg",
+      "category": "chip",
+      "style": "flat",
+      "license": "CC0 (自产)",
+      "source": "apollo-procedural",
+      "tags": [
+        "poker-chip",
+        "chip",
+        "casino",
+        "purple",
+        "500"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "generator": "gen-chips",
+        "denom": 500,
+        "color": "purple",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "chip/1000-yellow",
+      "type": "texture",
+      "description": "poker chip 1000 (yellow)",
+      "status": "filled",
+      "path": "chips/1000-yellow.svg",
+      "category": "chip",
+      "style": "flat",
+      "license": "CC0 (自产)",
+      "source": "apollo-procedural",
+      "tags": [
+        "poker-chip",
+        "chip",
+        "casino",
+        "yellow",
+        "1000"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "generator": "gen-chips",
+        "denom": 1000,
+        "color": "yellow",
+        "date": "2026-07-17"
+      }
+    },
+    {
+      "id": "chip/5000-gray",
+      "type": "texture",
+      "description": "poker chip 5000 (gray)",
+      "status": "filled",
+      "path": "chips/5000-gray.svg",
+      "category": "chip",
+      "style": "flat",
+      "license": "CC0 (自产)",
+      "source": "apollo-procedural",
+      "tags": [
+        "poker-chip",
+        "chip",
+        "casino",
+        "gray",
+        "5000"
+      ],
+      "spec": {
+        "format": "svg",
+        "usage": "sprite"
+      },
+      "provenance": {
+        "generator": "gen-chips",
+        "denom": 5000,
+        "color": "gray",
+        "date": "2026-07-17"
+      }
     }
   ]
 }

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <circle cx="50" cy="50" r="47" fill="#e8c72b" stroke="#c0a41f" stroke-width="2"/>
+  <g><rect x="43.0" y="-2.0" width="14" height="10" rx="2" fill="#1a1a1a" transform="rotate(0.0 50.0 3.0)"/><rect x="83.7" y="21.5" width="14" height="10" rx="2" fill="#1a1a1a" transform="rotate(60.0 90.7 26.5)"/><rect x="83.7" y="68.5" width="14" height="10" rx="2" fill="#1a1a1a" transform="rotate(120.0 90.7 73.5)"/><rect x="43.0" y="92.0" width="14" height="10" rx="2" fill="#1a1a1a" transform="rotate(180.0 50.0 97.0)"/><rect x="2.3" y="68.5" width="14" height="10" rx="2" fill="#1a1a1a" transform="rotate(240.0 9.3 73.5)"/><rect x="2.3" y="21.5" width="14" height="10" rx="2" fill="#1a1a1a" transform="rotate(300.0 9.3 26.5)"/></g>
+  <circle cx="50" cy="50" r="34" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-dasharray="6 5"/>
+  <circle cx="50" cy="50" r="29" fill="#e8c72b" stroke="#c0a41f" stroke-width="1.5"/>
+  <text x="50" y="55.666666666666664" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="#1a1a1a">1000</text>
+</svg>
