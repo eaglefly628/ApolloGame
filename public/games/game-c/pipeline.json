@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "slug": "game-c",
+  "concept": {
+    "name": "六人德州",
+    "pitch": "单人 vs 五位姨太行为树 AI 的六人桌标准德州扑克·现金局:俯视固定 3D 牌房+筹码物理落桌(render-only);衣物典当续命·剥光才出局;AI 难度=读牌误差%(简单档禁读)",
+    "refs": "Prominence Poker·Poker Night(有房间感的单机德州)",
+    "style": "双锚:人物线 sakura-nijigen × 场景线 vegas-victoriana(REQ-C-ART 修订①)"
+  },
+  "signoffs": {},
+  "evidence": {
+    "S4": {
+      "exit": 0,
+      "summary": " Test Files  3 passed (3) ·       Tests  50 passed (50)",
+      "at": "2026-07-17T14:08:25.037Z",
+      "gameHash": "312c7cf0f75756e6"
+    }
+  },
+  "history": [
+    {
+      "action": "concept",
+      "at": "2026-07-17T14:04:27.312Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "owner 启动词指派 PE-C 本会话领 M1 逻辑核(S4 机器侧)·前置 S1/S2/S3 人门复查门待 owner/Lead/复查 session 补签(顺序闸记账·game-t 先例)",
+      "at": "2026-07-17T14:04:47.838Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-17T14:04:49.417Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "owner 启动词指派 PE-C 本会话领 M1 逻辑核(S4 机器侧)·前置 S1/S2/S3 人门复查门待 owner/Lead/复查 session 补签(顺序闸记账·game-t 先例)",
+      "at": "2026-07-17T14:08:23.757Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-17T14:08:25.037Z"
+    }
+  ],
+  "outOfOrder": [
+    {
+      "stage": "S4",
+      "reason": "owner 启动词指派 PE-C 本会话领 M1 逻辑核(S4 机器侧)·前置 S1/S2/S3 人门复查门待 owner/Lead/复查 session 补签(顺序闸记账·game-t 先例)",
+      "at": "2026-07-17T14:04:47.838Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "owner 启动词指派 PE-C 本会话领 M1 逻辑核(S4 机器侧)·前置 S1/S2/S3 人门复查门待 owner/Lead/复查 session 补签(顺序闸记账·game-t 先例)",
+      "at": "2026-07-17T14:08:23.757Z"
+    }
+  ]
+}
