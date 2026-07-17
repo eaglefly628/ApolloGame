@@ -21,6 +21,9 @@ const view: PlayView = {
   hand,
   selected: [10, 11, 12], // 选中三张（上浮金边）
   sortMode: 'rank',
+  tributeText: '顾念念 进 ♠A → 沈玉薇（还 ♦8）',
+  showCounter: false,
+  counter: [],
   trick: { name: '三连对（木板）', family: 'tube', cards: [cardCode(0, 5), cardCode(1, 5), cardCode(0, 6), cardCode(1, 6), cardCode(0, 7), cardCode(1, 7)] },
   canCommit: true,
   commitWhy: '',

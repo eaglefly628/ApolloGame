@@ -34,8 +34,8 @@
     "S5": {
       "exit": 0,
       "summary": "AUDIT: WARNINGS · RATCHET: PASS",
-      "at": "2026-07-17T17:58:29.335Z",
-      "gameHash": "474f3bbdb702b275"
+      "at": "2026-07-17T18:32:22.154Z",
+      "gameHash": "744bf31a9bafd529"
     }
   },
   "history": [
@@ -117,6 +117,18 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-07-17T17:58:29.335Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "PE-A 完整玩法：选桌/进贡反馈/记牌器/理牌·audit 盲区 A-007",
+      "at": "2026-07-17T18:32:22.107Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-07-17T18:32:22.154Z"
     }
   ],
   "reviews": {
@@ -157,6 +169,11 @@
       "stage": "S5",
       "reason": "PE-A S5 UI 1:1 复刻·ui-audit 盲区 A-007 报 PUI",
       "at": "2026-07-17T17:58:29.284Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "PE-A 完整玩法：选桌/进贡反馈/记牌器/理牌·audit 盲区 A-007",
+      "at": "2026-07-17T18:32:22.107Z"
     }
   ]
 }

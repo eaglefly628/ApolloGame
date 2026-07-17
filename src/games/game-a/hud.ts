@@ -6,7 +6,7 @@
 // ui-audit 残留角标对比=light 白扑克牌+扇形叠放盲区（A-007 报 PUI·不降格·owner 两层 1:1 律=视觉 1:1）。
 import type { LayoutNode } from '@ui/components/index.js';
 import type { SeatSpec } from './rules.js';
-import { HAND_SIZE, DRESS_TIERS, codeRank, codeSuit } from './rules.js';
+import { DRESS_TIERS, codeRank, codeSuit, AI_TIERS, STAKES, BUYIN_MULT, SEATS } from './rules.js';
 import { MANOR_BG, FELT_RED, FIELD_W, FIELD_H, SEAT_ANCHORS, SEAT_W, seatTopLeft } from './theme.js';
 import { FAMILY_CN, type SeatId } from './guandan-session.js';
 
@@ -56,7 +56,7 @@ export function buildMenu(): LayoutNode {
               { type: 'Tag', id: 'a-menu-tag-3', props: { label: '级数爬 A', tone: 'normal', size: 'sm' } },
             ],
           },
-          { type: 'Button', id: 'a-menu-start', props: { label: '开始上桌 · 底注 100', kind: 'hero', action: 'menu.start', sub: '与三位姨太 · 快局爬级过 A' } },
+          { type: 'Button', id: 'a-menu-start', props: { label: '开始上桌', kind: 'primary', action: 'menu.start', sub: '与三位姨太 · 快局爬级过 A' } },
           { type: 'Button', id: 'a-menu-settings', props: { label: '设置', kind: 'ghost', disabled: true } },
           { type: 'Label', id: 'a-menu-ver', props: { text: '淮安标准全套 · 金钱/服饰罚 · 二次元私宅夜局', size: 'xs', color: 'dim' } },
         ],
@@ -65,9 +65,131 @@ export function buildMenu(): LayoutNode {
   };
 }
 
+// ── SC-2 选桌（难度×底注选择 + 三家人设预览 + 带入确认·owner 稿 SC-2）──────────────
+const TRAIT_CN: Record<string, string> = { 沉稳: '稳健', 护家: '护家', 锋利: '锋利', 好胜: '好胜', 跳脱: '多变', 爱起哄: '起哄' };
+export interface TableSelectView {
+  difficulty: 'l1' | 'l2' | 'l3' | 'l4';
+  stake: number;
+  wallet: number;
+}
+function seatPreview(seat: SeatSpec): LayoutNode {
+  const foe = seat.team === 1;
+  const trait = seat.traits?.[0] ? (TRAIT_CN[seat.traits[0]] ?? seat.traits[0]) : '';
+  return {
+    type: 'Card',
+    id: `a-sel-npc-${seat.id}`,
+    props: { title: seat.name },
+    layout: { direction: 'column', align: 'center', gap: 6, padding: 12, width: 132 },
+    children: [
+      { type: 'Avatar', id: `a-sel-npc-${seat.id}-face`, props: { name: seat.name, size: 52, shape: 'circle' } },
+      {
+        type: 'Panel',
+        id: `a-sel-npc-${seat.id}-tags`,
+        props: { bare: true },
+        layout: { direction: 'row', gap: 4, justify: 'center' },
+        children: [
+          { type: 'Tag', id: `a-sel-npc-${seat.id}-side`, props: { label: foe ? '对手' : '队友', tone: foe ? 'normal' : 'accent', size: 'sm' } },
+          ...(trait ? [{ type: 'Tag' as const, id: `a-sel-npc-${seat.id}-trait`, props: { label: trait, tone: 'dim' as const, size: 'sm' as const } }] : []),
+        ],
+      },
+    ],
+  };
+}
+export function buildTableSelect(v: TableSelectView): LayoutNode {
+  const buyin = v.stake * BUYIN_MULT;
+  const affordable = v.wallet >= buyin;
+  const tierSpec = AI_TIERS.find((t) => t.id === v.difficulty)!;
+  const aiSeats = SEATS.filter((s) => s.kind === 'ai');
+  return {
+    type: 'Screen',
+    id: 'a-select',
+    props: { bg: { custom: MANOR_BG }, center: true },
+    layout: { direction: 'column', align: 'center', justify: 'center', gap: 14, padding: 24 },
+    children: [
+      {
+        type: 'Panel',
+        id: 'a-sel-card',
+        props: { vignette: true },
+        layout: { direction: 'column', align: 'center', gap: 14, padding: 26, width: 640 },
+        children: [
+          { type: 'Label', id: 'a-sel-title', props: { text: '选桌', font: 'elegant', size: 'xxl', bold: true, color: 'gold' } },
+          // 难度
+          {
+            type: 'Panel',
+            id: 'a-sel-diff-row',
+            props: { bare: true },
+            layout: { direction: 'column', align: 'center', gap: 6 },
+            children: [
+              { type: 'Label', id: 'a-sel-diff-l', props: { text: '难度', size: 'sm', color: 'sub' } },
+              {
+                type: 'Segmented',
+                id: 'a-sel-diff',
+                props: { options: AI_TIERS.map((t) => ({ value: t.id, label: t.name })), value: v.difficulty, action: 'select.difficulty' },
+              },
+              {
+                type: 'Label',
+                id: 'a-sel-diff-hint',
+                props: {
+                  text: tierSpec.peek > 0 ? `⚠ ${tierSpec.name}会读牌（开局偷看每对手 ${tierSpec.peek} 张·公平告知）` : `${tierSpec.name} · ${tierSpec.memory === 'full' ? '全量记牌' : tierSpec.memory === 'big-cards' ? '记大牌' : '不记牌'}`,
+                  size: 'xs',
+                  color: tierSpec.peek > 0 ? 'warn' : 'dim',
+                },
+              },
+            ],
+          },
+          // 底注
+          {
+            type: 'Panel',
+            id: 'a-sel-stake-row',
+            props: { bare: true },
+            layout: { direction: 'column', align: 'center', gap: 6 },
+            children: [
+              { type: 'Label', id: 'a-sel-stake-l', props: { text: '底注', size: 'sm', color: 'sub' } },
+              {
+                type: 'Segmented',
+                id: 'a-sel-stake',
+                props: { options: STAKES.map((s) => ({ value: String(s), label: String(s) })), value: String(v.stake), action: 'select.stake' },
+              },
+            ],
+          },
+          // 三家人设预览
+          {
+            type: 'Panel',
+            id: 'a-sel-npcs',
+            props: { bare: true },
+            layout: { direction: 'row', gap: 12, justify: 'center' },
+            children: aiSeats.map((s) => seatPreview(s)),
+          },
+          // 带入确认 + 入座
+          {
+            type: 'Panel',
+            id: 'a-sel-buyin',
+            props: { bare: true },
+            layout: { direction: 'row', gap: 10, align: 'center', justify: 'center' },
+            children: [
+              { type: 'Label', id: 'a-sel-buyin-l', props: { text: '带入', size: 'sm', color: 'sub' } },
+              { type: 'Badge', id: 'a-sel-buyin-v', props: { text: `💰 ${fmtMoney(buyin)}`, tone: affordable ? 'ok' : 'warn' } },
+              { type: 'Label', id: 'a-sel-buyin-note', props: { text: `底注 ${v.stake} × 20 · 荷包 ${fmtMoney(v.wallet)}`, size: 'xs', color: 'dim' } },
+            ],
+          },
+          {
+            type: 'Panel',
+            id: 'a-sel-btns',
+            props: { bare: true },
+            layout: { direction: 'row', gap: 10, align: 'center', justify: 'center' },
+            children: [
+              { type: 'Button', id: 'a-sel-back', props: { label: '返回', kind: 'ghost', action: 'select.back' } },
+              { type: 'Button', id: 'a-sel-seat', props: { label: '入座开局', kind: 'primary', action: 'select.seat', sub: affordable ? undefined : '荷包不足·按结余入座' } },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
 // ── 席位卡（蓝本 SC-3·绝对定位到屏幕锚点·圆头像金边圈 + 阵营/性格 pill + 余牌 + 表情气泡）──
 // 固定相机=固定屏幕锚点（同 game-c 先例）；active=当前出牌者金边高亮；bubble=表情/「过」气泡（可空）。
-const TRAIT_CN: Record<string, string> = { 沉稳: '稳健', 护家: '护家', 锋利: '锋利', 好胜: '好胜', 跳脱: '多变', 爱起哄: '起哄' };
 function seatCard(v: SeatView, x: number, y: number, active: boolean, bubble?: string): LayoutNode {
   const foe = v.seat.team === 1;
   const trait = v.seat.traits?.[0] ? (TRAIT_CN[v.seat.traits[0]] ?? v.seat.traits[0]) : '';
@@ -119,6 +241,9 @@ export interface PlayView {
   selected: number[]; // 已选手牌**下标**（指向显示顺序·非牌码——两副牌同码会联动误选，故按 idx 标识）
   sortMode: 'rank' | 'family'; // 理牌当前档（Segmented 高亮用）
   trick: { name: string; family: string; cards: number[] } | null; // 当前墩
+  tributeText: string | null; // 本盘进贡/还贡/抗贡一句话（首盘=null·玩家知情）
+  showCounter: boolean; // 记牌器开合
+  counter: { rank: string; played: number; total: number }[]; // 明面已出牌计数（showCounter 时填）
   canCommit: boolean; // 选牌构成合法且能压
   commitWhy: string; // 不可出的原因（禁用提示）
   canPass: boolean;
@@ -195,13 +320,25 @@ export function buildPlay(v: PlayView): LayoutNode {
     layout: { direction: 'column', align: 'center', justify: 'center', gap: 8, width: 380 },
     children: centerChildren,
   };
-  // 椭圆红呢牌桌（radius 大=胶囊椭圆·felt 红呢 + 暗角 + 金边）·出牌区 flex 居中于桌心（felt 子节点）。
+  // 进贡/还贡横幅（本盘有则显·felt 子节点=祖孙嵌套·玩家知情盘首进贡）。
+  const feltChildren: LayoutNode[] = [];
+  if (v.tributeText) {
+    feltChildren.push({
+      type: 'Panel',
+      id: 'a-p-tribute',
+      props: { bg: { custom: 'linear-gradient(180deg,rgba(200,53,43,0.28),rgba(30,20,14,0.9))' } },
+      layout: { direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 7, radius: 16, margin: 6 },
+      children: [{ type: 'Label', id: 'a-p-tribute-l', props: { text: `🎴 ${v.tributeText}`, size: 'sm', color: 'gold', bold: true } }],
+    });
+  }
+  feltChildren.push(centerZone);
+  // 椭圆红呢牌桌（radius 大=胶囊椭圆·felt 红呢 + 暗角 + 金边）·进贡横幅 + 出牌区 flex 居中于桌心（felt 子节点）。
   const feltTable: LayoutNode = {
     type: 'Panel',
     id: 'a-felt',
     props: { bg: { custom: FELT_RED }, vignette: true, accent: true },
-    layout: { x: 232, y: 148, width: FIELD_W - 464, height: 322, radius: 160, direction: 'column', align: 'center', justify: 'center' },
-    children: [centerZone],
+    layout: { x: 232, y: 148, width: FIELD_W - 464, height: 322, radius: 160, direction: 'column', align: 'center', justify: 'center', gap: 8 },
+    children: feltChildren,
   };
 
   // 级牌信息条（牌桌下方 pill 一行）。
@@ -258,9 +395,10 @@ export function buildPlay(v: PlayView): LayoutNode {
         props: { bare: true },
         layout: { direction: 'row', gap: 8, align: 'center', justify: 'end' },
         children: [
+          { type: 'Button', id: 'a-p-counter', props: { label: v.showCounter ? '▤ 收起' : '▤ 记牌器', kind: 'quiet', action: 'tools.counter' } },
           { type: 'Button', id: 'a-p-hint', props: { label: '提示', kind: 'ghost', action: 'play.hint', disabled: !heroTurn } },
           { type: 'Button', id: 'a-p-pass', props: { label: '过', kind: 'quiet', action: 'play.pass', disabled: !heroTurn || !v.canPass } },
-          { type: 'Button', id: 'a-p-commit', props: { label: '出牌', kind: 'hero', action: 'play.commit', disabled: !heroTurn || !v.canCommit } },
+          { type: 'Button', id: 'a-p-commit', props: { label: '出牌', kind: 'primary', action: 'play.commit', disabled: !heroTurn || !v.canCommit } },
         ],
       },
       {
@@ -283,6 +421,34 @@ export function buildPlay(v: PlayView): LayoutNode {
     children: [{ type: 'Button', id: 'a-p-back', props: { label: '返回', kind: 'ghost', action: 'table.back' } }],
   };
 
+  // 记牌器（居中模态浮层·明面已出牌计数·点「▤ 记牌器」开·点遮罩/关闭收·不开天眼）。
+  const counterPanel: LayoutNode | null = v.showCounter
+    ? {
+        type: 'Modal',
+        id: 'a-p-counter-modal',
+        props: { title: '记牌器 · 明面已出牌（不开天眼）', size: 'sm', closable: true, closeAction: 'tools.counter' },
+        children: [
+          { type: 'Label', id: 'a-p-counter-hint', props: { text: '各点数 已出 / 共 · 剩余可推断谁手里还有大牌', size: 'xs', color: 'sub' } },
+          {
+            type: 'Table',
+            id: 'a-p-counter-table',
+            props: {
+              columns: [
+                { key: 'rank', label: '点数', width: 72 },
+                { key: 'played', label: '已出', width: 72, align: 'center' },
+                { key: 'left', label: '剩余', align: 'center' },
+              ],
+              rows: v.counter.map((r) => ({
+                id: `cnt-${r.rank}`,
+                cells: { rank: r.rank, played: `${r.played}/${r.total}`, left: String(r.total - r.played) },
+                tone: (r.total - r.played === 0 ? 'dim' : 'normal') as 'dim' | 'normal',
+              })),
+            },
+          },
+        ],
+      }
+    : null;
+
   // z 序（DOM 顺序）：桌 → 中央墩 → 席位 → 信息条 → 立绘/操作 → 手牌扇（最上·可点）→ 返回。
   return {
     type: 'Screen',
@@ -298,6 +464,7 @@ export function buildPlay(v: PlayView): LayoutNode {
       heroPortrait,
       actionBar,
       ...buildHandFanNodes(v.hand, v.selected),
+      ...(counterPanel ? [counterPanel] : []),
       backWrap,
     ],
   };

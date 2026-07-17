@@ -11,7 +11,7 @@ import {
   SEATS, DECK_SIZE, RANK_SMALL_JOKER, RANK_BIG_JOKER, SUIT_HEART, INITIAL_FUNDS, DRESS_TIERS,
 } from './rules.js';
 import { buildTableBlueprint } from './blueprint.js';
-import { buildMenu, buildPlay, buildResult, type SeatView } from './hud.js';
+import { buildMenu, buildTableSelect, buildPlay, buildResult, type SeatView } from './hud.js';
 import { cardAssetId } from './theme.js';
 
 const c = (suit: number, rank: number): Card => ({ suit, rank });
@@ -125,9 +125,14 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
     expect(snap()).toBe(snap());
   });
 
-  // ── UI 菜单（LayoutNode 纯数据·零 issue；牌桌/结算屏在下方 S4 用例）──────────────
-  it('菜单壳过 validateLayoutNode', () => {
+  // ── UI 菜单 + 选桌屏（LayoutNode 纯数据·零 issue；牌桌/结算屏在下方 S4 用例）──────
+  it('菜单壳 + 选桌屏（各难度）过 validateLayoutNode', () => {
     expect(validateLayoutNode(buildMenu())).toEqual([]);
+    for (const d of ['l1', 'l2', 'l3', 'l4'] as const) {
+      for (const stake of [100, 500, 2000]) {
+        expect(validateLayoutNode(buildTableSelect({ difficulty: d, stake, wallet: 10000 }))).toEqual([]);
+      }
+    }
   });
 
   // ── S4 玩法屏/结算屏 UI（LayoutNode 纯数据·零 issue）────────────────────────────
@@ -140,7 +145,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       hand: [cardCode(0, 3), cardCode(1, 3), cardCode(0, 7), cardCode(2, 14), cardCode(0, RANK_BIG_JOKER)],
       selected: [0, 1], // 选中前两张（下标·非牌码）
       trick: { name: '对子', family: 'pair', cards: [cardCode(2, 2), cardCode(3, 2)] },
-      canCommit: true, commitWhy: '', canPass: true, sortMode: 'rank',
+      canCommit: true, commitWhy: '', canPass: true, sortMode: 'rank', tributeText: null, showCounter: false, counter: [],
     });
     expect(validateLayoutNode(play)).toEqual([]);
     // 领出态（无墩）+ AI 轮次
@@ -148,7 +153,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       round: 2, stake: 100, levelPlay: 2, levelOurs: 3, levelTheirs: 2, wallet: 12000,
       turn: 'west', turnName: '林曼笙',
       seats: { partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero') },
-      hand: [cardCode(0, 5)], selected: [], trick: null, canCommit: false, commitWhy: '点牌选中 · 出牌或过', canPass: false, sortMode: 'family',
+      hand: [cardCode(0, 5)], selected: [], trick: null, canCommit: false, commitWhy: '点牌选中 · 出牌或过', canPass: false, sortMode: 'family', tributeText: '抗贡成功 · 双大王免进贡 · 头游先出', showCounter: true, counter: [{ rank: 'A', played: 3, total: 8 }],
     });
     expect(validateLayoutNode(lead)).toEqual([]);
     for (const phase of ['settled', 'run-won', 'run-lost'] as const) {
