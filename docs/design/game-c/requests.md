@@ -15,3 +15,15 @@
 > **无任何玩家档案字段**；launcher/studio/manifest-game 均无现成通道——真缺口，非重组可解。
 > **建议方案**：meta（或 launcher 全局档案）加可选 `player` 字段 → 蓝图装配层读取 → 填 `Text`（姓名）/`Sprite.textureKey`（头像）/`WorldUI3D`（桌边铭牌）。头像图走资产索引（PA 线）。
 > **游戏侧不阻塞**：game-c 装配层先留 `PlayerCard` 注入点（默认档案兜底），通道落地即接。
+
+### REQ-C-ART-美术拍板包 · owner 2026-07-17 三拍板 Lead 落档（台账自此可开建） · 指派：GD-C（回填 gdd §7/§11-l）+ PA（风格包条目） · status: open · 优先级: P1
+> ① **风格锚=拉斯维加斯奢华 × 维多利亚**：风格包 id `vegas-victoriana`（PA 落 `scripts/style-packs.json`·锚 v1 Lead 草拟·owner 可配参考图精修）：
+> `opulent Las Vegas casino meets Victorian elegance: gilded gold ornament, deep green felt, burgundy velvet, crystal chandelier glow, ornate baroque frames, warm dramatic lighting, high readability, game asset, no text, no watermark`。调色板基准 8 色：鎏金 #D4AF37 / 呢绿 #35654D / 酒红 #7B2D3B / 檀黑 #2A1F1E / 象牙 #F2E8D5 / 紫罗兰 #6B4E71 / 古铜 #B87333 / 烛光 #FFD9A0（PA 定稿微调）。
+> ② **五姨太人设定稿（性格↔策略模板↔头像一体·Lead 提对位·GD-C 可微调命名）**：大姨太=淑女（端庄礼致）↔紧凶 · 二姨太=富饶雍贵（珠光宝气）↔松凶 · 三姨太=冷静（静水深流）↔岩石 · 四姨太=清纯可爱（天真烂漫）↔跟注站 · 五姨太=狡猾狡诈（笑里藏刀）↔诈唬狂。
+> **头像=4 态/人**（常态 + 懊恼 + 胜利 + 犹豫思考——owner 口径「三种表情」·若要犹豫/思考拆分则 5 态·owner 目检首批后定）→ 头像 20 行。**头像行 prompt 硬约束：成年角色明示 + 着装完整**（分级合规锁在生成源头·台账行级规范）。
+> ③ **衣物图标=个性化 30 件**（5 人×6 件·图标级 128×128 透明·样式随各人设·**只画物件不画人身**）。
+> ④ **Lead 已裁三件**：52 牌面=vendored PD 定案（行直接 replaced·provenance=vendored·不进生成预算）；凳/墙/地程序化免槽例外=准；台账脚本参照 **game-d 样板**（3D inventory 先例·扫 Material3D/Decal3D 贴图槽·非 game-q 2D 样板）。
+> ⑤ 机械件：`scripts/game-c-art-ledger.mjs`·mergeLedger 保号·行行引 `vegas-victoriana` 锚（不手抄）；spec{w,h} 建行前向 P3D 要俯视角消费分辨率口径。**首版行数估算（快照）**：头像 20 + 衣物 30 + 牌面 53（replaced）+ 筹码 5 + 桌呢/按钮/头像框/房间件 ≈8 ≈ **116 行（needs-art ≈63）**。
+
+### REQ-C-立绘换装（典当脱衣表现） · TODO（owner 2026-07-17「先记需求·外面再做」） · status: 挂起待 owner 拉起 · 类型: 后期美术立项
+> 方向：典当后人设立绘随之换装——分层立绘美术（每角色×每衣物层·量大）单独立项。**届时前置硬条件**：①内容分级口径定案（Steam 成人内容申报/区域合规·gdd §11-j）②所有角色成年设定在人设档明示 ③分层立绘规格 spec（层对齐/锚点/规格）④生成 prompt 合规约束随行写死。本期口径不变：头像不随典当变化（清单置灰+件数徽章）。不阻塞 M1-M5。
