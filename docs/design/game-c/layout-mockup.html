@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Game C《六人德州》布局线框稿 v1 · Claude Design</title>
+<style>
+  /* 设计工件（线框稿·非游戏代码）——配套 ui-brief.md。灰阶线框 + 玉色点缀。 */
+  html,body{margin:0;background:#1c1e22;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:#cfd3da;}
+  .stage{position:relative;width:1280px;height:720px;margin:24px auto;background:#23262c;outline:2px solid #3a3f47;overflow:hidden;}
+  .zone{position:absolute;box-sizing:border-box;border:1.5px dashed #5a6270;background:rgba(255,255,255,.02);border-radius:8px;padding:4px 8px;font-size:12px;color:#9aa3b0;}
+  .zone b{color:#cfd3da;font-weight:600;}
+  .accent{border-color:#4fae8d;color:#7fd0b2;}
+  .accent b{color:#8fe0c2;}
+  .note{position:absolute;font-size:11px;color:#6b7482;}
+  /* 3D 视口示意 */
+  .table{position:absolute;left:390px;top:180px;width:500px;height:270px;border:2px solid #4a5160;border-radius:135px;background:#26332d;}
+  .table .felt{position:absolute;inset:14px;border-radius:120px;border:1px solid #35473e;background:#22392f;}
+  .cards{position:absolute;left:50%;top:78px;transform:translateX(-50%);display:flex;gap:6px;}
+  .card{width:34px;height:48px;border:1.5px solid #7a8290;border-radius:4px;background:#2c313a;display:flex;align-items:center;justify-content:center;font-size:10px;color:#8b93a2;}
+  .card.up{background:#e8e4d8;color:#333;border-color:#c9c4b4;}
+  .pot{position:absolute;left:50%;top:30px;transform:translateX(-50%);font-size:11px;color:#d9b96c;}
+  .chipstack{position:absolute;width:26px;height:18px;border:1.5px solid #8a92a0;border-radius:50%/40%;background:#333945;}
+  .btn-d{position:absolute;width:20px;height:20px;border:1.5px solid #d9b96c;border-radius:50%;color:#d9b96c;font-size:10px;display:flex;align-items:center;justify-content:center;}
+  /* 座位卡 */
+  .seat{position:absolute;width:150px;border:1.5px solid #5a6270;border-radius:8px;background:#262a31;padding:5px 7px;font-size:11px;}
+  .seat .nm{color:#e2e6ec;font-weight:600;font-size:12px;}
+  .seat .tag{color:#7d8695;font-size:10px;}
+  .seat .chips{color:#d9b96c;}
+  .seat .wear{color:#7fd0b2;}
+  .seat .act{display:inline-block;margin-top:2px;padding:0 5px;border:1px solid #4a5160;border-radius:8px;font-size:10px;color:#9aa3b0;}
+  .seat.me{border-color:#4fae8d;width:220px;}
+  .seat .ava{float:left;width:30px;height:30px;border:1.5px solid #6a7280;border-radius:50%;margin-right:7px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#8b93a2;background:#2c313a;}
+  .timer{position:absolute;right:6px;top:5px;width:16px;height:16px;border:2px solid #4fae8d;border-radius:50%;border-top-color:transparent;}
+  /* 行动条 */
+  .actions{position:absolute;right:16px;bottom:14px;width:330px;height:72px;}
+  .abtn{position:absolute;bottom:0;height:34px;border:1.5px solid #7a8290;border-radius:8px;background:#2c313a;color:#dfe3ea;font-size:13px;display:flex;align-items:center;justify-content:center;}
+  .quick{position:absolute;top:0;height:20px;border:1px solid #4a5160;border-radius:6px;color:#9aa3b0;font-size:10px;display:flex;align-items:center;justify-content:center;background:#262a31;}
+  .slider{position:absolute;top:26px;left:0;right:0;height:8px;border:1px solid #4a5160;border-radius:4px;}
+  .slider i{position:absolute;left:38%;top:-4px;width:14px;height:14px;border:1.5px solid #4fae8d;border-radius:50%;background:#2c313a;}
+  /* 衣柜面板 */
+  .panel{position:absolute;left:150px;top:130px;width:420px;height:330px;border:2px solid #4fae8d;border-radius:10px;background:#22262d;box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:5;}
+  .panel h4{margin:8px 12px 4px;font-size:13px;color:#8fe0c2;font-weight:600;}
+  .panel .close{position:absolute;right:8px;top:6px;width:20px;height:20px;border:1px solid #5a6270;border-radius:4px;color:#9aa3b0;font-size:11px;display:flex;align-items:center;justify-content:center;}
+  .portrait{position:absolute;left:12px;top:34px;width:150px;height:260px;border:1.5px dashed #5a6270;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:#7d8695;background:#262a31;text-align:center;line-height:1.7;}
+  .rows{position:absolute;left:174px;top:34px;right:12px;}
+  .row{height:34px;border:1px solid #454b56;border-radius:6px;margin-bottom:5px;background:#262a31;font-size:11px;display:flex;align-items:center;padding:0 8px;gap:8px;}
+  .row .ic{width:20px;height:20px;border:1px solid #6a7280;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;}
+  .row .v{margin-left:auto;color:#d9b96c;}
+  .row.gone{opacity:.38;text-decoration:line-through;}
+  .row .pawn{border:1px solid #4fae8d;color:#8fe0c2;border-radius:6px;font-size:10px;padding:1px 6px;}
+  .legend{width:1280px;margin:0 auto 30px;font-size:12px;color:#8b93a2;line-height:1.9;}
+  .legend b{color:#cfd3da;}
+</style>
+</head>
+<body>
+<div class="stage">
+  <!-- 顶带 -->
+  <div class="zone" style="left:14px;top:12px;width:170px;height:34px;"><b>盲注牌</b> 25/50 · 第 12 手</div>
+  <div class="zone" style="left:560px;top:12px;width:160px;height:34px;text-align:center;"><b>POT 1,275</b></div>
+  <div class="zone" style="right:14px;top:12px;width:96px;height:34px;text-align:center;">⚙ 菜单 · 🔊</div>
+
+  <!-- 3D 视口示意：牌桌 + 公共牌 + 底池 -->
+  <div class="table"><div class="felt"></div>
+    <div class="pot">底池筹码（物理堆）</div>
+    <div class="chipstack" style="left:225px;top:44px;"></div>
+    <div class="chipstack" style="left:250px;top:50px;"></div>
+    <div class="cards">
+      <div class="card up">♠A</div><div class="card up">♥K</div><div class="card up">♦7</div><div class="card">转</div><div class="card">河</div>
+    </div>
+    <div class="btn-d" style="left:392px;top:196px;">D</div>
+    <!-- 座位前下注区示意 -->
+    <div class="chipstack" style="left:70px;top:180px;"></div>
+    <div class="chipstack" style="left:410px;top:60px;"></div>
+  </div>
+  <div class="note" style="left:395px;top:458px;">3D 俯视视口（正交固定相机·game-d 配方）：桌/六凳/筹码物理/发牌演出</div>
+
+  <!-- 对手座位卡 P1~P5（顺时针：东南→东北→北→西北→西南） -->
+  <div class="seat" style="right:60px;top:400px;"><div class="ava">像</div><div class="nm">大姨太 <span class="tag">·岩石</span></div><div class="chips">🪙 1,850</div><div class="wear">👗×6</div><div class="act">CHECK</div></div>
+  <div class="seat" style="right:40px;top:170px;"><div class="ava">像</div><div class="nm">二姨太 <span class="tag">·紧凶</span></div><div class="chips">🪙 640</div><div class="wear">👗×6</div><div class="act">RAISE 150</div><div class="timer"></div></div>
+  <div class="seat" style="left:565px;top:96px;"><div class="ava">像</div><div class="nm">三姨太 <span class="tag">·诈唬狂</span></div><div class="chips">🪙 90</div><div class="wear">👗×4</div><div class="act">CALL</div></div>
+  <div class="seat" style="left:180px;top:170px;"><div class="ava">像</div><div class="nm">四姨太 <span class="tag">·跟注站</span></div><div class="chips">🪙 1,120</div><div class="wear">👗×6</div><div class="act">CALL</div></div>
+  <div class="seat" style="left:160px;top:400px;opacity:.45;"><div class="ava">像</div><div class="nm">五姨太 <span class="tag">·松凶</span></div><div class="chips">🪙 0</div><div class="wear">👗×0</div><div class="act">已出局</div></div>
+
+  <!-- 底带：主角 · 底牌 · 行动条 -->
+  <div class="seat me" style="left:14px;bottom:14px;"><div class="ava">我</div><div class="nm">主角（角色卡姓名） <span class="tag">·你</span></div><div class="chips">🪙 975</div> <span class="wear">👗×6（点开衣柜）</span></div>
+  <div class="zone accent" style="left:520px;bottom:14px;width:250px;height:74px;text-align:center;"><b>底牌 ♠Q ♠J</b>（大图）<br>牌型提示：顺子听牌<br><span style="font-size:10px;">（仅主角可见）</span></div>
+  <div class="actions">
+    <div class="quick" style="left:0;width:56px;">1/2 池</div><div class="quick" style="left:62px;width:56px;">2/3 池</div><div class="quick" style="left:124px;width:56px;">满池</div><div class="quick" style="left:186px;width:56px;">全下</div>
+    <div class="slider"><i></i></div>
+    <div class="abtn" style="left:0;width:86px;">弃牌</div>
+    <div class="abtn" style="left:94px;width:110px;">跟注 150</div>
+    <div class="abtn accent" style="left:212px;width:118px;border-color:#4fae8d;color:#8fe0c2;">加注 340</div>
+  </div>
+
+  <!-- 衣柜面板（示例：点开三姨太·对手视角只读） -->
+  <div class="panel">
+    <h4>三姨太的衣柜（对手·只读）</h4><div class="close">✕</div>
+    <div class="portrait">分层立绘区<br>（底层+件层实时合成<br>典当哪件消哪层）<br><br>未产出前=头像大图回退</div>
+    <div class="rows">
+      <div class="row gone"><div class="ic">💍</div>耳环<span class="v">100</span></div>
+      <div class="row gone"><div class="ic">🧤</div>手套<span class="v">150</span></div>
+      <div class="row"><div class="ic">🧦</div>袜子<span class="v">200</span></div>
+      <div class="row"><div class="ic">👚</div>上衣<span class="v">500</span></div>
+      <div class="row"><div class="ic">👗</div>裙子<span class="v">500</span></div>
+      <div class="row"><div class="ic">🎽</div>内衣<span class="v">1000</span></div>
+    </div>
+    <div class="note" style="left:174px;bottom:8px;">※ 自己的衣柜：行尾多「<span style="color:#8fe0c2;">换筹码</span>」按钮（示意：<span class="pawn" style="border:1px solid #4fae8d;color:#8fe0c2;border-radius:6px;padding:0 6px;">换筹码</span>）</div>
+  </div>
+</div>
+
+<div class="legend">
+  <b>《六人德州》布局线框稿 v1</b>（配套 ui-brief.md·全部元素映射 LayoutNode 现有控件闭集）<br>
+  ① 主角 P0 固定正南；大~五姨太顺时针环桌，座位卡含 姓名/性格/筹码/衣物徽章/行动气泡/倒计时环（示例：二姨太行动中）。<br>
+  ② 衣柜面板：点任意座位卡弹出——左栏分层立绘（owner 拍板逐件图层方案），右栏件目清单（对手可见件名+面值·已当置灰；自己的行尾带「换筹码」按钮→craft-recipe 原子成交）。示例展示三姨太已当耳环手套。<br>
+  ③ 行动条仅主角行动轮出现：弃牌/跟注/加注 + 加注滑杆 + 四档快捷；五姨太示例=已剥光出局态（凳暗+卡置灰）。<br>
+  ④ 3D 层演出：下注筹码物理抛入、进街扫入底池、摊牌聚光收池——均 render-only，不碰确定性。
+</div>
+</body>
+</html>
