@@ -32,15 +32,21 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": " Test Files  5 passed (5) ·       Tests  68 passed (68)",
-      "at": "2026-07-17T18:01:24.617Z",
-      "gameHash": "afa06d64daba0116"
+      "summary": " Test Files  6 passed (6) ·       Tests  72 passed (72)",
+      "at": "2026-07-17T18:23:10.297Z",
+      "gameHash": "a9d0747aca982e5f"
     },
     "S5": {
       "exit": 0,
       "summary": "AUDIT: WARNINGS · RATCHET: PASS",
       "at": "2026-07-17T17:39:11.804Z",
       "gameHash": "fdb89c8c240988a9"
+    },
+    "S3": {
+      "exit": 0,
+      "summary": "编译期游戏免 manifest 校验",
+      "at": "2026-07-17T18:23:08.423Z",
+      "gameHash": "a9d0747aca982e5f"
     }
   },
   "history": [
@@ -187,6 +193,30 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-17T18:01:24.617Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "3D 牌房骨架·引擎 load 空跑2tick 绿",
+      "at": "2026-07-17T18:23:08.423Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-07-17T18:23:08.423Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "3D 阶段1·hash变·机器侧重跑",
+      "at": "2026-07-17T18:23:08.487Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-17T18:23:10.297Z"
     }
   ],
   "outOfOrder": [
@@ -224,6 +254,16 @@
       "stage": "S4",
       "reason": "牌逻辑完整化·hash变·机器侧重跑",
       "at": "2026-07-17T18:01:23.237Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "3D 牌房骨架·引擎 load 空跑2tick 绿",
+      "at": "2026-07-17T18:23:08.423Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "3D 阶段1·hash变·机器侧重跑",
+      "at": "2026-07-17T18:23:08.487Z"
     }
   ],
   "reviews": {

@@ -412,21 +412,8 @@ function buildLogPanel(log: GameEvent[]): LayoutNode {
   };
 }
 
-// ── 牌桌主屏（组装·绝对定位坐标零改动·z 序：felt→底池→公共牌→顶带→座位→底牌→行动条→日志→衣柜）──
+// ── 牌桌主屏（UI 浮层·Screen 透明透出 scene 层 3D 牌房；桌/凳/公共牌/底池筹码=build3d render 组件）──
 export function buildTable(v: TableView): LayoutNode {
-  const feltTable: LayoutNode = {
-    type: 'Panel', id: 'c-felt', props: { bg: { custom: FELT_BG }, vignette: true, edge: 'gold' },
-    layout: { x: 210, y: 120, width: FIELD_W - 420, height: 400, radius: 200 },
-    children: [
-      { type: 'Label', id: 'c-felt-mark', props: { text: '德州夜宴', font: 'serif', size: 32, bold: true, color: 'dim' }, layout: { x: Math.round((FIELD_W - 420) / 2 - 70), y: 150, width: 140, opacity: 0.22 } },
-    ],
-  };
-  const potChips: LayoutNode = {
-    type: 'Label', id: 'c-pot-felt',
-    props: { text: `底池 ◉ ${fmt(v.pot)}`, font: 'impact', size: 20, color: 'gold', glow: true },
-    layout: { x: Math.round(FIELD_W / 2 - 80), y: 200, width: 160 },
-  };
-
   const opp = OPPONENT_ANCHORS.map((a) => {
     const sv = v.seats.find((s) => s.seat === a.seat)!;
     const { x, y } = anchorTopLeft(a);
@@ -435,12 +422,13 @@ export function buildTable(v: TableView): LayoutNode {
   const hero = v.seats.find((s) => s.isHero)!;
   const heroCard = seatCard(hero, 20, FIELD_H - 168, 236, 108);
 
+  // z 序（DOM 顺序）：顶带 → 座位卡/底牌/行动条浮层（透出身后 3D 牌房）→ 日志/衣柜最上。
   const children: LayoutNode[] = [
-    feltTable, potChips, buildBoard(v), buildTopBar(v),
-    ...opp, heroCard, buildHeroCards(v), buildActionBar(v),
+    buildTopBar(v), ...opp, heroCard, buildHeroCards(v), buildActionBar(v),
   ];
   if (v.showLog) children.push(buildLogPanel(v.log));
   if (v.openWardrobe !== null && v.wardrobe) children.push(buildWardrobe(v.wardrobe));
 
-  return { type: 'Screen', id: 'c-table', props: {}, layout: { width: FIELD_W, height: FIELD_H }, children };
+  // Screen bg transparent → 露出 scene 层 3D 牌房（桌/六凳/公共牌/底池筹码=build3d render 组件）。
+  return { type: 'Screen', id: 'c-table', props: { bg: 'transparent' }, layout: { width: FIELD_W, height: FIELD_H }, children };
 }

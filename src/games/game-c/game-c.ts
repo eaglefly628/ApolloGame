@@ -10,11 +10,14 @@
 import { mountHost } from '@engine/host/mount-host.js';
 import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap } from '@ui/components/index.js';
+import { Engine } from '../../runtime/engine.js';
+import { ThreeRenderer } from '@renderer/three-renderer.js';
 import { FIELD_W, FIELD_H, ROOM_BG, WRAPPER_BG, GAME_C_THEME, OPPONENT_ANCHORS, HAND_NAME_CN } from './theme.js';
 import { buildTable, buildMenu, type TableView, type SeatView, type WardrobeView, type MenuView } from './hud.js';
 import { CLOTHING_ITEMS } from './wardrobe.js';
 import { legalActions, type BettingConfig } from './betting-engine.js';
-import { replayDemoHand, type GameEvent } from './game-log.js';
+import { replayDemoHand } from './game-log.js';
+import { build3DTableBlueprint } from './build3d.js';
 
 const CFG: BettingConfig = { smallBlind: 25, bigBlind: 50 }; // GDD §11.5-1 现金局默认盲注
 const DEMO_SEED = 20260717; // 素坯定格种子（确定性·同种子同牌面同日志）
@@ -27,8 +30,17 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   const skel = mountHost(container, {
     fieldW: FIELD_W, fieldH: FIELD_H, sceneBackground: ROOM_BG, wrapperBackground: WRAPPER_BG,
   });
-  const { overlayHost } = skel;
-  overlayHost.style.pointerEvents = 'auto'; // 素坯全走浮层 host（3D 画布渲染线 M3 接）
+  const { scene, overlayHost } = skel;
+  overlayHost.style.pointerEvents = 'auto'; // UI 浮层（透明区透出 scene 层 3D 牌房）
+
+  // ── 3D 牌房（capability-plan §4-e·render-only·ThreeRenderer 消费·渲染线本体归 P3D 我只接线）─────
+  const engine = new Engine();
+  engine.load(build3DTableBlueprint());
+  const renderer = new ThreeRenderer({ width: FIELD_W, height: FIELD_H, background: 0x140c08, antialias: false, dprCap: 1.5, shadowMapSize: 1024 });
+  engine.attachRenderer(renderer, scene);
+  let running = false;
+  const start3D = (): void => { if (!running) { engine.start(); running = true; } };
+  const stop3D = (): void => { if (running) { engine.stop(); running = false; } };
 
   // ── M1 逻辑核 replay（确定性定格 + 游戏日志事件流·查 bug）─────────────────────
   const { st, deal, flop, heroHandType, events } = replayDemoHand(DEMO_SEED, CFG);
@@ -86,11 +98,11 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   const remount = (): void => { ui?.(); ui = mountUI(overlayHost, tree(), handlers, GAME_C_THEME); };
 
   const handlers: HandlerMap = {
-    // 屏切换（remount）
-    start_game: () => { screen = 'table'; remount(); },
-    continue_game: () => { screen = 'table'; remount(); },
-    back_menu: () => { screen = 'menu'; openWardrobe = null; showLog = false; remount(); },
-    menu_open: () => { screen = 'menu'; openWardrobe = null; showLog = false; remount(); }, // ⚙/设置 → 回主菜单（launcher 壳退出另走 overlay 菜单）
+    // 屏切换（remount·进桌 start 3D 渲染·回菜单 stop 省算力）
+    start_game: () => { screen = 'table'; start3D(); remount(); },
+    continue_game: () => { screen = 'table'; start3D(); remount(); },
+    back_menu: () => { screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); remount(); },
+    menu_open: () => { screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); remount(); }, // ⚙/设置 → 回主菜单（launcher 壳退出另走 overlay 菜单）
     // 牌桌屏内更新（update）
     sound_toggle: () => { muted = !muted; rerender(); },
     toggle_log: () => { showLog = !showLog; rerender(); },
@@ -112,5 +124,5 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   void host; // launcher 壳退出钩子（游戏内经 ⚙ 回主菜单；壳级退出由 launcher overlay 菜单接）
 
   ui = mountUI(overlayHost, buildMenu(menuView()), handlers, GAME_C_THEME);
-  return () => { ui?.(); skel.teardown(); };
+  return () => { stop3D(); ui?.(); skel.teardown(); };
 }
