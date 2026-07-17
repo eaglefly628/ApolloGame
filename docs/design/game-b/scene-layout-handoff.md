@@ -104,6 +104,11 @@ t2.5  立绘滑出·灯光复位·镜头回主机位 → 下一局发牌
 
 ## 六、资产位清单（S6 台账线对接·女性向二次元风格锚）
 
+> **⭐ 占位包（S3-S5 施工用·美术已备料·PE-B 必读）**：`docs/design/art-placeholders-riichi-mahjong.md`（PA 2026-07-16·CC0 全套可商用）——
+> **牌组全套现成**：34 种×4+红五+背/面/空，双格式=`mahjong/<牌>`（SVG·2D UI）+ `mahjong/tex/<牌>`（PNG·3D 立方体贴面 albedo）；3D 牌=货架 `mesh/cube` 压牌比例+`Material3D` 正面贴 PNG（**免建模**）。
+> **接法**：`node scripts/vendor-asset.mjs mahjong/tex/man-1 game-b`（copy 进本游戏 `art/`·**不直引货架**）。**骰子**：复用 `game-g/clash-dice-3d.ts`/`game-d/throw3d.ts` 现成 3D 骰（摆数据）。**缺口三件**（牌模 glb/点棒/牌桌）=程序化（P3D 域会审），全不外扒 GLB。
+> 台账纪律：占位=placeholder 真相入账（provenance CC0·FluffyStuff）；S6 真美术**保号逐行替换**，下表行号即台账位次。
+
 | 组 | 件 | 数量口径 |
 |---|---|---|
 | 桌面组 | 桌体/桌呢/座垫/点棒托/点棒三档/骰面 | ~8 |
