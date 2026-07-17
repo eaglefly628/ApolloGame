@@ -36,6 +36,7 @@ export interface RoundState {
   turn: number; // 当前行动 seat
   drawn: number | null; // 当前 turn 刚摸的牌（待打）；null=已打待下家摸
   lastDiscard: number | null; // 最近打出的牌（荣和/UI 高亮）
+  riichi: boolean[]; // 四家是否已立直（立直后锁摸切·§3 加立直役/一发/裏宝）
   phase: Phase;
   result: RoundResult | null;
   dealer: number;
@@ -100,6 +101,7 @@ export function startRound(m: MatchState): void {
     turn: m.dealer,
     drawn: null,
     lastDiscard: null,
+    riichi: [false, false, false, false],
     phase: 'playing',
     result: null,
     dealer: m.dealer,
@@ -178,10 +180,10 @@ function settleWin(m: MatchState, type: 'tsumo' | 'ron', winner: number, loser: 
     delta[loser!]! -= base;
     delta[winner]! += base;
   }
-  // 供托（立直棒）归和者
-  delta[winner]! += m.kyotaku;
+  for (let i = 0; i < 4; i++) m.scores[i]! += delta[i]!; // delta=和了点移（Σ=0 守恒）
+  // 供托（立直棒）归和者：走 scores·不计入 delta（否则破坏 delta 守恒·立直扣在 declareRiichi）
+  m.scores[winner]! += m.kyotaku;
   m.kyotaku = 0;
-  for (let i = 0; i < 4; i++) m.scores[i]! += delta[i]!;
   rs.result = { type, winner, loser, winTile: tile, delta, handSnapshot: winHand };
   rs.phase = 'win';
   m.log.push({ round: roundName(m), actor: m.seatNames[winner]!, kind: type, text: `${type === 'tsumo' ? '自摸' : '荣和'} ${labelTile(tile)}${loser !== null ? `（放铳=${m.seatNames[loser]}）` : ''}`, tile });
@@ -231,6 +233,17 @@ function ryuukyoku(m: MatchState): void {
   if (delta.some((d) => d !== 0)) m.log.push({ round: roundName(m), actor: '系统', kind: 'score', text: `罚符 ${delta.map((d, i) => `${m.seatNames[i]}${d >= 0 ? '+' : ''}${d}`).join(' ')}` });
 }
 
+/** 整场终局收尾：残供托（立直棒）归第 1 位（gdd）+ 置 over → 终局点数守恒。 */
+function finishMatch(m: MatchState): void {
+  if (m.kyotaku > 0) {
+    const lead = m.scores.indexOf(Math.max(...m.scores));
+    m.scores[lead]! += m.kyotaku;
+    m.kyotaku = 0;
+    m.log.push({ round: roundName(m), actor: '系统', kind: 'score', text: `残供托 ${m.kyotaku} 归第1位 ${m.seatNames[lead]}` });
+  }
+  m.over = true;
+}
+
 /** 一局终 → 连庄判定 + 进局 / 整场终（东4 打完 / 击飞<0）。返回是否整场结束。 */
 export function nextRound(m: MatchState): boolean {
   const rs = m.cur;
@@ -239,8 +252,8 @@ export function nextRound(m: MatchState): boolean {
   const dealerKept = r.type === 'draw' ? !!r.tenpaiFlags?.[m.dealer] : r.winner === m.dealer;
   // 击飞（gdd ⚙ 点数<0 即全场终）
   if (m.scores.some((s) => s < 0)) {
-    m.over = true;
     m.log.push({ round: roundName(m), actor: '系统', kind: 'info', text: '击飞·整场终局' });
+    finishMatch(m);
     return true;
   }
   if (dealerKept) {
@@ -249,8 +262,8 @@ export function nextRound(m: MatchState): boolean {
   } else {
     m.honba = 0;
     if (m.roundNo >= 4) { // 东4 非连庄打完 → 终局
-      m.over = true;
       m.log.push({ round: roundName(m), actor: '系统', kind: 'info', text: '东风战终局' });
+      finishMatch(m);
       return true;
     }
     m.roundNo++;
@@ -296,10 +309,47 @@ export function aiChooseDiscard(m: MatchState): number {
   return worst;
 }
 
-/** 当前 turn 走一步 AI（自摸则宣·否则选牌打）。用于 AI 席 + headless walkthrough。 */
+/** 当前 turn 能否立直（门清·听牌·持点≥1000·牌山≥4·未立直；简版=无副露即门清）。 */
+export function canRiichi(m: MatchState): boolean {
+  const rs = m.cur;
+  const t = rs.turn;
+  if (rs.phase !== 'playing' || rs.drawn === null || rs.riichi[t] || m.scores[t]! < 1000 || rs.wall.length < 4) return false;
+  const full = [...rs.hands[t]!, rs.drawn];
+  for (const x of new Set(full)) { // 存在一打法使 13 张听牌
+    const rest = [...full];
+    rest.splice(rest.indexOf(x), 1);
+    if (tenpai(rest).length > 0) return true;
+  }
+  return false;
+}
+
+/** 宣立直（简版：自动选一个使听牌的打法·扣 1000 进供托·标记锁·打出宣言牌·§3 加立直役/一发/裏宝）。 */
+export function declareRiichi(m: MatchState): void {
+  if (!canRiichi(m)) return;
+  const rs = m.cur;
+  const t = rs.turn;
+  const full = [...rs.hands[t]!, rs.drawn!];
+  let tile: number | null = null;
+  for (const x of new Set(full)) {
+    const rest = [...full];
+    rest.splice(rest.indexOf(x), 1);
+    if (tenpai(rest).length > 0) { tile = x; break; }
+  }
+  if (tile === null) return;
+  rs.riichi[t] = true;
+  m.scores[t]! -= 1000;
+  m.kyotaku += 1000;
+  m.log.push({ round: roundName(m), actor: m.seatNames[t]!, kind: 'riichi', text: '立直！（-1000 供托）' });
+  discard(m, tile); // 打出立直宣言牌
+}
+
+/** 当前 turn 走一步 AI（自摸→宣；立直后→锁摸切；听牌→立直；否则进张打）。AI 席 + headless walkthrough 用。 */
 export function aiTurn(m: MatchState): void {
-  if (m.cur.phase !== 'playing') return;
+  const rs = m.cur;
+  if (rs.phase !== 'playing') return;
   if (canTsumo(m)) { declareTsumo(m); return; }
+  if (rs.riichi[rs.turn]) { discard(m, rs.drawn!); return; } // 立直后锁摸切
+  if (canRiichi(m)) { declareRiichi(m); return; } // 门清听牌→立直（记债换 t2-behavior-tree 人设概率）
   discard(m, aiChooseDiscard(m));
 }
 

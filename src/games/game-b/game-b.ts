@@ -13,9 +13,9 @@ import { buildTableBlueprint } from './blueprint.js';
 import { createGameBAssets } from './assets.js';
 import { buildMenu, initialMenu, MENU_START, MENU_CONTINUE, MENU_SETTINGS } from './menu.js';
 import {
-  startMatch, aiTurn, discard, declareTsumo, canTsumo, nextRound, isPlayerTurn, isWinLikeEnd,
+  startMatch, aiTurn, discard, declareTsumo, canTsumo, declareRiichi, nextRound, isPlayerTurn, isWinLikeEnd,
 } from './core/game-state.js';
-import { buildPlayHud, PLAY_TILE, ACT_TSUMO, NEXT_ROUND, TOGGLE_LOG, BACK_MENU } from './play-ui.js';
+import { buildPlayHud, PLAY_TILE, ACT_TSUMO, ACT_RIICHI, NEXT_ROUND, TOGGLE_LOG, BACK_MENU } from './play-ui.js';
 import { FIELD_W, FIELD_H, MENU_W, MENU_H, MENU_BG, SAKURA, NIGHT, TINT } from './theme.js';
 
 // 开局 seed（gdd §十二·SessionIn.seed 缺省时钟种子入参化·S3 固定值可复现）。
@@ -78,6 +78,7 @@ export function mount(container: HTMLElement): () => void {
     const handlers: HandlerMap = {
       [PLAY_TILE]: (arg?: string) => { if (isPlayerTurn(match) && arg != null) { discard(match, Number(arg)); render(); scheduleAi(); } },
       [ACT_TSUMO]: () => { if (canTsumo(match)) { declareTsumo(match); render(); } },
+      [ACT_RIICHI]: () => { declareRiichi(match); render(); scheduleAi(); }, // 内含 canRiichi 门·宣言牌打出后推进
       [NEXT_ROUND]: () => { if (!match.over) { nextRound(match); render(); scheduleAi(); } },
       [TOGGLE_LOG]: () => { logOpen = !logOpen; render(); },
       [BACK_MENU]: () => showMenu(),

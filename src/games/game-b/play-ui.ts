@@ -3,12 +3,13 @@
 // 手牌交互在 HUD（可靠·守铁律）；3D 牌桌=氛围场景。视觉素皮（sakura）·1:1 精修留 S5。
 import type { LayoutNode } from '@ui/components/index.js';
 import type { MatchState } from './core/game-state.js';
-import { canTsumo, labelTile, seatWind, isWinLikeEnd, CLOTH_LABELS, STRIP_ITEMS } from './core/game-state.js';
+import { canTsumo, canRiichi, labelTile, seatWind, isWinLikeEnd, CLOTH_LABELS, STRIP_ITEMS } from './core/game-state.js';
 import { doraFromIndicator } from './core/wall.js';
 import { FIELD_W, FIELD_H } from './theme.js';
 
 export const PLAY_TILE = 'play-tile'; // arg=牌码
 export const ACT_TSUMO = 'act-tsumo';
+export const ACT_RIICHI = 'act-riichi';
 export const NEXT_ROUND = 'next-round';
 export const TOGGLE_LOG = 'toggle-log';
 export const BACK_MENU = 'back-menu';
@@ -39,7 +40,7 @@ function seatCard(m: MatchState, seat: number): LayoutNode {
           {
             type: 'Panel', id: `seat-${seat}-nm`, props: { bare: true }, layout: { direction: 'column', gap: 1, flex: 1 },
             children: [
-              { type: 'Label', id: `seat-${seat}-name`, props: { text: `${m.seatNames[seat]}${isDealer ? '·庄' : ''}`, size: 'sm', bold: true } },
+              { type: 'Label', id: `seat-${seat}-name`, props: { text: `${m.seatNames[seat]}${isDealer ? '·庄' : ''}${m.cur.riichi[seat] ? '·立直' : ''}`, size: 'sm', bold: true, color: m.cur.riichi[seat] ? 'danger' : 'text' } },
               { type: 'Label', id: `seat-${seat}-pts`, props: { text: m.scores[seat]!.toLocaleString('en-US'), size: 'sm', bold: true, color: 'danger' } },
             ],
           },
@@ -78,9 +79,10 @@ function playerHand(m: MatchState): LayoutNode {
   const rs = m.cur;
   const hand = rs.hands[0]!;
   const canPlay = rs.turn === 0 && rs.drawn !== null && rs.phase === 'playing';
+  const locked = rs.riichi[0]; // 立直后锁手牌·只能摸切（打 drawn）
   const tiles: LayoutNode[] = hand.map((c, i): LayoutNode => ({
     type: 'Button', id: `h-${i}`,
-    props: { label: labelTile(c), kind: 'ghost', disabled: !canPlay, action: PLAY_TILE, actionArg: String(c) },
+    props: { label: labelTile(c), kind: 'ghost', disabled: !canPlay || locked, action: PLAY_TILE, actionArg: String(c) },
   }));
   if (rs.drawn !== null) {
     tiles.push({
@@ -101,7 +103,7 @@ function infoBadge(m: MatchState): LayoutNode {
     type: 'Panel', id: 'info', props: { bg: { custom: 'rgba(30,20,30,0.72)' }, dashed: true },
     layout: { x: 14, y: 12, padding: 8, gap: 3, direction: 'column' },
     children: [
-      { type: 'Label', id: 'info-l', props: { text: `東${m.roundNo}局 · ${m.honba}本場 ｜ 余牌 ${m.cur.wall.length}`, size: 'sm', color: 'jade' } },
+      { type: 'Label', id: 'info-l', props: { text: `東${m.roundNo}局 · ${m.honba}本場 ｜ 供托 ${m.kyotaku / 1000} ｜ 余牌 ${m.cur.wall.length}`, size: 'sm', color: 'jade' } },
       { type: 'Label', id: 'info-d', props: { text: `宝牌 ${dora}`, size: 'sm', color: 'gold' } },
     ],
   };
@@ -126,6 +128,7 @@ function actionBar(m: MatchState): LayoutNode {
     layout: { x: FIELD_W - 250, y: 12, direction: 'row', gap: 8 },
     children: [
       { type: 'Button', id: 'act-tsumo', props: { label: '自摸', kind: 'hero', disabled: !tsumo, action: ACT_TSUMO } },
+      { type: 'Button', id: 'act-riichi', props: { label: '立直', kind: 'primary', disabled: !canRiichi(m), action: ACT_RIICHI } },
       { type: 'Button', id: 'act-log', props: { label: '📜 日志', kind: 'quiet', action: TOGGLE_LOG } },
       { type: 'Button', id: 'act-menu', props: { label: '☰', kind: 'quiet', action: BACK_MENU } },
     ],
