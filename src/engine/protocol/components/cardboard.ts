@@ -8,7 +8,7 @@ import type { Component, EntityId } from '../../core/types.js';
 // 相位状态机：idle（读点击选格/发起交换）→ swapped（首扫，无连线则回退）→ match（找≥3连线）
 // → clear（按 kindResource 发 ResourceModify 产料/币、置 -1）→ fall（按列下沉）→ refill（顶部确定性随机补）
 // → match（连锁）…稳定无连线 → idle。确定性：整数网格 + RandomSeed 整数 PRNG 补块，不碰浮点超越函数。
-// 产出走现成 ResourceModify → resource-apply 结算 → game-c 升级/换装链自动点亮（游戏数据不动一行）。
+// 产出走现成 ResourceModify → resource-apply 结算 → 游戏装配好的升级/解锁链自动点亮（游戏数据不动一行）。
 export interface MatchBoard extends Component {
   readonly type: 'MatchBoard';
   cols: number;

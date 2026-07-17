@@ -43,16 +43,16 @@ describe('T2 clickable — metadata', () => {
 describe('T2 clickable — 无相机：屏幕即世界', () => {
   it('命中 → 在命中实体上产出 Signal{name:action,source:自身}', () => {
     const w = worldWithClickable();
-    box(w, 'btn', 100, 100, 80, 40, 'craft_apron');
+    box(w, 'btn', 100, 100, 80, 40, 'craft_sword');
     setInput(w, [down(100, 100)]);
     w.tick();
-    expect(sig(w, 'btn')).toBe('craft_apron');
+    expect(sig(w, 'btn')).toBe('craft_sword');
     expect(w.getComponent<Signal>('btn', 'Signal')?.source).toBe('btn');
   });
 
   it('未命中（点在框外）→ 无 Signal', () => {
     const w = worldWithClickable();
-    box(w, 'btn', 100, 100, 80, 40, 'craft_apron');
+    box(w, 'btn', 100, 100, 80, 40, 'craft_sword');
     setInput(w, [down(500, 500)]);
     w.tick();
     expect(w.hasComponent('btn', 'Signal')).toBe(false);

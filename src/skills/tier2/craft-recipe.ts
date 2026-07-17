@@ -10,7 +10,7 @@ import { buildConditionLookup } from './condition.js';
 //   ② 成交：原子地扣全部 costs + 加全部 gains（各自钳进上下限）+ 置 grantsFlag + 设 grantsState。
 //
 // 这覆盖两条同源需求：
-//   - REQ-C-003「主动缝制」：点缝制→Signal→若材料够则扣多料 + 解锁该衣服（grantsFlag/grantsState）。
+//   - REQ-C-003「主动合成」：点合成→Signal→若材料够则扣多料 + 解锁对应产物（grantsFlag/grantsState）。
 //   - R14「选项批量改值」：costs 留空、gains=[{好感,+5},{事业,+2}]，一个 tick 原子改多项（不必一实体多组件）。
 // 它是 effect-apply.modify-resource（无条件、单项）的条件化/原子化/多项化超集。
 //
@@ -28,7 +28,7 @@ export const craftRecipeCapability = defineCapability({
     whenToUse:
       '想让一个信号触发「花费换取」或「一次改多项数值」而不写游戏代码时。挂 CraftRecipe{onSignal,costs,gains?,grantsFlag?,grantsState?}。可负担才成交=商店/合成；costs 留空=纯批量改值。',
     examples: [
-      '主动缝制：CraftRecipe{ onSignal:"craft_apron", costs:[{id:"cloth",amount:8}], grantsFlag:"apron_unlocked" }',
+      '主动合成：CraftRecipe{ onSignal:"craft_sword", costs:[{id:"iron",amount:8}], grantsFlag:"sword_unlocked" }',
       '选项批量改值：CraftRecipe{ onSignal:"choose_kind", costs:[], gains:[{id:"affection_S",amount:5},{id:"career",amount:2}] }',
       '以物易物：CraftRecipe{ onSignal:"trade", costs:[{id:"wood",amount:3}], gains:[{id:"plank",amount:1}] }',
     ],

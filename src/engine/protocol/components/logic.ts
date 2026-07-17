@@ -137,7 +137,7 @@ export interface Effect extends Component {
 }
 
 // ── craft-recipe ── 配方/经济：信号到达且所有 costs 可负担时，**原子地**扣全部料 + 产出 gains + 置 flag/state。
-// 「可负担才成交，否则整单不动」(REQ-C-003 主动缝制/商店/合成/建造) + 「一次原子改多项资源」(R14 选项批量改值)
+// 「可负担才成交，否则整单不动」(REQ-C-003 主动合成/商店/建造) + 「一次原子改多项资源」(R14 选项批量改值)
 // 归一为一个经济/批量改值 capability。effect-apply 的 modify-resource 是无条件单项加减；本能力是它的
 // 条件化、原子化、多项化超集。跑在 Commit 阶段（消费 Update 产的 Signal）。确定性：只读/写确定数值。
 export interface CraftRecipe extends Component {

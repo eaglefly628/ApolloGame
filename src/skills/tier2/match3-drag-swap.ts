@@ -124,7 +124,7 @@ export const match3DragSwapCapability = defineCapability({
     whenToUse:
       '给三消棋盘加「按住一格朝邻格滑动=交换」的移动端主手势。BoardCell 需配 Clickable{action:selectAction, phase:"down"}（三消默认相位·按下即选中起点格）+ Transform + Shape（命中体）；壳层 PointerInputSource 自动把超阈拖拽合成 drag 动作。本能力只补邻格选中，交换判定/回退全在 t3-match3-board。',
     examples: [
-      '缝纫三消：BoardCell{...}+Clickable{action:"cell",phase:"down"}；按 (col,row) 格向右滑过 0.4 格 → 在右邻格发 Signal"cell" → idle 判相邻 → 交换',
+      '材料三消：BoardCell{...}+Clickable{action:"cell",phase:"down"}；按 (col,row) 格向右滑过 0.4 格 → 在右邻格发 Signal"cell" → idle 判相邻 → 交换',
       '斜向滑（右下、右分量更大）→ 取横轴主轴 → 与右邻格交换；未过阈值 → 不发邻格信号，起点格仍选中（点选）',
     ],
   },

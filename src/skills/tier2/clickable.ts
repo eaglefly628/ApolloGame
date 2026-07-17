@@ -1,7 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { Transform, Shape, Sprite, Signal, InputQueue, Clickable, Flag } from '@engine/protocol/components.js';
 
-// clickable —— 通用「可点击实体」：指针命中 → 配置好的 Signal（REQ-C-002，三游戏共需的输入→逻辑桥）。
+// clickable —— 通用「可点击实体」：指针命中 → 配置好的 Signal（REQ-C-002，多游戏共需的输入→逻辑桥）。
 //
 // 每个想被点的实体挂 Clickable{action, phase?} + Transform + Shape。系统每 tick：
 //   ① 读单例 InputQueue 的指针事件（**世界坐标**——逆投影已由输入采集层 PointerInputSource 在本地、入网前完成）。
@@ -9,7 +9,7 @@ import type { Transform, Shape, Sprite, Signal, InputQueue, Clickable, Flag } fr
 //   ③ 对所有 Clickable 实体做 AABB 命中，取**最上层**（zOrder 最大，并列取 id 最小→确定性）。
 //   ④ 在命中实体上产出 Signal{name:action, source:命中实体}。
 //
-// 这样「点缝制按钮→Signal→craft-recipe 扣料」「点格子→Signal→match3 选中/交换」「点选项→Signal→对话推进」
+// 这样「点购买按钮→Signal→craft-recipe 扣料」「点格子→Signal→match3 选中/交换」「点选项→Signal→对话推进」
 // 全是纯数据接线，没有任何游戏写命中测试代码。下游照常 query('Signal') 按名消费。
 //
 // 信号生命周期：本系统每 tick 先清掉挂在 Clickable 实体上的旧 Signal，再按本帧命中重标（自包含、幂等）。
@@ -29,7 +29,7 @@ export const clickableCapability = defineCapability({
     whenToUse:
       '想让「点某个世界实体」产生一个信号而不写命中测试代码时。挂 Clickable{action,phase?}；下游 query Signal 按名消费（接 effect-apply / craft-recipe / match3 / 对话选项）。',
     examples: [
-      '缝制按钮：Clickable{ action:"craft_apron" } → 点中发 Signal"craft_apron" → craft-recipe 扣料',
+      '合成按钮：Clickable{ action:"craft_sword" } → 点中发 Signal"craft_sword" → craft-recipe 扣料',
       '三消格子：Clickable{ action:"cell" } → 点中发 Signal"cell"（source=该格实体）→ match3 选中/交换',
       '抬起触发：Clickable{ action:"release", phase:"up" } → 仅指针抬起命中时发',
     ],

@@ -4,9 +4,9 @@ import { NullAishePort, HttpAishePort } from './index.js';
 describe('AIGP NullAishePort（REQ-C-004，表现层旁路）', () => {
   it('即时返回 ready 占位句柄，回显提示词，记录日志', async () => {
     const port = new NullAishePort();
-    const h = await port.generate('a girl in a linen apron dress, 9:16', { aspect: '9:16' });
+    const h = await port.generate('a knight in silver armor, 9:16', { aspect: '9:16' });
     expect(h.status).toBe('ready');
-    expect(h.prompt).toContain('linen apron');
+    expect(h.prompt).toContain('silver armor');
     expect(h.url).toBeTruthy();
     expect(port.log).toHaveLength(1);
   });

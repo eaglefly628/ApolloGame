@@ -50,35 +50,35 @@ describe('T2 craft-recipe — metadata', () => {
 describe('T2 craft-recipe — 可负担才成交（REQ-C-003）', () => {
   it('够料 → 扣料 + 置 flag', () => {
     const w = worldWithCraft();
-    res(w, 'cloth', 10);
-    flag(w, 'apron_unlocked', false);
-    recipe(w, 'r1', { onSignal: 'craft_apron', costs: [{ id: 'cloth', amount: 8 }], grantsFlag: 'apron_unlocked' });
-    signal(w, 'craft_apron');
+    res(w, 'iron', 10);
+    flag(w, 'sword_unlocked', false);
+    recipe(w, 'r1', { onSignal: 'craft_sword', costs: [{ id: 'iron', amount: 8 }], grantsFlag: 'sword_unlocked' });
+    signal(w, 'craft_sword');
     w.tick();
-    expect(val(w, 'cloth')).toBe(2);
-    expect(flagOn(w, 'apron_unlocked')).toBe(true);
+    expect(val(w, 'iron')).toBe(2);
+    expect(flagOn(w, 'sword_unlocked')).toBe(true);
   });
 
   it('不够料 → 整单不动（不扣、不置 flag）', () => {
     const w = worldWithCraft();
-    res(w, 'cloth', 5);
-    flag(w, 'apron_unlocked', false);
-    recipe(w, 'r1', { onSignal: 'craft_apron', costs: [{ id: 'cloth', amount: 8 }], grantsFlag: 'apron_unlocked' });
-    signal(w, 'craft_apron');
+    res(w, 'iron', 5);
+    flag(w, 'sword_unlocked', false);
+    recipe(w, 'r1', { onSignal: 'craft_sword', costs: [{ id: 'iron', amount: 8 }], grantsFlag: 'sword_unlocked' });
+    signal(w, 'craft_sword');
     w.tick();
-    expect(val(w, 'cloth')).toBe(5);
-    expect(flagOn(w, 'apron_unlocked')).toBe(false);
+    expect(val(w, 'iron')).toBe(5);
+    expect(flagOn(w, 'sword_unlocked')).toBe(false);
   });
 
   it('多项成本原子性：一项不够 → 全部不扣', () => {
     const w = worldWithCraft();
-    res(w, 'cloth', 10);
-    res(w, 'thread', 2);
-    recipe(w, 'r1', { onSignal: 'craft', costs: [{ id: 'cloth', amount: 5 }, { id: 'thread', amount: 5 }] });
+    res(w, 'iron', 10);
+    res(w, 'wood', 2);
+    recipe(w, 'r1', { onSignal: 'craft', costs: [{ id: 'iron', amount: 5 }, { id: 'wood', amount: 5 }] });
     signal(w, 'craft');
     w.tick();
-    expect(val(w, 'cloth')).toBe(10); // 未扣（thread 不够 → 整单回滚）
-    expect(val(w, 'thread')).toBe(2);
+    expect(val(w, 'iron')).toBe(10); // 未扣（wood 不够 → 整单回滚）
+    expect(val(w, 'wood')).toBe(2);
   });
 });
 
@@ -119,10 +119,10 @@ describe('T2 craft-recipe — grantsState / 无信号 / 钳制', () => {
 
   it('无信号 → 什么都不做', () => {
     const w = worldWithCraft();
-    res(w, 'cloth', 10);
-    recipe(w, 'r1', { onSignal: 'craft', costs: [{ id: 'cloth', amount: 8 }] });
+    res(w, 'iron', 10);
+    recipe(w, 'r1', { onSignal: 'craft', costs: [{ id: 'iron', amount: 8 }] });
     w.tick(); // 无 signal
-    expect(val(w, 'cloth')).toBe(10);
+    expect(val(w, 'iron')).toBe(10);
   });
 
   it('扣到 min 边界仍可负担（current-amount===min）', () => {

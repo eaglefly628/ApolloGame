@@ -25,7 +25,7 @@ import { randomInt } from '@atom-skills/index.js';
 //   · 格层：jelly（果冻·参与消除减层）· blockers（>0=hp 邻接减；-1=石块不可动不可消·重力/补块绕行）。
 //
 //  产出走现成 ResourceModify（写到各材料自己的 Resource 实体）→ resource-apply 结算 → 游戏已装配好的
-//  升级/换装/展示链自动点亮，游戏数据不动一行。视图格（BoardCell）由游戏蓝图静态建好，本能力只改其外观、不增删实体。
+//  升级/解锁/展示链自动点亮，游戏数据不动一行。视图格（BoardCell）由游戏蓝图静态建好，本能力只改其外观、不增删实体。
 //  确定性：整数网格 + 大小比较 + RandomSeed（mulberry32 整数 PRNG）→ lockstep/录放安全。
 // ═══════════════════════════════════════════════════════════════
 
@@ -575,7 +575,7 @@ export const match3BoardCapability = defineCapability({
     whenToUse:
       '三消/连连看/网格解谜（含糖果传奇级特殊糖+果冻/障碍格层）。挂 MatchBoard 单例（config+cells+相位）+ RandomSeed；视图格 BoardCell+Clickable+Color+Text 由蓝图静态建。点格→clickable 发选中信号→本能力选/换/消，产料/减层/扣步走 ResourceModify → 胜负走现成 Condition。',
     examples: [
-      '6 色 8×8 缝纫三消：MatchBoard{ cols:8,rows:8,kindCount:6, kindResource:[...6 材料 id], coinResource:"coin", coinPerTile:1 }',
+      '6 色 8×8 材料三消：MatchBoard{ cols:8,rows:8,kindCount:6, kindResource:[...6 材料 id], coinResource:"coin", coinPerTile:1 }',
       '4 连生成条纹（stripedOrientation:"perpendicular"），L/T 生成包装糖，5 连生成彩球；引爆走行/列/3×3/全色',
       '格层：jelly:[0,1,2,…] 果冻减层写 jellyResource；blockers:[…-1 石块/2 障碍] 邻接减 hp 写 blockerResource → Condition 判胜负',
     ],
