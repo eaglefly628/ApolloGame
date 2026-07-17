@@ -30,6 +30,12 @@
       "summary": " Test Files  3 passed (3) ·       Tests  31 passed (31)",
       "at": "2026-07-17T15:34:20.578Z",
       "gameHash": "bececa756847a34f"
+    },
+    "S5": {
+      "exit": 0,
+      "summary": "AUDIT: WARNINGS · RATCHET: PASS",
+      "at": "2026-07-17T17:58:29.335Z",
+      "gameHash": "474f3bbdb702b275"
     }
   },
   "history": [
@@ -99,6 +105,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-17T15:34:20.578Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "PE-A S5 UI 1:1 复刻·ui-audit 盲区 A-007 报 PUI",
+      "at": "2026-07-17T17:58:29.284Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-07-17T17:58:29.335Z"
     }
   ],
   "reviews": {
@@ -134,6 +152,11 @@
       "stage": "S4",
       "reason": "PE-A bug 修复批·31 测全绿（含卡死回归）；复查门待另开 session",
       "at": "2026-07-17T15:34:18.494Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "PE-A S5 UI 1:1 复刻·ui-audit 盲区 A-007 报 PUI",
+      "at": "2026-07-17T17:58:29.284Z"
     }
   ]
 }

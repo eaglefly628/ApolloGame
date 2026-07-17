@@ -9,9 +9,9 @@ import { mountHost } from '@engine/host/mount-host.js';
 import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap } from '@ui/components/index.js';
 import { GuandanSession, TURN_ORDER, teamOf, FAMILY_CN, type SeatId } from './guandan-session.js';
-import { buildMenu, buildTable, buildPlay, buildResult, type SeatView, type PlayView, type ResultView, type TableView } from './hud.js';
+import { buildMenu, buildPlay, buildResult, type SeatView, type PlayView, type ResultView } from './hud.js';
 import { SEATS, DRESS_TIERS, INITIAL_FUNDS, codeSuit, codeRank } from './rules.js';
-import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG } from './theme.js';
+import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG, GAME_A_THEME } from './theme.js';
 
 const RUN_SEED = 20260717; // 骨架期固定 run 种子；生涯存档随 run 快照=后续接
 const AI_DELAY_MS = 700; // 拟人思考延迟（gdd §5·表现层·0.6~1.2s 档内取中）
@@ -93,11 +93,11 @@ export function mount(container: HTMLElement): () => void {
   // ── 渲染路由（三屏按 session.phase）───────────────────────────────────────────
   function render(): void {
     if (!session) {
-      ui?.update(buildMenu());
+      ui?.update(buildMenu(), GAME_A_THEME);
       return;
     }
-    if (session.phase === 'playing') ui?.update(buildPlay(playView(session)));
-    else ui?.update(buildResult(resultView(session)));
+    if (session.phase === 'playing') ui?.update(buildPlay(playView(session)), GAME_A_THEME);
+    else ui?.update(buildResult(resultView(session)), GAME_A_THEME);
   }
 
   // ── AI 步进（拟人延迟·递归排到 hero 轮或盘终）──────────────────────────────────
@@ -124,7 +124,7 @@ export function mount(container: HTMLElement): () => void {
   function showMenu(): void {
     stopSession();
     ui?.();
-    ui = mountUI(overlayHost, buildMenu(), handlers);
+    ui = mountUI(overlayHost, buildMenu(), handlers, GAME_A_THEME);
   }
 
   function enterTable(): void {
@@ -132,7 +132,7 @@ export function mount(container: HTMLElement): () => void {
     session = new GuandanSession({ seed: RUN_SEED, stake: 100, tier: 'l2' });
     selected = [];
     ui?.();
-    ui = mountUI(overlayHost, buildPlay(playView(session)), handlers);
+    ui = mountUI(overlayHost, buildPlay(playView(session)), handlers, GAME_A_THEME);
     scheduleAi();
   }
 
@@ -187,6 +187,12 @@ export function mount(container: HTMLElement): () => void {
         scheduleAi();
       }
     },
+    // 理牌切换（按点数/按牌型）：手牌已在 session 按点数排；牌型分组排序=后续增强（S5 视觉先接信号·切换清选避 idx 失效）。
+    'hand.sort': () => {
+      if (!session) return;
+      selected = [];
+      render();
+    },
   };
 
   showMenu();
@@ -196,15 +202,5 @@ export function mount(container: HTMLElement): () => void {
     ui?.();
     ui = null;
     skel.teardown();
-  };
-}
-
-// 骨架屏（S3 目击件·保留给单测/审计入口引用·launcher 走玩法屏）。
-export function buildSkeletonTableView(): TableView {
-  const sv = (id: SeatId): SeatView => ({ seat: SEATS.find((s) => s.id === id)!, cards: 0, dress: DRESS_TIERS });
-  return {
-    wallet: INITIAL_FUNDS, stake: 100, round: 1, levelOurs: 2, levelTheirs: 2,
-    flowState: 'table-idle', deckCount: 108,
-    partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero'),
   };
 }

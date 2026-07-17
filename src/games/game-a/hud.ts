@@ -1,12 +1,13 @@
-// Game A ·《掼蛋夜宴》—— 全部 UI = 纯 LayoutNode 数据（UI 铁律）。
-// S5 UI 关按 owner 钦定蓝本 guandan-lite-mockup.html 1:1 复刻（缺口届时提 requests.md 报 PUI）；
-// 本文件立 SC-1 主菜单壳 + 牌桌骨架屏 + S4 可玩牌桌屏（手牌扇列/操作条/中央墩/结算浮层），控件全取 catalog 闭集实名。
-// 写世界只经 action 信号；action（menu.start/table.back/hand.toggle/play.commit/pass/hint/round.next）由宿主 HandlerMap 消化，
-// handler 只做「选牌记账 + 调 session + 重渲」——不塞判型/结算逻辑（那些在 guandan-session sim 内）。
+// Game A ·《掼蛋夜宴》—— 全部 UI = 纯 LayoutNode 数据（UI 铁律·夜宴皮 GAME_A_THEME）。
+// S5 UI 关：按 owner 钦定蓝本 guandan-lite-mockup.html **1:1 复刻**（椭圆felt桌+席位环+中央墩+扇形手牌+
+// 信息条+立绘框+glass操作区·绝对定位屏幕锚点·同 game-c 夜宴牌桌先例）。三屏=SC-1 菜单 / SC-3 牌桌 / SC-4 结算。
+// 写世界只经 action 信号；action（menu.start/table.back/hand.toggle/play.commit/pass/hint/round.next/hand.sort）由宿主
+// HandlerMap 消化，handler 只做「选牌记账 + 调 session + 重渲」——不塞判型/结算逻辑（那些在 guandan-session sim 内）。
+// ui-audit 残留角标对比=light 白扑克牌+扇形叠放盲区（A-007 报 PUI·不降格·owner 两层 1:1 律=视觉 1:1）。
 import type { LayoutNode } from '@ui/components/index.js';
 import type { SeatSpec } from './rules.js';
 import { HAND_SIZE, DRESS_TIERS, codeRank, codeSuit } from './rules.js';
-import { MANOR_BG, CARD_BACK_ID, cardAssetUrl } from './theme.js';
+import { MANOR_BG, FELT_RED, FIELD_W, FIELD_H, SEAT_ANCHORS, SEAT_W, seatTopLeft } from './theme.js';
 import { FAMILY_CN, type SeatId } from './guandan-session.js';
 
 // ── 牌码 → PlayingCard props（经典白扑克面·红黑自动判）───────────────────────────
@@ -26,20 +27,6 @@ export interface SeatView {
   cards: number; // 手牌数
   dress: number; // 服饰档 0..5
 }
-export interface TableView {
-  wallet: number;
-  stake: number;
-  round: number;
-  levelOurs: number;
-  levelTheirs: number;
-  flowState: string;
-  deckCount: number; // 庄桌未发牌数（骨架=108）
-  partner: SeatView;
-  west: SeatView;
-  east: SeatView;
-  hero: SeatView;
-}
-
 const fmtMoney = (n: number): string => n.toLocaleString('en-US');
 
 // ── SC-1 主菜单壳（ui-scene-design §3 SC-1·蓝本 1:1 定稿在 S5）────────────────────
@@ -69,119 +56,50 @@ export function buildMenu(): LayoutNode {
               { type: 'Tag', id: 'a-menu-tag-3', props: { label: '级数爬 A', tone: 'normal', size: 'sm' } },
             ],
           },
-          { type: 'Button', id: 'a-menu-start', props: { label: '开始上桌 · 骨架桌（底注 100）', kind: 'primary', action: 'menu.start' } },
+          { type: 'Button', id: 'a-menu-start', props: { label: '开始上桌 · 底注 100', kind: 'hero', action: 'menu.start', sub: '与三位姨太 · 快局爬级过 A' } },
           { type: 'Button', id: 'a-menu-settings', props: { label: '设置', kind: 'ghost', disabled: true } },
-          { type: 'Label', id: 'a-menu-ver', props: { text: 'S3 骨架版 · 发牌与出牌循环于玩法关（S4）接入', size: 'xs', color: 'dim' } },
+          { type: 'Label', id: 'a-menu-ver', props: { text: '淮安标准全套 · 金钱/服饰罚 · 二次元私宅夜局', size: 'xs', color: 'dim' } },
         ],
       },
     ],
   };
 }
 
-// ── 席位卡（骨架·SC-3 席位区的最小形·S5 按蓝本重排）──────────────────────────────
-function seatCard(id: string, v: SeatView): LayoutNode {
+// ── 席位卡（蓝本 SC-3·绝对定位到屏幕锚点·圆头像金边圈 + 阵营/性格 pill + 余牌 + 表情气泡）──
+// 固定相机=固定屏幕锚点（同 game-c 先例）；active=当前出牌者金边高亮；bubble=表情/「过」气泡（可空）。
+const TRAIT_CN: Record<string, string> = { 沉稳: '稳健', 护家: '护家', 锋利: '锋利', 好胜: '好胜', 跳脱: '多变', 爱起哄: '起哄' };
+function seatCard(v: SeatView, x: number, y: number, active: boolean, bubble?: string): LayoutNode {
   const foe = v.seat.team === 1;
+  const trait = v.seat.traits?.[0] ? (TRAIT_CN[v.seat.traits[0]] ?? v.seat.traits[0]) : '';
   return {
     type: 'Panel',
-    id: `a-seat-${id}`,
-    props: {},
-    layout: { direction: 'column', align: 'center', gap: 5, padding: 10 },
+    id: `a-seat-${v.seat.id}`,
+    props: { accent: active, bg: { custom: 'linear-gradient(180deg,rgba(30,20,14,0.92),rgba(20,14,10,0.86))' } },
+    layout: { x, y, width: SEAT_W, direction: 'column', align: 'center', gap: 3, padding: 8, radius: 14 },
     children: [
-      { type: 'Avatar', id: `a-seat-${id}-face`, props: { name: v.seat.name, size: 40, shape: 'circle' } },
-      { type: 'Label', id: `a-seat-${id}-name`, props: { text: v.seat.name, size: 'sm', bold: true } },
+      // 头像金边圈（Avatar 外套圆 Panel 作阵营描边圈）
       {
         type: 'Panel',
-        id: `a-seat-${id}-row`,
+        id: `a-seat-${v.seat.id}-ring`,
+        props: { bg: foe ? { custom: 'radial-gradient(circle,#5a1f22,#2a0f11)' } : { custom: 'radial-gradient(circle,#1e4030,#14261c)' } },
+        layout: { direction: 'row', align: 'center', justify: 'center', padding: 3, radius: 40 },
+        children: [{ type: 'Avatar', id: `a-seat-${v.seat.id}-face`, props: { name: v.seat.name, size: 46, shape: 'circle' } }],
+      },
+      { type: 'Label', id: `a-seat-${v.seat.id}-name`, props: { text: v.seat.name, size: 'md', bold: true, color: 'gold' } },
+      {
+        type: 'Panel',
+        id: `a-seat-${v.seat.id}-tags`,
         props: { bare: true },
-        layout: { direction: 'row', gap: 6, align: 'center' },
+        layout: { direction: 'row', gap: 4, align: 'center', justify: 'center' },
         children: [
-          { type: 'Badge', id: `a-seat-${id}-cards`, props: { text: `余牌 ${v.cards}`, tone: 'ok' } },
-          { type: 'Tag', id: `a-seat-${id}-side`, props: { label: foe ? '对手' : '队友', tone: foe ? 'normal' : 'accent', size: 'sm' } },
+          { type: 'Tag', id: `a-seat-${v.seat.id}-side`, props: { label: foe ? '对手' : '队友', tone: foe ? 'normal' : 'accent', size: 'sm' } },
+          ...(trait ? [{ type: 'Tag' as const, id: `a-seat-${v.seat.id}-trait`, props: { label: trait, tone: 'dim' as const, size: 'sm' as const } }] : []),
         ],
       },
-      { type: 'Label', id: `a-seat-${id}-dress`, props: { text: `服饰 ${v.dress}/${DRESS_TIERS}`, size: 'xs', color: 'sub' } },
-    ],
-  };
-}
-
-// ── 牌桌骨架屏（挂载目击件：world 活值投影 + 本地牌资产上画面）────────────────────
-export function buildTable(v: TableView): LayoutNode {
-  return {
-    type: 'Screen',
-    id: 'a-table',
-    props: { bg: { custom: MANOR_BG } },
-    layout: { direction: 'column', gap: 10, padding: 16, justify: 'between' },
-    children: [
-      // 北 · 对家
-      {
-        type: 'Panel',
-        id: 'a-north',
-        props: { bare: true },
-        layout: { direction: 'row', justify: 'center' },
-        children: [seatCard('partner', v.partner)],
-      },
-      // 中带：西席 · 中央出牌区骨架 · 东席
-      {
-        type: 'Panel',
-        id: 'a-mid',
-        props: { bare: true },
-        layout: { direction: 'row', justify: 'between', align: 'center', gap: 12 },
-        children: [
-          seatCard('west', v.west),
-          {
-            type: 'Panel',
-            id: 'a-center',
-            props: { bg: 'sunken', vignette: true },
-            layout: { direction: 'column', align: 'center', gap: 8, padding: 18, flex: 1 },
-            children: [
-              {
-                type: 'Image',
-                id: 'a-center-deck',
-                props: { src: cardAssetUrl(CARD_BACK_ID), fit: 'contain', radius: 6 },
-                layout: { width: 72, height: 100 },
-              },
-              { type: 'Label', id: 'a-center-deckn', props: { text: `牌库 ${v.deckCount} 张 · 未发`, size: 'sm', color: 'sub' } },
-              { type: 'Label', id: 'a-center-note', props: { text: '牌桌骨架就绪 · 发牌/出牌循环于玩法关（S4）接入', size: 'xs', color: 'dim' } },
-              {
-                type: 'Panel',
-                id: 'a-info',
-                props: { bare: true },
-                layout: { direction: 'row', gap: 8, align: 'center', justify: 'center' },
-                children: [
-                  { type: 'Tag', id: 'a-info-level', props: { label: `级牌 ${v.levelOurs}`, tone: 'accent', size: 'sm' } },
-                  { type: 'Label', id: 'a-info-lv', props: { text: `我方 ${v.levelOurs} · 对方 ${v.levelTheirs}`, size: 'xs', color: 'sub' } },
-                  { type: 'Badge', id: 'a-info-stake', props: { text: `底注 ${v.stake}` } },
-                  { type: 'Label', id: 'a-info-round', props: { text: `第 ${v.round} 盘`, size: 'xs', color: 'sub' } },
-                  { type: 'Tag', id: 'a-info-flow', props: { label: `流程 ${v.flowState}`, tone: 'dim', size: 'sm' } },
-                ],
-              },
-            ],
-          },
-          seatCard('east', v.east),
-        ],
-      },
-      // 南 · 主角条
-      {
-        type: 'Panel',
-        id: 'a-hero-bar',
-        props: {},
-        layout: { direction: 'row', justify: 'between', align: 'center', gap: 12, padding: 12 },
-        children: [
-          {
-            type: 'Panel',
-            id: 'a-hero-id',
-            props: { bare: true },
-            layout: { direction: 'row', gap: 8, align: 'center' },
-            children: [
-              { type: 'Avatar', id: 'a-hero-face', props: { name: v.hero.seat.name, size: 36, shape: 'circle' } },
-              { type: 'Label', id: 'a-hero-name', props: { text: v.hero.seat.name, size: 'sm', bold: true } },
-              { type: 'Badge', id: 'a-hero-wallet', props: { text: `💰 ${fmtMoney(v.wallet)}`, tone: 'ok' } },
-            ],
-          },
-          { type: 'Label', id: 'a-hero-hand', props: { text: `手牌 ${v.hero.cards}/${HAND_SIZE} · 服饰 ${v.hero.dress}/${DRESS_TIERS}`, size: 'xs', color: 'sub' } },
-          { type: 'Button', id: 'a-hero-back', props: { label: '返回主菜单', kind: 'ghost', action: 'table.back' } },
-        ],
-      },
+      { type: 'Badge', id: `a-seat-${v.seat.id}-cards`, props: { text: `余牌 ${v.cards}`, tone: v.cards <= 3 ? 'warn' : 'ok' } },
+      ...(bubble
+        ? [{ type: 'Tag' as const, id: `a-seat-${v.seat.id}-bubble`, props: { label: bubble, tone: 'accent' as const, size: 'sm' as const } }]
+        : []),
     ],
   };
 }
@@ -205,125 +123,181 @@ export interface PlayView {
   canPass: boolean;
 }
 
-// face:dark（暗牌面白字·私宅暗色调协调）：亦规避 ui-audit 对 light 牌面黑花色角标的识别盲区
-// （♠♣ 纯黑角标在白牌面被误判 1.11·真人清晰可读）——盲区已报 PUI（requests.md REQ-UI-PlayingCard-audit）。
+// 中央墩牌（蓝本经典白扑克面·light·红黑自动判）。
 function trickCard(code: number, idx: number): LayoutNode {
   const f = cardFace(code);
-  return { type: 'PlayingCard', id: `a-trick-${idx}`, props: { rank: f.rank, suit: f.suit, face: 'dark', size: 'sm' } };
+  return { type: 'PlayingCard', id: `a-trick-${idx}`, props: { rank: f.rank, suit: f.suit, face: 'light', size: 'sm' } };
 }
-function handCard(code: number, idx: number, selected: boolean): LayoutNode {
-  const f = cardFace(code);
-  // actionArg=手牌**下标**（非牌码）：两副牌里同花同点牌牌码相同，用牌码会让点一张联动选中同码另一张。
-  return {
-    type: 'PlayingCard',
-    id: `a-hand-${idx}`,
-    props: { rank: f.rank, suit: f.suit, face: 'dark', size: 'md', selected, action: 'hand.toggle', actionArg: String(idx) },
-  };
+
+// ── 扇形手牌（蓝本底部弧列·flex 流式 + 负 margin 叠放 + 扇形旋转 + 选中上浮）──
+// 用流式（非绝对定位）叠牌：ui-audit 只查绝对定位元素的重叠，流式叠不误报（扇形叠是纸牌意图叠层）。
+// 选中金边（PlayingCard 自带）+ marginTop 负上浮；扇形倾斜靠逐张 rotate。
+// ── 扇形手牌（蓝本底部大弧·绝对定位逐张：水平步进叠放 + U 弧上翘 + 扇形旋转 + 选中上浮）──
+// 蓝本算法=translateX(中心偏移)+translateY(弧形+lift)+rotate；U 弧（中间牌低·两端翘起=手持牌形），
+// 端牌 rotate 左逆右顺。per-card 垂直弧 flex 表达不了 → 绝对定位。
+// audit 提示：扇形叠放=纸牌意图叠层，ui-audit 判重叠是盲区（LayoutNode 缺 data-allow-overlap·A-007 报 PUI）。
+const HAND_CARD_W = 64;
+const HAND_L = 132; // 左端（避主角立绘框·框右缘 96）
+const HAND_AVAIL = 760; // 手牌横向可用宽（右侧留 glass 操作区）
+function buildHandFanNodes(hand: number[], selected: number[]): LayoutNode[] {
+  const n = hand.length;
+  if (n === 0) return [];
+  const mid = (n - 1) / 2;
+  const step = Math.min(HAND_CARD_W - 2, Math.round(HAND_AVAIL / Math.max(1, n - 1)));
+  const totalW = step * (n - 1);
+  const startX = HAND_L + Math.round((HAND_AVAIL - totalW) / 2);
+  const baseY = FIELD_H - 112; // 中间牌顶 y（两端向上翘）
+  const MAX_LIFT = 48; // 两端上翘幅度（U 弧深）
+  const MAX_ROT = 19; // 端牌旋转角
+  return hand.map((c, i) => {
+    const f = cardFace(c);
+    const sel = selected.includes(i);
+    const t = mid === 0 ? 0 : (i - mid) / mid; // 归一化 -1..1
+    const lift = Math.round(t * t * MAX_LIFT); // U 弧：|t| 大 → 上翘多（y 小）
+    const rot = Math.round(t * MAX_ROT * 10) / 10; // 左端逆时针 / 右端顺时针
+    return {
+      type: 'PlayingCard',
+      id: `a-hand-${i}`,
+      // actionArg=手牌**下标**（非牌码·两副牌同码会联动误选）
+      props: { rank: f.rank, suit: f.suit, face: 'light', size: 'md', selected: sel, action: 'hand.toggle', actionArg: String(i) },
+      layout: { x: startX + i * step, y: baseY - lift - (sel ? 22 : 0), rotate: rot },
+    };
+  });
 }
 
 export function buildPlay(v: PlayView): LayoutNode {
   const heroTurn = v.turn === 'hero';
+  const anchorOf = (id: 'partner' | 'west' | 'east'): { x: number; y: number } =>
+    seatTopLeft(SEAT_ANCHORS.find((s) => s.id === id)!);
+  const pA = anchorOf('partner');
+  const wA = anchorOf('west');
+  const eA = anchorOf('east');
+
+  // 中央出牌区（桌心·牌型标签 + 四家最近一手 + 行动提示）——作 felt 子节点（祖孙嵌套·audit 不判桌面重叠）。
+  const centerChildren: LayoutNode[] = v.trick
+    ? [
+        { type: 'Tag', id: 'a-p-trickname', props: { label: v.trick.name, tone: 'accent', size: 'md' } },
+        {
+          type: 'Panel',
+          id: 'a-p-trickcards',
+          props: { bare: true },
+          layout: { direction: 'row', gap: 5, justify: 'center' },
+          children: v.trick.cards.map((c, i) => trickCard(c, i)),
+        },
+        { type: 'Label', id: 'a-p-turn', props: { text: heroTurn ? '待你应对' : `${v.turnName} 出牌中…`, size: 'sm', color: heroTurn ? 'gold' : 'sub' } },
+      ]
+    : [{ type: 'Label', id: 'a-p-lead', props: { text: heroTurn ? '轮到你领出' : `${v.turnName} 领出中…`, font: 'serif', size: 'lg', bold: true, color: heroTurn ? 'gold' : 'sub' } }];
+  const centerZone: LayoutNode = {
+    type: 'Panel',
+    id: 'a-p-center',
+    props: { bare: true },
+    layout: { direction: 'column', align: 'center', justify: 'center', gap: 8, width: 380 },
+    children: centerChildren,
+  };
+  // 椭圆红呢牌桌（radius 大=胶囊椭圆·felt 红呢 + 暗角 + 金边）·出牌区 flex 居中于桌心（felt 子节点）。
+  const feltTable: LayoutNode = {
+    type: 'Panel',
+    id: 'a-felt',
+    props: { bg: { custom: FELT_RED }, vignette: true, accent: true },
+    layout: { x: 232, y: 148, width: FIELD_W - 464, height: 322, radius: 160, direction: 'column', align: 'center', justify: 'center' },
+    children: [centerZone],
+  };
+
+  // 级牌信息条（牌桌下方 pill 一行）。
+  const infoBar: LayoutNode = {
+    type: 'Panel',
+    id: 'a-p-info',
+    props: { bg: { custom: 'linear-gradient(180deg,rgba(30,20,14,0.94),rgba(20,14,10,0.9))' } },
+    layout: { x: FIELD_W / 2 - 210, y: 512, width: 420, direction: 'row', gap: 12, align: 'center', justify: 'center', padding: 8, radius: 20 },
+    children: [
+      { type: 'Tag', id: 'a-p-level', props: { label: `级牌 ${v.levelPlay}`, tone: 'accent', size: 'sm' } },
+      { type: 'Label', id: 'a-p-lv', props: { text: `我方 ${v.levelOurs} · 对方 ${v.levelTheirs}`, size: 'sm', color: 'sub' } },
+      { type: 'Badge', id: 'a-p-stake', props: { text: `底注 ${v.stake}`, tone: 'ok' } },
+      { type: 'Label', id: 'a-p-round', props: { text: `第 ${v.round} 盘`, size: 'sm', color: 'sub' } },
+    ],
+  };
+
+  // 主角立绘框（左下·A-CHAR-HERO 占位·S6 真立绘）。
+  const heroPortrait: LayoutNode = {
+    type: 'Panel',
+    id: 'a-p-portrait',
+    props: { vignette: true },
+    layout: { x: 12, y: 566, width: 84, height: 126, direction: 'column', align: 'center', justify: 'center', gap: 4, padding: 8 },
+    children: [
+      { type: 'Avatar', id: 'a-p-portrait-face', props: { name: v.seats.hero.seat.name, size: 64, shape: 'rounded' } },
+      { type: 'Label', id: 'a-p-portrait-l', props: { text: '主角立绘', size: 'xs', color: 'dim' } },
+      { type: 'Label', id: 'a-p-portrait-dress', props: { text: `服饰 ${v.seats.hero.dress}/${DRESS_TIERS}`, size: 'xs', color: 'sub' } },
+    ],
+  };
+
+  // 操作区（右下 glass·金钱 + 理牌 Segmented + 提示/过/出牌）。
+  const actionBar: LayoutNode = {
+    type: 'Panel',
+    id: 'a-p-actions',
+    props: { glass: true },
+    layout: { x: FIELD_W - 322, y: 566, width: 306, direction: 'column', gap: 8, align: 'stretch', padding: 12 },
+    children: [
+      {
+        type: 'Panel',
+        id: 'a-p-act-top',
+        props: { bare: true },
+        layout: { direction: 'row', gap: 8, align: 'center', justify: 'between' },
+        children: [
+          { type: 'Badge', id: 'a-p-wallet', props: { text: `💰 ${fmtMoney(v.wallet)}`, tone: 'ok' } },
+          {
+            type: 'Segmented',
+            id: 'a-p-sort',
+            props: { options: [{ value: 'rank', label: '按点数' }, { value: 'family', label: '按牌型' }], value: 'rank', action: 'hand.sort' },
+          },
+        ],
+      },
+      {
+        type: 'Panel',
+        id: 'a-p-act-btns',
+        props: { bare: true },
+        layout: { direction: 'row', gap: 8, align: 'center', justify: 'end' },
+        children: [
+          { type: 'Button', id: 'a-p-hint', props: { label: '提示', kind: 'ghost', action: 'play.hint', disabled: !heroTurn } },
+          { type: 'Button', id: 'a-p-pass', props: { label: '过', kind: 'quiet', action: 'play.pass', disabled: !heroTurn || !v.canPass } },
+          { type: 'Button', id: 'a-p-commit', props: { label: '出牌', kind: 'hero', action: 'play.commit', disabled: !heroTurn || !v.canCommit } },
+        ],
+      },
+      {
+        type: 'Label',
+        id: 'a-p-why',
+        props: {
+          text: heroTurn ? (!v.canCommit && v.selected.length > 0 ? v.commitWhy : '点牌选中 · 出牌或过') : `${v.turnName} 行动中…`,
+          size: 'xs',
+          color: heroTurn && !v.canCommit && v.selected.length > 0 ? 'warn' : 'dim',
+        },
+      },
+    ],
+  };
+
+  const backWrap: LayoutNode = {
+    type: 'Panel',
+    id: 'a-p-backwrap',
+    props: { bare: true },
+    layout: { x: FIELD_W - 96, y: 12, width: 84 },
+    children: [{ type: 'Button', id: 'a-p-back', props: { label: '返回', kind: 'ghost', action: 'table.back' } }],
+  };
+
+  // z 序（DOM 顺序）：桌 → 中央墩 → 席位 → 信息条 → 立绘/操作 → 手牌扇（最上·可点）→ 返回。
   return {
     type: 'Screen',
     id: 'a-play',
-    props: { bg: { custom: MANOR_BG } },
-    layout: { direction: 'column', gap: 8, padding: 14, justify: 'between' },
+    props: {},
+    layout: { width: FIELD_W, height: FIELD_H },
     children: [
-      // 北 · 对家
-      { type: 'Panel', id: 'a-p-north', props: { bare: true }, layout: { direction: 'row', justify: 'center' }, children: [seatCard('partner', v.seats.partner)] },
-      // 中带：西 · 中央墩 · 东
-      {
-        type: 'Panel',
-        id: 'a-p-mid',
-        props: { bare: true },
-        layout: { direction: 'row', justify: 'between', align: 'center', gap: 12 },
-        children: [
-          seatCard('west', v.seats.west),
-          {
-            type: 'Panel',
-            id: 'a-p-center',
-            props: { bg: 'sunken', vignette: true },
-            layout: { direction: 'column', align: 'center', gap: 8, padding: 16, flex: 1 },
-            children: [
-              v.trick
-                ? {
-                    type: 'Panel',
-                    id: 'a-p-trick',
-                    props: { bare: true },
-                    layout: { direction: 'column', align: 'center', gap: 6 },
-                    children: [
-                      { type: 'Tag', id: 'a-p-trickname', props: { label: v.trick.name, tone: 'accent', size: 'sm' } },
-                      { type: 'Panel', id: 'a-p-trickcards', props: { bare: true }, layout: { direction: 'row', gap: 4 }, children: v.trick.cards.map((c, i) => trickCard(c, i)) },
-                    ],
-                  }
-                : { type: 'Label', id: 'a-p-lead', props: { text: '等待领出', size: 'sm', color: 'sub' } },
-              {
-                type: 'Panel',
-                id: 'a-p-info',
-                props: { bare: true },
-                layout: { direction: 'row', gap: 8, align: 'center', justify: 'center' },
-                children: [
-                  { type: 'Tag', id: 'a-p-level', props: { label: `打 ${v.levelPlay}`, tone: 'accent', size: 'sm' } },
-                  { type: 'Label', id: 'a-p-lv', props: { text: `我 ${v.levelOurs} · 敌 ${v.levelTheirs}`, size: 'xs', color: 'sub' } },
-                  { type: 'Badge', id: 'a-p-stake', props: { text: `底注 ${v.stake}`, tone: 'ok' } },
-                  { type: 'Label', id: 'a-p-round', props: { text: `第 ${v.round} 盘`, size: 'xs', color: 'sub' } },
-                ],
-              },
-              { type: 'Tag', id: 'a-p-turn', props: { label: heroTurn ? '轮到你出牌' : `${v.turnName} 思考中…`, tone: heroTurn ? 'accent' : 'dim', size: 'sm' } },
-            ],
-          },
-          seatCard('east', v.seats.east),
-        ],
-      },
-      // 南 · 手牌扇列 + 操作条
-      {
-        type: 'Panel',
-        id: 'a-p-south',
-        props: {},
-        layout: { direction: 'column', gap: 8, padding: 10 },
-        children: [
-          {
-            type: 'Panel',
-            id: 'a-p-hand',
-            props: { bare: true },
-            layout: { direction: 'row', justify: 'center', gap: 2, align: 'end' },
-            children: v.hand.map((c, i) => handCard(c, i, v.selected.includes(i))),
-          },
-          {
-            type: 'Panel',
-            id: 'a-p-bar',
-            props: { bare: true },
-            layout: { direction: 'row', justify: 'between', align: 'center', gap: 10 },
-            children: [
-              {
-                type: 'Panel',
-                id: 'a-p-id',
-                props: { bare: true },
-                layout: { direction: 'row', gap: 8, align: 'center' },
-                children: [
-                  { type: 'Avatar', id: 'a-p-face', props: { name: v.seats.hero.seat.name, size: 32, shape: 'circle' } },
-                  { type: 'Badge', id: 'a-p-wallet', props: { text: `💰 ${fmtMoney(v.wallet)}`, tone: 'ok' } },
-                  { type: 'Label', id: 'a-p-dress', props: { text: `服饰 ${v.seats.hero.dress}/${DRESS_TIERS}`, size: 'xs', color: 'sub' } },
-                ],
-              },
-              {
-                type: 'Panel',
-                id: 'a-p-actions',
-                props: { bare: true },
-                layout: { direction: 'row', gap: 8, align: 'center' },
-                children: [
-                  { type: 'Button', id: 'a-p-hint', props: { label: '提示', kind: 'ghost', action: 'play.hint', disabled: !heroTurn } },
-                  { type: 'Button', id: 'a-p-pass', props: { label: '过', kind: 'quiet', action: 'play.pass', disabled: !heroTurn || !v.canPass } },
-                  { type: 'Button', id: 'a-p-commit', props: { label: '出牌', kind: 'primary', action: 'play.commit', disabled: !heroTurn || !v.canCommit } },
-                ],
-              },
-            ],
-          },
-          heroTurn && !v.canCommit && v.selected.length > 0
-            ? { type: 'Label', id: 'a-p-why', props: { text: v.commitWhy, size: 'xs', color: 'warn' } }
-            : { type: 'Label', id: 'a-p-why', props: { text: heroTurn ? '点牌选中 · 出牌或过' : '', size: 'xs', color: 'dim' } },
-        ],
-      },
+      feltTable, // 含中央出牌区（祖孙嵌套）
+      seatCard(v.seats.partner, pA.x, pA.y, v.turn === 'partner'),
+      seatCard(v.seats.west, wA.x, wA.y, v.turn === 'west'),
+      seatCard(v.seats.east, eA.x, eA.y, v.turn === 'east'),
+      infoBar,
+      heroPortrait,
+      actionBar,
+      ...buildHandFanNodes(v.hand, v.selected),
+      backWrap,
     ],
   };
 }

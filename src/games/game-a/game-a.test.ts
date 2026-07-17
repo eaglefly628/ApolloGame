@@ -11,7 +11,7 @@ import {
   SEATS, DECK_SIZE, RANK_SMALL_JOKER, RANK_BIG_JOKER, SUIT_HEART, INITIAL_FUNDS, DRESS_TIERS,
 } from './rules.js';
 import { buildTableBlueprint } from './blueprint.js';
-import { buildMenu, buildTable, buildPlay, buildResult, type TableView, type SeatView } from './hud.js';
+import { buildMenu, buildPlay, buildResult, type SeatView } from './hud.js';
 import { cardAssetId } from './theme.js';
 
 const c = (suit: number, rank: number): Card => ({ suit, rank });
@@ -125,20 +125,9 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
     expect(snap()).toBe(snap());
   });
 
-  // ── UI 骨架（LayoutNode 纯数据·零 issue）─────────────────────────────────────
-  it('菜单壳与牌桌骨架屏过 validateLayoutNode', () => {
+  // ── UI 菜单（LayoutNode 纯数据·零 issue；牌桌/结算屏在下方 S4 用例）──────────────
+  it('菜单壳过 validateLayoutNode', () => {
     expect(validateLayoutNode(buildMenu())).toEqual([]);
-    const sv = (id: SeatView['seat']['id']): SeatView => ({
-      seat: SEATS.find((s) => s.id === id)!,
-      cards: 0,
-      dress: DRESS_TIERS,
-    });
-    const view: TableView = {
-      wallet: INITIAL_FUNDS, stake: 100, round: 1, levelOurs: 2, levelTheirs: 2,
-      flowState: 'table-idle', deckCount: DECK_SIZE,
-      partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero'),
-    };
-    expect(validateLayoutNode(buildTable(view))).toEqual([]);
   });
 
   // ── S4 玩法屏/结算屏 UI（LayoutNode 纯数据·零 issue）────────────────────────────
