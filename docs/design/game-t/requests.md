@@ -17,7 +17,8 @@
 > 拖拽 onlyFlag 缺口：宿主已双保险（终局 dispose 输入源）·引擎修复单=主池 `REQ-INPUT-拖拽-onlyFlag`，修后撤宿主半。
 > /check-ui 现状（入口 `tools/audits/game-t-{hud,select,result}.audit.ts`·440×780）：重叠 0·文字对比全过（实底纸面+text 令牌纪律沿 run1 整改）；残留硬失败=ghost 糖果皮按钮 ratio 1.21 ×5 = REQ-STYLESET M0.5 Lead 已定性的 ui-audit border-image 盲区假阳（真渲白字压深糖体可读·截图为证），PUI 修工具后归零。
 
-### T-103 · 待新一轮 GD-T 接力位 · [2026-07-17] · PE-T · status: **GD 交付完成→待 PE 整表替换**
+### T-103 · 待新一轮 GD-T 接力位 · [2026-07-17] · PE-T · status: **✅ done（PE-T 本提交接入·owner「看下策划，把游戏重新做下」）**
+> **PE 接入回执**：`levels.jsonc`→`levels.data.json` 运行时副本 + `LEVEL_NAMES`（copy.md §三）+ **五章过场 CHAPTERS**（copy.md §二·GDD §二点五 轻叙事=章首关未过时弹师父登场卡·纯 LayoutNode·师父立绘位留 S6）；占位 5 关退役（git 历史留档）。三重防漂移守卫测试：副本≡levels.jsonc·关名≡copy §三·章文案≡copy §二（GD 重跑 gen 忘同步即红）。音效 swap 对齐拟声表 150ms。选关长卷 5 列六排。
 > 30 关正式表（占位 5 关整表替换·`levelIssues` 校验器已备）+ 文案表 + balance-sim 定标 + 教学关摆盘。**计分口径提醒**：主池 `REQ-M3-计分倍率` 未落地前引擎为平铺 60/珠——GD 定标若按 GDD §四 连锁 ×1.5，须等该单或按平铺口径先标（run1 教训：sim 与 runtime 口径漂移=阻断）。
 > **↳ GD-T 交付（见 T-104）**：`docs/design/game-t/levels.jsonc` 30 关（**平铺 60/珠口径**·过 `levelIssues`）+ `copy.md` 文案表（关名→PE 填 `LevelSpec.name`）+ balance-sim + `balance-report.md`。PE 接力=`levels.jsonc`→`src/games/game-t/levels.ts` 整表替换（形状同 `LevelSpec`）。
 

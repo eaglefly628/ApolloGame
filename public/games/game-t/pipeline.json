@@ -12,20 +12,20 @@
     "S3": {
       "exit": 0,
       "summary": "编译期游戏免 manifest 校验",
-      "at": "2026-07-17T08:14:50.606Z",
-      "gameHash": "76d1fe52cc94bb45"
+      "at": "2026-07-17T10:03:34.880Z",
+      "gameHash": "beb3d26c74a1b015"
     },
     "S4": {
       "exit": 0,
-      "summary": " Test Files  1 passed (1) ·       Tests  12 passed (12)",
-      "at": "2026-07-17T08:14:52.946Z",
-      "gameHash": "76d1fe52cc94bb45"
+      "summary": " Test Files  1 passed (1) ·       Tests  13 passed (13)",
+      "at": "2026-07-17T10:03:37.867Z",
+      "gameHash": "beb3d26c74a1b015"
     },
     "S5": {
       "exit": 0,
       "summary": "AUDIT: PASS · RATCHET: PASS",
-      "at": "2026-07-17T08:14:53.071Z",
-      "gameHash": "76d1fe52cc94bb45"
+      "at": "2026-07-17T10:03:38.040Z",
+      "gameHash": "beb3d26c74a1b015"
     }
   },
   "history": [
@@ -104,6 +104,42 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-07-17T08:14:53.071Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "PE-T 机器侧先行·前置人门复查门待 owner/复查 session（顺序闸记账）",
+      "at": "2026-07-17T10:03:34.879Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-07-17T10:03:34.880Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE-T 机器侧先行·前置人门复查门待 owner/复查 session（顺序闸记账）",
+      "at": "2026-07-17T10:03:34.966Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-17T10:03:37.867Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "PE-T 机器侧先行·前置人门复查门待 owner/复查 session（顺序闸记账）",
+      "at": "2026-07-17T10:03:37.970Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-07-17T10:03:38.040Z"
     }
   ],
   "outOfOrder": [
@@ -136,6 +172,21 @@
       "stage": "S5",
       "reason": "PE-T 机器侧先行·前置人门复查门待 owner/复查 session（顺序闸记账）",
       "at": "2026-07-17T08:14:53.012Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "PE-T 机器侧先行·前置人门复查门待 owner/复查 session（顺序闸记账）",
+      "at": "2026-07-17T10:03:34.879Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "PE-T 机器侧先行·前置人门复查门待 owner/复查 session（顺序闸记账）",
+      "at": "2026-07-17T10:03:34.966Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "PE-T 机器侧先行·前置人门复查门待 owner/复查 session（顺序闸记账）",
+      "at": "2026-07-17T10:03:37.970Z"
     }
   ]
 }

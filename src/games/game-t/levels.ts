@@ -1,9 +1,11 @@
 // Game T ·《墨消》—— 关卡表（纯数据）+ schema 纯函数（字符画解析 / 目标推导 / 星级结算 / 校验）。
 // 单关形状严格对齐 docs/design/game-t/level-schema.md §一（layout=字符画·GD 手写友好）。
 //
-// ⚠ 当前 LEVELS 的 5 关为 PE 装配占位（覆盖关型闭集 score/collect/jelly/blocker/mixed·跑通骨架与走查）：
-//   GD-T 的 30 关正式表（levels + balance-sim 定标·通关率带见 GDD §四）交付后整表替换——
-//   moves/stars 数值不许拍脑袋（schema §二），占位数值不代表难度定标。
+// 关卡数据单一真相 = docs/design/game-t/levels.jsonc（GD-T run2 交付·gen 生成·balance-sim 200 seeds
+// 定标·**平铺 60/珠口径已对齐 theme.ts**）；./levels.data.json 是它的运行时纯 JSON 副本（jsonc 注释
+// 无法直 import）——守卫测试断言两者逐行等价 + 全表过 levelIssues + 关名/章文案 ≡ copy.md（GD 重跑
+// gen 后忘同步即红）。REQ-M3-计分倍率 落地后 GD 改 CASCADE_MULT 重定标，PE 只需同步副本。
+import levelsData from './levels.data.json';
 import { BRUSH_PER_MOVE, INK_NAMES } from './theme.js';
 
 export type GoalKind = 'score' | 'collect' | 'jelly' | 'blocker';
@@ -147,87 +149,42 @@ export function levelIssues(spec: LevelSpec): string[] {
   return issues;
 }
 
-const DOTS = (rows: number, cols: number): string[] => Array.from({ length: rows }, () => '.'.repeat(cols));
+// ── 关名（docs/design/game-t/copy.md §三·UI 直用·守卫测试与文案表比对防漂移）────
+export const LEVEL_NAMES: Record<number, string> = {
+  1: '初入山门', 2: '扎马运气', 3: '双风贯耳', 4: '力劈华山', 5: '连环冲拳', 6: '虎啸试炼',
+  7: '白鹤亮翅', 8: '芥子纳墨', 9: '拾遗撷珠', 10: '百川汇墨', 11: '紫毫入砚', 12: '鹤舞九霄',
+  13: '蛇行洗墨', 14: '曲水流觞', 15: '墨渍侵纸', 16: '双层寒墨', 17: '浣墨回廊', 18: '灵蛇试炼',
+  19: '金豹碎瓷', 20: '裂帛之音', 21: '层瓷叠嶂', 22: '坚冰三尺', 23: '玄铁寒瓷', 24: '豹隐试炼',
+  25: '龙吟初动', 26: '破瓷聚力', 27: '洗墨凝碧', 28: '碎冰拾金', 29: '双珠合璧', 30: '飞龙在天',
+};
 
-// ── 占位关卡表（5 关·关型闭集各一·待 GD 30 关正式表整表替换）───────────────────
-export const LEVELS: LevelSpec[] = [
-  {
-    no: 1,
-    name: '初磨', // 占位关名·GD 文案表交付后替换
-    type: 'score',
-    cols: 7,
-    rows: 9,
-    kinds: 4,
-    moves: 20,
-    goals: [{ kind: 'score', n: 3600 }],
-    stars: [3600, 12000, 22000],
-    seed: 10001,
-    layout: { board: DOTS(9, 7) },
-    note: 'PE 占位·纯分数教学（GDD §三 1-5 段）',
-  },
-  {
-    no: 2,
-    name: '拾砂',
-    type: 'collect',
-    cols: 7,
-    rows: 9,
-    kinds: 5,
-    moves: 22,
-    goals: [{ kind: 'collect', color: 1, n: 24 }],
-    stars: [4000, 14000, 24000],
-    seed: 10002,
-    layout: { board: DOTS(9, 7) },
-    note: 'PE 占位·收集+第五色（GDD §三 6-10 段）',
-  },
-  {
-    no: 3,
-    name: '浸润',
-    type: 'jelly',
-    cols: 7,
-    rows: 9,
-    kinds: 4,
-    moves: 24,
-    goals: [{ kind: 'jelly' }],
-    stars: [5000, 15000, 26000],
-    seed: 10003,
-    layout: {
-      board: DOTS(9, 7),
-      jelly: ['.......', '.......', '.......', '..111..', '..121..', '..111..', '.......', '.......', '.......'],
-    },
-    note: 'PE 占位·洗墨（墨渍=果冻·GDD §三 11-15 段）',
-  },
-  {
-    no: 4,
-    name: '冰纹',
-    type: 'blocker',
-    cols: 7,
-    rows: 9,
-    kinds: 5,
-    moves: 26,
-    goals: [{ kind: 'blocker' }],
-    stars: [5000, 16000, 28000],
-    seed: 10004,
-    layout: {
-      board: DOTS(9, 7),
-      blockers: ['.......', '.......', '..1.1..', '.2...2.', '.......', '.2...2.', '..1.1..', 'S.....S', '.......'],
-    },
-    note: 'PE 占位·破瓷+砚石地形（GDD §三 16-25 段）',
-  },
-  {
-    no: 5,
-    name: '五形小试',
-    type: 'mixed',
-    cols: 7,
-    rows: 9,
-    kinds: 5,
-    moves: 28,
-    goals: [{ kind: 'jelly' }, { kind: 'collect', color: 0, n: 18 }],
-    stars: [6000, 18000, 30000],
-    seed: 10005,
-    layout: {
-      board: DOTS(9, 7),
-      jelly: ['.......', '.......', '.......', '...11..', '...11..', '.......', '.......', '.......', '.......'],
-    },
-    note: 'PE 占位·混合双目标（GDD §三 26-30 段风格）',
-  },
+// ── 五章过场（copy.md §二·GDD §二点五 轻叙事·Modal/Panel 纯数据·师父立绘=S6 台账件）──
+export interface ChapterSpec {
+  no: number;
+  name: string; // 「一·虎」
+  master: string; // 师父名
+  theme: string; // 机制主题
+  intro: string; // 过场文案（2-3 句）
+  firstLevel: number; // 本章首关（进关且未过时弹过场）
+}
+export const CHAPTERS: ChapterSpec[] = [
+  { no: 1, name: '一·虎', master: '伏虎师父', theme: '基础(得分)', firstLevel: 1, intro: '「站桩先扎马，运墨如运力。」伏虎师父一掌拍碎案上顽石，「墨要连、力要整——去，把这三子连成一线。」' },
+  { no: 2, name: '二·鹤', master: '白鹤师父', theme: '收集', firstLevel: 7, intro: '白鹤师父单足立于崖石，衣袂不动。「取墨如衔珠，贵在准与巧。四子成轴、拐角成印——手要轻，眼要尖。」' },
+  { no: 3, name: '三·蛇', master: '灵蛇师父', theme: '洗墨(果冻)', firstLevel: 13, intro: '「纸上宿墨未干，便是心上尘垢。」灵蛇师父指尖一点，墨渍层层化开，「以柔克滞，逐层洗净，方见白纸。」' },
+  { no: 4, name: '四·豹', master: '金豹师父', theme: '破瓷(障碍)', firstLevel: 19, intro: '金豹师父盯着那面冰纹瓷，声如裂帛：「硬碰硬是莽夫。绕其锋、震其邻，一片片碎给我看。」' },
+  { no: 5, name: '五·龙', master: '游龙师父', theme: '混合·出师', firstLevel: 25, intro: '山巅风起。游龙师父负手而立：「洗墨、破瓷、取珠——五形归一，方能成龙。此为出师试炼，去吧。」' },
 ];
+/** 某关是否章首（是则返回该章·配合「未过关才弹」由宿主用进度判）。 */
+export function chapterStartingAt(levelNo: number): ChapterSpec | null {
+  return CHAPTERS.find((c) => c.firstLevel === levelNo) ?? null;
+}
+
+// ── 正式 30 关（GD-T run2 交付·五章×6·balance-sim 200 seeds 定标·29/30 带内）────
+export const LEVELS: LevelSpec[] = (levelsData as Array<Omit<LevelSpec, 'name' | 'stars'> & { stars: number[] }>).map(
+  (r) => ({
+    ...r,
+    stars: [r.stars[0], r.stars[1], r.stars[2]] as [number, number, number],
+    name: LEVEL_NAMES[r.no] ?? `第${r.no}关`,
+  }),
+);
+

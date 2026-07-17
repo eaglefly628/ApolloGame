@@ -2,6 +2,7 @@
 // 写世界只经 action 信号；本 HUD 的 action（play/retry/next/back/toggle_mute）全是宿主生命周期动作，
 // 由宿主 HandlerMap 消化——不碰 sim（棋盘输入走画布 clickable，不经 UI）。
 import type { LayoutNode } from '@ui/components/index.js';
+import type { ChapterSpec } from './levels.js';
 
 export interface HudGoalView {
   label: string;
@@ -44,7 +45,7 @@ export function buildSelect(s: SelectState): LayoutNode {
         layout: { direction: 'column', align: 'center', gap: 6, padding: 14 },
         children: [
           { type: 'Label', id: 't-title', props: { text: '墨 消', font: 'hand', size: 'xxxl', bold: true, color: 'gold' } },
-          { type: 'Label', id: 't-sub', props: { text: '功夫修行 · 水墨三消（骨架装配 · 点选交换先行）', size: 'sm', color: 'text' } },
+          { type: 'Label', id: 't-sub', props: { text: '功夫修行 · 水墨三消（拖拽滑动或点选两珠交换）', size: 'sm', color: 'text' } },
         ],
       },
       {
@@ -64,7 +65,7 @@ export function buildSelect(s: SelectState): LayoutNode {
                 action: 'play',
                 actionArg: String(n.no),
               })),
-              cols: 3, // 占位 5 关；GD 30 关（五章×6）到货换 5 列六排
+              cols: 5, // 30 关 · 五章×6 → 六排蛇形
               tone: 'gold',
             },
           },
@@ -76,7 +77,7 @@ export function buildSelect(s: SelectState): LayoutNode {
         props: {},
         layout: { direction: 'row', align: 'center', gap: 12, padding: 10 },
         children: [
-          { type: 'Label', id: 't-foot', props: { text: '占位 5 关 · 待新一轮 GD-T 三十关正式表（五形师父五章）', size: 'sm', color: 'text' } },
+          { type: 'Label', id: 't-foot', props: { text: '五形师父五章 · 三十关（balance-sim 定标 · 平铺计分口径）', size: 'sm', color: 'text' } },
           { type: 'Button', id: 't-mute', props: { label: s.muted ? '🔇 静音中' : '🔊 音效', kind: 'ghost', action: 'toggle_mute' } },
         ],
       },
@@ -178,6 +179,30 @@ export function buildBottomBar(s: HudState): LayoutNode {
         children: [
           { type: 'Button', id: 't-mute2', props: { label: s.muted ? '🔇' : '🔊', kind: 'ghost', action: 'toggle_mute' } },
           { type: 'Button', id: 't-back', props: { label: '🖼 长卷', kind: 'ghost', action: 'back' } },
+        ],
+      },
+    ],
+  };
+}
+
+// ── 章节过场（GDD §二点五 轻叙事·章首关未过时挂·师父立绘=S6 台账件到位后补图位）────
+export function buildChapterIntro(ch: ChapterSpec): LayoutNode {
+  return {
+    type: 'Screen',
+    id: 't-chapter',
+    props: { center: true, bg: { custom: 'linear-gradient(rgba(24,20,14,0.55),rgba(24,20,14,0.72))' } },
+    layout: { direction: 'column', align: 'center', justify: 'center', gap: 14, padding: 24 },
+    children: [
+      {
+        type: 'Panel',
+        id: 't-chapter-card',
+        props: {},
+        layout: { direction: 'column', align: 'center', gap: 12, padding: 22 },
+        children: [
+          { type: 'Label', id: 't-ch-name', props: { text: `第${ch.name}章`, size: 'sm', color: 'sub' } },
+          { type: 'Label', id: 't-ch-master', props: { text: ch.master, font: 'hand', size: 'xxl', bold: true, color: 'gold' } },
+          { type: 'Label', id: 't-ch-intro', props: { text: ch.intro, size: 'md', color: 'text' } },
+          { type: 'Button', id: 't-ch-go', props: { label: '领训 · 开始修行', kind: 'hero', action: 'chapter_go' } },
         ],
       },
     ],

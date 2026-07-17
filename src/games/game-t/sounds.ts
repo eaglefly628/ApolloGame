@@ -24,8 +24,9 @@ export type TSfx =
   | 'lose' // 失败低鼓
   | 'tap'; // 按钮点击
 
+// 拟声对照=copy.md §五（GD 文案表·「唰/咚/嗒/铛/刷/咚！/锵/叮/笃/叮叮叮/咚锵/嗡/哒」）。
 const TONE = {
-  swap: { partials: [{ wave: 'sine', freq: 620, freqTo: 880, dur: 0.06, gain: 0.04 }] },
+  swap: { partials: [{ wave: 'sine', freq: 620, freqTo: 880, dur: 0.15, gain: 0.04 }] }, // 「唰——」150ms 滑音
   illegal: { partials: [{ wave: 'sine', freq: 160, freqTo: 110, dur: 0.12, gain: 0.06 }] },
   clear: { partials: [{ wave: 'triangle', freq: 520, freqTo: 640, dur: 0.09, gain: 0.05 }] },
   clear2: { partials: [{ wave: 'triangle', freq: 660, freqTo: 800, dur: 0.09, gain: 0.05 }] },

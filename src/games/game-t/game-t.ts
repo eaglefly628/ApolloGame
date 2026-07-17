@@ -17,8 +17,8 @@ import type { MountHandle, HandlerMap } from '@ui/components/index.js';
 import { apolloToon } from '@ui/apollo-toon-theme.js';
 import type { GameFlow, Resource, MatchBoard } from '@engine/protocol/components.js';
 import { buildLevelBlueprint } from './blueprint.js';
-import { LEVELS, type LevelSpec, finalScore, starsFor, goalRequirements, progressStates } from './levels.js';
-import { buildSelect, buildTopBar, buildBottomBar, buildResultOverlay, type HudState } from './hud.js';
+import { LEVELS, type LevelSpec, finalScore, starsFor, goalRequirements, progressStates, chapterStartingAt } from './levels.js';
+import { buildSelect, buildTopBar, buildBottomBar, buildResultOverlay, buildChapterIntro, type HudState } from './hud.js';
 import { playTSfx, isMuted, setMuted } from './sounds.js';
 import { FIELD_W, FIELD_H, TOP_BAR_H, BOTTOM_BAR_H, BRUSH_PER_MOVE } from './theme.js';
 
@@ -126,6 +126,7 @@ export function mount(container: HTMLElement): () => void {
   let topUi: MountHandle | null = null;
   let bottomUi: MountHandle | null = null;
   let overlayUi: MountHandle | null = null;
+  let chapterUi: MountHandle | null = null; // 章节过场（章首关未过时·借宿 overlayHost）
   let lastSig = '';
 
   const handlers: HandlerMap = {
@@ -154,7 +155,18 @@ export function mount(container: HTMLElement): () => void {
         refreshHud(sim.engine);
       } else showSelect();
     },
+    chapter_go: () => {
+      playTSfx('tap');
+      closeChapter();
+    },
   };
+
+  function closeChapter(): void {
+    if (!chapterUi) return;
+    chapterUi();
+    chapterUi = null;
+    overlayHost.style.pointerEvents = 'none';
+  }
 
   function closeOverlay(): void {
     overlayUi?.();
@@ -220,6 +232,7 @@ export function mount(container: HTMLElement): () => void {
   function startLevel(spec: LevelSpec): void {
     selectUi?.();
     selectUi = null;
+    closeChapter();
     closeOverlay();
     stopSim();
     levelSpec = spec;
@@ -255,10 +268,18 @@ export function mount(container: HTMLElement): () => void {
     engine.start();
     sim = { engine, renderer, input, seam, inputDead: false, unsub };
     refreshHud(engine);
+
+    // 章节过场（GDD §二点五）：章首关且未过 → 弹师父登场卡（盖板可见开局落子·点「领训」开打）
+    const ch = chapterStartingAt(spec.no);
+    if (ch && !((starsByNo[spec.no] ?? 0) > 0)) {
+      overlayHost.style.pointerEvents = 'auto';
+      chapterUi = mountUI(overlayHost, buildChapterIntro(ch), handlers, apolloToon);
+    }
   }
 
   function showSelect(): void {
     stopSim();
+    closeChapter();
     closeOverlay();
     topUi?.();
     topUi = null;
@@ -277,6 +298,7 @@ export function mount(container: HTMLElement): () => void {
   // ── cleanup（launcher 卸载时调）────────────────────────────────────────────────
   return () => {
     stopSim();
+    chapterUi?.();
     overlayUi?.();
     topUi?.();
     bottomUi?.();

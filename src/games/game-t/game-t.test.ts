@@ -1,11 +1,17 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join, resolve } from 'node:path';
 import { Engine } from '../../runtime/engine.js';
 import { applyCommands, QueuedInputSource } from '@net/index.js';
 import { validateLayoutNode } from '@ui/components/index.js';
 import type { GameFlow, MatchBoard, Resource, Flag } from '@engine/protocol/components.js';
 import { buildLevelBlueprint } from './blueprint.js';
-import { LEVELS, type LevelSpec, levelIssues, parseLayout, goalRequirements, finalScore, starsFor, progressStates } from './levels.js';
-import { buildSelect, buildTopBar, buildBottomBar, buildResultOverlay, type HudState } from './hud.js';
+import {
+  LEVELS, LEVEL_NAMES, CHAPTERS, chapterStartingAt, type LevelSpec,
+  levelIssues, parseLayout, goalRequirements, finalScore, starsFor, progressStates,
+} from './levels.js';
+import { buildSelect, buildTopBar, buildBottomBar, buildResultOverlay, buildChapterIntro, type HudState } from './hud.js';
 import { cellCenter, SETTLE_TICKS, SCORE_PER_TILE } from './theme.js';
 
 // ── 测试专用迷你关（全指定摆盘·零初始连线·白盒可控）────────────────────────────
@@ -66,14 +72,45 @@ function driven(spec: LevelSpec) {
 }
 
 describe('Game T ·《墨消》（数据驱动三消·骨架关）', () => {
-  it('关卡表全过 schema 校验（PE 占位 5 关·关型闭集五型齐·待新一轮 GD-T 整表替换）', () => {
-    expect(LEVELS.length).toBe(5);
+  it('GD 30 关正式表全过 schema 校验·关型闭集五型齐·五章章首对齐', () => {
+    expect(LEVELS.length).toBe(30);
     for (const lv of LEVELS) expect(levelIssues(lv)).toEqual([]);
     expect(new Set(LEVELS.map((l) => l.type))).toEqual(new Set(['score', 'collect', 'jelly', 'blocker', 'mixed']));
+    expect(CHAPTERS.map((c) => c.firstLevel)).toEqual([1, 7, 13, 19, 25]);
+    expect(chapterStartingAt(7)?.master).toBe('白鹤师父');
+    expect(chapterStartingAt(8)).toBeNull();
     // 校验器本身有牙：坏表要报
     expect(levelIssues(miniSpec({ kinds: 9 })).length).toBeGreaterThan(0);
     const jellyLv = LEVELS.find((l) => l.type === 'jelly')!;
     expect(levelIssues({ ...jellyLv, goals: [{ kind: 'blocker' }] }).length).toBeGreaterThan(0);
+  });
+
+  it('运行时副本/关名/章文案 ≡ docs 单一真相（levels.jsonc + copy.md·防漂移守卫）', () => {
+    const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+    const docRows = JSON.parse(
+      readFileSync(join(root, 'docs/design/game-t/levels.jsonc'), 'utf8').replace(/^\s*\/\/.*$/gm, ''),
+    );
+    const dataRows = JSON.parse(readFileSync(join(root, 'src/games/game-t/levels.data.json'), 'utf8'));
+    expect(dataRows).toEqual(docRows); // GD 重跑 gen 后忘同步副本 → 此处红
+    const copy = readFileSync(join(root, 'docs/design/game-t/copy.md'), 'utf8');
+    // 关名 ≡ §三 表
+    const secNames = copy.split('## 三、')[1]!.split('\n## ')[0]!;
+    const names: Record<number, string> = {};
+    for (const line of secNames.split('\n')) {
+      const m = /^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|/.exec(line);
+      if (m) names[Number(m[1])] = m[2];
+    }
+    expect(names).toEqual(LEVEL_NAMES);
+    // 章师父/文案 ≡ §二 表
+    const secCh = copy.split('## 二、')[1]!.split('\n## ')[0]!;
+    const rows = secCh.split('\n').filter((l) => /^\|\s*[一二三四五]·/.test(l));
+    expect(rows.length).toBe(5);
+    rows.forEach((line, i) => {
+      const cells = line.split('|').map((s) => s.trim());
+      expect(cells[1]).toBe(CHAPTERS[i].name);
+      expect(cells[2]).toBe(CHAPTERS[i].master);
+      expect(cells[4]).toBe(CHAPTERS[i].intro);
+    });
   });
 
   it('蓝图=纯数据可序列化：规则零 TS·消费现有能力·关键实体齐全', () => {
@@ -260,6 +297,7 @@ describe('Game T ·《墨消》（数据驱动三消·骨架关）', () => {
       expect(validateLayoutNode(buildBottomBar(s))).toEqual([]);
       if (s.status === 'win' || s.status === 'lose') expect(validateLayoutNode(buildResultOverlay(s))).toEqual([]);
     }
+    for (const ch of CHAPTERS) expect(validateLayoutNode(buildChapterIntro(ch))).toEqual([]);
     for (const sel of [
       { nodes: progressStates(LEVELS, {}).map((n) => ({ no: n.no, name: n.name, stars: n.stars, state: n.state })), muted: false },
       { nodes: progressStates(LEVELS, { 1: 3, 2: 1 }).map((n) => ({ no: n.no, name: n.name, stars: n.stars, state: n.state })), muted: true },
