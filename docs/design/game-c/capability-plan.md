@@ -34,7 +34,7 @@
 | `AudioPort`（`SynthAudioPort`+`SfxSpec`·`SynthMusicPort`） | 洗牌/发牌/筹码/翻牌/allin/胜利音 + BGM（声音=数据·样例 `game-g/sfx.ts:35`） | ✅ 现有 |
 | **德州摊牌比较**（7 选 5 最优 + 同型 kicker 全序值·复用 `HAND_TYPE_ORDER`） | 六家摊牌定胜负/平分 | 🟢 game-c TS 模块（owner TS 口径·§4-a）；攒出第二消费方再议下沉 |
 | **下注圈/边池状态机** | 轮转/min-raise/all-in 关圈/边池切层 | 🟢 game-c TS 模块（§4-b） |
-| **行为树**（节点=数据·条件叶复用 ConditionExpr 语汇） | AI 下注决策骨架（owner 点名 BT） | 🟢 game-c TS 模块（§4-c） |
+| `t2-behavior-tree`（五节点闭集·叶注册表 registerBTLeaves·黑板复用 Resource/Flag/StringVar） | AI 下注决策骨架：树+性格/难度=纯数据 config·行动轮决策点调 tickBehaviorTree | ✅ **现有**（0c021546 落地·原"自写 BT 模块"撤销·§4-c 收窄为叶注册） |
 | **角色卡 player 通道**（meta→蓝图→Text/Sprite） | 外部带入主角姓名+头像（立绘字段预留） | ⏳ 唯一跨域缺口（REQ-C-104·PST 协同·本目录 `requests.md`）；游戏侧先留注入点不阻塞 |
 
 ## 3. 摆成数据的规则面
@@ -45,8 +45,8 @@
 | 桌面轮转/座位表 | 6 座、按钮轮转、死按钮规则 | game-c TS 模块 §4-b（config 驱动） |
 | 下注规则 | min-raise、不足额 all-in 不重开、行动闭合 | game-c TS 模块 §4-b（config 驱动） |
 | 摊牌/平分规则 | 7 选 5、kicker、奇数筹码给前位、muck | game-c TS 模块 §4-a（纯函数） |
-| AI 性格表 ×5 | 进池率/激进度/诈唬频率/oracle 权重（紧凶/松凶/岩石/跟注站/诈唬狂） | game-c TS 模块 §4-c（BT 数据 config） |
-| 难度表 | easy=oracle off · normal=±30% · hard=±10%（owner 可调） | 同上（oracle 输入=§4-a 的强度百分位+种子噪声，**不做蒙特卡洛**） |
+| AI 性格表 ×5 | 进池率/激进度/诈唬频率/oracle 权重（紧凶/松凶/岩石/跟注站/诈唬狂·按长幼配） | `t2-behavior-tree` 树 config（**现成引擎解释器**）+ 叶函数 §4-c |
+| 难度表 | easy=oracle off · normal=±30% · hard=±10%（owner 可调） | 同上（oracle 叶输入=§4-a 强度百分位+种子噪声，**不做蒙特卡洛**） |
 | 加注尺度表 | 1/2 池 · 2/3 池 · 满池 · all-in | BT 动作叶参数 |
 | 衣物典当表（每角色：件目/面值/初始状态） | 耳环/手套/袜子/上衣/裙子/内衣…（GDD §3.5·数值待调） | `t2-craft-recipe`（每件=一条配方·现成）+ UI 信号（现成）；AI 典当阈值=BT config §4-c |
 | 音效表 | `SfxSpec` 闭集数据 | `SynthAudioPort`（现成） |
@@ -59,9 +59,9 @@
 
 | # | 例外 | 归属与纪律 | 预计行数 | 裁决 | 偿还计划 |
 |---|---|---|---|---|---|
-| a | `holdem-eval.ts`——7 选 5 最优 + kicker 全序值 + 平分（**纯函数**·复用 poker-hand `HAND_TYPE_ORDER`/牌码） | sim 内确定性纯函数·测试点名全牌型/kicker/平分边角 | ~100 | 🟢 owner TS 口径 | 攒出第二消费方（如 game-g）再议下沉引擎 |
+| a | `holdem-eval.ts`——7 选 5 最优 + kicker 全序值 + 平分（**纯函数**·复用 poker-hand `HAND_TYPE_ORDER`/牌码） | sim 内确定性纯函数·测试点名全牌型/kicker/平分边角 | ~100 | 🟢 owner TS 口径 | 攒出第二消费方再议下沉（已核：`t3-hand-pattern` 图纸=掼蛋压制域·与德州摊牌无关） |
 | b | `betting-engine.ts`——下注圈状态机（轮转/min-raise/不足额 all-in 不重开/行动闭合/边池切层/死按钮） | sim 内确定性·config 驱动·测试点名多 all-in 边池矩阵 | ~250 | 🟢 owner TS 口径 | 同上（德州二作再下沉） |
-| c | `poker-bt.ts`——行为树微解释器（节点=数据：selector/sequence/条件叶/动作叶）+ 性格/难度 config + oracle（强度百分位+种子噪声） | sim 内确定性（掷点全走 RandomSeed）·AI 对 AI 万手 sim 验非退化 | ~150 | 🟢 owner TS 口径 | BT 若被第二游戏要→提 Lead 下沉通用 capability |
+| c | `poker-bt-leaves.ts`——**仅 BT 叶函数注册**（registerBTLeaves：oracle 读取叶/pot-odds 条件叶/下注动作叶/典当动作叶）；树与性格/难度 config=纯数据；解释器=引擎 `t2-behavior-tree`（**自写解释器已撤销**） | sim 内确定性（掷点/噪声全走传入 RandomSeed）·AI 对 AI 万手 sim 验非退化 | ~80 | 🟢 owner TS 口径 | 叶若被第二游戏同构复用→提 Lead 收编叶标准库 |
 | d | 薄 session 编排脚本（照 game-e/d 先例：仅编排「发牌→行动信号→tick→读结果」接线，不含规则/比牌/AI） | 线性编排=宣言明许形态 | ~120 | 🟢 先例 | 常驻·同 game-e |
 | e | 3D 表现驱动（`engine.subscribe` 内 render-only：底池变化→筹码 `Impulse3D` 抛掷/发牌滑弧/胜者聚光） | render-only（P3D 域件消费·NON_DETERMINISTIC·不进 hash）；game-d 同款先例 | ~150 | 🟢 先例 | 常驻·渲染线 |
 
@@ -69,6 +69,7 @@
 
 ## 4.5 美术接入
 
+- **PA 备料已录**（`art-placeholders.md`）：52 牌面+卡背（货架 PD·vendor）、筹码 9 面额（货架 CC0·2D 贴圆柱）——皮肤槽首选真图直接有货。
 - **3D 主体（桌/凳/筹码/房间）**：game-z 几何生成路（`Mesh3D`+`Material3D` preset+`SurfaceDetail`）起步——此为**程序化回退基线**；桌面呢绒/木纹等贴图槽后补真图即换装。
 - **皮肤槽清单（主体视觉必有槽）**：52 张牌面 + 卡背（`Decal3D`/`Sprite.textureKey`）、筹码面额贴图 ×5、头像框、主角头像（角色卡带入）、五名姨太头像、**衣物件目图标 ×6 类**（典当面板用）。
 - **台账**：`public/games/game-c/art/art-ledger.json`（requirements 模式起步·推导脚本拟 `scripts/game-c-art-ledger.mjs`·照 game-q 样板）。

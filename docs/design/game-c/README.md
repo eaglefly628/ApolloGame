@@ -19,6 +19,7 @@
 - GDD：🟢 v1 `gdd.md`（核心八条 owner 已拍板 2026-07-17·§11.5；数值细调/立绘分级留开放）
 - capability-plan：🟡 草案 v1 `capability-plan.md`（owner TS 口径已入档；待 Lead 备案评审）
 - 需求单：`requests.md`（游戏级·不占引擎池槽；现 1 条 REQ-C-104 角色卡通道→PST）
+- 美术备料：`art-placeholders.md`（PA 货架现货：52 牌+卡背+筹码 9 面额·2026-07-17 GD-C 录档）；布局图纸：`ui-brief.md` + `layout-mockup.html`
 - 生产流程板：未开（`docs/playbooks/game-production.md` 八阶段）
 
 ## 角色与通道
