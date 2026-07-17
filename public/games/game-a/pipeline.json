@@ -13,6 +13,34 @@
     {
       "action": "concept",
       "at": "2026-07-17T14:13:18.547Z"
+    },
+    {
+      "action": "review",
+      "stage": "S2",
+      "verdict": "PASS",
+      "at": "2026-07-17T14:30:09.287Z"
+    },
+    {
+      "action": "review",
+      "stage": "S3",
+      "verdict": "PASS",
+      "at": "2026-07-17T14:30:27.492Z"
     }
-  ]
+  ],
+  "reviews": {
+    "S2": {
+      "verdict": "PASS",
+      "note": "范围核查:56d37e52 五文件全在 docs/design/game-a/=GD域内✓；能力清单逐条核真:hand-pattern(cf6b0ed0)/behavior-tree(0c021546)/VoicePort 已落库并经Lead验收归档(94a01272)·其余 card-pile/card-play/clickable/tray/flow/event-when/modifier-stack/timeline registry 实名在册✓；规则面零虚胖(牌型表→t3-hand-pattern·AI树→t2-behavior-tree·经济/规则参数→flow+effect链S4接·各表解释器闭环)✓；§4例外①②③④裁决落列(①先重组有条件准·②收窄准=必须消费legalResponses·③④准)✓；§4.5美术已答(vendor 55张+双风格锚·无纯程序化申请)✓。owner人门待签。",
+      "by": "Lead-Fable(主程·非施工session)",
+      "at": "2026-07-17T14:30:09.287Z",
+      "gameHash": "9d5e108d611b87f8"
+    },
+    "S3": {
+      "verdict": "PASS",
+      "note": "范围核查:c457b38c 全部文件对照PE-A域注逐一核对=src/games/game-a/**9文件+launcher.tsx GAMES条目/game-runner动态导入行(域注知会)+tools/audits两入口+public/games/game-a(vendor55+pipeline.json)——零声明外文件✓；编译期无manifest·蓝图纯数据核证:blueprint.ts=WorldBlueprint纯数据(rng单例/pile-dealer持108全牌/四家空手/Resource run态/can-act闸/flow boot→table-idle)·实名消费5 capability与plan§2一致✓；宿主薄壳:game-a.ts=mountHost公用件+handler仅menu.start/table.back生命周期·零手写DOM/零裸随机/零玩法逻辑✓；落盘门真跑:独立复跑vitest 12测(load+3tick到table-idle·同种子双跑同世界·LayoutNode零issue·vendor全量对账)+hand-pattern36测+BT",
+      "by": "Lead-Fable(主程·非施工session)",
+      "at": "2026-07-17T14:30:27.492Z",
+      "gameHash": "9d5e108d611b87f8"
+    }
+  }
 }
