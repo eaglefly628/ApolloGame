@@ -94,7 +94,7 @@
 
 | 区块 | 控件 | 数据源 | 信号 |
 |---|---|---|---|
-| 三家席位 ×3 | `Avatar`+`Label`+`Badge`(余牌数)+`Tag`(级牌/头游标记)+`Float`(表情气泡·性格驱动) | 对局状态 | — |
+| 三家席位 ×3 | `Avatar`+`Label`+`Badge`(余牌数)+`Tag`(级牌/头游标记)+`Float`(表情气泡·性格驱动)；**点头像→角色状态卡**（SC-7b） | 对局状态 | `sig.table.inspect-char` |
 | 中央出牌区 | `PlayingCard` 组（四家落位·最近一手）+`Tag`(墩型名：三带二/钢板/炸弹…)+`Float`(「过」) | 出牌流 | — |
 | 局信息条 | `Panel` 内 `Label`+`Tag`：级牌(红桃级牌带流光标识)·双方级数·底注·盘数 | 对局状态 | — |
 | 主角手牌 | `PlayingCard`×N 扇形排列·选中上浮·可多选 | 手牌数据 | `sig.hand.toggle-card`(逐张) |
@@ -124,11 +124,12 @@
 | 级数推进 | `LevelPath`（2→A 双方两条轨·本盘 +N 推进动画） | 打A局特别标记 |
 | 操作 | `Button`[下一盘][离桌结算] | `sig.round.next` / `sig.round.leave` |
 
-### SC-5 通关结算（过 A）
+### SC-5 通关结算（过 A）/ 游戏结束
 
 - 全屏演出：主角立绘+队友人设卡并立、`Particles` 庆祝、艺术字「过 A」；
 - 生涯统计 `Table`（总盘数/胜率/最大炸弹/净盈亏）+ 带出金钱大数字；
-- `Button`[再来一局][回主菜单]（`sig.clear.restart` / `sig.clear.home`）。
+- `Button`[再来一局][回主菜单]（`sig.clear.restart` / `sig.clear.home`）；
+- **失败变体（对方先过 A·owner 二轮拍板「直接游戏结束」）**：同布局复用暗色调「游戏结束」——无庆祝粒子，统计照显、带出结余照算；数值目标=短周目内「对方过 A」为罕见事件（S4 balance-sim 钉）。
 
 ### SC-6 设置（全局 Modal）
 
@@ -138,9 +139,13 @@
 
 `Image` 立绘全身大图 + `Label` 名字 + 扩展字段占位区（年龄/性格… `Label`+`Tag`，**外部角色卡标准发放后填充**）+ 战绩摘要 `Table` + 返回 `Button`。
 
+### SC-7b 角色状态卡（姨太 · 牌桌内 Modal · 服饰罚可视化）
+
+`Modal` 内：`Image` 立绘（**随服饰阶梯 5 档切换**，底线装束为最终档不再变化）+ `Badge`「服饰 N/5」+ `ProgressBar`（run 内状态）+ 对战战绩 `Table` + 关闭按钮。规则语义见 brief §6.1；**内容红线**：全员成年、底线档非裸露（brief §3）。信号 `sig.table.inspect-char`。
+
 ## 4. 信号总表（命名约定 `sig.<域>.<动作>`）
 
-`sig.menu.start/continue/settings/profile` · `sig.table.difficulty/stake/peek-profile/seat` · `sig.hand.toggle-card/sort` · `sig.play.commit/pass/hint` · `sig.tribute.confirm` · `sig.tools.card-counter` · `sig.round.next/leave` · `sig.clear.restart/home` · `sig.settings.music/sfx/reduce-fx/skip-anim/quit`
+`sig.menu.start/continue/settings/profile` · `sig.table.difficulty/stake/peek-profile/seat/inspect-char` · `sig.hand.toggle-card/sort` · `sig.play.commit/pass/hint` · `sig.tribute.confirm` · `sig.tools.card-counter` · `sig.round.next/leave` · `sig.clear.restart/home` · `sig.settings.music/sfx/reduce-fx/skip-anim/quit`
 （PE 落地时如需增删，回改本表保持同源——信号表=UI 与逻辑的唯一契约。）
 
 ## 5. 美术槽位总表（→ S6 台账预备 · 二次元风格锚 · 全自产）
@@ -150,7 +155,7 @@
 | A-BG-01/02 | 主菜单背景·牌桌桌布(棋牌室场景) | 2 | 风格锚定调图，先出 |
 | A-CARD-BACK | 牌背 | 1 | 队伍色两变体可后补 |
 | A-CARD-FACE | 牌面体系 | 模板+徽记 | **建议「模板合成」**：底版+四花色徽记+点数字模+双王画。54 张逐张手绘工作量大，S2 里申请程序合成例外，Lead 裁 |
-| A-CHAR-NPC | 内置人设 ×3 | 头像+立绘+表情差分×3档 | 性格标签联动 AI 风格；结构对齐未来角色卡标准 |
+| A-CHAR-NPC | 内置人设 ×3（姨太） | 头像+**服饰阶梯立绘×5 档**+表情差分×3 | **台账行数大头（~15 张立绘）**；底线档非裸露（brief §3 红线）；性格标签联动 AI 风格；结构对齐未来角色卡标准 |
 | A-CHAR-HERO | 主角 | 头像+立绘 | **外部角色卡带入**，本库只留占位规格 |
 | A-FX | 炸弹爆裂·同花顺横幅·天王炸 cut-in 框·金币雨粒子 | 4 组 | 优先程序化(`Particles`/引擎特效)，贴图仅补质感 |
 | A-ICON | 金币·名次徽章(头游~末游)·级牌流光·墩型角标 | ~10 | — |
@@ -162,6 +167,7 @@
 2. UI 全 LayoutNode 纯数据；本案控件词汇已对照 catalog 闭集，若落地发现字段不够（见 §7）→ `requests.md` 报 PUI，不逃生。
 3. 美术走台账制：MOCK 不上画面；台账行带尺寸+英文提示词+风格锚（S6 照 `art-pipeline.md`）。
 4. 一切随机（洗牌/发牌/AI 决策/表情触发）用引擎种子 PRNG——回放与 bench 双跑是 S8 门。
+5. **内容红线**：角色全员成年、服饰阶梯底线档非裸露、露骨内容不产（brief §3·跟踪单 A-006）；发行按出海成人向定位——S6 美术、S7 品质、PS 发行各阶段复核此项。
 
 ## 7. 表达存疑项（留给 PUI/LEAD 裁决，S3/S5 前清零）
 
