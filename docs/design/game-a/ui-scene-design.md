@@ -1,6 +1,7 @@
 # Game A《掼蛋夜宴》· 场景布局 & UI 布局设计交接案（v1）
 
 > 2026-07-17 · GD-A 出案 → 交接对象：PE-A（S3/S5 落地）、PUI（控件缺口裁决）、美术线（S6 台账）。
+> **视觉基准（owner 07-17 钦定）**：本目录 `guandan-lite-mockup.html`——PE 用 LayoutNode **1:1 复刻**；控件缺口由 **PE 施工时**对照闭集提 `requests.md` 报 PUI（owner 口径：GD 不预筛缺口）。本案 §3 布局详案与蓝本冲突时**以蓝本为准**，§4 信号表/§5 槽位表仍有效。
 > **铁律对齐**：所有 UI=`src/ui/components` LayoutNode 纯数据（控件实名以 `catalog.ts` 闭集为准，本案只用闭集词汇）；handler 只入队 action 信号零逻辑；本案给的是**布局意图+控件词表+信号契约+美术槽位**，具体 LayoutNode 数据由 PE 在 S5 落地；表达不了 → `requests.md` 报 PUI，**绝不手写逃生**（存疑项已集中在 §7）。
 > 风格总纲：**二次元向 · 原生自产**（owner 拍板零外部 IP）。基准横屏 16:9（建议 1280×720 逻辑分辨率，PE 定稿）。
 
