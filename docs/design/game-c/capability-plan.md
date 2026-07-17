@@ -9,8 +9,8 @@
 
 ## 1. 游戏一句话
 
-单人 vs 五名 AI 的六人桌**标准德州扑克**（SNG 提案）：俯视固定 3D 牌房（牌桌+六凳），筹码 render-only 物理落桌；
-AI=行为树，难度=对敌方手牌强度的读取误差 %（简单档禁读）。参照 Prominence Poker 单机局。
+单人 vs 五位姨太 AI 的六人桌**标准德州扑克·现金局**（owner 拍板）：俯视固定 3D 牌房（牌桌+六凳），筹码 render-only 物理落桌；
+**衣物典当续命·剥光才出局**（每件衣物=一条 craft-recipe 配方）；AI=行为树，难度=读牌误差 %（简单档禁读）。参照 Prominence Poker 单机局。
 
 ## 2. 消费的引擎能力（对照 `capability-registry` 实名）
 
@@ -24,7 +24,7 @@ AI=行为树，难度=对敌方手牌强度的读取误差 %（简单档禁读�
 | `resource-apply`（`Resource`） | 六家筹码栈、底池/边池、当前注、盲注级别、加注增量 | ✅ 现有 |
 | flag / string-variable / state | 行动轮状态、按钮位、AI 性格/难度参数、当前牌型名 | ✅ 现有 |
 | `event-when` + condition | 阶段触发接线（如全员行动毕→进下一街的信号面） | ✅ 现有 |
-| `t2-effect-apply` / `t2-craft-recipe` | 盲注扣缴、原子多项筹码结算 | ✅ 现有 |
+| `t2-effect-apply` / `t2-craft-recipe` | 盲注扣缴、原子多项筹码结算；**衣物典当=每件一条配方**（信号→原子扣衣物+加筹码·§3.5 机制零新代码） | ✅ 现有 |
 | `t2-clickable` + keybind + LayoutNode 信号 | 行动条输入（fold/check/call/raise+尺度） | ✅ 现有 |
 | UI：LayoutNode 34 控件闭集 | 行动条/座位铭牌/底池/结算面板（PUI 域·缺件报 PUI） | ✅ 现有 |
 | 3D：`Mesh3D`+`Material3D`(preset)+`Transform3D`+`Light3D`+`Sky3D` | 房间/牌桌/六凳/筹码堆几何生成（game-z 路 `game-z/diorama.ts:22`） | ✅ 现有·render-only |
@@ -48,6 +48,7 @@ AI=行为树，难度=对敌方手牌强度的读取误差 %（简单档禁读�
 | AI 性格表 ×5 | 进池率/激进度/诈唬频率/oracle 权重（紧凶/松凶/岩石/跟注站/诈唬狂） | game-c TS 模块 §4-c（BT 数据 config） |
 | 难度表 | easy=oracle off · normal=±30% · hard=±10%（owner 可调） | 同上（oracle 输入=§4-a 的强度百分位+种子噪声，**不做蒙特卡洛**） |
 | 加注尺度表 | 1/2 池 · 2/3 池 · 满池 · all-in | BT 动作叶参数 |
+| 衣物典当表（每角色：件目/面值/初始状态） | 耳环/手套/袜子/上衣/裙子/内衣…（GDD §3.5·数值待调） | `t2-craft-recipe`（每件=一条配方·现成）+ UI 信号（现成）；AI 典当阈值=BT config §4-c |
 | 音效表 | `SfxSpec` 闭集数据 | `SynthAudioPort`（现成） |
 | 特效库 | `PrefabTemplate` 组 + `LayoutNode.fx` | prefab+caster+tween / UI 渲染器（现成） |
 | 房间布局 | 桌/凳/灯坐标 + Material3D preset | 蓝图实体数据（现成） |
@@ -69,7 +70,7 @@ AI=行为树，难度=对敌方手牌强度的读取误差 %（简单档禁读�
 ## 4.5 美术接入
 
 - **3D 主体（桌/凳/筹码/房间）**：game-z 几何生成路（`Mesh3D`+`Material3D` preset+`SurfaceDetail`）起步——此为**程序化回退基线**；桌面呢绒/木纹等贴图槽后补真图即换装。
-- **皮肤槽清单（主体视觉必有槽）**：52 张牌面 + 卡背（`Decal3D`/`Sprite.textureKey`）、筹码面额贴图 ×5、头像框、主角头像（角色卡带入）、五名 AI 头像。
+- **皮肤槽清单（主体视觉必有槽）**：52 张牌面 + 卡背（`Decal3D`/`Sprite.textureKey`）、筹码面额贴图 ×5、头像框、主角头像（角色卡带入）、五名姨太头像、**衣物件目图标 ×6 类**（典当面板用）。
 - **台账**：`public/games/game-c/art/art-ledger.json`（requirements 模式起步·推导脚本拟 `scripts/game-c-art-ledger.mjs`·照 game-q 样板）。
 - **程序化例外申请**：凳子/房间墙地不设贴图槽（几何+preset 已达盒庭观感·贴图收益低）——Lead 裁。
 
