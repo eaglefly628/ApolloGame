@@ -8,6 +8,22 @@
 
 ## 待处理
 
+### REQ-C-105 · [P0 复查打回] betting-engine 边池结算筹码蒸发（大盲短缴 all-in + 弃牌）· [2026-07-17] · 提出人 GD-C（S4 复查门对抗核证）→ 指派 PE-C 修 · status: open · 优先级: P0（阻塞 S4 放行·M2 前必修）· 类型: 游戏层 TS 正确性 bug（capability-plan §4-b）
+> **S4 复查门裁定=FAIL 打回**（复查人 GD-C≠施工 PE-C）。50 测独立复跑绿，但均为**场景测、未覆盖守恒 property**——对抗性 fuzz 一跑即现。
+> **根因**（`betting-engine.ts:287-295` potLayers refund）：未被跟注溢出的 `top` 仅从 **live（未弃）** 取。`startHand:149` 把 `currentBet` 强制设为 bigBlind，当大盲栈<大盲=短缴 all-in 时 currentBet **虚高于任何人实缴**；此时部分匹配该线后弃牌的玩家可成为**全场最高投入者却已弃牌**，其超出最高 live 投入的差额既不进池（caps 只来自 live total）也不退回（refund 只认 live top）→ 蒸发。
+> **复现（GD-C 亲手 vitest 验证）**：heads-up·SB 栈1000 缴25 / BB 栈10 短 all-in 缴10 / SB 面对 toCall25 弃牌 → uncontested BB。引擎 refund=null·池20 给 BB·终栈 [975,20]=995，起始 1010 → **漏 15**（应退 SB 未被跟注的 15 → [990,20]）。fuzz(30000 手/2-6 人)：67 手漏 214 筹码。**现金局剥光玩法终局栈常低于盲注，此路径高频；M2 万手 AI sim 必撞、任何守恒断言必发散。**
+> **修法（对抗子代理验证·0 泄漏/50 测不变/非 bug 路径 behavior-identical）**：refund 的 top 取**全体** players 非仅 live——
+> ```ts
+> const sortedAll = [...st.players].sort((a, b) => b.total - a.total);
+> const top = sortedAll[0];
+> const second = sortedAll[1]?.total ?? 0;
+> if (top.total > second) { refund = { seat: top.seat, amount: top.total - second }; totals.set(top.seat, second); }
+> ```
+> （全场最高是 live 时 second=原 othersMax → 行为不变；仅弃牌者为最高时才纠偏。）
+> **必带（防回归·测试方法论缺陷）**：加**守恒 property fuzz 测试**（随机合法动作序列 → 断言 Σstack 全程不变）——现套件只在固定场景断言 totalChips，正是漏网原因。
+> **P1 建议（可同修）**：①settlement 防御纵深——任何 eligible 为空的池层退回贡献者（未来状态机改动无条件守恒）；②`legalActions.call` 可超栈（act→pay 已 clamp），加 `Math.min(toCall,stack)` 或文档锐化防 AI/UI 误读。
+> **修完**：重跑复查门（另一双眼睛 + fuzz）再放行 S4；其余维度（rank5 kicker/wheel/行动闭合/短 all-in 不重开/死按钮/确定性/数据驱动）复查 **REFUTED=clean**，无需重审。
+
 ### REQ-C-104 · 角色卡「玩家档案」通道：外部带入主角姓名+头像（立绘字段预留） · [2026-07-17] · 提出人 GD-C → **⚖ Lead 接单出图（2026-07-17·owner「有需求就做掉」）→ 指派：Opus（PST 域施工）** · status: **✅ done·Lead 对抗性验收 PASS（2026-07-17）** · 优先级: P1（M4 前需要·不阻塞 M1 逻辑） · 类型: 创作台/卡带 meta 数据通道（跨域：PST 主责·引擎装配层读取）
 > **想要的行为**：游戏外部（工坊/launcher 档案）配置一张「角色卡」：`{ name, avatar(资产 key), portrait?(立绘·预留) }`；
 > **⚖ Lead 对抗性验收（2026-07-17·判 PASS）**：独立复跑全绿（tsc·vitest 368 文件/2928·build）；域界零越线（games/skills/engine/apollo.py 全 0 触碰）；12 新测含坏档/headless/往返/空名禁用。偏差四条全 INTENTIONAL 准许：avatar↔avatarUrl 归一（调和图纸与 §0 字段差·一个 ?? 两头吃）；档案卡独立文件=launcher 子件既有架构（「不新立组件」正解为 LayoutNode 闭集不扩·launcher React 壳同 SettingsPanel 先例）；游戏侧 adapter 接线随各 PE 走（正确守域）；清除按钮 additive。**三游戏 M4 前的外部依赖清零。**

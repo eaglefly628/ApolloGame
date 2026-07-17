@@ -44,6 +44,12 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-17T14:08:25.037Z"
+    },
+    {
+      "action": "review",
+      "stage": "S4",
+      "verdict": "FAIL",
+      "at": "2026-07-17T15:02:00.491Z"
     }
   ],
   "outOfOrder": [
@@ -57,5 +63,14 @@
       "reason": "owner 启动词指派 PE-C 本会话领 M1 逻辑核(S4 机器侧)·前置 S1/S2/S3 人门复查门待 owner/Lead/复查 session 补签(顺序闸记账·game-t 先例)",
       "at": "2026-07-17T14:08:23.757Z"
     }
-  ]
+  ],
+  "reviews": {
+    "S4": {
+      "verdict": "FAIL",
+      "note": "P0 边池筹码蒸发 betting-engine.ts:287-295 potLayers refund 仅取 live top·startHand:149 currentBet 强制=bigBlind 使大盲短缴all-in时虚高·弃牌者可为全场最高投入者→未跟注差额既不入池也不退回·复现 heads-up(SB1000缴25/BB10短all-in/SB弃)漏15(1010→995)·fuzz 67/30000漏214·修法见 requests REQ-C-105(refund top 取全体)·rank5/wheel/行动闭合/短allin/死按钮/确定性/数据驱动 REFUTED=clean·50测绿但均场景测未覆盖守恒property",
+      "by": "GD-C-review",
+      "at": "2026-07-17T15:02:00.491Z",
+      "gameHash": "9144d000df0ca361"
+    }
+  }
 }
