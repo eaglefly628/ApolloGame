@@ -7,7 +7,7 @@ import { matchPattern, beats, legalResponses } from '@skills/tier3/index.js';
 import type { Card, GameFlow, Resource, CardPile, Flag } from '@engine/protocol/components.js';
 import { validateLayoutNode } from '@ui/components/index.js';
 import {
-  buildDeck108, guandanConfig, cardCode, codeRank, codeSuit,
+  buildDeck108, guandanConfig, cardCode, codeRank, codeSuit, sortHand,
   SEATS, DECK_SIZE, RANK_SMALL_JOKER, RANK_BIG_JOKER, SUIT_HEART, INITIAL_FUNDS, DRESS_TIERS,
 } from './rules.js';
 import { buildTableBlueprint } from './blueprint.js';
@@ -140,7 +140,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       hand: [cardCode(0, 3), cardCode(1, 3), cardCode(0, 7), cardCode(2, 14), cardCode(0, RANK_BIG_JOKER)],
       selected: [0, 1], // 选中前两张（下标·非牌码）
       trick: { name: '对子', family: 'pair', cards: [cardCode(2, 2), cardCode(3, 2)] },
-      canCommit: true, commitWhy: '', canPass: true,
+      canCommit: true, commitWhy: '', canPass: true, sortMode: 'rank',
     });
     expect(validateLayoutNode(play)).toEqual([]);
     // 领出态（无墩）+ AI 轮次
@@ -148,7 +148,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       round: 2, stake: 100, levelPlay: 2, levelOurs: 3, levelTheirs: 2, wallet: 12000,
       turn: 'west', turnName: '林曼笙',
       seats: { partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero') },
-      hand: [cardCode(0, 5)], selected: [], trick: null, canCommit: false, commitWhy: '点牌选中 · 出牌或过', canPass: false,
+      hand: [cardCode(0, 5)], selected: [], trick: null, canCommit: false, commitWhy: '点牌选中 · 出牌或过', canPass: false, sortMode: 'family',
     });
     expect(validateLayoutNode(lead)).toEqual([]);
     for (const phase of ['settled', 'run-won', 'run-lost'] as const) {
@@ -162,6 +162,24 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       });
       expect(validateLayoutNode(res)).toEqual([]);
     }
+  });
+
+  // ── 理牌排序（视图·纯函数·不碰 sim）────────────────────────────────────────────
+  it('理牌 sortHand：按点数升序（级牌抬到 A 上王下）/ 按牌型同点聚组张数降序', () => {
+    // 打 7：♥7=级牌抬高。牌 = 3,3,7(级),9,大王,炸4×5
+    const codes = [
+      cardCode(0, 9), cardCode(1, 3), cardCode(0, 3), cardCode(1, 7), cardCode(0, RANK_BIG_JOKER),
+      cardCode(0, 5), cardCode(1, 5), cardCode(2, 5), cardCode(3, 5),
+    ];
+    const byRank = sortHand(codes, 'rank', 7).map(codeRank);
+    // 升序：3,3,5,5,5,5,9,7(级=A上),大王 → 级牌7排在9之后、王之前
+    expect(byRank[0]).toBe(3);
+    expect(byRank[byRank.length - 1]).toBe(RANK_BIG_JOKER); // 大王最后
+    expect(byRank.indexOf(7)).toBeGreaterThan(byRank.indexOf(9)); // 级牌7 抬到 9 之后
+    // 按牌型：炸弹（4×5）聚最前（张数最多）
+    const byFam = sortHand(codes, 'family', 7);
+    expect(byFam.slice(0, 4).map(codeRank)).toEqual([5, 5, 5, 5]); // 4 张 5 组在最前
+    expect(byFam.length).toBe(codes.length); // 不丢牌
   });
 
   // ── 牌码 → 资产 id 映射抽查（全量对账在 vendor.test）────────────────────────────

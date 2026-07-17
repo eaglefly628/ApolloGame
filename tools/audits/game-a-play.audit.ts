@@ -20,6 +20,7 @@ const view: PlayView = {
   seats: { partner: sv('partner', 8), west: sv('west', 12), east: sv('east', 5), hero: sv('hero', 27) },
   hand,
   selected: [10, 11, 12], // 选中三张（上浮金边）
+  sortMode: 'rank',
   trick: { name: '三连对（木板）', family: 'tube', cards: [cardCode(0, 5), cardCode(1, 5), cardCode(0, 6), cardCode(1, 6), cardCode(0, 7), cardCode(1, 7)] },
   canCommit: true,
   commitWhy: '',

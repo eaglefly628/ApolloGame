@@ -115,8 +115,9 @@ export interface PlayView {
   turn: SeatId;
   turnName: string;
   seats: { partner: SeatView; west: SeatView; east: SeatView; hero: SeatView };
-  hand: number[]; // hero 手牌牌码（已排序）
-  selected: number[]; // 已选手牌**下标**（非牌码——两副牌同码会联动误选，故按 idx 标识）
+  hand: number[]; // hero 手牌牌码（显示顺序·按 sortMode 排）
+  selected: number[]; // 已选手牌**下标**（指向显示顺序·非牌码——两副牌同码会联动误选，故按 idx 标识）
+  sortMode: 'rank' | 'family'; // 理牌当前档（Segmented 高亮用）
   trick: { name: string; family: string; cards: number[] } | null; // 当前墩
   canCommit: boolean; // 选牌构成合法且能压
   commitWhy: string; // 不可出的原因（禁用提示）
@@ -247,7 +248,7 @@ export function buildPlay(v: PlayView): LayoutNode {
           {
             type: 'Segmented',
             id: 'a-p-sort',
-            props: { options: [{ value: 'rank', label: '按点数' }, { value: 'family', label: '按牌型' }], value: 'rank', action: 'hand.sort' },
+            props: { options: [{ value: 'rank', label: '按点数' }, { value: 'family', label: '按牌型' }], value: v.sortMode, action: 'hand.sort' },
           },
         ],
       },

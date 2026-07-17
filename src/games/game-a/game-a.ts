@@ -10,7 +10,7 @@ import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap } from '@ui/components/index.js';
 import { GuandanSession, TURN_ORDER, teamOf, FAMILY_CN, type SeatId } from './guandan-session.js';
 import { buildMenu, buildPlay, buildResult, type SeatView, type PlayView, type ResultView } from './hud.js';
-import { SEATS, DRESS_TIERS, INITIAL_FUNDS, codeSuit, codeRank } from './rules.js';
+import { SEATS, DRESS_TIERS, INITIAL_FUNDS, codeSuit, codeRank, sortHand } from './rules.js';
 import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG, GAME_A_THEME } from './theme.js';
 
 const RUN_SEED = 20260717; // 骨架期固定 run 种子；生涯存档随 run 快照=后续接
@@ -23,7 +23,8 @@ export function mount(container: HTMLElement): () => void {
 
   let ui: MountHandle | null = null;
   let session: GuandanSession | null = null;
-  let selected: number[] = []; // 选中手牌**下标**（非牌码·避同码联动）
+  let selected: number[] = []; // 选中手牌**下标**（指向显示顺序·非牌码·避同码联动）
+  let sortMode: 'rank' | 'family' = 'rank'; // 理牌显示排序（视图·不碰 sim）
   let aiTimer: ReturnType<typeof setTimeout> | null = null;
 
   const seatSpec = (id: SeatId): SeatView['seat'] => SEATS.find((s) => s.id === id)!;
@@ -40,9 +41,13 @@ export function mount(container: HTMLElement): () => void {
     }
   }
 
-  // 选中下标 → 牌码（去重后按当前手牌取·下标越界丢弃）。
+  // 理牌显示顺序（视图·selected 下标以此为准；sim 手牌不动）。
+  function displayHand(s: GuandanSession): number[] {
+    return sortHand(s.hands.hero, sortMode, s.playLevel);
+  }
+  // 选中下标 → 牌码（按**显示顺序**取·下标越界丢弃）。
   function selectedCodes(s: GuandanSession): number[] {
-    const hand = s.hands.hero;
+    const hand = displayHand(s);
     return selected.filter((i) => i >= 0 && i < hand.length).map((i) => hand[i]);
   }
 
@@ -65,8 +70,9 @@ export function mount(container: HTMLElement): () => void {
       turn: s.turn,
       turnName: seatSpec(s.turn).name,
       seats: { partner: seatView('partner'), west: seatView('west'), east: seatView('east'), hero: seatView('hero') },
-      hand: [...s.hands.hero],
+      hand: displayHand(s),
       selected: [...selected],
+      sortMode,
       trick: s.currentTrick
         ? { name: FAMILY_CN[s.currentTrick.match.family] ?? s.currentTrick.match.family, family: s.currentTrick.match.family, cards: s.currentTrick.cards }
         : null,
@@ -187,9 +193,10 @@ export function mount(container: HTMLElement): () => void {
         scheduleAi();
       }
     },
-    // 理牌切换（按点数/按牌型）：手牌已在 session 按点数排；牌型分组排序=后续增强（S5 视觉先接信号·切换清选避 idx 失效）。
-    'hand.sort': () => {
+    // 理牌切换（按点数/按牌型）：纯视图排序（不碰 sim）；切换清选（idx 基准变）。
+    'hand.sort': (arg?: string) => {
       if (!session) return;
+      sortMode = arg === 'family' ? 'family' : 'rank';
       selected = [];
       render();
     },

@@ -19,6 +19,29 @@ export const codeSuit = (code: number): number => Math.floor(code / 100);
 export const codeRank = (code: number): number => code % 100;
 export const isJoker = (code: number): boolean => codeRank(code) >= RANK_SMALL_JOKER;
 
+/** 理牌排序（纯视图变换·不碰 sim）：
+ *  - 'rank'：按点数升序（级牌抬到 A 上·王下·同点按花色）——默认。
+ *  - 'family'：同点聚成组·组按张数降序（炸弹/三张/对子前置·一眼看牌力）·同张数按点数升序。
+ *  levelRank=本盘级牌点数（抬高排序位）。纯函数·可回放·可测。 */
+export function sortHand(codes: readonly number[], mode: 'rank' | 'family', levelRank: number): number[] {
+  const eff = (c: number): number => {
+    const r = codeRank(c);
+    return r === levelRank ? RANK_ACE + 0.5 : r; // 级牌抬到 A 之上、小王(15)之下
+  };
+  if (mode === 'rank') {
+    return [...codes].sort((a, b) => eff(a) - eff(b) || codeSuit(a) - codeSuit(b));
+  }
+  const byRank = new Map<number, number[]>();
+  for (const c of codes) {
+    const r = codeRank(c);
+    if (!byRank.has(r)) byRank.set(r, []);
+    byRank.get(r)!.push(c);
+  }
+  return [...byRank.values()]
+    .sort((g1, g2) => g2.length - g1.length || eff(g1[0]) - eff(g2[0]))
+    .flat();
+}
+
 /** 两副含王 108 张（gdd R1）。基准顺序=副×花色×点数+双王；洗牌在 S4 发牌时走 seededShuffle（种子 PRNG）。 */
 export function buildDeck108(): number[] {
   const deck: number[] = [];
