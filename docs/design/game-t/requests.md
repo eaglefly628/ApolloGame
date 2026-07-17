@@ -21,12 +21,19 @@
 > ①落地前的**临时观感**（全在 game-t 数据/宿主内·非引擎债）：特殊棋子无专属外观（卷轴/朱印/太极显为本色珠）；墨渍=静态底衬不随洗净刷新、冰纹瓷 hp 变化无视觉（进度看 HUD 活计数）；选中格无高亮（底栏文案提示「已选 r行c列」）；消除为瞬消无缓动。**引擎单落地后 PE-T 接线并销本条。**
 > ②拖拽交换：`t2-match3-drag-swap` 已下沉（2026-07-16·**待 Lead 对抗性验收**）——验收过后 PE-T 接入（手势产同名 `pick` 信号即插即用·sim 零改动·Clickable 点选路保留）。
 
-### T-003 · 引擎缺口候选（报 Lead 评审·先重组后下沉·勿在游戏层自造） · [2026-07-16] · PE-T · status: open（待 Lead 裁决是否立主池单）
+### T-005 · game-t 整改（Lead 对抗性验收 2026-07-16 判 **NEEDS WORK**·板全绿前不得称"完成"·owner 拍板 P1） · 指派：PE-T · status: open
+> 验收证据：流程板 S5-S8 未进入（S6 无台账/S7 未打分/复查门与人门全空）。整改清单（板全绿本条才关）：
+> ① **S6 台账（原 REQ-GDT-ART 条·优先级低→P1）**：建 `scripts/game-t-art-requirements.mjs`（game-q 样板·mergeLedger 保号·行 prompt=主体英文+风格锚引用+`chinese ink-wash, cartoon kung-fu`·清单=gdd §六约 60 件）→ 跑出台账与 art 目录。
+> ② S5 gate 真跑落证据（宿主 createElement 红旗由主池 `REQ-AUDIT-守门` A 件解封语义/C 件下沉归零——迁移到引擎 helper 时销 T-002①相应行）。
+> ③ S7 评分卡（复查人打分·八维带证据）；④ S2-S4 复查门补课 + 各关人门请 owner/Lead 签；⑤ 音效对照 gdd 13 条闭集列覆盖表补齐。
+
+### T-003 · 引擎缺口候选（报 Lead 评审·先重组后下沉·勿在游戏层自造） · [2026-07-16] · PE-T · status: **Lead 已裁（2026-07-16·见下）**
 > ① **连锁计分倍率**：GDD §四「连锁每级 ×1.5」——`t3-match3-board` 今日只有平铺 `coinPerTile`；骨架先平 60 分/珠（GD 定标已按此口径 sim，改倍率需连表重定标）。候选=config 加 `chainScoreScale?`（缺省 1=字节不变）。
 > ② **「棋盘已稳定」可判条件**：终局结算窗现用定值 SETTLE_TICKS=420 兜底（Condition 读不到 MatchBoard.phase）——候选=board 写 settled Flag/Resource（数据可判·回放安全）。
 > ③ **audit 工具债（转 Lead/工具域）**：`game-skill-audit` 对宿主容器 createElement 计 anyRed → 退出码 1——S5 机器门对**一切**编译期宿主游戏恒红（game-q 同判）。基线棘轮已管住增量；建议=基线内红旗不计 anyRed 或宿主骨架白名单，Lead 裁。
 > ③b **ui-audit 盲区回报（PUI 域·同 REQ-STYLESET M0.5 遗留①家族）**：/check-ui 走查 game-t 三屏（audit 入口 `tools/audits/game-t-{hud,select,result}.audit.ts`·440×780）——重叠 0；文字对比经「实底纸面化」整改后全过（glass→实底 Panel·直坐 Screen 文字包卡·color 显式 text 令牌——顺带修掉 5 处真实低对比 2.65-2.77）；**残留硬失败仅 ghost 糖果皮按钮 ratio=1.21 ×5**（border-image 皮审计不可见→按宣纸底误算；真渲=白字压深绿糖体可读·截图为证）=M0.5 Lead 验收已定性的工具债，等 PUI 修 ui-audit 后本三入口即归零。另报：pageBg 渐变/texture/glass 无 backgroundColor → 审计按深兜底算亮皮对比（同族·本次以实底纸面绕开且观感更优）。
 > ④ **sim 纯函数出口**：`resolveClear/classifySpawns` 未在 `skills/tier3/index.ts` 桶出口——GD sim 已直接 import `match3-board.js` 跑通；要不要补桶出口=Lead 一行裁决。
+> **⚖ Lead 裁决（2026-07-16）**：① ✅ 准——主池 `REQ-M3-计分倍率` 照候选 spec（`chainScoreScale?` 缺省 1=字节不变·连表重定标由 GD 随批）；② ✅ 准入三期包——主池 `REQ-M3-三期` 加 ⑤「棋盘 settled Flag/Resource」（数据可判·回放安全·新 session 照图）；③ ✅ 接管——新立主池 `REQ-AUDIT-守门`（棘轮防自基线+宿主骨架下沉·本条为其证据源）；③b 维持 M0.5 遗留定性（PUI 工具债）；④ ✅ 准（补桶出口·防深路径 import 漂移·随下批小活）。
 
 ---
 

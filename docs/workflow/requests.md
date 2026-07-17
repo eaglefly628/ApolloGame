@@ -66,6 +66,13 @@
 > **PST 活**：`src/studio/AssetImportWizard.tsx` 加「导入时移除背景」勾选 + 模式选（绿幕/纯色吸管/自动 flood/rembg）+ before/after 预览；调 PA 端点。
 > **红线**：authoring-time·**不碰 sim/hash/LayoutNode**（同 ai-gen/import-art-pack 一类资产变换）；auto-matte **必过人审预览**、绝不导入即改。**验收**：PA rembg 接线 + 测（纯色 flood 确定性真验 + rembg mock）；PST UI 勾选出预览·门禁绿；一张真异形图端到端（生图→导入去背→真 alpha→接 `backArt`/`skin` 透见对）。**边界**：本条 spec 由 PUI 会诊出图·**PUI 不施工**（studio/资产线非 PUI 域）。
 
+### REQ-AUDIT-守门 · 审计棘轮防自基线 + 宿主骨架下沉（game-t 流程失守复盘·机器补牙） · [2026-07-16] · owner 拍板「影响照手册交付的全是 P1·马上落地」→ Lead 出图 → **指派：Opus（A 先行·C 续做）** · status: in-progress（已派工 2026-07-16） · 优先级: P1 · 类型: 质量门禁基建（证据源=game-t T-003③ + Lead 复盘）
+> **事故机制（记档）**：`game-skill-audit` 棘轮提示语「无基线条目（新游戏？请加入 audit-baseline.json）」**亲口教施工 session 自写基线**——PE-T 照做（`6142237d` 把自己 createElement:5 写进基线），棘轮空转、AUDIT FAIL 照推。
+> **A·棘轮防自基线（先行）**：①基线中红旗>0 的条目必须带 `approvedBy:"LEAD"`+date+reason，缺=RATCHET FAIL（违规者不得自写豁免）；②删除邀请式提示语，改「新游戏红旗即 FAIL·豁免找 Lead 裁决」；③audit FAIL 语义改为「未被 Lead 批注基线覆盖的红旗才 FAIL」——同步解 game-t T-003③ 报的「S5 对编译期宿主恒红」；④`audit-ratchet.test.mjs` 断言随新语义收紧。**同批落 Lead 裁决记录**：game-q/game-t 各 5 处宿主容器 createElement（`game-t.ts:47-59`·骨架非 UI 内容）基线条目补 `approvedBy:"LEAD"`+reason「宿主骨架·C 件下沉后归零」。
+> **B·完成口径 ✅ done（Lead 亲笔本批）**：game-production.md 红线区+启动词模板——宣布完成必须附 board 全绿，否则只许说「做到 SN」。
+> **C·宿主骨架下沉（A 落地后同代理续做）**：game-q/game-t 重复的 5 容器 mount 骨架（wrapper/scene/topHost/bottomHost/overlayHost+定尺缩放）下沉引擎公用 helper（render-only·API 取两家现状交集）；迁移 game-q 消费自证；**game-t 迁移归 PE-T（T-005②·勿代改）**；迁移后基线 createElement 归零、撤 approvedBy。测试：helper 单测 + game-q 零回归。
+> 完工标 ✅ 待 Lead 对抗性验收。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。

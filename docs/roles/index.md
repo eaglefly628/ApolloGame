@@ -8,6 +8,7 @@
 > 第一动作（先于一切）：git fetch origin claude/mainbranch && git checkout -B claude/mainbranch origin/claude/mainbranch
 > 角色=<X> · 任务=<Y>。切完分支再读 docs/roles/index.md 找角色卡照办；任务的设计文档在 docs/design/<对应目录>/ ——以 mainbranch 最新为准，你被注入的 feature 分支是旧快照、绝不在其上开工。
 > 产出直推 claude/mainbranch（fetch→rebase→tsc+vitest+build 全绿→push），绝不推 feature 分支。
+> 做游戏的任务：宣布「完成」必须贴 node scripts/game-pipeline.mjs board <slug> 全绿输出——不全绿只许说「做到 SN」。
 > ```
 
 ## 角色名录（8 正式 + 1 草案）

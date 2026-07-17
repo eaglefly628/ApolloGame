@@ -57,6 +57,7 @@
   `library/<slug>/logic.ts`（cartCapability 契约·cart-logic-check 装载门·git 版本化）；该卡带**退出
   回放/换皮/bench 保证**（列表 allowTs/hasLogic 旗明示）。正道仍是 capgap 提案→能力下沉（TS 进引擎）；
   绝不把代码塞进 manifest JSON、绝不绕装载门。
+- **「完成」判词有门（owner 2026-07-16 事故律·game-t 复盘）**：session 宣布游戏「做完/完成」必须附 `board <slug>` **全绿**输出；板不全绿只许说「做到 SN」。口头完成=无效口径，owner/Lead 一律不采信。
 - **不许代签**：signoff 是人门——LLM 只能把「待人审」摆上看板，不得自己 signoff 冒充 owner/Lead（gate 随便跑，签核必须真人指令）。
 - **S6 的 MOCK 行不算完成**：mock 永不上画面（终态档 §六），流程板同口径。
 - **S8 过期即重跑**：rebase/新提交后 S8 证据自动过期——推送前必须净树重跑（呼应 CLAUDE.md 推送门禁）。
