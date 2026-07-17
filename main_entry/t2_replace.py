@@ -154,6 +154,15 @@ def handle_art_swap(body: dict) -> dict:
     res = _art_replace_cli(['swap', slug, no, asset_id])
     return _art_save_manifest(slug, res, f'美术换库 {no}→{asset_id}', {'no': no, 'row': res.get('row')})
 
+def _upsert_asset(assets: list, entry: dict) -> None:
+    """原地更新同 id 条目（无则末尾追加）——不整份重排 index.json，换一张图只动那一行（owner 07-15「换两个图改一堆」）。"""
+    eid = entry.get('id')
+    for i, a in enumerate(assets):
+        if a.get('id') == eid:
+            assets[i] = entry
+            return
+    assets.append(entry)
+
 def handle_art_upload(body: dict) -> dict:
     """POST /api/art/upload {slug, no, dataBase64, ext}。上传一张图/模型替换某槽（写盘+登记本地 index+钉引用）。"""
     slug = str(body.get('slug', '')).strip(); no = str(body.get('no', '')).strip(); ext = str(body.get('ext', 'png')).strip().lower()
@@ -189,12 +198,12 @@ def handle_art_upload(body: dict) -> dict:
     if not isinstance(idx.get('assets'), list):
         idx['assets'] = []
     local_id = f'gen/{no}-up'
-    idx['assets'] = [a for a in idx['assets'] if a.get('id') != local_id] + [{
+    _upsert_asset(idx['assets'], {
         'id': local_id, 'type': 'mesh' if ext == 'glb' else 'texture', 'description': f'上传替换 {no}',
         'status': 'filled', 'path': f'/games/{slug}/art/{rel}', 'category': 'ai-gen', 'tags': ['upload', no],
         'license': '用户上传', 'source': 'upload',
         'provenance': {'generator': 'upload', 'prompt': '', 'model': 'user-upload', 'mock': False, 'generatedAt': ''},
-    }]
+    })
     # 编译期游戏（无 manifest·有台账）：写回=skinKey 别名登记 + 台账行直更（无 manifest 可钉）。
     is_game = not (LIBRARY_DIR / slug / 'manifest.json').is_file()
     led_f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
@@ -212,22 +221,22 @@ def handle_art_upload(body: dict) -> dict:
             row['orig'] = {'status': row.get('status'), 'gen': row.get('gen'),
                            'indexEntry': json.loads(json.dumps(_orig_entry)) if _orig_entry else None}
         if skin:  # 别名=游戏消费的皮肤 key → 贴图即上画面
-            idx['assets'] = [a for a in idx['assets'] if a.get('id') != skin] + [{
+            _upsert_asset(idx['assets'], {
                 'id': skin, 'type': 'mesh' if ext == 'glb' else 'texture', 'description': f'上传替换 {no}（皮肤槽 {skin}）',
                 'status': 'filled', 'path': f'/games/{slug}/art/{rel}', 'category': 'ai-gen', 'tags': ['upload', no, 'skin'],
                 'license': '用户上传', 'source': 'upload',
                 'provenance': {'generator': 'upload', 'prompt': '', 'model': 'user-upload', 'mock': False, 'generatedAt': ''},
-            }]
-        idx['assets'].sort(key=lambda a: a.get('id', ''))
-        _write_json(idx_f, idx)
-        row.setdefault('history', []).append({'action': 'upload', 'assetId': local_id})
+            })
+        _write_json(idx_f, idx)  # 不再整份 sort（owner 07-15「换两个图改一堆」：原地 upsert·只动那一行·diff 干净）
+        hist = row.setdefault('history', [])
+        if not (hist and hist[-1].get('assetId') == local_id):  # 重传同图不重复记（去重）
+            hist.append({'action': 'upload', 'assetId': local_id})
         row['status'] = 'replaced'
         row['gen'] = {'source': 'upload', 'localId': local_id, 'servedPath': f'/games/{slug}/art/{rel}'}
         row['provenance'] = {'model': 'user-upload', 'prompt': row.get('query', ''), 'date': '', 'license': '用户上传'}
         led_f.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
         return {'success': True, 'no': no, 'localId': local_id, 'row': row}
-    idx['assets'].sort(key=lambda a: a.get('id', ''))
-    _write_json(idx_f, idx)
+    _write_json(idx_f, idx)  # 原地 upsert·不整份 sort（diff 干净）
     res = _art_replace_cli(['swap', slug, no, local_id, '--upload'])
     return _art_save_manifest(slug, res, f'美术上传替换 {no}', {'no': no, 'localId': local_id, 'row': res.get('row')})
 
@@ -255,23 +264,25 @@ def handle_art_restore(body: dict) -> dict:
     idx = json.loads(idx_f.read_text('utf-8')) if idx_f.is_file() else {'version': 1, 'assets': []}
     if not isinstance(idx.get('assets'), list):
         idx['assets'] = []
-    drop_ids = {f'gen/{no}-up', f'gen/{no}'}  # 上传/生成的本地条目
-    # 去覆盖：删本地产物条目 + 皮肤别名（皮肤别名下面按快照可能重登记回原程序化条目）
-    idx['assets'] = [a for a in idx['assets'] if a.get('id') not in drop_ids and (not skin or a.get('id') != skin)]
+    drop_ids = {f'gen/{no}-up', f'gen/{no}'}  # 上传/生成的本地产物条目（删）
+    idx['assets'] = [a for a in idx['assets'] if a.get('id') not in drop_ids]
     orig = row.get('orig')
     if isinstance(orig, dict):  # 有快照 → 精确复位
         row['status'] = orig.get('status')
         row['gen'] = orig.get('gen')
         oe = orig.get('indexEntry')
-        if isinstance(oe, dict):  # 原皮肤条目（多为程序化图）重登记 → 工作台缩略图也回原样
-            idx['assets'].append(oe)
+        if isinstance(oe, dict):  # 原皮肤条目（多为程序化图）原地复位 → 工作台缩略图也回原样
+            _upsert_asset(idx['assets'], oe)
+        elif skin:  # 原本无该皮肤条目 → 删覆盖别名
+            idx['assets'] = [a for a in idx['assets'] if a.get('id') != skin]
         row.pop('orig', None)
-    else:  # 无快照（本更新前写回）→ 回退占位；游戏无覆盖=内置程序化/emoji 正确
+    else:  # 无快照（本更新前写回）→ 删覆盖别名·回退占位；游戏无覆盖=内置程序化/emoji 正确
+        if skin:
+            idx['assets'] = [a for a in idx['assets'] if a.get('id') != skin]
         row['status'] = 'needs-art'
         row['gen'] = None
     row.pop('history', None)
-    idx['assets'].sort(key=lambda a: a.get('id', ''))
-    _write_json(idx_f, idx)
+    _write_json(idx_f, idx)  # 原地·不整份 sort（diff 干净）
     led_f.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     return {'success': True, 'no': no, 'row': row, 'restored': 'snapshot' if isinstance(orig, dict) else 'fallback'}
 
