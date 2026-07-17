@@ -26,5 +26,13 @@
 ### B-006 · 麻将 AI 参考代码调研 · [2026-07-17] · GD-B → 施工期 PE-B · status: open · P3
 > ⚖ owner：后面可能参考外部麻将 AI 代码。红线：只参考思路；落地=BT 数据（引擎 `t2-behavior-tree` spec）+麻将域叶；外部代码许可证先审、不抄。
 
+### B-008 · 美术台本批产 · [2026-07-17] · GD-B 出台本（⚖ owner 点名）→ **PA/美术平台**（转机读台账·真 key 后批产） · status: open · P1
+> 台本=`art-ledger.md`（29 号位·行=尺寸/格式/英文 prompt·锚引 `sakura-nijigen` 风格包不手抄）。第一批=B-01~06 人物头像立绘+B-20 主菜单背景；占位/程序化行先行不阻塞。转正式台账时**保号 B-NN**；`spec{w,h}` 消费口径 PUI/P3D 会审（Lead S2-⑤）。批产等真 key（连 REQ-AIGEN 卡口）。
+
+### B-009 · mockups 1:1 复刻成实装 UI（⚖ owner 2026-07-17「用我们的 UI 库重新实现一份，1:1 复刻」） · GD-B 立单 → **PE-B 主责（缺件报 PUI）** · status: open · P1
+> **范围**：`mockups/main-menu.dc.html`（主菜单 SC-1）+ `mockups/ui-mockup.dc.html` 的牌桌 HUD 分区/席位卡/行动按钮排/字幕条/场况角标/结算面板——用 **LayoutNode 闭集 + sakura-otome 主题**实装复刻。
+> **1:1 的口径（诚实边界）**：布局结构/信息层级/视觉基调 1:1；控件观感以主题件为准（非逐像素）；**LayoutNode 表达不了的差异逐条列清单**→缺件走 requests.md 报 PUI 裁决，**绝不手写 DOM/CSS 逃生**。dc 稿内交互小玩具（timeline 拖拽等）=设计稿自用，非游戏功能。
+> **口径警示照 `mockups/README.md`**：人名/半庄/25000/衣物件名以 gdd 为准，复刻时文案数值全部换成拍板口径。验收：/check-ui 全过 + 与 mockup 并排截图对照（S5 关证据）。
+
 ### B-007 · 占位包接线（⚖ owner 2026-07-17「录进文档结构供程序员参考」） · GD-B 录入 → **PE-B（S3 消费）** · status: open · P1
 > 美术占位包=`docs/design/art-placeholders-riichi-mahjong.md`（PA 备料·CC0 全套）；接线细则已录 `scene-layout-handoff.md §六` 头部（⭐ 占位包段）+ gdd §九。PE-B S3 骨架照此 vendor：牌面 PNG 贴 3D 盒（免建模）、2D UI 用 SVG、骰子复用 game-g/d 现成 3D 件、点棒/牌桌程序化（P3D 会审）；占位入台账记 placeholder 真相（provenance CC0·FluffyStuff），S6 真美术保号替换。
