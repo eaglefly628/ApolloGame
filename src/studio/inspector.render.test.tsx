@@ -10,10 +10,10 @@ import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import { buildGameFBlueprint } from '../games/game-f/index.js';
 import { demoBlueprint } from '../assembly/demo.assembly.js';
 
-// 回归：透视器曾因 game-a 的可选字段 Tween.loops=undefined → kindOf 落 'json' →
+// 回归：透视器曾因 game-a（已删）的可选字段 Tween.loops=undefined → kindOf 落 'json' →
 // JSON.stringify(undefined)===undefined → 编辑器 buf 为 undefined → buf.length 崩 → 整个透视器白屏。
 // （tsc/build/单测都没渲染过该组件，所以全绿却白屏。）两道守卫：
-//   ① 真把组件渲染一遍（默认 game-a，正好含崩溃字段）。
+//   ① 真把组件渲染一遍（默认 game-e）。
 //   ② 不变式：任何"值缺省(undefined/null)"的字段都不能被判成 'json'（否则 JSON.stringify→undefined）。
 
 const GAMES: Array<[string, () => WorldBlueprint]> = [

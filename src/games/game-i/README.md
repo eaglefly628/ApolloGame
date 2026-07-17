@@ -51,7 +51,7 @@ game-i/
 
 ## 运行
 
-它是与 game-a..h 并列的卡带，经 launcher / cartridge 入口挂载（槽契约 `mount(container)→cleanup`）。
+它是 launcher 里与其他游戏并列的卡带（游戏清单以 `src/launcher.tsx` GAMES 为准，不在此手抄），经 launcher / cartridge 入口挂载（槽契约 `mount(container)→cleanup`）。
 在仓库根：
 
 ```bash
