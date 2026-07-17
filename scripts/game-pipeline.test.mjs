@@ -1,10 +1,12 @@
 // 生产流程板自检（owner 2026-07-10「N 步拆分·每步 review·不能只靠手册」）：
 // 形态识别 · 内容指纹（排除 pipeline.json/gen-mock·变更即过期）· 看板推导（机器门×人门双验语义）。
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { detectForm, gameHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept } from './game-pipeline.mjs';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { detectForm, gameHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate } from './game-pipeline.mjs';
 
 const withRoot = async (fn) => { const r = mkdtempSync(join(tmpdir(), 'gpipe-')); try { return await fn(r); } finally { rmSync(r, { recursive: true, force: true }); } };
 const put = (root, rel, content) => { const p = join(root, rel); mkdirSync(join(p, '..'), { recursive: true }); writeFileSync(p, typeof content === 'string' ? content : JSON.stringify(content, null, 2)); };
@@ -155,4 +157,106 @@ describe('cart-S8 证据双轨（cart=gameHash·builtin=head·REQ-WORKSHOP C2）
     const bc = boardFor(root, 'c');
     expect(bc.stages.find((s) => s.id === 'S8').machine.detail).toContain('轻量终检');
   }));
+});
+
+// ═══ F·阶段顺序闸（REQ-GATE-硬化·「跳关可以，但从悄悄跳变记录在案的决定」）═══
+describe('priorGaps / orderGate（顺序闸判定·纯函数）', () => {
+  // 合成看板：S1 灰（欠机器门+人门）、S2 黄（欠复查门）、S3 绿。
+  const board = {
+    stages: [
+      { id: 'S1', title: '立项卡', status: 'dim', machine: { state: 'dim' }, review: { state: 'ok' }, human: { state: 'dim' } },
+      { id: 'S2', title: '能力计划', status: 'warn', machine: { state: 'ok' }, review: { state: 'dim' }, human: { state: 'ok' } },
+      { id: 'S3', title: '骨架关', status: 'ok', machine: { state: 'ok' }, review: { state: 'ok' }, human: { state: 'ok' } },
+      { id: 'S4', title: '玩法关', status: 'dim', machine: { state: 'dim' }, review: { state: 'dim' }, human: { state: 'dim' } },
+    ],
+  };
+  it('列出前置非绿关+各关欠的门；已绿关不列', () => {
+    const gaps = priorGaps(board, 'S4');
+    expect(gaps.map((g) => g.id)).toEqual(['S1', 'S2']); // S3 绿被跳过
+    expect(gaps[0].owes.join()).toContain('机器门');
+    expect(gaps[0].owes.join()).toContain('人门');
+    expect(gaps[1].owes.join()).toContain('复查门');
+  });
+  it('目标=S1 或全前置绿 → 无欠（gate 可直跑）', () => {
+    expect(priorGaps(board, 'S1')).toEqual([]);
+    const allGreen = { stages: board.stages.map((s) => ({ ...s, status: 'ok', machine: { state: 'ok' }, review: { state: 'ok' }, human: { state: 'ok' } })) };
+    expect(priorGaps(allGreen, 'S4')).toEqual([]);
+  });
+  it('有欠+无理由 → 拒跑；有欠+带理由 → 放行且生成落痕记录', () => {
+    expect(orderGate(board, 'S4', undefined).allowed).toBe(false);
+    expect(orderGate(board, 'S4', '   ').allowed).toBe(false); // 空白理由不算
+    const ok = orderGate(board, 'S4', '赶 demo 先跑玩法关');
+    expect(ok.allowed).toBe(true);
+    expect(ok.outOfOrder).toMatchObject({ stage: 'S4', reason: '赶 demo 先跑玩法关' });
+    expect(ok.outOfOrder.at).toBeTruthy();
+  });
+  it('前置全绿 → allowed 且无落痕（不冤记乱序）', () => {
+    const allGreen = { stages: board.stages.map((s) => ({ ...s, status: 'ok' })) };
+    const d = orderGate(allGreen, 'S4', '理由');
+    expect(d.allowed).toBe(true);
+    expect(d.outOfOrder).toBeUndefined();
+  });
+});
+
+describe('boardFor 乱序标记（板消费 outOfOrder·旧板零回归）', () => {
+  it('pf.outOfOrder → 对应关 outOfOrder 非空·其余关为 null', () => withRoot(async (root) => {
+    put(root, 'public/games/g/manifest.json', MANIFEST);
+    put(root, pipelineFile(root, 'g').slice(root.length + 1), {
+      version: 1, slug: 'g', concept: {}, signoffs: {},
+      outOfOrder: [{ stage: 'S5', reason: '设计验证优先', at: '2026-07-17T00:00:00Z' }],
+    });
+    const b = boardFor(root, 'g');
+    expect(b.stages.find((s) => s.id === 'S5').outOfOrder).toMatchObject({ reason: '设计验证优先' });
+    expect(b.stages.find((s) => s.id === 'S3').outOfOrder).toBeNull();
+  }));
+  it('旧 pipeline.json 无 outOfOrder 字段 → 全关 outOfOrder=null（零回归）', () => withRoot(async (root) => {
+    put(root, 'public/games/g/manifest.json', MANIFEST);
+    put(root, pipelineFile(root, 'g').slice(root.length + 1), { version: 1, slug: 'g', concept: {}, signoffs: {} });
+    const b = boardFor(root, 'g');
+    expect(b.stages.every((s) => s.outOfOrder === null)).toBe(true);
+  }));
+});
+
+// CLI 端到端：真跑 game-pipeline.mjs（APOLLO_PIPELINE_ROOT 注入临时根·不碰真仓库）。
+const CLI = fileURLToPath(new URL('./game-pipeline.mjs', import.meta.url));
+const runCli = (root, args) => spawnSync('node', [CLI, ...args], { env: { ...process.env, APOLLO_PIPELINE_ROOT: root }, encoding: 'utf8' });
+
+describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F 点名）', () => {
+  // 编译期 fixture：src/games/<slug> 目录存在（compiled）·空立项卡 → S1/S2 非绿。
+  //   gate S3 对编译期游戏=「免 manifest 校验」exit0（不 spawn 重活）——放行路径便宜可测。
+  const mkFixture = () => { const r = mkdtempSync(join(tmpdir(), 'ord-cli-')); mkdirSync(join(r, 'src', 'games', 'g'), { recursive: true }); return r; };
+
+  it('前关欠 → gate 拒跑（退出码非 0 + stderr 指名欠项）', () => {
+    const root = mkFixture();
+    try {
+      const r = runCli(root, ['gate', 'g', 'S3']);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain('顺序闸');
+      expect(r.stderr).toContain('S1'); // 指名前置欠关
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it('--out-of-order → 放行·pipeline.json 落 outOfOrder 痕·board 显 ⚠乱序', () => {
+    const root = mkFixture();
+    try {
+      const g = runCli(root, ['gate', 'g', 'S3', '--out-of-order', '赶 demo 骨架先跑']);
+      expect(g.status).toBe(0);
+      const pf = JSON.parse(readFileSync(join(root, 'public', 'games', 'g', 'pipeline.json'), 'utf8'));
+      expect(pf.outOfOrder).toEqual([expect.objectContaining({ stage: 'S3', reason: '赶 demo 骨架先跑' })]);
+      const b = runCli(root, ['board', 'g']);
+      expect(b.stdout).toContain('⚠乱序');
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it('旧板（无 outOfOrder 字段）board 正常出图·无 ⚠（零回归）', () => {
+    const root = mkFixture();
+    try {
+      const d = join(root, 'public', 'games', 'g');
+      mkdirSync(d, { recursive: true });
+      writeFileSync(join(d, 'pipeline.json'), JSON.stringify({ version: 1, slug: 'g', concept: { name: 'G', pitch: 'p' }, signoffs: {} }));
+      const b = runCli(root, ['board', 'g']);
+      expect(b.status).toBe(0);
+      expect(b.stdout).not.toContain('⚠乱序');
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
 });

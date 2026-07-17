@@ -71,6 +71,7 @@
 > **E·注册即有板**：新 vitest 守卫（`scripts/pipeline-registry-guard.test.mjs`）——`src/launcher.tsx` GAMES 注册的每款非冻结游戏必须有 `public/games/<slug>/pipeline.json` 且 S1 立项卡字段非空；**没进生产线就上不了架**。存量缺板游戏先盘点进白名单（带日期·逐步清偿·白名单不许新增）。
 > **F·阶段顺序闸**：`scripts/game-pipeline.mjs` 的 `gate <slug> <SN>` 在 S&lt;N 存在非绿（含复查门/人门）时**拒跑**，除非 `--out-of-order "<理由>"` 显式落进 pipeline.json 并在板上显 ⚠乱序标——跳关可以，但从「悄悄跳」变「记录在案的决定」。
 > 红线：pipeline.json 仍只经 CLI/端点写；两件各配点名测试；不碰 game-t（清库重跑在即）。完工标 ✅ 待 Lead 对抗性验收。
+> **✅ Opus 完工（2026-07-17·待 Lead 对抗性验收）**：E=新守卫 `scripts/pipeline-registry-guard.test.mjs`（12 测·解析 launcher GAMES·boardStatus 真验·白名单卫生+反向自证「确属缺板」）；F=`game-pipeline.mjs` 加 `priorGaps`/`orderGate` 顺序闸（前置非全绿拒跑·退出码 1+指名欠项）+ `--out-of-order "<理由>"` 记 `pipeline.json.outOfOrder[]`+board 行首 ⚠乱序标（旧板无字段零回归·pipeline.json 仍只经 CLI 写·加 `APOLLO_PIPELINE_ROOT` 测试注入根），点名测试进 `game-pipeline.test.mjs`（+8=20 测·纯函数+CLI 真退出码端到端）。**存量白名单盘点**：GAMES 9 款中 game-f 冻结免检、game-t 已有板；缺板 7 款进白名单=game-e/g/i/x/z/d/q（逐步清偿·不许新增）。门禁：tsc0·vitest 356 文件/2749·build0 全绿。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 

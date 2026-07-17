@@ -30,7 +30,9 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+// ROOT=仓库根（默认）。APOLLO_PIPELINE_ROOT 仅供测试注入临时根（跑 CLI 端到端·不碰真仓库）——
+// 生产不设此环境变量，行为逐字节同旧版。
+const ROOT = process.env.APOLLO_PIPELINE_ROOT || join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const readJson = (f, fb) => { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return fb; } };
 const writeJson = (f, v) => { mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, JSON.stringify(v, null, 2) + '\n'); };
@@ -244,10 +246,41 @@ export function boardFor(root, slug) {
     const status = machine.state === 'fail' || review.state === 'fail' ? 'fail'
       : machine.state === 'ok' && review.state === 'ok' && human.state === 'ok' ? 'ok'
         : machine.state === 'dim' && human.state === 'dim' && (reviewExempt || review.state === 'dim') ? 'dim' : 'warn';
-    return { id: st.id, title: st.title, handbook: st.handbook, gate: st.gate, machine, review, human, status };
+    // 乱序放行痕（F·REQ-GATE-硬化）：该关曾在前置未全绿时被 --out-of-order 放行——板上显 ⚠乱序标。
+    // 旧 pipeline.json 无 outOfOrder 字段=零回归（取最近一条）。
+    const ooo = (pf.outOfOrder || []).filter((o) => o.stage === st.id);
+    const outOfOrder = ooo.length ? ooo[ooo.length - 1] : null;
+    return { id: st.id, title: st.title, handbook: st.handbook, gate: st.gate, machine, review, human, status, outOfOrder };
   });
   const next = stages.find((s) => s.status !== 'ok');
   return { ok: true, slug, form, gameHash: hashNow, concept: c, stages, next: next ? next.id : null };
+}
+
+// ── 阶段顺序闸（F·REQ-GATE-硬化·owner「跳关可以，但从悄悄跳变记录在案」）─────────────
+/** 目标阶段之前（S1..S(N-1)）里所有非绿（status≠ok）的关，连同各关欠的门（机器/复查/人）。
+ *  空数组=前置全绿·可直跑。导出供 CLI 与单测共用（纯函数·不碰盘）。 */
+export function priorGaps(board, stage) {
+  const idx = STAGES.findIndex((s) => s.id === stage);
+  if (idx <= 0) return []; // S1 或未知阶段：无前置
+  const gaps = [];
+  for (const st of (board?.stages || []).slice(0, idx)) {
+    if (st.status === 'ok') continue;
+    const owes = [];
+    if (st.machine?.state !== 'ok') owes.push(`机器门(${st.machine?.state ?? '?'})`);
+    if (st.review?.state !== 'ok') owes.push(`复查门(${st.review?.state ?? '?'})`);
+    if (st.human?.state !== 'ok') owes.push(`人门(${st.human?.state ?? '?'})`);
+    gaps.push({ id: st.id, title: st.title, owes });
+  }
+  return gaps;
+}
+
+/** 顺序闸判定：前置全绿→allowed；有欠且给了 --out-of-order 理由→allowed+落痕记录；有欠且无理由→拒跑。 */
+export function orderGate(board, stage, reason) {
+  const gaps = priorGaps(board, stage);
+  if (!gaps.length) return { allowed: true, gaps: [] };
+  const r = (reason || '').trim();
+  if (r) return { allowed: true, gaps, outOfOrder: { stage, reason: r.slice(0, 200), at: new Date().toISOString() } };
+  return { allowed: false, gaps };
 }
 
 // ── 机器门执行（gate 子命令·真跑·记证据）──────────────────────────────
@@ -326,10 +359,12 @@ if (isMain) {
     console.log(`══ 生产流程板 · ${slug}（${form}）══`);
     const dot = { ok: '\x1b[32m●\x1b[0m', warn: '\x1b[33m●\x1b[0m', fail: '\x1b[31m●\x1b[0m', dim: '\x1b[90m○\x1b[0m' };
     for (const s of b.stages) {
-      console.log(`${dot[s.status]} ${s.id} ${s.title}  〔手册: ${s.handbook}〕`);
+      const oooTag = s.outOfOrder ? '\x1b[33m⚠乱序\x1b[0m ' : '';
+      console.log(`${dot[s.status]} ${oooTag}${s.id} ${s.title}  〔手册: ${s.handbook}〕`);
       console.log(`   机器门: ${s.machine.detail}`);
       console.log(`   复查门: ${s.review.detail}`);
       console.log(`   人  门: ${s.human.detail}`);
+      if (s.outOfOrder) console.log(`   ⚠ 乱序放行：${s.outOfOrder.reason}（${(s.outOfOrder.at || '').slice(0, 10)}）`);
     }
     console.log(b.next ? `\n→ 下一步：${b.next}（只做这一步·做完 gate/review/signoff 再看板）` : '\n✔ 全绿——可推进发布/换皮量产');
     process.exit(0);
@@ -394,8 +429,20 @@ if (isMain) {
   if (cmd === 'gate') {
     const stage = a3;
     if (!GATE_STAGES.includes(stage)) { console.error(`gate 只认 ${GATE_STAGES.join('/')}（其余阶段是纯推导或纯人门）`); process.exit(1); }
+    // F·阶段顺序闸：前置阶段（S1..S(N-1)）非全绿则拒跑，除非带 --out-of-order "<理由>" 记账放行。
+    const oooReason = opt('--out-of-order');
+    const decision = orderGate(boardFor(ROOT, slug), stage, oooReason);
+    if (!decision.allowed) {
+      console.error(`✗ 阶段顺序闸：${stage} 前置阶段未全绿，拒跑（要跳关须带 --out-of-order "<理由>" 显式记账放行）：`);
+      for (const g of decision.gaps) console.error(`  · ${g.id} ${g.title} 欠：${g.owes.join(' / ')}`);
+      process.exit(1);
+    }
     const res = gateRun(slug, stage, form);
     const pf = readJson(pipelineFile(ROOT, slug), { version: 1, slug, concept: {}, signoffs: {}, evidence: {} });
+    if (decision.outOfOrder) {
+      (pf.outOfOrder ||= []).push(decision.outOfOrder);
+      (pf.history ||= []).push({ action: 'out-of-order', stage, reason: decision.outOfOrder.reason, at: decision.outOfOrder.at });
+    }
     const ev = { exit: res.exit, summary: res.summary, at: new Date().toISOString() };
     if (stage === 'S8' && form !== 'cart') {
       // 全仓门证据绑仓库位置（引擎一动即过期）；cart 轻量门只看游戏自身内容 → 绑 gameHash（C2）
