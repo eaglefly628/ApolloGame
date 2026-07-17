@@ -65,9 +65,7 @@
 > - 要求：全种子 PRNG·无裸随机·AI 决策进确定性轨可回放；spec 细化随 game-a S2 capability-plan。
 > - 边界：`src/skills/**`+registry（Lead 域）；游戏层只产 BT 数据与估值表。
 > **⚖ Lead 裁决（2026-07-17·重组=不够·接为通用缺口·设计先行）**：condition/flow/event-when 只能摆平铺分支；「优先级选择树+黑板+可复用子树+逐 tick 确定性推进」是结构性缺口，硬拼必然逼游戏层长出私有解释器（违宪）。**接**：通用 `behavior-tree` capability——树=纯数据、节点闭集 v1 收紧为 selector/sequence/condition/action（+invert 修饰），黑板=复用既有 Resource/Flag/StringVar 读写（不另立存储），随机全走种子 PRNG、决策进确定性轨可回放。**收窄两刀**：①记牌保真度分档/性格权重/偷看=游戏数据（估值表/黑板初值），不进引擎节点集；②「内层出牌候选生成+估值」属 REQ-GUANDAN-牌型 的合法应对枚举接口，别塞进 BT。**流程**：开工前先读 `wiki/skills/ai-behavior.md`（铁律）；先交 ≤2 页设计稿（节点闭集+黑板契约+与 condition/flow 的关系）过 Lead 审再施工。
-
-### REQ-BT-行为树能力 · 通用 BT 解释器下沉（game-b/c 双消费方·实战暴露的首个隐形能力） · [2026-07-17] · Lead S2 评审改判（两游戏各建 BT=同概念两份·宪法先重组）→ **指派：Opus（随两游戏 M2 节奏派工）** · status: open · 优先级: P1 · 类型: 引擎 AI 能力（tier2·确定性）
-> **spec（Lead 图纸）**：①树=纯数据（节点闭集 `selector/sequence/condition/action` + 参数包·装载期校验）；②解释器=引擎确定性代码（tick 制·无时间依赖·随机一律经调用方传入 RandomSeed）；③条件/动作叶=**消费方注册表**（游戏按名注册叶函数·名单声明进 config·未注册名装载即错）；④参数包/难度包=数据覆盖层（game-b 三姨太人设+难度三档、game-c 五性格模板即此形态）；⑤测试点名：各节点语义/深树有界/同 seed 复现/未注册叶报错/两游戏形状用例各一。消费方=game-b（gdd §五）+ game-c（plan §4c）；落地前两家可本地薄实现但树数据结构照本 spec（迁移零改数据）。完工标 ✅ 待 Lead 对抗性验收。
+> **⚖ Lead 合并注记（2026-07-17）**：与同日重复单「REQ-BT-行为树能力」（Lead 于 game-b/c S2 评审中并行开出·spec 同向）**并入本条腾槽**。消费方定格三家：game-a（记牌分档/性格权重）+ game-b（三姨太人设/难度三档）+ game-c（五性格模板·plan §4c）。补充口径（自被并条·与设计先行不冲突）：引擎件设计稿过审前，各游戏可本地薄实现，但**树数据结构必须照引擎设计稿定稿形状**（迁移零改数据）；叶=消费方注册表（未注册名装载即错）。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
