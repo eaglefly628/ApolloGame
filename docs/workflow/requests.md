@@ -50,18 +50,21 @@
 > **红线**：表现层非确定性旁路（不进 sim/hash/回放）；headless/SSR 静默 no-op（同 SynthAudioPort 哲学）；同 char 新事件顶掉旧朗读；**游戏层不直调 speechSynthesis**（端口=src/services 引擎域）。
 > **验收**：端口单测（事件→调用形状/降级链①→③/headless no-op）+ 试听入口（建议 game-i sounds 台加一行·PUI 会审）+ `docs/playbooks/audio.md` 回填一行。消费方=game-b（gdd §十）；game-a/c 立项案语音位可共用。
 > **腾槽记录**：REQ-VN-退役（P3 去腐·同为 GD-B 所提）撤回让位入档（先清后加·档内可重提）。
+> **⚖ Lead 裁决（2026-07-17·接·spec 即图纸·指派 Opus 档施工）**：真缺口（引擎无语音输出路）；契约合格——端口进 `src/services/` 与 SynthAudioPort 同哲学（非确定性旁路·headless no-op·游戏层禁直调 speechSynthesis）全对。补三处裁决：① 端口名 `VoicePort`·落 `src/services/audio/voice-port.ts`（与合成同域）；② 降级链①→③探测须**运行时惰性**——speechSynthesis.getVoices 异步就绪，首帧空表不算「无 ja 音色」，就绪前入队或降级兜底后回升；③ 事件键闭集校验归**消费方** spec（game-b voice-pack-spec §2），端口本身收任意 string（引擎不背单游戏词表）。验收照单 + `audio.md` 回填。spec 已足，可派 Opus 档 session 照此施工。
 
 ### REQ-GUANDAN-牌型 · 掼蛋判型+压制序+逢人配（先裁 poker-hand 可否重组） · [2026-07-17] · 提出人 GD-A（《掼蛋夜宴》game-a S2 前置·owner 07-17 清池授权入池）→ 待 Lead 裁决 · status: open · 优先级: P1 · 类型: 能力缺口候选（正确性关键·不降档）
 > - 想实现：掼蛋牌型闭集判定（单/对/三同张/三带二/顺5/三连对木板/钢板二连三/炸弹4-10张/同花顺/四大天王）+ 压制比较序（天王炸>6+张炸>同花顺>5炸>4炸>普通牌型·同型比大·级牌>A）+ **红桃级牌逢人配**（除大小王外百搭）。
 > - 已有能力对照：`t3-poker-hand` 有 rankingTable+wild——但掼蛋型（变长连对/钢板/变长炸弹族/跨型压制序）疑似超出扑克 ranking 表达力；请 Lead 先裁**可否重组**，不能再下沉（建议 `guandan-hand` 或泛化表驱动 hand-pattern）。
 > - 要求：纯函数判型·种子确定性·可回放；消费方=game-a《掼蛋夜宴》（编译期 TS·capability-plan 随 S2 送审）；设计档 `docs/design/game-a/`。
 > - 边界：`src/skills/tier3/**`+registry 注册（Lead 域）；游戏层绝不自写判型解释器（虚胖数据禁令）。
+> **⚖ Lead 裁决（2026-07-17·重组=否·接为真缺口）**：`t3-poker-hand` 重组不可行——它是 Balatro 域**计分器**：牌型固定闭集（high-card…flush-five）·评一手出 chips/mult；无变长牌族（4-10 炸/三连对/钢板）、无跨型压制序（炸弹族>普通型）、无「甲能否压乙」成对比较接口、无级牌语义——这些是判定器本身的域差，不是 rankingTable 数据填得出来的。**方向：不做 guandan 专属件，下沉通用表驱动 `t3-hand-pattern`**——牌族 DSL 闭集（计数组+连续段+长度域+花色约束+百搭）+ 压制序数据表（族阶+同族比较规则令牌）+ 双接口（成对压制比较 / 合法应对枚举）；掼蛋=首个数据 config + 淮安规则 conformance 测试，同族游戏（斗地主/跑得快）后续零代码接入。poker-hand 原件不动（计分域）；其 isStraightRanks/wild 枚举技法可借鉴。**spec 出图=Lead 亲笔**（正确性关键不降档），随 game-a S2 节奏；出图后标指派 Opus。
 
 ### REQ-BT-行为树 · 通用行为树能力（纯数据树+确定性解释器·先裁 condition/flow 可否重组） · [2026-07-17] · 提出人 GD-A（《掼蛋夜宴》AI·owner 意向 BT）→ 待 Lead 裁决 · status: open · 优先级: P1 · 类型: 能力缺口候选（通用向·非单游戏拓宽）
 > - 想实现：AI 外层策略=**纯数据行为树**（selector/sequence/condition/action 节点闭集）+ 通用确定性解释器。掼蛋消费面：记牌四档（记忆保真度分档）、宗师开局偷看 2 张、性格标签（稳健/激进/多变）→ 行为权重；内层出牌=候选生成+估值表（数据）。
 > - 已有能力对照：condition/flow/event-when 可表达简单分支——「树形优先级+运行时黑板+跨游戏复用」疑似缺口；请 Lead 裁①重组是否够②不够则通用下沉（独立于掼蛋·NPC/敌 AI 皆可复用）。`wiki/skills/ai-behavior.md` 有行业知识。
 > - 要求：全种子 PRNG·无裸随机·AI 决策进确定性轨可回放；spec 细化随 game-a S2 capability-plan。
 > - 边界：`src/skills/**`+registry（Lead 域）；游戏层只产 BT 数据与估值表。
+> **⚖ Lead 裁决（2026-07-17·重组=不够·接为通用缺口·设计先行）**：condition/flow/event-when 只能摆平铺分支；「优先级选择树+黑板+可复用子树+逐 tick 确定性推进」是结构性缺口，硬拼必然逼游戏层长出私有解释器（违宪）。**接**：通用 `behavior-tree` capability——树=纯数据、节点闭集 v1 收紧为 selector/sequence/condition/action（+invert 修饰），黑板=复用既有 Resource/Flag/StringVar 读写（不另立存储），随机全走种子 PRNG、决策进确定性轨可回放。**收窄两刀**：①记牌保真度分档/性格权重/偷看=游戏数据（估值表/黑板初值），不进引擎节点集；②「内层出牌候选生成+估值」属 REQ-GUANDAN-牌型 的合法应对枚举接口，别塞进 BT。**流程**：开工前先读 `wiki/skills/ai-behavior.md`（铁律）；先交 ≤2 页设计稿（节点闭集+黑板契约+与 condition/flow 的关系）过 Lead 审再施工。
 
 ### REQ-BT-行为树能力 · 通用 BT 解释器下沉（game-b/c 双消费方·实战暴露的首个隐形能力） · [2026-07-17] · Lead S2 评审改判（两游戏各建 BT=同概念两份·宪法先重组）→ **指派：Opus（随两游戏 M2 节奏派工）** · status: open · 优先级: P1 · 类型: 引擎 AI 能力（tier2·确定性）
 > **spec（Lead 图纸）**：①树=纯数据（节点闭集 `selector/sequence/condition/action` + 参数包·装载期校验）；②解释器=引擎确定性代码（tick 制·无时间依赖·随机一律经调用方传入 RandomSeed）；③条件/动作叶=**消费方注册表**（游戏按名注册叶函数·名单声明进 config·未注册名装载即错）；④参数包/难度包=数据覆盖层（game-b 三姨太人设+难度三档、game-c 五性格模板即此形态）；⑤测试点名：各节点语义/深树有界/同 seed 复现/未注册叶报错/两游戏形状用例各一。消费方=game-b（gdd §五）+ game-c（plan §4c）；落地前两家可本地薄实现但树数据结构照本 spec（迁移零改数据）。完工标 ✅ 待 Lead 对抗性验收。

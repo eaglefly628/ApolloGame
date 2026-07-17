@@ -1378,6 +1378,7 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 
 > 【owner 2026-07-15 裁：B 撤单】A+D 已 done·C 在 3D 池；B（音频线）细节过期·撤单待 owner 重新分配
 ### REQ-ART-TGS吸收四件 · threejs-game-skills 对照吸收（视觉评分卡/音频线/像素QA/手册红线） · [2026-07-06] · owner 给源 → Lead 调研裁决（`art-pipeline-vision §八`）→ **owner 已批（2026-07-06）** · status: **落地中：A+D ✅ done（Lead 亲笔 2026-07-07）· B spec 就绪→指派 PST（**冲刺后**·被 REQ-DEMO-0729 队列重排压后）· C spec 已移 `docs/workflow/requests-3d.md`（P3D 域·同被压后）** · 优先级: P2 · 类型: 质量护栏吸收（不采其代码生成路线·宪法相反）
+> ↑（旧影·早期归档轮副本）本单后回池续活至 07-17 暂停——**最新状态与 ⏸ 暂停判词见本文件后部同名条目**（grep 第二处为准）。
 > 一句话：他家"AAA"不是描述词，是四道门（评分卡全维≥2/证据台账/反捷径工艺律/canvas 像素断言）——护栏纪律照单吸收，代码生成路线回驳。详见愿景稿 §八对照表。
 > **A ✅（Lead 亲笔）**：新 `docs/playbooks/visual-scorecard.md`（8 维 0-3 分·premium=全维≥2·证据台账+资产来源台账+凭证探针·反捷径工艺律·判词 `VISUAL: n/24 · PREMIUM: YES|NO`）；挂点=playbooks/index 一行 + P3D 视觉验收（3d.md 红线区指回）+ PS 出货内门（PS-steam-finish-list 阶段区一行）。
 > **D ✅（Lead 亲笔·手册回填）**：`docs/playbooks/3d.md` 红线区加工艺顺序律（先造型→材质→光照→特效·禁 glow 冒充）+ 主角面禁纯程序化（无 blocker 记录不豁免）；`docs/playbooks/testing.md` 红线区加凭证探针（空口 skip 不采信）+ 做X表挂评分卡行。
