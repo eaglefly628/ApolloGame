@@ -10,10 +10,10 @@
 
 ## FIX-001 · 数据透视器一打开就白屏
 
-- **症状**：进入 🔬 数据透视器（默认 Game A）整页空白；控制台 `TypeError: Cannot read properties of undefined (reading 'length')`，栈指向 `FieldEditor` 的 `buf.length`。tsc/build/单测全绿却白屏。
+- **症状**：进入 🔬 数据透视器（当时的默认游戏·该旧作已删）整页空白；控制台 `TypeError: Cannot read properties of undefined (reading 'length')`，栈指向 `FieldEditor` 的 `buf.length`。tsc/build/单测全绿却白屏。
 - **根因**：蓝图里**可选字段值为 `undefined`**（如 `Tween.loops`）。`kindOf(undefined)` 落到 `'json'` → 编辑器初值 `JSON.stringify(undefined) === undefined` → `buf` 为 `undefined` → `buf.length` 抛错 → React 卸载整棵树。**没有任何检查真正渲染过该组件**，所以静态全绿。
 - **修复**：① `inspect.ts` 加 `fieldKind(value, declaredType)`：值缺省时用 capability schema 的声明类型挑编辑器，不再落 `'json'`。② `FieldEditor` 初值对 `undefined/null` 一律取空串；`commit` 加"未改动不写"护栏。
-- **守卫**：`src/studio/inspector.render.test.tsx` —— `renderToString` 真渲染默认 Game A（含该崩溃字段）；并断言"缺省值字段不得被判成 json"不变式。
+- **守卫**：`src/studio/inspector.render.test.tsx` —— `renderToString` 真渲染默认游戏（当时的默认蓝图含该崩溃字段）；并断言"缺省值字段不得被判成 json"不变式。
 - **通用教训**：**纯静态检查（tsc/build/单测）不渲染组件 → 抓不到渲染期崩溃**。React 组件要有一条 `renderToString` 烟雾路径。
 
 ## FIX-002 · Windows 启动 `FileNotFoundError [WinError 2]`

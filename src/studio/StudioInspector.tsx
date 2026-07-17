@@ -44,7 +44,7 @@ interface GameDef {
   title: string;
   build: () => WorldBlueprint;
   viewport?: { w: number; h: number };
-  /** 交互型游戏(Game A)提供：按 target(画布)建键盘输入源 → 可玩预览。 */
+  /** 交互型游戏提供：按 target(画布)建键盘输入源 → 可玩预览。 */
   makeInput?: (target: EventTarget) => PreviewInput;
   /** 美术资产管理器（贴图就绪画真图，否则占位方块）。 */
   makeAssets?: () => AssetManager;

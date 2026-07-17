@@ -62,7 +62,7 @@ Manifest(纯 JSON) ──parseManifest──▶ WorldBlueprint ──engine.load
 | game-f 自走棋 | — | **owner 冻结勿动** |
 | game-x 残响 / game-z 盒庭 | 伴侣框架 / P3D 3D 渲染线底座 | sample·基建 |
 
-（game-a/b/c/h/j/k/m 与 block-blast-mini 已删除（h/j/k/m/bbm=owner 2026-07-16 清库）；任何文档再提到它们即为过期信号。装示例按钮装的是 apollo 内嵌 preset·与已删内置无关。）
+（game-b/c/h/j/k/m 与 block-blast-mini 已删除（h/j/k/m/bbm=owner 2026-07-16 清库）；任何文档再提到它们即为过期信号。**A 位 2026-07-17 重启为全新项目**（立项档 `docs/design/game-a/`·与已删旧作无关——早于该日期的 game-a 提法均属旧作·旧作信息已依 owner 令全库抹除）。装示例按钮装的是 apollo 内嵌 preset·与已删内置无关。）
 
 ## 5. 归档纪律
 

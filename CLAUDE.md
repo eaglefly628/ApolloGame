@@ -50,4 +50,4 @@
 - **LLM/新游戏接入唯一入口：`docs/llm-onboarding.md`**（机读口径铁律+五步产游戏路径+分层阅读协议+游戏治理态；数字口径一律以它 §0 指向的机读真相为准，文档手抄数字=过期信号）
 - 交接/现状：`docs/workflow/SESSION-HANDOFF.md`（薄指针版：只放真活着的挂起事项；现况以 llm-onboarding §4 + git log 为准）
 - 能力库：`src/skills/{atoms,tier1,tier2,tier3}`；组件契约 `src/engine/protocol/components.ts`
-- 游戏（应趋近纯数据）：`src/games/` 现 8 款 d/e/f/g/i/q/x/z（出口=**D+G**；e/i=sample；f=冻结；a/b/c/h/j/k/m+block-blast-mini 已删——再见到即过期信号）
+- 游戏（应趋近纯数据）：`src/games/` 现 8 款 d/e/f/g/i/q/x/z（出口=**D+G**；e/i=sample；f=冻结；b/c/h/j/k/m+block-blast-mini 已删——再见到即过期信号；**A 位 2026-07-17 重启为全新项目**·与已删旧作无关·立项档 `docs/design/game-a/`）

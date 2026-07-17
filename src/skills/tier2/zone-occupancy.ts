@@ -13,7 +13,7 @@ import { buildConditionLookup } from './condition.js';
 //   - 都不给         ：数所有带 Transform 的实体；阈值缺省 = 1。
 //
 // 这样「两人都进目标区 → 过关」「区内站够 N 个 → 开门」「到达点」「收集齐」全是蓝图里一个 Zone 数据，
-// 不再有 game-a/coop-goal.ts 那种手写系统。outFlag 由 event-when/condition 下游消费（接通关/开门/演出）。
+// 不再有早期 coop-goal.ts 那种游戏专属手写系统。outFlag 由 event-when/condition 下游消费（接通关/开门/演出）。
 // 确定性：只读 Transform/Tag + 矩形比较，写确定布尔。复用 buildConditionLookup 的按 id 索引取 Flag。
 export const zoneOccupancyCapability = defineCapability({
   id: 't2-zone-occupancy',
