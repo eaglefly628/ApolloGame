@@ -43,7 +43,7 @@
 > **PST 活**：`src/studio/AssetImportWizard.tsx` 加「导入时移除背景」勾选 + 模式选（绿幕/纯色吸管/自动 flood/rembg）+ before/after 预览；调 PA 端点。
 > **红线**：authoring-time·**不碰 sim/hash/LayoutNode**（同 ai-gen/import-art-pack 一类资产变换）；auto-matte **必过人审预览**、绝不导入即改。**验收**：PA rembg 接线 + 测（纯色 flood 确定性真验 + rembg mock）；PST UI 勾选出预览·门禁绿；一张真异形图端到端（生图→导入去背→真 alpha→接 `backArt`/`skin` 透见对）。**边界**：本条 spec 由 PUI 会诊出图·**PUI 不施工**（studio/资产线非 PUI 域）。
 
-### REQ-VOICE-语音输出端口 · TTS 即时档 + 采样档同接口（game-b 立项刚需·新游戏 a/c 可共用） · [2026-07-17] · GD-B 提（owner 指令「需求池提给主程执行」；⚖ 游戏要语音+owner 无音源包→语音合成先发声）→ **LEAD 出图/施工（或派 Opus）** · status: open · 优先级: P1 · 类型: 引擎能力（services 音频线扩展·表现层旁路）
+### REQ-VOICE-语音输出端口 · TTS 即时档 + 采样档同接口（game-b 立项刚需·新游戏 a/c 可共用） · [2026-07-17] · GD-B 提（owner 指令「需求池提给主程执行」；⚖ 游戏要语音+owner 无音源包→语音合成先发声）→ **LEAD 出图/施工（或派 Opus）** · status: ✅ done（OPS 施工完·待 Lead 对抗性验收） · 优先级: P1 · 类型: 引擎能力（services 音频线扩展·表现层旁路）
 > **需求面契约（GD 口径·架构 Lead 终裁）**：游戏侧只发语音事件 `{charId, event, text(日文台词), params?}`（事件键闭集=`docs/design/game-b/voice-pack-spec.md` §2·17 键）；端口一个接口两档实现——
 > ① **TTS 档（v1 默认·零资产零 key）**：浏览器 speechSynthesis·per-char 参数 `{lang:'ja-JP', voiceHint?, rate, pitch}`（spec §0 有三姨太参数草案）；无 ja 音色→降级③。
 > ② **采样档（将来配音）**：按 spec §1 命名 wav 资产·同事件键查台账播放；缺文件→降级①。
@@ -53,6 +53,7 @@
 > **验收**：端口单测（事件→调用形状/降级链①→③/headless no-op）+ 试听入口（建议 game-i sounds 台加一行·PUI 会审）+ `docs/playbooks/audio.md` 回填一行。消费方=game-b（gdd §十）；game-a/c 立项案语音位可共用。
 > **腾槽记录**：REQ-VN-退役（P3 去腐·同为 GD-B 所提）撤回让位入档（先清后加·档内可重提）。
 > **⚖ Lead 裁决（2026-07-17·接·spec 即图纸·指派 Opus 档施工）**：真缺口（引擎无语音输出路）；契约合格——端口进 `src/services/` 与 SynthAudioPort 同哲学（非确定性旁路·headless no-op·游戏层禁直调 speechSynthesis）全对。补三处裁决：① 端口名 `VoicePort`·落 `src/services/audio/voice-port.ts`（与合成同域）；② 降级链①→③探测须**运行时惰性**——speechSynthesis.getVoices 异步就绪，首帧空表不算「无 ja 音色」，就绪前入队或降级兜底后回升；③ 事件键闭集校验归**消费方** spec（game-b voice-pack-spec §2），端口本身收任意 string（引擎不背单游戏词表）。验收照单 + `audio.md` 回填。spec 已足，可派 Opus 档 session 照此施工。
+> **✅ OPS 施工回执（2026-07-17·Opus 档·待 Lead 对抗性验收）**：`src/services/voice/`（新目录·6 文件：voice-port/tts-voice-port/sample-pack-voice-port/voice-chain/null-voice/index）+ `voice.test.ts`（25 测·含三姨太 spec §0 凭证探针 mock 断言 lang/rate/pitch/voice·非空 skip）。门禁全绿：tsc 0 / vitest 2786 全过 / build 0。裁决①②③已落：②getVoices 每 speak 重查·空表本次回落不永久判无ja、就绪回升；③端口收任意 string。**⚠偏差待裁**：落 `src/services/voice/`（照图纸行 51 + 派工范围「新目录」6 文件），非裁决①的 `services/audio/voice-port.ts`——若 Lead 要归 audio 域同域，`git mv` 零改可迁。`audio.md` 已回填一行。**未做**（越域）：game-i sounds 试听台一行=PUI 域（走 requests.md 报 PUI）；**真发声=MANUAL CHECK 交 owner**（headless CI 无 speechSynthesis 只验构造形状）。
 
 ### REQ-GUANDAN-牌型 · 掼蛋判型+压制序+逢人配（先裁 poker-hand 可否重组） · [2026-07-17] · 提出人 GD-A（《掼蛋夜宴》game-a S2 前置·owner 07-17 清池授权入池）→ 待 Lead 裁决 · status: open · 优先级: P1 · 类型: 能力缺口候选（正确性关键·不降档）
 > - 想实现：掼蛋牌型闭集判定（单/对/三同张/三带二/顺5/三连对木板/钢板二连三/炸弹4-10张/同花顺/四大天王）+ 压制比较序（天王炸>6+张炸>同花顺>5炸>4炸>普通牌型·同型比大·级牌>A）+ **红桃级牌逢人配**（除大小王外百搭）。

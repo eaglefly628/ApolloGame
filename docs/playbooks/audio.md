@@ -10,7 +10,8 @@
 | sim 里声明「该响什么」 | `l4-sound`（组件 `Sound`） | 挂 `Sound{clipId,volume,loop}`；表现层读取并播放 |
 | 程序化音效（点击/金币/失败） | `SynthAudioPort` + `SfxSpec` | 写音色表 `{partials:[{wave,freq,freqTo?,dur,gain}]}`，端口合成（无音频资产） |
 | 背景音乐循环 | `SynthMusicPort` + `MusicTrack` | 写音符表 `MusicNote{beat,freq,dur,wave}`，端口循环合成；BGM 与 SFX 独立开关/音量 |
-| headless/SSR 环境 | 端口内建降级 | 无 `AudioContext` → 静默 no-op（测试安全） |
+| 角色语音（台词朗读/配音） | `VoicePort`（`services/voice`）：`TtsVoicePort`(合成·v1)/`SamplePackVoicePort`(采样)/`createVoiceChain` | 游戏侧只发 `{charId,event,text,params?}` 纯数据；链 ①TTS→②wav→③兜底(`SynthAudioPort` 提示音+字幕)。事件键闭集校验归消费方 spec。**表现层旁路·不进 sim/hash** |
+| headless/SSR 环境 | 端口内建降级 | 无 `AudioContext`/`speechSynthesis` → 静默 no-op（测试安全） |
 | sim↔音频同步 | `AudioSync` | 把 sim 产出的 Sound 投递给端口 |
 
 ## ② 样例指针
