@@ -135,6 +135,17 @@ export const GAMES: GameEntry[] = [
     icon: '🀄',
     status: 'playable',
   },
+  {
+    id: 'game-a',
+    title: 'Game A: 掼蛋夜宴',
+    subtitle: '淮安掼蛋 · 二次元私宅夜局',
+    description:
+      '四人两副牌传统掼蛋（淮安标准全套）——2v2 对家爬级过 A、快局金钱/服饰罚、三位二次元姨太 AI 同桌。判型/压制序/逢人配=引擎 t3-hand-pattern 纯数据 config（游戏层零判型代码），牌库/手牌=t2-card-pile，run 状态=Resource，盘间流程=t3-flow，UI 全 LayoutNode，牌面=PD 货架 vendor 本地库。当前=S3 骨架：牌桌世界装载空跑、108 牌库/级数/服饰/钱包资源就位；发牌与出牌循环、BT 对手 AI 于玩法关（S4）接入。',
+    color: '#2a0f11',
+    accentColor: '#f0c96a',
+    icon: '🏮',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════

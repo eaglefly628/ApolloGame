@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "slug": "game-a",
+  "concept": {
+    "name": "掼蛋夜宴",
+    "pitch": "四人两副牌传统掼蛋（淮安标准全套）×二次元姨太人设×快局金钱/服饰罚·爬级过 A",
+    "refs": "game-e 卡牌数据链（card-pile/计分/数据牌目录）· 蓝本 docs/design/game-a/guandan-lite-mockup.html",
+    "style": "二次元原生自产 · 现代私宅夜局（modern-manor × sakura-nijigen）"
+  },
+  "signoffs": {},
+  "evidence": {},
+  "history": [
+    {
+      "action": "concept",
+      "at": "2026-07-17T14:13:18.547Z"
+    }
+  ]
+}
