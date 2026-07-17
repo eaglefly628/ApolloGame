@@ -42,11 +42,14 @@
 > **PST 活**：`src/studio/AssetImportWizard.tsx` 加「导入时移除背景」勾选 + 模式选（绿幕/纯色吸管/自动 flood/rembg）+ before/after 预览；调 PA 端点。
 > **红线**：authoring-time·**不碰 sim/hash/LayoutNode**（同 ai-gen/import-art-pack 一类资产变换）；auto-matte **必过人审预览**、绝不导入即改。**验收**：PA rembg 接线 + 测（纯色 flood 确定性真验 + rembg mock）；PST UI 勾选出预览·门禁绿；一张真异形图端到端（生图→导入去背→真 alpha→接 `backArt`/`skin` 透见对）。**边界**：本条 spec 由 PUI 会诊出图·**PUI 不施工**（studio/资产线非 PUI 域）。
 
-### REQ-VN-退役 · game-b 残留收尾：src/ui/vn 零消费退役 + 3 处过期注释 · [2026-07-17] · GD-B 提（owner 指令：接新项目前清 game-b 历史残留；GD 零代码·域外按工作流提单）→ **指派：PUI（①③）+ PST（②）** · status: open · 优先级: P3 · 类型: 去腐（game-b 本体/设计文档/公库/git 史均已零残留·此为引擎侧最后收尾）
-> ① **`src/ui/vn/**` 退役**（7 文件·game-b 乙女 VN 的演出组件层）：全库零外部消费（仅内部互引+注释提及），CLAUDE.md UI 铁律已判「待退役·VN 零消费可随时退」——本单=执行退役；连带 `src/ui/themes/sakura-otome/theme.ts` 头注「喂给 @ui/vn」与 `src/ui/shell/types.ts:16`「与 @ui/vn 同款」提法改口；完工后请 LEAD 同步删 CLAUDE.md UI 铁律行的「/ui/vn」字样。
-> ② **studio 两处注释把 game-b 当现存事实**（过期信号·llm-onboarding §4）：`src/studio/assets-model.ts:26`·`src/studio/StudioInspector.tsx:228`——改为通用表述（usedBy 为场景 id 时仅展示、不跳数据树）。
-> ③ `src/ui/themes/sanguo/theme.ts:3`「对齐 game-b 的 sakuraOtomeTheme 范式」→ 改「主题在 src/ui/themes/·游戏只消费」通用表述。
-> **判保留（勿动）**：`src/ui/themes/sakura-otome/`（已泛化为主题库 9 套之一 + spec.md 格式模板·数据资产非 game-b 专属）；`src/skills/tier3/dialogue.ts:11`「原 game-b」=能力下沉出处记录（历史语境明确）；requests-archive/docs/review/已挂过期头文档（归档纪律「过期文档不删」）；`wiki/skills/otome.md`（品类知识）。**验收**：清后全库 grep `game-b` 仅剩归档层+出处注释；门禁全绿。
+### REQ-VOICE-语音输出端口 · TTS 即时档 + 采样档同接口（game-b 立项刚需·新游戏 a/c 可共用） · [2026-07-17] · GD-B 提（owner 指令「需求池提给主程执行」；⚖ 游戏要语音+owner 无音源包→语音合成先发声）→ **LEAD 出图/施工（或派 Opus）** · status: open · 优先级: P1 · 类型: 引擎能力（services 音频线扩展·表现层旁路）
+> **需求面契约（GD 口径·架构 Lead 终裁）**：游戏侧只发语音事件 `{charId, event, text(日文台词), params?}`（事件键闭集=`docs/design/game-b/voice-pack-spec.md` §2·17 键）；端口一个接口两档实现——
+> ① **TTS 档（v1 默认·零资产零 key）**：浏览器 speechSynthesis·per-char 参数 `{lang:'ja-JP', voiceHint?, rate, pitch}`（spec §0 有三姨太参数草案）；无 ja 音色→降级③。
+> ② **采样档（将来配音）**：按 spec §1 命名 wav 资产·同事件键查台账播放；缺文件→降级①。
+> ③ **兜底**：SynthAudioPort 合成提示音+字幕（现有·零改动）。
+> **红线**：表现层非确定性旁路（不进 sim/hash/回放）；headless/SSR 静默 no-op（同 SynthAudioPort 哲学）；同 char 新事件顶掉旧朗读；**游戏层不直调 speechSynthesis**（端口=src/services 引擎域）。
+> **验收**：端口单测（事件→调用形状/降级链①→③/headless no-op）+ 试听入口（建议 game-i sounds 台加一行·PUI 会审）+ `docs/playbooks/audio.md` 回填一行。消费方=game-b（gdd §十）；game-a/c 立项案语音位可共用。
+> **腾槽记录**：REQ-VN-退役（P3 去腐·同为 GD-B 所提）撤回让位入档（先清后加·档内可重提）。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 

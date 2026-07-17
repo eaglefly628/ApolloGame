@@ -132,6 +132,6 @@ SessionOut { ranks[4], pointsFinal[4], moneyDelta[4], clothing[4]: {remaining, i
 
 1. ⚖ 共享角色卡格式定稿（owner）——需求清单已交，等格式后对齐 adapter。
 2. 真配音（可选后续）——⚖ owner 暂无音源包·v1 走 TTS 即时档；将来真人/AI 配音按 voice-pack-spec 灌入即升级。
-3. 采样语音端口引擎单（LEAD·主池满需腾槽裁决）。
+3. 语音输出端口引擎单——**已提主池 REQ-VOICE（2026-07-17·P1·LEAD）**：TTS 档+采样档同接口。
 4. 姨太名字/台词文案表、衣物件名终稿（GD-B 随 S4 前交付 copy.md）。
 5. 局外纹身图系统如何消费 clothing 状态（局外团队·非本游戏域）。

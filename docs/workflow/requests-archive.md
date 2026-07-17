@@ -1540,3 +1540,12 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **现象**：桥在邻格 B 上发信号前只查 `Clickable` 存在、不查其 `onlyFlag`（clickable 自己查）——B 的闸旗为 false 时「点 B 无信号、拖到 B 有信号」，破坏「与点选逐字节同形」承诺；连拖两次可在输入闸落下后仍完成交换（game-t 终步结算窗 lastcall 可被翻盘）。**建议修法**：发信号前补 `onlyFlag` 同款检查（与 clickable 共用语义·一处 if）。game-t 宿主已双保险（终局 dispose 输入源），修后可撤。验收：闸落时拖拽不产邻格信号 + 既有 235 行测试零回归。
 >
 > **⏸ Lead 连带暂停出池（2026-07-17·随 owner「拖拽线暂时用不到」裁决）**：t2-match3-drag-swap 能力本体已验收在库（archive 有验收单）；本缺陷=输入闸可绕（P2·不进 sim/hash），唯一暴露面 game-t 已有宿主双保险（终局 dispose 输入源·T-102 记账）。缺陷记录在案不丢；拖拽线重启或出现第二消费者时新开槽修。
+### REQ-VN-退役 · game-b 残留收尾：src/ui/vn 零消费退役 + 3 处过期注释 · [2026-07-17] · GD-B 提 → 指派：PUI（①③}+ PST（②） · status: **⏸ 撤回让位（2026-07-17·未执行·内容仍有效）** · 优先级: P3 · 类型: 去腐
+> **撤回原因**：owner 同日三连立项（game-a/b/c），主池 10/10 满、REQ-VOICE-语音输出端口（P1·立项刚需）按「先清后加」顶槽；本单为 P3 去腐、由同提单人 GD-B 自撤让位。**主池有槽时任何角色可按下文原文重提。**
+> ① `src/ui/vn/**` 退役（7 文件·game-b 乙女 VN 演出组件层）：全库零外部消费，CLAUDE.md UI 铁律已判「待退役·VN 零消费可随时退」——单=执行退役；连带 `src/ui/themes/sakura-otome/theme.ts` 头注「喂给 @ui/vn」与 `src/ui/shell/types.ts:16`「与 @ui/vn 同款」提法改口；完工后 LEAD 同步删 CLAUDE.md 该行「/ui/vn」字样。**注（2026-07-17）**：game-b 新项目《雀宴》已复用 sakura-otome 主题——退役 vn 时勿动主题本体。
+> ② studio 两处注释把 game-b 当现存事实：`src/studio/assets-model.ts:26`·`src/studio/StudioInspector.tsx:228`——改通用表述（usedBy 为场景 id 时仅展示）。
+> ③ `src/ui/themes/sanguo/theme.ts:3`「对齐 game-b 的 sakuraOtomeTheme 范式」→ 改「主题在 src/ui/themes/·游戏只消费」。
+> 判保留（勿动）：sakura-otome 主题（主题库资产·且已被新 game-b 选用）；`src/skills/tier3/dialogue.ts:11` 出处注释；归档/评审/过期头文档；wiki/skills/otome.md。验收：全库 grep game-b 仅剩归档层+出处注释+新《雀宴》文档；门禁全绿。
+
+### B-003（game-b）· 引擎缺口盘点与提单 · [2026-07-17] · GD-B → LEAD · status: ✅ done（2026-07-17 当日结） · P1 · 类型: 游戏级工作票（game-b）
+> 盘点三件：a 语音输出端口=真缺口 → 提主池 REQ-VOICE-语音输出端口（P1·TTS speechSynthesis 即时档+采样档同接口·腾槽=GD-B 自撤 REQ-VN-退役）；b 行为树解释器=游戏层 TS 先行记下沉债（TS 已获 owner 授权·不占池·成熟后 capgap 提案）；c 机位切换/3D 点击=回驳已覆盖（Camera3D 运镜过渡 bump trigger + Pickable3D 射线拾取·2026-07-17 核实·实名出处记 capability-plan §2/§2.5）。

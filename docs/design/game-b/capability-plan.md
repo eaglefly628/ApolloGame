@@ -12,7 +12,9 @@
 | capability | 用来做什么 | 状态 |
 |---|---|---|
 | 种子 PRNG（RandomSeed/nextRandom/seededShuffle） | 洗牌/掷骰/AI 犯错注入——**一切随机** | ✅ 现有 |
-| 3D 渲染线组件（Mesh3D/Model3D/Transform3D/Camera3D/Light3D/Vfx3D + 实例化） | 桌/136 牌/骰/点棒/背景件/机位/灯光 | ✅ 现有（缺口见 §2.5-c） |
+| 3D 渲染线组件（Mesh3D/Model3D/Transform3D/Camera3D/Light3D/Vfx3D + 实例化） | 桌/136 牌/骰/点棒/背景件/灯光 | ✅ 现有 |
+| Camera3D 运镜过渡（设目标机位+bump trigger→渲染器平滑切） | 机位表演出（主机位/立直推近/和牌俯冲/脱衣特写/掷骰特写） | ✅ 现有（2026-07-17 核实 `components/render.ts` Camera3D） |
+| Pickable3D + pick() 射线拾取（render-only 输入层·信号名·照 2D clickable 先例） | 3D 手牌/牌河点击出牌 | ✅ 现有（2026-07-17 核实 three-renderer） |
 | LayoutNode UI 闭集 + sakura-otome 主题 | 全部 HUD/面板/按钮/字幕（§场景交接档 §四） | ✅ 现有 |
 | timeline（t3） | 掷骰/和牌/脱衣演出编排（机位+立绘+粒子时序） | ✅ 现有 |
 | dialogue（t3·DialogueScript） | 姨太台词/闲聊触发的声明式脚本 | ✅ 现有 |
@@ -23,9 +25,9 @@
 
 ### 2.5 缺口（需下沉/新增·S2 过审后由 Lead 开引擎单裁槽）
 
-- **a. 语音输出端口（两档同接口）**——⚖ owner 2026-07-17：音源包暂无，先用语音合成发声。档① TTS=speechSynthesis 朗读日文台词（ja-JP·零资产即时可用）；档② 采样播放=将来配音 wav（现音频线纯合成，采样=audio 手册明示缺口）。两档一个接口（事件键→发声），表现层非确定性旁路、不进 sim、headless/无音色时静默降级（同 SynthAudioPort 哲学）；**做成引擎 services 端口，不在游戏层手写**。端口未落地前以合成提示音+字幕占位，不阻塞 S3-S5。
-- **b. 行为树解释器**——引擎无 BT；v1 按 §4 在游戏层 TS 实现（记下沉债·将来泛化为通用 AI 能力）。
-- **c. 机位表切换语义**——若 Camera3D 现无"机位+缓动切换"数据语义，提 requests-3d.md（P3D 域）；有则直用。
+- **a. 语音输出端口（两档同接口）**——⚖ owner 2026-07-17：音源包暂无，先用语音合成发声。档① TTS=speechSynthesis 朗读日文台词（ja-JP·零资产即时可用）；档② 采样播放=将来配音 wav（现音频线纯合成，采样=audio 手册明示缺口）。两档一个接口（事件键→发声），表现层非确定性旁路、不进 sim、headless/无音色时静默降级（同 SynthAudioPort 哲学）；**做成引擎 services 端口，不在游戏层手写**。端口未落地前以合成提示音+字幕占位，不阻塞 S3-S5。**→ 已提主池 `REQ-VOICE-语音输出端口`（2026-07-17·P1·LEAD）。**
+- **b. 行为树解释器**——引擎无 BT；v1 按 §4 在游戏层 TS 实现（记下沉债·将来泛化为通用 AI 能力·**不占主池槽**——成熟后走 capgap 提案）。
+- ~~c. 机位表切换语义~~ **回驳·已覆盖（GD-B 2026-07-17 核实）**：Camera3D 自带运镜过渡（目标机位+bump trigger 平滑切）+ Pickable3D 射线拾取——机位表=Camera3D 预设参数组（纯数据），无需新能力、不提单。
 
 ## 3. 摆成数据的规则面
 
