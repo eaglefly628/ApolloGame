@@ -1,118 +1,194 @@
-// Game A ·《掼蛋夜宴》—— 宿主层（S3 骨架·mount-host helper·零手写 DOM·零玩法逻辑）。
+// Game A ·《掼蛋夜宴》—— 宿主层（S4 玩法关·mount-host helper·零手写 DOM·零判型/结算逻辑）。
 //
-// 职责（都在 sim 外）：mountHost 搭容器骨架（引擎公用件）；SC-1 菜单壳 ⇄ 牌桌骨架切换；
-// 上桌=建 Engine + load 牌桌蓝图 + start（固定步长循环）→ world 纯读投影进 LayoutNode 骨架屏。
-// 出牌交互/发牌/AI/结算全属 S4 玩法关——本层 handler 只有宿主生命周期动作（进桌/回菜单），零游戏逻辑。
-// UI 全 LayoutNode（mountUI）·随机全在 sim 侧 RandomSeed（宿主零随机）。
-import { Engine } from '../../runtime/engine.js';
+// 职责（都在 sim 外·outcome-first）：mountHost 搭骨架；SC-1 菜单 ⇄ 牌桌 ⇄ 结算三屏切换；
+// 上桌=建 GuandanSession（内嵌 Engine·盘循环在 sim 脚本）→ 投影 world/session 状态进 LayoutNode。
+// handler 只做「选牌记账 + 调 session.act/hint/nextRound + 重渲 + 排 AI 步」——判型/压制/结算全在
+// guandan-session（capability-plan 例外①②·已过审）。AI 拟人延迟=表现层 setTimeout（不进 sim/hash）。
+// UI 全 LayoutNode（mountUI）·随机全在 session 侧种子 PRNG（宿主零随机·延迟计时不是随机）。
 import { mountHost } from '@engine/host/mount-host.js';
 import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap } from '@ui/components/index.js';
-import type { GameFlow, Resource, CardPile } from '@engine/protocol/components.js';
-import { buildTableBlueprint } from './blueprint.js';
-import { buildMenu, buildTable, type TableView, type SeatView } from './hud.js';
-import { SEATS, DRESS_TIERS } from './rules.js';
+import { GuandanSession, TURN_ORDER, teamOf, FAMILY_CN, type SeatId } from './guandan-session.js';
+import { buildMenu, buildTable, buildPlay, buildResult, type SeatView, type PlayView, type ResultView, type TableView } from './hud.js';
+import { SEATS, DRESS_TIERS, INITIAL_FUNDS, codeSuit, codeRank } from './rules.js';
 import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG } from './theme.js';
 
-// 骨架期固定 run 种子（确定性·同种子同世界）；S4 起 run 种子随存档快照管理。
-const SKELETON_SEED = 20260717;
+const RUN_SEED = 20260717; // 骨架期固定 run 种子；生涯存档随 run 快照=后续接
+const AI_DELAY_MS = 700; // 拟人思考延迟（gdd §5·表现层·0.6~1.2s 档内取中）
 
 export function mount(container: HTMLElement): () => void {
-  const skel = mountHost(container, {
-    fieldW: FIELD_W,
-    fieldH: FIELD_H,
-    sceneBackground: MANOR_BG,
-    wrapperBackground: WRAPPER_BG,
-  });
+  const skel = mountHost(container, { fieldW: FIELD_W, fieldH: FIELD_H, sceneBackground: MANOR_BG, wrapperBackground: WRAPPER_BG });
   const { overlayHost } = skel;
-  overlayHost.style.pointerEvents = 'auto'; // 骨架期两屏都走浮层 host（画布渲染线 S4/S5 接）
+  overlayHost.style.pointerEvents = 'auto';
 
   let ui: MountHandle | null = null;
-  let engine: Engine | null = null;
-  let unsub: (() => void) | null = null;
-  let lastSig = '';
+  let session: GuandanSession | null = null;
+  let selected: number[] = [];
+  let aiTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // ── world → 骨架屏投影（纯读·outcome-first）────────────────────────────────
-  function readView(e: Engine): TableView {
-    const w = e.world;
-    const res = (id: string): number => {
-      for (const [eid] of w.query('Resource')) {
-        const r = w.getComponent<Resource>(eid, 'Resource');
-        if (r?.id === id) return r.current;
-      }
-      return 0;
-    };
-    const pile = (owner: string): CardPile | null => {
-      for (const [eid] of w.query('CardPile')) {
-        const p = w.getComponent<CardPile>(eid, 'CardPile');
-        if (p?.owner === owner) return p;
-      }
-      return null;
-    };
-    const seatView = (id: SeatView['seat']['id']): SeatView => ({
-      seat: SEATS.find((s) => s.id === id)!,
-      cards: pile(id)?.hand.length ?? 0,
-      dress: res(`dress-${id}`) || DRESS_TIERS,
-    });
+  const seatSpec = (id: SeatId): SeatView['seat'] => SEATS.find((s) => s.id === id)!;
+  const seatView = (id: SeatId): SeatView => ({
+    seat: seatSpec(id),
+    cards: session ? session.hands[id].length : 0,
+    dress: session ? session.dress[id] : DRESS_TIERS,
+  });
+
+  function clearAiTimer(): void {
+    if (aiTimer) {
+      clearTimeout(aiTimer);
+      aiTimer = null;
+    }
+  }
+
+  // ── 合法性投影（禁用态/原因·纯读 session·判型在 sim）──────────────────────────
+  function commitState(s: GuandanSession): { canCommit: boolean; why: string } {
+    if (selected.length === 0) return { canCommit: false, why: '点牌选中 · 出牌或过' };
+    const chk = s.legalCheck('hero', selected);
+    return { canCommit: chk.ok, why: chk.ok ? '' : (chk.why ?? '不合法') };
+  }
+
+  function playView(s: GuandanSession): PlayView {
+    const cs = commitState(s);
     return {
-      wallet: res('wallet'),
-      stake: res('stake'),
-      round: res('round'),
-      levelOurs: res('level-ours'),
-      levelTheirs: res('level-theirs'),
-      flowState: w.getComponent<GameFlow>('flow', 'GameFlow')?.current ?? '—',
-      deckCount: pile('dealer')?.deck.length ?? 0,
-      partner: seatView('partner'),
-      west: seatView('west'),
-      east: seatView('east'),
-      hero: seatView('hero'),
+      round: s.round,
+      stake: s.stake,
+      levelPlay: s.playLevel,
+      levelOurs: s.levels[0],
+      levelTheirs: s.levels[1],
+      wallet: s.wallets.hero,
+      turn: s.turn,
+      turnName: seatSpec(s.turn).name,
+      seats: { partner: seatView('partner'), west: seatView('west'), east: seatView('east'), hero: seatView('hero') },
+      hand: [...s.hands.hero],
+      selected: [...selected],
+      trick: s.currentTrick
+        ? { name: FAMILY_CN[s.currentTrick.match.family] ?? s.currentTrick.match.family, family: s.currentTrick.match.family, cards: s.currentTrick.cards }
+        : null,
+      canCommit: cs.canCommit,
+      commitWhy: cs.why,
+      canPass: s.currentTrick !== null,
     };
   }
 
-  function refreshTable(): void {
-    if (!engine || !ui) return;
-    const v = readView(engine);
-    const sig = JSON.stringify([v.wallet, v.round, v.flowState, v.deckCount, v.hero.cards]);
-    if (sig === lastSig) return;
-    lastSig = sig;
-    ui.update(buildTable(v));
+  function resultView(s: GuandanSession): ResultView {
+    const r = s.lastResult!;
+    return {
+      ranking: r.ranking.map((seat) => ({ seat, name: seatSpec(seat).name, team: teamOf(seat) })),
+      winnersTeam: r.winnersTeam,
+      comboLabel: r.combo === 'double' ? '双上 ×3' : r.combo === 'first-third' ? '一三 ×2' : '一四 ×1',
+      totalMult: r.totalMult,
+      payPerPlayer: r.payPerPlayer,
+      levelAfter: r.levelAfter,
+      dressOutDoubled: r.dressOutDoubled,
+      phase: s.phase === 'run-won' ? 'run-won' : s.phase === 'run-lost' ? 'run-lost' : 'settled',
+    };
   }
 
-  function stopSim(): void {
-    unsub?.();
-    unsub = null;
-    engine?.stop();
-    engine = null;
+  // ── 渲染路由（三屏按 session.phase）───────────────────────────────────────────
+  function render(): void {
+    if (!session) {
+      ui?.update(buildMenu());
+      return;
+    }
+    if (session.phase === 'playing') ui?.update(buildPlay(playView(session)));
+    else ui?.update(buildResult(resultView(session)));
+  }
+
+  // ── AI 步进（拟人延迟·递归排到 hero 轮或盘终）──────────────────────────────────
+  function scheduleAi(): void {
+    clearAiTimer();
+    if (!session || session.phase !== 'playing' || session.turn === 'hero') return;
+    aiTimer = setTimeout(() => {
+      aiTimer = null;
+      if (!session || session.phase !== 'playing' || session.turn === 'hero') return;
+      session.aiStep();
+      render();
+      scheduleAi();
+    }, AI_DELAY_MS);
+  }
+
+  // ── 生命周期 ─────────────────────────────────────────────────────────────────
+  function stopSession(): void {
+    clearAiTimer();
+    session?.engine.stop();
+    session = null;
+    selected = [];
   }
 
   function showMenu(): void {
-    stopSim();
+    stopSession();
     ui?.();
     ui = mountUI(overlayHost, buildMenu(), handlers);
   }
 
   function enterTable(): void {
-    stopSim();
-    engine = new Engine();
-    engine.load(buildTableBlueprint({ seed: SKELETON_SEED }));
+    stopSession();
+    session = new GuandanSession({ seed: RUN_SEED, stake: 100, tier: 'l2' });
+    selected = [];
     ui?.();
-    lastSig = '';
-    ui = mountUI(overlayHost, buildTable(readView(engine)), handlers);
-    unsub = engine.subscribe(refreshTable);
-    engine.start();
+    ui = mountUI(overlayHost, buildPlay(playView(session)), handlers);
+    scheduleAi();
   }
 
   const handlers: HandlerMap = {
     'menu.start': () => enterTable(),
     'table.back': () => showMenu(),
+    'hand.toggle': (arg?: string) => {
+      if (!session || session.turn !== 'hero') return;
+      const code = Number(arg);
+      const i = selected.indexOf(code);
+      if (i >= 0) selected.splice(i, 1);
+      else selected.push(code);
+      render();
+    },
+    'play.commit': () => {
+      if (!session || session.turn !== 'hero') return;
+      if (session.act('hero', [...selected])) {
+        selected = [];
+        render();
+        scheduleAi();
+      }
+    },
+    'play.pass': () => {
+      if (!session || session.turn !== 'hero') return;
+      if (session.act('hero', null)) {
+        selected = [];
+        render();
+        scheduleAi();
+      }
+    },
+    'play.hint': () => {
+      if (!session || session.turn !== 'hero') return;
+      const hint = session.hint('hero');
+      selected = hint ?? [];
+      render();
+    },
+    'round.next': () => {
+      if (!session) return;
+      if (session.nextRound()) {
+        selected = [];
+        render();
+        scheduleAi();
+      }
+    },
   };
 
   showMenu();
 
   return () => {
-    stopSim();
+    stopSession();
     ui?.();
     ui = null;
     skel.teardown();
+  };
+}
+
+// 骨架屏（S3 目击件·保留给单测/审计入口引用·launcher 走玩法屏）。
+export function buildSkeletonTableView(): TableView {
+  const sv = (id: SeatId): SeatView => ({ seat: SEATS.find((s) => s.id === id)!, cards: 0, dress: DRESS_TIERS });
+  return {
+    wallet: INITIAL_FUNDS, stake: 100, round: 1, levelOurs: 2, levelTheirs: 2,
+    flowState: 'table-idle', deckCount: 108,
+    partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero'),
   };
 }

@@ -24,7 +24,14 @@
       "at": "2026-07-17T14:39:10.779Z"
     }
   },
-  "evidence": {},
+  "evidence": {
+    "S4": {
+      "exit": 0,
+      "summary": " Test Files  3 passed (3) ·       Tests  27 passed (27)",
+      "at": "2026-07-17T15:04:24.358Z",
+      "gameHash": "a1725a3ab042677d"
+    }
+  },
   "history": [
     {
       "action": "concept",
@@ -56,6 +63,12 @@
       "action": "signoff",
       "stage": "S3",
       "at": "2026-07-17T14:39:10.779Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "at": "2026-07-17T15:04:24.358Z",
+      "outOfOrder": true
     }
   ],
   "reviews": {

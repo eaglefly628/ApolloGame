@@ -11,7 +11,7 @@ import {
   SEATS, DECK_SIZE, RANK_SMALL_JOKER, RANK_BIG_JOKER, SUIT_HEART, INITIAL_FUNDS, DRESS_TIERS,
 } from './rules.js';
 import { buildTableBlueprint } from './blueprint.js';
-import { buildMenu, buildTable, type TableView, type SeatView } from './hud.js';
+import { buildMenu, buildTable, buildPlay, buildResult, type TableView, type SeatView } from './hud.js';
 import { cardAssetId } from './theme.js';
 
 const c = (suit: number, rank: number): Card => ({ suit, rank });
@@ -139,6 +139,40 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero'),
     };
     expect(validateLayoutNode(buildTable(view))).toEqual([]);
+  });
+
+  // ── S4 玩法屏/结算屏 UI（LayoutNode 纯数据·零 issue）────────────────────────────
+  it('可玩牌桌屏与结算浮层过 validateLayoutNode', () => {
+    const sv = (id: SeatView['seat']['id']): SeatView => ({ seat: SEATS.find((s) => s.id === id)!, cards: 27, dress: DRESS_TIERS });
+    const play = buildPlay({
+      round: 1, stake: 100, levelPlay: 2, levelOurs: 2, levelTheirs: 2, wallet: INITIAL_FUNDS,
+      turn: 'hero', turnName: '你',
+      seats: { partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero') },
+      hand: [cardCode(0, 3), cardCode(1, 3), cardCode(0, 7), cardCode(2, 14), cardCode(0, RANK_BIG_JOKER)],
+      selected: [cardCode(0, 3), cardCode(1, 3)],
+      trick: { name: '对子', family: 'pair', cards: [cardCode(2, 2), cardCode(3, 2)] },
+      canCommit: true, commitWhy: '', canPass: true,
+    });
+    expect(validateLayoutNode(play)).toEqual([]);
+    // 领出态（无墩）+ AI 轮次
+    const lead = buildPlay({
+      round: 2, stake: 100, levelPlay: 2, levelOurs: 3, levelTheirs: 2, wallet: 12000,
+      turn: 'west', turnName: '林曼笙',
+      seats: { partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero') },
+      hand: [cardCode(0, 5)], selected: [], trick: null, canCommit: false, commitWhy: '点牌选中 · 出牌或过', canPass: false,
+    });
+    expect(validateLayoutNode(lead)).toEqual([]);
+    for (const phase of ['settled', 'run-won', 'run-lost'] as const) {
+      const res = buildResult({
+        ranking: [
+          { seat: 'hero', name: '你', team: 0 }, { seat: 'partner', name: '沈玉薇', team: 0 },
+          { seat: 'west', name: '林曼笙', team: 1 }, { seat: 'east', name: '顾念念', team: 1 },
+        ],
+        winnersTeam: 0, comboLabel: '双上 ×3', totalMult: 3, payPerPlayer: 300,
+        levelAfter: [5, 2], dressOutDoubled: false, phase,
+      });
+      expect(validateLayoutNode(res)).toEqual([]);
+    }
   });
 
   // ── 牌码 → 资产 id 映射抽查（全量对账在 vendor.test）────────────────────────────
