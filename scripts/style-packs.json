@@ -166,5 +166,95 @@
       "seed": 1775
     },
     "refImage": null
+  },
+  "sakura-nijigen": {
+    "packId": "sakura-nijigen",
+    "name": "樱色二次元（女性向人物锚）",
+    "stylePrompt": "elegant anime style for a female-oriented audience: refined line art, soft shading, mature adult characters, graceful poses, warm ambient light, high readability, game asset, no text, no watermark",
+    "promptEn": "elegant anime style for a female-oriented audience: refined line art, soft shading, mature adult characters, graceful poses, warm ambient light, high readability, game asset, no text, no watermark",
+    "promptZh": "女性向二次元风格：细腻柔和线条，柔光上色，成年角色，优雅姿态，暖调环境光，人物清丽，高辨识度，游戏素材，无文字，无水印",
+    "palette": [
+      16171982,
+      16511975,
+      2901584,
+      13081172,
+      13130868,
+      12032964,
+      3951211,
+      3551029
+    ],
+    "negative": {
+      "zh": "写实照片，暗沉，噪点，锯齿，杂乱背景，厂牌标识",
+      "en": "photorealistic, dark and muddy, noisy, jagged edges, cluttered background, brand logo"
+    },
+    "post": {
+      "paletteSnap": false
+    },
+    "params": {
+      "provider": "qwen",
+      "model": "wanx2.1-t2i-turbo",
+      "seed": 1776
+    },
+    "refImage": null
+  },
+  "vegas-victoriana": {
+    "packId": "vegas-victoriana",
+    "name": "维多利亚赌宴（game-c 场景锚）",
+    "stylePrompt": "opulent Las Vegas casino meets Victorian elegance: gilded gold ornament, deep green felt, burgundy velvet, crystal chandelier glow, ornate baroque frames, warm dramatic lighting, high readability, game asset, no text, no watermark",
+    "promptEn": "opulent Las Vegas casino meets Victorian elegance: gilded gold ornament, deep green felt, burgundy velvet, crystal chandelier glow, ornate baroque frames, warm dramatic lighting, high readability, game asset, no text, no watermark",
+    "promptZh": "拉斯维加斯奢华融合维多利亚优雅：鎏金装饰，深绿桌呢，酒红丝绒，水晶吊灯辉光，繁复巴洛克画框，暖调戏剧光，高辨识度，游戏素材，无文字，无水印",
+    "palette": [
+      13938487,
+      3499341,
+      8072507,
+      2760478,
+      15919317,
+      7032433,
+      12088115,
+      16767392
+    ],
+    "negative": {
+      "zh": "写实照片，暗沉，噪点，锯齿，杂乱背景，厂牌标识",
+      "en": "photorealistic, dark and muddy, noisy, jagged edges, cluttered background, brand logo"
+    },
+    "post": {
+      "paletteSnap": false
+    },
+    "params": {
+      "provider": "qwen",
+      "model": "wanx2.1-t2i-turbo",
+      "seed": 1777
+    },
+    "refImage": null
+  },
+  "modern-manor": {
+    "packId": "modern-manor",
+    "name": "现代豪宅夜局（game-a 场景锚）",
+    "stylePrompt": "modern luxury mansion night interior: warm lamplight, wooden card table, contemporary elegant furnishing, cozy intimate atmosphere, clean composition, game asset, no text, no watermark",
+    "promptEn": "modern luxury mansion night interior: warm lamplight, wooden card table, contemporary elegant furnishing, cozy intimate atmosphere, clean composition, game asset, no text, no watermark",
+    "promptZh": "现代奢华豪宅夜间室内：暖调灯光，木质牌桌，当代雅致陈设，温馨私密氛围，构图干净，游戏素材，无文字，无水印",
+    "palette": [
+      9067068,
+      2372685,
+      15186282,
+      15787730,
+      4862756,
+      2829104,
+      8010564,
+      5140074
+    ],
+    "negative": {
+      "zh": "写实照片，暗沉，噪点，锯齿，杂乱背景，厂牌标识",
+      "en": "photorealistic, dark and muddy, noisy, jagged edges, cluttered background, brand logo"
+    },
+    "post": {
+      "paletteSnap": false
+    },
+    "params": {
+      "provider": "qwen",
+      "model": "wanx2.1-t2i-turbo",
+      "seed": 1778
+    },
+    "refImage": null
   }
 }
