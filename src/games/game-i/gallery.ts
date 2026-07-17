@@ -787,15 +787,39 @@ function buildSimStage(id: string, glyph: string, title: string, desc: string, c
 }
 
 /** 一块模块积木卡。 */
+/** 每个效果的稳定索引编号（=在 MODULES 里的全局位次·1 起）：卡片角标显示 + 编号快速跳转都取它。
+ *  追加新效果不改旧号（位次不变）；用它「指定编号→点击直达」。 */
+export const MODULE_NO: ReadonlyMap<string, number> = new Map(MODULES.map((m, i) => [m.id, i + 1]));
+
 function moduleCard(m: typeof MODULES[number]): LayoutNode {
+  const no = MODULE_NO.get(m.id) ?? 0;
   return {
     type: 'Card', id: `hub-${m.id}`,
     props: {
-      media: m.glyph, title: m.label, sub: m.desc,
-      corner: m.soon ? '规划中' : '',
+      media: m.glyph, title: `#${no} ${m.label}`, sub: m.desc, // 编号直接进标题（一眼可见）
+      corner: m.soon ? `#${no}·规划中` : `#${no}`,             // 角标也标编号
       tone: m.soon ? 'locked' : m.tone,
       ...(m.soon ? {} : { action: 'enterModule', actionArg: m.id }),
     },
+  };
+}
+
+/** 编号快速跳转条：一排可点的效果编号（点编号=直达该效果）。demo 时「我要看 12 号」点 12 即跳。 */
+function buildJumpBar(): LayoutNode {
+  return {
+    type: 'Panel', id: 'hub-jump', props: { bg: 'jade', title: '🔢 效果编号快速跳转 · 点编号直达（demo 指哪看哪）' },
+    layout: { direction: 'grid', minCol: 44, gap: 6, padding: 12 }, // grid=自动换行（无 wrap 字段）
+    children: MODULES.map((m): LayoutNode => {
+      const no = MODULE_NO.get(m.id) ?? 0;
+      return {
+        type: 'Button', id: `jump-${m.id}`,
+        props: {
+          label: String(no), kind: m.dim === '3d' ? 'primary' : 'ghost', disabled: m.soon,
+          ...(m.soon ? {} : { action: 'enterModule', actionArg: m.id }),
+        },
+        layout: { width: 40 },
+      };
+    }),
   };
 }
 
@@ -824,7 +848,8 @@ function buildHub(): LayoutNode {
     layout: { direction: 'column', gap: 18, padding: 20 },
     children: [
       { type: 'Label', id: 'hub-sub', props: {
-        text: '每块积木是一类底座能力的活样例——点一块进去，看它怎么用纯数据驱动。分 2D 与 3D 两区。', color: 'sub', size: 'sm' } },
+        text: '每块积木是一类底座能力的活样例——点一块进去，看它怎么用纯数据驱动。分 2D 与 3D 两区。每个效果带编号（卡片标题/角标 #N），也可用下面的编号条直达。', color: 'sub', size: 'sm' } },
+      buildJumpBar(),
       hubSection('2d', '🟦 2D 能力', 'UI / 声音 / 输入 / 动画 / AI / 物理 / 战斗 / 特效 / 状态机 / 视频', '2d'),
       { type: 'Divider', id: 'hub-div', props: {} },
       hubSection('3d', '🧊 3D 能力', '消费 Apollo 3D 渲染线（ThreeRenderer）——光照 / 景深 / 寻路 / 碰撞 / 粒子', '3d'),
