@@ -1492,3 +1492,11 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > 门禁全绿直推；①②各自独立提交；完工标 ✅ 待 Lead 对抗性验收（真浏览器 demo 必查）。
 >
 > **⚖ Lead 关账（2026-07-16·owner「第六条是不是也该关掉了？」→ 授权关闭）**：①锚定已 PASS（偏差B 四处改注核实·CONCERNS 转 PASS），本单收口归档。**②绑定层未施工零代码**——设计稿在 `docs/design/ui-binding-layer-2026-07-16.md`（PUI 已交·三处待裁 a/b/c + PST 共审点见稿），owner 要启动时**新开槽/新 session 拉起**，不留空挂条目占槽（对齐 owner 同日「做不完的撤出主池·我新开 session 做」的清池方针）。
+
+### REQ-INPUT-拖拽交换 · 三消拖拽滑动手势（竖屏触屏主输入） · [2026-07-16] · owner 拍板（game-t）→ Lead 出图 → **派工撤回·owner 将新开 session 亲自安排（owner 2026-07-16「8和9不要做了，我新开session做」）——池内任何 session 勿动工·spec 保留供新 session 照图施工** · status: **✅ done·Lead 对抗性验收 PASS（2026-07-16·归档）** · 优先级: P1 · 类型: 引擎输入面（render/input-only·不进 sim/hash）
+> **目标**：在 BoardCell 上按下→向四邻方向拖过阈值（如 0.4 格）→ 释放，等价于「点选两格交换」——**产出与现有点选完全相同的选中/交换信号**（`t3-match3-board` idle 相位零改动·sim 不知道输入形态）。
+> **评判前置（先重组律）**：施工首步对照现有 `drag-place` / `grid-drag-square` / `i1-input-capture`+`i2-action-map` 能否重组表达；能则薄配置接线，不能再加最小新件（如 `dragSwap?: boolean` 挂输入映射）——**报告里必须写明重组结论**。
+> **验收**：触屏/鼠标各一路测试（拖过阈值=交换信号·未过阈值=视为点选·斜向取主轴）；确定性（输入→信号纯映射·无时间随机）；不破既有点选路（game-i/现有消费零回归）。完工标 ✅ 待 Lead 对抗性验收。
+> **回执（OPS 施工·2026-07-16·commit 3ce0e157）✅ 待 Lead 对抗性验收**：新增 `t2-match3-drag-swap`（`src/skills/tier2/match3-drag-swap.ts`）+ 注册 + 19 测（含 clickable+match3-board 全链集成）。**重组结论**：drag-place/grid-drag-square 产的是域意图(HexPos/PlaceBlockIntent)非选中 Signal、i1/i2 仅契约无系统——三者均不可重组表达；**复用 clickable**：BoardCell 配 `Clickable{action,phase:'down'}`，指针**按下**即由 clickable 选中起点格 A（第一半，逐字节点选），本能力只补**主轴方向邻格 B** 的选中 Signal（与点 B 逐字节同形）→ idle 判相邻交换。两拍天然落在真实 down/up 事件、**零暂存组件·不进 hash·idle 相位零改动**（世界状态轨迹与点两格逐字节一致）。阈值 0.4 格（`DRAG_SWAP_THRESHOLD_CELLS`）、斜向取主轴、越界不换、触屏/鼠标 source 无关。门禁：tsc+vitest(2714)+build 全绿（隔离 worktree 于最新 origin 复核·避并发污染）。
+>
+> **⚖ Lead 对抗性验收（2026-07-16·判 PASS·关单归档）**：设计复核——复用 clickable 只补邻格 B 信号、两拍落真实 down/up、零暂存组件、不进 hash、与点选两格世界轨迹逐字节同（红线内最优解）；19 条点名测试含 clickable+match3-board 全链集成与触屏/鼠标两路；当前 HEAD 全套门禁独立复跑绿（tsc·vitest 355 文件/2728·build）。**偏差三条全 INTENTIONAL 准许**：独立能力形态（优于挂输入映射·同族先例）；契约要求 BoardCell 用 Clickable{phase:down}（已写进 whenToUse）；阈值 0.4 为模块常量（不碰相位机文件）。**治理注记**：本单曾遭「派工撤回」与 Lead 派单竞态——成品经 owner 复盘流程后保留消费（PE-T T-002② 排队接入）；教训=派工前重读工单最新状态（LEAD 卡已补）。

@@ -20,7 +20,7 @@
 ## 3. 技能与工具
 
 - 可用：全部 agent/技能（asset-manager / game-publisher / check-ui / resource-manager / verify / code-review）。
-- 派工通道：评审通过的实现类需求，在 `docs/workflow/requests.md` 条目标「**指派：Opus**」+ 附实现 spec（组件/语义/测试写死）；无 spec 的架构判断不下放。
+- 派工通道：评审通过的实现类需求，在 `docs/workflow/requests.md` 条目标「**指派：Opus**」+ 附实现 spec（组件/语义/测试写死）；无 spec 的架构判断不下放。**派工前必须 fetch 重读工单最新状态**——多 Lead 并行时撤回/改派可能已落档（2026-07-16 拖拽单竞态教训）。
 - 效率纪律：effort 档位与派工性质对照 **CLAUDE.md「effort 档位默认判断」表**（正确性关键路径不因省钱降档）。
 
 ## 4. 白皮书（本角色知识库）

@@ -51,12 +51,6 @@
 > **候选（先重组已对照）**：现有 Effect.valueFrom/comboTable 均触不到相位机内的连锁级——需 config 可选字段下沉，如 `chainScale?: number`（缺省 1=现行为逐字节不变；clear 相位按 cascade 级对 coin 产出乘 `chainScale^级`，全整数化方案由 Lead 定：如 ×3/2 用整数分子分母避免 IEEE 漂移）。落地后 game-t 蓝图加一行 config 即对齐 GD 表，无需重定标。
 > **关联**：可并入 REQ-M3-三期批次施工（同文件·同红线：可选字段向后兼容+一/二期测试零回归）。game-t 侧台账=`docs/design/game-t/requests.md` T-003①。
 
-### REQ-INPUT-拖拽交换 · 三消拖拽滑动手势（竖屏触屏主输入） · [2026-07-16] · owner 拍板（game-t）→ Lead 出图 → **派工撤回·owner 将新开 session 亲自安排（owner 2026-07-16「8和9不要做了，我新开session做」）——池内任何 session 勿动工·spec 保留供新 session 照图施工** · status: open（挂起待 owner 拉起） · 优先级: P1 · 类型: 引擎输入面（render/input-only·不进 sim/hash）
-> **目标**：在 BoardCell 上按下→向四邻方向拖过阈值（如 0.4 格）→ 释放，等价于「点选两格交换」——**产出与现有点选完全相同的选中/交换信号**（`t3-match3-board` idle 相位零改动·sim 不知道输入形态）。
-> **评判前置（先重组律）**：施工首步对照现有 `drag-place` / `grid-drag-square` / `i1-input-capture`+`i2-action-map` 能否重组表达；能则薄配置接线，不能再加最小新件（如 `dragSwap?: boolean` 挂输入映射）——**报告里必须写明重组结论**。
-> **验收**：触屏/鼠标各一路测试（拖过阈值=交换信号·未过阈值=视为点选·斜向取主轴）；确定性（输入→信号纯映射·无时间随机）；不破既有点选路（game-i/现有消费零回归）。完工标 ✅ 待 Lead 对抗性验收。
-> **回执（OPS 施工·2026-07-16·commit 3ce0e157）✅ 待 Lead 对抗性验收**：新增 `t2-match3-drag-swap`（`src/skills/tier2/match3-drag-swap.ts`）+ 注册 + 19 测（含 clickable+match3-board 全链集成）。**重组结论**：drag-place/grid-drag-square 产的是域意图(HexPos/PlaceBlockIntent)非选中 Signal、i1/i2 仅契约无系统——三者均不可重组表达；**复用 clickable**：BoardCell 配 `Clickable{action,phase:'down'}`，指针**按下**即由 clickable 选中起点格 A（第一半，逐字节点选），本能力只补**主轴方向邻格 B** 的选中 Signal（与点 B 逐字节同形）→ idle 判相邻交换。两拍天然落在真实 down/up 事件、**零暂存组件·不进 hash·idle 相位零改动**（世界状态轨迹与点两格逐字节一致）。阈值 0.4 格（`DRAG_SWAP_THRESHOLD_CELLS`）、斜向取主轴、越界不换、触屏/鼠标 source 无关。门禁：tsc+vitest(2714)+build 全绿（隔离 worktree 于最新 origin 复核·避并发污染）。
-
 ### REQ-ASSET-导入抠图 · 创作台导入时「背景移除→真 alpha」选项（选型 rembg） · [2026-07-16] · owner 拍板「搞起·用 rembg」→ **指派：PA（抠图能力 + 端点·✅ done）+ PST（创作台导入向导选项 UI·open）** · status: **PA ✅ done（PA 2026-07-16）；PST 导入向导 UI open** · 优先级: P1 · 类型: 资产线能力 + 创作台导入 UI（authoring-time·确定性/AI 二档·不碰 sim/hash）
 > **PA 完工回执（2026-07-16）**：`scripts/asset-matte.mjs`（+`.test.mjs` 5 测绿·纯 Node·零依赖）——① **确定性主路 flood-fill**：纯 Node PNG 编解码（8-bit RGB/RGBA·非隔行）+ 从四角/种子灌水碰轮廓即停 → 真 alpha PNG。**实测真验「绿幕但主体也有绿」**：主体内部被轮廓包住的同色块 flood 进不去→保留 alpha 255（核心顾虑解决）；确定性（同输入两次 rgba 逐字节一致）。② **despill**（`--despill`·削边缘背景主色残留 halo）。③ **多种子**（`--seed x,y`·环形镂空）。④ **rembg 兜底档**（`--mode rembg`·subprocess 调 rembg·无 rembg→mock 门控·产合法 RGBA png 标 MOCK·**不静默顶替**）。⑤ provenance 记 matte 方式/tolerance/背景色/去背像素/model。**端点**：`POST /api/assets/matte`（`main_entry/assets.py` 薄胶水·base64 in→out+provenance·校验 mode/空图·防注入）——**注：走独立端点而非改 `/api/assets/import`**（后端已模块化·独立端点边界更干净·向导调它出 before/after 预览、再走既有 M2.5 pending 人审）。红线守：authoring-time·纯像素·不碰 sim/hash/LayoutNode。**PST 接**：`AssetImportWizard` 加「移除背景」勾选 + 模式选（flood/rembg）+ tolerance/despill + before/after 预览，调 `POST /api/assets/matte`；产物走 M2.5 pending 人审。**发行前 PA 复核 rembg 最终模型授权**（u2net=Apache-2.0 可商用）。
 > **背景（PUI 2026-07-16 会诊落档）**：owner 让 Gemini 生「透明背景」牌背/图，拿到的是**画进像素的棋盘格假透明**（不是真 alpha），贴进 `bg:'transparent'`/`Button.skin`/`PlayingCard.backArt` 显成灰白格子。根因=图像模型输出真 alpha 不可靠。→ 在**导入**处加一道「背景移除→真 alpha」兜底选项。**我们无「透明色键」概念、也不该加**（宪法：非标准游戏专属特例）——统一走 PNG 真 alpha。
@@ -72,6 +66,11 @@
 > **B·完成口径 ✅ done（Lead 亲笔本批）**：game-production.md 红线区+启动词模板——宣布完成必须附 board 全绿，否则只许说「做到 SN」。
 > **C·宿主骨架下沉（A 落地后同代理续做）**：game-q/game-t 重复的 5 容器 mount 骨架（wrapper/scene/topHost/bottomHost/overlayHost+定尺缩放）下沉引擎公用 helper（render-only·API 取两家现状交集）；迁移 game-q 消费自证；**game-t 迁移归 PE-T（T-005②·勿代改）**；迁移后基线 createElement 归零、撤 approvedBy。测试：helper 单测 + game-q 零回归。
 > 完工标 ✅ 待 Lead 对抗性验收。
+
+### REQ-GATE-硬化 · 注册即有板 + 阶段顺序闸（Lead 全链漏洞复查 E/F 件） · [2026-07-16] · owner「影响照手册交付的全是 P1·马上落地」→ Lead 出图 → **指派：Opus** · status: in-progress（已派工 2026-07-16） · 优先级: P1 · 类型: 质量门禁基建
+> **E·注册即有板**：新 vitest 守卫（`scripts/pipeline-registry-guard.test.mjs`）——`src/launcher.tsx` GAMES 注册的每款非冻结游戏必须有 `public/games/<slug>/pipeline.json` 且 S1 立项卡字段非空；**没进生产线就上不了架**。存量缺板游戏先盘点进白名单（带日期·逐步清偿·白名单不许新增）。
+> **F·阶段顺序闸**：`scripts/game-pipeline.mjs` 的 `gate <slug> <SN>` 在 S&lt;N 存在非绿（含复查门/人门）时**拒跑**，除非 `--out-of-order "<理由>"` 显式落进 pipeline.json 并在板上显 ⚠乱序标——跳关可以，但从「悄悄跳」变「记录在案的决定」。
+> 红线：pipeline.json 仍只经 CLI/端点写；两件各配点名测试；不碰 game-t（清库重跑在即）。完工标 ✅ 待 Lead 对抗性验收。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
