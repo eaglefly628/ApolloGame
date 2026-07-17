@@ -47,6 +47,7 @@
 > ① **TTS 档（v1 默认·零资产零 key）**：浏览器 speechSynthesis·per-char 参数 `{lang:'ja-JP', voiceHint?, rate, pitch}`（spec §0 有三姨太参数草案）；无 ja 音色→降级③。
 > ② **采样档（将来配音）**：按 spec §1 命名 wav 资产·同事件键查台账播放；缺文件→降级①。
 > ③ **兜底**：SynthAudioPort 合成提示音+字幕（现有·零改动）。
+> **⚖ Lead 图纸（2026-07-17 亲笔·指派 Opus）**：`src/services/voice/`（services 域·表现层旁路·NON-DETERMINISTIC OK·不进 sim/hash）——`VoicePort` 接口 `{speak(evt:{charId,event,text,params?}):boolean, stop(), dispose()}`；`TtsVoicePort`（speechSynthesis·ja-JP 优先·无 API/无音色→return false 让调用方走兜底③·headless=no-op）；`SamplePackVoicePort(manifest)`（事件键→wav 资产 key·照 `docs/design/game-b/voice-pack-spec.md` §1/§2 契约·缺键 return false 回落 TTS）；组合器 `createVoiceChain([sample?, tts])` 依序尝试。测试：headless no-op 不抛/事件分派/缺键回落链/**TTS 参数构造断言（mock speechSynthesis·凭证探针纪律——不许空口 skip）**；真发声=MANUAL CHECK 交 owner。红线：不碰 SynthAudioPort 本体；三姨太参数草案（spec §0）作 fixture。
 > **红线**：表现层非确定性旁路（不进 sim/hash/回放）；headless/SSR 静默 no-op（同 SynthAudioPort 哲学）；同 char 新事件顶掉旧朗读；**游戏层不直调 speechSynthesis**（端口=src/services 引擎域）。
 > **验收**：端口单测（事件→调用形状/降级链①→③/headless no-op）+ 试听入口（建议 game-i sounds 台加一行·PUI 会审）+ `docs/playbooks/audio.md` 回填一行。消费方=game-b（gdd §十）；game-a/c 立项案语音位可共用。
 > **腾槽记录**：REQ-VN-退役（P3 去腐·同为 GD-B 所提）撤回让位入档（先清后加·档内可重提）。
@@ -58,6 +59,12 @@
 > - 要求：纯函数判型·种子确定性·可回放；消费方=game-a《掼蛋夜宴》（编译期 TS·capability-plan 随 S2 送审）；设计档 `docs/design/game-a/`。
 > - 边界：`src/skills/tier3/**`+registry 注册（Lead 域）；游戏层绝不自写判型解释器（虚胖数据禁令）。
 > **⚖ Lead 裁决（2026-07-17·重组=否·接为真缺口）**：`t3-poker-hand` 重组不可行——它是 Balatro 域**计分器**：牌型固定闭集（high-card…flush-five）·评一手出 chips/mult；无变长牌族（4-10 炸/三连对/钢板）、无跨型压制序（炸弹族>普通型）、无「甲能否压乙」成对比较接口、无级牌语义——这些是判定器本身的域差，不是 rankingTable 数据填得出来的。**方向：不做 guandan 专属件，下沉通用表驱动 `t3-hand-pattern`**——牌族 DSL 闭集（计数组+连续段+长度域+花色约束+百搭）+ 压制序数据表（族阶+同族比较规则令牌）+ 双接口（成对压制比较 / 合法应对枚举）；掼蛋=首个数据 config + 淮安规则 conformance 测试，同族游戏（斗地主/跑得快）后续零代码接入。poker-hand 原件不动（计分域）；其 isStraightRanks/wild 枚举技法可借鉴。**spec 出图=Lead 亲笔**（正确性关键不降档），随 game-a S2 节奏；出图后标指派 Opus。
+> **⚖ Lead 图纸（2026-07-17 亲笔·即付施工·指派 Opus）**：`src/skills/tier3/hand-pattern.ts`——
+> ① **牌族 DSL 闭集**（config·纯数据）：`family = {name, kind:'ntuple'|'sequence'|'tuple-sequence'|'flush-sequence'|'fixed-set', n?:{min,max}, runLen?, groupSize?, composition?:number[], suited?}`。掼蛋族表=单(ntuple1)/对(2)/三(3)/三带二(composition[3,2])/顺子(seq·runLen5)/三连对(tuple-seq·groupSize2×runLen3)/钢板(tuple-seq·3×2)/炸弹(ntuple·n4..10)/同花顺(flush-seq·5)/天王炸(fixed-set·4王)。
+> ② **压制序=数值阶表**（data）：`tierOf(match)→number`（普通型 tier0=仅同族同长比 rank；炸弹族按长度/同花顺/天王排 t1..t9 全数值化·高阶压低阶）+ 同族比较规则令牌（byRank / byLenThenRank）。
+> ③ **级牌语义**（config）：`{levelRank, wildCard:{suit:'heart',rank:levelRank}}`——rank 序重映射（级牌插 A 之上小王之下）；逢人配=有界确定性枚举取最优（**借鉴 poker-hand wild 枚举技法**·并列取枚举序首解）。
+> ④ **三接口**（纯函数·全整数）：`matchPattern(cards,cfg)`（判型）；`beats(a,b,cfg)`（成对压制）；`legalResponses(hand,target,cfg)`（合法应对枚举·**确定性排序·首个=最小合法压牌**——game-a 提示按钮与 AI 候选共用）。
+> ⑤ 红线与测试：poker-hand 零改动；tier3 落位+registry 注册；conformance=淮安全套逐族判型/压制矩阵/级牌重映射/逢人配枚举/应对枚举含最小合法首位/同 seed 复现/空手牌与不可压边角。game-a 淮安 config 作 fixture。开工先读 `wiki/skills/` 卡牌类知识库。
 
 ### REQ-BT-行为树 · 通用行为树能力（纯数据树+确定性解释器·先裁 condition/flow 可否重组） · [2026-07-17] · 提出人 GD-A（《掼蛋夜宴》AI·owner 意向 BT）→ 待 Lead 裁决 · status: open · 优先级: P1 · 类型: 能力缺口候选（通用向·非单游戏拓宽）
 > - 想实现：AI 外层策略=**纯数据行为树**（selector/sequence/condition/action 节点闭集）+ 通用确定性解释器。掼蛋消费面：记牌四档（记忆保真度分档）、宗师开局偷看 2 张、性格标签（稳健/激进/多变）→ 行为权重；内层出牌=候选生成+估值表（数据）。
@@ -66,6 +73,13 @@
 > - 边界：`src/skills/**`+registry（Lead 域）；游戏层只产 BT 数据与估值表。
 > **⚖ Lead 裁决（2026-07-17·重组=不够·接为通用缺口·设计先行）**：condition/flow/event-when 只能摆平铺分支；「优先级选择树+黑板+可复用子树+逐 tick 确定性推进」是结构性缺口，硬拼必然逼游戏层长出私有解释器（违宪）。**接**：通用 `behavior-tree` capability——树=纯数据、节点闭集 v1 收紧为 selector/sequence/condition/action（+invert 修饰），黑板=复用既有 Resource/Flag/StringVar 读写（不另立存储），随机全走种子 PRNG、决策进确定性轨可回放。**收窄两刀**：①记牌保真度分档/性格权重/偷看=游戏数据（估值表/黑板初值），不进引擎节点集；②「内层出牌候选生成+估值」属 REQ-GUANDAN-牌型 的合法应对枚举接口，别塞进 BT。**流程**：开工前先读 `wiki/skills/ai-behavior.md`（铁律）；先交 ≤2 页设计稿（节点闭集+黑板契约+与 condition/flow 的关系）过 Lead 审再施工。
 > **⚖ Lead 合并注记（2026-07-17）**：与同日重复单「REQ-BT-行为树能力」（Lead 于 game-b/c S2 评审中并行开出·spec 同向）**并入本条腾槽**。消费方定格三家：game-a（记牌分档/性格权重）+ game-b（三姨太人设/难度三档）+ game-c（五性格模板·plan §4c）。补充口径（自被并条·与设计先行不冲突）：引擎件设计稿过审前，各游戏可本地薄实现，但**树数据结构必须照引擎设计稿定稿形状**（迁移零改数据）；叶=消费方注册表（未注册名装载即错）。
+> **⚖ Lead 设计稿（2026-07-17 亲笔·即为「设计先行」过审稿·指派 Opus 施工）**：`src/skills/tier2/behavior-tree.ts`——
+> ① **树=纯数据**：`{root: Node}`·`Node = {type:'selector'|'sequence'|'invert'|'condition'|'action', name?, children?, leaf?, args?}`（v1 闭集就这五种·parallel/decorator 等 YAGNI 不做·后议走 capgap）。装载期校验：结构/深度上限/叶名必在注册表。
+> ② **黑板=既有存储**：条件/动作叶读写现成 Resource/Flag/StringVar——**不新立存储组件**；叶签名 `(world, entity, args, seed) → boolean|Action`。
+> ③ **叶注册表**：capability 提供 `registerBTLeaves(gameId, {name: fn})`；游戏注册自己的条件/动作叶（TS 例外口径下的合法游戏层代码）；config 里声明用到的叶名单。
+> ④ **确定性**：tick 制逐帧重评估（selector 优先级语义）；一切随机经传入 RandomSeed；同 seed 同黑板→同决策轨（回放/万手 sim 依据）。
+> ⑤ **与 condition/flow 的关系**（收录进能力注释防误用）：BT=每 tick 重评估的优先级策略树；t3-flow=状态驻留流转机——互补不替代。
+> ⑥ 测试：五节点语义各一/invert/深树有界/未注册叶装载错/seed 复现/三游戏形状 fixture（a 记牌档权重·b 三姨太人设·c 五性格模板——只作数据形状用例·不实装游戏逻辑）。开工先读 `wiki/skills/ai-behavior.md`（裁决铁律）。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
