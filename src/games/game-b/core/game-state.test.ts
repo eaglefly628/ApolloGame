@@ -3,9 +3,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   startMatch, aiTurn, nextRound, canTsumo, declareTsumo, discard,
-  isWinLikeEnd, type MatchState,
+  isWinLikeEnd, isFuriten, STRIP_ITEMS, type MatchState,
 } from './game-state.js';
-import { isWinningHand } from './hand-eval.js';
+import { isWinningHand, tenpai } from './hand-eval.js';
 
 // 单局跑到终（全 AI·含玩家席也 AI 驱动·防死循环 guard）。
 function playRound(m: MatchState): void {
@@ -100,5 +100,37 @@ describe('game-b 局状态机 · 完整一场 walkthrough', () => {
       expect(m.cur.phase === 'win' || m.cur.turn !== 0 || m.cur.phase === 'draw').toBe(true);
     }
     expect(isWinLikeEnd(m) || m.cur.phase === 'playing').toBe(true);
+  });
+});
+
+describe('game-b 脱衣直击制（gdd §七）+ 振听', () => {
+  it('主角豁免恒不脱·姨太可被直击脱衣（多场统计）', () => {
+    let heroAlways = true;
+    let taiStripped = false;
+    for (const seed of [1, 7, 42, 100, 2024, 88888, 313, 999]) {
+      const m = playMatch(seed);
+      if (m.clothing[0] !== STRIP_ITEMS) heroAlways = false; // 主角(0)豁免·恒满
+      if (m.clothing.slice(1).some((c) => c < STRIP_ITEMS)) taiStripped = true;
+    }
+    expect(heroAlways).toBe(true); // 主角永不脱（gdd 2026-07-17 定稿）
+    expect(taiStripped).toBe(true); // 至少一场姨太被直击脱衣
+  });
+
+  it('放铳/自摸触发脱衣·脱光后不再脱·clothing 不越界负', () => {
+    for (const seed of [1, 42, 999, 2024, 55555]) {
+      const m = playMatch(seed);
+      expect(m.clothing.every((c) => c >= 0 && c <= STRIP_ITEMS)).toBe(true); // 0..5 界内
+    }
+  });
+
+  it('舍张振听：待ち含自家牌河 → isFuriten=true·禁荣（防非法荣和）', () => {
+    const m = startMatch(1);
+    // 听 pin3 的手（man123456789 + 東東 雀头 + pin12 搭）
+    m.cur.hands[1] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 27, 27, 9, 10];
+    expect(tenpai(m.cur.hands[1]!)).toContain(11); // 听 pin3(=11)
+    m.cur.rivers[1] = [11]; // 自家河里有 pin3 → 舍张振听
+    expect(isFuriten(m, 1)).toBe(true);
+    m.cur.rivers[1] = [33]; // 河里无听牌 → 非振听
+    expect(isFuriten(m, 1)).toBe(false);
   });
 });

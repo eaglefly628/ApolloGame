@@ -24,6 +24,7 @@ export interface RoundResult {
   delta: number[]; // 四家点数变动（Σ=0）
   tenpaiFlags?: boolean[]; // 流局各家听牌
   handSnapshot?: number[]; // 和了手（含和牌·结算面板用）
+  stripped?: number[]; // 本局各家脱衣件数（直击制·gdd §七）
 }
 
 export interface RoundState {
@@ -48,6 +49,7 @@ export interface MatchState {
   dealer: number; // 庄家 seat
   rng: RandomSeed; // 唯一随机源（SessionIn.seed 派生）
   seatNames: string[]; // 四席名（['主角','绫','莉世','小夜']）
+  clothing: number[]; // 四家剩余衣物件数（gdd §七·主角=PLAYER_SEAT 豁免不脱）
   cur: RoundState;
   log: GameLog;
   over: boolean; // 整场终（东4 打完 / 击飞）
@@ -55,6 +57,9 @@ export interface MatchState {
 
 const STARTING = 50000; // gdd 起点
 const PLAYER_SEAT = 0; // 玩家席（南/主角）
+export const STRIP_ITEMS = 5; // 每姨太衣物件数（gdd §三 ⚙ 5 件·簪/打挂/帯/襦袢/足袋）
+/** 衣物件名（席位卡衣物章·剩余亮/脱掉熄灭）。 */
+export const CLOTH_LABELS = ['簪', '掛', '帯', '襦', '足'] as const;
 
 /** 座风：dealer=东·逆时针 → 0东1南2西3北。 */
 export function seatWind(seat: number, dealer: number): number {
@@ -73,6 +78,7 @@ export function startMatch(seed: number, seatNames = ['主角', '绫', '莉世',
     dealer: 0,
     rng: { type: 'RandomSeed', seed, sequence: 0 },
     seatNames,
+    clothing: [STRIP_ITEMS, STRIP_ITEMS, STRIP_ITEMS, STRIP_ITEMS], // 主角(0)满且豁免·姨太可脱
     cur: null as unknown as RoundState,
     log: new GameLog(),
     over: false,
@@ -139,10 +145,10 @@ export function discard(m: MatchState, tileCode: number): void {
   rs.lastDiscard = tileCode;
   m.log.push({ round: roundName(m), actor: m.seatNames[rs.turn]!, kind: 'discard', text: `打 ${labelTile(tileCode)}`, tile: tileCode });
 
-  // 他家荣和检测（逆时针近家优先·简版单荣·多家荣和=§3 双响裁决）
+  // 他家荣和检测（逆时针近家优先·单荣·多家荣和=§3 双响裁决）；振听家禁荣（舍张振听·防非法荣和）。
   for (let off = 1; off <= 3; off++) {
     const i = (rs.turn + off) % 4;
-    if (isWinningHand([...rs.hands[i]!, tileCode])) {
+    if (isWinningHand([...rs.hands[i]!, tileCode]) && !isFuriten(m, i)) {
       settleWin(m, 'ron', i, rs.turn, tileCode, [...rs.hands[i]!, tileCode]);
       return;
     }
@@ -180,6 +186,31 @@ function settleWin(m: MatchState, type: 'tsumo' | 'ron', winner: number, loser: 
   rs.phase = 'win';
   m.log.push({ round: roundName(m), actor: m.seatNames[winner]!, kind: type, text: `${type === 'tsumo' ? '自摸' : '荣和'} ${labelTile(tile)}${loser !== null ? `（放铳=${m.seatNames[loser]}）` : ''}`, tile });
   m.log.push({ round: roundName(m), actor: '系统', kind: 'score', text: `点移 ${delta.map((d, i) => `${m.seatNames[i]}${d >= 0 ? '+' : ''}${d}`).join(' ')}` });
+  rs.result!.stripped = applyStrip(m, type, winner, loser); // 直击脱衣（gdd §七）
+}
+
+/** 直击脱衣（gdd §七·2026-07-17 定稿）：放铳者脱 1／被自摸支付的三家中姨太各脱 1；
+ *  主角(PLAYER_SEAT)豁免不脱·脱光(0)后只扣分不再脱·立直棒/罚符/流局不触发。 */
+function applyStrip(m: MatchState, type: 'tsumo' | 'ron', winner: number, loser: number | null): number[] {
+  const stripped = [0, 0, 0, 0];
+  const strip = (seat: number): void => {
+    if (seat === PLAYER_SEAT) return; // 主角豁免
+    if (m.clothing[seat]! <= 0) return; // 脱光后不再脱（只扣分）
+    m.clothing[seat]!--;
+    stripped[seat] = 1;
+    m.log.push({ round: roundName(m), actor: m.seatNames[seat]!, kind: 'info', text: `被直击·脱 ${CLOTH_LABELS[STRIP_ITEMS - 1 - m.clothing[seat]!] ?? '衣'}（余 ${m.clothing[seat]} 件）` });
+  };
+  if (type === 'ron' && loser !== null) strip(loser); // 放铳者脱
+  else if (type === 'tsumo') for (let i = 0; i < 4; i++) if (i !== winner) strip(i); // 被自摸三家各脱
+  return stripped;
+}
+
+/** 舍张振听：某家待ち牌种含其自家牌河任一 → 该家不能荣和（防非法荣和）。 */
+export function isFuriten(m: MatchState, seat: number): boolean {
+  const waits = tenpai(m.cur.hands[seat]!);
+  if (waits.length === 0) return false;
+  const river = m.cur.rivers[seat]!.map((c) => kindOf(c));
+  return waits.some((w) => river.includes(w));
 }
 
 /** 荒牌流局（听牌罚符 3000·标准分配）。 */

@@ -3,7 +3,7 @@
 // 手牌交互在 HUD（可靠·守铁律）；3D 牌桌=氛围场景。视觉素皮（sakura）·1:1 精修留 S5。
 import type { LayoutNode } from '@ui/components/index.js';
 import type { MatchState } from './core/game-state.js';
-import { canTsumo, labelTile, seatWind, isWinLikeEnd } from './core/game-state.js';
+import { canTsumo, labelTile, seatWind, isWinLikeEnd, CLOTH_LABELS, STRIP_ITEMS } from './core/game-state.js';
 import { doraFromIndicator } from './core/wall.js';
 import { FIELD_W, FIELD_H } from './theme.js';
 
@@ -45,6 +45,14 @@ function seatCard(m: MatchState, seat: number): LayoutNode {
           },
           { type: 'Tag', id: `seat-${seat}-w`, props: { label: wind!, tone: active ? 'accent' : 'normal', size: 'sm' } },
         ],
+      },
+      // 衣物章行（gdd §七直击脱衣·剩余亮/脱掉熄灭·主角满且豁免）
+      {
+        type: 'Panel', id: `seat-${seat}-cloth`, props: { bare: true }, layout: { direction: 'row', gap: 3 },
+        children: CLOTH_LABELS.map((lab, i): LayoutNode => {
+          const on = i < m.clothing[seat]!;
+          return { type: 'Tag', id: `seat-${seat}-cl${i}`, props: { label: lab, size: 'sm', tone: on ? 'normal' : 'dim', active: on } };
+        }),
       },
     ],
   };
@@ -143,6 +151,9 @@ function resultOverlay(m: MatchState): LayoutNode {
     { type: 'Label', id: 'res-t', props: { text: title, size: 'xl', bold: true, color: 'gold', font: 'serif' } },
   ];
   if (r.type !== 'draw') rows.push({ type: 'Label', id: 'res-w', props: { text: `和了牌 ${labelTile(r.winTile!)}${r.loser !== null ? `（放铳 ${m.seatNames[r.loser]}）` : ''}`, size: 'sm', color: 'sub' } });
+  // 本局脱衣汇总（直击制·gdd §七）
+  const stripSum = (r.stripped ?? []).map((n, i) => (n > 0 ? `${m.seatNames[i]} 脱${n}（余 ${m.clothing[i]}/${STRIP_ITEMS}）` : null)).filter(Boolean);
+  if (stripSum.length) rows.push({ type: 'Label', id: 'res-strip', props: { text: `直击脱衣 · ${stripSum.join('　')}`, size: 'sm', color: 'danger' } });
   rows.push({
     type: 'Panel', id: 'res-delta', props: { bare: true }, layout: { direction: 'column', gap: 2 },
     children: r.delta.map((d, i): LayoutNode => ({ type: 'Label', id: `res-d-${i}`, props: { text: `${m.seatNames[i]}　${d >= 0 ? '+' : ''}${d}　→ ${m.scores[i]!.toLocaleString('en-US')}`, size: 'sm', color: d > 0 ? 'ok' : d < 0 ? 'danger' : 'sub' } })),
