@@ -147,6 +147,17 @@ export const GAMES: GameEntry[] = [
     icon: '🏮',
     status: 'playable',
   },
+  {
+    id: 'game-c',
+    title: 'Game C: 六人德州',
+    subtitle: '标准德州扑克 · 夜宴牌房',
+    description:
+      '单人 vs 五位姨太行为树 AI 的六人桌标准德州扑克（现金局）：恒定盲注手手对局，筹码告急典当衣物续命、剥光才出局；AI 难度=读牌误差%（简单档禁读·不作弊发牌）。摊牌比较/下注圈边池=game-c 确定性 TS 模块（owner 批 TS 口径·M1 逻辑核 50 测钉死），洗牌=w1-random 种子 PRNG，典当=t2-craft-recipe 每件一条配方，UI 全 LayoutNode（夜宴主题皮·art-data-manual 1:1）。当前=S5 素坯：牌桌屏挂载（翻牌圈定格投影+座位环+行动条+衣柜面板）；AI/3D 牌房/筹码物理=M2/M3 接入。',
+    color: '#160e0a',
+    accentColor: '#f0c96a',
+    icon: '🃏',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════

@@ -7,13 +7,40 @@
     "refs": "Prominence Poker·Poker Night(有房间感的单机德州)",
     "style": "双锚:人物线 sakura-nijigen × 场景线 vegas-victoriana(REQ-C-ART 修订①)"
   },
-  "signoffs": {},
+  "signoffs": {
+    "S1": {
+      "by": "owner",
+      "note": "owner 口头签准(复核基本通过·2026-07-17)",
+      "at": "2026-07-17T15:18:56.676Z"
+    },
+    "S2": {
+      "by": "owner",
+      "note": "owner 口头签准(复核基本通过·2026-07-17)",
+      "at": "2026-07-17T15:18:56.749Z"
+    },
+    "S3": {
+      "by": "owner",
+      "note": "owner 口头签准(复核基本通过·2026-07-17)",
+      "at": "2026-07-17T15:18:56.822Z"
+    },
+    "S4": {
+      "by": "owner",
+      "note": "owner 口头签准(复核基本通过·2026-07-17)",
+      "at": "2026-07-17T15:18:56.898Z"
+    }
+  },
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": " Test Files  3 passed (3) ·       Tests  50 passed (50)",
-      "at": "2026-07-17T14:08:25.037Z",
-      "gameHash": "312c7cf0f75756e6"
+      "summary": " Test Files  4 passed (4) ·       Tests  56 passed (56)",
+      "at": "2026-07-17T15:18:59.343Z",
+      "gameHash": "e246543d07d7a082"
+    },
+    "S5": {
+      "exit": 0,
+      "summary": "AUDIT: WARNINGS · RATCHET: PASS",
+      "at": "2026-07-17T15:18:59.500Z",
+      "gameHash": "e246543d07d7a082"
     }
   },
   "history": [
@@ -50,6 +77,56 @@
       "stage": "S4",
       "verdict": "FAIL",
       "at": "2026-07-17T15:02:00.491Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S1",
+      "at": "2026-07-17T15:18:56.676Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S2",
+      "at": "2026-07-17T15:18:56.749Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S3",
+      "at": "2026-07-17T15:18:56.822Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S4",
+      "at": "2026-07-17T15:18:56.898Z"
+    },
+    {
+      "action": "review",
+      "stage": "S2",
+      "verdict": "PASS",
+      "at": "2026-07-17T15:18:56.975Z"
+    },
+    {
+      "action": "review",
+      "stage": "S3",
+      "verdict": "PASS",
+      "at": "2026-07-17T15:18:57.065Z"
+    },
+    {
+      "action": "review",
+      "stage": "S4",
+      "verdict": "PASS",
+      "at": "2026-07-17T15:18:57.149Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-17T15:18:59.343Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-07-17T15:18:59.500Z"
     }
   ],
   "outOfOrder": [
@@ -66,11 +143,25 @@
   ],
   "reviews": {
     "S4": {
-      "verdict": "FAIL",
-      "note": "P0 边池筹码蒸发 betting-engine.ts:287-295 potLayers refund 仅取 live top·startHand:149 currentBet 强制=bigBlind 使大盲短缴all-in时虚高·弃牌者可为全场最高投入者→未跟注差额既不入池也不退回·复现 heads-up(SB1000缴25/BB10短all-in/SB弃)漏15(1010→995)·fuzz 67/30000漏214·修法见 requests REQ-C-105(refund top 取全体)·rank5/wheel/行动闭合/短allin/死按钮/确定性/数据驱动 REFUTED=clean·50测绿但均场景测未覆盖守恒property",
-      "by": "GD-C-review",
-      "at": "2026-07-17T15:02:00.491Z",
-      "gameHash": "9144d000df0ca361"
+      "verdict": "PASS",
+      "note": "owner 口头复核通过(2026-07-17)",
+      "by": "owner",
+      "at": "2026-07-17T15:18:57.149Z",
+      "gameHash": "e246543d07d7a082"
+    },
+    "S2": {
+      "verdict": "PASS",
+      "note": "owner 口头复核通过(2026-07-17)",
+      "by": "owner",
+      "at": "2026-07-17T15:18:56.975Z",
+      "gameHash": "e246543d07d7a082"
+    },
+    "S3": {
+      "verdict": "PASS",
+      "note": "owner 口头复核通过(2026-07-17)",
+      "by": "owner",
+      "at": "2026-07-17T15:18:57.065Z",
+      "gameHash": "e246543d07d7a082"
     }
   }
 }
