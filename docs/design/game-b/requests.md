@@ -4,8 +4,8 @@
 
 ## 待处理
 
-### B-001 · 共享角色卡格式定稿 · [2026-07-17] · GD-B → **owner** · status: open · P1
-> ⚖ 格式 owner 晚点给。game-b 消费方字段需求已交：`character-card-format-needs.md`——请定稿时合并；定稿后 PE-B 对齐 adapter（假设 schema 落差在 adapter 吸收）。
+### B-001 · 共享角色卡格式 · status: **✅ done（2026-07-17 当日结·v1 口径拍板=仅 name+avatar·全文迁 requests-archive）** · P1
+> ⚖ owner 二批拍板收口：v1 卡=仅 `{name, avatar}`（生效口径=`character-card-format-needs.md §0`·完整字段=v2 参考）；PE-B adapter 照 §0 实现。完整格式将来另起单。
 
 ### B-002 · 语音：TTS 先行·真配音后备 · [2026-07-17·同日改口] · GD-B → GD-B（台词表）+ owner（将来可选配音） · status: open · P2
 > ⚖ owner 同日更新：**音源包没有——先用语音合成发个音**。v1=TTS 档（speechSynthesis·ja-JP 朗读日文台词·参数见 voice-pack-spec §0）；GD-B 交台词表（B-005 并轨·日文列=朗读文本兼录音台本）。将来真人/AI 配音=可选升级，按 §1 规范灌入即换档。核心五键（strip_lose/riichi/ron/tsumo/deal_in）台词优先写。

@@ -7,7 +7,7 @@
 ## 0. TTS 档参数（v1）
 
 - 每角色一组 TTS 参数（数据）：`{ lang:'ja-JP', voiceHint?: 名称匹配串, rate, pitch }`——三姨太靠 rate/pitch 差异化（⚙ 绫=rate0.9/pitch0.95 沉稳·莉世=rate1.15/pitch1.1 泼辣·小夜=rate1.0/pitch1.25 娇憨·施工期试听调）。
-- 主角卡 voicePack 缺省时同走 TTS（卡片 personality.style 映射一组参数）。
+- ⚖ v1 主角**无语音**（共享卡仅 name+avatar·owner 2026-07-17）——语音事件仅三姨太三席；将来完整卡带 voicePack/personality 再扩主角档。
 - 红线：TTS=表现层旁路（不进 sim/回放）；端口=引擎 services（LEAD 域），游戏层不直调 speechSynthesis。
 
 ## 1. 文件规范（档②·将来用）
