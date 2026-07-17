@@ -54,3 +54,4 @@
 - Lead 裁决：✅ **通过**（零游戏层例外立项；条件：①S3 前 `REQ-INPUT-拖拽交换` 与 `REQ-M3-三期①` 须落地——点选交换可先行装配；②道具接线若需新解释器，回 §4 补审）
 - **PE-T 落地记录（2026-07-16）**：骨架关（S3/S4 级）以**点选先行**装配完成——引擎两单（拖拽/①LayerCell/④手感层）owner 已改为「新开 session 亲自安排·池内勿动工」，按 owner 本 session 指令先行；壳形态经评（cart=library/ 不入库无法多 session 接力·builtin manifest 无 UI/多关表达）走编译期薄壳，例外已回 §4 补申请并附 owner 拍板；胜负链实装 `t3-flow`（§2 新行）。缺口台账见 `docs/design/game-t/requests.md`。
 - **PE-T 接入记录（2026-07-16·同日续）**：GD-T 30 关表+文案表落地即接入（`levels.data.json` 运行时副本 + 守卫测试锁 docs 单一真相/关名）；占位 5 关退役。**发现并上报阻断级口径错位**：GD 定标含连锁 ×1.5（GDD §四 正解），引擎 coinPerTile 为平铺 → 分数型关/星阈运行时偏难——已提主池 `REQ-M3-计分倍率`（Lead 裁决·下沉后 game-t 加一行 config 即对齐，表不动）。拖拽 `t2-match3-drag-swap` 已下沉待 Lead 验收，验收过后接入（T-002②）。
+- **清库令（owner 2026-07-16·clean-room 重跑验证）**：首轮实现产物已全清（档案=`docs/workflow/archive/game-t-run1-2026-07-16.md`·产物在 git 历史可找回）。本 plan 与 gdd/level-schema 保留为新一轮唯一输入；§4 编译期薄壳例外与上两条落地记录=**首轮先例可援引**，新一轮仍须自行重走 S2 计划门确认形态。

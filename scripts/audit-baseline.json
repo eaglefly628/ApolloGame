@@ -46,14 +46,6 @@
       "innerHTML": 0,
       "createElement": 0
     },
-    "game-t": {
-      "nakedRandom": 0,
-      "innerHTML": 0,
-      "createElement": 5,
-      "approvedBy": "LEAD",
-      "date": "2026-07-16",
-      "reason": "宿主容器骨架（对齐 game-q 先例）·REQ-AUDIT-守门 C 件下沉后归零"
-    },
     "game-x": {
       "nakedRandom": 0,
       "innerHTML": 0,

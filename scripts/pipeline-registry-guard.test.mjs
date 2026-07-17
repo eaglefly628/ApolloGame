@@ -119,7 +119,7 @@ describe('parseRegisteredGames — 解析 launcher GAMES', () => {
     expect(games.length).toBeGreaterThan(0);
     expect(games.every((g) => /^[a-z0-9-]+$/.test(g.id))).toBe(true);
     const ids = new Set(games.map((g) => g.id));
-    expect(ids.has('game-t')).toBe(true); // game-t 有板·应被解析到
+    expect(ids.has('game-g')).toBe(true); // 稳定注册项·应被解析到
   });
   it('容错样例：手写小片段解析出 id+status', () => {
     const src = "export const GAMES: GameEntry[] = [\n  { id: 'a', status: 'playable' },\n  { id: 'b', status: 'coming-soon' },\n];\n";
