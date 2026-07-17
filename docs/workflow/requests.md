@@ -63,6 +63,9 @@
 > - 要求：全种子 PRNG·无裸随机·AI 决策进确定性轨可回放；spec 细化随 game-a S2 capability-plan。
 > - 边界：`src/skills/**`+registry（Lead 域）；游戏层只产 BT 数据与估值表。
 
+### REQ-BT-行为树能力 · 通用 BT 解释器下沉（game-b/c 双消费方·实战暴露的首个隐形能力） · [2026-07-17] · Lead S2 评审改判（两游戏各建 BT=同概念两份·宪法先重组）→ **指派：Opus（随两游戏 M2 节奏派工）** · status: open · 优先级: P1 · 类型: 引擎 AI 能力（tier2·确定性）
+> **spec（Lead 图纸）**：①树=纯数据（节点闭集 `selector/sequence/condition/action` + 参数包·装载期校验）；②解释器=引擎确定性代码（tick 制·无时间依赖·随机一律经调用方传入 RandomSeed）；③条件/动作叶=**消费方注册表**（游戏按名注册叶函数·名单声明进 config·未注册名装载即错）；④参数包/难度包=数据覆盖层（game-b 三姨太人设+难度三档、game-c 五性格模板即此形态）；⑤测试点名：各节点语义/深树有界/同 seed 复现/未注册叶报错/两游戏形状用例各一。消费方=game-b（gdd §五）+ game-c（plan §4c）；落地前两家可本地薄实现但树数据结构照本 spec（迁移零改数据）。完工标 ✅ 待 Lead 对抗性验收。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
