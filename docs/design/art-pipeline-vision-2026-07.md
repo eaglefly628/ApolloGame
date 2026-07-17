@@ -117,7 +117,7 @@
 | 他有我更强 | director 路由 | ➡ 我们 playbooks 索引+角色协议+模板选路已覆盖·不换 |
 | 我有他无 | 确定性引擎/回放/数据宪法/index 治理/许可 provenance/棘轮门禁/sim 标定 | 🏰 我们的护城河·他的资产落盘无库存治理 |
 
-**吸收计划（A-D·owner 2026-07-06 已批·落地状态以 `docs/workflow/requests.md` REQ-ART-TGS吸收四件 为准：A/D ✅·B 派 PST·C 移 3D 池）**：
+**吸收计划（A-D·owner 2026-07-06 已批·A/D ✅·C 移 3D 池·B ⏸ owner 2026-07-17 暂停——单已出主池，全文+B spec 见 `docs/workflow/requests-archive.md` REQ-ART-TGS吸收四件）**：
 - **A. Apollo 视觉评分卡**（新 `docs/playbooks/visual-scorecard.md`·≤80 行）：维度裁成我们的（艺术方向/主角面/世界密度/材质/渲染管线/VFX/UI 美术/性能证据），0-3 分制·premium 线=全维 ≥2；挂两处：P3D 视觉验收 + PS 出货内门（替代散文式 MANUAL CHECK）。
 - **B. 音频生成线（工坊 M3.5）**：`ai-gen.mjs` 加 audio adapter（SFX/环境音/UI 音·BYO-key·无 key mock·人审门+provenance 同 2D/3D）；声音货架从 1 起步补齐；SynthAudioPort（合成）与采样并存。
 - **C. shoot-game 像素断言**：非黑占比/对比度/帧活动三断言 + 判词 token——3D 视觉 smoke 从人审升级为可进门禁（P3D 域）。

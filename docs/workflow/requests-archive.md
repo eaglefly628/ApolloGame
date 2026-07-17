@@ -1511,3 +1511,32 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 > **✅ Opus 完工（2026-07-17·待 Lead 对抗性验收）**：E=新守卫 `scripts/pipeline-registry-guard.test.mjs`（12 测·解析 launcher GAMES·boardStatus 真验·白名单卫生+反向自证「确属缺板」）；F=`game-pipeline.mjs` 加 `priorGaps`/`orderGate` 顺序闸（前置非全绿拒跑·退出码 1+指名欠项）+ `--out-of-order "<理由>"` 记 `pipeline.json.outOfOrder[]`+board 行首 ⚠乱序标（旧板无字段零回归·pipeline.json 仍只经 CLI 写·加 `APOLLO_PIPELINE_ROOT` 测试注入根），点名测试进 `game-pipeline.test.mjs`（+8=20 测·纯函数+CLI 真退出码端到端）。**存量白名单盘点**：GAMES 9 款中 game-f 冻结免检、game-t 已有板；缺板 7 款进白名单=game-e/g/i/x/z/d/q（逐步清偿·不许新增）。门禁：tsc0·vitest 356 文件/2749·build0 全绿。
 >
 > **⚖ Lead 对抗性验收（2026-07-16·A/C/E/F 四件合并验收·判 PASS）**：独立复跑全绿（tsc·vitest 357 文件/2760·build）；域界核对零越线（禁区 game-t 实现/并行文件零触碰）。**牙口实弹探针（Lead 亲手）**：①伪造自基线（剥 approvedBy）→ RATCHET FAIL exit 1 ✓；②S2-S4 欠复查/人门时跑 S5 → 拒跑 exit 1 指名欠项 ✓；③`--out-of-order` 放行且 ⚠乱序落痕上板 ✓；④全库审计 AUDIT: WARNINGS / RATCHET: PASS exit 0（S5 恒红已解）✓。**偏差裁决**：APOLLO_AUDIT_BASELINE / APOLLO_PIPELINE_ROOT 测试注入（生产不设·行为零变）INTENTIONAL 准许；7 款存量批注按 2026-07-04 既往不咎史实落档 INTENTIONAL 准许；冻结名单硬列测试常量（将来 launcher 加机器旗时改解析）记小债；helper 露 fit() additive 准许。game-q 迁移零回归、基线 createElement 归零并撤批注（棘轮锁定成果）✓。
+
+### REQ-ART-TGS吸收四件 · threejs-game-skills 对照吸收（视觉评分卡/音频线/像素QA/手册红线） · [2026-07-06] · owner 给源 → Lead 调研裁决（`art-pipeline-vision §八`）→ **owner 已批（2026-07-06）** · status: **落地中：A+D ✅ done（Lead 亲笔 2026-07-07）· B spec 就绪→指派 PST（**冲刺后**·被 REQ-DEMO-0729 队列重排压后）· C spec 已移 `docs/workflow/requests-3d.md`（P3D 域·同被压后）** · 优先级: P2 · 类型: 质量护栏吸收（不采其代码生成路线·宪法相反）
+> 一句话：他家"AAA"不是描述词，是四道门（评分卡全维≥2/证据台账/反捷径工艺律/canvas 像素断言）——护栏纪律照单吸收，代码生成路线回驳。详见愿景稿 §八对照表。
+> **A ✅（Lead 亲笔）**：新 `docs/playbooks/visual-scorecard.md`（8 维 0-3 分·premium=全维≥2·证据台账+资产来源台账+凭证探针·反捷径工艺律·判词 `VISUAL: n/24 · PREMIUM: YES|NO`）；挂点=playbooks/index 一行 + P3D 视觉验收（3d.md 红线区指回）+ PS 出货内门（PS-steam-finish-list 阶段区一行）。
+> **D ✅（Lead 亲笔·手册回填）**：`docs/playbooks/3d.md` 红线区加工艺顺序律（先造型→材质→光照→特效·禁 glow 冒充）+ 主角面禁纯程序化（无 blocker 记录不豁免）；`docs/playbooks/testing.md` 红线区加凭证探针（空口 skip 不采信）+ 做X表挂评分卡行。
+> **B spec（Lead 图纸·指派 PST·工坊 M3.5·与其他 studio 单碰 `apollo.py`/`scripts/ai-gen.mjs` 须串行——排 REQ-STUDIO 心跳余项之后）**：① `scripts/ai-gen.mjs` 加 audio adapter：类型闭集 `sfx|ambience|ui`；BYO-key provider（有 key 走真调，无 key→**先贴凭证探针输出**再走 mock 兜底=确定性占位 wav+MOCK 标记，绝不静默顶替）。② 产物一律落待审区（**复用 M2.5 人审门** writePending/reviewPending·绝不直登 index），provenance 硬字段同 2D/3D（model/prompt/date/license 缺一拒登）。③ 定位：`SynthAudioPort`/SfxSpec 合成=数据仍是首选路（见 `docs/playbooks/audio.md`）；工坊采样线只补合成表达不了的（音乐床/环境底噪）——声音货架从现存 1 条起步。④ 测试：`scripts/ai-gen.test.mjs` 增音频四例（pending/approve/reject/provenance 缺字段拒）+ `scripts/art-review-smoke.py` 扩音频类型断言。⑤ 门禁全绿直推；完工标 ✅ 待 Lead 验收 + PA 会审登记契约。
+>
+> **⏸ owner 暂停（2026-07-17）**：「第四件先暂停」——剩件 B（音频 adapter·PST）随单暂停出池。A/D 已完结、C 在 3D 池另管。重启=把 B spec（上文）新开槽拉起，原文在此不丢。
+
+### REQ-M3-三期 · game-t 引擎补件包（①LayerCell 层视图 ②锦鲤定向消除 ③朱印二次钤印） · [2026-07-16] · owner 拍板（game-t 首发含果冻/障碍关+后 10 关机制）→ Lead 出图 → **派工撤回·owner 将新开 session 亲自安排（owner 2026-07-16「8和9不要做了，我新开session做」）——池内任何 session 勿动工·spec 保留供新 session 照图施工** · status: open（挂起待 owner 拉起） · 优先级: P1 · 类型: 引擎 capability 三期（tier3·正确性关键·不降档）
+> **① LayerCell 层视图**（二期验收留的尾巴·防游戏层自写视图 system 违宪）：新 render-only 组件 `LayerCell{ boardId, index, layer:'jelly'|'blocker' }`——blueprint **静态**建覆盖实体（沿 BoardCell 同型·零实体增删），match-view-sync 每帧按 MatchBoard 的 jelly/blockers 状态改其外观（config 外观映射：层数/hp→Sprite/Color/透明度·清零→隐藏）。测试：jelly 减层外观变/清零隐、blocker hp 变化、砚石恒显、糖珠视图零回归。
+> **② 锦鲤（定向消除·CC"鱼"同构）**：新特殊棋子 flag `KOI=5`（编码位仍 bit8-10·闭集内加一）；引爆=确定性游向「最优先未完成目标格」（优先级：墨渍>冰纹瓷>随机目标色格·同级取最小 index）消除之；生成规则 config（如 goals 含 jelly 时 2×2 方连生成——照 CC 惯例·写死进 config 闭集）；combo：锦鲤+锦鲤=3 条齐发、锦鲤+条纹/包装=目标格代爆该特殊效果。
+> **③ 朱印二次钤印**：WRAPPED 引爆后**原地保留一回合再爆一次 3×3**（CC wrapped 惯例）；实现=clear 相位标记「二爆待决」队列（确定性·不进新组件），fall/refill 后于下个 match 相位补爆；config 开关 `wrappedTwice?: boolean`（缺省 false=二期行为逐字节不变）。
+> **④ 棋盘手感动画层（owner 2026-07-16 补拍板·硬需求清单=game-t GDD §五点五 十条）· 架构终裁（Lead 2026-07-16）=(c) 引擎级 `MatchBoardView` 渲染器**：render-only **DOM 瓦片渲染器**（引擎渲染线新组件·非游戏代码）——读 MatchBoard 状态渲 tile DOM，内建动画通道：交换滑动/非法弹回/下落缓动+落地微弹/消除缩淡（绝不瞬消）/特殊棋子聚拢生成/收集飞向目标（可指 HUD 元素 id·沿 flyTo 语义）/CSS3D 质感（tile z 景深·按压沉降·选中抬起）。config=皮肤映射（色/特殊→资产 key 或令牌）+ 时长参数（全部可跳过）。**分叉裁决记录**：(a) canvas cell-tween 表达 3D 质感吃亏；(b) LayoutNode 板=逼出 game-g 式千行游戏层视图（违背 game-t 纯数据卡带立项）——均否。(c) 先例=Diegetic3D/CSS3D 引擎渲 DOM 之路。**红线**：全部 render-only——sim 结果先定、动画只是回放表现（跳过动画结果逐字节同·bench/回放/lockstep 零影响）；测试=渲染标记/动画 config 生效/teardown 干净/sim hash 零变化。
+> **红线与门禁**：同 REQ-M3-二期（全整数确定性/相位机纪律/可选字段向后兼容/一期+二期 37 测零回归/点名测试缺一不关单）。完工标 ✅ 待 Lead 对抗性验收。
+>
+> **⏸ owner 暂停出池（2026-07-17）**：「三消三期也暂停·把需求池释放出来」——①-④ spec 与 ④(c) MatchBoardView 架构终裁全文保留在此。**连带**：本单是 game-t S3 装配前置，暂停即 game-t 装配线同卡（game-t 工单池已记指针·勿开 S3）。重启=owner 拉起+新开槽。
+
+### REQ-M3-计分倍率 · t3-match3-board 连锁计分倍率 config（game-t S4 平衡阻断） · [2026-07-16] · 提出人 PE-T → 待 Lead 裁决 · status: open · 优先级: P1 · 类型: 引擎 capability 可选扩展（正确性关键·不降档）
+> **缺口**：GDD §四 与 GD-T 已交付的 30 关定标（balance-sim·200 seeds）计分口径=「单格 60 × **连锁每级 ×1.5** + 收笔」；引擎 `t3-match3-board` 今日只有平铺 `coinPerTile`——**分数型关卡（1-6/26 等）与全表星阈运行时打不到定标值**（sim 与 runtime 口径漂移·恰是 conformance test 未覆盖的 score 面）。
+> **候选（先重组已对照）**：现有 Effect.valueFrom/comboTable 均触不到相位机内的连锁级——需 config 可选字段下沉，如 `chainScale?: number`（缺省 1=现行为逐字节不变；clear 相位按 cascade 级对 coin 产出乘 `chainScale^级`，全整数化方案由 Lead 定：如 ×3/2 用整数分子分母避免 IEEE 漂移）。落地后 game-t 蓝图加一行 config 即对齐 GD 表，无需重定标。
+> **关联**：可并入 REQ-M3-三期批次施工（同文件·同红线：可选字段向后兼容+一/二期测试零回归）。game-t 侧台账=`docs/design/game-t/requests.md` T-003①。
+>
+> **⏸ Lead 连带暂停出池（2026-07-17·随 owner「三消线暂停·释放池子」裁决）**：本单唯一消费者=game-t 定标对齐（S4），game-t 线已随 REQ-M3-三期/拖拽暂停——单独留池=死槽。spec 保留在此；game-t 重启时与三期一并新开槽（可并批施工·原文已注）。owner 若要单独先做，招呼一声即拉回。
+
+### REQ-INPUT-拖拽-onlyFlag · t2-match3-drag-swap 邻格信号不查 Clickable.onlyFlag（输入闸可绕） · [2026-07-17] · 提出人 PE-T（run2 消费时发现）→ 待 Lead 裁决 · status: open · 优先级: P2 · 类型: 已验收件缺陷回报（输入面·不进 sim/hash）
+> **现象**：桥在邻格 B 上发信号前只查 `Clickable` 存在、不查其 `onlyFlag`（clickable 自己查）——B 的闸旗为 false 时「点 B 无信号、拖到 B 有信号」，破坏「与点选逐字节同形」承诺；连拖两次可在输入闸落下后仍完成交换（game-t 终步结算窗 lastcall 可被翻盘）。**建议修法**：发信号前补 `onlyFlag` 同款检查（与 clickable 共用语义·一处 if）。game-t 宿主已双保险（终局 dispose 输入源），修后可撤。验收：闸落时拖拽不产邻格信号 + 既有 235 行测试零回归。
+>
+> **⏸ Lead 连带暂停出池（2026-07-17·随 owner「拖拽线暂时用不到」裁决）**：t2-match3-drag-swap 能力本体已验收在库（archive 有验收单）；本缺陷=输入闸可绕（P2·不进 sim/hash），唯一暴露面 game-t 已有宿主双保险（终局 dispose 输入源·T-102 记账）。缺陷记录在案不丢；拖拽线重启或出现第二消费者时新开槽修。

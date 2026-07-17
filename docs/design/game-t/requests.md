@@ -2,7 +2,7 @@
 
 > 用法同主池（`docs/workflow/requests.md` 规则头）：GD-T/PE-T 的 bug/平衡/演出/内容单写这里；**引擎缺口不写这里**——提到主池给 Lead 裁决。已完结条目就地标 done 加 commit。
 > **本池已随首轮清库重置（2026-07-16·owner 重跑令）**：首轮记录=`docs/workflow/archive/game-t-run1-2026-07-16.md`。
-> 关联引擎单现状：`t2-match3-drag-swap` ✅ 已验收在库可直接消费；`REQ-M3-三期`（①LayerCell ②锦鲤 ③二次钤印 ④MatchBoardView ⑤settled Flag·挂起待 owner 拉起）；`REQ-M3-计分倍率`（open·spec 在池）。
+> 关联引擎单现状（**⏸ owner 2026-07-17：三消/拖拽线整体暂停·已出主池归档**·全文+spec 见 `docs/workflow/requests-archive.md`）：`t2-match3-drag-swap` ✅ 已验收在库可直接消费（缺陷单 拖拽-onlyFlag 随线暂停·宿主双保险保留）；`REQ-M3-三期`（①-④ 含 MatchBoardView 终裁）与 `REQ-M3-计分倍率` 均暂停。**三期①是 S3 装配前置——暂停期间 game-t 勿开 S3**；重启=owner 拉起相关单新开槽。
 
 ## 待处理 / 进行中
 
