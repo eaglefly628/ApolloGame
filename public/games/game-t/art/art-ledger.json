@@ -1,0 +1,328 @@
+{
+  "version": 1,
+  "game": "game-t",
+  "mode": "requirements",
+  "count": 10,
+  "instances": 71,
+  "rows": [
+    {
+      "no": "art-01",
+      "desc": "cell, rectangular shape, main color #e8e0cd, interactive build spot, small on screen (44x44), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cell-0",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "cell",
+      "placeholder": {
+        "current": "皮肤槽 （未填时回退 2D 色块 box·#e8e0cd）",
+        "source": "procedural",
+        "count": 59,
+        "instances": [
+          "cell-0",
+          "cell-1",
+          "cell-2",
+          "cell-3",
+          "cell-4",
+          "cell-5",
+          "cell-6",
+          "cell-7"
+        ]
+      },
+      "spec": {
+        "w": 44,
+        "h": 44,
+        "displayW": 44,
+        "displayH": 44,
+        "transparent": true
+      },
+      "context": "美术需求：「cell」（场景实体·×59 实例）·2D 平面·当前占位=皮肤槽 （未填时回退 2D 色块 box·#e8e0cd）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-02",
+      "desc": "cell, rectangular shape, main color #9fb6c0, interactive build spot, small on screen (44x44), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cell-23",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "cell",
+      "placeholder": {
+        "current": "皮肤槽 （未填时回退 2D 色块 box·#9fb6c0）",
+        "source": "procedural",
+        "count": 3,
+        "instances": [
+          "cell-23",
+          "cell-24",
+          "cell-25"
+        ]
+      },
+      "spec": {
+        "w": 44,
+        "h": 44,
+        "displayW": 44,
+        "displayH": 44,
+        "transparent": true
+      },
+      "context": "美术需求：「cell」（场景实体·×3 实例）·2D 平面·当前占位=皮肤槽 （未填时回退 2D 色块 box·#9fb6c0）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-03",
+      "desc": "cell, rectangular shape, main color #4a453d, interactive build spot, small on screen (44x44), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cell-31",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "cell",
+      "placeholder": {
+        "current": "皮肤槽 （未填时回退 2D 色块 box·#4a453d）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "cell-31"
+        ]
+      },
+      "spec": {
+        "w": 44,
+        "h": 44,
+        "displayW": 44,
+        "displayH": 44,
+        "transparent": true
+      },
+      "context": "美术需求：「cell」（场景实体·单例）·2D 平面·当前占位=皮肤槽 （未填时回退 2D 色块 box·#4a453d）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "t/ink-0",
+      "no": "art-04",
+      "desc": "skin ink, main color #33363f, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "skin-ink0",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "skin ink",
+      "placeholder": {
+        "current": "贴图 t/ink-0",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "skin-ink0"
+        ]
+      },
+      "spec": {
+        "w": 64,
+        "h": 64,
+        "displayW": 64,
+        "displayH": 64,
+        "transparent": true
+      },
+      "context": "美术需求：「skin ink」（场景实体·单例）·2D 平面·当前占位=贴图 t/ink-0·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "t/ink-1",
+      "no": "art-05",
+      "desc": "skin ink, main color #bf4136, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "skin-ink1",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "skin ink",
+      "placeholder": {
+        "current": "贴图 t/ink-1",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "skin-ink1"
+        ]
+      },
+      "spec": {
+        "w": 64,
+        "h": 64,
+        "displayW": 64,
+        "displayH": 64,
+        "transparent": true
+      },
+      "context": "美术需求：「skin ink」（场景实体·单例）·2D 平面·当前占位=贴图 t/ink-1·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "t/ink-2",
+      "no": "art-06",
+      "desc": "skin ink, main color #d9a441, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "skin-ink2",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "skin ink",
+      "placeholder": {
+        "current": "贴图 t/ink-2",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "skin-ink2"
+        ]
+      },
+      "spec": {
+        "w": 64,
+        "h": 64,
+        "displayW": 64,
+        "displayH": 64,
+        "transparent": true
+      },
+      "context": "美术需求：「skin ink」（场景实体·单例）·2D 平面·当前占位=贴图 t/ink-2·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "t/ink-3",
+      "no": "art-07",
+      "desc": "skin ink, main color #4d8a54, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "skin-ink3",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "skin ink",
+      "placeholder": {
+        "current": "贴图 t/ink-3",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "skin-ink3"
+        ]
+      },
+      "spec": {
+        "w": 64,
+        "h": 64,
+        "displayW": 64,
+        "displayH": 64,
+        "transparent": true
+      },
+      "context": "美术需求：「skin ink」（场景实体·单例）·2D 平面·当前占位=贴图 t/ink-3·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "t/ink-4",
+      "no": "art-08",
+      "desc": "skin ink, main color #4f8fa8, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "skin-ink4",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "skin ink",
+      "placeholder": {
+        "current": "贴图 t/ink-4",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "skin-ink4"
+        ]
+      },
+      "spec": {
+        "w": 64,
+        "h": 64,
+        "displayW": 64,
+        "displayH": 64,
+        "transparent": true
+      },
+      "context": "美术需求：「skin ink」（场景实体·单例）·2D 平面·当前占位=贴图 t/ink-4·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "t/ink-5",
+      "no": "art-09",
+      "desc": "skin ink, main color #8a6aa0, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "skin-ink5",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "skin ink",
+      "placeholder": {
+        "current": "贴图 t/ink-5",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "skin-ink5"
+        ]
+      },
+      "spec": {
+        "w": 64,
+        "h": 64,
+        "displayW": 64,
+        "displayH": 64,
+        "transparent": true
+      },
+      "context": "美术需求：「skin ink」（场景实体·单例）·2D 平面·当前占位=贴图 t/ink-5·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-10",
+      "desc": "wash, rectangular shape, main color #7a5f96, small on screen (46x46), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "wash-16",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "wash",
+      "placeholder": {
+        "current": "2D 色块（box·#7a5f96）",
+        "source": "procedural",
+        "count": 2,
+        "instances": [
+          "wash-16",
+          "wash-17"
+        ]
+      },
+      "spec": {
+        "w": 46,
+        "h": 46,
+        "displayW": 46,
+        "displayH": 46,
+        "transparent": true
+      },
+      "context": "美术需求：「wash」（场景实体·×2 实例）·2D 平面·当前占位=2D 色块（box·#7a5f96）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    }
+  ],
+  "artStyle": {
+    "packId": "apollo-toon"
+  }
+}

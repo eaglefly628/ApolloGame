@@ -113,6 +113,17 @@ export const GAMES: GameEntry[] = [
     icon: '🗼',
     status: 'playable',
   },
+  {
+    id: 'game-t',
+    title: 'Game T: 墨消',
+    subtitle: '水墨三消 · 功夫闯关',
+    description:
+      '竖屏水墨三消（糖果传奇-like）：交换六品墨珠连三消除，卷轴/朱印/太极丸特殊棋子连锁，洗墨/破瓷多目标闯关。棋盘全机制=t3-match3-board config 驱动的确定性相位机，胜负=t3-flow 声明式状态机，输入=拖拽滑动（t2-match3-drag-swap）+点选双路，UI 全 LayoutNode（apollo-toon 水墨玩趣皮）——规则零游戏层代码。当前=run2 骨架：占位 5 关待 GD-T 三十关正式表；层视图/手感动画=REQ-M3-三期落地后接入。',
+    color: '#1b1712',
+    accentColor: '#d9a441',
+    icon: '🖌️',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
