@@ -53,7 +53,8 @@ const manifestPath = (root, slug, form) =>
       : null;
 
 /** 游戏内容指纹：只哈希**这款游戏自己的**输入（manifest/源码/美术/设计档），引擎全局变化由 S8 的 git HEAD 兜。
- *  排除 pipeline.json 自身（记证据不得自我过期）与 gen/mock/（mock 预览物不影响出货内容）。 */
+ *  排除 pipeline.json 自身（记证据不得自我过期）、gen/mock/（mock 预览物不影响出货内容）
+ *  与 requests.md（工单池=沟通台账非游戏内容——回执/批注不得作废复查·Lead 2026-07-17 修 game-b S3 误失效）。 */
 export function gameHash(root, slug) {
   const roots = [
     join(root, 'library', slug),
@@ -69,6 +70,7 @@ export function gameHash(root, slug) {
       const st = statSync(p);
       if (st.isDirectory()) { if (name !== 'mock') walk(p); continue; } // gen/mock/ 预览物不入指纹
       if (name === 'pipeline.json') continue;
+      if (name === 'requests.md') continue; // 工单池台账不入指纹（高频回执≠内容变更）
       files.push(p);
     }
   };

@@ -47,6 +47,11 @@ describe('游戏内容指纹（证据过期的机器判据）', () => {
     expect(h1).not.toBe(h0); // 真图入指纹
     put(root, 'public/games/g/manifest.json', { ...MANIFEST, name: 'G2' });
     expect(gameHash(root, 'g')).not.toBe(h1); // manifest 变更即过期
+    const h2 = gameHash(root, 'g');
+    put(root, 'docs/design/g/requests.md', '### 工单回执一条');
+    expect(gameHash(root, 'g')).toBe(h2); // 工单池台账不入指纹（回执/批注不作废复查·2026-07-17 修）
+    put(root, 'docs/design/g/gdd.md', '# 设计变更');
+    expect(gameHash(root, 'g')).not.toBe(h2); // 设计档变更仍然即过期（gdd/plan 真影响复查有效性）
   }));
 });
 

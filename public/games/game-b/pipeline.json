@@ -7,7 +7,23 @@
     "refs": "雀魂(规则完整度参照)·脱衣麻将品类(表现克制版)",
     "style": "女性向二次元·和风夜宴·樱色暖灯·sakura-otome主题"
   },
-  "signoffs": {},
+  "signoffs": {
+    "S1": {
+      "by": "owner（口令·Lead 代录）",
+      "note": "owner 2026-07-17 会话口令「批准他继续下一步」·立项卡=owner 亲提 brief 固化（B-004 落卡）",
+      "at": "2026-07-17T14:39:31.697Z"
+    },
+    "S2": {
+      "by": "Lead",
+      "note": "计划门 Lead 裁决在档（plan §6 有条件通过）·owner 口令批准继续",
+      "at": "2026-07-17T14:39:31.761Z"
+    },
+    "S3": {
+      "by": "owner（口令·Lead 代录）",
+      "note": "挂载目击=Lead 真浏览器截图（牌桌/骰/占位手牌/四席位卡/HUD 素坯就位·swiftshader）·owner 目验截图后口令批准",
+      "at": "2026-07-17T14:39:31.822Z"
+    }
+  },
   "evidence": {},
   "history": [
     {
@@ -25,6 +41,33 @@
       "stage": "S3",
       "verdict": "PASS",
       "at": "2026-07-17T14:32:36.531Z"
+    },
+    {
+      "action": "review",
+      "stage": "S2",
+      "verdict": "PASS",
+      "at": "2026-07-17T14:39:31.621Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S1",
+      "at": "2026-07-17T14:39:31.697Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S2",
+      "at": "2026-07-17T14:39:31.761Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S3",
+      "at": "2026-07-17T14:39:31.822Z"
+    },
+    {
+      "action": "review",
+      "stage": "S3",
+      "verdict": "PASS",
+      "at": "2026-07-17T14:41:38.096Z"
     }
   ],
   "reviews": {
@@ -37,10 +80,17 @@
     },
     "S3": {
       "verdict": "PASS",
-      "note": "五项逐条:①范围=faf454b0 全清单核查(src/games/game-b 8 件+launcher 2 行+pipeline+art 40 贴面+compose 工具+两池提单)全域内·但领工声明缺失(以提交实录代查·手册缺陷已回填 review-gates·责成 PE-B 补声明)②数据纯度=blueprint 纯数据仅引 randomCapability+主题/牌面表③与 plan §2 一致零私加机制④装载门=真引擎 load+2tick+同seed同hash断言(game-b.test.ts:21/45)+审计零红旗+reconcile 三方一致(40 vendored 带 provenance)⑤真浏览器挂载目击(swiftshader 截图:牌桌/骰/手牌/四席位卡/HUD 素坯就位)。B-007 透明底自纠+走 P3D 池提单=规矩加分。",
+      "note": "复查重签（指纹修正后重钉·内容零变动）：原 14:32 五项判词全文有效——范围/数据纯度/plan一致/装载门+确定性断言/真浏览器挂载目击。此前过期=工单池回执误入指纹（本批已修 game-pipeline.mjs·requests.md 出指纹+点名测试）。",
       "by": "Lead",
-      "at": "2026-07-17T14:32:36.531Z",
-      "gameHash": "5406883cfa34d540"
+      "at": "2026-07-17T14:41:38.096Z",
+      "gameHash": "03ffeaff383b5184"
+    },
+    "S2": {
+      "verdict": "PASS",
+      "note": "S2 复查=Lead 实审已在 capability-plan §6（2026-07-17 有条件通过·六条判词）：四例外准/BT改判下沉(已落地)/角色卡并共享通道/规则四漏转 S4 附录/台账可开建/VOICE·主题·Camera3D 核实——条件全部转为 S4/S6 验收项跟踪。",
+      "by": "Lead",
+      "at": "2026-07-17T14:39:31.621Z",
+      "gameHash": "e73901d566d6906e"
     }
   }
 }
