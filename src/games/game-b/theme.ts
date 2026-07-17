@@ -63,6 +63,21 @@ const PHOENIX_SVG =
   + `</svg>`;
 const NIGHT_TEXTURE = `url("data:image/svg+xml,${encodeURIComponent(PHOENIX_SVG)}") center/cover no-repeat`;
 
+// ── 主菜单按钮皮（对标 main-menu.dc.html·hero=粉红渐变主 CTA / ghost=暗底粉边次钮）─────────
+// 简洁渐变圆角 9-slice（区别 apolloToon 糖果厚唇·此稿钮观感更平实）。同 apolloToon SKIN 先例=SVG data-uri。
+function menuSkin(top: string, bottom: string, rim: string, hi: boolean, fillOp = 1, strokeOp = 1): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">`
+    + `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bottom}"/></linearGradient></defs>`
+    + `<rect x="2" y="2" width="60" height="60" rx="12" fill="url(#g)" fill-opacity="${fillOp}" stroke="${rim}" stroke-opacity="${strokeOp}" stroke-width="1.5"/>`
+    + (hi ? `<rect x="8" y="6" width="48" height="9" rx="4.5" fill="#ffffff" fill-opacity="0.26"/>` : '')
+    + `</svg>`;
+  // escape ()' —— skin 进 CSS url() 无引号时，data-uri 里 url(#g) 的括号会截断皮（apolloToon dataUri 先例）。
+  return `data:image/svg+xml,${encodeURIComponent(svg).replace(/[()']/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`;
+}
+const NIGHT_SLICE = 12;
+const SKIN_HERO_NIGHT = menuSkin('#f6a8c4', '#d94a6a', '#c0355a', true); // 粉红渐变主 CTA
+const SKIN_GHOST_NIGHT = menuSkin('#2e1a34', '#241528', '#f6a8c4', false, 0.9, 0.42); // 暗底粉边次钮
+
 export const NIGHT: UITheme = {
   bg0: '#160d1b', bg1: '#241528', bg2: '#2e1a34', bg3: '#3a2338',
   pageBg: 'radial-gradient(100% 120% at 78% 26%, #3a2338, #241528 46%, #160d1b 82%)',
@@ -80,6 +95,10 @@ export const NIGHT: UITheme = {
   fontSerif: "'Shippori Mincho','Noto Serif SC','Songti SC','Yu Mincho',serif",
   texture: NIGHT_TEXTURE,
   wash: 'radial-gradient(120% 80% at 70% -6%, rgba(120,50,90,0.40), transparent 55%)',
+  buttonSkins: {
+    hero: { skin: SKIN_HERO_NIGHT, skinSlice: NIGHT_SLICE }, // 开始上桌=粉红渐变
+    ghost: { skin: SKIN_GHOST_NIGHT, skinSlice: NIGHT_SLICE }, // 继续/设置=暗底粉边
+  },
 };
 
 // 主菜单宿主背景层（凤翎 texture 叠深紫渐变·game-t sceneBackground 先例·宿主装饰层）。

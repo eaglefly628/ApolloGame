@@ -16,7 +16,8 @@ export interface MenuState {
 }
 
 export function initialMenu(): MenuState {
-  return { heroName: '夜華', money: 50000, hasSave: false };
+  // hasSave 展示态=true（对齐稿·三钮皆亮）；S4 接真存档判断后按实际置灰。
+  return { heroName: '夜華', money: 50000, hasSave: true };
 }
 
 const fmt = (n: number): string => n.toLocaleString('en-US');
