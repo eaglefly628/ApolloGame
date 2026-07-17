@@ -63,6 +63,12 @@
 > **PST 活**：`src/studio/AssetImportWizard.tsx` 加「导入时移除背景」勾选 + 模式选（绿幕/纯色吸管/自动 flood/rembg）+ before/after 预览；调 PA 端点。
 > **红线**：authoring-time·**不碰 sim/hash/LayoutNode**（同 ai-gen/import-art-pack 一类资产变换）；auto-matte **必过人审预览**、绝不导入即改。**验收**：PA rembg 接线 + 测（纯色 flood 确定性真验 + rembg mock）；PST UI 勾选出预览·门禁绿；一张真异形图端到端（生图→导入去背→真 alpha→接 `backArt`/`skin` 透见对）。**边界**：本条 spec 由 PUI 会诊出图·**PUI 不施工**（studio/资产线非 PUI 域）。
 
+### REQ-VN-退役 · game-b 残留收尾：src/ui/vn 零消费退役 + 3 处过期注释 · [2026-07-17] · GD-B 提（owner 指令：接新项目前清 game-b 历史残留；GD 零代码·域外按工作流提单）→ **指派：PUI（①③）+ PST（②）** · status: open · 优先级: P3 · 类型: 去腐（game-b 本体/设计文档/公库/git 史均已零残留·此为引擎侧最后收尾）
+> ① **`src/ui/vn/**` 退役**（7 文件·game-b 乙女 VN 的演出组件层）：全库零外部消费（仅内部互引+注释提及），CLAUDE.md UI 铁律已判「待退役·VN 零消费可随时退」——本单=执行退役；连带 `src/ui/themes/sakura-otome/theme.ts` 头注「喂给 @ui/vn」与 `src/ui/shell/types.ts:16`「与 @ui/vn 同款」提法改口；完工后请 LEAD 同步删 CLAUDE.md UI 铁律行的「/ui/vn」字样。
+> ② **studio 两处注释把 game-b 当现存事实**（过期信号·llm-onboarding §4）：`src/studio/assets-model.ts:26`·`src/studio/StudioInspector.tsx:228`——改为通用表述（usedBy 为场景 id 时仅展示、不跳数据树）。
+> ③ `src/ui/themes/sanguo/theme.ts:3`「对齐 game-b 的 sakuraOtomeTheme 范式」→ 改「主题在 src/ui/themes/·游戏只消费」通用表述。
+> **判保留（勿动）**：`src/ui/themes/sakura-otome/`（已泛化为主题库 9 套之一 + spec.md 格式模板·数据资产非 game-b 专属）；`src/skills/tier3/dialogue.ts:11`「原 game-b」=能力下沉出处记录（历史语境明确）；requests-archive/docs/review/已挂过期头文档（归档纪律「过期文档不删」）；`wiki/skills/otome.md`（品类知识）。**验收**：清后全库 grep `game-b` 仅剩归档层+出处注释；门禁全绿。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
