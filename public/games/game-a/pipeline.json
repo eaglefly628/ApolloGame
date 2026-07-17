@@ -28,8 +28,8 @@
     "S4": {
       "exit": 0,
       "summary": " Test Files  3 passed (3) ·       Tests  27 passed (27)",
-      "at": "2026-07-17T15:04:24.358Z",
-      "gameHash": "a1725a3ab042677d"
+      "at": "2026-07-17T15:09:19.922Z",
+      "gameHash": "e8a467c44dfa5461"
     }
   },
   "history": [
@@ -69,6 +69,18 @@
       "stage": "S4",
       "at": "2026-07-17T15:04:24.358Z",
       "outOfOrder": true
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE-A 机器侧先行·S4 walkthrough 27 测全绿；复查门待另开复查 session（三门制·照 game-t/c 先例）",
+      "at": "2026-07-17T15:09:17.803Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-17T15:09:19.922Z"
     }
   ],
   "reviews": {
@@ -86,5 +98,12 @@
       "at": "2026-07-17T14:30:27.492Z",
       "gameHash": "9d5e108d611b87f8"
     }
-  }
+  },
+  "outOfOrder": [
+    {
+      "stage": "S4",
+      "reason": "PE-A 机器侧先行·S4 walkthrough 27 测全绿；复查门待另开复查 session（三门制·照 game-t/c 先例）",
+      "at": "2026-07-17T15:09:17.803Z"
+    }
+  ]
 }
