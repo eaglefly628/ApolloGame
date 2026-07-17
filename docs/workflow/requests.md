@@ -51,6 +51,18 @@
 > **验收**：端口单测（事件→调用形状/降级链①→③/headless no-op）+ 试听入口（建议 game-i sounds 台加一行·PUI 会审）+ `docs/playbooks/audio.md` 回填一行。消费方=game-b（gdd §十）；game-a/c 立项案语音位可共用。
 > **腾槽记录**：REQ-VN-退役（P3 去腐·同为 GD-B 所提）撤回让位入档（先清后加·档内可重提）。
 
+### REQ-GUANDAN-牌型 · 掼蛋判型+压制序+逢人配（先裁 poker-hand 可否重组） · [2026-07-17] · 提出人 GD-A（《掼蛋夜宴》game-a S2 前置·owner 07-17 清池授权入池）→ 待 Lead 裁决 · status: open · 优先级: P1 · 类型: 能力缺口候选（正确性关键·不降档）
+> - 想实现：掼蛋牌型闭集判定（单/对/三同张/三带二/顺5/三连对木板/钢板二连三/炸弹4-10张/同花顺/四大天王）+ 压制比较序（天王炸>6+张炸>同花顺>5炸>4炸>普通牌型·同型比大·级牌>A）+ **红桃级牌逢人配**（除大小王外百搭）。
+> - 已有能力对照：`t3-poker-hand` 有 rankingTable+wild——但掼蛋型（变长连对/钢板/变长炸弹族/跨型压制序）疑似超出扑克 ranking 表达力；请 Lead 先裁**可否重组**，不能再下沉（建议 `guandan-hand` 或泛化表驱动 hand-pattern）。
+> - 要求：纯函数判型·种子确定性·可回放；消费方=game-a《掼蛋夜宴》（编译期 TS·capability-plan 随 S2 送审）；设计档 `docs/design/game-a/`。
+> - 边界：`src/skills/tier3/**`+registry 注册（Lead 域）；游戏层绝不自写判型解释器（虚胖数据禁令）。
+
+### REQ-BT-行为树 · 通用行为树能力（纯数据树+确定性解释器·先裁 condition/flow 可否重组） · [2026-07-17] · 提出人 GD-A（《掼蛋夜宴》AI·owner 意向 BT）→ 待 Lead 裁决 · status: open · 优先级: P1 · 类型: 能力缺口候选（通用向·非单游戏拓宽）
+> - 想实现：AI 外层策略=**纯数据行为树**（selector/sequence/condition/action 节点闭集）+ 通用确定性解释器。掼蛋消费面：记牌四档（记忆保真度分档）、宗师开局偷看 2 张、性格标签（稳健/激进/多变）→ 行为权重；内层出牌=候选生成+估值表（数据）。
+> - 已有能力对照：condition/flow/event-when 可表达简单分支——「树形优先级+运行时黑板+跨游戏复用」疑似缺口；请 Lead 裁①重组是否够②不够则通用下沉（独立于掼蛋·NPC/敌 AI 皆可复用）。`wiki/skills/ai-behavior.md` 有行业知识。
+> - 要求：全种子 PRNG·无裸随机·AI 决策进确定性轨可回放；spec 细化随 game-a S2 capability-plan。
+> - 边界：`src/skills/**`+registry（Lead 域）；游戏层只产 BT 数据与估值表。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
