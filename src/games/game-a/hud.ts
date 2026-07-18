@@ -394,14 +394,16 @@ function buildHandFanNodes(hand: number[], selected: number[]): LayoutNode[] {
   const totalW = step * (n - 1);
   const startX = HAND_L + Math.round((HAND_AVAIL - totalW) / 2);
   const baseY = FIELD_H - 104; // 中间牌顶 y（两端向上翘）
-  const MAX_LIFT = 62; // 两端上翘幅度（U 弧深·参考稿大弧）
-  const MAX_ROT = 24; // 端牌旋转角
+  // 弧度随手牌张数收（owner 2026-07-18）：满手(≥22 张)=大弧；出牌后牌变少→弧度按张数微微收，不永远这么高地翘。
+  const arcScale = Math.min(1, n / 22);
+  const maxLift = 62 * arcScale; // 两端上翘幅度（U 弧深·张数越少越平）
+  const maxRot = 24 * arcScale; // 端牌旋转角（张数越少越正）
   return hand.map((c, i) => {
     const f = cardFace(c);
     const sel = selected.includes(i);
     const t = mid === 0 ? 0 : (i - mid) / mid; // 归一化 -1..1
-    const lift = Math.round(t * t * MAX_LIFT); // U 弧：|t| 大 → 上翘多（y 小）
-    const rot = Math.round(t * MAX_ROT * 10) / 10; // 左端逆时针 / 右端顺时针
+    const lift = Math.round(t * t * maxLift); // U 弧：|t| 大 → 上翘多（y 小）
+    const rot = Math.round(t * maxRot * 10) / 10; // 左端逆时针 / 右端顺时针
     return {
       type: 'PlayingCard',
       id: `a-hand-${i}`,

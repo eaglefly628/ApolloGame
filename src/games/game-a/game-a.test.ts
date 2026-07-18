@@ -13,7 +13,7 @@ import {
 import { buildTableBlueprint } from './blueprint.js';
 import { buildMenu, buildTableSelect, buildPlay, buildResult, buildGameMenu, type SeatView } from './hud.js';
 import { cardAssetId } from './theme.js';
-import { pickLead } from './ai.js';
+import { pickLead, pickMinResponse } from './ai.js';
 
 const c = (suit: number, rank: number): Card => ({ suit, rank });
 
@@ -97,7 +97,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
   it('领出 pickLead：倾长牌型倒库存·不主动领炸·不拆炸凑牌型', () => {
     const cfg = guandanConfig(2);
     const lead = (codes: number[]): ReturnType<typeof pickLead> =>
-      pickLead(legalResponses(codes.map((x) => c(codeSuit(x), codeRank(x))), null, cfg));
+      pickLead(legalResponses(codes.map((x) => c(codeSuit(x), codeRank(x))), null, cfg), cfg);
     // 顺子(5张) 优先于对子(2张)——最长牌型
     expect(lead([cardCode(0, 5), cardCode(1, 5), cardCode(0, 6), cardCode(1, 7), cardCode(2, 8), cardCode(3, 9), cardCode(0, 10)])?.family).toBe('straight');
     // 三连对(6张) 优先于其中的对子——最长牌型
@@ -108,7 +108,37 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
     expect(bombHand?.cards.every((cc) => cc.rank !== 6)).toBe(true); // 炸弹的 4 张 6 未被拆
     // 残局只剩炸 → 兜底用炸收尾（出光）
     expect(lead([cardCode(0, 7), cardCode(1, 7), cardCode(2, 7), cardCode(3, 7)])?.family).toBe('bomb');
-    expect(pickLead([])).toBeNull(); // 空候选
+    expect(pickLead([], cfg)).toBeNull(); // 空候选
+  });
+
+  // ── 先出小牌·保留大牌（owner 2026-07-18 报「先出大的后出小的·出了对2」根因）───────────
+  it('领出 pickLead：留 K/A/级牌 后手·先领小牌型（不先甩高对）', () => {
+    const cfg = guandanConfig(2); // 打 2：级牌 2 抬到 A 之上
+    const lead = (codes: number[]): ReturnType<typeof pickLead> =>
+      pickLead(legalResponses(codes.map((x) => c(codeSuit(x), codeRank(x))), null, cfg), cfg);
+    // 对2(级牌·次大·♠2+♦2 非红桃=非逢人配) + 小单张 3/4/5 → 不先甩对2·先出小单张（保留后手大牌）
+    const r = lead([cardCode(0, 2), cardCode(2, 2), cardCode(0, 3), cardCode(2, 4), cardCode(3, 5)]);
+    expect(r?.family).toBe('single');
+    expect(r?.cards.every((cc) => cc.rank !== 2)).toBe(true); // 级牌 2 未被先甩
+    // 低对(对4) 与 高对(对A) → 领低对（同为对子取小 rank）
+    const r2 = lead([cardCode(0, 4), cardCode(1, 4), cardCode(0, 14), cardCode(1, 14)]);
+    expect(r2).toMatchObject({ family: 'pair', rank: 4 });
+  });
+
+  // ── 应对不拆炸（owner 2026-07-18 报「四张7拆成两对出」根因）────────────────────────
+  it('应对 pickMinResponse：绝不拆炸凑对子压小墩（整炸或过·都不拆）', () => {
+    const cfg = guandanConfig(2);
+    const beatsPair4 = (m: { cards: Card[] }): boolean => beats(m.cards, [c(2, 4), c(3, 4)], cfg);
+    // 手握四张7(炸) + 无其他能压对4的普通牌 → 应对对4：不拆7炸凑对子（返回整炸或 null·绝非拆出的对7）
+    const hand4x7 = [c(0, 7), c(1, 7), c(2, 7), c(3, 7), c(0, 3)];
+    const respA = pickMinResponse(legalResponses(hand4x7, [c(2, 4), c(3, 4)], cfg).filter(beatsPair4));
+    expect(respA === null || respA.family === 'bomb').toBe(true); // 整炸或过·绝不拆成对7
+    expect(respA?.family).not.toBe('pair');
+    // 手握四张7(炸) + 另有对9 → 应对对4：用对9（不拆炸·省下真炸）
+    const hand4x7p9 = [c(0, 7), c(1, 7), c(2, 7), c(3, 7), c(0, 9), c(1, 9)];
+    const respB = pickMinResponse(legalResponses(hand4x7p9, [c(2, 4), c(3, 4)], cfg).filter(beatsPair4));
+    expect(respB).toMatchObject({ family: 'pair', rank: 9 });
+    expect(respB?.cards.every((cc) => cc.rank !== 7)).toBe(true); // 7 炸未被拆
   });
 
   // ── 蓝图真装载（机器门语义：引擎吃得下 + 空跑 2 tick）───────────────────────────

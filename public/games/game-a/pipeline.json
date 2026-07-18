@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  4 passed (4) ·       Tests  47 passed (47)）· 验收剧本 8 场景绿",
-      "at": "2026-07-18T13:32:01.729Z",
-      "gameHash": "50e7c8b680154665"
+      "summary": "walkthrough 绿（ Test Files  4 passed (4) ·       Tests  49 passed (49)）· 验收剧本 8 场景绿",
+      "at": "2026-07-18T15:44:35.130Z",
+      "gameHash": "c54da57b41eea337"
     },
     "S5": {
       "exit": 0,
@@ -237,6 +237,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T13:32:01.729Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE 2026-07-18 AI 策略改良（不拆炸+保留大牌）+ 手牌弧度 + 验收剧本按新 AI 重选 seed·S2/S3 复查门随游戏文件改 stale·非回退",
+      "at": "2026-07-18T15:44:29.339Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T15:44:35.130Z"
     }
   ],
   "reviews": {
@@ -327,6 +339,11 @@
       "stage": "S4",
       "reason": "PE 本轮改游戏文件（死机修 + 拟人延迟 + 逢人配标记 + tribute1 验收投影）致 S2/S3 复查门 stale·非回退·S4 机器门+8 剧本验收为准",
       "at": "2026-07-18T13:31:56.027Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "PE 2026-07-18 AI 策略改良（不拆炸+保留大牌）+ 手牌弧度 + 验收剧本按新 AI 重选 seed·S2/S3 复查门随游戏文件改 stale·非回退",
+      "at": "2026-07-18T15:44:29.339Z"
     }
   ]
 }

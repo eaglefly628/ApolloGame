@@ -2,6 +2,12 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
+### A-013 · [2026-07-18] · PE-A · 验收剧本耦合 AI 出牌线 → AI 改良后 4 剧本种子漂离目标分支（已重选 seed 修复·长期建议迁单测）· status: ✅ PE 已重选 seed 全绿（附长期建议交 GD-A）· 类型: 验收剧本健壮性（GD-A 域）
+**背景**：owner 2026-07-18 报「AI 把四张7拆成两对出、先甩对2（先出大的后出小的）·难度低也不能乱出牌」——PE 按掼蛋策略（web 校准）改 AI：**不拆炸弹**（`ai.pickLead`/`chooseTurn` 应对全程护炸·80局35701手实测 0 拆炸）+ **先出小牌·保留大牌**（不先领 K/A/级牌 premium）。
+**副作用**：①③④⑤⑥⑦⑧ 用 `play-round`/`play-run` **全自动打**，落到哪个名次/进贡/过A分支**取决于 AI 出牌线**（+种子 PRNG 消耗步数）。AI 一改，旧 seed 漂离目标分支 → 01/06/07/08 断言值过期变红（sim 结算/进贡/升级**逻辑本身没坏**·walkthrough 单测 forceRanking 全绿印证=纯 fixture 陈旧）。
+**PE 已修（本轮·重选 seed 命中各分支·非弱化断言·分支真被走到）**：01 单下→`seed 16`（hero 头游·进大王）、06 抗贡→`seed 4`（次盘应贡方双大王·head=partner）、07 双下→`seed 2`（一队一二·两王进贡 16/15·顺带落 A-010 次贡断言）、08 我方过A→`seed 1`。8 剧本全绿。README 表 + 头注同步更新，逐条头注写明「AI 改良重选 seed」。
+**长期建议（交 GD-A·非阻断）**：这些「分支验证」剧本**天然脆**——每次 AI 调参都得追 seed。建议把抗贡/双下/过A 等**规则分支断言迁到 walkthrough 单测**（`guandan-session.test.ts` 的 `forceRanking` 能直接摆名次·与 AI 完全解耦），acceptance 只保留 ②式「显式出牌驱动」的稳健剧本。这样引擎/AI 谁改都不必追种子。（问责定性=剧本设计耦合·不问谁改的 AI。）
+
 ### A-012 · [2026-07-18] · PE-A · UI reconciler 换「根节点 id」时静默 no-op → 跨屏切换死机 · status: ✅ 已转引擎池 **REQ-UIRECON-换根重挂**（Lead 2026-07-18·指派 PUI·P1）· 类型: UI 基座 bug（PUI 域）
 **根因（引擎 `src/ui/components/server.ts reconcileNode`）**：`update(newRoot)` 把新树最小化打补丁到 host——`reconcileNode` 起手 `const el = uiFindById(scope, newN.id); if (!el) return;`。当**新根 id ≠ 旧根 id**（如牌桌 `a-play` → 结算 `a-result`）时，host 里只有旧根元素、找不到新 id → **直接 return，屏一动不动**；且 `curRoot=newRoot` 已推进 → 之后每次 `update` 都拿新 id 找不到、永久 no-op（含菜单开合的 render）。
 **owner 实证（2026-07-18·多次报「死机」）**：某盘 AI 走光结算（如队友双下），`render()` 成功跑 `ui.update(buildResult(...))`（`render完 phase=settled` 已打日志）却**不切结算屏**，牌桌卡在「🏆X 暂大 Y 应对中…」旧帧；CSS 动画（合成线程）照跑=牌在抖，但点☰菜单也 no-op（同一 render 路径）→ 看着像死循环，实为 reconciler 换根静默失败。浏览器插桩复现：`render完 phase=settled` 后屏仍 `#a-felt` 在场、`#a-result` 不出。

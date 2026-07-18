@@ -14,7 +14,7 @@ import type { Card, RandomSeed, Resource } from '@engine/protocol/components.js'
 import { mulberry32, seededShuffle } from '@atom-skills/index.js';
 import { matchPattern, beats, legalResponses, effRank, type HandPatternConfig, type PatternMatch } from '@skills/tier3/index.js';
 import { buildTableBlueprint } from './blueprint.js';
-import { chooseTurn, personalityOf, pickLead, type Personality } from './ai.js';
+import { chooseTurn, personalityOf, pickLead, pickMinResponse, type Personality } from './ai.js';
 import {
   buildDeck108, guandanConfig, codeRank, codeSuit, SEATS, HAND_SIZE,
   INITIAL_FUNDS, RESULT_MULTS, BONUS_RESIST_MULT, BONUS_SKY_MULT, ROUND_MULT_CAP,
@@ -381,16 +381,16 @@ export class GuandanSession {
   }
 
   /**
-   * 提示（gdd 二轮拍板·各难度一致）：
-   *   · 领出（无当前墩）= pickLead 好牌型（倾长倒库存·不领炸·与 AI 领出同一启发）——修「提示恒给最小单张」。
-   *   · 应对（有当前墩）= 最小合法压牌（legalResponses 首解·省大牌）。
-   * 返回牌码数组（宿主按显示顺序映射成下标高亮）；null=领不出/无牌可压（只能过）。
+   * 提示（gdd 二轮拍板·各难度一致·与 AI 同一启发）：
+   *   · 领出（无当前墩）= pickLead（先出小牌·保留大牌·倾长倒库存·不领炸/不拆炸）——修「提示恒给最小单张」。
+   *   · 应对（有当前墩）= pickMinResponse（最小的不拆炸压牌·省大牌）；只剩拆炸的压牌返回 null=建议过（炸留反压）。
+   * 返回牌码数组（宿主按显示顺序映射成下标高亮）；null=领不出/无非拆炸可压（只能过）。
    * 应对经 legalBeats 过滤（见其注·引擎判读歧义 A-008 保证提示牌点出去必被 act 收）。
    */
   hint(seat: SeatId): number[] | null {
     const target = this.currentTrick ? this.toCards(this.currentTrick.cards) : null;
     const responses = this.legalBeats(this.toCards(this.hands[seat]), target);
-    const pick = target === null ? pickLead(responses) : responses[0];
+    const pick = target === null ? pickLead(responses, this.cfg) : pickMinResponse(responses);
     return pick ? pick.cards.map((c) => c.suit * 100 + c.rank) : null;
   }
 

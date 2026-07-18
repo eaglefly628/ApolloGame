@@ -8,7 +8,7 @@ import type { Card, RandomSeed, Flag, Resource } from '@engine/protocol/componen
 import {
   tickBehaviorTree, registerBTLeaves, type BehaviorTree, type BTLeafTable,
 } from '@skills/tier2/index.js';
-import { legalResponses, beats, type HandPatternConfig, type PatternMatch } from '@skills/tier3/index.js';
+import { legalResponses, beats, effRank, type HandPatternConfig, type PatternMatch } from '@skills/tier3/index.js';
 import { AI_TIERS, type AiTierSpec, type SeatSpec } from './rules.js';
 
 export const BT_GAME_ID = 'game-a';
@@ -102,32 +102,53 @@ const isBombFamily = (m: PatternMatch): boolean => m.family === 'bomb' || m.fami
 const cardsOf = (m: PatternMatch): number[] => m.cards.map((c) => c.suit * 100 + c.rank);
 
 /**
- * 领出选牌启发（hint 与 AI chooseTurn 共用·纯函数·确定性·全档一致）。
- * 掼蛋以先出光手牌者胜 → 领出的正解是**倾长牌型快速倒库存**、把「手数」压到最少（顺子/三连对/钢板/
- * 三带二 6/5 张 > 三张 > 对子 > 单张），同长取最小 rank（不浪费大牌）；两条保留原则：
- *   ①**绝不主动领炸**——炸弹/同花顺/天王炸留作被压时反击；
- *   ②**不拆炸凑牌型**——手里成炸的那几张牌不拿去当三张/对子领出（否则毁掉炸弹，观感像 bug）。
- * 故领出只从「安全非炸牌型」（组合不含任何成炸牌）里挑；仅当无安全牌可领（残局手牌全成炸）才用全候选收尾。
- * 这修掉「领出恒取 legalResponses[0]=最小单张 → 全局退化成单张流」+「领三张拆掉四张炸」（owner 2026-07-18 报）。
- * candidates = legalResponses(hand, null, cfg)（已 tier→rank→length 升序）。空手返回 null（兜底过）。
+ * 天然同点炸弹（family 'bomb' 且 wildsUsed===0：手里真有 4~10 张同点）占用的牌码集合。
+ * 「不拆炸弹」是掼蛋铁律——炸弹是反压利器，拆成三张/对子/单张=毁炸、牌力大减（web 策略：拆炸让单牌变多、
+ * 牌型变散、炸数减少）。排除同花顺/天王炸（与普通牌大量重叠·全护会把 AI 逼到死攥牌）与逢人配拼的炸
+ * （wildsUsed>0：一张百搭最多成一个炸·不该把每个三张都当潜在炸锁死）。领出/应对共用此护栏。
  */
-export function pickLead(candidates: readonly PatternMatch[]): PatternMatch | null {
+function naturalBombCards(candidates: readonly PatternMatch[]): Set<number> {
+  const s = new Set<number>();
+  for (const m of candidates) if (m.family === 'bomb' && m.wildsUsed === 0) for (const c of m.cards) s.add(c.suit * 100 + c.rank);
+  return s;
+}
+const consumesBomb = (m: PatternMatch, bomb: Set<number>): boolean => m.cards.some((c) => bomb.has(c.suit * 100 + c.rank));
+
+/**
+ * 领出选牌启发（hint 与 AI chooseTurn 共用·纯函数·确定性·全档一致）。掼蛋策略（web 校准·owner 2026-07-18）：
+ *   ①**先出小牌·保留大牌**——留 K/A/级牌/王（premium）作后手反压，先倒小牌型探路/倒库存（原实现只按「长度→最小
+ *     rank」→ 会先甩高对，如打2时先领对2（级牌·次大）——owner 报「先出大的后出小的」根因）；
+ *   ②**绝不主动领炸 + 不拆炸凑型**——炸弹/同花顺/天王炸留反压，成炸的牌不拿去当三张/对子领出；
+ *   ③在可领池里倾长牌型倒库存（顺子/三连对/钢板/三带二 > 三张 > 对子 > 单张·防退化成单张流），同长取最小 rank。
+ * candidates = legalResponses(hand, null, cfg)（已升序）。空手返回 null（兜底过）。
+ */
+export function pickLead(candidates: readonly PatternMatch[], cfg: HandPatternConfig): PatternMatch | null {
   if (candidates.length === 0) return null;
-  // 保炸不拆——只护**天然同点炸弹**（family 'bomb' 且 wildsUsed===0：手里真有 4~10 张同点，拆成三张/
-  // 对子=毁炸·观感像 bug）。三条排除，防「过度保炸」把 AI 逼到死攥牌：
-  //   ① 同花顺/天王炸：牌与普通牌型大量重叠（如 ♥A2345 占掉一串低红桃），且「不主动领它们」已由 nonBomb 过滤保证；
-  //   ② 逢人配拼出的炸（wildsUsed>0）：一张逢人配能把**任一**三张凑成炸，全保留=把每个三张都锁死（错）——
-  //      逢人配只有一张，最多成一个炸，不该让所有三张都当「潜在炸」被保留。
-  const bombCards = new Set<number>();
-  for (const m of candidates) if (m.family === 'bomb' && m.wildsUsed === 0) for (const c of m.cards) bombCards.add(c.suit * 100 + c.rank);
+  const bombCards = naturalBombCards(candidates);
   const nonBomb = candidates.filter((m) => !isBombFamily(m));
-  const safe = nonBomb.filter((m) => !m.cards.some((c) => bombCards.has(c.suit * 100 + c.rank)));
-  const pool = safe.length > 0 ? safe : candidates; // 无安全非炸牌（全成炸）→ 残局用全候选收尾
-  let best = pool[0];
+  const safe = nonBomb.filter((m) => !consumesBomb(m, bombCards)); // 不拆炸
+  // 无安全非炸牌（手牌全是成炸的牌·如满手 5张6+5张Q 两只炸）→ 只在「整只炸弹 + 不拆炸的非炸」里挑：
+  // 整炸=正当收尾（不拆），拆炸的 full/plate 一律排除（否则同长同 rank 下 full 排在炸前会被选中=拆炸·owner 报根因）。
+  const base = safe.length > 0 ? safe : candidates.filter((m) => isBombFamily(m) || !consumesBomb(m, bombCards));
+  // 保留大牌：K 及以上（K/A/级牌/王）留后手·先从非 premium 里领；无非 premium 才动大牌。
+  const premium = effRank(13, cfg); // effRank(K)——含 K/A/级牌/王
+  const nonPrem = base.filter((m) => m.rank < premium);
+  const pool = nonPrem.length > 0 ? nonPrem : base;
+  let best = pool[0]!;
   for (const m of pool) {
     if (m.length > best.length || (m.length === best.length && m.rank < best.rank)) best = m;
   }
   return best;
+}
+
+/**
+ * 最小应对启发（hint 用）：取最小的**不拆炸**应对——安全非炸牌型优先，无则退到整只炸弹（整炸=没拆·如唯一
+ * 能压钢板的真炸）；只剩「拆炸凑小牌型」的应对返回 null（=建议过·炸留反压·owner 报「四张7拆成两对」根因）。
+ * candidates=已 beats 过滤的应对候选（升序）。整炸不算拆——A-008 唯一解=真炸时仍会提示它。
+ */
+export function pickMinResponse(candidates: readonly PatternMatch[]): PatternMatch | null {
+  const bombCards = naturalBombCards(candidates);
+  return candidates.find((m) => isBombFamily(m) || !consumesBomb(m, bombCards)) ?? null;
 }
 
 /** 一手决策：写黑板 → tick 策略树 → 按 move 令牌从候选里取牌（估值=确定性规则查表）。 */
@@ -159,23 +180,29 @@ export function chooseTurn(world: IWorld, input: AiTurnInput, seed?: RandomSeed)
   const pick = (m: PatternMatch | undefined): AiDecision =>
     m ? { move, cards: cardsOf(m), match: m } : { move: 'pass', cards: null, match: null };
 
+  // 应对护炸：不拿成炸的牌去凑小牌型压小墩（掼蛋铁律·owner 报「把四张7拆成两对出」根因）。
+  const bombCards = naturalBombCards(candidates);
+  const safeNonBomb = nonBomb.filter((m) => !consumesBomb(m, bombCards));
+
   switch (move) {
     case 'lead':
-      // 领出：全档倾长牌型倒库存、不主动领炸（pickLead·hint 与 AI 同一启发·防单张流退化）。
-      return pick(pickLead(candidates) ?? undefined);
+      // 领出：先出小牌保留大牌、倾长倒库存、不主动领炸/不拆炸（pickLead·hint 与 AI 同一启发）。
+      return pick(pickLead(candidates, cfg) ?? undefined);
     case 'pass':
       return { move: 'pass', cards: null, match: null };
     case 'bomb':
+      // 真炸=整只炸弹压（family bomb·非拆散）；无炸兜底取候选首。
       return pick(candidates.find(isBombFamily) ?? candidates[0]);
     case 'press': {
-      // 压制节奏：非炸候选取最大；无非炸且攻性≥50 用炸，否则最小
-      if (nonBomb.length > 0) return pick(nonBomb[nonBomb.length - 1]);
+      // 压制节奏：取最大的**不拆炸**非炸应对；无则够凶(≥50)动整炸、否则宁可过（不为小墩拆炸）。
+      if (safeNonBomb.length > 0) return pick(safeNonBomb[safeNonBomb.length - 1]);
       if (agg >= 50) return pick(candidates.find(isBombFamily) ?? candidates[0]);
-      return pick(candidates[0]);
+      return { move: 'pass', cards: null, match: null };
     }
     case 'min':
     default:
-      return pick(nonBomb[0] ?? candidates[0]);
+      // 最小应对：取最小的**不拆炸**非炸应对；只剩拆炸的应对→过（炸留反压·不拆）。
+      return safeNonBomb.length > 0 ? pick(safeNonBomb[0]) : { move: 'pass', cards: null, match: null };
   }
 }
 

@@ -1,31 +1,39 @@
-// GD-A 验收剧本 ⑦ · 逻辑·双下（G2）：对方一二(末二同队) → 双人各进 1 张·大者归头游·进大贡者先出。
+// GD-A 验收剧本 ⑦ · 逻辑·双下（G2）：一队一二(末二同队) → 双人各进 1 张·大者归头游、次者归二游·进大贡者先出。
 // 规则依据 gdd §2.3 G2：双下时末游两人各进 1 张最大牌，大者归头游、次者归二游；首出=进大贡者。
-//   seed=8 首盘名次=[hero,partner,east,west]——末二(east,west)同为对方队(team1) → 双下。
-//   两进贡：west 进大王(码16)、east 进小王(码15)；大者(16)归头游 hero；首出=进大贡者 west。
-// ⚠ 「次者(小王15)归二游 partner」这半句需 tribute1_* 投影才能机读断言——现薄适配只投影 tribute0_*。
-//   已报 PE 加 tribute1_from/to/card 投影（README「待加固」）；本剧本先钉死「双进贡·大者归头游·大贡者先出」。
+//   seed=2 首盘名次=[east,west,hero,partner]——对方队(east,west·team1)双上、我方(hero,partner·team0)末二 → 双下；
+//     此局 team1 双上过 → 次盘打 5。**本剧本从「我方双下、我方两人进贡」这一侧验证双下机制**（resolveTribute 对称·
+//     换谁进都同一码路；hero 亲历进贡也顺带覆盖「玩家视角看到自己进贡」）。
+//   两进贡（打5）：hero 进大王(码16)、partner 进小王(码15)——都是王、无级牌歧义（干净大牌）。
+//   大者(大王16)归头游 east；次者(小王15)归二游 west；首出=进大贡者 hero。
 // 对抗目标（改坏被测逻辑应变红）：
 //   · 双下误判成单下（只取 rank[3]）→ tribute_count=1 红。
-//   · 大小贡分配反（大者给二游）→ tribute0_to / tribute0_card 红。
+//   · 大小贡分配反（大者给二游 / 次者给头游）→ tribute0_to / tribute1_to 红。
+//   · 进贡未取最大牌 → tribute0_card / tribute1_card 红。
 //   · 首出给错（非进大贡者）→ turn 红。
+// ⚠ 种子重选 + 次贡加固（PE 2026-07-18）：AI 策略改良（不拆炸+保留大牌）改变确定性出牌线·旧 seed=8 名次变、
+//   不再是原双下态；改 seed=2 重新命中双下·分支真被走到。同时 A-010 的 tribute1_* 投影已落 → 本轮补齐
+//   「次者归二游」机读断言（tribute1_from/to/card）。详 requests A-010 / A-013。
 {
-  "name": "双下·双进贡·大者归头游·大贡者先出（G2）",
+  "name": "双下·双进贡·大者归头游·次者归二游·大贡者先出（G2）",
   "game": "game-a",
-  "seed": 8,
+  "seed": 2,
   "steps": [
     { "signal": "play-round" },
     { "expect": [{ "flag": "settled", "eq": true }] },
-    { "signal": "next-round" }, // 次盘：对方一二 → 双下双进贡
+    { "signal": "next-round" }, // 次盘：一队一二 → 双下双进贡
     {
       "expect": [
         { "res": "round", "eq": 2 },
-        { "res": "tribute_count", "eq": 2 },       // 双下=两条进贡记录
-        { "sv": "tribute0_from", "eq": "west" },   // 大贡者
-        { "sv": "tribute0_to", "eq": "hero" },     // 大者归头游
-        { "res": "tribute0_card", "eq": 16 },      // 大者=大王
-        { "sv": "turn", "eq": "west" },            // 进大贡者先出
-        { "flag": "resisted", "eq": false },
-      ],
-    },
-  ],
+        { "res": "tribute_count", "eq": 2 },        // 双下=两条进贡记录
+        { "sv": "tribute0_from", "eq": "hero" },    // 大贡者（我方末二之一）
+        { "sv": "tribute0_to", "eq": "east" },      // 大者归头游
+        { "res": "tribute0_card", "eq": 16 },       // 大者=大王
+        { "sv": "tribute1_from", "eq": "partner" }, // 次贡者
+        { "sv": "tribute1_to", "eq": "west" },      // 次者归二游（A-010 投影落地后可断）
+        { "res": "tribute1_card", "eq": 15 },       // 次者=小王
+        { "sv": "turn", "eq": "hero" },             // 进大贡者先出
+        { "flag": "resisted", "eq": false }
+      ]
+    }
+  ]
 }
