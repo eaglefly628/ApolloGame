@@ -197,6 +197,50 @@ describe('hand-pattern — 合法应对枚举 legalResponses', () => {
   });
 });
 
+// ── legalResponses 自洽保证：legalResponses ⊆ 合法集（REQ-HANDPAT·A-008 根因回归）──
+//   根因：legalResponses 曾按「家族口径」纳入候选；act/beats/legalCheck 却按 matchPattern 的
+//   最强规范判读收牌。含逢人配的牌可多族判读，家族口径声称能压、规范口径却落到别的家族 → act 拒收。
+describe('hand-pattern — legalResponses 规范判读自洽（REQ-HANDPAT）', () => {
+  const sig = (cards: Card[]): string => cards.map((x) => `${x.suit}:${x.rank}`).sort().join(',');
+
+  it('① A-008 实证：QQ+KK+两逢人配 应对钢板 JJJ-QQQ 不得进返回集（规范判读=三连对 Q-K-A≠钢板→act 拒）', () => {
+    // 修前红：旧码按 plate 家族口径把 QQ+wild/KK+wild 判成钢板 K 顶(rank13)>目标钢板 Q(rank12) 纳入，
+    // 但 matchPattern 这 6 张的最强判读=三连对(tube) Q-K-A(rank14)≠钢板 → beats=false → act 拒 → 空过。
+    const target = [c(S, 11), c(D, 11), c(C, 11), c(S, 12), c(D, 12), c(C, 12)]; // 钢板 JJJ-QQQ
+    const hand = [c(S, 12), c(D, 12), c(S, 13), c(D, 13), W(), W()]; // QQ + KK + 两逢人配
+    expect(mp(target)).toMatchObject({ family: 'plate', rank: 12, length: 6 }); // 目标=钢板
+    const rs = legalResponses(hand, target, GUANDAN);
+    const ambiguous = sig([c(S, 12), c(D, 12), c(S, 13), c(D, 13), W(), W()]);
+    expect(rs.some((r) => sig(r.cards) === ambiguous)).toBe(false); // 该 6 张任何判读都不得出现
+    // 且给出的应对（QQ+ww / KK+ww 各成 4 炸）逐条通得过 beats 自洽（真能压钢板）。
+    expect(rs.length).toBeGreaterThan(0);
+    for (const r of rs) expect(beats(r.cards, target, GUANDAN)).toBe(true);
+  });
+
+  it('② 不变量：∀ p∈legalResponses ⇒ act 接受（有 target→规范判读真能压；领出→规范判读成型）', () => {
+    // 确定性枚举含逢人配的手牌 × 各类目标墩（无随机）；断言 legalResponses ⊆ 合法集。
+    const combos: { hand: Card[]; target: Card[] | null }[] = [
+      { hand: [c(S, 12), c(D, 12), c(S, 13), c(D, 13), W(), W()], target: [c(S, 11), c(D, 11), c(C, 11), c(S, 12), c(D, 12), c(C, 12)] }, // A-008 钢板
+      { hand: [c(S, 12), c(D, 12), c(S, 13), c(D, 13), W(), W()], target: [c(S, 7), c(D, 7), c(S, 8), c(D, 8), c(S, 9), c(D, 9)] }, // 三连对
+      { hand: [c(S, 9), c(D, 9), W(), c(S, 10), c(C, 10)], target: [c(S, 4), c(D, 5), c(C, 6), c(S, 7), c(D, 8)] }, // 顺子
+      { hand: [c(S, 8), W(), c(D, 8), c(S, 8)], target: [c(S, 3), c(D, 3)] }, // 对子（手可成 8 炸/三/对）
+      { hand: [c(S, 6), c(D, 6), c(C, 6), W(), W(), c(S, 7), c(D, 7)], target: [c(S, 5), c(D, 5), c(C, 5), c(H, 10), c(D, 10)] }, // 三带二
+      { hand: [c(S, 9), c(H, 9), c(D, 9), W()], target: [c(S, 3), c(D, 3), c(C, 3), c(H, 3)] }, // 炸对炸
+      { hand: [c(S, 12), c(D, 12), c(S, 13), c(D, 13), W(), W(), c(S, SJ), c(D, SJ)], target: null }, // 自由领出
+    ];
+    let checked = 0;
+    for (const { hand, target } of combos) {
+      const rs = legalResponses(hand, target, GUANDAN);
+      for (const p of rs) {
+        expect(matchPattern(p.cards, GUANDAN)).not.toBeNull(); // 规范判读成型
+        if (target) expect(beats(p.cards, target, GUANDAN)).toBe(true); // 真能压 target
+        checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(0); // 非空覆盖（防不变量在空集上真空通过）
+  });
+});
+
 // ── 空手牌 / 不可压边角 ────────────────────────────────────────────────────
 describe('hand-pattern — 边角', () => {
   it('空手牌 matchPattern → null；beats 含空 → false', () => {

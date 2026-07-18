@@ -307,6 +307,8 @@ export function beats(a: readonly Card[], b: readonly Card[], cfg: HandPatternCo
 /**
  * 合法应对枚举：从 hand 里枚举所有能压 target 的合法出牌（target=null → 自由领出全部合法牌型）。
  * 确定性排序（tier→rank→length→用逢人配数→牌签名 升序）；**首个=最小合法压牌**（提示按钮 / AI 候选共用）。
+ * 自洽保证（REQ-HANDPAT）：每条候选按 matchPattern 规范判读入集，故 legalResponses ⊆ 合法集——
+ * ∀ p ∈ legalResponses(hand,target) ⇒ beats(p.cards,target)（有 target）/ matchPattern(p.cards)≠null（领出），act 必接受。
  */
 export function legalResponses(hand: readonly Card[], target: readonly Card[] | null, cfg: HandPatternConfig): PatternMatch[] {
   const mt = target ? matchPattern(target, cfg) : null;
@@ -323,7 +325,16 @@ export function legalResponses(hand: readonly Card[], target: readonly Card[] | 
       if (!mt || beatsMatch(play, mt)) plays.push(play);
     }
   }
-  return sortResponses(plays);
+  // 规范口径自洽复核（REQ-HANDPAT·A-008）：生成 + 去重排序**保持不变**，最后一步按 matchPattern 的
+  //【最强判读】剔除 act 会拒的候选——act/beats/legalCheck 都按最强判读收牌；含逢人配的候选可多族判读，
+  // 家族口径声称能压、规范口径却落到别的家族时 act 拒收。领出须成型；应对须规范判读真能压 target
+  //（谓词 ≡ beats(p.cards,target,cfg)）。刻意置于 sortResponses 之后：不动 raw/去重池，只做末端剔除，
+  // 与消费方（game-a AI 的 `raw.filter(beats)`）**幂等**——存活集逐字段一致，保 legalResponses ⊆ 合法集。
+  return sortResponses(plays).filter((p) => {
+    const canon = matchPattern(p.cards, cfg);
+    if (!canon) return false; // 领出/应对均要求规范判读成型
+    return mt ? beatsMatch(canon, mt) : true; // 应对：规范判读须真能压 target
+  });
 }
 
 // 去重（同 family|tier|rank|length 取代表：少用逢人配、牌签名小）+ 确定性排序。
