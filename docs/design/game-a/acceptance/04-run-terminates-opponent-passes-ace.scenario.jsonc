@@ -1,0 +1,36 @@
+// GD-A 验收剧本 ④ · run 终局判定（对方过 A → 游戏结束）。
+// 规则依据 gdd §2.4 A1/A3：打 A 局头游且对家非末游(双上/一三)→ 过 A；对方过 A → 直接游戏结束(run-lost)。
+//   seed=42 打穿整个 run（play-run=逐盘自动+重开直到终局）——对方(team1)先冲到 A(级14)并双上过 A。
+//   终局态：phase=run-lost、a_result=passed、对方级=A(14)、我方未过(级<14)、run-won=false。
+// 对抗目标（改坏被测逻辑应变红）：
+//   · run 不收束（级牌封顶后死循环打不完）→ play-run 后仍 playing/settled → run_lost 断言红。
+//   · 过 A 判定误报（一四也判过 / 我方误判胜）→ a_result / winners_team / run_won 变红。
+//   · 级牌越过 A 上限（>14）→ level_theirs 断言红。
+{
+  "name": "run 终局·对方过 A 游戏结束",
+  "game": "game-a",
+  "seed": 42,
+  "steps": [
+    {
+      "expect": [
+        { "sv": "phase", "eq": "playing" },
+        { "res": "round", "eq": 1 },
+        { "flag": "run_won", "eq": false },
+        { "flag": "run_lost", "eq": false },
+      ],
+    },
+    { "signal": "play-run" }, // 打穿到 run 终局
+    {
+      // 对方过 A → 游戏结束：run-lost、过 A 判定=passed、对方级=A(14)、我方未过(<14)。
+      "expect": [
+        { "flag": "run_lost", "eq": true },
+        { "flag": "run_won", "eq": false },
+        { "sv": "phase", "eq": "run-lost" },
+        { "sv": "a_result", "eq": "passed" },
+        { "res": "winners_team", "eq": 1 },   // 过 A 的是对方(team1)
+        { "res": "level_theirs", "eq": 14 },  // 对方冲到 A(LEVEL_ACE=14) 并过
+        { "res": "level_ours", "lte": 13 },   // 我方未过 A
+      ],
+    },
+  ],
+}

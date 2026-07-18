@@ -1,0 +1,68 @@
+// GD-A 验收剧本 ① · 一整局打到头游判定与结算（含进贡/还贡口径）。
+// 规则依据 gdd §2.4 结算 + §2.3 进贡/还贡（G1 单下）+ R3 头游升级。
+//   seed=7 首盘主角(hero·team0)先出，全自动打完一盘 → 主角头游、combo=一四(first-fourth)。
+//   结算口径（gdd §4 盘结算 + R3）：一四 baseMult=1 → 本盘每人收付=底注100×1=100；
+//     头游队(0)升级 +1 → 级数 2→3；对方(1)停 2。
+//   次盘进贡（gdd §2.3 G1 单下）：上盘末游(partner·排名第4)向头游(hero)进 1 张**最大牌**——
+//     此局最大=大王(码16)；头游还 1 张 **≤10**（实测=码2）。进贡者先出 → 次盘 leader=partner。
+// 对抗目标（改坏被测逻辑应变红）：
+//   · 结算倍率/收付算错（如一四给成×3）→ result_total_mult / result_pay 变红。
+//   · 头游升级步长错（一四给 +3）→ level_ours 变红。
+//   · 进贡取非最大牌 / 还贡 >10 / 进还方向反 → tribute0_* 变红。
+//   · 盘不收束（死循环）→ play-round 后 phase 仍 playing → settled 断言红。
+{
+  "name": "一盘打到结算·头游判定·进贡还贡口径",
+  "game": "game-a",
+  "seed": 7,
+  "steps": [
+    {
+      // 开局态：首盘主角先出、无进贡、两队皆 2 级、108 张在场。
+      "expect": [
+        { "sv": "phase", "eq": "playing" },
+        { "sv": "turn", "eq": "hero" },
+        { "flag": "turn_is_hero", "eq": true },
+        { "res": "round", "eq": 1 },
+        { "res": "level_ours", "eq": 2 },
+        { "res": "level_theirs", "eq": 2 },
+        { "res": "hand_sum", "eq": 108 },
+        { "res": "hand_hero", "eq": 27 },
+        { "res": "tribute_count", "eq": 0 },
+      ],
+    },
+    { "signal": "play-round" }, // 全自动打完这一盘
+    {
+      // 盘结算：主角(hero)头游、combo=一四；倍率/收付/升级按 gdd §4+R3。
+      "expect": [
+        { "flag": "settled", "eq": true },
+        { "sv": "phase", "eq": "settled" },
+        { "flag": "has_result", "eq": true },
+        { "sv": "winner", "eq": "hero" },
+        { "res": "winners_team", "eq": 0 },
+        { "sv": "combo", "eq": "first-fourth" },
+        { "res": "result_total_mult", "eq": 1 }, // 一四 baseMult=1（无抗贡/无天王炸彩头）
+        { "res": "result_pay", "eq": 100 },      // 底注100 × 倍率1
+        // 「一四升 +1」以权威级牌资源为准（level_ours 2→3）——不押 RoundResult.levelUp 派生字段：
+        //   实测该字段仅在双上时算对(=3)，一三/一四恒报 0（PE t3-flow 派生 bug·记 README「已知偏差」交 PE）。
+        { "res": "level_ours", "eq": 3 },        // 我方 2→3（=升 +1 的权威证据）
+        { "res": "level_theirs", "eq": 2 },      // 对方停 2
+        { "res": "hand_hero", "eq": 0 },         // 头游手牌出光
+      ],
+    },
+    { "signal": "next-round" }, // 重开次盘 → 触发进贡/还贡结算
+    {
+      // 进贡口径（G1 单下）：末游 partner → 头游 hero，进最大牌(大王16)、还 ≤10(码2)，进贡者先出。
+      "expect": [
+        { "res": "round", "eq": 2 },
+        { "sv": "phase", "eq": "playing" },
+        { "res": "tribute_count", "eq": 1 },
+        { "sv": "tribute0_from", "eq": "partner" },
+        { "sv": "tribute0_to", "eq": "hero" },
+        { "res": "tribute0_card", "eq": 16 },    // 进 1 张最大牌=大王
+        { "res": "tribute0_return", "eq": 2 },   // 还贡实测=码2
+        { "res": "tribute0_return", "lte": 10 }, // 还贡口径：≤10
+        { "sv": "turn", "eq": "partner" },       // 进贡者先出
+        { "flag": "resisted", "eq": false },
+      ],
+    },
+  ],
+}

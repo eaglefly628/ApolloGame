@@ -1,0 +1,75 @@
+// GD-A 验收剧本 ② · 非法出牌被拒（牌型不合法 / 压不过上家 / 乱序 / 无牌）·状态不变。
+// 规则依据 gdd §2.2 牌型闭集 T1~T8 + 压制序、R6 行牌序。Lead schema 无 expect_error 算子——
+//   用「last_act_ok=false + 机读态一分不动」表达「被拒」。全程只用显式出牌驱动（不碰 AI），
+//   仅依赖 seed=1 的发牌 → 稳健、与 AI 逻辑解耦。
+// seed=1 首盘主角(hero)先出，实测手牌含：KK 对(码13,13)、♠3(码203)+♥4... 用于构造各类非法。
+// 对抗目标（改坏 legalCheck 应变红）：
+//   · 领出允许过（漏判「领出不可过」）→ 第 1 拒变绿 → last_act_ok 断言红。
+//   · 判型放水（把 ♠3+♣4 混牌当合法）→ 第 3 拒变绿。
+//   · 轮次门失灵（非轮座可出）→ 第 4 拒变绿 / turn 漂移。
+//   · 压制序失灵（单张压对子）→ 第 6 拒变绿 → 手牌被扣。
+{
+  "name": "非法出牌被拒·状态不变（判型/压制/轮次/无牌）",
+  "game": "game-a",
+  "seed": 1,
+  "steps": [
+    {
+      // 开局态：主角先出、无当前墩、四家各 27。
+      "expect": [
+        { "sv": "phase", "eq": "playing" },
+        { "sv": "turn", "eq": "hero" },
+        { "flag": "has_trick", "eq": false },
+        { "res": "round", "eq": 1 },
+        { "res": "hand_hero", "eq": 27 },
+        { "res": "hand_west", "eq": 27 },
+      ],
+    },
+    // (a) 领出不可过（gdd 出牌纪律：无当前墩不得 pass）。
+    { "signal": "pass", "by": "hero" },
+    { "expect": [
+      { "flag": "last_act_ok", "eq": false },
+      { "res": "hand_hero", "eq": 27 },
+      { "flag": "has_trick", "eq": false },
+      { "sv": "turn", "eq": "hero" },
+    ] },
+    // (b) 所选牌不在手（码9999 不存在）→ 被拒·态不变。
+    { "signal": "play", "by": "hero", "args": { "cards": [9999] } },
+    { "expect": [
+      { "flag": "last_act_ok", "eq": false },
+      { "res": "hand_hero", "eq": 27 },
+    ] },
+    // (c) 牌型不合法：♠3(203)+♥4(104) 非任一闭集牌型（异点·非逢人配）→ 被拒·态不变。
+    { "signal": "play", "by": "hero", "args": { "cards": [203, 104] } },
+    { "expect": [
+      { "flag": "last_act_ok", "eq": false },
+      { "res": "hand_hero", "eq": 27 },
+      { "flag": "has_trick", "eq": false },
+    ] },
+    // (d) 乱序：west 非轮座出牌（大王单张15）→ 轮次门拒·态不变（R6 行牌序）。
+    { "signal": "play", "by": "west", "args": { "cards": [15] } },
+    { "expect": [
+      { "flag": "last_act_ok", "eq": false },
+      { "res": "hand_west", "eq": 27 },
+      { "sv": "turn", "eq": "hero" },
+    ] },
+    // 合法领出对子 KK(13,13) → 收（手牌 27→25，当前墩=对子，轮转到 west）。
+    { "signal": "play", "by": "hero", "args": { "cards": [13, 13] } },
+    { "expect": [
+      { "flag": "last_act_ok", "eq": true },
+      { "res": "hand_hero", "eq": 25 },
+      { "flag": "has_trick", "eq": true },
+      { "res": "trick_size", "eq": 2 },
+      { "sv": "turn", "eq": "west" },
+      { "res": "turn_idx", "eq": 1 },
+    ] },
+    // (e) 压不过上家：west 用单张 ♠3(3) 应对对子墩 → 跨型压不过·被拒·态不变（gdd §2.2 压制序）。
+    { "signal": "play", "by": "west", "args": { "cards": [3] } },
+    { "expect": [
+      { "flag": "last_act_ok", "eq": false },
+      { "res": "hand_west", "eq": 27 },
+      { "flag": "has_trick", "eq": true },
+      { "res": "trick_size", "eq": 2 }, // 当前墩仍是主角的 KK 对，未被顶替
+      { "sv": "turn", "eq": "west" },   // 轮次未推进
+    ] },
+  ],
+}

@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": " Test Files  3 passed (3) ·       Tests  32 passed (32)",
-      "at": "2026-07-17T20:06:52.914Z",
-      "gameHash": "744bf31a9bafd529"
+      "summary": "walkthrough 绿（ Test Files  3 passed (3) ·       Tests  40 passed (40)）· 验收剧本 4 场景绿",
+      "at": "2026-07-18T05:06:02.384Z",
+      "gameHash": "4500299a335fe8e3"
     },
     "S5": {
       "exit": 0,
@@ -153,6 +153,18 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-07-17T20:06:53.255Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "GD-A 落 S4 验收剧本(4本)+薄适配·前置 S2/S3 复查仅因本次 docs+adapter 变更过期·acceptance conformance 绿",
+      "at": "2026-07-18T05:05:58.552Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T05:06:02.384Z"
     }
   ],
   "reviews": {
@@ -208,6 +220,11 @@
       "stage": "S5",
       "reason": "PE-A 完整玩法批·audit 盲区 A-007",
       "at": "2026-07-17T20:06:53.076Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "GD-A 落 S4 验收剧本(4本)+薄适配·前置 S2/S3 复查仅因本次 docs+adapter 变更过期·acceptance conformance 绿",
+      "at": "2026-07-18T05:05:58.552Z"
     }
   ]
 }

@@ -1,0 +1,60 @@
+// GD-A 验收剧本 ③ · 重开/下一局·级牌推进正确。
+// 规则依据 gdd R3 级数推进（头游队：双上+3／一三+2／一四+1）+ 盘循环重开。
+//   seed=42 对方(team1·west/east)连续双上(double)——每盘级牌 +3：2 → 5 → 8，逐盘验证。
+//   重开纪律：next-round 只在 settled 后推进新盘（round++、phase 回 playing、级牌承接上盘）。
+// 对抗目标（改坏被测逻辑应变红）：
+//   · 双上升级步长错（给成 +1/+2）→ level_theirs 断言红。
+//   · 升级方向反（给到输队）→ level_ours/level_theirs 互换红。
+//   · 重开不清盘 / round 不进 → 次盘 round/phase 断言红。
+//   · 级牌不承接（次盘归零重置）→ 第二次 level_theirs=8 断言红。
+{
+  "name": "重开下一局·级牌逐盘推进（双上+3）",
+  "game": "game-a",
+  "seed": 42,
+  "steps": [
+    {
+      // 开局：两队皆从 2 打起（gdd R3 LEVEL_START）。
+      "expect": [
+        { "res": "round", "eq": 1 },
+        { "res": "level_ours", "eq": 2 },
+        { "res": "level_theirs", "eq": 2 },
+        { "sv": "phase", "eq": "playing" },
+      ],
+    },
+    { "signal": "play-round" }, // 第 1 盘：对方双上
+    {
+      // 结算：对方(team1)头游、双上 → 级牌 2→5（+3）；我方停 2。
+      "expect": [
+        { "flag": "settled", "eq": true },
+        { "res": "winners_team", "eq": 1 },
+        { "sv": "combo", "eq": "double" },
+        { "res": "result_level_up", "eq": 3 }, // 双上 +3
+        { "res": "level_theirs", "eq": 5 },    // 对方 2→5
+        { "res": "level_ours", "eq": 2 },      // 我方停 2
+        { "res": "result_total_mult", "eq": 3 },
+        { "res": "result_pay", "eq": 300 },    // 底注100 × 双上3
+      ],
+    },
+    { "signal": "next-round" }, // 重开第 2 盘（承接级牌）
+    {
+      // 重开纪律：round 进位、phase 回 playing、级牌承接上盘（对方仍 5、我方仍 2）。
+      "expect": [
+        { "res": "round", "eq": 2 },
+        { "sv": "phase", "eq": "playing" },
+        { "res": "level_theirs", "eq": 5 },
+        { "res": "level_ours", "eq": 2 },
+      ],
+    },
+    { "signal": "play-round" }, // 第 2 盘：对方再双上
+    {
+      // 级牌继续推进：对方 5→8（+3）。
+      "expect": [
+        { "flag": "settled", "eq": true },
+        { "res": "winners_team", "eq": 1 },
+        { "sv": "combo", "eq": "double" },
+        { "res": "level_theirs", "eq": 8 },  // 5→8
+        { "res": "level_ours", "eq": 2 },
+      ],
+    },
+  ],
+}
