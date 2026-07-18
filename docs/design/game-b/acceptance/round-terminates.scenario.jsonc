@@ -1,0 +1,41 @@
+// 查的规则：每局必收束（无死循环）+ 牌山/席位边界。
+//   一局必以「和了」或「荒牌流局」收束（gdd §四 流局行「荒牌流局+听牌罚符」）——
+//     play-round 后 win_end 必为 true；否则=局逻辑卡死（或 harness 超时）。
+//   牌山可摸数 = 136 牌 - 王牌 14 枚 - 4×13 手牌 = 70（gdd §四「王牌 14 枚」）→ 开局 wall ≤ 70。
+//   摸牌不得透支牌山 → wall ≥ 0 全程成立；行动席 turn ∈ [0,3]（4 人）。
+// 规则依据：gdd §四 荒牌流局收束、王牌 14 枚、四人局。
+// 对抗目标：
+//   · 局逻辑死循环/永不置和了或流局 → play-round 后 win_end 仍 false 照出。
+//   · 王牌尺寸算错（如留 13 枚死牌）→ 开局 wall = 71 > 70 照出。
+//   · 摸牌越过牌山底 → wall < 0 照出。
+//   · 席位轮转 off-by-one → turn 越界（如 4）照出。
+{
+  "name": "每局收束与牌山边界",
+  "game": "game-b",
+  "seed": 13579,
+  "steps": [
+    {
+      // 开局态（发牌后·未行动）：尚在进行中，可摸牌 ≤ 70，首家行动席合法。
+      "expect": [
+        { "flag": "win_end", "eq": false },
+        { "sv": "phase", "eq": "playing" },
+        { "sv": "result_type", "eq": "none" },
+        { "res": "wall", "gte": 0 },
+        { "res": "wall", "lte": 70 },
+        { "res": "turn", "gte": 0 },
+        { "res": "turn", "lte": 3 }
+      ]
+    },
+    { "signal": "play-round" },
+    {
+      // 一局跑完：必已收束；牌山不透支；席位合法。
+      "expect": [
+        { "flag": "win_end", "eq": true },
+        { "res": "wall", "gte": 0 },
+        { "res": "wall", "lte": 70 },
+        { "res": "turn", "gte": 0 },
+        { "res": "turn", "lte": 3 }
+      ]
+    }
+  ]
+}

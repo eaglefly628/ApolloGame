@@ -1,0 +1,55 @@
+// 查的规则：庄家轮转与局号耦合（东风战）。
+//   东1 庄家 = 起家 = 席0，且先手 turn = 庄家（gdd §四 东风战；同点 tie-break=起家序 → 席0=起家=东1庄；
+//     日麻东家先摸打）。开局 round_no=1、dealer=0、honba=0、turn=0。
+//   局号(东N)由"谁坐东"定义，故 dealer 与 round_no 强耦合、一局最多推进一个庄：
+//     连庄→庄不动·本场(honba)+1·局号不进；庄家下庄→庄轮转且局号+1。
+//     所以打完一局并 next-round 后：round_no ∈ [1,2]、dealer ∈ [0,1]、honba ∈ [0,1]。
+//   东4 打完即终局（gdd §四「东4 打完即终局·无西入」）→ 终局 round_no ≤ 4、dealer ≤ 3。
+// 规则依据：gdd §三/§四 东风战 东1-4·含连庄；东4 下庄终局；起家序。
+// 对抗目标：
+//   · 庄家从错误席起（席3 / 1-indexed）→ 开局 dealer ≠ 0 照出。
+//   · 先手不是庄家 → 开局 turn ≠ 0 照出。
+//   · 连庄误把局号 +1，或庄家不随局号轮转（解耦）→ 单局转移后 round_no > 2 或 dealer > 1 照出。
+//   · 东4 下庄不终局（错误西入/续打）→ 终局 round_no > 4 照出。
+{
+  "name": "庄家轮转与局号耦合",
+  "game": "game-b",
+  "seed": 8080,
+  "steps": [
+    {
+      // 开局：东1、庄=起家=席0、无本场、庄家先手、未终局。
+      "expect": [
+        { "res": "round_no", "eq": 1 },
+        { "res": "dealer", "eq": 0 },
+        { "res": "honba", "eq": 0 },
+        { "res": "turn", "eq": 0 },
+        { "flag": "over", "eq": false }
+      ]
+    },
+    { "signal": "play-round" },
+    { "signal": "next-round" },
+    {
+      // 恰好推进一局：连庄则(1,0,honba+1)，下庄则(2,1,0)——两种都落在这组界内。
+      // 击飞提前终局也仍满足（round_no=1·dealer=0）。
+      "expect": [
+        { "res": "round_no", "gte": 1 },
+        { "res": "round_no", "lte": 2 },
+        { "res": "dealer", "gte": 0 },
+        { "res": "dealer", "lte": 1 },
+        { "res": "honba", "gte": 0 },
+        { "res": "honba", "lte": 1 }
+      ]
+    },
+    { "signal": "play-match" },
+    {
+      // 终局：东4 下庄或击飞收束，局号/庄位不得越界。
+      "expect": [
+        { "flag": "over", "eq": true },
+        { "res": "round_no", "gte": 1 },
+        { "res": "round_no", "lte": 4 },
+        { "res": "dealer", "gte": 0 },
+        { "res": "dealer", "lte": 3 }
+      ]
+    }
+  ]
+}
