@@ -33,8 +33,8 @@
     "S4": {
       "exit": 0,
       "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  95 passed (95)）· 验收剧本 5 场景绿",
-      "at": "2026-07-18T05:23:44.015Z",
-      "gameHash": "32f98ee8cd4560ea"
+      "at": "2026-07-18T06:30:33.323Z",
+      "gameHash": "c7c174e6c7f69712"
     },
     "S5": {
       "exit": 0,
@@ -344,6 +344,30 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T05:23:44.015Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE-game-c 领工·验收适配+修红循环·确认 S4 过门",
+      "at": "2026-07-18T06:23:36.133Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T06:23:43.546Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "adapter 撤回预设扩展复归纯接线·5剧本仍绿·刷证据",
+      "at": "2026-07-18T06:30:29.122Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T06:30:33.323Z"
     }
   ],
   "outOfOrder": [
@@ -441,6 +465,16 @@
       "stage": "S4",
       "reason": "rebase到GD-C 5场景之上·REQ-C-106+108修·重跑刷证据",
       "at": "2026-07-18T05:23:40.623Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "PE-game-c 领工·验收适配+修红循环·确认 S4 过门",
+      "at": "2026-07-18T06:23:36.133Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "adapter 撤回预设扩展复归纯接线·5剧本仍绿·刷证据",
+      "at": "2026-07-18T06:30:29.122Z"
     }
   ],
   "reviews": {
