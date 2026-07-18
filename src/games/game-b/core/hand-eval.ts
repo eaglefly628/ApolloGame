@@ -117,3 +117,46 @@ export function tenpai(tiles: number[]): number[] {
   }
   return waits;
 }
+
+// ── 鸣牌（副露）加法扩展（naki-design §6）─────────────────────────────────────
+// owner 铁令：门清核（isWinningHand/tenpai）签名与行为一字不改·此处纯加法。
+// 关键复用：isStandardShape/canFormMelds 的面子数并非硬编码 4，而是由「余牌张数」隐含
+//   （拆一雀头后余 3k 张 → 恰 k 面子）。故只需喂入「暗手 + 和牌」正确长度，
+//   即自动判定 (4-meldCount) 面子 + 雀头，无需另造分解器。
+//   长度绳（不变式）：一副露占 1 面子（3 张手数），暗手在和牌时须凑 (4-meldCount) 面子 + 雀头：
+//     concealed.length（不含和牌）= 13 - 3*meldCount；加和牌后 = 14 - 3*meldCount。
+
+/**
+ * 副露后暗手和了判定：concealed（暗手·不含副露牌）+ winTile 是否凑成 (4-meldCount) 面子 + 雀头。
+ * · meldCount=0 → 逐例等价 `isWinningHand([...concealed, winTile])`（含七対子 / 国士·回归钉）。
+ * · meldCount≥1 → 只可能标准形（鸣了牌不可能七対 / 国士）：暗手+和牌拆成 (4-meldCount) 面子 + 雀头。
+ * · meldCount / concealed 长度不合法（非 13-3*meldCount）→ false。
+ * 顺子仍受 canFormMelds 的 `i%9<=6` 防跨花色；赤5 经 toCounts→kindOf 归普5 计。
+ */
+export function winsWithMelds(concealed: number[], meldCount: number, winTile: number): boolean {
+  if (!Number.isInteger(meldCount) || meldCount < 0 || meldCount > 4) return false;
+  if (concealed.length !== 13 - 3 * meldCount) return false;
+  // meldCount=0：直接委托旧核 → 与门清路径逐例等价（七対 / 国士一并覆盖）。
+  if (meldCount === 0) return isWinningHand([...concealed, winTile]);
+  // meldCount≥1：标准形唯一路径。isStandardShape 拆一雀头后由余牌张数隐含 (4-meldCount) 面子。
+  return isStandardShape(toCounts([...concealed, winTile]));
+}
+
+/**
+ * 副露后暗手听牌枚举：concealed（不含副露·长度须 = 13-3*meldCount）逐试 34 种待ち → 能和的牌码升序数组。
+ * · meldCount=0 → 逐例等价旧 `tenpai(concealed)`。
+ * · 排除 concealed 已握 4 枚的种（无第 5 枚可摸·与门清 tenpai 同口径·不认「四枚使い」单听）。
+ * · 非听 / 长度非法 → 空数组。
+ */
+export function tenpaiWithMelds(concealed: number[], meldCount: number): number[] {
+  if (!Number.isInteger(meldCount) || meldCount < 0 || meldCount > 4) return [];
+  if (concealed.length !== 13 - 3 * meldCount) return [];
+  if (meldCount === 0) return tenpai(concealed); // 逐例等价旧核
+  const counts = toCounts(concealed);
+  const waits: number[] = [];
+  for (let k = 0; k < NUM_KINDS; k++) {
+    if (counts[k]! >= 4) continue; // 暗手已握 4 枚 → 无可摸的第 5 枚
+    if (winsWithMelds(concealed, meldCount, k)) waits.push(k);
+  }
+  return waits;
+}

@@ -3,7 +3,7 @@
 // 牌码速查（tiles-def.ts）：man1-9=0-8 · pin1-9=9-17 · sou1-9=18-26 · 東27 南28 西29 北30 白31 發32 中33。
 // 赤5：普5码+100（man5红=104·pin5红=113·sou5红=122）。
 import { describe, it, expect } from 'vitest';
-import { isWinningHand, tenpai } from './hand-eval.js';
+import { isWinningHand, tenpai, winsWithMelds, tenpaiWithMelds } from './hand-eval.js';
 
 describe('§2 标准形 4 面子+雀头（顺/刻混合）判和', () => {
   it('顺+刻混合：man123+man456+pin789+sou222(刻)+東東(雀头)', () => {
@@ -121,5 +121,31 @@ describe('§2 非听牌形 tenpai=[]（流局罚符依据）', () => {
     expect(tenpai([])).toEqual([]);
     // 一副已完成的 14 张：非「13 张听牌」语义 → []
     expect(tenpai([0, 1, 2, 3, 4, 5, 15, 16, 17, 19, 19, 19, 27, 27])).toEqual([]);
+  });
+});
+
+// ── §6 鸣牌加法扩展：meld-aware 和了 / 听牌（详尽用例在 meld.test.ts·此处补锚点）──
+describe('§6 winsWithMelds/tenpaiWithMelds · 加法不破门清核', () => {
+  it('meldCount=0 委托旧核：与 isWinningHand / tenpai 逐例等价', () => {
+    const win14 = [0, 1, 2, 3, 4, 5, 15, 16, 17, 19, 19, 19, 27, 27]; // 门清和了形
+    expect(winsWithMelds(win14.slice(0, 13), 0, 27)).toBe(isWinningHand(win14));
+    const wait13 = [1, 2, 27, 27, 9, 10, 11, 13, 14, 15, 19, 20, 21]; // man23 两面 → 听 man1/man4
+    expect(tenpaiWithMelds(wait13, 0)).toEqual(tenpai(wait13));
+  });
+
+  it('副露后暗手：各 meldCount 正例和了（(4-mc) 面子 + 雀头）', () => {
+    // mc1：man123 pin456 sou78 東東 + sou9 → 3 面子 + 雀头
+    expect(winsWithMelds([0, 1, 2, 12, 13, 14, 24, 25, 27, 27], 1, 26)).toBe(true);
+    // mc2：man123 pin11 sou78 + sou6 → 2 面子 + 雀头
+    expect(winsWithMelds([0, 1, 2, 9, 9, 24, 25], 2, 23)).toBe(true);
+    // mc3：man23 東東 + man1 → 1 面子 + 雀头
+    expect(winsWithMelds([1, 2, 27, 27], 3, 0)).toBe(true);
+    // mc4：東 单骑 + 東 → 雀头
+    expect(winsWithMelds([27], 4, 27)).toBe(true);
+  });
+
+  it('副露 meldCount≥1 不成七対 / 国士（长度天然排除·只走标准形）', () => {
+    // 七対子形（14 张）喂给 mc1（要求 10 张暗手）→ 长度守卫 false
+    expect(winsWithMelds([0, 0, 2, 2, 10, 10, 13, 13, 24, 24, 27, 27, 33], 1, 33)).toBe(false);
   });
 });
