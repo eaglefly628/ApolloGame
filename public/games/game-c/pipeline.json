@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  95 passed (95)）· 验收剧本 5 场景绿",
-      "at": "2026-07-18T06:30:33.323Z",
-      "gameHash": "c7c174e6c7f69712"
+      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  95 passed (95)）· 验收剧本 6 场景绿",
+      "at": "2026-07-18T07:46:27.296Z",
+      "gameHash": "4c8afd4a7b770359"
     },
     "S5": {
       "exit": 0,
@@ -368,6 +368,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T06:30:33.323Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "GD-C 下一轮：新增 06 手内典当守恒回归剧本(REQ-C-106)·6场景 conformance 重验·S2/S3 复查过期既有乱序",
+      "at": "2026-07-18T07:46:23.511Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T07:46:27.296Z"
     }
   ],
   "outOfOrder": [
@@ -475,6 +487,11 @@
       "stage": "S4",
       "reason": "adapter 撤回预设扩展复归纯接线·5剧本仍绿·刷证据",
       "at": "2026-07-18T06:30:29.122Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "GD-C 下一轮：新增 06 手内典当守恒回归剧本(REQ-C-106)·6场景 conformance 重验·S2/S3 复查过期既有乱序",
+      "at": "2026-07-18T07:46:23.511Z"
     }
   ],
   "reviews": {
