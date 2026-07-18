@@ -117,6 +117,7 @@ try {
     const txt = ownText(el);
     if (!txt) continue;
     if (isGlyphOnly(txt)) continue; // 纯 emoji/符号 → 跳过（不吃 text-color·量它是噪音）
+    if (el.closest('[data-audit-skip-contrast]')) continue; // 定色语义原语（扑克牌红黑花色·牌面本色）→ 免对比检查（A-007b）
     const cs = getComputedStyle(el);
     if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.5) continue;
     const fg = parse(cs.color); if (!fg) continue;

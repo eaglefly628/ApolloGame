@@ -71,6 +71,9 @@ export interface LayoutConstraints {
   dropZone?: string;
   /** 新手引导锚点键：渲染加 data-anchor → OnboardingOverlay 按它 querySelector 定位 spotlight 高亮（配世界 Coachmark{anchor}）。数据 UI 也能被引导。 */
   anchor?: string;
+  /** 意图叠层（render-only·纸牌类基座刚需·REQ game-a A-007）：true=渲染加 `data-allow-overlap` → ui-audit 重叠检查豁免此绝对定位件。
+   *  用于**扇形手牌 / 牌堆 / 绝对定位叠放**（叠是设计意图，非 bug）。只标真该叠的件；别拿它掩盖误叠。 */
+  allowOverlap?: boolean;
   /** 倒角切角 px（CSS clip-path 八边形·art-deco/扑克牌桌美学）：如 13 = 左上/右下各切 13px。给面板/卡/CTA 切角。 */
   chamfer?: number;
   /** 圆角半径 px（覆盖控件默认圆角·如 Panel 恒 10）。小件异形（城垛/盾/格位·radius 小）或大圆（落点圈=大 radius）用。

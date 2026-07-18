@@ -714,9 +714,10 @@ function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UIThe
     const front = `<div data-flip-front style="${face};background:${faceBg}">${inner}${label}${value}</div>`;
     const back = `<div data-flip-back style="${face};background:${t.bg2};padding:7px;overflow:hidden">${renderNode(p.backFace, t)}</div>`;
     const marker = p.flipped !== undefined ? `data-flipstate data-flipped="${p.flipped ? 'true' : 'false'}"` : 'data-flipcard';
-    return `<div id="${esc(id)}"${action} ${marker} style="position:relative;${dim};${cursor}${ls}">${front}${back}</div>`;
+    return `<div id="${esc(id)}"${action} ${marker} data-audit-skip-contrast style="position:relative;${dim};${cursor}${ls}">${front}${back}</div>`;
   }
-  return `<div id="${esc(id)}"${action} style="position:relative;display:inline-flex;align-items:center;justify-content:center;${dim};border-radius:8px;background:${faceBg};border:2px solid ${selBorder};font-family:${t.fontUi};${glow}${dimmed}${cursor}${ls}">${inner}${label}${value}</div>`;
+  // data-audit-skip-contrast：扑克牌是定色语义原语（红♥♦/黑♠♣ 在牌面·花色本色不吃 WCAG），ui-audit 对其内文字免对比检查（A-007b·防红角标/叠放采样假阳）。
+  return `<div id="${esc(id)}"${action} data-audit-skip-contrast style="position:relative;display:inline-flex;align-items:center;justify-content:center;${dim};border-radius:8px;background:${faceBg};border:2px solid ${selBorder};font-family:${t.fontUi};${glow}${dimmed}${cursor}${ls}">${inner}${label}${value}</div>`;
 }
 
 // ── CoinFlip（掷币）：3D 双面硬币·spinning 播翻转落定到 outcome·静态则直接显示结果面。──
@@ -988,11 +989,12 @@ export function renderNode(node: LayoutNode, theme: UITheme = SHELL): string {
   const html = renderDispatch(node, theme);
   const c = node.layout;
   const fxData = c?.fx?.length ? fxToCss(c.fx, theme).dataFx : ''; // sheen/flash 等叠层 token
-  if (c && (c.draggable || c.dropZone || c.anchor || c.sheen || c.tilt3d || c.press3d || c.flyTo || fxData)) {
+  if (c && (c.draggable || c.dropZone || c.anchor || c.allowOverlap || c.sheen || c.tilt3d || c.press3d || c.flyTo || fxData)) {
     const a: string[] = [];
     if (c.draggable) a.push(`draggable="true" data-drag="${esc(node.id)}"`);
     if (c.dropZone)  a.push(`data-drop="${esc(c.dropZone)}"`);
     if (c.anchor)    a.push(`data-anchor="${esc(c.anchor)}"`); // 新手引导 spotlight 锚点（OnboardingOverlay 定位）
+    if (c.allowOverlap) a.push('data-allow-overlap'); // 意图叠层（扇形手牌/牌堆）→ ui-audit 重叠豁免（A-007）
     if (c.sheen)     a.push('data-sheen'); // 流光层（CSS 注入 ::after·apollo-sheen-sweep）
     if (c.tilt3d)    a.push('data-tilt3d'); // 交互 3D 倾斜（悬停立体抬起·CSS 注入 :hover 变换）
     if (c.press3d)   a.push('data-press3d'); // 按压 3D 反馈（按下沉 Z + 底唇·CSS 注入 :active·触屏可用）
