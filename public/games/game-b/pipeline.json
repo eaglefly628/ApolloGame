@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  6 passed (6) ·       Tests  64 passed (64)）· 验收剧本 7 场景绿",
-      "at": "2026-07-18T06:28:58.895Z",
-      "gameHash": "9b407f2ac106449b"
+      "summary": "walkthrough 绿（ Test Files  6 passed (6) ·       Tests  64 passed (64)）· 验收剧本 11 场景绿",
+      "at": "2026-07-18T07:47:28.669Z",
+      "gameHash": "d716752096c829b7"
     }
   },
   "history": [
@@ -123,6 +123,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T06:28:58.895Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "GD-B 复合度提升：补 4 本精确规则剧本（直击脱衣荣和/自摸精确语义·立直全生命周期·连庄迁移），共 11 本覆盖 GDD 招牌机制；docs 变动使 S4 证据过期须重跑；S2/S3 复查过期为既有 governance 状态",
+      "at": "2026-07-18T07:47:22.584Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T07:47:28.669Z"
     }
   ],
   "reviews": {
@@ -168,6 +180,11 @@
       "stage": "S4",
       "reason": "S4 验收适配 landed + 硬化（未知信号抛错·game-c 先例·防静默吞信号假绿）；GD 7 剧本 conformance 全绿 + walkthrough 64 绿。S2/S3 复查过期=既有governance状态（reviewer 域·plan/骨架本次未改动·非本次引入）",
       "at": "2026-07-18T06:28:51.926Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "GD-B 复合度提升：补 4 本精确规则剧本（直击脱衣荣和/自摸精确语义·立直全生命周期·连庄迁移），共 11 本覆盖 GDD 招牌机制；docs 变动使 S4 证据过期须重跑；S2/S3 复查过期为既有 governance 状态",
+      "at": "2026-07-18T07:47:22.584Z"
     }
   ]
 }

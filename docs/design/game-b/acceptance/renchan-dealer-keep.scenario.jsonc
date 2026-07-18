@@ -1,0 +1,49 @@
+// 查的规则：连庄——庄家和牌则庄不动·本场+1·局号不进（gdd §四 东风战·含连庄）。
+//   东风战（gdd §三/§四）：庄家(dealer)和牌或流局听牌 → 连庄，庄位不轮转、局号(东N)不推进、本场棒(honba)+1（gdd §四 本场棒 300）；
+//     唯有庄家下庄才 dealer+1、round_no+1、honba 归 0（dealer-rotation 剧本管下庄侧）。
+//   本剧本钉**庄家荣和连庄**：seed=1 定盘——主角(席0=起家=东1庄)荣和小夜 → next-round 后庄仍=席0、局仍东1、本场=1。
+//   规则依据：gdd §三 核心循环「庄家和牌/听牌连庄·本场棒累积」、§四 东风战/本场棒 300/东4 打完终局。
+// 对抗目标：
+//   · 连庄误把局号 +1（庄没下却进局）→ next 后 round_no = 2 照出。
+//   · 连庄误轮转庄位（庄下了）→ next 后 dealer = 1 照出。
+//   · 连庄漏加本场（honba 不累积·本场棒 300 无从计）→ next 后 honba = 0 照出。
+//   · 连庄没开出新局（卡在上局）→ next 后 phase ≠ "playing" 照出。
+//   · 荣和结算破坏守恒 → score_sum ≠ 200000 照出。
+{
+  "name": "连庄（庄家荣和·庄不动本场+1局号不进）",
+  "game": "game-b",
+  "seed": 1,
+  "config": { "seatNames": ["主角", "绫", "莉世", "小夜"] },
+  "steps": [
+    {
+      // 开局：东1、庄=起家=主角(席0)、无本场。
+      "expect": [
+        { "res": "round_no", "eq": 1 },
+        { "res": "dealer", "eq": 0 },
+        { "res": "honba", "eq": 0 }
+      ]
+    },
+    { "signal": "play-round" },
+    {
+      // 庄家(主角)荣和小夜——庄家和牌=连庄触发条件。
+      "expect": [
+        { "flag": "win_end", "eq": true },
+        { "sv": "result_type", "eq": "ron" },
+        { "sv": "winner_name", "eq": "主角" },
+        { "res": "score_sum", "eq": 200000 }
+      ]
+    },
+    { "signal": "next-round" },
+    {
+      // 连庄：庄不动(席0)、局号不进(东1)、本场+1、新局已开、守恒。
+      "expect": [
+        { "res": "dealer", "eq": 0 },
+        { "res": "round_no", "eq": 1 },
+        { "res": "honba", "eq": 1 },
+        { "sv": "phase", "eq": "playing" },
+        { "flag": "over", "eq": false },
+        { "res": "score_sum", "eq": 200000 }
+      ]
+    }
+  ]
+}
