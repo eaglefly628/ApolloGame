@@ -16,13 +16,15 @@ const STOOL = 0x5a3d2e, STOOL_HERO = 0xc99a3e;
 const CARD_FACE = 0xf5efe0, CARD_EDGE = 0xd8cdb4;
 const CHIP_GOLD = 0xe0b458, CHIP_RED = 0xc0392b, CHIP_BLACK = 0x1b1b22;
 
-const STOOL_RING = 2.15; // 凳环半径（世界单位）
+// 椭圆桌（长椭圆/跑道形·传统德州桌·art-data §5.3「椭圆长桌」）：长轴 x > 短轴 z。凳环同椭圆展开。
+const RING_X = 2.95, RING_Z = 2.15; // 凳环长轴/短轴半径（世界单位）
+const TABLE_STRETCH = 1.5; // 桌面椭圆压缩比（长轴 = width×stretch·Transform3D.scaleX 分轴缩放）
 export const SEAT_COUNT = 6;
 
-/** 座位 i 的桌面世界坐标（主角 i=0 正南 +z 朝镜头·顺时针 60° 环·匹配 art-data §5.2 方位）。 */
+/** 座位 i 的桌面世界坐标（主角 i=0 正南 +z 朝镜头·顺时针 60° 沿椭圆环·匹配 art-data §5.2 方位）。 */
 export function seatWorldPos(i: number): { x: number; z: number } {
   const th = (i * Math.PI) / 3; // 0=南(+z), 60°=东南 … 顺时针
-  return { x: STOOL_RING * Math.sin(th), z: STOOL_RING * Math.cos(th) };
+  return { x: RING_X * Math.sin(th), z: RING_Z * Math.cos(th) };
 }
 
 /** 3D 牌房场景（静态·render-only）：斜俯视相机 + 三光 + 地板/墙 + 呢桌 + 六凳 + 公共牌位 + 底池筹码占位。 */
@@ -30,8 +32,9 @@ export function build3DTableBlueprint(): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {};
 
   // 相机：斜俯视（art-data §5.1 46°≈0.72 弧度·透视纵深·pivot 抬到桌面）。yaw 0 = 主角(+z)在屏底。
+  // 椭圆长桌横展 → distance 拉远、fov 略大，框住长轴 + 两端凳。
   entities['cam'] = {
-    Camera3D: { yaw: 0, pitch: 0.72, projection: 'perspective', fov: 44, distance: 6.6, near: 0.1, far: 100, pivotX: 0, pivotY: 0.45, pivotZ: 0.15 },
+    Camera3D: { yaw: 0, pitch: 0.72, projection: 'perspective', fov: 46, distance: 7.6, near: 0.1, far: 100, pivotX: 0, pivotY: 0.45, pivotZ: 0.15 },
   };
   // 三光：暖顶主光（投影）+ 冷蓝补光 + 暖环境（§1 烛光暖夜）。
   entities['sun'] = { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.15, dirX: -3, dirY: -8, dirZ: -2, castShadow: true } };
@@ -42,9 +45,10 @@ export function build3DTableBlueprint(): WorldBlueprint {
   entities['floor'] = { Transform3D: { x: 0, y: -0.05, z: 0 }, Mesh3D: { shape: 'box', width: 10, height: 0.1, depth: 8, frontTint: FLOOR, backTint: FLOOR, edgeTint: FLOOR_EDGE } };
   entities['wall-n'] = { Transform3D: { x: 0, y: 1.4, z: -4 }, Mesh3D: { shape: 'box', width: 10, height: 3, depth: 0.2, frontTint: WALL, backTint: WALL, edgeTint: FLOOR_EDGE } };
 
-  // 牌桌：木基圆柱 + 呢面圆柱（呢绿 §1）。呢面带**静态碰撞体**（RigidBody3D mass0）→ 物理筹码落在桌面堆叠、不穿桌。
-  entities['table-base'] = { Transform3D: { x: 0, y: 0.28, z: 0 }, Mesh3D: { shape: 'cylinder', width: 3.1, height: 0.5, frontTint: RIM, edgeTint: RIM_LO } };
-  entities['table-felt'] = { Transform3D: { x: 0, y: 0.55, z: 0 }, Mesh3D: { shape: 'cylinder', width: 2.7, height: 0.06, frontTint: FELT, edgeTint: FELT_LO }, RigidBody3D: { shape: 'cylinder', mass: 0, restitution: 0.2, friction: 0.7 } };
+  // 牌桌：木基 + 呢面（圆柱 × scaleX 压成**长椭圆/跑道形**·传统德州桌·§5.3）。呢面带静态碰撞体（RigidBody3D mass0）→ 物理筹码落桌面堆叠、不穿桌。
+  // 长轴(x)=width×scaleX·短轴(z)=width：base 短径 2.0→长 3.0；felt 短径 1.72→长 2.58（≈ §5.3 2.4×1.6 比例）。
+  entities['table-base'] = { Transform3D: { x: 0, y: 0.28, z: 0, scaleX: TABLE_STRETCH }, Mesh3D: { shape: 'cylinder', width: 2.0, height: 0.5, frontTint: RIM, edgeTint: RIM_LO } };
+  entities['table-felt'] = { Transform3D: { x: 0, y: 0.55, z: 0, scaleX: TABLE_STRETCH }, Mesh3D: { shape: 'cylinder', width: 1.72, height: 0.06, frontTint: FELT, edgeTint: FELT_LO }, RigidBody3D: { shape: 'cylinder', mass: 0, restitution: 0.2, friction: 0.7 } };
 
   // 六凳：环桌矮圆柱（主角凳暖金高亮·§5.3 出局变暗留渲染层）。
   for (let i = 0; i < SEAT_COUNT; i++) {
