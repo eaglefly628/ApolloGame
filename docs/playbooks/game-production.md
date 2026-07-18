@@ -26,6 +26,8 @@
 
 **立项卡自动化（REQ-WORKSHOP C1）**：建库（create 带 description）/ 装示例 / 换皮（谱系 pitch）都会
 **自动写 S1 立项卡**；PUT manifest 即自动重推美术台账（编号不漂移）。手填只剩改口与补参考/风格。
+**板自 S3 起（Lead 2026-07-18 裁决·A-005）**：零代码的 S1/S2 阶段板未开卡=正常——判词先记
+`docs/design/<slug>/`（brief/plan + requests 判词），S3 骨架落地后板自动识别、立项卡由 CLI 补落。
 
 ## 八阶段（每步唯一必读=手册列·每本 ≤80 行）
 

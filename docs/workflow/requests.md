@@ -43,6 +43,16 @@
 > **PST 活**：`src/studio/AssetImportWizard.tsx` 加「导入时移除背景」勾选 + 模式选（绿幕/纯色吸管/自动 flood/rembg）+ before/after 预览；调 PA 端点。
 > **红线**：authoring-time·**不碰 sim/hash/LayoutNode**（同 ai-gen/import-art-pack 一类资产变换）；auto-matte **必过人审预览**、绝不导入即改。**验收**：PA rembg 接线 + 测（纯色 flood 确定性真验 + rembg mock）；PST UI 勾选出预览·门禁绿；一张真异形图端到端（生图→导入去背→真 alpha→接 `backArt`/`skin` 透见对）。**边界**：本条 spec 由 PUI 会诊出图·**PUI 不施工**（studio/资产线非 PUI 域）。
 
+### REQ-HANDPAT-歧义自洽 · t3-hand-pattern legalResponses 与 act/beats 判读口径一致化 · [2026-07-18] · PE-A 报（A-008）→ Lead 裁决 ✅ 接（引擎正确性 bug）→ **指派：Opus** · status: in-progress（已派工） · 优先级: P1 · 类型: 引擎 capability bug（正确性关键·不降档）
+> **根因**：`legalResponses` 按「意图家族」枚举应对并以该家族比压制；`act`/`legalCheck`/`beats` 走 `matchPattern` **最强判读**——含逢人配的一手多判读时，最强判读落到另一普通型家族→跨家族压不过→legalResponses 承诺的牌 act 拒收（实证：墩=钢板 JJJ-QQQ，QQ+KK+两♥5 按钢板 QQQ-KKK 返回，规范判读=三连对 Q-K-A 更强→拒）。后果=提示按钮给「打不出去的牌」/AI 空过（game-a 已游戏层兜底滤除·引擎修好可退）。
+> **⚖ Lead spec**：修 `legalResponses`——每个候选生成后用**规范口径自洽复核**：应对仅当 `beats(play.cards, target, cfg)`=true 才纳入；领出仅当 `matchPattern` 非空。**不改 beats/legalCheck 语义**（「任一判读能压」方向回驳=改判定语义·风险大）。测试点名：① A-008 实证例复现（修前红修后绿）；② **不变量测**=∀ legalResponses 返回项 legalCheck 必过（含逢人配多手枚举）；③ 既有 conformance 测零回归。game-a 兜底 filter 去留=PE-A 自裁（幂等）。
+
+### REQ-UIRECON-换根重挂 · UI reconciler 换根节点 id 静默 no-op=跨屏死机 · [2026-07-18] · PE-A 报（A-012·owner 实证「死机」）→ Lead 核真 ✅ 接 → **指派：PUI** · status: open · 优先级: P1（UI 基座 bug·全游戏受益） · 类型: UI 基座 bug（PUI 域）
+> `reconcileNode` 起手按 `newN.id` 找元素——新根 id≠旧根 id（如 `a-play`→`a-result`）时找不到→**静默 return 且 curRoot 已推进**→此后一切 update 永久 no-op（含菜单）。修案（PE-A 已定位·PUI 裁）：`update()` 在 `curRoot.id !== newRoot.id` 时走**整根重挂**（同「换皮」分支既有路径），reconcile 只管同根；测试=跨屏转场回归落 ui 库自测（照 game-a `host-transition.test` 先例）。game-a 已宿主兜底（mountedRootId 重挂·引擎修好可退）；**game-b/c 同险未兜——修完通告三 PE**。
+
+### REQ-UIAUDIT-叠层与动效 · 「意图叠层」标记字段 + audit 锚定件/角标盲区豁免 + bounce 动效档 · [2026-07-18] · PE-A 报（A-007+A-011 并单）→ Lead 裁决 ✅ 接 → **指派：PUI** · status: open · 优先级: P2（非阻断·近似件已达效） · 类型: UI 基座工具债+小扩展（PUI 域）
+> ① LayoutNode 暴露「意图叠层」字段→渲染 `data-allow-overlap`（ui-audit 已支持该属性豁免）——扇形手牌/牌堆/Float 锚定件刚需（game-a 牌桌 58 处误报）；② audit contrast 对 `PlayingCard` 角标**按牌面底色判**（红角标白牌 3.68=扑克本色·33 处误报）；③ Float/Connector 等 JS 活取 rect 件静态摆 0,0 的重叠误报同用①豁免；④ 动效闭集 +`bounce`（常驻 scale 弹簧·注意力指示器通用·现 float+glow 近似已达效可后置）。**PUI 既欠 border-image 盲区一并清（工具债合帐）**。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。

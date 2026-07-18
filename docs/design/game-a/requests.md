@@ -2,13 +2,13 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
-### A-012 · [2026-07-18] · PE-A · UI reconciler 换「根节点 id」时静默 no-op → 跨屏切换死机 · status: 📝 待转引擎池报 PUI（游戏层已重挂兜底·非阻断）· 类型: UI 基座 bug（PUI 域）
+### A-012 · [2026-07-18] · PE-A · UI reconciler 换「根节点 id」时静默 no-op → 跨屏切换死机 · status: ✅ 已转引擎池 **REQ-UIRECON-换根重挂**（Lead 2026-07-18·指派 PUI·P1）· 类型: UI 基座 bug（PUI 域）
 **根因（引擎 `src/ui/components/server.ts reconcileNode`）**：`update(newRoot)` 把新树最小化打补丁到 host——`reconcileNode` 起手 `const el = uiFindById(scope, newN.id); if (!el) return;`。当**新根 id ≠ 旧根 id**（如牌桌 `a-play` → 结算 `a-result`）时，host 里只有旧根元素、找不到新 id → **直接 return，屏一动不动**；且 `curRoot=newRoot` 已推进 → 之后每次 `update` 都拿新 id 找不到、永久 no-op（含菜单开合的 render）。
 **owner 实证（2026-07-18·多次报「死机」）**：某盘 AI 走光结算（如队友双下），`render()` 成功跑 `ui.update(buildResult(...))`（`render完 phase=settled` 已打日志）却**不切结算屏**，牌桌卡在「🏆X 暂大 Y 应对中…」旧帧；CSS 动画（合成线程）照跑=牌在抖，但点☰菜单也 no-op（同一 render 路径）→ 看着像死循环，实为 reconciler 换根静默失败。浏览器插桩复现：`render完 phase=settled` 后屏仍 `#a-felt` 在场、`#a-result` 不出。
 **建议引擎修（PUI 裁）**：`update()` 在 `curRoot.id !== newRoot.id` 时走**整根重挂**（`uiFindById(host, curRoot.id)?.outerHTML = renderNode(newRoot)`，同「换皮」分支已有的路径），而非交给按新 id 寻元素的 `reconcileNode`（它天然处理不了根自身的 id 变化——子节点换 id 由父的 `uiChildKeysSame` 兜住，根无父可兜）。
 **游戏层已兜底（本提交·`game-a.ts paint()`）**：宿主自记 `mountedRootId`，跨屏（根 id 变）teardown+`mountUI` 重挂、同屏才 `update` 走 reconcile。回归护栏 `host-transition.test.ts`（happy-dom·驱动整盘 AI 至结算·断言 a-play→a-result 转屏）。引擎修好后此兜底可退（保留亦无害）。
 
-### A-011 · [2026-07-18] · PE-A · 弹簧箭头缺 scale 弹跳动效 + Float 静态 audit 摆不准 · status: 📝 待转引擎池报 PUI（非阻断·已用近似件）· 类型: UI 基座缺口（PUI 域）
+### A-011 · [2026-07-18] · PE-A · 弹簧箭头缺 scale 弹跳动效 + Float 静态 audit 摆不准 · status: ✅ 已转引擎池 **REQ-UIAUDIT-叠层与动效**（与 A-007 并单·Lead 2026-07-18·指派 PUI·P2）· 类型: UI 基座缺口（PUI 域）
 牌桌重设计（owner 2026-07-18）要「弹簧箭头指谁大」——箭头像弹簧一样**放缩弹跳**。UI 基座动效闭集只有
 `float(上下平移弹)/pop(一次性缩放)/pulse(透明度)/spin/glow`，**无常驻 scale 弹簧**。现用 `Float`(锚定暂大者座前
 小牌桌) + 子层 `anim:'float'`(上下弹跳) + `glow`(呼吸光) **近似**，已达「活的箭头指向」效果。**报 PUI 两诉求**：
@@ -42,7 +42,7 @@ owner 意向 BT。GD 方案：BT 纯数据树+通用解释器（外层策略）+
 > **记账缘由（问责定性=制度刚立没接住·不问人）**：S4 落地提交 `d1c2934f`（PE-A session `01Wa2igGxHXZ9w9PmPUyeVAK`）未先写领工声明——「复查基准=领工声明」铁律当日刚由 review-gates 回填（`b305672d`），施工与立律赛跑。Lead 复查时按**提交自带域注+全文件清单**代录边界并逐一核对：`src/games/game-a/**`（guandan-session/ai/hud/game-a+双测试）+ `tools/audits/game-a-{play,result}.audit.ts`（PUI 域·域注知会·照 game-t 先例）+ `public/games/game-a/pipeline.json`——**零声明外文件**。后续 S5-S8 施工按铁律先写声明再动工。
 > **并发撞车记录**：Lead 派工的 S4 施工代理与 PE-A session 平行施工同关——PE-A 版先落地且功能更全（含进贡/还贡/抗贡 G1-G4），代理版未推送（并发纪律：不覆盖已落地工作），其「flow 粗粒度重组」设计洞见已收进 A-004 对照结论。**派工流程教训记档**：同关派工前先查在施 session，避免双工。
 
-### A-005 · [2026-07-17] · GD-A · 生产板无法为零代码新立项开卡 · status: 📝 待转引擎池（现 10 槽满·先清后加） · 类型: 生产线工具缺口
+### A-005 · [2026-07-17] · GD-A · 生产板无法为零代码新立项开卡 · status: ✅ 结案（Lead 裁决 2026-07-18：明文「板自 S3 起」·手册已回填；design 态开卡=YAGNI 暂不做，真撞上再提） · 类型: 生产线工具缺口
 `game-pipeline.mjs detectForm` 只认 library/public 的 manifest.json 或 `src/games/<slug>/` 目录——但按八阶段设计 S1 立项卡/S2 plan **先于** S3 骨架，零代码新游戏开不了板、立项卡无处落。本项目权宜：S1 内容备于 `brief.md` §7，S2 过审后随骨架由 CLI 补落卡。建议 Lead 裁：detectForm 增认 `docs/design/<slug>/`（design 态）或明文「板自 S3 起」。（按问责定性=手册/工具缺陷记录，不问谁绕。）
 
 ### A-006 · [2026-07-17] · GD-A · 内容分级与平台合规跟踪（服饰罚要素） · status: 📌 长期跟踪 · 类型: 治理
@@ -54,10 +54,10 @@ owner 07-17 追加服饰罚玩法（输盘方姨太脱一件·立绘阶梯呈现
 
 > **⚖ owner 终字（2026-07-17）**：三套人设**各自独立，不统一**——A-S1 里的 a×b×c 人设会审项**销案**；game-c 五位由 GD-C 按共享二次元人物锚自设五案（"选五个"=出五个人设即可）。人物美术锚仍三游戏共用 `sakura-nijigen`（省的是风格一致性，不是人设本身）。
 
-### A-008 · [2026-07-18] · PE-A · t3-hand-pattern：逢人配令 legalResponses 返回「规范判读压不过目标」的歧义应对 · status: 📝 待转引擎池报 Lead（游戏层已兜底·非阻断）· 类型: 引擎能力缺口（Lead 域）
+### A-008 · [2026-07-18] · PE-A · t3-hand-pattern：逢人配令 legalResponses 返回「规范判读压不过目标」的歧义应对 · status: ✅ 已转引擎池 **REQ-HANDPAT-歧义自洽**（Lead 2026-07-18·已派工 Opus·P1）· 类型: 引擎能力缺口（Lead 域）
 **根因（引擎 `src/skills/tier3/hand-pattern.ts`）**：一手含逢人配的牌可有**多种家族判读**，`legalResponses` 用「意图家族」枚举应对并以该家族比 `beatsMatch(play, target)`；但 `act`/`legalCheck`/`beats` 用 `matchPattern` 取**最强判读**——当最强判读落到另一个普通型家族时，跨家族压不过原墩，于是 `legalResponses` 声称能压、`act` 却判非法。**实证**（打 5·♥5=逢人配）：当前墩=钢板 JJJ-QQQ；应对 QQ+KK+两♥5 逢人配 → `legalResponses` 当**钢板 QQQ-KKK**（rank13·压过）返回，但 `matchPattern` 判成**三连对 Q-K-A**（rank14·更强），三连对≠钢板跨普通型 → `beats=false` → `legalCheck` 拒。后果：提示按钮给「打不出去的牌」（owner 2026-07-18 报的现象之一）、AI 空过。
 **建议引擎修（Lead 裁）**：`legalResponses` 生成每个 play 后，用**规范 `matchPattern(play.cards)` 自洽复核**——仅当规范判读确能压 target（或领出时规范判读=非空）才纳入返回集；即让 legalResponses 的承诺与 act/beats 的判读口径一致。（或反向：`beats`/`legalCheck` 接受「任一判读能压」——但那要改判定语义，风险更大，倾向前者。）
 **游戏层已兜底（本提交·非侵入·用引擎自身 `beats` 复核）**：`guandan-session.legalBeats()` + `ai.chooseTurn` 对应对候选加 `filter(m => beats(m.cards, target, cfg))`——只留 act 真会收的那批，提示/AI 出牌恒合法（回归测试：`应对滤掉「规范判读压不过」的歧义牌`）。引擎修好后此兜底可退（保留亦无害·幂等）。
 
-### A-007 · [2026-07-17] · PE-A · S5 牌桌屏 ui-audit 对纸牌扇形的两处盲区（重叠 + 角标对比）· status: 📝 待转引擎池报 PUI · 类型: UI 基座工具缺口（PUI 域·非阻断）
+### A-007 · [2026-07-17] · PE-A · S5 牌桌屏 ui-audit 对纸牌扇形的两处盲区（重叠 + 角标对比）· status: ✅ 已并入引擎池 **REQ-UIAUDIT-叠层与动效**（Lead 2026-07-18）· 类型: UI 基座工具缺口（PUI 域·非阻断）
 S5 牌桌屏 1:1 复刻 owner 钦定稿 `guandan-lite-mockup.html`（可读 React 版·2026-07-17 替换·椭圆felt桌/席位环/中央墩/**U 弧扇形手牌**/信息条/立绘框/glass 操作区全 LayoutNode 闭集·夜宴皮 GAME_A_THEME）。稿的手牌=大弧扇形（`translateX(中心偏移)+translateY(U弧+lift)+rotate`）——**per-card 垂直弧 flex 流式表达不了**（`layout` 只有统一 `margin`·无 `marginTop`），只能绝对定位逐张 x/y/rotate。因此 `ui-audit` 报两类**盲区**（非真 bug）：①**58 处重叠**=扇形叠放（27 张手牌必叠·纸牌意图叠层·蓝本亦叠）；②**33 处角标「低对比」**=`PlayingCard face:'light'`（稿钦定经典白扑克牌）红♥♦角标（红字白底 3.68·扑克本色）+ 叠放被遮角标（1.15·采样到相邻牌深边）。**曾试 flex 流式规避重叠→手牌变平叠一堆·丢 U 弧·不达 1:1**，故按 owner「我需要 1:1 复刻」+ Claude Design 稿铁律（差异列清单不悄悄降格）**取绝对定位弧形**。**报 PUI 两诉求**：(a) **LayoutNode 暴露「意图叠层」标记字段**（→渲染 `data-allow-overlap`·ui-audit 第 83 行已支持该属性豁免）——供扇形手牌/牌堆/绝对定位叠放，是纸牌类游戏的基座刚需；(b) ui-audit contrast 对 `PlayingCard` 角标 span 豁免（按牌面底色判·非采样背景）。**在 PUI 加字段前**：视觉 1:1 优先（用 light 白牌 + 绝对定位 U 弧），此二盲区列清单待裁·门禁走 tsc+vitest+build+game-skill-audit（红旗零 RATCHET PASS）；牌面/弧形不因工具盲区降格。
