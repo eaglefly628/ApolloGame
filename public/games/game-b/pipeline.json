@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  6 passed (6) ·       Tests  64 passed (64)）· 验收剧本 13 场景绿",
-      "at": "2026-07-18T11:54:21.287Z",
-      "gameHash": "99a5b1e572011ce2"
+      "summary": "walkthrough 绿（ Test Files  11 passed (11) ·       Tests  254 passed (254)）· 验收剧本 13 场景绿",
+      "at": "2026-07-18T11:58:48.659Z",
+      "gameHash": "d600683603782c76"
     }
   },
   "history": [
@@ -147,6 +147,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T11:54:21.287Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "rebase 并入 PE-B 鸣牌(吃碰杠)+真役符结算落地后 S4 证据随 game-b 核变动过期，按 testing.md 重跑；GD 13 剧本对新 sim 全绿(determinism 保持·守恒/节奏/脱衣不变量稳)；S2/S3 复查过期为既有 governance 状态",
+      "at": "2026-07-18T11:58:38.175Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T11:58:48.659Z"
     }
   ],
   "reviews": {
@@ -202,6 +214,11 @@
       "stage": "S4",
       "reason": "GD-B 节奏+逻辑轮：补 draw-discard-cadence(摸打顺时针轮转/牌山匀速递减) + ryuukyoku-settle-logic(荒牌流局罚符零和/立直棒滚存/不脱衣/守恒自洽)，共 13 本；docs 变动使 S4 证据过期须重跑；S2/S3 复查过期为既有 governance 状态",
       "at": "2026-07-18T11:54:12.341Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "rebase 并入 PE-B 鸣牌(吃碰杠)+真役符结算落地后 S4 证据随 game-b 核变动过期，按 testing.md 重跑；GD 13 剧本对新 sim 全绿(determinism 保持·守恒/节奏/脱衣不变量稳)；S2/S3 复查过期为既有 governance 状态",
+      "at": "2026-07-18T11:58:38.175Z"
     }
   ]
 }
