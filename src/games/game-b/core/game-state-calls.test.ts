@@ -9,6 +9,11 @@ import {
   aiTurn,
   nextRound,
   isPlayerCallWindow,
+  canAnkan,
+  ankanKinds,
+  declareAnkan,
+  canKakan,
+  declareKakan,
   type MatchState,
 } from './game-state.js';
 
@@ -181,6 +186,107 @@ describe('鸣牌 P3a · 优先级', () => {
     expect(m.cur.result!.type).toBe('ron');
     expect(m.cur.result!.winner).toBe(2);
     expect(m.cur.melds[0]!.length).toBe(0); // 碰未成（荣压）
+  });
+});
+
+describe('鸣牌 P3b · 杠（暗杠/大明杠/加杠 + 岭上/新宝牌 + 抢杠）', () => {
+  it('暗杠：手中 4 张同种 → 组暗杠·即翻新宝牌·岭上摸·守恒', () => {
+    const m = controlled();
+    m.cur.hands[0] = [M(5), M(5), M(5), P(1), P(2), P(3), P(4), S(7), S(8), S(9), TON, TON, HAKU];
+    m.cur.turn = 0;
+    m.cur.drawn = M(5); // 摸到第 4 张 5m
+    expect(canAnkan(m)).toBe(true);
+    expect(ankanKinds(m)).toEqual([M(5)]);
+    const doraBefore = m.cur.doraInd.length;
+    declareAnkan(m, M(5));
+    expect(m.cur.melds[0]!.length).toBe(1);
+    expect(m.cur.melds[0]![0]!.kind).toBe('ankan');
+    expect(m.cur.melds[0]![0]!.tiles.length).toBe(4);
+    expect(m.cur.doraInd.length).toBe(doraBefore + 1); // 暗杠即翻新宝牌（R-3）
+    expect(m.cur.kanCount).toBe(1);
+    expect(m.cur.drawn).not.toBe(null); // 岭上摸
+    expect(m.cur.drawnRinshan).toBe(true);
+    expect(m.cur.dead.length).toBe(14); // 王牌恒 14（活山尾补）
+    expect(totalTiles(m)).toBe(136);
+  });
+
+  it('大明杠：暗手 3 张 + 他家弃牌 → 玩家 minkan 选项→岭上摸·守恒', () => {
+    const m = controlled();
+    m.cur.hands[0] = [PEI, PEI, PEI, P(1), P(4), P(7), S(1), S(4), S(7), TON, SHAA, HAKU, M(1)]; // 三张北
+    m.cur.turn = 1;
+    m.cur.drawn = PEI; // 座 1 打第 4 张北
+    discard(m, PEI);
+    expect(isPlayerCallWindow(m)).toBe(true);
+    expect(m.cur.callWindow!.options.minkan).toBe(true);
+    const doraBefore = m.cur.doraInd.length;
+    playerCall(m, { type: 'minkan' });
+    expect(m.cur.melds[0]![0]!.kind).toBe('minkan');
+    expect(m.cur.melds[0]![0]!.tiles.length).toBe(4);
+    expect(m.cur.turn).toBe(0);
+    expect(m.cur.drawn).not.toBe(null); // 岭上摸 → 待打
+    expect(m.cur.doraInd.length).toBe(doraBefore + 1);
+    expect(m.cur.dead.length).toBe(14);
+    expect(totalTiles(m)).toBe(136);
+  });
+
+  it('加杠：已碰某种 + 摸/手中第 4 张 → 升杠·岭上·守恒（无人抢）', () => {
+    const m = controlled();
+    m.cur.melds[0] = [{ kind: 'pon', tiles: [HATSU, HATSU, HATSU], from: 2, called: HATSU }];
+    m.cur.hands[0] = [HATSU, P(1), P(4), P(6), S(1), S(3), S(5), S(7), M(9), M(2)]; // 10 张·含第 4 张發
+    m.cur.turn = 0;
+    m.cur.drawn = M(1);
+    expect(canKakan(m)).toBe(true);
+    const doraBefore = m.cur.doraInd.length;
+    declareKakan(m, HATSU);
+    expect(m.cur.melds[0]![0]!.kind).toBe('kakan');
+    expect(m.cur.melds[0]![0]!.tiles.length).toBe(4);
+    expect(m.cur.doraInd.length).toBe(doraBefore + 1);
+    expect(m.cur.drawn).not.toBe(null); // 岭上摸
+    expect(totalTiles(m)).toBe(136);
+  });
+
+  it('抢杠：加杠牌正是他家听牌 → 该家荣·加杠不成立·加杠家放铳', () => {
+    const m = controlled();
+    m.cur.melds[0] = [{ kind: 'pon', tiles: [CHUN, CHUN, CHUN], from: 2, called: CHUN }];
+    m.cur.hands[0] = [CHUN, P(1), P(4), P(6), S(1), S(3), S(5), S(7), M(9), M(2)]; // 玩家持第 4 张中·欲加杠
+    m.cur.hands[2] = [M(1), M(2), M(3), P(4), P(5), P(6), S(7), S(8), S(9), TON, TON, CHUN, CHUN]; // 座 2 听中（+東東雀头）
+    m.cur.turn = 0;
+    m.cur.drawn = M(1);
+    declareKakan(m, CHUN);
+    expect(m.cur.phase).toBe('win');
+    expect(m.cur.result!.type).toBe('ron');
+    expect(m.cur.result!.winner).toBe(2); // 座 2 抢杠荣
+    expect(m.cur.result!.loser).toBe(0); // 加杠家放铳
+    expect(totalTiles(m)).toBe(136);
+  });
+
+  it('立直后禁杠（v1·不变听暗杠=债）：riichi 家 canAnkan=false', () => {
+    const m = controlled();
+    m.cur.hands[0] = [M(5), M(5), M(5), P(1), P(2), P(3), P(4), S(7), S(8), S(9), TON, TON, HAKU];
+    m.cur.turn = 0;
+    m.cur.drawn = M(5);
+    m.cur.riichi[0] = true;
+    expect(canAnkan(m)).toBe(false);
+  });
+
+  it('交互 walkthrough 出现杠（统计·证明 AI/流程真的杠）', () => {
+    let sawKan = false;
+    for (const seed of [7, 19, 88, 123, 2024, 555, 909, 4321, 100]) {
+      const m = startMatch(seed);
+      m.interactiveCalls = true;
+      let guard = 0;
+      while (!m.over && guard++ < 120 && !sawKan) {
+        let sg = 0;
+        while (m.cur.phase === 'playing' && sg++ < 900) {
+          aiTurn(m);
+          if (m.cur.melds.some((ms) => ms.some((md) => md.kind === 'ankan' || md.kind === 'minkan' || md.kind === 'kakan'))) { sawKan = true; break; }
+          if (m.cur.kanCount > 0) { sawKan = true; break; }
+        }
+        if (!sawKan) nextRound(m);
+      }
+      if (sawKan) break;
+    }
+    expect(sawKan).toBe(true); // 至少一局有杠
   });
 });
 

@@ -18,14 +18,14 @@ m.cur.melds[0] = [
   { kind: 'pon', tiles: [33, 33, 33], from: 1, called: 33 }, // 碰中
   { kind: 'chi', tiles: [M(2), M(3), M(4)], from: 3, called: M(3) }, // 吃 234萬
 ] as Meld[];
-m.cur.melds[1] = [{ kind: 'pon', tiles: [31, 31, 31], from: 2, called: 31 }] as Meld[];
+m.cur.melds[1] = [{ kind: 'ankan', tiles: [P(2), P(2), P(2), P(2)], from: 1, called: P(2) }] as Meld[]; // 暗杠 4 张
 m.cur.melds[2] = [{ kind: 'chi', tiles: [P(5), P(6), P(7)], from: 1, called: P(7) }] as Meld[];
-m.cur.melds[3] = [{ kind: 'pon', tiles: [S(9), S(9), S(9)], from: 0, called: S(9) }] as Meld[];
-// 注入玩家待鸣窗口（碰 + 两吃候选 + 荣 全亮·测按钮条满配）。
+m.cur.melds[3] = [{ kind: 'minkan', tiles: [S(9), S(9), S(9), S(9)], from: 0, called: S(9) }] as Meld[]; // 大明杠 4 张
+// 注入玩家待鸣窗口（碰 + 大明杠 + 两吃候选 + 荣 全亮·测按钮条满配）。
 m.cur.callWindow = {
   discarder: 3,
   tile: M(3),
-  options: { ron: true, pon: true, chi: [{ consume: [M(2), M(4)] }, { consume: [M(4), M(5)] }] },
+  options: { ron: true, pon: true, minkan: true, chi: [{ consume: [M(2), M(4)] }, { consume: [M(4), M(5)] }] },
   pending: [],
 };
 mountUI(document.getElementById('root')!, buildPlayHud(m, { logOpen: false }), {}, SAKURA);

@@ -55,20 +55,22 @@ describe('game-b 对局 UI（play-ui·LayoutNode 纪律）', () => {
     m.interactiveCalls = true;
     // 注入四家副露 + 玩家待鸣窗口（碰 + 两吃 + 荣 全亮）。
     m.cur.melds[0] = [{ kind: 'pon', tiles: [33, 33, 33], from: 1, called: 33 }] as Meld[];
-    m.cur.melds[2] = [{ kind: 'chi', tiles: [9, 10, 11], from: 1, called: 11 }] as Meld[];
+    m.cur.melds[2] = [{ kind: 'ankan', tiles: [9, 9, 9, 9], from: 2, called: 9 }] as Meld[]; // 暗杠 4 张
     m.cur.callWindow = {
       discarder: 3, tile: 2,
-      options: { ron: true, pon: true, chi: [{ consume: [1, 3] }, { consume: [3, 4] }] },
+      options: { ron: true, pon: true, minkan: true, chi: [{ consume: [1, 3] }, { consume: [3, 4] }] },
       pending: [],
     };
     const hud = buildPlayHud(m, { logOpen: false });
     expect(validateLayoutNode(hud)).toEqual([]);
     const ids = collect(hud).map((n) => n.id);
     expect(ids).toContain('melds-0'); // 玩家副露块
-    expect(ids).toContain('melds-2'); // 他家副露块
+    expect(ids).toContain('melds-2'); // 他家副露块（暗杠 4 张）
+    expect(collect(hud).filter((n) => /^meld-2-0-\d$/.test(n.id ?? ''))).toHaveLength(4); // 杠=4 张牌面
     expect(ids).toContain('callbar');
     expect(ids).toContain('call-ron');
     expect(ids).toContain('call-pon');
+    expect(ids).toContain('call-kan'); // 大明杠钮
     expect(ids).toContain('call-chi-0'); // 两吃候选
     expect(ids).toContain('call-chi-1');
     expect(ids).toContain('call-pass');

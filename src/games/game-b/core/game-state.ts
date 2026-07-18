@@ -14,22 +14,24 @@ import { isWinningHand, tenpai, winsWithMelds, tenpaiWithMelds } from './hand-ev
 import { doraFromIndicator } from './wall.js';
 import { GameLog } from './game-log.js';
 import type { Meld } from './meld.js';
-import { chiCandidates, canPon, resolveClaims, kuikaeForbidden, type ChiCandidate, type CallClaim } from './calls.js';
+import { chiCandidates, canPon, canDaiminkan, ankanCandidates, kakanCandidates, resolveClaims, kuikaeForbidden, type ChiCandidate, type CallClaim } from './calls.js';
 
 export type Phase = 'playing' | 'win' | 'draw';
 
-/** 玩家（seat 0）对某弃牌的可鸣选项（P4 HUD 亮按钮·P3a 碰/吃；杠=P3b）。 */
+/** 玩家（seat 0）对某弃牌的可鸣选项（P4 HUD 亮按钮·碰/吃/荣 + 大明杠 P3b）。 */
 export interface PlayerCallOptions {
   ron: boolean;
   pon: boolean;
+  minkan: boolean; // 大明杠（暗手 3 张 == 弃牌）
   chi: ChiCandidate[]; // 可吃搭子候选（≥2 需选一）
 }
 /** 鸣牌窗口：某家弃牌后暂停·玩家(0)待决；AI(1-3)主张已算入 pending，待玩家决定后统一裁优先级。 */
 export interface CallWindow {
-  discarder: number; // 弃牌者
-  tile: number; // 被鸣候选牌码
+  discarder: number; // 弃牌者（抢杠窗口=加杠家）
+  tile: number; // 被鸣候选牌码（抢杠窗口=加杠牌种）
   options: PlayerCallOptions; // 玩家可选
-  pending: CallClaim[]; // 已决 AI 主张（碰/荣·P3a 无 AI 吃/杠）
+  pending: CallClaim[]; // 已决 AI 主张（碰/荣/大明杠·P3a 无 AI 吃/杠）
+  robKakan?: boolean; // 抢杠窗口（仅荣·过则加杠成立岭上摸·非下家摸）
 }
 
 export interface RoundResult {
@@ -48,10 +50,14 @@ export interface RoundState {
   melds: Meld[][]; // 四家副露（吃/碰·杠=P3b）——naki-design §1
   rivers: number[][]; // 四家牌河（打出序）
   wall: number[]; // 活山摸序（shift 取）
-  dead: number[]; // 王牌
-  doraInd: number[]; // 宝牌指示牌（翻开·初始 1）
+  dead: number[]; // 王牌（恒 14·杠时尾摸+活山补·守恒 bookkeeping）
+  doraInd: number[]; // 已翻表宝牌指示牌（初 1·每杠 +1·至多 5）
+  doraPool: number[]; // 预备表宝牌指示（含初·至多 5·杠翻示取序·naki-design §5）
+  uraPool: number[]; // 预备裏宝牌指示（至多 5·立直和了翻·P6 消费）
+  kanCount: number; // 已杠次数（岭上摸 / 新宝牌索引·四杠散了判据）
   turn: number; // 当前行动 seat
   drawn: number | null; // 当前 turn 刚摸的牌（待打）；null=已打待下家摸 / 鸣牌后待打
+  drawnRinshan: boolean; // 当前 drawn 是否岭上牌（岭上开花判定·P6·且不作海底）
   awaitDiscard: boolean; // 鸣牌（碰/吃）后无摸·待鸣家打出（drawn=null 但仍须打）
   forbiddenDiscard: number[]; // 喰い替え禁打牌种（本巡·打出后清空·R-2）
   callWindow: CallWindow | null; // 玩家(0)待鸣窗口（非 null=流程暂停等玩家决定）
@@ -114,15 +120,23 @@ export function startMatch(seed: number, seatNames = ['主角', '绫', '莉世',
 export function startRound(m: MatchState): void {
   const seed = randomInt(m.rng, 0, 0x7fffffff); // 每局派生子 seed（单 seed 贯穿）
   const deal = dealWall({ seed, akaDora: true });
+  // 表/裏宝牌指示预备池（王牌顶排·标准位：表=偶 index 4/6/8/10/12·裏=其下 5/7/9/11/13·至多 5 层）。
+  const dw = deal.deadWall;
+  const doraPool = [dw[4]!, dw[6]!, dw[8]!, dw[10]!, dw[12]!];
+  const uraPool = [dw[5]!, dw[7]!, dw[9]!, dw[11]!, dw[13]!];
   m.cur = {
     hands: deal.hands.map((h) => [...h]),
     melds: [[], [], [], []],
     rivers: [[], [], [], []],
     wall: [...deal.drawWall],
-    dead: deal.deadWall,
-    doraInd: [deal.doraIndicator],
+    dead: [...deal.deadWall],
+    doraInd: [doraPool[0]!],
+    doraPool,
+    uraPool,
+    kanCount: 0,
     turn: m.dealer,
     drawn: null,
+    drawnRinshan: false,
     awaitDiscard: false,
     forbiddenDiscard: [],
     callWindow: null,
@@ -142,6 +156,7 @@ function drawTile(m: MatchState): void {
   const rs = m.cur;
   if (rs.wall.length === 0) { ryuukyoku(m); return; }
   rs.drawn = rs.wall.shift()!;
+  rs.drawnRinshan = false; // 活山摸=非岭上
   m.log.push({ round: roundName(m), actor: m.seatNames[rs.turn]!, kind: 'draw', text: `摸 ${labelTile(rs.drawn)}（余 ${rs.wall.length}）`, tile: rs.drawn });
 }
 
@@ -253,6 +268,22 @@ function applyCall(m: MatchState, seat: number, type: CallClaim['type'], discard
   const rs = m.cur;
   const hand = rs.hands[seat]!;
   const k = kindOf(tile);
+  rs.rivers[discarder]!.pop(); // 被鸣牌离弃牌者牌河（入副露·防再荣/振听误判）
+  rs.lastDiscard = null;
+  rs.turn = seat;
+  if (type === 'minkan') { // 大明杠：暗手 3 张 + 弃牌 → 4·岭上摸后待打
+    const taken: number[] = [];
+    for (let n = 0; n < 3; n++) { const i = hand.findIndex((t) => kindOf(t) === k); if (i >= 0) taken.push(hand.splice(i, 1)[0]!); }
+    rs.melds[seat]!.push({ kind: 'minkan', tiles: [...taken, tile].sort((a, b) => kindOf(a) - kindOf(b) || a - b), from: discarder, called: tile });
+    rs.drawn = null;
+    rs.awaitDiscard = false;
+    rs.forbiddenDiscard = [];
+    m.log.push({ round: roundName(m), actor: m.seatNames[seat]!, kind: 'info', text: `大明杠 ${labelTile(tile)}（供=${m.seatNames[discarder]}）` });
+    rinshanDraw(m); // 岭上摸 → drawn≠null·打后 openCallWindow
+    revealKanDora(m); // 简化即翻（R-3「明杠打后翻」精确时序=P6 债·占位分下无差别）
+    return;
+  }
+  // 碰/吃：暗手 2 张 + 弃牌 → 3·无摸待打 + 喰い替え禁
   const consumeKinds = type === 'pon' ? [k, k] : [chi!.consume[0], chi!.consume[1]];
   const forbidden = type === 'pon' ? kuikaeForbidden(tile, null) : kuikaeForbidden(tile, chi!.consume);
   const taken: number[] = [];
@@ -266,9 +297,6 @@ function applyCall(m: MatchState, seat: number, type: CallClaim['type'], discard
     from: discarder,
     called: tile,
   });
-  rs.rivers[discarder]!.pop(); // 被鸣牌离弃牌者牌河（入副露·防再荣/振听误判）
-  rs.lastDiscard = null;
-  rs.turn = seat;
   rs.drawn = null;
   rs.awaitDiscard = true; // 鸣后无摸·须打一张
   rs.forbiddenDiscard = forbidden;
@@ -301,34 +329,173 @@ function playerCallOptions(m: MatchState, discarder: number, tile: number): Play
   const seat = PLAYER_SEAT;
   const ron = winsWithMelds(rs.hands[seat]!, rs.melds[seat]!.length, tile) && !isFuriten(m, seat);
   const pon = !rs.riichi[seat] && canPon(rs.hands[seat]!, tile);
+  const minkan = !rs.riichi[seat] && canDaiminkan(rs.hands[seat]!, tile);
   const chi = !rs.riichi[seat] && seat === (discarder + 1) % 4 ? chiCandidates(rs.hands[seat]!, tile) : [];
-  return { ron, pon, chi };
+  return { ron, pon, minkan, chi };
 }
 
-/** 玩家决定「过」（不鸣）：AI 主张照常裁应用。 */
+/** 玩家决定「过」（不鸣）：抢杠窗口→加杠成立岭上摸；普通窗口→AI 主张照常裁应用。 */
 export function playerPass(m: MatchState): void {
   const cw = m.cur.callWindow;
   if (!cw) return;
   m.cur.callWindow = null;
+  if (cw.robKakan) { resolveKakanRob(m, cw, null); return; }
   resolveAndApplyCalls(m, cw.discarder, cw.tile, cw.pending);
 }
 
-/** 玩家决定鸣牌（荣/碰/吃）：与 AI 主张合并裁优先级（玩家的荣压 AI 碰·AI 荣压玩家碰…）。 */
-export function playerCall(m: MatchState, choice: { type: 'ron' | 'pon' | 'chi'; chi?: ChiCandidate }): void {
+/** 玩家决定鸣牌（荣/碰/吃/大明杠）：与 AI 主张合并裁优先级（荣>碰/杠>吃）。抢杠窗口只认荣。 */
+export function playerCall(m: MatchState, choice: { type: 'ron' | 'pon' | 'chi' | 'minkan'; chi?: ChiCandidate }): void {
   const cw = m.cur.callWindow;
   if (!cw) return;
   m.cur.callWindow = null;
+  if (cw.robKakan) { resolveKakanRob(m, cw, choice.type === 'ron' ? PLAYER_SEAT : null); return; }
   const claims: CallClaim[] = [...cw.pending, { seat: PLAYER_SEAT, type: choice.type }];
   applyWinners(m, cw.discarder, cw.tile, resolveClaims(claims), choice.chi);
 }
 
-/** headless/AI 代决玩家鸣牌窗口（seat 0 亦 AI 时·AI-vs-AI walkthrough 用）：同 AI 策略决碰/荣/过。 */
+/** 抢杠裁决：有人荣→加杠不成立·加杠家放铳；无人荣→加杠成立·岭上摸。 */
+function resolveKakanRob(m: MatchState, cw: CallWindow, playerRonSeat: number | null): void {
+  const claims: CallClaim[] = [...cw.pending];
+  if (playerRonSeat !== null) claims.push({ seat: playerRonSeat, type: 'ron' });
+  if (claims.length > 0) {
+    const w = claims.reduce((a, b) => (callOffset(cw.discarder, a.seat) <= callOffset(cw.discarder, b.seat) ? a : b));
+    settleWin(m, 'ron', w.seat, cw.discarder, cw.tile, [...m.cur.hands[w.seat]!, cw.tile]); // 抢杠荣（放铳=加杠家）
+    return;
+  }
+  finalizeKan(m); // 无人抢 → 加杠成立·岭上摸 + 翻新宝牌
+}
+
+/** headless/AI 代决玩家鸣牌窗口（seat 0 亦 AI 时·AI-vs-AI walkthrough 用）：抢杠窗口→AI 荣/过；普通→碰/荣/过。 */
 export function aiResolveCallWindow(m: MatchState): void {
   const cw = m.cur.callWindow;
   if (!cw) return;
+  if (cw.robKakan) { // 抢杠：能荣则荣（同 aiDecideCall 荣逻辑），否则过
+    if (winsWithMelds(m.cur.hands[PLAYER_SEAT]!, m.cur.melds[PLAYER_SEAT]!.length, cw.tile) && !isFuriten(m, PLAYER_SEAT)) playerCall(m, { type: 'ron' });
+    else playerPass(m);
+    return;
+  }
   const claim = aiDecideCall(m, PLAYER_SEAT, cw.discarder, cw.tile);
   if (claim) playerCall(m, { type: claim.type as 'ron' | 'pon' });
   else playerPass(m);
+}
+
+// ── 杠（暗杠/大明杠/加杠 + 岭上摸 / 新宝牌 / 抢杠·naki-design §5·P3b）─────────────────────
+/** 岭上摸：王牌前区取 1·活山尾补 1（王牌恒 14·守恒 bookkeeping）；标记 drawnRinshan + kanCount++。 */
+function rinshanDraw(m: MatchState): void {
+  const rs = m.cur;
+  const tile = rs.dead.shift();
+  if (tile === undefined) { ryuukyoku(m); return; } // 王牌耗尽（理论极限·兜底流局）
+  if (rs.wall.length > 0) rs.dead.push(rs.wall.pop()!); // 活山尾补进王牌（守恒·杠减活山→局终得更快）
+  rs.drawn = tile;
+  rs.drawnRinshan = true;
+  rs.kanCount++;
+  m.log.push({ round: roundName(m), actor: m.seatNames[rs.turn]!, kind: 'draw', text: `岭上摸 ${labelTile(tile)}（第 ${rs.kanCount} 杠·余 ${rs.wall.length}）`, tile });
+}
+
+/** 翻新表宝牌指示（杠·至多 5 层）。R-3「明杠打后翻」精确时序=P6 债（占位分下与即翻无差别）。 */
+function revealKanDora(m: MatchState): void {
+  const rs = m.cur;
+  if (rs.doraInd.length >= rs.doraPool.length) return; // 已翻满 5 层
+  rs.doraInd.push(rs.doraPool[rs.doraInd.length]!);
+  m.log.push({ round: roundName(m), actor: '系统', kind: 'dora', text: `杠·新宝牌指示 ${labelTile(rs.doraInd[rs.doraInd.length - 1]!)}（宝牌 ${labelTile(doraFromIndicator(rs.doraInd[rs.doraInd.length - 1]!))}）` });
+}
+
+/** 加杠成立（未被抢）→ 岭上摸 + 翻新宝牌（续摸打）。 */
+function finalizeKan(m: MatchState): void {
+  rinshanDraw(m);
+  revealKanDora(m);
+}
+
+/** 暗杠候选牌种（自家回合·含刚摸·某种 4 张）；立直后禁（v1·不变听暗杠=债）。 */
+export function ankanKinds(m: MatchState): number[] {
+  const rs = m.cur;
+  const t = rs.turn;
+  if (rs.phase !== 'playing' || rs.drawn === null || rs.callWindow !== null || rs.riichi[t]) return [];
+  return ankanCandidates([...rs.hands[t]!, rs.drawn]);
+}
+export function canAnkan(m: MatchState): boolean { return ankanKinds(m).length > 0; }
+
+/** 宣暗杠（kind=4 张同种）：组暗杠副露·即翻新宝牌（R-3）·岭上摸续摸打。 */
+export function declareAnkan(m: MatchState, kind: number): void {
+  const rs = m.cur;
+  const t = rs.turn;
+  if (!ankanKinds(m).includes(kind)) return;
+  const all = [...rs.hands[t]!, rs.drawn!];
+  const taken: number[] = [];
+  const rest: number[] = [];
+  for (const c of all) { if (kindOf(c) === kind && taken.length < 4) taken.push(c); else rest.push(c); }
+  rs.hands[t] = rest.sort((a, b) => kindOf(a) - kindOf(b) || a - b);
+  rs.drawn = null;
+  rs.melds[t]!.push({ kind: 'ankan', tiles: taken.sort((a, b) => kindOf(a) - kindOf(b) || a - b), from: t, called: kind });
+  m.log.push({ round: roundName(m), actor: m.seatNames[t]!, kind: 'info', text: `暗杠 ${labelTile(kind)}` });
+  revealKanDora(m); // 暗杠即翻（R-3）
+  rinshanDraw(m);
+}
+
+/** 加杠候选牌种（自家回合·已碰某种 + 手中/摸含第 4 张）；立直后禁。 */
+export function kakanKinds(m: MatchState): number[] {
+  const rs = m.cur;
+  const t = rs.turn;
+  if (rs.phase !== 'playing' || rs.drawn === null || rs.callWindow !== null || rs.riichi[t]) return [];
+  return kakanCandidates([...rs.hands[t]!, rs.drawn], rs.melds[t]!);
+}
+export function canKakan(m: MatchState): boolean { return kakanKinds(m).length > 0; }
+
+/** 加杠可被抢杠的家（非加杠家·能荣加杠牌·非振听）。国士抢暗杠 v1 不做（R-6·此为加杠抢=标准允许）。 */
+function kakanRobbers(m: MatchState, declarer: number, kind: number): number[] {
+  const rs = m.cur;
+  const out: number[] = [];
+  for (let off = 1; off <= 3; off++) {
+    const i = (declarer + off) % 4;
+    if (winsWithMelds(rs.hands[i]!, rs.melds[i]!.length, kind) && !isFuriten(m, i)) out.push(i);
+  }
+  return out;
+}
+
+/** 宣加杠（kind）：升碰为加杠·开抢杠窗口（可荣→杠不成立放铳）；未抢→岭上摸 + 翻新宝牌。 */
+export function declareKakan(m: MatchState, kind: number): void {
+  const rs = m.cur;
+  const t = rs.turn;
+  if (!kakanKinds(m).includes(kind)) return;
+  const all = [...rs.hands[t]!, rs.drawn!];
+  const i4 = all.findIndex((c) => kindOf(c) === kind);
+  const fourth = all.splice(i4, 1)[0]!;
+  rs.hands[t] = all.sort((a, b) => kindOf(a) - kindOf(b) || a - b);
+  rs.drawn = null;
+  const pon = rs.melds[t]!.find((md) => md.kind === 'pon' && kindOf(md.tiles[0]!) === kind)!;
+  pon.kind = 'kakan';
+  pon.tiles = [...pon.tiles, fourth].sort((a, b) => kindOf(a) - kindOf(b) || a - b);
+  m.log.push({ round: roundName(m), actor: m.seatNames[t]!, kind: 'info', text: `加杠 ${labelTile(kind)}` });
+  const robbers = kakanRobbers(m, t, kind);
+  const pending: CallClaim[] = robbers.filter((s) => s !== PLAYER_SEAT).map((s) => ({ seat: s, type: 'ron' as const }));
+  if (m.interactiveCalls && robbers.includes(PLAYER_SEAT)) {
+    rs.callWindow = { discarder: t, tile: kind, options: { ron: true, pon: false, minkan: false, chi: [] }, pending, robKakan: true };
+    return; // 等玩家抢/过（aiResolveCallWindow 代决）
+  }
+  if (pending.length > 0) { // AI 抢杠
+    const w = pending.reduce((a, b) => (callOffset(t, a.seat) <= callOffset(t, b.seat) ? a : b));
+    settleWin(m, 'ron', w.seat, t, kind, [...rs.hands[w.seat]!, kind]);
+    return;
+  }
+  finalizeKan(m);
+}
+
+/** AI 是否该暗/加杠（保守：仅当杠后仍听牌·不破手）——确定性·记债换 t2-behavior-tree。 */
+function aiShouldKan(m: MatchState): { type: 'ankan' | 'kakan'; kind: number } | null {
+  const rs = m.cur;
+  const t = rs.turn;
+  const keepsTenpai = (concealedAfter: number[], meldCountAfter: number): boolean =>
+    tenpaiWithMelds(concealedAfter, meldCountAfter).length > 0;
+  for (const kind of ankanKinds(m)) {
+    const rest = [...rs.hands[t]!, rs.drawn!].filter((c) => kindOf(c) !== kind);
+    if (keepsTenpai(rest, rs.melds[t]!.length + 1)) return { type: 'ankan', kind };
+  }
+  for (const kind of kakanKinds(m)) {
+    const rest = [...rs.hands[t]!, rs.drawn!];
+    rest.splice(rest.findIndex((c) => kindOf(c) === kind), 1);
+    if (keepsTenpai(rest, rs.melds[t]!.length)) return { type: 'kakan', kind }; // 加杠不增 meldCount（升碰）
+  }
+  return null;
 }
 
 /** 简版结算（占位固定分·让点数动起来·§3 真役符替换）。 */
@@ -523,6 +690,8 @@ export function aiTurn(m: MatchState): void {
   if (rs.phase !== 'playing') return;
   if (rs.callWindow !== null) { aiResolveCallWindow(m); return; } // 先决待鸣窗口（seat 0 亦 AI）
   if (canTsumo(m)) { declareTsumo(m); return; }
+  const kan = aiShouldKan(m); // 暗/加杠（保守·仅不破听）→ 岭上摸后本函数再入
+  if (kan) { if (kan.type === 'ankan') declareAnkan(m, kan.kind); else declareKakan(m, kan.kind); return; }
   if (rs.riichi[rs.turn] && rs.drawn !== null) { discard(m, rs.drawn); return; } // 立直后锁摸切
   if (canRiichi(m)) { declareRiichi(m); return; } // 门清听牌→立直（记债换 t2-behavior-tree 人设概率）
   discard(m, aiChooseDiscard(m)); // 含鸣牌后无摸待打（awaitDiscard）

@@ -6,7 +6,7 @@
 // UI 铁律：全 LayoutNode 闭集·写世界只走 action 信号（点手牌→play-tile·自摸→act-tsumo…）。
 import type { LayoutNode } from '@ui/components/index.js';
 import type { MatchState } from './core/game-state.js';
-import { canTsumo, canRiichi, labelTile, seatWind, isWinLikeEnd, isPlayerTurn, isPlayerCallWindow, CLOTH_LABELS, STRIP_ITEMS } from './core/game-state.js';
+import { canTsumo, canRiichi, canAnkan, canKakan, labelTile, seatWind, isWinLikeEnd, isPlayerTurn, isPlayerCallWindow, CLOTH_LABELS, STRIP_ITEMS } from './core/game-state.js';
 import { kindStr, isRed, kindOf } from './core/tiles-def.js';
 import type { Meld } from './core/meld.js';
 import type { ChiCandidate } from './core/calls.js';
@@ -16,6 +16,7 @@ import { FIELD_W, FIELD_H } from './theme.js';
 export const PLAY_TILE = 'play-tile'; // arg=手牌位 key（'0'..'12' 暗手位 / 'd' 摸牌）·两步：先选中再打出
 export const ACT_TSUMO = 'act-tsumo';
 export const ACT_RIICHI = 'act-riichi';
+export const ACT_KAN = 'act-kan'; // 自家回合暗杠/加杠（P3b·自动取首个可杠）
 export const NEXT_ROUND = 'next-round';
 export const TOGGLE_LOG = 'toggle-log';
 export const BACK_MENU = 'back-menu';
@@ -23,6 +24,7 @@ export const COPY_LOG = 'copy-log'; // 复制完整日志到剪贴板（查 bug�
 // 鸣牌窗口按钮（P4·owner 点名「先上鸣牌」·玩家可碰/吃/荣/过）。
 export const CALL_PON = 'call-pon';
 export const CALL_CHI = 'call-chi'; // arg=搭子候选 index
+export const CALL_KAN = 'call-kan'; // 大明杠（他家弃牌）
 export const CALL_RON = 'call-ron';
 export const CALL_PASS = 'call-pass';
 
@@ -225,6 +227,7 @@ function actionBar(m: MatchState): LayoutNode {
     layout: { x: FIELD_W - 250, y: 12, direction: 'row', gap: 8 },
     children: [
       { type: 'Button', id: 'act-tsumo', props: { label: '自摸', kind: 'hero', disabled: !canTsumo(m), action: ACT_TSUMO } },
+      ...(canAnkan(m) || canKakan(m) ? [{ type: 'Button' as const, id: 'act-kan', props: { label: '杠', kind: 'primary' as const, action: ACT_KAN } }] : []),
       { type: 'Button', id: 'act-riichi', props: { label: '立直', kind: 'primary', disabled: !canRiichi(m), action: ACT_RIICHI } },
       { type: 'Button', id: 'act-log', props: { label: '📜', kind: 'quiet', action: TOGGLE_LOG } },
       { type: 'Button', id: 'act-menu', props: { label: '☰', kind: 'quiet', action: BACK_MENU } },
@@ -248,8 +251,9 @@ function callBar(m: MatchState): LayoutNode | null {
   const btns: LayoutNode[] = [
     { type: 'Label', id: 'call-hint', props: { text: `${m.seatNames[cw.discarder]} 打【${labelTile(cw.tile)}】`, size: 'sm', bold: true, color: 'gold' } },
   ];
-  if (o.ron) btns.push({ type: 'Button', id: 'call-ron', props: { label: '🀄 荣和', kind: 'primary', action: CALL_RON } });
+  if (o.ron) btns.push({ type: 'Button', id: 'call-ron', props: { label: cw.robKakan ? '🀄 抢杠' : '🀄 荣和', kind: 'primary', action: CALL_RON } });
   if (o.pon) btns.push({ type: 'Button', id: 'call-pon', props: { label: '碰', kind: 'primary', action: CALL_PON } });
+  if (o.minkan) btns.push({ type: 'Button', id: 'call-kan', props: { label: '杠', kind: 'primary', action: CALL_KAN } });
   o.chi.forEach((c, i) => btns.push({ type: 'Button', id: `call-chi-${i}`, props: { label: `吃 ${chiLabel(c, cw.tile)}`, kind: 'primary', action: CALL_CHI, actionArg: String(i) } }));
   btns.push({ type: 'Button', id: 'call-pass', props: { label: '过', kind: 'quiet', action: CALL_PASS } });
   return {

@@ -16,11 +16,12 @@ import { buildSettings, defaultSettings, SET_SPEED, SET_LOGDEFAULT, SETTINGS_BAC
 import {
   startMatch, aiTurn, discard, declareTsumo, canTsumo, declareRiichi, nextRound, isPlayerTurn,
   playerCall, playerPass, isPlayerCallWindow,
+  canAnkan, canKakan, ankanKinds, kakanKinds, declareAnkan, declareKakan,
   type MatchState,
 } from './core/game-state.js';
 import {
-  buildPlayHud, PLAY_TILE, ACT_TSUMO, ACT_RIICHI, NEXT_ROUND, TOGGLE_LOG, BACK_MENU, COPY_LOG,
-  CALL_PON, CALL_CHI, CALL_RON, CALL_PASS,
+  buildPlayHud, PLAY_TILE, ACT_TSUMO, ACT_RIICHI, ACT_KAN, NEXT_ROUND, TOGGLE_LOG, BACK_MENU, COPY_LOG,
+  CALL_PON, CALL_CHI, CALL_KAN, CALL_RON, CALL_PASS,
 } from './play-ui.js';
 import { FIELD_W, FIELD_H, MENU_W, MENU_H, MENU_BG, SAKURA, NIGHT, TINT } from './theme.js';
 
@@ -122,8 +123,16 @@ export function mount(container: HTMLElement): () => void {
         const cand = match.cur.callWindow?.options.chi[Number(arg)];
         if (isPlayerCallWindow(match) && cand) { playerCall(match, { type: 'chi', chi: cand }); selectedKey = null; render(); scheduleAi(); }
       },
+      [CALL_KAN]: () => { if (isPlayerCallWindow(match)) { playerCall(match, { type: 'minkan' }); selectedKey = null; render(); scheduleAi(); } }, // 大明杠
       [CALL_RON]: () => { if (isPlayerCallWindow(match)) { playerCall(match, { type: 'ron' }); selectedKey = null; render(); scheduleAi(); } },
       [CALL_PASS]: () => { if (isPlayerCallWindow(match)) { playerPass(match); selectedKey = null; render(); scheduleAi(); } },
+      // 自家回合暗杠/加杠（首个可杠·杠后岭上摸→仍玩家回合待打；加杠被抢则本局终）。
+      [ACT_KAN]: () => {
+        if (canAnkan(match)) declareAnkan(match, ankanKinds(match)[0]!);
+        else if (canKakan(match)) declareKakan(match, kakanKinds(match)[0]!);
+        else return;
+        selectedKey = null; render(); scheduleAi();
+      },
       [ACT_TSUMO]: () => { if (canTsumo(match)) { declareTsumo(match); selectedKey = null; render(); } },
       [ACT_RIICHI]: () => { declareRiichi(match); selectedKey = null; render(); scheduleAi(); }, // 内含 canRiichi 门·宣言牌打出后推进
       [NEXT_ROUND]: () => { if (!match.over) { nextRound(match); selectedKey = null; render(); scheduleAi(); } },
