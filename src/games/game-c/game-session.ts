@@ -140,11 +140,18 @@ export class HoldemSession {
   }
 
   // ── 典当（点哪件当哪件·owner 拍板）+ 缴盲兜底 ────────────────────
+  // REQ-C-106 裁定（PE-C 2026-07-18）=**手内即时生效**（续命本意：点衣换筹当下就能跟注）。
+  //   同步当前手 hand.players 栈——① 本手下注即可用刚换的筹码；② 经 settle 的 syncStacks 保全
+  //   （旧码只加 session.seats.stack·手内不同步且被 syncStacks 覆盖→蒸发·守恒破）。
+  //   边界：已 all-in（本手已打光坐庄旁观）者不就地解 all-in（避免重开已闭合行动）——加的筹码随
+  //   syncStacks 落到局级栈·下一手 startHand 即用；未 all-in 者（正常续命流：面注→点当→跟）当下可用。
   pawn(seat: SeatId, itemId: string): boolean {
     const s = this.seats[seat];
     const item = CLOTHING_ITEMS.find((c) => c.id === itemId);
     if (!item || s.pawned.has(itemId) || s.eliminated) return false;
     s.pawned.add(itemId); s.stack += item.value;
+    const p = this.hand?.players.find((x) => x.seat === seat);
+    if (p) p.stack += item.value; // 手内同步（守恒·可用）；all-in 标志不动=换来的筹码顺延下一手
     return true;
   }
   private autoPawnIfBroke(seat: SeatId): void {

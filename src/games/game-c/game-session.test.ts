@@ -130,6 +130,22 @@ describe('game-c game-session — 典当续命', () => {
     expect(s.wardrobeLeft(1)).toBe(CLOTHING_ITEMS.length - 1);
   });
 
+  it('REQ-C-106 手内典当即时生效：stackOf 立增·结算不蒸发（守恒）', () => {
+    const s = new HoldemSession(20260717);
+    const before = s.stackOf(0); // 主角手内实时栈（读 hand.players）
+    const beforeTotal = totalChips(s);
+    expect(s.pawn(0, 'lingerie')).toBe(true); // 内衣 1000
+    expect(s.stackOf(0)).toBe(before + 1000); // 手内即时可用（旧码 stackOf 不变=换的钱看不见）
+    expect(totalChips(s)).toBe(beforeTotal + 1000); // 注入随即入账（旧码手内不计→守恒破）
+    expect(totalChips(s)).toBe(SIX_START + pawnedValue(s));
+    // 打到摊牌：确认换来的筹码不被 settle 的 syncStacks 覆盖蒸发（旧码此处漏 1000）
+    drive(s);
+    let guard = 0;
+    while (s.phase === 'betting' && guard++ < 50) { const la = s.legalForHero(); if (!la) break; s.heroAct(la.check ? { kind: 'check' } : { kind: 'call' }); drive(s); }
+    expect(s.phase).toBe('showdown');
+    expect(totalChips(s)).toBe(SIX_START + pawnedValue(s)); // 结算后仍守恒（典当值全程在账·不蒸发）
+  });
+
   it('全套典当上限 = 衣物总值 2450', () => {
     const s = new HoldemSession(1);
     for (const c of CLOTHING_ITEMS) s.pawn(3, c.id);

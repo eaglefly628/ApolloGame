@@ -91,9 +91,13 @@ export class HoldemAcceptanceWorld {
     res('reveal-first', sd?.rows[0]?.seat ?? -1);
     res('winner-count', sd?.winners.length ?? 0);
     res('showdown-pot', sd?.potTotal ?? 0);
-    res('won-total', sd ? sd.rows.reduce((a, r) => a + r.won, 0) : 0);
+    const wonTotal = sd ? sd.rows.reduce((a, r) => a + r.won, 0) : 0;
+    res('won-total', wonTotal);
     sv('reveal-order', sd ? sd.rows.map((r) => r.seat).join(',') : '');
     sv('winner-type', sd?.rows.find((r) => r.won > 0)?.type ?? '');
+    // REQ-C-108①：分池守恒布尔（Lead schema 断言只支持 res-vs-常量·表达不了 won-total==showdown-pot 的
+    //   res-vs-res）→ 投影成 flag 供剧本一句 `pot-conserved eq true` 断精确守恒；无摊牌=真空守恒 true。
+    flag('pot-conserved', sd ? wonTotal === sd.potTotal : true);
     return m;
   }
 
@@ -117,10 +121,25 @@ export function applySignal(world: HoldemAcceptanceWorld, signal: string, args?:
   const s = world.session;
   switch (signal) {
     case 'hero_act': {
-      const kind = String(args?.action ?? '') as Action['kind'];
-      if (kind === 'raise') s.heroAct({ kind: 'raise', to: Number(args?.to ?? 0) });
-      else if (kind === 'fold' || kind === 'check' || kind === 'call') s.heroAct({ kind });
-      else throw new Error(`hero_act: 未知 action ${JSON.stringify(args?.action)}（fold/check/call/raise）`);
+      const action = String(args?.action ?? '');
+      // REQ-C-108②：主角非法行动（如不足 min-raise）经 betting-engine.act 抛错——在此 catch 成 no-op，
+      //   使剧本能断「非法被拒·态不变」（真 UI 里该键本就不可点·合法性单一真相在引擎·此处只不外抛）。
+      try {
+        if (action === 'raise') s.heroAct({ kind: 'raise', to: Number(args?.to ?? 0) });
+        else if (action === 'fold') s.heroAct({ kind: 'fold' });
+        else if (action === 'check') s.heroAct({ kind: 'check' });
+        else if (action === 'call') s.heroAct({ kind: 'call' });
+        else if (action === 'allin') {
+          // 全下：能加则加到全下位·否则跟注全下（REQ-C-108③ 用·配合逐座栈可构边池矩阵）。
+          const la = s.legalForHero();
+          if (la?.raise) s.heroAct({ kind: 'raise', to: la.raise.max });
+          else if (la?.call !== undefined) s.heroAct({ kind: 'call' });
+          else if (la?.check) s.heroAct({ kind: 'check' });
+        } else throw new Error(`hero_act: 未知 action ${JSON.stringify(args?.action)}（fold/check/call/raise/allin）`);
+      } catch (e) {
+        if (!['raise', 'fold', 'check', 'call'].includes(action)) throw e; // allin/未知信号仍抛（剧本笔误要暴露）
+        // 合法动作类型但被引擎判非法（不足 min-raise/面注过牌…）=no-op·态不变（剧本可断）
+      }
       break;
     }
     case 'next_hand':

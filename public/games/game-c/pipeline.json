@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  94 passed (94)）· 验收剧本 5 场景绿",
-      "at": "2026-07-18T05:13:30.154Z",
-      "gameHash": "252695132dcc9a50"
+      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  95 passed (95)）· 验收剧本 5 场景绿",
+      "at": "2026-07-18T05:23:44.015Z",
+      "gameHash": "32f98ee8cd4560ea"
     },
     "S5": {
       "exit": 0,
@@ -332,6 +332,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T05:13:30.154Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "rebase到GD-C 5场景之上·REQ-C-106+108修·重跑刷证据",
+      "at": "2026-07-18T05:23:40.623Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T05:23:44.015Z"
     }
   ],
   "outOfOrder": [
@@ -424,6 +436,11 @@
       "stage": "S4",
       "reason": "GD-C 验收剧本 ①②③ 精确结算断言+三层边池矩阵(05)·rebase 至 REQ-C-105 边池修复后重验·S2/S3 复查过期既有乱序",
       "at": "2026-07-18T05:13:26.380Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "rebase到GD-C 5场景之上·REQ-C-106+108修·重跑刷证据",
+      "at": "2026-07-18T05:23:40.623Z"
     }
   ],
   "reviews": {

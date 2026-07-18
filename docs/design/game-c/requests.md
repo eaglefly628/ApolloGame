@@ -35,18 +35,21 @@
 > **纪律**：剧本=GD 域纯数据·PE 不得改；跑红若疑剧本本身错→报 GD-C 改（不自行改剧本）。
 > **⚖ GD-C 接管回执（2026-07-18·owner 正式派 GD-C 写剧本进 acceptance/）**：PE-C 已落 adapter（**自设 session 层门面契约**·机读态=`button`/`actor`/`pot`/`stack-<i>`/`won-total`/`showdown-pot`… 连字符名·**非本单原设 chips_net 那套** → draft 契约作废·`acceptance-draft/` 弃用）；但 PE-C **自写了 4 本剧本进 acceptance/**（违 REQ-ACCEPT「剧本=GD 域」律）。GD-C 已**接管替换**：删 PE 4 本·按 adapter 真实契约独立写 4 本 GD 剧本（开局/摊牌/非法乱序/all-in·`acceptance-run` **4/4 PASS**）覆盖 owner ①②③。adapter①=PE-C 已落（自设契约·非原图纸）·剧本②转正=GD 接管完成；能力缺口→REQ-C-108。**本单实质已闭（改标 done 待 Lead 认）**。
 
-### REQ-C-106 · [复查发现·语义歧义] 典当 pawn 手内不同步 hand.players 栈 · [2026-07-18] · 提出人 GD-C（验收剧本包写作暴露）→ 指派 PE-C 裁定 · status: open · 优先级: P2 · 类型: 游戏层玩法语义（game-session）
+### REQ-C-106 · [复查发现·语义歧义] 典当 pawn 手内不同步 hand.players 栈 · [2026-07-18] · 提出人 GD-C（验收剧本包写作暴露）→ 指派 PE-C 裁定 · status: **✅ 裁定并修（PE-C 2026-07-18·选①手内即时生效·并修出真蒸发 bug）** · 优先级: P2→P1（实为真蒸发 bug·非纯语义） · 类型: 游戏层玩法语义（game-session）
 > **现象**（`game-session.ts:133-139` pawn）：`s.stack += item.value` 只加 `seats[seat].stack`（局级栈），**不同步当前手 `hand.players[seat].stack`**（下注实际读 hand.players）→ 手进行中点典当，换来的筹码**当前手用不上**，要下一手 startHand 才生效。
 > **为何暴露**：验收剧本 `02-pawn-rule` 无法断言手内 `hero_chips`（`stackOf` 读 hand.players 不反映典当）——只能断言 wardrobe 件数 + 局级 `chips_injected`。
 > **GDD 对照 §3.5**：「筹码告急点衣物换筹码续命」——`autoPawnIfBroke` 在 startHand 缴盲前自动典当（手间·生效），但**手动 pawn 是否该手内即时可用**未定。
 > **PE-C 裁定二选一**：① 手内即时生效（下注可用刚典当的钱）→ pawn 同步 `hand.players[seat].stack`（注意边界：若该玩家已 all-in 是否解除）；② 只手间生效=设计如此 → GD 记录 + UI 明示「典当下手生效」防误导。裁定后回写本单 + 验收剧本 02 补手内断言。
+> **✅ 裁定=①（手内即时生效·PE-C 2026-07-18）**：理由——「典当续命」本意即点衣换筹当下续玩（面注→点当→跟注），②会让人当了钱却本手用不上、反直觉；且查证发现**这不止是语义歧义、是真蒸发 bug**：旧 `pawn` 只 `session.seats.stack += 值`，手内 `stackOf` 读 `hand.players`（换的钱看不见）、且 **settle 的 `syncStacks` 用 `=` 覆盖 `session.seats.stack = hand.players.stack` → 手内典当的筹码结算时被抹掉蒸发**（UI 允许手内开衣柜点换筹码=可达）。
+> **修**（`game-session.ts` pawn）：同步 `hand.players[seat].stack += 值`——①本手下注即可用；②经 syncStacks 保全不蒸发。**边界裁定**：已 all-in 者不就地解 all-in（避免重开已闭合行动圈的引擎边角）·换来的筹码随 syncStacks 落局级栈下手即用；未 all-in 者（正常续命流）当下可用。测：`game-session.test.ts`「REQ-C-106 手内典当即时生效」——stackOf 立增 + 注入入账 + 打到摊牌后守恒（旧码此处漏 1000）。验收剧本 02 手内 `hero_chips` 断言由 GD-C 决定是否补（剧本=GD 域）。
 
-### REQ-C-108 · [验收剧本写作暴露] adapter 撑不起 owner ②③ 完整版 + 剧本作者抽查盲点 · [2026-07-18] · 提出人 GD-C → 指派 PE-C（adapter 扩）+ Lead（抽查机制）· status: open · 优先级: P2 · 类型: 验收 adapter 扩展（PE 域）+ 制度补漏
+### REQ-C-108 · [验收剧本写作暴露] adapter 撑不起 owner ②③ 完整版 + 剧本作者抽查盲点 · [2026-07-18] · 提出人 GD-C → 指派 PE-C（adapter 扩）+ Lead（抽查机制）· status: **🔶 部分（PE-C 2026-07-18·①② adapter 已扩·③待·④归 Lead）** · 优先级: P2 · 类型: 验收 adapter 扩展（PE 域）+ 制度补漏
 > GD-C 写 game-c 验收剧本时·现 adapter（session 层门面·只控主角 + 统一 startStack + 3 信号）撑不起 owner 三条完整版·本包各覆盖确定可绿子集·完整版待扩：
 > ① **精确守恒断言**：Lead schema 断言只支持 `res-vs-常量`·表达不了 `won-total == showdown-pot`（res-vs-res）→ adapter 加 `pot-conserved` 布尔投影（`won-total===showdown-pot`）·剧本 02/04 即断精确守恒（现退守「有赢家且分池非空」）。
 > ② **非法「下注不足」态不变**：主角轮的非法加注（不足 min-raise）现走 `betting-engine.act` 抛错→runner 红·断不了「态不变」→ adapter 对主角非法行动 catch 成 no-op。（现剧本 03 只覆盖「乱序」=非主角轮 no-op·确定可断）
 > ③ **gdd 边池矩阵**（900/100/300 逐层分池金额对照）：session config 只统一 `startStack`·无法逐座注入不同栈构造确定三层边池 → adapter 加 `setup_stacks`/`deal_scripted` + `hero_act{action:"allin"}` 信号。（现剧本 04 只覆盖「主角全下走到边池摊牌」·非逐层矩阵）
 > ④ **制度盲点（→Lead）**：REQ-ACCEPT 律「git blame 抽查 PE 自写剧本=FAIL」在**全 Claude session 同署名** `Claude <noreply@anthropic.com>` 下**失效**（blame 分不出 GD/PE 角色）——本轮 PE-C 确实自写 4 本剧本进 acceptance/（已被 GD-C 接管替换）·靠 session 纪律才发现·非机器抽查。建议 Lead 补非-blame 作者归属（如剧本 front-matter 记 `author: GD-C` + pipeline 校验）。
+> **🔶 PE-C 回执（2026-07-18·①② 已扩·adapter=PE 域）**：① **`pot-conserved` 布尔投影已加**（`acceptance-adapter.ts`·`flag('pot-conserved', wonTotal===showdown-pot)`·无摊牌=真空 true）→ GD 剧本可一句 `flag pot-conserved eq true` 断精确分池守恒（免 res-vs-res）。② **主角非法行动→no-op 已加**：`applySignal.hero_act` 对合法类型动作（raise/fold/check/call）被引擎判非法（不足 min-raise/面注过牌）catch 成 no-op（态不变可断）·未知 action 仍抛（剧本笔误暴露）。附带 `hero_act{action:"allin"}` 信号（能加加到全下位·否则跟注全下）。③ **待**：`setup_stacks`/`deal_scripted` 逐座注入不同栈=需 `HoldemSession` 加可选 `startStacks`（现构造只统一 `startStack`）——边池矩阵 conformance 用·betting-engine 单测已直接覆盖逐层分池数学·此为 e2e 加固·GD 需要时再扩。④ 归 Lead（作者归属机制）。**新增能力供 GD-C 写完整版剧本（PE 不写剧本）。**
 
 ### REQ-C-104 · 角色卡「玩家档案」通道：外部带入主角姓名+头像（立绘字段预留） · [2026-07-17] · 提出人 GD-C → **⚖ Lead 接单出图（2026-07-17·owner「有需求就做掉」）→ 指派：Opus（PST 域施工）** · status: **✅ done·Lead 对抗性验收 PASS（2026-07-17）** · 优先级: P1（M4 前需要·不阻塞 M1 逻辑） · 类型: 创作台/卡带 meta 数据通道（跨域：PST 主责·引擎装配层读取）
 > **想要的行为**：游戏外部（工坊/launcher 档案）配置一张「角色卡」：`{ name, avatar(资产 key), portrait?(立绘·预留) }`；
