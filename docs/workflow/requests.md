@@ -50,8 +50,9 @@
 ### REQ-UIRECON-换根重挂 · UI reconciler 换根节点 id 静默 no-op=跨屏死机 · [2026-07-18] · PE-A 报（A-012·owner 实证「死机」）→ Lead 核真 ✅ 接 → **指派：PUI** · status: open · 优先级: P1（UI 基座 bug·全游戏受益） · 类型: UI 基座 bug（PUI 域）
 > `reconcileNode` 起手按 `newN.id` 找元素——新根 id≠旧根 id（如 `a-play`→`a-result`）时找不到→**静默 return 且 curRoot 已推进**→此后一切 update 永久 no-op（含菜单）。修案（PE-A 已定位·PUI 裁）：`update()` 在 `curRoot.id !== newRoot.id` 时走**整根重挂**（同「换皮」分支既有路径），reconcile 只管同根；测试=跨屏转场回归落 ui 库自测（照 game-a `host-transition.test` 先例）。game-a 已宿主兜底（mountedRootId 重挂·引擎修好可退）；**game-b/c 同险未兜——修完通告三 PE**。
 
-### REQ-UIAUDIT-叠层与动效 · 「意图叠层」标记字段 + audit 锚定件/角标盲区豁免 + bounce 动效档 · [2026-07-18] · PE-A 报（A-007+A-011 并单）→ Lead 裁决 ✅ 接 → **指派：PUI** · status: open · 优先级: P2（非阻断·近似件已达效） · 类型: UI 基座工具债+小扩展（PUI 域）
+### REQ-UIAUDIT-叠层与动效 · 「意图叠层」标记字段 + audit 锚定件/角标盲区豁免 + bounce 动效档 · [2026-07-18] · PE-A 报（A-007+A-011 并单）→ Lead 裁决 ✅ 接 → **指派：PUI** · status: **①②③ ✅ done（PUI 2026-07-18·`3b21ee04`·待 Lead 验收）；④ bounce + border-image 盲区 open（后置）** · 优先级: P2（非阻断·近似件已达效） · 类型: UI 基座工具债+小扩展（PUI 域）
 > ① LayoutNode 暴露「意图叠层」字段→渲染 `data-allow-overlap`（ui-audit 已支持该属性豁免）——扇形手牌/牌堆/Float 锚定件刚需（game-a 牌桌 58 处误报）；② audit contrast 对 `PlayingCard` 角标**按牌面底色判**（红角标白牌 3.68=扑克本色·33 处误报）；③ Float/Connector 等 JS 活取 rect 件静态摆 0,0 的重叠误报同用①豁免；④ 动效闭集 +`bounce`（常驻 scale 弹簧·注意力指示器通用·现 float+glow 近似已达效可后置）。**PUI 既欠 border-image 盲区一并清（工具债合帐）**。
+> **PUI 回执（2026-07-18·`3b21ee04`）**：①=`layout.allowOverlap:true`→`data-allow-overlap`（`types.ts`+`render.ts`）；②=`PlayingCard` 根挂 `data-audit-skip-contrast`+ui-audit `closest()` 豁免；③=Float/Connector 加 `layout.allowOverlap:true` 即豁免（同①·无需另做）。测试 `card-overlap-audit.test.ts`（6 例）+ ui.md 回填 + 端到端（3 叠放红角标牌→0 重叠 0 对比）。全绿 tsc0/vitest/build。**剩 ④ bounce anim（闭集加一档 scale 弹簧关键帧·非新增轴）+ border-image 白字皮盲区（ui-audit 对 `data-apollo-skin` 件按皮底判·非采样父面）——两条工具债后置批清。**
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
