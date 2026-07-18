@@ -8,7 +8,7 @@ import type { Resource } from '@engine/protocol/components.js';
 import {
   GuandanSession, TURN_ORDER, teamOf, partnerOf, type SeatId, type TrickPlay,
 } from './guandan-session.js';
-import { codeRank, codeSuit, cardCode, guandanConfig, RANK_BIG_JOKER, LEVEL_ACE, DRESS_TIERS } from './rules.js';
+import { codeRank, codeSuit, cardCode, guandanConfig, sortHand, RANK_BIG_JOKER, LEVEL_ACE, DRESS_TIERS } from './rules.js';
 
 // 用真 matchPattern 造一个当前墩（避免 null as never 污染类型）。
 function mkTrick(seat: SeatId, codes: number[], level = 2): TrickPlay {
@@ -308,6 +308,105 @@ describe('Game A ·《掼蛋夜宴》S4 盘循环', () => {
     // 四张 9 → bomb（非三带一·四张同点是炸弹）
     s.hands.hero = [cardCode(0, 9), cardCode(1, 9), cardCode(2, 9), cardCode(3, 9)];
     expect(s.legalCheck('hero', [cardCode(0, 9), cardCode(1, 9), cardCode(2, 9), cardCode(3, 9)]).match?.family).toBe('bomb');
+  });
+
+  // ── 领出真实性：hint 领出给组合牌型（防单张流退化·owner 2026-07-18 报「按规则模拟不真实」）──
+  it('hint 领出=倾长组合牌型（非最小单张）·合法可出', () => {
+    const s = new GuandanSession({ seed: 5 });
+    s.turn = 'hero';
+    s.currentTrick = null;
+    // 一对 5 + 顺子 6-7-8-9-10 + 散单 K —— 领出应给顺子(最长)，绝非最小单张
+    s.hands.hero = [
+      cardCode(0, 5), cardCode(1, 5), cardCode(0, 6), cardCode(1, 7), cardCode(2, 8), cardCode(3, 9), cardCode(0, 10), cardCode(0, 13),
+    ];
+    const hint = s.hint('hero');
+    expect(hint).not.toBeNull();
+    expect(hint!.length).toBeGreaterThan(1); // 不是单张流
+    const chk = s.legalCheck('hero', hint!);
+    expect(chk.ok).toBe(true);
+    expect(chk.match!.family).toBe('straight'); // 最长牌型=顺子
+  });
+
+  it('hint 领出不拆炸弹·不主动领炸（四张同点保留）', () => {
+    const s = new GuandanSession({ seed: 5 });
+    s.turn = 'hero';
+    s.currentTrick = null;
+    // 四张 6（炸）+ 散单 8/10/Q —— 领出只能给单张，且不动 4 张 6
+    s.hands.hero = [cardCode(0, 6), cardCode(1, 6), cardCode(2, 6), cardCode(3, 6), cardCode(0, 8), cardCode(0, 10), cardCode(0, 12)];
+    const hint = s.hint('hero')!;
+    const chk = s.legalCheck('hero', hint);
+    expect(chk.ok).toBe(true);
+    expect(chk.match!.family).toBe('single');
+    expect(hint.map(codeRank)).not.toContain(6); // 炸弹牌未被拆去凑牌型
+  });
+
+  // ── hint 往返（owner 报「提示给错牌·正确的牌打不出去」根因=idx 基准错位）──────────────
+  // 宿主把 hint 牌码按**显示顺序**(理牌 family/rank)映射成下标高亮·出牌时再按同序取回；
+  // 此不变量（映射与出牌同基准）保证 hint 高亮的牌点出去必合法。任一序错位即回归此 bug。
+  it('hint 往返：理牌 family 序下 码→下标→码 一致且合法', () => {
+    const s = new GuandanSession({ seed: 5 });
+    s.turn = 'hero';
+    s.currentTrick = null;
+    s.hands.hero = [
+      cardCode(0, 5), cardCode(1, 5), cardCode(0, 6), cardCode(1, 7), cardCode(2, 8), cardCode(3, 9), cardCode(0, 10), cardCode(0, 13),
+    ];
+    const hintCodes = s.hint('hero')!;
+    // 复刻 game-a.ts play.hint 的宿主映射（显示序=sortHand family）
+    const display = sortHand(s.hands.hero, 'family', s.playLevel);
+    const selected: number[] = [];
+    for (const code of hintCodes) {
+      const i = display.findIndex((cc, k) => cc === code && !selected.includes(k));
+      if (i >= 0) selected.push(i);
+    }
+    const committed = selected.map((i) => display[i]); // 出牌 selectedCodes：按同一显示序取回
+    expect([...committed].sort((a, b) => a - b)).toEqual([...hintCodes].sort((a, b) => a - b));
+    expect(s.legalCheck('hero', committed).ok).toBe(true); // hint 高亮的牌点出去必合法
+  });
+
+  it('整局领出不退化单张流：跨盘确有组合牌型领出', () => {
+    const combos = new Set<string>();
+    for (let seed = 40; seed < 50; seed++) {
+      const s = new GuandanSession({ seed, tier: 'l2' });
+      autoRun(s);
+      for (const e of s.playLog) if (e.action === 'lead' && e.family && e.family !== 'single') combos.add(e.family);
+    }
+    expect(combos.size).toBeGreaterThan(0); // 见到对/三/顺/连对… 至少一种（非纯单张）
+  });
+
+  // ── AI 黑板接线回归（owner 报「AI 全程最小单张」·根因=蓝图缺 bb-* → BT 恒落 move:min）───────
+  it('AI 座领出走策略树倾长牌型（黑板接线·非纯单张）', () => {
+    const combos = new Set<string>();
+    for (let seed = 20260717; seed < 20260723; seed++) {
+      const s = new GuandanSession({ seed, tier: 'l3' });
+      let g = 0;
+      while (s.phase === 'playing' && g++ < 4000) {
+        if (s.turn === 'hero') s.act('hero', s.hint('hero'));
+        else s.aiStep();
+      }
+      // 只看非 hero（AI）座的领出——BT 死时这里恒为 single
+      for (const e of s.playLog) if (e.action === 'lead' && e.seat !== 'hero' && e.family && e.family !== 'single') combos.add(e.family);
+    }
+    expect(combos.size).toBeGreaterThan(0);
+  });
+
+  // ── 引擎判读歧义兜底（A-008·逢人配令一手牌可多家族判读·matchPattern 取最强可能跨家族压不过）──────
+  it('应对滤掉「规范判读压不过」的歧义牌：提示/合法应对必被 act 收', () => {
+    const s = new GuandanSession({ seed: 5 });
+    s.playLevel = 5;
+    s.cfg = guandanConfig(5); // 打 5 → ♥5=逢人配
+    s.turn = 'hero';
+    // 当前墩=钢板 JJJ-QQQ
+    s.currentTrick = mkTrick('east', [cardCode(0, 11), cardCode(2, 11), cardCode(3, 11), cardCode(0, 12), cardCode(2, 12), cardCode(3, 12)], 5);
+    // hero 手：QQ+KK+两逢人配（意图钢板 QQQ-KKK，但 matchPattern 判成三连对 Q-K-A 压不过钢板）+ 真炸四张 3
+    s.hands.hero = [
+      cardCode(1, 12), cardCode(1, 12), cardCode(2, 13), cardCode(3, 13), cardCode(1, 5), cardCode(1, 5),
+      cardCode(0, 3), cardCode(1, 3), cardCode(2, 3), cardCode(3, 3),
+    ];
+    const hint = s.hint('hero');
+    expect(hint).not.toBeNull();
+    const chk = s.legalCheck('hero', hint!); // 提示的牌点出去必被 act 收（不再给打不出去的牌）
+    expect(chk.ok).toBe(true);
+    expect(chk.match!.family).toBe('bomb'); // 真炸=唯一合法压钢板的解（歧义钢板已滤）
   });
 
   // ── 出牌日志（owner 诊断·每手一条·family/tier 正确）──────────────────────────────

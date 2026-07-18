@@ -51,6 +51,16 @@ export function buildTableBlueprint(opts: TableOptions): WorldBlueprint {
   // ── 输入闸（骨架关死·S4 出牌轮 flow onEnter 开闸）───────────────────────────
   entities['can-act'] = { Flag: { id: 'can-act', active: false } };
 
+  // ── AI 黑板（t2-behavior-tree 策略树读写·capability-plan §4 例外②·gdd §5）───────────
+  // chooseTurn 每步决策前经 setFlag/setRes 刷这些值 → BT 叶（flag/res-gte）按 id 读它们评估
+  // （BT 能力本身不新立存储·借既有 Flag/Resource 黑板——故必须在此把黑板实体摆进世界，
+  //  否则 setFlag 找不到目标、BT 全叶读 false → 恒落 move:min·AI 退化成最小单张·owner 2026-07-18 报）。
+  entities['bb-leading'] = { Flag: { id: 'bb-leading', active: false } }; // 本手为领出
+  entities['bb-partner-winning'] = { Flag: { id: 'bb-partner-winning', active: false } }; // 当前墩队友压住（让牌）
+  entities['bb-only-bomb'] = { Flag: { id: 'bb-only-bomb', active: false } }; // 应对候选只剩炸弹族
+  entities['bb-endgame'] = { Flag: { id: 'bb-endgame', active: false } }; // 有对手余牌≤5（压制节奏）
+  entities['bb-aggression'] = { Resource: { id: 'bb-aggression', current: 50, min: 0, max: 100 } }; // 进攻倾向
+
   // ── 盘间流程骨架（声明式状态机·真轮转=S4 展开：发牌→[进贡]→打牌→结算→run 判定）──
   entities.flow = {
     GameFlow: {

@@ -8,7 +8,7 @@ import type { Card, RandomSeed, Flag, Resource } from '@engine/protocol/componen
 import {
   tickBehaviorTree, registerBTLeaves, type BehaviorTree, type BTLeafTable,
 } from '@skills/tier2/index.js';
-import { legalResponses, type HandPatternConfig, type PatternMatch } from '@skills/tier3/index.js';
+import { legalResponses, beats, type HandPatternConfig, type PatternMatch } from '@skills/tier3/index.js';
 import { AI_TIERS, type AiTierSpec, type SeatSpec } from './rules.js';
 
 export const BT_GAME_ID = 'game-a';
@@ -101,12 +101,44 @@ export interface AiDecision {
 const isBombFamily = (m: PatternMatch): boolean => m.family === 'bomb' || m.family === 'straight-flush' || m.family === 'sky';
 const cardsOf = (m: PatternMatch): number[] => m.cards.map((c) => c.suit * 100 + c.rank);
 
+/**
+ * 领出选牌启发（hint 与 AI chooseTurn 共用·纯函数·确定性·全档一致）。
+ * 掼蛋以先出光手牌者胜 → 领出的正解是**倾长牌型快速倒库存**、把「手数」压到最少（顺子/三连对/钢板/
+ * 三带二 6/5 张 > 三张 > 对子 > 单张），同长取最小 rank（不浪费大牌）；两条保留原则：
+ *   ①**绝不主动领炸**——炸弹/同花顺/天王炸留作被压时反击；
+ *   ②**不拆炸凑牌型**——手里成炸的那几张牌不拿去当三张/对子领出（否则毁掉炸弹，观感像 bug）。
+ * 故领出只从「安全非炸牌型」（组合不含任何成炸牌）里挑；仅当无安全牌可领（残局手牌全成炸）才用全候选收尾。
+ * 这修掉「领出恒取 legalResponses[0]=最小单张 → 全局退化成单张流」+「领三张拆掉四张炸」（owner 2026-07-18 报）。
+ * candidates = legalResponses(hand, null, cfg)（已 tier→rank→length 升序）。空手返回 null（兜底过）。
+ */
+export function pickLead(candidates: readonly PatternMatch[]): PatternMatch | null {
+  if (candidates.length === 0) return null;
+  // 保炸不拆——只护**天然同点炸弹**（family 'bomb' 且 wildsUsed===0：手里真有 4~10 张同点，拆成三张/
+  // 对子=毁炸·观感像 bug）。三条排除，防「过度保炸」把 AI 逼到死攥牌：
+  //   ① 同花顺/天王炸：牌与普通牌型大量重叠（如 ♥A2345 占掉一串低红桃），且「不主动领它们」已由 nonBomb 过滤保证；
+  //   ② 逢人配拼出的炸（wildsUsed>0）：一张逢人配能把**任一**三张凑成炸，全保留=把每个三张都锁死（错）——
+  //      逢人配只有一张，最多成一个炸，不该让所有三张都当「潜在炸」被保留。
+  const bombCards = new Set<number>();
+  for (const m of candidates) if (m.family === 'bomb' && m.wildsUsed === 0) for (const c of m.cards) bombCards.add(c.suit * 100 + c.rank);
+  const nonBomb = candidates.filter((m) => !isBombFamily(m));
+  const safe = nonBomb.filter((m) => !m.cards.some((c) => bombCards.has(c.suit * 100 + c.rank)));
+  const pool = safe.length > 0 ? safe : candidates; // 无安全非炸牌（全成炸）→ 残局用全候选收尾
+  let best = pool[0];
+  for (const m of pool) {
+    if (m.length > best.length || (m.length === best.length && m.rank < best.rank)) best = m;
+  }
+  return best;
+}
+
 /** 一手决策：写黑板 → tick 策略树 → 按 move 令牌从候选里取牌（估值=确定性规则查表）。 */
 export function chooseTurn(world: IWorld, input: AiTurnInput, seed?: RandomSeed): AiDecision {
   ensureBTLeaves();
   const cfg = input.cfg;
   const tierIdx = AI_TIERS.findIndex((t) => t.id === input.tier);
-  const candidates = legalResponses(input.hand, input.target, cfg);
+  // 应对候选经引擎自身 beats 复核：滤掉「意图能压、matchPattern 规范判读却压不过」的歧义应对
+  //（引擎 t3-hand-pattern 逢人配判读缺口·A-008），只留 act 真会收的那批 → AI 不空过、不出被判非法的牌。
+  const raw = legalResponses(input.hand, input.target, cfg);
+  const candidates = input.target === null ? raw : raw.filter((m) => beats(m.cards, input.target!, cfg));
   const nonBomb = candidates.filter((m) => !isBombFamily(m));
 
   // 黑板写入（L1 无让牌/压制概念=旗恒 false；宗师 +10 进攻；多变 ±20 浮动）
@@ -128,17 +160,9 @@ export function chooseTurn(world: IWorld, input: AiTurnInput, seed?: RandomSeed)
     m ? { move, cards: cardsOf(m), match: m } : { move: 'pass', cards: null, match: null };
 
   switch (move) {
-    case 'lead': {
-      // 领出估值：L1 最小起；L3+ 优先长牌型倾库存（同长取最小）；不领炸（炸留压制）
-      const pool = nonBomb.length > 0 ? nonBomb : candidates;
-      if (pool.length === 0) return { move: 'pass', cards: null, match: null };
-      if (tierIdx >= 2) {
-        let best = pool[0];
-        for (const m of pool) if (m.length > best.length) best = m;
-        return pick(best);
-      }
-      return pick(pool[0]);
-    }
+    case 'lead':
+      // 领出：全档倾长牌型倒库存、不主动领炸（pickLead·hint 与 AI 同一启发·防单张流退化）。
+      return pick(pickLead(candidates) ?? undefined);
     case 'pass':
       return { move: 'pass', cards: null, match: null };
     case 'bomb':

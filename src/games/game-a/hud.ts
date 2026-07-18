@@ -189,8 +189,9 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
 }
 
 // ── 席位卡（蓝本 SC-3·绝对定位到屏幕锚点·圆头像金边圈 + 阵营/性格 pill + 余牌 + 表情气泡）──
-// 固定相机=固定屏幕锚点（同 game-c 先例）；active=当前出牌者金边高亮；bubble=表情/「过」气泡（可空）。
-function seatCard(v: SeatView, x: number, y: number, active: boolean, bubble?: string): LayoutNode {
+// 固定相机=固定屏幕锚点（同 game-c 先例）；active=当前出牌者金边高亮；leading=当前墩持有者（暂大·名前缀🏆·
+// 零增高防重叠）；bubble=表情/「过」气泡（可空）。
+function seatCard(v: SeatView, x: number, y: number, active: boolean, leading: boolean, bubble?: string): LayoutNode {
   const foe = v.seat.team === 1;
   const trait = v.seat.traits?.[0] ? (TRAIT_CN[v.seat.traits[0]] ?? v.seat.traits[0]) : '';
   return {
@@ -207,7 +208,8 @@ function seatCard(v: SeatView, x: number, y: number, active: boolean, bubble?: s
         layout: { direction: 'row', align: 'center', justify: 'center', padding: 3, radius: 40 },
         children: [{ type: 'Avatar', id: `a-seat-${v.seat.id}-face`, props: { name: v.seat.name, size: 46, shape: 'circle' } }],
       },
-      { type: 'Label', id: `a-seat-${v.seat.id}-name`, props: { text: v.seat.name, size: 'md', bold: true, color: 'gold' } },
+      // 暂大者名前缀 🏆（谁出的牌谁大·零增高不触发 audit 重叠）
+      { type: 'Label', id: `a-seat-${v.seat.id}-name`, props: { text: leading ? `🏆 ${v.seat.name}` : v.seat.name, size: 'md', bold: true, color: 'gold' } },
       {
         type: 'Panel',
         id: `a-seat-${v.seat.id}-tags`,
@@ -240,7 +242,8 @@ export interface PlayView {
   hand: number[]; // hero 手牌牌码（显示顺序·按 sortMode 排）
   selected: number[]; // 已选手牌**下标**（指向显示顺序·非牌码——两副牌同码会联动误选，故按 idx 标识）
   sortMode: 'rank' | 'family'; // 理牌当前档（Segmented 高亮用）
-  trick: { name: string; family: string; cards: number[] } | null; // 当前墩
+  // 当前墩（含持有者=暂大者·「谁出的牌谁大」明示）。
+  trick: { name: string; family: string; cards: number[]; holder: SeatId; holderName: string; holderTeam: 0 | 1 } | null;
   tributeText: string | null; // 本盘进贡/还贡/抗贡一句话（首盘=null·玩家知情）
   showCounter: boolean; // 记牌器开合
   counter: { rank: string; played: number; total: number }[]; // 明面已出牌计数（showCounter 时填）
@@ -263,18 +266,18 @@ function trickCard(code: number, idx: number): LayoutNode {
 // 端牌 rotate 左逆右顺。per-card 垂直弧 flex 表达不了 → 绝对定位。
 // audit 提示：扇形叠放=纸牌意图叠层，ui-audit 判重叠是盲区（LayoutNode 缺 data-allow-overlap·A-007 报 PUI）。
 const HAND_CARD_W = 64;
-const HAND_L = 132; // 左端（避主角立绘框·框右缘 96）
-const HAND_AVAIL = 760; // 手牌横向可用宽（右侧留 glass 操作区）
+const HAND_L = 150; // 左端（避主角立绘框·框右缘 100）
+const HAND_AVAIL = 900; // 手牌横向可用宽（大弧舒展占底部满宽·右端翘牌在操作区上方错开）
 function buildHandFanNodes(hand: number[], selected: number[]): LayoutNode[] {
   const n = hand.length;
   if (n === 0) return [];
   const mid = (n - 1) / 2;
-  const step = Math.min(HAND_CARD_W - 2, Math.round(HAND_AVAIL / Math.max(1, n - 1)));
+  const step = Math.min(HAND_CARD_W + 2, Math.round(HAND_AVAIL / Math.max(1, n - 1)));
   const totalW = step * (n - 1);
   const startX = HAND_L + Math.round((HAND_AVAIL - totalW) / 2);
-  const baseY = FIELD_H - 112; // 中间牌顶 y（两端向上翘）
-  const MAX_LIFT = 48; // 两端上翘幅度（U 弧深）
-  const MAX_ROT = 19; // 端牌旋转角
+  const baseY = FIELD_H - 104; // 中间牌顶 y（两端向上翘）
+  const MAX_LIFT = 62; // 两端上翘幅度（U 弧深·参考稿大弧）
+  const MAX_ROT = 24; // 端牌旋转角
   return hand.map((c, i) => {
     const f = cardFace(c);
     const sel = selected.includes(i);
@@ -299,10 +302,22 @@ export function buildPlay(v: PlayView): LayoutNode {
   const wA = anchorOf('west');
   const eA = anchorOf('east');
 
-  // 中央出牌区（桌心·牌型标签 + 四家最近一手 + 行动提示）——作 felt 子节点（祖孙嵌套·audit 不判桌面重叠）。
+  // 中央出牌区（桌心·牌型标签 + 暂大者 + 四家最近一手 + 行动提示）——felt 子节点（祖孙嵌套·audit 不判桌面重叠）。
+  // 「谁出的牌谁大」明示（owner 2026-07-18）：当前墩持有者=暂时最大，其余家要么压过、要么过。
+  const holderLabel = v.trick ? (v.trick.holder === 'hero' ? '你' : v.trick.holderName) : '';
   const centerChildren: LayoutNode[] = v.trick
     ? [
-        { type: 'Tag', id: 'a-p-trickname', props: { label: v.trick.name, tone: 'accent', size: 'md' } },
+        {
+          type: 'Panel',
+          id: 'a-p-trickhead',
+          props: { bare: true },
+          layout: { direction: 'row', align: 'center', justify: 'center', gap: 6 },
+          children: [
+            { type: 'Tag', id: 'a-p-trickname', props: { label: v.trick.name, tone: 'accent', size: 'md' } },
+            // 暂大牌主：本方(队友/你)=绿(ok·安全)·对手=黄(warn·需压)——一眼看清谁大。
+            { type: 'Badge', id: 'a-p-holder', props: { text: `🏆 ${holderLabel} 暂大`, tone: v.trick.holderTeam === 0 ? 'ok' : 'warn' } },
+          ],
+        },
         {
           type: 'Panel',
           id: 'a-p-trickcards',
@@ -310,7 +325,15 @@ export function buildPlay(v: PlayView): LayoutNode {
           layout: { direction: 'row', gap: 5, justify: 'center' },
           children: v.trick.cards.map((c, i) => trickCard(c, i)),
         },
-        { type: 'Label', id: 'a-p-turn', props: { text: heroTurn ? '待你应对' : `${v.turnName} 出牌中…`, size: 'sm', color: heroTurn ? 'gold' : 'sub' } },
+        {
+          type: 'Label',
+          id: 'a-p-turn',
+          props: {
+            text: heroTurn ? '待你应对 · 压过上方牌或过' : v.turn === v.trick.holder ? `${v.turnName} 收墩领出中…` : `${v.turnName} 应对中…`,
+            size: 'sm',
+            color: heroTurn ? 'gold' : 'sub',
+          },
+        },
       ]
     : [{ type: 'Label', id: 'a-p-lead', props: { text: heroTurn ? '轮到你领出' : `${v.turnName} 领出中…`, font: 'serif', size: 'lg', bold: true, color: heroTurn ? 'gold' : 'sub' } }];
   const centerZone: LayoutNode = {
@@ -368,49 +391,48 @@ export function buildPlay(v: PlayView): LayoutNode {
     ],
   };
 
-  // 操作区（右下 glass·金钱 + 理牌 Segmented + 提示/过/出牌）。
-  const actionBar: LayoutNode = {
+  // 操作区（右下角两行·紧凑靠底·让手牌大弧延伸其上方·参考稿版式）。
+  //   行1（y636）：提示 / 过 / 出牌；行2（y684）：金钱 · 理牌 Segmented · 记牌器。
+  const actionRow1: LayoutNode = {
     type: 'Panel',
-    id: 'a-p-actions',
-    props: { glass: true },
-    layout: { x: FIELD_W - 322, y: 566, width: 306, direction: 'column', gap: 8, align: 'stretch', padding: 12 },
+    id: 'a-p-act-btns',
+    props: { bare: true },
+    layout: { x: FIELD_W - 314, y: 634, width: 302, direction: 'row', gap: 8, align: 'center', justify: 'end' },
     children: [
-      {
-        type: 'Panel',
-        id: 'a-p-act-top',
-        props: { bare: true },
-        layout: { direction: 'row', gap: 8, align: 'center', justify: 'between' },
-        children: [
-          { type: 'Badge', id: 'a-p-wallet', props: { text: `💰 ${fmtMoney(v.wallet)}`, tone: 'ok' } },
-          {
-            type: 'Segmented',
-            id: 'a-p-sort',
-            props: { options: [{ value: 'rank', label: '按点数' }, { value: 'family', label: '按牌型' }], value: v.sortMode, action: 'hand.sort' },
-          },
-        ],
-      },
-      {
-        type: 'Panel',
-        id: 'a-p-act-btns',
-        props: { bare: true },
-        layout: { direction: 'row', gap: 8, align: 'center', justify: 'end' },
-        children: [
-          { type: 'Button', id: 'a-p-counter', props: { label: v.showCounter ? '▤ 收起' : '▤ 记牌器', kind: 'quiet', action: 'tools.counter' } },
-          { type: 'Button', id: 'a-p-hint', props: { label: '提示', kind: 'ghost', action: 'play.hint', disabled: !heroTurn } },
-          { type: 'Button', id: 'a-p-pass', props: { label: '过', kind: 'quiet', action: 'play.pass', disabled: !heroTurn || !v.canPass } },
-          { type: 'Button', id: 'a-p-commit', props: { label: '出牌', kind: 'primary', action: 'play.commit', disabled: !heroTurn || !v.canCommit } },
-        ],
-      },
-      {
-        type: 'Label',
-        id: 'a-p-why',
-        props: {
-          text: heroTurn ? (!v.canCommit && v.selected.length > 0 ? v.commitWhy : '点牌选中 · 出牌或过') : `${v.turnName} 行动中…`,
-          size: 'xs',
-          color: heroTurn && !v.canCommit && v.selected.length > 0 ? 'warn' : 'dim',
-        },
-      },
+      { type: 'Button', id: 'a-p-hint', props: { label: '提示', kind: 'ghost', action: 'play.hint', disabled: !heroTurn } },
+      { type: 'Button', id: 'a-p-pass', props: { label: '过', kind: 'quiet', action: 'play.pass', disabled: !heroTurn || !v.canPass } },
+      { type: 'Button', id: 'a-p-commit', props: { label: '出牌', kind: 'primary', action: 'play.commit', disabled: !heroTurn || !v.canCommit } },
     ],
+  };
+  const actionRow2: LayoutNode = {
+    type: 'Panel',
+    id: 'a-p-act-tools',
+    props: { bare: true },
+    layout: { x: FIELD_W - 336, y: 682, width: 324, direction: 'row', gap: 8, align: 'center', justify: 'end' },
+    children: [
+      { type: 'Badge', id: 'a-p-wallet', props: { text: `💰 ${fmtMoney(v.wallet)}`, tone: 'ok' } },
+      {
+        type: 'Segmented',
+        id: 'a-p-sort',
+        props: { options: [{ value: 'rank', label: '按点数' }, { value: 'family', label: '按牌型' }], value: v.sortMode, action: 'hand.sort' },
+      },
+      { type: 'Button', id: 'a-p-counter', props: { label: v.showCounter ? '▤ 收起' : '▤ 记牌器', kind: 'quiet', action: 'tools.counter' } },
+    ],
+  };
+  const actionHint: LayoutNode = {
+    type: 'Panel',
+    id: 'a-p-why-wrap',
+    props: { bare: true },
+    layout: { x: FIELD_W - 314, y: 610, width: 302, direction: 'row', justify: 'end' },
+    children: [{
+      type: 'Label',
+      id: 'a-p-why',
+      props: {
+        text: heroTurn ? (!v.canCommit && v.selected.length > 0 ? v.commitWhy : '点牌选中 · 出牌或过') : `${v.turnName} 行动中…`,
+        size: 'xs',
+        color: heroTurn && !v.canCommit && v.selected.length > 0 ? 'warn' : 'dim',
+      },
+    }],
   };
 
   const backWrap: LayoutNode = {
@@ -457,13 +479,15 @@ export function buildPlay(v: PlayView): LayoutNode {
     layout: { width: FIELD_W, height: FIELD_H },
     children: [
       feltTable, // 含中央出牌区（祖孙嵌套）
-      seatCard(v.seats.partner, pA.x, pA.y, v.turn === 'partner'),
-      seatCard(v.seats.west, wA.x, wA.y, v.turn === 'west'),
-      seatCard(v.seats.east, eA.x, eA.y, v.turn === 'east'),
+      seatCard(v.seats.partner, pA.x, pA.y, v.turn === 'partner', v.trick?.holder === 'partner'),
+      seatCard(v.seats.west, wA.x, wA.y, v.turn === 'west', v.trick?.holder === 'west'),
+      seatCard(v.seats.east, eA.x, eA.y, v.turn === 'east', v.trick?.holder === 'east'),
       infoBar,
       heroPortrait,
-      actionBar,
       ...buildHandFanNodes(v.hand, v.selected),
+      actionHint,
+      actionRow1,
+      actionRow2,
       ...(counterPanel ? [counterPanel] : []),
       backWrap,
     ],

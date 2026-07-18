@@ -13,6 +13,7 @@ import {
 import { buildTableBlueprint } from './blueprint.js';
 import { buildMenu, buildTableSelect, buildPlay, buildResult, type SeatView } from './hud.js';
 import { cardAssetId } from './theme.js';
+import { pickLead } from './ai.js';
 
 const c = (suit: number, rank: number): Card => ({ suit, rank });
 
@@ -80,6 +81,24 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
     expect(first).toMatchObject({ family: 'pair', rank: 8 }); // 最小能压=对 8
   });
 
+  // ── 领出启发 pickLead（hint 与 AI 领出共用·防单张流退化·owner 2026-07-18 报）──────
+  it('领出 pickLead：倾长牌型倒库存·不主动领炸·不拆炸凑牌型', () => {
+    const cfg = guandanConfig(2);
+    const lead = (codes: number[]): ReturnType<typeof pickLead> =>
+      pickLead(legalResponses(codes.map((x) => c(codeSuit(x), codeRank(x))), null, cfg));
+    // 顺子(5张) 优先于对子(2张)——最长牌型
+    expect(lead([cardCode(0, 5), cardCode(1, 5), cardCode(0, 6), cardCode(1, 7), cardCode(2, 8), cardCode(3, 9), cardCode(0, 10)])?.family).toBe('straight');
+    // 三连对(6张) 优先于其中的对子——最长牌型
+    expect(lead([cardCode(0, 3), cardCode(1, 3), cardCode(0, 4), cardCode(1, 4), cardCode(0, 5), cardCode(1, 5), cardCode(0, 9)])?.family).toBe('tube');
+    // 四张同点=炸 + 散单 → 既不主动领炸、也不拆炸成三张 → 只领最小单张·不碰炸弹牌
+    const bombHand = lead([cardCode(0, 6), cardCode(1, 6), cardCode(2, 6), cardCode(3, 6), cardCode(0, 8), cardCode(0, 10), cardCode(0, 12)]);
+    expect(bombHand?.family).toBe('single');
+    expect(bombHand?.cards.every((cc) => cc.rank !== 6)).toBe(true); // 炸弹的 4 张 6 未被拆
+    // 残局只剩炸 → 兜底用炸收尾（出光）
+    expect(lead([cardCode(0, 7), cardCode(1, 7), cardCode(2, 7), cardCode(3, 7)])?.family).toBe('bomb');
+    expect(pickLead([])).toBeNull(); // 空候选
+  });
+
   // ── 蓝图真装载（机器门语义：引擎吃得下 + 空跑 2 tick）───────────────────────────
   it('牌桌蓝图装载 + 空跑：flow boot→table-idle · 资源/牌堆/闸就位', () => {
     const e = new Engine();
@@ -114,6 +133,21 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
     expect(w.getComponent<Flag>('can-act', 'Flag')!.active).toBe(false);
   });
 
+  // ── AI 黑板接线（owner 2026-07-18 报「AI 全程最小单张」根因回归）──────────────────
+  // chooseTurn 经 setFlag/setRes 刷 bb-* → BT 叶按 id 读；缺这些实体则 setFlag 空找、BT 恒落 move:min。
+  it('AI 黑板 bb-* Flag/Resource 在世界（BT 策略树非空转）', () => {
+    const e = new Engine();
+    e.load(buildTableBlueprint({ seed: 42 }));
+    const w = e.world;
+    const flagIds = new Set<string>();
+    for (const [eid] of w.query('Flag')) { const f = w.getComponent<Flag>(eid, 'Flag'); if (f) flagIds.add(f.id); }
+    for (const id of ['bb-leading', 'bb-partner-winning', 'bb-only-bomb', 'bb-endgame']) expect(flagIds.has(id)).toBe(true);
+    let aggr: Resource | null = null;
+    for (const [eid] of w.query('Resource')) { const r = w.getComponent<Resource>(eid, 'Resource'); if (r?.id === 'bb-aggression') aggr = r; }
+    expect(aggr).not.toBeNull();
+    expect(aggr!.max).toBe(100);
+  });
+
   it('同种子双跑同世界（确定性冒烟）', () => {
     const snap = (): string => {
       const e = new Engine();
@@ -144,7 +178,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       seats: { partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero') },
       hand: [cardCode(0, 3), cardCode(1, 3), cardCode(0, 7), cardCode(2, 14), cardCode(0, RANK_BIG_JOKER)],
       selected: [0, 1], // 选中前两张（下标·非牌码）
-      trick: { name: '对子', family: 'pair', cards: [cardCode(2, 2), cardCode(3, 2)] },
+      trick: { name: '对子', family: 'pair', cards: [cardCode(2, 2), cardCode(3, 2)], holder: 'west', holderName: '林曼笙', holderTeam: 1 },
       canCommit: true, commitWhy: '', canPass: true, sortMode: 'rank', tributeText: null, showCounter: false, counter: [],
     });
     expect(validateLayoutNode(play)).toEqual([]);

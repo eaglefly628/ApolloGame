@@ -14,7 +14,7 @@ import type { Card, RandomSeed, Resource } from '@engine/protocol/components.js'
 import { mulberry32, seededShuffle } from '@atom-skills/index.js';
 import { matchPattern, beats, legalResponses, effRank, type HandPatternConfig, type PatternMatch } from '@skills/tier3/index.js';
 import { buildTableBlueprint } from './blueprint.js';
-import { chooseTurn, personalityOf, type Personality } from './ai.js';
+import { chooseTurn, personalityOf, pickLead, type Personality } from './ai.js';
 import {
   buildDeck108, guandanConfig, codeRank, codeSuit, SEATS, HAND_SIZE,
   INITIAL_FUNDS, RESULT_MULTS, BONUS_RESIST_MULT, BONUS_SKY_MULT, ROUND_MULT_CAP,
@@ -367,11 +367,32 @@ export class GuandanSession {
     return true;
   }
 
-  /** 提示=最小合法压牌（gdd 二轮拍板·各难度一致）。null=无牌可压（只能过）。 */
+  /**
+   * 提示（gdd 二轮拍板·各难度一致）：
+   *   · 领出（无当前墩）= pickLead 好牌型（倾长倒库存·不领炸·与 AI 领出同一启发）——修「提示恒给最小单张」。
+   *   · 应对（有当前墩）= 最小合法压牌（legalResponses 首解·省大牌）。
+   * 返回牌码数组（宿主按显示顺序映射成下标高亮）；null=领不出/无牌可压（只能过）。
+   * 应对经 legalBeats 过滤（见其注·引擎判读歧义 A-008 保证提示牌点出去必被 act 收）。
+   */
   hint(seat: SeatId): number[] | null {
     const target = this.currentTrick ? this.toCards(this.currentTrick.cards) : null;
-    const first = legalResponses(this.toCards(this.hands[seat]), target, this.cfg)[0];
-    return first ? first.cards.map((c) => c.suit * 100 + c.rank) : null;
+    const responses = this.legalBeats(this.toCards(this.hands[seat]), target);
+    const pick = target === null ? pickLead(responses) : responses[0];
+    return pick ? pick.cards.map((c) => c.suit * 100 + c.rank) : null;
+  }
+
+  /**
+   * 合法应对枚举（引擎 legalResponses 的自洽包装·A-008 缺口兜底）。
+   * 引擎 legalResponses 用「意图牌型」枚举应对，但含逢人配的牌可有多种判读，act/legalCheck 用 matchPattern
+   * 取**最强**判读——当最强判读落到另一个普通型家族时（如 QQ+KK+两逢人配：意图钢板 QQQ-KKK，matchPattern
+   * 判成更强的三连对 Q-K-A，跨家族压不过原钢板），legalResponses 声称能压、act 却判非法 → 提示给「打不出去
+   * 的牌」/AI 空过。此为引擎 t3-hand-pattern 缺口（已报 Lead·requests A-008）。游戏层用引擎自身 beats 复核，
+   * 只留「规范判读真能压目标」的应对（=act 会收的那批），保证提示/AI 出的牌必合法。领出无需过滤（任意牌型皆合法领）。
+   */
+  private legalBeats(hand: Card[], target: Card[] | null): PatternMatch[] {
+    const responses = legalResponses(hand, target, this.cfg);
+    if (target === null) return responses;
+    return responses.filter((m) => beats(m.cards, target, this.cfg));
   }
 
   /** 推进一步 AI（轮到 AI 座时调用；hero 轮次/盘终为 no-op）。返回是否有动作。 */

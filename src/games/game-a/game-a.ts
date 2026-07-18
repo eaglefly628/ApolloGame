@@ -109,7 +109,14 @@ export function mount(container: HTMLElement): () => void {
       selected: [...selected],
       sortMode,
       trick: s.currentTrick
-        ? { name: FAMILY_CN[s.currentTrick.match.family] ?? s.currentTrick.match.family, family: s.currentTrick.match.family, cards: s.currentTrick.cards }
+        ? {
+            name: FAMILY_CN[s.currentTrick.match.family] ?? s.currentTrick.match.family,
+            family: s.currentTrick.match.family,
+            cards: s.currentTrick.cards,
+            holder: s.currentTrick.seat, // 当前墩持有者（暂大·谁出的牌谁大）
+            holderName: seatSpec(s.currentTrick.seat).name,
+            holderTeam: teamOf(s.currentTrick.seat),
+          }
         : null,
       tributeText: tributeText(s),
       showCounter,
@@ -233,10 +240,11 @@ export function mount(container: HTMLElement): () => void {
     'play.hint': () => {
       if (!session || session.turn !== 'hero') return;
       const hintCodes = session.hint('hero');
-      // 牌码 → 下标（消耗式映射·同码取不同下标·不重复选同一张）
+      // 牌码 → **显示顺序**下标（消耗式映射·同码取不同下标）——必须用 displayHand（与 selected/出牌同基准），
+      // 否则理牌排序（sortMode）下高亮错位、提示的牌点出去被判非法（owner 2026-07-18 报「提示给错牌」根因）。
       selected = [];
       if (hintCodes) {
-        const hand = session.hands.hero;
+        const hand = displayHand(session);
         for (const code of hintCodes) {
           const i = hand.findIndex((c, k) => c === code && !selected.includes(k));
           if (i >= 0) selected.push(i);
