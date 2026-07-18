@@ -34,7 +34,7 @@
 | S1 立项卡 | 名字+一句话玩法+参考+风格意向 | concept 字段非空 | owner/Lead 签 | `docs/llm-onboarding.md` |
 | S2 能力计划 | capability-plan 过审（纯数据卡带可记免 plan 裁决） | plan 在档 或 裁决在案 | Lead 签 | `docs/design/capability-plan-template.md` |
 | S3 骨架关 | manifest 立起来、引擎吃得下 | parseManifest 零 error **+ 真引擎装载 load+空跑2tick**（gate·「能存必须能跑」owner 07-11） | 挂载目击签 | `docs/playbooks/index.md`（找对应线） |
-| S4 玩法关 | 胜负/重开/核心循环闭环 | 该游戏 walkthrough vitest 绿；卡带=bench 五轴（gate） | 试玩签 | `docs/playbooks/testing.md` |
+| S4 玩法关 | 胜负/重开/核心循环闭环 | 该游戏 walkthrough vitest 绿 **+ GD 验收剧本 ≥3 场景 conformance 绿**（REQ-ACCEPT·剧本作者=GD 非 PE）；卡带=bench 五轴（gate） | 试玩签（附真浏览器试玩截图序列） | `docs/playbooks/testing.md` |
 | S5 UI 关 | HUD/菜单守 LayoutNode 纪律 | game-skill-audit 红旗零（gate）；卡带天然免 | /check-ui 结论签 | `docs/playbooks/ui.md` |
 | S6 美术关 | 台账→风格锚→生成→写回→复核 | 台账推导（MOCK 不算完成） | **已内嵌**=平台逐行 ☑ 复核 | `docs/playbooks/art-pipeline.md` |
 | S7 品质关 | 视觉评分卡打分 | —（以人门为主） | 得分记 note 签 | `docs/playbooks/visual-scorecard.md` |
@@ -57,6 +57,7 @@
   `library/<slug>/logic.ts`（cartCapability 契约·cart-logic-check 装载门·git 版本化）；该卡带**退出
   回放/换皮/bench 保证**（列表 allowTs/hasLogic 旗明示）。正道仍是 capgap 提案→能力下沉（TS 进引擎）；
   绝不把代码塞进 manifest JSON、绝不绕装载门。
+- **验收剧本循环律（owner 2026-07-17 拍板·「绿门不可玩」复盘）**：玩法正确性的裁判=**GD 写的验收剧本**（规则→seed+操作+逐步期望·纯数据），harness 驱动真引擎对账；**PE 修码不改剧本**（剧本错=GD 改+记录）。PE 自写 walkthrough 只是下限，不构成 S4 完成证据。
 - **两层 1:1 律（Lead 2026-07-17 裁决·owner「不复刻逻辑不好验证」之问）**：有设计稿的屏，**S4 即须「结构 1:1」**——布局/信息层级/状态可见性照稿（素皮实现·人门试玩才验得动逻辑）；**「视觉 1:1」**（字体/渐变/纹样/皮）留 S5 纯观感替换（布局不动零返工）。前提=开工前渲染目击稿（CLAUDE.md Claude Design 稿铁律）。
 - **「完成」判词有门（owner 2026-07-16 事故律·game-t 复盘）**：session 宣布游戏「做完/完成」必须附 `board <slug>` **全绿**输出；板不全绿只许说「做到 SN」。口头完成=无效口径，owner/Lead 一律不采信。
 - **不许代签**：signoff 是人门——LLM 只能把「待人审」摆上看板，不得自己 signoff 冒充 owner/Lead（gate 随便跑，签核必须真人指令）。
