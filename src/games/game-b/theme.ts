@@ -78,6 +78,10 @@ const NIGHT_SLICE = 12;
 const SKIN_HERO_NIGHT = menuSkin('#f6a8c4', '#d94a6a', '#c0355a', true); // 粉红渐变主 CTA
 const SKIN_GHOST_NIGHT = menuSkin('#2e1a34', '#241528', '#f6a8c4', false, 0.9, 0.42); // 暗底粉边次钮
 
+// SAKURA 行动键 hero 皮（自摸=绯红渐变·Button.skin 强制白字投影→绯红底白字高对比·
+// 治「默认 hero 浅金底浅字」低对比·check-ui 阻断项）。深色 skin 才配得起白字。
+SAKURA.buttonSkins = { hero: { skin: menuSkin('#e86a86', '#c03a52', '#8f2038', true), skinSlice: NIGHT_SLICE } };
+
 export const NIGHT: UITheme = {
   bg0: '#160d1b', bg1: '#241528', bg2: '#2e1a34', bg3: '#3a2338',
   pageBg: 'radial-gradient(100% 120% at 78% 26%, #3a2338, #241528 46%, #160d1b 82%)',

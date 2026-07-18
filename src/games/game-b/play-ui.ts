@@ -34,11 +34,14 @@ const DW = 26, DH = 35; // 宝牌
 
 // 席位卡屏幕位（seat 0=玩家南·下；1=东·右；2=北·上；3=西·左·出牌 0→1→2→3 逆时针）。
 const SEAT_POS: Array<{ x: number; y: number }> = [
-  { x: 12, y: FIELD_H - 150 },              // 0 南（玩家·左下）
+  { x: 12, y: FIELD_H - 200 },              // 0 南（玩家·左下·抬高避让底部手牌排）
   { x: FIELD_W - 184, y: 250 },             // 1 东（右）
   { x: FIELD_W / 2 - 86, y: 12 },           // 2 北（上·对家）
   { x: 12, y: 250 },                        // 3 西（左）
 ];
+// 席位卡暗底（不透明兜底·ui-playbook §3：文字对比不靠 3D 背景·任何底都读得清）。
+// 暗梅底 + 樱粉/金亮字（同场况角标·game-a 先例：暗牌桌上暗卡亮字比浅纸贴片更融·且高对比）。
+const CARD_BG = { custom: 'rgba(34,22,36,0.9)' };
 // 牌河屏幕位（各家门前·围桌心 cx≈560 cy≈310）。
 const RIVER_POS: Array<{ x: number; y: number }> = [
   { x: FIELD_W / 2 - (RW * 6 + 10) / 2, y: 356 }, // 0 南（桌心下·玩家门前）
@@ -55,7 +58,7 @@ function seatCard(m: MatchState, seat: number): LayoutNode {
   const riichi = m.cur.riichi[seat];
   const p = SEAT_POS[seat]!;
   return {
-    type: 'Panel', id: `seat-${seat}`, props: { accent: active, glow: active },
+    type: 'Panel', id: `seat-${seat}`, props: { accent: active, glow: active, bg: CARD_BG },
     layout: { x: p.x, y: p.y, width: 172, padding: 8, gap: 5, direction: 'column' },
     children: [
       {
@@ -66,7 +69,7 @@ function seatCard(m: MatchState, seat: number): LayoutNode {
           {
             type: 'Panel', id: `seat-${seat}-nm`, props: { bare: true }, layout: { direction: 'column', gap: 1, flex: 1 },
             children: [
-              { type: 'Label', id: `seat-${seat}-name`, props: { text: `${m.seatNames[seat]}${isDealer ? '·庄' : ''}`, size: 'sm', bold: true, color: 'text' } },
+              { type: 'Label', id: `seat-${seat}-name`, props: { text: `${m.seatNames[seat]}${isDealer ? '·庄' : ''}`, size: 'sm', bold: true, color: 'jade' } },
               { type: 'Label', id: `seat-${seat}-pts`, props: { text: m.scores[seat]!.toLocaleString('en-US'), size: 'md', bold: true, color: 'gold' } },
             ],
           },
