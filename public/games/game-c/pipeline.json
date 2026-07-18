@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  100 passed (100)）· 验收剧本 6 场景绿",
-      "at": "2026-07-18T10:30:29.390Z",
-      "gameHash": "4eb9d059a3ba0715"
+      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  100 passed (100)）· 验收剧本 9 场景绿",
+      "at": "2026-07-18T11:57:15.844Z",
+      "gameHash": "8aaed6d6a4e5bf93"
     },
     "S5": {
       "exit": 0,
@@ -416,6 +416,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T10:30:29.390Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "GD-C +3 节奏/逻辑剧本·rebase 至 game-b 后重验·9场景 conformance·S2/S3 复查过期既有乱序",
+      "at": "2026-07-18T11:57:06.613Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T11:57:15.844Z"
     }
   ],
   "outOfOrder": [
@@ -543,6 +555,11 @@
       "stage": "S4",
       "reason": "owner 定稿：2D视角+3D物理筹码抛掷+隐形碰撞围栏+主角堆越赢越高·刷证据",
       "at": "2026-07-18T10:30:19.022Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "GD-C +3 节奏/逻辑剧本·rebase 至 game-b 后重验·9场景 conformance·S2/S3 复查过期既有乱序",
+      "at": "2026-07-18T11:57:06.613Z"
     }
   ],
   "reviews": {
