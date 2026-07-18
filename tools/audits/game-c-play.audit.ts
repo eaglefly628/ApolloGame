@@ -28,7 +28,6 @@ const view: TableView = {
   phase: 'betting', isHeroTurn: true,
 };
 mountUI(document.getElementById('root')!, buildTable(view), {}, GAME_C_THEME);
-// 2D 牌桌背景层（前景座位/公共牌/筹码坐落其上=意图叠层）→ 标 data-allow-overlap（ui-audit 背景排除）：
-//   · c-felt-wrap/c-rail/c-felt = 大牌桌背景面；· c-top = 满宽顶带渐变横幅（内容 blind/POT/menu 在横向留白·
-//     与两侧顶部座位不真撞·仅包围盒相交）。
-for (const id of ['c-felt-wrap', 'c-rail', 'c-felt', 'c-top']) document.getElementById(id)?.setAttribute('data-allow-overlap', '1');
+// 牌桌/呢面/筹码现为 scene 层 3D（build3d/chip3d·audit 只审 2D HUD 层）。c-top = 满宽顶带渐变横幅
+//   （内容 blind/POT/menu 在横向留白·与两侧顶部座位不真撞·仅包围盒相交）→ 标 data-allow-overlap 背景排除。
+document.getElementById('c-top')?.setAttribute('data-allow-overlap', '1');

@@ -9,7 +9,6 @@ import type { LayoutNode } from '@ui/components/index.js';
 import type { Card } from '@engine/protocol/components.js';
 import {
   OPPONENT_ANCHORS, anchorTopLeft, cardFace, SEAT_W, SEAT_H, FIELD_W, FIELD_H,
-  TABLE, RAIL_BG, TABLE_FELT_BG, FELT_MARK,
 } from './theme.js';
 import type { GameEvent } from './game-log.js';
 
@@ -427,46 +426,13 @@ function buildLogPanel(log: GameEvent[]): LayoutNode {
   };
 }
 
-// ── 2D 大牌桌（owner 2026-07-18 转 2D·正式赛跑道形椭圆：外轨胡桃木金边 + 内绒呢 + 中心印记·无椅）──
-function buildFeltTable(): LayoutNode {
-  const { x, y, w, h, rail } = TABLE;
-  const iy = y + rail, ih = h - 2 * rail;
-  return {
-    type: 'Panel', id: 'c-felt-wrap', props: { bare: true }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H },
-    children: [
-      { type: 'Panel', id: 'c-rail', props: { bg: { custom: RAIL_BG }, edge: 'gold' }, layout: { x, y, width: w, height: h, radius: Math.round(h / 2) } },
-      { type: 'Panel', id: 'c-felt', props: { bg: { custom: TABLE_FELT_BG } }, layout: { x: x + rail, y: iy, width: w - 2 * rail, height: ih, radius: Math.round(ih / 2) } },
-      { type: 'Panel', id: 'c-felt-mark-row', props: { bare: true }, layout: { x: Math.round(FIELD_W / 2 - 120), y: Math.round(iy + ih * 0.09), width: 240, direction: 'row', justify: 'center' },
-        children: [{ type: 'Label', id: 'c-felt-mark', props: { text: FELT_MARK, font: 'serif', size: 36, color: 'dim' } }] },
-    ],
-  };
-}
-
-// ── 底池筹码堆（桌心·2D 筹码视觉·替代 3D 物理筹码·owner 2026-07-18 转 2D；数额在顶带 POT）──
-function potPile(): LayoutNode {
-  const disc = (id: string, fill: string): LayoutNode => ({
-    type: 'Panel', id, props: { bg: { custom: fill }, edge: 'gold' },
-    layout: { width: 26, height: 26, radius: 26 },
-  });
-  return {
-    type: 'Panel', id: 'c-potpile', props: { bare: true },
-    layout: { x: Math.round(FIELD_W / 2 - 64), y: 292, width: 128, direction: 'row', justify: 'center', align: 'center', gap: 3 },
-    children: [
-      disc('c-pd0', 'radial-gradient(circle at 40% 32%,#e05a5a,#7b2d3b)'),
-      disc('c-pd1', 'radial-gradient(circle at 40% 32%,#2c2c34,#0e0e12)'),
-      disc('c-pd2', 'radial-gradient(circle at 40% 32%,#f0c96a,#b8862f)'),
-      disc('c-pd3', 'radial-gradient(circle at 40% 32%,#7fd6b0,#12684b)'),
-    ],
-  };
-}
-
-// ── 公共牌（桌心·实时揭示·让玩家看清·2D 牌面·真贴图 S6）──────────────────────────
+// ── 公共牌（桌心·2D HUD 浮层·盖在 3D 呢面桌心之上·让玩家看清·真贴图 S6）──────────────────
 function buildCommunity(community: Card[]): LayoutNode {
   const slots: LayoutNode[] = [];
   for (let i = 0; i < 5; i++) slots.push(cardNode(`c-comm-${i}`, community[i] ?? null, 'md'));
   return {
     type: 'Panel', id: 'c-community', props: { bare: true },
-    layout: { x: Math.round(FIELD_W / 2 - 175), y: 366, width: 350, direction: 'row', gap: 7, justify: 'center' },
+    layout: { x: Math.round(FIELD_W / 2 - 175), y: 300, width: 350, direction: 'row', gap: 7, justify: 'center' },
     children: slots,
   };
 }
@@ -555,9 +521,9 @@ export function buildTable(v: TableView): LayoutNode {
   const hero = v.seats.find((s) => s.isHero)!;
   const heroCard = seatCard(hero, 20, FIELD_H - 168, 236, 108);
 
-  // z 序（DOM 顺序）：2D 牌桌(底) → 顶带 → 底池筹码 → 公共牌 → 座位卡/底牌 → 行动条/等待 → 日志/衣柜 → 摊牌/局终最上。
+  // z 序（DOM 顺序·2D HUD 层·透明区透出 scene 层 3D 牌桌+物理筹码）：顶带 → 公共牌 → 座位卡/底牌 → 行动条/等待 → 日志/衣柜 → 摊牌/局终最上。
   const children: LayoutNode[] = [
-    buildFeltTable(), buildTopBar(v), potPile(), buildCommunity(v.board), ...opp, heroCard, buildHeroCards(v),
+    buildTopBar(v), buildCommunity(v.board), ...opp, heroCard, buildHeroCards(v),
   ];
   if (v.phase === 'betting') children.push(v.isHeroTurn ? buildActionBar(v) : buildWaiting());
   if (v.showLog) children.push(buildLogPanel(v.log));

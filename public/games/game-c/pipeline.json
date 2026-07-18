@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  6 passed (6) ·       Tests  90 passed (90)）· 验收剧本 6 场景绿",
-      "at": "2026-07-18T09:27:04.886Z",
-      "gameHash": "5e7e5d1b5f38d3eb"
+      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  100 passed (100)）· 验收剧本 6 场景绿",
+      "at": "2026-07-18T10:30:29.390Z",
+      "gameHash": "4eb9d059a3ba0715"
     },
     "S5": {
       "exit": 0,
@@ -404,6 +404,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T09:27:04.886Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "owner 定稿：2D视角+3D物理筹码抛掷+隐形碰撞围栏+主角堆越赢越高·刷证据",
+      "at": "2026-07-18T10:30:19.022Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T10:30:29.390Z"
     }
   ],
   "outOfOrder": [
@@ -526,6 +538,11 @@
       "stage": "S4",
       "reason": "owner 转 2D·废弃3D牌房·纯LayoutNode大牌桌·刷证据",
       "at": "2026-07-18T09:26:54.038Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "owner 定稿：2D视角+3D物理筹码抛掷+隐形碰撞围栏+主角堆越赢越高·刷证据",
+      "at": "2026-07-18T10:30:19.022Z"
     }
   ],
   "reviews": {

@@ -25,23 +25,10 @@ export const C = {
   outGray: '#8a8a94',
 } as const;
 
-// 页背景（暖夜黑径向渐变·2D 牌桌背后的夜宴厅氛围）。
+// 页背景（暖夜黑径向渐变·3D 牌桌背后的夜宴厅氛围·scene sceneBackground）。
 export const ROOM_BG =
   'radial-gradient(ellipse at 50% 22%, #33221a 0%, #241812 45%, #160e0a 78%, #0d0806 100%)';
-// 牌桌呢绒（2D 桌面·美术贴图=S6 台账件）。
-export const FELT_BG =
-  'radial-gradient(ellipse at 50% 44%, #166f4f 0%, #0e5540 54%, #093a2c 100%)';
 export const WRAPPER_BG = '#0a0605';
-
-// ── 2D 大牌桌几何（owner 2026-07-18 转 2D·正式比赛跑道形椭圆·无椅子）──────────────
-// 外轨盒（中心 640×400·占屏中央大半）；跑道形= radius=h/2（两端半圆+长直边=正式赛桌）。
-export const TABLE = { x: 122, y: 150, w: 1036, h: 500, rail: 22 } as const;
-// 外轨（胡桃木皮革感·金边压条）+ 内呢（绒绿径向·中心亮四周沉）。
-export const RAIL_BG = 'radial-gradient(ellipse at 50% 40%, #4c3626 0%, #34231a 58%, #211510 100%)';
-export const TABLE_FELT_BG =
-  'radial-gradient(ellipse at 50% 46%, #1b8460 0%, #136c4d 44%, #0c4a37 76%, #08382a 100%)';
-// 桌面中央印记（夜宴 logo 水印位·S6 换真贴图）。
-export const FELT_MARK = '德州夜宴';
 
 // 夜宴系 UITheme（令牌值照 §1 色板映射·换皮即改这一份·游戏 LayoutNode 数据零改）。
 export const GAME_C_THEME: UITheme = {

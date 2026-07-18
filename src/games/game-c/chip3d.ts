@@ -1,0 +1,77 @@
+import type { Engine } from '../../runtime/engine.js';
+import type { Component } from '@engine/core/types.js';
+import { mulberry32 } from '@atom-skills/random/index.js';
+import { seatWorldPos, POT3D, HERO_STACK3D } from './build3d.js';
+
+// ═══════════════════════════════════════════════════════════════
+//  game-c ·《六人德州》3D 物理筹码（owner 2026-07-18「下注就往池里扔真 3D 物理筹码·速度力量随机·别滚出台子」）
+//
+//  ① 抛注 throwBet：座位下注→从座位前生成圆柱筹码 RigidBody3D，朝底池以**随机速度+力量+翻滚**抛出（cannon-es 物理
+//     落桌翻滚堆叠）；桌缘一圈静态围栏墙（build3d rail-*）挡住不滚出台。② 主角筹码堆 setHeroStack：正南桌缘一摞
+//     静态筹码·**赢得越多摞越高**。render-only·不进 sim/hash（翻滚随机走专属种子 PRNG·不碰游戏主 seed）。
+// ═══════════════════════════════════════════════════════════════
+
+const CHIP_COLORS = [0xe0b458, 0xc0392b, 0x1b1b22, 0x2e7d5b, 0xf0c96a]; // 金/红/黑/绿/亮金（面额分色·表现）
+const CHIP_R = 0.34, CHIP_H = 0.06; // 筹码圆柱直径/高（醒目·堆得起来）
+const HERO_STACK_MAX = 22;           // 主角堆最高摞数（越赢越高·封顶防穿天）
+const HERO_PER_CHIP = 90;            // 每 90 筹码 = 堆里一枚（决定摞高）
+
+export class Chip3D {
+  private nonce = 0;
+  private thrown: string[] = [];        // 抛出的物理筹码 id（新手清场）
+  private heroStack: string[] = [];     // 主角筹码堆 id（越赢越高·随栈更新重建）
+  private readonly rng: () => number;
+  constructor(private readonly engine: Engine, seed = 20260717) { this.rng = mulberry32(seed); }
+
+  /** 座位下注 → 从座位前朝底池抛 count 枚筹码（**随机速度+力量+翻滚**·物理落桌·围栏挡住不出台）。 */
+  throwBet(seat: number, count: number): void {
+    const { x: sx, z: sz } = seatWorldPos(seat);
+    const startX = sx * 0.72, startZ = sz * 0.72; // 座位前（靠桌心·下注区）
+    const n = Math.max(1, Math.min(6, count));    // 表现上限 6 枚/次
+    const dx = POT3D.x - startX, dz = POT3D.z - startZ;
+    const w = this.engine.world;
+    for (let i = 0; i < n; i++) {
+      const id = `c-chip-${this.nonce++}`;
+      this.thrown.push(id);
+      w.createEntity(id);
+      w.addComponent(id, { type: 'Transform3D', x: startX + (this.rng() - 0.5) * 0.18, y: 1.35 + i * 0.07, z: startZ + (this.rng() - 0.5) * 0.18 } as unknown as Component);
+      w.addComponent(id, { type: 'Mesh3D', shape: 'cylinder', width: CHIP_R, height: CHIP_H, frontTint: CHIP_COLORS[(this.nonce + i) % CHIP_COLORS.length] } as unknown as Component);
+      // 随机速度+力量：朝底池的水平初速按 [0.8,1.35] 随机倍率 + 小横向抖动（多数落池心堆起）+ 上抛弧度随机 + 三轴翻滚。
+      const power = 0.8 + this.rng() * 0.55;
+      w.addComponent(id, {
+        type: 'RigidBody3D', shape: 'cylinder', mass: 1, restitution: 0.3, friction: 0.62,
+        vx: dx * power + (this.rng() - 0.5) * 0.45, vy: 1.15 + this.rng() * 0.9, vz: dz * power + (this.rng() - 0.5) * 0.45,
+        avx: (this.rng() - 0.5) * 12, avy: (this.rng() - 0.5) * 12, avz: (this.rng() - 0.5) * 12,
+      } as unknown as Component);
+    }
+  }
+
+  /** 主角筹码堆（正南桌缘·**赢得越多摞越高**）：按当前筹码量重建一摞静态筹码（无物理·稳定不倒）。 */
+  setHeroStack(chips: number): void {
+    const target = Math.max(0, Math.min(HERO_STACK_MAX, Math.round(chips / HERO_PER_CHIP)));
+    if (target === this.heroStack.length) return; // 无变化不重建
+    const w = this.engine.world;
+    for (const id of this.heroStack) w.destroyEntity(id);
+    this.heroStack = [];
+    for (let i = 0; i < target; i++) {
+      const id = `c-herostk-${i}`;
+      this.heroStack.push(id);
+      w.createEntity(id);
+      w.addComponent(id, { type: 'Transform3D', x: HERO_STACK3D.x + (i % 2) * 0.02, y: HERO_STACK3D.y + 0.03 + i * CHIP_H, z: HERO_STACK3D.z } as unknown as Component);
+      w.addComponent(id, { type: 'Mesh3D', shape: 'cylinder', width: CHIP_R, height: CHIP_H, frontTint: CHIP_COLORS[i % CHIP_COLORS.length] } as unknown as Component);
+    }
+  }
+
+  /** 新一手清场（移除所有抛出的物理筹码·主角堆不动）。 */
+  clear(): void {
+    for (const id of this.thrown) this.engine.world.destroyEntity(id);
+    this.thrown = [];
+  }
+
+  /** 全拆（teardown）。 */
+  dispose(): void {
+    this.clear();
+    for (const id of this.heroStack) this.engine.world.destroyEntity(id);
+    this.heroStack = [];
+  }
+}
