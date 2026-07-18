@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { mulberry32 } from '@atom-skills/random/index.js';
 import {
   startHand, act, legalActions, settle, potLayers, nextPositions, initialPositions, nextLiveSeat, cloneHand,
-  type BettingConfig, type HandState, type SeatId,
+  type BettingConfig, type HandState, type SeatId, type Action,
 } from './betting-engine.js';
 import { holdemRank, dealHoldem, type HandRank } from './holdem-eval.js';
 
@@ -325,5 +326,83 @@ describe('game-c betting-engine — 同 seed 全手复现（发牌×下注×摊�
     act(cp, 3, { kind: 'raise', to: 100 });
     expect(st.currentBet).toBe(50);
     expect(st.players[3].committed).toBe(0);
+  });
+});
+
+describe('game-c betting-engine — REQ-C-105 筹码守恒（GD-C S4 复查门对抗核证·防蒸发）', () => {
+  it('大盲短缴 all-in + 高投入者弃牌 → 未跟注溢出退回（不蒸发）', () => {
+    // 复现（GD-C 亲验）：heads-up·SB 栈1000 缴25 / BB 栈10 短 all-in 缴10 / SB 面 toCall25 弃 → uncontested BB。
+    // 旧引擎 refund=null（top 仅取 live·BB(10)<SB(25) 故不触发）→ SB 的 25 只有 10 进池、余 15 既不进池也不退 = 蒸发。
+    const st = startHand(CFG, [{ seat: 0, stack: 1000 }, { seat: 1, stack: 10 }], initialPositions([0, 1], 0));
+    expect(st.players.find((p) => p.seat === 1)!.allIn).toBe(true); // BB 短缴 all-in
+    expect(st.actor).toBe(0); // heads-up 翻前钮(=SB)先动
+    act(st, 0, { kind: 'fold' }); // 高投入者弃牌（total 25 > BB total 10）
+    expect(st.street).toBe('done');
+    const s = settle(st); // uncontested·免 ranks
+    expect(s.refund).toEqual({ seat: 0, amount: 15 }); // SB 未被跟注的 15 退回（曾=null 蒸发）
+    expect(s.payouts).toEqual({ 1: 20 }); // BB 收池 = 双方各 10
+    expect(totalChips(st)).toBe(1010); // 守恒：起始 1000+10，一分不少
+  });
+
+  it('三人：短栈弃牌者为全场最高投入 → 溢出正确退回', () => {
+    // BB(座2) 栈20 短 all-in 缴20；UTG(座0=按钮) 加注到 200 后…被打；SB(座1) 跟 200 后弃；此处构造「弃牌者投入最高」。
+    const st = startHand(CFG, [
+      { seat: 0, stack: 1000 }, { seat: 1, stack: 1000 }, { seat: 2, stack: 20 },
+    ], initialPositions([0, 1, 2], 0));
+    // 三人桌 UTG=按钮=座0
+    act(st, 0, { kind: 'raise', to: 200 }); // 座0 total 200
+    act(st, 1, { kind: 'call' });           // 座1 total 200
+    // 座2(BB) 已在 startHand 短 all-in 20（total 20·allIn），无需行动；街闭合看余下
+    // 翻后座1、座0 到河（座2 旁观 all-in）
+    while (st.street !== 'showdown' && st.street !== 'done') {
+      const a = st.actor!;
+      const la = legalActions(st);
+      act(st, a, la.check ? { kind: 'check' } : { kind: 'call' });
+    }
+    settle(st, new Map<SeatId, HandRank>([[2, [8]], [1, [4]], [0, [2]]]));
+    expect(totalChips(st)).toBe(2020); // 守恒：起始 1000+1000+20·无论分池怎么切总额不变
+  });
+
+  it('守恒 property fuzz：随机合法动作序列 6000 手（2-6 人·含短栈） → Σ栈全程不变', () => {
+    // GD-C 方法论指正：旧套件只在固定场景断言 totalChips，漏掉守恒 property。此测随机漫游状态空间钉死守恒——
+    // 任何未来状态机改动一旦蒸发/凭空造币，settle 内守恒不变式即抛、或此处 Σ栈断言即红。
+    const rng = mulberry32(0xC105);
+    const pick = <T,>(arr: T[]): T => arr[Math.floor(rng() * arr.length)];
+    let hands = 0, allInBlindHands = 0;
+    for (let h = 0; h < 6000; h++) {
+      const n = 2 + Math.floor(rng() * 5); // 2..6 人
+      const seats = Array.from({ length: n }, (_, seat) => ({
+        seat,
+        stack: 1 + Math.floor(rng() * rng() * 800), // 偏小·频繁跨越盲注线（短缴 all-in 高发）
+      }));
+      let st: HandState;
+      try {
+        st = startHand(CFG, seats, initialPositions(seats.map((s) => s.seat), Math.floor(rng() * n)));
+      } catch { continue; } // 起手校验拒（零栈等）→ 跳过
+      const startTotal = seats.reduce((a, s) => a + s.stack, 0);
+      hands++;
+      if (st.street === 'showdown' || st.street === 'done') allInBlindHands++;
+      let guard = 0;
+      while (st.street !== 'showdown' && st.street !== 'done' && guard++ < 400) {
+        const a = st.actor!;
+        const la = legalActions(st);
+        const opts: Action[] = [{ kind: 'fold' }];
+        if (la.check) opts.push({ kind: 'check' });
+        if (la.call !== undefined) opts.push({ kind: 'call' });
+        if (la.raise) opts.push({ kind: 'raise', to: la.raise.min + Math.floor(rng() * (la.raise.max - la.raise.min + 1)) });
+        act(st, a, pick(opts));
+        // 下注中：筹码只在栈↔投入间搬运，Σ(栈+投入) 恒定
+        expect(totalChips(st)).toBe(startTotal);
+      }
+      // 结算：非全弃需给未弃者随机全序值
+      const ranks = new Map<SeatId, HandRank>(
+        st.players.filter((p) => !p.folded).map((p) => [p.seat, [Math.floor(rng() * 9), Math.floor(rng() * 15), Math.floor(rng() * 15)]]),
+      );
+      settle(st, st.uncontested !== undefined ? undefined : ranks);
+      // 结算后：所有投入清零并回栈，Σ栈 == 起始（一分不多不少）
+      expect(st.players.reduce((a, p) => a + p.stack, 0)).toBe(startTotal);
+    }
+    expect(hands).toBeGreaterThan(5000); // 确实跑了足量手
+    expect(allInBlindHands).toBeGreaterThan(50); // 确实覆盖了短栈即摊牌的高危路径
   });
 });

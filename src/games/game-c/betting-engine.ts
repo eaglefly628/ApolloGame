@@ -283,15 +283,17 @@ export function potLayers(st: HandState): { pots: PotLayer[]; refund: Settlement
   const totals = new Map<SeatId, number>(st.players.map((p) => [p.seat, p.total]));
   const live = st.players.filter((p) => !p.folded);
   let refund: Settlement['refund'] = null;
-  // 未被跟注的溢出：唯一最高投入的活人，超出「其他任意人最高投入」的部分退回本人。
-  const liveSorted = [...live].sort((a, b) => b.total - a.total);
-  if (liveSorted.length >= 1) {
-    const top = liveSorted[0];
-    const othersMax = Math.max(0, ...st.players.filter((p) => p !== top).map((p) => p.total));
-    if (top.total > othersMax) {
-      refund = { seat: top.seat, amount: top.total - othersMax };
-      totals.set(top.seat, othersMax);
-    }
+  // 未被跟注的溢出：全场**唯一**最高投入者，超出「次高投入」的部分退回本人（含次高在内，谁都没跟到那么高）。
+  // ⚠REQ-C-105（GD-C S4 复查门对抗核证）：top 必须从**全体** players 取，绝不能只取 live（未弃）——
+  //   大盲短缴 all-in 时 startHand 把 currentBet 强设为 bigBlind，部分匹配该虚高线后弃牌的玩家可成为
+  //   全场最高投入者却已弃牌；若 top 只认 live，其溢出既不进池（caps 只来自 live total）也不退 → 蒸发。
+  //   （最高本就是 live 时，次高=原 othersMax·行为不变；仅「弃牌者投入最高」这一路径才纠偏。）
+  const sortedAll = [...st.players].sort((a, b) => b.total - a.total);
+  const top = sortedAll[0];
+  const second = sortedAll[1]?.total ?? 0;
+  if (top && top.total > second) {
+    refund = { seat: top.seat, amount: top.total - second };
+    totals.set(top.seat, second);
   }
   const caps = [...new Set(live.map((p) => totals.get(p.seat)!))].filter((c) => c > 0).sort((a, b) => a - b);
   const pots: PotLayer[] = [];
@@ -311,6 +313,11 @@ export function potLayers(st: HandState): { pots: PotLayer[]; refund: Settlement
 export function settle(st: HandState, ranks?: ReadonlyMap<SeatId, HandRank>): Settlement {
   if (st.street !== 'showdown' && st.street !== 'done') throw new Error('下注未结束不可结算');
   const { pots, refund } = potLayers(st);
+  // 守恒不变式（防御纵深·REQ-C-105 RCA=静默蒸发）：入池的每一分钱都必须去向池层或退回，
+  //   否则边池切层有漏。发时即抛（determinism/经济核绝不带病静默运行）；守恒 fuzz 保证它平时永不触发。
+  const inPlay = st.players.reduce((a, p) => a + p.total, 0);
+  const distributed = pots.reduce((a, pot) => a + pot.amount, 0) + (refund?.amount ?? 0);
+  if (distributed !== inPlay) throw new Error(`结算守恒破：入池 ${inPlay} ≠ 池层 ${distributed - (refund?.amount ?? 0)} + 退回 ${refund?.amount ?? 0}（边池切层漏筹）`);
   const payouts: Record<SeatId, number> = {};
   const credit = (seat: SeatId, amt: number): void => { payouts[seat] = (payouts[seat] ?? 0) + amt; };
 

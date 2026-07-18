@@ -8,7 +8,7 @@
 
 ## 待处理
 
-### REQ-C-105 · [P0 复查打回] betting-engine 边池结算筹码蒸发（大盲短缴 all-in + 弃牌）· [2026-07-17] · 提出人 GD-C（S4 复查门对抗核证）→ 指派 PE-C 修 · status: open · 优先级: P0（阻塞 S4 放行·M2 前必修）· 类型: 游戏层 TS 正确性 bug（capability-plan §4-b）
+### REQ-C-105 · [P0 复查打回] betting-engine 边池结算筹码蒸发（大盲短缴 all-in + 弃牌）· [2026-07-17] · 提出人 GD-C（S4 复查门对抗核证）→ 指派 PE-C 修 · status: **✅ 修毕（PE-C 2026-07-18·守恒fuzz+独立对抗子代理 CONFIRMED-CLEAN·复查门终签待 GD-C/owner）** · 优先级: P0（阻塞 S4 放行·M2 前必修）· 类型: 游戏层 TS 正确性 bug（capability-plan §4-b）
 > **S4 复查门裁定=FAIL 打回**（复查人 GD-C≠施工 PE-C）。50 测独立复跑绿，但均为**场景测、未覆盖守恒 property**——对抗性 fuzz 一跑即现。
 > **根因**（`betting-engine.ts:287-295` potLayers refund）：未被跟注溢出的 `top` 仅从 **live（未弃）** 取。`startHand:149` 把 `currentBet` 强制设为 bigBlind，当大盲栈<大盲=短缴 all-in 时 currentBet **虚高于任何人实缴**；此时部分匹配该线后弃牌的玩家可成为**全场最高投入者却已弃牌**，其超出最高 live 投入的差额既不进池（caps 只来自 live total）也不退回（refund 只认 live top）→ 蒸发。
 > **复现（GD-C 亲手 vitest 验证）**：heads-up·SB 栈1000 缴25 / BB 栈10 短 all-in 缴10 / SB 面对 toCall25 弃牌 → uncontested BB。引擎 refund=null·池20 给 BB·终栈 [975,20]=995，起始 1010 → **漏 15**（应退 SB 未被跟注的 15 → [990,20]）。fuzz(30000 手/2-6 人)：67 手漏 214 筹码。**现金局剥光玩法终局栈常低于盲注，此路径高频；M2 万手 AI sim 必撞、任何守恒断言必发散。**
@@ -23,6 +23,8 @@
 > **必带（防回归·测试方法论缺陷）**：加**守恒 property fuzz 测试**（随机合法动作序列 → 断言 Σstack 全程不变）——现套件只在固定场景断言 totalChips，正是漏网原因。
 > **P1 建议（可同修）**：①settlement 防御纵深——任何 eligible 为空的池层退回贡献者（未来状态机改动无条件守恒）；②`legalActions.call` 可超栈（act→pay 已 clamp），加 `Math.min(toCall,stack)` 或文档锐化防 AI/UI 误读。
 > **修完**：重跑复查门（另一双眼睛 + fuzz）再放行 S4；其余维度（rank5 kicker/wheel/行动闭合/短 all-in 不重开/死按钮/确定性/数据驱动）复查 **REFUTED=clean**，无需重审。
+> **✅ 回执（PE-C 2026-07-18·commit 待推）**：① 先复现后修——GD-C 亲验 repro 落成正式测（heads-up SB1000/BB10 短 all-in/SB 弃），旧码上确认 `refund=null` 蒸发 15、修后 `{seat:0,amount:15}` 守恒。② 按 GD 精确方案改 `potLayers`：refund 的 top 从**全体** players 取（`sortedAll`/`second`），最高本就 live 时行为不变、仅弃牌者最高才纠偏。③ **必带守恒 fuzz 已加**（`betting-engine.test.ts`·6000 手随机合法动作·2-6人·偏小栈频繁短 all-in·覆盖 50+ 短栈即摊牌高危路径→断言 Σ栈全程不变）；旧码此测即红（漏筹）。④ **P1① 防御纵深已采**：`settle` 加守恒不变式（入池的钱必去池层或退回·否则当场抛错·把静默蒸发变响亮崩溃）。⑤ P1②（call clamp）：`legalActions.call` 语义**不动**（现 doc 已注明「不足额=全下跟注 min(值,栈)」·act→pay 已 clamp）——避免扰动 REQ-ACCEPT 验收剧本已钉的确定性金值；取 GD 提供的「文档锐化」替代。
+> **⚖ 独立对抗复核（子代理·adversarial-refute·2026-07-18）= CONFIRMED-CLEAN**（「另一双眼睛 + fuzz」条件已足）：(a) 「live 为最高时行为等价」**证明成立**（解析 + 250k 手实测：4689 处新旧分歧**全部**属弃牌者为全场最高·live 最高处 0 分歧）；(b) 隐患 B2（双弃牌者均超 live 最高）经**结构性论证不可达**（末位非 all-in 者永不弃牌→顶线永有 live 玩家坐镇·每手至多一个 SB 弃入虚高线）+ **310 万节点穷举 DFS** 复核 0 命中；(c) 独立搜索（异 RNG xorshift32·250k 随机 + 穷举 DFS）**0 漏筹 / 0 误抛 / 0 造币**；合成不可达 B2 确认守恒不变式为**正确硬崩 backstop**（非误报）。**复查门终签（PASS 落账）留 GD-C/owner**——机器门已重跑绿（gameHash be23e667·walkthrough 94 测 + 验收剧本 4 场景）。
 
 ### REQ-C-107 · [S4 验收循环] PE-C 落 acceptance-adapter + 转正 GD 剧本 · [2026-07-18] · 提出人 GD-C → 指派 PE-C · status: open · 优先级: P1（S4 门·REQ-ACCEPT 循环）· 类型: 薄适配契约（PE 域·纯接线）
 > **背景**：REQ-ACCEPT harness（`scripts/acceptance.test.mjs`·Opus 已落）动态扫 `docs/design/<g>/acceptance/*.scenario.jsonc`——**有剧本无 adapter=红且阻塞全库门禁**（harness `227-232` 点名「缺 adapter」）。故 GD-C 4 本剧本 + 契约暂存 `docs/design/game-c/acceptance-draft/`（harness 不扫·不阻塞）。

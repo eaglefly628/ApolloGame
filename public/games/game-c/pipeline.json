@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  91 passed (91)）· 验收剧本 4 场景绿",
-      "at": "2026-07-18T03:30:05.567Z",
-      "gameHash": "29fa60faa8167bd5"
+      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  94 passed (94)）· 验收剧本 4 场景绿",
+      "at": "2026-07-18T05:05:52.119Z",
+      "gameHash": "3079c5481758874b"
     },
     "S5": {
       "exit": 0,
@@ -296,6 +296,30 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T03:30:05.567Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "REQ-C-105 边池蒸发修复(GD-C复查门打回)·守恒fuzz+对抗子代理CONFIRMED-CLEAN·刷机器门证据",
+      "at": "2026-07-18T04:59:45.789Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T04:59:49.320Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "REQ-C-105 P0修 rebase 到 GD-C 接管剧本之上·重跑机器门刷证据",
+      "at": "2026-07-18T05:05:48.663Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T05:05:52.119Z"
     }
   ],
   "outOfOrder": [
@@ -373,6 +397,16 @@
       "stage": "S4",
       "reason": "rebase带入Lead门禁加固(APOLLO_ACCEPTANCE_CLI握手·假绿封死)后重验S4·确认真绿非假绿",
       "at": "2026-07-18T03:30:02.554Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "REQ-C-105 边池蒸发修复(GD-C复查门打回)·守恒fuzz+对抗子代理CONFIRMED-CLEAN·刷机器门证据",
+      "at": "2026-07-18T04:59:45.789Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "REQ-C-105 P0修 rebase 到 GD-C 接管剧本之上·重跑机器门刷证据",
+      "at": "2026-07-18T05:05:48.663Z"
     }
   ],
   "reviews": {
