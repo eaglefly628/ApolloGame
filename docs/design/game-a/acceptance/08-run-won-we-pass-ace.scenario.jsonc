@@ -1,0 +1,37 @@
+// GD-A 验收剧本 ⑧ · 逻辑·run 终局（我方过 A → 通关 run-won）。
+// 规则依据 gdd §2.4 A1/A2：打 A 局本队头游且对家非末游(双上/一三)→ 过 A；我方过 A → 通关大结算(run-won)。
+//   与剧本 ④（对方过 A→run-lost）成镜像——补齐 run 终局的两个出口。
+//   seed=0 打穿整个 run：我方(team0)冲到 A(级14)并双上过 A → phase=run-won、a_result=passed、我方级=14。
+// 对抗目标（改坏被测逻辑应变红）：
+//   · 我方过 A 误判成失败(run-lost)或不收束 → run_won / phase 红。
+//   · 过 A 判定误报（一四也判过）→ a_result 红（此 seed 以双上过·非一四）。
+//   · 级牌越过 A 上限(>14) → level_ours 红。
+//   · 胜方队判反(记成对方过) → winners_team 红。
+{
+  "name": "run 终局·我方过 A 通关（run-won·A2）",
+  "game": "game-a",
+  "seed": 0,
+  "steps": [
+    {
+      "expect": [
+        { "sv": "phase", "eq": "playing" },
+        { "res": "round", "eq": 1 },
+        { "flag": "run_won", "eq": false },
+        { "flag": "run_lost", "eq": false },
+      ],
+    },
+    { "signal": "play-run" }, // 打穿到 run 终局
+    {
+      // 我方过 A → 通关：run-won、过 A=passed、我方级=A(14)、对方未过(<14)。
+      "expect": [
+        { "flag": "run_won", "eq": true },
+        { "flag": "run_lost", "eq": false },
+        { "sv": "phase", "eq": "run-won" },
+        { "sv": "a_result", "eq": "passed" },
+        { "res": "winners_team", "eq": 0 },   // 过 A 的是我方(team0)
+        { "res": "level_ours", "eq": 14 },    // 我方冲到 A(LEVEL_ACE=14) 并过
+        { "res": "level_theirs", "lte": 13 }, // 对方未过 A
+      ],
+    },
+  ],
+}

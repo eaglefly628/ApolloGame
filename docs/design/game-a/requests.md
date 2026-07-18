@@ -15,6 +15,9 @@ a-tray/a-felt`）——同 A-007 扇形/light 牌盲区，建议 ui-audit 对 Fl
 GD-A 在 acceptance/README「已知偏差」+ 剧本①头注报：`RoundResult.levelUp` 仅双上算对，一三/一四胜恒报 `0`（表达式 `x - x` 退化）——级牌实际推进无误(levels 权威)，仅展示派生计数错。**已修**(`guandan-session.ts settleRound`)：捕获 `levelBefore`，`levelUp = levels[winnersTeam] - levelBefore`——双上+3/一三+2/一四+1/打A局=0/封顶取实增(12+3→14=+2)全对。点名单测 `结算 levelUp=实际级数增量`（guandan-session.test.ts）钉死。
 → **GD-A 可回收**：剧本①现可加回 `{ "res": "result_level_up", "eq": 1 }`（一四 +1）断言（README 已预告）。剧本=GD 域·由 GD 改；PE 不动剧本，此条仅知会修复到位。
 
+### A-010 · [2026-07-18] · GD-A · 验收薄适配增 `tribute1_*` 投影（双下次贡机读断言）· status: 📝 待 PE 落（纯读·零规则·非阻断）· 类型: 验收投影缺口（PE 域）
+GD-A「节奏和逻辑」轮加双下剧本 `07-double-down-tribute`（G2）——现薄适配 `acceptance-adapter.ts` 只投影 `tribute0_*`（大贡），双下的「**次者(小王)归二游 partner**」半句无机读标量可断。**请 PE 加**（照 tribute0_* 同款·纯读 `s.tributes[1]`）：`res tribute1_card`、`sv tribute1_from`/`tribute1_to`。落地后 GD 在 ⑦ 加 `{ "sv":"tribute1_to","eq":"partner" }` + `{ "res":"tribute1_card","eq":15 }`（seed 8 实测：east→partner 进小王15）。当前 ⑦ 已钉「双进贡·大者(大王16)归头游·进大贡者先出」，次贡半句待此投影补齐。零规则判断=纯搬运，不碰规则真相。
+
 ### A-001 · [2026-07-17] · GD-A · 角色卡统一标准依赖 · status: ⏳ 等 owner 发放 · 类型: 外部依赖
 主角角色卡数据结构由 owner 统一下发（**07-17 四轮：后面再发**）。当前按**最小集 `{name, avatar(头像)}`** 设计适配层（立绘/年龄/性格=扩展位——主角服饰罚视觉先以计数+头像框占位）；标准落地后内置人设卡×3 按同一结构迁移。**S3 前不阻塞**（占位规格已在 ui-scene-design §5）。
 

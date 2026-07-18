@@ -1,0 +1,49 @@
+// GD-A 验收剧本 ⑤ · 节奏/流程收束（无死循环·单调推进·轮转恒合法）。
+// 规则依据 gdd §1 核心循环（墩/圈轮转）+ guandan-session「轮转永不指向出光座·治卡死根因」。
+//   这是「节奏」裁判：不验某条规则的数值，而验**盘一定会在有限步内收束、且过程单调推进**——
+//   若收墩/接风轮转有死循环或活锁，playRound 的 8000 步守卫会耗尽 → phase 仍 playing → settled 断言红。
+//   seed=42 首盘 AI(west)先出，用 auto 推进到 hero 轮次观察中途态，再 play-round 打到收束。
+// 对抗目标（改坏被测逻辑应变红）：
+//   · 轮转死循环/活锁（接风指向出光座）→ play-round 耗尽守卫仍 playing → settled=false 红。
+//   · 手牌越打越多 / 透支牌堆（出牌不扣手）→ hand_sum 越界（>108 或 <0）红。
+//   · 轮次 off-by-one 漂出四家 → turn_idx 越界红。
+//   · 盘收束却无人走科（假结算）→ finished_count < 2 红。
+{
+  "name": "节奏·盘必在有限步收束且单调推进",
+  "game": "game-a",
+  "seed": 42,
+  "steps": [
+    {
+      // 开局：AI(west·座1)先出、108 张全在场、无当前墩。
+      "expect": [
+        { "sv": "phase", "eq": "playing" },
+        { "res": "turn_idx", "eq": 1 },
+        { "res": "hand_sum", "eq": 108 },
+        { "flag": "has_trick", "eq": false },
+      ],
+    },
+    { "signal": "auto" }, // AI 连推到 hero 轮次（中途快照）
+    {
+      // 中途：已轮回 hero、牌数严格下降(单调推进)、不透支、轮次合法。
+      "expect": [
+        { "flag": "turn_is_hero", "eq": true },
+        { "res": "hand_sum", "lte": 107 }, // 严格 < 108：有真实推进
+        { "res": "hand_sum", "gte": 0 },   // 不透支牌堆
+        { "res": "turn_idx", "gte": 0 },
+        { "res": "turn_idx", "lte": 3 },
+      ],
+    },
+    { "signal": "play-round" }, // 打到收束（若轮转卡死→守卫耗尽→下面 settled 红）
+    {
+      // 收束：盘一定结算、≥2 家走科、牌数仍在 [0,108]、轮次合法。
+      "expect": [
+        { "flag": "settled", "eq": true },
+        { "res": "finished_count", "gte": 2 },
+        { "res": "hand_sum", "lte": 107 },
+        { "res": "hand_sum", "gte": 0 },
+        { "res": "turn_idx", "gte": 0 },
+        { "res": "turn_idx", "lte": 3 },
+      ],
+    },
+  ],
+}

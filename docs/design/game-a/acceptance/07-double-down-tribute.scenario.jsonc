@@ -1,0 +1,31 @@
+// GD-A 验收剧本 ⑦ · 逻辑·双下（G2）：对方一二(末二同队) → 双人各进 1 张·大者归头游·进大贡者先出。
+// 规则依据 gdd §2.3 G2：双下时末游两人各进 1 张最大牌，大者归头游、次者归二游；首出=进大贡者。
+//   seed=8 首盘名次=[hero,partner,east,west]——末二(east,west)同为对方队(team1) → 双下。
+//   两进贡：west 进大王(码16)、east 进小王(码15)；大者(16)归头游 hero；首出=进大贡者 west。
+// ⚠ 「次者(小王15)归二游 partner」这半句需 tribute1_* 投影才能机读断言——现薄适配只投影 tribute0_*。
+//   已报 PE 加 tribute1_from/to/card 投影（README「待加固」）；本剧本先钉死「双进贡·大者归头游·大贡者先出」。
+// 对抗目标（改坏被测逻辑应变红）：
+//   · 双下误判成单下（只取 rank[3]）→ tribute_count=1 红。
+//   · 大小贡分配反（大者给二游）→ tribute0_to / tribute0_card 红。
+//   · 首出给错（非进大贡者）→ turn 红。
+{
+  "name": "双下·双进贡·大者归头游·大贡者先出（G2）",
+  "game": "game-a",
+  "seed": 8,
+  "steps": [
+    { "signal": "play-round" },
+    { "expect": [{ "flag": "settled", "eq": true }] },
+    { "signal": "next-round" }, // 次盘：对方一二 → 双下双进贡
+    {
+      "expect": [
+        { "res": "round", "eq": 2 },
+        { "res": "tribute_count", "eq": 2 },       // 双下=两条进贡记录
+        { "sv": "tribute0_from", "eq": "west" },   // 大贡者
+        { "sv": "tribute0_to", "eq": "hero" },     // 大者归头游
+        { "res": "tribute0_card", "eq": 16 },      // 大者=大王
+        { "sv": "turn", "eq": "west" },            // 进大贡者先出
+        { "flag": "resisted", "eq": false },
+      ],
+    },
+  ],
+}
