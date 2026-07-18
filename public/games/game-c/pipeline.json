@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  98 passed (98)）· 验收剧本 6 场景绿",
-      "at": "2026-07-18T08:58:08.673Z",
-      "gameHash": "c1386c35f64268f8"
+      "summary": "walkthrough 绿（ Test Files  6 passed (6) ·       Tests  90 passed (90)）· 验收剧本 6 场景绿",
+      "at": "2026-07-18T09:27:04.886Z",
+      "gameHash": "5e7e5d1b5f38d3eb"
     },
     "S5": {
       "exit": 0,
@@ -392,6 +392,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T08:58:08.673Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "owner 转 2D·废弃3D牌房·纯LayoutNode大牌桌·刷证据",
+      "at": "2026-07-18T09:26:54.038Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T09:27:04.886Z"
     }
   ],
   "outOfOrder": [
@@ -509,6 +521,11 @@
       "stage": "S4",
       "reason": "REQ-C-109 AI非法加注夹取修 + REQ-C-108② heroAct防御no-op + 会话fuzz·刷证据",
       "at": "2026-07-18T08:57:57.491Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "owner 转 2D·废弃3D牌房·纯LayoutNode大牌桌·刷证据",
+      "at": "2026-07-18T09:26:54.038Z"
     }
   ],
   "reviews": {

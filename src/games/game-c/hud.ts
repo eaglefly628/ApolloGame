@@ -8,7 +8,8 @@
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Card } from '@engine/protocol/components.js';
 import {
-  FELT_BG, OPPONENT_ANCHORS, anchorTopLeft, cardFace, SEAT_W, SEAT_H, FIELD_W, FIELD_H,
+  OPPONENT_ANCHORS, anchorTopLeft, cardFace, SEAT_W, SEAT_H, FIELD_W, FIELD_H,
+  TABLE, RAIL_BG, TABLE_FELT_BG, FELT_MARK,
 } from './theme.js';
 import type { GameEvent } from './game-log.js';
 
@@ -426,13 +427,46 @@ function buildLogPanel(log: GameEvent[]): LayoutNode {
   };
 }
 
-// ── 公共牌浮层（桌心·实时揭示的公共牌·让玩家看清·3D 白片占位之上·真牌面 Decal3D=后续）──
+// ── 2D 大牌桌（owner 2026-07-18 转 2D·正式赛跑道形椭圆：外轨胡桃木金边 + 内绒呢 + 中心印记·无椅）──
+function buildFeltTable(): LayoutNode {
+  const { x, y, w, h, rail } = TABLE;
+  const iy = y + rail, ih = h - 2 * rail;
+  return {
+    type: 'Panel', id: 'c-felt-wrap', props: { bare: true }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H },
+    children: [
+      { type: 'Panel', id: 'c-rail', props: { bg: { custom: RAIL_BG }, edge: 'gold' }, layout: { x, y, width: w, height: h, radius: Math.round(h / 2) } },
+      { type: 'Panel', id: 'c-felt', props: { bg: { custom: TABLE_FELT_BG } }, layout: { x: x + rail, y: iy, width: w - 2 * rail, height: ih, radius: Math.round(ih / 2) } },
+      { type: 'Panel', id: 'c-felt-mark-row', props: { bare: true }, layout: { x: Math.round(FIELD_W / 2 - 120), y: Math.round(iy + ih * 0.09), width: 240, direction: 'row', justify: 'center' },
+        children: [{ type: 'Label', id: 'c-felt-mark', props: { text: FELT_MARK, font: 'serif', size: 36, color: 'dim' } }] },
+    ],
+  };
+}
+
+// ── 底池筹码堆（桌心·2D 筹码视觉·替代 3D 物理筹码·owner 2026-07-18 转 2D；数额在顶带 POT）──
+function potPile(): LayoutNode {
+  const disc = (id: string, fill: string): LayoutNode => ({
+    type: 'Panel', id, props: { bg: { custom: fill }, edge: 'gold' },
+    layout: { width: 26, height: 26, radius: 26 },
+  });
+  return {
+    type: 'Panel', id: 'c-potpile', props: { bare: true },
+    layout: { x: Math.round(FIELD_W / 2 - 64), y: 292, width: 128, direction: 'row', justify: 'center', align: 'center', gap: 3 },
+    children: [
+      disc('c-pd0', 'radial-gradient(circle at 40% 32%,#e05a5a,#7b2d3b)'),
+      disc('c-pd1', 'radial-gradient(circle at 40% 32%,#2c2c34,#0e0e12)'),
+      disc('c-pd2', 'radial-gradient(circle at 40% 32%,#f0c96a,#b8862f)'),
+      disc('c-pd3', 'radial-gradient(circle at 40% 32%,#7fd6b0,#12684b)'),
+    ],
+  };
+}
+
+// ── 公共牌（桌心·实时揭示·让玩家看清·2D 牌面·真贴图 S6）──────────────────────────
 function buildCommunity(community: Card[]): LayoutNode {
   const slots: LayoutNode[] = [];
   for (let i = 0; i < 5; i++) slots.push(cardNode(`c-comm-${i}`, community[i] ?? null, 'md'));
   return {
     type: 'Panel', id: 'c-community', props: { bare: true },
-    layout: { x: Math.round(FIELD_W / 2 - 175), y: 150, width: 350, direction: 'row', gap: 7, justify: 'center' },
+    layout: { x: Math.round(FIELD_W / 2 - 175), y: 366, width: 350, direction: 'row', gap: 7, justify: 'center' },
     children: slots,
   };
 }
@@ -511,7 +545,7 @@ function buildFinale(f: FinaleView): LayoutNode {
   return { type: 'Panel', id: 'c-fin-scrim', props: { bg: { custom: 'rgba(4,2,8,0.82)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children: [card] };
 }
 
-// ── 牌桌主屏（UI 浮层·Screen 透明透出 scene 层 3D 牌房；桌/凳/公共牌/底池筹码=build3d render 组件）──
+// ── 牌桌主屏（纯 2D LayoutNode·owner 2026-07-18 转 2D：大牌桌 c-felt-wrap + 顶带 + 底池筹码 + 公共牌 + 座位）──
 export function buildTable(v: TableView): LayoutNode {
   const opp = OPPONENT_ANCHORS.map((a) => {
     const sv = v.seats.find((s) => s.seat === a.seat)!;
@@ -521,9 +555,9 @@ export function buildTable(v: TableView): LayoutNode {
   const hero = v.seats.find((s) => s.isHero)!;
   const heroCard = seatCard(hero, 20, FIELD_H - 168, 236, 108);
 
-  // z 序（DOM 顺序）：顶带 → 公共牌 → 座位卡/底牌 → 行动条(主角轮)/等待 → 日志/衣柜 → 摊牌/局终最上。
+  // z 序（DOM 顺序）：2D 牌桌(底) → 顶带 → 底池筹码 → 公共牌 → 座位卡/底牌 → 行动条/等待 → 日志/衣柜 → 摊牌/局终最上。
   const children: LayoutNode[] = [
-    buildTopBar(v), buildCommunity(v.board), ...opp, heroCard, buildHeroCards(v),
+    buildFeltTable(), buildTopBar(v), potPile(), buildCommunity(v.board), ...opp, heroCard, buildHeroCards(v),
   ];
   if (v.phase === 'betting') children.push(v.isHeroTurn ? buildActionBar(v) : buildWaiting());
   if (v.showLog) children.push(buildLogPanel(v.log));
@@ -531,6 +565,6 @@ export function buildTable(v: TableView): LayoutNode {
   if (v.phase === 'showdown' && v.showdown) children.push(buildShowdown(v.showdown));
   if (v.phase === 'gameover' && v.finale) children.push(buildFinale(v.finale));
 
-  // Screen bg transparent → 露出 scene 层 3D 牌房（桌/六凳/公共牌/底池筹码=build3d render 组件）。
+  // Screen bg transparent → 露出 scene 层夜宴厅暗背景（ROOM_BG）；2D 大牌桌=本层 LayoutNode c-felt-wrap。
   return { type: 'Screen', id: 'c-table', props: { bg: 'transparent' }, layout: { width: FIELD_W, height: FIELD_H }, children };
 }

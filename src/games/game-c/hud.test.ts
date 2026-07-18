@@ -76,6 +76,17 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     expect(OPPONENT_ANCHORS.map((a) => a.name)).toEqual(['大姨太', '二姨太', '三姨太', '四姨太', '五姨太']);
   });
 
+  it('2D 大牌桌背景存在（owner 转 2D：跑道椭圆外轨 c-rail + 内呢 c-felt + 底池筹码 c-potpile）', () => {
+    const table = buildTable(baseView());
+    const ids = new Set<string>();
+    const walk = (n: { id?: string; children?: unknown[] }): void => {
+      if (n.id) ids.add(n.id);
+      for (const c of (n.children ?? []) as { id?: string; children?: unknown[] }[]) walk(c);
+    };
+    walk(table);
+    for (const id of ['c-felt-wrap', 'c-rail', 'c-felt', 'c-potpile', 'c-community']) expect(ids.has(id)).toBe(true);
+  });
+
   it('游戏日志面板打开（事件流渲染）零 issue', () => {
     const log = [
       { seq: 0, tag: 'deal' as const, text: '🎲 发牌 · seed 42' },

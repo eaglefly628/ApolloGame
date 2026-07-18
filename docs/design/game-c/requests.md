@@ -60,6 +60,11 @@
 > **修**（`game-session.ts aiDecide`）：`raiseTo(r, desired)=Math.max(r.min, Math.min(r.max, desired))` 夹进合法区间 [min,max]（AI 是行动者·必须自出合法·不能靠防御 no-op 兜=那会卡住牌局）；两处加注（面注/可过）同走。**只在旧「本该崩」的分支改变行为·seed42 既过剧本零扰动**（6 本 conformance 重跑仍绿）。
 > **钉死**：`game-session.test.ts` 加「会话层守恒 + 健壮 fuzz」（500 局随机·主角随机行动+随机典当+AI 逐步·断言 Σ栈全程守恒·必终局·AI 出牌恒合法即零崩）。与 REQ-C-108②（hero 输入侧防御 no-op）互补：AI 侧=永不产非法（夹取）·hero 侧=容非法输入（no-op）。
 
+### REQ-C-110 · [报 PUI·工具盲区] ui-audit 对比度量不了「渐变填充」→ 牌面/金键假阳 · [2026-07-18] · 提出人 PE-C（2D 转向 check-ui 暴露）→ PUI（ui-audit/基座控件）· status: open · 优先级: P3（假阳·不阻断真交付·工具准度） · 类型: 审计工具盲区（跨游戏·非单游戏）
+> **现象**：`tools/ui-audit.mjs` 对比度检查「取 computed color vs 逐层向上第一个**不透明** backgroundColor」——`PlayingCard` 'light' 白牌面 + `gold-sheen` 等 FillPreset 都是**渐变**（无实 backgroundColor），审计穿透到暗桌呢/页底 → 黑/红点数判 1.15、金键 ink 暗字判 1.1（硬失败）。**实际高对比可读**（白牌面黑红点数、金键压暗字·截图 `2d-*.png` 目击）。
+> **同先例**：game-a 亦 PlayingCard 假阳（其 audit exit 1·已报 A-007 系overlap侧）；此为**对比侧**同根盲区·跨 game-a/game-c。
+> **建议（PUI 裁）**：① ui-audit 渐变底取「渐变主色/端点色」近似量对比（而非穿透到底）；或 ② 给渐变填充元素识别标（如 `data-fill-approx="#..."`）供审计读；或 ③ PlayingCard/FillPreset 渲染补一层实 backgroundColor 兜底。**在此之前**：game-c 的 12 处对比硬失败=已知渐变假阳（audit 头注记录）·重叠侧已归零·真交付不阻断。
+
 ### REQ-C-104 · 角色卡「玩家档案」通道：外部带入主角姓名+头像（立绘字段预留） · [2026-07-17] · 提出人 GD-C → **⚖ Lead 接单出图（2026-07-17·owner「有需求就做掉」）→ 指派：Opus（PST 域施工）** · status: **✅ done·Lead 对抗性验收 PASS（2026-07-17）** · 优先级: P1（M4 前需要·不阻塞 M1 逻辑） · 类型: 创作台/卡带 meta 数据通道（跨域：PST 主责·引擎装配层读取）
 > **想要的行为**：游戏外部（工坊/launcher 档案）配置一张「角色卡」：`{ name, avatar(资产 key), portrait?(立绘·预留) }`；
 > **⚖ Lead 对抗性验收（2026-07-17·判 PASS）**：独立复跑全绿（tsc·vitest 368 文件/2928·build）；域界零越线（games/skills/engine/apollo.py 全 0 触碰）；12 新测含坏档/headless/往返/空名禁用。偏差四条全 INTENTIONAL 准许：avatar↔avatarUrl 归一（调和图纸与 §0 字段差·一个 ?? 两头吃）；档案卡独立文件=launcher 子件既有架构（「不新立组件」正解为 LayoutNode 闭集不扩·launcher React 壳同 SettingsPanel 先例）；游戏侧 adapter 接线随各 PE 走（正确守域）；清除按钮 additive。**三游戏 M4 前的外部依赖清零。**
