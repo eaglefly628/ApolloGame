@@ -10,7 +10,7 @@ import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap } from '@ui/components/index.js';
 import { GuandanSession, TURN_ORDER, teamOf, FAMILY_CN, fmtCardCode, type SeatId } from './guandan-session.js';
 import { buildMenu, buildTableSelect, buildPlay, buildResult, type SeatView, type PlayView, type ResultView } from './hud.js';
-import { SEATS, DRESS_TIERS, INITIAL_FUNDS, STAKES, codeSuit, codeRank, sortHand } from './rules.js';
+import { SEATS, DRESS_TIERS, INITIAL_FUNDS, STAKES, AI_TIERS, codeSuit, codeRank, sortHand } from './rules.js';
 import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG, GAME_A_THEME } from './theme.js';
 
 const RUN_SEED = 20260717; // 骨架期固定 run 种子；生涯存档随 run 快照=后续接
@@ -33,6 +33,8 @@ export function mount(container: HTMLElement): () => void {
   let wallet = INITIAL_FUNDS; // 生涯钱包（跨桌持久·带出回写；存档=后续）
   let runCount = 0; // 上桌计数（seed 递增·每局不同牌·确定性可复现）
   let showCounter = false; // 记牌器开合（玩家辅助·只统计明面已出牌·不开天眼·gdd §5）
+  let menuOpen = false; // 游戏内菜单（☰·出牌日志/规则说明/设置）开合（避与 showMenu() 屏切换函数撞名）
+  let menuTab: 'log' | 'rules' | 'settings' = 'log'; // 菜单当前页（宿主记·AI 重渲不丢页）
 
   const seatSpec = (id: SeatId): SeatView['seat'] => SEATS.find((s) => s.id === id)!;
   const seatView = (id: SeatId): SeatView => ({
@@ -80,6 +82,21 @@ export function mount(container: HTMLElement): () => void {
     return rows;
   }
 
+  // 出牌日志行（本盘·newest last·供游戏内菜单「出牌日志」页·玩家可复制贴作者排查 freeze/牌型）。
+  const ACT_CN: Record<string, string> = { lead: '领出', follow: '跟', pass: '过' };
+  function logRows(s: GuandanSession): { round: number; who: string; act: string; cards: string; fam: string }[] {
+    return s.playLog
+      .filter((e) => e.round === s.round)
+      .slice(-60)
+      .map((e) => ({
+        round: e.round,
+        who: e.seatName,
+        act: ACT_CN[e.action] ?? e.action,
+        cards: e.action === 'pass' ? '—' : e.cards.map(fmtCardCode).join(' '),
+        fam: e.family ? (FAMILY_CN[e.family] ?? e.family) : '—',
+      }));
+  }
+
   // 本盘进贡/还贡一句话（首盘=null·抗贡/正常各态·玩家知情）。
   function tributeText(s: GuandanSession): string | null {
     if (s.round <= 1) return null;
@@ -124,6 +141,10 @@ export function mount(container: HTMLElement): () => void {
       canCommit: cs.canCommit,
       commitWhy: cs.why,
       canPass: s.currentTrick !== null,
+      showMenu: menuOpen,
+      menuTab,
+      logRows: menuOpen ? logRows(s) : [],
+      tierName: AI_TIERS.find((t) => t.id === s.tier)?.name ?? s.tier,
     };
   }
 
@@ -271,6 +292,20 @@ export function mount(container: HTMLElement): () => void {
     'tools.counter': () => {
       if (!session) return;
       showCounter = !showCounter;
+      render();
+    },
+    // 游戏内菜单（☰·出牌日志/规则说明/设置）。
+    'menu.open': () => {
+      if (!session) return;
+      menuOpen = true;
+      render();
+    },
+    'menu.close': () => {
+      menuOpen = false;
+      render();
+    },
+    'menu.tab': (arg?: string) => {
+      if (arg === 'log' || arg === 'rules' || arg === 'settings') menuTab = arg;
       render();
     },
   };

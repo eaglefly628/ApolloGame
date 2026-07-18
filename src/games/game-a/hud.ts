@@ -250,6 +250,11 @@ export interface PlayView {
   canCommit: boolean; // 选牌构成合法且能压
   commitWhy: string; // 不可出的原因（禁用提示）
   canPass: boolean;
+  // 游戏内菜单（☰·出牌日志/规则说明/设置）。
+  showMenu: boolean;
+  menuTab: 'log' | 'rules' | 'settings';
+  logRows: LogRow[];
+  tierName: string;
 }
 
 // 中央墩牌（蓝本经典白扑克面·light·红黑自动判）。
@@ -435,13 +440,20 @@ export function buildPlay(v: PlayView): LayoutNode {
     }],
   };
 
-  const backWrap: LayoutNode = {
+  // 右上角：☰ 菜单（出牌日志/规则/设置）+ 返回。
+  const topWrap: LayoutNode = {
     type: 'Panel',
     id: 'a-p-backwrap',
     props: { bare: true },
-    layout: { x: FIELD_W - 96, y: 12, width: 84 },
-    children: [{ type: 'Button', id: 'a-p-back', props: { label: '返回', kind: 'ghost', action: 'table.back' } }],
+    layout: { x: FIELD_W - 208, y: 12, width: 196, direction: 'row', gap: 8, justify: 'end' },
+    children: [
+      { type: 'Button', id: 'a-p-menu', props: { label: '☰ 菜单', kind: 'quiet', action: 'menu.open' } },
+      { type: 'Button', id: 'a-p-back', props: { label: '返回', kind: 'ghost', action: 'table.back' } },
+    ],
   };
+  const gameMenu: LayoutNode | null = v.showMenu
+    ? buildGameMenu({ menuTab: v.menuTab, logRows: v.logRows, tierName: v.tierName, levelPlay: v.levelPlay, stake: v.stake, wallet: v.wallet, sortMode: v.sortMode })
+    : null;
 
   // 记牌器（居中模态浮层·明面已出牌计数·点「▤ 记牌器」开·点遮罩/关闭收·不开天眼）。
   const counterPanel: LayoutNode | null = v.showCounter
@@ -489,7 +501,129 @@ export function buildPlay(v: PlayView): LayoutNode {
       actionRow1,
       actionRow2,
       ...(counterPanel ? [counterPanel] : []),
-      backWrap,
+      ...(gameMenu ? [gameMenu] : []),
+      topWrap,
+    ],
+  };
+}
+
+// ── 游戏内菜单（☰）：出牌日志 + 牌型/规则说明 + 设置（owner 2026-07-18·让玩家能复制日志+学规则）──
+// 全 LayoutNode 闭集（Modal + Tabs + Table + Label）；Tabs.action='menu.tab' 由宿主记 active（AI 重渲不丢页）。
+export interface LogRow { round: number; who: string; act: string; cards: string; fam: string }
+export interface GameMenuView {
+  menuTab: 'log' | 'rules' | 'settings';
+  logRows: LogRow[];
+  tierName: string;
+  levelPlay: number;
+  stake: number;
+  wallet: number;
+  sortMode: 'rank' | 'family';
+}
+// 牌型闭集 10 型（gdd §2.2·静态说明数据·非规则逻辑）。
+const PATTERN_GUIDE: { name: string; eg: string; note: string }[] = [
+  { name: '单张', eg: '♠5', note: '比点数；级牌 > A，大王最大' },
+  { name: '对子', eg: '♠5 ♥5', note: '两张同点' },
+  { name: '三同张', eg: '♠5 ♥5 ♦5', note: '三张同点' },
+  { name: '三带二', eg: '888 + 99', note: '三张带一对，比三张那部分' },
+  { name: '顺子', eg: '3-4-5-6-7', note: '五张连续单牌（A 可当 1）' },
+  { name: '三连对（木板）', eg: '33 44 55', note: '三副连续的对子' },
+  { name: '钢板（二连三）', eg: '888-999', note: '两副连续的三同张（点数必须相邻）' },
+  { name: '炸弹', eg: '5555 起', note: '四张及以上同点；先比张数再比点' },
+  { name: '同花顺', eg: '♥3-4-5-6-7', note: '同花色顺子，压 5 张炸弹' },
+  { name: '四大天王', eg: '双大王+双小王', note: '最大，压一切' },
+];
+const RULES_LINES: { t: string; b: boolean }[] = [
+  { t: '目标：四人两副牌（108 张），2v2 对家；本队两人先出光手牌即胜，爬级打过 A 通关。', b: true },
+  { t: '出牌：领出任意合法牌型 → 下家出同型更大的、或用炸弹跨型压 → 压不过就「过」；一圈都过则收墩，收墩者重新领出。', b: false },
+  { t: '压制序：四大天王 ＞ 大炸弹 ＞ 同花顺 ＞ 小炸弹 ＞ 普通牌型（同型比大小）。', b: false },
+  { t: '级牌 / 逢人配：本盘「级牌」抬到 A 之上、小王之下；红桃级牌 = 逢人配（百搭，可当除王外任意牌）。', b: false },
+  { t: '进贡 / 还贡：次盘末游向头游进最大牌，头游还一张 ≤10；应贡方手握双大王可「抗贡」免进。', b: false },
+  { t: '升级：头游队按 双上 +3 / 一三 +2 / 一四 +1 升级；输队褪一件服饰，到底线转金钱罚。', b: false },
+];
+export function buildGameMenu(v: GameMenuView): LayoutNode {
+  const logTab: LayoutNode = {
+    type: 'Panel', id: 'a-menu-log', props: { bare: true },
+    layout: { direction: 'column', gap: 8, padding: 4 },
+    children: [
+      { type: 'Label', id: 'a-menu-log-hint', props: { text: '本局出牌流水（可框选复制贴给作者排查）· 完整日志见浏览器 F12 → Console', size: 'xs', color: 'sub' } },
+      v.logRows.length === 0
+        ? { type: 'Label', id: 'a-menu-log-empty', props: { text: '（本盘还没有出牌记录）', size: 'sm', color: 'dim' } }
+        : {
+            type: 'Table', id: 'a-menu-log-tbl',
+            props: {
+              columns: [
+                { key: 'round', label: '盘', width: 40, align: 'center' },
+                { key: 'who', label: '玩家', width: 90 },
+                { key: 'act', label: '动作', width: 56, align: 'center' },
+                { key: 'cards', label: '出的牌' },
+                { key: 'fam', label: '牌型', width: 92 },
+              ],
+              rows: v.logRows.map((r, i) => ({
+                id: `a-lg-${i}`,
+                cells: { round: String(r.round), who: r.who, act: r.act, cards: r.cards, fam: r.fam },
+                tone: (r.act === '过' ? 'dim' : 'normal') as 'dim' | 'normal',
+              })),
+            },
+          },
+    ],
+  };
+  const rulesTab: LayoutNode = {
+    type: 'Panel', id: 'a-menu-rules', props: { bare: true },
+    layout: { direction: 'column', gap: 8, padding: 4 },
+    children: [
+      { type: 'Label', id: 'a-menu-rules-h1', props: { text: '牌型（从小到大）', size: 'sm', bold: true, color: 'gold' } },
+      {
+        type: 'Table', id: 'a-menu-pat-tbl',
+        props: {
+          columns: [
+            { key: 'name', label: '牌型', width: 116 },
+            { key: 'eg', label: '例子', width: 152 },
+            { key: 'note', label: '说明' },
+          ],
+          rows: PATTERN_GUIDE.map((p, i) => ({ id: `a-pat-${i}`, cells: { name: p.name, eg: p.eg, note: p.note } })),
+        },
+      },
+      { type: 'Label', id: 'a-menu-rules-h2', props: { text: '基本规则', size: 'sm', bold: true, color: 'gold' } },
+      ...RULES_LINES.map((r, i) => ({
+        type: 'Label' as const, id: `a-menu-rule-${i}`,
+        props: { text: `· ${r.t}`, size: 'xs' as const, color: 'sub' as const, bold: r.b }, // sub=可读正文（dim 4.49 差 AA·规则是要读的内容）
+      })),
+    ],
+  };
+  const settingsTab: LayoutNode = {
+    type: 'Panel', id: 'a-menu-set', props: { bare: true },
+    layout: { direction: 'column', gap: 8, padding: 4 },
+    children: [
+      { type: 'Label', id: 'a-menu-set-h', props: { text: '本局', size: 'sm', bold: true, color: 'gold' } },
+      {
+        type: 'Panel', id: 'a-menu-set-row', props: { bare: true },
+        layout: { direction: 'row', gap: 8, align: 'center' },
+        children: [
+          { type: 'Tag', id: 'a-menu-set-tier', props: { label: `难度 ${v.tierName}`, tone: 'accent', size: 'sm' } },
+          { type: 'Tag', id: 'a-menu-set-lvl', props: { label: `级牌 ${v.levelPlay}`, tone: 'normal', size: 'sm' } },
+          { type: 'Badge', id: 'a-menu-set-stake', props: { text: `底注 ${v.stake}`, tone: 'ok' } },
+          { type: 'Badge', id: 'a-menu-set-wallet', props: { text: `💰 ${fmtMoney(v.wallet)}`, tone: 'ok' } },
+        ],
+      },
+      { type: 'Label', id: 'a-menu-set-sort', props: { text: `理牌方式：${v.sortMode === 'rank' ? '按点数' : '按牌型'}（牌桌右下角可切换）`, size: 'xs', color: 'sub' } },
+      { type: 'Label', id: 'a-menu-set-more', props: { text: '音效 / 动画速度 / 记牌器等更多设置陆续加入。', size: 'xs', color: 'dim' } },
+    ],
+  };
+  return {
+    type: 'Modal',
+    id: 'a-menu-modal',
+    props: { title: '菜单 · 掼蛋夜宴', size: 'lg', closable: true, closeAction: 'menu.close' },
+    children: [
+      {
+        type: 'Tabs',
+        id: 'a-menu-tabs',
+        props: {
+          tabs: [{ id: 'log', label: '出牌日志' }, { id: 'rules', label: '规则说明' }, { id: 'settings', label: '设置' }],
+          active: v.menuTab,
+          action: 'menu.tab',
+        },
+        children: [logTab, rulesTab, settingsTab],
+      },
     ],
   };
 }

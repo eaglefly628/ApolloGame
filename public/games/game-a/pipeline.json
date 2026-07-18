@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  3 passed (3) ·       Tests  41 passed (41)）· 验收剧本 4 场景绿",
-      "at": "2026-07-18T07:32:58.184Z",
-      "gameHash": "ad928647d8b22262"
+      "summary": "walkthrough 绿（ Test Files  3 passed (3) ·       Tests  43 passed (43)）· 验收剧本 4 场景绿",
+      "at": "2026-07-18T09:13:52.374Z",
+      "gameHash": "90d1d92c081361aa"
     },
     "S5": {
       "exit": 0,
@@ -201,6 +201,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T07:32:58.184Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "游戏内菜单(日志/规则/设置)UI 增补后重跑·前置 S2/S3 复查仅因游戏文件变更过期·walkthrough+验收4场景绿",
+      "at": "2026-07-18T09:13:48.116Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T09:13:52.374Z"
     }
   ],
   "reviews": {
@@ -276,6 +288,11 @@
       "stage": "S4",
       "reason": "GD-A 下一轮：PE 修 A-009 后回收 result_level_up 断言·前置复查因 game-a 变更过期",
       "at": "2026-07-18T07:32:53.899Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "游戏内菜单(日志/规则/设置)UI 增补后重跑·前置 S2/S3 复查仅因游戏文件变更过期·walkthrough+验收4场景绿",
+      "at": "2026-07-18T09:13:48.116Z"
     }
   ]
 }

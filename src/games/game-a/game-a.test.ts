@@ -11,7 +11,7 @@ import {
   SEATS, DECK_SIZE, RANK_SMALL_JOKER, RANK_BIG_JOKER, SUIT_HEART, INITIAL_FUNDS, DRESS_TIERS,
 } from './rules.js';
 import { buildTableBlueprint } from './blueprint.js';
-import { buildMenu, buildTableSelect, buildPlay, buildResult, type SeatView } from './hud.js';
+import { buildMenu, buildTableSelect, buildPlay, buildResult, buildGameMenu, type SeatView } from './hud.js';
 import { cardAssetId } from './theme.js';
 import { pickLead } from './ai.js';
 
@@ -45,6 +45,18 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
         cfg,
       ),
     ).toMatchObject({ family: 'sky' });
+  });
+
+  // ── 钢板必须点数相邻（owner 2026-07-18 报「888+一对10+2 打出钢板」）──────────────────
+  it('钢板点数必须相邻：888+10·10+逢人配 非法拒；888+9·9+逢人配=888-999 合法', () => {
+    const cfg = guandanConfig(2); // ♥2=逢人配
+    const w = c(SUIT_HEART, 2); // 红桃2 逢人配
+    // 8 与 10 不相邻 → 逢人配补不成钢板 → 非法（null）
+    expect(matchPattern([c(0, 8), c(1, 8), c(2, 8), c(0, 10), c(1, 10), w], cfg)).toBeNull();
+    // 8 与 9 相邻 → 逢人配补第三张 9 → 合法钢板 888-999
+    expect(matchPattern([c(0, 8), c(1, 8), c(2, 8), c(0, 9), c(1, 9), w], cfg)).toMatchObject({ family: 'plate', rank: 9 });
+    // 纯自然 888-999 也是钢板（对照）
+    expect(matchPattern([c(0, 8), c(1, 8), c(2, 8), c(0, 9), c(1, 9), c(2, 9)], cfg)).toMatchObject({ family: 'plate' });
   });
 
   it('逢人配（红桃级牌）可补顺子缺口；黑桃级牌不是百搭', () => {
@@ -180,6 +192,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       selected: [0, 1], // 选中前两张（下标·非牌码）
       trick: { name: '对子', family: 'pair', cards: [cardCode(2, 2), cardCode(3, 2)], holder: 'west', holderName: '林曼笙', holderTeam: 1 },
       canCommit: true, commitWhy: '', canPass: true, sortMode: 'rank', tributeText: null, showCounter: false, counter: [],
+      showMenu: false, menuTab: 'log', logRows: [], tierName: '常客',
     });
     expect(validateLayoutNode(play)).toEqual([]);
     // 领出态（无墩）+ AI 轮次
@@ -188,6 +201,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       turn: 'west', turnName: '林曼笙',
       seats: { partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero') },
       hand: [cardCode(0, 5)], selected: [], trick: null, canCommit: false, commitWhy: '点牌选中 · 出牌或过', canPass: false, sortMode: 'family', tributeText: '抗贡成功 · 双大王免进贡 · 头游先出', showCounter: true, counter: [{ rank: 'A', played: 3, total: 8 }],
+      showMenu: true, menuTab: 'rules', logRows: [{ round: 2, who: '林曼笙', act: '领出', cards: '♠5', fam: '单张' }], tierName: '宗师',
     });
     expect(validateLayoutNode(lead)).toEqual([]);
     for (const phase of ['settled', 'run-won', 'run-lost'] as const) {
@@ -201,6 +215,23 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       });
       expect(validateLayoutNode(res)).toEqual([]);
     }
+  });
+
+  // ── 游戏内菜单（☰·出牌日志/规则说明/设置·owner 2026-07-18）过 validateLayoutNode ─────────
+  it('游戏内菜单三页（日志/规则/设置）纯数据·零 issue', () => {
+    for (const tab of ['log', 'rules', 'settings'] as const) {
+      const menu = buildGameMenu({
+        menuTab: tab,
+        logRows: [
+          { round: 3, who: '顾念念', act: '领出', cards: '♥4 ♥4 ♣4 ♠5 ♠5 ♥5', fam: '钢板' },
+          { round: 3, who: '你', act: '过', cards: '—', fam: '—' },
+        ],
+        tierName: '常客', levelPlay: 2, stake: 100, wallet: 10000, sortMode: 'rank',
+      });
+      expect(validateLayoutNode(menu)).toEqual([]);
+    }
+    // 空日志（本盘还没出牌）也零 issue
+    expect(validateLayoutNode(buildGameMenu({ menuTab: 'log', logRows: [], tierName: '雏鸟', levelPlay: 2, stake: 500, wallet: 200000, sortMode: 'family' }))).toEqual([]);
   });
 
   // ── 理牌排序（视图·纯函数·不碰 sim）────────────────────────────────────────────
