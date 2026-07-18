@@ -29,38 +29,120 @@ export interface SeatView {
 }
 const fmtMoney = (n: number): string => n.toLocaleString('en-US');
 
-// ── SC-1 主菜单壳（ui-scene-design §3 SC-1·蓝本 1:1 定稿在 S5）────────────────────
-export function buildMenu(): LayoutNode {
+// ── SC-1 主菜单（1:1 复刻设计稿 main-menu-guandan.dc.html·owner 2026-07-18）────────────────
+// 稿 = 1280×720 绝对定位：星点背景 + 左侧主角立绘占位(300×440) + 左下头像/名/金币 + 右上级牌+大标题
+// (掼蛋 米白 / 夜宴 朱砂) + 右侧按钮列(开始上桌金 CTA / 继续 / 设置) + 右下版本。夜宴皮=深胡桃×朱砂×米金。
+// 差异（逐条·非阻断）：① 立绘占位去掉 EN-prompt/A-CHAR 台账标注（美术生产注解·非玩家 UI）；
+//   ② bob/glow/twinkle 呼吸动效简化（星点用 Particles·徽标静态）；③「继续上局」暂无存档=同「开始」。
+const MENU_BG = 'radial-gradient(90% 120% at 78% 30%,#31201a,#160e0a 75%)';
+export interface MenuView {
+  wallet: number;
+  level: number; // 本家级牌（无存档=起始 2）
+  showMenu: boolean; // 游戏内菜单（规则/设置）浮层
+  menuTab: 'log' | 'rules' | 'settings';
+}
+export function buildMenu(v: MenuView): LayoutNode {
+  const overlay = v.showMenu
+    ? buildGameMenu({ menuTab: v.menuTab, logRows: [], tierName: '—', levelPlay: v.level, stake: 0, wallet: v.wallet, sortMode: 'rank' })
+    : null;
   return {
     type: 'Screen',
     id: 'a-menu',
-    props: { bg: { custom: MANOR_BG }, center: true },
-    layout: { direction: 'column', align: 'center', justify: 'center', gap: 16, padding: 24 },
+    props: { bg: { custom: MENU_BG } },
+    layout: { width: FIELD_W, height: FIELD_H },
     children: [
+      // 主角立绘占位（左·300×440·斜纹虚框·真立绘 S6 台账 A-CHAR-HERO）
       {
         type: 'Panel',
-        id: 'a-menu-card',
-        props: { vignette: true },
-        layout: { direction: 'column', align: 'center', gap: 14, padding: 30 },
+        id: 'a-menu-portrait',
+        props: { vignette: true, bg: { custom: 'repeating-linear-gradient(45deg,rgba(216,184,120,.06) 0 9px,transparent 9px 18px),linear-gradient(160deg,rgba(30,20,14,.72),rgba(22,15,11,.5))' } },
+        layout: { x: 96, y: 132, width: 300, height: 440, direction: 'column', align: 'center', justify: 'center', gap: 14, padding: 26, radius: 14 },
         children: [
-          { type: 'Label', id: 'a-menu-title', props: { text: '掼蛋夜宴', font: 'elegant', size: 'xxxl', bold: true, color: 'gold' } },
-          { type: 'Label', id: 'a-menu-sub', props: { text: '四人两副牌 · 淮安标准全套 · 私宅夜局', size: 'sm', color: 'sub' } },
-          {
-            type: 'Panel',
-            id: 'a-menu-tags',
-            props: { bare: true },
-            layout: { direction: 'row', gap: 8, justify: 'center' },
-            children: [
-              { type: 'Tag', id: 'a-menu-tag-1', props: { label: '快局制', tone: 'accent', size: 'sm' } },
-              { type: 'Tag', id: 'a-menu-tag-2', props: { label: '2v2 对家', tone: 'normal', size: 'sm' } },
-              { type: 'Tag', id: 'a-menu-tag-3', props: { label: '级数爬 A', tone: 'normal', size: 'sm' } },
-            ],
-          },
-          { type: 'Button', id: 'a-menu-start', props: { label: '开始上桌', kind: 'primary', action: 'menu.start', sub: '与三位姨太 · 快局爬级过 A' } },
-          { type: 'Button', id: 'a-menu-settings', props: { label: '设置', kind: 'ghost', disabled: true } },
-          { type: 'Label', id: 'a-menu-ver', props: { text: '淮安标准全套 · 金钱/服饰罚 · 二次元私宅夜局', size: 'xs', color: 'dim' } },
+          { type: 'Label', id: 'a-menu-portrait-icon', props: { text: '▤', size: 44, color: 'gold' } },
+          { type: 'Label', id: 'a-menu-portrait-t', props: { text: '主角立绘', font: 'serif', size: 'xxl', bold: true, color: 'text' } },
+          { type: 'Tag', id: 'a-menu-portrait-sz', props: { label: '尺寸 300 × 440 · 竖幅', tone: 'accent', size: 'sm' } },
+          { type: 'Label', id: 'a-menu-portrait-anchor', props: { text: '风格锚 · 二次元 / 柔光 / 暖夜', size: 'xs', color: 'jade' } },
         ],
       },
+      // 玩家（左下·金边圆头像 + 名 + 金币 Badge）
+      {
+        type: 'Panel',
+        id: 'a-menu-player',
+        props: { bare: true },
+        layout: { x: 96, y: 636, direction: 'row', align: 'center', gap: 14 },
+        children: [
+          {
+            type: 'Panel',
+            id: 'a-menu-player-ring',
+            props: { accent: true, bg: { custom: 'linear-gradient(145deg,#5a3d2e,#39251b)' } },
+            layout: { width: 64, height: 64, radius: 32, direction: 'row', align: 'center', justify: 'center' },
+            children: [{ type: 'Label', id: 'a-menu-player-init', props: { text: '君', font: 'serif', size: 'xxl', bold: true, color: 'text' } }],
+          },
+          {
+            type: 'Panel',
+            id: 'a-menu-player-col',
+            props: { bare: true },
+            layout: { direction: 'column', gap: 6 },
+            children: [
+              { type: 'Label', id: 'a-menu-player-name', props: { text: '夜阑君', font: 'serif', size: 'lg', bold: true, color: 'text' } },
+              { type: 'Badge', id: 'a-menu-player-money', props: { text: `◉ ${fmtMoney(v.wallet)}`, tone: 'warn' } },
+            ],
+          },
+        ],
+      },
+      // 标题（右上·本家级牌 + 掼蛋夜宴大字 + 副标·右对齐）
+      {
+        type: 'Panel',
+        id: 'a-menu-title',
+        props: { bare: true },
+        layout: { x: 520, y: 74, width: 680, direction: 'column', align: 'end', gap: 12 },
+        children: [
+          {
+            type: 'Panel',
+            id: 'a-menu-level',
+            props: { bare: true },
+            layout: { direction: 'row', align: 'center', gap: 10 },
+            children: [
+              { type: 'Label', id: 'a-menu-level-l', props: { text: '本家级牌', size: 'sm', color: 'sub' } },
+              // 级牌红徽（稿=朱砂红渐变·闭集 Tag/Badge 无 danger 档→创作者指定红底 custom·同 felt 先例）
+              {
+                type: 'Panel',
+                id: 'a-menu-level-v',
+                props: { bg: { custom: 'linear-gradient(160deg,rgba(200,53,43,.9),rgba(122,26,18,.92))' } },
+                layout: { direction: 'row', align: 'center', gap: 3, padding: 7, radius: 10 },
+                children: [
+                  { type: 'Label', id: 'a-menu-level-v-t', props: { text: '级', size: 'sm', bold: true, color: 'text' } },
+                  { type: 'Label', id: 'a-menu-level-v-n', props: { text: String(v.level), size: 'md', bold: true, color: 'gold' } },
+                ],
+              },
+            ],
+          },
+          { type: 'Label', id: 'a-menu-title-t', props: { size: 80, font: 'serif', bold: true, color: 'text', spans: [{ text: '掼蛋' }, { text: '夜宴', color: 'danger' }] } },
+          { type: 'Label', id: 'a-menu-title-sub', props: { text: '四人两副牌 · 升级同盟 · 逢局必争', size: 'md', color: 'sub' } },
+        ],
+      },
+      // 按钮列（右·红包 tip + 开始上桌金 CTA + 继续 + 设置）
+      {
+        type: 'Panel',
+        id: 'a-menu-btns',
+        props: { bare: true },
+        layout: { x: 960, y: 352, width: 240, direction: 'column', gap: 14, align: 'stretch' },
+        children: [
+          { type: 'Badge', id: 'a-menu-tip', props: { text: '每日首局 +88 红包', tone: 'warn' } },
+          { type: 'Button', id: 'a-menu-start', props: { label: '开始上桌', kind: 'primary', action: 'menu.start' } }, // primary=米金 CTA 深字(hero 是金字金底 1.05 糊)
+          { type: 'Button', id: 'a-menu-resume', props: { label: '继续上局', kind: 'ghost', action: 'menu.start' } },
+          { type: 'Button', id: 'a-menu-settings', props: { label: '设置 · 规则', kind: 'ghost', action: 'menu.settings' } },
+        ],
+      },
+      // 版本（右下）
+      {
+        type: 'Panel',
+        id: 'a-menu-ver-wrap',
+        props: { bare: true },
+        layout: { x: 1000, y: 688, width: 200, direction: 'row', justify: 'end' },
+        children: [{ type: 'Label', id: 'a-menu-ver', props: { text: 'v0.1.0 · 盒庭线', size: 'xs', color: 'dim' } }],
+      },
+      ...(overlay ? [overlay] : []),
     ],
   };
 }

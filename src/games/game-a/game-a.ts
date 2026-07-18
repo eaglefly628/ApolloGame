@@ -10,7 +10,7 @@ import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap } from '@ui/components/index.js';
 import { GuandanSession, TURN_ORDER, teamOf, FAMILY_CN, fmtCardCode, type SeatId } from './guandan-session.js';
 import { buildMenu, buildTableSelect, buildPlay, buildResult, type SeatView, type PlayView, type ResultView } from './hud.js';
-import { SEATS, DRESS_TIERS, INITIAL_FUNDS, STAKES, AI_TIERS, codeSuit, codeRank, sortHand } from './rules.js';
+import { SEATS, DRESS_TIERS, INITIAL_FUNDS, STAKES, AI_TIERS, LEVEL_START, codeSuit, codeRank, sortHand } from './rules.js';
 import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG, GAME_A_THEME } from './theme.js';
 
 const RUN_SEED = 20260717; // 骨架期固定 run 种子；生涯存档随 run 快照=后续接
@@ -36,6 +36,8 @@ export function mount(container: HTMLElement): () => void {
   let menuOpen = false; // 游戏内菜单（☰·出牌日志/规则说明/设置）开合（避与 showMenu() 屏切换函数撞名）
   let menuTab: 'log' | 'rules' | 'settings' = 'log'; // 菜单当前页（宿主记·AI 重渲不丢页）
 
+  // 主菜单视图（无 session·1:1 设计稿·wallet 持久·级牌无存档=起始）。
+  const menuView = () => ({ wallet, level: LEVEL_START, showMenu: menuOpen, menuTab });
   const seatSpec = (id: SeatId): SeatView['seat'] => SEATS.find((s) => s.id === id)!;
   const seatView = (id: SeatId): SeatView => ({
     seat: seatSpec(id),
@@ -165,7 +167,7 @@ export function mount(container: HTMLElement): () => void {
   // ── 渲染路由（无 session=menu/select 门面·有 session=play/result）─────────────────
   function render(): void {
     if (!session) {
-      ui?.update(screen === 'select' ? buildTableSelect({ difficulty: selDifficulty, stake: selStake, wallet }) : buildMenu(), GAME_A_THEME);
+      ui?.update(screen === 'select' ? buildTableSelect({ difficulty: selDifficulty, stake: selStake, wallet }) : buildMenu(menuView()), GAME_A_THEME);
       return;
     }
     if (session.phase === 'playing') ui?.update(buildPlay(playView(session)), GAME_A_THEME);
@@ -197,7 +199,7 @@ export function mount(container: HTMLElement): () => void {
     stopSession();
     screen = 'menu';
     ui?.();
-    ui = mountUI(overlayHost, buildMenu(), handlers, GAME_A_THEME);
+    ui = mountUI(overlayHost, buildMenu(menuView()), handlers, GAME_A_THEME);
   }
 
   function showTableSelect(): void {
@@ -298,6 +300,12 @@ export function mount(container: HTMLElement): () => void {
     'menu.open': () => {
       if (!session) return;
       menuOpen = true;
+      render();
+    },
+    // 主菜单「设置 · 规则」→ 开菜单浮层（默认规则页·赛前最有用）。
+    'menu.settings': () => {
+      menuOpen = true;
+      menuTab = 'rules';
       render();
     },
     'menu.close': () => {

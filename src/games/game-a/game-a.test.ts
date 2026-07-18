@@ -173,7 +173,8 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
 
   // ── UI 菜单 + 选桌屏（LayoutNode 纯数据·零 issue；牌桌/结算屏在下方 S4 用例）──────
   it('菜单壳 + 选桌屏（各难度）过 validateLayoutNode', () => {
-    expect(validateLayoutNode(buildMenu())).toEqual([]);
+    expect(validateLayoutNode(buildMenu({ wallet: 12860, level: 2, showMenu: false, menuTab: 'log' }))).toEqual([]);
+    expect(validateLayoutNode(buildMenu({ wallet: 12860, level: 2, showMenu: true, menuTab: 'rules' }))).toEqual([]); // 设置浮层开
     for (const d of ['l1', 'l2', 'l3', 'l4'] as const) {
       for (const stake of [100, 500, 2000]) {
         expect(validateLayoutNode(buildTableSelect({ difficulty: d, stake, wallet: 10000 }))).toEqual([]);
