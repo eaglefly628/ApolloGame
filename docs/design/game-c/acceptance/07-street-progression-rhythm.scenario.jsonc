@@ -1,0 +1,72 @@
+// GD-C 验收剧本 · 一手牌节奏·四街推进（gdd §2 心跳单元「翻前→翻牌→转牌→河牌 下注圈」+ §3 发牌）。
+// 主角(座0=button)全程被动跟/过 → 看牌局节奏走满四条街：公共牌按拍发出（0→3→4→5）、每进一街下注圈重开
+// （current-bet 归 0·标准德州收街清注）、翻后主角=按钮末位行动。这是「可玩」的节奏骨架：不是一 tick 跳到摊牌，
+// 而是逐街有节拍地推进。同时钉死街推进**逻辑**（收街闭合→发下一街→重开行动）。
+//
+// 剧本作者核对（seed=2026·主角 call/call/check/check/check）：
+//   翻前①面大盲 50 跟 → 翻前②有 AI 加注到 250 再跟 200（加注重开行动=节奏里的「再想一轮」）→
+//   翻牌(cc3·注归0)过 → 转牌(cc4·注归0)过 → 河牌(cc5·注归0)过 → 摊牌。主角底牌成三条独收 1100（守恒）。
+// ⚠ 精确值钉死到 (seed 2026 + M1 占位 AI)·M2 换 AI 须 GD 重派（REQ-ACCEPT 分工：PE 不改剧本）。
+{
+  "name": "一手四街推进节奏·逐街发牌+下注圈重开（精确·seed2026）",
+  "game": "game-c",
+  "seed": 2026,
+  "steps": [
+    // ── 翻前·第一次行动（面大盲）──
+    { "tick": 40 },
+    { "expect": [
+      { "flag": "hero-turn", "eq": true },
+      { "sv": "street", "eq": "preflop" },
+      { "res": "community-count", "eq": 0 },     // 翻前无公共牌
+      { "res": "current-bet", "eq": 50 }         // 面大盲线
+    ] },
+    { "signal": "hero_act", "args": { "action": "call" } },
+    // ── 翻前·第二次行动（AI 加注重开→主角再跟）──
+    { "tick": 40 },
+    { "expect": [
+      { "flag": "hero-turn", "eq": true },
+      { "sv": "street", "eq": "preflop" },
+      { "res": "community-count", "eq": 0 },
+      { "res": "current-bet", "eq": 250 }        // 有人加注到 250=行动重开（节奏：再过一轮）
+    ] },
+    { "signal": "hero_act", "args": { "action": "call" } },
+    // ── 翻牌：公共牌发 3 张·下注圈重开（注归 0）──
+    { "tick": 40 },
+    { "expect": [
+      { "flag": "hero-turn", "eq": true },
+      { "sv": "street", "eq": "flop" },
+      { "res": "community-count", "eq": 3 },      // ★翻牌发 3 张
+      { "res": "current-bet", "eq": 0 }          // ★收街清注·新街从 0 开
+    ] },
+    { "signal": "hero_act", "args": { "action": "check" } },
+    // ── 转牌：第 4 张·再重开 ──
+    { "tick": 40 },
+    { "expect": [
+      { "flag": "hero-turn", "eq": true },
+      { "sv": "street", "eq": "turn" },
+      { "res": "community-count", "eq": 4 },      // ★转牌 +1
+      { "res": "current-bet", "eq": 0 }
+    ] },
+    { "signal": "hero_act", "args": { "action": "check" } },
+    // ── 河牌：第 5 张·最后一街 ──
+    { "tick": 40 },
+    { "expect": [
+      { "flag": "hero-turn", "eq": true },
+      { "sv": "street", "eq": "river" },
+      { "res": "community-count", "eq": 5 },      // ★河牌 +1=满 5
+      { "res": "current-bet", "eq": 0 }
+    ] },
+    { "signal": "hero_act", "args": { "action": "check" } },
+    // ── 摊牌：四街走完·结算 ──
+    { "tick": 40 },
+    { "expect": [
+      { "flag": "phase-showdown", "eq": true },
+      { "res": "community-count", "eq": 5 },
+      { "sv": "winner-type", "eq": "三条" },       // 逻辑：被动跟到底·主角三条独收
+      { "res": "won-0", "eq": 1100 },
+      { "res": "showdown-pot", "eq": 1100 },
+      { "res": "won-total", "eq": 1100 },         // 守恒
+      { "res": "stack-0", "eq": 1850 }
+    ] }
+  ]
+}

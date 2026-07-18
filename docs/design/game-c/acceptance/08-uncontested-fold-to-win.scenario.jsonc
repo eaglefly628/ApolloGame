@@ -1,0 +1,40 @@
+// GD-C 验收剧本 · 逻辑·全弃收池（gdd §2「全弃直接收池」+ §3 摊牌「弃牌可 muck」）——无摊牌结算路径。
+// 与 02/04/05（摊牌比牌）走的是**不同结算分支**：doUncontested——除一人外全部弃牌，最后一人直接收池，
+// 不比牌、不揭示底牌（winner-type 特判「全弃收池·无摊牌」）。这是德州两大收池路径之一，此前零覆盖。
+//
+// 剧本作者核对（seed=20260718）：主角(座0=button)翻前弃 → AI 逐个弃到只剩座2 → 座2 无摊牌收池。
+//   winner-type=「（全弃收池·无摊牌）」·座2 独得 950（底池 1475·含未跟注溢出 525 退回座2 本人=REQ-C-105 修后守恒）；
+//   守恒 Σ栈=6000。仅座2 未弃（folded 全 true 除座2）。
+// ⚠ 精确值钉死到 (seed 20260718 + M1 占位 AI)·M2 换 AI 须 GD 重派（REQ-ACCEPT 分工：PE 不改剧本）。
+{
+  "name": "全弃收池·无摊牌直接收池（逻辑·seed20260718）",
+  "game": "game-c",
+  "seed": 20260718,
+  "steps": [
+    { "tick": 40 },
+    { "expect": [ { "flag": "hero-turn", "eq": true } ] },
+    { "signal": "hero_act", "args": { "action": "fold" } },
+    { "tick": 40 },
+    { "expect": [
+      { "flag": "phase-showdown", "eq": true },
+      { "sv": "winner-type", "eq": "（全弃收池·无摊牌）" },  // ★走 doUncontested 分支·非比牌
+      { "res": "winner-count", "eq": 1 },
+      { "res": "reveal-first", "eq": 2 },        // 收池者座2
+      { "res": "won-2", "eq": 950 },             // 座2 独得（含溢出退回·守恒）
+      { "res": "won-0", "eq": 0 },
+      { "flag": "folded-0", "eq": true },
+      { "flag": "folded-2", "eq": false },       // 座2 是唯一未弃者
+      { "flag": "folded-1", "eq": true },
+      { "flag": "folded-3", "eq": true },
+      { "flag": "folded-4", "eq": true },
+      { "flag": "folded-5", "eq": true },
+      // 守恒（Σ栈=6000·逐座钉死）
+      { "res": "stack-2", "eq": 1725 },
+      { "res": "stack-0", "eq": 1000 },
+      { "res": "stack-1", "eq": 950 },
+      { "res": "stack-3", "eq": 775 },
+      { "res": "stack-4", "eq": 775 },
+      { "res": "stack-5", "eq": 775 }
+    ] }
+  ]
+}

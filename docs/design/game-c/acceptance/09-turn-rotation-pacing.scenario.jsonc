@@ -1,0 +1,44 @@
+// GD-C 验收剧本 · 节奏·逐步轮转（gdd §5「分步演出·可观察轮到谁思考/行动」+ §3 行动序）。
+// 宿主 timer 每拍驱动一个 AI 行动（stepAI）——本剧本一 tick 一 tick 地断：行动者严格顺时针推进一位、
+// 每步只一人行动、注线随动作更新。这是牌桌「轮到谁」的节拍单元（非一次跳到主角轮）。
+//
+// 剧本作者核对（seed=42 开局·6 人首手）：button=座0·小盲座1·大盲座2·翻前首行动=UTG 座3。
+//   三名 AI(3→4→5) 各跟大盲 50·逐拍推进 → 第 3 拍轮到主角(座0=button 末位)。currentBet 恒 50（无人加注·全跟）。
+// ⚠ 依赖占位 AI 此手皆跟（非加注）；M2 换 AI 行为变则 GD 重派（REQ-ACCEPT 分工：PE 不改剧本）。
+{
+  "name": "开局逐拍轮转·行动者顺时针推进 3→4→5→主角（节奏·seed42）",
+  "game": "game-c",
+  "seed": 42,
+  "steps": [
+    // 开局：UTG 座3 首行动
+    { "expect": [
+      { "res": "actor", "eq": 3 },
+      { "flag": "hero-turn", "eq": false },
+      { "flag": "pending-ai", "eq": true },
+      { "res": "current-bet", "eq": 50 }
+    ] },
+    // 第 1 拍：座3 行动 → 轮到座4
+    { "tick": 1 },
+    { "expect": [
+      { "res": "actor", "eq": 4 },
+      { "sv": "last-action-3", "eq": "跟注 50" },   // 座3 已行动（跟）
+      { "res": "current-bet", "eq": 50 },           // 全跟·注线不动
+      { "flag": "hero-turn", "eq": false }
+    ] },
+    // 第 2 拍：座4 行动 → 轮到座5
+    { "tick": 1 },
+    { "expect": [
+      { "res": "actor", "eq": 5 },
+      { "sv": "last-action-4", "eq": "跟注 50" },
+      { "flag": "hero-turn", "eq": false }
+    ] },
+    // 第 3 拍：座5 行动 → 轮到主角(座0=button 末位)
+    { "tick": 1 },
+    { "expect": [
+      { "res": "actor", "eq": 0 },
+      { "sv": "last-action-5", "eq": "跟注 50" },
+      { "flag": "hero-turn", "eq": true },          // 一圈走完·轮到主角收官
+      { "flag": "pending-ai", "eq": false }
+    ] }
+  ]
+}
