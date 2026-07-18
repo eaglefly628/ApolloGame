@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { detectForm, gameHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate } from './game-pipeline.mjs';
+import { detectForm, gameHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS } from './game-pipeline.mjs';
 
 const withRoot = async (fn) => { const r = mkdtempSync(join(tmpdir(), 'gpipe-')); try { return await fn(r); } finally { rmSync(r, { recursive: true, force: true }); } };
 const put = (root, rel, content) => { const p = join(root, rel); mkdirSync(join(p, '..'), { recursive: true }); writeFileSync(p, typeof content === 'string' ? content : JSON.stringify(content, null, 2)); };
@@ -222,6 +222,35 @@ describe('boardFor 乱序标记（板消费 outOfOrder·旧板零回归）', () 
   }));
 });
 
+// ═══ S4 验收剧本门（REQ-ACCEPT·图纸④·「绿门不可玩」复盘）═══
+describe('acceptanceScenarioCount / S4 存在性门', () => {
+  it('无 acceptance 目录=0·计 *.scenario.jsonc·忽略其它文件', () => withRoot(async (root) => {
+    put(root, 'src/games/g/index.ts', '// compiled');
+    expect(acceptanceScenarioCount(root, 'g')).toBe(0);
+    put(root, 'docs/design/g/acceptance/a.scenario.jsonc', '{}');
+    put(root, 'docs/design/g/acceptance/b.scenario.jsonc', '{}');
+    put(root, 'docs/design/g/acceptance/readme.md', '# 说明');
+    put(root, 'docs/design/g/acceptance/notes.json', '{}'); // 非 .scenario.jsonc 不计
+    expect(acceptanceScenarioCount(root, 'g')).toBe(2);
+    put(root, 'docs/design/g/acceptance/c.scenario.jsonc', '{}');
+    expect(acceptanceScenarioCount(root, 'g')).toBe(MIN_ACCEPTANCE_SCENARIOS);
+  }));
+  it('MIN=3；S4 板提示随场景数变（0/3（GD 补）→ 3/3 ✓）', () => withRoot(async (root) => {
+    expect(MIN_ACCEPTANCE_SCENARIOS).toBe(3);
+    put(root, 'public/games/g/manifest.json', MANIFEST); // builtin·无 walkthrough → S4 fail 但 detail 带剧本提示
+    let s4 = boardFor(root, 'g').stages.find((s) => s.id === 'S4');
+    expect(s4.machine.detail).toContain('验收剧本 0/3（GD 补）');
+    for (const n of ['a', 'b', 'c']) put(root, `docs/design/g/acceptance/${n}.scenario.jsonc`, '{}');
+    s4 = boardFor(root, 'g').stages.find((s) => s.id === 'S4');
+    expect(s4.machine.detail).toContain('验收剧本 3/3 ✓');
+  }));
+  it('复查清单 S4 含「剧本作者=GD 非 PE」+「真浏览器试玩截图序列」两行', () => {
+    const joined = REVIEW_CHECKLISTS.S4.join('\n');
+    expect(joined).toContain('剧本作者=GD 非 PE');
+    expect(joined).toContain('真浏览器试玩截图序列');
+  });
+});
+
 // CLI 端到端：真跑 game-pipeline.mjs（APOLLO_PIPELINE_ROOT 注入临时根·不碰真仓库）。
 const CLI = fileURLToPath(new URL('./game-pipeline.mjs', import.meta.url));
 const runCli = (root, args) => spawnSync('node', [CLI, ...args], { env: { ...process.env, APOLLO_PIPELINE_ROOT: root }, encoding: 'utf8' });
@@ -262,6 +291,18 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
       const b = runCli(root, ['board', 'g']);
       expect(b.status).toBe(0);
       expect(b.stdout).not.toContain('⚠乱序');
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  // REQ-ACCEPT·图纸④：S4 门存在性检查（<3 场景直接拒·不空转跑重活·此路径在 spawn 前返回·temp root 可测）。
+  it('S4 gate：验收剧本 <3 → 拒过·点名「验收剧本不足（GD 补）」（不空转跑 vitest）', () => {
+    const root = mkFixture();
+    try {
+      const r = runCli(root, ['gate', 'g', 'S4', '--out-of-order', '测 S4 存在性门']);
+      expect(r.status).not.toBe(0);
+      expect(r.stdout + r.stderr).toContain('验收剧本不足');
+      const pf = JSON.parse(readFileSync(join(root, 'public', 'games', 'g', 'pipeline.json'), 'utf8'));
+      expect(pf.evidence.S4.exit).not.toBe(0); // 落证据=红
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
 });

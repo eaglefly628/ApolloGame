@@ -43,7 +43,7 @@
 > **PST 活**：`src/studio/AssetImportWizard.tsx` 加「导入时移除背景」勾选 + 模式选（绿幕/纯色吸管/自动 flood/rembg）+ before/after 预览；调 PA 端点。
 > **红线**：authoring-time·**不碰 sim/hash/LayoutNode**（同 ai-gen/import-art-pack 一类资产变换）；auto-matte **必过人审预览**、绝不导入即改。**验收**：PA rembg 接线 + 测（纯色 flood 确定性真验 + rembg mock）；PST UI 勾选出预览·门禁绿；一张真异形图端到端（生图→导入去背→真 alpha→接 `backArt`/`skin` 透见对）。**边界**：本条 spec 由 PUI 会诊出图·**PUI 不施工**（studio/资产线非 PUI 域）。
 
-### REQ-ACCEPT-验收剧本 harness · GD-测试×PE-修复循环的机器执行器（三游戏「绿门不可玩」复盘·owner 拍板） · [2026-07-17] · Lead 出图 → **指派：Opus** · status: in-progress（已派工） · 优先级: **P0（三游戏 S4 重验前置）** · 类型: 质量门禁基建（正确性关键·不降档）
+### REQ-ACCEPT-验收剧本 harness · GD-测试×PE-修复循环的机器执行器（三游戏「绿门不可玩」复盘·owner 拍板） · [2026-07-17] · Lead 出图 → **指派：Opus** · status: **✅ done（Opus 2026-07-18·待 Lead 对抗性验收）** · 优先级: **P0（三游戏 S4 重验前置）** · 类型: 质量门禁基建（正确性关键·不降档）
 > **根因记档**：S4 walkthrough=PE 自写自测——理解错则测码同错门照绿；GDD 规则从未成为第三方可执行断言。药方=**验收剧本循环**：GD（懂规则方）写剧本，harness 驱动真引擎逐步对账，PE 照红单修：剧本=GD 域纯数据，PE 不得改（剧本错=GD 改+记录）。
 > **⚖ Lead 图纸**：
 > ① **剧本 schema**（`docs/design/<game>/acceptance/*.scenario.jsonc`·GD 作者）：`{name, game, seed, config?, steps:[ {signal,args?,by?} | {tick:N} | {expect:[断言...]} ]}`；断言闭集=读世界机读态：`{res:"名",eq/gte/lte}`（Resource）/`{flag:"名",eq}`/`{sv:"名",eq}`（StringVar）/`{comp:{entity,component,field},eq}`——**只读世界状态,不读 DOM**。
@@ -52,6 +52,8 @@
 > ④ **S4 门升级**（`game-pipeline.mjs`）：S4 机器门在原 vitest 绿之上**加存在性检查**：`acceptance/` 场景数 ≥3 且 conformance 全绿，否则 S4 gate FAIL（防零剧本空转）；复查清单 S4 加一条「剧本作者=GD 非 PE（git blame 抽查）+ 附真浏览器试玩截图序列（开局→N 步→终局→重开）」。
 > ⑤ 测试：runner 用合成 fixture 世界自测（信号/断言/失败报告格式/确定性同 seed 同轨）；schema 校验器（坏剧本装载即错）。三游戏 adapter 与剧本=各 PE/GD 随 S4 落（不在本单）。
 > 完工标 ✅ 待 Lead 对抗性验收。落地后**三游戏现有 S4 一律重验**（无剧本=门红）。
+> **✅ 完工回执（Opus 2026-07-18）**：① `scripts/acceptance-schema.mjs`（闭集 schema + 带行位 JSONC 解析器·注释/尾逗号·坏本装载即错）；② `scripts/acceptance-run.mjs`（通用 runner·经薄适配契约 createWorld/applySignal/readWorld 驱动真引擎·**机读态提取集中在 runner 不下放各 PE**＝防自写自测掩 bug·失败=步号+期望 vs 实际+快照·`--game` 单跑·退出码咬）；③ `scripts/acceptance.test.mjs`（合成 fixture 自测 26 例：信号/tick/各算子/失败报告/同 seed 同轨/schema 拒坏本 + 真游戏动态扫）；④ `game-pipeline.mjs` S4 门＝存在性(≥3 场景)+conformance 绿（compiled/cart 通用·`acceptanceScenarioCount` 纯函数可测）+ 复查清单 S4 加两行（剧本作者=GD 抽查·真浏览器截图序列）；⑤ 回填 `testing.md`。门禁全绿（tsc+vitest+build+双守卫）。
+> **偏差（据实报 Lead）**：(a) `readWorld` 定为**纯 passthrough**（`(w)=>w`）——机读态提取（扫 Resource/Flag/StringVar/comp）集中在 runner，非各 adapter 手写：直服本 harness 的 RCA（提取写错会掩断言失败）。(b) cart S4 也要 ≥3 场景+conformance，但 conformance 需 `src/games/<g>/acceptance-adapter.ts`——**通用 cart 适配机制不在本单**（adapter=各 PE/GD 随 S4 落）；有剧本无 adapter=门红（诚实态）。(c) runner 判 main 用 `VITEST` 环境变量（vite-node 剥脚本名·唯一 import 方是 vitest·gate 是 spawn 非 import）。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 

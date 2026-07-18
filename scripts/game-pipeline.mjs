@@ -95,6 +95,16 @@ export const GATE_STAGES = STAGES.filter((s) => s.gate).map((s) => s.id);
 
 const led = (root, slug) => readJson(join(root, 'public', 'games', slug, 'art', 'art-ledger.json'), null);
 
+// ── 验收剧本存在性（REQ-ACCEPT·图纸④·「绿门不可玩」复盘）─────────────────
+// S4 门在原 walkthrough/bench 之上加一道：GD 写的验收剧本 ≥3 场景才许过（防零剧本空转）。
+// 纯 fs 计数（不装载·不跑）——导出供 gate 与单测共用（compiled/builtin/cart 通用）。
+export const MIN_ACCEPTANCE_SCENARIOS = 3;
+export function acceptanceScenarioCount(root, slug) {
+  const dir = join(root, 'docs', 'design', slug, 'acceptance');
+  if (!existsSync(dir)) return 0;
+  return readdirSync(dir).filter((f) => f.endsWith('.scenario.jsonc')).length;
+}
+
 /** mock 债：live 行（非 retired）里 gen.mock 的计数——「mock 永不上画面」在终检关的机器化表达。无台账=0（纯免费库 placeholder 也算清账）。 */
 export function mockDebt(root, slug) {
   const l = led(root, slug);
@@ -135,7 +145,7 @@ export const REVIEW_STAGES = ['S2', 'S3', 'S4', 'S5', 'S8'];
 export const REVIEW_CHECKLISTS = {
   S2: ['能力清单逐条对 registry 实名核真（无幻觉能力）', '规则面全有现成解释器（无「数据表+待写解释器」虚胖）', '游戏层代码例外逐条有 Lead 裁决', '§4.5 美术接入已答（纯程序化须申请例外）'],
   S3: ['manifest 纯 JSON（无代码走私）', '实体/组件用途与 plan 一致（无 plan 外私加系统性机制）', '落盘门真跑过（load+2tick 证据新鲜）', '组件字段无「填了但没人解释」的死数据'],
-  S4: ['走查测试断言的是行为而非常量（假信心自查：故意改坏被测逻辑应变红）', '核心循环闭环：开局→行动→反馈→终局→可重开', '失败路径有测试（非法输入被拒/终局判定不误报）', '确定性：同 seed 同结果有断言'],
+  S4: ['走查测试断言的是行为而非常量（假信心自查：故意改坏被测逻辑应变红）', '核心循环闭环：开局→行动→反馈→终局→可重开', '失败路径有测试（非法输入被拒/终局判定不误报）', '确定性：同 seed 同结果有断言', '验收剧本作者=GD 非 PE（git blame docs/design/<game>/acceptance/*.scenario.jsonc 抽查·PE 自写剧本=FAIL·REQ-ACCEPT 循环律）', '附真浏览器试玩截图序列（开局→N 步→终局→重开·非仅 CLI 绿）'],
   S5: ['UI 全走 LayoutNode/引擎渲染（无手写 DOM 逃生）', 'audit 零新增红旗（棘轮绿）', '/check-ui 四关过（重叠/对比度/透明度/布局）', '交互可发现（按钮可见可点·不靠猜）'],
   S8: ['三绿证据绑当前 HEAD 且净树', '本游戏走查在全量并发下仍绿（非单跑侥幸）', '复盘：本次撞到的手册缺口已回填或提单'],
 };
@@ -209,11 +219,14 @@ export function boardFor(root, slug) {
           ? evalEvidence(pf.evidence?.S3, hashNow, head)
           : { state: 'ok', detail: '编译期游戏无 manifest（本关免·玩法关直接接管）' };
         break;
-      case 'S4':
+      case 'S4': {
         machine = evalEvidence(pf.evidence?.S4, hashNow, head);
-        if (machine.state === 'dim') machine.detail = form === 'cart' ? '未跑（gate=bench 五轴体检）' : hasTests ? '未跑（gate=该游戏 vitest）' : '✗ 无 walkthrough 测试（testing.md：先补测试再谈玩法完成）';
+        const nScen = acceptanceScenarioCount(root, slug);
+        const scenNote = `验收剧本 ${nScen}/${MIN_ACCEPTANCE_SCENARIOS}${nScen < MIN_ACCEPTANCE_SCENARIOS ? '（GD 补）' : ' ✓'}`;
+        if (machine.state === 'dim') machine.detail = form === 'cart' ? `未跑（gate=bench 五轴 + ${scenNote}）` : hasTests ? `未跑（gate=该游戏 vitest + ${scenNote}）` : `✗ 无 walkthrough 测试（testing.md：先补测试再谈玩法完成）· ${scenNote}`;
         if (machine.state === 'dim' && form !== 'cart' && !hasTests) machine.state = 'fail';
         break;
+      }
       case 'S5':
         machine = form === 'cart'
           ? { state: 'ok', detail: '纯数据卡带无游戏层代码（LayoutNode 纪律天然满足）' }
@@ -296,16 +309,27 @@ function gateRun(slug, stage, form) {
     return { exit: r.status ?? 1, summary: r.status === 0 ? 'parse+引擎装载（load+2tick）零 error' : (r.stderr || r.stdout || '').trim().slice(0, 300) };
   }
   if (stage === 'S4') {
+    // 图纸④·验收剧本存在性门（compiled/卡带通用·先查最便宜的）：<3 场景直接拒，不空转跑重活。
+    const nScen = acceptanceScenarioCount(ROOT, slug);
+    if (nScen < MIN_ACCEPTANCE_SCENARIOS) {
+      return { exit: 1, summary: `✗ 验收剧本不足（GD 补·需≥${MIN_ACCEPTANCE_SCENARIOS}·现 ${nScen}）· docs/design/${slug}/acceptance/*.scenario.jsonc` };
+    }
+    // conformance：真引擎逐 step 对账 GD 剧本（无 adapter/断言不过=非零退出）。
+    const acc = run('npx', ['vite-node', 'scripts/acceptance-run.mjs', '--game', slug]);
+    const accTail = (acc.stdout || acc.stderr || '').trim().split('\n').slice(-3).join(' / ').slice(0, 200);
+    if ((acc.status ?? 1) !== 0) return { exit: acc.status ?? 1, summary: `✗ 验收剧本 conformance 未过（${nScen} 场景）· ${accTail}` };
     if (form === 'cart') {
       const mf = manifestPath(ROOT, slug, form);
       const r = run('npx', ['vite-node', 'scripts/bench-manifest.mjs'], { input: readFileSync(mf, 'utf8') });
       let pass = false, score = '?';
       try { const j = JSON.parse((r.stdout || '').trim().split('\n').pop()); pass = !!j.pass; score = j.score; } catch { /* 输出非 JSON 即失败 */ }
-      return { exit: pass ? 0 : 1, summary: `bench 五轴 score=${score}` };
+      if (!pass) return { exit: 1, summary: `✗ bench 五轴 score=${score}` };
+      return { exit: 0, summary: `bench 五轴 score=${score} · 验收剧本 ${nScen} 场景绿` };
     }
     const r = run('npx', ['vitest', 'run', `src/games/${slug}/`]);
     const tail = (r.stdout || '').trim().split('\n').filter((l) => /Tests|Test Files/.test(l)).join(' · ');
-    return { exit: r.status ?? 1, summary: tail.slice(0, 200) || (r.stderr || '').slice(0, 200) };
+    if ((r.status ?? 1) !== 0) return { exit: r.status ?? 1, summary: `✗ walkthrough · ${tail.slice(0, 160) || (r.stderr || '').slice(0, 160)}` };
+    return { exit: 0, summary: `walkthrough 绿（${tail.slice(0, 120)}）· 验收剧本 ${nScen} 场景绿` };
   }
   if (stage === 'S5') {
     if (form === 'cart') return { exit: 0, summary: '纯数据卡带免审计' };

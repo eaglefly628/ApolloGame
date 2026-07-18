@@ -20,6 +20,13 @@
 | 视觉里程碑验收 / 出货 | `docs/playbooks/visual-scorecard.md`（8 维评分卡）→ **落账进流程板** `game-pipeline.mjs scorecard`（任一维 0=S7 红灯） | 全维 ≥2 = premium |
 | 阶段复查（三门制·复查人≠施工人） | `game-pipeline.mjs checklist <SN>` → 对抗核证 → `review --verdict --note --by`（`docs/playbooks/review-gates.md`） | PASS/CONCERNS/FAIL |
 | 上下文预算（防信息膨胀·新 session 读得完） | `node scripts/context-budget-guard.mjs`（requests 池/T0 必读/手册行数各封顶·基线 `scripts/context-budget-baseline.json`·超顶正解=归档不是抬顶） | `CONTEXT-BUDGET: PASS` |
+| S4 玩法正确性（GD×PE 循环·防「绿门不可玩」） | 验收剧本 harness（`scripts/acceptance-run.mjs` + `acceptance.test.mjs`·REQ-ACCEPT） | 全部剧本绿 + ≥3 场景 |
+
+## 验收剧本（S4 玩法关裁判·REQ-ACCEPT·「绿门不可玩」复盘）
+
+- **schema**：GD 写纯数据剧本 `docs/design/<game>/acceptance/*.scenario.jsonc`＝`{name,game,seed,config?,steps:[{signal,args?,by?}|{tick:N}|{expect:[断言]}]}`；断言闭集只读机读态 `{res|flag|sv|comp}`（不读 DOM）·坏本装载即报错带行位。
+- **runner**：`npx vite-node scripts/acceptance-run.mjs [--game g]`（经薄适配 `src/games/<game>/acceptance-adapter.ts`＝createWorld/applySignal/readWorld 驱动真引擎·失败报告=步号+期望 vs 实际+机读态快照）；全部剧本也进 vitest（`scripts/acceptance.test.mjs`·推送门禁自动咬）。
+- **分工**：剧本＝**GD 域**（懂规则方）；**PE 修码不改剧本**（剧本错=GD 改+记录）；PE 只落薄适配（纯接线零规则）。S4 门要 ≥3 场景 + conformance 绿才过（`game-pipeline.mjs gate <slug> S4`）——无剧本/无 adapter=门红。
 
 ## 红线（一体适用）
 
