@@ -6,8 +6,10 @@
 // UI 铁律：全 LayoutNode 闭集·写世界只走 action 信号（点手牌→play-tile·自摸→act-tsumo…）。
 import type { LayoutNode } from '@ui/components/index.js';
 import type { MatchState } from './core/game-state.js';
-import { canTsumo, canRiichi, labelTile, seatWind, isWinLikeEnd, isPlayerTurn, CLOTH_LABELS, STRIP_ITEMS } from './core/game-state.js';
-import { kindStr, isRed } from './core/tiles-def.js';
+import { canTsumo, canRiichi, labelTile, seatWind, isWinLikeEnd, isPlayerTurn, isPlayerCallWindow, CLOTH_LABELS, STRIP_ITEMS } from './core/game-state.js';
+import { kindStr, isRed, kindOf } from './core/tiles-def.js';
+import type { Meld } from './core/meld.js';
+import type { ChiCandidate } from './core/calls.js';
 import { doraFromIndicator } from './core/wall.js';
 import { FIELD_W, FIELD_H } from './theme.js';
 
@@ -18,6 +20,11 @@ export const NEXT_ROUND = 'next-round';
 export const TOGGLE_LOG = 'toggle-log';
 export const BACK_MENU = 'back-menu';
 export const COPY_LOG = 'copy-log'; // 复制完整日志到剪贴板（查 bug·贴给 owner）
+// 鸣牌窗口按钮（P4·owner 点名「先上鸣牌」·玩家可碰/吃/荣/过）。
+export const CALL_PON = 'call-pon';
+export const CALL_CHI = 'call-chi'; // arg=搭子候选 index
+export const CALL_RON = 'call-ron';
+export const CALL_PASS = 'call-pass';
 
 // ── 牌面占位贴图（B-007 FluffyStuff CC0·600×800 象牙牌·赤5 带 -red）─────────────────────
 const ART = '/games/game-b/art/mahjong';
@@ -50,6 +57,45 @@ const RIVER_POS: Array<{ x: number; y: number }> = [
   { x: FIELD_W / 2 - (RW * 6 + 10) / 2, y: 100 }, // 2 北（上）
   { x: 330, y: 214 },                              // 3 西（左）
 ];
+
+// ── 副露展示（吃/碰露出的面子·各家门前·naki-design §8）───────────────────────────────────
+// 牌尺寸/位（玩家=大看得清；他家=小）。右侧两家（0/1）右锚防溢出；左/上家左锚。
+const MELD_TILE: Array<{ w: number; h: number }> = [
+  { w: 26, h: 34 }, { w: 18, h: 24 }, { w: 18, h: 24 }, { w: 18, h: 24 },
+];
+const MELD_POS: Array<{ x: number; y: number }> = [
+  { x: 0, y: FIELD_H - 42 },        // 0 玩家（桌底·手牌上方·右锚）
+  { x: 0, y: 344 },                 // 1 东（右·席卡下·右锚）
+  { x: 700, y: 40 },                // 2 北（上·席卡右·左锚·避让北席卡）
+  { x: 12, y: 344 },                // 3 西（左·席卡下·左锚）
+];
+/** 一组副露的像素宽（tiles×w + 内隙 + 副露间隙 + padding）。 */
+function meldRowWidth(melds: Meld[], w: number): number {
+  let total = 8; // padding 两侧
+  melds.forEach((md, i) => { total += md.tiles.length * w + (md.tiles.length - 1) + (i > 0 ? 6 : 0); });
+  return total;
+}
+/** 某家副露块（无副露→null）；每副露=牌面小牌簇（横摆示意·被鸣牌 called 带暗记）。 */
+function meldBlock(m: MatchState, seat: number): LayoutNode | null {
+  const melds = m.cur.melds[seat]!;
+  if (melds.length === 0) return null;
+  const { w, h } = MELD_TILE[seat]!;
+  const pos = MELD_POS[seat]!;
+  const rightAnchor = seat === 0 || seat === 1;
+  const x = rightAnchor ? FIELD_W - 12 - meldRowWidth(melds, w) : pos.x;
+  return {
+    type: 'Panel', id: `melds-${seat}`, props: { bg: { custom: 'rgba(20,10,20,0.55)' } },
+    layout: { x, y: pos.y, direction: 'row', gap: 6, padding: 4, align: 'center' },
+    children: melds.map((md, i): LayoutNode => ({
+      type: 'Panel', id: `meld-${seat}-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 1, align: 'center' },
+      children: md.tiles.map((c, j): LayoutNode => ({
+        type: 'Image', id: `meld-${seat}-${i}-${j}`,
+        props: { src: faceUrl(c), fit: 'contain' },
+        layout: { width: w, height: h, opacity: c === md.called && md.from !== seat ? 0.72 : 1 }, // 被鸣的那张压暗示意
+      })),
+    })),
+  };
+}
 
 // ── 席位卡（名/风/点/立直/衣物章·当前家高亮）───────────────────────────────────────────
 function seatCard(m: MatchState, seat: number): LayoutNode {
@@ -137,15 +183,18 @@ function playerHand(m: MatchState, selectedKey: string | null): LayoutNode[] {
   const BASE_Y = FIELD_H - HH - 4;
   const RAISE = 18;
   const dimOthers = selectedKey != null && canPlay && !locked;
+  const forbid = (c: number): boolean => rs.forbiddenDiscard.includes(kindOf(c)); // 喰い替え禁打（鸣牌后本巡·R-2）
   const mkTile = (c: number, key: string, x: number, disabled: boolean): LayoutNode => {
     const sel = selectedKey === key && !disabled;
+    const kuikaeDim = canPlay && forbid(c); // 喰い替え禁牌·压暗提示
+    const op = kuikaeDim ? 0.4 : dimOthers && !sel ? 0.68 : 1;
     return {
       type: 'Button', id: `h-${key}`,
       props: { label: '', skin: faceUrl(c), kind: sel ? 'primary' : 'ghost', disabled, action: PLAY_TILE, actionArg: key },
-      layout: { x, y: sel ? BASE_Y - RAISE : BASE_Y, width: HW, height: HH, opacity: dimOthers && !sel ? 0.68 : 1 },
+      layout: { x, y: sel ? BASE_Y - RAISE : BASE_Y, width: HW, height: HH, opacity: op },
     };
   };
-  const out: LayoutNode[] = hand.map((c, i) => mkTile(c, String(i), x0 + i * step, !canPlay || locked));
+  const out: LayoutNode[] = hand.map((c, i) => mkTile(c, String(i), x0 + i * step, !canPlay || locked || forbid(c)));
   if (showDrawn) out.push(mkTile(rs.drawn!, 'd', x0 + n * step + drawnGap - 4, !canPlay)); // 摸牌离一档
   return out;
 }
@@ -183,11 +232,40 @@ function actionBar(m: MatchState): LayoutNode {
   };
 }
 
+// ── 鸣牌窗口按钮条（有人打出可鸣牌·亮碰/吃/荣/过·owner 点名先上鸣牌）────────────────────
+/** 吃搭子 → 顺子标签（如 "234萬"）。 */
+function chiLabel(c: ChiCandidate, tile: number): string {
+  const kinds = [c.consume[0], c.consume[1], kindOf(tile)].sort((a, b) => a - b);
+  const nums = kinds.map((k) => (k % 9) + 1).join('');
+  const suit = ['萬', '筒', '索'][Math.floor(kinds[0]! / 9)];
+  return `${nums}${suit}`;
+}
+/** 鸣牌行动条（仅玩家有待鸣窗口时）；否则 null。 */
+function callBar(m: MatchState): LayoutNode | null {
+  const cw = m.cur.callWindow;
+  if (!cw) return null;
+  const o = cw.options;
+  const btns: LayoutNode[] = [
+    { type: 'Label', id: 'call-hint', props: { text: `${m.seatNames[cw.discarder]} 打【${labelTile(cw.tile)}】`, size: 'sm', bold: true, color: 'gold' } },
+  ];
+  if (o.ron) btns.push({ type: 'Button', id: 'call-ron', props: { label: '🀄 荣和', kind: 'primary', action: CALL_RON } });
+  if (o.pon) btns.push({ type: 'Button', id: 'call-pon', props: { label: '碰', kind: 'primary', action: CALL_PON } });
+  o.chi.forEach((c, i) => btns.push({ type: 'Button', id: `call-chi-${i}`, props: { label: `吃 ${chiLabel(c, cw.tile)}`, kind: 'primary', action: CALL_CHI, actionArg: String(i) } }));
+  btns.push({ type: 'Button', id: 'call-pass', props: { label: '过', kind: 'quiet', action: CALL_PASS } });
+  return {
+    type: 'Panel', id: 'callbar', props: { bg: { custom: 'rgba(32,16,28,0.97)' }, glow: true, accent: true },
+    layout: { x: FIELD_W / 2 - 230, y: FIELD_H - HH - 82, width: 460, padding: 8, gap: 9, direction: 'row', justify: 'center', align: 'center' },
+    children: btns,
+  };
+}
+
 // ── 字幕条（轮到谁·思考中·结果播报）────────────────────────────────────────────────────
 function subtitle(m: MatchState, selectedKey: string | null): LayoutNode {
-  const yourTurn = m.cur.turn === 0 && m.cur.phase === 'playing';
+  const yourTurn = m.cur.turn === 0 && m.cur.phase === 'playing' && m.cur.callWindow === null;
   let txt: string;
-  if (m.cur.phase !== 'playing') {
+  if (isPlayerCallWindow(m)) {
+    txt = '⚡ 可以鸣牌！ —— 选 碰 / 吃 / 荣 或「过」';
+  } else if (m.cur.phase !== 'playing') {
     txt = m.log.all().slice(-1)[0]?.text ?? '';
   } else if (yourTurn) {
     txt = canTsumo(m) ? '★ 可以自摸和了！（或点牌选中 → 再点打出）'
@@ -261,9 +339,12 @@ export function buildPlayHud(m: MatchState, opts: PlayHudOpts): LayoutNode {
     actionBar(m),
     ...[0, 1, 2, 3].map((s) => riverBlock(m, s)),
     ...[0, 1, 2, 3].map((s) => seatCard(m, s)),
+    ...[0, 1, 2, 3].map((s) => meldBlock(m, s)).filter((n): n is LayoutNode => n !== null), // 副露展示
     ...playerHand(m, sel), // 手牌=绝对定位节点数组（选中张抬升）·直接铺进 play-root
-    subtitle(m, sel),
+    ...(isPlayerCallWindow(m) ? [] : [subtitle(m, sel)]), // 鸣牌窗口时字幕让位给按钮条（同区避重叠）
   ];
+  const cb = callBar(m); // 鸣牌窗口按钮（有待鸣才显）
+  if (cb) children.push(cb);
   if (opts.logOpen) children.push(logPanel(m, opts.logCopied ?? false));
   if (isWinLikeEnd(m)) children.push(resultOverlay(m));
   return { type: 'Panel', id: 'play-root', props: { bare: true }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children };

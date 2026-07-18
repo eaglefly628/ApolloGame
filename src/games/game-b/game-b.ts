@@ -15,9 +15,13 @@ import { buildMenu, initialMenu, MENU_START, MENU_CONTINUE, MENU_SETTINGS } from
 import { buildSettings, defaultSettings, SET_SPEED, SET_LOGDEFAULT, SETTINGS_BACK, type Settings, type AiSpeed } from './menu-settings.js';
 import {
   startMatch, aiTurn, discard, declareTsumo, canTsumo, declareRiichi, nextRound, isPlayerTurn,
+  playerCall, playerPass, isPlayerCallWindow,
   type MatchState,
 } from './core/game-state.js';
-import { buildPlayHud, PLAY_TILE, ACT_TSUMO, ACT_RIICHI, NEXT_ROUND, TOGGLE_LOG, BACK_MENU, COPY_LOG } from './play-ui.js';
+import {
+  buildPlayHud, PLAY_TILE, ACT_TSUMO, ACT_RIICHI, NEXT_ROUND, TOGGLE_LOG, BACK_MENU, COPY_LOG,
+  CALL_PON, CALL_CHI, CALL_RON, CALL_PASS,
+} from './play-ui.js';
 import { FIELD_W, FIELD_H, MENU_W, MENU_H, MENU_BG, SAKURA, NIGHT, TINT } from './theme.js';
 
 // 开局 seed（gdd §十二·SessionIn.seed 缺省时钟种子入参化·S3 固定值可复现）。
@@ -82,6 +86,7 @@ export function mount(container: HTMLElement): () => void {
 
     // ── 对局状态机（headless 逻辑核·§2/③）+ HUD 投影驱动 ────────────────────────────
     const match = resume ?? startMatch(S3_SEED);
+    match.interactiveCalls = true; // 开鸣牌窗口（P4·owner 点名先上鸣牌·玩家可碰/吃/荣）
     const aiDelay = AI_DELAY_BY[settings.aiSpeed];
     let logOpen = settings.logDefault;
     let selectedKey: string | null = null; // 两步打牌：选中的手牌位（null=未选）
@@ -91,10 +96,11 @@ export function mount(container: HTMLElement): () => void {
 
     const render = (): void => { ui.update(buildPlayHud(match, { logOpen, selectedKey, logCopied }), SAKURA); };
     const clearAi = (): void => { if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; } };
-    // AI 席逐步推进（节奏可见）→ 到玩家/局终停。
+    // AI 席逐步推进（节奏可见）→ 到玩家行动 / 玩家待鸣窗口 / 局终 停。
     const scheduleAi = (): void => {
       clearAi();
-      if (match.cur.phase === 'playing' && match.cur.turn !== 0) {
+      // 玩家待鸣窗口开着时绝不推进 AI（否则 aiTurn 会替玩家代决鸣牌）——停下等玩家点按钮。
+      if (match.cur.phase === 'playing' && match.cur.turn !== 0 && match.cur.callWindow === null) {
         aiTimer = setTimeout(() => { aiTurn(match); render(); scheduleAi(); }, aiDelay);
       }
     };
@@ -110,6 +116,14 @@ export function mount(container: HTMLElement): () => void {
           if (code != null) { discard(match, code); selectedKey = null; render(); scheduleAi(); }
         } else { selectedKey = arg; render(); }
       },
+      // ── 鸣牌窗口（P4·owner 点名先上鸣牌）：碰/吃/荣/过 → 应用后推进 ──────────────────
+      [CALL_PON]: () => { if (isPlayerCallWindow(match)) { playerCall(match, { type: 'pon' }); selectedKey = null; render(); scheduleAi(); } },
+      [CALL_CHI]: (arg?: string) => {
+        const cand = match.cur.callWindow?.options.chi[Number(arg)];
+        if (isPlayerCallWindow(match) && cand) { playerCall(match, { type: 'chi', chi: cand }); selectedKey = null; render(); scheduleAi(); }
+      },
+      [CALL_RON]: () => { if (isPlayerCallWindow(match)) { playerCall(match, { type: 'ron' }); selectedKey = null; render(); scheduleAi(); } },
+      [CALL_PASS]: () => { if (isPlayerCallWindow(match)) { playerPass(match); selectedKey = null; render(); scheduleAi(); } },
       [ACT_TSUMO]: () => { if (canTsumo(match)) { declareTsumo(match); selectedKey = null; render(); } },
       [ACT_RIICHI]: () => { declareRiichi(match); selectedKey = null; render(); scheduleAi(); }, // 内含 canRiichi 门·宣言牌打出后推进
       [NEXT_ROUND]: () => { if (!match.over) { nextRound(match); selectedKey = null; render(); scheduleAi(); } },

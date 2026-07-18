@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { validateLayoutNode, type LayoutNode } from '@ui/components/index.js';
 import { startMatch, aiTurn, nextRound } from './core/game-state.js';
+import type { Meld } from './core/meld.js';
 import { buildPlayHud, PLAY_TILE } from './play-ui.js';
 
 const collect = (n: LayoutNode, out: LayoutNode[] = []): LayoutNode[] => {
@@ -47,6 +48,33 @@ describe('game-b 对局 UI（play-ui·LayoutNode 纪律）', () => {
     nodes = collect(buildPlayHud(m, { logOpen: false }));
     expect(nodes.some((n) => n.type === 'Modal' && n.id === 'result')).toBe(true);
     expect(validateLayoutNode(buildPlayHud(m, { logOpen: false }))).toEqual([]); // 结算态也零 issue
+  });
+
+  it('鸣牌态（P4）：副露展示 + 鸣牌按钮条·validateLayoutNode 零 issue + 按钮齐全', () => {
+    const m = startMatch(20260717);
+    m.interactiveCalls = true;
+    // 注入四家副露 + 玩家待鸣窗口（碰 + 两吃 + 荣 全亮）。
+    m.cur.melds[0] = [{ kind: 'pon', tiles: [33, 33, 33], from: 1, called: 33 }] as Meld[];
+    m.cur.melds[2] = [{ kind: 'chi', tiles: [9, 10, 11], from: 1, called: 11 }] as Meld[];
+    m.cur.callWindow = {
+      discarder: 3, tile: 2,
+      options: { ron: true, pon: true, chi: [{ consume: [1, 3] }, { consume: [3, 4] }] },
+      pending: [],
+    };
+    const hud = buildPlayHud(m, { logOpen: false });
+    expect(validateLayoutNode(hud)).toEqual([]);
+    const ids = collect(hud).map((n) => n.id);
+    expect(ids).toContain('melds-0'); // 玩家副露块
+    expect(ids).toContain('melds-2'); // 他家副露块
+    expect(ids).toContain('callbar');
+    expect(ids).toContain('call-ron');
+    expect(ids).toContain('call-pon');
+    expect(ids).toContain('call-chi-0'); // 两吃候选
+    expect(ids).toContain('call-chi-1');
+    expect(ids).toContain('call-pass');
+    // 鸣牌窗口时手牌全禁点（不是玩家的打牌回合）
+    const tiles = collect(hud).filter((n) => n.type === 'Button' && /^h-/.test(n.id ?? ''));
+    expect(tiles.every((t) => (t.props as { disabled?: boolean }).disabled === true)).toBe(true);
   });
 
   it('终局态：结算钮=返回主菜单', () => {

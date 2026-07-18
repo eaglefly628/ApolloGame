@@ -219,6 +219,26 @@ describe('鸣牌 P3a · 门清不回退 + 交互 walkthrough', () => {
     }
   });
 
+  it('玩家总「过」：交互整场能打穿（模拟 owner 每次点过·不卡死）', () => {
+    for (const seed of [7, 19, 88, 123]) {
+      const m = startMatch(seed);
+      m.interactiveCalls = true;
+      let guard = 0;
+      while (!m.over && guard++ < 100) {
+        let sg = 0;
+        while (m.cur.phase === 'playing' && sg++ < 900) {
+          if (m.cur.callWindow) playerPass(m); // 玩家（seat 0）永远「过」——callWindow 只对玩家设
+          else aiTurn(m); // 推进当前 seat（含玩家打牌·AI 启发代打）
+          expect(totalTiles(m)).toBe(136);
+        }
+        nextRound(m);
+      }
+      expect(m.over).toBe(true);
+      // 玩家永远过 → 玩家 seat 0 恒无副露
+      // （注：本 walkthrough seat 0 打牌用 AI 启发·仅验「过」路径全程不卡·守恒）
+    }
+  });
+
   it('交互模式确实产生副露（统计·证明鸣牌真的发生）', () => {
     let sawMeld = false;
     for (const seed of [7, 19, 88, 123, 2024, 555, 909]) {
