@@ -1,8 +1,7 @@
-// Game B ·《雀宴》—— 麻将牌目录 + 3D 摆位（纯数据/纯函数·零逻辑零随机）。
-// 视觉重做（owner 2026-07-17「好好想想麻将什么样子」）：参照雀魂/天凤电子麻将——
-//   自家手牌=屏幕底部一大排、牌面清晰朝玩家；三家=牌背围三面；牌山=红牌背方墙；牌河=弃牌摊开。
-// 牌面只在正面（box 牌身 + 正面 plane 贴图·不再 Material3D.map 贴满 6 面糊成怪牌）。
-// 尺寸/位置=scene-layout-handoff.md §二基调 + 电子麻将视觉惯例；占位资产=B-007（FluffyStuff CC0）。
+// Game B ·《雀宴》—— 麻将牌目录 + 3D 氛围舞台摆位（纯数据/纯函数·零逻辑零随机）。
+// 架构（owner 2026-07-18 根因修正）：3D 只留**氛围件**——牌山方墙 + 三家牌背立牌（围三面）。
+//   自家手牌/四家牌河/宝牌=**2D HUD**（play-ui.ts·真牌局投影·点牌即打），不再在 3D 里塞静态假牌
+//   （假牌与真局对不上=owner 直指的「分不清谁在打」根因）。占位资产=B-007（FluffyStuff CC0）。
 import { U } from './theme.js';
 
 // ── 牌种目录（34 种 + 赤 5 ×3·资产 key = 本地索引 mahjong/tex/<牌>）──────────────────
@@ -21,12 +20,8 @@ export const TILE_KINDS: TileKind[] = [
   'ton', 'nan', 'shaa', 'pei', 'haku', 'hatsu', 'chun',
 ];
 
-// ── 牌尺寸（世界单位·桌面 1.8U=18 宽）────────────────────────────────────────────────
-// 自家手牌=放大特写（雀魂式·屏幕底部主角）；场牌（山/对家/侧家/河）=标准小牌。
-export const HAND_W = 0.115 * U; // 1.15
-export const HAND_H = 0.155 * U; // 1.55
-export const HAND_D = 0.042 * U; // 0.42
-export const SM_W = 0.062 * U; // 0.62（缩小→牌山四墙围合不交叉·牌河/副露留缝）
+// ── 牌尺寸（世界单位·桌面 1.8U=18 宽·场牌=标准小牌·围合方墙留缝）─────────────────────────
+export const SM_W = 0.062 * U; // 0.62（缩小→牌山四墙围合不交叉）
 export const SM_H = 0.084 * U; // 0.84
 export const SM_D = 0.03 * U; // 0.30
 
@@ -38,35 +33,7 @@ export interface TilePose {
   rotY?: number;
 }
 
-// ── 自家手牌（南·玩家）：桌南内缘一大排·牌立·牌面朝相机·摸牌右离一档───────────────────
-// 内容=线框稿示意手（1:1）；S4 起由 sim 发牌。牌面清晰（body 白 + 正面 plane 贴图）。
-export const DEMO_HAND: TileKind[] = [
-  'man-1', 'man-2', 'man-3',
-  'pin-4', 'pin-5', 'pin-6',
-  'sou-4', 'sou-5', 'sou-6',
-  'ton', 'ton',
-  'man-9', 'man-9',
-];
-export const DEMO_TSUMO: TileKind = 'pin-7';
-
-const HAND_Z = 0.72 * U; // 桌南内缘（牌山外·靠玩家）
-const HAND_GAP = 0.012 * U;
-const TSUMO_GAP = 0.05 * U;
-
-export function handLayout(count = DEMO_HAND.length): Array<TilePose & { tsumo?: boolean }> {
-  const step = HAND_W + HAND_GAP;
-  const total = count * step + TSUMO_GAP;
-  const x0 = -total / 2 + HAND_W / 2;
-  const tiles: Array<TilePose & { tsumo?: boolean }> = Array.from({ length: count }, (_, i) => ({
-    x: x0 + i * step,
-    y: HAND_H / 2,
-    z: HAND_Z,
-  }));
-  tiles.push({ x: x0 + count * step + TSUMO_GAP, y: HAND_H / 2, z: HAND_Z, tsumo: true });
-  return tiles;
-}
-
-// ── 三家手牌（对家北 + 东西·牌背立牌·围三面）──────────────────────────────────────────
+// ── 三家手牌（对家北 + 东西·牌背立牌·围三面·氛围）─────────────────────────────────────────
 export type Seat = 'north' | 'east' | 'west';
 const SIDE_LINE = 0.72 * U; // 三家距心（对称自家 HAND_Z）
 const SIDE_COUNT = 13;
@@ -100,40 +67,6 @@ export function wallLayout(): Array<TilePose & { side: 'e' | 's' | 'w' | 'n'; st
       out.push({ side: 'e', stack: i, layer, x: WALL_LINE, y, z: -span(i), rotX: Math.PI / 2, rotY: Math.PI / 2 });
       out.push({ side: 'w', stack: i, layer, x: -WALL_LINE, y, z: span(i), rotX: Math.PI / 2, rotY: Math.PI / 2 });
     }
-  }
-  return out;
-}
-
-// ── 牌河（各家门前弃牌·牌面朝上摊开·示意"一局进行中"·固定牌确定性）───────────────────
-// S3=静态定格示意（非真弃牌·S4 由 sim 摆真河）；每家 6 张 2 行×3。
-export const RIVER_DEMO: Record<'south' | Seat, TileKind[]> = {
-  south: ['pin-1', 'sou-9', 'ton', 'man-8', 'haku', 'pin-3'],
-  north: ['sou-2', 'man-5', 'chun', 'pin-8', 'nan', 'sou-6'],
-  east: ['man-4', 'pin-6', 'hatsu', 'sou-3', 'ton', 'man-1'],
-  west: ['sou-7', 'pin-2', 'shaa', 'man-6', 'pei', 'sou-4'],
-};
-
-const RIVER_LINE = 0.2 * U; // 河距心（牌山内侧·门前）
-const RIVER_COLS = 3;
-
-/** 牌河牌面朝上平躺位（每家 6 张·2 行 3 列·门前方向铺）。
- *  **只 rotX=-π/2**（plane 法线 +z→+y·牌面朝上·俯视看得见弃牌）——不叠 rotY：rotX+rotY 欧拉组合会把
- *  plane 转成竖直（侧看成白线·v3 中间那几根线的成因）。占位弃牌牌面朝向无所谓，位置区分门前即可。 */
-export function riverLayout(seat: 'south' | Seat): TilePose[] {
-  const gw = SM_W + 0.006 * U;
-  const gh = SM_H + 0.006 * U;
-  const faceUp = -Math.PI / 2;
-  const out: TilePose[] = [];
-  for (let i = 0; i < RIVER_DEMO[seat].length; i++) {
-    const col = i % RIVER_COLS;
-    const row = Math.floor(i / RIVER_COLS);
-    const off = (col - (RIVER_COLS - 1) / 2) * gw; // 沿墙方向
-    const depth = RIVER_LINE + row * gh; // 门前由内向外铺
-    const y = SM_D / 2 + 0.002 * U;
-    if (seat === 'south') out.push({ x: off, y, z: depth, rotX: faceUp });
-    else if (seat === 'north') out.push({ x: -off, y, z: -depth, rotX: faceUp });
-    else if (seat === 'east') out.push({ x: depth, y, z: -off, rotX: faceUp });
-    else out.push({ x: -depth, y, z: off, rotX: faceUp }); // west
   }
   return out;
 }

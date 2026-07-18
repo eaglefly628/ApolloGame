@@ -6,19 +6,18 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Engine } from '../../runtime/engine.js';
-import type { Pickable3D } from '@engine/protocol/components.js';
 import { nextRandom, type RandomSeed } from '@atom-skills/random/index.js';
 import { parseAssetIndex } from '@assets/index.js';
 import { validateLayoutNode, type LayoutNode } from '@ui/components/index.js';
-import { buildTableBlueprint, HAND_PICK_SIGNAL } from './blueprint.js';
-import { wallLayout, handLayout, sideHandLayout, riverLayout, DEMO_HAND, DEMO_TSUMO, RIVER_DEMO, texKey, HAND_H, SM_D } from './tiles.js';
+import { buildTableBlueprint } from './blueprint.js';
+import { wallLayout, sideHandLayout, texKey, TILE_KINDS, SM_D } from './tiles.js';
 import { buildHud, initialHud, CLOTH_ITEMS } from './hud.js';
 import { U, CAM_MAIN, orbitFromEye, SAKURA } from './theme.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
-describe('game-b S3 骨架 · 真引擎装载 + 空跑', () => {
-  it('蓝图装进真 Engine·空跑 2 tick 不炸·四家牌局实体齐全', () => {
+describe('game-b 3D 氛围舞台 · 真引擎装载 + 空跑', () => {
+  it('蓝图装进真 Engine·空跑 2 tick 不炸·氛围舞台实体齐全（无静态假牌·真牌局走 2D HUD）', () => {
     const engine = new Engine();
     engine.load(buildTableBlueprint({ seed: 1 }));
     engine.world.tick();
@@ -32,15 +31,11 @@ describe('game-b S3 骨架 · 真引擎装载 + 空跑', () => {
     const ids: string[] = [];
     for (const [eid] of w.query('Mesh3D')) ids.push(eid);
     const count = (re: RegExp): number => ids.filter((id) => re.test(id)).length;
-    expect(count(/^wall-[nsew]-\d+-\d+$/)).toBe(136); // 牌山 136
-    expect(count(/^hand-\d+$/)).toBe(14); // 自家手牌 body 13+摸
-    expect(count(/^hand-\d+-face$/)).toBe(14); // 自家手牌正面牌面 plane
-    expect(count(/^hand-(north|east|west)-\d+$/)).toBe(39); // 三家各 13
-    expect(count(/^river-(south|north|east|west)-\d+$/)).toBe(24); // 各家河 6
-
-    // 自家手牌可拾取（Pickable3D 挂 body）
-    const pick = w.getComponent<Pickable3D>('hand-0', 'Pickable3D');
-    expect(pick?.signal).toBe(HAND_PICK_SIGNAL);
+    expect(count(/^wall-[nsew]-\d+-\d+$/)).toBe(136); // 牌山 136（红牌背方墙·氛围）
+    expect(count(/^hand-(north|east|west)-\d+$/)).toBe(39); // 三家牌背立牌各 13（围三面·氛围）
+    // 根因修正（owner 2026-07-18）：3D 不再塞静态假手牌/假牌河（分不清谁在打）——真手牌/牌河=2D HUD。
+    expect(count(/^hand-\d+$/)).toBe(0);
+    expect(count(/^river-/)).toBe(0);
   });
 
   it('确定性：同 seed 同 hash·异 seed 异 hash（空跑 2 tick 后）', () => {
@@ -101,36 +96,13 @@ describe('game-b 摆位（纯函数·四家牌局）', () => {
     }
   });
 
-  it('自家手牌：13+摸牌位（右离一档）·立于南边·线框稿示意手 1:1', () => {
-    const hand = handLayout();
-    expect(hand).toHaveLength(14);
-    expect(hand[13].tsumo).toBe(true);
-    const step = hand[1].x - hand[0].x;
-    expect(hand[13].x - hand[12].x).toBeGreaterThan(step); // 摸牌离一档
-    expect(hand.every((p) => p.z === 0.72 * U && p.y === HAND_H / 2)).toBe(true);
-    expect(DEMO_HAND).toHaveLength(13);
-    expect([...DEMO_HAND, DEMO_TSUMO]).toEqual([
-      'man-1', 'man-2', 'man-3', 'pin-4', 'pin-5', 'pin-6',
-      'sou-4', 'sou-5', 'sou-6', 'ton', 'ton', 'man-9', 'man-9', 'pin-7',
-    ]);
-  });
-
-  it('三家手牌：对家北 + 东西各 13·围三面·立牌', () => {
+  it('三家手牌：对家北 + 东西各 13·围三面·立牌（氛围）', () => {
     for (const seat of ['north', 'east', 'west'] as const) {
       const s = sideHandLayout(seat);
       expect(s).toHaveLength(13);
       if (seat === 'north') expect(s.every((p) => p.z < 0)).toBe(true);
       if (seat === 'east') expect(s.every((p) => p.x > 0)).toBe(true);
       if (seat === 'west') expect(s.every((p) => p.x < 0)).toBe(true);
-    }
-  });
-
-  it('牌河：四家各 6 张·牌面朝上（rotX=-π/2·俯视看得到弃牌）', () => {
-    for (const seat of ['south', 'north', 'east', 'west'] as const) {
-      const r = riverLayout(seat);
-      expect(r).toHaveLength(6);
-      expect(RIVER_DEMO[seat]).toHaveLength(6);
-      for (const p of r) expect(p.rotX).toBeCloseTo(-Math.PI / 2, 6);
     }
   });
 });
@@ -190,7 +162,7 @@ describe('game-b 占位资产（B-007 vendor 包）', () => {
     const idx = parseAssetIndex(JSON.parse(readFileSync(idxPath, 'utf8')));
     expect(idx.assets).toHaveLength(40);
     const byId = new Map(idx.assets.map((a) => [a.id, a]));
-    for (const kind of new Set([...DEMO_HAND, DEMO_TSUMO])) {
+    for (const kind of TILE_KINDS) { // 全 34 种牌面贴图在档且文件真存在（2D HUD 手牌/牌河消费）
       const entry = byId.get(texKey(kind));
       expect(entry, `缺 ${texKey(kind)}`).toBeTruthy();
       expect(entry!.status).toBe('filled');

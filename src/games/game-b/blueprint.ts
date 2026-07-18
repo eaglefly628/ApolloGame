@@ -1,25 +1,18 @@
-// Game B ·《雀宴》—— 牌桌世界蓝图 = 纯数据（WorldBlueprint·S3 骨架·视觉重做版）。
-// owner 2026-07-17「好好想想麻将什么样子」——照电子麻将（雀魂/天凤）视觉惯例重排：
-//   自家手牌=屏幕底部一大排·牌面清晰朝玩家（body 白牌身 + 正面 plane 贴牌面·牌面只在正面，
-//   不再 Material3D.map 贴满 6 面糊成「怪双面牌」）；三家=红牌背立牌围三面；牌山=红牌背方墙；
-//   各家牌河=弃牌摊开（静态定格「一局进行中」）；中央=宝牌指示 + 骰。
-// 全件走引擎 render-only 3D 组件（Mesh3D/Material3D/Camera3D/Light3D/Glow3D/Post3D/Pickable3D）+
-// 种子 PRNG（RandomSeed·唯一随机源·gdd §十二）——零手写 Three.js/零专属 system。
+// Game B ·《雀宴》—— 牌桌世界蓝图 = 纯数据（WorldBlueprint·3D 氛围舞台）。
+// 架构（owner 2026-07-18「连个正常人都没法开始·整个流程混乱」根因修正·对标 game-c 先例）：
+//   **3D = 纯氛围舞台**（和室夜宴桌/牌山方墙/三家牌背/灯笼月窗）——不再在 3D 里塞「静态假手牌/假牌河」，
+//   那假牌与真牌局对不上、玩家分不清"哪把是我的、谁在打"（owner 直指）。
+//   **真牌局（自家手牌·四家牌河·宝牌·结算）全部走 2D LayoutNode HUD**（play-ui.ts·牌面=真占位贴图·点牌即打），
+//   与 game-c「3D 牌房舞台 + 2D 牌面交互」同构，可靠、清晰、可点。
+// 全件走引擎 render-only 3D 组件（Mesh3D/Material3D/Camera3D/Light3D/Glow3D/Post3D）+ 种子 PRNG。
 import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assembly.js';
 import { randomCapability } from '@atom-skills/index.js';
 import { U, TINT, CAM_MAIN } from './theme.js';
-import {
-  wallLayout, sideHandLayout, riverLayout, handLayout,
-  DEMO_HAND, DEMO_TSUMO, RIVER_DEMO, texKey,
-  HAND_W, HAND_H, HAND_D, SM_W, SM_H, SM_D, type Seat, type TileKind,
-} from './tiles.js';
+import { wallLayout, sideHandLayout, SM_W, SM_H, SM_D, type Seat } from './tiles.js';
 
 export interface GameBConfig {
   seed: number; // SessionIn.seed（局外传入·缺省由宿主给定值·绝不裸 Math.random）
 }
-
-/** 手牌 3D 拾取信号名（Pickable3D → 宿主 pick() → S4 起 enqueueAction 入 sim）。 */
-export const HAND_PICK_SIGNAL = 'hand-pick';
 
 function block(
   x: number, y: number, z: number,
@@ -38,15 +31,6 @@ function backTile(p: { x: number; y: number; z: number; rotX?: number; rotY?: nu
     Transform3D: { x: p.x, y: p.y, z: p.z, ...(p.rotX !== undefined ? { rotX: p.rotX } : {}), ...(p.rotY !== undefined ? { rotY: p.rotY } : {}) },
     Mesh3D: { shape: 'box', width: SM_W, height: SM_H, depth: SM_D, frontTint: TINT.tileBack, backTint: TINT.tileBack, edgeTint: TINT.tileBackEdge },
     Material3D: { preset: 'matte', color: TINT.tileBack, roughness: 0.5 },
-  };
-}
-
-// 牌面朝上/朝前的一张（牌河 / 宝牌指示·plane 贴牌面·只正面显图）。
-function faceTile(kind: TileKind, p: { x: number; y: number; z: number; rotX?: number; rotY?: number }): EntityBlueprint {
-  return {
-    Transform3D: { x: p.x, y: p.y, z: p.z, ...(p.rotX !== undefined ? { rotX: p.rotX } : {}), ...(p.rotY !== undefined ? { rotY: p.rotY } : {}) },
-    Mesh3D: { shape: 'plane', width: SM_W, height: SM_H, frontTint: TINT.tileFaceFallback },
-    Material3D: { preset: 'matte', color: 0xffffff, roughness: 0.4, map: texKey(kind) },
   };
 }
 
@@ -119,34 +103,7 @@ export function buildTableBlueprint(config: GameBConfig): WorldBlueprint {
     });
   }
 
-  // ── 各家牌河（弃牌摊开·牌面朝上·静态定格）──────────────────────────────────────────
-  for (const seat of ['south', 'north', 'east', 'west'] as Array<'south' | Seat>) {
-    const poses = riverLayout(seat);
-    RIVER_DEMO[seat].forEach((kind, i) => {
-      entities[`river-${seat}-${i}`] = faceTile(kind, poses[i]);
-    });
-  }
-
-  // ── 自家手牌 13+摸（body 白牌身 + 正面 plane 牌面·牌面清晰只在正面·可拾取）──────────────
-  const hand = handLayout();
-  const kinds: TileKind[] = [...DEMO_HAND, DEMO_TSUMO];
-  hand.forEach((p, i) => {
-    entities[`hand-${i}`] = {
-      Transform3D: { x: p.x, y: p.y, z: p.z },
-      Mesh3D: { shape: 'box', width: HAND_W, height: HAND_H, depth: HAND_D, frontTint: TINT.tileBody, backTint: TINT.tileBack, edgeTint: TINT.tileBody },
-      Material3D: { preset: 'matte', color: TINT.tileBody, roughness: 0.42 },
-      Pickable3D: { signal: HAND_PICK_SIGNAL },
-    };
-    // 正面牌面（plane 贴图·紧贴 body 正面·牌面朝相机）
-    entities[`hand-${i}-face`] = {
-      Transform3D: { x: p.x, y: p.y, z: p.z + HAND_D / 2 + 0.02 * U },
-      Mesh3D: { shape: 'plane', width: HAND_W * 0.94, height: HAND_H * 0.94, frontTint: TINT.tileFaceFallback },
-      Material3D: { preset: 'matte', color: 0xffffff, roughness: 0.4, map: texKey(kinds[i]) },
-    };
-  });
-
-  // ── 宝牌指示（王牌中央翻开一张·牌面朝上·rotX=-π/2）+ 骰 ×2 ──────────────────────────
-  entities['dora-indicator'] = faceTile('sou-5-red', { x: -0.08 * U, y: SM_D / 2 + 0.002 * U, z: 0, rotX: -Math.PI / 2 });
+  // ── 中央骰 ×2（开门定格·装饰·真牌河/手牌/宝牌全走 2D HUD·play-ui.ts）───────────────────
   const PIPS = [1, 6, 2, 5, 3, 4] as const;
   const die = (x: number, z: number, rotY: number): EntityBlueprint => ({
     Transform3D: { x, y: 0.03 * U + 0.001 * U, z, rotY },
