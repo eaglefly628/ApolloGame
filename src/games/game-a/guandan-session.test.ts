@@ -215,6 +215,21 @@ describe('Game A ·《掼蛋夜宴》S4 盘循环', () => {
     expect(stay.phase).toBe('settled');
   });
 
+  // ── levelUp 派生字段=实际级数增量（GD-A 验收剧本①报「非双上恒 0」派生 bug·PE 修）────────────
+  it('结算 levelUp=实际级数增量：双上+3/一三+2/一四+1/打A局不升=0', () => {
+    const up = (levels: [number, number], ranking: SeatId[]): number => {
+      const s = new GuandanSession({ seed: 1 });
+      s.levels = [...levels] as [number, number];
+      forceRanking(s, ranking);
+      return s.lastResult!.levelUp;
+    };
+    expect(up([2, 2], ['hero', 'partner', 'west', 'east'])).toBe(3); // 双上 +3
+    expect(up([2, 2], ['hero', 'west', 'partner', 'east'])).toBe(2); // 一三 +2（旧 bug 恒报 0）
+    expect(up([2, 2], ['hero', 'west', 'east', 'partner'])).toBe(1); // 一四 +1（旧 bug 恒报 0）
+    expect(up([14, 5], ['hero', 'partner', 'west', 'east'])).toBe(0); // 打 A 局双上=过 A·不再升
+    expect(up([12, 2], ['hero', 'partner', 'west', 'east'])).toBe(2); // 封顶：12+3→14（实增 2·非 3）
+  });
+
   it('同种子双跑：全程名次/金钱/级数逐字节复现（确定性）', () => {
     const snap = (seed: number): string => {
       const s = new GuandanSession({ seed, stake: 500, tier: 'l3' });

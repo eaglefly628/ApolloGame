@@ -6,7 +6,10 @@
 // 规则真相全在 GuandanSession（发牌/进贡/判型/压制/结算/升级/run 终局）；本文件只把 session 状态
 // 投影成引擎协议标量（Resource/Flag/StringVar）+ 转发信号——**零规则判断**（不判型/不算番/不定名次·
 // 那是 session 的事）。信号名用 GDD 术语（play/pass/进贡走 next-round 自动结算）。
-import { GuandanSession, TURN_ORDER, type SeatId } from './guandan-session.js';
+import { GuandanSession, setPlayDebug, TURN_ORDER, type SeatId } from './guandan-session.js';
+
+// 验收 runner 走 vite-node（非 vitest·PLAY_DEBUG 默认开）→ 静音出牌日志，保验收报告干净（不改规则/行为）。
+setPlayDebug(false);
 
 // ── 机读态读者：GuandanSession → 引擎协议标量（每个事实一个"实体"·id=事实名）─────────────────
 // 纯读投影：只搬运 session 公有字段，不做任何规则计算。

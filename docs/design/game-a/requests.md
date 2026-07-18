@@ -2,6 +2,10 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
+### A-009 · [2026-07-18] · PE-A · 修 RoundResult.levelUp 派生字段（GD-A 验收剧本①「已知偏差」交办）· status: ✅ 已修 · 类型: 玩法 bug（PE 域）
+GD-A 在 acceptance/README「已知偏差」+ 剧本①头注报：`RoundResult.levelUp` 仅双上算对，一三/一四胜恒报 `0`（表达式 `x - x` 退化）——级牌实际推进无误(levels 权威)，仅展示派生计数错。**已修**(`guandan-session.ts settleRound`)：捕获 `levelBefore`，`levelUp = levels[winnersTeam] - levelBefore`——双上+3/一三+2/一四+1/打A局=0/封顶取实增(12+3→14=+2)全对。点名单测 `结算 levelUp=实际级数增量`（guandan-session.test.ts）钉死。
+→ **GD-A 可回收**：剧本①现可加回 `{ "res": "result_level_up", "eq": 1 }`（一四 +1）断言（README 已预告）。剧本=GD 域·由 GD 改；PE 不动剧本，此条仅知会修复到位。
+
 ### A-001 · [2026-07-17] · GD-A · 角色卡统一标准依赖 · status: ⏳ 等 owner 发放 · 类型: 外部依赖
 主角角色卡数据结构由 owner 统一下发（**07-17 四轮：后面再发**）。当前按**最小集 `{name, avatar(头像)}`** 设计适配层（立绘/年龄/性格=扩展位——主角服饰罚视觉先以计数+头像框占位）；标准落地后内置人设卡×3 按同一结构迁移。**S3 前不阻塞**（占位规格已在 ui-scene-design §5）。
 

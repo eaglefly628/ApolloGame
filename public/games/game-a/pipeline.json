@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  3 passed (3) ·       Tests  40 passed (40)）· 验收剧本 4 场景绿",
-      "at": "2026-07-18T05:06:02.384Z",
-      "gameHash": "4500299a335fe8e3"
+      "summary": "walkthrough 绿（ Test Files  3 passed (3) ·       Tests  41 passed (41)）· 验收剧本 4 场景绿",
+      "at": "2026-07-18T06:35:05.269Z",
+      "gameHash": "fee34064c73e184f"
     },
     "S5": {
       "exit": 0,
@@ -165,6 +165,30 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T05:06:02.384Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE-A 修 levelUp 派生 bug(A-009)+静音验收适配噪音·前置 S2/S3 复查仅因游戏文件变更过期·acceptance 4 场景 conformance 绿+假信心自查双破验红",
+      "at": "2026-07-18T06:29:51.158Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T06:29:54.924Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "rebase 后重跑：incoming=game-c adapter refactor(不碰 game-a/共享)·game-a S2/S3 复查仅因游戏文件变更过期·acceptance 4 场景绿",
+      "at": "2026-07-18T06:35:01.293Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T06:35:05.269Z"
     }
   ],
   "reviews": {
@@ -225,6 +249,16 @@
       "stage": "S4",
       "reason": "GD-A 落 S4 验收剧本(4本)+薄适配·前置 S2/S3 复查仅因本次 docs+adapter 变更过期·acceptance conformance 绿",
       "at": "2026-07-18T05:05:58.552Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "PE-A 修 levelUp 派生 bug(A-009)+静音验收适配噪音·前置 S2/S3 复查仅因游戏文件变更过期·acceptance 4 场景 conformance 绿+假信心自查双破验红",
+      "at": "2026-07-18T06:29:51.158Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "rebase 后重跑：incoming=game-c adapter refactor(不碰 game-a/共享)·game-a S2/S3 复查仅因游戏文件变更过期·acceptance 4 场景绿",
+      "at": "2026-07-18T06:35:01.293Z"
     }
   ]
 }

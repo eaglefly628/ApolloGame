@@ -439,7 +439,8 @@ export class GuandanSession {
     for (const s of losers) if (this.dress[s] > 1) this.dress[s] -= 1; // 底线档不再脱（→金钱罚翻倍）
 
     // 级数推进与过 A（A1-A3）
-    const wasAtAce = this.levels[winnersTeam] === LEVEL_ACE;
+    const levelBefore = this.levels[winnersTeam]; // 升级前级（levelUp 增量的权威基准）
+    const wasAtAce = levelBefore === LEVEL_ACE;
     let aResult: RoundResult['aResult'] = 'none';
     if (wasAtAce) {
       if (combo === 'first-fourth') aResult = 'stay'; // 一四不过·停 A 重打
@@ -460,7 +461,8 @@ export class GuandanSession {
       totalMult,
       dressOutDoubled,
       payPerPlayer,
-      levelUp: wasAtAce ? 0 : this.levels[winnersTeam] - (combo === 'double' ? this.levels[winnersTeam] - LEVEL_UPS.doubleWin : this.levels[winnersTeam]),
+      levelUp: this.levels[winnersTeam] - levelBefore, // 实际级数增量（封顶后·打A局不升=0）——修非双上恒 0 的派生 bug（GD-A 剧本①报）
+
       levelAfter: [...this.levels] as [number, number],
       aResult,
     };
