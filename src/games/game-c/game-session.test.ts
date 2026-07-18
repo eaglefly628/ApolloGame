@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { mulberry32 } from '@atom-skills/random/index.js';
 import { HoldemSession, handStrength } from './game-session.js';
 import { CLOTHING_ITEMS, WARDROBE_TOTAL } from './wardrobe.js';
 import type { Card } from '@engine/protocol/components.js';
@@ -168,5 +169,79 @@ describe('game-c game-session — AI 手力（不作弊·占位策略）', () =>
     const sf = handStrength([H(0, 6), H(0, 7)], [H(0, 5), H(0, 8), H(0, 9)]); // 同花顺听/成
     const hc = handStrength([H(2, 3), H(3, 2)], board); // 高牌
     expect(sf).toBeGreaterThan(hc);
+  });
+});
+
+describe('game-c game-session — heroAct 防御 no-op（REQ-C-108②·非法输入态不变）', () => {
+  it('主角非法加注（不足 min-raise·非全下）→ 静默拒绝·态不变；合法加注生效', () => {
+    const s = new HoldemSession(20260718);
+    drive(s); // 到主角轮
+    expect(s.isHeroTurn).toBe(true);
+    const la = s.legalForHero()!;
+    expect(la.raise).toBeTruthy();
+    const illegalTo = s.hand!.currentBet + 1; // > 当前注但 < min-raise 且 ≠ 全下 = 非法
+    expect(illegalTo).toBeLessThan(la.raise!.min);
+    const snap = { pot: s.pot(), stack: s.stackOf(0), actor: s.hand!.actor, commit: s.committedOf(0) };
+    s.heroAct({ kind: 'raise', to: illegalTo }); // 旧码：act() 抛「不足 min-raise」崩宿主
+    expect(s.pot()).toBe(snap.pot);            // 态一分不动
+    expect(s.stackOf(0)).toBe(snap.stack);
+    expect(s.committedOf(0)).toBe(snap.commit);
+    expect(s.hand!.actor).toBe(snap.actor);    // 仍主角轮·未推进
+    expect(s.isHeroTurn).toBe(true);
+    s.heroAct({ kind: 'raise', to: la.raise!.min }); // 对照：合法加注生效
+    expect(s.isHeroTurn).toBe(false);          // 已行动让位
+    expect(s.pot()).toBeGreaterThan(snap.pot);
+  });
+
+  it('主角面注时非法过牌 → 态不变（对照乱序 no-op 同语义）', () => {
+    const s = new HoldemSession(20260718);
+    drive(s);
+    expect(s.isHeroTurn).toBe(true);
+    expect(s.legalForHero()!.check).toBeUndefined(); // 面注不可过
+    const snap = { actor: s.hand!.actor, pot: s.pot() };
+    s.heroAct({ kind: 'check' }); // 非法·应 no-op
+    expect(s.hand!.actor).toBe(snap.actor);
+    expect(s.isHeroTurn).toBe(true);
+  });
+});
+
+describe('game-c game-session — 会话层守恒 + 健壮 fuzz（整局随机漫游·防蒸发/AI 非法崩手）', () => {
+  it('800 局随机（主角随机行动 + 随机典当 + AI 逐步）→ 全程守恒·零崩·必终局', () => {
+    // 会话编排层（pawn/轮转/淘汰/syncStacks/AI 出牌）的守恒 property + 健壮 property。
+    // 抓出过 REQ-C-105(边池蒸发·已修) 同类：AI aiDecide 面对大 lastRaiseSize 时按池比定的加注 < min-raise
+    //   → act 抛「不足 min-raise」崩手（主角先下大注→AI 再加注即触发）。此测钉死：AI 出牌恒合法·Σ栈恒守恒。
+    let games = 0, showdowns = 0, pawns = 0;
+    for (let g = 0; g < 500; g++) {
+      const rng = mulberry32(0xC0FFEE + g * 2654435761);
+      const s = new HoldemSession(3000 + g, { smallBlind: 25, bigBlind: 50 }, 1000);
+      games++;
+      let guard = 0;
+      while (s.phase !== 'gameover' && guard++ < 3000) {
+        if (rng() < 0.04) { // 随机典当（含手内·测 REQ-C-106 路径守恒）
+          const seat = Math.floor(rng() * 6);
+          const avail = CLOTHING_ITEMS.filter((c) => !s.seats[seat].pawned.has(c.id));
+          if (avail.length && !s.seats[seat].eliminated && s.pawn(seat, avail[Math.floor(rng() * avail.length)].id)) pawns++;
+        }
+        expect(totalChips(s)).toBe(SIX_START + pawnedValue(s)); // 守恒·任何时刻（含手内典当后）
+        drive(s); // AI 逐步（内含 aiDecide 出牌·非法即 act 抛→测崩）
+        if (s.isHeroTurn) {
+          const la = s.legalForHero()!;
+          const r = rng();
+          if (la.raise && r < 0.25) s.heroAct({ kind: 'raise', to: la.raise.min + Math.floor(rng() * (la.raise.max - la.raise.min + 1)) });
+          else if (la.check) s.heroAct({ kind: 'check' });
+          else if (la.call !== undefined && r < 0.7) s.heroAct({ kind: 'call' });
+          else s.heroAct({ kind: 'fold' });
+        } else if (s.phase === 'showdown') {
+          showdowns++;
+          expect(totalChips(s)).toBe(SIX_START + pawnedValue(s)); // 摊牌结算后守恒
+          s.nextHand();
+        } else break;
+      }
+      expect(s.phase).toBe('gameover'); // 必终局（无死循环）
+      expect(totalChips(s)).toBe(SIX_START + pawnedValue(s)); // 局终守恒
+    }
+    expect(games).toBe(500);
+    expect(showdowns).toBeGreaterThan(3000); // 确覆盖大量摊牌
+    expect(pawns).toBeGreaterThan(300);      // 确覆盖典当路径
   });
 });

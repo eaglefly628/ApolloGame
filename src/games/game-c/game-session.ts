@@ -161,9 +161,24 @@ export class HoldemSession {
     while (s.stack < this.cfg.bigBlind && i < remaining.length) { this.pawn(seat, remaining[i].id); i++; }
   }
 
+  /** 主角输入是否合法（对照 legalActions 单一真相；raise 落在 [min,max] 即合法）。 */
+  private heroActionLegal(action: Action): boolean {
+    if (!this.hand) return false;
+    const la = legalActions(this.hand);
+    switch (action.kind) {
+      case 'fold': return la.fold;
+      case 'check': return !!la.check;
+      case 'call': return la.call !== undefined;
+      case 'raise': return !!la.raise && action.to >= la.raise.min && action.to <= la.raise.max;
+    }
+  }
+
   // ── 主角行动（分步·宿主 timer 接管 AI 节奏·不自动循环）──────────────
   heroAct(action: Action): void {
     if (!this.isHeroTurn || !this.hand) return;
+    // 防御 no-op（REQ-C-108② GD-C 裁引擎层）：非法输入如「非主角轮」一样静默拒绝——真 UI 里非法键本就置灰
+    //   不可点，heroAct 收到越界输入应态不变，而非把 act() 的 throw 冒泡崩掉宿主。合法性单一真相在 betting-engine。
+    if (!this.heroActionLegal(action)) return;
     const toCall = this.hand.currentBet - (this.hand.players.find((p) => p.seat === 0)?.committed ?? 0);
     act(this.hand, 0, action);
     this.recordAction(0, action, toCall);
@@ -195,15 +210,19 @@ export class HoldemSession {
     const s = handStrength(this.holeOf(seat), this.community) + (this.rng() - 0.5) * 0.18;
     const toCall = la.call ?? 0;
     const pot = this.pot();
+    // 加注额必须落在合法区间 [min,max]（min=当前注+上一完整加注增量；不足 min 只能整栈 all-in=max）。
+    // ⚠曾只 Math.min(max,…) 不夹下界：面对大 lastRaiseSize 时按池比定的目标 < min 且 ≠ 全下 → act 抛「不足 min-raise」崩手
+    // （主角先下大注→AI 再加注即触发·会话 fuzz 抓出）。夹到 [min,max] 恒合法。
+    const raiseTo = (r: { min: number; max: number }, desired: number): number => Math.max(r.min, Math.min(r.max, desired));
     if (toCall > 0) {
       // 面对下注：强牌再加注（价值/施压）→ 合理牌跟注 → 便宜时宽跟 → 垃圾牌弃（占位策略·不作弊）。
-      if (s > 0.66 && la.raise) return { kind: 'raise', to: Math.min(la.raise.max, this.hand.currentBet + Math.max(this.cfg.bigBlind, Math.round(pot * 0.6))) };
+      if (s > 0.66 && la.raise) return { kind: 'raise', to: raiseTo(la.raise, this.hand.currentBet + Math.max(this.cfg.bigBlind, Math.round(pot * 0.6))) };
       if (s > 0.30) return { kind: 'call' };
       if (toCall <= this.cfg.bigBlind && s > 0.20) return { kind: 'call' }; // 便宜牌宽跟（限进/守大盲）
       return { kind: 'fold' };
     }
     // 无注可跟（可过）：两对+/对子档价值下注 → 其余过牌（让牌局有真实下注/加注节奏·非纯过牌到底）。
-    if (s > 0.34 && la.raise) return { kind: 'raise', to: Math.min(la.raise.max, la.raise.min + Math.round(pot * 0.5)) };
+    if (s > 0.34 && la.raise) return { kind: 'raise', to: raiseTo(la.raise, la.raise.min + Math.round(pot * 0.5)) };
     return la.check ? { kind: 'check' } : { kind: 'fold' };
   }
   private settleIfDone(): void {

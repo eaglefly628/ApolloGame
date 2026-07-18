@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  95 passed (95)）· 验收剧本 6 场景绿",
-      "at": "2026-07-18T07:46:27.296Z",
-      "gameHash": "4c8afd4a7b770359"
+      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  98 passed (98)）· 验收剧本 6 场景绿",
+      "at": "2026-07-18T08:58:08.673Z",
+      "gameHash": "c1386c35f64268f8"
     },
     "S5": {
       "exit": 0,
@@ -380,6 +380,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T07:46:27.296Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "REQ-C-109 AI非法加注夹取修 + REQ-C-108② heroAct防御no-op + 会话fuzz·刷证据",
+      "at": "2026-07-18T08:57:57.491Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T08:58:08.673Z"
     }
   ],
   "outOfOrder": [
@@ -492,6 +504,11 @@
       "stage": "S4",
       "reason": "GD-C 下一轮：新增 06 手内典当守恒回归剧本(REQ-C-106)·6场景 conformance 重验·S2/S3 复查过期既有乱序",
       "at": "2026-07-18T07:46:23.511Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "REQ-C-109 AI非法加注夹取修 + REQ-C-108② heroAct防御no-op + 会话fuzz·刷证据",
+      "at": "2026-07-18T08:57:57.491Z"
     }
   ],
   "reviews": {
