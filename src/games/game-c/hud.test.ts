@@ -96,8 +96,8 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
   it('摊牌屏（赢家+成牌5张+分池）零 issue', () => {
     const showdown = {
       rows: [
-        { name: '主角', type: '葫芦', best: [H(0, 14), H(1, 14), H(2, 14), H(3, 13), H(0, 13)], won: 300, isWinner: true },
-        { name: '大姨太', type: '两对', best: [H(0, 9), H(1, 9), H(2, 5), H(3, 5), H(0, 2)], won: 0, isWinner: false },
+        { name: '主角', type: '葫芦', best: [H(0, 14), H(1, 14), H(2, 14), H(3, 13), H(0, 13)], hole: [H(0, 14), H(1, 14)], won: 300, isWinner: true },
+        { name: '大姨太', type: '两对', best: [H(0, 9), H(1, 9), H(2, 5), H(3, 5), H(0, 2)], hole: [H(0, 9), H(1, 9)], won: 0, isWinner: false },
       ],
       potTotal: 300,
     };

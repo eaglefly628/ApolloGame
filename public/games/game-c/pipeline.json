@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": " Test Files  8 passed (8) ·       Tests  90 passed (90)",
-      "at": "2026-07-17T18:54:49.434Z",
-      "gameHash": "765156dc3652d2be"
+      "summary": " Test Files  8 passed (8) ·       Tests  91 passed (91)",
+      "at": "2026-07-18T03:13:20.834Z",
+      "gameHash": "120a1cec7e56bbb3"
     },
     "S5": {
       "exit": 0,
@@ -260,6 +260,18 @@
       "stage": "S8",
       "exit": 0,
       "at": "2026-07-17T18:56:34.199Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "德州完整流程演出重构（分步AI/行动气泡/摊牌last-aggressor顺序·AI价值下注）·玩法hash变·机器侧重跑刷证据",
+      "at": "2026-07-18T03:13:18.678Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T03:13:20.834Z"
     }
   ],
   "outOfOrder": [
@@ -322,6 +334,11 @@
       "stage": "S8",
       "reason": "三阶段完整·tsc+vitest+build 三绿·净树重跑",
       "at": "2026-07-17T18:54:49.512Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "德州完整流程演出重构（分步AI/行动气泡/摊牌last-aggressor顺序·AI价值下注）·玩法hash变·机器侧重跑刷证据",
+      "at": "2026-07-18T03:13:18.678Z"
     }
   ],
   "reviews": {

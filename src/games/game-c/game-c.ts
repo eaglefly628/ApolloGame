@@ -79,6 +79,7 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
       folded: stt.folded, allIn: stt.allIn, out: ss.eliminated,
       isActor: session.hand?.actor === seat && session.phase === 'betting',
       isHero: seat === HERO, isButton: session.buttonSeat === seat,
+      lastAction: session.lastAction[seat],
     };
   }
   function wardrobeView(seat: number): WardrobeView {
@@ -107,7 +108,7 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
       showLog, log: session.events,
       phase: session.phase, isHeroTurn: session.isHeroTurn,
       showdown: sd ? {
-        rows: sd.rows.map((r) => ({ name: seatName(r.seat), type: r.type, best: r.best, won: r.won, isWinner: sd.winners.includes(r.seat) })),
+        rows: sd.rows.map((r) => ({ name: seatName(r.seat), type: r.type, best: r.best, hole: r.hole, won: r.won, isWinner: sd.winners.includes(r.seat) })),
         potTotal: sd.potTotal,
       } : undefined,
       finale: session.phase === 'gameover' ? { win: session.winnerSide === 'hero', ...session.stats() } : undefined,
@@ -120,10 +121,19 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   const rerender = (): void => { ui?.update(tree()); syncChips(); };
   const remount = (): void => { ui?.(); ui = mountUI(overlayHost, tree(), handlers, GAME_C_THEME); syncChips(); };
 
-  // 主角行动 → session 推进（内部跑完 AI）→ 重渲反映新态。
+  // ── AI 逐步演出（宿主 timer·每拍推进一个 AI·可观察「轮到谁思考/行动」·标准德州节奏·owner 2026-07-18）──
+  let aiTimer: ReturnType<typeof setTimeout> | null = null;
+  const AI_DELAY = 850; // 每个 AI 行动间隔 ms（看清轮到谁·不拖沓）
+  const clearAiTimer = (): void => { if (aiTimer !== null) { clearTimeout(aiTimer); aiTimer = null; } };
+  const runAITurns = (): void => {
+    clearAiTimer();
+    if (screen !== 'table' || !session.pendingAI) return; // 主角轮 / 摊牌 / 局终 → 停，等玩家
+    aiTimer = setTimeout(() => { session.stepAI(); rerender(); runAITurns(); }, AI_DELAY);
+  };
+  // 主角行动 → 重渲 → 启动 AI 逐步节奏。
   const heroAct = (a: Parameters<HoldemSession['heroAct']>[0]): void => {
     if (!session.isHeroTurn) return;
-    session.heroAct(a); rerender();
+    session.heroAct(a); rerender(); runAITurns();
   };
   const raiseTo = (arg?: string): number => {
     const la = session.legalForHero();
@@ -138,11 +148,11 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   };
 
   const handlers: HandlerMap = {
-    // 屏切换
-    start_game: () => { screen = 'table'; start3D(); remount(); },
-    continue_game: () => { screen = 'table'; start3D(); remount(); },
-    back_menu: () => { screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); remount(); },
-    menu_open: () => { screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); remount(); },
+    // 屏切换（进桌启动 AI 逐步节奏·回菜单停 timer）
+    start_game: () => { screen = 'table'; start3D(); remount(); runAITurns(); },
+    continue_game: () => { screen = 'table'; start3D(); remount(); runAITurns(); },
+    back_menu: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); remount(); },
+    menu_open: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); remount(); },
     // UI 开关
     sound_toggle: () => { muted = !muted; rerender(); },
     toggle_log: () => { showLog = !showLog; rerender(); },
@@ -155,12 +165,12 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
     act_fold: () => heroAct({ kind: 'fold' }),
     act_check_call: () => { const la = session.legalForHero(); heroAct(la?.check ? { kind: 'check' } : { kind: 'call' }); },
     act_raise: (arg) => { const to = raiseTo(arg); if (to > 0) heroAct({ kind: 'raise', to }); },
-    // 摊牌「继续」→ 下一手；局终「再来一局」→ 新会话（新 seed 派生·换局面）。
-    continue_showdown: () => { session.nextHand(); rerender(); },
-    restart: () => { session = new HoldemSession(DEMO_SEED + session.handNo * 101 + 1, CFG, STARTING_STACK); raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind; rerender(); },
+    // 摊牌「继续」→ 下一手（发牌+启动 AI 节奏）；局终「再来一局」→ 新会话。
+    continue_showdown: () => { session.nextHand(); rerender(); runAITurns(); },
+    restart: () => { session = new HoldemSession(DEMO_SEED + session.handNo * 101 + 1, CFG, STARTING_STACK); raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind; rerender(); runAITurns(); },
   };
   void host; // launcher 壳退出钩子（游戏内经 ⚙ 回主菜单；壳级退出由 launcher overlay 菜单接）
 
   ui = mountUI(overlayHost, buildMenu(menuView()), handlers, GAME_C_THEME);
-  return () => { stop3D(); ui?.(); skel.teardown(); };
+  return () => { clearAiTimer(); stop3D(); ui?.(); skel.teardown(); };
 }

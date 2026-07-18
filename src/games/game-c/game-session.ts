@@ -27,7 +27,7 @@ export interface SessionSeat {
   seat: SeatId; stack: number; pawned: Set<string>; eliminated: boolean; name: string;
 }
 export type SessionPhase = 'betting' | 'showdown' | 'gameover';
-export interface ShowdownRowLite { seat: SeatId; type: string; best: Card[]; value: HandRank; won: number; }
+export interface ShowdownRowLite { seat: SeatId; type: string; best: Card[]; value: HandRank; won: number; hole: Card[]; }
 export interface ShowdownResult { rows: ShowdownRowLite[]; winners: SeatId[]; potTotal: number; }
 
 const SEAT_NAMES = ['主角', '大姨太', '二姨太', '三姨太', '四姨太', '五姨太'];
@@ -61,9 +61,18 @@ export class HoldemSession {
   showdown: ShowdownResult | null = null;
   winnerSide: 'hero' | 'opponents' | null = null;
   events: GameEvent[] = []; // 实时牌局日志（查 bug·owner 2026-07-17）
+  lastAggressor: SeatId | null = null; // 本手最后 bet/raise 者（摊牌 reveal 起点·标准德州）
+  lastAction: Record<SeatId, string> = {}; // 各座上一动作文案（UI 行动气泡·CHECK/CALL 50/RAISE/FOLD）
   private dealIdxBySeat = new Map<SeatId, number>();
   private seq = 0;
   private lastStreet: Street = 'preflop';
+  private recordAction(seat: SeatId, action: Action, toCall: number): void {
+    const txt = action.kind === 'fold' ? '弃牌' : action.kind === 'check' ? '过牌'
+      : action.kind === 'call' ? (toCall > 0 ? `跟注 ${toCall}` : '过牌') : `加注 ${action.to}`;
+    this.lastAction[seat] = txt;
+    if (action.kind === 'raise') this.lastAggressor = seat;
+    this.log('action', describeAction(seat, action, toCall));
+  }
   private log(tag: GameEvent['tag'], text: string): void { this.events.push({ seq: this.seq++, tag, text }); if (this.events.length > 200) this.events.shift(); }
   private logStreet(): void {
     if (!this.hand || !this.deal) return;
@@ -124,9 +133,10 @@ export class HoldemSession {
     this.dealIdxBySeat = new Map(live.map((seat, i) => [seat, i]));
     this.hand = startHand(this.cfg, live.map((seat) => ({ seat, stack: this.seats[seat].stack })), this.pos);
     this.phase = 'betting'; this.showdown = null; this.lastStreet = 'preflop';
+    this.lastAggressor = null; this.lastAction = {};
     this.log('deal', `🎲 第 ${this.handNo} 手 · 发牌 · ${live.length} 家 · 主角底牌 ${this.holeOf(0).map(cardStr).join(' ')}`);
     this.log('blind', `🔵 小盲 座${this.pos.sb} ${this.cfg.smallBlind} · 大盲 座${this.pos.bb} ${this.cfg.bigBlind}`);
-    this.advance();
+    this.settleIfDone(); // 罕见：发牌即全 all-in → 直接摊牌（否则等宿主 timer 逐步推进 AI）
   }
 
   // ── 典当（点哪件当哪件·owner 拍板）+ 缴盲兜底 ────────────────────
@@ -144,44 +154,55 @@ export class HoldemSession {
     while (s.stack < this.cfg.bigBlind && i < remaining.length) { this.pawn(seat, remaining[i].id); i++; }
   }
 
-  // ── 主角行动 → 推进 ──────────────────────────────────────────
+  // ── 主角行动（分步·宿主 timer 接管 AI 节奏·不自动循环）──────────────
   heroAct(action: Action): void {
     if (!this.isHeroTurn || !this.hand) return;
     const toCall = this.hand.currentBet - (this.hand.players.find((p) => p.seat === 0)?.committed ?? 0);
     act(this.hand, 0, action);
-    this.log('action', describeAction(0, action, toCall));
-    this.advance();
+    this.recordAction(0, action, toCall);
+    this.logStreet();
+    this.settleIfDone();
   }
 
-  // ── 推进：AI 循环直到轮到主角 / 街闭合 / 摊牌 ────────────────────
-  private advance(): void {
-    let guard = 0;
-    while (this.phase === 'betting' && this.hand && guard++ < 300) {
-      const st = this.hand;
-      this.logStreet();
-      if (st.street === 'showdown') { this.doShowdown(); return; }
-      if (st.street === 'done') { this.doUncontested(); return; }
-      if (st.actor === null || st.actor === 0) return; // 等主角 / 无行动者
-      this.aiAct(st.actor);
-    }
+  // ── 分步演出 API（宿主 timer 逐个驱动·可观察「轮到谁思考/行动」·标准德州节奏）─────
+  /** 是否有 AI 待行动（宿主 timer 每拍调 stepAI）。主角轮 / 摊牌 / 局终时 false。 */
+  get pendingAI(): boolean {
+    return this.phase === 'betting' && !!this.hand && this.hand.street !== 'showdown' && this.hand.street !== 'done'
+      && this.hand.actor !== null && this.hand.actor !== 0;
   }
-
-  private aiAct(seat: SeatId): void {
-    if (!this.hand) return;
+  /** 执行一个 AI 行动（分步·不循环）。返回刚行动的座位供 UI 高亮/气泡；街闭合/摊牌自动结算。 */
+  stepAI(): SeatId | null {
+    if (!this.pendingAI || !this.hand) { this.settleIfDone(); return null; }
+    const seat = this.hand.actor!;
     const la = legalActions(this.hand);
+    const toCall = la.call ?? 0;
+    const action = this.aiDecide(seat, la);
+    act(this.hand, seat, action);
+    this.recordAction(seat, action, toCall);
+    this.logStreet();
+    this.settleIfDone();
+    return seat;
+  }
+  private aiDecide(seat: SeatId, la: ReturnType<typeof legalActions>): Action {
+    if (!this.hand) return { kind: 'fold' };
     const s = handStrength(this.holeOf(seat), this.community) + (this.rng() - 0.5) * 0.18;
     const toCall = la.call ?? 0;
-    let action: Action;
+    const pot = this.pot();
     if (toCall > 0) {
-      if (s > 0.72 && la.raise) action = { kind: 'raise', to: Math.min(la.raise.max, this.hand.currentBet + Math.max(this.cfg.bigBlind, Math.round(this.pot() * 0.6))) };
-      else if (s > 0.34) action = { kind: 'call' };
-      else action = { kind: 'fold' };
-    } else {
-      if (s > 0.6 && la.raise) action = { kind: 'raise', to: Math.min(la.raise.max, la.raise.min + Math.round(this.pot() * 0.5)) };
-      else action = la.check ? { kind: 'check' } : { kind: 'fold' };
+      // 面对下注：强牌再加注（价值/施压）→ 合理牌跟注 → 便宜时宽跟 → 垃圾牌弃（占位策略·不作弊）。
+      if (s > 0.66 && la.raise) return { kind: 'raise', to: Math.min(la.raise.max, this.hand.currentBet + Math.max(this.cfg.bigBlind, Math.round(pot * 0.6))) };
+      if (s > 0.30) return { kind: 'call' };
+      if (toCall <= this.cfg.bigBlind && s > 0.20) return { kind: 'call' }; // 便宜牌宽跟（限进/守大盲）
+      return { kind: 'fold' };
     }
-    act(this.hand, seat, action);
-    this.log('action', describeAction(seat, action, toCall));
+    // 无注可跟（可过）：两对+/对子档价值下注 → 其余过牌（让牌局有真实下注/加注节奏·非纯过牌到底）。
+    if (s > 0.34 && la.raise) return { kind: 'raise', to: Math.min(la.raise.max, la.raise.min + Math.round(pot * 0.5)) };
+    return la.check ? { kind: 'check' } : { kind: 'fold' };
+  }
+  private settleIfDone(): void {
+    if (!this.hand || this.phase !== 'betting') return;
+    if (this.hand.street === 'showdown') this.doShowdown();
+    else if (this.hand.street === 'done') this.doUncontested();
   }
 
   // ── 摊牌（牌逻辑核心：holdemRank 比牌 → settle 分池 → 结算入栈）───────────
@@ -196,12 +217,35 @@ export class HoldemSession {
     const s = settle(this.hand, new Map<SeatId, HandRank>(ranked.map((r) => [r.seat, r.value])));
     this.syncStacks();
     const winners = ranked.map((r) => r.seat).filter((seat) => (s.payouts[seat] ?? 0) > 0);
+    // 摊牌展示顺序（标准德州·WebSearch 确认）：last aggressor 先亮·全 check 则 button 左手先·顺时针依次。
+    const contenders = ranked.map((r) => r.seat);
+    const byseat = new Map(ranked.map((r) => [r.seat, r]));
     this.showdown = {
-      rows: ranked.map((r) => ({ seat: r.seat, type: r.type, best: r.best, value: r.value, won: s.payouts[r.seat] ?? 0 })),
+      rows: this.revealOrder(contenders).map((seat) => {
+        const r = byseat.get(seat)!;
+        return { seat, type: r.type, best: r.best, value: r.value, won: s.payouts[seat] ?? 0, hole: this.holeOf(seat) };
+      }),
       winners, potTotal,
     };
-    for (const r of ranked) this.log('showdown', `${winners.includes(r.seat) ? '🏆' : '·'} ${this.seats[r.seat].name} · ${r.type} · ${r.best.map(cardStr).join(' ')}`);
+    for (const seat of this.revealOrder(contenders)) {
+      const r = byseat.get(seat)!;
+      this.log('showdown', `${winners.includes(seat) ? '🏆' : '·'} ${this.seats[seat].name} · ${r.type} · ${r.best.map(cardStr).join(' ')}`);
+    }
     this.phase = 'showdown';
+  }
+  /** 摊牌 reveal 顺序：last aggressor 起（有下注）/ button 左手起（全 check），顺时针取摊牌者。 */
+  private revealOrder(contenders: SeatId[]): SeatId[] {
+    if (!this.hand) return contenders;
+    const set = new Set(contenders);
+    const all = this.hand.players.map((p) => p.seat);
+    let cur = this.lastAggressor !== null && set.has(this.lastAggressor) ? this.lastAggressor : nextLiveSeat(all, this.buttonSeat);
+    const order: SeatId[] = [];
+    for (let i = 0; i < all.length + 6 && order.length < contenders.length; i++) {
+      if (set.has(cur) && !order.includes(cur)) order.push(cur);
+      if (order.length >= contenders.length) break;
+      cur = nextLiveSeat(all, cur);
+    }
+    return order;
   }
   private doUncontested(): void {
     if (!this.hand) return;
@@ -209,7 +253,7 @@ export class HoldemSession {
     const s = settle(this.hand);
     this.syncStacks();
     const w = this.hand.uncontested ?? this.hand.players.find((p) => !p.folded)?.seat ?? 0;
-    this.showdown = { rows: [{ seat: w, type: '（全弃收池·无摊牌）', best: [], value: [0], won: s.payouts[w] ?? 0 }], winners: [w], potTotal };
+    this.showdown = { rows: [{ seat: w, type: '（全弃收池·无摊牌）', best: [], value: [0], won: s.payouts[w] ?? 0, hole: [] }], winners: [w], potTotal };
     this.log('showdown', `🏆 ${this.seats[w].name} 收池 ${potTotal}（对手全弃）`);
     this.phase = 'showdown';
   }

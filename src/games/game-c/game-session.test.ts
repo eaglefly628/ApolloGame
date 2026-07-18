@@ -20,6 +20,8 @@ function pawnedValue(s: HoldemSession): number {
   for (const seat of s.seats) for (const id of seat.pawned) v += CLOTHING_ITEMS.find((c) => c.id === id)!.value;
   return v;
 }
+/** 模拟宿主 timer：跑完所有待行动 AI（分步 stepAI 直到主角轮/摊牌）。 */
+function drive(s: HoldemSession): void { let g = 0; while (s.pendingAI && g++ < 400) s.stepAI(); }
 
 describe('game-c game-session — 开局与推进', () => {
   it('构造即开第一手：发牌/公共牌/轮转就绪', () => {
@@ -28,7 +30,7 @@ describe('game-c game-session — 开局与推进', () => {
     expect(s.deal).toBeTruthy();
     expect(s.hero.stack).toBeGreaterThan(0);
     expect(s.holeOf(0)).toHaveLength(2); // 主角底牌
-    // AI 已自动推进到主角行动 或 已摊牌
+    drive(s); // 宿主 timer 推进 AI 到主角轮 / 摊牌
     expect(s.isHeroTurn || s.phase === 'showdown').toBe(true);
   });
 
@@ -42,10 +44,12 @@ describe('game-c game-session — 完整一手到摊牌（牌逻辑跑通）', (
   it('主角跟到摊牌 → 有赢家 + 分池守恒', () => {
     const s = new HoldemSession(42);
     let guard = 0;
+    drive(s);
     while (s.phase === 'betting' && guard++ < 50) {
       const la = s.legalForHero();
       if (!la) break;
       s.heroAct(la.check ? { kind: 'check' } : { kind: 'call' }); // 主角一路过/跟
+      drive(s);
     }
     expect(s.phase).toBe('showdown');
     expect(s.showdown).toBeTruthy();
@@ -59,10 +63,26 @@ describe('game-c game-session — 完整一手到摊牌（牌逻辑跑通）', (
   it('摊牌行含牌型 + 赢家成牌 5 张', () => {
     const s = new HoldemSession(42);
     let guard = 0;
-    while (s.phase === 'betting' && guard++ < 50) { const la = s.legalForHero(); if (!la) break; s.heroAct(la.check ? { kind: 'check' } : { kind: 'call' }); }
+    drive(s);
+    while (s.phase === 'betting' && guard++ < 50) { const la = s.legalForHero(); if (!la) break; s.heroAct(la.check ? { kind: 'check' } : { kind: 'call' }); drive(s); }
     const champ = s.showdown!.rows.find((r) => s.showdown!.winners.includes(r.seat))!;
     expect(champ.type).toBeTruthy();
     if (champ.best.length) expect(champ.best).toHaveLength(5); // 非全弃收池
+  });
+
+  it('摊牌 reveal 顺序（last aggressor 先·展示所有摊牌者底牌）', () => {
+    const s = new HoldemSession(42);
+    drive(s);
+    let guard = 0;
+    while (s.phase === 'betting' && guard++ < 50) { const la = s.legalForHero(); if (!la) break; s.heroAct(la.check ? { kind: 'check' } : { kind: 'call' }); drive(s); }
+    if (s.showdown && s.showdown.rows.length > 1) {
+      // 每个摊牌行带底牌 2 张（展示各家手牌）
+      for (const r of s.showdown.rows) if (r.best.length) expect(r.hole).toHaveLength(2);
+      // 有加注则 last aggressor 排在首位
+      if (s.lastAggressor !== null && s.showdown.rows.some((r) => r.seat === s.lastAggressor)) {
+        expect(s.showdown.rows[0].seat).toBe(s.lastAggressor);
+      }
+    }
   });
 });
 
@@ -70,28 +90,29 @@ describe('game-c game-session — 玩到局终（多手循环不崩）', () => {
   it('主角一路弃牌 → 筹码/衣物耗尽 → 局终判负（终止·守恒）', () => {
     const s = new HoldemSession(20260717);
     let guard = 0;
-    while (s.phase !== 'gameover' && guard++ < 2000) {
+    while (s.phase !== 'gameover' && guard++ < 4000) {
+      drive(s); // 宿主 timer 推进 AI
       if (s.isHeroTurn) {
         const la = s.legalForHero()!;
         s.heroAct(la.check ? { kind: 'check' } : { kind: 'fold' }); // 免费过牌、面注即弃
       } else if (s.phase === 'showdown') {
         expect(totalChips(s)).toBe(SIX_START + pawnedValue(s)); // 每次摊牌后守恒
         s.nextHand();
-      } else break; // AI 应已自动推进（不该到这）
+      }
     }
     expect(s.phase).toBe('gameover');
     expect(s.winnerSide).not.toBeNull();
-    expect(guard).toBeLessThan(2000); // 确实终止（非死循环）
+    expect(guard).toBeLessThan(4000); // 确实终止（非死循环）
   });
 
   it('确定性：同 seed + 同主角行动序列 → 同结果', () => {
     const play = (): { hands: number; side: string | null; heroChips: number } => {
       const s = new HoldemSession(777);
       let g = 0;
-      while (s.phase !== 'gameover' && g++ < 2000) {
+      while (s.phase !== 'gameover' && g++ < 4000) {
+        drive(s);
         if (s.isHeroTurn) { const la = s.legalForHero()!; s.heroAct(la.check ? { kind: 'check' } : { kind: 'fold' }); }
         else if (s.phase === 'showdown') s.nextHand();
-        else break;
       }
       return { hands: s.handNo, side: s.winnerSide, heroChips: s.hero.stack };
     };
