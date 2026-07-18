@@ -34,6 +34,9 @@ const RES: Record<string, (s: GuandanSession, w: AWorld) => number> = {
   tribute_count: (s) => s.tributes.length,
   tribute0_card: (s) => (s.tributes[0] ? s.tributes[0].card : -1),
   tribute0_return: (s) => (s.tributes[0] && s.tributes[0].returned !== null ? s.tributes[0].returned : -1),
+  // 双下次贡（s.tributes[1]·次者归二游·GD-A A-010 请求·纯读镜像 tribute0_*）
+  tribute1_card: (s) => (s.tributes[1] ? s.tributes[1].card : -1),
+  tribute1_return: (s) => (s.tributes[1] && s.tributes[1].returned !== null ? s.tributes[1].returned : -1),
   result_total_mult: (s) => (s.lastResult ? s.lastResult.totalMult : -1),
   result_pay: (s) => (s.lastResult ? s.lastResult.payPerPlayer : -1),
   result_level_up: (s) => (s.lastResult ? s.lastResult.levelUp : -1),
@@ -58,6 +61,8 @@ const SV: Record<string, (s: GuandanSession, w: AWorld) => string> = {
   last_loser: (s) => (s.lastResult ? s.lastResult.ranking[3] : 'none'),
   tribute0_from: (s) => (s.tributes[0] ? s.tributes[0].from : 'none'),
   tribute0_to: (s) => (s.tributes[0] ? s.tributes[0].to : 'none'),
+  tribute1_from: (s) => (s.tributes[1] ? s.tributes[1].from : 'none'),
+  tribute1_to: (s) => (s.tributes[1] ? s.tributes[1].to : 'none'),
 };
 
 interface Comp { type: string; id: string; current?: number; active?: boolean; value?: string }
