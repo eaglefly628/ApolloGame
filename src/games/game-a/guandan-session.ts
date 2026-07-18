@@ -120,6 +120,8 @@ export class GuandanSession {
   lastFirstTeam: 0 | 1 = 0;
   turn: SeatId = 'hero';
   currentTrick: TrickPlay | null = null;
+  /** 本墩各座最近一手（座前小牌桌显示·像真扑克·出=牌+型，过=pass）；收墩清空。UI 镜像·非规则真相。 */
+  seatPlay: Partial<Record<SeatId, { cards: number[]; family: string | null; pass: boolean }>> = {};
   /** 本墩已应对（过牌/被压后再表态）的座位计数。 */
   private responded = 0;
   /** 本墩需应对的活跃座数（=除持墩者外的活跃座）；responded 达此数即收墩。 */
@@ -178,6 +180,7 @@ export class GuandanSession {
     this.cfg = guandanConfig(this.playLevel);
     this.finished = [];
     this.currentTrick = null;
+    this.seatPlay = {};
     this.responded = 0;
     this.respondersNeeded = 0;
     this.tributes = [];
@@ -324,11 +327,14 @@ export class GuandanSession {
 
     if (codes === null) {
       this.logPlay(seat, 'pass', [], null); // 读旧墩前记（此处 pass 无墩引用）
+      this.seatPlay[seat] = { cards: [], family: null, pass: true }; // 座前小牌桌：本墩此座过
       this.responded += 1;
     } else {
       const isLead = this.currentTrick === null;
       this.logPlay(seat, isLead ? 'lead' : 'follow', codes, chk.match!); // 记在 currentTrick 更新前（beatWhat 读旧墩）
       for (const c of codes) this.hands[seat].splice(this.hands[seat].indexOf(c), 1);
+      if (isLead) this.seatPlay = {}; // 新墩领出=清上墩座前牌，本座重记
+      this.seatPlay[seat] = { cards: [...codes], family: chk.match!.family, pass: false }; // 座前小牌桌：本墩此座出的牌
       this.currentTrick = { seat, cards: codes, match: chk.match! };
       if (this.hands[seat].length === 0) {
         this.finished.push(seat);

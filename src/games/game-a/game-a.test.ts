@@ -194,6 +194,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       trick: { name: '对子', family: 'pair', cards: [cardCode(2, 2), cardCode(3, 2)], holder: 'west', holderName: '林曼笙', holderTeam: 1 },
       canCommit: true, commitWhy: '', canPass: true, sortMode: 'rank', tributeText: null, showCounter: false, counter: [],
       showMenu: false, menuTab: 'log', logRows: [], tierName: '常客',
+      plays: { west: { cards: [cardCode(2, 2), cardCode(3, 2)], pass: false }, partner: { cards: [], pass: true } },
     });
     expect(validateLayoutNode(play)).toEqual([]);
     // 领出态（无墩）+ AI 轮次
@@ -203,6 +204,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       seats: { partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero') },
       hand: [cardCode(0, 5)], selected: [], trick: null, canCommit: false, commitWhy: '点牌选中 · 出牌或过', canPass: false, sortMode: 'family', tributeText: '抗贡成功 · 双大王免进贡 · 头游先出', showCounter: true, counter: [{ rank: 'A', played: 3, total: 8 }],
       showMenu: true, menuTab: 'rules', logRows: [{ round: 2, who: '林曼笙', act: '领出', cards: '♠5', fam: '单张' }], tierName: '宗师',
+      plays: {},
     });
     expect(validateLayoutNode(lead)).toEqual([]);
     for (const phase of ['settled', 'run-won', 'run-lost'] as const) {

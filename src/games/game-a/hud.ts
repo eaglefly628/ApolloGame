@@ -8,7 +8,7 @@ import type { LayoutNode } from '@ui/components/index.js';
 import type { SeatSpec } from './rules.js';
 import { DRESS_TIERS, codeRank, codeSuit, AI_TIERS, STAKES, BUYIN_MULT, SEATS } from './rules.js';
 import { MANOR_BG, FELT_RED, FIELD_W, FIELD_H, SEAT_ANCHORS, SEAT_W, seatTopLeft } from './theme.js';
-import { FAMILY_CN, type SeatId } from './guandan-session.js';
+import { FAMILY_CN, TURN_ORDER, type SeatId } from './guandan-session.js';
 
 // ── 牌码 → PlayingCard props（经典白扑克面·红黑自动判）───────────────────────────
 const RANK_TEXT: Record<number, string> = {
@@ -291,7 +291,7 @@ function seatCard(v: SeatView, x: number, y: number, active: boolean, leading: b
         children: [{ type: 'Avatar', id: `a-seat-${v.seat.id}-face`, props: { name: v.seat.name, size: 46, shape: 'circle' } }],
       },
       // 暂大者名前缀 🏆（谁出的牌谁大·零增高不触发 audit 重叠）
-      { type: 'Label', id: `a-seat-${v.seat.id}-name`, props: { text: leading ? `🏆 ${v.seat.name}` : v.seat.name, size: 'md', bold: true, color: 'gold' } },
+      { type: 'Label', id: `a-seat-${v.seat.id}-name`, props: { text: v.seat.name, size: 'sm', bold: true, color: 'gold' } }, // 名缩小·谁大改由弹簧箭头指（owner 2026-07-18）
       {
         type: 'Panel',
         id: `a-seat-${v.seat.id}-tags`,
@@ -326,6 +326,8 @@ export interface PlayView {
   sortMode: 'rank' | 'family'; // 理牌当前档（Segmented 高亮用）
   // 当前墩（含持有者=暂大者·「谁出的牌谁大」明示）。
   trick: { name: string; family: string; cards: number[]; holder: SeatId; holderName: string; holderTeam: 0 | 1 } | null;
+  // 本墩各座最近一手（座前小牌桌·像真扑克·出=牌码/过=pass）。
+  plays: Partial<Record<SeatId, { cards: number[]; pass: boolean }>>;
   tributeText: string | null; // 本盘进贡/还贡/抗贡一句话（首盘=null·玩家知情）
   showCounter: boolean; // 记牌器开合
   counter: { rank: string; played: number; total: number }[]; // 明面已出牌计数（showCounter 时填）
@@ -344,6 +346,34 @@ function trickCard(code: number, idx: number): LayoutNode {
   const f = cardFace(code);
   return { type: 'PlayingCard', id: `a-trick-${idx}`, props: { rank: f.rank, suit: f.suit, face: 'light', size: 'sm' } };
 }
+
+// ── 座前小牌桌（owner 2026-07-18·像真扑克·本墩此座最近一手摆座位前）──────────────────
+// felt 子节点（祖孙嵌套·audit 不判桌面重叠）；出=小牌横排，过=「过」灰签，无=不显。x/y=felt 内相对坐标。
+function seatTrayNode(seat: SeatId, play: { cards: number[]; pass: boolean } | undefined, x: number, y: number): LayoutNode | null {
+  if (!play) return null;
+  if (play.pass) {
+    return {
+      type: 'Panel', id: `a-tray-${seat}`, props: { bare: true },
+      layout: { x, y, direction: 'row' },
+      children: [{ type: 'Tag', id: `a-tray-${seat}-pass`, props: { label: '过', tone: 'dim', size: 'sm' } }],
+    };
+  }
+  return {
+    type: 'Panel', id: `a-tray-${seat}`, props: { bare: true },
+    layout: { x, y, direction: 'row', gap: 2, align: 'center' },
+    children: play.cards.map((c, i) => {
+      const f = cardFace(c);
+      return { type: 'PlayingCard', id: `a-tray-${seat}-${i}`, props: { rank: f.rank, suit: f.suit, face: 'light', size: 'sm' } } as LayoutNode;
+    }),
+  };
+}
+// 座前小牌桌的 felt 内相对锚点（felt 816×322·各座朝桌心方向摆）。
+const TRAY_POS: Record<SeatId, { x: number; y: number }> = {
+  partner: { x: 300, y: 4 }, // 北·顶中
+  west: { x: 8, y: 132 }, // 西·左
+  east: { x: 566, y: 132 }, // 东·右
+  hero: { x: 300, y: 250 }, // 南·底中（你）
+};
 
 // ── 扇形手牌（蓝本底部弧列·flex 流式 + 负 margin 叠放 + 扇形旋转 + 选中上浮）──
 // 用流式（非绝对定位）叠牌：ui-audit 只查绝对定位元素的重叠，流式叠不误报（扇形叠是纸牌意图叠层）。
@@ -405,18 +435,12 @@ export function buildPlay(v: PlayView): LayoutNode {
             { type: 'Badge', id: 'a-p-holder', props: { text: `🏆 ${holderLabel} 暂大`, tone: v.trick.holderTeam === 0 ? 'ok' : 'warn' } },
           ],
         },
-        {
-          type: 'Panel',
-          id: 'a-p-trickcards',
-          props: { bare: true },
-          layout: { direction: 'row', gap: 5, justify: 'center' },
-          children: v.trick.cards.map((c, i) => trickCard(c, i)),
-        },
+        // 各家出的牌摆在各自座前小牌桌（不在中央重复）；中央只留牌型 + 暂大 + 行动提示。
         {
           type: 'Label',
           id: 'a-p-turn',
           props: {
-            text: heroTurn ? '待你应对 · 压过上方牌或过' : v.turn === v.trick.holder ? `${v.turnName} 收墩领出中…` : `${v.turnName} 应对中…`,
+            text: heroTurn ? '待你应对 · 压过下方最大牌或过' : v.turn === v.trick.holder ? `${v.turnName} 收墩领出中…` : `${v.turnName} 应对中…`,
             size: 'sm',
             color: heroTurn ? 'gold' : 'sub',
           },
@@ -442,6 +466,33 @@ export function buildPlay(v: PlayView): LayoutNode {
     });
   }
   feltChildren.push(centerZone);
+  // 座前小牌桌（本墩各座最近一手·felt 子节点·祖孙嵌套 audit 不判桌面重叠）。
+  for (const seat of TURN_ORDER) {
+    const tray = seatTrayNode(seat, v.plays[seat], TRAY_POS[seat].x, TRAY_POS[seat].y);
+    if (tray) feltChildren.push(tray);
+  }
+  // 弹簧箭头指「谁大」（Float 锚定暂大者座前小牌桌·上下弹跳+呼吸光·近似弹簧·owner 2026-07-18）。
+  // felt 子节点（Float 位置 JS 活取·静态 audit 摆不准=祖孙嵌套豁免同扇形/中央墩）；真 scale 弹簧基座缺→用
+  // float 弹跳 + glow 近似·已报 PUI A-011。
+  if (v.trick) {
+    feltChildren.push({
+      type: 'Float',
+      id: 'a-p-bigarrow',
+      props: { anchorTo: { kind: 'node', id: `a-tray-${v.trick.holder}`, at: 'top', offset: { y: -6 } } },
+      children: [
+        {
+          type: 'Panel',
+          id: 'a-p-bigarrow-w',
+          props: { bare: true },
+          layout: { direction: 'column', align: 'center', gap: 0, anim: 'float' },
+          children: [
+            { type: 'Label', id: 'a-p-bigarrow-t', props: { text: '最大', size: 'xs', bold: true, color: 'gold', glow: true } },
+            { type: 'Label', id: 'a-p-bigarrow-a', props: { text: '▼', size: 22, bold: true, color: 'gold', glow: true } },
+          ],
+        },
+      ],
+    });
+  }
   // 椭圆红呢牌桌（radius 大=胶囊椭圆·felt 红呢 + 暗角 + 金边）·进贡横幅 + 出牌区 flex 居中于桌心（felt 子节点）。
   const feltTable: LayoutNode = {
     type: 'Panel',

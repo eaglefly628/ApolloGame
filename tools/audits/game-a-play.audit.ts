@@ -24,10 +24,19 @@ const view: PlayView = {
   tributeText: '顾念念 进 ♠A → 沈玉薇（还 ♦8）',
   showCounter: false,
   counter: [],
-  trick: { name: '三连对（木板）', family: 'tube', cards: [cardCode(0, 5), cardCode(1, 5), cardCode(0, 6), cardCode(1, 6), cardCode(0, 7), cardCode(1, 7)] },
+  trick: { name: '三连对（木板）', family: 'tube', cards: [cardCode(0, 5), cardCode(1, 5), cardCode(0, 6), cardCode(1, 6), cardCode(0, 7), cardCode(1, 7)], holder: 'west', holderName: '林曼笙', holderTeam: 1 },
+  plays: {
+    west: { cards: [cardCode(0, 5), cardCode(1, 5), cardCode(0, 6), cardCode(1, 6), cardCode(0, 7), cardCode(1, 7)], pass: false },
+    partner: { cards: [], pass: true },
+    east: { cards: [cardCode(2, 3), cardCode(3, 3)], pass: false },
+  },
   canCommit: true,
   commitWhy: '',
   canPass: true,
+  showMenu: false,
+  menuTab: 'log',
+  logRows: [],
+  tierName: '老手',
 };
 
 mountUI(document.getElementById('root')!, buildPlay(view), {}, GAME_A_THEME);

@@ -424,6 +424,34 @@ describe('Game A ·《掼蛋夜宴》S4 盘循环', () => {
     expect(chk.match!.family).toBe('bomb'); // 真炸=唯一合法压钢板的解（歧义钢板已滤）
   });
 
+  // ── 座前小牌桌 seatPlay（owner 2026-07-18·像真扑克·本墩各座最近一手·收墩清）───────────
+  it('seatPlay：记本墩各座最近一手（出=牌+型/过=pass）·新墩领出清空', () => {
+    const s = new GuandanSession({ seed: 5 });
+    s.turn = 'hero';
+    s.currentTrick = null;
+    s.hands.hero = [cardCode(0, 6), cardCode(1, 6), cardCode(0, 3)];
+    s.hands.west = [cardCode(2, 9), cardCode(3, 9), cardCode(0, 2)];
+    s.hands.partner = [cardCode(0, 5)];
+    s.hands.east = [cardCode(1, 8)];
+    s.seatPlay = {};
+    s.act('hero', [cardCode(0, 6), cardCode(1, 6)]); // 领出对 6
+    expect(s.seatPlay.hero).toMatchObject({ cards: [cardCode(0, 6), cardCode(1, 6)], pass: false });
+    s.act('west', [cardCode(2, 9), cardCode(3, 9)]); // 对 9 压过
+    expect(s.seatPlay.west).toMatchObject({ pass: false });
+    expect(s.seatPlay.hero).toBeDefined(); // hero 的仍在（本墩内累积）
+    s.act('partner', null); // 过
+    expect(s.seatPlay.partner).toMatchObject({ pass: true, cards: [] });
+    // 新墩领出清上墩各座牌（造收墩后局面：currentTrick=null + 旧 seatPlay·west 领出）
+    s.currentTrick = null;
+    s.turn = 'west';
+    s.seatPlay = { hero: { cards: [cardCode(0, 6)], family: 'single', pass: false }, east: { cards: [], family: null, pass: true } };
+    s.hands.west = [cardCode(0, 4)];
+    s.act('west', [cardCode(0, 4)]); // west 领出新墩
+    expect(s.seatPlay.hero).toBeUndefined(); // 上墩已清
+    expect(s.seatPlay.east).toBeUndefined();
+    expect(s.seatPlay.west).toMatchObject({ cards: [cardCode(0, 4)], pass: false });
+  });
+
   // ── 出牌日志（owner 诊断·每手一条·family/tier 正确）──────────────────────────────
   it('playLog：每手出牌/过各记一条·family/tier 与判型一致·压过记录旧墩', () => {
     const s = new GuandanSession({ seed: 5 });

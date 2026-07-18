@@ -2,6 +2,15 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
+### A-011 · [2026-07-18] · PE-A · 弹簧箭头缺 scale 弹跳动效 + Float 静态 audit 摆不准 · status: 📝 待转引擎池报 PUI（非阻断·已用近似件）· 类型: UI 基座缺口（PUI 域）
+牌桌重设计（owner 2026-07-18）要「弹簧箭头指谁大」——箭头像弹簧一样**放缩弹跳**。UI 基座动效闭集只有
+`float(上下平移弹)/pop(一次性缩放)/pulse(透明度)/spin/glow`，**无常驻 scale 弹簧**。现用 `Float`(锚定暂大者座前
+小牌桌) + 子层 `anim:'float'`(上下弹跳) + `glow`(呼吸光) **近似**，已达「活的箭头指向」效果。**报 PUI 两诉求**：
+(a) 加一档常驻 `anim:'bounce'`/`'springScale'`（scale 0.9↔1.1 缓入缓出循环·注意力指示器通用·非新增轴）；
+(b) `Float`(及锚定件)位置靠 JS 活取 rect，**静态 ui-audit 摆在 0,0** → 误报与桌面元素重叠（本次 `a-p-bigarrow ⨉
+a-tray/a-felt`）——同 A-007 扇形/light 牌盲区，建议 ui-audit 对 Float/Connector 锚定件豁免重叠判定（或 LayoutNode
+出 `data-allow-overlap` 字段·A-007 也需它）。**在 PUI 出件前**：箭头用 float+glow 近似（视觉达标），此二盲区列清单待裁。
+
 ### A-009 · [2026-07-18] · PE-A · 修 RoundResult.levelUp 派生字段（GD-A 验收剧本①「已知偏差」交办）· status: ✅ 已修 · 类型: 玩法 bug（PE 域）
 GD-A 在 acceptance/README「已知偏差」+ 剧本①头注报：`RoundResult.levelUp` 仅双上算对，一三/一四胜恒报 `0`（表达式 `x - x` 退化）——级牌实际推进无误(levels 权威)，仅展示派生计数错。**已修**(`guandan-session.ts settleRound`)：捕获 `levelBefore`，`levelUp = levels[winnersTeam] - levelBefore`——双上+3/一三+2/一四+1/打A局=0/封顶取实增(12+3→14=+2)全对。点名单测 `结算 levelUp=实际级数增量`（guandan-session.test.ts）钉死。
 → **GD-A 可回收**：剧本①现可加回 `{ "res": "result_level_up", "eq": 1 }`（一四 +1）断言（README 已预告）。剧本=GD 域·由 GD 改；PE 不动剧本，此条仅知会修复到位。

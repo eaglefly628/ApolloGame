@@ -137,6 +137,9 @@ export function mount(container: HTMLElement): () => void {
             holderTeam: teamOf(s.currentTrick.seat),
           }
         : null,
+      plays: Object.fromEntries(
+        TURN_ORDER.filter((seat) => s.seatPlay[seat]).map((seat) => [seat, { cards: s.seatPlay[seat]!.cards, pass: s.seatPlay[seat]!.pass }]),
+      ),
       tributeText: tributeText(s),
       showCounter,
       counter: showCounter ? counterData(s) : [],
