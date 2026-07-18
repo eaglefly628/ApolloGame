@@ -28,8 +28,8 @@
     "S4": {
       "exit": 0,
       "summary": "walkthrough 绿（ Test Files  6 passed (6) ·       Tests  64 passed (64)）· 验收剧本 7 场景绿",
-      "at": "2026-07-18T05:09:12.491Z",
-      "gameHash": "e39c45da55bb2162"
+      "at": "2026-07-18T06:28:58.895Z",
+      "gameHash": "9b407f2ac106449b"
     }
   },
   "history": [
@@ -111,6 +111,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T05:09:12.491Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "S4 验收适配 landed + 硬化（未知信号抛错·game-c 先例·防静默吞信号假绿）；GD 7 剧本 conformance 全绿 + walkthrough 64 绿。S2/S3 复查过期=既有governance状态（reviewer 域·plan/骨架本次未改动·非本次引入）",
+      "at": "2026-07-18T06:28:51.926Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T06:28:58.895Z"
     }
   ],
   "reviews": {
@@ -151,6 +163,11 @@
       "stage": "S4",
       "reason": "rebase 并入 PE-B 交互补齐(设置屏/续局/HUD)后 S4 证据随 game-b 源变动过期，按 testing.md 重跑刷新；GD 两验收剧本(非法操作被拒/第二局重开)conformance 仍全绿；S2/S3 复查过期为既有状态",
       "at": "2026-07-18T05:09:06.650Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "S4 验收适配 landed + 硬化（未知信号抛错·game-c 先例·防静默吞信号假绿）；GD 7 剧本 conformance 全绿 + walkthrough 64 绿。S2/S3 复查过期=既有governance状态（reviewer 域·plan/骨架本次未改动·非本次引入）",
+      "at": "2026-07-18T06:28:51.926Z"
     }
   ]
 }

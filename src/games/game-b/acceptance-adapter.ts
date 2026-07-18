@@ -73,7 +73,8 @@ export function applySignal(world: BWorld, signal: string, args: unknown[] = [],
     case 'play-round': { let g = 0; while (m.cur.phase === 'playing' && g++ < 400) aiTurn(m); break; } // 全 AI 打完一局
     case 'next-round': nextRound(m); break;                  // 进下一局/终局判定
     case 'play-match': { let g = 0; while (!m.over && g++ < 80) { let s = 0; while (m.cur.phase === 'playing' && s++ < 400) aiTurn(m); nextRound(m); } break; } // 打穿整场
-    default: break;                                          // 未知信号=剧本笔误·静默（adapter 不判规则）
+    // 未知信号=剧本笔误 → 抛错暴露（game-c 先例·防静默吞信号=少跑几步却照绿的假绿·harness 完整性）。
+    default: throw new Error(`未知信号 ${JSON.stringify(signal)}（game-b 认 discard/tsumo/riichi/ai/auto/play-round/next-round/play-match·{tick:N} 走 world.tick()）`);
   }
 }
 
