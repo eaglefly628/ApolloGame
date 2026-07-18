@@ -49,8 +49,18 @@ const DEMO_IMG =
   'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22160%22%20height%3D%22100%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%2322d3ee%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%237c3aed%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22url(%23g)%22%2F%3E%3Ctext%20x%3D%2280%22%20y%3D%2258%22%20font-size%3D%2222%22%20fill%3D%22white%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22bold%22%3EAPOLLO%3C%2Ftext%3E%3C%2Fsvg%3E';
 
 // ── 段落标题小工具（统一风格：阔字距小标签）──────────────────
+// 子效果编号（owner：进模块后每个子效果/控件都要能按号找到，好跟美术说「换哪个」）：
+// 每个 sectionTitle 前缀 `#<主编号>-<子序>`（主编号=MODULE_NO·子序=该模块内递增）。稳定顺序 = 显示顺序。
+let _secPrefix = '0';
+let _secNo = 0;
+function beginSections(moduleId: string | null): void { _secPrefix = String((moduleId && MODULE_NO.get(moduleId)) || 0); _secNo = 0; }
+/** 当前模块内下一个子编号（`<主>-<子>`）。给非 sectionTitle 的可编号子项（如字体墙每款字）也可取。 */
+function nextSubNo(): string { _secNo += 1; return `${_secPrefix}-${_secNo}`; }
+
 function sectionTitle(id: string, text: string): LayoutNode {
-  return { type: 'Label', id, props: { text, size: 'xs', color: 'dim', bold: true } };
+  // 编号做成独立高亮前缀 span（金色·好扫），后接原标题。
+  const no = nextSubNo();
+  return { type: 'Label', id, props: { size: 'xs', color: 'dim', bold: true, spans: [{ text: `#${no}  `, color: 'gold', bold: true }, { text, color: 'dim' }] } };
 }
 function divider(id: string): LayoutNode {
   return { type: 'Divider', id, props: {} };
@@ -94,7 +104,8 @@ const CARTOON_ROBOT = uiTextureUrl('tex/cartoon-robot');
 const CARTOON_TRAVEL = uiTextureUrl('tex/cartoon-travel');
 
 // ── 页 1 · 容器与布局 ────────────────────────────────────────
-const pageLayout: LayoutNode = {
+// 函数（非 const）：每次渲染重建，让内部 sectionTitle 参与当次「子编号」计数（与其它 tab 页一致递增）。
+function pageLayout(): LayoutNode { return {
   type: 'Panel',
   id: 'page-layout',
   props: { scroll: true },
@@ -166,14 +177,14 @@ const pageLayout: LayoutNode = {
       ],
     },
   ],
-};
+}; }
 
 // ── 页 2 · 数据展示 ──────────────────────────────────────────
 const labelColors: Array<'text' | 'sub' | 'dim' | 'jade' | 'gold' | 'ok' | 'warn' | 'danger'> =
   ['text', 'sub', 'dim', 'jade', 'gold', 'ok', 'warn', 'danger'];
 const labelSizes: Array<'xs' | 'sm' | 'md' | 'lg' | 'xl'> = ['xs', 'sm', 'md', 'lg', 'xl'];
 
-const pageDisplay: LayoutNode = {
+function pageDisplay(): LayoutNode { return {
   type: 'Panel',
   id: 'page-display',
   props: { scroll: true },
@@ -401,7 +412,7 @@ const pageDisplay: LayoutNode = {
       },
     },
   ],
-};
+}; }
 
 // ── 页 3 · 输入与交互 ────────────────────────────────────────
 function buildPageInput(c: ControlsState): LayoutNode {
@@ -1246,8 +1257,14 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           ['gothic', 'Gothic · Pirata One 哥特海盗', 'text'],
           ['fashion', 'Fashion · Abril Fatface 时尚粗衬', 'gold'],
           ['shadow', 'SHADOW · Bungee Shade 立体投影', 'jade'],
-        ] as const).map(([f, txt, color]): LayoutNode =>
-          ({ type: 'Label', id: `af-${f}`, props: { text: txt, size: 'xl', font: f, color } })) },
+        ] as const).map(([f, txt, color]): LayoutNode => ({
+          // 每款字一行：左=子编号（普通字·好读）+ 右=艺术字样张。owner 可按号跟美术点名换某款字。
+          type: 'Panel', id: `afr-${f}`, props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 12 },
+          children: [
+            { type: 'Label', id: `afn-${f}`, props: { text: `#${nextSubNo()}`, size: 'sm', color: 'gold', bold: true }, layout: { width: 52 } },
+            { type: 'Label', id: `af-${f}`, props: { text: txt, size: 'xl', font: f, color } },
+          ],
+        })) },
 
       divider('d-n17'),
       sectionTitle('t-fx', 'FX · UI 特效库（库 A·layout.fx 闭集合集·可叠加·render-only CSS·一个字段一串特效）'),
@@ -1575,7 +1592,7 @@ function buildUIModule(shop: ShopState, pick: PickState, activeTab: string, cont
       action: 'switchTab',
     },
     layout: { flex: 1 },
-    children: [pageLayout, pageDisplay, buildPageInput(controls), buildPage3dUi(controls), buildPageEmoji(), buildPageNew(controls), buildShop(shop), buildPickHand(pick)],
+    children: [pageLayout(), pageDisplay(), buildPageInput(controls), buildPage3dUi(controls), buildPageEmoji(), buildPageNew(controls), buildShop(shop), buildPickHand(pick)],
   };
 }
 
@@ -1584,6 +1601,7 @@ function moduleBody(
   currentModule: string, shop: ShopState, pick: PickState, activeTab: string,
   controls: ControlsState, input: InputLabState, aishe: AisheState,
 ): LayoutNode {
+  beginSections(currentModule); // 进模块即重置子编号计数（前缀=该模块主编号·顺序=显示顺序·稳定可复述）
   switch (currentModule) {
     case 'mod-ui': return buildUIModule(shop, pick, activeTab, controls);
     case 'mod-mmo': return buildMmoHud();
