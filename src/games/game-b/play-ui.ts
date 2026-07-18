@@ -291,10 +291,17 @@ function subtitle(m: MatchState, selectedKey: string | null): LayoutNode {
 function logPanel(m: MatchState, logCopied: boolean): LayoutNode {
   const evs = m.log.recent(24); // 面板扫近 24 条（跨局累计·完整靠复制钮）
   return {
-    type: 'Panel', id: 'logpanel', props: { bg: { custom: 'rgba(18,12,20,0.97)' }, title: '游戏日志 · 跨局累计（查 bug）' },
-    layout: { x: FIELD_W - 392, y: 52, width: 376, height: FIELD_H - 104, padding: 10, gap: 3, direction: 'column' },
+    type: 'Panel', id: 'logpanel', props: { bg: { custom: 'rgba(18,12,20,0.98)' }, title: '游戏日志 · 跨局累计' },
+    layout: { x: FIELD_W - 392, y: 56, width: 376, height: FIELD_H - 112, padding: 10, gap: 3, direction: 'column' },
     children: [
-      { type: 'Button', id: 'log-copy', props: { label: logCopied ? '✓ 已复制 —— 粘贴给我即可' : `📋 复制完整日志（${m.log.size()} 条·全部局）`, kind: logCopied ? 'quiet' : 'primary', action: COPY_LOG } },
+      // 头行：关闭 ✕（永远可关·不靠被遮的 📜）+ 复制。
+      {
+        type: 'Panel', id: 'log-hdr', props: { bare: true }, layout: { direction: 'row', gap: 6, align: 'center' },
+        children: [
+          { type: 'Button', id: 'log-close', props: { label: '✕ 关闭', kind: 'quiet', action: TOGGLE_LOG }, layout: { flex: 0 } },
+          { type: 'Button', id: 'log-copy', props: { label: logCopied ? '✓ 已复制 —— 粘贴给我' : `📋 复制完整日志（${m.log.size()} 条）`, kind: logCopied ? 'quiet' : 'primary', action: COPY_LOG }, layout: { flex: 1 } },
+        ],
+      },
       ...evs.map((e, i): LayoutNode => ({
         type: 'Label', id: `log-${i}`,
         props: { text: `[${e.round}] ${e.actor}·${e.text}`, size: 'xs', color: e.kind === 'tsumo' || e.kind === 'ron' ? 'gold' : e.kind === 'score' ? 'danger' : e.kind === 'draw' || e.kind === 'discard' ? 'sub' : 'jade' },
@@ -341,18 +348,21 @@ export interface PlayHudOpts { logOpen: boolean; selectedKey?: string | null; lo
 
 export function buildPlayHud(m: MatchState, opts: PlayHudOpts): LayoutNode {
   const sel = opts.selectedKey ?? null;
+  // 棋盘层（最底）。
   const children: LayoutNode[] = [
     centerInfo(m),
-    actionBar(m),
     ...[0, 1, 2, 3].map((s) => riverBlock(m, s)),
     ...[0, 1, 2, 3].map((s) => seatCard(m, s)),
     ...[0, 1, 2, 3].map((s) => meldBlock(m, s)).filter((n): n is LayoutNode => n !== null), // 副露展示
     ...playerHand(m, sel), // 手牌=绝对定位节点数组（选中张抬升）·直接铺进 play-root
-    ...(isPlayerCallWindow(m) ? [] : [subtitle(m, sel)]), // 鸣牌窗口时字幕让位给按钮条（同区避重叠）
   ];
-  const cb = callBar(m); // 鸣牌窗口按钮（有待鸣才显）
+  // 日志面板（覆盖棋盘·但在控件之下）——鸣牌窗口时强制收起：决策不被日志遮（owner 冻结根因）。
+  if (opts.logOpen && !isPlayerCallWindow(m)) children.push(logPanel(m, opts.logCopied ?? false));
+  // 控件层（在日志之上·永远可点）：行动条 / 字幕 / 鸣牌按钮条。
+  children.push(actionBar(m));
+  if (!isPlayerCallWindow(m)) children.push(subtitle(m, sel)); // 鸣牌窗口时字幕让位给按钮条
+  const cb = callBar(m); // 鸣牌窗口按钮（有待鸣才显·最上层）
   if (cb) children.push(cb);
-  if (opts.logOpen) children.push(logPanel(m, opts.logCopied ?? false));
-  if (isWinLikeEnd(m)) children.push(resultOverlay(m));
+  if (isWinLikeEnd(m)) children.push(resultOverlay(m)); // 结算浮层（最上）
   return { type: 'Panel', id: 'play-root', props: { bare: true }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children };
 }

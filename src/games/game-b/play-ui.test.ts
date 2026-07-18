@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { validateLayoutNode, type LayoutNode } from '@ui/components/index.js';
 import { startMatch, aiTurn, nextRound } from './core/game-state.js';
 import type { Meld } from './core/meld.js';
-import { buildPlayHud, PLAY_TILE } from './play-ui.js';
+import { buildPlayHud, PLAY_TILE, TOGGLE_LOG } from './play-ui.js';
 
 const collect = (n: LayoutNode, out: LayoutNode[] = []): LayoutNode[] => {
   out.push(n);
@@ -77,6 +77,29 @@ describe('game-b 对局 UI（play-ui·LayoutNode 纪律）', () => {
     // 鸣牌窗口时手牌全禁点（不是玩家的打牌回合）
     const tiles = collect(hud).filter((n) => n.type === 'Button' && /^h-/.test(n.id ?? ''));
     expect(tiles.every((t) => (t.props as { disabled?: boolean }).disabled === true)).toBe(true);
+  });
+
+  it('日志面板可关（✕ 关闭钮）+ 行动条渲染在日志之上（owner「log 关不掉」修复）', () => {
+    const m = startMatch(20260717);
+    const root = buildPlayHud(m, { logOpen: true }); // 无鸣牌窗口·日志开
+    const ids = collect(root).map((n) => n.id);
+    expect(ids).toContain('logpanel');
+    expect(ids).toContain('log-close'); // ✕ 关闭钮存在
+    const closeBtn = collect(root).find((n) => n.id === 'log-close');
+    expect((closeBtn?.props as { action?: string }).action).toBe(TOGGLE_LOG); // 关闭钮走 TOGGLE_LOG
+    // 行动条(acts) 在日志(logpanel) 之后=渲染在上·永远可点（不被日志遮）
+    const childIds = root.children!.map((c) => c.id);
+    expect(childIds.indexOf('logpanel')).toBeLessThan(childIds.indexOf('acts'));
+  });
+
+  it('鸣牌窗口时日志自动收起（决策不被日志遮·owner 冻结修复）', () => {
+    const m = startMatch(20260717);
+    m.interactiveCalls = true;
+    m.cur.callWindow = { discarder: 3, tile: 2, options: { ron: false, pon: true, minkan: false, chi: [] }, pending: [] };
+    const ids = collect(buildPlayHud(m, { logOpen: true })).map((n) => n.id); // 请求开日志·但有鸣牌窗口
+    expect(ids).not.toContain('logpanel'); // 鸣牌窗口时日志强制收起（不遮碰/过按钮）
+    expect(ids).toContain('callbar'); // 鸣牌按钮条在
+    expect(ids).toContain('call-pon');
   });
 
   it('终局态：结算钮=返回主菜单', () => {
