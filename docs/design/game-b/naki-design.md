@@ -64,9 +64,10 @@ export interface Meld {
 ## 10. 分阶段（每阶段 tsc+vitest 绿·GD 验收剧本钉·可玩里程碑）
 | P | 内容 | 可玩里程碑 |
 |---|---|---|
-| **P1** | 数据模型（Meld/RoundState.melds）+ meld-aware hand-eval（加法·测） | — 地基 |
-| **P2** | 合法性检测 + 应用（`calls.ts` 纯函数·各型测·喰い替え/优先级） | — |
-| **P3** | 流程接线（call window + 优先级 + actor 跳转 + 杠岭上/王牌/新宝牌） | AI 之间能鸣·headless 跑通 |
+| **P1** | 数据模型（Meld/RoundState.melds）+ meld-aware hand-eval（加法·测） | ✅ 地基 |
+| **P2** | 合法性检测（`calls.ts` 纯函数·各型测·喰い替え/优先级） | ✅ |
+| **P3a** | 流程接线·碰/吃（call window + 优先级 + actor 跳转 + `interactiveCalls` 总闸·门清逐字节等价） | ✅ AI 之间能碰·headless 跑通 |
+| **P3b** | 杠（大明杠/暗杠/加杠 + 岭上摸/王牌 14/新宝牌翻示 R-3 + 抢杠 R-6） | AI 会杠·headless |
 | **P4** | UI（鸣牌按钮 + 吃搭子选择 + 副露展示） | **玩家能碰/吃/杠**（占位分） |
 | **P5** | AI 鸣牌决策（倾向·确定性） | 三姨太会鸣·局面活 |
 | **P6** | 役/符 open-hand（连 scoring：门清消/喰い下がり/杠符/食断/岭上/抢杠/海底） | **鸣牌局真算分** |

@@ -10,11 +10,27 @@
 import { randomInt, type RandomSeed } from '@atom-skills/random/index.js';
 import { kindOf, isTerminalOrHonor } from './tiles-def.js';
 import { dealWall } from './wall.js';
-import { isWinningHand, tenpai } from './hand-eval.js';
+import { isWinningHand, tenpai, winsWithMelds, tenpaiWithMelds } from './hand-eval.js';
 import { doraFromIndicator } from './wall.js';
 import { GameLog } from './game-log.js';
+import type { Meld } from './meld.js';
+import { chiCandidates, canPon, resolveClaims, kuikaeForbidden, type ChiCandidate, type CallClaim } from './calls.js';
 
 export type Phase = 'playing' | 'win' | 'draw';
+
+/** 玩家（seat 0）对某弃牌的可鸣选项（P4 HUD 亮按钮·P3a 碰/吃；杠=P3b）。 */
+export interface PlayerCallOptions {
+  ron: boolean;
+  pon: boolean;
+  chi: ChiCandidate[]; // 可吃搭子候选（≥2 需选一）
+}
+/** 鸣牌窗口：某家弃牌后暂停·玩家(0)待决；AI(1-3)主张已算入 pending，待玩家决定后统一裁优先级。 */
+export interface CallWindow {
+  discarder: number; // 弃牌者
+  tile: number; // 被鸣候选牌码
+  options: PlayerCallOptions; // 玩家可选
+  pending: CallClaim[]; // 已决 AI 主张（碰/荣·P3a 无 AI 吃/杠）
+}
 
 export interface RoundResult {
   type: 'tsumo' | 'ron' | 'draw';
@@ -28,13 +44,17 @@ export interface RoundResult {
 }
 
 export interface RoundState {
-  hands: number[][]; // 四家暗手（升序·不含 drawn）
+  hands: number[][]; // 四家暗手（升序·不含 drawn·不含副露）
+  melds: Meld[][]; // 四家副露（吃/碰·杠=P3b）——naki-design §1
   rivers: number[][]; // 四家牌河（打出序）
   wall: number[]; // 活山摸序（shift 取）
   dead: number[]; // 王牌
   doraInd: number[]; // 宝牌指示牌（翻开·初始 1）
   turn: number; // 当前行动 seat
-  drawn: number | null; // 当前 turn 刚摸的牌（待打）；null=已打待下家摸
+  drawn: number | null; // 当前 turn 刚摸的牌（待打）；null=已打待下家摸 / 鸣牌后待打
+  awaitDiscard: boolean; // 鸣牌（碰/吃）后无摸·待鸣家打出（drawn=null 但仍须打）
+  forbiddenDiscard: number[]; // 喰い替え禁打牌种（本巡·打出后清空·R-2）
+  callWindow: CallWindow | null; // 玩家(0)待鸣窗口（非 null=流程暂停等玩家决定）
   lastDiscard: number | null; // 最近打出的牌（荣和/UI 高亮）
   riichi: boolean[]; // 四家是否已立直（立直后锁摸切·§3 加立直役/一发/裏宝）
   phase: Phase;
@@ -54,6 +74,7 @@ export interface MatchState {
   cur: RoundState;
   log: GameLog;
   over: boolean; // 整场终（东4 打完 / 击飞）
+  interactiveCalls: boolean; // 鸣牌总闸（默认 false=门清兼容路径逐字节等价；P4 UI 置 true 开碰/吃/荣窗口）
 }
 
 const STARTING = 50000; // gdd 起点
@@ -83,6 +104,7 @@ export function startMatch(seed: number, seatNames = ['主角', '绫', '莉世',
     cur: null as unknown as RoundState,
     log: new GameLog(),
     over: false,
+    interactiveCalls: false, // 默认门清兼容；开鸣牌由 UI/测试显式置 true
   };
   startRound(m);
   return m;
@@ -94,12 +116,16 @@ export function startRound(m: MatchState): void {
   const deal = dealWall({ seed, akaDora: true });
   m.cur = {
     hands: deal.hands.map((h) => [...h]),
+    melds: [[], [], [], []],
     rivers: [[], [], [], []],
     wall: [...deal.drawWall],
     dead: deal.deadWall,
     doraInd: [deal.doraIndicator],
     turn: m.dealer,
     drawn: null,
+    awaitDiscard: false,
+    forbiddenDiscard: [],
+    callWindow: null,
     lastDiscard: null,
     riichi: [false, false, false, false],
     phase: 'playing',
@@ -119,10 +145,11 @@ function drawTile(m: MatchState): void {
   m.log.push({ round: roundName(m), actor: m.seatNames[rs.turn]!, kind: 'draw', text: `摸 ${labelTile(rs.drawn)}（余 ${rs.wall.length}）`, tile: rs.drawn });
 }
 
-/** 当前 turn 是否可自摸（门清·纯形·§3 加役闸）。 */
+/** 当前 turn 是否可自摸（副露感知·melds 空=门清纯形·§3 加役闸）。 */
 export function canTsumo(m: MatchState): boolean {
   const rs = m.cur;
-  return rs.phase === 'playing' && rs.drawn !== null && isWinningHand([...rs.hands[rs.turn]!, rs.drawn]);
+  return rs.phase === 'playing' && rs.drawn !== null &&
+    winsWithMelds(rs.hands[rs.turn]!, rs.melds[rs.turn]!.length, rs.drawn);
 }
 
 /** 宣告自摸和了。 */
@@ -133,31 +160,175 @@ export function declareTsumo(m: MatchState): void {
   settleWin(m, 'tsumo', rs.turn, null, rs.drawn!, winHand);
 }
 
-/** 打出一张（tileCode 可为 drawn=摸切 或手牌任一=手切）。检测他家荣和→否则下家摸。 */
+/**
+ * 打出一张（tileCode = drawn 摸切 / 手牌任一手切 / 鸣牌后待打）。
+ * 打出后开「鸣牌窗口」——非交互（门清兼容）路径 = 与鸣牌前逐字节等价（他家荣→否则下家摸）。
+ */
 export function discard(m: MatchState, tileCode: number): void {
   const rs = m.cur;
-  if (rs.phase !== 'playing' || rs.drawn === null) return;
-  const full = [...rs.hands[rs.turn]!, rs.drawn];
+  if (rs.phase !== 'playing' || rs.callWindow !== null) return; // 窗口未决不得打
+  if (rs.drawn === null && !rs.awaitDiscard) return; // 无牌可打
+  if (rs.forbiddenDiscard.includes(kindOf(tileCode))) return; // 喰い替え禁（R-2·防御·AI/UI 不应给出）
+  const full = rs.drawn !== null ? [...rs.hands[rs.turn]!, rs.drawn] : [...rs.hands[rs.turn]!];
   const idx = full.indexOf(tileCode);
   if (idx < 0) return; // 非法牌·忽略
   full.splice(idx, 1);
   rs.hands[rs.turn] = full.sort((a, b) => kindOf(a) - kindOf(b) || a - b);
   rs.drawn = null;
+  rs.awaitDiscard = false;
+  rs.forbiddenDiscard = [];
   rs.rivers[rs.turn]!.push(tileCode);
   rs.lastDiscard = tileCode;
   m.log.push({ round: roundName(m), actor: m.seatNames[rs.turn]!, kind: 'discard', text: `打 ${labelTile(tileCode)}`, tile: tileCode });
+  openCallWindow(m, rs.turn, tileCode);
+}
 
-  // 他家荣和检测（逆时针近家优先·单荣·多家荣和=§3 双响裁决）；振听家禁荣（舍张振听·防非法荣和）。
+/** 弃牌者到 seat 的逆时针距（1=下家…3=上家）——荣/鸣近家优先裁据。 */
+const callOffset = (from: number, seat: number): number => (seat - from + 4) % 4;
+
+/**
+ * 弃牌后开鸣牌窗口。
+ * · 非交互（m.interactiveCalls=false·当前 UI/门清 walkthrough）：仅他家荣和（近家优先·非振听）→ 否则下家摸——**逐字节等价鸣牌前**。
+ * · 交互（P3a+·测试/P4 UI 开）：收集 AI 碰/荣主张 + 玩家可鸣选项；玩家有选项→暂停窗口，否则即裁即应用。
+ */
+function openCallWindow(m: MatchState, discarder: number, tile: number): void {
+  const rs = m.cur;
+  if (!m.interactiveCalls) {
+    for (let off = 1; off <= 3; off++) {
+      const i = (discarder + off) % 4;
+      if (winsWithMelds(rs.hands[i]!, rs.melds[i]!.length, tile) && !isFuriten(m, i)) {
+        settleWin(m, 'ron', i, discarder, tile, [...rs.hands[i]!, tile]);
+        return;
+      }
+    }
+    advanceDraw(m, discarder);
+    return;
+  }
+  // ── 交互鸣牌路径 ──
+  const pending: CallClaim[] = [];
   for (let off = 1; off <= 3; off++) {
-    const i = (rs.turn + off) % 4;
-    if (isWinningHand([...rs.hands[i]!, tileCode]) && !isFuriten(m, i)) {
-      settleWin(m, 'ron', i, rs.turn, tileCode, [...rs.hands[i]!, tileCode]);
-      return;
+    const seat = (discarder + off) % 4;
+    if (seat === PLAYER_SEAT) continue; // 玩家单列（options）
+    const claim = aiDecideCall(m, seat, discarder, tile);
+    if (claim) pending.push(claim);
+  }
+  if (discarder !== PLAYER_SEAT) {
+    const options = playerCallOptions(m, discarder, tile);
+    if (options.ron || options.pon || options.chi.length > 0) {
+      rs.callWindow = { discarder, tile, options, pending };
+      return; // 暂停·待 playerCall/playerPass（headless AI 由 aiResolveCallWindow 代决）
     }
   }
-  // 无荣和·轮转下家摸
-  rs.turn = (rs.turn + 1) % 4;
+  resolveAndApplyCalls(m, discarder, tile, pending);
+}
+
+/** 无荣无鸣·下家摸（原流程尾）。 */
+function advanceDraw(m: MatchState, discarder: number): void {
+  m.cur.turn = (discarder + 1) % 4;
   drawTile(m);
+}
+
+/** 裁优先级并应用（荣>碰/杠>吃）；playerChi=玩家吃选中的搭子。 */
+function applyWinners(m: MatchState, discarder: number, tile: number, winners: CallClaim[], playerChi?: ChiCandidate): void {
+  const rs = m.cur;
+  if (winners.length === 0) { advanceDraw(m, discarder); return; }
+  if (winners[0]!.type === 'ron') {
+    // 近家单荣（门清行为一致）；双响=债（gdd·naki-design §3 记）。
+    const nearest = winners.reduce((a, b) => (callOffset(discarder, a.seat) <= callOffset(discarder, b.seat) ? a : b));
+    settleWin(m, 'ron', nearest.seat, discarder, tile, [...rs.hands[nearest.seat]!, tile]);
+    return;
+  }
+  const w = winners[0]!;
+  applyCall(m, w.seat, w.type, discarder, tile, w.seat === PLAYER_SEAT ? playerChi : undefined);
+}
+
+function resolveAndApplyCalls(m: MatchState, discarder: number, tile: number, claims: CallClaim[]): void {
+  applyWinners(m, discarder, tile, resolveClaims(claims));
+}
+
+/**
+ * 应用碰/吃（P3a）：组副露·从暗手取牌·被鸣牌离河入副露·跳 actor·无摸待打（awaitDiscard）+ 喰い替え禁。
+ */
+function applyCall(m: MatchState, seat: number, type: CallClaim['type'], discarder: number, tile: number, chi?: ChiCandidate): void {
+  const rs = m.cur;
+  const hand = rs.hands[seat]!;
+  const k = kindOf(tile);
+  const consumeKinds = type === 'pon' ? [k, k] : [chi!.consume[0], chi!.consume[1]];
+  const forbidden = type === 'pon' ? kuikaeForbidden(tile, null) : kuikaeForbidden(tile, chi!.consume);
+  const taken: number[] = [];
+  for (const ck of consumeKinds) {
+    const i = hand.findIndex((t) => kindOf(t) === ck); // 每种取一枚（赤5 计宝牌不论位置·任取）
+    if (i >= 0) taken.push(hand.splice(i, 1)[0]!);
+  }
+  rs.melds[seat]!.push({
+    kind: type === 'pon' ? 'pon' : 'chi',
+    tiles: [...taken, tile].sort((a, b) => kindOf(a) - kindOf(b) || a - b),
+    from: discarder,
+    called: tile,
+  });
+  rs.rivers[discarder]!.pop(); // 被鸣牌离弃牌者牌河（入副露·防再荣/振听误判）
+  rs.lastDiscard = null;
+  rs.turn = seat;
+  rs.drawn = null;
+  rs.awaitDiscard = true; // 鸣后无摸·须打一张
+  rs.forbiddenDiscard = forbidden;
+  m.log.push({ round: roundName(m), actor: m.seatNames[seat]!, kind: 'info', text: `${type === 'pon' ? '碰' : '吃'} ${labelTile(tile)}（供=${m.seatNames[discarder]}）` });
+}
+
+/** 该牌种对某家是否役牌（三元白發中 / 自风 / 场风·东风战场风恒東）——AI 碰倾向 + P6 役判据。 */
+function isYakuhai(m: MatchState, seat: number, tile: number): boolean {
+  const k = kindOf(tile);
+  if (k >= 31) return true; // 白發中
+  if (k >= 27) {
+    const wind = k - 27; // 0東1南2西3北
+    return wind === seatWind(seat, m.dealer) || wind === 0; // 自风 or 场风（東風戦恒東场）
+  }
+  return false;
+}
+
+/** AI 鸣牌决策（P3a 简版·确定性）：能荣（非振听）→ 荣；役牌 ≥2 → 碰；否则不鸣（吃=P5·杠=P3b）。 */
+function aiDecideCall(m: MatchState, seat: number, _discarder: number, tile: number): CallClaim | null {
+  const rs = m.cur;
+  if (winsWithMelds(rs.hands[seat]!, rs.melds[seat]!.length, tile) && !isFuriten(m, seat)) return { seat, type: 'ron' };
+  if (rs.riichi[seat]) return null; // 立直锁手·不鸣（仍可荣·上一行已判）
+  if (canPon(rs.hands[seat]!, tile) && isYakuhai(m, seat, tile)) return { seat, type: 'pon' };
+  return null;
+}
+
+/** 玩家（seat 0）对某弃牌的可鸣选项（交互模式·P4 HUD 消费）。 */
+function playerCallOptions(m: MatchState, discarder: number, tile: number): PlayerCallOptions {
+  const rs = m.cur;
+  const seat = PLAYER_SEAT;
+  const ron = winsWithMelds(rs.hands[seat]!, rs.melds[seat]!.length, tile) && !isFuriten(m, seat);
+  const pon = !rs.riichi[seat] && canPon(rs.hands[seat]!, tile);
+  const chi = !rs.riichi[seat] && seat === (discarder + 1) % 4 ? chiCandidates(rs.hands[seat]!, tile) : [];
+  return { ron, pon, chi };
+}
+
+/** 玩家决定「过」（不鸣）：AI 主张照常裁应用。 */
+export function playerPass(m: MatchState): void {
+  const cw = m.cur.callWindow;
+  if (!cw) return;
+  m.cur.callWindow = null;
+  resolveAndApplyCalls(m, cw.discarder, cw.tile, cw.pending);
+}
+
+/** 玩家决定鸣牌（荣/碰/吃）：与 AI 主张合并裁优先级（玩家的荣压 AI 碰·AI 荣压玩家碰…）。 */
+export function playerCall(m: MatchState, choice: { type: 'ron' | 'pon' | 'chi'; chi?: ChiCandidate }): void {
+  const cw = m.cur.callWindow;
+  if (!cw) return;
+  m.cur.callWindow = null;
+  const claims: CallClaim[] = [...cw.pending, { seat: PLAYER_SEAT, type: choice.type }];
+  applyWinners(m, cw.discarder, cw.tile, resolveClaims(claims), choice.chi);
+}
+
+/** headless/AI 代决玩家鸣牌窗口（seat 0 亦 AI 时·AI-vs-AI walkthrough 用）：同 AI 策略决碰/荣/过。 */
+export function aiResolveCallWindow(m: MatchState): void {
+  const cw = m.cur.callWindow;
+  if (!cw) return;
+  const claim = aiDecideCall(m, PLAYER_SEAT, cw.discarder, cw.tile);
+  if (claim) playerCall(m, { type: claim.type as 'ron' | 'pon' });
+  else playerPass(m);
 }
 
 /** 简版结算（占位固定分·让点数动起来·§3 真役符替换）。 */
@@ -207,9 +378,9 @@ function applyStrip(m: MatchState, type: 'tsumo' | 'ron', winner: number, loser:
   return stripped;
 }
 
-/** 舍张振听：某家待ち牌种含其自家牌河任一 → 该家不能荣和（防非法荣和）。 */
+/** 舍张振听：某家待ち牌种含其自家牌河任一 → 该家不能荣和（防非法荣和·副露感知·melds 空=门清）。 */
 export function isFuriten(m: MatchState, seat: number): boolean {
-  const waits = tenpai(m.cur.hands[seat]!);
+  const waits = tenpaiWithMelds(m.cur.hands[seat]!, m.cur.melds[seat]!.length);
   if (waits.length === 0) return false;
   const river = m.cur.rivers[seat]!.map((c) => kindOf(c));
   return waits.some((w) => river.includes(w));
@@ -218,7 +389,7 @@ export function isFuriten(m: MatchState, seat: number): boolean {
 /** 荒牌流局（听牌罚符 3000·标准分配）。 */
 function ryuukyoku(m: MatchState): void {
   const rs = m.cur;
-  const tp = rs.hands.map((h) => tenpai(h).length > 0);
+  const tp = rs.hands.map((h, i) => tenpaiWithMelds(h, rs.melds[i]!.length).length > 0);
   const nTen = tp.filter(Boolean).length;
   const delta = [0, 0, 0, 0];
   if (nTen > 0 && nTen < 4) {
@@ -292,12 +463,14 @@ function tileValue(code: number, hand: number[]): number {
   return v;
 }
 
-/** AI 选打哪张（当前 turn·含 drawn·价值最低者·PRNG tiebreak）。 */
+/** AI 选打哪张（当前 turn·含 drawn；鸣牌后无摸则仅暗手·滤喰い替え禁·价值最低者·PRNG tiebreak）。 */
 export function aiChooseDiscard(m: MatchState): number {
   const rs = m.cur;
-  const full = [...rs.hands[rs.turn]!, rs.drawn!];
-  const uniq = [...new Set(full)];
-  let worst = full[0]!;
+  const full = rs.drawn !== null ? [...rs.hands[rs.turn]!, rs.drawn] : [...rs.hands[rs.turn]!];
+  const legal = full.filter((t) => !rs.forbiddenDiscard.includes(kindOf(t)));
+  const pool = legal.length > 0 ? legal : full; // 全禁兜底（不该发生）
+  const uniq = [...new Set(pool)];
+  let worst = pool[0]!;
   let worstVal = Infinity;
   for (const t of uniq) {
     const v = tileValue(t, full);
@@ -313,7 +486,8 @@ export function aiChooseDiscard(m: MatchState): number {
 export function canRiichi(m: MatchState): boolean {
   const rs = m.cur;
   const t = rs.turn;
-  if (rs.phase !== 'playing' || rs.drawn === null || rs.riichi[t] || m.scores[t]! < 1000 || rs.wall.length < 4) return false;
+  // 立直须门清（melds 非空=已副露·禁立直）。
+  if (rs.phase !== 'playing' || rs.drawn === null || rs.melds[t]!.length > 0 || rs.riichi[t] || m.scores[t]! < 1000 || rs.wall.length < 4) return false;
   const full = [...rs.hands[t]!, rs.drawn];
   for (const x of new Set(full)) { // 存在一打法使 13 张听牌
     const rest = [...full];
@@ -343,19 +517,26 @@ export function declareRiichi(m: MatchState): void {
   discard(m, tile); // 打出立直宣言牌
 }
 
-/** 当前 turn 走一步 AI（自摸→宣；立直后→锁摸切；听牌→立直；否则进张打）。AI 席 + headless walkthrough 用。 */
+/** 当前 turn 走一步 AI（待鸣窗口→代决；自摸→宣；立直后→锁摸切；听牌→立直；否则进张打）。AI 席 + headless walkthrough 用。 */
 export function aiTurn(m: MatchState): void {
   const rs = m.cur;
   if (rs.phase !== 'playing') return;
+  if (rs.callWindow !== null) { aiResolveCallWindow(m); return; } // 先决待鸣窗口（seat 0 亦 AI）
   if (canTsumo(m)) { declareTsumo(m); return; }
-  if (rs.riichi[rs.turn]) { discard(m, rs.drawn!); return; } // 立直后锁摸切
+  if (rs.riichi[rs.turn] && rs.drawn !== null) { discard(m, rs.drawn); return; } // 立直后锁摸切
   if (canRiichi(m)) { declareRiichi(m); return; } // 门清听牌→立直（记债换 t2-behavior-tree 人设概率）
-  discard(m, aiChooseDiscard(m));
+  discard(m, aiChooseDiscard(m)); // 含鸣牌后无摸待打（awaitDiscard）
 }
 
-/** 是否轮到玩家行动（UI：等玩家点牌/自摸）。 */
+/** 是否轮到玩家行动（UI：等玩家点牌/自摸·含鸣牌后待打）。 */
 export function isPlayerTurn(m: MatchState): boolean {
-  return m.cur.phase === 'playing' && m.cur.turn === PLAYER_SEAT && m.cur.drawn !== null;
+  const rs = m.cur;
+  return rs.phase === 'playing' && rs.callWindow === null && rs.turn === PLAYER_SEAT && (rs.drawn !== null || rs.awaitDiscard);
+}
+
+/** 是否有玩家待决鸣牌窗口（UI：亮碰/吃/荣/过按钮·仅交互模式设窗口）。 */
+export function isPlayerCallWindow(m: MatchState): boolean {
+  return m.cur.phase === 'playing' && m.cur.callWindow !== null;
 }
 
 /** 本局是否已终（和了/流局·UI 弹结算浮层）。 */
@@ -363,10 +544,12 @@ export function isWinLikeEnd(m: MatchState): boolean {
   return m.cur.phase === 'win' || m.cur.phase === 'draw';
 }
 
-/** UI 驱动：自动推进 AI 席直到轮到玩家 或 本局终。 */
+/** UI 驱动：自动推进 AI 席直到轮到玩家（行动 或 待鸣窗口）或 本局终。 */
 export function runUntilPlayerOrEnd(m: MatchState, maxSteps = 200): void {
   let n = 0;
-  while (m.cur.phase === 'playing' && m.cur.turn !== PLAYER_SEAT && n++ < maxSteps) {
+  while (m.cur.phase === 'playing' && n++ < maxSteps) {
+    if (m.cur.callWindow !== null) break; // 玩家待鸣（窗口仅玩家有选项时设）→ 停给 UI
+    if (m.cur.turn === PLAYER_SEAT && (m.cur.drawn !== null || m.cur.awaitDiscard)) break; // 轮到玩家打
     aiTurn(m);
   }
 }
