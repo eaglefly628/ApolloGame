@@ -1,0 +1,29 @@
+// 验收剧本 ④《六人德州》打到摊牌·开牌展示：last-aggressor 先亮牌 · 分池守恒。
+// seed 42：主角翻前弃牌后，AI 打满四街到摊牌（tick 40 足够到摊牌·到点后 tick 空转不再推进）。
+// 依据 gdd.md §3 + 标准德州（WebSearch 复核）：摊牌亮牌从「最后下注/加注者」起顺时针 → 本局 last-aggressor=座1 先亮。
+// 这是 owner 点名的「最后开牌展示，细节流程全都要全」的机读钉子：谁先亮、赢家、分池不多不少。
+{
+  "name": "打到摊牌·开牌展示（last-aggressor先亮·分池守恒）",
+  "game": "game-c",
+  "seed": 42,
+  "steps": [
+    { "tick": 3 },
+    { "expect": [ { "flag": "hero-turn", "eq": true } ] },
+    { "signal": "hero_act", "args": { "action": "fold" } },   // 主角弃牌·让 AI 打到摊牌
+    { "tick": 40 },                                            // 驱动 AI 打满翻/转/河到摊牌（≥21 拍即达·余拍空转）
+    { "expect": [
+      { "flag": "phase-showdown", "eq": true },   // 到达摊牌相位
+      { "flag": "folded-0", "eq": true },          // 主角确实弃了
+      { "res": "community-count", "eq": 5 },       // 五张公共牌全亮
+      // ── 开牌展示顺序：最后加注者(座1)先亮，顺时针到座4 ──
+      { "res": "last-aggressor", "eq": 1 },
+      { "res": "reveal-first", "eq": 1 },
+      { "sv": "reveal-order", "eq": "1,4" },
+      // ── 结算：有赢家 + 分池守恒（亮牌各家赢得之和 = 摊牌底池，不凭空多/少）──
+      { "res": "winner-count", "gte": 1 },
+      { "res": "showdown-pot", "eq": 2351 },
+      { "res": "won-total", "eq": 2351 },
+      { "sv": "winner-type", "eq": "三条" }
+    ]}
+  ]
+}

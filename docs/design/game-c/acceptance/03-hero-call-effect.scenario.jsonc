@@ -1,0 +1,23 @@
+// 验收剧本 ③《六人德州》主角行动写入牌局：主角跟注 → 缴筹入池 → 让位给下家。
+// tick 3 轮到主角(承剧本②)，主角发 hero_act call。跟注写世界（缴 ≥ 大盲、栈相应减、行动权交给下家座1=小盲位）。
+// 断言取「跟注一定成立」的结构量（commit≥50 / stack≤950 / 让位座1 / 不再主角轮），不锁 AI 相关的池额 → 鲁棒。
+{
+  "name": "主角跟注写入牌局（缴筹入池·让位下家）",
+  "game": "game-c",
+  "seed": 20260718,
+  "steps": [
+    { "tick": 3 },
+    { "expect": [
+      { "flag": "hero-turn", "eq": true },
+      { "res": "commit-0", "eq": 0 }         // 行动前主角本街未投
+    ]},
+    { "signal": "hero_act", "args": { "action": "call" } },
+    { "expect": [
+      { "flag": "hero-turn", "eq": false },  // 主角行动完·让位
+      { "res": "actor", "eq": 1 },            // 行动权到下家座1（小盲位）
+      { "res": "commit-0", "gte": 50 },       // 至少跟到大盲线
+      { "res": "stack-0", "lte": 950 },       // 栈相应扣减
+      { "sv": "last-action-0", "eq": "跟注 50" }
+    ]}
+  ]
+}

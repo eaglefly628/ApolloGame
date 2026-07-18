@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": " Test Files  8 passed (8) ·       Tests  91 passed (91)",
-      "at": "2026-07-18T03:13:20.834Z",
-      "gameHash": "120a1cec7e56bbb3"
+      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  91 passed (91)）· 验收剧本 4 场景绿",
+      "at": "2026-07-18T03:30:05.567Z",
+      "gameHash": "29fa60faa8167bd5"
     },
     "S5": {
       "exit": 0,
@@ -272,6 +272,30 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T03:13:20.834Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "德州流程演出重构+S4验收剧本harness落地（4场景conformance绿·adapter薄接线）·刷机器门证据",
+      "at": "2026-07-18T03:27:14.118Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T03:27:17.073Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "rebase带入Lead门禁加固(APOLLO_ACCEPTANCE_CLI握手·假绿封死)后重验S4·确认真绿非假绿",
+      "at": "2026-07-18T03:30:02.554Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T03:30:05.567Z"
     }
   ],
   "outOfOrder": [
@@ -339,6 +363,16 @@
       "stage": "S4",
       "reason": "德州完整流程演出重构（分步AI/行动气泡/摊牌last-aggressor顺序·AI价值下注）·玩法hash变·机器侧重跑刷证据",
       "at": "2026-07-18T03:13:18.678Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "德州流程演出重构+S4验收剧本harness落地（4场景conformance绿·adapter薄接线）·刷机器门证据",
+      "at": "2026-07-18T03:27:14.118Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "rebase带入Lead门禁加固(APOLLO_ACCEPTANCE_CLI握手·假绿封死)后重验S4·确认真绿非假绿",
+      "at": "2026-07-18T03:30:02.554Z"
     }
   ],
   "reviews": {
