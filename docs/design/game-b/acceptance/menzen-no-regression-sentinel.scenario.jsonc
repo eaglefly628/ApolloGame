@@ -1,0 +1,42 @@
+// 查的规则：门清不回退哨兵——鸣牌总闸 interactiveCalls 默认 false 时，全场恒无副露（melds 空），
+//   且与鸣牌前逐字节等价（naki-design §0/§4「melds 空 = 现有纯门清路径 100% 等价」）。
+//   这是本轮「加法扩展不破门清核」owner 铁令的机器守卫：只要默认路径冒出任何副露，说明 call window
+//   在非交互模式误接线（openCallWindow 非交互支只应做「他家荣→否则下家摸」·绝不 applyCall）。
+//   默认场结束时四家点数仍 Σ=200000（无马无 oka·gdd §四），供托回收后 kyotaku=0。
+// 规则依据：naki-design §0（门清体验全程不回退·melds 空=纯门清等价）、gdd §四（起点 50000×4·无马无 oka）。
+// 对抗目标（把 call window 接线接漏进默认路径的程序员会犯的错，这些键照出来）：
+//   · 非交互模式误跑 applyCall/AI 鸣 → 收官 melds_sum > 0 照出（本该恒 0）。
+//   · 鸣牌接线破坏了门清点数流转 → score_sum ≠ 200000 照出。
+//   · 王牌记账被杠逻辑污染 → dead_len ≠ 14 照出。
+// 需要 PE 新增的适配器读者（signal 不需要·全走既有 play-match）：
+//   · RES melds_sum = 四家副露牌总枚数 Σ_s Σ_meld tiles.length（门清恒 0）。
+//   · RES dead_len   = m.cur.dead.length（王牌恒 14）。
+//   （score_sum/kyotaku/over 为既有读者。）
+{
+  "name": "门清不回退哨兵（默认无副露·守恒）",
+  "game": "game-b",
+  "seed": 20260717,
+  "config": { "seatNames": ["主角", "绫", "莉世", "小夜"] },
+  "steps": [
+    {
+      // 开局态：默认非交互·尚无副露·满点未终局。
+      "expect": [
+        { "res": "melds_sum", "eq": 0 },
+        { "res": "dead_len", "eq": 14 },
+        { "res": "score_sum", "eq": 200000 },
+        { "flag": "over", "eq": false }
+      ]
+    },
+    { "signal": "play-match" },
+    {
+      // 收官态：整场默认打穿·全程零副露·点数守恒回 200000·王牌恒 14·供托清零。
+      "expect": [
+        { "flag": "over", "eq": true },
+        { "res": "melds_sum", "eq": 0 },
+        { "res": "dead_len", "eq": 14 },
+        { "res": "score_sum", "eq": 200000 },
+        { "res": "kyotaku", "eq": 0 }
+      ]
+    }
+  ]
+}

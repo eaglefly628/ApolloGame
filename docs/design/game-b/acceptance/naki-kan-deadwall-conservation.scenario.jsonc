@@ -1,0 +1,51 @@
+// 查的规则：杠（岭上摸 + 王牌守恒 + 新宝牌翻示）+ 交互整场守恒——本轮招牌机制的机器钉。
+//   naki-design §5：杠→岭上摸 1（王牌前区取）+ 活山尾补 1 进王牌 → **王牌恒 14**（守恒 bookkeeping）·
+//   活山随杠变短（海底提前）；新宝牌指示每杠 +1（暗杠即翻/明加杠翻·R-3）。
+//   seed=88 交互场 東1：AI 加杠成一杠 → kan_count=1、宝牌指示由 1 涨到 2、王牌恒 14、全局 136 守恒；
+//   续打整场（play-match）→ 终局四家点数 Σ=200000（无马无 oka·供托回收）、王牌仍 14、牌数仍 136。
+// 规则依据：naki-design §5（岭上/王牌恒 14/新宝牌）、mahjong-core-tests §1（王牌恒 14·岭上补→海底前移）、
+//   gdd §四（无马无 oka·终局残供托归第 1 位）。
+// 对抗目标（把王牌守恒/岭上补摸写错的程序员会犯的错，这些键照出来）：
+//   · 岭上摸没从活山尾补王牌（王牌越杠越少）→ 杠后 dead_len < 14 照出。
+//   · 岭上摸凭空多一张/漏一张（守恒破）→ tile_total ≠ 136 照出。
+//   · 杠没翻新宝牌指示 → dora_count 仍 = 1 照出（本局有杠应 ≥ 2）。
+//   · 杠逻辑污染点数流转 → 终局 score_sum ≠ 200000 照出。
+// 【seed 锁定·若 PE 改 AI 杠启发需 GD 重验】seed=88 東1 加杠=确定性（种子 PRNG·双跑复现）。
+// 需要 PE 新增的适配器信号 + 读者：
+//   · signal「interactive」→ m.interactiveCalls = true。
+//   · RES kan_count  = m.cur.kanCount。
+//   · RES dora_count = m.cur.doraInd.length（初 1·每杠 +1）。
+//   · RES dead_len   = m.cur.dead.length（王牌恒 14）。
+//   · RES melds_sum  = 四家副露牌总枚数（含杠 4 枚）。
+//   · RES tile_total = 全局牌数守恒（恒 136）。
+{
+  "name": "杠·王牌恒14·新宝牌 + 交互整场守恒",
+  "game": "game-b",
+  "seed": 88,
+  "config": { "seatNames": ["主角", "绫", "莉世", "小夜"] },
+  "steps": [
+    { "signal": "interactive" },
+    { "signal": "play-round" },
+    {
+      // 東1 收局（含一杠）：kan_count=1·新宝牌指示 2 层·王牌恒 14·全局牌数守恒 136·副露含杠（≥4 枚）。
+      "expect": [
+        { "res": "kan_count", "gte": 1 },
+        { "res": "dora_count", "gte": 2 },
+        { "res": "dead_len", "eq": 14 },
+        { "res": "melds_sum", "gte": 4 },
+        { "res": "tile_total", "eq": 136 }
+      ]
+    },
+    { "signal": "play-match" },
+    {
+      // 终局态：整场交互打穿·点数守恒 200000·王牌仍恒 14·牌数仍守恒 136·供托清零。
+      "expect": [
+        { "flag": "over", "eq": true },
+        { "res": "score_sum", "eq": 200000 },
+        { "res": "kyotaku", "eq": 0 },
+        { "res": "dead_len", "eq": 14 },
+        { "res": "tile_total", "eq": 136 }
+      ]
+    }
+  ]
+}

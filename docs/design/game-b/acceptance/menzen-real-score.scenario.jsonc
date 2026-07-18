@@ -1,0 +1,38 @@
+// 查的规则：门清闭手（无副露）走真役符引擎 scoreWin（P6a）——真役种识别 + 真番符 + 真点移，
+//   而**不是**简版占位固定分（naki-design §P6a·mahjong-core-tests §3/§4/§5）。
+//   seed=42 默认场：東1 由主角(席0)门清荣和「立直 一盃口」（2 翻 40 符）→ 结算带真役种明细 + 真档位标签，
+//   放铳者等额付、四家点移 Σ=0（gdd §四 无马无 oka·§五 点数守恒）。
+//   关键鉴别：占位分档位标签含「占位」二字（settleWin 开手/兜底支）；真算分标签=「N翻M符」/满贯档，绝无「占位」。
+// 规则依据：mahjong-core-tests §3（立直 1 番·一盃口 1 番门清限定）、§4（门前清荣和 20+10 符起）、
+//   §5（闲家荣=基本点×4·百位切上）、gdd §四（1 番缚·闭手真役）。
+// 对抗目标（把「闭手也吃占位分」当成没做完的程序员会犯的错，这些键照出来）：
+//   · 闭手仍走占位固定分（没接 scoreWin）→ win_placeholder=1 且 win_has_yaku=false 照出。
+//   · 真算分却漏了役种明细 → win_has_yaku=false 照出（占位=无 yakuLabel）。
+//   · 和牌凭空造点（winner 加分 loser 未等额扣）→ delta_sum ≠ 0 照出。
+//   · 闭手误记了副露 → melds_sum ≠ 0 照出。
+// 需要 PE 新增的适配器读者（signal 不需要·走既有 play-round）：
+//   · RES  win_placeholder = m.cur.result ? (String(result.scoreLabel).includes('占位') ? 1 : 0) : -1
+//          （闭手真算分=0·开手/兜底占位=1·无结果=-1）。
+//   · FLAG win_has_yaku    = !!m.cur.result?.yakuLabel（真算分必有役种明细·占位=无）。
+//   · RES  melds_sum       = 四家副露牌总枚数（本局闭手恒 0）。
+//   （result_type / winner_name / delta_sum 为既有读者。）
+{
+  "name": "门清闭手真算分（scoreWin·非占位）",
+  "game": "game-b",
+  "seed": 42,
+  "config": { "seatNames": ["主角", "绫", "莉世", "小夜"] },
+  "steps": [
+    { "signal": "play-round" },
+    {
+      // 東1 收局：主角门清荣和·真役符引擎结算（立直 一盃口 = 2 翻 40 符）·点移守恒·闭手无副露。
+      "expect": [
+        { "sv": "result_type", "eq": "ron" },
+        { "sv": "winner_name", "eq": "主角" },
+        { "res": "win_placeholder", "eq": 0 },
+        { "flag": "win_has_yaku", "eq": true },
+        { "res": "delta_sum", "eq": 0 },
+        { "res": "melds_sum", "eq": 0 }
+      ]
+    }
+  ]
+}

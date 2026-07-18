@@ -176,7 +176,7 @@ export function declareTsumo(m: MatchState): void {
   const rs = m.cur;
   if (!canTsumo(m)) return;
   const winHand = [...rs.hands[rs.turn]!, rs.drawn!];
-  settleWin(m, 'tsumo', rs.turn, null, rs.drawn!, winHand);
+  settleWin(m, 'tsumo', rs.turn, null, rs.drawn!, winHand, { rinshan: rs.drawnRinshan }); // 岭上開花旗（D5a·闭手含暗杠 P6b 才行使）
 }
 
 /**
@@ -216,7 +216,7 @@ function openCallWindow(m: MatchState, discarder: number, tile: number): void {
   if (!m.interactiveCalls) {
     for (let off = 1; off <= 3; off++) {
       const i = (discarder + off) % 4;
-      if (winsWithMelds(rs.hands[i]!, rs.melds[i]!.length, tile) && !isFuriten(m, i)) {
+      if (canRon(m, i, tile)) { // 形 + 非振听 + 有役（D2·1番縛り）
         settleWin(m, 'ron', i, discarder, tile, [...rs.hands[i]!, tile]);
         return;
       }
@@ -322,7 +322,7 @@ function isYakuhai(m: MatchState, seat: number, tile: number): boolean {
 /** AI 鸣牌决策（P3a 简版·确定性）：能荣（非振听）→ 荣；役牌 ≥2 → 碰；否则不鸣（吃=P5·杠=P3b）。 */
 function aiDecideCall(m: MatchState, seat: number, _discarder: number, tile: number): CallClaim | null {
   const rs = m.cur;
-  if (winsWithMelds(rs.hands[seat]!, rs.melds[seat]!.length, tile) && !isFuriten(m, seat)) return { seat, type: 'ron' };
+  if (canRon(m, seat, tile)) return { seat, type: 'ron' }; // 形 + 非振听 + 有役（D2）
   if (rs.riichi[seat]) return null; // 立直锁手·不鸣（仍可荣·上一行已判）
   if (canPon(rs.hands[seat]!, tile) && isYakuhai(m, seat, tile)) return { seat, type: 'pon' };
   return null;
@@ -332,9 +332,9 @@ function aiDecideCall(m: MatchState, seat: number, _discarder: number, tile: num
 function playerCallOptions(m: MatchState, discarder: number, tile: number): PlayerCallOptions {
   const rs = m.cur;
   const seat = PLAYER_SEAT;
-  const ron = winsWithMelds(rs.hands[seat]!, rs.melds[seat]!.length, tile) && !isFuriten(m, seat);
+  const ron = canRon(m, seat, tile); // 形 + 非振听 + 有役（D2·1番縛り）
   const pon = !rs.riichi[seat] && canPon(rs.hands[seat]!, tile);
-  const minkan = !rs.riichi[seat] && canDaiminkan(rs.hands[seat]!, tile);
+  const minkan = !rs.riichi[seat] && rs.wall.length > 0 && canDaiminkan(rs.hands[seat]!, tile); // 海底不得杠（D7）
   const chi = !rs.riichi[seat] && seat === (discarder + 1) % 4 ? chiCandidates(rs.hands[seat]!, tile) : [];
   return { ron, pon, minkan, chi };
 }
@@ -364,7 +364,7 @@ function resolveKakanRob(m: MatchState, cw: CallWindow, playerRonSeat: number | 
   if (playerRonSeat !== null) claims.push({ seat: playerRonSeat, type: 'ron' });
   if (claims.length > 0) {
     const w = claims.reduce((a, b) => (callOffset(cw.discarder, a.seat) <= callOffset(cw.discarder, b.seat) ? a : b));
-    settleWin(m, 'ron', w.seat, cw.discarder, cw.tile, [...m.cur.hands[w.seat]!, cw.tile]); // 抢杠荣（放铳=加杠家）
+    settleWin(m, 'ron', w.seat, cw.discarder, cw.tile, [...m.cur.hands[w.seat]!, cw.tile], { chankan: true }); // 抢杠荣（放铳=加杠家·带槍槓 1 番 D5b）
     return;
   }
   finalizeKan(m); // 无人抢 → 加杠成立·岭上摸 + 翻新宝牌
@@ -411,11 +411,11 @@ function finalizeKan(m: MatchState): void {
   revealKanDora(m);
 }
 
-/** 暗杠候选牌种（自家回合·含刚摸·某种 4 张）；立直后禁（v1·不变听暗杠=债）。 */
+/** 暗杠候选牌种（自家回合·含刚摸·某种 4 张）；立直后禁（v1·不变听暗杠=债）；海底（活山空）禁杠（D7）。 */
 export function ankanKinds(m: MatchState): number[] {
   const rs = m.cur;
   const t = rs.turn;
-  if (rs.phase !== 'playing' || rs.drawn === null || rs.callWindow !== null || rs.riichi[t]) return [];
+  if (rs.phase !== 'playing' || rs.drawn === null || rs.callWindow !== null || rs.riichi[t] || rs.wall.length === 0) return [];
   return ankanCandidates([...rs.hands[t]!, rs.drawn]);
 }
 export function canAnkan(m: MatchState): boolean { return ankanKinds(m).length > 0; }
@@ -437,22 +437,21 @@ export function declareAnkan(m: MatchState, kind: number): void {
   rinshanDraw(m);
 }
 
-/** 加杠候选牌种（自家回合·已碰某种 + 手中/摸含第 4 张）；立直后禁。 */
+/** 加杠候选牌种（自家回合·已碰某种 + 手中/摸含第 4 张）；立直后禁；海底（活山空）禁杠（D7）。 */
 export function kakanKinds(m: MatchState): number[] {
   const rs = m.cur;
   const t = rs.turn;
-  if (rs.phase !== 'playing' || rs.drawn === null || rs.callWindow !== null || rs.riichi[t]) return [];
+  if (rs.phase !== 'playing' || rs.drawn === null || rs.callWindow !== null || rs.riichi[t] || rs.wall.length === 0) return [];
   return kakanCandidates([...rs.hands[t]!, rs.drawn], rs.melds[t]!);
 }
 export function canKakan(m: MatchState): boolean { return kakanKinds(m).length > 0; }
 
 /** 加杠可被抢杠的家（非加杠家·能荣加杠牌·非振听）。国士抢暗杠 v1 不做（R-6·此为加杠抢=标准允许）。 */
 function kakanRobbers(m: MatchState, declarer: number, kind: number): number[] {
-  const rs = m.cur;
   const out: number[] = [];
   for (let off = 1; off <= 3; off++) {
     const i = (declarer + off) % 4;
-    if (winsWithMelds(rs.hands[i]!, rs.melds[i]!.length, kind) && !isFuriten(m, i)) out.push(i);
+    if (canRon(m, i, kind, true)) out.push(i); // chankan=true·抢加杠恒带槍槓（有役闸不误挡）
   }
   return out;
 }
@@ -479,7 +478,7 @@ export function declareKakan(m: MatchState, kind: number): void {
   }
   if (pending.length > 0) { // AI 抢杠
     const w = pending.reduce((a, b) => (callOffset(t, a.seat) <= callOffset(t, b.seat) ? a : b));
-    settleWin(m, 'ron', w.seat, t, kind, [...rs.hands[w.seat]!, kind]);
+    settleWin(m, 'ron', w.seat, t, kind, [...rs.hands[w.seat]!, kind], { chankan: true }); // 带槍槓 1 番（D5b）
     return;
   }
   finalizeKan(m);
@@ -514,11 +513,44 @@ function scoreDisplayLabel(s: ScoreResult): string {
   return `${s.han}翻${s.fu}符`;
 }
 
+/** 构和了上下文（settleWin + 荣和「有役」闸共用·闭手真算分口径·東風戦恒東场）。 */
+function buildWinContext(m: MatchState, winner: number, tile: number, tsumo: boolean, winHand: number[], opts?: { chankan?: boolean; rinshan?: boolean }): WinContext {
+  const rs = m.cur;
+  return {
+    hand14: winHand, winTile: tile, tsumo,
+    seatWind: seatWind(winner, m.dealer), roundWind: 0,
+    isDealer: winner === m.dealer, riichi: rs.riichi[winner]!,
+    doubleRiichi: false, ippatsu: false, // 债（未 track 两立直/一发·P6b）
+    haitei: rs.wall.length === 0 && !rs.drawnRinshan, // 海底摸月/河底撈魚（岭上不算）
+    doraIndicators: rs.doraInd,
+    uraIndicators: rs.riichi[winner] ? rs.uraPool.slice(0, rs.doraInd.length) : [], // 立直和了才看里宝
+    chankan: opts?.chankan, rinshan: opts?.rinshan,
+  };
+}
+
+/**
+ * 荣和「有役」闸（D2·1番縛り·GD-B 2026-07-18 复审必修）：日麻最低一役才能荣。
+ * · 闭手（melds 空）：以该荣和牌构 WinContext 跑 scoreWin·**必须有役（≠null）** 才允许荣（无役形式听牌只计流局罚符·不得实荣）。
+ * · 开手（有副露）：暂放行（P6b 补 open-hand 役引擎前无法判·记债）。
+ * · chankan=抢加杠荣（恒带槍槓 1 番·故闭手抢杠恒有役·不误挡）。
+ * 自摸不用此闸（闭手自摸恒带門前清自摸和·scoreWin 恒非 null）。
+ */
+function hasRonYaku(m: MatchState, seat: number, tile: number, chankan = false): boolean {
+  if (m.cur.melds[seat]!.length > 0) return true; // 开手 defer P6b
+  return scoreWin(buildWinContext(m, seat, tile, false, [...m.cur.hands[seat]!, tile], { chankan })) !== null;
+}
+
+/** 荣和合法性（形 + 非振听 + 1番縛り有役闸）。chankan=抢加杠。 */
+function canRon(m: MatchState, seat: number, tile: number, chankan = false): boolean {
+  return winsWithMelds(m.cur.hands[seat]!, m.cur.melds[seat]!.length, tile) && !isFuriten(m, seat) && hasRonYaku(m, seat, tile, chankan);
+}
+
 /**
  * 结算和了：**闭手（无副露）走真役符引擎 scoreWin（P6a）**·开手暂占位固定分（P6b 结账）。
  * 引擎 Payment → 四家 delta（+本场）；供托归和者；结算标签（役种/番符）落 result 供面板显示。
+ * opts.chankan/rinshan：抢杠/岭上開花役旗（D5a/D5b·注入 WinContext）。
  */
-function settleWin(m: MatchState, type: 'tsumo' | 'ron', winner: number, loser: number | null, tile: number, winHand: number[]): void {
+function settleWin(m: MatchState, type: 'tsumo' | 'ron', winner: number, loser: number | null, tile: number, winHand: number[], opts?: { chankan?: boolean; rinshan?: boolean }): void {
   const rs = m.cur;
   const isDealer = winner === m.dealer;
   const delta = [0, 0, 0, 0];
@@ -526,19 +558,9 @@ function settleWin(m: MatchState, type: 'tsumo' | 'ron', winner: number, loser: 
   const honbaRon = m.honba * 300; // 荣和放铳 +300/本场
 
   // 真算分：仅闭手（melds 空）走 scoreWin 引擎；开手/无役兜底走占位。
-  let score: ScoreResult | null = null;
-  if (rs.melds[winner]!.length === 0) {
-    const ctx: WinContext = {
-      hand14: winHand, winTile: tile, tsumo: type === 'tsumo',
-      seatWind: seatWind(winner, m.dealer), roundWind: 0, // 東風戦恒東场
-      isDealer, riichi: rs.riichi[winner]!,
-      doubleRiichi: false, ippatsu: false, // 债（未 track 两立直/一发·P6b）
-      haitei: rs.wall.length === 0 && !rs.drawnRinshan, // 海底摸月/河底撈魚（岭上不算）
-      doraIndicators: rs.doraInd,
-      uraIndicators: rs.riichi[winner] ? rs.uraPool.slice(0, rs.doraInd.length) : [], // 立直和了才看里宝
-    };
-    score = scoreWin(ctx);
-  }
+  const score: ScoreResult | null = rs.melds[winner]!.length === 0
+    ? scoreWin(buildWinContext(m, winner, tile, type === 'tsumo', winHand, opts))
+    : null;
 
   if (score) {
     const p = score.points;

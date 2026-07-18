@@ -1,0 +1,42 @@
+// 查的规则：碰（pon）机制真发生——开鸣牌总闸后，AI 之间会碰役牌（naki-design §2 碰=任意家暗手≥2 同弃牌·
+//   §3 优先级 碰>吃）；被鸣牌离弃牌者牌河入副露·actor 跳鸣家·全局牌数守恒 136·王牌不被碰动（恒 14）。
+//   seed=909 交互场 東1：席2（AI）碰役牌成一副 3 枚副露·本局无杠（kan_count=0）。
+// 规则依据：naki-design §2（碰合法性）、§4（call window 流程·被鸣牌离河）、
+//   naki-design §1 手数不变式（碰缩暗手 2 张·副露占 3 枚·牌数守恒）。
+// 对抗目标（把碰接线接漏/牌数没守住的程序员会犯的错，这些键照出来）：
+//   · 碰没真发生（AI 鸣决策没接线）→ melds_sum=0 照出。
+//   · 碰把牌数搞漏/搞多（被鸣牌没离河·或暗手没缩）→ tile_total ≠ 136 照出。
+//   · 碰误当成杠（多吃一枚）→ kan_count>0 或 melds_2 ≠ 3 照出。
+// 【seed 锁定·若 PE 改 AI 鸣牌启发需 GD 重验本剧本】席2 碰=确定性（种子 PRNG·双跑复现）。
+// 需要 PE 新增的适配器信号 + 读者：
+//   · signal「interactive」→ m.interactiveCalls = true（纯开闸·零规则）。
+//   · RES melds_sum = 四家副露牌总枚数。
+//   · RES melds_2   = 席2 副露牌枚数（melds_0..3 同族·各家一个）。
+//   · RES kan_count = m.cur.kanCount（本局杠次数）。
+//   · RES tile_total = 手+副露+河+活山+王牌+摸 全和（守恒恒 136）。
+{
+  "name": "碰机制（interactive·AI 碰役牌·守恒）",
+  "game": "game-b",
+  "seed": 909,
+  "config": { "seatNames": ["主角", "绫", "莉世", "小夜"] },
+  "steps": [
+    { "signal": "interactive" },
+    {
+      // 开闸后开局态：尚无副露·牌数守恒。
+      "expect": [
+        { "res": "melds_sum", "eq": 0 },
+        { "res": "tile_total", "eq": 136 }
+      ]
+    },
+    { "signal": "play-round" },
+    {
+      // 東1 收局：席2 碰成一副（3 枚）·本局无杠·全局牌数守恒 136。
+      "expect": [
+        { "res": "melds_sum", "eq": 3 },
+        { "res": "melds_2", "eq": 3 },
+        { "res": "kan_count", "eq": 0 },
+        { "res": "tile_total", "eq": 136 }
+      ]
+    }
+  ]
+}

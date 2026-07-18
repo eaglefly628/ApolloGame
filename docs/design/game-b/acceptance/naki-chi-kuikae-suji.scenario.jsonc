@@ -1,0 +1,54 @@
+// 查的规则：吃（chi）仅下家 + 喰い替え禁（R-2）**筋方向**——本轮最易写反的规则，独立钉死。
+//   naki-design §2：吃仅「下家对上家」弃牌·同花色数牌成顺；喰い替え禁 = 現物 + **両面吃的筋牌**
+//   （低端吃：被吃牌在顺子低端·暗手持高两张 → 禁打「高端+1」的筋牌；嵌张/边张只禁現物）。
+//   seed=3 交互场 東1：第 24 步（tick 24）席3（上家）弃 sou3(码20)·主角(席0·下家)持 sou4 sou5(码21,22)成両面吃
+//   → 顺子副露 [sou3,sou4,sou5]·actor 跳主角(turn=0)·喰い替え禁打 = {sou3(現物·码20), sou6(筋·码23)}。
+//   低端吃 sou3 时 sou4-5 両面本待 sou3/sou6，吃了 sou3 → 禁再打 sou6（否则等于白鸣一张换手）。
+// 规则依据：naki-design §2 + mahjong-core-tests §7（吃仅上家·喰い替え=R-2 默认禁·同牌与筋替打非法）、
+//   R-2 裁决行（GD-B 2026-07-18 圈定=禁·合天凤/雀魂）。
+// 对抗目标（把喰い替え筋方向写反/漏写的程序员会犯的错，这些键照出来）：
+//   · 只禁現物、漏了筋 → forbidden_count=1 照出（両面吃应为 2）。
+//   · 筋方向算反（低端吃却禁「低端-1」= sou2·或禁成消耗牌 sou4/sou5）→ forbidden_sum ≠ 43 照出
+//     （正解 {20,23} 和=43；禁 sou2{20,19}=39·禁 sou9{20,26}=46·禁消耗牌{20,21}=41 全≠43）。
+//   · 吃没真成顺（暗手没缩/被鸣牌没离河）→ melds_0 ≠ 3 或 tile_total ≠ 136 照出。
+//   · 吃误当杠 → kan_count>0 照出。
+// 【seed 锁定·tick 精确单招·若 PE 改 AI 打牌启发致步序漂移需 GD 重验 tick 数】
+//   AI 无「吃」倾向（吃=玩家路径）故必须玩家驱动：tick 24 停在主角吃窗口 → call-chi 单搭子（唯一候选·免选）。
+// 需要 PE 新增的适配器信号 + 读者：
+//   · signal「interactive」→ m.interactiveCalls = true。
+//   · signal「call-chi」(args 可选 [consumeLo]) → 若玩家鸣窗口有吃候选：按 consume[0]===args[0] 选中·缺 args 取首个
+//        → playerCall(m,{type:'chi',chi:cand})（纯转发·零规则）。本剧本唯一候选·无 args。
+//   · RES melds_0        = 席0 副露牌枚数（吃成 = 3）。
+//   · RES forbidden_count = m.cur.forbiddenDiscard.length（喰い替え禁打牌种数·両面吃 = 2）。
+//   · RES forbidden_sum   = m.cur.forbiddenDiscard 各牌种码之和（{20,23} → 43·钉筋方向）。
+//   · RES turn / tile_total / kan_count 为既有或前述读者。
+{
+  "name": "吃·喰い替え筋方向（両面吃 sou3 禁 sou6）",
+  "game": "game-b",
+  "seed": 3,
+  "config": { "seatNames": ["主角", "绫", "莉世", "小夜"] },
+  "steps": [
+    { "signal": "interactive" },
+    { "tick": 24 },
+    {
+      // tick 24 停在主角吃窗口（席3 弃 sou3·主角是其下家·持 sou4 sou5）：局仍进行·牌数守恒。
+      "expect": [
+        { "sv": "phase", "eq": "playing" },
+        { "flag": "over", "eq": false },
+        { "res": "tile_total", "eq": 136 }
+      ]
+    },
+    { "signal": "call-chi" },
+    {
+      // 吃成 sou3-4-5 顺子副露·actor 跳主角·喰い替え禁打 = 現物 sou3 + 筋 sou6（count=2·sum=43）·守恒不破·无杠。
+      "expect": [
+        { "res": "melds_0", "eq": 3 },
+        { "res": "turn", "eq": 0 },
+        { "res": "forbidden_count", "eq": 2 },
+        { "res": "forbidden_sum", "eq": 43 },
+        { "res": "kan_count", "eq": 0 },
+        { "res": "tile_total", "eq": 136 }
+      ]
+    }
+  ]
+}

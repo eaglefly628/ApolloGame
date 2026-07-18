@@ -292,6 +292,59 @@ describe('鸣牌 P3b · 杠（暗杠/大明杠/加杠 + 岭上/新宝牌 + 抢�
   });
 });
 
+describe('GD-B 复审修红（D2 1番縛り / D7 海底禁杠 / D5b 槍槓役）', () => {
+  // 无役闭手听牌：111m 999m 345p 678p + 5s 单骑（幺九刻杀断幺·刻子杀平和·无役牌·未立直）→ 荣 5s = 无役。
+  const NO_YAKU_13 = [M(1), M(1), M(1), M(9), M(9), M(9), P(3), P(4), P(5), P(6), P(7), P(8), S(5)];
+
+  it('D2 · 无役闭手荣和被拒（1番縛り）；给个役（立直）则同张可荣', () => {
+    // 非交互（默认·荣自动结算）建局。
+    const m = startMatch(1);
+    Object.assign(m.cur, {
+      hands: [NO_YAKU_13.slice(), JUNK_B.slice(), JUNK_B.slice(), JUNK_B.slice()],
+      melds: [[], [], [], []], rivers: [[], [], [], []], riichi: [false, false, false, false],
+      drawn: S(5), turn: 1, phase: 'playing', awaitDiscard: false, forbiddenDiscard: [], callWindow: null,
+    });
+    discard(m, S(5)); // 座1 打 5s（主角能荣其「形」但无役）
+    expect(m.cur.phase).not.toBe('win'); // 无役 → 荣被拒（1番縛り）
+
+    const m2 = startMatch(1);
+    Object.assign(m2.cur, {
+      hands: [NO_YAKU_13.slice(), JUNK_B.slice(), JUNK_B.slice(), JUNK_B.slice()],
+      melds: [[], [], [], []], rivers: [[], [], [], []], riichi: [true, false, false, false], // 立直=役
+      drawn: S(5), turn: 1, phase: 'playing', awaitDiscard: false, forbiddenDiscard: [], callWindow: null,
+    });
+    discard(m2, S(5));
+    expect(m2.cur.phase).toBe('win'); // 有役（立直）→ 荣成立
+    expect(m2.cur.result!.winner).toBe(0);
+    expect(m2.cur.result!.yakuLabel).toContain('立直');
+  });
+
+  it('D7 · 海底禁杠：活山空时 canAnkan/canKakan=false（防王牌跌13）', () => {
+    const m = controlled();
+    m.cur.hands[0] = [M(5), M(5), M(5), P(1), P(2), P(3), P(4), S(7), S(8), S(9), TON, TON, HAKU];
+    m.cur.turn = 0;
+    m.cur.drawn = M(5);
+    expect(canAnkan(m)).toBe(true); // 有活山时可杠
+    m.cur.wall = []; // 活山空（海底）
+    expect(canAnkan(m)).toBe(false); // 海底禁杠
+  });
+
+  it('D5b · 抢杠和了带槍槓役（闭手抢和家真算分含槍槓）', () => {
+    const m = controlled();
+    m.cur.melds[0] = [{ kind: 'pon', tiles: [CHUN, CHUN, CHUN], from: 2, called: CHUN }];
+    m.cur.hands[0] = [CHUN, P(1), P(4), P(6), S(1), S(3), S(5), S(7), M(9), M(2)];
+    // 座 2 闭手听中（123m 456p 789s 東東 + 中）·荣中带 槍槓。
+    m.cur.hands[2] = [M(1), M(2), M(3), P(4), P(5), P(6), S(7), S(8), S(9), TON, TON, CHUN, CHUN];
+    m.cur.melds[2] = [];
+    m.cur.turn = 0;
+    m.cur.drawn = M(1);
+    declareKakan(m, CHUN);
+    expect(m.cur.result!.type).toBe('ron');
+    expect(m.cur.result!.winner).toBe(2);
+    expect(m.cur.result!.yakuLabel).toContain('槍槓'); // 抢杠役接线（D5b）
+  });
+});
+
 describe('P6a · 真役符接线（门清闭手走 scoreWin 引擎）', () => {
   it('闭手自摸：结算走真引擎（yakuLabel/scoreLabel 落位·非占位·守恒）', () => {
     const m = controlled();

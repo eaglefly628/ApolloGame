@@ -63,3 +63,11 @@
 > **PE-B 无异议、按建议默认即可开工**；GD-B 若要改，逐条标即可。R-4/R-6/R-7 三条建议默认都是「v1 不做」，工作量最省，也最贴陪打体量——**尤其请 GD-B 确认这三条**。
 >
 > **阻塞关系**：（甲）圈定影响 hand-eval 是否重构；（乙）圈定后 PE-B 即可落 `yaku.ts`/`fu-score.ts` 两个新纯逻辑文件（mahjong-core-tests §3/§4 已备好逐役测试点名清单）。两块互相独立，可分别圈、分别开工。
+
+### B-011 · 鸣牌+门清真算分 对抗性复审（GD-B 回馈本轮） · GD-B（审+剧本）→ **PE-B（修红+接线）** · status: **✅ 复审出裁（2026-07-18·GD-B）** · P1
+> 全文裁决 + 修红清单 + 新剧本清单 = `docs/design/game-b/naki-review-2026-07-18.md`。**只读审查·未碰任何代码/适配器/PE 测试**。
+> **结论**：主体规则正确（喰い替え筋方向 ✅·优先级 ✅·抢杠放铳方向 ✅·王牌恒14守恒 ✅·真役符 R-1/R-7/R-8/無切上満貫 ✅·门清不回退 ✅）。
+> **🔴 唯一硬错·必须现修**：**1番縛り 闭手荣和未强制**——无役闭手**荣和**走占位兜底=**允许非法荣和**（日麻最低一役硬规则；闭手自摸恒带門前清自摸和·不在洞内）。闭手役引擎已在，荣和检测点补「闭手时 `scoreWin(ctx)!==null` 才允许荣」gate 廉价；开手 1番縛り defer P6b 可接受。**载体=单测**（adapter 不能注入构造手）：构造无役闭手听牌（未立直纯形听）→他家弃其和牌张→断言荣被拒（不落占位分）。
+> **🟠 应修/对齐**：①**双响 vs 頭跳**——实装頭跳（方向对·可接受 v1），但背离 gdd §四拍板默认「双响制」→ **报 owner** 把 gdd + R-10 注「v1=頭跳 interim」（GD 不擅改拍板）；②**海底での槓未禁**——`canAnkan/canKakan/大明杠` 补 `wall.length>0` 守卫（否则王牌跌 13·违海底牌不可杠）；③**槍槓役未接线**（连闭手抢和家欠 1 番·抢杠本轮即上，建议补 `WinContext.chankan`）。
+> **🟡 记债（文档已裁清·可接受 v1）**：明杠新宝牌即翻(R-3 时序·零算分影响)/立直后整禁暗杠/岭上開花役/含暗杠门清手落占位(P6b 收口「闭手=门前含暗杠」)/同巡·立直振听(玩家 pass 路径 UI 化前必补)/AI 不吃(玩法债)。
+> **新验收剧本 5 条**（GD-B 亲写·勿改·已过 schema 校验）：`menzen-no-regression-sentinel`/`menzen-real-score`/`naki-pon`/`naki-kan-deadwall-conservation`/`naki-chi-kuikae-suji`。**需 PE 接线的适配器信号/读者**逐条列在复审 md §C.1（信号 `interactive`/`call-chi`+建议全套鸣牌信号；读者 `melds_sum`/`melds_0..3`/`kan_count`/`dora_count`/`dead_len`/`tile_total`/`win_placeholder`/`forbidden_count`/`forbidden_sum`/FLAG `win_has_yaku`）——**纯投影零算番**，照单接线即可跑。

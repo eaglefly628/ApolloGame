@@ -29,6 +29,8 @@ export interface WinContext {
   uraIndicators: number[]; // 里宝牌指示牌（仅立直和了计·未立直传 []）
   tenhou?: boolean; // 天和（庄家第一巡自摸·调用方判定置位）——签名微调（WinContext 无第一巡信息·外部注入）
   chiihou?: boolean; // 地和（闲家第一巡自摸无鸣·调用方判定置位）——签名微调
+  chankan?: boolean; // 槍槓（抢加杠·荣和限定 1 番·外部注入·D5b）
+  rinshan?: boolean; // 嶺上開花（杠后岭上自摸 1 番·外部注入·D5a）
 }
 
 export interface YakuEntry {
@@ -270,6 +272,8 @@ function evalInterp(
   if (ctx.ippatsu && (ctx.riichi || ctx.doubleRiichi)) yaku.push({ name: '一発', han: 1 });
   if (ctx.tsumo) yaku.push({ name: '門前清自摸和', han: 1 }); // v1 恒门清
   if (ctx.haitei) yaku.push({ name: ctx.tsumo ? '海底摸月' : '河底撈魚', han: 1 });
+  if (ctx.chankan && !ctx.tsumo) yaku.push({ name: '槍槓', han: 1 }); // 抢加杠（荣和限定·D5b）
+  if (ctx.rinshan && ctx.tsumo) yaku.push({ name: '嶺上開花', han: 1 }); // 杠后岭上自摸（D5a）
   if (isTanyao) yaku.push({ name: '断幺九', han: 1 });
   if (numSuits === 1 && hasHonor) yaku.push({ name: '混一色', han: 3 });
   else if (numSuits === 1 && !hasHonor) yaku.push({ name: '清一色', han: 6 });
