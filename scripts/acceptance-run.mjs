@@ -203,7 +203,11 @@ export async function runGame(root, slug) {
 // 走 vite-node 时 argv 会剥掉脚本名（argv=[node, vite-node, …scriptArgs]）→ 标准 argv[1] 判 main 失效。
 // 本脚本唯一的 import 方是 vitest（acceptance.test.mjs）；gate 是**另起进程 spawn** 而非 import。
 // 故：非 vitest 环境（VITEST 未置）即视为 CLI 直跑 → 跑 main。（game-pipeline.mjs 不 import 本模块·自带计数。）
-const underVitest = !!process.env.VITEST || !!process.env.VITEST_WORKER_ID;
+// Lead 验收加固：VITEST 变量会**穿透嵌套 spawn**（vitest 里跑 gate CLI → 传染进本子进程 → 误判被
+// import → 静默退 0 = conformance 假绿）。gate spawn 时显式传 APOLLO_ACCEPTANCE_CLI=1 握手，见之
+// 无条件跑 main——假绿路径封死；vitest 真 import 本模块时无此变量，照旧惰性。
+const forceCli = process.env.APOLLO_ACCEPTANCE_CLI === '1';
+const underVitest = !forceCli && (!!process.env.VITEST || !!process.env.VITEST_WORKER_ID);
 if (!underVitest) {
   const argv = process.argv.slice(2);
   const gi = argv.indexOf('--game');

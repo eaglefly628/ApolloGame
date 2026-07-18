@@ -305,4 +305,20 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
       expect(pf.evidence.S4.exit).not.toBe(0); // 落证据=红
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
+
+  // Lead 验收加固：≥3 场景后 gate 真进 conformance——temp 根注入下 runner 根须对齐（绝对脚本路径 +
+  // APOLLO_ACCEPTANCE_ROOT 透传），落红须是真判词（缺 adapter），不许是脚本找不到的崩溃尾巴。
+  it('S4 gate：3 场景无 adapter → conformance 真判红（点名缺 adapter·非崩溃式落红）', () => {
+    const root = mkFixture();
+    try {
+      for (const n of ['a', 'b', 'c']) {
+        put(root, `docs/design/g/acceptance/${n}.scenario.jsonc`, JSON.stringify({ name: n, game: 'g', seed: 1, steps: [{ tick: 1 }] }));
+      }
+      const r = runCli(root, ['gate', 'g', 'S4', '--out-of-order', '测 conformance 根对齐']);
+      expect(r.status).not.toBe(0);
+      const out = r.stdout + r.stderr;
+      expect(out).toContain('conformance 未过');
+      expect(out).toContain('缺 adapter'); // runner 的真实判词穿透到 gate 摘要（根对齐生效）
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  }, 120_000);
 });

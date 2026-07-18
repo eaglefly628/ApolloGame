@@ -315,7 +315,12 @@ function gateRun(slug, stage, form) {
       return { exit: 1, summary: `✗ 验收剧本不足（GD 补·需≥${MIN_ACCEPTANCE_SCENARIOS}·现 ${nScen}）· docs/design/${slug}/acceptance/*.scenario.jsonc` };
     }
     // conformance：真引擎逐 step 对账 GD 剧本（无 adapter/断言不过=非零退出）。
-    const acc = run('npx', ['vite-node', 'scripts/acceptance-run.mjs', '--game', slug]);
+    // 脚本用绝对路径 + 显式对齐 runner 的根（Lead 验收加固：ROOT 被测试注入临时根时，
+    // 相对路径以 cwd=临时根解析不到脚本、runner 又按自身位置定根——两处都会错位成崩溃式落红）。
+    // APOLLO_ACCEPTANCE_CLI=1 是 CLI 握手：VITEST 变量会穿透嵌套 spawn 使 runner 误判被 import
+    // 而静默退 0（conformance 假绿）——显式握手封死该路径。
+    const accScript = join(dirname(fileURLToPath(import.meta.url)), 'acceptance-run.mjs');
+    const acc = run('npx', ['vite-node', accScript, '--game', slug], { env: { ...process.env, APOLLO_ACCEPTANCE_ROOT: ROOT, APOLLO_ACCEPTANCE_CLI: '1' } });
     const accTail = (acc.stdout || acc.stderr || '').trim().split('\n').slice(-3).join(' / ').slice(0, 200);
     if ((acc.status ?? 1) !== 0) return { exit: acc.status ?? 1, summary: `✗ 验收剧本 conformance 未过（${nScen} 场景）· ${accTail}` };
     if (form === 'cart') {
