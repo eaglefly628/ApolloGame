@@ -54,7 +54,7 @@ owner 07-17 追加服饰罚玩法（输盘方姨太脱一件·立绘阶梯呈现
 
 > **⚖ owner 终字（2026-07-17）**：三套人设**各自独立，不统一**——A-S1 里的 a×b×c 人设会审项**销案**；game-c 五位由 GD-C 按共享二次元人物锚自设五案（"选五个"=出五个人设即可）。人物美术锚仍三游戏共用 `sakura-nijigen`（省的是风格一致性，不是人设本身）。
 
-### A-008 · [2026-07-18] · PE-A · t3-hand-pattern：逢人配令 legalResponses 返回「规范判读压不过目标」的歧义应对 · status: ✅ 已转引擎池 **REQ-HANDPAT-歧义自洽**（Lead 2026-07-18·已派工 Opus·P1）· 类型: 引擎能力缺口（Lead 域）
+### A-008 · [2026-07-18] · PE-A · t3-hand-pattern：逢人配令 legalResponses 返回「规范判读压不过目标」的歧义应对 · status: ✅ 引擎已修（REQ-HANDPAT done `214fc846`·Lead 验收 PASS·兜底 filter 可退=PE-A 自裁·幂等保留亦无害）· 类型: 引擎能力缺口（Lead 域）
 **根因（引擎 `src/skills/tier3/hand-pattern.ts`）**：一手含逢人配的牌可有**多种家族判读**，`legalResponses` 用「意图家族」枚举应对并以该家族比 `beatsMatch(play, target)`；但 `act`/`legalCheck`/`beats` 用 `matchPattern` 取**最强判读**——当最强判读落到另一个普通型家族时，跨家族压不过原墩，于是 `legalResponses` 声称能压、`act` 却判非法。**实证**（打 5·♥5=逢人配）：当前墩=钢板 JJJ-QQQ；应对 QQ+KK+两♥5 逢人配 → `legalResponses` 当**钢板 QQQ-KKK**（rank13·压过）返回，但 `matchPattern` 判成**三连对 Q-K-A**（rank14·更强），三连对≠钢板跨普通型 → `beats=false` → `legalCheck` 拒。后果：提示按钮给「打不出去的牌」（owner 2026-07-18 报的现象之一）、AI 空过。
 **建议引擎修（Lead 裁）**：`legalResponses` 生成每个 play 后，用**规范 `matchPattern(play.cards)` 自洽复核**——仅当规范判读确能压 target（或领出时规范判读=非空）才纳入返回集；即让 legalResponses 的承诺与 act/beats 的判读口径一致。（或反向：`beats`/`legalCheck` 接受「任一判读能压」——但那要改判定语义，风险更大，倾向前者。）
 **游戏层已兜底（本提交·非侵入·用引擎自身 `beats` 复核）**：`guandan-session.legalBeats()` + `ai.chooseTurn` 对应对候选加 `filter(m => beats(m.cards, target, cfg))`——只留 act 真会收的那批，提示/AI 出牌恒合法（回归测试：`应对滤掉「规范判读压不过」的歧义牌`）。引擎修好后此兜底可退（保留亦无害·幂等）。
