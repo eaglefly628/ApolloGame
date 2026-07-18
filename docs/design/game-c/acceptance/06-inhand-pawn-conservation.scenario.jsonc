@@ -1,0 +1,44 @@
+// GD-C 验收剧本 · 手内典当续命·即时生效 + 结算守恒（gdd §3.5 衣物筹码典当·owner 拍板「剥光才出局」核心弧线）。
+// 覆盖 REQ-C-106（PE-C 2026-07-18 修的**手内典当筹码蒸发** P0 bug）的回归裁判——本剧本在旧码下必红：
+//   旧 pawn 只加 session.seats.stack·手内 stackOf 读 hand.players 看不见（步4 stack-0 仍=1000 → 红）；
+//   且 settle 的 syncStacks 用 `=` 覆盖 → 换来的筹码结算时被抹掉（步6 stack-0 蒸发回 1000·守恒破 → 红）。
+//   新码：pawn 同步 hand.players[seat].stack → 手内即用 + 经 syncStacks 保全。本剧本钉死两处。
+//
+// 剧本作者核对（gdd §3.5 衣物表：耳环 100/手套 150/袜子 200/上衣 500/裙子 500/内衣 1000·自由点选）：
+//   seed=42 hand#1·主角(座0=button)轮到行动时点当**耳环(100)** → 栈 1000→1100(手内即增·衣柜 6→5)；
+//   随后弃牌·AI 打到摊牌。典当把 100 面值衣物原子换成 100 筹码入桌 → 全场筹码守恒变为 6000+100=6100
+//   （典当=资产转筹码·非凭空生筹）；主角弃牌未投入·故 1100 全额留栈（结算不蒸发）。
+// ⚠ 精确值钉死到 (seed 42 + M1 占位 AI)·M2 换 AI 须 GD 重派（REQ-ACCEPT 分工：PE 不改剧本）。
+{
+  "name": "手内典当续命·即时生效+结算守恒·防蒸发(REQ-C-106)（精确·seed42）",
+  "game": "game-c",
+  "seed": 42,
+  "steps": [
+    { "tick": 3 },
+    { "expect": [
+      { "flag": "hero-turn", "eq": true },
+      { "res": "stack-0", "eq": 1000 },          // 典当前主角栈
+      { "res": "wardrobe-0", "eq": 6 }           // 衣柜满 6 件
+    ] },
+    // 手内点当耳环(面值 100)——原子换筹码入自己栈（gdd §3.5 craft-recipe 语义）
+    { "signal": "pawn", "args": { "seat": 0, "item": "earrings" } },
+    { "expect": [
+      { "res": "stack-0", "eq": 1100 },          // ★即时生效：手内当下就多 100 可用（旧码此处仍 1000=蒸发前兆）
+      { "res": "wardrobe-0", "eq": 5 }           // 衣柜 -1
+    ] },
+    { "signal": "hero_act", "args": { "action": "fold" } },
+    { "tick": 40 },
+    { "expect": [
+      { "flag": "phase-showdown", "eq": true },
+      { "flag": "folded-0", "eq": true },
+      { "res": "stack-0", "eq": 1100 },          // ★结算不蒸发：弃牌未投入→换来的 100 全额留栈（旧码抹回 1000）
+      { "res": "wardrobe-0", "eq": 5 },
+      // 全场守恒（典当后=6000+100=6100·逐座钉死）：主角弃牌不影响他座结算，同 02 手#1 分布
+      { "res": "stack-1", "eq": 2513 },
+      { "res": "stack-2", "eq": 775 },
+      { "res": "stack-3", "eq": 775 },
+      { "res": "stack-4", "eq": 162 },
+      { "res": "stack-5", "eq": 775 }
+    ] }
+  ]
+}
