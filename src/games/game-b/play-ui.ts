@@ -11,12 +11,13 @@ import { kindStr, isRed } from './core/tiles-def.js';
 import { doraFromIndicator } from './core/wall.js';
 import { FIELD_W, FIELD_H } from './theme.js';
 
-export const PLAY_TILE = 'play-tile'; // arg=牌码
+export const PLAY_TILE = 'play-tile'; // arg=手牌位 key（'0'..'12' 暗手位 / 'd' 摸牌）·两步：先选中再打出
 export const ACT_TSUMO = 'act-tsumo';
 export const ACT_RIICHI = 'act-riichi';
 export const NEXT_ROUND = 'next-round';
 export const TOGGLE_LOG = 'toggle-log';
 export const BACK_MENU = 'back-menu';
+export const COPY_LOG = 'copy-log'; // 复制完整日志到剪贴板（查 bug·贴给 owner）
 
 // ── 牌面占位贴图（B-007 FluffyStuff CC0·600×800 象牙牌·赤5 带 -red）─────────────────────
 const ART = '/games/game-b/art/mahjong';
@@ -119,25 +120,34 @@ function riverBlock(m: MatchState, seat: number): LayoutNode {
   };
 }
 
-// ── 自家手牌（底部一大排·真牌面·点一张=打一张·立直后锁摸切·摸牌离一档）─────────────────
-function playerHand(m: MatchState): LayoutNode {
+// ── 自家手牌（底部一大排·真牌面·**两步打牌**：点一张=选中站起 → 再点=打出·立直后锁摸切）───────
+// 摸牌只在**轮到玩家**时显示（否则显示的是当前 AI 的摸牌=串台·owner 目击 bug）。绝对定位排布→
+// 选中张 y 抬高「站起来」+ 余张压暗，避让 flex 做不出的抬升；返回节点数组直接铺进 play-root。
+function playerHand(m: MatchState, selectedKey: string | null): LayoutNode[] {
   const rs = m.cur;
   const hand = rs.hands[0]!; // 13 张暗手（升序）
   const canPlay = isPlayerTurn(m);
   const locked = rs.riichi[0]; // 立直后只能摸切（打 drawn）
-  const tile = (c: number, id: string, disabled: boolean): LayoutNode => ({
-    type: 'Button', id, props: { label: '', skin: faceUrl(c), kind: 'ghost', disabled, action: PLAY_TILE, actionArg: String(c) }, layout: { width: HW, height: HH },
-  });
-  const children: LayoutNode[] = hand.map((c, i) => tile(c, `h-${i}`, !canPlay || locked));
-  if (rs.drawn !== null) {
-    children.push({ type: 'Panel', id: 'h-gap', props: { bare: true }, layout: { width: 18 } }); // 摸牌离一档
-    children.push(tile(rs.drawn, 'h-drawn', !canPlay));
-  }
-  return {
-    type: 'Panel', id: 'player-hand', props: { bare: true },
-    layout: { x: 0, y: FIELD_H - HH - 8, width: FIELD_W, direction: 'row', gap: 3, justify: 'center', align: 'end' },
-    children,
+  const showDrawn = rs.drawn !== null && rs.turn === 0; // ★只有轮到玩家才显示自家摸牌
+  const step = HW + 4;
+  const drawnGap = 22;
+  const n = hand.length;
+  const totalW = n * step - 4 + (showDrawn ? drawnGap + HW : 0);
+  const x0 = Math.round((FIELD_W - totalW) / 2);
+  const BASE_Y = FIELD_H - HH - 4;
+  const RAISE = 18;
+  const dimOthers = selectedKey != null && canPlay && !locked;
+  const mkTile = (c: number, key: string, x: number, disabled: boolean): LayoutNode => {
+    const sel = selectedKey === key && !disabled;
+    return {
+      type: 'Button', id: `h-${key}`,
+      props: { label: '', skin: faceUrl(c), kind: sel ? 'primary' : 'ghost', disabled, action: PLAY_TILE, actionArg: key },
+      layout: { x, y: sel ? BASE_Y - RAISE : BASE_Y, width: HW, height: HH, opacity: dimOthers && !sel ? 0.68 : 1 },
+    };
   };
+  const out: LayoutNode[] = hand.map((c, i) => mkTile(c, String(i), x0 + i * step, !canPlay || locked));
+  if (showDrawn) out.push(mkTile(rs.drawn!, 'd', x0 + n * step + drawnGap - 4, !canPlay)); // 摸牌离一档
+  return out;
 }
 
 // ── 场况角标（局/本场/供托/余牌 + 宝牌真牌面）─────────────────────────────────────────────
@@ -174,27 +184,40 @@ function actionBar(m: MatchState): LayoutNode {
 }
 
 // ── 字幕条（轮到谁·思考中·结果播报）────────────────────────────────────────────────────
-function subtitle(m: MatchState): LayoutNode {
-  const last = m.log.all().slice(-1)[0];
-  const txt = m.cur.phase === 'playing'
-    ? (m.cur.turn === 0 ? (canTsumo(m) ? '可以自摸和了！或点手牌打出' : '轮到你——点手牌打出') : `${m.seatNames[m.cur.turn]} 思考中…`)
-    : (last?.text ?? '');
+function subtitle(m: MatchState, selectedKey: string | null): LayoutNode {
+  const yourTurn = m.cur.turn === 0 && m.cur.phase === 'playing';
+  let txt: string;
+  if (m.cur.phase !== 'playing') {
+    txt = m.log.all().slice(-1)[0]?.text ?? '';
+  } else if (yourTurn) {
+    txt = canTsumo(m) ? '★ 可以自摸和了！（或点牌选中 → 再点打出）'
+      : selectedKey != null ? '已选中 —— 再点一次打出（点别张可改选）'
+      : '轮到你 —— 点一张牌选中';
+  } else {
+    // AI 回合：报「上家打了啥 + 现在轮到谁」（节奏可跟·owner「找不到北/太快」）
+    const lastDisc = [...m.log.all()].reverse().find((e) => e.kind === 'discard' && e.tile != null);
+    const cur = m.seatNames[m.cur.turn];
+    txt = lastDisc ? `${lastDisc.actor} 打【${labelTile(lastDisc.tile!)}】　▸ 轮到 ${cur}` : `▸ 轮到 ${cur}`;
+  }
   return {
-    type: 'Panel', id: 'sub', props: { bg: { custom: 'rgba(22,14,22,0.86)' } },
-    layout: { x: FIELD_W / 2 - 200, y: FIELD_H - HH - 52, width: 400, padding: 7, align: 'center' },
-    children: [{ type: 'Label', id: 'sub-l', props: { text: txt, size: 'md', bold: true, color: m.cur.turn === 0 && m.cur.phase === 'playing' ? 'gold' : 'jade' } }],
+    type: 'Panel', id: 'sub', props: { bg: { custom: 'rgba(22,14,22,0.9)' } },
+    layout: { x: FIELD_W / 2 - 235, y: FIELD_H - HH - 52, width: 470, padding: 8, align: 'center' },
+    children: [{ type: 'Label', id: 'sub-l', props: { text: txt, size: 'md', bold: true, color: yourTurn ? 'gold' : 'jade' } }],
   };
 }
 
-function logPanel(m: MatchState): LayoutNode {
-  const evs = m.log.recent(18);
+function logPanel(m: MatchState, logCopied: boolean): LayoutNode {
+  const evs = m.log.recent(24); // 面板扫近 24 条（跨局累计·完整靠复制钮）
   return {
-    type: 'Panel', id: 'logpanel', props: { bg: { custom: 'rgba(18,12,20,0.95)' }, title: '游戏日志（查 bug）' },
-    layout: { x: FIELD_W - 372, y: 62, width: 356, height: FIELD_H - 130, padding: 10, gap: 2, direction: 'column' },
-    children: evs.map((e, i): LayoutNode => ({
-      type: 'Label', id: `log-${i}`,
-      props: { text: `[${e.round}] ${e.actor}·${e.text}`, size: 'xs', color: e.kind === 'tsumo' || e.kind === 'ron' ? 'gold' : e.kind === 'score' ? 'danger' : 'sub' },
-    })),
+    type: 'Panel', id: 'logpanel', props: { bg: { custom: 'rgba(18,12,20,0.97)' }, title: '游戏日志 · 跨局累计（查 bug）' },
+    layout: { x: FIELD_W - 392, y: 52, width: 376, height: FIELD_H - 104, padding: 10, gap: 3, direction: 'column' },
+    children: [
+      { type: 'Button', id: 'log-copy', props: { label: logCopied ? '✓ 已复制 —— 粘贴给我即可' : `📋 复制完整日志（${m.log.size()} 条·全部局）`, kind: logCopied ? 'quiet' : 'primary', action: COPY_LOG } },
+      ...evs.map((e, i): LayoutNode => ({
+        type: 'Label', id: `log-${i}`,
+        props: { text: `[${e.round}] ${e.actor}·${e.text}`, size: 'xs', color: e.kind === 'tsumo' || e.kind === 'ron' ? 'gold' : e.kind === 'score' ? 'danger' : e.kind === 'draw' || e.kind === 'discard' ? 'sub' : 'jade' },
+      })),
+    ],
   };
 }
 
@@ -229,18 +252,19 @@ function resultOverlay(m: MatchState): LayoutNode {
   };
 }
 
-export interface PlayHudOpts { logOpen: boolean }
+export interface PlayHudOpts { logOpen: boolean; selectedKey?: string | null; logCopied?: boolean }
 
 export function buildPlayHud(m: MatchState, opts: PlayHudOpts): LayoutNode {
+  const sel = opts.selectedKey ?? null;
   const children: LayoutNode[] = [
     centerInfo(m),
     actionBar(m),
     ...[0, 1, 2, 3].map((s) => riverBlock(m, s)),
     ...[0, 1, 2, 3].map((s) => seatCard(m, s)),
-    playerHand(m),
-    subtitle(m),
+    ...playerHand(m, sel), // 手牌=绝对定位节点数组（选中张抬升）·直接铺进 play-root
+    subtitle(m, sel),
   ];
-  if (opts.logOpen) children.push(logPanel(m));
+  if (opts.logOpen) children.push(logPanel(m, opts.logCopied ?? false));
   if (isWinLikeEnd(m)) children.push(resultOverlay(m));
   return { type: 'Panel', id: 'play-root', props: { bare: true }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children };
 }

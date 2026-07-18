@@ -17,17 +17,24 @@ describe('game-b 对局 UI（play-ui·LayoutNode 纪律）', () => {
     expect(validateLayoutNode(buildPlayHud(m, { logOpen: true }))).toEqual([]); // 日志面板开
   });
 
-  it('玩家手牌排：每张=可点按钮·action=play-tile·arg=牌码', () => {
+  it('玩家手牌排：每张=可点按钮·action=play-tile·arg=手牌位 key（两步打牌）', () => {
     const m = startMatch(555); // 东1 庄=玩家·开局玩家有 drawn
     const nodes = collect(buildPlayHud(m, { logOpen: false }));
     const tiles = nodes.filter((n) => n.type === 'Button' && /^h-/.test(n.id ?? ''));
-    // 13 手牌 + 1 摸牌 = 14
+    // 13 暗手（h-0..h-12）+ 1 摸牌（h-d）= 14
     expect(tiles).toHaveLength(14);
     for (const t of tiles) {
       const p = t.props as { action?: string; actionArg?: string };
       expect(p.action).toBe(PLAY_TILE);
-      expect(Number(p.actionArg)).not.toBeNaN();
+      // actionArg=手牌位 key：'0'..'12' 暗手位 / 'd' 摸牌（非牌码·两步打牌 handler 映射回码）
+      expect(p.actionArg === 'd' || /^\d+$/.test(p.actionArg ?? '')).toBe(true);
     }
+    // 选中态：某张抬升（y 更小）+ 余张压暗（opacity<1）——两步打牌视觉
+    const selNodes = collect(buildPlayHud(m, { logOpen: false, selectedKey: '0' }));
+    const sel = selNodes.find((n) => n.id === 'h-0');
+    const other = selNodes.find((n) => n.id === 'h-1');
+    expect((sel?.layout as { y: number }).y).toBeLessThan((other?.layout as { y: number }).y); // 选中张站起
+    expect((other?.layout as { opacity?: number }).opacity).toBeLessThan(1); // 余张压暗
   });
 
   it('四席位卡实时点数·当前玩家高亮·结算态弹 Modal', () => {

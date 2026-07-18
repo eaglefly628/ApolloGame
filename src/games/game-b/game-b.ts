@@ -17,13 +17,13 @@ import {
   startMatch, aiTurn, discard, declareTsumo, canTsumo, declareRiichi, nextRound, isPlayerTurn,
   type MatchState,
 } from './core/game-state.js';
-import { buildPlayHud, PLAY_TILE, ACT_TSUMO, ACT_RIICHI, NEXT_ROUND, TOGGLE_LOG, BACK_MENU } from './play-ui.js';
+import { buildPlayHud, PLAY_TILE, ACT_TSUMO, ACT_RIICHI, NEXT_ROUND, TOGGLE_LOG, BACK_MENU, COPY_LOG } from './play-ui.js';
 import { FIELD_W, FIELD_H, MENU_W, MENU_H, MENU_BG, SAKURA, NIGHT, TINT } from './theme.js';
 
 // 开局 seed（gdd §十二·SessionIn.seed 缺省时钟种子入参化·S3 固定值可复现）。
 const S3_SEED = 20260717;
-// AI 逐步节奏（ms·设置屏可调·让玩家看清每家摸打）。
-const AI_DELAY_BY: Record<AiSpeed, number> = { fast: 300, normal: 560, slow: 900 };
+// AI 逐步节奏（ms·设置屏可调·让玩家看清每家摸打·owner「太快跟不上」→放慢普通档）。
+const AI_DELAY_BY: Record<AiSpeed, number> = { fast: 480, normal: 780, slow: 1150 };
 
 // 牌桌和室夜宴底（宿主装饰层·真美术=S6 背景件）。
 const STAGE_BG = 'radial-gradient(ellipse at 50% 38%, #41283a 0%, #2a1e2b 62%, #201722 100%)';
@@ -84,10 +84,12 @@ export function mount(container: HTMLElement): () => void {
     const match = resume ?? startMatch(S3_SEED);
     const aiDelay = AI_DELAY_BY[settings.aiSpeed];
     let logOpen = settings.logDefault;
+    let selectedKey: string | null = null; // 两步打牌：选中的手牌位（null=未选）
+    let logCopied = false;                  // 日志复制反馈（短暂）
     let aiTimer: ReturnType<typeof setTimeout> | null = null;
     skel.overlayHost.style.pointerEvents = 'auto'; // 对局 HUD 全可点
 
-    const render = (): void => { ui.update(buildPlayHud(match, { logOpen }), SAKURA); };
+    const render = (): void => { ui.update(buildPlayHud(match, { logOpen, selectedKey, logCopied }), SAKURA); };
     const clearAi = (): void => { if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; } };
     // AI 席逐步推进（节奏可见）→ 到玩家/局终停。
     const scheduleAi = (): void => {
@@ -96,17 +98,33 @@ export function mount(container: HTMLElement): () => void {
         aiTimer = setTimeout(() => { aiTurn(match); render(); scheduleAi(); }, aiDelay);
       }
     };
+    // 手牌位 key（'0'..'12'/'d'）→ 牌码（两步打牌第二下映射·打出用真牌码）。
+    const keyToCode = (key: string): number | null => (key === 'd' ? match.cur.drawn : (match.cur.hands[0]![Number(key)] ?? null));
 
     const handlers: HandlerMap = {
-      [PLAY_TILE]: (arg?: string) => { if (isPlayerTurn(match) && arg != null) { discard(match, Number(arg)); render(); scheduleAi(); } },
-      [ACT_TSUMO]: () => { if (canTsumo(match)) { declareTsumo(match); render(); } },
-      [ACT_RIICHI]: () => { declareRiichi(match); render(); scheduleAi(); }, // 内含 canRiichi 门·宣言牌打出后推进
-      [NEXT_ROUND]: () => { if (!match.over) { nextRound(match); render(); scheduleAi(); } },
+      // 两步打牌（owner 需求）：第一下选中站起·同一张再点=打出·点别张=改选。
+      [PLAY_TILE]: (arg?: string) => {
+        if (!isPlayerTurn(match) || arg == null) return;
+        if (selectedKey === arg) {
+          const code = keyToCode(arg);
+          if (code != null) { discard(match, code); selectedKey = null; render(); scheduleAi(); }
+        } else { selectedKey = arg; render(); }
+      },
+      [ACT_TSUMO]: () => { if (canTsumo(match)) { declareTsumo(match); selectedKey = null; render(); } },
+      [ACT_RIICHI]: () => { declareRiichi(match); selectedKey = null; render(); scheduleAi(); }, // 内含 canRiichi 门·宣言牌打出后推进
+      [NEXT_ROUND]: () => { if (!match.over) { nextRound(match); selectedKey = null; render(); scheduleAi(); } },
       [TOGGLE_LOG]: () => { logOpen = !logOpen; render(); },
+      [COPY_LOG]: () => { // 复制完整日志到剪贴板（查 bug·贴给 owner）
+        try {
+          void navigator.clipboard?.writeText(match.log.dump());
+          logCopied = true; render();
+          setTimeout(() => { logCopied = false; render(); }, 1600);
+        } catch { /* 无剪贴板权限=静默（面板仍可肉眼读） */ }
+      },
       [BACK_MENU]: () => { savedMatch = match.over ? null : match; showMenu(); }, // 未终局暂存→菜单可续
     };
 
-    const ui = mountUI(skel.overlayHost, buildPlayHud(match, { logOpen }), handlers, SAKURA);
+    const ui = mountUI(skel.overlayHost, buildPlayHud(match, { logOpen, selectedKey, logCopied }), handlers, SAKURA);
     scheduleAi(); // 若当前为 AI 席（续局可能停在 AI 手）则自动推进
     render();
 
