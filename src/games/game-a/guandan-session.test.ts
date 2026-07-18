@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { matchPattern, type PatternMatch } from '@skills/tier3/index.js';
 import type { Resource } from '@engine/protocol/components.js';
 import {
-  GuandanSession, TURN_ORDER, teamOf, partnerOf, type SeatId, type TrickPlay,
+  GuandanSession, TURN_ORDER, teamOf, partnerOf, fmtCardCode, type SeatId, type TrickPlay,
 } from './guandan-session.js';
 import { codeRank, codeSuit, cardCode, guandanConfig, sortHand, RANK_BIG_JOKER, LEVEL_ACE, DRESS_TIERS } from './rules.js';
 
@@ -453,6 +453,31 @@ describe('Game A ·《掼蛋夜宴》S4 盘循环', () => {
   });
 
   // ── 出牌日志（owner 诊断·每手一条·family/tier 正确）──────────────────────────────
+  // ── 逢人配标记（红桃级牌=百搭·owner 2026-07-18 报「2-6-7-8-9 / QQQ+KK+2 为何合法」困惑根因）──
+  it('fmtCardCode(playLevel)：红桃级牌标 🃏·其余不标·缺 playLevel 向后兼容不标', () => {
+    // 打 2：♥2=逢人配 → 标；其余不标
+    expect(fmtCardCode(cardCode(1, 2), 2)).toContain('🃏'); // ♥2 本盘百搭
+    expect(fmtCardCode(cardCode(0, 2), 2)).not.toContain('🃏'); // ♠2 非红桃
+    expect(fmtCardCode(cardCode(1, 5), 2)).not.toContain('🃏'); // ♥5 非级牌
+    // 打 5：逢人配随级牌走到 ♥5
+    expect(fmtCardCode(cardCode(1, 5), 5)).toContain('🃏');
+    expect(fmtCardCode(cardCode(1, 2), 5)).not.toContain('🃏');
+    // 不传 playLevel=旧行为（日志外调用不误标）
+    expect(fmtCardCode(cardCode(1, 2))).not.toContain('🃏');
+  });
+
+  it('playLog.wilds：含逢人配的合法牌型记录用了几张百搭', () => {
+    const s = new GuandanSession({ seed: 5 });
+    s.turn = 'hero';
+    s.currentTrick = null;
+    // ♥2(逢人配·当 5) + ♠5 + ♥5 → 三同张 5（wildsUsed=1）
+    s.hands.hero = [cardCode(1, 2), cardCode(0, 5), cardCode(1, 5)];
+    s.playLog = [];
+    expect(s.act('hero', [cardCode(1, 2), cardCode(0, 5), cardCode(1, 5)])).toBe(true);
+    expect(s.playLog[0].family).toBe('triple');
+    expect(s.playLog[0].wilds).toBe(1); // 记录 1 张逢人配（宿主日志/牌桌 🃏 标数据源）
+  });
+
   it('playLog：每手出牌/过各记一条·family/tier 与判型一致·压过记录旧墩', () => {
     const s = new GuandanSession({ seed: 5 });
     s.turn = 'hero';

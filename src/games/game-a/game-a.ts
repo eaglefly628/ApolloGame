@@ -7,14 +7,19 @@
 // UI 全 LayoutNode（mountUI）·随机全在 session 侧种子 PRNG（宿主零随机·延迟计时不是随机）。
 import { mountHost } from '@engine/host/mount-host.js';
 import { mountUI } from '@ui/components/index.js';
-import type { MountHandle, HandlerMap } from '@ui/components/index.js';
+import type { MountHandle, HandlerMap, LayoutNode } from '@ui/components/index.js';
 import { GuandanSession, TURN_ORDER, teamOf, FAMILY_CN, fmtCardCode, type SeatId } from './guandan-session.js';
 import { buildMenu, buildTableSelect, buildPlay, buildResult, type SeatView, type PlayView, type ResultView } from './hud.js';
 import { SEATS, DRESS_TIERS, INITIAL_FUNDS, STAKES, AI_TIERS, LEVEL_START, codeSuit, codeRank, sortHand } from './rules.js';
 import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG, GAME_A_THEME } from './theme.js';
+import { mulberry32 } from '@atom-skills/index.js';
 
-const RUN_SEED = 20260717; // 骨架期固定 run 种子；生涯存档随 run 快照=后续接
-const AI_DELAY_MS = 700; // 拟人思考延迟（gdd §5·表现层·0.6~1.2s 档内取中）
+// run 种子：时间派生（owner 2026-07-18·每局不同牌）。sim 仍确定性=给定种子可复现；
+// 菜单「设置」显种子供报 bug（宿主选种子不违「宿主零随机」——sim 逻辑无裸随机·Date.now 非 Math.random）。
+// 拟人思考延迟=范围随机（owner 2026-07-18·700~2000ms 每步独立抖动）。表现层·不进 sim/hash；
+// 抖动取自宿主表现层 PRNG（种子派生·与 sim rng 隔离·非裸 Math.random·不扰动确定性回放）。
+const AI_DELAY_MIN = 700;
+const AI_DELAY_MAX = 2000;
 
 export function mount(container: HTMLElement): () => void {
   const skel = mountHost(container, { fieldW: FIELD_W, fieldH: FIELD_H, sceneBackground: MANOR_BG, wrapperBackground: WRAPPER_BG });
@@ -26,12 +31,14 @@ export function mount(container: HTMLElement): () => void {
   let selected: number[] = []; // 选中手牌**下标**（指向显示顺序·非牌码·避同码联动）
   let sortMode: 'rank' | 'family' = 'rank'; // 理牌显示排序（视图·不碰 sim）
   let aiTimer: ReturnType<typeof setTimeout> | null = null;
+  let aiRng: () => number = mulberry32(1); // 表现层拟人延迟抖动 PRNG（enterTable 按 run 种子重播·非 sim 随机·不进 hash）
   // 无 session 时的屏（menu 门面 / select 选桌）；选桌暂存所选难度底注。
   let screen: 'menu' | 'select' = 'menu';
   let selDifficulty: 'l1' | 'l2' | 'l3' | 'l4' = 'l2';
   let selStake = STAKES[0];
   let wallet = INITIAL_FUNDS; // 生涯钱包（跨桌持久·带出回写；存档=后续）
-  let runCount = 0; // 上桌计数（seed 递增·每局不同牌·确定性可复现）
+  let runCount = 0; // 上桌计数（同毫秒开局的种子微扰·避撞）
+  let lastSeed = 0; // 上一局 run 种子（菜单「设置」显示·供报 bug 复现）
   let showCounter = false; // 记牌器开合（玩家辅助·只统计明面已出牌·不开天眼·gdd §5）
   let menuOpen = false; // 游戏内菜单（☰·出牌日志/规则说明/设置）开合（避与 showMenu() 屏切换函数撞名）
   let menuTab: 'log' | 'rules' | 'settings' = 'log'; // 菜单当前页（宿主记·AI 重渲不丢页）
@@ -94,8 +101,9 @@ export function mount(container: HTMLElement): () => void {
         round: e.round,
         who: e.seatName,
         act: ACT_CN[e.action] ?? e.action,
-        cards: e.action === 'pass' ? '—' : e.cards.map(fmtCardCode).join(' '),
-        fam: e.family ? (FAMILY_CN[e.family] ?? e.family) : '—',
+        // 逢人配（红桃级牌🃏）标出·让玩家看懂含百搭的合法牌型（owner 2026-07-18）
+        cards: e.action === 'pass' ? '—' : e.cards.map((c) => fmtCardCode(c, s.playLevel)).join(' '),
+        fam: e.family ? `${FAMILY_CN[e.family] ?? e.family}${e.wilds > 0 ? `·${e.wilds}🃏` : ''}` : '—',
       }));
   }
 
@@ -135,6 +143,7 @@ export function mount(container: HTMLElement): () => void {
             holder: s.currentTrick.seat, // 当前墩持有者（暂大·谁出的牌谁大）
             holderName: seatSpec(s.currentTrick.seat).name,
             holderTeam: teamOf(s.currentTrick.seat),
+            wilds: s.currentTrick.match.wildsUsed, // 本墩用的逢人配张数（含百搭合法牌型明示）
           }
         : null,
       plays: Object.fromEntries(
@@ -150,6 +159,7 @@ export function mount(container: HTMLElement): () => void {
       menuTab,
       logRows: menuOpen ? logRows(s) : [],
       tierName: AI_TIERS.find((t) => t.id === s.tier)?.name ?? s.tier,
+      seed: lastSeed,
     };
   }
 
@@ -168,26 +178,44 @@ export function mount(container: HTMLElement): () => void {
   }
 
   // ── 渲染路由（无 session=menu/select 门面·有 session=play/result）─────────────────
+  // 跨屏切换必须重挂：UI reconciler 从 host 里按**新根 id** 找元素补丁，根 id 变了（牌桌 a-play ⇄ 结算
+  // a-result ⇄ 菜单 a-menu ⇄ 选桌 a-select）时找不到→静默 no-op、屏卡在旧树（owner 报「结算不出、菜单点不开」
+  // 死机根因·已报 PUI A-012）。故 paint()：同根 id=最小 diff（保焦点/reconcile），根 id 变=teardown 重挂。
+  let mountedRootId = '';
+  function paint(node: LayoutNode): void {
+    if (ui && mountedRootId === node.id) {
+      ui.update(node, GAME_A_THEME);
+    } else {
+      ui?.();
+      ui = mountUI(overlayHost, node, handlers, GAME_A_THEME);
+    }
+    mountedRootId = node.id;
+  }
   function render(): void {
     if (!session) {
-      ui?.update(screen === 'select' ? buildTableSelect({ difficulty: selDifficulty, stake: selStake, wallet }) : buildMenu(menuView()), GAME_A_THEME);
+      paint(screen === 'select' ? buildTableSelect({ difficulty: selDifficulty, stake: selStake, wallet }) : buildMenu(menuView()));
       return;
     }
-    if (session.phase === 'playing') ui?.update(buildPlay(playView(session)), GAME_A_THEME);
-    else ui?.update(buildResult(resultView(session)), GAME_A_THEME);
+    paint(session.phase === 'playing' ? buildPlay(playView(session)) : buildResult(resultView(session)));
   }
 
   // ── AI 步进（拟人延迟·递归排到 hero 轮或盘终）──────────────────────────────────
   function scheduleAi(): void {
     clearAiTimer();
     if (!session || session.phase !== 'playing' || session.turn === 'hero') return;
+    const delay = AI_DELAY_MIN + Math.floor(aiRng() * (AI_DELAY_MAX - AI_DELAY_MIN + 1)); // 每步独立 700~2000ms（拟人）
     aiTimer = setTimeout(() => {
       aiTimer = null;
       if (!session || session.phase !== 'playing' || session.turn === 'hero') return;
-      session.aiStep();
-      render();
+      try {
+        session.aiStep();
+        render();
+      } catch (e) {
+        // 兜底：AI 循环异常绝不静默冻结游戏（owner 多次报死机）——记 console，链继续（下一步再推进）。
+        if (typeof console !== 'undefined') console.error('[game-a] AI 步异常', e);
+      }
       scheduleAi();
-    }, AI_DELAY_MS);
+    }, delay);
   }
 
   // ── 生命周期 ─────────────────────────────────────────────────────────────────
@@ -201,24 +229,23 @@ export function mount(container: HTMLElement): () => void {
   function showMenu(): void {
     stopSession();
     screen = 'menu';
-    ui?.();
-    ui = mountUI(overlayHost, buildMenu(menuView()), handlers, GAME_A_THEME);
+    render(); // paint(buildMenu)·跨屏重挂由 paint 统一处理
   }
 
   function showTableSelect(): void {
     stopSession();
     screen = 'select';
-    ui?.();
-    ui = mountUI(overlayHost, buildTableSelect({ difficulty: selDifficulty, stake: selStake, wallet }), handlers, GAME_A_THEME);
+    render(); // paint(buildTableSelect)
   }
 
   function enterTable(): void {
     stopSession();
-    session = new GuandanSession({ seed: RUN_SEED + runCount++, stake: selStake, tier: selDifficulty });
+    lastSeed = ((Date.now() >>> 0) + runCount++) >>> 0; // 时间派生·每局不同牌（宿主选种·非 sim 随机）
+    aiRng = mulberry32((lastSeed ^ 0x9e3779b9) >>> 0); // 拟人延迟专用 PRNG（与 sim 种子隔离·扰动它不影响牌局回放）
+    session = new GuandanSession({ seed: lastSeed, stake: selStake, tier: selDifficulty });
     selected = [];
     sortMode = 'rank';
-    ui?.();
-    ui = mountUI(overlayHost, buildPlay(playView(session)), handlers, GAME_A_THEME);
+    render(); // paint(buildPlay)
     scheduleAi();
   }
 

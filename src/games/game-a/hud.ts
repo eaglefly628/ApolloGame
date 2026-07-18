@@ -43,7 +43,7 @@ export interface MenuView {
 }
 export function buildMenu(v: MenuView): LayoutNode {
   const overlay = v.showMenu
-    ? buildGameMenu({ menuTab: v.menuTab, logRows: [], tierName: '—', levelPlay: v.level, stake: 0, wallet: v.wallet, sortMode: 'rank' })
+    ? buildGameMenu({ menuTab: v.menuTab, logRows: [], tierName: '—', levelPlay: v.level, stake: 0, wallet: v.wallet, sortMode: 'rank', seed: 0 })
     : null;
   return {
     type: 'Screen',
@@ -324,8 +324,8 @@ export interface PlayView {
   hand: number[]; // hero 手牌牌码（显示顺序·按 sortMode 排）
   selected: number[]; // 已选手牌**下标**（指向显示顺序·非牌码——两副牌同码会联动误选，故按 idx 标识）
   sortMode: 'rank' | 'family'; // 理牌当前档（Segmented 高亮用）
-  // 当前墩（含持有者=暂大者·「谁出的牌谁大」明示）。
-  trick: { name: string; family: string; cards: number[]; holder: SeatId; holderName: string; holderTeam: 0 | 1 } | null;
+  // 当前墩（含持有者=暂大者·「谁出的牌谁大」明示；wilds=本墩用的逢人配张数）。
+  trick: { name: string; family: string; cards: number[]; holder: SeatId; holderName: string; holderTeam: 0 | 1; wilds: number } | null;
   // 本墩各座最近一手（座前小牌桌·像真扑克·出=牌码/过=pass）。
   plays: Partial<Record<SeatId, { cards: number[]; pass: boolean }>>;
   tributeText: string | null; // 本盘进贡/还贡/抗贡一句话（首盘=null·玩家知情）
@@ -339,6 +339,7 @@ export interface PlayView {
   menuTab: 'log' | 'rules' | 'settings';
   logRows: LogRow[];
   tierName: string;
+  seed: number; // 本局 run 种子（设置页显示·供报 bug 复现）
 }
 
 // 中央墩牌（蓝本经典白扑克面·light·红黑自动判）。
@@ -431,6 +432,10 @@ export function buildPlay(v: PlayView): LayoutNode {
           layout: { direction: 'row', align: 'center', justify: 'center', gap: 6 },
           children: [
             { type: 'Tag', id: 'a-p-trickname', props: { label: v.trick.name, tone: 'accent', size: 'md' } },
+            // 逢人配提示：本墩含 N 张百搭时明示（让玩家看懂 2🃏-6-7-8-9 这类含百搭的合法牌型·owner 2026-07-18）。
+            ...(v.trick.wilds > 0
+              ? [{ type: 'Tag' as const, id: 'a-p-trickwild', props: { label: `含${v.trick.wilds}🃏逢人配`, tone: 'warn' as const, size: 'sm' as const } }]
+              : []),
             // 暂大牌主：本方(队友/你)=绿(ok·安全)·对手=黄(warn·需压)——一眼看清谁大。
             { type: 'Badge', id: 'a-p-holder', props: { text: `🏆 ${holderLabel} 暂大`, tone: v.trick.holderTeam === 0 ? 'ok' : 'warn' } },
           ],
@@ -585,7 +590,7 @@ export function buildPlay(v: PlayView): LayoutNode {
     ],
   };
   const gameMenu: LayoutNode | null = v.showMenu
-    ? buildGameMenu({ menuTab: v.menuTab, logRows: v.logRows, tierName: v.tierName, levelPlay: v.levelPlay, stake: v.stake, wallet: v.wallet, sortMode: v.sortMode })
+    ? buildGameMenu({ menuTab: v.menuTab, logRows: v.logRows, tierName: v.tierName, levelPlay: v.levelPlay, stake: v.stake, wallet: v.wallet, sortMode: v.sortMode, seed: v.seed })
     : null;
 
   // 记牌器（居中模态浮层·明面已出牌计数·点「▤ 记牌器」开·点遮罩/关闭收·不开天眼）。
@@ -651,6 +656,7 @@ export interface GameMenuView {
   stake: number;
   wallet: number;
   sortMode: 'rank' | 'family';
+  seed: number; // 本局 run 种子（设置页显示·供报 bug 复现）
 }
 // 牌型闭集 10 型（gdd §2.2·静态说明数据·非规则逻辑）。
 const PATTERN_GUIDE: { name: string; eg: string; note: string }[] = [
@@ -669,7 +675,7 @@ const RULES_LINES: { t: string; b: boolean }[] = [
   { t: '目标：四人两副牌（108 张），2v2 对家；本队两人先出光手牌即胜，爬级打过 A 通关。', b: true },
   { t: '出牌：领出任意合法牌型 → 下家出同型更大的、或用炸弹跨型压 → 压不过就「过」；一圈都过则收墩，收墩者重新领出。', b: false },
   { t: '压制序：四大天王 ＞ 大炸弹 ＞ 同花顺 ＞ 小炸弹 ＞ 普通牌型（同型比大小）。', b: false },
-  { t: '级牌 / 逢人配：本盘「级牌」抬到 A 之上、小王之下；红桃级牌 = 逢人配（百搭，可当除王外任意牌）。', b: false },
+  { t: '级牌 / 逢人配：本盘「级牌」抬到 A 之上、小王之下；红桃级牌 = 逢人配（百搭，可当除王外任意牌）。牌桌/日志里标 🃏 的就是逢人配——所以「2🃏-6-7-8-9」是把 ♥2 当 5 的顺子、「QQQ+KK+2🃏」是 ♥2 当 K 的钢板，都合法。', b: false },
   { t: '进贡 / 还贡：次盘末游向头游进最大牌，头游还一张 ≤10；应贡方手握双大王可「抗贡」免进。', b: false },
   { t: '升级：头游队按 双上 +3 / 一三 +2 / 一四 +1 升级；输队褪一件服饰，到底线转金钱罚。', b: false },
 ];
@@ -739,6 +745,7 @@ export function buildGameMenu(v: GameMenuView): LayoutNode {
         ],
       },
       { type: 'Label', id: 'a-menu-set-sort', props: { text: `理牌方式：${v.sortMode === 'rank' ? '按点数' : '按牌型'}（牌桌右下角可切换）`, size: 'xs', color: 'sub' } },
+      { type: 'Label', id: 'a-menu-set-seed', props: { text: `本局种子：${v.seed}（报 bug 时贴上·同种子可复现这副牌与走向）`, size: 'xs', color: 'sub' } },
       { type: 'Label', id: 'a-menu-set-more', props: { text: '音效 / 动画速度 / 记牌器等更多设置陆续加入。', size: 'xs', color: 'dim' } },
     ],
   };

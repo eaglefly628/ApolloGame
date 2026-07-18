@@ -2,6 +2,12 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
+### A-012 · [2026-07-18] · PE-A · UI reconciler 换「根节点 id」时静默 no-op → 跨屏切换死机 · status: 📝 待转引擎池报 PUI（游戏层已重挂兜底·非阻断）· 类型: UI 基座 bug（PUI 域）
+**根因（引擎 `src/ui/components/server.ts reconcileNode`）**：`update(newRoot)` 把新树最小化打补丁到 host——`reconcileNode` 起手 `const el = uiFindById(scope, newN.id); if (!el) return;`。当**新根 id ≠ 旧根 id**（如牌桌 `a-play` → 结算 `a-result`）时，host 里只有旧根元素、找不到新 id → **直接 return，屏一动不动**；且 `curRoot=newRoot` 已推进 → 之后每次 `update` 都拿新 id 找不到、永久 no-op（含菜单开合的 render）。
+**owner 实证（2026-07-18·多次报「死机」）**：某盘 AI 走光结算（如队友双下），`render()` 成功跑 `ui.update(buildResult(...))`（`render完 phase=settled` 已打日志）却**不切结算屏**，牌桌卡在「🏆X 暂大 Y 应对中…」旧帧；CSS 动画（合成线程）照跑=牌在抖，但点☰菜单也 no-op（同一 render 路径）→ 看着像死循环，实为 reconciler 换根静默失败。浏览器插桩复现：`render完 phase=settled` 后屏仍 `#a-felt` 在场、`#a-result` 不出。
+**建议引擎修（PUI 裁）**：`update()` 在 `curRoot.id !== newRoot.id` 时走**整根重挂**（`uiFindById(host, curRoot.id)?.outerHTML = renderNode(newRoot)`，同「换皮」分支已有的路径），而非交给按新 id 寻元素的 `reconcileNode`（它天然处理不了根自身的 id 变化——子节点换 id 由父的 `uiChildKeysSame` 兜住，根无父可兜）。
+**游戏层已兜底（本提交·`game-a.ts paint()`）**：宿主自记 `mountedRootId`，跨屏（根 id 变）teardown+`mountUI` 重挂、同屏才 `update` 走 reconcile。回归护栏 `host-transition.test.ts`（happy-dom·驱动整盘 AI 至结算·断言 a-play→a-result 转屏）。引擎修好后此兜底可退（保留亦无害）。
+
 ### A-011 · [2026-07-18] · PE-A · 弹簧箭头缺 scale 弹跳动效 + Float 静态 audit 摆不准 · status: 📝 待转引擎池报 PUI（非阻断·已用近似件）· 类型: UI 基座缺口（PUI 域）
 牌桌重设计（owner 2026-07-18）要「弹簧箭头指谁大」——箭头像弹簧一样**放缩弹跳**。UI 基座动效闭集只有
 `float(上下平移弹)/pop(一次性缩放)/pulse(透明度)/spin/glow`，**无常驻 scale 弹簧**。现用 `Float`(锚定暂大者座前

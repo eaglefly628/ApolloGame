@@ -16,6 +16,7 @@ mountUI(
     stake: 100,
     wallet: 10000,
     sortMode: 'rank',
+    seed: 20260718,
   }),
   {},
   GAME_A_THEME,

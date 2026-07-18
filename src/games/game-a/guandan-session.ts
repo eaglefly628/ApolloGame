@@ -42,15 +42,19 @@ export function setPlayDebug(on: boolean): void {
 }
 const SUIT_GLYPH = ['♠', '♥', '♦', '♣'];
 const RANK_GLYPH: Record<number, string> = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A', 15: '小王', 16: '大王' };
-/** 牌码 → 可读（♠9 / 大王）。 */
-export function fmtCardCode(code: number): string {
+/**
+ * 牌码 → 可读（♠9 / 大王）。给 playLevel 时，红桃级牌=逢人配（百搭）标 🃏——
+ * 让玩家看懂「2-6-7-8-9 顺子」「QQQ+KK+♥2 钢板」这类含百搭的合法牌型（owner 2026-07-18 困惑根因）。
+ */
+export function fmtCardCode(code: number, playLevel?: number): string {
   const r = codeRank(code);
   if (r >= 15) return RANK_GLYPH[r];
-  return `${SUIT_GLYPH[codeSuit(code)]}${RANK_GLYPH[r] ?? r}`;
+  const base = `${SUIT_GLYPH[codeSuit(code)]}${RANK_GLYPH[r] ?? r}`;
+  return playLevel !== undefined && codeSuit(code) === SUIT_HEART && r === playLevel ? `${base}🃏` : base;
 }
-/** 一手牌 → 可读串（供日志/调试）。 */
-export function fmtHand(codes: readonly number[]): string {
-  return codes.map(fmtCardCode).join(' ');
+/** 一手牌 → 可读串（供日志/调试）；playLevel 在场则标逢人配。 */
+export function fmtHand(codes: readonly number[], playLevel?: number): string {
+  return codes.map((c) => fmtCardCode(c, playLevel)).join(' ');
 }
 
 // 出牌日志条目（宿主可读·也 console 输出）。
@@ -62,6 +66,7 @@ export interface PlayLogEntry {
   cards: number[];
   family: string | null; // 判型（pass=null）
   tier: number | null;
+  wilds: number; // 本手用的逢人配（红桃级牌百搭）张数——让玩家看懂含百搭的合法牌型
   beatWhat: string | null; // 压过的当前墩描述（领出/pass=null）
 }
 
@@ -139,7 +144,7 @@ export class GuandanSession {
   private logPlay(seat: SeatId, action: PlayLogEntry['action'], codes: number[], match: PatternMatch | null): void {
     const beatWhat =
       action === 'follow' && this.currentTrick
-        ? `${FAMILY_CN[this.currentTrick.match.family] ?? this.currentTrick.match.family} ${fmtHand(this.currentTrick.cards)}`
+        ? `${FAMILY_CN[this.currentTrick.match.family] ?? this.currentTrick.match.family} ${fmtHand(this.currentTrick.cards, this.playLevel)}`
         : null;
     const entry: PlayLogEntry = {
       round: this.round,
@@ -149,6 +154,7 @@ export class GuandanSession {
       cards: [...codes],
       family: match?.family ?? null,
       tier: match?.tier ?? null,
+      wilds: match?.wildsUsed ?? 0,
       beatWhat,
     };
     this.playLog.push(entry);
@@ -156,9 +162,10 @@ export class GuandanSession {
       if (action === 'pass') {
         console.log(`[掼蛋·第${entry.round}盘] ${entry.seatName} 过`);
       } else {
-        const fam = match ? `${FAMILY_CN[match.family] ?? match.family}(tier${match.tier})` : '?';
+        const wildTag = match && match.wildsUsed > 0 ? `·含${match.wildsUsed}张逢人配` : '';
+        const fam = match ? `${FAMILY_CN[match.family] ?? match.family}(tier${match.tier})${wildTag}` : '?';
         const tail = beatWhat ? ` ⟶ 压过 ${beatWhat}` : '（领出）';
-        console.log(`[掼蛋·第${entry.round}盘] ${entry.seatName} ${action === 'lead' ? '领出' : '跟'} ${fmtHand(codes)} = ${fam}${tail}`);
+        console.log(`[掼蛋·第${entry.round}盘] ${entry.seatName} ${action === 'lead' ? '领出' : '跟'} ${fmtHand(codes, this.playLevel)} = ${fam}${tail}`);
       }
     }
   }
