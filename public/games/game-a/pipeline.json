@@ -28,8 +28,8 @@
     "S4": {
       "exit": 0,
       "summary": "walkthrough 绿（ Test Files  3 passed (3) ·       Tests  41 passed (41)）· 验收剧本 4 场景绿",
-      "at": "2026-07-18T06:35:05.269Z",
-      "gameHash": "fee34064c73e184f"
+      "at": "2026-07-18T07:32:58.184Z",
+      "gameHash": "ad928647d8b22262"
     },
     "S5": {
       "exit": 0,
@@ -189,6 +189,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T06:35:05.269Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "GD-A 下一轮：PE 修 A-009 后回收 result_level_up 断言·前置复查因 game-a 变更过期",
+      "at": "2026-07-18T07:32:53.899Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T07:32:58.184Z"
     }
   ],
   "reviews": {
@@ -259,6 +271,11 @@
       "stage": "S4",
       "reason": "rebase 后重跑：incoming=game-c adapter refactor(不碰 game-a/共享)·game-a S2/S3 复查仅因游戏文件变更过期·acceptance 4 场景绿",
       "at": "2026-07-18T06:35:01.293Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "GD-A 下一轮：PE 修 A-009 后回收 result_level_up 断言·前置复查因 game-a 变更过期",
+      "at": "2026-07-18T07:32:53.899Z"
     }
   ]
 }

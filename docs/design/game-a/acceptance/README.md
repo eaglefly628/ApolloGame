@@ -27,10 +27,9 @@
   `flag` last_act_ok·has_trick·turn_is_hero·settled·run_won/lost·resisted；`sv` phase·turn·combo·a_result·winner·tribute0_from/to。
 - `last_act_ok`=上一条 play/pass 是否被引擎接收——配「机读态一分不动」表达「非法被拒」（schema 无 expect_error 算子）。
 
-## 已知偏差（交 PE / Lead·非 GD 域）
+## 偏差归档（已闭环）
 
-- **`RoundResult.levelUp` 派生字段仅双上算对**：实测一三/一四胜时该字段恒报 `0`（应为 +2 / +1），
-  仅双上=+3 正确（`guandan-session.ts` 的 `levelUp` 表达式对非双上退化成 `x - x = 0`）。
-  级牌**实际推进正确**（`levels`/`level_ours` 权威资源无误），仅这个展示用派生计数错。
-  故剧本 ① 以 `level_ours` 2→3 断言「一四升 +1」，**不押** `result_level_up`；③ 的双上 +3 仍押 `result_level_up`（该分支正确）。
-  → 建议 PE 修 `levelUp` 计算（`levelAfter[winnersTeam] - levelBefore`）；修好后可在 ① 加回 `result_level_up eq 1`。
+- **`RoundResult.levelUp` 派生字段仅双上算对**（A-009·**已修**·PE bd53fc2f）：
+  曾实测一三/一四胜时该字段恒报 `0`（表达式退化成 `x - x`），仅双上=+3 正确。
+  PE 改为捕获 `levelBefore`、`levelUp = levels[winnersTeam] - levelBefore`（双上+3/一三+2/一四+1/打A局=0/封顶取实增 全对）。
+  → GD 已回收断言：剧本 ① 加回 `result_level_up eq 1`（一四升 +1），与 `level_ours` 2→3 交叉印证；③ 的双上 +3 仍押。

@@ -41,9 +41,8 @@
         { "sv": "combo", "eq": "first-fourth" },
         { "res": "result_total_mult", "eq": 1 }, // 一四 baseMult=1（无抗贡/无天王炸彩头）
         { "res": "result_pay", "eq": 100 },      // 底注100 × 倍率1
-        // 「一四升 +1」以权威级牌资源为准（level_ours 2→3）——不押 RoundResult.levelUp 派生字段：
-        //   实测该字段仅在双上时算对(=3)，一三/一四恒报 0（PE t3-flow 派生 bug·记 README「已知偏差」交 PE）。
-        { "res": "level_ours", "eq": 3 },        // 我方 2→3（=升 +1 的权威证据）
+        { "res": "result_level_up", "eq": 1 },   // 一四升 +1（PE 修 A-009 派生 bug 后回收断言·bd53fc2f）
+        { "res": "level_ours", "eq": 3 },        // 我方 2→3（与 result_level_up 交叉印证）
         { "res": "level_theirs", "eq": 2 },      // 对方停 2
         { "res": "hand_hero", "eq": 0 },         // 头游手牌出光
       ],
