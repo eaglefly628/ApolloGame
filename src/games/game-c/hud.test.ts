@@ -104,12 +104,33 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     expect(validateLayoutNode(buildTable(baseView({ isHeroTurn: false })))).toEqual([]);
   });
 
-  it('摊牌屏（赢家+成牌5张+分池）零 issue', () => {
+  it('摊牌屏（6 家全摊·公共牌板 + 各家最优五张 + 确认键钉底）零 issue·防 freeze', () => {
+    // 旧版 6 人时确认键掉出 720 视口按不到=freeze；重设计=定高卡 + 组合滚动 + 确认键钉底常驻。
     const showdown = {
-      rows: [
-        { name: '主角', type: '葫芦', best: [H(0, 14), H(1, 14), H(2, 14), H(3, 13), H(0, 13)], hole: [H(0, 14), H(1, 14)], won: 300, isWinner: true },
-        { name: '大姨太', type: '两对', best: [H(0, 9), H(1, 9), H(2, 5), H(3, 5), H(0, 2)], hole: [H(0, 9), H(1, 9)], won: 0, isWinner: false },
-      ],
+      rows: [0, 1, 2, 3, 4, 5].map((i) => ({
+        name: i === 0 ? '主角' : `姨太${i}`, type: i === 0 ? '葫芦' : '高牌',
+        best: [H(0, 14), H(1, 14), H(2, 14), H(3, 13), H(0, 13)], hole: [H(0, 14), H(1, 14)],
+        won: i === 0 ? 1800 : 0, isWinner: i === 0,
+      })),
+      potTotal: 1800,
+    };
+    const river = [H(0, 14), H(1, 13), H(2, 5), H(3, 9), H(0, 2)];
+    const table = buildTable(baseView({ phase: 'showdown', board: river, showdown }));
+    expect(validateLayoutNode(table)).toEqual([]);
+    // 确认键必须在树里（钉底 → 6 人也点得到，不再 freeze）。
+    const ids = new Set<string>();
+    const walk = (n: { id?: string; children?: unknown[] }): void => {
+      if (n.id) ids.add(n.id);
+      for (const c of (n.children ?? []) as { id?: string; children?: unknown[] }[]) walk(c);
+    };
+    walk(table);
+    expect(ids.has('c-sd-next')).toBe(true);
+    expect(ids.has('c-sd-board')).toBe(true); // 公共牌板在
+  });
+
+  it('摊牌屏·盖牌收池（best 空·无摊）零 issue', () => {
+    const showdown = {
+      rows: [{ name: '主角', type: '收池', best: [] as Card[], hole: [] as Card[], won: 300, isWinner: true }],
       potTotal: 300,
     };
     expect(validateLayoutNode(buildTable(baseView({ phase: 'showdown', showdown })))).toEqual([]);

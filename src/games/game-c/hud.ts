@@ -43,7 +43,7 @@ const CARD_FILL = 'linear-gradient(160deg,rgba(30,20,34,0.94),rgba(14,9,18,0.96)
 const CARD_FILL_HERO = 'linear-gradient(160deg,rgba(40,26,44,0.96),rgba(16,10,22,0.97))';
 
 // ── 公共牌 / 底牌（白牌 face:light·红黑对比·§5.3 Decal3D 牌面正装）──────────────
-function cardNode(id: string, c: Card | null, size: 'md' | 'lg', rotate?: number): LayoutNode {
+function cardNode(id: string, c: Card | null, size: 'sm' | 'md' | 'lg', rotate?: number): LayoutNode {
   const layout = rotate ? { rotate } : {};
   if (!c) return { type: 'PlayingCard', id, props: { rank: '', suit: '♠', faceUp: false, face: 'dark', size }, layout };
   const f = cardFace(c);
@@ -446,30 +446,58 @@ function buildWaiting(): LayoutNode {
   };
 }
 
-// ── 摊牌横幅（开牌展示·标准德州：last aggressor 先·依次亮各家底牌+牌型·赢家高亮·§5.4 D 画板）─────
-function buildShowdown(sd: ShowdownView): LayoutNode {
-  const rows: LayoutNode[] = sd.rows.map((r, i) => ({
-    type: 'Panel', id: `c-sd-row-${i}`, props: { bg: { custom: r.isWinner ? 'rgba(224,180,88,0.14)' : 'rgba(30,22,26,0.5)' }, edge: r.isWinner ? 'gold' : undefined },
-    layout: { direction: 'row', align: 'center', justify: 'between', gap: 10, padding: 8, radius: 10, opacity: r.isWinner ? 1 : 0.82 },
+// ── 摊牌屏（owner 2026-07-18 重设计·防 5~6 人 freeze）：定高卡=顶公共牌 + 中滚动各家最优五张组合 + 底确认键常驻 ─
+//   旧版列高随人数长、y 固定 → 6 人时确认键掉出 720 视口按不到=freeze。今：卡定高、组合列 scroll:flex1、确认键钉底永远可点。
+function buildShowdown(sd: ShowdownView, board: Card[]): LayoutNode {
+  // 顶：公共牌板（共享底牌·5 张 md·金边突出）
+  const boardRow: LayoutNode = {
+    type: 'Panel', id: 'c-sd-board', props: { bg: { custom: 'rgba(224,180,88,0.08)' }, edge: 'gold' },
+    layout: { direction: 'column', align: 'center', gap: 6, padding: 10, radius: 12 },
     children: [
+      { type: 'Label', id: 'c-sd-board-l', props: { text: '公共牌 · COMMUNITY', font: 'mono', size: 'xs', color: 'warn' } },
       {
-        type: 'Panel', id: `c-sd-l-${i}`, props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 10 },
-        children: [
-          { type: 'Label', id: `c-sd-crown-${i}`, props: { text: r.isWinner ? '🏆' : `#${i + 1}`, size: 'sm', color: r.isWinner ? 'gold' : 'dim' } },
-          ...(r.hole.length ? r.hole.map((c, k) => cardNode(`c-sd-hole-${i}-${k}`, c, 'md')) : [{ type: 'Label', id: `c-sd-muck-${i}`, props: { text: '盖牌', size: 'sm', color: 'dim' } } as LayoutNode]),
-          { type: 'Label', id: `c-sd-nm-${i}`, props: { text: `${r.name} · ${r.type}`, font: 'serif', size: 'md', bold: r.isWinner, color: r.isWinner ? 'gold' : 'text' } },
-        ],
+        type: 'Panel', id: 'c-sd-board-row', props: { bare: true },
+        layout: { direction: 'row', gap: 7, justify: 'center' },
+        children: Array.from({ length: 5 }, (_, i) => cardNode(`c-sd-board-${i}`, board[i] ?? null, 'md')),
       },
-      { type: 'Label', id: `c-sd-won-${i}`, props: { text: r.won > 0 ? `+${fmt(r.won)}` : '—', font: 'impact', size: r.isWinner ? 22 : 16, color: r.won > 0 ? 'gold' : 'dim' } },
     ],
-  }));
+  };
+  // 中：各家最优五张组合（依次排开·赢家金边高亮·可滚动·左名右分池）
+  const rows: LayoutNode[] = sd.rows.map((r, i) => {
+    const combo: LayoutNode[] = r.best.length
+      ? r.best.map((c, k) => cardNode(`c-sd-best-${i}-${k}`, c, 'sm'))
+      : [{ type: 'Label', id: `c-sd-muck-${i}`, props: { text: '盖牌收池 · 无摊', size: 'sm', color: 'dim' } } as LayoutNode];
+    return {
+      type: 'Panel', id: `c-sd-row-${i}`, props: { bg: { custom: r.isWinner ? 'rgba(224,180,88,0.14)' : 'rgba(30,22,26,0.5)' }, edge: r.isWinner ? 'gold' : undefined },
+      layout: { direction: 'row', align: 'center', gap: 10, padding: 9, radius: 10, opacity: r.isWinner ? 1 : 0.85 },
+      children: [
+        {
+          type: 'Panel', id: `c-sd-nm-col-${i}`, props: { bare: true }, layout: { direction: 'column', gap: 2, width: 132 },
+          children: [
+            {
+              type: 'Panel', id: `c-sd-nm-row-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 6, align: 'center' },
+              children: [
+                { type: 'Label', id: `c-sd-crown-${i}`, props: { text: r.isWinner ? '🏆' : `#${i + 1}`, size: 'sm', color: r.isWinner ? 'gold' : 'dim' } },
+                { type: 'Label', id: `c-sd-nm-${i}`, props: { text: r.name, font: 'serif', size: 'md', bold: r.isWinner, color: r.isWinner ? 'gold' : 'text' } },
+              ],
+            },
+            { type: 'Label', id: `c-sd-ty-${i}`, props: { text: r.type, size: 'xs', color: r.isWinner ? 'gold' : 'sub' } },
+          ],
+        },
+        { type: 'Panel', id: `c-sd-combo-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 4, justify: 'center', flex: 1 }, children: combo },
+        { type: 'Label', id: `c-sd-won-${i}`, props: { text: r.won > 0 ? `+${fmt(r.won)}` : '—', font: 'impact', size: r.isWinner ? 22 : 16, color: r.won > 0 ? 'gold' : 'dim' } },
+      ],
+    };
+  });
   const card: LayoutNode = {
     type: 'Panel', id: 'c-sd-card', props: { bg: { custom: 'linear-gradient(160deg,rgba(34,22,38,0.98),rgba(14,9,18,0.99))' }, edge: 'gold', accent: true },
-    layout: { x: Math.round(FIELD_W / 2 - 340), y: 120, width: 680, direction: 'column', align: 'stretch', gap: 10, padding: 22, radius: 16 },
+    layout: { x: Math.round(FIELD_W / 2 - 340), y: 40, width: 680, height: 640, direction: 'column', align: 'stretch', gap: 12, padding: 22, radius: 16 },
     children: [
-      { type: 'Label', id: 'c-sd-title', props: { text: `摊牌 · 底池 ${fmt(sd.potTotal)}`, font: 'impact', size: 24, color: 'gold', glow: true }, layout: { x: 0, y: 0, width: 636 } },
-      ...rows,
-      { type: 'Button', id: 'c-sd-next', props: { label: '继续下一手 ▶', kind: 'hero', action: 'continue_showdown' }, layout: { width: 280 } },
+      { type: 'Label', id: 'c-sd-title', props: { text: `摊牌 · 底池 ${fmt(sd.potTotal)}`, font: 'impact', size: 26, color: 'gold', glow: true } },
+      boardRow,
+      { type: 'Divider', id: 'c-sd-div', props: {} },
+      { type: 'Panel', id: 'c-sd-rows', props: { bare: true, scroll: true }, layout: { direction: 'column', gap: 8, flex: 1 }, children: rows },
+      { type: 'Button', id: 'c-sd-next', props: { label: '确认 · 继续下一手 ▶', kind: 'hero', action: 'continue_showdown' }, layout: { width: 300 } },
     ],
   };
   return { type: 'Panel', id: 'c-sd-scrim', props: { bg: { custom: 'rgba(4,2,8,0.72)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children: [card] };
@@ -528,7 +556,7 @@ export function buildTable(v: TableView): LayoutNode {
   if (v.phase === 'betting') children.push(v.isHeroTurn ? buildActionBar(v) : buildWaiting());
   if (v.showLog) children.push(buildLogPanel(v.log));
   if (v.openWardrobe !== null && v.wardrobe) children.push(buildWardrobe(v.wardrobe));
-  if (v.phase === 'showdown' && v.showdown) children.push(buildShowdown(v.showdown));
+  if (v.phase === 'showdown' && v.showdown) children.push(buildShowdown(v.showdown, v.board));
   if (v.phase === 'gameover' && v.finale) children.push(buildFinale(v.finale));
 
   // Screen bg transparent → 露出 scene 层夜宴厅暗背景（ROOM_BG）；2D 大牌桌=本层 LayoutNode c-felt-wrap。
