@@ -14,6 +14,8 @@ import {
   declareAnkan,
   canKakan,
   declareKakan,
+  declareTsumo,
+  canTsumo,
   type MatchState,
 } from './game-state.js';
 
@@ -287,6 +289,41 @@ describe('鸣牌 P3b · 杠（暗杠/大明杠/加杠 + 岭上/新宝牌 + 抢�
       if (sawKan) break;
     }
     expect(sawKan).toBe(true); // 至少一局有杠
+  });
+});
+
+describe('P6a · 真役符接线（门清闭手走 scoreWin 引擎）', () => {
+  it('闭手自摸：结算走真引擎（yakuLabel/scoreLabel 落位·非占位·守恒）', () => {
+    const m = controlled();
+    // 门清全顺 + 東東雀头（庄=座0·東=连风）·摸 東 单骑自摸 → 至少「門前清自摸和」。
+    m.cur.hands[0] = [M(2), M(3), M(4), P(3), P(4), P(5), S(4), S(5), S(6), S(7), S(8), S(9), TON];
+    m.cur.melds[0] = []; // 闭手
+    m.cur.turn = 0;
+    m.cur.drawn = TON; // 東東 雀头单骑自摸
+    expect(canTsumo(m)).toBe(true);
+    declareTsumo(m);
+    const r = m.cur.result!;
+    expect(r.type).toBe('tsumo');
+    expect(r.winner).toBe(0);
+    expect(r.yakuLabel).toBeTruthy(); // 真役种明细（占位=undefined）
+    expect(r.scoreLabel).not.toContain('占位'); // 真档位标签
+    expect(r.delta.reduce((a, b) => a + b, 0)).toBe(0); // 守恒
+    expect(r.delta[0]!).toBeGreaterThan(0); // 和了家收点
+  });
+
+  it('开手（有副露）自摸：暂占位（P6b 结账·scoreLabel 标占位·仍守恒）', () => {
+    const m = controlled();
+    m.cur.melds[0] = [{ kind: 'pon', tiles: [CHUN, CHUN, CHUN], from: 2, called: CHUN }];
+    // 暗手 10 张 + 摸 → 3 面子 + 雀头（配合副露=4 面子+雀头）。
+    m.cur.hands[0] = [M(2), M(3), M(4), P(3), P(4), P(5), S(7), S(8), S(9), TON];
+    m.cur.turn = 0;
+    m.cur.drawn = TON; // 東東 雀头
+    expect(canTsumo(m)).toBe(true);
+    declareTsumo(m);
+    const r = m.cur.result!;
+    expect(r.type).toBe('tsumo');
+    expect(r.scoreLabel).toContain('占位'); // 开手暂占位
+    expect(r.delta.reduce((a, b) => a + b, 0)).toBe(0); // 守恒
   });
 });
 

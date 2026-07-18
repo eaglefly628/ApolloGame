@@ -319,6 +319,9 @@ function resultOverlay(m: MatchState): LayoutNode {
       })),
     });
     rows.push({ type: 'Label', id: 'res-w', props: { text: `和了牌 ${labelTile(r.winTile!)}${r.loser !== null ? `（放铳 ${m.seatNames[r.loser]}）` : '（自摸）'}`, size: 'sm', color: 'sub' } });
+    // 真役种明细 + 番符档位（P6a·闭手真算分；开手标占位）。
+    if (r.yakuLabel) rows.push({ type: 'Label', id: 'res-yaku', props: { text: r.yakuLabel, size: 'sm', bold: true, color: 'jade' } });
+    if (r.scoreLabel) rows.push({ type: 'Label', id: 'res-score', props: { text: r.scoreLabel, size: 'lg', bold: true, color: 'gold', font: 'serif' } });
   }
   // 本局脱衣汇总（直击制·gdd §七）
   const stripSum = (r.stripped ?? []).map((n, i) => (n > 0 ? `${m.seatNames[i]} 脱${n}（余 ${m.clothing[i]}/${STRIP_ITEMS}）` : null)).filter(Boolean);

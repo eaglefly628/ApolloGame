@@ -15,6 +15,7 @@ import { doraFromIndicator } from './wall.js';
 import { GameLog } from './game-log.js';
 import type { Meld } from './meld.js';
 import { chiCandidates, canPon, canDaiminkan, ankanCandidates, kakanCandidates, resolveClaims, kuikaeForbidden, type ChiCandidate, type CallClaim } from './calls.js';
+import { scoreWin, type WinContext, type ScoreResult } from './yaku.js';
 
 export type Phase = 'playing' | 'win' | 'draw';
 
@@ -43,6 +44,9 @@ export interface RoundResult {
   tenpaiFlags?: boolean[]; // 流局各家听牌
   handSnapshot?: number[]; // 和了手（含和牌·结算面板用）
   stripped?: number[]; // 本局各家脱衣件数（直击制·gdd §七）
+  yakuLabel?: string; // 役种明细（真算分·结算面板显示·如「立直 門前清自摸和 平和 ドラ2」）
+  scoreLabel?: string; // 番符档位（如「3翻30符」/「満貫」/「数え役満」）
+  meldsSnapshot?: Meld[]; // 和了家副露（结算面板显示开手·闭手为空）
 }
 
 export interface RoundState {
@@ -190,6 +194,7 @@ export function discard(m: MatchState, tileCode: number): void {
   full.splice(idx, 1);
   rs.hands[rs.turn] = full.sort((a, b) => kindOf(a) - kindOf(b) || a - b);
   rs.drawn = null;
+  rs.drawnRinshan = false; // 岭上机会已消耗（打出=不再岭上开花）
   rs.awaitDiscard = false;
   rs.forbiddenDiscard = [];
   rs.rivers[rs.turn]!.push(tileCode);
@@ -498,33 +503,79 @@ function aiShouldKan(m: MatchState): { type: 'ankan' | 'kakan'; kind: number } |
   return null;
 }
 
-/** 简版结算（占位固定分·让点数动起来·§3 真役符替换）。 */
+/** 结算档位显示名（役満/数え/三倍満…満貫/番符）。 */
+function scoreDisplayLabel(s: ScoreResult): string {
+  if (s.yakuman > 0) return s.yakuman === 1 ? '役満' : `${s.yakuman}倍役満`;
+  if (s.han >= 13) return '数え役満';
+  if (s.han >= 11) return '三倍満';
+  if (s.han >= 8) return '倍満';
+  if (s.han >= 6) return '跳満';
+  if (s.han >= 5) return '満貫';
+  return `${s.han}翻${s.fu}符`;
+}
+
+/**
+ * 结算和了：**闭手（无副露）走真役符引擎 scoreWin（P6a）**·开手暂占位固定分（P6b 结账）。
+ * 引擎 Payment → 四家 delta（+本场）；供托归和者；结算标签（役种/番符）落 result 供面板显示。
+ */
 function settleWin(m: MatchState, type: 'tsumo' | 'ron', winner: number, loser: number | null, tile: number, winHand: number[]): void {
   const rs = m.cur;
   const isDealer = winner === m.dealer;
   const delta = [0, 0, 0, 0];
   const honbaEach = m.honba * 100; // 自摸每家 +100/本场
   const honbaRon = m.honba * 300; // 荣和放铳 +300/本场
-  if (type === 'tsumo') {
-    for (let i = 0; i < 4; i++) {
-      if (i === winner) continue;
-      const base = isDealer ? 2000 : (i === m.dealer ? 2000 : 1000); // 占位：庄自摸各付2000·闲自摸庄付2000他闲付1000
-      const pay = base + honbaEach;
-      delta[i]! -= pay;
-      delta[winner]! += pay;
-    }
-  } else {
-    const base = (isDealer ? 7700 : 5200) + honbaRon; // 占位：闲和放铳付5200·庄和放铳付7700
-    delta[loser!]! -= base;
-    delta[winner]! += base;
+
+  // 真算分：仅闭手（melds 空）走 scoreWin 引擎；开手/无役兜底走占位。
+  let score: ScoreResult | null = null;
+  if (rs.melds[winner]!.length === 0) {
+    const ctx: WinContext = {
+      hand14: winHand, winTile: tile, tsumo: type === 'tsumo',
+      seatWind: seatWind(winner, m.dealer), roundWind: 0, // 東風戦恒東场
+      isDealer, riichi: rs.riichi[winner]!,
+      doubleRiichi: false, ippatsu: false, // 债（未 track 两立直/一发·P6b）
+      haitei: rs.wall.length === 0 && !rs.drawnRinshan, // 海底摸月/河底撈魚（岭上不算）
+      doraIndicators: rs.doraInd,
+      uraIndicators: rs.riichi[winner] ? rs.uraPool.slice(0, rs.doraInd.length) : [], // 立直和了才看里宝
+    };
+    score = scoreWin(ctx);
   }
+
+  if (score) {
+    const p = score.points;
+    if (type === 'tsumo') {
+      for (let i = 0; i < 4; i++) {
+        if (i === winner) continue;
+        const base = isDealer ? p.fromEach! : (i === m.dealer ? p.fromDealer! : p.fromNonDealer!);
+        const pay = base + honbaEach;
+        delta[i]! -= pay; delta[winner]! += pay;
+      }
+    } else {
+      const pay = p.ron! + honbaRon;
+      delta[loser!]! -= pay; delta[winner]! += pay;
+    }
+  } else { // 占位（开手·或闭手无役兜底·P6b 结账）
+    if (type === 'tsumo') {
+      for (let i = 0; i < 4; i++) {
+        if (i === winner) continue;
+        const base = isDealer ? 2000 : (i === m.dealer ? 2000 : 1000);
+        const pay = base + honbaEach; delta[i]! -= pay; delta[winner]! += pay;
+      }
+    } else {
+      const base = (isDealer ? 7700 : 5200) + honbaRon;
+      delta[loser!]! -= base; delta[winner]! += base;
+    }
+  }
+
   for (let i = 0; i < 4; i++) m.scores[i]! += delta[i]!; // delta=和了点移（Σ=0 守恒）
-  // 供托（立直棒）归和者：走 scores·不计入 delta（否则破坏 delta 守恒·立直扣在 declareRiichi）
-  m.scores[winner]! += m.kyotaku;
+  m.scores[winner]! += m.kyotaku; // 供托（立直棒）归和者·不计入 delta（守恒不破·立直扣在 declareRiichi）
   m.kyotaku = 0;
-  rs.result = { type, winner, loser, winTile: tile, delta, handSnapshot: winHand };
+
+  const yakuLabel = score ? score.yaku.map((y) => `${y.name}${y.han > 0 ? y.han : ''}`).join(' ') : undefined;
+  const scoreLabel = score ? scoreDisplayLabel(score) : '占位分（开手真算=P6b）';
+  rs.result = { type, winner, loser, winTile: tile, delta, handSnapshot: winHand, yakuLabel, scoreLabel, meldsSnapshot: [...rs.melds[winner]!] };
   rs.phase = 'win';
   m.log.push({ round: roundName(m), actor: m.seatNames[winner]!, kind: type, text: `${type === 'tsumo' ? '自摸' : '荣和'} ${labelTile(tile)}${loser !== null ? `（放铳=${m.seatNames[loser]}）` : ''}`, tile });
+  if (score) m.log.push({ round: roundName(m), actor: '系统', kind: 'info', text: `${yakuLabel} · ${scoreLabel}` });
   m.log.push({ round: roundName(m), actor: '系统', kind: 'score', text: `点移 ${delta.map((d, i) => `${m.seatNames[i]}${d >= 0 ? '+' : ''}${d}`).join(' ')}` });
   rs.result!.stripped = applyStrip(m, type, winner, loser); // 直击脱衣（gdd §七）
 }
