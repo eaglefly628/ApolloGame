@@ -24,6 +24,20 @@
 > **P1 建议（可同修）**：①settlement 防御纵深——任何 eligible 为空的池层退回贡献者（未来状态机改动无条件守恒）；②`legalActions.call` 可超栈（act→pay 已 clamp），加 `Math.min(toCall,stack)` 或文档锐化防 AI/UI 误读。
 > **修完**：重跑复查门（另一双眼睛 + fuzz）再放行 S4；其余维度（rank5 kicker/wheel/行动闭合/短 all-in 不重开/死按钮/确定性/数据驱动）复查 **REFUTED=clean**，无需重审。
 
+### REQ-C-107 · [S4 验收循环] PE-C 落 acceptance-adapter + 转正 GD 剧本 · [2026-07-18] · 提出人 GD-C → 指派 PE-C · status: open · 优先级: P1（S4 门·REQ-ACCEPT 循环）· 类型: 薄适配契约（PE 域·纯接线）
+> **背景**：REQ-ACCEPT harness（`scripts/acceptance.test.mjs`·Opus 已落）动态扫 `docs/design/<g>/acceptance/*.scenario.jsonc`——**有剧本无 adapter=红且阻塞全库门禁**（harness `227-232` 点名「缺 adapter」）。故 GD-C 4 本剧本 + 契约暂存 `docs/design/game-c/acceptance-draft/`（harness 不扫·不阻塞）。
+> **PE-C 活**（一批同推·此时 adapter 在→conformance 绿）：
+> ① 落 `src/games/game-c/acceptance-adapter.ts`——照 `acceptance-draft/README.md §1` 契约：`createWorld(seed,config)→new HoldemSession`、`applySignal` 映射 hero_fold/check/call/raise·pawn·next_hand 到 session 方法、`readWorld` 暴露 §1 词表机读态（含 **chips_net=Σseats.stack−chips_injected** 守恒探针、chips_injected、pot、hero_wardrobe、phase、hand_no 等）。纯接线零规则·~50 行·capability-plan §4 记账。
+> ② 把 `acceptance-draft/` 转正为 `acceptance/`（git mv·同批推）。
+> ③ **剧本 04-multihand 会因 REQ-C-105 P0 跑红——这是预期**（chips_net 跌破 6000=边池蒸发）；先修 P0，04 转绿=P0 真修好（这就是验收循环闭环）。
+> **纪律**：剧本=GD 域纯数据·PE 不得改；跑红若疑剧本本身错→报 GD-C 改（不自行改剧本）。
+
+### REQ-C-106 · [复查发现·语义歧义] 典当 pawn 手内不同步 hand.players 栈 · [2026-07-18] · 提出人 GD-C（验收剧本包写作暴露）→ 指派 PE-C 裁定 · status: open · 优先级: P2 · 类型: 游戏层玩法语义（game-session）
+> **现象**（`game-session.ts:133-139` pawn）：`s.stack += item.value` 只加 `seats[seat].stack`（局级栈），**不同步当前手 `hand.players[seat].stack`**（下注实际读 hand.players）→ 手进行中点典当，换来的筹码**当前手用不上**，要下一手 startHand 才生效。
+> **为何暴露**：验收剧本 `02-pawn-rule` 无法断言手内 `hero_chips`（`stackOf` 读 hand.players 不反映典当）——只能断言 wardrobe 件数 + 局级 `chips_injected`。
+> **GDD 对照 §3.5**：「筹码告急点衣物换筹码续命」——`autoPawnIfBroke` 在 startHand 缴盲前自动典当（手间·生效），但**手动 pawn 是否该手内即时可用**未定。
+> **PE-C 裁定二选一**：① 手内即时生效（下注可用刚典当的钱）→ pawn 同步 `hand.players[seat].stack`（注意边界：若该玩家已 all-in 是否解除）；② 只手间生效=设计如此 → GD 记录 + UI 明示「典当下手生效」防误导。裁定后回写本单 + 验收剧本 02 补手内断言。
+
 ### REQ-C-104 · 角色卡「玩家档案」通道：外部带入主角姓名+头像（立绘字段预留） · [2026-07-17] · 提出人 GD-C → **⚖ Lead 接单出图（2026-07-17·owner「有需求就做掉」）→ 指派：Opus（PST 域施工）** · status: **✅ done·Lead 对抗性验收 PASS（2026-07-17）** · 优先级: P1（M4 前需要·不阻塞 M1 逻辑） · 类型: 创作台/卡带 meta 数据通道（跨域：PST 主责·引擎装配层读取）
 > **想要的行为**：游戏外部（工坊/launcher 档案）配置一张「角色卡」：`{ name, avatar(资产 key), portrait?(立绘·预留) }`；
 > **⚖ Lead 对抗性验收（2026-07-17·判 PASS）**：独立复跑全绿（tsc·vitest 368 文件/2928·build）；域界零越线（games/skills/engine/apollo.py 全 0 触碰）；12 新测含坏档/headless/往返/空名禁用。偏差四条全 INTENTIONAL 准许：avatar↔avatarUrl 归一（调和图纸与 §0 字段差·一个 ?? 两头吃）；档案卡独立文件=launcher 子件既有架构（「不新立组件」正解为 LayoutNode 闭集不扩·launcher React 壳同 SettingsPanel 先例）；游戏侧 adapter 接线随各 PE 走（正确守域）；清除按钮 additive。**三游戏 M4 前的外部依赖清零。**

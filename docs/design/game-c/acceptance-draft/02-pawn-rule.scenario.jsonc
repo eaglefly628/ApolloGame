@@ -1,0 +1,37 @@
+// GD-C 验收剧本 · 典当规则（GDD §3.5·owner 拍板）：点衣物换筹码·件数减·二次同件不重复入账。
+// 注入语义：衣物→筹码，chips_injected 累加该件面值（chips_net 不变=下注面守恒不受典当扰动）。
+// ⚠ 只断言 hero_wardrobe + chips_injected；不断言手内 hero_chips——见 README 发现② REQ-C-106
+//   （pawn 只加 seats.stack 不同步 hand.players·手内歧义待 PE-C 裁定）。
+{
+  "name": "典当续命·衣物换筹码规则",
+  "game": "game-c",
+  "seed": 20260717,
+  "config": { "startStack": 1000, "smallBlind": 25, "bigBlind": 50 },
+  "steps": [
+    { "expect": [
+      { "res": "hero_wardrobe", "eq": 6 },
+      { "res": "chips_injected", "eq": 0 },
+      { "res": "chips_net", "eq": 6000 }
+    ] },
+    // 典当耳环（面值 100）→ 件数 6→5，注入累计 +100。
+    { "signal": "pawn", "args": { "item": "earrings" } },
+    { "expect": [
+      { "res": "hero_wardrobe", "eq": 5 },
+      { "res": "chips_injected", "eq": 100 }
+    ] },
+    // 二次典当同件 → 不可负担（已不在身）→ 整单不动·不重复入账。
+    { "signal": "pawn", "args": { "item": "earrings" } },
+    { "expect": [
+      { "res": "hero_wardrobe", "eq": 5 },
+      { "res": "chips_injected", "eq": 100 }
+    ] },
+    // 典当内衣（面值 1000·最高档）→ 件数 5→4，注入累计 100→1100。
+    { "signal": "pawn", "args": { "item": "lingerie" } },
+    { "expect": [
+      { "res": "hero_wardrobe", "eq": 4 },
+      { "res": "chips_injected", "eq": 1100 },
+      // 下注面始终守恒：典当只是把衣物面值搬进筹码，没凭空多算/漏算下注。
+      { "res": "chips_net", "eq": 6000 }
+    ] }
+  ]
+}
