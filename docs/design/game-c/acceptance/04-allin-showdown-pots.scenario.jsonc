@@ -1,19 +1,19 @@
-// GD-C 验收剧本 · ③all-in 边池结算·分池（gdd §3 边池·多人 all-in 逐层切池）。
-// 主角全下 → tick 驱动 AI 应对 → 打到摊牌 → 断结构不变量（主角确 all-in·到摊牌·有赢家·池已派出）。
-// ⚠ 降级说明：owner 要「对照 gdd 边池矩阵（900/100/300 逐层分池金额）」——但当前 adapter=session 层门面·
-//    config 只有统一 startStack·无法逐座注入不同栈构造确定的三层边池矩阵；信号也只有 hero_act。
-//    → 完整「边池矩阵对照」需 adapter 扩「逐座栈/牌局注入」能力·缺口记 REQ-C-108（PE-C 域）。
-//    本剧本先覆盖「主角全下走到边池摊牌结算」这一确定可绿路径；矩阵逐层金额待 adapter 扩后补。
-// 注：主角 1000 全下·AI 1000·首手无短缴大盲 → 不触发 REQ-C-105（P0 边池蒸发只在大盲短缴 all-in+弃牌路径）。
+// GD-C 验收剧本 · ③all-in 摊牌·单一主池全额结算（gdd §3 边池·等栈全下=单层池·守恒）。
+// 主角(座0=button)翻前全下 1000 → 五姨太 AI 逐个跟全下 → 六家等栈 all-in → 打到摊牌单一主池。
+//
+// 剧本作者手工核对（seed=42 hand#1·同 02 同牌·全下版）：六家各 1000 全下 → 池=6000（单层·无边池：等投入无切层）。
+//   公共牌 K♦ 2♥ 10♣ 7♦ 2♠；座1(2♣ Q♠)=三条(三个2) 为六家最优 → **座1 独收 6000**。
+//   守恒：won-total == showdown-pot == 6000（全部筹码在桌·无生灭）；主角(座0)两对负、栈清零。
+// ⚠ 精确值钉死到 (seed 42 + M1 占位 AI)·M2 换 AI 须 GD 重派（REQ-ACCEPT 分工）。
+// 注：等栈全下只出单层主池；**多层边池矩阵**见 05（跨手制造短栈·真三层切池）。
 {
-  "name": "主角全下到摊牌·边池分池（降级：非逐层矩阵·待 adapter 扩）",
+  "name": "六家等栈全下·单主池·三条独收6000（精确·seed42）",
   "game": "game-c",
   "seed": 42,
   "steps": [
     { "tick": 3 },
     { "expect": [ { "flag": "hero-turn", "eq": true } ] },
-    // 全下：raise to = 主角 allInTo（button 翻前未投·栈 1000 → to=1000=整栈 all-in）。
-    // ⚠ 写死 to=栈值是 adapter 缺口的症状（无 all_in 语义信号·剧本得算 allInTo）→ REQ-C-108 请 PE-C 加 hero_act{action:"allin"}。
+    // 全下：raise-to=主角 allInTo=栈 1000（button 翻前未投）。
     { "signal": "hero_act", "args": { "action": "raise", "to": 1000 } },
     { "expect": [
       { "flag": "allin-0", "eq": true },
@@ -22,9 +22,18 @@
     { "tick": 40 },
     { "expect": [
       { "flag": "phase-showdown", "eq": true },
-      { "res": "winner-count", "gte": 1 },
-      { "res": "won-total", "gte": 1 },
-      { "res": "showdown-pot", "gte": 1 }
+      { "flag": "allin-0", "eq": true },
+      { "flag": "allin-1", "eq": true },         // 六家全 all-in（等栈）
+      { "flag": "allin-5", "eq": true },
+      { "res": "community-count", "eq": 5 },
+      { "res": "winner-count", "eq": 1 },        // 单一主池唯一赢家
+      { "sv": "winner-type", "eq": "三条" },      // 座1 三条最优
+      { "res": "won-1", "eq": 6000 },            // 独收整池
+      { "res": "won-0", "eq": 0 },               // 主角负
+      { "res": "showdown-pot", "eq": 6000 },
+      { "res": "won-total", "eq": 6000 },        // 守恒
+      { "res": "stack-1", "eq": 6000 },          // 赢家收全场筹码
+      { "res": "stack-0", "eq": 0 }              // 主角出清
     ] }
   ]
 }

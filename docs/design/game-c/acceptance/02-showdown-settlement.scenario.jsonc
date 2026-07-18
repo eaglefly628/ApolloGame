@@ -1,10 +1,14 @@
-// GD-C 验收剧本 · ①一手打到摊牌·比牌与筹码结算（gdd §2 一手循环 + §3 摊牌）。
-// 主角翻前弃牌 → tick 驱动 AI 打满四街到摊牌 → 断结构不变量（到摊牌·有唯一/并列赢家·池已派出）。
-// 用鲁棒结构断言（不预演具体牌型/池额·避免 seed 脆弱）：winner-count≥1 且 won-total≥1 = 有赢家且分到钱。
-// ⚠ 精确守恒（won-total == showdown-pot 两机读态相等）Lead schema 只支持 res-vs-常量·表达不了 res-vs-res
-//    → 缺口记 REQ-C-108（adapter 加 pot-conserved 布尔投影）；此处退守「有分池且非空」。
+// GD-C 验收剧本 · ①一手打到摊牌·比牌与筹码结算正确（gdd §2 一手循环 + §3 摊牌 7 选 5+kicker）。
+// 主角(座0=button)翻前弃牌 → tick 驱动五姨太 AI 打满四街到摊牌 → 断**精确结算**（确定性引擎·seed 钉死）。
+//
+// 剧本作者手工核对（GD=懂规则方·对照标准德州）：seed=42 hand#1 公共牌 K♦ 2♥ 10♣ 7♦ 2♠，
+//   摊牌两家——座1 底牌 2♣ Q♠ → 最优 5 张「K♦ Q♠ 2♠ 2♥ 2♣」= **三条**(三个2)；
+//   座4 底牌 4♣ K♥ → 「K♥ K♦ 10♣ 2♠ 2♥」= 两对(KK+22)。三条 > 两对 → **座1 胜**（比牌正确）。
+//   底池 2351 全额推给座1（守恒：won-total == showdown-pot == 2351·无未跟注退回）。
+// ⚠ 精确值钉死到 (seed 42 + M1 占位 AI)；M2 换真行为树后本手 AI 路径变→值须 GD 重派（REQ-ACCEPT 分工：PE 不改剧本）。
+//   刻意取舍——精确断言才真测「比牌与结算正确」（结构不变量 gte 1 测不出算错的赢家/漏派的池）。
 {
-  "name": "一手到摊牌·比牌与结算（有赢家·池已派）",
+  "name": "一手到摊牌·三条胜两对·底池全额结算（精确·seed42）",
   "game": "game-c",
   "seed": 42,
   "steps": [
@@ -14,11 +18,17 @@
     { "tick": 40 },
     { "expect": [
       { "flag": "phase-showdown", "eq": true },
-      { "flag": "folded-0", "eq": true },
-      { "res": "community-count", "gte": 3 },
-      { "res": "winner-count", "gte": 1 },
-      { "res": "won-total", "gte": 1 },
-      { "res": "showdown-pot", "gte": 1 }
+      { "flag": "folded-0", "eq": true },       // 主角已弃
+      { "res": "community-count", "eq": 5 },     // 打满到河牌五张公共牌
+      { "res": "winner-count", "eq": 1 },        // 唯一赢家（非平分）
+      { "res": "reveal-first", "eq": 1 },        // 摊牌先亮=last aggressor 座1
+      { "sv": "winner-type", "eq": "三条" },      // 比牌：三条胜出（非两对）
+      { "res": "won-1", "eq": 2351 },            // 座1 赢得全池
+      { "res": "won-4", "eq": 0 },               // 座4（两对）未分到
+      { "res": "showdown-pot", "eq": 2351 },     // 底池总额
+      { "res": "won-total", "eq": 2351 },        // 守恒：派出总额==底池（无凭空生灭）
+      { "res": "stack-1", "eq": 2513 },          // 赢家结算入栈
+      { "res": "stack-4", "eq": 162 }            // 输家栈（本手投入已扣）
     ] }
   ]
 }

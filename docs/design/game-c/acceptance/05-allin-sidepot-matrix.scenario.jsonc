@@ -1,0 +1,64 @@
+// GD-C 验收剧本 · ③多人 all-in **边池矩阵**·逐层切池独立比牌（gdd §3「多人 all-in 逐层切边池·每池独立比牌」）。
+// 用**跨手**制造不等栈（单手等栈只出单主池·见 04），再全下打出真·三层边池——纯 hero_act/next_hand/tick 在域内做到，
+// 不需 adapter 扩逐座注栈（原 REQ-C-108 ③「无法构造三层边池」的可绿闭合方案：靠牌局自然分化短栈）。
+//
+// 构造：seed=42。hand#1 主角(座0=button)弃牌·五姨太打到摊牌 → 座4 只剩 **162** 短栈（其余 750~2513）。
+//   next_hand → hand#2（button=1·sb=2·bb=3）主角全下 → 全员跟至 all-in / deep-call。
+//
+// 剧本作者手工核对（GD 对照标准德州边池算法·逐层验算）——hand#2 各家本手总投入：
+//   座0=1000(全下)·座1=1000(深栈跟·非 all-in)·座2=775·座3=775·座4=162(短)·座5=775。Σ=4487=底池。
+//   公共牌 8♥ 7♥ A♦ 8♠ 6♦。三层切池（帽=去重总投入升序 162/775/1000）：
+//     · 主池   (帽162·全6家有份)      = 6×162            = 972
+//     · 边池①  (帽775·除短座4)        = 5×(775-162)      = 3065
+//     · 边池②  (帽1000·仅深座0,1)     = 2×(1000-775)     = 450
+//   比牌：座5(A♥Q♥)=两对(AA+88) 为全场最优 → **主池+边池① 全归座5 = 4037**；
+//        边池②座5 无资格(投入仅775<1000)，仅座0/座1 争——两家皆一对8·**kicker 座1 有 Q > 座0 的 10 → 座1 得 450**。
+//   ∴ won-5=4037·won-1=450·其余 0；守恒 won-total==showdown-pot==4487。**这就是 owner 要的「边池矩阵对照」**。
+// ⚠ 精确值钉死到 (seed 42 + M1 占位 AI)·M2 换 AI 须 GD 重派（REQ-ACCEPT 分工：PE 不改剧本）。
+{
+  "name": "跨手短栈·三层边池矩阵·逐层独立比牌+kicker（精确·seed42）",
+  "game": "game-c",
+  "seed": 42,
+  "steps": [
+    // ── hand#1：主角弃牌，AI 打到摊牌，制造短栈（座4→162）──
+    { "tick": 3 },
+    { "expect": [ { "flag": "hero-turn", "eq": true } ] },
+    { "signal": "hero_act", "args": { "action": "fold" } },
+    { "tick": 40 },
+    { "expect": [
+      { "res": "hand-no", "eq": 1 },
+      { "flag": "phase-showdown", "eq": true },
+      { "res": "stack-4", "eq": 162 }            // 短栈已成形（下一手全下即触发切层）
+    ] },
+    // ── hand#2：主角全下，打出三层边池 ──
+    { "signal": "next_hand" },
+    { "expect": [ { "res": "hand-no", "eq": 2 } ] },
+    { "tick": 40 },                               // 驱动 UTG 起 AI 到主角轮（over-tick 安全·hero 轮 pendingAI=false）
+    { "expect": [ { "flag": "hero-turn", "eq": true } ] },
+    { "signal": "hero_act", "args": { "action": "raise", "to": 1000 } },  // 主角全下 1000
+    { "tick": 40 },
+    { "expect": [
+      { "flag": "phase-showdown", "eq": true },
+      { "res": "community-count", "eq": 5 },
+      // 全下格局：短座4 与深座1 的区分（座1 深栈跟注·非 all-in）
+      { "flag": "allin-0", "eq": true },
+      { "flag": "allin-4", "eq": true },         // 短栈全下
+      { "flag": "allin-1", "eq": false },        // 深栈跟注未全下（撑起边池②的资格差）
+      // 边池矩阵结算（逐层·独立比牌·kicker）
+      { "res": "showdown-pot", "eq": 4487 },
+      { "res": "won-total", "eq": 4487 },        // 守恒
+      { "res": "winner-count", "eq": 2 },        // 两名赢家分属不同池层=边池切分生效
+      { "res": "won-5", "eq": 4037 },            // 座5 两对：主池+边池①
+      { "res": "won-1", "eq": 450 },             // 座1：边池②（kicker Q>10 胜座0）
+      { "res": "won-0", "eq": 0 },
+      { "res": "won-2", "eq": 0 },
+      { "res": "won-3", "eq": 0 },
+      { "res": "won-4", "eq": 0 },               // 短栈无缘任何池
+      // 结算入栈
+      { "res": "stack-5", "eq": 4037 },
+      { "res": "stack-1", "eq": 1963 },          // 深栈：留栈1513 + 边池②450
+      { "res": "stack-0", "eq": 0 },
+      { "res": "stack-4", "eq": 0 }
+    ] }
+  ]
+}

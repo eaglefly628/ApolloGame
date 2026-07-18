@@ -13,24 +13,27 @@
   - flag：`hero-turn`/`pending-ai`/`phase-betting`/`phase-showdown`/`phase-gameover`/`folded-<i>`/`allin-<i>`
   - sv：`street`/`phase`/`hero-hole`/`reveal-order`/`winner-type`/`last-action-<i>`
 
-## 2. 剧本清单（4·覆盖 owner ①②③ + 开局·acceptance-run 全绿）
+## 2. 剧本清单（5·覆盖 owner ①②③ + 开局·acceptance-run 全绿）
 
 | 文件 | 覆盖（owner 要点） | 断言口径 |
 |---|---|---|
 | `01-button-blinds` | 开局庄位/盲注/UTG 首动 | 纯开局态·完全确定（不依赖 AI） |
-| `02-showdown-settlement` | ①一手打到摊牌·比牌与结算 | 到摊牌·有赢家·池已派（结构不变量·不预演具体牌） |
+| `02-showdown-settlement` | ①一手打到摊牌·比牌与结算**正确** | **精确**：三条胜两对(比牌)·底池 2351 全额推赢家·守恒(won-total==pot)·结算入栈 |
 | `03-illegal-out-of-turn` | ②非法行动被拒（乱序） | 主角未轮行动→引擎 no-op→态一分不动 |
-| `04-allin-showdown-pots` | ③all-in 边池结算·分池 | 主角全下→摊牌→有赢家池已派（降级·见 §3） |
+| `04-allin-showdown-pots` | ③all-in 摊牌·单主池 | **精确**：六家等栈全下→单层主池 6000→三条独收·守恒·出清 |
+| `05-allin-sidepot-matrix` | ③all-in **边池矩阵**·逐层切池 | **精确**：跨手造短栈→真三层边池(972/3065/450)·逐层独立比牌+kicker·守恒 4487 |
 
-## 3. ⚠ adapter 能力缺口（REQ-C-108·PE-C 域·限制 owner ②③ 的完整版）
+> 断言进化（本轮 GD-C 加固）：②③从「结构不变量（`gte 1`·有赢家池已派）」升级为**精确值钉死**——三条胜两对的**比牌**、底池的**逐层切分金额**、深栈 kicker 决胜（Q>10）、以及**守恒**（派出总额==底池）全部机读断死。确定性引擎（seed+占位 AI）令精确值可复现；`gte 1` 测不出「算错赢家/漏派池/切错层」，精确值能。代价：值钉死到 (seed 42 + M1 占位 AI)，M2 换真行为树后 GD 按同法重派（REQ-ACCEPT 分工·PE 不改剧本）。
 
-现 adapter 是 **session 层门面·只控主角 + 统一起始栈 + 3 个信号**，撑不起 owner 要的完整②③，本包已覆盖各自的确定可绿子集，完整版待 adapter 扩：
+## 3. ⚠ adapter 能力缺口（REQ-C-108·PE-C 域）——③已在域内闭合，仅剩②与便利项
 
-1. **精确守恒断言**（`won-total == showdown-pot` 两机读态相等）：Lead schema 断言只支持 `res-vs-常量`，表达不了 `res-vs-res`。→ adapter 加 `pot-conserved` 布尔投影（`won-total===showdown-pot`），02/04 即可断精确守恒。现退守「有赢家且分池非空」。
-2. **②下注不足态不变**：主角轮的非法加注（不足 min-raise）现走 `betting-engine.act` 抛错 → runner 红，断不了「态不变」。→ adapter 对主角非法行动 catch 成 no-op。本包②先覆盖「乱序」（非主角轮 no-op·确定可断）。
-3. **③gdd 边池矩阵**（900/100/300 逐层分池金额对照）：session 层 config 只有统一 `startStack`·无法逐座注入不同栈构造确定三层边池。→ adapter 加 `setup_stacks`/`deal_scripted` + `hero_act{action:"allin"}` 信号。本包④先覆盖「主角全下走到边池摊牌」·逐层金额待扩。
+原三项缺口本轮复盘：**①精确守恒 与 ③边池矩阵已用现有信号在剧本域内闭合**（不再等 adapter 扩），仅 ② 与「便利注栈」仍缺：
+
+1. ~~**精确守恒断言**~~ ✅ **已闭合**：`won-total` 与 `showdown-pot` 各自都是**确定值**，无需 `res-vs-res`——两者同断成同一常量（02=2351/04=6000/05=4487）即钉死守恒。原以为要 `pot-conserved` 投影，实则确定性引擎让常量断言足矣。
+2. **②下注不足态不变**（仍缺·PE 域）：主角轮的非法加注（不足 min-raise）走 `betting-engine.act` **抛错** → runner 红，断不了「态不变」。→ adapter 需对主角非法行动 catch 成 no-op。本包②先覆盖「乱序」（非主角轮 no-op·确定可断）；下注不足待 adapter 加 catch 后补点名剧本。
+3. ~~**③gdd 边池矩阵**~~ ✅ **已闭合**（05）：不必 adapter 逐座注栈——**跨手**（`next_hand`）让牌局自然分化出短栈（座4→162），再全下即打出真·三层边池（帽 162/775/1000），逐层金额+kicker 全额对照。`setup_stacks`/`deal_scripted` 降级为**便利项**（直接造特定矩阵更省步），非正确性阻塞。
 
 ## 4. 制度记录（接管 PE 自写剧本）
 
-本包**接管替换了 PE-C 自写的 4 本剧本**（`01-button-blinds-preflop`/`02-preflop-rotation-to-hero`/`03-hero-call-effect`/`04-showdown-reveal-order`）——剧本=GD 域，PE 自写违 REQ-ACCEPT 律（「作者=GD 非 PE」）。PE 版内容质量不差（已复核），其有效覆盖（开局/摊牌）由本 GD 集独立按 gdd 重写吸收；owner 明确要而 PE 漏的 ②非法/③边池由本集新增。
+本包**接管替换了 PE-C 自写的 4 本剧本**（`01-button-blinds-preflop`/`02-preflop-rotation-to-hero`/`03-hero-call-effect`/`04-showdown-reveal-order`）——剧本=GD 域，PE 自写违 REQ-ACCEPT 律（「作者=GD 非 PE」）。PE 版内容质量不差（已复核），其有效覆盖（开局/摊牌）由本 GD 集独立按 gdd 重写吸收；owner 明确要而 PE 漏的 ②非法/③边池由本集新增。本轮 GD-C 续把 ①②③ 从结构不变量升级为**精确结算断言**并新增 05（真三层边池矩阵），5/5 acceptance-run 绿。
 > ⚠ **抽查机制盲点**：REQ-ACCEPT 律称「git blame 抽查 PE 自写=FAIL」，但全 Claude session 同署名 `Claude <noreply@anthropic.com>`——git blame 分不出 GD/PE 角色，该抽查在当前署名体制下失效，只能靠 session 纪律。建议 Lead 补一个非 git-blame 的作者归属机制（记 requests.md·REQ-C-108 附带）。
