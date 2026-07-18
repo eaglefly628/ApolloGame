@@ -1,0 +1,68 @@
+// 查的规则：局间重开——一局收束后能干净地开出第二局（核心循环可重入·gdd §三 核心循环）。
+//   东风战 东1 打完（和了/流局），下庄则进 東2 局（gdd §四 东风战 东1-4·庄家不连庄→轮转+局号+1）。
+//   nextRound 须**重发一局**而非续用旧局：新局 phase 回 playing、result 清空(none)、活山重满
+//     （136 - 王牌14 - 手牌52 = 70·新庄首摸后 = 69）、庄家轮转到席1。
+//   跨局点数守恒（gdd §四 无马无 oka·点数只在四家间转移）：开第二局时 score_sum 仍 = 200000。
+//   衣物件数跨局累计不回穿（gdd §七 状态外带·只减不增）：第二局 clothing_sum ≤ 20。
+//   规则依据：gdd §三 核心循环「和了或流局 → 点数结算 → 东1→东4」；§四 庄家轮转/东4 终局；§十二 确定性。
+// 对抗目标：
+//   · nextRound 没重发牌（续用旧局残山）→ 第二局 wall ≠ 69（远小于）或 result_type 仍 = 上局结果 照出。
+//   · 局号/庄家不随下庄推进（解耦或漏加）→ round_no ≠ 2 或第二局未开新牌照出。
+//   · 跨局凭空生/灭点（结算记账错）→ 第二局或终局 score_sum ≠ 200000 照出。
+//   · 一局没真收束就 nextRound（phase 卡 playing）→ 第一局 win_end ≠ true 照出。
+//   · 整场打穿后仍可无限续打（东4 不终局）→ 终局 round_no > 4 照出。
+{
+  "name": "第二局重开与跨局连续性",
+  "game": "game-b",
+  "seed": 20260718,
+  "config": { "seatNames": ["主角", "绫", "莉世", "小夜"] },
+  "steps": [
+    {
+      // 开局：東1、进行中、无结果、四家满点满衣。
+      "expect": [
+        { "res": "round_no", "eq": 1 },
+        { "sv": "phase", "eq": "playing" },
+        { "sv": "result_type", "eq": "none" },
+        { "flag": "over", "eq": false },
+        { "res": "score_sum", "eq": 200000 },
+        { "res": "clothing_sum", "eq": 20 }
+      ]
+    },
+    { "signal": "play-round" },
+    {
+      // 第一局收束（和了/流局皆可）：本局已终，但整场未终。
+      "expect": [
+        { "flag": "win_end", "eq": true },
+        { "flag": "over", "eq": false },
+        { "res": "score_sum", "eq": 200000 }
+      ]
+    },
+    { "signal": "next-round" },
+    {
+      // 第二局重开（東2）：新局进行中、结果清空、活山重满(69)、庄轮到席1、点数守恒、衣物只减不增。
+      "expect": [
+        { "res": "round_no", "eq": 2 },
+        { "sv": "phase", "eq": "playing" },
+        { "sv": "result_type", "eq": "none" },
+        { "flag": "over", "eq": false },
+        { "res": "dealer", "eq": 1 },
+        { "res": "wall", "eq": 69 },
+        { "res": "turn", "gte": 0 },
+        { "res": "turn", "lte": 3 },
+        { "res": "score_sum", "eq": 200000 },
+        { "res": "clothing_sum", "lte": 20 }
+      ]
+    },
+    { "signal": "play-match" },
+    {
+      // 从第二局继续打穿整场：终局收束（东4/击飞），局号不越界，点数守恒。
+      "expect": [
+        { "flag": "over", "eq": true },
+        { "flag": "win_end", "eq": true },
+        { "res": "round_no", "gte": 2 },
+        { "res": "round_no", "lte": 4 },
+        { "res": "score_sum", "eq": 200000 }
+      ]
+    }
+  ]
+}

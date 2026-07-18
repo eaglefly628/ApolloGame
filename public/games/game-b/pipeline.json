@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": " Test Files  5 passed (5) ·       Tests  63 passed (63)",
-      "at": "2026-07-17T18:52:43.236Z",
-      "gameHash": "e2ec287302ff6168"
+      "summary": "walkthrough 绿（ Test Files  6 passed (6) ·       Tests  64 passed (64)）· 验收剧本 7 场景绿",
+      "at": "2026-07-18T05:09:12.491Z",
+      "gameHash": "e39c45da55bb2162"
     }
   },
   "history": [
@@ -87,6 +87,30 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-17T18:52:43.236Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "GD-B 补入 illegal-ops-rejected + second-round-restart 两验收剧本（覆盖非法操作被拒/重开第二局），docs 变动使 S4 证据过期须重跑；S2/S3 复查过期为既有状态（本轮视觉重做待 owner 重目击）",
+      "at": "2026-07-18T05:03:48.293Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T05:03:56.641Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "rebase 并入 PE-B 交互补齐(设置屏/续局/HUD)后 S4 证据随 game-b 源变动过期，按 testing.md 重跑刷新；GD 两验收剧本(非法操作被拒/第二局重开)conformance 仍全绿；S2/S3 复查过期为既有状态",
+      "at": "2026-07-18T05:09:06.650Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T05:09:12.491Z"
     }
   ],
   "reviews": {
@@ -117,6 +141,16 @@
       "stage": "S4",
       "reason": "S4 门清日麻一局完整可玩(发牌/摸打/自摸荣和/流局/连庄/结算/脱衣/振听/立直/供托·63测绿)；S2/S3复查过期=本轮视觉重做+逻辑推进致文件变动·待owner就这版重目击·机器门证据先落",
       "at": "2026-07-17T18:52:36.504Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "GD-B 补入 illegal-ops-rejected + second-round-restart 两验收剧本（覆盖非法操作被拒/重开第二局），docs 变动使 S4 证据过期须重跑；S2/S3 复查过期为既有状态（本轮视觉重做待 owner 重目击）",
+      "at": "2026-07-18T05:03:48.293Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "rebase 并入 PE-B 交互补齐(设置屏/续局/HUD)后 S4 证据随 game-b 源变动过期，按 testing.md 重跑刷新；GD 两验收剧本(非法操作被拒/第二局重开)conformance 仍全绿；S2/S3 复查过期为既有状态",
+      "at": "2026-07-18T05:09:06.650Z"
     }
   ]
 }

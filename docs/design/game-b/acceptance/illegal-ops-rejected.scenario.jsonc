@@ -1,0 +1,51 @@
+// 查的规则：非法操作被静默拒绝（守卫不误动状态·gdd §十二 确定性 + §四 规则闸）。
+//   开局态=庄家(席0)刚首摸、未打牌（phase=playing·drawn 非空·turn=0·活山 70-1=69）。
+//   此刻三种操作都**非法**、引擎须一律拒绝（no-op·不改任何机读态）：
+//     · 自摸(tsumo)：开局配牌非和了形 → canTsumo=false → 宣自摸无效（gdd §四 役/和了闸）。
+//     · 打非法牌(discard 999)：999 不在手牌+摸牌里 → discard 忽略（不得打出幻影牌/不得空转轮转）。
+//     · 立直(riichi)：开局非听牌 → canRiichi=false → 宣立直无效（不得扣 1000/不得置供托）。
+//   规则依据：gdd §四（1 番缚·和了闸）、§十二（确定性·非法输入不得改 sim 态）、脱衣仅直击触发（§七）。
+// 对抗目标（一个把守卫写漏的程序员会犯的错，这些键能照出来）：
+//   · 非法自摸误判和了 → result_type ≠ "none" 或 over=true 照出。
+//   · 非法打牌吞了一张摸牌/误推进 turn → wall < 69 或 turn ≠ 0 照出。
+//   · 非法立直照扣 1000 进供托 → score_0 ≠ 50000 或 score_sum ≠ 200000 照出。
+//   · 任一非法操作触发脱衣 → clothing_sum < 20 照出。
+{
+  "name": "非法操作被拒（守卫不误动）",
+  "game": "game-b",
+  "seed": 42,
+  "config": { "seatNames": ["主角", "绫", "莉世", "小夜"] },
+  "steps": [
+    {
+      // 开局态：庄家席0 首摸后待打，活山 69，四家满点满衣，未终局。
+      "expect": [
+        { "sv": "phase", "eq": "playing" },
+        { "sv": "result_type", "eq": "none" },
+        { "flag": "over", "eq": false },
+        { "flag": "win_end", "eq": false },
+        { "res": "turn", "eq": 0 },
+        { "res": "wall", "eq": 69 },
+        { "res": "score_sum", "eq": 200000 },
+        { "res": "score_0", "eq": 50000 },
+        { "res": "clothing_sum", "eq": 20 }
+      ]
+    },
+    { "signal": "tsumo" },                    // 非法：开局非和了形 → 应无效
+    { "signal": "discard", "args": { "0": 999 } }, // 非法：999 不在手 → 应忽略
+    { "signal": "riichi" },                   // 非法：开局非听牌 → 应无效
+    {
+      // 三次非法操作后机读态须与开局逐位相同：状态、行动席、活山、点数、衣物全不动。
+      "expect": [
+        { "sv": "phase", "eq": "playing" },
+        { "sv": "result_type", "eq": "none" },
+        { "flag": "over", "eq": false },
+        { "flag": "win_end", "eq": false },
+        { "res": "turn", "eq": 0 },
+        { "res": "wall", "eq": 69 },
+        { "res": "score_sum", "eq": 200000 },
+        { "res": "score_0", "eq": 50000 },
+        { "res": "clothing_sum", "eq": 20 }
+      ]
+    }
+  ]
+}
