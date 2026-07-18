@@ -1,0 +1,24 @@
+// GD-C 验收剧本 · ①一手打到摊牌·比牌与筹码结算（gdd §2 一手循环 + §3 摊牌）。
+// 主角翻前弃牌 → tick 驱动 AI 打满四街到摊牌 → 断结构不变量（到摊牌·有唯一/并列赢家·池已派出）。
+// 用鲁棒结构断言（不预演具体牌型/池额·避免 seed 脆弱）：winner-count≥1 且 won-total≥1 = 有赢家且分到钱。
+// ⚠ 精确守恒（won-total == showdown-pot 两机读态相等）Lead schema 只支持 res-vs-常量·表达不了 res-vs-res
+//    → 缺口记 REQ-C-108（adapter 加 pot-conserved 布尔投影）；此处退守「有分池且非空」。
+{
+  "name": "一手到摊牌·比牌与结算（有赢家·池已派）",
+  "game": "game-c",
+  "seed": 42,
+  "steps": [
+    { "tick": 3 },
+    { "expect": [ { "flag": "hero-turn", "eq": true } ] },
+    { "signal": "hero_act", "args": { "action": "fold" } },
+    { "tick": 40 },
+    { "expect": [
+      { "flag": "phase-showdown", "eq": true },
+      { "flag": "folded-0", "eq": true },
+      { "res": "community-count", "gte": 3 },
+      { "res": "winner-count", "gte": 1 },
+      { "res": "won-total", "gte": 1 },
+      { "res": "showdown-pot", "gte": 1 }
+    ] }
+  ]
+}

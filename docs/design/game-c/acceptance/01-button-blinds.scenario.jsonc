@@ -1,0 +1,23 @@
+// GD-C 验收剧本 · 开局：庄位/盲注/翻前首行动位（gdd §3 标准德州·纯开局态·零 tick·完全确定）。
+// 6 人首手 button=座0；顺位小盲=座1(缴25)、大盲=座2(缴50)；翻前首行动=大盲下家 UTG=座3；主角(座0=button)最后圈。
+{
+  "name": "开局·庄位盲注·翻前UTG首行动",
+  "game": "game-c",
+  "seed": 20260718,
+  "steps": [
+    { "expect": [
+      { "res": "button", "eq": 0 },
+      { "res": "sb-seat", "eq": 1 },
+      { "res": "bb-seat", "eq": 2 },
+      { "res": "stack-0", "eq": 1000 },
+      { "res": "stack-1", "eq": 975 },
+      { "res": "stack-2", "eq": 950 },
+      { "res": "pot", "eq": 75 },
+      { "res": "current-bet", "eq": 50 },
+      { "res": "actor", "eq": 3 },
+      { "sv": "street", "eq": "preflop" },
+      { "flag": "phase-betting", "eq": true },
+      { "flag": "hero-turn", "eq": false }
+    ] }
+  ]
+}

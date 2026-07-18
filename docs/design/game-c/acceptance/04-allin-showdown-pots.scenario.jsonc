@@ -1,0 +1,30 @@
+// GD-C 验收剧本 · ③all-in 边池结算·分池（gdd §3 边池·多人 all-in 逐层切池）。
+// 主角全下 → tick 驱动 AI 应对 → 打到摊牌 → 断结构不变量（主角确 all-in·到摊牌·有赢家·池已派出）。
+// ⚠ 降级说明：owner 要「对照 gdd 边池矩阵（900/100/300 逐层分池金额）」——但当前 adapter=session 层门面·
+//    config 只有统一 startStack·无法逐座注入不同栈构造确定的三层边池矩阵；信号也只有 hero_act。
+//    → 完整「边池矩阵对照」需 adapter 扩「逐座栈/牌局注入」能力·缺口记 REQ-C-108（PE-C 域）。
+//    本剧本先覆盖「主角全下走到边池摊牌结算」这一确定可绿路径；矩阵逐层金额待 adapter 扩后补。
+// 注：主角 1000 全下·AI 1000·首手无短缴大盲 → 不触发 REQ-C-105（P0 边池蒸发只在大盲短缴 all-in+弃牌路径）。
+{
+  "name": "主角全下到摊牌·边池分池（降级：非逐层矩阵·待 adapter 扩）",
+  "game": "game-c",
+  "seed": 42,
+  "steps": [
+    { "tick": 3 },
+    { "expect": [ { "flag": "hero-turn", "eq": true } ] },
+    // 全下：raise to = 主角 allInTo（button 翻前未投·栈 1000 → to=1000=整栈 all-in）。
+    // ⚠ 写死 to=栈值是 adapter 缺口的症状（无 all_in 语义信号·剧本得算 allInTo）→ REQ-C-108 请 PE-C 加 hero_act{action:"allin"}。
+    { "signal": "hero_act", "args": { "action": "raise", "to": 1000 } },
+    { "expect": [
+      { "flag": "allin-0", "eq": true },
+      { "flag": "phase-betting", "eq": true }
+    ] },
+    { "tick": 40 },
+    { "expect": [
+      { "flag": "phase-showdown", "eq": true },
+      { "res": "winner-count", "gte": 1 },
+      { "res": "won-total", "gte": 1 },
+      { "res": "showdown-pot", "gte": 1 }
+    ] }
+  ]
+}

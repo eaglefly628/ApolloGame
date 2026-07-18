@@ -1,0 +1,28 @@
+// GD-C 验收剧本 · ②非法行动被拒（乱序）·状态不变（gdd §3 行动轮·标准德州只有轮到你才可行动）。
+// 开局翻前 UTG=座3 先动·主角(座0)非轮。喂主角行动信号 → 引擎按「非主角轮 no-op」拒绝 → 机读态一分不动 = 被拒。
+// Lead schema 无 expect_error 算子·用「态不变」表达「拒绝」。
+// ⚠ 另一类非法「下注不足 min-raise」(主角轮的非法加注) 现走 betting-engine act 抛错→runner 红·非态不变
+//    → 需 adapter catch 成 no-op 才能断言·缺口记 REQ-C-108。本剧本先覆盖「乱序」这一类确定可断的。
+{
+  "name": "非法乱序被拒·状态不变",
+  "game": "game-c",
+  "seed": 20260718,
+  "steps": [
+    { "expect": [
+      { "res": "actor", "eq": 3 },
+      { "flag": "hero-turn", "eq": false },
+      { "res": "pot", "eq": 75 },
+      { "res": "stack-0", "eq": 1000 },
+      { "res": "current-bet", "eq": 50 }
+    ] },
+    // 主角未轮就行动 → 引擎 no-op（heroAct: isHeroTurn=false → return）。
+    { "signal": "hero_act", "args": { "action": "call" } },
+    { "expect": [
+      { "res": "actor", "eq": 3 },
+      { "flag": "hero-turn", "eq": false },
+      { "res": "pot", "eq": 75 },
+      { "res": "stack-0", "eq": 1000 },
+      { "res": "current-bet", "eq": 50 }
+    ] }
+  ]
+}
