@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  6 passed (6) ·       Tests  64 passed (64)）· 验收剧本 11 场景绿",
-      "at": "2026-07-18T07:47:28.669Z",
-      "gameHash": "d716752096c829b7"
+      "summary": "walkthrough 绿（ Test Files  6 passed (6) ·       Tests  64 passed (64)）· 验收剧本 13 场景绿",
+      "at": "2026-07-18T11:54:21.287Z",
+      "gameHash": "99a5b1e572011ce2"
     }
   },
   "history": [
@@ -135,6 +135,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T07:47:28.669Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "GD-B 节奏+逻辑轮：补 draw-discard-cadence(摸打顺时针轮转/牌山匀速递减) + ryuukyoku-settle-logic(荒牌流局罚符零和/立直棒滚存/不脱衣/守恒自洽)，共 13 本；docs 变动使 S4 证据过期须重跑；S2/S3 复查过期为既有 governance 状态",
+      "at": "2026-07-18T11:54:12.341Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-18T11:54:21.287Z"
     }
   ],
   "reviews": {
@@ -185,6 +197,11 @@
       "stage": "S4",
       "reason": "GD-B 复合度提升：补 4 本精确规则剧本（直击脱衣荣和/自摸精确语义·立直全生命周期·连庄迁移），共 11 本覆盖 GDD 招牌机制；docs 变动使 S4 证据过期须重跑；S2/S3 复查过期为既有 governance 状态",
       "at": "2026-07-18T07:47:22.584Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "GD-B 节奏+逻辑轮：补 draw-discard-cadence(摸打顺时针轮转/牌山匀速递减) + ryuukyoku-settle-logic(荒牌流局罚符零和/立直棒滚存/不脱衣/守恒自洽)，共 13 本；docs 变动使 S4 证据过期须重跑；S2/S3 复查过期为既有 governance 状态",
+      "at": "2026-07-18T11:54:12.341Z"
     }
   ]
 }
