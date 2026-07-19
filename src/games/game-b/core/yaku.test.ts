@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { scoreWin, type WinContext } from './yaku.js';
 import { pairFu } from './fu-score.js';
+import type { MeldKind } from './meld.js';
 
 /** 默认上下文：闲家·自风南(1)·场风東(0)·荣和·无立直。测试逐项覆盖。 */
 function mk(over: Partial<WinContext> & { hand14: number[]; winTile: number }): WinContext {
@@ -438,5 +439,104 @@ describe('§3 取高原则（多分解取番符最高）', () => {
     const r = scoreWin(mk({ hand14: [1, 2, 3, 1, 2, 3, 10, 11, 12, 10, 11, 12, 22, 22], winTile: 22, tsumo: true }));
     // 二盃口解 = 二盃口(3)+门清自摸(1)+断幺九(1) = 5 番 > 七対解 = 七対(2)+自摸(1)+断幺(1) = 4 番 → 取 5
     expect(r!.han).toBe(5);
+  });
+});
+
+// ── §9 开手真算分（G1/G2/G3·calledMelds）──────────────────────────────────────
+// 开手 hand14=暗手（含和牌·14−3k 张·杠亦占 3 张面子预算）·calledMelds=k 副已鸣露固定面子。
+type CM = { kind: MeldKind; tiles: number[] };
+const chi = (lo: number): CM => ({ kind: 'chi', tiles: [lo, lo + 1, lo + 2] }); // 明顺（lo=最低种码）
+const pon = (k: number): CM => ({ kind: 'pon', tiles: [k, k, k] }); // 明刻
+const minkan = (k: number): CM => ({ kind: 'minkan', tiles: [k, k, k, k] }); // 大明杠
+const ankan = (k: number): CM => ({ kind: 'ankan', tiles: [k, k, k, k] }); // 暗杠
+const hanOf = (ctx: WinContext, name: string): number | undefined => scoreWin(ctx)?.yaku.find((y) => y.name === name)?.han;
+
+describe('§9 开手·门前清限定役 gating（副露即消·G1）', () => {
+  it('① 开手（吃）+ 平和/一盃口形 + 宣立直自摸 → 门清限定役一律不计（食断存活）', () => {
+    // 吃 234p + 暗手 234s×2 456m 88p·两面自摸·riichi=true（开手不该有·gating 须丢弃）。
+    const ns = names(mk({
+      hand14: [19, 20, 21, 19, 20, 21, 3, 4, 5, 16, 16], winTile: 21,
+      tsumo: true, riichi: true, calledMelds: [chi(10)],
+    }));
+    expect(ns).toContain('断幺九'); // 食断有·副露断幺存活（证 scoreWin 非 null）
+    expect(ns).not.toContain('平和'); // 平和=门清限定·开手消
+    expect(ns).not.toContain('一盃口'); // 两 234s 本是一盃口形·开手消
+    expect(ns).not.toContain('門前清自摸和'); // 门前限定·开手消
+    expect(ns).not.toContain('立直'); // 门前限定·开手消
+    expect(ns).not.toContain('両立直');
+  });
+});
+
+describe('§9 开手·喰い下がり −1 番（G1）', () => {
+  it('② 三色同順 副露 = 1 番（门清 2）', () => {
+    // 吃 234m + 暗手 234p 234s 678p 99m
+    expect(hanOf(mk({ hand14: [10, 11, 12, 19, 20, 21, 14, 15, 16, 8, 8], winTile: 21, tsumo: true, calledMelds: [chi(1)] }), '三色同順')).toBe(1);
+  });
+  it('② 一気通貫 副露 = 1 番（门清 2）', () => {
+    // 吃 123m + 暗手 456m 789m 234p 99s
+    expect(hanOf(mk({ hand14: [3, 4, 5, 6, 7, 8, 10, 11, 12, 26, 26], winTile: 12, tsumo: true, calledMelds: [chi(0)] }), '一気通貫')).toBe(1);
+  });
+  it('② 混全帯么九 副露 = 1 番（门清 2）', () => {
+    // 吃 123m + 暗手 789p 789s 北北北 中中（北=客风·无役牌污染）
+    expect(hanOf(mk({ hand14: [15, 16, 17, 24, 25, 26, 30, 30, 30, 33, 33], winTile: 24, tsumo: true, calledMelds: [chi(0)] }), '混全帯么九')).toBe(1);
+  });
+  it('② 純全帯么九 副露 = 2 番（门清 3）', () => {
+    // 吃 123m + 暗手 789p 789s 123p 99m
+    expect(hanOf(mk({ hand14: [15, 16, 17, 24, 25, 26, 9, 10, 11, 8, 8], winTile: 26, tsumo: true, calledMelds: [chi(0)] }), '純全帯么九')).toBe(2);
+  });
+  it('② 混一色 副露 = 2 番（门清 3）', () => {
+    // 吃 123m + 暗手 456m 567m 北北北 白白（单 man 色 + 字·北客风）
+    expect(hanOf(mk({ hand14: [3, 4, 5, 4, 5, 6, 30, 30, 30, 31, 31], winTile: 5, tsumo: true, calledMelds: [chi(0)] }), '混一色')).toBe(2);
+  });
+  it('② 清一色 副露 = 5 番（门清 6）', () => {
+    // 吃 123m + 暗手 234m 345m 456m 99m（纯 man·无 789 避一通污染）
+    expect(hanOf(mk({ hand14: [1, 2, 3, 2, 3, 4, 3, 4, 5, 8, 8], winTile: 5, tsumo: true, calledMelds: [chi(0)] }), '清一色')).toBe(5);
+  });
+});
+
+describe('§9 开手·暗刻计数（碰=明刻·不计三暗刻·G1）', () => {
+  it('③ 碰役牌 中 + 两暗刻 → 有役牌·无三暗刻（碰的中=明刻不计暗）', () => {
+    // 碰 中 + 暗手 999p(暗刻) 333s(暗刻) 456m 77m·和 456m 两面自摸（999p/333s 暗摸·中=明刻）
+    const ns = names(mk({ hand14: [17, 17, 17, 20, 20, 20, 3, 4, 5, 6, 6], winTile: 5, tsumo: true, calledMelds: [pon(33)] }));
+    expect(ns).toContain('役牌 中');
+    expect(ns).not.toContain('三暗刻'); // 仅 2 暗刻（碰的中=明刻不计）
+    expect(ns).not.toContain('四暗刻');
+  });
+});
+
+describe('§9 开手·杠子役 + 九蓮宝燈（G2/G3）', () => {
+  it('⑤ 三槓子 = 2 番（3 组杠·非役满）', () => {
+    // 3 大明杠 2m/3p/4s + 暗手 567m + 88p 雀头（tanyao 存活证非 null）
+    const r = scoreWin(mk({ hand14: [4, 5, 6, 16, 16], winTile: 6, tsumo: true, calledMelds: [minkan(1), minkan(11), minkan(21)] }));
+    expect(r!.yaku.find((y) => y.name === '三槓子')?.han).toBe(2);
+    expect(r!.yakuman).toBe(0);
+  });
+  it('⑤ 四槓子 = 役满（4 组杠·全明杠避四暗刻·R-7 单倍）', () => {
+    // 4 大明杠 2m/3p/4s/6m + 88p 雀头单骑
+    const r = scoreWin(mk({ hand14: [16, 16], winTile: 16, tsumo: true, calledMelds: [minkan(1), minkan(11), minkan(21), minkan(5)] }));
+    expect(r!.yakuman).toBe(1);
+    expect(r!.yaku.map((y) => y.name)).toContain('四槓子');
+  });
+  it('⑤ 九蓮宝燈 = 役满（门清清一色 1112345678999+任一同色·R-7 单倍）', () => {
+    // 纯正九蓮 man：1112345678999 + man5·自摸
+    const r = scoreWin(mk({ hand14: [0, 0, 0, 1, 2, 3, 4, 4, 5, 6, 7, 8, 8, 8], winTile: 4, tsumo: true }));
+    expect(r!.yakuman).toBe(1);
+    expect(r!.yaku.map((y) => y.name)).toContain('九蓮宝燈');
+  });
+  it('◇ 九蓮反例：普通门前清一色（缺 man1×3 模板）→ 清一色非九蓮·不误判役满', () => {
+    const r = scoreWin(mk({ hand14: [0, 0, 1, 1, 1, 1, 2, 2, 3, 4, 5, 6, 7, 8], winTile: 8, tsumo: true }));
+    expect(r!.yakuman).toBe(0);
+    expect(r!.yaku.map((y) => y.name)).not.toContain('九蓮宝燈');
+  });
+});
+
+describe('§9 开手·D6 含暗杠门清手真算分（G2）', () => {
+  it('⑥ 门前含暗杠（man1 幺九）自摸立直 → 门清役成立 + 暗杠符 32 → 60 符', () => {
+    // 暗杠 man1 + 暗手 234p 567p 789s 22s·和 567p 两面自摸立直（暗杠不破门清）
+    const r = scoreWin(mk({ hand14: [10, 11, 12, 13, 14, 15, 24, 25, 26, 19, 19], winTile: 15, tsumo: true, riichi: true, calledMelds: [ankan(0)] }));
+    const ns = r!.yaku.map((y) => y.name);
+    expect(ns).toContain('立直'); // 暗杠不破门清·立直成立
+    expect(ns).toContain('門前清自摸和'); // 门前清自摸成立
+    expect(r!.fu).toBe(60); // 20 + 暗杠幺九 32 + 自摸 2 = 54 → 60（暗杠符 32 钉死·联动 §4）
   });
 });

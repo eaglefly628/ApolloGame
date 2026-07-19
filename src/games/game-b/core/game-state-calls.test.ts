@@ -345,7 +345,7 @@ describe('GD-B 复审修红（D2 1番縛り / D7 海底禁杠 / D5b 槍槓役）
   });
 });
 
-describe('P6a · 真役符接线（门清闭手走 scoreWin 引擎）', () => {
+describe('P6a/G1 · 真役符接线（门清 + 开手 calledMelds 走 scoreWin 引擎）', () => {
   it('闭手自摸：结算走真引擎（yakuLabel/scoreLabel 落位·非占位·守恒）', () => {
     const m = controlled();
     // 门清全顺 + 東東雀头（庄=座0·東=连风）·摸 東 单骑自摸 → 至少「門前清自摸和」。
@@ -364,19 +364,35 @@ describe('P6a · 真役符接线（门清闭手走 scoreWin 引擎）', () => {
     expect(r.delta[0]!).toBeGreaterThan(0); // 和了家收点
   });
 
-  it('开手（有副露）自摸：暂占位（P6b 结账·scoreLabel 标占位·仍守恒）', () => {
+  it('⑦ 开手有役自摸（碰役牌 中）：走真算分·非占位·delta Σ=0 守恒·和者收点（G1）', () => {
     const m = controlled();
-    m.cur.melds[0] = [{ kind: 'pon', tiles: [CHUN, CHUN, CHUN], from: 2, called: CHUN }];
+    m.cur.melds[0] = [{ kind: 'pon', tiles: [CHUN, CHUN, CHUN], from: 2, called: CHUN }]; // 碰中（役牌）
     // 暗手 10 张 + 摸 → 3 面子 + 雀头（配合副露=4 面子+雀头）。
     m.cur.hands[0] = [M(2), M(3), M(4), P(3), P(4), P(5), S(7), S(8), S(9), TON];
     m.cur.turn = 0;
-    m.cur.drawn = TON; // 東東 雀头
+    m.cur.drawn = TON; // 東東 雀头单骑
     expect(canTsumo(m)).toBe(true);
     declareTsumo(m);
     const r = m.cur.result!;
     expect(r.type).toBe('tsumo');
-    expect(r.scoreLabel).toContain('占位'); // 开手暂占位
-    expect(r.delta.reduce((a, b) => a + b, 0)).toBe(0); // 守恒
+    expect(r.scoreLabel).not.toContain('占位'); // 开手真算分（非占位·G1 落地）
+    expect(r.yakuLabel).toContain('役牌 中'); // 碰的中=役牌 1 番
+    expect(r.delta.reduce((a, b) => a + b, 0)).toBe(0); // Σ=0 守恒
+    expect(r.delta[0]!).toBeGreaterThan(0); // 和者收点
+  });
+
+  it('开手无役自摸（碰客风北·含幺九顺）：scoreWin 无役 → 占位兜底·仍守恒', () => {
+    const m = controlled(); // 座0=庄=東·北=客风（非役牌）
+    m.cur.melds[0] = [{ kind: 'pon', tiles: [PEI, PEI, PEI], from: 2, called: PEI }]; // 碰北（客风·无役牌）
+    m.cur.hands[0] = [M(1), M(2), M(3), P(4), P(5), P(6), S(6), S(7), M(9), M(9)]; // 10 张
+    m.cur.turn = 0;
+    m.cur.drawn = S(8); // 补 678s（无役：含 1m/9m 幺九→非断幺·北客风→无役牌·456p/678s 中张→非混全）
+    expect(canTsumo(m)).toBe(true);
+    declareTsumo(m);
+    const r = m.cur.result!;
+    expect(r.type).toBe('tsumo');
+    expect(r.scoreLabel).toContain('占位'); // 无役 → 占位兜底（守恒优先）
+    expect(r.delta.reduce((a, b) => a + b, 0)).toBe(0); // Σ=0 守恒
   });
 });
 

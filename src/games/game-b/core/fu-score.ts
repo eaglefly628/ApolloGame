@@ -23,24 +23,32 @@ export function pairFu(pairKind: number, ctx: WinContext): number {
 }
 
 /**
- * 符计算（v1 无杠·门前清恒真）。
- * isPinfu=true 时抑制自摸 +2 → 平和自摸恒 20 符；平和荣和走通用式 = 20+10 = 30 符。
+ * 符计算。isPinfu=true 时抑制自摸 +2 → 平和自摸恒 20 符；平和荣和走通用式 = 20+10 = 30 符。
+ * 开手（G2）：decomp.melds 含 calledMelds（标 open/kan）——明刻/明杠/暗杠符从 melds 直接算；
+ *   open=有吃/碰/大明杠/加杠（暗杠 open=false 不破门清）→ 无门前清荣和 +10。
+ * 闭手（melds 无 open/kan）逐字节向后兼容（现有符测据此不回退）。
  */
 export function calcFu(decomp: Decomp, interp: WinInterp, ctx: WinContext, isPinfu: boolean): number {
   if (decomp.form === 'chiitoi') return 25; // 七対子固定 25 符（不加不进位）
   if (decomp.form === 'kokushi') return 20; // 役满不看符·代表值
+  const open = decomp.melds.some((m) => m.open); // 破门清（暗杠 open=false 不破）
   let fu = 20; // 底符
-  if (!ctx.tsumo) fu += 10; // 门前清荣和 +10（v1 恒门清）
+  if (!ctx.tsumo && !open) fu += 10; // 门前清荣和 +10（副露荣和无此加符）
   for (let i = 0; i < decomp.melds.length; i++) {
     const m = decomp.melds[i]!;
     if (m.type !== 'triplet') continue; // 顺子 0 符
     const to = isTerminalOrHonor(m.kind);
-    const concealed = ctx.tsumo || i !== interp.ronMinkoIndex; // 荣和双碰该刻→按明刻计
-    fu += concealed ? (to ? 8 : 4) : (to ? 4 : 2);
+    if (m.kan) {
+      fu += m.open ? (to ? 16 : 8) : (to ? 32 : 16); // 明杠 幺16/中8·暗杠 幺32/中16（G2）
+    } else {
+      const concealed = !m.open && (ctx.tsumo || i !== interp.ronMinkoIndex); // 明刻(碰)或荣和双碰刻→按明刻计
+      fu += concealed ? (to ? 8 : 4) : (to ? 4 : 2);
+    }
   }
   fu += pairFu(decomp.pair, ctx);
   if (interp.waitType === 'kanchan' || interp.waitType === 'penchan' || interp.waitType === 'tanki') fu += 2; // 边/嵌/单骑
   if (ctx.tsumo && !isPinfu) fu += 2; // 自摸 +2（平和例外）
+  if (open && !ctx.tsumo && fu === 20) fu = 30; // 副露平和形荣和=30符（喰い平和·R-11）——纯顺+客风雀头+两面·荣无 +10
   return Math.ceil(fu / 10) * 10; // 符一位切上（22→30）
 }
 

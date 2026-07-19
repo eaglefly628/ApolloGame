@@ -12,10 +12,11 @@
 import { kindOf, isRed, isTerminalOrHonor, tileNumber, NUM_KINDS } from './tiles-def.js';
 import { doraFromIndicator } from './wall.js';
 import { calcFu, limitAndBase, buildPayment, pairFu, type Payment } from './fu-score.js';
+import type { MeldKind } from './meld.js';
 
 // ── 对外契约 ───────────────────────────────────────────────────────────────
 export interface WinContext {
-  hand14: number[]; // 14 张和了手（含和了牌·升序无所谓）
+  hand14: number[]; // 暗手（含和了牌）：闭手=14 张·开手=14−3k 张（k=calledMelds.length·杠亦占 1 面子=3 张预算）
   winTile: number; // 和了牌码
   tsumo: boolean; // true=自摸 / false=荣和
   seatWind: number; // 自风 0-3（東南西北）
@@ -31,6 +32,9 @@ export interface WinContext {
   chiihou?: boolean; // 地和（闲家第一巡自摸无鸣·调用方判定置位）——签名微调
   chankan?: boolean; // 槍槓（抢加杠·荣和限定 1 番·外部注入·D5b）
   rinshan?: boolean; // 嶺上開花（杠后岭上自摸 1 番·外部注入·D5a）
+  // 已鸣露副露（开手真算分·G1）：k 副固定面子·不再枚举；缺省=[] 即门前清闭手（逐字节向后兼容）。
+  //   暗杠 kind='ankan' 不破门清（仍算暗刻·暗杠符）；吃/碰/大明杠/加杠 = 破门清明面子。
+  calledMelds?: { kind: MeldKind; tiles: number[] }[];
 }
 
 export interface YakuEntry {
@@ -49,6 +53,8 @@ export interface ScoreResult {
 export interface Meld {
   type: 'seq' | 'triplet';
   kind: number; // seq=最低牌种码·triplet=牌种码
+  open?: boolean; // 副露明面子（吃/碰/大明杠/加杠）：破门清·计明刻·喰い下がり；暗杠 open=false（不破门清）。缺省=暗（闭手分解出）
+  kan?: boolean; // 杠子（4 枚·杠符 明8/16·暗16/32）；缺省=非杠
 }
 export interface Decomp {
   form: 'standard' | 'chiitoi' | 'kokushi';
@@ -65,6 +71,29 @@ const DRAGONS = [31, 32, 33]; // 白發中
 const GREEN = new Set([19, 20, 21, 23, 25, 32]); // sou2,3,4,6,8,發（绿一色成分·标准含发）
 const KOKUSHI_KINDS = [0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33]; // 13 幺九
 const WIND = ['東', '南', '西', '北'];
+const CHUUREN_REQ = [3, 1, 1, 1, 1, 1, 1, 1, 3]; // 九蓮宝燈模板 1112345678999（单花色 9 种最小计数）
+
+/** calledMeld（{kind,tiles}）→ 分解用 Meld（标 open/kan）：吃=明顺·碰/大明杠/加杠=明刻·暗杠=暗刻(kan)。 */
+function calledToMeld(cm: { kind: MeldKind; tiles: number[] }): Meld {
+  if (cm.kind === 'chi') {
+    const lo = Math.min(...cm.tiles.map(kindOf)); // 顺子起点=最低牌种（剥赤）
+    return { type: 'seq', kind: lo, open: true, kan: false };
+  }
+  const k = kindOf(cm.tiles[0]!); // 碰/杠 = 同种
+  const kan = cm.kind === 'minkan' || cm.kind === 'ankan' || cm.kind === 'kakan';
+  return { type: 'triplet', kind: k, open: cm.kind !== 'ankan', kan };
+}
+
+/** 九蓮宝燈：单一数牌花色（suitBase=0/9/18）计数匹配 1112345678999 + 任一同色牌（每种 ≥ 模板·总 14）。 */
+function isChuuren(counts: number[], suitBase: number): boolean {
+  let sum = 0;
+  for (let r = 0; r < 9; r++) {
+    const c = counts[suitBase + r]!;
+    if (c < CHUUREN_REQ[r]!) return false;
+    sum += c;
+  }
+  return sum === 14; // 清一色单花色 14 张 → 恰多一张（纯正 9 面听或普通九蓮）
+}
 
 // ── 和了形分解枚举 ─────────────────────────────────────────────────────────
 function toCounts(tiles: number[]): number[] {
@@ -107,28 +136,34 @@ function enumKokushi(counts: number[]): Decomp[] {
   return pair === -1 ? [] : [{ form: 'kokushi', melds: [], pair }];
 }
 
-/** 枚举 14 张的全部和了分解（标准形所有雀头×面子解 + 七対子 + 国士·去重）。 */
-function enumDecomps(counts: number[]): Decomp[] {
+/**
+ * 枚举暗手的全部和了分解（标准形所有雀头×面子解 + 七対子 + 国士·去重）。
+ * meldTarget = 4−k（k=已鸣露副露数）：暗手拆一雀头后由余牌张数隐含 meldTarget 面子（喂 14−3k 张即自动）。
+ * 七対子/国士仅闭手（meldTarget===4·即 k=0·无副露）可能。
+ */
+function enumDecomps(counts: number[], meldTarget: number): Decomp[] {
   const results: Decomp[] = [];
   for (let p = 0; p < NUM_KINDS; p++) {
     if (counts[p]! >= 2) {
       counts[p]! -= 2;
       for (const melds of enumMelds(counts)) {
-        if (melds.length === 4) results.push({ form: 'standard', melds, pair: p });
+        if (melds.length === meldTarget) results.push({ form: 'standard', melds, pair: p });
       }
       counts[p]! += 2;
     }
   }
-  // 七対子（恰 7 个不同对子·四枚同牌≠两对）
-  const pairs: number[] = [];
-  let chiitoiOk = true;
-  for (let k = 0; k < NUM_KINDS; k++) {
-    if (counts[k] === 0) continue;
-    if (counts[k] === 2) pairs.push(k);
-    else { chiitoiOk = false; break; }
+  if (meldTarget === 4) { // 仅闭手（k=0·无副露）可七対子/国士（鸣了牌不可能）
+    // 七対子（恰 7 个不同对子·四枚同牌≠两对）
+    const pairs: number[] = [];
+    let chiitoiOk = true;
+    for (let k = 0; k < NUM_KINDS; k++) {
+      if (counts[k] === 0) continue;
+      if (counts[k] === 2) pairs.push(k);
+      else { chiitoiOk = false; break; }
+    }
+    if (chiitoiOk && pairs.length === 7) results.push({ form: 'chiitoi', melds: [], pair: -1, pairs });
+    results.push(...enumKokushi(counts));
   }
-  if (chiitoiOk && pairs.length === 7) results.push({ form: 'chiitoi', melds: [], pair: -1, pairs });
-  results.push(...enumKokushi(counts));
 
   const seen = new Set<string>();
   const uniq: Decomp[] = [];
@@ -175,8 +210,10 @@ function allNonzero(counts: number[], pred: (k: number) => boolean): boolean {
 function countConcealedTriplets(d: Decomp, interp: WinInterp, ctx: WinContext): number {
   let n = 0;
   for (let i = 0; i < d.melds.length; i++) {
-    if (d.melds[i]!.type !== 'triplet') continue;
-    if (ctx.tsumo || i !== interp.ronMinkoIndex) n++;
+    const m = d.melds[i]!;
+    if (m.type !== 'triplet') continue;
+    if (m.open) continue; // 碰/大明杠/加杠=明刻·不算暗刻（暗杠 open=false 仍算暗）
+    if (ctx.tsumo || i !== interp.ronMinkoIndex) n++; // 荣和双碰化明刻
   }
   return n;
 }
@@ -221,13 +258,14 @@ function countDoraHan(hand14: number[], indicators: number[]): number {
 
 // ── 单解释评分 ─────────────────────────────────────────────────────────────
 function evalInterp(
-  d: Decomp,
+  d: Decomp, // 完整 4 面子+雀头（暗手分解 + calledMelds 拼入·melds 标 open/kan）
   interp: WinInterp,
   ctx: WinContext,
-  counts: number[],
+  counts: number[], // 全手计数（暗手 + 副露牌·34 桶·含杠第 4 枚）
   doraHan: number,
   akaHan: number,
   uraHan: number,
+  open: boolean, // 门清破否（有吃/碰/大明杠/加杠·暗杠不破）——门清限定 gating + 喰い下がり
 ): ScoreResult | null {
   const yaku: YakuEntry[] = [];
   let yakuman = 0;
@@ -238,6 +276,8 @@ function evalInterp(
   const hasSou = anyIn(counts, 18, 26);
   const hasHonor = anyIn(counts, 27, 33);
   const numSuits = (hasMan ? 1 : 0) + (hasPin ? 1 : 0) + (hasSou ? 1 : 0);
+  const suitBase = hasMan ? 0 : hasPin ? 9 : hasSou ? 18 : -1; // 单花色数牌起点（九蓮判定）
+  const kanCount = d.melds.filter((m) => m.kan).length; // 杠数（三/四槓子）
   const allTermHonor = allNonzero(counts, (k) => isTerminalOrHonor(k));
   const allHonor = allNonzero(counts, (k) => k >= 27);
   const allTermNum = allNonzero(counts, (k) => k < 27 && (tileNumber(k) === 1 || tileNumber(k) === 9));
@@ -251,10 +291,15 @@ function evalInterp(
   if (allHonor) { yaku.push({ name: '字一色', han: 0 }); yakuman++; }
   if (allTermNum) { yaku.push({ name: '清老頭', han: 0 }); yakuman++; }
   if (allGreen) { yaku.push({ name: '緑一色', han: 0 }); yakuman++; }
+  if (kanCount === 4) { yaku.push({ name: '四槓子', han: 0 }); yakuman++; } // 四组杠（R-7 单倍·§3·G2）
+  // 九蓮宝燈（门清·清一色单花色数牌·counts 匹配 1112345678999+任一同色·纯正 9 面·R-7 单倍·G3）
+  if (!open && d.form === 'standard' && numSuits === 1 && !hasHonor && suitBase >= 0 && isChuuren(counts, suitBase)) {
+    yaku.push({ name: '九蓮宝燈', han: 0 }); yakuman++;
+  }
   if (d.form === 'standard') {
     const trips = d.melds.filter((m) => m.type === 'triplet');
     const concealed = countConcealedTriplets(d, interp, ctx);
-    if (trips.length === 4 && concealed === 4) { yaku.push({ name: '四暗刻', han: 0 }); yakuman++; } // R-7 单倍
+    if (trips.length === 4 && concealed === 4) { yaku.push({ name: '四暗刻', han: 0 }); yakuman++; } // R-7 单倍（暗杠算暗·碰/大明杠不算）
     if (trips.filter((m) => DRAGONS.includes(m.kind)).length === 3) { yaku.push({ name: '大三元', han: 0 }); yakuman++; }
     const windTrip = trips.filter((m) => m.kind >= 27 && m.kind < 31).length;
     const pairIsWind = d.pair >= 27 && d.pair < 31;
@@ -267,16 +312,18 @@ function evalInterp(
   }
 
   // ── 普通役 ─────────────────────────────────────────────────────────────
-  if (ctx.doubleRiichi) yaku.push({ name: '両立直', han: 2 });
-  else if (ctx.riichi) yaku.push({ name: '立直', han: 1 });
-  if (ctx.ippatsu && (ctx.riichi || ctx.doubleRiichi)) yaku.push({ name: '一発', han: 1 });
-  if (ctx.tsumo) yaku.push({ name: '門前清自摸和', han: 1 }); // v1 恒门清
+  if (!open) { // 门前清限定役（有吃/碰/大明杠/加杠即消·暗杠不破门清）
+    if (ctx.doubleRiichi) yaku.push({ name: '両立直', han: 2 });
+    else if (ctx.riichi) yaku.push({ name: '立直', han: 1 });
+    if (ctx.ippatsu && (ctx.riichi || ctx.doubleRiichi)) yaku.push({ name: '一発', han: 1 });
+    if (ctx.tsumo) yaku.push({ name: '門前清自摸和', han: 1 });
+  }
   if (ctx.haitei) yaku.push({ name: ctx.tsumo ? '海底摸月' : '河底撈魚', han: 1 });
   if (ctx.chankan && !ctx.tsumo) yaku.push({ name: '槍槓', han: 1 }); // 抢加杠（荣和限定·D5b）
   if (ctx.rinshan && ctx.tsumo) yaku.push({ name: '嶺上開花', han: 1 }); // 杠后岭上自摸（D5a）
-  if (isTanyao) yaku.push({ name: '断幺九', han: 1 });
-  if (numSuits === 1 && hasHonor) yaku.push({ name: '混一色', han: 3 });
-  else if (numSuits === 1 && !hasHonor) yaku.push({ name: '清一色', han: 6 });
+  if (isTanyao) yaku.push({ name: '断幺九', han: 1 }); // 食断有（副露断幺成立·gdd）
+  if (numSuits === 1 && hasHonor) yaku.push({ name: '混一色', han: open ? 2 : 3 }); // 喰い下がり 3→2
+  else if (numSuits === 1 && !hasHonor) yaku.push({ name: '清一色', han: open ? 5 : 6 }); // 喰い下がり 6→5
   if (allTermHonor) yaku.push({ name: '混老頭', han: 2 }); // 役满字一色/清老頭已先返回·此处必混
 
   let isPinfu = false;
@@ -287,28 +334,31 @@ function evalInterp(
     const trips = d.melds.filter((m) => m.type === 'triplet');
     const concealed = countConcealedTriplets(d, interp, ctx);
 
-    isPinfu = seqs.length === 4 && pairFu(d.pair, ctx) === 0 && interp.waitType === 'ryanmen';
+    isPinfu = !open && seqs.length === 4 && pairFu(d.pair, ctx) === 0 && interp.waitType === 'ryanmen'; // 平和=门清限定（open→isPinfu 恒 false·不抑自摸符）
     if (isPinfu) yaku.push({ name: '平和', han: 1 });
 
-    const seqCount = new Map<number, number>();
-    for (const s of seqs) seqCount.set(s.kind, (seqCount.get(s.kind) ?? 0) + 1);
-    let iipeiPairs = 0;
-    for (const v of seqCount.values()) iipeiPairs += Math.floor(v / 2);
-    if (iipeiPairs >= 2) yaku.push({ name: '二盃口', han: 3 }); // 与一盃口/七対互斥·取高由上层
-    else if (iipeiPairs === 1) yaku.push({ name: '一盃口', han: 1 });
+    if (!open) { // 一盃口/二盃口=门前清限定
+      const seqCount = new Map<number, number>();
+      for (const s of seqs) seqCount.set(s.kind, (seqCount.get(s.kind) ?? 0) + 1);
+      let iipeiPairs = 0;
+      for (const v of seqCount.values()) iipeiPairs += Math.floor(v / 2);
+      if (iipeiPairs >= 2) yaku.push({ name: '二盃口', han: 3 }); // 与一盃口/七対互斥·取高由上层
+      else if (iipeiPairs === 1) yaku.push({ name: '一盃口', han: 1 });
+    }
 
-    if (hasSanshokuSeq(seqs)) yaku.push({ name: '三色同順', han: 2 });
-    if (hasIttsuu(seqs)) yaku.push({ name: '一気通貫', han: 2 });
+    if (hasSanshokuSeq(seqs)) yaku.push({ name: '三色同順', han: open ? 1 : 2 }); // 喰い下がり 2→1
+    if (hasIttsuu(seqs)) yaku.push({ name: '一気通貫', han: open ? 1 : 2 }); // 喰い下がり 2→1
     if (hasSanshokuTriplet(trips)) yaku.push({ name: '三色同刻', han: 2 });
 
     const everyTermHonor = d.melds.every(setHasTermHonor) && isTerminalOrHonor(d.pair);
     if (everyTermHonor && seqs.length >= 1) {
-      if (!hasHonor) yaku.push({ name: '純全帯么九', han: 3 });
-      else yaku.push({ name: '混全帯么九', han: 2 });
+      if (!hasHonor) yaku.push({ name: '純全帯么九', han: open ? 2 : 3 }); // 喰い下がり 3→2
+      else yaku.push({ name: '混全帯么九', han: open ? 1 : 2 }); // 喰い下がり 2→1
     }
 
-    if (trips.length === 4) yaku.push({ name: '対々和', han: 2 });
+    if (trips.length === 4) yaku.push({ name: '対々和', han: 2 }); // 四刻子（含明刻/杠）+雀头
     if (concealed >= 3) yaku.push({ name: '三暗刻', han: 2 });
+    if (kanCount === 3) yaku.push({ name: '三槓子', han: 2 }); // 三组杠（§2·G2）
 
     for (const t of trips) {
       if (t.kind === 31) yaku.push({ name: '役牌 白', han: 1 });
@@ -345,21 +395,39 @@ function better(a: ScoreResult, b: ScoreResult): boolean {
   return a.fu > b.fu;
 }
 
-/** 算一次和了的番/符/点。无役（含光宝牌）→ 返回 null（1 番缚·不得和）。 */
+/**
+ * 算一次和了的番/符/点。无役（含光宝牌）→ 返回 null（1 番缚·不得和）。
+ * 开手（G1）：ctx.calledMelds=k 副已鸣露固定面子·ctx.hand14=暗手（含和牌·14−3k 张）；
+ *   暗手枚举成 (4−k) 面子+雀头 → 拼进 k 副 called → 完整 4 面子+雀头供算役/符。
+ * 闭手（calledMelds 缺省=[]·hand14=14 张）逐字节向后兼容（现有闭手测据此不回退）。
+ */
 export function scoreWin(ctx: WinContext): ScoreResult | null {
-  if (ctx.hand14.length !== 14) return null;
-  const counts = toCounts(ctx.hand14);
-  const decomps = enumDecomps(counts);
+  const called = ctx.calledMelds ?? [];
+  const k = called.length;
+  if (k < 0 || k > 4) return null;
+  if (ctx.hand14.length !== 14 - 3 * k) return null; // 暗手张数=14−3k（杠亦占 3 张面子预算）
+
+  const concealedCounts = toCounts(ctx.hand14); // 仅暗手（枚举用）
+  const decomps = enumDecomps(concealedCounts, 4 - k);
   if (decomps.length === 0) return null;
+
+  const calledMelds = called.map(calledToMeld); // 固定面子（标 open/kan）
+  const calledTiles = called.flatMap((cm) => cm.tiles); // 副露物理牌（杠 4 枚）
+  const fullTiles = [...ctx.hand14, ...calledTiles]; // 全手物理牌（宝牌/赤/花色/幺九判据）
+  const fullCounts = toCounts(fullTiles);
+  const open = called.some((cm) => cm.kind !== 'ankan'); // 门清破否（暗杠不破）
+
   const w = kindOf(ctx.winTile);
-  const doraHan = countDoraHan(ctx.hand14, ctx.doraIndicators);
-  const akaHan = ctx.hand14.filter(isRed).length; // 赤5 每枚 +1
-  const uraHan = (ctx.riichi || ctx.doubleRiichi) ? countDoraHan(ctx.hand14, ctx.uraIndicators) : 0;
+  const doraHan = countDoraHan(fullTiles, ctx.doraIndicators);
+  const akaHan = fullTiles.filter(isRed).length; // 赤5 每枚 +1（含副露内的赤5）
+  const uraHan = (ctx.riichi || ctx.doubleRiichi) ? countDoraHan(fullTiles, ctx.uraIndicators) : 0;
 
   let best: ScoreResult | null = null;
   for (const d of decomps) {
-    for (const interp of interpsFor(d, w)) {
-      const r = evalInterp(d, interp, ctx, counts, doraHan, akaHan, uraHan);
+    // 拼完整面子集：暗手分解 (4−k) 面子在前（保留 interp.ronMinkoIndex 下标语义）+ k 副 called 在后。
+    const full: Decomp = { form: d.form, melds: [...d.melds, ...calledMelds], pair: d.pair, pairs: d.pairs };
+    for (const interp of interpsFor(d, w)) { // interp 只对暗手分解取待ち（和牌落暗手·不落固定副露）
+      const r = evalInterp(full, interp, ctx, fullCounts, doraHan, akaHan, uraHan, open);
       if (r && (best === null || better(r, best))) best = r;
     }
   }

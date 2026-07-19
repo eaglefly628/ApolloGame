@@ -4,7 +4,7 @@
 //   洗牌/骰/派生 = `wall.ts`（引擎 w1-random 种子 PRNG）· 和了/听牌 = `hand-eval.ts`（§2）·
 //   牌码/基元 = `tiles-def.ts`· 随机 = 引擎 randomInt（AI tiebreak·禁裸 Math.random）。
 // 本文件补的缝 = 「一局的回合流程」：摸→打→他家荣和检测→轮转→流局→点数移动→连庄/进局。
-//   ⚠ 点数=**简版占位固定分**（让循环转起来·可玩可见）；真役/符/番计分=§3（裁决行待 GD-B 会审）。
+//   点数=真役/符/番计分（scoreWin·门清/开手 G1/G2/G3 均真算）；无役兜底走占位固定分（守恒优先）。
 //   ⚠ AI=**简版进张启发**（打孤张·PRNG tiebreak）；真人设 BT=gdd §五 t2-behavior-tree（B-006 记债）。
 //   鸣牌（吃碰杠）/立直/振听 = 后续切片（本切片=摸切打循环 + 门清和了·先让一局能跑通打穿）。
 import { randomInt, type RandomSeed } from '@atom-skills/random/index.js';
@@ -513,30 +513,30 @@ function scoreDisplayLabel(s: ScoreResult): string {
   return `${s.han}翻${s.fu}符`;
 }
 
-/** 构和了上下文（settleWin + 荣和「有役」闸共用·闭手真算分口径·東風戦恒東场）。 */
+/** 构和了上下文（settleWin + 荣和「有役」闸共用·闭手/开手真算分口径·東風戦恒東场）。 */
 function buildWinContext(m: MatchState, winner: number, tile: number, tsumo: boolean, winHand: number[], opts?: { chankan?: boolean; rinshan?: boolean }): WinContext {
   const rs = m.cur;
   return {
-    hand14: winHand, winTile: tile, tsumo,
+    hand14: winHand, winTile: tile, tsumo, // 开手 winHand=[...暗手, 和牌]=14−3k 张（暗手不含副露）
     seatWind: seatWind(winner, m.dealer), roundWind: 0,
     isDealer: winner === m.dealer, riichi: rs.riichi[winner]!,
-    doubleRiichi: false, ippatsu: false, // 债（未 track 两立直/一发·P6b）
+    doubleRiichi: false, ippatsu: false, // 债（未 track 两立直/一发·G4·主程另接）
     haitei: rs.wall.length === 0 && !rs.drawnRinshan, // 海底摸月/河底撈魚（岭上不算）
     doraIndicators: rs.doraInd,
     uraIndicators: rs.riichi[winner] ? rs.uraPool.slice(0, rs.doraInd.length) : [], // 立直和了才看里宝
     chankan: opts?.chankan, rinshan: opts?.rinshan,
+    calledMelds: rs.melds[winner]!.map((md) => ({ kind: md.kind, tiles: md.tiles })), // 开手真算分（G1·闭手=[]）
   };
 }
 
 /**
  * 荣和「有役」闸（D2·1番縛り·GD-B 2026-07-18 复审必修）：日麻最低一役才能荣。
- * · 闭手（melds 空）：以该荣和牌构 WinContext 跑 scoreWin·**必须有役（≠null）** 才允许荣（无役形式听牌只计流局罚符·不得实荣）。
- * · 开手（有副露）：暂放行（P6b 补 open-hand 役引擎前无法判·记债）。
- * · chankan=抢加杠荣（恒带槍槓 1 番·故闭手抢杠恒有役·不误挡）。
- * 自摸不用此闸（闭手自摸恒带門前清自摸和·scoreWin 恒非 null）。
+ * · 闭手/开手一律以该荣和牌构 WinContext 跑 scoreWin（含 calledMelds·G1 真算分）·**必须有役（≠null）** 才允许荣。
+ *   （P6b 前开手曾暂放行·今开手真算分已落·完成 D2 开手闸——无役开手荣被正确拒。）
+ * · chankan=抢加杠荣（恒带槍槓 1 番·故抢杠恒有役·不误挡）。
+ * 自摸不用此闸（门前清自摸恒带門前清自摸和；开手无役自摸走占位兜底·见 settleWin）。
  */
 function hasRonYaku(m: MatchState, seat: number, tile: number, chankan = false): boolean {
-  if (m.cur.melds[seat]!.length > 0) return true; // 开手 defer P6b
   return scoreWin(buildWinContext(m, seat, tile, false, [...m.cur.hands[seat]!, tile], { chankan })) !== null;
 }
 
@@ -546,7 +546,9 @@ function canRon(m: MatchState, seat: number, tile: number, chankan = false): boo
 }
 
 /**
- * 结算和了：**闭手（无副露）走真役符引擎 scoreWin（P6a）**·开手暂占位固定分（P6b 结账）。
+ * 结算和了：**门清/开手一律走真役符引擎 scoreWin（G1/D6·含 calledMelds 真算分）**。
+ * 「闭手」判据不再是 `melds.length===0`：门前含暗杠亦走真算分（暗杠不破门清·D6）。
+ * 占位固定分只当 scoreWin 返回 null（无役·如开手无役自摸）时兜底——守恒不破。
  * 引擎 Payment → 四家 delta（+本场）；供托归和者；结算标签（役种/番符）落 result 供面板显示。
  * opts.chankan/rinshan：抢杠/岭上開花役旗（D5a/D5b·注入 WinContext）。
  */
@@ -557,10 +559,8 @@ function settleWin(m: MatchState, type: 'tsumo' | 'ron', winner: number, loser: 
   const honbaEach = m.honba * 100; // 自摸每家 +100/本场
   const honbaRon = m.honba * 300; // 荣和放铳 +300/本场
 
-  // 真算分：仅闭手（melds 空）走 scoreWin 引擎；开手/无役兜底走占位。
-  const score: ScoreResult | null = rs.melds[winner]!.length === 0
-    ? scoreWin(buildWinContext(m, winner, tile, type === 'tsumo', winHand, opts))
-    : null;
+  // 真算分：全手（闭手 calledMelds=[]·含暗杠/开手 calledMelds=rs.melds[winner]）走 scoreWin；无役兜底走占位。
+  const score: ScoreResult | null = scoreWin(buildWinContext(m, winner, tile, type === 'tsumo', winHand, opts));
 
   if (score) {
     const p = score.points;
@@ -575,7 +575,7 @@ function settleWin(m: MatchState, type: 'tsumo' | 'ron', winner: number, loser: 
       const pay = p.ron! + honbaRon;
       delta[loser!]! -= pay; delta[winner]! += pay;
     }
-  } else { // 占位（开手·或闭手无役兜底·P6b 结账）
+  } else { // 占位兜底：scoreWin 无役（如开手无役自摸·门清核不挡自摸形）——守恒优先·固定分
     if (type === 'tsumo') {
       for (let i = 0; i < 4; i++) {
         if (i === winner) continue;
@@ -593,7 +593,7 @@ function settleWin(m: MatchState, type: 'tsumo' | 'ron', winner: number, loser: 
   m.kyotaku = 0;
 
   const yakuLabel = score ? score.yaku.map((y) => `${y.name}${y.han > 0 ? y.han : ''}`).join(' ') : undefined;
-  const scoreLabel = score ? scoreDisplayLabel(score) : '占位分（开手真算=P6b）';
+  const scoreLabel = score ? scoreDisplayLabel(score) : '占位分（无役兜底）';
   rs.result = { type, winner, loser, winTile: tile, delta, handSnapshot: winHand, yakuLabel, scoreLabel, meldsSnapshot: [...rs.melds[winner]!] };
   rs.phase = 'win';
   m.log.push({ round: roundName(m), actor: m.seatNames[winner]!, kind: type, text: `${type === 'tsumo' ? '自摸' : '荣和'} ${labelTile(tile)}${loser !== null ? `（放铳=${m.seatNames[loser]}）` : ''}`, tile });

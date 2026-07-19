@@ -64,6 +64,36 @@ describe('§4 面子符矩阵（明/暗刻 × 中张/幺九 = 2/4/4/8·经切上
   });
 });
 
+// ── §4 杠符（明杠 中8/幺16·暗杠 中16/幺32·G2）───────────────────────────────
+describe('§4 杠符矩阵（明8/16·暗16/32·各钉·自摸隔离 +10 门清荣和加符）', () => {
+  const minkanM = (k: number): Meld => ({ type: 'triplet', kind: k, open: true, kan: true }); // 明杠（大明/加杠）
+  const ankanM = (k: number): Meld => ({ type: 'triplet', kind: k, open: false, kan: true }); // 暗杠
+  // 隔离式：1 杠 + 3 顺(0符) + 数牌雀头 man9(0符) + 两面(0符) + 自摸(+2)·非平和 → fu = 20 + 杠符 + 2 → 切上。
+  //   自摸避开门清荣和 +10（明杠会破门清·暗杠不破·统一自摸后 +10 皆不入·纯钉杠符）。
+  const kanD = (kanMeld: Meld): Decomp => D([kanMeld, seq(9), seq(12), seq(15)], 8); // + pin123/456/789 顺 + man9 雀头
+  it('明杠中张（sou5·open）= 8 符 → 20+8+2 = 30', () => {
+    expect(calcFu(kanD(minkanM(22)), RY, ctx({ tsumo: true }), false)).toBe(30);
+  });
+  it('明杠幺九（man1·open）= 16 符 → 20+16+2 = 38→40', () => {
+    expect(calcFu(kanD(minkanM(0)), RY, ctx({ tsumo: true }), false)).toBe(40);
+  });
+  it('暗杠中张（sou5·concealed）= 16 符 → 20+16+2 = 38→40', () => {
+    expect(calcFu(kanD(ankanM(22)), RY, ctx({ tsumo: true }), false)).toBe(40);
+  });
+  it('暗杠幺九（man1·concealed）= 32 符 → 20+32+2 = 54→60', () => {
+    expect(calcFu(kanD(ankanM(0)), RY, ctx({ tsumo: true }), false)).toBe(60);
+  });
+  it('暗杠不破门清：暗杠幺九荣和 = 20+10(门清荣和)+32 = 62→70（明杠同形无 +10 = 36→40）', () => {
+    expect(calcFu(kanD(ankanM(0)), RY, ctx(), false)).toBe(70); // 荣和·暗杠 open=false → 门清荣和 +10
+    expect(calcFu(kanD(minkanM(0)), RY, ctx(), false)).toBe(40); // 荣和·明杠 open=true → 无 +10（20+16=36→40）
+  });
+  it('副露平和形荣和（喰い平和·R-11）= 30 符（20 无门清加符 → 补足 30）', () => {
+    const openSeq: Meld = { type: 'seq', kind: 0, open: true }; // 明顺（吃）→ 破门清
+    // 全顺（1 明顺+3 暗顺）+ 数牌雀头 pin9 + 两面荣和：fu=20（无 +10·无刻/杠/雀头/待ち符）→ 补 30。
+    expect(calcFu(D([openSeq, seq(3), seq(9), seq(12)], 17), RY, ctx(), false)).toBe(30);
+  });
+});
+
 describe('§4 雀头符（役牌+2·连风=2符 R-1 GD-B 圈定·客风/数牌 0）', () => {
   it('数牌雀头 0 符', () => { expect(pairFu(15, ctx())).toBe(0); });
   it('三元雀头（中）+2 符', () => { expect(pairFu(33, ctx())).toBe(2); });
