@@ -344,7 +344,7 @@ function subtitle(m: MatchState, selectedKey: string | null): LayoutNode {
 function logPanel(m: MatchState, logCopied: boolean): LayoutNode {
   const evs = m.log.recent(24); // 面板扫近 24 条（跨局累计·完整靠复制钮）
   return {
-    type: 'Panel', id: 'logpanel', props: { bg: { custom: 'rgba(18,12,20,0.98)' }, title: '游戏日志 · 跨局累计' },
+    type: 'Panel', id: 'logpanel', props: { bg: { custom: 'rgba(18,12,20,0.98)' }, title: `游戏日志 · 跨局累计 · 种子 ${m.rng.seed}` },
     layout: { x: FIELD_W - 392, y: 56, width: 376, height: FIELD_H - 112, padding: 10, gap: 3, direction: 'column' },
     children: [
       // 头行：关闭 ✕（永远可关·不靠被遮的 📜）+ 复制。

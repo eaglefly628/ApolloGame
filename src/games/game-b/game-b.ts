@@ -25,8 +25,10 @@ import {
 } from './play-ui.js';
 import { FIELD_W, FIELD_H, MENU_W, MENU_H, MENU_BG, SAKURA, NIGHT, TINT } from './theme.js';
 
-// 开局 seed（gdd §十二·SessionIn.seed 缺省时钟种子入参化·S3 固定值可复现）。
-const S3_SEED = 20260717;
+// 开局 seed：每局用**当前时钟（秒）**派生（gdd §十二·SessionIn.seed 缺省时钟种子·owner 2026-07-20）——
+// 每局牌局不同。种子在 driver（非 sim）读一次、存进 match.rng.seed（日志面板标题可见）→ 全程走引擎
+// RandomSeed PRNG，存 seed 即可复现整局（randomness.md「存初始 seed 复现」·不破 lockstep/回放）。
+const clockSeed = (): number => Math.floor(Date.now() / 1000) % 0x7fffffff;
 // AI 逐步节奏（ms·设置屏可调·让玩家看清每家摸打·owner「太快跟不上」→放慢普通档）。
 const AI_DELAY_BY: Record<AiSpeed, number> = { fast: 480, normal: 780, slow: 1150 };
 
@@ -76,7 +78,9 @@ export function mount(container: HTMLElement): () => void {
     // 3D 牌桌 = 氛围场景（桌/牌山/席位牌背·真引擎渲染·对局交互全走 2D HUD）。
     const { assets, ready } = createGameBAssets();
     const engine = new Engine();
-    engine.load(buildTableBlueprint({ seed: S3_SEED }));
+    // 新局=当前时钟（秒）种子（每局不同）·续局=沿用原种子（续同一副牌势）。3D 桌景与牌局同种子。
+    const seed = resume ? resume.rng.seed : clockSeed();
+    engine.load(buildTableBlueprint({ seed }));
     const renderer = new ThreeRenderer({
       width: FIELD_W, height: FIELD_H, background: TINT.stageBg,
       assets, antialias: false, dprCap: 1.5, shadowMapSize: 1024,
@@ -86,7 +90,7 @@ export function mount(container: HTMLElement): () => void {
     engine.start();
 
     // ── 对局状态机（headless 逻辑核·§2/③）+ HUD 投影驱动 ────────────────────────────
-    const match = resume ?? startMatch(S3_SEED);
+    const match = resume ?? startMatch(seed);
     match.interactiveCalls = true; // 开鸣牌窗口（P4·owner 点名先上鸣牌·玩家可碰/吃/荣）
     const aiDelay = AI_DELAY_BY[settings.aiSpeed];
     let logOpen = settings.logDefault;
