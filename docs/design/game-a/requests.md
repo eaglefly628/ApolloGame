@@ -2,6 +2,18 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
+### A-016 · [2026-07-20] · GD-A · 衣橱 UI（收藏册网格清单 + 本 run 战况）· status: 📝 待转报 PUI（缺库存/收藏控件）· 类型: UI 基座缺口（PUI 域）
+GDD §4.3 衣橱=点开查看「几套几件·谁的·价值·等级·集套进度」+ 本 run 各角色当前档。需 **LayoutNode 网格清单/收藏卡控件**（每格=一件收藏：立绘缩图+原主+档名+价值星级）。现闭集若无「网格库存/收藏格」控件→报 PUI 扩控件（照纸牌类刚需·参 A-007 叠层诉求）。**禁手写 DOM/innerHTML**；表达不了列清单等 PUI 裁决，不自造逃生。入口＝角色头像/衣橱按钮（SC-7b 扩展）。
+
+### A-015 · [2026-07-20] · GD-A · 【大改】经济翻改：金钱→服饰经济（衣服=筹码+收藏）· status: 📝 待 Lead 复审 GDD v2 + capability-plan 复审后交 PE · 类型: 玩法系统重写（PE 域·需 capability-plan 过审）
+owner 2026-07-20 拍板（GDD v2 §3+§4 重写）：**废除金钱**，衣服=唯一筹码单位 + 可收藏资产。改动面：
+- **规则**（GDD §3 C1~C7）：脱衣=衣贡（盘末·从外到内脱·双上3/一三2/一四1 件·彩头多脱1·封顶4）；脱下每件转入赢队衣橱（标签 原主/档/价值）；底线档不再脱→记耻辱点；过 A 仍唯一 run 终局（不改胜负结构）。
+- **数值**（GDD §4）：衣服价值表（档1盛→档5底线=5→1 分）；对局档 ×1/×5/×20 放大收藏价值；无带入/荷包/破产扣钱。
+- **引擎改**（PE 域·`guandan-session.ts`）：删 `wallets`/money settlement；加 服饰阶梯态（每座当前档）/脱衣结算/衣橱收藏集（持久）/耻辱点。**确定性不破**（全种子·walkthrough 双跑）。
+- **⚠ capability-plan 复审先行（防绕引擎·CLAUDE.md 铁律）**：衣橱=**库存/收藏系统**，PE **不得游戏层手写**——先查 `wiki/skills/index.md` 有无现成 inventory/collection capability 可复用，真缺口走 Lead 下沉裁决，再动工。plan 未过审不写系统代码。
+- **acceptance 随改**（GD 域·PE 落投影后）：现 ①/③ 断言的 `result_pay`/`wallet_hero`（金钱）失效 → 换新投影 `dress_lost_this_round`/`wardrobe_count`/`collected_value`/`shame_points`/各座 `dress_tier`（tribute1 已由 A-010 落地）。GD 待 PE 落地后重写经济类断言 + 加脱衣/收藏剧本；并借机采纳 A-013 长期建议（分支断言迁 walkthrough·acceptance 留稳健式）。
+- 关联既有：C7 内容红线沿用 A-006；牌贡（§2.3·不动）与衣贡（新）术语分立。
+
 ### A-014 · [2026-07-18] · PE-A · Tabs/Modal 同级切页时容器随活跃页高度「跳大小」→ 应固定容器尺寸 + 录 UI 检查目录规则 · status: 📝 待转引擎池报 PUI（纯 UI 基座·游戏层无干净兜底）· 类型: UI 基座缺口 + 手册规则（PUI 域）
 **owner 实证（2026-07-18）**：主菜单进「设置·规则」菜单，切「出牌日志 / 规则说明 / 设置」三页签时，Modal **变大小**（还带居中重定位的位移）——owner 报「原来做纸牌时也这样切大小·游戏里其实用得很少·很不显著」。
 **根因（引擎 `src/ui/components/server.ts switchTab` + Modal 居中）**：`switchTab` 切页用 `pg.style.display = 'block'/'none'`——**容器高 = 当前活跃页高**；三页内容高不同 → 切页即变高；Modal 居中 → 高一变、整体尺寸+位置一起跳。
