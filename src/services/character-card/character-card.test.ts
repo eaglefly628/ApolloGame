@@ -43,29 +43,30 @@ const fullDraft: PlatformCharacterDraft = {
   animationName: '待机',
 };
 
-// 空卡 fixture（owner 截图 emptyCharacterDraft 逐键同构·全 26 键平铺·全空值）。
+// 空卡 fixture（owner 截图 emptyCharacterDraft 逐键同构·全 36 键平铺·顺序与值照原图）。
 const emptyCharacterDraft: PlatformCharacterDraft = {
-  // 非媒体 15 键
   name: '',
   gender: '',
-  kind: '',
+  kind: '角色',
+  format: '文本',
   opening: '',
   cardDescription: '',
   description: '',
-  personality: '',
-  catchphrases: [],
-  tags: [],
-  adultConfirmed: false,
-  visibility: '',
-  backgroundPublic: false,
-  updatedAt: '',
-  moreSettings: null,
-  format: '',
-  // 平铺媒体 11 键（owner 截图 media 块）
+  backgroundPublic: true,
+  visibility: 'public',
   imageMode: 'upload',
   imageDataUrl: '',
   avatarDataUrl: '',
   imageName: '',
+  personality: '',
+  speakingStyle: '',
+  boundaries: '',
+  catchphrases: [],
+  backstory: '',
+  worldView: '',
+  eraBackground: '',
+  rules: '',
+  coreConflicts: '',
   imageUrl: '',
   avatarUrl: '',
   imageOssKey: '',
@@ -73,6 +74,13 @@ const emptyCharacterDraft: PlatformCharacterDraft = {
   animationDataUrl: '',
   animationName: '',
   animationOssKey: '',
+  tags: [],
+  moreSettings: false,
+  conversationStyle: 'default',
+  exampleDialogues: '',
+  replySettings: '',
+  adultConfirmed: false,
+  updatedAt: '',
 };
 
 describe('normalizeCharacterCard · 满卡（平铺媒体）', () => {
@@ -104,12 +112,12 @@ describe('normalizeCharacterCard · 满卡（平铺媒体）', () => {
   });
 });
 
-describe('normalizeCharacterCard · 空卡（emptyCharacterDraft·26 键平铺）', () => {
-  it('夹具恰 26 键平铺（结构守卫）', () => {
-    expect(Object.keys(emptyCharacterDraft)).toHaveLength(26);
+describe('normalizeCharacterCard · 空卡（emptyCharacterDraft·36 键平铺）', () => {
+  it('夹具恰 36 键平铺（结构守卫）', () => {
+    expect(Object.keys(emptyCharacterDraft)).toHaveLength(36);
   });
 
-  it('name 空 → error·id 回退 warn·零头像 warn·仍产出 card（不 throw）', () => {
+  it('name 空 → error·id 回退 warn·零头像 warn·非空默认值落规范卡（不 throw）', () => {
     const { card, issues } = normalizeCharacterCard(emptyCharacterDraft);
     expect(isCardUsable({ card, issues })).toBe(false); // name 空 = 不可用
     expect(issues.some((i) => i.level === 'error' && i.field === 'name')).toBe(true);
@@ -120,8 +128,13 @@ describe('normalizeCharacterCard · 空卡（emptyCharacterDraft·26 键平铺�
     expect(card.media).toEqual({});
     expect(card.persona.catchphrases).toEqual([]);
     expect(card.tags).toEqual([]);
-    // passthrough 恰含 imageMode/format/moreSettings 三键（空媒体字符串键不污染）
-    expect(card.passthrough).toEqual({ imageMode: 'upload', moreSettings: null, format: '' });
+    // 非空默认值照样落进规范卡（截图默认非空的键）
+    expect(card.kind).toBe('角色');
+    expect(card.visibility).toBe('public');
+    expect(card.backgroundPublic).toBe(true);
+    expect(card.persona.conversationStyle).toBe('default');
+    // passthrough 恰含 imageMode/format/moreSettings 三键（空媒体字符串键不污染·此不变量不动）
+    expect(card.passthrough).toEqual({ imageMode: 'upload', format: '文本', moreSettings: false });
     expect(Object.keys(card.passthrough).sort()).toEqual(['format', 'imageMode', 'moreSettings']);
   });
 
