@@ -241,7 +241,7 @@ export function mount(container: HTMLElement): () => void {
 
   function enterTable(): void {
     stopSession();
-    lastSeed = ((Date.now() >>> 0) + runCount++) >>> 0; // 时间派生·每局不同牌（宿主选种·非 sim 随机）
+    lastSeed = ((Math.floor(Date.now() / 1000) >>> 0) + runCount++) >>> 0; // 种子=当前时间**到秒**（owner 2026-07-18）+ 同秒连开的 runCount 微扰·每局不同牌（宿主选种·非 sim 随机）
     aiRng = mulberry32((lastSeed ^ 0x9e3779b9) >>> 0); // 拟人延迟专用 PRNG（与 sim 种子隔离·扰动它不影响牌局回放）
     session = new GuandanSession({ seed: lastSeed, stake: selStake, tier: selDifficulty });
     selected = [];

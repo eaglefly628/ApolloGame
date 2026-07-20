@@ -141,6 +141,20 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
     expect(respB?.cards.every((cc) => cc.rank !== 7)).toBe(true); // 7 炸未被拆
   });
 
+  // ── 不拆牌型（owner 2026-07-18「提示别拆我三条凑对子」）───────────────────────────
+  it('不拆组：应对宁用干净对子·不拆三条（传 hand 生效）', () => {
+    const cfg = guandanConfig(2);
+    const beats3 = (m: { cards: Card[] }): boolean => beats(m.cards, [c(0, 3), c(1, 3)], cfg);
+    // 手：三张 5（三条）+ 对 7（干净）→ 应对对 3：宁用对 7·不拆三条 5 成对
+    const hand = [c(0, 5), c(1, 5), c(2, 5), c(0, 7), c(1, 7)];
+    const cands = legalResponses(hand, [c(0, 3), c(1, 3)], cfg).filter(beats3);
+    const r = pickMinResponse(cands, cfg, hand);
+    expect(r).toMatchObject({ family: 'pair', rank: 7 });
+    expect(r?.cards.every((cc) => cc.rank !== 5)).toBe(true); // 三条 5 未被拆
+    // 不传 hand → 退化成最小（对 5·拆三条）——证明 hand 参数真起了作用
+    expect(pickMinResponse(cands)?.rank).toBe(5);
+  });
+
   // ── 蓝图真装载（机器门语义：引擎吃得下 + 空跑 2 tick）───────────────────────────
   it('牌桌蓝图装载 + 空跑：flow boot→table-idle · 资源/牌堆/闸就位', () => {
     const e = new Engine();

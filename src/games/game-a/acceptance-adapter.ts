@@ -7,6 +7,7 @@
 // 投影成引擎协议标量（Resource/Flag/StringVar）+ 转发信号——**零规则判断**（不判型/不算番/不定名次·
 // 那是 session 的事）。信号名用 GDD 术语（play/pass/进贡走 next-round 自动结算）。
 import { GuandanSession, setPlayDebug, TURN_ORDER, type SeatId } from './guandan-session.js';
+import { codeRank } from './rules.js';
 
 // 验收 runner 走 vite-node（非 vitest·PLAY_DEBUG 默认开）→ 静音出牌日志，保验收报告干净（不改规则/行为）。
 setPlayDebug(false);
@@ -34,9 +35,13 @@ const RES: Record<string, (s: GuandanSession, w: AWorld) => number> = {
   tribute_count: (s) => s.tributes.length,
   tribute0_card: (s) => (s.tributes[0] ? s.tributes[0].card : -1),
   tribute0_return: (s) => (s.tributes[0] && s.tributes[0].returned !== null ? s.tributes[0].returned : -1),
+  // 还贡牌**点数**（code=suit*100+rank·故 return 是 code 不是 rank）——「还贡 ≤10」规则须查点数、非 code
+  // （否则 ♥5 code 105 会误判 >10）。剧本用本投影钉 ≤10 口径·免钉了 suit 才碰巧过（A-013 二次再钉时定位的隐患）。
+  tribute0_return_rank: (s) => (s.tributes[0] && s.tributes[0].returned !== null ? codeRank(s.tributes[0].returned) : -1),
   // 双下次贡（s.tributes[1]·次者归二游·GD-A A-010 请求·纯读镜像 tribute0_*）
   tribute1_card: (s) => (s.tributes[1] ? s.tributes[1].card : -1),
   tribute1_return: (s) => (s.tributes[1] && s.tributes[1].returned !== null ? s.tributes[1].returned : -1),
+  tribute1_return_rank: (s) => (s.tributes[1] && s.tributes[1].returned !== null ? codeRank(s.tributes[1].returned) : -1),
   result_total_mult: (s) => (s.lastResult ? s.lastResult.totalMult : -1),
   result_pay: (s) => (s.lastResult ? s.lastResult.payPerPlayer : -1),
   result_level_up: (s) => (s.lastResult ? s.lastResult.levelUp : -1),

@@ -1,16 +1,18 @@
 // GD-A 验收剧本 ③ · 重开/下一局·级牌推进正确。
 // 规则依据 gdd R3 级数推进（头游队：双上+3／一三+2／一四+1）+ 盘循环重开。
-//   seed=42 对方(team1·west/east)连续双上(double)——每盘级牌 +3：2 → 5 → 8，逐盘验证。
+//   seed=3 对方(team1·west/east)连续双上(double)——每盘级牌 +3：2 → 5 → 8，逐盘验证。
 //   重开纪律：next-round 只在 settled 后推进新盘（round++、phase 回 playing、级牌承接上盘）。
 // 对抗目标（改坏被测逻辑应变红）：
 //   · 双上升级步长错（给成 +1/+2）→ level_theirs 断言红。
 //   · 升级方向反（给到输队）→ level_ours/level_theirs 互换红。
 //   · 重开不清盘 / round 不进 → 次盘 round/phase 断言红。
 //   · 级牌不承接（次盘归零重置）→ 第二次 level_theirs=8 断言红。
+// ⚠ 种子重选（PE 2026-07-20·AI「不拆牌型」改良改变确定性出牌线·旧 seed=42 首盘由对方双上变主角一四）：
+//   改 seed=3 重新命中「对方连续双上 2→5→8」——同机制（断言值不变·仅换命中该线的种子）。详 requests A-013。
 {
   "name": "重开下一局·级牌逐盘推进（双上+3）",
   "game": "game-a",
-  "seed": 42,
+  "seed": 3,
   "steps": [
     {
       // 开局：两队皆从 2 打起（gdd R3 LEVEL_START）。

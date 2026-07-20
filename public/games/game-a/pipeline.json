@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  4 passed (4) ·       Tests  51 passed (51)）· 验收剧本 8 场景绿",
-      "at": "2026-07-20T03:49:36.878Z",
-      "gameHash": "4fad99b397ce3d46"
+      "summary": "walkthrough 绿（ Test Files  4 passed (4) ·       Tests  52 passed (52)）· 验收剧本 8 场景绿",
+      "at": "2026-07-20T10:12:29.602Z",
+      "gameHash": "8efed0f5fcd82a18"
     },
     "S5": {
       "exit": 0,
@@ -261,6 +261,30 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-20T03:49:36.878Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE 2026-07-20 本批：出牌动画只播刚出那家+方向错落入盘+提示不拆牌型+种子到秒；no-split AI 改良再变确定性出牌线→按 A-013 保机制重钉 01/03/06/08 验收种子(47/3/7/1)+还贡≤10 改钉 rank。前置 S2/S3 复查门随游戏文件改 stale·非回退",
+      "at": "2026-07-20T10:03:15.399Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-20T10:03:20.795Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE 2026-07-20 rebase 后重跑：并入 origin game-c i18n + GD-A requests(A-015/16 经济翻改/衣橱)·让号 A-015→A-017(入场动效)·hud 注释同步。本批玩法/验收变更同前钉。前置 S2/S3 复查门随游戏文件改 stale·非回退",
+      "at": "2026-07-20T10:12:24.041Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-20T10:12:29.602Z"
     }
   ],
   "reviews": {
@@ -361,6 +385,16 @@
       "stage": "S4",
       "reason": "PE 2026-07-18 owner 五连需求：压不过高亮过 + 本盘记录复制 + 手感 placeholder 特效 + 手牌固定弧 + Tab尺寸报PUI·S2/S3 复查门随游戏文件改 stale·非回退",
       "at": "2026-07-20T03:49:31.602Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "PE 2026-07-20 本批：出牌动画只播刚出那家+方向错落入盘+提示不拆牌型+种子到秒；no-split AI 改良再变确定性出牌线→按 A-013 保机制重钉 01/03/06/08 验收种子(47/3/7/1)+还贡≤10 改钉 rank。前置 S2/S3 复查门随游戏文件改 stale·非回退",
+      "at": "2026-07-20T10:03:15.399Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "PE 2026-07-20 rebase 后重跑：并入 origin game-c i18n + GD-A requests(A-015/16 经济翻改/衣橱)·让号 A-015→A-017(入场动效)·hud 注释同步。本批玩法/验收变更同前钉。前置 S2/S3 复查门随游戏文件改 stale·非回退",
+      "at": "2026-07-20T10:12:24.041Z"
     }
   ]
 }

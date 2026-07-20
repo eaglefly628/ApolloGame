@@ -350,23 +350,31 @@ function trickCard(code: number, idx: number): LayoutNode {
 }
 
 // ── 座前小牌桌（owner 2026-07-18·像真扑克·本墩此座最近一手摆座位前）──────────────────
-// felt 子节点（祖孙嵌套·audit 不判桌面重叠）；出=小牌横排，过=「过」灰签，无=不显。x/y=felt 内相对坐标。
-function seatTrayNode(seat: SeatId, play: { cards: number[]; pass: boolean } | undefined, x: number, y: number): LayoutNode | null {
-  if (!play) return null;
+// felt 子节点（祖孙嵌套·audit 不判桌面重叠）；出=小牌横排，过=「过」灰签，无出牌=**空占位**（稳定 felt 子键，
+// 见下 buildPlay 恒 4 槽注）。**动画逐张 anim 而非整槽 anim**——只有刚变的那槽重渲、只有那槽的牌重播入场，
+// 避免「全桌牌一起播」bug（owner 2026-07-18）；per-card animDelay=错落、按座位方向选入场式（从手上/落盘）。
+// 入座方向→入场式（从该座方向飞入·owner 2026-07-18「根据入桌方向」）：east 无 from-right 关键帧→暂 dealIn·报 PUI A-017。
+const TRAY_ANIM: Record<SeatId, 'slideUp' | 'dealIn' | 'flyIn'> = { hero: 'slideUp', partner: 'dealIn', west: 'flyIn', east: 'dealIn' };
+function seatTrayNode(seat: SeatId, play: { cards: number[]; pass: boolean } | undefined, x: number, y: number): LayoutNode {
+  if (!play) return { type: 'Panel', id: `a-tray-${seat}`, props: { bare: true }, layout: { x, y } }; // 空占位（稳定键·0 尺寸不显）
   if (play.pass) {
     return {
       type: 'Panel', id: `a-tray-${seat}`, props: { bare: true },
-      layout: { x, y, direction: 'row', anim: 'fadeIn' }, // 「过」淡入（手感 placeholder）
-      children: [{ type: 'Tag', id: `a-tray-${seat}-pass`, props: { label: '过', tone: 'dim', size: 'sm' } }],
+      layout: { x, y, direction: 'row' },
+      children: [{ type: 'Tag', id: `a-tray-${seat}-pass`, props: { label: '过', tone: 'dim', size: 'sm' }, layout: { anim: 'fadeIn' } }],
     };
   }
+  const dir = TRAY_ANIM[seat];
   return {
-    // 出的牌 dealIn 入场（牌面展开手感 placeholder·owner 2026-07-18·真展开/收墩特效留下一步美术）。
     type: 'Panel', id: `a-tray-${seat}`, props: { bare: true },
-    layout: { x, y, direction: 'row', gap: 2, align: 'center', anim: 'dealIn' },
+    layout: { x, y, direction: 'row', gap: 2, align: 'center' },
     children: play.cards.map((c, i) => {
       const f = cardFace(c);
-      return { type: 'PlayingCard', id: `a-tray-${seat}-${i}`, props: { rank: f.rank, suit: f.suit, face: 'light', size: 'sm' } } as LayoutNode;
+      return {
+        type: 'PlayingCard', id: `a-tray-${seat}-${i}`,
+        props: { rank: f.rank, suit: f.suit, face: 'light', size: 'sm' },
+        layout: { anim: dir, animDelay: i * 70 }, // 错落：逐张递增延迟·从座位方向飞入
+      } as LayoutNode;
     }),
   };
 }
@@ -475,33 +483,30 @@ export function buildPlay(v: PlayView): LayoutNode {
     });
   }
   feltChildren.push(centerZone);
-  // 座前小牌桌（本墩各座最近一手·felt 子节点·祖孙嵌套 audit 不判桌面重叠）。
-  for (const seat of TURN_ORDER) {
-    const tray = seatTrayNode(seat, v.plays[seat], TRAY_POS[seat].x, TRAY_POS[seat].y);
-    if (tray) feltChildren.push(tray);
-  }
-  // 弹簧箭头指「谁大」（Float 锚定暂大者座前小牌桌·上下弹跳+呼吸光·近似弹簧·owner 2026-07-18）。
-  // felt 子节点（Float 位置 JS 活取·静态 audit 摆不准=祖孙嵌套豁免同扇形/中央墩）；真 scale 弹簧基座缺→用
-  // float 弹跳 + glow 近似·已报 PUI A-011。
-  if (v.trick) {
-    feltChildren.push({
-      type: 'Float',
-      id: 'a-p-bigarrow',
-      props: { anchorTo: { kind: 'node', id: `a-tray-${v.trick.holder}`, at: 'top', offset: { y: -6 } } },
-      children: [
-        {
-          type: 'Panel',
-          id: 'a-p-bigarrow-w',
-          props: { bare: true },
-          layout: { direction: 'column', align: 'center', gap: 0, anim: 'float' },
-          children: [
-            { type: 'Label', id: 'a-p-bigarrow-t', props: { text: '最大', size: 'xs', bold: true, color: 'gold', glow: true } },
-            { type: 'Label', id: 'a-p-bigarrow-a', props: { text: '▼', size: 22, bold: true, color: 'gold', glow: true } },
-          ],
-        },
-      ],
-    });
-  }
+  // 座前小牌桌·**恒 4 槽**（无出牌=空占位）——稳定 felt 子键序，reconciler 只重渲「内容真变了的那槽」，
+  // 只有刚出牌的那家的牌重播入场（修 owner 2026-07-18「播打牌动画时全桌牌一起播」bug·根因=旧实现 tray 数随出牌
+  // 增减→felt 子键序变→整片 felt 被 outerHTML 重建→所有 tray 一起重播）。
+  for (const seat of TURN_ORDER) feltChildren.push(seatTrayNode(seat, v.plays[seat], TRAY_POS[seat].x, TRAY_POS[seat].y));
+  // 弹簧箭头指「谁大」（Float 锚定暂大者座前小牌桌·上下弹跳+呼吸光·近似弹簧·owner 2026-07-18）。**恒渲**（无墩=锚到
+  // 不存在的槽·Float 找不到目标自隐）——稳定 felt 子键序，箭头出没不再触发整片 felt 重建（=全桌牌重播）。
+  // felt 子节点（Float 位置 JS 活取·静态 audit 摆不准=祖孙嵌套豁免同扇形/中央墩）；真 scale 弹簧基座缺→float+glow 近似·A-011。
+  feltChildren.push({
+    type: 'Float',
+    id: 'a-p-bigarrow',
+    props: { anchorTo: { kind: 'node', id: v.trick ? `a-tray-${v.trick.holder}` : 'a-tray-none', at: 'top', offset: { y: -6 } } },
+    children: [
+      {
+        type: 'Panel',
+        id: 'a-p-bigarrow-w',
+        props: { bare: true },
+        layout: { direction: 'column', align: 'center', gap: 0, anim: 'float' },
+        children: [
+          { type: 'Label', id: 'a-p-bigarrow-t', props: { text: '最大', size: 'xs', bold: true, color: 'gold', glow: true } },
+          { type: 'Label', id: 'a-p-bigarrow-a', props: { text: '▼', size: 22, bold: true, color: 'gold', glow: true } },
+        ],
+      },
+    ],
+  });
   // 椭圆红呢牌桌（radius 大=胶囊椭圆·felt 红呢 + 暗角 + 金边）·进贡横幅 + 出牌区 flex 居中于桌心（felt 子节点）。
   const feltTable: LayoutNode = {
     type: 'Panel',

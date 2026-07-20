@@ -2,6 +2,13 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
+### A-017 · [2026-07-18] · PE-A · 入场动效闭集缺「从右/可配方向」变体 → 座前出牌无法按入座方向全向飞入 · status: 📝 待转引擎池报 PUI（游戏层已近似·非阻断）· 类型: UI 基座动效缺口（PUI 域）
+> **ID 让号（2026-07-20·rebase）**：本条原报 A-015，与 GD-A 同轮占用的 A-015（经济翻改）/A-016（衣橱）撞号——origin 先落，PE 让号改 **A-017**（hud.ts/ui-scene-design.md 内引用同步改）。
+**owner 需求（2026-07-18）**：座前出牌动效「根据入桌方向动态调整更漂亮」——各座出的牌从**自己的方向**飞入桌心（partner 顶→下落、hero 底→上飞、west 左→右入、east 右→左入）。
+**根因（引擎 `src/ui/components/server.ts` 关键帧闭集）**：一次性入场 `ANIM_PRESETS` 只有 `fadeIn/slideUp(下→上)/pop/dealIn(上→下)/flyIn(左→右)/shake/popOut`——**无「从右→左」变体、也无 `from` 方向参**。故 east（右座）没有对味的入场式。
+**游戏层已近似（`hud.ts TRAY_ANIM`）**：hero=`slideUp`（底/手上飞出）、partner=`dealIn`（顶落）、west=`flyIn`（左入）、east=`dealIn`（顶落·**将就**·from-right 缺）；per-card `animDelay` 阶梯=错落入盘手感。
+**建议引擎修（PUI 裁）**：给一次性入场加**方向参**（`anim:'slideIn'` + `from:'top'|'bottom'|'left'|'right'`），或补 `flyInRight`/`dropIn` 等变体——让「按方向飞入」通用可配（所有牌桌/棋类游戏通用）。在 PUI 出件前 east 用 dealIn 将就。
+
 ### A-016 · [2026-07-20] · GD-A · 衣橱 UI（收藏册网格清单 + 本 run 战况）· status: 📝 待转报 PUI（缺库存/收藏控件）· 类型: UI 基座缺口（PUI 域）
 GDD §4.3 衣橱=点开查看「几套几件·谁的·价值·等级·集套进度」+ 本 run 各角色当前档。需 **LayoutNode 网格清单/收藏卡控件**（每格=一件收藏：立绘缩图+原主+档名+价值星级）。现闭集若无「网格库存/收藏格」控件→报 PUI 扩控件（照纸牌类刚需·参 A-007 叠层诉求）。**禁手写 DOM/innerHTML**；表达不了列清单等 PUI 裁决，不自造逃生。入口＝角色头像/衣橱按钮（SC-7b 扩展）。
 
@@ -27,6 +34,8 @@ owner 2026-07-20 拍板（GDD v2 §3+§4 重写）：**废除金钱**，衣服=�
 **副作用**：①③④⑤⑥⑦⑧ 用 `play-round`/`play-run` **全自动打**，落到哪个名次/进贡/过A分支**取决于 AI 出牌线**（+种子 PRNG 消耗步数）。AI 一改，旧 seed 漂离目标分支 → 01/06/07/08 断言值过期变红（sim 结算/进贡/升级**逻辑本身没坏**·walkthrough 单测 forceRanking 全绿印证=纯 fixture 陈旧）。
 **PE 已修（本轮·重选 seed 命中各分支·非弱化断言·分支真被走到）**：01 单下→`seed 16`（hero 头游·进大王）、06 抗贡→`seed 4`（次盘应贡方双大王·head=partner）、07 双下→`seed 2`（一队一二·两王进贡 16/15·顺带落 A-010 次贡断言）、08 我方过A→`seed 1`。8 剧本全绿。README 表 + 头注同步更新，逐条头注写明「AI 改良重选 seed」。
 **长期建议（交 GD-A·非阻断）**：这些「分支验证」剧本**天然脆**——每次 AI 调参都得追 seed。建议把抗贡/双下/过A 等**规则分支断言迁到 walkthrough 单测**（`guandan-session.test.ts` 的 `forceRanking` 能直接摆名次·与 AI 完全解耦），acceptance 只保留 ②式「显式出牌驱动」的稳健剧本。这样引擎/AI 谁改都不必追种子。（问责定性=剧本设计耦合·不问谁改的 AI。）
+> **⚠ 第二次命中（2026-07-20·本轮已修）**：owner 续报「提示出牌不应拆我的牌型」→ PE 给 `hint`/AI 加**不拆 ≥3 同点组**（`preferNoSplit`）——又一次改确定性出牌线，01/03/06/08 再漂。**PE 二次重钉（保机制·非弱化）**：01→`seed 47`（首盘 hero 先出·hero 头游·**跨队**一三单下·进末游最大 ♠A）、03→`seed 3`（对方连续双上 2→5→8·断言值不变）、06→`seed 7`（次盘应贡方双大王免贡·上盘头游 west 先出）、08→`seed 1` 不变仅**放宽** `level_theirs` 上界 13→14（对方亦冲到 A 级14 但未过·「未过 A」由 run_won+winner=team0 判定·非靠对方停低级；lte 14 仍守不得越 A 上限>14）。8 剧本全绿·S4 gate 乱序重跑 exit=0。
+> **顺带修隐患（adapter·PE 域·纯读投影）**：剧本①「还贡 ≤10」旧钉 `tribute0_return`（=code=suit*100+rank）——仅当还♠牌(suit0)才碰巧 ≤10，还 ♥5(code105) 会误判 >10。加 `tribute0_return_rank`/`tribute1_return_rank`（`codeRank`·点数），①改钉 `tribute0_return_rank lte 10`（suit 无关·真查点数）+ 保留 `tribute0_return eq 2`（确定性钉码）。**长期建议再重申**：第二次追种子印证「脆」非偶发·GD-A 迁 walkthrough 单测的价值随每轮 AI 调参递增。
 
 ### A-012 · [2026-07-18] · PE-A · UI reconciler 换「根节点 id」时静默 no-op → 跨屏切换死机 · status: ✅ 已转引擎池 **REQ-UIRECON-换根重挂**（Lead 2026-07-18·指派 PUI·P1）· 类型: UI 基座 bug（PUI 域）
 **根因（引擎 `src/ui/components/server.ts reconcileNode`）**：`update(newRoot)` 把新树最小化打补丁到 host——`reconcileNode` 起手 `const el = uiFindById(scope, newN.id); if (!el) return;`。当**新根 id ≠ 旧根 id**（如牌桌 `a-play` → 结算 `a-result`）时，host 里只有旧根元素、找不到新 id → **直接 return，屏一动不动**；且 `curRoot=newRoot` 已推进 → 之后每次 `update` 都拿新 id 找不到、永久 no-op（含菜单开合的 render）。

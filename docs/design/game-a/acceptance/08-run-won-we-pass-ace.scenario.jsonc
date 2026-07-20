@@ -1,12 +1,15 @@
 // GD-A 验收剧本 ⑧ · 逻辑·run 终局（我方过 A → 通关 run-won）。
 // 规则依据 gdd §2.4 A1/A2：打 A 局本队头游且对家非末游(双上/一三)→ 过 A；我方过 A → 通关大结算(run-won)。
 //   与剧本 ④（对方过 A→run-lost）成镜像——补齐 run 终局的两个出口。
-//   seed=1 打穿整个 run：我方(team0)冲到 A(级14)并过 A(双上/一三·a_result=passed) → phase=run-won、我方级=14、对方=10(<13)。
-// ⚠ 种子重选（PE 2026-07-18·AI 策略改良改变确定性出牌线·旧 seed=0 不再命中我方过A）：改 seed=1 重新命中·分支真被走到。详 requests A-013。
+//   seed=1 打穿整个 run：我方(team0)冲到 A(级14)并过 A(双上/一三·a_result=passed) → phase=run-won、我方级=14、
+//   对方=14(亦达 A·但未过——过 A=在 A 局做头游赢·先过者收 run)。
+// ⚠ 种子重选（PE 2026-07-18·AI 策略改良改变确定性出牌线·旧 seed=0 不再命中我方过A）：改 seed=1 重新命中·分支真被走到。
+// ⚠ 断言订正（PE 2026-07-20·AI「不拆牌型」改良后对方也冲到 A 级14）：level_theirs 上界由 13 放宽到 14——
+//   「对方未过 A」由 run_won=true+winner=team0（先过者收 run）判定·非靠对方停在低级；lte 14 仍守「不得越 A 上限>14」。详 A-013。
 // 对抗目标（改坏被测逻辑应变红）：
 //   · 我方过 A 误判成失败(run-lost)或不收束 → run_won / phase 红。
 //   · 过 A 判定误报（一四也判过）→ a_result 红（此 seed 以双上过·非一四）。
-//   · 级牌越过 A 上限(>14) → level_ours 红。
+//   · 级牌越过 A 上限(>14) → level_ours / level_theirs 红。
 //   · 胜方队判反(记成对方过) → winners_team 红。
 {
   "name": "run 终局·我方过 A 通关（run-won·A2）",
@@ -31,7 +34,7 @@
         { "sv": "a_result", "eq": "passed" },
         { "res": "winners_team", "eq": 0 },   // 过 A 的是我方(team0)
         { "res": "level_ours", "eq": 14 },    // 我方冲到 A(LEVEL_ACE=14) 并过
-        { "res": "level_theirs", "lte": 13 }, // 对方未过 A
+        { "res": "level_theirs", "lte": 14 }, // 对方≤A(可亦达 14·但未过·我方先过收 run)·不得越 A 上限>14
       ],
     },
   ],

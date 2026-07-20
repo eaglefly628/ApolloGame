@@ -114,6 +114,30 @@ function naturalBombCards(candidates: readonly PatternMatch[]): Set<number> {
 }
 const consumesBomb = (m: PatternMatch, bomb: Set<number>): boolean => m.cards.some((c) => bomb.has(c.suit * 100 + c.rank));
 
+// ── 不拆牌型（owner 2026-07-18「提示别拆我的三条凑对子」）──────────────────────────
+// 手里各点数的**非逢人配**张数（逢人配灵活·不算固定组）。
+function rankCounts(hand: readonly Card[], cfg: HandPatternConfig): Map<number, number> {
+  const wr = cfg.wild?.rank ?? -1, ws = cfg.wild?.suit ?? -1;
+  const m = new Map<number, number>();
+  for (const c of hand) if (!(c.rank === wr && c.suit === ws)) m.set(c.rank, (m.get(c.rank) ?? 0) + 1);
+  return m;
+}
+/** play 是否「拆了 ≥3 张的同点组」（用了某点一部分、留下残余）——整只出该组（用光）不算拆。 */
+function splitsGroup(m: PatternMatch, counts: Map<number, number>, cfg: HandPatternConfig): boolean {
+  const wr = cfg.wild?.rank ?? -1, ws = cfg.wild?.suit ?? -1;
+  const used = new Map<number, number>();
+  for (const c of m.cards) if (!(c.rank === wr && c.suit === ws)) used.set(c.rank, (used.get(c.rank) ?? 0) + 1);
+  for (const [r, u] of used) { const held = counts.get(r) ?? 0; if (held >= 3 && u < held) return true; }
+  return false;
+}
+/** 软偏好：候选里有「不拆 ≥3 组」的就只留它们（否则原样返回·hand 缺省=不过滤）。 */
+function preferNoSplit(pool: PatternMatch[], cfg: HandPatternConfig, hand?: readonly Card[]): PatternMatch[] {
+  if (!hand) return pool;
+  const counts = rankCounts(hand, cfg);
+  const clean = pool.filter((m) => !splitsGroup(m, counts, cfg));
+  return clean.length > 0 ? clean : pool;
+}
+
 /**
  * 领出选牌启发（hint 与 AI chooseTurn 共用·纯函数·确定性·全档一致）。掼蛋策略（web 校准·owner 2026-07-18）：
  *   ①**先出小牌·保留大牌**——留 K/A/级牌/王（premium）作后手反压，先倒小牌型探路/倒库存（原实现只按「长度→最小
@@ -122,7 +146,7 @@ const consumesBomb = (m: PatternMatch, bomb: Set<number>): boolean => m.cards.so
  *   ③在可领池里倾长牌型倒库存（顺子/三连对/钢板/三带二 > 三张 > 对子 > 单张·防退化成单张流），同长取最小 rank。
  * candidates = legalResponses(hand, null, cfg)（已升序）。空手返回 null（兜底过）。
  */
-export function pickLead(candidates: readonly PatternMatch[], cfg: HandPatternConfig): PatternMatch | null {
+export function pickLead(candidates: readonly PatternMatch[], cfg: HandPatternConfig, hand?: readonly Card[]): PatternMatch | null {
   if (candidates.length === 0) return null;
   const bombCards = naturalBombCards(candidates);
   const nonBomb = candidates.filter((m) => !isBombFamily(m));
@@ -133,7 +157,8 @@ export function pickLead(candidates: readonly PatternMatch[], cfg: HandPatternCo
   // 保留大牌：K 及以上（K/A/级牌/王）留后手·先从非 premium 里领；无非 premium 才动大牌。
   const premium = effRank(13, cfg); // effRank(K)——含 K/A/级牌/王
   const nonPrem = base.filter((m) => m.rank < premium);
-  const pool = nonPrem.length > 0 ? nonPrem : base;
+  // 尽量不拆 ≥3 组（软偏好·owner 2026-07-18「别拆我三条凑对子」）——传 hand 时生效。
+  const pool = preferNoSplit(nonPrem.length > 0 ? nonPrem : base, cfg, hand);
   let best = pool[0]!;
   for (const m of pool) {
     if (m.length > best.length || (m.length === best.length && m.rank < best.rank)) best = m;
@@ -146,9 +171,12 @@ export function pickLead(candidates: readonly PatternMatch[], cfg: HandPatternCo
  * 能压钢板的真炸）；只剩「拆炸凑小牌型」的应对返回 null（=建议过·炸留反压·owner 报「四张7拆成两对」根因）。
  * candidates=已 beats 过滤的应对候选（升序）。整炸不算拆——A-008 唯一解=真炸时仍会提示它。
  */
-export function pickMinResponse(candidates: readonly PatternMatch[]): PatternMatch | null {
+export function pickMinResponse(candidates: readonly PatternMatch[], cfg?: HandPatternConfig, hand?: readonly Card[]): PatternMatch | null {
   const bombCards = naturalBombCards(candidates);
-  return candidates.find((m) => isBombFamily(m) || !consumesBomb(m, bombCards)) ?? null;
+  const usable = candidates.filter((m) => isBombFamily(m) || !consumesBomb(m, bombCards)); // 不拆炸（整炸可）
+  // 尽量不拆 ≥3 组（软·owner 2026-07-18）——传 cfg+hand 时生效；候选升序·取最小的不拆组解。
+  const pool = cfg && hand ? preferNoSplit(usable, cfg, hand) : usable;
+  return pool[0] ?? null;
 }
 
 /** 一手决策：写黑板 → tick 策略树 → 按 move 令牌从候选里取牌（估值=确定性规则查表）。 */
@@ -182,19 +210,20 @@ export function chooseTurn(world: IWorld, input: AiTurnInput, seed?: RandomSeed)
 
   // 应对护炸：不拿成炸的牌去凑小牌型压小墩（掼蛋铁律·owner 报「把四张7拆成两对出」根因）。
   const bombCards = naturalBombCards(candidates);
-  const safeNonBomb = nonBomb.filter((m) => !consumesBomb(m, bombCards));
+  // 应对候选：不拆炸 + 尽量不拆 ≥3 组（owner「别拆我三条凑对子」·软偏好）。
+  const safeNonBomb = preferNoSplit(nonBomb.filter((m) => !consumesBomb(m, bombCards)), cfg, input.hand);
 
   switch (move) {
     case 'lead':
-      // 领出：先出小牌保留大牌、倾长倒库存、不主动领炸/不拆炸（pickLead·hint 与 AI 同一启发）。
-      return pick(pickLead(candidates, cfg) ?? undefined);
+      // 领出：先出小牌保留大牌、倾长倒库存、不主动领炸/不拆炸、不拆三条（pickLead·hint 与 AI 同一启发）。
+      return pick(pickLead(candidates, cfg, input.hand) ?? undefined);
     case 'pass':
       return { move: 'pass', cards: null, match: null };
     case 'bomb':
       // 真炸=整只炸弹压（family bomb·非拆散）；无炸兜底取候选首。
       return pick(candidates.find(isBombFamily) ?? candidates[0]);
     case 'press': {
-      // 压制节奏：取最大的**不拆炸**非炸应对；无则够凶(≥50)动整炸、否则宁可过（不为小墩拆炸）。
+      // 压制节奏：取最大的**不拆炸/不拆组**非炸应对；无则够凶(≥50)动整炸、否则宁可过（不为小墩拆炸）。
       if (safeNonBomb.length > 0) return pick(safeNonBomb[safeNonBomb.length - 1]);
       if (agg >= 50) return pick(candidates.find(isBombFamily) ?? candidates[0]);
       return { move: 'pass', cards: null, match: null };

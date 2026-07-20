@@ -1,9 +1,9 @@
 // GD-A 验收剧本 ⑥ · 逻辑·抗贡（G3）：应贡方合计持双大王 → 免贡·头游先出。
 // 规则依据 gdd §2.3 G3：抗贡成功则本盘无进贡记录，且由上盘头游先出（非进贡者）。
-//   seed=4 首盘打完后，次盘应贡方手握双大王 → 触发抗贡：resisted=true、tribute_count=0、
-//   首出=上盘头游(partner)。彩头「抗贡成功 +1 倍」在结算时体现（本剧本只钉抗贡触发与免贡口径）。
-// ⚠ 种子重选（PE 2026-07-18·AI 策略改良「不拆炸+保留大牌」改变了确定性出牌线·旧 seed=0 不再命中抗贡分支）：
-//   改 seed=4 重新命中「次盘应贡方持双大王」——分支真被走到（非弱化断言）。详 requests A-013。
+//   seed=7 首盘打完后（首盘头游=west·team1），次盘应贡方(我方)手握双大王 → 触发抗贡：resisted=true、
+//   tribute_count=0、首出=上盘头游(west)。彩头「抗贡成功 +1 倍」在结算时体现（本剧本只钉抗贡触发与免贡口径）。
+// ⚠ 种子二次重选（PE 2026-07-20·AI「不拆牌型」改良再变确定性出牌线·旧 seed=4 次盘由抗贡变双下双进贡）：
+//   改 seed=7 重新命中「次盘应贡方持双大王免贡」——同机制（非弱化·上盘头游由 partner 变 west·随新线更新）。详 requests A-013。
 // 对抗目标（改坏被测逻辑应变红）：
 //   · 抗贡判定失效（双大王仍强制进贡）→ tribute_count=1、resisted=false 红。
 //   · 抗贡后首出给错人（给进贡者而非头游）→ turn 断言红。
@@ -11,7 +11,7 @@
 {
   "name": "抗贡·双大王免贡·头游先出（G3）",
   "game": "game-a",
-  "seed": 4,
+  "seed": 7,
   "steps": [
     {
       // 首盘无进贡（G4）。
@@ -26,13 +26,13 @@
     { "expect": [{ "flag": "settled", "eq": true }] },
     { "signal": "next-round" }, // 次盘：应贡方持双大王 → 抗贡
     {
-      // 抗贡成立：本盘无进贡记录、resisted 置位、上盘头游(partner)先出。
+      // 抗贡成立：本盘无进贡记录、resisted 置位、上盘头游(west)先出。
       "expect": [
         { "res": "round", "eq": 2 },
         { "sv": "phase", "eq": "playing" },
         { "flag": "resisted", "eq": true },
         { "res": "tribute_count", "eq": 0 }, // 免贡：零进贡记录
-        { "sv": "turn", "eq": "partner" },   // 头游先出（非进贡者）
+        { "sv": "turn", "eq": "west" },      // 头游先出（非进贡者）
         { "flag": "turn_is_hero", "eq": false },
       ],
     },

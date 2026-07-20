@@ -424,9 +424,11 @@ export class GuandanSession {
    * 应对经 legalBeats 过滤（见其注·引擎判读歧义 A-008 保证提示牌点出去必被 act 收）。
    */
   hint(seat: SeatId): number[] | null {
+    const hand = this.toCards(this.hands[seat]);
     const target = this.currentTrick ? this.toCards(this.currentTrick.cards) : null;
-    const responses = this.legalBeats(this.toCards(this.hands[seat]), target);
-    const pick = target === null ? pickLead(responses, this.cfg) : pickMinResponse(responses);
+    const responses = this.legalBeats(hand, target);
+    // 传 hand → 提示尽量不拆 ≥3 组（owner 2026-07-18「别拆我三条凑对子」）。
+    const pick = target === null ? pickLead(responses, this.cfg, hand) : pickMinResponse(responses, this.cfg, hand);
     return pick ? pick.cards.map((c) => c.suit * 100 + c.rank) : null;
   }
 
