@@ -23,17 +23,18 @@ export const SEAT_COUNT = 6;
 /** 底池位（桌心偏主角侧·筹码扔向此·§下注区）。 */
 export const POT3D = { x: 0, y: FELT_TOP + 0.06, z: -0.35 } as const;
 
-/** 座位 i 桌缘世界坐标（主角 i=0 正南 +z 朝镜头·顺时针 60°·2D HUD 座位卡在屏幕锚点·此处只供筹码抛掷起点）。 */
-export function seatWorldPos(i: number): { x: number; z: number } {
-  const th = (i * Math.PI) / 3; // 0=南(+z)·顺时针
+/** 座位 i 桌缘世界坐标（主角 i=0 正南 +z 朝镜头·顺时针均布·此处只供筹码抛掷起点）。
+ *  count（owner 2026-07-20 入局人数 2~6）：环上均布 = i*2π/count；count=6 时 = i*60°（与旧值一致·零回归）。 */
+export function seatWorldPos(i: number, count = 6): { x: number; z: number } {
+  const th = (i * 2 * Math.PI) / count; // 0=南(+z)·顺时针均布
   return { x: FELT_RX * 0.9 * Math.sin(th), z: FELT_RZ * 0.9 * Math.cos(th) };
 }
 /** 座位 i 的筹码堆锚点（该座位桌缘·**贴边**呢面上·owner 2026-07-18「主角堆靠自己桌边·每位姨太也各有堆靠桌边·再往外一点」）。
  *  同一椭圆环（factor f·贴近座位环但留 CHIP_R 余量稳在呢面·不越围栏），角向偏一点点=落在该座位右手侧（避开正前抛掷线 + 底牌位）。
  *  ⚠ 堆=**静态无物理**（setStack 只挂 Transform3D+Mesh3D·无 RigidBody3D）→ cannon-es 不建体·抛入筹码撞不翻（owner「不要被别人撞翻」）。 */
-export function seatStackPos(i: number): { x: number; y: number; z: number } {
-  const th = (i * Math.PI) / 3 + 0.32; // 0=南(+z)·顺时针 60°/座；+0.32rad≈该座位右手侧偏一点
-  const f = 0.85;                      // 桌缘·贴边（往外挪·仍 <0.9 座位环 + 留 CHIP_R 余量稳在呢面·<1.0 围栏）
+export function seatStackPos(i: number, count = 6): { x: number; y: number; z: number } {
+  const th = (i * 2 * Math.PI) / count + 0.32; // 0=南(+z)·顺时针均布；+0.32rad≈该座位右手侧偏一点（count=6→i*60°+偏移）
+  const f = 0.85;                              // 桌缘·贴边（往外挪·仍 <0.9 座位环 + 留 CHIP_R 余量稳在呢面·<1.0 围栏）
   return { x: FELT_RX * f * Math.sin(th), y: FELT_TOP, z: FELT_RZ * f * Math.cos(th) };
 }
 

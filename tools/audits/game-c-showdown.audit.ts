@@ -15,7 +15,7 @@ const river = [H(0, 14), H(1, 13), H(2, 5), H(3, 9), H(0, 2)];
 const TY = ['Full House', 'Flush', 'Straight', 'Trips', 'Two Pair', 'High Card'];
 const NM = ['You', 'Rose', 'Lily', 'Jade', 'Pearl', 'Iris'];
 const view: TableView = {
-  lang: 'en', blindLabel: '25 / 50', handNo: 7, pot: 2400,
+  lang: 'en', playerCount: 6, blindLabel: '25 / 50', handNo: 7, pot: 2400,
   board: river, heroHole: [H(0, 14), H(1, 14)], heroHandName: 'Full House',
   seats: [0, 1, 2, 3, 4, 5].map((seat) => ({
     seat, name: NM[seat]!, chips: 950, committed: 400,

@@ -18,6 +18,7 @@ export const STRINGS = {
   'menu.titleB': { en: 'NIGHTS', zh: '夜宴' },
   'menu.subtitle': { en: '6-Handed · Read & Raise · Play the Long Game', zh: '六人环桌 · 押注见真章 · 步步为局' },
   'menu.blindLabel': { en: 'Blinds', zh: '本局盲注' },
+  'menu.players': { en: 'Players', zh: '入局人数' },
   'menu.redpack': { en: '🧧 Daily First Hand · +88 Bonus', zh: '🧧 每日首局 +88 红包' },
   'menu.start': { en: 'Sit Down', zh: '开始上桌' },
   'menu.continue': { en: 'Continue', zh: '继续上局' },

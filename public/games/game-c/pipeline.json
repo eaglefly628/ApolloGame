@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  9 passed (9) ·       Tests  108 passed (108)）· 验收剧本 9 场景绿",
-      "at": "2026-07-20T10:03:30.621Z",
-      "gameHash": "4e2285971715fbdd"
+      "summary": "walkthrough 绿（ Test Files  9 passed (9) ·       Tests  116 passed (116)）· 验收剧本 9 场景绿",
+      "at": "2026-07-20T14:28:45.297Z",
+      "gameHash": "36f9233230679760"
     },
     "S5": {
       "exit": 0,
@@ -512,6 +512,30 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-20T10:03:30.621Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "入局人数 2~6 选择(默认6)：session numPlayers 建 N 座(betting已支持heads-up+SEAT_RING模)·hud opponentAnchors 均布·host playerCount 态·session/acceptance 默认6不动：capability-plan/骨架未动→S2/S3复查过期既有乱序；机器门重跑=9场景conformance全绿+ts",
+      "at": "2026-07-20T14:24:17.956Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-20T14:24:32.730Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "入局人数 2~6 选择·rebase 至 game-b 后重跑：session/acceptance 默认6不动；机器门重跑=9场景conformance全绿+tsc/vitest(3377)/build三绿",
+      "at": "2026-07-20T14:28:29.874Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-20T14:28:45.297Z"
     }
   ],
   "outOfOrder": [
@@ -679,6 +703,16 @@
       "stage": "S4",
       "reason": "中英切换+每局时间种子·rebase 至 game-b 后重跑：capability-plan/骨架未动→S2/S3复查过期为既有乱序态；机器门重跑=9场景conformance全绿(last-action中文口径仍绿)+tsc/vitest(3361)/build三绿",
       "at": "2026-07-20T10:03:17.445Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "入局人数 2~6 选择(默认6)：session numPlayers 建 N 座(betting已支持heads-up+SEAT_RING模)·hud opponentAnchors 均布·host playerCount 态·session/acceptance 默认6不动：capability-plan/骨架未动→S2/S3复查过期既有乱序；机器门重跑=9场景conformance全绿+ts",
+      "at": "2026-07-20T14:24:17.956Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "入局人数 2~6 选择·rebase 至 game-b 后重跑：session/acceptance 默认6不动；机器门重跑=9场景conformance全绿+tsc/vitest(3377)/build三绿",
+      "at": "2026-07-20T14:28:29.874Z"
     }
   ],
   "reviews": {

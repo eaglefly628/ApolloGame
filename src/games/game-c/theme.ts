@@ -58,6 +58,21 @@ export const OPPONENT_ANCHORS: readonly SeatAnchor[] = [
   { seat: 5, name: '五姨太', nameEn: 'Iris', xPct: 20, yPct: 66 },
 ] as const;
 
+// 对手座位锚点（owner 2026-07-20 入局人数 2~6）：6 人=上方手工微调布局（OPPONENT_ANCHORS·owner 已验）；
+//   <6 人=把 (count-1) 个对手沿桌上弧（右→过顶→左·避开底部主角区）**均布**·屏幕椭圆 cx50/cy40/ax39/ay32(%)。
+export function opponentAnchors(count: number): SeatAnchor[] {
+  const n = Math.max(2, Math.min(6, count));
+  if (n >= 6) return [...OPPONENT_ANCHORS];
+  const k = n - 1; // 对手数
+  const cx = 50, cy = 40, ax = 39, ay = 32;
+  return Array.from({ length: k }, (_, j) => {
+    const src = OPPONENT_ANCHORS[j]!; // 名字沿用（座 j+1 = 大/二/三/四姨太）
+    const frac = (j + 1) / (k + 1);
+    const ang = Math.PI * (1 - frac); // 0=右, π=左, 过顶
+    return { seat: j + 1, name: src.name, nameEn: src.nameEn, xPct: cx + ax * Math.cos(ang), yPct: cy - ay * Math.sin(ang) };
+  });
+}
+
 // 座位卡尺寸（锚点=中心 → 绝对定位左上角需减半宽/半高）。
 export const SEAT_W = 158;
 export const SEAT_H = 92;

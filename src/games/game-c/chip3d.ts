@@ -21,12 +21,21 @@ export class Chip3D {
   private nonce = 0;
   private thrown: string[] = [];              // 抛出的物理筹码 id（新手清场）
   private stacks = new Map<number, string[]>(); // 各座位筹码堆 id（越赢越高·随栈更新重建）
+  private players = 6;                          // 入局人数（owner 2026-07-20·决定座位环均布 + 堆布局）
   private readonly rng: () => number;
   constructor(private readonly engine: Engine, seed = 20260717) { this.rng = mulberry32(seed); }
 
+  /** 设入局人数（换局时·N<旧则剪掉多余座位的残留堆·防跨局残留）。 */
+  setPlayers(n: number): void {
+    this.players = Math.max(2, Math.min(6, n));
+    for (const [seat, ids] of this.stacks) {
+      if (seat >= this.players) { for (const id of ids) this.engine.world.destroyEntity(id); this.stacks.delete(seat); }
+    }
+  }
+
   /** 座位下注 → 从座位前朝底池抛 count 枚筹码（**随机速度+力量+翻滚**·物理落桌·围栏挡住不出台）。 */
   throwBet(seat: number, count: number): void {
-    const { x: sx, z: sz } = seatWorldPos(seat);
+    const { x: sx, z: sz } = seatWorldPos(seat, this.players);
     const startX = sx * 0.72, startZ = sz * 0.72; // 座位前（靠桌心·下注区）
     const n = Math.max(1, Math.min(6, count));    // 表现上限 6 枚/次
     const dx = POT3D.x - startX, dz = POT3D.z - startZ;
@@ -56,7 +65,7 @@ export class Chip3D {
     const w = this.engine.world;
     for (const id of cur) w.destroyEntity(id);
     const ids: string[] = [];
-    const base = seatStackPos(seat);
+    const base = seatStackPos(seat, this.players);
     for (let i = 0; i < target; i++) {
       const id = `c-stk-${seat}-${i}`;
       ids.push(id);

@@ -89,10 +89,14 @@ export class HoldemSession {
     else if (cur === 'river') this.log('street', `🀄 河牌 · ${cardStr(this.deal.board[4])}`);
   }
 
-  constructor(seed = 20260717, cfg: BettingConfig = { smallBlind: 25, bigBlind: 50 }, startStack = 1000) {
+  // numPlayers（owner 2026-07-20 入局人数 2~6·默认 6）：建 N 座（座 0=主角·座 1..N-1=姨太）。
+  //   betting-engine 已支持任意人数（SEAT_RING=6 作座号模·非活座跳过；heads-up: button=SB·翻前先动·翻后 BB 先）。
+  constructor(seed = 20260717, cfg: BettingConfig = { smallBlind: 25, bigBlind: 50 }, startStack = 1000, numPlayers = 6) {
     this.seed = seed; this.cfg = cfg; this.rng = mulberry32(seed);
-    this.seats = [0, 1, 2, 3, 4, 5].map((seat) => ({ seat, stack: startStack, pawned: new Set<string>(), eliminated: false, name: SEAT_NAMES[seat] }));
-    this.pos = initialPositions([0, 1, 2, 3, 4, 5], 0);
+    const n = Math.max(2, Math.min(6, numPlayers));
+    const ids = Array.from({ length: n }, (_, i) => i);
+    this.seats = ids.map((seat) => ({ seat, stack: startStack, pawned: new Set<string>(), eliminated: false, name: SEAT_NAMES[seat] }));
+    this.pos = initialPositions(ids, 0);
     this.startHand();
   }
 

@@ -41,6 +41,34 @@ describe('game-c game-session — 开局与推进', () => {
   });
 });
 
+describe('game-c game-session — 入局人数 2~6（owner 2026-07-20·默认 6）', () => {
+  for (const n of [2, 3, 4, 5, 6]) {
+    it(`${n} 人局：建 ${n} 座 · 发牌就绪 · 推进不崩 · 守恒 Σ=${n}×1000`, () => {
+      const s = new HoldemSession(42, { smallBlind: 25, bigBlind: 50 }, START, n);
+      expect(s.seats).toHaveLength(n);
+      expect(s.seats.map((x) => x.seat)).toEqual(Array.from({ length: n }, (_, i) => i));
+      expect(s.holeOf(0)).toHaveLength(2); // 主角底牌
+      expect(s.holeOf(n - 1)).toHaveLength(2); // 末位也发到牌
+      expect(totalChips(s)).toBe(n * START + pawnedValue(s)); // 开局守恒
+      drive(s); // 推进 AI 到主角轮 / 摊牌——不崩
+      expect(s.isHeroTurn || s.phase === 'showdown').toBe(true);
+      expect(totalChips(s)).toBe(n * START + pawnedValue(s)); // 推进后仍守恒
+    });
+  }
+
+  it('heads-up(2 人)：庄位=小盲（标准德州特例·betting-engine 已支持）', () => {
+    const s = new HoldemSession(42, { smallBlind: 25, bigBlind: 50 }, START, 2);
+    // 2 人局：button 与 sb 同座（heads-up 规则）；另一家=bb。
+    expect(s.hand!.pos.button).toBe(s.hand!.pos.sb);
+    expect(s.hand!.pos.bb).not.toBe(s.hand!.pos.button);
+  });
+
+  it('人数夹取：<2 提为 2 · >6 夹为 6', () => {
+    expect(new HoldemSession(1, undefined, START, 1).seats).toHaveLength(2);
+    expect(new HoldemSession(1, undefined, START, 9).seats).toHaveLength(6);
+  });
+});
+
 describe('game-c game-session — 完整一手到摊牌（牌逻辑跑通）', () => {
   it('主角跟到摊牌 → 有赢家 + 分池守恒', () => {
     const s = new HoldemSession(42);

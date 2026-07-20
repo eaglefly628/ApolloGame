@@ -65,10 +65,10 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
       chip3d.clear(); for (const k of Object.keys(prevTotal)) delete prevTotal[Number(k)]; chipHandNo = session.handNo;
       prevBoardLen = 0; gcAudio.play('deal'); // 新一手·发牌声
     }
-    for (let seat = 0; seat < 6; seat++) {
+    for (let seat = 0; seat < playerCount; seat++) {
       const cur = session.totalOf(seat), prev = prevTotal[seat] ?? 0;
       if (cur > prev) { chip3d.throwBet(seat, Math.ceil((cur - prev) / 50)); prevTotal[seat] = cur; gcAudio.play('chip'); } // 每 50 一枚·物理抛向底池 + 筹码落桌声
-      chip3d.setStack(seat, session.stackOf(seat)); // 各座位筹码堆靠自己桌边·越赢越高（主角+五姨太各一堆）
+      chip3d.setStack(seat, session.stackOf(seat)); // 各座位筹码堆靠自己桌边·越赢越高（在场各座一堆）
     }
     // 翻街（公共牌张数增）→ 揭示声。
     const boardLen = session.community.length;
@@ -94,11 +94,18 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   const loadLang = (): Lang => { try { return typeof localStorage !== 'undefined' && localStorage.getItem(LANG_KEY) === 'zh' ? 'zh' : 'en'; } catch { return 'en'; } };
   const saveLang = (x: Lang): void => { try { localStorage.setItem(LANG_KEY, x); } catch { /* 无 localStorage */ } };
   let lang: Lang = loadLang();
+  // 入局人数 2~6（owner 2026-07-20·**默认 6**·localStorage 持久·菜单选·start_game/restart 生效）。
+  const PLAYERS_KEY = 'gc_players';
+  const clampPlayers = (n: number): number => Math.max(2, Math.min(6, Math.round(n) || 6));
+  const loadPlayers = (): number => { try { return typeof localStorage !== 'undefined' ? clampPlayers(Number(localStorage.getItem(PLAYERS_KEY)) || 6) : 6; } catch { return 6; } };
+  const savePlayers = (n: number): void => { try { localStorage.setItem(PLAYERS_KEY, String(n)); } catch { /* 无 localStorage */ } };
+  let playerCount = loadPlayers();
   let raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind;
-  // 新开一局：全新时间种子会话（牌面每局不同）+ 重置筹码/声音追踪（防跨局残留）。
+  // 新开一局：全新时间种子会话（牌面每局不同）+ 按当前入局人数建座 + 重置筹码/声音追踪（防跨局残留）。
   const newGame = (): void => {
-    session = new HoldemSession(timeSeed(), CFG, STARTING_STACK);
+    session = new HoldemSession(timeSeed(), CFG, STARTING_STACK, playerCount);
     raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind;
+    chip3d.setPlayers(playerCount); // 座位环均布 + 剪掉多余座位残留堆
     chip3d.clear(); chipHandNo = -1; for (const k of Object.keys(prevTotal)) delete prevTotal[Number(k)]; prevBoardLen = 0; prevPhase = 'betting';
   };
 
@@ -137,10 +144,10 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
     if (la?.raise && (raiseValue < la.raise.min || raiseValue > la.raise.max)) raiseValue = la.raise.min;
     const sd = session.showdown;
     return {
-      lang,
+      lang, playerCount,
       blindLabel: `${CFG.smallBlind} / ${CFG.bigBlind}`, handNo: session.handNo,
       pot: session.pot(), board: session.community, heroHole: session.holeOf(HERO), heroHandName: heroHandName(),
-      seats: [0, 1, 2, 3, 4, 5].map(seatView),
+      seats: Array.from({ length: playerCount }, (_, i) => i).map(seatView),
       toCall: la?.call ?? 0, canRaise: !!la?.raise, minRaise: la?.raise?.min ?? CFG.bigBlind,
       maxRaise: la?.raise?.max ?? STARTING_STACK, raiseValue, muted,
       openWardrobe, wardrobe: openWardrobe !== null ? wardrobeView(openWardrobe) : undefined,
@@ -154,7 +161,7 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
       finale: session.phase === 'gameover' ? { win: session.winnerSide === 'hero', ...session.stats() } : undefined,
     };
   }
-  const menuView = (): MenuView => ({ lang, playerName: PLAYER.name, playerChips: PLAYER.chips, blindLabel: `${CFG.smallBlind} / ${CFG.bigBlind}` });
+  const menuView = (): MenuView => ({ lang, playerCount, playerName: PLAYER.name, playerChips: PLAYER.chips, blindLabel: `${CFG.smallBlind} / ${CFG.bigBlind}` });
 
   let ui: MountHandle | null = null;
   const tree = (): ReturnType<typeof buildMenu> => (screen === 'menu' ? buildMenu(menuView()) : buildTable(tableView()));
@@ -196,6 +203,8 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
     menu_open: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); },
     // 语言切换（EN/中·默认英语·持久化·整树重挂应用新文案）
     set_lang: (arg) => { const nl: Lang = arg === 'zh' ? 'zh' : 'en'; if (nl !== lang) { lang = nl; saveLang(nl); gcAudio.play('click'); remount(); } },
+    // 入局人数选择（2~6·默认 6·持久化·菜单选·下次开始上桌/再来一局生效）
+    set_players: (arg) => { const n = clampPlayers(Number(arg)); if (n !== playerCount) { playerCount = n; savePlayers(n); gcAudio.play('click'); rerender(); } },
     // UI 开关（♪ 键真静音音乐+音效）
     sound_toggle: () => { muted = !muted; gcAudio.setMuted(muted); rerender(); },
     toggle_log: () => { showLog = !showLog; gcAudio.play('click'); rerender(); },

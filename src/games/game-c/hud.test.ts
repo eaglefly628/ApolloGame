@@ -9,7 +9,7 @@ const H = (suit: number, rank: number): Card => ({ suit, rank });
 
 function baseView(over: Partial<TableView> = {}): TableView {
   return {
-    lang: 'en',
+    lang: 'en', playerCount: 6,
     blindLabel: '25 / 50',
     handNo: 1,
     pot: 300,
@@ -98,7 +98,7 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
   });
 
   it('主菜单屏 SC-1 零 issue（标题/立绘/按钮/角色卡）', () => {
-    expect(validateLayoutNode(buildMenu({ lang: 'en', playerName: '夜阑君', playerChips: 12860, blindLabel: '25 / 50' }))).toEqual([]);
+    expect(validateLayoutNode(buildMenu({ lang: 'en', playerCount: 6, playerName: '夜阑君', playerChips: 12860, blindLabel: '25 / 50' }))).toEqual([]);
   });
 
   it('非主角轮=等待提示（行动条隐）零 issue', () => {
@@ -153,7 +153,7 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     for (const lang of ['en', 'zh'] as const) {
       const table = buildTable(baseView({ lang }));
       expect(validateLayoutNode(table)).toEqual([]);
-      const menu = buildMenu({ lang, playerName: '夜阑君', playerChips: 12860, blindLabel: '25 / 50' });
+      const menu = buildMenu({ lang, playerCount: 6, playerName: '夜阑君', playerChips: 12860, blindLabel: '25 / 50' });
       expect(validateLayoutNode(menu)).toEqual([]);
       for (const id of ['c-lang-en', 'c-lang-zh']) expect(idsOf(table).has(id)).toBe(true); // 顶栏语言段控
       for (const id of ['c-menu-lang-seg-en', 'c-menu-lang-seg-zh']) expect(idsOf(menu).has(id)).toBe(true); // 菜单语言段控
@@ -173,5 +173,29 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     };
     expect(validateLayoutNode(buildTable(withMoves('en')))).toEqual([]);
     expect(validateLayoutNode(buildTable(withMoves('zh')))).toEqual([]);
+  });
+
+  it('入局人数 2~6（owner 2026-07-20）：只渲染在场座 + 菜单人数段控 + 各人数零 issue', () => {
+    const idsOf = (n: { id?: string; children?: unknown[] }): Set<string> => {
+      const ids = new Set<string>();
+      const walk = (x: { id?: string; children?: unknown[] }): void => { if (x.id) ids.add(x.id); for (const c of (x.children ?? []) as { id?: string }[]) walk(c); };
+      walk(n); return ids;
+    };
+    for (const pc of [2, 3, 4, 5, 6]) {
+      const seats = [0, 1, 2, 3, 4, 5].map((seat) => ({
+        seat, name: `S${seat}`, chips: 950, committed: 0, clothes: 6,
+        folded: false, allIn: false, out: false, isActor: seat === 0, isHero: seat === 0, isButton: seat === 0,
+      })).slice(0, pc);
+      const table = buildTable(baseView({ playerCount: pc, seats }));
+      expect(validateLayoutNode(table)).toEqual([]);
+      const ids = idsOf(table);
+      for (let s = 0; s < pc; s++) expect(ids.has(`c-seat-${s}`)).toBe(true); // 在场座都在
+      for (let s = pc; s < 6; s++) expect(ids.has(`c-seat-${s}`)).toBe(false); // 不在场座不渲染
+    }
+    // 菜单人数段控 2~6 全在。
+    const menu = buildMenu({ lang: 'en', playerCount: 4, playerName: '夜阑君', playerChips: 100, blindLabel: '25 / 50' });
+    expect(validateLayoutNode(menu)).toEqual([]);
+    const mids = idsOf(menu);
+    for (const n of [2, 3, 4, 5, 6]) expect(mids.has(`c-menu-players-${n}`)).toBe(true);
   });
 });

@@ -6,7 +6,7 @@
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Card } from '@engine/protocol/components.js';
 import {
-  OPPONENT_ANCHORS, anchorTopLeft, cardFace, SEAT_W, SEAT_H, FIELD_W, FIELD_H,
+  opponentAnchors, anchorTopLeft, cardFace, SEAT_W, SEAT_H, FIELD_W, FIELD_H,
 } from './theme.js';
 import type { GameEvent } from './game-log.js';
 import {
@@ -24,6 +24,7 @@ export interface WardrobeRow { id: string; name: string; value: number; pawned: 
 export interface WardrobeView { seat: number; name: string; isHero: boolean; rows: WardrobeRow[]; }
 export interface TableView {
   lang: Lang; // 界面语言（owner 2026-07-20 中英切换·默认 en·宿主持久）
+  playerCount: number; // 入局人数 2~6（owner 2026-07-20·渲染主角 + (count-1) 对手座）
   blindLabel: string; handNo: number; pot: number;
   board: Card[]; heroHole: Card[]; heroHandName: string; // heroHandName=宿主已本地化的牌型显示名
   seats: SeatView[]; toCall: number; canRaise: boolean; minRaise: number; maxRaise: number; raiseValue: number;
@@ -334,7 +335,21 @@ function buildWardrobe(w: WardrobeView, l: Lang): LayoutNode {
 }
 
 // ── 主菜单屏 SC-1（对齐 texas-main-menu 稿·左立绘 + 右标题按钮 + 左下角色卡 + 右上语言段控）──────────────
-export interface MenuView { lang: Lang; playerName: string; playerChips: number; blindLabel: string; }
+export interface MenuView { lang: Lang; playerCount: number; playerName: string; playerChips: number; blindLabel: string; }
+// 入局人数段控（2~6·当前档金 primary·发 set_players·owner 2026-07-20·默认 6）。
+function playerCountSel(m: MenuView): LayoutNode {
+  return {
+    type: 'Panel', id: 'c-menu-players', props: { bare: true },
+    layout: { direction: 'row', gap: 6, align: 'center', justify: 'end' },
+    children: [
+      { type: 'Label', id: 'c-menu-players-l', props: { text: t(m.lang, 'menu.players'), size: 'sm', color: 'sub' } },
+      ...[2, 3, 4, 5, 6].map((n): LayoutNode => ({
+        type: 'Button', id: `c-menu-players-${n}`,
+        props: { label: String(n), kind: m.playerCount === n ? 'primary' : 'ghost', action: 'set_players', actionArg: String(n) },
+      })),
+    ],
+  };
+}
 export function buildMenu(m: MenuView): LayoutNode {
   const l = m.lang;
   const portrait: LayoutNode = {
@@ -374,6 +389,7 @@ export function buildMenu(m: MenuView): LayoutNode {
         layout: { direction: 'row', justify: 'center', padding: 6, radius: 16 },
         children: [{ type: 'Label', id: 'c-menu-rp-t', props: { text: t(l, 'menu.redpack'), size: 'sm', color: 'gold' } }],
       },
+      playerCountSel(m),
       { type: 'Button', id: 'c-menu-start', props: { label: t(l, 'menu.start'), kind: 'hero', action: 'start_game' }, layout: { width: 280 } },
       { type: 'Button', id: 'c-menu-continue', props: { label: t(l, 'menu.continue'), kind: 'ghost', action: 'continue_game' }, layout: { width: 280 } },
       { type: 'Button', id: 'c-menu-settings', props: { label: t(l, 'menu.settings'), kind: 'ghost', action: 'menu_open' }, layout: { width: 280 } },
@@ -552,7 +568,8 @@ function buildFinale(f: FinaleView, l: Lang): LayoutNode {
 // ── 牌桌主屏（纯 2D LayoutNode·owner 2026-07-18 转 2D：大牌桌 + 顶带 + 公共牌 + 座位·文案随 v.lang）──
 export function buildTable(v: TableView): LayoutNode {
   const l = v.lang;
-  const opp = OPPONENT_ANCHORS.map((a) => {
+  // 对手座：按入局人数取锚点（6=手工布局·<6=上弧均布）；只渲染真在场的对手（座 1..count-1）。
+  const opp = opponentAnchors(v.playerCount).map((a) => {
     const sv = v.seats.find((s) => s.seat === a.seat)!;
     const { x, y } = anchorTopLeft(a);
     return seatCard({ ...sv, name: l === 'en' ? a.nameEn : a.name }, x, y, SEAT_W, SEAT_H, l);
