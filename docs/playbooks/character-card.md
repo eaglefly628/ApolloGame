@@ -34,7 +34,7 @@
 ## ③ 成年硬闸（a/b/c 姨太题材必开）
 
 `normalizeCharacterCard(input, { requireAdult: true })`：`adultConfirmed !== true` → **error**（`isCardUsable` 为 false）。
-三游戏（modern-manor / 雀宴 / 德州姨太题材）接卡时**必须 `requireAdult:true`**——不得省。requireAdult 关时默认放行（信任边界上移调用方）。
+三游戏（掼蛋夜宴 / 雀宴 / 德州·姨太题材）接卡时**必须 `requireAdult:true`**——不得省。requireAdult 关时默认放行（信任边界上移调用方）。
 
 ## ④ passthrough 与 SessionOut id 对账
 
