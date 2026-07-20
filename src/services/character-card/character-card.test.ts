@@ -6,7 +6,7 @@ import {
   type PlatformCharacterDraft,
 } from './index.js';
 
-// 满卡 fixture（平台字段全集·媒体三源俱全）。
+// 满卡 fixture（平台真格式·媒体键全部平铺）。
 const fullDraft: PlatformCharacterDraft = {
   id: 'card-001',
   name: '  夜華  ',
@@ -33,18 +33,19 @@ const fullDraft: PlatformCharacterDraft = {
   backgroundPublic: true,
   moreSettings: { theme: 'noir' },
   updatedAt: '2026-07-18T00:00:00Z',
-  image: { Url: 'https://cdn/img.png' },
-  avatar: { Url: 'https://cdn/ava.png' },
-  animation: { Url: 'https://cdn/anim.webp' },
-  imageMode: 'cover',
+  format: 'v2',
+  // 平铺媒体键
+  imageMode: 'upload',
+  imageUrl: 'https://cdn/img.png',
+  avatarUrl: 'https://cdn/ava.png',
+  animationDataUrl: 'data:anim', // 无 animationUrl → 退到 DataUrl
   imageName: '立绘A',
   animationName: '待机',
-  format: 'v2',
 };
 
-// 空卡 fixture（emptyCharacterDraft·全字段在场但空值·同构于平台「新建空卡」）。
-const emptyDraft: PlatformCharacterDraft = {
-  id: '',
+// 空卡 fixture（owner 截图 emptyCharacterDraft 逐键同构·全 26 键平铺·全空值）。
+const emptyCharacterDraft: PlatformCharacterDraft = {
+  // 非媒体 15 键
   name: '',
   gender: '',
   kind: '',
@@ -52,34 +53,30 @@ const emptyDraft: PlatformCharacterDraft = {
   cardDescription: '',
   description: '',
   personality: '',
-  speakingStyle: '',
-  boundaries: '',
   catchphrases: [],
-  backstory: '',
-  worldView: '',
-  eraBackground: '',
-  rules: '',
-  coreConflicts: '',
-  exampleDialogues: '',
-  conversationStyle: '',
-  replySettings: '',
   tags: [],
   adultConfirmed: false,
   visibility: '',
   backgroundPublic: false,
-  moreSettings: null,
   updatedAt: '',
-  image: { Url: '', DataUrl: '', OssKey: '' },
-  avatar: { Url: '', DataUrl: '', OssKey: '' },
-  animation: { Url: '', DataUrl: '', OssKey: '' },
-  imageMode: '',
-  imageName: '',
-  animationName: '',
+  moreSettings: null,
   format: '',
+  // 平铺媒体 11 键（owner 截图 media 块）
+  imageMode: 'upload',
+  imageDataUrl: '',
+  avatarDataUrl: '',
+  imageName: '',
+  imageUrl: '',
+  avatarUrl: '',
+  imageOssKey: '',
+  avatarOssKey: '',
+  animationDataUrl: '',
+  animationName: '',
+  animationOssKey: '',
 };
 
-describe('normalizeCharacterCard · 满卡', () => {
-  it('全字段落位·文本 trim·数组滤重保序·媒体取 Url', () => {
+describe('normalizeCharacterCard · 满卡（平铺媒体）', () => {
+  it('全字段落位·文本 trim·数组滤重保序·媒体平铺取优', () => {
     const { card, issues } = normalizeCharacterCard(fullDraft, { requireAdult: true });
     expect(isCardUsable({ card, issues })).toBe(true);
     expect(issues).toEqual([]); // 满卡零 issue（含头像、id、成年皆齐）
@@ -98,18 +95,22 @@ describe('normalizeCharacterCard · 满卡', () => {
     expect(card.media).toEqual({
       avatarUrl: 'https://cdn/ava.png',
       imageUrl: 'https://cdn/img.png',
-      animationUrl: 'https://cdn/anim.webp',
+      animationUrl: 'data:anim', // 无 animationUrl → 退 DataUrl
       imageName: '立绘A',
       animationName: '待机',
     });
-    // imageMode/format/moreSettings=未消费 → passthrough
-    expect(card.passthrough).toEqual({ moreSettings: { theme: 'noir' }, imageMode: 'cover', format: 'v2' });
+    // imageMode/moreSettings/format=未消费 → passthrough
+    expect(card.passthrough).toEqual({ imageMode: 'upload', moreSettings: { theme: 'noir' }, format: 'v2' });
   });
 });
 
-describe('normalizeCharacterCard · 空卡', () => {
+describe('normalizeCharacterCard · 空卡（emptyCharacterDraft·26 键平铺）', () => {
+  it('夹具恰 26 键平铺（结构守卫）', () => {
+    expect(Object.keys(emptyCharacterDraft)).toHaveLength(26);
+  });
+
   it('name 空 → error·id 回退 warn·零头像 warn·仍产出 card（不 throw）', () => {
-    const { card, issues } = normalizeCharacterCard(emptyDraft);
+    const { card, issues } = normalizeCharacterCard(emptyCharacterDraft);
     expect(isCardUsable({ card, issues })).toBe(false); // name 空 = 不可用
     expect(issues.some((i) => i.level === 'error' && i.field === 'name')).toBe(true);
     expect(issues.some((i) => i.level === 'warn' && i.field === 'id')).toBe(true);
@@ -119,8 +120,9 @@ describe('normalizeCharacterCard · 空卡', () => {
     expect(card.media).toEqual({});
     expect(card.persona.catchphrases).toEqual([]);
     expect(card.tags).toEqual([]);
-    // 全空媒体源/空字符串字段不进 passthrough（imageMode/format 为空串被消费判定外但值空仍保留）
-    expect(card.passthrough).toEqual({ moreSettings: null, imageMode: '', format: '' });
+    // passthrough 恰含 imageMode/format/moreSettings 三键（空媒体字符串键不污染）
+    expect(card.passthrough).toEqual({ imageMode: 'upload', moreSettings: null, format: '' });
+    expect(Object.keys(card.passthrough).sort()).toEqual(['format', 'imageMode', 'moreSettings']);
   });
 
   it('非对象/数组/null 输入 → error 非对象·不 throw', () => {
@@ -133,46 +135,53 @@ describe('normalizeCharacterCard · 空卡', () => {
   });
 });
 
-describe('normalizeCharacterCard · 媒体取优矩阵', () => {
-  it('Url > DataUrl > OssKey：三者齐时取 Url', () => {
+describe('normalizeCharacterCard · 媒体取优矩阵（平铺键）', () => {
+  it('avatarUrl > avatarDataUrl > avatarOssKey：三者齐时取 Url', () => {
     const { card } = normalizeCharacterCard({
       name: 'x',
-      avatar: { Url: 'u', DataUrl: 'd', OssKey: 'k' },
+      avatarUrl: 'u',
+      avatarDataUrl: 'd',
+      avatarOssKey: 'k',
     });
     expect(card.media.avatarUrl).toBe('u');
   });
 
-  it('无 Url 时取 DataUrl', () => {
-    const { card } = normalizeCharacterCard({ name: 'x', avatar: { DataUrl: 'd', OssKey: 'k' } });
+  it('无 avatarUrl 时取 avatarDataUrl', () => {
+    const { card } = normalizeCharacterCard({ name: 'x', avatarDataUrl: 'd', avatarOssKey: 'k' });
     expect(card.media.avatarUrl).toBe('d');
   });
 
-  it('仅 OssKey + 有解析器 → 解析地址', () => {
+  it('animation 槽容忍 animationUrl 优先（平台无此键·宽容读）', () => {
+    const { card } = normalizeCharacterCard({ name: 'x', animationUrl: 'au', animationDataUrl: 'ad' });
+    expect(card.media.animationUrl).toBe('au');
+  });
+
+  it('仅 avatarOssKey + 有解析器 → 解析地址', () => {
     const { card, issues } = normalizeCharacterCard(
-      { name: 'x', avatar: { OssKey: 'oss://a' } },
+      { name: 'x', avatarOssKey: 'oss://a' },
       { resolveOssKey: (k) => `https://cdn/${k}` },
     );
     expect(card.media.avatarUrl).toBe('https://cdn/oss://a');
-    expect(issues.some((i) => i.field === 'avatar.OssKey')).toBe(false);
+    expect(issues.some((i) => i.field === 'avatarOssKey')).toBe(false);
   });
 
-  it('仅 OssKey + 无解析器 → 弃 + warn', () => {
-    const { card, issues } = normalizeCharacterCard({ name: 'x', avatar: { OssKey: 'oss://a' } });
+  it('仅 avatarOssKey + 无解析器 → 弃 + warn（field=真实键名）', () => {
+    const { card, issues } = normalizeCharacterCard({ name: 'x', avatarOssKey: 'oss://a' });
     expect(card.media.avatarUrl).toBeUndefined();
-    expect(issues.some((i) => i.level === 'warn' && i.field === 'avatar.OssKey')).toBe(true);
+    expect(issues.some((i) => i.level === 'warn' && i.field === 'avatarOssKey')).toBe(true);
   });
 
   it('解析器抛异常 → 不炸 normalize·媒体弃 + warn', () => {
     const { card, issues } = normalizeCharacterCard(
-      { name: 'x', avatar: { OssKey: 'k' } },
+      { name: 'x', imageOssKey: 'k' },
       {
         resolveOssKey: () => {
           throw new Error('boom');
         },
       },
     );
-    expect(card.media.avatarUrl).toBeUndefined();
-    expect(issues.some((i) => i.field === 'avatar.OssKey')).toBe(true);
+    expect(card.media.imageUrl).toBeUndefined();
+    expect(issues.some((i) => i.field === 'imageOssKey')).toBe(true);
   });
 });
 
@@ -209,6 +218,38 @@ describe('normalizeCharacterCard · 宽容读 & passthrough', () => {
   });
 });
 
+describe('normalizeCharacterCard · 类型不符 → passthrough + warn（Lead 裁决·不静默丢弃）', () => {
+  it('replySettings 为对象 → 原值进 passthrough + warn·不入 persona', () => {
+    const { card, issues } = normalizeCharacterCard({ name: 'x', replySettings: { a: 1 } });
+    expect(card.persona.replySettings).toBeUndefined();
+    expect(card.passthrough.replySettings).toEqual({ a: 1 });
+    expect(issues.some((i) => i.level === 'warn' && i.field === 'replySettings')).toBe(true);
+  });
+
+  it('catchphrases 非数组 → 原值进 passthrough + warn·persona 退空数组', () => {
+    const { card, issues } = normalizeCharacterCard({ name: 'x', catchphrases: '哼' });
+    expect(card.persona.catchphrases).toEqual([]);
+    expect(card.passthrough.catchphrases).toBe('哼');
+    expect(issues.some((i) => i.level === 'warn' && i.field === 'catchphrases')).toBe(true);
+  });
+
+  it('name 为数字 → 原值进 passthrough + warn·并触发 name 空 error', () => {
+    const { card, issues } = normalizeCharacterCard({ name: 42 });
+    expect(card.name).toBe('');
+    expect(card.passthrough.name).toBe(42);
+    expect(issues.some((i) => i.level === 'warn' && i.field === 'name')).toBe(true);
+    expect(issues.some((i) => i.level === 'error' && i.field === 'name')).toBe(true);
+  });
+
+  it('adultConfirmed 非布尔 → 原值进 passthrough + warn·当未确认（requireAdult 下 error）', () => {
+    const res = normalizeCharacterCard({ name: 'x', adultConfirmed: 'true' }, { requireAdult: true });
+    expect(res.card.adultConfirmed).toBe(false);
+    expect(res.card.passthrough.adultConfirmed).toBe('true');
+    expect(res.issues.some((i) => i.level === 'warn' && i.field === 'adultConfirmed')).toBe(true);
+    expect(res.issues.some((i) => i.level === 'error' && i.field === 'adultConfirmed')).toBe(true);
+  });
+});
+
 describe('normalizeCharacterCard · 确定性', () => {
   it('同输入两次深等输出', () => {
     const a = normalizeCharacterCard(fullDraft, { requireAdult: true });
@@ -225,7 +266,7 @@ describe('toSeatCard · v1 投影兼容', () => {
   });
 
   it('无头像退回主图', () => {
-    const { card } = normalizeCharacterCard({ name: 'x', image: { Url: 'img' } });
+    const { card } = normalizeCharacterCard({ name: 'x', imageUrl: 'img' });
     expect(toSeatCard(card)).toEqual({ id: 'x', name: 'x', avatar: 'img' });
   });
 

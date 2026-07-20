@@ -7,7 +7,6 @@ export {
   isCardUsable,
 } from './character-card.js';
 export type {
-  MediaSource,
   PlatformCharacterDraft,
   CharacterMedia,
   CharacterPersona,

@@ -1,21 +1,15 @@
 // 平台角色卡桥 · 类型契约（REQ-CHARCARD·三游戏共用·外部数据桥·纯确定性）。
 //
-// 网页平台的角色卡草稿格式 `PlatformCharacterDraft`（宽容读·全字段可缺）经
-// normalizeCharacterCard 收敛为引擎规范卡 `ApolloCharacterCard`。此层**不进 skills tier**——
+// 网页平台的角色卡草稿 `PlatformCharacterDraft`（**平台真格式=唯一真相·媒体键全部平铺·无嵌套**）
+// 经 normalizeCharacterCard 收敛为引擎规范卡 `ApolloCharacterCard`。此层**不进 skills tier**——
 // 外部平台数据 ≠ sim capability；与 profile/voice 同为 services 基础设施端口。
 //
 // 红线：DataUrl/媒体不进美术台账、不进 sim hash；卡文本=外部不可信输入（展示层自行长度截断）。
 
-/** 媒体三源槽（每槽同结构·取优 Url > DataUrl > OssKey）。 */
-export interface MediaSource {
-  Url?: string;
-  DataUrl?: string;
-  OssKey?: string;
-}
-
 /**
  * 平台角色卡草稿（网页平台发放的原始格式·宽容读·所有字段可缺/可为任意类型）。
- * 用 unknown 兼容脏输入；normalizeCharacterCard 负责逐字段安全收敛，绝不 throw。
+ * **媒体键平铺**（平台真格式：`imageUrl/imageDataUrl/imageOssKey/avatarUrl/...`·无嵌套对象）。
+ * normalizeCharacterCard 逐字段安全收敛，绝不 throw；类型不符的已消费键 → 原值转存 passthrough + warn。
  */
 export interface PlatformCharacterDraft {
   id?: string;
@@ -45,14 +39,20 @@ export interface PlatformCharacterDraft {
   backgroundPublic?: boolean;
   moreSettings?: unknown;
   updatedAt?: string;
-  // —— 媒体三源 + 元数据 ——
-  image?: MediaSource;
-  avatar?: MediaSource;
-  animation?: MediaSource;
-  imageMode?: string;
-  imageName?: string;
-  animationName?: string;
   format?: string;
+  // —— 媒体键·全部平铺（平台真格式）——
+  imageMode?: string;
+  imageUrl?: string;
+  imageDataUrl?: string;
+  imageOssKey?: string;
+  imageName?: string;
+  avatarUrl?: string;
+  avatarDataUrl?: string;
+  avatarOssKey?: string;
+  animationUrl?: string; // 平台无此键·宽容读容忍其出现（若在则取优最高）
+  animationDataUrl?: string;
+  animationOssKey?: string;
+  animationName?: string;
   // 平台可能追加的自留字段（原样进 passthrough）。
   [key: string]: unknown;
 }
@@ -100,14 +100,14 @@ export interface ApolloCharacterCard {
   visibility?: string;
   backgroundPublic?: boolean;
   updatedAt?: string;
-  /** 未消费字段原样保留（随 SessionOut 回传对账·只透传不消费）。 */
+  /** 未消费字段 + 类型不符的已消费键原样保留（随 SessionOut 回传对账·只透传不消费）。 */
   passthrough: Record<string, unknown>;
 }
 
 /** 收敛过程中记录的问题（error=不可用硬伤·warn=可用但降级）。 */
 export interface CardIssue {
   level: 'error' | 'warn';
-  /** 出问题的字段名（空串=整卡级）。 */
+  /** 出问题的字段名（用真实平台键名·空串=整卡级）。 */
   field: string;
   msg: string;
 }

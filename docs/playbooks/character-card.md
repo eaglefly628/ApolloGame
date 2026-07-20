@@ -16,14 +16,20 @@
 | catchphrases[]/tags[] | persona.catchphrases[]/tags[] | 滤空 + **按序去重（不排序·保作者序）** |
 | adultConfirmed | adultConfirmed | 成年硬闸见 ③ |
 | visibility/backgroundPublic/updatedAt | 同名（可选） | 原样携带 |
-| image/avatar/animation（三源）+ imageName/animationName | media.{imageUrl,avatarUrl,animationUrl,imageName,animationName} | 取优见 ② |
-| 其余（moreSettings/imageMode/format/未知字段） | passthrough | 原样保留·见 ④ |
+| （平铺媒体键）`{avatar,image,animation}{Url,DataUrl,OssKey}` + imageName/animationName | media.{avatarUrl,imageUrl,animationUrl,imageName,animationName} | 取优见 ②（**平台无 animationUrl·宽容读容忍**） |
+| 其余（imageMode/format/moreSettings/未知字段） | passthrough | 原样保留·见 ④ |
+
+> **媒体键=平台真格式的平铺键**（`avatarUrl/avatarDataUrl/avatarOssKey/imageUrl/…`·**无嵌套对象**）；桥只认平铺、不做双形读。
 
 ## ② 媒体取优（每槽独立）
 
-每个媒体槽 `{Url, DataUrl, OssKey}` 取优 **Url > DataUrl > OssKey**：
-- 仅 `OssKey` → 需 `opts.resolveOssKey(key)=>url`；无解析器 / 解析空 / 解析器抛错 → 该源**弃 + warn**（绝不炸）。
+每槽三键取优 **Url > DataUrl > OssKey**（如 avatar 槽=`avatarUrl > avatarDataUrl > avatarOssKey`；image/animation 同构）：
+- 仅 `OssKey` → 需 `opts.resolveOssKey(key)=>url`；无解析器 / 解析空 / 解析器抛错 → 该源**弃 + warn**（field=真实键名如 `avatarOssKey`·绝不炸）。
 - 三槽全空 → warn「零头像媒体」（游戏侧用占位头像降级）。
+
+## ②b 类型不符 → passthrough + warn（Lead 裁决·不静默丢弃）
+
+任何**已消费键**值类型不符预期（replySettings 为对象 / catchphrases 非数组 / name 为数字 / adultConfirmed 非布尔…）→ **原始值转存 passthrough + 记 warn**（保 SessionOut 回传完整性），该键在规范卡按缺失处理（name 另触发空 error）。
 
 ## ③ 成年硬闸（a/b/c 姨太题材必开）
 
@@ -32,7 +38,7 @@
 
 ## ④ passthrough 与 SessionOut id 对账
 
-`passthrough` = 桥**不消费**的字段（平台自留：纹身图、moreSettings 等）原样保留。
+`passthrough` = 桥**不消费**的字段（imageMode/format/moreSettings/未知自留字段·如纹身图）+ 类型不符的已消费键（②b）原样保留。
 纪律：终局回传 SessionOut 以 **`card.id`** 键控（顺位/点数/事件摘要 + passthrough 原样带回）；id 稳定性 = 唯一硬要求（无 id 回退 name 已记 warn，需上报风险）。
 
 ## ⑤ 三游戏消费样板
