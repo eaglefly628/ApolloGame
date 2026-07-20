@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  11 passed (11) ·       Tests  259 passed (259)）· 验收剧本 18 场景绿",
-      "at": "2026-07-19T02:11:42.274Z",
-      "gameHash": "08a87d439125468e"
+      "summary": "walkthrough 绿（ Test Files  11 passed (11) ·       Tests  281 passed (281)）· 验收剧本 18 场景绿",
+      "at": "2026-07-20T09:15:36.557Z",
+      "gameHash": "cbba5312f13364fe"
     }
   },
   "history": [
@@ -183,6 +183,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-19T02:11:42.274Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "GD-B review 迭代：对拍验证 PE 的 P6b 开手真算分(12 构造牌型全对·九蓮/明刻排暗刻/喰い下がり/门清gating/杠符/三四槓子/複合役满)·回填 yaku-scoring-spec(G1-G3 已落已验·补複合役满口径·刷新 §9 工单)；纯文档·玩法码未变",
+      "at": "2026-07-20T09:15:24.773Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-20T09:15:36.557Z"
     }
   ],
   "reviews": {
@@ -253,6 +265,11 @@
       "stage": "S4",
       "reason": "yaku-scoring-spec.md 精修：删随口俗称伪需求·硬性声明标准役全集为唯一基准·非标准役不收；纯文档·玩法码未变·剧本全绿",
       "at": "2026-07-19T02:11:22.054Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "GD-B review 迭代：对拍验证 PE 的 P6b 开手真算分(12 构造牌型全对·九蓮/明刻排暗刻/喰い下がり/门清gating/杠符/三四槓子/複合役满)·回填 yaku-scoring-spec(G1-G3 已落已验·补複合役满口径·刷新 §9 工单)；纯文档·玩法码未变",
+      "at": "2026-07-20T09:15:24.773Z"
     }
   ]
 }
