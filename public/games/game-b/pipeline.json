@@ -28,8 +28,8 @@
     "S4": {
       "exit": 0,
       "summary": "walkthrough 绿（ Test Files  11 passed (11) ·       Tests  281 passed (281)）· 验收剧本 18 场景绿",
-      "at": "2026-07-20T09:15:36.557Z",
-      "gameHash": "cbba5312f13364fe"
+      "at": "2026-07-20T09:46:08.935Z",
+      "gameHash": "ffef07a70aa92868"
     }
   },
   "history": [
@@ -195,6 +195,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-20T09:15:36.557Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "牌桌表现：2D HUD 牌山存量(随 wall.length 缩·摸一张少一张)+对家暗手枚数(鸣牌后自动变少)·owner 2026-07-20 拍板走 HUD 方案；全 LayoutNode·validateLayoutNode 零 issue·功能对拍(wall/hand 计数=live)；玩法核未变",
+      "at": "2026-07-20T09:46:01.386Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-20T09:46:08.935Z"
     }
   ],
   "reviews": {
@@ -270,6 +282,11 @@
       "stage": "S4",
       "reason": "GD-B review 迭代：对拍验证 PE 的 P6b 开手真算分(12 构造牌型全对·九蓮/明刻排暗刻/喰い下がり/门清gating/杠符/三四槓子/複合役满)·回填 yaku-scoring-spec(G1-G3 已落已验·补複合役满口径·刷新 §9 工单)；纯文档·玩法码未变",
       "at": "2026-07-20T09:15:24.773Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "牌桌表现：2D HUD 牌山存量(随 wall.length 缩·摸一张少一张)+对家暗手枚数(鸣牌后自动变少)·owner 2026-07-20 拍板走 HUD 方案；全 LayoutNode·validateLayoutNode 零 issue·功能对拍(wall/hand 计数=live)；玩法核未变",
+      "at": "2026-07-20T09:46:01.386Z"
     }
   ]
 }

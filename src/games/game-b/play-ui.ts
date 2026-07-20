@@ -108,6 +108,48 @@ function meldBlock(m: MatchState, seat: number): LayoutNode | null {
   };
 }
 
+// ── 牌背表现（owner 2026-07-20：牌山摸一张少一张 + 对家手牌动态数量·全 LayoutNode 纯 Panel·无资产依赖）──
+const TILE_BACK = '#e0cea0'; // 米黄牌背（theme.tileBack 0xe0cea0·对齐 3D 牌山背色）
+/** 一枚牌背小格（纯色 Panel=牌背·gap 分隔成排）。 */
+function backCell(id: string, w: number, h: number): LayoutNode {
+  return { type: 'Panel', id, props: { bg: { custom: TILE_BACK } }, layout: { width: w, height: h } };
+}
+/** 牌山存量块：wall.length 枚牌背方格（每摸一张少一张·gdd §八 真牌桌）。25/行网格·右上角避让北席卡。 */
+function wallPile(m: MatchState): LayoutNode {
+  const n = m.cur.wall.length;
+  const PER = 25, CW = 8, CH = 6;
+  const rows: LayoutNode[] = [];
+  for (let r = 0; r * PER < Math.max(n, 1); r++) {
+    const cnt = Math.max(0, Math.min(PER, n - r * PER));
+    rows.push({
+      type: 'Panel', id: `wall-row${r}`, props: { bare: true }, layout: { direction: 'row', gap: 1 },
+      children: Array.from({ length: cnt }, (_, i): LayoutNode => backCell(`wall-c${r}-${i}`, CW, CH)),
+    });
+  }
+  return {
+    type: 'Panel', id: 'wallpile', props: { bg: { custom: 'rgba(28,18,28,0.72)' } },
+    layout: { x: 648, y: 8, padding: 6, gap: 3, direction: 'column' },
+    children: [
+      { type: 'Label', id: 'wall-lb', props: { text: `牌山 ${n}`, size: 'sm', bold: true, color: 'jade' } },
+      ...rows,
+    ],
+  };
+}
+/** 对家暗手枚数：hands[seat] 枚牌背 + 「n枚」（鸣牌离手后自动变少·当前家含刚摸的一张）。玩家(0)看真牌不用。 */
+function concealedRow(m: MatchState, seat: number): LayoutNode {
+  const n = m.cur.hands[seat]!.length + (m.cur.turn === seat && m.cur.drawn !== null ? 1 : 0);
+  return {
+    type: 'Panel', id: `conceal-${seat}`, props: { bare: true }, layout: { direction: 'row', gap: 4, align: 'center' },
+    children: [
+      {
+        type: 'Panel', id: `conceal-${seat}-r`, props: { bare: true }, layout: { direction: 'row', gap: 1 },
+        children: Array.from({ length: n }, (_, i): LayoutNode => backCell(`conceal-${seat}-${i}`, 5, 13)),
+      },
+      { type: 'Label', id: `conceal-${seat}-n`, props: { text: `${n}枚`, size: 'xs', color: 'sub' } },
+    ],
+  };
+}
+
 // ── 席位卡（名/风/点/立直/衣物章·当前家高亮）───────────────────────────────────────────
 function seatCard(m: MatchState, seat: number): LayoutNode {
   const active = m.cur.turn === seat && m.cur.phase === 'playing';
@@ -150,6 +192,8 @@ function seatCard(m: MatchState, seat: number): LayoutNode {
           return { type: 'Tag', id: `seat-${seat}-cl${i}`, props: { label: lab, size: 'sm', tone: on ? 'normal' : 'dim', active: on } };
         }),
       },
+      // 对家暗手枚数（玩家自己看真牌·不加·owner：手牌动态数量）
+      ...(seat !== 0 ? [concealedRow(m, seat)] : []),
     ],
   };
 }
@@ -432,6 +476,7 @@ export function buildPlayHud(m: MatchState, opts: PlayHudOpts): LayoutNode {
   // 棋盘层（最底）。
   const children: LayoutNode[] = [
     centerInfo(m),
+    wallPile(m), // 牌山存量（摸一张少一张·owner 2026-07-20）
     ...[0, 1, 2, 3].map((s) => riverBlock(m, s)),
     ...[0, 1, 2, 3].map((s) => seatCard(m, s)),
     ...[0, 1, 2, 3].map((s) => meldBlock(m, s)).filter((n): n is LayoutNode => n !== null), // 副露展示
