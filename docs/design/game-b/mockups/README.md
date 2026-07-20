@@ -9,7 +9,18 @@
 |---|---|
 | `ui-mockup.dc.html` | 场景布局线框稿（可交互）：HUD 分区标注开关 / 3D 牌桌透视（四家手牌 Slot·牌河·活牌山摸牌演示）/ 席位卡拆解（衣物 5 件点击切换熄灭态）/ 脱衣演出条 timeline 拖拽预览（§五 时序逐事件点亮）/ 行动按钮·字幕·场况规格 / 结算面板 |
 | `main-menu.dc.html` | 主菜单 SC-1（1280×720·原名「雀宴 主菜单.dc.html」·入库转 ASCII 名）：标题+主角立绘占位框（A-CHAR-HERO·300×440·带生成 prompt 与风格锚签）+头像/点数 badge+开始上桌/继续上局/设置 |
+| `play-table.offline.html` | **对局屏 SC-play（1280×720·owner 2026-07-20 交·新布局·1:1 复刻基准）**：顶栏（币三档 🌸/◈/🪙 + 邮件/语言🌐/头像）+ 左侧栏（主角像+导航图标）+ **三姨太角色卡列**（立绘框 + 好感条 + 心情台词 + 情绪三钮）+ **三立绘槽（上家/对家/下家·`tachie-daiyi/eryi/sanyi.png`·单独交付去背 PNG）** + 3D 透视牌桌（四家牌背/牌河/雀坊心/好感飘字）+ 玩家大牌手排 + 行动钮（碰/杠/过）+ 底部聊天输入。**立绘资源待 owner 交付**（见下）。 |
 | `support.js` | Design Component 运行时（打开 .dc.html 必需·与其同目录·从 unpkg 拉 React18/Babel 渲染，**需联网**） |
+
+### 立绘资源台账（待 owner 交付去背 PNG · SC-play 三槽）
+
+| 资产 key | 角色 · 座 | 参考观感（owner 2026-07-20 贴参考图） | 状态 |
+|---|---|---|---|
+| `tachie-daiyi.png` | 大姨太 · 上家（東） | 黑发盘髻 · 暗红牡丹旗袍 · 暖灯和室 | 待交付去背 PNG |
+| `tachie-eryi.png` | 二姨太 · 对家（北） | 深蓝长卷发 · 灰银旗袍 · 夜景霓虹 | 待交付去背 PNG |
+| `tachie-sanyi.png` | 三姨太 · 下家（西） | 栗发 · 粉色旗袍 · 夜景（持牌微笑） | 待交付去背 PNG |
+
+> owner 贴的三张参考图为**内联参考**（未落盘）；实装需 owner **以文件形式**上传去背 PNG，方可 vendor 进 `public/games/game-b/art/tachie/` 并接 asset-index（资产走 asset-manager/resource-manager）。在此之前，SC-play 三槽按设计稿渲**占位框**（同稿「待接去背 PNG」态）。
 
 打开方式：浏览器直开 .dc.html（联网加载 Google Fonts + unpkg）。离线速览用上级目录静态版 `../ui-mockup.html`。
 
