@@ -14,13 +14,13 @@
 
 ### 立绘资源台账（待 owner 交付去背 PNG · SC-play 三槽）
 
-| 资产 key | 角色 · 座 | 参考观感（owner 2026-07-20 贴参考图） | 状态 |
-|---|---|---|---|
-| `tachie-daiyi.png` | 大姨太 · 上家（東） | 黑发盘髻 · 暗红牡丹旗袍 · 暖灯和室 | 待交付去背 PNG |
-| `tachie-eryi.png` | 二姨太 · 对家（北） | 深蓝长卷发 · 灰银旗袍 · 夜景霓虹 | 待交付去背 PNG |
-| `tachie-sanyi.png` | 三姨太 · 下家（西） | 栗发 · 粉色旗袍 · 夜景（持牌微笑） | 待交付去背 PNG |
+| 资产 key | 角色 · 座 | 参考观感（owner 2026-07-20 贴参考图） | 尺寸 | 状态 |
+|---|---|---|---|---|
+| `tachie-daiyi.png` | 大姨太 · 上家（東） | 黑发盘髻 · 暗红牡丹旗袍 · 暖灯和室 | 545×670 | ⚙ **临时已入** `art/tachie/`（**带背景·待去背终稿**） |
+| `tachie-eryi.png` | 二姨太 · 对家（北） | 深蓝长卷发 · 灰银旗袍 · 夜景霓虹 | 420×600 | ⚙ 临时已入（带背景·待去背） |
+| `tachie-sanyi.png` | 三姨太 · 下家（西） | 栗发 · 粉色旗袍 · 夜景（持牌微笑） | 470×560 | ⚙ 临时已入（带背景·待去背） |
 
-> owner 贴的三张参考图为**内联参考**（未落盘）；实装需 owner **以文件形式**上传去背 PNG，方可 vendor 进 `public/games/game-b/art/tachie/` 并接 asset-index（资产走 asset-manager/resource-manager）。在此之前，SC-play 三槽按设计稿渲**占位框**（同稿「待接去背 PNG」态）。
+> **来源**：owner 2026-07-20 贴的三张参考图为**聊天内联**（未落盘 uploads·文件系统查无）；从**会话 transcript 里抽出 base64 还原**成文件，Playwright 转 PNG 后 vendor 进 `public/games/game-b/art/tachie/`（临时·owner「先放美术目录·后面入库」）。**均带原背景**（非去背）——SC-play 立绘槽先用它出图；**待 owner 交付去背 PNG 终稿**再换 + 走 asset-manager 正式入 asset-index。
 
 打开方式：浏览器直开 .dc.html（联网加载 Google Fonts + unpkg）。离线速览用上级目录静态版 `../ui-mockup.html`。
 
