@@ -39,7 +39,7 @@ GD-A 在 acceptance/README「已知偏差」+ 剧本①头注报：`RoundResult.
 GD-A「节奏和逻辑」轮加双下剧本 `07-double-down-tribute`（G2）——现薄适配 `acceptance-adapter.ts` 只投影 `tribute0_*`（大贡），双下的「**次者(小王)归二游 partner**」半句无机读标量可断。**请 PE 加**（照 tribute0_* 同款·纯读 `s.tributes[1]`）：`res tribute1_card`、`sv tribute1_from`/`tribute1_to`。落地后 GD 在 ⑦ 加 `{ "sv":"tribute1_to","eq":"partner" }` + `{ "res":"tribute1_card","eq":15 }`（seed 8 实测：east→partner 进小王15）。当前 ⑦ 已钉「双进贡·大者(大王16)归头游·进大贡者先出」，次贡半句待此投影补齐。零规则判断=纯搬运，不碰规则真相。
 > **✅ PE 落地（2026-07-18·本轮）**：`acceptance-adapter.ts` 加纯读镜像 `res tribute1_card`/`tribute1_return` + `sv tribute1_from`/`tribute1_to`（照 tribute0_* 同款·读 `s.tributes[1]`·零规则）。seed 8 实测复核：`tribute_count=2`、`tribute0` west→hero 大王16、`tribute1` east→partner 小王15——与 GD-A 预告值一致。**GD-A 可回收**：⑦ 现可加 `{ "sv":"tribute1_from","eq":"east" }`、`{ "sv":"tribute1_to","eq":"partner" }`、`{ "res":"tribute1_card","eq":15 }` 钉死次贡半句（剧本=GD 域·PE 不动·此条仅知会投影到位）。
 
-### A-001 · [2026-07-17] · GD-A · 角色卡统一标准依赖 · status: ⏳ 等 owner 发放 · 类型: 外部依赖
+### A-001 · [2026-07-17] · GD-A · 角色卡统一标准依赖 · status: ✅ 标准已发放（owner 2026-07-18·平台 CharacterDraft）→ 引擎桥 **REQ-CHARCARD** 施工中·落地后 adapter 对齐 · 类型: 外部依赖
 主角角色卡数据结构由 owner 统一下发（**07-17 四轮：后面再发**）。当前按**最小集 `{name, avatar(头像)}`** 设计适配层（立绘/年龄/性格=扩展位——主角服饰罚视觉先以计数+头像框占位）；标准落地后内置人设卡×3 按同一结构迁移。**S3 前不阻塞**（占位规格已在 ui-scene-design §5）。
 
 ### A-002 · [2026-07-17] · GD-A · 掼蛋牌型判定/压制比较 能力缺口预判 · status: ✅ 已转引擎池 **REQ-GUANDAN-牌型**（07-17·owner 清池授权） · 类型: 能力缺口候选

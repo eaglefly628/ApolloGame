@@ -1,6 +1,6 @@
 # 共享角色卡格式 · game-b 消费方字段需求清单
 
-> GD-B 2026-07-17 出。**⚖ 同日二批拍板：v1 共享卡=仅 `{name, avatar}` 两字段**——adapter 按 §0 实现；下文 §1-§4 完整愿望清单**整体降级为 v2 参考**（将来完整格式定稿时合并用）。
+> GD-B 2026-07-17 出。**⚖ 2026-07-18 更新：owner 已发放平台完整格式（CharacterDraft）·引擎统一桥=REQ-CHARCARD（`src/services/character-card`·手册 `docs/playbooks/character-card.md`）——v1 两字段口径由 `toSeatCard` 投影兼容承接；本文降为消费方愿望单参考（portraits 衣着档/voicePack/牌风/moneyIn 仍属游戏侧附加数据·不入共享卡）。****⚖ 同日二批拍板：v1 共享卡=仅 `{name, avatar}` 两字段**——adapter 按 §0 实现；下文 §1-§4 完整愿望清单**整体降级为 v2 参考**（将来完整格式定稿时合并用）。
 
 ## 0. v1 生效口径（⚖ owner 2026-07-17）
 
