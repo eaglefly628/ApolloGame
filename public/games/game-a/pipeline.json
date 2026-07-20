@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  4 passed (4) ·       Tests  49 passed (49)）· 验收剧本 8 场景绿",
-      "at": "2026-07-18T15:44:35.130Z",
-      "gameHash": "c54da57b41eea337"
+      "summary": "walkthrough 绿（ Test Files  4 passed (4) ·       Tests  51 passed (51)）· 验收剧本 8 场景绿",
+      "at": "2026-07-20T03:49:36.878Z",
+      "gameHash": "4fad99b397ce3d46"
     },
     "S5": {
       "exit": 0,
@@ -249,6 +249,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T15:44:35.130Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE 2026-07-18 owner 五连需求：压不过高亮过 + 本盘记录复制 + 手感 placeholder 特效 + 手牌固定弧 + Tab尺寸报PUI·S2/S3 复查门随游戏文件改 stale·非回退",
+      "at": "2026-07-20T03:49:31.602Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-20T03:49:36.878Z"
     }
   ],
   "reviews": {
@@ -344,6 +356,11 @@
       "stage": "S4",
       "reason": "PE 2026-07-18 AI 策略改良（不拆炸+保留大牌）+ 手牌弧度 + 验收剧本按新 AI 重选 seed·S2/S3 复查门随游戏文件改 stale·非回退",
       "at": "2026-07-18T15:44:29.339Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "PE 2026-07-18 owner 五连需求：压不过高亮过 + 本盘记录复制 + 手感 placeholder 特效 + 手牌固定弧 + Tab尺寸报PUI·S2/S3 复查门随游戏文件改 stale·非回退",
+      "at": "2026-07-20T03:49:31.602Z"
     }
   ]
 }

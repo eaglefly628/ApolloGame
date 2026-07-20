@@ -424,6 +424,37 @@ describe('Game A ·《掼蛋夜宴》S4 盘循环', () => {
     expect(chk.match!.family).toBe('bomb'); // 真炸=唯一合法压钢板的解（歧义钢板已滤）
   });
 
+  // ── 只能过（owner 2026-07-18·压不过时高亮「过」）───────────────────────────────
+  it('canOnlyPass：应对无合法压牌=true·领出/能压/非当前座=false', () => {
+    const s = new GuandanSession({ seed: 5 });
+    s.playLevel = 2;
+    s.cfg = guandanConfig(2);
+    s.turn = 'hero';
+    s.currentTrick = null; // 领出（必须出·不是只能过）
+    s.hands.hero = [cardCode(0, 5)];
+    expect(s.canOnlyPass('hero')).toBe(false);
+    // 应对对 A·hero 只有小单张 → 只能过
+    s.currentTrick = mkTrick('west', [cardCode(0, 14), cardCode(1, 14)], 2);
+    s.hands.hero = [cardCode(0, 3), cardCode(1, 4)];
+    expect(s.canOnlyPass('hero')).toBe(true);
+    // 应对对 4·hero 有对 5 能压 → 不是只能过
+    s.currentTrick = mkTrick('west', [cardCode(2, 4), cardCode(3, 4)], 2);
+    s.hands.hero = [cardCode(0, 5), cardCode(1, 5)];
+    expect(s.canOnlyPass('hero')).toBe(false);
+    s.turn = 'west'; // 非当前座
+    expect(s.canOnlyPass('hero')).toBe(false);
+  });
+
+  // ── 本盘完整记录复制（owner 2026-07-18·发作者调 AI）─────────────────────────────
+  it('roundTranscript：含起始手牌 + 出牌流水（起始手牌快照 27 张）', () => {
+    const s = new GuandanSession({ seed: 5 });
+    expect(s.initialHands.hero.length).toBe(27); // 发牌后快照
+    const t = s.roundTranscript();
+    expect(t).toContain('第 1 盘');
+    expect(t).toContain('起始手牌');
+    expect(t).toContain('出牌流水');
+  });
+
   // ── 座前小牌桌 seatPlay（owner 2026-07-18·像真扑克·本墩各座最近一手·收墩清）───────────
   it('seatPlay：记本墩各座最近一手（出=牌+型/过=pass）·新墩领出清空', () => {
     const s = new GuandanSession({ seed: 5 });

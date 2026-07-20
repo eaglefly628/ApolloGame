@@ -20,13 +20,16 @@ describe('game-a 宿主 · 盘结算转屏（死机回归护栏）', () => {
       expect(click('a-sel-seat')).toBe(true); // 选桌 → 入座（建 session·排 AI）
       expect($('a-play')).toBeTruthy(); // 牌桌屏就位
 
-      // 驱动到某盘结算：轮到 hero 就 hint→出牌/过；否则推进定时器跑一步 AI（延迟上限 2000ms）。
+      // 驱动到某盘结算：轮到 hero（提示 或 过 可用）就 hint→出牌/过；否则推进定时器跑一步 AI（延迟上限 2000ms）。
+      // 注：压不过时提示键禁用（must-pass 高亮「过」），故 hero 轮判定要看提示 OR 过任一可用。
       let reachedResult = false;
       for (let i = 0; i < 6000; i++) {
         if ($('a-result')) { reachedResult = true; break; }
         const hint = $('a-p-hint') as HTMLButtonElement | null;
-        if (hint && !hint.disabled) {
-          click('a-p-hint');
+        const passBtn = $('a-p-pass') as HTMLButtonElement | null;
+        const heroTurn = (!!hint && !hint.disabled) || (!!passBtn && !passBtn.disabled);
+        if (heroTurn) {
+          if (hint && !hint.disabled) click('a-p-hint');
           const commit = $('a-p-commit') as HTMLButtonElement | null;
           if (commit && !commit.disabled) click('a-p-commit');
           else {

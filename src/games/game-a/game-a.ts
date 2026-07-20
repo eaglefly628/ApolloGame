@@ -155,6 +155,7 @@ export function mount(container: HTMLElement): () => void {
       canCommit: cs.canCommit,
       commitWhy: cs.why,
       canPass: s.currentTrick !== null,
+      mustPass: s.canOnlyPass('hero'),
       showMenu: menuOpen,
       menuTab,
       logRows: menuOpen ? logRows(s) : [],
@@ -325,6 +326,16 @@ export function mount(container: HTMLElement): () => void {
       if (!session) return;
       showCounter = !showCounter;
       render();
+    },
+    // 复制本盘完整记录（发牌+过程+结果）→ 剪贴板（F12 console 兜底）·供玩家发作者分析 AI（owner 2026-07-18）。
+    // 表现层副作用（读 session 拼串 + 写剪贴板）：不写世界/不进 sim/hash。
+    'tools.copylog': () => {
+      if (!session) return;
+      const text = session.roundTranscript();
+      if (typeof console !== 'undefined') console.log('[掼蛋·本盘完整记录]\n' + text); // 剪贴板 + F12 双落（确认可见）
+      try {
+        if (typeof navigator !== 'undefined' && navigator.clipboard) void navigator.clipboard.writeText(text);
+      } catch { /* 非安全上下文/无权限=靠 F12 或框选复制 */ }
     },
     // 游戏内菜单（☰·出牌日志/规则说明/设置）。
     'menu.open': () => {

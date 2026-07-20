@@ -334,6 +334,7 @@ export interface PlayView {
   canCommit: boolean; // 选牌构成合法且能压
   commitWhy: string; // 不可出的原因（禁用提示）
   canPass: boolean;
+  mustPass: boolean; // hero 应对时无任何合法压牌（只能过）→ 高亮「过」引导（owner 2026-07-18）
   // 游戏内菜单（☰·出牌日志/规则说明/设置）。
   showMenu: boolean;
   menuTab: 'log' | 'rules' | 'settings';
@@ -355,13 +356,14 @@ function seatTrayNode(seat: SeatId, play: { cards: number[]; pass: boolean } | u
   if (play.pass) {
     return {
       type: 'Panel', id: `a-tray-${seat}`, props: { bare: true },
-      layout: { x, y, direction: 'row' },
+      layout: { x, y, direction: 'row', anim: 'fadeIn' }, // 「过」淡入（手感 placeholder）
       children: [{ type: 'Tag', id: `a-tray-${seat}-pass`, props: { label: '过', tone: 'dim', size: 'sm' } }],
     };
   }
   return {
+    // 出的牌 dealIn 入场（牌面展开手感 placeholder·owner 2026-07-18·真展开/收墩特效留下一步美术）。
     type: 'Panel', id: `a-tray-${seat}`, props: { bare: true },
-    layout: { x, y, direction: 'row', gap: 2, align: 'center' },
+    layout: { x, y, direction: 'row', gap: 2, align: 'center', anim: 'dealIn' },
     children: play.cards.map((c, i) => {
       const f = cardFace(c);
       return { type: 'PlayingCard', id: `a-tray-${seat}-${i}`, props: { rank: f.rank, suit: f.suit, face: 'light', size: 'sm' } } as LayoutNode;
@@ -383,33 +385,33 @@ const TRAY_POS: Record<SeatId, { x: number; y: number }> = {
 // 蓝本算法=translateX(中心偏移)+translateY(弧形+lift)+rotate；U 弧（中间牌低·两端翘起=手持牌形），
 // 端牌 rotate 左逆右顺。per-card 垂直弧 flex 表达不了 → 绝对定位。
 // audit 提示：扇形叠放=纸牌意图叠层，ui-audit 判重叠是盲区（LayoutNode 缺 data-allow-overlap·A-007 报 PUI）。
+// 扇形手牌（owner 2026-07-18 二次校准·固定弧模型）：**每张重叠步进固定**（不随张数撑开）、**弧曲率固定**
+// （lift=K·offset²·用绝对张数偏移·不归一化）→ 牌越少=整把越短越平但**弧度一致**，居中。牌少「完全展开」=旧
+// 归一化+撑满宽 bug，此模型消除。
 const HAND_CARD_W = 64;
-const HAND_L = 150; // 左端（避主角立绘框·框右缘 100）
-const HAND_AVAIL = 900; // 手牌横向可用宽（大弧舒展占底部满宽·右端翘牌在操作区上方错开）
+const HAND_STEP = 34; // 固定重叠步进（每张露出 34px·恒定·牌少不撑开·满手 27 张≈884px 居中于底部）
+const HAND_CURVE_K = 0.28; // 固定弧曲率（lift = K·offset²·弧度一致·不随张数变·更平缓）
+const HAND_ROT_PER = 1.6; // 固定每张旋转角（度·扇形一致）
+const HAND_CENTER_X = 600; // 扇形中心 x（居中·满手左端≈126 clears 立绘框·右端翘牌错在操作区上方 A-007）
 function buildHandFanNodes(hand: number[], selected: number[]): LayoutNode[] {
   const n = hand.length;
   if (n === 0) return [];
   const mid = (n - 1) / 2;
-  const step = Math.min(HAND_CARD_W + 2, Math.round(HAND_AVAIL / Math.max(1, n - 1)));
-  const totalW = step * (n - 1);
-  const startX = HAND_L + Math.round((HAND_AVAIL - totalW) / 2);
+  const totalW = HAND_STEP * (n - 1);
+  const startX = Math.round(HAND_CENTER_X - totalW / 2 - HAND_CARD_W / 2); // 居中（含半张宽偏移·中心牌心对齐 center）
   const baseY = FIELD_H - 104; // 中间牌顶 y（两端向上翘）
-  // 弧度随手牌张数收（owner 2026-07-18）：满手(≥22 张)=大弧；出牌后牌变少→弧度按张数微微收，不永远这么高地翘。
-  const arcScale = Math.min(1, n / 22);
-  const maxLift = 62 * arcScale; // 两端上翘幅度（U 弧深·张数越少越平）
-  const maxRot = 24 * arcScale; // 端牌旋转角（张数越少越正）
   return hand.map((c, i) => {
     const f = cardFace(c);
     const sel = selected.includes(i);
-    const t = mid === 0 ? 0 : (i - mid) / mid; // 归一化 -1..1
-    const lift = Math.round(t * t * maxLift); // U 弧：|t| 大 → 上翘多（y 小）
-    const rot = Math.round(t * maxRot * 10) / 10; // 左端逆时针 / 右端顺时针
+    const off = i - mid; // 距中心的**绝对**张数偏移（不归一化=弧度恒定·牌少自然浅）
+    const lift = Math.round(HAND_CURVE_K * off * off); // U 弧：固定曲率抛物线（两端翘·弧度一致）
+    const rot = Math.round(off * HAND_ROT_PER * 10) / 10; // 左端逆时针 / 右端顺时针（固定每张角）
     return {
       type: 'PlayingCard',
       id: `a-hand-${i}`,
       // actionArg=手牌**下标**（非牌码·两副牌同码会联动误选）
       props: { rank: f.rank, suit: f.suit, face: 'light', size: 'md', selected: sel, action: 'hand.toggle', actionArg: String(i) },
-      layout: { x: startX + i * step, y: baseY - lift - (sel ? 22 : 0), rotate: rot },
+      layout: { x: startX + Math.round(i * HAND_STEP), y: baseY - lift - (sel ? 22 : 0), rotate: rot },
     };
   });
 }
@@ -538,15 +540,21 @@ export function buildPlay(v: PlayView): LayoutNode {
 
   // 操作区（右下角两行·紧凑靠底·让手牌大弧延伸其上方·参考稿版式）。
   //   行1（y636）：提示 / 过 / 出牌；行2（y684）：金钱 · 理牌 Segmented · 记牌器。
+  // 压不过下家最大牌（只能过）→「过」升为金色 CTA + 呼吸光高亮·「出牌」降格·「提示」禁用（owner 2026-07-18：不该让人自己找）。
+  const passHi = heroTurn && v.mustPass;
   const actionRow1: LayoutNode = {
     type: 'Panel',
     id: 'a-p-act-btns',
     props: { bare: true },
     layout: { x: FIELD_W - 314, y: 634, width: 302, direction: 'row', gap: 8, align: 'center', justify: 'end' },
     children: [
-      { type: 'Button', id: 'a-p-hint', props: { label: '提示', kind: 'ghost', action: 'play.hint', disabled: !heroTurn } },
-      { type: 'Button', id: 'a-p-pass', props: { label: '过', kind: 'quiet', action: 'play.pass', disabled: !heroTurn || !v.canPass } },
-      { type: 'Button', id: 'a-p-commit', props: { label: '出牌', kind: 'primary', action: 'play.commit', disabled: !heroTurn || !v.canCommit } },
+      { type: 'Button', id: 'a-p-hint', props: { label: '提示', kind: 'ghost', action: 'play.hint', disabled: !heroTurn || v.mustPass } },
+      {
+        type: 'Button', id: 'a-p-pass',
+        props: { label: passHi ? '过 · 跳过本轮' : '过', kind: passHi ? 'primary' : 'quiet', action: 'play.pass', disabled: !heroTurn || !v.canPass },
+        ...(passHi ? { layout: { anim: 'glow' as const } } : {}),
+      },
+      { type: 'Button', id: 'a-p-commit', props: { label: '出牌', kind: passHi ? 'ghost' : 'primary', action: 'play.commit', disabled: !heroTurn || !v.canCommit } },
     ],
   };
   const actionRow2: LayoutNode = {
@@ -573,9 +581,15 @@ export function buildPlay(v: PlayView): LayoutNode {
       type: 'Label',
       id: 'a-p-why',
       props: {
-        text: heroTurn ? (!v.canCommit && v.selected.length > 0 ? v.commitWhy : '点牌选中 · 出牌或过') : `${v.turnName} 行动中…`,
+        text: !heroTurn
+          ? `${v.turnName} 行动中…`
+          : passHi
+            ? '压不过下家最大牌 · 点「过」跳过本轮'
+            : !v.canCommit && v.selected.length > 0
+              ? v.commitWhy
+              : '点牌选中 · 出牌或过',
         size: 'xs',
-        color: heroTurn && !v.canCommit && v.selected.length > 0 ? 'warn' : 'dim',
+        color: passHi ? 'gold' : heroTurn && !v.canCommit && v.selected.length > 0 ? 'warn' : 'dim',
       },
     }],
   };
@@ -686,7 +700,15 @@ export function buildGameMenu(v: GameMenuView): LayoutNode {
     type: 'Panel', id: 'a-menu-log', props: { bare: true },
     layout: { direction: 'column', gap: 8, padding: 4 },
     children: [
-      { type: 'Label', id: 'a-menu-log-hint', props: { text: '本局出牌流水（可框选复制贴给作者排查）· 完整日志见浏览器 F12 → Console', size: 'xs', color: 'sub' } },
+      {
+        type: 'Panel', id: 'a-menu-log-head', props: { bare: true },
+        layout: { direction: 'row', gap: 8, align: 'center', justify: 'between' },
+        children: [
+          { type: 'Label', id: 'a-menu-log-hint', props: { text: '本局出牌流水（可框选复制）· 完整含发牌 F12 → Console', size: 'xs', color: 'sub' } },
+          // 一键复制本盘完整记录（起始四家手牌 + 过程 + 结果）→ 剪贴板·发作者调 AI（owner 2026-07-18）。
+          { type: 'Button', id: 'a-menu-log-copy', props: { label: '📋 复制本盘记录', kind: 'quiet', action: 'tools.copylog' } },
+        ],
+      },
       v.logRows.length === 0
         ? { type: 'Label', id: 'a-menu-log-empty', props: { text: '（本盘还没有出牌记录）', size: 'sm', color: 'dim' } }
         : {
@@ -805,10 +827,10 @@ export function buildResult(v: ResultView): LayoutNode {
       {
         type: 'Panel',
         id: 'a-r-card',
-        props: { vignette: true },
-        layout: { direction: 'column', align: 'center', gap: 12, padding: 26 },
+        props: { vignette: true, accent: heroWon }, // 胜=金边（手感 placeholder·owner 2026-07-18·真特效留下一步美术）
+        layout: { direction: 'column', align: 'center', gap: 12, padding: 26, anim: 'pop' }, // 结算卡一次性 pop 入场
         children: [
-          { type: 'Label', id: 'a-r-title', props: { text: title, font: 'elegant', size: 'xxl', bold: true, color: runEnd ? (heroWon ? 'gold' : 'danger') : 'gold' } },
+          { type: 'Label', id: 'a-r-title', props: { text: title, font: 'elegant', size: 'xxl', bold: true, glow: heroWon, color: runEnd ? (heroWon ? 'gold' : 'danger') : 'gold' } },
           {
             type: 'Table',
             id: 'a-r-rank',
@@ -829,12 +851,20 @@ export function buildResult(v: ResultView): LayoutNode {
             children: [
               { type: 'Tag', id: 'a-r-combo', props: { label: v.comboLabel, tone: 'accent', size: 'sm' } },
               { type: 'Badge', id: 'a-r-mult', props: { text: `×${v.totalMult}`, tone: 'ok' } },
-              { type: 'Badge', id: 'a-r-pay', props: { text: `${heroWon ? '+' : '-'}${fmtMoney(v.payPerPlayer)}`, tone: heroWon ? 'ok' : 'warn' } },
+              { type: 'Badge', id: 'a-r-pay', props: { text: `${heroWon ? '+' : '-'}${fmtMoney(v.payPerPlayer)}`, tone: heroWon ? 'ok' : 'warn' }, layout: { anim: 'pop' } },
               { type: 'Label', id: 'a-r-lv', props: { text: `级数 我 ${v.levelAfter[0]} · 敌 ${v.levelAfter[1]}`, size: 'sm', color: 'sub' } },
             ],
           },
           dressLine,
-          actionBtn,
+          {
+            type: 'Panel', id: 'a-r-foot', props: { bare: true },
+            layout: { direction: 'row', gap: 10, align: 'center', justify: 'center' },
+            children: [
+              // 复制本盘完整记录（发牌+过程+结果）→ 剪贴板 + F12·发作者调 AI（owner 2026-07-18）。
+              { type: 'Button', id: 'a-r-copylog', props: { label: '📋 复制本盘记录', kind: 'ghost', action: 'tools.copylog', sub: '发牌+过程·发作者调 AI' } },
+              actionBtn,
+            ],
+          },
         ],
       },
     ],

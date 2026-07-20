@@ -2,6 +2,14 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
+### A-014 · [2026-07-18] · PE-A · Tabs/Modal 同级切页时容器随活跃页高度「跳大小」→ 应固定容器尺寸 + 录 UI 检查目录规则 · status: 📝 待转引擎池报 PUI（纯 UI 基座·游戏层无干净兜底）· 类型: UI 基座缺口 + 手册规则（PUI 域）
+**owner 实证（2026-07-18）**：主菜单进「设置·规则」菜单，切「出牌日志 / 规则说明 / 设置」三页签时，Modal **变大小**（还带居中重定位的位移）——owner 报「原来做纸牌时也这样切大小·游戏里其实用得很少·很不显著」。
+**根因（引擎 `src/ui/components/server.ts switchTab` + Modal 居中）**：`switchTab` 切页用 `pg.style.display = 'block'/'none'`——**容器高 = 当前活跃页高**；三页内容高不同 → 切页即变高；Modal 居中 → 高一变、整体尺寸+位置一起跳。
+**建议引擎修（PUI 域·src/ui Tabs/Modal）**：`renderTabs` 给页容器**预留最高页高度**（所有页都渲染·`min-height = max(各页 scrollHeight)`·非活跃页 `display:none` 只是不可见但仍占位测高），或 Modal 内容区**固定高 + 页内 `overflow:auto` 滚动**。目标：**切页只换内容、容器尺寸/位置不变**。（游戏层无干净兜底——Panel 固定高会裁掉长日志页·滚动/测高属 Tabs 组件职责。）
+**owner 要录的 UI 检查目录规则（PUI 落 `docs/playbooks/ui.md` / check-ui / ui-playbook）**：
+> **「同级 Tab / Segmented 切换不得改变容器尺寸」**——切页预留最高页高度、内容超出走页内滚动；面板/弹层切页时**尺寸与位置保持不变**，不得「跳大小 / 重定位」。（做 Tabs/分段切换的 UI 时自检此条。）
+**附**：owner 明确此为 UI-设计级修复 + 手册规则（非 game-a 专属）——本条按「缺控件/UI 基座缺口走 requests 报 PUI」铁律转 PUI，PE 不擅改 `src/ui/**` 与 UI 手册。
+
 ### A-013 · [2026-07-18] · PE-A · 验收剧本耦合 AI 出牌线 → AI 改良后 4 剧本种子漂离目标分支（已重选 seed 修复·长期建议迁单测）· status: ✅ PE 已重选 seed 全绿（附长期建议交 GD-A）· 类型: 验收剧本健壮性（GD-A 域）
 **背景**：owner 2026-07-18 报「AI 把四张7拆成两对出、先甩对2（先出大的后出小的）·难度低也不能乱出牌」——PE 按掼蛋策略（web 校准）改 AI：**不拆炸弹**（`ai.pickLead`/`chooseTurn` 应对全程护炸·80局35701手实测 0 拆炸）+ **先出小牌·保留大牌**（不先领 K/A/级牌 premium）。
 **副作用**：①③④⑤⑥⑦⑧ 用 `play-round`/`play-run` **全自动打**，落到哪个名次/进贡/过A分支**取决于 AI 出牌线**（+种子 PRNG 消耗步数）。AI 一改，旧 seed 漂离目标分支 → 01/06/07/08 断言值过期变红（sim 结算/进贡/升级**逻辑本身没坏**·walkthrough 单测 forceRanking 全绿印证=纯 fixture 陈旧）。

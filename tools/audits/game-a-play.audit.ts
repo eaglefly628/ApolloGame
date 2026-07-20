@@ -33,6 +33,7 @@ const view: PlayView = {
   canCommit: true,
   commitWhy: '',
   canPass: true,
+  mustPass: false,
   showMenu: false,
   menuTab: 'log',
   logRows: [],

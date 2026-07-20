@@ -120,6 +120,8 @@ export class GuandanSession {
   wallets: Record<SeatId, number> = { hero: INITIAL_FUNDS, partner: INITIAL_FUNDS, west: INITIAL_FUNDS, east: INITIAL_FUNDS };
   dress: Record<SeatId, number> = { hero: DRESS_TIERS, partner: DRESS_TIERS, west: DRESS_TIERS, east: DRESS_TIERS };
   hands: Record<SeatId, number[]> = { hero: [], partner: [], west: [], east: [] };
+  /** 本盘起始手牌快照（发牌+进贡后·play 前）——供「本盘完整记录」复制给作者分析 AI 强弱（owner 2026-07-18）。 */
+  initialHands: Record<SeatId, number[]> = { hero: [], partner: [], west: [], east: [] };
   finished: SeatId[] = [];
   lastRanking: SeatId[] | null = null;
   lastFirstTeam: 0 | 1 = 0;
@@ -230,6 +232,40 @@ export class GuandanSession {
       }
     }
     this.mirrorToWorld();
+
+    // 本盘起始手牌快照（发牌+进贡后·play 前）——供「本盘完整记录」复制 + console 落底（F12 兜底·owner 分析 AI 用）。
+    for (const seat of TURN_ORDER) this.initialHands[seat] = [...this.hands[seat]];
+    if (PLAY_DEBUG && typeof console !== 'undefined') {
+      console.log(`[掼蛋·第${this.round}盘·发牌] 打${this.playLevel} seed=${this.seed} · ` +
+        TURN_ORDER.map((s) => `${SEATS.find((x) => x.id === s)?.name}:${fmtHand(this.initialHands[s], this.playLevel)}`).join(' ｜ '));
+    }
+  }
+
+  /**
+   * 本盘完整记录（起始四家手牌 + 进贡 + 逐手出牌流水 + 结果）——玩家复制贴给作者分析 AI 强弱（owner 2026-07-18）。
+   * 取本盘（this.round）；结算屏调=刚打完那盘、菜单中调=进行中那盘。
+   */
+  roundTranscript(): string {
+    const nameOf = (s: SeatId): string => (SEATS.find((x) => x.id === s)?.name ?? s) + (s === 'hero' ? '(你)' : '');
+    const lines: string[] = [
+      `《掼蛋夜宴》第 ${this.round} 盘 · 打 ${this.playLevel} · seed=${this.seed} · 难度=${this.tier}`,
+      '— 起始手牌（发牌+进贡后）—',
+      ...TURN_ORDER.map((s) => `  ${nameOf(s)}：${fmtHand(this.initialHands[s], this.playLevel)}`),
+    ];
+    if (this.tributes.length) {
+      lines.push('— 进贡 —');
+      for (const t of this.tributes) lines.push(`  ${nameOf(t.from)} → ${nameOf(t.to)}：${fmtCardCode(t.card, this.playLevel)}${t.returned != null ? `（还 ${fmtCardCode(t.returned, this.playLevel)}）` : ''}`);
+    }
+    lines.push('— 出牌流水 —');
+    for (const e of this.playLog.filter((x) => x.round === this.round)) {
+      if (e.action === 'pass') lines.push(`  ${e.seatName} 过`);
+      else lines.push(`  ${e.seatName} ${e.action === 'lead' ? '领出' : '跟'} ${fmtHand(e.cards, this.playLevel)} = ${FAMILY_CN[e.family!] ?? e.family}${e.wilds > 0 ? `（含${e.wilds}逢人配）` : ''}`);
+    }
+    if (this.lastResult) {
+      const r = this.lastResult;
+      lines.push('— 结果 —', `  名次：${r.ranking.map(nameOf).join(' > ')} · ${r.combo} · 我方级 ${r.levelAfter[0]} / 对方级 ${r.levelAfter[1]}`);
+    }
+    return lines.join('\n');
   }
 
   /** 次盘起进贡结算；返回首出座。 */
@@ -392,6 +428,16 @@ export class GuandanSession {
     const responses = this.legalBeats(this.toCards(this.hands[seat]), target);
     const pick = target === null ? pickLead(responses, this.cfg) : pickMinResponse(responses);
     return pick ? pick.cards.map((c) => c.suit * 100 + c.rank) : null;
+  }
+
+  /**
+   * 该座应对时是否**无任何合法压牌**（含炸弹在内都压不过）→ 只能过。
+   * 供 UI 高亮「过」按钮引导玩家（owner 2026-07-18：没有更大的牌时「过」应高亮·不该让人自己找）。
+   * 领出（无当前墩·必须出）/ 非当前座 / 盘已结束 → false（那些情形不是「只能过」）。
+   */
+  canOnlyPass(seat: SeatId): boolean {
+    if (this.phase !== 'playing' || this.turn !== seat || !this.currentTrick) return false;
+    return this.legalBeats(this.toCards(this.hands[seat]), this.toCards(this.currentTrick.cards)).length === 0;
   }
 
   /**

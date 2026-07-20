@@ -222,7 +222,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       hand: [cardCode(0, 3), cardCode(1, 3), cardCode(0, 7), cardCode(2, 14), cardCode(0, RANK_BIG_JOKER)],
       selected: [0, 1], // 选中前两张（下标·非牌码）
       trick: { name: '对子', family: 'pair', cards: [cardCode(2, 2), cardCode(3, 2)], holder: 'west', holderName: '林曼笙', holderTeam: 1, wilds: 0 },
-      canCommit: true, commitWhy: '', canPass: true, sortMode: 'rank', tributeText: null, showCounter: false, counter: [],
+      canCommit: true, commitWhy: '', canPass: true, mustPass: false, sortMode: 'rank', tributeText: null, showCounter: false, counter: [],
       showMenu: false, menuTab: 'log', logRows: [], tierName: '常客', seed: 20260718,
       plays: { west: { cards: [cardCode(2, 2), cardCode(3, 2)], pass: false }, partner: { cards: [], pass: true } },
     });
@@ -232,7 +232,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       round: 2, stake: 100, levelPlay: 2, levelOurs: 3, levelTheirs: 2, wallet: 12000,
       turn: 'west', turnName: '林曼笙',
       seats: { partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero') },
-      hand: [cardCode(0, 5)], selected: [], trick: null, canCommit: false, commitWhy: '点牌选中 · 出牌或过', canPass: false, sortMode: 'family', tributeText: '抗贡成功 · 双大王免进贡 · 头游先出', showCounter: true, counter: [{ rank: 'A', played: 3, total: 8 }],
+      hand: [cardCode(0, 5)], selected: [], trick: null, canCommit: false, commitWhy: '点牌选中 · 出牌或过', canPass: false, mustPass: false, sortMode: 'family', tributeText: '抗贡成功 · 双大王免进贡 · 头游先出', showCounter: true, counter: [{ rank: 'A', played: 3, total: 8 }],
       showMenu: true, menuTab: 'rules', logRows: [{ round: 2, who: '林曼笙', act: '领出', cards: '♠5', fam: '单张' }], tierName: '宗师', seed: 20260718,
       plays: {},
     });
