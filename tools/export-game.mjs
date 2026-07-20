@@ -110,6 +110,47 @@ async function trace(entry) {
 // Map an in-SRC absolute path to its copied location under <out>/src/game/.
 const mapToOut = (abs) => path.join(GAME_SRC_OUT, path.relative(SRC, abs));
 
+// Copy runtime assets served from public/ (fetched by absolute URL at run time, e.g.
+// '/games/<id>/art/...'), which the import-closure tracer never sees. Two sources:
+//  1) the whole public/games/<id>/ dir (tiles, art index.json, per-game art);
+//  2) any absolute /… asset URL literal in the closure that resolves under public/
+//     (covers shared roots like /art or /models).
+async function copyPublicAssets(closure) {
+  const PUB = path.join(REPO, 'public');
+  const OUTPUB = path.join(OUT, 'public');
+  let count = 0;
+  const copyOne = async (relUrl) => {
+    const rel = relUrl.replace(/^\/+/, '').split('?')[0];
+    const src = path.join(PUB, rel);
+    try { if (!(await fs.stat(src)).isFile()) return; } catch { return; }
+    const dest = path.join(OUTPUB, rel);
+    await fs.mkdir(path.dirname(dest), { recursive: true });
+    await fs.copyFile(src, dest);
+    count++;
+  };
+  // 1) whole per-game public dir
+  const gameDir = path.join(PUB, 'games', gameId);
+  try {
+    for (const p of await fs.readdir(gameDir, { recursive: true, withFileTypes: true })) {
+      if (p.isFile()) {
+        const abs = path.join(p.parentPath ?? p.path, p.name);
+        await copyOne('/' + path.relative(PUB, abs));
+      }
+    }
+  } catch { /* no per-game public dir */ }
+  // 2) absolute asset-URL literals in closure source
+  const seen = new Set();
+  const urlRe = /['"`](\/[A-Za-z0-9_./-]+\.(?:png|jpe?g|webp|gif|svg|json|glb|gltf|hdr|exr|woff2?|ttf|otf|mp3|wav|ogg|mp4|webm))['"`]/g;
+  for (const f of closure) {
+    let code; try { code = await fs.readFile(f, 'utf8'); } catch { continue; }
+    for (const m of code.matchAll(urlRe)) {
+      if (seen.has(m[1])) continue; seen.add(m[1]);
+      await copyOne(m[1]);
+    }
+  }
+  return count;
+}
+
 // Copy each imported asset so its ORIGINAL relative specifier still resolves from the
 // copied importer — works even when the asset lived above src/ (e.g. ../../../docs/x?raw).
 async function copyAssets(assets) {
@@ -189,9 +230,9 @@ const files = {
   '.gitignore': () => 'node_modules/\ndist/\n*.log\n.DS_Store\n',
   // One-command launchers so the package is "runnable code" out of the box (install if needed, then dev).
   'run.sh': () =>
-    `#!/usr/bin/env bash\n# One-command launcher: installs deps on first run, then starts the dev server.\nset -e\ncd "$(dirname "$0")"\nif [ ! -d node_modules ]; then echo "▶ installing deps (first run)…"; npm install; fi\necho "▶ starting ${gameId} …"; npm run dev\n`,
+    `#!/usr/bin/env bash\n# One-command launcher: installs deps on first run, then opens the game in the browser.\nset -e\ncd "$(dirname "$0")"\nif [ ! -d node_modules ]; then echo "▶ installing deps (first run)…"; npm install; fi\necho "▶ starting ${gameId} — the browser will open automatically…"; npm run dev -- --open\n`,
   'run.bat': () =>
-    `@echo off\r\nREM One-command launcher: installs deps on first run, then starts the dev server.\r\ncd /d "%~dp0"\r\nif not exist node_modules ( echo Installing deps ^(first run^)... & call npm install )\r\necho Starting ${gameId} ...\r\ncall npm run dev\r\n`,
+    `@echo off\r\nREM One-command launcher: installs deps on first run, then opens the game in the browser.\r\ncd /d "%~dp0"\r\nif not exist node_modules ( echo Installing deps ^(first run^)... & call npm install )\r\necho Starting ${gameId} - the browser will open automatically...\r\ncall npm run dev -- --open\r\n`,
   'README.md': (d) =>
     `# ${gameId} — Standalone Game Module\n\n` +
     `Self-contained, runnable extraction of Apollo ${gameId} with **zero platform dependency**\n` +
@@ -250,6 +291,8 @@ async function main() {
   await copyClosure(closure);
   const assetWarnings = await copyAssets(assets);
   for (const w of assetWarnings) console.warn(`  ⚠ asset not found (declared but missing): ${w}`);
+  const publicCount = await copyPublicAssets(closure);
+  console.log(`  ${publicCount} runtime assets copied from public/`);
 
   const runtime = {};
   for (const spec of externals) {
