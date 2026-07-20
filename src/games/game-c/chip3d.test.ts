@@ -69,6 +69,19 @@ describe('game-c chip3d — 3D 物理筹码抛掷 + 主角堆（render-only·own
     expect(seatStack(e, 0)).toHaveLength(0); // 输光=无堆
   });
 
+  it('座位堆=静态无物理（无 RigidBody3D·抛入筹码撞不翻·owner「不要被别人撞翻」）', () => {
+    const e = freshEngine();
+    new Chip3D(e, 1).setStack(0, 1500);
+    const stk = seatStack(e, 0);
+    expect(stk.length).toBeGreaterThan(0);
+    for (const id of stk) {
+      expect(e.world.getComponent(id, 'RigidBody3D')).toBeUndefined(); // 纯渲染网格·cannon-es 不建体
+      expect(e.world.getComponent(id, 'Mesh3D')).toBeDefined();
+    }
+    // 堆贴边（f=0.85）：主角堆(座0)比座位环(0.9)略内·但比旧 0.8 更靠外桌缘
+    expect(Math.hypot(seatStackPos(0).x / 3.55, seatStackPos(0).z / 2.45)).toBeGreaterThan(0.8);
+  });
+
   it('六席各有独立筹码堆（各在自己桌缘·id 命名空间隔离·owner 2026-07-18）', () => {
     const e = freshEngine();
     const chip = new Chip3D(e, 1);

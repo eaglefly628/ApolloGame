@@ -47,7 +47,8 @@ export class Chip3D {
     }
   }
 
-  /** 座位筹码堆（该座位桌缘内侧·**赢得越多摞越高**·六席各一堆）：按当前筹码量重建一摞静态筹码（无物理·稳定不倒）。 */
+  /** 座位筹码堆（该座位桌缘·贴边·**赢得越多摞越高**·六席各一堆）：按当前筹码量重建一摞筹码。
+   *  **只挂 Transform3D+Mesh3D·绝不挂 RigidBody3D** → 纯渲染网格·cannon-es 不建体·抛入的物理筹码撞不翻（owner「不要被别人撞翻」）。 */
   setStack(seat: number, chips: number): void {
     const target = Math.max(0, Math.min(STACK_MAX, Math.round(chips / PER_CHIP)));
     const cur = this.stacks.get(seat) ?? [];
