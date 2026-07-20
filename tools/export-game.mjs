@@ -80,6 +80,7 @@ async function resolve(spec, fromAbs) {
 async function trace(entry) {
   const closure = new Set();
   const externals = new Set();
+  const assets = []; // { importerAbs, spec }  — asset files imported relatively/by alias
   const queue = [entry];
   while (queue.length) {
     const file = queue.pop();
@@ -88,6 +89,14 @@ async function trace(entry) {
     let code;
     try { code = await fs.readFile(file, 'utf8'); } catch { continue; }
     for (const spec of specifiers(code)) {
+      if (!isBare(spec) && isAssetSpec(spec)) {
+        // Only a real asset if the file exists — skips lookalike specs inside comments/strings.
+        const abs = spec.startsWith('.')
+          ? path.resolve(path.dirname(file), spec.split('?')[0])
+          : null;
+        if (abs) { try { if ((await fs.stat(abs)).isFile()) assets.push({ importerAbs: file, spec }); } catch { /* comment/example */ } }
+        continue;
+      }
       if (!VALID_SPEC.test(spec)) continue; // regex false-positive from a comment/string
       if (isBare(spec)) { externals.add(spec); continue; }
       const r = await resolve(spec, file);
@@ -95,8 +104,36 @@ async function trace(entry) {
       else if (!r && spec.startsWith('node:')) externals.add(spec);
     }
   }
-  return { closure, externals };
+  return { closure, externals, assets };
 }
+
+// Map an in-SRC absolute path to its copied location under <out>/src/game/.
+const mapToOut = (abs) => path.join(GAME_SRC_OUT, path.relative(SRC, abs));
+
+// Copy each imported asset so its ORIGINAL relative specifier still resolves from the
+// copied importer — works even when the asset lived above src/ (e.g. ../../../docs/x?raw).
+async function copyAssets(assets) {
+  const warnings = [];
+  for (const { importerAbs, spec } of assets) {
+    const rel = spec.split('?')[0];
+    const srcAbs = path.resolve(path.dirname(importerAbs), rel);
+    const destAbs = path.resolve(path.dirname(mapToOut(importerAbs)), rel);
+    try {
+      await fs.mkdir(path.dirname(destAbs), { recursive: true });
+      await fs.copyFile(srcAbs, destAbs);
+    } catch {
+      warnings.push(`${path.relative(REPO, srcAbs)} (imported by ${path.relative(SRC, importerAbs)})`);
+    }
+  }
+  return warnings;
+}
+
+// Asset-file imports (fonts/images/raw html/etc) — copied verbatim, never recursed into.
+const ASSET_EXT = /\.(woff2?|ttf|otf|eot|png|jpe?g|webp|gif|svg|glb|gltf|hdr|exr|mp3|wav|ogg|m4a|mp4|webm|html|txt|csv)$/i;
+const isAssetSpec = (spec) => {
+  const [p, q] = spec.split('?');
+  return (q && /^(raw|url|inline)/.test(q)) || ASSET_EXT.test(p);
+};
 
 // bare 'three/addons/x' -> 'three'; '@scope/pkg/sub' -> '@scope/pkg'
 const pkgName = (s) => (s.startsWith('@') ? s.split('/').slice(0, 2).join('/') : s.split('/')[0]);
@@ -118,7 +155,7 @@ const files = {
     scripts: { dev: 'vite', build: 'tsc --noEmit && vite build', preview: 'vite preview', typecheck: 'tsc --noEmit' },
     dependencies: deps.runtime, peerDependencies: { react: '^18.0.0 || ^19.0.0', 'react-dom': '^18.0.0 || ^19.0.0' },
     devDependencies: {
-      '@types/react': '^18.3.3', '@types/react-dom': '^18.3.0', '@types/three': '^0.184.1',
+      '@types/node': '^20.0.0', '@types/react': '^18.3.3', '@types/react-dom': '^18.3.0', '@types/three': '^0.184.1',
       '@vitejs/plugin-react': '^4.3.1', typescript: '^5.5.3', vite: '^5.4.2',
     },
   }, null, 2) + '\n',
@@ -126,11 +163,18 @@ const files = {
     compilerOptions: {
       target: 'ES2022', module: 'ESNext', moduleResolution: 'bundler', jsx: 'react-jsx', strict: true,
       esModuleInterop: true, skipLibCheck: true, forceConsistentCasingInFileNames: true, resolveJsonModule: true,
-      isolatedModules: true, noEmit: true, lib: ['ES2022', 'DOM', 'DOM.Iterable'], types: ['three'], baseUrl: '.',
+      isolatedModules: true, noEmit: true, lib: ['ES2022', 'DOM', 'DOM.Iterable'], types: ['three', 'node'], baseUrl: '.',
       paths: Object.fromEntries(Object.entries(ALIASES).map(([a, t]) => [a + '*', [`./src/game/${t}*`]])),
     },
     include: ['src'], exclude: ['node_modules', 'dist'],
   }, null, 2) + '\n',
+  // Ambient declarations so `tsc` accepts asset imports (fonts / images / ?raw / ?url).
+  'src/game/_shims.d.ts': () =>
+    `declare module '*?raw' { const s: string; export default s; }\n` +
+    `declare module '*?url' { const s: string; export default s; }\n` +
+    `declare module '*?inline' { const s: string; export default s; }\n` +
+    ['woff2', 'woff', 'ttf', 'otf', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'glb', 'gltf', 'hdr', 'mp3', 'wav', 'ogg', 'mp4', 'webm']
+      .map((e) => `declare module '*.${e}' { const s: string; export default s; }`).join('\n') + '\n',
   'vite.config.ts': () =>
     `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nimport { resolve } from 'path';\n\n` +
     `export default defineConfig({\n  plugins: [react()],\n  resolve: {\n    alias: {\n` +
@@ -140,24 +184,50 @@ const files = {
     `<!DOCTYPE html>\n<html lang="zh">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />\n  <title>${gameId}</title>\n  <style>*{margin:0;padding:0;box-sizing:border-box}html,body,#root{width:100%;height:100%;overflow:hidden;background:#000}</style>\n</head>\n<body>\n  <div id="root"></div>\n  <script type="module" src="/src/main.tsx"></script>\n</body>\n</html>\n`,
   'src/main.tsx': () =>
     `import { createRoot } from 'react-dom/client';\nimport { ${COMP} } from './${COMP}.js';\n\nconst root = document.getElementById('root');\nif (!root) throw new Error('#root not found');\ncreateRoot(root).render(\n  <div style={{ position: 'fixed', inset: 0, background: '#000' }}>\n    <${COMP} onExit={() => console.log('[dev] exit')} />\n  </div>,\n);\n`,
-  [`src/${COMP}.tsx`]: () =>
-    `import { useEffect, useRef } from 'react';\nimport { mount } from './game/games/${gameId}/index.js';\n\nexport interface ${COMP}Props {\n  onExit?: () => void;\n  style?: React.CSSProperties;\n  className?: string;\n}\n\nexport function ${COMP}({ onExit, style, className }: ${COMP}Props): React.ReactElement {\n  const ref = useRef<HTMLDivElement>(null);\n  const onExitRef = useRef(onExit);\n  onExitRef.current = onExit;\n  useEffect(() => {\n    const el = ref.current;\n    if (!el) return;\n    const cleanup = mount(el, { exit: () => onExitRef.current?.() });\n    return () => cleanup();\n  }, []);\n  return <div ref={ref} className={className} style={{ width: '100%', height: '100%', position: 'relative', ...style }} />;\n}\n\nexport default ${COMP};\n`,
+  [`src/${COMP}.tsx`]: (d) =>
+    `import { useEffect, useRef } from 'react';\nimport { mount } from '${d.entryImport}';\n\nexport interface ${COMP}Props {\n  onExit?: () => void;\n  style?: React.CSSProperties;\n  className?: string;\n}\n\nexport function ${COMP}({ onExit, style, className }: ${COMP}Props): React.ReactElement {\n  const ref = useRef<HTMLDivElement>(null);\n  const onExitRef = useRef(onExit);\n  onExitRef.current = onExit;\n  useEffect(() => {\n    const el = ref.current;\n    if (!el) return;\n    const cleanup = ${d.mountTakesHost ? 'mount(el, { exit: () => onExitRef.current?.() })' : 'mount(el)'};\n    return () => cleanup?.();\n  }, []);\n  return <div ref={ref} className={className} style={{ width: '100%', height: '100%', position: 'relative', ...style }} />;\n}\n\nexport default ${COMP};\n`,
   '.gitignore': () => 'node_modules/\ndist/\n*.log\n.DS_Store\n',
 };
 
 // Known runtime deps; extend the map if a game pulls others.
 const RUNTIME_DEP_VERSIONS = { three: '^0.184.0', 'cannon-es': '^0.20.0' };
 
-async function main() {
-  const entry = path.join(SRC, 'games', gameId, 'index.ts');
-  try { await fs.stat(entry); } catch { console.error(`✗ entry not found: ${path.relative(REPO, entry)}`); process.exit(1); }
+// Auto-detect the file that exports `mount(container)` for this game.
+async function findEntry() {
+  const candidates = [
+    path.join(SRC, 'games', gameId, 'index.ts'),
+    path.join(SRC, 'games', gameId, `${gameId}.tsx`),
+    path.join(SRC, 'games', gameId, `${gameId}.ts`),
+    path.join(SRC, `${gameId}.tsx`),
+    path.join(SRC, `${gameId}.ts`),
+  ];
+  for (const c of candidates) {
+    let code;
+    try { code = await fs.readFile(c, 'utf8'); } catch { continue; }
+    if (/export\s+(?:function\s+mount|\{[^}]*\bmount\b|const\s+mount)/.test(code)) return c;
+  }
+  return null;
+}
 
+async function main() {
+  const entry = await findEntry();
+  if (!entry) { console.error(`✗ no mount entry found for ${gameId} (looked in src/games/${gameId}/ and src/${gameId}.*)`); process.exit(1); }
+  // Wrapper import path = entry relative to SRC, under ./game/, with .js extension.
+  const entryImport = './game/' + path.relative(SRC, entry).replace(/\.tsx?$/, '.js');
+
+  // Does mount() accept a 2nd (host) argument? Drives the wrapper's call shape.
+  const entryCode = await fs.readFile(entry, 'utf8');
+  const mountTakesHost = /export\s+function\s+mount\s*\(\s*[^,)]+,[^)]/.test(entryCode);
+
+  console.log(`▶ entry: ${path.relative(REPO, entry)}  (mount ${mountTakesHost ? 'takes host' : '1-arg'})`);
   console.log(`▶ tracing closure from ${path.relative(REPO, entry)} …`);
-  const { closure, externals } = await trace(entry);
-  console.log(`  ${closure.size} source files, ${externals.size} external specifiers`);
+  const { closure, externals, assets } = await trace(entry);
+  console.log(`  ${closure.size} source files, ${assets.length} asset imports, ${externals.size} external specifiers`);
 
   await fs.rm(OUT, { recursive: true, force: true });
   await copyClosure(closure);
+  const assetWarnings = await copyAssets(assets);
+  for (const w of assetWarnings) console.warn(`  ⚠ asset not found (declared but missing): ${w}`);
 
   const runtime = {};
   for (const spec of externals) {
@@ -171,7 +241,7 @@ async function main() {
   for (const [rel, make] of Object.entries(files)) {
     const dest = path.join(OUT, rel);
     await fs.mkdir(path.dirname(dest), { recursive: true });
-    await fs.writeFile(dest, make({ runtime }));
+    await fs.writeFile(dest, make({ runtime, entryImport, mountTakesHost }));
   }
 
   console.log(`✔ wrote ${path.relative(REPO, OUT)}`);
