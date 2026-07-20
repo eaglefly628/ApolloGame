@@ -42,6 +42,32 @@
       "command": "npm run build",
       "group": { "kind": "build", "isDefault": true },
       "problemMatcher": []
+    },
+    {
+      "label": "📦 导出单游戏 (standalone export)",
+      "detail": "抽出所选游戏为自包含可运行工程 → export/<game>/（给网页/React 团队）",
+      "type": "shell",
+      "command": "node tools/export-game.mjs ${input:exportGameId}",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "📦▶ 导出并本地跑 (export + dev)",
+      "detail": "导出所选游戏 → npm install → vite dev（一条龙验证导出产物）",
+      "type": "shell",
+      "command": "node tools/export-game.mjs ${input:exportGameId} && cd export/${input:exportGameId} && npm install && npm run dev",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "exportGameId",
+      "type": "pickString",
+      "description": "选择要导出的游戏",
+      "options": ["game-c", "game-a", "game-b", "game-d", "game-e", "game-f", "game-g", "game-i", "game-t", "game-x"],
+      "default": "game-c"
     }
   ]
 }
