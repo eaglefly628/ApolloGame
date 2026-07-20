@@ -18,11 +18,11 @@ function mk(over: Partial<WinContext> & { hand14: number[]; winTile: number }): 
 }
 const names = (ctx: WinContext): string[] => scoreWin(ctx)?.yaku.map((y) => y.name) ?? [];
 
-// ── §4 R-1 雀头符（GD-B 2026-07-18 圈定：連風=2 符·对齐雀魂/天凤·非 4 符竞技变体）──────────
-describe('§4 雀头符 · R-1 連風=2符（GD 圈定钉）', () => {
+// ── §4 R-1 雀头符（owner 2026-07-20「全日式」订正：連風=4 符·天凤/雀魂/竞技一致·只世嘉 MJ 用 2）──────────
+describe('§4 雀头符 · R-1 連風=4符（全日式·权威源核实）', () => {
   const c = (seatWind: number, roundWind: number): WinContext => mk({ hand14: [], winTile: 0, seatWind, roundWind });
-  it('連風対子（東场東家的東東·自风==场风）= 2 符（非 4）', () => {
-    expect(pairFu(27, c(0, 0))).toBe(2); // 東 pair·seat東 round東 → 連風·R-1 圈定 2 符
+  it('連風対子（東场東家的東東·自风==场风·ダブ東）= 4 符（场风2+自风2）', () => {
+    expect(pairFu(27, c(0, 0))).toBe(4); // 東 pair·seat東 round東 → 連風·全日式 4 符
   });
   it('单风役牌雀头（自风南）= 2 符', () => {
     expect(pairFu(28, c(1, 0))).toBe(2); // 南 pair·自风南·场风東

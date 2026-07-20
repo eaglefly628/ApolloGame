@@ -9,16 +9,18 @@
 import { isTerminalOrHonor } from './tiles-def.js';
 import type { WinContext, Decomp, WinInterp } from './yaku.js';
 
-/** 雀头符：三元/自风/场风 +2；连风(自风==场风) +2（R-1·GD-B 2026-07-18 圈定=2符·对齐雀魂/天凤）；客风/数牌 0。 */
+/** 雀头符：三元/自风/场风 +2；**连风(自风==场风) +4**（全日式·天凤/雀魂/竞技一致·场风2+自风2）；客风/数牌 0。 */
 export function pairFu(pairKind: number, ctx: WinContext): number {
   if (pairKind < 27) return 0; // 数牌雀头 0 符
   if (pairKind >= 31) return 2; // 三元牌（白發中）
   const w = pairKind - 27; // 风牌 0東1南2西3北
   const isSeat = w === ctx.seatWind;
   const isRound = w === ctx.roundWind;
-  // 连风牌（自风==场风·如东场东家的东对子）：R-1 GD 圈定 **2 符**（雀魂/天凤口径·4符=竞技变体）——
-  // 自风+场风各计一次会双 2 符，但标准口径连风雀头**只计一档 2 符**（非叠加）。
-  if (isSeat || isRound) return 2;
+  // 连风牌（自风==场风·如东场东家的东东·ダブ東）：**4 符**（场风 2 + 自风 2 各计一次）——
+  // owner 2026-07-20「全日式」订正：天凤/雀魂/麻雀格闘倶楽部/竞技团体皆 4 符（只世嘉 MJ 用 2 符）；
+  // 网上权威源核实（麻雀豆腐/麻雀王国/はぐりん天凤考据）→ 推翻 GD-B 07-18「2符」（其「对齐天凤/雀魂」前提有误）。
+  if (isSeat && isRound) return 4; // 连风（双风重叠）4 符
+  if (isSeat || isRound) return 2; // 单风牌 2 符
   return 0; // 客风雀头 0 符
 }
 

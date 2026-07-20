@@ -99,7 +99,7 @@ describe('§4 雀头符（役牌+2·连风=2符 R-1 GD-B 圈定·客风/数牌 0
   it('三元雀头（中）+2 符', () => { expect(pairFu(33, ctx())).toBe(2); });
   it('自风雀头（南·seat1）+2 符', () => { expect(pairFu(28, ctx({ seatWind: 1, roundWind: 0 }))).toBe(2); });
   it('场风雀头（東·round0·seat南）+2 符', () => { expect(pairFu(27, ctx({ seatWind: 1, roundWind: 0 }))).toBe(2); });
-  it('连风雀头（東·seat0 round0）= 2 符（R-1 圈定·对齐雀魂/天凤·非叠加）', () => { expect(pairFu(27, ctx({ seatWind: 0, roundWind: 0 }))).toBe(2); });
+  it('连风雀头（東·seat0 round0·ダブ東）= 4 符（全日式·天凤/雀魂/竞技一致·场风2+自风2）', () => { expect(pairFu(27, ctx({ seatWind: 0, roundWind: 0 }))).toBe(4); });
   it('客风雀头（西·非自非场）0 符', () => { expect(pairFu(29, ctx({ seatWind: 1, roundWind: 0 }))).toBe(0); });
 });
 
