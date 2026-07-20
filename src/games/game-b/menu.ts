@@ -45,15 +45,24 @@ export function buildMenu(st: MenuState): LayoutNode {
           },
         ],
       },
-      // ── 按钮竖排（右侧·提示 + 三钮）─────────────────────────────────────────────────
+      // ── 按钮竖排（右侧·提示 + 外框内三钮）──────────────────────────────────────────────
+      // owner 2026-07-20：菜单钮**统一等宽**（不随文字长短变）+ **外框**成一块。做法=框 Panel 固定
+      // 宽 + `align:'stretch'` 让三钮满框等宽（钮无固有宽·flex 拉伸）；`edge:'gold'` 描金框。约定入 ui.md。
       {
         type: 'Panel', id: 'menu-btns', props: { bare: true },
-        layout: { x: MENU_W - 316, y: 322, width: 240, gap: 15, align: 'center' },
+        layout: { x: MENU_W - 336, y: 300, width: 260, gap: 13, align: 'center' },
         children: [
           { type: 'Label', id: 'menu-tip', props: { text: '荷官已就位，请上桌 ▾', size: 12, color: 'sub' } },
-          { type: 'Button', id: 'menu-start-btn', props: { label: '开始上桌', kind: 'hero', action: MENU_START } },
-          { type: 'Button', id: 'menu-continue-btn', props: { label: '继续上局', kind: 'ghost', action: MENU_CONTINUE, disabled: !st.hasSave } },
-          { type: 'Button', id: 'menu-settings-btn', props: { label: '设置', kind: 'ghost', action: MENU_SETTINGS } },
+          {
+            type: 'Panel', id: 'menu-btn-frame',
+            props: { bg: { custom: 'linear-gradient(162deg,rgba(48,29,54,0.62),rgba(28,17,34,0.72))' }, edge: 'gold' },
+            layout: { width: 260, direction: 'column', gap: 12, padding: 18, radius: 14, align: 'stretch' },
+            children: [
+              { type: 'Button', id: 'menu-start-btn', props: { label: '开始上桌', kind: 'hero', action: MENU_START } },
+              { type: 'Button', id: 'menu-continue-btn', props: { label: '继续上局', kind: 'ghost', action: MENU_CONTINUE, disabled: !st.hasSave } },
+              { type: 'Button', id: 'menu-settings-btn', props: { label: '设置', kind: 'ghost', action: MENU_SETTINGS } },
+            ],
+          },
         ],
       },
       // ── 主角立绘占位框（左·虚线框 + 台账签·真立绘=S6 台账 A-CHAR-HERO/角色卡）────────
