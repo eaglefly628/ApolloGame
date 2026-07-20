@@ -4,6 +4,7 @@ import { mountUI } from '../../src/ui/components/index.js';
 import { buildResult, type ResultView } from '../../src/games/game-a/hud.js';
 
 const view: ResultView = {
+  lang: 'zh',
   ranking: [
     { seat: 'hero', name: '你', team: 0 },
     { seat: 'partner', name: '沈玉薇', team: 0 },

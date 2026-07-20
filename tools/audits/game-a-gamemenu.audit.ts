@@ -9,6 +9,7 @@ import { GAME_A_THEME } from '../../src/games/game-a/theme.js';
 mountUI(
   document.getElementById('root')!,
   buildGameMenu({
+    lang: 'zh',
     menuTab: 'rules',
     logRows: [{ round: 3, who: '顾念念', act: '领出', cards: '♥4 ♥4 ♣4 ♠5 ♠5 ♥5', fam: '钢板' }],
     tierName: '常客',

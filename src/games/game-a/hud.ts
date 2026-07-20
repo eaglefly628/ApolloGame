@@ -8,7 +8,24 @@ import type { LayoutNode } from '@ui/components/index.js';
 import type { SeatSpec } from './rules.js';
 import { DRESS_TIERS, codeRank, codeSuit, AI_TIERS, STAKES, BUYIN_MULT, SEATS } from './rules.js';
 import { MANOR_BG, FELT_RED, FIELD_W, FIELD_H, SEAT_ANCHORS, SEAT_W, seatTopLeft } from './theme.js';
-import { FAMILY_CN, TURN_ORDER, type SeatId } from './guandan-session.js';
+import { TURN_ORDER, type SeatId } from './guandan-session.js';
+import {
+  type Lang, t, traitName, tierName, PATTERN_GUIDE, RULES_LINES,
+  fmtTurnLead, fmtTurnWonLead, fmtTurnRespond, fmtActing, fmtHolder, fmtWildTag,
+  fmtCardsLeft, fmtLevelTag, fmtLevels, fmtStake, fmtRound, fmtDress, fmtBuyinNote,
+  fmtTierName, fmtPeekHint, fmtMemHint, fmtSortSetting, fmtSeed, fmtLevelsAfter,
+} from './strings.js';
+
+// ── 语言切换段控（EN / 中·当前档 primary 高亮·发 set_lang 信号·菜单与牌桌顶栏共用·mirror game-c）──
+function langToggle(l: Lang, idp: string): LayoutNode {
+  const btn = (lang: Lang, label: string): LayoutNode => ({
+    type: 'Button', id: `${idp}-${lang}`, props: { label, kind: l === lang ? 'primary' : 'ghost', action: 'set_lang', actionArg: lang },
+  });
+  return {
+    type: 'Panel', id: idp, props: { bare: true }, layout: { direction: 'row', gap: 4, align: 'center' },
+    children: [btn('en', 'EN'), btn('zh', '中')],
+  };
+}
 
 // ── 牌码 → PlayingCard props（经典白扑克面·红黑自动判）───────────────────────────
 const RANK_TEXT: Record<number, string> = {
@@ -36,14 +53,16 @@ const fmtMoney = (n: number): string => n.toLocaleString('en-US');
 //   ② bob/glow/twinkle 呼吸动效简化（星点用 Particles·徽标静态）；③「继续上局」暂无存档=同「开始」。
 const MENU_BG = 'radial-gradient(90% 120% at 78% 30%,#31201a,#160e0a 75%)';
 export interface MenuView {
+  lang: Lang; // 界面语言（owner 2026-07-20 中英切换·默认中文·宿主持久）
   wallet: number;
   level: number; // 本家级牌（无存档=起始 2）
   showMenu: boolean; // 游戏内菜单（规则/设置）浮层
   menuTab: 'log' | 'rules' | 'settings';
 }
 export function buildMenu(v: MenuView): LayoutNode {
+  const l = v.lang;
   const overlay = v.showMenu
-    ? buildGameMenu({ menuTab: v.menuTab, logRows: [], tierName: '—', levelPlay: v.level, stake: 0, wallet: v.wallet, sortMode: 'rank', seed: 0 })
+    ? buildGameMenu({ lang: l, menuTab: v.menuTab, logRows: [], tierName: '—', levelPlay: v.level, stake: 0, wallet: v.wallet, sortMode: 'rank', seed: 0 })
     : null;
   return {
     type: 'Screen',
@@ -59,9 +78,9 @@ export function buildMenu(v: MenuView): LayoutNode {
         layout: { x: 96, y: 132, width: 300, height: 440, direction: 'column', align: 'center', justify: 'center', gap: 14, padding: 26, radius: 14 },
         children: [
           { type: 'Label', id: 'a-menu-portrait-icon', props: { text: '▤', size: 44, color: 'gold' } },
-          { type: 'Label', id: 'a-menu-portrait-t', props: { text: '主角立绘', font: 'serif', size: 'xxl', bold: true, color: 'text' } },
-          { type: 'Tag', id: 'a-menu-portrait-sz', props: { label: '尺寸 300 × 440 · 竖幅', tone: 'accent', size: 'sm' } },
-          { type: 'Label', id: 'a-menu-portrait-anchor', props: { text: '风格锚 · 二次元 / 柔光 / 暖夜', size: 'xs', color: 'jade' } },
+          { type: 'Label', id: 'a-menu-portrait-t', props: { text: t(l, 'menu.portraitTitle'), font: 'serif', size: 'xxl', bold: true, color: 'text' } },
+          { type: 'Tag', id: 'a-menu-portrait-sz', props: { label: t(l, 'menu.portraitSize'), tone: 'accent', size: 'sm' } },
+          { type: 'Label', id: 'a-menu-portrait-anchor', props: { text: t(l, 'menu.portraitAnchor'), size: 'xs', color: 'jade' } },
         ],
       },
       // 玩家（左下·金边圆头像 + 名 + 金币 Badge）
@@ -103,7 +122,7 @@ export function buildMenu(v: MenuView): LayoutNode {
             props: { bare: true },
             layout: { direction: 'row', align: 'center', gap: 10 },
             children: [
-              { type: 'Label', id: 'a-menu-level-l', props: { text: '本家级牌', size: 'sm', color: 'sub' } },
+              { type: 'Label', id: 'a-menu-level-l', props: { text: t(l, 'menu.levelLabel'), size: 'sm', color: 'sub' } },
               // 级牌红徽（稿=朱砂红渐变·闭集 Tag/Badge 无 danger 档→创作者指定红底 custom·同 felt 先例）
               {
                 type: 'Panel',
@@ -111,14 +130,14 @@ export function buildMenu(v: MenuView): LayoutNode {
                 props: { bg: { custom: 'linear-gradient(160deg,rgba(200,53,43,.9),rgba(122,26,18,.92))' } },
                 layout: { direction: 'row', align: 'center', gap: 3, padding: 7, radius: 10 },
                 children: [
-                  { type: 'Label', id: 'a-menu-level-v-t', props: { text: '级', size: 'sm', bold: true, color: 'text' } },
+                  { type: 'Label', id: 'a-menu-level-v-t', props: { text: t(l, 'menu.levelBadge'), size: 'sm', bold: true, color: 'text' } },
                   { type: 'Label', id: 'a-menu-level-v-n', props: { text: String(v.level), size: 'md', bold: true, color: 'gold' } },
                 ],
               },
             ],
           },
-          { type: 'Label', id: 'a-menu-title-t', props: { size: 80, font: 'serif', bold: true, color: 'text', spans: [{ text: '掼蛋' }, { text: '夜宴', color: 'danger' }] } },
-          { type: 'Label', id: 'a-menu-title-sub', props: { text: '四人两副牌 · 升级同盟 · 逢局必争', size: 'md', color: 'sub' } },
+          { type: 'Label', id: 'a-menu-title-t', props: { size: 80, font: 'serif', bold: true, color: 'text', spans: [{ text: t(l, 'menu.titleA') }, { text: t(l, 'menu.titleB'), color: 'danger' }] } },
+          { type: 'Label', id: 'a-menu-title-sub', props: { text: t(l, 'menu.subtitle'), size: 'md', color: 'sub' } },
         ],
       },
       // 按钮列（右·红包 tip + 开始上桌金 CTA + 继续 + 设置）
@@ -128,11 +147,19 @@ export function buildMenu(v: MenuView): LayoutNode {
         props: { bare: true },
         layout: { x: 960, y: 352, width: 240, direction: 'column', gap: 14, align: 'stretch' },
         children: [
-          { type: 'Badge', id: 'a-menu-tip', props: { text: '每日首局 +88 红包', tone: 'warn' } },
-          { type: 'Button', id: 'a-menu-start', props: { label: '开始上桌', kind: 'primary', action: 'menu.start' } }, // primary=米金 CTA 深字(hero 是金字金底 1.05 糊)
-          { type: 'Button', id: 'a-menu-resume', props: { label: '继续上局', kind: 'ghost', action: 'menu.start' } },
-          { type: 'Button', id: 'a-menu-settings', props: { label: '设置 · 规则', kind: 'ghost', action: 'menu.settings' } },
+          { type: 'Badge', id: 'a-menu-tip', props: { text: t(l, 'menu.tip'), tone: 'warn' } },
+          { type: 'Button', id: 'a-menu-start', props: { label: t(l, 'menu.start'), kind: 'primary', action: 'menu.start' } }, // primary=米金 CTA 深字(hero 是金字金底 1.05 糊)
+          { type: 'Button', id: 'a-menu-resume', props: { label: t(l, 'menu.resume'), kind: 'ghost', action: 'menu.start' } },
+          { type: 'Button', id: 'a-menu-settings', props: { label: t(l, 'menu.settings'), kind: 'ghost', action: 'menu.settings' } },
         ],
+      },
+      // 语言段控（右上·EN/中·mirror game-c 主菜单右上角）
+      {
+        type: 'Panel',
+        id: 'a-menu-lang',
+        props: { bare: true },
+        layout: { x: FIELD_W - 150, y: 24, width: 120, direction: 'row', justify: 'end' },
+        children: [langToggle(l, 'a-menu-lang-seg')],
       },
       // 版本（右下）
       {
@@ -140,7 +167,7 @@ export function buildMenu(v: MenuView): LayoutNode {
         id: 'a-menu-ver-wrap',
         props: { bare: true },
         layout: { x: 1000, y: 688, width: 200, direction: 'row', justify: 'end' },
-        children: [{ type: 'Label', id: 'a-menu-ver', props: { text: 'v0.1.0 · 盒庭线', size: 'xs', color: 'dim' } }],
+        children: [{ type: 'Label', id: 'a-menu-ver', props: { text: t(l, 'menu.version'), size: 'xs', color: 'dim' } }],
       },
       ...(overlay ? [overlay] : []),
     ],
@@ -148,15 +175,16 @@ export function buildMenu(v: MenuView): LayoutNode {
 }
 
 // ── SC-2 选桌（难度×底注选择 + 三家人设预览 + 带入确认·owner 稿 SC-2）──────────────
-const TRAIT_CN: Record<string, string> = { 沉稳: '稳健', 护家: '护家', 锋利: '锋利', 好胜: '好胜', 跳脱: '多变', 爱起哄: '起哄' };
+// 性格标签/难度名/阵营=strings.ts 双语查表（traitName/tierName/t·键=rules 原始值·不解析 session 中文）。
 export interface TableSelectView {
+  lang: Lang; // 界面语言（owner 2026-07-20 中英切换）
   difficulty: 'l1' | 'l2' | 'l3' | 'l4';
   stake: number;
   wallet: number;
 }
-function seatPreview(seat: SeatSpec): LayoutNode {
+function seatPreview(seat: SeatSpec, l: Lang): LayoutNode {
   const foe = seat.team === 1;
-  const trait = seat.traits?.[0] ? (TRAIT_CN[seat.traits[0]] ?? seat.traits[0]) : '';
+  const trait = seat.traits?.[0] ? traitName(l, seat.traits[0]) : '';
   return {
     type: 'Card',
     id: `a-sel-npc-${seat.id}`,
@@ -170,7 +198,7 @@ function seatPreview(seat: SeatSpec): LayoutNode {
         props: { bare: true },
         layout: { direction: 'row', gap: 4, justify: 'center' },
         children: [
-          { type: 'Tag', id: `a-sel-npc-${seat.id}-side`, props: { label: foe ? '对手' : '队友', tone: foe ? 'normal' : 'accent', size: 'sm' } },
+          { type: 'Tag', id: `a-sel-npc-${seat.id}-side`, props: { label: foe ? t(l, 'seat.foe') : t(l, 'seat.ally'), tone: foe ? 'normal' : 'accent', size: 'sm' } },
           ...(trait ? [{ type: 'Tag' as const, id: `a-sel-npc-${seat.id}-trait`, props: { label: trait, tone: 'dim' as const, size: 'sm' as const } }] : []),
         ],
       },
@@ -178,9 +206,10 @@ function seatPreview(seat: SeatSpec): LayoutNode {
   };
 }
 export function buildTableSelect(v: TableSelectView): LayoutNode {
+  const l = v.lang;
   const buyin = v.stake * BUYIN_MULT;
   const affordable = v.wallet >= buyin;
-  const tierSpec = AI_TIERS.find((t) => t.id === v.difficulty)!;
+  const tierSpec = AI_TIERS.find((tt) => tt.id === v.difficulty)!;
   const aiSeats = SEATS.filter((s) => s.kind === 'ai');
   return {
     type: 'Screen',
@@ -194,7 +223,7 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
         props: { vignette: true },
         layout: { direction: 'column', align: 'center', gap: 14, padding: 26, width: 640 },
         children: [
-          { type: 'Label', id: 'a-sel-title', props: { text: '选桌', font: 'elegant', size: 'xxl', bold: true, color: 'gold' } },
+          { type: 'Label', id: 'a-sel-title', props: { text: t(l, 'sel.title'), font: 'elegant', size: 'xxl', bold: true, color: 'gold' } },
           // 难度
           {
             type: 'Panel',
@@ -202,17 +231,17 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
             props: { bare: true },
             layout: { direction: 'column', align: 'center', gap: 6 },
             children: [
-              { type: 'Label', id: 'a-sel-diff-l', props: { text: '难度', size: 'sm', color: 'sub' } },
+              { type: 'Label', id: 'a-sel-diff-l', props: { text: t(l, 'sel.difficulty'), size: 'sm', color: 'sub' } },
               {
                 type: 'Segmented',
                 id: 'a-sel-diff',
-                props: { options: AI_TIERS.map((t) => ({ value: t.id, label: t.name })), value: v.difficulty, action: 'select.difficulty' },
+                props: { options: AI_TIERS.map((tt) => ({ value: tt.id, label: tierName(l, tt.id) })), value: v.difficulty, action: 'select.difficulty' },
               },
               {
                 type: 'Label',
                 id: 'a-sel-diff-hint',
                 props: {
-                  text: tierSpec.peek > 0 ? `⚠ ${tierSpec.name}会读牌（开局偷看每对手 ${tierSpec.peek} 张·公平告知）` : `${tierSpec.name} · ${tierSpec.memory === 'full' ? '全量记牌' : tierSpec.memory === 'big-cards' ? '记大牌' : '不记牌'}`,
+                  text: tierSpec.peek > 0 ? fmtPeekHint(l, tierSpec.id, tierSpec.peek) : fmtMemHint(l, tierSpec.id, tierSpec.memory),
                   size: 'xs',
                   color: tierSpec.peek > 0 ? 'warn' : 'dim',
                 },
@@ -226,7 +255,7 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
             props: { bare: true },
             layout: { direction: 'column', align: 'center', gap: 6 },
             children: [
-              { type: 'Label', id: 'a-sel-stake-l', props: { text: '底注', size: 'sm', color: 'sub' } },
+              { type: 'Label', id: 'a-sel-stake-l', props: { text: t(l, 'sel.stake'), size: 'sm', color: 'sub' } },
               {
                 type: 'Segmented',
                 id: 'a-sel-stake',
@@ -240,7 +269,7 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
             id: 'a-sel-npcs',
             props: { bare: true },
             layout: { direction: 'row', gap: 12, justify: 'center' },
-            children: aiSeats.map((s) => seatPreview(s)),
+            children: aiSeats.map((s) => seatPreview(s, l)),
           },
           // 带入确认 + 入座
           {
@@ -249,9 +278,9 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
             props: { bare: true },
             layout: { direction: 'row', gap: 10, align: 'center', justify: 'center' },
             children: [
-              { type: 'Label', id: 'a-sel-buyin-l', props: { text: '带入', size: 'sm', color: 'sub' } },
+              { type: 'Label', id: 'a-sel-buyin-l', props: { text: t(l, 'sel.buyin'), size: 'sm', color: 'sub' } },
               { type: 'Badge', id: 'a-sel-buyin-v', props: { text: `💰 ${fmtMoney(buyin)}`, tone: affordable ? 'ok' : 'warn' } },
-              { type: 'Label', id: 'a-sel-buyin-note', props: { text: `底注 ${v.stake} × 20 · 荷包 ${fmtMoney(v.wallet)}`, size: 'xs', color: 'dim' } },
+              { type: 'Label', id: 'a-sel-buyin-note', props: { text: fmtBuyinNote(l, v.stake, v.wallet), size: 'xs', color: 'dim' } },
             ],
           },
           {
@@ -260,8 +289,8 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
             props: { bare: true },
             layout: { direction: 'row', gap: 10, align: 'center', justify: 'center' },
             children: [
-              { type: 'Button', id: 'a-sel-back', props: { label: '返回', kind: 'ghost', action: 'select.back' } },
-              { type: 'Button', id: 'a-sel-seat', props: { label: '入座开局', kind: 'primary', action: 'select.seat', sub: affordable ? undefined : '荷包不足·按结余入座' } },
+              { type: 'Button', id: 'a-sel-back', props: { label: t(l, 'sel.back'), kind: 'ghost', action: 'select.back' } },
+              { type: 'Button', id: 'a-sel-seat', props: { label: t(l, 'sel.seat'), kind: 'primary', action: 'select.seat', sub: affordable ? undefined : t(l, 'sel.seatPoor') } },
             ],
           },
         ],
@@ -273,9 +302,9 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
 // ── 席位卡（蓝本 SC-3·绝对定位到屏幕锚点·圆头像金边圈 + 阵营/性格 pill + 余牌 + 表情气泡）──
 // 固定相机=固定屏幕锚点（同 game-c 先例）；active=当前出牌者金边高亮；leading=当前墩持有者（暂大·名前缀🏆·
 // 零增高防重叠）；bubble=表情/「过」气泡（可空）。
-function seatCard(v: SeatView, x: number, y: number, active: boolean, leading: boolean, bubble?: string): LayoutNode {
+function seatCard(v: SeatView, x: number, y: number, active: boolean, leading: boolean, l: Lang, bubble?: string): LayoutNode {
   const foe = v.seat.team === 1;
-  const trait = v.seat.traits?.[0] ? (TRAIT_CN[v.seat.traits[0]] ?? v.seat.traits[0]) : '';
+  const trait = v.seat.traits?.[0] ? traitName(l, v.seat.traits[0]) : '';
   return {
     type: 'Panel',
     id: `a-seat-${v.seat.id}`,
@@ -298,11 +327,11 @@ function seatCard(v: SeatView, x: number, y: number, active: boolean, leading: b
         props: { bare: true },
         layout: { direction: 'row', gap: 4, align: 'center', justify: 'center' },
         children: [
-          { type: 'Tag', id: `a-seat-${v.seat.id}-side`, props: { label: foe ? '对手' : '队友', tone: foe ? 'normal' : 'accent', size: 'sm' } },
+          { type: 'Tag', id: `a-seat-${v.seat.id}-side`, props: { label: foe ? t(l, 'seat.foe') : t(l, 'seat.ally'), tone: foe ? 'normal' : 'accent', size: 'sm' } },
           ...(trait ? [{ type: 'Tag' as const, id: `a-seat-${v.seat.id}-trait`, props: { label: trait, tone: 'dim' as const, size: 'sm' as const } }] : []),
         ],
       },
-      { type: 'Badge', id: `a-seat-${v.seat.id}-cards`, props: { text: `余牌 ${v.cards}`, tone: v.cards <= 3 ? 'warn' : 'ok' } },
+      { type: 'Badge', id: `a-seat-${v.seat.id}-cards`, props: { text: fmtCardsLeft(l, v.cards), tone: v.cards <= 3 ? 'warn' : 'ok' } },
       ...(bubble
         ? [{ type: 'Tag' as const, id: `a-seat-${v.seat.id}-bubble`, props: { label: bubble, tone: 'accent' as const, size: 'sm' as const } }]
         : []),
@@ -312,6 +341,7 @@ function seatCard(v: SeatView, x: number, y: number, active: boolean, leading: b
 
 // ── S4 可玩牌桌屏（手牌扇列 + 操作条 + 中央墩·SC-3 的玩法关最小可玩形）──────────────
 export interface PlayView {
+  lang: Lang; // 界面语言（owner 2026-07-20 中英切换）
   round: number;
   stake: number;
   levelPlay: number; // 本盘打的级
@@ -355,13 +385,13 @@ function trickCard(code: number, idx: number): LayoutNode {
 // 避免「全桌牌一起播」bug（owner 2026-07-18）；per-card animDelay=错落、按座位方向选入场式（从手上/落盘）。
 // 入座方向→入场式（从该座方向飞入·owner 2026-07-18「根据入桌方向」）：east 无 from-right 关键帧→暂 dealIn·报 PUI A-017。
 const TRAY_ANIM: Record<SeatId, 'slideUp' | 'dealIn' | 'flyIn'> = { hero: 'slideUp', partner: 'dealIn', west: 'flyIn', east: 'dealIn' };
-function seatTrayNode(seat: SeatId, play: { cards: number[]; pass: boolean } | undefined, x: number, y: number): LayoutNode {
+function seatTrayNode(seat: SeatId, play: { cards: number[]; pass: boolean } | undefined, x: number, y: number, l: Lang): LayoutNode {
   if (!play) return { type: 'Panel', id: `a-tray-${seat}`, props: { bare: true }, layout: { x, y } }; // 空占位（稳定键·0 尺寸不显）
   if (play.pass) {
     return {
       type: 'Panel', id: `a-tray-${seat}`, props: { bare: true },
       layout: { x, y, direction: 'row' },
-      children: [{ type: 'Tag', id: `a-tray-${seat}-pass`, props: { label: '过', tone: 'dim', size: 'sm' }, layout: { anim: 'fadeIn' } }],
+      children: [{ type: 'Tag', id: `a-tray-${seat}-pass`, props: { label: t(l, 'play.pass'), tone: 'dim', size: 'sm' }, layout: { anim: 'fadeIn' } }],
     };
   }
   const dir = TRAY_ANIM[seat];
@@ -425,6 +455,7 @@ function buildHandFanNodes(hand: number[], selected: number[]): LayoutNode[] {
 }
 
 export function buildPlay(v: PlayView): LayoutNode {
+  const l = v.lang;
   const heroTurn = v.turn === 'hero';
   const anchorOf = (id: 'partner' | 'west' | 'east'): { x: number; y: number } =>
     seatTopLeft(SEAT_ANCHORS.find((s) => s.id === id)!);
@@ -434,7 +465,8 @@ export function buildPlay(v: PlayView): LayoutNode {
 
   // 中央出牌区（桌心·牌型标签 + 暂大者 + 四家最近一手 + 行动提示）——felt 子节点（祖孙嵌套·audit 不判桌面重叠）。
   // 「谁出的牌谁大」明示（owner 2026-07-18）：当前墩持有者=暂时最大，其余家要么压过、要么过。
-  const holderLabel = v.trick ? (v.trick.holder === 'hero' ? '你' : v.trick.holderName) : '';
+  // holderName / trick.name = 宿主已本地化（hero→t(seat.you)·牌型名→handName·随 lang）。
+  const holderLabel = v.trick ? v.trick.holderName : '';
   const centerChildren: LayoutNode[] = v.trick
     ? [
         {
@@ -446,10 +478,10 @@ export function buildPlay(v: PlayView): LayoutNode {
             { type: 'Tag', id: 'a-p-trickname', props: { label: v.trick.name, tone: 'accent', size: 'md' } },
             // 逢人配提示：本墩含 N 张百搭时明示（让玩家看懂 2🃏-6-7-8-9 这类含百搭的合法牌型·owner 2026-07-18）。
             ...(v.trick.wilds > 0
-              ? [{ type: 'Tag' as const, id: 'a-p-trickwild', props: { label: `含${v.trick.wilds}🃏逢人配`, tone: 'warn' as const, size: 'sm' as const } }]
+              ? [{ type: 'Tag' as const, id: 'a-p-trickwild', props: { label: fmtWildTag(l, v.trick.wilds), tone: 'warn' as const, size: 'sm' as const } }]
               : []),
             // 暂大牌主：本方(队友/你)=绿(ok·安全)·对手=黄(warn·需压)——一眼看清谁大。
-            { type: 'Badge', id: 'a-p-holder', props: { text: `🏆 ${holderLabel} 暂大`, tone: v.trick.holderTeam === 0 ? 'ok' : 'warn' } },
+            { type: 'Badge', id: 'a-p-holder', props: { text: fmtHolder(l, holderLabel), tone: v.trick.holderTeam === 0 ? 'ok' : 'warn' } },
           ],
         },
         // 各家出的牌摆在各自座前小牌桌（不在中央重复）；中央只留牌型 + 暂大 + 行动提示。
@@ -457,13 +489,13 @@ export function buildPlay(v: PlayView): LayoutNode {
           type: 'Label',
           id: 'a-p-turn',
           props: {
-            text: heroTurn ? '待你应对 · 压过下方最大牌或过' : v.turn === v.trick.holder ? `${v.turnName} 收墩领出中…` : `${v.turnName} 应对中…`,
+            text: heroTurn ? t(l, 'play.yourRespond') : v.turn === v.trick.holder ? fmtTurnWonLead(l, v.turnName) : fmtTurnRespond(l, v.turnName),
             size: 'sm',
             color: heroTurn ? 'gold' : 'sub',
           },
         },
       ]
-    : [{ type: 'Label', id: 'a-p-lead', props: { text: heroTurn ? '轮到你领出' : `${v.turnName} 领出中…`, font: 'serif', size: 'lg', bold: true, color: heroTurn ? 'gold' : 'sub' } }];
+    : [{ type: 'Label', id: 'a-p-lead', props: { text: heroTurn ? t(l, 'play.yourLead') : fmtTurnLead(l, v.turnName), font: 'serif', size: 'lg', bold: true, color: heroTurn ? 'gold' : 'sub' } }];
   const centerZone: LayoutNode = {
     type: 'Panel',
     id: 'a-p-center',
@@ -486,7 +518,7 @@ export function buildPlay(v: PlayView): LayoutNode {
   // 座前小牌桌·**恒 4 槽**（无出牌=空占位）——稳定 felt 子键序，reconciler 只重渲「内容真变了的那槽」，
   // 只有刚出牌的那家的牌重播入场（修 owner 2026-07-18「播打牌动画时全桌牌一起播」bug·根因=旧实现 tray 数随出牌
   // 增减→felt 子键序变→整片 felt 被 outerHTML 重建→所有 tray 一起重播）。
-  for (const seat of TURN_ORDER) feltChildren.push(seatTrayNode(seat, v.plays[seat], TRAY_POS[seat].x, TRAY_POS[seat].y));
+  for (const seat of TURN_ORDER) feltChildren.push(seatTrayNode(seat, v.plays[seat], TRAY_POS[seat].x, TRAY_POS[seat].y, l));
   // 弹簧箭头指「谁大」（Float 锚定暂大者座前小牌桌·上下弹跳+呼吸光·近似弹簧·owner 2026-07-18）。**恒渲**（无墩=锚到
   // 不存在的槽·Float 找不到目标自隐）——稳定 felt 子键序，箭头出没不再触发整片 felt 重建（=全桌牌重播）。
   // felt 子节点（Float 位置 JS 活取·静态 audit 摆不准=祖孙嵌套豁免同扇形/中央墩）；真 scale 弹簧基座缺→float+glow 近似·A-011。
@@ -501,7 +533,7 @@ export function buildPlay(v: PlayView): LayoutNode {
         props: { bare: true },
         layout: { direction: 'column', align: 'center', gap: 0, anim: 'float' },
         children: [
-          { type: 'Label', id: 'a-p-bigarrow-t', props: { text: '最大', size: 'xs', bold: true, color: 'gold', glow: true } },
+          { type: 'Label', id: 'a-p-bigarrow-t', props: { text: t(l, 'play.biggest'), size: 'xs', bold: true, color: 'gold', glow: true } },
           { type: 'Label', id: 'a-p-bigarrow-a', props: { text: '▼', size: 22, bold: true, color: 'gold', glow: true } },
         ],
       },
@@ -523,10 +555,10 @@ export function buildPlay(v: PlayView): LayoutNode {
     props: { bg: { custom: 'linear-gradient(180deg,rgba(30,20,14,0.94),rgba(20,14,10,0.9))' } },
     layout: { x: FIELD_W / 2 - 210, y: 512, width: 420, direction: 'row', gap: 12, align: 'center', justify: 'center', padding: 8, radius: 20 },
     children: [
-      { type: 'Tag', id: 'a-p-level', props: { label: `级牌 ${v.levelPlay}`, tone: 'accent', size: 'sm' } },
-      { type: 'Label', id: 'a-p-lv', props: { text: `我方 ${v.levelOurs} · 对方 ${v.levelTheirs}`, size: 'sm', color: 'sub' } },
-      { type: 'Badge', id: 'a-p-stake', props: { text: `底注 ${v.stake}`, tone: 'ok' } },
-      { type: 'Label', id: 'a-p-round', props: { text: `第 ${v.round} 盘`, size: 'sm', color: 'sub' } },
+      { type: 'Tag', id: 'a-p-level', props: { label: fmtLevelTag(l, v.levelPlay), tone: 'accent', size: 'sm' } },
+      { type: 'Label', id: 'a-p-lv', props: { text: fmtLevels(l, v.levelOurs, v.levelTheirs), size: 'sm', color: 'sub' } },
+      { type: 'Badge', id: 'a-p-stake', props: { text: fmtStake(l, v.stake), tone: 'ok' } },
+      { type: 'Label', id: 'a-p-round', props: { text: fmtRound(l, v.round), size: 'sm', color: 'sub' } },
     ],
   };
 
@@ -538,8 +570,8 @@ export function buildPlay(v: PlayView): LayoutNode {
     layout: { x: 12, y: 566, width: 84, height: 126, direction: 'column', align: 'center', justify: 'center', gap: 4, padding: 8 },
     children: [
       { type: 'Avatar', id: 'a-p-portrait-face', props: { name: v.seats.hero.seat.name, size: 64, shape: 'rounded' } },
-      { type: 'Label', id: 'a-p-portrait-l', props: { text: '主角立绘', size: 'xs', color: 'dim' } },
-      { type: 'Label', id: 'a-p-portrait-dress', props: { text: `服饰 ${v.seats.hero.dress}/${DRESS_TIERS}`, size: 'xs', color: 'sub' } },
+      { type: 'Label', id: 'a-p-portrait-l', props: { text: t(l, 'menu.portraitTitle'), size: 'xs', color: 'dim' } },
+      { type: 'Label', id: 'a-p-portrait-dress', props: { text: fmtDress(l, v.seats.hero.dress, DRESS_TIERS), size: 'xs', color: 'sub' } },
     ],
   };
 
@@ -553,13 +585,13 @@ export function buildPlay(v: PlayView): LayoutNode {
     props: { bare: true },
     layout: { x: FIELD_W - 314, y: 634, width: 302, direction: 'row', gap: 8, align: 'center', justify: 'end' },
     children: [
-      { type: 'Button', id: 'a-p-hint', props: { label: '提示', kind: 'ghost', action: 'play.hint', disabled: !heroTurn || v.mustPass } },
+      { type: 'Button', id: 'a-p-hint', props: { label: t(l, 'play.hint'), kind: 'ghost', action: 'play.hint', disabled: !heroTurn || v.mustPass } },
       {
         type: 'Button', id: 'a-p-pass',
-        props: { label: passHi ? '过 · 跳过本轮' : '过', kind: passHi ? 'primary' : 'quiet', action: 'play.pass', disabled: !heroTurn || !v.canPass },
+        props: { label: passHi ? t(l, 'play.passSkip') : t(l, 'play.pass'), kind: passHi ? 'primary' : 'quiet', action: 'play.pass', disabled: !heroTurn || !v.canPass },
         ...(passHi ? { layout: { anim: 'glow' as const } } : {}),
       },
-      { type: 'Button', id: 'a-p-commit', props: { label: '出牌', kind: passHi ? 'ghost' : 'primary', action: 'play.commit', disabled: !heroTurn || !v.canCommit } },
+      { type: 'Button', id: 'a-p-commit', props: { label: t(l, 'play.commit'), kind: passHi ? 'ghost' : 'primary', action: 'play.commit', disabled: !heroTurn || !v.canCommit } },
     ],
   };
   const actionRow2: LayoutNode = {
@@ -572,9 +604,9 @@ export function buildPlay(v: PlayView): LayoutNode {
       {
         type: 'Segmented',
         id: 'a-p-sort',
-        props: { options: [{ value: 'rank', label: '按点数' }, { value: 'family', label: '按牌型' }], value: v.sortMode, action: 'hand.sort' },
+        props: { options: [{ value: 'rank', label: t(l, 'play.sortRank') }, { value: 'family', label: t(l, 'play.sortFamily') }], value: v.sortMode, action: 'hand.sort' },
       },
-      { type: 'Button', id: 'a-p-counter', props: { label: v.showCounter ? '▤ 收起' : '▤ 记牌器', kind: 'quiet', action: 'tools.counter' } },
+      { type: 'Button', id: 'a-p-counter', props: { label: v.showCounter ? t(l, 'play.counterHide') : t(l, 'play.counterShow'), kind: 'quiet', action: 'tools.counter' } },
     ],
   };
   const actionHint: LayoutNode = {
@@ -587,31 +619,32 @@ export function buildPlay(v: PlayView): LayoutNode {
       id: 'a-p-why',
       props: {
         text: !heroTurn
-          ? `${v.turnName} 行动中…`
+          ? fmtActing(l, v.turnName)
           : passHi
-            ? '压不过下家最大牌 · 点「过」跳过本轮'
+            ? t(l, 'play.mustPass')
             : !v.canCommit && v.selected.length > 0
-              ? v.commitWhy
-              : '点牌选中 · 出牌或过',
+              ? v.commitWhy // 非法原因来自 session.legalCheck（红线·恒中文·见 game-a.ts commitState 注）
+              : t(l, 'play.selectHint'),
         size: 'xs',
         color: passHi ? 'gold' : heroTurn && !v.canCommit && v.selected.length > 0 ? 'warn' : 'dim',
       },
     }],
   };
 
-  // 右上角：☰ 菜单（出牌日志/规则/设置）+ 返回。
+  // 右上角：语言段控（EN/中·mirror game-c 顶栏）+ ☰ 菜单（出牌日志/规则/设置）+ 返回。
   const topWrap: LayoutNode = {
     type: 'Panel',
     id: 'a-p-backwrap',
     props: { bare: true },
-    layout: { x: FIELD_W - 208, y: 12, width: 196, direction: 'row', gap: 8, justify: 'end' },
+    layout: { x: FIELD_W - 330, y: 12, width: 318, direction: 'row', gap: 8, align: 'center', justify: 'end' },
     children: [
-      { type: 'Button', id: 'a-p-menu', props: { label: '☰ 菜单', kind: 'quiet', action: 'menu.open' } },
-      { type: 'Button', id: 'a-p-back', props: { label: '返回', kind: 'ghost', action: 'table.back' } },
+      langToggle(l, 'a-p-lang'),
+      { type: 'Button', id: 'a-p-menu', props: { label: t(l, 'play.menu'), kind: 'quiet', action: 'menu.open' } },
+      { type: 'Button', id: 'a-p-back', props: { label: t(l, 'sel.back'), kind: 'ghost', action: 'table.back' } },
     ],
   };
   const gameMenu: LayoutNode | null = v.showMenu
-    ? buildGameMenu({ menuTab: v.menuTab, logRows: v.logRows, tierName: v.tierName, levelPlay: v.levelPlay, stake: v.stake, wallet: v.wallet, sortMode: v.sortMode, seed: v.seed })
+    ? buildGameMenu({ lang: l, menuTab: v.menuTab, logRows: v.logRows, tierName: v.tierName, levelPlay: v.levelPlay, stake: v.stake, wallet: v.wallet, sortMode: v.sortMode, seed: v.seed })
     : null;
 
   // 记牌器（居中模态浮层·明面已出牌计数·点「▤ 记牌器」开·点遮罩/关闭收·不开天眼）。
@@ -619,17 +652,17 @@ export function buildPlay(v: PlayView): LayoutNode {
     ? {
         type: 'Modal',
         id: 'a-p-counter-modal',
-        props: { title: '记牌器 · 明面已出牌（不开天眼）', size: 'sm', closable: true, closeAction: 'tools.counter' },
+        props: { title: t(l, 'counter.title'), size: 'sm', closable: true, closeAction: 'tools.counter' },
         children: [
-          { type: 'Label', id: 'a-p-counter-hint', props: { text: '各点数 已出 / 共 · 剩余可推断谁手里还有大牌', size: 'xs', color: 'sub' } },
+          { type: 'Label', id: 'a-p-counter-hint', props: { text: t(l, 'counter.hint'), size: 'xs', color: 'sub' } },
           {
             type: 'Table',
             id: 'a-p-counter-table',
             props: {
               columns: [
-                { key: 'rank', label: '点数', width: 72 },
-                { key: 'played', label: '已出', width: 72, align: 'center' },
-                { key: 'left', label: '剩余', align: 'center' },
+                { key: 'rank', label: t(l, 'counter.rank'), width: 72 },
+                { key: 'played', label: t(l, 'counter.played'), width: 72, align: 'center' },
+                { key: 'left', label: t(l, 'counter.left'), align: 'center' },
               ],
               rows: v.counter.map((r) => ({
                 id: `cnt-${r.rank}`,
@@ -650,9 +683,9 @@ export function buildPlay(v: PlayView): LayoutNode {
     layout: { width: FIELD_W, height: FIELD_H },
     children: [
       feltTable, // 含中央出牌区（祖孙嵌套）
-      seatCard(v.seats.partner, pA.x, pA.y, v.turn === 'partner', v.trick?.holder === 'partner'),
-      seatCard(v.seats.west, wA.x, wA.y, v.turn === 'west', v.trick?.holder === 'west'),
-      seatCard(v.seats.east, eA.x, eA.y, v.turn === 'east', v.trick?.holder === 'east'),
+      seatCard(v.seats.partner, pA.x, pA.y, v.turn === 'partner', v.trick?.holder === 'partner', l),
+      seatCard(v.seats.west, wA.x, wA.y, v.turn === 'west', v.trick?.holder === 'west', l),
+      seatCard(v.seats.east, eA.x, eA.y, v.turn === 'east', v.trick?.holder === 'east', l),
       infoBar,
       heroPortrait,
       ...buildHandFanNodes(v.hand, v.selected),
@@ -668,39 +701,21 @@ export function buildPlay(v: PlayView): LayoutNode {
 
 // ── 游戏内菜单（☰）：出牌日志 + 牌型/规则说明 + 设置（owner 2026-07-18·让玩家能复制日志+学规则）──
 // 全 LayoutNode 闭集（Modal + Tabs + Table + Label）；Tabs.action='menu.tab' 由宿主记 active（AI 重渲不丢页）。
-export interface LogRow { round: number; who: string; act: string; cards: string; fam: string }
+export interface LogRow { round: number; who: string; act: string; cards: string; fam: string; pass?: boolean } // act/who/cards/fam=中文日志口径（红线·恒中文）；pass=过牌置灰用（非中文串比对）
 export interface GameMenuView {
+  lang: Lang; // 界面语言（owner 2026-07-20 中英切换）
   menuTab: 'log' | 'rules' | 'settings';
   logRows: LogRow[];
-  tierName: string;
+  tierName: string; // 已本地化难度显示名（宿主传 tierName(lang,id)·pre-game 菜单='—'）
   levelPlay: number;
   stake: number;
   wallet: number;
   sortMode: 'rank' | 'family';
   seed: number; // 本局 run 种子（设置页显示·供报 bug 复现）
 }
-// 牌型闭集 10 型（gdd §2.2·静态说明数据·非规则逻辑）。
-const PATTERN_GUIDE: { name: string; eg: string; note: string }[] = [
-  { name: '单张', eg: '♠5', note: '比点数；级牌 > A，大王最大' },
-  { name: '对子', eg: '♠5 ♥5', note: '两张同点' },
-  { name: '三同张', eg: '♠5 ♥5 ♦5', note: '三张同点' },
-  { name: '三带二', eg: '888 + 99', note: '三张带一对，比三张那部分' },
-  { name: '顺子', eg: '3-4-5-6-7', note: '五张连续单牌（A 可当 1）' },
-  { name: '三连对（木板）', eg: '33 44 55', note: '三副连续的对子' },
-  { name: '钢板（二连三）', eg: '888-999', note: '两副连续的三同张（点数必须相邻）' },
-  { name: '炸弹', eg: '5555 起', note: '四张及以上同点；先比张数再比点' },
-  { name: '同花顺', eg: '♥3-4-5-6-7', note: '同花色顺子，压 5 张炸弹' },
-  { name: '四大天王', eg: '双大王+双小王', note: '最大，压一切' },
-];
-const RULES_LINES: { t: string; b: boolean }[] = [
-  { t: '目标：四人两副牌（108 张），2v2 对家；本队两人先出光手牌即胜，爬级打过 A 通关。', b: true },
-  { t: '出牌：领出任意合法牌型 → 下家出同型更大的、或用炸弹跨型压 → 压不过就「过」；一圈都过则收墩，收墩者重新领出。', b: false },
-  { t: '压制序：四大天王 ＞ 大炸弹 ＞ 同花顺 ＞ 小炸弹 ＞ 普通牌型（同型比大小）。', b: false },
-  { t: '级牌 / 逢人配：本盘「级牌」抬到 A 之上、小王之下；红桃级牌 = 逢人配（百搭，可当除王外任意牌）。牌桌/日志里标 🃏 的就是逢人配——所以「2🃏-6-7-8-9」是把 ♥2 当 5 的顺子、「QQQ+KK+2🃏」是 ♥2 当 K 的钢板，都合法。', b: false },
-  { t: '进贡 / 还贡：次盘末游向头游进最大牌，头游还一张 ≤10；应贡方手握双大王可「抗贡」免进。', b: false },
-  { t: '升级：头游队按 双上 +3 / 一三 +2 / 一四 +1 升级；输队褪一件服饰，到底线转金钱罚。', b: false },
-];
+// 牌型说明表 PATTERN_GUIDE + 基本规则 RULES_LINES = strings.ts 双语静态数据（按 v.lang 取·非规则逻辑）。
 export function buildGameMenu(v: GameMenuView): LayoutNode {
+  const l = v.lang;
   const logTab: LayoutNode = {
     type: 'Panel', id: 'a-menu-log', props: { bare: true },
     layout: { direction: 'column', gap: 8, padding: 4 },
@@ -709,27 +724,27 @@ export function buildGameMenu(v: GameMenuView): LayoutNode {
         type: 'Panel', id: 'a-menu-log-head', props: { bare: true },
         layout: { direction: 'row', gap: 8, align: 'center', justify: 'between' },
         children: [
-          { type: 'Label', id: 'a-menu-log-hint', props: { text: '本局出牌流水（可框选复制）· 完整含发牌 F12 → Console', size: 'xs', color: 'sub' } },
+          { type: 'Label', id: 'a-menu-log-hint', props: { text: t(l, 'gm.logHint'), size: 'xs', color: 'sub' } },
           // 一键复制本盘完整记录（起始四家手牌 + 过程 + 结果）→ 剪贴板·发作者调 AI（owner 2026-07-18）。
-          { type: 'Button', id: 'a-menu-log-copy', props: { label: '📋 复制本盘记录', kind: 'quiet', action: 'tools.copylog' } },
+          { type: 'Button', id: 'a-menu-log-copy', props: { label: t(l, 'gm.copyLog'), kind: 'quiet', action: 'tools.copylog' } },
         ],
       },
       v.logRows.length === 0
-        ? { type: 'Label', id: 'a-menu-log-empty', props: { text: '（本盘还没有出牌记录）', size: 'sm', color: 'dim' } }
+        ? { type: 'Label', id: 'a-menu-log-empty', props: { text: t(l, 'gm.logEmpty'), size: 'sm', color: 'dim' } }
         : {
             type: 'Table', id: 'a-menu-log-tbl',
             props: {
               columns: [
-                { key: 'round', label: '盘', width: 40, align: 'center' },
-                { key: 'who', label: '玩家', width: 90 },
-                { key: 'act', label: '动作', width: 56, align: 'center' },
-                { key: 'cards', label: '出的牌' },
-                { key: 'fam', label: '牌型', width: 92 },
+                { key: 'round', label: t(l, 'gm.colRound'), width: 40, align: 'center' },
+                { key: 'who', label: t(l, 'gm.colWho'), width: 90 },
+                { key: 'act', label: t(l, 'gm.colAct'), width: 56, align: 'center' },
+                { key: 'cards', label: t(l, 'gm.colCards') },
+                { key: 'fam', label: t(l, 'gm.colType'), width: 92 },
               ],
               rows: v.logRows.map((r, i) => ({
                 id: `a-lg-${i}`,
                 cells: { round: String(r.round), who: r.who, act: r.act, cards: r.cards, fam: r.fam },
-                tone: (r.act === '过' ? 'dim' : 'normal') as 'dim' | 'normal',
+                tone: (r.pass ? 'dim' : 'normal') as 'dim' | 'normal',
               })),
             },
           },
@@ -739,20 +754,20 @@ export function buildGameMenu(v: GameMenuView): LayoutNode {
     type: 'Panel', id: 'a-menu-rules', props: { bare: true },
     layout: { direction: 'column', gap: 8, padding: 4 },
     children: [
-      { type: 'Label', id: 'a-menu-rules-h1', props: { text: '牌型（从小到大）', size: 'sm', bold: true, color: 'gold' } },
+      { type: 'Label', id: 'a-menu-rules-h1', props: { text: t(l, 'gm.rulesH1'), size: 'sm', bold: true, color: 'gold' } },
       {
         type: 'Table', id: 'a-menu-pat-tbl',
         props: {
           columns: [
-            { key: 'name', label: '牌型', width: 116 },
-            { key: 'eg', label: '例子', width: 152 },
-            { key: 'note', label: '说明' },
+            { key: 'name', label: t(l, 'gm.colType'), width: 116 },
+            { key: 'eg', label: t(l, 'gm.colEg'), width: 152 },
+            { key: 'note', label: t(l, 'gm.colNote') },
           ],
-          rows: PATTERN_GUIDE.map((p, i) => ({ id: `a-pat-${i}`, cells: { name: p.name, eg: p.eg, note: p.note } })),
+          rows: PATTERN_GUIDE[l].map((p, i) => ({ id: `a-pat-${i}`, cells: { name: p.name, eg: p.eg, note: p.note } })),
         },
       },
-      { type: 'Label', id: 'a-menu-rules-h2', props: { text: '基本规则', size: 'sm', bold: true, color: 'gold' } },
-      ...RULES_LINES.map((r, i) => ({
+      { type: 'Label', id: 'a-menu-rules-h2', props: { text: t(l, 'gm.rulesH2'), size: 'sm', bold: true, color: 'gold' } },
+      ...RULES_LINES[l].map((r, i) => ({
         type: 'Label' as const, id: `a-menu-rule-${i}`,
         props: { text: `· ${r.t}`, size: 'xs' as const, color: 'sub' as const, bold: r.b }, // sub=可读正文（dim 4.49 差 AA·规则是要读的内容）
       })),
@@ -762,32 +777,41 @@ export function buildGameMenu(v: GameMenuView): LayoutNode {
     type: 'Panel', id: 'a-menu-set', props: { bare: true },
     layout: { direction: 'column', gap: 8, padding: 4 },
     children: [
-      { type: 'Label', id: 'a-menu-set-h', props: { text: '本局', size: 'sm', bold: true, color: 'gold' } },
+      { type: 'Label', id: 'a-menu-set-h', props: { text: t(l, 'gm.setH'), size: 'sm', bold: true, color: 'gold' } },
       {
         type: 'Panel', id: 'a-menu-set-row', props: { bare: true },
         layout: { direction: 'row', gap: 8, align: 'center' },
         children: [
-          { type: 'Tag', id: 'a-menu-set-tier', props: { label: `难度 ${v.tierName}`, tone: 'accent', size: 'sm' } },
-          { type: 'Tag', id: 'a-menu-set-lvl', props: { label: `级牌 ${v.levelPlay}`, tone: 'normal', size: 'sm' } },
-          { type: 'Badge', id: 'a-menu-set-stake', props: { text: `底注 ${v.stake}`, tone: 'ok' } },
+          { type: 'Tag', id: 'a-menu-set-tier', props: { label: fmtTierName(l, v.tierName), tone: 'accent', size: 'sm' } },
+          { type: 'Tag', id: 'a-menu-set-lvl', props: { label: fmtLevelTag(l, v.levelPlay), tone: 'normal', size: 'sm' } },
+          { type: 'Badge', id: 'a-menu-set-stake', props: { text: fmtStake(l, v.stake), tone: 'ok' } },
           { type: 'Badge', id: 'a-menu-set-wallet', props: { text: `💰 ${fmtMoney(v.wallet)}`, tone: 'ok' } },
         ],
       },
-      { type: 'Label', id: 'a-menu-set-sort', props: { text: `理牌方式：${v.sortMode === 'rank' ? '按点数' : '按牌型'}（牌桌右下角可切换）`, size: 'xs', color: 'sub' } },
-      { type: 'Label', id: 'a-menu-set-seed', props: { text: `本局种子：${v.seed}（报 bug 时贴上·同种子可复现这副牌与走向）`, size: 'xs', color: 'sub' } },
-      { type: 'Label', id: 'a-menu-set-more', props: { text: '音效 / 动画速度 / 记牌器等更多设置陆续加入。', size: 'xs', color: 'dim' } },
+      // 语言段控（设置页也放一份·EN/中·mirror game-c 设置项）
+      {
+        type: 'Panel', id: 'a-menu-set-lang-row', props: { bare: true },
+        layout: { direction: 'row', gap: 8, align: 'center' },
+        children: [
+          { type: 'Label', id: 'a-menu-set-lang-l', props: { text: t(l, 'gm.language'), size: 'xs', color: 'sub' } },
+          langToggle(l, 'a-menu-set-lang'),
+        ],
+      },
+      { type: 'Label', id: 'a-menu-set-sort', props: { text: fmtSortSetting(l, v.sortMode), size: 'xs', color: 'sub' } },
+      { type: 'Label', id: 'a-menu-set-seed', props: { text: fmtSeed(l, v.seed), size: 'xs', color: 'sub' } },
+      { type: 'Label', id: 'a-menu-set-more', props: { text: t(l, 'gm.setMore'), size: 'xs', color: 'dim' } },
     ],
   };
   return {
     type: 'Modal',
     id: 'a-menu-modal',
-    props: { title: '菜单 · 掼蛋夜宴', size: 'lg', closable: true, closeAction: 'menu.close' },
+    props: { title: t(l, 'gm.title'), size: 'lg', closable: true, closeAction: 'menu.close' },
     children: [
       {
         type: 'Tabs',
         id: 'a-menu-tabs',
         props: {
-          tabs: [{ id: 'log', label: '出牌日志' }, { id: 'rules', label: '规则说明' }, { id: 'settings', label: '设置' }],
+          tabs: [{ id: 'log', label: t(l, 'gm.tabLog') }, { id: 'rules', label: t(l, 'gm.tabRules') }, { id: 'settings', label: t(l, 'gm.tabSettings') }],
           active: v.menuTab,
           action: 'menu.tab',
         },
@@ -799,9 +823,10 @@ export function buildGameMenu(v: GameMenuView): LayoutNode {
 
 // ── 盘结算浮层（SC-4·名次+金钱+级数+服饰·run 终局变体）──────────────────────────
 export interface ResultView {
+  lang: Lang; // 界面语言（owner 2026-07-20 中英切换）
   ranking: { seat: SeatId; name: string; team: 0 | 1 }[];
   winnersTeam: 0 | 1;
-  comboLabel: string; // 双上/一三/一四
+  comboLabel: string; // 双上/一三/一四·宿主已本地化（fmtComboLabel）
   totalMult: number;
   payPerPlayer: number;
   levelAfter: [number, number];
@@ -809,20 +834,21 @@ export interface ResultView {
   phase: 'settled' | 'run-won' | 'run-lost';
 }
 export function buildResult(v: ResultView): LayoutNode {
+  const l = v.lang;
   const runEnd = v.phase !== 'settled';
-  const title = v.phase === 'run-won' ? '过 A · 通关！' : v.phase === 'run-lost' ? '对方过 A · 游戏结束' : '本盘结算';
+  const title = v.phase === 'run-won' ? t(l, 'res.titleWon') : v.phase === 'run-lost' ? t(l, 'res.titleLost') : t(l, 'res.titleSettled');
   const heroWon = v.winnersTeam === 0;
   const rankRows = v.ranking.map((r, i) => ({
     id: `rank-${i}`,
-    cells: { no: `${i + 1}`, name: r.name, side: r.team === 0 ? '我方' : '对方' },
+    cells: { no: `${i + 1}`, name: r.name, side: r.team === 0 ? t(l, 'side.us') : t(l, 'side.them') },
     tone: (r.team === v.winnersTeam ? 'accent' : 'normal') as 'accent' | 'normal',
   }));
   const dressLine: LayoutNode = v.dressOutDoubled
-    ? { type: 'Label', id: 'a-r-dress', props: { text: '有姨太已至底线档 · 金钱罚 ×2', size: 'xs', color: 'warn' } }
-    : { type: 'Label', id: 'a-r-dress', props: { text: '输方姨太各褪一件', size: 'xs', color: 'sub' } };
+    ? { type: 'Label', id: 'a-r-dress', props: { text: t(l, 'res.dressDoubled'), size: 'xs', color: 'warn' } }
+    : { type: 'Label', id: 'a-r-dress', props: { text: t(l, 'res.dressNormal'), size: 'xs', color: 'sub' } };
   const actionBtn: LayoutNode = runEnd
-    ? { type: 'Button', id: 'a-r-home', props: { label: '回主菜单', kind: 'primary', action: 'table.back' } }
-    : { type: 'Button', id: 'a-r-next', props: { label: '下一盘', kind: 'primary', action: 'round.next' } };
+    ? { type: 'Button', id: 'a-r-home', props: { label: t(l, 'res.home'), kind: 'primary', action: 'table.back' } }
+    : { type: 'Button', id: 'a-r-next', props: { label: t(l, 'res.next'), kind: 'primary', action: 'round.next' } };
   return {
     type: 'Screen',
     id: 'a-result',
@@ -841,9 +867,9 @@ export function buildResult(v: ResultView): LayoutNode {
             id: 'a-r-rank',
             props: {
               columns: [
-                { key: 'no', label: '名次', width: 48, align: 'center' },
-                { key: 'name', label: '座' },
-                { key: 'side', label: '阵营', width: 64, align: 'center' },
+                { key: 'no', label: t(l, 'res.colNo'), width: 48, align: 'center' },
+                { key: 'name', label: t(l, 'res.colSeat') },
+                { key: 'side', label: t(l, 'res.colSide'), width: 64, align: 'center' },
               ],
               rows: rankRows,
             },
@@ -857,7 +883,7 @@ export function buildResult(v: ResultView): LayoutNode {
               { type: 'Tag', id: 'a-r-combo', props: { label: v.comboLabel, tone: 'accent', size: 'sm' } },
               { type: 'Badge', id: 'a-r-mult', props: { text: `×${v.totalMult}`, tone: 'ok' } },
               { type: 'Badge', id: 'a-r-pay', props: { text: `${heroWon ? '+' : '-'}${fmtMoney(v.payPerPlayer)}`, tone: heroWon ? 'ok' : 'warn' }, layout: { anim: 'pop' } },
-              { type: 'Label', id: 'a-r-lv', props: { text: `级数 我 ${v.levelAfter[0]} · 敌 ${v.levelAfter[1]}`, size: 'sm', color: 'sub' } },
+              { type: 'Label', id: 'a-r-lv', props: { text: fmtLevelsAfter(l, v.levelAfter[0], v.levelAfter[1]), size: 'sm', color: 'sub' } },
             ],
           },
           dressLine,
@@ -866,7 +892,7 @@ export function buildResult(v: ResultView): LayoutNode {
             layout: { direction: 'row', gap: 10, align: 'center', justify: 'center' },
             children: [
               // 复制本盘完整记录（发牌+过程+结果）→ 剪贴板 + F12·发作者调 AI（owner 2026-07-18）。
-              { type: 'Button', id: 'a-r-copylog', props: { label: '📋 复制本盘记录', kind: 'ghost', action: 'tools.copylog', sub: '发牌+过程·发作者调 AI' } },
+              { type: 'Button', id: 'a-r-copylog', props: { label: t(l, 'gm.copyLog'), kind: 'ghost', action: 'tools.copylog', sub: t(l, 'res.copyLogSub') } },
               actionBtn,
             ],
           },

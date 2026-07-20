@@ -4,4 +4,4 @@ import { mountUI } from '../../src/ui/components/index.js';
 import { buildMenu } from '../../src/games/game-a/hud.js';
 import { GAME_A_THEME } from '../../src/games/game-a/theme.js';
 
-mountUI(document.getElementById('root')!, buildMenu({ wallet: 12860, level: 2, showMenu: false, menuTab: 'log' }), {}, GAME_A_THEME);
+mountUI(document.getElementById('root')!, buildMenu({ lang: 'zh', wallet: 12860, level: 2, showMenu: false, menuTab: 'log' }), {}, GAME_A_THEME);

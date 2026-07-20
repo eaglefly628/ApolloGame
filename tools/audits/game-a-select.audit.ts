@@ -4,4 +4,4 @@ import { mountUI } from '../../src/ui/components/index.js';
 import { buildTableSelect } from '../../src/games/game-a/hud.js';
 import { GAME_A_THEME } from '../../src/games/game-a/theme.js';
 
-mountUI(document.getElementById('root')!, buildTableSelect({ difficulty: 'l4', stake: 500, wallet: 10000 }), {}, GAME_A_THEME);
+mountUI(document.getElementById('root')!, buildTableSelect({ lang: 'zh', difficulty: 'l4', stake: 500, wallet: 10000 }), {}, GAME_A_THEME);

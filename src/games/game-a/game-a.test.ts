@@ -217,11 +217,11 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
 
   // ── UI 菜单 + 选桌屏（LayoutNode 纯数据·零 issue；牌桌/结算屏在下方 S4 用例）──────
   it('菜单壳 + 选桌屏（各难度）过 validateLayoutNode', () => {
-    expect(validateLayoutNode(buildMenu({ wallet: 12860, level: 2, showMenu: false, menuTab: 'log' }))).toEqual([]);
-    expect(validateLayoutNode(buildMenu({ wallet: 12860, level: 2, showMenu: true, menuTab: 'rules' }))).toEqual([]); // 设置浮层开
+    expect(validateLayoutNode(buildMenu({ lang: 'zh', wallet: 12860, level: 2, showMenu: false, menuTab: 'log' }))).toEqual([]);
+    expect(validateLayoutNode(buildMenu({ lang: 'zh', wallet: 12860, level: 2, showMenu: true, menuTab: 'rules' }))).toEqual([]); // 设置浮层开
     for (const d of ['l1', 'l2', 'l3', 'l4'] as const) {
       for (const stake of [100, 500, 2000]) {
-        expect(validateLayoutNode(buildTableSelect({ difficulty: d, stake, wallet: 10000 }))).toEqual([]);
+        expect(validateLayoutNode(buildTableSelect({ lang: 'zh', difficulty: d, stake, wallet: 10000 }))).toEqual([]);
       }
     }
   });
@@ -230,6 +230,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
   it('可玩牌桌屏与结算浮层过 validateLayoutNode', () => {
     const sv = (id: SeatView['seat']['id']): SeatView => ({ seat: SEATS.find((s) => s.id === id)!, cards: 27, dress: DRESS_TIERS });
     const play = buildPlay({
+      lang: 'zh',
       round: 1, stake: 100, levelPlay: 2, levelOurs: 2, levelTheirs: 2, wallet: INITIAL_FUNDS,
       turn: 'hero', turnName: '你',
       seats: { partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero') },
@@ -243,6 +244,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
     expect(validateLayoutNode(play)).toEqual([]);
     // 领出态（无墩）+ AI 轮次
     const lead = buildPlay({
+      lang: 'zh',
       round: 2, stake: 100, levelPlay: 2, levelOurs: 3, levelTheirs: 2, wallet: 12000,
       turn: 'west', turnName: '林曼笙',
       seats: { partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero') },
@@ -253,6 +255,7 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
     expect(validateLayoutNode(lead)).toEqual([]);
     for (const phase of ['settled', 'run-won', 'run-lost'] as const) {
       const res = buildResult({
+        lang: 'zh',
         ranking: [
           { seat: 'hero', name: '你', team: 0 }, { seat: 'partner', name: '沈玉薇', team: 0 },
           { seat: 'west', name: '林曼笙', team: 1 }, { seat: 'east', name: '顾念念', team: 1 },
@@ -268,17 +271,18 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
   it('游戏内菜单三页（日志/规则/设置）纯数据·零 issue', () => {
     for (const tab of ['log', 'rules', 'settings'] as const) {
       const menu = buildGameMenu({
+        lang: 'zh',
         menuTab: tab,
         logRows: [
           { round: 3, who: '顾念念', act: '领出', cards: '♥4 ♥4 ♣4 ♠5 ♠5 ♥5', fam: '钢板' },
-          { round: 3, who: '你', act: '过', cards: '—', fam: '—' },
+          { round: 3, who: '你', act: '过', cards: '—', fam: '—', pass: true },
         ],
         tierName: '常客', levelPlay: 2, stake: 100, wallet: 10000, sortMode: 'rank', seed: 20260718,
       });
       expect(validateLayoutNode(menu)).toEqual([]);
     }
     // 空日志（本盘还没出牌）也零 issue
-    expect(validateLayoutNode(buildGameMenu({ menuTab: 'log', logRows: [], tierName: '雏鸟', levelPlay: 2, stake: 500, wallet: 200000, sortMode: 'family', seed: 20260718 }))).toEqual([]);
+    expect(validateLayoutNode(buildGameMenu({ lang: 'zh', menuTab: 'log', logRows: [], tierName: '雏鸟', levelPlay: 2, stake: 500, wallet: 200000, sortMode: 'family', seed: 20260718 }))).toEqual([]);
   });
 
   // ── 理牌排序（视图·纯函数·不碰 sim）────────────────────────────────────────────

@@ -27,9 +27,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  4 passed (4) ·       Tests  52 passed (52)）· 验收剧本 8 场景绿",
-      "at": "2026-07-20T10:12:29.602Z",
-      "gameHash": "8efed0f5fcd82a18"
+      "summary": "walkthrough 绿（ Test Files  5 passed (5) ·       Tests  59 passed (59)）· 验收剧本 8 场景绿",
+      "at": "2026-07-20T10:59:30.282Z",
+      "gameHash": "3edb9f4f373e2122"
     },
     "S5": {
       "exit": 0,
@@ -285,6 +285,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-20T10:12:29.602Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE 2026-07-20 i18n 中英切换(默认中文)·mirror game-c strings.ts·hud/game-a.ts 加 lang 态·红线口径不动·前置 S2/S3 复查门随文件改 stale·非回退",
+      "at": "2026-07-20T10:59:23.572Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-20T10:59:30.282Z"
     }
   ],
   "reviews": {
@@ -395,6 +407,11 @@
       "stage": "S4",
       "reason": "PE 2026-07-20 rebase 后重跑：并入 origin game-c i18n + GD-A requests(A-015/16 经济翻改/衣橱)·让号 A-015→A-017(入场动效)·hud 注释同步。本批玩法/验收变更同前钉。前置 S2/S3 复查门随游戏文件改 stale·非回退",
       "at": "2026-07-20T10:12:24.041Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "PE 2026-07-20 i18n 中英切换(默认中文)·mirror game-c strings.ts·hud/game-a.ts 加 lang 态·红线口径不动·前置 S2/S3 复查门随文件改 stale·非回退",
+      "at": "2026-07-20T10:59:23.572Z"
     }
   ]
 }

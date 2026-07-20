@@ -9,6 +9,7 @@ const sv = (id: SeatView['seat']['id'], cards: number): SeatView => ({ seat: SEA
 // 满手 27 张（发牌后·按点数排序）看扇形弧列效果。
 const hand = buildDeck108().slice(0, 27).sort((a, b) => codeRank(a) - codeRank(b));
 const view: PlayView = {
+  lang: 'zh',
   round: 4,
   stake: 100,
   levelPlay: 7,

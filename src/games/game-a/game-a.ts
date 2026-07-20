@@ -10,7 +10,8 @@ import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap, LayoutNode } from '@ui/components/index.js';
 import { GuandanSession, TURN_ORDER, teamOf, FAMILY_CN, fmtCardCode, type SeatId } from './guandan-session.js';
 import { buildMenu, buildTableSelect, buildPlay, buildResult, type SeatView, type PlayView, type ResultView } from './hud.js';
-import { SEATS, DRESS_TIERS, INITIAL_FUNDS, STAKES, AI_TIERS, LEVEL_START, codeSuit, codeRank, sortHand } from './rules.js';
+import { type Lang, t, handName, tierName, fmtComboLabel, fmtTributeResist, fmtTributeLine } from './strings.js';
+import { SEATS, DRESS_TIERS, INITIAL_FUNDS, STAKES, LEVEL_START, codeSuit, codeRank, sortHand } from './rules.js';
 import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG, GAME_A_THEME } from './theme.js';
 import { mulberry32 } from '@atom-skills/index.js';
 
@@ -42,10 +43,17 @@ export function mount(container: HTMLElement): () => void {
   let showCounter = false; // 记牌器开合（玩家辅助·只统计明面已出牌·不开天眼·gdd §5）
   let menuOpen = false; // 游戏内菜单（☰·出牌日志/规则说明/设置）开合（避与 showMenu() 屏切换函数撞名）
   let menuTab: 'log' | 'rules' | 'settings' = 'log'; // 菜单当前页（宿主记·AI 重渲不丢页）
+  // 界面语言（owner 2026-07-20 中英切换·**默认中文**·game-c 默认英语·本作 owner 钦定中文·localStorage 持久）。
+  const LANG_KEY = 'ga_lang';
+  const loadLang = (): Lang => { try { return typeof localStorage !== 'undefined' && localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'zh'; } catch { return 'zh'; } };
+  const saveLang = (x: Lang): void => { try { localStorage.setItem(LANG_KEY, x); } catch { /* 无 localStorage */ } };
+  let lang: Lang = loadLang();
 
   // 主菜单视图（无 session·1:1 设计稿·wallet 持久·级牌无存档=起始）。
-  const menuView = () => ({ wallet, level: LEVEL_START, showMenu: menuOpen, menuTab });
+  const menuView = () => ({ lang, wallet, level: LEVEL_START, showMenu: menuOpen, menuTab });
   const seatSpec = (id: SeatId): SeatView['seat'] => SEATS.find((s) => s.id === id)!;
+  // 座位显示名：hero='你'/You 经字典本地化；AI 专名（沈玉薇/林曼笙/顾念念）=rules 数据·恒中文（专名不译）。
+  const displayName = (id: SeatId): string => (id === 'hero' ? t(lang, 'seat.you') : seatSpec(id).name);
   const seatView = (id: SeatId): SeatView => ({
     seat: seatSpec(id),
     cards: session ? session.hands[id].length : 0,
@@ -71,9 +79,10 @@ export function mount(container: HTMLElement): () => void {
 
   // ── 合法性投影（禁用态/原因·纯读 session·判型在 sim）──────────────────────────
   function commitState(s: GuandanSession): { canCommit: boolean; why: string } {
-    if (selected.length === 0) return { canCommit: false, why: '点牌选中 · 出牌或过' };
+    if (selected.length === 0) return { canCommit: false, why: t(lang, 'play.selectHint') };
     const chk = s.legalCheck('hero', selectedCodes(s));
-    return { canCommit: chk.ok, why: chk.ok ? '' : (chk.why ?? '不合法') };
+    // chk.why = session.legalCheck 的中文机读原因（红线·恒中文·EN 模式仍显中文·可接受）；仅宿主兜底默认走字典。
+    return { canCommit: chk.ok, why: chk.ok ? '' : (chk.why ?? t(lang, 'play.illegal')) };
   }
 
   // 记牌器（明面已出牌计数·从 playLog 本盘聚合·不开天眼）。总数：2-A 各 8 张(两副×4花色)·王各 2 张。
@@ -92,8 +101,9 @@ export function mount(container: HTMLElement): () => void {
   }
 
   // 出牌日志行（本盘·newest last·供游戏内菜单「出牌日志」页·玩家可复制贴作者排查 freeze/牌型）。
+  // 日志正文=中文机读口径（红线·恒中文·同 game-c 确定性事件流）；仅面板 chrome 双语（见 hud buildGameMenu）。
   const ACT_CN: Record<string, string> = { lead: '领出', follow: '跟', pass: '过' };
-  function logRows(s: GuandanSession): { round: number; who: string; act: string; cards: string; fam: string }[] {
+  function logRows(s: GuandanSession): { round: number; who: string; act: string; cards: string; fam: string; pass: boolean }[] {
     return s.playLog
       .filter((e) => e.round === s.round)
       .slice(-60)
@@ -104,25 +114,24 @@ export function mount(container: HTMLElement): () => void {
         // 逢人配（红桃级牌🃏）标出·让玩家看懂含百搭的合法牌型（owner 2026-07-18）
         cards: e.action === 'pass' ? '—' : e.cards.map((c) => fmtCardCode(c, s.playLevel)).join(' '),
         fam: e.family ? `${FAMILY_CN[e.family] ?? e.family}${e.wilds > 0 ? `·${e.wilds}🃏` : ''}` : '—',
+        pass: e.action === 'pass', // 过牌行置灰用（非中文串比对·hud 用 r.pass）
       }));
   }
 
-  // 本盘进贡/还贡一句话（首盘=null·抗贡/正常各态·玩家知情）。
+  // 本盘进贡/还贡一句话（首盘=null·抗贡/正常各态·玩家知情）。连接词双语；牌码=红线机读口径恒中文（fmtCardCode）。
   function tributeText(s: GuandanSession): string | null {
     if (s.round <= 1) return null;
-    if (s.resisted) return '抗贡成功 · 双大王免进贡 · 头游先出';
+    if (s.resisted) return fmtTributeResist(lang);
     if (s.tributes.length === 0) return null;
     return s.tributes
-      .map((t) => {
-        const base = `${seatSpec(t.from).name} 进 ${fmtCardCode(t.card)} → ${seatSpec(t.to).name}`;
-        return t.returned != null ? `${base}（还 ${fmtCardCode(t.returned)}）` : base;
-      })
-      .join(' ； ');
+      .map((tr) => fmtTributeLine(lang, displayName(tr.from), fmtCardCode(tr.card), displayName(tr.to), tr.returned != null ? fmtCardCode(tr.returned) : null))
+      .join(lang === 'zh' ? ' ； ' : ' ; ');
   }
 
   function playView(s: GuandanSession): PlayView {
     const cs = commitState(s);
     return {
+      lang,
       round: s.round,
       stake: s.stake,
       levelPlay: s.playLevel,
@@ -130,18 +139,18 @@ export function mount(container: HTMLElement): () => void {
       levelTheirs: s.levels[1],
       wallet: s.wallets.hero,
       turn: s.turn,
-      turnName: seatSpec(s.turn).name,
+      turnName: displayName(s.turn), // hero='你'/You 本地化·AI 专名恒中文
       seats: { partner: seatView('partner'), west: seatView('west'), east: seatView('east'), hero: seatView('hero') },
       hand: displayHand(s),
       selected: [...selected],
       sortMode,
       trick: s.currentTrick
         ? {
-            name: FAMILY_CN[s.currentTrick.match.family] ?? s.currentTrick.match.family,
+            name: handName(lang, s.currentTrick.match.family), // 牌型显示名双语（不碰 session FAMILY_CN 日志口径）
             family: s.currentTrick.match.family,
             cards: s.currentTrick.cards,
             holder: s.currentTrick.seat, // 当前墩持有者（暂大·谁出的牌谁大）
-            holderName: seatSpec(s.currentTrick.seat).name,
+            holderName: displayName(s.currentTrick.seat),
             holderTeam: teamOf(s.currentTrick.seat),
             wilds: s.currentTrick.match.wildsUsed, // 本墩用的逢人配张数（含百搭合法牌型明示）
           }
@@ -159,7 +168,7 @@ export function mount(container: HTMLElement): () => void {
       showMenu: menuOpen,
       menuTab,
       logRows: menuOpen ? logRows(s) : [],
-      tierName: AI_TIERS.find((t) => t.id === s.tier)?.name ?? s.tier,
+      tierName: tierName(lang, s.tier), // 难度显示名双语（设置页用·fmtTierName 再套「难度 X」壳）
       seed: lastSeed,
     };
   }
@@ -167,9 +176,10 @@ export function mount(container: HTMLElement): () => void {
   function resultView(s: GuandanSession): ResultView {
     const r = s.lastResult!;
     return {
-      ranking: r.ranking.map((seat) => ({ seat, name: seatSpec(seat).name, team: teamOf(seat) })),
+      lang,
+      ranking: r.ranking.map((seat) => ({ seat, name: displayName(seat), team: teamOf(seat) })),
       winnersTeam: r.winnersTeam,
-      comboLabel: r.combo === 'double' ? '双上 ×3' : r.combo === 'first-third' ? '一三 ×2' : '一四 ×1',
+      comboLabel: fmtComboLabel(lang, r.combo),
       totalMult: r.totalMult,
       payPerPlayer: r.payPerPlayer,
       levelAfter: r.levelAfter,
@@ -194,7 +204,7 @@ export function mount(container: HTMLElement): () => void {
   }
   function render(): void {
     if (!session) {
-      paint(screen === 'select' ? buildTableSelect({ difficulty: selDifficulty, stake: selStake, wallet }) : buildMenu(menuView()));
+      paint(screen === 'select' ? buildTableSelect({ lang, difficulty: selDifficulty, stake: selStake, wallet }) : buildMenu(menuView()));
       return;
     }
     paint(session.phase === 'playing' ? buildPlay(playView(session)) : buildResult(resultView(session)));
@@ -253,6 +263,17 @@ export function mount(container: HTMLElement): () => void {
   const handlers: HandlerMap = {
     'menu.start': () => showTableSelect(),
     'table.back': () => showMenu(),
+    // 语言切换（EN/中·默认中文·localStorage 持久·mirror game-c set_lang）。
+    // paint() 对同根 id 走最小 diff reconcile·可能漏刷深层嵌套文案 → 置 mountedRootId='' 逼下次 render 走
+    //   teardown+整树重挂（同「跨屏根 id 变」路径），确保当前屏所有 Label/Button/Tag 文案随语言刷新。
+    'set_lang': (arg?: string) => {
+      const nl: Lang = arg === 'en' ? 'en' : 'zh';
+      if (nl === lang) return;
+      lang = nl;
+      saveLang(nl);
+      mountedRootId = ''; // 强制下次 paint 整树重挂（非最小 diff）
+      render();
+    },
     // 选桌 SC-2
     'select.difficulty': (arg?: string) => {
       if (arg === 'l1' || arg === 'l2' || arg === 'l3' || arg === 'l4') selDifficulty = arg;
