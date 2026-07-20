@@ -30,6 +30,7 @@
 | **美术管线（配美术/换皮）** | `playbooks/art-pipeline.md` | 美术平台+台账 art-NN+风格包+批量生成/写回（终态档=唯一权威） | 全员（做游戏必读）；平台=PST |
 | 音频 | `playbooks/audio.md` | SynthAudioPort/SfxSpec（声音=数据） | 各游戏 PE；正样例=game-g |
 | 存档与平台 | `playbooks/save-platform.md` | storage/platform-hooks（云存档/成就） | 各游戏 PE；发布=**game-publisher agent** |
+| 平台角色卡桥（外部数据→席位） | `playbooks/character-card.md` | `services/character-card`（normalizeCharacterCard/toSeatCard/isCardUsable）· 媒体取优 · 成年硬闸 · passthrough 对账 | 各游戏 PE（a/b/c 接卡）；桥=引擎 services |
 | **测试与验收** | `playbooks/testing.md` | vitest·registry-guard·ApolloBench·数值 sim·e2e·smoke·game-skill-audit | **全员（交付前必过）**；验收纪律=Lead |
 | **视觉验收/出货门** | `playbooks/visual-scorecard.md` | 8 维 0-3 分·premium=全维≥2·证据台账·反捷径工艺律 | 判官=Lead/P3D；PS 出货内门（TGS 吸收·owner 2026-07-06 批） |
 

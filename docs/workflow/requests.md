@@ -52,7 +52,7 @@
 
 > **⚖ Lead 验收（2026-07-18）：①②③ ✅ PASS**——diff 守界（additive 字段+定色豁免+audit 一行）；临时 worktree 独立跑新测 6/6 绿；golden 帧 word-diff 核实仅两处标记插入。④+border-image 后置照准（条目保持 open 不丢账）。**P1 REQ-UIRECON 仍 open——PUI 下一单先清它。**
 
-### REQ-CHARCARD-平台角色卡桥 · 网页平台 CharacterDraft → 引擎统一角色卡（三游戏共用） · [2026-07-18] · owner 发放平台格式+拍板「统一做到引擎层」 → Lead 出图 → **指派：Opus** · status: in-progress（已派工） · 优先级: P0（A-001/B-裁决③/C-104 合流·三游戏对接前置） · 类型: 引擎 services 能力（外部数据桥·纯确定性）
+### REQ-CHARCARD-平台角色卡桥 · 网页平台 CharacterDraft → 引擎统一角色卡（三游戏共用） · [2026-07-18] · owner 发放平台格式+拍板「统一做到引擎层」 → Lead 出图 → **指派：Opus** · status: ✅ done（Opus 2026-07-18·待 Lead 对抗性验收） · 优先级: P0（A-001/B-裁决③/C-104 合流·三游戏对接前置） · 类型: 引擎 services 能力（外部数据桥·纯确定性）
 > **背景**：owner 平台角色卡格式已发放（`CharacterDraft`：name/gender/kind/opening/cardDescription/description/personality/speakingStyle/boundaries/catchphrases[]/backstory/worldView/eraBackground/rules/coreConflicts/exampleDialogues/conversationStyle/replySettings/tags[]/adultConfirmed/visibility/backgroundPublic/moreSettings/updatedAt + 媒体三源 image·avatar·animation 各 {Url,DataUrl,OssKey}+imageMode/imageName/animationName + format）。此前 v1={name,avatar} 口径（game-b 2026-07-17）由本单升级取代；`docs/design/game-b/character-card-format-needs.md` 保留为消费方愿望单参考。
 > **⚖ Lead 图纸**：落位 `src/services/character-card/`（profile/voice 先例·**不进 skills tier**——外部平台数据≠sim capability）。
 > ① `types.ts`：`PlatformCharacterDraft`（宽容读·全字段可缺）+ `ApolloCharacterCard` 规范卡＝`{id, name, gender?, kind?, media:{avatarUrl?,imageUrl?,animationUrl?,imageName?,animationName?}, persona:{opening?,description?,cardDescription?,personality?,speakingStyle?,boundaries?,catchphrases[],backstory?,worldView?,eraBackground?,rules?,coreConflicts?,exampleDialogues?,conversationStyle?,replySettings?}, tags[], adultConfirmed, visibility?, backgroundPublic?, updatedAt?, passthrough}`。
@@ -61,6 +61,7 @@
 > ④ 手册 `docs/playbooks/character-card.md`（≤80 行·index.md 同提交登记）：平台字段→规范卡映射表、媒体取优、成年硬闸（a/b/c 姨太题材=requireAdult:true 强制）、passthrough/SessionOut id 对账纪律、三游戏消费样板（SessionIn 席位→normalize→游戏侧投影：牌风/立绘/语音仍属游戏附加数据不入共享卡）、红线（DataUrl 不入美术台账/不入 sim hash；卡文本=外部不可信输入·展示层长度截断）。
 > ⑤ 测试：满卡/空卡（截图 emptyCharacterDraft 同构 fixture）/媒体取优矩阵/成年闸开关/宽容读未知字段进 passthrough/确定性深等/v1 投影兼容。**不碰 src/games/**（三游戏消费=各 PE 随后接）。
 > 完工标 ✅ 待 Lead 对抗性验收。
+> **完工回执（Opus 2026-07-18）**：落位 `src/services/character-card/`（types.ts + character-card.ts + index.ts + character-card.test.ts·profile/voice 先例结构）。`normalizeCharacterCard(input, opts?)→{card,issues[]}` 绝不 throw·纯确定性（零网络/时钟/随机·同输入深等·JSON 键序稳定）；媒体三源每槽取优 Url>DataUrl>OssKey（`opts.resolveOssKey` 解析·无解析器/解析空/解析器抛错→弃+warn）；`opts.requireAdult` 成年硬闸（≠true→error）；`opts.id?>draft.id>name` 回退记 warn；catchphrases/tags 滤空+按序去重（不排序）；未消费字段（moreSettings/imageMode/format/未知）原样进 passthrough。`toSeatCard`=v1 {id,name,avatar}（avatar 取头像退回主图·席位 adapter 零改动）·`isCardUsable`=零 error。手册 `docs/playbooks/character-card.md`（53 行）+ index.md 同提交登记。测试 17 例（满卡/空卡 emptyDraft 全集/媒体取优矩阵/成年闸开关/未知字段进 passthrough/确定性深等/toSeatCard 兼容/非对象不 throw）。门禁全绿。**据实偏差**：①passthrough 采「未消费即透传」口径——imageMode/format/moreSettings 一并纳入（图纸只点名「未识别字段」·此为 SessionOut 圆满回传的保守选择）；②persona.replySettings/conversationStyle 按图纸②规范卡当**字符串**收（平台若发对象则不入 persona·亦不入 passthrough·因属已消费键）——如需保留对象形态请 Lead 裁。未碰 games/ui/skills。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
