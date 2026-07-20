@@ -1,28 +1,31 @@
 // Game C ·《六人德州》—— 全部 UI = 纯 LayoutNode 数据（UI 铁律·夜宴系主题皮）。
 // 两层 1:1 律（生产总线红线·Lead 2026-07-17）：S4 结构 1:1（布局/信息层级/状态可见性照稿·素皮）；
-//   本文件=S5 视觉 1:1「换正装」——字体/渐变/纹样/发光纯观感替换，**布局锚点零改动**（对齐 art-data-manual §5 视觉·
-//   闭集控件表达：Panel bg 令牌(FillPreset/SurfaceToken)+edge+fx glow、Label impact 艺术字+glow、layout.rotate 斜摆、
-//   ProgressBar ring 读秒、Panel action 三色按钮）。闭集真缺的质感件走 requests.md 报 PUI（绝不手写 CSS 逃生）。
-// 写世界只经 action 信号；S5 骨架期 action 由宿主 HandlerMap 消化（衣柜开关=本地 state；下注真接 sim=M4）。
-// 3D 视口（牌桌/凳/立体筹码）=M3 render-only 接（原型标注层自标 Camera3D/Mesh3D/Decal3D/Glow3D）；本层 felt 平面占位。
+//   本文件=S5 视觉 1:1「换正装」——字体/渐变/纹样/发光纯观感替换，**布局锚点零改动**。
+// 写世界只经 action 信号；宿主 HandlerMap 消化。3D 视口（牌桌/立体筹码）=scene 层 render-only；本层 2D HUD 浮层。
+// 中英切换（owner 2026-07-20）：一切用户可见文案走 strings.ts 的 t(lang,key)/fmt*（v.lang 贯穿）；**默认英语**（宿主定 lang）。
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Card } from '@engine/protocol/components.js';
 import {
   OPPONENT_ANCHORS, anchorTopLeft, cardFace, SEAT_W, SEAT_H, FIELD_W, FIELD_H,
 } from './theme.js';
 import type { GameEvent } from './game-log.js';
+import {
+  type Lang, type LastMove, t, fmtHand, fmtCall, fmtRaise, fmtBet, fmtBest, fmtShowdownTitle,
+  fmtValue, fmtWardrobeTitle, fmtPortrait, fmtHands, fmtItems, fmtMove,
+} from './strings.js';
 
 // ── 视图数据（宿主从 M1 sim 状态纯读投影·outcome-first）─────────────────────────
 export interface SeatView {
   seat: number; name: string; chips: number; committed: number; clothes: number;
   folded: boolean; allIn: boolean; out: boolean; isActor: boolean; isHero: boolean; isButton: boolean;
-  lastAction?: string; // 上一动作气泡（CHECK/CALL 50/RAISE/FOLD·标准德州行动史）
+  lastMove?: LastMove; // 上一动作气泡（结构化·UI 层本地化文案+着色·标准德州行动史）
 }
 export interface WardrobeRow { id: string; name: string; value: number; pawned: boolean; }
 export interface WardrobeView { seat: number; name: string; isHero: boolean; rows: WardrobeRow[]; }
 export interface TableView {
+  lang: Lang; // 界面语言（owner 2026-07-20 中英切换·默认 en·宿主持久）
   blindLabel: string; handNo: number; pot: number;
-  board: Card[]; heroHole: Card[]; heroHandName: string;
+  board: Card[]; heroHole: Card[]; heroHandName: string; // heroHandName=宿主已本地化的牌型显示名
   seats: SeatView[]; toCall: number; canRaise: boolean; minRaise: number; maxRaise: number; raiseValue: number;
   muted: boolean; openWardrobe: number | null; wardrobe?: WardrobeView;
   showLog: boolean; log: GameEvent[]; // 游戏日志（确定性事件流·查 bug·owner 2026-07-17）
@@ -31,7 +34,7 @@ export interface TableView {
   showdown?: ShowdownView; finale?: FinaleView;
 }
 export interface ShowdownView {
-  rows: Array<{ name: string; type: string; best: Card[]; hole: Card[]; won: number; isWinner: boolean }>;
+  rows: Array<{ name: string; type: string; best: Card[]; hole: Card[]; won: number; isWinner: boolean }>; // name/type=宿主已本地化
   potTotal: number;
 }
 export interface FinaleView { win: boolean; hands: number; heroChips: number; heroPawned: number; }
@@ -42,6 +45,17 @@ const fmt = (n: number): string => n.toLocaleString('en-US');
 const CARD_FILL = 'linear-gradient(160deg,rgba(30,20,34,0.94),rgba(14,9,18,0.96))';
 const CARD_FILL_HERO = 'linear-gradient(160deg,rgba(40,26,44,0.96),rgba(16,10,22,0.97))';
 
+// ── 语言切换段控（EN / 中·当前档 primary 高亮·发 set_lang 信号·顶栏与菜单共用）──
+function langToggle(l: Lang, idp: string): LayoutNode {
+  const btn = (lang: Lang, label: string): LayoutNode => ({
+    type: 'Button', id: `${idp}-${lang}`, props: { label, kind: l === lang ? 'primary' : 'ghost', action: 'set_lang', actionArg: lang },
+  });
+  return {
+    type: 'Panel', id: idp, props: { bare: true }, layout: { direction: 'row', gap: 4, align: 'center' },
+    children: [btn('en', 'EN'), btn('zh', '中')],
+  };
+}
+
 // ── 公共牌 / 底牌（白牌 face:light·红黑对比·§5.3 Decal3D 牌面正装）──────────────
 function cardNode(id: string, c: Card | null, size: 'sm' | 'md' | 'lg', rotate?: number): LayoutNode {
   const layout = rotate ? { rotate } : {};
@@ -50,39 +64,29 @@ function cardNode(id: string, c: Card | null, size: 'sm' | 'md' | 'lg', rotate?:
   return { type: 'PlayingCard', id, props: { rank: f.rank, suit: f.suit, faceUp: true, face: 'light', size }, layout };
 }
 
-function buildBoard(v: TableView): LayoutNode {
-  const slots: LayoutNode[] = [];
-  for (let i = 0; i < 5; i++) slots.push(cardNode(`c-board-${i}`, v.board[i] ?? null, 'md'));
-  return {
-    type: 'Panel', id: 'c-board', props: { bare: true },
-    layout: { x: Math.round(FIELD_W / 2 - 195), y: 250, width: 390, direction: 'row', gap: 8, justify: 'center' },
-    children: slots,
-  };
-}
-
 // ── 座位卡（正装：夜宴渐变底 + 状态 edge 金/翠/红 + active/allin 发光 + 读秒 + 状态气泡）────
-function statusBubble(v: SeatView): LayoutNode | null {
+function statusBubble(v: SeatView, l: Lang): LayoutNode | null {
   const mk = (text: string, bg: string, color: 'ok' | 'danger' | 'dim' | 'gold' | 'sub'): LayoutNode => ({
     type: 'Panel', id: `c-bub-${v.seat}`, props: { bg: { custom: bg } },
     layout: { direction: 'row', justify: 'center', padding: 3, radius: 12 },
     children: [{ type: 'Label', id: `c-bub-t-${v.seat}`, props: { text, size: 'xs', bold: true, color } }],
   });
-  if (v.out) return mk('出局 OUT', 'rgba(80,80,88,0.3)', 'dim');
-  if (v.folded) return mk('已弃 FOLD', 'rgba(120,120,130,0.2)', 'dim');
-  if (v.allIn) return mk('ALL-IN', 'linear-gradient(90deg,rgba(200,53,43,0.9),rgba(192,57,43,0.9))', 'gold');
-  if (v.isActor) return mk('● 思考中 · 0:15', 'rgba(127,214,176,0.15)', 'ok');
+  if (v.out) return mk(t(l, 'bubble.out'), 'rgba(80,80,88,0.3)', 'dim');
+  if (v.folded) return mk(t(l, 'bubble.fold'), 'rgba(120,120,130,0.2)', 'dim');
+  if (v.allIn) return mk(t(l, 'bubble.allin'), 'linear-gradient(90deg,rgba(200,53,43,0.9),rgba(192,57,43,0.9))', 'gold');
+  if (v.isActor) return mk(t(l, 'bubble.thinking'), 'rgba(127,214,176,0.15)', 'ok');
   // 行动气泡：上一动作（跟注/过牌/加注·标准德州行动史·让玩家看清各家做了什么）。
-  if (v.lastAction) {
-    const isRaise = v.lastAction.startsWith('加注');
-    return mk(v.lastAction, isRaise ? 'rgba(224,180,88,0.2)' : 'rgba(40,30,44,0.75)', isRaise ? 'gold' : 'sub');
+  if (v.lastMove) {
+    const { text, isRaise } = fmtMove(l, v.lastMove);
+    return mk(text, isRaise ? 'rgba(224,180,88,0.2)' : 'rgba(40,30,44,0.75)', isRaise ? 'gold' : 'sub');
   }
   return null;
 }
 
-function seatCard(v: SeatView, x: number, y: number, w: number, h: number): LayoutNode {
+function seatCard(v: SeatView, x: number, y: number, w: number, h: number, l: Lang): LayoutNode {
   const edge = v.allIn ? 'danger' : v.isActor ? 'jade' : v.out || v.folded ? undefined : 'gold';
   const fx = v.isActor ? [{ kind: 'glow' as const, color: 'jade' as const }] : v.allIn ? [{ kind: 'glow' as const, color: 'danger' as const }] : undefined;
-  const bub = statusBubble(v);
+  const bub = statusBubble(v, l);
 
   const head: LayoutNode = {
     type: 'Panel', id: `c-seat-head-${v.seat}`, props: { bare: true },
@@ -111,9 +115,9 @@ function seatCard(v: SeatView, x: number, y: number, w: number, h: number): Layo
     type: 'Panel', id: `c-seat-meta-${v.seat}`, props: { bare: true },
     layout: { direction: 'row', gap: 6, align: 'center' },
     children: [
-      { type: 'Tag', id: `c-tag-${v.seat}`, props: { label: v.isHero ? '你' : '对手', tone: v.isHero ? 'normal' : 'accent', size: 'sm' } },
+      { type: 'Tag', id: `c-tag-${v.seat}`, props: { label: v.isHero ? t(l, 'seat.you') : t(l, 'seat.opp'), tone: v.isHero ? 'normal' : 'accent', size: 'sm' } },
       { type: 'Label', id: `c-cloth-${v.seat}`, props: { text: `👗 ${v.clothes}`, size: 'sm', color: 'sub' } },
-      ...(v.committed > 0 ? [{ type: 'Label', id: `c-bet-${v.seat}`, props: { text: `注 ${fmt(v.committed)}`, size: 'sm', color: 'gold' } } as LayoutNode] : []),
+      ...(v.committed > 0 ? [{ type: 'Label', id: `c-bet-${v.seat}`, props: { text: fmtBet(l, v.committed), size: 'sm', color: 'gold' } } as LayoutNode] : []),
     ],
   };
   const children: LayoutNode[] = bub ? [bub, head, meta] : [head, meta];
@@ -128,8 +132,9 @@ function seatCard(v: SeatView, x: number, y: number, w: number, h: number): Layo
   };
 }
 
-// ── 顶带（SB 徽章 + 盲注 impact + POT 金发光大字 + ⚙♪）──────────────────────────
+// ── 顶带（SB 徽章 + 盲注 impact + POT 金发光大字 + 语言段控 + ⚙♪）──────────────────
 function buildTopBar(v: TableView): LayoutNode {
+  const l = v.lang;
   return {
     type: 'Panel', id: 'c-top', props: { bg: { custom: 'linear-gradient(180deg,rgba(8,5,14,0.92),rgba(8,5,14,0.15) 82%,rgba(8,5,14,0))' } },
     layout: { x: 0, y: 0, width: FIELD_W, height: 76, direction: 'row', align: 'center', justify: 'between', padding: 16 },
@@ -146,8 +151,8 @@ function buildTopBar(v: TableView): LayoutNode {
           {
             type: 'Panel', id: 'c-blind-col', props: { bare: true }, layout: { direction: 'column', gap: 0 },
             children: [
-              { type: 'Label', id: 'c-blind-v', props: { text: `盲注 ${v.blindLabel}`, font: 'impact', size: 20, color: 'text' } },
-              { type: 'Label', id: 'c-hand-n', props: { text: `第 ${v.handNo} 手 · 现金局`, size: 'xs', color: 'dim' } },
+              { type: 'Label', id: 'c-blind-v', props: { text: `${t(l, 'top.blind')} ${v.blindLabel}`, font: 'impact', size: 20, color: 'text' } },
+              { type: 'Label', id: 'c-hand-n', props: { text: fmtHand(l, v.handNo), size: 'xs', color: 'dim' } },
             ],
           },
         ],
@@ -156,13 +161,14 @@ function buildTopBar(v: TableView): LayoutNode {
         type: 'Panel', id: 'c-pot', props: { bare: true },
         layout: { direction: 'column', align: 'center', gap: 0 },
         children: [
-          { type: 'Label', id: 'c-pot-l', props: { text: 'POT · 底池', font: 'mono', size: 'xs', color: 'warn' } },
+          { type: 'Label', id: 'c-pot-l', props: { text: t(l, 'top.pot'), font: 'mono', size: 'xs', color: 'warn' } },
           { type: 'Label', id: 'c-pot-v', props: { text: `◉ ${fmt(v.pot)}`, font: 'impact', size: 44, color: 'gold', glow: true } },
         ],
       },
       {
         type: 'Panel', id: 'c-menu', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' },
         children: [
+          langToggle(l, 'c-lang'),
           { type: 'Button', id: 'c-log', props: { label: '📋', kind: v.showLog ? 'primary' : 'ghost', action: 'toggle_log' } },
           { type: 'Button', id: 'c-sound', props: { label: v.muted ? '🔇' : '♪', kind: 'ghost', action: 'sound_toggle' } },
           { type: 'Button', id: 'c-gear', props: { label: '⚙', kind: 'ghost', action: 'menu_open' } },
@@ -186,7 +192,7 @@ function buildHeroCards(v: TableView): LayoutNode {
       {
         type: 'Panel', id: 'c-hole-cap', props: { bg: { custom: 'rgba(224,180,88,0.14)' }, edge: 'gold' },
         layout: { direction: 'row', justify: 'center', padding: 5, radius: 14 },
-        children: [{ type: 'Label', id: 'c-hole-name', props: { text: `最优成牌 · ${v.heroHandName || '—'}`, font: 'serif', size: 'sm', bold: true, color: 'gold' } }],
+        children: [{ type: 'Label', id: 'c-hole-name', props: { text: fmtBest(v.lang, v.heroHandName), font: 'serif', size: 'sm', bold: true, color: 'gold' } }],
       },
     ],
   };
@@ -204,24 +210,25 @@ function bigBtn(id: string, main: string, sub: string, fill: string, mainColor: 
   };
 }
 function buildActionBar(v: TableView): LayoutNode {
-  const callMain = v.toCall > 0 ? `跟注 ${fmt(v.toCall)}` : '过牌';
+  const l = v.lang;
+  const callMain = v.toCall > 0 ? fmtCall(l, v.toCall) : t(l, 'act.check');
   const main: LayoutNode = {
     type: 'Panel', id: 'c-act-main', props: { bare: true },
     layout: { direction: 'row', gap: 9, align: 'stretch' },
     children: [
-      bigBtn('c-act-fold', '弃牌', 'FOLD', 'blood', 'text', 'act_fold', undefined, 1),
+      bigBtn('c-act-fold', t(l, 'act.fold'), 'FOLD', 'blood', 'text', 'act_fold', undefined, 1),
       bigBtn('c-act-call', callMain, v.toCall > 0 ? 'CALL' : 'CHECK', 'jade-sheen', 'text', 'act_check_call', undefined, 1.2),
-      ...(v.canRaise ? [bigBtn('c-act-raise', `加注 ${fmt(v.raiseValue)}`, 'RAISE', 'gold-sheen', 'ink', 'act_raise', 'slider', 1.2)] : []),
+      ...(v.canRaise ? [bigBtn('c-act-raise', fmtRaise(l, v.raiseValue), 'RAISE', 'gold-sheen', 'ink', 'act_raise', 'slider', 1.2)] : []),
     ],
   };
   const quick: LayoutNode = {
     type: 'Panel', id: 'c-quick', props: { bare: true },
     layout: { direction: 'row', gap: 6, justify: 'end' },
     children: [
-      { type: 'Button', id: 'c-q-half', props: { label: '½ 池', kind: 'quiet', action: 'act_raise', actionArg: 'half' } },
-      { type: 'Button', id: 'c-q-two3', props: { label: '⅔ 池', kind: 'quiet', action: 'act_raise', actionArg: 'twoThird' } },
-      { type: 'Button', id: 'c-q-pot', props: { label: '满池', kind: 'quiet', action: 'act_raise', actionArg: 'pot' } },
-      { type: 'Button', id: 'c-q-allin', props: { label: '全下', kind: 'quiet', action: 'act_raise', actionArg: 'allin' } },
+      { type: 'Button', id: 'c-q-half', props: { label: t(l, 'quick.half'), kind: 'quiet', action: 'act_raise', actionArg: 'half' } },
+      { type: 'Button', id: 'c-q-two3', props: { label: t(l, 'quick.two3'), kind: 'quiet', action: 'act_raise', actionArg: 'twoThird' } },
+      { type: 'Button', id: 'c-q-pot', props: { label: t(l, 'quick.pot'), kind: 'quiet', action: 'act_raise', actionArg: 'pot' } },
+      { type: 'Button', id: 'c-q-allin', props: { label: t(l, 'quick.allin'), kind: 'quiet', action: 'act_raise', actionArg: 'allin' } },
     ],
   };
   const children: LayoutNode[] = [main];
@@ -245,7 +252,7 @@ function buildActionBar(v: TableView): LayoutNode {
 }
 
 // ── 衣柜面板（正装：立绘区虚线框 + 行渐变金边 + 图标方块 + 面值 impact + 换筹码金键）──────
-function buildWardrobe(w: WardrobeView): LayoutNode {
+function buildWardrobe(w: WardrobeView, l: Lang): LayoutNode {
   const rows: LayoutNode[] = w.rows.map((r) => ({
     type: 'Panel', id: `c-wr-${r.id}`, props: { bg: { custom: r.pawned ? 'rgba(30,26,32,0.5)' : 'rgba(224,180,88,0.06)' }, edge: r.pawned ? undefined : 'gold' },
     layout: { direction: 'row', gap: 12, align: 'center', justify: 'between', padding: 11, radius: 11, opacity: r.pawned ? 0.5 : 1 },
@@ -262,7 +269,7 @@ function buildWardrobe(w: WardrobeView): LayoutNode {
             type: 'Panel', id: `c-wr-nm-col-${r.id}`, props: { bare: true }, layout: { direction: 'column', gap: 0 },
             children: [
               { type: 'Label', id: `c-wr-nm-${r.id}`, props: { text: r.name, size: 'md', bold: true, color: r.pawned ? 'dim' : 'text' } },
-              { type: 'Label', id: `c-wr-st-${r.id}`, props: { text: r.pawned ? '已当 · 立绘层消失' : '在穿', size: 'xs', color: r.pawned ? 'dim' : 'sub' } },
+              { type: 'Label', id: `c-wr-st-${r.id}`, props: { text: r.pawned ? t(l, 'wr.pawnedState') : t(l, 'wr.wornState'), size: 'xs', color: r.pawned ? 'dim' : 'sub' } },
             ],
           },
         ],
@@ -270,9 +277,9 @@ function buildWardrobe(w: WardrobeView): LayoutNode {
       {
         type: 'Panel', id: `c-wr-r-${r.id}`, props: { bare: true }, layout: { direction: 'row', gap: 12, align: 'center' },
         children: [
-          { type: 'Label', id: `c-wr-val-${r.id}`, props: { text: r.pawned ? '已典当' : `面值 ${fmt(r.value)}`, font: r.pawned ? 'ui' : 'impact', size: r.pawned ? 'sm' : 20, color: r.pawned ? 'dim' : 'gold' } },
+          { type: 'Label', id: `c-wr-val-${r.id}`, props: { text: r.pawned ? t(l, 'wr.pawnedVal') : fmtValue(l, r.value), font: r.pawned ? 'ui' : 'impact', size: r.pawned ? 'sm' : 20, color: r.pawned ? 'dim' : 'gold' } },
           ...(w.isHero && !r.pawned
-            ? [{ type: 'Panel', id: `c-wr-pawn-${r.id}`, props: { bg: 'gold-sheen' as never, action: 'pawn_item', actionArg: r.id }, layout: { padding: 9, radius: 9, justify: 'center' }, children: [{ type: 'Label', id: `c-wr-pawn-t-${r.id}`, props: { text: '换筹码', font: 'impact', size: 'sm', color: 'ink' } }] } as LayoutNode]
+            ? [{ type: 'Panel', id: `c-wr-pawn-${r.id}`, props: { bg: 'gold-sheen' as never, action: 'pawn_item', actionArg: r.id }, layout: { padding: 9, radius: 9, justify: 'center' }, children: [{ type: 'Label', id: `c-wr-pawn-t-${r.id}`, props: { text: t(l, 'wr.cashIn'), font: 'impact', size: 'sm', color: 'ink' } }] } as LayoutNode]
             : []),
         ],
       },
@@ -291,8 +298,8 @@ function buildWardrobe(w: WardrobeView): LayoutNode {
             layout: { direction: 'column', align: 'center', justify: 'center', gap: 12, padding: 22, radius: 12, width: 200, height: 300 },
             children: [
               { type: 'Avatar', id: 'c-wr-face', props: { name: w.name.slice(0, 1), size: 88, shape: 'circle' } },
-              { type: 'Label', id: 'c-wr-face-l', props: { text: `${w.name} 立绘`, font: 'impact', size: 26, color: 'gold' } },
-              { type: 'Label', id: 'c-wr-face-s', props: { text: '分层立绘区 · 3:4 · 典当逐层消失', size: 'xs', color: 'dim' } },
+              { type: 'Label', id: 'c-wr-face-l', props: { text: fmtPortrait(l, w.name), font: 'impact', size: 26, color: 'gold' } },
+              { type: 'Label', id: 'c-wr-face-s', props: { text: t(l, 'wr.portraitSub'), size: 'xs', color: 'dim' } },
             ],
           },
         ],
@@ -307,8 +314,8 @@ function buildWardrobe(w: WardrobeView): LayoutNode {
               {
                 type: 'Panel', id: 'c-wr-hdr-l', props: { bare: true }, layout: { direction: 'column', gap: 0 },
                 children: [
-                  { type: 'Label', id: 'c-wr-title', props: { text: `${w.name} · 衣柜`, font: 'impact', size: 30, color: 'text' } },
-                  { type: 'Label', id: 'c-wr-mode', props: { text: w.isHero ? '自己视角 · 在穿件可典当换筹码' : '对手视角 · 只读（件名 + 面值可见）', size: 'xs', color: 'dim' } },
+                  { type: 'Label', id: 'c-wr-title', props: { text: fmtWardrobeTitle(l, w.name), font: 'impact', size: 30, color: 'text' } },
+                  { type: 'Label', id: 'c-wr-mode', props: { text: w.isHero ? t(l, 'wr.modeHero') : t(l, 'wr.modeOpp'), size: 'xs', color: 'dim' } },
                 ],
               },
               { type: 'Button', id: 'c-wr-close', props: { label: '✕', kind: 'ghost', action: 'panel_close' } },
@@ -326,18 +333,19 @@ function buildWardrobe(w: WardrobeView): LayoutNode {
   };
 }
 
-// ── 主菜单屏 SC-1（对齐 texas-main-menu 稿·左立绘 + 右标题按钮 + 左下角色卡）──────────────
-export interface MenuView { playerName: string; playerChips: number; blindLabel: string; }
+// ── 主菜单屏 SC-1（对齐 texas-main-menu 稿·左立绘 + 右标题按钮 + 左下角色卡 + 右上语言段控）──────────────
+export interface MenuView { lang: Lang; playerName: string; playerChips: number; blindLabel: string; }
 export function buildMenu(m: MenuView): LayoutNode {
+  const l = m.lang;
   const portrait: LayoutNode = {
     type: 'Panel', id: 'c-menu-portrait', props: { bare: true, dashed: true, edge: 'gold' },
     layout: { direction: 'column', align: 'center', justify: 'center', gap: 12, padding: 22, width: 300, height: 440, radius: 12 },
     children: [
       { type: 'Label', id: 'c-menu-p-badge', props: { text: 'C-CHAR-HERO', font: 'mono', size: 'xs', color: 'warn' } },
       { type: 'Avatar', id: 'c-menu-p-face', props: { name: m.playerName.slice(0, 1), size: 96, shape: 'rounded' } },
-      { type: 'Label', id: 'c-menu-p-title', props: { text: '· 主角立绘', font: 'impact', size: 26, color: 'gold' } },
-      { type: 'Label', id: 'c-menu-p-size', props: { text: '尺寸 300 × 440 · 竖幅', size: 'xs', color: 'sub' } },
-      { type: 'Label', id: 'c-menu-p-anchor', props: { text: '风格锚 · 二次元 / 柔光 / 暖夜 / 不露骨', size: 'xs', color: 'dim' } },
+      { type: 'Label', id: 'c-menu-p-title', props: { text: t(l, 'menu.portraitTitle'), font: 'impact', size: 26, color: 'gold' } },
+      { type: 'Label', id: 'c-menu-p-size', props: { text: t(l, 'menu.portraitSize'), size: 'xs', color: 'sub' } },
+      { type: 'Label', id: 'c-menu-p-anchor', props: { text: t(l, 'menu.portraitAnchor'), size: 'xs', color: 'dim' } },
     ],
   };
   const right: LayoutNode = {
@@ -348,27 +356,27 @@ export function buildMenu(m: MenuView): LayoutNode {
         type: 'Panel', id: 'c-menu-title-row', props: { bare: true },
         layout: { direction: 'row', gap: 4, align: 'end', justify: 'end' },
         children: [
-          { type: 'Label', id: 'c-menu-t1', props: { text: '德州', font: 'serif', size: 72, bold: true, color: 'text' } },
-          { type: 'Label', id: 'c-menu-t2', props: { text: '夜宴', font: 'serif', size: 72, bold: true, color: 'danger' } },
+          { type: 'Label', id: 'c-menu-t1', props: { text: t(l, 'menu.titleA'), font: 'serif', size: 72, bold: true, color: 'text' } },
+          { type: 'Label', id: 'c-menu-t2', props: { text: t(l, 'menu.titleB'), font: 'serif', size: 72, bold: true, color: 'danger' } },
         ],
       },
-      { type: 'Label', id: 'c-menu-sub', props: { text: '六人环桌 · 押注见真章 · 步步为局', size: 'md', color: 'sub' } },
+      { type: 'Label', id: 'c-menu-sub', props: { text: t(l, 'menu.subtitle'), size: 'md', color: 'sub' } },
       {
         type: 'Panel', id: 'c-menu-blind', props: { bg: { custom: 'linear-gradient(160deg,#c0392b,#7a1420)' }, edge: 'gold' },
         layout: { direction: 'row', gap: 8, align: 'center', padding: 7, radius: 8 },
         children: [
-          { type: 'Label', id: 'c-menu-blind-l', props: { text: '本局盲注', size: 'xs', color: 'gold' } },
+          { type: 'Label', id: 'c-menu-blind-l', props: { text: t(l, 'menu.blindLabel'), size: 'xs', color: 'gold' } },
           { type: 'Label', id: 'c-menu-blind-v', props: { text: m.blindLabel, font: 'impact', size: 18, color: 'gold' } },
         ],
       },
       {
         type: 'Panel', id: 'c-menu-redpack', props: { bg: { custom: 'linear-gradient(90deg,rgba(224,180,88,0.2),rgba(200,53,43,0.15))' }, edge: 'warn' },
         layout: { direction: 'row', justify: 'center', padding: 6, radius: 16 },
-        children: [{ type: 'Label', id: 'c-menu-rp-t', props: { text: '🧧 每日首局 +88 红包', size: 'sm', color: 'gold' } }],
+        children: [{ type: 'Label', id: 'c-menu-rp-t', props: { text: t(l, 'menu.redpack'), size: 'sm', color: 'gold' } }],
       },
-      { type: 'Button', id: 'c-menu-start', props: { label: '开始上桌', kind: 'hero', action: 'start_game' }, layout: { width: 280 } },
-      { type: 'Button', id: 'c-menu-continue', props: { label: '继续上局', kind: 'ghost', action: 'continue_game' }, layout: { width: 280 } },
-      { type: 'Button', id: 'c-menu-settings', props: { label: '设置', kind: 'ghost', action: 'menu_open' }, layout: { width: 280 } },
+      { type: 'Button', id: 'c-menu-start', props: { label: t(l, 'menu.start'), kind: 'hero', action: 'start_game' }, layout: { width: 280 } },
+      { type: 'Button', id: 'c-menu-continue', props: { label: t(l, 'menu.continue'), kind: 'ghost', action: 'continue_game' }, layout: { width: 280 } },
+      { type: 'Button', id: 'c-menu-settings', props: { label: t(l, 'menu.settings'), kind: 'ghost', action: 'menu_open' }, layout: { width: 280 } },
     ],
   };
   const roleCard: LayoutNode = {
@@ -395,7 +403,8 @@ export function buildMenu(m: MenuView): LayoutNode {
         children: [portrait, right],
       },
       roleCard,
-      { type: 'Label', id: 'c-menu-ver', props: { text: 'v0.1.0 · 盒庭线', font: 'mono', size: 'xs', color: 'dim' }, layout: { x: FIELD_W - 200, y: FIELD_H - 40, width: 180 } },
+      { type: 'Panel', id: 'c-menu-lang', props: { bare: true }, layout: { x: FIELD_W - 150, y: 24, width: 120, direction: 'row', justify: 'end' }, children: [langToggle(l, 'c-menu-lang-seg')] },
+      { type: 'Label', id: 'c-menu-ver', props: { text: t(l, 'menu.version'), font: 'mono', size: 'xs', color: 'dim' }, layout: { x: FIELD_W - 200, y: FIELD_H - 40, width: 180 } },
     ],
   };
 }
@@ -404,7 +413,7 @@ export function buildMenu(m: MenuView): LayoutNode {
 const LOG_TAG_COLOR: Record<GameEvent['tag'], 'sub' | 'text' | 'gold' | 'warn' | 'ok'> = {
   deal: 'ok', blind: 'sub', action: 'text', street: 'gold', showdown: 'gold', pawn: 'warn', info: 'ok',
 };
-function buildLogPanel(log: GameEvent[]): LayoutNode {
+function buildLogPanel(log: GameEvent[], l: Lang): LayoutNode {
   const rows: LayoutNode[] = log.map((e) => ({
     type: 'Label', id: `c-log-${e.seq}`, props: { text: e.text, font: 'mono', size: 'xs', color: LOG_TAG_COLOR[e.tag] },
   }));
@@ -415,11 +424,11 @@ function buildLogPanel(log: GameEvent[]): LayoutNode {
       {
         type: 'Panel', id: 'c-log-hdr', props: { bare: true }, layout: { direction: 'row', justify: 'between', align: 'center' },
         children: [
-          { type: 'Label', id: 'c-log-title', props: { text: '📋 牌局日志 · 查 bug', font: 'impact', size: 18, color: 'gold' } },
+          { type: 'Label', id: 'c-log-title', props: { text: t(l, 'log.title'), font: 'impact', size: 18, color: 'gold' } },
           { type: 'Button', id: 'c-log-close', props: { label: '✕', kind: 'ghost', action: 'toggle_log' } },
         ],
       },
-      { type: 'Label', id: 'c-log-seed', props: { text: '确定性事件流 · 同 seed 同日志', size: 'xs', color: 'dim' } },
+      { type: 'Label', id: 'c-log-seed', props: { text: t(l, 'log.seed'), size: 'xs', color: 'dim' } },
       { type: 'Divider', id: 'c-log-div', props: {} },
       { type: 'Panel', id: 'c-log-rows', props: { bare: true, scroll: true }, layout: { direction: 'column', gap: 5, flex: 1 }, children: rows },
     ],
@@ -438,23 +447,24 @@ function buildCommunity(community: Card[]): LayoutNode {
 }
 
 // ── 等待提示（非主角轮·行动条位置显「等待…」）─────────────────────────────────
-function buildWaiting(): LayoutNode {
+function buildWaiting(l: Lang): LayoutNode {
   return {
     type: 'Panel', id: 'c-waiting', props: { glass: true },
     layout: { x: FIELD_W - 372, y: FIELD_H - 96, width: 356, direction: 'row', justify: 'center', align: 'center', padding: 16, radius: 11 },
-    children: [{ type: 'Label', id: 'c-waiting-t', props: { text: '⏳ 等待其他玩家行动…', size: 'md', color: 'sub' } }],
+    children: [{ type: 'Label', id: 'c-waiting-t', props: { text: t(l, 'waiting'), size: 'md', color: 'sub' } }],
   };
 }
 
 // ── 摊牌屏（owner 2026-07-18 重设计·防 5~6 人 freeze）：定高卡=顶公共牌 + 中滚动各家最优五张组合 + 底确认键常驻 ─
 //   旧版列高随人数长、y 固定 → 6 人时确认键掉出 720 视口按不到=freeze。今：卡定高、组合列 scroll:flex1、确认键钉底永远可点。
-function buildShowdown(sd: ShowdownView, board: Card[]): LayoutNode {
+//   name/type=宿主已本地化（座位名 + 牌型名·随 lang）。
+function buildShowdown(sd: ShowdownView, board: Card[], l: Lang): LayoutNode {
   // 顶：公共牌板（共享底牌·5 张 md·金边突出）
   const boardRow: LayoutNode = {
     type: 'Panel', id: 'c-sd-board', props: { bg: { custom: 'rgba(224,180,88,0.08)' }, edge: 'gold' },
     layout: { direction: 'column', align: 'center', gap: 6, padding: 10, radius: 12 },
     children: [
-      { type: 'Label', id: 'c-sd-board-l', props: { text: '公共牌 · COMMUNITY', font: 'mono', size: 'xs', color: 'warn' } },
+      { type: 'Label', id: 'c-sd-board-l', props: { text: t(l, 'sd.community'), font: 'mono', size: 'xs', color: 'warn' } },
       {
         type: 'Panel', id: 'c-sd-board-row', props: { bare: true },
         layout: { direction: 'row', gap: 7, justify: 'center' },
@@ -466,7 +476,7 @@ function buildShowdown(sd: ShowdownView, board: Card[]): LayoutNode {
   const rows: LayoutNode[] = sd.rows.map((r, i) => {
     const combo: LayoutNode[] = r.best.length
       ? r.best.map((c, k) => cardNode(`c-sd-best-${i}-${k}`, c, 'sm'))
-      : [{ type: 'Label', id: `c-sd-muck-${i}`, props: { text: '盖牌收池 · 无摊', size: 'sm', color: 'dim' } } as LayoutNode];
+      : [{ type: 'Label', id: `c-sd-muck-${i}`, props: { text: t(l, 'sd.muck'), size: 'sm', color: 'dim' } } as LayoutNode];
     return {
       type: 'Panel', id: `c-sd-row-${i}`, props: { bg: { custom: r.isWinner ? 'rgba(224,180,88,0.14)' : 'rgba(30,22,26,0.5)' }, edge: r.isWinner ? 'gold' : undefined },
       layout: { direction: 'row', align: 'center', gap: 10, padding: 9, radius: 10, opacity: r.isWinner ? 1 : 0.85 },
@@ -493,18 +503,18 @@ function buildShowdown(sd: ShowdownView, board: Card[]): LayoutNode {
     type: 'Panel', id: 'c-sd-card', props: { bg: { custom: 'linear-gradient(160deg,rgba(34,22,38,0.98),rgba(14,9,18,0.99))' }, edge: 'gold', accent: true },
     layout: { x: Math.round(FIELD_W / 2 - 340), y: 40, width: 680, height: 640, direction: 'column', align: 'stretch', gap: 12, padding: 22, radius: 16 },
     children: [
-      { type: 'Label', id: 'c-sd-title', props: { text: `摊牌 · 底池 ${fmt(sd.potTotal)}`, font: 'impact', size: 26, color: 'gold', glow: true } },
+      { type: 'Label', id: 'c-sd-title', props: { text: fmtShowdownTitle(l, sd.potTotal), font: 'impact', size: 26, color: 'gold', glow: true } },
       boardRow,
       { type: 'Divider', id: 'c-sd-div', props: {} },
       { type: 'Panel', id: 'c-sd-rows', props: { bare: true, scroll: true }, layout: { direction: 'column', gap: 8, flex: 1 }, children: rows },
-      { type: 'Button', id: 'c-sd-next', props: { label: '确认 · 继续下一手 ▶', kind: 'hero', action: 'continue_showdown' }, layout: { width: 300 } },
+      { type: 'Button', id: 'c-sd-next', props: { label: t(l, 'sd.next'), kind: 'hero', action: 'continue_showdown' }, layout: { width: 300 } },
     ],
   };
   return { type: 'Panel', id: 'c-sd-scrim', props: { bg: { custom: 'rgba(4,2,8,0.72)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children: [card] };
 }
 
 // ── 局终屏（胜=通吃满堂 / 负=输得精光 + 战绩 + 再来一局/回大厅·§5.4 E 画板）─────────────
-function buildFinale(f: FinaleView): LayoutNode {
+function buildFinale(f: FinaleView, l: Lang): LayoutNode {
   const stat = (id: string, label: string, val: string): LayoutNode => ({
     type: 'Panel', id, props: { bare: true }, layout: { direction: 'row', justify: 'between', align: 'center', padding: 4 },
     children: [
@@ -516,22 +526,22 @@ function buildFinale(f: FinaleView): LayoutNode {
     type: 'Panel', id: 'c-fin-card', props: { bg: { custom: f.win ? 'linear-gradient(160deg,#2a1e0e,#160f0b)' : 'linear-gradient(160deg,#2a0f11,#160b0c)' }, edge: f.win ? 'gold' : 'danger', accent: true },
     layout: { x: Math.round(FIELD_W / 2 - 260), y: 150, width: 520, direction: 'column', align: 'center', gap: 16, padding: 30, radius: 16 },
     children: [
-      { type: 'Label', id: 'c-fin-sub', props: { text: f.win ? '大 获 全 胜' : '铩 羽 而 归', font: 'impact', size: 20, color: f.win ? 'gold' : 'danger' } },
-      { type: 'Label', id: 'c-fin-title', props: { text: f.win ? '通吃满堂' : '输得精光', font: 'serif', size: 52, bold: true, color: f.win ? 'gold' : 'danger', glow: true } },
-      { type: 'Label', id: 'c-fin-flavor', props: { text: f.win ? '五位姨太尽数出局 · 一桌尽归' : '筹码与衣物尽失 · 落败离席', size: 'sm', color: 'sub' } },
+      { type: 'Label', id: 'c-fin-sub', props: { text: f.win ? t(l, 'fin.winSub') : t(l, 'fin.loseSub'), font: 'impact', size: 20, color: f.win ? 'gold' : 'danger' } },
+      { type: 'Label', id: 'c-fin-title', props: { text: f.win ? t(l, 'fin.winTitle') : t(l, 'fin.loseTitle'), font: 'serif', size: 52, bold: true, color: f.win ? 'gold' : 'danger', glow: true } },
+      { type: 'Label', id: 'c-fin-flavor', props: { text: f.win ? t(l, 'fin.winFlavor') : t(l, 'fin.loseFlavor'), size: 'sm', color: 'sub' } },
       {
         type: 'Panel', id: 'c-fin-stats', props: { bg: { custom: 'rgba(0,0,0,0.28)' } }, layout: { direction: 'column', gap: 6, padding: 14, radius: 10, width: 360 },
         children: [
-          stat('c-fin-hands', '总手数', `${f.hands} 手`),
-          stat('c-fin-chips', '最终筹码', fmt(f.heroChips)),
-          stat('c-fin-pawn', '典当衣物', `${f.heroPawned} / ${6} 件`),
+          stat('c-fin-hands', t(l, 'fin.hands'), fmtHands(l, f.hands)),
+          stat('c-fin-chips', t(l, 'fin.chips'), fmt(f.heroChips)),
+          stat('c-fin-pawn', t(l, 'fin.pawned'), fmtItems(l, f.heroPawned)),
         ],
       },
       {
         type: 'Panel', id: 'c-fin-btns', props: { bare: true }, layout: { direction: 'row', gap: 12, justify: 'center' },
         children: [
-          { type: 'Button', id: 'c-fin-again', props: { label: '再来一局', kind: 'hero', action: 'restart' }, layout: { width: 180 } },
-          { type: 'Button', id: 'c-fin-exit', props: { label: '回大厅', kind: 'ghost', action: 'back_menu' }, layout: { width: 150 } },
+          { type: 'Button', id: 'c-fin-again', props: { label: t(l, 'fin.again'), kind: 'hero', action: 'restart' }, layout: { width: 180 } },
+          { type: 'Button', id: 'c-fin-exit', props: { label: t(l, 'fin.exit'), kind: 'ghost', action: 'back_menu' }, layout: { width: 150 } },
         ],
       },
     ],
@@ -539,26 +549,27 @@ function buildFinale(f: FinaleView): LayoutNode {
   return { type: 'Panel', id: 'c-fin-scrim', props: { bg: { custom: 'rgba(4,2,8,0.82)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children: [card] };
 }
 
-// ── 牌桌主屏（纯 2D LayoutNode·owner 2026-07-18 转 2D：大牌桌 c-felt-wrap + 顶带 + 底池筹码 + 公共牌 + 座位）──
+// ── 牌桌主屏（纯 2D LayoutNode·owner 2026-07-18 转 2D：大牌桌 + 顶带 + 公共牌 + 座位·文案随 v.lang）──
 export function buildTable(v: TableView): LayoutNode {
+  const l = v.lang;
   const opp = OPPONENT_ANCHORS.map((a) => {
     const sv = v.seats.find((s) => s.seat === a.seat)!;
     const { x, y } = anchorTopLeft(a);
-    return seatCard({ ...sv, name: a.name }, x, y, SEAT_W, SEAT_H);
+    return seatCard({ ...sv, name: l === 'en' ? a.nameEn : a.name }, x, y, SEAT_W, SEAT_H, l);
   });
   const hero = v.seats.find((s) => s.isHero)!;
-  const heroCard = seatCard(hero, 20, FIELD_H - 168, 236, 108);
+  const heroCard = seatCard(hero, 20, FIELD_H - 168, 236, 108, l);
 
   // z 序（DOM 顺序·2D HUD 层·透明区透出 scene 层 3D 牌桌+物理筹码）：顶带 → 公共牌 → 座位卡/底牌 → 行动条/等待 → 日志/衣柜 → 摊牌/局终最上。
   const children: LayoutNode[] = [
     buildTopBar(v), buildCommunity(v.board), ...opp, heroCard, buildHeroCards(v),
   ];
-  if (v.phase === 'betting') children.push(v.isHeroTurn ? buildActionBar(v) : buildWaiting());
-  if (v.showLog) children.push(buildLogPanel(v.log));
-  if (v.openWardrobe !== null && v.wardrobe) children.push(buildWardrobe(v.wardrobe));
-  if (v.phase === 'showdown' && v.showdown) children.push(buildShowdown(v.showdown, v.board));
-  if (v.phase === 'gameover' && v.finale) children.push(buildFinale(v.finale));
+  if (v.phase === 'betting') children.push(v.isHeroTurn ? buildActionBar(v) : buildWaiting(l));
+  if (v.showLog) children.push(buildLogPanel(v.log, l));
+  if (v.openWardrobe !== null && v.wardrobe) children.push(buildWardrobe(v.wardrobe, l));
+  if (v.phase === 'showdown' && v.showdown) children.push(buildShowdown(v.showdown, v.board, l));
+  if (v.phase === 'gameover' && v.finale) children.push(buildFinale(v.finale, l));
 
-  // Screen bg transparent → 露出 scene 层夜宴厅暗背景（ROOM_BG）；2D 大牌桌=本层 LayoutNode c-felt-wrap。
+  // Screen bg transparent → 露出 scene 层夜宴厅暗背景（ROOM_BG）；2D 大牌桌=scene 层 3D。
   return { type: 'Screen', id: 'c-table', props: { bg: 'transparent' }, layout: { width: FIELD_W, height: FIELD_H }, children };
 }

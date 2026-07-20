@@ -13,7 +13,8 @@ import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap } from '@ui/components/index.js';
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
-import { FIELD_W, FIELD_H, ROOM_BG, WRAPPER_BG, GAME_C_THEME, OPPONENT_ANCHORS, HAND_NAME_CN } from './theme.js';
+import { FIELD_W, FIELD_H, ROOM_BG, WRAPPER_BG, GAME_C_THEME, OPPONENT_ANCHORS } from './theme.js';
+import { type Lang, t, handName } from './strings.js';
 import { buildTable, buildMenu, type TableView, type SeatView, type WardrobeView, type MenuView } from './hud.js';
 import { CLOTHING_ITEMS } from './wardrobe.js';
 import { bestOf7, HOLDEM_TYPE_ORDER } from './holdem-eval.js';
@@ -24,8 +25,11 @@ import { Chip3D } from './chip3d.js';
 import { gcAudio } from './sound.js';
 
 const CFG: BettingConfig = { smallBlind: 25, bigBlind: 50 }; // GDD §11.5-1 现金局默认盲注
-const DEMO_SEED = 20260717; // 素坯定格种子（确定性·同种子同牌面同日志）
 const HERO = 0; // 主角=座位 0（正南底带·§5.2）
+// 每局种子 = **当前时间到秒**（owner 2026-07-20「每一局种子用当前时间到秒做种」）：宿主选种·非 sim 随机
+// （Date.now≠Math.random·sim 逻辑仍纯种子 PRNG·同 game-a 先例）。+runCount 防同秒连开重复。
+let runCount = 0;
+const timeSeed = (): number => (Math.floor(Date.now() / 1000) + runCount++) >>> 0;
 const STARTING_STACK = 1000; // GDD §3 默认起始筹码
 // 玩家档案占位（REQ-C-104 角色卡通道落地前的兜底·PST 通道接入即换真档案）。
 const PLAYER = { name: '夜阑君', chips: 12860 };
@@ -49,7 +53,7 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   const stop3D = (): void => { if (running) { engine.stop(); running = false; } };
 
   // ── 3D 物理筹码（owner 2026-07-18「下注就往池里扔真 3D 物理筹码·速度力量随机·围栏挡住」+ 主角堆越赢越高）─────
-  const chip3d = new Chip3D(engine, DEMO_SEED);
+  const chip3d = new Chip3D(engine, timeSeed()); // 物理散落种子（render-only·每局不同）
   let chipHandNo = 0;
   const prevTotal: Record<number, number> = {};
   // 声音事件追踪（表现层·render-only）：手号/公共牌张数/阶段 变化 → 触发对应 SFX（声音=数据·经 gcAudio 端口）。
@@ -78,17 +82,31 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   };
 
   // ── 玩法会话（真交互闭环：发牌→下注→AI→摊牌→结算→轮转→淘汰→局终·§4-d 线性编排）────
-  let session = new HoldemSession(DEMO_SEED, CFG, STARTING_STACK);
+  let session = new HoldemSession(timeSeed(), CFG, STARTING_STACK); // 每局时间种子·每次开局牌面不同
 
   // ── 宿主本地态（UI 生命周期·非 sim）─────────────────────────────────────────
   let screen: 'menu' | 'table' = 'menu';
   let muted = false;
   let openWardrobe: number | null = null;
   let showLog = false;
+  // 界面语言（owner 2026-07-20 中英切换·**默认英语**·localStorage 持久）。
+  const LANG_KEY = 'gc_lang';
+  const loadLang = (): Lang => { try { return typeof localStorage !== 'undefined' && localStorage.getItem(LANG_KEY) === 'zh' ? 'zh' : 'en'; } catch { return 'en'; } };
+  const saveLang = (x: Lang): void => { try { localStorage.setItem(LANG_KEY, x); } catch { /* 无 localStorage */ } };
+  let lang: Lang = loadLang();
   let raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind;
+  // 新开一局：全新时间种子会话（牌面每局不同）+ 重置筹码/声音追踪（防跨局残留）。
+  const newGame = (): void => {
+    session = new HoldemSession(timeSeed(), CFG, STARTING_STACK);
+    raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind;
+    chip3d.clear(); chipHandNo = -1; for (const k of Object.keys(prevTotal)) delete prevTotal[Number(k)]; prevBoardLen = 0; prevPhase = 'betting';
+  };
 
-  const seatName = (seat: number): string =>
-    seat === HERO ? '主角' : OPPONENT_ANCHORS.find((a) => a.seat === seat)?.name ?? `座位${seat}`;
+  const seatName = (seat: number): string => {
+    if (seat === HERO) return t(lang, 'name.hero');
+    const a = OPPONENT_ANCHORS.find((x) => x.seat === seat);
+    return (lang === 'en' ? a?.nameEn : a?.name) ?? `#${seat}`;
+  };
 
   function seatView(seat: number): SeatView {
     const ss = session.seats[seat];
@@ -99,26 +117,27 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
       folded: stt.folded, allIn: stt.allIn, out: ss.eliminated,
       isActor: session.hand?.actor === seat && session.phase === 'betting',
       isHero: seat === HERO, isButton: session.buttonSeat === seat,
-      lastAction: session.lastAction[seat],
+      lastMove: session.lastMove[seat], // 结构化上一动作（UI 层本地化气泡·中文 lastAction 仅供 acceptance 机读）
     };
   }
   function wardrobeView(seat: number): WardrobeView {
     const pawned = session.seats[seat].pawned;
     return {
       seat, name: seatName(seat), isHero: seat === HERO,
-      rows: CLOTHING_ITEMS.map((it) => ({ id: it.id, name: it.name, value: it.value, pawned: pawned.has(it.id) })),
+      rows: CLOTHING_ITEMS.map((it) => ({ id: it.id, name: lang === 'en' ? it.nameEn : it.name, value: it.value, pawned: pawned.has(it.id) })),
     };
   }
   function heroHandName(): string {
     const hole = session.holeOf(HERO), comm = session.community;
     if (hole.length < 2 || comm.length < 3) return '';
-    return HAND_NAME_CN[HOLDEM_TYPE_ORDER[bestOf7([...hole, ...comm]).value[0]]] ?? '';
+    return handName(lang, HOLDEM_TYPE_ORDER[bestOf7([...hole, ...comm]).value[0]]);
   }
   function tableView(): TableView {
     const la = session.legalForHero();
     if (la?.raise && (raiseValue < la.raise.min || raiseValue > la.raise.max)) raiseValue = la.raise.min;
     const sd = session.showdown;
     return {
+      lang,
       blindLabel: `${CFG.smallBlind} / ${CFG.bigBlind}`, handNo: session.handNo,
       pot: session.pot(), board: session.community, heroHole: session.holeOf(HERO), heroHandName: heroHandName(),
       seats: [0, 1, 2, 3, 4, 5].map(seatView),
@@ -128,13 +147,14 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
       showLog, log: session.events,
       phase: session.phase, isHeroTurn: session.isHeroTurn,
       showdown: sd ? {
-        rows: sd.rows.map((r) => ({ name: seatName(r.seat), type: r.type, best: r.best, hole: r.hole, won: r.won, isWinner: sd.winners.includes(r.seat) })),
+        // 牌型显示名按 type index 本地化（不碰 session 中文 r.type=机读口径）；无摊(best 空)不显牌型。
+        rows: sd.rows.map((r) => ({ name: seatName(r.seat), type: r.best.length ? handName(lang, HOLDEM_TYPE_ORDER[r.value[0]]) : '', best: r.best, hole: r.hole, won: r.won, isWinner: sd.winners.includes(r.seat) })),
         potTotal: sd.potTotal,
       } : undefined,
       finale: session.phase === 'gameover' ? { win: session.winnerSide === 'hero', ...session.stats() } : undefined,
     };
   }
-  const menuView = (): MenuView => ({ playerName: PLAYER.name, playerChips: PLAYER.chips, blindLabel: `${CFG.smallBlind} / ${CFG.bigBlind}` });
+  const menuView = (): MenuView => ({ lang, playerName: PLAYER.name, playerChips: PLAYER.chips, blindLabel: `${CFG.smallBlind} / ${CFG.bigBlind}` });
 
   let ui: MountHandle | null = null;
   const tree = (): ReturnType<typeof buildMenu> => (screen === 'menu' ? buildMenu(menuView()) : buildTable(tableView()));
@@ -169,10 +189,13 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
 
   const handlers: HandlerMap = {
     // 屏切换（进桌启动 AI 逐步节奏 + 起 BGM·回菜单停 timer + 停 BGM）
-    start_game: () => { screen = 'table'; start3D(); gcAudio.enterTable(); remount(); runAITurns(); },
+    // 开始上桌 = 全新一局（时间种子·牌面每局不同）；继续上局 = 沿用当前会话不重开。
+    start_game: () => { newGame(); screen = 'table'; start3D(); gcAudio.enterTable(); remount(); runAITurns(); },
     continue_game: () => { screen = 'table'; start3D(); gcAudio.enterTable(); remount(); runAITurns(); },
     back_menu: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); },
     menu_open: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); },
+    // 语言切换（EN/中·默认英语·持久化·整树重挂应用新文案）
+    set_lang: (arg) => { const nl: Lang = arg === 'zh' ? 'zh' : 'en'; if (nl !== lang) { lang = nl; saveLang(nl); gcAudio.play('click'); remount(); } },
     // UI 开关（♪ 键真静音音乐+音效）
     sound_toggle: () => { muted = !muted; gcAudio.setMuted(muted); rerender(); },
     toggle_log: () => { showLog = !showLog; gcAudio.play('click'); rerender(); },
@@ -187,7 +210,7 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
     act_raise: (arg) => { const to = raiseTo(arg); if (to > 0) { if (arg === 'allin' || to >= (session.legalForHero()?.raise?.max ?? Infinity)) gcAudio.play('allin'); heroAct({ kind: 'raise', to }); } },
     // 摊牌「继续」→ 下一手（发牌+启动 AI 节奏）；局终「再来一局」→ 新会话。
     continue_showdown: () => { session.nextHand(); rerender(); runAITurns(); },
-    restart: () => { session = new HoldemSession(DEMO_SEED + session.handNo * 101 + 1, CFG, STARTING_STACK); raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind; rerender(); runAITurns(); },
+    restart: () => { newGame(); rerender(); runAITurns(); }, // 再来一局 = 全新时间种子会话
   };
   void host; // launcher 壳退出钩子（游戏内经 ⚙ 回主菜单；壳级退出由 launcher overlay 菜单接）
 

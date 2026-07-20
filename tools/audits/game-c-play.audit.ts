@@ -14,14 +14,14 @@ import type { Card } from '../../src/engine/protocol/components.js';
 
 const H = (suit: number, rank: number): Card => ({ suit, rank });
 const view: TableView = {
-  blindLabel: '25 / 50', handNo: 3, pot: 1150,
+  lang: 'en', blindLabel: '25 / 50', handNo: 3, pot: 1150,
   board: [H(0, 14), H(1, 13), H(2, 5), H(3, 9), H(0, 2)],
-  heroHole: [H(0, 12), H(0, 11)], heroHandName: '两对',
+  heroHole: [H(0, 12), H(0, 11)], heroHandName: 'Two Pair',
   seats: [0, 1, 2, 3, 4, 5].map((seat) => ({
-    seat, name: seat === 0 ? '主角' : `姨太${seat}`, chips: 950, committed: seat < 3 ? 50 : 0,
+    seat, name: seat === 0 ? 'You' : `Lady ${seat}`, chips: 950, committed: seat < 3 ? 50 : 0,
     clothes: 6, folded: seat === 5, allIn: false, out: false,
     isActor: seat === 0, isHero: seat === 0, isButton: seat === 0,
-    lastAction: seat === 1 ? '跟注 50' : undefined,
+    lastMove: seat === 1 ? { kind: 'call', amount: 50 } : undefined,
   })),
   toCall: 50, canRaise: true, minRaise: 100, maxRaise: 950, raiseValue: 100,
   muted: false, openWardrobe: null, showLog: false, log: [],

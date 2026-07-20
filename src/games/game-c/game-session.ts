@@ -62,7 +62,9 @@ export class HoldemSession {
   winnerSide: 'hero' | 'opponents' | null = null;
   events: GameEvent[] = []; // 实时牌局日志（查 bug·owner 2026-07-17）
   lastAggressor: SeatId | null = null; // 本手最后 bet/raise 者（摊牌 reveal 起点·标准德州）
-  lastAction: Record<SeatId, string> = {}; // 各座上一动作文案（UI 行动气泡·CHECK/CALL 50/RAISE/FOLD）
+  lastAction: Record<SeatId, string> = {}; // 各座上一动作文案（**中文·机读口径**·acceptance last-action-N 断言此串·勿改）
+  // 结构化上一动作（owner 2026-07-20 中英切换）：UI 层据此本地化气泡文案+着色·与中文 lastAction 并存（不碰机读口径）。
+  lastMove: Record<SeatId, { kind: 'fold' | 'check' | 'call' | 'raise'; amount?: number }> = {};
   private dealIdxBySeat = new Map<SeatId, number>();
   private seq = 0;
   private lastStreet: Street = 'preflop';
@@ -70,6 +72,9 @@ export class HoldemSession {
     const txt = action.kind === 'fold' ? '弃牌' : action.kind === 'check' ? '过牌'
       : action.kind === 'call' ? (toCall > 0 ? `跟注 ${toCall}` : '过牌') : `加注 ${action.to}`;
     this.lastAction[seat] = txt;
+    this.lastMove[seat] = action.kind === 'call' && toCall === 0 ? { kind: 'check' }
+      : action.kind === 'call' ? { kind: 'call', amount: toCall }
+        : action.kind === 'raise' ? { kind: 'raise', amount: action.to } : { kind: action.kind };
     if (action.kind === 'raise') this.lastAggressor = seat;
     this.log('action', describeAction(seat, action, toCall));
   }
@@ -133,7 +138,7 @@ export class HoldemSession {
     this.dealIdxBySeat = new Map(live.map((seat, i) => [seat, i]));
     this.hand = startHand(this.cfg, live.map((seat) => ({ seat, stack: this.seats[seat].stack })), this.pos);
     this.phase = 'betting'; this.showdown = null; this.lastStreet = 'preflop';
-    this.lastAggressor = null; this.lastAction = {};
+    this.lastAggressor = null; this.lastAction = {}; this.lastMove = {};
     this.log('deal', `🎲 第 ${this.handNo} 手 · 发牌 · ${live.length} 家 · 主角底牌 ${this.holeOf(0).map(cardStr).join(' ')}`);
     this.log('blind', `🔵 小盲 座${this.pos.sb} ${this.cfg.smallBlind} · 大盲 座${this.pos.bb} ${this.cfg.bigBlind}`);
     this.settleIfDone(); // 罕见：发牌即全 all-in → 直接摊牌（否则等宿主 timer 逐步推进 AI）

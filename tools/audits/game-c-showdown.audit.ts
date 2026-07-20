@@ -12,12 +12,13 @@ import type { Card } from '../../src/engine/protocol/components.js';
 
 const H = (suit: number, rank: number): Card => ({ suit, rank });
 const river = [H(0, 14), H(1, 13), H(2, 5), H(3, 9), H(0, 2)];
-const TY = ['葫芦', '同花', '顺子', '三条', '两对', '高牌'];
+const TY = ['Full House', 'Flush', 'Straight', 'Trips', 'Two Pair', 'High Card'];
+const NM = ['You', 'Rose', 'Lily', 'Jade', 'Pearl', 'Iris'];
 const view: TableView = {
-  blindLabel: '25 / 50', handNo: 7, pot: 2400,
-  board: river, heroHole: [H(0, 14), H(1, 14)], heroHandName: '葫芦',
+  lang: 'en', blindLabel: '25 / 50', handNo: 7, pot: 2400,
+  board: river, heroHole: [H(0, 14), H(1, 14)], heroHandName: 'Full House',
   seats: [0, 1, 2, 3, 4, 5].map((seat) => ({
-    seat, name: seat === 0 ? '主角' : `姨太${seat}`, chips: 950, committed: 400,
+    seat, name: NM[seat]!, chips: 950, committed: 400,
     clothes: 6, folded: false, allIn: false, out: false,
     isActor: false, isHero: seat === 0, isButton: seat === 0,
   })),
@@ -26,7 +27,7 @@ const view: TableView = {
   phase: 'showdown', isHeroTurn: false,
   showdown: {
     rows: [0, 1, 2, 3, 4, 5].map((i) => ({
-      name: i === 0 ? '主角' : `姨太${i}`, type: TY[i]!,
+      name: NM[i]!, type: TY[i]!,
       best: [H(0, 14 - i), H(1, 13 - i), H(2, 12 - i), H(3, 11 - i), H(0, 10 - i)],
       hole: [H(0, 14 - i), H(1, 13 - i)],
       won: i === 0 ? 2400 : 0, isWinner: i === 0,

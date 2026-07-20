@@ -48,13 +48,14 @@ export const GAME_C_THEME: UITheme = {
 };
 
 // ── 对手座位屏幕锚点（art-data-manual §5.2·%·座位卡中心·固定相机=固定屏幕常量）──
-export interface SeatAnchor { seat: number; name: string; xPct: number; yPct: number; }
+// nameEn（owner 2026-07-20 中英切换）：五姨太的英文名·取花/玉名·首字母各异(R/L/J/P/I)使头像首字不撞。
+export interface SeatAnchor { seat: number; name: string; nameEn: string; xPct: number; yPct: number; }
 export const OPPONENT_ANCHORS: readonly SeatAnchor[] = [
-  { seat: 1, name: '大姨太', xPct: 87, yPct: 38 },
-  { seat: 2, name: '二姨太', xPct: 71, yPct: 9 },
-  { seat: 3, name: '三姨太', xPct: 22, yPct: 8 },
-  { seat: 4, name: '四姨太', xPct: 12, yPct: 38 },
-  { seat: 5, name: '五姨太', xPct: 20, yPct: 66 },
+  { seat: 1, name: '大姨太', nameEn: 'Rose', xPct: 87, yPct: 38 },
+  { seat: 2, name: '二姨太', nameEn: 'Lily', xPct: 71, yPct: 9 },
+  { seat: 3, name: '三姨太', nameEn: 'Jade', xPct: 22, yPct: 8 },
+  { seat: 4, name: '四姨太', nameEn: 'Pearl', xPct: 12, yPct: 38 },
+  { seat: 5, name: '五姨太', nameEn: 'Iris', xPct: 20, yPct: 66 },
 ] as const;
 
 // 座位卡尺寸（锚点=中心 → 绝对定位左上角需减半宽/半高）。

@@ -13,17 +13,18 @@ import type { EntityBlueprint } from '../../assembly/demo.assembly.js';
 export interface ClothingItem {
   id: string;
   name: string;
+  nameEn: string; // 英文名（owner 2026-07-20 中英切换·衣柜显示用）
   value: number; // 典当面值（筹码）
 }
 
 /** 衣物表（owner 拍板数值 GDD §11.5-12：总值 2450·数值 M2 万手 sim 后可调——只改此表）。 */
 export const CLOTHING_ITEMS: readonly ClothingItem[] = [
-  { id: 'earrings', name: '耳环', value: 100 },
-  { id: 'gloves', name: '手套', value: 150 },
-  { id: 'socks', name: '袜子', value: 200 },
-  { id: 'top', name: '上衣', value: 500 },
-  { id: 'skirt', name: '裙子', value: 500 },
-  { id: 'lingerie', name: '内衣', value: 1000 },
+  { id: 'earrings', name: '耳环', nameEn: 'Earrings', value: 100 },
+  { id: 'gloves', name: '手套', nameEn: 'Gloves', value: 150 },
+  { id: 'socks', name: '袜子', nameEn: 'Socks', value: 200 },
+  { id: 'top', name: '上衣', nameEn: 'Top', value: 500 },
+  { id: 'skirt', name: '裙子', nameEn: 'Skirt', value: 500 },
+  { id: 'lingerie', name: '内衣', nameEn: 'Lingerie', value: 1000 },
 ];
 
 /** 全套典当总值（=续命上限；测试钉死 2450 防手滑改表）。 */

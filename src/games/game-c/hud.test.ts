@@ -9,6 +9,7 @@ const H = (suit: number, rank: number): Card => ({ suit, rank });
 
 function baseView(over: Partial<TableView> = {}): TableView {
   return {
+    lang: 'en',
     blindLabel: '25 / 50',
     handNo: 1,
     pot: 300,
@@ -97,7 +98,7 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
   });
 
   it('主菜单屏 SC-1 零 issue（标题/立绘/按钮/角色卡）', () => {
-    expect(validateLayoutNode(buildMenu({ playerName: '夜阑君', playerChips: 12860, blindLabel: '25 / 50' }))).toEqual([]);
+    expect(validateLayoutNode(buildMenu({ lang: 'en', playerName: '夜阑君', playerChips: 12860, blindLabel: '25 / 50' }))).toEqual([]);
   });
 
   it('非主角轮=等待提示（行动条隐）零 issue', () => {
@@ -141,5 +142,36 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     const lose = { win: false, hands: 28, heroChips: 0, heroPawned: 6 };
     expect(validateLayoutNode(buildTable(baseView({ phase: 'gameover', finale: win })))).toEqual([]);
     expect(validateLayoutNode(buildTable(baseView({ phase: 'gameover', finale: lose })))).toEqual([]);
+  });
+
+  it('中英双语（owner 2026-07-20）：EN/ZH 牌桌+菜单均零 issue + 语言段控在树 + 文案真随语言变', () => {
+    const idsOf = (n: { id?: string; children?: unknown[] }): Set<string> => {
+      const ids = new Set<string>();
+      const walk = (x: { id?: string; children?: unknown[] }): void => { if (x.id) ids.add(x.id); for (const c of (x.children ?? []) as { id?: string }[]) walk(c); };
+      walk(n); return ids;
+    };
+    for (const lang of ['en', 'zh'] as const) {
+      const table = buildTable(baseView({ lang }));
+      expect(validateLayoutNode(table)).toEqual([]);
+      const menu = buildMenu({ lang, playerName: '夜阑君', playerChips: 12860, blindLabel: '25 / 50' });
+      expect(validateLayoutNode(menu)).toEqual([]);
+      for (const id of ['c-lang-en', 'c-lang-zh']) expect(idsOf(table).has(id)).toBe(true); // 顶栏语言段控
+      for (const id of ['c-menu-lang-seg-en', 'c-menu-lang-seg-zh']) expect(idsOf(menu).has(id)).toBe(true); // 菜单语言段控
+    }
+    // 文案真随语言变：EN 弃牌键=Fold；ZH=弃牌。
+    expect(JSON.stringify(buildTable(baseView({ lang: 'en' }))).includes('Fold')).toBe(true);
+    expect(JSON.stringify(buildTable(baseView({ lang: 'zh' }))).includes('弃牌')).toBe(true);
+  });
+
+  it('结构化 lastMove 气泡（加注/跟注/过牌·中英）零 issue', () => {
+    const withMoves = (lang: 'en' | 'zh'): TableView => {
+      const v = baseView({ lang, toCall: 100, canRaise: false });
+      v.seats[1] = { ...v.seats[1], lastMove: { kind: 'raise', amount: 200 } };
+      v.seats[2] = { ...v.seats[2], lastMove: { kind: 'call', amount: 100 } };
+      v.seats[3] = { ...v.seats[3], lastMove: { kind: 'check' } };
+      return v;
+    };
+    expect(validateLayoutNode(buildTable(withMoves('en')))).toEqual([]);
+    expect(validateLayoutNode(buildTable(withMoves('zh')))).toEqual([]);
   });
 });
