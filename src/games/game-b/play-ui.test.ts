@@ -102,6 +102,38 @@ describe('game-b 对局 UI（play-ui·LayoutNode 纪律）', () => {
     expect(ids).toContain('call-pon');
   });
 
+  it('结算面板重设计（owner）：役种逐行 + 暗手/副露分开展示 + 合计行·validateLayoutNode 零 issue', () => {
+    const m = startMatch(20260717);
+    m.cur.phase = 'win';
+    m.cur.melds[0] = [{ kind: 'pon', tiles: [33, 33, 33], from: 2, called: 33 }] as Meld[];
+    m.cur.result = {
+      type: 'ron', winner: 0, loser: 2, winTile: 20, delta: [8000, 0, -8000, 0],
+      handSnapshot: [0, 1, 2, 9, 10, 11, 18, 19, 20, 23, 23],
+      meldsSnapshot: [{ kind: 'pon', tiles: [33, 33, 33], from: 2, called: 33 }] as Meld[],
+      yakuList: [{ name: '断幺九', han: 1 }, { name: '三色同順', han: 1 }, { name: '宝牌', han: 2 }],
+      han: 4, fu: 40, yakuman: 0, scoreLabel: '満貫',
+    };
+    const hud = buildPlayHud(m, { logOpen: false });
+    expect(validateLayoutNode(hud)).toEqual([]);
+    const ids = collect(hud).map((n) => n.id);
+    expect(ids).toContain('res-cc'); // 暗手行
+    expect(ids).toContain('res-md-0'); // 副露分开展示
+    expect(ids).toContain('res-md-0-s'); // 副露来源标签（吃/碰/杠◄谁）
+    expect(ids).toContain('res-yk-0'); expect(ids).toContain('res-yk-2'); // 役种逐行
+    expect(ids).toContain('res-yk-total'); // 合计行
+    const ykRows = collect(hud).filter((n) => /^res-yk-\d+$/.test(n.id ?? ''));
+    expect(ykRows).toHaveLength(3); // 3 役各一行（不挤一行）
+  });
+
+  it('回合流向指示：中央指向条显当前家 + 方向箭头', () => {
+    const m = startMatch(20260717);
+    m.interactiveCalls = true;
+    m.cur.turn = 2; // 北家出牌中
+    const ids = collect(buildPlayHud(m, { logOpen: false })).map((n) => n.id);
+    expect(ids).toContain('turnbanner');
+    expect(ids).toContain('tb-head');
+  });
+
   it('终局态：结算钮=返回主菜单', () => {
     const m = startMatch(3);
     let g = 0;

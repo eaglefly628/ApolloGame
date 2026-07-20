@@ -15,7 +15,7 @@ import { doraFromIndicator } from './wall.js';
 import { GameLog } from './game-log.js';
 import type { Meld } from './meld.js';
 import { chiCandidates, canPon, canDaiminkan, ankanCandidates, kakanCandidates, resolveClaims, kuikaeForbidden, type ChiCandidate, type CallClaim } from './calls.js';
-import { scoreWin, type WinContext, type ScoreResult } from './yaku.js';
+import { scoreWin, type WinContext, type ScoreResult, type YakuEntry } from './yaku.js';
 
 export type Phase = 'playing' | 'win' | 'draw';
 
@@ -44,9 +44,13 @@ export interface RoundResult {
   tenpaiFlags?: boolean[]; // 流局各家听牌
   handSnapshot?: number[]; // 和了手（含和牌·结算面板用）
   stripped?: number[]; // 本局各家脱衣件数（直击制·gdd §七）
-  yakuLabel?: string; // 役种明细（真算分·结算面板显示·如「立直 門前清自摸和 平和 ドラ2」）
+  yakuLabel?: string; // 役种明细单行（日志用·如「立直 門前清自摸和 平和 ドラ2」）
+  yakuList?: YakuEntry[]; // 结构化役种（结算面板逐行显示·含宝牌/赤/裏·役满 han=0）
+  han?: number; // 总番（结算面板总行）
+  fu?: number; // 符（结算面板总行）
+  yakuman?: number; // 役满倍数（0=非役满）
   scoreLabel?: string; // 番符档位（如「3翻30符」/「満貫」/「数え役満」）
-  meldsSnapshot?: Meld[]; // 和了家副露（结算面板显示开手·闭手为空）
+  meldsSnapshot?: Meld[]; // 和了家副露（结算面板与暗手分开展示·闭手为空）
 }
 
 export interface RoundState {
@@ -594,7 +598,11 @@ function settleWin(m: MatchState, type: 'tsumo' | 'ron', winner: number, loser: 
 
   const yakuLabel = score ? score.yaku.map((y) => `${y.name}${y.han > 0 ? y.han : ''}`).join(' ') : undefined;
   const scoreLabel = score ? scoreDisplayLabel(score) : '占位分（无役兜底）';
-  rs.result = { type, winner, loser, winTile: tile, delta, handSnapshot: winHand, yakuLabel, scoreLabel, meldsSnapshot: [...rs.melds[winner]!] };
+  rs.result = {
+    type, winner, loser, winTile: tile, delta, handSnapshot: winHand,
+    yakuLabel, yakuList: score?.yaku, han: score?.han, fu: score?.fu, yakuman: score?.yakuman,
+    scoreLabel, meldsSnapshot: [...rs.melds[winner]!],
+  };
   rs.phase = 'win';
   m.log.push({ round: roundName(m), actor: m.seatNames[winner]!, kind: type, text: `${type === 'tsumo' ? '自摸' : '荣和'} ${labelTile(tile)}${loser !== null ? `（放铳=${m.seatNames[loser]}）` : ''}`, tile });
   if (score) m.log.push({ round: roundName(m), actor: '系统', kind: 'info', text: `${yakuLabel} · ${scoreLabel}` });

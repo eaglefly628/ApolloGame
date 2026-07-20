@@ -66,18 +66,20 @@ const MELD_TILE: Array<{ w: number; h: number }> = [
   { w: 26, h: 34 }, { w: 18, h: 24 }, { w: 18, h: 24 }, { w: 18, h: 24 },
 ];
 const MELD_POS: Array<{ x: number; y: number }> = [
-  { x: 0, y: FIELD_H - 42 },        // 0 玩家（桌底·手牌上方·右锚）
+  { x: 0, y: FIELD_H - 66 },        // 0 玩家（桌底·手牌上方·右锚·留来源标签行不切底）
   { x: 0, y: 344 },                 // 1 东（右·席卡下·右锚）
   { x: 700, y: 40 },                // 2 北（上·席卡右·左锚·避让北席卡）
   { x: 12, y: 344 },                // 3 西（左·席卡下·左锚）
 ];
-/** 一组副露的像素宽（tiles×w + 内隙 + 副露间隙 + padding）。 */
+/** 副露动词（吃/碰/杠·owner「吃谁的碰谁的」指示）。 */
+const MELD_VERB: Record<string, string> = { chi: '吃', pon: '碰', minkan: '杠', ankan: '暗杠', kakan: '加杠' };
+/** 一组副露的像素宽（tiles×w + 内隙 + 副露间隙 + padding·至少容下来源标签）。 */
 function meldRowWidth(melds: Meld[], w: number): number {
   let total = 8; // padding 两侧
-  melds.forEach((md, i) => { total += md.tiles.length * w + (md.tiles.length - 1) + (i > 0 ? 6 : 0); });
+  melds.forEach((md, i) => { total += Math.max(md.tiles.length * w + (md.tiles.length - 1), 44) + (i > 0 ? 6 : 0); });
   return total;
 }
-/** 某家副露块（无副露→null）；每副露=牌面小牌簇（横摆示意·被鸣牌 called 带暗记）。 */
+/** 某家副露块（无副露→null）；每副露=牌面小牌簇 + **来源标签**（吃/碰/杠 ◄ 供牌者名·owner 要「箭头指向吃谁的」）。 */
 function meldBlock(m: MatchState, seat: number): LayoutNode | null {
   const melds = m.cur.melds[seat]!;
   if (melds.length === 0) return null;
@@ -89,12 +91,19 @@ function meldBlock(m: MatchState, seat: number): LayoutNode | null {
     type: 'Panel', id: `melds-${seat}`, props: { bg: { custom: 'rgba(20,10,20,0.55)' } },
     layout: { x, y: pos.y, direction: 'row', gap: 6, padding: 4, align: 'center' },
     children: melds.map((md, i): LayoutNode => ({
-      type: 'Panel', id: `meld-${seat}-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 1, align: 'center' },
-      children: md.tiles.map((c, j): LayoutNode => ({
-        type: 'Image', id: `meld-${seat}-${i}-${j}`,
-        props: { src: faceUrl(c), fit: 'contain' },
-        layout: { width: w, height: h, opacity: c === md.called && md.from !== seat ? 0.72 : 1 }, // 被鸣的那张压暗示意
-      })),
+      type: 'Panel', id: `meld-${seat}-${i}`, props: { bare: true }, layout: { direction: 'column', gap: 1, align: 'center' },
+      children: [
+        {
+          type: 'Panel', id: `meld-${seat}-${i}-t`, props: { bare: true }, layout: { direction: 'row', gap: 1, align: 'center' },
+          children: md.tiles.map((c, j): LayoutNode => ({
+            type: 'Image', id: `meld-${seat}-${i}-${j}`,
+            props: { src: faceUrl(c), fit: 'contain' },
+            layout: { width: w, height: h, opacity: c === md.called && md.from !== seat ? 0.72 : 1 }, // 被鸣的那张压暗示意
+          })),
+        },
+        // 来源标签：吃/碰/杠 ◄ 供牌者名（暗杠=自摸无来源·只标「暗杠」）
+        { type: 'Label', id: `meld-${seat}-${i}-src`, props: { text: md.from !== seat ? `${MELD_VERB[md.kind]}◄${m.seatNames[md.from]}` : MELD_VERB[md.kind]!, size: 'xs', bold: true, color: 'gold' } },
+      ],
     })),
   };
 }
@@ -310,27 +319,78 @@ function logPanel(m: MatchState, logCopied: boolean): LayoutNode {
   };
 }
 
-// ── 结算浮层（和了/流局·点移·脱衣汇总·和了手真牌面）──────────────────────────────────────
+// ── 结算浮层（重设计·owner 2026-07-18：和了手暗手/副露分开·役种逐行·一眼看出为什么赢）──────────
+/** 和了手展示：暗手一排 + 副露分开各簇（带来源标签）·和了牌抬升高亮。 */
+function resultHand(m: MatchState, r: RoundResultView): LayoutNode {
+  const CW = 28, CH = 38;
+  const concealed = (r.handSnapshot ?? []);
+  let winMarked = false; // 和了牌只高亮一枚（暗手内首个匹配）
+  const concealedRow: LayoutNode = {
+    type: 'Panel', id: 'res-cc', props: { bare: true }, layout: { direction: 'row', gap: 2, align: 'end' },
+    children: concealed.map((c, i): LayoutNode => {
+      const isWin = !winMarked && c === r.winTile;
+      if (isWin) winMarked = true;
+      return { type: 'Image', id: `res-h-${i}`, props: { src: faceUrl(c), fit: 'contain' }, layout: { width: CW, height: isWin ? CH + 8 : CH } }; // 和了牌抬高
+    }),
+  };
+  const melds = r.meldsSnapshot ?? [];
+  const meldClusters: LayoutNode[] = melds.map((md, i): LayoutNode => ({
+    type: 'Panel', id: `res-md-${i}`, props: { bg: { custom: 'rgba(44,22,34,0.6)' } }, layout: { direction: 'column', gap: 1, padding: 3, align: 'center' },
+    children: [
+      { type: 'Panel', id: `res-md-${i}-t`, props: { bare: true }, layout: { direction: 'row', gap: 1, align: 'center' },
+        children: md.tiles.map((c, j): LayoutNode => ({ type: 'Image', id: `res-md-${i}-${j}`, props: { src: faceUrl(c), fit: 'contain' }, layout: { width: 24, height: 32 } })) },
+      { type: 'Label', id: `res-md-${i}-s`, props: { text: md.from !== r.winner ? `${MELD_VERB[md.kind]}◄${m.seatNames[md.from]}` : MELD_VERB[md.kind]!, size: 'xs', bold: true, color: 'gold' } },
+    ],
+  }));
+  const cols: LayoutNode[] = [{
+    type: 'Panel', id: 'res-hand-c', props: { bare: true }, layout: { direction: 'column', gap: 2, align: 'center' },
+    children: [{ type: 'Label', id: 'res-hand-cl', props: { text: '暗手', size: 'xs', color: 'sub' } }, concealedRow],
+  }];
+  if (melds.length) cols.push({
+    type: 'Panel', id: 'res-hand-m', props: { bare: true }, layout: { direction: 'column', gap: 2, align: 'center' },
+    children: [
+      { type: 'Label', id: 'res-hand-ml', props: { text: '副露（吃/碰/杠·来源）', size: 'xs', color: 'sub' } },
+      { type: 'Panel', id: 'res-mds', props: { bare: true }, layout: { direction: 'row', gap: 6, align: 'end' }, children: meldClusters },
+    ],
+  });
+  return { type: 'Panel', id: 'res-hand', props: { bare: true }, layout: { direction: 'row', gap: 14, align: 'end', justify: 'center' }, children: cols };
+}
+/** 役种表：每役一行（名 … N番/役満）+ 合计行（番符档位）。owner「每行列出来·不写一行里」。 */
+function yakuTable(r: RoundResultView): LayoutNode {
+  const rows: LayoutNode[] = (r.yakuList ?? []).map((y, i): LayoutNode => ({
+    type: 'Panel', id: `res-yk-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 10, align: 'center', width: 250 },
+    children: [
+      { type: 'Label', id: `res-yk-${i}-n`, props: { text: y.name, size: 'sm', bold: true, color: 'jade' }, layout: { flex: 1 } },
+      { type: 'Label', id: `res-yk-${i}-h`, props: { text: y.han > 0 ? `${y.han} 番` : '役満', size: 'sm', bold: true, color: 'gold' } },
+    ],
+  }));
+  const totalTxt = r.yakuman && r.yakuman > 0 ? `${r.yakuman > 1 ? r.yakuman + ' 倍' : ''}役満` : `${r.han} 翻 ${r.fu} 符`;
+  rows.push({
+    type: 'Panel', id: 'res-yk-total', props: { bg: { custom: 'rgba(64,30,46,0.85)' } }, layout: { direction: 'row', gap: 10, align: 'center', width: 250, padding: 5 },
+    children: [
+      { type: 'Label', id: 'res-yk-total-l', props: { text: '合计', size: 'sm', bold: true, color: 'gold' }, layout: { flex: 1 } },
+      { type: 'Label', id: 'res-yk-total-r', props: { text: `${totalTxt} · ${r.scoreLabel}`, size: 'md', bold: true, color: 'gold', font: 'serif' } },
+    ],
+  });
+  return { type: 'Panel', id: 'res-yaku', props: { bg: { custom: 'rgba(18,10,18,0.5)' } }, layout: { direction: 'column', gap: 2, align: 'center', padding: 6 }, children: rows };
+}
+
+/** 结算 result 的视图型（play-ui 只读投影·避免直接依赖 game-state 内部型）。 */
+type RoundResultView = NonNullable<MatchState['cur']['result']>;
+
 function resultOverlay(m: MatchState): LayoutNode {
   const r = m.cur.result!;
+  const isWin = r.type !== 'draw';
   const title = r.type === 'draw' ? '荒牌流局' : (r.type === 'tsumo' ? `${m.seatNames[r.winner!]} 自摸和了` : `${m.seatNames[r.winner!]} 荣和`);
   const rows: LayoutNode[] = [
     { type: 'Label', id: 'res-t', props: { text: title, size: 'xl', bold: true, color: 'gold', font: 'serif' } },
   ];
-  // 和了手真牌面
-  if (r.type !== 'draw' && r.handSnapshot) {
-    rows.push({
-      type: 'Panel', id: 'res-hand', props: { bare: true }, layout: { direction: 'row', gap: 2, justify: 'center' },
-      children: r.handSnapshot.map((c, i): LayoutNode => ({
-        type: 'Image', id: `res-h-${i}`, props: { src: faceUrl(c), fit: 'contain' }, layout: { width: 30, height: 40 },
-      })),
-    });
+  if (isWin && r.handSnapshot) {
+    rows.push(resultHand(m, r)); // 暗手 + 副露分开展示
     rows.push({ type: 'Label', id: 'res-w', props: { text: `和了牌 ${labelTile(r.winTile!)}${r.loser !== null ? `（放铳 ${m.seatNames[r.loser]}）` : '（自摸）'}`, size: 'sm', color: 'sub' } });
-    // 真役种明细 + 番符档位（P6a·闭手真算分；开手标占位）。
-    if (r.yakuLabel) rows.push({ type: 'Label', id: 'res-yaku', props: { text: r.yakuLabel, size: 'sm', bold: true, color: 'jade' } });
-    if (r.scoreLabel) rows.push({ type: 'Label', id: 'res-score', props: { text: r.scoreLabel, size: 'lg', bold: true, color: 'gold', font: 'serif' } });
+    if (r.yakuList && r.yakuList.length) rows.push(yakuTable(r)); // 役种逐行 + 合计
+    else if (r.scoreLabel) rows.push({ type: 'Label', id: 'res-score', props: { text: r.scoreLabel, size: 'lg', bold: true, color: 'gold', font: 'serif' } }); // 占位兜底
   }
-  // 本局脱衣汇总（直击制·gdd §七）
   const stripSum = (r.stripped ?? []).map((n, i) => (n > 0 ? `${m.seatNames[i]} 脱${n}（余 ${m.clothing[i]}/${STRIP_ITEMS}）` : null)).filter(Boolean);
   if (stripSum.length) rows.push({ type: 'Label', id: 'res-strip', props: { text: `直击脱衣 · ${stripSum.join('　')}`, size: 'sm', color: 'danger' } });
   rows.push({
@@ -340,7 +400,28 @@ function resultOverlay(m: MatchState): LayoutNode {
   rows.push({ type: 'Button', id: 'res-next', props: { label: m.over ? '返回主菜单' : '下一局 ▸', kind: 'hero', action: m.over ? BACK_MENU : NEXT_ROUND } });
   return {
     type: 'Modal', id: 'result', props: { title: m.over ? '终局' : '本局结算', closable: false },
-    children: [{ type: 'Panel', id: 'res-body', props: { bare: true }, layout: { direction: 'column', gap: 10, align: 'center', padding: 6 }, children: rows }],
+    children: [{ type: 'Panel', id: 'res-body', props: { bare: true }, layout: { direction: 'column', gap: 9, align: 'center', padding: 6 }, children: rows }],
+  };
+}
+
+// ── 回合流向指示（owner「谁在打·打到谁那里」·中央指向条）─────────────────────────────────────
+const DIR_ARROW = ['▼', '▶', '▲', '◀']; // 指向各席屏幕方位（0 下·1 右·2 上·3 左）
+function turnBanner(m: MatchState): LayoutNode | null {
+  const rs = m.cur;
+  if (rs.phase !== 'playing') return null;
+  const t = rs.turn;
+  const waiting = rs.callWindow !== null;
+  const hot = waiting || t === 0;
+  const head = waiting ? '⚡ 轮到你 · 鸣牌' : t === 0 ? '▶ 轮到你 · 出牌' : `${DIR_ARROW[t]} ${m.seatNames[t]} 出牌中`;
+  const lastDisc = [...m.log.all()].reverse().find((e) => e.kind === 'discard' && e.tile != null);
+  const flow = lastDisc ? `刚打：${lastDisc.actor} 打【${labelTile(lastDisc.tile!)}】` : '开局';
+  return {
+    type: 'Panel', id: 'turnbanner', props: { bg: { custom: hot ? 'rgba(52,22,36,0.95)' : 'rgba(26,15,24,0.9)' }, glow: hot, accent: hot },
+    layout: { x: FIELD_W / 2 - 88, y: 240, width: 176, padding: 7, gap: 2, direction: 'column', align: 'center' },
+    children: [
+      { type: 'Label', id: 'tb-head', props: { text: head, size: 'md', bold: true, color: hot ? 'gold' : 'jade' } },
+      { type: 'Label', id: 'tb-flow', props: { text: flow, size: 'xs', color: 'sub' } },
+    ],
   };
 }
 
@@ -356,6 +437,8 @@ export function buildPlayHud(m: MatchState, opts: PlayHudOpts): LayoutNode {
     ...[0, 1, 2, 3].map((s) => meldBlock(m, s)).filter((n): n is LayoutNode => n !== null), // 副露展示
     ...playerHand(m, sel), // 手牌=绝对定位节点数组（选中张抬升）·直接铺进 play-root
   ];
+  const tb = turnBanner(m); // 中央回合流向指示（谁在打·打到谁那里·owner 要点指示性）
+  if (tb) children.push(tb);
   // 日志面板（覆盖棋盘·但在控件之下）——鸣牌窗口时强制收起：决策不被日志遮（owner 冻结根因）。
   if (opts.logOpen && !isPlayerCallWindow(m)) children.push(logPanel(m, opts.logCopied ?? false));
   // 控件层（在日志之上·永远可点）：行动条 / 字幕 / 鸣牌按钮条。
