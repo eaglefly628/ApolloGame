@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  8 passed (8) ·       Tests  101 passed (101)）· 验收剧本 9 场景绿",
-      "at": "2026-07-18T15:19:49.190Z",
-      "gameHash": "90c26bfbd77de544"
+      "summary": "walkthrough 绿（ Test Files  9 passed (9) ·       Tests  105 passed (105)）· 验收剧本 9 场景绿",
+      "at": "2026-07-20T04:22:54.394Z",
+      "gameHash": "51d921c2b11c6a8e"
     },
     "S5": {
       "exit": 0,
@@ -452,6 +452,30 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-18T15:19:49.190Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "筹码每座位堆(build3d/chip3d) + 音乐音效接入(sound.ts·SynthMusic/SynthAudio 声音=数据)·均 render-only 不进 sim：capability-plan/骨架未动→S2/S3复查过期为既有乱序态；机器门重跑=9场景conformance全绿+tsc/vitest(3309)/build三绿",
+      "at": "2026-07-20T04:19:14.922Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-20T04:19:28.395Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "筹码每座位堆 + 音乐音效接入(render-only 不进 sim)·rebase 至 game-b 后重跑：capability-plan/骨架未动→S2/S3复查过期为既有乱序态；机器门重跑=9场景conformance全绿+tsc/vitest(3335)/build三绿",
+      "at": "2026-07-20T04:22:42.016Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-20T04:22:54.394Z"
     }
   ],
   "outOfOrder": [
@@ -594,6 +618,16 @@
       "stage": "S4",
       "reason": "摊牌屏重设计(hud.ts UI-only·防5~6人freeze)·rebase至game-b后重跑：capability-plan/骨架未动→S2/S3复查过期为既有乱序态；机器门freshly重跑=9场景conformance全绿+tsc/vitest(3305)/build三绿",
       "at": "2026-07-18T15:19:37.779Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "筹码每座位堆(build3d/chip3d) + 音乐音效接入(sound.ts·SynthMusic/SynthAudio 声音=数据)·均 render-only 不进 sim：capability-plan/骨架未动→S2/S3复查过期为既有乱序态；机器门重跑=9场景conformance全绿+tsc/vitest(3309)/build三绿",
+      "at": "2026-07-20T04:19:14.922Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "筹码每座位堆 + 音乐音效接入(render-only 不进 sim)·rebase 至 game-b 后重跑：capability-plan/骨架未动→S2/S3复查过期为既有乱序态；机器门重跑=9场景conformance全绿+tsc/vitest(3335)/build三绿",
+      "at": "2026-07-20T04:22:42.016Z"
     }
   ],
   "reviews": {

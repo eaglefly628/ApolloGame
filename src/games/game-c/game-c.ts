@@ -21,6 +21,7 @@ import type { BettingConfig } from './betting-engine.js';
 import { HoldemSession } from './game-session.js';
 import { build3DTableBlueprint } from './build3d.js';
 import { Chip3D } from './chip3d.js';
+import { gcAudio } from './sound.js';
 
 const CFG: BettingConfig = { smallBlind: 25, bigBlind: 50 }; // GDD §11.5-1 现金局默认盲注
 const DEMO_SEED = 20260717; // 素坯定格种子（确定性·同种子同牌面同日志）
@@ -51,14 +52,29 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   const chip3d = new Chip3D(engine, DEMO_SEED);
   let chipHandNo = 0;
   const prevTotal: Record<number, number> = {};
+  // 声音事件追踪（表现层·render-only）：手号/公共牌张数/阶段 变化 → 触发对应 SFX（声音=数据·经 gcAudio 端口）。
+  let prevBoardLen = 0;
+  let prevPhase: TableView['phase'] = 'betting'; // 新一手起始阶段（session 稍后声明·此处用字面量避免前引用）
   const syncChips = (): void => {
     if (!running || screen !== 'table') return;
-    if (session.handNo !== chipHandNo) { chip3d.clear(); for (const k of Object.keys(prevTotal)) delete prevTotal[Number(k)]; chipHandNo = session.handNo; }
+    if (session.handNo !== chipHandNo) {
+      chip3d.clear(); for (const k of Object.keys(prevTotal)) delete prevTotal[Number(k)]; chipHandNo = session.handNo;
+      prevBoardLen = 0; gcAudio.play('deal'); // 新一手·发牌声
+    }
     for (let seat = 0; seat < 6; seat++) {
       const cur = session.totalOf(seat), prev = prevTotal[seat] ?? 0;
-      if (cur > prev) { chip3d.throwBet(seat, Math.ceil((cur - prev) / 50)); prevTotal[seat] = cur; } // 每 50 一枚·物理抛向底池
+      if (cur > prev) { chip3d.throwBet(seat, Math.ceil((cur - prev) / 50)); prevTotal[seat] = cur; gcAudio.play('chip'); } // 每 50 一枚·物理抛向底池 + 筹码落桌声
+      chip3d.setStack(seat, session.stackOf(seat)); // 各座位筹码堆靠自己桌边·越赢越高（主角+五姨太各一堆）
     }
-    chip3d.setHeroStack(session.stackOf(HERO)); // 主角筹码堆：越赢越高
+    // 翻街（公共牌张数增）→ 揭示声。
+    const boardLen = session.community.length;
+    if (boardLen > prevBoardLen) { if (prevBoardLen > 0) gcAudio.play('flip'); prevBoardLen = boardLen; }
+    // 阶段跃迁 → 摊牌揭盅 / 局终胜负号角。
+    if (session.phase !== prevPhase) {
+      if (session.phase === 'showdown') gcAudio.play('reveal');
+      else if (session.phase === 'gameover') gcAudio.play(session.winnerSide === 'hero' ? 'win' : 'lose');
+      prevPhase = session.phase;
+    }
   };
 
   // ── 玩法会话（真交互闭环：发牌→下注→AI→摊牌→结算→轮转→淘汰→局终·§4-d 线性编排）────
@@ -152,23 +168,23 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   };
 
   const handlers: HandlerMap = {
-    // 屏切换（进桌启动 AI 逐步节奏·回菜单停 timer）
-    start_game: () => { screen = 'table'; start3D(); remount(); runAITurns(); },
-    continue_game: () => { screen = 'table'; start3D(); remount(); runAITurns(); },
-    back_menu: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); remount(); },
-    menu_open: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); remount(); },
-    // UI 开关
-    sound_toggle: () => { muted = !muted; rerender(); },
-    toggle_log: () => { showLog = !showLog; rerender(); },
-    seat_view: (arg) => { openWardrobe = Number(arg); rerender(); },
-    panel_close: () => { openWardrobe = null; rerender(); },
+    // 屏切换（进桌启动 AI 逐步节奏 + 起 BGM·回菜单停 timer + 停 BGM）
+    start_game: () => { screen = 'table'; start3D(); gcAudio.enterTable(); remount(); runAITurns(); },
+    continue_game: () => { screen = 'table'; start3D(); gcAudio.enterTable(); remount(); runAITurns(); },
+    back_menu: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); },
+    menu_open: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); },
+    // UI 开关（♪ 键真静音音乐+音效）
+    sound_toggle: () => { muted = !muted; gcAudio.setMuted(muted); rerender(); },
+    toggle_log: () => { showLog = !showLog; gcAudio.play('click'); rerender(); },
+    seat_view: (arg) => { openWardrobe = Number(arg); gcAudio.play('click'); rerender(); },
+    panel_close: () => { openWardrobe = null; gcAudio.play('click'); rerender(); },
     // 典当续命（真接 session·主角衣柜可点·扣衣加筹）
-    pawn_item: (arg) => { if (openWardrobe !== null && arg) { session.pawn(openWardrobe, arg); rerender(); } },
+    pawn_item: (arg) => { if (openWardrobe !== null && arg) { session.pawn(openWardrobe, arg); gcAudio.play('pawn'); rerender(); } },
     set_raise: (arg) => { raiseValue = Number(arg) || raiseValue; rerender(); },
-    // 下注交互（真接 betting-engine·经 session）
-    act_fold: () => heroAct({ kind: 'fold' }),
-    act_check_call: () => { const la = session.legalForHero(); heroAct(la?.check ? { kind: 'check' } : { kind: 'call' }); },
-    act_raise: (arg) => { const to = raiseTo(arg); if (to > 0) heroAct({ kind: 'raise', to }); },
+    // 下注交互（真接 betting-engine·经 session；弃牌/过牌本地声，跟注/加注的筹码声由 syncChips 抛注触发）
+    act_fold: () => { gcAudio.play('fold'); heroAct({ kind: 'fold' }); },
+    act_check_call: () => { const la = session.legalForHero(); if (la?.check) gcAudio.play('check'); heroAct(la?.check ? { kind: 'check' } : { kind: 'call' }); },
+    act_raise: (arg) => { const to = raiseTo(arg); if (to > 0) { if (arg === 'allin' || to >= (session.legalForHero()?.raise?.max ?? Infinity)) gcAudio.play('allin'); heroAct({ kind: 'raise', to }); } },
     // 摊牌「继续」→ 下一手（发牌+启动 AI 节奏）；局终「再来一局」→ 新会话。
     continue_showdown: () => { session.nextHand(); rerender(); runAITurns(); },
     restart: () => { session = new HoldemSession(DEMO_SEED + session.handNo * 101 + 1, CFG, STARTING_STACK); raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind; rerender(); runAITurns(); },
@@ -176,5 +192,5 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   void host; // launcher 壳退出钩子（游戏内经 ⚙ 回主菜单；壳级退出由 launcher overlay 菜单接）
 
   ui = mountUI(overlayHost, buildMenu(menuView()), handlers, GAME_C_THEME);
-  return () => { clearAiTimer(); stop3D(); chip3d.dispose(); ui?.(); skel.teardown(); };
+  return () => { clearAiTimer(); stop3D(); chip3d.dispose(); gcAudio.dispose(); ui?.(); skel.teardown(); };
 }

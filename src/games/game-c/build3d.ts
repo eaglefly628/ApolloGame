@@ -28,8 +28,13 @@ export function seatWorldPos(i: number): { x: number; z: number } {
   const th = (i * Math.PI) / 3; // 0=南(+z)·顺时针
   return { x: FELT_RX * 0.9 * Math.sin(th), z: FELT_RZ * 0.9 * Math.cos(th) };
 }
-/** 主角筹码堆锚点（正南桌缘内侧·§筹码堆越赢越高）。 */
-export const HERO_STACK3D = { x: 1.15, y: FELT_TOP, z: FELT_RZ * 0.62 } as const;
+/** 座位 i 的筹码堆锚点（该座位桌缘内侧呢面上·靠边·owner 2026-07-18「主角堆靠自己桌边近点·每位姨太也各有堆靠桌边」）。
+ *  同一椭圆环（factor f<0.9 座位环·稳在呢面上），角向偏一点点=落在该座位右手侧（避开正前抛掷线 + 底牌位）。 */
+export function seatStackPos(i: number): { x: number; y: number; z: number } {
+  const th = (i * Math.PI) / 3 + 0.32; // 0=南(+z)·顺时针 60°/座；+0.32rad≈该座位右手侧偏一点
+  const f = 0.8;                        // 桌缘内侧（<0.9 座位环·<1.0 围栏·靠边但稳在呢面）
+  return { x: FELT_RX * f * Math.sin(th), y: FELT_TOP, z: FELT_RZ * f * Math.cos(th) };
+}
 
 /** 3D 牌桌场景（静态·render-only）：陡俯视相机 + 光 + 暗地板 + 椭圆呢面(带碰撞) + 一圈物理围栏墙。 */
 export function build3DTableBlueprint(): WorldBlueprint {

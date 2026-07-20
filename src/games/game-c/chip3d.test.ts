@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
-import { build3DTableBlueprint, seatWorldPos } from './build3d.js';
+import { build3DTableBlueprint, seatWorldPos, seatStackPos } from './build3d.js';
 import { Chip3D } from './chip3d.js';
 import type { RigidBody3D, Mesh3D } from '@engine/protocol/components.js';
 
@@ -10,7 +10,8 @@ function freshEngine(): Engine {
   return e;
 }
 const thrown = (e: Engine): string[] => [...e.world.queryEntities('RigidBody3D')].filter((id) => id.startsWith('c-chip-'));
-const heroStack = (e: Engine): string[] => [...e.world.queryEntities('Mesh3D')].filter((id) => id.startsWith('c-herostk-'));
+const stacks = (e: Engine): string[] => [...e.world.queryEntities('Mesh3D')].filter((id) => id.startsWith('c-stk-'));
+const seatStack = (e: Engine, seat: number): string[] => [...e.world.queryEntities('Mesh3D')].filter((id) => id.startsWith(`c-stk-${seat}-`));
 
 describe('game-c chip3d — 3D 物理筹码抛掷 + 主角堆（render-only·owner 2026-07-18）', () => {
   it('抛注 → 生成筹码 RigidBody3D(cylinder)（随机初速 + 三轴翻滚）', () => {
@@ -42,30 +43,43 @@ describe('game-c chip3d — 3D 物理筹码抛掷 + 主角堆（render-only·own
     expect(thrown(e)).toHaveLength(6);
   });
 
-  it('clear 清抛出筹码（新一手）·主角堆不动', () => {
+  it('clear 清抛出筹码（新一手）·座位堆不动', () => {
     const e = freshEngine();
     const chip = new Chip3D(e, 1);
     chip.throwBet(0, 4);
-    chip.setHeroStack(1000);
-    const stackN = heroStack(e).length;
+    chip.setStack(0, 1000);
+    const stackN = stacks(e).length;
     expect(stackN).toBeGreaterThan(0);
     chip.clear();
     expect(thrown(e)).toHaveLength(0);
-    expect(heroStack(e)).toHaveLength(stackN); // 主角堆保留
+    expect(stacks(e)).toHaveLength(stackN); // 座位堆保留
   });
 
-  it('主角筹码堆越赢越高（栈越大摞越高·封顶）', () => {
+  it('座位筹码堆越赢越高（栈越大摞越高·封顶·输光无堆）', () => {
     const e = freshEngine();
     const chip = new Chip3D(e, 1);
-    chip.setHeroStack(200);
-    const low = heroStack(e).length;
-    chip.setHeroStack(1800);
-    const high = heroStack(e).length;
+    chip.setStack(0, 200);
+    const low = seatStack(e, 0).length;
+    chip.setStack(0, 1800);
+    const high = seatStack(e, 0).length;
     expect(high).toBeGreaterThan(low); // 更多筹码 = 更高堆
-    chip.setHeroStack(999999);
-    expect(heroStack(e).length).toBeLessThanOrEqual(22); // 封顶防穿天
-    chip.setHeroStack(0);
-    expect(heroStack(e)).toHaveLength(0); // 输光=无堆
+    chip.setStack(0, 999999);
+    expect(seatStack(e, 0).length).toBeLessThanOrEqual(22); // 封顶防穿天
+    chip.setStack(0, 0);
+    expect(seatStack(e, 0)).toHaveLength(0); // 输光=无堆
+  });
+
+  it('六席各有独立筹码堆（各在自己桌缘·id 命名空间隔离·owner 2026-07-18）', () => {
+    const e = freshEngine();
+    const chip = new Chip3D(e, 1);
+    for (let s = 0; s < 6; s++) chip.setStack(s, 1000);
+    for (let s = 0; s < 6; s++) expect(seatStack(e, s).length).toBeGreaterThan(0); // 每席都有堆
+    expect(stacks(e).length).toBe(seatStack(e, 0).length * 6); // 六席不串号（命名空间隔离）
+    // 各堆锚点=各自 seatStackPos·分处不同桌缘（x 各异=各靠自己边·非挤一处）
+    const xs = new Set([0, 1, 2, 3, 4, 5].map((s) => Math.round(seatStackPos(s).x * 100)));
+    expect(xs.size).toBeGreaterThan(4);
+    // 主角堆(座0)比旧锚点(z≈1.52)更靠自己南桌边(z 更大)
+    expect(seatStackPos(0).z).toBeGreaterThan(1.52);
   });
 
   it('确定性：同 seed 同抛序列 → 同筹码数（render-only 专属种子）', () => {
