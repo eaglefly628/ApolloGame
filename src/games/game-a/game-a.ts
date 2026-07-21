@@ -12,6 +12,7 @@ import { GuandanSession, TURN_ORDER, teamOf, FAMILY_CN, fmtCardCode, type SeatId
 import { buildMenu, buildTableSelect, buildPlay, buildResult, type SeatView, type PlayView, type ResultView } from './hud.js';
 import { type Lang, t, handName, tierName, fmtComboLabel, fmtTributeResist, fmtTributeLine } from './strings.js';
 import { SEATS, DRESS_TIERS, INITIAL_FUNDS, STAKES, LEVEL_START, codeSuit, codeRank, sortHand } from './rules.js';
+import { resolveSeatCards, seatDisplay, seatFlavor, buildSessionOut, type GameASessionIn, type SeatOutcome, type SeatSessionOut } from './seat-cards.js';
 import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG, GAME_A_THEME } from './theme.js';
 import { mulberry32 } from '@atom-skills/index.js';
 
@@ -22,7 +23,17 @@ import { mulberry32 } from '@atom-skills/index.js';
 const AI_DELAY_MIN = 700;
 const AI_DELAY_MAX = 2000;
 
-export function mount(container: HTMLElement): () => void {
+export function mount(container: HTMLElement, host?: { exit?: () => void; sessionIn?: GameASessionIn }): () => void {
+  // 角色卡消费（REQ-CHARCARD）：mount 时一次性解出四席规范卡（纯确定性·平台未接线→内置默认卡·显示零变）。
+  const seatCards = resolveSeatCards(host?.sessionIn);
+  // 席位头像（默认卡无媒体→undefined→退首字铭牌；平台覆盖时经 Avatar src 显图）。选桌预览也消费。
+  const seatAvatars: Partial<Record<SeatId, string>> = {};
+  for (const s of SEATS) {
+    const a = seatDisplay(seatCards[s.id]).avatar;
+    if (a) seatAvatars[s.id] = a;
+  }
+  let lastSessionOut: Record<string, SeatSessionOut> | null = null; // 终局回传（REQ-CHARCARD·经返回句柄 getSessionOut 暴露）
+
   const skel = mountHost(container, { fieldW: FIELD_W, fieldH: FIELD_H, sceneBackground: MANOR_BG, wrapperBackground: WRAPPER_BG });
   const { overlayHost } = skel;
   overlayHost.style.pointerEvents = 'auto';
@@ -52,12 +63,16 @@ export function mount(container: HTMLElement): () => void {
   // 主菜单视图（无 session·1:1 设计稿·wallet 持久·级牌无存档=起始）。
   const menuView = () => ({ lang, wallet, level: LEVEL_START, showMenu: menuOpen, menuTab });
   const seatSpec = (id: SeatId): SeatView['seat'] => SEATS.find((s) => s.id === id)!;
-  // 座位显示名：hero='你'/You 经字典本地化；AI 专名（沈玉薇/林曼笙/顾念念）=rules 数据·恒中文（专名不译）。
-  const displayName = (id: SeatId): string => (id === 'hero' ? t(lang, 'seat.you') : seatSpec(id).name);
+  // 座位显示名：hero='你'/You 经字典本地化；AI 专名取角色卡 name（默认卡===SEATS 原名·透明；平台覆盖时随卡）。
+  const displayName = (id: SeatId): string => (id === 'hero' ? t(lang, 'seat.you') : seatCards[id].name);
   const seatView = (id: SeatId): SeatView => ({
-    seat: seatSpec(id),
+    // 席位铭牌名与 displayName 同源=角色卡 name（AI 席；默认卡===SEATS 原名·透明·平台覆盖时铭牌/轮次名一致不裂）。
+    // hero 席不走 seatCard（用左侧立绘框）·保留 SEATS「你」——立绘头像首字仍显「你」不受影响。
+    seat: id === 'hero' ? seatSpec(id) : { ...seatSpec(id), name: seatCards[id].name },
     cards: session ? session.hands[id].length : 0,
     dress: session ? session.dress[id] : DRESS_TIERS,
+    avatar: seatAvatars[id], // 角色卡头像（默认卡无→退首字铭牌）
+    flavor: seatFlavor(seatCards[id]), // 人设问候（闲时气泡·已截断·外部不可信输入）
   });
 
   function clearAiTimer(): void {
@@ -188,6 +203,15 @@ export function mount(container: HTMLElement): () => void {
     };
   }
 
+  // 终局 SessionOut（REQ-CHARCARD·以 card.id 键控·passthrough 原样回带）：本盘名次 → 四席顺位/阵营。
+  // 纯确定性（读 lastResult.ranking·无时钟/随机）。暂存 lastSessionOut·经返回句柄 getSessionOut 暴露（game-runner 尚未消费）。
+  function computeSessionOut(s: GuandanSession): Record<string, SeatSessionOut> {
+    const r = s.lastResult!;
+    const outcomes = {} as Record<SeatId, SeatOutcome>;
+    r.ranking.forEach((seat, i) => { outcomes[seat] = { rank: i + 1, team: teamOf(seat) }; });
+    return buildSessionOut(seatCards, outcomes);
+  }
+
   // ── 渲染路由（无 session=menu/select 门面·有 session=play/result）─────────────────
   // 跨屏切换必须重挂：UI reconciler 从 host 里按**新根 id** 找元素补丁，根 id 变了（牌桌 a-play ⇄ 结算
   // a-result ⇄ 菜单 a-menu ⇄ 选桌 a-select）时找不到→静默 no-op、屏卡在旧树（owner 报「结算不出、菜单点不开」
@@ -204,10 +228,15 @@ export function mount(container: HTMLElement): () => void {
   }
   function render(): void {
     if (!session) {
-      paint(screen === 'select' ? buildTableSelect({ lang, difficulty: selDifficulty, stake: selStake, wallet }) : buildMenu(menuView()));
+      paint(screen === 'select' ? buildTableSelect({ lang, difficulty: selDifficulty, stake: selStake, wallet, avatars: seatAvatars }) : buildMenu(menuView()));
       return;
     }
-    paint(session.phase === 'playing' ? buildPlay(playView(session)) : buildResult(resultView(session)));
+    if (session.phase === 'playing') {
+      paint(buildPlay(playView(session)));
+    } else {
+      lastSessionOut = computeSessionOut(session); // 盘/局终局：构造 SessionOut（REQ-CHARCARD·纯确定性）
+      paint(buildResult(resultView(session)));
+    }
   }
 
   // ── AI 步进（拟人延迟·递归排到 hero 轮或盘终）──────────────────────────────────
@@ -382,10 +411,12 @@ export function mount(container: HTMLElement): () => void {
 
   showMenu();
 
-  return () => {
+  const teardown = (): void => {
     stopSession();
     ui?.();
     ui = null;
     skel.teardown();
   };
+  // 返回句柄挂 getSessionOut（REQ-CHARCARD·暴露终局回传·game-runner 尚未消费·供未来/测试读）。
+  return Object.assign(teardown, { getSessionOut: (): Record<string, SeatSessionOut> | null => lastSessionOut });
 }

@@ -43,6 +43,8 @@ export interface SeatView {
   seat: SeatSpec;
   cards: number; // 手牌数
   dress: number; // 服饰档 0..5
+  avatar?: string; // 角色卡头像 src（REQ-CHARCARD·无则 Avatar 退首字铭牌·默认卡无媒体=零变）
+  flavor?: string; // 人设问候（REQ-CHARCARD·闲时气泡·已截断·无活跃玩法气泡时显）
 }
 const fmtMoney = (n: number): string => n.toLocaleString('en-US');
 
@@ -181,8 +183,9 @@ export interface TableSelectView {
   difficulty: 'l1' | 'l2' | 'l3' | 'l4';
   stake: number;
   wallet: number;
+  avatars?: Partial<Record<SeatId, string>>; // 角色卡头像 src（REQ-CHARCARD·无则退首字铭牌·默认卡无=零变）
 }
-function seatPreview(seat: SeatSpec, l: Lang): LayoutNode {
+function seatPreview(seat: SeatSpec, l: Lang, avatar?: string): LayoutNode {
   const foe = seat.team === 1;
   const trait = seat.traits?.[0] ? traitName(l, seat.traits[0]) : '';
   return {
@@ -191,7 +194,7 @@ function seatPreview(seat: SeatSpec, l: Lang): LayoutNode {
     props: { title: seat.name },
     layout: { direction: 'column', align: 'center', gap: 6, padding: 12, width: 132 },
     children: [
-      { type: 'Avatar', id: `a-sel-npc-${seat.id}-face`, props: { name: seat.name, size: 52, shape: 'circle' } },
+      { type: 'Avatar', id: `a-sel-npc-${seat.id}-face`, props: { name: seat.name, size: 52, shape: 'circle', ...(avatar ? { src: avatar } : {}) } },
       {
         type: 'Panel',
         id: `a-sel-npc-${seat.id}-tags`,
@@ -269,7 +272,7 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
             id: 'a-sel-npcs',
             props: { bare: true },
             layout: { direction: 'row', gap: 12, justify: 'center' },
-            children: aiSeats.map((s) => seatPreview(s, l)),
+            children: aiSeats.map((s) => seatPreview(s, l, v.avatars?.[s.id])),
           },
           // 带入确认 + 入座
           {
@@ -305,6 +308,8 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
 function seatCard(v: SeatView, x: number, y: number, active: boolean, leading: boolean, l: Lang, bubble?: string): LayoutNode {
   const foe = v.seat.team === 1;
   const trait = v.seat.traits?.[0] ? traitName(l, v.seat.traits[0]) : '';
+  // 气泡：活跃玩法气泡（表情/过）优先；无则退人设问候（idle greeting·REQ-CHARCARD·已截断）。
+  const shownBubble = bubble ?? (v.flavor || undefined);
   return {
     type: 'Panel',
     id: `a-seat-${v.seat.id}`,
@@ -317,7 +322,7 @@ function seatCard(v: SeatView, x: number, y: number, active: boolean, leading: b
         id: `a-seat-${v.seat.id}-ring`,
         props: { bg: foe ? { custom: 'radial-gradient(circle,#5a1f22,#2a0f11)' } : { custom: 'radial-gradient(circle,#1e4030,#14261c)' } },
         layout: { direction: 'row', align: 'center', justify: 'center', padding: 3, radius: 40 },
-        children: [{ type: 'Avatar', id: `a-seat-${v.seat.id}-face`, props: { name: v.seat.name, size: 46, shape: 'circle' } }],
+        children: [{ type: 'Avatar', id: `a-seat-${v.seat.id}-face`, props: { name: v.seat.name, size: 46, shape: 'circle', ...(v.avatar ? { src: v.avatar } : {}) } }],
       },
       // 暂大者名前缀 🏆（谁出的牌谁大·零增高不触发 audit 重叠）
       { type: 'Label', id: `a-seat-${v.seat.id}-name`, props: { text: v.seat.name, size: 'sm', bold: true, color: 'gold' } }, // 名缩小·谁大改由弹簧箭头指（owner 2026-07-18）
@@ -332,8 +337,8 @@ function seatCard(v: SeatView, x: number, y: number, active: boolean, leading: b
         ],
       },
       { type: 'Badge', id: `a-seat-${v.seat.id}-cards`, props: { text: fmtCardsLeft(l, v.cards), tone: v.cards <= 3 ? 'warn' : 'ok' } },
-      ...(bubble
-        ? [{ type: 'Tag' as const, id: `a-seat-${v.seat.id}-bubble`, props: { label: bubble, tone: 'accent' as const, size: 'sm' as const } }]
+      ...(shownBubble
+        ? [{ type: 'Tag' as const, id: `a-seat-${v.seat.id}-bubble`, props: { label: shownBubble, tone: 'accent' as const, size: 'sm' as const } }]
         : []),
     ],
   };
