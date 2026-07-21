@@ -31,6 +31,7 @@
 ## 红线（一体适用）
 
 - **门禁=退出码**：`tsc + vitest + build` 全 0 才推；rebase 带进新提交必须重跑；禁 `vitest | grep` 吞失败码。
+- **快/慢双车道（owner 2026-07-21 提速）**：`npm test`（推送门禁+`scripts/scoped-gate.mjs` 走这条）=快车道·`vite.config.ts` 已排除冻结 game-f + 整局通关巨无霸 + 起进程 CLI 测试（占全量 CPU 近半却每推空转）；`npm run test:deep`（`APOLLO_DEEP=1`）=慢车道跑全 392 文件·**发版前/定期必跑=完整安全网**。缩的是「每次推的负担」非总覆盖。改动全在单游戏时 scoped-gate 只跑该游戏测试（详该脚本头注）。
 - **测试代码三禁**：真实时间等待（墙钟 sleep/setTimeout）、外部 IO 直连、无种子随机——FAIL 级，用信号/mock/种子 PRNG 替代（fake timers 合法）。
 - **复现=seed+tick**：bug 复现优先给种子 + tick 序列/replay 文件（确定性引擎的强项）；文字步骤是降级方案。
 - **缺基线判黄不判绿**：sim 缺目标带、bench 缺 prior、AC 不可测 → CONCERNS / MANUAL CHECK 交 owner；绝不默认过、绝不编造目标值。
