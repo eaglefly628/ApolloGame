@@ -81,6 +81,23 @@ export function opponentAnchors(count: number): SeatAnchor[] {
 export const SEAT_W = 150;
 export const SEAT_H = 86;
 
+// ── 剧情局 STORY-POKER V2（owner 2026-07-21·GD-C 稿「四人德州·剧情局」·完全复刻·docs/design/game-c/cloud-design/story-poker-v2-ref.png）──
+//   4 座：对面三座（左/中·主/右·各带分层立绘）+ 主角一座（你&林晚·底左面板）。固定斜俯视·电影化场景。
+//   位置 = 1280×720 px（席卡中心 / 立绘矩形中心+尺寸）。中座=剧情主角（恋爱线对象·立绘最大）。
+export interface StorySeatDef {
+  seat: number; name: string; nameEn: string;
+  cardCx: number; cardCy: number;                       // 席卡中心 px
+  portCx: number; portCy: number; portW: number; portH: number; // 立绘矩形中心 + 尺寸 px
+  main?: boolean;
+}
+export const STORY_OPPONENTS: readonly StorySeatDef[] = [
+  { seat: 1, name: '陆时衍', nameEn: 'Lu Shiyan', cardCx: 640, cardCy: 238, portCx: 640, portCy: 168, portW: 200, portH: 252, main: true }, // 中·主
+  { seat: 2, name: '谢经理', nameEn: 'Mgr. Xie', cardCx: 278, cardCy: 326, portCx: 296, portCy: 244, portW: 134, portH: 188 },              // 左
+  { seat: 3, name: '柯女士', nameEn: 'Ms. Ke', cardCx: 1010, cardCy: 326, portCx: 996, portCy: 244, portW: 134, portH: 188 },               // 右
+] as const;
+export const STORY_HERO = { name: '你 & 林晚', nameEn: 'You & Linwan' };   // 主角一座（底左面板）
+export const STORY_PARTNER = { name: '林晚', nameEn: 'Linwan' };            // 搭档旁白（手牌建议 advice_show）
+
 /** 锚点 %（中心）→ 绝对定位左上角 px（1280×720 基准）。 */
 export function anchorTopLeft(a: SeatAnchor): { x: number; y: number } {
   return { x: Math.round((a.xPct / 100) * FIELD_W - SEAT_W / 2), y: Math.round((a.yPct / 100) * FIELD_H - SEAT_H / 2) };

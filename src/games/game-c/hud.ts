@@ -6,12 +6,12 @@
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Card } from '@engine/protocol/components.js';
 import {
-  opponentAnchors, anchorTopLeft, cardFace, SEAT_W, SEAT_H, FIELD_W, FIELD_H,
+  cardFace, FIELD_W, FIELD_H, STORY_OPPONENTS, STORY_HERO, STORY_PARTNER, type StorySeatDef,
 } from './theme.js';
 import type { GameEvent } from './game-log.js';
 import {
-  type Lang, type LastMove, t, fmtHand, fmtCall, fmtRaise, fmtBet, fmtBest, fmtShowdownTitle,
-  fmtValue, fmtWardrobeTitle, fmtPortrait, fmtHands, fmtItems, fmtMove,
+  type Lang, type LastMove, type Street, t, fmtCall, fmtRaise, fmtBet, fmtBest, fmtShowdownTitle,
+  fmtValue, fmtWardrobeTitle, fmtPortrait, fmtHands, fmtItems, fmtMove, fmtStoryHand,
 } from './strings.js';
 
 // ── 视图数据（宿主从 M1 sim 状态纯读投影·outcome-first）─────────────────────────
@@ -24,7 +24,9 @@ export interface WardrobeRow { id: string; name: string; value: number; pawned: 
 export interface WardrobeView { seat: number; name: string; isHero: boolean; rows: WardrobeRow[]; }
 export interface TableView {
   lang: Lang; // 界面语言（owner 2026-07-20 中英切换·默认 en·宿主持久）
-  playerCount: number; // 入局人数 2~6（owner 2026-07-20·渲染主角 + (count-1) 对手座）
+  playerCount: number; // 入局人数（剧情局=4·owner 2026-07-21 STORY-POKER V2 稿）
+  street: Street; // 当前街（顶带「第 N 局 · 翻牌圈」）
+  partnerAdvice?: string; // 搭档林晚旁白（手牌建议·advice_show）
   blindLabel: string; handNo: number; pot: number;
   board: Card[]; heroHole: Card[]; heroHandName: string; // heroHandName=宿主已本地化的牌型显示名
   seats: SeatView[]; toCall: number; canRaise: boolean; minRaise: number; maxRaise: number; raiseValue: number;
@@ -133,57 +135,97 @@ function seatCard(v: SeatView, x: number, y: number, w: number, h: number, l: La
   };
 }
 
-// ── 顶带（SB 徽章 + 盲注 impact + POT 金发光大字 + 语言段控 + ⚙♪）──────────────────
-function buildTopBar(v: TableView): LayoutNode {
+// ── 顶带（剧情局·GD-C 稿）：左=夺回进度 Gauge · 中=第 N 局·街 · 右=胜负注 + 返回剧情 ──────────────
+function buildStoryTopBar(v: TableView): LayoutNode {
   const l = v.lang;
   return {
-    type: 'Panel', id: 'c-top', props: { bg: { custom: 'linear-gradient(180deg,rgba(8,5,14,0.92),rgba(8,5,14,0.15) 82%,rgba(8,5,14,0))' } },
-    layout: { x: 0, y: 0, width: FIELD_W, height: 76, direction: 'row', align: 'center', justify: 'between', padding: 16 },
+    type: 'Panel', id: 'c-top', props: { bg: { custom: 'linear-gradient(180deg,rgba(8,5,14,0.92),rgba(8,5,14,0.12) 82%,rgba(8,5,14,0))' } },
+    layout: { x: 0, y: 0, width: FIELD_W, height: 72, direction: 'row', align: 'center', justify: 'between', padding: 16 },
     children: [
+      // 左：夺回进度（剧情 meta·Gauge）
       {
-        type: 'Panel', id: 'c-blind', props: { bg: { custom: CARD_FILL }, edge: 'gold' },
-        layout: { direction: 'row', gap: 10, align: 'center', padding: 8, radius: 10 },
+        type: 'Panel', id: 'c-recover', props: { bare: true }, layout: { direction: 'column', gap: 3, width: 268 },
         children: [
           {
-            type: 'Panel', id: 'c-sb', props: { bg: { custom: 'linear-gradient(160deg,#c0392b,#7a1420)' }, edge: 'gold' },
-            layout: { direction: 'row', justify: 'center', align: 'center', width: 30, height: 28, radius: 6 },
-            children: [{ type: 'Label', id: 'c-sb-t', props: { text: 'SB', font: 'impact', size: 14, color: 'gold' } }],
-          },
-          {
-            type: 'Panel', id: 'c-blind-col', props: { bare: true }, layout: { direction: 'column', gap: 0 },
+            type: 'Panel', id: 'c-recover-row', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' },
             children: [
-              { type: 'Label', id: 'c-blind-v', props: { text: `${t(l, 'top.blind')} ${v.blindLabel}`, font: 'impact', size: 20, color: 'text' } },
-              { type: 'Label', id: 'c-hand-n', props: { text: fmtHand(l, v.handNo), size: 'xs', color: 'dim' } },
+              { type: 'Label', id: 'c-recover-l', props: { text: t(l, 'story.recover'), size: 'xs', color: 'sub' } },
+              { type: 'Label', id: 'c-recover-v', props: { text: '2万 / 100万', font: 'mono', size: 'xs', color: 'gold' } },
             ],
           },
+          { type: 'ProgressBar', id: 'c-recover-bar', props: { value: 2, max: 100, tone: 'accent' } },
         ],
       },
+      // 中：第 N 局 · 街道
       {
-        type: 'Panel', id: 'c-pot', props: { bare: true },
-        layout: { direction: 'column', align: 'center', gap: 0 },
+        type: 'Panel', id: 'c-hand', props: { bare: true }, layout: { direction: 'column', align: 'center', gap: 0 },
         children: [
-          { type: 'Label', id: 'c-pot-l', props: { text: t(l, 'top.pot'), font: 'mono', size: 'xs', color: 'warn' } },
-          { type: 'Label', id: 'c-pot-v', props: { text: `◉ ${fmt(v.pot)}`, font: 'impact', size: 44, color: 'gold', glow: true } },
+          { type: 'Label', id: 'c-hand-t', props: { text: fmtStoryHand(l, v.handNo, v.street), font: 'serif', size: 26, bold: true, color: 'text' } },
         ],
       },
+      // 右：胜负注 + 返回剧情
       {
-        type: 'Panel', id: 'c-menu', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' },
+        type: 'Panel', id: 'c-topright', props: { bare: true }, layout: { direction: 'row', gap: 12, align: 'center' },
         children: [
-          langToggle(l, 'c-lang'),
-          { type: 'Button', id: 'c-log', props: { label: '📋', kind: v.showLog ? 'primary' : 'ghost', action: 'toggle_log' } },
-          { type: 'Button', id: 'c-sound', props: { label: v.muted ? '🔇' : '♪', kind: 'ghost', action: 'sound_toggle' } },
-          { type: 'Button', id: 'c-gear', props: { label: '⚙', kind: 'ghost', action: 'menu_open' } },
+          {
+            type: 'Panel', id: 'c-stakes', props: { bare: true }, layout: { direction: 'column', gap: 1, align: 'end' },
+            children: [
+              { type: 'Label', id: 'c-stake-win', props: { text: t(l, 'story.winStake'), size: 'xs', color: 'ok' } },
+              { type: 'Label', id: 'c-stake-lose', props: { text: t(l, 'story.loseStake'), size: 'xs', color: 'danger' } },
+            ],
+          },
+          { type: 'Button', id: 'c-back-story', props: { label: t(l, 'story.back'), kind: 'ghost', action: 'back_to_story' } },
         ],
       },
     ],
   };
 }
 
+// ── 对手座（剧情局·对面三座：分层立绘占位框 + 席卡[头像/名/筹码/动作气泡/读秒]·中座=主更大）─────────
+function buildStoryOpponent(sv: SeatView, def: StorySeatDef, l: Lang): LayoutNode[] {
+  const name = l === 'en' ? def.nameEn : def.name;
+  const big = !!def.main;
+  // 分层立绘占位框（虚线·图标·真立绘 S6 台账拖入）。
+  const portrait: LayoutNode = {
+    type: 'Panel', id: `c-port-${def.seat}`, props: { bare: true, dashed: true, edge: big ? 'gold' : undefined },
+    layout: { x: Math.round(def.portCx - def.portW / 2), y: Math.round(def.portCy - def.portH / 2), width: def.portW, height: def.portH, direction: 'column', align: 'center', justify: 'center', gap: 6, radius: 12, opacity: 0.5 },
+    children: [
+      { type: 'Avatar', id: `c-port-av-${def.seat}`, props: { name: name.slice(0, 1), size: big ? 64 : 44, shape: 'rounded' } },
+      { type: 'Label', id: `c-port-l-${def.seat}`, props: { text: `${name}·${t(l, 'story.portrait')}`, size: 'xs', color: 'dim' } },
+    ],
+  };
+  const bub = statusBubble({ ...sv, name }, l);
+  const edge = sv.allIn ? 'danger' : sv.isActor ? 'jade' : sv.folded || sv.out ? undefined : 'gold';
+  const cardW = big ? 178 : 158, cardH = big ? 76 : 64;
+  const card: LayoutNode = {
+    type: 'Panel', id: `c-seat-${def.seat}`,
+    props: { bg: { custom: sv.isHero ? CARD_FILL_HERO : CARD_FILL }, edge, action: 'seat_view', actionArg: String(def.seat), ...(sv.isActor ? { fx: [{ kind: 'glow' as const, color: 'jade' as const }] } : {}) },
+    layout: { x: Math.round(def.cardCx - cardW / 2), y: Math.round(def.cardCy - cardH / 2), width: cardW, height: cardH, direction: 'row', gap: 9, align: 'center', padding: 9, radius: 12, opacity: sv.out ? 0.45 : sv.folded ? 0.6 : 1 },
+    children: [
+      { type: 'Avatar', id: `c-av-${def.seat}`, props: { name: name.slice(0, 1), size: big ? 48 : 40, shape: 'circle' } },
+      {
+        type: 'Panel', id: `c-seat-col-${def.seat}`, props: { bare: true }, layout: { direction: 'column', gap: 1, flex: 1 },
+        children: [
+          { type: 'Label', id: `c-name-${def.seat}`, props: { text: name, size: big ? 'md' : 'sm', bold: true, color: sv.out ? 'dim' : 'text' } },
+          { type: 'Label', id: `c-chips-${def.seat}`, props: { text: `${t(l, 'story.pot') === '底池' ? '筹码' : 'Chips'} ${fmt(sv.chips)}`, font: 'impact', size: big ? 22 : 18, color: sv.out ? 'dim' : 'gold', glow: !sv.out } },
+        ],
+      },
+    ],
+  };
+  // 动作气泡浮在席卡上方（跟注/加注/思考中）。
+  const bubNode: LayoutNode[] = bub ? [{
+    type: 'Panel', id: `c-bubwrap-${def.seat}`, props: { bare: true },
+    layout: { x: Math.round(def.cardCx - 60), y: Math.round(def.cardCy - cardH / 2 - 30), width: 120, direction: 'row', justify: 'center' },
+    children: [bub],
+  }] : [];
+  return [portrait, card, ...bubNode];
+}
+
 // ── 底牌区（大牌斜摆 + 金光 + 成牌胶囊·§5.4）────────────────────────────────────
 function buildHeroCards(v: TableView): LayoutNode {
   return {
     type: 'Panel', id: 'c-hole', props: { bare: true },
-    layout: { x: Math.round(FIELD_W / 2 - 150), y: FIELD_H - 172, width: 300, direction: 'column', align: 'center', gap: 8 },
+    layout: { x: Math.round(FIELD_W / 2 - 150), y: 438, width: 300, direction: 'column', align: 'center', gap: 8 },
     children: [
       {
         type: 'Panel', id: 'c-hole-row', props: { bare: true },
@@ -565,71 +607,130 @@ function buildFinale(f: FinaleView, l: Lang): LayoutNode {
   return { type: 'Panel', id: 'c-fin-scrim', props: { bg: { custom: 'rgba(4,2,8,0.82)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children: [card] };
 }
 
-// ── 左侧主角立绘框（owner 2026-07-20·参考 game-b 左侧布局）：竖幅立绘占位框 + 主角名/筹码/衣物/状态 = 「你」的主面板。
-//   替代旧的左下小席卡；点击 = 开主角衣柜（seat_view 0·立绘随典当逐层褪衣·夜宴主题）。轮到你 = 翠边发光 + 读秒。
-function buildHeroPortrait(v: TableView): LayoutNode {
+// ── 主角一座（剧情局·底左「你 & 林晚」面板·点开衣柜·轮到你=翠边发光）───────────────────────
+function buildHeroPanel(v: TableView): LayoutNode {
   const l = v.lang;
   const h = v.seats.find((s) => s.isHero)!;
-  const frame: LayoutNode = {
-    type: 'Panel', id: 'c-hp-frame', props: { bare: true, dashed: true, edge: 'gold' },
-    layout: { direction: 'column', align: 'center', justify: 'center', gap: 10, flex: 1, radius: 12, padding: 12 },
-    children: [
-      { type: 'Avatar', id: 'c-hp-face', props: { name: h.name.slice(0, 1), size: 92, shape: 'rounded' } },
-      { type: 'Label', id: 'c-hp-label', props: { text: t(l, 'portrait.hero'), font: 'impact', size: 22, color: 'gold' } },
-      { type: 'Label', id: 'c-hp-sub', props: { text: t(l, 'portrait.sub'), size: 'xs', color: 'dim' } },
-    ],
-  };
-  const info: LayoutNode = {
-    type: 'Panel', id: 'c-hp-info', props: { bare: true }, layout: { direction: 'column', gap: 3 },
-    children: [
-      {
-        type: 'Panel', id: 'c-hp-name-row', props: { bare: true }, layout: { direction: 'row', gap: 5, align: 'center' },
-        children: [
-          { type: 'Label', id: 'c-hp-name', props: { text: h.name, size: 'md', bold: true, color: 'text' } },
-          { type: 'Label', id: 'c-hp-you', props: { text: 'YOU', size: 'xs', color: 'dim' } },
-          ...(h.isButton ? [{ type: 'Badge', id: 'c-hp-btn', props: { text: 'D', tone: 'warn' } } as LayoutNode] : []),
-        ],
-      },
-      { type: 'Label', id: 'c-hp-chips', props: { text: fmt(h.chips), font: 'impact', size: 30, color: 'gold', glow: true } },
-      {
-        type: 'Panel', id: 'c-hp-meta', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' },
-        children: [
-          { type: 'Label', id: 'c-hp-cloth', props: { text: `👗 ${h.clothes}`, size: 'sm', color: 'sub' } },
-          ...(h.committed > 0 ? [{ type: 'Label', id: 'c-hp-bet', props: { text: fmtBet(l, h.committed), size: 'sm', color: 'gold' } } as LayoutNode] : []),
-        ],
-      },
-      ...(h.isActor ? [{ type: 'ProgressBar', id: 'c-hp-timer', props: { value: 65, max: 100, tone: 'accent' } } as LayoutNode] : []),
-    ],
-  };
-  const bub = statusBubble(h, l);
+  const name = l === 'en' ? STORY_HERO.nameEn : STORY_HERO.name;
   return {
-    type: 'Panel', id: 'c-hero-portrait',
-    props: { bg: { custom: CARD_FILL_HERO }, edge: h.isActor ? 'jade' : 'gold', action: 'seat_view', actionArg: '0' },
-    layout: { x: 14, y: 86, width: 200, height: FIELD_H - 104, direction: 'column', gap: 10, padding: 14, radius: 16, ...(h.isActor ? { fx: [{ kind: 'glow' as const, color: 'jade' as const }] } : {}) },
-    children: bub ? [frame, bub, info] : [frame, info],
+    type: 'Panel', id: 'c-hero-panel',
+    props: { bg: { custom: CARD_FILL_HERO }, edge: h.isActor ? 'jade' : 'gold', action: 'seat_view', actionArg: '0', ...(h.isActor ? { fx: [{ kind: 'glow' as const, color: 'jade' as const }] } : {}) },
+    layout: { x: 40, y: 468, width: 292, height: 76, direction: 'row', gap: 12, align: 'center', padding: 11, radius: 14 },
+    children: [
+      { type: 'Avatar', id: 'c-hero-av', props: { name: '你', size: 48, shape: 'circle' } },
+      {
+        type: 'Panel', id: 'c-hero-col', props: { bare: true }, layout: { direction: 'column', gap: 2, flex: 1 },
+        children: [
+          {
+            type: 'Panel', id: 'c-hero-nm-row', props: { bare: true }, layout: { direction: 'row', gap: 6, align: 'center' },
+            children: [
+              { type: 'Label', id: 'c-hero-name', props: { text: name, size: 'md', bold: true, color: 'text' } },
+              ...(h.isButton ? [{ type: 'Badge', id: 'c-hero-btn', props: { text: 'D', tone: 'warn' } } as LayoutNode] : []),
+            ],
+          },
+          { type: 'Label', id: 'c-hero-chips', props: { text: fmt(h.chips), font: 'impact', size: 28, color: 'gold', glow: true } },
+        ],
+      },
+    ],
   };
 }
 
-// ── 牌桌主屏（纯 2D LayoutNode·owner 2026-07-18 转 2D + 07-20 左侧主角立绘框：顶带 + 公共牌 + 对手座 + 左立绘 + 底牌）──
+// ── 搭档旁白（剧情局·林晚给手牌建议·advice_show）：头像 + 台词气泡 ────────────────────────────
+function buildPartnerAdvice(v: TableView): LayoutNode {
+  const l = v.lang;
+  const pname = l === 'en' ? STORY_PARTNER.nameEn : STORY_PARTNER.name;
+  const advice = v.partnerAdvice ?? t(l, 'story.adviceDefault');
+  return {
+    type: 'Panel', id: 'c-partner', props: { bare: true },
+    layout: { x: 40, y: 588, width: 438, direction: 'row', gap: 10, align: 'center' },
+    children: [
+      { type: 'Avatar', id: 'c-partner-av', props: { name: pname.slice(-1), size: 46, shape: 'circle' } },
+      {
+        type: 'Panel', id: 'c-partner-bub', props: { bg: { custom: 'linear-gradient(160deg,rgba(30,20,34,0.94),rgba(14,9,18,0.96))' }, edge: 'jade' },
+        layout: { direction: 'column', gap: 2, padding: 10, radius: 12, flex: 1 },
+        children: [
+          { type: 'Label', id: 'c-partner-nm', props: { text: `${pname} · ${l === 'en' ? 'Partner' : '搭档'}`, size: 'xs', color: 'jade' } },
+          { type: 'Label', id: 'c-partner-tx', props: { text: advice, size: 'sm', color: 'text' } },
+        ],
+      },
+    ],
+  };
+}
+
+// ── 底池（桌心下·剧情稿 Label 底池 N）──────────────────────────────────────────────────
+function buildPot(v: TableView): LayoutNode {
+  const l = v.lang;
+  return {
+    type: 'Panel', id: 'c-pot', props: { bare: true },
+    layout: { x: Math.round(FIELD_W / 2 - 100), y: 404, width: 200, direction: 'row', justify: 'center', align: 'center', gap: 8 },
+    children: [
+      { type: 'Label', id: 'c-pot-l', props: { text: t(l, 'story.pot'), size: 'sm', color: 'sub' } },
+      { type: 'Label', id: 'c-pot-v', props: { text: fmt(v.pot), font: 'impact', size: 26, color: 'gold', glow: true } },
+    ],
+  };
+}
+
+// ── 行动条（剧情稿·Button×3+Slider：弃牌 / 跟注 N / 加注[− slider value +]）────────────────────
+function buildStoryActionBar(v: TableView): LayoutNode {
+  const l = v.lang;
+  const callMain = v.toCall > 0 ? fmtCall(l, v.toCall) : t(l, 'act.check');
+  const children: LayoutNode[] = [
+    {
+      type: 'Panel', id: 'c-act-fold', props: { bg: 'blood' as never, action: 'act_fold' },
+      layout: { width: 150, direction: 'column', align: 'center', justify: 'center', padding: 12, radius: 12 },
+      children: [{ type: 'Label', id: 'c-act-fold-t', props: { text: t(l, 'act.fold'), font: 'impact', size: 20, color: 'text' } }],
+    },
+    {
+      type: 'Panel', id: 'c-act-call', props: { bg: 'jade-sheen' as never, action: 'act_check_call' },
+      layout: { width: 186, direction: 'column', align: 'center', justify: 'center', padding: 12, radius: 12 },
+      children: [{ type: 'Label', id: 'c-act-call-t', props: { text: callMain, font: 'impact', size: 20, color: 'text' } }],
+    },
+  ];
+  if (v.canRaise) {
+    children.push({
+      type: 'Panel', id: 'c-raise-wrap', props: { bg: { custom: 'linear-gradient(90deg,rgba(224,180,88,0.20),rgba(150,96,190,0.30))' }, edge: 'gold' },
+      layout: { flex: 1, direction: 'row', align: 'center', gap: 10, padding: 8, radius: 12 },
+      children: [
+        {
+          type: 'Panel', id: 'c-act-raise', props: { bg: 'gold-sheen' as never, action: 'act_raise', actionArg: 'slider' },
+          layout: { width: 100, direction: 'column', align: 'center', justify: 'center', padding: 9, radius: 9 },
+          children: [{ type: 'Label', id: 'c-act-raise-t', props: { text: t(l, 'act.raise'), font: 'impact', size: 18, color: 'ink' } }],
+        },
+        { type: 'Button', id: 'c-raise-dec', props: { label: '−', kind: 'ghost', action: 'set_raise', actionArg: 'dec' }, layout: { width: 42 } },
+        { type: 'Slider', id: 'c-raise-slider', props: { min: v.minRaise, max: v.maxRaise, value: v.raiseValue, step: 25, action: 'set_raise' }, layout: { flex: 1 } },
+        { type: 'Label', id: 'c-raise-v', props: { text: fmt(v.raiseValue), font: 'impact', size: 24, color: 'gold' } },
+        { type: 'Button', id: 'c-raise-inc', props: { label: '+', kind: 'ghost', action: 'set_raise', actionArg: 'inc' }, layout: { width: 42 } },
+      ],
+    });
+  }
+  return {
+    type: 'Panel', id: 'c-act', props: { bare: true },
+    layout: { x: 40, y: 646, width: FIELD_W - 80, height: 60, direction: 'row', gap: 12, align: 'stretch' },
+    children,
+  };
+}
+
+// ── 牌桌主屏（剧情局 STORY-POKER V2·GD-C 稿·owner 2026-07-21 完全复刻）──────────────────────────
+//   顶带(夺回进度/局街/胜负注/返回剧情) + 对面三座(立绘+席卡) + 公共牌 + 底池 + 主角底牌 + 主角面板 + 搭档旁白 + 行动条。
 export function buildTable(v: TableView): LayoutNode {
   const l = v.lang;
-  // 对手座：按入局人数取锚点（上弧均布·右移让开左侧立绘框）；只渲染真在场的对手（座 1..count-1）。
-  const opp = opponentAnchors(v.playerCount).map((a) => {
-    const sv = v.seats.find((s) => s.seat === a.seat)!;
-    const { x, y } = anchorTopLeft(a);
-    return seatCard({ ...sv, name: l === 'en' ? a.nameEn : a.name }, x, y, SEAT_W, SEAT_H, l);
-  });
+  // 对面三座（左/中·主/右·分层立绘 + 席卡）——只渲染在场对手（座 1..3·剧情局默认 4 人）。
+  const opp: LayoutNode[] = STORY_OPPONENTS.filter((d) => d.seat < v.playerCount)
+    .flatMap((d) => {
+      const sv = v.seats.find((s) => s.seat === d.seat);
+      return sv ? buildStoryOpponent(sv, d, l) : [];
+    });
 
-  // z 序（DOM 顺序·2D HUD 层·透明区透出 scene 层 3D 牌桌+物理筹码）：顶带 → 公共牌 → 对手座 → 左主角立绘 → 底牌 → 行动条/等待 → 日志/衣柜 → 摊牌/局终最上。
+  // z 序（DOM 顺序·2D HUD 层·透明区透出 scene 层 3D 椭圆桌）：顶带 → 对面三座 → 公共牌 → 底池 → 底牌 → 主角面板 → 搭档旁白 → 行动条 → 覆盖层。
   const children: LayoutNode[] = [
-    buildTopBar(v), buildCommunity(v.board), ...opp, buildHeroPortrait(v), buildHeroCards(v),
+    buildStoryTopBar(v), ...opp, buildCommunity(v.board), buildPot(v), buildHeroCards(v), buildHeroPanel(v), buildPartnerAdvice(v),
   ];
-  if (v.phase === 'betting') children.push(v.isHeroTurn ? buildActionBar(v) : buildWaiting(l));
+  if (v.phase === 'betting') children.push(v.isHeroTurn ? buildStoryActionBar(v) : buildWaiting(l));
   if (v.showLog) children.push(buildLogPanel(v.log, l));
   if (v.openWardrobe !== null && v.wardrobe) children.push(buildWardrobe(v.wardrobe, l));
   if (v.phase === 'showdown' && v.showdown) children.push(buildShowdown(v.showdown, v.board, l));
   if (v.phase === 'gameover' && v.finale) children.push(buildFinale(v.finale, l));
 
-  // Screen bg transparent → 露出 scene 层夜宴厅暗背景（ROOM_BG）；2D 大牌桌=scene 层 3D。
+  // Screen bg transparent → 露出 scene 层电影化场景（3D 椭圆桌 + 夜景）；2D HUD 浮层。
   return { type: 'Screen', id: 'c-table', props: { bg: 'transparent' }, layout: { width: FIELD_W, height: FIELD_H }, children };
 }

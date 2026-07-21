@@ -96,8 +96,8 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   let lang: Lang = loadLang();
   // 入局人数 2~6（owner 2026-07-20·**默认 6**·localStorage 持久·菜单选·start_game/restart 生效）。
   const PLAYERS_KEY = 'gc_players';
-  const clampPlayers = (n: number): number => Math.max(2, Math.min(6, Math.round(n) || 6));
-  const loadPlayers = (): number => { try { return typeof localStorage !== 'undefined' ? clampPlayers(Number(localStorage.getItem(PLAYERS_KEY)) || 6) : 6; } catch { return 6; } };
+  const clampPlayers = (n: number): number => Math.max(2, Math.min(6, Math.round(n) || 4));
+  const loadPlayers = (): number => { try { return typeof localStorage !== 'undefined' ? clampPlayers(Number(localStorage.getItem(PLAYERS_KEY)) || 4) : 4; } catch { return 4; } };
   const savePlayers = (n: number): void => { try { localStorage.setItem(PLAYERS_KEY, String(n)); } catch { /* 无 localStorage */ } };
   let playerCount = loadPlayers();
   let raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind;
@@ -143,8 +143,10 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
     const la = session.legalForHero();
     if (la?.raise && (raiseValue < la.raise.min || raiseValue > la.raise.max)) raiseValue = la.raise.min;
     const sd = session.showdown;
+    const st = session.hand?.street;
+    const street: TableView['street'] = st === 'flop' || st === 'turn' || st === 'river' || st === 'showdown' ? st : 'preflop';
     return {
-      lang, playerCount,
+      lang, playerCount, street,
       blindLabel: `${CFG.smallBlind} / ${CFG.bigBlind}`, handNo: session.handNo,
       pot: session.pot(), board: session.community, heroHole: session.holeOf(HERO), heroHandName: heroHandName(),
       seats: Array.from({ length: playerCount }, (_, i) => i).map(seatView),
@@ -212,7 +214,16 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
     panel_close: () => { openWardrobe = null; gcAudio.play('click'); rerender(); },
     // 典当续命（真接 session·主角衣柜可点·扣衣加筹）
     pawn_item: (arg) => { if (openWardrobe !== null && arg) { session.pawn(openWardrobe, arg); gcAudio.play('pawn'); rerender(); } },
-    set_raise: (arg) => { raiseValue = Number(arg) || raiseValue; rerender(); },
+    // 加注滑杆：数值=set_raise N；剧情条 −/+ 步进（一个大盲）。
+    set_raise: (arg) => {
+      const la = session.legalForHero(); const step = CFG.bigBlind;
+      if (arg === 'dec') raiseValue = Math.max(la?.raise?.min ?? raiseValue, raiseValue - step);
+      else if (arg === 'inc') raiseValue = Math.min(la?.raise?.max ?? raiseValue, raiseValue + step);
+      else raiseValue = Number(arg) || raiseValue;
+      rerender();
+    },
+    // 返回剧情（剧情局顶带·剧情系统未接前=回主菜单）
+    back_to_story: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); },
     // 下注交互（真接 betting-engine·经 session；弃牌/过牌本地声，跟注/加注的筹码声由 syncChips 抛注触发）
     act_fold: () => { gcAudio.play('fold'); heroAct({ kind: 'fold' }); },
     act_check_call: () => { const la = session.legalForHero(); if (la?.check) gcAudio.play('check'); heroAct(la?.check ? { kind: 'check' } : { kind: 'call' }); },

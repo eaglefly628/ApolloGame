@@ -39,6 +39,8 @@ export const STRINGS = {
   // 行动条
   'act.check': { en: 'Check', zh: '过牌' },
   'act.fold': { en: 'Fold', zh: '弃牌' },
+  'act.raise': { en: 'Raise', zh: '加注' },
+  'seat.chips': { en: 'Chips', zh: '筹码' },
   'quick.half': { en: '½ Pot', zh: '½ 池' },
   'quick.two3': { en: '⅔ Pot', zh: '⅔ 池' },
   'quick.pot': { en: 'Pot', zh: '满池' },
@@ -73,6 +75,19 @@ export const STRINGS = {
   'log.seed': { en: 'Deterministic event stream · same seed → same log', zh: '确定性事件流 · 同 seed 同日志' },
   // 座位名（主角）
   'name.hero': { en: 'You', zh: '主角' },
+  // 剧情局 STORY-POKER V2（owner 2026-07-21·GD-C 稿）
+  'story.recover': { en: 'Recovery', zh: '夺回进度' },
+  'story.back': { en: '← Back to Story', zh: '← 返回剧情' },
+  'story.winStake': { en: 'Win · Romance', zh: '胜利 · 心动剧情' },
+  'story.loseStake': { en: 'Lose · New Crisis', zh: '失败 · 新的危机' },
+  'story.pot': { en: 'Pot', zh: '底池' },
+  'story.portrait': { en: 'Portrait', zh: '立绘' },
+  'story.adviceDefault': { en: "He's bluffing — I'd call.", zh: '他在偷鸡，我觉得可以跟。' },
+  'street.preflop': { en: 'Pre-Flop', zh: '翻牌前' },
+  'street.flop': { en: 'Flop', zh: '翻牌圈' },
+  'street.turn': { en: 'Turn', zh: '转牌' },
+  'street.river': { en: 'River', zh: '河牌' },
+  'street.showdown': { en: 'Showdown', zh: '摊牌' },
   // 左侧主角立绘框（owner 2026-07-20·参考 game-b 左侧布局）
   'portrait.hero': { en: 'Hero Portrait', zh: '主角立绘' },
   'portrait.sub': { en: 'Layered · pawns peel off', zh: '分层立绘 · 典当逐层褪' },
@@ -98,6 +113,11 @@ export const handName = (lang: Lang, typeKey: string): string => HAND_NAMES[lang
 // ── 插值文案（数字/名字拼接·en-US 千分位）──
 const n = (x: number): string => x.toLocaleString('en-US');
 export const fmtHand = (l: Lang, hand: number): string => (l === 'zh' ? `第 ${hand} 手 · 现金局` : `Hand ${hand} · Cash Game`);
+export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
+export const fmtStoryHand = (l: Lang, hand: number, street: Street): string => {
+  const s = t(l, `street.${street}` as StringKey);
+  return l === 'zh' ? `第 ${hand} 局 · ${s}` : `Hand ${hand} · ${s}`;
+};
 export const fmtCall = (l: Lang, amt: number): string => (l === 'zh' ? `跟注 ${n(amt)}` : `Call ${n(amt)}`);
 export const fmtRaise = (l: Lang, amt: number): string => (l === 'zh' ? `加注 ${n(amt)}` : `Raise ${n(amt)}`);
 export const fmtBet = (l: Lang, amt: number): string => (l === 'zh' ? `注 ${n(amt)}` : `Bet ${n(amt)}`);

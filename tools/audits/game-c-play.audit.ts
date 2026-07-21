@@ -14,7 +14,7 @@ import type { Card } from '../../src/engine/protocol/components.js';
 
 const H = (suit: number, rank: number): Card => ({ suit, rank });
 const view: TableView = {
-  lang: 'en', playerCount: 6, blindLabel: '25 / 50', handNo: 3, pot: 1150,
+  lang: 'en', playerCount: 4, street: 'flop', blindLabel: '25 / 50', handNo: 3, pot: 1150,
   board: [H(0, 14), H(1, 13), H(2, 5), H(3, 9), H(0, 2)],
   heroHole: [H(0, 12), H(0, 11)], heroHandName: 'Two Pair',
   seats: [0, 1, 2, 3, 4, 5].map((seat) => ({
@@ -28,6 +28,6 @@ const view: TableView = {
   phase: 'betting', isHeroTurn: true,
 };
 mountUI(document.getElementById('root')!, buildTable(view), {}, GAME_C_THEME);
-// 牌桌/呢面/筹码现为 scene 层 3D（build3d/chip3d·audit 只审 2D HUD 层）。c-top = 满宽顶带渐变横幅
-//   （内容 blind/POT/menu 在横向留白·与两侧顶部座位不真撞·仅包围盒相交）→ 标 data-allow-overlap 背景排除。
-document.getElementById('c-top')?.setAttribute('data-allow-overlap', '1');
+// 牌桌/呢面/筹码现为 scene 层 3D（build3d/chip3d·audit 只审 2D HUD 层）。c-top = 满宽顶带 → 排除。
+// c-port-1/2/3 = 对面三座**分层立绘背景框**（GD-C 稿·席卡 c-seat-N 意图浮在立绘之上·非撞车）→ 标 data-allow-overlap。
+for (const id of ['c-top', 'c-port-1', 'c-port-2', 'c-port-3']) document.getElementById(id)?.setAttribute('data-allow-overlap', '1');

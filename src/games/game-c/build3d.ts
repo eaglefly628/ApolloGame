@@ -11,7 +11,8 @@ import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assemb
 // ═══════════════════════════════════════════════════════════════
 
 // 色板（art-data §1 夜宴·场景线 vegas-victoriana）。
-const FELT = 0x14795a, FELT_LO = 0x0c4a37, RAIL = 0x8a5f2e, RAIL_HI = 0xd3a247, FLOOR = 0x1a110c, FLOOR_EDGE = 0x0d0806;
+// 剧情局紫调绒面（owner 2026-07-21·GD-C STORY-POKER V2 稿·紫调绒面椭圆桌）。
+const FELT = 0x4a2d52, FELT_LO = 0x2c1834, RAIL = 0x6a4a38, RAIL_HI = 0xb98a5a, FLOOR = 0x160f1a, FLOOR_EDGE = 0x0b0710;
 
 // 桌面椭圆（跑道形·长轴 x > 短轴 z·正式赛桌比例）。felt=呢面半径；rail=围栏环半径（略大·墙贴桌缘）。
 export const FELT_RX = 3.55, FELT_RZ = 2.45; // 呢面长/短半轴（世界单位）

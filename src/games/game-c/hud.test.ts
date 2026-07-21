@@ -9,7 +9,7 @@ const H = (suit: number, rank: number): Card => ({ suit, rank });
 
 function baseView(over: Partial<TableView> = {}): TableView {
   return {
-    lang: 'en', playerCount: 6,
+    lang: 'en', playerCount: 4, street: 'flop',
     blindLabel: '25 / 50',
     handNo: 1,
     pot: 300,
@@ -65,7 +65,7 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     expect(validateLayoutNode(buildTable(baseView({ board: river, heroHandName: '一对' })))).toEqual([]);
   });
 
-  it('六席覆盖：主角=左立绘框 + 五姨太席卡锚点实名（owner 2026-07-20 左立绘框）', () => {
+  it('剧情局四座覆盖：主角=底左面板 + 对面三座（席卡+立绘）+ 搭档旁白（GD-C STORY-POKER V2 稿）', () => {
     const table = buildTable(baseView());
     const ids = new Set<string>();
     const walk = (n: { id?: string; children?: unknown[] }): void => {
@@ -73,9 +73,13 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
       for (const c of (n.children ?? []) as { id?: string; children?: unknown[] }[]) walk(c);
     };
     walk(table);
-    expect(ids.has('c-hero-portrait')).toBe(true); // 主角=左侧立绘框（非小席卡）
-    expect(ids.has('c-seat-0')).toBe(false);       // 主角不再是小席卡
-    for (const seat of [1, 2, 3, 4, 5]) expect(ids.has(`c-seat-${seat}`)).toBe(true); // 五姨太=席卡
+    expect(ids.has('c-hero-panel')).toBe(true);   // 主角=底左面板（你&林晚）
+    expect(ids.has('c-seat-0')).toBe(false);      // 主角不再是环桌席卡
+    expect(ids.has('c-partner')).toBe(true);      // 搭档林晚旁白
+    for (const seat of [1, 2, 3]) { // 对面三座（左/中·主/右）·各带席卡 + 分层立绘框
+      expect(ids.has(`c-seat-${seat}`)).toBe(true);
+      expect(ids.has(`c-port-${seat}`)).toBe(true);
+    }
     expect(OPPONENT_ANCHORS.map((a) => a.name)).toEqual(['大姨太', '二姨太', '三姨太', '四姨太', '五姨太']);
   });
 
@@ -155,10 +159,9 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     for (const lang of ['en', 'zh'] as const) {
       const table = buildTable(baseView({ lang }));
       expect(validateLayoutNode(table)).toEqual([]);
-      const menu = buildMenu({ lang, playerCount: 6, playerName: '夜阑君', playerChips: 12860, blindLabel: '25 / 50' });
+      const menu = buildMenu({ lang, playerCount: 4, playerName: '夜阑君', playerChips: 12860, blindLabel: '25 / 50' });
       expect(validateLayoutNode(menu)).toEqual([]);
-      for (const id of ['c-lang-en', 'c-lang-zh']) expect(idsOf(table).has(id)).toBe(true); // 顶栏语言段控
-      for (const id of ['c-menu-lang-seg-en', 'c-menu-lang-seg-zh']) expect(idsOf(menu).has(id)).toBe(true); // 菜单语言段控
+      for (const id of ['c-menu-lang-seg-en', 'c-menu-lang-seg-zh']) expect(idsOf(menu).has(id)).toBe(true); // 菜单语言段控（剧情局牌桌顶带只留返回剧情·语言在菜单切）
     }
     // 文案真随语言变：EN 弃牌键=Fold；ZH=弃牌。
     expect(JSON.stringify(buildTable(baseView({ lang: 'en' }))).includes('Fold')).toBe(true);
@@ -177,13 +180,13 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     expect(validateLayoutNode(buildTable(withMoves('zh')))).toEqual([]);
   });
 
-  it('入局人数 2~6（owner 2026-07-20）：只渲染在场座 + 菜单人数段控 + 各人数零 issue', () => {
+  it('入局人数 2~4（剧情局对面三座·GD-C 稿）：只渲染在场对手 + 各人数零 issue', () => {
     const idsOf = (n: { id?: string; children?: unknown[] }): Set<string> => {
       const ids = new Set<string>();
       const walk = (x: { id?: string; children?: unknown[] }): void => { if (x.id) ids.add(x.id); for (const c of (x.children ?? []) as { id?: string }[]) walk(c); };
       walk(n); return ids;
     };
-    for (const pc of [2, 3, 4, 5, 6]) {
+    for (const pc of [2, 3, 4]) {
       const seats = [0, 1, 2, 3, 4, 5].map((seat) => ({
         seat, name: `S${seat}`, chips: 950, committed: 0, clothes: 6,
         folded: false, allIn: false, out: false, isActor: seat === 0, isHero: seat === 0, isButton: seat === 0,
@@ -191,9 +194,9 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
       const table = buildTable(baseView({ playerCount: pc, seats }));
       expect(validateLayoutNode(table)).toEqual([]);
       const ids = idsOf(table);
-      expect(ids.has('c-hero-portrait')).toBe(true); // 主角=左立绘框（各人数恒在）
-      for (let s = 1; s < pc; s++) expect(ids.has(`c-seat-${s}`)).toBe(true); // 在场对手席卡都在
-      for (let s = pc; s < 6; s++) expect(ids.has(`c-seat-${s}`)).toBe(false); // 不在场座不渲染
+      expect(ids.has('c-hero-panel')).toBe(true); // 主角面板恒在
+      for (let s = 1; s < pc; s++) expect(ids.has(`c-seat-${s}`)).toBe(true); // 在场对面座都在（座 1..pc-1）
+      for (let s = pc; s <= 3; s++) expect(ids.has(`c-seat-${s}`)).toBe(false); // 不在场对面座不渲染
     }
     // 菜单人数段控 2~6 全在。
     const menu = buildMenu({ lang: 'en', playerCount: 4, playerName: '夜阑君', playerChips: 100, blindLabel: '25 / 50' });
