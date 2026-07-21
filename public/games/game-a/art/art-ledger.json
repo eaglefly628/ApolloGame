@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "game": "game-a",
+  "mode": "authored-inventory",
+  "note": "《掼蛋夜宴》外围美术台账（owner 2026-07-20 定范围：立绘=外部角色卡传入·不入本账；5 档服饰暂缓；聚焦外围打牌观感）。手册来源 docs/design/game-a/art-bible.md。风格锚：场景 modern-manor · 控件/图标/牌 apollo-toon（人物 sakura-nijigen 本账不涉）。UI chrome art 非蓝图 Sprite 可推导 → authored-inventory（同 game-d 先例）。台账工具读 GET /api/art/ledger?slug=game-a。",
+  "count": 16,
+  "instances": 16,
+  "rows": [
+    {
+      "no": "art-01",
+      "desc": "主菜单背景·豪宅夜景牌室",
+      "kind": "sprite",
+      "slot": { "entity": "bg/menu", "component": "Image", "field": "src" },
+      "query": "luxe mansion night parlor interior, floor-to-ceiling window city bokeh, warm downlight, empty room, cinematic wide, deep vignette",
+      "placeholder": { "current": "CSS 径向渐变 MENU_BG（#31201a→#160e0a）", "source": "procedural", "count": 1, "instances": ["bg/menu"] },
+      "spec": { "w": 1280, "h": 720, "transparent": false },
+      "context": "game-a《掼蛋夜宴》SC-1 主菜单满幅底图·风格锚 modern-manor·暖夜私宅·非写实赌场·P0 先出定调图",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-02",
+      "desc": "牌桌场景背景·胡桃木牌室",
+      "kind": "sprite",
+      "slot": { "entity": "bg/table", "component": "Image", "field": "src" },
+      "query": "mahogany card room at night, warm downlight pool, marble floor, dark walls, empty table area, deep vignette",
+      "placeholder": { "current": "CSS 径向渐变 MANOR_BG（#4a3020→#160e0a）", "source": "procedural", "count": 1, "instances": ["bg/table"] },
+      "spec": { "w": 1280, "h": 720, "transparent": false },
+      "context": "game-a SC-3 牌桌满幅底图（felt 之下）·风格锚 modern-manor·与 SC-1 同调·P0",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-03",
+      "desc": "牌呢桌面纹理·酒红椭圆",
+      "kind": "sprite",
+      "slot": { "entity": "felt/table", "component": "Image", "field": "src" },
+      "query": "deep wine-red felt table surface texture, soft center highlight, thin gold rim, subtle fabric weave, top-down",
+      "placeholder": { "current": "CSS 径向渐变 FELT_RED（#6a1f26→#360f14）", "source": "procedural", "count": 1, "instances": ["felt/table"] },
+      "spec": { "w": 900, "h": 380, "transparent": true },
+      "context": "game-a SC-3 椭圆 felt 桌呢纹理（a-felt 消费）·风格锚 modern-manor·压深让白扑克不刺眼（A-007）·P1",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-04",
+      "desc": "夜宴牌背",
+      "kind": "sprite",
+      "slot": { "entity": "card/back-banquet", "component": "Image", "field": "src" },
+      "query": "art-deco playing card back, cinnabar red and gold filigree, symmetric ornament, dark center, elegant border",
+      "placeholder": { "current": "PD 牌背 back.png（现零调用·文字牌无背面）", "source": "freelib", "count": 1, "instances": ["card/back-banquet"] },
+      "spec": { "w": 168, "h": 240, "transparent": false },
+      "context": "game-a 牌背·风格锚 apollo-toon·夜宴金朱主题·发牌/暗牌用·P1",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-05",
+      "desc": "大王牌面",
+      "kind": "sprite",
+      "slot": { "entity": "card/joker-big", "component": "Image", "field": "src" },
+      "query": "ornate red joker playing card, gold crown motif, night-banquet palette, full card face, symmetric",
+      "placeholder": { "current": "文字「大王」+ 字形 🃏（joker-red.svg 零调用）", "source": "freelib", "count": 1, "instances": ["card/joker-big"] },
+      "spec": { "w": 168, "h": 240, "transparent": false },
+      "context": "game-a 大王（RANK 16·最大牌）·风格锚 apollo-toon·与牌面/牌背同套·P1",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-06",
+      "desc": "小王牌面",
+      "kind": "sprite",
+      "slot": { "entity": "card/joker-small", "component": "Image", "field": "src" },
+      "query": "ornate black joker playing card, silver crown motif, night-banquet palette, full card face, symmetric",
+      "placeholder": { "current": "文字「小王」+ 字形 🂿（joker-black.svg 零调用）", "source": "freelib", "count": 1, "instances": ["card/joker-small"] },
+      "spec": { "w": 168, "h": 240, "transparent": false },
+      "context": "game-a 小王（RANK 15）·风格锚 apollo-toon·与大王成对·P1",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-07",
+      "desc": "标题字 logo·掼蛋夜宴",
+      "kind": "sprite",
+      "slot": { "entity": "logo/title", "component": "Image", "field": "src" },
+      "query": "chinese calligraphy logotype reading 掼蛋夜宴, gold on wine-red, 3d beveled drop shadow, banquet luxe, transparent",
+      "placeholder": { "current": "扁平 serif Label size80·无阴影（蓝本要 3d text-shadow）", "source": "procedural", "count": 1, "instances": ["logo/title"] },
+      "spec": { "w": 680, "h": 180, "transparent": true },
+      "context": "game-a SC-1 主菜单标题字·风格锚 apollo-toon·蓝本 3d 立体金字·门面·P0",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-08",
+      "desc": "图标·金币",
+      "kind": "sprite",
+      "slot": { "entity": "icon/coin", "component": "Image", "field": "src" },
+      "query": "gold coin icon, chinese banquet motif, warm rim light, flat game icon, centered, transparent",
+      "placeholder": { "current": "emoji 💰 / ◉（不一致·系统字形）", "source": "procedural", "count": 1, "instances": ["icon/coin"] },
+      "spec": { "w": 48, "h": 48, "transparent": true },
+      "context": "game-a 金钱图标（荷包/底注/带入·现 ◉ 与 💰 混用不一致）·风格锚 apollo-toon·P1",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-09",
+      "desc": "图标·级牌红徽",
+      "kind": "sprite",
+      "slot": { "entity": "icon/level", "component": "Image", "field": "src" },
+      "query": "cinnabar red rank badge icon, gold number frame, small emblem, flat game icon, transparent",
+      "placeholder": { "current": "custom 红渐变 Panel + 文字「级 N」", "source": "procedural", "count": 1, "instances": ["icon/level"] },
+      "spec": { "w": 48, "h": 48, "transparent": true },
+      "context": "game-a 级牌徽（当前打级·朱砂红）·风格锚 apollo-toon·P1",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-10",
+      "desc": "图标·奖杯（暂大/头游）",
+      "kind": "sprite",
+      "slot": { "entity": "icon/trophy", "component": "Image", "field": "src" },
+      "query": "small gold trophy icon, warm glow, flat game icon, centered, transparent",
+      "placeholder": { "current": "emoji 🏆（且与 ▼ 箭头重复指同一态）", "source": "procedural", "count": 1, "instances": ["icon/trophy"] },
+      "spec": { "w": 48, "h": 48, "transparent": true },
+      "context": "game-a「谁大」暂大标记·风格锚 apollo-toon·去重后与弹簧箭头二选一·P2",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-11",
+      "desc": "图标·进贡礼盒",
+      "kind": "sprite",
+      "slot": { "entity": "icon/tribute", "component": "Image", "field": "src" },
+      "query": "small gift-of-cards icon, red ribbon, gold accent, flat game icon, transparent",
+      "placeholder": { "current": "emoji 🎴", "source": "procedural", "count": 1, "instances": ["icon/tribute"] },
+      "spec": { "w": 48, "h": 48, "transparent": true },
+      "context": "game-a 进贡/还贡横幅图标·风格锚 apollo-toon·P2",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-12",
+      "desc": "图标·菜单（汉堡）",
+      "kind": "sprite",
+      "slot": { "entity": "icon/menu", "component": "Image", "field": "src" },
+      "query": "hamburger menu icon, thin gold lines, flat ui icon, transparent",
+      "placeholder": { "current": "emoji ☰", "source": "procedural", "count": 1, "instances": ["icon/menu"] },
+      "spec": { "w": 48, "h": 48, "transparent": true },
+      "context": "game-a 牌桌 ☰ 菜单键·风格锚 apollo-toon·P2",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-13",
+      "desc": "图标·记牌器",
+      "kind": "sprite",
+      "slot": { "entity": "icon/counter", "component": "Image", "field": "src" },
+      "query": "card-counter tally board icon, thin gold strokes, flat ui icon, transparent",
+      "placeholder": { "current": "字形 ▤", "source": "procedural", "count": 1, "instances": ["icon/counter"] },
+      "spec": { "w": 48, "h": 48, "transparent": true },
+      "context": "game-a 记牌器开合键·风格锚 apollo-toon·P2",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-14",
+      "desc": "图标·复制记录",
+      "kind": "sprite",
+      "slot": { "entity": "icon/copy", "component": "Image", "field": "src" },
+      "query": "clipboard copy icon, thin gold lines, flat ui icon, transparent",
+      "placeholder": { "current": "emoji 📋", "source": "procedural", "count": 1, "instances": ["icon/copy"] },
+      "spec": { "w": 48, "h": 48, "transparent": true },
+      "context": "game-a 复制本盘记录键（结算/菜单各一）·风格锚 apollo-toon·P2",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-15",
+      "desc": "胜利/通关演出贴图",
+      "kind": "sprite",
+      "slot": { "entity": "fx/win", "component": "Image", "field": "src" },
+      "query": "golden confetti burst with silk ribbons, warm celebratory glow, radial, transparent",
+      "placeholder": { "current": "结算卡金边 accent（注释标 placeholder）· Particles 未用", "source": "procedural", "count": 1, "instances": ["fx/win"] },
+      "spec": { "w": 512, "h": 512, "transparent": true },
+      "context": "game-a SC-4/SC-5 过 A 通关/胜利演出·风格锚 apollo-toon·P1",
+      "status": "needs-art"
+    },
+    {
+      "no": "art-16",
+      "desc": "装饰边框·夜宴金框（9-slice）",
+      "kind": "sprite",
+      "slot": { "entity": "frame/ornament", "component": "Image", "field": "src" },
+      "query": "carved gold banquet frame, thin, corner ornament, dark inset, nine-slice tile, transparent",
+      "placeholder": { "current": "CSS border/accent 金线（立绘框/席位/结算卡）", "source": "procedural", "count": 1, "instances": ["frame/ornament"] },
+      "spec": { "w": 192, "h": 192, "transparent": true },
+      "context": "game-a 立绘框/席位卡/结算卡通用装饰边框·风格锚 apollo-toon·9-slice·P2",
+      "status": "needs-art"
+    }
+  ]
+}
