@@ -19,6 +19,8 @@ export interface SeatView {
   seat: number; name: string; chips: number; committed: number; clothes: number;
   folded: boolean; allIn: boolean; out: boolean; isActor: boolean; isHero: boolean; isButton: boolean;
   lastMove?: LastMove; // 上一动作气泡（结构化·UI 层本地化文案+着色·标准德州行动史）
+  // 平台角色卡投影（REQ-CHARCARD·仅对手·展示层）：卡名覆盖显示名 / 卡头像媒体 / persona 台词（已截断）。
+  cardName?: string; avatarUrl?: string; flavor?: string;
 }
 export interface WardrobeRow { id: string; name: string; value: number; pawned: boolean; }
 export interface WardrobeView { seat: number; name: string; isHero: boolean; rows: WardrobeRow[]; }
@@ -200,9 +202,12 @@ function buildStoryTopBar(v: TableView): LayoutNode {
 
 // ── 对手立绘 bust（剧情局·稿 busts behind rail·大且高·上实下透融入呢面·真分层立绘 S6 台账替换）──────────
 //   z 序在 3D 呢面之上、顶带之下（buildTable 里先画立绘再画顶带）——立绘上沿被顶带渐变压暗=稿观感。
-function buildStoryPortrait(def: StorySeatDef, l: Lang): LayoutNode {
-  const name = l === 'en' ? def.nameEn : def.name;
+function buildStoryPortrait(def: StorySeatDef, sv: SeatView | undefined, l: Lang): LayoutNode {
+  const name = sv?.cardName ?? (l === 'en' ? def.nameEn : def.name); // 平台卡名优先·否则内置双语
   const big = !!def.main;
+  const avatarProps = sv?.avatarUrl // 卡头像媒体（有则显图·否则名首字占位）
+    ? { src: sv.avatarUrl, name, size: big ? 108 : 88, shape: 'rounded' as const }
+    : { name: name.slice(0, 1), size: big ? 108 : 88, shape: 'rounded' as const };
   return {
     type: 'Panel', id: `c-port-${def.seat}`,
     props: { bg: { custom: big ? PORTRAIT_FILL_MAIN : PORTRAIT_FILL_SIDE } },
@@ -212,9 +217,9 @@ function buildStoryPortrait(def: StorySeatDef, l: Lang): LayoutNode {
       allowOverlap: true, // 立绘 bust=背景层·稿意图叠层（席卡/顶带浮其上）→ ui-audit 重叠豁免
     },
     children: [
-      { type: 'Avatar', id: `c-port-av-${def.seat}`, props: { name: name.slice(0, 1), size: big ? 108 : 88, shape: 'rounded' } },
+      { type: 'Avatar', id: `c-port-av-${def.seat}`, props: avatarProps },
       { type: 'Label', id: `c-port-l-${def.seat}`, props: { text: name, font: 'serif', size: big ? 'lg' : 'md', bold: true, color: big ? 'gold' : 'sub' } },
-      { type: 'Label', id: `c-port-s-${def.seat}`, props: { text: t(l, 'story.portrait'), size: 'xs', color: 'dim' } },
+      { type: 'Label', id: `c-port-s-${def.seat}`, props: { text: sv?.flavor ?? t(l, 'story.portrait'), size: 'xs', color: 'dim' } },
     ],
   };
 }
@@ -239,17 +244,19 @@ function oppHoleCards(def: StorySeatDef, sv: SeatView): LayoutNode | null {
 
 // ── 对手席卡（剧情局·头像/名/筹码/动作气泡·稿 compact 卡·中座主更大·浮在立绘下沿）─────────────────────
 function buildStoryOpponentCard(sv: SeatView, def: StorySeatDef, l: Lang): LayoutNode[] {
-  const name = l === 'en' ? def.nameEn : def.name;
+  const name = sv.cardName ?? (l === 'en' ? def.nameEn : def.name); // 平台卡名优先·否则内置双语
   const big = !!def.main;
   const bub = statusBubble({ ...sv, name }, l);
   const edge = sv.allIn ? 'danger' : sv.folded || sv.out ? undefined : 'gold'; // 稿：active/在局皆金框（active 另加金光+读秒区分）
   const cardW = big ? 172 : 158, cardH = big ? 64 : 58;
+  const avSize = big ? 44 : 40;
+  const avatarProps = sv.avatarUrl ? { src: sv.avatarUrl, name, size: avSize, shape: 'circle' as const } : { name: name.slice(0, 1), size: avSize, shape: 'circle' as const };
   const card: LayoutNode = {
     type: 'Panel', id: `c-seat-${def.seat}`,
     props: { bg: { custom: sv.isHero ? CARD_FILL_HERO : CARD_FILL }, edge, action: 'seat_view', actionArg: String(def.seat), ...(sv.isActor ? { fx: [{ kind: 'glow' as const, color: 'gold' as const }] } : {}) },
     layout: { x: Math.round(def.cardCx - cardW / 2), y: Math.round(def.cardCy - cardH / 2), width: cardW, height: cardH, direction: 'row', gap: 9, align: 'center', padding: 9, radius: 12, opacity: sv.out ? 0.45 : sv.folded ? 0.6 : 1 },
     children: [
-      { type: 'Avatar', id: `c-av-${def.seat}`, props: { name: name.slice(0, 1), size: big ? 44 : 40, shape: 'circle' } },
+      { type: 'Avatar', id: `c-av-${def.seat}`, props: avatarProps },
       {
         type: 'Panel', id: `c-seat-col-${def.seat}`, props: { bare: true }, layout: { direction: 'column', gap: 1, flex: 1 },
         children: [
@@ -769,7 +776,7 @@ export function buildTable(v: TableView): LayoutNode {
   const l = v.lang;
   // 对面三座（左/中·主/右）——只渲染在场对手（座 1..3·剧情局默认 4 人）。立绘与席卡分层：立绘在顶带之下、席卡在顶带之上（照稿 z 序）。
   const inSeats = STORY_OPPONENTS.filter((d) => d.seat < v.playerCount);
-  const portraits: LayoutNode[] = inSeats.map((d) => buildStoryPortrait(d, l));
+  const portraits: LayoutNode[] = inSeats.map((d) => buildStoryPortrait(d, v.seats.find((s) => s.seat === d.seat), l));
   const cards: LayoutNode[] = inSeats.flatMap((d) => {
     const sv = v.seats.find((s) => s.seat === d.seat);
     return sv ? buildStoryOpponentCard(sv, d, l) : [];

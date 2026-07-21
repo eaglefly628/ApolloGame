@@ -32,9 +32,9 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  9 passed (9) ·       Tests  116 passed (116)）· 验收剧本 9 场景绿",
-      "at": "2026-07-21T09:54:54.908Z",
-      "gameHash": "dcc1abdff2bfa109"
+      "summary": "walkthrough 绿（ Test Files  10 passed (10) ·       Tests  123 passed (123)）· 验收剧本 9 场景绿",
+      "at": "2026-07-21T13:25:08.227Z",
+      "gameHash": "0f6bc1ee6ffc4972"
     },
     "S5": {
       "exit": 0,
@@ -620,6 +620,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-21T09:54:54.908Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "REQ-CHARCARD 接线：SessionIn 席位卡桥",
+      "at": "2026-07-21T13:24:56.945Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-21T13:25:08.227Z"
     }
   ],
   "outOfOrder": [
@@ -832,6 +844,11 @@
       "stage": "S4",
       "reason": "art-fidelity iter2: opponent hole-card indicators + raise button + best-combo highlight",
       "at": "2026-07-21T09:54:42.451Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "REQ-CHARCARD 接线：SessionIn 席位卡桥",
+      "at": "2026-07-21T13:24:56.945Z"
     }
   ],
   "reviews": {

@@ -20,6 +20,7 @@ import { CLOTHING_ITEMS } from './wardrobe.js';
 import { bestOf7, HOLDEM_TYPE_ORDER } from './holdem-eval.js';
 import type { BettingConfig } from './betting-engine.js';
 import type { Card } from '@engine/protocol/components.js';
+import { resolveSeatCharacters, buildSessionOut, personaFlavor, type GameCSessionIn, type GameCSessionOut, type SeatCharacter } from './characters.js';
 import { HoldemSession } from './game-session.js';
 import { build3DTableBlueprint } from './build3d.js';
 import { Chip3D } from './chip3d.js';
@@ -35,7 +36,10 @@ const STARTING_STACK = 1000; // GDD §3 默认起始筹码
 // 玩家档案占位（REQ-C-104 角色卡通道落地前的兜底·PST 通道接入即换真档案）。
 const PLAYER = { name: '夜阑君', chips: 12860 };
 
-export function mount(container: HTMLElement, host?: { exit: () => void }): () => void {
+export function mount(
+  container: HTMLElement,
+  host?: { exit?: () => void; session?: GameCSessionIn; onSessionOut?: (out: GameCSessionOut) => void },
+): () => void {
   // 渲染分层（owner 2026-07-18 定稿）：scene 层 = 3D 牌桌 + 物理筹码（陡俯视=2D 平面观感·筹码真 3D 物理）；
   //   overlayHost 层 = 2D LayoutNode HUD（座位卡/公共牌/底池数/行动条·透明区透出 3D 桌）。
   const skel = mountHost(container, {
@@ -103,10 +107,30 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   const loadPlayers = (): number => { try { return typeof localStorage !== 'undefined' ? clampPlayers(Number(localStorage.getItem(PLAYERS_KEY)) || 4) : 4; } catch { return 4; } };
   const savePlayers = (n: number): void => { try { localStorage.setItem(PLAYERS_KEY, String(n)); } catch { /* 无 localStorage */ } };
   let playerCount = loadPlayers();
+  // ── 平台角色卡桥（REQ-CHARCARD·手册 §⑤）：SessionIn 对手席草稿 → 规范卡（requireAdult 必开·姨太题材）→ 席位显示 + persona 台词/风味 ──
+  const sessionIn = host?.session;
+  let seatChars: SeatCharacter[] = [];
+  const reportedIssues = new Set<string>();
+  const resolveChars = (): void => {
+    seatChars = resolveSeatCharacters(playerCount, sessionIn);
+    for (const ch of seatChars) {
+      for (const iss of ch.issues) {
+        const key = `${ch.seat}:${iss.level}:${iss.field}:${iss.msg}`;
+        if (reportedIssues.has(key)) continue;
+        reportedIssues.add(key);
+        const tail = ch.fromDraft ? '' : ' → 退内置默认卡';
+        (iss.level === 'error' ? console.warn : console.info)(`[game-c charcard] 座${ch.seat} ${iss.level}(${iss.field || '卡级'}): ${iss.msg}${tail}`);
+      }
+    }
+  };
+  resolveChars();
+  const charOf = (seat: number): SeatCharacter | undefined => seatChars.find((c) => c.seat === seat);
+  let sessionOutSent = false; // 终局 SessionOut 一次性回传闸（每局重置）
   let raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind;
   // 新开一局：全新时间种子会话（牌面每局不同）+ 按当前入局人数建座 + 重置筹码/声音追踪（防跨局残留）。
   const newGame = (): void => {
     session = new HoldemSession(timeSeed(), CFG, STARTING_STACK, playerCount);
+    resolveChars(); sessionOutSent = false; // 按当前入局人数重解角色卡 + 重置终局回传闸
     raiseValue = session.legalForHero()?.raise?.min ?? CFG.bigBlind;
     chip3d.setPlayers(playerCount); // 座位环均布 + 剪掉多余座位残留堆
     chip3d.clear(); chipHandNo = -1; for (const k of Object.keys(prevTotal)) delete prevTotal[Number(k)]; prevBoardLen = 0; prevPhase = 'betting';
@@ -121,6 +145,9 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   function seatView(seat: number): SeatView {
     const ss = session.seats[seat];
     const stt = session.seatState(seat);
+    // 平台角色卡投影（仅对手·座 1..N-1）：fromDraft 时用卡名/头像覆盖显示 + persona 台词（长度已截断）。
+    const ch = seat === HERO ? undefined : charOf(seat);
+    const flavor = ch?.fromDraft ? personaFlavor(ch.card) : undefined;
     return {
       seat, name: seatName(seat),
       chips: session.stackOf(seat), committed: session.committedOf(seat), clothes: session.wardrobeLeft(seat),
@@ -128,6 +155,9 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
       isActor: session.hand?.actor === seat && session.phase === 'betting',
       isHero: seat === HERO, isButton: session.buttonSeat === seat,
       lastMove: session.lastMove[seat], // 结构化上一动作（UI 层本地化气泡·中文 lastAction 仅供 acceptance 机读）
+      ...(ch?.fromDraft ? { cardName: ch.seatCard.name } : {}), // 平台卡名覆盖席位显示名（内置默认仍走 def 双语）
+      ...(ch?.seatCard.avatar ? { avatarUrl: ch.seatCard.avatar } : {}), // 卡头像媒体（仅显示·不进 sim hash）
+      ...(flavor ? { flavor } : {}), // persona 台词/风味（展示层·已截断）
     };
   }
   function wardrobeView(seat: number): WardrobeView {
@@ -176,7 +206,18 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
 
   let ui: MountHandle | null = null;
   const tree = (): ReturnType<typeof buildMenu> => (screen === 'menu' ? buildMenu(menuView()) : buildTable(tableView()));
-  const rerender = (): void => { ui?.update(tree()); syncChips(); };
+  // 终局一次性回传 SessionOut（手册④·以 card.id 键控·passthrough 原样带回）：顺位=最终筹码降序名次。
+  const maybeEmitSessionOut = (): void => {
+    if (sessionOutSent || session.phase !== 'gameover') return;
+    sessionOutSent = true;
+    if (!host?.onSessionOut) return;
+    const ranked = Array.from({ length: playerCount }, (_, i) => i).sort((a, b) => session.stackOf(b) - session.stackOf(a));
+    const placeOf = new Map<number, number>(ranked.map((s, i) => [s, i + 1]));
+    host.onSessionOut(buildSessionOut(seatChars, (seat) => ({
+      placement: placeOf.get(seat) ?? playerCount, chips: session.stackOf(seat), eliminated: session.seats[seat].eliminated,
+    })));
+  };
+  const rerender = (): void => { ui?.update(tree()); syncChips(); maybeEmitSessionOut(); };
   const remount = (): void => { ui?.(); ui = mountUI(overlayHost, tree(), handlers, GAME_C_THEME); syncChips(); };
 
   // ── AI 逐步演出（宿主 timer·每拍推进一个 AI·可观察「轮到谁思考/行动」·标准德州节奏·owner 2026-07-18）──
