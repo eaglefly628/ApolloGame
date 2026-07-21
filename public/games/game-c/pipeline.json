@@ -33,8 +33,8 @@
     "S4": {
       "exit": 0,
       "summary": "walkthrough 绿（ Test Files  9 passed (9) ·       Tests  116 passed (116)）· 验收剧本 9 场景绿",
-      "at": "2026-07-21T08:16:58.076Z",
-      "gameHash": "27a2a7aa6e12231e"
+      "at": "2026-07-21T08:27:13.492Z",
+      "gameHash": "f912b96d2ac65851"
     },
     "S5": {
       "exit": 0,
@@ -584,6 +584,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-21T08:16:58.076Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "剧情局稿 All-in 键补齐 + 清版 dc.html 存档(纯 HUD·session/acceptance 不动)：9场景conformance全绿+tsc/vitest/build三绿",
+      "at": "2026-07-21T08:27:00.412Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-21T08:27:13.492Z"
     }
   ],
   "outOfOrder": [
@@ -781,6 +793,11 @@
       "stage": "S4",
       "reason": "剧情局 STORY-POKER V2 布局复刻·rebase 至 game-b 后重跑：纯 HUD+3D皮·session/acceptance 不动；9场景conformance全绿+tsc/vitest(3192)/build三绿",
       "at": "2026-07-21T08:16:45.496Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "剧情局稿 All-in 键补齐 + 清版 dc.html 存档(纯 HUD·session/acceptance 不动)：9场景conformance全绿+tsc/vitest/build三绿",
+      "at": "2026-07-21T08:27:00.412Z"
     }
   ],
   "reviews": {

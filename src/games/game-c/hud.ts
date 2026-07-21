@@ -702,6 +702,12 @@ function buildStoryActionBar(v: TableView): LayoutNode {
         { type: 'Button', id: 'c-raise-inc', props: { label: '+', kind: 'ghost', action: 'set_raise', actionArg: 'inc' }, layout: { width: 42 } },
       ],
     });
+    // All-in（剧情稿·行动条最右·红键·一键推入全栈=加注至上限）
+    children.push({
+      type: 'Panel', id: 'c-act-allin', props: { bg: { custom: 'linear-gradient(160deg,#c0392b,#7a1420)' }, edge: 'gold', action: 'act_raise', actionArg: 'allin' },
+      layout: { width: 100, direction: 'column', align: 'center', justify: 'center', padding: 12, radius: 12 },
+      children: [{ type: 'Label', id: 'c-act-allin-t', props: { text: t(l, 'quick.allin'), font: 'impact', size: 18, color: 'gold' } }],
+    });
   }
   return {
     type: 'Panel', id: 'c-act', props: { bare: true },
