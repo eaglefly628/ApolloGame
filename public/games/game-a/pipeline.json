@@ -28,8 +28,8 @@
     "S4": {
       "exit": 0,
       "summary": "walkthrough 绿（ Test Files  5 passed (5) ·       Tests  59 passed (59)）· 验收剧本 8 场景绿",
-      "at": "2026-07-20T10:59:30.282Z",
-      "gameHash": "3edb9f4f373e2122"
+      "at": "2026-07-21T13:28:54.534Z",
+      "gameHash": "aeb5d9247911df5e"
     },
     "S5": {
       "exit": 0,
@@ -297,6 +297,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-20T10:59:30.282Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE 2026-07-20 主角立绘大一倍(UI 布局·hud.ts)·玩法逻辑不动·前置复查门随文件改 stale·非回退",
+      "at": "2026-07-21T13:28:45.713Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-21T13:28:54.534Z"
     }
   ],
   "reviews": {
@@ -412,6 +424,11 @@
       "stage": "S4",
       "reason": "PE 2026-07-20 i18n 中英切换(默认中文)·mirror game-c strings.ts·hud/game-a.ts 加 lang 态·红线口径不动·前置 S2/S3 复查门随文件改 stale·非回退",
       "at": "2026-07-20T10:59:23.572Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "PE 2026-07-20 主角立绘大一倍(UI 布局·hud.ts)·玩法逻辑不动·前置复查门随文件改 stale·非回退",
+      "at": "2026-07-21T13:28:45.713Z"
     }
   ]
 }

@@ -430,7 +430,7 @@ const HAND_CARD_W = 64;
 const HAND_STEP = 34; // 固定重叠步进（每张露出 34px·恒定·牌少不撑开·满手 27 张≈884px 居中于底部）
 const HAND_CURVE_K = 0.28; // 固定弧曲率（lift = K·offset²·弧度一致·不随张数变·更平缓）
 const HAND_ROT_PER = 1.6; // 固定每张旋转角（度·扇形一致）
-const HAND_CENTER_X = 600; // 扇形中心 x（居中·满手左端≈126 clears 立绘框·右端翘牌错在操作区上方 A-007）
+const HAND_CENTER_X = 600; // 扇形中心 x（居中·满手左端≈126·放大立绘上移到扇左端之上 y·两者不再横向争位·右端翘牌错在操作区上方 A-007）
 function buildHandFanNodes(hand: number[], selected: number[]): LayoutNode[] {
   const n = hand.length;
   if (n === 0) return [];
@@ -562,14 +562,16 @@ export function buildPlay(v: PlayView): LayoutNode {
     ],
   };
 
-  // 主角立绘框（左下·A-CHAR-HERO 占位·S6 真立绘）。
+  // 主角立绘框（左·A-CHAR-HERO 占位·S6 真立绘）。owner 2026-07-20：尺寸大一倍——头像 64→112、框 84×126→128×194；
+  // 位置由「左下角」上移到「西家席位下方·手牌扇左缘之上」的左侧留白带（bottom≈560 让过满手扇左端 y≈569），
+  // 这样放大后既不压手牌扇（无需右移扇心·免右端挤操作区）、也不压西家席位/felt——纯占左侧空区。
   const heroPortrait: LayoutNode = {
     type: 'Panel',
     id: 'a-p-portrait',
     props: { vignette: true },
-    layout: { x: 12, y: 566, width: 84, height: 126, direction: 'column', align: 'center', justify: 'center', gap: 4, padding: 8 },
+    layout: { x: 10, y: 358, width: 128, height: 192, direction: 'column', align: 'center', justify: 'center', gap: 6, padding: 8 },
     children: [
-      { type: 'Avatar', id: 'a-p-portrait-face', props: { name: v.seats.hero.seat.name, size: 64, shape: 'rounded' } },
+      { type: 'Avatar', id: 'a-p-portrait-face', props: { name: v.seats.hero.seat.name, size: 112, shape: 'rounded' } },
       { type: 'Label', id: 'a-p-portrait-l', props: { text: t(l, 'menu.portraitTitle'), size: 'xs', color: 'dim' } },
       { type: 'Label', id: 'a-p-portrait-dress', props: { text: fmtDress(l, v.seats.hero.dress, DRESS_TIERS), size: 'xs', color: 'sub' } },
     ],
