@@ -51,9 +51,9 @@ const DW = 24, DH = 32;   // 宝牌
 // ── 布局区块常量（照稿 1280×720 DOM 量测·1:1 锚点·owner「左缩右放·比例对齐」）────────────────
 const HEADER_H = 72;
 const RAIL_W = 90;                  // 左导航栏（窄·x8-90）
-const CARD_X = 98, CARD_W = 280, CARD_H = 190; // 角色卡（照稿缩小·主诉「左边太大」→ 280×190·非 436）
+const CARD_X = 100, CARD_W = 248, CARD_H = 186; // 角色卡（再收窄·owner「更窄·宽纵比合理·留白更小」）
 const CARD_Y = [76, 278, 480];      // 三卡 y（pitch 202·量测）
-const PORT_W = 80, PORT_H = 102;    // 立绘缩略图（照稿 80×102·非满高·主诉「立绘比例不对」）
+const PORT_W = 76, PORT_H = 104;    // 立绘缩略图（略瘦高·宽纵比更合理）
 const PANEL_X = 392, PANEL_W = 866, PANEL_Y = 76, PANEL_H = 626; // 对局盘（照稿放大·x392-1258 y76-702）
 const FELT = 'linear-gradient(168deg,#1e6a5b 0%,#175349 52%,#123c3a 100%)'; // 出牌区绿呢
 // 出牌区透视梯形（照稿量测·outer x525 y157 w601 h431·rotateX 透视→上窄下宽梯形·owner「很重要·与右侧一致」）。
@@ -124,11 +124,11 @@ function charCard(m: MatchState, seat: number, idx: number): LayoutNode {
   const emoji = (id: string, e: string, on: boolean): LayoutNode => ({ type: 'Button', id, props: { label: e, kind: on ? 'primary' : 'ghost', action: BACK_MENU }, layout: { width: 32, height: 32 } });
   return {
     type: 'Panel', id: `char-${seat}`, props: { bg: { custom: 'rgba(32,18,38,0.78)' }, accent: active, glow: active },
-    layout: { x: CARD_X, y: CARD_Y[idx], width: CARD_W, height: CARD_H, direction: 'row', gap: 10, padding: 10, align: 'start' },
+    layout: { x: CARD_X, y: CARD_Y[idx], width: CARD_W, height: CARD_H, direction: 'row', gap: 8, padding: 8, align: 'start' },
     children: [
       { type: 'Image', id: `char-${seat}-p`, props: { src: OPP_TACHIE[seat]!, fit: 'cover' }, layout: { width: PORT_W, height: PORT_H, radius: 8 } },
       {
-        type: 'Panel', id: `char-${seat}-info`, props: { bare: true }, layout: { direction: 'column', gap: 5, flex: 1 },
+        type: 'Panel', id: `char-${seat}-info`, props: { bare: true }, layout: { direction: 'column', gap: 4, flex: 1 },
         children: [
           { type: 'Label', id: `char-${seat}-nm`, props: { text: OPP_TITLE[seat]!, size: 'md', bold: true, font: 'serif', color: 'text' } },
           {
@@ -156,34 +156,44 @@ function charCard(m: MatchState, seat: number, idx: number): LayoutNode {
 // 对家屏幕位（座 1=東/左·2=北/上·3=西/右）——照稿 DOM 量测（立绘 76×76·围梯形三边）。
 const OPP_POS: Record<number, { x: number; y: number }> = {
   1: { x: 420, y: 262 },   // 東 左（量测 424,266）
-  2: { x: 784, y: 54 },    // 北 上中（靠上边·owner 微调·量测 788,87）
+  2: { x: 704, y: 82 },    // 北 上中（横排·头像 beside 名·居felt上方·owner 微调）
   3: { x: 1148, y: 262 },  // 西 右（量测 1152,266）
 };
 function tableAvatar(m: MatchState, seat: number): LayoutNode {
   const p = OPP_POS[seat]!;
   const active = m.cur.turn === seat && m.cur.phase === 'playing';
   const wind = WIND[seatWind(seat, m.dealer)]!;
+  const frame: LayoutNode = {
+    type: 'Panel', id: `seat-${seat}-fr`, props: { bg: { custom: 'rgba(24,14,28,0.6)' }, accent: active, glow: active },
+    layout: { width: 76, height: 76, padding: 3 },
+    children: [{ type: 'Image', id: `seat-${seat}-p`, props: { src: OPP_TACHIE[seat]!, fit: 'cover' }, layout: { width: 70, height: 70, radius: 8 } }],
+  };
+  const nameRow: LayoutNode = {
+    type: 'Panel', id: `seat-${seat}-nm`, props: { bg: { custom: 'rgba(16,10,20,0.85)' } },
+    layout: { direction: 'row', gap: 5, align: 'center', padding: 4 },
+    children: [
+      { type: 'Tag', id: `seat-${seat}-w`, props: { label: wind, tone: active ? 'accent' : 'normal', size: 'sm' } },
+      { type: 'Label', id: `seat-${seat}-n`, props: { text: m.seatNames[seat]!, size: 'sm', bold: true, color: 'text' } },
+      { type: 'Label', id: `seat-${seat}-s`, props: { text: m.scores[seat]!.toLocaleString('en-US'), size: 'sm', bold: true, color: 'gold' } },
+    ],
+  };
+  const tags: LayoutNode[] = [
+    ...(active ? [{ type: 'Tag' as const, id: `seat-${seat}-t`, props: { label: '打牌中', tone: 'accent' as const, size: 'sm' as const } }] : []),
+    ...(m.cur.riichi[seat] ? [{ type: 'Tag' as const, id: `seat-${seat}-r`, props: { label: '● 立直', tone: 'accent' as const, size: 'sm' as const } }] : []),
+  ];
+  // 顶座（2·北位）：横排——头像 **beside** 名（不竖叠·不上超框·owner 微调）。
+  if (seat === 2) {
+    return {
+      type: 'Panel', id: `seat-${seat}`, props: { bare: true },
+      layout: { x: p.x, y: p.y, direction: 'row', gap: 8, align: 'center' },
+      children: [frame, { type: 'Panel', id: `seat-${seat}-side`, props: { bare: true }, layout: { direction: 'column', gap: 3, align: 'start' }, children: [nameRow, ...tags] }],
+    };
+  }
+  // 侧座（1 東左·3 西右）：头像上·名下。
   return {
     type: 'Panel', id: `seat-${seat}`, props: { bare: true },
     layout: { x: p.x, y: p.y, width: 76, direction: 'column', gap: 3, align: 'center' },
-    children: [
-      {
-        type: 'Panel', id: `seat-${seat}-fr`, props: { bg: { custom: 'rgba(24,14,28,0.6)' }, accent: active, glow: active },
-        layout: { width: 76, height: 76, padding: 3 },
-        children: [{ type: 'Image', id: `seat-${seat}-p`, props: { src: OPP_TACHIE[seat]!, fit: 'cover' }, layout: { width: 70, height: 70, radius: 8 } }],
-      },
-      {
-        type: 'Panel', id: `seat-${seat}-nm`, props: { bg: { custom: 'rgba(16,10,20,0.85)' } },
-        layout: { direction: 'row', gap: 5, align: 'center', padding: 4 },
-        children: [
-          { type: 'Tag', id: `seat-${seat}-w`, props: { label: wind, tone: active ? 'accent' : 'normal', size: 'sm' } },
-          { type: 'Label', id: `seat-${seat}-n`, props: { text: m.seatNames[seat]!, size: 'sm', bold: true, color: 'text' } },
-          { type: 'Label', id: `seat-${seat}-s`, props: { text: m.scores[seat]!.toLocaleString('en-US'), size: 'sm', bold: true, color: 'gold' } },
-        ],
-      },
-      ...(active ? [{ type: 'Tag' as const, id: `seat-${seat}-t`, props: { label: '打牌中', tone: 'accent' as const, size: 'sm' as const } }] : []),
-      ...(m.cur.riichi[seat] ? [{ type: 'Tag' as const, id: `seat-${seat}-r`, props: { label: '● 立直', tone: 'accent' as const, size: 'sm' as const } }] : []),
-    ],
+    children: [frame, nameRow, ...tags],
   };
 }
 
@@ -294,7 +304,7 @@ function meldBlock(m: MatchState, seat: number): LayoutNode | null {
   const w = seat === 0 ? 24 : 18, h = seat === 0 ? 32 : 24;
   // 吃碰区位：玩家(0)=座条上方·他家=各自头像框下。
   const pos = seat === 0
-    ? { x: PANEL_X + 6, y: PLAY_H - HH - 120 }              // 玩家吃碰区：上移·避免跟手牌重叠（owner 微调）
+    ? { x: FELT_X + 8, y: FELT_Y + FELT_H - 88 }            // 玩家吃碰区：出牌区左下·远离底部手牌（owner「别跟牌重合」）
     : { x: OPP_POS[seat]!.x - 12, y: OPP_POS[seat]!.y + 94 }; // 他家：头像+名下
   return {
     type: 'Panel', id: `melds-${seat}`, props: { bg: { custom: 'rgba(20,10,20,0.5)' } },
@@ -336,14 +346,14 @@ function topToggles(): LayoutNode {
 
 // ── 聊天条 + 演示行动栏（底部·静态到稿）──────────────────────────────────────────────────────
 function chatBtn(): LayoutNode {
-  return { type: 'Button', id: 'chat', props: { label: '💬 说点什么…', kind: 'ghost', action: BACK_MENU }, layout: { x: PANEL_X + PANEL_W - 154, y: PANEL_Y + PANEL_H - 108, width: 142, height: 36 } };
+  return { type: 'Button', id: 'chat', props: { label: '💬 说点什么…', kind: 'ghost', action: BACK_MENU }, layout: { x: PANEL_X + PANEL_W - 154, y: PANEL_Y + PANEL_H - 150, width: 142, height: 36 } };
 }
 
 // ── 行动按钮排（自摸/立直/杠·日志/菜单）= acts（测试钉）──────────────────────────────────────
 function actionBar(m: MatchState): LayoutNode {
   return {
     type: 'Panel', id: 'acts', props: { bare: true },
-    layout: { x: PANEL_X + PANEL_W / 2 - 176, y: PANEL_Y + PANEL_H - 100, direction: 'row', gap: 8, align: 'center' },
+    layout: { x: PANEL_X + PANEL_W / 2 - 176, y: PANEL_Y + PANEL_H - 152, direction: 'row', gap: 8, align: 'center' },
     children: [
       { type: 'Button', id: 'act-tsumo', props: { label: '自摸', kind: 'hero', disabled: !canTsumo(m), action: ACT_TSUMO } },
       ...(canAnkan(m) || canKakan(m) ? [{ type: 'Button' as const, id: 'act-kan', props: { label: '杠', kind: 'primary' as const, action: ACT_KAN } }] : []),
@@ -375,7 +385,7 @@ function callBar(m: MatchState): LayoutNode | null {
   btns.push({ type: 'Button', id: 'call-pass', props: { label: '过', kind: 'quiet', action: CALL_PASS } });
   return {
     type: 'Panel', id: 'callbar', props: { bg: { custom: 'rgba(32,16,28,0.97)' }, glow: true, accent: true },
-    layout: { x: PANEL_X + PANEL_W / 2 - 230, y: PANEL_Y + PANEL_H - 106, width: 460, padding: 8, gap: 9, direction: 'row', justify: 'center', align: 'center' },
+    layout: { x: PANEL_X + PANEL_W / 2 - 230, y: PANEL_Y + PANEL_H - 156, width: 460, padding: 8, gap: 9, direction: 'row', justify: 'center', align: 'center' },
     children: btns,
   };
 }
@@ -393,7 +403,7 @@ function turnBanner(m: MatchState): LayoutNode | null {
   const flow = lastDisc ? `刚打：${lastDisc.actor} 打【${labelTile(lastDisc.tile!)}】` : '开局';
   return {
     type: 'Panel', id: 'turnbanner', props: { bg: { custom: hot ? 'rgba(52,22,36,0.95)' : 'rgba(26,15,24,0.9)' }, glow: hot, accent: hot },
-    layout: { x: PANEL_X + 10, y: PANEL_Y + PANEL_H - 98, width: 214, padding: 6, gap: 1, direction: 'column', align: 'start' },
+    layout: { x: PANEL_X + 10, y: PANEL_Y + PANEL_H - 150, width: 214, padding: 6, gap: 1, direction: 'column', align: 'start' },
     children: [
       { type: 'Label', id: 'tb-head', props: { text: head, size: 'sm', bold: true, color: hot ? 'gold' : 'jade' } },
       { type: 'Label', id: 'tb-flow', props: { text: flow, size: 'xs', color: 'sub' } },
