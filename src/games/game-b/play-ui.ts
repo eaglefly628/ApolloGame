@@ -242,25 +242,45 @@ function playField(m: MatchState): LayoutNode[] {
   const doraTiles: LayoutNode[] = m.cur.doraInd.map((d, i): LayoutNode => ({
     type: 'Image', id: `dora-${i}`, props: { src: faceUrl(doraFromIndicator(d)), fit: 'contain' }, layout: { width: DW, height: DH },
   }));
-  // 透视梯形绿呢（rotateX→上窄下宽·gold 虚线=牌区黄线·内嵌白虚线内区·owner「透视梯形·很重要」）。
+  // 牌区占位框（2D 先标出·owner「以后 3D 放上面」）：虚线框 + 小标·随梯形透视倾斜。
+  const zone = (id: string, x: number, y: number, w: number, h: number, label: string, tone: 'gold' | 'jade' | 'danger'): LayoutNode => ({
+    type: 'Panel', id, props: { bg: { custom: 'rgba(8,20,18,0.22)' }, dashed: true, edge: tone },
+    layout: { x, y, width: w, height: h, radius: 6, align: 'center', justify: 'center' },
+    children: label ? [{ type: 'Label', id: `${id}-l`, props: { text: label, size: 'xs', color: 'sub' } }] : [],
+  });
+  const CW = FELT_W, CH = FELT_H;
+  // 透视梯形绿呢（rotateX→上窄下宽·gold 虚线=牌桌黄线·owner「透视梯形·很重要」）·内含全部牌区占位框。
   const trapezoid: LayoutNode = {
     type: 'Panel', id: 'felt', props: { bg: { custom: FELT }, dashed: true, edge: 'gold' },
-    layout: { x: FELT_X, y: FELT_Y, width: FELT_W, height: FELT_H, rotateX: 34, perspective: 1050, radius: 14 },
+    layout: { x: FELT_X, y: FELT_Y, width: CW, height: CH, rotateX: 34, perspective: 1050, radius: 14 },
     children: [
-      { type: 'Panel', id: 'felt-inner', props: { bg: 'transparent', dashed: true, edge: 'jade' }, layout: { x: 64, y: 40, width: FELT_W - 128, height: FELT_H - 96, radius: 10 } },
+      // 牌山（两层·围一圈·还没摸的牌·owner「当中围起来两层」）——外圈虚线带。
+      { type: 'Panel', id: 'felt-wall', props: { bg: 'transparent', dashed: true, edge: 'jade' }, layout: { x: 26, y: 20, width: CW - 52, height: CH - 40, radius: 12 } },
+      // 报牌区（正当中·死牌墙/宝牌指示）。
+      zone('felt-dead', CW / 2 - 66, CH / 2 - 40, 132, 80, '报牌区', 'gold'),
+      // 四家河（出牌区·各家面前·围成风车·下=自家/上=对家/左右=两侧）。
+      zone('river-z-0', CW / 2 - 104, CH - 120, 208, 56, '你 · 河', 'jade'),  // 南 下（自家·大）
+      zone('river-z-2', CW / 2 - 100, 62, 200, 52, '对家 · 河', 'jade'),      // 北 上（远·小）
+      zone('river-z-1', 74, CH / 2 - 54, 56, 108, '河', 'jade'),              // 左
+      zone('river-z-3', CW - 130, CH / 2 - 54, 56, 108, '河', 'jade'),        // 右
     ],
   };
-  // 中央场况（平面浮层·不随透视倾斜·可读）。
-  const info: LayoutNode = {
+  // 顶部场况状态条（東場·東家 · 余牌 · 本場 · 供托）——面板左上·不压牌区。
+  const topStatus: LayoutNode = {
+    type: 'Panel', id: 'felt-status', props: { bg: { custom: 'rgba(18,10,22,0.6)' } },
+    layout: { x: PANEL_X + 12, y: PANEL_Y + 48, direction: 'row', gap: 10, align: 'center', padding: 7 },
+    children: [
+      { type: 'Label', id: 'felt-round', props: { text: `${m.roundNo <= 4 ? '東' : '南'}場 · ${WIND[seatWind(m.dealer, m.dealer)]}家`, size: 'md', bold: true, font: 'serif', color: 'gold' } },
+      { type: 'Label', id: 'felt-wall', props: { text: `余牌 ${m.cur.wall.length} · ${m.honba}本場 · 供托 ${m.kyotaku / 1000}`, size: 'xs', color: 'jade' } },
+    ],
+  };
+  // 中央报牌区宝牌（flat 浮层·可读·落在报牌区框里）。
+  const centerDora: LayoutNode = {
     type: 'Panel', id: 'felt-info', props: { bare: true },
-    layout: { x: FELT_X + FELT_W / 2 - 110, y: FELT_Y + 128, width: 220, direction: 'column', align: 'center', gap: 5 },
-    children: [
-      { type: 'Label', id: 'felt-round', props: { text: `${m.roundNo <= 4 ? '東' : '南'}場 · ${WIND[seatWind(m.dealer, m.dealer)]}家`, size: 'xl', bold: true, font: 'serif', color: 'gold' } },
-      { type: 'Label', id: 'felt-wall', props: { text: `余牌 ${m.cur.wall.length} · ${m.honba} 本場 · 供托 ${m.kyotaku / 1000}`, size: 'xs', color: 'jade' } },
-      { type: 'Panel', id: 'felt-dora', props: { bare: true }, layout: { direction: 'row', gap: 4, align: 'center' }, children: [{ type: 'Label', id: 'felt-dl', props: { text: '宝牌', size: 'xs', color: 'sub' } }, ...doraTiles] },
-    ],
+    layout: { x: FELT_X + FELT_W / 2 - 62, y: FELT_Y + 158, width: 124, direction: 'row', gap: 4, align: 'center', justify: 'center' },
+    children: [{ type: 'Label', id: 'felt-dl', props: { text: '宝牌', size: 'xs', color: 'sub' } }, ...doraTiles],
   };
-  return [trapezoid, info];
+  return [trapezoid, topStatus, centerDora];
 }
 
 // ══════════════════════════════════════════════════════════════════════════════════════════
