@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="m_wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#241812"/>
+      <stop offset="0.62" stop-color="#1c120c"/>
+      <stop offset="1" stop-color="#160e0a"/>
+    </linearGradient>
+    <radialGradient id="m_glow" cx="0.83" cy="0.14" r="0.62">
+      <stop offset="0" stop-color="#6a4326" stop-opacity="0.85"/>
+      <stop offset="0.45" stop-color="#4a3020" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#4a3020" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="m_sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0e0a08"/>
+      <stop offset="0.7" stop-color="#1a120d"/>
+      <stop offset="1" stop-color="#2c1d12"/>
+    </linearGradient>
+    <radialGradient id="m_bokeh" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#f0c96a" stop-opacity="0.9"/>
+      <stop offset="0.55" stop-color="#e0b458" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#e0b458" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="m_pool" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#d8b878" stop-opacity="0.5"/>
+      <stop offset="0.6" stop-color="#8a6238" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#8a6238" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="m_floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#20140d"/>
+      <stop offset="1" stop-color="#130c08"/>
+    </linearGradient>
+    <radialGradient id="m_vig" cx="0.5" cy="0.42" r="0.78">
+      <stop offset="0.52" stop-color="#0b0704" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0b0704" stop-opacity="0.9"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1280" height="720" fill="url(#m_wall)"/>
+  <rect width="1280" height="720" fill="url(#m_glow)"/>
+
+  <!-- left wall wainscot hairlines -->
+  <g stroke="#f0c96a" stroke-opacity="0.06" stroke-width="1.5">
+    <line x1="150" y1="120" x2="150" y2="556"/>
+    <line x1="300" y1="120" x2="300" y2="556"/>
+    <line x1="450" y1="120" x2="450" y2="556"/>
+    <line x1="600" y1="140" x2="600" y2="556"/>
+  </g>
+
+  <!-- floor plane -->
+  <rect x="0" y="558" width="1280" height="162" fill="url(#m_floor)"/>
+  <line x1="0" y1="558" x2="1280" y2="558" stroke="#f0c96a" stroke-opacity="0.12" stroke-width="1.5"/>
+  <ellipse cx="600" cy="686" rx="540" ry="120" fill="url(#m_pool)"/>
+
+  <!-- tall floor window on the right -->
+  <g>
+    <rect x="902" y="66" width="292" height="548" rx="6" fill="url(#m_sky)"/>
+    <!-- city bokeh -->
+    <g>
+      <circle cx="948" cy="132" r="7" fill="url(#m_bokeh)"/>
+      <circle cx="1010" cy="98" r="5" fill="url(#m_bokeh)"/>
+      <circle cx="1074" cy="150" r="8" fill="url(#m_bokeh)"/>
+      <circle cx="1132" cy="112" r="5" fill="url(#m_bokeh)"/>
+      <circle cx="1168" cy="176" r="6" fill="url(#m_bokeh)"/>
+      <circle cx="964" cy="214" r="4" fill="url(#m_bokeh)"/>
+      <circle cx="1032" cy="196" r="6" fill="url(#m_bokeh)"/>
+      <circle cx="1108" cy="238" r="5" fill="url(#m_bokeh)"/>
+      <circle cx="1160" cy="286" r="7" fill="url(#m_bokeh)"/>
+      <circle cx="936" cy="300" r="5" fill="url(#m_bokeh)"/>
+      <circle cx="1000" cy="332" r="4" fill="url(#m_bokeh)"/>
+      <circle cx="1070" cy="360" r="6" fill="url(#m_bokeh)"/>
+      <circle cx="1140" cy="398" r="4" fill="url(#m_bokeh)"/>
+      <circle cx="976" cy="430" r="5" fill="url(#m_bokeh)"/>
+      <circle cx="1046" cy="470" r="4" fill="url(#m_bokeh)"/>
+      <circle cx="1118" cy="506" r="5" fill="url(#m_bokeh)"/>
+    </g>
+    <!-- mullions -->
+    <g stroke="#160e0a" stroke-width="7">
+      <line x1="998" y1="66" x2="998" y2="614"/>
+      <line x1="1098" y1="66" x2="1098" y2="614"/>
+      <line x1="902" y1="342" x2="1194" y2="342"/>
+    </g>
+    <!-- gold window frame -->
+    <rect x="902" y="66" width="292" height="548" rx="6" fill="none" stroke="#f0c96a" stroke-opacity="0.34" stroke-width="2.5"/>
+    <rect x="890" y="54" width="316" height="572" rx="10" fill="none" stroke="#f0c96a" stroke-opacity="0.14" stroke-width="2"/>
+  </g>
+
+  <rect width="1280" height="720" fill="url(#m_vig)"/>
+</svg>

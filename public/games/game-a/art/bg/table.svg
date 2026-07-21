@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <radialGradient id="t_manor" cx="0.5" cy="0.36" r="0.72">
+      <stop offset="0" stop-color="#4a3020"/>
+      <stop offset="0.45" stop-color="#2c1d12"/>
+      <stop offset="1" stop-color="#160e0a"/>
+    </radialGradient>
+    <radialGradient id="t_down" cx="0.5" cy="0.30" r="0.5">
+      <stop offset="0" stop-color="#d8b878" stop-opacity="0.42"/>
+      <stop offset="0.5" stop-color="#a9793e" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#a9793e" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="t_floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#241711"/>
+      <stop offset="1" stop-color="#140d09"/>
+    </linearGradient>
+    <radialGradient id="t_vig" cx="0.5" cy="0.4" r="0.8">
+      <stop offset="0.48" stop-color="#0b0704" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0b0704" stop-opacity="0.92"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1280" height="720" fill="url(#t_manor)"/>
+
+  <!-- marble floor hint (lower third) -->
+  <rect x="0" y="486" width="1280" height="234" fill="url(#t_floor)"/>
+  <g stroke="#d8b878" stroke-opacity="0.05" stroke-width="1.5" fill="none">
+    <path d="M60 700 L280 500"/>
+    <path d="M360 706 L520 512"/>
+    <path d="M980 706 L1140 500"/>
+    <path d="M1180 700 L1080 520"/>
+    <path d="M520 700 L470 540"/>
+  </g>
+  <line x1="0" y1="486" x2="1280" y2="486" stroke="#f0c96a" stroke-opacity="0.08" stroke-width="1.5"/>
+
+  <!-- central warm downlight pool -->
+  <ellipse cx="640" cy="300" rx="440" ry="360" fill="url(#t_down)"/>
+
+  <rect width="1280" height="720" fill="url(#t_vig)"/>
+</svg>

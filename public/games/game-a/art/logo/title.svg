@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="180" viewBox="0 0 680 180">
+  <defs>
+    <linearGradient id="lg_plaque" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6a1f26"/>
+      <stop offset="1" stop-color="#360f14"/>
+    </linearGradient>
+    <linearGradient id="lg_gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff2cf"/>
+      <stop offset="0.45" stop-color="#f0c96a"/>
+      <stop offset="1" stop-color="#c99a3e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- wine plaque -->
+  <rect x="34" y="34" width="612" height="112" rx="16" fill="url(#lg_plaque)" fill-opacity="0.92" stroke="#f0c96a" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="42" y="42" width="596" height="96" rx="11" fill="none" stroke="#f0c96a" stroke-opacity="0.22" stroke-width="1.2"/>
+  <!-- corner accents -->
+  <g fill="#f0c96a" fill-opacity="0.85">
+    <path d="M56 56 l7 0 0 3 -4 0 0 4 -3 0 z"/>
+    <path d="M624 56 l-7 0 0 3 4 0 0 4 3 0 z"/>
+    <path d="M56 124 l7 0 0 -3 -4 0 0 -4 -3 0 z"/>
+    <path d="M624 124 l-7 0 0 -3 4 0 0 -4 3 0 z"/>
+  </g>
+
+  <!-- title text 掼蛋夜宴 -->
+  <g font-family="'Noto Serif SC','Source Han Serif SC','Songti SC','STSong',serif" font-weight="700" font-size="86" text-anchor="middle" letter-spacing="12">
+    <text x="343" y="122" fill="#2a0b10" fill-opacity="0.75">掼蛋夜宴</text>
+    <text x="340" y="119" fill="url(#lg_gold)" stroke="#a9791f" stroke-width="0.8">掼蛋夜宴</text>
+  </g>
+</svg>

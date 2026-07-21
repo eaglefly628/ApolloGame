@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="168" height="240" viewBox="0 0 168 240">
+  <defs>
+    <radialGradient id="js_field" cx="0.5" cy="0.42" r="0.72">
+      <stop offset="0" stop-color="#37271a"/>
+      <stop offset="0.55" stop-color="#241812"/>
+      <stop offset="1" stop-color="#160e0a"/>
+    </radialGradient>
+    <linearGradient id="js_crown" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef1f4"/>
+      <stop offset="0.5" stop-color="#c3cbd2"/>
+      <stop offset="1" stop-color="#8b949c"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="2" y="2" width="164" height="236" rx="14" fill="url(#js_field)"/>
+  <rect x="8" y="8" width="152" height="224" rx="11" fill="none" stroke="#f0c96a" stroke-opacity="0.6" stroke-width="2"/>
+  <rect x="13" y="13" width="142" height="214" rx="8" fill="none" stroke="#c3cbd2" stroke-opacity="0.28" stroke-width="1.1"/>
+
+  <!-- radiating rays behind crown -->
+  <g stroke="#c3cbd2" stroke-opacity="0.14" stroke-width="1.4">
+    <line x1="84" y1="120" x2="84" y2="40"/>
+    <line x1="84" y1="120" x2="40" y2="70"/>
+    <line x1="84" y1="120" x2="128" y2="70"/>
+    <line x1="84" y1="120" x2="34" y2="130"/>
+    <line x1="84" y1="120" x2="134" y2="130"/>
+  </g>
+
+  <!-- crown (silver) -->
+  <g>
+    <path d="M42 118 L54 84 L70 108 L84 76 L98 108 L114 84 L126 118 Z" fill="url(#js_crown)" stroke="#6b747c" stroke-width="1.4" stroke-linejoin="round"/>
+    <rect x="42" y="116" width="84" height="16" rx="4" fill="url(#js_crown)" stroke="#6b747c" stroke-width="1.2"/>
+    <circle cx="54" cy="84" r="4" fill="#6a1f26"/>
+    <circle cx="84" cy="74" r="5" fill="#6a1f26"/>
+    <circle cx="114" cy="84" r="4" fill="#6a1f26"/>
+    <circle cx="60" cy="124" r="2.4" fill="#37271a"/>
+    <circle cx="84" cy="124" r="2.4" fill="#37271a"/>
+    <circle cx="108" cy="124" r="2.4" fill="#37271a"/>
+  </g>
+
+  <!-- flourish under crown -->
+  <path d="M60 150 Q84 166 108 150" fill="none" stroke="#c3cbd2" stroke-opacity="0.55" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="84" cy="160" r="3" fill="#c3cbd2"/>
+
+  <!-- 小王 tag top-left -->
+  <g stroke="#eef1f4" stroke-width="2.2" stroke-linecap="round" fill="none">
+    <path d="M30 26 V41"/><path d="M26 30 L23 40"/><path d="M34 30 L37 40"/>
+    <path d="M25 48 H35"/><path d="M26 55 H34"/><path d="M23 62 H37"/><path d="M30 48 V62"/>
+  </g>
+  <!-- 小王 tag bottom-right (rotated) -->
+  <g stroke="#eef1f4" stroke-width="2.2" stroke-linecap="round" fill="none" transform="translate(168,240) rotate(180)">
+    <path d="M30 26 V41"/><path d="M26 30 L23 40"/><path d="M34 30 L37 40"/>
+    <path d="M25 48 H35"/><path d="M26 55 H34"/><path d="M23 62 H37"/><path d="M30 48 V62"/>
+  </g>
+</svg>
