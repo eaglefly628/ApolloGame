@@ -44,13 +44,13 @@ const DW = 22, DH = 30;   // 宝牌
 // ── 布局区块常量（精简牌桌·920×640·牌桌居中）────────────────────────────────────────────
 const PANEL_X = 8, PANEL_W = PLAY_W - 16, PANEL_Y = 6, PANEL_H = PLAY_H - 12; // 对局盘=整画布
 const FELT = 'linear-gradient(168deg,#1e6a5b 0%,#175349 52%,#123c3a 100%)';
-// 出牌区透视梯形（居中·rotateX 透视）。
-const FELT_W = 580, FELT_H = 372, FELT_X = Math.round((PLAY_W - FELT_W) / 2), FELT_Y = 52;
-// 对家屏幕位（座 1=東/左·2=北/上·3=西/右）。
+// 出牌区透视梯形（居中·rotateX 透视）·**尽量放大让玩家视野更大**（owner 2026-07-21）。
+const FELT_W = 728, FELT_H = 448, FELT_X = Math.round((PLAY_W - FELT_W) / 2), FELT_Y = 44;
+// 对家屏幕位（座 1=東/左·2=北/上·3=西/右）——贴牌桌左右/上三边。
 const OPP_POS: Record<number, { x: number; y: number }> = {
-  1: { x: 14, y: 176 },     // 東 左
-  2: { x: 360, y: 6 },      // 北 上中（横排）
-  3: { x: 828, y: 176 },    // 西 右
+  1: { x: 40, y: 214 },     // 東 左（名条 128 居中溢出·两侧不切边）
+  2: { x: 356, y: 4 },      // 北 上中（横排）
+  3: { x: 808, y: 214 },    // 西 右（名条 128 居中溢出·两侧不切边）
 };
 
 // ══════════════════════════════════════════════════════════════════════════════════════════
@@ -67,7 +67,9 @@ function tableAvatar(m: MatchState, seat: number): LayoutNode {
   };
   const nameRow: LayoutNode = {
     type: 'Panel', id: `seat-${seat}-nm`, props: { bg: { custom: 'rgba(16,10,20,0.85)' } },
-    layout: { direction: 'row', gap: 5, align: 'center', padding: 4 },
+    // 名条固定宽居中：窄于内容时会挤压 Label 换行（「小夜」竖叠）——给定宽 + justify center，
+    // 侧座（1/3）的名条比 72 框宽、居中溢出不切边（Panel 非 scroll 不裁溢出）。
+    layout: { direction: 'row', gap: 5, align: 'center', justify: 'center', width: 128, padding: 4 },
     children: [
       { type: 'Tag', id: `seat-${seat}-w`, props: { label: wind, tone: active ? 'accent' : 'normal', size: 'sm' } },
       { type: 'Label', id: `seat-${seat}-n`, props: { text: m.seatNames[seat]!, size: 'sm', bold: true, color: 'text' } },
