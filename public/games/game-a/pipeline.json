@@ -28,8 +28,8 @@
     "S4": {
       "exit": 0,
       "summary": "walkthrough 绿（ Test Files  6 passed (6) ·       Tests  66 passed (66)）· 验收剧本 8 场景绿",
-      "at": "2026-07-21T13:53:44.094Z",
-      "gameHash": "ba3814cc11ec1bd5"
+      "at": "2026-07-21T16:56:22.204Z",
+      "gameHash": "ddbbdf474adfe8fb"
     },
     "S5": {
       "exit": 0,
@@ -321,6 +321,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-21T13:53:44.094Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "PE 2026-07-20 外围美术占位接线：4 屏背景走 Screen.image(夜宴豪宅夜景 SVG)·渐变保兜底·规则/验收不动",
+      "at": "2026-07-21T16:56:10.886Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-21T16:56:22.204Z"
     }
   ],
   "reviews": {
@@ -446,6 +458,11 @@
       "stage": "S4",
       "reason": "PE 2026-07-20 角色卡桥接进 game-a(REQ-CHARCARD·seat-cards.ts 消费层)·规则核/验收不动·前置复查门随文件改 stale·非回退",
       "at": "2026-07-21T13:53:35.747Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "PE 2026-07-20 外围美术占位接线：4 屏背景走 Screen.image(夜宴豪宅夜景 SVG)·渐变保兜底·规则/验收不动",
+      "at": "2026-07-21T16:56:10.886Z"
     }
   ]
 }

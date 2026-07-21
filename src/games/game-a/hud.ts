@@ -54,6 +54,9 @@ const fmtMoney = (n: number): string => n.toLocaleString('en-US');
 // 差异（逐条·非阻断）：① 立绘占位去掉 EN-prompt/A-CHAR 台账标注（美术生产注解·非玩家 UI）；
 //   ② bob/glow/twinkle 呼吸动效简化（星点用 Particles·徽标静态）；③「继续上局」暂无存档=同「开始」。
 const MENU_BG = 'radial-gradient(90% 120% at 78% 30%,#31201a,#160e0a 75%)';
+// 夜宴外围美术占位（程序化 SVG·静态路径·台账 art-ledger/bg·真图到位自动更靓；渐变 bg 保留作兜底）。
+const BG_MENU = '/games/game-a/art/bg/menu.svg';   // 主菜单：豪宅夜景牌室
+const BG_TABLE = '/games/game-a/art/bg/table.svg'; // 牌桌/选桌/结算：胡桃木牌室暖光
 export interface MenuView {
   lang: Lang; // 界面语言（owner 2026-07-20 中英切换·默认中文·宿主持久）
   wallet: number;
@@ -69,7 +72,7 @@ export function buildMenu(v: MenuView): LayoutNode {
   return {
     type: 'Screen',
     id: 'a-menu',
-    props: { bg: { custom: MENU_BG } },
+    props: { bg: { custom: MENU_BG }, image: BG_MENU },
     layout: { width: FIELD_W, height: FIELD_H },
     children: [
       // 主角立绘占位（左·300×440·斜纹虚框·真立绘 S6 台账 A-CHAR-HERO）
@@ -217,7 +220,7 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
   return {
     type: 'Screen',
     id: 'a-select',
-    props: { bg: { custom: MANOR_BG }, center: true },
+    props: { bg: { custom: MANOR_BG }, image: BG_TABLE, center: true },
     layout: { direction: 'column', align: 'center', justify: 'center', gap: 14, padding: 24 },
     children: [
       {
@@ -686,7 +689,7 @@ export function buildPlay(v: PlayView): LayoutNode {
   return {
     type: 'Screen',
     id: 'a-play',
-    props: {},
+    props: { image: BG_TABLE },
     layout: { width: FIELD_W, height: FIELD_H },
     children: [
       feltTable, // 含中央出牌区（祖孙嵌套）
@@ -859,7 +862,7 @@ export function buildResult(v: ResultView): LayoutNode {
   return {
     type: 'Screen',
     id: 'a-result',
-    props: { bg: { custom: 'linear-gradient(180deg,rgba(20,10,11,0.94),rgba(20,10,11,0.98)),#140a0b' }, center: true },
+    props: { bg: { custom: 'linear-gradient(180deg,rgba(20,10,11,0.94),rgba(20,10,11,0.98)),#140a0b' }, image: BG_TABLE, center: true },
     layout: { direction: 'column', align: 'center', justify: 'center', gap: 14, padding: 24 },
     children: [
       {
