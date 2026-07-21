@@ -565,21 +565,64 @@ function buildFinale(f: FinaleView, l: Lang): LayoutNode {
   return { type: 'Panel', id: 'c-fin-scrim', props: { bg: { custom: 'rgba(4,2,8,0.82)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children: [card] };
 }
 
-// ── 牌桌主屏（纯 2D LayoutNode·owner 2026-07-18 转 2D：大牌桌 + 顶带 + 公共牌 + 座位·文案随 v.lang）──
+// ── 左侧主角立绘框（owner 2026-07-20·参考 game-b 左侧布局）：竖幅立绘占位框 + 主角名/筹码/衣物/状态 = 「你」的主面板。
+//   替代旧的左下小席卡；点击 = 开主角衣柜（seat_view 0·立绘随典当逐层褪衣·夜宴主题）。轮到你 = 翠边发光 + 读秒。
+function buildHeroPortrait(v: TableView): LayoutNode {
+  const l = v.lang;
+  const h = v.seats.find((s) => s.isHero)!;
+  const frame: LayoutNode = {
+    type: 'Panel', id: 'c-hp-frame', props: { bare: true, dashed: true, edge: 'gold' },
+    layout: { direction: 'column', align: 'center', justify: 'center', gap: 10, flex: 1, radius: 12, padding: 12 },
+    children: [
+      { type: 'Avatar', id: 'c-hp-face', props: { name: h.name.slice(0, 1), size: 92, shape: 'rounded' } },
+      { type: 'Label', id: 'c-hp-label', props: { text: t(l, 'portrait.hero'), font: 'impact', size: 22, color: 'gold' } },
+      { type: 'Label', id: 'c-hp-sub', props: { text: t(l, 'portrait.sub'), size: 'xs', color: 'dim' } },
+    ],
+  };
+  const info: LayoutNode = {
+    type: 'Panel', id: 'c-hp-info', props: { bare: true }, layout: { direction: 'column', gap: 3 },
+    children: [
+      {
+        type: 'Panel', id: 'c-hp-name-row', props: { bare: true }, layout: { direction: 'row', gap: 5, align: 'center' },
+        children: [
+          { type: 'Label', id: 'c-hp-name', props: { text: h.name, size: 'md', bold: true, color: 'text' } },
+          { type: 'Label', id: 'c-hp-you', props: { text: 'YOU', size: 'xs', color: 'dim' } },
+          ...(h.isButton ? [{ type: 'Badge', id: 'c-hp-btn', props: { text: 'D', tone: 'warn' } } as LayoutNode] : []),
+        ],
+      },
+      { type: 'Label', id: 'c-hp-chips', props: { text: fmt(h.chips), font: 'impact', size: 30, color: 'gold', glow: true } },
+      {
+        type: 'Panel', id: 'c-hp-meta', props: { bare: true }, layout: { direction: 'row', gap: 8, align: 'center' },
+        children: [
+          { type: 'Label', id: 'c-hp-cloth', props: { text: `👗 ${h.clothes}`, size: 'sm', color: 'sub' } },
+          ...(h.committed > 0 ? [{ type: 'Label', id: 'c-hp-bet', props: { text: fmtBet(l, h.committed), size: 'sm', color: 'gold' } } as LayoutNode] : []),
+        ],
+      },
+      ...(h.isActor ? [{ type: 'ProgressBar', id: 'c-hp-timer', props: { value: 65, max: 100, tone: 'accent' } } as LayoutNode] : []),
+    ],
+  };
+  const bub = statusBubble(h, l);
+  return {
+    type: 'Panel', id: 'c-hero-portrait',
+    props: { bg: { custom: CARD_FILL_HERO }, edge: h.isActor ? 'jade' : 'gold', action: 'seat_view', actionArg: '0' },
+    layout: { x: 14, y: 86, width: 200, height: FIELD_H - 104, direction: 'column', gap: 10, padding: 14, radius: 16, ...(h.isActor ? { fx: [{ kind: 'glow' as const, color: 'jade' as const }] } : {}) },
+    children: bub ? [frame, bub, info] : [frame, info],
+  };
+}
+
+// ── 牌桌主屏（纯 2D LayoutNode·owner 2026-07-18 转 2D + 07-20 左侧主角立绘框：顶带 + 公共牌 + 对手座 + 左立绘 + 底牌）──
 export function buildTable(v: TableView): LayoutNode {
   const l = v.lang;
-  // 对手座：按入局人数取锚点（6=手工布局·<6=上弧均布）；只渲染真在场的对手（座 1..count-1）。
+  // 对手座：按入局人数取锚点（上弧均布·右移让开左侧立绘框）；只渲染真在场的对手（座 1..count-1）。
   const opp = opponentAnchors(v.playerCount).map((a) => {
     const sv = v.seats.find((s) => s.seat === a.seat)!;
     const { x, y } = anchorTopLeft(a);
     return seatCard({ ...sv, name: l === 'en' ? a.nameEn : a.name }, x, y, SEAT_W, SEAT_H, l);
   });
-  const hero = v.seats.find((s) => s.isHero)!;
-  const heroCard = seatCard(hero, 20, FIELD_H - 168, 236, 108, l);
 
-  // z 序（DOM 顺序·2D HUD 层·透明区透出 scene 层 3D 牌桌+物理筹码）：顶带 → 公共牌 → 座位卡/底牌 → 行动条/等待 → 日志/衣柜 → 摊牌/局终最上。
+  // z 序（DOM 顺序·2D HUD 层·透明区透出 scene 层 3D 牌桌+物理筹码）：顶带 → 公共牌 → 对手座 → 左主角立绘 → 底牌 → 行动条/等待 → 日志/衣柜 → 摊牌/局终最上。
   const children: LayoutNode[] = [
-    buildTopBar(v), buildCommunity(v.board), ...opp, heroCard, buildHeroCards(v),
+    buildTopBar(v), buildCommunity(v.board), ...opp, buildHeroPortrait(v), buildHeroCards(v),
   ];
   if (v.phase === 'betting') children.push(v.isHeroTurn ? buildActionBar(v) : buildWaiting(l));
   if (v.showLog) children.push(buildLogPanel(v.log, l));

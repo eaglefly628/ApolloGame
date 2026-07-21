@@ -73,6 +73,9 @@ export const STRINGS = {
   'log.seed': { en: 'Deterministic event stream · same seed → same log', zh: '确定性事件流 · 同 seed 同日志' },
   // 座位名（主角）
   'name.hero': { en: 'You', zh: '主角' },
+  // 左侧主角立绘框（owner 2026-07-20·参考 game-b 左侧布局）
+  'portrait.hero': { en: 'Hero Portrait', zh: '主角立绘' },
+  'portrait.sub': { en: 'Layered · pawns peel off', zh: '分层立绘 · 典当逐层褪' },
 } satisfies Record<string, Entry>;
 
 export type StringKey = keyof typeof STRINGS;

@@ -65,7 +65,7 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     expect(validateLayoutNode(buildTable(baseView({ board: river, heroHandName: '一对' })))).toEqual([]);
   });
 
-  it('座位卡覆盖全部六席（主角 + 五姨太锚点实名）', () => {
+  it('六席覆盖：主角=左立绘框 + 五姨太席卡锚点实名（owner 2026-07-20 左立绘框）', () => {
     const table = buildTable(baseView());
     const ids = new Set<string>();
     const walk = (n: { id?: string; children?: unknown[] }): void => {
@@ -73,7 +73,9 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
       for (const c of (n.children ?? []) as { id?: string; children?: unknown[] }[]) walk(c);
     };
     walk(table);
-    for (const seat of [0, 1, 2, 3, 4, 5]) expect(ids.has(`c-seat-${seat}`)).toBe(true);
+    expect(ids.has('c-hero-portrait')).toBe(true); // 主角=左侧立绘框（非小席卡）
+    expect(ids.has('c-seat-0')).toBe(false);       // 主角不再是小席卡
+    for (const seat of [1, 2, 3, 4, 5]) expect(ids.has(`c-seat-${seat}`)).toBe(true); // 五姨太=席卡
     expect(OPPONENT_ANCHORS.map((a) => a.name)).toEqual(['大姨太', '二姨太', '三姨太', '四姨太', '五姨太']);
   });
 
@@ -189,7 +191,8 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
       const table = buildTable(baseView({ playerCount: pc, seats }));
       expect(validateLayoutNode(table)).toEqual([]);
       const ids = idsOf(table);
-      for (let s = 0; s < pc; s++) expect(ids.has(`c-seat-${s}`)).toBe(true); // 在场座都在
+      expect(ids.has('c-hero-portrait')).toBe(true); // 主角=左立绘框（各人数恒在）
+      for (let s = 1; s < pc; s++) expect(ids.has(`c-seat-${s}`)).toBe(true); // 在场对手席卡都在
       for (let s = pc; s < 6; s++) expect(ids.has(`c-seat-${s}`)).toBe(false); // 不在场座不渲染
     }
     // 菜单人数段控 2~6 全在。

@@ -58,24 +58,28 @@ export const OPPONENT_ANCHORS: readonly SeatAnchor[] = [
   { seat: 5, name: '五姨太', nameEn: 'Iris', xPct: 20, yPct: 66 },
 ] as const;
 
-// 对手座位锚点（owner 2026-07-20 入局人数 2~6）：6 人=上方手工微调布局（OPPONENT_ANCHORS·owner 已验）；
-//   <6 人=把 (count-1) 个对手沿桌上弧（右→过顶→左·避开底部主角区）**均布**·屏幕椭圆 cx50/cy40/ax39/ay32(%)。
+// 对手座位锚点（owner 2026-07-20 入局人数 2~6 + 左侧主角立绘框）：把 (count-1) 个对手沿桌**上弧**均布——
+//   弧**右移**（cx57·左端 ≥~28%）给左侧主角立绘框(x14~226px)让位·避撞；避开底部主角区（立绘框 + 底牌 + 行动条）。
 export function opponentAnchors(count: number): SeatAnchor[] {
   const n = Math.max(2, Math.min(6, count));
-  if (n >= 6) return [...OPPONENT_ANCHORS];
   const k = n - 1; // 对手数
-  const cx = 50, cy = 40, ax = 39, ay = 32;
+  const nm = (j: number): { name: string; nameEn: string } => ({ name: OPPONENT_ANCHORS[j]!.name, nameEn: OPPONENT_ANCHORS[j]!.nameEn });
+  if (k === 5) {
+    // 6 人满席：环绕**上方 + 右侧**铺开（避开左侧立绘框 x14~214px + 顶带 76px + 底部行动条）·手工微调不撞。
+    const P: Array<[number, number]> = [[87, 33], [68, 19], [45, 18], [27, 31], [87, 57]];
+    return P.map(([xPct, yPct], j) => ({ seat: j + 1, ...nm(j), xPct, yPct }));
+  }
+  // ≤5 人：上弧**均匀横布**（等 x 间距·避端点压缩相撞）·x 让开左侧立绘框、y 压顶带下浅拱。
+  const xL = 25, xR = 88, cy = 41, ay = 22;
   return Array.from({ length: k }, (_, j) => {
-    const src = OPPONENT_ANCHORS[j]!; // 名字沿用（座 j+1 = 大/二/三/四姨太）
-    const frac = (j + 1) / (k + 1);
-    const ang = Math.PI * (1 - frac); // 0=右, π=左, 过顶
-    return { seat: j + 1, name: src.name, nameEn: src.nameEn, xPct: cx + ax * Math.cos(ang), yPct: cy - ay * Math.sin(ang) };
+    const fx = (j + 0.5) / k;
+    return { seat: j + 1, ...nm(j), xPct: xL + fx * (xR - xL), yPct: cy - ay * Math.sin(Math.PI * fx) };
   });
 }
 
-// 座位卡尺寸（锚点=中心 → 绝对定位左上角需减半宽/半高）。
-export const SEAT_W = 158;
-export const SEAT_H = 92;
+// 座位卡尺寸（锚点=中心 → 绝对定位左上角需减半宽/半高）。owner 2026-07-20 略缩：给左侧立绘框 + 上弧多席让位防撞。
+export const SEAT_W = 150;
+export const SEAT_H = 86;
 
 /** 锚点 %（中心）→ 绝对定位左上角 px（1280×720 基准）。 */
 export function anchorTopLeft(a: SeatAnchor): { x: number; y: number } {
