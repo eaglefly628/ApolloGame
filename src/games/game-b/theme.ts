@@ -8,6 +8,10 @@ import type { UITheme } from '@ui/components/index.js';
 export const FIELD_W = 1120;
 export const FIELD_H = 630;
 
+// ── 对局屏 SC-play v2 画布（owner 2026-07-20 新稿 506ef9d6·1280×720·mountHost 整块等比缩放·不乱位）──
+export const PLAY_W = 1280;
+export const PLAY_H = 720;
+
 // ── 3D 世界（交接档归一单位 × U：桌面半宽=1 → U 世界单位；桌面 2×2 → 20×20）──────────
 export const U = 10;
 

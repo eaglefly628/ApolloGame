@@ -4,13 +4,9 @@
 //   ② 设置（NIGHT 皮·真接线选项：AI 速度 + 默认日志·治「设置=死键」）
 //   ③ 牌桌（3D 氛围场景 + sakura HUD·真牌局全走 2D LayoutNode·点真牌面打牌）。
 // 红线：UI 全 LayoutNode；3D 全 render-only 组件；随机只有蓝图 RandomSeed（宿主零随机）。
-import { Engine } from '../../runtime/engine.js';
-import { ThreeRenderer } from '@renderer/three-renderer.js';
 import { mountHost } from '@engine/host/mount-host.js';
 import { mountUI } from '@ui/components/index.js';
 import type { HandlerMap } from '@ui/components/index.js';
-import { buildTableBlueprint } from './blueprint.js';
-import { createGameBAssets } from './assets.js';
 import { buildMenu, initialMenu, MENU_START, MENU_CONTINUE, MENU_SETTINGS } from './menu.js';
 import { buildSettings, defaultSettings, SET_SPEED, SET_LOGDEFAULT, SETTINGS_BACK, type Settings, type AiSpeed } from './menu-settings.js';
 import {
@@ -23,7 +19,7 @@ import {
   buildPlayHud, PLAY_TILE, ACT_TSUMO, ACT_RIICHI, ACT_KAN, NEXT_ROUND, TOGGLE_LOG, BACK_MENU, COPY_LOG,
   CALL_PON, CALL_CHI, CALL_KAN, CALL_RON, CALL_PASS,
 } from './play-ui.js';
-import { FIELD_W, FIELD_H, MENU_W, MENU_H, MENU_BG, SAKURA, NIGHT, TINT } from './theme.js';
+import { PLAY_W, PLAY_H, MENU_W, MENU_H, MENU_BG, NIGHT } from './theme.js';
 
 // 开局 seed：每局用**当前时钟（秒）**派生（gdd §十二·SessionIn.seed 缺省时钟种子·owner 2026-07-20）——
 // 每局牌局不同。种子在 driver（非 sim）读一次、存进 match.rng.seed（日志面板标题可见）→ 全程走引擎
@@ -73,21 +69,11 @@ export function mount(container: HTMLElement): () => void {
   // ── 牌桌屏（3D 氛围场景 + LayoutNode 对局 HUD·driver 驱动一局跑起来）──────────────────
   function showTable(resume?: MatchState): void {
     clear();
-    const skel = mountHost(container, { fieldW: FIELD_W, fieldH: FIELD_H, sceneBackground: STAGE_BG, wrapperBackground: '#1c141d' });
+    const skel = mountHost(container, { fieldW: PLAY_W, fieldH: PLAY_H, sceneBackground: STAGE_BG, wrapperBackground: '#160d1b' });
 
-    // 3D 牌桌 = 氛围场景（桌/牌山/席位牌背·真引擎渲染·对局交互全走 2D HUD）。
-    const { assets, ready } = createGameBAssets();
-    const engine = new Engine();
-    // 新局=当前时钟（秒）种子（每局不同）·续局=沿用原种子（续同一副牌势）。3D 桌景与牌局同种子。
+    // SC-play v2（owner 2026-07-20 新稿 506ef9d6）：对局屏第一波**纯 2D LayoutNode**——出牌区 2D 牌河先行，
+    // 3D 麻将区留下一波尝试（owner「先用 2D 做·我要交付版本」）。种子仍每局时钟（秒）·续局沿用。
     const seed = resume ? resume.rng.seed : clockSeed();
-    engine.load(buildTableBlueprint({ seed }));
-    const renderer = new ThreeRenderer({
-      width: FIELD_W, height: FIELD_H, background: TINT.stageBg,
-      assets, antialias: false, dprCap: 1.5, shadowMapSize: 1024,
-    });
-    engine.attachRenderer(renderer, skel.scene);
-    void ready.then(() => renderer.invalidate());
-    engine.start();
 
     // ── 对局状态机（headless 逻辑核·§2/③）+ HUD 投影驱动 ────────────────────────────
     const match = resume ?? startMatch(seed);
@@ -99,7 +85,7 @@ export function mount(container: HTMLElement): () => void {
     let aiTimer: ReturnType<typeof setTimeout> | null = null;
     skel.overlayHost.style.pointerEvents = 'auto'; // 对局 HUD 全可点
 
-    const render = (): void => { ui.update(buildPlayHud(match, { logOpen, selectedKey, logCopied }), SAKURA); };
+    const render = (): void => { ui.update(buildPlayHud(match, { logOpen, selectedKey, logCopied }), NIGHT); };
     const clearAi = (): void => { if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; } };
     // AI 席逐步推进（节奏可见）→ 到玩家行动 / 玩家待鸣窗口 / 局终 停。
     const scheduleAi = (): void => {
@@ -151,14 +137,12 @@ export function mount(container: HTMLElement): () => void {
       [BACK_MENU]: () => { savedMatch = match.over ? null : match; showMenu(); }, // 未终局暂存→菜单可续
     };
 
-    const ui = mountUI(skel.overlayHost, buildPlayHud(match, { logOpen, selectedKey, logCopied }), handlers, SAKURA);
+    const ui = mountUI(skel.overlayHost, buildPlayHud(match, { logOpen, selectedKey, logCopied }), handlers, NIGHT);
     scheduleAi(); // 若当前为 AI 席（续局可能停在 AI 手）则自动推进
     render();
 
     teardown = () => {
       clearAi();
-      engine.stop();
-      renderer.destroy();
       ui();
       skel.teardown();
     };
