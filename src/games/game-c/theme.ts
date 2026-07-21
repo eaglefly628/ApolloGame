@@ -125,7 +125,7 @@ export interface StorySeatDef {
 //   立绘 LEFT 中心(269,144)186×252 / CENTER(640,122)214×288 / RIGHT(1011,144)186×252；
 //   席卡 LEFT(256,288) / CENTER(640,194) / RIGHT(1024,288)。
 export const STORY_OPPONENTS: readonly StorySeatDef[] = [
-  { seat: 1, name: '陆时衍', nameEn: 'Lu Shiyan', cardCx: 640, cardCy: 194, portCx: 640, portCy: 122, portW: 214, portH: 288, holeCx: 640, holeCy: 268, main: true }, // 中·主（恋爱线·最大）
+  { seat: 1, name: '陆时衍', nameEn: 'Lu Shiyan', cardCx: 640, cardCy: 194, portCx: 640, portCy: 122, portW: 214, portH: 288, holeCx: 640, holeCy: 300, main: true }, // 中·主（恋爱线·最大·底牌下移给状态牌让位）
   { seat: 2, name: '谢经理', nameEn: 'Mgr. Xie', cardCx: 256, cardCy: 288, portCx: 269, portCy: 144, portW: 186, portH: 252, holeCx: 371, holeCy: 353 },              // 左
   { seat: 3, name: '柯女士', nameEn: 'Ms. Ke', cardCx: 1024, cardCy: 288, portCx: 1011, portCy: 144, portW: 186, portH: 252, holeCx: 909, holeCy: 353 },             // 右
 ] as const;

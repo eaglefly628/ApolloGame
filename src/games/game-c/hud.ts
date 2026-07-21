@@ -88,10 +88,14 @@ const inBest = (c: Card | null, best?: Card[]): boolean => !!c && !!best && best
 
 // ── 座位卡（正装：夜宴渐变底 + 状态 edge 金/翠/红 + active/allin 发光 + 读秒 + 状态气泡）────
 function statusBubble(v: SeatView, l: Lang): LayoutNode | null {
+  // owner 2026-07-21：决定/状态字太小 → 放大成醒目状态牌（前置**状态圆点**·大字·清楚显在立绘下方）。
   const mk = (text: string, bg: string, color: 'ok' | 'danger' | 'dim' | 'gold' | 'sub' | 'mine'): LayoutNode => ({
-    type: 'Panel', id: `c-bub-${v.seat}`, props: { bg: { custom: bg } },
-    layout: { direction: 'row', justify: 'center', padding: 3, radius: 12 },
-    children: [{ type: 'Label', id: `c-bub-t-${v.seat}`, props: { text, size: 'xs', bold: true, color } }],
+    type: 'Panel', id: `c-bub-${v.seat}`, props: { bg: { custom: bg }, edge: color === 'dim' ? undefined : color === 'gold' ? 'gold' : color === 'ok' ? 'ok' : color === 'danger' ? 'danger' : color === 'mine' ? 'mine' : undefined },
+    layout: { direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 6, radius: 13 },
+    children: [
+      { type: 'Label', id: `c-bub-dot-${v.seat}`, props: { text: '●', size: 14, color } },
+      { type: 'Label', id: `c-bub-t-${v.seat}`, props: { text, size: 14, bold: true, color } },
+    ],
   });
   if (v.out) return mk(t(l, 'bubble.out'), 'rgba(120,120,132,0.2)', 'dim');
   if (v.folded) return mk(t(l, 'bubble.fold'), 'rgba(120,120,132,0.2)', 'dim');
@@ -266,10 +270,10 @@ function buildStoryOpponentCard(sv: SeatView, def: StorySeatDef, l: Lang): Layou
       },
     ],
   };
-  // 动作气泡浮在席卡上方（跟注/加注/思考中）。
+  // 状态牌醒目显在**席卡下方**（立绘下面·跟注/过牌/加注/思考中/弃牌·owner 2026-07-21 放大+圆点）。
   const bubNode: LayoutNode[] = bub ? [{
     type: 'Panel', id: `c-bubwrap-${def.seat}`, props: { bare: true },
-    layout: { x: Math.round(def.cardCx - 60), y: Math.round(def.cardCy - cardH / 2 - 30), width: 120, direction: 'row', justify: 'center' },
+    layout: { x: Math.round(def.cardCx - 85), y: Math.round(def.cardCy + cardH / 2 + 8), width: 170, direction: 'row', justify: 'center', allowOverlap: true },
     children: [bub],
   }] : [];
   const hole = oppHoleCards(def, sv); // 底牌背指示（在局/弃牌·呢面上·在席卡之前画=席卡浮其上）
