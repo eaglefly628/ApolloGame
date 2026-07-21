@@ -1,0 +1,80 @@
+#!/usr/bin/env node
+// game-c《STORY-POKER V2》美术台账生成器（authored-inventory·mirror game-b/game-d）。
+// 真相=docs/design/game-c/art-bible-story-poker-v2.md §3；本脚本把可替换美术面展开成机读台账
+//   → public/games/game-c/art/art-ledger.json（平台素材屏 + audit 读它）。改台本→改本脚本→重跑。
+// 红线：立绘=外部角色卡 Avatar.src（不入台账·非我方资产）；status=placeholder（素坯占位·真图待出）。
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// §1 统一风格前缀（拼进每条 query·出图必守）。
+const P = 'luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette #7d5570 velvet #d8b878 gold #c9a9dd glow, painterly premium mobile-game art, refined tasteful, dramatic depth';
+
+// 紧凑源（一行一素材）：[skinKey, kind, 中desc, ref, servedPath, 主体(EN), spec, 中prompt, 素坯现状]
+const SRC = [
+  ['game-c/scene/backdrop', 'texture', '夜景背幕（全屏落地窗+城市夜景+景深光斑）',
+    { mechanism: 'url', component: 'ThreeRenderer', field: 'setBackgroundTexture', resolver: 'renderer.setBackgroundTexture(skinKey→url)·3D 场景背景·render-only' },
+    'scene/backdrop.png', 'floor-to-ceiling window over a nocturnal city skyline, bokeh city lights, deep purple night, horizontal cinematic composition',
+    { w: 2048, h: 1152, transparent: false }, '夜景背幕·落地窗+城市夜景+景深光斑', '素坯：声明式 SVG 夜景（theme STORY_BACKDROP）'],
+  ['game-c/felt/albedo', 'texture', '呢面绒布 albedo（紫绒+桌心暖光池）',
+    { mechanism: 'index', component: 'Material3D', field: 'map', resolver: 'build3d table-felt Material3D.map（隐形碰撞体上的 2D 贴图呢面·owner 定）' },
+    'table/felt-albedo.png', 'purple velvet poker felt cloth, elliptical racetrack table, warm light pool at center, fine woven nap texture, top-down',
+    { w: 1024, h: 1024, transparent: false }, '呢面绒布 albedo·紫绒+桌心暖光池·天鹅绒织纹', '素坯：Mesh3D 纯色 tint(0x6a4462) + point 暖光'],
+  ['game-c/felt/normal', 'texture', '呢面法线（天鹅绒织纹立体）',
+    { mechanism: 'index', component: 'Material3D', field: 'normalMap', resolver: 'build3d table-felt Material3D.normalMap（织纹凹凸·线性色）' },
+    'table/felt-normal.png', 'velvet cloth weave normal map, tangent-space, subtle fabric bump',
+    { w: 1024, h: 1024, transparent: false }, '呢面法线·天鹅绒织纹·线性', '无（当前纯 tint 无法线）'],
+  ['game-c/rail/albedo', 'texture', '木栏 albedo（胡桃木+皮革软边）',
+    { mechanism: 'index', component: 'Material3D', field: 'map', resolver: 'build3d table-base Material3D.map（桌栏木纹环）' },
+    'table/rail-albedo.png', 'dark walnut wood poker table rail with padded leather bumper, warm highlight, ring strip',
+    { w: 1024, h: 256, transparent: false }, '木栏 albedo·深胡桃木+皮革软边·暖高光', '素坯：Mesh3D 纯色 tint(0x6f5040)'],
+  ['game-c/btn/fold', 'texture', '弃牌 按钮皮（9-slice·哑光深皮金边）',
+    { mechanism: 'skin', component: 'Button/theme.buttonSkins', field: 'skin', resolver: 'theme.buttonSkins 或 c-act-fold 皮·9-slice' },
+    'buttons/fold.png', 'matte dark leather UI button plate with thin gold rim, 9-slice, neutral, dark violet',
+    { w: 280, h: 88, transparent: true }, '弃牌按钮皮·哑光深皮+金边·中性', '素坯：Panel 深紫渐变 BTN_DARK + 金边'],
+  ['game-c/btn/call', 'texture', '跟注/过牌 按钮皮（9-slice·主操作）',
+    { mechanism: 'skin', component: 'Button/theme.buttonSkins', field: 'skin', resolver: 'c-act-call 皮·9-slice' },
+    'buttons/call.png', 'matte dark leather UI button plate with gold rim, primary action, warm sheen, 9-slice',
+    { w: 280, h: 88, transparent: true }, '跟注/过牌按钮皮·金边·主操作', '素坯：Panel BTN_DARK + 金边'],
+  ['game-c/btn/raise', 'texture', '加注 按钮皮（9-slice·紫辉进攻）',
+    { mechanism: 'skin', component: 'Button/theme.buttonSkins', field: 'skin', resolver: 'c-act-raise 皮·9-slice' },
+    'buttons/raise.png', 'matte dark UI button plate with violet glow rim, aggressive raise action, 9-slice',
+    { w: 280, h: 88, transparent: true }, '加注按钮皮·紫辉·进攻', '素坯：Panel BTN_DARK + 金边 + press3d'],
+  ['game-c/btn/allin', 'texture', 'All-in 按钮皮（9-slice·红渐变警示）',
+    { mechanism: 'skin', component: 'Button/theme.buttonSkins', field: 'skin', resolver: 'c-act-allin 皮·9-slice' },
+    'buttons/allin.png', 'glowing crimson-to-maroon UI button plate, all-in warning, bright edge, 9-slice',
+    { w: 200, h: 72, transparent: true }, 'All-in 按钮皮·红渐变·警示', '素坯：Panel 红渐变 BTN_ALLIN'],
+  ['game-c/card/back', 'texture', '牌背（紫绒底+金饰纹章·owner AI 定制）',
+    { mechanism: 'index', component: 'PlayingCard', field: 'backArt', resolver: 'cardNode faceUp:false → PlayingCard.backArt（skinKey→url）' },
+    'cards/back.png', 'poker card back, purple velvet ground with gilded ornamental crest and central emblem, symmetric, luxury noir',
+    { w: 240, h: 336, transparent: false }, '牌背·紫绒底+金饰纹章+中央徽标·夜金 noir', '素坯：PlayingCard face:dark（bg3 暖紫）'],
+  ['game-c/chip/set', 'texture', '筹码贴图·9 面额（顶/侧面·owner AI·统一夜金边框）',
+    { mechanism: 'index', component: 'Chip3D/Material3D', field: 'map', resolver: '3D 筹码柱侧/顶贴图·9 面额一套（denom→tint）' },
+    'chips/set.png', 'set of casino poker chips top and edge, nine denominations, each a distinct color but unified with a gold rim and dark-violet inlay pattern, premium',
+    { w: 256, h: 256, transparent: true }, '筹码 9 面额贴图·各色但统一夜金边框', '素坯：程序分色圆柱（chip3d）'],
+  ['game-c/token/dealer', 'texture', '庄家钮 D（可货架/程序）',
+    { mechanism: 'index', component: 'Decal3D/Sprite', field: 'tex', resolver: '庄家位圆片·Decal3D 或小贴图' },
+    'tokens/dealer.png', 'round dealer button token, letter D, ivory disc with gold rim, poker',
+    { w: 128, h: 128, transparent: true }, '庄家钮 D·象牙圆片+金边', '素坯：Badge D（LayoutNode）'],
+];
+
+const rows = SRC.map(([skinKey, kind, desc, ref, sp, subject, spec, promptCn, ph], i) => ({
+  no: `art-${String(i + 1).padStart(2, '0')}`,
+  desc, kind,
+  ref: { ...ref, servedPath: `/games/game-c/art/${sp}` },
+  query: `${subject}, ${P}, isolated subject${spec.transparent ? ', transparent background' : ''}, no watermark`,
+  placeholder: { current: ph, source: 'procedural-placeholder', count: 1, instances: [skinKey] },
+  spec,
+  context: `game-c《STORY-POKER V2》${desc}·消费=${ref.resolver}（art-bible-story-poker-v2.md §3·render-only 不进 sim hash）`,
+  status: 'placeholder',
+  gen: { provider: 'pending', model: null, prompt: null, servedPath: `/games/game-c/art/${sp}`, localId: skinKey },
+  provenance: { generator: 'placeholder', prompt: null, model: null, license: null, source: 'docs/design/game-c/art-bible-story-poker-v2.md', mock: false, note: '素坯占位·真图待出（我方定制走平台/owner AI 出图·照 §1 统一风格）' },
+  prompt: promptCn,
+}));
+
+const ledger = { version: 1, game: 'game-c', mode: 'authored-inventory', count: rows.length, instances: rows.length, rows };
+const out = resolve(ROOT, 'public/games/game-c/art/art-ledger.json');
+mkdirSync(dirname(out), { recursive: true });
+writeFileSync(out, `${JSON.stringify(ledger, null, 1)}\n`);
+console.log(`game-c art-ledger → ${out} (${rows.length} 行·立绘=外部角色卡不入账)`);
