@@ -26,11 +26,14 @@ describe('game-b 设置屏（menu-settings·LayoutNode 纪律 + 真接线）', (
   });
 
   it('日志开关=set-logdefault·标签随态开/关·返回=settings-back', () => {
-    const on = collect(buildSettings({ aiSpeed: 'normal', logDefault: true })).find((n) => n.id === 'set-log-tg')!;
+    const on = collect(buildSettings({ aiSpeed: 'normal', logDefault: true }, 'zh')).find((n) => n.id === 'set-log-tg')!;
     expect((on.props as { label: string }).label).toBe('开');
     expect((on.props as { action?: string }).action).toBe(SET_LOGDEFAULT);
-    const off = collect(buildSettings({ aiSpeed: 'normal', logDefault: false })).find((n) => n.id === 'set-log-tg')!;
+    const off = collect(buildSettings({ aiSpeed: 'normal', logDefault: false }, 'zh')).find((n) => n.id === 'set-log-tg')!;
     expect((off.props as { label: string }).label).toBe('关');
+    // 默认日文：同开关出「オン/オフ」（i18n 生效）。
+    const onJa = collect(buildSettings({ aiSpeed: 'normal', logDefault: true })).find((n) => n.id === 'set-log-tg')!;
+    expect((onJa.props as { label: string }).label).toBe('オン');
     const back = collect(buildSettings(defaultSettings())).find((n) => n.id === 'set-back')!;
     expect((back.props as { action?: string }).action).toBe(SETTINGS_BACK);
   });

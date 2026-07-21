@@ -143,8 +143,11 @@ describe('game-b 对局 UI（play-ui·LayoutNode 纪律）', () => {
       nextRound(m);
     }
     expect(m.over).toBe(true);
-    const nodes = collect(buildPlayHud(m, { logOpen: false }));
+    const nodes = collect(buildPlayHud(m, { logOpen: false, lang: 'zh' }));
     const nextBtn = nodes.find((n) => n.id === 'res-next');
-    expect((nextBtn?.props as { label: string }).label).toContain('主菜单');
+    expect((nextBtn?.props as { label: string }).label).toContain('主菜单'); // zh
+    // 默认日文：同按钮出「タイトルへ」（i18n 生效·默认 ja）。
+    const nodesJa = collect(buildPlayHud(m, { logOpen: false }));
+    expect((nodesJa.find((n) => n.id === 'res-next')?.props as { label: string }).label).toContain('タイトルへ');
   });
 });

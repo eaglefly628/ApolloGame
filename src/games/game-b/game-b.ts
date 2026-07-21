@@ -17,8 +17,9 @@ import {
 } from './core/game-state.js';
 import {
   buildPlayHud, PLAY_TILE, ACT_TSUMO, ACT_RIICHI, ACT_KAN, NEXT_ROUND, TOGGLE_LOG, BACK_MENU, COPY_LOG,
-  CALL_PON, CALL_CHI, CALL_KAN, CALL_RON, CALL_PASS, MENU_OPEN, RULES_OPEN, TOGGLE_SOUND,
+  CALL_PON, CALL_CHI, CALL_KAN, CALL_RON, CALL_PASS, MENU_OPEN, RULES_OPEN, TOGGLE_SOUND, SET_LANG,
 } from './play-ui.js';
+import type { Lang } from './strings.js';
 import { PLAY_W, PLAY_H, MENU_W, MENU_H, MENU_BG, NIGHT } from './theme.js';
 
 // 开局 seed：每局用**当前时钟（秒）**派生（gdd §十二·SessionIn.seed 缺省时钟种子·owner 2026-07-20）——
@@ -36,6 +37,7 @@ export function mount(container: HTMLElement): () => void {
   const clear = (): void => { teardown?.(); teardown = null; };
 
   const settings: Settings = defaultSettings(); // 菜单↔设置↔牌桌之间存活
+  let lang: Lang = 'ja';                         // 语言（默认日文·owner 2026-07-21·三屏共用·牌桌菜单切换）
   let savedMatch: MatchState | null = null;     // 同 session 续局（返回菜单时暂存·未终局才可续）
   const canContinue = (): boolean => savedMatch !== null && !savedMatch.over;
 
@@ -44,7 +46,7 @@ export function mount(container: HTMLElement): () => void {
     clear();
     const skel = mountHost(container, { fieldW: MENU_W, fieldH: MENU_H, sceneBackground: MENU_BG, wrapperBackground: '#160d1b' });
     skel.overlayHost.style.pointerEvents = 'auto';
-    const ui = mountUI(skel.overlayHost, buildMenu({ ...initialMenu(), hasSave: canContinue() }), {
+    const ui = mountUI(skel.overlayHost, buildMenu({ ...initialMenu(), hasSave: canContinue() }, lang), {
       [MENU_START]: () => { savedMatch = null; showTable(); },              // 新局：弃旧续局
       [MENU_CONTINUE]: () => { if (canContinue()) showTable(savedMatch!); }, // 续同 session 未终局
       [MENU_SETTINGS]: () => showSettings(),
@@ -57,8 +59,8 @@ export function mount(container: HTMLElement): () => void {
     clear();
     const skel = mountHost(container, { fieldW: MENU_W, fieldH: MENU_H, sceneBackground: MENU_BG, wrapperBackground: '#160d1b' });
     skel.overlayHost.style.pointerEvents = 'auto';
-    const render = (): void => { ui.update(buildSettings(settings), NIGHT); };
-    const ui = mountUI(skel.overlayHost, buildSettings(settings), {
+    const render = (): void => { ui.update(buildSettings(settings, lang), NIGHT); };
+    const ui = mountUI(skel.overlayHost, buildSettings(settings, lang), {
       [SET_SPEED]: (arg?: string) => { if (arg === 'fast' || arg === 'normal' || arg === 'slow') { settings.aiSpeed = arg; render(); } },
       [SET_LOGDEFAULT]: () => { settings.logDefault = !settings.logDefault; render(); },
       [SETTINGS_BACK]: () => showMenu(),
@@ -87,7 +89,7 @@ export function mount(container: HTMLElement): () => void {
     let aiTimer: ReturnType<typeof setTimeout> | null = null;
     skel.overlayHost.style.pointerEvents = 'auto'; // 对局 HUD 全可点
 
-    const render = (): void => { ui.update(buildPlayHud(match, { logOpen, selectedKey, logCopied, menuOpen, rulesOpen, soundOn }), NIGHT); };
+    const render = (): void => { ui.update(buildPlayHud(match, { logOpen, selectedKey, logCopied, menuOpen, rulesOpen, soundOn, lang }), NIGHT); };
     const clearAi = (): void => { if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; } };
     // AI 出牌用时（owner「1–3 秒」）：速度档基线 + 据牌局状态的确定性抖动（非裸随机·可复现）→ 落 1000–3000ms。
     const aiDelay = (): number => Math.min(3000, AI_BASE_BY[settings.aiSpeed] + (match.cur.wall.length * 37 + match.cur.turn * 101 + match.honba * 7) % 1500);
@@ -143,10 +145,12 @@ export function mount(container: HTMLElement): () => void {
       [MENU_OPEN]: () => { menuOpen = !menuOpen; if (!menuOpen) rulesOpen = false; if (menuOpen) clearAi(); else scheduleAi(); render(); },
       [RULES_OPEN]: () => { rulesOpen = !rulesOpen; render(); },
       [TOGGLE_SOUND]: () => { soundOn = !soundOn; render(); },
+      [SET_LANG]: () => { lang = lang === 'ja' ? 'zh' : 'ja'; render(); }, // 日 ⇄ 中 即时切换（默认日文）
+
       [BACK_MENU]: () => { savedMatch = match.over ? null : match; showMenu(); }, // 未终局暂存→菜单可续
     };
 
-    const ui = mountUI(skel.overlayHost, buildPlayHud(match, { logOpen, selectedKey, logCopied }), handlers, NIGHT);
+    const ui = mountUI(skel.overlayHost, buildPlayHud(match, { logOpen, selectedKey, logCopied, lang }), handlers, NIGHT);
     scheduleAi(); // 若当前为 AI 席（续局可能停在 AI 手）则自动推进
     render();
 

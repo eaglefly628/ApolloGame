@@ -4,6 +4,7 @@
 // 文案换 gdd 拍板口径（mockups/README 警示）：半庄→东风战一圈；点数=金钱示意；人名=角色卡候选。
 import type { LayoutNode } from '@ui/components/index.js';
 import { MENU_W, MENU_H } from './theme.js';
+import { t, type Lang } from './strings.js';
 
 export const MENU_START = 'menu-start';
 export const MENU_CONTINUE = 'menu-continue';
@@ -22,7 +23,7 @@ export function initialMenu(): MenuState {
 
 const fmt = (n: number): string => n.toLocaleString('en-US');
 
-export function buildMenu(st: MenuState): LayoutNode {
+export function buildMenu(st: MenuState, lang: Lang = 'ja'): LayoutNode {
   return {
     type: 'Panel', id: 'menu-root', props: { bare: true },
     layout: { width: MENU_W, height: MENU_H },
@@ -41,7 +42,7 @@ export function buildMenu(st: MenuState): LayoutNode {
           },
           {
             type: 'Label', id: 'menu-sub',
-            props: { text: '四人东风战 · 立直麻将 · 暖夜和室雀庄', size: 15, color: 'sub' },
+            props: { text: t(lang, 'menu.sub'), size: 15, color: 'sub' },
           },
         ],
       },
@@ -52,15 +53,15 @@ export function buildMenu(st: MenuState): LayoutNode {
         type: 'Panel', id: 'menu-btns', props: { bare: true },
         layout: { x: MENU_W - 336, y: 300, width: 260, gap: 13, align: 'center' },
         children: [
-          { type: 'Label', id: 'menu-tip', props: { text: '荷官已就位，请上桌 ▾', size: 12, color: 'sub' } },
+          { type: 'Label', id: 'menu-tip', props: { text: t(lang, 'menu.tip'), size: 12, color: 'sub' } },
           {
             type: 'Panel', id: 'menu-btn-frame',
             props: { bg: { custom: 'linear-gradient(162deg,rgba(48,29,54,0.62),rgba(28,17,34,0.72))' }, edge: 'gold' },
             layout: { width: 260, direction: 'column', gap: 12, padding: 18, radius: 14, align: 'stretch' },
             children: [
-              { type: 'Button', id: 'menu-start-btn', props: { label: '开始上桌', kind: 'hero', action: MENU_START } },
-              { type: 'Button', id: 'menu-continue-btn', props: { label: '继续上局', kind: 'ghost', action: MENU_CONTINUE, disabled: !st.hasSave } },
-              { type: 'Button', id: 'menu-settings-btn', props: { label: '设置', kind: 'ghost', action: MENU_SETTINGS } },
+              { type: 'Button', id: 'menu-start-btn', props: { label: t(lang, 'menu.start'), kind: 'hero', action: MENU_START } },
+              { type: 'Button', id: 'menu-continue-btn', props: { label: t(lang, 'menu.continue'), kind: 'ghost', action: MENU_CONTINUE, disabled: !st.hasSave } },
+              { type: 'Button', id: 'menu-settings-btn', props: { label: t(lang, 'menu.settings'), kind: 'ghost', action: MENU_SETTINGS } },
             ],
           },
         ],
@@ -72,9 +73,9 @@ export function buildMenu(st: MenuState): LayoutNode {
         layout: { x: 84, y: 150, width: 300, height: 440, direction: 'column', align: 'center', justify: 'center', gap: 15, padding: 26 },
         children: [
           { type: 'Label', id: 'menu-hero-icon', props: { text: '▤', size: 40, color: 'jade' } },
-          { type: 'Label', id: 'menu-hero-label', props: { text: '主角立绘', size: 20, font: 'serif', bold: true, color: 'jade' } },
+          { type: 'Label', id: 'menu-hero-label', props: { text: t(lang, 'menu.heroLabel'), size: 20, font: 'serif', bold: true, color: 'jade' } },
           { type: 'Tag', id: 'menu-hero-dim', props: { label: '300 × 440', tone: 'accent', size: 'sm' } },
-          { type: 'Label', id: 'menu-hero-prompt', props: { text: '女性向二次元 · 和风夜宴 · 暖夜和室 · 真 alpha 立绘', size: 12, color: 'sub' } },
+          { type: 'Label', id: 'menu-hero-prompt', props: { text: t(lang, 'menu.heroPrompt'), size: 12, color: 'sub' } },
           { type: 'Tag', id: 'menu-hero-anchor', props: { label: '风格锚：sakura-nijigen', tone: 'normal', size: 'sm' } },
         ],
       },
@@ -97,7 +98,7 @@ export function buildMenu(st: MenuState): LayoutNode {
       // ── 版本号（右下）──────────────────────────────────────────────────────────────
       {
         type: 'Label', id: 'menu-ver',
-        props: { text: 'v0.3.1 · 内部测试', size: 12, color: 'dim' },
+        props: { text: t(lang, 'menu.ver'), size: 12, color: 'dim' },
         layout: { x: MENU_W - 220, y: MENU_H - 40, width: 200, align: 'end' },
       },
     ],
