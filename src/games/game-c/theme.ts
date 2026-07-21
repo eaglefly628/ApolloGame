@@ -125,9 +125,10 @@ export interface StorySeatDef {
 //   立绘 LEFT 中心(269,144)186×252 / CENTER(640,122)214×288 / RIGHT(1011,144)186×252；
 //   席卡 LEFT(256,288) / CENTER(640,194) / RIGHT(1024,288)。
 export const STORY_OPPONENTS: readonly StorySeatDef[] = [
-  { seat: 1, name: '陆时衍', nameEn: 'Lu Shiyan', cardCx: 640, cardCy: 194, portCx: 640, portCy: 122, portW: 214, portH: 288, holeCx: 640, holeCy: 300, main: true }, // 中·主（恋爱线·最大·底牌下移给状态牌让位）
-  { seat: 2, name: '谢经理', nameEn: 'Mgr. Xie', cardCx: 256, cardCy: 288, portCx: 269, portCy: 144, portW: 186, portH: 252, holeCx: 371, holeCy: 353 },              // 左
-  { seat: 3, name: '柯女士', nameEn: 'Ms. Ke', cardCx: 1024, cardCy: 288, portCx: 1011, portCy: 144, portW: 186, portH: 252, holeCx: 909, holeCy: 353 },             // 右
+  // owner 2026-07-21：立绘太大占满屏 → 缩小 40%（×0.6·中座 214×288→128×172·边座 186×252→112×150）。
+  { seat: 1, name: '陆时衍', nameEn: 'Lu Shiyan', cardCx: 640, cardCy: 194, portCx: 640, portCy: 108, portW: 128, portH: 172, holeCx: 640, holeCy: 300, main: true }, // 中·主（恋爱线·最大·底牌下移给状态牌让位）
+  { seat: 2, name: '谢经理', nameEn: 'Mgr. Xie', cardCx: 256, cardCy: 288, portCx: 269, portCy: 130, portW: 112, portH: 150, holeCx: 371, holeCy: 353 },              // 左
+  { seat: 3, name: '柯女士', nameEn: 'Ms. Ke', cardCx: 1024, cardCy: 288, portCx: 1011, portCy: 130, portW: 112, portH: 150, holeCx: 909, holeCy: 353 },             // 右
 ] as const;
 export const STORY_HERO = { name: '你 & 林晚', nameEn: 'You & Linwan' };   // 主角一座（底左面板）
 export const STORY_PARTNER = { name: '林晚', nameEn: 'Linwan' };            // 搭档旁白（手牌建议 advice_show）

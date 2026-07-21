@@ -210,19 +210,19 @@ function buildStoryPortrait(def: StorySeatDef, sv: SeatView | undefined, l: Lang
   const name = sv?.cardName ?? (l === 'en' ? def.nameEn : def.name); // 平台卡名优先·否则内置双语
   const big = !!def.main;
   const avatarProps = sv?.avatarUrl // 卡头像媒体（有则显图·否则名首字占位）
-    ? { src: sv.avatarUrl, name, size: big ? 108 : 88, shape: 'rounded' as const }
-    : { name: name.slice(0, 1), size: big ? 108 : 88, shape: 'rounded' as const };
+    ? { src: sv.avatarUrl, name, size: big ? 64 : 52, shape: 'rounded' as const }
+    : { name: name.slice(0, 1), size: big ? 64 : 52, shape: 'rounded' as const };
   return {
     type: 'Panel', id: `c-port-${def.seat}`,
     props: { bg: { custom: big ? PORTRAIT_FILL_MAIN : PORTRAIT_FILL_SIDE } },
     layout: {
       x: Math.round(def.portCx - def.portW / 2), y: Math.round(def.portCy - def.portH / 2), width: def.portW, height: def.portH,
-      direction: 'column', align: 'center', justify: 'start', gap: 10, padding: 18, radius: 16, opacity: 0.96,
+      direction: 'column', align: 'center', justify: 'start', gap: 6, padding: 10, radius: 14, opacity: 0.96,
       allowOverlap: true, // 立绘 bust=背景层·稿意图叠层（席卡/顶带浮其上）→ ui-audit 重叠豁免
     },
     children: [
       { type: 'Avatar', id: `c-port-av-${def.seat}`, props: avatarProps },
-      { type: 'Label', id: `c-port-l-${def.seat}`, props: { text: name, font: 'serif', size: big ? 'lg' : 'md', bold: true, color: big ? 'gold' : 'sub' } },
+      { type: 'Label', id: `c-port-l-${def.seat}`, props: { text: name, font: 'serif', size: big ? 'md' : 'sm', bold: true, color: big ? 'gold' : 'sub' } },
       { type: 'Label', id: `c-port-s-${def.seat}`, props: { text: sv?.flavor ?? t(l, 'story.portrait'), size: 'xs', color: 'dim' } },
     ],
   };

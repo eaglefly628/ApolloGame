@@ -33,8 +33,8 @@
     "S4": {
       "exit": 0,
       "summary": "walkthrough 绿（ Test Files  10 passed (10) ·       Tests  123 passed (123)）· 验收剧本 9 场景绿",
-      "at": "2026-07-21T15:59:42.454Z",
-      "gameHash": "540b105890577b66"
+      "at": "2026-07-21T16:07:58.921Z",
+      "gameHash": "f0fa58ab5b33a92f"
     },
     "S5": {
       "exit": 0,
@@ -656,6 +656,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-21T15:59:42.454Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "立绘缩小40%",
+      "at": "2026-07-21T16:07:48.987Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-21T16:07:58.921Z"
     }
   ],
   "outOfOrder": [
@@ -883,6 +895,11 @@
       "stage": "S4",
       "reason": "showdown 原始牌+高亮组合·无牌型名 + 美术台本",
       "at": "2026-07-21T15:59:32.649Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "立绘缩小40%",
+      "at": "2026-07-21T16:07:48.987Z"
     }
   ],
   "reviews": {
