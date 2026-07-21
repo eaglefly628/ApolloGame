@@ -17,7 +17,7 @@ import {
 } from './core/game-state.js';
 import {
   buildPlayHud, PLAY_TILE, ACT_TSUMO, ACT_RIICHI, ACT_KAN, NEXT_ROUND, TOGGLE_LOG, BACK_MENU, COPY_LOG,
-  CALL_PON, CALL_CHI, CALL_KAN, CALL_RON, CALL_PASS,
+  CALL_PON, CALL_CHI, CALL_KAN, CALL_RON, CALL_PASS, MENU_OPEN, RULES_OPEN, TOGGLE_SOUND,
 } from './play-ui.js';
 import { PLAY_W, PLAY_H, MENU_W, MENU_H, MENU_BG, NIGHT } from './theme.js';
 
@@ -25,8 +25,8 @@ import { PLAY_W, PLAY_H, MENU_W, MENU_H, MENU_BG, NIGHT } from './theme.js';
 // 每局牌局不同。种子在 driver（非 sim）读一次、存进 match.rng.seed（日志面板标题可见）→ 全程走引擎
 // RandomSeed PRNG，存 seed 即可复现整局（randomness.md「存初始 seed 复现」·不破 lockstep/回放）。
 const clockSeed = (): number => Math.floor(Date.now() / 1000) % 0x7fffffff;
-// AI 逐步节奏（ms·设置屏可调·让玩家看清每家摸打·owner「太快跟不上」→放慢普通档）。
-const AI_DELAY_BY: Record<AiSpeed, number> = { fast: 480, normal: 780, slow: 1150 };
+// AI 出牌节奏基线（ms·设置屏可调）——owner 2026-07-21「每家出牌控制在 1–3 秒」：基线 + 确定性抖动落在 1000–3000ms。
+const AI_BASE_BY: Record<AiSpeed, number> = { fast: 1000, normal: 1500, slow: 2400 };
 
 // 牌桌和室夜宴底（宿主装饰层·真美术=S6 背景件）。
 const STAGE_BG = 'radial-gradient(ellipse at 50% 38%, #41283a 0%, #2a1e2b 62%, #201722 100%)';
@@ -78,21 +78,26 @@ export function mount(container: HTMLElement): () => void {
     // ── 对局状态机（headless 逻辑核·§2/③）+ HUD 投影驱动 ────────────────────────────
     const match = resume ?? startMatch(seed);
     match.interactiveCalls = true; // 开鸣牌窗口（P4·owner 点名先上鸣牌·玩家可碰/吃/荣）
-    const aiDelay = AI_DELAY_BY[settings.aiSpeed];
     let logOpen = settings.logDefault;
     let selectedKey: string | null = null; // 两步打牌：选中的手牌位（null=未选）
     let logCopied = false;                  // 日志复制反馈（短暂）
+    let menuOpen = false;                   // 游戏内菜单浮层（菜单钮开）
+    let rulesOpen = false;                  // 规则说明浮层（菜单→规则）
+    let soundOn = true;                     // 声音开关（视觉态·音频系统待接）
     let aiTimer: ReturnType<typeof setTimeout> | null = null;
     skel.overlayHost.style.pointerEvents = 'auto'; // 对局 HUD 全可点
 
-    const render = (): void => { ui.update(buildPlayHud(match, { logOpen, selectedKey, logCopied }), NIGHT); };
+    const render = (): void => { ui.update(buildPlayHud(match, { logOpen, selectedKey, logCopied, menuOpen, rulesOpen, soundOn }), NIGHT); };
     const clearAi = (): void => { if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; } };
-    // AI 席逐步推进（节奏可见）→ 到玩家行动 / 玩家待鸣窗口 / 局终 停。
+    // AI 出牌用时（owner「1–3 秒」）：速度档基线 + 据牌局状态的确定性抖动（非裸随机·可复现）→ 落 1000–3000ms。
+    const aiDelay = (): number => Math.min(3000, AI_BASE_BY[settings.aiSpeed] + (match.cur.wall.length * 37 + match.cur.turn * 101 + match.honba * 7) % 1500);
+    // AI 席逐步推进（节奏可见）→ 到玩家行动 / 玩家待鸣窗口 / 菜单浮层 / 局终 停。
     const scheduleAi = (): void => {
       clearAi();
+      if (menuOpen || rulesOpen) return; // 菜单/规则浮层开着=暂停 AI（读秒停·别在浮层后偷跑）
       // 玩家待鸣窗口开着时绝不推进 AI（否则 aiTurn 会替玩家代决鸣牌）——停下等玩家点按钮。
       if (match.cur.phase === 'playing' && match.cur.turn !== 0 && match.cur.callWindow === null) {
-        aiTimer = setTimeout(() => { aiTurn(match); render(); scheduleAi(); }, aiDelay);
+        aiTimer = setTimeout(() => { aiTurn(match); render(); scheduleAi(); }, aiDelay());
       }
     };
     // 手牌位 key（'0'..'12'/'d'）→ 牌码（两步打牌第二下映射·打出用真牌码）。
@@ -134,6 +139,10 @@ export function mount(container: HTMLElement): () => void {
           setTimeout(() => { logCopied = false; render(); }, 1600);
         } catch { /* 无剪贴板权限=静默（面板仍可肉眼读） */ }
       },
+      // 游戏内菜单浮层：菜单钮开/关（开时暂停 AI 读秒·关时恢复）；规则说明子浮层；声音开关（视觉态）。
+      [MENU_OPEN]: () => { menuOpen = !menuOpen; if (!menuOpen) rulesOpen = false; if (menuOpen) clearAi(); else scheduleAi(); render(); },
+      [RULES_OPEN]: () => { rulesOpen = !rulesOpen; render(); },
+      [TOGGLE_SOUND]: () => { soundOn = !soundOn; render(); },
       [BACK_MENU]: () => { savedMatch = match.over ? null : match; showMenu(); }, // 未终局暂存→菜单可续
     };
 

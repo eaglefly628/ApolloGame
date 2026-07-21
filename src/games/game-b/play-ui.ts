@@ -20,6 +20,9 @@ export const NEXT_ROUND = 'next-round';
 export const TOGGLE_LOG = 'toggle-log';
 export const BACK_MENU = 'back-menu';
 export const COPY_LOG = 'copy-log';
+export const MENU_OPEN = 'menu-open';     // 开/关 游戏内菜单浮层
+export const RULES_OPEN = 'rules-open';   // 开/关 规则说明浮层
+export const TOGGLE_SOUND = 'toggle-sound'; // 声音开关（视觉态·音频系统待接）
 export const CALL_PON = 'call-pon';
 export const CALL_CHI = 'call-chi';
 export const CALL_KAN = 'call-kan';
@@ -38,7 +41,6 @@ const OPP_TACHIE: Record<number, string> = { 1: `${TACHIE}/tachie-daiyi.png`, 2:
 
 const WIND = ['東', '南', '西', '北'];
 const HW = 44, HH = 60;   // 自家手牌
-const RW = 20, RH = 27;   // 牌河（出牌区 2D 弃牌）
 const DW = 22, DH = 30;   // 宝牌
 
 // ── 布局区块常量（精简牌桌·920×640·牌桌居中）────────────────────────────────────────────
@@ -46,12 +48,20 @@ const PANEL_X = 8, PANEL_W = PLAY_W - 16, PANEL_Y = 6, PANEL_H = PLAY_H - 12; //
 const FELT = 'linear-gradient(168deg,#1e6a5b 0%,#175349 52%,#123c3a 100%)';
 // 出牌区透视梯形（居中·rotateX 透视）·**尽量放大让玩家视野更大**（owner 2026-07-21）。
 const FELT_W = 728, FELT_H = 448, FELT_X = Math.round((PLAY_W - FELT_W) / 2), FELT_Y = 44;
+// 桌底控制带（Y·锚定在梯形投影底边 ~516 之下、手牌顶 ~574 之上的 58px 带内·行动键/回合条贴这里·不压桌不压手牌）。
+const BAND_Y = 520;
 // 对家屏幕位（座 1=東/左·2=北/上·3=西/右）——贴牌桌左右/上三边。
 const OPP_POS: Record<number, { x: number; y: number }> = {
   1: { x: 40, y: 214 },     // 東 左（名条 128 居中溢出·两侧不切边）
   2: { x: 356, y: 4 },      // 北 上中（横排）
   3: { x: 808, y: 214 },    // 西 右（名条 128 居中溢出·两侧不切边）
 };
+
+// ── 出牌倒计时环（当前手·闭集件 ProgressBar shape:ring conic 环 + anim:spin 自转·纯 CSS 无重渲染）──
+// owner 2026-07-21「每个人头像打牌时有个倒计时圆圈转一转·五秒」——头像角标小环·当前手时自旋提示"读秒中"（不糊脸）。
+function countdownRing(id: string, size: number, x: number, y: number): LayoutNode {
+  return { type: 'ProgressBar', id, props: { value: 68, max: 100, tone: 'gold', shape: 'ring', size }, layout: { x, y, anim: 'spin' } };
+}
 
 // ══════════════════════════════════════════════════════════════════════════════════════════
 //  桌上头像框（東/北/西·贴立绘 + 风位徽 + 名 + 点）= seat-1/2/3（测试钉 seat-* 齐 4）
@@ -63,7 +73,11 @@ function tableAvatar(m: MatchState, seat: number): LayoutNode {
   const frame: LayoutNode = {
     type: 'Panel', id: `seat-${seat}-fr`, props: { bg: { custom: 'rgba(24,14,28,0.6)' }, accent: active, glow: active },
     layout: { width: 72, height: 72, padding: 3 },
-    children: [{ type: 'Image', id: `seat-${seat}-p`, props: { src: OPP_TACHIE[seat]!, fit: 'cover' }, layout: { width: 66, height: 66, radius: 8 } }],
+    children: [
+      { type: 'Image', id: `seat-${seat}-p`, props: { src: OPP_TACHIE[seat]!, fit: 'cover' }, layout: { width: 66, height: 66, radius: 8 } },
+      // 出牌倒计时环（当前手·右上角小环角标·anim:spin 纯 CSS 自转不触发重渲染·不糊脸）。
+      ...(active ? [countdownRing(`seat-${seat}-ring`, 26, 48, -9)] : []),
+    ],
   };
   const nameRow: LayoutNode = {
     type: 'Panel', id: `seat-${seat}-nm`, props: { bg: { custom: 'rgba(16,10,20,0.85)' } },
@@ -95,14 +109,15 @@ function tableAvatar(m: MatchState, seat: number): LayoutNode {
   };
 }
 
-// 玩家座条（南·felt 底）= seat-0（精简·点数不放大）。
+// 玩家座条（主角·锚定牌桌左下角·owner 2026-07-21）= seat-0（精简·点数不放大·恰在行动键正上方）。
 function playerBar(m: MatchState): LayoutNode {
   const active = m.cur.turn === 0 && m.cur.phase === 'playing';
   const wind = WIND[seatWind(0, m.dealer)]!;
   return {
     type: 'Panel', id: 'seat-0', props: { bg: { custom: 'rgba(20,12,26,0.9)' }, accent: active, glow: active },
-    layout: { x: FELT_X + FELT_W / 2 - 130, y: FELT_Y + FELT_H - 24, width: 260, height: 30, direction: 'row', gap: 8, align: 'center', padding: 6 },
+    layout: { x: FELT_X + 8, y: FELT_Y + FELT_H - 30, width: 200, height: 32, direction: 'row', gap: 8, align: 'center', padding: 6 },
     children: [
+      ...(active ? [{ type: 'ProgressBar' as const, id: 'seat-0-ring', props: { value: 70, max: 100, tone: 'gold' as const, shape: 'ring' as const, size: 22 }, layout: { anim: 'spin' as const } }] : []),
       { type: 'Tag', id: 'seat-0-w', props: { label: wind, tone: 'accent', size: 'sm' } },
       { type: 'Label', id: 'seat-0-n', props: { text: m.seatNames[0]!, size: 'sm', bold: true, color: 'text' }, layout: { flex: 1 } },
       ...(m.cur.riichi[0] ? [{ type: 'Tag' as const, id: 'seat-0-r', props: { label: '● 立直', tone: 'accent' as const, size: 'sm' as const } }] : []),
@@ -114,26 +129,29 @@ function playerBar(m: MatchState): LayoutNode {
 // ══════════════════════════════════════════════════════════════════════════════════════════
 //  出牌区（透视梯形 + 全部牌区占位框·2D 先标出·3D 后放上面）
 // ══════════════════════════════════════════════════════════════════════════════════════════
-const RIVER_POS: Record<number, { x: number; y: number }> = {
-  0: { x: FELT_X + FELT_W / 2 - 62, y: FELT_Y + FELT_H - 100 }, // 南 下
-  1: { x: FELT_X + 26, y: FELT_Y + 142 },                       // 東 左
-  2: { x: FELT_X + FELT_W / 2 - 62, y: FELT_Y + 42 },           // 北 上
-  3: { x: FELT_X + FELT_W - 148, y: FELT_Y + 142 },             // 西 右
+// 牌河区（梯形**局部**坐标·四家 = 合牌区四边·左右对称·弃牌当梯形子获同款透视/远近放缩·owner 2026-07-21）。
+const RG = 2; // 河内牌间距
+const RIVER_ZONE: Record<number, { x: number; y: number; w: number; h: number; cols: number; tw: number; th: number }> = {
+  0: { x: FELT_W / 2 - 98, y: FELT_H - 112, w: 196, h: 52, cols: 6, tw: 20, th: 24 }, // 你 下（宽·6 列）
+  2: { x: FELT_W / 2 - 94, y: 58, w: 188, h: 48, cols: 6, tw: 18, th: 22 },           // 对家 上（宽·6 列·稍小）
+  1: { x: 70, y: FELT_H / 2 - 50, w: 52, h: 100, cols: 2, tw: 20, th: 24 },           // 東 左（窄高·2 列）
+  3: { x: FELT_W - 122, y: FELT_H / 2 - 50, w: 52, h: 100, cols: 2, tw: 20, th: 24 }, // 西 右（窄高·2 列·镜像左）
 };
-function riverBlock(m: MatchState, seat: number): LayoutNode | null {
+// 弃牌网格：在各家河区**居中排开**（grid cols·满自动换行·取最近若干张）——梯形子·透视自适应。
+function riverTiles(m: MatchState, seat: number): LayoutNode | null {
   const river = m.cur.rivers[seat]!;
   if (!river.length) return null;
-  const show = river.slice(-18);
-  const p = RIVER_POS[seat]!;
-  const rows: LayoutNode[] = [];
-  for (let r = 0; r < Math.ceil(show.length / 6); r++) {
-    const slice = show.slice(r * 6, r * 6 + 6);
-    rows.push({
-      type: 'Panel', id: `river-${seat}-row${r}`, props: { bare: true }, layout: { direction: 'row', gap: 2 },
-      children: slice.map((c, i): LayoutNode => ({ type: 'Image', id: `river-${seat}-${r * 6 + i}`, props: { src: faceUrl(c), fit: 'contain' }, layout: { width: RW, height: RH } })),
-    });
-  }
-  return { type: 'Panel', id: `river-${seat}`, props: { bg: { custom: 'rgba(8,20,18,0.35)' } }, layout: { x: p.x, y: p.y, direction: 'column', gap: 2, padding: 3 }, children: rows };
+  const z = RIVER_ZONE[seat]!;
+  const rowsMax = Math.max(1, Math.floor((z.h + RG) / (z.th + RG)));
+  const show = river.slice(-(z.cols * rowsMax));
+  const rows = Math.ceil(show.length / z.cols);
+  const gridW = z.cols * z.tw + (z.cols - 1) * RG;
+  const gridH = rows * z.th + (rows - 1) * RG;
+  return {
+    type: 'Panel', id: `river-${seat}`, props: { bare: true },
+    layout: { x: z.x + Math.round((z.w - gridW) / 2), y: z.y + Math.round((z.h - gridH) / 2), width: gridW, direction: 'grid', cols: z.cols, gap: RG },
+    children: show.map((c, i): LayoutNode => ({ type: 'Image', id: `river-${seat}-${i}`, props: { src: faceUrl(c), fit: 'contain' }, layout: { width: z.tw, height: z.th } })),
+  };
 }
 function playField(m: MatchState): LayoutNode[] {
   const doraTiles: LayoutNode[] = m.cur.doraInd.map((d, i): LayoutNode => ({
@@ -145,16 +163,18 @@ function playField(m: MatchState): LayoutNode[] {
     children: label ? [{ type: 'Label', id: `${id}-l`, props: { text: label, size: 'xs', color: 'sub' } }] : [],
   });
   const CW = FELT_W, CH = FELT_H;
+  const zLabel: Record<number, string> = { 0: '你 · 河', 2: '对家 · 河', 1: '河', 3: '河' };
+  // 四家河区占位框（据 RIVER_ZONE·左右对称）+ 实际弃牌网格（同为梯形子·共享透视）。
+  const riverZones: LayoutNode[] = [0, 2, 1, 3].map((s) => { const z = RIVER_ZONE[s]!; return zone(`river-z-${s}`, z.x, z.y, z.w, z.h, zLabel[s]!, 'jade'); });
+  const discards: LayoutNode[] = [0, 1, 2, 3].map((s) => riverTiles(m, s)).filter((n): n is LayoutNode => n !== null);
   const trapezoid: LayoutNode = {
     type: 'Panel', id: 'felt', props: { bg: { custom: FELT }, dashed: true, edge: 'gold' },
     layout: { x: FELT_X, y: FELT_Y, width: CW, height: CH, rotateX: 34, perspective: 1000, radius: 14 },
     children: [
       { type: 'Panel', id: 'felt-wall', props: { bg: 'transparent', dashed: true, edge: 'jade' }, layout: { x: 24, y: 18, width: CW - 48, height: CH - 36, radius: 12 } }, // 牌山（外圈两层）
       zone('felt-dead', CW / 2 - 62, CH / 2 - 38, 124, 76, '报牌区', 'gold'),                 // 报牌区（正当中）
-      zone('river-z-0', CW / 2 - 98, CH - 112, 196, 52, '你 · 河', 'jade'),                   // 南 下（自家）
-      zone('river-z-2', CW / 2 - 94, 58, 188, 48, '对家 · 河', 'jade'),                        // 北 上
-      zone('river-z-1', 70, CH / 2 - 50, 52, 100, '河', 'jade'),                               // 左
-      zone('river-z-3', CW - 122, CH / 2 - 50, 52, 100, '河', 'jade'),                         // 右
+      ...riverZones,
+      ...discards,
     ],
   };
   // 顶部场况状态条（左上·不压牌区）。
@@ -233,27 +253,77 @@ function meldBlock(m: MatchState, seat: number): LayoutNode | null {
   };
 }
 
-// ── 最小控制（右上角·📜日志 + ☰返回菜单·owner「只留菜单/返回/日志」）───────────────────────────
+// ── 最小控制（右上角·日志 + 菜单·横排）───────────────────────────────────────────────────────
+// 按钮宽必须容下 2 字+左右内边距（30px×2）否则字被挤竖排（owner 目击 bug）——定宽 100 保横排。
 function controls(): LayoutNode {
+  const W = 100, H = 36;
   return {
     type: 'Panel', id: 'controls', props: { bare: true },
-    layout: { x: PANEL_X + PANEL_W - 184, y: PANEL_Y + 4, direction: 'row', gap: 8, align: 'center' },
+    layout: { x: PANEL_X + PANEL_W - (W * 2 + 8), y: PANEL_Y + 4, direction: 'row', gap: 8, align: 'center' },
     children: [
-      { type: 'Button', id: 'act-log', props: { label: '日志', kind: 'ghost', action: TOGGLE_LOG }, layout: { width: 72, height: 34 } },
-      { type: 'Button', id: 'act-menu', props: { label: '返回', kind: 'ghost', action: BACK_MENU }, layout: { width: 72, height: 34 } },
+      { type: 'Button', id: 'act-log', props: { label: '日志', kind: 'ghost', action: TOGGLE_LOG }, layout: { width: W, height: H } },
+      { type: 'Button', id: 'act-menu', props: { label: '菜单', kind: 'ghost', action: MENU_OPEN }, layout: { width: W, height: H } },
     ],
   };
 }
 
-// ── 行动键排（自摸/杠/立直·居中底部·acts 测试钉）────────────────────────────────────────────
+// ── 游戏内菜单浮层（菜单钮开·规则说明/声音/返回主菜单·语言开关下一版接 i18n）─────────────────────
+function menuOverlay(soundOn: boolean): LayoutNode {
+  const row = (id: string, label: string, action: string, hint: string, kind: 'primary' | 'ghost' | 'quiet' = 'ghost', disabled = false): LayoutNode => ({
+    type: 'Panel', id: `gm-${id}-row`, props: { bare: true }, layout: { direction: 'row', gap: 10, align: 'center', width: 340 },
+    children: [
+      { type: 'Label', id: `gm-${id}-l`, props: { text: label, size: 'sm', bold: true, color: 'text' }, layout: { flex: 1 } },
+      { type: 'Button', id: `gm-${id}`, props: { label: hint, kind, action, disabled }, layout: { width: 120, height: 38 } },
+    ],
+  });
+  return {
+    type: 'Modal', id: 'gmenu', props: { title: '菜单 · 雀宴', closable: true, closeAction: MENU_OPEN },
+    children: [{
+      type: 'Panel', id: 'gm-body', props: { bare: true }, layout: { direction: 'column', gap: 12, align: 'center', padding: 6 },
+      children: [
+        row('rules', '规则说明 · 番数', RULES_OPEN, '查看', 'primary'),
+        row('sound', '声音', TOGGLE_SOUND, soundOn ? '🔊 开' : '🔇 关'),
+        row('lang', '语言 / 言語', MENU_OPEN, '日本語 ▾'), // 占位·下一版接 i18n 日/中切换
+        row('home', '返回主菜单', BACK_MENU, '返回', 'quiet'),
+        { type: 'Label', id: 'gm-tip', props: { text: '语言（日/中）切换即将上线', size: 'xs', color: 'sub' } },
+      ],
+    }],
+  };
+}
+
+// ── 规则说明浮层（全日式番数速览·菜单→规则说明·详见 docs yaku-guide）──────────────────────────────
+const RULES_LINES: { t: string; b: boolean }[] = [
+  { t: '雀宴 · 全日式立直麻将（東風戦一圈·四人）', b: true },
+  { t: '基本：13 张起手·摸一打一凑 4 面子 + 1 雀头和了。门前清可立直（1000 点·翻宝牌里）。', b: false },
+  { t: '役（常用）：立直 / 断幺九 / 平和 / 一盃口 / 役牌 = 1 番；三色 / 一気通貫 / 七対子 = 2 番（副露降 1）。', b: false },
+  { t: '符：底 20 符 + 面子/雀头/待ち/自摸/门清荣加符；連風雀頭 = 4 符（天鳳準拠）。', b: false },
+  { t: '点数：满贯 5 番 8000 · 跳满 6-7 番 12000 · 倍满 8-10 番 16000 · 三倍满 11-12 番 24000 · 役満 13 番+ 32000。', b: false },
+  { t: '鸣牌：碰（任家）/ 吃（上家）/ 杠（明·暗·加）·杠后岭上摸 + 翻新宝牌·抢杠可荣。', b: false },
+];
+function rulesOverlay(): LayoutNode {
+  return {
+    type: 'Modal', id: 'grules', props: { title: '规则说明 · 番数速览', closable: true, closeAction: RULES_OPEN },
+    children: [{
+      type: 'Panel', id: 'gr-body', props: { bare: true }, layout: { direction: 'column', gap: 8, align: 'start', padding: 6, width: 460 },
+      children: RULES_LINES.map((ln, i): LayoutNode => ({
+        type: 'Label', id: `gr-${i}`, props: { text: ln.t, size: ln.b ? 'md' : 'sm', bold: ln.b, color: ln.b ? 'gold' : 'text' },
+      })),
+    }],
+  };
+}
+
+// ── 行动键排（自摸/杠/立直·贴桌底左·acts 测试钉）───────────────────────────────────────────────
+// 按钮定高 48 挤进 58px 控制带（梯形投影底 516 ↔ 手牌顶 574）·靠左贴边·不压桌不压手牌（owner 锚定要求）。
 function actionBar(m: MatchState): LayoutNode {
+  const BH = 48;
   return {
     type: 'Panel', id: 'acts', props: { bare: true },
-    layout: { x: PANEL_X + PANEL_W / 2 - 90, y: FELT_Y + FELT_H + 20, direction: 'row', gap: 8, align: 'center' },
+    layout: { x: PANEL_X + 4, y: BAND_Y, direction: 'row', gap: 8, align: 'center' },
     children: [
-      { type: 'Button', id: 'act-tsumo', props: { label: '自摸', kind: 'hero', disabled: !canTsumo(m), action: ACT_TSUMO } },
-      ...(canAnkan(m) || canKakan(m) ? [{ type: 'Button' as const, id: 'act-kan', props: { label: '杠', kind: 'primary' as const, action: ACT_KAN } }] : []),
-      { type: 'Button', id: 'act-riichi', props: { label: '立直', kind: 'primary', disabled: !canRiichi(m), action: ACT_RIICHI } },
+      // 均用 primary（jade）：hero 大字 + overflow:hidden 会把「自摸」次字裁掉（组件特性）——primary 定宽 96 稳显两字。
+      { type: 'Button', id: 'act-tsumo', props: { label: '自摸', kind: 'primary', disabled: !canTsumo(m), action: ACT_TSUMO }, layout: { width: 96, height: BH } },
+      ...(canAnkan(m) || canKakan(m) ? [{ type: 'Button' as const, id: 'act-kan', props: { label: '杠', kind: 'primary' as const, action: ACT_KAN }, layout: { width: 66, height: BH } }] : []),
+      { type: 'Button', id: 'act-riichi', props: { label: '立直', kind: 'primary', disabled: !canRiichi(m), action: ACT_RIICHI }, layout: { width: 96, height: BH } },
     ],
   };
 }
@@ -279,8 +349,9 @@ function callBar(m: MatchState): LayoutNode | null {
   btns.push({ type: 'Button', id: 'call-pass', props: { label: '过', kind: 'quiet', action: CALL_PASS } });
   return {
     type: 'Panel', id: 'callbar', props: { bg: { custom: 'rgba(32,16,28,0.97)' }, glow: true, accent: true },
-    layout: { x: PANEL_X + PANEL_W / 2 - 220, y: FELT_Y + FELT_H + 14, width: 440, padding: 8, gap: 8, direction: 'row', justify: 'center', align: 'center' },
-    children: btns,
+    // 居中贴桌底控制带（鸣牌窗口态·与手牌不叠·按钮压扁到 40 高）。
+    layout: { x: PANEL_X + PANEL_W / 2 - 220, y: BAND_Y, width: 440, padding: 6, gap: 8, direction: 'row', justify: 'center', align: 'center' },
+    children: btns.map((b): LayoutNode => (b.type === 'Button' ? { ...b, layout: { ...(b.layout ?? {}), height: 40 } } : b)),
   };
 }
 
@@ -297,7 +368,8 @@ function turnBanner(m: MatchState): LayoutNode | null {
   const flow = lastDisc ? `刚打：${lastDisc.actor} 打【${labelTile(lastDisc.tile!)}】` : '开局';
   return {
     type: 'Panel', id: 'turnbanner', props: { bg: { custom: hot ? 'rgba(52,22,36,0.95)' : 'rgba(26,15,24,0.9)' }, glow: hot, accent: hot },
-    layout: { x: PANEL_X + 6, y: FELT_Y + FELT_H + 18, width: 206, padding: 6, gap: 1, direction: 'column', align: 'start' },
+    // 贴桌底右（与左下角行动键分居两侧·中间留给手牌）·同在 58px 控制带内不压桌不压手牌。
+    layout: { x: PANEL_X + PANEL_W - 212, y: BAND_Y, width: 206, padding: 6, gap: 1, direction: 'column', align: 'start' },
     children: [
       { type: 'Label', id: 'tb-head', props: { text: head, size: 'sm', bold: true, color: hot ? 'gold' : 'jade' } },
       { type: 'Label', id: 'tb-flow', props: { text: flow, size: 'xs', color: 'sub' } },
@@ -409,16 +481,15 @@ function resultOverlay(m: MatchState): LayoutNode {
   };
 }
 
-export interface PlayHudOpts { logOpen: boolean; selectedKey?: string | null; logCopied?: boolean }
+export interface PlayHudOpts { logOpen: boolean; selectedKey?: string | null; logCopied?: boolean; menuOpen?: boolean; rulesOpen?: boolean; soundOn?: boolean }
 
 export function buildPlayHud(m: MatchState, opts: PlayHudOpts): LayoutNode {
   const sel = opts.selectedKey ?? null;
   const children: LayoutNode[] = [
     // 底层对局盘（暗底）。
     { type: 'Panel', id: 'playpanel', props: { bg: { custom: 'rgba(14,26,26,0.5)' } }, layout: { x: PANEL_X, y: PANEL_Y, width: PANEL_W, height: PANEL_H } },
-    // 出牌区透视梯形 + 牌河（2D）+ 桌上头像框（seat 1/2/3）+ 玩家座条（seat 0）。
+    // 出牌区透视梯形（含四家牌河弃牌·梯形子共享透视）+ 桌上头像框（seat 1/2/3）+ 玩家座条（seat 0）。
     ...playField(m),
-    ...[0, 1, 2, 3].map((s) => riverBlock(m, s)).filter((n): n is LayoutNode => n !== null),
     ...[1, 2, 3].map((s) => tableAvatar(m, s)),
     playerBar(m),
     ...[0, 1, 2, 3].map((s) => meldBlock(m, s)).filter((n): n is LayoutNode => n !== null),
@@ -432,5 +503,8 @@ export function buildPlayHud(m: MatchState, opts: PlayHudOpts): LayoutNode {
   const cb = callBar(m);
   if (cb) children.push(cb);
   if (isWinLikeEnd(m)) children.push(resultOverlay(m));
+  // 用户浮层（菜单/规则说明·互斥·菜单钮开·盖最上层）。
+  if (opts.rulesOpen) children.push(rulesOverlay());
+  else if (opts.menuOpen) children.push(menuOverlay(opts.soundOn ?? true));
   return { type: 'Panel', id: 'play-root', props: { bare: true }, layout: { x: 0, y: 0, width: PLAY_W, height: PLAY_H }, children };
 }
