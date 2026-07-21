@@ -52,6 +52,11 @@
 
 > **⚖ Lead 验收（2026-07-18）：①②③ ✅ PASS**——diff 守界（additive 字段+定色豁免+audit 一行）；临时 worktree 独立跑新测 6/6 绿；golden 帧 word-diff 核实仅两处标记插入。④+border-image 后置照准（条目保持 open 不丢账）。**P1 REQ-UIRECON 仍 open——PUI 下一单先清它。**
 
+### REQ-EVENTLOG-下沉共享事件日志原子 · game-b + game-c 各造一份 → 引擎缺 log/journal 件 · [2026-07-21] · PE-B 报（数据驱动 review 档 B·owner 追问「能用积木就用」纠出）→ Lead 裁决 · status: open · 优先级: P2 · 类型: 引擎原子下沉（DRY·跨游戏复用）
+> **缺口**：引擎无「流水事件日志/journal」原子（`tier3/timeline` 是**演出时序调度**·非流水日志）；而 **game-b（`core/game-log.ts` 的 `GameLog` 类）+ game-c（`game-log.ts`）两款各手写一份**「带 seq 的类型化事件流·供 HUD 显示 + 回放」——宪法 §2「真缺口·可复用」信号（rule-of-two 已成·第三款卡牌游戏必再造）。
+> **建议方案**：下沉一个 headless `event-log`/`play-journal` 能力（纯数据·确定性·录放安全）：`append({seq,round,actor,kind,text})` / `recent(n)` / `dump()` / `size()`；kind 由消费游戏各填闭集枚举（能力只管容器骨架·不定义具体 kind）。两款迁移消费（game-b `LogKind/LogEvent/GameLog`→薄封装；game-c 内联 log→同）。红线：日志**正文**恒各游戏机读口径（能力不碰文案）。
+> **边界**：新增 `src/skills/<tier>/event-log.ts`（或归 tier2 卡牌包）+ 测试；game-b/game-c 各改消费点。**属主程/引擎域·PE 不擅改引擎**——报 Lead 评审下沉粒度（值不值·放哪层·kind 泛型化）。证据全文 `docs/design/game-b/data-driven-review.md` §3 档 B。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
