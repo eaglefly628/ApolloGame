@@ -382,7 +382,7 @@ function buildWardrobe(w: WardrobeView, l: Lang): LayoutNode {
   }));
   const panel: LayoutNode = {
     type: 'Panel', id: 'c-wardrobe-card', props: { bg: { custom: 'linear-gradient(160deg,rgba(34,22,38,0.98),rgba(14,9,18,0.99))' }, edge: 'gold' },
-    layout: { x: Math.round(FIELD_W / 2 - 400), y: 100, width: 800, height: 500, direction: 'row', gap: 0, radius: 16 },
+    layout: { x: Math.round(FIELD_W / 2 - 400), y: 100, width: 800, height: 500, direction: 'row', gap: 0, radius: 16, allowOverlap: true },
     children: [
       {
         type: 'Panel', id: 'c-wr-portrait', props: { bg: { custom: 'linear-gradient(180deg,#2a1a12,#160f0b)' } },
@@ -423,6 +423,8 @@ function buildWardrobe(w: WardrobeView, l: Lang): LayoutNode {
   };
   return {
     type: 'Panel', id: 'c-wardrobe-scrim', props: { bg: { custom: 'rgba(4,2,8,0.72)' }, action: 'panel_close' },
+    // 模态遮罩=意图盖住牌桌（ui-audit 重叠豁免·避免误报模态覆盖背景）
+
     layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H },
     children: [panel],
   };
@@ -582,36 +584,35 @@ function buildShowdown(sd: ShowdownView, board: Card[], l: Lang): LayoutNode {
       },
     ],
   };
-  // 中：各家最优五张组合（依次排开·赢家金边高亮·可滚动·左名右分池）
+  // 中：各家**原始底牌 + 与公共牌的最优五张组合（金边高亮）**——owner 2026-07-21：不列牌型名·只出牌+高亮组合。
   const rows: LayoutNode[] = sd.rows.map((r, i) => {
-    const combo: LayoutNode[] = r.best.length
-      ? r.best.map((c, k) => cardNode(`c-sd-best-${i}-${k}`, c, 'sm'))
-      : [{ type: 'Label', id: `c-sd-muck-${i}`, props: { text: t(l, 'sd.muck'), size: 'sm', color: 'dim' } } as LayoutNode];
+    const hole: LayoutNode[] = r.hole.map((c, k) => cardNode(`c-sd-hole-${i}-${k}`, c, 'sm')); // 原始底牌（不高亮=你的两张）
+    const comboChildren: LayoutNode[] = r.best.length
+      ? [
+        ...hole,
+        { type: 'Label', id: `c-sd-sep-${i}`, props: { text: '›', size: 20, color: 'dim' } },
+        ...r.best.map((c, k) => cardNode(`c-sd-best-${i}-${k}`, c, 'sm', undefined, true)), // 最优五张·金边高亮圈出
+      ]
+      : [{ type: 'Label', id: `c-sd-muck-${i}`, props: { text: t(l, 'sd.muck'), size: 'sm', color: 'dim' } }];
     return {
       type: 'Panel', id: `c-sd-row-${i}`, props: { bg: { custom: r.isWinner ? 'rgba(224,180,88,0.14)' : 'rgba(30,22,26,0.5)' }, edge: r.isWinner ? 'gold' : undefined },
       layout: { direction: 'row', align: 'center', gap: 10, padding: 9, radius: 10, opacity: r.isWinner ? 1 : 0.85 },
       children: [
         {
-          type: 'Panel', id: `c-sd-nm-col-${i}`, props: { bare: true }, layout: { direction: 'column', gap: 2, width: 132 },
+          type: 'Panel', id: `c-sd-nm-row-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 6, align: 'center', width: 116 },
           children: [
-            {
-              type: 'Panel', id: `c-sd-nm-row-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 6, align: 'center' },
-              children: [
-                { type: 'Label', id: `c-sd-crown-${i}`, props: { text: r.isWinner ? '🏆' : `#${i + 1}`, size: 'sm', color: r.isWinner ? 'gold' : 'dim' } },
-                { type: 'Label', id: `c-sd-nm-${i}`, props: { text: r.name, font: 'serif', size: 'md', bold: r.isWinner, color: r.isWinner ? 'gold' : 'text' } },
-              ],
-            },
-            { type: 'Label', id: `c-sd-ty-${i}`, props: { text: r.type, size: 'xs', color: r.isWinner ? 'gold' : 'sub' } },
+            { type: 'Label', id: `c-sd-crown-${i}`, props: { text: r.isWinner ? '🏆' : `#${i + 1}`, size: 'sm', color: r.isWinner ? 'gold' : 'dim' } },
+            { type: 'Label', id: `c-sd-nm-${i}`, props: { text: r.name, font: 'serif', size: 'md', bold: r.isWinner, color: r.isWinner ? 'gold' : 'text' } },
           ],
         },
-        { type: 'Panel', id: `c-sd-combo-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 4, justify: 'center', flex: 1 }, children: combo },
+        { type: 'Panel', id: `c-sd-combo-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 3, align: 'center', justify: 'center', flex: 1 }, children: comboChildren },
         { type: 'Label', id: `c-sd-won-${i}`, props: { text: r.won > 0 ? `+${fmt(r.won)}` : '—', font: 'impact', size: r.isWinner ? 22 : 16, color: r.won > 0 ? 'gold' : 'dim' } },
       ],
     };
   });
   const card: LayoutNode = {
     type: 'Panel', id: 'c-sd-card', props: { bg: { custom: 'linear-gradient(160deg,rgba(34,22,38,0.98),rgba(14,9,18,0.99))' }, edge: 'gold', accent: true },
-    layout: { x: Math.round(FIELD_W / 2 - 340), y: 40, width: 680, height: 640, direction: 'column', align: 'stretch', gap: 12, padding: 22, radius: 16 },
+    layout: { x: Math.round(FIELD_W / 2 - 375), y: 40, width: 750, height: 640, direction: 'column', align: 'stretch', gap: 12, padding: 22, radius: 16, allowOverlap: true },
     children: [
       { type: 'Label', id: 'c-sd-title', props: { text: fmtShowdownTitle(l, sd.potTotal), font: 'impact', size: 26, color: 'gold', glow: true } },
       boardRow,
@@ -620,7 +621,7 @@ function buildShowdown(sd: ShowdownView, board: Card[], l: Lang): LayoutNode {
       { type: 'Button', id: 'c-sd-next', props: { label: t(l, 'sd.next'), kind: 'hero', action: 'continue_showdown' }, layout: { width: 300 } },
     ],
   };
-  return { type: 'Panel', id: 'c-sd-scrim', props: { bg: { custom: 'rgba(4,2,8,0.72)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children: [card] };
+  return { type: 'Panel', id: 'c-sd-scrim', props: { bg: { custom: 'rgba(4,2,8,0.72)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H, allowOverlap: true }, children: [card] };
 }
 
 // ── 局终屏（胜=通吃满堂 / 负=输得精光 + 战绩 + 再来一局/回大厅·§5.4 E 画板）─────────────
@@ -634,7 +635,7 @@ function buildFinale(f: FinaleView, l: Lang): LayoutNode {
   });
   const card: LayoutNode = {
     type: 'Panel', id: 'c-fin-card', props: { bg: { custom: f.win ? 'linear-gradient(160deg,#2a1e0e,#160f0b)' : 'linear-gradient(160deg,#2a0f11,#160b0c)' }, edge: f.win ? 'gold' : 'danger', accent: true },
-    layout: { x: Math.round(FIELD_W / 2 - 260), y: 150, width: 520, direction: 'column', align: 'center', gap: 16, padding: 30, radius: 16 },
+    layout: { x: Math.round(FIELD_W / 2 - 260), y: 150, width: 520, direction: 'column', align: 'center', gap: 16, padding: 30, radius: 16, allowOverlap: true },
     children: [
       { type: 'Label', id: 'c-fin-sub', props: { text: f.win ? t(l, 'fin.winSub') : t(l, 'fin.loseSub'), font: 'impact', size: 20, color: f.win ? 'gold' : 'danger' } },
       { type: 'Label', id: 'c-fin-title', props: { text: f.win ? t(l, 'fin.winTitle') : t(l, 'fin.loseTitle'), font: 'serif', size: 52, bold: true, color: f.win ? 'gold' : 'danger', glow: true } },
@@ -656,7 +657,7 @@ function buildFinale(f: FinaleView, l: Lang): LayoutNode {
       },
     ],
   };
-  return { type: 'Panel', id: 'c-fin-scrim', props: { bg: { custom: 'rgba(4,2,8,0.82)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H }, children: [card] };
+  return { type: 'Panel', id: 'c-fin-scrim', props: { bg: { custom: 'rgba(4,2,8,0.82)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H, allowOverlap: true }, children: [card] };
 }
 
 // ── 主角一座（剧情局·底左「你 & 林晚」面板·点开衣柜·轮到你=翠边发光）───────────────────────
