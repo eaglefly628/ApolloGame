@@ -57,7 +57,7 @@ const PORT_W = 80, PORT_H = 102;    // 立绘缩略图（照稿 80×102·非满�
 const PANEL_X = 392, PANEL_W = 866, PANEL_Y = 76, PANEL_H = 626; // 对局盘（照稿放大·x392-1258 y76-702）
 const FELT = 'linear-gradient(168deg,#1e6a5b 0%,#175349 52%,#123c3a 100%)'; // 出牌区绿呢
 // 出牌区透视梯形（照稿量测·outer x525 y157 w601 h431·rotateX 透视→上窄下宽梯形·owner「很重要·与右侧一致」）。
-const FELT_X = 525, FELT_Y = 150, FELT_W = 601, FELT_H = 438;
+const FELT_X = 525, FELT_Y = 132, FELT_W = 601, FELT_H = 404;
 
 // ══════════════════════════════════════════════════════════════════════════════════════════
 //  顶栏（logo + 币三档 + 邮件/语言/头像）· 静态到稿（币/邮件/语言=占位·待接系统）
@@ -156,7 +156,7 @@ function charCard(m: MatchState, seat: number, idx: number): LayoutNode {
 // 对家屏幕位（座 1=東/左·2=北/上·3=西/右）——照稿 DOM 量测（立绘 76×76·围梯形三边）。
 const OPP_POS: Record<number, { x: number; y: number }> = {
   1: { x: 420, y: 262 },   // 東 左（量测 424,266）
-  2: { x: 784, y: 83 },    // 北 上中（量测 788,87）
+  2: { x: 784, y: 54 },    // 北 上中（靠上边·owner 微调·量测 788,87）
   3: { x: 1148, y: 262 },  // 西 右（量测 1152,266）
 };
 function tableAvatar(m: MatchState, seat: number): LayoutNode {
@@ -294,7 +294,7 @@ function meldBlock(m: MatchState, seat: number): LayoutNode | null {
   const w = seat === 0 ? 24 : 18, h = seat === 0 ? 32 : 24;
   // 吃碰区位：玩家(0)=座条上方·他家=各自头像框下。
   const pos = seat === 0
-    ? { x: PANEL_X + 12, y: PLAY_H - HH - 64 }              // 玩家吃碰区：底部左·手牌上方
+    ? { x: PANEL_X + 6, y: PLAY_H - HH - 120 }              // 玩家吃碰区：上移·避免跟手牌重叠（owner 微调）
     : { x: OPP_POS[seat]!.x - 12, y: OPP_POS[seat]!.y + 94 }; // 他家：头像+名下
   return {
     type: 'Panel', id: `melds-${seat}`, props: { bg: { custom: 'rgba(20,10,20,0.5)' } },
