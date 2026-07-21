@@ -33,8 +33,8 @@
     "S4": {
       "exit": 0,
       "summary": "walkthrough 绿（ Test Files  9 passed (9) ·       Tests  116 passed (116)）· 验收剧本 9 场景绿",
-      "at": "2026-07-21T09:11:22.878Z",
-      "gameHash": "5294be98eb3f414c"
+      "at": "2026-07-21T09:54:54.908Z",
+      "gameHash": "dcc1abdff2bfa109"
     },
     "S5": {
       "exit": 0,
@@ -608,6 +608,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-21T09:11:22.878Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "art-fidelity iter2: opponent hole-card indicators + raise button + best-combo highlight",
+      "at": "2026-07-21T09:54:42.451Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-21T09:54:54.908Z"
     }
   ],
   "outOfOrder": [
@@ -815,6 +827,11 @@
       "stage": "S4",
       "reason": "art-fidelity pass: S2/S3 review-gates stale from STORY-POKER V2 iteration",
       "at": "2026-07-21T09:11:09.703Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "art-fidelity iter2: opponent hole-card indicators + raise button + best-combo highlight",
+      "at": "2026-07-21T09:54:42.451Z"
     }
   ],
   "reviews": {

@@ -118,15 +118,16 @@ export interface StorySeatDef {
   seat: number; name: string; nameEn: string;
   cardCx: number; cardCy: number;                       // 席卡中心 px
   portCx: number; portCy: number; portW: number; portH: number; // 立绘矩形中心 + 尺寸 px
+  holeCx: number; holeCy: number;                       // 对手底牌指示（两张小背牌·呢面上·在局/弃牌态区分）中心 px（稿 OPPONENT HOLE CARDS）
   main?: boolean;
 }
 // 位置照稿 story-poker-v2.dc.html 逐像素（立绘=busts behind rail 大且高·席卡在立绘下沿·中座立绘/卡都更大）：
 //   立绘 LEFT 中心(269,144)186×252 / CENTER(640,122)214×288 / RIGHT(1011,144)186×252；
 //   席卡 LEFT(256,288) / CENTER(640,194) / RIGHT(1024,288)。
 export const STORY_OPPONENTS: readonly StorySeatDef[] = [
-  { seat: 1, name: '陆时衍', nameEn: 'Lu Shiyan', cardCx: 640, cardCy: 194, portCx: 640, portCy: 122, portW: 214, portH: 288, main: true }, // 中·主（恋爱线·最大）
-  { seat: 2, name: '谢经理', nameEn: 'Mgr. Xie', cardCx: 256, cardCy: 288, portCx: 269, portCy: 144, portW: 186, portH: 252 },              // 左
-  { seat: 3, name: '柯女士', nameEn: 'Ms. Ke', cardCx: 1024, cardCy: 288, portCx: 1011, portCy: 144, portW: 186, portH: 252 },             // 右
+  { seat: 1, name: '陆时衍', nameEn: 'Lu Shiyan', cardCx: 640, cardCy: 194, portCx: 640, portCy: 122, portW: 214, portH: 288, holeCx: 640, holeCy: 268, main: true }, // 中·主（恋爱线·最大）
+  { seat: 2, name: '谢经理', nameEn: 'Mgr. Xie', cardCx: 256, cardCy: 288, portCx: 269, portCy: 144, portW: 186, portH: 252, holeCx: 371, holeCy: 353 },              // 左
+  { seat: 3, name: '柯女士', nameEn: 'Ms. Ke', cardCx: 1024, cardCy: 288, portCx: 1011, portCy: 144, portW: 186, portH: 252, holeCx: 909, holeCy: 353 },             // 右
 ] as const;
 export const STORY_HERO = { name: '你 & 林晚', nameEn: 'You & Linwan' };   // 主角一座（底左面板）
 export const STORY_PARTNER = { name: '林晚', nameEn: 'Linwan' };            // 搭档旁白（手牌建议 advice_show）

@@ -19,6 +19,7 @@ import { buildTable, buildMenu, type TableView, type SeatView, type WardrobeView
 import { CLOTHING_ITEMS } from './wardrobe.js';
 import { bestOf7, HOLDEM_TYPE_ORDER } from './holdem-eval.js';
 import type { BettingConfig } from './betting-engine.js';
+import type { Card } from '@engine/protocol/components.js';
 import { HoldemSession } from './game-session.js';
 import { build3DTableBlueprint } from './build3d.js';
 import { Chip3D } from './chip3d.js';
@@ -141,6 +142,12 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
     if (hole.length < 2 || comm.length < 3) return '';
     return handName(lang, HOLDEM_TYPE_ORDER[bestOf7([...hole, ...comm]).value[0]]);
   }
+  // 主角最优五张组合（owner 2026-07-21：不显牌型名·把这五张在底牌/公共牌上金边高亮圈出）。未到翻牌=空。
+  function heroBest(): Card[] {
+    const hole = session.holeOf(HERO), comm = session.community;
+    if (hole.length < 2 || comm.length < 3) return [];
+    return bestOf7([...hole, ...comm]).best;
+  }
   function tableView(): TableView {
     const la = session.legalForHero();
     if (la?.raise && (raiseValue < la.raise.min || raiseValue > la.raise.max)) raiseValue = la.raise.min;
@@ -150,7 +157,7 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
     return {
       lang, playerCount, street,
       blindLabel: `${CFG.smallBlind} / ${CFG.bigBlind}`, handNo: session.handNo,
-      pot: session.pot(), board: session.community, heroHole: session.holeOf(HERO), heroHandName: heroHandName(),
+      pot: session.pot(), board: session.community, heroHole: session.holeOf(HERO), heroHandName: heroHandName(), heroBest: heroBest(),
       seats: Array.from({ length: playerCount }, (_, i) => i).map(seatView),
       toCall: la?.call ?? 0, canRaise: !!la?.raise, minRaise: la?.raise?.min ?? CFG.bigBlind,
       maxRaise: la?.raise?.max ?? STARTING_STACK, raiseValue, muted,

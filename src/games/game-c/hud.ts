@@ -10,7 +10,7 @@ import {
 } from './theme.js';
 import type { GameEvent } from './game-log.js';
 import {
-  type Lang, type LastMove, type Street, t, fmtCall, fmtRaise, fmtBet, fmtBest, fmtShowdownTitle,
+  type Lang, type LastMove, type Street, t, fmtCall, fmtRaise, fmtBet, fmtShowdownTitle,
   fmtValue, fmtWardrobeTitle, fmtPortrait, fmtHands, fmtItems, fmtMove, fmtStoryHand,
 } from './strings.js';
 
@@ -28,7 +28,8 @@ export interface TableView {
   street: Street; // 当前街（顶带「第 N 局 · 翻牌圈」）
   partnerAdvice?: string; // 搭档林晚旁白（手牌建议·advice_show）
   blindLabel: string; handNo: number; pot: number;
-  board: Card[]; heroHole: Card[]; heroHandName: string; // heroHandName=宿主已本地化的牌型显示名
+  board: Card[]; heroHole: Card[]; heroHandName: string; // heroHandName=宿主已本地化的牌型显示名（现不显·保留供他用）
+  heroBest?: Card[]; // 主角最优五张组合（bestOf7.best·高亮圈出用·owner 2026-07-21「高亮最大组合」）
   seats: SeatView[]; toCall: number; canRaise: boolean; minRaise: number; maxRaise: number; raiseValue: number;
   muted: boolean; openWardrobe: number | null; wardrobe?: WardrobeView;
   showLog: boolean; log: GameEvent[]; // 游戏日志（确定性事件流·查 bug·owner 2026-07-17）
@@ -53,6 +54,9 @@ const PARTNER_FILL = 'linear-gradient(160deg,rgba(58,38,64,0.95),rgba(30,18,34,0
 const BTN_DARK = 'linear-gradient(160deg,rgba(46,30,40,0.95),rgba(24,15,22,0.97))';
 const BTN_ALLIN = 'linear-gradient(160deg,#d0483e,#a01e3a)';
 const RAISE_SLOT = 'linear-gradient(160deg,rgba(74,47,66,0.92),rgba(40,24,40,0.94))';
+// 对手底牌背（稿 OPPONENT HOLE CARDS·两张小背牌斜摆）：在局=紫背金边 / 弃牌=灰背(mucked) → owner「看清他还在场上还是弃牌了」。
+const OHOLE_IN = 'linear-gradient(135deg,#4a2f42,#2e1c2a)';
+const OHOLE_FOLD = 'linear-gradient(135deg,#3a3040,#241e28)';
 // 立绘 bust 竖渐变（上实下透·融入呢面·稿 busts behind rail）——主角(恋爱线)略亮、配角稍暗。
 const PORTRAIT_FILL_MAIN = 'linear-gradient(180deg,rgba(58,40,70,0.78) 0%,rgba(34,22,44,0.6) 52%,rgba(18,11,24,0.22) 100%)';
 const PORTRAIT_FILL_SIDE = 'linear-gradient(180deg,rgba(44,30,52,0.68) 0%,rgba(28,18,36,0.5) 52%,rgba(16,10,22,0.18) 100%)';
@@ -69,12 +73,16 @@ function langToggle(l: Lang, idp: string): LayoutNode {
 }
 
 // ── 公共牌 / 底牌（白牌 face:light·红黑对比·§5.3 Decal3D 牌面正装）──────────────
-function cardNode(id: string, c: Card | null, size: 'sm' | 'md' | 'lg', rotate?: number): LayoutNode {
+function cardNode(id: string, c: Card | null, size: 'sm' | 'md' | 'lg', rotate?: number, selected?: boolean): LayoutNode {
   const layout = rotate ? { rotate } : {};
   if (!c) return { type: 'PlayingCard', id, props: { rank: '', suit: '♠', faceUp: false, face: 'dark', size }, layout };
   const f = cardFace(c);
-  return { type: 'PlayingCard', id, props: { rank: f.rank, suit: f.suit, faceUp: true, face: 'light', size }, layout };
+  // selected=最优五张组合成员 → 金边圈出高亮（owner 2026-07-21：不显牌型名·只高亮圈出最大组合的原始牌）。
+  return { type: 'PlayingCard', id, props: { rank: f.rank, suit: f.suit, faceUp: true, face: 'light', size, ...(selected ? { selected: true } : {}) }, layout };
 }
+// 最优组合成员判定（同花色+点数即同牌·board/hole 与 heroBest 比对）。
+const cardKey = (c: Card): number => c.suit * 100 + c.rank;
+const inBest = (c: Card | null, best?: Card[]): boolean => !!c && !!best && best.some((b) => cardKey(b) === cardKey(c));
 
 // ── 座位卡（正装：夜宴渐变底 + 状态 edge 金/翠/红 + active/allin 发光 + 读秒 + 状态气泡）────
 function statusBubble(v: SeatView, l: Lang): LayoutNode | null {
@@ -211,6 +219,24 @@ function buildStoryPortrait(def: StorySeatDef, l: Lang): LayoutNode {
   };
 }
 
+// ── 对手底牌指示（两张小背牌·呢面上·在局=紫背金边 / 弃牌=灰背暗 mucked / 出局=不显）─────────────────────
+//   owner 2026-07-21「我看不清对手有没有牌·先贴两小牌表示在场/弃牌·以后重设计」。稿：中座大(34×48)、边座小(30×42)。
+function oppHoleCards(def: StorySeatDef, sv: SeatView): LayoutNode | null {
+  if (sv.out) return null; // 出局=无牌
+  const fold = sv.folded;
+  const big = !!def.main;
+  const w = big ? 34 : 30, h = big ? 48 : 42, rot = big ? 4 : 6;
+  const back = (i: number, r: number): LayoutNode => ({
+    type: 'Panel', id: `c-ohole-${def.seat}-${i}`, props: { bg: { custom: fold ? OHOLE_FOLD : OHOLE_IN }, ...(fold ? {} : { edge: 'gold' as const }) },
+    layout: { width: w, height: h, radius: 4, rotate: r, opacity: fold ? 0.55 : 1 },
+  });
+  return {
+    type: 'Panel', id: `c-ohole-${def.seat}`, props: { bare: true },
+    layout: { x: Math.round(def.holeCx - w - 1), y: Math.round(def.holeCy - h / 2), width: w * 2 + 2, direction: 'row', justify: 'center', gap: 2, allowOverlap: true },
+    children: [back(0, -rot), back(1, rot)],
+  };
+}
+
 // ── 对手席卡（剧情局·头像/名/筹码/动作气泡·稿 compact 卡·中座主更大·浮在立绘下沿）─────────────────────
 function buildStoryOpponentCard(sv: SeatView, def: StorySeatDef, l: Lang): LayoutNode[] {
   const name = l === 'en' ? def.nameEn : def.name;
@@ -239,25 +265,19 @@ function buildStoryOpponentCard(sv: SeatView, def: StorySeatDef, l: Lang): Layou
     layout: { x: Math.round(def.cardCx - 60), y: Math.round(def.cardCy - cardH / 2 - 30), width: 120, direction: 'row', justify: 'center' },
     children: [bub],
   }] : [];
-  return [card, ...bubNode];
+  const hole = oppHoleCards(def, sv); // 底牌背指示（在局/弃牌·呢面上·在席卡之前画=席卡浮其上）
+  return [...(hole ? [hole] : []), card, ...bubNode];
 }
 
 // ── 底牌区（大牌斜摆 + 金光 + 成牌胶囊·§5.4）────────────────────────────────────
+// owner 2026-07-21：不显组合牌型名·只把主角原始底牌**金边圈出**（你的牌）+ 公共牌里进入最优组合的也高亮（见 buildCommunity）。
 function buildHeroCards(v: TableView): LayoutNode {
   return {
     type: 'Panel', id: 'c-hole', props: { bare: true },
-    layout: { x: Math.round(FIELD_W / 2 - 150), y: 470, width: 300, direction: 'column', align: 'center', gap: 8 },
+    layout: { x: Math.round(FIELD_W / 2 - 105), y: 468, width: 210, direction: 'row', gap: 14, justify: 'center' },
     children: [
-      {
-        type: 'Panel', id: 'c-hole-row', props: { bare: true },
-        layout: { direction: 'row', gap: 12, justify: 'center' },
-        children: [cardNode('c-hole-0', v.heroHole[0] ?? null, 'lg', -6), cardNode('c-hole-1', v.heroHole[1] ?? null, 'lg', 6)],
-      },
-      {
-        type: 'Panel', id: 'c-hole-cap', props: { bg: { custom: 'rgba(224,180,88,0.14)' }, edge: 'gold' },
-        layout: { direction: 'row', justify: 'center', padding: 5, radius: 14 },
-        children: [{ type: 'Label', id: 'c-hole-name', props: { text: fmtBest(v.lang, v.heroHandName), font: 'serif', size: 'sm', bold: true, color: 'gold' } }],
-      },
+      cardNode('c-hole-0', v.heroHole[0] ?? null, 'lg', -6, true), // 底牌恒圈出=你的牌
+      cardNode('c-hole-1', v.heroHole[1] ?? null, 'lg', 6, true),
     ],
   };
 }
@@ -515,9 +535,9 @@ function buildLogPanel(log: GameEvent[], l: Lang): LayoutNode {
 }
 
 // ── 公共牌（桌心·2D HUD 浮层·盖在 3D 呢面桌心之上·让玩家看清·真贴图 S6）──────────────────
-function buildCommunity(community: Card[]): LayoutNode {
+function buildCommunity(community: Card[], best?: Card[]): LayoutNode {
   const slots: LayoutNode[] = [];
-  for (let i = 0; i < 5; i++) slots.push(cardNode(`c-comm-${i}`, community[i] ?? null, 'md'));
+  for (let i = 0; i < 5; i++) { const c = community[i] ?? null; slots.push(cardNode(`c-comm-${i}`, c, 'md', undefined, inBest(c, best))); }
   return {
     type: 'Panel', id: 'c-community', props: { bare: true },
     layout: { x: Math.round(FIELD_W / 2 - 175), y: 320, width: 350, direction: 'row', gap: 9, justify: 'center' },
@@ -696,50 +716,40 @@ function buildPot(v: TableView): LayoutNode {
   };
 }
 
-// ── 行动条（剧情稿·Button×3+Slider：弃牌 / 跟注 N / 加注[− slider value +]）────────────────────
+// ── 行动条（owner 2026-07-21：加注=真按钮·与弃牌/跟注一致的深底金边 + press3d 按压反馈；右侧「加注暗淡条」= − slider value + All-in 并列排开）──
 function buildStoryActionBar(v: TableView): LayoutNode {
   const l = v.lang;
   const callWord = v.toCall > 0 ? (l === 'zh' ? '跟注' : 'Call') : t(l, 'act.check');
-  // 弃牌 / 跟注（稿·素雅深底金边·文字暖白·跟注金额金）——将来整体换美术贴图（buttonSkins）。
+  // 统一按钮：深底金边 + press3d 按压反馈（弃牌/跟注/加注一致·将来整体换美术贴图 buttonSkins）。
+  const actBtn = (id: string, action: string, width: number, kids: LayoutNode[], arg?: string): LayoutNode => ({
+    type: 'Panel', id, props: { bg: { custom: BTN_DARK }, edge: 'gold', action, ...(arg ? { actionArg: arg } : {}) },
+    layout: { width, direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 12, radius: 13, press3d: true },
+    children: kids,
+  });
   const children: LayoutNode[] = [
-    {
-      type: 'Panel', id: 'c-act-fold', props: { bg: { custom: BTN_DARK }, edge: 'gold', action: 'act_fold' },
-      layout: { width: 150, direction: 'row', align: 'center', justify: 'center', gap: 0, padding: 12, radius: 13 },
-      children: [{ type: 'Label', id: 'c-act-fold-t', props: { text: t(l, 'act.fold'), size: 19, bold: true, color: 'text' } }],
-    },
-    {
-      type: 'Panel', id: 'c-act-call', props: { bg: { custom: BTN_DARK }, edge: 'gold', action: 'act_check_call' },
-      layout: { width: 186, direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 12, radius: 13 },
-      children: v.toCall > 0
-        ? [
-          { type: 'Label', id: 'c-act-call-t', props: { text: callWord, size: 19, bold: true, color: 'text' } },
-          { type: 'Label', id: 'c-act-call-v', props: { text: fmt(v.toCall), size: 19, bold: true, color: 'gold' } },
-        ]
-        : [{ type: 'Label', id: 'c-act-call-t', props: { text: callWord, size: 19, bold: true, color: 'text' } }],
-    },
+    actBtn('c-act-fold', 'act_fold', 138, [{ type: 'Label', id: 'c-act-fold-t', props: { text: t(l, 'act.fold'), size: 19, bold: true, color: 'text' } }]),
+    actBtn('c-act-call', 'act_check_call', 176, v.toCall > 0
+      ? [
+        { type: 'Label', id: 'c-act-call-t', props: { text: callWord, size: 19, bold: true, color: 'text' } },
+        { type: 'Label', id: 'c-act-call-v', props: { text: fmt(v.toCall), size: 19, bold: true, color: 'gold' } },
+      ]
+      : [{ type: 'Label', id: 'c-act-call-t', props: { text: callWord, size: 19, bold: true, color: 'text' } }]),
   ];
   if (v.canRaise) {
+    // 加注=真按钮（与弃牌/跟注同款·press3d）→ 提交当前滑杆值；右侧暗淡条=最小注/− slider value +/All-in。
+    children.push(actBtn('c-act-raise', 'act_raise', 118, [{ type: 'Label', id: 'c-act-raise-t', props: { text: t(l, 'act.raise'), size: 19, bold: true, color: 'text' } }], 'slider'));
     children.push({
       type: 'Panel', id: 'c-raise-wrap', props: { bg: { custom: RAISE_SLOT }, edge: 'mine' },
       layout: { flex: 1, direction: 'row', align: 'center', gap: 11, padding: 8, radius: 13 },
       children: [
-        // 加注（clickable·稿·紫底上暖白大字 + 最小注 mono 小字）→ 提交当前滑杆值
-        {
-          type: 'Panel', id: 'c-act-raise', props: { bare: true, action: 'act_raise', actionArg: 'slider' },
-          layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4 },
-          children: [
-            { type: 'Label', id: 'c-act-raise-t', props: { text: t(l, 'act.raise'), size: 20, bold: true, color: 'text' } },
-            { type: 'Label', id: 'c-act-raise-s', props: { text: `${l === 'zh' ? '最小' : 'Min'} ${fmt(v.minRaise)}`, font: 'mono', size: 'xs', color: 'dim' } },
-          ],
-        },
+        { type: 'Label', id: 'c-raise-min', props: { text: `${l === 'zh' ? '最小' : 'Min'} ${fmt(v.minRaise)}`, font: 'mono', size: 'xs', color: 'dim' } },
         { type: 'Button', id: 'c-raise-dec', props: { label: '−', kind: 'ghost', action: 'set_raise', actionArg: 'dec' }, layout: { width: 40 } },
         { type: 'Slider', id: 'c-raise-slider', props: { min: v.minRaise, max: v.maxRaise, value: v.raiseValue, step: 25, action: 'set_raise' }, layout: { flex: 1 } },
         { type: 'Label', id: 'c-raise-v', props: { text: fmt(v.raiseValue), font: 'serif', size: 23, bold: true, color: 'text' } },
         { type: 'Button', id: 'c-raise-inc', props: { label: '+', kind: 'ghost', action: 'set_raise', actionArg: 'inc' }, layout: { width: 40 } },
-        // All-in（稿·红渐变·白字·右端）
         {
           type: 'Panel', id: 'c-act-allin', props: { bg: { custom: BTN_ALLIN }, action: 'act_raise', actionArg: 'allin' },
-          layout: { height: 44, direction: 'row', align: 'center', justify: 'center', padding: 14, radius: 10 },
+          layout: { height: 44, direction: 'row', align: 'center', justify: 'center', padding: 14, radius: 10, press3d: true },
           children: [{ type: 'Label', id: 'c-act-allin-t', props: { text: t(l, 'quick.allin'), size: 15, bold: true, color: 'text' } }],
         },
       ],
@@ -768,7 +778,7 @@ export function buildTable(v: TableView): LayoutNode {
   // z 序（DOM 顺序·2D HUD 层·透明区透出 scene 层 3D 椭圆桌 + 夜景背幕）：
   //   立绘 bust（背幕之上·顶带之下）→ 顶带 → 席卡 → 公共牌 → 底池 → 底牌 → 主角面板 → 搭档旁白 → 行动条 → 覆盖层。
   const children: LayoutNode[] = [
-    ...portraits, buildStoryTopBar(v), ...cards, buildCommunity(v.board), buildPot(v), buildHeroCards(v), buildHeroPanel(v), buildPartnerAdvice(v),
+    ...portraits, buildStoryTopBar(v), ...cards, buildCommunity(v.board, v.heroBest), buildPot(v), buildHeroCards(v), buildHeroPanel(v), buildPartnerAdvice(v),
   ];
   if (v.phase === 'betting') children.push(v.isHeroTurn ? buildStoryActionBar(v) : buildWaiting(l));
   if (v.showLog) children.push(buildLogPanel(v.log, l));
