@@ -57,11 +57,11 @@ const OPP_POS: Record<number, { x: number; y: number }> = {
   3: { x: 808, y: 214 },    // 西 右（名条 128 居中溢出·两侧不切边）
 };
 
-// ── 出牌倒计时环（当前手·闭集件 ProgressBar shape:ring conic 环 + anim:spin 自转·纯 CSS 无重渲染）──
-// owner 2026-07-21「每个人头像打牌时有个倒计时圆圈转一转·五秒」——头像角标小环·当前手时自旋提示"读秒中"（不糊脸）。
-function countdownRing(id: string, size: number, x: number, y: number): LayoutNode {
-  return { type: 'ProgressBar', id, props: { value: 68, max: 100, tone: 'gold', shape: 'ring', size }, layout: { x, y, anim: 'spin' } };
-}
+// 当前出牌方头像高亮（金框 + 金外发光 + 流光斜扫·闭集 fx）——精美"读秒中"标记（interim）。
+// owner 2026-07-21 要「矩形条沿正方形框一圈流动」= 描边周长流动条：闭集无此件（anim:spin 是整体旋转·
+// 非沿边流动；无 conic-from-angle/描边 trace fx）→ 精美流动条须 PUI 加「头像回合计时描边」能力（缺件报
+// PUI·不手写逃生）；owner 定夺后立单，到货即换上。此处先用金框+流光的干净 interim。
+const ACTIVE_FX: NonNullable<LayoutNode['layout']>['fx'] = [{ kind: 'glow', color: 'gold', intensity: 1.2 }, { kind: 'sheen' }];
 
 // ══════════════════════════════════════════════════════════════════════════════════════════
 //  桌上头像框（東/北/西·贴立绘 + 风位徽 + 名 + 点）= seat-1/2/3（测试钉 seat-* 齐 4）
@@ -71,12 +71,11 @@ function tableAvatar(m: MatchState, seat: number): LayoutNode {
   const active = m.cur.turn === seat && m.cur.phase === 'playing';
   const wind = WIND[seatWind(seat, m.dealer)]!;
   const frame: LayoutNode = {
-    type: 'Panel', id: `seat-${seat}-fr`, props: { bg: { custom: 'rgba(24,14,28,0.6)' }, accent: active, glow: active },
-    layout: { width: 72, height: 72, padding: 3 },
+    type: 'Panel', id: `seat-${seat}-fr`,
+    props: active ? { bg: { custom: 'rgba(24,14,28,0.6)' }, edge: 'gold' } : { bg: { custom: 'rgba(24,14,28,0.6)' } },
+    layout: active ? { width: 72, height: 72, padding: 3, fx: ACTIVE_FX } : { width: 72, height: 72, padding: 3 },
     children: [
       { type: 'Image', id: `seat-${seat}-p`, props: { src: OPP_TACHIE[seat]!, fit: 'cover' }, layout: { width: 66, height: 66, radius: 8 } },
-      // 出牌倒计时环（当前手·右上角小环角标·anim:spin 纯 CSS 自转不触发重渲染·不糊脸）。
-      ...(active ? [countdownRing(`seat-${seat}-ring`, 26, 48, -9)] : []),
     ],
   };
   const nameRow: LayoutNode = {
@@ -113,11 +112,12 @@ function tableAvatar(m: MatchState, seat: number): LayoutNode {
 function playerBar(m: MatchState): LayoutNode {
   const active = m.cur.turn === 0 && m.cur.phase === 'playing';
   const wind = WIND[seatWind(0, m.dealer)]!;
+  const base = { x: FELT_X + 8, y: FELT_Y + FELT_H - 30, width: 200, height: 32, direction: 'row' as const, gap: 8, align: 'center' as const, padding: 6 };
   return {
-    type: 'Panel', id: 'seat-0', props: { bg: { custom: 'rgba(20,12,26,0.9)' }, accent: active, glow: active },
-    layout: { x: FELT_X + 8, y: FELT_Y + FELT_H - 30, width: 200, height: 32, direction: 'row', gap: 8, align: 'center', padding: 6 },
+    type: 'Panel', id: 'seat-0',
+    props: active ? { bg: { custom: 'rgba(20,12,26,0.9)' }, edge: 'gold' } : { bg: { custom: 'rgba(20,12,26,0.9)' } },
+    layout: active ? { ...base, fx: ACTIVE_FX } : base,
     children: [
-      ...(active ? [{ type: 'ProgressBar' as const, id: 'seat-0-ring', props: { value: 70, max: 100, tone: 'gold' as const, shape: 'ring' as const, size: 22 }, layout: { anim: 'spin' as const } }] : []),
       { type: 'Tag', id: 'seat-0-w', props: { label: wind, tone: 'accent', size: 'sm' } },
       { type: 'Label', id: 'seat-0-n', props: { text: m.seatNames[0]!, size: 'sm', bold: true, color: 'text' }, layout: { flex: 1 } },
       ...(m.cur.riichi[0] ? [{ type: 'Tag' as const, id: 'seat-0-r', props: { label: '● 立直', tone: 'accent' as const, size: 'sm' as const } }] : []),
