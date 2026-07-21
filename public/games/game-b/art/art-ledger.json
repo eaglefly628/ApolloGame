@@ -1,0 +1,1944 @@
+{
+  "version": 1,
+  "game": "game-b",
+  "mode": "authored-inventory",
+  "count": 43,
+  "instances": 43,
+  "rows": [
+    {
+      "no": "art-01",
+      "desc": "萬子·一萬 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/man-1.png"
+      },
+      "query": "ivory mahjong tile face, the one of characters (manzu), bold one numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/man-1.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/man-1"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·萬子·一萬 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/man-1）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/man-1.png",
+        "localId": "mahjong/tex/man-1"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "萬子·一萬，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-02",
+      "desc": "萬子·二萬 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/man-2.png"
+      },
+      "query": "ivory mahjong tile face, the two of characters (manzu), bold two numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/man-2.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/man-2"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·萬子·二萬 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/man-2）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/man-2.png",
+        "localId": "mahjong/tex/man-2"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "萬子·二萬，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-03",
+      "desc": "萬子·三萬 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/man-3.png"
+      },
+      "query": "ivory mahjong tile face, the three of characters (manzu), bold three numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/man-3.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/man-3"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·萬子·三萬 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/man-3）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/man-3.png",
+        "localId": "mahjong/tex/man-3"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "萬子·三萬，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-04",
+      "desc": "萬子·四萬 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/man-4.png"
+      },
+      "query": "ivory mahjong tile face, the four of characters (manzu), bold four numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/man-4.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/man-4"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·萬子·四萬 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/man-4）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/man-4.png",
+        "localId": "mahjong/tex/man-4"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "萬子·四萬，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-05",
+      "desc": "萬子·五萬 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/man-5.png"
+      },
+      "query": "ivory mahjong tile face, the five of characters (manzu), bold five numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/man-5.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/man-5"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·萬子·五萬 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/man-5）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/man-5.png",
+        "localId": "mahjong/tex/man-5"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "萬子·五萬，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-06",
+      "desc": "萬子·赤五萬（红5 dora）牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/man-5-red.png"
+      },
+      "query": "ivory mahjong tile face, the red-five dora of characters (aka-dora), the numeral 5 and 萬 kanji drawn in vivid red, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/man-5-red.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/man-5-red"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·萬子·赤五萬（红5 dora）牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/man-5-red）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/man-5-red.png",
+        "localId": "mahjong/tex/man-5-red"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "萬子·赤五萬（红5 dora），日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-07",
+      "desc": "萬子·六萬 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/man-6.png"
+      },
+      "query": "ivory mahjong tile face, the six of characters (manzu), bold six numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/man-6.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/man-6"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·萬子·六萬 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/man-6）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/man-6.png",
+        "localId": "mahjong/tex/man-6"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "萬子·六萬，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-08",
+      "desc": "萬子·七萬 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/man-7.png"
+      },
+      "query": "ivory mahjong tile face, the seven of characters (manzu), bold seven numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/man-7.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/man-7"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·萬子·七萬 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/man-7）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/man-7.png",
+        "localId": "mahjong/tex/man-7"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "萬子·七萬，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-09",
+      "desc": "萬子·八萬 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/man-8.png"
+      },
+      "query": "ivory mahjong tile face, the eight of characters (manzu), bold eight numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/man-8.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/man-8"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·萬子·八萬 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/man-8）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/man-8.png",
+        "localId": "mahjong/tex/man-8"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "萬子·八萬，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-10",
+      "desc": "萬子·九萬 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/man-9.png"
+      },
+      "query": "ivory mahjong tile face, the nine of characters (manzu), bold nine numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/man-9.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/man-9"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·萬子·九萬 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/man-9）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/man-9.png",
+        "localId": "mahjong/tex/man-9"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "萬子·九萬，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-11",
+      "desc": "筒子·一筒 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/pin-1.png"
+      },
+      "query": "ivory mahjong tile face, the one of circles (pinzu), one round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-1.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/pin-1"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·筒子·一筒 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/pin-1）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/pin-1.png",
+        "localId": "mahjong/tex/pin-1"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "筒子·一筒，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-12",
+      "desc": "筒子·二筒 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/pin-2.png"
+      },
+      "query": "ivory mahjong tile face, the two of circles (pinzu), two round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-2.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/pin-2"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·筒子·二筒 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/pin-2）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/pin-2.png",
+        "localId": "mahjong/tex/pin-2"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "筒子·二筒，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-13",
+      "desc": "筒子·三筒 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/pin-3.png"
+      },
+      "query": "ivory mahjong tile face, the three of circles (pinzu), three round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-3.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/pin-3"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·筒子·三筒 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/pin-3）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/pin-3.png",
+        "localId": "mahjong/tex/pin-3"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "筒子·三筒，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-14",
+      "desc": "筒子·四筒 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/pin-4.png"
+      },
+      "query": "ivory mahjong tile face, the four of circles (pinzu), four round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-4.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/pin-4"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·筒子·四筒 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/pin-4）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/pin-4.png",
+        "localId": "mahjong/tex/pin-4"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "筒子·四筒，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-15",
+      "desc": "筒子·五筒 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/pin-5.png"
+      },
+      "query": "ivory mahjong tile face, the five of circles (pinzu), five round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-5.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/pin-5"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·筒子·五筒 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/pin-5）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/pin-5.png",
+        "localId": "mahjong/tex/pin-5"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "筒子·五筒，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-16",
+      "desc": "筒子·赤五筒（红5 dora）牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/pin-5-red.png"
+      },
+      "query": "ivory mahjong tile face, the red-five dora of circles (aka-dora), the five circle dots with the centre dot in vivid red, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-5-red.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/pin-5-red"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·筒子·赤五筒（红5 dora）牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/pin-5-red）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/pin-5-red.png",
+        "localId": "mahjong/tex/pin-5-red"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "筒子·赤五筒（红5 dora），日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-17",
+      "desc": "筒子·六筒 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/pin-6.png"
+      },
+      "query": "ivory mahjong tile face, the six of circles (pinzu), six round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-6.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/pin-6"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·筒子·六筒 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/pin-6）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/pin-6.png",
+        "localId": "mahjong/tex/pin-6"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "筒子·六筒，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-18",
+      "desc": "筒子·七筒 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/pin-7.png"
+      },
+      "query": "ivory mahjong tile face, the seven of circles (pinzu), seven round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-7.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/pin-7"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·筒子·七筒 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/pin-7）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/pin-7.png",
+        "localId": "mahjong/tex/pin-7"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "筒子·七筒，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-19",
+      "desc": "筒子·八筒 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/pin-8.png"
+      },
+      "query": "ivory mahjong tile face, the eight of circles (pinzu), eight round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-8.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/pin-8"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·筒子·八筒 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/pin-8）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/pin-8.png",
+        "localId": "mahjong/tex/pin-8"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "筒子·八筒，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-20",
+      "desc": "筒子·九筒 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/pin-9.png"
+      },
+      "query": "ivory mahjong tile face, the nine of circles (pinzu), nine round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-9.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/pin-9"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·筒子·九筒 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/pin-9）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/pin-9.png",
+        "localId": "mahjong/tex/pin-9"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "筒子·九筒，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-21",
+      "desc": "索子·一索 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/sou-1.png"
+      },
+      "query": "ivory mahjong tile face, the one of bamboo (souzu), a stylized peacock bird perched over a single bamboo stalk, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-1.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/sou-1"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·索子·一索 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/sou-1）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/sou-1.png",
+        "localId": "mahjong/tex/sou-1"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "索子·一索，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-22",
+      "desc": "索子·二索 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/sou-2.png"
+      },
+      "query": "ivory mahjong tile face, the two of bamboo (souzu), two green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-2.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/sou-2"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·索子·二索 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/sou-2）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/sou-2.png",
+        "localId": "mahjong/tex/sou-2"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "索子·二索，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-23",
+      "desc": "索子·三索 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/sou-3.png"
+      },
+      "query": "ivory mahjong tile face, the three of bamboo (souzu), three green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-3.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/sou-3"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·索子·三索 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/sou-3）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/sou-3.png",
+        "localId": "mahjong/tex/sou-3"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "索子·三索，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-24",
+      "desc": "索子·四索 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/sou-4.png"
+      },
+      "query": "ivory mahjong tile face, the four of bamboo (souzu), four green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-4.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/sou-4"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·索子·四索 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/sou-4）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/sou-4.png",
+        "localId": "mahjong/tex/sou-4"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "索子·四索，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-25",
+      "desc": "索子·五索 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/sou-5.png"
+      },
+      "query": "ivory mahjong tile face, the five of bamboo (souzu), five green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-5.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/sou-5"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·索子·五索 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/sou-5）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/sou-5.png",
+        "localId": "mahjong/tex/sou-5"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "索子·五索，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-26",
+      "desc": "索子·赤五索（红5 dora）牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/sou-5-red.png"
+      },
+      "query": "ivory mahjong tile face, the red-five dora of bamboo (aka-dora), five bamboo sticks with the centre stick in vivid red, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-5-red.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/sou-5-red"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·索子·赤五索（红5 dora）牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/sou-5-red）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/sou-5-red.png",
+        "localId": "mahjong/tex/sou-5-red"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "索子·赤五索（红5 dora），日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-27",
+      "desc": "索子·六索 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/sou-6.png"
+      },
+      "query": "ivory mahjong tile face, the six of bamboo (souzu), six green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-6.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/sou-6"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·索子·六索 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/sou-6）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/sou-6.png",
+        "localId": "mahjong/tex/sou-6"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "索子·六索，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-28",
+      "desc": "索子·七索 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/sou-7.png"
+      },
+      "query": "ivory mahjong tile face, the seven of bamboo (souzu), seven green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-7.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/sou-7"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·索子·七索 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/sou-7）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/sou-7.png",
+        "localId": "mahjong/tex/sou-7"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "索子·七索，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-29",
+      "desc": "索子·八索 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/sou-8.png"
+      },
+      "query": "ivory mahjong tile face, the eight of bamboo (souzu), eight green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-8.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/sou-8"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·索子·八索 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/sou-8）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/sou-8.png",
+        "localId": "mahjong/tex/sou-8"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "索子·八索，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-30",
+      "desc": "索子·九索 牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/sou-9.png"
+      },
+      "query": "ivory mahjong tile face, the nine of bamboo (souzu), nine green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-9.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/sou-9"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·索子·九索 牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/sou-9）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/sou-9.png",
+        "localId": "mahjong/tex/sou-9"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "索子·九索，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-31",
+      "desc": "東（东风）字牌牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/ton.png"
+      },
+      "query": "ivory mahjong tile face, the East wind honor tile, bold 東 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/ton.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/ton"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·東（东风）字牌牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/ton）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/ton.png",
+        "localId": "mahjong/tex/ton"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "東（东风）字牌，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-32",
+      "desc": "南（南风）字牌牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/nan.png"
+      },
+      "query": "ivory mahjong tile face, the South wind honor tile, bold 南 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/nan.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/nan"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·南（南风）字牌牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/nan）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/nan.png",
+        "localId": "mahjong/tex/nan"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "南（南风）字牌，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-33",
+      "desc": "西（西风）字牌牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/shaa.png"
+      },
+      "query": "ivory mahjong tile face, the West wind honor tile, bold 西 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/shaa.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/shaa"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·西（西风）字牌牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/shaa）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/shaa.png",
+        "localId": "mahjong/tex/shaa"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "西（西风）字牌，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-34",
+      "desc": "北（北风）字牌牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/pei.png"
+      },
+      "query": "ivory mahjong tile face, the North wind honor tile, bold 北 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/pei.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/pei"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·北（北风）字牌牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/pei）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/pei.png",
+        "localId": "mahjong/tex/pei"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "北（北风）字牌，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-35",
+      "desc": "白（白板/白龙）三元牌牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/haku.png"
+      },
+      "query": "ivory mahjong tile face, the white dragon (haku) honor tile, a plain framed white face with a thin blue outline border, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/haku.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/haku"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·白（白板/白龙）三元牌牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/haku）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/haku.png",
+        "localId": "mahjong/tex/haku"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "白（白板/白龙）三元牌，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-36",
+      "desc": "發（青龙）三元牌牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/hatsu.png"
+      },
+      "query": "ivory mahjong tile face, the green dragon (hatsu) honor tile, bold green 發 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/hatsu.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/hatsu"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·發（青龙）三元牌牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/hatsu）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/hatsu.png",
+        "localId": "mahjong/tex/hatsu"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "發（青龙）三元牌，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-37",
+      "desc": "中（红中）三元牌牌面",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "faceUrl(code) → /games/game-b/art/mahjong/<kind>.png",
+        "alsoUsedBy": "Button.skin（自家手牌）",
+        "servedPath": "/games/game-b/art/mahjong/chun.png"
+      },
+      "query": "ivory mahjong tile face, the red dragon (chun) honor tile, bold red 中 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/chun.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/chun"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌面·中（红中）三元牌牌面·play-ui.ts faceUrl(code) 按 URL 引用（Image.src 牌河/宝牌/副露/结算 + Button.skin 自家手牌·2D 先行·index.json 已登记 mahjong/tex/chun）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/chun.png",
+        "localId": "mahjong/tex/chun"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "中（红中）三元牌，日式立直麻将象牙牌面，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-38",
+      "desc": "牌背（牌身反面·面朝下/3D 牌身贴图·预留）",
+      "kind": "texture",
+      "ref": {
+        "mechanism": "index",
+        "component": null,
+        "field": null,
+        "resolver": "index.json registerAssetIndex（3D 牌身贴图·预留·faceUrl 2D 路径暂未引用）",
+        "servedPath": "/games/game-b/art/mahjong/back.png"
+      },
+      "query": "ivory mahjong tile body, the reverse back face of the tile, ivory back plate with rounded bevel and a uniform decorative back pattern, clean bold form, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/back.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/back"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌身·牌背（牌身反面·面朝下/3D 牌身贴图·预留）·index.json 已登记 mahjong/tex/back（3D 牌身贴图·registerAssetIndex 预留·2D faceUrl 路径暂未引用）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/back.png",
+        "localId": "mahjong/tex/back"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "牌背（牌身反面），日式立直麻将象牙牌身，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-39",
+      "desc": "空白牌面（无雕刻·占位/3D 面）",
+      "kind": "texture",
+      "ref": {
+        "mechanism": "index",
+        "component": null,
+        "field": null,
+        "resolver": "index.json registerAssetIndex（3D 牌身贴图·预留·faceUrl 2D 路径暂未引用）",
+        "servedPath": "/games/game-b/art/mahjong/blank.png"
+      },
+      "query": "ivory mahjong tile body, a completely blank tile face, plain ivory front plate with no engraving, clean bold form, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/blank.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/blank"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌身·空白牌面（无雕刻·占位/3D 面）·index.json 已登记 mahjong/tex/blank（3D 牌身贴图·registerAssetIndex 预留·2D faceUrl 路径暂未引用）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/blank.png",
+        "localId": "mahjong/tex/blank"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "空白牌面（无雕刻），日式立直麻将象牙牌身，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-40",
+      "desc": "牌面底板（象牙白空白正面·雕刻底/3D 面）",
+      "kind": "texture",
+      "ref": {
+        "mechanism": "index",
+        "component": null,
+        "field": null,
+        "resolver": "index.json registerAssetIndex（3D 牌身贴图·预留·faceUrl 2D 路径暂未引用）",
+        "servedPath": "/games/game-b/art/mahjong/front.png"
+      },
+      "query": "ivory mahjong tile body, the plain front body plate of the tile, blank ivory face before any engraving, clean bold form, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "placeholder": {
+        "current": "已入真图 CC0（/games/game-b/art/mahjong/front.png）",
+        "source": "vendored-cc0",
+        "count": 1,
+        "instances": [
+          "mahjong/tex/front"
+        ]
+      },
+      "spec": {
+        "w": 600,
+        "h": 800,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》立直麻将牌身·牌面底板（象牙白空白正面·雕刻底/3D 面）·index.json 已登记 mahjong/tex/front（3D 牌身贴图·registerAssetIndex 预留·2D faceUrl 路径暂未引用）",
+      "status": "replaced",
+      "gen": {
+        "provider": "fluffystuff-cc0",
+        "model": "FluffyStuff/riichi-mahjong-tiles (CC0)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/mahjong/front.png",
+        "localId": "mahjong/tex/front"
+      },
+      "provenance": {
+        "generator": "fluffystuff-cc0",
+        "prompt": null,
+        "model": "FluffyStuff/riichi-mahjong-tiles",
+        "license": "CC0-1.0",
+        "source": "https://github.com/FluffyStuff/riichi-mahjong-tiles",
+        "mock": false
+      },
+      "prompt": "牌面底板（象牙白空白正面），日式立直麻将象牙牌身，樱色二次元风（女性向·细腻柔和线条·柔光上色），透明背景"
+    },
+    {
+      "no": "art-41",
+      "desc": "立绘·大姨太（上家/東座）·黑发盘髻·暗红牡丹旗袍·暖灯和室（临时参考图·带背景·待去背终稿）",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "OPP_TACHIE[1] → /games/game-b/art/tachie/tachie-daiyi.png",
+        "servedPath": "/games/game-b/art/tachie/tachie-daiyi.png"
+      },
+      "query": "elegant female-oriented anime portrait, a poised mature woman, glossy black hair in a traditional bun, deep crimson qipao cheongsam with peony brocade, warm lamplit tatami tea-room behind her, graceful upper-body pose, refined line art, soft shading, transparent background, sakura-nijigen",
+      "placeholder": {
+        "current": "临时参考图已入（带背景·待去背终稿）",
+        "source": "owner-reference-temp",
+        "count": 1,
+        "instances": [
+          "tachie/daiyi"
+        ]
+      },
+      "spec": {
+        "w": 545,
+        "h": 670,
+        "transparent": false
+      },
+      "context": "game-b《雀宴》SC-play 立绘槽·座 1 上家（東座）·play-ui.ts OPP_TACHIE[1] 按 URL 引用（Image.src·72px 头像框 fit:cover）·临时素材未入 index.json（待去背终稿走 asset-manager 正式登记）",
+      "status": "placeholder",
+      "gen": {
+        "provider": "owner-reference",
+        "model": "owner-provided reference portrait (temp)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/tachie/tachie-daiyi.png",
+        "localId": "tachie/daiyi"
+      },
+      "provenance": {
+        "generator": "owner-reference",
+        "prompt": null,
+        "model": "owner-provided reference",
+        "license": "owner-provided·temp（再分发许可未确认·仅临时占位）",
+        "source": "owner 2026-07-20 聊天内联参考图 → transcript base64 还原 → Playwright 转 PNG → vendor 进 art/tachie/",
+        "mock": false,
+        "temp": true,
+        "note": "带背景·待 owner 交付去背 PNG 终稿再换并走 asset-manager 正式入 asset-index（见 docs/design/game-b/mockups/README.md 立绘台账）"
+      },
+      "prompt": "大姨太立绘·黑发盘髻·暗红牡丹旗袍·暖灯和室·女性向二次元风（sakura-nijigen）·去背透明终稿"
+    },
+    {
+      "no": "art-42",
+      "desc": "立绘·二姨太（对家/北座）·深蓝长卷发·灰银旗袍·夜景霓虹（临时参考图·带背景·待去背终稿）",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "OPP_TACHIE[2] → /games/game-b/art/tachie/tachie-eryi.png",
+        "servedPath": "/games/game-b/art/tachie/tachie-eryi.png"
+      },
+      "query": "elegant female-oriented anime portrait, a poised mature woman, long dark-blue wavy hair, grey-silver satin qipao cheongsam, neon night cityscape backdrop, graceful upper-body pose, refined line art, soft shading, transparent background, sakura-nijigen",
+      "placeholder": {
+        "current": "临时参考图已入（带背景·待去背终稿）",
+        "source": "owner-reference-temp",
+        "count": 1,
+        "instances": [
+          "tachie/eryi"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 600,
+        "transparent": false
+      },
+      "context": "game-b《雀宴》SC-play 立绘槽·座 2 对家（北座）·play-ui.ts OPP_TACHIE[2] 按 URL 引用（Image.src·72px 头像框 fit:cover）·临时素材未入 index.json（待去背终稿走 asset-manager 正式登记）",
+      "status": "placeholder",
+      "gen": {
+        "provider": "owner-reference",
+        "model": "owner-provided reference portrait (temp)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/tachie/tachie-eryi.png",
+        "localId": "tachie/eryi"
+      },
+      "provenance": {
+        "generator": "owner-reference",
+        "prompt": null,
+        "model": "owner-provided reference",
+        "license": "owner-provided·temp（再分发许可未确认·仅临时占位）",
+        "source": "owner 2026-07-20 聊天内联参考图 → transcript base64 还原 → Playwright 转 PNG → vendor 进 art/tachie/",
+        "mock": false,
+        "temp": true,
+        "note": "带背景·待 owner 交付去背 PNG 终稿再换并走 asset-manager 正式入 asset-index（见 docs/design/game-b/mockups/README.md 立绘台账）"
+      },
+      "prompt": "二姨太立绘·深蓝长卷发·灰银旗袍·夜景霓虹·女性向二次元风（sakura-nijigen）·去背透明终稿"
+    },
+    {
+      "no": "art-43",
+      "desc": "立绘·三姨太（下家/西座）·栗发·粉色旗袍·夜景·持牌微笑（临时参考图·带背景·待去背终稿）",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Image",
+        "field": "src",
+        "resolver": "OPP_TACHIE[3] → /games/game-b/art/tachie/tachie-sanyi.png",
+        "servedPath": "/games/game-b/art/tachie/tachie-sanyi.png"
+      },
+      "query": "elegant female-oriented anime portrait, a poised mature woman, chestnut wavy hair, soft pink qipao cheongsam, night scene backdrop, holding a single mahjong tile with a gentle smile, graceful upper-body pose, refined line art, soft shading, transparent background, sakura-nijigen",
+      "placeholder": {
+        "current": "临时参考图已入（带背景·待去背终稿）",
+        "source": "owner-reference-temp",
+        "count": 1,
+        "instances": [
+          "tachie/sanyi"
+        ]
+      },
+      "spec": {
+        "w": 470,
+        "h": 560,
+        "transparent": false
+      },
+      "context": "game-b《雀宴》SC-play 立绘槽·座 3 下家（西座）·play-ui.ts OPP_TACHIE[3] 按 URL 引用（Image.src·72px 头像框 fit:cover）·临时素材未入 index.json（待去背终稿走 asset-manager 正式登记）",
+      "status": "placeholder",
+      "gen": {
+        "provider": "owner-reference",
+        "model": "owner-provided reference portrait (temp)",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/tachie/tachie-sanyi.png",
+        "localId": "tachie/sanyi"
+      },
+      "provenance": {
+        "generator": "owner-reference",
+        "prompt": null,
+        "model": "owner-provided reference",
+        "license": "owner-provided·temp（再分发许可未确认·仅临时占位）",
+        "source": "owner 2026-07-20 聊天内联参考图 → transcript base64 还原 → Playwright 转 PNG → vendor 进 art/tachie/",
+        "mock": false,
+        "temp": true,
+        "note": "带背景·待 owner 交付去背 PNG 终稿再换并走 asset-manager 正式入 asset-index（见 docs/design/game-b/mockups/README.md 立绘台账）"
+      },
+      "prompt": "三姨太立绘·栗发·粉色旗袍·夜景·持牌微笑·女性向二次元风（sakura-nijigen）·去背透明终稿"
+    }
+  ]
+}
