@@ -359,7 +359,7 @@ function topToggles(): LayoutNode {
     layout: { x: PANEL_X + 20, y: PANEL_Y + 14, width: PANEL_W - 40, direction: 'row', gap: 18, align: 'center', justify: 'between' },
     children: [
       { type: 'Panel', id: 'tt-l', props: { bare: true }, layout: { direction: 'row', gap: 16, align: 'center' }, children: [{ type: 'Button', id: 'tt-help', props: { label: '?', kind: 'ghost', action: BACK_MENU }, layout: { width: 32, height: 32 } }, tg('tt-pray', '祈祷模式', false)] },
-      { type: 'Panel', id: 'tt-r', props: { bare: true }, layout: { direction: 'row', gap: 16, align: 'center' }, children: [tg('tt-auto', '托管', false), tg('tt-mark', '牌面标记', true)] },
+      { type: 'Panel', id: 'tt-r', props: { bare: true }, layout: { direction: 'row', gap: 12, align: 'center' }, children: [tg('tt-auto', '托管', false), tg('tt-mark', '牌面标记', true), { type: 'Button', id: 'act-log', props: { label: '📜', kind: 'ghost', action: TOGGLE_LOG }, layout: { width: 38, height: 34 } }, { type: 'Button', id: 'act-menu', props: { label: '☰', kind: 'ghost', action: BACK_MENU }, layout: { width: 38, height: 34 } }] },
     ],
   };
 }
@@ -371,15 +371,14 @@ function chatBtn(): LayoutNode {
 
 // ── 行动按钮排（自摸/立直/杠·日志/菜单）= acts（测试钉）──────────────────────────────────────
 function actionBar(m: MatchState): LayoutNode {
+  // 只放**对局行动键**（自摸/杠/立直）·居中底部；说明(📜)/菜单(☰)移到右上角（owner「别放字模旁」）。
   return {
     type: 'Panel', id: 'acts', props: { bare: true },
-    layout: { x: PANEL_X + PANEL_W / 2 - 176, y: PANEL_Y + PANEL_H - 152, direction: 'row', gap: 8, align: 'center' },
+    layout: { x: PANEL_X + PANEL_W / 2 - 90, y: PANEL_Y + PANEL_H - 152, direction: 'row', gap: 8, align: 'center' },
     children: [
       { type: 'Button', id: 'act-tsumo', props: { label: '自摸', kind: 'hero', disabled: !canTsumo(m), action: ACT_TSUMO } },
       ...(canAnkan(m) || canKakan(m) ? [{ type: 'Button' as const, id: 'act-kan', props: { label: '杠', kind: 'primary' as const, action: ACT_KAN } }] : []),
       { type: 'Button', id: 'act-riichi', props: { label: '立直', kind: 'primary', disabled: !canRiichi(m), action: ACT_RIICHI } },
-      { type: 'Button', id: 'act-log', props: { label: '📜', kind: 'quiet', action: TOGGLE_LOG } },
-      { type: 'Button', id: 'act-menu', props: { label: '☰', kind: 'quiet', action: BACK_MENU } },
     ],
   };
 }
