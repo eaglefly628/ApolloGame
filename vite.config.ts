@@ -104,6 +104,21 @@ export default defineConfig({
   test: {
     // 排除并行 Programmer 的 worktree 副本（.claude/worktrees）——否则 vitest 会把副本里的
     // 测试也扫进来、测试数虚高（曾出现 1515 假象）。保留默认的 node_modules/dist 排除。
-    exclude: ['**/node_modules/**', '**/dist/**', '**/.claude/**'],
+    //
+    // 快/慢双车道（owner 2026-07-21·测试提速体检）：默认 `npm test`=快车道，排除下列
+    // DEEP_GLOBS（冻结游戏 + 巨无霸整局通关 + 起子进程的工具测试·占全量 CPU 时间约一半却每次空转）；
+    // `npm run test:deep`（APOLLO_DEEP=1）=慢车道跑全部，发版前/定期用。缩范围只减「每次推」的负担、
+    // 不减总覆盖——慢车道仍是完整安全网。判据见 docs/playbooks/testing.md「双车道」。
+    exclude: [
+      '**/node_modules/**', '**/dist/**', '**/.claude/**',
+      ...(process.env.APOLLO_DEEP === '1' ? [] : [
+        'src/games/game-f/**', // 冻结游戏（owner 勿删勿迁）·26s/133 测·没人开发→只慢车道跑
+        'src/games/game-g/flow-walk.test.ts', // 整局通关走查 8.4s/1 测·33 个单元文件已覆盖各片段
+        'scripts/manifest-check.test.mjs', // 起进程跑 CLI 7.3s·库 manifest 校验（发版前跑够）
+        'scripts/acceptance.test.mjs', // 起进程 3.1s·验收剧本harness
+        'scripts/game-pipeline.test.mjs', // 起进程 2.4s·流程板 CLI（人用工具·不常改）
+        'scripts/audit-ratchet.test.mjs', // 对 8 游戏各 spawn 一次·红旗棘轮（game-skill-audit 每游戏仍活跑）
+      ]),
+    ],
   },
 });

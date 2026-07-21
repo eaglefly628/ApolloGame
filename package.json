@@ -21,7 +21,8 @@
     "build:cartridge:single": "VITE_SINGLEFILE=1 vite build --config vite.config.cartridge.ts",
     "pack:mac": "electron-builder --mac --config electron-builder.yml",
     "pack:win": "electron-builder --win --config electron-builder.yml",
-    "dist": "python3 scripts/dist.py"
+    "dist": "python3 scripts/dist.py",
+    "test:deep": "APOLLO_DEEP=1 vitest run"
   },
   "optionalDependencies": {
     "steamworks.js": "^0.4.0"
