@@ -10,13 +10,14 @@ import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assemb
 //  坐标系：x 右 / y 上（地面 0）/ z 朝镜头近。桌心=原点。
 // ═══════════════════════════════════════════════════════════════
 
-// 色板（art-data §1 夜宴·场景线 vegas-victoriana）。
-// 剧情局紫调绒面（owner 2026-07-21·GD-C STORY-POKER V2 稿·紫调绒面椭圆桌）。
-const FELT = 0x4a2d52, FELT_LO = 0x2c1834, RAIL = 0x6a4a38, RAIL_HI = 0xb98a5a, FLOOR = 0x160f1a, FLOOR_EDGE = 0x0b0710;
+// 色板（STORY-POKER V2 稿·紫调绒面椭圆桌·owner 2026-07-21「美术无限逼近」）——照稿 felt radial 中亮 #7d5570 →
+//   边暗 #281620 取中值 0x5a3a52 做呢面主色（暖顶光在桌心再提亮=warm pool）；rail 稿 #6a4c38→#3e2c1e 木栏（收敛高光防塑感）。
+const FELT = 0x6a4462, FELT_LO = 0x2a1826, RAIL = 0x6f5040, RAIL_HI = 0x8a6448, FLOOR = 0x18101e, FLOOR_EDGE = 0x0b0710;
 
 // 桌面椭圆（跑道形·长轴 x > 短轴 z·正式赛桌比例）。felt=呢面半径；rail=围栏环半径（略大·墙贴桌缘）。
-export const FELT_RX = 3.55, FELT_RZ = 2.45; // 呢面长/短半轴（世界单位）
-const RAIL_RX = 3.72, RAIL_RZ = 2.62;        // 围栏环长/短半轴（呢面外 ~0.17）
+// owner 2026-07-21「纵横比跟稿差不多·别让立绘盖住这么大桌」：短轴收窄 → 呢面更扁·屏上 ≈916×502(1.82:1)·上沿下移给立绘 bust 让位。
+export const FELT_RX = 3.55, FELT_RZ = 2.02; // 呢面长/短半轴（世界单位·稿 1.82:1）
+const RAIL_RX = 3.72, RAIL_RZ = 2.19;        // 围栏环长/短半轴（呢面外 ~0.17）
 const RAIL_SEGS = 46;                         // 围栏墙段数（越多越贴椭圆·段间略叠不漏筹码·平滑）
 const RAIL_Y = 0.64, RAIL_H = 0.26;           // 围栏中心高 / 高度（低矮圆润软边·非高墙）
 const FELT_TOP = 0.55;                         // 呢面上沿 y（筹码落此面）
@@ -48,9 +49,11 @@ export function build3DTableBlueprint(): WorldBlueprint {
     Camera3D: { yaw: 0, pitch: 1.12, projection: 'perspective', fov: 40, distance: 8.4, near: 0.1, far: 100, pivotX: 0, pivotY: 0.2, pivotZ: 0 },
   };
   // 光：暖顶主光（投影·筹码立体感）+ 冷补 + 暖环境。
-  entities['sun'] = { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.2, dirX: -2, dirY: -9, dirZ: -1.5, castShadow: true } };
-  entities['fill'] = { Light3D: { kind: 'directional', color: 0x6f7cff, intensity: 0.2, dirX: 4, dirY: -3, dirZ: 4 } };
-  entities['amb'] = { Light3D: { kind: 'ambient', color: 0xffe6c4, intensity: 0.58 } };
+  entities['sun'] = { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.05, dirX: -2, dirY: -9, dirZ: -1.5, castShadow: true } };
+  entities['fill'] = { Light3D: { kind: 'directional', color: 0x8a6fff, intensity: 0.22, dirX: 4, dirY: -3, dirZ: 4 } }; // 冷紫补（夜景冷调）
+  entities['amb'] = { Light3D: { kind: 'ambient', color: 0xe8d0ff, intensity: 0.5 } };                                   // 紫环境补
+  // 暖光池（桌心正上方 point·呢面中央提亮=稿 felt radial 中亮 + warm floor pool·朝边自然衰减出深紫）。
+  entities['pool'] = { Transform3D: { x: 0, y: 2.4, z: -0.15 }, Light3D: { kind: 'point', color: 0xffd2a0, intensity: 4.6, range: 9 } };
 
   // 暗地板（夜宴厅氛围·衬托桌面）。
   entities['floor'] = { Transform3D: { x: 0, y: -0.02, z: 0 }, Mesh3D: { shape: 'box', width: 16, height: 0.04, depth: 12, frontTint: FLOOR, backTint: FLOOR, edgeTint: FLOOR_EDGE } };

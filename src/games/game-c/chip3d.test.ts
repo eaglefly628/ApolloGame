@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
-import { build3DTableBlueprint, seatWorldPos, seatStackPos } from './build3d.js';
+import { build3DTableBlueprint, seatWorldPos, seatStackPos, FELT_RX, FELT_RZ } from './build3d.js';
 import { Chip3D } from './chip3d.js';
 import type { RigidBody3D, Mesh3D } from '@engine/protocol/components.js';
 
@@ -78,8 +78,8 @@ describe('game-c chip3d — 3D 物理筹码抛掷 + 主角堆（render-only·own
       expect(e.world.getComponent(id, 'RigidBody3D')).toBeUndefined(); // 纯渲染网格·cannon-es 不建体
       expect(e.world.getComponent(id, 'Mesh3D')).toBeDefined();
     }
-    // 堆贴边（f=0.85）：主角堆(座0)比座位环(0.9)略内·但比旧 0.8 更靠外桌缘
-    expect(Math.hypot(seatStackPos(0).x / 3.55, seatStackPos(0).z / 2.45)).toBeGreaterThan(0.8);
+    // 堆贴边（f=0.85·按当前 felt 半径归一·随呢面尺寸变仍恒 0.85）：主角堆(座0)比座位环(0.9)略内·但比旧 0.8 更靠外桌缘
+    expect(Math.hypot(seatStackPos(0).x / FELT_RX, seatStackPos(0).z / FELT_RZ)).toBeGreaterThan(0.8);
   });
 
   it('六席各有独立筹码堆（各在自己桌缘·id 命名空间隔离·owner 2026-07-18）', () => {

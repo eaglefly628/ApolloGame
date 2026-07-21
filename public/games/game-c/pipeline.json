@@ -33,8 +33,8 @@
     "S4": {
       "exit": 0,
       "summary": "walkthrough 绿（ Test Files  9 passed (9) ·       Tests  116 passed (116)）· 验收剧本 9 场景绿",
-      "at": "2026-07-21T08:27:13.492Z",
-      "gameHash": "f912b96d2ac65851"
+      "at": "2026-07-21T09:11:22.878Z",
+      "gameHash": "5294be98eb3f414c"
     },
     "S5": {
       "exit": 0,
@@ -596,6 +596,18 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-21T08:27:13.492Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "art-fidelity pass: S2/S3 review-gates stale from STORY-POKER V2 iteration",
+      "at": "2026-07-21T09:11:09.703Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-21T09:11:22.878Z"
     }
   ],
   "outOfOrder": [
@@ -798,6 +810,11 @@
       "stage": "S4",
       "reason": "剧情局稿 All-in 键补齐 + 清版 dc.html 存档(纯 HUD·session/acceptance 不动)：9场景conformance全绿+tsc/vitest/build三绿",
       "at": "2026-07-21T08:27:00.412Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "art-fidelity pass: S2/S3 review-gates stale from STORY-POKER V2 iteration",
+      "at": "2026-07-21T09:11:09.703Z"
     }
   ],
   "reviews": {

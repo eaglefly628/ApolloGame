@@ -13,7 +13,7 @@ import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap } from '@ui/components/index.js';
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
-import { FIELD_W, FIELD_H, ROOM_BG, WRAPPER_BG, GAME_C_THEME, OPPONENT_ANCHORS } from './theme.js';
+import { FIELD_W, FIELD_H, ROOM_BG, WRAPPER_BG, GAME_C_THEME, OPPONENT_ANCHORS, STORY_BACKDROP } from './theme.js';
 import { type Lang, t, handName } from './strings.js';
 import { buildTable, buildMenu, type TableView, type SeatView, type WardrobeView, type MenuView } from './hud.js';
 import { CLOTHING_ITEMS } from './wardrobe.js';
@@ -46,8 +46,10 @@ export function mount(container: HTMLElement, host?: { exit: () => void }): () =
   // ── 3D 牌桌 + 物理围栏（build3d·render-only·ThreeRenderer 消费·P3D 渲染线本体归 P3D 我只接线）─────
   const engine = new Engine();
   engine.load(build3DTableBlueprint());
-  const renderer = new ThreeRenderer({ width: FIELD_W, height: FIELD_H, background: 0x140c08, antialias: true, dprCap: 1.5, shadowMapSize: 1024 });
+  const renderer = new ThreeRenderer({ width: FIELD_W, height: FIELD_H, background: 0x140d16, antialias: true, dprCap: 1.5, shadowMapSize: 1024 });
   engine.attachRenderer(renderer, scene);
+  // 夜景电影化背幕（STORY-POKER V2 稿·落地窗+城市散景·声明式 SVG 贴图·3D 呢面桌背后·render-only）。
+  renderer.setBackgroundTexture(STORY_BACKDROP);
   let running = false;
   const start3D = (): void => { if (!running) { engine.start(); running = true; } };
   const stop3D = (): void => { if (running) { engine.stop(); running = false; } };

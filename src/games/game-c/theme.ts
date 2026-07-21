@@ -8,41 +8,71 @@ import type { Card } from '@engine/protocol/components.js';
 export const FIELD_W = 1280;
 export const FIELD_H = 720;
 
-// ── 色板（art-data-manual §1·跨夜宴系统一）───────────────────────────────────
+// ── 色板（STORY-POKER V2·夜紫电影化·十六进制照抄 GD-C 稿 story-poker-v2.dc.html）───────────────
+//   owner 2026-07-21「美术无限逼近设计稿」：把旧夜宴棕金色板整体换成稿里的紫罗兰调（面板/felt/立绘/搭档一体紫）。
 export const C = {
-  nightBg: '#160e0a', nightBg2: '#0d0806',
-  walnutGlow: '#33221a',
-  panel0: '#1e140e', panel1: '#160f0b',
-  cinnabar: '#c8352b',
-  goldA: '#f0c96a', goldB: '#d3a247',
-  goldEdge: '#e0b458', goldSoft: '#d8b878', goldPale: '#ecca8a',
-  ivory: '#f3ece0',
-  mute: '#b8a894', mute2: '#8a7862',
-  jade: '#7fd6b0', jadeBack: '#0e2620',
-  clay: '#e08a5a', clayBack: '#5a1a12',
-  feltA: '#166f4f', feltB: '#0e5540', feltC: '#093a2c',
+  nightBg: '#1c1422', nightBg2: '#0b070d',        // 页背景紫黑（稿 backdrop 180deg #1c1422→#0b070d）
+  walnutGlow: '#2a1f38',                            // 窗内壁暖冷晕
+  panel0: '#221626', panel1: '#0f090c',            // 面板亮/暗（rgba(34,22,38)/rgba(15,9,18) 近似）
+  cinnabar: '#d0483e',                              // all-in 红（稿 #d0483e→#a01e3a）
+  goldA: '#ecca8a', goldB: '#d8b878',              // 金亮/金中（稿 #ecca8a/#d8b878）
+  goldEdge: '#d8b878', goldSoft: '#c9b18a', goldPale: '#ecca8a',
+  ivory: '#f0e6dc',                                 // 暖象牙主字（稿 #f0e6dc）
+  mute: '#b3a08f', mute2: '#7a6a5c',               // 次级/弱字（稿 #b3a08f / #7a6a5c）
+  jade: '#5fd39a', jadeBack: '#12281f',            // 跟注/已过 绿（稿 rgba(52,211,120)）
+  clay: '#e6a0c4', clayBack: '#3a1a2e',            // 粉（胜利注 / 底池 label·稿 #e6a0c4）
+  feltA: '#7d5570', feltB: '#5a3a52', feltC: '#281620', // 紫绒面（稿 radial 中亮 #7d5570 → 边暗 #281620）
   cardRed: '#c0392b',
+  violet: '#c9a9dd', violetB: '#b98fd6', violetDeep: '#8a5fa8', // 立绘框 / 搭档 / 加注槽 紫（稿 #c9a9dd…）
   outGray: '#8a8a94',
 } as const;
 
-// 页背景（暖夜黑径向渐变·3D 牌桌背后的夜宴厅氛围·scene sceneBackground）。
+// 页背景（紫黑径向·稿 backdrop·3D 呢面桌背后夜景氛围·scene sceneBackground 回退层）。
 export const ROOM_BG =
-  'radial-gradient(ellipse at 50% 22%, #33221a 0%, #241812 45%, #160e0a 78%, #0d0806 100%)';
-export const WRAPPER_BG = '#0a0605';
+  'radial-gradient(140% 120% at 50% -10%, #1a121e 0%, #140d16 46%, #0b070d 100%)';
+export const WRAPPER_BG = '#08050c';
 
-// 夜宴系 UITheme（令牌值照 §1 色板映射·换皮即改这一份·游戏 LayoutNode 数据零改）。
+// ── 电影化夜景背幕（STORY-POKER V2 稿·全屏落地窗+城市散景·纯声明式 SVG=数据·非手写自由 DOM）──────────
+//   3D 呢面桌背后的场景（renderer.setBackgroundTexture 的既定用途「手绘天空渐变图·Cloud Design 素材」）：
+//   紫黑竖渐变 + 落地窗(暖/冷散景点阵 + 窗棂 + 暖冷光晕) + 两侧暗角 + 桌心暖光池。照稿 backdrop 逐层复刻。
+const BACKDROP_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#241734"/><stop offset=".44" stop-color="#1a1226"/><stop offset="1" stop-color="#100a18"/></linearGradient>
+<linearGradient id="win" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2c50"/><stop offset=".58" stop-color="#241a34"/><stop offset="1" stop-color="#140d1e"/></linearGradient>
+<radialGradient id="warm"><stop offset="0" stop-color="#ffc882" stop-opacity=".26"/><stop offset=".7" stop-color="#ffc882" stop-opacity="0"/></radialGradient>
+<radialGradient id="cool"><stop offset="0" stop-color="#c39aee" stop-opacity=".24"/><stop offset=".7" stop-color="#c39aee" stop-opacity="0"/></radialGradient>
+<radialGradient id="floor" cx=".5" cy=".4"><stop offset="0" stop-color="#ffd296" stop-opacity=".12"/><stop offset=".66" stop-color="#ffd296" stop-opacity="0"/></radialGradient>
+<pattern id="dw" width="15" height="21" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r=".95" fill="#ffce8c" opacity=".62"/></pattern>
+<pattern id="dc" width="26" height="30" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".8" fill="#c0a0ff" opacity=".44"/></pattern>
+<linearGradient id="vl"><stop offset="0" stop-color="#0e0810"/><stop offset="1" stop-color="#0e0810" stop-opacity="0"/></linearGradient>
+<linearGradient id="vr" x1="1" x2="0"><stop offset="0" stop-color="#0e0810"/><stop offset="1" stop-color="#0e0810" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="1280" height="720" fill="url(#bg)"/>
+<g><rect x="48" y="-46" width="1184" height="404" rx="8" fill="url(#win)"/>
+<rect x="48" y="-46" width="1184" height="404" fill="url(#dw)"/>
+<rect x="48" y="-46" width="1184" height="404" fill="url(#dc)"/>
+<circle cx="270" cy="150" r="200" fill="url(#warm)"/><circle cx="1010" cy="120" r="220" fill="url(#cool)"/>
+<g stroke="#0a060e" stroke-opacity=".85"><line x1="344" y1="-46" x2="344" y2="358" stroke-width="6"/><line x1="640" y1="-46" x2="640" y2="358" stroke-width="6"/><line x1="936" y1="-46" x2="936" y2="358" stroke-width="6"/><line x1="48" y1="153" x2="1232" y2="153" stroke-width="5" stroke-opacity=".78"/></g></g>
+<rect width="1280" height="720" fill="url(#floor)"/>
+<rect width="220" height="720" fill="url(#vl)"/><rect x="1060" width="220" height="720" fill="url(#vr)"/>
+</svg>`;
+/** 夜景背幕 data-URL（3D 场景背景贴图·render-only·不进 sim/hash）。 */
+export const STORY_BACKDROP = `data:image/svg+xml,${encodeURIComponent(BACKDROP_SVG)}`;
+
+// 夜紫系 UITheme（令牌值照上方色板·稿 story-poker-v2·换皮即改这一份·游戏 LayoutNode 数据零改）。
 export const GAME_C_THEME: UITheme = {
-  bg0: '#0d0806', bg1: '#1e140e', bg2: '#241812', bg3: '#2c1f16',
+  bg0: '#0b070d', bg1: '#160e1a', bg2: '#221626', bg3: '#3a2842', // bg3 暖紫（牌背/头像底/进度槽·稿 card-back #4a2f42·避冷暗半透感）
   pageBg: ROOM_BG,
-  line: 'rgba(224,180,120,0.30)',
-  text: '#f3ece0', sub: '#b8a894', dim: '#8a7862',
-  jade: '#7fd6b0', jadeWash: 'rgba(127,214,176,0.12)', jadeLine: 'rgba(127,214,176,0.42)',
-  gold: '#f0c96a',
-  ok: '#7fd6b0', okWash: 'rgba(127,214,176,0.14)',
-  warn: '#e0b458', warnWash: 'rgba(224,180,88,0.14)',
-  danger: '#c8352b',
-  ink: '#241009',
-  fontUi: "'Noto Sans SC','Source Han Sans SC',system-ui,sans-serif",
+  line: 'rgba(201,169,221,0.28)',                  // 紫罗兰细线（稿 border rgba(185,143,214,.28)）
+  text: '#f0e6dc', sub: '#b3a08f', dim: '#7a6a5c',
+  jade: '#5fd39a', jadeWash: 'rgba(95,211,154,0.12)', jadeLine: 'rgba(95,211,154,0.42)',
+  gold: '#ecca8a',
+  ok: '#5fd39a', okWash: 'rgba(95,211,154,0.14)',
+  warn: '#d8b878', warnWash: 'rgba(216,184,120,0.16)',
+  danger: '#d0483e',
+  mine: '#c9a9dd', foe: '#e6a0c4', // 紫罗兰(搭档/立绘/加注槽) / 粉(胜利注·底池 label)·稿 accent·借 mine/foe 令牌槽入闭集
+  ink: '#2a1420',
+  fontUi: "'Noto Sans SC','PingFang SC','Microsoft YaHei','Source Han Sans SC',sans-serif",
   fontMono: "ui-monospace,'SF Mono',Menlo,Consolas,monospace",
   fontSerif: "'Noto Serif SC','Songti SC','Source Han Serif SC',serif",
 };
@@ -90,10 +120,13 @@ export interface StorySeatDef {
   portCx: number; portCy: number; portW: number; portH: number; // 立绘矩形中心 + 尺寸 px
   main?: boolean;
 }
+// 位置照稿 story-poker-v2.dc.html 逐像素（立绘=busts behind rail 大且高·席卡在立绘下沿·中座立绘/卡都更大）：
+//   立绘 LEFT 中心(269,144)186×252 / CENTER(640,122)214×288 / RIGHT(1011,144)186×252；
+//   席卡 LEFT(256,288) / CENTER(640,194) / RIGHT(1024,288)。
 export const STORY_OPPONENTS: readonly StorySeatDef[] = [
-  { seat: 1, name: '陆时衍', nameEn: 'Lu Shiyan', cardCx: 640, cardCy: 238, portCx: 640, portCy: 168, portW: 200, portH: 252, main: true }, // 中·主
-  { seat: 2, name: '谢经理', nameEn: 'Mgr. Xie', cardCx: 278, cardCy: 326, portCx: 296, portCy: 244, portW: 134, portH: 188 },              // 左
-  { seat: 3, name: '柯女士', nameEn: 'Ms. Ke', cardCx: 1010, cardCy: 326, portCx: 996, portCy: 244, portW: 134, portH: 188 },               // 右
+  { seat: 1, name: '陆时衍', nameEn: 'Lu Shiyan', cardCx: 640, cardCy: 194, portCx: 640, portCy: 122, portW: 214, portH: 288, main: true }, // 中·主（恋爱线·最大）
+  { seat: 2, name: '谢经理', nameEn: 'Mgr. Xie', cardCx: 256, cardCy: 288, portCx: 269, portCy: 144, portW: 186, portH: 252 },              // 左
+  { seat: 3, name: '柯女士', nameEn: 'Ms. Ke', cardCx: 1024, cardCy: 288, portCx: 1011, portCy: 144, portW: 186, portH: 252 },             // 右
 ] as const;
 export const STORY_HERO = { name: '你 & 林晚', nameEn: 'You & Linwan' };   // 主角一座（底左面板）
 export const STORY_PARTNER = { name: '林晚', nameEn: 'Linwan' };            // 搭档旁白（手牌建议 advice_show）
