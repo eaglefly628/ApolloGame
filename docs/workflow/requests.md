@@ -8,6 +8,19 @@
 
 ## 待处理 / 进行中
 
+### REQ-ART-可消费槽铁律 · 美术台本只列「有消费槽」的行 + 程序化背景下沉成可替换槽 · [2026-07-22] · owner 拍板（game-c 素坯写不回暴露·「不想没消费槽的图列在台本·换了也白换」）→ Lead 出图 → **全游戏一体适用：Lead 供引擎件（审计+背景槽）· 各 PE 接自己游戏** · status: open · 优先级: P1 · 类型: 美术生产链铁律 + 引擎能力（跨全游戏）
+> **owner 原则（一句话）**：美术台本（`art-ledger.json`）里**每一行都必须有真实消费槽**——生成/替换它，游戏里能真的换上。**没有消费槽的"孤儿行"禁止列进台本**（否则 owner 换了也白换=浪费+误导）。game-c 37 行素坯全 `skinKey:null`、游戏零引用=反面教材（REQ-C-112）。
+> **消费槽的两种合法形态**：① 数据卡带=manifest 里的 `art:` 引用；② 编译期游戏=`skinKey`（游戏渲染代码按此 resolve 上画面）。两者皆无=孤儿=违规。
+>
+> **【Lead 供·引擎件·全游戏共享】**
+> 1. **孤儿行审计**（机器守卫）：新增检查——台账行若既无 manifest `art:` 绑定、又无 `skinKey`（或 skinKey 无游戏侧消费）→ 报 `ORPHAN-LEDGER-ROW` 警告（列出 game+行号），让"生成了没处接"被机器抓到、不再静默坑 owner。挂进 `game-skill-audit` 或 art-replace 校验（Lead 定）。
+> 2. **背景/场景皮肤槽能力**：程序化背景（如 game-c `theme.ts` 画的渐变、game-a `MANOR_BG`）目前是宿主层 CSS、skinKey 够不着 → 加通用 `mountHost` 背景皮肤槽：声明 `sceneBgSkin` 数据槽 → art-ledger 派生该行 → 生成图填入 → **有生成图用图·无图回退现程序化背景（兜底永不丢）**。红线：render-only·不碰 sim/hash·生成图过 M2.5 人审才覆盖（不自动拿 AI 图盖掉手绘背景·防质量倒退）。
+>
+> **【各 PE 接·自己游戏·可粘给 PE-A/PE-B/PE-C】**
+> 逐行审自己游戏的 `art-ledger.json`：每行二选一——**(a) 接消费槽**（编译期加 skinKey + 游戏渲染消费之·背景类用上面的 sceneBgSkin·留程序化兜底）；**(b) 删/退役**（这行游戏根本不用→retire 或移出台本·别让它躺在台本里骗你去换）。**完工判据：孤儿行审计零告警**（台本每行都能真换上画面）。
+> **边界**：引擎件（审计守卫 + mountHost 背景槽 + art-ledger 派生）=Lead 域；各游戏台账清理 + 渲染消费接线=各 PE 域（game 代码）。
+> **Lead 落地状态**：引擎两件（审计 + 背景槽）待 Lead 施工/出 spec；owner 已拿本条分发各 PE。
+
 ### REQ-QC-UI-工坊生产板显示「复查门」+ 评分卡摘要 · [2026-07-15] · Lead（REQ-QC-三门接续·全文回执在 archive）→ **指派：PST** · status: open · 优先级: P1 · 类型: 工坊 UI（数据已通·只差显示）
 > 三门制已上线（`game-pipeline.mjs`·板 JSON 已带 `review` 字段+scorecard·端点自动透传），工坊生产板 UI 现只画机器门/人门两行——请 PST 在 GamePipelinePanel 补第三行「复查门」+ S7 评分卡判词（`VISUAL: n/24 · PREMIUM`）显示，照 CLI 版式（`board <slug>` 输出）。参考手册 `docs/playbooks/review-gates.md`。
 
