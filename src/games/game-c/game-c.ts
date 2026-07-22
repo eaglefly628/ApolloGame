@@ -218,7 +218,7 @@ export function mount(
       phase: session.phase, isHeroTurn: session.isHeroTurn,
       showdown: sd ? {
         // 牌型显示名按 type index 本地化（不碰 session 中文 r.type=机读口径）；无摊(best 空)不显牌型。
-        rows: sd.rows.map((r) => ({ name: seatName(r.seat), type: r.best.length ? handName(lang, HOLDEM_TYPE_ORDER[r.value[0]]) : '', best: r.best, hole: r.hole, won: r.won, isWinner: sd.winners.includes(r.seat) })),
+        rows: sd.rows.map((r) => ({ name: seatName(r.seat), type: r.best.length ? handName(lang, HOLDEM_TYPE_ORDER[r.value[0]]) : '', best: r.best, hole: r.hole, won: r.won, isWinner: sd.winners.includes(r.seat), isHero: r.seat === HERO })),
         potTotal: sd.potTotal,
       } : undefined,
       finale: session.phase === 'gameover' ? { win: session.winnerSide === 'hero', ...session.stats() } : undefined,

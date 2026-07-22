@@ -137,7 +137,7 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
       rows: [0, 1, 2, 3, 4, 5].map((i) => ({
         name: i === 0 ? '主角' : `姨太${i}`, type: i === 0 ? '葫芦' : '高牌',
         best: [H(0, 14), H(1, 14), H(2, 14), H(3, 13), H(0, 13)], hole: [H(0, 14), H(1, 14)],
-        won: i === 0 ? 1800 : 0, isWinner: i === 0,
+        won: i === 0 ? 1800 : 0, isWinner: i === 0, isHero: i === 0,
       })),
       potTotal: 1800,
     };
@@ -153,11 +153,19 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     walk(table);
     expect(ids.has('c-sd-next')).toBe(true);
     expect(ids.has('c-sd-board')).toBe(true); // 公共牌板在
+    // 主角组合里属于自己底牌的两张标「YOURS」（owner 2026-07-22）；对手行不标。fixture 中 A♠A♥ 两张都进最优 → 恰 2 张。
+    const yours: string[] = [];
+    const walkY = (n: { props?: unknown; children?: unknown[] }): void => {
+      if ((n.props as { label?: string } | undefined)?.label === 'YOURS') yours.push('y');
+      for (const c of (n.children ?? []) as { props?: unknown; children?: unknown[] }[]) walkY(c);
+    };
+    walkY(table as unknown as { props?: unknown; children?: unknown[] });
+    expect(yours.length).toBe(2); // 只主角行标·恰两张自己的底牌
   });
 
   it('摊牌屏·盖牌收池（best 空·无摊）零 issue', () => {
     const showdown = {
-      rows: [{ name: '主角', type: '收池', best: [] as Card[], hole: [] as Card[], won: 300, isWinner: true }],
+      rows: [{ name: '主角', type: '收池', best: [] as Card[], hole: [] as Card[], won: 300, isWinner: true, isHero: true }],
       potTotal: 300,
     };
     expect(validateLayoutNode(buildTable(baseView({ phase: 'showdown', showdown })))).toEqual([]);

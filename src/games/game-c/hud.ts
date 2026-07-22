@@ -44,7 +44,7 @@ export interface TableView {
   showdown?: ShowdownView; finale?: FinaleView;
 }
 export interface ShowdownView {
-  rows: Array<{ name: string; type: string; best: Card[]; hole: Card[]; won: number; isWinner: boolean }>; // name/type=宿主已本地化
+  rows: Array<{ name: string; type: string; best: Card[]; hole: Card[]; won: number; isWinner: boolean; isHero: boolean }>; // name/type=宿主已本地化·isHero=主角行（标「你的」两张）
   potTotal: number;
 }
 export interface FinaleView { win: boolean; hands: number; heroChips: number; heroPawned: number; }
@@ -77,7 +77,7 @@ function langToggle(l: Lang, idp: string): LayoutNode {
 }
 
 // ── 公共牌 / 底牌（白牌 face:light·红黑对比·§5.3 Decal3D 牌面正装）──────────────
-function cardNode(id: string, c: Card | null, size: 'sm' | 'md' | 'lg', rotate?: number, selected?: boolean): LayoutNode {
+function cardNode(id: string, c: Card | null, size: 'sm' | 'md' | 'lg', rotate?: number, selected?: boolean, label?: string): LayoutNode {
   const layout = rotate ? { rotate } : {};
   // owner 2026-07-22：扑克牌=引擎原语·不贴任何美术（vendored 全牌 SVG 自带角标 → 叠组件角标=双重重影）。
   // 空槽=牌背朝上：程序化斜纹牌背（backPattern·组件自绘·无贴图）。
@@ -86,7 +86,8 @@ function cardNode(id: string, c: Card | null, size: 'sm' | 'md' | 'lg', rotate?:
   }
   const f = cardFace(c);
   // 牌面=组件原生白牌面（红黑角标点数花色·中央大花色·自绘）；selected=最优五张组合成员→金边高亮圈出。
-  return { type: 'PlayingCard', id, props: { rank: f.rank, suit: f.suit, faceUp: true, face: 'light', size, ...(selected ? { selected: true } : {}) }, layout };
+  // label=牌下小标（摊牌时标「你的」两张主角底牌·owner 2026-07-22）。
+  return { type: 'PlayingCard', id, props: { rank: f.rank, suit: f.suit, faceUp: true, face: 'light', size, ...(selected ? { selected: true } : {}), ...(label ? { label } : {}) }, layout };
 }
 // 最优组合成员判定（同花色+点数即同牌·board/hole 与 heroBest 比对）。
 const cardKey = (c: Card): number => c.suit * 100 + c.rank;
@@ -680,7 +681,11 @@ function buildShowdown(sd: ShowdownView, board: Card[], l: Lang): LayoutNode {
       ? [
         ...hole,
         { type: 'Label', id: `c-sd-sep-${i}`, props: { text: '›', size: 20, color: 'dim' } },
-        ...r.best.map((c, k) => cardNode(`c-sd-best-${i}-${k}`, c, 'sm', undefined, true)), // 最优五张·金边高亮圈出
+        // 最优五张·金边高亮圈出；主角行里**属于自己底牌的那两张**再叠「你的」小标（owner 2026-07-22：知道哪两张是我嵌进去的）。
+        ...r.best.map((c, k) => {
+          const mine = r.isHero && r.hole.some((h) => cardKey(h) === cardKey(c));
+          return cardNode(`c-sd-best-${i}-${k}`, c, 'sm', undefined, true, mine ? t(l, 'sd.yours') : undefined);
+        }),
       ]
       : [{ type: 'Label', id: `c-sd-muck-${i}`, props: { text: t(l, 'sd.muck'), size: 'sm', color: 'dim' } }];
     return {

@@ -57,6 +57,7 @@ export const STRINGS = {
   // 摊牌屏
   'sd.community': { en: 'COMMUNITY', zh: '公共牌 · COMMUNITY' },
   'sd.muck': { en: 'Mucked · no showdown', zh: '盖牌收池 · 无摊' },
+  'sd.yours': { en: 'YOURS', zh: '你的' }, // 摊牌·主角组合里属于自己底牌的两张标注（owner 2026-07-22）
   'sd.next': { en: 'Confirm · Next Hand ▶', zh: '确认 · 继续下一手 ▶' },
   // 局终屏
   'fin.winSub': { en: 'TOTAL VICTORY', zh: '大 获 全 胜' },
