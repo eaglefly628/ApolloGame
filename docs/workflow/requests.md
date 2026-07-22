@@ -57,6 +57,12 @@
 > **建议方案**：下沉一个 headless `event-log`/`play-journal` 能力（纯数据·确定性·录放安全）：`append({seq,round,actor,kind,text})` / `recent(n)` / `dump()` / `size()`；kind 由消费游戏各填闭集枚举（能力只管容器骨架·不定义具体 kind）。两款迁移消费（game-b `LogKind/LogEvent/GameLog`→薄封装；game-c 内联 log→同）。红线：日志**正文**恒各游戏机读口径（能力不碰文案）。
 > **边界**：新增 `src/skills/<tier>/event-log.ts`（或归 tier2 卡牌包）+ 测试；game-b/game-c 各改消费点。**属主程/引擎域·PE 不擅改引擎**——报 Lead 评审下沉粒度（值不值·放哪层·kind 泛型化）。证据全文 `docs/design/game-b/data-driven-review.md` §3 档 B。
 
+### REQ-ARTLIB-空白台账 · 素材屏对 fileless placeholder 行显空白缩略图（reconcile 豁免它→PASS≠平台可见） · [2026-07-22] · PE-C 报 → Lead 裁决 · status: open · 优先级: P2 · 类型: 创作台素材屏 UX + 台账约定（platform/PST 域·跨游戏）
+> **症状**：创作台美术库/素材屏里 authored-inventory 台账（`art-ledger.json`）很多行显**空白缩略图**（owner 2026-07-22 实证 game-c：Art-001~006 + 069~090 空白）。
+> **根因**：素材屏按行 `servedPath` 取缩略图；`status:placeholder` 的行若 servedPath **无真图文件** → 空白。而 `asset-reconcile.mjs` 的 dangling-file 检查**明确豁免 tbf/placeholder 行**（「合法无文件不误报」）——所以「reconcile PASS」**≠**「平台每行可见」。game-b 靠给 placeholder 行塞临时/程序图躲过；game-c 起初纯声明台账 → 空白。**这是 authored-inventory 约定的系统缺口：允许声明无文件行、平台却渲成空白、无守卫提醒。**
+> **建议（下沉·择一·Lead 裁决）**：①**平台侧兜底**（推荐·一处修全游戏受益）——素材屏对 fileless/placeholder 行渲染**程序占位缩略图**（desc + 类目色底签），不空白；②或**lint 档**——`asset-reconcile`/audit 加一条**警告**「placeholder 行 servedPath 无文件且无 `spec.generator` → 平台会空白」，让作者知情补图（不 FAIL·只提醒）。
+> **game-c 现状（PE-C 已自救·非通用方案·勿当标准）**：`scripts/game-c-art-gen.mjs` 给 28 面素坯各生成夜金 SVG 占位（REQ-VECTOR-ART·`index.json` filled）→ game-c 素材屏满显（`27631194`）。但**不应要求每游戏都手造占位 SVG**——故报此单请 Lead 定通用兜底（platform/PST 域·我不擅改）。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
