@@ -6,7 +6,7 @@
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Card } from '@engine/protocol/components.js';
 import {
-  cardFace, cardAssetId, cardAssetUrl, CARD_BACK_ID,
+  cardFace,
   FIELD_W, FIELD_H, STORY_OPPONENTS, STORY_HERO, STORY_PARTNER, type StorySeatDef,
 } from './theme.js';
 import type { GameEvent } from './game-log.js';
@@ -58,8 +58,6 @@ const BTN_DARK = 'linear-gradient(160deg,rgba(46,30,40,0.95),rgba(24,15,22,0.97)
 const BTN_ALLIN = 'linear-gradient(160deg,#d0483e,#a01e3a)';
 const RAISE_SLOT = 'linear-gradient(160deg,rgba(74,47,66,0.92),rgba(40,24,40,0.94))';
 // 对手底牌背（稿 OPPONENT HOLE CARDS·两张小背牌斜摆）：在局=紫背金边 / 弃牌=灰背(mucked) → owner「看清他还在场上还是弃牌了」。
-const OHOLE_IN = 'linear-gradient(135deg,#4a2f42,#2e1c2a)';
-const OHOLE_FOLD = 'linear-gradient(135deg,#3a3040,#241e28)';
 // 立绘 bust 竖渐变（上实下透·融入呢面·稿 busts behind rail）——主角(恋爱线)略亮、配角稍暗。
 const PORTRAIT_FILL_MAIN = 'linear-gradient(180deg,rgba(58,40,70,0.78) 0%,rgba(34,22,44,0.6) 52%,rgba(18,11,24,0.22) 100%)';
 const PORTRAIT_FILL_SIDE = 'linear-gradient(180deg,rgba(44,30,52,0.68) 0%,rgba(28,18,36,0.5) 52%,rgba(16,10,22,0.18) 100%)';
@@ -78,16 +76,14 @@ function langToggle(l: Lang, idp: string): LayoutNode {
 // ── 公共牌 / 底牌（白牌 face:light·红黑对比·§5.3 Decal3D 牌面正装）──────────────
 function cardNode(id: string, c: Card | null, size: 'sm' | 'md' | 'lg', rotate?: number, selected?: boolean): LayoutNode {
   const layout = rotate ? { rotate } : {};
-  // 空槽=牌背朝上（vendor 自 PD 货架的牌背贴图·§art-bible）：backArt 有→整面 cover·'' →程序化牌背（素坯 fallback）。
+  // owner 2026-07-22：扑克牌=引擎原语·不贴任何美术（vendored 全牌 SVG 自带角标 → 叠组件角标=双重重影）。
+  // 空槽=牌背朝上：程序化斜纹牌背（backPattern·组件自绘·无贴图）。
   if (!c) {
-    const backArt = cardAssetUrl(CARD_BACK_ID);
-    return { type: 'PlayingCard', id, props: { rank: '', suit: '♠', faceUp: false, face: 'dark', size, ...(backArt ? { backArt } : {}) }, layout };
+    return { type: 'PlayingCard', id, props: { rank: '', suit: '♠', faceUp: false, face: 'dark', size, backPattern: 'stripe' }, layout };
   }
   const f = cardFace(c);
-  // 牌面贴图（真 PD 牌面·render-only）：art 有→居中显牌面 + 角标点数花色仍在·'' →程序化白牌面（素坯 fallback）。
-  const art = cardAssetUrl(cardAssetId(c));
-  // selected=最优五张组合成员 → 金边圈出高亮（owner 2026-07-21：不显牌型名·只高亮圈出最大组合的原始牌）。
-  return { type: 'PlayingCard', id, props: { rank: f.rank, suit: f.suit, faceUp: true, face: 'light', size, ...(art ? { art } : {}), ...(selected ? { selected: true } : {}) }, layout };
+  // 牌面=组件原生白牌面（红黑角标点数花色·中央大花色·自绘）；selected=最优五张组合成员→金边高亮圈出。
+  return { type: 'PlayingCard', id, props: { rank: f.rank, suit: f.suit, faceUp: true, face: 'light', size, ...(selected ? { selected: true } : {}) }, layout };
 }
 // 最优组合成员判定（同花色+点数即同牌·board/hole 与 heroBest 比对）。
 const cardKey = (c: Card): number => c.suit * 100 + c.rank;
@@ -237,19 +233,27 @@ function buildStoryPortrait(def: StorySeatDef, sv: SeatView | undefined, l: Lang
 
 // ── 对手底牌指示（两张小背牌·呢面上·在局=紫背金边 / 弃牌=灰背暗 mucked / 出局=不显）─────────────────────
 //   owner 2026-07-21「我看不清对手有没有牌·先贴两小牌表示在场/弃牌·以后重设计」。稿：中座大(34×48)、边座小(30×42)。
+// 对手底牌（呢面上·贴各自席位）= 真 PlayingCard 牌背原语（非两块底色）。两态美术区分（owner 2026-07-22）：
+//   在局=端正微扇（±5°·清晰持牌·棋盘格牌背）；弃牌=**被弃/muck 表达**（大角度歪斜抛散 + 暗淡 + 斜纹背·整簇半透·配状态牌「弃牌」）。
 function oppHoleCards(def: StorySeatDef, sv: SeatView): LayoutNode | null {
-  if (sv.out) return null; // 出局=无牌
+  if (sv.out) return null; // 出局=无牌·不显
   const fold = sv.folded;
   const big = !!def.main;
-  const w = big ? 34 : 30, h = big ? 48 : 42, rot = big ? 4 : 6;
-  const back = (i: number, r: number): LayoutNode => ({
-    type: 'Panel', id: `c-ohole-${def.seat}-${i}`, props: { bg: { custom: fold ? OHOLE_FOLD : OHOLE_IN }, ...(fold ? {} : { edge: 'gold' as const }) },
-    layout: { width: w, height: h, radius: 4, rotate: r, opacity: fold ? 0.55 : 1 },
+  const w = big ? 30 : 27;
+  const h = Math.round((w * 7) / 5);                       // 5:7 扑克比例
+  const rot = (i: number): number => (fold ? (i === 0 ? -20 : 12) : (i === 0 ? -5 : 5)); // 弃=歪斜抛散·在局=端正微扇
+  const back = (i: number): LayoutNode => ({
+    type: 'PlayingCard', id: `c-ohole-${def.seat}-${i}`,
+    // size 决定角标/中央纹样字号档；layout width/height 覆盖成小牌盒（30/27×比例高）。牌背程序化纹理·无贴图。
+    props: { rank: '', suit: '♠', faceUp: false, face: 'dark', size: 'sm', backPattern: fold ? 'stripe' : 'checker', ...(fold ? { dimmed: true } : {}) },
+    layout: { width: w, height: h, rotate: rot(i) },
   });
+  const gap = fold ? 1 : 5;
+  const clusterW = w * 2 + gap;
   return {
     type: 'Panel', id: `c-ohole-${def.seat}`, props: { bare: true },
-    layout: { x: Math.round(def.holeCx - w - 1), y: Math.round(def.holeCy - h / 2), width: w * 2 + 2, direction: 'row', justify: 'center', gap: 2, allowOverlap: true },
-    children: [back(0, -rot), back(1, rot)],
+    layout: { x: Math.round(def.holeCx - clusterW / 2), y: Math.round(def.holeCy - h / 2), width: clusterW, direction: 'row', justify: 'center', align: 'center', gap, opacity: fold ? 0.48 : 1, allowOverlap: true },
+    children: [back(0), back(1)],
   };
 }
 

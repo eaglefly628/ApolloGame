@@ -109,7 +109,7 @@ describe('ArtLedgerPanel · REQ-ARTLIB fileless placeholder 不空白', () => {
     expect(container.querySelector('img[src*="card.svg"]')).toBeNull(); // 破图已撤
   });
 
-  it('game-c 真台账（90 行·ref 形状）整屏渲染不崩溃 + 描述可辨认', async () => {
+  it('game-c 真台账（ref 形状·authored-inventory）整屏渲染不崩溃 + 描述可辨认', async () => {
     const real = JSON.parse(readFileSync('public/games/game-c/art/art-ledger.json', 'utf-8'));
     stubLedger(real.rows as LedgerRow[]);
     await act(async () => { root.render(<ArtLedgerPanel slug="game-c" onBack={() => {}} />); });
@@ -117,6 +117,7 @@ describe('ArtLedgerPanel · REQ-ARTLIB fileless placeholder 不空白', () => {
     const html = container.innerHTML;
     expect(html).toContain('art-001'); // 编号墙渲出（旧代码在此崩于 r.slot.entity）
     expect(html).toContain('夜景背幕'); // 人读 desc 可辨认
-    expect(real.rows.length).toBe(90);
+    // 真台账非空即验渲染路径（**不硬编游戏侧行数**·免 game-c 台账演进——如扑克牌移出——误伤 studio 渲染回归）。
+    expect(real.rows.length).toBeGreaterThan(0);
   });
 });

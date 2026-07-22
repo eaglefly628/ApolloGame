@@ -126,9 +126,11 @@ export interface StorySeatDef {
 //   席卡 LEFT(256,288) / CENTER(640,194) / RIGHT(1024,288)。
 export const STORY_OPPONENTS: readonly StorySeatDef[] = [
   // owner 2026-07-21：立绘太大占满屏 → 缩小 40%（×0.6·中座 214×288→128×172·边座 186×252→112×150）。
-  { seat: 1, name: '陆时衍', nameEn: 'Lu Shiyan', cardCx: 640, cardCy: 194, portCx: 640, portCy: 108, portW: 128, portH: 172, holeCx: 640, holeCy: 300, main: true }, // 中·主（恋爱线·最大·底牌下移给状态牌让位）
-  { seat: 2, name: '谢经理', nameEn: 'Mgr. Xie', cardCx: 256, cardCy: 288, portCx: 269, portCy: 130, portW: 112, portH: 150, holeCx: 371, holeCy: 353 },              // 左
-  { seat: 3, name: '柯女士', nameEn: 'Ms. Ke', cardCx: 1024, cardCy: 288, portCx: 1011, portCy: 130, portW: 112, portH: 150, holeCx: 909, holeCy: 353 },             // 右
+  // owner 2026-07-22：对手底牌**贴紧各自席位**（在他面前呢面上·不再飘向桌心）——原位太靠中心与公共牌(x462-818/y320-410)重合。
+  //   中座=席卡下方、公共牌之上的窄带(holeCy 288)；边座=席卡正下方、各自那一侧(holeCy 384·避开公共牌 x 带)。
+  { seat: 1, name: '陆时衍', nameEn: 'Lu Shiyan', cardCx: 640, cardCy: 194, portCx: 640, portCy: 108, portW: 128, portH: 172, holeCx: 640, holeCy: 288, main: true }, // 中·主（恋爱线·最大·底牌在席卡下/公共牌上窄带）
+  { seat: 2, name: '谢经理', nameEn: 'Mgr. Xie', cardCx: 256, cardCy: 288, portCx: 269, portCy: 130, portW: 112, portH: 150, holeCx: 300, holeCy: 384 },              // 左（底牌贴左席下方·呢面左半）
+  { seat: 3, name: '柯女士', nameEn: 'Ms. Ke', cardCx: 1024, cardCy: 288, portCx: 1011, portCy: 130, portW: 112, portH: 150, holeCx: 980, holeCy: 384 },             // 右（底牌贴右席下方·呢面右半）
 ] as const;
 export const STORY_HERO = { name: '你 & 林晚', nameEn: 'You & Linwan' };   // 主角一座（底左面板）
 export const STORY_PARTNER = { name: '林晚', nameEn: 'Linwan' };            // 搭档旁白（手牌建议 advice_show）
@@ -145,29 +147,11 @@ export function cardFace(c: Card): { rank: string; suit: string } {
   return { rank: RANK_TXT[c.rank] ?? String(c.rank), suit: SUIT_SYM[c.suit] ?? '♠' };
 }
 
-// ── 牌资产 key（本地库 public/games/game-c/art/index.json·vendor 自 PD 货架·mirror game-a §5.1）───
-// holdem-eval Card{ suit 0=♠1=♥2=♦3=♣, rank 2..14 } → 本地资产 id `card/<rank-word>-of-<suit-word>`。
-// 牌面/牌背贴图=render-only 表现层（sim 只持 Card·不进 hash）；缺图→PlayingCard 退程序化白牌面（素坯 fallback）。
-const RANK_WORDS: Record<number, string> = {
-  2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight',
-  9: 'nine', 10: 'ten', 11: 'jack', 12: 'queen', 13: 'king', 14: 'ace',
-};
-const SUIT_WORDS = ['spades', 'hearts', 'diamonds', 'clubs'] as const; // 索引=Card.suit（0=♠…3=♣）
-
-/** Card → 本地资产 id（card/<rank>-of-<suit>·对齐 vendor 落盘的 52 张 PD 牌 id）。 */
-export function cardAssetId(c: Card): string {
-  return `card/${RANK_WORDS[c.rank] ?? String(c.rank)}-of-${SUIT_WORDS[c.suit] ?? 'spades'}`;
-}
-export const CARD_BACK_ID = 'card/back';
-
-/** 资产 id → 站点绝对 URL（本地索引 path 约定·vendor-asset 落盘规律；缺/未知 id 返 '' → 消费端退素坯）。
- *  牌面=svg·牌背=png（照 vendor 落盘扩展名）；本地库仅 `card/*`，其余（如 chip/*）此处不解析返 ''。
- *  vendor.test 逐条对账 `cardAssetUrl(id) === 本地索引 path` 钉死本约定。 */
-export function cardAssetUrl(assetId: string): string {
-  if (!assetId.startsWith('card/')) return '';
-  const ext = assetId === CARD_BACK_ID ? 'png' : 'svg';
-  return `/games/game-c/art/cards/${assetId.slice('card/'.length)}.${ext}`;
-}
+// ── 扑克牌 = 引擎渲染原语（PlayingCard 程序化牌面/牌背·render-only）───────────────────────
+// owner 2026-07-22：扑克牌移出美术台账——牌不需要美术修饰，且 vendored 全牌 SVG（自带角标点数）
+// 叠在 PlayingCard 组件自绘角标上=「双重」重影。故 cardNode 直用组件原生牌面/牌背，不再引任何贴图；
+// 52 牌面 + 牌背既不在 art-ledger.json、也不在 index.json（筹码仍 vendored 保留）。
+// 现由 holdem-eval Card{suit,rank} → cardFace() 出点数花色，PlayingCard 红黑自绘（见 hud.cardNode）。
 
 // 牌型英文枚举 → 中文提示（底带牌型提示·art-data-manual §5.4「牌型」）。
 export const HAND_NAME_CN: Record<string, string> = {

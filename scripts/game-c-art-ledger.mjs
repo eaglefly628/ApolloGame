@@ -2,7 +2,7 @@
 // game-c《STORY-POKER V2》美术台账生成器（authored-inventory·mirror game-b/game-g）。
 // 真相=docs/design/game-c/art-bible-story-poker-v2.md §1 风格 + §3 面清单；本脚本展开成机读账
 //   → public/games/game-c/art/art-ledger.json（平台素材屏 + audit 读它）。改风格/面→改本脚本→重跑。
-// 覆盖：背景 · 牌桌 · 全副 52 牌面+牌背 · 9 面额筹码 · UI 按钮/框贴图 · 特效(VFX·待接槽) · 衣柜图标。
+// 覆盖：背景 · 牌桌 · 9 面额筹码 · UI 按钮/框贴图 · 特效(VFX·待接槽) · 衣柜图标。（扑克牌=引擎原语·移出台账·见 ③）
 // 红线：立绘=外部角色卡 Avatar.src（不入账·非我方资产）；status=placeholder（素坯占位·真图待出）。
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -57,29 +57,10 @@ add('game-c/table/rail-normal', 'texture', '木栏法线（木纹+皮革缝线�
 add('game-c/table/betline', 'texture', '下注线/发牌区贴花（桌面弧线）', { mechanism: 'index', component: 'Decal3D', field: 'tex', resolver: 'Decal3D 桌面贴花·下注线' }, 'table/betline.svg',
   'subtle gold betting line arc and dealer area marking decal on felt, semi-transparent', { w: 1024, h: 512, transparent: true }, '下注线/发牌区贴花·金弧', '无');
 
-// ── ③ 全副 52 牌面 + 牌背 ─────────────────────────────────
-const RANKS = [['2', 'two', 'number'], ['3', 'three', 'number'], ['4', 'four', 'number'], ['5', 'five', 'number'], ['6', 'six', 'number'], ['7', 'seven', 'number'], ['8', 'eight', 'number'], ['9', 'nine', 'number'], ['T', 'ten', 'number'], ['J', 'jack', 'court'], ['Q', 'queen', 'court'], ['K', 'king', 'court'], ['A', 'ace', 'ace']];
-const SUITS = [['S', 'spades', 'black'], ['H', 'hearts', 'red'], ['D', 'diamonds', 'red'], ['C', 'clubs', 'black']];
-const cardCn = { S: '黑桃', H: '红心', D: '方块', C: '梅花' };
-const rankCn = { 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', T: '10', J: 'J', Q: 'Q', K: 'K', A: 'A' };
-for (const [rk, rn, rt] of RANKS) for (const [sk, sn, color] of SUITS) {
-  const sub = rt === 'court'
-    ? `the ${rn} of ${sn}, poker court card, ornate ${color} ${rn} figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners`
-    : rt === 'ace'
-      ? `the ace of ${sn}, poker ace card, large ornate ${color} suit emblem centered, white card face, gilded flourish`
-      : `the ${rn} of ${sn}, poker number card, ${color} suit pips arranged classic, white card face, clean bold rank`;
-  const served = `cards/${rn}-of-${sn}.svg`;
-  add(`card/${rn}-of-${sn}`, 'sprite', `牌面·${cardCn[sk]}${rankCn[rk]}`,
-    { mechanism: 'index', component: 'PlayingCard', field: 'art', resolver: `cardNode PlayingCard.art（${rn}-of-${sn}）` },
-    served, sub, { w: 240, h: 336, transparent: false }, `牌面·${cardCn[sk]}${rankCn[rk]}·古典 PD 矢量（可换夜金定制）`,
-    '货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）',
-    vendored(`card/${rn}-of-${sn}`, served, 'Public Domain', 'notpeter/Vector-Playing-Cards'));
-}
-add('card/back', 'texture', '牌背（现货 PD·可换紫绒金纹定制）',
-  { mechanism: 'index', component: 'PlayingCard', field: 'backArt', resolver: 'cardNode faceUp:false → PlayingCard.backArt' },
-  'cards/back.png', 'poker card back, purple velvet ground with gilded ornamental crest and central emblem, symmetric, luxury noir',
-  { w: 240, h: 336, transparent: false }, '牌背·PD 现货（可换紫绒金饰定制）', '货架 PD 牌背已 vendor',
-  vendored('card/back', 'cards/back.png', 'Public Domain', 'hayeah/playing-cards-assets'));
+// ── ③ 扑克牌 = 引擎渲染原语·移出美术台账（owner 2026-07-22）──────────────────────────
+//   52 牌面 + 牌背既不入 art-ledger.json 也不入 index.json：PlayingCard 组件自绘牌面/牌背（红黑角标+中央花色+
+//   程序化牌背纹理），无需任何贴图。vendored 全牌 SVG 自带角标叠在组件角标上会「双重」重影，且扑克牌本身
+//   无美术修饰需求。将来若要夜金定制牌面再走 requests 重开此段。（筹码仍 vendored 保留·见 ④。）
 
 // ── ④ 筹码 9 面额（顶/侧面贴图·owner AI·统一夜金边框）──────
 const CHIPS = [['1', 'white', '白'], ['5', 'red', '红'], ['10', 'blue', '蓝'], ['25', 'green', '绿'], ['50', 'orange', '橙'], ['100', 'black', '黑'], ['500', 'purple', '紫'], ['1000', 'yellow', '黄'], ['5000', 'gray', '灰']];
@@ -126,4 +107,4 @@ const out = resolve(ROOT, 'public/games/game-c/art/art-ledger.json');
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, `${JSON.stringify(ledger, null, 1)}\n`);
 console.log(`game-c art-ledger → ${out} (${rows.length} 行)`);
-console.log('  分类：场景1 · 牌桌5 · 牌面52+背1 · 筹码9 · UI 按钮/框10 · 特效6 · 衣柜图标6 ·（立绘=外部角色卡不入账）');
+console.log('  分类：场景1 · 牌桌5 · 筹码9 · UI 按钮/框10 · 特效6 · 衣柜图标6 ·（扑克牌=引擎原语移出台账·立绘=外部角色卡不入账）');

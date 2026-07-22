@@ -65,9 +65,8 @@ painterly premium mobile-game art, refined tasteful, dramatic depth, story-drive
 
 | # | 面 | 消费槽位 | 规格 | 风格要点（必守 §1） |
 |---|---|---|---|---|
-| A11 | **牌背** | `PlayingCard.backArt` | 240×336 png | 紫绒底+金饰纹章·中央 logo·夜金 noir |
 | A12 | **筹码贴图 ×9 面额** | 贴 3D 筹码柱侧/顶面 | 256² png ×9 | 分面额配色但**统一夜金边框**·防花 |
-| A13 | 牌面 52（若要定制而非货架） | `PlayingCard.art` | 240×336 ×52 | 白牌面+紫黑花色变体·可选 |
+| ~~A11 牌背 / A13 牌面 52~~ | — | ~~PlayingCard.backArt/art~~ | **移出台账**（owner 2026-07-22·见下 §扑克牌） |
 
 ### B档 · 外部传入（**我方不出图**）
 
@@ -79,10 +78,10 @@ painterly premium mobile-game art, refined tasteful, dramatic depth, story-drive
 
 | # | 面 | 货架 id | 授权 |
 |---|---|---|---|
-| C1 | 52 牌面 | `card/<rank>-of-<suit>` | PD |
-| C2 | 牌背 | `card/back` | PD |
 | C3 | 9 面额筹码 | `chip/*` | CC0 |
 | C4 | 庄家钮 D | 程序圆片 或 `Decal3D` | — |
+
+> **⛔ 扑克牌（52 牌面 + 牌背）= 引擎渲染原语·移出美术台账（owner 2026-07-22）**：`PlayingCard` 组件自绘牌面（红黑角标点数 + 中央花色）与牌背（`backPattern` 程序纹理），**不入 `art-ledger.json` 也不入 `index.json`，无任何贴图**。此前 vendored 全副 PD 牌 SVG（自带角标）叠在组件角标上 → 牌面「双重」重影；且扑克牌本身无美术修饰需求。将来若真要夜金定制牌面/牌背，走 `requests.md` 重开（重开时同步：ledger 脚本 ③ 段 + index.json + `cardNode` 接 art/backArt）。对手底牌指示也用 `PlayingCard` 牌背原语（在局=棋盘格微扇 / 弃牌=斜纹歪斜暗淡 muck）。
 
 ### D档 · 不需美术（程序/数据/引擎·别浪费美术工时）
 
@@ -112,11 +111,11 @@ painterly premium mobile-game art, refined tasteful, dramatic depth, story-drive
 ## §5 接入顺序 + 域边界
 
 1. **台本定版**（本档）
-2. **接槽**（占位回退·观感零变）：字体槽(Bebas/Cinzel) → buttonSkins → PlayingCard.backArt → Material3D.map(呢面/木栏) → setBackgroundTexture；同时落机读账 `art-ledger.json`。
+2. **接槽**（占位回退·观感零变）：字体槽(Bebas/Cinzel) → buttonSkins → Material3D.map(呢面/木栏) → setBackgroundTexture；同时落机读账 `art-ledger.json`。（~~PlayingCard.backArt~~ 扑克牌已移出台账·见 C 档下方铁律。）
 3. **出图**：A档=平台一键全量（风格包=§1）；A′档=owner AI 出图别名写回。
 4. **验收**：`visual-scorecard` 8 维·premium=全维≥2。
 
-**域边界**：呢面/木栏 `Material3D` + 隐形碰撞 = **P3D 域**（提缺口协调）；`buttonSkins`/`PlayingCard.art/backArt` 槽 = **PUI 域**（消费）；出图 = **asset-manager/PST 平台**；立绘 = **外部角色卡**。
+**域边界**：呢面/木栏 `Material3D` + 隐形碰撞 = **P3D 域**（提缺口协调）；`buttonSkins` 槽 = **PUI 域**（消费）；出图 = **asset-manager/PST 平台**；立绘 = **外部角色卡**；**扑克牌 = 引擎 `PlayingCard` 原语·不出图不接槽**（见 C 档铁律）。
 
 ---
 
