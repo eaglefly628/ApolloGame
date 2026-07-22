@@ -8,6 +8,15 @@
 
 ## 待处理
 
+### REQ-C-112 · [owner 2026-07-22 实测] 生成的场景美术「无法写回游戏」——37 行素坯无 skinKey·游戏无消费槽 · 提出人 owner（工坊真调 Seedream 出图后）→ Lead 诊断落单 → **指派 PE-C（先裁设计岔口·再定要不要接线）** · status: open · 优先级: P2（美术生产链尾·不阻塞玩法/S4）· 类型: 游戏层美术消费接线（PE-C 域·game-c.ts/theme.ts/blueprint）
+> **owner 实测现象**：Seedream 真调已通、生成成功；但 game-c 美术库里那些 `art-001~037` 场景图**写不回游戏**（生成物落 `public/games/game-c/art/gen/art-NN.png` + 登记 `gen/art-NN`，但游戏里看不到）。
+> **Lead 诊断（根因·非管线 bug）**：① game-c 是编译期游戏（无 manifest）→「⤵ 写回 manifest（数据卡带）」按钮不适用（会报错）。② 编译期游戏的写回靠 **skinKey 别名**（`art-replace` 生成时 `if(row.skinKey) 登记别名 id=skinKey` → 游戏按 skinKey resolve 上画面）——但 game-c 台账 **37 行全部 `skinKey:null`**，故生成物无游戏侧消费槽。③ game-c 背景是 `theme.ts` **程序化画的**（紫黑渐变+落地窗+暖光池·照 .dc.html 设计稿逐层复刻），**不是图片槽**；牌面/筹码是 vendor 直引（`PlayingCard.art`·工作正常）。所以这 37 张素坯是"悬空"行·游戏没有任何地方引用。
+> **⚖ 先裁设计岔口（PE-C/GD-C 定·别直接接线）**：game-c **到底要不要用生成的场景图**？
+> - **不要**（程序化背景=终稿·照稿复刻已达标）→ 那 37 行素坯是**过早生成**·退役或标「仅目录/平台墙预览·不进游戏」·本单收口（零游戏代码改动）。
+> - **要**（想用生成图当背景/场景元素）→ PE-C 加消费槽：给相关台账行配 skinKey + game-c 场景层改成「有生成图用生成图·无则回退现程序化背景」（如 mountHost sceneBackground 吃 skin），并回填 gdd 美术规格。**红线**：不删现程序化背景兜底·render-only·蓝图/确定性零影响。
+> **关联**：同源于 REQ-C-111（PE-C 07-22 已清的 vendor.test 红=28 素坯塞索引未接游戏）——素坯"生成了但没接"是同一问题的两面。建议 PE-C 与 GD-C 一并厘清 game-c 美术消费规范（哪些槽真进游戏）。
+> **非管线 bug 声明（Lead）**：工坊/art-replace/写回机制本身工作正常（对数据卡带 manifest 路 + 编译期 skinKey 路都通）；game-c 缺的是**游戏侧消费接线**，属 game-c 游戏代码=PE-C 域。owner 已知情选「派 PE-C」（2026-07-22）。
+
 ### REQ-C-105 · [P0 复查打回] betting-engine 边池结算筹码蒸发（大盲短缴 all-in + 弃牌）· [2026-07-17] · 提出人 GD-C（S4 复查门对抗核证）→ 指派 PE-C 修 · status: **✅ 修毕（PE-C 2026-07-18·守恒fuzz+独立对抗子代理 CONFIRMED-CLEAN·复查门终签待 GD-C/owner）** · 优先级: P0（阻塞 S4 放行·M2 前必修）· 类型: 游戏层 TS 正确性 bug（capability-plan §4-b）
 > **S4 复查门裁定=FAIL 打回**（复查人 GD-C≠施工 PE-C）。50 测独立复跑绿，但均为**场景测、未覆盖守恒 property**——对抗性 fuzz 一跑即现。
 > **根因**（`betting-engine.ts:287-295` potLayers refund）：未被跟注溢出的 `top` 仅从 **live（未弃）** 取。`startHand:149` 把 `currentBet` 强制设为 bigBlind，当大盲栈<大盲=短缴 all-in 时 currentBet **虚高于任何人实缴**；此时部分匹配该线后弃牌的玩家可成为**全场最高投入者却已弃牌**，其超出最高 live 投入的差额既不进池（caps 只来自 live total）也不退回（refund 只认 live top）→ 蒸发。
