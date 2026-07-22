@@ -2,7 +2,7 @@
   "version": 1,
   "game": "game-a",
   "mode": "authored-inventory",
-  "note": "《掼蛋夜宴》外围美术台账（owner 2026-07-20 定范围：立绘=外部角色卡传入·不入本账；5 档服饰暂缓；聚焦外围打牌观感）。手册来源 docs/design/game-a/art-bible.md。风格锚：场景 modern-manor · 控件/图标/牌 apollo-toon（人物 sakura-nijigen 本账不涉）。UI chrome art 非蓝图 Sprite 可推导 → authored-inventory（同 game-d 先例）。台账工具读 GET /api/art/ledger?slug=game-a。",
+  "note": "《掼蛋夜宴》外围美术台账（owner 2026-07-20 定范围：立绘=外部角色卡传入·不入本账；5 档服饰暂缓；聚焦外围打牌观感）。手册来源 docs/design/game-a/art-bible.md。风格锚：场景 modern-manor · 控件/图标/牌 apollo-toon（人物 sakura-nijigen 本账不涉）。UI chrome art 非蓝图 Sprite 可推导 → authored-inventory（同 game-d 先例）。台账工具读 GET /api/art/ledger?slug=game-a。 | A-023 接线审计（2026-07-20·PE-A）：10/23 条真接线（换图即生效）；余下每条 wired.reason 标真因（PUI缺口/待布局/有意不接）。status:filled=文件在，wired.consumed=是否消费。",
   "count": 23,
   "instances": 23,
   "rows": [
@@ -37,6 +37,10 @@
         "localId": "game-a/bg/menu",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts buildMenu Screen.image (BG_MENU)"
       }
     },
     {
@@ -70,6 +74,10 @@
         "localId": "game-a/bg/table",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts 牌桌/选桌/结算 Screen.image (BG_TABLE)"
       }
     },
     {
@@ -103,6 +111,10 @@
         "localId": "game-a/felt/oval",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "theme FELT_TEXTURE → a-felt 桌面 bg"
       }
     },
     {
@@ -136,6 +148,10 @@
         "localId": "game-a/cards/back-banquet",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "无面朝下渲染位（对手显余牌数·非扣牌扇）——现无消费点"
       }
     },
     {
@@ -169,6 +185,10 @@
         "localId": "game-a/cards/joker-big",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "牌面走控件文字面（合蓝本经典白扑克）；整张牌立绘需 PUI 补 PlayingCard 满面贴图槽·A-024"
       }
     },
     {
@@ -202,6 +222,10 @@
         "localId": "game-a/cards/joker-small",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "同 art-05·整卡立绘槽缺·A-024"
       }
     },
     {
@@ -235,6 +259,10 @@
         "localId": "game-a/logo/title",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "标题走 i18n 文字 spans（EN/中 切换）；固定中文 logo 图会破 EN 模式——故不接·文字标题合稿更优"
       }
     },
     {
@@ -268,6 +296,10 @@
         "localId": "game-a/icons/coin",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts coinTag → 菜单/牌桌/设置 3 处钱包 Tag.icon"
       }
     },
     {
@@ -301,6 +333,10 @@
         "localId": "game-a/icons/level",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts a-p-level 信息条 Tag.icon"
       }
     },
     {
@@ -334,6 +370,10 @@
         "localId": "game-a/icons/trophy",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "🏆 在 fmtHolder 串/席名前缀（Badge/文字内）·需 Badge.icon 或重构·A-024"
       }
     },
     {
@@ -367,6 +407,10 @@
         "localId": "game-a/icons/tribute",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts a-p-tribute 进贡横幅 Image"
       }
     },
     {
@@ -400,6 +444,10 @@
         "localId": "game-a/icons/menu",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts a-p-menu Button.icon"
       }
     },
     {
@@ -433,6 +481,10 @@
         "localId": "game-a/icons/counter",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts a-p-counter Button.icon"
       }
     },
     {
@@ -466,6 +518,10 @@
         "localId": "game-a/icons/copy",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts a-menu-log-copy Button.icon"
       }
     },
     {
@@ -499,6 +555,10 @@
         "localId": "game-a/fx/win-confetti",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts a-result run-won 满屏 Image 叠层"
       }
     },
     {
@@ -532,6 +592,10 @@
         "localId": "game-a/decor/corner",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "角落装饰件·待布局设计（屏角摆放防叠·后续）"
       }
     },
     {
@@ -565,6 +629,10 @@
         "localId": "game-a/ui/btn-gold",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "有意不接：金 CTA 用引擎 hero kind（深字金底·真机8:1）；贴皮强制白字→浅金失读·A-022"
       }
     },
     {
@@ -598,6 +666,10 @@
         "localId": "game-a/ui/btn-ghost",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "220×56·9-slice 16 对紧凑顶栏/工具条小按钮=强制大 min-size→撑高变方+折行·实测回归·A-024"
       }
     },
     {
@@ -631,6 +703,10 @@
         "localId": "game-a/ui/btn-quiet",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "同 art-18·紧凑按钮贴皮回归·A-024"
       }
     },
     {
@@ -664,6 +740,10 @@
         "localId": "game-a/icons/arrow",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "谁大 ▼ 文字箭头语义正确（指座前墩）；通用 arrow.svg 朝向不定·未接"
       }
     },
     {
@@ -697,6 +777,10 @@
         "localId": "game-a/decor/chips",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "筹码装饰件·待布局设计"
       }
     },
     {
@@ -730,6 +814,10 @@
         "localId": "game-a/fx/play-glow",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "出牌流光·需逐手出牌事件态钩子（当前入场动效走 LayoutNode.anim）·后续/A-024"
       }
     },
     {
@@ -763,7 +851,13 @@
         "localId": "game-a/fx/bomb",
         "model": "procedural-svg",
         "mock": false
+      },
+      "wired": {
+        "consumed": false,
+        "reason": "炸弹闪光·需炸弹出牌事件态钩子·后续/A-024"
       }
     }
-  ]
+  ],
+  "wiredCount": 10,
+  "rowCount": 23
 }

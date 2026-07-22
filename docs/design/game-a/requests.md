@@ -2,7 +2,7 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
-### A-023 · 美术走索引消费（工坊替换才生效）· [2026-07-22] · owner 报（工坊替换游戏没看到·全游戏一体）→ Lead 诊断 → **PE-A** · status: open · 优先级: P1 · 类型: 接消费槽（REQ-ART-可消费槽铁律 option a·game-a 侧·同 game-b B-012）
+### A-023 · 美术走索引消费（工坊替换才生效）· [2026-07-22] · owner 报（工坊替换游戏没看到·全游戏一体）→ Lead 诊断 → **PE-A** · status: 🔧 PE-A 承接施工中 · 优先级: P1 · 类型: 接消费槽（REQ-ART-可消费槽铁律 option a·game-a 侧·同 game-b B-012）
 > **症状**：owner 在工坊替换 game-a 美术后，游戏里没变（与 game-b 同病）。
 > **根因（Lead 2026-07-22 诊断·已读码定位）**：game-a 的美术走**硬编码 URL**、绕过 art 索引/台本——`hud.ts` `BG_MENU`/`BG_TABLE`=`/games/game-a/art/bg/*.svg`（`image:` 直传）、`theme.ts` 牌面 URL 拼 `/games/game-a/art/cards/<id>.<ext>`、`MANOR_BG`（`theme.ts:18`）=宿主层程序化 CSS 渐变经 `mountHost({sceneBackground})`。工坊写回 index/台本对游戏零效果。`npm run ledger:audit game-a` 23 行全判孤儿=实证。
 > **修法（REQ-ART option a·接消费槽·引擎件已 done 可直接用）**：
@@ -10,6 +10,15 @@
 > - 程序化背景 `MANOR_BG`：改用 `mountHost` 的 `sceneBgSkin` 槽（`src/engine/host/mount-host.ts`·REQ-ART ② 已 done）——`sceneBgSkin: { skinKey:'game-a/scene/bg-...', imageUrl: filledSrc(index, skinKey) }`，有生成图叠图、无图回退 `MANOR_BG`（**兜底永不丢**）；台账加该背景行。
 > **完工判据**：① 工坊替换某图→别名登记进 `game-a/art/index.json`→游戏即显（非破坏·带 provenance/M2.5）；② `npm run ledger:audit game-a --strict` 孤儿归零（无用行退役）；③ game-a 测零回归·门禁绿；④ 真浏览器亲验换一张牌面/背景成立。
 > **边界**：game-a 游戏代码（`hud.ts`/`theme.ts`/`game-a.ts`）=PE-A 域；引擎件（`filledSrc` + `sceneBgSkin` + `ledger-audit`）已 done。
+> **PE-A 首轮进展（2026-07-20·本 A-023 承接前的半程）**：已做「消费接线 + 台账诚实化」——theme 立 `ART` 槽位表、新接 7 条**渲染**槽（coin/level/tribute→Tag/Image·菜单/记牌器/复制→Button.icon·win-confetti→结算叠层·共 10/23 渲染真上屏）、`art-ledger` 每行加 `wired` 真状态。**但 Lead 诊断正确：这些仍走硬编码 URL、绕过 index**——渲染上屏≠工坊可换。本 A-023 的 `filledSrc`/`sceneBgSkin` **索引解析**=真正让「工坊替换即生效」的那半程，续做（把 ART/BG 常量的静态 URL 改成经 parsed index 按 id 解析·硬编码作回退）。
+
+### A-024 · [2026-07-20] · PE-A · 美术槽位能力缺口（4 项·挡「每条美术换了都有效果」）· status: 📝 待转报 PUI · 类型: UI 基座控件/工具缺口（PUI 域）
+owner 2026-07-20 要「工作台换任一美术→游戏即时生效」。逐条接线审计（A-023）后，10/23 接上，余下有 4 类**引擎缺口**挡住接线（非游戏层能补）：
+① **PlayingCard 满面贴图槽**：控件 `art` 槽只放**中央**立绘（四角点数花色仍是控件自画）——vendor 的 54 张整卡 SVG（各带自家点数版式）塞中央=双重点数。要「换整张牌面图」需控件支持**满面 art 模式**（cover 整卡·关角标）或牌背同款 `backArt` 的正面版。现状：牌面走控件文字面（合蓝本经典白扑克·观感 OK），SVG 牌库暂闲置。
+② **Badge/文字内联图标**：`Badge`（钱包/持有者）无 `icon` 槽（`Tag`/`Button` 有·已用）；`🏆` 暂大者前缀嵌在 `fmtHolder` 文字串里。要让奖杯/部分徽章图标可换→`Badge` 加 `icon`（照 `Tag.icon`），或提供「文字内联图标」原语。
+③ **紧凑按钮贴皮 min-size**：`buttonSkins`（9-slice）源图 220×56·slice 16 → 对顶栏/工具条**小按钮**强制大 min-size，撑高变方 +「菜单」折行（实测回归·已撤）。要小按钮也能换皮→9-slice 支持**更小源图/可配 min** 或按钮尺寸自适应 slice。
+④ **一次性事件态 fx 钩子**：`fx/play-glow`（出牌流光）/`fx/bomb`（炸弹闪光）需「本手出的是炸弹吗」这类**逐手事件态**触发叠层；现入场动效走 `LayoutNode.anim` 闭集、无自定义 SVG-fx 事件叠加位。要事件驱动 SVG 特效→补事件态 fx 叠层原语（或 timeline 消费）。
+**PE 侧无干净兜底**（都属控件/工具能力）。在 PUI 出件前：牌面维持文字、徽章图标维持 emoji、小按钮维持原生 kind、fx 维持 anim；台账每条标真状态（`wired.reason`）不留幽灵槽。
 
 ### A-022 · [2026-07-20] · PE-A · ui-audit 对比度只读 `background-color` → `hero`/渐变底按钮误报「硬性低对比」假阳 · status: 📝 待转报 PUI（视觉真绿·非阻断·工具盲区）· 类型: UI 基座工具缺口（PUI 域·`tools/ui-audit.mjs`）
 > **ID 让号（2026-07-20·rebase）**：本条原报 A-018，与 Lead 评审同轮工单化的 A-018（一四进贡裁决）撞号——Lead 995e6c70 先落，PE 让号改 **A-022**（hud.ts 头注内引用同步改）。

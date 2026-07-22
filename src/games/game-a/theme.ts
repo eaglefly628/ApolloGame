@@ -20,10 +20,32 @@ export const MANOR_BG =
 // 酒红牌呢（掼蛋特色·蓝本椭圆桌·真图=S6·风格锚 modern-manor）。
 export const FELT_RED =
   'radial-gradient(ellipse at 50% 42%, #6a1f26 0%, #4e151b 52%, #360f14 100%)';
+// ── 美术槽位 → 资产路径（**单一真相**·art-ledger 逐条对应此表·owner 2026-07-20「每条换了都要有效果」）──
+// 换图=换这些静态路径上的文件，游戏即时生效（无需改代码）。台账 art-ledger.json 的 servedPath 必与此表一致。
+// 注：牌面 54 张=控件文字画（合蓝本经典白扑克·换整卡 SVG 需 PUI 补卡面立绘槽·见 requests A-024）。
+export const ART = {
+  bgMenu: '/games/game-a/art/bg/menu.svg',
+  bgTable: '/games/game-a/art/bg/table.svg',
+  feltOval: '/games/game-a/art/felt/oval.svg',
+  logo: '/games/game-a/art/logo/title.svg',
+  iconCoin: '/games/game-a/art/icons/coin.svg',
+  iconLevel: '/games/game-a/art/icons/level.svg',
+  iconTrophy: '/games/game-a/art/icons/trophy.svg',
+  iconTribute: '/games/game-a/art/icons/tribute.svg',
+  iconMenu: '/games/game-a/art/icons/menu.svg',
+  iconCounter: '/games/game-a/art/icons/counter.svg',
+  iconCopy: '/games/game-a/art/icons/copy.svg',
+  iconArrow: '/games/game-a/art/icons/arrow.svg',
+  decorCorner: '/games/game-a/art/decor/corner.svg',
+  decorChips: '/games/game-a/art/decor/chips.svg',
+  fxWin: '/games/game-a/art/fx/win-confetti.svg',
+  btnGhost: '/games/game-a/art/ui/btn-ghost.svg',
+  btnQuiet: '/games/game-a/art/ui/btn-quiet.svg',
+} as const;
+
 // 牌呢贴图（felt/oval.svg 叠在渐变上=偏心聚光光晕+呢纹·owner 2026-07-20「桌面完整背景贴图」）；
 // cover 裁掉 SVG 自带金边上下缘→桌面板 accent 金边保持单一干净；图 404 则退回 FELT_RED 渐变（层叠兜底）。
-export const FELT_TEXTURE =
-  `url('/games/game-a/art/felt/oval.svg') center/cover no-repeat, ${FELT_RED}`;
+export const FELT_TEXTURE = `url('${ART.feltOval}') center/cover no-repeat, ${FELT_RED}`;
 export const WRAPPER_BG = '#140a0b';
 
 // ── 夜宴系 UITheme（令牌照 art-data-manual §1 色板·跨 a/b/c 统一·换皮改这一份·LayoutNode 数据零改）──
@@ -41,6 +63,8 @@ export const GAME_A_THEME: UITheme = {
   fontUi: "'Noto Sans SC','Source Han Sans SC',system-ui,sans-serif",
   fontMono: "ui-monospace,'SF Mono',Menlo,Consolas,monospace",
   fontSerif: "'Noto Serif SC','Songti SC','Source Han Serif SC',serif",
+  // 次级按钮不贴皮（btn-ghost/btn-quiet.svg 220×56·9-slice 16 对紧凑顶栏/工具条小按钮=强制大 min-size→
+  // 撑高变方+「菜单」折行·实测回归·A-024 记）；小按钮用引擎原生 kind，金 CTA 用 hero kind（A-022）。
 };
 
 // ── 席位屏幕锚点（蓝本布局·%中心·固定相机=固定屏幕常量·四人掼蛋）──────────────────
