@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { IWorld } from '@engine/core/types.js';
 import type { Decal3D, Transform3D, Transform } from '@engine/protocol/components.js';
+import type { ResolveTex } from './billboard.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  three/DecalSystem —— 地面贴花（Decal3D·render-only·不进 hash·休闲通用）。
@@ -59,16 +60,17 @@ function groundPos(world: IWorld, id: string): { x: number; z: number } | null {
   return null;
 }
 
-const DEF_COLOR = (kind: Decal3D['kind']): number => (kind === 'blob' || kind === undefined ? 0x000000 : 0xffffff);
-const DEF_OPACITY = (kind: Decal3D['kind']): number => (kind === 'blob' || kind === undefined ? 0.35 : 0.7);
+const DEF_COLOR = (d: Decal3D): number => (d.tex ? 0xffffff : (d.kind === 'blob' || d.kind === undefined ? 0x000000 : 0xffffff)); // tex 缺省不染色（白=显原色）
+const DEF_OPACITY = (d: Decal3D): number => (d.tex ? 1 : (d.kind === 'blob' || d.kind === undefined ? 0.35 : 0.7)); // tex 缺省全不透（alpha 走贴图通道）
 
 interface DState { mesh: THREE.Mesh; geom: THREE.PlaneGeometry; mat: THREE.MeshBasicMaterial; sig: string; }
 
 export class DecalSystem {
   private readonly decals = new Map<string, DState>();
 
-  // 管理贴片网格 + 每帧跟随实体地面位。返回本帧**有变化**的贴片数（创建/移动/改参/移除）→ >0 时渲染器持续重渲。
-  sync(scene: THREE.Scene, world: IWorld): number {
+  // 管理贴片网格 + 每帧跟随实体地面位。返回本帧**有变化**的贴片数（创建/移动/改参/贴图就绪/移除）→ >0 时渲染器持续重渲。
+  // resolveTex：贴图 key→THREE.Texture（异步就绪前 null·同 Billboard 先例）；仅 tex 路用。
+  sync(scene: THREE.Scene, world: IWorld, resolveTex: ResolveTex): number {
     const seen = new Set<string>();
     let changed = 0;
     for (const [id] of world.query('Decal3D')) {
@@ -76,16 +78,21 @@ export class DecalSystem {
       const p = groundPos(world, id);
       if (!p) continue;
       seen.add(id);
-      const radius = d.radius ?? 3, color = d.color ?? DEF_COLOR(d.kind), opacity = d.opacity ?? DEF_OPACITY(d.kind), y = d.y ?? 0.05;
-      const sig = `${d.kind ?? 'blob'}|${radius}|${color}|${opacity}|${y}`;
+      const w = d.width ?? (d.radius ?? 3) * 2, h = d.height ?? (d.radius ?? 3) * 2; // 非等比覆盖 radius（长条下注线）
+      const color = d.color ?? DEF_COLOR(d), opacity = d.opacity ?? DEF_OPACITY(d), y = d.y ?? 0.05, rot = d.rotation ?? 0;
+      // 贴图：tex 路取真图（异步就绪前 null → 暂隐不显白块）；否则程序化遮罩。
+      const tex = d.tex ? resolveTex(d.tex) : maskTexture(d.kind);
+      const sig = `${d.tex ?? d.kind ?? 'blob'}|${w}|${h}|${color}|${opacity}|${y}|${rot}|${tex ? 1 : 0}`;
       let st = this.decals.get(id);
-      if (!st) { st = this.make(d.kind); this.decals.set(id, st); scene.add(st.mesh); changed++; }
+      if (!st) { st = this.make(); this.decals.set(id, st); scene.add(st.mesh); changed++; }
       if (st.sig !== sig) {
-        st.mat.map = maskTexture(d.kind);
+        st.mat.map = tex;
         st.mat.color.setHex(color & 0xffffff);
         st.mat.opacity = opacity;
         st.mat.needsUpdate = true;
-        st.mesh.scale.set(radius * 2, radius * 2, 1);
+        st.mesh.visible = !!tex; // tex 未就绪（null）→ 暂隐
+        st.mesh.scale.set(w, h, 1);
+        st.mesh.rotation.set(-Math.PI / 2, 0, rot); // 贴地朝上 + 地面内 Y 朝向（rot 绕贴片法线转）
         st.sig = sig;
         changed++;
       }
@@ -98,10 +105,10 @@ export class DecalSystem {
     return changed;
   }
 
-  private make(kind: Decal3D['kind']): DState {
+  private make(): DState {
     const geom = new THREE.PlaneGeometry(1, 1);
     const mat = new THREE.MeshBasicMaterial({
-      map: maskTexture(kind), transparent: true, depthWrite: false,
+      transparent: true, depthWrite: false,
       polygonOffset: true, polygonOffsetFactor: -2, // 压过地面防 z-fighting（配 y 抬升双保险）
     });
     const mesh = new THREE.Mesh(geom, mat);

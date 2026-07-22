@@ -34,6 +34,8 @@ describe('decalMask（纯函数·alpha 形状遮罩）', () => {
   });
 });
 
+const NO_TEX = (): THREE.Texture | null => null; // 程序化路不取真图
+
 describe('DecalSystem（跟随实体地面位·render-only）', () => {
   it('贴片跟随实体 XZ；改参重建；实体消失清理', () => {
     const scene = new THREE.Scene();
@@ -42,7 +44,7 @@ describe('DecalSystem（跟随实体地面位·render-only）', () => {
     w.addComponent('u', { type: 'Transform3D', x: 5, y: 2, z: -3 } as Transform3D);
     w.addComponent('u', { type: 'Decal3D', kind: 'blob', radius: 3 } as Decal3D);
     const sys = new DecalSystem();
-    expect(sys.sync(scene, w)).toBeGreaterThan(0); // 首帧创建=有变化
+    expect(sys.sync(scene, w, NO_TEX)).toBeGreaterThan(0); // 首帧创建=有变化
     // 贴片挂到场景、贴地（y≈0.05·非实体 y=2）、随 XZ
     const mesh = scene.children.find((o) => o instanceof THREE.Mesh) as THREE.Mesh;
     expect(mesh).toBeTruthy();
@@ -50,14 +52,39 @@ describe('DecalSystem（跟随实体地面位·render-only）', () => {
     expect(mesh.position.y).toBeCloseTo(0.05); // 贴地·不随实体高度
     // 移动实体 → 贴片跟随（有变化）
     w.getComponent<Transform3D>('u', 'Transform3D')!.x = 9;
-    expect(sys.sync(scene, w)).toBeGreaterThan(0);
+    expect(sys.sync(scene, w, NO_TEX)).toBeGreaterThan(0);
     expect(mesh.position.x).toBe(9);
     // 静止再 sync → 无变化（0·不强制重渲）
-    expect(sys.sync(scene, w)).toBe(0);
+    expect(sys.sync(scene, w, NO_TEX)).toBe(0);
     // 实体消失 → 清理贴片
     w.destroyEntity('u');
-    expect(sys.sync(scene, w)).toBeGreaterThan(0);
+    expect(sys.sync(scene, w, NO_TEX)).toBeGreaterThan(0);
     expect(scene.children.some((o) => o instanceof THREE.Mesh)).toBe(false);
+  });
+
+  it('自定义贴图路（tex）：就绪→挂真图·非等比尺寸·Y 朝向·可见；未就绪→暂隐', () => {
+    const scene = new THREE.Scene();
+    const w = new World();
+    w.createEntity('line');
+    w.addComponent('line', { type: 'Transform3D', x: 0, y: 0, z: 0 } as Transform3D);
+    // 下注线：长条(非等比) + 朝向 + 自定义贴图
+    w.addComponent('line', { type: 'Decal3D', tex: 'bet-line', width: 12, height: 2, rotation: Math.PI / 3 } as Decal3D);
+    const sys = new DecalSystem();
+    // ① 贴图未就绪（resolveTex→null）→ 贴片暂隐（不显白块）
+    sys.sync(scene, w, NO_TEX);
+    const mesh = scene.children.find((o) => o instanceof THREE.Mesh) as THREE.Mesh;
+    expect(mesh).toBeTruthy();
+    expect(mesh.visible).toBe(false); // tex 未就绪 → 隐
+    // ② 贴图就绪 → 挂真图·可见·非等比·朝向
+    const fake = new THREE.Texture();
+    const changed = sys.sync(scene, w, (k) => (k === 'bet-line' ? fake : null));
+    expect(changed).toBeGreaterThan(0);
+    expect(mesh.visible).toBe(true);
+    expect((mesh.material as THREE.MeshBasicMaterial).map).toBe(fake); // 挂上真图（非程序化遮罩）
+    expect(mesh.scale.x).toBe(12); expect(mesh.scale.y).toBe(2); // 非等比（width×height·长条）
+    expect(mesh.rotation.z).toBeCloseTo(Math.PI / 3); // 地面内朝向
+    expect(mesh.rotation.x).toBeCloseTo(-Math.PI / 2); // 仍贴地朝上
+    sys.dispose(scene);
   });
 });
 

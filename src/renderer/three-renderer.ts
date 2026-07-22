@@ -262,7 +262,7 @@ export class ThreeRenderer implements RendererBackend {
     // 运动拖尾采样（Trail3D·render-only）：据实体世界位更新位置历史（相机后才建几何）。有位移的拖尾数 >0 → 折进 renderSig。
     const trailLive = this.trails.sample(world);
     // 地面贴花（Decal3D·render-only·不需相机·世界空间贴地）：管理贴片网格 + 跟随实体地面位。有变化 >0 → 折进 renderSig。
-    const decalLive = this.decals.sync(this.scene, world);
+    const decalLive = this.decals.sync(this.scene, world, (k) => this.pbrMapTexture(k, true)); // tex 路取真图（sRGB·同 billboard 先例）
     // 世界空间广告牌（Billboard3D·render-only·Sprite 自朝相机）：管理精灵 + 定位 + 取贴图（sRGB）。有变化 >0 → 折进 renderSig。
     const billboardLive = this.billboards.sync(this.scene, world, (k) => this.pbrMapTexture(k, true));
     // 程序化位姿动画（Anim3D·render-only）：据壁钟改 Transform3D 分量（spin/bob）——须在 collect 前（渲染读更新后的位姿）。

@@ -499,14 +499,19 @@ export interface Line3D extends Component {
 }
 
 // ── Decal3D（render-only·不进 hash·休闲通用地面贴花）── 在实体地面投影处铺一张水平贴片·随实体 XZ 跟随。
-// kind:'blob'=软阴影（便宜的接触阴影·真阴影关了也有立体感）·'ring'=空心环（选中/目标标记）·'disc'=实心圆（高亮/落点 splat）。
-// 形状=程序化 alpha 遮罩（按 kind 生成缓存·零美术文件）；颜色/不透明度/半径走参数（改这些不重建贴图）。**纯表现**。
+// 两条贴图路（皆平贴无光·透明·贴地防 z-fight·跟随 XZ）：
+//   ① 程序化 kind（零美术文件）：'blob'=软阴影(接触阴影·真阴影关了也有立体感)·'ring'=空心环(选中/目标)·'disc'=实心圆(高亮/落点 splat)；
+//   ② 自定义贴图 `tex`（美术图·= texture 资产 id·带 alpha 透明）：下注线/地面 logo/路面标线/桌面图形/脚印/splat 美术图。
+// 有 tex 时用真图（alpha 走贴图自带通道·color 可染色·缺省白显原色）；无 tex 时按 kind 生成 alpha 遮罩染 color。**纯表现**。
 export interface Decal3D extends Component {
   readonly type: 'Decal3D';
-  kind?: 'blob' | 'ring' | 'disc'; // 缺省 blob（软阴影）
-  radius?: number; // 半径（世界单位·缺省 3）
-  color?: number; // 颜色 0xRRGGBB（缺省 blob=黑·ring/disc=白）
-  opacity?: number; // 不透明度 0..1（缺省 blob=0.35·ring/disc=0.7）
+  kind?: 'blob' | 'ring' | 'disc'; // 程序化遮罩（缺省 blob·tex 在场时忽略）
+  tex?: string; // 自定义贴图 key（AssetManager·= texture 资产 id·带 alpha·在场则替代程序化遮罩·异步就绪前暂隐）
+  radius?: number; // 半径（世界单位·缺省 3·等比方贴片）
+  width?: number; height?: number; // 非等比尺寸（世界单位·覆盖 radius·长条下注线/矩形标线用）
+  rotation?: number; // 地面内 Y 轴朝向（弧度·缺省 0·把长条/有向图对准座位/行进方向；程序化 kind 径向对称无影响）
+  color?: number; // 颜色 0xRRGGBB（遮罩=染色·缺省 blob 黑/ring·disc 白；tex=染色·缺省白显原色）
+  opacity?: number; // 不透明度 0..1（缺省 blob=0.35·ring/disc/tex=0.7... tex 缺省 1）
   y?: number; // 贴地高度（缺省 0.05·防 z-fighting）
 }
 

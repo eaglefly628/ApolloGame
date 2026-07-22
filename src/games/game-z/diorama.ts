@@ -11,7 +11,7 @@ import type { WorldBlueprint } from '../../assembly/demo.assembly.js';
 import { motionApplyCapability } from '@skills/tier1/index.js';
 import { overlapDetect3dCapability, navmeshBakeCapability, collisionResolve3dCapability } from '@skills/atoms/index.js';
 import { pathfindCapability } from '@skills/tier2/index.js';
-import { MODEL_FOX, MAT_PLANK_WOOD, MAT_STONE, MAT_RUNE } from './assets.js';
+import { MODEL_FOX, MAT_PLANK_WOOD, MAT_STONE, MAT_RUNE, TEX_RUNE_EMISSIVE, TEX_PLANK_ALBEDO } from './assets.js';
 
 type Ent = WorldBlueprint['entities'][string];
 
@@ -220,6 +220,11 @@ function platformThree(): Record<string, Ent> {
     },
     // 平涂无光球（flat·纯亮色）。
     'p3-flat': { Transform3D: { x: X - 34, y: 5, z: 6 }, Mesh3D: { shape: 'sphere', width: 6, height: 6, frontTint: 0xffffff }, Material3D: { preset: 'gold', shading: 'flat', color: 0xffca28 }, Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.8 }] }, WorldUI3D: { text: '平涂 flat', offsetY: 6, size: 'sm', color: 'gold' } },
+    // 自定义贴图地面贴花（REQ-3D-DECAL-TEX·Decal3D.tex）：平贴地面的真图贴花（alpha 走贴图通道·区别程序化 blob/ring/disc）。
+    // ① 符文法阵（方贴片·符文自发光图当地面法阵）。
+    'p3-decal-rune': { Transform3D: { x: X - 8, y: 0, z: 10 }, Decal3D: { tex: TEX_RUNE_EMISSIVE, radius: 7, opacity: 0.95 }, WorldUI3D: { text: '贴图贴花 Decal3D.tex（符文法阵）', offsetY: 2, size: 'sm', color: 'jade' } },
+    // ② 下注线样式（长条·非等比 width×height + rotation 朝向·= game-c 下注线要的形态；此处用木纹图当占位美术）。
+    'p3-decal-line': { Transform3D: { x: X + 16, y: 0, z: 10 }, Decal3D: { tex: TEX_PLANK_ALBEDO, width: 24, height: 3.5, rotation: 0.4, opacity: 0.9 }, WorldUI3D: { text: '下注线样式（长条+朝向）', offsetY: 2, size: 'sm', color: 'gold' } },
   };
 }
 

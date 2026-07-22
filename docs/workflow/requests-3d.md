@@ -6,10 +6,12 @@
 
 ---
 
-## REQ-3D-DECAL-TEX · 可换真图的「平贴 + alpha + 自定义贴图」贴花（Decal3D 无贴图槽）· [2026-07-22] · PE-C 提（game-c 下注线 REQ-C-113）→ P3D 评审 · status: open · 优先级: P3 · 类型: 3D 线能力缺口（贴花贴图）
+## REQ-3D-DECAL-TEX · 可换真图的「平贴 + alpha + 自定义贴图」贴花（Decal3D 无贴图槽）· [2026-07-22] · PE-C 提（game-c 下注线 REQ-C-113）→ P3D · status: **✅ done（P3D 2026-07-22·取方案①·已推·见回执）** · 优先级: P3 · 类型: 3D 线能力缺口（贴花贴图）
 > **缺口**：想在呢面上平贴一张**可被工坊生成图替换**的下注线/发牌区贴花（台账槽 `game-c/table/betline`），闭集里没有干净件——`Decal3D`=**程序化**（kind blob/ring/disc·无贴图键·不碰 assets）→ 换不了真图；`Material3D.map` 平贴 mesh 有 map 但 **PBR 路无 alpha**（透明底 PNG 的透明区渲成不透明黑）；`Billboard3D.tex` 有贴图 + alpha 但**永远朝相机**（陡俯视下立起 ~26°·不平贴）。三者都缺「平 + alpha + 自定义贴图」这一交集。
 > **建议（P3D 裁·二选一）**：① 给 `Decal3D` 加 `tex?` 贴图键（走 `pbrMapTexture`/assets 解析·decal 本就平 + alpha·最贴合）；或 ② 给 `Material3D` map 路加 `transparent`/`alphaMap`（平贴 mesh 就能透）。落地后 game-c betline 即从程序化金环换成台账真图（`build3d.ts` 已留位·现程序化 `Decal3D{kind:'ring'}` 占位）。**非阻塞**：betline 是次要贴花·现金环占位可接受。
 > **game-c 现状**：chips（`Material3D.map` 顶盖）、fx（`Billboard3D.tex` 瞬时）已接真图；仅 betline 卡此缺口。
+>
+> **★ P3D 落地回执（2026-07-22·取方案① Decal3D.tex·PE-C 的三向缺口分析与我评判一致）**：`Decal3D` 加 `tex?`(texture 资产 id·alpha 走贴图自带通道·异步就绪前暂隐不显白块) + `width?/height?`(非等比长条·下注线是细长条) + `rotation?`(地面内 Y 朝向·对准座位)。DecalSystem 复用 Billboard 的 `ResolveTex`/`pbrMapTexture` 取图；有 tex 用真图、无 tex 走原程序化遮罩（向后兼容·additive·Decal3D 已在册不改组件清单）。测试 6 例（tex 就绪/未就绪暂隐/非等比/朝向）·回填 `playbooks/3d.md` 贴花行。**demo**：game-z Platform Three `p3-decal-rune`+`p3-decal-line`。**交 PE-C**：把 betline 从 `Decal3D{kind:'ring'}` 占位换成 `Decal3D{tex:<台账 betline key>,width,height,rotation}`（真图带 alpha 由 PA/PE-C 出）·API 已就绪。tsc0/vitest3004/build0 全绿·截图自证。
 
 ## REQ-3D-资产就绪自动重渲 · 静态场景 × 异步贴图迟到 = 脏帧跳渲吞掉换图帧 · [2026-07-17] · PE-B 提 → P3D 评审 · status: open · 类型: 渲染健壮（W1-C 脏帧跳渲的盲区）
 
