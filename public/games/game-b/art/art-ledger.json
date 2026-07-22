@@ -2,8 +2,8 @@
   "version": 1,
   "game": "game-b",
   "mode": "authored-inventory",
-  "count": 43,
-  "instances": 43,
+  "count": 50,
+  "instances": 50,
   "rows": [
     {
       "no": "art-01",
@@ -17,7 +17,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/man-1.png"
       },
-      "query": "ivory mahjong tile face, the one of characters (manzu), bold one numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the manzu (characters suit) one of characters: the Chinese numeral 一 (1) in RED ink stacked above a bold BLACK 萬 kanji. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/man-1.png）",
         "source": "vendored-cc0",
@@ -62,7 +62,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/man-2.png"
       },
-      "query": "ivory mahjong tile face, the two of characters (manzu), bold two numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the manzu (characters suit) two of characters: the Chinese numeral 二 (2) in RED ink stacked above a bold BLACK 萬 kanji. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/man-2.png）",
         "source": "vendored-cc0",
@@ -107,7 +107,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/man-3.png"
       },
-      "query": "ivory mahjong tile face, the three of characters (manzu), bold three numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the manzu (characters suit) three of characters: the Chinese numeral 三 (3) in RED ink stacked above a bold BLACK 萬 kanji. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/man-3.png）",
         "source": "vendored-cc0",
@@ -152,7 +152,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/man-4.png"
       },
-      "query": "ivory mahjong tile face, the four of characters (manzu), bold four numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the manzu (characters suit) four of characters: the Chinese numeral 四 (4) in RED ink stacked above a bold BLACK 萬 kanji. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/man-4.png）",
         "source": "vendored-cc0",
@@ -197,7 +197,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/man-5.png"
       },
-      "query": "ivory mahjong tile face, the five of characters (manzu), bold five numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the manzu (characters suit) five of characters: the Chinese numeral 五 (5) in RED ink stacked above a bold BLACK 萬 kanji. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/man-5.png）",
         "source": "vendored-cc0",
@@ -242,7 +242,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/man-5-red.png"
       },
-      "query": "ivory mahjong tile face, the red-five dora of characters (aka-dora), the numeral 5 and 萬 kanji drawn in vivid red, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the aka-dora RED-FIVE of characters (manzu): the numeral 五 (5) and the 萬 kanji BOTH drawn in vivid RED ink — this is the red-5 dora tile. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/man-5-red.png）",
         "source": "vendored-cc0",
@@ -287,7 +287,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/man-6.png"
       },
-      "query": "ivory mahjong tile face, the six of characters (manzu), bold six numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the manzu (characters suit) six of characters: the Chinese numeral 六 (6) in RED ink stacked above a bold BLACK 萬 kanji. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/man-6.png）",
         "source": "vendored-cc0",
@@ -332,7 +332,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/man-7.png"
       },
-      "query": "ivory mahjong tile face, the seven of characters (manzu), bold seven numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the manzu (characters suit) seven of characters: the Chinese numeral 七 (7) in RED ink stacked above a bold BLACK 萬 kanji. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/man-7.png）",
         "source": "vendored-cc0",
@@ -377,7 +377,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/man-8.png"
       },
-      "query": "ivory mahjong tile face, the eight of characters (manzu), bold eight numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the manzu (characters suit) eight of characters: the Chinese numeral 八 (8) in RED ink stacked above a bold BLACK 萬 kanji. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/man-8.png）",
         "source": "vendored-cc0",
@@ -422,7 +422,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/man-9.png"
       },
-      "query": "ivory mahjong tile face, the nine of characters (manzu), bold nine numeral above the 萬 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the manzu (characters suit) nine of characters: the Chinese numeral 九 (9) in RED ink stacked above a bold BLACK 萬 kanji. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/man-9.png）",
         "source": "vendored-cc0",
@@ -467,7 +467,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/pin-1.png"
       },
-      "query": "ivory mahjong tile face, the one of circles (pinzu), one round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the pinzu (circles suit) one of circles: exactly 1 round ring pip (concentric dots) in the classic 1-dot pinzu arrangement, each dot a concentric ring of BLUE and RED. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-1.png）",
         "source": "vendored-cc0",
@@ -512,7 +512,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/pin-2.png"
       },
-      "query": "ivory mahjong tile face, the two of circles (pinzu), two round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the pinzu (circles suit) two of circles: exactly 2 round ring pips (concentric dots) in the classic 2-dot pinzu arrangement, each dot a concentric ring of BLUE and RED. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-2.png）",
         "source": "vendored-cc0",
@@ -557,7 +557,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/pin-3.png"
       },
-      "query": "ivory mahjong tile face, the three of circles (pinzu), three round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the pinzu (circles suit) three of circles: exactly 3 round ring pips (concentric dots) in the classic 3-dot pinzu arrangement, each dot a concentric ring of BLUE and RED. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-3.png）",
         "source": "vendored-cc0",
@@ -602,7 +602,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/pin-4.png"
       },
-      "query": "ivory mahjong tile face, the four of circles (pinzu), four round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the pinzu (circles suit) four of circles: exactly 4 round ring pips (concentric dots) in the classic 4-dot pinzu arrangement, each dot a concentric ring of BLUE and RED. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-4.png）",
         "source": "vendored-cc0",
@@ -647,7 +647,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/pin-5.png"
       },
-      "query": "ivory mahjong tile face, the five of circles (pinzu), five round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the pinzu (circles suit) five of circles: exactly 5 round ring pips (concentric dots) in the classic 5-dot pinzu arrangement, each dot a concentric ring of BLUE and RED. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-5.png）",
         "source": "vendored-cc0",
@@ -692,7 +692,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/pin-5-red.png"
       },
-      "query": "ivory mahjong tile face, the red-five dora of circles (aka-dora), the five circle dots with the centre dot in vivid red, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the aka-dora RED-FIVE of circles (pinzu): five round ring pips in the classic 5-dot arrangement with the CENTER dot in vivid RED — this is the red-5 dora tile, the other dots blue-and-red concentric rings. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-5-red.png）",
         "source": "vendored-cc0",
@@ -737,7 +737,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/pin-6.png"
       },
-      "query": "ivory mahjong tile face, the six of circles (pinzu), six round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the pinzu (circles suit) six of circles: exactly 6 round ring pips (concentric dots) in the classic 6-dot pinzu arrangement, each dot a concentric ring of BLUE and RED. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-6.png）",
         "source": "vendored-cc0",
@@ -782,7 +782,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/pin-7.png"
       },
-      "query": "ivory mahjong tile face, the seven of circles (pinzu), seven round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the pinzu (circles suit) seven of circles: exactly 7 round ring pips (concentric dots) in the classic 7-dot pinzu arrangement, each dot a concentric ring of BLUE and RED. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-7.png）",
         "source": "vendored-cc0",
@@ -827,7 +827,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/pin-8.png"
       },
-      "query": "ivory mahjong tile face, the eight of circles (pinzu), eight round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the pinzu (circles suit) eight of circles: exactly 8 round ring pips (concentric dots) in the classic 8-dot pinzu arrangement, each dot a concentric ring of BLUE and RED. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-8.png）",
         "source": "vendored-cc0",
@@ -872,7 +872,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/pin-9.png"
       },
-      "query": "ivory mahjong tile face, the nine of circles (pinzu), nine round dot symbols arranged in the classic pinzu pattern, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the pinzu (circles suit) nine of circles: exactly 9 round ring pips (concentric dots) in the classic 9-dot pinzu arrangement, each dot a concentric ring of BLUE and RED. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/pin-9.png）",
         "source": "vendored-cc0",
@@ -917,7 +917,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/sou-1.png"
       },
-      "query": "ivory mahjong tile face, the one of bamboo (souzu), a stylized peacock bird perched over a single bamboo stalk, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the souzu (bamboo suit) one of bamboo: a single stylized GREEN peacock bird perched over one bamboo stalk with RED accents. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-1.png）",
         "source": "vendored-cc0",
@@ -962,7 +962,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/sou-2.png"
       },
-      "query": "ivory mahjong tile face, the two of bamboo (souzu), two green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the souzu (bamboo suit) two of bamboo: exactly 2 GREEN bamboo sticks with RED accents in the classic 2-stick arrangement. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-2.png）",
         "source": "vendored-cc0",
@@ -1007,7 +1007,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/sou-3.png"
       },
-      "query": "ivory mahjong tile face, the three of bamboo (souzu), three green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the souzu (bamboo suit) three of bamboo: exactly 3 GREEN bamboo sticks with RED accents in the classic 3-stick arrangement. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-3.png）",
         "source": "vendored-cc0",
@@ -1052,7 +1052,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/sou-4.png"
       },
-      "query": "ivory mahjong tile face, the four of bamboo (souzu), four green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the souzu (bamboo suit) four of bamboo: exactly 4 GREEN bamboo sticks with RED accents in the classic 4-stick arrangement. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-4.png）",
         "source": "vendored-cc0",
@@ -1097,7 +1097,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/sou-5.png"
       },
-      "query": "ivory mahjong tile face, the five of bamboo (souzu), five green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the souzu (bamboo suit) five of bamboo: exactly 5 GREEN bamboo sticks with RED accents in the classic 5-stick arrangement. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-5.png）",
         "source": "vendored-cc0",
@@ -1142,7 +1142,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/sou-5-red.png"
       },
-      "query": "ivory mahjong tile face, the red-five dora of bamboo (aka-dora), five bamboo sticks with the centre stick in vivid red, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the aka-dora RED-FIVE of bamboo (souzu): five bamboo sticks in the classic 5-stick arrangement with the CENTER stick in vivid RED — this is the red-5 dora tile, the other sticks green. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-5-red.png）",
         "source": "vendored-cc0",
@@ -1187,7 +1187,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/sou-6.png"
       },
-      "query": "ivory mahjong tile face, the six of bamboo (souzu), six green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the souzu (bamboo suit) six of bamboo: exactly 6 GREEN bamboo sticks with RED accents in the classic 6-stick arrangement. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-6.png）",
         "source": "vendored-cc0",
@@ -1232,7 +1232,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/sou-7.png"
       },
-      "query": "ivory mahjong tile face, the seven of bamboo (souzu), seven green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the souzu (bamboo suit) seven of bamboo: exactly 7 GREEN bamboo sticks with RED accents in the classic 7-stick arrangement. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-7.png）",
         "source": "vendored-cc0",
@@ -1277,7 +1277,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/sou-8.png"
       },
-      "query": "ivory mahjong tile face, the eight of bamboo (souzu), eight green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the souzu (bamboo suit) eight of bamboo: exactly 8 GREEN bamboo sticks with RED accents in the classic 8-stick arrangement. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-8.png）",
         "source": "vendored-cc0",
@@ -1322,7 +1322,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/sou-9.png"
       },
-      "query": "ivory mahjong tile face, the nine of bamboo (souzu), nine green bamboo sticks, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the souzu (bamboo suit) nine of bamboo: exactly 9 GREEN bamboo sticks with RED accents in the classic 9-stick arrangement. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/sou-9.png）",
         "source": "vendored-cc0",
@@ -1367,7 +1367,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/ton.png"
       },
-      "query": "ivory mahjong tile face, the East wind honor tile, bold 東 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the East wind honor tile: a single bold 東 kanji drawn in BLUE ink, centered, no pips. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/ton.png）",
         "source": "vendored-cc0",
@@ -1412,7 +1412,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/nan.png"
       },
-      "query": "ivory mahjong tile face, the South wind honor tile, bold 南 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the South wind honor tile: a single bold 南 kanji drawn in BLUE ink, centered, no pips. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/nan.png）",
         "source": "vendored-cc0",
@@ -1457,7 +1457,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/shaa.png"
       },
-      "query": "ivory mahjong tile face, the West wind honor tile, bold 西 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the West wind honor tile: a single bold 西 kanji drawn in BLUE ink, centered, no pips. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/shaa.png）",
         "source": "vendored-cc0",
@@ -1502,7 +1502,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/pei.png"
       },
-      "query": "ivory mahjong tile face, the North wind honor tile, bold 北 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the North wind honor tile: a single bold 北 kanji drawn in BLUE ink, centered, no pips. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/pei.png）",
         "source": "vendored-cc0",
@@ -1547,7 +1547,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/haku.png"
       },
-      "query": "ivory mahjong tile face, the white dragon (haku) honor tile, a plain framed white face with a thin blue outline border, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the white dragon (haku) honor tile: a completely BLANK white face enclosed by a thin BLUE-outlined rectangular frame (blank-with-frame), no character inside. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/haku.png）",
         "source": "vendored-cc0",
@@ -1592,7 +1592,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/hatsu.png"
       },
-      "query": "ivory mahjong tile face, the green dragon (hatsu) honor tile, bold green 發 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the green dragon (hatsu) honor tile: a single bold 發 kanji drawn in GREEN ink, centered, no pips. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/hatsu.png）",
         "source": "vendored-cc0",
@@ -1637,7 +1637,7 @@
         "alsoUsedBy": "Button.skin（自家手牌）",
         "servedPath": "/games/game-b/art/mahjong/chun.png"
       },
-      "query": "ivory mahjong tile face, the red dragon (chun) honor tile, bold red 中 kanji, clean bold engraving, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, engraving of the red dragon (chun) honor tile: a single bold 中 kanji drawn in RED ink, centered, no pips. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/chun.png）",
         "source": "vendored-cc0",
@@ -1681,7 +1681,7 @@
         "resolver": "index.json registerAssetIndex（3D 牌身贴图·预留·faceUrl 2D 路径暂未引用）",
         "servedPath": "/games/game-b/art/mahjong/back.png"
       },
-      "query": "ivory mahjong tile body, the reverse back face of the tile, ivory back plate with rounded bevel and a uniform decorative back pattern, clean bold form, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face (showing the ivory reverse/BACK side), orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, a uniform decorative back pattern on a smooth ivory back plate, no character and no pips. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/back.png）",
         "source": "vendored-cc0",
@@ -1725,7 +1725,7 @@
         "resolver": "index.json registerAssetIndex（3D 牌身贴图·预留·faceUrl 2D 路径暂未引用）",
         "servedPath": "/games/game-b/art/mahjong/blank.png"
       },
-      "query": "ivory mahjong tile body, a completely blank tile face, plain ivory front plate with no engraving, clean bold form, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, a completely BLANK ivory tile face with NO engraving — no pips and no character at all, smooth ivory surface. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/blank.png）",
         "source": "vendored-cc0",
@@ -1769,7 +1769,7 @@
         "resolver": "index.json registerAssetIndex（3D 牌身贴图·预留·faceUrl 2D 路径暂未引用）",
         "servedPath": "/games/game-b/art/mahjong/front.png"
       },
-      "query": "ivory mahjong tile body, the plain front body plate of the tile, blank ivory face before any engraving, clean bold form, front-facing centered, transparent background, elegant female-oriented anime style (sakura-nijigen): refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
+      "query": "front-facing FLAT 2D mahjong tile face, orthographic, NO perspective, NO tilt, NO drop shadow, NO 3D, tile fills frame, transparent background, 600×800 portrait, the plain ivory FRONT body plate before any engraving, smooth blank ivory surface, no pips and no character. Style anchor sakura-nijigen: refined line art, soft shading, warm ambient light, high readability, unified riichi tile set, no watermark",
       "placeholder": {
         "current": "已入真图 CC0（/games/game-b/art/mahjong/front.png）",
         "source": "vendored-cc0",
@@ -1813,7 +1813,7 @@
         "resolver": "OPP_TACHIE[1] → /games/game-b/art/tachie/tachie-daiyi.png",
         "servedPath": "/games/game-b/art/tachie/tachie-daiyi.png"
       },
-      "query": "elegant female-oriented anime portrait, a poised mature woman, glossy black hair in a traditional bun, deep crimson qipao cheongsam with peony brocade, warm lamplit tatami tea-room behind her, graceful upper-body pose, refined line art, soft shading, transparent background, sakura-nijigen",
+      "query": "elegant female-oriented anime tachie portrait, WAIST-UP 3/4 FRONT VIEW, the eldest hostess 大姨太 (upper-seat / East): glossy black hair in a traditional bun, deep crimson qipao cheongsam with peony brocade, poised gentle expression, soft-light cel shading, refined line art, TRANSPARENT background (true alpha · no scenery), single figure centered, 545×670 vertical portrait, sakura-nijigen",
       "placeholder": {
         "current": "临时参考图已入（带背景·待去背终稿）",
         "source": "owner-reference-temp",
@@ -1859,7 +1859,7 @@
         "resolver": "OPP_TACHIE[2] → /games/game-b/art/tachie/tachie-eryi.png",
         "servedPath": "/games/game-b/art/tachie/tachie-eryi.png"
       },
-      "query": "elegant female-oriented anime portrait, a poised mature woman, long dark-blue wavy hair, grey-silver satin qipao cheongsam, neon night cityscape backdrop, graceful upper-body pose, refined line art, soft shading, transparent background, sakura-nijigen",
+      "query": "elegant female-oriented anime tachie portrait, WAIST-UP 3/4 FRONT VIEW, the second hostess 二姨太 (opposite-seat / North): long dark-blue wavy hair, grey-silver satin qipao cheongsam, cool composed expression, soft-light cel shading, refined line art, TRANSPARENT background (true alpha · no scenery), single figure centered, 420×600 vertical portrait, sakura-nijigen",
       "placeholder": {
         "current": "临时参考图已入（带背景·待去背终稿）",
         "source": "owner-reference-temp",
@@ -1905,7 +1905,7 @@
         "resolver": "OPP_TACHIE[3] → /games/game-b/art/tachie/tachie-sanyi.png",
         "servedPath": "/games/game-b/art/tachie/tachie-sanyi.png"
       },
-      "query": "elegant female-oriented anime portrait, a poised mature woman, chestnut wavy hair, soft pink qipao cheongsam, night scene backdrop, holding a single mahjong tile with a gentle smile, graceful upper-body pose, refined line art, soft shading, transparent background, sakura-nijigen",
+      "query": "elegant female-oriented anime tachie portrait, WAIST-UP 3/4 FRONT VIEW, the third hostess 三姨太 (lower-seat / West): chestnut wavy hair, soft pink qipao cheongsam, holding a single mahjong tile with a gentle smile, soft-light cel shading, refined line art, TRANSPARENT background (true alpha · no scenery), single figure centered, 470×560 vertical portrait, sakura-nijigen",
       "placeholder": {
         "current": "临时参考图已入（带背景·待去背终稿）",
         "source": "owner-reference-temp",
@@ -1939,6 +1939,304 @@
         "note": "带背景·待 owner 交付去背 PNG 终稿再换并走 asset-manager 正式入 asset-index（见 docs/design/game-b/mockups/README.md 立绘台账）"
       },
       "prompt": "三姨太立绘·栗发·粉色旗袍·夜景·持牌微笑·女性向二次元风（sakura-nijigen）·去背透明终稿"
+    },
+    {
+      "no": "art-44",
+      "desc": "牌桌毡面（felt·牌桌背景毡布纹理·当前 CSS 渐变）",
+      "kind": "texture",
+      "ref": {
+        "mechanism": "css-bg",
+        "site": "src/games/game-b/play-ui.ts:FELT",
+        "consumer": "Panel#felt · props.bg.custom",
+        "note": "当前=CSS 线性渐变皮（linear-gradient 168deg 深青玉绿）·无缝栅格毡面纹理待接线"
+      },
+      "query": "seamless tileable dark teal-green mahjong table baize/felt fabric texture, fine even woven weave, flat top-down orthographic, uniform soft lighting, edges tile seamlessly, absolutely NO objects/lines/logos/perspective/shadows/text, 512×512, deep jade-teal palette, sakura-nijigen",
+      "placeholder": {
+        "current": "程序化 CSS 线性渐变（play-ui.ts const FELT）·未落栅格图",
+        "source": "programmatic-css",
+        "count": 0,
+        "instances": []
+      },
+      "spec": {
+        "w": 512,
+        "h": 512,
+        "transparent": false,
+        "tileable": true
+      },
+      "context": "game-b《雀宴》SC-play 牌桌毡面·play-ui.ts const FELT（Panel#felt 背景 bg.custom）·当前 CSS 渐变皮·此槽声明表面+提示词·代码接线为独立后续（未入 index.json·无 servedPath·planned·对账不列断链）",
+      "status": "planned",
+      "gen": {
+        "provider": "planned",
+        "model": null,
+        "prompt": null,
+        "servedPath": null,
+        "localId": "theme/felt-surface"
+      },
+      "provenance": {
+        "generator": "planned",
+        "prompt": null,
+        "model": null,
+        "license": "self-produced（planned·当前=自写程序化 CSS/SVG·栅格生成时随风格包定 CC0/自产）",
+        "source": "declared surface · 代码接线待办（play-ui.ts const FELT · Panel#felt 背景）",
+        "mock": false,
+        "planned": true
+      },
+      "prompt": "牌桌毡面·深青玉绿麻将桌毡布无缝平铺纹理·平面顶视正交·512×512·sakura-nijigen"
+    },
+    {
+      "no": "art-45",
+      "desc": "和室夜宴舞台底（SC-play 场景背景·当前 CSS 径向渐变）",
+      "kind": "background",
+      "ref": {
+        "mechanism": "scene-background",
+        "site": "src/games/game-b/game-b.ts:STAGE_BG",
+        "consumer": "mountHost({ sceneBackground: STAGE_BG })",
+        "note": "当前=CSS 径向渐变（暗梅→暗紫）·场景底图待接线"
+      },
+      "query": "atmospheric background of a warm-lit traditional Japanese tatami tea-room at night, upscale mahjong parlor, shoji paper screens, hanging paper lanterns with soft warm bokeh, deep plum-maroon + warm-amber ambiance, CENTER INTENTIONALLY EMPTY & softly darker (a mahjong table overlays the center), NO people, NO table, NO furniture in the middle, painterly soft-focus depth, NO text/UI, 920×640 landscape, sakura-nijigen",
+      "placeholder": {
+        "current": "程序化 CSS 径向渐变（game-b.ts const STAGE_BG）·未落栅格图",
+        "source": "programmatic-css",
+        "count": 0,
+        "instances": []
+      },
+      "spec": {
+        "w": 920,
+        "h": 640,
+        "transparent": false
+      },
+      "context": "game-b《雀宴》SC-play 场景背景底·game-b.ts const STAGE_BG（mountHost sceneBackground）·当前 CSS 径向渐变·中心留空更暗（3D 牌桌叠中心）·planned·未入 index.json·无 servedPath",
+      "status": "planned",
+      "gen": {
+        "provider": "planned",
+        "model": null,
+        "prompt": null,
+        "servedPath": null,
+        "localId": "bg/stage-room"
+      },
+      "provenance": {
+        "generator": "planned",
+        "prompt": null,
+        "model": null,
+        "license": "self-produced（planned·当前=自写程序化 CSS/SVG·栅格生成时随风格包定 CC0/自产）",
+        "source": "declared surface · 代码接线待办（game-b.ts const STAGE_BG · mountHost sceneBackground）",
+        "mock": false,
+        "planned": true
+      },
+      "prompt": "和室夜宴舞台底·暖灯榻榻米茶室夜景·障子/纸灯笼暖光·中心留空更暗（牌桌叠加位）·无人无桌·920×640 横构·sakura-nijigen"
+    },
+    {
+      "no": "art-46",
+      "desc": "主菜单背景 KV（SC-1 主菜单·当前凤翎 SVG 叠暗紫渐变）",
+      "kind": "background",
+      "ref": {
+        "mechanism": "scene-background",
+        "site": "src/games/game-b/theme.ts:MENU_BG",
+        "consumer": "menu 屏 mountHost sceneBackground（MENU_BG = NIGHT_TEXTURE 叠 NIGHT.pageBg）",
+        "note": "当前=凤翎 SVG data-uri 叠 CSS 径向渐变·主视觉 KV 底图待接线"
+      },
+      "query": "elegant Japanese night-banquet key-visual background, drifting sakura petals, deep plum-and-gold palette, warm lantern glow, phoenix-feather motif, refined atmospheric depth, LEFT THIRD kept clean/soft for a character portrait, RIGHT THIRD kept clean for a vertical menu, NO text, NO UI elements, 1280×720 landscape, sakura-nijigen",
+      "placeholder": {
+        "current": "程序化 凤翎 SVG data-uri 叠 CSS 渐变（theme.ts const MENU_BG）·未落栅格图",
+        "source": "programmatic-theme",
+        "count": 0,
+        "instances": []
+      },
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "context": "game-b《雀宴》SC-1 主菜单背景 KV·theme.ts const MENU_BG（mountHost sceneBackground·凤翎 texture 叠 pageBg）·左三分之一留净给主角立绘·右三分之一留净给竖排菜单·对标 mockups/main-menu.dc.html·planned·无 servedPath",
+      "status": "planned",
+      "gen": {
+        "provider": "planned",
+        "model": null,
+        "prompt": null,
+        "servedPath": null,
+        "localId": "bg/menu-kv"
+      },
+      "provenance": {
+        "generator": "planned",
+        "prompt": null,
+        "model": null,
+        "license": "self-produced（planned·当前=自写程序化 CSS/SVG·栅格生成时随风格包定 CC0/自产）",
+        "source": "declared surface · 代码接线待办（theme.ts const MENU_BG · mountHost sceneBackground · 对标 mockups/main-menu.dc.html）",
+        "mock": false,
+        "planned": true
+      },
+      "prompt": "主菜单背景 KV·日式夜宴主视觉·飘樱花·梅紫描金·暖灯·凤翎纹·左三分之一留净给主角立绘/右三分之一留净给竖排菜单·1280×720 横构·sakura-nijigen"
+    },
+    {
+      "no": "art-47",
+      "desc": "主角立绘（主菜单·当前虚线占位框 menu-hero-box）",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "box-placeholder",
+        "site": "src/games/game-b/menu.ts:menu-hero-box",
+        "consumer": "Panel#menu-hero-box（当前=虚线占位框·对标 A-CHAR-HERO 300×440）",
+        "note": "当前=虚线占位框（无图）·主角立绘去背 PNG 待接线"
+      },
+      "query": "female-oriented anime portrait of the protagonist — elegant hostess of a night mahjong parlor, refined cheongsam or kimono, 3/4 front view, waist-up framing, gentle confident expression, soft-light cel shading, TRANSPARENT background (true alpha), centered, 300×440 vertical portrait, sakura-nijigen",
+      "placeholder": {
+        "current": "虚线占位框（menu.ts Panel#menu-hero-box）·未落图",
+        "source": "box-placeholder",
+        "count": 0,
+        "instances": []
+      },
+      "spec": {
+        "w": 300,
+        "h": 440,
+        "transparent": true
+      },
+      "context": "game-b《雀宴》SC-1 主菜单主角立绘·menu.ts Panel#menu-hero-box（当前虚线占位·对标 mockups/main-menu.dc.html A-CHAR-HERO 300×440 带 prompt+风格锚）·placeholder·待去背 PNG·无 servedPath",
+      "status": "placeholder",
+      "gen": {
+        "provider": "planned",
+        "model": null,
+        "prompt": null,
+        "servedPath": null,
+        "localId": "tachie/hero"
+      },
+      "provenance": {
+        "generator": "planned",
+        "prompt": null,
+        "model": null,
+        "license": "self-produced（planned·当前=自写程序化 CSS/SVG·栅格生成时随风格包定 CC0/自产）",
+        "source": "declared surface · 代码接线待办（menu.ts Panel#menu-hero-box · mockups/main-menu.dc.html A-CHAR-HERO 300×440）",
+        "mock": false,
+        "planned": true
+      },
+      "prompt": "主角立绘·夜麻将馆女主人·旗袍或和服·3/4 正面半身·自信温和·柔光赛璐璐·去背透明（true alpha）·居中·300×440 竖构·sakura-nijigen"
+    },
+    {
+      "no": "art-48",
+      "desc": "按钮皮·hero（开始上桌 CTA·当前程序化 SVG 渐变皮）",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "button-skin",
+        "site": "src/games/game-b/theme.ts:NIGHT.buttonSkins.hero",
+        "consumer": "NIGHT.buttonSkins.hero.skin（Button.skin 9-slice · skinSlice=12）",
+        "note": "当前=程序化 SVG data-uri 粉红渐变皮（menuSkin → SKIN_HERO_NIGHT）·栅格 9-slice 皮待接线"
+      },
+      "query": "9-slice UI button skin, ornate pink-crimson lacquer PILL with gold rim + top sheen highlight, flat front orthographic view, symmetric, NO text, rounded-rectangle pill centered, transparent outside the pill, 64×64 with 12px slice borders (all corner detail must stay within the 12px border so 9-slice stretch is clean), sakura-nijigen",
+      "placeholder": {
+        "current": "程序化 SVG 渐变皮（theme.ts menuSkin → SKIN_HERO_NIGHT）·未落栅格图",
+        "source": "programmatic-theme",
+        "count": 0,
+        "instances": []
+      },
+      "spec": {
+        "w": 64,
+        "h": 64,
+        "transparent": true,
+        "slice": 12
+      },
+      "context": "game-b《雀宴》主菜单主 CTA 按钮皮·theme.ts NIGHT.buttonSkins.hero（Button.skin 9-slice·skinSlice=12·粉红渐变主钮·开始上桌）·当前程序化 SVG·planned·无 servedPath",
+      "status": "planned",
+      "gen": {
+        "provider": "planned",
+        "model": null,
+        "prompt": null,
+        "servedPath": null,
+        "localId": "ui/btn-skin-hero"
+      },
+      "provenance": {
+        "generator": "planned",
+        "prompt": null,
+        "model": null,
+        "license": "self-produced（planned·当前=自写程序化 CSS/SVG·栅格生成时随风格包定 CC0/自产）",
+        "source": "declared surface · 代码接线待办（theme.ts NIGHT.buttonSkins.hero · Button.skin 9-slice）",
+        "mock": false,
+        "planned": true
+      },
+      "prompt": "按钮皮·hero·粉绯漆丸型 9-slice（金边+顶部高光·无字）·平面正交·丸角居中·丸外透明·64×64/12px 切边·sakura-nijigen"
+    },
+    {
+      "no": "art-49",
+      "desc": "按钮皮·ghost（继续/设置次钮·当前程序化 SVG 暗底粉边皮）",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "button-skin",
+        "site": "src/games/game-b/theme.ts:NIGHT.buttonSkins.ghost",
+        "consumer": "NIGHT.buttonSkins.ghost.skin（Button.skin 9-slice · skinSlice=12）",
+        "note": "当前=程序化 SVG data-uri 暗底粉边皮（menuSkin → SKIN_GHOST_NIGHT）·栅格 9-slice 皮待接线"
+      },
+      "query": "9-slice UI button skin, dark plum pill with a thin pink rim, subtle/secondary, flat front orthographic, no text, transparent outside pill, 64×64 with 12px slice borders, sakura-nijigen",
+      "placeholder": {
+        "current": "程序化 SVG 暗底粉边皮（theme.ts menuSkin → SKIN_GHOST_NIGHT）·未落栅格图",
+        "source": "programmatic-theme",
+        "count": 0,
+        "instances": []
+      },
+      "spec": {
+        "w": 64,
+        "h": 64,
+        "transparent": true,
+        "slice": 12
+      },
+      "context": "game-b《雀宴》主菜单次钮皮·theme.ts NIGHT.buttonSkins.ghost（Button.skin 9-slice·skinSlice=12·暗梅底粉边次钮·继续/设置）·当前程序化 SVG·planned·无 servedPath",
+      "status": "planned",
+      "gen": {
+        "provider": "planned",
+        "model": null,
+        "prompt": null,
+        "servedPath": null,
+        "localId": "ui/btn-skin-ghost"
+      },
+      "provenance": {
+        "generator": "planned",
+        "prompt": null,
+        "model": null,
+        "license": "self-produced（planned·当前=自写程序化 CSS/SVG·栅格生成时随风格包定 CC0/自产）",
+        "source": "declared surface · 代码接线待办（theme.ts NIGHT.buttonSkins.ghost · Button.skin 9-slice）",
+        "mock": false,
+        "planned": true
+      },
+      "prompt": "按钮皮·ghost·暗梅丸型细粉边次钮（低调·无字）·平面正交·丸外透明·64×64/12px 切边·sakura-nijigen"
+    },
+    {
+      "no": "art-50",
+      "desc": "凤翎叠纹（主菜单/面板纹理叠层·当前程序化 SVG NIGHT_TEXTURE）",
+      "kind": "texture",
+      "ref": {
+        "mechanism": "css-texture",
+        "site": "src/games/game-b/theme.ts:NIGHT_TEXTURE",
+        "consumer": "NIGHT.texture / MENU_BG（凤翎 SVG data-uri 叠层 · PHOENIX_SVG）",
+        "note": "当前=程序化凤翎羽扇 SVG data-uri（PHOENIX_SVG）·无缝栅格叠纹待接线"
+      },
+      "query": "seamless tileable phoenix-feather / plume damask motif overlay, faint gold-on-plum, low-contrast decorative pattern, flat, edges tile seamlessly, mostly transparent (subtle overlay), 512×512, sakura-nijigen",
+      "placeholder": {
+        "current": "程序化 凤翎 SVG data-uri（theme.ts NIGHT_TEXTURE / PHOENIX_SVG）·未落栅格图",
+        "source": "programmatic-theme",
+        "count": 0,
+        "instances": []
+      },
+      "spec": {
+        "w": 512,
+        "h": 512,
+        "transparent": true,
+        "tileable": true
+      },
+      "context": "game-b《雀宴》主菜单/面板凤翎纹理叠层·theme.ts const NIGHT_TEXTURE（PHOENIX_SVG data-uri·NIGHT.texture + MENU_BG 消费）·当前程序化 SVG·planned·无 servedPath",
+      "status": "planned",
+      "gen": {
+        "provider": "planned",
+        "model": null,
+        "prompt": null,
+        "servedPath": null,
+        "localId": "theme/night-phoenix"
+      },
+      "provenance": {
+        "generator": "planned",
+        "prompt": null,
+        "model": null,
+        "license": "self-produced（planned·当前=自写程序化 CSS/SVG·栅格生成时随风格包定 CC0/自产）",
+        "source": "declared surface · 代码接线待办（theme.ts const NIGHT_TEXTURE / PHOENIX_SVG · NIGHT.texture + MENU_BG 消费）",
+        "mock": false,
+        "planned": true
+      },
+      "prompt": "凤翎叠纹·金压梅紫低对比锦纹叠层·无缝平铺·大部透明（微叠）·512×512·sakura-nijigen"
     }
   ]
 }
