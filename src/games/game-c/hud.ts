@@ -12,7 +12,7 @@ import {
 import { wearIconUri } from './art-overrides.js';
 import type { GameEvent } from './game-log.js';
 import {
-  type Lang, type LastMove, type Street, t, fmtCall, fmtRaise, fmtBet, fmtShowdownTitle,
+  type Lang, type LastMove, type Street, type StringKey, t, fmtCall, fmtRaise, fmtBet, fmtShowdownTitle,
   fmtValue, fmtWardrobeTitle, fmtPortrait, fmtHands, fmtItems, fmtMove, fmtStoryHand,
 } from './strings.js';
 
@@ -37,6 +37,7 @@ export interface TableView {
   seats: SeatView[]; toCall: number; canRaise: boolean; minRaise: number; maxRaise: number; raiseValue: number;
   muted: boolean; openWardrobe: number | null; wardrobe?: WardrobeView;
   showLog: boolean; log: GameEvent[]; // 游戏日志（确定性事件流·查 bug·owner 2026-07-17）
+  showMenu: boolean; showHelp: boolean; // 右上角菜单键（REQ-C-114·owner 2026-07-22·收进设置/说明/日志三选项）
   phase: 'betting' | 'showdown' | 'gameover'; // 玩法阶段（摊牌屏/局终屏叠加）
   isHeroTurn: boolean; // 轮到主角真人行动（行动条才显·否则等待提示）
   showdown?: ShowdownView; finale?: FinaleView;
@@ -202,8 +203,64 @@ function buildStoryTopBar(v: TableView): LayoutNode {
             ],
           },
           { type: 'Button', id: 'c-back-story', props: { label: t(l, 'story.back'), kind: 'ghost', action: 'back_to_story' } },
+          // 右上角菜单键（REQ-C-114·点开 = 设置/说明/日志三选项下拉·再点收起）
+          { type: 'Button', id: 'c-menu-btn', props: { label: '☰', kind: 'ghost', action: 'menu_toggle' } },
         ],
       },
+    ],
+  };
+}
+
+// ── 右上角菜单下拉（REQ-C-114·owner 2026-07-22·三选项：音乐开关 / 游戏说明 / 牌局日志）──────────────
+//   锚在顶带菜单键正下方（右上·FIELD_W-206）；纯 LayoutNode 数据·每项 = action 信号入队（无自由逻辑）。
+function buildTopMenu(v: TableView): LayoutNode {
+  const l = v.lang;
+  const item = (id: string, text: string, action: string): LayoutNode => ({
+    type: 'Button', id, props: { label: text, kind: 'ghost', action }, layout: { width: 190 },
+  });
+  return {
+    type: 'Panel', id: 'c-topmenu', props: { bg: { custom: 'linear-gradient(160deg,rgba(24,16,30,0.98),rgba(12,8,18,0.99))' }, edge: 'gold' },
+    layout: { x: FIELD_W - 214, y: 58, width: 206, direction: 'column', gap: 6, padding: 12, radius: 12 },
+    children: [
+      { type: 'Label', id: 'c-topmenu-t', props: { text: t(l, 'topmenu.title'), font: 'impact', size: 15, color: 'gold' } },
+      { type: 'Divider', id: 'c-topmenu-div', props: {} },
+      // ① 设置·音乐开关（复用 sound_toggle·标签随 muted 态切换·菜单不收起=让玩家看到状态变化）
+      item('c-topmenu-music', t(l, v.muted ? 'topmenu.musicOff' : 'topmenu.musicOn'), 'sound_toggle'),
+      // ② 游戏说明（新面板·双语规则速览）
+      item('c-topmenu-help', t(l, 'topmenu.help'), 'help_toggle'),
+      // ③ 牌局日志（复用 toggle_log·确定性事件流）
+      item('c-topmenu-log', t(l, 'topmenu.log'), 'toggle_log'),
+    ],
+  };
+}
+
+// ── 游戏说明面板（REQ-C-114·双语规则速览·居中浮层·右上角 ✕ 关闭）─────────────────────────────
+function buildHelpPanel(v: TableView): LayoutNode {
+  const l = v.lang;
+  const section = (k: string, tKey: StringKey, bKey: StringKey): LayoutNode => ({
+    type: 'Panel', id: `c-help-s-${k}`, props: { bare: true }, layout: { direction: 'column', gap: 3 },
+    children: [
+      { type: 'Label', id: `c-help-st-${k}`, props: { text: t(l, tKey), font: 'serif', size: 16, bold: true, color: 'gold' } },
+      { type: 'Label', id: `c-help-sb-${k}`, props: { text: t(l, bKey), size: 'sm', color: 'sub' } },
+    ],
+  });
+  return {
+    type: 'Panel', id: 'c-helppanel', props: { bg: { custom: 'linear-gradient(158deg,rgba(22,15,28,0.98),rgba(11,7,16,0.99))' }, edge: 'gold', scroll: true },
+    layout: { x: Math.round(FIELD_W / 2 - 260), y: 96, width: 520, height: 430, direction: 'column', gap: 12, padding: 22, radius: 14 },
+    children: [
+      {
+        type: 'Panel', id: 'c-help-hdr', props: { bare: true }, layout: { direction: 'row', justify: 'between', align: 'center' },
+        children: [
+          { type: 'Label', id: 'c-help-title', props: { text: t(l, 'help.title'), font: 'impact', size: 24, color: 'gold' } },
+          { type: 'Button', id: 'c-help-close', props: { label: '✕', kind: 'ghost', action: 'help_toggle' } },
+        ],
+      },
+      { type: 'Divider', id: 'c-help-div', props: {} },
+      section('g', 'help.g.t', 'help.g.b'),
+      section('r', 'help.r.t', 'help.r.b'),
+      section('b', 'help.b.t', 'help.b.b'),
+      section('p', 'help.p.t', 'help.p.b'),
+      section('d', 'help.d.t', 'help.d.b'),
     ],
   };
 }
@@ -808,6 +865,8 @@ export function buildTable(v: TableView): LayoutNode {
   ];
   if (v.phase === 'betting') children.push(v.isHeroTurn ? buildStoryActionBar(v) : buildWaiting(l));
   if (v.showLog) children.push(buildLogPanel(v.log, l));
+  if (v.showMenu) children.push(buildTopMenu(v)); // 右上角菜单下拉（REQ-C-114）
+  if (v.showHelp) children.push(buildHelpPanel(v)); // 游戏说明面板（REQ-C-114）
   if (v.openWardrobe !== null && v.wardrobe) children.push(buildWardrobe(v.wardrobe, l));
   if (v.phase === 'showdown' && v.showdown) children.push(buildShowdown(v.showdown, v.board, l));
   if (v.phase === 'gameover' && v.finale) children.push(buildFinale(v.finale, l));

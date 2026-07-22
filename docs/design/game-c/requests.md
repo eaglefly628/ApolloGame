@@ -8,9 +8,10 @@
 
 ## 待处理
 
-### REQ-C-114 · 右上角菜单键（点开三项：设置/游戏说明/日志）· [2026-07-22] · owner 报 → **PE-C**（chips/decals/fx 之后做）· status: open · 优先级: P2 · 类型: 游戏层 UI（HUD·LayoutNode）
+### REQ-C-114 · 右上角菜单键（点开三项：设置/游戏说明/日志）· [2026-07-22] · owner 报 → **PE-C** · status: **✅ done（PE-C 2026-07-22）** · 优先级: P2 · 类型: 游戏层 UI（HUD·LayoutNode）
 > **owner 指令**：牌桌右上角一个**菜单键**（平时收起）·点开露三项：① **设置**（关音乐等）② **游戏说明/菜单说明**（玩法帮助）③ **日志**。三项收在一个菜单键里。
 > **评判（大半是重组现成件·非缺口）**：① 音乐=现有 `sound_toggle`+`muted`；③ 日志=现有 `toggle_log`+`buildLogPanel`——直接归拢进菜单；② 游戏说明=新增一个帮助面板（LayoutNode 纯数据文案·EN/ZH i18n）。菜单键+下拉/面板=game-c HUD 组合（`buildStoryTopBar` 右侧加菜单键→`menu_toggle` 开一个 `Panel` 列三项·`check-ui` 防重叠）。**用基座 LayoutNode·不手写**。做完 check-ui + 门禁。
+> **回执（PE-C 2026-07-22）**：顶带右侧加 `☰` 键（`menu_toggle`）→ `buildTopMenu` 下拉 `Panel` 列三项：① 音乐开关复用 `sound_toggle`（标签随 `muted` 切 🔊/🔇·下拉不收让玩家见状态变化）② `help_toggle` 开新 `buildHelpPanel`（双语规则速览·目标/一手牌/下注/典当续命/公平确定性五段·`Divider`+`✕` 关）③ `toggle_log` 复用现有日志面板。全 LayoutNode 纯数据·`validateLayoutNode` 零 issue（hud.test 增 REQ-C-114 例·showMenu/showHelp/muted 三态）·四态无头渲染目击（EN/ZH 下拉 + 双语说明面板）。tsc 0 · game-c vitest 133 绿 · build 0。
 
 ### REQ-C-113 · 美术**全量**走索引消费（工坊替换才生效·owner「全部重改」）· [2026-07-22] · owner 报（背幕已通·余下全改）→ Lead 落单 → **PE-C** · status: **🔶 大半接完（背幕/呢面/木栏/筹码/衣柜图标/次级按钮/fx·PE-C 2026-07-22）；余：主行动键=PUI·betline=P3D·牌面=已移出（native）** · 优先级: P2（承 REQ-C-112·美术生产链尾·不阻玩法）· 类型: 游戏层美术消费接线（PE-C 域）
 > **✅ 回执（PE-C 2026-07-22·第二/三批·端到端目击）**：承背幕样板逐类接消费槽（各带回退兜底·真图未到观感近零变）——

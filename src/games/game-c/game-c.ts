@@ -115,6 +115,8 @@ export function mount(
   let muted = false;
   let openWardrobe: number | null = null;
   let showLog = false;
+  let showMenu = false; // 右上角菜单下拉开关（REQ-C-114·owner 2026-07-22）
+  let showHelp = false; // 游戏说明面板开关（REQ-C-114）
   // 界面语言（owner 2026-07-20 中英切换·**默认英语**·localStorage 持久）。
   const LANG_KEY = 'gc_lang';
   const loadLang = (): Lang => { try { return typeof localStorage !== 'undefined' && localStorage.getItem(LANG_KEY) === 'zh' ? 'zh' : 'en'; } catch { return 'en'; } };
@@ -211,7 +213,7 @@ export function mount(
       toCall: la?.call ?? 0, canRaise: !!la?.raise, minRaise: la?.raise?.min ?? CFG.bigBlind,
       maxRaise: la?.raise?.max ?? STARTING_STACK, raiseValue, muted,
       openWardrobe, wardrobe: openWardrobe !== null ? wardrobeView(openWardrobe) : undefined,
-      showLog, log: session.events,
+      showLog, log: session.events, showMenu, showHelp,
       phase: session.phase, isHeroTurn: session.isHeroTurn,
       showdown: sd ? {
         // 牌型显示名按 type index 本地化（不碰 session 中文 r.type=机读口径）；无摊(best 空)不显牌型。
@@ -272,15 +274,18 @@ export function mount(
     // 开始上桌 = 全新一局（时间种子·牌面每局不同）；继续上局 = 沿用当前会话不重开。
     start_game: () => { newGame(); screen = 'table'; start3D(); gcAudio.enterTable(); remount(); runAITurns(); },
     continue_game: () => { screen = 'table'; start3D(); gcAudio.enterTable(); remount(); runAITurns(); },
-    back_menu: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); },
-    menu_open: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); },
+    back_menu: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; showMenu = false; showHelp = false; stop3D(); gcAudio.leaveTable(); remount(); },
+    menu_open: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; showMenu = false; showHelp = false; stop3D(); gcAudio.leaveTable(); remount(); },
     // 语言切换（EN/中·默认英语·持久化·整树重挂应用新文案）
     set_lang: (arg) => { const nl: Lang = arg === 'zh' ? 'zh' : 'en'; if (nl !== lang) { lang = nl; saveLang(nl); gcAudio.play('click'); remount(); } },
     // 入局人数选择（2~6·默认 6·持久化·菜单选·下次开始上桌/再来一局生效）
     set_players: (arg) => { const n = clampPlayers(Number(arg)); if (n !== playerCount) { playerCount = n; savePlayers(n); gcAudio.play('click'); rerender(); } },
-    // UI 开关（♪ 键真静音音乐+音效）
+    // UI 开关（♪ 键真静音音乐+音效·菜单不收起=让玩家看到 🔊/🔇 标签变化）
     sound_toggle: () => { muted = !muted; gcAudio.setMuted(muted); rerender(); },
-    toggle_log: () => { showLog = !showLog; gcAudio.play('click'); rerender(); },
+    // 右上角菜单键（REQ-C-114）：☰ 开/收下拉；说明面板开=顺手收下拉（大面板浮层不叠下拉）
+    menu_toggle: () => { showMenu = !showMenu; gcAudio.play('click'); rerender(); },
+    help_toggle: () => { showHelp = !showHelp; showMenu = false; gcAudio.play('click'); rerender(); },
+    toggle_log: () => { showLog = !showLog; showMenu = false; gcAudio.play('click'); rerender(); },
     seat_view: (arg) => { openWardrobe = Number(arg); gcAudio.play('click'); rerender(); },
     panel_close: () => { openWardrobe = null; gcAudio.play('click'); rerender(); },
     // 典当续命（真接 session·主角衣柜可点·扣衣加筹）
@@ -294,7 +299,7 @@ export function mount(
       rerender();
     },
     // 返回剧情（剧情局顶带·剧情系统未接前=回主菜单）
-    back_to_story: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); },
+    back_to_story: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; showMenu = false; showHelp = false; stop3D(); gcAudio.leaveTable(); remount(); },
     // 下注交互（真接 betting-engine·经 session；弃牌/过牌本地声，跟注/加注的筹码声由 syncChips 抛注触发）
     act_fold: () => { gcAudio.play('fold'); heroAct({ kind: 'fold' }); },
     act_check_call: () => { const la = session.legalForHero(); if (la?.check) gcAudio.play('check'); heroAct(la?.check ? { kind: 'check' } : { kind: 'call' }); },

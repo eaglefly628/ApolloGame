@@ -73,6 +73,25 @@ export const STRINGS = {
   // 日志面板
   'log.title': { en: '📋 Hand Log', zh: '📋 牌局日志 · 查 bug' },
   'log.seed': { en: 'Deterministic event stream · same seed → same log', zh: '确定性事件流 · 同 seed 同日志' },
+  // 右上角菜单键（REQ-C-114·owner 2026-07-22·设置/说明/日志三选项收进一个菜单）
+  'topmenu.title': { en: 'Menu', zh: '菜单' },
+  'topmenu.musicOn': { en: '🔊  Music: On', zh: '🔊  音乐：开' },
+  'topmenu.musicOff': { en: '🔇  Music: Off', zh: '🔇  音乐：关' },
+  'topmenu.help': { en: '❔  How to Play', zh: '❔  游戏说明' },
+  'topmenu.log': { en: '📋  Hand Log', zh: '📋  牌局日志' },
+  // 游戏说明面板（双语·剧情德州规则速览）
+  'help.title': { en: 'How to Play', zh: '游戏说明' },
+  'help.close': { en: 'Close', zh: '关闭' },
+  'help.g.t': { en: '🎯  Goal', zh: '🎯  目标' },
+  'help.g.b': { en: 'Bust all five ladies to win the story. Lose all chips and garments and you are out.', zh: '让五位姨太全数出局即通关剧情；自己筹码与衣物尽失则落败离席。' },
+  'help.r.t': { en: '🃏  The Hand', zh: '🃏  一手牌' },
+  'help.r.b': { en: 'Six-player Texas Hold’em. Make your best five cards from two hole cards + five community cards.', zh: '六人德州扑克。用两张底牌 + 五张公共牌，凑出最强的五张牌型。' },
+  'help.b.t': { en: '💰  Betting', zh: '💰  下注' },
+  'help.b.b': { en: 'Fold to drop out, Check/Call to stay, or Raise (slider or ½/⅔/Pot/All-in). Four streets: Pre-Flop, Flop, Turn, River.', zh: '弃牌离手、过牌/跟注留局，或加注（滑杆或 ½/⅔/底池/全下）。四条街：翻牌前、翻牌、转牌、河牌。' },
+  'help.p.t': { en: '👗  Pawn to Survive', zh: '👗  典当续命' },
+  'help.p.b': { en: 'Out of chips? Tap a portrait to open her wardrobe — pawn garments for chips and stay in the game.', zh: '筹码见底？点立绘打开衣柜——典当衣物换筹码，留在牌桌上。' },
+  'help.d.t': { en: '🎲  Fair & Deterministic', zh: '🎲  公平·确定性' },
+  'help.d.b': { en: 'Every deal uses a seeded shuffle — same seed replays the same hands. Check the Hand Log to audit.', zh: '每次发牌走种子洗牌——同一 seed 复现同样牌局；牌局日志可逐条审计。' },
   // 座位名（主角）
   'name.hero': { en: 'You', zh: '主角' },
   // 剧情局 STORY-POKER V2（owner 2026-07-21·GD-C 稿）

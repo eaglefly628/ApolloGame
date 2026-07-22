@@ -23,7 +23,7 @@ function baseView(over: Partial<TableView> = {}): TableView {
     })),
     toCall: 0, canRaise: true, minRaise: 50, maxRaise: 950, raiseValue: 50,
     muted: false, openWardrobe: null,
-    showLog: false, log: [],
+    showLog: false, log: [], showMenu: false, showHelp: false,
     phase: 'betting', isHeroTurn: true,
     ...over,
   };
@@ -101,6 +101,13 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
       { seq: 2, tag: 'street' as const, text: '🃏 翻牌 · A♠ K♥ 5♦' },
     ];
     expect(validateLayoutNode(buildTable(baseView({ showLog: true, log })))).toEqual([]);
+  });
+
+  it('右上角菜单下拉 + 游戏说明面板（REQ-C-114）零 issue', () => {
+    expect(validateLayoutNode(buildTable(baseView({ showMenu: true })))).toEqual([]);
+    expect(validateLayoutNode(buildTable(baseView({ showHelp: true })))).toEqual([]);
+    // 音乐关态标签切换（🔇）仍合法
+    expect(validateLayoutNode(buildTable(baseView({ showMenu: true, muted: true })))).toEqual([]);
   });
 
   it('主菜单屏 SC-1 零 issue（标题/立绘/按钮/角色卡）', () => {
