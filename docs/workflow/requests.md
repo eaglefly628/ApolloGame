@@ -58,6 +58,10 @@
 <!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结迁归档（requests-archive.md）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
 
 
+### REQ-FACEART-画框修缮 · faceArtSlice 9-slice 真浏览器不渲染 + 手册补行 + border-image 审计盲区提前清 · [2026-07-22] · Lead 复核发现 → **指派：PUI** · status: open · 优先级: P3（无活消费者·非阻断） · 类型: UI 基座缺陷修缮 + 工具债（PUI 域）
+> ① `render.ts:721` faceArtSlice 覆盖 div 缺 `border-style:solid;border-width:${slice}px`——border-image 渲染前提不满足，真浏览器一像素不画（同文件 `skinCss`/`panelSkinCss` 均已显式设，唯此处漏）；修法=对齐 panelSkinCss 口径 + **真浏览器目击一次**（happy-dom 字符串断言测不出此病）。② `docs/playbooks/ui.md` 图标行补 `Panel.titleIcon`/`Tabs.tab.icon`（ab2a316c 落地未回填手册）。③ **border-image 审计盲区工具债提前清**（原 REQ-UIAUDIT 后置项）——本次正是「audit 测不出 border-image 白画」的同类病在 PUI 自家交付里咬了自己，实证该盲区值得现在补：ui-audit 对带 border-image 的元素校验 border-style/width 前提，缺=报警。
+> 附 Lead 裁决：REQ-UIRECON「通告 game-b/c」项**豁免**——引擎修复对两家透明兜住、无需其任何动作，补知会=空跑（game-a 兜底可退已在 A-012 闭环）。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
