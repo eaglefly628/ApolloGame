@@ -17,16 +17,36 @@ const CHIP_IDS = [
 ] as const;
 
 describe('Game C · 本地牌资产库（PD vendor·mirror game-a §5.1）', () => {
-  it('索引合法：62 条（52 牌 + 牌背 + 9 筹码）·全 filled·携 vendoredFrom 溯源', () => {
+  // 索引 = 两类合流，分解式对账（REQ-C-111·别只改总数糊过去）：
+  //   ① vendor 类 62 条：52 牌 + 牌背 + 9 筹码，均自共享货架 copy·provenance.vendoredFrom === 自身 id；
+  //   ② 程序生成类 28 条：夜金 SVG 占位（scene/table/ui/fx/icons），provenance.generator === art-gen 脚本。
+  // 两类各自计数 + 溯源字段独立断言，合计 90·全 filled。
+  it('索引合法：90 条 = 62 vendor（53 牌 + 9 筹码·vendoredFrom 溯源）+ 28 程序生成（generator 溯源）·全 filled', () => {
     const idx = parseAssetIndex(RAW);
-    expect(idx.assets.length).toBe(62);
-    const cards = idx.assets.filter((a) => a.id.startsWith('card/'));
-    const chips = idx.assets.filter((a) => a.id.startsWith('chip/'));
+    const isVendor = (id: string) => id.startsWith('card/') || id.startsWith('chip/');
+    const vendored = idx.assets.filter((a) => isVendor(a.id));
+    const procedural = idx.assets.filter((a) => !isVendor(a.id));
+
+    // —— 合计 + 两类计数 ——
+    expect(idx.assets.length).toBe(90);
+    expect(vendored.length).toBe(62);
+    expect(procedural.length).toBe(28);
+
+    // —— ① vendor 类：52 牌 + 牌背 + 9 筹码 ——
+    const cards = vendored.filter((a) => a.id.startsWith('card/'));
+    const chips = vendored.filter((a) => a.id.startsWith('chip/'));
     expect(cards.length).toBe(53); // 52 + 牌背
     expect(chips.length).toBe(9);
-    for (const a of idx.assets) {
+    for (const a of vendored) {
       expect(a.status).toBe('filled');
       expect(a.provenance).toMatchObject({ vendoredFrom: a.id }); // 同 id 自货架 vendor（copy 不直引）
+    }
+
+    // —— ② 程序生成类：夜金 SVG 占位·art-gen 脚本溯源（真图到位同 id 热替换） ——
+    for (const a of procedural) {
+      expect(a.status).toBe('filled');
+      expect(a.provenance).toMatchObject({ generator: 'scripts/game-c-art-gen.mjs' });
+      expect(a.id.startsWith('card/') || a.id.startsWith('chip/')).toBe(false);
     }
   });
 
