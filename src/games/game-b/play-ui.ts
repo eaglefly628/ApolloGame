@@ -259,17 +259,19 @@ function meldBlock(m: MatchState, seat: number, lang: Lang): LayoutNode | null {
   };
 }
 
-// ── 最小控制（右上角·日志 + 菜单·横排）───────────────────────────────────────────────────────
-// 按钮宽必须容下 2 字+左右内边距（30px×2）否则字被挤竖排（owner 目击 bug）——定宽 100 保横排。
+// ── 最小控制（右上角·日志 + 菜单·横排·木纹切角皮）─────────────────────────────────────────────
+// owner 2026-07-22 gallery #1-64：换 game-i「木纹切角」皮（`skin`+`shape:'cut'`·vendor 自 game-i CC0 UI 皮）。
+// 宽 120 容「メニュー」4 片假名·文字用 skin 按钮的居中排（皮按钮内容 flex 居中·治旧 ghost 高度撑开偏下）。
+const WOOD_SKIN = '/games/game-b/art/ui/skin-wood.svg';
 function controls(lang: Lang): LayoutNode {
-  const W = 120, H = 36; // 容下最长标签「メニュー」（4 片假名）不换行·中文「日志/菜单」同宽有余。
+  const W = 120, H = 40;
+  const ctl = (id: string, label: string, action: string): LayoutNode => ({
+    type: 'Button', id, props: { label, skin: WOOD_SKIN, shape: 'cut', action }, layout: { width: W, height: H },
+  });
   return {
     type: 'Panel', id: 'controls', props: { bare: true },
     layout: { x: PANEL_X + PANEL_W - (W * 2 + 8), y: PANEL_Y + 4, direction: 'row', gap: 8, align: 'center' },
-    children: [
-      { type: 'Button', id: 'act-log', props: { label: t(lang, 'ui.log'), kind: 'ghost', action: TOGGLE_LOG }, layout: { width: W, height: H } },
-      { type: 'Button', id: 'act-menu', props: { label: t(lang, 'ui.menu'), kind: 'ghost', action: MENU_OPEN }, layout: { width: W, height: H } },
-    ],
+    children: [ctl('act-log', t(lang, 'ui.log'), TOGGLE_LOG), ctl('act-menu', t(lang, 'ui.menu'), MENU_OPEN)],
   };
 }
 
@@ -313,14 +315,17 @@ function rulesOverlay(lang: Lang): LayoutNode {
 // 按钮定高 48 挤进 58px 控制带（梯形投影底 516 ↔ 手牌顶 574）·靠左贴边·不压桌不压手牌（owner 锚定要求）。
 function actionBar(m: MatchState, lang: Lang): LayoutNode {
   const BH = 48;
+  const tsumoOn = canTsumo(m), riichiOn = canRiichi(m);
+  const glow: NonNullable<LayoutNode['layout']>['fx'] = [{ kind: 'glow' }]; // #1-60·可点键发光引导（仅亮态）
   return {
     type: 'Panel', id: 'acts', props: { bare: true },
     layout: { x: PANEL_X + 4, y: BAND_Y, direction: 'row', gap: 8, align: 'center' },
     children: [
       // 均用 primary（jade）：hero 大字 + overflow:hidden 会把两字次字裁掉（组件特性）——primary 定宽 96 稳显。
-      { type: 'Button', id: 'act-tsumo', props: { label: t(lang, 'act.tsumo'), kind: 'primary', disabled: !canTsumo(m), action: ACT_TSUMO }, layout: { width: 96, height: BH } },
-      ...(canAnkan(m) || canKakan(m) ? [{ type: 'Button' as const, id: 'act-kan', props: { label: t(lang, 'act.kan'), kind: 'primary' as const, action: ACT_KAN }, layout: { width: 66, height: BH } }] : []),
-      { type: 'Button', id: 'act-riichi', props: { label: t(lang, 'act.riichi'), kind: 'primary', disabled: !canRiichi(m), action: ACT_RIICHI }, layout: { width: 96, height: BH } },
+      // owner 2026-07-22 gallery #1-60：可点（亮态）的行动键发光引导「该你点了」·灰态不发光。
+      { type: 'Button', id: 'act-tsumo', props: { label: t(lang, 'act.tsumo'), kind: 'primary', disabled: !tsumoOn, action: ACT_TSUMO }, layout: { width: 96, height: BH, ...(tsumoOn ? { fx: glow } : {}) } },
+      ...(canAnkan(m) || canKakan(m) ? [{ type: 'Button' as const, id: 'act-kan', props: { label: t(lang, 'act.kan'), kind: 'primary' as const, action: ACT_KAN }, layout: { width: 66, height: BH, fx: glow } }] : []),
+      { type: 'Button', id: 'act-riichi', props: { label: t(lang, 'act.riichi'), kind: 'primary', disabled: !riichiOn, action: ACT_RIICHI }, layout: { width: 96, height: BH, ...(riichiOn ? { fx: glow } : {}) } },
     ],
   };
 }
@@ -348,7 +353,8 @@ function callBar(m: MatchState, lang: Lang): LayoutNode | null {
     type: 'Panel', id: 'callbar', props: { bg: { custom: 'rgba(32,16,28,0.97)' }, glow: true, accent: true },
     // 居中贴桌底控制带（鸣牌窗口态·与手牌不叠·按钮压扁到 40 高）。
     layout: { x: PANEL_X + PANEL_W / 2 - 220, y: BAND_Y, width: 440, padding: 6, gap: 8, direction: 'row', justify: 'center', align: 'center' },
-    children: btns.map((b): LayoutNode => (b.type === 'Button' ? { ...b, layout: { ...(b.layout ?? {}), height: 40 } } : b)),
+    // owner 2026-07-22 gallery #1-75：鸣牌键（碰/吃/杠/荣/过）加流光扫过（fx sheen·斜向湿润反光循环·引导点击）。
+    children: btns.map((b): LayoutNode => (b.type === 'Button' ? { ...b, layout: { ...(b.layout ?? {}), height: 40, fx: [{ kind: 'sheen' }] } } : b)),
   };
 }
 

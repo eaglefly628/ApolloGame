@@ -2,8 +2,8 @@
   "version": 1,
   "game": "game-b",
   "mode": "authored-inventory",
-  "count": 50,
-  "instances": 50,
+  "count": 51,
+  "instances": 51,
   "rows": [
     {
       "no": "art-01",
@@ -2237,6 +2237,48 @@
         "planned": true
       },
       "prompt": "凤翎叠纹·金压梅紫低对比锦纹叠层·无缝平铺·大部透明（微叠）·512×512·sakura-nijigen"
+    },
+    {
+      "no": "art-51",
+      "desc": "木纹切角 按钮皮（日志/菜单控制键·9-slice 备料）",
+      "kind": "sprite",
+      "ref": {
+        "mechanism": "url",
+        "component": "Button",
+        "field": "skin",
+        "resolver": "controls() 木纹切角键",
+        "servedPath": "/games/game-b/art/ui/skin-wood.svg"
+      },
+      "query": "seamless wood-grain button skin panel, warm walnut plank texture, subtle horizontal grain, flat front orthographic, gently beveled/chamfered edge, no text, 9-slice friendly (uniform border), 220×88, sakura-nijigen warm-wood palette",
+      "placeholder": {
+        "current": "已入 SVG 木纹皮（vendor 自 game-i CC0 UI 皮）",
+        "source": "vendored",
+        "count": 1,
+        "instances": [
+          "ui/skin-wood"
+        ]
+      },
+      "spec": {
+        "w": 220,
+        "h": 88,
+        "transparent": true,
+        "slice": 12
+      },
+      "context": "game-b 右上控制键 日志/菜单 的木纹切角皮（owner 2026-07-22 gallery #1-64）·Button.skin URL 引用 + shape:cut",
+      "status": "replaced",
+      "gen": {
+        "provider": "vendored",
+        "model": "game-i CC0 UI 皮",
+        "prompt": null,
+        "servedPath": "/games/game-b/art/ui/skin-wood.svg",
+        "localId": "game-b/ui/skin-wood"
+      },
+      "provenance": {
+        "provider": "vendored-cc0",
+        "license": "CC0-1.0",
+        "source": "src/games/game-i (自产 UI 皮)·vendor copy",
+        "date": "2026-07-22"
+      }
     }
   ]
 }
