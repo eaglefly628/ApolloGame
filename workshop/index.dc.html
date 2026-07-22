@@ -1285,15 +1285,25 @@ class Component extends DCLogic {
       body: JSON.stringify({ slug }) }).then(() => readLedger()).catch(() => readLedger());
     this.ensureArtMeta();
   }
-  // 风格包/文生图 provider 清单（懒取一次·素材屏与 art-ops 执行共用）。
+  // 风格包/文生图 provider 清单（素材屏与 art-ops 执行共用）。
+  // 空数组也重拉（owner 2026-07-21·新 PC 首拉失败/超时→[]→之前只认 null 就永不重试→「无风格选择」死态）：
+  //   null=没拉过·[]=拉过但空（失败/慢）→ 两种都重拉；正在拉用 _packsLoading/_provsLoading 防并发风暴。
   ensureArtMeta() {
-    if (this.state.artPacks === null) {
+    const packsEmpty = !Array.isArray(this.state.artPacks) || this.state.artPacks.length === 0;
+    if (packsEmpty && !this._packsLoading) {
+      this._packsLoading = true;
       fetch('/api/art/style-packs').then(r => r.json())
-        .then(d => this.setState({ artPacks: (d && d.packs) || [] })).catch(() => this.setState({ artPacks: [] }));
+        .then(d => this.setState({ artPacks: (d && d.packs) || [] }))
+        .catch(() => this.setState({ artPacks: [] }))
+        .finally(() => { this._packsLoading = false; });
     }
-    if (this.state.genProviders === null) {
+    const provsEmpty = !Array.isArray(this.state.genProviders) || this.state.genProviders.length === 0;
+    if (provsEmpty && !this._provsLoading) {
+      this._provsLoading = true;
       fetch('/api/assets/generate/providers').then(r => r.json())
-        .then(d => this.setState({ genProviders: (d && d.providers) || [] })).catch(() => this.setState({ genProviders: [] }));
+        .then(d => this.setState({ genProviders: (d && d.providers) || [] }))
+        .catch(() => this.setState({ genProviders: [] }))
+        .finally(() => { this._provsLoading = false; });
     }
   }
   // art-ops 执行链（07-12 工作流重设）：美术 agent 开方子 → 用户确认 → 逐条串行执行既有端点。
@@ -1326,6 +1336,16 @@ class Component extends DCLogic {
   // 美术台操作统一走这（生成/替换=分钟级——busy 标+完成刷新台账；一次一件防重入）。
   artCall(label, path, body) {
     if (this.state.artBusy) return;
+    // 空 packId 客户端拦截（owner 2026-07-21·新 PC「无风格选择→非法 packId(空)」）：风格包没加载完/未选
+    // 就点生成 → 发空值吃后端「非法 packId(空)」神秘错。这里提前明报 + 主动重拉风格包，不发废请求。
+    if ('packId' in body && !body.packId) {
+      const loaded = Array.isArray(this.state.artPacks) && this.state.artPacks.length > 0;
+      this.setState({ artLastResult: { tone: 'fail', text: '✕ ' + label + '：没有可用的风格包（packId 为空）。' +
+        (loaded ? '请在上方「风格包」里点选一个再生成。' : '风格包还没加载完——正在重新拉取，稍等 1-2 秒再点；若一直空，刷新页面并确认 apollo.py 在跑（/api/art/style-packs 应返回风格包列表）。') } });
+      this.showToast('先选风格包（未加载/未选）');
+      this.ensureArtMeta && this.ensureArtMeta();
+      return;
+    }
     const slug = this.state.assetsSlug;
     this.setState({ artBusy: label, artLastResult: null });
     fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -2438,7 +2458,8 @@ class Component extends DCLogic {
         const c = r.tone === 'fail' ? { bg: '#fdecec', bd: '#c0392b', fg: '#8a1c12' }
           : r.tone === 'mock' ? { bg: '#fff6e0', bd: '#c98a1a', fg: '#7a5410' }
           : { bg: '#eafbe7', bd: '#4e8a24', fg: '#2f5a13' };
-        return { text: r.text, style: 'margin-bottom:16px;padding:10px 14px;background:' + c.bg + ';border:3px solid ' + c.bd + ';border-radius:12px;color:' + c.fg + ';box-shadow:0 4px 0 rgba(58,35,18,.12)' };
+        // 固定悬浮层（z 高于详情模态 9000·永远可见·不自动消失·治「错误一闪就没/被模态盖住」owner 2026-07-21）。
+        return { text: r.text, style: 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:11000;max-width:min(720px,92vw);padding:12px 16px;background:' + c.bg + ';border:3px solid ' + c.bd + ';border-radius:12px;color:' + c.fg + ';box-shadow:0 8px 28px rgba(0,0,0,.35)' };
       })(),
       artResultClear: () => this.setState({ artLastResult: null }),
       // 素材库（共享 FreeArtLib·Feature C）
