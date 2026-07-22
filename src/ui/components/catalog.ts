@@ -57,6 +57,8 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'vignette', type: 'boolean', describe: '四周渐暗暗角' },
       { name: 'accent', type: 'boolean', describe: 'jade 高亮框 + 柔光' },
       { name: 'glass', type: 'boolean', describe: '磨砂玻璃（backdrop-blur + 半透底·HUD 浮 3D/大图上）' },
+      { name: 'skin', type: 'string', describe: '面覆盖皮 URL（复合按钮框皮·整面 cover/9-slice·art 即框·children 叠其上·配 action=贴图按钮·动态文字不烤进图）' },
+      { name: 'skinSlice', type: 'number', describe: 'skin 9-slice 源边距 px（画框式·不填=cover）' },
       { name: 'bgTexture', type: 'string', describe: '平铺贴图 URL' },
       { name: 'pattern', type: 'enum', values: ['stripe', 'checker'], describe: '程序化纹理叠层（斜条纹/棋盘格）' },
       { name: 'action', type: 'string', describe: '容器可点→点击信号名（整个容器作点击目标·同 Button）' },

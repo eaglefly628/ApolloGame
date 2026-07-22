@@ -235,6 +235,12 @@ export interface PanelProps {
   /** 无框纯布局容器（owner 2026-06-25「别千层框」）：true=不画边框/底/圆角、padding 缺省 0——只做 row/column/grid 分组。
    *  边框只留给「真该成一个框的东西」（外框/牌桌/侧栏/卡片）；行列分组一律 bare，避免嵌套出层层框。 */
   bare?: boolean;
+  /** 面覆盖皮（复合按钮/框皮·已解析图 URL·REQ-PANELSKIN·同 Button.skin 约定）：整面 art **cover** 覆盖（或配 `skinSlice` 走 9-slice）·
+   *  art 即框（压过 bg/边框·**bare 面板不吃皮**·同 panelTexture guard）；**children 照常叠在皮上**——动态文字（如「Call 50」的实时数额）走 LayoutNode 渲在皮之上、不必烤进图。
+   *  区别 `bgTexture`（平铺）：这是 cover/9-slice 单图整面。区别 `Button.skin`：不强制白字（children 各自定色）。配 `action` = 复合贴图按钮。 */
+  skin?: string;
+  /** skin 的 9-slice 源边距 px（画框式框皮·四角固定/边中拉伸·任意尺寸不糊·同 Button.skinSlice）。不填=整图 cover。 */
+  skinSlice?: number;
   /** 图片贴图层（平铺·同 Screen.bgTexture）：贴图 URL → repeat 平铺叠在面板底上、可被 bgScroll 滚动。 */
   bgTexture?: string;
   /** 贴图平铺单元尺寸 px（配 bgTexture·缺省=图原始尺寸）。 */

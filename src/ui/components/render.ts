@@ -223,6 +223,18 @@ const skinCss = (url?: string, slice?: number): string => {
   return `;background:url('${u}') center/cover no-repeat;border:0;${legible}`;
 };
 
+// Panel cover-skin（复合按钮/框皮·REQ-PANELSKIN·game-c 主行动键）：整面 art 覆盖（cover 或 9-slice），
+// **children 照常叠在皮上**（动态文字如「Call 50」= 实时 LayoutNode 渲在皮之上·数额不必烤进图）。
+// 区别 Button.skin：**不强制白字**（Panel children 各自定色）；art 即框（省默认边框/底）。区别 bgTexture：cover/9-slice 非平铺。
+const panelSkinCss = (url: string, slice?: number): string => {
+  const u = safeUrl(url);
+  if (slice !== undefined) {
+    const s = num(slice);
+    return `background:none;border-style:solid;border-width:${s}px;border-image:url('${u}') ${s} fill / ${s}px / 0 stretch;`;
+  }
+  return `background:url('${u}') center/cover no-repeat;border:0;`;
+};
+
 // 面填充三态解析（owner 2026-07-04 色库化）：语义令牌(换皮自适应) / 预设配色(固定观感) / {custom}(显式逃生) / 遗留裸串。
 // 令牌→UITheme（随主题变）；preset→引擎内建渐变（色库·固定）；对象→custom 自由串；其余字符串→原样透传(back-compat)。
 const SURFACE_TOKEN: Record<string, (t: UITheme) => string> = {
@@ -391,9 +403,13 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const tex = texLayer(p.bgTexture, p.bgTextureSize);
   // 主题级面板底纹（纸纹/底纹·house-style 主题填·叠在填色之上、节点 bgTexture 之下）。缺省无 = 老主题字节不变。
   const panelTex = (!bare && t.panelTexture) ? t.panelTexture : '';
-  const chrome = bare
-    ? (tex ? `background:${tex}, transparent;` : '')
-    : `background:${tex ? `${tex}, ` : ''}${panelTex ? `${panelTex}, ` : ''}${resolveFill(p.bg, t) ?? (p.glass ? 'rgba(20,24,32,0.5)' : t.bg1)};border:1px ${bStyle} ${border};border-radius:${rad}px;${glow}${p.glass ? 'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' : ''}`;
+  // cover-skin（复合按钮框皮·REQ-PANELSKIN）：非 bare 面板给了 skin → art 即整面框（cover/9-slice），压过 fill/边框；
+  // children 叠其上（动态数额活文字）。**bare 面板不吃皮**（bare=纯布局无 chrome·同 panelTexture guard·Lead 裁）。
+  const chrome = (!bare && p.skin)
+    ? `${panelSkinCss(p.skin, p.skinSlice)}border-radius:${rad}px;${glow}`
+    : bare
+      ? (tex ? `background:${tex}, transparent;` : '')
+      : `background:${tex ? `${tex}, ` : ''}${panelTex ? `${panelTex}, ` : ''}${resolveFill(p.bg, t) ?? (p.glass ? 'rgba(20,24,32,0.5)' : t.bg1)};border:1px ${bStyle} ${border};border-radius:${rad}px;${glow}${p.glass ? 'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' : ''}`;
   const style = `${box};padding:${pad}px;${chrome}position:relative;${overflow}${ls}`;
   // 标题图标（REQ-UI-标题图标槽）：titleIcon 在场 → 标题前 1.05em 内联图；无=纯文字标题字节不变。
   const titleIcon = p.titleIcon ? `<img src="${esc(p.titleIcon)}" alt="" style="height:1.05em;width:1.05em;object-fit:contain;vertical-align:-0.18em;margin-right:5px">` : '';
