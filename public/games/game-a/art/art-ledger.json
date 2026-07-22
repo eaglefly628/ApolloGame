@@ -2,9 +2,9 @@
   "version": 1,
   "game": "game-a",
   "mode": "authored-inventory",
-  "note": "A-023 可消费槽（2026-07-22·PE-A）：rows=真接线（各带 skinKey game-a/<slot>·工坊 art-replace 写 index 别名即热替换上画·ledger:audit 非孤儿）——含 10 2D 槽 + 2 3D 呢面材质槽 + 3 对手默认立绘槽（portrait/*·无默认图=Avatar 退首字·平台角色卡 avatar 传入则覆盖·owner 2026-07-22）；pending=未接（wired.reason 标真因·art 文件在库不删·非孤儿计·俟能力到位再转 rows）。",
-  "count": 28,
-  "instances": 28,
+  "note": "A-023 可消费槽（2026-07-22·PE-A）：rows=真接线（各带 skinKey game-a/<slot>·工坊 art-replace 写 index 别名即热替换上画·ledger:audit 非孤儿）——含 10 2D 槽（bg/felt/icon/fx）+ 3 对手默认立绘槽（portrait/*·无默认图=Avatar 退首字·平台角色卡 avatar 传入则覆盖）。owner 2026-07-22 退回 2D 长方形桌→删 3D 呢面材质槽（table/felt-albedo|normal）。pending=未接（wired.reason 标真因·art 文件在库不删·非孤儿计·俟能力到位再转 rows）。",
+  "count": 26,
+  "instances": 26,
   "rows": [
     {
       "no": "art-01",
@@ -387,50 +387,6 @@
       "skinKey": "game-a/fx/win"
     },
     {
-      "no": "art-3d-1",
-      "desc": "3D 呢面桌 高清酒红呢面 albedo 贴图（2K·细呢纹+暖光池·俟 Seedream 生成）",
-      "kind": "texture",
-      "slot": {
-        "entity": "table/felt-albedo",
-        "component": "Material3D",
-        "field": "map"
-      },
-      "skinKey": "game-a/table/felt-albedo",
-      "query": "3D 呢面桌 高清酒红呢面 albedo 贴图（2K·细呢纹+暖光池·俟 Seedream 生成）",
-      "spec": {
-        "w": 2048,
-        "h": 2048,
-        "transparent": false
-      },
-      "status": "filled",
-      "wired": {
-        "consumed": true,
-        "at": "build3d.ts felt Material3D.map/normalMap（3D 呢面·ThreeRenderer 按 key 挂·无真图回退酒红 preset）"
-      }
-    },
-    {
-      "no": "art-3d-2",
-      "desc": "3D 呢面桌 呢面法线贴图 normal（2K·呢纹凹凸=掠射高光·俟生成）",
-      "kind": "texture",
-      "slot": {
-        "entity": "table/felt-normal",
-        "component": "Material3D",
-        "field": "map"
-      },
-      "skinKey": "game-a/table/felt-normal",
-      "query": "3D 呢面桌 呢面法线贴图 normal（2K·呢纹凹凸=掠射高光·俟生成）",
-      "spec": {
-        "w": 2048,
-        "h": 2048,
-        "transparent": false
-      },
-      "status": "filled",
-      "wired": {
-        "consumed": true,
-        "at": "build3d.ts felt Material3D.map/normalMap（3D 呢面·ThreeRenderer 按 key 挂·无真图回退酒红 preset）"
-      }
-    },
-    {
       "no": "art-por-partner",
       "desc": "对手默认立绘·沈玉薇（沉稳 · 护家）",
       "kind": "sprite",
@@ -545,8 +501,8 @@
       "skinKey": "game-a/portrait/east"
     }
   ],
-  "wiredCount": 13,
-  "rowCount": 15,
+  "wiredCount": 11,
+  "rowCount": 13,
   "pending": [
     {
       "no": "art-04",
