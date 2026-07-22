@@ -26,8 +26,8 @@ const add = (skinKey, kind, desc, slot, servedPath, sub, spec, cn, cur, o = {}) 
     spec,
     context: `game-c《STORY-POKER V2》${desc}·消费=${slot.resolver}（art-bible §3·render-only 不进 sim hash）`,
     status: o.status || 'placeholder',
-    gen: o.gen || { provider: 'pending', model: null, prompt: null, servedPath: served, localId: skinKey },
-    provenance: o.prov || { generator: 'placeholder', prompt: null, model: null, license: null, source: 'docs/design/game-c/art-bible-story-poker-v2.md', mock: false, note: '素坯占位·真图待出（照 §1 统一风格）' },
+    gen: o.gen || { provider: 'procedural', model: 'scripts/game-c-art-gen.mjs', prompt: null, servedPath: served, localId: skinKey },
+    provenance: o.prov || { generator: 'procedural-noir', prompt: null, model: 'scripts/game-c-art-gen.mjs', license: 'CC0', source: 'scripts/game-c-art-gen.mjs（夜金 SVG 程序占位）', mock: false, note: '夜金 SVG 程序占位·真图到位同 id 热替换（照 §1 统一风格）' },
     prompt: cn,
   });
 };
@@ -41,20 +41,20 @@ const vendored = (skinKey, served, license, source) => ({
 // ── ① 场景/背景 ───────────────────────────────────────────
 add('game-c/scene/backdrop', 'texture', '夜景背幕（全屏落地窗+城市夜景+景深光斑）',
   { mechanism: 'url', component: 'ThreeRenderer', field: 'setBackgroundTexture', resolver: 'renderer.setBackgroundTexture' },
-  'scene/backdrop.png', 'floor-to-ceiling window over a nocturnal city skyline, bokeh city lights, deep purple night, horizontal cinematic composition',
+  'scene/backdrop.svg', 'floor-to-ceiling window over a nocturnal city skyline, bokeh city lights, deep purple night, horizontal cinematic composition',
   { w: 2048, h: 1152, transparent: false }, '夜景背幕·落地窗+城市夜景+景深光斑', '素坯：声明式 SVG 夜景（theme STORY_BACKDROP）');
 
 // ── ② 牌桌（隐形碰撞 + 2D 贴图呢面·owner 定）────────────────
 const felt = { mechanism: 'index', component: 'Material3D', field: 'map', resolver: 'build3d table-felt Material3D.map' };
-add('game-c/table/felt-albedo', 'texture', '呢面绒布 albedo（紫绒+桌心暖光池）', felt, 'table/felt-albedo.png',
+add('game-c/table/felt-albedo', 'texture', '呢面绒布 albedo（紫绒+桌心暖光池）', felt, 'table/felt-albedo.svg',
   'purple velvet poker felt cloth, elliptical racetrack table surface, warm light pool at center, fine woven nap', { w: 1024, h: 1024, transparent: false }, '呢面 albedo·紫绒+暖光池', '素坯：Mesh3D 纯 tint(0x6a4462)+暖 point 光');
-add('game-c/table/felt-normal', 'texture', '呢面法线（天鹅绒织纹）', { ...felt, field: 'normalMap', resolver: 'build3d table-felt Material3D.normalMap' }, 'table/felt-normal.png',
+add('game-c/table/felt-normal', 'texture', '呢面法线（天鹅绒织纹）', { ...felt, field: 'normalMap', resolver: 'build3d table-felt Material3D.normalMap' }, 'table/felt-normal.svg',
   'velvet cloth weave normal map, tangent-space, subtle fabric bump', { w: 1024, h: 1024, transparent: false }, '呢面法线·天鹅绒织纹·线性', '无（当前纯 tint）');
-add('game-c/table/rail-albedo', 'texture', '木栏 albedo（胡桃木+皮革软边）', { ...felt, resolver: 'build3d table-base Material3D.map' }, 'table/rail-albedo.png',
+add('game-c/table/rail-albedo', 'texture', '木栏 albedo（胡桃木+皮革软边）', { ...felt, resolver: 'build3d table-base Material3D.map' }, 'table/rail-albedo.svg',
   'dark walnut poker table rail with padded leather bumper, warm highlight, ring strip', { w: 1024, h: 256, transparent: false }, '木栏 albedo·胡桃木+皮革软边', '素坯：Mesh3D 纯 tint(0x6f5040)');
-add('game-c/table/rail-normal', 'texture', '木栏法线（木纹+皮革缝线）', { ...felt, field: 'normalMap', resolver: 'build3d table-base Material3D.normalMap' }, 'table/rail-normal.png',
+add('game-c/table/rail-normal', 'texture', '木栏法线（木纹+皮革缝线）', { ...felt, field: 'normalMap', resolver: 'build3d table-base Material3D.normalMap' }, 'table/rail-normal.svg',
   'walnut wood grain plus leather stitch normal map, tangent-space', { w: 1024, h: 256, transparent: false }, '木栏法线·木纹+缝线', '无');
-add('game-c/table/betline', 'texture', '下注线/发牌区贴花（桌面弧线）', { mechanism: 'index', component: 'Decal3D', field: 'tex', resolver: 'Decal3D 桌面贴花·下注线' }, 'table/betline.png',
+add('game-c/table/betline', 'texture', '下注线/发牌区贴花（桌面弧线）', { mechanism: 'index', component: 'Decal3D', field: 'tex', resolver: 'Decal3D 桌面贴花·下注线' }, 'table/betline.svg',
   'subtle gold betting line arc and dealer area marking decal on felt, semi-transparent', { w: 1024, h: 512, transparent: true }, '下注线/发牌区贴花·金弧', '无');
 
 // ── ③ 全副 52 牌面 + 牌背 ─────────────────────────────────
@@ -94,30 +94,30 @@ for (const [denom, colorEn, colorCn] of CHIPS) {
 
 // ── ⑤ UI 按钮 / 框贴图（9-slice）─────────────────────────────
 const btn = (field) => ({ mechanism: 'skin', component: 'theme.buttonSkins/Button', field, resolver: `buttonSkins 或 node Button.skin·${field}` });
-add('game-c/ui/btn-fold', 'texture', '弃牌 按钮皮（哑光深皮金边）', btn('skin'), 'ui/btn-fold.png', 'matte dark leather UI button plate with thin gold rim, neutral, 9-slice', { w: 280, h: 88, transparent: true }, '弃牌按钮皮·哑光深皮金边', '素坯：Panel BTN_DARK+金边');
-add('game-c/ui/btn-call', 'texture', '跟注/过牌 按钮皮（主操作）', btn('skin'), 'ui/btn-call.png', 'matte dark leather UI button plate with gold rim, primary action, warm sheen, 9-slice', { w: 280, h: 88, transparent: true }, '跟注按钮皮·金边主操作', '素坯：Panel BTN_DARK+金边');
-add('game-c/ui/btn-raise', 'texture', '加注 按钮皮（紫辉进攻）', btn('skin'), 'ui/btn-raise.png', 'matte dark UI button plate with violet glow rim, aggressive, 9-slice', { w: 280, h: 88, transparent: true }, '加注按钮皮·紫辉', '素坯：Panel BTN_DARK+金边+press3d');
-add('game-c/ui/btn-allin', 'texture', 'All-in 按钮皮（红渐变警示）', btn('skin'), 'ui/btn-allin.png', 'glowing crimson-to-maroon UI button plate, all-in warning, bright edge, 9-slice', { w: 200, h: 72, transparent: true }, 'All-in 按钮皮·红渐变', '素坯：Panel BTN_ALLIN');
-add('game-c/ui/btn-hero', 'texture', '主键皮（开始/确认/再来·hero）', btn('skin'), 'ui/btn-hero.png', 'premium gold gilded primary CTA button plate, ornate, 9-slice', { w: 560, h: 96, transparent: true }, 'hero 主键皮·鎏金 CTA', '素坯：Button kind:hero（金渐变）');
-add('game-c/ui/btn-ghost', 'texture', '次键皮（继续/设置/返回·ghost）', btn('skin'), 'ui/btn-ghost.png', 'subtle dark ghost button plate with faint violet outline, 9-slice', { w: 560, h: 96, transparent: true }, 'ghost 次键皮·暗紫描边', '素坯：Button kind:ghost');
-add('game-c/ui/step', 'texture', '加注步进 −/+ 键皮', btn('skin'), 'ui/step.png', 'small round dark stepper button with violet rim, plus/minus', { w: 96, h: 96, transparent: true }, '步进 −/+ 键皮·圆形暗紫', '素坯：Button kind:ghost 小圆');
-add('game-c/ui/panel-frame', 'texture', '面板/席卡框（9-slice·紫金边）', { mechanism: 'skin', component: 'Panel', field: 'bgTexture/frame', resolver: 'Panel 9-slice 框皮（席卡/顶带/底池）' }, 'ui/panel-frame.png', 'ornate dark violet panel frame with gold trim, 9-slice border', { w: 320, h: 200, transparent: true }, '面板/席卡框·紫金 9-slice', '素坯：Panel 渐变+edge 令牌（数据·可不出图）');
-add('game-c/ui/avatar-frame', 'texture', '头像框（对手/主角·金环）', { mechanism: 'index', component: 'Avatar', field: 'frame', resolver: '头像外金环框（叠在 Avatar 外）' }, 'ui/avatar-frame.png', 'circular gold ornate avatar frame ring, luxury', { w: 128, h: 128, transparent: true }, '头像金环框', '素坯：Avatar 圆（bg3+line 边·无框）');
-add('game-c/ui/dealer-D', 'texture', '庄家钮 D', { mechanism: 'index', component: 'Decal3D/Sprite', field: 'tex', resolver: '庄家位圆片' }, 'ui/dealer.png', 'round dealer button token letter D, ivory disc with gold rim', { w: 128, h: 128, transparent: true }, '庄家钮 D·象牙+金边', '素坯：Badge D（LayoutNode）');
+add('game-c/ui/btn-fold', 'texture', '弃牌 按钮皮（哑光深皮金边）', btn('skin'), 'ui/btn-fold.svg', 'matte dark leather UI button plate with thin gold rim, neutral, 9-slice', { w: 280, h: 88, transparent: true }, '弃牌按钮皮·哑光深皮金边', '素坯：Panel BTN_DARK+金边');
+add('game-c/ui/btn-call', 'texture', '跟注/过牌 按钮皮（主操作）', btn('skin'), 'ui/btn-call.svg', 'matte dark leather UI button plate with gold rim, primary action, warm sheen, 9-slice', { w: 280, h: 88, transparent: true }, '跟注按钮皮·金边主操作', '素坯：Panel BTN_DARK+金边');
+add('game-c/ui/btn-raise', 'texture', '加注 按钮皮（紫辉进攻）', btn('skin'), 'ui/btn-raise.svg', 'matte dark UI button plate with violet glow rim, aggressive, 9-slice', { w: 280, h: 88, transparent: true }, '加注按钮皮·紫辉', '素坯：Panel BTN_DARK+金边+press3d');
+add('game-c/ui/btn-allin', 'texture', 'All-in 按钮皮（红渐变警示）', btn('skin'), 'ui/btn-allin.svg', 'glowing crimson-to-maroon UI button plate, all-in warning, bright edge, 9-slice', { w: 200, h: 72, transparent: true }, 'All-in 按钮皮·红渐变', '素坯：Panel BTN_ALLIN');
+add('game-c/ui/btn-hero', 'texture', '主键皮（开始/确认/再来·hero）', btn('skin'), 'ui/btn-hero.svg', 'premium gold gilded primary CTA button plate, ornate, 9-slice', { w: 560, h: 96, transparent: true }, 'hero 主键皮·鎏金 CTA', '素坯：Button kind:hero（金渐变）');
+add('game-c/ui/btn-ghost', 'texture', '次键皮（继续/设置/返回·ghost）', btn('skin'), 'ui/btn-ghost.svg', 'subtle dark ghost button plate with faint violet outline, 9-slice', { w: 560, h: 96, transparent: true }, 'ghost 次键皮·暗紫描边', '素坯：Button kind:ghost');
+add('game-c/ui/step', 'texture', '加注步进 −/+ 键皮', btn('skin'), 'ui/step.svg', 'small round dark stepper button with violet rim, plus/minus', { w: 96, h: 96, transparent: true }, '步进 −/+ 键皮·圆形暗紫', '素坯：Button kind:ghost 小圆');
+add('game-c/ui/panel-frame', 'texture', '面板/席卡框（9-slice·紫金边）', { mechanism: 'skin', component: 'Panel', field: 'bgTexture/frame', resolver: 'Panel 9-slice 框皮（席卡/顶带/底池）' }, 'ui/panel-frame.svg', 'ornate dark violet panel frame with gold trim, 9-slice border', { w: 320, h: 200, transparent: true }, '面板/席卡框·紫金 9-slice', '素坯：Panel 渐变+edge 令牌（数据·可不出图）');
+add('game-c/ui/avatar-frame', 'texture', '头像框（对手/主角·金环）', { mechanism: 'index', component: 'Avatar', field: 'frame', resolver: '头像外金环框（叠在 Avatar 外）' }, 'ui/avatar-frame.svg', 'circular gold ornate avatar frame ring, luxury', { w: 128, h: 128, transparent: true }, '头像金环框', '素坯：Avatar 圆（bg3+line 边·无框）');
+add('game-c/ui/dealer-D', 'texture', '庄家钮 D', { mechanism: 'index', component: 'Decal3D/Sprite', field: 'tex', resolver: '庄家位圆片' }, 'ui/dealer.svg', 'round dealer button token letter D, ivory disc with gold rim', { w: 128, h: 128, transparent: true }, '庄家钮 D·象牙+金边', '素坯：Badge D（LayoutNode）');
 
 // ── ⑥ 特效 VFX（owner「现在没特效·可以加」·slot 待接 Vfx3D/Billboard3D）──
 const vfx = (r) => ({ mechanism: 'index', component: 'Vfx3D/Billboard3D', field: 'tex', resolver: `VFX 贴图·${r}（待接 Vfx3D/Billboard3D 槽）` });
-add('game-c/fx/win-burst', 'texture', '特效·胜利爆花（收池/赢家）', vfx('win burst'), 'fx/win-burst.png', 'golden particle burst and light rays sprite sheet, celebratory, radial', { w: 512, h: 512, transparent: true }, '胜利爆花·金色粒子光芒', '无（待接 VFX 槽）');
-add('game-c/fx/allin-flash', 'texture', '特效·All-in 冲击闪', vfx('all-in flash'), 'fx/allin-flash.png', 'crimson shockwave ring and flash sprite, dramatic', { w: 512, h: 512, transparent: true }, 'All-in 冲击闪·红色波纹', '无（待接 VFX 槽）');
-add('game-c/fx/chip-spark', 'texture', '特效·筹码抛掷火花', vfx('chip toss spark'), 'fx/chip-spark.png', 'small gold spark and dust puff sprite for chip impact', { w: 256, h: 256, transparent: true }, '筹码抛掷火花·金色微尘', '无（待接 VFX 槽）');
-add('game-c/fx/deal-glow', 'texture', '特效·发牌/翻牌流光', vfx('card deal glow'), 'fx/deal-glow.png', 'soft violet-gold streak glow sprite for card reveal', { w: 512, h: 256, transparent: true }, '发牌/翻牌流光·紫金拖尾', '无（待接 VFX 槽）');
-add('game-c/fx/winner-ring', 'texture', '特效·赢家光环（座位高亮）', vfx('winner ring'), 'fx/winner-ring.png', 'glowing gold laurel ring halo sprite, seat highlight', { w: 512, h: 512, transparent: true }, '赢家光环·金桂环', '素坯：Panel fx glow（程序·可留）');
-add('game-c/fx/pot-shine', 'texture', '特效·底池金光', vfx('pot shine'), 'fx/pot-shine.png', 'soft golden glow and coin shimmer sprite over the pot', { w: 512, h: 256, transparent: true }, '底池金光·硬币微闪', '无（待接 VFX 槽）');
+add('game-c/fx/win-burst', 'texture', '特效·胜利爆花（收池/赢家）', vfx('win burst'), 'fx/win-burst.svg', 'golden particle burst and light rays sprite sheet, celebratory, radial', { w: 512, h: 512, transparent: true }, '胜利爆花·金色粒子光芒', '无（待接 VFX 槽）');
+add('game-c/fx/allin-flash', 'texture', '特效·All-in 冲击闪', vfx('all-in flash'), 'fx/allin-flash.svg', 'crimson shockwave ring and flash sprite, dramatic', { w: 512, h: 512, transparent: true }, 'All-in 冲击闪·红色波纹', '无（待接 VFX 槽）');
+add('game-c/fx/chip-spark', 'texture', '特效·筹码抛掷火花', vfx('chip toss spark'), 'fx/chip-spark.svg', 'small gold spark and dust puff sprite for chip impact', { w: 256, h: 256, transparent: true }, '筹码抛掷火花·金色微尘', '无（待接 VFX 槽）');
+add('game-c/fx/deal-glow', 'texture', '特效·发牌/翻牌流光', vfx('card deal glow'), 'fx/deal-glow.svg', 'soft violet-gold streak glow sprite for card reveal', { w: 512, h: 256, transparent: true }, '发牌/翻牌流光·紫金拖尾', '无（待接 VFX 槽）');
+add('game-c/fx/winner-ring', 'texture', '特效·赢家光环（座位高亮）', vfx('winner ring'), 'fx/winner-ring.svg', 'glowing gold laurel ring halo sprite, seat highlight', { w: 512, h: 512, transparent: true }, '赢家光环·金桂环', '素坯：Panel fx glow（程序·可留）');
+add('game-c/fx/pot-shine', 'texture', '特效·底池金光', vfx('pot shine'), 'fx/pot-shine.svg', 'soft golden glow and coin shimmer sprite over the pot', { w: 512, h: 256, transparent: true }, '底池金光·硬币微闪', '无（待接 VFX 槽）');
 
 // ── ⑦ 衣柜件图标 ×6（现 emoji·可升级真图标）────────────────
 const WEAR = [['earrings', '耳环', 'diamond earrings'], ['gloves', '手套', 'silk opera gloves'], ['socks', '袜', 'stockings'], ['top', '上装', 'qipao top'], ['skirt', '裙', 'silk skirt'], ['lingerie', '内衣', 'lace lingerie (tasteful, non-explicit)']];
 for (const [id, cn, en] of WEAR) {
-  add(`game-c/icon/wear-${id}`, 'texture', `衣柜图标·${cn}`, { mechanism: 'url', component: 'Image', field: 'src', resolver: `衣柜件图标·${id}（替代 emoji）` }, `icons/wear-${id}.png`,
+  add(`game-c/icon/wear-${id}`, 'texture', `衣柜图标·${cn}`, { mechanism: 'url', component: 'Image', field: 'src', resolver: `衣柜件图标·${id}（替代 emoji）` }, `icons/wear-${id}.svg`,
     `elegant icon of ${en}, gold-outlined, dark violet backdrop, tasteful boudoir item, game inventory icon`, { w: 128, h: 128, transparent: true }, `衣柜件图标·${cn}·金描边`, `素坯：emoji（${cn}）`);
 }
 
