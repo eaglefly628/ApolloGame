@@ -34,9 +34,21 @@ describe('game-a build3d — 3D 呢面牌桌（owner 2026-07-22）', () => {
     expect(FELT_RX).toBeGreaterThan(FELT_RZ); // 椭圆（长轴 x > 短轴 z）
   });
 
-  it('金边环(gold 高光) + 深胡桃桌基(wood)（夜宴金饰 + 桌身）', () => {
-    expect((bp.entities['rim']!.Material3D as { preset: string } | undefined)?.preset).toBe('gold');
-    expect((bp.entities['base']!.Material3D as { preset: string } | undefined)?.preset).toBe('wood');
+  it('呢面挂程序化绒面 surface（owner 高质量材质/高光=真图未到也有立体绒纹 + 挑光·非纯平色）', () => {
+    const mat = bp.entities['felt']!.Material3D as { surface?: { pattern: string; rough?: number; normal?: number }; roughness?: number } | undefined;
+    expect(mat?.surface?.pattern).toBe('noise'); // 细绒纹（非蛋格/划痕）
+    expect(mat?.surface?.rough).toBeGreaterThan(0); // rough 起伏=凸绒挑光/凹处哑 → 高光的机制根据
+    expect(mat?.surface?.normal).toBeGreaterThan(0); // normal 起伏=绒毛立体
+    expect(mat?.roughness).toBeLessThan(0.85); // 略降默认哑光 → 丝绒微泽吃光
+  });
+
+  it('古铜边环(copper 金属·拉丝 surface) + 深胡桃桌基(wood·木纹 surface)（owner 2026-07-22 边环改古铜金属+材质感·均非平色）', () => {
+    const rim = bp.entities['rim']!.Material3D as { preset: string; surface?: { pattern: string } } | undefined;
+    const base = bp.entities['base']!.Material3D as { preset: string; surface?: { pattern: string } } | undefined;
+    expect(rim?.preset).toBe('copper'); // owner：从亮金改古铜金属（材质球选一个衬酒红的暖金属）
+    expect(rim?.surface?.pattern).toBe('scratches'); // 金属拉丝/木纹感（"金属的木纹"）
+    expect(base?.preset).toBe('wood');
+    expect(base?.surface?.pattern).toBe('scratches'); // 木料年轮纹
   });
 
   it('无物理筹码/围栏（掼蛋纯观感·区别德州）', () => {
