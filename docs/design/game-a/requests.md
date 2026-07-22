@@ -17,6 +17,7 @@
 owner 2026-07-20 要「工作台换任一美术→游戏即时生效」。逐条接线审计（A-023）后，10/23 接上，余下有 4 类**引擎缺口**挡住接线（非游戏层能补）：
 ① **PlayingCard 满面贴图槽**：控件 `art` 槽只放**中央**立绘（四角点数花色仍是控件自画）——vendor 的 54 张整卡 SVG（各带自家点数版式）塞中央=双重点数。要「换整张牌面图」需控件支持**满面 art 模式**（cover 整卡·关角标）或牌背同款 `backArt` 的正面版。现状：牌面走控件文字面（合蓝本经典白扑克·观感 OK），SVG 牌库暂闲置。
 > **⏬ owner 2026-07-22 裁：低优先·PUI 排期做即可**——今明版本 demo **不换牌面**（文字白扑克稳用·合蓝本）。此项非急件，PUI 有余力再补满面贴图槽；game-a 侧无待办（牌面维持现状）。
+> **✅ PUI 已交 ①（2026-07-22）**：`PlayingCard.faceArt`（+`faceArtSlice` 9-slice·backArt 的正面版）——`faceUp` 时整面 cover、角标点数/中央花色全隐（关角标）、`label`/`value` 覆盖层仍在；不填=文字牌面零回归。`types.ts`+`render.ts`+catalog+`ui.md`+测试（playing-card.test.ts）。**PE-A 要换牌面时**：`faceArt=resolveAsset(牌面 key)`（sim 持 key），54 张整卡 SVG 即可上面（`art` 中央槽留给"中央剪影"用途）。②③④仍 open。
 ② **Badge/文字内联图标**：`Badge`（钱包/持有者）无 `icon` 槽（`Tag`/`Button` 有·已用）；`🏆` 暂大者前缀嵌在 `fmtHolder` 文字串里。要让奖杯/部分徽章图标可换→`Badge` 加 `icon`（照 `Tag.icon`），或提供「文字内联图标」原语。
 ③ **紧凑按钮贴皮 min-size**：`buttonSkins`（9-slice）源图 220×56·slice 16 → 对顶栏/工具条**小按钮**强制大 min-size，撑高变方 +「菜单」折行（实测回归·已撤）。要小按钮也能换皮→9-slice 支持**更小源图/可配 min** 或按钮尺寸自适应 slice。
 ④ **一次性事件态 fx 钩子**：`fx/play-glow`（出牌流光）/`fx/bomb`（炸弹闪光）需「本手出的是炸弹吗」这类**逐手事件态**触发叠层；现入场动效走 `LayoutNode.anim` 闭集、无自定义 SVG-fx 事件叠加位。要事件驱动 SVG 特效→补事件态 fx 叠层原语（或 timeline 消费）。

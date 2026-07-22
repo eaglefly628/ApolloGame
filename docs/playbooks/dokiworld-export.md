@@ -1,7 +1,6 @@
 # 操作手册 · DokiWorld 卡带导出（外部引擎交付）
 
-> 做「把我们的 game-a/b/c 交给 DokiWorld 当 iframe 卡带」这件事的**操作手册（SOP）**：从打包→本地预览→交付部署→验收，照本操作。
-> 定位：只讲**在本引擎怎么产出合规产物 + 怎么操作**；DokiWorld 官方的完整字段/消息契约以其《外部游戏交付与消息协议接入指南》为准，本手册不手抄。
+> 把 game-a/b/c 交给 DokiWorld 当 iframe 卡带的**操作手册（SOP）**：打包→本地预览→交付部署→验收，照本操作。只讲**本引擎怎么产合规产物 + 怎么操作**；DokiWorld 官方完整字段/消息契约以其《外部游戏交付与消息协议接入指南》为准，不手抄。
 
 ---
 
@@ -17,9 +16,7 @@
 | 平台按钮 | 产物 | 何时用 |
 |---|---|---|
 | 🌸 **DokiWorld 卡带（源码工程）** | 可构建 TS 工程 + `public/game.json`；`npm run build` 出 dist 再部署 | 交源码、对方要改代码/自己构建 |
-| 🌸 **DokiWorld 部署产物 dist** | 工作台直接 `vite build` 好的**独立可运行 dist 卡带**（zip 根另带预览启动器） | 落地即用、只需部署或本地 review |
-
-dist 卡带完全自包含：JS 内联 three/react/cannon，art 全打入，**零外部模块/CDN**。
+| 🌸 **DokiWorld 部署产物 dist** | 工作台直接 `vite build` 好的**独立可运行 dist 卡带**（zip 根另带预览启动器·JS 内联 three/react/cannon·art 全打入·**零外部模块/CDN**） | 落地即用、只需部署或本地 review |
 
 ## 3. 操作：怎么打包
 
@@ -51,7 +48,7 @@ README.txt
 
 ## 6. 插件自动做的（对应契约·验收对照）
 
-1. **协议桥** `src/dokiworldBridge.ts`：`protocolVersion=1`；ready/init/initialized/result/close/resize；init 全校验（source===parent·origin 钉定复检·grantedScopes 子集+去重·context schema·逐 scope 字段）；幂等 init；`initialized` Promise；standalone 惰性。
+1. **协议桥**（`tools/export-targets/dokiworld.mjs` 注入产物内 `dokiworldBridge`）：`protocolVersion=1`；ready/init/initialized/result/close/resize；init 全校验（source===parent·origin 钉定复检·grantedScopes 子集+去重·context schema·逐 scope 字段）；幂等 init；`initialized` Promise；standalone 惰性。
 2. **`game.json`**（落 dist 根 = `/games/<id>/game.json`）：id/status/entry/protocolVersion/**launchRequirements.minPlayers**（a=4·b=4·c=2）/contextScopes(required 三角色 scope)/locales(en+zh-cn)/selection。
 3. **资源展平**：vite `base:'./'` + `closeBundle` 把 `dist/games/<id>/*→dist/*`（禁嵌套 `games/game-x/`）。
 4. **计分注入**：各游戏**已有终局一次性闸**调 `host.complete(...)`，一局一次。映射（契约 §6.1）：a=胜100/负0（metrics 轮数·钱包）·b=四人名次线性0..100（第一名 win）·c=主角胜100/0（metrics 手数·筹码）。
@@ -67,8 +64,7 @@ README.txt
 | 现象 | 原因 / 处置 |
 |---|---|
 | 双击 index.html 白屏/报错 | file:// 不能加载 ES 模块 → 用 `review.bat`/`review.sh` |
-| 图片全 404 | 没挂在 `/games/<slug>/` 路径（绝对资源路径对不上）→ 用 review 脚本 |
-| 控制台 `/favicon.ico` 404 | 已在 index.html 加 `<link rel=icon href="data:,">` 消除；旧包忽略即可 |
+| 图片全 404 | 没挂在 `/games/<slug>/` 路径 → 用 review 脚本 |
 | iframe 内模块 CORS 报错 | 服务端缺 §5 的两个 CORS 头 |
 | 导出报「不支持」 | 该游戏无计分映射 → 走 requests.md 提缺口·补 `GAME_PATCHES`/`GAME_META`，绝不手改源码 |
 
@@ -78,9 +74,6 @@ README.txt
 - [ ] `game.json`：id=目录名·minPlayers 正确·locales(en+zh-cn)·required scope 只用平台支持的。
 - [ ] review 脚本能起服务、握手（真 iframe 下 ready→init→initialized）。
 - [ ] result 只一次·`normalizedScore` 为 0..100 整数（桥已保证钳位）。
-- [ ] 无缺图 404（art 全打入·favicon 已消）。
 - [ ] 部署目录 `<slug>/` 不含 review/审计脚本；服务端带 CORS 头。
 
-## 10. 查不到怎么办
-
-要支持新游戏 / 改计分映射 / 接第二个外部引擎 → `docs/workflow/requests.md` 提缺口（Lead 评审）；插件里补 `GAME_PATCHES`/`GAME_META` 或新增 `tools/export-targets/<engine>.mjs`。**绝不手改游戏源码逃生。**
+要支持新游戏/改计分映射/接第二个外部引擎 → `docs/workflow/requests.md` 提缺口（Lead 评审），补 `GAME_PATCHES`/`GAME_META` 或加 `tools/export-targets/<engine>.mjs`。**绝不手改游戏源码。**
