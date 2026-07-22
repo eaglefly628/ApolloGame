@@ -655,6 +655,11 @@
                       <button onClick="{{ artApplyBack }}" title="把已生成的替换图批量写回卡带 manifest——仅数据卡带（有 manifest）适用；game-d/g/f 等编译期游戏无 manifest，请用左侧「⬆ 上传本地图替换」写回台账" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⤵ 写回 manifest（数据卡带）</button>
                       <button onClick="{{ artSelClose }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">✕ 收起</button>
                     </div>
+                    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">
+                      <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c">上传前处理</span>
+                      <button onClick="{{ matteUpToggle }}" title="开：上传本地图前先抠图去背成真 alpha PNG 再写回（治「画进像素的假透明棋盘格」底）·抠图失败即止、不入原图" style="{{ matteUpChipStyle }}">{{ matteUpLabel }}</button>
+                      <sc-if value="{{ matteUp }}" hint-placeholder-val="{{ false }}"><sc-for list="{{ matteUpModeChips }}" as="mc" hint-placeholder-count="2"><button onClick="{{ mc.pick }}" title="{{ mc.tip }}" style="{{ mc.style }}">{{ mc.label }}</button></sc-for></sc-if>
+                    </div>
                     <sc-if value="{{ artBusyText }}" hint-placeholder-val="{{ false }}">
                       <div style="margin-top:10px;display:flex;align-items:center;gap:8px"><span style="width:16px;height:16px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e">{{ artBusyText }}</span></div>
                     </sc-if>
@@ -981,6 +986,7 @@ class Component extends DCLogic {
     mlGroups: null, mlOpen: {}, artResolve: {},  // 虚拟分组 + 占位图解析（owner 07-12）
     // 美术一站式（owner 07-12「占位/提示词/模型/替换都在工坊」）：选中行 + 风格包/文生图模型 + 忙碌标
     artSel: null, artQ: '', artSize: '', artPack: null, artProv: '', artBusy: null, artLastResult: null, artPacks: null, genProviders: null,
+    matteUp: false, matteUpMode: 'flood',   // 上传时抠图去背（owner 07-16·REQ-ASSET·工作台上传线）：开则先过 /api/assets/matte 出真 alpha
     artStyleInput: null, artStyleBusy: false,   // 本游戏整体美术风格锚（owner 07-13·拼进每张生成提示词·后端 dialectPrompt 已支持）
     artPreview: null, artZoom: 1,                // 台账美术图片预览灯箱 + 放大缩小（owner 07-13）
     tokenInput: '', genKeyInputs: {}, provKeyInputs: {}, genOptSel: {}, defaultProv: null, cfgModel: null, saving: false,
@@ -1229,14 +1235,28 @@ class Component extends DCLogic {
         const durl = String(reader.result || ''); const c = durl.indexOf(',');
         const b64 = c >= 0 ? durl.slice(c + 1) : '';
         if (!b64) { this.showToast('✕ 读图为空'); return; }
-        this.setState({ artBusy: '上传本地图替换 ' + no });
-        fetch('/api/art/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug, no, dataBase64: b64, ext }) }).then(r => r.json()).then(d => {
-          if (!d || d.success === false) throw new Error((d && d.error) || '上传失败');
-          this.setState({ artBusy: null });
-          this.showToast('✓ 本地图已写回 ' + no + '（台账更新·游戏内即用·无需 manifest）');
-          if (this.state.assetsSlug === slug) this.pickAssetGame(slug);
-        }).catch(e => { this.setState({ artBusy: null }); this.showToast('✕ ' + ((e && e.message) || '上传失败').slice(0, 80)); });
+        // 写回台账（抠图产物=真 alpha PNG → ext 强制 png）。
+        const doUpload = (upB64, upExt) => {
+          this.setState({ artBusy: '上传本地图替换 ' + no });
+          fetch('/api/art/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug, no, dataBase64: upB64, ext: upExt }) }).then(r => r.json()).then(d => {
+            if (!d || d.success === false) throw new Error((d && d.error) || '上传失败');
+            this.setState({ artBusy: null });
+            this.showToast('✓ 本地图已写回 ' + no + (this.state.matteUp ? '（已抠图去背→真 alpha）' : '') + '·台账更新·游戏内即用');
+            if (this.state.assetsSlug === slug) this.pickAssetGame(slug);
+          }).catch(e => { this.setState({ artBusy: null }); this.showToast('✕ ' + ((e && e.message) || '上传失败').slice(0, 80)); });
+        };
+        // 抠图去背（owner 07-16·REQ-ASSET·工作台上传线）：开则先过 /api/assets/matte 出真 alpha 再写回；失败即止不入原图。
+        if (this.state.matteUp) {
+          this.setState({ artBusy: '抠图去背 ' + no + '（' + this.state.matteUpMode + '）' });
+          fetch('/api/assets/matte', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dataBase64: b64, mode: this.state.matteUpMode }) }).then(r => r.json()).then(m => {
+            if (!m || m.success === false || !m.dataBase64) throw new Error((m && m.error) || '抠图失败');
+            doUpload(m.dataBase64, 'png'); // 抠图产物=真 alpha PNG
+          }).catch(e => { this.setState({ artBusy: null }); this.showToast('✕ 抠图失败：' + ((e && e.message) || '').slice(0, 70) + '（未写回·原图未动）'); });
+        } else {
+          doUpload(b64, ext);
+        }
       };
       reader.readAsDataURL(f);
     };
@@ -2473,6 +2493,15 @@ class Component extends DCLogic {
       artApplyBack: () => this.artCall('替换写回', '/api/art/replace', { slug: s.assetsSlug }),
       artUpload: () => this.artUpload(),
       uploadBtnStyle: upload.style, uploadBtnActive: upload.active,
+      // 上传时抠图去背（owner 07-16·REQ-ASSET·工作台上传线）：开则 artUpload 先过 /api/assets/matte 出真 alpha 再写回。
+      matteUp: s.matteUp,
+      matteUpToggle: () => this.setState({ matteUp: !s.matteUp }),
+      matteUpLabel: s.matteUp ? '🎯 抠图去背：开' : '🎯 抠图去背：关',
+      matteUpChipStyle: chipStyle(s.matteUp),
+      matteUpModeChips: [
+        { id: 'flood', label: 'flood 漫填', tip: '快·确定性·纯色/干净底最佳' },
+        { id: 'rembg', label: 'rembg AI', tip: '慢·复杂前景/杂底·需装 rembg' },
+      ].map(m => ({ label: m.label, tip: m.tip, style: chipStyle(s.matteUpMode === m.id), pick: () => this.setState({ matteUpMode: m.id }) })),
       artRestore: () => this.artRestore(),
       restoreBtnStyle: restore.style, restoreBtnActive: restore.active,
       // 能还原=当前行有用户写回的覆盖（上传 or 真 AI 生成·非程序化/authored/mock）→ 显「↩ 还原原图」。
