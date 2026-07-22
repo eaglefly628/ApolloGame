@@ -25,7 +25,7 @@ const RESULT_TYPE =
 // Each entry: how to add `complete?` to mount's host, and where/how to emit it once at
 // game-over, reusing the game's own terminal guard so it can't double-fire.
 const GAME_PATCHES = {
-  'game-a': (COMP) => [
+  'game-a': () => [
     {
       file: 'src/game/games/game-a/game-a.ts',
       find: `host?: { exit?: () => void; sessionIn?: GameASessionIn }`,
@@ -47,7 +47,7 @@ const GAME_PATCHES = {
       replace: `      lastSessionOut = computeSessionOut(session); // 盘/局终局：构造 SessionOut（REQ-CHARCARD·纯确定性）\n      if (!completedRun && (session.phase === 'run-won' || session.phase === 'run-lost')) {\n        completedRun = true;\n        host?.complete?.({ normalizedScore: session.phase === 'run-won' ? 100 : 0, outcome: session.phase === 'run-won' ? 'win' : 'loss', metrics: { rounds: session.round, wallet: session.wallets.hero } });\n      }`,
     },
   ],
-  'game-b': (COMP) => [
+  'game-b': () => [
     {
       file: 'src/game/games/game-b/game-b.ts',
       find: `host?: { exit?: () => void; sessionIn?: GameBSessionIn }`,
@@ -64,7 +64,7 @@ const GAME_PATCHES = {
       replace: `      if (match.over) lastSessionOut = computeSessionOut(match); // 终局回传就绪（REQ-CHARCARD·纯确定性·平台尚未消费）\n      if (match.over && !completedMatch) {\n        completedMatch = true;\n        const heroScore = match.scores[0] ?? 0;\n        const rank = [...match.scores].sort((a, b) => b - a).findIndex((s) => s === heroScore) + 1;\n        const normalizedScore = Math.round(100 * (match.scores.length - rank) / Math.max(1, match.scores.length - 1));\n        host?.complete?.({ normalizedScore, outcome: rank === 1 ? 'win' : 'loss', metrics: { rank, score: heroScore, round: match.roundNo } });\n      }`,
     },
   ],
-  'game-c': (COMP) => [
+  'game-c': () => [
     {
       file: 'src/game/games/game-c/game-c.ts',
       find: `  host?: { exit?: () => void; session?: GameCSessionIn; onSessionOut?: (out: GameCSessionOut) => void },`,
@@ -78,7 +78,7 @@ const GAME_PATCHES = {
     {
       file: 'src/game/games/game-c/game-c.ts',
       find: `    back_to_story: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); },`,
-      replace: `    back_to_story: () => { clearAiTimer(); if (host?.complete) { host?.exit?.(); } else { screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); } },`,
+      replace: `    back_to_story: () => { clearAiTimer(); if (host?.complete) { host?.exit?.(); /* 3D/audio teardown delegated to mount() cleanup when the host unmounts the iframe */ } else { screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); } },`,
     },
   ],
 };
@@ -124,6 +124,9 @@ export function createDokiWorldBridge(gameId: string): DokiWorldGameHost & { dis
     if (!d || d.type !== 'dokiworld-game-init') return;
     if (d.protocolVersion !== PROTOCOL_VERSION || d.gameId !== gameId || !d.runId) return;
     runId = d.runId;
+    // Pin to the host's real origin from the init event (opaque-origin iframes strip
+    // document.referrer, so this is the reliable source). Only '*' before init.
+    if (e.origin && e.origin !== 'null') parentOrigin = e.origin;
     post('dokiworld-game-initialized');
   };
 
@@ -238,6 +241,6 @@ export default defineConfig({
       throw new Error(
         `DokiWorld 导出暂不支持 ${ctx.gameId}：缺少该游戏的终局计分映射（需在 tools/export-targets/dokiworld.mjs 的 GAME_PATCHES 里补一条·对齐其卡片 SessionOut 终局闸）。当前支持：${Object.keys(GAME_PATCHES).join(', ')}`);
     }
-    return make(ctx.COMP);
+    return make();
   },
 };

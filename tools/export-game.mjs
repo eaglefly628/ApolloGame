@@ -322,9 +322,12 @@ async function main() {
   // ── export target plugin (adapt the plain export for a specific host engine) ──────
   if (TARGET !== 'plain') {
     const pluginPath = path.join(REPO, 'tools', 'export-targets', `${TARGET}.mjs`);
-    let plugin;
-    try { plugin = (await import(pathToFileURL(pluginPath).href)).default; }
+    try { await fs.access(pluginPath); }
     catch { console.error(`✗ unknown export target '${TARGET}' (no tools/export-targets/${TARGET}.mjs)`); process.exit(1); }
+    let plugin;
+    // Plugin file exists → surface any load-time error (syntax/runtime) rather than hiding it.
+    try { plugin = (await import(pathToFileURL(pluginPath).href)).default; }
+    catch (e) { console.error(`✗ export target '${TARGET}' failed to load:\n`, e); process.exit(1); }
     if (plugin.supportedGames && !plugin.supportedGames.includes(gameId)) {
       console.error(`✗ target '${TARGET}' does not support ${gameId} (supported: ${plugin.supportedGames.join(', ')})`);
       process.exit(1);
