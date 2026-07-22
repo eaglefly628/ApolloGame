@@ -12,7 +12,8 @@ import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assemb
 
 // 色板（STORY-POKER V2 稿·紫调绒面椭圆桌·owner 2026-07-21「美术无限逼近」）——照稿 felt radial 中亮 #7d5570 →
 //   边暗 #281620 取中值 0x5a3a52 做呢面主色（暖顶光在桌心再提亮=warm pool）；rail 稿 #6a4c38→#3e2c1e 木栏（收敛高光防塑感）。
-const FELT = 0x6a4462, FELT_LO = 0x2a1826, RAIL = 0x6f5040, RAIL_HI = 0x8a6448;
+// RAIL（桌边木料色）owner 2026-07-22「更暖更亮」：暗胡桃 0x6f5040 → 暖蜜橡 0xa5703c（提亮 + 偏橙暖·仍木料非塑）。
+const FELT = 0x6a4462, FELT_LO = 0x2a1826, RAIL = 0xa5703c, RAIL_HI = 0xc08a4e;
 
 // 桌面椭圆（跑道形·长轴 x > 短轴 z·正式赛桌比例）。felt=呢面半径；rail=围栏环半径（略大·墙贴桌缘）。
 // owner 2026-07-21「纵横比跟稿差不多·别让立绘盖住这么大桌」：短轴收窄 → 呢面更扁·屏上 ≈916×502(1.82:1)·上沿下移给立绘 bust 让位。
@@ -61,14 +62,14 @@ export function build3DTableBlueprint(): WorldBlueprint {
   //   纯 render-only（地板本就无 RigidBody3D·筹码落呢面非地板）·物理/确定性零影响。owner 目击 A/B 拍板拿掉。
 
   // 桌基（木·椭圆·圆柱×scaleX）——呢面下的桌身 = 玩家看到的「桌边缘」。
-  //   owner 2026-07-22「桌边缘用引擎 3D 木头材质球」：改用 PBR 闭集 **wood 预设**（Filament 橡木实测·roughness0.6/metalness0
-  //   =真木光响应·软反光不塑感），color 覆盖成暗胡桃 RAIL（承夜紫 noir 调）+ **surface scratches=程序化各向异性木纹**
-  //   （零美术文件·沿 v 拉长的纤维纹·渲染器据参数生成 normal+roughness DataTexture）。这是纯引擎能力重组·非新代码。
+  //   owner 2026-07-22「桌边缘用引擎 3D 木头材质球」：改用 PBR 闭集 **wood 预设**（Filament 橡木实测·metalness0=真木光响应）+
+  //   color 覆盖成暖蜜橡 RAIL + **surface scratches=程序化各向异性木纹**（零美术文件·沿 v 拉长纤维纹·渲染器生成 normal+roughness DataTexture）。
+  //   owner 2026-07-22 二次「更光亮·木色更暖更亮」：roughness 0.58→**0.4**（降糙出光泽·点光更锐高光=打蜡赛桌感）+ RAIL 提亮偏橙暖（见上 const）。
   //   REQ-C-112/113 接槽保留：map/normalMap 槽仍在——工坊生成真木纹图就绪即按 key 覆盖程序化面（可替换不丢·无真图=用木料球+程序纹）。
   entities['table-base'] = {
     Transform3D: { x: 0, y: 0.26, z: 0, scaleX: FELT_RX / FELT_RZ },
-    Mesh3D: { shape: 'cylinder', width: FELT_RZ * 2 + 0.5, height: 0.5, frontTint: RAIL, edgeTint: 0x4a3218 },
-    Material3D: { preset: 'wood', color: RAIL, roughness: 0.58, surface: { pattern: 'scratches', tiles: 4, normal: 0.5, rough: 0.35, scale: 1.0 }, map: 'game-c/table/rail-albedo', normalMap: 'game-c/table/rail-normal' },
+    Mesh3D: { shape: 'cylinder', width: FELT_RZ * 2 + 0.5, height: 0.5, frontTint: RAIL, edgeTint: 0x5e421f },
+    Material3D: { preset: 'wood', color: RAIL, roughness: 0.4, surface: { pattern: 'scratches', tiles: 4, normal: 0.5, rough: 0.35, scale: 1.0 }, map: 'game-c/table/rail-albedo', normalMap: 'game-c/table/rail-normal' },
   };
   // 呢面（椭圆·带静态碰撞体 mass0→筹码落此面堆叠不穿桌）。width=短径×2·scaleX 拉成长椭圆。
   //   REQ-C-112 接槽：Material3D 呢面贴图槽 game-c/table/felt-albedo（+normal）；无真图=回退 preset matte + color FELT（紫绒·观感近零变）。
