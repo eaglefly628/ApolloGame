@@ -76,6 +76,38 @@ describe('SettingsPanel · BYO key 设置面板', () => {
     expect(local.textContent).toContain('本地 · 免 key');
   });
 
+  it('Seedream 模型下拉：渲在 ARK key 行下方·3 档·改选随 PUT 送 genOptions（owner 2026-07-21）', async () => {
+    const view: SettingsView = {
+      ...VIEW,
+      genKeys: [{ envKey: 'ARK_API_KEY', apiKeyMasked: '', hasConfigKey: false, keyAvailable: false }],
+      genOptions: [{
+        envKey: 'ARK_SEEDREAM_MODEL', label: 'Seedream 模型版本', forKey: 'ARK_API_KEY',
+        default: 'doubao-seedream-4-0-250828', value: 'doubao-seedream-4-0-250828',
+        choices: [
+          { value: 'doubao-seedream-4-0-250828', label: 'Seedream 4.0（1K/2K/4K·稳定）' },
+          { value: 'doubao-seedream-4-5-251128', label: 'Seedream 4.5（2K/4K）' },
+          { value: 'doubao-seedream-5-0-260128', label: 'Seedream 5.0（2K/3K·最新）' },
+        ],
+      }],
+    };
+    const { calls } = mockFetch([['GET /api/settings', view], ['PUT /api/settings', { success: true, ...view }]]);
+    await act(async () => { root.render(<SettingsPanel api="" onClose={() => {}} />); });
+    await flush();
+    const sel = container.querySelector('select[aria-label="Seedream 模型版本"]') as HTMLSelectElement;
+    expect(sel).toBeTruthy();
+    expect(sel.querySelectorAll('option').length).toBe(3); // 4.0/4.5/5.0
+    expect(sel.value).toBe('doubao-seedream-4-0-250828'); // 默认生效值
+    // 改选 5.0 → 保存 → PUT 载荷带 genOptions
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!;
+    await act(async () => { setter.call(sel, 'doubao-seedream-5-0-260128'); sel.dispatchEvent(new Event('change', { bubbles: true })); });
+    const saveBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('保存设置'))!;
+    await act(async () => { saveBtn.click(); });
+    await flush();
+    const put = calls.find((c) => c.method === 'PUT');
+    expect(put).toBeTruthy();
+    expect(JSON.parse(put!.body!).genOptions).toEqual({ ARK_SEEDREAM_MODEL: 'doubao-seedream-5-0-260128' });
+  });
+
   it('填 key → 测试连接：先 PUT 落盘（仅 dirty 项送 apiKey）再 POST test，显示结果', async () => {
     const { calls } = mockFetch([
       ['GET /api/settings', VIEW],

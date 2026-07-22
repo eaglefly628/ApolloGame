@@ -46,10 +46,19 @@ export interface SettingsGenKey {
   hasConfigKey: boolean;
   keyAvailable: boolean;
 }
+export interface SettingsGenOption {
+  envKey: string;
+  label: string;
+  forKey?: string | null; // 归属哪个生成 key（UI 把下拉排在该 key 行下方）
+  choices: { value: string; label: string }[];
+  value: string; // 当前生效值
+  default: string;
+}
 export interface SettingsView {
   providers: SettingsProvider[];
   default?: string | null;
   genKeys?: SettingsGenKey[];
+  genOptions?: SettingsGenOption[];
 }
 
 type TestState = { k: 'idle' } | { k: 'testing' } | { k: 'ok' } | { k: 'fail'; error: string };
@@ -70,6 +79,7 @@ export function SettingsPanel({ api, onClose, onSaved }: {
   const [test, setTest] = useState<Record<string, TestState>>({});
   const [genInputs, setGenInputs] = useState<Record<string, string>>({}); // 美术生成 key（DASHSCOPE/TRIPO/MESHY）新填明文
   const [genDirty, setGenDirty] = useState<Record<string, boolean>>({});
+  const [genOpts, setGenOpts] = useState<Record<string, string>>({}); // 生成选项当前选值（如 Seedream 模型版本）
   const [saving, setSaving] = useState(false);
   const [saveErr, setSaveErr] = useState<string | null>(null);
   const [savedTick, setSavedTick] = useState(0); // 保存成功一闪提示
@@ -82,6 +92,7 @@ export function SettingsPanel({ api, onClose, onSaved }: {
     setKeyDirty({});
     setGenInputs({});
     setGenDirty({});
+    setGenOpts(Object.fromEntries((v.genOptions ?? []).map((o) => [o.envKey, o.value])));
   }, []);
 
   useEffect(() => {
@@ -104,8 +115,14 @@ export function SettingsPanel({ api, onClose, onSaved }: {
     }
     const genKeys: Record<string, string> = {};
     for (const g of view?.genKeys ?? []) if (genDirty[g.envKey]) genKeys[g.envKey] = genInputs[g.envKey] ?? '';
-    return { providers, default: defaultId, ...(Object.keys(genKeys).length ? { genKeys } : {}) };
-  }, [view, keyDirty, keyInputs, models, defaultId, genDirty, genInputs]);
+    const genOptions: Record<string, string> = {};
+    for (const o of view?.genOptions ?? []) if (genOpts[o.envKey]) genOptions[o.envKey] = genOpts[o.envKey]!;
+    return {
+      providers, default: defaultId,
+      ...(Object.keys(genKeys).length ? { genKeys } : {}),
+      ...(Object.keys(genOptions).length ? { genOptions } : {}),
+    };
+  }, [view, keyDirty, keyInputs, models, defaultId, genDirty, genInputs, genOpts]);
 
   const persist = useCallback(async (): Promise<boolean> => {
     setSaving(true);
@@ -272,22 +289,38 @@ export function SettingsPanel({ api, onClose, onSaved }: {
           <div style={{ marginTop: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: SHELL.violet, marginBottom: 4 }}>🎨 美术生成 API Key</div>
             <div style={{ fontSize: 11.5, color: SHELL.dim, lineHeight: 1.6, marginBottom: 8 }}>
-              万相文生图（DASHSCOPE·千问聊天 key 可复用不必重填）/ Tripo / Meshy 文生 3D。没配 key 时生成自动走
-              mock 占位并附探针说明，绝不静默顶替。
+              万相文生图（DASHSCOPE·千问聊天 key 可复用不必重填）/ Tripo / Meshy 文生 3D / Seedream（字节火山方舟·
+              key 下方可选模型版本 4.0/4.5/5.0）。没配 key 时生成自动走 mock 占位并附探针说明，绝不静默顶替。
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(view.genKeys ?? []).map((g) => (
-                <div key={g.envKey} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${SHELL.line}`, borderRadius: 8 }}>
-                  <code style={{ fontSize: 11, color: SHELL.sub, minWidth: 160 }}>{g.envKey}</code>
-                  <input
-                    type="password"
-                    value={genInputs[g.envKey] ?? ''}
-                    onChange={(e) => { setGenInputs((m) => ({ ...m, [g.envKey]: e.target.value })); setGenDirty((m) => ({ ...m, [g.envKey]: true })); }}
-                    placeholder={g.apiKeyMasked ? `已存：${g.apiKeyMasked}（留空=不改）` : (g.keyAvailable ? '已由环境/千问 key 提供（可覆盖）' : '粘贴 API Key')}
-                    style={{ flex: 1, padding: '7px 10px', background: SHELL.bg2, color: SHELL.text, border: `1px solid ${SHELL.line}`, borderRadius: 6, fontSize: 12, outline: 'none' }}
-                  />
-                  <span style={{ fontSize: 11, color: g.keyAvailable ? SHELL.ok : SHELL.dim }}>{g.keyAvailable ? '● 可用' : '○ 未配'}</span>
-                </div>
+                <React.Fragment key={g.envKey}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${SHELL.line}`, borderRadius: 8 }}>
+                    <code style={{ fontSize: 11, color: SHELL.sub, minWidth: 160 }}>{g.envKey}</code>
+                    <input
+                      type="password"
+                      value={genInputs[g.envKey] ?? ''}
+                      onChange={(e) => { setGenInputs((m) => ({ ...m, [g.envKey]: e.target.value })); setGenDirty((m) => ({ ...m, [g.envKey]: true })); }}
+                      placeholder={g.apiKeyMasked ? `已存：${g.apiKeyMasked}（留空=不改）` : (g.keyAvailable ? '已由环境/千问 key 提供（可覆盖）' : '粘贴 API Key')}
+                      style={{ flex: 1, padding: '7px 10px', background: SHELL.bg2, color: SHELL.text, border: `1px solid ${SHELL.line}`, borderRadius: 6, fontSize: 12, outline: 'none' }}
+                    />
+                    <span style={{ fontSize: 11, color: g.keyAvailable ? SHELL.ok : SHELL.dim }}>{g.keyAvailable ? '● 可用' : '○ 未配'}</span>
+                  </div>
+                  {/* 该 key 关联的生成选项（如 Seedream 模型版本）→ 下拉排在 key 行正下方（owner 2026-07-21） */}
+                  {(view.genOptions ?? []).filter((o) => o.forKey === g.envKey).map((o) => (
+                    <label key={o.envKey} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 12px 6px 24px' }}>
+                      <span style={{ fontSize: 11.5, color: SHELL.sub, minWidth: 148 }}>{o.label}</span>
+                      <select
+                        aria-label={o.label}
+                        value={genOpts[o.envKey] ?? o.value}
+                        onChange={(e) => setGenOpts((m) => ({ ...m, [o.envKey]: e.target.value }))}
+                        style={{ flex: 1, padding: '6px 10px', background: SHELL.bg2, color: SHELL.text, border: `1px solid ${SHELL.line}`, borderRadius: 6, fontSize: 12, outline: 'none' }}
+                      >
+                        {o.choices.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                      </select>
+                    </label>
+                  ))}
+                </React.Fragment>
               ))}
             </div>
           </div>

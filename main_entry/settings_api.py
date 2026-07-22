@@ -4,7 +4,7 @@ import json
 import urllib.request
 import urllib.parse
 
-from .config import GEN_KEY_LABELS, GEN_KEY_NAMES, _config_api_key, _config_model, _load_config, _save_config
+from .config import GEN_KEY_LABELS, GEN_KEY_NAMES, GEN_OPTIONS, gen_option_choice, _config_api_key, _config_model, _load_config, _save_config
 from .llm_transport import LLM_PROVIDERS, _provider_request, get_api_key
 from .mock import _mock_enabled
 
@@ -57,7 +57,14 @@ def _settings_view() -> dict:
             'hasConfigKey': cfg_v is not None,
             'keyAvailable': bool(os.environ.get(name) or cfg_v or (name == 'DASHSCOPE_API_KEY' and _config_api_key('qwen'))),
         })
-    return {'providers': providers, 'default': cfg.get('default'), 'genKeys': gen_keys}
+    gen_options = []
+    for name, spec in GEN_OPTIONS.items():
+        gen_options.append({
+            'envKey': name, 'label': spec['label'], 'forKey': spec.get('forKey'),
+            'choices': spec['choices'], 'default': spec['default'],
+            'value': gen_option_choice(name, cfg),  # 当前生效值（在册·否则 default）
+        })
+    return {'providers': providers, 'default': cfg.get('default'), 'genKeys': gen_keys, 'genOptions': gen_options}
 
 def handle_settings_get() -> dict:
     return _settings_view()
@@ -95,6 +102,19 @@ def handle_settings_put(body: dict) -> dict:
                 else:
                     cur.pop(name, None)
         cfg['genKeys'] = cur
+    opt_in = body.get('genOptions')
+    if isinstance(opt_in, dict):  # 生成选项（如 Seedream 模型版本）：闭集校验·在册才存·非法/空=清除回退 default
+        cur = cfg.get('genOptions') if isinstance(cfg.get('genOptions'), dict) else {}
+        cur = dict(cur)
+        for name, spec in GEN_OPTIONS.items():
+            if name in opt_in:
+                v = opt_in.get(name)
+                valid = {c['value'] for c in spec['choices']}
+                if isinstance(v, str) and v in valid:
+                    cur[name] = v
+                else:
+                    cur.pop(name, None)
+        cfg['genOptions'] = cur
     if 'default' in body:
         d = body.get('default')
         if isinstance(d, str) and d:

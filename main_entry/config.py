@@ -69,9 +69,35 @@ GEN_KEY_LABELS = {
     'PIXVERSE_API_KEY': '爱诗 PixVerse（文生视频·owner 07-12）',
 }
 
+# 生成选项（下拉·非 key·数据驱动·owner 2026-07-21）：某 provider 的可选参数（如模型版本），
+# 设置面板渲染成下拉排在 forKey 那行下方；选中值经 _gen_env 注成同名 env（ai-gen.mjs 读它）。
+# 加新选项只改这里：envKey=注入的环境变量名·forKey=归属哪个 key·choices=闭集（value 在册才注入·防注入乱值）。
+GEN_OPTIONS = {
+    'ARK_SEEDREAM_MODEL': {
+        'label': 'Seedream 模型版本', 'forKey': 'ARK_API_KEY',
+        'default': 'doubao-seedream-4-0-250828',
+        'choices': [
+            {'value': 'doubao-seedream-4-0-250828', 'label': 'Seedream 4.0（1K/2K/4K·稳定）'},
+            {'value': 'doubao-seedream-4-5-251128', 'label': 'Seedream 4.5（2K/4K）'},
+            {'value': 'doubao-seedream-5-0-260128', 'label': 'Seedream 5.0（2K/3K·最新）'},
+        ],
+    },
+}
+
+def gen_option_choice(name: str, cfg: dict) -> str:
+    """某生成选项当前生效值（config.genOptions 里在册的 value·否则回退 default）。UI/env 共用。"""
+    spec = GEN_OPTIONS.get(name)
+    if not spec:
+        return ''
+    go = cfg.get('genOptions') if isinstance(cfg.get('genOptions'), dict) else {}
+    v = go.get(name)
+    valid = {c['value'] for c in spec['choices']}
+    return v if isinstance(v, str) and v in valid else spec['default']
+
 def _gen_env() -> dict:
     """美术生成子进程的 env：进程 env + 设置面板配置的生成 key（config.genKeys；千问缺省回退
-    providers.qwen.apiKey——DashScope 一 key 两用）。env 已有的**不覆盖**（显式 env 优先）。key 绝不打印/落日志。"""
+    providers.qwen.apiKey——DashScope 一 key 两用）+ 生成选项（config.genOptions·如 Seedream 模型版本）。
+    env 已有的**不覆盖**（显式 env 优先）。key 绝不打印/落日志。"""
     env = dict(os.environ)
     cfg = _load_config()
     gk = cfg.get('genKeys') if isinstance(cfg.get('genKeys'), dict) else {}
@@ -83,4 +109,7 @@ def _gen_env() -> dict:
         q = _config_api_key('qwen')
         if q:
             env['DASHSCOPE_API_KEY'] = q
+    for name in GEN_OPTIONS:  # 生成选项注成同名 env（仅闭集在册值·env 已设不覆盖）
+        if not env.get(name):
+            env[name] = gen_option_choice(name, cfg)
     return env
