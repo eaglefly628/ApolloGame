@@ -7,6 +7,7 @@
  "rows": [
   {
    "no": "art-001",
+   "skinKey": "game-c/scene/backdrop",
    "desc": "夜景背幕（全屏落地窗+城市夜景+景深光斑）",
    "kind": "texture",
    "ref": {
@@ -52,6 +53,7 @@
   },
   {
    "no": "art-002",
+   "skinKey": "game-c/table/felt-albedo",
    "desc": "呢面绒布 albedo（紫绒+桌心暖光池）",
    "kind": "texture",
    "ref": {
@@ -97,6 +99,7 @@
   },
   {
    "no": "art-003",
+   "skinKey": "game-c/table/felt-normal",
    "desc": "呢面法线（天鹅绒织纹）",
    "kind": "texture",
    "ref": {
@@ -142,6 +145,7 @@
   },
   {
    "no": "art-004",
+   "skinKey": "game-c/table/rail-albedo",
    "desc": "木栏 albedo（胡桃木+皮革软边）",
    "kind": "texture",
    "ref": {
@@ -187,6 +191,7 @@
   },
   {
    "no": "art-005",
+   "skinKey": "game-c/table/rail-normal",
    "desc": "木栏法线（木纹+皮革缝线）",
    "kind": "texture",
    "ref": {
@@ -232,6 +237,7 @@
   },
   {
    "no": "art-006",
+   "skinKey": "game-c/table/betline",
    "desc": "下注线/发牌区贴花（桌面弧线）",
    "kind": "texture",
    "ref": {
@@ -277,6 +283,7 @@
   },
   {
    "no": "art-007",
+   "skinKey": "chip/1-white",
    "desc": "筹码·1（白·顶+侧面）",
    "kind": "texture",
    "ref": {
@@ -322,6 +329,7 @@
   },
   {
    "no": "art-008",
+   "skinKey": "chip/5-red",
    "desc": "筹码·5（红·顶+侧面）",
    "kind": "texture",
    "ref": {
@@ -367,6 +375,7 @@
   },
   {
    "no": "art-009",
+   "skinKey": "chip/10-blue",
    "desc": "筹码·10（蓝·顶+侧面）",
    "kind": "texture",
    "ref": {
@@ -412,6 +421,7 @@
   },
   {
    "no": "art-010",
+   "skinKey": "chip/25-green",
    "desc": "筹码·25（绿·顶+侧面）",
    "kind": "texture",
    "ref": {
@@ -457,6 +467,7 @@
   },
   {
    "no": "art-011",
+   "skinKey": "chip/50-orange",
    "desc": "筹码·50（橙·顶+侧面）",
    "kind": "texture",
    "ref": {
@@ -502,6 +513,7 @@
   },
   {
    "no": "art-012",
+   "skinKey": "chip/100-black",
    "desc": "筹码·100（黑·顶+侧面）",
    "kind": "texture",
    "ref": {
@@ -547,6 +559,7 @@
   },
   {
    "no": "art-013",
+   "skinKey": "chip/500-purple",
    "desc": "筹码·500（紫·顶+侧面）",
    "kind": "texture",
    "ref": {
@@ -592,6 +605,7 @@
   },
   {
    "no": "art-014",
+   "skinKey": "chip/1000-yellow",
    "desc": "筹码·1000（黄·顶+侧面）",
    "kind": "texture",
    "ref": {
@@ -637,6 +651,7 @@
   },
   {
    "no": "art-015",
+   "skinKey": "chip/5000-gray",
    "desc": "筹码·5000（灰·顶+侧面）",
    "kind": "texture",
    "ref": {
@@ -682,6 +697,7 @@
   },
   {
    "no": "art-016",
+   "skinKey": "game-c/ui/btn-fold",
    "desc": "弃牌 按钮皮（哑光深皮金边）",
    "kind": "texture",
    "ref": {
@@ -727,6 +743,7 @@
   },
   {
    "no": "art-017",
+   "skinKey": "game-c/ui/btn-call",
    "desc": "跟注/过牌 按钮皮（主操作）",
    "kind": "texture",
    "ref": {
@@ -772,6 +789,7 @@
   },
   {
    "no": "art-018",
+   "skinKey": "game-c/ui/btn-raise",
    "desc": "加注 按钮皮（紫辉进攻）",
    "kind": "texture",
    "ref": {
@@ -817,6 +835,7 @@
   },
   {
    "no": "art-019",
+   "skinKey": "game-c/ui/btn-allin",
    "desc": "All-in 按钮皮（红渐变警示）",
    "kind": "texture",
    "ref": {
@@ -862,6 +881,7 @@
   },
   {
    "no": "art-020",
+   "skinKey": "game-c/ui/btn-hero",
    "desc": "主键皮（开始/确认/再来·hero）",
    "kind": "texture",
    "ref": {
@@ -907,6 +927,7 @@
   },
   {
    "no": "art-021",
+   "skinKey": "game-c/ui/btn-ghost",
    "desc": "次键皮（继续/设置/返回·ghost）",
    "kind": "texture",
    "ref": {
@@ -952,6 +973,7 @@
   },
   {
    "no": "art-022",
+   "skinKey": "game-c/ui/step",
    "desc": "加注步进 −/+ 键皮",
    "kind": "texture",
    "ref": {
@@ -997,6 +1019,7 @@
   },
   {
    "no": "art-023",
+   "skinKey": "game-c/ui/panel-frame",
    "desc": "面板/席卡框（9-slice·紫金边）",
    "kind": "texture",
    "ref": {
@@ -1042,6 +1065,7 @@
   },
   {
    "no": "art-024",
+   "skinKey": "game-c/ui/avatar-frame",
    "desc": "头像框（对手/主角·金环）",
    "kind": "texture",
    "ref": {
@@ -1087,6 +1111,7 @@
   },
   {
    "no": "art-025",
+   "skinKey": "game-c/ui/dealer-D",
    "desc": "庄家钮 D",
    "kind": "texture",
    "ref": {
@@ -1132,6 +1157,7 @@
   },
   {
    "no": "art-026",
+   "skinKey": "game-c/fx/win-burst",
    "desc": "特效·胜利爆花（收池/赢家）",
    "kind": "texture",
    "ref": {
@@ -1177,6 +1203,7 @@
   },
   {
    "no": "art-027",
+   "skinKey": "game-c/fx/allin-flash",
    "desc": "特效·All-in 冲击闪",
    "kind": "texture",
    "ref": {
@@ -1222,6 +1249,7 @@
   },
   {
    "no": "art-028",
+   "skinKey": "game-c/fx/chip-spark",
    "desc": "特效·筹码抛掷火花",
    "kind": "texture",
    "ref": {
@@ -1267,6 +1295,7 @@
   },
   {
    "no": "art-029",
+   "skinKey": "game-c/fx/deal-glow",
    "desc": "特效·发牌/翻牌流光",
    "kind": "texture",
    "ref": {
@@ -1312,6 +1341,7 @@
   },
   {
    "no": "art-030",
+   "skinKey": "game-c/fx/winner-ring",
    "desc": "特效·赢家光环（座位高亮）",
    "kind": "texture",
    "ref": {
@@ -1357,6 +1387,7 @@
   },
   {
    "no": "art-031",
+   "skinKey": "game-c/fx/pot-shine",
    "desc": "特效·底池金光",
    "kind": "texture",
    "ref": {
@@ -1402,6 +1433,7 @@
   },
   {
    "no": "art-032",
+   "skinKey": "game-c/icon/wear-earrings",
    "desc": "衣柜图标·耳环",
    "kind": "texture",
    "ref": {
@@ -1447,6 +1479,7 @@
   },
   {
    "no": "art-033",
+   "skinKey": "game-c/icon/wear-gloves",
    "desc": "衣柜图标·手套",
    "kind": "texture",
    "ref": {
@@ -1492,6 +1525,7 @@
   },
   {
    "no": "art-034",
+   "skinKey": "game-c/icon/wear-socks",
    "desc": "衣柜图标·袜",
    "kind": "texture",
    "ref": {
@@ -1537,6 +1571,7 @@
   },
   {
    "no": "art-035",
+   "skinKey": "game-c/icon/wear-top",
    "desc": "衣柜图标·上装",
    "kind": "texture",
    "ref": {
@@ -1582,6 +1617,7 @@
   },
   {
    "no": "art-036",
+   "skinKey": "game-c/icon/wear-skirt",
    "desc": "衣柜图标·裙",
    "kind": "texture",
    "ref": {
@@ -1627,6 +1663,7 @@
   },
   {
    "no": "art-037",
+   "skinKey": "game-c/icon/wear-lingerie",
    "desc": "衣柜图标·内衣",
    "kind": "texture",
    "ref": {

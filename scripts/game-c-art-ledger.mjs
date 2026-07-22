@@ -19,6 +19,7 @@ const add = (skinKey, kind, desc, slot, servedPath, sub, spec, cn, cur, o = {}) 
   const served = `/games/game-c/art/${servedPath}`;
   rows.push({
     no: `art-${String(++n).padStart(3, '0')}`,
+    skinKey,                         // 顶层消费槽 id（art-replace 写回时 if(row.skinKey) 登记别名 id=skinKey → 游戏按此 resolve·REQ-C-112）
     desc, kind,
     ref: { mechanism: slot.mechanism, component: slot.component, field: slot.field, resolver: slot.resolver, servedPath: served },
     query: `${sub}, ${P}, isolated subject${spec.transparent ? ', transparent background' : ''}, no watermark`,

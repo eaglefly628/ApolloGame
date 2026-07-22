@@ -8,7 +8,7 @@
 
 ## 待处理
 
-### REQ-C-112 · [owner 2026-07-22 实测] 生成的场景美术「无法写回游戏」——37 行素坯无 skinKey·游戏无消费槽 · 提出人 owner（工坊真调 Seedream 出图后）→ Lead 诊断落单 → **指派 PE-C（先裁设计岔口·再定要不要接线）** · status: open · 优先级: P2（美术生产链尾·不阻塞玩法/S4）· 类型: 游戏层美术消费接线（PE-C 域·game-c.ts/theme.ts/blueprint）
+### REQ-C-112 · [owner 2026-07-22 实测] 生成的场景美术「无法写回游戏」——37 行素坯无 skinKey·游戏无消费槽 · 提出人 owner（工坊真调 Seedream 出图后）→ Lead 诊断落单 → 指派 PE-C · status: ✅ **裁定=要·背幕槽已接（PE-C 2026-07-22）·余槽 follow-on** · 优先级: P2（美术生产链尾·不阻塞玩法/S4）· 类型: 游戏层美术消费接线（PE-C 域·game-c.ts/theme.ts/blueprint）
 > **owner 实测现象**：Seedream 真调已通、生成成功；但 game-c 美术库里那些 `art-001~037` 场景图**写不回游戏**（生成物落 `public/games/game-c/art/gen/art-NN.png` + 登记 `gen/art-NN`，但游戏里看不到）。
 > **Lead 诊断（根因·非管线 bug）**：① game-c 是编译期游戏（无 manifest）→「⤵ 写回 manifest（数据卡带）」按钮不适用（会报错）。② 编译期游戏的写回靠 **skinKey 别名**（`art-replace` 生成时 `if(row.skinKey) 登记别名 id=skinKey` → 游戏按 skinKey resolve 上画面）——但 game-c 台账 **37 行全部 `skinKey:null`**，故生成物无游戏侧消费槽。③ game-c 背景是 `theme.ts` **程序化画的**（紫黑渐变+落地窗+暖光池·照 .dc.html 设计稿逐层复刻），**不是图片槽**；牌面/筹码是 vendor 直引（`PlayingCard.art`·工作正常）。所以这 37 张素坯是"悬空"行·游戏没有任何地方引用。
 > **⚖ 先裁设计岔口（PE-C/GD-C 定·别直接接线）**：game-c **到底要不要用生成的场景图**？
@@ -16,6 +16,13 @@
 > - **要**（想用生成图当背景/场景元素）→ PE-C 加消费槽：给相关台账行配 skinKey + game-c 场景层改成「有生成图用生成图·无则回退现程序化背景」（如 mountHost sceneBackground 吃 skin），并回填 gdd 美术规格。**红线**：不删现程序化背景兜底·render-only·蓝图/确定性零影响。
 > **关联**：同源于 REQ-C-111（PE-C 07-22 已清的 vendor.test 红=28 素坯塞索引未接游戏）——素坯"生成了但没接"是同一问题的两面。建议 PE-C 与 GD-C 一并厘清 game-c 美术消费规范（哪些槽真进游戏）。
 > **非管线 bug 声明（Lead）**：工坊/art-replace/写回机制本身工作正常（对数据卡带 manifest 路 + 编译期 skinKey 路都通）；game-c 缺的是**游戏侧消费接线**，属 game-c 游戏代码=PE-C 域。owner 已知情选「派 PE-C」（2026-07-22）。
+>
+> **⚖ PE-C 裁定＝要（2026-07-22·owner「处理这个需求」）**：owner 全程诉求=生成美术要能上画（「无限逼近」「AI 出图」「所有能替换的全列出来」），故**接消费槽**（数据接口=skinKey 别名·manifesto 合规）而非退役素坯；且带程序化兜底=**纯期权上行**（无真图→观感与现在逐字节一致；有真图→热替换），无任何回归风险，正合 Lead 红线。**不选「不要」**：那会与 owner 明确方向相悖，且素坯已生成、退役=浪费。
+> **✅ 回执（PE-C 2026-07-22·背幕槽落地 + 全库 skinKey 补齐）**：
+> - **根因两处齐修**：① `scripts/game-c-art-ledger.mjs` `add()` 补发**顶层 `skinKey` 字段**（原只落 `gen.localId`/`placeholder.instances`·故 art-replace 的 `if(row.skinKey)` 从不触发＝37 行全 null 的真因）——重跑后 37 行全带 skinKey·唯一（28 生成槽 `game-c/*` + 9 vendor 筹码 `chip/*`）。② `src/games/game-c/art-overrides.ts`（新·mirror game-g `art-textures`）：覆盖注册表 + `backdropUri()=textureOverrideUri('game-c/scene/backdrop') ?? STORY_BACKDROP` + `loadArtOverrides()`（**只收 `game-c/` 命名空间 + 正向 AI 信号** source `gen:`/`vendored` 或 tags `skin`·程序占位 `scene/backdrop` 因 id 无前缀+无顶层 source 天然不进）。`game-c.ts:57` 背幕改走 `backdropUri()` + mount 期异步拉索引热替换（disposed 守卫·headless 无 fetch 空安全）。
+> - **验证**：art-overrides.test 6 例（无覆盖=STORY_BACKDROP 回退 / 登记即换 / headless 空安全 / 37 行 skinKey 全带唯一 / 命名空间分布 / 背幕 art-001）；合成索引端到端跑通=真 AI 别名 `game-c/scene/backdrop` 被收、程序占位 `scene/backdrop` 与 vendor `chip/1-white` 正确排除、`backdropUri()` 热切到 gen PNG。tsc+game-c vitest 132 例全绿。
+> - **follow-on（同模式·各自 `xxxUri()` 消费点·art-bible §5.1 登记）**：`game-c/table/felt-albedo|rail-albedo`→`Material3D.map`（**P3D 域·改前知会 P3D**）；`game-c/ui/btn-*`→`buttonSkins`（PUI 提供皮机制·PE-C 接键·owner「按钮变贴图」）；`game-c/icon/wear-*`→衣柜 `Image.src`（现 emoji）；`game-c/fx/*`→`Vfx3D`（未接）。均非阻塞·owner 排期再接。
+> - **GD-C 协同**：美术消费规范（哪些槽真进游戏）已在 art-bible §5.1 落档·背幕为首个 live 样板；余槽接线随各消费点 follow-on。
 
 ### REQ-C-105 · [P0 复查打回] betting-engine 边池结算筹码蒸发（大盲短缴 all-in + 弃牌）· [2026-07-17] · 提出人 GD-C（S4 复查门对抗核证）→ 指派 PE-C 修 · status: **✅ 修毕（PE-C 2026-07-18·守恒fuzz+独立对抗子代理 CONFIRMED-CLEAN·复查门终签待 GD-C/owner）** · 优先级: P0（阻塞 S4 放行·M2 前必修）· 类型: 游戏层 TS 正确性 bug（capability-plan §4-b）
 > **S4 复查门裁定=FAIL 打回**（复查人 GD-C≠施工 PE-C）。50 测独立复跑绿，但均为**场景测、未覆盖守恒 property**——对抗性 fuzz 一跑即现。

@@ -13,7 +13,8 @@ import { mountUI } from '@ui/components/index.js';
 import type { MountHandle, HandlerMap } from '@ui/components/index.js';
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
-import { FIELD_W, FIELD_H, ROOM_BG, WRAPPER_BG, GAME_C_THEME, OPPONENT_ANCHORS, STORY_BACKDROP } from './theme.js';
+import { FIELD_W, FIELD_H, ROOM_BG, WRAPPER_BG, GAME_C_THEME, OPPONENT_ANCHORS } from './theme.js';
+import { backdropUri, registerTextureOverrides, loadArtOverrides } from './art-overrides.js';
 import { type Lang, t, handName } from './strings.js';
 import { buildTable, buildMenu, type TableView, type SeatView, type WardrobeView, type MenuView } from './hud.js';
 import { CLOTHING_ITEMS } from './wardrobe.js';
@@ -53,8 +54,16 @@ export function mount(
   engine.load(build3DTableBlueprint());
   const renderer = new ThreeRenderer({ width: FIELD_W, height: FIELD_H, background: 0x140d16, antialias: true, dprCap: 1.5, shadowMapSize: 1024 });
   engine.attachRenderer(renderer, scene);
-  // 夜景电影化背幕（STORY-POKER V2 稿·落地窗+城市散景·声明式 SVG 贴图·3D 呢面桌背后·render-only）。
-  renderer.setBackgroundTexture(STORY_BACKDROP);
+  // 夜景电影化背幕（STORY-POKER V2 稿·落地窗+城市散景·3D 呢面桌背后·render-only）。
+  //   REQ-C-112（owner 2026-07-22）：背幕=可换皮消费槽 game-c/scene/backdrop——先上程序化 STORY_BACKDROP（观感零变），
+  //   mount 期异步拉本地美术索引，若工坊已按 skinKey 别名生成真背幕图则热替换上画（无真图=留程序化）。render-only·不进 sim。
+  let disposed = false;
+  renderer.setBackgroundTexture(backdropUri());
+  void loadArtOverrides('game-c').then((tex) => {
+    if (disposed) return;
+    registerTextureOverrides(tex);
+    renderer.setBackgroundTexture(backdropUri()); // 真图就绪→热替换；否则仍是 STORY_BACKDROP
+  });
   let running = false;
   const start3D = (): void => { if (!running) { engine.start(); running = true; } };
   const stop3D = (): void => { if (running) { engine.stop(); running = false; } };
@@ -285,5 +294,5 @@ export function mount(
   void host; // launcher 壳退出钩子（游戏内经 ⚙ 回主菜单；壳级退出由 launcher overlay 菜单接）
 
   ui = mountUI(overlayHost, buildMenu(menuView()), handlers, GAME_C_THEME);
-  return () => { clearAiTimer(); stop3D(); chip3d.dispose(); gcAudio.dispose(); ui?.(); skel.teardown(); };
+  return () => { disposed = true; clearAiTimer(); stop3D(); chip3d.dispose(); gcAudio.dispose(); ui?.(); skel.teardown(); };
 }
