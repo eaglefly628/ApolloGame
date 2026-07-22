@@ -24,6 +24,8 @@
 > - **follow-on（同模式·各自 `xxxUri()` 消费点·art-bible §5.1 登记）**：`game-c/table/felt-albedo|rail-albedo`→`Material3D.map`（**P3D 域·改前知会 P3D**）；`game-c/ui/btn-*`→`buttonSkins`（PUI 提供皮机制·PE-C 接键·owner「按钮变贴图」）；`game-c/icon/wear-*`→衣柜 `Image.src`（现 emoji）；`game-c/fx/*`→`Vfx3D`（未接）。均非阻塞·owner 排期再接。
 > - **GD-C 协同**：美术消费规范（哪些槽真进游戏）已在 art-bible §5.1 落档·背幕为首个 live 样板；余槽接线随各消费点 follow-on。
 > **⚠ 交付前端到端目击补修（PE-C 2026-07-22·owner「先试背景」前自测）**：真跑 vite preview + 注入测试图跑通链路——控制台确认 fetch→过滤→`setBackgroundTexture(gen)` 三步全触发，但**背幕屏上无变化**。根因=`build3d.ts` 那块 16×12 不透明暗地板在陡俯视下铺满全屏、把 `setBackgroundTexture` 的场景背幕整个压在下面（**这才是 owner「场景图写不回游戏」看不见的最终表现根因·skinKey 只是链路前半**）。**修**：拿掉地板（owner A/B 目击拍板·纯 render-only·地板本无 RigidBody3D·筹码落呢面）→ 背幕（程序化夜景/生成图）填满桌子四周电影感环境。注入 PNG 测试图验证=背幕真换上（magenta 目击）。**教训**：接了消费槽 ≠ 上屏——消费点得在相机可见面上，交付前必真跑目击。
+> **🔀 报 PST/主程·平台 UX 坑（owner 2026-07-22 实测撞上）**：工坊素材屏的「⤵ 替换写回」按钮（`/api/art/replace`→`art-replace.mjs:602` `if(!mf||!ledger)`）对**编译期游戏**（无 manifest）必报 `缺 manifest 或台账`——正是 Lead 诊断①。编译期游戏正确写回=「🔄 重新生成这张」（`/api/art/regenerate`→`t2_replace.py:128` 走 `fill`·登记 skinKey 别名·已本地 `fill game-c art-001` 验通 ok:true）。**建议 PST**：编译期游戏隐藏/禁用「替换写回」或让它对 compile-time no-op（现按钮把 owner 引进死胡同·误以为写回失败）。非 game-c 域·PE-C 只报不改。
+> **📋 owner 2026-07-22 拍板「把剩下的全接上」**：不止背幕——felt/rail(`Material3D.map`)、UI 按钮(`buttonSkins`)、衣柜图标(`Image/Sprite`)、fx 全接消费点（各带回退兜底）。PE-C 施工中（先摸机制不自造·逐类真跑目击）。felt=P3D 域知会·buttonSkins=PUI 机制。
 
 ### REQ-C-105 · [P0 复查打回] betting-engine 边池结算筹码蒸发（大盲短缴 all-in + 弃牌）· [2026-07-17] · 提出人 GD-C（S4 复查门对抗核证）→ 指派 PE-C 修 · status: **✅ 修毕（PE-C 2026-07-18·守恒fuzz+独立对抗子代理 CONFIRMED-CLEAN·复查门终签待 GD-C/owner）** · 优先级: P0（阻塞 S4 放行·M2 前必修）· 类型: 游戏层 TS 正确性 bug（capability-plan §4-b）
 > **S4 复查门裁定=FAIL 打回**（复查人 GD-C≠施工 PE-C）。50 测独立复跑绿，但均为**场景测、未覆盖守恒 property**——对抗性 fuzz 一跑即现。
