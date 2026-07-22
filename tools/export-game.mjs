@@ -231,7 +231,7 @@ const files = {
     Object.entries(ALIASES).map(([a, t]) => `      '${a.slice(0, -1)}': resolve(__dirname, 'src/game/${t.slice(0, -1)}'),`).join('\n') +
     `\n    },\n  },\n  build: { outDir: 'dist', emptyOutDir: true },\n});\n`,
   'index.html': () =>
-    `<!DOCTYPE html>\n<html lang="zh">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />\n  <title>${gameId}</title>\n  <style>*{margin:0;padding:0;box-sizing:border-box}html,body,#root{width:100%;height:100%;overflow:hidden;background:#000}</style>\n</head>\n<body>\n  <div id="root"></div>\n  <script type="module" src="/src/main.tsx"></script>\n</body>\n</html>\n`,
+    `<!DOCTYPE html>\n<html lang="zh">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />\n  <title>${gameId}</title>\n  <link rel="icon" href="data:," />\n  <style>*{margin:0;padding:0;box-sizing:border-box}html,body,#root{width:100%;height:100%;overflow:hidden;background:#000}</style>\n</head>\n<body>\n  <div id="root"></div>\n  <script type="module" src="/src/main.tsx"></script>\n</body>\n</html>\n`,
   'src/main.tsx': () =>
     `import { createRoot } from 'react-dom/client';\nimport { ${COMP} } from './${COMP}.js';\n\nconst root = document.getElementById('root');\nif (!root) throw new Error('#root not found');\ncreateRoot(root).render(\n  <div style={{ position: 'fixed', inset: 0, background: '#000' }}>\n    <${COMP} onExit={() => console.log('[dev] exit')} />\n  </div>,\n);\n`,
   [`src/${COMP}.tsx`]: (d) =>

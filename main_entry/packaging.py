@@ -158,6 +158,68 @@ def _pkg_build_export(slug: str, target: str = 'plain'):
             z.write(p, f'{top}/{p.relative_to(work).as_posix()}')
     return out
 
+# 本地预览启动器（打进 doki-dist zip 根·不进部署目录）：一键把 dist 挂到正确的 /games/<slug>/
+# 路径、加 CORS 头、开浏览器——供交付方快速 review，不双击 file:// 踩坑。
+_REVIEW_PY_BODY = r'''
+import http.server, os, sys, threading, webbrowser
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+PREFIX = '/games/' + SLUG + '/'
+
+class H(http.server.SimpleHTTPRequestHandler):
+    def translate_path(self, path):
+        p = path.split('?', 1)[0].split('#', 1)[0]
+        if p == '/' or p == '/index.html':
+            p = PREFIX + 'index.html'
+        if p.startswith(PREFIX):
+            return os.path.join(ROOT, SLUG, *p[len(PREFIX):].split('/'))
+        return os.path.join(ROOT, *p.lstrip('/').split('/'))
+    def end_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Cross-Origin-Resource-Policy', 'cross-origin')
+        super().end_headers()
+    def log_message(self, *a):
+        pass
+
+def main():
+    port = 8080
+    for _ in range(20):
+        try:
+            httpd = http.server.HTTPServer(('127.0.0.1', port), H)
+            break
+        except OSError:
+            port += 1
+    else:
+        print('no free port'); sys.exit(1)
+    url = 'http://localhost:%d%sindex.html' % (port, PREFIX)
+    print('\n  %s  —  serving at:\n  %s\n  (Ctrl+C to stop)\n' % (SLUG, url))
+    threading.Timer(0.8, lambda: webbrowser.open(url)).start()
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+'''
+
+def _review_py(slug: str) -> str:
+    return 'SLUG = "%s"\n%s\nif __name__ == "__main__":\n    main()\n' % (slug, _REVIEW_PY_BODY)
+
+_REVIEW_BAT = '@echo off\r\ncd /d "%~dp0"\r\npython review.py || py review.py\r\npause\r\n'
+_REVIEW_SH = '#!/usr/bin/env bash\ncd "$(dirname "$0")"\nexec python3 review.py\n'
+
+def _review_readme(slug: str) -> str:
+    return (
+        'DokiWorld cartridge: %s\n\n'
+        'PREVIEW LOCALLY (quick review):\n'
+        '  - Windows: double-click review.bat\n'
+        '  - macOS/Linux: ./review.sh   (or: python3 review.py)\n'
+        '  It serves the game at http://localhost:8080/games/%s/index.html and opens your browser.\n'
+        '  (Do NOT double-click %s/index.html directly — ES modules + absolute asset paths need\n'
+        '   an HTTP server mounted at /games/%s/.)\n\n'
+        'DEPLOY:\n'
+        '  Copy the %s/ folder into DokiWorld at frontend/public/games/%s/.\n'
+        '  Serve its assets with Access-Control-Allow-Origin: * and Cross-Origin-Resource-Policy: cross-origin.\n'
+    ) % (slug, slug, slug, slug, slug, slug)
+
 def _pkg_build_export_dist(slug: str):
     """DokiWorld 部署产物：导出 dokiworld 源码 → vite build → 打包构建好的独立可运行 dist 为
     <slug>-dokiworld-dist.zip。解压 = 一张完全独立的游戏卡带（index.html + assets/ + art/ +
@@ -191,6 +253,12 @@ def _pkg_build_export_dist(slug: str):
         for p in sorted(dist.rglob('*')):
             if p.is_file():  # 解压根 = <slug>/ → 直接落 frontend/public/games/<slug>/
                 z.write(p, f'{slug}/{p.relative_to(dist).as_posix()}')
+        # 本地预览启动器（zip 根·不进 <slug>/ 部署目录）——双击即在正确 /games/<slug>/ 路径起服务并开浏览器。
+        z.writestr('review.py', _review_py(slug))
+        z.writestr('review.bat', _REVIEW_BAT)
+        sh = zipfile.ZipInfo('review.sh'); sh.external_attr = 0o755 << 16  # 可执行位
+        z.writestr(sh, _REVIEW_SH)
+        z.writestr('README.txt', _review_readme(slug))
     return out
 
 def _pkg_build_platform(slug: str, platform: str):

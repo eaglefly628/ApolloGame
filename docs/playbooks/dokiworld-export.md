@@ -10,7 +10,7 @@
 - **实现**：导出插件 `tools/export-targets/dokiworld.mjs`（core=`tools/export-game.mjs` 的 `--target` 插件架构）。
 - **两种产物**（发布屏两个平台）：
   - 「🌸 DokiWorld 卡带（源码工程）」= 可构建 TS 工程 + `public/game.json`（对方 `npm run build` 再部署）。
-  - 「🌸 DokiWorld 部署产物 dist」= 工作台直接 `vite build` → **每游戏一张完全独立可运行的 dist 卡带**（`index.html`+`assets/`+`art/`+`game.json`+`pipeline.json`·资源已展平），解压落 `/games/<slug>/` 即跑。
+  - 「🌸 DokiWorld 部署产物 dist」= 工作台直接 `vite build` → **每游戏一张完全独立可运行的 dist 卡带**（`index.html`+`assets/`+`art/`+`game.json`+`pipeline.json`·资源已展平·JS 内联 three/react/cannon·零外部模块），解压落 `/games/<slug>/` 即跑。zip 根另带 **`review.bat`/`review.sh`/`review.py`**（双击本地预览·自动挂正确路径开浏览器·部署目录 `<slug>/` 不含这些）。**禁双击 `<slug>/index.html`**（ES 模块+绝对路径需 HTTP 挂在 `/games/<slug>/`）。
 - **当前支持**：`game-a / game-b / game-c`（`supportedGames`）。别的游戏会报错指路，不伪造产物。
 
 ## 插件自动做的四件事（对应契约）
