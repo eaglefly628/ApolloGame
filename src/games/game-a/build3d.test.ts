@@ -42,11 +42,11 @@ describe('game-a build3d — 3D 呢面牌桌（owner 2026-07-22）', () => {
     expect(mat?.roughness).toBeGreaterThanOrEqual(0.85); // 天鹅绒=丰盈哑光（非丝绒亮泽·owner「丝绒不如天鹅绒」）
   });
 
-  it('木纹桌沿(wood·木纹 surface) + 深胡桃桌基(wood·木纹 surface)（owner 2026-07-22 二迭：边环古铜→哑光木纹·均真木材质）', () => {
+  it('抛光钢桌沿(steel·拉丝 surface) + 深胡桃桌基(wood·木纹 surface)（owner 2026-07-22 三迭：边环木纹→金属钢边·材质球金属）', () => {
     const rim = bp.entities['rim']!.Material3D as { preset: string; surface?: { pattern: string } } | undefined;
     const base = bp.entities['base']!.Material3D as { preset: string; surface?: { pattern: string } } | undefined;
-    expect(rim?.preset).toBe('wood'); // owner：古铜金属→哑光木纹边（同 game-c 木栏）
-    expect(rim?.surface?.pattern).toBe('scratches'); // 程序化木纹（各向异性纤维纹）
+    expect(rim?.preset).toBe('steel'); // owner：金/铜/木都否→试材质球里的金属钢边（冷银衬酒红）
+    expect(rim?.surface?.pattern).toBe('scratches'); // 程序化拉丝钢纹（各向异性）
     expect(base?.preset).toBe('wood');
     expect(base?.surface?.pattern).toBe('scratches'); // 木料年轮纹
   });
