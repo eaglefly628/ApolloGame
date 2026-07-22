@@ -83,6 +83,53 @@ const GAME_PATCHES = {
   ],
 };
 
+// ── Per-game manifest metadata + character→SessionIn mapper ──────────────────────
+// Owner decision "多角色没有就先空着": DokiWorld sends ONE character but our SessionIn is
+// per-opponent-seat, so seat injection is left BLANK for now (games run on default cards).
+// The mapper is the single hook to fill later (also gated on adult-confirmation — see CL).
+const BLANK_MAPPER =
+`// Seat injection from the DokiWorld character is intentionally left blank for now
+// (owner: "多角色没有就先空着"; also pending the adult-confirmation gate — see CL). The
+// validated character is available here; when enabled, build SessionIn from it and
+// return { sessionIn } (game-c: { session }). Until then games use built-in default cards.
+function mapCharacter(character?: DokiWorldCharacter): Record<string, never> {
+  void character;
+  return {};
+}`;
+
+const GAME_META = {
+  'game-a': {
+    locales: {
+      en: { name: 'Guandan Night Banquet', description: 'A 4-player Guandan (tribute card game) match against three AI rivals — ranked tricks, tribute, and escalating levels.' },
+      'zh-cn': { name: '掼蛋夜宴', description: '四人两副牌·升级同盟·逢局必争——对阵三名 AI 对手的掼蛋对局。' },
+    },
+    selection: { tags: ['cards', 'strategic', 'guandan'], promptHint: {
+      en: 'Pick this when the scene calls for a tense, strategic card duel among close rivals.',
+      'zh-cn': '当情节需要一场紧张、讲策略的牌桌博弈时选择该游戏。' } },
+    mapperTs: BLANK_MAPPER,
+  },
+  'game-b': {
+    locales: {
+      en: { name: 'Sparrow Feast · Riichi Mahjong', description: 'A 4-player East-round Riichi mahjong table against AI opponents — calls, riichi, and real scoring.' },
+      'zh-cn': { name: '雀宴 · 立直麻将', description: '四人东风战·立直麻将·暖夜和室——对阵 AI 的真算分麻将。' },
+    },
+    selection: { tags: ['mahjong', 'tiles', 'strategic'], promptHint: {
+      en: 'Pick this for a refined, patient tile-game scene of reading and misdirection.',
+      'zh-cn': '当情节适合一场含蓄、比耐心与读牌的麻将时选择该游戏。' } },
+    mapperTs: BLANK_MAPPER,
+  },
+  'game-c': {
+    locales: {
+      en: { name: 'Six-Seat Hold’em', description: 'A 6-seat no-limit Texas Hold’em cash game against five AI rivals — blinds, betting, showdowns.' },
+      'zh-cn': { name: '六人德州', description: '单人对阵五名 AI 的六人桌标准德州扑克现金局——盲注·下注·摊牌。' },
+    },
+    selection: { tags: ['poker', 'cards', 'bluffing'], promptHint: {
+      en: 'Pick this for a high-stakes bluffing scene of nerve and reading opponents.',
+      'zh-cn': '当情节需要一场高注、比胆识与读人的德州扑克时选择该游戏。' } },
+    mapperTs: BLANK_MAPPER,
+  },
+};
+
 export default {
   id: 'dokiworld',
   label: 'DokiWorld 卡带',
@@ -90,90 +137,182 @@ export default {
 
   files(ctx) {
     const { gameId, COMP, entryImport } = ctx;
+    const meta = GAME_META[gameId];
     return {
-      // Protocol bridge (DokiWorld Game Protocol v1).
+      // game.json — DokiWorld registration manifest (spec §2). Deployed at the game dir root.
+      'public/game.json': JSON.stringify({
+        schemaVersion: 1,
+        id: gameId,
+        status: 'active',
+        entry: 'index.html',
+        protocolVersion: 1,
+        // Owner decision: character context is mapped into an opponent seat, so the card
+        // scopes are declared required. NOTE: activation is gated on the adult-confirmation
+        // decision (these titles are adult-themed; the card service requires adultConfirmed).
+        contextScopes: { required: ['character.identity', 'character.avatar', 'character.card'], optional: [] },
+        locales: meta.locales,
+        selection: meta.selection,
+      }, null, 2) + '\n',
+
+      // Protocol bridge (DokiWorld Game Protocol v1 — spec §6). protocolVersion is the
+      // NUMBER 1. Runs over an iframe with sandbox="allow-scripts" (opaque origin): validate
+      // source + origin + identity + context schema on every message; never trust storage.
       'src/dokiworldBridge.ts':
-`// DokiWorld Game Protocol v1 bridge — postMessage handshake + score report over an
-// iframe with sandbox="allow-scripts" (no allow-same-origin). Storage/cookies must not
-// be assumed; persist via the host if needed.
-export type DokiWorldGameOutcome = 'win' | 'loss' | 'draw' | 'completed';
+`const PROTOCOL_VERSION = 1 as const;
+
+export type GameContextScope = 'character.identity' | 'character.avatar' | 'character.card';
+
+export type DokiWorldCharacter = {
+  id?: string;
+  displayName?: string;
+  avatar?: { url: string; alt: string };
+  card?: { description: string; tags: string[] };
+};
+
+export type DokiWorldGameInit = {
+  type: 'dokiworld-game-init';
+  protocolVersion: 1;
+  gameId: string;
+  runId: string;
+  locale: string;
+  grantedScopes: GameContextScope[];
+  context: { schemaVersion: 1; character?: DokiWorldCharacter };
+};
+
 export type DokiWorldGameResult = {
   normalizedScore: number;
-  outcome: DokiWorldGameOutcome;
+  outcome: 'win' | 'loss' | 'draw' | 'completed';
   metrics?: Record<string, string | number | boolean>;
 };
-export type DokiWorldGameHost = {
-  exit: () => void;
-  complete: (result: DokiWorldGameResult) => void;
-};
 
-const PROTOCOL_VERSION = 'v1';
+const ALLOWED_SCOPES = new Set<GameContextScope>(['character.identity', 'character.avatar', 'character.card']);
 
-export function createDokiWorldBridge(gameId: string): DokiWorldGameHost & { dispose: () => void } {
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return Boolean(v && typeof v === 'object' && !Array.isArray(v));
+}
+function parentOriginFromReferrer(): string | null {
+  if (!document.referrer) return null;
+  try { return new URL(document.referrer).origin; } catch { return null; }
+}
+function isGameInit(value: unknown, expectedGameId: string): value is DokiWorldGameInit {
+  if (!isRecord(value)) return false;
+  const m = value;
+  if (m.type !== 'dokiworld-game-init' || m.protocolVersion !== PROTOCOL_VERSION
+    || m.gameId !== expectedGameId || typeof m.runId !== 'string' || !m.runId
+    || !Array.isArray(m.grantedScopes)) return false;
+  if (!m.grantedScopes.every((s) => ALLOWED_SCOPES.has(s as GameContextScope))) return false;
+  if (new Set(m.grantedScopes).size !== m.grantedScopes.length) return false;
+  if (!isRecord(m.context) || m.context.schemaVersion !== 1) return false;
+  const c = m.context.character;
+  if (c !== undefined && !isRecord(c)) return false;
+  if (m.grantedScopes.includes('character.identity')) {
+    if (!isRecord(c) || typeof c.id !== 'string' || !c.id) return false;
+    if (typeof c.displayName !== 'string' || !c.displayName) return false;
+  }
+  if (m.grantedScopes.includes('character.avatar')) {
+    if (!isRecord(c) || !isRecord(c.avatar)) return false;
+    if (typeof c.avatar.url !== 'string' || !c.avatar.url) return false;
+    if (typeof c.avatar.alt !== 'string') return false;
+  }
+  if (m.grantedScopes.includes('character.card')) {
+    if (!isRecord(c) || !isRecord(c.card)) return false;
+    if (typeof c.card.description !== 'string') return false;
+    if (!Array.isArray(c.card.tags) || !c.card.tags.every((t) => typeof t === 'string')) return false;
+  }
+  return true;
+}
+
+export function createDokiWorldBridge(gameId: string) {
   let runId: string | null = null;
-  let parentOrigin = '*';
-  try { if (document.referrer) parentOrigin = new URL(document.referrer).origin; } catch { /* keep '*' */ }
+  let parentOrigin = parentOriginFromReferrer();
+  let resolveInit!: (init: DokiWorldGameInit) => void;
+  const initialized = new Promise<DokiWorldGameInit>((resolve) => { resolveInit = resolve; });
 
-  const post = (type: string, payload: Record<string, unknown> = {}): void => {
-    window.parent?.postMessage({ type, gameId, runId, ...payload }, parentOrigin);
+  const post = (payload: Record<string, unknown>): void => {
+    if (window.parent === window) return;                          // standalone: no host, stay inert
+    window.parent.postMessage({ protocolVersion: PROTOCOL_VERSION, gameId, runId, ...payload }, parentOrigin ?? '*');
   };
 
-  const onMessage = (e: MessageEvent): void => {
-    if (e.source !== window.parent) return;                 // only the host frame
-    const d = e.data as { type?: string; protocolVersion?: string; gameId?: string; runId?: string } | null;
-    if (!d || d.type !== 'dokiworld-game-init') return;
-    if (d.protocolVersion !== PROTOCOL_VERSION || d.gameId !== gameId || !d.runId) return;
-    runId = d.runId;
-    // Pin to the host's real origin from the init event (opaque-origin iframes strip
-    // document.referrer, so this is the reliable source). Only '*' before init.
-    if (e.origin && e.origin !== 'null') parentOrigin = e.origin;
-    post('dokiworld-game-initialized');
+  const onMessage = (event: MessageEvent): void => {
+    if (event.source !== window.parent) return;                    // only the host frame
+    if (parentOrigin && event.origin !== parentOrigin) return;     // pin origin once known
+    if (!isGameInit(event.data, gameId)) return;
+    if (runId && runId !== event.data.runId) return;               // ignore other runs
+    parentOrigin = event.origin;
+    const first = runId === null;
+    runId = event.data.runId;
+    if (first) resolveInit(event.data);                            // resolve once; init is idempotent
+    post({ type: 'dokiworld-game-initialized' });
   };
 
   window.addEventListener('message', onMessage);
-  post('dokiworld-game-ready');
+  queueMicrotask(() => post({ type: 'dokiworld-game-ready' }));
 
   return {
-    exit: () => post('dokiworld-game-close'),
-    complete: (result: DokiWorldGameResult) => {
-      const normalizedScore = Math.max(0, Math.min(100, Math.round(result.normalizedScore)));
-      post('dokiworld-game-result', { result: { ...result, normalizedScore } });
+    initialized,
+    complete(result: DokiWorldGameResult) {
+      if (!runId || !Number.isFinite(result.normalizedScore)) return;
+      const normalizedScore = Math.round(Math.min(100, Math.max(0, result.normalizedScore)));
+      post({ type: 'dokiworld-game-result', result: { ...result, normalizedScore } });
     },
-    dispose: () => window.removeEventListener('message', onMessage),
+    resize(height: number) {
+      if (!runId || !Number.isFinite(height)) return;
+      post({ type: 'dokiworld-game-resize', height: Math.round(height) });
+    },
+    close() { if (runId) post({ type: 'dokiworld-game-close' }); },
+    dispose() { window.removeEventListener('message', onMessage); },
   };
 }
 `,
-      // React entry wired to the bridge.
+      // React entry (spec §6): render immediately (menu shows before init), wire result/close.
+      // The validated character context (bridge.initialized) is forwarded to the wrapper;
+      // whether it is injected into a seat is decided there (see mapCharacter — adult-gate).
       'src/main.tsx':
 `import { createRoot } from 'react-dom/client';
 import { ${COMP} } from './${COMP}.js';
-import { createDokiWorldBridge } from './dokiworldBridge.js';
+import { createDokiWorldBridge, type DokiWorldCharacter } from './dokiworldBridge.js';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('#root not found');
 
 const bridge = createDokiWorldBridge('${gameId}');
-createRoot(root).render(
-  <div style={{ position: 'fixed', inset: 0, background: '#000' }}>
-    <${COMP} onExit={bridge.exit} onComplete={bridge.complete} />
-  </div>,
-);
+let character: DokiWorldCharacter | undefined;
+
+const render = (): void => {
+  createRoot(root).render(
+    <div style={{ position: 'fixed', inset: 0, background: '#000' }}>
+      <${COMP} character={character} onExit={bridge.close} onComplete={bridge.complete} />
+    </div>,
+  );
+};
+
+// Standalone (no host frame): render straight away. Under DokiWorld: apply the validated
+// character context from init, then render. (Init arrives promptly after our ready.)
+if (window.parent === window) {
+  render();
+} else {
+  void bridge.initialized.then((init) => { character = init.context.character; render(); });
+}
 window.addEventListener('pagehide', bridge.dispose, { once: true });
 `,
-      // Wrapper with onComplete, threading host caps to mount() via refs.
+      // Wrapper: maps the (validated) DokiWorld character into this game's SessionIn and
+      // threads host caps to mount(). See mapCharacter for the adult-gate seat injection.
       [`src/${COMP}.tsx`]:
 `import { useEffect, useRef } from 'react';
 import { mount } from '${entryImport}';
-import type { DokiWorldGameResult } from './dokiworldBridge.js';
+import type { DokiWorldGameResult, DokiWorldCharacter } from './dokiworldBridge.js';
 
 export interface ${COMP}Props {
+  character?: DokiWorldCharacter;
   onExit?: () => void;
   onComplete?: (result: DokiWorldGameResult) => void;
   style?: React.CSSProperties;
   className?: string;
 }
 
-export function ${COMP}({ onExit, onComplete, style, className }: ${COMP}Props): React.ReactElement {
+${meta.mapperTs}
+
+export function ${COMP}({ character, onExit, onComplete, style, className }: ${COMP}Props): React.ReactElement {
   const ref = useRef<HTMLDivElement>(null);
   const onExitRef = useRef(onExit); onExitRef.current = onExit;
   const onCompleteRef = useRef(onComplete); onCompleteRef.current = onComplete;
@@ -181,6 +320,7 @@ export function ${COMP}({ onExit, onComplete, style, className }: ${COMP}Props):
     const el = ref.current;
     if (!el) return;
     const cleanup = mount(el, {
+      ...mapCharacter(character),
       exit: () => onExitRef.current?.(),
       complete: (result) => onCompleteRef.current?.(result),
     });
