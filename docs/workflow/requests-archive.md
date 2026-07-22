@@ -2,6 +2,22 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-AIGEN-软件内文本生成资产 · Tripo(3D)+千问/Seedream(2D) 接入创作台 · [2026-07-04] · owner 拍板 → PA 建生成框架(资产侧) · status: **✅ done（owner 2026-07-22 拍板「标记已完成」；Lead 归档腾槽）** · 类型: 新能力(外部 AI 服务·表现层旁路)
+
+> **⚖ Lead 结案摘要（2026-07-22·owner「REQ-AIGEN 文本生成资产 这个标记已经完成」）**：AIGEN 核心愿景（软件内自然语言 → 生成资产：3D=Tripo·2D=千问/Seedream）已端到端打通并经 owner 真机验证：
+> - **框架**（PA·`scripts/ai-gen.mjs`+`.test.mjs`）：厂商无关适配器注册表 + mock 合法资产 + 连库 + provenance + 真调门控 + `providerSettings()`——mock 全链绿。
+> - **运行时 UI + 设置 UI**：已随 Workshop（`workshop/index.dc.html` 素材屏详情卡）+ T1/T2 端点建成（key 设置在木纹工坊设置屏·数据驱动 genKeys/genOptions）。
+> - **Seedream 真调落地（owner 07-21 美术主力·本 session 打通）**：`ai-gen.mjs` seedream 适配器（火山方舟 `images/generations` 同步调）+ `config.py` GEN_KEY/GEN_OPTIONS（模型 ID 自由填·免硬编码漂移）+ `t2_replace.py`/`assets.py`/`art-replace.mjs` 全链接入 + row.orig 快照（还原不丢原图）。**owner Mac 真机确认生成成功**（曾遇 ModelNotOpen=账号侧未开通模型·owner 开通 `doubao-seedream-5-0-pro-260628` 后通）。
+> - **真 key 前置**：已解除（owner 已购火山方舟 key 并真机跑通）。
+> **遗留（不阻塞本单结案·如需单立）**：Seedance(文生视频)/NanoBanana/PixVerse 仅有 key 槽、无真实 adapter 装配——非本单「文生图/文生 3D 资产」核心愿景所需（视频线是另一族 provider）；owner 若要接视频线再单开工单。qwen 2D、tripo/meshy 3D、seedream 2D 三线已真实装配。
+
+> **owner 愿景**：软件内用自然语言描述 → 生成资产（3D 用 **Tripo**·2D 用 **千问/DashScope 万相**），落进资产库。先 mock 打通全框架。
+> **PA 已交付（资产侧·`scripts/ai-gen.mjs` + `ai-gen.test.mjs`·mock 全绿）**：厂商无关生成框架 = 适配器注册表（`tripo` 文本→glb·`qwen` 文本→png）+ mock 产合法资产（glb/png·prompt 播种）+ **连库**（落 `assets/index.json` 或游戏本地 `art/index.json`·带 provenance 厂商/prompt/模型/mock/日期）+ 真调门控（fetch Tripo v2 openapi / DashScope 万相·密钥走 env `TRIPO_API_KEY`/`DASHSCOPE_API_KEY`·**绝不入库**·本环境 GitHub-only 真调被挡→`--mock`）+ 设置视图 `providerSettings()`（envKey/是否已配/打码·可被 server/UI 复用）。哲学同 `src/services/aigp`（非确定性旁路·不碰 sim/hash）。
+> **待主程/PE（跨域·非 PA）**：① **设置 UI + server**——把 Tripo/DashScope key 接进 `apollo.py` 设置系统（现 `LLM_PROVIDERS` 是 chat 域·生成域另起一套或并入）+ 创作台设置屏（LayoutNode·UI铁律·复用 `providerSettings()` 形状与 `apiKeyMasked` 打码）。② **运行时生成 UI**——创作台输入 prompt→调生成→资产入本地库→即时可用（异步任务·pending/进度·参照 aigp 视频端口 handle 模式）。③ 浏览器侧直调需把生成逻辑做成 `src/services/ai-gen/` 端口（node 侧 `ai-gen.mjs` 是 authoring-time 参照）。
+> **真调前置**：放宽网络的环境/session（Tripo/DashScope 域名本环境 403）+ 用户付费 key（owner 已购）。许可按各家订阅商用条款（provenance 已记）。
+> **owner 2026-07-16 口径**：真 key 验证**等 owner 买到 key 再开**——「很多事情还没有完备，需要一次性把这事弄完」。在那之前本单挂起、任何 session 不催不动；REQ-STYLESET M1 同卡此口（连动启动）。
+> **+ meshy 适配器接入（PST 2026-07-07·owner 直接要「接入 meshy 顺便接菜单」）**：`ai-gen.mjs` ADAPTERS 加第三家 `meshy`（文本→3D glb·kind:mesh·envKey `MESHY_API_KEY`·mock→cube.glb 占位·真调走 Meshy v2 openapi `POST /openapi/v2/text-to-3d` mode:preview → 轮询 `model_urls.glb`·门控同 tripo）；apollo.py 白名单 `GEN_ADAPTERS=('tripo','meshy','qwen')`（新增 provider 两处同改=脚本注册+此白名单）；创作台 `AssetGenPanel` 适配器菜单加 🗿 Meshy(3D) 一档 + provider key 状态自动列出。测试：`ai-gen.test` 注册表 + meshy mock glb·render 测断言菜单含 Meshy。门禁 tsc0/vitest2318/build0。**ai-gen.mjs=PA 框架·此 provider 扩展请 PA 会审**（真调端点/字段是否随 Meshy-6 漂移）。
+
 ### REQ-UI-web字体加载（数据化）+ 第3字体槽 + Label ink 令牌 · [2026-07-02] · P3D（game-d 对齐 Cloud Design 撞到·全 app 受益） → 主程（UI 库域） · status: **✅ done（主程 2026-07-02·①机制下沉 + ③令牌落地·②已存→回驳；剩 vendor woff2 数据活）** · 类型: 真能力缺口（3 项·尺子已过·不可重组）
 
 > **背景（owner 2026-07-02「用色/字体必须跟 Cloud Design 对齐」）**：对齐 game-d《骰途》到 Cloud Design 设计案时定位到——**字体走样不是能力问题、是全 app 从不加载 web 字体**。三项缺口都属 UI 库域（`src/ui/**`·主程），game-d 侧无法数据化解决：

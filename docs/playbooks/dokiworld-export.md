@@ -13,7 +13,7 @@
 
 ## 插件自动做的四件事（对应契约）
 
-1. **协议桥** `src/dokiworldBridge.ts`：`protocolVersion=1`（数字）；ready/init/initialized/result/close/resize；
+1. **协议桥**（导出插件在产物工程 `src/` 下生成 `dokiworldBridge.ts`）：`protocolVersion=1`（数字）；ready/init/initialized/result/close/resize；
    init 全校验（source===parent · origin 钉定 · grantedScopes 子集+去重 · context schema · 逐 scope 字段）；幂等 init；`window.parent===window` 惰性。
 2. **`game.json`**（落 `dist/` 根 = 部署 `/games/<id>/game.json`）：`id/status/entry/protocolVersion/launchRequirements.minPlayers/contextScopes/locales(en+zh-cn)/selection`。
    **minPlayers**：game-a=4 · game-b=4 · game-c=2（去重 AI 角色 + 1 真人）。
