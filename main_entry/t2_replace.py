@@ -75,7 +75,7 @@ def handle_art_style(body: dict) -> dict:
         else:
             style.pop('packId', None)
     ledger['artStyle'] = style
-    f.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    _write_json(f, ledger)  # 保留既有缩进·不重格式化（owner 2026-07-22 churn 修）
     print(c("  [ART]", 'g'), f"style {slug} → 锚更新")
     return {'success': True, 'artStyle': style}
 
@@ -106,7 +106,7 @@ def handle_art_approve(body: dict) -> dict:
             hit += 1
         elif no != 'all':
             return {'success': False, 'error': f"{no} 状态={r.get('status')}——只有已写回（replaced/filled）的行可复核"}
-    f.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    _write_json(f, ledger)  # 保留既有缩进·不重格式化（owner 2026-07-22 churn 修）
     print(c("  [ART]", 'g'), f"approve {slug} {no} → {hit} 行复核通过")
     return {'success': True, 'approved': hit}
 
@@ -238,7 +238,7 @@ def handle_art_upload(body: dict) -> dict:
         row['status'] = 'replaced'
         row['gen'] = {'source': 'upload', 'localId': local_id, 'servedPath': f'/games/{slug}/art/{rel}'}
         row['provenance'] = {'model': 'user-upload', 'prompt': row.get('query', ''), 'date': '', 'license': '用户上传'}
-        led_f.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        _write_json(led_f, ledger)  # 保留既有缩进·不重格式化
         return {'success': True, 'no': no, 'localId': local_id, 'row': row}
     _write_json(idx_f, idx)  # 原地 upsert·不整份 sort（diff 干净）
     res = _art_replace_cli(['swap', slug, no, local_id, '--upload'])
@@ -287,7 +287,7 @@ def handle_art_restore(body: dict) -> dict:
         row['gen'] = None
     row.pop('history', None)
     _write_json(idx_f, idx)  # 原地·不整份 sort（diff 干净）
-    led_f.write_text(json.dumps(ledger, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    _write_json(led_f, ledger)  # 保留既有缩进·不重格式化
     return {'success': True, 'no': no, 'row': row, 'restored': 'snapshot' if isinstance(orig, dict) else 'fallback'}
 
 def handle_art_reskin(body: dict) -> dict:

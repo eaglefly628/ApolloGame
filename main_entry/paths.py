@@ -93,8 +93,21 @@ def _design_parts(path: str):
         return segs[2], '/'.join(segs[4:])
     return None, None
 
+def _detect_indent(path: Path, default: int = 2) -> int:
+    """探测既有 JSON 文件缩进（首个缩进键行的前导空格数·制表符按 2 计）——回写同格式，避免
+    整文件重格式化 churn（owner 2026-07-22「换一张替换图 index/台账全文都 diff」；各工具写这些文件
+    缩进不一：game-c-art-gen 用 1 空格·pipeline 用 2）。缺省 2（新文件）。"""
+    try:
+        for line in path.read_text(encoding='utf-8').splitlines():
+            stripped = line.lstrip(' \t')
+            if stripped.startswith('"') and len(line) > len(stripped):
+                return len(line[:len(line) - len(stripped)].replace('\t', '  '))
+    except Exception:
+        pass
+    return default
+
 def _write_json(path: Path, data: dict) -> None:
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=_detect_indent(path)) + '\n', encoding='utf-8')
 
 def _now_iso() -> str:
     return time.strftime('%Y-%m-%dT%H:%M:%S')
