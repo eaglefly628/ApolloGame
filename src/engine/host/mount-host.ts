@@ -17,10 +17,53 @@ export interface MountHostOptions {
   topBarH?: number;
   /** 底栏 host 高（px·默认 0）。 */
   bottomBarH?: number;
-  /** 场景底纹（CSS background 值·省略=不设背景）。 */
+  /** 场景底纹（CSS background 值·省略=不设背景）。sceneBgSkin 有生成图时，此值自动降为**回退底层**（兜底永不丢）。 */
   sceneBackground?: string;
   /** wrapper 信箱区底色（CSS background 值·省略=不设背景）。 */
   wrapperBackground?: string;
+  /**
+   * 场景背景皮肤槽（REQ-ART-可消费槽铁律 ②·render-only·不碰 sim/hash）：让程序化背景成为**可替换的可消费槽**。
+   * - `imageUrl` 有值（调用方经 `filledSrc(gameIndex, skinKey)` 从本游戏 art 索引解析）→ 生成图叠在
+   *   `sceneBackground` 之上（cover/contain/stretch）；图有透明/失败仍露出下面的程序化背景。
+   * - `imageUrl` 无值（未生成/未填充）→ 纯回退 `sceneBackground`（**兜底永不丢**·不拿空槽盖掉手绘背景）。
+   * 本槽只消费索引现态——生成图入索引前须过 M2.5 人审（防 AI 图自动盖掉手绘·质量倒退）。
+   * `skinKey` 打到 scene 的 `data-scene-bg-skin` 属性，供孤儿审计/巡检识别「此场景有可换背景槽」。
+   */
+  sceneBgSkin?: {
+    /** 消费键（art-ledger 派生此行·孤儿审计据此认作有槽·游戏 art 索引按此登记生成图）。 */
+    skinKey: string;
+    /** 已解析的生成图 URL（null/缺省=未填 → 回退 sceneBackground）。 */
+    imageUrl?: string | null;
+    /** 贴合方式（默认 cover）。 */
+    fit?: 'cover' | 'contain' | 'stretch';
+  };
+}
+
+const FIT_POS: Record<NonNullable<NonNullable<MountHostOptions['sceneBgSkin']>['fit']>, string> = {
+  cover: 'center/cover',
+  contain: 'center/contain',
+  stretch: 'left top/100% 100%',
+};
+
+/** CSS url() 值卫生：转义会破坏双引号 url("…") 上下文的字符（背景 URL 来自可信作者索引·仍做防御）。 */
+function cssUrl(u: string): string {
+  return u.replace(/["\\]/g, (c) => encodeURIComponent(c));
+}
+
+/**
+ * 计算 scene 的有效 background 值：皮肤槽有生成图 → 图叠在程序化背景之上（兜底永不丢）；
+ * 无生成图 → 纯程序化背景。导出供契约测试。
+ */
+export function resolveSceneBg(
+  fallback: string | undefined,
+  skin: MountHostOptions['sceneBgSkin'],
+): string | undefined {
+  const url = skin?.imageUrl;
+  if (url) {
+    const img = `url("${cssUrl(url)}") ${FIT_POS[skin?.fit ?? 'cover']} no-repeat`;
+    return fallback ? `${img}, ${fallback}` : img; // fallback 作底层：图透明/缺失时露出程序化背景
+  }
+  return fallback;
 }
 
 export interface HostSkeleton {
@@ -45,7 +88,7 @@ export interface HostSkeleton {
  * render-only：不含任何 sim 逻辑，跳过/复用不影响回放/hash/lockstep。
  */
 export function mountHost(container: HTMLElement, opts: MountHostOptions): HostSkeleton {
-  const { fieldW, fieldH, topBarH = 0, bottomBarH = 0, sceneBackground, wrapperBackground } = opts;
+  const { fieldW, fieldH, topBarH = 0, bottomBarH = 0, sceneBackground, wrapperBackground, sceneBgSkin } = opts;
 
   const wrapper = document.createElement('div');
   wrapper.style.cssText =
@@ -54,10 +97,14 @@ export function mountHost(container: HTMLElement, opts: MountHostOptions): HostS
     (wrapperBackground ? `;background:${wrapperBackground}` : '');
 
   // scene = 定尺缩放盒；画布(z0·渲染器 init 时挂入) 打底 + 三个 HUD host(z10/20) 叠上。
+  // 场景背景走皮肤槽解析：有生成图→图叠程序化底（兜底永不丢）；无图→纯程序化 sceneBackground。
+  const sceneBg = resolveSceneBg(sceneBackground, sceneBgSkin);
   const scene = document.createElement('div');
   scene.style.cssText =
     `position:relative;width:${fieldW}px;height:${fieldH}px;flex:0 0 auto;transform-origin:center center` +
-    (sceneBackground ? `;background:${sceneBackground}` : '');
+    (sceneBg ? `;background:${sceneBg}` : '');
+  // 标记「此场景有可换背景槽」（供孤儿审计/巡检识别·skinKey 即消费键）。
+  if (sceneBgSkin?.skinKey) scene.dataset.sceneBgSkin = sceneBgSkin.skinKey;
 
   const topHost = document.createElement('div');
   topHost.style.cssText = `position:absolute;left:0;right:0;top:0;height:${topBarH}px;z-index:10`;

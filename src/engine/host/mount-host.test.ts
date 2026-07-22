@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // mount-host 宿主骨架 helper 的契约测试（REQ-AUDIT-守门 C 件）：容器结构 / 定尺缩放 / teardown。
 import { describe, it, expect, beforeEach } from 'vitest';
-import { mountHost } from './mount-host.js';
+import { mountHost, resolveSceneBg } from './mount-host.js';
 
 function makeContainer(w?: number, h?: number): HTMLElement {
   const c = document.createElement('div');
@@ -79,6 +79,73 @@ describe('mountHost（引擎公用宿主骨架）', () => {
     Object.defineProperty(container, 'clientHeight', { value: 300, configurable: true });
     h.fit();
     expect(h.scene.style.transform).toBe('scale(0.5)');
+  });
+
+  // ── 背景皮肤槽（REQ-ART-可消费槽铁律 ②·render-only）─────────────────────────
+  describe('sceneBgSkin 背景皮肤槽', () => {
+    it('有生成图（单层·无回退）：图落进 scene 背景 + 打 data-scene-bg-skin', () => {
+      // 单层 url() happy-dom 可解析回读（多层 shorthand 是 happy-dom 解析盲区·多层字符串正确性
+      // 由下方 resolveSceneBg 单元测覆盖·此处只验 mountHost 把解析结果真装进 scene 背景）。
+      const container = makeContainer();
+      const h = mountHost(container, {
+        fieldW: 800, fieldH: 600,
+        sceneBgSkin: { skinKey: 'game-a/scene/bg-menu', imageUrl: '/games/game-a/art/bg/menu.svg' },
+      });
+      const bg = h.scene.style.background;
+      expect(bg).toContain('menu.svg');
+      expect(bg).toContain('no-repeat');
+      expect(h.scene.dataset.sceneBgSkin).toBe('game-a/scene/bg-menu');
+    });
+
+    it('有生成图 + 有程序化回退（多层）：data 属性标可换槽（多层背景串正确性见 resolveSceneBg 单元测）', () => {
+      const container = makeContainer();
+      const h = mountHost(container, {
+        fieldW: 800, fieldH: 600,
+        sceneBackground: 'radial-gradient(#31201a, #160e0a)',
+        sceneBgSkin: { skinKey: 'game-a/scene/bg-menu', imageUrl: '/games/game-a/art/bg/menu.svg' },
+      });
+      expect(h.scene.dataset.sceneBgSkin).toBe('game-a/scene/bg-menu');
+    });
+
+    it('无生成图（imageUrl 空/缺）：回退纯程序化背景·仍打 data 属性标可换槽', () => {
+      const container = makeContainer();
+      const h = mountHost(container, {
+        fieldW: 800, fieldH: 600,
+        sceneBackground: '#123456',
+        sceneBgSkin: { skinKey: 'game-a/scene/bg-menu', imageUrl: null },
+      });
+      expect(h.scene.style.background).toContain('#123456');
+      expect(h.scene.style.background).not.toContain('url(');
+      expect(h.scene.dataset.sceneBgSkin).toBe('game-a/scene/bg-menu');
+    });
+
+    it('resolveSceneBg 单元：fit 变体 / 无回退 / 无图', () => {
+      expect(resolveSceneBg('#000', { skinKey: 'k', imageUrl: '/a.png', fit: 'contain' }))
+        .toBe('url("/a.png") center/contain no-repeat, #000');
+      expect(resolveSceneBg('#000', { skinKey: 'k', imageUrl: '/a.png', fit: 'stretch' }))
+        .toBe('url("/a.png") left top/100% 100% no-repeat, #000');
+      // 无回退（sceneBackground 省略）→ 只图
+      expect(resolveSceneBg(undefined, { skinKey: 'k', imageUrl: '/a.png' }))
+        .toBe('url("/a.png") center/cover no-repeat');
+      // 无图 → 原样回退（含 undefined 透传）
+      expect(resolveSceneBg('#fff', { skinKey: 'k' })).toBe('#fff');
+      expect(resolveSceneBg('#fff', undefined)).toBe('#fff');
+      expect(resolveSceneBg(undefined, undefined)).toBeUndefined();
+    });
+
+    it('resolveSceneBg：url 里的引号/反斜杠转义（防破坏 style 串）', () => {
+      const out = resolveSceneBg(undefined, { skinKey: 'k', imageUrl: '/a"b\\c.png' });
+      expect(out).not.toContain('"b'); // 裸引号已转义
+      expect(out).toContain('%22');
+      expect(out).toContain('%5C');
+    });
+
+    it('无皮肤槽：不打 data 属性·背景=旧 sceneBackground 行为（回归）', () => {
+      const container = makeContainer();
+      const h = mountHost(container, { fieldW: 100, fieldH: 100, sceneBackground: '#abcdef' });
+      expect(h.scene.dataset.sceneBgSkin).toBeUndefined();
+      expect(h.scene.style.background).toContain('#abcdef');
+    });
   });
 
   it('teardown 干净：移除 wrapper·window resize 不再改 scene', () => {

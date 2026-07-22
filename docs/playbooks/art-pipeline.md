@@ -32,6 +32,7 @@
   `registerTextureGenerator(name, fn)`（确定性纯函数→data-URI）**先登记后 registerAssetIndex**；
   热替换=同 id 条目在 `path`(raster)↔`spec.generator`(矢量) 间只改索引数据，textureKey/调用点零改。
 - **写回**：不钉 manifest——生成/上传按 `skinKey` **别名登记**进 `public/games/<g>/art/index.json`，资产就绪自动换装。其余步骤与卡带线相同（换库/换皮动作在平台自动隐藏）。
+- **程序化背景 = 可换背景槽（REQ-ART ②·owner 2026-07-22）**：宿主层 CSS 渐变背景（原直传 `mountHost({sceneBackground})`）改用背景皮肤槽：`mountHost({ sceneBackground: 程序化底, sceneBgSkin: { skinKey, imageUrl: filledSrc(gameIndex, skinKey) } })`——有生成图叠图、无图纯回退程序化底（**兜底永不丢**）。台账加一行 `skinKey=<g>/scene/<名>`（孤儿审计据此认作有槽）；生成图入索引前过 M2.5 人审才上画面（不拿空/未审图盖掉手绘背景）。`filledSrc`=`src/assets/asset-index.ts`（skinKey→URL 解析口）。
 
 ## 红线
 

@@ -298,6 +298,22 @@ export function registerAssetIndex(manager: AssetManager, index: AssetIndex, bas
 }
 
 /**
+ * 取某 `filled` 条目的可服务 src（skinKey/id → URL）——供背景皮肤槽等「按 id 要一张图 URL」的消费
+ * （REQ-ART-可消费槽铁律 ②·mountHost sceneBgSkin.imageUrl 的解析口）。
+ * 解析规则与 registerAssetIndex 一致：texture 的 generator 胜 path（矢量条目→data-URI）；否则 baseUrl+path。
+ * 未找到 / 非 filled / 既无 path 又无 generator → `null`（消费方据此回退程序化背景·兜底永不丢）。
+ */
+export function filledSrc(index: AssetIndex, id: string, baseUrl = ''): string | null {
+  const e = index.assets.find((a) => a.id === id);
+  if (!e || e.status !== 'filled') return null;
+  const gen = e.type === 'texture' ? generatorSpecOf(e.spec) : null;
+  if (gen) return resolveGeneratedSrc(gen);
+  if (!e.path) return null;
+  const sep = baseUrl && !baseUrl.endsWith('/') ? '/' : '';
+  return baseUrl + sep + e.path;
+}
+
+/**
  * 材质资源目录（REQ-Resource ④）：从索引提取 `type:'material'` 数据型资产 → `id → MaterialSpec`。
  * 材质 = **引 texture key 的数据资产**（预设降级为「内置材质资源」）；渲染器据 `Material3D.materialRef` 查此表
  * 合成有效材质（见 renderer/three/material.applyMaterialRef）。无文件·不走 AssetManager 加载。

@@ -4,6 +4,7 @@ import {
   parseAssetIndex,
   pendingAssets,
   filledAssets,
+  filledSrc,
   registerAssetIndex,
   ASSET_TYPES,
   deriveColorSpace,
@@ -11,6 +12,7 @@ import {
   buildMaterialCatalog,
 } from './asset-index.js';
 import { AssetManager, StubAssetLoader } from './asset-manager.js';
+import { registerTextureGenerator, unregisterTextureGeneratorForTest } from './texture-generators.js';
 
 const good = {
   version: 1,
@@ -251,6 +253,44 @@ describe('asset-index — 材质数据资产（REQ-Resource ④）', () => {
     const m = new AssetManager(new StubAssetLoader());
     registerAssetIndex(m, idx);
     expect(m.has('mat/x')).toBe(false); // 材质走 buildMaterialCatalog·不进 AssetManager
+  });
+});
+
+describe('asset-index — filledSrc（skinKey/id → URL·背景皮肤槽解析口）', () => {
+  const idx = parseAssetIndex({
+    version: 1,
+    assets: [
+      { id: 'scene/bg-menu', type: 'texture', description: '菜单背景', status: 'filled', path: 'game-a/bg/menu.png' },
+      { id: 'scene/bg-play', type: 'texture', description: '牌桌背景', status: 'tbf' },
+      { id: 'scene/vec', type: 'texture', description: '矢量底纹', status: 'filled', spec: { generator: { name: 'checker', params: { a: '#000', b: '#fff' } } } },
+    ],
+  });
+
+  it('filled + path：baseUrl 前缀正确拼接（补/去重）', () => {
+    expect(filledSrc(idx, 'scene/bg-menu')).toBe('game-a/bg/menu.png');
+    expect(filledSrc(idx, 'scene/bg-menu', '/assets')).toBe('/assets/game-a/bg/menu.png');
+    expect(filledSrc(idx, 'scene/bg-menu', '/assets/')).toBe('/assets/game-a/bg/menu.png');
+  });
+
+  it('filled + generator：解析成 data-URI（矢量条目 generator 胜 path）', () => {
+    registerTextureGenerator('checker', () => 'data:image/svg+xml,<svg/>');
+    try {
+      const src = filledSrc(idx, 'scene/vec');
+      expect(src).toBeTruthy();
+      expect(src?.startsWith('data:')).toBe(true);
+    } finally {
+      unregisterTextureGeneratorForTest('checker');
+    }
+  });
+
+  it('tbf / 未找到 → null（消费方回退）', () => {
+    expect(filledSrc(idx, 'scene/bg-play')).toBeNull(); // tbf
+    expect(filledSrc(idx, 'does-not-exist')).toBeNull();
+  });
+
+  it('防御分支：filled 但既无 path 又无 generator（parseAssetIndex 不会产出·手造畸形入参）→ null', () => {
+    const malformed = { version: 1, assets: [{ id: 'x', type: 'texture', description: '', status: 'filled' }] } as unknown as Parameters<typeof filledSrc>[0];
+    expect(filledSrc(malformed, 'x')).toBeNull();
   });
 });
 
