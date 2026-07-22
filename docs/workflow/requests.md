@@ -37,6 +37,7 @@
 ### REQ-PANELSKIN-Panel 贴图皮槽 · 复合按钮（`Panel`+子节点）没法换贴图皮 · [2026-07-22] · PE-C 报（owner「按钮变贴图」落地撞缺口）→ Lead/PUI 裁 · status: open · 优先级: P2 · 类型: UI 基座控件缺口（PUI 域）
 > **缺口**：`ButtonProps.skin`/`skinSlice`（cover/9-slice 贴图皮）只 `Button` 组件有；`PanelProps` 无 cover 图槽（`image` 是 `ScreenProps` 专属·`Panel` 只 tiled `bgTexture`·平铺≠按钮皮）。游戏里**复合按钮**（文+金额/图标两色·必须 `Panel`+子 `Label`·非单 `label` 串）就换不了贴图皮。实例：game-c 主行动键 弃/跟/加/All-in（`hud.ts buildStoryActionBar`·`Panel bg:custom+edge+press3d`+两色 Label）——owner「按钮变贴图」主诉这几个键落不了地；改 `Button` 会丢两色复合标签。
 > **建议（PUI 裁）**：给 `PanelProps` 加 cover `skin?`（+`skinSlice?`）·语义同 `ButtonProps.skin`（`render.ts renderPanel` 消费·`skinSlice` 走 border-image 九宫格/缺省 cover·guard `!bare`·缺省无=面板零变化）。游戏侧即可 `skin: textureOverrideUri('game-c/ui/btn-fold') ?? undefined` 换主行动键皮。**评判**：现闭集真表达不了复合按钮换皮（`bgTexture` 平铺不对·`Button` 丢复合内容）→ 真缺口·非重组可解。game-c 次级按钮（Button·kind 皮）已接·此条只差复合 Panel 皮。
+> **owner 2026-07-22 追加决策依据（评估过替代方案·仍要此条）**：① 考虑过「文字烤进贴图·纯 cover 皮不叠字」——owner 接受**丢本地化**，但**跟注键金额是动态的**（「跟注 50」的 50 每手随下注额变·`50→200→800`）→ **动态数字无法烤进固定图**·必须「贴图打底 + 文字/金额叠渲」= 本条 cover-skin（叠文字层）而非纯 cover。② 故 cover `skin` 需与既有子节点（复合 Label：局部化文案 + 动态金额两色）**共存叠渲**（skin 作底层背景·子节点照常在其上）——非替换内容。这样一举保住：贴图 + 动态金额 + 本地化 + 现深金边观感。owner 已同意报此条为正解、不走烤字 hack。
 
 <!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结迁归档（requests-archive.md）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
 
