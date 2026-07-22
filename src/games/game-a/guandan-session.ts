@@ -425,7 +425,7 @@ export class GuandanSession {
    *   · 领出（无当前墩）= pickLead（先出小牌·保留大牌·倾长倒库存·不领炸/不拆炸）——修「提示恒给最小单张」。
    *   · 应对（有当前墩）= pickMinResponse（最小的不拆炸压牌·省大牌）；只剩拆炸的压牌返回 null=建议过（炸留反压）。
    * 返回牌码数组（宿主按显示顺序映射成下标高亮）；null=领不出/无非拆炸可压（只能过）。
-   * 应对经 legalBeats 过滤（见其注·引擎判读歧义 A-008 保证提示牌点出去必被 act 收）。
+   * 应对经 legalBeats 防御性复核（见其注·引擎判读歧义 A-008 已修 `214fc846`·复核幂等·保证提示牌点出去必被 act 收）。
    */
   hint(seat: SeatId): number[] | null {
     const hand = this.toCards(this.hands[seat]);
@@ -447,12 +447,12 @@ export class GuandanSession {
   }
 
   /**
-   * 合法应对枚举（引擎 legalResponses 的自洽包装·A-008 缺口兜底）。
-   * 引擎 legalResponses 用「意图牌型」枚举应对，但含逢人配的牌可有多种判读，act/legalCheck 用 matchPattern
-   * 取**最强**判读——当最强判读落到另一个普通型家族时（如 QQ+KK+两逢人配：意图钢板 QQQ-KKK，matchPattern
-   * 判成更强的三连对 Q-K-A，跨家族压不过原钢板），legalResponses 声称能压、act 却判非法 → 提示给「打不出去
-   * 的牌」/AI 空过。此为引擎 t3-hand-pattern 缺口（已报 Lead·requests A-008）。游戏层用引擎自身 beats 复核，
-   * 只留「规范判读真能压目标」的应对（=act 会收的那批），保证提示/AI 出的牌必合法。领出无需过滤（任意牌型皆合法领）。
+   * 合法应对枚举（引擎 legalResponses 的自洽包装·**防御性复核**）。
+   * 曾治引擎 A-008 缺口：legalResponses 用「意图牌型」枚举，含逢人配的牌可有多判读，act/legalCheck 用 matchPattern
+   * 取**最强**判读——最强判读落到另一普通型家族时（如 QQ+KK+两逢人配：意图钢板 QQQ-KKK，matchPattern 判成更强
+   * 的三连对 Q-K-A 跨家族压不过原钢板），legalResponses 声称能压、act 却判非法。**引擎已修**（REQ-HANDPAT
+   * `214fc846`·legalResponses 现自洽复核规范判读→返回集 ⊆ 合法集）。本 beats 复核降为**防御性冗余**（幂等·恒真·
+   * 保留作跨版本护栏+文档意图·退亦无害），只留「规范判读真能压目标」的应对。领出无需过滤（任意牌型皆合法领）。
    */
   private legalBeats(hand: Card[], target: Card[] | null): PatternMatch[] {
     const responses = legalResponses(hand, target, this.cfg);
@@ -477,6 +477,8 @@ export class GuandanSession {
         tier: this.tier,
         personality: personalityOf(SEATS.find((s) => s.id === seat)!),
         jitter: this.rng(),
+        // 宗师读牌真消费（L4·A-019）：本座偷看到的对手牌码（各对手 2 张·发牌期种子取）压平入决策。
+        peekedOpp: this.tier === 'l4' ? Object.values(this.peeks[seat] ?? {}).flat() : undefined,
       },
       this.worldSeed(),
     );

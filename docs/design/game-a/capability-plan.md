@@ -8,19 +8,21 @@
 
 ## 2. 消费的引擎能力（对照 registry 实名）
 
+> **⚠ 记账诚实校正（PE-A·A-020·2026-07-20·Lead 评审代跑）**：本表原「状态」列 `✅ 现有` 只表「引擎在册」，被误读为「已消费」。逐条实测（grep 游戏层引用）后，把**列了但零消费**的降级为「⚠ 未消费·偿还计划」——**modifier-stack / event-when / effect-apply / timeline / tween 实测 0 引用**（结算番数/彩头倍率=`settleRound` 内联算，入场动效走 `LayoutNode.anim` 非 timeline/tween）；`t2-card-pile` 蓝图装了 5 份组件但发牌走 `session.hands[]` 私有数组、组件 load 后不更新=**骨架占位/影子态**。真消费的（hand-pattern/behavior-tree/clickable/flow/RandomSeed/LayoutNode/services）保持 ✅。偿还=攒 b/c 同构后随例外①债一并下沉（§4）。
+
 | capability | 用来做什么 | 状态 |
 |---|---|---|
-| `t2-card-pile` | 108 张牌库→四家手牌·确定性发牌 | ✅ 现有 |
+| `t2-card-pile` | 108 张牌库→四家手牌·确定性发牌 | ⚠ 骨架占位·影子态（A-020：蓝图装 5 份·真发牌在 `session.hands[]` 私有数组·组件不更新） |
 | `t2-card-play` | 「出哪几张」命令流（选牌→出牌/过） | ✅ 现有 |
 | `t3-hand-pattern` | 掼蛋判型+压制序+逢人配（数据表驱动） | ⏳ 下沉中（REQ-GUANDAN-牌型·Lead spec 亲笔·A-S1 条件②） |
 | `t2-behavior-tree` | AI 外层策略树（档位×性格权重） | ✅ 现有（`0c021546` 新落地） |
 | `t2-clickable` | 选牌/按钮→action 信号 | ✅ 现有 |
 | `t2-tray` | 手牌排布（弧形参数是否够→PE 施工对照·不够提 PUI） | ✅ 现有 |
 | `flow` | 盘间状态机（发牌→进贡→打牌→结算→run 判定） | ✅ 现有·表达力 S3 对照（A-004·不够提单） |
-| `event-when`/`condition`/`effect-apply` | 事件链（炸弹演出触发/结算脉冲/服饰-1） | ✅ 现有 |
-| `modifier-stack` | 彩头倍率叠加（抗贡/天王炸/封顶） | ✅ 现有·S3 对照 |
+| `event-when`/`condition`/`effect-apply` | 事件链（炸弹演出触发/结算脉冲/服饰-1） | ⚠ 未消费·偿还计划（A-020：实测 0 引用·结算/演出散在 session 过程码·effect 链待下沉） |
+| `modifier-stack` | 彩头倍率叠加（抗贡/天王炸/封顶） | ⚠ 未消费·偿还计划（A-020：实测 0 引用·倍率=`settleRound` 内联算·未走 modifier-stack） |
 | `RandomSeed`+`nextRandom` | 洗牌/首盘定家/AI tie-break/表情触发 | ✅ 现有（裸 Math.random=红线） |
-| `timeline`/`tween` | 发牌瀑布/牌飞行/结算演出 | ✅ 现有 |
+| `timeline`/`tween` | 发牌瀑布/牌飞行/结算演出 | ⚠ 未消费·偿还计划（A-020：实测 0 引用·入场动效走 `LayoutNode.anim`·发牌/结算演出未接 timeline/tween） |
 | LayoutNode 34 控件（UI 铁律） | 全部 UI·蓝本 1:1 复刻·缺口 PE 提 requests.md 报 PUI | ✅ 现有 |
 | SynthAudioPort/SfxSpec（services） | BGM 1 首舒缓循环 + SFX 表 | ✅ 现有（game-g 正样例） |
 | storage/platform-hooks（services） | 生涯钱包/run 快照/统计/设置存档 | ✅ 现有（save-platform 线·不埋平台钩子） |
@@ -49,6 +51,10 @@
 | ④记牌器统计装配 | 出牌历史→13×4 计数视图数据 | ~40 | ✅ 准（Lead 2026-07-17·render-only 纯读投影·不写 sim·记忆分档语义归 AI 数据表不在此件） | 无 |
 
 > 未列出的游戏层自由代码=违规；audit 红旗（裸随机/innerHTML/createElement/零能力/零测试）不受理为例外。
+
+> **⚠ 行数记账·实测校正（PE-A·A-020·2026-07-20·`wc -l`）**：预估 vs 实测过程化码——
+> ①盘间流程编排 `guandan-session.ts` 预估 ~200 → **实测 571**；②AI glue `ai.ts` 预估 ~150 → **实测 261**；③UI 装配 `game-a.ts`（宿主）预估 ~100 → **实测 423**；④记牌器统计已并入 `hud.ts` 数据（不单列）。
+> **过程化码合计 ~1255 行（预估 490·约 2.6×）**（`hud.ts` 919 + `rules.ts` 161 = LayoutNode/纯数据·不计过程化）。Lead 评审快照测 ~1160（ai 227+session 563+host 370·2026-07-20），本轮 A-019 施工后增至 ~1255。**A-004 债线「419 行」（game-e session 先例）已过时**——真实超支债=①②③三例外合计超预估 ~765 行，随 b/c 牌桌同构攒齐后一并下沉偿还（turn-flow / card-ai-candidates / mountHost 泛化）。诚实记债不洗白：超支主因=掼蛋规则面（进贡矩阵 G1-G4/逢人配/彩头倍率）确比通用桌游复杂，但**结算数值散码**（modifier-stack 未消费·见 §2）确有可下沉空间，非全属不可避免。
 
 ## 4.5 美术接入（必填）
 

@@ -13,7 +13,7 @@ import {
 import { buildTableBlueprint } from './blueprint.js';
 import { buildMenu, buildTableSelect, buildPlay, buildResult, buildGameMenu, type SeatView } from './hud.js';
 import { cardAssetId } from './theme.js';
-import { pickLead, pickMinResponse } from './ai.js';
+import { pickLead, pickMinResponse, chooseTurn } from './ai.js';
 
 const c = (suit: number, rank: number): Card => ({ suit, rank });
 
@@ -202,6 +202,31 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
     for (const [eid] of w.query('Resource')) { const r = w.getComponent<Resource>(eid, 'Resource'); if (r?.id === 'bb-aggression') aggr = r; }
     expect(aggr).not.toBeNull();
     expect(aggr!.max).toBe(100);
+  });
+
+  // ── 宗师读牌真消费（L4·A-019·偷看到对手 premium → 进攻抬·「会读牌」为真非 HUD 摆设）──────────
+  it('宗师偷看真消费：读到对手 premium 牌 → bb-aggression +12（决策真吃偷看·非 premium/非 L4 不抬）', () => {
+    const e = new Engine();
+    e.load(buildTableBlueprint({ seed: 7 }));
+    const cfg = guandanConfig(2);
+    const readAgg = (): number => {
+      for (const [eid] of e.world.query('Resource')) {
+        const r = e.world.getComponent<Resource>(eid, 'Resource');
+        if (r?.id === 'bb-aggression') return r.current;
+      }
+      return NaN;
+    };
+    const base = {
+      cfg, hand: [c(0, 5), c(0, 6), c(1, 7)], target: null,
+      partnerWinning: false, minOppCards: 20, tier: 'l4' as const,
+      personality: 'steady' as const, jitter: 0,
+    };
+    chooseTurn(e.world, { ...base }); const a0 = readAgg(); // 无偷看：steady30 + l4 10 = 40
+    chooseTurn(e.world, { ...base, peekedOpp: [cardCode(0, 14)] }); const a1 = readAgg(); // 偷看到对手 A（premium）
+    chooseTurn(e.world, { ...base, peekedOpp: [cardCode(0, 3), cardCode(1, 4)] }); const a2 = readAgg(); // 只偷看到小牌
+    expect(a0).toBe(40);
+    expect(a1).toBe(52); // +12：读到对手火力→抢先倒牌进攻抬
+    expect(a2).toBe(40); // 非 premium 偷看不抬（只有大牌才是威胁）
   });
 
   it('同种子双跑同世界（确定性冒烟）', () => {

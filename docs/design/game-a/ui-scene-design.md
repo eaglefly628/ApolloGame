@@ -250,3 +250,14 @@ owner 一轮四条：①菜单 Tab 切页跳大小 ②压不过时高亮「过�
 - **提示/AI 不拆牌型（owner「别拆我三条凑对子」）**：`ai.preferNoSplit` 软偏好——候选里有「不拆 ≥3 同点组」的就只从里面挑（整只出该组不算拆）。接进 pickLead/pickMinResponse/chooseTurn 应对，hint 传 hand 生效。点名单测：三条5+对7 应对对3 → 用对7 不拆三条。
 - **种子到秒（owner）**：`enterTable` 种子 = `Math.floor(Date.now()/1000)`（当前时间**到秒**）+ 同秒连开 runCount 微扰；设置页显此种子供报 bug 复现。
 - **留下一步**：EN/中 语言切换（i18n·owner 本轮提·默认中文）=独立较大改动·随后专项落。
+
+## 14. v7 迭代记录（扇牌真碰撞修 + 金 CTA/felt 贴图 + 稿件降格清单诚实化 · PE-A · 2026-07-20）
+
+- **扇牌真碰撞布局修（A-019①·非 allowOverlap 掩盖）**：27 张满手时右端 `a-hand-24~26` 旋摆压进右下操作按钮区（ui-audit 实测 12 处牌vs非牌重叠·最大 ~1736px²·被盖牌右段命中区被按钮吃）——**真碰撞非 A-007 扇叠假阳**。走**布局修**（Lead 三选）：`HAND_STEP` 34→25（扇宽 884→650px·每张仍露 25px 可读点数）+ `HAND_CENTER_X` 600→556（略左移给右下按钮列腾位）。ui-audit 复测：**牌vs按钮/立绘/工具重叠归零**（残留仅座前 tray↔谁大箭头=祖孙嵌套·与基线同·Float 锚定 by design）；扇内牌vs牌叠=纸牌意图叠层（A-007 记档·未用 allowOverlap 清零·守 Lead 铁律）。真机截图目击。
+- **主 CTA 金按钮（owner「接上去」批·hero kind）**：开始上桌/入座开局 `primary`(绿·jadeWash)→`hero`（金渐变底+深墨字 `t.bg0`+倒角流光）=蓝本 `main-menu-guandan.dc.html` 主 CTA「深字金底」1:1（真机≈8:1 高对比）。弃贴皮路（`buttonSkins.skin` 强制白字→浅金失读）用引擎 hero kind。ui-audit contrast 渐变底盲区误报 1.05 假阳=**A-022 报 PUI·不降格**（同 A-007）。
+- **牌桌 felt 贴图**：`FELT_RED` 纯渐变 → `FELT_TEXTURE`（`felt/oval.svg` 偏心聚光光晕+呢纹叠渐变上·图 404 退渐变兜底）——真机=正椭圆金边+桌心光池，较旧胶囊软边更像实体牌桌。
+- **稿件降格清单（Claude Design 稿铁律·逐条列不悄悄降格·A-020③·Lead 评审补录）**：以下四处实现偏离设计稿，逐条列明·标 deferred（待做）/accepted（功能等价非损失）——
+  1. **席位表情气泡**：稿=座位即时情绪气泡（出牌/被压反应）；实现=`SeatView.flavor` **静态人设问候气泡**（闲时显），即时情绪反应气泡=**死参恒缺席**。→ **deferred**（情绪反应系统=phase-3 演出·当前只静态人设句）。
+  2. **SC-5 通关生涯统计**：稿=通关结算独立生涯统计面板（总局/胜率/收藏进度）；实现=**折叠进结算卡标题变体**（`buildResult` run-won phase·无独立统计面板）。→ **deferred**（生涯统计=storage 存档聚合·后议）。
+  3. **进贡交互 Modal**：稿=进贡/还贡交互 Modal（玩家选牌进贡弹窗）；实现=**文字横幅** `tributeText`（一句话告知·玩家知情·AI 按规则自动进最大牌）。→ **accepted**（末游进最大牌=规则确定·G1-G4 无玩家选择空间·横幅告知功能等价·非降格损失）。
+  4. **记牌器 Drawer**：稿=侧滑 Drawer；实现=**Modal 浮层**（13×4 明面计数）。→ **accepted**（Modal 与 Drawer 均闭集浮层·功能等价·居中更聚焦）。

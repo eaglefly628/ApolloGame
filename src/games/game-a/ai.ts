@@ -91,6 +91,7 @@ export interface AiTurnInput {
   tier: AiTierSpec['id'];
   personality: Personality;
   jitter: number; // [0,1) 种子取数（多变浮动·session 提供）
+  peekedOpp?: readonly number[]; // L4 宗师本座发牌期偷看到的对手牌码（真消费=知对手火力·A-019）；非 L4 空
 }
 export interface AiDecision {
   move: 'lead' | 'pass' | 'bomb' | 'press' | 'min';
@@ -169,7 +170,7 @@ export function pickLead(candidates: readonly PatternMatch[], cfg: HandPatternCo
 /**
  * 最小应对启发（hint 用）：取最小的**不拆炸**应对——安全非炸牌型优先，无则退到整只炸弹（整炸=没拆·如唯一
  * 能压钢板的真炸）；只剩「拆炸凑小牌型」的应对返回 null（=建议过·炸留反压·owner 报「四张7拆成两对」根因）。
- * candidates=已 beats 过滤的应对候选（升序）。整炸不算拆——A-008 唯一解=真炸时仍会提示它。
+ * candidates=已 beats 过滤的应对候选（升序）。整炸不算拆——真炸时仍会提示它（曾并入 A-008 已修 `214fc846`）。
  */
 export function pickMinResponse(candidates: readonly PatternMatch[], cfg?: HandPatternConfig, hand?: readonly Card[]): PatternMatch | null {
   const bombCards = naturalBombCards(candidates);
@@ -185,17 +186,21 @@ export function chooseTurn(world: IWorld, input: AiTurnInput, seed?: RandomSeed)
   const cfg = input.cfg;
   const tierIdx = AI_TIERS.findIndex((t) => t.id === input.tier);
   // 应对候选经引擎自身 beats 复核：滤掉「意图能压、matchPattern 规范判读却压不过」的歧义应对
-  //（引擎 t3-hand-pattern 逢人配判读缺口·A-008），只留 act 真会收的那批 → AI 不空过、不出被判非法的牌。
+  //（曾治引擎 t3-hand-pattern 逢人配判读缺口·A-008·已修 `214fc846`→防御性复核·幂等），只留 act 真会收的那批 → AI 不空过、不出被判非法的牌。
   const raw = legalResponses(input.hand, input.target, cfg);
   const candidates = input.target === null ? raw : raw.filter((m) => beats(m.cards, input.target!, cfg));
   const nonBomb = candidates.filter((m) => !isBombFamily(m));
 
-  // 黑板写入（L1 无让牌/压制概念=旗恒 false；宗师 +10 进攻；多变 ±20 浮动）
+  // 宗师读牌真消费（L4·A-019）：偷看到对手握 premium（K/A/级牌/王）→ 知对手有后手火力，抢先倒牌自保（+12 进攻）。
+  // 偷看保真度→黑板初值（引擎 REQ-BT 口径·A-021）；HUD「会读牌」公平告知由此为真（决策真吃偷看·非纯摆设）。
+  const peekLoaded = !!input.peekedOpp?.some((code) => effRank(code % 100, cfg) >= effRank(13, cfg));
+  // 黑板写入（L1 无让牌/压制概念=旗恒 false；宗师 +10 进攻；多变 ±20 浮动；读到对手火力 +12）
   const aggBase = PERSONALITY_AGGRESSION[input.personality];
   const agg =
     aggBase +
     (input.tier === 'l4' ? 10 : 0) +
-    (input.personality === 'wild' ? Math.floor(input.jitter * 41) - 20 : 0);
+    (input.personality === 'wild' ? Math.floor(input.jitter * 41) - 20 : 0) +
+    (peekLoaded ? 12 : 0);
   setFlag(world, 'bb-leading', input.target === null);
   setFlag(world, 'bb-partner-winning', tierIdx >= 1 && input.partnerWinning);
   setFlag(world, 'bb-only-bomb', candidates.length > 0 && nonBomb.length === 0 && input.target !== null);

@@ -441,10 +441,10 @@ const TRAY_POS: Record<SeatId, { x: number; y: number }> = {
 // （lift=K·offset²·用绝对张数偏移·不归一化）→ 牌越少=整把越短越平但**弧度一致**，居中。牌少「完全展开」=旧
 // 归一化+撑满宽 bug，此模型消除。
 const HAND_CARD_W = 64;
-const HAND_STEP = 34; // 固定重叠步进（每张露出 34px·恒定·牌少不撑开·满手 27 张≈884px 居中于底部）
+const HAND_STEP = 25; // 固定重叠步进（每张露出 25px·恒定·牌少不撑开）。满手 27 张≈650px——收窄自 34（A-019 真碰撞修：34 时右端 a-hand-24~26 压进操作按钮区·非 allowOverlap 掩盖；25 两端各留 ~35px 余量）。
 const HAND_CURVE_K = 0.28; // 固定弧曲率（lift = K·offset²·弧度一致·不随张数变·更平缓）
 const HAND_ROT_PER = 1.6; // 固定每张旋转角（度·扇形一致）
-const HAND_CENTER_X = 600; // 扇形中心 x（居中·满手左端≈126·放大立绘上移到扇左端之上 y·两者不再横向争位·右端翘牌错在操作区上方 A-007）
+const HAND_CENTER_X = 556; // 扇形中心 x（略左移·给右下操作按钮列腾位·A-019 真碰撞修）。满手右端<操作区左缘 966；左端翘牌旋摆不压立绘框（x/y 双清）。
 function buildHandFanNodes(hand: number[], selected: number[]): LayoutNode[] {
   const n = hand.length;
   if (n === 0) return [];

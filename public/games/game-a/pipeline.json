@@ -27,15 +27,15 @@
   "evidence": {
     "S4": {
       "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  6 passed (6) ·       Tests  66 passed (66)）· 验收剧本 8 场景绿",
-      "at": "2026-07-21T16:56:22.204Z",
-      "gameHash": "ddbbdf474adfe8fb"
+      "summary": "walkthrough 绿（ Test Files  6 passed (6) ·       Tests  68 passed (68)）· 验收剧本 8 场景绿",
+      "at": "2026-07-22T02:58:14.183Z",
+      "gameHash": "655c1f763b48b656"
     },
     "S5": {
       "exit": 0,
-      "summary": "AUDIT: WARNINGS · RATCHET: PASS",
-      "at": "2026-07-17T20:06:53.255Z",
-      "gameHash": "744bf31a9bafd529"
+      "summary": "AUDIT: PASS · RATCHET: PASS",
+      "at": "2026-07-22T02:58:14.334Z",
+      "gameHash": "655c1f763b48b656"
     }
   },
   "history": [
@@ -333,6 +333,30 @@
       "stage": "S4",
       "exit": 0,
       "at": "2026-07-21T16:56:22.204Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "A-019 UI 冻结后重跑 S4/S5 机器门补戳（Lead 领单令）·S2/S3 复查门 stale 属 A-020/A-021 文档刷新范畴·非本机器门欠",
+      "at": "2026-07-22T02:58:08.333Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-07-22T02:58:14.183Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "A-019 UI 冻结后重跑 S4/S5 机器门补戳（Lead 领单令）·S2/S3 复查门 stale 属 A-020/A-021 文档刷新范畴·非本机器门欠",
+      "at": "2026-07-22T02:58:14.282Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-07-22T02:58:14.334Z"
     }
   ],
   "reviews": {
@@ -463,6 +487,16 @@
       "stage": "S4",
       "reason": "PE 2026-07-20 外围美术占位接线：4 屏背景走 Screen.image(夜宴豪宅夜景 SVG)·渐变保兜底·规则/验收不动",
       "at": "2026-07-21T16:56:10.886Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "A-019 UI 冻结后重跑 S4/S5 机器门补戳（Lead 领单令）·S2/S3 复查门 stale 属 A-020/A-021 文档刷新范畴·非本机器门欠",
+      "at": "2026-07-22T02:58:08.333Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "A-019 UI 冻结后重跑 S4/S5 机器门补戳（Lead 领单令）·S2/S3 复查门 stale 属 A-020/A-021 文档刷新范畴·非本机器门欠",
+      "at": "2026-07-22T02:58:14.282Z"
     }
   ]
 }

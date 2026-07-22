@@ -11,11 +11,13 @@
 ### A-018 · [2026-07-20] · Lead 评审 · ⚖ 规则裁决：一四局进贡口径（甲=按位末游贡/乙=按输方三游贡） · status: ⏳ **待 owner 一字裁决** · 类型: 规则口径（owner 域·阻 A-021 部分剧本）
 GDD §2.3 G1 自带问号未裁（裁 ☐）；代码照字面=绝对末游进贡 → 一四局（~35% 盘）赢家搭档进贡自家头游、输家不掏（审A seed 1-400 实证 140/140）；剧本⑥（seed=4）恰把该行为钉成正确。裁甲=现状即对、GDD 消问号打勾；裁乙=session 进贡 giver 改输方最低名次 + 剧本⑥换 seed 重写 + 补一四正例剧本。详 `lead-review-2026-07-20.md` §二。
 
-### A-019 · [2026-07-20] · Lead 评审 · PE-A 领单包①（P1/P2 施工·不依赖 A-018） · status: 📋 open 待领 · 类型: 玩法/UI 修缮（PE 域）
+### A-019 · [2026-07-20] · Lead 评审 · PE-A 领单包①（P1/P2 施工·不依赖 A-018） · status: ✅ PE-A 完结（2026-07-20·四件全落·门禁绿） · 类型: 玩法/UI 修缮（PE 域）
 ① **扇牌真碰撞布局修**：27 张满手时 a-hand-24~26 压进操作按钮区（hud.ts:391-395/653-656·12 处牌vs非牌重叠·最大 ~3000px²）——缩 HAND_STEP / 左移 HAND_CENTER_X / 操作区下移三选一；**禁止**用 allowOverlap 掩盖（ui.md 铁律）。② **宗师读牌二选一**：peeks 从未进 AI 决策（session:217-233 算了没人吃·仅 HUD 显示「会读牌」=不实告知）——真消费（AiTurnInput 加 peek·注意剧本走位漂移照 A-013 先例与 GD 对 seed）或撤文案撤字段。③ 过期注释更新：session:443-450 + ai.ts:159-162 的「A-008 缺口兜底」改「防御性复核·引擎 REQ-HANDPAT `214fc846` 已保证 ⊆ 合法集」。④ UI 冻结后重跑 S4/S5 gate 补戳。详 review §三/§四。
+> **✅ PE-A 落地（2026-07-20·本轮）**：① `HAND_STEP` 34→25 + `HAND_CENTER_X` 600→556（**布局修·非 allowOverlap**）→ ui-audit 复测牌vs按钮/立绘/工具重叠**归零**（残留仅座前 tray↔谁大箭头=祖孙嵌套·与基线同）；真机截图目击。② 选**真消费**：`AiTurnInput.peekedOpp`（L4 本座偷看的对手牌码）→ `chooseTurn` 读到对手 premium(K/A/级牌/王)→`bb-aggression`+12（抢先倒牌·「会读牌」由此为真·记牌保真度=黑板初值·A-021 引擎口径）；点名单测 + 假绿自查（删 +12 转红已核）。**零剧本漂移**（验收全走 L1 无 peek·default tier 实证 l1；S4 gate 验收 8 场景仍绿）——故无需与 GD 对 seed。③ session/ai.ts 四处「A-008 缺口兜底」注释改「防御性复核·引擎 `214fc846` 已保证 ⊆ 合法集·幂等」。④ S4 gate（walkthrough 68 测+验收 8 场景绿）+ S5 gate（AUDIT+RATCHET PASS）重跑补戳 exit=0·gameHash `655c1f76`（S2/S3 复查门 stale 属 A-020/A-021 范畴·--out-of-order 记账放行）。tsc 0·vitest game-a 68·build 0。
 
-### A-020 · [2026-07-20] · Lead 评审 · PE-A 领单包②（记账诚实·半小时账房活） · status: 📋 open 待领 · 类型: 文档对账（PE 域）
+### A-020 · [2026-07-20] · Lead 评审 · PE-A 领单包②（记账诚实·半小时账房活） · status: ✅ PE-A 完结（2026-07-20·三件全落） · 类型: 文档对账（PE 域）
 ① capability-plan §2：modifier-stack/event-when/effect-apply/timeline/tween 实测零消费——从「✅ 消费」降级为「未消费·偿还计划」；card-pile 标注「骨架占位·真手牌态在 session」。② §4 行数记账实测更新（过程化码 ~1160 vs 预估 450·A-004 债线 419 过时）。③ 稿件降格四处补列清单（表情气泡死参/SC-5 生涯统计折叠/进贡 Modal→文字/记牌器 Drawer→Modal——接线或明记 deferred）。详 review §四。
+> **✅ PE-A 落地（2026-07-20·本轮）**：① capability-plan §2 加诚实校正块 + 逐行降级——`modifier-stack`/`event-when`/`effect-apply`/`timeline`/`tween` 实测 0 引用（grep 实证·`tween` 那 1 命中=`justify:'between'` 假匹配）标「⚠ 未消费·偿还计划」；`t2-card-pile` 标「⚠ 骨架占位·影子态（蓝图装 5 份·真发牌在 `session.hands[]`）」。② §4 加行数实测块：session 571/ai 261/host(game-a) 423=**过程化码 ~1255**（预估 490·~2.6×·hud 919+rules 161=数据不计）；A-004 债线 419 标过时·超支债随 b/c 同构下沉偿还·诚实记账不洗白（超支主因=掼蛋规则复杂 + 结算散码可下沉）。③ ui-scene-design §14 加稿件降格清单：席位表情气泡（死参·deferred）/SC-5 生涯统计（折叠·deferred）/进贡 Modal→文字横幅（accepted·规则自动无选择空间）/记牌器 Drawer→Modal（accepted·闭集浮层等价·核码 `a-p-counter-modal`）。纯文档·门禁文档守卫绿。
 
 ### A-021 · [2026-07-20] · Lead 评审 · GD-A：brief 记牌口径认账 + 剧本缺口补写 · status: 📋 open 待领（剧本部分衔接 A-018 裁决） · 类型: 设计对账+验收剧本（GD 域）
 ① brief §5「4 档靠记牌分档」未实现（AI_TIERS.memory=死标签·真差异=三策略开关）——补记牌消费设计（REQ-BT 裁决：记牌保真度=黑板初值）交 PE，或 brief 改口认账。② 剧本缺口：一四进贡正例（待 A-018）；抗贡正例（输方真持双大王）；双下抗贡；抗贡+1倍/天王炸+1倍彩头倍率（现零测试）；停 A 重打闭环。详 review §三/§四。
