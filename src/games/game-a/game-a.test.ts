@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { matchPattern, beats, legalResponses } from '@skills/tier3/index.js';
 import type { Card, GameFlow, Resource, CardPile, Flag } from '@engine/protocol/components.js';
-import { validateLayoutNode } from '@ui/components/index.js';
+import { validateLayoutNode, type LayoutNode } from '@ui/components/index.js';
 import {
   buildDeck108, guandanConfig, cardCode, codeRank, codeSuit, sortHand,
   SEATS, DECK_SIZE, RANK_SMALL_JOKER, RANK_BIG_JOKER, SUIT_HEART, INITIAL_FUNDS, DRESS_TIERS,
@@ -265,6 +265,47 @@ describe('Game A ·《掼蛋夜宴》骨架关（S3）', () => {
       });
       expect(validateLayoutNode(res)).toEqual([]);
     }
+  });
+
+  // ── 座前牌入场动效独立性（只播最近落子座·防全桌/上一张一起重播·owner 2026-07-20·A-017）────
+  // 根因：旧 seatTrayNode 给每座的牌都挂 anim → 任何重渲/换根都把全桌 tray 一起重放。
+  // 修法：仅 justPlayed 座的座前牌带 anim，其余座静态渲染（无 anim=重渲不重放）。
+  it('入场动效只挂 justPlayed 座：其余座前牌/pass 静态无 anim', () => {
+    const sv = (id: SeatView['seat']['id']): SeatView => ({ seat: SEATS.find((s) => s.id === id)!, cards: 27, dress: DRESS_TIERS });
+    const byId = new Map<string, LayoutNode>();
+    const walk = (n: LayoutNode): void => { byId.set(n.id, n); (n.children ?? []).forEach(walk); };
+    const base = {
+      lang: 'zh' as const,
+      round: 1, stake: 100, levelPlay: 2, levelOurs: 2, levelTheirs: 2, wallet: INITIAL_FUNDS,
+      turn: 'hero' as const, turnName: '你',
+      seats: { partner: sv('partner'), west: sv('west'), east: sv('east'), hero: sv('hero') },
+      hand: [cardCode(0, 3)], selected: [], trick: null,
+      canCommit: false, commitWhy: '', canPass: false, mustPass: false, sortMode: 'rank' as const,
+      tributeText: null, showCounter: false, counter: [], showMenu: false, menuTab: 'log' as const,
+      logRows: [], tierName: '常客', seed: 20260718,
+      // west 出对子、hero 出单张、partner 过牌 → 三座座前牌桌都有内容
+      plays: {
+        west: { cards: [cardCode(2, 2), cardCode(3, 2)], pass: false },
+        hero: { cards: [cardCode(0, 5)], pass: false },
+        partner: { cards: [], pass: true },
+      },
+    };
+    // justPlayed = west：只有 west 两张牌带 anim（错落 dir+delay），hero/partner 静态
+    byId.clear(); walk(buildPlay({ ...base, justPlayed: 'west' }));
+    expect(byId.get('a-tray-west-0')?.layout?.anim).toBeTruthy();
+    expect(byId.get('a-tray-west-1')?.layout?.anim).toBeTruthy();
+    expect(byId.get('a-tray-west-1')?.layout?.animDelay).toBe(70); // 逐张错落
+    expect(byId.get('a-tray-hero-0')?.layout?.anim).toBeFalsy(); // 非落子座·静态（重渲不重放）
+    expect(byId.get('a-tray-partner-pass')?.layout?.anim).toBeFalsy();
+    // justPlayed = partner（过牌）：只有 partner 的 pass 标带 fadeIn，牌座全静态
+    byId.clear(); walk(buildPlay({ ...base, justPlayed: 'partner' }));
+    expect(byId.get('a-tray-partner-pass')?.layout?.anim).toBe('fadeIn');
+    expect(byId.get('a-tray-west-0')?.layout?.anim).toBeFalsy();
+    expect(byId.get('a-tray-hero-0')?.layout?.anim).toBeFalsy();
+    // justPlayed 缺省（fixture 只验布局·无落子上下文）：全桌静态·无一带 anim
+    byId.clear(); walk(buildPlay({ ...base }));
+    for (const seat of ['west', 'hero'] as const) expect(byId.get(`a-tray-${seat}-0`)?.layout?.anim).toBeFalsy();
+    expect(byId.get('a-tray-partner-pass')?.layout?.anim).toBeFalsy();
   });
 
   // ── 游戏内菜单（☰·出牌日志/规则说明/设置·owner 2026-07-18）过 validateLayoutNode ─────────

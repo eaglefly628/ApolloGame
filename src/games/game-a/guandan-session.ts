@@ -129,6 +129,8 @@ export class GuandanSession {
   currentTrick: TrickPlay | null = null;
   /** 本墩各座最近一手（座前小牌桌显示·像真扑克·出=牌+型，过=pass）；收墩清空。UI 镜像·非规则真相。 */
   seatPlay: Partial<Record<SeatId, { cards: number[]; family: string | null; pass: boolean }>> = {};
+  /** 最近落子座（座前牌入场动效只播它·防全桌/上一张一起重播·UI 镜像·非规则真相）。startRound 清 null。 */
+  lastPlayed: SeatId | null = null;
   /** 本墩已应对（过牌/被压后再表态）的座位计数。 */
   private responded = 0;
   /** 本墩需应对的活跃座数（=除持墩者外的活跃座）；responded 达此数即收墩。 */
@@ -190,6 +192,7 @@ export class GuandanSession {
     this.finished = [];
     this.currentTrick = null;
     this.seatPlay = {};
+    this.lastPlayed = null;
     this.responded = 0;
     this.respondersNeeded = 0;
     this.tributes = [];
@@ -367,6 +370,7 @@ export class GuandanSession {
   act(seat: SeatId, codes: number[] | null): boolean {
     const chk = this.legalCheck(seat, codes);
     if (!chk.ok) return false;
+    this.lastPlayed = seat; // 最近落子座（座前牌入场动效只播它·防全桌/上一张一起重播·owner 2026-07-20）
 
     if (codes === null) {
       this.logPlay(seat, 'pass', [], null); // 读旧墩前记（此处 pass 无墩引用）

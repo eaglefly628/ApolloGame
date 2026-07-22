@@ -173,6 +173,7 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
       plays: Object.fromEntries(
         TURN_ORDER.filter((seat) => s.seatPlay[seat]).map((seat) => [seat, { cards: s.seatPlay[seat]!.cards, pass: s.seatPlay[seat]!.pass }]),
       ),
+      justPlayed: s.lastPlayed, // 座前牌入场动效只播最近落子座（防全桌/上一张一起重播·owner 2026-07-20）
       tributeText: tributeText(s),
       showCounter,
       counter: showCounter ? counterData(s) : [],

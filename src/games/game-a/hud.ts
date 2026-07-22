@@ -366,6 +366,7 @@ export interface PlayView {
   trick: { name: string; family: string; cards: number[]; holder: SeatId; holderName: string; holderTeam: 0 | 1; wilds: number } | null;
   // 本墩各座最近一手（座前小牌桌·像真扑克·出=牌码/过=pass）。
   plays: Partial<Record<SeatId, { cards: number[]; pass: boolean }>>;
+  justPlayed?: SeatId | null; // 最近落子座（座前牌入场动效只播它·防全桌/上一张一起重播）；缺省=都不播（fixture 只验布局）
   tributeText: string | null; // 本盘进贡/还贡/抗贡一句话（首盘=null·玩家知情）
   showCounter: boolean; // 记牌器开合
   counter: { rank: string; played: number; total: number }[]; // 明面已出牌计数（showCounter 时填）
@@ -393,13 +394,15 @@ function trickCard(code: number, idx: number): LayoutNode {
 // 避免「全桌牌一起播」bug（owner 2026-07-18）；per-card animDelay=错落、按座位方向选入场式（从手上/落盘）。
 // 入座方向→入场式（从该座方向飞入·owner 2026-07-18「根据入桌方向」）：east 无 from-right 关键帧→暂 dealIn·报 PUI A-017。
 const TRAY_ANIM: Record<SeatId, 'slideUp' | 'dealIn' | 'flyIn'> = { hero: 'slideUp', partner: 'dealIn', west: 'flyIn', east: 'dealIn' };
-function seatTrayNode(seat: SeatId, play: { cards: number[]; pass: boolean } | undefined, x: number, y: number, l: Lang): LayoutNode {
+// animate=仅「最近落子座」为真（justPlayed）：入场动效只播它，其余座前牌静态渲染——
+// 治「全桌一起播 / 上一张一起重播」（owner 2026-07-20）：非本次落子的座不带 anim，任何重渲/换根都不会重放它们。
+function seatTrayNode(seat: SeatId, play: { cards: number[]; pass: boolean } | undefined, x: number, y: number, l: Lang, animate: boolean): LayoutNode {
   if (!play) return { type: 'Panel', id: `a-tray-${seat}`, props: { bare: true }, layout: { x, y } }; // 空占位（稳定键·0 尺寸不显）
   if (play.pass) {
     return {
       type: 'Panel', id: `a-tray-${seat}`, props: { bare: true },
       layout: { x, y, direction: 'row' },
-      children: [{ type: 'Tag', id: `a-tray-${seat}-pass`, props: { label: t(l, 'play.pass'), tone: 'dim', size: 'sm' }, layout: { anim: 'fadeIn' } }],
+      children: [{ type: 'Tag', id: `a-tray-${seat}-pass`, props: { label: t(l, 'play.pass'), tone: 'dim', size: 'sm' }, ...(animate ? { layout: { anim: 'fadeIn' as const } } : {}) }],
     };
   }
   const dir = TRAY_ANIM[seat];
@@ -411,7 +414,8 @@ function seatTrayNode(seat: SeatId, play: { cards: number[]; pass: boolean } | u
       return {
         type: 'PlayingCard', id: `a-tray-${seat}-${i}`,
         props: { rank: f.rank, suit: f.suit, face: 'light', size: 'sm' },
-        layout: { anim: dir, animDelay: i * 70 }, // 错落：逐张递增延迟·从座位方向飞入
+        // 仅落子座错落入场；其余静态（无 anim=重渲不重放）。
+        ...(animate ? { layout: { anim: dir, animDelay: i * 70 } } : {}),
       } as LayoutNode;
     }),
   };
@@ -526,7 +530,7 @@ export function buildPlay(v: PlayView): LayoutNode {
   // 座前小牌桌·**恒 4 槽**（无出牌=空占位）——稳定 felt 子键序，reconciler 只重渲「内容真变了的那槽」，
   // 只有刚出牌的那家的牌重播入场（修 owner 2026-07-18「播打牌动画时全桌牌一起播」bug·根因=旧实现 tray 数随出牌
   // 增减→felt 子键序变→整片 felt 被 outerHTML 重建→所有 tray 一起重播）。
-  for (const seat of TURN_ORDER) feltChildren.push(seatTrayNode(seat, v.plays[seat], TRAY_POS[seat].x, TRAY_POS[seat].y, l));
+  for (const seat of TURN_ORDER) feltChildren.push(seatTrayNode(seat, v.plays[seat], TRAY_POS[seat].x, TRAY_POS[seat].y, l, seat === v.justPlayed));
   // 弹簧箭头指「谁大」（Float 锚定暂大者座前小牌桌·上下弹跳+呼吸光·近似弹簧·owner 2026-07-18）。**恒渲**（无墩=锚到
   // 不存在的槽·Float 找不到目标自隐）——稳定 felt 子键序，箭头出没不再触发整片 felt 重建（=全桌牌重播）。
   // felt 子节点（Float 位置 JS 活取·静态 audit 摆不准=祖孙嵌套豁免同扇形/中央墩）；真 scale 弹簧基座缺→float+glow 近似·A-011。
