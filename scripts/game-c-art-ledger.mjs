@@ -39,22 +39,15 @@ const vendored = (skinKey, served, license, source) => ({
   prov: { generator: 'vendored', prompt: null, model: source, license, source: `assets/index.json → scripts/vendor-asset.mjs`, mock: false, note: '货架现货已 vendor·可后续换夜金定制' },
 });
 
-// ── ① 场景/背景 ───────────────────────────────────────────
-// owner 2026-07-22：相机是**陡俯视**（~64°往下看桌），背幕必须是**从高往下俯视**看到桌四周环境的一小片切片——
-//   视角方向要和相机一致，否则背景像「桌子朝天平放、墙贴在旁边」。故 prompt 强制 overhead/top-down 环境视角（非平视地平线/落地窗）。
-add('game-c/scene/backdrop', 'texture', '环境背幕（高角俯视·桌四周地面切片·紫 noir·与俯视相机方向一致）',
+// ── ① 场景/背景 = 整幅场景 2D 图（owner 2026-07-22 大重构定稿·透视豪华包间）───────────────────────
+//   owner「这是我们游戏的整个背景·桌子只是一个透明 collision·不用画」⇒ **整张透视场景图**（含大木桌 + 皮椅 + 夜景落地窗 +
+//   包间陈设）走 `setBackgroundTexture`（2D 屏空间铺满整个游戏背景）；3D 侧桌子只留**不可见碰撞体**（有碰撞就行）。
+//   人物立绘 + 筹码按图**摆在桌子边上**（HUD 层·PE-C 侧排位）。走背景路=避开 Material3D.map 无 alpha 坑（REQ-3D-MAT-ALPHA）。
+//   旧 felt/rail/betline/table-surface 全下线（桌面美术并入这张整幅场景图）。owner 提供·认作默认最终资产。
+add('game-c/scene/backdrop', 'texture', '整幅场景 2D 背景图（透视豪华包间·大木桌 + 皮椅 + 夜景窗·桌子在 3D 侧只是不可见碰撞体）',
   { mechanism: 'url', component: 'ThreeRenderer', field: 'setBackgroundTexture', resolver: 'renderer.setBackgroundTexture' },
-  'scene/backdrop.svg', 'high-angle overhead top-down view looking straight down at a dark luxurious poker lounge floor surrounding the table, deep purple noir carpet and polished wood, warm pooled light at center fading to shadowed edges, faint city-light reflections on the floor, a thin slice of the surrounding floor seen from a steep downward camera consistent with a top-down table view; NOT an eye-level horizon, NOT a vertical window',
-  { w: 2048, h: 2048, transparent: false, usage: 'albedo' }, '环境背幕·高角俯视桌四周地面·紫 noir', '素坯：声明式 SVG 夜景（theme STORY_BACKDROP）');
-
-// ── ② 牌桌（owner 2026-07-22 大重构·透视 3D 难→顶视整幅贴图）────────────────
-//   桌面 = **一张顶视牌桌整幅贴图**盖住 3D 物理桌（呢面/木栏/发牌区/公共牌槽/下注线全烤进这张图）。
-//   旧的 felt-albedo/normal · rail-albedo/normal · betline 五槽全部**下线**（拆成单张顶视图·美术台账重建）。
-//   物理仍在图下（呢面碰撞体 + 围栏墙·不可见）。AI 生成·owner 认作默认最终资产。
-const felt = { mechanism: 'index', component: 'Material3D', field: 'map', resolver: 'build3d table-surface Material3D.map' };
-add('game-c/table/surface', 'texture', '顶视牌桌整幅贴图（桌面/木栏/发牌区/公共牌槽全在图里·盖住 3D 物理桌）', felt, 'table/surface.png',
-  'top-down overhead view of a luxurious purple velvet poker table, elliptical racetrack stadium shape, padded rail border, floral damask felt pattern, warm central light glow, five outlined community card slots in a horizontal row at center, a single dealer card slot at top, subtle casino branding, dark surroundings, high resolution, slight downward tilt consistent with a near-top-down camera',
-  { w: 2048, h: 1152, transparent: false, usage: 'albedo' }, '顶视牌桌整幅贴图·紫绒racetrack+公共牌槽', '素坯：Mesh3D plane 纯 tint(0x2a1a2e)·真图就绪整幅盖住');
+  'scene/backdrop.svg', 'cinematic perspective view of a luxurious executive lounge / private card room, a large dark walnut table in the foreground seen at a three-quarter slightly-downward angle (table top receding toward the back), leather tub chairs arranged around the table, floor-to-ceiling windows with a night city skyline behind, warm ambient lighting, sofas, table lamps, framed art and trophies, opulent noir mood; this is the full-screen game background, opaque, high resolution',
+  { w: 2048, h: 1152, transparent: false, usage: 'albedo' }, '整幅场景 2D 背景·透视包间+大木桌+夜景窗', '素坯：声明式 SVG（theme STORY_BACKDROP）·真图就绪 setBackgroundTexture 热替换');
 
 // ── ③ 扑克牌 = 引擎渲染原语·移出美术台账（owner 2026-07-22）──────────────────────────
 //   52 牌面 + 牌背既不入 art-ledger.json 也不入 index.json：PlayingCard 组件自绘牌面/牌背（红黑角标+中央花色+
@@ -106,4 +99,4 @@ const out = resolve(ROOT, 'public/games/game-c/art/art-ledger.json');
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, `${JSON.stringify(ledger, null, 1)}\n`);
 console.log(`game-c art-ledger → ${out} (${rows.length} 行)`);
-console.log('  分类：场景1 · 牌桌1(顶视整幅图) · 筹码9 · UI 按钮/框10 · 特效6 · 衣柜图标6 ·（扑克牌=引擎原语移出台账·立绘=外部角色卡不入账）');
+console.log('  分类：场景1(整幅场景图·桌面并入) · 牌桌0(只余不可见碰撞体) · 筹码9 · UI 按钮/框10 · 特效6 · 衣柜图标6 ·（扑克牌=引擎原语移出台账·立绘=外部角色卡不入账）');
