@@ -15,6 +15,7 @@
 > **现状**：背幕已走 `art-overrides.ts` 的 skinKey 索引解析（`fetch art/index.json` + `renderer.setBackgroundTexture(backdropUri())` 热替换·PE-C `f89baa97`）——**此模式=样板**，把它推广到全部 37 行。`npm run ledger:audit game-c` 看当前孤儿数（REQ-C-112 后应已降·余数即本单目标→0）。
 > **黑色地板遮挡（owner「德州黑色地板挡住·移去了」）**：`build3d.ts:59` 注释已定位——有面「完全遮住 setBackgroundTexture 场景背幕」的地板/元素（夜景背幕/工坊生成图被压在下面看不见=owner 报「生成写不回」的**表现根因之一**）。owner 称已移去→**PE-C 复核**：背幕真图就绪后确实上画面（真浏览器目击），别被别的 mesh 再遮。
 > **修法**：逐行接 skinKey 索引消费（承背幕样板）——2D 图走 `filledSrc(index, skinKey)`（`src/assets/asset-index.ts`），3D 场景纹理走既有 `setBackgroundTexture` 热替换；程序化背景（`theme.ts` 渐变）如仍走宿主层→用 `mountHost` `sceneBgSkin` 槽（REQ-ART ② 已 done·有图叠图/无图回退）。无用行退役、别留台本。
+> **⚠ 附带发现·台账 query 塞满场景词（owner 2026-07-22 实测「呢面贴图生成了整个房间+凳子+牌」）**：贴图/材质行的 `query` 被灌进整套 house-style 场景词——如 art-002 呢面 query=`purple velvet poker felt cloth …, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette(#…), painterly premium mobile-game art …`。texture 行 query 该**只描述材质本身**（`purple velvet felt, seamless tileable, flat top-down, fine woven nap`），场景/画风交风格包 base（Lead 已按 kind 分层：texture/UI 走 uiPrompt 无场景）。**根因**：row.prompt 空时 dialectPrompt 回退到 query→场景词上位（felt 的 clean prompt「呢面 albedo·紫绒+暖光池」在时产出正确·实证）。**PE-C 顺手**：把 texture/material 行 query 去场景化（只留材质词），或确保这些行有干净 prompt。（引擎侧 kind 分层已 done·commit f683c961。）
 > **完工判据**：① `npm run ledger:audit game-c --strict` 孤儿归零；② 工坊替换任一 game-c 美术（筹码/牌面/背幕）→游戏即显（真浏览器亲验≥2 类·背幕不被地板遮）；③ game-c 测零回归·门禁绿。
 > **边界**：game-c 游戏代码=PE-C 域；引擎件（`filledSrc`+`sceneBgSkin`+`ledger-audit`+`setBackgroundTexture`）已 done、直接消费。
 

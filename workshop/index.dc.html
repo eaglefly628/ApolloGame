@@ -1890,8 +1890,13 @@ class Component extends DCLogic {
     };
     const mkArtCell = (r) => {
       // 封面优先级：真生成图 > 现况占位快照（row.placeholder.servedPath·07-15 needs-art 行也有脸） > 占位解析图（07-12） > 灰底
-      const served = (r.gen && r.gen.servedPath) || (r.placeholder && r.placeholder.servedPath)
+      const servedRaw = (r.gen && r.gen.servedPath) || (r.placeholder && r.placeholder.servedPath)
         || (r.status === 'placeholder' ? (s.artResolve || {})[r.query] : null);
+      // 缓存破坏（owner 2026-07-22 报「重生成后缩略图还是老图」）：生成图 URL 不变→浏览器缓存旧图；
+      // 真生成图附版本戳（provenance.date 每次重生成变·退回 cacheKey/localId）→强制刷新。占位/库图静态·不加戳。
+      const served = servedRaw
+        ? (servedRaw + ((r.gen && r.gen.servedPath === servedRaw) ? ('?v=' + encodeURIComponent((r.provenance && r.provenance.date) || r.gen.cacheKey || r.gen.localId || '1')) : ''))
+        : null;
       const badge = stBadge[r.status] || [r.status, '#c8c8c8'];
       // 原始占位可视化（owner 07-13「新建卡袋看不到在用的占位图」）：没生成真图的行，把引擎实际渲染的
       // 程序化占位（Color.tint 色块 + 形体）画成 swatch——所见=游戏里现在真渲染的样子（非空白）。
@@ -1952,9 +1957,13 @@ class Component extends DCLogic {
     const artCurPack = s.artPack || (artPacksArr[0] && artPacksArr[0].packId) || '';
     const artWantKind = artSelRow && artSelRow.kind === 'model3d' ? 'mesh' : 'texture'; // 2D=texture（对齐 providers kind·qwen/seedream 均 texture·曾误写 'image' 致 2D 模型 chip 空）
     const artProvsArr = (Array.isArray(s.genProviders) ? s.genProviders : []).filter(p => !p.kind || p.kind === artWantKind);
-    const artSelServed = artSelRow && ((artSelRow.gen && artSelRow.gen.servedPath)
+    const artSelServedRaw = artSelRow && ((artSelRow.gen && artSelRow.gen.servedPath)
       || (artSelRow.placeholder && artSelRow.placeholder.servedPath)
       || (artSelRow.status === 'placeholder' ? (s.artResolve || {})[artSelRow.query] : null));
+    // 同缩略图·详情卡预览也破缓存（重生成后详情大图刷新·owner 2026-07-22 报）。
+    const artSelServed = artSelServedRaw
+      ? (artSelServedRaw + ((artSelRow.gen && artSelRow.gen.servedPath === artSelServedRaw) ? ('?v=' + encodeURIComponent((artSelRow.provenance && artSelRow.provenance.date) || artSelRow.gen.cacheKey || artSelRow.gen.localId || '1')) : ''))
+      : null;
     const artStBadge = artSelRow ? (stBadge[artSelRow.status] || [artSelRow.status, '#c8c8c8']) : ['', ''];
     const artSlotN = artSelRow ? ((artSelRow.slots && artSelRow.slots.length) || 1) : 0;
 
