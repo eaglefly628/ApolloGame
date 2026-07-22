@@ -47,18 +47,14 @@ add('game-c/scene/backdrop', 'texture', '环境背幕（高角俯视·桌四周�
   'scene/backdrop.svg', 'high-angle overhead top-down view looking straight down at a dark luxurious poker lounge floor surrounding the table, deep purple noir carpet and polished wood, warm pooled light at center fading to shadowed edges, faint city-light reflections on the floor, a thin slice of the surrounding floor seen from a steep downward camera consistent with a top-down table view; NOT an eye-level horizon, NOT a vertical window',
   { w: 2048, h: 2048, transparent: false, usage: 'albedo' }, '环境背幕·高角俯视桌四周地面·紫 noir', '素坯：声明式 SVG 夜景（theme STORY_BACKDROP）');
 
-// ── ② 牌桌（隐形碰撞 + 2D 贴图呢面·owner 定）────────────────
-const felt = { mechanism: 'index', component: 'Material3D', field: 'map', resolver: 'build3d table-felt Material3D.map' };
-add('game-c/table/felt-albedo', 'texture', '呢面 albedo（绿绒·整幅完整贴图·非平铺）', felt, 'table/felt-albedo.svg',
-  'green velvet poker felt, full elliptical table surface, one complete image (not tiled), warm light pool at center, high resolution', { w: 2048, h: 2048, transparent: false, usage: 'albedo' }, '呢面 albedo·绿绒·整幅完整贴图', '素坯：Mesh3D 纯 tint(0x2e7d4e)+暖 point 光·整幅铺满');
-add('game-c/table/felt-normal', 'texture', '呢面法线（绿绒·整幅完整贴图·可选）', { ...felt, field: 'normalMap', resolver: 'build3d table-felt Material3D.normalMap' }, 'table/felt-normal.svg',
-  'green velvet full table-surface normal map, one complete image (not tiled), tangent-space, subtle nap, high resolution', { w: 2048, h: 2048, transparent: false, usage: 'normal' }, '呢面法线·整幅完整贴图·线性', '素坯：无（纯绿色底）·真图就绪整幅覆盖');
-add('game-c/table/rail-albedo', 'texture', '木栏 albedo（胡桃木+皮革软边）', { ...felt, resolver: 'build3d table-base Material3D.map' }, 'table/rail-albedo.svg',
-  'dark walnut poker table rail with padded leather bumper, warm highlight, ring strip', { w: 1024, h: 256, transparent: false }, '木栏 albedo·胡桃木+皮革软边', '素坯：Mesh3D 纯 tint(0x6f5040)');
-add('game-c/table/rail-normal', 'texture', '木栏法线（木纹+皮革缝线）', { ...felt, field: 'normalMap', resolver: 'build3d table-base Material3D.normalMap' }, 'table/rail-normal.svg',
-  'walnut wood grain plus leather stitch normal map, tangent-space', { w: 1024, h: 256, transparent: false }, '木栏法线·木纹+缝线', '无');
-add('game-c/table/betline', 'texture', '下注线/发牌区贴花（桌面弧线）', { mechanism: 'index', component: 'Decal3D', field: 'tex', resolver: 'Decal3D 桌面贴花·下注线' }, 'table/betline.svg',
-  'subtle gold betting line arc and dealer area marking decal on felt, semi-transparent', { w: 1024, h: 512, transparent: true }, '下注线/发牌区贴花·金弧', '无');
+// ── ② 牌桌（owner 2026-07-22 大重构·透视 3D 难→顶视整幅贴图）────────────────
+//   桌面 = **一张顶视牌桌整幅贴图**盖住 3D 物理桌（呢面/木栏/发牌区/公共牌槽/下注线全烤进这张图）。
+//   旧的 felt-albedo/normal · rail-albedo/normal · betline 五槽全部**下线**（拆成单张顶视图·美术台账重建）。
+//   物理仍在图下（呢面碰撞体 + 围栏墙·不可见）。AI 生成·owner 认作默认最终资产。
+const felt = { mechanism: 'index', component: 'Material3D', field: 'map', resolver: 'build3d table-surface Material3D.map' };
+add('game-c/table/surface', 'texture', '顶视牌桌整幅贴图（桌面/木栏/发牌区/公共牌槽全在图里·盖住 3D 物理桌）', felt, 'table/surface.png',
+  'top-down overhead view of a luxurious purple velvet poker table, elliptical racetrack stadium shape, padded rail border, floral damask felt pattern, warm central light glow, five outlined community card slots in a horizontal row at center, a single dealer card slot at top, subtle casino branding, dark surroundings, high resolution, slight downward tilt consistent with a near-top-down camera',
+  { w: 2048, h: 1152, transparent: false, usage: 'albedo' }, '顶视牌桌整幅贴图·紫绒racetrack+公共牌槽', '素坯：Mesh3D plane 纯 tint(0x2a1a2e)·真图就绪整幅盖住');
 
 // ── ③ 扑克牌 = 引擎渲染原语·移出美术台账（owner 2026-07-22）──────────────────────────
 //   52 牌面 + 牌背既不入 art-ledger.json 也不入 index.json：PlayingCard 组件自绘牌面/牌背（红黑角标+中央花色+
@@ -110,4 +106,4 @@ const out = resolve(ROOT, 'public/games/game-c/art/art-ledger.json');
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, `${JSON.stringify(ledger, null, 1)}\n`);
 console.log(`game-c art-ledger → ${out} (${rows.length} 行)`);
-console.log('  分类：场景1 · 牌桌5 · 筹码9 · UI 按钮/框10 · 特效6 · 衣柜图标6 ·（扑克牌=引擎原语移出台账·立绘=外部角色卡不入账）');
+console.log('  分类：场景1 · 牌桌1(顶视整幅图) · 筹码9 · UI 按钮/框10 · 特效6 · 衣柜图标6 ·（扑克牌=引擎原语移出台账·立绘=外部角色卡不入账）');

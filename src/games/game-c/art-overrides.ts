@@ -46,9 +46,9 @@ export function buttonSkinsForTheme(): Partial<Record<'hero' | 'primary' | 'ghos
 
 /**
  * 把本地美术库索引注册进一个 AssetManager（供 3D `Material3D.map` 按 **key** 解析·区别背幕/按钮的 URL 路）。
- * 3D 呢面/木栏贴图（game-c/table/felt-albedo|rail-albedo…）就绪后 ThreeRenderer 按 key 取真图挂上（异步就绪→mesh 自动重建·
+ * 3D 顶视牌桌整幅贴图（game-c/table/surface·owner 2026-07-22 大重构）就绪后 ThreeRenderer 按 key 取真图挂上（异步就绪→mesh 自动重建·
  * three-renderer 把「贴图就绪态」并进 mode）；未就绪/无真图=map 解析 null→回退 preset 色。失败/headless=空 manager（回退色）。
- * 注：这里注册**全部** filled 条目（含程序占位 `table/felt-albedo`）·但呢面 map 指 skinKey `game-c/table/felt-albedo`
+ * 注：这里注册**全部** filled 条目·但桌面 map 指 skinKey `game-c/table/surface`
  * （仅真图写回后才在索引里）→ 无真图=解析 null=回退色；真图到=解析命中=上贴图。render-only。
  */
 export async function loadSkinIndex(manager: AssetManager, slug = 'game-c'): Promise<void> {

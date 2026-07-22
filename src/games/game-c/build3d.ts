@@ -19,6 +19,8 @@ const FELT = 0x2e7d4e, FELT_LO = 0x123a24, RAIL = 0xa5703c, RAIL_HI = 0xc08a4e;
 // 桌面椭圆（跑道形·长轴 x > 短轴 z·正式赛桌比例）。felt=呢面半径；rail=围栏环半径（略大·墙贴桌缘）。
 // owner 2026-07-21「纵横比跟稿差不多·别让立绘盖住这么大桌」：短轴收窄 → 呢面更扁·屏上 ≈916×502(1.82:1)·上沿下移给立绘 bust 让位。
 export const FELT_RX = 3.55, FELT_RZ = 2.02; // 呢面长/短半轴（世界单位·稿 1.82:1）
+// 顶视牌桌整幅贴图幅面（owner 2026-07-22 大重构·16:9·盖住顶视视野·待见真图微调）。
+const TABLE_IMG_W = 8.0, TABLE_IMG_H = 4.5;
 const RAIL_RX = 3.72, RAIL_RZ = 2.19;        // 围栏环长/短半轴（呢面外 ~0.17）
 const RAIL_SEGS = 46;                         // 围栏墙段数（越多越贴椭圆·段间略叠不漏筹码·平滑）
 const RAIL_Y = 0.64, RAIL_H = 0.26;           // 围栏中心高 / 高度（低矮圆润软边·非高墙）
@@ -46,9 +48,10 @@ export function seatStackPos(i: number, count = 6): { x: number; y: number; z: n
 export function build3DTableBlueprint(): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {};
 
-  // 相机：**陡俯视**（近垂直=2D 平面观感·pitch≈1.12rad≈64°）·yaw0=主角(+z)在屏底。distance 框住椭圆长轴。
+  // 相机：**顶视·稍微斜**（owner 2026-07-22 大重构·透视 3D 难→改顶视）·pitch≈1.45rad≈83°（近乎直下·留一点斜=微立体）·
+  //   yaw0=主角(+z)在屏底。distance 框住整幅顶视牌桌图。pivotY 0=看向桌面。
   entities['cam'] = {
-    Camera3D: { yaw: 0, pitch: 1.12, projection: 'perspective', fov: 40, distance: 8.4, near: 0.1, far: 100, pivotX: 0, pivotY: 0.2, pivotZ: 0 },
+    Camera3D: { yaw: 0, pitch: 1.45, projection: 'perspective', fov: 38, distance: 9.2, near: 0.1, far: 100, pivotX: 0, pivotY: 0, pivotZ: 0 },
   };
   // 光：暖顶主光（投影·筹码立体感）+ 冷补 + 暖环境。
   entities['sun'] = { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.05, dirX: -2, dirY: -9, dirZ: -1.5, castShadow: true } };
@@ -62,36 +65,29 @@ export function build3DTableBlueprint(): WorldBlueprint {
   //   拿掉后背幕(程序化 STORY_BACKDROP·真图就绪热替换)填满桌子四周=电影感环境；桌身自带木基+围栏接地不飘。
   //   纯 render-only（地板本就无 RigidBody3D·筹码落呢面非地板）·物理/确定性零影响。owner 目击 A/B 拍板拿掉。
 
-  // 桌基（木·椭圆·圆柱×scaleX）——呢面下的桌身 = 玩家看到的「桌边缘」。
-  //   owner 2026-07-22「桌边缘用引擎 3D 木头材质球」：改用 PBR 闭集 **wood 预设**（Filament 橡木实测·metalness0=真木光响应）+
-  //   color 覆盖成暖蜜橡 RAIL + **surface scratches=程序化各向异性木纹**（零美术文件·沿 v 拉长纤维纹·渲染器生成 normal+roughness DataTexture）。
-  //   owner 2026-07-22 二次「更光亮·木色更暖更亮」：roughness 0.58→**0.4**（降糙出光泽·点光更锐高光=打蜡赛桌感）+ RAIL 提亮偏橙暖（见上 const）。
-  //   REQ-C-112/113 接槽保留：map/normalMap 槽仍在——工坊生成真木纹图就绪即按 key 覆盖程序化面（可替换不丢·无真图=用木料球+程序纹）。
-  entities['table-base'] = {
-    Transform3D: { x: 0, y: 0.26, z: 0, scaleX: FELT_RX / FELT_RZ },
-    Mesh3D: { shape: 'cylinder', width: FELT_RZ * 2 + 0.5, height: 0.5, frontTint: RAIL, edgeTint: 0x5e421f },
-    Material3D: { preset: 'wood', color: RAIL, roughness: 0.4, surface: { pattern: 'scratches', tiles: 4, normal: 0.5, rough: 0.35, scale: 1.0 }, map: 'game-c/table/rail-albedo', normalMap: 'game-c/table/rail-normal' },
-  };
-  // 呢面（椭圆·带静态碰撞体 mass0→筹码落此面堆叠不穿桌）。width=短径×2·scaleX 拉成长椭圆。
-  //   owner 2026-07-22 二次拍板「tiling 在牌桌上太碎难看·改纯色底 + 一张完整贴图（整幅铺满·不平铺）」：
-  //     撤掉 tiling.repeat（→repeat 1·一张图整幅映到呢面）+ 撤掉 surface 程序织纹（→纯绿色底·无噪点）。
-  //   preset matte（介电绒布非金属）+ color 绿 FELT 纯底 + roughness 0.9（哑光绒面）。
-  //   接槽（owner 提供**整幅**完整贴图·非 tile）：map=Art02 felt-albedo（整张天鹅绒呢面图）·normalMap=Art03 felt-normal（整幅法线·可选）。
-  //   就绪 ThreeRenderer 按 key 整幅挂上（圆柱顶盖采中心圆·随 scaleX 铺满椭圆呢面）·mesh 自动重建；无真图=纯绿绒色回退。
+  // ── owner 2026-07-22 大重构（透视 3D 难→顶视整幅贴图）──────────────────────────────────
+  //   桌边缘（木栏 table-base）**移除**——owner「牌桌边缘也不要了，就用这张图全部盖住」。呢面 visual 也退成不可见碰撞体。
+  //   桌面 = 一张**顶视牌桌整幅贴图**（AI 生成·owner 认作最终美术资产）平铺盖住 3D 物理桌；桌身/呢面/发牌区/边缘全在这张图里。
+  //   物理照旧在图下面（owner「3D 下面还是 3D 的」）：呢面碰撞体 mass0 接住筹码 + 一圈围栏墙挡池（都不可见）。
+
+  // 呢面碰撞体（**不可见**·只留物理·筹码落此面堆叠不穿桌）。visual 由上面的 table-surface 顶视图承担。
   entities['table-felt'] = {
     Transform3D: { x: 0, y: FELT_TOP - 0.03, z: 0, scaleX: FELT_RX / FELT_RZ },
     Mesh3D: { shape: 'cylinder', width: FELT_RZ * 2, height: 0.06, frontTint: FELT, edgeTint: FELT_LO },
-    Material3D: {
-      preset: 'matte', color: FELT, roughness: 0.9,
-      map: 'game-c/table/felt-albedo', normalMap: 'game-c/table/felt-normal',
-    },
+    Visibility: { visible: false }, // 不渲染（图盖住）·只作 RigidBody 取碰撞尺寸
     RigidBody3D: { shape: 'cylinder', mass: 0, restitution: 0.18, friction: 0.72 },
   };
+  // 顶视牌桌整幅贴图（水平平面·rotX -90° 面朝上·略高于呢面碰撞体让筹码浮其上）。
+  //   Material3D.map=game-c/table/surface（owner 提供的顶视牌桌图·台账最终资产）；无真图=深紫回退底。
+  //   16:9 幅面盖住整个顶视视野（尺寸待见真图 + owner 反馈微调）。
+  entities['table-surface'] = {
+    Transform3D: { x: 0, y: FELT_TOP + 0.005, z: 0, rotX: -Math.PI / 2 },
+    Mesh3D: { shape: 'plane', width: TABLE_IMG_W, height: TABLE_IMG_H, frontTint: 0x2a1a2e },
+    // color=深紫占位（无真图=深色桌面·非刺眼灰白）；真图就绪时 ThreeRenderer 强制 color 置白让 albedo 显真（material.ts）。
+    Material3D: { preset: 'matte', color: 0x2a1a2e, roughness: 0.85, map: 'game-c/table/surface' },
+  };
 
-  // 下注/发牌区贴花（REQ-C-113·呢面上一圈金环下注线·平贴 + alpha·Decal3D 程序化 ring）。
-  //   ⚠ Decal3D=**程序化**（kind/半径/色·无贴图槽）→ **换不了台账 table/betline 真图**；可换真图的「平贴 + alpha + 自定义贴图」贴花=
-  //   引擎缺口（Decal3D 无贴图键·Material3D map 无 alpha·Billboard 朝相机不平）→ 已报 P3D（REQ-DECAL-TEX）。此处先上程序化金环占位。
-  entities['betline'] = { Transform3D: { x: 0, y: 0, z: -0.12 }, Decal3D: { kind: 'ring', radius: 1.62, color: 0xd4af37, opacity: 0.2, y: FELT_TOP + 0.02 } };
+  // 下注线/发牌区贴花移除（owner 2026-07-22 大重构）：公共牌槽/发牌区/下注线全烤进顶视牌桌整幅贴图·不再程序化画。
 
   // ── 隐形物理围栏（owner 2026-07-18：可见木栏「太奇怪」·改**看不见的碰撞墙**·朝心一圈·只挡不画）──
   // 一圈静态 box 墙（mass0·physics.ts 明许「围栏/地台」静态体）沿椭圆缘·挡抛入的筹码不滚出台。
