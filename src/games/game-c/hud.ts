@@ -20,6 +20,7 @@ import {
 export interface SeatView {
   seat: number; name: string; chips: number; committed: number; clothes: number;
   folded: boolean; allIn: boolean; out: boolean; isActor: boolean; isHero: boolean; isButton: boolean;
+  isSb: boolean; isBb: boolean; // 小盲/大盲位标（owner 2026-07-22·D/SB/BB 位置标志符·别漏）
   lastMove?: LastMove; // 上一动作气泡（结构化·UI 层本地化文案+着色·标准德州行动史）
   // 平台角色卡投影（REQ-CHARCARD·仅对手·展示层）：卡名覆盖显示名 / 卡头像媒体 / persona 台词（已截断）。
   cardName?: string; avatarUrl?: string; flavor?: string;
@@ -114,6 +115,17 @@ function statusBubble(v: SeatView, l: Lang): LayoutNode | null {
   return null;
 }
 
+// 位置标志符（owner 2026-07-22「大盲/小盲/Dealer 位·别漏·Dealer 有特殊标志」）：庄家 D=金 warn（赌桌 dealer button·最醒目）·
+//   小盲 SB=灰 dim·大盲 BB=绿 ok。4~6 人 D/SB/BB 为三个不同座（每座至多中一个）；heads-up 庄=小盲会同显 D+SB（标准德州死按钮）。
+//   id 带 prefix 防「对手席卡 / 主角面板」重复。
+function posBadges(v: SeatView, prefix: string): LayoutNode[] {
+  const b: LayoutNode[] = [];
+  if (v.isButton) b.push({ type: 'Badge', id: `${prefix}-d-${v.seat}`, props: { text: 'D', tone: 'warn' } });
+  if (v.isSb) b.push({ type: 'Badge', id: `${prefix}-sb-${v.seat}`, props: { text: 'SB', tone: 'dim' } });
+  if (v.isBb) b.push({ type: 'Badge', id: `${prefix}-bb-${v.seat}`, props: { text: 'BB', tone: 'ok' } });
+  return b;
+}
+
 function seatCard(v: SeatView, x: number, y: number, w: number, h: number, l: Lang): LayoutNode {
   const edge = v.allIn ? 'danger' : v.isActor ? 'jade' : v.out || v.folded ? undefined : 'gold';
   const fx = v.isActor ? [{ kind: 'glow' as const, color: 'jade' as const }] : v.allIn ? [{ kind: 'glow' as const, color: 'danger' as const }] : undefined;
@@ -134,7 +146,7 @@ function seatCard(v: SeatView, x: number, y: number, w: number, h: number, l: La
             children: [
               { type: 'Label', id: `c-name-${v.seat}`, props: { text: v.name, size: 'sm', bold: true, color: v.out ? 'dim' : 'text' } },
               ...(v.isHero ? [{ type: 'Label', id: `c-you-${v.seat}`, props: { text: 'YOU', size: 'xs', color: 'dim' } } as LayoutNode] : []),
-              ...(v.isButton ? [{ type: 'Badge', id: `c-btn-${v.seat}`, props: { text: 'D', tone: 'warn' } } as LayoutNode] : []),
+              ...posBadges(v, 'c-seat'),
             ],
           },
           { type: 'Label', id: `c-chips-${v.seat}`, props: { text: fmt(v.chips), font: 'impact', size: v.isHero ? 28 : 20, color: v.out ? 'dim' : 'gold', glow: !v.out } },
@@ -333,7 +345,13 @@ function buildStoryOpponentCard(sv: SeatView, def: StorySeatDef, l: Lang): Layou
       {
         type: 'Panel', id: `c-seat-col-${def.seat}`, props: { bare: true }, layout: { direction: 'column', gap: 1, flex: 1 },
         children: [
-          { type: 'Label', id: `c-name-${def.seat}`, props: { text: name, size: 'sm', bold: true, color: sv.out ? 'dim' : 'text' } },
+          {
+            type: 'Panel', id: `c-name-row-${def.seat}`, props: { bare: true }, layout: { direction: 'row', gap: 4, align: 'center' },
+            children: [
+              { type: 'Label', id: `c-name-${def.seat}`, props: { text: name, size: 'sm', bold: true, color: sv.out ? 'dim' : 'text' } },
+              ...posBadges(sv, 'c-op'), // D/SB/BB 位标（owner 2026-07-22·别漏）
+            ],
+          },
           { type: 'Label', id: `c-chips-${def.seat}`, props: { text: `${l === 'zh' ? '筹码' : 'Chips'} ${fmt(sv.chips)}`, font: 'serif', size: big ? 17 : 16, bold: true, color: sv.out ? 'dim' : 'gold' } },
         ],
       },
@@ -749,7 +767,7 @@ function buildHeroPanel(v: TableView): LayoutNode {
             type: 'Panel', id: 'c-hero-nm-row', props: { bare: true }, layout: { direction: 'row', gap: 6, align: 'center' },
             children: [
               { type: 'Label', id: 'c-hero-name', props: { text: name, size: 'sm', bold: true, color: 'text' } },
-              ...(h.isButton ? [{ type: 'Badge', id: 'c-hero-btn', props: { text: 'D', tone: 'warn' } } as LayoutNode] : []),
+              ...posBadges(h, 'c-hero'), // D/SB/BB 位标（owner 2026-07-22·别漏）
             ],
           },
           { type: 'Label', id: 'c-hero-chips', props: { text: fmt(h.chips), font: 'serif', size: 22, bold: true, color: 'gold', glow: true } },

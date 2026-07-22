@@ -19,7 +19,7 @@ function baseView(over: Partial<TableView> = {}): TableView {
     seats: [0, 1, 2, 3, 4, 5].map((seat) => ({
       seat, name: seat === 0 ? '主角' : `姨太${seat}`, chips: 950, committed: 0,
       clothes: 6, folded: false, allIn: false, out: false,
-      isActor: seat === 0, isHero: seat === 0, isButton: seat === 0,
+      isActor: seat === 0, isHero: seat === 0, isButton: seat === 0, isSb: seat === 1, isBb: seat === 2,
     })),
     toCall: 0, canRaise: true, minRaise: 50, maxRaise: 950, raiseValue: 50,
     muted: false, openWardrobe: null,
@@ -110,6 +110,19 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     expect(validateLayoutNode(buildTable(baseView({ showMenu: true, muted: true })))).toEqual([]);
   });
 
+  it('位置标志符 D/SB/BB 渲染（owner 2026-07-22·别漏·Dealer 特殊）', () => {
+    const collect = (n: { id?: string; children?: unknown[] }, s = new Set<string>()): Set<string> => {
+      if (n.id) s.add(n.id);
+      for (const c of (n.children ?? []) as { id?: string; children?: unknown[] }[]) collect(c, s);
+      return s;
+    };
+    const ids = collect(buildTable(baseView({}))); // fixture：座0=庄D·座1=小盲SB·座2=大盲BB
+    expect(ids.has('c-hero-d-0')).toBe(true); // 主角=庄家 D（金·特殊 dealer button）
+    expect(ids.has('c-op-sb-1')).toBe(true); // 座1=小盲 SB
+    expect(ids.has('c-op-bb-2')).toBe(true); // 座2=大盲 BB
+    expect(validateLayoutNode(buildTable(baseView({})))).toEqual([]); // 加位标后布局仍零 issue
+  });
+
   it('主菜单屏 SC-1 零 issue（标题/立绘/按钮/角色卡）', () => {
     expect(validateLayoutNode(buildMenu({ lang: 'en', playerCount: 6, playerName: '夜阑君', playerChips: 12860, blindLabel: '25 / 50' }))).toEqual([]);
   });
@@ -196,7 +209,7 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
     for (const pc of [2, 3, 4]) {
       const seats = [0, 1, 2, 3, 4, 5].map((seat) => ({
         seat, name: `S${seat}`, chips: 950, committed: 0, clothes: 6,
-        folded: false, allIn: false, out: false, isActor: seat === 0, isHero: seat === 0, isButton: seat === 0,
+        folded: false, allIn: false, out: false, isActor: seat === 0, isHero: seat === 0, isButton: seat === 0, isSb: seat === 1, isBb: seat === 2,
       })).slice(0, pc);
       const table = buildTable(baseView({ playerCount: pc, seats }));
       expect(validateLayoutNode(table)).toEqual([]);

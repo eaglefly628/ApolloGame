@@ -175,6 +175,7 @@ export function mount(
       folded: stt.folded, allIn: stt.allIn, out: ss.eliminated,
       isActor: session.hand?.actor === seat && session.phase === 'betting',
       isHero: seat === HERO, isButton: session.buttonSeat === seat,
+      isSb: session.pos.sb === seat, isBb: session.pos.bb === seat, // 小盲/大盲位标（owner 2026-07-22·别漏）
       lastMove: session.lastMove[seat], // 结构化上一动作（UI 层本地化气泡·中文 lastAction 仅供 acceptance 机读）
       ...(ch?.fromDraft ? { cardName: ch.seatCard.name } : {}), // 平台卡名覆盖席位显示名（内置默认仍走 def 双语）
       ...(ch?.seatCard.avatar ? { avatarUrl: ch.seatCard.avatar } : {}), // 卡头像媒体（仅显示·不进 sim hash）
