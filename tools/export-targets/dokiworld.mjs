@@ -106,6 +106,7 @@ const GAME_META = {
     selection: { tags: ['cards', 'strategic', 'guandan'], promptHint: {
       en: 'Pick this when the scene calls for a tense, strategic card duel among close rivals.',
       'zh-cn': '当情节需要一场紧张、讲策略的牌桌博弈时选择该游戏。' } },
+    minPlayers: 4,
     mapperTs: BLANK_MAPPER,
   },
   'game-b': {
@@ -116,6 +117,7 @@ const GAME_META = {
     selection: { tags: ['mahjong', 'tiles', 'strategic'], promptHint: {
       en: 'Pick this for a refined, patient tile-game scene of reading and misdirection.',
       'zh-cn': '当情节适合一场含蓄、比耐心与读牌的麻将时选择该游戏。' } },
+    minPlayers: 4,
     mapperTs: BLANK_MAPPER,
   },
   'game-c': {
@@ -126,6 +128,7 @@ const GAME_META = {
     selection: { tags: ['poker', 'cards', 'bluffing'], promptHint: {
       en: 'Pick this for a high-stakes bluffing scene of nerve and reading opponents.',
       'zh-cn': '当情节需要一场高注、比胆识与读人的德州扑克时选择该游戏。' } },
+    minPlayers: 2,
     mapperTs: BLANK_MAPPER,
   },
 };
@@ -146,6 +149,8 @@ export default {
         status: 'active',
         entry: 'index.html',
         protocolVersion: 1,
+        // 启动资格：最少总玩家数（去重 AI 角色 + 1 真人）。spec §2.1/§6.1：a/b=4、c=2。
+        launchRequirements: { minPlayers: meta.minPlayers },
         // Owner decision: character context is mapped into an opponent seat, so the card
         // scopes are declared required. NOTE: activation is gated on the adult-confirmation
         // decision (these titles are adult-themed; the card service requires adultConfirmed).
