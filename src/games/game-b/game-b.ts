@@ -12,9 +12,13 @@ import { buildSettings, defaultSettings, SET_SPEED, SET_LOGDEFAULT, SETTINGS_BAC
 import {
   startMatch, aiTurn, discard, declareTsumo, canTsumo, declareRiichi, nextRound, isPlayerTurn,
   playerCall, playerPass, isPlayerCallWindow,
-  canAnkan, canKakan, ankanKinds, kakanKinds, declareAnkan, declareKakan,
+  canAnkan, canKakan, ankanKinds, kakanKinds, declareAnkan, declareKakan, STRIP_ITEMS,
   type MatchState,
 } from './core/game-state.js';
+import {
+  resolveSeatCards, seatNamesFrom, buildSessionOut, SEAT_IDS, SEAT_INDEX,
+  type GameBSessionIn, type SeatId, type SeatOutcome, type SeatSessionOut,
+} from './seat-cards.js';
 import {
   buildPlayHud, PLAY_TILE, ACT_TSUMO, ACT_RIICHI, ACT_KAN, NEXT_ROUND, TOGGLE_LOG, BACK_MENU, COPY_LOG,
   CALL_PON, CALL_CHI, CALL_KAN, CALL_RON, CALL_PASS, MENU_OPEN, RULES_OPEN, TOGGLE_SOUND, SET_LANG,
@@ -32,9 +36,26 @@ const AI_BASE_BY: Record<AiSpeed, number> = { fast: 1000, normal: 1500, slow: 24
 // 牌桌和室夜宴底（宿主装饰层·真美术=S6 背景件）。
 const STAGE_BG = 'radial-gradient(ellipse at 50% 38%, #41283a 0%, #2a1e2b 62%, #201722 100%)';
 
-export function mount(container: HTMLElement): () => void {
+export function mount(container: HTMLElement, host?: { exit?: () => void; sessionIn?: GameBSessionIn }): () => void {
   let teardown: (() => void) | null = null;
   const clear = (): void => { teardown?.(); teardown = null; };
+
+  // 角色卡消费（REQ-CHARCARD·character-card.md §⑤）：mount 一次性解四席规范卡（纯确定性·必开成年硬闸
+  // requireAdult·姨太题材不得省）；平台未接线（host.sessionIn=undefined）→ 内置默认卡·显示零变。
+  const seatCards = resolveSeatCards(host?.sessionIn);
+  const seatNames = seatNamesFrom(seatCards);   // 席名走卡桥（默认=主角/绫/莉世/小夜·显示零变）
+  let lastSessionOut: Record<string, SeatSessionOut> | null = null; // 终局回传（card.id 键控·平台尚未消费·held ready）
+  // 终局 SessionOut（§④·以 card.id 键控·passthrough 原样回带）：名次=按最终点数降序·脱衣=STRIP_ITEMS-剩余。
+  const computeSessionOut = (m: MatchState): Record<string, SeatSessionOut> => {
+    const rankBySeat = new Map<number, number>();
+    [0, 1, 2, 3].slice().sort((a, b) => m.scores[b]! - m.scores[a]!).forEach((seat, i) => rankBySeat.set(seat, i + 1));
+    const outcomes = {} as Record<SeatId, SeatOutcome>;
+    for (const id of SEAT_IDS) {
+      const seat = SEAT_INDEX[id];
+      outcomes[id] = { rank: rankBySeat.get(seat)!, score: m.scores[seat]!, stripped: STRIP_ITEMS - m.clothing[seat]! };
+    }
+    return buildSessionOut(seatCards, outcomes);
+  };
 
   const settings: Settings = defaultSettings(); // 菜单↔设置↔牌桌之间存活
   let lang: Lang = 'ja';                         // 语言（默认日文·owner 2026-07-21·三屏共用·牌桌菜单切换）
@@ -78,7 +99,7 @@ export function mount(container: HTMLElement): () => void {
     const seed = resume ? resume.rng.seed : clockSeed();
 
     // ── 对局状态机（headless 逻辑核·§2/③）+ HUD 投影驱动 ────────────────────────────
-    const match = resume ?? startMatch(seed);
+    const match = resume ?? startMatch(seed, seatNames); // 席名走角色卡桥（REQ-CHARCARD）
     match.interactiveCalls = true; // 开鸣牌窗口（P4·owner 点名先上鸣牌·玩家可碰/吃/荣）
     let logOpen = settings.logDefault;
     let selectedKey: string | null = null; // 两步打牌：选中的手牌位（null=未选）
@@ -89,7 +110,10 @@ export function mount(container: HTMLElement): () => void {
     let aiTimer: ReturnType<typeof setTimeout> | null = null;
     skel.overlayHost.style.pointerEvents = 'auto'; // 对局 HUD 全可点
 
-    const render = (): void => { ui.update(buildPlayHud(match, { logOpen, selectedKey, logCopied, menuOpen, rulesOpen, soundOn, lang }), NIGHT); };
+    const render = (): void => {
+      if (match.over) lastSessionOut = computeSessionOut(match); // 终局回传就绪（REQ-CHARCARD·纯确定性·平台尚未消费）
+      ui.update(buildPlayHud(match, { logOpen, selectedKey, logCopied, menuOpen, rulesOpen, soundOn, lang }), NIGHT);
+    };
     const clearAi = (): void => { if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; } };
     // AI 出牌用时（owner「1–3 秒」）：速度档基线 + 据牌局状态的确定性抖动（非裸随机·可复现）→ 落 1000–3000ms。
     const aiDelay = (): number => Math.min(3000, AI_BASE_BY[settings.aiSpeed] + (match.cur.wall.length * 37 + match.cur.turn * 101 + match.honba * 7) % 1500);
@@ -162,5 +186,6 @@ export function mount(container: HTMLElement): () => void {
   }
 
   showMenu();
-  return () => clear();
+  // 返回句柄挂 getSessionOut（REQ-CHARCARD·暴露终局回传·平台/runner 尚未消费·供未来接线与测试读）。
+  return Object.assign((): void => clear(), { getSessionOut: (): Record<string, SeatSessionOut> | null => lastSessionOut });
 }
