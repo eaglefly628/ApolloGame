@@ -116,7 +116,7 @@ describe('ArtLedgerPanel · REQ-ARTLIB fileless placeholder 不空白', () => {
     await flush();
     const html = container.innerHTML;
     expect(html).toContain('art-001'); // 编号墙渲出（旧代码在此崩于 r.slot.entity）
-    expect(html).toContain('夜景背幕'); // 人读 desc 可辨认
+    expect(html).toContain('背幕'); // 人读 desc 可辨认（用稳定关键词·免 game-c 背幕文案演进——夜景→环境俯视——误伤 studio 渲染回归）
     // 真台账非空即验渲染路径（**不硬编游戏侧行数**·免 game-c 台账演进——如扑克牌移出——误伤 studio 渲染回归）。
     expect(real.rows.length).toBeGreaterThan(0);
   });
