@@ -885,11 +885,20 @@
                       <input value="{{ r.value }}" onInput="{{ r.type }}" type="password" placeholder="新 key（要更换时填）" style="flex:1;border:2.5px solid #3a2312;border-radius:9px;padding:7px 10px;font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#fff;color:#3a2312;outline:none">
                     </div>
                   </sc-for>
-                  <!-- 生成选项（如 Seedream 模型版本·owner 2026-07-21）：chip 选·随保存存本地 -->
+                  <!-- 生成选项（如 Seedream 模型 ID·owner 2026-07-21）：free=文本框可填任意 ID（模型 ID 账号专属）·chip 快填·随保存存本地 -->
                   <sc-for list="{{ genOptRows }}" as="o" hint-placeholder-count="1">
-                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-left:10px">
-                      <span style="font-family:'Fredoka';font-weight:700;font-size:11px;color:#3a2312;flex:none">{{ o.label }}</span>
-                      <sc-for list="{{ o.chips }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</button></sc-for>
+                    <div style="display:flex;flex-direction:column;gap:5px;padding-left:10px">
+                      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                        <span style="font-family:'Fredoka';font-weight:700;font-size:11px;color:#3a2312;flex:none">{{ o.label }}</span>
+                        <sc-if value="{{ o.free }}" hint-placeholder-val="{{ true }}">
+                          <input value="{{ o.value }}" onInput="{{ o.type }}" placeholder="填已开通的模型 ID / 接入点 ep-…" style="flex:1;min-width:280px;border:2.5px solid #3a2312;border-radius:8px;padding:6px 10px;font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#fff;color:#3a2312;outline:none">
+                        </sc-if>
+                      </div>
+                      <sc-if value="{{ o.hint }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Noto Sans SC';font-weight:600;font-size:10.5px;color:#8a5a2c;line-height:1.5">{{ o.hint }}</span></sc-if>
+                      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                        <span style="font-family:'Noto Sans SC';font-weight:600;font-size:10.5px;color:#8a5a2c;flex:none">快填：</span>
+                        <sc-for list="{{ o.chips }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</button></sc-for>
+                      </div>
                     </div>
                   </sc-for>
                 </div>
@@ -2097,14 +2106,15 @@ class Component extends DCLogic {
       value: s.genKeyInputs[g.envKey] || '',
       type: (e) => { const v = e.target.value; this.setState(cur => ({ genKeyInputs: Object.assign({}, cur.genKeyInputs, { [g.envKey]: v }) })); }
     }));
-    // 生成选项（Seedream 模型版本等·chip 选·当前值=已选 ?? 后端生效值）——数据驱动·加新选项后端一条数据即出。
+    // 生成选项（Seedream 模型 ID 等·free=文本框可填任意 ID·chip 快填·当前值=已填/已选 ?? 后端生效值）——数据驱动。
     const genOptRows = ((s.settings && s.settings.genOptions) || []).map(o => {
-      const cur = (s.genOptSel && s.genOptSel[o.envKey]) || o.value;
+      const cur = (s.genOptSel && (o.envKey in s.genOptSel)) ? s.genOptSel[o.envKey] : o.value;
+      const setVal = (v) => this.setState(st => ({ genOptSel: Object.assign({}, st.genOptSel, { [o.envKey]: v }) }));
       return {
-        label: o.label,
+        label: o.label, free: !!o.free, hint: o.hint || '', value: cur,
+        type: (e) => setVal(e.target.value),  // free 文本框输入
         chips: (o.choices || []).map(c => ({
-          label: c.label, style: chipStyle(cur === c.value),
-          pick: () => this.setState(st => ({ genOptSel: Object.assign({}, st.genOptSel, { [o.envKey]: c.value }) })),
+          label: c.label, style: chipStyle(cur === c.value), pick: () => setVal(c.value),  // chip 快填
         })),
       };
     });

@@ -117,7 +117,7 @@ export const ADAPTERS = {
     kind: 'texture', ext: 'png', envKey: 'ARK_API_KEY', license: 'ByteDance Seedream/火山方舟 (按订阅商用授权)',
     async generate(prompt, { mock, apiKey }) {
       if (mock || !apiKey) { const { buffer, w, h } = mockImage(prompt); return { buffer, model: 'seedream-mock', mock: true, spec: { format: 'png', width: w, height: h, usage: 'sprite' } }; }
-      const model = process.env.ARK_SEEDREAM_MODEL || 'doubao-seedream-4-0-250828';
+      const model = process.env.ARK_SEEDREAM_MODEL || process.env.ARK_IMAGEGEN_MODEL || 'doubao-seedream-4-0-250828';
       const size = process.env.ARK_SEEDREAM_SIZE || '2K';
       const H = { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' };
       const body = { model, prompt, size, response_format: 'url', watermark: false };

@@ -69,28 +69,33 @@ GEN_KEY_LABELS = {
     'PIXVERSE_API_KEY': '爱诗 PixVerse（文生视频·owner 07-12）',
 }
 
-# 生成选项（下拉·非 key·数据驱动·owner 2026-07-21）：某 provider 的可选参数（如模型版本），
-# 设置面板渲染成下拉排在 forKey 那行下方；选中值经 _gen_env 注成同名 env（ai-gen.mjs 读它）。
-# 加新选项只改这里：envKey=注入的环境变量名·forKey=归属哪个 key·choices=闭集（value 在册才注入·防注入乱值）。
+# 生成选项（非 key·数据驱动·owner 2026-07-21）：某 provider 的可选参数（如模型版本）。
+# 设置面板渲染在 forKey 那行下方；选中值经 _gen_env 注成同名 env（ai-gen.mjs 读它）。
+# free=True → **自由文本**（火山方舟模型 ID 账号专属+带版本日期·如 doubao-seedream-5-0-pro-260628·
+#   硬编码闭集必漂移·故 Seedream 模型走自由填·choices 仅作快填建议·任何非空串都接受·前后空白剥掉）；
+# free 缺省=False → 闭集（value 在册才注入·防注入乱值）。加新选项只改这里。
 GEN_OPTIONS = {
     'ARK_SEEDREAM_MODEL': {
-        'label': 'Seedream 模型版本', 'forKey': 'ARK_API_KEY',
+        'label': 'Seedream 模型 ID', 'forKey': 'ARK_API_KEY', 'free': True,
         'default': 'doubao-seedream-4-0-250828',
+        'hint': '填你火山方舟账号**已开通**的模型 ID（控制台「开通管理」里的准确 ID·如 doubao-seedream-5-0-pro-260628）；或接入点 ep- ID。下方为快填建议。',
         'choices': [
-            {'value': 'doubao-seedream-4-0-250828', 'label': 'Seedream 4.0（1K/2K/4K·稳定）'},
-            {'value': 'doubao-seedream-4-5-251128', 'label': 'Seedream 4.5（2K/4K）'},
-            {'value': 'doubao-seedream-5-0-260128', 'label': 'Seedream 5.0（2K/3K·最新）'},
+            {'value': 'doubao-seedream-5-0-pro-260628', 'label': 'Seedream 5.0 Pro（260628）'},
+            {'value': 'doubao-seedream-4-0-250828', 'label': 'Seedream 4.0（250828）'},
+            {'value': 'doubao-seedream-4-5-251128', 'label': 'Seedream 4.5（251128）'},
         ],
     },
 }
 
 def gen_option_choice(name: str, cfg: dict) -> str:
-    """某生成选项当前生效值（config.genOptions 里在册的 value·否则回退 default）。UI/env 共用。"""
+    """某生成选项当前生效值（config.genOptions·free=任何非空串·闭集=在册值·否则回退 default）。UI/env 共用。"""
     spec = GEN_OPTIONS.get(name)
     if not spec:
         return ''
     go = cfg.get('genOptions') if isinstance(cfg.get('genOptions'), dict) else {}
     v = go.get(name)
+    if spec.get('free'):
+        return v.strip() if isinstance(v, str) and v.strip() else spec['default']
     valid = {c['value'] for c in spec['choices']}
     return v if isinstance(v, str) and v in valid else spec['default']
 

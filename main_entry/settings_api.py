@@ -62,7 +62,8 @@ def _settings_view() -> dict:
         gen_options.append({
             'envKey': name, 'label': spec['label'], 'forKey': spec.get('forKey'),
             'choices': spec['choices'], 'default': spec['default'],
-            'value': gen_option_choice(name, cfg),  # 当前生效值（在册·否则 default）
+            'free': bool(spec.get('free')), 'hint': spec.get('hint', ''),
+            'value': gen_option_choice(name, cfg),  # 当前生效值（free=任何非空串·闭集=在册·否则 default）
         })
     return {'providers': providers, 'default': cfg.get('default'), 'genKeys': gen_keys, 'genOptions': gen_options}
 
@@ -103,15 +104,15 @@ def handle_settings_put(body: dict) -> dict:
                     cur.pop(name, None)
         cfg['genKeys'] = cur
     opt_in = body.get('genOptions')
-    if isinstance(opt_in, dict):  # 生成选项（如 Seedream 模型版本）：闭集校验·在册才存·非法/空=清除回退 default
+    if isinstance(opt_in, dict):  # 生成选项：free=任何非空串（模型 ID 账号专属）·闭集=在册才存·空/非法=清除回退 default
         cur = cfg.get('genOptions') if isinstance(cfg.get('genOptions'), dict) else {}
         cur = dict(cur)
         for name, spec in GEN_OPTIONS.items():
             if name in opt_in:
                 v = opt_in.get(name)
-                valid = {c['value'] for c in spec['choices']}
-                if isinstance(v, str) and v in valid:
-                    cur[name] = v
+                ok = (isinstance(v, str) and v.strip()) if spec.get('free') else (isinstance(v, str) and v in {c['value'] for c in spec['choices']})
+                if ok:
+                    cur[name] = v.strip()
                 else:
                     cur.pop(name, None)
         cfg['genOptions'] = cur
