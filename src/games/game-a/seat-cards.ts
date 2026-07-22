@@ -16,6 +16,7 @@ import {
 } from '../../services/character-card/index.js';
 import { SEATS } from './rules.js';
 import { type SeatId } from './guandan-session.js';
+import { artOverride } from './art-overrides.js';
 
 // 四席 id（绑定 SEATS 唯一真相·迭代顺序 hero→partner→west→east 恒定=确定性）。
 const SEAT_IDS: readonly SeatId[] = SEATS.map((s) => s.id);
@@ -95,6 +96,30 @@ export function resolveSeatCards(sessionIn?: GameASessionIn): Record<SeatId, Apo
 /** v1 席位投影 {id,name,avatar?}（游戏侧填铭牌/头像·既有 hud 零改动契约）。 */
 export function seatDisplay(card: ApolloCharacterCard): SeatCard {
   return toSeatCard(card);
+}
+
+/**
+ * 对手席默认立绘 skinKey（owner 2026-07-22「你对手的立绘」）：工坊/index 注册真图即命中·未注册=undefined。
+ * 三 AI 席各一槽（人物性格对齐 DEFAULT_SEAT_DRAFTS）；hero=玩家自己·无默认立绘。真图入美术台账（art-ledger）。
+ */
+export const SEAT_PORTRAIT_SLOT: Partial<Record<SeatId, string>> = {
+  partner: 'game-a/portrait/partner', // 沈玉薇（沉稳 · 护家）
+  west: 'game-a/portrait/west', //     林曼笙（锋利 · 好胜）
+  east: 'game-a/portrait/east', //     顾念念（跳脱 · 爱起哄）
+};
+
+/**
+ * 解某席立绘 src（owner 2026-07-22 三级链·纯函数确定性）：
+ *   ① 平台角色卡传入头像（card.avatar·"从外面传进来的图"）——最高·覆盖默认；
+ *   ② 内置默认立绘（工坊/index 注册在 SEAT_PORTRAIT_SLOT 的真图·"这三个作为默认"）；
+ *   ③ 都无 → undefined（"空的话就不画"·Avatar 组件退首字铭牌·永不裂图）。
+ * artOverride 读 mount 期 loadArtOverrides 已填的覆盖注册表（异步就绪→re-render 时命中）。
+ */
+export function seatPortrait(seatId: SeatId, card: ApolloCharacterCard): string | undefined {
+  const passedIn = toSeatCard(card).avatar; // 平台卡头像（默认卡无媒体=undefined）
+  if (passedIn) return passedIn;
+  const slot = SEAT_PORTRAIT_SLOT[seatId];
+  return slot ? artOverride(slot) : undefined;
 }
 
 /**

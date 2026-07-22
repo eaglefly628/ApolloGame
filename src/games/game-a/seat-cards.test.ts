@@ -2,7 +2,7 @@
 // 覆盖：默认卡可用性 · 成年硬闸回退 · 平台覆盖 · toSeatCard 投影 · seatFlavor 截断 ·
 //   buildSessionOut 键控 card.id + passthrough 回带 · 纯确定性（同输入深等）。
 // 服务本身的收敛/取优全量在 services/character-card 测（这里只验 game-a 侧接入正确）。
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { normalizeCharacterCard, isCardUsable } from '../../services/character-card/index.js';
 import { SEATS } from './rules.js';
 import { type SeatId } from './guandan-session.js';
@@ -11,10 +11,13 @@ import {
   resolveSeatCards,
   seatDisplay,
   seatFlavor,
+  seatPortrait,
+  SEAT_PORTRAIT_SLOT,
   buildSessionOut,
   type GameASessionIn,
   type SeatOutcome,
 } from './seat-cards.js';
+import { registerArtOverrides, clearArtOverridesForTest } from './art-overrides.js';
 
 const ALL_IDS = ['hero', 'partner', 'west', 'east'] as const;
 
@@ -110,5 +113,41 @@ describe('Game A · 角色卡消费层（REQ-CHARCARD）', () => {
       seats: { west: { name: '甲', adultConfirmed: true }, partner: { name: '乙', adultConfirmed: false } },
     };
     expect(resolveSeatCards(sin)).toEqual(resolveSeatCards(sin));
+  });
+});
+
+// (h) seatPortrait 立绘三级链（owner 2026-07-22：对手立绘·传入>默认>空不画）──────────
+describe('Game A · 对手立绘三级链（seatPortrait·owner 2026-07-22）', () => {
+  afterEach(clearArtOverridesForTest);
+
+  it('三 AI 席默认立绘槽 skinKey = game-a/portrait/<seat>（对齐美术台账 rows）', () => {
+    expect(SEAT_PORTRAIT_SLOT).toEqual({
+      partner: 'game-a/portrait/partner',
+      west: 'game-a/portrait/west',
+      east: 'game-a/portrait/east',
+    });
+    expect(SEAT_PORTRAIT_SLOT.hero).toBeUndefined(); // hero=玩家自己·无默认立绘
+  });
+
+  it('① 平台卡传入头像最高优先（"传进来就替代默认"）', () => {
+    registerArtOverrides({ 'game-a/portrait/east': '/games/game-a/art/portrait/east.png' }); // 已有默认
+    const withAvatar = resolveSeatCards({ seats: { east: { name: '念念', adultConfirmed: true, avatarUrl: 'https://x/passed.png' } } });
+    expect(seatPortrait('east', withAvatar.east)).toBe('https://x/passed.png'); // 传入胜出·非默认
+  });
+
+  it('② 无传入 + 注册了默认立绘 → 用默认（"不传就用这三个默认"·工坊/index 命中）', () => {
+    registerArtOverrides({ 'game-a/portrait/partner': '/games/game-a/art/portrait/partner.png' });
+    expect(seatPortrait('partner', resolveSeatCards().partner)).toBe('/games/game-a/art/portrait/partner.png');
+  });
+
+  it('③ 无传入 + 无默认 → undefined（"空的话就不画"·Avatar 退首字铭牌·永不裂图）', () => {
+    expect(seatPortrait('west', resolveSeatCards().west)).toBeUndefined();
+    expect(seatPortrait('hero', resolveSeatCards().hero)).toBeUndefined(); // hero 无槽·恒空
+  });
+
+  it('确定性：同输入同覆盖两跑深等（artOverride 读注册表·无时钟/随机）', () => {
+    registerArtOverrides({ 'game-a/portrait/west': '/w.png' });
+    const cards = resolveSeatCards();
+    expect(seatPortrait('west', cards.west)).toBe(seatPortrait('west', cards.west));
   });
 });

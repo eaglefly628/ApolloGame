@@ -2,9 +2,9 @@
   "version": 1,
   "game": "game-a",
   "mode": "authored-inventory",
-  "note": "A-023 可消费槽（2026-07-22·PE-A）：rows=10 条真接线（各带 skinKey game-a/<slot>·工坊 art-replace 写 index 别名即热替换上画·ledger:audit 非孤儿）；pending=13 条未接（wired.reason 标真因·A-024 PUI 缺口/待布局/有意不接·art 文件在库不删·非孤儿计·俟能力到位再转 rows）。",
-  "count": 23,
-  "instances": 23,
+  "note": "A-023 可消费槽（2026-07-22·PE-A）：rows=真接线（各带 skinKey game-a/<slot>·工坊 art-replace 写 index 别名即热替换上画·ledger:audit 非孤儿）——含 10 2D 槽 + 2 3D 呢面材质槽 + 3 对手默认立绘槽（portrait/*·无默认图=Avatar 退首字·平台角色卡 avatar 传入则覆盖·owner 2026-07-22）；pending=未接（wired.reason 标真因·art 文件在库不删·非孤儿计·俟能力到位再转 rows）。",
+  "count": 28,
+  "instances": 28,
   "rows": [
     {
       "no": "art-01",
@@ -429,10 +429,124 @@
         "consumed": true,
         "at": "build3d.ts felt Material3D.map/normalMap（3D 呢面·ThreeRenderer 按 key 挂·无真图回退酒红 preset）"
       }
+    },
+    {
+      "no": "art-por-partner",
+      "desc": "对手默认立绘·沈玉薇（沉稳 · 护家）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "portrait/partner",
+        "component": "Avatar",
+        "field": "src"
+      },
+      "query": "elegant composed qipao lady portrait, poised hand near temple, warm parlor bokeh, cinematic half-body",
+      "placeholder": {
+        "current": "无默认图·Avatar 退首字铭牌（owner「空就不画」）",
+        "source": "none",
+        "count": 0,
+        "instances": [
+          "portrait/partner"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 560,
+        "transparent": true
+      },
+      "context": "game-a《掼蛋夜宴》席位卡立绘·partner 席默认（无平台角色卡 avatar 传入时用）·owner 2026-07-22 提供 3 立绘·真图待上传（工坊 art-replace / index 注册 id=skinKey 即热替换命中；平台角色卡 avatar 传入则覆盖默认）",
+      "status": "awaiting-upload",
+      "gen": {
+        "source": "pending-owner-upload",
+        "servedPath": null,
+        "localId": "game-a/portrait/partner",
+        "model": null,
+        "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "seat-cards.ts seatPortrait() → hud seatCard/seatPreview Avatar.src（三级链：平台卡传入>默认立绘>空退首字）"
+      },
+      "skinKey": "game-a/portrait/partner"
+    },
+    {
+      "no": "art-por-west",
+      "desc": "对手默认立绘·林曼笙（锋利 · 好胜）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "portrait/west",
+        "component": "Avatar",
+        "field": "src"
+      },
+      "query": "cool sharp qipao lady portrait, long wavy hair, confident gaze, night city bokeh, cinematic half-body",
+      "placeholder": {
+        "current": "无默认图·Avatar 退首字铭牌（owner「空就不画」）",
+        "source": "none",
+        "count": 0,
+        "instances": [
+          "portrait/west"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 560,
+        "transparent": true
+      },
+      "context": "game-a《掼蛋夜宴》席位卡立绘·west 席默认（无平台角色卡 avatar 传入时用）·owner 2026-07-22 提供 3 立绘·真图待上传（工坊 art-replace / index 注册 id=skinKey 即热替换命中；平台角色卡 avatar 传入则覆盖默认）",
+      "status": "awaiting-upload",
+      "gen": {
+        "source": "pending-owner-upload",
+        "servedPath": null,
+        "localId": "game-a/portrait/west",
+        "model": null,
+        "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "seat-cards.ts seatPortrait() → hud seatCard/seatPreview Avatar.src（三级链：平台卡传入>默认立绘>空退首字）"
+      },
+      "skinKey": "game-a/portrait/west"
+    },
+    {
+      "no": "art-por-east",
+      "desc": "对手默认立绘·顾念念（跳脱 · 爱起哄）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "portrait/east",
+        "component": "Avatar",
+        "field": "src"
+      },
+      "query": "playful sweet qipao lady portrait, bright smile holding a tile, warm lively parlor, cinematic half-body",
+      "placeholder": {
+        "current": "无默认图·Avatar 退首字铭牌（owner「空就不画」）",
+        "source": "none",
+        "count": 0,
+        "instances": [
+          "portrait/east"
+        ]
+      },
+      "spec": {
+        "w": 420,
+        "h": 560,
+        "transparent": true
+      },
+      "context": "game-a《掼蛋夜宴》席位卡立绘·east 席默认（无平台角色卡 avatar 传入时用）·owner 2026-07-22 提供 3 立绘·真图待上传（工坊 art-replace / index 注册 id=skinKey 即热替换命中；平台角色卡 avatar 传入则覆盖默认）",
+      "status": "awaiting-upload",
+      "gen": {
+        "source": "pending-owner-upload",
+        "servedPath": null,
+        "localId": "game-a/portrait/east",
+        "model": null,
+        "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "seat-cards.ts seatPortrait() → hud seatCard/seatPreview Avatar.src（三级链：平台卡传入>默认立绘>空退首字）"
+      },
+      "skinKey": "game-a/portrait/east"
     }
   ],
-  "wiredCount": 10,
-  "rowCount": 12,
+  "wiredCount": 13,
+  "rowCount": 15,
   "pending": [
     {
       "no": "art-04",

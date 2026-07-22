@@ -12,7 +12,7 @@ import { GuandanSession, TURN_ORDER, teamOf, FAMILY_CN, fmtCardCode, type SeatId
 import { buildMenu, buildTableSelect, buildPlay, buildResult, type SeatView, type PlayView, type ResultView } from './hud.js';
 import { type Lang, t, handName, tierName, fmtComboLabel, fmtTributeResist, fmtTributeLine } from './strings.js';
 import { SEATS, DRESS_TIERS, INITIAL_FUNDS, STAKES, LEVEL_START, codeSuit, codeRank, sortHand } from './rules.js';
-import { resolveSeatCards, seatDisplay, seatFlavor, buildSessionOut, type GameASessionIn, type SeatOutcome, type SeatSessionOut } from './seat-cards.js';
+import { resolveSeatCards, seatPortrait, seatFlavor, buildSessionOut, type GameASessionIn, type SeatOutcome, type SeatSessionOut } from './seat-cards.js';
 import { loadArtOverrides, registerArtOverrides, makeSkinAssets, loadSkinIndex } from './art-overrides.js';
 import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG, GAME_A_THEME, art } from './theme.js';
 import { mulberry32 } from '@atom-skills/index.js';
@@ -30,12 +30,16 @@ const AI_DELAY_MAX = 2000;
 export function mount(container: HTMLElement, host?: { exit?: () => void; sessionIn?: GameASessionIn }): () => void {
   // 角色卡消费（REQ-CHARCARD）：mount 时一次性解出四席规范卡（纯确定性·平台未接线→内置默认卡·显示零变）。
   const seatCards = resolveSeatCards(host?.sessionIn);
-  // 席位头像（默认卡无媒体→undefined→退首字铭牌；平台覆盖时经 Avatar src 显图）。选桌预览也消费。
-  const seatAvatars: Partial<Record<SeatId, string>> = {};
-  for (const s of SEATS) {
-    const a = seatDisplay(seatCards[s.id]).avatar;
-    if (a) seatAvatars[s.id] = a;
-  }
+  // 席位立绘（owner 2026-07-22 三级链·**每次渲染实时解**·异步载入的默认立绘就绪后 re-render 即命中）：
+  //   平台卡传入头像 > 内置默认立绘（SEAT_PORTRAIT_SLOT·工坊/index 注册真图）> 都无=undefined→退首字铭牌（空就不画）。
+  const seatAvatarMap = (): Partial<Record<SeatId, string>> => {
+    const m: Partial<Record<SeatId, string>> = {};
+    for (const s of SEATS) {
+      const a = seatPortrait(s.id, seatCards[s.id]);
+      if (a) m[s.id] = a;
+    }
+    return m;
+  };
   let lastSessionOut: Record<string, SeatSessionOut> | null = null; // 终局回传（REQ-CHARCARD·经返回句柄 getSessionOut 暴露）
 
   const skel = mountHost(container, { fieldW: FIELD_W, fieldH: FIELD_H, sceneBackground: MANOR_BG, wrapperBackground: WRAPPER_BG });
@@ -94,7 +98,7 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
     seat: id === 'hero' ? seatSpec(id) : { ...seatSpec(id), name: seatCards[id].name },
     cards: session ? session.hands[id].length : 0,
     dress: session ? session.dress[id] : DRESS_TIERS,
-    avatar: seatAvatars[id], // 角色卡头像（默认卡无→退首字铭牌）
+    avatar: seatPortrait(id, seatCards[id]), // 立绘三级链（传入>默认>空不画·实时解·见 seat-cards）
     flavor: seatFlavor(seatCards[id]), // 人设问候（闲时气泡·已截断·外部不可信输入）
   });
 
@@ -253,7 +257,7 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
   }
   function render(): void {
     if (!session) {
-      paint(screen === 'select' ? buildTableSelect({ lang, difficulty: selDifficulty, stake: selStake, wallet, avatars: seatAvatars }) : buildMenu(menuView()));
+      paint(screen === 'select' ? buildTableSelect({ lang, difficulty: selDifficulty, stake: selStake, wallet, avatars: seatAvatarMap() }) : buildMenu(menuView()));
       return;
     }
     if (session.phase === 'playing') {

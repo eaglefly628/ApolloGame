@@ -23,6 +23,15 @@ export function artUri(skinKey: string, fallback: string): string {
 }
 
 /**
+ * 按 skinKey 取覆盖真图 URL·**无内置回退**（未注册 = undefined）。
+ * 用于「无兜底占位·空就不画」的可选美术槽（如对手默认立绘·owner 2026-07-22「空就不画」）——
+ * 区别 artUri（有硬编码占位兜底永不丢）。工坊/index 注册真图后即命中。
+ */
+export function artOverride(skinKey: string): string | undefined {
+  return _overrides.get(skinKey);
+}
+
+/**
  * 从本地美术库索引载入**真图替换**条目 → 返回 { skinKey: url } 覆盖表。
  * 只收 art-replace 写回的 skinKey 别名（id 以 `<slug>/` 开头 + 正向 AI 信号：top-level source 以 `gen:`/`vendored`
  * 开头，或 tags 含 'skin'）——原生货架/程序占位（不带 `game-a/` 前缀或无信号）**不进** = 观感零变。
