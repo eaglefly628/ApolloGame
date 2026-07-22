@@ -13,7 +13,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-import { ADAPTERS, encodePng } from './ai-gen.mjs';
+import { ADAPTERS, encodePng, curlFor } from './ai-gen.mjs';
 import { STYLE_PACKS, listStylePacks } from './style-packs.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -394,29 +394,49 @@ const provFor = (row, pack, override = null) => {
   return TWO_D_PROVIDERS.includes(pack.params.provider) ? pack.params.provider : 'qwen';
 };
 
-/** 单行产资产（2D：mock→palette-snap+按 spec 尺寸·真调→adapter；3D：tripo/meshy adapter）。 */
+/**
+ * 目标生成尺寸（按行 spec 推·防 UI 元素被塞进 2K 方图渲成整场景）：
+ * - bg/splash（全屏）→ null（用 adapter 默认大图·2K）；
+ * - UI/sprite/texture 有 spec w×h → 保长宽比、长边归一 ~1024、各边夹 [512,2048]、8 的倍数 → `WxH`；
+ * - 无 spec → null（不强加·用默认）。
+ * 导出供单测 + debug 回显。
+ */
+export function sizeForSpec(row) {
+  if (row.kind === 'bg' || row.kind === 'splash' || row.kind === 'model3d') return null;
+  const w = row.spec?.w, h = row.spec?.h;
+  if (typeof w !== 'number' || typeof h !== 'number' || w <= 0 || h <= 0) return null;
+  const k = 1024 / Math.max(w, h);
+  const clamp = (n) => Math.min(2048, Math.max(512, Math.round((n * k) / 8) * 8));
+  return `${clamp(w)}x${clamp(h)}`;
+}
+
+/** 单行产资产（2D：mock→palette-snap+按 spec 尺寸·真调→adapter；3D：tripo/meshy adapter）。返回含 request（供 debug 回显·mock 也带）。 */
 export async function genRowAsset(row, pack, { mock = true, apiKey = null, gameStyle = '', provider: providerOverride = null } = {}) {
   const provider = provFor(row, pack, providerOverride);
   const prompt = dialectPrompt(row, pack, gameStyle);
   const ck = cacheKey(provider, prompt, pack.params);
+  const size = sizeForSpec(row);
   if (row.kind === 'model3d') {
     const g = await ADAPTERS[provider].generate(prompt, { mock, apiKey });
-    return { buffer: g.buffer, ext: 'glb', provider, model: g.model, mock: !!g.mock, prompt, cacheKey: ck };
+    return { buffer: g.buffer, ext: 'glb', provider, model: g.model, mock: !!g.mock, prompt, cacheKey: ck, request: g.request ?? null };
   }
-  const w = row.spec?.w ?? 64, h = row.spec?.h ?? 64;
   if (mock || !apiKey) {
+    // mock 也向 adapter 要一次「本该发的请求」用于 debug 回显（不产真图·免花 key）；像素仍走确定性 mock+palette-snap。
+    const w = row.spec?.w ?? 64, h = row.spec?.h ?? 64;
+    let request = null;
+    try { request = (await ADAPTERS[provider].generate(prompt, { mock: true, apiKey: null, size }))?.request ?? null; } catch { /* adapter 无 request=旧适配器·忽略 */ }
     const rgb = mockRawRgb(prompt, w, h, pack.post.pixelGrid); // 生成
     if (pack.post.paletteSnap) paletteSnapRgb(rgb, pack.palette); // ④ 后处理（mock 同走）
-    return { buffer: encodePng(w, h, rgb), ext: 'png', provider, model: pack.params.model + '·mock', mock: true, prompt, cacheKey: ck };
+    return { buffer: encodePng(w, h, rgb), ext: 'png', provider, model: pack.params.model + '·mock', mock: true, prompt, cacheKey: ck, request };
   }
-  const g = await ADAPTERS[provider].generate(prompt, { mock: false, apiKey }); // 真调（palette-snap on real=冲刺后精修）
-  return { buffer: g.buffer, ext: 'png', provider, model: g.model, mock: false, prompt, cacheKey: ck };
+  const g = await ADAPTERS[provider].generate(prompt, { mock: false, apiKey, size }); // 真调（palette-snap on real=冲刺后精修）
+  return { buffer: g.buffer, ext: 'png', provider, model: g.model, mock: false, prompt, cacheKey: ck, request: g.request ?? null };
 }
 
 // ═══ ④ 批量生成器（并发留给 apollo 层·此处确定性顺序·缓存/续跑/探针）═══
 
 /** 逐行生成落盘 + 登记游戏本地 index + 更新台账。断点续跑=命中缓存(cacheKey+文件在)不重扣费；无 key=探针+mock。 */
-export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = true, env = process.env, at = new Date().toISOString(), only = null, provider: providerOverride = null, allowMock = false } = {}) {
+export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = true, env = process.env, at = new Date().toISOString(), only = null, provider: providerOverride = null, allowMock = false, debug = false } = {}) {
   const pack = STYLE_PACKS[packId];
   if (!pack) return { ok: false, error: `未知风格包: ${packId}` };
   if (!game) return { ok: false, error: 'batchGenerate 需要 game' };
@@ -424,7 +444,9 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
   const index = readJson(idxFile, { version: 1, assets: [] });
   if (!Array.isArray(index.assets)) index.assets = [];
   const byId = new Map(index.assets.map((a) => [a.id, a]));
-  const summary = { total: 0, generated: 0, cached: 0, mock: 0, failed: 0, skipped: 0, probes: [], errors: [] };
+  // debug：每行回显「实际发给文生图的完整提示词 + 完整请求（含 curl 命令行·key 打码）」——owner 2026-07-22
+  // 「知道我到底传了什么」。mock 也带（genRowAsset 向 adapter 要 request）→ 免花 key 就能核对。
+  const summary = { total: 0, generated: 0, cached: 0, mock: 0, failed: 0, skipped: 0, probes: [], errors: [], debug: [] };
   const gameStyle = (ledger.artStyle && typeof ledger.artStyle.stylePrompt === 'string') ? ledger.artStyle.stylePrompt : '';
   for (const row of ledger.rows) {
     if (only && row.no !== only) { summary.skipped++; continue; } // 单槽点名（fill/regen）
@@ -451,6 +473,14 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     let a;
     try { a = await genRowAsset(row, pack, { mock: useMock, apiKey, gameStyle, provider: providerOverride }); }
     catch (e) { row.status = 'failed'; row.gen = { provider, error: String(e).slice(0, 200) }; summary.failed++; summary.errors.push({ no: row.no, provider, error: String(e).slice(0, 200) }); continue; }
+    // debug 回显：实际（或本该）发给文生图的完整提示词 + 请求 + curl 命令行（key 打码·mock 也有）。
+    const dbg = { no: row.no, provider: a.provider, model: a.model, kind: row.kind, mock: !!a.mock, prompt: a.prompt, size: a.request?.size ?? null, endpoint: a.request?.endpoint ?? null, body: a.request?.body ?? null, curl: a.request ? curlFor(a.request, ENVKEY[a.provider]) : null };
+    summary.debug.push(dbg);
+    if (debug) {
+      console.log(`\n[GEN·${a.provider}] ${row.no}${a.mock ? '·mock' : ''} kind=${row.kind} size=${dbg.size ?? '(默认)'}`);
+      console.log(`  prompt: ${a.prompt}`);
+      if (dbg.curl) console.log(`  ${dbg.curl}`);
+    }
     mkdirSync(dirname(outAbs), { recursive: true }); writeFileSync(outAbs, a.buffer);
     const id = useMock ? `gen/mock/${row.no}` : `gen/${row.no}`;
     const servedPath = `/games/${game}/art/${outRel}`;
@@ -559,6 +589,7 @@ async function run(argv) {
   // 全命令共享的开关（提前声明·避免 fill 分支在 const 声明前引用 → TDZ ReferenceError）。
   const pvi = argv.indexOf('--provider'); const providerArg = pvi >= 0 ? argv[pvi + 1] : null;
   const allowMock = argv.includes('--allow-mock'); // 仅测试/冒烟机械验证·端点永不传
+  const debug = argv.includes('--debug'); // 回显发给文生图的完整提示词 + 请求 + curl 命令行（key 打码·owner 2026-07-22）
   if (cmd === 'packs') { console.log(JSON.stringify({ packs: listStylePacks() })); return; }
   if (cmd === 'derive') {
     const mf = readJson(manifestFile(ROOT, slug), null);
@@ -579,7 +610,7 @@ async function run(argv) {
     if (!ledger) { console.error(`无台账: public/games/${slug}/art/art-ledger.json`); process.exit(1); }
     const rr = resetRow(ledger, no, { query });
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
-    const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg });
+    const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg, debug });
     if (!b.ok) { console.log(JSON.stringify(b)); process.exit(1); }
     writeJson(ledgerFile(ROOT, slug), ledger);
     console.log(JSON.stringify({ ok: true, slug, no, summary: b.summary, row: ledger.rows.find((r) => r.no === no) }));
@@ -590,7 +621,7 @@ async function run(argv) {
     const mock = argv.includes('--mock');
     const ledger = readJson(ledgerFile(ROOT, slug), null);
     if (!ledger) { console.error(`无台账: 先 derive ${slug}`); process.exit(1); }
-    const res = await batchGenerate(ledger, packId, { game: slug, mock, provider: providerArg });
+    const res = await batchGenerate(ledger, packId, { game: slug, mock, provider: providerArg, debug });
     if (res.ok) writeJson(ledgerFile(ROOT, slug), res.ledger);
     console.log(JSON.stringify(res.ok ? { ok: true, slug, packId, summary: res.summary } : res));
     if (!res.ok) process.exit(1);
@@ -614,7 +645,7 @@ async function run(argv) {
     if (!mf || !ledger) { console.error('缺 manifest 或台账'); process.exit(1); }
     const rr = resetRow(ledger, no, { query });
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
-    const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg });
+    const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg, debug });
     if (!b.ok) { console.log(JSON.stringify(b)); process.exit(1); }
     const rep = applyReplacements(mf, ledger, { allowMock });
     writeJson(ledgerFile(ROOT, slug), ledger);

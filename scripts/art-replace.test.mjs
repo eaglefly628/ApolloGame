@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame } from './art-replace.mjs';
+import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame, sizeForSpec } from './art-replace.mjs';
 import { STYLE_PACKS, STYLE_PACK_IDS } from './style-packs.mjs';
 
 const MANIFEST = {
@@ -63,6 +63,31 @@ describe('T1 ③④ 风格方言 + 缓存 + palette-snap', () => {
     paletteSnapRgb(rgb, pal);
     expect([...rgb]).toEqual([0, 0, 0, 255, 255, 255]);
   });
+});
+
+describe('T2I 尺寸 + debug 回显（owner 2026-07-22「按钮渲成整场景·要知道传了什么」）', () => {
+  it('sizeForSpec：bg/splash/model→null（默认大图）·UI 有 spec→保比例夹 [512,2048]·无 spec→null', () => {
+    expect(sizeForSpec({ kind: 'bg', spec: { w: 1280, h: 720 } })).toBeNull();
+    expect(sizeForSpec({ kind: 'splash', spec: { w: 1080, h: 1920 } })).toBeNull();
+    expect(sizeForSpec({ kind: 'model3d', spec: { w: 100, h: 100 } })).toBeNull();
+    expect(sizeForSpec({ kind: 'sprite', spec: { w: 64, h: 64 } })).toBe('1024x1024'); // 方→长边归 1024
+    expect(sizeForSpec({ kind: 'sprite', spec: { w: 48, h: 64 } })).toBe('768x1024');   // 保 3:4
+    expect(sizeForSpec({ kind: 'sprite', spec: { w: 256, h: 96 } })).toBe('1024x512');  // 极扁·短边夹到 512 下限
+    expect(sizeForSpec({ kind: 'sprite' })).toBeNull(); // 无 spec
+  });
+
+  it('batchGenerate summary.debug：每行回显完整 prompt + size + curl 命令行（mock 也带·key 打码）', () => withRoot(async (root) => {
+    const l = deriveLedger(MANIFEST, { game: 'g' });
+    const r = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true, provider: 'seedream' });
+    expect(Array.isArray(r.summary.debug)).toBe(true);
+    expect(r.summary.debug.length).toBeGreaterThan(0);
+    const sp = r.summary.debug.find((d) => d.kind === 'sprite');
+    expect(sp.prompt).toBeTruthy();                    // 完整提示词
+    expect(sp.curl).toContain('ark.cn-beijing.volces.com'); // 完整命令行
+    expect(sp.curl).toContain('Bearer $ARK_API_KEY');  // key 占位·不落真值
+    expect(sp.curl).not.toMatch(/ark-[0-9a-f]{4}/);    // 无真 key 形态
+    expect(sp.size).toBeTruthy();                       // 尺寸回显（非隐式）
+  }));
 });
 
 describe('T1 ④ 批量生成 + 断点续跑', () => {

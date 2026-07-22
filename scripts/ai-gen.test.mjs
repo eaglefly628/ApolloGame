@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ADAPTERS, buildEntry, mockImage, encodePng, providerSettings, demo, writePending, reviewPending, listPending, locations, provenanceMissing } from './ai-gen.mjs';
+import { ADAPTERS, buildEntry, mockImage, encodePng, providerSettings, demo, writePending, reviewPending, listPending, locations, provenanceMissing, seedreamRequest, curlFor } from './ai-gen.mjs';
 
 describe('ai-gen 框架 · 适配器注册表', () => {
   it('注册了 tripo·meshy(3D) + qwen·seedream(2D)，各带 kind/envKey/license', () => {
@@ -12,6 +12,33 @@ describe('ai-gen 框架 · 适配器注册表', () => {
     expect(ADAPTERS.meshy).toMatchObject({ kind: 'mesh', ext: 'glb', envKey: 'MESHY_API_KEY' });
     expect(ADAPTERS.qwen).toMatchObject({ kind: 'texture', ext: 'png', envKey: 'DASHSCOPE_API_KEY' });
     expect(ADAPTERS.seedream).toMatchObject({ kind: 'texture', ext: 'png', envKey: 'ARK_API_KEY' });
+  });
+});
+
+describe('ai-gen · debug 回显（owner「知道我到底传了什么」）', () => {
+  it('seedreamRequest：body 全字段可回显·无密钥（key 走 header 不进 body）', () => {
+    const req = seedreamRequest('a red button, isolated subject, transparent background', { model: 'doubao-seedream-5-0-pro-260628', size: '1024x384' });
+    expect(req.endpoint).toBe('https://ark.cn-beijing.volces.com/api/v3/images/generations');
+    expect(req.method).toBe('POST');
+    expect(req.body).toEqual({ model: 'doubao-seedream-5-0-pro-260628', prompt: 'a red button, isolated subject, transparent background', size: '1024x384', response_format: 'url', watermark: false });
+    expect(JSON.stringify(req)).not.toMatch(/Bearer|apiKey|ARK_API_KEY=/); // 无密钥泄漏
+  });
+
+  it('curlFor：可复制命令行·key 用 $ENV 占位（绝不落真值）', () => {
+    const req = seedreamRequest('x', { model: 'm', size: '2K' });
+    const curl = curlFor(req, 'ARK_API_KEY');
+    expect(curl).toContain(`curl -X POST 'https://ark.cn-beijing.volces.com/api/v3/images/generations'`);
+    expect(curl).toContain(`Authorization: Bearer $ARK_API_KEY`); // 占位·非真 key
+    expect(curl).toContain('"watermark":false');
+    expect(curl).not.toMatch(/ark-[0-9a-f]/); // 不含真 key 形态
+  });
+
+  it('seedream 适配器：mock 也返回 request（免花 key 就能核对本该发什么）+ 尊重 opts.size', async () => {
+    const g = await ADAPTERS.seedream.generate('a button', { mock: true, size: '1024x384' });
+    expect(g.mock).toBe(true);
+    expect(g.request).toBeTruthy();
+    expect(g.request.size).toBe('1024x384'); // 传入尺寸生效（非硬编码 2K）
+    expect(g.request.body.prompt).toBe('a button');
   });
 });
 

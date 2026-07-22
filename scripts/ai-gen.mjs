@@ -41,6 +41,24 @@ export function mockImage(prompt, N = 128) {
   return { buffer: encodePng(N, N, rgb), w: N, h: N };
 }
 
+// ── 文生图请求构造（纯函数·可测·可回显）——owner debug「到底传了什么」。──
+// key 走 header（Authorization）不进 body，故 body 全字段可安全回显/落日志（无密钥泄漏）。
+export function seedreamRequest(prompt, { model, size }) {
+  return {
+    provider: 'seedream',
+    endpoint: 'https://ark.cn-beijing.volces.com/api/v3/images/generations',
+    method: 'POST',
+    model, size, prompt,
+    body: { model, prompt, size, response_format: 'url', watermark: false },
+  };
+}
+
+/** 把请求转成可复制的 curl（key 用 $ENV 占位·绝不落真值）——owner debug「整个命令行」，可自贴 key 复现。 */
+export function curlFor(request, keyEnv = 'ARK_API_KEY') {
+  const headers = `-H 'Authorization: Bearer $${keyEnv}' -H 'Content-Type: application/json'`;
+  return `curl -X ${request.method} '${request.endpoint}' ${headers} -d '${JSON.stringify(request.body)}'`;
+}
+
 // ── 适配器（kind=资产类型·envKey=密钥环境变量·generate=产 buffer+meta）──
 export const ADAPTERS = {
   tripo: {
@@ -115,17 +133,18 @@ export const ADAPTERS = {
     // 端点/字段核实自 Ark 官方 images/generations（OpenAI 兼容·`response_format:url`→data[0].url·24h 有效）。
     // 模型默认 doubao-seedream-4-0（env ARK_SEEDREAM_MODEL 可覆盖·owner 试 4-5/5-0 免改码）；尺寸 env ARK_SEEDREAM_SIZE。
     kind: 'texture', ext: 'png', envKey: 'ARK_API_KEY', license: 'ByteDance Seedream/火山方舟 (按订阅商用授权)',
-    async generate(prompt, { mock, apiKey }) {
-      if (mock || !apiKey) { const { buffer, w, h } = mockImage(prompt); return { buffer, model: 'seedream-mock', mock: true, spec: { format: 'png', width: w, height: h, usage: 'sprite' } }; }
+    // opts.size：调用方按行 spec 传目标尺寸（缺省回退 env·再回退 2K）——防 UI 按钮被塞进 2K 方图渲成整场景。
+    async generate(prompt, { mock, apiKey, size: sizeOpt } = {}) {
       const model = process.env.ARK_SEEDREAM_MODEL || process.env.ARK_IMAGEGEN_MODEL || 'doubao-seedream-4-0-250828';
-      const size = process.env.ARK_SEEDREAM_SIZE || '2K';
+      const size = sizeOpt || process.env.ARK_SEEDREAM_SIZE || '2K';
+      const request = seedreamRequest(prompt, { model, size }); // 恒构造·mock 也回显「本该发的完整请求」（debug 免花 key）
+      if (mock || !apiKey) { const { buffer, w, h } = mockImage(prompt); return { buffer, model: 'seedream-mock', mock: true, spec: { format: 'png', width: w, height: h, usage: 'sprite' }, request }; }
       const H = { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' };
-      const body = { model, prompt, size, response_format: 'url', watermark: false };
-      const res = await fetch('https://ark.cn-beijing.volces.com/api/v3/images/generations', { method: 'POST', headers: H, body: JSON.stringify(body) }).then((r) => r.json());
+      const res = await fetch(request.endpoint, { method: 'POST', headers: H, body: JSON.stringify(request.body) }).then((r) => r.json());
       const url = res?.data?.[0]?.url;
       if (!url) throw new Error('seedream: 无 image url ' + JSON.stringify(res?.error ?? res).slice(0, 300));
       const buffer = Buffer.from(await fetch(url).then((r) => r.arrayBuffer()));
-      return { buffer, model, mock: false, spec: { format: 'png', usage: 'sprite' } };
+      return { buffer, model, mock: false, spec: { format: 'png', usage: 'sprite' }, request };
     },
   },
 };
