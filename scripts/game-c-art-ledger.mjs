@@ -15,21 +15,28 @@ const P = 'luxury night poker parlor, violet-and-gold noir, cinematic rim light,
 const rows = [];
 let n = 0;
 /** 加一行台账。slot=消费槽位实名；sub=英文主体；spec；cn=中 prompt；cur=素坯现状；transparent。 */
-const add = (skinKey, kind, desc, slot, servedPath, sub, spec, cn, cur, extra = {}) => {
+const add = (skinKey, kind, desc, slot, servedPath, sub, spec, cn, cur, o = {}) => {
+  const served = `/games/game-c/art/${servedPath}`;
   rows.push({
     no: `art-${String(++n).padStart(3, '0')}`,
     desc, kind,
-    ref: { mechanism: slot.mechanism, component: slot.component, field: slot.field, resolver: slot.resolver, servedPath: `/games/game-c/art/${servedPath}` },
+    ref: { mechanism: slot.mechanism, component: slot.component, field: slot.field, resolver: slot.resolver, servedPath: served },
     query: `${sub}, ${P}, isolated subject${spec.transparent ? ', transparent background' : ''}, no watermark`,
-    placeholder: { current: cur, source: 'procedural-placeholder', count: 1, instances: [skinKey] },
+    placeholder: { current: cur, source: o.phSource || 'procedural-placeholder', count: 1, instances: [skinKey] },
     spec,
     context: `game-c《STORY-POKER V2》${desc}·消费=${slot.resolver}（art-bible §3·render-only 不进 sim hash）`,
-    status: 'placeholder',
-    gen: { provider: 'pending', model: null, prompt: null, servedPath: `/games/game-c/art/${servedPath}`, localId: skinKey },
-    provenance: { generator: 'placeholder', prompt: null, model: null, license: null, source: 'docs/design/game-c/art-bible-story-poker-v2.md', mock: false, note: '素坯占位·真图待出（照 §1 统一风格）', ...extra },
+    status: o.status || 'placeholder',
+    gen: o.gen || { provider: 'pending', model: null, prompt: null, servedPath: served, localId: skinKey },
+    provenance: o.prov || { generator: 'placeholder', prompt: null, model: null, license: null, source: 'docs/design/game-c/art-bible-story-poker-v2.md', mock: false, note: '素坯占位·真图待出（照 §1 统一风格）' },
     prompt: cn,
   });
 };
+// 已 vendor 现货（货架 PD/CC0·真图已入·status=replaced）的 provenance/gen 帮手。
+const vendored = (skinKey, served, license, source) => ({
+  status: 'replaced', phSource: 'vendored',
+  gen: { provider: 'vendored', model: source, prompt: null, servedPath: `/games/game-c/art/${served}`, localId: skinKey },
+  prov: { generator: 'vendored', prompt: null, model: source, license, source: `assets/index.json → scripts/vendor-asset.mjs`, mock: false, note: '货架现货已 vendor·可后续换夜金定制' },
+});
 
 // ── ① 场景/背景 ───────────────────────────────────────────
 add('game-c/scene/backdrop', 'texture', '夜景背幕（全屏落地窗+城市夜景+景深光斑）',
@@ -61,23 +68,28 @@ for (const [rk, rn, rt] of RANKS) for (const [sk, sn, color] of SUITS) {
     : rt === 'ace'
       ? `the ace of ${sn}, poker ace card, large ornate ${color} suit emblem centered, white card face, gilded flourish`
       : `the ${rn} of ${sn}, poker number card, ${color} suit pips arranged classic, white card face, clean bold rank`;
-  add(`game-c/card/${rk}${sk}`, 'sprite', `牌面·${cardCn[sk]}${rankCn[rk]}`,
-    { mechanism: 'index', component: 'PlayingCard', field: 'art', resolver: `cardNode PlayingCard.art（${rk}${sk}）` },
-    `cards/${rk}${sk}.png`, sub, { w: 240, h: 336, transparent: false }, `牌面·${cardCn[sk]}${rankCn[rk]}·夜金 noir 扑克`,
-    '素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor');
+  const served = `cards/${rn}-of-${sn}.svg`;
+  add(`card/${rn}-of-${sn}`, 'sprite', `牌面·${cardCn[sk]}${rankCn[rk]}`,
+    { mechanism: 'index', component: 'PlayingCard', field: 'art', resolver: `cardNode PlayingCard.art（${rn}-of-${sn}）` },
+    served, sub, { w: 240, h: 336, transparent: false }, `牌面·${cardCn[sk]}${rankCn[rk]}·古典 PD 矢量（可换夜金定制）`,
+    '货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）',
+    vendored(`card/${rn}-of-${sn}`, served, 'Public Domain', 'notpeter/Vector-Playing-Cards'));
 }
-add('game-c/card/back', 'texture', '牌背（紫绒底+金饰纹章·owner AI 定制）',
+add('card/back', 'texture', '牌背（现货 PD·可换紫绒金纹定制）',
   { mechanism: 'index', component: 'PlayingCard', field: 'backArt', resolver: 'cardNode faceUp:false → PlayingCard.backArt' },
   'cards/back.png', 'poker card back, purple velvet ground with gilded ornamental crest and central emblem, symmetric, luxury noir',
-  { w: 240, h: 336, transparent: false }, '牌背·紫绒底+金饰纹章+中央徽标', '素坯：PlayingCard face:dark（bg3 暖紫）');
+  { w: 240, h: 336, transparent: false }, '牌背·PD 现货（可换紫绒金饰定制）', '货架 PD 牌背已 vendor',
+  vendored('card/back', 'cards/back.png', 'Public Domain', 'hayeah/playing-cards-assets'));
 
 // ── ④ 筹码 9 面额（顶/侧面贴图·owner AI·统一夜金边框）──────
-const CHIPS = [['1', 'white', '白'], ['5', 'red', '红'], ['10', 'blue', '蓝'], ['25', 'green', '绿'], ['50', 'orange', '橙'], ['100', 'black', '黑'], ['500', 'purple', '紫'], ['1000', 'gold', '金'], ['5000', 'gray', '灰']];
+const CHIPS = [['1', 'white', '白'], ['5', 'red', '红'], ['10', 'blue', '蓝'], ['25', 'green', '绿'], ['50', 'orange', '橙'], ['100', 'black', '黑'], ['500', 'purple', '紫'], ['1000', 'yellow', '黄'], ['5000', 'gray', '灰']];
 for (const [denom, colorEn, colorCn] of CHIPS) {
-  add(`game-c/chip/${denom}`, 'texture', `筹码·${denom}（${colorCn}·顶+侧面）`,
+  const served = `chips/${denom}-${colorEn}.svg`;
+  add(`chip/${denom}-${colorEn}`, 'texture', `筹码·${denom}（${colorCn}·顶+侧面）`,
     { mechanism: 'index', component: 'Chip3D/Material3D', field: 'map', resolver: `3D 筹码柱贴图·面额 ${denom}` },
-    `chips/${denom}.png`, `casino poker chip denomination ${denom}, ${colorEn} body with a unified gold rim and dark-violet inlay pattern, top and edge, premium`,
-    { w: 256, h: 256, transparent: true }, `筹码 ${denom}·${colorCn}底+统一金边`, '素坯：程序分色圆柱（chip3d）·货架 9 面额可 vendor');
+    served, `casino poker chip denomination ${denom}, ${colorEn} body with a unified gold rim and dark-violet inlay pattern, top and edge, premium`,
+    { w: 256, h: 256, transparent: true }, `筹码 ${denom}·${colorCn}（现货·可换夜金定制）`, 'CC0 现货已 vendor',
+    vendored(`chip/${denom}-${colorEn}`, served, 'CC0-1.0', 'scripts/gen-chips.mjs'));
 }
 
 // ── ⑤ UI 按钮 / 框贴图（9-slice）─────────────────────────────

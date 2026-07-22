@@ -283,16 +283,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（2S）",
-    "servedPath": "/games/game-c/art/cards/2S.png"
+    "resolver": "cardNode PlayingCard.art（two-of-spades）",
+    "servedPath": "/games/game-c/art/cards/two-of-spades.svg"
    },
    "query": "the two of spades, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/2S"
+     "card/two-of-spades"
     ]
    },
    "spec": {
@@ -300,25 +300,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃2·消费=cardNode PlayingCard.art（2S）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃2·消费=cardNode PlayingCard.art（two-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/2S.png",
-    "localId": "game-c/card/2S"
+    "servedPath": "/games/game-c/art/cards/two-of-spades.svg",
+    "localId": "card/two-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃2·夜金 noir 扑克"
+   "prompt": "牌面·黑桃2·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-008",
@@ -328,16 +328,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（2H）",
-    "servedPath": "/games/game-c/art/cards/2H.png"
+    "resolver": "cardNode PlayingCard.art（two-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/two-of-hearts.svg"
    },
    "query": "the two of hearts, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/2H"
+     "card/two-of-hearts"
     ]
    },
    "spec": {
@@ -345,25 +345,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心2·消费=cardNode PlayingCard.art（2H）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心2·消费=cardNode PlayingCard.art（two-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/2H.png",
-    "localId": "game-c/card/2H"
+    "servedPath": "/games/game-c/art/cards/two-of-hearts.svg",
+    "localId": "card/two-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心2·夜金 noir 扑克"
+   "prompt": "牌面·红心2·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-009",
@@ -373,16 +373,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（2D）",
-    "servedPath": "/games/game-c/art/cards/2D.png"
+    "resolver": "cardNode PlayingCard.art（two-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/two-of-diamonds.svg"
    },
    "query": "the two of diamonds, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/2D"
+     "card/two-of-diamonds"
     ]
    },
    "spec": {
@@ -390,25 +390,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块2·消费=cardNode PlayingCard.art（2D）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块2·消费=cardNode PlayingCard.art（two-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/2D.png",
-    "localId": "game-c/card/2D"
+    "servedPath": "/games/game-c/art/cards/two-of-diamonds.svg",
+    "localId": "card/two-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块2·夜金 noir 扑克"
+   "prompt": "牌面·方块2·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-010",
@@ -418,16 +418,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（2C）",
-    "servedPath": "/games/game-c/art/cards/2C.png"
+    "resolver": "cardNode PlayingCard.art（two-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/two-of-clubs.svg"
    },
    "query": "the two of clubs, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/2C"
+     "card/two-of-clubs"
     ]
    },
    "spec": {
@@ -435,25 +435,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花2·消费=cardNode PlayingCard.art（2C）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花2·消费=cardNode PlayingCard.art（two-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/2C.png",
-    "localId": "game-c/card/2C"
+    "servedPath": "/games/game-c/art/cards/two-of-clubs.svg",
+    "localId": "card/two-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花2·夜金 noir 扑克"
+   "prompt": "牌面·梅花2·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-011",
@@ -463,16 +463,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（3S）",
-    "servedPath": "/games/game-c/art/cards/3S.png"
+    "resolver": "cardNode PlayingCard.art（three-of-spades）",
+    "servedPath": "/games/game-c/art/cards/three-of-spades.svg"
    },
    "query": "the three of spades, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/3S"
+     "card/three-of-spades"
     ]
    },
    "spec": {
@@ -480,25 +480,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃3·消费=cardNode PlayingCard.art（3S）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃3·消费=cardNode PlayingCard.art（three-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/3S.png",
-    "localId": "game-c/card/3S"
+    "servedPath": "/games/game-c/art/cards/three-of-spades.svg",
+    "localId": "card/three-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃3·夜金 noir 扑克"
+   "prompt": "牌面·黑桃3·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-012",
@@ -508,16 +508,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（3H）",
-    "servedPath": "/games/game-c/art/cards/3H.png"
+    "resolver": "cardNode PlayingCard.art（three-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/three-of-hearts.svg"
    },
    "query": "the three of hearts, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/3H"
+     "card/three-of-hearts"
     ]
    },
    "spec": {
@@ -525,25 +525,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心3·消费=cardNode PlayingCard.art（3H）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心3·消费=cardNode PlayingCard.art（three-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/3H.png",
-    "localId": "game-c/card/3H"
+    "servedPath": "/games/game-c/art/cards/three-of-hearts.svg",
+    "localId": "card/three-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心3·夜金 noir 扑克"
+   "prompt": "牌面·红心3·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-013",
@@ -553,16 +553,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（3D）",
-    "servedPath": "/games/game-c/art/cards/3D.png"
+    "resolver": "cardNode PlayingCard.art（three-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/three-of-diamonds.svg"
    },
    "query": "the three of diamonds, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/3D"
+     "card/three-of-diamonds"
     ]
    },
    "spec": {
@@ -570,25 +570,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块3·消费=cardNode PlayingCard.art（3D）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块3·消费=cardNode PlayingCard.art（three-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/3D.png",
-    "localId": "game-c/card/3D"
+    "servedPath": "/games/game-c/art/cards/three-of-diamonds.svg",
+    "localId": "card/three-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块3·夜金 noir 扑克"
+   "prompt": "牌面·方块3·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-014",
@@ -598,16 +598,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（3C）",
-    "servedPath": "/games/game-c/art/cards/3C.png"
+    "resolver": "cardNode PlayingCard.art（three-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/three-of-clubs.svg"
    },
    "query": "the three of clubs, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/3C"
+     "card/three-of-clubs"
     ]
    },
    "spec": {
@@ -615,25 +615,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花3·消费=cardNode PlayingCard.art（3C）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花3·消费=cardNode PlayingCard.art（three-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/3C.png",
-    "localId": "game-c/card/3C"
+    "servedPath": "/games/game-c/art/cards/three-of-clubs.svg",
+    "localId": "card/three-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花3·夜金 noir 扑克"
+   "prompt": "牌面·梅花3·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-015",
@@ -643,16 +643,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（4S）",
-    "servedPath": "/games/game-c/art/cards/4S.png"
+    "resolver": "cardNode PlayingCard.art（four-of-spades）",
+    "servedPath": "/games/game-c/art/cards/four-of-spades.svg"
    },
    "query": "the four of spades, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/4S"
+     "card/four-of-spades"
     ]
    },
    "spec": {
@@ -660,25 +660,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃4·消费=cardNode PlayingCard.art（4S）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃4·消费=cardNode PlayingCard.art（four-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/4S.png",
-    "localId": "game-c/card/4S"
+    "servedPath": "/games/game-c/art/cards/four-of-spades.svg",
+    "localId": "card/four-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃4·夜金 noir 扑克"
+   "prompt": "牌面·黑桃4·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-016",
@@ -688,16 +688,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（4H）",
-    "servedPath": "/games/game-c/art/cards/4H.png"
+    "resolver": "cardNode PlayingCard.art（four-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/four-of-hearts.svg"
    },
    "query": "the four of hearts, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/4H"
+     "card/four-of-hearts"
     ]
    },
    "spec": {
@@ -705,25 +705,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心4·消费=cardNode PlayingCard.art（4H）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心4·消费=cardNode PlayingCard.art（four-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/4H.png",
-    "localId": "game-c/card/4H"
+    "servedPath": "/games/game-c/art/cards/four-of-hearts.svg",
+    "localId": "card/four-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心4·夜金 noir 扑克"
+   "prompt": "牌面·红心4·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-017",
@@ -733,16 +733,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（4D）",
-    "servedPath": "/games/game-c/art/cards/4D.png"
+    "resolver": "cardNode PlayingCard.art（four-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/four-of-diamonds.svg"
    },
    "query": "the four of diamonds, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/4D"
+     "card/four-of-diamonds"
     ]
    },
    "spec": {
@@ -750,25 +750,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块4·消费=cardNode PlayingCard.art（4D）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块4·消费=cardNode PlayingCard.art（four-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/4D.png",
-    "localId": "game-c/card/4D"
+    "servedPath": "/games/game-c/art/cards/four-of-diamonds.svg",
+    "localId": "card/four-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块4·夜金 noir 扑克"
+   "prompt": "牌面·方块4·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-018",
@@ -778,16 +778,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（4C）",
-    "servedPath": "/games/game-c/art/cards/4C.png"
+    "resolver": "cardNode PlayingCard.art（four-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/four-of-clubs.svg"
    },
    "query": "the four of clubs, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/4C"
+     "card/four-of-clubs"
     ]
    },
    "spec": {
@@ -795,25 +795,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花4·消费=cardNode PlayingCard.art（4C）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花4·消费=cardNode PlayingCard.art（four-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/4C.png",
-    "localId": "game-c/card/4C"
+    "servedPath": "/games/game-c/art/cards/four-of-clubs.svg",
+    "localId": "card/four-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花4·夜金 noir 扑克"
+   "prompt": "牌面·梅花4·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-019",
@@ -823,16 +823,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（5S）",
-    "servedPath": "/games/game-c/art/cards/5S.png"
+    "resolver": "cardNode PlayingCard.art（five-of-spades）",
+    "servedPath": "/games/game-c/art/cards/five-of-spades.svg"
    },
    "query": "the five of spades, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/5S"
+     "card/five-of-spades"
     ]
    },
    "spec": {
@@ -840,25 +840,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃5·消费=cardNode PlayingCard.art（5S）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃5·消费=cardNode PlayingCard.art（five-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/5S.png",
-    "localId": "game-c/card/5S"
+    "servedPath": "/games/game-c/art/cards/five-of-spades.svg",
+    "localId": "card/five-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃5·夜金 noir 扑克"
+   "prompt": "牌面·黑桃5·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-020",
@@ -868,16 +868,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（5H）",
-    "servedPath": "/games/game-c/art/cards/5H.png"
+    "resolver": "cardNode PlayingCard.art（five-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/five-of-hearts.svg"
    },
    "query": "the five of hearts, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/5H"
+     "card/five-of-hearts"
     ]
    },
    "spec": {
@@ -885,25 +885,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心5·消费=cardNode PlayingCard.art（5H）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心5·消费=cardNode PlayingCard.art（five-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/5H.png",
-    "localId": "game-c/card/5H"
+    "servedPath": "/games/game-c/art/cards/five-of-hearts.svg",
+    "localId": "card/five-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心5·夜金 noir 扑克"
+   "prompt": "牌面·红心5·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-021",
@@ -913,16 +913,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（5D）",
-    "servedPath": "/games/game-c/art/cards/5D.png"
+    "resolver": "cardNode PlayingCard.art（five-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/five-of-diamonds.svg"
    },
    "query": "the five of diamonds, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/5D"
+     "card/five-of-diamonds"
     ]
    },
    "spec": {
@@ -930,25 +930,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块5·消费=cardNode PlayingCard.art（5D）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块5·消费=cardNode PlayingCard.art（five-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/5D.png",
-    "localId": "game-c/card/5D"
+    "servedPath": "/games/game-c/art/cards/five-of-diamonds.svg",
+    "localId": "card/five-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块5·夜金 noir 扑克"
+   "prompt": "牌面·方块5·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-022",
@@ -958,16 +958,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（5C）",
-    "servedPath": "/games/game-c/art/cards/5C.png"
+    "resolver": "cardNode PlayingCard.art（five-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/five-of-clubs.svg"
    },
    "query": "the five of clubs, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/5C"
+     "card/five-of-clubs"
     ]
    },
    "spec": {
@@ -975,25 +975,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花5·消费=cardNode PlayingCard.art（5C）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花5·消费=cardNode PlayingCard.art（five-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/5C.png",
-    "localId": "game-c/card/5C"
+    "servedPath": "/games/game-c/art/cards/five-of-clubs.svg",
+    "localId": "card/five-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花5·夜金 noir 扑克"
+   "prompt": "牌面·梅花5·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-023",
@@ -1003,16 +1003,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（6S）",
-    "servedPath": "/games/game-c/art/cards/6S.png"
+    "resolver": "cardNode PlayingCard.art（six-of-spades）",
+    "servedPath": "/games/game-c/art/cards/six-of-spades.svg"
    },
    "query": "the six of spades, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/6S"
+     "card/six-of-spades"
     ]
    },
    "spec": {
@@ -1020,25 +1020,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃6·消费=cardNode PlayingCard.art（6S）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃6·消费=cardNode PlayingCard.art（six-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/6S.png",
-    "localId": "game-c/card/6S"
+    "servedPath": "/games/game-c/art/cards/six-of-spades.svg",
+    "localId": "card/six-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃6·夜金 noir 扑克"
+   "prompt": "牌面·黑桃6·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-024",
@@ -1048,16 +1048,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（6H）",
-    "servedPath": "/games/game-c/art/cards/6H.png"
+    "resolver": "cardNode PlayingCard.art（six-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/six-of-hearts.svg"
    },
    "query": "the six of hearts, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/6H"
+     "card/six-of-hearts"
     ]
    },
    "spec": {
@@ -1065,25 +1065,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心6·消费=cardNode PlayingCard.art（6H）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心6·消费=cardNode PlayingCard.art（six-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/6H.png",
-    "localId": "game-c/card/6H"
+    "servedPath": "/games/game-c/art/cards/six-of-hearts.svg",
+    "localId": "card/six-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心6·夜金 noir 扑克"
+   "prompt": "牌面·红心6·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-025",
@@ -1093,16 +1093,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（6D）",
-    "servedPath": "/games/game-c/art/cards/6D.png"
+    "resolver": "cardNode PlayingCard.art（six-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/six-of-diamonds.svg"
    },
    "query": "the six of diamonds, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/6D"
+     "card/six-of-diamonds"
     ]
    },
    "spec": {
@@ -1110,25 +1110,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块6·消费=cardNode PlayingCard.art（6D）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块6·消费=cardNode PlayingCard.art（six-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/6D.png",
-    "localId": "game-c/card/6D"
+    "servedPath": "/games/game-c/art/cards/six-of-diamonds.svg",
+    "localId": "card/six-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块6·夜金 noir 扑克"
+   "prompt": "牌面·方块6·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-026",
@@ -1138,16 +1138,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（6C）",
-    "servedPath": "/games/game-c/art/cards/6C.png"
+    "resolver": "cardNode PlayingCard.art（six-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/six-of-clubs.svg"
    },
    "query": "the six of clubs, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/6C"
+     "card/six-of-clubs"
     ]
    },
    "spec": {
@@ -1155,25 +1155,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花6·消费=cardNode PlayingCard.art（6C）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花6·消费=cardNode PlayingCard.art（six-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/6C.png",
-    "localId": "game-c/card/6C"
+    "servedPath": "/games/game-c/art/cards/six-of-clubs.svg",
+    "localId": "card/six-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花6·夜金 noir 扑克"
+   "prompt": "牌面·梅花6·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-027",
@@ -1183,16 +1183,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（7S）",
-    "servedPath": "/games/game-c/art/cards/7S.png"
+    "resolver": "cardNode PlayingCard.art（seven-of-spades）",
+    "servedPath": "/games/game-c/art/cards/seven-of-spades.svg"
    },
    "query": "the seven of spades, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/7S"
+     "card/seven-of-spades"
     ]
    },
    "spec": {
@@ -1200,25 +1200,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃7·消费=cardNode PlayingCard.art（7S）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃7·消费=cardNode PlayingCard.art（seven-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/7S.png",
-    "localId": "game-c/card/7S"
+    "servedPath": "/games/game-c/art/cards/seven-of-spades.svg",
+    "localId": "card/seven-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃7·夜金 noir 扑克"
+   "prompt": "牌面·黑桃7·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-028",
@@ -1228,16 +1228,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（7H）",
-    "servedPath": "/games/game-c/art/cards/7H.png"
+    "resolver": "cardNode PlayingCard.art（seven-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/seven-of-hearts.svg"
    },
    "query": "the seven of hearts, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/7H"
+     "card/seven-of-hearts"
     ]
    },
    "spec": {
@@ -1245,25 +1245,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心7·消费=cardNode PlayingCard.art（7H）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心7·消费=cardNode PlayingCard.art（seven-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/7H.png",
-    "localId": "game-c/card/7H"
+    "servedPath": "/games/game-c/art/cards/seven-of-hearts.svg",
+    "localId": "card/seven-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心7·夜金 noir 扑克"
+   "prompt": "牌面·红心7·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-029",
@@ -1273,16 +1273,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（7D）",
-    "servedPath": "/games/game-c/art/cards/7D.png"
+    "resolver": "cardNode PlayingCard.art（seven-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/seven-of-diamonds.svg"
    },
    "query": "the seven of diamonds, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/7D"
+     "card/seven-of-diamonds"
     ]
    },
    "spec": {
@@ -1290,25 +1290,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块7·消费=cardNode PlayingCard.art（7D）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块7·消费=cardNode PlayingCard.art（seven-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/7D.png",
-    "localId": "game-c/card/7D"
+    "servedPath": "/games/game-c/art/cards/seven-of-diamonds.svg",
+    "localId": "card/seven-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块7·夜金 noir 扑克"
+   "prompt": "牌面·方块7·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-030",
@@ -1318,16 +1318,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（7C）",
-    "servedPath": "/games/game-c/art/cards/7C.png"
+    "resolver": "cardNode PlayingCard.art（seven-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/seven-of-clubs.svg"
    },
    "query": "the seven of clubs, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/7C"
+     "card/seven-of-clubs"
     ]
    },
    "spec": {
@@ -1335,25 +1335,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花7·消费=cardNode PlayingCard.art（7C）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花7·消费=cardNode PlayingCard.art（seven-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/7C.png",
-    "localId": "game-c/card/7C"
+    "servedPath": "/games/game-c/art/cards/seven-of-clubs.svg",
+    "localId": "card/seven-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花7·夜金 noir 扑克"
+   "prompt": "牌面·梅花7·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-031",
@@ -1363,16 +1363,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（8S）",
-    "servedPath": "/games/game-c/art/cards/8S.png"
+    "resolver": "cardNode PlayingCard.art（eight-of-spades）",
+    "servedPath": "/games/game-c/art/cards/eight-of-spades.svg"
    },
    "query": "the eight of spades, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/8S"
+     "card/eight-of-spades"
     ]
    },
    "spec": {
@@ -1380,25 +1380,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃8·消费=cardNode PlayingCard.art（8S）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃8·消费=cardNode PlayingCard.art（eight-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/8S.png",
-    "localId": "game-c/card/8S"
+    "servedPath": "/games/game-c/art/cards/eight-of-spades.svg",
+    "localId": "card/eight-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃8·夜金 noir 扑克"
+   "prompt": "牌面·黑桃8·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-032",
@@ -1408,16 +1408,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（8H）",
-    "servedPath": "/games/game-c/art/cards/8H.png"
+    "resolver": "cardNode PlayingCard.art（eight-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/eight-of-hearts.svg"
    },
    "query": "the eight of hearts, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/8H"
+     "card/eight-of-hearts"
     ]
    },
    "spec": {
@@ -1425,25 +1425,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心8·消费=cardNode PlayingCard.art（8H）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心8·消费=cardNode PlayingCard.art（eight-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/8H.png",
-    "localId": "game-c/card/8H"
+    "servedPath": "/games/game-c/art/cards/eight-of-hearts.svg",
+    "localId": "card/eight-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心8·夜金 noir 扑克"
+   "prompt": "牌面·红心8·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-033",
@@ -1453,16 +1453,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（8D）",
-    "servedPath": "/games/game-c/art/cards/8D.png"
+    "resolver": "cardNode PlayingCard.art（eight-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/eight-of-diamonds.svg"
    },
    "query": "the eight of diamonds, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/8D"
+     "card/eight-of-diamonds"
     ]
    },
    "spec": {
@@ -1470,25 +1470,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块8·消费=cardNode PlayingCard.art（8D）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块8·消费=cardNode PlayingCard.art（eight-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/8D.png",
-    "localId": "game-c/card/8D"
+    "servedPath": "/games/game-c/art/cards/eight-of-diamonds.svg",
+    "localId": "card/eight-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块8·夜金 noir 扑克"
+   "prompt": "牌面·方块8·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-034",
@@ -1498,16 +1498,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（8C）",
-    "servedPath": "/games/game-c/art/cards/8C.png"
+    "resolver": "cardNode PlayingCard.art（eight-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/eight-of-clubs.svg"
    },
    "query": "the eight of clubs, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/8C"
+     "card/eight-of-clubs"
     ]
    },
    "spec": {
@@ -1515,25 +1515,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花8·消费=cardNode PlayingCard.art（8C）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花8·消费=cardNode PlayingCard.art（eight-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/8C.png",
-    "localId": "game-c/card/8C"
+    "servedPath": "/games/game-c/art/cards/eight-of-clubs.svg",
+    "localId": "card/eight-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花8·夜金 noir 扑克"
+   "prompt": "牌面·梅花8·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-035",
@@ -1543,16 +1543,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（9S）",
-    "servedPath": "/games/game-c/art/cards/9S.png"
+    "resolver": "cardNode PlayingCard.art（nine-of-spades）",
+    "servedPath": "/games/game-c/art/cards/nine-of-spades.svg"
    },
    "query": "the nine of spades, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/9S"
+     "card/nine-of-spades"
     ]
    },
    "spec": {
@@ -1560,25 +1560,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃9·消费=cardNode PlayingCard.art（9S）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃9·消费=cardNode PlayingCard.art（nine-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/9S.png",
-    "localId": "game-c/card/9S"
+    "servedPath": "/games/game-c/art/cards/nine-of-spades.svg",
+    "localId": "card/nine-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃9·夜金 noir 扑克"
+   "prompt": "牌面·黑桃9·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-036",
@@ -1588,16 +1588,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（9H）",
-    "servedPath": "/games/game-c/art/cards/9H.png"
+    "resolver": "cardNode PlayingCard.art（nine-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/nine-of-hearts.svg"
    },
    "query": "the nine of hearts, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/9H"
+     "card/nine-of-hearts"
     ]
    },
    "spec": {
@@ -1605,25 +1605,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心9·消费=cardNode PlayingCard.art（9H）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心9·消费=cardNode PlayingCard.art（nine-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/9H.png",
-    "localId": "game-c/card/9H"
+    "servedPath": "/games/game-c/art/cards/nine-of-hearts.svg",
+    "localId": "card/nine-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心9·夜金 noir 扑克"
+   "prompt": "牌面·红心9·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-037",
@@ -1633,16 +1633,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（9D）",
-    "servedPath": "/games/game-c/art/cards/9D.png"
+    "resolver": "cardNode PlayingCard.art（nine-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/nine-of-diamonds.svg"
    },
    "query": "the nine of diamonds, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/9D"
+     "card/nine-of-diamonds"
     ]
    },
    "spec": {
@@ -1650,25 +1650,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块9·消费=cardNode PlayingCard.art（9D）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块9·消费=cardNode PlayingCard.art（nine-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/9D.png",
-    "localId": "game-c/card/9D"
+    "servedPath": "/games/game-c/art/cards/nine-of-diamonds.svg",
+    "localId": "card/nine-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块9·夜金 noir 扑克"
+   "prompt": "牌面·方块9·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-038",
@@ -1678,16 +1678,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（9C）",
-    "servedPath": "/games/game-c/art/cards/9C.png"
+    "resolver": "cardNode PlayingCard.art（nine-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/nine-of-clubs.svg"
    },
    "query": "the nine of clubs, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/9C"
+     "card/nine-of-clubs"
     ]
    },
    "spec": {
@@ -1695,25 +1695,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花9·消费=cardNode PlayingCard.art（9C）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花9·消费=cardNode PlayingCard.art（nine-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/9C.png",
-    "localId": "game-c/card/9C"
+    "servedPath": "/games/game-c/art/cards/nine-of-clubs.svg",
+    "localId": "card/nine-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花9·夜金 noir 扑克"
+   "prompt": "牌面·梅花9·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-039",
@@ -1723,16 +1723,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（TS）",
-    "servedPath": "/games/game-c/art/cards/TS.png"
+    "resolver": "cardNode PlayingCard.art（ten-of-spades）",
+    "servedPath": "/games/game-c/art/cards/ten-of-spades.svg"
    },
    "query": "the ten of spades, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/TS"
+     "card/ten-of-spades"
     ]
    },
    "spec": {
@@ -1740,25 +1740,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃10·消费=cardNode PlayingCard.art（TS）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃10·消费=cardNode PlayingCard.art（ten-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/TS.png",
-    "localId": "game-c/card/TS"
+    "servedPath": "/games/game-c/art/cards/ten-of-spades.svg",
+    "localId": "card/ten-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃10·夜金 noir 扑克"
+   "prompt": "牌面·黑桃10·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-040",
@@ -1768,16 +1768,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（TH）",
-    "servedPath": "/games/game-c/art/cards/TH.png"
+    "resolver": "cardNode PlayingCard.art（ten-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/ten-of-hearts.svg"
    },
    "query": "the ten of hearts, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/TH"
+     "card/ten-of-hearts"
     ]
    },
    "spec": {
@@ -1785,25 +1785,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心10·消费=cardNode PlayingCard.art（TH）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心10·消费=cardNode PlayingCard.art（ten-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/TH.png",
-    "localId": "game-c/card/TH"
+    "servedPath": "/games/game-c/art/cards/ten-of-hearts.svg",
+    "localId": "card/ten-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心10·夜金 noir 扑克"
+   "prompt": "牌面·红心10·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-041",
@@ -1813,16 +1813,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（TD）",
-    "servedPath": "/games/game-c/art/cards/TD.png"
+    "resolver": "cardNode PlayingCard.art（ten-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/ten-of-diamonds.svg"
    },
    "query": "the ten of diamonds, poker number card, red suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/TD"
+     "card/ten-of-diamonds"
     ]
    },
    "spec": {
@@ -1830,25 +1830,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块10·消费=cardNode PlayingCard.art（TD）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块10·消费=cardNode PlayingCard.art（ten-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/TD.png",
-    "localId": "game-c/card/TD"
+    "servedPath": "/games/game-c/art/cards/ten-of-diamonds.svg",
+    "localId": "card/ten-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块10·夜金 noir 扑克"
+   "prompt": "牌面·方块10·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-042",
@@ -1858,16 +1858,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（TC）",
-    "servedPath": "/games/game-c/art/cards/TC.png"
+    "resolver": "cardNode PlayingCard.art（ten-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/ten-of-clubs.svg"
    },
    "query": "the ten of clubs, poker number card, black suit pips arranged classic, white card face, clean bold rank, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/TC"
+     "card/ten-of-clubs"
     ]
    },
    "spec": {
@@ -1875,25 +1875,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花10·消费=cardNode PlayingCard.art（TC）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花10·消费=cardNode PlayingCard.art（ten-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/TC.png",
-    "localId": "game-c/card/TC"
+    "servedPath": "/games/game-c/art/cards/ten-of-clubs.svg",
+    "localId": "card/ten-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花10·夜金 noir 扑克"
+   "prompt": "牌面·梅花10·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-043",
@@ -1903,16 +1903,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（JS）",
-    "servedPath": "/games/game-c/art/cards/JS.png"
+    "resolver": "cardNode PlayingCard.art（jack-of-spades）",
+    "servedPath": "/games/game-c/art/cards/jack-of-spades.svg"
    },
    "query": "the jack of spades, poker court card, ornate black jack figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/JS"
+     "card/jack-of-spades"
     ]
    },
    "spec": {
@@ -1920,25 +1920,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃J·消费=cardNode PlayingCard.art（JS）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃J·消费=cardNode PlayingCard.art（jack-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/JS.png",
-    "localId": "game-c/card/JS"
+    "servedPath": "/games/game-c/art/cards/jack-of-spades.svg",
+    "localId": "card/jack-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃J·夜金 noir 扑克"
+   "prompt": "牌面·黑桃J·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-044",
@@ -1948,16 +1948,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（JH）",
-    "servedPath": "/games/game-c/art/cards/JH.png"
+    "resolver": "cardNode PlayingCard.art（jack-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/jack-of-hearts.svg"
    },
    "query": "the jack of hearts, poker court card, ornate red jack figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/JH"
+     "card/jack-of-hearts"
     ]
    },
    "spec": {
@@ -1965,25 +1965,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心J·消费=cardNode PlayingCard.art（JH）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心J·消费=cardNode PlayingCard.art（jack-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/JH.png",
-    "localId": "game-c/card/JH"
+    "servedPath": "/games/game-c/art/cards/jack-of-hearts.svg",
+    "localId": "card/jack-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心J·夜金 noir 扑克"
+   "prompt": "牌面·红心J·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-045",
@@ -1993,16 +1993,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（JD）",
-    "servedPath": "/games/game-c/art/cards/JD.png"
+    "resolver": "cardNode PlayingCard.art（jack-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/jack-of-diamonds.svg"
    },
    "query": "the jack of diamonds, poker court card, ornate red jack figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/JD"
+     "card/jack-of-diamonds"
     ]
    },
    "spec": {
@@ -2010,25 +2010,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块J·消费=cardNode PlayingCard.art（JD）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块J·消费=cardNode PlayingCard.art（jack-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/JD.png",
-    "localId": "game-c/card/JD"
+    "servedPath": "/games/game-c/art/cards/jack-of-diamonds.svg",
+    "localId": "card/jack-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块J·夜金 noir 扑克"
+   "prompt": "牌面·方块J·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-046",
@@ -2038,16 +2038,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（JC）",
-    "servedPath": "/games/game-c/art/cards/JC.png"
+    "resolver": "cardNode PlayingCard.art（jack-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/jack-of-clubs.svg"
    },
    "query": "the jack of clubs, poker court card, ornate black jack figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/JC"
+     "card/jack-of-clubs"
     ]
    },
    "spec": {
@@ -2055,25 +2055,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花J·消费=cardNode PlayingCard.art（JC）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花J·消费=cardNode PlayingCard.art（jack-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/JC.png",
-    "localId": "game-c/card/JC"
+    "servedPath": "/games/game-c/art/cards/jack-of-clubs.svg",
+    "localId": "card/jack-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花J·夜金 noir 扑克"
+   "prompt": "牌面·梅花J·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-047",
@@ -2083,16 +2083,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（QS）",
-    "servedPath": "/games/game-c/art/cards/QS.png"
+    "resolver": "cardNode PlayingCard.art（queen-of-spades）",
+    "servedPath": "/games/game-c/art/cards/queen-of-spades.svg"
    },
    "query": "the queen of spades, poker court card, ornate black queen figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/QS"
+     "card/queen-of-spades"
     ]
    },
    "spec": {
@@ -2100,25 +2100,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃Q·消费=cardNode PlayingCard.art（QS）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃Q·消费=cardNode PlayingCard.art（queen-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/QS.png",
-    "localId": "game-c/card/QS"
+    "servedPath": "/games/game-c/art/cards/queen-of-spades.svg",
+    "localId": "card/queen-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃Q·夜金 noir 扑克"
+   "prompt": "牌面·黑桃Q·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-048",
@@ -2128,16 +2128,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（QH）",
-    "servedPath": "/games/game-c/art/cards/QH.png"
+    "resolver": "cardNode PlayingCard.art（queen-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/queen-of-hearts.svg"
    },
    "query": "the queen of hearts, poker court card, ornate red queen figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/QH"
+     "card/queen-of-hearts"
     ]
    },
    "spec": {
@@ -2145,25 +2145,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心Q·消费=cardNode PlayingCard.art（QH）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心Q·消费=cardNode PlayingCard.art（queen-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/QH.png",
-    "localId": "game-c/card/QH"
+    "servedPath": "/games/game-c/art/cards/queen-of-hearts.svg",
+    "localId": "card/queen-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心Q·夜金 noir 扑克"
+   "prompt": "牌面·红心Q·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-049",
@@ -2173,16 +2173,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（QD）",
-    "servedPath": "/games/game-c/art/cards/QD.png"
+    "resolver": "cardNode PlayingCard.art（queen-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/queen-of-diamonds.svg"
    },
    "query": "the queen of diamonds, poker court card, ornate red queen figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/QD"
+     "card/queen-of-diamonds"
     ]
    },
    "spec": {
@@ -2190,25 +2190,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块Q·消费=cardNode PlayingCard.art（QD）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块Q·消费=cardNode PlayingCard.art（queen-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/QD.png",
-    "localId": "game-c/card/QD"
+    "servedPath": "/games/game-c/art/cards/queen-of-diamonds.svg",
+    "localId": "card/queen-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块Q·夜金 noir 扑克"
+   "prompt": "牌面·方块Q·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-050",
@@ -2218,16 +2218,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（QC）",
-    "servedPath": "/games/game-c/art/cards/QC.png"
+    "resolver": "cardNode PlayingCard.art（queen-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/queen-of-clubs.svg"
    },
    "query": "the queen of clubs, poker court card, ornate black queen figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/QC"
+     "card/queen-of-clubs"
     ]
    },
    "spec": {
@@ -2235,25 +2235,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花Q·消费=cardNode PlayingCard.art（QC）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花Q·消费=cardNode PlayingCard.art（queen-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/QC.png",
-    "localId": "game-c/card/QC"
+    "servedPath": "/games/game-c/art/cards/queen-of-clubs.svg",
+    "localId": "card/queen-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花Q·夜金 noir 扑克"
+   "prompt": "牌面·梅花Q·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-051",
@@ -2263,16 +2263,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（KS）",
-    "servedPath": "/games/game-c/art/cards/KS.png"
+    "resolver": "cardNode PlayingCard.art（king-of-spades）",
+    "servedPath": "/games/game-c/art/cards/king-of-spades.svg"
    },
    "query": "the king of spades, poker court card, ornate black king figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/KS"
+     "card/king-of-spades"
     ]
    },
    "spec": {
@@ -2280,25 +2280,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃K·消费=cardNode PlayingCard.art（KS）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃K·消费=cardNode PlayingCard.art（king-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/KS.png",
-    "localId": "game-c/card/KS"
+    "servedPath": "/games/game-c/art/cards/king-of-spades.svg",
+    "localId": "card/king-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃K·夜金 noir 扑克"
+   "prompt": "牌面·黑桃K·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-052",
@@ -2308,16 +2308,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（KH）",
-    "servedPath": "/games/game-c/art/cards/KH.png"
+    "resolver": "cardNode PlayingCard.art（king-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/king-of-hearts.svg"
    },
    "query": "the king of hearts, poker court card, ornate red king figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/KH"
+     "card/king-of-hearts"
     ]
    },
    "spec": {
@@ -2325,25 +2325,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心K·消费=cardNode PlayingCard.art（KH）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心K·消费=cardNode PlayingCard.art（king-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/KH.png",
-    "localId": "game-c/card/KH"
+    "servedPath": "/games/game-c/art/cards/king-of-hearts.svg",
+    "localId": "card/king-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心K·夜金 noir 扑克"
+   "prompt": "牌面·红心K·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-053",
@@ -2353,16 +2353,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（KD）",
-    "servedPath": "/games/game-c/art/cards/KD.png"
+    "resolver": "cardNode PlayingCard.art（king-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/king-of-diamonds.svg"
    },
    "query": "the king of diamonds, poker court card, ornate red king figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/KD"
+     "card/king-of-diamonds"
     ]
    },
    "spec": {
@@ -2370,25 +2370,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块K·消费=cardNode PlayingCard.art（KD）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块K·消费=cardNode PlayingCard.art（king-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/KD.png",
-    "localId": "game-c/card/KD"
+    "servedPath": "/games/game-c/art/cards/king-of-diamonds.svg",
+    "localId": "card/king-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块K·夜金 noir 扑克"
+   "prompt": "牌面·方块K·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-054",
@@ -2398,16 +2398,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（KC）",
-    "servedPath": "/games/game-c/art/cards/KC.png"
+    "resolver": "cardNode PlayingCard.art（king-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/king-of-clubs.svg"
    },
    "query": "the king of clubs, poker court card, ornate black king figure illustration in violet-and-gold noir dress, white card face, rank pip and suit symbol in corners, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/KC"
+     "card/king-of-clubs"
     ]
    },
    "spec": {
@@ -2415,25 +2415,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花K·消费=cardNode PlayingCard.art（KC）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花K·消费=cardNode PlayingCard.art（king-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/KC.png",
-    "localId": "game-c/card/KC"
+    "servedPath": "/games/game-c/art/cards/king-of-clubs.svg",
+    "localId": "card/king-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花K·夜金 noir 扑克"
+   "prompt": "牌面·梅花K·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-055",
@@ -2443,16 +2443,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（AS）",
-    "servedPath": "/games/game-c/art/cards/AS.png"
+    "resolver": "cardNode PlayingCard.art（ace-of-spades）",
+    "servedPath": "/games/game-c/art/cards/ace-of-spades.svg"
    },
    "query": "the ace of spades, poker ace card, large ornate black suit emblem centered, white card face, gilded flourish, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/AS"
+     "card/ace-of-spades"
     ]
    },
    "spec": {
@@ -2460,25 +2460,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·黑桃A·消费=cardNode PlayingCard.art（AS）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·黑桃A·消费=cardNode PlayingCard.art（ace-of-spades）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/AS.png",
-    "localId": "game-c/card/AS"
+    "servedPath": "/games/game-c/art/cards/ace-of-spades.svg",
+    "localId": "card/ace-of-spades"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·黑桃A·夜金 noir 扑克"
+   "prompt": "牌面·黑桃A·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-056",
@@ -2488,16 +2488,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（AH）",
-    "servedPath": "/games/game-c/art/cards/AH.png"
+    "resolver": "cardNode PlayingCard.art（ace-of-hearts）",
+    "servedPath": "/games/game-c/art/cards/ace-of-hearts.svg"
    },
    "query": "the ace of hearts, poker ace card, large ornate red suit emblem centered, white card face, gilded flourish, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/AH"
+     "card/ace-of-hearts"
     ]
    },
    "spec": {
@@ -2505,25 +2505,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·红心A·消费=cardNode PlayingCard.art（AH）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·红心A·消费=cardNode PlayingCard.art（ace-of-hearts）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/AH.png",
-    "localId": "game-c/card/AH"
+    "servedPath": "/games/game-c/art/cards/ace-of-hearts.svg",
+    "localId": "card/ace-of-hearts"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·红心A·夜金 noir 扑克"
+   "prompt": "牌面·红心A·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-057",
@@ -2533,16 +2533,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（AD）",
-    "servedPath": "/games/game-c/art/cards/AD.png"
+    "resolver": "cardNode PlayingCard.art（ace-of-diamonds）",
+    "servedPath": "/games/game-c/art/cards/ace-of-diamonds.svg"
    },
    "query": "the ace of diamonds, poker ace card, large ornate red suit emblem centered, white card face, gilded flourish, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/AD"
+     "card/ace-of-diamonds"
     ]
    },
    "spec": {
@@ -2550,25 +2550,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·方块A·消费=cardNode PlayingCard.art（AD）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·方块A·消费=cardNode PlayingCard.art（ace-of-diamonds）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/AD.png",
-    "localId": "game-c/card/AD"
+    "servedPath": "/games/game-c/art/cards/ace-of-diamonds.svg",
+    "localId": "card/ace-of-diamonds"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·方块A·夜金 noir 扑克"
+   "prompt": "牌面·方块A·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-058",
@@ -2578,16 +2578,16 @@
     "mechanism": "index",
     "component": "PlayingCard",
     "field": "art",
-    "resolver": "cardNode PlayingCard.art（AC）",
-    "servedPath": "/games/game-c/art/cards/AC.png"
+    "resolver": "cardNode PlayingCard.art（ace-of-clubs）",
+    "servedPath": "/games/game-c/art/cards/ace-of-clubs.svg"
    },
    "query": "the ace of clubs, poker ace card, large ornate black suit emblem centered, white card face, gilded flourish, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard 程序牌面（白底+红黑点数花色）·货架 52 PD 可 vendor",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 矢量牌已 vendor（notpeter/Vector-Playing-Cards）",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/AC"
+     "card/ace-of-clubs"
     ]
    },
    "spec": {
@@ -2595,29 +2595,29 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌面·梅花A·消费=cardNode PlayingCard.art（AC）（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌面·梅花A·消费=cardNode PlayingCard.art（ace-of-clubs）（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "notpeter/Vector-Playing-Cards",
     "prompt": null,
-    "servedPath": "/games/game-c/art/cards/AC.png",
-    "localId": "game-c/card/AC"
+    "servedPath": "/games/game-c/art/cards/ace-of-clubs.svg",
+    "localId": "card/ace-of-clubs"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "notpeter/Vector-Playing-Cards",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌面·梅花A·夜金 noir 扑克"
+   "prompt": "牌面·梅花A·古典 PD 矢量（可换夜金定制）"
   },
   {
    "no": "art-059",
-   "desc": "牌背（紫绒底+金饰纹章·owner AI 定制）",
+   "desc": "牌背（现货 PD·可换紫绒金纹定制）",
    "kind": "texture",
    "ref": {
     "mechanism": "index",
@@ -2628,11 +2628,11 @@
    },
    "query": "poker card back, purple velvet ground with gilded ornamental crest and central emblem, symmetric, luxury noir, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：PlayingCard face:dark（bg3 暖紫）",
-    "source": "procedural-placeholder",
+    "current": "货架 PD 牌背已 vendor",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/card/back"
+     "card/back"
     ]
    },
    "spec": {
@@ -2640,25 +2640,25 @@
     "h": 336,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》牌背（紫绒底+金饰纹章·owner AI 定制）·消费=cardNode faceUp:false → PlayingCard.backArt（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》牌背（现货 PD·可换紫绒金纹定制）·消费=cardNode faceUp:false → PlayingCard.backArt（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "hayeah/playing-cards-assets",
     "prompt": null,
     "servedPath": "/games/game-c/art/cards/back.png",
-    "localId": "game-c/card/back"
+    "localId": "card/back"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "hayeah/playing-cards-assets",
+    "license": "Public Domain",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "牌背·紫绒底+金饰纹章+中央徽标"
+   "prompt": "牌背·PD 现货（可换紫绒金饰定制）"
   },
   {
    "no": "art-060",
@@ -2669,15 +2669,15 @@
     "component": "Chip3D/Material3D",
     "field": "map",
     "resolver": "3D 筹码柱贴图·面额 1",
-    "servedPath": "/games/game-c/art/chips/1.png"
+    "servedPath": "/games/game-c/art/chips/1-white.svg"
    },
    "query": "casino poker chip denomination 1, white body with a unified gold rim and dark-violet inlay pattern, top and edge, premium, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
    "placeholder": {
-    "current": "素坯：程序分色圆柱（chip3d）·货架 9 面额可 vendor",
-    "source": "procedural-placeholder",
+    "current": "CC0 现货已 vendor",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/chip/1"
+     "chip/1-white"
     ]
    },
    "spec": {
@@ -2686,24 +2686,24 @@
     "transparent": true
    },
    "context": "game-c《STORY-POKER V2》筹码·1（白·顶+侧面）·消费=3D 筹码柱贴图·面额 1（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "scripts/gen-chips.mjs",
     "prompt": null,
-    "servedPath": "/games/game-c/art/chips/1.png",
-    "localId": "game-c/chip/1"
+    "servedPath": "/games/game-c/art/chips/1-white.svg",
+    "localId": "chip/1-white"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "scripts/gen-chips.mjs",
+    "license": "CC0-1.0",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "筹码 1·白底+统一金边"
+   "prompt": "筹码 1·白（现货·可换夜金定制）"
   },
   {
    "no": "art-061",
@@ -2714,15 +2714,15 @@
     "component": "Chip3D/Material3D",
     "field": "map",
     "resolver": "3D 筹码柱贴图·面额 5",
-    "servedPath": "/games/game-c/art/chips/5.png"
+    "servedPath": "/games/game-c/art/chips/5-red.svg"
    },
    "query": "casino poker chip denomination 5, red body with a unified gold rim and dark-violet inlay pattern, top and edge, premium, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
    "placeholder": {
-    "current": "素坯：程序分色圆柱（chip3d）·货架 9 面额可 vendor",
-    "source": "procedural-placeholder",
+    "current": "CC0 现货已 vendor",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/chip/5"
+     "chip/5-red"
     ]
    },
    "spec": {
@@ -2731,24 +2731,24 @@
     "transparent": true
    },
    "context": "game-c《STORY-POKER V2》筹码·5（红·顶+侧面）·消费=3D 筹码柱贴图·面额 5（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "scripts/gen-chips.mjs",
     "prompt": null,
-    "servedPath": "/games/game-c/art/chips/5.png",
-    "localId": "game-c/chip/5"
+    "servedPath": "/games/game-c/art/chips/5-red.svg",
+    "localId": "chip/5-red"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "scripts/gen-chips.mjs",
+    "license": "CC0-1.0",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "筹码 5·红底+统一金边"
+   "prompt": "筹码 5·红（现货·可换夜金定制）"
   },
   {
    "no": "art-062",
@@ -2759,15 +2759,15 @@
     "component": "Chip3D/Material3D",
     "field": "map",
     "resolver": "3D 筹码柱贴图·面额 10",
-    "servedPath": "/games/game-c/art/chips/10.png"
+    "servedPath": "/games/game-c/art/chips/10-blue.svg"
    },
    "query": "casino poker chip denomination 10, blue body with a unified gold rim and dark-violet inlay pattern, top and edge, premium, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
    "placeholder": {
-    "current": "素坯：程序分色圆柱（chip3d）·货架 9 面额可 vendor",
-    "source": "procedural-placeholder",
+    "current": "CC0 现货已 vendor",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/chip/10"
+     "chip/10-blue"
     ]
    },
    "spec": {
@@ -2776,24 +2776,24 @@
     "transparent": true
    },
    "context": "game-c《STORY-POKER V2》筹码·10（蓝·顶+侧面）·消费=3D 筹码柱贴图·面额 10（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "scripts/gen-chips.mjs",
     "prompt": null,
-    "servedPath": "/games/game-c/art/chips/10.png",
-    "localId": "game-c/chip/10"
+    "servedPath": "/games/game-c/art/chips/10-blue.svg",
+    "localId": "chip/10-blue"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "scripts/gen-chips.mjs",
+    "license": "CC0-1.0",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "筹码 10·蓝底+统一金边"
+   "prompt": "筹码 10·蓝（现货·可换夜金定制）"
   },
   {
    "no": "art-063",
@@ -2804,15 +2804,15 @@
     "component": "Chip3D/Material3D",
     "field": "map",
     "resolver": "3D 筹码柱贴图·面额 25",
-    "servedPath": "/games/game-c/art/chips/25.png"
+    "servedPath": "/games/game-c/art/chips/25-green.svg"
    },
    "query": "casino poker chip denomination 25, green body with a unified gold rim and dark-violet inlay pattern, top and edge, premium, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
    "placeholder": {
-    "current": "素坯：程序分色圆柱（chip3d）·货架 9 面额可 vendor",
-    "source": "procedural-placeholder",
+    "current": "CC0 现货已 vendor",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/chip/25"
+     "chip/25-green"
     ]
    },
    "spec": {
@@ -2821,24 +2821,24 @@
     "transparent": true
    },
    "context": "game-c《STORY-POKER V2》筹码·25（绿·顶+侧面）·消费=3D 筹码柱贴图·面额 25（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "scripts/gen-chips.mjs",
     "prompt": null,
-    "servedPath": "/games/game-c/art/chips/25.png",
-    "localId": "game-c/chip/25"
+    "servedPath": "/games/game-c/art/chips/25-green.svg",
+    "localId": "chip/25-green"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "scripts/gen-chips.mjs",
+    "license": "CC0-1.0",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "筹码 25·绿底+统一金边"
+   "prompt": "筹码 25·绿（现货·可换夜金定制）"
   },
   {
    "no": "art-064",
@@ -2849,15 +2849,15 @@
     "component": "Chip3D/Material3D",
     "field": "map",
     "resolver": "3D 筹码柱贴图·面额 50",
-    "servedPath": "/games/game-c/art/chips/50.png"
+    "servedPath": "/games/game-c/art/chips/50-orange.svg"
    },
    "query": "casino poker chip denomination 50, orange body with a unified gold rim and dark-violet inlay pattern, top and edge, premium, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
    "placeholder": {
-    "current": "素坯：程序分色圆柱（chip3d）·货架 9 面额可 vendor",
-    "source": "procedural-placeholder",
+    "current": "CC0 现货已 vendor",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/chip/50"
+     "chip/50-orange"
     ]
    },
    "spec": {
@@ -2866,24 +2866,24 @@
     "transparent": true
    },
    "context": "game-c《STORY-POKER V2》筹码·50（橙·顶+侧面）·消费=3D 筹码柱贴图·面额 50（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "scripts/gen-chips.mjs",
     "prompt": null,
-    "servedPath": "/games/game-c/art/chips/50.png",
-    "localId": "game-c/chip/50"
+    "servedPath": "/games/game-c/art/chips/50-orange.svg",
+    "localId": "chip/50-orange"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "scripts/gen-chips.mjs",
+    "license": "CC0-1.0",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "筹码 50·橙底+统一金边"
+   "prompt": "筹码 50·橙（现货·可换夜金定制）"
   },
   {
    "no": "art-065",
@@ -2894,15 +2894,15 @@
     "component": "Chip3D/Material3D",
     "field": "map",
     "resolver": "3D 筹码柱贴图·面额 100",
-    "servedPath": "/games/game-c/art/chips/100.png"
+    "servedPath": "/games/game-c/art/chips/100-black.svg"
    },
    "query": "casino poker chip denomination 100, black body with a unified gold rim and dark-violet inlay pattern, top and edge, premium, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
    "placeholder": {
-    "current": "素坯：程序分色圆柱（chip3d）·货架 9 面额可 vendor",
-    "source": "procedural-placeholder",
+    "current": "CC0 现货已 vendor",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/chip/100"
+     "chip/100-black"
     ]
    },
    "spec": {
@@ -2911,24 +2911,24 @@
     "transparent": true
    },
    "context": "game-c《STORY-POKER V2》筹码·100（黑·顶+侧面）·消费=3D 筹码柱贴图·面额 100（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "scripts/gen-chips.mjs",
     "prompt": null,
-    "servedPath": "/games/game-c/art/chips/100.png",
-    "localId": "game-c/chip/100"
+    "servedPath": "/games/game-c/art/chips/100-black.svg",
+    "localId": "chip/100-black"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "scripts/gen-chips.mjs",
+    "license": "CC0-1.0",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "筹码 100·黑底+统一金边"
+   "prompt": "筹码 100·黑（现货·可换夜金定制）"
   },
   {
    "no": "art-066",
@@ -2939,15 +2939,15 @@
     "component": "Chip3D/Material3D",
     "field": "map",
     "resolver": "3D 筹码柱贴图·面额 500",
-    "servedPath": "/games/game-c/art/chips/500.png"
+    "servedPath": "/games/game-c/art/chips/500-purple.svg"
    },
    "query": "casino poker chip denomination 500, purple body with a unified gold rim and dark-violet inlay pattern, top and edge, premium, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
    "placeholder": {
-    "current": "素坯：程序分色圆柱（chip3d）·货架 9 面额可 vendor",
-    "source": "procedural-placeholder",
+    "current": "CC0 现货已 vendor",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/chip/500"
+     "chip/500-purple"
     ]
    },
    "spec": {
@@ -2956,43 +2956,43 @@
     "transparent": true
    },
    "context": "game-c《STORY-POKER V2》筹码·500（紫·顶+侧面）·消费=3D 筹码柱贴图·面额 500（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "scripts/gen-chips.mjs",
     "prompt": null,
-    "servedPath": "/games/game-c/art/chips/500.png",
-    "localId": "game-c/chip/500"
+    "servedPath": "/games/game-c/art/chips/500-purple.svg",
+    "localId": "chip/500-purple"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "scripts/gen-chips.mjs",
+    "license": "CC0-1.0",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "筹码 500·紫底+统一金边"
+   "prompt": "筹码 500·紫（现货·可换夜金定制）"
   },
   {
    "no": "art-067",
-   "desc": "筹码·1000（金·顶+侧面）",
+   "desc": "筹码·1000（黄·顶+侧面）",
    "kind": "texture",
    "ref": {
     "mechanism": "index",
     "component": "Chip3D/Material3D",
     "field": "map",
     "resolver": "3D 筹码柱贴图·面额 1000",
-    "servedPath": "/games/game-c/art/chips/1000.png"
+    "servedPath": "/games/game-c/art/chips/1000-yellow.svg"
    },
-   "query": "casino poker chip denomination 1000, gold body with a unified gold rim and dark-violet inlay pattern, top and edge, premium, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
+   "query": "casino poker chip denomination 1000, yellow body with a unified gold rim and dark-violet inlay pattern, top and edge, premium, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
    "placeholder": {
-    "current": "素坯：程序分色圆柱（chip3d）·货架 9 面额可 vendor",
-    "source": "procedural-placeholder",
+    "current": "CC0 现货已 vendor",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/chip/1000"
+     "chip/1000-yellow"
     ]
    },
    "spec": {
@@ -3000,25 +3000,25 @@
     "h": 256,
     "transparent": true
    },
-   "context": "game-c《STORY-POKER V2》筹码·1000（金·顶+侧面）·消费=3D 筹码柱贴图·面额 1000（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "context": "game-c《STORY-POKER V2》筹码·1000（黄·顶+侧面）·消费=3D 筹码柱贴图·面额 1000（art-bible §3·render-only 不进 sim hash）",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "scripts/gen-chips.mjs",
     "prompt": null,
-    "servedPath": "/games/game-c/art/chips/1000.png",
-    "localId": "game-c/chip/1000"
+    "servedPath": "/games/game-c/art/chips/1000-yellow.svg",
+    "localId": "chip/1000-yellow"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "scripts/gen-chips.mjs",
+    "license": "CC0-1.0",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "筹码 1000·金底+统一金边"
+   "prompt": "筹码 1000·黄（现货·可换夜金定制）"
   },
   {
    "no": "art-068",
@@ -3029,15 +3029,15 @@
     "component": "Chip3D/Material3D",
     "field": "map",
     "resolver": "3D 筹码柱贴图·面额 5000",
-    "servedPath": "/games/game-c/art/chips/5000.png"
+    "servedPath": "/games/game-c/art/chips/5000-gray.svg"
    },
    "query": "casino poker chip denomination 5000, gray body with a unified gold rim and dark-violet inlay pattern, top and edge, premium, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
    "placeholder": {
-    "current": "素坯：程序分色圆柱（chip3d）·货架 9 面额可 vendor",
-    "source": "procedural-placeholder",
+    "current": "CC0 现货已 vendor",
+    "source": "vendored",
     "count": 1,
     "instances": [
-     "game-c/chip/5000"
+     "chip/5000-gray"
     ]
    },
    "spec": {
@@ -3046,24 +3046,24 @@
     "transparent": true
    },
    "context": "game-c《STORY-POKER V2》筹码·5000（灰·顶+侧面）·消费=3D 筹码柱贴图·面额 5000（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "status": "replaced",
    "gen": {
-    "provider": "pending",
-    "model": null,
+    "provider": "vendored",
+    "model": "scripts/gen-chips.mjs",
     "prompt": null,
-    "servedPath": "/games/game-c/art/chips/5000.png",
-    "localId": "game-c/chip/5000"
+    "servedPath": "/games/game-c/art/chips/5000-gray.svg",
+    "localId": "chip/5000-gray"
    },
    "provenance": {
-    "generator": "placeholder",
+    "generator": "vendored",
     "prompt": null,
-    "model": null,
-    "license": null,
-    "source": "docs/design/game-c/art-bible-story-poker-v2.md",
+    "model": "scripts/gen-chips.mjs",
+    "license": "CC0-1.0",
+    "source": "assets/index.json → scripts/vendor-asset.mjs",
     "mock": false,
-    "note": "素坯占位·真图待出（照 §1 统一风格）"
+    "note": "货架现货已 vendor·可后续换夜金定制"
    },
-   "prompt": "筹码 5000·灰底+统一金边"
+   "prompt": "筹码 5000·灰（现货·可换夜金定制）"
   },
   {
    "no": "art-069",

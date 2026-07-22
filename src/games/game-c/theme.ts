@@ -145,6 +145,30 @@ export function cardFace(c: Card): { rank: string; suit: string } {
   return { rank: RANK_TXT[c.rank] ?? String(c.rank), suit: SUIT_SYM[c.suit] ?? '♠' };
 }
 
+// ── 牌资产 key（本地库 public/games/game-c/art/index.json·vendor 自 PD 货架·mirror game-a §5.1）───
+// holdem-eval Card{ suit 0=♠1=♥2=♦3=♣, rank 2..14 } → 本地资产 id `card/<rank-word>-of-<suit-word>`。
+// 牌面/牌背贴图=render-only 表现层（sim 只持 Card·不进 hash）；缺图→PlayingCard 退程序化白牌面（素坯 fallback）。
+const RANK_WORDS: Record<number, string> = {
+  2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight',
+  9: 'nine', 10: 'ten', 11: 'jack', 12: 'queen', 13: 'king', 14: 'ace',
+};
+const SUIT_WORDS = ['spades', 'hearts', 'diamonds', 'clubs'] as const; // 索引=Card.suit（0=♠…3=♣）
+
+/** Card → 本地资产 id（card/<rank>-of-<suit>·对齐 vendor 落盘的 52 张 PD 牌 id）。 */
+export function cardAssetId(c: Card): string {
+  return `card/${RANK_WORDS[c.rank] ?? String(c.rank)}-of-${SUIT_WORDS[c.suit] ?? 'spades'}`;
+}
+export const CARD_BACK_ID = 'card/back';
+
+/** 资产 id → 站点绝对 URL（本地索引 path 约定·vendor-asset 落盘规律；缺/未知 id 返 '' → 消费端退素坯）。
+ *  牌面=svg·牌背=png（照 vendor 落盘扩展名）；本地库仅 `card/*`，其余（如 chip/*）此处不解析返 ''。
+ *  vendor.test 逐条对账 `cardAssetUrl(id) === 本地索引 path` 钉死本约定。 */
+export function cardAssetUrl(assetId: string): string {
+  if (!assetId.startsWith('card/')) return '';
+  const ext = assetId === CARD_BACK_ID ? 'png' : 'svg';
+  return `/games/game-c/art/cards/${assetId.slice('card/'.length)}.${ext}`;
+}
+
 // 牌型英文枚举 → 中文提示（底带牌型提示·art-data-manual §5.4「牌型」）。
 export const HAND_NAME_CN: Record<string, string> = {
   'high-card': '高牌', 'pair': '一对', 'two-pair': '两对', 'three-of-a-kind': '三条',

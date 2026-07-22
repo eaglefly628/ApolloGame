@@ -6,7 +6,8 @@
 import type { LayoutNode } from '@ui/components/index.js';
 import type { Card } from '@engine/protocol/components.js';
 import {
-  cardFace, FIELD_W, FIELD_H, STORY_OPPONENTS, STORY_HERO, STORY_PARTNER, type StorySeatDef,
+  cardFace, cardAssetId, cardAssetUrl, CARD_BACK_ID,
+  FIELD_W, FIELD_H, STORY_OPPONENTS, STORY_HERO, STORY_PARTNER, type StorySeatDef,
 } from './theme.js';
 import type { GameEvent } from './game-log.js';
 import {
@@ -77,10 +78,16 @@ function langToggle(l: Lang, idp: string): LayoutNode {
 // ── 公共牌 / 底牌（白牌 face:light·红黑对比·§5.3 Decal3D 牌面正装）──────────────
 function cardNode(id: string, c: Card | null, size: 'sm' | 'md' | 'lg', rotate?: number, selected?: boolean): LayoutNode {
   const layout = rotate ? { rotate } : {};
-  if (!c) return { type: 'PlayingCard', id, props: { rank: '', suit: '♠', faceUp: false, face: 'dark', size }, layout };
+  // 空槽=牌背朝上（vendor 自 PD 货架的牌背贴图·§art-bible）：backArt 有→整面 cover·'' →程序化牌背（素坯 fallback）。
+  if (!c) {
+    const backArt = cardAssetUrl(CARD_BACK_ID);
+    return { type: 'PlayingCard', id, props: { rank: '', suit: '♠', faceUp: false, face: 'dark', size, ...(backArt ? { backArt } : {}) }, layout };
+  }
   const f = cardFace(c);
+  // 牌面贴图（真 PD 牌面·render-only）：art 有→居中显牌面 + 角标点数花色仍在·'' →程序化白牌面（素坯 fallback）。
+  const art = cardAssetUrl(cardAssetId(c));
   // selected=最优五张组合成员 → 金边圈出高亮（owner 2026-07-21：不显牌型名·只高亮圈出最大组合的原始牌）。
-  return { type: 'PlayingCard', id, props: { rank: f.rank, suit: f.suit, faceUp: true, face: 'light', size, ...(selected ? { selected: true } : {}) }, layout };
+  return { type: 'PlayingCard', id, props: { rank: f.rank, suit: f.suit, faceUp: true, face: 'light', size, ...(art ? { art } : {}), ...(selected ? { selected: true } : {}) }, layout };
 }
 // 最优组合成员判定（同花色+点数即同牌·board/hole 与 heroBest 比对）。
 const cardKey = (c: Card): number => c.suit * 100 + c.rank;
