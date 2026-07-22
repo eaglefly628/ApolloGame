@@ -369,6 +369,7 @@ export interface PlayView {
   // 本墩各座最近一手（座前小牌桌·像真扑克·出=牌码/过=pass）。
   plays: Partial<Record<SeatId, { cards: number[]; pass: boolean }>>;
   justPlayed?: SeatId | null; // 最近落子座（座前牌入场动效只播它·防全桌/上一张一起重播）；缺省=都不播（fixture 只验布局）
+  has3d?: boolean; // 3D 呢面桌可用（宿主判 WebGL）：真=牌桌屏/felt 透明透出 scene 层 3D 桌；假/缺省=2D 酒红呢面桌兜底（feltTexture）
   tributeText: string | null; // 本盘进贡/还贡/抗贡一句话（首盘=null·玩家知情）
   showCounter: boolean; // 记牌器开合
   counter: { rank: string; played: number; total: number }[]; // 明面已出牌计数（showCounter 时填）
@@ -560,7 +561,8 @@ export function buildPlay(v: PlayView): LayoutNode {
   const feltTable: LayoutNode = {
     type: 'Panel',
     id: 'a-felt',
-    props: { bg: { custom: feltTexture() }, vignette: true, accent: true },
+    // 3D 桌可用 → 透明壳（只作子节点布局锚·让 scene 层 3D 呢面桌透出）；无 3D → 2D 酒红呢面桌兜底（feltTexture·观感不塌）。owner 2026-07-22。
+    props: v.has3d ? { bare: true } : { bg: { custom: feltTexture() }, vignette: true, accent: true },
     layout: { x: 232, y: 148, width: FIELD_W - 464, height: 322, radius: 160, direction: 'column', align: 'center', justify: 'center', gap: 8 },
     children: feltChildren,
   };
@@ -698,7 +700,8 @@ export function buildPlay(v: PlayView): LayoutNode {
   return {
     type: 'Screen',
     id: 'a-play',
-    props: { image: art('bg/table') },
+    // 3D 桌可用 → 透明底（透出 scene 层 3D 呢面桌·带 bg/table 背幕）；无 3D → 2D 牌室背图兜底。owner 2026-07-22。
+    props: v.has3d ? { bg: { custom: 'transparent' } } : { image: art('bg/table') },
     layout: { width: FIELD_W, height: FIELD_H },
     children: [
       feltTable, // 含中央出牌区（祖孙嵌套）

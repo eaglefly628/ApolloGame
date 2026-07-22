@@ -385,10 +385,54 @@
         "at": "hud.ts a-result run-won 满屏 Image 叠层"
       },
       "skinKey": "game-a/fx/win"
+    },
+    {
+      "no": "art-3d-1",
+      "desc": "3D 呢面桌 高清酒红呢面 albedo 贴图（2K·细呢纹+暖光池·俟 Seedream 生成）",
+      "kind": "texture",
+      "slot": {
+        "entity": "table/felt-albedo",
+        "component": "Material3D",
+        "field": "map"
+      },
+      "skinKey": "game-a/table/felt-albedo",
+      "query": "3D 呢面桌 高清酒红呢面 albedo 贴图（2K·细呢纹+暖光池·俟 Seedream 生成）",
+      "spec": {
+        "w": 2048,
+        "h": 2048,
+        "transparent": false
+      },
+      "status": "filled",
+      "wired": {
+        "consumed": true,
+        "at": "build3d.ts felt Material3D.map/normalMap（3D 呢面·ThreeRenderer 按 key 挂·无真图回退酒红 preset）"
+      }
+    },
+    {
+      "no": "art-3d-2",
+      "desc": "3D 呢面桌 呢面法线贴图 normal（2K·呢纹凹凸=掠射高光·俟生成）",
+      "kind": "texture",
+      "slot": {
+        "entity": "table/felt-normal",
+        "component": "Material3D",
+        "field": "map"
+      },
+      "skinKey": "game-a/table/felt-normal",
+      "query": "3D 呢面桌 呢面法线贴图 normal（2K·呢纹凹凸=掠射高光·俟生成）",
+      "spec": {
+        "w": 2048,
+        "h": 2048,
+        "transparent": false
+      },
+      "status": "filled",
+      "wired": {
+        "consumed": true,
+        "at": "build3d.ts felt Material3D.map/normalMap（3D 呢面·ThreeRenderer 按 key 挂·无真图回退酒红 preset）"
+      }
     }
   ],
   "wiredCount": 10,
-  "rowCount": 10,
+  "rowCount": 12,
   "pending": [
     {
       "no": "art-04",

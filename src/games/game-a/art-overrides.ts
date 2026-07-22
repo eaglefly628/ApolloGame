@@ -5,6 +5,8 @@
 //   → mount 期 `loadArtOverrides` 拉索引 → 覆盖注册表；消费点 `artUri(skinKey, 内置回退)` 先查覆盖、未命中回退内置占位。
 // **真图未到 = 观感零字节变化**（兜底永不丢·Lead 红线）；工坊换图 → 索引写别名 → mount 拉到 → 热替换上画。
 // render-only·不进 sim/hash·蓝图/确定性零影响。
+import { AssetManager, ImageAssetLoader, parseAssetIndex, registerAssetIndex } from '@assets/index.js';
+
 const _overrides = new Map<string, string>();
 
 /** 登记美术覆盖（{ 'game-a/bg/menu': url, … }）。只收非空 URL。 */
@@ -26,6 +28,27 @@ export function artUri(skinKey: string, fallback: string): string {
  * 开头，或 tags 含 'skin'）——原生货架/程序占位（不带 `game-a/` 前缀或无信号）**不进** = 观感零变。
  * 失败/无索引/无 fetch（headless）= 空对象（消费点回退内置）。render-only。
  */
+/** 建空皮肤 AssetManager（mount 期创建·传给 3D ThreeRenderer·随后 loadSkinIndex 异步填充）。 */
+export function makeSkinAssets(): AssetManager {
+  return new AssetManager(new ImageAssetLoader());
+}
+/**
+ * 把本地美术索引注册进皮肤 AssetManager（3D `Material3D.map` 按 **key** 解析·区别 2D artUri 的 URL 路）。
+ * 3D 呢面贴图（game-a/table/felt-albedo|normal）就绪后 ThreeRenderer 按 key 取真图挂上（异步就绪→mesh 自动重建）；
+ * 未就绪/无真图 = map 解析 null → 回退 preset 色。失败/headless = 空 manager（回退色·兜底永不丢）。render-only。
+ */
+export async function loadSkinIndex(manager: AssetManager, slug = 'game-a'): Promise<void> {
+  try {
+    if (typeof fetch !== 'function') return;
+    const r = await fetch(`/games/${slug}/art/index.json`, { cache: 'no-cache' });
+    if (!r.ok) return;
+    registerAssetIndex(manager, parseAssetIndex(await r.json()));
+    await manager.loadAll();
+  } catch {
+    /* headless/无索引/解析失败 → manager 保持空 → Material3D.map 解析 null → 回退 preset 色 */
+  }
+}
+
 export async function loadArtOverrides(slug = 'game-a'): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   try {

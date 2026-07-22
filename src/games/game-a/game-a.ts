@@ -13,9 +13,12 @@ import { buildMenu, buildTableSelect, buildPlay, buildResult, type SeatView, typ
 import { type Lang, t, handName, tierName, fmtComboLabel, fmtTributeResist, fmtTributeLine } from './strings.js';
 import { SEATS, DRESS_TIERS, INITIAL_FUNDS, STAKES, LEVEL_START, codeSuit, codeRank, sortHand } from './rules.js';
 import { resolveSeatCards, seatDisplay, seatFlavor, buildSessionOut, type GameASessionIn, type SeatOutcome, type SeatSessionOut } from './seat-cards.js';
-import { loadArtOverrides, registerArtOverrides } from './art-overrides.js';
-import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG, GAME_A_THEME } from './theme.js';
+import { loadArtOverrides, registerArtOverrides, makeSkinAssets, loadSkinIndex } from './art-overrides.js';
+import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG, GAME_A_THEME, art } from './theme.js';
 import { mulberry32 } from '@atom-skills/index.js';
+import { Engine } from '../../runtime/engine.js';
+import { ThreeRenderer } from '@renderer/three-renderer.js';
+import { build3DTableBlueprint } from './build3d.js';
 
 // run 种子：时间派生（owner 2026-07-18·每局不同牌）。sim 仍确定性=给定种子可复现；
 // 菜单「设置」显种子供报 bug（宿主选种子不违「宿主零随机」——sim 逻辑无裸随机·Date.now 非 Math.random）。
@@ -36,8 +39,27 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
   let lastSessionOut: Record<string, SeatSessionOut> | null = null; // 终局回传（REQ-CHARCARD·经返回句柄 getSessionOut 暴露）
 
   const skel = mountHost(container, { fieldW: FIELD_W, fieldH: FIELD_H, sceneBackground: MANOR_BG, wrapperBackground: WRAPPER_BG });
-  const { overlayHost } = skel;
+  const { scene, overlayHost } = skel;
   overlayHost.style.pointerEvents = 'auto';
+
+  // ── 3D 呢面牌桌（build3d·render-only·ThreeRenderer 消费·P3D 渲染线本体归 P3D·我只接线·owner 2026-07-22「牌桌用 3D+高质量材质+高光+几盏灯」）─────
+  // scene 层(z0)=3D 灯光呢面桌打底；overlayHost 层(z20)=2D LayoutNode（手牌/席位/按钮·透明区透出 3D 桌）。牌逻辑零改（3D 纯表现层·不进 sim/hash）。
+  // **无 WebGL 兜底**（headless/老设备）：ThreeRenderer 建不出 → has3d=false → 牌桌屏退回 2D 酒红呢面桌（feltTexture）·功能零损。
+  const skinAssets = makeSkinAssets(); // 3D 呢面 Material3D.map 按 key 解析·loadSkinIndex 异步填真图（无真图=回退酒红 preset）
+  let table3d: Engine | null = null;
+  let renderer3d: ThreeRenderer | null = null;
+  try {
+    const e = new Engine();
+    e.load(build3DTableBlueprint());
+    const r = new ThreeRenderer({ width: FIELD_W, height: FIELD_H, background: 0x160e0a, antialias: true, dprCap: 1.5, shadowMapSize: 1024, assets: skinAssets });
+    e.attachRenderer(r, scene);
+    r.setBackgroundTexture(art('bg/table')); // 桌四周夜宴牌室背幕（工坊换图即热替换·同 2D bg/table 槽）
+    table3d = e; renderer3d = r;
+  } catch { table3d = null; renderer3d = null; /* 无 WebGL/headless → 2D 呢面兜底 */ }
+  const has3d = renderer3d !== null;
+  let running3d = false;
+  const start3D = (): void => { if (table3d && !running3d) { table3d.start(); running3d = true; } };
+  const stop3D = (): void => { if (table3d && running3d) { table3d.stop(); running3d = false; } };
 
   let ui: MountHandle | null = null;
   let session: GuandanSession | null = null;
@@ -175,6 +197,7 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
         TURN_ORDER.filter((seat) => s.seatPlay[seat]).map((seat) => [seat, { cards: s.seatPlay[seat]!.cards, pass: s.seatPlay[seat]!.pass }]),
       ),
       justPlayed: s.lastPlayed, // 座前牌入场动效只播最近落子座（防全桌/上一张一起重播·owner 2026-07-20）
+      has3d, // 3D 呢面桌可用 → 牌桌屏透明透出 3D（否则退 2D 酒红呢面·兜底）
       tributeText: tributeText(s),
       showCounter,
       counter: showCounter ? counterData(s) : [],
@@ -270,12 +293,14 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
 
   function showMenu(): void {
     stopSession();
+    stop3D();
     screen = 'menu';
     render(); // paint(buildMenu)·跨屏重挂由 paint 统一处理
   }
 
   function showTableSelect(): void {
     stopSession();
+    stop3D();
     screen = 'select';
     render(); // paint(buildTableSelect)
   }
@@ -288,6 +313,7 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
     selected = [];
     sortMode = 'rank';
     render(); // paint(buildPlay)
+    start3D(); // 3D 呢面桌起转（上桌才转·省算力）
     scheduleAi();
   }
 
@@ -418,9 +444,11 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
   void loadArtOverrides('game-a')
     .then((m) => { if (Object.keys(m).length) { registerArtOverrides(m); render(); } })
     .catch(() => { /* 无索引/headless → 保持内置占位 */ });
+  if (has3d) void loadSkinIndex(skinAssets, 'game-a'); // 3D 呢面真图就绪 → renderer 下帧自动重建（无真图=回退酒红 preset·兜底永不丢）
 
   const teardown = (): void => {
     stopSession();
+    stop3D();
     ui?.();
     ui = null;
     skel.teardown();

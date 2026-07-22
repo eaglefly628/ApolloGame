@@ -39,11 +39,11 @@ describe('game-a 美术台账 skinKey 契约（art-replace 写回别名依据·A
     pending: Array<{ no: string; wired?: { consumed?: boolean } }>;
   };
 
-  it('10 行接线·skinKey 全带 game-a/ 命名空间且唯一（工坊 override 载入过滤依据·此前全无=换不生效的根因）', () => {
-    expect(led.rows.length).toBe(10);
+  it('接线行 skinKey 全带 game-a/ 命名空间且唯一（工坊 override 载入过滤依据·此前全无=换不生效的根因）', () => {
+    expect(led.rows.length).toBe(12); // 10 2D 槽 + 2 3D 呢面材质槽（felt-albedo/normal·A-023 3D 桌）
     const keys = led.rows.map((r) => r.skinKey);
     expect(keys.every((k) => typeof k === 'string' && k!.startsWith('game-a/'))).toBe(true);
-    expect(new Set(keys).size).toBe(10);
+    expect(new Set(keys).size).toBe(12);
   });
 
   it('skinKey = game-a/<slot.entity>（消费键 art(slot) 与台账 slot 对齐·工坊写回同键即命中）', () => {
