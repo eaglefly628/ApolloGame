@@ -9,6 +9,7 @@ import {
   cardFace,
   FIELD_W, FIELD_H, STORY_OPPONENTS, STORY_HERO, STORY_PARTNER, type StorySeatDef,
 } from './theme.js';
+import { wearIconUri } from './art-overrides.js';
 import type { GameEvent } from './game-log.js';
 import {
   type Lang, type LastMove, type Street, t, fmtCall, fmtRaise, fmtBet, fmtShowdownTitle,
@@ -369,7 +370,9 @@ function buildWardrobe(w: WardrobeView, l: Lang): LayoutNode {
           {
             type: 'Panel', id: `c-wr-ic-${r.id}`, props: { bg: { custom: r.pawned ? 'linear-gradient(150deg,#3a3640,#1a1820)' : 'linear-gradient(150deg,#5a3d2e,#2a1a12)' }, edge: r.pawned ? undefined : 'gold' },
             layout: { width: 40, height: 40, justify: 'center', align: 'center', radius: 9 },
-            children: [{ type: 'Label', id: `c-wr-em-${r.id}`, props: { text: ITEM_EMOJI[r.id] ?? '👗', size: 'lg' } }],
+            children: [wearIconUri(r.id)
+              ? { type: 'Image', id: `c-wr-ic-img-${r.id}`, props: { src: wearIconUri(r.id)!, alt: r.name, fit: 'contain' as const }, layout: { width: 34, height: 34, radius: 6, opacity: r.pawned ? 0.5 : 1 } }
+              : { type: 'Label', id: `c-wr-em-${r.id}`, props: { text: ITEM_EMOJI[r.id] ?? '👗', size: 'lg' } }],
           },
           {
             type: 'Panel', id: `c-wr-nm-col-${r.id}`, props: { bare: true }, layout: { direction: 'column', gap: 0 },

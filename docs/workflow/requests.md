@@ -34,6 +34,10 @@
 > **根因**：`legalResponses` 按「意图家族」枚举应对并以该家族比压制；`act`/`legalCheck`/`beats` 走 `matchPattern` **最强判读**——含逢人配的一手多判读时，最强判读落到另一普通型家族→跨家族压不过→legalResponses 承诺的牌 act 拒收（实证：墩=钢板 JJJ-QQQ，QQ+KK+两♥5 按钢板 QQQ-KKK 返回，规范判读=三连对 Q-K-A 更强→拒）。后果=提示按钮给「打不出去的牌」/AI 空过（game-a 已游戏层兜底滤除·引擎修好可退）。
 > **⚖ Lead spec**：修 `legalResponses`——每个候选生成后用**规范口径自洽复核**：应对仅当 `beats(play.cards, target, cfg)`=true 才纳入；领出仅当 `matchPattern` 非空。**不改 beats/legalCheck 语义**（「任一判读能压」方向回驳=改判定语义·风险大）。测试点名：① A-008 实证例复现（修前红修后绿）；② **不变量测**=∀ legalResponses 返回项 legalCheck 必过（含逢人配多手枚举）；③ 既有 conformance 测零回归。game-a 兜底 filter 去留=PE-A 自裁（幂等）。
 
+### REQ-PANELSKIN-Panel 贴图皮槽 · 复合按钮（`Panel`+子节点）没法换贴图皮 · [2026-07-22] · PE-C 报（owner「按钮变贴图」落地撞缺口）→ Lead/PUI 裁 · status: open · 优先级: P2 · 类型: UI 基座控件缺口（PUI 域）
+> **缺口**：`ButtonProps.skin`/`skinSlice`（cover/9-slice 贴图皮）只 `Button` 组件有；`PanelProps` 无 cover 图槽（`image` 是 `ScreenProps` 专属·`Panel` 只 tiled `bgTexture`·平铺≠按钮皮）。游戏里**复合按钮**（文+金额/图标两色·必须 `Panel`+子 `Label`·非单 `label` 串）就换不了贴图皮。实例：game-c 主行动键 弃/跟/加/All-in（`hud.ts buildStoryActionBar`·`Panel bg:custom+edge+press3d`+两色 Label）——owner「按钮变贴图」主诉这几个键落不了地；改 `Button` 会丢两色复合标签。
+> **建议（PUI 裁）**：给 `PanelProps` 加 cover `skin?`（+`skinSlice?`）·语义同 `ButtonProps.skin`（`render.ts renderPanel` 消费·`skinSlice` 走 border-image 九宫格/缺省 cover·guard `!bare`·缺省无=面板零变化）。游戏侧即可 `skin: textureOverrideUri('game-c/ui/btn-fold') ?? undefined` 换主行动键皮。**评判**：现闭集真表达不了复合按钮换皮（`bgTexture` 平铺不对·`Button` 丢复合内容）→ 真缺口·非重组可解。game-c 次级按钮（Button·kind 皮）已接·此条只差复合 Panel 皮。
+
 <!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结迁归档（requests-archive.md）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
 
 

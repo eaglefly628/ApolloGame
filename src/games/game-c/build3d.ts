@@ -61,11 +61,19 @@ export function build3DTableBlueprint(): WorldBlueprint {
   //   纯 render-only（地板本就无 RigidBody3D·筹码落呢面非地板）·物理/确定性零影响。owner 目击 A/B 拍板拿掉。
 
   // 桌基（木·椭圆·圆柱×scaleX）——呢面下的桌身。
-  entities['table-base'] = { Transform3D: { x: 0, y: 0.26, z: 0, scaleX: FELT_RX / FELT_RZ }, Mesh3D: { shape: 'cylinder', width: FELT_RZ * 2 + 0.5, height: 0.5, frontTint: RAIL, edgeTint: 0x4a3218 } };
+  //   REQ-C-112 接槽：Material3D 木栏贴图槽 game-c/table/rail-albedo（真图就绪 ThreeRenderer 按 key 挂上·mesh 自动重建）；
+  //   无真图=map 解析 null→回退 preset matte + color RAIL（≈原木色·观感近零变）。normalMap 同理。
+  entities['table-base'] = {
+    Transform3D: { x: 0, y: 0.26, z: 0, scaleX: FELT_RX / FELT_RZ },
+    Mesh3D: { shape: 'cylinder', width: FELT_RZ * 2 + 0.5, height: 0.5, frontTint: RAIL, edgeTint: 0x4a3218 },
+    Material3D: { preset: 'matte', color: RAIL, map: 'game-c/table/rail-albedo', normalMap: 'game-c/table/rail-normal' },
+  };
   // 呢面（椭圆·带静态碰撞体 mass0→筹码落此面堆叠不穿桌）。width=短径×2·scaleX 拉成长椭圆。
+  //   REQ-C-112 接槽：Material3D 呢面贴图槽 game-c/table/felt-albedo（+normal）；无真图=回退 preset matte + color FELT（紫绒·观感近零变）。
   entities['table-felt'] = {
     Transform3D: { x: 0, y: FELT_TOP - 0.03, z: 0, scaleX: FELT_RX / FELT_RZ },
     Mesh3D: { shape: 'cylinder', width: FELT_RZ * 2, height: 0.06, frontTint: FELT, edgeTint: FELT_LO },
+    Material3D: { preset: 'matte', color: FELT, map: 'game-c/table/felt-albedo', normalMap: 'game-c/table/felt-normal' },
     RigidBody3D: { shape: 'cylinder', mass: 0, restitution: 0.18, friction: 0.72 },
   };
 

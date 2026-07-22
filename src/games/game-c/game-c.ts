@@ -14,7 +14,7 @@ import type { MountHandle, HandlerMap } from '@ui/components/index.js';
 import { Engine } from '../../runtime/engine.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
 import { FIELD_W, FIELD_H, ROOM_BG, WRAPPER_BG, GAME_C_THEME, OPPONENT_ANCHORS } from './theme.js';
-import { backdropUri, registerTextureOverrides, loadArtOverrides } from './art-overrides.js';
+import { backdropUri, registerTextureOverrides, loadArtOverrides, loadSkinIndex, makeSkinAssets, buttonSkinsForTheme } from './art-overrides.js';
 import { type Lang, t, handName } from './strings.js';
 import { buildTable, buildMenu, type TableView, type SeatView, type WardrobeView, type MenuView } from './hud.js';
 import { CLOTHING_ITEMS } from './wardrobe.js';
@@ -52,18 +52,15 @@ export function mount(
   // ── 3D 牌桌 + 物理围栏（build3d·render-only·ThreeRenderer 消费·P3D 渲染线本体归 P3D 我只接线）─────
   const engine = new Engine();
   engine.load(build3DTableBlueprint());
-  const renderer = new ThreeRenderer({ width: FIELD_W, height: FIELD_H, background: 0x140d16, antialias: true, dprCap: 1.5, shadowMapSize: 1024 });
+  // REQ-C-112 接槽：皮肤 AssetManager（3D 呢面/木栏 Material3D.map 按 key 解析·随后 loadSkinIndex 异步填充·就绪自动重建）。
+  const skinAssets = makeSkinAssets();
+  const renderer = new ThreeRenderer({ width: FIELD_W, height: FIELD_H, background: 0x140d16, antialias: true, dprCap: 1.5, shadowMapSize: 1024, assets: skinAssets });
   engine.attachRenderer(renderer, scene);
   // 夜景电影化背幕（STORY-POKER V2 稿·落地窗+城市散景·3D 呢面桌背后·render-only）。
   //   REQ-C-112（owner 2026-07-22）：背幕=可换皮消费槽 game-c/scene/backdrop——先上程序化 STORY_BACKDROP（观感零变），
-  //   mount 期异步拉本地美术索引，若工坊已按 skinKey 别名生成真背幕图则热替换上画（无真图=留程序化）。render-only·不进 sim。
+  //   mount 尾异步拉本地美术索引，若工坊已按 skinKey 别名生成真背幕图则热替换上画（无真图=留程序化）。render-only·不进 sim。
   let disposed = false;
   renderer.setBackgroundTexture(backdropUri());
-  void loadArtOverrides('game-c').then((tex) => {
-    if (disposed) return;
-    registerTextureOverrides(tex);
-    renderer.setBackgroundTexture(backdropUri()); // 真图就绪→热替换；否则仍是 STORY_BACKDROP
-  });
   let running = false;
   const start3D = (): void => { if (!running) { engine.start(); running = true; } };
   const stop3D = (): void => { if (running) { engine.stop(); running = false; } };
@@ -227,7 +224,9 @@ export function mount(
     })));
   };
   const rerender = (): void => { ui?.update(tree()); syncChips(); maybeEmitSessionOut(); };
-  const remount = (): void => { ui?.(); ui = mountUI(overlayHost, tree(), handlers, GAME_C_THEME); syncChips(); };
+  // REQ-C-112 接槽：主题带按钮皮（kind→真图·台账 game-c/ui/btn-hero|primary|ghost）——无真图返 undefined=原 kind 底（零变化）。
+  const gcTheme = (): typeof GAME_C_THEME => { const bs = buttonSkinsForTheme(); return bs ? { ...GAME_C_THEME, buttonSkins: bs } : GAME_C_THEME; };
+  const remount = (): void => { ui?.(); ui = mountUI(overlayHost, tree(), handlers, gcTheme()); syncChips(); };
 
   // ── AI 逐步演出（宿主 timer·每拍推进一个 AI·可观察「轮到谁思考/行动」·标准德州节奏·owner 2026-07-18）──
   let aiTimer: ReturnType<typeof setTimeout> | null = null;
@@ -293,6 +292,18 @@ export function mount(
   };
   void host; // launcher 壳退出钩子（游戏内经 ⚙ 回主菜单；壳级退出由 launcher overlay 菜单接）
 
-  ui = mountUI(overlayHost, buildMenu(menuView()), handlers, GAME_C_THEME);
+  ui = mountUI(overlayHost, buildMenu(menuView()), handlers, gcTheme());
+
+  // REQ-C-112 接槽·异步拉本地美术索引（mount 尾·handlers/remount 已就位）：
+  //   ① loadSkinIndex → 填 skinAssets（3D 呢面/木栏 Material3D.map 按 key·就绪 renderer 下帧自动重建·无真图=回退色）；
+  //   ② loadArtOverrides → URL 覆盖表（背幕/按钮皮/衣柜图标）·有真图才 remount 拾取（背幕热替换）·无真图=零改动。
+  void loadSkinIndex(skinAssets, 'game-c');
+  void loadArtOverrides('game-c').then((tex) => {
+    if (disposed || Object.keys(tex).length === 0) return; // 无真图覆盖 → 观感逐字节不变
+    registerTextureOverrides(tex);
+    renderer.setBackgroundTexture(backdropUri()); // 背幕真图热替换
+    remount(); // 按钮皮(主题)+衣柜图标(树) 拾取真图
+  });
+
   return () => { disposed = true; clearAiTimer(); stop3D(); chip3d.dispose(); gcAudio.dispose(); ui?.(); skel.teardown(); };
 }

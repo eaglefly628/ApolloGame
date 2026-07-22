@@ -121,7 +121,13 @@ painterly premium mobile-game art, refined tasteful, dramatic depth, story-drive
 
 - **机制**（编译期游戏·mirror game-g `art-textures` 覆盖模式）：台账行带**顶层 `skinKey`**（`scripts/game-c-art-ledger.mjs` 已补·37 行全带·art-replace 写回时 `if(row.skinKey)` 登记别名 `id=skinKey`+`tags:['skin']`+`source:'gen:<provider>'` 进 `index.json`）→ mount 期 `loadArtOverrides('game-c')`（`src/games/game-c/art-overrides.ts`）拉索引、**只收 `game-c/` 命名空间 + 正向 AI 信号**（`source` 起 `gen:`/`vendored` 或 `tags` 含 `skin`）的真图别名注册进覆盖表 → 消费点 `xxxUri()` 先查覆盖、未命中回退程序化。**红线**：真图未到=观感零字节变化·render-only·不进 sim/hash。
 - **已接（✅ live·端到端目击）**：**背幕** `game-c/scene/backdrop` → `backdropUri()` → `renderer.setBackgroundTexture`（`game-c.ts`·真图热替换/无则 `STORY_BACKDROP` 程序化·art-overrides.test 钉死回退+切换+headless 空安全）。**关键**：`build3d.ts` 原 16×12 暗地板在陡俯视下遮住整个场景背幕 → 已移除（REQ-C-112·render-only），背幕才真上屏；**消费点必须在相机可见面上**（接槽 ≠ 上屏·交付前真跑 vite preview 目击）。
-- **待接（follow-on·各自 `xxxUri()` 消费点·同模式）**：`game-c/table/felt-albedo|rail-albedo` → `Material3D.map`（**P3D 域·改前知会**）；`game-c/ui/btn-*` → `buttonSkins`（PUI 提供皮机制·PE-C 接键·owner「按钮变贴图」）；`game-c/icon/wear-*` → 衣柜 `Image.src`（现 emoji）；`game-c/fx/*` → `Vfx3D`（未接）。9 vendor 筹码 `chip/*` = 已真图·3D 筹码贴图消费待接。
+- **已接②（✅ live·owner「全接上」2026-07-22·端到端目击）**：
+  - **呢面/木栏** `game-c/table/felt-albedo`(+`felt-normal`)、`rail-albedo`(+`rail-normal`) → `build3d.ts` `table-felt`/`table-base` 的 `Material3D.map`/`normalMap`（**按 key 解析**·非 URL）。`game-c.ts` 建 `AssetManager`（`makeSkinAssets`）→ `loadSkinIndex` 拉索引注册 → 传 `new ThreeRenderer({assets})`；真图就绪 renderer 按 key 挂上（`three-renderer` 把「贴图就绪态」并进 mesh mode→**自动重建**）·无真图=map 解析 null→回退 `preset:'matte'`+`color`（呢面紫绒/木栏木色·观感近零变）。**注入绿棋盘贴图目击=呢面真换上。**
+  - **衣柜图标** `game-c/icon/wear-<id>` → `hud.ts` 衣柜格 `wearIconUri(id)` 有真图渲 `Image`·无则 emoji（`ITEM_EMOJI`）。目击=注入即换、未注入项仍 emoji。
+  - **次级按钮皮**（menu/showdown/lang 等 **Button 组件**·kind=hero/primary/ghost）`game-c/ui/btn-hero|primary|ghost` → `GAME_C_THEME` 动态 `buttonSkins`（`buttonSkinsForTheme()`·game-c.ts `gcTheme()` 注入·真图 remount 拾取·无则原 kind 底）。
+- **待接/缺口（follow-on）**：
+  - **主行动键 弃/跟/加/All-in = 复合 `Panel`（文+金额两色）**·`Panel` 无 cover/9-slice 贴图槽（只 tiled `bgTexture`·`image` 是 Screen 专属）→ **报 PUI 缺口**（给 `PanelProps` 加 cover `skin`），或改 `Button`（丢复合标签）。owner「按钮变贴图」主诉未全落。
+  - `game-c/fx/*` → `Vfx3D`（未接·新特效非换皮）；9 vendor 筹码 `chip/*` → 3D 筹码 `Material3D`（chip3d·未接）。
 
 ---
 
