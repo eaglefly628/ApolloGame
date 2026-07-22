@@ -79,7 +79,7 @@ def handle_art_style(body: dict) -> dict:
     print(c("  [ART]", 'g'), f"style {slug} → 锚更新")
     return {'success': True, 'artStyle': style}
 
-GEN_PROVIDER_RE = re.compile(r'qwen|tripo|meshy')
+GEN_PROVIDER_RE = re.compile(r'qwen|seedream|tripo|meshy')  # 2D:qwen/seedream · 3D:tripo/meshy（owner 2026-07-21 加 seedream·否则选 seedream 被拒→退回 qwen→无 key→mock 噪声图）
 
 def handle_art_approve(body: dict) -> dict:
     """POST /api/art/approve {slug, no|'all'}。人审复核（double verify 第二道门·owner 2026-07-10）：

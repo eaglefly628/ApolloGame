@@ -1322,7 +1322,21 @@ class Component extends DCLogic {
     fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .then(r => r.json()).then(d => {
         if (!d || d.success === false) throw new Error((d && d.error) || (label + '失败'));
-        this.showToast(label + ' ✓');
+        // 明报真图/mock/失败（治「看不到 log·不知为何是噪声图」）：summary 有 mock/failed/probes/errors。
+        const sm = d.summary || {}; const g = sm.generated || 0, mk = sm.mock || 0, fl = sm.failed || 0;
+        let msg;
+        if (fl > 0) {
+          const e0 = (sm.errors && sm.errors[0]) || null;
+          const et = e0 ? ('（' + e0.no + '：' + String(e0.error).slice(0, 90) + '）') : '';
+          msg = '✕ ' + label + '：' + fl + ' 张真调失败' + et + '·图未更新';
+        } else if (mk > 0) {
+          const p0 = (sm.probes && sm.probes[0]) || null;
+          const why = p0 ? (p0.note || ((p0.envKey || '') + ' 未配')) : '未配 key 或真调不可达';
+          msg = '⚠ ' + label + '：走了 mock 占位（' + why + '）——噪声图=占位·配好 key 后重生成出真图';
+        } else if (g > 0) {
+          msg = '✓ ' + label + '：生成 ' + g + ' 张真图';
+        } else { msg = label + ' ✓'; }
+        this.showToast(msg);
         this.setState({ artBusy: null });
         if (this.state.assetsSlug === slug) this.pickAssetGame(slug);
       }).catch(e => { this.setState({ artBusy: null }); this.showToast('✕ ' + ((e && e.message) || (label + '失败'))); });

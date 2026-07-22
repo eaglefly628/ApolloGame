@@ -424,7 +424,7 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
   const index = readJson(idxFile, { version: 1, assets: [] });
   if (!Array.isArray(index.assets)) index.assets = [];
   const byId = new Map(index.assets.map((a) => [a.id, a]));
-  const summary = { total: 0, generated: 0, cached: 0, mock: 0, failed: 0, skipped: 0, probes: [] };
+  const summary = { total: 0, generated: 0, cached: 0, mock: 0, failed: 0, skipped: 0, probes: [], errors: [] };
   const gameStyle = (ledger.artStyle && typeof ledger.artStyle.stylePrompt === 'string') ? ledger.artStyle.stylePrompt : '';
   for (const row of ledger.rows) {
     if (only && row.no !== only) { summary.skipped++; continue; } // 单槽点名（fill/regen）
@@ -444,7 +444,7 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     if (['generated', 'replaced'].includes(row.status) && row.gen?.cacheKey === ck && existsSync(outAbs)) { summary.cached++; continue; } // 命中·不重扣费
     let a;
     try { a = await genRowAsset(row, pack, { mock: useMock, apiKey, gameStyle, provider: providerOverride }); }
-    catch (e) { row.status = 'failed'; row.gen = { provider, error: String(e).slice(0, 200) }; summary.failed++; continue; }
+    catch (e) { row.status = 'failed'; row.gen = { provider, error: String(e).slice(0, 200) }; summary.failed++; summary.errors.push({ no: row.no, provider, error: String(e).slice(0, 200) }); continue; }
     mkdirSync(dirname(outAbs), { recursive: true }); writeFileSync(outAbs, a.buffer);
     const id = useMock ? `gen/mock/${row.no}` : `gen/${row.no}`;
     const servedPath = `/games/${game}/art/${outRel}`;
