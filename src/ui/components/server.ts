@@ -340,6 +340,48 @@ export function mountUI(
   };
   ensureAnchorLoop();
 
+  // 光标微尘（Particles follow:'cursor'·render-only·下沉自 game-b「GameD 粒子追随·较弱」owner 2026-07-22）：
+  //   每帧把带 data-particle-follow 的粒子簇 **JS 缓动**逼近指针（同 anchor 循环/相机 pivot 的 cur+=(t-cur)*k·
+  //   非 CSS 动画）→ 平移其 transform；指针在场淡入、离场淡出。坐标按元素 offsetParent 反算（信箱缩放自适应·
+  //   稳健于嵌套）。每帧重查（稳健于 update 重渲）·无跟随件不起循环（省帧）·teardown 撤监听 + 停 rAF。
+  let followRaf = 0;
+  let followPtr: { x: number; y: number } | null = null; // 指针 client 坐标·null=离场
+  const followPos = new WeakMap<Element, { x: number; y: number }>(); // 元素 → 当前缓动位（offsetParent 局部·未缩放 px）
+  const onFollowMove = (e: PointerEvent | MouseEvent): void => { followPtr = { x: e.clientX, y: e.clientY }; };
+  const onFollowLeave = (): void => { followPtr = null; };
+  const ensureParticleFollowLoop = (): void => {
+    if (followRaf) return; // 已在跑（幂等·mount + 每次 update 可调）
+    if (typeof document === 'undefined' || typeof requestAnimationFrame !== 'function') return;
+    if (!host.querySelector('[data-particle-follow]')) return; // 无跟随件·不起循环
+    const step = (): void => {
+      const nodes = host.querySelectorAll<HTMLElement>('[data-particle-follow]');
+      if (!nodes.length) { followRaf = 0; return; } // 跟随件全撤 → 停循环（再挂由 ensure 重启）
+      nodes.forEach((el) => {
+        const op = (el.offsetParent as HTMLElement | null) ?? host;
+        const r = op.getBoundingClientRect();
+        const k = op.offsetWidth ? r.width / op.offsetWidth : 1; // 信箱缩放系数（无布局→1·测试环境安全）
+        const w = el.offsetWidth || 0, h = el.offsetHeight || 0;
+        if (followPtr && k && Number.isFinite(k)) {
+          const tx = (followPtr.x - r.left) / k, ty = (followPtr.y - r.top) / k;
+          let p = followPos.get(el);
+          if (!p) { p = { x: tx, y: ty }; followPos.set(el, p); } // 首现直接落位·免从 0,0 飞入
+          else { p.x += (tx - p.x) * 0.18; p.y += (ty - p.y) * 0.18; } // JS 缓动（柔性跟随·非吸附）
+          el.style.transform = `translate(${(p.x - w / 2).toFixed(1)}px,${(p.y - h / 2).toFixed(1)}px)`;
+          el.style.opacity = '1';
+        } else {
+          el.style.opacity = '0'; // 指针离场 → 淡出（下次移动再现）
+        }
+      });
+      followRaf = requestAnimationFrame(step);
+    };
+    followRaf = requestAnimationFrame(step);
+  };
+  if (typeof document !== 'undefined') {
+    host.addEventListener('pointermove', onFollowMove);
+    host.addEventListener('pointerleave', onFollowLeave);
+  }
+  ensureParticleFollowLoop();
+
   // 背景 UV 滚动（render-only·滚动 UI 特效）：给带 data-bgscroll 的元素注入逐元素关键帧（平移 background-position），
   // 无限循环。配 repeating 贴图(texture)即得无缝滚动底纹；teardown 移除注入的 style。
   const scrollStyles: HTMLStyleElement[] = [];
@@ -615,6 +657,7 @@ export function mountUI(
     curRoot = newRoot;
     bindVlists(); // 子树可能被替换 → 复绑 vlist 滚动监听
     ensureAnchorLoop(); // update 引入锚定件（Float/Connector）→ 启动跟随 rAF（幂等·game-i 从 hub .update 进模块的路径）
+    ensureParticleFollowLoop(); // update 引入 Particles follow:'cursor' → 启动光标微尘 rAF（幂等）
   };
 
   const teardown = (() => {
@@ -639,6 +682,9 @@ export function mountUI(
     typers.forEach((iv) => clearInterval(iv));
     scrollStyles.forEach((s) => s.remove()); // 移除背景滚动注入的 keyframe style
     if (anchorRaf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(anchorRaf); // 停锚定跟随 rAF
+    host.removeEventListener('pointermove', onFollowMove); // 停光标微尘监听 + rAF
+    host.removeEventListener('pointerleave', onFollowLeave);
+    if (followRaf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(followRaf);
     host.innerHTML = '';
   }) as MountHandle;
   teardown.update = update;

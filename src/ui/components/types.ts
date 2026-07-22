@@ -355,6 +355,10 @@ export interface ParticlesProps {
   kind: 'confetti' | 'coins' | 'stars' | 'sparkle'; // 纸屑雨 / 金币雨 / 星光爆(径向) / 环境微光(原地闪)
   count?: number;   // 粒子数(缺省 confetti 26·其余 16·上限 60 防过载)
   loop?: boolean;   // true=持续循环(缺省·环境/展示)；false=播一次即停(庆祝一次性·配退场)
+  // 跟随光标态（render-only·下沉自 game-b「GameD 粒子追随」owner 2026-07-22）：设 'cursor' → 粒子簇
+  // 收成小簇（软径向遮罩 + screen 混色·不挡字）·每帧 JS 缓动逼近指针（同 anchor/相机 pivot·非 CSS 动画）·
+  // 指针离场淡出。渲染器侧胶水（server.ts 跟随循环）读 data-particle-follow 驱动；游戏侧纯数据消费。
+  follow?: 'cursor';
 }
 
 // ── LevelPath（关卡地图·休闲选关屏经典·render-only·下沉自「关卡地图缺口」owner 2026-07-15）─────────────

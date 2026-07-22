@@ -58,6 +58,18 @@ describe('休闲 juice 五补', () => {
     expect((renderNode({ type: 'Particles', id: 'm', props: { kind: 'confetti', count: 999 } }).match(/<span/g) ?? []).length).toBe(60);
   });
 
+  it('Particles follow:"cursor" → 跟随光标态标记 + 绝对定位小簇 + 初始隐 + screen 混色（不铺满父）', () => {
+    const html = renderNode({ type: 'Particles', id: 'dust', props: { kind: 'sparkle', count: 9, follow: 'cursor' } });
+    expect(html).toContain('data-particle-follow="cursor"'); // server 跟随循环据此驱动
+    expect(html).toContain('position:absolute');             // 小簇绝对定位（非铺满父）
+    expect(html).toContain('opacity:0');                     // 初始隐（指针移动才淡入）
+    expect(html).toContain('mix-blend-mode:screen');         // 只提亮·不挡字
+    expect(html).toContain('apollo-p-twinkle');              // sparkle 微光
+    expect((html.match(/<span/g) ?? []).length).toBe(9);     // 较弱=9 片
+    // 非 follow 态仍铺满父（relative·overflow:hidden）——回归不破原语义
+    expect(renderNode({ type: 'Particles', id: 'p', props: { kind: 'sparkle' } })).toContain('position:relative');
+  });
+
   it('Particles/ProgressBar-ring/stroke 样例过校验器（零 issue·目录自洽）', () => {
     const nodes: LayoutNode[] = [
       { type: 'Particles', id: 'v1', props: { kind: 'coins' } },

@@ -1465,6 +1465,17 @@ function buildPage3dUi(controls: ControlsState): LayoutNode {
           { type: 'Label', id: '3dui-particles-l', props: { text: '一个 Particles{kind} = 一台 UI 层发射器（世界层对等件=Vfx3D）。粒子位置确定式派生·无裸 Math.random·可回归。loop:false=庆祝播一次。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
         ]) },
 
+      // follow:'cursor'——收成小簇跟随光标（桌面微尘·下沉自 game-b「GameD 粒子追随」owner 2026-07-22）。
+      { type: 'Panel', id: '3dui-particles-follow-row', props: { bare: true }, layout: { direction: 'row', gap: 18, padding: 20, align: 'center' },
+        children: [
+          { type: 'Panel', id: 'pt-follow-stage', props: { bg: 'sunken' }, layout: { width: 320, height: 120, padding: 0, align: 'center', justify: 'center' },
+            children: [
+              { type: 'Label', id: 'pt-follow-hint', props: { text: '↖ 在此框内移动鼠标 · 微尘跟随光标', size: 'sm', color: 'dim' } },
+              { type: 'Particles', id: 'pt-follow', props: { kind: 'sparkle', count: 9, follow: 'cursor' } },
+            ] },
+          { type: 'Label', id: '3dui-particles-follow-l', props: { text: 'Particles{follow:"cursor"} = 粒子收成小簇跟随光标（软遮罩 + screen 混色不挡字·JS 缓动逼近·离场淡出）。渲染器侧跟随循环(server rAF)驱动·游戏侧纯数据一行；render-only 不进 sim。', color: 'sub', size: 'sm' }, layout: { flex: 1 } },
+        ] },
+
       divider('d-3du10'),
       sectionTitle('t-3dui-exit', '★ 退场 / 飘字动画 anim（fadeOut·popOut 一次性退场 + floatUp 循环升冒·+N 收益飘字）'),
       { type: 'Panel', id: '3dui-exit-row', props: { bare: true }, layout: { direction: 'row', gap: 40, padding: 24, align: 'center' },

@@ -122,11 +122,12 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
     sample: { type: 'Video', id: 's-video', props: { src: '/intro.mp4', controls: true } },
   },
   {
-    type: 'Particles', summary: 'UI 庆祝粒子叠层', whenToUse: '通关撒纸屑/领奖金币雨/星光爆/环境微光。铺满父容器(给父 width/height + position)。render-only·不进 sim。', children: 'none',
+    type: 'Particles', summary: 'UI 庆祝粒子叠层', whenToUse: '通关撒纸屑/领奖金币雨/星光爆/环境微光。铺满父容器(给父 width/height + position)。follow:"cursor"=收成小簇跟随光标(桌面微尘·render-only)。render-only·不进 sim。', children: 'none',
     props: [
       { name: 'kind', type: 'enum', values: ['confetti', 'coins', 'stars', 'sparkle'], required: true, describe: '纸屑雨/金币雨/星光爆(径向)/环境微光' },
       { name: 'count', type: 'number', describe: '粒子数(缺省 confetti 26·余 16·上限 60)' },
       { name: 'loop', type: 'boolean', default: true, describe: 'true=持续循环(展示/环境)·false=播一次(庆祝一次性)' },
+      { name: 'follow', type: 'enum', values: ['cursor'], describe: '跟随光标态：粒子收小簇·软遮罩+screen混色·JS缓动逼近指针·离场淡出(render-only胶水在渲染器侧)' },
     ],
     sample: { type: 'Particles', id: 's-particles', props: { kind: 'confetti' }, layout: { width: 200, height: 120 } },
   },

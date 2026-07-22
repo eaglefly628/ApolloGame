@@ -948,6 +948,12 @@ function renderParticles(id: string, p: ParticlesProps, ls: string, t: UITheme):
       pieces.push(`<span style="position:absolute;left:${px}%;top:-8%;${shape};--dx:${drift}px;--rot:${rot}deg;animation:apollo-p-fall ${dur}ms linear ${delay}ms ${iter} ${fill}"></span>`);
     }
   }
+  if (p.follow === 'cursor') {
+    // 跟随光标态：粒子收成小簇·绝对定位·软径向遮罩(边缘化开·不见方框)·screen 混色(只提亮·不挡字)·
+    // 初始隐(opacity:0)——由 server.ts 跟随循环每帧平移 + 显隐(指针在场淡入·离场淡出)。box 固定=不铺满父。
+    const box = 132;
+    return `<div id="${esc(id)}" data-particle-follow="cursor" style="${ls};position:absolute;left:0;top:0;width:${box}px;height:${box}px;overflow:visible;pointer-events:none;opacity:0;transition:opacity .35s ease;mix-blend-mode:screen;-webkit-mask-image:radial-gradient(circle,#000 26%,transparent 68%);mask-image:radial-gradient(circle,#000 26%,transparent 68%)">${pieces.join('')}</div>`;
+  }
   return `<div id="${esc(id)}" style="position:relative;overflow:hidden;pointer-events:none;${ls}">${pieces.join('')}</div>`;
 }
 

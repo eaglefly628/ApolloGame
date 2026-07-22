@@ -9,6 +9,7 @@
 | 要做 | 用 | 备注 |
 |---|---|---|
 | 通关撒纸屑 / 领奖金币雨 / 星光爆 / 环境微光 | `Particles{kind:confetti/coins/stars/sparkle,count?,loop?}` | UI 层发射器（世界层对等=`Vfx3D`）·铺满父容器 |
+| 桌面微尘 / 粒子跟随光标 | `Particles{kind:'sparkle',follow:'cursor',count?}` | 收成小簇随光标流动（软遮罩+screen 混色不挡字·JS 缓动·离场淡出）·render-only·活范例 game-i 🎉Juice |
 | 数值滚动 / +N 收益飘字 | `Label.tween{from,to,ms}` · `layout.anim:'floatUp'`（循环升冒） | 配 `Label.format` 一起用 |
 | 大数缩写 / 计时 / 百分比 | `Label.format`：compact（1.2K/3.4M/1.5B）/ time（mm:ss）/ percent（75%）/ int | 作用于 tween 每帧值 + 数字 text |
 | 奖励飞向钱包 / 卡飞进牌库 | `layout.flyTo{to,ms?,arc?,delay?}`（沿弧飞到目标元素 id·mountUI 量 rect） | 多个挂不同 delay=拖尾成串 |
