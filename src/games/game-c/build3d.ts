@@ -60,13 +60,15 @@ export function build3DTableBlueprint(): WorldBlueprint {
   //   拿掉后背幕(程序化 STORY_BACKDROP·真图就绪热替换)填满桌子四周=电影感环境；桌身自带木基+围栏接地不飘。
   //   纯 render-only（地板本就无 RigidBody3D·筹码落呢面非地板）·物理/确定性零影响。owner 目击 A/B 拍板拿掉。
 
-  // 桌基（木·椭圆·圆柱×scaleX）——呢面下的桌身。
-  //   REQ-C-112 接槽：Material3D 木栏贴图槽 game-c/table/rail-albedo（真图就绪 ThreeRenderer 按 key 挂上·mesh 自动重建）；
-  //   无真图=map 解析 null→回退 preset matte + color RAIL（≈原木色·观感近零变）。normalMap 同理。
+  // 桌基（木·椭圆·圆柱×scaleX）——呢面下的桌身 = 玩家看到的「桌边缘」。
+  //   owner 2026-07-22「桌边缘用引擎 3D 木头材质球」：改用 PBR 闭集 **wood 预设**（Filament 橡木实测·roughness0.6/metalness0
+  //   =真木光响应·软反光不塑感），color 覆盖成暗胡桃 RAIL（承夜紫 noir 调）+ **surface scratches=程序化各向异性木纹**
+  //   （零美术文件·沿 v 拉长的纤维纹·渲染器据参数生成 normal+roughness DataTexture）。这是纯引擎能力重组·非新代码。
+  //   REQ-C-112/113 接槽保留：map/normalMap 槽仍在——工坊生成真木纹图就绪即按 key 覆盖程序化面（可替换不丢·无真图=用木料球+程序纹）。
   entities['table-base'] = {
     Transform3D: { x: 0, y: 0.26, z: 0, scaleX: FELT_RX / FELT_RZ },
     Mesh3D: { shape: 'cylinder', width: FELT_RZ * 2 + 0.5, height: 0.5, frontTint: RAIL, edgeTint: 0x4a3218 },
-    Material3D: { preset: 'matte', color: RAIL, map: 'game-c/table/rail-albedo', normalMap: 'game-c/table/rail-normal' },
+    Material3D: { preset: 'wood', color: RAIL, roughness: 0.58, surface: { pattern: 'scratches', tiles: 4, normal: 0.5, rough: 0.35, scale: 1.0 }, map: 'game-c/table/rail-albedo', normalMap: 'game-c/table/rail-normal' },
   };
   // 呢面（椭圆·带静态碰撞体 mass0→筹码落此面堆叠不穿桌）。width=短径×2·scaleX 拉成长椭圆。
   //   REQ-C-112 接槽：Material3D 呢面贴图槽 game-c/table/felt-albedo（+normal）；无真图=回退 preset matte + color FELT（紫绒·观感近零变）。
