@@ -30,10 +30,13 @@ import { PLAY_W, PLAY_H, MENU_W, MENU_H, MENU_BG, NIGHT } from './theme.js';
 // 每局牌局不同。种子在 driver（非 sim）读一次、存进 match.rng.seed（日志面板标题可见）→ 全程走引擎
 // RandomSeed PRNG，存 seed 即可复现整局（randomness.md「存初始 seed 复现」·不破 lockstep/回放）。
 const clockSeed = (): number => Math.floor(Date.now() / 1000) % 0x7fffffff;
-// AI 出牌节奏基线（ms·设置屏可调）——owner 2026-07-21「每家出牌控制在 1–3 秒」：基线 + 确定性抖动落在 1000–3000ms。
-const AI_BASE_BY: Record<AiSpeed, number> = { fast: 1000, normal: 1500, slow: 2400 };
+// AI 出牌节奏基线（ms·设置屏可调）——owner 2026-07-21「1–3 秒」→ owner 2026-07-22「再快 30%」：基线×0.7·
+// 确定性抖动落在 ~700–2100ms（基线 700/1050/1680 + 抖动 %1050·上限 2100）。
+const AI_BASE_BY: Record<AiSpeed, number> = { fast: 700, normal: 1050, slow: 1680 };
 
-// 牌桌和室夜宴底（宿主装饰层·真美术=S6 背景件）。
+// 牌桌和室夜宴底（宿主装饰层·真美术=S6 背景件）。owner 2026-07-22「背景平铺整个场景·不随渲染器尺寸放缩」：
+// 此底挂在 **wrapper（全视窗·不缩放）** 而非 scene（定尺信箱盒）——满铺整个视窗、与信箱黑边无缝，牌局内容照旧
+// 等比信箱在其上。真背景件到货时同样挂 wrapper（可 repeat 平铺·native 尺寸不随 field 缩放）。
 const STAGE_BG = 'radial-gradient(ellipse at 50% 38%, #41283a 0%, #2a1e2b 62%, #201722 100%)';
 
 export function mount(container: HTMLElement, host?: { exit?: () => void; sessionIn?: GameBSessionIn }): () => void {
@@ -92,7 +95,9 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
   // ── 牌桌屏（3D 氛围场景 + LayoutNode 对局 HUD·driver 驱动一局跑起来）──────────────────
   function showTable(resume?: MatchState): void {
     clear();
-    const skel = mountHost(container, { fieldW: PLAY_W, fieldH: PLAY_H, sceneBackground: STAGE_BG, wrapperBackground: '#160d1b' });
+    // 背景挂 wrapper（全视窗满铺·不随 field 信箱缩放·owner 2026-07-22）；scene 不设底 → wrapper 背景透过定尺盒
+    // 四周与黑边无缝（牌桌 felt/HUD 自带底·居中信箱在其上）。
+    const skel = mountHost(container, { fieldW: PLAY_W, fieldH: PLAY_H, wrapperBackground: STAGE_BG });
 
     // SC-play v2（owner 2026-07-20 新稿 506ef9d6）：对局屏第一波**纯 2D LayoutNode**——出牌区 2D 牌河先行，
     // 3D 麻将区留下一波尝试（owner「先用 2D 做·我要交付版本」）。种子仍每局时钟（秒）·续局沿用。
@@ -116,7 +121,7 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
     };
     const clearAi = (): void => { if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; } };
     // AI 出牌用时（owner「1–3 秒」）：速度档基线 + 据牌局状态的确定性抖动（非裸随机·可复现）→ 落 1000–3000ms。
-    const aiDelay = (): number => Math.min(3000, AI_BASE_BY[settings.aiSpeed] + (match.cur.wall.length * 37 + match.cur.turn * 101 + match.honba * 7) % 1500);
+    const aiDelay = (): number => Math.min(2100, AI_BASE_BY[settings.aiSpeed] + (match.cur.wall.length * 37 + match.cur.turn * 101 + match.honba * 7) % 1050);
     // AI 席逐步推进（节奏可见）→ 到玩家行动 / 玩家待鸣窗口 / 菜单浮层 / 局终 停。
     const scheduleAi = (): void => {
       clearAi();

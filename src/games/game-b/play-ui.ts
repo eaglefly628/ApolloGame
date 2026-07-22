@@ -341,20 +341,25 @@ function callBar(m: MatchState, lang: Lang): LayoutNode | null {
   const cw = m.cur.callWindow;
   if (!cw) return null;
   const o = cw.options;
-  const btns: LayoutNode[] = [
-    { type: 'Label', id: 'call-hint', props: { text: fmtCallHint(lang, heroDisplay(lang, m.seatNames[cw.discarder]!), labelTile(cw.tile)), size: 'sm', bold: true, color: 'gold' } },
-  ];
-  if (o.ron) btns.push({ type: 'Button', id: 'call-ron', props: { label: cw.robKakan ? t(lang, 'act.robkan') : t(lang, 'act.ron'), kind: 'primary', action: CALL_RON } });
-  if (o.pon) btns.push({ type: 'Button', id: 'call-pon', props: { label: t(lang, 'act.pon'), kind: 'primary', action: CALL_PON } });
-  if (o.minkan) btns.push({ type: 'Button', id: 'call-kan', props: { label: t(lang, 'act.kan'), kind: 'primary', action: CALL_KAN } });
-  o.chi.forEach((c, i) => btns.push({ type: 'Button', id: `call-chi-${i}`, props: { label: fmtChi(lang, chiLabel(c, cw.tile)), kind: 'primary', action: CALL_CHI, actionArg: String(i) } }));
-  btns.push({ type: 'Button', id: 'call-pass', props: { label: t(lang, 'act.pass'), kind: 'quiet', action: CALL_PASS } });
+  // owner 2026-07-22「吃碰出现时 UI 太难看·要耀光效果」：鸣牌键=金光晕 + 呼吸（gallery「增益 glow gold + pulse」=
+  // 放光引导点击·闭集 fx 叠加·非手写）取代原素身 sheen；荣=hero 主强调、过=ghost 素身不抢光。卡片式两层
+  // （提示行浮上 + 键排贴带·描金边 + 暗紫渐变底·premium）·压在控制带内（y≈496→571·手牌顶 574 不叠）。
+  const shine: NonNullable<LayoutNode['layout']>['fx'] = [{ kind: 'glow', color: 'gold', intensity: 1.3 }, { kind: 'pulse' }];
+  const BH = 40;
+  const act: LayoutNode[] = [];
+  if (o.ron) act.push({ type: 'Button', id: 'call-ron', props: { label: cw.robKakan ? t(lang, 'act.robkan') : t(lang, 'act.ron'), kind: 'hero', action: CALL_RON }, layout: { height: BH, fx: shine } });
+  if (o.pon) act.push({ type: 'Button', id: 'call-pon', props: { label: t(lang, 'act.pon'), kind: 'primary', action: CALL_PON }, layout: { height: BH, fx: shine } });
+  if (o.minkan) act.push({ type: 'Button', id: 'call-kan', props: { label: t(lang, 'act.kan'), kind: 'primary', action: CALL_KAN }, layout: { height: BH, fx: shine } });
+  o.chi.forEach((c, i) => act.push({ type: 'Button', id: `call-chi-${i}`, props: { label: fmtChi(lang, chiLabel(c, cw.tile)), kind: 'primary', action: CALL_CHI, actionArg: String(i) }, layout: { height: BH, fx: shine } }));
+  act.push({ type: 'Button', id: 'call-pass', props: { label: t(lang, 'act.pass'), kind: 'ghost', action: CALL_PASS }, layout: { height: BH } });
   return {
-    type: 'Panel', id: 'callbar', props: { bg: { custom: 'rgba(32,16,28,0.97)' }, glow: true, accent: true },
-    // 居中贴桌底控制带（鸣牌窗口态·与手牌不叠·按钮压扁到 40 高）。
-    layout: { x: PANEL_X + PANEL_W / 2 - 220, y: BAND_Y, width: 440, padding: 6, gap: 8, direction: 'row', justify: 'center', align: 'center' },
-    // owner 2026-07-22 gallery #1-75：鸣牌键（碰/吃/杠/荣/过）加流光扫过（fx sheen·斜向湿润反光循环·引导点击）。
-    children: btns.map((b): LayoutNode => (b.type === 'Button' ? { ...b, layout: { ...(b.layout ?? {}), height: 40, fx: [{ kind: 'sheen' }] } } : b)),
+    type: 'Panel', id: 'callbar',
+    props: { bg: { custom: 'linear-gradient(180deg,rgba(60,27,46,0.98),rgba(31,15,27,0.98))' }, edge: 'gold', glow: true, accent: true },
+    layout: { x: PANEL_X + PANEL_W / 2 - 246, y: BAND_Y - 24, width: 492, padding: 8, gap: 5, direction: 'column', align: 'center', radius: 12 },
+    children: [
+      { type: 'Label', id: 'call-hint', props: { text: fmtCallHint(lang, heroDisplay(lang, m.seatNames[cw.discarder]!), labelTile(cw.tile)), size: 'sm', bold: true, color: 'gold' } },
+      { type: 'Panel', id: 'call-btnrow', props: { bare: true }, layout: { direction: 'row', gap: 8, justify: 'center', align: 'center' }, children: act },
+    ],
   };
 }
 
@@ -508,7 +513,11 @@ export function buildPlayHud(m: MatchState, opts: PlayHudOpts): LayoutNode {
   if (cb) children.push(cb);
   if (isWinLikeEnd(m)) children.push(resultOverlay(m, L));
   // 用户浮层（菜单/规则说明·互斥·菜单钮开·盖最上层）。
+  const overlayOpen = opts.rulesOpen || opts.menuOpen || isWinLikeEnd(m);
   if (opts.rulesOpen) children.push(rulesOverlay(L));
   else if (opts.menuOpen) children.push(menuOverlay(L, opts.soundOn ?? true));
+  // 光标微尘（owner 2026-07-22「GameD 粒子追随·较弱」）：闭集 Particles follow:'cursor'·纯数据消费·screen 混色
+  // 不挡字·较弱=count 9 sparkle。仅活跃对局态挂（浮层/结算态不挂·免盖模态）·置顶层随光标流动。
+  if (!overlayOpen) children.push({ type: 'Particles', id: 'table-dust', props: { kind: 'sparkle', count: 9, follow: 'cursor' } });
   return { type: 'Panel', id: 'play-root', props: { bare: true }, layout: { x: 0, y: 0, width: PLAY_W, height: PLAY_H }, children };
 }

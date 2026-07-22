@@ -40,6 +40,12 @@ export function buildMenu(st: MenuState, lang: Lang = 'ja'): LayoutNode {
               spans: [{ text: '雀' }, { text: '宴', color: 'danger' }],
             },
           },
+          // owner 2026-07-22 gallery #1-83「花写收体」（Pacifico 手写体·闭集 font:'script'）：题名罗马音手写签
+          // ——艺术字皆拉丁字体（CJK 自动回退）·贴罗马音才生效；金色手写花签压在明朝大字下=和风题头标配。
+          {
+            type: 'Label', id: 'menu-title-romaji',
+            props: { text: 'Jakuen', size: 36, font: 'script', color: 'gold' },
+          },
           {
             type: 'Label', id: 'menu-sub',
             props: { text: t(lang, 'menu.sub'), size: 15, color: 'sub' },
