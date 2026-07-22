@@ -120,6 +120,55 @@ painterly premium mobile-game art, refined tasteful, dramatic depth, story-drive
 
 ---
 
+## §7 动效台账（owner 2026-07-21「增加很多动效」·专业德州视角·**全走引擎数据化 fx·零手写 CSS**）
+
+> 铁律：动效=引擎闭集 fx 数据（`fx:[{kind}]` / `layout.flyTo` / `Label.tween` / `Particles` / `PlayingCard.flipped` / `anim` / `ProgressBar.shape:'ring'` / 3D `Vfx3D`·`Material3D.uvAnim`）。**缺 juice → requests.md 加一个 kind/字段，绝不手写 CSS/setTimeout 动画**（手册 ui.md）。纯表现·不进 sim hash。
+
+### A · 发牌 / 揭示（deal & reveal）
+| 时机 | 动效 | 引擎能力 | 现状 |
+|---|---|---|---|
+| 开局发底牌 | 牌从荷官位飞向各座（错峰） | `layout.flyTo{to,ms,arc,delay}` 逐张错峰 | 待接 |
+| 主角看底牌 | 底牌翻起 | `PlayingCard.flipped`（绕 Y 真 3D 翻） | 待接 |
+| 翻牌 flop | 3 张翻开·错峰 + 金光 | `flipped` + `fx:[{kind:'glow',color:'gold'}]` 错峰 delay | 待接（现直显） |
+| 转/河 turn/river | 单张翻 + 流光 | `flipped` + `fx:'sheen'` | 待接 |
+| 街切换 | 公共牌区呼吸一下 | `fx:[{kind:'pulse'}]` | 待接 |
+
+### B · 下注 / 筹码（betting & chips）
+| 下注 | 3D 物理筹码抛向池 | `chip3d.throwBet`（RigidBody3D+Impulse） | **✅ 已有** |
+| 筹码落定 | 落点火花/微尘 | 3D `Vfx3D` 发射器（fx 台账 `game-c/fx/chip-spark`） | 待接 |
+| 底池累加 | 数字滚动上跳 | `Label.tween{from,to,ms}` + `format:'compact'` + `fx:'pop'` | 待接（现直改） |
+| 收池 | 池筹码飞向赢家 | `layout.flyTo`（池→赢家席） | 待接 |
+| 赢家筹码堆增长 | 堆升高 | `chip3d.setStack`（已有·可加 `pop`） | ✅ 部分 |
+| All-in 推入 | 红闪 + 抖 + 全推 | `fx:[{kind:'flash',color:'danger',once},{kind:'shake'}]` + `game-c/fx/allin-flash` | 待接 |
+
+### C · 轮转 / 状态（turn & state）
+| 轮到谁 | 席卡呼吸金光 | `fx:[{kind:'pulse'},{kind:'glow',color:'gold'}]` | ✅ 有 glow·加 pulse |
+| 读秒 | 头像环形倒计时 | `ProgressBar.shape:'ring'`（现直条·换环） | 待接（现直条） |
+| 行动气泡出现 | 状态牌弹入 | `fx:[{kind:'pop'}]` | 待接 |
+| 弃牌盖牌 | 底牌滑走淡出 | `anim:'popOut'`/`fadeOut` | 待接 |
+| 庄家钮移动 | D 滑向下一座 | `layout.flyTo` | 待接 |
+
+### D · 结算 / 演出（showdown & win）
+| 逐家亮牌 | 依 last-aggressor 顺序翻 | `PlayingCard.flipped` 错峰 | ✅ 顺序有·翻待接 |
+| 最优组合高亮 | 5 张脉冲圈入 | `fx:[{kind:'pulse'},{kind:'glow',color:'gold'}]`（现静态金边） | 待接 |
+| 赢家庆祝 | 撒金币/彩带 + 光环 | `Particles{kind:'coins'/'confetti'}` + `game-c/fx/winner-ring`/`win-burst` | 待接 |
+| 局终屏 | 砸入 + 胜=彩带/负=灰烬 | `fx:'pop'` + `Particles{kind:'confetti'/'stars'}` | 待接 |
+
+### E · UI / 转场（UI & transitions）
+| 按钮按压 | 下沉反馈 | `layout.press3d` + `fx:'ripple'` | ✅ press3d 有 |
+| 屏切换 | 菜单↔牌桌 / 模态进出 | `anim:'fadeOut'/'popOut'` + panel-action-fade | 待接 |
+| 加注滑杆 | 值滚动 | `Label.tween` on raiseValue | 待接 |
+| 搭档旁白 | 台词打字机 | `Label.typewriter` | 待接 |
+| 立绘反应 | 对手立绘轻摇（赢/输/偷鸡） | `fx:[{kind:'float'}]`/`shake`（剧情反应） | 待接 |
+
+### F · 氛围（ambient·低频循环）
+| 呢面暖光呼吸 | 桌心光池微脉 | 3D `Material3D.uvAnim` 或 Light3D 脉动 | 待接 |
+| 背幕夜景闪烁 | 城市灯火微闪 | `bgScroll` 或背幕帧动 | 待接 |
+
+**接入优先级（ROI）**：①翻牌/发牌 flip+flyTo（最有牌感）→②底池 count-up + 收池 flyTo →③赢家 Particles 庆祝 →④active pulse + 读秒环 →⑤All-in flash/shake →⑥氛围。**全部数据化 fx·缺 kind 提 requests**。对应**需美术的** fx 精灵 = §3/机读账 `game-c/fx/*` 6 张（chip-spark/allin-flash/win-burst/winner-ring/deal-glow/pot-shine）；其余（count-up/flyTo/flip/pulse/Particles）**零美术**（引擎程序化）。
+
+---
+
 ## §6 机读账（下一步接槽时落）
 
 `public/games/game-c/art/art-ledger.json`（结构照 game-b/game-g）：每面一行 `{no,skinKey,kind,slot{entity,component,field},query(§1前缀+主体),prompt(中),spec,status}`。本台本 §3 A/A′ 档=待落行；B/C/D 档不占定制账（B 外部·C vendor·D 无美术）。
