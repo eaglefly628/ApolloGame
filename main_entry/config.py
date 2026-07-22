@@ -59,12 +59,13 @@ def _features() -> dict:
             out[k] = bool(v) if isinstance(v, bool) else dflt
     return out
 
-GEN_KEY_NAMES = ('DASHSCOPE_API_KEY', 'TRIPO_API_KEY', 'MESHY_API_KEY', 'SEEDANCE_API_KEY', 'NANO_BANANA_API_KEY', 'PIXVERSE_API_KEY')
+GEN_KEY_NAMES = ('DASHSCOPE_API_KEY', 'TRIPO_API_KEY', 'MESHY_API_KEY', 'ARK_API_KEY', 'SEEDANCE_API_KEY', 'NANO_BANANA_API_KEY', 'PIXVERSE_API_KEY')
 # 文生图/文生 3D key 的显示名（数据驱动·/api/settings 随 genKeys 回 label·壳读 label 即可，
-# 以后加新 key 只改这里、无需动壳）。owner 2026-07-11：Seedance（字节·主力）+ Nano Banana（Google 图像）。
+# 以后加新 key 只改这里、无需动壳）。owner 2026-07-21：Seedream（字节·火山方舟·文生图·美术主力·ARK_API_KEY）。
 GEN_KEY_LABELS = {
     'DASHSCOPE_API_KEY': '千问万相（2D 主力）', 'TRIPO_API_KEY': 'Tripo（3D）', 'MESHY_API_KEY': 'Meshy（3D 备选）',
-    'SEEDANCE_API_KEY': 'Seedance（字节·文生图/视频·主力）', 'NANO_BANANA_API_KEY': 'Nano Banana（Google Gemini 图像）',
+    'ARK_API_KEY': 'Seedream（字节·火山方舟·文生图·美术主力·owner 07-21）',
+    'SEEDANCE_API_KEY': 'Seedance（字节·文生视频）', 'NANO_BANANA_API_KEY': 'Nano Banana（Google Gemini 图像）',
     'PIXVERSE_API_KEY': '爱诗 PixVerse（文生视频·owner 07-12）',
 }
 

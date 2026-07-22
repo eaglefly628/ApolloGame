@@ -1,4 +1,4 @@
-// AI 资产生成框架 —— 文本→资产。适配器：tripo·meshy(文本→3D glb)· qwen(文本→2D png，走 DashScope 万相)。
+// AI 资产生成框架 —— 文本→资产。适配器：tripo·meshy(文本→3D glb)· qwen(2D png·DashScope 万相)· seedream(2D png·字节火山方舟)。
 //
 // 架构（同 src/services/aigp 端口哲学）：外部**非确定性 AI 服务**走旁路；产物 = 提交进库的**固定资产**（带
 //   provenance：厂商/prompt/模型/日期/许可），**不碰 sim/hash**（渲染层数据·确定性不受威胁）。
@@ -108,6 +108,24 @@ export const ADAPTERS = {
       if (!url) throw new Error('qwen: 轮询超时');
       const buffer = Buffer.from(await fetch(url).then((r) => r.arrayBuffer()));
       return { buffer, model: 'wanx2.1-t2i-turbo', mock: false, spec: { format: 'png', width: 1024, height: 1024, usage: 'sprite' } };
+    },
+  },
+  seedream: {
+    // 字节 Seedream 文生图（火山方舟 Ark·2D 主力·owner 2026-07-21 接入）。与 qwen 不同=**同步**返回（无轮询）。
+    // 端点/字段核实自 Ark 官方 images/generations（OpenAI 兼容·`response_format:url`→data[0].url·24h 有效）。
+    // 模型默认 doubao-seedream-4-0（env ARK_SEEDREAM_MODEL 可覆盖·owner 试 4-5/5-0 免改码）；尺寸 env ARK_SEEDREAM_SIZE。
+    kind: 'texture', ext: 'png', envKey: 'ARK_API_KEY', license: 'ByteDance Seedream/火山方舟 (按订阅商用授权)',
+    async generate(prompt, { mock, apiKey }) {
+      if (mock || !apiKey) { const { buffer, w, h } = mockImage(prompt); return { buffer, model: 'seedream-mock', mock: true, spec: { format: 'png', width: w, height: h, usage: 'sprite' } }; }
+      const model = process.env.ARK_SEEDREAM_MODEL || 'doubao-seedream-4-0-250828';
+      const size = process.env.ARK_SEEDREAM_SIZE || '2K';
+      const H = { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' };
+      const body = { model, prompt, size, response_format: 'url', watermark: false };
+      const res = await fetch('https://ark.cn-beijing.volces.com/api/v3/images/generations', { method: 'POST', headers: H, body: JSON.stringify(body) }).then((r) => r.json());
+      const url = res?.data?.[0]?.url;
+      if (!url) throw new Error('seedream: 无 image url ' + JSON.stringify(res?.error ?? res).slice(0, 300));
+      const buffer = Buffer.from(await fetch(url).then((r) => r.arrayBuffer()));
+      return { buffer, model, mock: false, spec: { format: 'png', usage: 'sprite' } };
     },
   },
 };

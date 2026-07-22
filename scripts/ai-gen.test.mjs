@@ -6,11 +6,12 @@ import { join } from 'node:path';
 import { ADAPTERS, buildEntry, mockImage, encodePng, providerSettings, demo, writePending, reviewPending, listPending, locations, provenanceMissing } from './ai-gen.mjs';
 
 describe('ai-gen 框架 · 适配器注册表', () => {
-  it('注册了 tripo·meshy(3D) + qwen(2D)，各带 kind/envKey/license', () => {
-    expect(Object.keys(ADAPTERS).sort()).toEqual(['meshy', 'qwen', 'tripo']);
+  it('注册了 tripo·meshy(3D) + qwen·seedream(2D)，各带 kind/envKey/license', () => {
+    expect(Object.keys(ADAPTERS).sort()).toEqual(['meshy', 'qwen', 'seedream', 'tripo']);
     expect(ADAPTERS.tripo).toMatchObject({ kind: 'mesh', ext: 'glb', envKey: 'TRIPO_API_KEY' });
     expect(ADAPTERS.meshy).toMatchObject({ kind: 'mesh', ext: 'glb', envKey: 'MESHY_API_KEY' });
     expect(ADAPTERS.qwen).toMatchObject({ kind: 'texture', ext: 'png', envKey: 'DASHSCOPE_API_KEY' });
+    expect(ADAPTERS.seedream).toMatchObject({ kind: 'texture', ext: 'png', envKey: 'ARK_API_KEY' });
   });
 });
 
@@ -37,6 +38,21 @@ describe('ai-gen 框架 · mock 生成产合法资产', () => {
     expect(a.buffer.slice(0, 8).toString('hex')).toBe('89504e470d0a1a0a'); // PNG 签名
     expect(a.spec).toMatchObject({ format: 'png', usage: 'sprite' });
     const b = await ADAPTERS.qwen.generate('blue round shield', { mock: true });
+    expect(b.buffer.slice(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    expect(a.buffer.equals(b.buffer)).toBe(false);
+  });
+
+  it('seedream mock → 合法 png·prompt 播种·model 标 seedream-mock（真调需 ARK_API_KEY+网络）', async () => {
+    const a = await ADAPTERS.seedream.generate('ink wash koi', { mock: true });
+    expect(a.buffer.slice(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    expect(a.model).toBe('seedream-mock');
+    expect(a.mock).toBe(true);
+    expect(a.spec).toMatchObject({ format: 'png', usage: 'sprite' });
+    const b = await ADAPTERS.seedream.generate('golden dragon', { mock: true });
+    expect(a.buffer.equals(b.buffer)).toBe(false); // prompt 播种
+    // 缺 key 非 mock → 回退 mock（不炸）
+    const c = await ADAPTERS.seedream.generate('x', { mock: false, apiKey: undefined });
+    expect(c.mock).toBe(true);
     expect(Buffer.compare(a.buffer, b.buffer)).not.toBe(0); // 不同 prompt → 不同 mock 图
   });
 

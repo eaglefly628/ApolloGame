@@ -74,7 +74,7 @@ def handle_asset_import(body: dict) -> dict:
 # 校验入参 → shell 调脚本（--mock --json）→ 回机读结果给库刷新。真调 API 走脚本内的 env key + 放宽网络。
 # 适配器闭集与脚本 ADAPTERS 对齐（新增 provider 两处同改：脚本注册 + 此白名单）。
 
-GEN_ADAPTERS = ('tripo', 'meshy', 'qwen')
+GEN_ADAPTERS = ('tripo', 'meshy', 'qwen', 'seedream')
 
 def handle_asset_generate(body: dict) -> dict:
     """POST /api/assets/generate。body = { adapter:'tripo'|'meshy'|'qwen', prompt:str, game?:str }。
