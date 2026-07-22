@@ -6,9 +6,11 @@
 
 ## 做 X → 用什么（一律走导出插件，绝不手改游戏源码）
 
-- **产出方式**：工作台发布屏「🌸 DokiWorld 卡带」平台，或 `node tools/export-game.mjs <game> --target dokiworld`。
+- **产出方式**：工作台发布屏，或 `node tools/export-game.mjs <game> --target dokiworld`。
 - **实现**：导出插件 `tools/export-targets/dokiworld.mjs`（core=`tools/export-game.mjs` 的 `--target` 插件架构）。
-- **产物**：可构建源码工程（`npm run build` 出 `dist/`）+ `public/game.json`；含协议桥 + 计分注入 + 资源展平。
+- **两种产物**（发布屏两个平台）：
+  - 「🌸 DokiWorld 卡带（源码工程）」= 可构建 TS 工程 + `public/game.json`（对方 `npm run build` 再部署）。
+  - 「🌸 DokiWorld 部署产物 dist」= 工作台直接 `vite build` → **每游戏一张完全独立可运行的 dist 卡带**（`index.html`+`assets/`+`art/`+`game.json`+`pipeline.json`·资源已展平），解压落 `/games/<slug>/` 即跑。
 - **当前支持**：`game-a / game-b / game-c`（`supportedGames`）。别的游戏会报错指路，不伪造产物。
 
 ## 插件自动做的四件事（对应契约）

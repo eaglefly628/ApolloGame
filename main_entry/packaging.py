@@ -28,6 +28,7 @@ _PKG_PLATFORMS = {
     'zip':      {'label': '工程包 .zip（卡带+资产）', 'ext': 'zip', 'needMac': False},
     'react':    {'label': 'React 独立工程 .zip', 'ext': 'zip', 'needMac': False},
     'doki':     {'label': 'DokiWorld 卡带 .zip', 'ext': 'zip', 'needMac': False},
+    'doki-dist': {'label': 'DokiWorld 部署产物 dist .zip', 'ext': 'zip', 'needMac': False},
 }
 # 内置卡带工程游戏（有 src/games 入口·可打卡带/桌面）——与 scripts/dist.py 的 GAME_META 对齐。
 _PKG_BUILTIN_META = {
@@ -66,10 +67,17 @@ def _run_pkg_job(jid: str, slug: str, platform: str) -> None:
             _pkg_job_update(jid, step=1)
             out = _pkg_build_export(slug, 'plain')
             _pkg_job_update(jid, done=True, artifact=str(out), artifactName=out.name); return
-        # doki=DokiWorld 卡带：同一导出管线套 dokiworld 导出插件（协议桥 + 计分注入 + 资源展平·仅 a/b/c）。
+        # doki=DokiWorld 卡带（源码工程）：同一导出管线套 dokiworld 导出插件（协议桥 + 计分注入 + 资源展平·仅 a/b/c）。
         if platform == 'doki':
             _pkg_job_update(jid, step=1)
             out = _pkg_build_export(slug, 'dokiworld')
+            _pkg_job_update(jid, done=True, artifact=str(out), artifactName=out.name); return
+        # doki-dist=DokiWorld 部署产物：导出 dokiworld → vite build → 打包构建好的独立可运行 dist
+        # （每游戏一张自包含卡带·index.html+assets+art+game.json·解压即 /games/<slug>/ 落地）。
+        if platform == 'doki-dist':
+            _pkg_job_update(jid, step=1)
+            with _PKG_BUILD_LOCK:  # 串行真实构建（vite 共享缓存）
+                out = _pkg_build_export_dist(slug)
             _pkg_job_update(jid, done=True, artifact=str(out), artifactName=out.name); return
         # 单文件/桌面/掌机：现管线只支持内置工程游戏。生成的库卡带 → 明确指路（不伪造产物）。
         is_builtin = slug in _PKG_BUILTIN_META
@@ -148,6 +156,41 @@ def _pkg_build_export(slug: str, target: str = 'plain'):
             if 'node_modules' in parts or 'dist' in parts:  # 只打源码，不打依赖/构建产物
                 continue
             z.write(p, f'{top}/{p.relative_to(work).as_posix()}')
+    return out
+
+def _pkg_build_export_dist(slug: str):
+    """DokiWorld 部署产物：导出 dokiworld 源码 → vite build → 打包构建好的独立可运行 dist 为
+    <slug>-dokiworld-dist.zip。解压 = 一张完全独立的游戏卡带（index.html + assets/ + art/ +
+    game.json + pipeline.json·资源已展平·base 相对），落到 /games/<slug>/ 即跑。"""
+    tool = ROOT / 'tools' / 'export-game.mjs'
+    if not tool.is_file():
+        raise RuntimeError('缺 tools/export-game.mjs（独立导出脚本未就位）')
+    work = ROOT / 'release' / slug / 'dokiworld-dist-src'
+    if work.exists():
+        shutil.rmtree(work)
+    work.parent.mkdir(parents=True, exist_ok=True)
+    r = subprocess.run(['node', str(tool), slug, '--out', str(work), '--target', 'dokiworld'],
+                       cwd=ROOT, capture_output=True, text=True)
+    if r.returncode != 0:
+        tail = (r.stderr or r.stdout or '').strip().splitlines()[-1:] or ['']
+        raise RuntimeError(f'DokiWorld 导出失败：{slug}（纯数据库卡带/无 mount 入口不支持）。{tail[0][:180]}')
+    # 复用仓库 node_modules（依赖同版本·免每次整装）；直接 vite build（跳 tsc·已另行 typecheck 保证）。
+    nm = work / 'node_modules'
+    root_nm = ROOT / 'node_modules'
+    if not nm.exists() and root_nm.is_dir():
+        nm.symlink_to(root_nm)
+    b = subprocess.run(['npx', 'vite', 'build'], cwd=work, capture_output=True, text=True)
+    if b.returncode != 0:
+        tail = (b.stderr or b.stdout or '').strip().splitlines()[-3:]
+        raise RuntimeError('vite build 失败：' + ' / '.join(t.strip() for t in tail)[:240])
+    dist = work / 'dist'
+    if not dist.is_dir() or not (dist / 'index.html').is_file():
+        raise RuntimeError('构建完成但未找到 dist/index.html（见服务端日志）')
+    out = ROOT / 'release' / slug / f'{slug}-dokiworld-dist.zip'
+    with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
+        for p in sorted(dist.rglob('*')):
+            if p.is_file():  # 解压根 = <slug>/ → 直接落 frontend/public/games/<slug>/
+                z.write(p, f'{slug}/{p.relative_to(dist).as_posix()}')
     return out
 
 def _pkg_build_platform(slug: str, platform: str):

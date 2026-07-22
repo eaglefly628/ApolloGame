@@ -2063,7 +2063,8 @@ class Component extends DCLogic {
       { key: 'handheld', label: '🎮 掌机版 · 单 HTML' },
       { key: 'zip', label: '📦 工程包 · .zip（卡带+资产）' },
       { key: 'react', label: '⚛️ React 独立工程 · .zip（内嵌网页/React）' },
-      { key: 'doki', label: '🌸 DokiWorld 卡带 · .zip（iframe 协议桥+计分）' },
+      { key: 'doki', label: '🌸 DokiWorld 卡带 · .zip（源码工程）' },
+      { key: 'doki-dist', label: '🌸 DokiWorld 部署产物 · dist.zip（构建好·独立卡带）' },
     ];
     const pkgState = s.pkgJobs || {};
     const mkPkgGame = (slug, cn, desc, icon) => ({
