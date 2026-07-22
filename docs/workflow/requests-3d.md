@@ -13,6 +13,12 @@
 >
 > **★ P3D 落地回执（2026-07-22·取方案① Decal3D.tex·PE-C 的三向缺口分析与我评判一致）**：`Decal3D` 加 `tex?`(texture 资产 id·alpha 走贴图自带通道·异步就绪前暂隐不显白块) + `width?/height?`(非等比长条·下注线是细长条) + `rotation?`(地面内 Y 朝向·对准座位)。DecalSystem 复用 Billboard 的 `ResolveTex`/`pbrMapTexture` 取图；有 tex 用真图、无 tex 走原程序化遮罩（向后兼容·additive·Decal3D 已在册不改组件清单）。测试 6 例（tex 就绪/未就绪暂隐/非等比/朝向）·回填 `playbooks/3d.md` 贴花行。**demo**：game-z Platform Three `p3-decal-rune`+`p3-decal-line`。**交 PE-C**：把 betline 从 `Decal3D{kind:'ring'}` 占位换成 `Decal3D{tex:<台账 betline key>,width,height,rotation}`（真图带 alpha 由 PA/PE-C 出）·API 已就绪。tsc0/vitest3004/build0 全绿·截图自证。
 
+## REQ-3D-MAT-ALPHA · Material3D.map 透明贴图路（transparent/alphaTest opt-in）· [2026-07-22] · PE-C 提（game-c 顶视牌桌）→ P3D · status: open · 优先级: **P2（现在阻塞 game-c 顶视重构主桌面视觉）** · 类型: 3D 线能力缺口（材质 alpha）
+> **触发**：owner 上传了一张**带透明色**的顶视牌桌图，写回 `game-c/table/surface`（`build3d.ts` table-surface plane·`Material3D.map`）后，**透明区渲成黑**——正是本池早已顺记、当时判「眼下不催」的缺口（见下条 REQ-3D-资产就绪自动重渲「连带小缺口」+ REQ-3D-DECAL-TEX 建议②）。owner 大重构把牌桌改成「一张顶视整幅贴图盖住物理桌」后，这张 `Material3D.map` 平面**就是**当时说的「透明贴花面」——条件已满足，现在**是主桌面视觉、阻塞**。
+> **缺口**：`material.ts buildPbrMaterial` 的 MeshStandard 路恒 `transparent:false`（只玻璃 transmission 路设 true）·`Material3D` 无 `transparent`/`alphaTest` 字段 → 贴图 alpha 通道被忽略·透明像素按 RGB(黑)渲出。台账 `spec.transparent` 声明**只 2D UI(img)吃·3D 材质不吃**（owner 敏锐指出「含/不含透明色要写清楚」——声明是有，3D 没接）。
+> **建议（P3D 裁·opt-in·向后兼容）**：给 `Material3D` 加 `alphaTest?`(cutout·硬边·透明像素 discard·无排序问题·最适合桌面透明角/贴花) + 可选 `transparent?`(软混合·配 opacity)；`buildPbrMaterial` 据此设 `m.alphaTest`/`m.transparent`。缺省不设=现行不透明行为零变。**顺带**：可让台账 `spec.transparent:true` 在 3D 消费端自动置 `transparent`（对齐 owner 直觉·2D/3D 声明一致）。
+> **PE-C 侧就绪**：`build3d.ts` table-surface 已在册；API 落地后我加 `alphaTest`（或 `transparent`）一字段即透。**workaround（不等 P3D）**：owner 改出**不透明**顶视桌图（四周深色/环境烤进图·填满 16:9），`spec.transparent:false` 即正常显（现台账已 false）。
+
 ## REQ-3D-资产就绪自动重渲 · 静态场景 × 异步贴图迟到 = 脏帧跳渲吞掉换图帧 · [2026-07-17] · PE-B 提 → P3D 评审 · status: open · 类型: 渲染健壮（W1-C 脏帧跳渲的盲区）
 
 > **现象（game-b S3 实证）**：全静态 3D 场景（无动画/无相机动）+ Material3D.map 贴图异步 fetch 迟到——`ensurePbrMesh` 在贴图就绪后按 mode 正确重建了 mesh，但 `renderSig`（位姿/相机/灯/后处理…）不含资产就绪态 → 跳渲判「画面没变」→ 新贴图永不上屏（canvas 停在旧帧）。动态场景（game-z 恒动）撞不到此坑，纯静态陈列场景必撞。
