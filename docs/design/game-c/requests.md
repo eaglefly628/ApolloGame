@@ -8,7 +8,9 @@
 
 ## 待处理
 
-### REQ-C-113 · 美术**全量**走索引消费（工坊替换才生效·owner「全部重改」）· [2026-07-22] · owner 报（背幕已通·余下全改）→ Lead 落单 → **PE-C** · status: open · 优先级: P2（承 REQ-C-112·美术生产链尾·不阻玩法）· 类型: 游戏层美术消费接线（PE-C 域）
+### REQ-C-114 · 右上角菜单键（点开三项：设置/游戏说明/日志）· [2026-07-22] · owner 报 → **PE-C**（chips/decals/fx 之后做）· status: open · 优先级: P2 · 类型: 游戏层 UI（HUD·LayoutNode）
+> **owner 指令**：牌桌右上角一个**菜单键**（平时收起）·点开露三项：① **设置**（关音乐等）② **游戏说明/菜单说明**（玩法帮助）③ **日志**。三项收在一个菜单键里。
+> **评判（大半是重组现成件·非缺口）**：① 音乐=现有 `sound_toggle`+`muted`；③ 日志=现有 `toggle_log`+`buildLogPanel`——直接归拢进菜单；② 游戏说明=新增一个帮助面板（LayoutNode 纯数据文案·EN/ZH i18n）。菜单键+下拉/面板=game-c HUD 组合（`buildStoryTopBar` 右侧加菜单键→`menu_toggle` 开一个 `Panel` 列三项·`check-ui` 防重叠）。**用基座 LayoutNode·不手写**。做完 check-ui + 门禁。
 > **owner 指令（2026-07-22）**：game-c 的美术**全部重改**成「可消费槽」——不止背幕（REQ-C-112 已接），筹码/牌面/呢面/木栏/贴花等**逐行**都要能被工坊替换后真上画面。
 > **现状**：背幕已走 `art-overrides.ts` 的 skinKey 索引解析（`fetch art/index.json` + `renderer.setBackgroundTexture(backdropUri())` 热替换·PE-C `f89baa97`）——**此模式=样板**，把它推广到全部 37 行。`npm run ledger:audit game-c` 看当前孤儿数（REQ-C-112 后应已降·余数即本单目标→0）。
 > **黑色地板遮挡（owner「德州黑色地板挡住·移去了」）**：`build3d.ts:59` 注释已定位——有面「完全遮住 setBackgroundTexture 场景背幕」的地板/元素（夜景背幕/工坊生成图被压在下面看不见=owner 报「生成写不回」的**表现根因之一**）。owner 称已移去→**PE-C 复核**：背幕真图就绪后确实上画面（真浏览器目击），别被别的 mesh 再遮。
