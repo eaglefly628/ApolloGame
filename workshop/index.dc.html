@@ -634,6 +634,11 @@
                       <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c;flex:none">提示词</span>
                       <input value="{{ artQ }}" onInput="{{ artQType }}" placeholder="改这里再点「重新生成」即换词出图…" style="flex:1;min-width:240px;border:2.5px solid #3a2312;border-radius:9px;padding:8px 10px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;background:#fff;color:#3a2312;outline:none">
                     </div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
+                      <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c;flex:none">目标尺寸</span>
+                      <input value="{{ artSize }}" onInput="{{ artSizeType }}" placeholder="{{ artSizePlaceholder }}" style="width:120px;border:2.5px solid #3a2312;border-radius:9px;padding:8px 10px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;background:#fff;color:#3a2312;outline:none">
+                      <span style="font-family:'Noto Sans SC';font-weight:600;font-size:10px;color:#8a5a2c">留空=默认规格 {{ artSizePlaceholder }}·格式 宽x高（生成自动放大到文生图下限再缩回此尺寸）</span>
+                    </div>
                     <div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap">
                       <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c">风格包</span>
                       <sc-for list="{{ artPackChips }}" as="pc" hint-placeholder-count="3"><button onClick="{{ pc.pick }}" style="{{ pc.style }}">{{ pc.label }}</button></sc-for>
@@ -975,7 +980,7 @@ class Component extends DCLogic {
     coverPrompt: '', coverBusy: false,   // 游戏封面/图标文生图（owner 07-12·替换卡片默认矢量图标）
     mlGroups: null, mlOpen: {}, artResolve: {},  // 虚拟分组 + 占位图解析（owner 07-12）
     // 美术一站式（owner 07-12「占位/提示词/模型/替换都在工坊」）：选中行 + 风格包/文生图模型 + 忙碌标
-    artSel: null, artQ: '', artPack: null, artProv: '', artBusy: null, artLastResult: null, artPacks: null, genProviders: null,
+    artSel: null, artQ: '', artSize: '', artPack: null, artProv: '', artBusy: null, artLastResult: null, artPacks: null, genProviders: null,
     artStyleInput: null, artStyleBusy: false,   // 本游戏整体美术风格锚（owner 07-13·拼进每张生成提示词·后端 dialectPrompt 已支持）
     artPreview: null, artZoom: 1,                // 台账美术图片预览灯箱 + 放大缩小（owner 07-13）
     tokenInput: '', genKeyInputs: {}, provKeyInputs: {}, genOptSel: {}, defaultProv: null, cfgModel: null, saving: false,
@@ -1913,7 +1918,7 @@ class Component extends DCLogic {
       const swatchText = (served || phColor) ? '' : '程序占位';
       return { no: r.no, q: r.query || (r.slot && r.slot.entity) || '', badge: badge[0], swatchStyle, swatchText,
         specText: artSpecText(r),  // 出图规格（owner 07-15「没有尺寸让我文生图怎么干」）：行卡就亮尺寸·不用点开
-        pick: () => this.setState({ artSel: r.no, artQ: r.query || '' }),  // 点开详情卡（一站式处理·07-12）
+        pick: () => this.setState({ artSel: r.no, artQ: r.query || '', artSize: (r.targetSize && r.targetSize.w && r.targetSize.h) ? (r.targetSize.w + 'x' + r.targetSize.h) : '' }),  // 点开详情卡（一站式处理·07-12·带尺寸覆盖）
         cardStyle: { borderRadius: '16px', overflow: 'hidden', cursor: 'pointer',
           border: '3px solid ' + (s.artSel === r.no ? '#7ecb45' : '#ffd257'),
           boxShadow: '0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312', background: '#fff' },
@@ -2443,6 +2448,9 @@ class Component extends DCLogic {
           : '状态：还没出过图，查询词在免费库也无命中（游戏里退化为色块）——点「⚡ 重新生成」出真图') : '',
       ].filter(Boolean).join('\n') : '',
       artQ: s.artQ, artQType: (e) => this.setState({ artQ: e.target.value }),
+      artSize: s.artSize, artSizeType: (e) => this.setState({ artSize: e.target.value }),
+      // 目标尺寸占位=该行原生 spec（留空即用它）；生成会自动放大到文生图面积下限再缩回此尺寸。
+      artSizePlaceholder: (artSelRow && artSelRow.spec && artSelRow.spec.w && artSelRow.spec.h) ? (artSelRow.spec.w + 'x' + artSelRow.spec.h) : '自动',
       artPackChips: artPacksArr.map(p => ({ label: p.name || p.packId, style: chipStyle(artCurPack === p.packId), pick: () => this.setState({ artPack: p.packId }) })),
       artProvChips: [{ id: '', label: '自动', tip: '按风格包默认的生成通道' }]
         .concat(artProvsArr.map(p => ({ id: p.id, label: p.id + (p.keyConfigured === false ? ' ⚠' : ''), tip: p.keyConfigured === false ? ('未配 key（' + (p.envKey || '') + '）——设置页可填') : (p.license || '') })))
@@ -2460,7 +2468,7 @@ class Component extends DCLogic {
           '提示词：' + ((s.artQ || '').trim() || artSelRow.query || '')].join('\n'));
       },
       artRegen: () => { if (artSelRow) this.artCall('重新生成 ' + artSelRow.no, '/api/art/regenerate',
-        { slug: s.assetsSlug, no: artSelRow.no, packId: artCurPack, query: (s.artQ || '').trim() || undefined, provider: s.artProv || undefined }); },
+        { slug: s.assetsSlug, no: artSelRow.no, packId: artCurPack, query: (s.artQ || '').trim() || undefined, size: (s.artSize || '').trim() || undefined, provider: s.artProv || undefined }); },
       artBatchGen: () => this.artCall('批量生成占位行', '/api/art/batch', { slug: s.assetsSlug, packId: artCurPack, provider: s.artProv || undefined }),
       artApplyBack: () => this.artCall('替换写回', '/api/art/replace', { slug: s.assetsSlug }),
       artUpload: () => this.artUpload(),
