@@ -114,7 +114,14 @@ def _gen_env() -> dict:
         q = _config_api_key('qwen')
         if q:
             env['DASHSCOPE_API_KEY'] = q
-    for name in GEN_OPTIONS:  # 生成选项注成同名 env（仅闭集在册值·env 已设不覆盖）
+    # Seedream 模型 ID 优先级（owner 2026-07-21「让我自己填·别猜」）：
+    #   ① 显式 env ARK_SEEDREAM_MODEL  ② UI 设置 genOptions  ③ env 别名 ARK_IMAGEGEN_MODEL  ④ default
+    # 别名 ③ 必须先于「④ 默认回填」判定——否则下面 GEN_OPTIONS 循环会把默认值盖上、别名白填。
+    go = cfg.get('genOptions') if isinstance(cfg.get('genOptions'), dict) else {}
+    ui_model = go.get('ARK_SEEDREAM_MODEL')
+    if not env.get('ARK_SEEDREAM_MODEL') and not (isinstance(ui_model, str) and ui_model.strip()) and env.get('ARK_IMAGEGEN_MODEL'):
+        env['ARK_SEEDREAM_MODEL'] = env['ARK_IMAGEGEN_MODEL'].strip()
+    for name in GEN_OPTIONS:  # 生成选项注成同名 env（free=任意串·闭集=在册值·env 已设不覆盖=显式/别名优先）
         if not env.get(name):
             env[name] = gen_option_choice(name, cfg)
     return env
