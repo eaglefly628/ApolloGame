@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="816" height="322" viewBox="0 0 816 322">
+  <!-- game-a《掼蛋夜宴》长方形呢桌面纹理（owner 2026-07-22 退 2D 长方桌·替代旧 oval.svg 椭圆）。
+       圆角矩形酒红呢 + 桌心暖光池 + 细金边框（rx≈28 对齐 a-felt 面板圆角·816×322 精确尺寸=cover 无形变）。 -->
+  <defs>
+    <radialGradient id="f_felt" cx="0.5" cy="0.46" r="0.72">
+      <stop offset="0" stop-color="#7a2732"/>
+      <stop offset="0.5" stop-color="#5a1c24"/>
+      <stop offset="1" stop-color="#360f14"/>
+    </radialGradient>
+    <radialGradient id="f_light" cx="0.5" cy="0.4" r="0.5">
+      <stop offset="0" stop-color="#a4384a" stop-opacity="0.5"/>
+      <stop offset="0.7" stop-color="#a4384a" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#a4384a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="f_edge" cx="0.5" cy="0.5" r="0.66">
+      <stop offset="0.82" stop-color="#360f14" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2a0b10" stop-opacity="0.7"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="2" y="2" width="812" height="318" rx="28" fill="url(#f_felt)"/>
+  <rect x="2" y="2" width="812" height="318" rx="28" fill="url(#f_light)"/>
+  <rect x="2" y="2" width="812" height="318" rx="28" fill="url(#f_edge)"/>
+  <!-- gold rim（细金边·内缩对齐面板圆角矩形） -->
+  <rect x="10" y="10" width="796" height="302" rx="22" fill="none" stroke="#f0c96a" stroke-opacity="0.7" stroke-width="2.5"/>
+  <rect x="16" y="16" width="784" height="290" rx="18" fill="none" stroke="#6a1f26" stroke-opacity="0.6" stroke-width="1.5"/>
+</svg>

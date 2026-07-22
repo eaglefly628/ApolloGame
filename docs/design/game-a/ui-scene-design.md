@@ -255,7 +255,7 @@ owner 一轮四条：①菜单 Tab 切页跳大小 ②压不过时高亮「过�
 
 - **扇牌真碰撞布局修（A-019①·非 allowOverlap 掩盖）**：27 张满手时右端 `a-hand-24~26` 旋摆压进右下操作按钮区（ui-audit 实测 12 处牌vs非牌重叠·最大 ~1736px²·被盖牌右段命中区被按钮吃）——**真碰撞非 A-007 扇叠假阳**。走**布局修**（Lead 三选）：`HAND_STEP` 34→25（扇宽 884→650px·每张仍露 25px 可读点数）+ `HAND_CENTER_X` 600→556（略左移给右下按钮列腾位）。ui-audit 复测：**牌vs按钮/立绘/工具重叠归零**（残留仅座前 tray↔谁大箭头=祖孙嵌套·与基线同·Float 锚定 by design）；扇内牌vs牌叠=纸牌意图叠层（A-007 记档·未用 allowOverlap 清零·守 Lead 铁律）。真机截图目击。
 - **主 CTA 金按钮（owner「接上去」批·hero kind）**：开始上桌/入座开局 `primary`(绿·jadeWash)→`hero`（金渐变底+深墨字 `t.bg0`+倒角流光）=蓝本 `main-menu-guandan.dc.html` 主 CTA「深字金底」1:1（真机≈8:1 高对比）。弃贴皮路（`buttonSkins.skin` 强制白字→浅金失读）用引擎 hero kind。ui-audit contrast 渐变底盲区误报 1.05 假阳=**A-022 报 PUI·不降格**（同 A-007）。
-- **牌桌 felt 贴图**：`FELT_RED` 纯渐变 → `FELT_TEXTURE`（`felt/oval.svg` 偏心聚光光晕+呢纹叠渐变上·图 404 退渐变兜底）——真机=正椭圆金边+桌心光池，较旧胶囊软边更像实体牌桌。
+- **牌桌 felt 贴图**：`FELT_RED` 纯渐变 → `FELT_TEXTURE`（`felt/table.svg` 桌心聚光光晕+细金边叠渐变上·图 404 退渐变兜底）——真机=**长方形圆角**（rx28·对齐 a-felt 面板）金边+桌心光池（owner 2026-07-22 退 2D 长方桌·替旧椭圆 oval.svg·台账 art-03 同步）。
 - **稿件降格清单（Claude Design 稿铁律·逐条列不悄悄降格·A-020③·Lead 评审补录）**：以下四处实现偏离设计稿，逐条列明·标 deferred（待做）/accepted（功能等价非损失）——
   1. **席位表情气泡**：稿=座位即时情绪气泡（出牌/被压反应）；实现=`SeatView.flavor` **静态人设问候气泡**（闲时显），即时情绪反应气泡=**死参恒缺席**。→ **deferred**（情绪反应系统=phase-3 演出·当前只静态人设句）。
   2. **SC-5 通关生涯统计**：稿=通关结算独立生涯统计面板（总局/胜率/收藏进度）；实现=**折叠进结算卡标题变体**（`buildResult` run-won phase·无独立统计面板）。→ **deferred**（生涯统计=storage 存档聚合·后议）。

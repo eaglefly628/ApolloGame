@@ -28,7 +28,7 @@ export const FELT_RED =
 const ART_FALLBACK = {
   'bg/menu': '/games/game-a/art/bg/menu.svg',
   'bg/table': '/games/game-a/art/bg/table.svg',
-  'felt/table': '/games/game-a/art/felt/oval.svg',
+  'felt/table': '/games/game-a/art/felt/table.svg',
   'icon/coin': '/games/game-a/art/icons/coin.svg',
   'icon/level': '/games/game-a/art/icons/level.svg',
   'icon/tribute': '/games/game-a/art/icons/tribute.svg',

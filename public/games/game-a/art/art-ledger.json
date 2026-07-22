@@ -2,7 +2,7 @@
   "version": 1,
   "game": "game-a",
   "mode": "authored-inventory",
-  "note": "A-023 可消费槽（2026-07-22·PE-A）：rows=真接线（各带 skinKey game-a/<slot>·工坊 art-replace 写 index 别名即热替换上画·ledger:audit 非孤儿）——含 10 2D 槽（bg/felt/icon/fx）+ 3 对手默认立绘槽（portrait/*·无默认图=Avatar 退首字·平台角色卡 avatar 传入则覆盖）。owner 2026-07-22 退回 2D 长方形桌→删 3D 呢面材质槽（table/felt-albedo|normal）。pending=未接（wired.reason 标真因·art 文件在库不删·非孤儿计·俟能力到位再转 rows）。",
+  "note": "A-023 可消费槽（2026-07-22·PE-A）：rows=真接线（各带 skinKey game-a/<slot>·工坊 art-replace 写 index 别名即热替换上画·ledger:audit 非孤儿）——含 10 2D 槽（bg/felt/icon/fx）+ 3 对手默认立绘槽（portrait/*·无默认图=Avatar 退首字·平台角色卡 avatar 传入则覆盖）。owner 2026-07-22 退回 2D 长方形桌→删 3D 呢面材质槽（table/felt-albedo|normal）；felt/table 贴图 oval.svg→table.svg（椭圆改长方形圆角·对齐面板）。pending=未接（wired.reason 标真因·art 文件在库不删·非孤儿计·俟能力到位再转 rows）。",
   "count": 26,
   "instances": 26,
   "rows": [
@@ -84,16 +84,16 @@
     },
     {
       "no": "art-03",
-      "desc": "牌呢桌面纹理·酒红椭圆",
+      "desc": "牌呢桌面纹理·酒红长方形圆角桌",
       "kind": "sprite",
       "slot": {
         "entity": "felt/table",
         "component": "Image",
         "field": "src"
       },
-      "query": "deep wine-red felt table surface texture, soft center highlight, thin gold rim, subtle fabric weave, top-down",
+      "query": "deep wine-red rounded-rectangular felt table surface, soft center highlight, thin gold rim, subtle fabric weave, top-down",
       "placeholder": {
-        "current": "CSS 径向渐变 FELT_RED（#6a1f26→#360f14）",
+        "current": "程序化圆角矩形 SVG（酒红径向渐变 + 桌心光池 + 细金边·felt/table.svg）",
         "source": "procedural",
         "count": 1,
         "instances": [
@@ -101,16 +101,16 @@
         ]
       },
       "spec": {
-        "w": 900,
-        "h": 380,
+        "w": 816,
+        "h": 322,
         "transparent": true
       },
-      "context": "game-a SC-3 椭圆 felt 桌呢纹理（a-felt 消费）·风格锚 modern-manor·压深让白扑克不刺眼（A-007）·P1",
+      "context": "game-a SC-3 长方形（圆角矩形 rx28）felt 桌呢纹理（a-felt 消费·owner 2026-07-22 退 2D 长方桌·替旧椭圆）·风格锚 modern-manor·压深让白扑克不刺眼（A-007）·P1",
       "status": "filled",
       "gen": {
         "source": "procedural",
-        "servedPath": "/games/game-a/art/felt/oval.svg",
-        "localId": "game-a/felt/oval",
+        "servedPath": "/games/game-a/art/felt/table.svg",
+        "localId": "game-a/felt/table",
         "model": "procedural-svg",
         "mock": false
       },
