@@ -12,7 +12,7 @@ import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assemb
 
 // 色板（STORY-POKER V2 稿·紫调绒面椭圆桌·owner 2026-07-21「美术无限逼近」）——照稿 felt radial 中亮 #7d5570 →
 //   边暗 #281620 取中值 0x5a3a52 做呢面主色（暖顶光在桌心再提亮=warm pool）；rail 稿 #6a4c38→#3e2c1e 木栏（收敛高光防塑感）。
-const FELT = 0x6a4462, FELT_LO = 0x2a1826, RAIL = 0x6f5040, RAIL_HI = 0x8a6448, FLOOR = 0x18101e, FLOOR_EDGE = 0x0b0710;
+const FELT = 0x6a4462, FELT_LO = 0x2a1826, RAIL = 0x6f5040, RAIL_HI = 0x8a6448;
 
 // 桌面椭圆（跑道形·长轴 x > 短轴 z·正式赛桌比例）。felt=呢面半径；rail=围栏环半径（略大·墙贴桌缘）。
 // owner 2026-07-21「纵横比跟稿差不多·别让立绘盖住这么大桌」：短轴收窄 → 呢面更扁·屏上 ≈916×502(1.82:1)·上沿下移给立绘 bust 让位。
@@ -55,8 +55,10 @@ export function build3DTableBlueprint(): WorldBlueprint {
   // 暖光池（桌心正上方 point·呢面中央提亮=稿 felt radial 中亮 + warm floor pool·朝边自然衰减出深紫）。
   entities['pool'] = { Transform3D: { x: 0, y: 2.4, z: -0.15 }, Light3D: { kind: 'point', color: 0xffd2a0, intensity: 4.6, range: 9 } };
 
-  // 暗地板（夜宴厅氛围·衬托桌面）。
-  entities['floor'] = { Transform3D: { x: 0, y: -0.02, z: 0 }, Mesh3D: { shape: 'box', width: 16, height: 0.04, depth: 12, frontTint: FLOOR, backTint: FLOOR, edgeTint: FLOOR_EDGE } };
+  // 地板移除（REQ-C-112·owner 2026-07-22）：陡俯视下这块 16×12 不透明暗地板铺满全屏 →
+  //   完全遮住 setBackgroundTexture 的场景背幕（夜景背幕/工坊生成的场景图都被压在它下面看不见=owner 报「生成写不回游戏」的表现根因）。
+  //   拿掉后背幕(程序化 STORY_BACKDROP·真图就绪热替换)填满桌子四周=电影感环境；桌身自带木基+围栏接地不飘。
+  //   纯 render-only（地板本就无 RigidBody3D·筹码落呢面非地板）·物理/确定性零影响。owner 目击 A/B 拍板拿掉。
 
   // 桌基（木·椭圆·圆柱×scaleX）——呢面下的桌身。
   entities['table-base'] = { Transform3D: { x: 0, y: 0.26, z: 0, scaleX: FELT_RX / FELT_RZ }, Mesh3D: { shape: 'cylinder', width: FELT_RZ * 2 + 0.5, height: 0.5, frontTint: RAIL, edgeTint: 0x4a3218 } };

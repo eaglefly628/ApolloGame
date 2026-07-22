@@ -120,7 +120,7 @@ painterly premium mobile-game art, refined tasteful, dramatic depth, story-drive
 ### §5.1 生成美术消费槽（REQ-C-112·owner 2026-07-22「生成的场景美术写不回游戏」）
 
 - **机制**（编译期游戏·mirror game-g `art-textures` 覆盖模式）：台账行带**顶层 `skinKey`**（`scripts/game-c-art-ledger.mjs` 已补·37 行全带·art-replace 写回时 `if(row.skinKey)` 登记别名 `id=skinKey`+`tags:['skin']`+`source:'gen:<provider>'` 进 `index.json`）→ mount 期 `loadArtOverrides('game-c')`（`src/games/game-c/art-overrides.ts`）拉索引、**只收 `game-c/` 命名空间 + 正向 AI 信号**（`source` 起 `gen:`/`vendored` 或 `tags` 含 `skin`）的真图别名注册进覆盖表 → 消费点 `xxxUri()` 先查覆盖、未命中回退程序化。**红线**：真图未到=观感零字节变化·render-only·不进 sim/hash。
-- **已接（✅ live）**：**背幕** `game-c/scene/backdrop` → `backdropUri()` → `renderer.setBackgroundTexture`（`game-c.ts`·真图热替换/无则 `STORY_BACKDROP` 程序化·art-overrides.test 钉死回退+切换+headless 空安全）。
+- **已接（✅ live·端到端目击）**：**背幕** `game-c/scene/backdrop` → `backdropUri()` → `renderer.setBackgroundTexture`（`game-c.ts`·真图热替换/无则 `STORY_BACKDROP` 程序化·art-overrides.test 钉死回退+切换+headless 空安全）。**关键**：`build3d.ts` 原 16×12 暗地板在陡俯视下遮住整个场景背幕 → 已移除（REQ-C-112·render-only），背幕才真上屏；**消费点必须在相机可见面上**（接槽 ≠ 上屏·交付前真跑 vite preview 目击）。
 - **待接（follow-on·各自 `xxxUri()` 消费点·同模式）**：`game-c/table/felt-albedo|rail-albedo` → `Material3D.map`（**P3D 域·改前知会**）；`game-c/ui/btn-*` → `buttonSkins`（PUI 提供皮机制·PE-C 接键·owner「按钮变贴图」）；`game-c/icon/wear-*` → 衣柜 `Image.src`（现 emoji）；`game-c/fx/*` → `Vfx3D`（未接）。9 vendor 筹码 `chip/*` = 已真图·3D 筹码贴图消费待接。
 
 ---
