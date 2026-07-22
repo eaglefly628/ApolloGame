@@ -8,7 +8,7 @@
   {
    "no": "art-001",
    "skinKey": "game-c/scene/backdrop",
-   "desc": "夜景背幕（全屏落地窗+城市夜景+景深光斑）",
+   "desc": "环境背幕（高角俯视·桌四周地面切片·紫 noir·与俯视相机方向一致）",
    "kind": "texture",
    "ref": {
     "mechanism": "url",
@@ -17,7 +17,7 @@
     "resolver": "renderer.setBackgroundTexture",
     "servedPath": "/games/game-c/art/scene/backdrop.svg"
    },
-   "query": "floor-to-ceiling window over a nocturnal city skyline, bokeh city lights, deep purple night, horizontal cinematic composition, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
+   "query": "high-angle overhead top-down view looking straight down at a dark luxurious poker lounge floor surrounding the table, deep purple noir carpet and polished wood, warm pooled light at center fading to shadowed edges, faint city-light reflections on the floor, a thin slice of the surrounding floor seen from a steep downward camera consistent with a top-down table view; NOT an eye-level horizon, NOT a vertical window, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
     "current": "素坯：声明式 SVG 夜景（theme STORY_BACKDROP）",
     "source": "procedural-placeholder",
@@ -28,10 +28,11 @@
    },
    "spec": {
     "w": 2048,
-    "h": 1152,
-    "transparent": false
+    "h": 2048,
+    "transparent": false,
+    "usage": "albedo"
    },
-   "context": "game-c《STORY-POKER V2》夜景背幕（全屏落地窗+城市夜景+景深光斑）·消费=renderer.setBackgroundTexture（art-bible §3·render-only 不进 sim hash）",
+   "context": "game-c《STORY-POKER V2》环境背幕（高角俯视·桌四周地面切片·紫 noir·与俯视相机方向一致）·消费=renderer.setBackgroundTexture（art-bible §3·render-only 不进 sim hash）",
    "status": "placeholder",
    "gen": {
     "provider": "procedural",
@@ -49,12 +50,12 @@
     "mock": false,
     "note": "夜金 SVG 程序占位·真图到位同 id 热替换（照 §1 统一风格）"
    },
-   "prompt": "夜景背幕·落地窗+城市夜景+景深光斑"
+   "prompt": "环境背幕·高角俯视桌四周地面·紫 noir"
   },
   {
    "no": "art-002",
    "skinKey": "game-c/table/felt-albedo",
-   "desc": "呢面绒布 albedo（绿绒·可平铺 tile）",
+   "desc": "呢面 albedo（绿绒·整幅完整贴图·非平铺）",
    "kind": "texture",
    "ref": {
     "mechanism": "index",
@@ -63,9 +64,9 @@
     "resolver": "build3d table-felt Material3D.map",
     "servedPath": "/games/game-c/art/table/felt-albedo.svg"
    },
-   "query": "green velvet poker felt cloth, seamless tileable texture, fine woven nap, high resolution, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
+   "query": "green velvet poker felt, full elliptical table surface, one complete image (not tiled), warm light pool at center, high resolution, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：Mesh3D 纯 tint(0x2e7d4e)+暖 point 光·tiling repeat 平铺",
+    "current": "素坯：Mesh3D 纯 tint(0x2e7d4e)+暖 point 光·整幅铺满",
     "source": "procedural-placeholder",
     "count": 1,
     "instances": [
@@ -75,9 +76,10 @@
    "spec": {
     "w": 2048,
     "h": 2048,
-    "transparent": false
+    "transparent": false,
+    "usage": "albedo"
    },
-   "context": "game-c《STORY-POKER V2》呢面绒布 albedo（绿绒·可平铺 tile）·消费=build3d table-felt Material3D.map（art-bible §3·render-only 不进 sim hash）",
+   "context": "game-c《STORY-POKER V2》呢面 albedo（绿绒·整幅完整贴图·非平铺）·消费=build3d table-felt Material3D.map（art-bible §3·render-only 不进 sim hash）",
    "status": "placeholder",
    "gen": {
     "provider": "procedural",
@@ -95,12 +97,12 @@
     "mock": false,
     "note": "夜金 SVG 程序占位·真图到位同 id 热替换（照 §1 统一风格）"
    },
-   "prompt": "呢面 albedo·绿绒·可平铺 tile"
+   "prompt": "呢面 albedo·绿绒·整幅完整贴图"
   },
   {
    "no": "art-003",
    "skinKey": "game-c/table/felt-normal",
-   "desc": "呢面法线（绿绒天鹅绒织纹·可平铺）",
+   "desc": "呢面法线（绿绒·整幅完整贴图·可选）",
    "kind": "texture",
    "ref": {
     "mechanism": "index",
@@ -109,9 +111,9 @@
     "resolver": "build3d table-felt Material3D.normalMap",
     "servedPath": "/games/game-c/art/table/felt-normal.svg"
    },
-   "query": "green velvet cloth weave normal map, seamless tileable, tangent-space, subtle fabric bump, high resolution, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
+   "query": "green velvet full table-surface normal map, one complete image (not tiled), tangent-space, subtle nap, high resolution, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：surface noise 程序织纹回退·真图就绪覆盖",
+    "current": "素坯：无（纯绿色底）·真图就绪整幅覆盖",
     "source": "procedural-placeholder",
     "count": 1,
     "instances": [
@@ -121,9 +123,10 @@
    "spec": {
     "w": 2048,
     "h": 2048,
-    "transparent": false
+    "transparent": false,
+    "usage": "normal"
    },
-   "context": "game-c《STORY-POKER V2》呢面法线（绿绒天鹅绒织纹·可平铺）·消费=build3d table-felt Material3D.normalMap（art-bible §3·render-only 不进 sim hash）",
+   "context": "game-c《STORY-POKER V2》呢面法线（绿绒·整幅完整贴图·可选）·消费=build3d table-felt Material3D.normalMap（art-bible §3·render-only 不进 sim hash）",
    "status": "placeholder",
    "gen": {
     "provider": "procedural",
@@ -141,7 +144,7 @@
     "mock": false,
     "note": "夜金 SVG 程序占位·真图到位同 id 热替换（照 §1 统一风格）"
    },
-   "prompt": "呢面法线·天鹅绒织纹·可平铺·线性"
+   "prompt": "呢面法线·整幅完整贴图·线性"
   },
   {
    "no": "art-004",

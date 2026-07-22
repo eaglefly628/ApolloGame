@@ -73,18 +73,17 @@ export function build3DTableBlueprint(): WorldBlueprint {
     Material3D: { preset: 'wood', color: RAIL, roughness: 0.4, surface: { pattern: 'scratches', tiles: 4, normal: 0.5, rough: 0.35, scale: 1.0 }, map: 'game-c/table/rail-albedo', normalMap: 'game-c/table/rail-normal' },
   };
   // 呢面（椭圆·带静态碰撞体 mass0→筹码落此面堆叠不穿桌）。width=短径×2·scaleX 拉成长椭圆。
-  //   owner 2026-07-22「绿底天鹅绒·高分辨率 + 好 normal/粗糙度·tile 纹理」：改绿绒 + velvet 观感。
-  //   preset matte（介电绒布非金属）+ color 绿 FELT 底 + roughness 0.9（哑光绒面）+ surface noise=无真图时程序化织纹底（真 normal 就绪即覆盖）。
-  //   接槽（owner 提供 tile 纹理）：map=Art02 felt-albedo·normalMap=Art03 felt-normal（velvet 织纹）；tiling.repeat=平铺 tile（非拉伸一张·待见真图微调密度）。
-  //   就绪 ThreeRenderer 按 key 挂上并按 repeat 平铺·mesh 自动重建；无真图=绿绒 + 程序织纹回退。
+  //   owner 2026-07-22 二次拍板「tiling 在牌桌上太碎难看·改纯色底 + 一张完整贴图（整幅铺满·不平铺）」：
+  //     撤掉 tiling.repeat（→repeat 1·一张图整幅映到呢面）+ 撤掉 surface 程序织纹（→纯绿色底·无噪点）。
+  //   preset matte（介电绒布非金属）+ color 绿 FELT 纯底 + roughness 0.9（哑光绒面）。
+  //   接槽（owner 提供**整幅**完整贴图·非 tile）：map=Art02 felt-albedo（整张天鹅绒呢面图）·normalMap=Art03 felt-normal（整幅法线·可选）。
+  //   就绪 ThreeRenderer 按 key 整幅挂上（圆柱顶盖采中心圆·随 scaleX 铺满椭圆呢面）·mesh 自动重建；无真图=纯绿绒色回退。
   entities['table-felt'] = {
     Transform3D: { x: 0, y: FELT_TOP - 0.03, z: 0, scaleX: FELT_RX / FELT_RZ },
     Mesh3D: { shape: 'cylinder', width: FELT_RZ * 2, height: 0.06, frontTint: FELT, edgeTint: FELT_LO },
     Material3D: {
       preset: 'matte', color: FELT, roughness: 0.9,
-      surface: { pattern: 'noise', tiles: 6, normal: 0.28, rough: 0.4, scale: 1.5 },
       map: 'game-c/table/felt-albedo', normalMap: 'game-c/table/felt-normal',
-      tiling: { repeat: 4 },
     },
     RigidBody3D: { shape: 'cylinder', mass: 0, restitution: 0.18, friction: 0.72 },
   };

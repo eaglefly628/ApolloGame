@@ -40,17 +40,19 @@ const vendored = (skinKey, served, license, source) => ({
 });
 
 // ── ① 场景/背景 ───────────────────────────────────────────
-add('game-c/scene/backdrop', 'texture', '夜景背幕（全屏落地窗+城市夜景+景深光斑）',
+// owner 2026-07-22：相机是**陡俯视**（~64°往下看桌），背幕必须是**从高往下俯视**看到桌四周环境的一小片切片——
+//   视角方向要和相机一致，否则背景像「桌子朝天平放、墙贴在旁边」。故 prompt 强制 overhead/top-down 环境视角（非平视地平线/落地窗）。
+add('game-c/scene/backdrop', 'texture', '环境背幕（高角俯视·桌四周地面切片·紫 noir·与俯视相机方向一致）',
   { mechanism: 'url', component: 'ThreeRenderer', field: 'setBackgroundTexture', resolver: 'renderer.setBackgroundTexture' },
-  'scene/backdrop.svg', 'floor-to-ceiling window over a nocturnal city skyline, bokeh city lights, deep purple night, horizontal cinematic composition',
-  { w: 2048, h: 1152, transparent: false }, '夜景背幕·落地窗+城市夜景+景深光斑', '素坯：声明式 SVG 夜景（theme STORY_BACKDROP）');
+  'scene/backdrop.svg', 'high-angle overhead top-down view looking straight down at a dark luxurious poker lounge floor surrounding the table, deep purple noir carpet and polished wood, warm pooled light at center fading to shadowed edges, faint city-light reflections on the floor, a thin slice of the surrounding floor seen from a steep downward camera consistent with a top-down table view; NOT an eye-level horizon, NOT a vertical window',
+  { w: 2048, h: 2048, transparent: false, usage: 'albedo' }, '环境背幕·高角俯视桌四周地面·紫 noir', '素坯：声明式 SVG 夜景（theme STORY_BACKDROP）');
 
 // ── ② 牌桌（隐形碰撞 + 2D 贴图呢面·owner 定）────────────────
 const felt = { mechanism: 'index', component: 'Material3D', field: 'map', resolver: 'build3d table-felt Material3D.map' };
-add('game-c/table/felt-albedo', 'texture', '呢面绒布 albedo（绿绒·可平铺 tile）', felt, 'table/felt-albedo.svg',
-  'green velvet poker felt cloth, seamless tileable texture, fine woven nap, high resolution', { w: 2048, h: 2048, transparent: false }, '呢面 albedo·绿绒·可平铺 tile', '素坯：Mesh3D 纯 tint(0x2e7d4e)+暖 point 光·tiling repeat 平铺');
-add('game-c/table/felt-normal', 'texture', '呢面法线（绿绒天鹅绒织纹·可平铺）', { ...felt, field: 'normalMap', resolver: 'build3d table-felt Material3D.normalMap' }, 'table/felt-normal.svg',
-  'green velvet cloth weave normal map, seamless tileable, tangent-space, subtle fabric bump, high resolution', { w: 2048, h: 2048, transparent: false }, '呢面法线·天鹅绒织纹·可平铺·线性', '素坯：surface noise 程序织纹回退·真图就绪覆盖');
+add('game-c/table/felt-albedo', 'texture', '呢面 albedo（绿绒·整幅完整贴图·非平铺）', felt, 'table/felt-albedo.svg',
+  'green velvet poker felt, full elliptical table surface, one complete image (not tiled), warm light pool at center, high resolution', { w: 2048, h: 2048, transparent: false, usage: 'albedo' }, '呢面 albedo·绿绒·整幅完整贴图', '素坯：Mesh3D 纯 tint(0x2e7d4e)+暖 point 光·整幅铺满');
+add('game-c/table/felt-normal', 'texture', '呢面法线（绿绒·整幅完整贴图·可选）', { ...felt, field: 'normalMap', resolver: 'build3d table-felt Material3D.normalMap' }, 'table/felt-normal.svg',
+  'green velvet full table-surface normal map, one complete image (not tiled), tangent-space, subtle nap, high resolution', { w: 2048, h: 2048, transparent: false, usage: 'normal' }, '呢面法线·整幅完整贴图·线性', '素坯：无（纯绿色底）·真图就绪整幅覆盖');
 add('game-c/table/rail-albedo', 'texture', '木栏 albedo（胡桃木+皮革软边）', { ...felt, resolver: 'build3d table-base Material3D.map' }, 'table/rail-albedo.svg',
   'dark walnut poker table rail with padded leather bumper, warm highlight, ring strip', { w: 1024, h: 256, transparent: false }, '木栏 albedo·胡桃木+皮革软边', '素坯：Mesh3D 纯 tint(0x6f5040)');
 add('game-c/table/rail-normal', 'texture', '木栏法线（木纹+皮革缝线）', { ...felt, field: 'normalMap', resolver: 'build3d table-base Material3D.normalMap' }, 'table/rail-normal.svg',
