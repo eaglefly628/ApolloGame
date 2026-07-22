@@ -447,6 +447,8 @@ export interface PlayingCardProps {
   face?: 'dark' | 'light';               // 牌面底：dark=暗主题卡(缺省) / light=经典白扑克牌（红黑对比·对决卡用）
   back?: string;                         // 牌背中央纹样字符（缺省 ♠ 暗纹）
   art?: string;                          // 立绘槽（已解析 URL/SVG）：正面时居中显名将立绘剪影、替代中央大花色（角标点数花色仍在）。游戏经 resolveAsset 把资产 key 解析后填（sim 持 key 保纯）。复用面：所有卡牌游戏。
+  faceArt?: string;                      // 整牌面贴图（已解析 URL·faceUp 时整面 cover·替代程序化牌面=角标/中央花色全隐·art/back 一脉的正面版）。牌面即一张插画（掼蛋 54 张牌面皮/TCG 卡面）——是「牌面能换图」的槽。label/value 覆盖层仍在（可不填）。不填=原程序化牌面零变化。REQ game-a A-024①。
+  faceArtSlice?: number;                 // faceArt 9-slice 源边距 px（可选·画框式牌面按边距无损缩放·同 Button.skinSlice；不填=整图 cover）。
   fluid?: boolean;                       // 流式卡：width:100% 充满父格 + 维持 5:7 aspect-ratio（替代固定 sm/md/lg 档）。配 Panel grid cols:N → 严格 N 列、卡填满、零卡间空隙（REQ-UI-G收藏卡②）。
   flipOnHover?: boolean;                 // 悬停翻面：配 backFace·鼠标悬停时 front→back 绕 Y 轴真 3D 翻转（rotateY 180°+backface-hidden），露出背面信息子树（CSS 注入·REQ-UI-G收藏卡①）。**只 :hover→触屏无效**·手机翻牌用 flipped。
   flipped?: boolean;                     // 状态驱动翻面（配 backFace）：由数据/游戏 state 决定翻到哪面（true=背面），点按/state 变即翻——**非 hover·触屏可用**（记忆翻牌/卡牌对战/刮刮乐）。同一套真 3D rotateY 翻转，由 data-flipped 属性驱动。与 flipOnHover 互斥（flipped 在场优先）。

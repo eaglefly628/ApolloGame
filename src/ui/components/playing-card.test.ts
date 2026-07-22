@@ -27,6 +27,21 @@ describe('UI Components · PlayingCard 扑克牌原语', () => {
     const face = renderNode({ type: 'PlayingCard', id: 'fa', props: { rank: 'A', suit: '♠', faceUp: true, backArt: '/art/back.png' } });
     expect(face).not.toContain('/art/back.png'); // 正面不受牌背贴图影响
   });
+  it('整牌面贴图 faceArt（A-024①·backArt 正面版）：faceUp 整面 cover·角标/花色全隐·label 覆盖仍在', () => {
+    const html = renderNode({ type: 'PlayingCard', id: 'fc', props: { rank: 'A', suit: '♥', faceUp: true, faceArt: '/art/card-dragon.png', label: '青龙' } });
+    expect(html).toContain('src="/art/card-dragon.png"'); expect(html).toContain('object-fit:cover');
+    expect(html).not.toContain('<br>'); // 角标 pip（rank<br>suit）没了=整面被插画替
+    expect(html).toContain('青龙'); // label 覆盖层仍在
+    // faceArtSlice → 9-slice border-image 画框
+    const framed = renderNode({ type: 'PlayingCard', id: 'fc2', props: { rank: 'K', suit: '♠', faceArt: '/art/frame.png', faceArtSlice: 16 } });
+    expect(framed).toContain('border-image:url(/art/frame.png)');
+    // 不填 faceArt → 原程序化牌面（角标 pip 在·零回归）
+    const plain = renderNode({ type: 'PlayingCard', id: 'fc3', props: { rank: 'Q', suit: '♦' } });
+    expect(plain).toContain('<br>'); expect(plain).not.toContain('object-fit:cover');
+    // 牌背时 faceArt 不生效（走 backArt/程序化背）
+    const back = renderNode({ type: 'PlayingCard', id: 'fc4', props: { rank: 'A', suit: '♠', faceUp: false, faceArt: '/art/card-dragon.png' } });
+    expect(back).not.toContain('/art/card-dragon.png');
+  });
   it('选中态 selected → 金边发光；label/value 显示', () => {
     const html = renderNode({ type: 'PlayingCard', id: 's', props: { rank: '10', suit: '♦', selected: true, label: '孙武', value: '66' } });
     expect(html).toContain('box-shadow'); expect(html).toContain('孙武'); expect(html).toContain('66');

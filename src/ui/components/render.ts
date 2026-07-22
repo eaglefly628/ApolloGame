@@ -698,8 +698,15 @@ function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UIThe
     : '';
   // 牌背贴图（REQ-UI-PlayingCard-back·批29）：backArt=已解析 URL → 背面整面 cover（替代纹样字符+程序化纹理）；
   // 无 backArt=原样（观感零变）。圆角 6px 贴容器 8px 圆角内缘（2px 边框内）；边框/选中金边仍在外层。
+  // 整牌面贴图（A-024①·backArt 的正面版）：faceUp 且给了 faceArt → 整面 cover（或 faceArtSlice 走 9-slice 画框）·
+  // 替代程序化牌面（角标/中央花色全隐）；label/value 覆盖层仍在。牌面即一张插画（掼蛋 54 牌面皮/TCG）。
+  const faceArtHtml = p.faceArt
+    ? (p.faceArtSlice !== undefined
+        ? `<div style="position:absolute;inset:0;border-radius:6px;border-image:url(${safeUrl(p.faceArt)}) ${num(p.faceArtSlice)} fill / ${num(p.faceArtSlice)}px stretch;pointer-events:none"></div>`
+        : `<img src="${esc(p.faceArt)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px;pointer-events:none">`)
+    : '';
   const inner = faceUp
-    ? `${pip('top:5px;left:6px')}${center}${pip('bottom:5px;right:6px;transform:rotate(180deg)')}`
+    ? (faceArtHtml || `${pip('top:5px;left:6px')}${center}${pip('bottom:5px;right:6px;transform:rotate(180deg)')}`)
     : p.backArt
       ? `<img src="${esc(p.backArt)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px;pointer-events:none">`
       : `${backPat}<span style="font-size:${big}px;color:${t.jade};opacity:.5">${esc(p.back ?? '♠')}</span>`;
