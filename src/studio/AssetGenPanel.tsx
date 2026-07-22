@@ -36,31 +36,73 @@ interface GenResult {
 /** 人审结果（approve 入库 / reject 弃置）。 */
 type Reviewed = { action: 'approve' | 'reject'; ok: boolean; error?: string };
 
-type AdapterId = 'tripo' | 'meshy' | 'qwen';
+type AdapterId = 'tripo' | 'meshy' | 'qwen' | 'seedream';
 const ADAPTER_META: Record<AdapterId, { label: string; hint: string }> = {
   tripo: { label: '🧊 Tripo · 文本→3D', hint: '生成 .glb 网格（可 vendor 进游戏 models/）' },
   meshy: { label: '🗿 Meshy · 文本→3D', hint: '生成 .glb 网格（外链 Meshy·可 vendor 进游戏 models/）' },
   qwen: { label: '🖼 千问万相 · 文本→2D', hint: '生成 .png 贴图/图标（DashScope 万相）' },
+  seedream: { label: '🎨 Seedream · 文本→2D', hint: '生成 .png 美术图（字节火山方舟·美术主力·下方选模型版本）' },
 };
+const ADAPTER_ORDER: readonly AdapterId[] = ['seedream', 'qwen', 'tripo', 'meshy'];
+
+/** 生成选项（下拉·如 Seedream 模型版本）——/api/settings genOptions·forKey 匹配当前适配器 envKey 时渲染。 */
+interface GenOption {
+  readonly envKey: string;
+  readonly label: string;
+  readonly forKey?: string | null;
+  readonly choices: { value: string; label: string }[];
+  readonly value: string;
+  readonly default: string;
+}
 
 export function AssetGenPanel({ onClose, onCommitted }: { onClose: () => void; onCommitted: () => void }) {
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [adapter, setAdapter] = useState<AdapterId>('qwen');
+  const [adapter, setAdapter] = useState<AdapterId>('seedream');
   const [prompt, setPrompt] = useState('');
   const [game, setGame] = useState(''); // 空=共享货架 assets/ai/；填=游戏本地 public/games/<g>/art/ai/
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<GenResult | null>(null);
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewed, setReviewed] = useState<Reviewed | null>(null);
+  const [genOptions, setGenOptions] = useState<GenOption[]>([]); // 生成选项（Seedream 模型版本等·/api/settings）
+  const [optVals, setOptVals] = useState<Record<string, string>>({}); // 各选项当前选值
+  const [optSaved, setOptSaved] = useState(false); // 模型选择已存盘一闪提示
 
   useEffect(() => {
     fetch(`${API}/api/assets/generate/providers`)
       .then((r) => r.json())
       .then((j) => setProviders((j?.providers ?? []) as Provider[]))
       .catch(() => setProviders([]));
+    fetch(`${API}/api/settings`)
+      .then((r) => r.json())
+      .then((v) => {
+        const opts = (v?.genOptions ?? []) as GenOption[];
+        setGenOptions(opts);
+        setOptVals(Object.fromEntries(opts.map((o) => [o.envKey, o.value])));
+      })
+      .catch(() => setGenOptions([]));
   }, []);
 
   const active = useMemo(() => providers.find((p) => p.id === adapter), [providers, adapter]);
+  // 当前适配器关联的生成选项（forKey 匹配其 envKey）——如 Seedream→模型版本下拉。
+  const activeOpts = useMemo(
+    () => genOptions.filter((o) => active && o.forKey === active.envKey),
+    [genOptions, active],
+  );
+
+  // 改模型版本 → PUT /api/settings 持久化到本地（生成时经 _gen_env 注入·"存盘存本地"）。
+  const saveOption = useCallback(async (envKey: string, value: string) => {
+    setOptVals((m) => ({ ...m, [envKey]: value }));
+    setOptSaved(false);
+    try {
+      await fetch(`${API}/api/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ genOptions: { [envKey]: value } }),
+      });
+      setOptSaved(true);
+    } catch { /* 存盘失败静默·下次生成回退默认 */ }
+  }, []);
 
   const generate = useCallback(async () => {
     if (!prompt.trim() || busy) return;
@@ -118,7 +160,7 @@ export function AssetGenPanel({ onClose, onCommitted }: { onClose: () => void; o
         {/* ① 适配器 */}
         <div style={sLabel}>① 选生成方式</div>
         <div style={{ display: 'flex', gap: 10, margin: '8px 0 18px', flexWrap: 'wrap' }}>
-          {(['qwen', 'tripo', 'meshy'] as const).map((a) => (
+          {ADAPTER_ORDER.map((a) => (
             <button
               key={a}
               onClick={() => setAdapter(a)}
@@ -145,12 +187,28 @@ export function AssetGenPanel({ onClose, onCommitted }: { onClose: () => void; o
           </div>
         )}
 
+        {/* 当前适配器的生成选项（如 Seedream 模型版本）→ 下拉·改选即存本地（owner 2026-07-21） */}
+        {activeOpts.map((o) => (
+          <div key={o.envKey} style={{ margin: '0 0 18px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: SHELL.sub }}>{o.label}</span>
+            <select
+              aria-label={o.label}
+              value={optVals[o.envKey] ?? o.value}
+              onChange={(e) => saveOption(o.envKey, e.target.value)}
+              style={{ padding: '7px 10px', background: SHELL.bg2, color: SHELL.text, border: `1px solid ${SHELL.line}`, borderRadius: 6, fontSize: 12, outline: 'none', minWidth: 260 }}
+            >
+              {o.choices.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+            {optSaved && <span style={{ fontSize: 11, color: SHELL.ok }}>✓ 已存</span>}
+          </div>
+        ))}
+
         {/* ② prompt */}
         <div style={sLabel}>② 描述你要的资产</div>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder={adapter === 'qwen' ? '例：pixel fire sword icon, transparent background' : '例：a wooden treasure chest with iron bands'}
+          placeholder={(adapter === 'qwen' || adapter === 'seedream') ? '例：pixel fire sword icon, transparent background' : '例：a wooden treasure chest with iron bands'}
           rows={3}
           style={{ ...sInput(), width: '100%', margin: '8px 0 18px', resize: 'vertical', fontFamily: SHELL.fontMono }}
         />
