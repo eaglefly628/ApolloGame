@@ -2,6 +2,18 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-ART-可消费槽铁律 · 美术台本只列「有消费槽」的行 + 程序化背景下沉成可替换槽 · [2026-07-22] · owner 拍板 → Lead 出图 → 全游戏一体适用 · status: **✅ done（两件引擎件皆 done·Lead 2026-07-22 归档腾槽；per-game 台本清理转各游戏 requests.md + 审计工具追踪）** · 类型: 美术生产链铁律 + 引擎能力（跨全游戏）
+
+> **⚖ Lead 结案（2026-07-22·owner「一圈都做了一坨·清 slot」）**：本条的**引擎侧两件全部 done**，故归档腾槽；**剩余=各游戏逐行清台本**（game-level·不占引擎槽·由 `npm run ledger:audit` + 各游戏 `docs/design/<game>/requests.md` 追踪·PE-C 已起步 REQ-C-112）。
+> - **① 孤儿行审计 ✅ done**（`c7775e17`·`scripts/ledger-audit.mjs`+`.test.mjs` 8 测·`npm run ledger:audit`·契约=skinKey/manifest `art:`·顾问态不阻推送·PE 清完可 `--strict` 单游戏门禁）。首轮普查 221 行孤儿跨 8 款（game-a23/b43/c37/d83/q23/t4+两 sample）·唯 game-g 110/110 全净=样板。
+> - **② mountHost 背景皮肤槽 ✅ done**（`5cbc0c5a`·`mount-host.ts` 加 `sceneBgSkin` 槽 + `asset-index.ts` `filledSrc` 解析口·render-only·有生成图叠图/无图回退程序化底·兜底永不丢·生成图过 M2.5 人审才上画面·手册 art-pipeline 编译期线回填）。
+> - **完工判据（per-game）**：各游戏孤儿审计零告警——各 PE 逐行二选一：接 skinKey（背景类用 sceneBgSkin·留程序化兜底）或删/退役。此为游戏级工作、随各游戏走。
+
+> **owner 原则（一句话）**：美术台本（`art-ledger.json`）里**每一行都必须有真实消费槽**——生成/替换它，游戏里能真的换上。**没有消费槽的"孤儿行"禁止列进台本**（否则 owner 换了也白换=浪费+误导）。game-c 37 行素坯全 `skinKey:null`、游戏零引用=反面教材（REQ-C-112）。
+> **消费槽的两种合法形态**：① 数据卡带=manifest 里的 `art:` 引用；② 编译期游戏=`skinKey`（游戏渲染代码按此 resolve 上画面）。两者皆无=孤儿=违规。
+> **【各 PE 接·自己游戏·可粘给 PE-A/PE-B/PE-C】**逐行审自己游戏的 `art-ledger.json`：每行二选一——**(a) 接消费槽**（编译期加 skinKey + 游戏渲染消费之·背景类用 sceneBgSkin·留程序化兜底）；**(b) 删/退役**（这行游戏根本不用→retire 或移出台本）。**完工判据：孤儿行审计零告警**。
+> **边界**：引擎件（审计守卫 + mountHost 背景槽 + filledSrc）=Lead 域【已 done】；各游戏台账清理 + 渲染消费接线=各 PE 域（game 代码·随游戏走）。
+
 ### REQ-AIGEN-软件内文本生成资产 · Tripo(3D)+千问/Seedream(2D) 接入创作台 · [2026-07-04] · owner 拍板 → PA 建生成框架(资产侧) · status: **✅ done（owner 2026-07-22 拍板「标记已完成」；Lead 归档腾槽）** · 类型: 新能力(外部 AI 服务·表现层旁路)
 
 > **⚖ Lead 结案摘要（2026-07-22·owner「REQ-AIGEN 文本生成资产 这个标记已经完成」）**：AIGEN 核心愿景（软件内自然语言 → 生成资产：3D=Tripo·2D=千问/Seedream）已端到端打通并经 owner 真机验证：

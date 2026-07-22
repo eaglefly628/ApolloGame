@@ -8,27 +8,6 @@
 
 ## 待处理 / 进行中
 
-### REQ-ART-可消费槽铁律 · 美术台本只列「有消费槽」的行 + 程序化背景下沉成可替换槽 · [2026-07-22] · owner 拍板（game-c 素坯写不回暴露·「不想没消费槽的图列在台本·换了也白换」）→ Lead 出图 → **全游戏一体适用：Lead 供引擎件（审计+背景槽）· 各 PE 接自己游戏** · status: open · 优先级: P1 · 类型: 美术生产链铁律 + 引擎能力（跨全游戏）
-> **owner 原则（一句话）**：美术台本（`art-ledger.json`）里**每一行都必须有真实消费槽**——生成/替换它，游戏里能真的换上。**没有消费槽的"孤儿行"禁止列进台本**（否则 owner 换了也白换=浪费+误导）。game-c 37 行素坯全 `skinKey:null`、游戏零引用=反面教材（REQ-C-112）。
-> **消费槽的两种合法形态**：① 数据卡带=manifest 里的 `art:` 引用；② 编译期游戏=`skinKey`（游戏渲染代码按此 resolve 上画面）。两者皆无=孤儿=违规。
->
-> **【Lead 供·引擎件·全游戏共享】**
-> 1. **孤儿行审计**（机器守卫）：新增检查——台账行若既无 manifest `art:` 绑定、又无 `skinKey`（或 skinKey 无游戏侧消费）→ 报 `ORPHAN-LEDGER-ROW` 警告（列出 game+行号），让"生成了没处接"被机器抓到、不再静默坑 owner。挂进 `game-skill-audit` 或 art-replace 校验（Lead 定）。
-> 2. **背景/场景皮肤槽能力**：程序化背景（如 game-c `theme.ts` 画的渐变、game-a `MANOR_BG`）目前是宿主层 CSS、skinKey 够不着 → 加通用 `mountHost` 背景皮肤槽：声明 `sceneBgSkin` 数据槽 → art-ledger 派生该行 → 生成图填入 → **有生成图用图·无图回退现程序化背景（兜底永不丢）**。红线：render-only·不碰 sim/hash·生成图过 M2.5 人审才覆盖（不自动拿 AI 图盖掉手绘背景·防质量倒退）。
->
-> **【各 PE 接·自己游戏·可粘给 PE-A/PE-B/PE-C】**
-> 逐行审自己游戏的 `art-ledger.json`：每行二选一——**(a) 接消费槽**（编译期加 skinKey + 游戏渲染消费之·背景类用上面的 sceneBgSkin·留程序化兜底）；**(b) 删/退役**（这行游戏根本不用→retire 或移出台本·别让它躺在台本里骗你去换）。**完工判据：孤儿行审计零告警**（台本每行都能真换上画面）。
-> **边界**：引擎件（审计守卫 + mountHost 背景槽 + art-ledger 派生）=Lead 域；各游戏台账清理 + 渲染消费接线=各 PE 域（game 代码）。
-> **Lead 落地状态**：**① 孤儿行审计 ✅ done**（`scripts/ledger-audit.mjs`+`.test.mjs` 8 测绿·`npm run ledger:audit`·契约=skinKey/manifest `art:`·顾问态不阻推送·PE 清完可 `--strict` 单游戏门禁）。**首轮普查（2026-07-22）**：221 行孤儿跨 8 款——game-a(23)·game-b(43)·game-c(37)·game-d(83)·game-q(23)·game-t(4)·sample-platformer(3)·smoke-test-game(5)；**唯 game-g 110/110 全净=样板**。各 PE 照此逐行清（接 skinKey 或退役）。**② mountHost 背景皮肤槽 ✅ done**（`src/engine/host/mount-host.ts` 加 `sceneBgSkin` 槽 + `src/assets/asset-index.ts` `filledSrc` 解析口·render-only 不碰 sim/hash·有生成图叠图/无图回退程序化底·**兜底永不丢**·生成图入索引过 M2.5 人审才上画面；测试 mount-host+asset-index 全绿·手册 art-pipeline 编译期线回填用法）。**两件引擎件皆 done**；本条保持 open 追踪各 PE 逐游戏清台本（完工判据=各游戏孤儿审计零告警·PE-C 已起步接 game-c 背幕 skinKey）。owner 已拿本条分发各 PE。
-
-### REQ-AIGEN-软件内文本生成资产 · Tripo(3D)+千问(2D) 接入创作台 · [2026-07-04] · owner 拍板 → **PA 建生成框架(资产侧)** · status: **框架 ✅ done(PA·mock 全绿)·运行时 UI+设置 UI ✅ 已随 Workshop/T1/T2 建成（Lead 2026-07-16 核账纠偏：原「未做」口径已过时）；剩=真 key(owner 采购) + 目标服务 adapter(仅 qwen 真实装·Seedance/NanoBanana/PixVerse 只有 key 槽) + 真调 e2e + 行规格执行——详 `docs/design/retro-workshop-drift-art-2026-07-16.md` §五** · 类型: 新能力(外部 AI 服务·表现层旁路)
-> **owner 愿景**：软件内用自然语言描述 → 生成资产（3D 用 **Tripo**·2D 用 **千问/DashScope 万相**），落进资产库。先 mock 打通全框架。
-> **PA 已交付（资产侧·`scripts/ai-gen.mjs` + `ai-gen.test.mjs`·mock 全绿）**：厂商无关生成框架 = 适配器注册表（`tripo` 文本→glb·`qwen` 文本→png）+ mock 产合法资产（glb/png·prompt 播种）+ **连库**（落 `assets/index.json` 或游戏本地 `art/index.json`·带 provenance 厂商/prompt/模型/mock/日期）+ 真调门控（fetch Tripo v2 openapi / DashScope 万相·密钥走 env `TRIPO_API_KEY`/`DASHSCOPE_API_KEY`·**绝不入库**·本环境 GitHub-only 真调被挡→`--mock`）+ 设置视图 `providerSettings()`（envKey/是否已配/打码·可被 server/UI 复用）。哲学同 `src/services/aigp`（非确定性旁路·不碰 sim/hash）。
-> **待主程/PE（跨域·非 PA）**：① **设置 UI + server**——把 Tripo/DashScope key 接进 `apollo.py` 设置系统（现 `LLM_PROVIDERS` 是 chat 域·生成域另起一套或并入）+ 创作台设置屏（LayoutNode·UI铁律·复用 `providerSettings()` 形状与 `apiKeyMasked` 打码）。② **运行时生成 UI**——创作台输入 prompt→调生成→资产入本地库→即时可用（异步任务·pending/进度·参照 aigp 视频端口 handle 模式）。③ 浏览器侧直调需把生成逻辑做成 `src/services/ai-gen/` 端口（node 侧 `ai-gen.mjs` 是 authoring-time 参照）。
-> **真调前置**：放宽网络的环境/session（Tripo/DashScope 域名本环境 403）+ 用户付费 key（owner 已购）。许可按各家订阅商用条款（provenance 已记）。
-> **owner 2026-07-16 口径**：真 key 验证**等 owner 买到 key 再开**——「很多事情还没有完备，需要一次性把这事弄完」。在那之前本单挂起、任何 session 不催不动；REQ-STYLESET M1 同卡此口（连动启动）。
-> **+ meshy 适配器接入（PST 2026-07-07·owner 直接要「接入 meshy 顺便接菜单」）**：`ai-gen.mjs` ADAPTERS 加第三家 `meshy`（文本→3D glb·kind:mesh·envKey `MESHY_API_KEY`·mock→cube.glb 占位·真调走 Meshy v2 openapi `POST /openapi/v2/text-to-3d` mode:preview → 轮询 `model_urls.glb`·门控同 tripo）；apollo.py 白名单 `GEN_ADAPTERS=('tripo','meshy','qwen')`（新增 provider 两处同改=脚本注册+此白名单）；创作台 `AssetGenPanel` 适配器菜单加 🗿 Meshy(3D) 一档 + provider key 状态自动列出。测试：`ai-gen.test` 注册表 + meshy mock glb·render 测断言菜单含 Meshy。门禁 tsc0/vitest2318/build0。**ai-gen.mjs=PA 框架·此 provider 扩展请 PA 会审**（真调端点/字段是否随 Meshy-6 漂移）。
-
 ### REQ-STYLESET-风格库 apollo-toon · 迪士尼×Supercell×中国水墨混风·全类型 house style · [2026-07-16] · owner 拍板（全形态换装非调色·先现装可视版·其他风格收敛）→ **指派：PA（M0 台账底座）+ PUI（M0.5 现装可视版·先行）** · status: **M0 ✅ PASS + M0.5 ✅ PASS（Lead 对抗性验收 2026-07-16）；M1 试产 open·等真 key（连 REQ-AIGEN 卡口）** · 优先级: P1 · 类型: 引擎级风格资产库 + UI 基座消费
 > 图纸唯一真相=`docs/design/styleset-artlib-plan-2026-07-16.md`（§二 三增量·§六 首批清单 spec + M0/M0.5 交付边界·风格锚 v2 单一真相在风格包·**IP 红线：锚用描述词不写厂牌词**）。M1 试产/M2 建库等真 key（连 REQ-AIGEN 卡口）；M3 对齐（examples 进 game-i）；M4 D/G 出口游戏换装。完工各标 ✅ 待 Lead 对抗性验收（真浏览器截图必查）。
 > **+ M0.6 主题指针（owner 2026-07-16·game-t 连带需求·指派 PUI）**：UITheme 加 `cursor?` 主题令牌（data-URI 图 + hotspot + 按压态·缺省无=老主题零变化·沿 panelTexture 先例：guard+点名测试+ui.md 回填）；apollo-toon 配墨笔尖造型指针（程序化 SVG 占位·台账行留真图位）；触屏无指针不受影响。"墨迹拖尾跟随"记二期候选不做。
