@@ -14,7 +14,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { ADAPTERS, encodePng, curlFor } from './ai-gen.mjs';
-import { STYLE_PACKS, listStylePacks } from './style-packs.mjs';
+import { STYLE_PACKS, listStylePacks, saveLocalStyle, deleteLocalStyle } from './style-packs.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ART_PREFIX = 'art:';
@@ -333,7 +333,14 @@ export function mergeLedger(prev, fresh, manifest = null) {
 export function dialectPrompt(row, pack, gameStyle = '') {
   const provider = pack.params.provider;
   const zh = provider === 'qwen' || provider === 'seedream'; // 中文文生图（万相/Seedream 均吃中文 promptZh）
-  const base = zh ? pack.promptZh : pack.promptEn;
+  // 风格 base 按资产 kind 分层（owner 2026-07-22·修「换皮把 UI 画成场景」）：
+  //   场景类（bg/splash）→ 含场景描述的 promptZh/En（吊灯/画框/戏剧光…）；
+  //   非场景类（sprite/texture/UI/model3d）→ uiPromptZh/En（仅配色+质感+孤立主体·无场景），
+  //   缺 ui 变体则回退 promptZh/En（零回归·PA 可逐包补 ui 变体）。
+  const isScene = row.kind === 'bg' || row.kind === 'splash';
+  const base = isScene
+    ? (zh ? pack.promptZh : pack.promptEn)
+    : (zh ? (pack.uiPromptZh || pack.promptZh) : (pack.uiPromptEn || pack.promptEn));
   const kindWord = zh
     ? ({ sprite: '精灵图', texture: '贴图', bg: '背景图', splash: '启动画', model3d: '3D 模型' }[row.kind] || '图')
     : ({ sprite: 'game sprite', texture: 'texture', bg: 'background', splash: 'splash screen', model3d: '3d model' }[row.kind] || 'image');
@@ -591,6 +598,17 @@ async function run(argv) {
   const allowMock = argv.includes('--allow-mock'); // 仅测试/冒烟机械验证·端点永不传
   const debug = argv.includes('--debug'); // 回显发给文生图的完整提示词 + 请求 + curl 命令行（key 打码·owner 2026-07-22）
   if (cmd === 'packs') { console.log(JSON.stringify({ packs: listStylePacks() })); return; }
+  // 本地命名风格预设库（owner 2026-07-22·工坊自建风格·存 .apollo-styles.json·gitignored）。
+  // style-save <jsonString>：校验+归一化+写本地库（argv 传·非 shell·无注入）；style-delete <packId>：删本地（内置不可删）。
+  if (cmd === 'style-save') {
+    let pack; try { pack = JSON.parse(argv[1] || ''); } catch { console.log(JSON.stringify({ ok: false, errors: ['风格 JSON 解析失败'] })); process.exit(1); }
+    const r = saveLocalStyle(pack);
+    console.log(JSON.stringify(r)); if (!r.ok) process.exit(1); return;
+  }
+  if (cmd === 'style-delete') {
+    const r = deleteLocalStyle(String(argv[1] || '').trim());
+    console.log(JSON.stringify(r)); if (!r.ok) process.exit(1); return;
+  }
   if (cmd === 'derive') {
     const mf = readJson(manifestFile(ROOT, slug), null);
     if (!mf) { console.error(`无 manifest: library/${slug}/manifest.json`); process.exit(1); }

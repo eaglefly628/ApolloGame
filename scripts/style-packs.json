@@ -203,6 +203,8 @@
     "stylePrompt": "opulent Las Vegas casino meets Victorian elegance: gilded gold ornament, deep green felt, burgundy velvet, crystal chandelier glow, ornate baroque frames, warm dramatic lighting, high readability, game asset, no text, no watermark",
     "promptEn": "opulent Las Vegas casino meets Victorian elegance: gilded gold ornament, deep green felt, burgundy velvet, crystal chandelier glow, ornate baroque frames, warm dramatic lighting, high readability, game asset, no text, no watermark",
     "promptZh": "拉斯维加斯奢华融合维多利亚优雅：鎏金装饰，深绿桌呢，酒红丝绒，水晶吊灯辉光，繁复巴洛克画框，暖调戏剧光，高辨识度，游戏素材，无文字，无水印",
+    "uiPromptEn": "Victorian casino palette: gilded gold trim, deep green and burgundy velvet material, warm gold highlights, clean painterly finish, isolated single subject, no scene, no background, flat and tileable, high readability, game UI asset, no text, no watermark",
+    "uiPromptZh": "维多利亚赌宴配色：鎏金描边，深绿与酒红丝绒质感，暖金高光，干净厚涂收边，孤立单一主体，无场景，无背景，平整可平铺，高辨识度，游戏 UI 素材，无文字，无水印",
     "palette": [
       13938487,
       3499341,

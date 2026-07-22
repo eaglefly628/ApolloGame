@@ -10,7 +10,7 @@ from pathlib import Path
 from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 
 from .agent_chat import handle_agent_chat
-from .art_replace import handle_art_batch, handle_art_derive, handle_art_ledger, handle_art_packs, handle_art_replace
+from .art_replace import handle_art_batch, handle_art_derive, handle_art_ledger, handle_art_packs, handle_art_replace, handle_art_style_save, handle_art_style_delete
 from .art_review import handle_asset_pending, handle_asset_review
 from .asset_annotate import handle_asset_autotag
 from .assets import handle_asset_generate, handle_asset_generate_providers, handle_asset_import, handle_asset_matte, handle_asset_vendor
@@ -504,6 +504,16 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_art_style(body)
             except Exception as e:
                 data = {'success': False, 'error': f'style 异常: {e}'}
+        elif path == '/api/art/styles':
+            try:
+                data = handle_art_style_save(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'styles-save 异常: {e}'}
+        elif path == '/api/art/styles/delete':
+            try:
+                data = handle_art_style_delete(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'styles-delete 异常: {e}'}
         elif path == '/api/art/approve':
             try:
                 data = handle_art_approve(body)

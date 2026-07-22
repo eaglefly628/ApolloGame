@@ -8,6 +8,20 @@
 
 ## 待处理 / 进行中
 
+### REQ-STYLE-SWAP-工坊风格库（命名风格预设 + 一键换风格）· [2026-07-22] · owner 拍板（「加风格类型下拉·新建风格·存本地·Apply 换掉全部 UI 风格」）→ **引擎侧 Lead ✅ done · 工坊 UI 指派 PST** · status: **引擎 ✅ done（Lead 2026-07-22）；工坊 UI open（PST）** · 优先级: P1 · 类型: 风格换装（引擎已具·工坊 UI 缺口）
+> **owner 愿景**：美术台本加「风格类型」下拉——可**新建风格**（存本地）、选一套风格**一键 Apply** → 当前游戏全部美术按该风格重生成换掉。多套命名风格可存本地、随时切。
+> **架构评审（Lead·先评判）**：换皮引擎 + 风格包 + 选择器**大半已存在**（9 内置风格包=已定义风格·批量生成+替换写回=换皮·工坊已有风格包 chips + 整体风格锚输入）——不重建。真缺口=①owner **自建命名风格存本地**②一键 Apply。
+> **【引擎侧 ✅ done（Lead 2026-07-22·commit 见下）】**
+> - **本地命名风格库**：`.apollo-styles.json`（gitignored·同 BYO-key 就近本机）并入 `STYLE_PACKS`（本地覆盖同名内置）；`style-packs.mjs` 加 `validateStylePack`/`saveLocalStyle`/`deleteLocalStyle`/`readLocalStyles`；`listStylePacks` 每条带 `local` 标位。
+> - **端点**：`POST /api/art/styles {pack}`（存自建风格·Node 校验+归一化）·`POST /api/art/styles/delete {packId}`（删·内置不可删）·`GET /api/art/style-packs` 已回 `local` 标位。
+> - **提示词按 kind 分层**（修「换皮把 UI 画成场景」）：`dialectPrompt` bg/splash 用含场景 promptZh/En；sprite/texture/UI 用 `uiPromptZh/En`（仅配色+质感+孤立无场景·缺则回退·零回归）。vegas-victoriana 已授 ui 变体作样板；**其余包 ui 变体待 PA 逐包补**（缺=回退旧行为·不阻塞）。
+> - **一键 Apply（当前游戏 in place）= 现有 `POST /api/art/batch {slug, packId}`**（按选定风格整批重生成·编译期游戏 batch 即登记 skinKey 别名上画面；卡带线再 `POST /api/art/replace`）。`reskin` 端点=另一路（fork 新卡带·reskinOf 谱系·非本需求）。
+> **【工坊 UI open·指派 PST·`workshop/index.dc.html`（PST 域）】**
+> 1. 风格屏加**风格下拉/chips**：列 `/api/art/style-packs`（含 `local` 标位·自建风格可标「自建·可删」）。
+> 2. **「+ 新建风格」表单**：名称 + 中/英风格提示词 + 调色板(取色) + provider(qwen/seedream…) + 选填 uiPrompt → `POST /api/art/styles`；自建风格旁「删除」→ `POST /api/art/styles/delete`。
+> 3. **「🎭 一键 Apply 此风格」按钮**：对当前游戏调 `/api/art/batch`（选定 packId）[+ 卡带线 `/api/art/replace`] → 全部美术按该风格重生成换掉；忙碌态 + 结果回显（复用现 artResultBox）。
+> **边界**：引擎（`style-packs.mjs`/`art-replace.mjs`/`art_replace.py`/`server.py`）=Lead ✅ done；工坊 UI=PST；各内置包 uiPrompt 变体补全=PA。
+
 ### REQ-STYLESET-风格库 apollo-toon · 迪士尼×Supercell×中国水墨混风·全类型 house style · [2026-07-16] · owner 拍板（全形态换装非调色·先现装可视版·其他风格收敛）→ **指派：PA（M0 台账底座）+ PUI（M0.5 现装可视版·先行）** · status: **M0 ✅ PASS + M0.5 ✅ PASS（Lead 对抗性验收 2026-07-16）；M1 试产 open·等真 key（连 REQ-AIGEN 卡口）** · 优先级: P1 · 类型: 引擎级风格资产库 + UI 基座消费
 > 图纸唯一真相=`docs/design/styleset-artlib-plan-2026-07-16.md`（§二 三增量·§六 首批清单 spec + M0/M0.5 交付边界·风格锚 v2 单一真相在风格包·**IP 红线：锚用描述词不写厂牌词**）。M1 试产/M2 建库等真 key（连 REQ-AIGEN 卡口）；M3 对齐（examples 进 game-i）；M4 D/G 出口游戏换装。完工各标 ✅ 待 Lead 对抗性验收（真浏览器截图必查）。
 > **+ M0.6 主题指针（owner 2026-07-16·game-t 连带需求·指派 PUI）**：UITheme 加 `cursor?` 主题令牌（data-URI 图 + hotspot + 按压态·缺省无=老主题零变化·沿 panelTexture 先例：guard+点名测试+ui.md 回填）；apollo-toon 配墨笔尖造型指针（程序化 SVG 占位·台账行留真图位）；触屏无指针不受影响。"墨迹拖尾跟随"记二期候选不做。

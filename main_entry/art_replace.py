@@ -57,6 +57,28 @@ def handle_art_batch(body: dict) -> dict:
         print(c("  [ART]", 'g'), f"batch {slug}·{pack} → 生成 {s.get('generated')} 缓存 {s.get('cached')} mock {s.get('mock')}")
     return {'success': bool(res.get('ok')), **res}
 
+def handle_art_style_save(body: dict) -> dict:
+    """POST /api/art/styles {pack:{packId,name,promptZh,promptEn,palette,params,...}}。
+    存 owner 自建命名风格进本地库（校验+归一化在 Node·.apollo-styles.json·gitignored·并入风格包供一键换风格选）。"""
+    pack = body.get('pack')
+    if not isinstance(pack, dict):
+        return {'success': False, 'error': '缺 pack 对象'}
+    res = _art_replace_cli(['style-save', json.dumps(pack, ensure_ascii=False)])
+    if res.get('ok'):
+        print(c("  [ART]", 'g'), f"style-save {res.get('packId')}（本地风格库）")
+        return {'success': True, 'packId': res.get('packId')}
+    return {'success': False, 'error': '·'.join(res.get('errors') or [res.get('error', '保存失败')])}
+
+def handle_art_style_delete(body: dict) -> dict:
+    """POST /api/art/styles/delete {packId}。删 owner 自建风格（内置不可删·只动本地库）。"""
+    pack_id = str(body.get('packId', '')).strip()
+    if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', pack_id):
+        return {'success': False, 'error': f'非法 packId: {pack_id or "(空)"}'}
+    res = _art_replace_cli(['style-delete', pack_id])
+    if res.get('ok'):
+        return {'success': True, 'packId': pack_id}
+    return {'success': False, 'error': '·'.join(res.get('errors') or [res.get('error', '删除失败')])}
+
 def handle_art_replace(body: dict) -> dict:
     """POST /api/art/replace {slug}。按编号重钉 manifest 引用 → **过 parseManifest 零 error** → 落盘 + 版本化。"""
     slug = str(body.get('slug', '')).strip()
