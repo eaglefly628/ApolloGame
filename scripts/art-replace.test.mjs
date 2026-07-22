@@ -80,6 +80,21 @@ describe('T1 ④ 批量生成 + 断点续跑', () => {
     expect(row.provenance).toMatchObject({ date: '2026-07-09T00:00:00Z' });
     expect(row.provenance.model && row.provenance.prompt && row.provenance.license).toBeTruthy();
   }));
+  it('首次生成存原始态快照 row.orig（供还原·owner 2026-07-21 报「还原变色块」修）', () => withRoot(async (root) => {
+    const l = deriveLedger(MANIFEST, { game: 'g' });
+    const before = l.rows.find((x) => x.no === 'art-03');
+    expect('orig' in before).toBe(false); // 生成前无快照
+    const beforeStatus = before.status ?? null;
+    await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true });
+    const row = l.rows.find((x) => x.no === 'art-03');
+    expect(row.orig).toBeTruthy(); // 覆盖前存了快照
+    expect(row.orig.status).toBe(beforeStatus); // 快照=生成前状态（非生成后的 'generated'）
+    expect(row.status).toBe('generated');
+    // 二次生成不覆盖已存快照（保真正原始态·非上一次生成态）
+    const origSnap = JSON.stringify(row.orig);
+    await batchGenerate(l, 'cartoon-thick', { root, game: 'g', mock: true, only: 'art-03' });
+    expect(JSON.stringify(l.rows.find((x) => x.no === 'art-03').orig)).toBe(origSnap);
+  }));
   it('断点续跑：二次批处理全缓存命中·0 重生成（不重扣费）', () => withRoot(async (root) => {
     const l = deriveLedger(MANIFEST, { game: 'g' });
     await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true });

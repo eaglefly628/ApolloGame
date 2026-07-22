@@ -442,6 +442,12 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     const outAbs = genAbs(root, game, outRel);
     const ck = cacheKey(provider, dialectPrompt(row, pack, gameStyle), pack.params);
     if (['generated', 'replaced'].includes(row.status) && row.gen?.cacheKey === ck && existsSync(outAbs)) { summary.cached++; continue; } // 命中·不重扣费
+    // 首次覆盖前存原始态快照（供「一键还原」·对齐上传路径 handle_art_upload·owner 2026-07-21 报「还原变色块」修）：
+    // 之前 orig 只在上传路径存·AI 生成不存 → 生成后还原找不到快照走 fallback=色块。此处补齐 → 还原精确复位。
+    if (!('orig' in row)) {
+      const skinEntry = row.skinKey ? byId.get(row.skinKey) : null;
+      row.orig = { status: row.status ?? null, gen: row.gen ?? null, indexEntry: skinEntry ? JSON.parse(JSON.stringify(skinEntry)) : null };
+    }
     let a;
     try { a = await genRowAsset(row, pack, { mock: useMock, apiKey, gameStyle, provider: providerOverride }); }
     catch (e) { row.status = 'failed'; row.gen = { provider, error: String(e).slice(0, 200) }; summary.failed++; summary.errors.push({ no: row.no, provider, error: String(e).slice(0, 200) }); continue; }
