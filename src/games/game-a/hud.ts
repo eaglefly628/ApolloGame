@@ -319,7 +319,8 @@ function seatCard(v: SeatView, x: number, y: number, active: boolean, leading: b
     type: 'Panel',
     id: `a-seat-${v.seat.id}`,
     props: { accent: active, bg: { custom: 'linear-gradient(180deg,rgba(30,20,14,0.92),rgba(20,14,10,0.86))' } },
-    layout: { x, y, width: SEAT_W, direction: 'column', align: 'center', gap: 3, padding: 8, radius: 14 },
+    // 当前轮到的席位=金光呼吸（turn indicator·mirror game-c fx:glow·filter+animation 不碰 position→不冲突绝对定位 x/y）。owner 2026-07-22 动态元素。
+    layout: { x, y, width: SEAT_W, direction: 'column', align: 'center', gap: 3, padding: 8, radius: 14, ...(active ? { fx: [{ kind: 'glow' as const, color: 'gold' as const }, { kind: 'pulse' as const }] } : {}) },
     children: [
       // 头像金边圈（Avatar 外套圆 Panel 作阵营描边圈）
       {
@@ -463,7 +464,8 @@ function buildHandFanNodes(hand: number[], selected: number[]): LayoutNode[] {
       id: `a-hand-${i}`,
       // actionArg=手牌**下标**（非牌码·两副牌同码会联动误选）
       props: { rank: f.rank, suit: f.suit, face: 'light', size: 'md', selected: sel, action: 'hand.toggle', actionArg: String(i) },
-      layout: { x: startX + Math.round(i * HAND_STEP), y: baseY - lift - (sel ? 22 : 0), rotate: rot },
+      // 扇形手牌=**故意叠放**（playbook §意图叠层）→ allowOverlap 豁免 ui-audit 重叠（相邻牌本就压半张·非误叠）。
+      layout: { x: startX + Math.round(i * HAND_STEP), y: baseY - lift - (sel ? 22 : 0), rotate: rot, allowOverlap: true },
     };
   });
 }
@@ -506,10 +508,12 @@ export function buildPlay(v: PlayView): LayoutNode {
             text: heroTurn ? t(l, 'play.yourRespond') : v.turn === v.trick.holder ? fmtTurnWonLead(l, v.turnName) : fmtTurnRespond(l, v.turnName),
             size: 'sm',
             color: heroTurn ? 'gold' : 'sub',
+            glow: heroTurn, // 轮到你=金光提示（owner 2026-07-22 动态元素）
           },
+          ...(heroTurn ? { layout: { anim: 'pulse' as const } } : {}),
         },
       ]
-    : [{ type: 'Label', id: 'a-p-lead', props: { text: heroTurn ? t(l, 'play.yourLead') : fmtTurnLead(l, v.turnName), font: 'serif', size: 'lg', bold: true, color: heroTurn ? 'gold' : 'sub' } }];
+    : [{ type: 'Label', id: 'a-p-lead', props: { text: heroTurn ? t(l, 'play.yourLead') : fmtTurnLead(l, v.turnName), font: 'serif', size: 'lg', bold: true, color: heroTurn ? 'gold' : 'sub', glow: heroTurn }, ...(heroTurn ? { layout: { anim: 'pulse' as const } } : {}) }];
   const centerZone: LayoutNode = {
     type: 'Panel',
     id: 'a-p-center',
@@ -519,6 +523,12 @@ export function buildPlay(v: PlayView): LayoutNode {
   };
   // 进贡/还贡横幅（本盘有则显·felt 子节点=祖孙嵌套·玩家知情盘首进贡）。
   const feltChildren: LayoutNode[] = [];
+  // 呢面环境微光（Particles sparkle·render-only·pointer-events:none·衬夜宴华光·满铺呢面·allowOverlap 豁免叠 audit·owner 2026-07-22「很多动态元素」）。
+  feltChildren.push({
+    type: 'Particles', id: 'a-p-felt-sparkle',
+    props: { kind: 'sparkle', count: 10, loop: true },
+    layout: { x: 0, y: 0, width: FIELD_W - 464, height: 322, allowOverlap: true },
+  });
   if (v.tributeText) {
     feltChildren.push({
       type: 'Panel',
@@ -542,6 +552,8 @@ export function buildPlay(v: PlayView): LayoutNode {
   feltChildren.push({
     type: 'Float',
     id: 'a-p-bigarrow',
+    // Float=JS 活取锚定暂大者座前（静态 audit 摆不准·指向即贴 tray）→ allowOverlap 豁免（意图指示·非误叠）。
+    layout: { allowOverlap: true },
     props: { anchorTo: { kind: 'node', id: v.trick ? `a-tray-${v.trick.holder}` : 'a-tray-none', at: 'top', offset: { y: -6 } } },
     children: [
       {
@@ -604,13 +616,14 @@ export function buildPlay(v: PlayView): LayoutNode {
     props: { bare: true },
     layout: { x: FIELD_W - 314, y: 634, width: 302, direction: 'row', gap: 8, align: 'center', justify: 'end' },
     children: [
-      { type: 'Button', id: 'a-p-hint', props: { label: t(l, 'play.hint'), kind: 'ghost', action: 'play.hint', disabled: !heroTurn || v.mustPass } },
+      // press3d=按压沉 Z+底唇（触屏友好糖果按钮·手感·owner 2026-07-22 动态元素）。
+      { type: 'Button', id: 'a-p-hint', props: { label: t(l, 'play.hint'), kind: 'ghost', action: 'play.hint', disabled: !heroTurn || v.mustPass }, layout: { press3d: true } },
       {
         type: 'Button', id: 'a-p-pass',
         props: { label: passHi ? t(l, 'play.passSkip') : t(l, 'play.pass'), kind: passHi ? 'primary' : 'quiet', action: 'play.pass', disabled: !heroTurn || !v.canPass },
-        ...(passHi ? { layout: { anim: 'glow' as const } } : {}),
+        layout: passHi ? { anim: 'glow' as const, press3d: true } : { press3d: true },
       },
-      { type: 'Button', id: 'a-p-commit', props: { label: t(l, 'play.commit'), kind: passHi ? 'ghost' : 'primary', action: 'play.commit', disabled: !heroTurn || !v.canCommit } },
+      { type: 'Button', id: 'a-p-commit', props: { label: t(l, 'play.commit'), kind: passHi ? 'ghost' : 'primary', action: 'play.commit', disabled: !heroTurn || !v.canCommit }, layout: { press3d: true } },
     ],
   };
   const actionRow2: LayoutNode = {
@@ -874,9 +887,13 @@ export function buildResult(v: ResultView): LayoutNode {
     props: { bg: { custom: 'linear-gradient(180deg,rgba(20,10,11,0.94),rgba(20,10,11,0.98)),#140a0b' }, image: art('bg/table'), center: true },
     layout: { direction: 'column', align: 'center', justify: 'center', gap: 14, padding: 24 },
     children: [
-      // 通关胜利彩带（fx/win-confetti·仅 run-won·满屏叠于结算卡后·换图即生效）。
+      // 通关胜利彩带（仅 run-won·满屏叠于结算卡后）：底图 fx/win（换图即生效）+ 彩纸雨 Particles + 金币雨 Particles（一次性爆·owner 2026-07-22 特效）。
       ...(v.phase === 'run-won'
-        ? [{ type: 'Image', id: 'a-r-confetti', props: { src: art('fx/win'), fit: 'cover' as const }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H, anim: 'fadeIn' as const } } as LayoutNode]
+        ? [
+            { type: 'Image', id: 'a-r-confetti', props: { src: art('fx/win'), fit: 'cover' as const }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H, anim: 'fadeIn' as const } } as LayoutNode,
+            { type: 'Particles', id: 'a-r-confetti-fx', props: { kind: 'confetti', loop: false }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H, allowOverlap: true } } as LayoutNode,
+            { type: 'Particles', id: 'a-r-coins-fx', props: { kind: 'coins', loop: false }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H, allowOverlap: true } } as LayoutNode,
+          ]
         : []),
       {
         type: 'Panel',
@@ -884,7 +901,7 @@ export function buildResult(v: ResultView): LayoutNode {
         props: { vignette: true, accent: heroWon }, // 胜=金边（手感 placeholder·owner 2026-07-18·真特效留下一步美术）
         layout: { direction: 'column', align: 'center', gap: 12, padding: 26, anim: 'pop' }, // 结算卡一次性 pop 入场
         children: [
-          { type: 'Label', id: 'a-r-title', props: { text: title, font: 'elegant', size: 'xxl', bold: true, glow: heroWon, color: runEnd ? (heroWon ? 'gold' : 'danger') : 'gold' } },
+          { type: 'Label', id: 'a-r-title', props: { text: title, font: 'elegant', size: 'xxl', bold: true, glow: heroWon, color: runEnd ? (heroWon ? 'gold' : 'danger') : 'gold' }, ...(heroWon ? { layout: { fx: [{ kind: 'sheen' as const }] } } : {}) },
           {
             type: 'Table',
             id: 'a-r-rank',
