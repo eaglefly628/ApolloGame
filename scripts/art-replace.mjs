@@ -32,8 +32,11 @@ const genAbs = (root, slug, rel) => join(root, 'public', 'games', slug, 'art', r
 
 const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const readJson = (f, fb) => (existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : fb);
-const writeJson = (f, o) => { mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, JSON.stringify(o, null, 2) + '\n'); };
-const byIdCmp = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+// 写 JSON 时**保留目标文件既有缩进**（owner 2026-07-22「生成一张替换图·index/台账全文都 diff」）：
+// 各工具写这些文件的缩进不一（game-c-art-ledger 用 1 空格·pipeline 曾用 2）→ 重写即全文重格式化=巨 diff。
+// 探测既有文件首个缩进行的空格数（缺省 2·新文件）→ 同格式回写 → 单次生成只 diff 真变的那几行。
+const detectIndent = (f) => { try { const m = readFileSync(f, 'utf8').match(/\n([ \t]+)"/); return m ? m[1].replace(/\t/g, '  ').length : 2; } catch { return 2; } };
+const writeJson = (f, o) => { mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, JSON.stringify(o, null, detectIndent(f)) + '\n'); };
 
 // ═══ ① 列表推导器（工作流档 §三）：扫 manifest art: 槽位 → 台账行 ═══
 
@@ -561,7 +564,9 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     row.provenance = { model: a.model, prompt: a.prompt, date: at, license: LICENSE[a.provider] }; // M2.5 口径硬字段
     summary.generated++; if (a.mock) summary.mock++;
   }
-  index.assets = [...byId.values()].sort(byIdCmp);
+  // 保留既有条目顺序（Map 从原数组建·set 改在原位·新条目追加末尾）——**不整表重排**，
+  // 否则原索引若非 id 序（如 game-c）整表重排=全文 diff（owner 2026-07-22「只该那一行变」）。
+  index.assets = [...byId.values()];
   writeJson(idxFile, index);
   return { ok: true, ledger, summary };
 }
