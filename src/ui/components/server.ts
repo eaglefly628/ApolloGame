@@ -599,11 +599,16 @@ export function mountUI(
   // 换皮（theme 变）：颜色烤进渲染串、props 不变 → diff 测不出，整根子树按新主题重渲一次
   // （替换 host 的单个子元素，非 host.innerHTML 全清）；其余情况走按 id 的 reconcile。
   const update = (newRoot: LayoutNode, newTheme?: UITheme): void => {
-    if (newTheme && newTheme !== curTheme) {
-      curTheme = newTheme;
-      const rootEl = uiFindById(host, curRoot.id);
-      if (rootEl) rootEl.outerHTML = renderNode(newRoot, newTheme);
-      else host.innerHTML = renderNode(newRoot, newTheme);
+    const themeChanged = !!(newTheme && newTheme !== curTheme);
+    if (themeChanged) curTheme = newTheme!;
+    // 整根重挂条件：① 换皮（换主题令牌包·全盘换色）② **换根**（新根 id ≠ 旧根 id·如牌桌 a-play→结算 a-result）。
+    // 换根为何不能交给 reconcileNode：它起手 `uiFindById(host, newRoot.id)` 找**新** id → host 里只有**旧**根元素 →
+    // 找不到静默 return → 屏一动不动；且 curRoot 已推进 → 之后每次 update 都拿新 id 找不到、永久 no-op（含菜单开合）=
+    // 「跨屏死机」根因（REQ-UIRECON·game-a A-012·owner 实证）。子节点换 id 由父的 uiChildKeysSame 兜住，**根无父可兜** → 必须整根替换。
+    if (themeChanged || curRoot.id !== newRoot.id) {
+      const rootEl = uiFindById(host, curRoot.id); // 按**旧**根 id 找现有元素，整体换成新根渲染
+      if (rootEl) rootEl.outerHTML = renderNode(newRoot, curTheme);
+      else host.innerHTML = renderNode(newRoot, curTheme);
     } else {
       reconcileNode(host, curRoot, newRoot, curTheme);
     }

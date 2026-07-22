@@ -17,6 +17,14 @@
 > **真调前置**：放宽网络的环境/session（Tripo/DashScope 域名本环境 403）+ 用户付费 key（owner 已购）。许可按各家订阅商用条款（provenance 已记）。
 > **owner 2026-07-16 口径**：真 key 验证**等 owner 买到 key 再开**——「很多事情还没有完备，需要一次性把这事弄完」。在那之前本单挂起、任何 session 不催不动；REQ-STYLESET M1 同卡此口（连动启动）。
 > **+ meshy 适配器接入（PST 2026-07-07·owner 直接要「接入 meshy 顺便接菜单」）**：`ai-gen.mjs` ADAPTERS 加第三家 `meshy`（文本→3D glb·kind:mesh·envKey `MESHY_API_KEY`·mock→cube.glb 占位·真调走 Meshy v2 openapi `POST /openapi/v2/text-to-3d` mode:preview → 轮询 `model_urls.glb`·门控同 tripo）；apollo.py 白名单 `GEN_ADAPTERS=('tripo','meshy','qwen')`（新增 provider 两处同改=脚本注册+此白名单）；创作台 `AssetGenPanel` 适配器菜单加 🗿 Meshy(3D) 一档 + provider key 状态自动列出。测试：`ai-gen.test` 注册表 + meshy mock glb·render 测断言菜单含 Meshy。门禁 tsc0/vitest2318/build0。**ai-gen.mjs=PA 框架·此 provider 扩展请 PA 会审**（真调端点/字段是否随 Meshy-6 漂移）。
+### REQ-UIRECON-换根重挂 · UI reconciler 换根节点 id 静默 no-op=跨屏死机 · [2026-07-18] · PE-A 报（A-012·owner 实证「死机」）→ Lead 核真接 → **指派：PUI** · status: **✅ done（PUI 2026-07-18·待 Lead 验收）** · 优先级: P1（UI 基座 bug·全游戏受益） · 类型: UI 基座 bug（PUI 域）
+> **根因**：`reconcileNode` 起手 `uiFindById(host,newN.id)`——换根（新根 id≠旧根 id·如 `a-play`→`a-result`）时 host 只有旧根元素→找不到**静默 return + curRoot 已推进**→此后一切 update 永久 no-op（含菜单开合）=「跨屏死机」。根自身换 id 无父可兜（子换 id 由父 `uiChildKeysSame` 兜）。
+> **PUI 修（`src/ui/components/server.ts update()`）**：整根重挂条件从「仅换皮」扩为「换皮 **OR** `curRoot.id !== newRoot.id`」→ 按**旧**根 id 找现有元素、`outerHTML` 换成新根渲染（同换皮分支既有路径）；reconcile 只管同根。回归测试 `update-patch.test.ts`「换根」例（a-play→a-result→a-result'→a-play·验切屏出新屏/旧屏走 + **后续 update 仍活**）。全绿 tsc/vitest/build。**通告三 PE**：game-a 宿主兜底（mountedRootId 重挂）现可退（保留亦无害）；game-b/c 同险现由引擎兜住、无需再兜。
+
+### REQ-UIAUDIT-叠层与动效 · 「意图叠层」标记字段 + audit 锚定件/角标盲区豁免（+ bounce 动效档后置） · [2026-07-18] · PE-A 报（A-007+A-011 并单）→ Lead 裁决接 → **指派：PUI** · status: **✅ done ①②③（PUI 2026-07-18·落地 `8f1096d1`·Lead 验收 PASS）** · 优先级: P2 · 类型: UI 基座工具债+小扩展（PUI 域）
+> **⚖ Lead 验收（2026-07-18）：①②③ ✅ PASS**——diff 守界（additive 字段+定色豁免+audit 一行）；临时 worktree 独立跑新测 6/6 绿；golden 帧 word-diff 核实仅两处标记插入。④+border-image 后置照准。
+> **交付 ①②③**：① `layout.allowOverlap:true`→渲染 `data-allow-overlap`（`types.ts`+`render.ts` renderNode 属性块·ui-audit 已支持该属性重叠豁免）——扇形手牌/牌堆/Float 锚定件意图叠层（game-a 牌桌 58 处误报消）；② `PlayingCard` 根自动挂 `data-audit-skip-contrast`（红黑花色=定色语义原语·不吃 WCAG）+ ui-audit `closest()` 免其内文字对比（33 处角标假阳消·游戏零改）；③ Float/Connector 等 JS 活取 rect 件静态摆 0,0 的重叠误报 = 同 ① 加 `allowOverlap` 豁免（无需另做）。测试 `card-overlap-audit.test.ts`（6 例）+ `ui.md` 回填 + 端到端（3 叠放红角标牌→0 重叠 0 对比）。全绿 tsc0/vitest/build。
+> **余项后置（不占槽·工具债·PUI 后续批清·要做时重开小条）**：④ 动效闭集 +`bounce`（常驻 scale 弹簧关键帧·注意力指示器通用·现 `float+glow` 近似已达效）；⑤ ui-audit 对 `border-image` 白字皮盲区（对 `data-apollo-skin` 件按皮底判·非采样父面·M0.5 apollo-toon 遗留）。二者非阻断。
 
 ### REQ-UI-web字体加载（数据化）+ 第3字体槽 + Label ink 令牌 · [2026-07-02] · P3D（game-d 对齐 Cloud Design 撞到·全 app 受益） → 主程（UI 库域） · status: **✅ done（主程 2026-07-02·①机制下沉 + ③令牌落地·②已存→回驳；剩 vendor woff2 数据活）** · 类型: 真能力缺口（3 项·尺子已过·不可重组）
 

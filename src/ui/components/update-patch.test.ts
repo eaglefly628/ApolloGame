@@ -39,6 +39,29 @@ describe('UI Components · mountUI().update 局部更新', () => {
     expect(host.innerHTML).toContain('#ff0000');
   });
 
+  it('换根：新根 id ≠ 旧根 id → 整根重挂切新屏（REQ-UIRECON·A-012 跨屏死机回归）', () => {
+    const host = document.createElement('div');
+    const play: LayoutNode = { id: 'a-play', type: 'Panel', props: {}, children: [{ id: 'p-felt', type: 'Label', props: { text: '牌桌' } }] };
+    const result: LayoutNode = { id: 'a-result', type: 'Panel', props: {}, children: [{ id: 'r-win', type: 'Label', props: { text: '结算·你赢了' } }] };
+    const handle = mountUI(host, play);
+    expect(host.querySelector('#a-play')).toBeTruthy();
+
+    handle.update(result); // 换根 id：a-play → a-result（旧代码 reconcileNode 找不到新 id 静默 no-op=死机）
+
+    expect(host.querySelector('#a-result')).toBeTruthy(); // 新屏出来了
+    expect(host.querySelector('#a-play')).toBeFalsy();     // 旧屏走了
+    expect(host.textContent).toContain('结算·你赢了');
+
+    // 换根后**后续 update 仍活**（旧 bug：curRoot 推进成新 id 后每次 update 永久 no-op）。
+    const result2: LayoutNode = { id: 'a-result', type: 'Panel', props: {}, children: [{ id: 'r-win', type: 'Label', props: { text: '结算·再来一局' } }] };
+    handle.update(result2);
+    expect(host.textContent).toContain('再来一局');
+
+    // 再换回牌桌（结算→重开）也活。
+    handle.update(play);
+    expect(host.querySelector('#a-play')).toBeTruthy();
+  });
+
   it('焦点保护：update 改聚焦 Input 的 value 时不销毁重建（保焦点/光标）', () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
