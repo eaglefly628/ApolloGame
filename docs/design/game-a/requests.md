@@ -2,6 +2,15 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
+### A-023 · 美术走索引消费（工坊替换才生效）· [2026-07-22] · owner 报（工坊替换游戏没看到·全游戏一体）→ Lead 诊断 → **PE-A** · status: open · 优先级: P1 · 类型: 接消费槽（REQ-ART-可消费槽铁律 option a·game-a 侧·同 game-b B-012）
+> **症状**：owner 在工坊替换 game-a 美术后，游戏里没变（与 game-b 同病）。
+> **根因（Lead 2026-07-22 诊断·已读码定位）**：game-a 的美术走**硬编码 URL**、绕过 art 索引/台本——`hud.ts` `BG_MENU`/`BG_TABLE`=`/games/game-a/art/bg/*.svg`（`image:` 直传）、`theme.ts` 牌面 URL 拼 `/games/game-a/art/cards/<id>.<ext>`、`MANOR_BG`（`theme.ts:18`）=宿主层程序化 CSS 渐变经 `mountHost({sceneBackground})`。工坊写回 index/台本对游戏零效果。`npm run ledger:audit game-a` 23 行全判孤儿=实证。
+> **修法（REQ-ART option a·接消费槽·引擎件已 done 可直接用）**：
+> - 牌面/bg 图：改成从游戏索引按 id 解析 URL——`filledSrc(index, id)`（`src/assets/asset-index.ts`）+ 现硬编码 URL 作回退（未填不炸）。需留住 parsed `AssetIndex` 下传到 hud/theme 拼 URL 处。
+> - 程序化背景 `MANOR_BG`：改用 `mountHost` 的 `sceneBgSkin` 槽（`src/engine/host/mount-host.ts`·REQ-ART ② 已 done）——`sceneBgSkin: { skinKey:'game-a/scene/bg-...', imageUrl: filledSrc(index, skinKey) }`，有生成图叠图、无图回退 `MANOR_BG`（**兜底永不丢**）；台账加该背景行。
+> **完工判据**：① 工坊替换某图→别名登记进 `game-a/art/index.json`→游戏即显（非破坏·带 provenance/M2.5）；② `npm run ledger:audit game-a --strict` 孤儿归零（无用行退役）；③ game-a 测零回归·门禁绿；④ 真浏览器亲验换一张牌面/背景成立。
+> **边界**：game-a 游戏代码（`hud.ts`/`theme.ts`/`game-a.ts`）=PE-A 域；引擎件（`filledSrc` + `sceneBgSkin` + `ledger-audit`）已 done。
+
 ### A-022 · [2026-07-20] · PE-A · ui-audit 对比度只读 `background-color` → `hero`/渐变底按钮误报「硬性低对比」假阳 · status: 📝 待转报 PUI（视觉真绿·非阻断·工具盲区）· 类型: UI 基座工具缺口（PUI 域·`tools/ui-audit.mjs`）
 > **ID 让号（2026-07-20·rebase）**：本条原报 A-018，与 Lead 评审同轮工单化的 A-018（一四进贡裁决）撞号——Lead 995e6c70 先落，PE 让号改 **A-022**（hud.ts 头注内引用同步改）。
 **背景（owner 2026-07-20 金按钮）**：主 CTA「开始上桌 / 入座开局」按蓝本 `main-menu-guandan.dc.html`（`color:#241009` 深墨字 + `background:linear-gradient(#f0c96a,#d3a247)` 金渐变=深字金底）复刻。闭集里唯一「深字金底」件=`Button kind:'hero'`（`render.ts:270`·金渐变底 + `t.bg0` 深墨字 + 倒角 + 流光）——**真机渲染约 8:1 高对比、清晰可读**（已截图目击 `menu-hero.png`）。贴皮路（`buttonSkins.skin`）反而 `render.ts:218` 强制 `color:#fff` 白字→浅金上失读，故弃皮用 hero kind（视觉更对蓝本）。

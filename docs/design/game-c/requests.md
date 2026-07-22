@@ -8,6 +8,14 @@
 
 ## 待处理
 
+### REQ-C-113 · 美术**全量**走索引消费（工坊替换才生效·owner「全部重改」）· [2026-07-22] · owner 报（背幕已通·余下全改）→ Lead 落单 → **PE-C** · status: open · 优先级: P2（承 REQ-C-112·美术生产链尾·不阻玩法）· 类型: 游戏层美术消费接线（PE-C 域）
+> **owner 指令（2026-07-22）**：game-c 的美术**全部重改**成「可消费槽」——不止背幕（REQ-C-112 已接），筹码/牌面/呢面/木栏/贴花等**逐行**都要能被工坊替换后真上画面。
+> **现状**：背幕已走 `art-overrides.ts` 的 skinKey 索引解析（`fetch art/index.json` + `renderer.setBackgroundTexture(backdropUri())` 热替换·PE-C `f89baa97`）——**此模式=样板**，把它推广到全部 37 行。`npm run ledger:audit game-c` 看当前孤儿数（REQ-C-112 后应已降·余数即本单目标→0）。
+> **黑色地板遮挡（owner「德州黑色地板挡住·移去了」）**：`build3d.ts:59` 注释已定位——有面「完全遮住 setBackgroundTexture 场景背幕」的地板/元素（夜景背幕/工坊生成图被压在下面看不见=owner 报「生成写不回」的**表现根因之一**）。owner 称已移去→**PE-C 复核**：背幕真图就绪后确实上画面（真浏览器目击），别被别的 mesh 再遮。
+> **修法**：逐行接 skinKey 索引消费（承背幕样板）——2D 图走 `filledSrc(index, skinKey)`（`src/assets/asset-index.ts`），3D 场景纹理走既有 `setBackgroundTexture` 热替换；程序化背景（`theme.ts` 渐变）如仍走宿主层→用 `mountHost` `sceneBgSkin` 槽（REQ-ART ② 已 done·有图叠图/无图回退）。无用行退役、别留台本。
+> **完工判据**：① `npm run ledger:audit game-c --strict` 孤儿归零；② 工坊替换任一 game-c 美术（筹码/牌面/背幕）→游戏即显（真浏览器亲验≥2 类·背幕不被地板遮）；③ game-c 测零回归·门禁绿。
+> **边界**：game-c 游戏代码=PE-C 域；引擎件（`filledSrc`+`sceneBgSkin`+`ledger-audit`+`setBackgroundTexture`）已 done、直接消费。
+
 ### REQ-C-112 · [owner 2026-07-22 实测] 生成的场景美术「无法写回游戏」——37 行素坯无 skinKey·游戏无消费槽 · 提出人 owner（工坊真调 Seedream 出图后）→ Lead 诊断落单 → 指派 PE-C · status: ✅ **裁定=要·背幕槽已接（PE-C 2026-07-22）·余槽 follow-on** · 优先级: P2（美术生产链尾·不阻塞玩法/S4）· 类型: 游戏层美术消费接线（PE-C 域·game-c.ts/theme.ts/blueprint）
 > **owner 实测现象**：Seedream 真调已通、生成成功；但 game-c 美术库里那些 `art-001~037` 场景图**写不回游戏**（生成物落 `public/games/game-c/art/gen/art-NN.png` + 登记 `gen/art-NN`，但游戏里看不到）。
 > **Lead 诊断（根因·非管线 bug）**：① game-c 是编译期游戏（无 manifest）→「⤵ 写回 manifest（数据卡带）」按钮不适用（会报错）。② 编译期游戏的写回靠 **skinKey 别名**（`art-replace` 生成时 `if(row.skinKey) 登记别名 id=skinKey` → 游戏按 skinKey resolve 上画面）——但 game-c 台账 **37 行全部 `skinKey:null`**，故生成物无游戏侧消费槽。③ game-c 背景是 `theme.ts` **程序化画的**（紫黑渐变+落地窗+暖光池·照 .dc.html 设计稿逐层复刻），**不是图片槽**；牌面/筹码是 vendor 直引（`PlayingCard.art`·工作正常）。所以这 37 张素坯是"悬空"行·游戏没有任何地方引用。
