@@ -548,6 +548,15 @@
                 <button onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button>
               </sc-for>
             </div>
+            <!-- 生成结果持久横幅（owner 2026-07-21「toast 一闪就没·看不到失败原因」）：顶层·不随详情面板开关消失·失败显全文原因·点 ✕ 关 -->
+            <sc-if value="{{ artResultBox }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ artResultBox.style }}">
+                <div style="display:flex;align-items:flex-start;gap:8px">
+                  <span style="font-family:'Noto Sans SC';font-weight:700;font-size:12.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word;flex:1">{{ artResultBox.text }}</span>
+                  <button onClick="{{ artResultClear }}" title="关闭" style="background:none;border:none;cursor:pointer;font-size:16px;color:inherit;opacity:.6;flex:none;padding:0 2px">✕</button>
+                </div>
+              </div>
+            </sc-if>
             <!-- 游戏封面/图标（文生图）·生成后替换「我的游戏库」卡片外观（owner 07-12） -->
             <sc-if value="{{ assetsSlug }}" hint-placeholder-val="{{ false }}">
               <div style="display:flex;align-items:center;gap:14px;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:13px 15px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:16px">
@@ -957,7 +966,7 @@ class Component extends DCLogic {
     coverPrompt: '', coverBusy: false,   // 游戏封面/图标文生图（owner 07-12·替换卡片默认矢量图标）
     mlGroups: null, mlOpen: {}, artResolve: {},  // 虚拟分组 + 占位图解析（owner 07-12）
     // 美术一站式（owner 07-12「占位/提示词/模型/替换都在工坊」）：选中行 + 风格包/文生图模型 + 忙碌标
-    artSel: null, artQ: '', artPack: null, artProv: '', artBusy: null, artPacks: null, genProviders: null,
+    artSel: null, artQ: '', artPack: null, artProv: '', artBusy: null, artLastResult: null, artPacks: null, genProviders: null,
     artStyleInput: null, artStyleBusy: false,   // 本游戏整体美术风格锚（owner 07-13·拼进每张生成提示词·后端 dialectPrompt 已支持）
     artPreview: null, artZoom: 1,                // 台账美术图片预览灯箱 + 放大缩小（owner 07-13）
     tokenInput: '', genKeyInputs: {}, provKeyInputs: {}, genOptSel: {}, defaultProv: null, cfgModel: null, saving: false,
@@ -1318,28 +1327,35 @@ class Component extends DCLogic {
   artCall(label, path, body) {
     if (this.state.artBusy) return;
     const slug = this.state.assetsSlug;
-    this.setState({ artBusy: label });
+    this.setState({ artBusy: label, artLastResult: null });
     fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .then(r => r.json()).then(d => {
         if (!d || d.success === false) throw new Error((d && d.error) || (label + '失败'));
-        // 明报真图/mock/失败（治「看不到 log·不知为何是噪声图」）：summary 有 mock/failed/probes/errors。
+        // 明报真图/mock/失败（治「看不到 log·不知为何是噪声图/一闪就没」）：summary 有 mock/failed/probes/errors。
+        // toast 只做一闪提示；持久框 artLastResult 留全文不自动消失（失败原文全给·owner 07-21）。
         const sm = d.summary || {}; const g = sm.generated || 0, mk = sm.mock || 0, fl = sm.failed || 0;
-        let msg;
+        let tone = 'ok', msg;
         if (fl > 0) {
-          const e0 = (sm.errors && sm.errors[0]) || null;
-          const et = e0 ? ('（' + e0.no + '：' + String(e0.error).slice(0, 90) + '）') : '';
-          msg = '✕ ' + label + '：' + fl + ' 张真调失败' + et + '·图未更新';
+          tone = 'fail';
+          const errs = (sm.errors || []).map(e => e.no + '：' + String(e.error)).join('\n');
+          msg = '✕ ' + label + '：' + fl + ' 张真调失败（图未更新）\n' + (errs || '(无错误详情)') +
+            '\n提示：真图需 ARK_API_KEY 有效 + 能连火山方舟（ark.cn-beijing.volces.com）。多为 key 无效/额度/网络不可达。';
         } else if (mk > 0) {
+          tone = 'mock';
           const p0 = (sm.probes && sm.probes[0]) || null;
           const why = p0 ? (p0.note || ((p0.envKey || '') + ' 未配')) : '未配 key 或真调不可达';
           msg = '⚠ ' + label + '：走了 mock 占位（' + why + '）——噪声图=占位·配好 key 后重生成出真图';
         } else if (g > 0) {
           msg = '✓ ' + label + '：生成 ' + g + ' 张真图';
         } else { msg = label + ' ✓'; }
-        this.showToast(msg);
-        this.setState({ artBusy: null });
+        this.showToast(msg.split('\n')[0]);
+        this.setState({ artBusy: null, artLastResult: { tone, text: msg } });
         if (this.state.assetsSlug === slug) this.pickAssetGame(slug);
-      }).catch(e => { this.setState({ artBusy: null }); this.showToast('✕ ' + ((e && e.message) || (label + '失败'))); });
+      }).catch(e => {
+        const text = '✕ ' + label + '失败：' + ((e && e.message) || '未知错误');
+        this.setState({ artBusy: null, artLastResult: { tone: 'fail', text } });
+        this.showToast(text.slice(0, 80));
+      });
   }
   // 素材库=双源合并（owner 07-12「对内展示·把我们的素材全列上」）：
   //   ① 共享免费库 FreeArtLib（约 4.9k·CC0）② 引擎内库 assets/index.json（约 30.6k·图标/emoji/插画/图集…）
@@ -2416,6 +2432,14 @@ class Component extends DCLogic {
         (artSelRow.gen.provider && artSelRow.gen.provider !== 'procedural' && artSelRow.gen.provider !== 'authored' && !artSelRow.gen.mock))))),
       artSelClose: () => this.setState({ artSel: null }),
       artBusyText: s.artBusy ? (s.artBusy + ' 中…（生成走文生图服务·分钟级·完成自动刷新台账）') : '',
+      artResultBox: (() => {
+        const r = s.artLastResult; if (!r) return false;
+        const c = r.tone === 'fail' ? { bg: '#fdecec', bd: '#c0392b', fg: '#8a1c12' }
+          : r.tone === 'mock' ? { bg: '#fff6e0', bd: '#c98a1a', fg: '#7a5410' }
+          : { bg: '#eafbe7', bd: '#4e8a24', fg: '#2f5a13' };
+        return { text: r.text, style: 'margin-bottom:16px;padding:10px 14px;background:' + c.bg + ';border:3px solid ' + c.bd + ';border-radius:12px;color:' + c.fg + ';box-shadow:0 4px 0 rgba(58,35,18,.12)' };
+      })(),
+      artResultClear: () => this.setState({ artLastResult: null }),
       // 素材库（共享 FreeArtLib·Feature C）
       matlibBanner: '素材库（对内展示·双源 ' + (flAll.length || '…') + ' 项 = 共享 CC0 + 🏠引擎内库图标/emoji/插画）· 展开分类浏览，或用标签搜索',
       mlGroupRows,
