@@ -332,8 +332,9 @@ export function mergeLedger(prev, fresh, manifest = null) {
 
 export function dialectPrompt(row, pack, gameStyle = '') {
   const provider = pack.params.provider;
-  const base = provider === 'qwen' ? pack.promptZh : pack.promptEn;
-  const kindWord = provider === 'qwen'
+  const zh = provider === 'qwen' || provider === 'seedream'; // 中文文生图（万相/Seedream 均吃中文 promptZh）
+  const base = zh ? pack.promptZh : pack.promptEn;
+  const kindWord = zh
     ? ({ sprite: '精灵图', texture: '贴图', bg: '背景图', splash: '启动画', model3d: '3D 模型' }[row.kind] || '图')
     : ({ sprite: 'game sprite', texture: 'texture', bg: 'background', splash: 'splash screen', model3d: '3d model' }[row.kind] || 'image');
   // 主体优先级：row.prompt（人工精调·整体替代）> query+desc（机器推导详细描述）> query。
@@ -379,17 +380,18 @@ function mockRawRgb(prompt, w, h, pixelGrid) {
   return rgb;
 }
 
-const LICENSE = { qwen: 'Qwen/DashScope 万相 (按订阅授权)', tripo: 'Tripo (按订阅商用授权)', meshy: 'Meshy (按订阅商用授权)' };
-const ENVKEY = { qwen: 'DASHSCOPE_API_KEY', tripo: 'TRIPO_API_KEY', meshy: 'MESHY_API_KEY' };
+const LICENSE = { qwen: 'Qwen/DashScope 万相 (按订阅授权)', seedream: 'ByteDance Seedream/火山方舟 (按订阅商用授权)', tripo: 'Tripo (按订阅商用授权)', meshy: 'Meshy (按订阅商用授权)' };
+const ENVKEY = { qwen: 'DASHSCOPE_API_KEY', seedream: 'ARK_API_KEY', tripo: 'TRIPO_API_KEY', meshy: 'MESHY_API_KEY' };
+const TWO_D_PROVIDERS = ['qwen', 'seedream']; // 2D 文生图生成器闭集（owner 2026-07-21 加 seedream·字节火山方舟）
 // provider 选择：默认=风格包钉死（一致性层2）；override=平台菜单点名覆盖（owner 07-09 review ④）——
-// 3D 行只认 tripo/meshy，2D 行只认 qwen（wanx 是当前唯一 2D adapter），不兼容的覆盖忽略回默认。
+// 3D 行只认 tripo/meshy，2D 行认 qwen/seedream；不兼容的覆盖忽略回默认（2D 默认回退 qwen）。
 const provFor = (row, pack, override = null) => {
   if (row.kind === 'model3d') {
     if (override && ['tripo', 'meshy'].includes(override)) return override;
     return ['tripo', 'meshy'].includes(pack.params.provider) ? pack.params.provider : 'meshy';
   }
-  if (override === 'qwen') return 'qwen';
-  return pack.params.provider;
+  if (override && TWO_D_PROVIDERS.includes(override)) return override;
+  return TWO_D_PROVIDERS.includes(pack.params.provider) ? pack.params.provider : 'qwen';
 };
 
 /** 单行产资产（2D：mock→palette-snap+按 spec 尺寸·真调→adapter；3D：tripo/meshy adapter）。 */

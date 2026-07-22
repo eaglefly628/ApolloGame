@@ -867,13 +867,20 @@
               <!-- 文生图 API（美术生成·从旧美术台收编） -->
               <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:14px 16px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:12px">
                 <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:15px;margin-bottom:4px">文生图 / 文生 3D API（美术生成）</div>
-                <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;margin-bottom:10px">千问万相（DashScope·2D 主力）· Seedance（字节·主力）· Nano Banana（Google 图像）· Tripo / Meshy（3D）。没配走 mock 占位，绝不静默顶替。</div>
+                <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;margin-bottom:10px">千问万相（DashScope·2D）· Seedream（字节火山方舟·2D 美术主力·key 下方可选模型版本）· Nano Banana（Google 图像）· Tripo / Meshy（3D）。没配走 mock 占位，绝不静默顶替。</div>
                 <div style="display:flex;flex-direction:column;gap:8px">
                   <sc-for list="{{ genKeyRows }}" as="r" hint-placeholder-count="3">
                     <div style="display:flex;align-items:center;gap:8px">
                       <span style="font-family:'Fredoka';font-weight:700;font-size:11px;color:#3a2312;width:150px;flex:none">{{ r.label }}</span>
                       <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#8a5a2c;width:110px;flex:none">{{ r.masked }}</span>
                       <input value="{{ r.value }}" onInput="{{ r.type }}" type="password" placeholder="新 key（要更换时填）" style="flex:1;border:2.5px solid #3a2312;border-radius:9px;padding:7px 10px;font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#fff;color:#3a2312;outline:none">
+                    </div>
+                  </sc-for>
+                  <!-- 生成选项（如 Seedream 模型版本·owner 2026-07-21）：chip 选·随保存存本地 -->
+                  <sc-for list="{{ genOptRows }}" as="o" hint-placeholder-count="1">
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-left:10px">
+                      <span style="font-family:'Fredoka';font-weight:700;font-size:11px;color:#3a2312;flex:none">{{ o.label }}</span>
+                      <sc-for list="{{ o.chips }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</button></sc-for>
                     </div>
                   </sc-for>
                 </div>
@@ -953,7 +960,7 @@ class Component extends DCLogic {
     artSel: null, artQ: '', artPack: null, artProv: '', artBusy: null, artPacks: null, genProviders: null,
     artStyleInput: null, artStyleBusy: false,   // 本游戏整体美术风格锚（owner 07-13·拼进每张生成提示词·后端 dialectPrompt 已支持）
     artPreview: null, artZoom: 1,                // 台账美术图片预览灯箱 + 放大缩小（owner 07-13）
-    tokenInput: '', genKeyInputs: {}, provKeyInputs: {}, defaultProv: null, cfgModel: null, saving: false,
+    tokenInput: '', genKeyInputs: {}, provKeyInputs: {}, genOptSel: {}, defaultProv: null, cfgModel: null, saving: false,
     toast: null
   };
 
@@ -1283,7 +1290,7 @@ class Component extends DCLogic {
   // art-ops 执行链（07-12 工作流重设）：美术 agent 开方子 → 用户确认 → 逐条串行执行既有端点。
   runArtOps(ops, slug) {
     if (this.state.artBusy || !slug || !Array.isArray(ops) || !ops.length) return;
-    const pack = this.state.artPack || (((this.state.artPacks || [])[0] || {}).id) || 'pixel';
+    const pack = this.state.artPack || (((this.state.artPacks || [])[0] || {}).packId) || 'pixel';
     let done = 0, fail = 0;
     const step = (i) => {
       if (i >= ops.length) {
@@ -1883,8 +1890,8 @@ class Component extends DCLogic {
     // ── 美术详情卡（owner 07-12「占位/提示词/模型/替换全在工坊」）──
     const artSelRow = s.artSel ? ledRowsAll.find(r => r.no === s.artSel) : null;
     const artPacksArr = Array.isArray(s.artPacks) ? s.artPacks : [];
-    const artCurPack = s.artPack || (artPacksArr[0] && artPacksArr[0].id) || '';
-    const artWantKind = artSelRow && artSelRow.kind === 'model3d' ? 'mesh' : 'image';
+    const artCurPack = s.artPack || (artPacksArr[0] && artPacksArr[0].packId) || '';
+    const artWantKind = artSelRow && artSelRow.kind === 'model3d' ? 'mesh' : 'texture'; // 2D=texture（对齐 providers kind·qwen/seedream 均 texture·曾误写 'image' 致 2D 模型 chip 空）
     const artProvsArr = (Array.isArray(s.genProviders) ? s.genProviders : []).filter(p => !p.kind || p.kind === artWantKind);
     const artSelServed = artSelRow && ((artSelRow.gen && artSelRow.gen.servedPath)
       || (artSelRow.placeholder && artSelRow.placeholder.servedPath)
@@ -2039,6 +2046,17 @@ class Component extends DCLogic {
       value: s.genKeyInputs[g.envKey] || '',
       type: (e) => { const v = e.target.value; this.setState(cur => ({ genKeyInputs: Object.assign({}, cur.genKeyInputs, { [g.envKey]: v }) })); }
     }));
+    // 生成选项（Seedream 模型版本等·chip 选·当前值=已选 ?? 后端生效值）——数据驱动·加新选项后端一条数据即出。
+    const genOptRows = ((s.settings && s.settings.genOptions) || []).map(o => {
+      const cur = (s.genOptSel && s.genOptSel[o.envKey]) || o.value;
+      return {
+        label: o.label,
+        chips: (o.choices || []).map(c => ({
+          label: c.label, style: chipStyle(cur === c.value),
+          pick: () => this.setState(st => ({ genOptSel: Object.assign({}, st.genOptSel, { [o.envKey]: c.value }) })),
+        })),
+      };
+    });
     const saveB = this.jelly('#8fe05a', '#6cbf37', '#4e8a24', 17); saveB.style.padding = '11px 26px';
 
     // 调试日志块（/api/llm-logs 度量行·新在前）
@@ -2354,7 +2372,7 @@ class Component extends DCLogic {
           : '状态：还没出过图，查询词在免费库也无命中（游戏里退化为色块）——点「⚡ 重新生成」出真图') : '',
       ].filter(Boolean).join('\n') : '',
       artQ: s.artQ, artQType: (e) => this.setState({ artQ: e.target.value }),
-      artPackChips: artPacksArr.map(p => ({ label: p.id, style: chipStyle(artCurPack === p.id), pick: () => this.setState({ artPack: p.id }) })),
+      artPackChips: artPacksArr.map(p => ({ label: p.name || p.packId, style: chipStyle(artCurPack === p.packId), pick: () => this.setState({ artPack: p.packId }) })),
       artProvChips: [{ id: '', label: '自动', tip: '按风格包默认的生成通道' }]
         .concat(artProvsArr.map(p => ({ id: p.id, label: p.id + (p.keyConfigured === false ? ' ⚠' : ''), tip: p.keyConfigured === false ? ('未配 key（' + (p.envKey || '') + '）——设置页可填') : (p.license || '') })))
         .map(p => ({ label: p.label, tip: p.tip, style: chipStyle((s.artProv || '') === p.id), pick: () => this.setState({ artProv: p.id }) })),
@@ -2400,7 +2418,7 @@ class Component extends DCLogic {
       publishRows, publishHint, pkgBtnStyle: pkgB.style, pkgBtnActive: pkgB.active, dlBtnStyle: dlB.style, dlBtnActive: dlB.active,
       // settings
       ccStatus, tokenInput: s.tokenInput, tokenType: (e) => this.setState({ tokenInput: e.target.value }),
-      providerChips, genKeyRows,
+      providerChips, genKeyRows, genOptRows,
       // BYO 模型 key 行（owner 07-12「没有配置 key 的地方」）：qwen/anthropic/deepseek/openai——
       // claude-code 走上方订阅 token 块，local(Ollama) 免 key。
       providerKeyRows: ((s.settings && s.settings.providers) || [])
@@ -2427,6 +2445,7 @@ class Component extends DCLogic {
         const gk = {};
         Object.keys(s.genKeyInputs || {}).forEach(k => { if ((s.genKeyInputs[k] || '').trim()) gk[k] = s.genKeyInputs[k].trim(); });
         if (Object.keys(gk).length) payload.genKeys = gk;
+        if (Object.keys(s.genOptSel || {}).length) payload.genOptions = Object.assign({}, s.genOptSel); // 生成选项（模型版本等·本地持久化）
         if (s.defaultProv) payload.default = s.defaultProv;
         if (!Object.keys(payload).length) { this.showToast('没有要保存的改动'); return; }
         this.setState({ saving: true });
