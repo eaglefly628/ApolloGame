@@ -6,6 +6,11 @@
 
 ---
 
+## REQ-3D-DECAL-TEX · 可换真图的「平贴 + alpha + 自定义贴图」贴花（Decal3D 无贴图槽）· [2026-07-22] · PE-C 提（game-c 下注线 REQ-C-113）→ P3D 评审 · status: open · 优先级: P3 · 类型: 3D 线能力缺口（贴花贴图）
+> **缺口**：想在呢面上平贴一张**可被工坊生成图替换**的下注线/发牌区贴花（台账槽 `game-c/table/betline`），闭集里没有干净件——`Decal3D`=**程序化**（kind blob/ring/disc·无贴图键·不碰 assets）→ 换不了真图；`Material3D.map` 平贴 mesh 有 map 但 **PBR 路无 alpha**（透明底 PNG 的透明区渲成不透明黑）；`Billboard3D.tex` 有贴图 + alpha 但**永远朝相机**（陡俯视下立起 ~26°·不平贴）。三者都缺「平 + alpha + 自定义贴图」这一交集。
+> **建议（P3D 裁·二选一）**：① 给 `Decal3D` 加 `tex?` 贴图键（走 `pbrMapTexture`/assets 解析·decal 本就平 + alpha·最贴合）；或 ② 给 `Material3D` map 路加 `transparent`/`alphaMap`（平贴 mesh 就能透）。落地后 game-c betline 即从程序化金环换成台账真图（`build3d.ts` 已留位·现程序化 `Decal3D{kind:'ring'}` 占位）。**非阻塞**：betline 是次要贴花·现金环占位可接受。
+> **game-c 现状**：chips（`Material3D.map` 顶盖）、fx（`Billboard3D.tex` 瞬时）已接真图；仅 betline 卡此缺口。
+
 ## REQ-3D-资产就绪自动重渲 · 静态场景 × 异步贴图迟到 = 脏帧跳渲吞掉换图帧 · [2026-07-17] · PE-B 提 → P3D 评审 · status: open · 类型: 渲染健壮（W1-C 脏帧跳渲的盲区）
 
 > **现象（game-b S3 实证）**：全静态 3D 场景（无动画/无相机动）+ Material3D.map 贴图异步 fetch 迟到——`ensurePbrMesh` 在贴图就绪后按 mode 正确重建了 mesh，但 `renderSig`（位姿/相机/灯/后处理…）不含资产就绪态 → 跳渲判「画面没变」→ 新贴图永不上屏（canvas 停在旧帧）。动态场景（game-z 恒动）撞不到此坑，纯静态陈列场景必撞。

@@ -23,7 +23,8 @@ import type { BettingConfig } from './betting-engine.js';
 import type { Card } from '@engine/protocol/components.js';
 import { resolveSeatCharacters, buildSessionOut, personaFlavor, type GameCSessionIn, type GameCSessionOut, type SeatCharacter } from './characters.js';
 import { HoldemSession } from './game-session.js';
-import { build3DTableBlueprint } from './build3d.js';
+import type { Component } from '@engine/core/types.js';
+import { build3DTableBlueprint, POT3D } from './build3d.js';
 import { Chip3D } from './chip3d.js';
 import { gcAudio } from './sound.js';
 
@@ -72,11 +73,23 @@ export function mount(
   // 声音事件追踪（表现层·render-only）：手号/公共牌张数/阶段 变化 → 触发对应 SFX（声音=数据·经 gcAudio 端口）。
   let prevBoardLen = 0;
   let prevPhase: TableView['phase'] = 'betting'; // 新一手起始阶段（session 稍后声明·此处用字面量避免前引用）
+  // REQ-C-113 接槽·瞬时特效精灵（Billboard3D.tex·朝相机=闪光/爆发/辉光正确观感；索引 fx/* 真图 filled 即上·art-replace 换图即换；
+  //   无真图/未解析=纯色 quad 兜底不崩）。render-only·瞬时实体·setTimeout 后销。
+  let fxNonce = 0;
+  const spawnFx = (tex: string, size: number, ms: number, color?: number): void => {
+    if (!running) return;
+    const id = `c-fx-${fxNonce++}`;
+    const w = engine.world;
+    w.createEntity(id);
+    w.addComponent(id, { type: 'Transform3D', x: POT3D.x, y: POT3D.y + 0.5, z: POT3D.z } as unknown as Component);
+    w.addComponent(id, { type: 'Billboard3D', tex, size, blend: 'add', opacity: 1, ...(color !== undefined ? { color } : {}) } as unknown as Component);
+    setTimeout(() => { try { w.destroyEntity(id); } catch { /* 已拆/已销 */ } }, ms);
+  };
   const syncChips = (): void => {
     if (!running || screen !== 'table') return;
     if (session.handNo !== chipHandNo) {
       chip3d.clear(); for (const k of Object.keys(prevTotal)) delete prevTotal[Number(k)]; chipHandNo = session.handNo;
-      prevBoardLen = 0; gcAudio.play('deal'); // 新一手·发牌声
+      prevBoardLen = 0; gcAudio.play('deal'); spawnFx('fx/deal-glow', 3, 600); // 新一手·发牌声 + 桌心发牌流光
     }
     for (let seat = 0; seat < playerCount; seat++) {
       const cur = session.totalOf(seat), prev = prevTotal[seat] ?? 0;
@@ -88,8 +101,8 @@ export function mount(
     if (boardLen > prevBoardLen) { if (prevBoardLen > 0) gcAudio.play('flip'); prevBoardLen = boardLen; }
     // 阶段跃迁 → 摊牌揭盅 / 局终胜负号角。
     if (session.phase !== prevPhase) {
-      if (session.phase === 'showdown') gcAudio.play('reveal');
-      else if (session.phase === 'gameover') gcAudio.play(session.winnerSide === 'hero' ? 'win' : 'lose');
+      if (session.phase === 'showdown') { gcAudio.play('reveal'); spawnFx('fx/pot-shine', 3.4, 700, 0xe0b458); } // 摊牌·底池金光
+      else if (session.phase === 'gameover') { gcAudio.play(session.winnerSide === 'hero' ? 'win' : 'lose'); if (session.winnerSide === 'hero') spawnFx('fx/win-burst', 4.4, 1100, 0xffd27a); } // 局终·主角胜爆发
       prevPhase = session.phase;
     }
   };
@@ -285,7 +298,7 @@ export function mount(
     // 下注交互（真接 betting-engine·经 session；弃牌/过牌本地声，跟注/加注的筹码声由 syncChips 抛注触发）
     act_fold: () => { gcAudio.play('fold'); heroAct({ kind: 'fold' }); },
     act_check_call: () => { const la = session.legalForHero(); if (la?.check) gcAudio.play('check'); heroAct(la?.check ? { kind: 'check' } : { kind: 'call' }); },
-    act_raise: (arg) => { const to = raiseTo(arg); if (to > 0) { if (arg === 'allin' || to >= (session.legalForHero()?.raise?.max ?? Infinity)) gcAudio.play('allin'); heroAct({ kind: 'raise', to }); } },
+    act_raise: (arg) => { const to = raiseTo(arg); if (to > 0) { if (arg === 'allin' || to >= (session.legalForHero()?.raise?.max ?? Infinity)) { gcAudio.play('allin'); spawnFx('fx/allin-flash', 3.6, 550, 0xd0483e); } heroAct({ kind: 'raise', to }); } },
     // 摊牌「继续」→ 下一手（发牌+启动 AI 节奏）；局终「再来一局」→ 新会话。
     continue_showdown: () => { session.nextHand(); rerender(); runAITurns(); },
     restart: () => { newGame(); rerender(); runAITurns(); }, // 再来一局 = 全新时间种子会话
@@ -297,7 +310,7 @@ export function mount(
   // REQ-C-112 接槽·异步拉本地美术索引（mount 尾·handlers/remount 已就位）：
   //   ① loadSkinIndex → 填 skinAssets（3D 呢面/木栏 Material3D.map 按 key·就绪 renderer 下帧自动重建·无真图=回退色）；
   //   ② loadArtOverrides → URL 覆盖表（背幕/按钮皮/衣柜图标）·有真图才 remount 拾取（背幕热替换）·无真图=零改动。
-  void loadSkinIndex(skinAssets, 'game-c');
+  void loadSkinIndex(skinAssets, 'game-c').then(() => { if (!disposed) renderer.invalidate(); }); // 贴图迟到→强制重渲一帧（防静态帧跳渲吞换图·REQ-3D-资产就绪自动重渲）
   void loadArtOverrides('game-c').then((tex) => {
     if (disposed || Object.keys(tex).length === 0) return; // 无真图覆盖 → 观感逐字节不变
     registerTextureOverrides(tex);

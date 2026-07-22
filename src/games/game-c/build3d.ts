@@ -77,6 +77,11 @@ export function build3DTableBlueprint(): WorldBlueprint {
     RigidBody3D: { shape: 'cylinder', mass: 0, restitution: 0.18, friction: 0.72 },
   };
 
+  // 下注/发牌区贴花（REQ-C-113·呢面上一圈金环下注线·平贴 + alpha·Decal3D 程序化 ring）。
+  //   ⚠ Decal3D=**程序化**（kind/半径/色·无贴图槽）→ **换不了台账 table/betline 真图**；可换真图的「平贴 + alpha + 自定义贴图」贴花=
+  //   引擎缺口（Decal3D 无贴图键·Material3D map 无 alpha·Billboard 朝相机不平）→ 已报 P3D（REQ-DECAL-TEX）。此处先上程序化金环占位。
+  entities['betline'] = { Transform3D: { x: 0, y: 0, z: -0.12 }, Decal3D: { kind: 'ring', radius: 1.62, color: 0xd4af37, opacity: 0.2, y: FELT_TOP + 0.02 } };
+
   // ── 隐形物理围栏（owner 2026-07-18：可见木栏「太奇怪」·改**看不见的碰撞墙**·朝心一圈·只挡不画）──
   // 一圈静态 box 墙（mass0·physics.ts 明许「围栏/地台」静态体）沿椭圆缘·挡抛入的筹码不滚出台。
   // Visibility:false = 渲染器不画（Mesh3D 仅供物理取盒尺寸·非渲染网格）；rotY 朝径向=墙面对心。

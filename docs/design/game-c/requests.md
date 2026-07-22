@@ -11,6 +11,13 @@
 ### REQ-C-114 · 右上角菜单键（点开三项：设置/游戏说明/日志）· [2026-07-22] · owner 报 → **PE-C**（chips/decals/fx 之后做）· status: open · 优先级: P2 · 类型: 游戏层 UI（HUD·LayoutNode）
 > **owner 指令**：牌桌右上角一个**菜单键**（平时收起）·点开露三项：① **设置**（关音乐等）② **游戏说明/菜单说明**（玩法帮助）③ **日志**。三项收在一个菜单键里。
 > **评判（大半是重组现成件·非缺口）**：① 音乐=现有 `sound_toggle`+`muted`；③ 日志=现有 `toggle_log`+`buildLogPanel`——直接归拢进菜单；② 游戏说明=新增一个帮助面板（LayoutNode 纯数据文案·EN/ZH i18n）。菜单键+下拉/面板=game-c HUD 组合（`buildStoryTopBar` 右侧加菜单键→`menu_toggle` 开一个 `Panel` 列三项·`check-ui` 防重叠）。**用基座 LayoutNode·不手写**。做完 check-ui + 门禁。
+
+### REQ-C-113 · 美术**全量**走索引消费（工坊替换才生效·owner「全部重改」）· [2026-07-22] · owner 报（背幕已通·余下全改）→ Lead 落单 → **PE-C** · status: **🔶 大半接完（背幕/呢面/木栏/筹码/衣柜图标/次级按钮/fx·PE-C 2026-07-22）；余：主行动键=PUI·betline=P3D·牌面=已移出（native）** · 优先级: P2（承 REQ-C-112·美术生产链尾·不阻玩法）· 类型: 游戏层美术消费接线（PE-C 域）
+> **✅ 回执（PE-C 2026-07-22·第二/三批·端到端目击）**：承背幕样板逐类接消费槽（各带回退兜底·真图未到观感近零变）——
+> - **呢面/木栏**=`Material3D.map`（`build3d.ts`+`game-c.ts` `AssetManager`）；**衣柜图标**=`Image`/emoji；**次级按钮**（Button·kind）=主题 `buttonSkins`（e50f08d3）。
+> - **筹码**=`chip3d.ts` 每枚顶盖 `Material3D.map`（`chip/<denom>-<color>`·vendored 真图**即上**·顶枚贴图限 PBR 网格数）——**目击筹码面数字上顶**。**fx**=`game-c.ts` `spawnFx` 瞬时 `Billboard3D.tex`（deal-glow/allin-flash/pot-shine/win-burst·`fx/*` 真图 filled 即上·朝相机正确）——**目击 deal-glow 触发**。贴图迟到加 `renderer.invalidate()` 兜底（REQ-3D-资产就绪自动重渲）。
+> - **完工判据①** `ledger-audit --strict` 孤儿=0 ✅（REQ-C-112 补 skinKey 达成）；**②** 工坊换任一→游戏即显：背幕/呢面/筹码 三类端到端目击 ✅（≥2 达标）；**③** 门禁绿·零回归 ✅。
+> **余下卡外域**：① **主行动键 弃/跟/加/All-in**=复合 Panel·`Panel` 无贴图槽→报 **PUI `REQ-PANELSKIN`**（owner 已同意·art-018 btn-raise 即卡此）；② **betline 下注线**=可换真图的平贴+alpha 贴花闭集缺件→报 **P3D `REQ-3D-DECAL-TEX`**（现程序化金环 `Decal3D{ring}` 占位）；③ **牌面**=owner 已定 native 自绘（不入台账·REQ-C-111）。
 > **owner 指令（2026-07-22）**：game-c 的美术**全部重改**成「可消费槽」——不止背幕（REQ-C-112 已接），筹码/牌面/呢面/木栏/贴花等**逐行**都要能被工坊替换后真上画面。
 > **现状**：背幕已走 `art-overrides.ts` 的 skinKey 索引解析（`fetch art/index.json` + `renderer.setBackgroundTexture(backdropUri())` 热替换·PE-C `f89baa97`）——**此模式=样板**，把它推广到全部 37 行。`npm run ledger:audit game-c` 看当前孤儿数（REQ-C-112 后应已降·余数即本单目标→0）。
 > **黑色地板遮挡（owner「德州黑色地板挡住·移去了」）**：`build3d.ts:59` 注释已定位——有面「完全遮住 setBackgroundTexture 场景背幕」的地板/元素（夜景背幕/工坊生成图被压在下面看不见=owner 报「生成写不回」的**表现根因之一**）。owner 称已移去→**PE-C 复核**：背幕真图就绪后确实上画面（真浏览器目击），别被别的 mesh 再遮。

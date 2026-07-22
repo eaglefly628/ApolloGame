@@ -125,9 +125,13 @@ painterly premium mobile-game art, refined tasteful, dramatic depth, story-drive
   - **呢面/木栏** `game-c/table/felt-albedo`(+`felt-normal`)、`rail-albedo`(+`rail-normal`) → `build3d.ts` `table-felt`/`table-base` 的 `Material3D.map`/`normalMap`（**按 key 解析**·非 URL）。`game-c.ts` 建 `AssetManager`（`makeSkinAssets`）→ `loadSkinIndex` 拉索引注册 → 传 `new ThreeRenderer({assets})`；真图就绪 renderer 按 key 挂上（`three-renderer` 把「贴图就绪态」并进 mesh mode→**自动重建**）·无真图=map 解析 null→回退 `preset:'matte'`+`color`（呢面紫绒/木栏木色·观感近零变）。**注入绿棋盘贴图目击=呢面真换上。**
   - **衣柜图标** `game-c/icon/wear-<id>` → `hud.ts` 衣柜格 `wearIconUri(id)` 有真图渲 `Image`·无则 emoji（`ITEM_EMOJI`）。目击=注入即换、未注入项仍 emoji。
   - **次级按钮皮**（menu/showdown/lang 等 **Button 组件**·kind=hero/primary/ghost）`game-c/ui/btn-hero|primary|ghost` → `GAME_C_THEME` 动态 `buttonSkins`（`buttonSkinsForTheme()`·game-c.ts `gcTheme()` 注入·真图 remount 拾取·无则原 kind 底）。
-- **待接/缺口（follow-on）**：
-  - **主行动键 弃/跟/加/All-in = 复合 `Panel`（文+金额两色）**·`Panel` 无 cover/9-slice 贴图槽（只 tiled `bgTexture`·`image` 是 Screen 专属）→ **报 PUI 缺口**（给 `PanelProps` 加 cover `skin`），或改 `Button`（丢复合标签）。owner「按钮变贴图」主诉未全落。
-  - `game-c/fx/*` → `Vfx3D`（未接·新特效非换皮）；9 vendor 筹码 `chip/*` → 3D 筹码 `Material3D`（chip3d·未接）。
+- **已接③（✅ live·owner「筹码/贴画/特效都要」2026-07-22·端到端目击）**：
+  - **筹码** `chip/<denom>-<color>` → `chip3d.ts` 每枚**顶盖** `Material3D.map`（圆柱顶盖=俯视正对·vendored 真图 filled **即上**；抛注全贴、堆只贴顶枚限 PBR 网格数）。**目击筹码面数字上顶**。
+  - **特效** `game-c/fx/*` → `game-c.ts` `spawnFx()` 瞬时 `Billboard3D.tex`（朝相机=闪光/爆发正确）：`deal-glow`(发牌)·`allin-flash`(All-in)·`pot-shine`(摊牌)·`win-burst`(主角胜)。`fx/*` 真图 filled 即上·art-replace 换图即换。贴图迟到 `renderer.invalidate()` 兜底。**目击 deal-glow 触发**。
+- **待接/缺口（卡外域·follow-on）**：
+  - **主行动键 弃/跟/加/All-in = 复合 `Panel`（文+动态金额两色）**·`Panel` 无 cover 贴图槽 → **报 PUI `REQ-PANELSKIN`**（`PanelProps` 加 cover `skin`·须叠渲复合子节点）。owner「按钮变贴图」主行动键卡此（art-018 btn-raise 即此）。
+  - **betline 下注线贴花**：可换真图的「平贴 + alpha + 自定义贴图」闭集缺件（`Decal3D` 程序化无贴图键·`Material3D` map 无 alpha·`Billboard` 朝相机）→ **报 P3D `REQ-3D-DECAL-TEX`**；现 `build3d.ts` 程序化 `Decal3D{kind:'ring'}` 金环占位。
+  - **牌面** = owner 定 native 自绘（不入台账·REQ-C-111·非"可替换美术"）。
 
 ---
 

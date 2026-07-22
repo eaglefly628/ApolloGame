@@ -13,6 +13,9 @@ import { seatWorldPos, seatStackPos, POT3D } from './build3d.js';
 // ═══════════════════════════════════════════════════════════════
 
 const CHIP_COLORS = [0xe0b458, 0xc0392b, 0x1b1b22, 0x2e7d5b, 0xf0c96a]; // 金/红/黑/绿/亮金（面额分色·表现）
+// REQ-C-113 接槽：筹码面贴图（与 5 色位一一对应·索引里 vendored 真图 filled·即上顶盖；art-replace 换图即换）。
+//   Material3D.map 落圆柱**顶盖**（中心内切圆·顶俯视相机正对）；无真图/未解析=回退 frontTint 色（同现观感）。
+const CHIP_ART = ['chip/1000-yellow', 'chip/5-red', 'chip/100-black', 'chip/25-green', 'chip/50-orange'];
 const CHIP_R = 0.34, CHIP_H = 0.06; // 筹码圆柱直径/高（醒目·堆得起来）
 const STACK_MAX = 22;                // 每堆最高摞数（越赢越高·封顶防穿天）
 const PER_CHIP = 90;                 // 每 90 筹码 = 堆里一枚（决定摞高）
@@ -43,9 +46,11 @@ export class Chip3D {
     for (let i = 0; i < n; i++) {
       const id = `c-chip-${this.nonce++}`;
       this.thrown.push(id);
+      const ci = (this.nonce + i) % CHIP_COLORS.length;
       w.createEntity(id);
       w.addComponent(id, { type: 'Transform3D', x: startX + (this.rng() - 0.5) * 0.18, y: 1.35 + i * 0.07, z: startZ + (this.rng() - 0.5) * 0.18 } as unknown as Component);
-      w.addComponent(id, { type: 'Mesh3D', shape: 'cylinder', width: CHIP_R, height: CHIP_H, frontTint: CHIP_COLORS[(this.nonce + i) % CHIP_COLORS.length] } as unknown as Component);
+      w.addComponent(id, { type: 'Mesh3D', shape: 'cylinder', width: CHIP_R, height: CHIP_H, frontTint: CHIP_COLORS[ci] } as unknown as Component);
+      w.addComponent(id, { type: 'Material3D', preset: 'matte', color: CHIP_COLORS[ci], map: CHIP_ART[ci] } as unknown as Component); // 顶盖筹码面贴图·无真图回退色
       // 随机速度+力量：朝底池的水平初速按 [0.8,1.35] 随机倍率 + 小横向抖动（多数落池心堆起）+ 上抛弧度随机 + 三轴翻滚。
       const power = 0.8 + this.rng() * 0.55;
       w.addComponent(id, {
@@ -69,9 +74,12 @@ export class Chip3D {
     for (let i = 0; i < target; i++) {
       const id = `c-stk-${seat}-${i}`;
       ids.push(id);
+      const ci = i % CHIP_COLORS.length;
       w.createEntity(id);
       w.addComponent(id, { type: 'Transform3D', x: base.x + (i % 2) * 0.02, y: base.y + 0.03 + i * CHIP_H, z: base.z } as unknown as Component);
-      w.addComponent(id, { type: 'Mesh3D', shape: 'cylinder', width: CHIP_R, height: CHIP_H, frontTint: CHIP_COLORS[i % CHIP_COLORS.length] } as unknown as Component);
+      w.addComponent(id, { type: 'Mesh3D', shape: 'cylinder', width: CHIP_R, height: CHIP_H, frontTint: CHIP_COLORS[ci] } as unknown as Component);
+      // 只给**顶枚**贴筹码面（顶盖朝上·俯视可见）→ 限 PBR 网格数（每堆 1 枚·非整摞）；下面各枚保 Mesh3D 纯色鳞边。
+      if (i === target - 1) w.addComponent(id, { type: 'Material3D', preset: 'matte', color: CHIP_COLORS[ci], map: CHIP_ART[ci] } as unknown as Component);
     }
     this.stacks.set(seat, ids);
   }
