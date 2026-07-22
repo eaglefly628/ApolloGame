@@ -27,6 +27,33 @@ import { SHELL, sBtn, sInput, sSelect, sChip, sLabel } from '../ui/shell-theme.j
 
 const API = 'http://localhost:4000';
 
+// 抠图去背 → 真 alpha（REQ-ASSET-导入抠图·PA 能力 /api/assets/matte）：逐图过端点，用抠好的图替换入库负载，
+// provenance 记 matte 步（M2.5 人审可见来源）。任一图失败即整批中止（绝不静默把没抠的原图入库）。导出供单测。
+export async function matteImportFiles(
+  files: ReadonlyArray<{ path: string; dataBase64: string }>,
+  entries: ReadonlyArray<AssetIndexEntry>,
+  mode: 'flood' | 'rembg',
+  apiBase: string,
+  onProgress?: (done: number, total: number) => void,
+): Promise<{ files: Array<{ path: string; dataBase64: string }>; entries: AssetIndexEntry[] }> {
+  const outFiles = files.map((f) => ({ ...f }));
+  const outEntries = entries.map((e) => ({ ...e }));
+  for (let i = 0; i < outFiles.length; i++) {
+    onProgress?.(i + 1, outFiles.length);
+    const mr = await fetch(`${apiBase}/api/assets/matte`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dataBase64: outFiles[i].dataBase64, mode }),
+    }).then((r) => r.json() as Promise<{ success?: boolean; dataBase64?: string; provenance?: unknown; error?: string }>);
+    if (!mr.success || !mr.dataBase64) throw new Error(`抠图失败（${outFiles[i].path}）：${mr.error ?? '未知'}`);
+    outFiles[i].dataBase64 = mr.dataBase64;
+    if (outEntries[i]) {
+      const prov = (outEntries[i].provenance ?? {}) as Record<string, unknown>;
+      outEntries[i] = { ...outEntries[i], provenance: { ...prov, matte: { mode, ...(mr.provenance && typeof mr.provenance === 'object' ? mr.provenance as Record<string, unknown> : {}) } } };
+    }
+  }
+  return { files: outFiles, entries: outEntries };
+}
+
 type Mode = 'loose' | 'sheet' | 'rename';
 type Step = 1 | 2 | 3 | 4;
 
@@ -96,6 +123,11 @@ export function AssetImportWizard({
   // 入库主动扫描标注（Claude 视觉 → tags 写回索引；失败不阻塞导入本身）
   const [autotag, setAutotag] = useState(true);
   const [tagMsg, setTagMsg] = useState<string | null>(null);
+  // 抠图去背 → 真 alpha（REQ-ASSET-导入抠图·owner 07-16「用 rembg」·PA 能力 /api/assets/matte）：
+  // 开则导入前逐图过抠图端点、用抠好的真 alpha 图入库（flood 漫填快 / rembg AI 兜底）。sheet 模式不适用。
+  const [matteOn, setMatteOn] = useState(false);
+  const [matteMode, setMatteMode] = useState<'flood' | 'rembg'>('flood');
+  const [matteMsg, setMatteMsg] = useState<string | null>(null);
 
   // ── 文件加载 ──
   const addFiles = useCallback(async (list: FileList | File[]) => {
@@ -294,6 +326,15 @@ export function AssetImportWizard({
       }
 
       if (entries.length === 0) throw new Error('没有可导入的条目');
+
+      // 抠图去背 → 真 alpha（REQ-ASSET·PA 能力）：逐图过 /api/assets/matte，用抠好的图入库；
+      // 任一失败即中止（绝不静默把没抠的原图入库）。provenance 记 matte 步（M2.5 人审可见来源）。sheet 不适用。
+      if (matteOn && mode !== 'sheet' && payloadFiles.length > 0) {
+        const m = await matteImportFiles(payloadFiles, entries, matteMode, API, (i, n) => setMatteMsg(`🎯 抠图去背 ${i}/${n}（${matteMode}）…`));
+        payloadFiles = m.files; entries = m.entries;
+        setMatteMsg(null);
+      }
+
       const res = await fetch(`${API}/api/assets/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -328,7 +369,7 @@ export function AssetImportWizard({
     } finally {
       setCommitting(false);
     }
-  }, [mode, sheetFile, grid, sheetId, product, template, dropEmpty, emptyCells, effectiveRows, files, profile, onCommitted, autotag]);
+  }, [mode, sheetFile, grid, sheetId, product, template, dropEmpty, emptyCells, effectiveRows, files, profile, onCommitted, autotag, matteOn, matteMode]);
 
   // ── 渲染 ──
   const stepDot = (n: Step, label: string) => {
@@ -630,10 +671,22 @@ export function AssetImportWizard({
                   <input type="checkbox" checked={autotag} onChange={(e) => setAutotag(e.target.checked)} />
                   ✨ 追加语义标注（Claude 视觉认主体，约 $0.003/张；需 .env 配 ANTHROPIC_API_KEY）
                 </label>
+                {mode !== 'sheet' && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: SHELL.sub, fontSize: 12, cursor: 'pointer', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <input type="checkbox" checked={matteOn} onChange={(e) => setMatteOn(e.target.checked)} />
+                    🎯 背景移除 → 真 alpha（抠图·导入前逐图处理）
+                    {matteOn && (
+                      <select value={matteMode} onChange={(e) => setMatteMode(e.target.value as 'flood' | 'rembg')} style={{ ...sSelect(), width: 280 }}>
+                        <option value="flood">flood 漫填（快·确定性·纯色/干净底最佳）</option>
+                        <option value="rembg">rembg AI（慢·复杂前景/杂底·需装 rembg）</option>
+                      </select>
+                    )}
+                  </label>
+                )}
                 <button onClick={() => void commit()} style={{ ...sBtn('primary'), padding: '10px 28px', fontSize: 13 }}>提交写库 ✓</button>
               </>
             )}
-            {committing && <div style={{ color: SHELL.sub }}>写入中…</div>}
+            {committing && <div style={{ color: SHELL.sub }}>{matteMsg ?? '写入中…'}</div>}
             {result && (
               <>
                 <div style={{ fontSize: 14, color: result.ok ? SHELL.ok : SHELL.danger }}>{result.ok ? '✓ 导入完成' : '✕ 导入失败'}</div>
