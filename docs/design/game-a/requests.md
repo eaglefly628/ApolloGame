@@ -2,6 +2,12 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
+### A-022 · [2026-07-20] · PE-A · ui-audit 对比度只读 `background-color` → `hero`/渐变底按钮误报「硬性低对比」假阳 · status: 📝 待转报 PUI（视觉真绿·非阻断·工具盲区）· 类型: UI 基座工具缺口（PUI 域·`tools/ui-audit.mjs`）
+> **ID 让号（2026-07-20·rebase）**：本条原报 A-018，与 Lead 评审同轮工单化的 A-018（一四进贡裁决）撞号——Lead 995e6c70 先落，PE 让号改 **A-022**（hud.ts 头注内引用同步改）。
+**背景（owner 2026-07-20 金按钮）**：主 CTA「开始上桌 / 入座开局」按蓝本 `main-menu-guandan.dc.html`（`color:#241009` 深墨字 + `background:linear-gradient(#f0c96a,#d3a247)` 金渐变=深字金底）复刻。闭集里唯一「深字金底」件=`Button kind:'hero'`（`render.ts:270`·金渐变底 + `t.bg0` 深墨字 + 倒角 + 流光）——**真机渲染约 8:1 高对比、清晰可读**（已截图目击 `menu-hero.png`）。贴皮路（`buttonSkins.skin`）反而 `render.ts:218` 强制 `color:#fff` 白字→浅金上失读，故弃皮用 hero kind（视觉更对蓝本）。
+**盲区（`tools/ui-audit.mjs` contrast）**：对比度计算只取 computed `background-color`；`hero` 底是 `linear-gradient`（`background-color` 解析=透明）→ 工具穿透到父/页底 `bg0(#160e0a)` 深色采样 → 深墨字 vs「看不见的金底」≈ 1.05 → 误报**硬性低对比阻断**。同因：`game-b-flow` 4 处 contrast 假阳、各游戏扇形/嵌套 overlap 假阳——raw `ui-audit.mjs exit=1` 是这些复杂屏的**已知假阳常态**（`/check-ui` agent 判官豁免·非自动推门卡口；本项目推门=`scoped-gate` 不含 ui-audit）。对照：旧 `primary`（绿·`jadeWash` 半透实底）工具读得到→绿；换 hero 后**仅此一行**由绿转红（纯工具盲区·非真回归）。
+**建议 PUI 修（`src/ui`/`tools` 域）**：①`render.ts` hero（及任何渐变底 kind）在 `background` 前补一层 solid `background-color:<首停色>` 兜底（视觉零变·让工具读得到金底）；或 ②`ui-audit.mjs` contrast 解析 `background-image` 渐变取首停色/主色再算比。任一即消所有渐变底 CTA 的 contrast 假阳（全牌桌/大厅通用）。**在 PUI 出件前**：视觉 1:1 优先（hero 金 CTA 真机 8:1 可读），此假阳列清单待裁·不因工具盲区把金 CTA 降格回绿（同 A-007「不降格」律）。
+
 ### A-018 · [2026-07-20] · Lead 评审 · ⚖ 规则裁决：一四局进贡口径（甲=按位末游贡/乙=按输方三游贡） · status: ⏳ **待 owner 一字裁决** · 类型: 规则口径（owner 域·阻 A-021 部分剧本）
 GDD §2.3 G1 自带问号未裁（裁 ☐）；代码照字面=绝对末游进贡 → 一四局（~35% 盘）赢家搭档进贡自家头游、输家不掏（审A seed 1-400 实证 140/140）；剧本⑥（seed=4）恰把该行为钉成正确。裁甲=现状即对、GDD 消问号打勾；裁乙=session 进贡 giver 改输方最低名次 + 剧本⑥换 seed 重写 + 补一四正例剧本。详 `lead-review-2026-07-20.md` §二。
 

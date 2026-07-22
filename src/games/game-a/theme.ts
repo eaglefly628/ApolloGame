@@ -20,6 +20,10 @@ export const MANOR_BG =
 // 酒红牌呢（掼蛋特色·蓝本椭圆桌·真图=S6·风格锚 modern-manor）。
 export const FELT_RED =
   'radial-gradient(ellipse at 50% 42%, #6a1f26 0%, #4e151b 52%, #360f14 100%)';
+// 牌呢贴图（felt/oval.svg 叠在渐变上=偏心聚光光晕+呢纹·owner 2026-07-20「桌面完整背景贴图」）；
+// cover 裁掉 SVG 自带金边上下缘→桌面板 accent 金边保持单一干净；图 404 则退回 FELT_RED 渐变（层叠兜底）。
+export const FELT_TEXTURE =
+  `url('/games/game-a/art/felt/oval.svg') center/cover no-repeat, ${FELT_RED}`;
 export const WRAPPER_BG = '#140a0b';
 
 // ── 夜宴系 UITheme（令牌照 art-data-manual §1 色板·跨 a/b/c 统一·换皮改这一份·LayoutNode 数据零改）──

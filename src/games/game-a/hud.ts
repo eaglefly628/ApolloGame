@@ -4,10 +4,12 @@
 // 写世界只经 action 信号；action（menu.start/table.back/hand.toggle/play.commit/pass/hint/round.next/hand.sort）由宿主
 // HandlerMap 消化，handler 只做「选牌记账 + 调 session + 重渲」——不塞判型/结算逻辑（那些在 guandan-session sim 内）。
 // ui-audit 残留角标对比=light 白扑克牌+扇形叠放盲区（A-007 报 PUI·不降格·owner 两层 1:1 律=视觉 1:1）。
+// 主 CTA 用 hero kind（金渐变底+深墨字·蓝本「深字金底」·真机≈8:1 可读）；ui-audit contrast 只读 background-color、
+// 读不到渐变底 → 误报「开始上桌」1.05 假阳（A-022 报 PUI·同 A-007 不降格·视觉真绿）。
 import type { LayoutNode } from '@ui/components/index.js';
 import type { SeatSpec } from './rules.js';
 import { DRESS_TIERS, codeRank, codeSuit, AI_TIERS, STAKES, BUYIN_MULT, SEATS } from './rules.js';
-import { MANOR_BG, FELT_RED, FIELD_W, FIELD_H, SEAT_ANCHORS, SEAT_W, seatTopLeft } from './theme.js';
+import { MANOR_BG, FELT_TEXTURE, FIELD_W, FIELD_H, SEAT_ANCHORS, SEAT_W, seatTopLeft } from './theme.js';
 import { TURN_ORDER, type SeatId } from './guandan-session.js';
 import {
   type Lang, t, traitName, tierName, PATTERN_GUIDE, RULES_LINES,
@@ -153,7 +155,7 @@ export function buildMenu(v: MenuView): LayoutNode {
         layout: { x: 960, y: 352, width: 240, direction: 'column', gap: 14, align: 'stretch' },
         children: [
           { type: 'Badge', id: 'a-menu-tip', props: { text: t(l, 'menu.tip'), tone: 'warn' } },
-          { type: 'Button', id: 'a-menu-start', props: { label: t(l, 'menu.start'), kind: 'primary', action: 'menu.start' } }, // primary=米金 CTA 深字(hero 是金字金底 1.05 糊)
+          { type: 'Button', id: 'a-menu-start', props: { label: t(l, 'menu.start'), kind: 'hero', action: 'menu.start' } }, // hero=金渐变底+深墨字+倒角流光=蓝本主 CTA「深字金底」（skin 皮会强制白字→浅金上失读·故用引擎 hero kind 非贴皮·owner 2026-07-20 金按钮）
           { type: 'Button', id: 'a-menu-resume', props: { label: t(l, 'menu.resume'), kind: 'ghost', action: 'menu.start' } },
           { type: 'Button', id: 'a-menu-settings', props: { label: t(l, 'menu.settings'), kind: 'ghost', action: 'menu.settings' } },
         ],
@@ -296,7 +298,7 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
             layout: { direction: 'row', gap: 10, align: 'center', justify: 'center' },
             children: [
               { type: 'Button', id: 'a-sel-back', props: { label: t(l, 'sel.back'), kind: 'ghost', action: 'select.back' } },
-              { type: 'Button', id: 'a-sel-seat', props: { label: t(l, 'sel.seat'), kind: 'primary', action: 'select.seat', sub: affordable ? undefined : t(l, 'sel.seatPoor') } },
+              { type: 'Button', id: 'a-sel-seat', props: { label: t(l, 'sel.seat'), kind: 'hero', action: 'select.seat', sub: affordable ? undefined : t(l, 'sel.seatPoor') } }, // hero 金 CTA（sub=不足提示·hero 原生副标槽）
             ],
           },
         ],
@@ -555,7 +557,7 @@ export function buildPlay(v: PlayView): LayoutNode {
   const feltTable: LayoutNode = {
     type: 'Panel',
     id: 'a-felt',
-    props: { bg: { custom: FELT_RED }, vignette: true, accent: true },
+    props: { bg: { custom: FELT_TEXTURE }, vignette: true, accent: true },
     layout: { x: 232, y: 148, width: FIELD_W - 464, height: 322, radius: 160, direction: 'column', align: 'center', justify: 'center', gap: 8 },
     children: feltChildren,
   };
