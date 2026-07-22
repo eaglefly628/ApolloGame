@@ -27,6 +27,7 @@ _PKG_PLATFORMS = {
     'handheld': {'label': '掌机·单HTML', 'ext': 'html', 'needMac': False},
     'zip':      {'label': '工程包 .zip（卡带+资产）', 'ext': 'zip', 'needMac': False},
     'react':    {'label': 'React 独立工程 .zip', 'ext': 'zip', 'needMac': False},
+    'doki':     {'label': 'DokiWorld 卡带 .zip', 'ext': 'zip', 'needMac': False},
 }
 # 内置卡带工程游戏（有 src/games 入口·可打卡带/桌面）——与 scripts/dist.py 的 GAME_META 对齐。
 _PKG_BUILTIN_META = {
@@ -63,7 +64,12 @@ def _run_pkg_job(jid: str, slug: str, platform: str) -> None:
         # 任何有 mount 入口的游戏都可（内置 e/f/g/x + 玩法游戏 a/b/c 等）；无 mount 入口的库卡带会报错指路。
         if platform == 'react':
             _pkg_job_update(jid, step=1)
-            out = _pkg_build_react(slug)
+            out = _pkg_build_export(slug, 'plain')
+            _pkg_job_update(jid, done=True, artifact=str(out), artifactName=out.name); return
+        # doki=DokiWorld 卡带：同一导出管线套 dokiworld 导出插件（协议桥 + 计分注入 + 资源展平·仅 a/b/c）。
+        if platform == 'doki':
+            _pkg_job_update(jid, step=1)
+            out = _pkg_build_export(slug, 'dokiworld')
             _pkg_job_update(jid, done=True, artifact=str(out), artifactName=out.name); return
         # 单文件/桌面/掌机：现管线只支持内置工程游戏。生成的库卡带 → 明确指路（不伪造产物）。
         is_builtin = slug in _PKG_BUILTIN_META
@@ -111,24 +117,29 @@ def _pkg_build_zip(slug: str):
         _add(pub, 'assets/' if lib.is_dir() else '')
     return out
 
-def _pkg_build_react(slug: str):
-    """React 独立工程 zip：tools/export-game.mjs 追游戏 mount 入口的传递依赖闭包 → 剥掉平台
+def _pkg_build_export(slug: str, target: str = 'plain'):
+    """独立导出 zip（导出插件架构）：tools/export-game.mjs 追游戏 mount 入口的传递依赖闭包 → 剥掉平台
     （launcher/studio/账号/大厅/Steam/Electron/其它游戏）→ 自包含 TS+Vite 工程（<Game{X}/> React 封装
-    + 独立 index.html + 对接说明）→ zip 供下载。产物内含 npm i && npm run dev 即可跑的完整源码。"""
+    + 独立 index.html + 对接说明）→ zip 供下载。target='plain' 出中性 React 工程；target='dokiworld'
+    套 DokiWorld 导出插件（协议桥 + 计分注入 + 资源展平）。产物内含 npm i && npm run dev 即可跑的完整源码。"""
     tool = ROOT / 'tools' / 'export-game.mjs'
     if not tool.is_file():
         raise RuntimeError('缺 tools/export-game.mjs（独立导出脚本未就位）')
-    work = ROOT / 'release' / slug / 'react-src'
+    suffix = '' if target == 'plain' else f'-{target}'
+    label = 'react' if target == 'plain' else target
+    work = ROOT / 'release' / slug / f'{label}-src'
     if work.exists():
         shutil.rmtree(work)
     work.parent.mkdir(parents=True, exist_ok=True)
-    r = subprocess.run(['node', str(tool), slug, '--out', str(work)],
-                       cwd=ROOT, capture_output=True, text=True)
+    cmd = ['node', str(tool), slug, '--out', str(work)]
+    if target != 'plain':
+        cmd += ['--target', target]
+    r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
     if r.returncode != 0:
         tail = (r.stderr or r.stdout or '').strip().splitlines()[-1:] or ['']
-        raise RuntimeError(
-            f'导出失败：{slug} 可能不是带 mount 入口的可玩游戏（纯数据库卡带不支持 React 独立工程）。{tail[0][:160]}')
-    out = ROOT / 'release' / slug / f'{slug}-react.zip'
+        raise RuntimeError(f'导出失败（target={target}）：{slug}。{tail[0][:200]}')
+    out = ROOT / 'release' / slug / f'{slug}{suffix}.zip'
+    top = f'{slug}{suffix}'
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
         for p in sorted(work.rglob('*')):
             if not p.is_file():
@@ -136,7 +147,7 @@ def _pkg_build_react(slug: str):
             parts = p.relative_to(work).parts
             if 'node_modules' in parts or 'dist' in parts:  # 只打源码，不打依赖/构建产物
                 continue
-            z.write(p, f'{slug}-react/{p.relative_to(work).as_posix()}')
+            z.write(p, f'{top}/{p.relative_to(work).as_posix()}')
     return out
 
 def _pkg_build_platform(slug: str, platform: str):

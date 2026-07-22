@@ -20,14 +20,20 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 
 // ── args ─────────────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);
 const gameId = argv.find((a) => !a.startsWith('--')) ?? 'game-c';
 const outFlag = argv.indexOf('--out');
+const targetFlag = argv.indexOf('--target');
+// Export target = a plugin under tools/export-targets/<name>.mjs. 'plain' (default) = the
+// framework-neutral standalone project; other targets (e.g. 'dokiworld') adapt it for a
+// specific host engine by adding/overriding files and injecting into the exported game core.
+const TARGET = targetFlag >= 0 ? argv[targetFlag + 1] : 'plain';
 const REPO = process.cwd();
 const SRC = path.join(REPO, 'src');
-const OUT = path.resolve(outFlag >= 0 ? argv[outFlag + 1] : `export/${gameId}`);
+const OUT = path.resolve(outFlag >= 0 ? argv[outFlag + 1] : `export/${gameId}${TARGET === 'plain' ? '' : '-' + TARGET}`);
 const GAME_SRC_OUT = path.join(OUT, 'src', 'game');
 
 // Alias table (mirror of tsconfig paths). Extend if your repo adds aliases.
@@ -41,6 +47,9 @@ const ALIASES = {
   '@ui/': 'ui/',
   '@net/': 'net/',
 };
+// NOTE: base tsconfig.json + vite.config.ts derive their alias maps from ALIASES above,
+// so adding an alias here propagates to the plain target automatically. The dokiworld
+// vite template lists aliases explicitly — keep it in sync when ALIASES changes.
 
 const isTest = (p) => /\.(test|spec)\.[tj]sx?$/.test(p);
 // A plausible module specifier: relative, node:, or a real package id (no spaces/CJK/punctuation).
@@ -308,6 +317,37 @@ async function main() {
     await fs.mkdir(path.dirname(dest), { recursive: true });
     await fs.writeFile(dest, make({ runtime, entryImport, mountTakesHost }));
     if (rel === 'run.sh') await fs.chmod(dest, 0o755);
+  }
+
+  // ── export target plugin (adapt the plain export for a specific host engine) ──────
+  if (TARGET !== 'plain') {
+    const pluginPath = path.join(REPO, 'tools', 'export-targets', `${TARGET}.mjs`);
+    let plugin;
+    try { plugin = (await import(pathToFileURL(pluginPath).href)).default; }
+    catch { console.error(`✗ unknown export target '${TARGET}' (no tools/export-targets/${TARGET}.mjs)`); process.exit(1); }
+    if (plugin.supportedGames && !plugin.supportedGames.includes(gameId)) {
+      console.error(`✗ target '${TARGET}' does not support ${gameId} (supported: ${plugin.supportedGames.join(', ')})`);
+      process.exit(1);
+    }
+    const ctx = { gameId, COMP, entryImport, mountTakesHost, OUT };
+    // 1) add/override files (bridge, entry, wrapper, vite config, …)
+    for (const [rel, content] of Object.entries(plugin.files?.(ctx) ?? {})) {
+      const dest = path.join(OUT, rel);
+      await fs.mkdir(path.dirname(dest), { recursive: true });
+      await fs.writeFile(dest, content);
+    }
+    // 2) anchored injections into the exported game core (must match exactly once each)
+    for (const edit of plugin.patchGame?.(ctx) ?? []) {
+      const abs = path.join(OUT, edit.file);
+      const src = await fs.readFile(abs, 'utf8');
+      const occurrences = src.split(edit.find).length - 1;
+      if (occurrences !== 1) {
+        console.error(`✗ target '${TARGET}' patch anchor matched ${occurrences}× (need 1) in ${edit.file}:\n    ${edit.find.slice(0, 80)}…`);
+        process.exit(1);
+      }
+      await fs.writeFile(abs, src.replace(edit.find, () => edit.replace));
+    }
+    console.log(`  applied export target: ${plugin.label ?? TARGET}`);
   }
 
   console.log(`✔ wrote ${path.relative(REPO, OUT)}`);
