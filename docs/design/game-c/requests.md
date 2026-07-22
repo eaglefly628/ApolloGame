@@ -60,6 +60,11 @@
 > **修**（`game-session.ts aiDecide`）：`raiseTo(r, desired)=Math.max(r.min, Math.min(r.max, desired))` 夹进合法区间 [min,max]（AI 是行动者·必须自出合法·不能靠防御 no-op 兜=那会卡住牌局）；两处加注（面注/可过）同走。**只在旧「本该崩」的分支改变行为·seed42 既过剧本零扰动**（6 本 conformance 重跑仍绿）。
 > **钉死**：`game-session.test.ts` 加「会话层守恒 + 健壮 fuzz」（500 局随机·主角随机行动+随机典当+AI 逐步·断言 Σ栈全程守恒·必终局·AI 出牌恒合法即零崩）。与 REQ-C-108②（hero 输入侧防御 no-op）互补：AI 侧=永不产非法（夹取）·hero 侧=容非法输入（no-op）。
 
+### REQ-C-111 · [2026-07-22] · Lead 验收中发现 · **主干全量 vitest 红**：vendor.test 断言 62 条 vs 索引实有 90 条（自救 28 SVG 未同步测试即推送） · status: 🔴 open·**指派 PE-C 即修** · 优先级: **P1（阻全员全量门禁·当日清）** · 类型: 门禁纪律欠账（game-c 域）
+> **实证（Lead 2026-07-22 于 origin tip）**：`src/games/game-c/vendor.test.ts`「索引合法：62 条」失败（expected 90 to be 62）。根因=`game-c-art-gen.mjs` 自救把 28 条占位 SVG 写进 `index.json`（62→90）但 vendor 测试未同步——**推送时门禁必已红**（scoped-gate 单游戏面会跑本测），违「全绿才推」。
+> **修法二选一（PE-C 自裁）**：a) 测试断言更新为分解式（62 vendor + 28 placeholder=90·并断言两类各自计数与溯源字段，别只改总数糊过去）；b) 占位条目拆到独立 index（vendor 库不变式保 62）。**修完附全量 vitest 绿证据再推。**
+> **问责定性（照制度只问流程）**：门本身咬得住（单游戏面即跑该测）——缺口在「推送前跑门」仍靠自觉、无服务端强制；此事记为 CI 服务端门禁议题（owner 决策仍挂起）的新实证。
+
 ### REQ-C-110 · [报 PUI·工具盲区] ui-audit 对比度量不了「渐变填充」→ 牌面/金键假阳 · [2026-07-18] · 提出人 PE-C（2D 转向 check-ui 暴露）→ PUI（ui-audit/基座控件）· status: open · 优先级: P3（假阳·不阻断真交付·工具准度） · 类型: 审计工具盲区（跨游戏·非单游戏）
 > **现象**：`tools/ui-audit.mjs` 对比度检查「取 computed color vs 逐层向上第一个**不透明** backgroundColor」——`PlayingCard` 'light' 白牌面 + `gold-sheen` 等 FillPreset 都是**渐变**（无实 backgroundColor），审计穿透到暗桌呢/页底 → 黑/红点数判 1.15、金键 ink 暗字判 1.1（硬失败）。**实际高对比可读**（白牌面黑红点数、金键压暗字·截图 `2d-*.png` 目击）。
 > **同先例**：game-a 亦 PlayingCard 假阳（其 audit exit 1·已报 A-007 系overlap侧）；此为**对比侧**同根盲区·跨 game-a/game-c。
