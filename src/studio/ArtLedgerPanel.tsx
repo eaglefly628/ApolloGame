@@ -19,7 +19,9 @@ interface Hist { readonly action?: string; readonly at?: string; readonly assetI
 export interface LedgerRow {
   readonly no: string;
   readonly kind: string;
-  readonly slot: { entity: string; component: string; field: string };
+  readonly desc?: string; // 人读短描述（authored-inventory 台账有·如 game-c；derive 线无）
+  readonly slot?: { entity: string; component: string; field: string }; // derive 线（manifest 推导·game-q）
+  readonly ref?: { mechanism?: string; component?: string; field?: string; resolver?: string; servedPath?: string }; // authored-inventory 线（声明式台账·game-c）
   readonly query: string;
   readonly prompt?: string; // 回填的完整提示词（skinKey 行有·needs-art 行 null）
   readonly placeholder?: { ref?: string; current?: string; source?: string; count?: number };
@@ -58,6 +60,68 @@ function swatchDataUri(r: LedgerRow): string | null {
       : `<polygon points='23,3 40,13 40,33 23,43 6,33 6,13' fill='${color}'/>`; // polygon（含 hex/diamond）→ 六边形
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='46' height='46' viewBox='0 0 46 46'>${inner}</svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+// 类目色底（占位签背景·按 kind 给个可辨认的低饱和色调 + 前景色）：一眼分清纹理/精灵/背景/3D。未知 kind → 青瓷回退。
+const KIND_TINT: Record<string, { bg: string; fg: string }> = {
+  texture: { bg: SHELL.violetWash, fg: SHELL.violet }, // 黛紫=纹理/材质
+  sprite: { bg: SHELL.jadeWash, fg: SHELL.jade },      // 青瓷=精灵
+  bg: { bg: SHELL.goldWash, fg: SHELL.gold },          // 淡金=背景
+  model3d: { bg: SHELL.okWash, fg: SHELL.ok },         // 绿=3D
+};
+const kindTint = (kind: string): { bg: string; fg: string } => KIND_TINT[kind] ?? { bg: SHELL.jadeWash, fg: SHELL.sub };
+// fileless 行的人读描述（占位签正文）：优先短 desc → query → slot/ref 组件名 → 编号兜底。
+const rowDesc = (r: LedgerRow): string => r.desc || r.query || r.slot?.entity || r.ref?.component || r.no;
+
+// ═══ 缩略图格（REQ-ARTLIB·平台侧兜底·跨游戏受益）═══
+// 优先渲真图；真图 404 → onError 落程序占位签（免 fs 探测）；status placeholder/tbf 且无真图（fileless）→ 直渲占位签。
+// 占位签 = 类目色底 + desc 文案 + status 标签（一眼可辨「待产占位行」·永不空白）。needs-art 等仍走原色块/图标回退。
+// ⚠ 显示层专用：不写文件、不入台账、不改行状态（MOCK 债照记）。
+function ThumbCell({ r, height = 96 }: { r: LedgerRow; height?: number }): React.ReactElement {
+  const [imgErr, setImgErr] = useState(false);
+  const thumb = thumbUrl(r);
+  useEffect(() => { setImgErr(false); }, [thumb]); // URL 变（如重生成后热替换）→ 重试加载
+  const fileless = r.status === 'placeholder' || r.status === 'tbf';
+  const boxBase: React.CSSProperties = { width: '100%', height, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: `1px solid ${SHELL.line}` };
+  if (thumb && !imgErr) {
+    return (
+      <div style={{ ...sChecker, ...boxBase }}>
+        <img src={thumb} alt={r.no} onError={() => setImgErr(true)} style={{ maxWidth: '92%', maxHeight: '92%', imageRendering: 'pixelated' }} />
+      </div>
+    );
+  }
+  if (fileless || imgErr) {
+    const t = kindTint(r.kind);
+    const label = r.status === 'tbf' ? '待补图' : imgErr ? '缺图·占位' : '占位·待产';
+    return (
+      <div data-placeholder-sign="1" title={`${rowDesc(r)}（${label}·平台占位·未生成美术）`} style={{ ...boxBase, background: t.bg, border: `1px dashed ${t.fg}`, flexDirection: 'column', gap: 4, padding: 6, textAlign: 'center' }}>
+        <span style={{ fontSize: 20, opacity: 0.6 }}>{r.kind === 'model3d' ? '🧊' : '🖼'}</span>
+        <span style={{ fontSize: 9.5, color: t.fg, fontWeight: 600, lineHeight: 1.25, maxHeight: 24, overflow: 'hidden' }}>{rowDesc(r)}</span>
+        <span style={{ ...sBadge('dim'), fontSize: 8 }}>{label}</span>
+      </div>
+    );
+  }
+  const swatch = swatchDataUri(r);
+  return (
+    <div style={{ ...sChecker, ...boxBase }}>
+      {swatch ? <img src={swatch} alt={r.query} title="占位（当前程序化色块·未生成美术）" style={{ maxWidth: '58%', maxHeight: '58%' }} />
+        : <span style={{ fontSize: 30, opacity: 0.55 }}>{r.kind === 'model3d' ? '🧊' : '🎨'}</span>}
+    </div>
+  );
+}
+
+// 详情并排预览格：真图 404 时退回文字描述（不留破图·同 ThumbCell 兜底口径）。
+function PreviewBox({ lab, img, desc }: { lab: string; img: string | null; desc: string }): React.ReactElement {
+  const [imgErr, setImgErr] = useState(false);
+  useEffect(() => { setImgErr(false); }, [img]);
+  return (
+    <div style={{ flex: 1 }}>
+      <div style={{ ...sLabel, marginBottom: 3 }}>{lab}</div>
+      <div style={{ ...sChecker, height: 88, borderRadius: 6, border: `1px solid ${SHELL.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', fontSize: 10, color: SHELL.dim, padding: 4, textAlign: 'center' }}>
+        {img && !imgErr ? <img src={img} alt={lab} onError={() => setImgErr(true)} style={{ maxWidth: '90%', maxHeight: '90%', imageRendering: 'pixelated' }} /> : <span style={{ wordBreak: 'break-all' }}>{desc}</span>}
+      </div>
+    </div>
+  );
 }
 
 // ═══ 五步流程条（owner 2026-07-10「工作流放进 UI·每步 double verify」）═══
@@ -241,20 +305,16 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
           {loading ? <div style={{ color: SHELL.dim }}>加载台账…</div>
             : rows.length === 0 ? <div style={{ color: SHELL.dim, fontSize: 13 }}>{kind === 'builtin' ? '编译期游戏未初始化美术库——照 game-q 样板跑一次 requirements 推导脚本（见交接档 game-q 节）' : '无台账（自动初始化失败——确认 library 卡带 manifest 可读后点 ↻）'}</div>
               : rows.map((r) => {
-                const b = SOURCE_BADGE(r); const thumb = thumbUrl(r); const swatch = swatchDataUri(r); const active = selNo === r.no;
+                const b = SOURCE_BADGE(r); const active = selNo === r.no; const entity = r.slot?.entity || r.ref?.component || r.no;
                 return (
                   <div key={r.no} onClick={() => { setSelNo(r.no); setRegenPrompt(r.prompt || r.query || ''); setSwapId(''); }} style={{ width: 132, padding: 8, borderRadius: 9, cursor: 'pointer', background: active ? SHELL.jadeWash : 'rgba(255,255,255,0.02)', border: `1px solid ${active ? SHELL.jadeLine : SHELL.line}`, display: 'flex', flexDirection: 'column', gap: 5 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <span style={{ fontFamily: SHELL.fontMono, fontSize: 11, color: SHELL.jade, fontWeight: 700 }}>{r.no}</span>
                       <span style={{ ...sBadge(b.tone), fontSize: 9, marginLeft: 'auto' }}>{b.text}</span>
                     </div>
-                    <div style={{ ...sChecker, width: '100%', height: 96, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: `1px solid ${SHELL.line}` }}>
-                      {thumb ? <img src={thumb} alt={r.no} style={{ maxWidth: '92%', maxHeight: '92%', imageRendering: 'pixelated' }} />
-                        : swatch ? <img src={swatch} alt={r.query} title="占位（当前程序化色块·未生成美术）" style={{ maxWidth: '58%', maxHeight: '58%' }} />
-                          : <span style={{ fontSize: 30, opacity: 0.55 }}>{r.kind === 'model3d' ? '🧊' : '🎨'}</span>}
-                    </div>
-                    <div title={r.query} style={{ fontSize: 11, color: SHELL.sub, fontWeight: 600, lineHeight: 1.25, maxHeight: 28, overflow: 'hidden' }}>{r.query || r.slot.entity}</div>
-                    <div style={{ fontSize: 9, color: SHELL.dim, wordBreak: 'break-all', lineHeight: 1.2, maxHeight: 22, overflow: 'hidden' }}>{r.slot.entity} · {r.kind}{r.placeholder?.count && r.placeholder.count > 1 ? ` ×${r.placeholder.count}` : ''}</div>
+                    <ThumbCell r={r} />
+                    <div title={r.query} style={{ fontSize: 11, color: SHELL.sub, fontWeight: 600, lineHeight: 1.25, maxHeight: 28, overflow: 'hidden' }}>{r.desc || r.query || entity}</div>
+                    <div style={{ fontSize: 9, color: SHELL.dim, wordBreak: 'break-all', lineHeight: 1.2, maxHeight: 22, overflow: 'hidden' }}>{entity} · {r.kind}{r.placeholder?.count && r.placeholder.count > 1 ? ` ×${r.placeholder.count}` : ''}</div>
                   </div>
                 );
               })}
@@ -270,18 +330,10 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
               {/* ⑤ 并排预览：占位 vs 现用 */}
               {(() => {
                 const cur = thumbUrl(sel);
-                const box = (lab: string, img: string | null, desc: string) => (
-                  <div style={{ flex: 1 }}>
-                    <div style={{ ...sLabel, marginBottom: 3 }}>{lab}</div>
-                    <div style={{ ...sChecker, height: 88, borderRadius: 6, border: `1px solid ${SHELL.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', fontSize: 10, color: SHELL.dim, padding: 4, textAlign: 'center' }}>
-                      {img ? <img src={img} alt={lab} style={{ maxWidth: '90%', maxHeight: '90%', imageRendering: 'pixelated' }} /> : <span style={{ wordBreak: 'break-all' }}>{desc}</span>}
-                    </div>
-                  </div>
-                );
                 return (
                   <div style={{ display: 'flex', gap: 8 }}>
-                    {box('占位/原始', swatchDataUri(sel), sel.placeholder?.current || sel.placeholder?.ref || '—')}
-                    {box('现用', cur, cur ? '' : (sel.gen?.localId || '待生成'))}
+                    <PreviewBox lab="占位/原始" img={swatchDataUri(sel)} desc={sel.placeholder?.current || sel.placeholder?.ref || rowDesc(sel)} />
+                    <PreviewBox lab="现用" img={cur} desc={sel.gen?.localId || rowDesc(sel) || '待生成'} />
                   </div>
                 );
               })()}
