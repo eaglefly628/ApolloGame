@@ -4,7 +4,9 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame, sizeForSpec } from './art-replace.mjs';
+import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame, sizeForSpec, genSizeForTarget, resizeImageTo } from './art-replace.mjs';
+import { encodePng } from './ai-gen.mjs';
+import { decodePng } from './asset-matte.mjs';
 import { STYLE_PACKS, STYLE_PACK_IDS } from './style-packs.mjs';
 
 const MANIFEST = {
@@ -66,14 +68,33 @@ describe('T1 ③④ 风格方言 + 缓存 + palette-snap', () => {
 });
 
 describe('T2I 尺寸 + debug 回显（owner 2026-07-22「按钮渲成整场景·要知道传了什么」）', () => {
-  it('sizeForSpec：bg/splash/model→null（默认大图）·UI 有 spec→保比例夹 [512,2048]·无 spec→null', () => {
+  it('genSizeForTarget：放大到面积 ≥ 921600（火山实测最低面积）·保长宽比·单边 ≤ 4096', () => {
+    for (const [w, h] of [[64, 64], [48, 64], [256, 96], [1280, 720], [100, 100], [512, 512]]) {
+      const g = genSizeForTarget(w, h);
+      expect(g.w * g.h).toBeGreaterThanOrEqual(921600);           // 面积达标（否则火山 InvalidParameter 拒）
+      expect(Math.max(g.w, g.h)).toBeLessThanOrEqual(4096);       // 单边顶
+      expect(Math.abs(g.w / g.h - w / h)).toBeLessThan(0.1);      // 长宽比保持（round8 容差）
+      expect(g.size).toBe(`${g.w}x${g.h}`);
+    }
+  });
+
+  it('sizeForSpec：非场景 kind 面积达标·bg/splash/model/无 spec → null', () => {
     expect(sizeForSpec({ kind: 'bg', spec: { w: 1280, h: 720 } })).toBeNull();
     expect(sizeForSpec({ kind: 'splash', spec: { w: 1080, h: 1920 } })).toBeNull();
     expect(sizeForSpec({ kind: 'model3d', spec: { w: 100, h: 100 } })).toBeNull();
-    expect(sizeForSpec({ kind: 'sprite', spec: { w: 64, h: 64 } })).toBe('1024x1024'); // 方→长边归 1024
-    expect(sizeForSpec({ kind: 'sprite', spec: { w: 48, h: 64 } })).toBe('768x1024');   // 保 3:4
-    expect(sizeForSpec({ kind: 'sprite', spec: { w: 256, h: 96 } })).toBe('1024x512');  // 极扁·短边夹到 512 下限
-    expect(sizeForSpec({ kind: 'sprite' })).toBeNull(); // 无 spec
+    expect(sizeForSpec({ kind: 'sprite' })).toBeNull();
+    const [w, h] = sizeForSpec({ kind: 'sprite', spec: { w: 256, h: 96 } }).split('x').map(Number);
+    expect(w * h).toBeGreaterThanOrEqual(921600);
+  });
+
+  it('resizeImageTo：真 PNG 缩到目标尺寸（scale-back）·目标≥源=原图·非 PNG=安全兜底', () => {
+    // 造一张 200×80 RGB PNG（假图·像素随意）
+    const big = encodePng(200, 80, Buffer.alloc(200 * 80 * 3, 128));
+    const small = resizeImageTo(big, 100, 40);
+    const dec = decodePng(small);
+    expect([dec.w, dec.h]).toEqual([100, 40]);        // 真缩到目标
+    expect(resizeImageTo(big, 400, 160)).toBe(big);   // 目标≥源→不放大·返回原 buffer
+    expect(resizeImageTo(Buffer.from('not a png'), 10, 10)).toBeInstanceOf(Buffer); // decode 失败→原 buffer 不炸
   });
 
   it('batchGenerate summary.debug：每行回显完整 prompt + size + curl 命令行（mock 也带·key 打码）', () => withRoot(async (root) => {

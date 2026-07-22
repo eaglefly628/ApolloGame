@@ -20,7 +20,8 @@
 > 1. 风格屏加**风格下拉/chips**：列 `/api/art/style-packs`（含 `local` 标位·自建风格可标「自建·可删」）。
 > 2. **「+ 新建风格」表单**：名称 + 中/英风格提示词 + 调色板(取色) + provider(qwen/seedream…) + 选填 uiPrompt → `POST /api/art/styles`；自建风格旁「删除」→ `POST /api/art/styles/delete`。
 > 3. **「🎭 一键 Apply 此风格」按钮**：对当前游戏调 `/api/art/batch`（选定 packId）[+ 卡带线 `/api/art/replace`] → 全部美术按该风格重生成换掉；忙碌态 + 结果回显（复用现 artResultBox）。
-> **边界**：引擎（`style-packs.mjs`/`art-replace.mjs`/`art_replace.py`/`server.py`）=Lead ✅ done；工坊 UI=PST；各内置包 uiPrompt 变体补全=PA。
+> 4. **手动尺寸输入（owner 2026-07-22·「AI 给的尺寸不精确·让我改」）**：详情卡加「目标尺寸 WxH」输入（缺省=行原生 spec）→ 重新生成时传 `size` 给 `/api/art/regenerate`。**引擎已 done**：`resetRow` 存 `row.targetSize`·生成按面积放大到火山 ≥921600 下限·回来 scale-back 到目标（`resizeImageTo`）·`/api/art/regenerate {size:'WxH'}` 已透传。PST 只加输入框 + 传参。
+> **边界**：引擎（`style-packs.mjs`/`art-replace.mjs`/`art_replace.py`/`server.py`/`t2_replace.py`）=Lead ✅ done；工坊 UI（风格下拉+新建表单+Apply 按钮+尺寸输入）=PST；各内置包 uiPrompt 变体补全=PA。
 
 ### REQ-STYLESET-风格库 apollo-toon · 迪士尼×Supercell×中国水墨混风·全类型 house style · [2026-07-16] · owner 拍板（全形态换装非调色·先现装可视版·其他风格收敛）→ **指派：PA（M0 台账底座）+ PUI（M0.5 现装可视版·先行）** · status: **M0 ✅ PASS + M0.5 ✅ PASS（Lead 对抗性验收 2026-07-16）；M1 试产 open·等真 key（连 REQ-AIGEN 卡口）** · 优先级: P1 · 类型: 引擎级风格资产库 + UI 基座消费
 > 图纸唯一真相=`docs/design/styleset-artlib-plan-2026-07-16.md`（§二 三增量·§六 首批清单 spec + M0/M0.5 交付边界·风格锚 v2 单一真相在风格包·**IP 红线：锚用描述词不写厂牌词**）。M1 试产/M2 建库等真 key（连 REQ-AIGEN 卡口）；M3 对齐（examples 进 game-i）；M4 D/G 出口游戏换装。完工各标 ✅ 待 Lead 对抗性验收（真浏览器截图必查）。

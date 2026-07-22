@@ -14,6 +14,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { ADAPTERS, encodePng, curlFor } from './ai-gen.mjs';
+import { decodePng, encodePngRGBA } from './asset-matte.mjs';
 import { STYLE_PACKS, listStylePacks, saveLocalStyle, deleteLocalStyle } from './style-packs.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -401,43 +402,95 @@ const provFor = (row, pack, override = null) => {
   return TWO_D_PROVIDERS.includes(pack.params.provider) ? pack.params.provider : 'qwen';
 };
 
+// 文生图尺寸约束（owner 2026-07-22 实测火山方舟 Seedream）：**图像面积 ≥ 921600 px**（≈960×960·非按边·
+// 面积不足即 InvalidParameter 拒绝）。故生成时按目标比例**放大到面积达标**、回来再 scale-back 到目标。
+// MIN_AREA/GEN_MAX 可 env 调（不同模型下限不一·debug 回显真实 size）。
+const MIN_AREA = Number(process.env.ARK_GEN_MIN_AREA) || 921600;
+const GEN_MAX = Number(process.env.ARK_GEN_MAX) || 4096; // 单边安全上限（防极端比爆尺寸）
+const round8 = (n) => Math.max(8, Math.round(n / 8) * 8);
+
+/** 目标尺寸 → 生成尺寸：保长宽比·放大到面积 ≥ MIN_AREA（单边硬顶 GEN_MAX·含 6% 余量防 round8 掉线下）。返回 {size,w,h}。导出供单测。 */
+export function genSizeForTarget(w, h) {
+  const want = MIN_AREA * 1.06;
+  const scale = (w * h) < want ? Math.sqrt(want / (w * h)) : 1; // 已够大不放大
+  let gw = round8(w * scale), gh = round8(h * scale);
+  const over = Math.max(gw, gh) / GEN_MAX;
+  if (over > 1) { gw = round8(gw / over); gh = round8(gh / over); } // 极端比触顶（罕见·可能略低于面积线）
+  return { size: `${gw}x${gh}`, w: gw, h: gh };
+}
+
 /**
- * 目标生成尺寸（按行 spec 推·防 UI 元素被塞进 2K 方图渲成整场景）：
- * - bg/splash（全屏）→ null（用 adapter 默认大图·2K）；
- * - UI/sprite/texture 有 spec w×h → 保长宽比、长边归一 ~1024、各边夹 [512,2048]、8 的倍数 → `WxH`；
- * - 无 spec → null（不强加·用默认）。
- * 导出供单测 + debug 回显。
+ * 生成尺寸（按行 spec 推）：bg/splash/model→null（adapter 默认大图·全屏本就大）；
+ * 其余有 spec w×h → 按目标放大到 GEN_MIN（保长宽比·`genSizeForTarget`）。无 spec→null。导出供 debug 回显。
  */
 export function sizeForSpec(row) {
   if (row.kind === 'bg' || row.kind === 'splash' || row.kind === 'model3d') return null;
   const w = row.spec?.w, h = row.spec?.h;
   if (typeof w !== 'number' || typeof h !== 'number' || w <= 0 || h <= 0) return null;
-  const k = 1024 / Math.max(w, h);
-  const clamp = (n) => Math.min(2048, Math.max(512, Math.round((n * k) / 8) * 8));
-  return `${clamp(w)}x${clamp(h)}`;
+  return genSizeForTarget(w, h).size;
 }
 
-/** 单行产资产（2D：mock→palette-snap+按 spec 尺寸·真调→adapter；3D：tripo/meshy adapter）。返回含 request（供 debug 回显·mock 也带）。 */
-export async function genRowAsset(row, pack, { mock = true, apiKey = null, gameStyle = '', provider: providerOverride = null } = {}) {
+/**
+ * 面积平均降采样：把 PNG buffer 缩到 (tw,th)（scale-back·owner 2026-07-22「放大生成→缩回需求尺寸」）。
+ * 只缩小（目标≥源=不放大·避免糊·返回原图）；decode 失败（16-bit/隔行等非支持 PNG）=安全返回原 buffer（不炸生成）。
+ * 导出供单测。
+ */
+export function resizeImageTo(buffer, tw, th) {
+  if (!(tw > 0 && th > 0)) return buffer;
+  let img;
+  try { img = decodePng(buffer); } catch { return buffer; }
+  const { w: sw, h: sh, rgba } = img;
+  if (tw >= sw && th >= sh) return buffer; // 不放大（保留原分辨率）
+  const out = Buffer.alloc(tw * th * 4);
+  for (let y = 0; y < th; y++) {
+    const y0 = Math.floor((y * sh) / th), y1 = Math.max(y0 + 1, Math.floor(((y + 1) * sh) / th));
+    for (let x = 0; x < tw; x++) {
+      const x0 = Math.floor((x * sw) / tw), x1 = Math.max(x0 + 1, Math.floor(((x + 1) * sw) / tw));
+      let r = 0, g = 0, b = 0, a = 0, n = 0;
+      for (let sy = y0; sy < y1; sy++) for (let sx = x0; sx < x1; sx++) {
+        const o = (sy * sw + sx) * 4; r += rgba[o]; g += rgba[o + 1]; b += rgba[o + 2]; a += rgba[o + 3]; n++;
+      }
+      const o = (y * tw + x) * 4;
+      out[o] = Math.round(r / n); out[o + 1] = Math.round(g / n); out[o + 2] = Math.round(b / n); out[o + 3] = Math.round(a / n);
+    }
+  }
+  return encodePngRGBA(tw, th, out);
+}
+
+/** 目标最终尺寸：手动覆盖 targetSize > 行 row.targetSize（工坊存的覆盖）> 行 spec。无=null。 */
+function targetSizeOf(row, override) {
+  const pick = (o) => (o && o.w > 0 && o.h > 0) ? { w: o.w | 0, h: o.h | 0 } : null;
+  return pick(override) || pick(row.targetSize) || pick(row.spec) || null;
+}
+
+/**
+ * 单行产资产（2D：mock→palette-snap+按目标尺寸·真调→放大生成到 GEN_MIN 后 scale-back 回目标；3D：adapter）。
+ * targetSize 覆盖（手动改尺寸·owner 2026-07-22）：override > row.targetSize > row.spec。返回含 request（debug 回显·mock 也带）。
+ */
+export async function genRowAsset(row, pack, { mock = true, apiKey = null, gameStyle = '', provider: providerOverride = null, targetSize = null } = {}) {
   const provider = provFor(row, pack, providerOverride);
   const prompt = dialectPrompt(row, pack, gameStyle);
   const ck = cacheKey(provider, prompt, pack.params);
-  const size = sizeForSpec(row);
+  const isScene = row.kind === 'bg' || row.kind === 'splash' || row.kind === 'model3d';
+  const target = targetSizeOf(row, targetSize);            // 最终尺寸
+  const size = (target && !isScene) ? genSizeForTarget(target.w, target.h).size : null; // 生成尺寸（放大到 GEN_MIN）
   if (row.kind === 'model3d') {
     const g = await ADAPTERS[provider].generate(prompt, { mock, apiKey });
     return { buffer: g.buffer, ext: 'glb', provider, model: g.model, mock: !!g.mock, prompt, cacheKey: ck, request: g.request ?? null };
   }
   if (mock || !apiKey) {
-    // mock 也向 adapter 要一次「本该发的请求」用于 debug 回显（不产真图·免花 key）；像素仍走确定性 mock+palette-snap。
-    const w = row.spec?.w ?? 64, h = row.spec?.h ?? 64;
+    // mock 也向 adapter 要一次「本该发的请求」用于 debug 回显（不产真图·免花 key）；像素仍走确定性 mock+palette-snap·直接产目标尺寸。
+    const w = target?.w ?? 64, h = target?.h ?? 64;
     let request = null;
     try { request = (await ADAPTERS[provider].generate(prompt, { mock: true, apiKey: null, size }))?.request ?? null; } catch { /* adapter 无 request=旧适配器·忽略 */ }
     const rgb = mockRawRgb(prompt, w, h, pack.post.pixelGrid); // 生成
     if (pack.post.paletteSnap) paletteSnapRgb(rgb, pack.palette); // ④ 后处理（mock 同走）
     return { buffer: encodePng(w, h, rgb), ext: 'png', provider, model: pack.params.model + '·mock', mock: true, prompt, cacheKey: ck, request };
   }
-  const g = await ADAPTERS[provider].generate(prompt, { mock: false, apiKey, size }); // 真调（palette-snap on real=冲刺后精修）
-  return { buffer: g.buffer, ext: 'png', provider, model: g.model, mock: false, prompt, cacheKey: ck, request: g.request ?? null };
+  const g = await ADAPTERS[provider].generate(prompt, { mock: false, apiKey, size }); // 真调（放大生成到 GEN_MIN）
+  // scale-back：把返回大图缩回目标尺寸（非场景 kind·有 target）；decode 失败/无 target=保留原图（安全兜底）。
+  const buffer = (target && !isScene) ? resizeImageTo(g.buffer, target.w, target.h) : g.buffer;
+  return { buffer, ext: 'png', provider, model: g.model, mock: false, prompt, cacheKey: ck, request: g.request ?? null };
 }
 
 // ═══ ④ 批量生成器（并发留给 apollo 层·此处确定性顺序·缓存/续跑/探针）═══
@@ -547,13 +600,22 @@ export function applyReplacements(manifest, ledger, { allowMock = false } = {}) 
 function pushHistory(row, entry) { if (!Array.isArray(row.history)) row.history = []; row.history.push(entry); }
 
 /** 单行打回待生成（点名「重新生成」·可改 query/prompt）。批处理会据 status 只重跑它、其余命中缓存不动。 */
-export function resetRow(ledger, no, { query, at = new Date().toISOString() } = {}) {
+export function resetRow(ledger, no, { query, targetSize, at = new Date().toISOString() } = {}) {
   const row = ledger.rows.find((r) => r.no === no);
   if (!row) return { ok: false, error: `无此编号: ${no}` };
   pushHistory(row, { action: 'regen', at, prevQuery: row.query, newQuery: (typeof query === 'string' && query.trim()) ? query.trim() : row.query });
   if (typeof query === 'string' && query.trim()) row.query = query.trim();
+  // 手动尺寸覆盖（owner 2026-07-22）：{w,h}=存该行 targetSize（生成放大到 GEN_MIN·回缩到此）；null=清除回 spec。
+  if (targetSize && targetSize.w > 0 && targetSize.h > 0) row.targetSize = { w: targetSize.w | 0, h: targetSize.h | 0 };
+  else if (targetSize === null) delete row.targetSize;
   row.status = 'placeholder'; row.gen = null; row.provenance = null;
   return { ok: true, row };
+}
+
+/** 解析 `WxH` 尺寸串 → {w,h}（非法=undefined）。CLI/端点共用。 */
+export function parseSize(s) {
+  const m = /^(\d+)x(\d+)$/i.exec(String(s || '').trim());
+  return m ? { w: +m[1], h: +m[2] } : undefined;
 }
 
 /** 换全部行（换皮用·同一列表整批重跑）。 */
@@ -623,10 +685,11 @@ async function run(argv) {
   if (cmd === 'fill') {
     const no = argv[2], packId = argv[3];
     const qi = argv.indexOf('--query'); const query = qi >= 0 ? argv[qi + 1] : undefined;
+    const szi = argv.indexOf('--size'); const targetSize = szi >= 0 ? parseSize(argv[szi + 1]) : undefined; // 手动尺寸覆盖 WxH
     const mock = argv.includes('--mock');
     const ledger = readJson(ledgerFile(ROOT, slug), null);
     if (!ledger) { console.error(`无台账: public/games/${slug}/art/art-ledger.json`); process.exit(1); }
-    const rr = resetRow(ledger, no, { query });
+    const rr = resetRow(ledger, no, { query, targetSize });
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
     const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg, debug });
     if (!b.ok) { console.log(JSON.stringify(b)); process.exit(1); }
@@ -658,10 +721,11 @@ async function run(argv) {
   if (cmd === 'regen') {
     const no = argv[2], packId = argv[3];
     const qi = argv.indexOf('--query'); const query = qi >= 0 ? argv[qi + 1] : undefined;
+    const szi = argv.indexOf('--size'); const targetSize = szi >= 0 ? parseSize(argv[szi + 1]) : undefined; // 手动尺寸覆盖 WxH
     const mock = argv.includes('--mock');
     const mf = readJson(manifestFile(ROOT, slug), null); const ledger = readJson(ledgerFile(ROOT, slug), null);
     if (!mf || !ledger) { console.error('缺 manifest 或台账'); process.exit(1); }
-    const rr = resetRow(ledger, no, { query });
+    const rr = resetRow(ledger, no, { query, targetSize });
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
     const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg, debug });
     if (!b.ok) { console.log(JSON.stringify(b)); process.exit(1); }

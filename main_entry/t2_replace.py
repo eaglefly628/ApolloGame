@@ -132,6 +132,10 @@ def handle_art_regenerate(body: dict) -> dict:
     prov = str(body.get('provider', '')).strip()
     if prov and GEN_PROVIDER_RE.fullmatch(prov):
         args += ['--provider', prov]
+    # 手动尺寸覆盖（owner 2026-07-22）：{size:'WxH'} → 该行 targetSize（生成放大到面积线·回缩到此）；防注入=严格 WxH。
+    size = str(body.get('size', '')).strip()
+    if size and re.fullmatch(r'\d{1,5}x\d{1,5}', size):
+        args += ['--size', size]
     if mock:
         args.append('--mock')
     res = _art_replace_cli(args)
