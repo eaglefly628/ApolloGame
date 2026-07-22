@@ -54,7 +54,7 @@
   {
    "no": "art-002",
    "skinKey": "game-c/table/felt-albedo",
-   "desc": "呢面绒布 albedo（紫绒+桌心暖光池）",
+   "desc": "呢面绒布 albedo（绿绒·可平铺 tile）",
    "kind": "texture",
    "ref": {
     "mechanism": "index",
@@ -63,9 +63,9 @@
     "resolver": "build3d table-felt Material3D.map",
     "servedPath": "/games/game-c/art/table/felt-albedo.svg"
    },
-   "query": "purple velvet poker felt cloth, elliptical racetrack table surface, warm light pool at center, fine woven nap, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
+   "query": "green velvet poker felt cloth, seamless tileable texture, fine woven nap, high resolution, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "素坯：Mesh3D 纯 tint(0x6a4462)+暖 point 光",
+    "current": "素坯：Mesh3D 纯 tint(0x2e7d4e)+暖 point 光·tiling repeat 平铺",
     "source": "procedural-placeholder",
     "count": 1,
     "instances": [
@@ -73,11 +73,11 @@
     ]
    },
    "spec": {
-    "w": 1024,
-    "h": 1024,
+    "w": 2048,
+    "h": 2048,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》呢面绒布 albedo（紫绒+桌心暖光池）·消费=build3d table-felt Material3D.map（art-bible §3·render-only 不进 sim hash）",
+   "context": "game-c《STORY-POKER V2》呢面绒布 albedo（绿绒·可平铺 tile）·消费=build3d table-felt Material3D.map（art-bible §3·render-only 不进 sim hash）",
    "status": "placeholder",
    "gen": {
     "provider": "procedural",
@@ -95,12 +95,12 @@
     "mock": false,
     "note": "夜金 SVG 程序占位·真图到位同 id 热替换（照 §1 统一风格）"
    },
-   "prompt": "呢面 albedo·紫绒+暖光池"
+   "prompt": "呢面 albedo·绿绒·可平铺 tile"
   },
   {
    "no": "art-003",
    "skinKey": "game-c/table/felt-normal",
-   "desc": "呢面法线（天鹅绒织纹）",
+   "desc": "呢面法线（绿绒天鹅绒织纹·可平铺）",
    "kind": "texture",
    "ref": {
     "mechanism": "index",
@@ -109,9 +109,9 @@
     "resolver": "build3d table-felt Material3D.normalMap",
     "servedPath": "/games/game-c/art/table/felt-normal.svg"
    },
-   "query": "velvet cloth weave normal map, tangent-space, subtle fabric bump, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
+   "query": "green velvet cloth weave normal map, seamless tileable, tangent-space, subtle fabric bump, high resolution, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
    "placeholder": {
-    "current": "无（当前纯 tint）",
+    "current": "素坯：surface noise 程序织纹回退·真图就绪覆盖",
     "source": "procedural-placeholder",
     "count": 1,
     "instances": [
@@ -119,11 +119,11 @@
     ]
    },
    "spec": {
-    "w": 1024,
-    "h": 1024,
+    "w": 2048,
+    "h": 2048,
     "transparent": false
    },
-   "context": "game-c《STORY-POKER V2》呢面法线（天鹅绒织纹）·消费=build3d table-felt Material3D.normalMap（art-bible §3·render-only 不进 sim hash）",
+   "context": "game-c《STORY-POKER V2》呢面法线（绿绒天鹅绒织纹·可平铺）·消费=build3d table-felt Material3D.normalMap（art-bible §3·render-only 不进 sim hash）",
    "status": "placeholder",
    "gen": {
     "provider": "procedural",
@@ -141,7 +141,7 @@
     "mock": false,
     "note": "夜金 SVG 程序占位·真图到位同 id 热替换（照 §1 统一风格）"
    },
-   "prompt": "呢面法线·天鹅绒织纹·线性"
+   "prompt": "呢面法线·天鹅绒织纹·可平铺·线性"
   },
   {
    "no": "art-004",

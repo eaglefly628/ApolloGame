@@ -12,8 +12,9 @@ import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assemb
 
 // 色板（STORY-POKER V2 稿·紫调绒面椭圆桌·owner 2026-07-21「美术无限逼近」）——照稿 felt radial 中亮 #7d5570 →
 //   边暗 #281620 取中值 0x5a3a52 做呢面主色（暖顶光在桌心再提亮=warm pool）；rail 稿 #6a4c38→#3e2c1e 木栏（收敛高光防塑感）。
+// FELT（呢面绒布色）owner 2026-07-22「改成绿底天鹅绒」：紫绒 0x6a4462 → 赌桌绿绒 0x2e7d4e（真图就绪由 Art02 albedo 覆盖·此为无图回退底 + 基色）。
 // RAIL（桌边木料色）owner 2026-07-22「更暖更亮」：暗胡桃 0x6f5040 → 暖蜜橡 0xa5703c（提亮 + 偏橙暖·仍木料非塑）。
-const FELT = 0x6a4462, FELT_LO = 0x2a1826, RAIL = 0xa5703c, RAIL_HI = 0xc08a4e;
+const FELT = 0x2e7d4e, FELT_LO = 0x123a24, RAIL = 0xa5703c, RAIL_HI = 0xc08a4e;
 
 // 桌面椭圆（跑道形·长轴 x > 短轴 z·正式赛桌比例）。felt=呢面半径；rail=围栏环半径（略大·墙贴桌缘）。
 // owner 2026-07-21「纵横比跟稿差不多·别让立绘盖住这么大桌」：短轴收窄 → 呢面更扁·屏上 ≈916×502(1.82:1)·上沿下移给立绘 bust 让位。
@@ -72,11 +73,19 @@ export function build3DTableBlueprint(): WorldBlueprint {
     Material3D: { preset: 'wood', color: RAIL, roughness: 0.4, surface: { pattern: 'scratches', tiles: 4, normal: 0.5, rough: 0.35, scale: 1.0 }, map: 'game-c/table/rail-albedo', normalMap: 'game-c/table/rail-normal' },
   };
   // 呢面（椭圆·带静态碰撞体 mass0→筹码落此面堆叠不穿桌）。width=短径×2·scaleX 拉成长椭圆。
-  //   REQ-C-112 接槽：Material3D 呢面贴图槽 game-c/table/felt-albedo（+normal）；无真图=回退 preset matte + color FELT（紫绒·观感近零变）。
+  //   owner 2026-07-22「绿底天鹅绒·高分辨率 + 好 normal/粗糙度·tile 纹理」：改绿绒 + velvet 观感。
+  //   preset matte（介电绒布非金属）+ color 绿 FELT 底 + roughness 0.9（哑光绒面）+ surface noise=无真图时程序化织纹底（真 normal 就绪即覆盖）。
+  //   接槽（owner 提供 tile 纹理）：map=Art02 felt-albedo·normalMap=Art03 felt-normal（velvet 织纹）；tiling.repeat=平铺 tile（非拉伸一张·待见真图微调密度）。
+  //   就绪 ThreeRenderer 按 key 挂上并按 repeat 平铺·mesh 自动重建；无真图=绿绒 + 程序织纹回退。
   entities['table-felt'] = {
     Transform3D: { x: 0, y: FELT_TOP - 0.03, z: 0, scaleX: FELT_RX / FELT_RZ },
     Mesh3D: { shape: 'cylinder', width: FELT_RZ * 2, height: 0.06, frontTint: FELT, edgeTint: FELT_LO },
-    Material3D: { preset: 'matte', color: FELT, map: 'game-c/table/felt-albedo', normalMap: 'game-c/table/felt-normal' },
+    Material3D: {
+      preset: 'matte', color: FELT, roughness: 0.9,
+      surface: { pattern: 'noise', tiles: 6, normal: 0.28, rough: 0.4, scale: 1.5 },
+      map: 'game-c/table/felt-albedo', normalMap: 'game-c/table/felt-normal',
+      tiling: { repeat: 4 },
+    },
     RigidBody3D: { shape: 'cylinder', mass: 0, restitution: 0.18, friction: 0.72 },
   };
 

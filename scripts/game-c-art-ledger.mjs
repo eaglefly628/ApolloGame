@@ -47,10 +47,10 @@ add('game-c/scene/backdrop', 'texture', '夜景背幕（全屏落地窗+城市�
 
 // ── ② 牌桌（隐形碰撞 + 2D 贴图呢面·owner 定）────────────────
 const felt = { mechanism: 'index', component: 'Material3D', field: 'map', resolver: 'build3d table-felt Material3D.map' };
-add('game-c/table/felt-albedo', 'texture', '呢面绒布 albedo（紫绒+桌心暖光池）', felt, 'table/felt-albedo.svg',
-  'purple velvet poker felt cloth, elliptical racetrack table surface, warm light pool at center, fine woven nap', { w: 1024, h: 1024, transparent: false }, '呢面 albedo·紫绒+暖光池', '素坯：Mesh3D 纯 tint(0x6a4462)+暖 point 光');
-add('game-c/table/felt-normal', 'texture', '呢面法线（天鹅绒织纹）', { ...felt, field: 'normalMap', resolver: 'build3d table-felt Material3D.normalMap' }, 'table/felt-normal.svg',
-  'velvet cloth weave normal map, tangent-space, subtle fabric bump', { w: 1024, h: 1024, transparent: false }, '呢面法线·天鹅绒织纹·线性', '无（当前纯 tint）');
+add('game-c/table/felt-albedo', 'texture', '呢面绒布 albedo（绿绒·可平铺 tile）', felt, 'table/felt-albedo.svg',
+  'green velvet poker felt cloth, seamless tileable texture, fine woven nap, high resolution', { w: 2048, h: 2048, transparent: false }, '呢面 albedo·绿绒·可平铺 tile', '素坯：Mesh3D 纯 tint(0x2e7d4e)+暖 point 光·tiling repeat 平铺');
+add('game-c/table/felt-normal', 'texture', '呢面法线（绿绒天鹅绒织纹·可平铺）', { ...felt, field: 'normalMap', resolver: 'build3d table-felt Material3D.normalMap' }, 'table/felt-normal.svg',
+  'green velvet cloth weave normal map, seamless tileable, tangent-space, subtle fabric bump, high resolution', { w: 2048, h: 2048, transparent: false }, '呢面法线·天鹅绒织纹·可平铺·线性', '素坯：surface noise 程序织纹回退·真图就绪覆盖');
 add('game-c/table/rail-albedo', 'texture', '木栏 albedo（胡桃木+皮革软边）', { ...felt, resolver: 'build3d table-base Material3D.map' }, 'table/rail-albedo.svg',
   'dark walnut poker table rail with padded leather bumper, warm highlight, ring strip', { w: 1024, h: 256, transparent: false }, '木栏 albedo·胡桃木+皮革软边', '素坯：Mesh3D 纯 tint(0x6f5040)');
 add('game-c/table/rail-normal', 'texture', '木栏法线（木纹+皮革缝线）', { ...felt, field: 'normalMap', resolver: 'build3d table-base Material3D.normalMap' }, 'table/rail-normal.svg',
