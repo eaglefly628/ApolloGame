@@ -8,10 +8,14 @@ import { SHELL, sBtn, sInput, sLabel } from '../ui/shell-theme.js';
 const API = 'http://localhost:4000';
 
 interface Gatey { state: string; detail: string }
-interface Stage { id: string; title: string; handbook: string; gate: string | null; machine: Gatey; human: Gatey; status: 'ok' | 'warn' | 'fail' | 'dim' }
+interface Stage { id: string; title: string; handbook: string; gate: string | null; machine: Gatey; review: Gatey; human: Gatey; status: 'ok' | 'warn' | 'fail' | 'dim'; outOfOrder?: { at?: string; by?: string; note?: string } | null }
 interface Board { success?: boolean; error?: string; slug?: string; form?: string; concept?: { name?: string; pitch?: string }; stages?: Stage[]; next?: string | null }
 
 const DOT: Record<Stage['status'], string> = { ok: SHELL.ok, warn: SHELL.warn, fail: SHELL.danger, dim: SHELL.faint };
+// 门状态配色（复查门/评分卡·REQ-QC-UI）：ok=绿·fail=红·warn/stale=黄·其余(dim/未复查)=灰。
+const gateColor = (st: string): string => st === 'ok' ? SHELL.ok : st === 'fail' ? SHELL.danger : (st === 'warn' || st === 'stale') ? SHELL.warn : SHELL.dim;
+// 复查门紧凑标记字形（板行一眼看三门）。
+const reviewGlyph = (st: string): string => st === 'ok' ? '复✓' : st === 'fail' ? '复✗' : st === 'dim' ? '复—' : '复⚠';
 
 export function GamePipelinePanel({ slug, title, onBack, onOpenArt }: {
   slug: string;
@@ -75,7 +79,7 @@ export function GamePipelinePanel({ slug, title, onBack, onOpenArt }: {
       <div style={{ padding: '12px 20px', borderBottom: `1px solid ${SHELL.line}`, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 15, fontWeight: 700, color: SHELL.violet }}>🏭 生产流程板</span>
         <span style={{ fontSize: 13, color: SHELL.sub }}>{title || slug}{board?.form ? ` ·（${board.form}）` : ''}</span>
-        <span style={{ fontSize: 11, color: SHELL.dim }}>每步双验：机器门（真跑·证据带内容指纹·文件一动自动过期）+ 人门（review 落账）</span>
+        <span style={{ fontSize: 11, color: SHELL.dim }}>每步三门：机器门（真跑·证据带内容指纹·文件一动自动过期）+ 复查门（另一 session 对抗性复核落账·S7=评分卡）+ 人门（owner 签）</span>
         <button onClick={load} style={{ ...sBtn('ghost'), marginLeft: 'auto' }} title="重新推导看板">↻</button>
         <button onClick={onBack} style={sBtn('ghost')}>← 返回</button>
       </div>
@@ -95,8 +99,9 @@ export function GamePipelinePanel({ slug, title, onBack, onOpenArt }: {
                         <span style={{ width: 10, height: 10, borderRadius: 5, background: DOT[s.status], flex: 'none' }} />
                         <span style={{ fontFamily: SHELL.fontMono, fontSize: 12, color: SHELL.jade, width: 26, flex: 'none' }}>{s.id}</span>
                         <span style={{ fontSize: 13, fontWeight: 700, width: 72, flex: 'none' }}>{s.title}</span>
-                        <span style={{ fontSize: 11, color: SHELL.sub, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.machine.detail}>{s.machine.detail}</span>
-                        <span style={{ fontSize: 11, color: s.human.state === 'ok' ? SHELL.ok : SHELL.dim, flex: 'none', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.human.detail}>{s.human.detail}</span>
+                        <span style={{ fontSize: 11, color: SHELL.sub, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`${s.id === 'S7' ? '评分卡' : '机器门'}：${s.machine.detail}`}>{s.machine.detail}</span>
+                        <span style={{ fontFamily: SHELL.fontMono, fontSize: 11, color: gateColor(s.review.state), flex: 'none', width: 40, textAlign: 'center' }} title={`复查门：${s.review.detail}`}>{reviewGlyph(s.review.state)}</span>
+                        <span style={{ fontSize: 11, color: s.human.state === 'ok' ? SHELL.ok : SHELL.dim, flex: 'none', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.human.detail}>{s.human.detail}</span>
                       </div>
                     ))}
                   </div>
@@ -108,8 +113,10 @@ export function GamePipelinePanel({ slug, title, onBack, onOpenArt }: {
             <>
               <div style={{ fontFamily: SHELL.fontMono, fontSize: 13, color: SHELL.jade }}>{selStage.id} {selStage.title}</div>
               <div style={{ fontSize: 11, color: SHELL.sub, lineHeight: 1.5 }}>📖 本步唯一必读手册：<span style={{ fontFamily: SHELL.fontMono, color: SHELL.text }}>{selStage.handbook}</span></div>
-              <div style={{ fontSize: 11, color: SHELL.sub, lineHeight: 1.5 }}>机器门：{selStage.machine.detail}</div>
+              <div style={{ fontSize: 11, color: selStage.id === 'S7' ? gateColor(selStage.machine.state) : SHELL.sub, lineHeight: 1.5 }}>{selStage.id === 'S7' ? '评分卡' : '机器门'}：{selStage.machine.detail}</div>
+              <div style={{ fontSize: 11, color: gateColor(selStage.review.state), lineHeight: 1.5 }}>复查门：{selStage.review.detail}</div>
               <div style={{ fontSize: 11, color: SHELL.sub, lineHeight: 1.5 }}>人　门：{selStage.human.detail}</div>
+              {selStage.outOfOrder && <div style={{ fontSize: 11, color: SHELL.warn, lineHeight: 1.5 }}>⚠ 乱序放行：{selStage.outOfOrder.by || '?'} @ {(selStage.outOfOrder.at || '').slice(0, 10)}{selStage.outOfOrder.note ? ' · ' + String(selStage.outOfOrder.note).slice(0, 60) : ''}</div>}
               {selStage.id === 'S1' && (
                 <>
                   <div style={sLabel}>立项卡（机器门=名字+一句话玩法·创作台建库自动带）</div>

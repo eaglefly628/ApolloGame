@@ -26,6 +26,10 @@
 > **交付 ①②③**：① `layout.allowOverlap:true`→渲染 `data-allow-overlap`（`types.ts`+`render.ts` renderNode 属性块·ui-audit 已支持该属性重叠豁免）——扇形手牌/牌堆/Float 锚定件意图叠层（game-a 牌桌 58 处误报消）；② `PlayingCard` 根自动挂 `data-audit-skip-contrast`（红黑花色=定色语义原语·不吃 WCAG）+ ui-audit `closest()` 免其内文字对比（33 处角标假阳消·游戏零改）；③ Float/Connector 等 JS 活取 rect 件静态摆 0,0 的重叠误报 = 同 ① 加 `allowOverlap` 豁免（无需另做）。测试 `card-overlap-audit.test.ts`（6 例）+ `ui.md` 回填 + 端到端（3 叠放红角标牌→0 重叠 0 对比）。全绿 tsc0/vitest/build。
 > **余项后置（不占槽·工具债·PUI 后续批清·要做时重开小条）**：④ 动效闭集 +`bounce`（常驻 scale 弹簧关键帧·注意力指示器通用·现 `float+glow` 近似已达效）；⑤ ui-audit 对 `border-image` 白字皮盲区（对 `data-apollo-skin` 件按皮底判·非采样父面·M0.5 apollo-toon 遗留）。二者非阻断。
 
+### REQ-QC-UI-工坊生产板显示「复查门」+ 评分卡摘要 · [2026-07-15] · Lead（REQ-QC-三门接续）→ 指派：PST · status: **✅ done（PST 2026-07-17·门禁 tsc0/vitest2844/build 全绿）** · 优先级: P1 · 类型: 工坊 UI（数据已通·只差显示）
+> 三门制已上线（`game-pipeline.mjs`·板 JSON 已带 `review` 字段+scorecard·端点自动透传），工坊生产板 UI 原只画机器门/人门两行——PST 在 `GamePipelinePanel` 补第三行「复查门」+ S7 评分卡判词（`VISUAL: n/24 · PREMIUM`）显示，照 CLI 版式（`board <slug>` 输出）。参考手册 `docs/playbooks/review-gates.md`。
+> **✅ 完工回执（PST 2026-07-17）**：`src/studio/GamePipelinePanel.tsx`——① `Stage` 接口补 `review: Gatey` + `outOfOrder?`（board JSON 早透传·前端没消费）；② 板行加复查门紧凑标记（复✓/复—/复⚠/复✗·配色 gateColor·hover 出全文）；③ 详情面板三门齐（机器门 / **复查门** / 人门）；④ S7 机器门行改标「评分卡」并按判词状态配色（PREMIUM YES=绿·NO=黄·任一维 0=红）；⑤ 乱序放行痕显示；⑥ 头部改「每步三门」口径。零后端改（纯消费既有 board 字段）。测试 `src/studio/game-pipeline-panel.test.tsx`（4 例·happy-dom 真渲染：复查门标记/S3 三门齐/S7 VISUAL 判词/乱序痕）。门禁全绿 tsc0/vitest2844/build。
+
 ### REQ-UI-web字体加载（数据化）+ 第3字体槽 + Label ink 令牌 · [2026-07-02] · P3D（game-d 对齐 Cloud Design 撞到·全 app 受益） → 主程（UI 库域） · status: **✅ done（主程 2026-07-02·①机制下沉 + ③令牌落地·②已存→回驳；剩 vendor woff2 数据活）** · 类型: 真能力缺口（3 项·尺子已过·不可重组）
 
 > **背景（owner 2026-07-02「用色/字体必须跟 Cloud Design 对齐」）**：对齐 game-d《骰途》到 Cloud Design 设计案时定位到——**字体走样不是能力问题、是全 app 从不加载 web 字体**。三项缺口都属 UI 库域（`src/ui/**`·主程），game-d 侧无法数据化解决：
