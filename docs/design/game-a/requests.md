@@ -2,7 +2,8 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
-### A-023 · 美术走索引消费（工坊替换才生效）· [2026-07-22] · owner 报（工坊替换游戏没看到·全游戏一体）→ Lead 诊断 → **PE-A** · status: 🔧 PE-A 承接施工中 · 优先级: P1 · 类型: 接消费槽（REQ-ART-可消费槽铁律 option a·game-a 侧·同 game-b B-012）
+### A-023 · 美术走索引消费（工坊替换才生效）· [2026-07-22] · owner 报（工坊替换游戏没看到·全游戏一体）→ Lead 诊断 → **PE-A** · status: ✅ PE-A 完结（索引解析接线·真机换背景验证成立·ledger-audit 孤儿归零） · 优先级: P1 · 类型: 接消费槽（REQ-ART-可消费槽铁律 option a·game-a 侧·同 game-b B-012）
+> **✅ PE-A 落地（2026-07-22·本 A-023）**：新增 `art-overrides.ts`（mirror game-c）——mount 尾 `loadArtOverrides('game-a')` 异步拉 `index.json`、收 `game-a/` 命名空间 + `gen:`/`vendored`/`tags:skin` 信号的 skinKey 别名 → `registerArtOverrides` → **`render()` 热替换**；theme `art(slot)` = `artUri('game-a/'+slot, 内置回退)`（覆盖优先·真图未到零字节变化·兜底永不丢）。hud 全部 Screen 底图/图标/felt 改经 `art(slot)`（硬编码 URL 退为回退）。台账 10 接线行各带 `skinKey game-a/<slot.entity>`（与 `art()` 键对齐·工坊写回同键即命中）、13 未接行退役进 `pending`（art 在库不删）。**完工判据全绿**：① 机制成立（真机注入 `game-a/bg/menu→bg/table` 别名→菜单底图即换·截图目击）；② `ledger:audit game-a --strict` 孤儿 0（10 行全有槽）；③ tsc 0·vitest game-a 74（+art-overrides 6 测·含覆盖/回退/headless/skinKey 契约）·build 0·验收 8 绿·S5 补戳；④ 真浏览器换背景成立。**牌面 54 张仍文字面**（换整卡 SVG 需 PUI 满面贴图槽·A-024①·非本 option-a 范畴）。
 > **症状**：owner 在工坊替换 game-a 美术后，游戏里没变（与 game-b 同病）。
 > **根因（Lead 2026-07-22 诊断·已读码定位）**：game-a 的美术走**硬编码 URL**、绕过 art 索引/台本——`hud.ts` `BG_MENU`/`BG_TABLE`=`/games/game-a/art/bg/*.svg`（`image:` 直传）、`theme.ts` 牌面 URL 拼 `/games/game-a/art/cards/<id>.<ext>`、`MANOR_BG`（`theme.ts:18`）=宿主层程序化 CSS 渐变经 `mountHost({sceneBackground})`。工坊写回 index/台本对游戏零效果。`npm run ledger:audit game-a` 23 行全判孤儿=实证。
 > **修法（REQ-ART option a·接消费槽·引擎件已 done 可直接用）**：

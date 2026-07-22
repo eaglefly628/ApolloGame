@@ -13,6 +13,7 @@ import { buildMenu, buildTableSelect, buildPlay, buildResult, type SeatView, typ
 import { type Lang, t, handName, tierName, fmtComboLabel, fmtTributeResist, fmtTributeLine } from './strings.js';
 import { SEATS, DRESS_TIERS, INITIAL_FUNDS, STAKES, LEVEL_START, codeSuit, codeRank, sortHand } from './rules.js';
 import { resolveSeatCards, seatDisplay, seatFlavor, buildSessionOut, type GameASessionIn, type SeatOutcome, type SeatSessionOut } from './seat-cards.js';
+import { loadArtOverrides, registerArtOverrides } from './art-overrides.js';
 import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG, GAME_A_THEME } from './theme.js';
 import { mulberry32 } from '@atom-skills/index.js';
 
@@ -411,6 +412,12 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
   };
 
   showMenu();
+
+  // A-023 可消费槽：mount 尾异步拉本地美术索引——工坊按 skinKey 别名写回的真图就绪则热替换上画
+  //（无真图/无索引/headless = 内置占位·观感零字节变化）。render-only·不进 sim/hash·确定性零影响。
+  void loadArtOverrides('game-a')
+    .then((m) => { if (Object.keys(m).length) { registerArtOverrides(m); render(); } })
+    .catch(() => { /* 无索引/headless → 保持内置占位 */ });
 
   const teardown = (): void => {
     stopSession();

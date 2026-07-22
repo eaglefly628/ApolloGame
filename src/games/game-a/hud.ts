@@ -9,7 +9,7 @@
 import type { LayoutNode } from '@ui/components/index.js';
 import type { SeatSpec } from './rules.js';
 import { DRESS_TIERS, codeRank, codeSuit, AI_TIERS, STAKES, BUYIN_MULT, SEATS } from './rules.js';
-import { MANOR_BG, FELT_TEXTURE, ART, FIELD_W, FIELD_H, SEAT_ANCHORS, SEAT_W, seatTopLeft } from './theme.js';
+import { MANOR_BG, feltTexture, art, FIELD_W, FIELD_H, SEAT_ANCHORS, SEAT_W, seatTopLeft } from './theme.js';
 import { TURN_ORDER, type SeatId } from './guandan-session.js';
 import {
   type Lang, t, traitName, tierName, PATTERN_GUIDE, RULES_LINES,
@@ -56,11 +56,9 @@ const fmtMoney = (n: number): string => n.toLocaleString('en-US');
 // 差异（逐条·非阻断）：① 立绘占位去掉 EN-prompt/A-CHAR 台账标注（美术生产注解·非玩家 UI）；
 //   ② bob/glow/twinkle 呼吸动效简化（星点用 Particles·徽标静态）；③「继续上局」暂无存档=同「开始」。
 const MENU_BG = 'radial-gradient(90% 120% at 78% 30%,#31201a,#160e0a 75%)';
-// 夜宴外围美术（程序化 SVG·路径见 theme ART 单一真相·换图即生效；渐变 bg 保留作 404 兜底）。
-const BG_MENU = ART.bgMenu;   // 主菜单：豪宅夜景牌室
-const BG_TABLE = ART.bgTable; // 牌桌/选桌/结算：胡桃木牌室暖光
+// 夜宴外围美术：Screen 底图/图标经 theme art(slot) 解析（工坊 skinKey 覆盖优先·换图即生效·真图未到回退内置占位）。
 // 小图标（1em 内联·Button.icon / Tag.icon 消费·换图即生效）。
-const coinTag = (id: string, text: string): LayoutNode => ({ type: 'Tag', id, props: { label: text, tone: 'accent', size: 'md', icon: ART.iconCoin } });
+const coinTag = (id: string, text: string): LayoutNode => ({ type: 'Tag', id, props: { label: text, tone: 'accent', size: 'md', icon: art('icon/coin') } });
 export interface MenuView {
   lang: Lang; // 界面语言（owner 2026-07-20 中英切换·默认中文·宿主持久）
   wallet: number;
@@ -76,7 +74,7 @@ export function buildMenu(v: MenuView): LayoutNode {
   return {
     type: 'Screen',
     id: 'a-menu',
-    props: { bg: { custom: MENU_BG }, image: BG_MENU },
+    props: { bg: { custom: MENU_BG }, image: art('bg/menu') },
     layout: { width: FIELD_W, height: FIELD_H },
     children: [
       // 主角立绘占位（左·300×440·斜纹虚框·真立绘 S6 台账 A-CHAR-HERO）
@@ -224,7 +222,7 @@ export function buildTableSelect(v: TableSelectView): LayoutNode {
   return {
     type: 'Screen',
     id: 'a-select',
-    props: { bg: { custom: MANOR_BG }, image: BG_TABLE, center: true },
+    props: { bg: { custom: MANOR_BG }, image: art('bg/table'), center: true },
     layout: { direction: 'column', align: 'center', justify: 'center', gap: 14, padding: 24 },
     children: [
       {
@@ -528,7 +526,7 @@ export function buildPlay(v: PlayView): LayoutNode {
       props: { bg: { custom: 'linear-gradient(180deg,rgba(200,53,43,0.28),rgba(30,20,14,0.9))' } },
       layout: { direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 7, radius: 16, margin: 6 },
       children: [
-        { type: 'Image', id: 'a-p-tribute-ic', props: { src: ART.iconTribute, fit: 'contain' }, layout: { width: 18, height: 18 } },
+        { type: 'Image', id: 'a-p-tribute-ic', props: { src: art('icon/tribute'), fit: 'contain' }, layout: { width: 18, height: 18 } },
         { type: 'Label', id: 'a-p-tribute-l', props: { text: v.tributeText, size: 'sm', color: 'gold', bold: true } },
       ],
     });
@@ -562,7 +560,7 @@ export function buildPlay(v: PlayView): LayoutNode {
   const feltTable: LayoutNode = {
     type: 'Panel',
     id: 'a-felt',
-    props: { bg: { custom: FELT_TEXTURE }, vignette: true, accent: true },
+    props: { bg: { custom: feltTexture() }, vignette: true, accent: true },
     layout: { x: 232, y: 148, width: FIELD_W - 464, height: 322, radius: 160, direction: 'column', align: 'center', justify: 'center', gap: 8 },
     children: feltChildren,
   };
@@ -574,7 +572,7 @@ export function buildPlay(v: PlayView): LayoutNode {
     props: { bg: { custom: 'linear-gradient(180deg,rgba(30,20,14,0.94),rgba(20,14,10,0.9))' } },
     layout: { x: FIELD_W / 2 - 210, y: 512, width: 420, direction: 'row', gap: 12, align: 'center', justify: 'center', padding: 8, radius: 20 },
     children: [
-      { type: 'Tag', id: 'a-p-level', props: { label: fmtLevelTag(l, v.levelPlay), tone: 'accent', size: 'sm', icon: ART.iconLevel } },
+      { type: 'Tag', id: 'a-p-level', props: { label: fmtLevelTag(l, v.levelPlay), tone: 'accent', size: 'sm', icon: art('icon/level') } },
       { type: 'Label', id: 'a-p-lv', props: { text: fmtLevels(l, v.levelOurs, v.levelTheirs), size: 'sm', color: 'sub' } },
       { type: 'Badge', id: 'a-p-stake', props: { text: fmtStake(l, v.stake), tone: 'ok' } },
       { type: 'Label', id: 'a-p-round', props: { text: fmtRound(l, v.round), size: 'sm', color: 'sub' } },
@@ -627,7 +625,7 @@ export function buildPlay(v: PlayView): LayoutNode {
         id: 'a-p-sort',
         props: { options: [{ value: 'rank', label: t(l, 'play.sortRank') }, { value: 'family', label: t(l, 'play.sortFamily') }], value: v.sortMode, action: 'hand.sort' },
       },
-      { type: 'Button', id: 'a-p-counter', props: { label: v.showCounter ? t(l, 'play.counterHide') : t(l, 'play.counterShow'), kind: 'quiet', action: 'tools.counter', icon: ART.iconCounter } },
+      { type: 'Button', id: 'a-p-counter', props: { label: v.showCounter ? t(l, 'play.counterHide') : t(l, 'play.counterShow'), kind: 'quiet', action: 'tools.counter', icon: art('icon/counter') } },
     ],
   };
   const actionHint: LayoutNode = {
@@ -660,7 +658,7 @@ export function buildPlay(v: PlayView): LayoutNode {
     layout: { x: FIELD_W - 330, y: 12, width: 318, direction: 'row', gap: 8, align: 'center', justify: 'end' },
     children: [
       langToggle(l, 'a-p-lang'),
-      { type: 'Button', id: 'a-p-menu', props: { label: t(l, 'play.menu'), kind: 'quiet', action: 'menu.open', icon: ART.iconMenu } },
+      { type: 'Button', id: 'a-p-menu', props: { label: t(l, 'play.menu'), kind: 'quiet', action: 'menu.open', icon: art('icon/menu') } },
       { type: 'Button', id: 'a-p-back', props: { label: t(l, 'sel.back'), kind: 'ghost', action: 'table.back' } },
     ],
   };
@@ -700,7 +698,7 @@ export function buildPlay(v: PlayView): LayoutNode {
   return {
     type: 'Screen',
     id: 'a-play',
-    props: { image: BG_TABLE },
+    props: { image: art('bg/table') },
     layout: { width: FIELD_W, height: FIELD_H },
     children: [
       feltTable, // 含中央出牌区（祖孙嵌套）
@@ -747,7 +745,7 @@ export function buildGameMenu(v: GameMenuView): LayoutNode {
         children: [
           { type: 'Label', id: 'a-menu-log-hint', props: { text: t(l, 'gm.logHint'), size: 'xs', color: 'sub' } },
           // 一键复制本盘完整记录（起始四家手牌 + 过程 + 结果）→ 剪贴板·发作者调 AI（owner 2026-07-18）。
-          { type: 'Button', id: 'a-menu-log-copy', props: { label: t(l, 'gm.copyLog'), kind: 'quiet', action: 'tools.copylog', icon: ART.iconCopy } },
+          { type: 'Button', id: 'a-menu-log-copy', props: { label: t(l, 'gm.copyLog'), kind: 'quiet', action: 'tools.copylog', icon: art('icon/copy') } },
         ],
       },
       v.logRows.length === 0
@@ -873,12 +871,12 @@ export function buildResult(v: ResultView): LayoutNode {
   return {
     type: 'Screen',
     id: 'a-result',
-    props: { bg: { custom: 'linear-gradient(180deg,rgba(20,10,11,0.94),rgba(20,10,11,0.98)),#140a0b' }, image: BG_TABLE, center: true },
+    props: { bg: { custom: 'linear-gradient(180deg,rgba(20,10,11,0.94),rgba(20,10,11,0.98)),#140a0b' }, image: art('bg/table'), center: true },
     layout: { direction: 'column', align: 'center', justify: 'center', gap: 14, padding: 24 },
     children: [
       // 通关胜利彩带（fx/win-confetti·仅 run-won·满屏叠于结算卡后·换图即生效）。
       ...(v.phase === 'run-won'
-        ? [{ type: 'Image', id: 'a-r-confetti', props: { src: ART.fxWin, fit: 'cover' as const }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H, anim: 'fadeIn' as const } } as LayoutNode]
+        ? [{ type: 'Image', id: 'a-r-confetti', props: { src: art('fx/win'), fit: 'cover' as const }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H, anim: 'fadeIn' as const } } as LayoutNode]
         : []),
       {
         type: 'Panel',

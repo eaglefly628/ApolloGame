@@ -4,6 +4,7 @@
 // 布局基准=ui-scene-design §1 / 蓝本：横屏 1280×720 逻辑分辨率·固定相机=席位屏幕锚点常量。
 import type { UITheme } from '@ui/components/index.js';
 import { codeRank, codeSuit, RANK_BIG_JOKER, RANK_SMALL_JOKER } from './rules.js';
+import { artUri } from './art-overrides.js';
 
 export const FIELD_W = 1280;
 export const FIELD_H = 720;
@@ -20,32 +21,30 @@ export const MANOR_BG =
 // 酒红牌呢（掼蛋特色·蓝本椭圆桌·真图=S6·风格锚 modern-manor）。
 export const FELT_RED =
   'radial-gradient(ellipse at 50% 42%, #6a1f26 0%, #4e151b 52%, #360f14 100%)';
-// ── 美术槽位 → 资产路径（**单一真相**·art-ledger 逐条对应此表·owner 2026-07-20「每条换了都要有效果」）──
-// 换图=换这些静态路径上的文件，游戏即时生效（无需改代码）。台账 art-ledger.json 的 servedPath 必与此表一致。
-// 注：牌面 54 张=控件文字画（合蓝本经典白扑克·换整卡 SVG 需 PUI 补卡面立绘槽·见 requests A-024）。
-export const ART = {
-  bgMenu: '/games/game-a/art/bg/menu.svg',
-  bgTable: '/games/game-a/art/bg/table.svg',
-  feltOval: '/games/game-a/art/felt/oval.svg',
-  logo: '/games/game-a/art/logo/title.svg',
-  iconCoin: '/games/game-a/art/icons/coin.svg',
-  iconLevel: '/games/game-a/art/icons/level.svg',
-  iconTrophy: '/games/game-a/art/icons/trophy.svg',
-  iconTribute: '/games/game-a/art/icons/tribute.svg',
-  iconMenu: '/games/game-a/art/icons/menu.svg',
-  iconCounter: '/games/game-a/art/icons/counter.svg',
-  iconCopy: '/games/game-a/art/icons/copy.svg',
-  iconArrow: '/games/game-a/art/icons/arrow.svg',
-  decorCorner: '/games/game-a/art/decor/corner.svg',
-  decorChips: '/games/game-a/art/decor/chips.svg',
-  fxWin: '/games/game-a/art/fx/win-confetti.svg',
-  btnGhost: '/games/game-a/art/ui/btn-ghost.svg',
-  btnQuiet: '/games/game-a/art/ui/btn-quiet.svg',
+// ── 美术槽位 → 内置回退路径（**单一真相**·台账 skinKey `game-a/<slot>` 逐条对应）──
+// 消费经 `art(slot)`：工坊替换真图（art-replace 写 index skinKey 别名·A-023）→ 覆盖优先热替换；
+// 未替换→内置占位（**换图即生效·真图未到零字节变化**·Lead 红线）。台账 art-ledger.json skinKey 必与此表键对应。
+// 注：牌面 54 张=控件文字画（合蓝本经典白扑克·换整卡 SVG 需 PUI 补卡面贴图槽·见 requests A-024）。
+const ART_FALLBACK = {
+  'bg/menu': '/games/game-a/art/bg/menu.svg',
+  'bg/table': '/games/game-a/art/bg/table.svg',
+  'felt/table': '/games/game-a/art/felt/oval.svg',
+  'icon/coin': '/games/game-a/art/icons/coin.svg',
+  'icon/level': '/games/game-a/art/icons/level.svg',
+  'icon/tribute': '/games/game-a/art/icons/tribute.svg',
+  'icon/menu': '/games/game-a/art/icons/menu.svg',
+  'icon/counter': '/games/game-a/art/icons/counter.svg',
+  'icon/copy': '/games/game-a/art/icons/copy.svg',
+  'fx/win': '/games/game-a/art/fx/win-confetti.svg',
 } as const;
-
-// 牌呢贴图（felt/oval.svg 叠在渐变上=偏心聚光光晕+呢纹·owner 2026-07-20「桌面完整背景贴图」）；
-// cover 裁掉 SVG 自带金边上下缘→桌面板 accent 金边保持单一干净；图 404 则退回 FELT_RED 渐变（层叠兜底）。
-export const FELT_TEXTURE = `url('${ART.feltOval}') center/cover no-repeat, ${FELT_RED}`;
+/** 按槽解析美术 URL（工坊 skinKey 别名覆盖优先·回退内置占位·换图即生效·**mount 期 loadArtOverrides 后热替换**）。 */
+export function art(slot: keyof typeof ART_FALLBACK): string {
+  return artUri(`game-a/${slot}`, ART_FALLBACK[slot]);
+}
+/** 牌呢桌面贴图（felt 覆盖优先叠红呢渐变·图未到=纯渐变兜底）。运行时解析故为函数（非常量·随覆盖热替换）。 */
+export function feltTexture(): string {
+  return `url('${art('felt/table')}') center/cover no-repeat, ${FELT_RED}`;
+}
 export const WRAPPER_BG = '#140a0b';
 
 // ── 夜宴系 UITheme（令牌照 art-data-manual §1 色板·跨 a/b/c 统一·换皮改这一份·LayoutNode 数据零改）──

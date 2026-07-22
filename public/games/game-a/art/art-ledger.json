@@ -2,7 +2,7 @@
   "version": 1,
   "game": "game-a",
   "mode": "authored-inventory",
-  "note": "《掼蛋夜宴》外围美术台账（owner 2026-07-20 定范围：立绘=外部角色卡传入·不入本账；5 档服饰暂缓；聚焦外围打牌观感）。手册来源 docs/design/game-a/art-bible.md。风格锚：场景 modern-manor · 控件/图标/牌 apollo-toon（人物 sakura-nijigen 本账不涉）。UI chrome art 非蓝图 Sprite 可推导 → authored-inventory（同 game-d 先例）。台账工具读 GET /api/art/ledger?slug=game-a。 | A-023 接线审计（2026-07-20·PE-A）：10/23 条真接线（换图即生效）；余下每条 wired.reason 标真因（PUI缺口/待布局/有意不接）。status:filled=文件在，wired.consumed=是否消费。",
+  "note": "A-023 可消费槽（2026-07-22·PE-A）：rows=10 条真接线（各带 skinKey game-a/<slot>·工坊 art-replace 写 index 别名即热替换上画·ledger:audit 非孤儿）；pending=13 条未接（wired.reason 标真因·A-024 PUI 缺口/待布局/有意不接·art 文件在库不删·非孤儿计·俟能力到位再转 rows）。",
   "count": 23,
   "instances": 23,
   "rows": [
@@ -41,7 +41,8 @@
       "wired": {
         "consumed": true,
         "at": "hud.ts buildMenu Screen.image (BG_MENU)"
-      }
+      },
+      "skinKey": "game-a/bg/menu"
     },
     {
       "no": "art-02",
@@ -78,7 +79,8 @@
       "wired": {
         "consumed": true,
         "at": "hud.ts 牌桌/选桌/结算 Screen.image (BG_TABLE)"
-      }
+      },
+      "skinKey": "game-a/bg/table"
     },
     {
       "no": "art-03",
@@ -115,8 +117,279 @@
       "wired": {
         "consumed": true,
         "at": "theme FELT_TEXTURE → a-felt 桌面 bg"
-      }
+      },
+      "skinKey": "game-a/felt/table"
     },
+    {
+      "no": "art-08",
+      "desc": "图标·金币",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon/coin",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "gold coin icon, chinese banquet motif, warm rim light, flat game icon, centered, transparent",
+      "placeholder": {
+        "current": "emoji 💰 / ◉（不一致·系统字形）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "icon/coin"
+        ]
+      },
+      "spec": {
+        "w": 48,
+        "h": 48,
+        "transparent": true
+      },
+      "context": "game-a 金钱图标（荷包/底注/带入·现 ◉ 与 💰 混用不一致）·风格锚 apollo-toon·P1",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game-a/art/icons/coin.svg",
+        "localId": "game-a/icons/coin",
+        "model": "procedural-svg",
+        "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts coinTag → 菜单/牌桌/设置 3 处钱包 Tag.icon"
+      },
+      "skinKey": "game-a/icon/coin"
+    },
+    {
+      "no": "art-09",
+      "desc": "图标·级牌红徽",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon/level",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "cinnabar red rank badge icon, gold number frame, small emblem, flat game icon, transparent",
+      "placeholder": {
+        "current": "custom 红渐变 Panel + 文字「级 N」",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "icon/level"
+        ]
+      },
+      "spec": {
+        "w": 48,
+        "h": 48,
+        "transparent": true
+      },
+      "context": "game-a 级牌徽（当前打级·朱砂红）·风格锚 apollo-toon·P1",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game-a/art/icons/level.svg",
+        "localId": "game-a/icons/level",
+        "model": "procedural-svg",
+        "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts a-p-level 信息条 Tag.icon"
+      },
+      "skinKey": "game-a/icon/level"
+    },
+    {
+      "no": "art-11",
+      "desc": "图标·进贡礼盒",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon/tribute",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "small gift-of-cards icon, red ribbon, gold accent, flat game icon, transparent",
+      "placeholder": {
+        "current": "emoji 🎴",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "icon/tribute"
+        ]
+      },
+      "spec": {
+        "w": 48,
+        "h": 48,
+        "transparent": true
+      },
+      "context": "game-a 进贡/还贡横幅图标·风格锚 apollo-toon·P2",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game-a/art/icons/tribute.svg",
+        "localId": "game-a/icons/tribute",
+        "model": "procedural-svg",
+        "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts a-p-tribute 进贡横幅 Image"
+      },
+      "skinKey": "game-a/icon/tribute"
+    },
+    {
+      "no": "art-12",
+      "desc": "图标·菜单（汉堡）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon/menu",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "hamburger menu icon, thin gold lines, flat ui icon, transparent",
+      "placeholder": {
+        "current": "emoji ☰",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "icon/menu"
+        ]
+      },
+      "spec": {
+        "w": 48,
+        "h": 48,
+        "transparent": true
+      },
+      "context": "game-a 牌桌 ☰ 菜单键·风格锚 apollo-toon·P2",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game-a/art/icons/menu.svg",
+        "localId": "game-a/icons/menu",
+        "model": "procedural-svg",
+        "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts a-p-menu Button.icon"
+      },
+      "skinKey": "game-a/icon/menu"
+    },
+    {
+      "no": "art-13",
+      "desc": "图标·记牌器",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon/counter",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "card-counter tally board icon, thin gold strokes, flat ui icon, transparent",
+      "placeholder": {
+        "current": "字形 ▤",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "icon/counter"
+        ]
+      },
+      "spec": {
+        "w": 48,
+        "h": 48,
+        "transparent": true
+      },
+      "context": "game-a 记牌器开合键·风格锚 apollo-toon·P2",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game-a/art/icons/counter.svg",
+        "localId": "game-a/icons/counter",
+        "model": "procedural-svg",
+        "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts a-p-counter Button.icon"
+      },
+      "skinKey": "game-a/icon/counter"
+    },
+    {
+      "no": "art-14",
+      "desc": "图标·复制记录",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon/copy",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "clipboard copy icon, thin gold lines, flat ui icon, transparent",
+      "placeholder": {
+        "current": "emoji 📋",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "icon/copy"
+        ]
+      },
+      "spec": {
+        "w": 48,
+        "h": 48,
+        "transparent": true
+      },
+      "context": "game-a 复制本盘记录键（结算/菜单各一）·风格锚 apollo-toon·P2",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game-a/art/icons/copy.svg",
+        "localId": "game-a/icons/copy",
+        "model": "procedural-svg",
+        "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts a-menu-log-copy Button.icon"
+      },
+      "skinKey": "game-a/icon/copy"
+    },
+    {
+      "no": "art-15",
+      "desc": "胜利/通关演出贴图",
+      "kind": "sprite",
+      "slot": {
+        "entity": "fx/win",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "golden confetti burst with silk ribbons, warm celebratory glow, radial, transparent",
+      "placeholder": {
+        "current": "结算卡金边 accent（注释标 placeholder）· Particles 未用",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "fx/win"
+        ]
+      },
+      "spec": {
+        "w": 512,
+        "h": 512,
+        "transparent": true
+      },
+      "context": "game-a SC-4/SC-5 过 A 通关/胜利演出·风格锚 apollo-toon·P1",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game-a/art/fx/win-confetti.svg",
+        "localId": "game-a/fx/win-confetti",
+        "model": "procedural-svg",
+        "mock": false
+      },
+      "wired": {
+        "consumed": true,
+        "at": "hud.ts a-result run-won 满屏 Image 叠层"
+      },
+      "skinKey": "game-a/fx/win"
+    }
+  ],
+  "wiredCount": 10,
+  "rowCount": 10,
+  "pending": [
     {
       "no": "art-04",
       "desc": "夜宴牌背",
@@ -266,80 +539,6 @@
       }
     },
     {
-      "no": "art-08",
-      "desc": "图标·金币",
-      "kind": "sprite",
-      "slot": {
-        "entity": "icon/coin",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "gold coin icon, chinese banquet motif, warm rim light, flat game icon, centered, transparent",
-      "placeholder": {
-        "current": "emoji 💰 / ◉（不一致·系统字形）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "icon/coin"
-        ]
-      },
-      "spec": {
-        "w": 48,
-        "h": 48,
-        "transparent": true
-      },
-      "context": "game-a 金钱图标（荷包/底注/带入·现 ◉ 与 💰 混用不一致）·风格锚 apollo-toon·P1",
-      "status": "filled",
-      "gen": {
-        "source": "procedural",
-        "servedPath": "/games/game-a/art/icons/coin.svg",
-        "localId": "game-a/icons/coin",
-        "model": "procedural-svg",
-        "mock": false
-      },
-      "wired": {
-        "consumed": true,
-        "at": "hud.ts coinTag → 菜单/牌桌/设置 3 处钱包 Tag.icon"
-      }
-    },
-    {
-      "no": "art-09",
-      "desc": "图标·级牌红徽",
-      "kind": "sprite",
-      "slot": {
-        "entity": "icon/level",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "cinnabar red rank badge icon, gold number frame, small emblem, flat game icon, transparent",
-      "placeholder": {
-        "current": "custom 红渐变 Panel + 文字「级 N」",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "icon/level"
-        ]
-      },
-      "spec": {
-        "w": 48,
-        "h": 48,
-        "transparent": true
-      },
-      "context": "game-a 级牌徽（当前打级·朱砂红）·风格锚 apollo-toon·P1",
-      "status": "filled",
-      "gen": {
-        "source": "procedural",
-        "servedPath": "/games/game-a/art/icons/level.svg",
-        "localId": "game-a/icons/level",
-        "model": "procedural-svg",
-        "mock": false
-      },
-      "wired": {
-        "consumed": true,
-        "at": "hud.ts a-p-level 信息条 Tag.icon"
-      }
-    },
-    {
       "no": "art-10",
       "desc": "图标·奖杯（暂大/头游）",
       "kind": "sprite",
@@ -374,191 +573,6 @@
       "wired": {
         "consumed": false,
         "reason": "🏆 在 fmtHolder 串/席名前缀（Badge/文字内）·需 Badge.icon 或重构·A-024"
-      }
-    },
-    {
-      "no": "art-11",
-      "desc": "图标·进贡礼盒",
-      "kind": "sprite",
-      "slot": {
-        "entity": "icon/tribute",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "small gift-of-cards icon, red ribbon, gold accent, flat game icon, transparent",
-      "placeholder": {
-        "current": "emoji 🎴",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "icon/tribute"
-        ]
-      },
-      "spec": {
-        "w": 48,
-        "h": 48,
-        "transparent": true
-      },
-      "context": "game-a 进贡/还贡横幅图标·风格锚 apollo-toon·P2",
-      "status": "filled",
-      "gen": {
-        "source": "procedural",
-        "servedPath": "/games/game-a/art/icons/tribute.svg",
-        "localId": "game-a/icons/tribute",
-        "model": "procedural-svg",
-        "mock": false
-      },
-      "wired": {
-        "consumed": true,
-        "at": "hud.ts a-p-tribute 进贡横幅 Image"
-      }
-    },
-    {
-      "no": "art-12",
-      "desc": "图标·菜单（汉堡）",
-      "kind": "sprite",
-      "slot": {
-        "entity": "icon/menu",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "hamburger menu icon, thin gold lines, flat ui icon, transparent",
-      "placeholder": {
-        "current": "emoji ☰",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "icon/menu"
-        ]
-      },
-      "spec": {
-        "w": 48,
-        "h": 48,
-        "transparent": true
-      },
-      "context": "game-a 牌桌 ☰ 菜单键·风格锚 apollo-toon·P2",
-      "status": "filled",
-      "gen": {
-        "source": "procedural",
-        "servedPath": "/games/game-a/art/icons/menu.svg",
-        "localId": "game-a/icons/menu",
-        "model": "procedural-svg",
-        "mock": false
-      },
-      "wired": {
-        "consumed": true,
-        "at": "hud.ts a-p-menu Button.icon"
-      }
-    },
-    {
-      "no": "art-13",
-      "desc": "图标·记牌器",
-      "kind": "sprite",
-      "slot": {
-        "entity": "icon/counter",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "card-counter tally board icon, thin gold strokes, flat ui icon, transparent",
-      "placeholder": {
-        "current": "字形 ▤",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "icon/counter"
-        ]
-      },
-      "spec": {
-        "w": 48,
-        "h": 48,
-        "transparent": true
-      },
-      "context": "game-a 记牌器开合键·风格锚 apollo-toon·P2",
-      "status": "filled",
-      "gen": {
-        "source": "procedural",
-        "servedPath": "/games/game-a/art/icons/counter.svg",
-        "localId": "game-a/icons/counter",
-        "model": "procedural-svg",
-        "mock": false
-      },
-      "wired": {
-        "consumed": true,
-        "at": "hud.ts a-p-counter Button.icon"
-      }
-    },
-    {
-      "no": "art-14",
-      "desc": "图标·复制记录",
-      "kind": "sprite",
-      "slot": {
-        "entity": "icon/copy",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "clipboard copy icon, thin gold lines, flat ui icon, transparent",
-      "placeholder": {
-        "current": "emoji 📋",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "icon/copy"
-        ]
-      },
-      "spec": {
-        "w": 48,
-        "h": 48,
-        "transparent": true
-      },
-      "context": "game-a 复制本盘记录键（结算/菜单各一）·风格锚 apollo-toon·P2",
-      "status": "filled",
-      "gen": {
-        "source": "procedural",
-        "servedPath": "/games/game-a/art/icons/copy.svg",
-        "localId": "game-a/icons/copy",
-        "model": "procedural-svg",
-        "mock": false
-      },
-      "wired": {
-        "consumed": true,
-        "at": "hud.ts a-menu-log-copy Button.icon"
-      }
-    },
-    {
-      "no": "art-15",
-      "desc": "胜利/通关演出贴图",
-      "kind": "sprite",
-      "slot": {
-        "entity": "fx/win",
-        "component": "Image",
-        "field": "src"
-      },
-      "query": "golden confetti burst with silk ribbons, warm celebratory glow, radial, transparent",
-      "placeholder": {
-        "current": "结算卡金边 accent（注释标 placeholder）· Particles 未用",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "fx/win"
-        ]
-      },
-      "spec": {
-        "w": 512,
-        "h": 512,
-        "transparent": true
-      },
-      "context": "game-a SC-4/SC-5 过 A 通关/胜利演出·风格锚 apollo-toon·P1",
-      "status": "filled",
-      "gen": {
-        "source": "procedural",
-        "servedPath": "/games/game-a/art/fx/win-confetti.svg",
-        "localId": "game-a/fx/win-confetti",
-        "model": "procedural-svg",
-        "mock": false
-      },
-      "wired": {
-        "consumed": true,
-        "at": "hud.ts a-result run-won 满屏 Image 叠层"
       }
     },
     {
@@ -858,6 +872,5 @@
       }
     }
   ],
-  "wiredCount": 10,
-  "rowCount": 23
+  "pendingCount": 13
 }
