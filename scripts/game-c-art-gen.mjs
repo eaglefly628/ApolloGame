@@ -14,7 +14,8 @@ const made = []; // {rel,w,h,id,desc}
 function emit(id, rel, w, h, desc, svg) { const p = join(ART, rel); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, svg); made.push({ id, rel, w, h, desc }); }
 
 // ── §1 调色板 ──
-const GOLD = '#d8b878', GOLD2 = '#ecca8a', VIO = '#c9a9dd', RED = '#d0483e', RED2 = '#a01e3a', WOOD = '#6a4c38', WOOD2 = '#3e2c1e';
+// WOOD/WOOD2（桌边木纹素坯色）owner 2026-07-22：跟游戏 RAIL(0xa5703c 暖蜜橡·glossy) 对齐·非旧暗胡桃。
+const GOLD = '#d8b878', GOLD2 = '#ecca8a', VIO = '#c9a9dd', RED = '#d0483e', RED2 = '#a01e3a', WOOD = '#a5703c', WOOD2 = '#6a4426';
 
 // 夜金按钮皮模板（圆角板 + 上高光 + rim）。
 const btn = (w, h, a, b, rim, label, lc) => S(w, h,
@@ -35,7 +36,7 @@ const icon = (glyph) => S(128, 128,
   `<text x="64" y="86" font-size="60" text-anchor="middle">${glyph}</text>`);
 
 // ── ① 背幕（夜窗·复用 art-bible 背幕观感）──
-emit('scene/backdrop', 'scene/backdrop.svg', 1280, 720, '夜景背幕', S(1280, 720,
+emit('scene/backdrop', 'scene/backdrop.svg', 1280, 720, '室内环境背幕·夜景窗·无桌（3D 长方桌单独渲其上）', S(1280, 720,
   `<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#241734"/><stop offset=".44" stop-color="#1a1226"/><stop offset="1" stop-color="#100a18"/></linearGradient>` +
   `<linearGradient id="win" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2c50"/><stop offset=".58" stop-color="#241a34"/><stop offset="1" stop-color="#140d1e"/></linearGradient>` +
   `<radialGradient id="warm"><stop offset="0" stop-color="#ffc882" stop-opacity=".26"/><stop offset=".7" stop-color="#ffc882" stop-opacity="0"/></radialGradient>` +
@@ -46,11 +47,12 @@ emit('scene/backdrop', 'scene/backdrop.svg', 1280, 720, '夜景背幕', S(1280, 
   `<g stroke="#0a060e" stroke-opacity=".85"><line x1="344" y1="0" x2="344" y2="358" stroke-width="6"/><line x1="640" y1="0" x2="640" y2="358" stroke-width="6"/><line x1="936" y1="0" x2="936" y2="358" stroke-width="6"/><line x1="48" y1="153" x2="1232" y2="153" stroke-width="5"/></g>`));
 
 // ── ② 牌桌 ──
-emit('table/felt-albedo', 'table/felt-albedo.svg', 1024, 1024, '呢面绒布', S(1024, 1024,
-  `<defs><radialGradient id="f" cx=".5" cy=".44" r=".62"><stop offset="0" stop-color="#7d5570"/><stop offset=".46" stop-color="#5a3a52"/><stop offset=".78" stop-color="#38222f"/><stop offset="1" stop-color="#281620"/></radialGradient>` +
-  `<radialGradient id="pool" cx=".5" cy=".42" r=".38"><stop offset="0" stop-color="#ffd2a0" stop-opacity=".16"/><stop offset="1" stop-color="#ffd2a0" stop-opacity="0"/></radialGradient>` +
+// owner 2026-07-22：呢面素坯跟游戏 FELT(0x2e7d4e 赌桌绿) 对齐·长方桌面·非旧紫绒。
+emit('table/felt-albedo', 'table/felt-albedo.svg', 2048, 1024, '呢面绒布（赌桌绿·长方桌面）', S(2048, 1024,
+  `<defs><radialGradient id="f" cx=".5" cy=".5" r=".72"><stop offset="0" stop-color="#3a9560"/><stop offset=".45" stop-color="#2e7d4e"/><stop offset=".8" stop-color="#1e5636"/><stop offset="1" stop-color="#123a24"/></radialGradient>` +
+  `<radialGradient id="pool" cx=".5" cy=".5" r=".42"><stop offset="0" stop-color="#ffe0b0" stop-opacity=".14"/><stop offset="1" stop-color="#ffe0b0" stop-opacity="0"/></radialGradient>` +
   `<pattern id="wv" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 3H6M3 0V6" stroke="#000" stroke-opacity=".05" stroke-width=".6"/></pattern></defs>` +
-  `<rect width="1024" height="1024" fill="url(#f)"/><rect width="1024" height="1024" fill="url(#wv)"/><rect width="1024" height="1024" fill="url(#pool)"/>`));
+  `<rect width="2048" height="1024" fill="url(#f)"/><rect width="2048" height="1024" fill="url(#wv)"/><rect width="2048" height="1024" fill="url(#pool)"/>`));
 emit('table/felt-normal', 'table/felt-normal.svg', 1024, 1024, '呢面法线', S(1024, 1024, `<rect width="1024" height="1024" fill="#8080ff"/><rect width="1024" height="1024" fill="url(#n)" opacity=".08"/><defs><pattern id="n" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 3H6M3 0V6" stroke="#a0a0ff" stroke-width=".6"/></pattern></defs>`));
 emit('table/rail-albedo', 'table/rail-albedo.svg', 1024, 256, '木栏', S(1024, 256,
   `<defs><linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a5842"/><stop offset=".5" stop-color="${WOOD}"/><stop offset="1" stop-color="${WOOD2}"/></linearGradient></defs>` +
