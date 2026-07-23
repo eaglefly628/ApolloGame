@@ -46,6 +46,7 @@ export const STRINGS = {
   'quick.pot': { en: 'Pot', zh: '满池' },
   'quick.allin': { en: 'All-In', zh: '全下' },
   'waiting': { en: '⏳ Waiting for other players…', zh: '⏳ 等待其他玩家行动…' },
+  'yourTurn': { en: 'YOUR TURN', zh: '轮到你了' }, // 轮到主角=浮动提示（owner 2026-07-23·pop 弹入·无需确认·行动即消）
   // 衣柜
   'wr.pawnedState': { en: 'Pawned · layer removed', zh: '已当 · 立绘层消失' },
   'wr.wornState': { en: 'Worn', zh: '在穿' },

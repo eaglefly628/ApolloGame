@@ -815,6 +815,45 @@ function buildPartnerAdvice(v: TableView): LayoutNode {
   };
 }
 
+// ── Dealer 按钮 puck（owner 2026-07-23「看不到 Dealer 在哪」）：庄家席旁一枚醒目金圆盘「D」——
+//    比席卡内小徽章显眼得多；随庄家轮转定位到该席。STORY 4 席（主角+三对手）各一锚点·座号超出回退主角位。
+const DEALER_PUCK_POS: Record<number, { x: number; y: number }> = {
+  0: { x: 296, y: 452 }, // 主角（底左面板右侧）
+  1: { x: 548, y: 214 }, // 中座对手（席卡左下·朝桌心）
+  2: { x: 356, y: 318 }, // 左座对手（席卡右下·朝桌心）
+  3: { x: 924, y: 318 }, // 右座对手（席卡左下·朝桌心）
+};
+function buildDealerButton(v: TableView): LayoutNode | null {
+  const btn = v.seats.find((s) => s.isButton && s.seat < v.playerCount);
+  if (!btn) return null;
+  const pos = DEALER_PUCK_POS[btn.seat] ?? DEALER_PUCK_POS[0]!;
+  return {
+    type: 'Panel', id: 'c-dealer-puck',
+    // 实色金圆盘（非渐变·审计可解析对比·暗字读得清）+ 金边 + 金光晕——醒目庄家钮。
+    props: { bg: { custom: '#e8c878' }, edge: 'gold' },
+    layout: { x: pos.x - 18, y: pos.y - 18, width: 36, height: 36, radius: 18, direction: 'row', align: 'center', justify: 'center', allowOverlap: true, fx: [{ kind: 'glow' as const, color: 'gold' as const }] },
+    children: [{ type: 'Label', id: 'c-dealer-d', props: { text: 'D', font: 'impact', size: 19, bold: true, color: 'ink' } }],
+  };
+}
+
+// ── 「轮到你了」浮动提示（owner 2026-07-23·pop 弹入 + 翠光·无需确认·仅 isHeroTurn 渲染·主角行动即消）。
+function buildYourTurn(v: TableView): LayoutNode {
+  const l = v.lang;
+  return {
+    type: 'Panel', id: 'c-yourturn-wrap', props: { bare: true },
+    layout: { x: Math.round(FIELD_W / 2 - 150), y: 228, width: 300, direction: 'row', justify: 'center', allowOverlap: true },
+    children: [{
+      type: 'Panel', id: 'c-yourturn',
+      props: { bg: { custom: 'linear-gradient(90deg,rgba(95,211,154,0.28),rgba(216,184,120,0.22))' }, edge: 'jade' },
+      layout: { direction: 'row', align: 'center', justify: 'center', gap: 8, padding: 9, radius: 20, fx: [{ kind: 'pop' as const }, { kind: 'glow' as const, color: 'jade' as const }] },
+      children: [
+        { type: 'Label', id: 'c-yourturn-i', props: { text: '▸', size: 18, bold: true, color: 'jade' } },
+        { type: 'Label', id: 'c-yourturn-t', props: { text: t(l, 'yourTurn'), font: 'impact', size: 20, bold: true, color: 'jade' } },
+      ],
+    }],
+  };
+}
+
 // ── 底池（桌心下·剧情稿 Label 底池 N）──────────────────────────────────────────────────
 function buildPot(v: TableView): LayoutNode {
   const l = v.lang;
@@ -899,7 +938,10 @@ export function buildTable(v: TableView): LayoutNode {
   const children: LayoutNode[] = [
     ...portraits, buildStoryTopBar(v), ...cards, buildCommunity(v.board, v.heroBest), buildPot(v), buildHeroCards(v), buildHeroPanel(v), buildPartnerAdvice(v),
   ];
+  const dealer = buildDealerButton(v); // 庄家 puck（owner 2026-07-23·随庄轮转·醒目金圆盘）
+  if (dealer) children.push(dealer);
   if (v.phase === 'betting') children.push(v.isHeroTurn ? buildStoryActionBar(v) : buildWaiting(l));
+  if (v.phase === 'betting' && v.isHeroTurn) children.push(buildYourTurn(v)); // 「轮到你了」浮动提示（owner 2026-07-23）
   if (v.showLog) children.push(buildLogPanel(v.log, l));
   if (v.showMenu) children.push(buildTopMenu(v)); // 右上角菜单下拉（REQ-C-114）
   if (v.showHelp) children.push(buildHelpPanel(v)); // 游戏说明面板（REQ-C-114）
