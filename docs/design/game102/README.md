@@ -1,23 +1,24 @@
 # Pixel Pour ·《色流工坊》— 新立项（2026-07-23）
 
-> 代号 **game102**（owner 口径）· 题材：**Pixel Flow（Loom Games / Scopely）核心玩法复刻**。
-> 与已删旧作无关；本包为 GD 立项候选，落 `docs/design/pixel-pour/`（尚未占用字母槽）。
+> 槽位 **game102**（owner 2026-07-23 拍板定槽）· 题材：**Pixel Flow（Loom Games / Scopely）核心玩法复刻**。
+> 与已删旧作无关；GD 立项包落 `docs/design/game102/`。
 
-## 槽位归属（待 owner 拍板）
+## 槽位归属（owner 2026-07-23 已定）
 
-现有槽位 a/b/c/d/e/f/g/i/q/t/x/z 均已占用，且无「传送带+同色消除」这类休闲玩法。
-本包**暂不占字母槽**、**不改 `src/launcher.tsx`**，待 owner 指定正式字母（建议 game-p）后，
-整目录改名迁入即可（迁移=一次目录 rename + launcher 加一行 GAMES 条目）。
+**owner 拍板：本作即 game102**（不用字母槽，沿用 owner 的数字编号口径）。
+现有字母槽 a/b/c/d/e/f/g/i/q/t/x/z 均无「传送带+同色消除」这类休闲玩法，本作为全新品类。
+GD 阶段**只产 `docs/design/game102/` 文档**、**不改 `src/launcher.tsx`**；launcher 注册（加 `id:'game102'` GAMES 条目）
+与源码目录由 PE/PST 在实现阶段落地（GD 域外·CLAUDE.md 域边界）。
 
 ## 状态
 
 - 市场调研：✅ `market-research.md`
 - 立项 brief：✅ `brief.md`
 - GDD（核心设定+数值+关卡+商业化）：✅ `gdd.md`
-- 能力总览 capability-plan（开工前必过审）：✅ 草案 `capability-plan.md`（**待 Lead 评审**）
+- 能力总览 capability-plan（开工前必过审）：✅ `capability-plan.md`（**已提请 Lead 评审** → 工单 `requests.md` REQ-G102-CAPREVIEW）
 - Claude Designer 设计图文稿：✅ `pixel-pour-designer.html`（自包含可视化设计稿）
 - 可玩核心玩法参考原型：✅ `prototype.html`（GD 设计参考·非引擎游戏代码）
-- 引擎能力缺口：⏳ 见 capability-plan §2/§4，需 Lead 裁决后走 requests.md 下沉
+- 引擎能力缺口：⏳ 见 capability-plan §4，`conveyor-queue` 下沉 vs 组合表达=Lead 裁决点（工单 REQ-G102-CAPREVIEW）
 
 ## 角色与边界（CLAUDE.md）
 

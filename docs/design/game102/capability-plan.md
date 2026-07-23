@@ -7,7 +7,7 @@
 ## 1. 游戏一句话
 
 竖屏休闲益智：传送带承载「色炮」到发射位**自动向中央同色方块开火**消色，5 待命槽复用+连击突破——
-清空棋盘/拼出隐藏像素画过关（GDD=`docs/design/pixel-pour/gdd.md`）。
+清空棋盘/拼出隐藏像素画过关（GDD=`docs/design/game102/gdd.md`）。
 
 ## 2. 消费的引擎能力（对照 `capability-registry` 实名）
 
@@ -64,6 +64,7 @@
 
 ## 6. 评审记录
 
-- 提交人 / 日期：GD（Pixel Pour）/ 2026-07-23
-- Lead 裁决：⏳ **待评审**（重点裁 §4 首行：传送带编排=组合表达 vs 下沉 `conveyor-queue`）
+- 提交人 / 日期：GD（game102 / Pixel Pour）/ 2026-07-23
+- **已提请 Lead 评审**（工单 `docs/design/game102/requests.md` REQ-G102-CAPREVIEW·2026-07-23）
+- Lead 裁决：⏳ **待评审**（重点裁 §4 首行：传送带编排=组合表达 vs 下沉 `conveyor-queue`；若确认真需下沉，升级进引擎池 `docs/workflow/requests.md`）
 - 备注：本 plan 未过审前**不写任何游戏层代码**；`prototype.html` 为 GD 设计参考 mockup，非引擎实现。
