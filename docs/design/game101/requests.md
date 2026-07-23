@@ -10,10 +10,10 @@
 > `capability-plan.md` v1 草案待 Lead 备案评审。**重点裁 §2.5 G1–G4**（生成器耗体力门控 / 订单交付消耗棋盘实例 / 气泡锁 flag 尊重 / 免体力生成器产能条）走「①组合现有能力 / ②下沉通用 capability / ③游戏层例外」哪条；并裁 §4 装配胶水行数上限。
 > 边界：判为「下沉」的项转 `docs/workflow/requests.md` 引擎池（通用能力·非 game101 私有 system）。**过审前 PE-101 不得写游戏层系统代码。**
 
-### REQ-101-02 · designer 设计稿 · 2026-07-23 · 提出人 GD-101 → 指派 claude designer · status: in-progress · 优先级: P0 · 类型: 美术/UI
-> 【2026-07-23 owner「零二号开始吧」→ 启动出稿】Sprint 1 首批 `.dc.html` 交付 `mockups/`（S1 合并主界面 + S2 物品链/生成器 spec）；S3/S4 作为 S1 内嵌区呈现；S10 次批。
-> 按 `ui-brief.md` 出 `.dc.html` 设计稿，交付到 `docs/design/game101/mockups/`（+ `support.js`）。Sprint 1 最小起步包：S4 HUD + S1 合并主界面(default) + S2 食材链 Lv1–6 递进 + 3 生成器 + S3 订单卡 + S10 新手首屏。
-> 口径：竖屏 1080×1920、百分比锚点；风格见 ui-brief §0。**1:1 复刻基准，但界面 LayoutNode 重做、禁挪用交付 HTML。** 交付后 GD-101 录入 + 写 `mockups/README.md` 编目 + ⚠口径警示表。
+### REQ-101-02 · UI 布局设计 · 2026-07-23 · 提出人 GD-101 → 指派 GD-101 · status: in-progress · 优先级: P0 · 类型: UI
+> 【owner 2026-07-23「用我们 UI 库设计更好」→ 改口径】弃用 emoji `.dc.html`，改用真 **LayoutNode 闭集控件 + game101 暖色主题**出布局（纯数据）。
+> **S1 已落** `layout/s1-merge-board.layout.json`（`validateLayoutNode` 0 issue·效果图 `layout/s1-preview.png`）；早期 `mockups/*.dc.html` 已删。
+> 待续：S5 剧情任务 / S7 装修 3选1 / 商店·体力弹层 / 结算 等纯 LayoutNode 面板逐屏出 `layout/<screen>.layout.json`。落地移植进 `src/games/game101/` 归 PE（capability-plan 过审后·落地跑 /check-ui + ui-audit）。
 
 ### REQ-101-03 · 出货线朝向确认 · 2026-07-23 · 提出人 GD-101 → 指派 LEAD/PUI · status: done · 优先级: P1 · 类型: 平台
 > ✅ owner 2026-07-23 拍板：**走竖屏 1080×1920，不适配横屏**。设计稿/接线一律按竖屏。（本条完结·下次清理迁归档）

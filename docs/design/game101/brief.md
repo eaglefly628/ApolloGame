@@ -8,7 +8,7 @@
 
 1. **调研** Gossip Harbor: Merge & Story 的核心设计。
 2. 以本项目数据驱动口径**复刻核心 gameplay**（核心循环闭环，非整包商业化/长线运营）。
-3. 产出**给 claude designer 的逐屏设计规格**（`ui-brief.md`），供其出 `.dc.html` 设计稿。
+3. 产出**逐屏 UI 设计规格**（`ui-brief.md`）+ 用真 LayoutNode 库出布局（`layout/`·owner 改口径「用我们 UI 库更好」）。
 
 ---
 

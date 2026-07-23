@@ -103,7 +103,7 @@
 ## 8. UI 与美术
 
 - 竖屏 9:16；风格 `cozy / 海港治愈 / 暖阳 / 轻插画 2.5D / 糖果感 UI`。
-- 全 UI 用 LayoutNode 闭集（禁手写 DOM）；逐屏规格 + 控件映射见 **`ui-brief.md`**（给 claude designer 出 `.dc.html`）。
+- 全 UI 用 LayoutNode 闭集（禁手写 DOM）；逐屏规格见 **`ui-brief.md`**；已出 S1 真布局 `layout/s1-merge-board.layout.json`。
 - 色板/资源清单见 `ui-brief.md` §规范 与 `capability-plan.md` §4.5。
 
 ## 9. 局外接口
@@ -123,7 +123,7 @@
 | S2 能力计划 | `capability-plan.md` 过 Lead 审 | 🟡 待审 |
 | S3 数据 | manifest + 配置表（config-schema 落 JSON） | ⬜ |
 | S4 玩法 | 合并/生成器/体力/订单核 + GD 验收剧本（`acceptance/`） | ⬜ |
-| S5 视觉 1:1 | 接 `mockups/*.dc.html`（结构→视觉 1:1） | ⬜ |
+| S5 视觉 1:1 | LayoutNode 布局 `layout/*.layout.json`（S1 已落） | 🟡 S1 |
 | S6 美术 | 皮肤槽 + 台账 | ⬜ |
 | S7 音频 | 合并/交付/破泡音效 | ⬜ |
 | S8 打磨 | 数值平衡 + 手感 | ⬜ |

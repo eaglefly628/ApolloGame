@@ -1,9 +1,9 @@
 # game101 ·《海港绯闻》界面布局设计（ui-brief v1 · Claude Design）
 
-> GD-101 · 2026-07-23 · owner 指令「出一个设计给 claude designer 出设计图」——本文即给 claude designer 的**逐屏设计规格**，据此产出 `.dc.html` 设计稿。
-> **视觉定稿 = claude designer 交付包**（`docs/design/game101/mockups/*.dc.html`·**1:1 复刻基准**；GD-101 收到后录入 + 写 `mockups/README.md` 编目 + ⚠口径警示表，冲突处一律以 `gdd.md`/`config-schema.md` 为准）。
-> **接线铁律**：M5 以 `.dc.html` 为 1:1 基准，但**全部元素映射现有 LayoutNode 闭集 + play-field 渲染组件，零新控件，禁止直接挪用 .dc.html 的 HTML/CSS/JS 代码**。缺控件走 `requests.md` 提 PUI。
-> **基线画布**：**竖屏 1080×1920（9:16）**，比例位铺（百分比锚点），非绝对像素；安全区上下各留 ~120px。
+> GD-101 · 2026-07-23 · owner 指令「用我们 UI 库出设计布局，能设计得更好」——**改用真 Apollo Kit（`src/ui/components` 的 `LayoutNode` 闭集控件）+ game101 暖色主题**直接出布局（**纯数据**），不再用 emoji `.dc.html` 假稿。
+> **S1 已落地 = `layout/s1-merge-board.layout.json`**（真 LayoutNode 树·`validateLayoutNode` 0 issue·`layout/s1-preview.png` 效果图）。本文各屏 ASCII/控件表 = 逐屏**规格**，据此把每屏都用 LayoutNode 出成 `layout/<screen>.layout.json`。
+> **接线铁律**：全部元素映射现有 LayoutNode 闭集 + play-field 渲染组件，**零新控件、零手写 DOM/React**；缺控件走 `requests.md` 提 PUI。合并板本身=play-field（引擎渲染·非 LayoutNode）。
+> **基线画布**：**竖屏 1080×1920（9:16）**；布局全流式（column/row/grid·天然防重叠），非绝对像素。
 > ✅ **朝向定稿**：owner 2026-07-23 拍板**竖屏 1080×1920**（不适配横屏·REQ-101-03 closed）。
 > 做 UI 前必读 `docs/design/ui-playbook.md` + `docs/playbooks/ui.md`；交付前过 `/check-ui` 四关。
 
@@ -199,9 +199,9 @@
 - **UI Kit**：HUD 资源胶囊/体力条/按钮(主·次·文字)/订单卡/任务条/弹窗容器/导航/红点角标。
 - **特效关键帧**：合并迸发/交付飞行/气泡破裂/星星金币获得（对齐 `juice.json`）。
 
-## 12. 交付格式
+## 12. 交付格式（改为真 LayoutNode·非 emoji 稿）
 
-- 每屏：高保真静态稿（标注色值/字号/间距）+ 关键交互态；抽出可复用 UI Kit + 物品/生成器 spec sheet。
-- 命名：`S01_MergeBoard_default` / `item_food_3` / `gen_toolbox_pressed`（便于切图接入）。
-- 交付到 `docs/design/game101/mockups/`（`.dc.html` + `support.js`；离线变体 `.offline.html`）。
-- **再次强调**：`.dc.html` = 视觉 1:1 基准，但**界面由 LayoutNode 闭集重做，禁挪用交付 HTML/CSS/JS**。
+- 每屏产出 `layout/<screen>.layout.json` = **LayoutNode 纯数据树**（闭集控件·语义色令牌·`action` 信号）；用 game101 暖色主题（`layout/game101-theme.tokens.json`）。
+- 自检：`validateLayoutNode(tree)` 必须 **0 issue**；全流式布局防重叠；文字走语义色（对比达标）。设计侧用 `mountUI` 真渲染器出效果图（如 `layout/s1-preview.png`）。
+- 落地：PE 把 json 移植成 `src/games/game101/` 的 `buildXxx(): LayoutNode` builder，落地时跑 `/check-ui` + `tools/ui-audit.mjs`（PUI 域工具）。
+- **缺控件/缺色令牌 → `requests.md` 报 PUI 扩闭集，绝不手写 React/自由 CSS。**
