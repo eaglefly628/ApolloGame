@@ -34,9 +34,11 @@ export function buildMenu(st: MenuState, lang: Lang = 'ja'): LayoutNode {
         layout: { x: MENU_W - 464, y: 60, width: 388, gap: 14, align: 'end' },
         children: [
           {
+            // owner 2026-07-23「引入 CJK 艺术字体」：题名「雀宴」上真中文毛笔行楷（font:'cnbrush' 马善政·SIL OFL·
+            // 能渲汉字）——终于把标题做成书法感（接前「花写收体」诉求）。毛笔字单一字重·不叠 bold（免浏览器伪粗糊笔锋）。
             type: 'Label', id: 'menu-title',
             props: {
-              size: 98, font: 'serif', bold: true, glow: true,
+              size: 104, font: 'cnbrush', glow: true,
               spans: [{ text: '雀' }, { text: '宴', color: 'danger' }],
             },
           },
