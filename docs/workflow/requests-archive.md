@@ -2,6 +2,10 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-HANDPAT-歧义自洽 · t3-hand-pattern legalResponses 与 act/beats 判读口径一致化 · [2026-07-18] · PE-A 报（A-008）→ Lead 裁决 ✅ 接 → 指派 Opus · status: **✅ done（`214fc846`·Lead 验收 PASS·2026-07-23 归档腾槽）** · 优先级: P1 · 类型: 引擎 capability bug（正确性关键·不降档）
+> **根因**：`legalResponses` 按「意图家族」枚举应对并以该家族比压制；`act`/`legalCheck`/`beats` 走 `matchPattern` **最强判读**——含逢人配的一手多判读时，最强判读落到另一普通型家族→跨家族压不过→legalResponses 承诺的牌 act 拒收（实证：墩=钢板 JJJ-QQQ，QQ+KK+两♥5 按钢板 QQQ-KKK 返回，规范判读=三连对 Q-K-A 更强→拒）。后果=提示按钮给「打不出去的牌」/AI 空过（game-a 已游戏层兜底滤除·引擎修好可退）。
+> **⚖ Lead spec（已落地）**：修 `legalResponses`——每个候选生成后用规范口径自洽复核：应对仅当 `beats(play.cards, target, cfg)`=true 才纳入；领出仅当 `matchPattern` 非空。不改 beats/legalCheck 语义。测试：① A-008 实证例复现（修前红修后绿）；② 不变量测=∀ legalResponses 返回项 legalCheck 必过（含逢人配多手枚举）；③ 既有 conformance 测零回归。**完工**：`214fc846` fix(engine)·Lead 验收 PASS（game-a A-008 记档·兜底 filter 可退=PE-A 自裁·幂等保留亦无害）。
+
 ### REQ-ART-可消费槽铁律 · 美术台本只列「有消费槽」的行 + 程序化背景下沉成可替换槽 · [2026-07-22] · owner 拍板 → Lead 出图 → 全游戏一体适用 · status: **✅ done（两件引擎件皆 done·Lead 2026-07-22 归档腾槽；per-game 台本清理转各游戏 requests.md + 审计工具追踪）** · 类型: 美术生产链铁律 + 引擎能力（跨全游戏）
 
 > **⚖ Lead 结案（2026-07-22·owner「一圈都做了一坨·清 slot」）**：本条的**引擎侧两件全部 done**，故归档腾槽；**剩余=各游戏逐行清台本**（game-level·不占引擎槽·由 `npm run ledger:audit` + 各游戏 `docs/design/<game>/requests.md` 追踪·PE-C 已起步 REQ-C-112）。
