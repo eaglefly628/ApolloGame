@@ -7,7 +7,13 @@
 
 ## 待处理 / 进行中
 
-（暂无·REQ-G102-CAPREVIEW 已裁决 ① 迁「已完结」）
+### REQ-G102-UI · UI 实装（据布局稿出 .dc.html + LayoutNode）· [2026-07-23] · GD 提 → **PUI** · status: **open** · 优先级: P1 · 类型: UI 实装
+> **交付基准**：`docs/design/game102/ui-layout-spec.html`（GD 布局稿·四屏·已映射真实控件·零新控件需求）。
+> **请 PUI**：① 据布局稿出四屏 `.dc.html` 视觉稿（卡通像素风·「稿=1:1 复刻基准」铁律）；② LayoutNode 纯数据实装（对局 HUD / 结算 Modal+Rating / 选关 LevelPath / 失败续命 Modal）；写世界=action 信号入队。
+> **控件**：全部落在 34 闭集内（`Panel/Label/Badge/ProgressBar/Button/Modal/Rating/LevelPath/Card/Float/Particles/Toast`）——如实装发现缺控件，回本表报缺口，绝不手写逃生。
+> **待定项**（请 PUI/PE 会审）：待命槽/补给的交互层归属＝render+clickable（play-field）还是 LayoutNode。
+> **边界**：play-field（像素画/传送带/色炮/弹道）= PE 的 render 层·非本单范围。
+> **前置**：capability-plan 已过 Lead 裁①（数据面可开工）；本单可与 PE 数据装配并行。
 
 ---
 

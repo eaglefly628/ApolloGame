@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>game102 · UI 布局设计稿（LayoutNode 基准 → 交 PUI）</title>
+<style>
+  :root{
+    --bg:#16122e; --bg2:#1b1636; --panel:#231d45; --panel2:#2b2455; --line:#3a3268;
+    --ink:#ece8ff; --ink2:#b7add9; --muted:#8a7fc4;
+    --gold:#ffd54a; --ui:#4fc3ff; --render:#ff9d4d; --ok:#5ee8a0; --warn:#ff5d6c;
+    --shadow:0 14px 40px rgba(0,0,0,.4); --radius:14px;
+  }
+  @media (prefers-color-scheme: light){ :root{ --bg:#f3f0fb; --bg2:#ece7f9; --panel:#fff; --panel2:#f6f3ff;
+    --line:#e0d9f4; --ink:#231d45; --ink2:#4c4470; --muted:#6c619c; --shadow:0 12px 34px rgba(90,70,160,.14); } }
+  :root[data-theme="dark"]{ --bg:#16122e; --bg2:#1b1636; --panel:#231d45; --panel2:#2b2455; --line:#3a3268; --ink:#ece8ff; --ink2:#b7add9; --muted:#8a7fc4; --shadow:0 14px 40px rgba(0,0,0,.4); }
+  :root[data-theme="light"]{ --bg:#f3f0fb; --bg2:#ece7f9; --panel:#fff; --panel2:#f6f3ff; --line:#e0d9f4; --ink:#231d45; --ink2:#4c4470; --muted:#6c619c; --shadow:0 12px 34px rgba(90,70,160,.14); }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{ background:var(--bg); color:var(--ink); line-height:1.6;
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    background-image:radial-gradient(circle at 50% -10%, var(--bg2), var(--bg) 55%); -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:0 20px 70px; }
+  h1{ font-size:clamp(26px,5vw,40px); font-weight:850; letter-spacing:-.01em; margin-top:26px; text-wrap:balance;
+    background:linear-gradient(92deg,var(--ui),var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub{ color:var(--ink2); margin-top:6px; max-width:70ch; }
+  h2{ font-size:13px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin:34px 0 14px; display:flex; align-items:center; gap:10px; }
+  h2::before{ content:""; width:11px; height:11px; border-radius:3px; background:var(--gold); }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); }
+  p,li{ color:var(--ink2); } b{ color:var(--ink); }
+  code{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.85em; background:var(--panel2); border:1px solid var(--line); padding:1px 6px; border-radius:6px; color:var(--ink); }
+  .legend{ display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+  .pill{ display:inline-flex; align-items:center; gap:7px; font-size:12.5px; padding:5px 11px; border-radius:999px; border:1px solid var(--line); background:var(--panel2); color:var(--ink2); }
+  .dot{ width:10px; height:10px; border-radius:3px; }
+  .screens{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; }
+
+  /* phone wireframe */
+  .phone{ background:var(--panel2); border:1px solid var(--line); border-radius:22px; padding:12px; box-shadow:var(--shadow); }
+  .phone .scr{ background:#141026; border-radius:14px; overflow:hidden; display:flex; flex-direction:column; height:560px; }
+  @media (prefers-color-scheme: light){ .phone .scr{ background:#e7e1f7; } }
+  :root[data-theme="light"] .phone .scr{ background:#e7e1f7; }
+  :root[data-theme="dark"] .phone .scr{ background:#141026; }
+  .region{ border:1px dashed var(--line); border-radius:8px; margin:5px; padding:7px 9px; position:relative; }
+  .region.ui{ border-color:var(--ui); background:rgba(79,195,255,.08); }
+  .region.render{ border-color:var(--render); background:rgba(255,157,77,.09); }
+  .region .rn{ font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; position:absolute; top:-8px; left:8px; padding:0 5px; background:var(--panel); border-radius:4px; }
+  .region.ui .rn{ color:var(--ui); } .region.render .rn{ color:var(--render); }
+  .region .txt{ font-size:11.5px; color:var(--ink2); }
+  .ctl{ display:inline-block; font-size:10px; font-weight:700; color:var(--ui); background:rgba(79,195,255,.14); border:1px solid rgba(79,195,255,.4); border-radius:5px; padding:0 5px; margin:1px 2px; }
+  .ctl.r{ color:var(--render); background:rgba(255,157,77,.14); border-color:rgba(255,157,77,.4); }
+  .grow{ flex:1; }
+  .rowbox{ display:flex; gap:5px; } .rowbox>*{ flex:1; }
+  .mini{ background:var(--panel); border:1px solid var(--line); border-radius:6px; height:34px; display:grid; place-items:center; font-size:10px; color:var(--muted); }
+  .capt{ text-align:center; font-size:12px; color:var(--muted); margin-top:8px; font-weight:600; }
+
+  .tablewrap{ overflow-x:auto; border:1px solid var(--line); border-radius:12px; }
+  table{ border-collapse:collapse; width:100%; font-size:13px; min-width:560px; }
+  th,td{ text-align:left; padding:9px 13px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); background:var(--panel2); }
+  tr:last-child td{ border-bottom:none; }
+  .note{ border-left:4px solid var(--gold); background:var(--panel2); border-radius:8px; padding:12px 15px; margin-top:10px; font-size:13px; }
+  footer{ margin-top:40px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:12.5px; }
+  .toggle{ position:fixed; top:14px; right:14px; background:var(--panel); border:1px solid var(--line); color:var(--ink); border-radius:999px; padding:7px 13px; font-size:12px; cursor:pointer; box-shadow:var(--shadow); }
+</style>
+</head>
+<body>
+<button class="toggle" id="tg">◐ 主题</button>
+<div class="wrap">
+  <h1>game102 · UI 布局设计稿</h1>
+  <p class="sub">《色流工坊 / Pixel Pour》· GD 产出的 UI 布局基准（2026-07-23）。<b>用途</b>：作为 PUI 落 <code>.dc.html</code> 视觉稿 + <b>LayoutNode 纯数据</b>实装的 <b>1:1 基准</b>。每个 chrome 元素已映射到真实控件（<code>src/ui/components/catalog.ts</code> 34 闭集）；play-field 明确归引擎 render 层。</p>
+  <div class="legend">
+    <span class="pill"><span class="dot" style="background:var(--ui)"></span>UI chrome = LayoutNode 纯数据（PUI 域）</span>
+    <span class="pill"><span class="dot" style="background:var(--render)"></span>play-field = 引擎 render 组件 + 渲染器（非 UI）</span>
+    <span class="pill"><span class="dot" style="background:var(--ok)"></span>零新控件需求（闭集已覆盖）</span>
+  </div>
+
+  <h2>四屏布局（竖屏）</h2>
+  <div class="screens">
+
+    <!-- 对局屏 -->
+    <div>
+      <div class="phone"><div class="scr">
+        <div class="region ui"><span class="rn">HUD Bar</span>
+          <div class="rowbox" style="align-items:center">
+            <span class="txt">关卡<span class="ctl">Label</span></span>
+            <span class="txt">🔑3/8<span class="ctl">Badge</span></span>
+            <span class="txt">得分<span class="ctl">Label</span></span>
+            <span class="txt">⏸<span class="ctl">Button</span></span>
+          </div>
+          <div class="txt" style="margin-top:4px">宝箱门进度 <span class="ctl">ProgressBar</span></div>
+        </div>
+        <div class="region render grow"><span class="rn">Play-field · 像素画棋盘</span>
+          <div class="txt">像素画（鲸）+ 🔑金钥匙 + 🚪宝箱门<br>
+            <span class="ctl r">render:PixelBoard</span><span class="ctl r">render:Door</span><span class="ctl r">弹道 Projectile</span></div>
+        </div>
+        <div class="region render"><span class="rn">传送带 5/5</span>
+          <div class="txt">发射位 + 色炮队列 <span class="ctl r">render:Conveyor</span><span class="ctl">Label</span></div></div>
+        <div class="region render"><span class="rn">待命槽 ×5</span>
+          <div class="rowbox">
+            <div class="mini">1</div><div class="mini">2</div><div class="mini">3</div><div class="mini">4</div><div class="mini">5</div>
+          </div>
+          <div class="txt" style="margin-top:3px"><span class="ctl r">render:Tray(clickable)</span> · 框/标 <span class="ctl">Panel</span></div>
+        </div>
+        <div class="region render"><span class="rn">补给区</span>
+          <div class="rowbox">
+            <div class="mini" style="color:#4fc3ff">20</div><div class="mini" style="color:#5ee8a0">20</div><div class="mini" style="color:#ffcf3f">20</div><div class="mini" style="color:#ff5d6c">20</div>
+          </div>
+          <div class="txt" style="margin-top:3px"><span class="ctl r">render:Supply(clickable)</span> · 剩余角标 <span class="ctl">Badge</span></div>
+        </div>
+      </div></div>
+      <div class="capt">① 对局屏（核心）· 连击/突破飘字 = <span class="ctl">Float</span> <span class="ctl">Particles</span></div>
+    </div>
+
+    <!-- 结算屏 -->
+    <div>
+      <div class="phone"><div class="scr" style="justify-content:center;padding:14px">
+        <div class="region ui" style="margin:auto;width:88%"><span class="rn">Modal · 结算</span>
+          <div class="txt" style="text-align:center;font-size:15px;color:var(--ink)">通关！ <span class="ctl">Modal</span><span class="ctl">Label</span></div>
+          <div class="txt" style="text-align:center;margin:8px 0">★ ★ ☆ <span class="ctl">Rating</span></div>
+          <div class="txt" style="text-align:center">🔑 8/8 · 宝箱门开启 <span class="ctl">Badge</span></div>
+          <div class="txt" style="text-align:center;margin:6px 0">得分 12,340 <span class="ctl">Label</span></div>
+          <div class="rowbox" style="margin-top:10px">
+            <div class="mini" style="color:var(--ok)">下一关</div><div class="mini">重来</div>
+          </div>
+          <div class="txt" style="text-align:center;margin-top:4px"><span class="ctl">Button</span> · 庆祝 <span class="ctl">Particles</span></div>
+        </div>
+      </div></div>
+      <div class="capt">② 结算屏 · 星级 = <span class="ctl">Rating</span></div>
+    </div>
+
+    <!-- 选关屏 -->
+    <div>
+      <div class="phone"><div class="scr">
+        <div class="region ui"><span class="rn">Top</span><span class="txt">金币 / 返回 <span class="ctl">Label</span><span class="ctl">Button</span></span></div>
+        <div class="region ui grow"><span class="rn">选关长卷</span>
+          <div class="txt">武馆→山巅式关卡路径（节点=关·星标）<br><span class="ctl">LevelPath</span><span class="ctl">Card</span><span class="ctl">Badge</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+            <div class="mini" style="width:60%">关 3 ★★☆</div>
+            <div class="mini" style="width:60%;margin-left:30%">关 2 ★★★</div>
+            <div class="mini" style="width:60%">关 1 ★★★</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="capt">③ 选关屏 · <span class="ctl">LevelPath</span>（game-t 同款活范例）</div>
+    </div>
+
+    <!-- 失败/续命 -->
+    <div>
+      <div class="phone"><div class="scr" style="justify-content:center;padding:14px">
+        <div class="region render grow" style="opacity:.5;margin:5px"><span class="rn">Play-field（灰屏定格）</span><div class="txt">差一点…</div></div>
+        <div class="region ui" style="width:92%;margin:0 auto 10px"><span class="rn">Modal · 续命 offer</span>
+          <div class="txt" style="text-align:center;color:var(--ink)">再来一发就赢！ <span class="ctl">Modal</span></div>
+          <div class="rowbox" style="margin-top:8px">
+            <div class="mini" style="color:var(--gold)">📺 看广告复活</div>
+            <div class="mini" style="color:var(--ok)">$6.99 续命</div>
+          </div>
+          <div class="txt" style="text-align:center;margin-top:4px"><span class="ctl">Button</span> · 提示 <span class="ctl">Toast</span></div>
+        </div>
+      </div></div>
+      <div class="capt">④ 失败/续命屏 · 失败点变现</div>
+    </div>
+  </div>
+
+  <h2>控件映射表（区域 → LayoutNode 控件 / render 层）</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>区域</th><th>元素</th><th>控件 / 层</th><th>归属</th></tr></thead>
+    <tbody>
+      <tr><td>对局 HUD</td><td>关卡/得分文字 · 钥匙进度 · 宝箱门计量 · 暂停</td><td><code>Panel</code> <code>Label</code> <code>Badge</code> <code>ProgressBar</code> <code>Button</code></td><td>PUI · LayoutNode</td></tr>
+      <tr><td>Play-field</td><td>像素画棋盘 · 金钥匙 · 宝箱门 · 弹道 · 传送带 · 色炮</td><td><code>render 组件</code>（引擎渲染器·<code>clickable</code> 输入）</td><td>PE · render 层</td></tr>
+      <tr><td>待命槽 / 补给</td><td>槽位框+标签+剩余角标（交互层=render 实体）</td><td>框标 <code>Panel</code> <code>Label</code> <code>Badge</code>；实体 <code>render+clickable</code></td><td>PUI 框 · PE 实体</td></tr>
+      <tr><td>连击 / 突破反馈</td><td>飘分 · COMBO 字 · BURST 光晕 · 消除粒子</td><td><code>Float</code> <code>Particles</code></td><td>PUI · LayoutNode</td></tr>
+      <tr><td>结算屏</td><td>弹窗 · 星级 · 钥匙 · 得分 · 按钮 · 庆祝</td><td><code>Modal</code> <code>Rating</code> <code>Badge</code> <code>Label</code> <code>Button</code> <code>Particles</code></td><td>PUI · LayoutNode</td></tr>
+      <tr><td>选关屏</td><td>关卡路径 · 关卡节点 · 星标</td><td><code>LevelPath</code> <code>Card</code> <code>Badge</code></td><td>PUI · LayoutNode</td></tr>
+      <tr><td>失败/续命</td><td>弹窗 · 复活/续命按钮 · 提示</td><td><code>Modal</code> <code>Button</code> <code>Toast</code></td><td>PUI · LayoutNode</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note">
+    <b>结论：零新控件需求</b> —— 全部 UI chrome 用现有 34 控件闭集即可表达（符合 manifesto「先重组」）。
+    play-field（像素画/传送带/色炮/弹道）不是 UI，走引擎 render 组件 + 渲染器（对齐 game-g 对战场先例）。
+  </div>
+
+  <h2>交接说明（给 PUI）</h2>
+  <div class="card">
+    <p><b>本稿 = GD 布局基准</b>，非最终 UI 代码（GD 零代码 + UI 铁律）。请 PUI：</p>
+    <ol style="margin:8px 0 0 20px">
+      <li>据本稿出 <code>.dc.html</code> 视觉稿（字体/渐变/纹样/配色以卡通像素风为基·「稿=1:1 复刻基准」铁律）。</li>
+      <li>四屏用 <b>LayoutNode 纯数据</b>实装；写世界=action 信号入队（handler 不塞自由逻辑/DOM）。</li>
+      <li>待命槽/补给的<b>交互层归属</b>（render+clickable vs LayoutNode）请 PUI/PE 会审定夺——本稿标为待定项。</li>
+      <li>若实装中发现缺控件/表达不了 → 走 <code>requests.md</code> 报 PUI，绝不手写逃生。</li>
+    </ol>
+    <p style="margin-top:8px">开工单：<code>docs/design/game102/requests.md</code>（GD 将据本稿开「UI 实装」工单派 PUI）。</p>
+  </div>
+
+  <footer>
+    <b>game102 · Pixel Pour</b> — UI 布局设计稿 v1 · GD · 2026-07-23 · 控件对照 <code>src/ui/components/catalog.ts</code>（34 闭集）。
+    配套：<code>gdd.md</code> · <code>capability-plan.md</code>（Lead 已裁①）· <code>pixel-pour-designer.html</code> · <code>prototype.html</code>。
+  </footer>
+</div>
+<script>
+  (function(){ var root=document.documentElement, b=document.getElementById('tg');
+    b.addEventListener('click',function(){ var c=root.getAttribute('data-theme');
+      if(!c) c=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+      root.setAttribute('data-theme', c==='dark'?'light':'dark'); }); })();
+</script>
+</body>
+</html>
