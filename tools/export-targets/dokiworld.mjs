@@ -77,8 +77,8 @@ const GAME_PATCHES = {
     },
     {
       file: 'src/game/games/game-c/game-c.ts',
-      find: `    back_to_story: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); },`,
-      replace: `    back_to_story: () => { clearAiTimer(); if (host?.complete) { host?.exit?.(); /* 3D/audio teardown delegated to mount() cleanup when the host unmounts the iframe */ } else { screen = 'menu'; openWardrobe = null; showLog = false; stop3D(); gcAudio.leaveTable(); remount(); } },`,
+      find: `    back_to_story: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; showMenu = false; showHelp = false; stop3D(); gcAudio.leaveTable(); remount(); },`,
+      replace: `    back_to_story: () => { clearAiTimer(); if (host?.complete) { host?.exit?.(); /* 3D/audio teardown delegated to mount() cleanup when the host unmounts the iframe */ } else { screen = 'menu'; openWardrobe = null; showLog = false; showMenu = false; showHelp = false; stop3D(); gcAudio.leaveTable(); remount(); } },`,
     },
   ],
 };
