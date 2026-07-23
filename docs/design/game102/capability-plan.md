@@ -6,8 +6,8 @@
 
 ## 1. 游戏一句话
 
-竖屏休闲益智：传送带承载「色炮」到发射位**自动向中央同色方块开火**消色，5 待命槽复用+连击突破——
-清空棋盘/拼出隐藏像素画过关（GDD=`docs/design/game102/gdd.md`）。
+竖屏休闲益智：传送带承载「色炮」到发射位**自动向中央同色像素块开火**消色，5 待命槽复用+连击突破——
+清空**整幅像素画棋盘**（并集金钥匙/开宝箱门）过关（GDD=`docs/design/game102/gdd.md`；已按 2026-07-23 实机截图校准）。
 
 ## 2. 消费的引擎能力（对照 `capability-registry` 实名）
 
@@ -20,10 +20,11 @@
 | `hitbox` / `collision-resolve` | 弹丸命中方块判定 | ✅ 现有 |
 | `tween` / `motion-apply` | 传送带位移、色炮上带/入槽缓动、方块消除缩放 | ✅ 现有 |
 | `lifetime` | 弹丸/粒子生命期回收 | ✅ 现有 |
-| `group-count` | 按颜色统计**剩余同色方块数**（补给区角标 + 无同色目标判定） | ✅ 现有 |
-| `event-when` + `effect-apply` | 规则链：到位且有同色→开火；弹尽→入槽；同色 hp 归零→消除+计分+连击；全清→胜；步/时尽→负 | ✅ 现有 |
-| `flow`（GameFlow） | 关卡流程：playing →(全清)victory /(限额尽)defeat；onEnter 落输入闸 | ✅ 现有 |
-| `gauge` / stats + resource（atoms） | 得分/连击倍率/步数或倒计时/金币 | ✅ 现有 |
+| `group-count` | 按颜色统计**剩余同色像素块数**（补给区角标 + 无同色目标判定） | ✅ 现有 |
+| `event-when` + `effect-apply` | 规则链：到位且有同色→开火；弹尽→入槽；同色 hp 归零→消除+计分+连击；**收集钥匙→计数/开门**；全清/目标达成→胜；步/时尽→负 | ✅ 现有 |
+| `flow`（GameFlow） | 关卡流程：playing →(全清/门开)victory /(限额尽)defeat；onEnter 落输入闸 | ✅ 现有 |
+| `gauge` / stats + resource（atoms） | 得分/连击倍率/步数或倒计时/金币/**钥匙计数/宝箱门目标计量（100）** | ✅ 现有 |
+| `tilemap`（位图棋盘） | **中央像素画棋盘**：位图+调色板→带色像素块阵列（关卡=位图数据） | ✅ 现有（待 PE 核对适配度） |
 | `timeline` | 连击/突破/结算的多拍演出编排（订阅信号自演） | ✅ 现有 |
 | 种子 PRNG（RandomSeed） | 关卡摆盘、补给出色（**游戏层禁裸 Math.random**） | ✅ 现有 |
 | UI：LayoutNode 全套（Modal/Particles/flyTo/floatUp/format/stroke/LevelPath） | HUD/结算/飘分/收集飞行/选关 | ✅ 现有（休闲批） |
@@ -32,10 +33,11 @@
 
 | 数据表 | 内容 | 谁解释它 |
 |---|---|---|
-| 关卡表（20 行） | 颜色数/方块阵(行列/摆色/隐藏图案)/硬块 hp/带速/步或时限/星阈/seed | `flow` + `event-when`/`effect-apply` 胜负链 + PRNG 摆盘 |
+| 关卡表（20 行） | 颜色数/带速/步或时限/星阈/seed/目标（清空·钥匙数·门目标值） | `flow` + `event-when`/`effect-apply` 胜负链 |
+| **像素画位图**（每关一张） | 位图像素→像素块颜色 + 硬块 hp + 特殊件坐标（`key`/`door`） | `tilemap`（位图→格）+ 视图映射（色/皮） |
 | 色炮配置 | 每炮弹药量、颜色集 | `launch` + `tray` config |
 | 连击表 comboTable | 连击窗口/倍率阶梯 | `event-when`/`effect-apply`（计分链） |
-| 突破规则 | 快连间隔阈值→容量 6→10 | `zone-occupancy` config + `event-when` |
+| 突破规则 | 快连间隔阈值→容量 5→10 | `zone-occupancy` config + `event-when` |
 | 商业化触发表 | Lv.10 双倍币 / Lv.20 去广告 / 失败续命 | 元层（运行时外·先记数据，接线后置） |
 
 > 红线自检：上表每一行都指向**现有解释器**，无「数据表+待写游戏层解释器」。**唯一存疑**见 §4。

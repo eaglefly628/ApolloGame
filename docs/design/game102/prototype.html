@@ -3,428 +3,329 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>色流工坊 · Pixel Pour（核心玩法原型）</title>
+<title>色流工坊 · Pixel Pour（核心玩法原型 · 实机校准版）</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Press+Start+2P&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { height:100%; background:#141026; overflow:hidden; font-family:'Fredoka',sans-serif; }
+  html,body { height:100%; background:#141026; overflow:hidden; font-family:"PingFang SC",system-ui,sans-serif; }
   #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-    background:radial-gradient(circle at 50% 20%, #2a2150 0%, #141026 70%); }
+    background:radial-gradient(circle at 50% 18%, #2a2150 0%, #141026 70%); }
   canvas { display:block; touch-action:none; box-shadow:0 20px 60px rgba(0,0,0,.5); border-radius:18px; }
   #hint { position:fixed; bottom:8px; left:0; right:0; text-align:center; color:#6b6398;
-    font-size:12px; letter-spacing:.5px; pointer-events:none; }
+    font-size:12px; letter-spacing:.4px; pointer-events:none; padding:0 12px; }
 </style>
 </head>
 <body>
 <div id="wrap"><canvas id="game"></canvas></div>
-<div id="hint">点击底部颜色发射色炮 · 只打同色 · 点待命槽复用 · 快速连发触发 BURST</div>
+<div id="hint">点底部颜色发射色炮（每炮 20 发·连喷同色）· 收集金钥匙开宝箱门 · 点待命槽复用 · 快速连发触发 BURST</div>
 <script>
 (() => {
 'use strict';
-// ============== 配置（对应 GDD 数值表，可调） ==============
+// ============== 配置（实机校准 2026-07-23） ==============
 const CFG = {
-  W: 480, H: 854,                 // 逻辑竖屏分辨率
-  CONVEYOR_CAP: 6,                // 传送带容量
-  BURST_CAP: 10,                  // 连发突破上限
-  BURST_WINDOW: 0.38,            // 连发判定间隔(s)
-  SLOTS: 5,                       // 待命槽
-  AMMO: 3,                        // 每炮弹药
-  BELT_SPEED: 95,                 // 传送带基础速度 px/s
-  FIRE_INTERVAL: 0.28,           // 发射间隔(s)
-  COMBO_WINDOW: 1.6,             // 连击窗口(s)
-  SCORE_CLEAR: 10,
+  W: 480, H: 854,
+  COLS: 16, ROWS: 13, TILE: 24,     // 像素画棋盘
+  CONVEYOR_CAP: 5,                    // 传送带容量（实机 5/5）
+  BURST_CAP: 10,                      // 连发突破
+  BURST_WINDOW: 0.38,
+  SLOTS: 5,                           // 待命槽
+  AMMO: 20,                           // 每炮弹药（实机 20·连喷）
+  BELT_SPEED: 150,
+  FIRE_INTERVAL: 0.075,             // 连喷间隔
+  COMBO_WINDOW: 1.4,
+  SCORE_CLEAR: 5,
 };
-const COLORS = [
-  {n:'red',    c:'#ff5d6c', d:'#c93b4a', ico:'●'},
-  {n:'yellow', c:'#ffcf3f', d:'#d9a410', ico:'▲'},
-  {n:'blue',   c:'#4fc3ff', d:'#2b8fce', ico:'■'},
-  {n:'green',  c:'#5ee8a0', d:'#2fb877', ico:'◆'},
-  {n:'purple', c:'#c98bff', d:'#9455d6', ico:'★'},
-  {n:'orange', c:'#ff9d4d', d:'#d9701f', ico:'✦'},
+const PAL = {
+  blue:  {c:'#3f7bd6', d:'#2b5aa0'}, lblue:{c:'#7fd0ff', d:'#4fa6de'},
+  white: {c:'#eef4ff', d:'#c3ccdd'}, teal: {c:'#4fe0c0', d:'#2fae94'},
+  red:   {c:'#ff5d6c', d:'#c93b4a'}, pink: {c:'#ffa6c0', d:'#d76f92'},
+  gold:  {c:'#ffcf3f', d:'#d9a410'}, orange:{c:'#ff9d4d', d:'#d9701f'},
+  green: {c:'#5ee8a0', d:'#2fb877'}, purple:{c:'#c98bff', d:'#9455d6'},
+};
+// 关卡图库：形状函数 + 调色板（返回 palette 名或 null）
+function shapeHeart(nx,ny){ // nx,ny in [-1,1]
+  const x=nx*1.15, y=-ny*1.15+0.15;
+  const v=Math.pow(x*x+y*y-1,3)-x*x*y*y*y;
+  if(v>0) return null;
+  const d=x*x+y*y; return d>0.62?'red':'pink';
+}
+function shapeFish(nx,ny){
+  const x=nx, y=ny;
+  const body=(x-0.15)*(x-0.15)/0.62 + y*y/0.28 <= 1;
+  const tail=(x< -0.45) && Math.abs(y) < ( -x-0.45)*0.9;
+  if(!body&&!tail) return null;
+  if(tail&&!body) return 'teal';
+  const belly=y>0.05;
+  if(x>0.55) return 'lblue';        // 头
+  return belly?'blue':'lblue';
+}
+function shapeStar(nx,ny){
+  const a=Math.atan2(ny,nx), r=Math.hypot(nx,ny);
+  const rr=0.55+0.35*Math.cos(5*a - Math.PI/2);
+  if(r>rr) return null;
+  return r>rr*0.55?'orange':'gold';
+}
+const PICTURES = [
+  {name:'鲸', shape:shapeFish, cols:['blue','lblue','teal'], keys:6},
+  {name:'心', shape:shapeHeart, cols:['red','pink'], keys:5},
+  {name:'星', shape:shapeStar, cols:['gold','orange'], keys:4},
 ];
 
 // ============== Canvas / 缩放 ==============
-const cv = document.getElementById('game');
-const ctx = cv.getContext('2d');
-let scale = 1;
+const cv=document.getElementById('game'), ctx=cv.getContext('2d');
+let scale=1;
 function resize(){
-  const ww = window.innerWidth, wh = window.innerHeight;
-  scale = Math.min(ww/CFG.W, wh/CFG.H);
-  cv.width = CFG.W*devicePixelRatio*scale|0;
-  cv.height = CFG.H*devicePixelRatio*scale|0;
-  cv.style.width = (CFG.W*scale)+'px';
-  cv.style.height = (CFG.H*scale)+'px';
+  const ww=innerWidth, wh=innerHeight; scale=Math.min(ww/CFG.W, wh/CFG.H);
+  cv.width=CFG.W*devicePixelRatio*scale|0; cv.height=CFG.H*devicePixelRatio*scale|0;
+  cv.style.width=(CFG.W*scale)+'px'; cv.style.height=(CFG.H*scale)+'px';
   ctx.setTransform(devicePixelRatio*scale,0,0,devicePixelRatio*scale,0,0);
 }
-window.addEventListener('resize', resize); resize();
+addEventListener('resize',resize); resize();
 
-// ============== 布局区域 ==============
-const L = {
-  hud:   {x:0,   y:0,   w:480, h:74},
-  board: {x:20,  y:88,  w:440, h:340},
-  belt:  {x:0,   y:452, w:480, h:96},   // 发射位在左端
-  slots: {x:20,  y:566, w:440, h:78},
-  supply:{x:20,  y:668, w:440, h:150},
+// ============== 布局 ==============
+const L={
+  board:{x:48, y:96, w:384, h:312},
+  belt: {x:0,  y:452, w:480, h:92},
+  slots:{x:20, y:556, w:440, h:76},
+  supply:{x:20, y:660, w:440, h:150},
 };
-const FIRE_X = 78, FIRE_Y = L.belt.y + L.belt.h/2; // 发射位坐标
+const FIRE_X=78, FIRE_Y=L.belt.y+L.belt.h/2;
 
-// ============== 游戏状态 ==============
-let state, level, score, best = 0;
-function palette(k){ return COLORS.slice(0,k); }
+// ============== 状态 ==============
+let state, level, score, best=0;
+function seeded(a,b,c,d=0){ let x=Math.sin(a*97.13+b*33.7+c*7.31+d*131.1)*43758.5453; return x-Math.floor(x); }
 
 function buildLevel(lv){
-  const colorCount = Math.min(3 + Math.floor((lv-1)/3), 6);
-  const cols = 6;
-  const rows = Math.min(3 + Math.floor((lv-1)/2), 7);
-  const pal = palette(colorCount);
-  const cubes = [];
-  const cw = 62, ch = 40, gap = 6;
-  const gridW = cols*cw + (cols-1)*gap;
-  const ox = L.board.x + (L.board.w - gridW)/2;
-  const oy = L.board.y + 14;
-  for(let r=0;r<rows;r++){
-    for(let c=0;c<cols;c++){
-      const col = pal[(Math.floor(seeded(lv,r,c)*colorCount))%colorCount];
-      const hp = lv>=8 && seeded(lv,r,c,1)>0.78 ? 2 : 1;
-      cubes.push({
-        color:col, hp, maxhp:hp, alive:true,
-        x: ox + c*(cw+gap), y: oy + r*(ch+gap),
-        w:cw, h:ch, sx:0.4, // spawn scale anim
-      });
-    }
+  const pic=PICTURES[(lv-1)%PICTURES.length];
+  const colorCount=Math.min(pic.cols.length + Math.floor((lv-1)/PICTURES.length),6);
+  const pal=pic.cols.slice(0,Math.max(2,colorCount));
+  const T=CFG.TILE, cols=CFG.COLS, rows=CFG.ROWS;
+  const ox=L.board.x+(L.board.w-cols*T)/2, oy=L.board.y+(L.board.h-rows*T)/2;
+  const tiles=[]; const filled=[];
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const nx=(c+0.5)/cols*2-1, ny=(r+0.5)/rows*2-1;
+    let col=pic.shape(nx,ny);
+    if(!col) continue;
+    if(!pal.includes(col)) col=pal[Math.floor(seeded(lv,r,c)*pal.length)];
+    const hp = lv>=3 && seeded(lv,r,c,2)>0.86 ? 2:1;
+    const t={color:col, hp, maxhp:hp, x:ox+c*T, y:oy+r*T, w:T, h:T, alive:true, sx:0.3, isKey:false};
+    tiles.push(t); filled.push(t);
   }
+  // 撒钥匙（在已填格上标记）
+  const nkeys=Math.min(pic.keys, filled.length);
+  for(let i=0;i<nkeys;i++){ const t=filled[Math.floor(seeded(lv,i,7)*filled.length)]; t.isKey=true; }
+  const keyTotal=tiles.filter(t=>t.isKey).length;
   return {
-    colorCount, pal, cubes,
+    pic, pal, tiles, ox, oy,
     belt:[], slots:new Array(CFG.SLOTS).fill(null),
     projectiles:[], particles:[], floaters:[],
     combo:0, comboTimer:0, lastSpawn:-99, burst:0, shake:0,
-    beltSpeed: CFG.BELT_SPEED*(1+(lv-1)*0.05),
+    beltSpeed:CFG.BELT_SPEED*(1+(lv-1)*0.04),
     fireCd:0, won:false, winTimer:0,
+    keyTotal, keyGot:0, doorTarget:100,
   };
 }
-// 确定性伪随机，保证关卡可复现
-function seeded(a,b,c,d=0){ let x=Math.sin(a*97.13+b*33.7+c*7.31+d*131.1)*43758.5453; return x-Math.floor(x); }
-
-function newGame(){ level=1; score=0; state=buildLevel(level); }
+function newGame(){ level=1; score=0; state=buildLevel(1); }
 function nextLevel(){ level++; state=buildLevel(level); }
 
-// ============== 交互：命中区域 ==============
+// ============== 交互 ==============
 function pointer(px,py){
-  // supply 颜色按钮
-  const pal=state.pal, n=pal.length;
-  const bw=Math.min(70,(L.supply.w-(n-1)*12)/n), bh=70;
-  const totalW=n*bw+(n-1)*12, sx=L.supply.x+(L.supply.w-totalW)/2, sy=L.supply.y+34;
-  for(let i=0;i<n;i++){
-    const bx=sx+i*(bw+12);
-    if(px>=bx&&px<=bx+bw&&py>=sy&&py<=sy+bh){ spawnCannon(pal[i]); return; }
-  }
-  // 待命槽点击复用
-  const gw=(L.slots.w-(CFG.SLOTS-1)*10)/CFG.SLOTS, gh=58;
-  const gy=L.slots.y+16;
-  for(let i=0;i<CFG.SLOTS;i++){
-    const gx=L.slots.x+i*(gw+10);
-    if(state.slots[i]&&px>=gx&&px<=gx+gw&&py>=gy&&py<=gy+gh){ redeploy(i); return; }
-  }
-  if(state.won){ nextLevel(); }
-}
-cv.addEventListener('pointerdown', e=>{
-  const rect=cv.getBoundingClientRect();
-  const px=(e.clientX-rect.left)/scale, py=(e.clientY-rect.top)/scale;
-  pointer(px,py);
-});
-
-// ============== 核心动作 ==============
-function beltCount(){ return state.belt.length; }
-function totalUnits(){ return state.belt.length + state.slots.filter(Boolean).length; }
-
-function spawnCannon(color){
-  if(state.won) return;
-  const now=performance.now()/1000;
-  const fast = (now-state.lastSpawn) < CFG.BURST_WINDOW;
-  const cap = fast ? CFG.BURST_CAP : CFG.CONVEYOR_CAP;
-  if(beltCount()>=cap) { bump(); return; }
-  if(fast && beltCount()>=CFG.CONVEYOR_CAP){ state.burst=1.0; state.floaters.push(floater('BURST!','#ffd54a',CFG.W/2,L.belt.y-6,1.1)); }
-  state.lastSpawn=now;
-  state.belt.push({ color, ammo:CFG.AMMO, x:CFG.W+30, targetX:0, firing:false, bob:Math.random()*6 });
-  relayout();
-}
-function relayout(){
-  // 从发射位向右排布
-  state.belt.sort((a,b)=>a.x-b.x);
-  state.belt.forEach((cn,i)=>{ cn.targetX = FIRE_X + i*56; });
-}
-function redeploy(i){
-  if(state.won) return;
-  const cn=state.slots[i];
-  if(!cn) return;
-  if(beltCount()>=CFG.BURST_CAP){ bump(); return; }
-  cn.ammo=CFG.AMMO; cn.x=CFG.W+30; cn.firing=false;
-  state.slots[i]=null; state.belt.push(cn); relayout();
-  state.floaters.push(floater('+装填','#9be7c4',L.slots.x+i*90+40,L.slots.y+8,0.8));
-}
-function firstEmptySlot(){ return state.slots.findIndex(s=>!s); }
-function targetsFor(color){ return state.cubes.filter(q=>q.alive&&q.color===color); }
-
-function bump(){ state.shake=Math.min(state.shake+4,10); }
-
-// ============== 更新 ==============
-let lastT=performance.now();
-function loop(t){
-  const dt=Math.min((t-lastT)/1000,0.05); lastT=t;
-  update(dt); render(); requestAnimationFrame(loop);
-}
-function update(dt){
   const s=state;
-  // 传送带移动
-  relayout();
-  for(const cn of s.belt){
-    if(cn.x>cn.targetX){ cn.x=Math.max(cn.targetX, cn.x - s.beltSpeed*dt); }
-    cn.bob += dt*6;
-  }
-  // 连发/震屏衰减
-  s.burst=Math.max(0,s.burst-dt*1.4);
-  s.shake=Math.max(0,s.shake-dt*24);
-  if(s.comboTimer>0){ s.comboTimer-=dt; if(s.comboTimer<=0) s.combo=0; }
+  const pal=s.pal, n=pal.length;
+  const bw=Math.min(72,(L.supply.w-(n-1)*12)/n), bh=72;
+  const totalW=n*bw+(n-1)*12, sx=L.supply.x+(L.supply.w-totalW)/2, sy=L.supply.y+40;
+  for(let i=0;i<n;i++){ const bx=sx+i*(bw+12);
+    if(px>=bx&&px<=bx+bw&&py>=sy&&py<=sy+bh){ spawnCannon(pal[i]); return; } }
+  const gw=(L.slots.w-(CFG.SLOTS-1)*10)/CFG.SLOTS, gh=56, gy=L.slots.y+16;
+  for(let i=0;i<CFG.SLOTS;i++){ const gx=L.slots.x+i*(gw+10);
+    if(s.slots[i]&&px>=gx&&px<=gx+gw&&py>=gy&&py<=gy+gh){ redeploy(i); return; } }
+  if(s.won) nextLevel();
+}
+cv.addEventListener('pointerdown',e=>{ const r=cv.getBoundingClientRect();
+  pointer((e.clientX-r.left)/scale,(e.clientY-r.top)/scale); });
 
-  // 发射：队首（最左）到位的炮开火
+// ============== 动作 ==============
+const beltCount=()=>state.belt.length;
+function spawnCannon(color){
+  const s=state; if(s.won) return;
+  const now=performance.now()/1000, fast=(now-s.lastSpawn)<CFG.BURST_WINDOW;
+  const cap=fast?CFG.BURST_CAP:CFG.CONVEYOR_CAP;
+  if(beltCount()>=cap){ bump(); return; }
+  if(fast&&beltCount()>=CFG.CONVEYOR_CAP){ s.burst=1; s.floaters.push(fl('BURST!','#ffd54a',CFG.W/2,L.belt.y-4,1.1)); }
+  s.lastSpawn=now;
+  s.belt.push({color,ammo:CFG.AMMO,x:CFG.W+30,targetX:0,bob:Math.random()*6});
+  relayout();
+}
+function relayout(){ state.belt.sort((a,b)=>a.x-b.x); state.belt.forEach((c,i)=>c.targetX=FIRE_X+i*58); }
+function redeploy(i){ const s=state; if(s.won) return; const cn=s.slots[i]; if(!cn) return;
+  if(beltCount()>=CFG.BURST_CAP){ bump(); return; }
+  cn.ammo=CFG.AMMO; cn.x=CFG.W+30; s.slots[i]=null; s.belt.push(cn); relayout();
+  s.floaters.push(fl('+装填','#9be7c4',L.slots.x+i*90+40,L.slots.y+6,0.8)); }
+const emptySlot=()=>state.slots.findIndex(x=>!x);
+const targets=col=>state.tiles.filter(t=>t.alive&&t.color===col);
+function bump(){ state.shake=Math.min(state.shake+3,9); }
+
+// ============== 循环 ==============
+let lastT=performance.now();
+function loop(t){ const dt=Math.min((t-lastT)/1000,0.05); lastT=t; update(dt); render(); requestAnimationFrame(loop); }
+function update(dt){
+  const s=state; relayout();
+  for(const cn of s.belt){ if(cn.x>cn.targetX) cn.x=Math.max(cn.targetX,cn.x-s.beltSpeed*dt); cn.bob+=dt*6; }
+  s.burst=Math.max(0,s.burst-dt*1.4); s.shake=Math.max(0,s.shake-dt*24);
+  if(s.comboTimer>0){ s.comboTimer-=dt; if(s.comboTimer<=0) s.combo=0; }
   s.fireCd-=dt;
   const head=s.belt[0];
-  if(head && head.x<=head.targetX+0.5 && Math.abs(head.targetX-FIRE_X)<1){
-    const ts=targetsFor(head.color);
-    if(ts.length===0){
-      // 无同色目标 → 存入待命槽（若满则留在带上等待）
-      const slot=firstEmptySlot();
-      if(slot>=0){ s.slots[slot]=head; s.belt.shift(); relayout(); }
-    } else if(s.fireCd<=0){
+  if(head && Math.abs(head.x-FIRE_X)<1){
+    const ts=targets(head.color);
+    if(ts.length===0){ const sl=emptySlot(); if(sl>=0){ s.slots[sl]=head; s.belt.shift(); relayout(); } }
+    else if(s.fireCd<=0){
       s.fireCd=CFG.FIRE_INTERVAL;
       const tgt=ts[Math.floor(Math.random()*ts.length)];
-      s.projectiles.push({x:FIRE_X,y:FIRE_Y,tx:tgt.x+tgt.w/2,ty:tgt.y+tgt.h/2,
-        color:head.color,tgt,life:0});
-      head.ammo--; head.firing=true;
-      if(head.ammo<=0){
-        const slot=firstEmptySlot();
-        if(slot>=0){ s.slots[slot]=head; }
-        s.belt.shift(); relayout();
-      }
+      s.projectiles.push({x:FIRE_X,y:FIRE_Y,tx:tgt.x+tgt.w/2,ty:tgt.y+tgt.h/2,color:head.color,tgt,life:0});
+      head.ammo--;
+      if(head.ammo<=0){ const sl=emptySlot(); if(sl>=0) s.slots[sl]=head; s.belt.shift(); relayout(); }
     }
   }
-
-  // 抛射物
-  for(const p of s.projectiles){
-    p.life+=dt*7;
-    if(p.life>=1){
-      p.done=true;
-      if(p.tgt.alive){
-        p.tgt.hp--;
-        spawnHit(p.tx,p.ty,p.color.c);
-        if(p.tgt.hp<=0){
-          p.tgt.alive=false;
-          clearCube(p.tgt);
-        } else { p.tgt.sx=1.25; }
-      }
-    }
-  }
+  for(const p of s.projectiles){ p.life+=dt*9;
+    if(p.life>=1){ p.done=true; if(p.tgt.alive){ p.tgt.hp--; hit(p.tx,p.ty,PAL[p.color].c);
+      if(p.tgt.hp<=0){ p.tgt.alive=false; clearTile(p.tgt); } else p.tgt.sx=1.3; } } }
   s.projectiles=s.projectiles.filter(p=>!p.done);
-
-  // 方块生长动画
-  for(const q of s.cubes){ q.sx += (1-q.sx)*Math.min(1,dt*12); }
-
-  // 粒子
-  for(const pt of s.particles){
-    pt.x+=pt.vx*dt; pt.y+=pt.vy*dt; pt.vy+=520*dt; pt.life-=dt;
-  }
+  for(const t of s.tiles) t.sx+=(1-t.sx)*Math.min(1,dt*14);
+  for(const pt of s.particles){ pt.x+=pt.vx*dt; pt.y+=pt.vy*dt; pt.vy+=520*dt; pt.life-=dt; }
   s.particles=s.particles.filter(p=>p.life>0);
-  // 飘字
-  for(const f of s.floaters){ f.y-=28*dt; f.life-=dt; }
-  s.floaters=s.floaters.filter(f=>f.life>0);
-
-  // 胜负
-  if(!s.won && s.cubes.every(q=>!q.alive)){ s.won=true; s.winTimer=0; best=Math.max(best,score); }
-  if(s.won){ s.winTimer+=dt; }
+  for(const f of s.floaters){ f.y-=26*dt; f.life-=dt; } s.floaters=s.floaters.filter(f=>f.life>0);
+  if(!s.won && s.tiles.every(t=>!t.alive)){ s.won=true; s.winTimer=0; best=Math.max(best,score); }
+  if(s.won) s.winTimer+=dt;
 }
-function clearCube(q){
-  const s=state;
-  s.combo++; s.comboTimer=CFG.COMBO_WINDOW;
-  const gain=CFG.SCORE_CLEAR*Math.max(1,s.combo);
-  score+=gain;
-  spawnBurst(q.x+q.w/2,q.y+q.h/2,q.color.c);
-  s.floaters.push(floater('+'+gain, q.color.c, q.x+q.w/2, q.y, 0.9));
-  if(s.combo>=3) s.floaters.push(floater('COMBO x'+s.combo,'#fff',CFG.W/2,L.board.y+L.board.h+8,0.9));
-  bump();
+function clearTile(t){
+  const s=state; s.combo++; s.comboTimer=CFG.COMBO_WINDOW;
+  const gain=CFG.SCORE_CLEAR*Math.max(1,s.combo); score+=gain;
+  burst(t.x+t.w/2,t.y+t.h/2,PAL[t.color].c);
+  if(t.isKey){ s.keyGot++; s.floaters.push(fl('🔑+1','#ffcf3f',t.x+t.w/2,t.y,1.0)); bump(); }
+  if(s.combo>=5 && s.combo%3===0) s.floaters.push(fl('COMBO x'+s.combo,'#fff',CFG.W/2,L.board.y+L.board.h+2,0.95));
 }
-
-// ============== 特效工厂 ==============
-function floater(txt,color,x,y,size){ return {txt,color,x,y,size,life:1.0}; }
-function spawnHit(x,y,c){
-  for(let i=0;i<5;i++){ const a=Math.random()*Math.PI*2, sp=40+Math.random()*80;
-    state.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0.4,r:2+Math.random()*2,c}); }
-}
-function spawnBurst(x,y,c){
-  for(let i=0;i<16;i++){ const a=Math.random()*Math.PI*2, sp=90+Math.random()*180;
-    state.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-60,life:0.6+Math.random()*0.3,r:2.5+Math.random()*3,c}); }
-}
+function fl(txt,color,x,y,size){ return {txt,color,x,y,size,life:1}; }
+function hit(x,y,c){ for(let i=0;i<4;i++){ const a=Math.random()*6.28,sp=30+Math.random()*70;
+  state.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0.35,r:2+Math.random()*2,c}); } }
+function burst(x,y,c){ for(let i=0;i<10;i++){ const a=Math.random()*6.28,sp=80+Math.random()*150;
+  state.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-50,life:0.5+Math.random()*0.3,r:2+Math.random()*3,c}); } }
 
 // ============== 渲染 ==============
-function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y);
-  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
-
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function render(){
-  const s=state;
-  ctx.save();
-  if(s.shake>0){ ctx.translate((Math.random()-0.5)*s.shake,(Math.random()-0.5)*s.shake); }
-  // 背景
+  const s=state; ctx.save();
+  if(s.shake>0) ctx.translate((Math.random()-0.5)*s.shake,(Math.random()-0.5)*s.shake);
   ctx.fillStyle='#1b1636'; ctx.fillRect(0,0,CFG.W,CFG.H);
-  drawPanel(L.board.x-6,L.board.y-6,L.board.w+12,L.board.h+12,'#241d47');
-
-  // 中央方块
-  for(const q of s.cubes){ if(!q.alive) continue;
-    const sc=q.sx, cx=q.x+q.w/2, cy=q.y+q.h/2;
+  // 棋盘底框
+  rr(L.board.x-8,L.board.y-8,L.board.w+16,L.board.h+16,14); ctx.fillStyle='#241d47'; ctx.fill();
+  // 像素画格
+  const T=CFG.TILE;
+  for(const t of s.tiles){ if(!t.alive) continue;
+    const p=PAL[t.color], sc=t.sx, cx=t.x+t.w/2, cy=t.y+t.h/2;
     ctx.save(); ctx.translate(cx,cy); ctx.scale(sc,sc); ctx.translate(-cx,-cy);
-    rr(q.x,q.y,q.w,q.h,8); ctx.fillStyle=q.color.d; ctx.fill();
-    rr(q.x+2,q.y+2,q.w-4,q.h-6,7); ctx.fillStyle=q.color.c; ctx.fill();
-    // 高光
-    rr(q.x+5,q.y+4,q.w-10,7,4); ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fill();
-    // 图标 + 硬块标记
-    ctx.fillStyle='rgba(0,0,0,.35)'; ctx.font='bold 16px Fredoka'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(q.color.ico, cx, cy+1);
-    if(q.maxhp>1){ ctx.fillStyle='#fff'; ctx.font='bold 12px Fredoka'; ctx.fillText(q.hp, q.x+q.w-10, q.y+11); }
+    ctx.fillStyle=p.d; ctx.fillRect(t.x,t.y,T,T);
+    ctx.fillStyle=p.c; ctx.fillRect(t.x+1,t.y+1,T-2,T-3);
+    ctx.fillStyle='rgba(255,255,255,.25)'; ctx.fillRect(t.x+2,t.y+2,T-4,3);
+    if(t.maxhp>1){ ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(t.x+3,t.y+3,T-6,T-6); }
+    if(t.isKey){ ctx.font='bold '+(T-6)+'px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('🔑',cx,cy+1); }
     ctx.restore();
   }
-
   // 抛射物
-  for(const p of s.projectiles){
-    const x=p.x+(p.tx-p.x)*p.life, y=p.y+(p.ty-p.y)*p.life - Math.sin(p.life*Math.PI)*40;
-    ctx.beginPath(); ctx.arc(x,y,6,0,7); ctx.fillStyle=p.color.c; ctx.fill();
-    ctx.beginPath(); ctx.arc(x,y,3,0,7); ctx.fillStyle='#fff'; ctx.fill();
-  }
-
-  // 传送带
-  drawBelt();
-  // 待命槽
-  drawSlots();
-  // 补给
-  drawSupply();
-  // 粒子
+  for(const p of s.projectiles){ const x=p.x+(p.tx-p.x)*p.life, y=p.y+(p.ty-p.y)*p.life-Math.sin(p.life*Math.PI)*46;
+    ctx.beginPath(); ctx.arc(x,y,5,0,7); ctx.fillStyle=PAL[p.color].c; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,2.5,0,7); ctx.fillStyle='#fff'; ctx.fill(); }
+  drawBelt(); drawSlots(); drawSupply();
   for(const pt of s.particles){ ctx.globalAlpha=Math.max(0,pt.life*2);
-    ctx.beginPath(); ctx.arc(pt.x,pt.y,pt.r,0,7); ctx.fillStyle=pt.c; ctx.fill(); }
-  ctx.globalAlpha=1;
-  // 飘字
+    ctx.beginPath(); ctx.arc(pt.x,pt.y,pt.r,0,7); ctx.fillStyle=pt.c; ctx.fill(); } ctx.globalAlpha=1;
   for(const f of s.floaters){ ctx.globalAlpha=Math.max(0,f.life);
-    ctx.font=`bold ${18*f.size}px Fredoka`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font=`bold ${17*f.size}px "PingFang SC",system-ui`; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.lineWidth=4; ctx.strokeStyle='rgba(0,0,0,.4)'; ctx.strokeText(f.txt,f.x,f.y);
-    ctx.fillStyle=f.color; ctx.fillText(f.txt,f.x,f.y); }
-  ctx.globalAlpha=1;
-  // HUD
-  drawHUD();
-  ctx.restore();
-  if(s.won) drawWin();
-  if(s.burst>0) drawBurstGlow(s.burst);
-}
-
-function drawPanel(x,y,w,h,fill){
-  rr(x,y,w,h,16); ctx.fillStyle=fill; ctx.fill();
-  ctx.lineWidth=2; ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.stroke();
+    ctx.fillStyle=f.color; ctx.fillText(f.txt,f.x,f.y); } ctx.globalAlpha=1;
+  drawHUD(); ctx.restore();
+  if(s.won) drawWin(); if(s.burst>0) drawBurstGlow(s.burst);
 }
 function drawHUD(){
+  const s=state;
   ctx.textAlign='left'; ctx.textBaseline='middle';
-  ctx.fillStyle='#8a7fc4'; ctx.font='600 13px Fredoka';
-  ctx.fillText('关卡', 24, 26);
-  ctx.fillStyle='#fff'; ctx.font='700 26px Fredoka'; ctx.fillText(level, 24, 50);
+  ctx.fillStyle='#8a7fc4'; ctx.font='600 12px system-ui'; ctx.fillText('关卡·'+s.pic.name+'图',20,26);
+  ctx.fillStyle='#fff'; ctx.font='700 24px system-ui'; ctx.fillText(level,20,50);
   ctx.textAlign='right';
-  ctx.fillStyle='#8a7fc4'; ctx.font='600 13px Fredoka'; ctx.fillText('得分', CFG.W-24, 26);
-  ctx.fillStyle='#ffd54a'; ctx.font='700 26px Fredoka'; ctx.fillText(score, CFG.W-24, 50);
-  // 剩余方块
-  const left=state.cubes.filter(q=>q.alive).length;
-  ctx.textAlign='center'; ctx.fillStyle='#8a7fc4'; ctx.font='600 12px Fredoka';
-  ctx.fillText('剩余方块 '+left, CFG.W/2, 20);
-  if(state.combo>=2){ ctx.fillStyle='#ff5d6c'; ctx.font='700 20px Fredoka'; ctx.fillText('COMBO x'+state.combo, CFG.W/2, 46); }
+  ctx.fillStyle='#8a7fc4'; ctx.font='600 12px system-ui'; ctx.fillText('得分',CFG.W-20,26);
+  ctx.fillStyle='#ffd54a'; ctx.font='700 24px system-ui'; ctx.fillText(score,CFG.W-20,50);
+  ctx.textAlign='center';
+  const left=s.tiles.filter(t=>t.alive).length;
+  ctx.fillStyle='#8a7fc4'; ctx.font='600 12px system-ui';
+  ctx.fillText('🔑 '+s.keyGot+'/'+s.keyTotal+'    剩 '+left, CFG.W/2, 20);
+  if(s.combo>=3){ ctx.fillStyle='#ff5d6c'; ctx.font='700 18px system-ui'; ctx.fillText('COMBO x'+s.combo,CFG.W/2,44); }
 }
 function drawBelt(){
   const b=L.belt;
-  // 带体
-  rr(b.x+8,b.y+18,b.w-16,b.h-30,14); ctx.fillStyle='#15112b'; ctx.fill();
-  rr(b.x+8,b.y+18,b.w-16,b.h-30,14); ctx.lineWidth=2; ctx.strokeStyle='#332a5c'; ctx.stroke();
-  // 发射位标记
-  ctx.beginPath(); ctx.arc(FIRE_X,FIRE_Y,26,0,7); ctx.fillStyle='rgba(255,213,74,.12)'; ctx.fill();
+  rr(b.x+8,b.y+16,b.w-16,b.h-28,14); ctx.fillStyle='#15112b'; ctx.fill();
+  ctx.lineWidth=2; ctx.strokeStyle='#332a5c'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(FIRE_X,FIRE_Y,24,0,7); ctx.fillStyle='rgba(255,213,74,.12)'; ctx.fill();
   ctx.setLineDash([4,4]); ctx.strokeStyle='rgba(255,213,74,.5)'; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.arc(FIRE_X,FIRE_Y,26,0,7); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle='#6b6398'; ctx.font='600 10px Fredoka'; ctx.textAlign='center'; ctx.textBaseline='top';
-  ctx.fillText('发射位', FIRE_X, b.y+2);
-  ctx.textAlign='right'; ctx.fillText('传送带 '+beltCount()+'/'+CFG.CONVEYOR_CAP, b.x+b.w-16, b.y+2);
-  // 炮
-  for(const cn of state.belt){ drawCannon(cn.x, FIRE_Y + Math.sin(cn.bob)*2, cn); }
+  ctx.beginPath(); ctx.arc(FIRE_X,FIRE_Y,24,0,7); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#6b6398'; ctx.font='600 10px system-ui'; ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillText('发射位',FIRE_X,b.y+2);
+  ctx.textAlign='right'; ctx.fillText('传送带 '+beltCount()+'/'+CFG.CONVEYOR_CAP,b.x+b.w-16,b.y+2);
+  for(const cn of state.belt) drawCannon(cn.x,FIRE_Y+Math.sin(cn.bob)*2,cn);
 }
 function drawCannon(x,y,cn){
-  ctx.save(); ctx.translate(x,y);
-  // 身体
-  rr(-22,-20,44,40,12); ctx.fillStyle=cn.color.d; ctx.fill();
-  rr(-19,-18,38,34,10); ctx.fillStyle=cn.color.c; ctx.fill();
-  // 炮口朝上
-  rr(-6,-30,12,14,4); ctx.fillStyle=cn.color.d; ctx.fill();
-  // 眼睛（Q版）
-  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-8,-2,5,0,7); ctx.arc(8,-2,5,0,7); ctx.fill();
-  ctx.fillStyle='#241d47'; ctx.beginPath(); ctx.arc(-8,-1,2.4,0,7); ctx.arc(8,-1,2.4,0,7); ctx.fill();
-  // 弹药点
-  for(let i=0;i<CFG.AMMO;i++){ ctx.beginPath(); ctx.arc(-14+i*14,14,3,0,7);
-    ctx.fillStyle= i<cn.ammo ? '#fff':'rgba(255,255,255,.25)'; ctx.fill(); }
+  const p=PAL[cn.color]; ctx.save(); ctx.translate(x,y);
+  rr(-21,-19,42,38,12); ctx.fillStyle=p.d; ctx.fill();
+  rr(-18,-17,36,32,10); ctx.fillStyle=p.c; ctx.fill();
+  rr(-5,-28,10,12,4); ctx.fillStyle=p.d; ctx.fill();       // 炮口
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-7,-2,4.5,0,7); ctx.arc(7,-2,4.5,0,7); ctx.fill();
+  ctx.fillStyle='#241d47'; ctx.beginPath(); ctx.arc(-7,-1,2.2,0,7); ctx.arc(7,-1,2.2,0,7); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.font='700 11px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(cn.ammo,0,13);   // 弹药数（实机风格）
   ctx.restore();
 }
 function drawSlots(){
-  const s=L.slots; drawPanel(s.x-6,s.y-2,s.w+12,s.h,'#201a3f');
-  ctx.fillStyle='#6b6398'; ctx.font='600 11px Fredoka'; ctx.textAlign='left'; ctx.textBaseline='top';
-  ctx.fillText('待命槽（点击复用装填）', s.x, s.y-16>0? s.y-16 : s.y);
-  const gw=(s.w-(CFG.SLOTS-1)*10)/CFG.SLOTS, gh=58, gy=s.y+16;
-  for(let i=0;i<CFG.SLOTS;i++){
-    const gx=s.x+i*(gw+10);
-    rr(gx,gy,gw,gh,10); ctx.fillStyle='#15112b'; ctx.fill();
-    ctx.lineWidth=2; ctx.strokeStyle='#332a5c'; ctx.stroke();
+  const s=L.slots; rr(s.x-6,s.y-2,s.w+12,s.h,12); ctx.fillStyle='#201a3f'; ctx.fill();
+  ctx.fillStyle='#6b6398'; ctx.font='600 11px system-ui'; ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('待命槽（点击复用·重新装满）',s.x,s.y-14);
+  const gw=(s.w-(CFG.SLOTS-1)*10)/CFG.SLOTS, gh=56, gy=s.y+16;
+  for(let i=0;i<CFG.SLOTS;i++){ const gx=s.x+i*(gw+10);
+    rr(gx,gy,gw,gh,10); ctx.fillStyle='#15112b'; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='#332a5c'; ctx.stroke();
     const cn=state.slots[i];
-    if(cn){ drawCannon(gx+gw/2, gy+gh/2, cn); }
-    else { ctx.fillStyle='#3a3363'; ctx.font='700 20px Fredoka'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(i+1,gx+gw/2,gy+gh/2); }
-  }
+    if(cn) drawCannon(gx+gw/2,gy+gh/2,cn);
+    else { ctx.fillStyle='#3a3363'; ctx.font='700 18px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(i+1,gx+gw/2,gy+gh/2); } }
 }
 function drawSupply(){
-  const s=L.supply; const pal=state.pal, n=pal.length;
-  ctx.fillStyle='#6b6398'; ctx.font='600 11px Fredoka'; ctx.textAlign='left'; ctx.textBaseline='top';
-  ctx.fillText('补给区（点击发射色炮）', s.x, s.y+4);
-  const bw=Math.min(70,(s.w-(n-1)*12)/n), bh=70;
-  const totalW=n*bw+(n-1)*12, sx=s.x+(s.w-totalW)/2, sy=s.y+34;
-  for(let i=0;i<n;i++){
-    const bx=sx+i*(bw+12), col=pal[i];
-    rr(bx,sy+3,bw,bh,16); ctx.fillStyle=col.d; ctx.fill();
-    rr(bx,sy,bw,bh,16); ctx.fillStyle=col.c; ctx.fill();
+  const s=L.supply, pal=state.pal, n=pal.length;
+  ctx.fillStyle='#6b6398'; ctx.font='600 11px system-ui'; ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('补给区（点击发射 · 每炮 '+CFG.AMMO+' 发连喷同色）',s.x,s.y+6);
+  const bw=Math.min(72,(s.w-(n-1)*12)/n), bh=72, totalW=n*bw+(n-1)*12, sx=s.x+(s.w-totalW)/2, sy=s.y+40;
+  for(let i=0;i<n;i++){ const bx=sx+i*(bw+12), p=PAL[pal[i]];
+    rr(bx,sy+3,bw,bh,16); ctx.fillStyle=p.d; ctx.fill();
+    rr(bx,sy,bw,bh,16); ctx.fillStyle=p.c; ctx.fill();
     rr(bx+5,sy+4,bw-10,10,6); ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fill();
-    ctx.fillStyle='rgba(0,0,0,.4)'; ctx.font='700 26px Fredoka'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(col.ico, bx+bw/2, sy+bh/2+2);
-    // 剩余同色数
-    const rem=targetsFor(col).length;
-    ctx.fillStyle='#fff'; ctx.font='700 12px Fredoka'; ctx.fillText(rem, bx+bw/2, sy+bh-12);
-  }
+    // Q版脸
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(bx+bw/2-11,sy+bh/2-4,7,0,7); ctx.arc(bx+bw/2+11,sy+bh/2-4,7,0,7); ctx.fill();
+    ctx.fillStyle='#241d47'; ctx.beginPath(); ctx.arc(bx+bw/2-11,sy+bh/2-3,3,0,7); ctx.arc(bx+bw/2+11,sy+bh/2-3,3,0,7); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='700 14px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(CFG.AMMO,bx+bw/2,sy+bh-14);
+    ctx.fillStyle='rgba(0,0,0,.35)'; ctx.font='700 10px system-ui'; ctx.fillText('剩'+targets(pal[i]).length,bx+bw/2,sy+12); }
 }
-function drawBurstGlow(a){
-  ctx.save(); const g=ctx.createLinearGradient(0,0,0,CFG.H);
-  g.addColorStop(0,`rgba(255,213,74,${0.0})`); g.addColorStop(0.5,`rgba(255,140,80,${0.14*a})`);
-  g.addColorStop(1,`rgba(255,93,108,${0.0})`); ctx.fillStyle=g; ctx.fillRect(0,0,CFG.W,CFG.H);
-  ctx.lineWidth=8*a; ctx.strokeStyle=`rgba(255,213,74,${0.5*a})`; rr(4,4,CFG.W-8,CFG.H-8,20); ctx.stroke();
-  ctx.restore();
-}
+function drawBurstGlow(a){ ctx.save();
+  const g=ctx.createLinearGradient(0,0,0,CFG.H); g.addColorStop(0,'rgba(255,213,74,0)');
+  g.addColorStop(0.5,`rgba(255,140,80,${0.14*a})`); g.addColorStop(1,'rgba(255,93,108,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,CFG.W,CFG.H);
+  ctx.lineWidth=8*a; ctx.strokeStyle=`rgba(255,213,74,${0.5*a})`; rr(4,4,CFG.W-8,CFG.H-8,20); ctx.stroke(); ctx.restore(); }
 function drawWin(){
-  const a=Math.min(1,state.winTimer*2);
-  ctx.fillStyle=`rgba(10,8,24,${0.7*a})`; ctx.fillRect(0,0,CFG.W,CFG.H);
-  ctx.save(); ctx.translate(CFG.W/2, CFG.H/2-40);
-  const pop=Math.min(1,state.winTimer*3); ctx.scale(pop,pop);
-  ctx.fillStyle='#5ee8a0'; ctx.font='700 44px Fredoka'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText('通关！', 0, -30);
-  ctx.fillStyle='#fff'; ctx.font='700 22px Fredoka'; ctx.fillText('得分 '+score, 0, 24);
-  ctx.restore();
-  ctx.fillStyle='#ffd54a'; ctx.font='600 18px Fredoka'; ctx.textAlign='center';
-  ctx.fillText('点击进入第 '+(level+1)+' 关 ▶', CFG.W/2, CFG.H/2+70);
+  const s=state, a=Math.min(1,s.winTimer*2);
+  ctx.fillStyle=`rgba(10,8,24,${0.72*a})`; ctx.fillRect(0,0,CFG.W,CFG.H);
+  ctx.save(); ctx.translate(CFG.W/2,CFG.H/2-40); const pop=Math.min(1,s.winTimer*3); ctx.scale(pop,pop);
+  ctx.fillStyle='#5ee8a0'; ctx.font='700 44px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('通关！',0,-34);
+  ctx.fillStyle='#ffcf3f'; ctx.font='700 20px system-ui'; ctx.fillText('🔑 '+s.keyGot+'/'+s.keyTotal+'   宝箱门开启',0,6);
+  ctx.fillStyle='#fff'; ctx.font='700 20px system-ui'; ctx.fillText('得分 '+score,0,36); ctx.restore();
+  ctx.fillStyle='#ffd54a'; ctx.font='600 17px system-ui'; ctx.textAlign='center';
+  ctx.fillText('点击进入第 '+(level+1)+' 关 ▶',CFG.W/2,CFG.H/2+66);
 }
-
-// 启动
-newGame();
-requestAnimationFrame(loop);
+newGame(); requestAnimationFrame(loop);
 })();
 </script>
 </body>
