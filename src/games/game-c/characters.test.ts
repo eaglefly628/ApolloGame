@@ -10,7 +10,7 @@ describe('game-c 角色卡接线（REQ-CHARCARD·§⑤）', () => {
     expect(cs.every((c) => !c.fromDraft)).toBe(true);
     expect(cs.every((c) => c.issues.length === 0)).toBe(true);
     expect(cs[0]!.card.id).toBe('builtin-c-1');
-    expect(cs[0]!.seatCard.name).toBe('陆时衍'); // STORY_OPPONENTS 座 1 = 中座主
+    expect(cs[0]!.seatCard.name).toBe('林曼笙'); // STORY_OPPONENTS 座 1 = 中座主（默认名·owner 2026-07-23）
   });
 
   it('成年硬闸必开：草稿缺 adultConfirmed → 不可用 → 退默认卡（带 error·上报）', () => {
