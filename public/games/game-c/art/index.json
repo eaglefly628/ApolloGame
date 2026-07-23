@@ -265,7 +265,7 @@
   {
    "id": "scene/backdrop",
    "type": "texture",
-   "description": "game-c 程序占位·夜景背幕",
+   "description": "game-c 程序占位·室内环境背幕·夜景窗·无桌（3D 长方桌单独渲其上）",
    "status": "filled",
    "path": "/games/game-c/art/scene/backdrop.svg",
    "spec": {
@@ -287,13 +287,13 @@
   {
    "id": "table/felt-albedo",
    "type": "texture",
-   "description": "game-c 程序占位·呢面绒布",
+   "description": "game-c 程序占位·呢面绒布（赌桌绿·长方桌面）",
    "status": "filled",
    "path": "/games/game-c/art/table/felt-albedo.svg",
    "spec": {
     "format": "svg",
     "usage": "sprite",
-    "width": 1024,
+    "width": 2048,
     "height": 1024
    },
    "category": "table",
