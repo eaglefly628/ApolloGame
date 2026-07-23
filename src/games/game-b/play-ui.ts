@@ -542,11 +542,8 @@ export function buildPlayHud(m: MatchState, opts: PlayHudOpts): LayoutNode {
   if (cb) children.push(cb);
   if (isWinLikeEnd(m)) children.push(resultOverlay(m, L));
   // 用户浮层（菜单/规则说明·互斥·菜单钮开·盖最上层）。
-  const overlayOpen = opts.rulesOpen || opts.menuOpen || isWinLikeEnd(m);
   if (opts.rulesOpen) children.push(rulesOverlay(L));
   else if (opts.menuOpen) children.push(menuOverlay(L, opts.soundOn ?? true));
-  // 光标微尘（owner 2026-07-22「GameD 粒子追随·较弱」）：闭集 Particles follow:'cursor'·纯数据消费·screen 混色
-  // 不挡字·较弱=count 9 sparkle。仅活跃对局态挂（浮层/结算态不挂·免盖模态）·置顶层随光标流动。
-  if (!overlayOpen) children.push({ type: 'Particles', id: 'table-dust', props: { kind: 'sparkle', count: 9, follow: 'cursor' } });
+  // 光标微尘（follow:'cursor'）已按 owner 2026-07-23「太难看」撤除；能力仍在闭集（art-fonts/Particles·别处可用）。
   return { type: 'Panel', id: 'play-root', props: { bare: true }, layout: { x: 0, y: 0, width: PLAY_W, height: PLAY_H }, children };
 }
