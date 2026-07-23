@@ -34,8 +34,10 @@ export function buildMenu(st: MenuState, lang: Lang = 'ja'): LayoutNode {
         layout: { x: MENU_W - 464, y: 60, width: 388, gap: 14, align: 'end' },
         children: [
           {
-            // owner 2026-07-23「引入 CJK 艺术字体」：题名「雀宴」上真中文毛笔行楷（font:'cnbrush' 马善政·SIL OFL·
-            // 能渲汉字）——终于把标题做成书法感（接前「花写收体」诉求）。毛笔字单一字重·不叠 bold（免浏览器伪粗糊笔锋）。
+            // owner 2026-07-23「引入 CJK 艺术字体」：题名「雀宴」用**中文毛笔行楷**（font:'cnbrush' 马善政·SIL OFL）——
+            // 「雀宴」纯汉字（无假名），cnbrush 笔锋更浓、题头更有气势；且其行高紧凑、不撑破标题块（jpbrush 筑紫行高偏大
+            // 会把副标顶下去撞提示行·实测过）。带假名的高潮文案（和了/ロン/ツモ）走 jpbrush（见 play-ui resultOverlay）。
+            // 毛笔字单一字重·不叠 bold（免浏览器伪粗糊笔锋）。
             type: 'Label', id: 'menu-title',
             props: {
               size: 104, font: 'cnbrush', glow: true,

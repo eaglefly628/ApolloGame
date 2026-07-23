@@ -468,13 +468,14 @@ function resultOverlay(m: MatchState, lang: Lang): LayoutNode {
   const isWin = r.type !== 'draw';
   const title = fmtResultTitle(lang, r.type, r.winner != null ? heroDisplay(lang, m.seatNames[r.winner]!) : '');
   const rows: LayoutNode[] = [
-    { type: 'Label', id: 'res-t', props: { text: title, size: 'xl', bold: true, color: 'gold', font: 'serif' } },
+    // owner 2026-07-23 CJK 艺术字：和了/ロン/ツモ/流局 = 高潮时刻，上日文毛筆明朝（jpbrush·含假名·渲片假名 ロン/ツモ 不漏字）。
+    { type: 'Label', id: 'res-t', props: { text: title, size: 'xl', color: 'gold', font: 'jpbrush' } },
   ];
   if (isWin && r.handSnapshot) {
     rows.push(resultHand(m, r, lang));
     rows.push({ type: 'Label', id: 'res-w', props: { text: fmtWinTile(lang, labelTile(r.winTile!), r.loser !== null ? heroDisplay(lang, m.seatNames[r.loser]!) : null), size: 'sm', color: 'sub' } });
     if (r.yakuList && r.yakuList.length) rows.push(yakuTable(r, lang));
-    else if (r.scoreLabel) rows.push({ type: 'Label', id: 'res-score', props: { text: r.scoreLabel, size: 'lg', bold: true, color: 'gold', font: 'serif' } });
+    else if (r.scoreLabel) rows.push({ type: 'Label', id: 'res-score', props: { text: r.scoreLabel, size: 'lg', color: 'gold', font: 'jpbrush' } }); // 満貫/跳満/役満 点数揭晓=毛筆高潮（含汉字数字）
   }
   const stripSum = (r.stripped ?? []).map((n, i) => (n > 0 ? fmtStrip(lang, heroDisplay(lang, m.seatNames[i]!), n, m.clothing[i]!, STRIP_ITEMS) : null)).filter(Boolean);
   if (stripSum.length) rows.push({ type: 'Label', id: 'res-strip', props: { text: `${fmtStripHead(lang)}${stripSum.join('　')}`, size: 'sm', color: 'danger' } });
