@@ -173,8 +173,10 @@ function riverTiles(m: MatchState, seat: number): LayoutNode | null {
   };
 }
 function playField(m: MatchState, lang: Lang): LayoutNode[] {
+  // 宝牌金光高亮；最新一张（杠开的新ドラ=新元素）加 pop 亮相（owner 2026-07-23 动效·杠后新宝牌翻出有反馈）。
   const doraTiles: LayoutNode[] = m.cur.doraInd.map((d, i): LayoutNode => ({
-    type: 'Image', id: `dora-${i}`, props: { src: faceUrl(doraFromIndicator(d)), fit: 'contain' }, layout: { width: DW, height: DH, fx: DORA_FX },
+    type: 'Image', id: `dora-${i}`, props: { src: faceUrl(doraFromIndicator(d)), fit: 'contain' },
+    layout: { width: DW, height: DH, fx: i === m.cur.doraInd.length - 1 ? [{ kind: 'glow', color: 'gold' }, { kind: 'pop' }] : DORA_FX },
   }));
   const zone = (id: string, x: number, y: number, w: number, h: number, label: string, tone: 'gold' | 'jade'): LayoutNode => ({
     type: 'Panel', id, props: { bg: { custom: 'rgba(8,20,18,0.22)' }, dashed: true, edge: tone },
@@ -241,7 +243,8 @@ function playerHand(m: MatchState, selectedKey: string | null): LayoutNode[] {
     };
   };
   const out: LayoutNode[] = hand.map((c, i) => mkTile(c, String(i), x0 + i * step, !canPlay || locked || forbid(c)));
-  if (showDrawn) out.push(mkTile(rs.drawn!, 'd', x0 + n * step + drawnGap - 3, !canPlay));
+  // ツモ牌（刚摸的·分隔在右）=翠光高亮（owner 2026-07-23 动效·点明「这张是新摸的·留还是打？」）。
+  if (showDrawn) { const dt = mkTile(rs.drawn!, 'd', x0 + n * step + drawnGap - 3, !canPlay); out.push({ ...dt, layout: { ...dt.layout, fx: [{ kind: 'glow', color: 'jade' }] } }); }
   return out;
 }
 
@@ -331,13 +334,14 @@ function actionBar(m: MatchState, lang: Lang): LayoutNode {
   const BH = 48;
   const tsumoOn = canTsumo(m), riichiOn = canRiichi(m);
   const glow: NonNullable<LayoutNode['layout']>['fx'] = [{ kind: 'glow' }]; // #1-60·可点键发光引导（仅亮态）
+  const winBeacon: NonNullable<LayoutNode['layout']>['fx'] = [{ kind: 'glow', color: 'gold' }, { kind: 'pulse' }]; // 能自摸=胜利灯塔（金光呼吸·最大时刻）
   return {
     type: 'Panel', id: 'acts', props: { bare: true },
     layout: { x: PANEL_X + 4, y: BAND_Y, direction: 'row', gap: 8, align: 'center' },
     children: [
       // 均用 primary（jade）：hero 大字 + overflow:hidden 会把两字次字裁掉（组件特性）——primary 定宽 96 稳显。
       // owner 2026-07-22 gallery #1-60：可点（亮态）的行动键发光引导「该你点了」·灰态不发光。
-      { type: 'Button', id: 'act-tsumo', props: { label: t(lang, 'act.tsumo'), kind: 'primary', disabled: !tsumoOn, action: ACT_TSUMO }, layout: { width: 96, height: BH, ...(tsumoOn ? { fx: glow } : {}) } },
+      { type: 'Button', id: 'act-tsumo', props: { label: t(lang, 'act.tsumo'), kind: 'primary', disabled: !tsumoOn, action: ACT_TSUMO }, layout: { width: 96, height: BH, ...(tsumoOn ? { fx: winBeacon } : {}) } },
       ...(canAnkan(m) || canKakan(m) ? [{ type: 'Button' as const, id: 'act-kan', props: { label: t(lang, 'act.kan'), kind: 'primary' as const, action: ACT_KAN }, layout: { width: 66, height: BH, fx: glow } }] : []),
       { type: 'Button', id: 'act-riichi', props: { label: t(lang, 'act.riichi'), kind: 'primary', disabled: !riichiOn, action: ACT_RIICHI }, layout: { width: 96, height: BH, ...(riichiOn ? { fx: glow } : {}) } },
     ],
@@ -434,7 +438,8 @@ function resultHand(m: MatchState, r: RoundResultView, lang: Lang): LayoutNode {
     children: concealed.map((c, i): LayoutNode => {
       const isWin = !winMarked && c === r.winTile;
       if (isWin) winMarked = true;
-      return { type: 'Image', id: `res-h-${i}`, props: { src: faceUrl(c), fit: 'contain' }, layout: { width: CW, height: isWin ? CH + 8 : CH } };
+      // 和了牌=抬高 + 金光高亮（owner 2026-07-23 动效·一眼看到「就是这张成的」）。
+      return { type: 'Image', id: `res-h-${i}`, props: { src: faceUrl(c), fit: 'contain' }, layout: { width: CW, height: isWin ? CH + 8 : CH, ...(isWin ? { fx: [{ kind: 'glow' as const, color: 'gold' as const }] } : {}) } };
     }),
   };
   const melds = r.meldsSnapshot ?? [];
