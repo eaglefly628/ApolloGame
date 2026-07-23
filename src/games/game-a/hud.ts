@@ -383,6 +383,7 @@ export interface PlayView {
   logRows: LogRow[];
   tierName: string;
   seed: number; // 本局 run 种子（设置页显示·供报 bug 复现）
+  freshDeal?: boolean; // 仅「开局/新盘发牌」首帧真→手牌错落入场；其余渲染（点击/提示/出牌/开关菜单）假=不重播（owner 2026-07-22）。
 }
 
 // 中央墩牌（蓝本经典白扑克面·light·红黑自动判）。
@@ -450,7 +451,7 @@ const HAND_STEP = 25; // 固定重叠步进（每张露出 25px·恒定·牌少�
 const HAND_CURVE_K = 0.28; // 固定弧曲率（lift = K·offset²·弧度一致·不随张数变·更平缓）
 const HAND_ROT_PER = 1.6; // 固定每张旋转角（度·扇形一致）
 const HAND_CENTER_X = 556; // 扇形中心 x（略左移·给右下操作按钮列腾位·A-019 真碰撞修）。满手右端<操作区左缘 966；左端翘牌旋摆不压立绘框（x/y 双清）。
-function buildHandFanNodes(hand: number[], selected: number[]): LayoutNode[] {
+function buildHandFanNodes(hand: number[], selected: number[], freshDeal = false): LayoutNode[] {
   const n = hand.length;
   if (n === 0) return [];
   const mid = (n - 1) / 2;
@@ -469,8 +470,8 @@ function buildHandFanNodes(hand: number[], selected: number[]): LayoutNode[] {
       // actionArg=手牌**下标**（非牌码·两副牌同码会联动误选）
       props: { rank: f.rank, suit: f.suit, face: 'light', size: 'md', selected: sel, action: 'hand.toggle', actionArg: String(i) },
       // 扇形手牌=**故意叠放**（playbook §意图叠层）→ allowOverlap 豁免 ui-audit 重叠（相邻牌本就压半张·非误叠）。
-      // 发牌错落入场（anim:fadeIn·纯 opacity 不碰 transform=不冲突扇形 rotate；id 稳定→只在首挂/发牌时播一次·切选/出牌重渲不重放）。owner 2026-07-22 二层特效。
-      layout: { x: startX + Math.round(i * HAND_STEP), y: baseY - lift - (sel ? 22 : 0), rotate: rot, allowOverlap: true, anim: 'fadeIn', animDelay: i * 22 },
+      // 发牌错落入场只在 freshDeal（开局/新盘首帧）挂 anim——**否则不挂 anim**（点击/提示/出牌/开关菜单重渲时 style 重写会重启动画→整片手牌重跑·owner 2026-07-22 报过度表现·根因）。
+      layout: { x: startX + Math.round(i * HAND_STEP), y: baseY - lift - (sel ? 22 : 0), rotate: rot, allowOverlap: true, ...(freshDeal ? { anim: 'fadeIn' as const, animDelay: i * 22 } : {}) },
     };
   });
 }
@@ -739,7 +740,7 @@ export function buildPlay(v: PlayView): LayoutNode {
       infoBar,
       tickerBar,
       heroPortrait,
-      ...buildHandFanNodes(v.hand, v.selected),
+      ...buildHandFanNodes(v.hand, v.selected, v.freshDeal),
       actionHint,
       actionRow1,
       actionRow2,

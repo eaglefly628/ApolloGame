@@ -4,7 +4,9 @@
 
 ## 待处理
 
-### B-001 · 共享角色卡格式 · status: **✅ done（2026-07-17 当日结·v1 口径拍板=仅 name+avatar·全文迁 requests-archive）** · P1
+### B-013 · 迁移 GameLog 到引擎共享 event-log 原子 · [2026-07-23] · Lead 落单（REQ-EVENTLOG 下沉完工）→ **PE-B** · status: open · P3（DRY 收敛·非阻塞·功能等价） · 类型: 游戏层消费迁移（PE-B 域）
+> **背景**：REQ-EVENTLOG 已下沉引擎通用 `src/skills/tier1/event-log.ts`（`EventLog<K, Extra>` 泛型类 + `createEventLog()`·`push`(自增 seq)/`recent`/`all`/`size`/`clear`/`dump`）。game-b `core/game-log.ts` 的手写 `GameLog` 类是 rule-of-two 的一半，迁移到共享原子收敛 DRY。
+> **活**：`core/game-log.ts` 的 `GameLog`→薄封装 `EventLog<LogKind, { round: string; actor: string; tile?: number }>`（`import { EventLog } from '@skills/tier1/index.js'`）——保留自家 `LogKind` 闭集与 `LogEvent`/`push` 对外签名（`push` 现返回带 seq 条目·可无视），内部委托给 `EventLog`。`recent(14)`/`all`/`size`/`clear`/`dump` 语义已 1:1 对齐。**验收**：game-b 全量 vitest 零回归（日志断言不变）；`GameLog` 公开 API 对消费方（game-state/HUD）字节等价。**功能等价·可暂缓**（不阻玩法）。
 > ⚖ owner 二批拍板收口：v1 卡=仅 `{name, avatar}`（生效口径=`character-card-format-needs.md §0`·完整字段=v2 参考）；PE-B adapter 照 §0 实现。完整格式将来另起单。
 
 ### B-002 · 语音：TTS 先行·真配音后备 · [2026-07-17·同日改口] · GD-B → GD-B（台词表）+ owner（将来可选配音） · status: open · P2

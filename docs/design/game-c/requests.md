@@ -13,7 +13,9 @@
 
 ## 待处理
 
-### REQ-C-114 · 右上角菜单键（点开三项：设置/游戏说明/日志）· [2026-07-22] · owner 报 → **PE-C** · status: **✅ done（PE-C 2026-07-22）** · 优先级: P2 · 类型: 游戏层 UI（HUD·LayoutNode）
+### REQ-C-115 · 迁移 GameEvent 日志到引擎共享 event-log 原子 · [2026-07-23] · Lead 落单（REQ-EVENTLOG 下沉完工）→ **PE-C** · status: open · P3（DRY 收敛·非阻塞·功能等价） · 类型: 游戏层消费迁移（PE-C 域）
+> **背景**：REQ-EVENTLOG 已下沉引擎通用 `src/skills/tier1/event-log.ts`（`EventLog<K, Extra>` 泛型类 + `createEventLog()`·`push`(自增 seq)/`recent`/`all`/`size`/`clear`/`dump`）。game-c `game-log.ts` 的手写 `GameEvent` 流是 rule-of-two 的一半，迁移收敛 DRY。
+> **活**：game-c `game-log.ts` 的 `GameEvent{seq,tag,text}` 事件流→改用 `EventLog<GameTag>`（`import { EventLog } from '@skills/tier1/index.js'`；注：本核类别字段名为 `kind`，game-c 现用 `tag`——迁移时把 `tag` 归一为 `kind` 或在薄封装里 `tag→kind` 映射，公开 `describeAction`/日志格式器口径保持不变）。`seq` 自增交给核·本地不再手维护 `n`。**验收**：`game-log.test.ts` 零回归（同 seed 逐条日志一致断言不变）；`describeAction` 等格式器 + 消费方（HUD 日志面板/万手 sim replay）字节等价。**功能等价·可暂缓**（不阻玩法/S4）。
 > **owner 指令**：牌桌右上角一个**菜单键**（平时收起）·点开露三项：① **设置**（关音乐等）② **游戏说明/菜单说明**（玩法帮助）③ **日志**。三项收在一个菜单键里。
 > **评判（大半是重组现成件·非缺口）**：① 音乐=现有 `sound_toggle`+`muted`；③ 日志=现有 `toggle_log`+`buildLogPanel`——直接归拢进菜单；② 游戏说明=新增一个帮助面板（LayoutNode 纯数据文案·EN/ZH i18n）。菜单键+下拉/面板=game-c HUD 组合（`buildStoryTopBar` 右侧加菜单键→`menu_toggle` 开一个 `Panel` 列三项·`check-ui` 防重叠）。**用基座 LayoutNode·不手写**。做完 check-ui + 门禁。
 > **回执（PE-C 2026-07-22）**：顶带右侧加 `☰` 键（`menu_toggle`）→ `buildTopMenu` 下拉 `Panel` 列三项：① 音乐开关复用 `sound_toggle`（标签随 `muted` 切 🔊/🔇·下拉不收让玩家见状态变化）② `help_toggle` 开新 `buildHelpPanel`（双语规则速览·目标/一手牌/下注/典当续命/公平确定性五段·`Divider`+`✕` 关）③ `toggle_log` 复用现有日志面板。全 LayoutNode 纯数据·`validateLayoutNode` 零 issue（hud.test 增 REQ-C-114 例·showMenu/showHelp/muted 三态）·四态无头渲染目击（EN/ZH 下拉 + 双语说明面板）。tsc 0 · game-c vitest 133 绿 · build 0。
