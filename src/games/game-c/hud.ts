@@ -836,19 +836,19 @@ function buildDealerButton(v: TableView): LayoutNode | null {
   };
 }
 
-// ── 「轮到你了」浮动提示（owner 2026-07-23·pop 弹入 + 翠光·无需确认·仅 isHeroTurn 渲染·主角行动即消）。
+// ── 「轮到你了」浮动提示（owner 2026-07-23 二改·紫调醒目 + 位于主角手牌下方·底部状态区居中·pop 弹入 + 白光晕·无需确认·仅 isHeroTurn 渲染）。
 function buildYourTurn(v: TableView): LayoutNode {
   const l = v.lang;
   return {
     type: 'Panel', id: 'c-yourturn-wrap', props: { bare: true },
-    layout: { x: Math.round(FIELD_W / 2 - 150), y: 228, width: 300, direction: 'row', justify: 'center', allowOverlap: true },
+    layout: { x: Math.round(FIELD_W / 2 - 110), y: 592, width: 220, direction: 'row', justify: 'center', allowOverlap: true },
     children: [{
       type: 'Panel', id: 'c-yourturn',
-      props: { bg: { custom: 'linear-gradient(90deg,rgba(95,211,154,0.28),rgba(216,184,120,0.22))' }, edge: 'jade' },
-      layout: { direction: 'row', align: 'center', justify: 'center', gap: 8, padding: 9, radius: 20, fx: [{ kind: 'pop' as const }, { kind: 'glow' as const, color: 'jade' as const }] },
+      props: { bg: { custom: 'linear-gradient(92deg,#8a5fa8,#b98fd6)' }, edge: 'mine' }, // 紫调（violetDeep→violetB·醒目）
+      layout: { direction: 'row', align: 'center', justify: 'center', gap: 7, padding: 7, radius: 16, fx: [{ kind: 'pop' as const }, { kind: 'glow' as const, color: 'white' as const }] },
       children: [
-        { type: 'Label', id: 'c-yourturn-i', props: { text: '▸', size: 18, bold: true, color: 'jade' } },
-        { type: 'Label', id: 'c-yourturn-t', props: { text: t(l, 'yourTurn'), font: 'impact', size: 20, bold: true, color: 'jade' } },
+        { type: 'Label', id: 'c-yourturn-i', props: { text: '▸', size: 16, bold: true, color: 'text' } },
+        { type: 'Label', id: 'c-yourturn-t', props: { text: t(l, 'yourTurn'), font: 'impact', size: 18, bold: true, color: 'text' } },
       ],
     }],
   };
@@ -879,9 +879,8 @@ function buildStoryActionBar(v: TableView): LayoutNode {
   // 统一按钮：深底金边 + press3d 按压反馈（弃牌/跟注/加注一致·将来整体换美术贴图 buttonSkins）。
   const actBtn = (id: string, action: string, width: number, kids: LayoutNode[], arg?: string): LayoutNode => ({
     type: 'Panel', id, props: { bg: { custom: BTN_DARK }, edge: 'gold', action, ...(arg ? { actionArg: arg } : {}) },
-    // owner 2026-07-23：流光只留主行动键、且**悬停触发 + 冷却**（非常驻·常驻扫光太吵）——待 PUI 出 hover-sheen 变体后接
-    //   （REQ 见 requests.md·当前先撤掉常驻 sheen·仅保 press3d 按压反馈）。
-    layout: { width, direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 12, radius: 13, press3d: true },
+    // owner 2026-07-23：主行动键**悬停触发流光**（sheen-hover·鼠标移上去扫一道·移开→再入才重扫=天然冷却·非常驻）+ press3d 按压。
+    layout: { width, direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 12, radius: 13, press3d: true, fx: [{ kind: 'sheen-hover' as const }] },
     children: kids,
   });
   const children: LayoutNode[] = [
@@ -907,7 +906,7 @@ function buildStoryActionBar(v: TableView): LayoutNode {
         { type: 'Button', id: 'c-raise-inc', props: { label: '+', kind: 'ghost', action: 'set_raise', actionArg: 'inc' }, layout: { width: 40 } },
         {
           type: 'Panel', id: 'c-act-allin', props: { bg: { custom: BTN_ALLIN }, action: 'act_raise', actionArg: 'allin' },
-          layout: { height: 44, direction: 'row', align: 'center', justify: 'center', padding: 14, radius: 10, press3d: true },
+          layout: { height: 44, direction: 'row', align: 'center', justify: 'center', padding: 14, radius: 10, press3d: true, fx: [{ kind: 'sheen-hover' as const }] },
           children: [{ type: 'Label', id: 'c-act-allin-t', props: { text: t(l, 'quick.allin'), size: 15, bold: true, color: 'text' } }],
         },
       ],

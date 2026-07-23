@@ -17,7 +17,7 @@ export interface UiIssue {
 }
 
 // 视觉特效合集（layout.fx）闭集：kind/color 枚举·防拼错与注入（与 types.ts EffectKind/EffectColor 同源）。
-const FX_KINDS = new Set(['pulse', 'float', 'shake', 'pop', 'glow', 'sheen', 'flash', 'fade']);
+const FX_KINDS = new Set(['pulse', 'float', 'shake', 'pop', 'glow', 'sheen', 'sheen-hover', 'flash', 'fade', 'holo', 'ripple']);
 const FX_COLORS = new Set(['danger', 'gold', 'jade', 'warn', 'ok', 'white']);
 
 /** 验一棵 LayoutNode 树（递归 children + node 型 props），返回全部 issue（空=合法）。 */

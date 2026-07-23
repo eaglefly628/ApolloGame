@@ -25,6 +25,7 @@ describe('REQ-UI-G流光底纹 · 通用 sheen / Panel pattern / PlayingCard bac
     const teardown = mountUI(host, { type: 'Button', id: 'b', props: { label: '刷新' }, layout: { sheen: true } } as LayoutNode);
     const kf = document.getElementById('apollo-ui-keyframes')?.textContent ?? '';
     expect(kf).toContain('[data-sheen]::after'); expect(kf).toContain('apollo-sheen-sweep');
+    expect(kf).toContain('[data-fx~="sheen-hover"]:hover::after'); // 悬停触发流光变体（REQ-FX-SHEEN-HOVER）
     teardown(); host.remove();
   });
   it('① 无 sheen → 不加 data-sheen（不回归）', () => {

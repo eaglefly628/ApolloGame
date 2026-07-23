@@ -97,6 +97,8 @@ function fxToCss(fx: readonly VisualEffect[], t: UITheme): { css: string; dataFx
       filter.push(`drop-shadow(0 0 ${4 * r}px ${col}) drop-shadow(0 0 ${10 * r}px ${col})`);
     } else if (e.kind === 'sheen') {
       dataFx.push('sheen');
+    } else if (e.kind === 'sheen-hover') {
+      dataFx.push('sheen-hover'); // 悬停触发流光（CSS 注入 ::after·:hover 扫一道·非常驻）
     } else if (e.kind === 'holo') {
       dataFx.push('holo'); // 全息箔·彩虹叠层（CSS 注入 ::after·apollo-holo）
     } else if (e.kind === 'ripple') {

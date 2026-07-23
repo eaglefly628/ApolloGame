@@ -175,6 +175,9 @@ const APOLLO_KEYFRAMES = `
 @keyframes apollo-sheen-sweep{0%{background-position:220% 0}100%{background-position:-60% 0}}
 [data-sheen]{position:relative}
 [data-sheen]::after,[data-fx~="sheen"]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.4) 50%,transparent 58%);background-size:250% 100%;animation:apollo-sheen-sweep 3.2s ease-in-out infinite}
+[data-fx~="sheen-hover"]{position:relative}
+[data-fx~="sheen-hover"]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.5) 50%,transparent 58%);background-size:250% 100%;background-position:220% 0}
+[data-fx~="sheen-hover"]:hover::after{animation:apollo-sheen-sweep .7s ease-out}
 @keyframes apollo-holo{0%{background-position:0% 50%}100%{background-position:220% 50%}}
 [data-fx~="holo"]::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,transparent 18%,rgba(255,80,180,.42),rgba(150,90,255,.42),rgba(80,200,255,.42),rgba(120,255,170,.42),transparent 82%);background-size:220% 100%;mix-blend-mode:screen;animation:apollo-holo 3s linear infinite}
 @keyframes apollo-ripple{0%{width:0;height:0;opacity:.5}100%{width:230%;height:230%;opacity:0}}

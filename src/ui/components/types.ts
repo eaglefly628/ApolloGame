@@ -102,7 +102,8 @@ export type EffectKind =
   | 'shake'   // 抖动（受击/错误/拒绝·intensity=抖幅·once=单次）
   | 'pop'     // 弹一下（出现/数值跳/强调·一次性）
   | 'glow'    // 外发光（buff/可交互/选中·color=光色）
-  | 'sheen'   // 流光斜扫（高级感/稀有/新到）
+  | 'sheen'   // 流光斜扫（常驻循环·高级感/稀有/新到）
+  | 'sheen-hover' // 流光斜扫·**悬停触发**（鼠标移上去扫一道·非常驻·移开→再移入才重扫=天然冷却·可交互键 premium 手感·REQ-FX-SHEEN-HOVER）
   | 'flash'   // 整体闪色（受击冒红/暴击闪白/警告·color=闪色·常配 once）
   | 'fade'    // 半透明淡出消失（消耗/消退/移除·opacity→0·一次性·REQ-UI-fx源泉消退）
   | 'holo'    // 全息箔（彩虹光随角度流动·收集/gacha 稀有卡·比 sheen 白斜扫更炫·render-only 叠层）

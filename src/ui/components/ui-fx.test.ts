@@ -35,6 +35,15 @@ describe('UI 特效库 · fx 合集（一个字段·闭集·可叠加·可参数
   it('sheen：叠层 token data-fx="sheen"', () => {
     expect(panel([{ kind: 'sheen' }])).toContain('data-fx="sheen"');
   });
+  it('sheen-hover：叠层 token data-fx="sheen-hover"（悬停触发变体·REQ-FX-SHEEN-HOVER）', () => {
+    const h = panel([{ kind: 'sheen-hover' }]);
+    expect(h).toContain('data-fx="sheen-hover"');
+    expect(h).toContain('position:relative'); // ::after 锚定
+  });
+  it('sheen-hover 是合法闭集 kind（validator 收）', () => {
+    const node = { type: 'Panel', id: 'p', layout: { fx: [{ kind: 'sheen-hover' }] } } as LayoutNode;
+    expect(validateLayoutNode(node)).toEqual([]);
+  });
   it('叠层效果挂 position:relative（::after/::before 锚定）', () => {
     expect(panel([{ kind: 'sheen' }])).toContain('position:relative');
   });
