@@ -638,9 +638,16 @@ function buildLogPanel(log: GameEvent[], l: Lang): LayoutNode {
 }
 
 // ── 公共牌（桌心·2D HUD 浮层·盖在 3D 呢面桌心之上·让玩家看清·真贴图 S6）──────────────────
+// 公共牌槽：已发=正面牌（最优组合金边）；未发=**桌面虚线占位框**（透明底·只描边）。
+// owner 2026-07-23：未发的公共牌不该显牌背（不透明·挡住身后 3D 筹码）——改成呢面上的虚线框、透光不挡筹码。
+// md 牌尺寸 64×90（PCARD_DIMS）·框同尺寸保发牌后整排不跳；透明 bg → 身后 3D 筹码/呢面透出；gold 虚线边=赌桌占位圈。
+function communitySlot(id: string, c: Card | null, best?: Card[]): LayoutNode {
+  if (c) return cardNode(id, c, 'md', undefined, inBest(c, best));
+  return { type: 'Panel', id, props: { bg: { custom: 'transparent' }, dashed: true, edge: 'gold' }, layout: { width: 64, height: 90, radius: 8 } };
+}
 function buildCommunity(community: Card[], best?: Card[]): LayoutNode {
   const slots: LayoutNode[] = [];
-  for (let i = 0; i < 5; i++) { const c = community[i] ?? null; slots.push(cardNode(`c-comm-${i}`, c, 'md', undefined, inBest(c, best))); }
+  for (let i = 0; i < 5; i++) { const c = community[i] ?? null; slots.push(communitySlot(`c-comm-${i}`, c, best)); }
   return {
     type: 'Panel', id: 'c-community', props: { bare: true },
     layout: { x: Math.round(FIELD_W / 2 - 175), y: 320, width: 350, direction: 'row', gap: 9, justify: 'center' },
