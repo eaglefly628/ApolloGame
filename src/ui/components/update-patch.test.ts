@@ -85,6 +85,34 @@ describe('UI Components · mountUI().update 局部更新', () => {
     host.remove();
   });
 
+  // 动态列表键控增删（owner 2026-07-23「每次打牌桌面牌全部闪」根因·图片重载闪屏）：父自身未变、只增/删/换位子节点 →
+  //   稳定子节点 DOM 身份必须**保留**（不销毁重建→不重载图片→不闪）。
+  const list = (ids: string[]): LayoutNode => ({
+    type: 'Panel', id: 'root', props: {}, layout: { direction: 'row' },
+    children: ids.map((id) => ({ type: 'Image', id, props: { src: `/t/${id}.png` } })),
+  });
+  it('键控增子：新增一张牌·原有牌 DOM 身份保留（不重载=不闪）', () => {
+    const host = document.createElement('div');
+    const handle = mountUI(host, list(['t0', 't1', 't2']));
+    ['t0', 't1', 't2'].forEach((id) => { (host.querySelector(`#${id}`) as HTMLElement).dataset['keep'] = id; });
+    handle.update(list(['t0', 't1', 't2', 't3'])); // 河里多一张（子数 3→4）
+    ['t0', 't1', 't2'].forEach((id) => expect((host.querySelector(`#${id}`) as HTMLElement).dataset['keep']).toBe(id)); // 原牌未重建
+    expect(host.querySelector('#t3')).toBeTruthy();  // 新牌加上了
+    expect(host.querySelectorAll('img').length).toBe(4);
+    // 顺序正确：t0,t1,t2,t3
+    expect(Array.from(host.querySelectorAll('img')).map((e) => e.id)).toEqual(['t0', 't1', 't2', 't3']);
+  });
+  it('键控删子（窗口滑动）：删首、加尾·中间牌身份保留', () => {
+    const host = document.createElement('div');
+    const handle = mountUI(host, list(['t4', 't5', 't6']));
+    ['t5', 't6'].forEach((id) => { (host.querySelector(`#${id}`) as HTMLElement).dataset['keep'] = id; });
+    handle.update(list(['t5', 't6', 't7'])); // 滑窗：删 t4、加 t7
+    ['t5', 't6'].forEach((id) => expect((host.querySelector(`#${id}`) as HTMLElement).dataset['keep']).toBe(id)); // 留存牌未重建
+    expect(host.querySelector('#t4')).toBeFalsy(); // 首牌走了
+    expect(host.querySelector('#t7')).toBeTruthy(); // 尾牌来了
+    expect(Array.from(host.querySelectorAll('img')).map((e) => e.id)).toEqual(['t5', 't6', 't7']);
+  });
+
   it('teardown 仍可直接调用（向后兼容）', () => {
     const host = document.createElement('div');
     const handle = mountUI(host, tree('x', 1));

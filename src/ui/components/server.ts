@@ -76,14 +76,56 @@ function patchFocusedInput(el: HTMLElement, newN: LayoutNode): boolean {
 function reconcileNode(scope: ParentNode, oldN: LayoutNode, newN: LayoutNode, theme: UITheme): void {
   const el = uiFindById(scope, newN.id);
   if (!el) return; // 上层未变才会递进到此；找不到则跳过（安全）
-  if (!uiOwnSame(oldN, newN) || !uiChildKeysSame(oldN, newN)) {
-    // 焦点在内的输入元素：就地覆写值，不销毁重建（保焦点/光标/IME）。
+  if (!uiOwnSame(oldN, newN)) {
+    // 节点**自身** props/layout 变了 → 整体替换这棵最浅子树（含焦点保护）。
     if (patchFocusedInput(el, newN)) return;
-    el.outerHTML = renderNode(newN, theme); // 自身或子集变了 → 整体替换这棵最浅子树
+    el.outerHTML = renderNode(newN, theme);
     return;
   }
-  const ak = oldN.children ?? [], bk = newN.children ?? [];
-  for (let i = 0; i < ak.length; i++) reconcileNode(el, ak[i]!, bk[i]!, theme); // 自身同 → 递归子节点
+  if (uiChildKeysSame(oldN, newN)) {
+    const ak = oldN.children ?? [], bk = newN.children ?? [];
+    for (let i = 0; i < ak.length; i++) reconcileNode(el, ak[i]!, bk[i]!, theme); // 自身同 + 子键序同 → 逐子递归
+    return;
+  }
+  // 自身同、但子节点**增删/换位/换型** → **按 id 键控**增删/移位/递归（不整体 outerHTML 重建·保住稳定子节点的 DOM
+  //   不被销毁重载——修「动态列表（手牌/牌河/副露）每次变化整块图片重载闪屏」·owner 2026-07-23 报·事件走 host 委托故插删安全）。
+  if (patchFocusedInput(el, newN)) return; // 焦点在文本输入内 → 保守跳过本帧结构变更（保光标/IME）
+  reconcileChildrenKeyed(el, oldN, newN, theme);
+}
+
+/** 按 id 键控增删/移位/递归子节点（父自身未变时用·免整体重建的图片重载闪屏）。 */
+function reconcileChildrenKeyed(el: HTMLElement, oldN: LayoutNode, newN: LayoutNode, theme: UITheme): void {
+  const oldKids = oldN.children ?? [], newKids = newN.children ?? [];
+  const oldById = new Map<string, LayoutNode>();
+  for (const k of oldKids) oldById.set(k.id, k);
+  const newIds = new Set<string>(newKids.map((k) => k.id));
+  const doc = el.ownerDocument ?? (typeof document !== 'undefined' ? document : null);
+  if (!doc) return;
+  // ① 删：旧有、新无的直接子（按 id）。
+  for (const child of Array.from(el.children)) {
+    const cid = (child as HTMLElement).id;
+    if (cid && oldById.has(cid) && !newIds.has(cid)) child.remove();
+  }
+  // ② 按新序逐个就位：同型→递归打补丁；缺/换型→渲染新建；再 insertBefore 到 prev 之后（稳定子不重载）。
+  let prev: Element | null = null;
+  for (const nk of newKids) {
+    const oldK = oldById.get(nk.id);
+    let dom: Element | null = uiFindById(el, nk.id);
+    if (dom && oldK && oldK.type === nk.type) {
+      reconcileNode(el, oldK, nk, theme);
+      dom = uiFindById(el, nk.id) ?? dom;
+    } else {
+      if (dom) dom.remove(); // 换型：旧的先删
+      const tmp = doc.createElement('div');
+      tmp.innerHTML = renderNode(nk, theme);
+      dom = tmp.firstElementChild;
+    }
+    if (dom) {
+      const anchor: Element | null = prev ? prev.nextElementSibling : el.firstElementChild;
+      if (dom !== anchor) el.insertBefore(dom, anchor);
+      prev = dom;
+    }
+  }
 }
 
 /**
