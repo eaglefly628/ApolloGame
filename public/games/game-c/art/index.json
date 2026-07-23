@@ -877,6 +877,161 @@
     "date": "2026-07-22",
     "note": "夜金 SVG 程序占位·真图到位同 id 热替换"
    }
+  },
+  {
+   "id": "gen/art-017-up",
+   "type": "texture",
+   "description": "上传替换 art-017",
+   "status": "filled",
+   "path": "/games/game-c/art/gen/art-017-up.png",
+   "category": "ai-gen",
+   "tags": [
+    "upload",
+    "art-017"
+   ],
+   "license": "用户上传",
+   "source": "upload",
+   "provenance": {
+    "generator": "upload",
+    "prompt": "",
+    "model": "user-upload",
+    "mock": false,
+    "generatedAt": ""
+   }
+  },
+  {
+   "id": "game-c/ui/btn-raise",
+   "type": "texture",
+   "description": "上传替换 art-017（皮肤槽 game-c/ui/btn-raise）",
+   "status": "filled",
+   "path": "/games/game-c/art/gen/art-017-up.png",
+   "category": "ai-gen",
+   "tags": [
+    "upload",
+    "art-017",
+    "skin"
+   ],
+   "license": "用户上传",
+   "source": "upload",
+   "provenance": {
+    "generator": "upload",
+    "prompt": "",
+    "model": "user-upload",
+    "mock": false,
+    "generatedAt": ""
+   }
+  },
+  {
+   "id": "gen/art-001-up",
+   "type": "texture",
+   "description": "上传替换 art-001",
+   "status": "filled",
+   "path": "/games/game-c/art/gen/art-001-up.png",
+   "category": "ai-gen",
+   "tags": [
+    "upload",
+    "art-001"
+   ],
+   "license": "用户上传",
+   "source": "upload",
+   "provenance": {
+    "generator": "upload",
+    "prompt": "",
+    "model": "user-upload",
+    "mock": false,
+    "generatedAt": ""
+   }
+  },
+  {
+   "id": "game-c/scene/backdrop",
+   "type": "texture",
+   "description": "上传替换 art-001（皮肤槽 game-c/scene/backdrop）",
+   "status": "filled",
+   "path": "/games/game-c/art/gen/art-001-up.png",
+   "category": "ai-gen",
+   "tags": [
+    "upload",
+    "art-001",
+    "skin"
+   ],
+   "license": "用户上传",
+   "source": "upload",
+   "provenance": {
+    "generator": "upload",
+    "prompt": "",
+    "model": "user-upload",
+    "mock": false,
+    "generatedAt": ""
+   }
+  },
+  {
+   "id": "gen/mock/art-002",
+   "type": "texture",
+   "description": "green casino poker felt cloth, rectangular table top, flat even texture with fine woven nap, subtle warm light pool at center, seamless, high resolution, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark · 生成(modern-manor·mock)",
+   "status": "filled",
+   "path": "/games/game-c/art/gen/mock/art-002.png",
+   "category": "ai-gen",
+   "tags": [
+    "gen",
+    "modern-manor",
+    "texture",
+    "mock"
+   ],
+   "license": "Qwen/DashScope 万相 (按订阅授权)",
+   "source": "gen:qwen",
+   "provenance": {
+    "generator": "qwen",
+    "prompt": "呢面 albedo·长方桌面整幅贴图, 贴图, 现代奢华豪宅夜间室内：暖调灯光，木质牌桌，当代雅致陈设，温馨私密氛围，构图干净，游戏素材，无文字，无水印",
+    "model": "wanx2.1-t2i-turbo·mock",
+    "mock": true,
+    "generatedAt": "2026-07-23T04:52:52.892Z",
+    "pack": "modern-manor",
+    "style": "现代豪宅夜局（game-a 场景锚）",
+    "vendoredFrom": null
+   }
+  },
+  {
+   "id": "gen/art-002-up",
+   "type": "texture",
+   "description": "上传替换 art-002",
+   "status": "filled",
+   "path": "/games/game-c/art/gen/art-002-up.png",
+   "category": "ai-gen",
+   "tags": [
+    "upload",
+    "art-002"
+   ],
+   "license": "用户上传",
+   "source": "upload",
+   "provenance": {
+    "generator": "upload",
+    "prompt": "",
+    "model": "user-upload",
+    "mock": false,
+    "generatedAt": ""
+   }
+  },
+  {
+   "id": "game-c/table/felt-albedo",
+   "type": "texture",
+   "description": "上传替换 art-002（皮肤槽 game-c/table/felt-albedo）",
+   "status": "filled",
+   "path": "/games/game-c/art/gen/art-002-up.png",
+   "category": "ai-gen",
+   "tags": [
+    "upload",
+    "art-002",
+    "skin"
+   ],
+   "license": "用户上传",
+   "source": "upload",
+   "provenance": {
+    "generator": "upload",
+    "prompt": "",
+    "model": "user-upload",
+    "mock": false,
+    "generatedAt": ""
+   }
   }
  ]
 }

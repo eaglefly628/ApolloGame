@@ -33,24 +33,36 @@
     "usage": "albedo"
    },
    "context": "game-c《STORY-POKER V2》室内环境背幕（豪华包间·夜景落地窗·皮沙发陈设·无桌·3D 长方桌单独渲其上）·消费=renderer.setBackgroundTexture（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "status": "replaced",
    "gen": {
-    "provider": "procedural",
-    "model": "scripts/game-c-art-gen.mjs",
-    "prompt": null,
-    "servedPath": "/games/game-c/art/scene/backdrop.svg",
-    "localId": "game-c/scene/backdrop"
+    "source": "upload",
+    "localId": "gen/art-001-up",
+    "servedPath": "/games/game-c/art/gen/art-001-up.png"
    },
    "provenance": {
-    "generator": "procedural-noir",
-    "prompt": null,
-    "model": "scripts/game-c-art-gen.mjs",
-    "license": "CC0",
-    "source": "scripts/game-c-art-gen.mjs（夜金 SVG 程序占位）",
-    "mock": false,
-    "note": "夜金 SVG 程序占位·真图到位同 id 热替换（照 §1 统一风格）"
+    "model": "user-upload",
+    "prompt": "cinematic interior of a luxurious executive lounge / private card room WITHOUT any table, seen at a slightly downward angle: floor-to-ceiling windows with a night city skyline, warm ambient cove lighting, leather sofas and tub chairs around the empty center, table lamps, framed art, opulent noir mood; the center is left open for a separate 3D table; full-screen background, opaque, high resolution, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
+    "date": "",
+    "license": "用户上传"
    },
-   "prompt": "室内环境背幕·包间+夜景窗+沙发·无桌"
+   "prompt": "室内环境背幕·包间+夜景窗+沙发·无桌",
+   "orig": {
+    "status": "placeholder",
+    "gen": {
+     "provider": "procedural",
+     "model": "scripts/game-c-art-gen.mjs",
+     "prompt": null,
+     "servedPath": "/games/game-c/art/scene/backdrop.svg",
+     "localId": "game-c/scene/backdrop"
+    },
+    "indexEntry": null
+   },
+   "history": [
+    {
+     "action": "upload",
+     "assetId": "gen/art-001-up"
+    }
+   ]
   },
   {
    "no": "art-002",
@@ -80,24 +92,36 @@
     "usage": "albedo"
    },
    "context": "game-c《STORY-POKER V2》呢面 albedo（长方桌面整幅贴图·可换材质·主美术槽）·消费=build3d table-felt Material3D.map（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "status": "replaced",
    "gen": {
-    "provider": "procedural",
-    "model": "scripts/game-c-art-gen.mjs",
-    "prompt": null,
-    "servedPath": "/games/game-c/art/table/felt-albedo.svg",
-    "localId": "game-c/table/felt-albedo"
+    "source": "upload",
+    "localId": "gen/art-002-up",
+    "servedPath": "/games/game-c/art/gen/art-002-up.png"
    },
    "provenance": {
-    "generator": "procedural-noir",
-    "prompt": null,
-    "model": "scripts/game-c-art-gen.mjs",
-    "license": "CC0",
-    "source": "scripts/game-c-art-gen.mjs（夜金 SVG 程序占位）",
-    "mock": false,
-    "note": "夜金 SVG 程序占位·真图到位同 id 热替换（照 §1 统一风格）"
+    "model": "user-upload",
+    "prompt": "green casino poker felt cloth, rectangular table top, flat even texture with fine woven nap, subtle warm light pool at center, seamless, high resolution, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
+    "date": "",
+    "license": "用户上传"
    },
-   "prompt": "呢面 albedo·长方桌面整幅贴图"
+   "prompt": "呢面 albedo·长方桌面整幅贴图",
+   "history": [
+    {
+     "action": "regen",
+     "at": "2026-07-23T04:52:52.891Z",
+     "prevQuery": "green casino poker felt cloth, rectangular table top, flat even texture with fine woven nap, subtle warm light pool at center, seamless, high resolution, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark",
+     "newQuery": "green casino poker felt cloth, rectangular table top, flat even texture with fine woven nap, subtle warm light pool at center, seamless, high resolution, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark"
+    },
+    {
+     "action": "upload",
+     "assetId": "gen/art-002-up"
+    }
+   ],
+   "orig": {
+    "status": "placeholder",
+    "gen": null,
+    "indexEntry": null
+   }
   },
   {
    "no": "art-003",
@@ -773,24 +797,36 @@
     "transparent": true
    },
    "context": "game-c《STORY-POKER V2》加注 按钮皮（紫辉进攻）·消费=buttonSkins 或 node Button.skin·skin（art-bible §3·render-only 不进 sim hash）",
-   "status": "placeholder",
+   "status": "replaced",
    "gen": {
-    "provider": "procedural",
-    "model": "scripts/game-c-art-gen.mjs",
-    "prompt": null,
-    "servedPath": "/games/game-c/art/ui/btn-raise.svg",
-    "localId": "game-c/ui/btn-raise"
+    "source": "upload",
+    "localId": "gen/art-017-up",
+    "servedPath": "/games/game-c/art/gen/art-017-up.png"
    },
    "provenance": {
-    "generator": "procedural-noir",
-    "prompt": null,
-    "model": "scripts/game-c-art-gen.mjs",
-    "license": "CC0",
-    "source": "scripts/game-c-art-gen.mjs（夜金 SVG 程序占位）",
-    "mock": false,
-    "note": "夜金 SVG 程序占位·真图到位同 id 热替换（照 §1 统一风格）"
+    "model": "user-upload",
+    "prompt": "matte dark UI button plate with violet glow rim, aggressive, 9-slice, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, transparent background, no watermark",
+    "date": "",
+    "license": "用户上传"
    },
-   "prompt": "加注按钮皮·紫辉"
+   "prompt": "加注按钮皮·紫辉",
+   "orig": {
+    "status": "placeholder",
+    "gen": {
+     "provider": "procedural",
+     "model": "scripts/game-c-art-gen.mjs",
+     "prompt": null,
+     "servedPath": "/games/game-c/art/ui/btn-raise.svg",
+     "localId": "game-c/ui/btn-raise"
+    },
+    "indexEntry": null
+   },
+   "history": [
+    {
+     "action": "upload",
+     "assetId": "gen/art-017-up"
+    }
+   ]
   },
   {
    "no": "art-018",
