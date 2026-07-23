@@ -714,6 +714,17 @@ export function buildPlay(v: PlayView): LayoutNode {
       }
     : null;
 
+  // 夜宴跑马灯（桌下窄带 y474·felt 底 470 与信息条 512 之间空档·anim:marquee 横向滚动氛围条·owner 2026-07-22 三层特效）。
+  const ticker = l === 'zh'
+    ? `🀄 夜宴既开，落座从容　·　第 ${v.round} 盘　·　稳中求胜，静观其变　·　快牌快开，气氛正酣　✦　`
+    : `🀄 The banquet begins　·　Round ${v.round}　·　Play steady, read the table　·　keep it lively　✦　`;
+  const tickerBar: LayoutNode = {
+    type: 'Panel', id: 'a-p-ticker',
+    props: { bg: { custom: 'linear-gradient(90deg,transparent,rgba(30,20,14,0.55) 12%,rgba(30,20,14,0.55) 88%,transparent)' } },
+    layout: { x: FIELD_W / 2 - 300, y: 474, width: 600, height: 20, direction: 'row', align: 'center', radius: 10, allowOverlap: true },
+    children: [{ type: 'Label', id: 'a-p-ticker-t', props: { text: ticker, size: 'sm', color: 'gold', bold: true }, layout: { anim: 'marquee', allowOverlap: true } }],
+  };
+
   // z 序（DOM 顺序）：桌 → 中央墩 → 席位 → 信息条 → 立绘/操作 → 手牌扇（最上·可点）→ 返回。
   return {
     type: 'Screen',
@@ -726,6 +737,7 @@ export function buildPlay(v: PlayView): LayoutNode {
       seatCard(v.seats.west, wA.x, wA.y, v.turn === 'west', v.trick?.holder === 'west', l),
       seatCard(v.seats.east, eA.x, eA.y, v.turn === 'east', v.trick?.holder === 'east', l),
       infoBar,
+      tickerBar,
       heroPortrait,
       ...buildHandFanNodes(v.hand, v.selected),
       actionHint,
@@ -902,6 +914,13 @@ export function buildResult(v: ResultView): LayoutNode {
             { type: 'Particles', id: 'a-r-coins-fx', props: { kind: 'coins', loop: false }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H, allowOverlap: true } } as LayoutNode,
           ]
         : []),
+      // 金币飞进奖金（flyTo·仅赢·5 枚从上方沿弧线拖尾飞落 a-r-pay 奖金数·owner 2026-07-22 三层特效）。
+      ...(heroWon
+        ? Array.from({ length: 5 }, (_, i) => ({
+            type: 'Image' as const, id: `a-r-fly-${i}`, props: { src: art('icon/coin'), fit: 'contain' as const },
+            layout: { x: FIELD_W / 2 - 13 + (i - 2) * 46, y: 148, width: 26, height: 26, flyTo: { to: 'a-r-pay', arc: 66, delay: 300 + i * 120, ms: 820 }, allowOverlap: true },
+          } as LayoutNode))
+        : []),
       {
         type: 'Panel',
         id: 'a-r-card',
@@ -929,7 +948,15 @@ export function buildResult(v: ResultView): LayoutNode {
             children: [
               { type: 'Tag', id: 'a-r-combo', props: { label: v.comboLabel, tone: 'accent', size: 'sm' } },
               { type: 'Badge', id: 'a-r-mult', props: { text: `×${v.totalMult}`, tone: 'ok' } },
-              { type: 'Badge', id: 'a-r-pay', props: { text: `${heroWon ? '+' : '-'}${fmtMoney(v.payPerPlayer)}`, tone: heroWon ? 'ok' : 'warn' }, layout: { anim: 'pop' } },
+              // 结算奖金**数字滚动**（tween 0→额·owner 2026-07-22 三层特效）：符号 + 滚动数（保 a-r-pay id 供金币 flyTo 落点）。
+              {
+                type: 'Panel', id: 'a-r-pay', props: { bare: true },
+                layout: { direction: 'row', gap: 1, align: 'center', anim: 'pop' },
+                children: [
+                  { type: 'Label', id: 'a-r-pay-sign', props: { text: heroWon ? '+' : '−', size: 'lg', bold: true, color: heroWon ? 'ok' : 'danger' } },
+                  { type: 'Label', id: 'a-r-pay-n', props: { text: fmtMoney(v.payPerPlayer), tween: { from: 0, to: v.payPerPlayer, ms: 900 }, size: 'lg', bold: true, color: heroWon ? 'ok' : 'danger', glow: true } },
+                ],
+              },
               { type: 'Label', id: 'a-r-lv', props: { text: fmtLevelsAfter(l, v.levelAfter[0], v.levelAfter[1]), size: 'sm', color: 'sub' } },
             ],
           },
