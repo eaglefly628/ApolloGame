@@ -38,19 +38,20 @@ describe('game-c 美术台账 skinKey 契约（art-replace 写回别名依据）
     rows: Array<{ no: string; skinKey?: string }>;
   };
 
-  it('32 行·skinKey 全带且唯一（一行一素材·fill 写回的别名依据·此前全 null=生成写不回的根因）', () => {
-    // owner 2026-07-22 大重构：牌桌 5 槽（felt/rail/betline）+ table-surface 全下线·桌面美术并入整幅场景背景图 → 37→32 行。
-    expect(led.rows.length).toBe(32);
+  it('36 行·skinKey 全带且唯一（一行一素材·fill 写回的别名依据·此前全 null=生成写不回的根因）', () => {
+    // owner 2026-07-22 定稿：长方 3D 桌回归——背幕(室内环境) + 呢面 albedo/normal + 桌边木纹 albedo/normal → 32→36 行。
+    expect(led.rows.length).toBe(36);
     const keys = led.rows.map((r) => r.skinKey);
     expect(keys.every((k) => typeof k === 'string' && k!.length > 0)).toBe(true);
-    expect(new Set(keys).size).toBe(32);
+    expect(new Set(keys).size).toBe(36);
   });
 
-  it('23 生成槽 game-c/ 命名空间（override 载入过滤依据）+ 9 vendor 筹码 chip/ 保其索引 id', () => {
+  it('27 生成槽 game-c/ 命名空间（override 载入过滤依据）+ 9 vendor 筹码 chip/ 保其索引 id', () => {
     const keys = led.rows.map((r) => r.skinKey!);
-    expect(keys.filter((k) => k.startsWith('game-c/')).length).toBe(23);
+    expect(keys.filter((k) => k.startsWith('game-c/')).length).toBe(27);
     expect(keys.filter((k) => k.startsWith('chip/')).length).toBe(9);
-    expect(keys).toContain('game-c/scene/backdrop'); // 整幅场景 2D 背景图槽（大重构·桌面+环境唯一美术资产·setBackgroundTexture）
+    expect(keys).toContain('game-c/table/felt-albedo'); // 呢面主美术槽（长方桌面整幅贴图·可换材质）
+    expect(keys).toContain('game-c/scene/backdrop'); // 室内环境背幕槽（setBackgroundTexture）
   });
 
   it('背幕槽存在且首号（game-c/scene/backdrop·art-001·backdropUri 消费键）', () => {

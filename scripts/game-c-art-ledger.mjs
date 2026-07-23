@@ -39,15 +39,27 @@ const vendored = (skinKey, served, license, source) => ({
   prov: { generator: 'vendored', prompt: null, model: source, license, source: `assets/index.json → scripts/vendor-asset.mjs`, mock: false, note: '货架现货已 vendor·可后续换夜金定制' },
 });
 
-// ── ① 场景/背景 = 整幅场景 2D 图（owner 2026-07-22 大重构定稿·透视豪华包间）───────────────────────
-//   owner「这是我们游戏的整个背景·桌子只是一个透明 collision·不用画」⇒ **整张透视场景图**（含大木桌 + 皮椅 + 夜景落地窗 +
-//   包间陈设）走 `setBackgroundTexture`（2D 屏空间铺满整个游戏背景）；3D 侧桌子只留**不可见碰撞体**（有碰撞就行）。
-//   人物立绘 + 筹码按图**摆在桌子边上**（HUD 层·PE-C 侧排位）。走背景路=避开 Material3D.map 无 alpha 坑（REQ-3D-MAT-ALPHA）。
-//   旧 felt/rail/betline/table-surface 全下线（桌面美术并入这张整幅场景图）。owner 提供·认作默认最终资产。
-add('game-c/scene/backdrop', 'texture', '整幅场景 2D 背景图（透视豪华包间·大木桌 + 皮椅 + 夜景窗·桌子在 3D 侧只是不可见碰撞体）',
+// ── ① 场景/背景（owner 2026-07-22 定稿：3D 长方桌回归·背幕=桌四周室内环境·无桌）───────────────────────
+//   3D 长方桌单独渲染（见②），背幕只画**桌四周的室内环境**（豪华包间·夜景落地窗·皮沙发陈设·**不含桌**·免与 3D 桌重复）。
+//   走 `setBackgroundTexture`（2D 屏背景·3D 桌 + 筹码渲其上）。
+add('game-c/scene/backdrop', 'texture', '室内环境背幕（豪华包间·夜景落地窗·皮沙发陈设·无桌·3D 长方桌单独渲其上）',
   { mechanism: 'url', component: 'ThreeRenderer', field: 'setBackgroundTexture', resolver: 'renderer.setBackgroundTexture' },
-  'scene/backdrop.svg', 'cinematic perspective view of a luxurious executive lounge / private card room, a large dark walnut table in the foreground seen at a three-quarter slightly-downward angle (table top receding toward the back), leather tub chairs arranged around the table, floor-to-ceiling windows with a night city skyline behind, warm ambient lighting, sofas, table lamps, framed art and trophies, opulent noir mood; this is the full-screen game background, opaque, high resolution',
-  { w: 2048, h: 1152, transparent: false, usage: 'albedo' }, '整幅场景 2D 背景·透视包间+大木桌+夜景窗', '素坯：声明式 SVG（theme STORY_BACKDROP）·真图就绪 setBackgroundTexture 热替换');
+  'scene/backdrop.svg', 'cinematic interior of a luxurious executive lounge / private card room WITHOUT any table, seen at a slightly downward angle: floor-to-ceiling windows with a night city skyline, warm ambient cove lighting, leather sofas and tub chairs around the empty center, table lamps, framed art, opulent noir mood; the center is left open for a separate 3D table; full-screen background, opaque, high resolution',
+  { w: 2048, h: 1152, transparent: false, usage: 'albedo' }, '室内环境背幕·包间+夜景窗+沙发·无桌', '素坯：声明式 SVG（theme STORY_BACKDROP）·真图就绪 setBackgroundTexture 热替换');
+
+// ── ② 牌桌（owner 2026-07-22 定稿：3D 长方桌·呢面 flat plane 易换材质·桌边 glossy 木纹）─────────────────
+//   桌面呢面 = 长方 flat plane·Material3D.map（clean UV·整幅贴图易换·owner「继续出桌面贴图台账」）。
+//   桌边/桌体 = glossy 木纹（wood preset + rail 贴图槽·owner「木质木纹·跟老版差不多·要有光泽度」）。
+const felt = { mechanism: 'index', component: 'Material3D', field: 'map', resolver: 'build3d table-felt Material3D.map' };
+add('game-c/table/felt-albedo', 'texture', '呢面 albedo（长方桌面整幅贴图·可换材质·主美术槽）', felt, 'table/felt-albedo.svg',
+  'green casino poker felt cloth, rectangular table top, flat even texture with fine woven nap, subtle warm light pool at center, seamless, high resolution', { w: 2048, h: 1024, transparent: false, usage: 'albedo' }, '呢面 albedo·长方桌面整幅贴图', '素坯：plane 纯 tint(FELT)·真图就绪整幅铺（clean UV·易换）');
+add('game-c/table/felt-normal', 'texture', '呢面法线（长方桌面·织纹·可选）', { ...felt, field: 'normalMap', resolver: 'build3d table-felt Material3D.normalMap' }, 'table/felt-normal.svg',
+  'poker felt cloth weave normal map, rectangular, tangent-space, subtle fabric nap, high resolution', { w: 2048, h: 1024, transparent: false, usage: 'normal' }, '呢面法线·织纹·线性', '素坯：无（纯色底）·真图就绪覆盖');
+const rail = { ...felt, resolver: 'build3d table-body Material3D.map' };
+add('game-c/table/rail-albedo', 'texture', '桌边木纹 albedo（长方木框·glossy·跟老版差不多）', rail, 'table/rail-albedo.svg',
+  'polished dark walnut wood grain, rectangular poker table rail / frame, glossy lacquered sheen, warm highlights, high resolution', { w: 2048, h: 512, transparent: false, usage: 'albedo' }, '桌边木纹 albedo·胡桃木·光泽', '素坯：wood preset + 程序木纹(scratches)·真图就绪覆盖');
+add('game-c/table/rail-normal', 'texture', '桌边木纹法线（木纹起伏·可选）', { ...rail, field: 'normalMap', resolver: 'build3d table-body Material3D.normalMap' }, 'table/rail-normal.svg',
+  'dark walnut wood grain normal map, rectangular frame, tangent-space, high resolution', { w: 2048, h: 512, transparent: false, usage: 'normal' }, '桌边木纹法线·线性', '素坯：程序木纹回退·真图就绪覆盖');
 
 // ── ③ 扑克牌 = 引擎渲染原语·移出美术台账（owner 2026-07-22）──────────────────────────
 //   52 牌面 + 牌背既不入 art-ledger.json 也不入 index.json：PlayingCard 组件自绘牌面/牌背（红黑角标+中央花色+
@@ -99,4 +111,4 @@ const out = resolve(ROOT, 'public/games/game-c/art/art-ledger.json');
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, `${JSON.stringify(ledger, null, 1)}\n`);
 console.log(`game-c art-ledger → ${out} (${rows.length} 行)`);
-console.log('  分类：场景1(整幅场景图·桌面并入) · 牌桌0(只余不可见碰撞体) · 筹码9 · UI 按钮/框10 · 特效6 · 衣柜图标6 ·（扑克牌=引擎原语移出台账·立绘=外部角色卡不入账）');
+console.log('  分类：场景1(室内环境背幕·无桌) · 牌桌4(呢面albedo/normal + 桌边木纹albedo/normal·长方 3D 桌) · 筹码9 · UI 按钮/框10 · 特效6 · 衣柜图标6 ·（扑克牌=引擎原语移出台账·立绘=外部角色卡不入账）');

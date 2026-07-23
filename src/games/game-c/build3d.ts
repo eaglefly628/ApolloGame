@@ -12,16 +12,13 @@ import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assemb
 
 // 色板（STORY-POKER V2 稿·紫调绒面椭圆桌·owner 2026-07-21「美术无限逼近」）——照稿 felt radial 中亮 #7d5570 →
 //   边暗 #281620 取中值 0x5a3a52 做呢面主色（暖顶光在桌心再提亮=warm pool）；rail 稿 #6a4c38→#3e2c1e 木栏（收敛高光防塑感）。
-// FELT（呢面绒布色）owner 2026-07-22「改成绿底天鹅绒」：紫绒 0x6a4462 → 赌桌绿绒 0x2e7d4e（真图就绪由 Art02 albedo 覆盖·此为无图回退底 + 基色）。
-// RAIL（桌边木料色）owner 2026-07-22「更暖更亮」：暗胡桃 0x6f5040 → 暖蜜橡 0xa5703c（提亮 + 偏橙暖·仍木料非塑）。
-const FELT = 0x2e7d4e, FELT_LO = 0x123a24, RAIL = 0xa5703c, RAIL_HI = 0xc08a4e;
+// FELT（呢面色·无真图回退底 + 基色·真图就绪由 felt-albedo 覆盖）。RAIL（桌边木料色·暖蜜橡·wood preset 上）。
+const FELT = 0x2e7d4e, RAIL = 0xa5703c, RAIL_HI = 0xc08a4e;
 
-// 桌面椭圆（跑道形·长轴 x > 短轴 z·正式赛桌比例）。felt=呢面半径；rail=围栏环半径（略大·墙贴桌缘）。
-// owner 2026-07-21「纵横比跟稿差不多·别让立绘盖住这么大桌」：短轴收窄 → 呢面更扁·屏上 ≈916×502(1.82:1)·上沿下移给立绘 bust 让位。
-export const FELT_RX = 3.55, FELT_RZ = 2.02; // 呢面长/短半轴（世界单位·稿 1.82:1）
-const RAIL_RX = 3.72, RAIL_RZ = 2.19;        // 围栏环长/短半轴（呢面外 ~0.17）
-const RAIL_SEGS = 46;                         // 围栏墙段数（越多越贴椭圆·段间略叠不漏筹码·平滑）
-const RAIL_Y = 0.64, RAIL_H = 0.26;           // 围栏中心高 / 高度（低矮圆润软边·非高墙）
+// 呢面锚点半径（保留·chip3d 座位堆/抛掷锚点仍用·落点在长方呢面内）。
+export const FELT_RX = 3.55, FELT_RZ = 2.02;
+// 长方桌呢面尺寸（owner 2026-07-22：椭圆→长方·flat plane 易换材质）：长×宽（世界单位·≈1.8:1 赛桌比例）。
+const TBL_W = 7.1, TBL_D = 3.95;
 const FELT_TOP = 0.55;                         // 呢面上沿 y（筹码落此面）
 export const SEAT_COUNT = 6;
 /** 底池位（桌心偏主角侧·筹码扔向此·§下注区）。 */
@@ -46,10 +43,10 @@ export function seatStackPos(i: number, count = 6): { x: number; y: number; z: n
 export function build3DTableBlueprint(): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {};
 
-  // 相机：**顶视·稍微斜**（owner 2026-07-22 大重构·透视 3D 难→改顶视）·pitch≈1.45rad≈83°（近乎直下·留一点斜=微立体）·
-  //   yaw0=主角(+z)在屏底。distance 框住整幅顶视牌桌图。pivotY 0=看向桌面。
+  // 相机：**顶视·稍斜**（owner 2026-07-22：长方 3D 桌·顶视稍斜=看清呢面 + 一点桌体立体/木边光泽）·pitch≈1.28rad≈73°。
+  //   yaw0=主角(+z)在屏底。distance 框住长方桌。pivotY 抬一点看向桌面。
   entities['cam'] = {
-    Camera3D: { yaw: 0, pitch: 1.45, projection: 'perspective', fov: 38, distance: 9.2, near: 0.1, far: 100, pivotX: 0, pivotY: 0, pivotZ: 0 },
+    Camera3D: { yaw: 0, pitch: 1.28, projection: 'perspective', fov: 40, distance: 8.6, near: 0.1, far: 100, pivotX: 0, pivotY: 0.12, pivotZ: 0 },
   };
   // 光：暖顶主光（投影·筹码立体感）+ 冷补 + 暖环境。
   entities['sun'] = { Light3D: { kind: 'directional', color: 0xfff0d8, intensity: 1.05, dirX: -2, dirY: -9, dirZ: -1.5, castShadow: true } };
@@ -58,42 +55,41 @@ export function build3DTableBlueprint(): WorldBlueprint {
   // 暖光池（桌心正上方 point·呢面中央提亮=稿 felt radial 中亮 + warm floor pool·朝边自然衰减出深紫）。
   entities['pool'] = { Transform3D: { x: 0, y: 2.4, z: -0.15 }, Light3D: { kind: 'point', color: 0xffd2a0, intensity: 4.6, range: 9 } };
 
-  // 地板移除（REQ-C-112·owner 2026-07-22）：陡俯视下这块 16×12 不透明暗地板铺满全屏 →
-  //   完全遮住 setBackgroundTexture 的场景背幕（夜景背幕/工坊生成的场景图都被压在它下面看不见=owner 报「生成写不回游戏」的表现根因）。
-  //   拿掉后背幕(程序化 STORY_BACKDROP·真图就绪热替换)填满桌子四周=电影感环境；桌身自带木基+围栏接地不飘。
-  //   纯 render-only（地板本就无 RigidBody3D·筹码落呢面非地板）·物理/确定性零影响。owner 目击 A/B 拍板拿掉。
+  // ── owner 2026-07-22 定稿：长方 3D 桌（椭圆→长方·桌面 flat plane 易换材质·桌边 glossy 木纹跟老版差不多）────────
+  //   桌面呢面 = 长方 flat plane + Material3D.map（clean UV·一张贴图整幅铺·易换材质·owner「继续出桌面贴图台账」）。
+  //   桌边/桌体 = glossy 木纹（wood preset·roughness 0.4 出光泽·+ 程序木纹 + rail 贴图槽·owner「木质木纹·要有光泽度」）。
+  //   物理：木桌体 box 碰撞 mass0 接筹码 + 四面矮墙挡池（不可见）。背幕=setBackgroundTexture 室内环境（桌四周）。
 
-  // ── owner 2026-07-22 大重构（透视 3D 难→顶视·桌面=2D 背景图·非 3D Mesh）──────────────────────
-  //   owner 定稿：「桌子还是一个模型·不用画·有碰撞就行；上面再放一个 2D 渲染图·不用真当 3D Mesh」。
-  //   ⇒ 桌面 visual = **一张顶视 2D 整幅图**走 `setBackgroundTexture`（游戏侧 backdropUri→renderer.setBackgroundTexture·
-  //     2D 屏空间铺满·3D 筹码渲其上）；**不建任何桌面 Mesh**（避开 Material3D.map 的 PBR 无 alpha 坑=透明区渲黑·REQ-3D-MAT-ALPHA）。
-  //   桌身/呢面/发牌区/公共牌槽/边缘全烤进这张 2D 图；桌子本体只留**不可见碰撞体**（呢面 + 围栏墙·owner「有碰撞就行」）。
-
-  // 呢面碰撞体（**不可见**·只留物理·筹码落此面堆叠不穿桌）。visual 由 setBackgroundTexture 的 2D 顶视图承担·此处零渲染。
+  // 木桌体 + 桌边（长方木盒·比呢面略大=四周露木边框/rail·glossy 木纹·可换 rail 真图）。top 在呢面沿·中心被呢面盖·四周露木。
+  entities['table-body'] = {
+    Transform3D: { x: 0, y: FELT_TOP - 0.24, z: 0 },
+    Mesh3D: { shape: 'box', width: TBL_W + 0.55, height: 0.48, depth: TBL_D + 0.55, frontTint: RAIL, edgeTint: 0x4a3218 },
+    Material3D: { preset: 'wood', color: RAIL, roughness: 0.4, surface: { pattern: 'scratches', tiles: 5, normal: 0.45, rough: 0.35, scale: 1.1 }, map: 'game-c/table/rail-albedo', normalMap: 'game-c/table/rail-normal' },
+    RigidBody3D: { shape: 'box', mass: 0, restitution: 0.15, friction: 0.72 },
+  };
+  // 桌面呢面（长方 flat plane·rotX -90° 面朝上·略高于木桌体·四周留木边）。Material3D.map=felt-albedo（整幅呢面图·clean UV·易换）+ normalMap felt-normal；无真图=纯色 FELT 回退。
   entities['table-felt'] = {
-    Transform3D: { x: 0, y: FELT_TOP - 0.03, z: 0, scaleX: FELT_RX / FELT_RZ },
-    Mesh3D: { shape: 'cylinder', width: FELT_RZ * 2, height: 0.06, frontTint: FELT, edgeTint: FELT_LO },
-    Visibility: { visible: false }, // 不渲染·只作 RigidBody 取碰撞尺寸
-    RigidBody3D: { shape: 'cylinder', mass: 0, restitution: 0.18, friction: 0.72 },
+    Transform3D: { x: 0, y: FELT_TOP + 0.004, z: 0, rotX: -Math.PI / 2 },
+    Mesh3D: { shape: 'plane', width: TBL_W, height: TBL_D, frontTint: FELT },
+    Material3D: { preset: 'matte', color: FELT, roughness: 0.85, map: 'game-c/table/felt-albedo', normalMap: 'game-c/table/felt-normal' },
   };
 
-  // 桌面 2D 图 = setBackgroundTexture（不在此建 Mesh）；下注线/公共牌槽/发牌区全在那张 2D 图里·不再程序化画。
-
-  // ── 隐形物理围栏（owner 2026-07-18：可见木栏「太奇怪」·改**看不见的碰撞墙**·朝心一圈·只挡不画）──
-  // 一圈静态 box 墙（mass0·physics.ts 明许「围栏/地台」静态体）沿椭圆缘·挡抛入的筹码不滚出台。
-  // Visibility:false = 渲染器不画（Mesh3D 仅供物理取盒尺寸·非渲染网格）；rotY 朝径向=墙面对心。
-  for (let k = 0; k < RAIL_SEGS; k++) {
-    const th = (k / RAIL_SEGS) * Math.PI * 2;
-    const x = RAIL_RX * Math.sin(th), z = RAIL_RZ * Math.cos(th);
-    const rotY = Math.atan2(x, z); // 墙面法线朝径向（对准桌心）
-    const segLen = (Math.PI * (FELT_RX + FELT_RZ)) / RAIL_SEGS * 1.7; // 段长多叠→无缝闭环
+  // ── 四面隐形矮墙（长方·挡抛入筹码不滑出呢面·mass0 静态·不渲染）──
+  const WALL_Y = FELT_TOP + 0.13, WALL_H = 0.26, hw = TBL_W / 2, hd = TBL_D / 2;
+  const walls = [
+    { x: 0, z: hd, w: TBL_W + 0.3, d: 0.12 },  // 远边
+    { x: 0, z: -hd, w: TBL_W + 0.3, d: 0.12 },  // 近边
+    { x: hw, z: 0, w: 0.12, d: TBL_D + 0.3 },   // 右边
+    { x: -hw, z: 0, w: 0.12, d: TBL_D + 0.3 },  // 左边
+  ];
+  walls.forEach((wl, k) => {
     entities[`rail-${k}`] = {
-      Transform3D: { x, y: RAIL_Y, z, rotY },
-      Mesh3D: { shape: 'box', width: segLen, height: RAIL_H, depth: 0.14, frontTint: RAIL_HI }, // 只为物理取尺寸
-      Visibility: { visible: false }, // **不渲染**（owner：围栏看不见·只碰撞）
-      RigidBody3D: { shape: 'box', mass: 0, restitution: 0.42, friction: 0.5 },
+      Transform3D: { x: wl.x, y: WALL_Y, z: wl.z },
+      Mesh3D: { shape: 'box', width: wl.w, height: WALL_H, depth: wl.d, frontTint: RAIL_HI }, // 只为物理取盒尺寸
+      Visibility: { visible: false }, // 不渲染·只碰撞
+      RigidBody3D: { shape: 'box', mass: 0, restitution: 0.4, friction: 0.5 },
     };
-  }
+  });
 
   return { capabilities: [], entities };
 }

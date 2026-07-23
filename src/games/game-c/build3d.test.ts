@@ -1,22 +1,27 @@
 import { describe, it, expect } from 'vitest';
 import { build3DTableBlueprint, seatWorldPos, SEAT_COUNT } from './build3d.js';
 
-describe('game-c build3d — 2D 视角 3D 牌桌 + 物理围栏（owner 2026-07-18）', () => {
-  it('蓝图有陡俯视相机 + 光 + 椭圆呢面（带碰撞体）', () => {
+describe('game-c build3d — 长方 3D 牌桌（owner 2026-07-22：椭圆→长方·呢面 flat plane 易换材质·桌边 glossy 木纹）', () => {
+  it('顶视稍斜相机 + 光 + 长方呢面 plane + 木桌体碰撞体', () => {
     const bp = build3DTableBlueprint();
     expect(bp.capabilities).toEqual([]); // 静态场景无 tick system
     const cam = bp.entities['cam']!.Camera3D as { pitch: number } | undefined;
     expect(cam).toBeTruthy();
-    expect(cam!.pitch).toBeGreaterThan(1.0); // 陡俯视（近 2D 平面观感·非 45° 斜视）
+    expect(cam!.pitch).toBeGreaterThan(1.0); // 顶视稍斜（近 2D 平面观感）
+    // 呢面 = flat plane（clean UV·易换材质·map=felt-albedo）
     const felt = bp.entities['table-felt']!;
-    expect(felt.Mesh3D).toBeTruthy();
-    expect((felt.RigidBody3D as { mass: number } | undefined)?.mass).toBe(0); // 呢面静态碰撞体（筹码落此面）
+    expect((felt.Mesh3D as { shape: string } | undefined)?.shape).toBe('plane');
+    expect((felt.Material3D as { map: string } | undefined)?.map).toBe('game-c/table/felt-albedo');
+    // 碰撞体 = 木桌体 box（mass0·筹码落呢面）
+    const body = bp.entities['table-body']!;
+    expect((body.RigidBody3D as { shape: string; mass: number } | undefined)?.shape).toBe('box');
+    expect((body.RigidBody3D as { mass: number } | undefined)?.mass).toBe(0);
   });
 
-  it('一圈**隐形**物理围栏墙（静态 box·mass0·挡筹码不出台·owner：看不见只碰撞）', () => {
+  it('四面**隐形**物理矮墙（静态 box·mass0·挡筹码不滑出长方呢面·不渲染）', () => {
     const bp = build3DTableBlueprint();
     const rails = Object.keys(bp.entities).filter((k) => k.startsWith('rail-'));
-    expect(rails.length).toBeGreaterThanOrEqual(24); // 足够多段贴椭圆·闭环
+    expect(rails.length).toBe(4); // 长方四边各一堵
     for (const k of rails) {
       const rb = bp.entities[k]!.RigidBody3D as { shape: string; mass: number } | undefined;
       expect(rb?.shape).toBe('box');
