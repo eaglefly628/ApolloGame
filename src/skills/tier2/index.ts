@@ -30,6 +30,14 @@ export { cardPlayCapability, decodeCard, encodeCard } from './card-play.js';
 export { diceRollCapability } from './dice-roll.js';
 export { rollDicePool, applyBanFilter, opposedRoll, OPPOSED_MAX_REROLL } from './dice.js';
 export type { TiePolicy, OpposedResult } from './dice.js';
+// draft-offer（REQ-SURVIVOR编排 E1）：Roguelite 升级三选一抽选纯函数核（非 capability·先例见 dice.ts）——
+// 按已持有/槽位满否过滤候选池 → 加权抽 N 个不重复 offer → applyPick 回填。种子化确定性。
+export { rollOffer, applyPick, isEligible } from './draft-offer.js';
+export type { DraftCandidate, DraftState, RollOfferOpts } from './draft-offer.js';
+// spawn-director（REQ-SURVIVOR编排 E3）：波次刷怪调度纯函数核（非 capability·先例见 dice.ts）——
+// 波表 + 每秒速率累积 + 同屏 cap 上限 → tickDirector 出本 tick 该发的 SpawnRequest 列（真生成交 k1-spawn）。
+export { createDirector, tickDirector } from './spawn-director.js';
+export type { DirectorWave, Director, SpawnRing, TickOpts } from './spawn-director.js';
 // card-pile（REQ-017）：牌库/手牌 sim 内确定性管理（发牌/选牌下标/补牌/弃牌）——回合流程数据化 + lockstep 共同前置。
 export { cardPileCapability } from './card-pile.js';
 // self-rule（REQ-021）：逻辑链实体本地(self)作用域——对每个实体读自身条件→对自身施效。补动态多实体自治缺口。
