@@ -91,9 +91,9 @@
         "component": "Image",
         "field": "src"
       },
-      "query": "deep wine-red rounded-rectangular felt table surface, soft center highlight, thin gold rim, subtle fabric weave, top-down",
+      "query": "top-down deep wine-red velvet felt card table surface, long rounded-rectangle shape, ornate thin gold trim following the rounded rectangle edge, soft warm central light pool, subtle plush velvet weave, luxurious chinese night-banquet mood, dark vignetted corners, transparent background outside the table, high resolution, clean game art",
       "placeholder": {
-        "current": "程序化圆角矩形 SVG（酒红径向渐变 + 桌心光池 + 细金边·felt/table.svg）",
+        "current": "程序化圆角矩形 SVG 占位（felt/table.svg·酒红径向渐变+桌心光池+细金边）——真高清图待工坊生成替换",
         "source": "procedural",
         "count": 1,
         "instances": [
@@ -101,12 +101,12 @@
         ]
       },
       "spec": {
-        "w": 816,
-        "h": 322,
+        "w": 1632,
+        "h": 644,
         "transparent": true
       },
-      "context": "game-a SC-3 长方形（圆角矩形 rx28）felt 桌呢纹理（a-felt 消费·owner 2026-07-22 退 2D 长方桌·替旧椭圆）·风格锚 modern-manor·压深让白扑克不刺眼（A-007）·P1",
-      "status": "filled",
+      "context": "game-a《掼蛋夜宴》SC-3 牌桌面（a-felt 消费·长方形圆角 rx28）·风格锚 modern-manor 夜宴华贵·压深让白扑克不刺眼（A-007）·**真高清呢面待工坊生成**（当前=程序 SVG 占位·真图入库即热替换）·P1",
+      "status": "pending-art",
       "gen": {
         "source": "procedural",
         "servedPath": "/games/game-a/art/felt/table.svg",
@@ -118,7 +118,14 @@
         "consumed": true,
         "at": "theme FELT_TEXTURE → a-felt 桌面 bg"
       },
-      "skinKey": "game-a/felt/table"
+      "skinKey": "game-a/felt/table",
+      "provenance": {
+        "generator": "game-a-authored",
+        "prompt": "top-down deep wine-red velvet felt card table surface, long rounded-rectangle shape, ornate thin gold trim following the rounded rectangle edge, soft warm central light pool, subtle plush velvet weave, luxurious chinese night-banquet mood, dark vignetted corners, transparent background outside the table, high resolution, clean game art",
+        "model": "待工坊生成",
+        "mock": false
+      },
+      "prompt": "掼蛋夜宴·长方形圆角呢桌面·酒红天鹅绒 + 细金边框（跟随圆角矩形）+ 桌心暖光池·俯视·透明背景·高清"
     },
     {
       "no": "art-08",
