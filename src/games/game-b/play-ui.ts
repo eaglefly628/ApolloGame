@@ -68,7 +68,11 @@ const OPP_POS: Record<number, { x: number; y: number }> = {
 // owner 2026-07-21 要「矩形条沿正方形框一圈流动」= 描边周长流动条：闭集无此件（anim:spin 是整体旋转·
 // 非沿边流动；无 conic-from-angle/描边 trace fx）→ 精美流动条须 PUI 加「头像回合计时描边」能力（缺件报
 // PUI·不手写逃生）；owner 定夺后立单，到货即换上。此处先用金框+流光的干净 interim。
-const ACTIVE_FX: NonNullable<LayoutNode['layout']>['fx'] = [{ kind: 'glow', color: 'gold', intensity: 1.2 }, { kind: 'sheen' }];
+// 当前手席=金光呼吸（glow + pulse·活的「轮到他」心跳·mirror game-a turn indicator）·owner 2026-07-23 动效发挥。
+const ACTIVE_FX: NonNullable<LayoutNode['layout']>['fx'] = [{ kind: 'glow', color: 'gold', intensity: 1.2 }, { kind: 'pulse' }];
+// 立直席=金光警示（对手听牌·放铳警戒）；宝牌=金光高亮（加符价值牌）。
+const RIICHI_FX: NonNullable<LayoutNode['layout']>['fx'] = [{ kind: 'glow', color: 'gold' }, { kind: 'pulse' }];
+const DORA_FX: NonNullable<LayoutNode['layout']>['fx'] = [{ kind: 'glow', color: 'gold' }];
 
 // ══════════════════════════════════════════════════════════════════════════════════════════
 //  桌上头像框（東/北/西·贴立绘 + 风位徽 + 名 + 点）= seat-1/2/3（测试钉 seat-* 齐 4）
@@ -98,7 +102,7 @@ function tableAvatar(m: MatchState, seat: number, lang: Lang): LayoutNode {
   };
   const tags: LayoutNode[] = [
     ...(active ? [{ type: 'Tag' as const, id: `seat-${seat}-t`, props: { label: t(lang, 'play.playing'), tone: 'accent' as const, size: 'sm' as const } }] : []),
-    ...(m.cur.riichi[seat] ? [{ type: 'Tag' as const, id: `seat-${seat}-r`, props: { label: t(lang, 'play.riichiTag'), tone: 'accent' as const, size: 'sm' as const } }] : []),
+    ...(m.cur.riichi[seat] ? [{ type: 'Tag' as const, id: `seat-${seat}-r`, props: { label: t(lang, 'play.riichiTag'), tone: 'accent' as const, size: 'sm' as const }, layout: { fx: RIICHI_FX } }] : []),
   ];
   // 顶座（2·北位）：横排——头像 beside 名（不竖叠·不上超框）。
   if (seat === 2) {
@@ -127,7 +131,7 @@ function playerBar(m: MatchState, lang: Lang): LayoutNode {
     children: [
       { type: 'Tag', id: 'seat-0-w', props: { label: wind, tone: 'accent', size: 'sm' } },
       { type: 'Label', id: 'seat-0-n', props: { text: heroDisplay(lang, m.seatNames[0]!), size: 'sm', bold: true, color: 'text' }, layout: { flex: 1 } },
-      ...(m.cur.riichi[0] ? [{ type: 'Tag' as const, id: 'seat-0-r', props: { label: t(lang, 'play.riichiTag'), tone: 'accent' as const, size: 'sm' as const } }] : []),
+      ...(m.cur.riichi[0] ? [{ type: 'Tag' as const, id: 'seat-0-r', props: { label: t(lang, 'play.riichiTag'), tone: 'accent' as const, size: 'sm' as const }, layout: { fx: RIICHI_FX } }] : []),
       { type: 'Label', id: 'seat-0-s', props: { text: m.scores[0]!.toLocaleString('en-US'), size: 'sm', bold: true, color: 'gold' } },
     ],
   };
@@ -162,7 +166,7 @@ function riverTiles(m: MatchState, seat: number): LayoutNode | null {
 }
 function playField(m: MatchState, lang: Lang): LayoutNode[] {
   const doraTiles: LayoutNode[] = m.cur.doraInd.map((d, i): LayoutNode => ({
-    type: 'Image', id: `dora-${i}`, props: { src: faceUrl(doraFromIndicator(d)), fit: 'contain' }, layout: { width: DW, height: DH },
+    type: 'Image', id: `dora-${i}`, props: { src: faceUrl(doraFromIndicator(d)), fit: 'contain' }, layout: { width: DW, height: DH, fx: DORA_FX },
   }));
   const zone = (id: string, x: number, y: number, w: number, h: number, label: string, tone: 'gold' | 'jade'): LayoutNode => ({
     type: 'Panel', id, props: { bg: { custom: 'rgba(8,20,18,0.22)' }, dashed: true, edge: tone },
@@ -190,7 +194,8 @@ function playField(m: MatchState, lang: Lang): LayoutNode[] {
     layout: { x: PANEL_X + 4, y: PANEL_Y + 4, direction: 'row', gap: 8, align: 'center', padding: 6 },
     children: [
       { type: 'Label', id: 'felt-round', props: { text: `${m.roundNo <= 4 ? '東' : '南'}場 · ${WIND[seatWind(m.dealer, m.dealer)]}家`, size: 'sm', bold: true, font: 'serif', color: 'gold' } },
-      { type: 'Label', id: 'felt-wall-n', props: { text: fmtWall(lang, m.cur.wall.length, m.honba, m.kyotaku / 1000), size: 'xs', color: 'jade' } },
+      // 残り牌 ≤8 = 海底将至·红字脉冲提示紧张（owner 动效·闭集 pulse）。
+      { type: 'Label', id: 'felt-wall-n', props: { text: fmtWall(lang, m.cur.wall.length, m.honba, m.kyotaku / 1000), size: 'xs', color: m.cur.wall.length <= 8 ? 'danger' : 'jade' }, ...(m.cur.wall.length <= 8 ? { layout: { fx: [{ kind: 'pulse' as const }] } } : {}) },
     ],
   };
   const centerDora: LayoutNode = {
@@ -376,8 +381,8 @@ function turnBanner(m: MatchState, lang: Lang): LayoutNode | null {
   const flow = lastDisc ? fmtLastDiscard(lang, heroDisplay(lang, lastDisc.actor), labelTile(lastDisc.tile!)) : t(lang, 'turn.opening');
   return {
     type: 'Panel', id: 'turnbanner', props: { bg: { custom: hot ? 'rgba(52,22,36,0.95)' : 'rgba(26,15,24,0.9)' }, glow: hot, accent: hot },
-    // 贴桌底右（与左下角行动键分居两侧·中间留给手牌）·同在 58px 控制带内不压桌不压手牌。
-    layout: { x: PANEL_X + PANEL_W - 212, y: BAND_Y, width: 206, padding: 6, gap: 1, direction: 'column', align: 'start' },
+    // 贴桌底右（与左下角行动键分居两侧·中间留给手牌）·同在 58px 控制带内不压桌不压手牌。轮到你/待鸣=脉冲提醒（owner 动效）。
+    layout: { x: PANEL_X + PANEL_W - 212, y: BAND_Y, width: 206, padding: 6, gap: 1, direction: 'column', align: 'start', ...(hot ? { fx: [{ kind: 'pulse' as const }] } : {}) },
     children: [
       { type: 'Label', id: 'tb-head', props: { text: head, size: 'sm', bold: true, color: hot ? 'gold' : 'jade' } },
       { type: 'Label', id: 'tb-flow', props: { text: flow, size: 'xs', color: 'sub' } },
@@ -471,6 +476,8 @@ function resultOverlay(m: MatchState, lang: Lang): LayoutNode {
     // owner 2026-07-23 CJK 艺术字：和了/ロン/ツモ/流局 = 高潮时刻，上日文毛筆明朝（jpbrush·含假名·渲片假名 ロン/ツモ 不漏字）。
     { type: 'Label', id: 'res-t', props: { text: title, size: 'xl', color: 'gold', font: 'jpbrush' } },
   ];
+  // 和了庆祝：星光爆一次性（owner 动效发挥·闭集 Particles·流局不放·render-only）。
+  if (isWin) rows.push({ type: 'Particles', id: 'res-fx', props: { kind: 'stars', count: 20, loop: false }, layout: { width: 280, height: 78 } });
   if (isWin && r.handSnapshot) {
     rows.push(resultHand(m, r, lang));
     rows.push({ type: 'Label', id: 'res-w', props: { text: fmtWinTile(lang, labelTile(r.winTile!), r.loser !== null ? heroDisplay(lang, m.seatNames[r.loser]!) : null), size: 'sm', color: 'sub' } });
