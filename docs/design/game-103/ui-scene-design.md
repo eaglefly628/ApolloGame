@@ -1,6 +1,6 @@
 # game-103《幸存者核心原型》· 场景布局 & UI 布局设计交接案（v1）
 
-> 2026-07-23 · GD-103 · S4 交付物。配套设计稿：`survivor-hud-mockup.dc.html`（**PE 1:1 复刻基准**·CLAUDE.md 稿铁律）。
+> 2026-07-23 · GD-103 · S4 交付物。配套设计稿（**PE 1:1 复刻基准**·CLAUDE.md 稿铁律·均渲染目击在案）：`survivor-hud-mockup.dc.html`（SC-2 战斗 HUD + SC-3 升级三选一）· `survivor-menu-result.dc.html`（SC-1 主菜单 + SC-4 结算胜/负）。
 > **UI 铁律**：HUD/菜单/弹窗全部用 `LayoutNode` 闭集控件（`src/ui/components/catalog.ts`）；**play-field（玩家/敌人/子弹/宝石实体）走 render 组件 + 引擎渲染器**（rendering-fx.md），不是 LayoutNode。写世界=`action` 信号入队，handler 不塞逻辑。
 > 做前必读 `ui-playbook.md` 四准则（防重叠/对比/透明/布局卫生）；交付前跑 `/check-ui` + `tools/ui-audit.mjs` 归零。
 

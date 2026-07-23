@@ -7,8 +7,8 @@
 
 - **S1 立项讨论**：✅ v1 → `brief.md`（含 GD 架构评判：接受立项·有前置条件）
 - **S2 capability-plan**：✅ 送审稿 → `capability-plan.md`（⏳ 待 Lead 审；§4 三处编排下沉已提 `REQ-SURVIVOR编排`·GD 已诚实核查 event-when/merge-rule/dice-roll 覆盖度；**过审前零游戏层代码**）
-- **S3 GDD**：✅ v1 送审稿 → `gdd.md`（武器/进化/被动/敌人/波次/掉落数值表 + DPS 功率曲线）
-- **S4 UI/场景设计交接**：✅ v1 → `ui-scene-design.md` + 设计稿 `survivor-hud-mockup.dc.html`（渲染目击在案·PE 1:1 复刻基准）
+- **S3 GDD + 数值**：✅ v1 → `gdd.md` + `balance-design.md`（伤害公式/逐级成长/难度曲线/**P-M 功率曲线手算验证**/经济/balance-sim spec）
+- **S4 UI/场景设计交接**：✅ v1 → `ui-scene-design.md` + 设计稿 `survivor-hud-mockup.dc.html`（战斗+三选一）+ `survivor-menu-result.dc.html`（主菜单+结算胜/负）·均渲染目击在案·PE 1:1 复刻基准
 - S5+ 交 PE 实现：⬜（等 capability-plan 过审 + slot 骨架）
 
 ## 文档索引
@@ -18,8 +18,10 @@
 | [`brief.md`](./brief.md) | 立项讨论稿 + GD 架构评判 + owner 拍板项 + 风险 |
 | [`capability-plan.md`](./capability-plan.md) | 能力总览（门禁）：每系统对照 registry 实名消费能力 + §4 三处编排下沉裁决 |
 | [`gdd.md`](./gdd.md) | GDD：核心循环/操作/武器/进化/被动/敌人/掉落/数值曲线/里程碑 |
+| [`balance-design.md`](./balance-design.md) | 数值平衡：伤害公式/逐级成长/被动叠加/难度曲线/P-M 功率曲线验证/经济/sim spec |
 | [`ui-scene-design.md`](./ui-scene-design.md) | S4 场景/UI 布局交接：逐场景详案 + 控件映射 + 信号总表 + 美术槽位 |
-| [`survivor-hud-mockup.dc.html`](./survivor-hud-mockup.dc.html) | Claude Designer 设计稿：战斗 HUD + 升级三选一（PE 1:1 复刻基准） |
+| [`survivor-hud-mockup.dc.html`](./survivor-hud-mockup.dc.html) | 设计稿：战斗 HUD + 升级三选一（PE 1:1 复刻基准） |
+| [`survivor-menu-result.dc.html`](./survivor-menu-result.dc.html) | 设计稿：主菜单 + 结算（胜利/失败）（PE 1:1 复刻基准） |
 
 ## 一句话
 

@@ -28,7 +28,8 @@
   .tag{display:inline-block; font-size:11px; color:var(--dim); background:var(--chrome); border:1px solid var(--line); border-radius:6px; padding:2px 7px; margin:2px 2px 0 0; white-space:nowrap}
 
   /* ---- phone frame ---- */
-  .phone{width:300px; height:600px; border-radius:26px; padding:8px; background:linear-gradient(160deg,#1c2530,#0c1016); box-shadow:0 20px 50px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.05); position:relative}
+  /* 游戏屏=固定暗色·屏内文字恒亮（钉死令牌·不随页面明暗翻转） */
+  .phone{--ink:#e6edf3; --sub:#9aa7b4; --dim:#66707c; width:300px; height:600px; border-radius:26px; padding:8px; background:linear-gradient(160deg,#1c2530,#0c1016); box-shadow:0 20px 50px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.05); position:relative; color:var(--ink)}
   .screen{position:absolute; inset:8px; border-radius:20px; overflow:hidden; background:radial-gradient(120% 90% at 50% 55%, var(--field0), var(--field1) 80%)}
   /* subtle battlefield grid */
   .grid{position:absolute; inset:0; background-image:linear-gradient(rgba(80,140,170,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(80,140,170,.06) 1px,transparent 1px); background-size:26px 26px; mask-image:radial-gradient(80% 70% at 50% 55%,#000,transparent)}
