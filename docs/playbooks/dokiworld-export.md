@@ -47,6 +47,7 @@ README.txt
 - 把 dist 的 **`<slug>/` 目录** 放进 DokiWorld `frontend/public/games/<slug>/`（`game.json`+`index.html`+`assets/`+`art/` 直接在目录根）。
 - 服务端给美术资源加头：`Access-Control-Allow-Origin: *` + `Cross-Origin-Resource-Policy: cross-origin`（opaque-origin iframe 必需·DokiWorld 侧提供）。
 - 不要交付 review 脚本/审计/流水线文件到线上（部署只用 `<slug>/`）。
+- **mock/快照目录自动不打**（导出 + 打包两处均排除 `mock`/`mocks`/`__mocks__`/`snapshots`·spec §1 非运行时资源）。
 
 ## 6. 插件自动做的（对应契约·验收对照）
 

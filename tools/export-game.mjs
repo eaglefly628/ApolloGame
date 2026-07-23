@@ -124,12 +124,17 @@ const mapToOut = (abs) => path.join(GAME_SRC_OUT, path.relative(SRC, abs));
 //  1) the whole public/games/<id>/ dir (tiles, art index.json, per-game art);
 //  2) any absolute /… asset URL literal in the closure that resolves under public/
 //     (covers shared roots like /art or /models).
+// Non-runtime dirs that must never ship in a cartridge (spec §1: no audit/mock/pipeline files).
+const EXCLUDE_ASSET_PARTS = new Set(['mock', 'mocks', '__mocks__', '.mock', 'snapshots', '.snapshots']);
+const isExcludedAsset = (rel) => rel.split('/').some((seg) => EXCLUDE_ASSET_PARTS.has(seg));
+
 async function copyPublicAssets(closure) {
   const PUB = path.join(REPO, 'public');
   const OUTPUB = path.join(OUT, 'public');
   let count = 0;
   const copyOne = async (relUrl) => {
     const rel = relUrl.replace(/^\/+/, '').split('?')[0];
+    if (isExcludedAsset(rel)) return;               // 跳过 mock/快照等非运行时目录
     const src = path.join(PUB, rel);
     try { if (!(await fs.stat(src)).isFile()) return; } catch { return; }
     const dest = path.join(OUTPUB, rel);
