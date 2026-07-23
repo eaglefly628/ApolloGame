@@ -1,6 +1,6 @@
 # 能力总览 Capability Plan — game-103《幸存者核心原型》（S2 送审稿）
 
-> GD-103 · 2026-07-23 · 形态待 owner 定（编译期 TS 游戏 / 纯数据卡带）。
+> GD-103 · 2026-07-23 · **形态=编译期 TS 游戏（owner 2026-07-23 拍板）**；slot=`game-103`（owner 拍板·不占字母位）。
 > **plan 未过审不写游戏层系统代码**（CLAUDE.md 能力总览铁律）。规则语义=`gdd.md`。
 > 能力名已对照真实 registry 核准（`src/skills/tier1·tier2·tier3` + `atoms`）。
 
@@ -25,6 +25,8 @@
 | `t2-modifier-stack` (`ModifierSource`+`ModifierTotals`) | **被动技能全局加成聚合**（伤害/攻速/范围/拾取…） | ✅ 现有 |
 | `t2-over-time` (`OverTime`) | 灼烧 DoT / 生命回复 / 定时状态 | ✅ 现有 |
 | `t2-dice-roll` (`DicePool`) | **升级三选一抽取 + 掉落判定**（种子化） | ✅ 现有 |
+| `t2-event-when` (`EventWhen`+`Signal`) | **进化触发条件门**（"武器 lv5 且带被动"布尔条件树 edge 触发发信号）+ 波次时间门 | ✅ 现有 |
+| `t3-merge-rule` (`MergeRule`) | **进化替换**（N 换 1 模板替换·摘要明列"进化通用"·适配形状待核·见 §4 E2） | ✅ 现有（适配待裁） |
 | `t2-bounds-clamp` (`Bounds`+`Shape`) | 场地边界限制 | ✅ 现有 |
 | `spawn`（原子） | 刷怪 / 掉落物生成 | ✅ 现有 |
 | `spatial-query`（原子） | 范围索敌 / AoE 命中查询 / 拾取半径 | ✅ 现有 |
@@ -51,22 +53,25 @@
 
 > **红线自检**：以上每张表都指向**现成能力**做解释器，无「表 + 待写游戏层 for 循环」。三处编排（三选一/进化/波次）的解释器归属见 §4，是本 plan 的过审焦点。
 
-## 4. 申请的游戏层代码例外（逐条过审）
+## 4. 三处编排的能力归属（owner 2026-07-23 拍板：下沉新能力·交 Lead 做）
 
-| 例外 | 为什么现有能力表达不了 | 预计行数 | Lead 裁决 | 偿还计划 |
-|---|---|---|---|---|
-| **E1 升级三选一编排** | 抽 3（dice-roll 有）后需「按已拥有武器/被动、槽位满否过滤候选池」——过滤规则是否有现成能力？ | ~40 | ⬜ 待裁 | 若通用→下沉 `t3-draft-pool` 能力 |
-| **E2 进化触发检查** | 「武器 lv5 且携带指定被动 → 替换为进化体」的条件触发——是否可用现有 condition/trigger 能力表达，还是需下沉？ | ~30 | ⬜ 待裁 | 通用则下沉 `evo-rule` |
-| **E3 波次时间轴调度** | timer+spawn 有，但「t 到点→按表 spawn 指定敌人/rate/cap」的调度器是否已有 director 能力？ | ~50 | ⬜ 待裁 | 通用则下沉 `t3-spawn-director` |
-| **E4 进化质变 flag（homing/pull/fan）** | 追踪弹/黑洞吸附/扇形多重是否被现有 launch/steering/caster 覆盖？逐个核 describe | ~按缺口 | ⬜ 待裁 | 缺口走 requests.md 下沉 |
+> **owner 决策**：这块编排能力**下沉为新通用能力，交 Lead 做**。
+> **GD 诚实核查（CLAUDE.md CORE RULE §2 先重组再下沉）**：动手前逐条对现有 registry 核查——**大半可被现有件重组表达**，非「3 个整块新能力」。据实把「重组 vs 下沉哪几处薄缺口」的裁决交 Lead（引擎域），需求单已如实框定（见 requests.md `REQ-SURVIVOR编排`）。
 
-> **说明**：E1–E4 是本 plan 的**核心待裁点**。GD 立场=**倾向下沉为通用能力**（三选一 draft、进化 rule、波次 director 都是 Roguelite 通用件，非本游戏个性），而非在游戏层写 system。请 Lead 裁：能否用现有能力重组？不能则下沉哪几个。**过审前不写 E1–E4 任何代码。**
+| 编排点 | 现有件覆盖度（核查结论） | 真缺口（请 Lead 裁下沉的薄片） |
+|---|---|---|
+| **E1 升级三选一 draft** | 抽取=`t2-dice-roll` ✅；**但"按持有武器/被动+槽位满否过滤候选池 → offer N 选 1"无现成 draft/offer 件** | **最可能真缺口** → 下沉 `draft-offer`（过滤候选+发 N 选项+选中回填），Roguelite 通用 |
+| **E2 进化触发替换** | 条件门"武器 lv5 且带被动"=`t2-event-when`（布尔条件树 edge 触发）✅；替换动作=`t3-merge-rule`（摘要明列"进化通用"）**但其形状是"N 个同模板换 1"，进化是"1 武器+被动在场→换模板"，need:1 是否适配待核** | **薄缺口/可能可重组** → Lead 核 merge-rule need:1 + event-when 门是否成立；不成立则下沉「条件单实体换模板」 |
+| **E3 波次刷怪调度** | 时间门=`t2-event-when`（时间/资源条件→信号）✅ + `spawn` 原子逐个生成 ✅；**但 spawn 是单发·无 rate（每秒 N）/cap（同屏上限）** | **薄缺口** → 下沉 `spawn-director`（限速+同屏上限+按波表调度）；或 `timer(period)`+存活计数重组，Lead 定 |
+| **E4 进化质变 flag** | homing=`t2-steering`+`t3-aggro` ✅；fan=`Launch.amount>1` ✅；pull=反向 steering/吸引（待核） | 多数可重组·逐个核 describe；真缺口（如 pull 吸附）单独走 capgap |
+
+> **结论**：请 Lead 评审 `REQ-SURVIVOR编排`——回驳能重组的（E4 大半、E2 若 merge-rule 适配），只下沉真薄缺口（E1 `draft-offer`、E3 `spawn-director`、E2 换模板动作若缺）。**下沉件属引擎域·Lead/Opus 施工·GD 不碰代码；过审前不写任何游戏层 system。**
 > 未列进本表的游戏层自由代码=违规。审计红旗（裸 Math.random / innerHTML / createElement / 零能力接入 / 零测试）不接受申请为例外。
 
 ## 4.5 美术接入
 
 - **皮肤槽清单**：玩家、各敌人、各武器投射物、经验宝石、道具、Boss——**主体视觉实体全部带 `Sprite` 皮肤槽**（art-pipeline 红线）；原型阶段用占位几何体（圆/方 + 颜色），皮肤就绪即盖过。
-- **台账产出**：形态定为编译期游戏则照 game-q 样板写推导脚本（脚本名：`game-103-art-derive.mjs`，待建）；纯数据卡带则落库自动。
+- **台账产出**：形态=编译期 TS 游戏（owner 拍板）→ 照 game-q 样板写推导脚本 `game-103-art-derive.mjs`（待建·PE 骨架落地时同提交）。
 - 「纯程序化观感」仅作占位回退，不作为终态美德（art-pipeline 上线后旧叙事作废）。
 
 ## 5. 确定性声明
@@ -77,4 +82,5 @@
 ## 6. 评审记录
 
 - 提交人 / 日期：GD-103 / 2026-07-23
-- Lead 裁决：⬜ 待审（焦点=§4 E1–E4 编排能力归属：重组 or 下沉；及 §5 实时确定性风险）
+- owner 拍板（2026-07-23）：形态=编译期 TS 游戏；slot=game-103；§4 编排下沉新能力交 Lead。
+- Lead 裁决：⬜ 待审（焦点=§4 三处编排 `REQ-SURVIVOR编排` 重组 vs 下沉哪几处薄缺口；及 §5 实时确定性/实体规模风险）

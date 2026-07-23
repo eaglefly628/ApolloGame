@@ -63,6 +63,14 @@
 > ① `render.ts:721` faceArtSlice 覆盖 div 缺 `border-style:solid;border-width:${slice}px`——border-image 渲染前提不满足，真浏览器一像素不画（同文件 `skinCss`/`panelSkinCss` 均已显式设，唯此处漏）；修法=对齐 panelSkinCss 口径 + **真浏览器目击一次**（happy-dom 字符串断言测不出此病）。② `docs/playbooks/ui.md` 图标行补 `Panel.titleIcon`/`Tabs.tab.icon`（ab2a316c 落地未回填手册）。③ **border-image 审计盲区工具债提前清**（原 REQ-UIAUDIT 后置项）——本次正是「audit 测不出 border-image 白画」的同类病在 PUI 自家交付里咬了自己，实证该盲区值得现在补：ui-audit 对带 border-image 的元素校验 border-style/width 前提，缺=报警。
 > 附 Lead 裁决：REQ-UIRECON「通告 game-b/c」项**豁免**——引擎修复对两家透明兜住、无需其任何动作，补知会=空跑（game-a 兜底可退已在 A-012 闭环）。
 
+### REQ-SURVIVOR编排-幸存者三处编排能力归属（三选一 draft / 进化替换 / 波次刷怪）· [2026-07-23] · GD-103 报（owner 拍板「下沉新能力·交 Lead」）→ Lead 裁决 · status: open · 优先级: P2 · 类型: 引擎 capability 下沉裁决（Roguelite 通用编排·先重组再下沉）
+> **背景**：game-103《幸存者核心原型》（吸血鬼幸存者式割草·编译期 TS 游戏·owner 2026-07-23 拍板）。capability-plan §4 三处编排需引擎解释器，owner 拍板下沉新通用能力交 Lead。**GD 已按 CORE RULE §2 诚实核查现有 registry**，据实框定「回驳能重组的、只下沉真薄缺口」，裁决权交 Lead（引擎域·GD 不碰代码）。
+> **① 升级三选一 draft**：抽取=`t2-dice-roll` ✅ 有；缺口=「按已持有武器/被动 + 槽位满否**过滤候选池** → offer N 选 1 → 选中回填」无现成 draft/offer 件。→ **最可能真缺口**，建议下沉 `draft-offer`（headless·纯数据·种子化·Roguelite/rogue 通用·非 game-103 个性）。
+> **② 进化触发替换**：条件门「武器 lv5 且带对应被动」=`t2-event-when`（布尔条件树 edge 触发发 Signal）✅ 可表达；替换动作疑用 `t3-merge-rule`（摘要明列「进化通用」）——但其形状=「N 个**同**模板换 1」，而进化=「1 武器(lv5)+被动**在场**→换成进化模板」（非凑 N 个同名）。→ **请 Lead 核 `merge-rule need:1` + `event-when` 门是否成立**；成立则回驳（重组可解·GD 照写数据）；不成立则下沉「条件驱动·单实体换模板」薄能力。
+> **③ 波次刷怪调度**：时间门=`t2-event-when`（时间/资源条件→信号）✅ + `spawn` 原子逐个生成 ✅；缺口=`spawn` 单发·**无 rate（每秒 N）/ cap（同屏上限）/ 按波表调度**。→ **薄缺口**，建议下沉 `spawn-director`（限速+并发上限+波表驱动）；或 `timer(period)`+存活计数重组，Lead 定粒度。
+> **④ 进化质变 flag**（附）：homing=`t2-steering`+`t3-aggro`✅、fan=`Launch.amount>1`✅、pull(黑洞吸附)=反向 steering 待核——多数可重组·逐个走 capgap 快速通道·不占本单。
+> **请 Lead 裁**：逐条判「重组 / 下沉」；下沉件属引擎域，Lead 出 spec → Opus 施工（GD/游戏层不碰）。**过审前 game-103 零游戏层 system 代码**。证据全文=`docs/design/game-103/capability-plan.md §4`。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
