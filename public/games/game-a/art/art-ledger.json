@@ -371,9 +371,9 @@
         "component": "Image",
         "field": "src"
       },
-      "query": "golden confetti burst with silk ribbons, warm celebratory glow, radial, transparent",
+      "query": "luxurious golden victory celebration overlay, radial burst of warm gold light rays from center, silk ribbons and falling gold coins, festive chinese night-banquet triumph glow, soft bloom, transparent background, high resolution, game vfx art",
       "placeholder": {
-        "current": "结算卡金边 accent（注释标 placeholder）· Particles 未用",
+        "current": "程序化 SVG 占位（fx/win.svg·金色彩带径向）——真高清胜利演出图待工坊生成替换",
         "source": "procedural",
         "count": 1,
         "instances": [
@@ -381,12 +381,12 @@
         ]
       },
       "spec": {
-        "w": 512,
-        "h": 512,
+        "w": 2560,
+        "h": 1440,
         "transparent": true
       },
-      "context": "game-a SC-4/SC-5 过 A 通关/胜利演出·风格锚 apollo-toon·P1",
-      "status": "filled",
+      "context": "game-a《掼蛋夜宴》SC-4 通关胜利演出底图（run-won·满幅叠结算卡后·其上再叠程序 Particles 彩纸+金币雨）·**真高清胜利演出图待工坊生成**（当前=程序 SVG 占位·真图入库即热替换）·风格锚 modern-manor 夜宴华贵·P2",
+      "status": "pending-art",
       "gen": {
         "source": "procedural",
         "servedPath": "/games/game-a/art/fx/win-confetti.svg",
@@ -398,7 +398,14 @@
         "consumed": true,
         "at": "hud.ts a-result run-won 满屏 Image 叠层"
       },
-      "skinKey": "game-a/fx/win"
+      "skinKey": "game-a/fx/win",
+      "provenance": {
+        "generator": "game-a-authored",
+        "prompt": "luxurious golden victory celebration overlay, radial burst of warm gold light rays from center, silk ribbons and falling gold coins, festive chinese night-banquet triumph glow, soft bloom, transparent background, high resolution, game vfx art",
+        "model": "待工坊生成",
+        "mock": false
+      },
+      "prompt": "掼蛋夜宴·通关胜利演出·金光径向爆发 + 丝带 + 落金币 + 暖庆典辉光·透明背景·高清"
     },
     {
       "no": "art-por-partner",

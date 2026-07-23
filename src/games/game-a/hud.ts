@@ -399,7 +399,9 @@ function trickCard(code: number, idx: number): LayoutNode {
 const TRAY_ANIM: Record<SeatId, 'slideUp' | 'dealIn' | 'flyIn'> = { hero: 'slideUp', partner: 'dealIn', west: 'flyIn', east: 'dealIn' };
 // animate=仅「最近落子座」为真（justPlayed）：入场动效只播它，其余座前牌静态渲染——
 // 治「全桌一起播 / 上一张一起重播」（owner 2026-07-20）：非本次落子的座不带 anim，任何重渲/换根都不会重放它们。
-function seatTrayNode(seat: SeatId, play: { cards: number[]; pass: boolean } | undefined, x: number, y: number, l: Lang, animate: boolean): LayoutNode {
+// 炸弹级牌型（炸弹/同花顺/四大天王）——打出走**彩虹全息**（holo·库里最炫·owner 2026-07-22 二层特效）。
+const BOMB_FAMILIES = new Set(['bomb', 'straight-flush', 'sky']);
+function seatTrayNode(seat: SeatId, play: { cards: number[]; pass: boolean } | undefined, x: number, y: number, l: Lang, animate: boolean, bomb = false): LayoutNode {
   if (!play) return { type: 'Panel', id: `a-tray-${seat}`, props: { bare: true }, layout: { x, y } }; // 空占位（稳定键·0 尺寸不显）
   if (play.pass) {
     return {
@@ -414,11 +416,13 @@ function seatTrayNode(seat: SeatId, play: { cards: number[]; pass: boolean } | u
     layout: { x, y, direction: 'row', gap: 2, align: 'center' },
     children: play.cards.map((c, i) => {
       const f = cardFace(c);
+      // 炸弹级=每张挂 holo 彩虹箔（PlayingCard 是 tray 行 flex 子·无 x/y→holo 的 position:relative 不冲突）。
+      const bombFx = bomb ? { fx: [{ kind: 'holo' as const }] } : {};
       return {
         type: 'PlayingCard', id: `a-tray-${seat}-${i}`,
         props: { rank: f.rank, suit: f.suit, face: 'light', size: 'sm' },
-        // 仅落子座错落入场；其余静态（无 anim=重渲不重放）。
-        ...(animate ? { layout: { anim: dir, animDelay: i * 70 } } : {}),
+        // 仅落子座错落入场；其余静态（无 anim=重渲不重放）。炸弹级叠 holo 彩虹箔（与入场 anim 共存）。
+        ...(animate || bomb ? { layout: { ...(animate ? { anim: dir, animDelay: i * 70 } : {}), ...bombFx } } : {}),
       } as LayoutNode;
     }),
   };
@@ -465,7 +469,8 @@ function buildHandFanNodes(hand: number[], selected: number[]): LayoutNode[] {
       // actionArg=手牌**下标**（非牌码·两副牌同码会联动误选）
       props: { rank: f.rank, suit: f.suit, face: 'light', size: 'md', selected: sel, action: 'hand.toggle', actionArg: String(i) },
       // 扇形手牌=**故意叠放**（playbook §意图叠层）→ allowOverlap 豁免 ui-audit 重叠（相邻牌本就压半张·非误叠）。
-      layout: { x: startX + Math.round(i * HAND_STEP), y: baseY - lift - (sel ? 22 : 0), rotate: rot, allowOverlap: true },
+      // 发牌错落入场（anim:fadeIn·纯 opacity 不碰 transform=不冲突扇形 rotate；id 稳定→只在首挂/发牌时播一次·切选/出牌重渲不重放）。owner 2026-07-22 二层特效。
+      layout: { x: startX + Math.round(i * HAND_STEP), y: baseY - lift - (sel ? 22 : 0), rotate: rot, allowOverlap: true, anim: 'fadeIn', animDelay: i * 22 },
     };
   });
 }
@@ -545,7 +550,9 @@ export function buildPlay(v: PlayView): LayoutNode {
   // 座前小牌桌·**恒 4 槽**（无出牌=空占位）——稳定 felt 子键序，reconciler 只重渲「内容真变了的那槽」，
   // 只有刚出牌的那家的牌重播入场（修 owner 2026-07-18「播打牌动画时全桌牌一起播」bug·根因=旧实现 tray 数随出牌
   // 增减→felt 子键序变→整片 felt 被 outerHTML 重建→所有 tray 一起重播）。
-  for (const seat of TURN_ORDER) feltChildren.push(seatTrayNode(seat, v.plays[seat], TRAY_POS[seat].x, TRAY_POS[seat].y, l, seat === v.justPlayed));
+  // 暂大者(holder)的座前牌若是炸弹级牌型→该座前牌走 holo 彩虹箔（trick.family 判炸·holder=当前最大=打炸那家）。
+  const bombSeat = v.trick && v.trick.family != null && BOMB_FAMILIES.has(v.trick.family) ? v.trick.holder : null;
+  for (const seat of TURN_ORDER) feltChildren.push(seatTrayNode(seat, v.plays[seat], TRAY_POS[seat].x, TRAY_POS[seat].y, l, seat === v.justPlayed, seat === bombSeat));
   // 弹簧箭头指「谁大」（Float 锚定暂大者座前小牌桌·上下弹跳+呼吸光·近似弹簧·owner 2026-07-18）。**恒渲**（无墩=锚到
   // 不存在的槽·Float 找不到目标自隐）——稳定 felt 子键序，箭头出没不再触发整片 felt 重建（=全桌牌重播）。
   // felt 子节点（Float 位置 JS 活取·静态 audit 摆不准=祖孙嵌套豁免同扇形/中央墩）；真 scale 弹簧基座缺→float+glow 近似·A-011。
