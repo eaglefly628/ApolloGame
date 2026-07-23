@@ -10,10 +10,11 @@
 
 ```json
 {
-  "board": { "cols": 7, "rows": 7 },
+  "board": { "cols": 7, "rows": 9 },
   "mergeNeed": 2,
   "seed": "injected-per-run",
-  "startEnergy": 100
+  "startEnergy": 100,
+  "happinessMeter": { "max": 12, "eventRewardAt": 12 }
 }
 ```
 
@@ -43,6 +44,16 @@
       { "lvl": 4, "item": "fish_4", "name": "鱼柳",       "sell": 36,  "sprite": "item_fish_4" },
       { "lvl": 5, "item": "fish_5", "name": "香煎鱼",     "sell": 80,  "sprite": "item_fish_5" },
       { "lvl": 6, "item": "fish_6", "name": "主厨鱼料理", "sell": 180, "sprite": "item_fish_6" }
+    ]
+  },
+  {
+    "id": "fries",
+    "name": "薯条链（原作主力成品）",
+    "levels": [
+      { "lvl": 1, "item": "fries_1", "name": "土豆",   "sell": 3,  "sprite": "item_fries_1" },
+      { "lvl": 2, "item": "fries_2", "name": "薯块",   "sell": 7,  "sprite": "item_fries_2" },
+      { "lvl": 3, "item": "fries_3", "name": "薯条",   "sell": 16, "sprite": "item_fries_3" },
+      { "lvl": 4, "item": "fries_4", "name": "招牌薯条","sell": 36, "sprite": "item_fries_4" }
     ]
   },
   {
@@ -121,14 +132,13 @@
 
 ```json
 [
-  { "id": "o_latte", "char": "sudarling", "needItem": "coffee_4", "qty": 1, "reward": { "exp": 12, "coins": 70,  "energy": 0, "stars": 2 } },
-  { "id": "o_pasta", "char": "sudarling", "needItem": "food_5",   "qty": 1, "reward": { "exp": 15, "coins": 90,  "energy": 0, "stars": 2 } },
-  { "id": "o_fish",  "char": "zhouhang",  "needItem": "fish_4",   "qty": 1, "reward": { "exp": 8,  "coins": 45,  "energy": 5, "stars": 1 } },
-  { "id": "o_fix",   "char": "laochen",   "needItem": "tool_4",   "qty": 1, "reward": { "exp": 10, "coins": 60,  "energy": 0, "stars": 2 } },
-  { "id": "o_combo", "char": "ayana",     "needItem": "food_6",   "qty": 1, "reward": { "exp": 30, "coins": 200, "energy": 0, "stars": 3 } }
+  { "id": "o_latte", "char": "sudarling", "needItem": "coffee_4", "qty": 1, "reward": { "happy": 1, "exp": 12, "coins": 70,  "stars": 2 } },
+  { "id": "o_pasta", "char": "zhouhang",  "needItem": "food_5",   "qty": 2, "reward": { "happy": 1, "exp": 15, "coins": 44,  "stars": 0 } },
+  { "id": "o_fries", "char": "laochen",   "needItem": "fries_3",  "qty": 1, "reward": { "happy": 1, "exp": 10, "coins": 38,  "stars": 2 } },
+  { "id": "o_combo", "char": "ayana",     "needItem": "food_6",   "qty": 1, "reward": { "happy": 2, "exp": 30, "coins": 178, "stars": 3 } }
 ]
 ```
-> 交付=拖 needItem 到订单区消耗→按 reward 发**经验+金币+星星(+能量)**（`effect-apply`）。经验累积升等级（见 §4.5）。订单随时刷新、可跳过。
+> 交付=拖成品(`needItem`)到该顾客→按 reward 发**满意度😊+经验+金币+星星**（`effect-apply`）。`happy` 累积到 `happinessMeter.max` → 触发活动奖励（原作 😊7/12 挂件）。`qty`>1=该顾客要多份。订单随时刷新、可跳过。顾客点的是**成品菜**（棋盘高阶物），非散件。
 
 ## 4.5 玩家等级 `levels.json`（经验→等级·→ `f1-resource`）
 
