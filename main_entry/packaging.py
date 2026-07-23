@@ -196,7 +196,7 @@ def _pkg_build_export(slug: str, target: str = 'plain'):
             if not p.is_file():
                 continue
             parts = p.relative_to(work).parts
-            if set(parts) & {'node_modules', 'dist', 'mock', 'mocks', '__mocks__', 'snapshots'}:  # 依赖/构建产物/mock/快照都不打
+            if 'node_modules' in parts or 'dist' in parts:  # 只打源码，不打依赖/构建产物（mock 已在导出层精确排除·勿在此宽匹配误伤 art/gen/mock 真美术）
                 continue
             z.write(p, f'{top}/{p.relative_to(work).as_posix()}')
     return out
@@ -295,9 +295,8 @@ def _pkg_build_export_dist(slug: str):
     out = ROOT / 'release' / slug / f'{slug}-dokiworld-dist.zip'
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
         for p in sorted(dist.rglob('*')):
-            rel = p.relative_to(dist)
-            if p.is_file() and not (set(rel.parts) & {'mock', 'mocks', '__mocks__', 'snapshots'}):
-                z.write(p, f'{slug}/{rel.as_posix()}')  # 解压根 = <slug>/·mock/快照不打
+            if p.is_file():  # 解压根 = <slug>/ → 直接落 frontend/public/games/<slug>/（mock 已在导出层精确排除）
+                z.write(p, f'{slug}/{p.relative_to(dist).as_posix()}')
         # 本地预览启动器（zip 根·不进 <slug>/ 部署目录）——双击即在正确 /games/<slug>/ 路径起服务并开浏览器。
         z.writestr('review.py', _review_py(slug))
         z.writestr('review.bat', _REVIEW_BAT)

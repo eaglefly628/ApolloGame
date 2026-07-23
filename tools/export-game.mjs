@@ -124,9 +124,16 @@ const mapToOut = (abs) => path.join(GAME_SRC_OUT, path.relative(SRC, abs));
 //  1) the whole public/games/<id>/ dir (tiles, art index.json, per-game art);
 //  2) any absolute /… asset URL literal in the closure that resolves under public/
 //     (covers shared roots like /art or /models).
-// Non-runtime dirs that must never ship in a cartridge (spec §1: no audit/mock/pipeline files).
-const EXCLUDE_ASSET_PARTS = new Set(['mock', 'mocks', '__mocks__', '.mock', 'snapshots', '.snapshots']);
-const isExcludedAsset = (rel) => rel.split('/').some((seg) => EXCLUDE_ASSET_PARTS.has(seg));
+// Non-runtime junk that must never ship (spec §1). Scoped to a game's TOP-LEVEL subdir only
+// (e.g. public/games/<id>/mock/) — NOT nested paths like art/gen/mock/, which the art platform
+// legitimately uses for real generated art (index.json references them). Over-broad matching
+// here previously dropped a referenced asset (game-c art/gen/mock/art-002.png).
+const EXCLUDE_TOP_SUBDIRS = new Set(['mock', 'mocks', '__mocks__', 'snapshots', '.snapshots']);
+const isExcludedAsset = (rel) => {
+  const segs = rel.split('/');                 // rel like 'games/<id>/<sub>/...'
+  const gi = segs.indexOf('games');
+  return gi >= 0 && segs.length > gi + 2 && EXCLUDE_TOP_SUBDIRS.has(segs[gi + 2]);
+};
 
 async function copyPublicAssets(closure) {
   const PUB = path.join(REPO, 'public');
