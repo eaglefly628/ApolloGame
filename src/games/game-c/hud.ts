@@ -232,7 +232,7 @@ function buildTopMenu(v: TableView): LayoutNode {
     type: 'Button', id, props: { label: text, kind: 'ghost', action }, layout: { width: 190 },
   });
   return {
-    type: 'Panel', id: 'c-topmenu', props: { bg: { custom: 'linear-gradient(160deg,rgba(24,16,30,0.98),rgba(12,8,18,0.99))' }, edge: 'gold' },
+    type: 'Panel', id: 'c-topmenu', props: { bg: { custom: 'linear-gradient(160deg,rgba(24,16,30,0.98),rgba(12,8,18,0.99))' }, edge: 'gold', pattern: 'stripe' },
     layout: { x: FIELD_W - 214, y: 58, width: 206, direction: 'column', gap: 6, padding: 12, radius: 12 },
     children: [
       { type: 'Label', id: 'c-topmenu-t', props: { text: t(l, 'topmenu.title'), font: 'impact', size: 15, color: 'gold' } },
@@ -258,7 +258,7 @@ function buildHelpPanel(v: TableView): LayoutNode {
     ],
   });
   return {
-    type: 'Panel', id: 'c-helppanel', props: { bg: { custom: 'linear-gradient(158deg,rgba(22,15,28,0.98),rgba(11,7,16,0.99))' }, edge: 'gold', scroll: true },
+    type: 'Panel', id: 'c-helppanel', props: { bg: { custom: 'linear-gradient(158deg,rgba(22,15,28,0.98),rgba(11,7,16,0.99))' }, edge: 'gold', scroll: true, pattern: 'stripe' },
     layout: { x: Math.round(FIELD_W / 2 - 260), y: 96, width: 520, height: 430, direction: 'column', gap: 12, padding: 22, radius: 14 },
     children: [
       {
@@ -339,8 +339,10 @@ function buildStoryOpponentCard(sv: SeatView, def: StorySeatDef, l: Lang): Layou
   const avatarProps = sv.avatarUrl ? { src: sv.avatarUrl, name, size: avSize, shape: 'circle' as const } : { name: name.slice(0, 1), size: avSize, shape: 'circle' as const };
   const card: LayoutNode = {
     type: 'Panel', id: `c-seat-${def.seat}`,
-    props: { bg: { custom: sv.isHero ? CARD_FILL_HERO : CARD_FILL }, edge, action: 'seat_view', actionArg: String(def.seat), ...(sv.isActor ? { fx: [{ kind: 'glow' as const, color: 'gold' as const }] } : {}) },
-    layout: { x: Math.round(def.cardCx - cardW / 2), y: Math.round(def.cardCy - cardH / 2), width: cardW, height: cardH, direction: 'row', gap: 9, align: 'center', padding: 9, radius: 12, opacity: sv.out ? 0.45 : sv.folded ? 0.6 : 1 },
+    // owner 2026-07-23「贴图 UI + 流光」：席卡叠 stripe 纹样（贴图质感）；轮到该家=金光晕 glow + 流光 sheen（焦点·功能性提示）。
+    //   fx 归 layout（renderNode 读 node.layout·旧置 props 空转已修）。
+    props: { bg: { custom: sv.isHero ? CARD_FILL_HERO : CARD_FILL }, edge, pattern: 'stripe', action: 'seat_view', actionArg: String(def.seat) },
+    layout: { x: Math.round(def.cardCx - cardW / 2), y: Math.round(def.cardCy - cardH / 2), width: cardW, height: cardH, direction: 'row', gap: 9, align: 'center', padding: 9, radius: 12, opacity: sv.out ? 0.45 : sv.folded ? 0.6 : 1, fx: sv.isActor ? [{ kind: 'glow' as const, color: 'gold' as const }, { kind: 'sheen' as const }] : undefined },
     children: [
       { type: 'Avatar', id: `c-av-${def.seat}`, props: avatarProps },
       {
@@ -382,10 +384,11 @@ function buildHeroCards(v: TableView): LayoutNode {
 }
 
 // ── 行动条（三色大按钮 Panel+action：弃牌 blood / 跟注 jade-sheen / 加注 gold-sheen + 副标签 + 滑杆）──
+//   owner 2026-07-23「贴图 UI + 流光」：主行动键叠 fx sheen（流光斜扫·闭集特效·render-only）——premium 手感。
 function bigBtn(id: string, main: string, sub: string, fill: string, mainColor: 'text' | 'ink', action: string, arg?: string, flex = 1): LayoutNode {
   return {
     type: 'Panel', id, props: { bg: fill as never, action, ...(arg ? { actionArg: arg } : {}) },
-    layout: { direction: 'column', align: 'center', justify: 'center', gap: 0, padding: 12, radius: 11, flex },
+    layout: { direction: 'column', align: 'center', justify: 'center', gap: 0, padding: 12, radius: 11, flex, fx: [{ kind: 'sheen' }] },
     children: [
       { type: 'Label', id: `${id}-m`, props: { text: main, font: 'impact', size: 18, color: mainColor } },
       { type: 'Label', id: `${id}-s`, props: { text: sub, font: 'mono', size: 'xs', color: mainColor === 'ink' ? 'ink' : 'dim' } },
@@ -471,7 +474,7 @@ function buildWardrobe(w: WardrobeView, l: Lang): LayoutNode {
     ],
   }));
   const panel: LayoutNode = {
-    type: 'Panel', id: 'c-wardrobe-card', props: { bg: { custom: 'linear-gradient(160deg,rgba(34,22,38,0.98),rgba(14,9,18,0.99))' }, edge: 'gold' },
+    type: 'Panel', id: 'c-wardrobe-card', props: { bg: { custom: 'linear-gradient(160deg,rgba(34,22,38,0.98),rgba(14,9,18,0.99))' }, edge: 'gold', pattern: 'stripe' },
     layout: { x: Math.round(FIELD_W / 2 - 400), y: 100, width: 800, height: 500, direction: 'row', gap: 0, radius: 16, allowOverlap: true },
     children: [
       {
@@ -582,7 +585,7 @@ export function buildMenu(m: MenuView): LayoutNode {
     ],
   };
   const roleCard: LayoutNode = {
-    type: 'Panel', id: 'c-menu-role', props: { bg: { custom: CARD_FILL }, edge: 'gold' },
+    type: 'Panel', id: 'c-menu-role', props: { bg: { custom: CARD_FILL }, edge: 'gold', pattern: 'stripe' },
     layout: { x: 40, y: FIELD_H - 130, width: 240, direction: 'row', gap: 12, align: 'center', padding: 12, radius: 12 },
     children: [
       { type: 'Avatar', id: 'c-menu-role-av', props: { name: m.playerName.slice(0, 1), size: 52, shape: 'circle' } },
@@ -620,7 +623,7 @@ function buildLogPanel(log: GameEvent[], l: Lang): LayoutNode {
     type: 'Label', id: `c-log-${e.seq}`, props: { text: e.text, font: 'mono', size: 'xs', color: LOG_TAG_COLOR[e.tag] },
   }));
   return {
-    type: 'Panel', id: 'c-logpanel', props: { bg: { custom: 'linear-gradient(160deg,rgba(20,14,26,0.97),rgba(10,7,16,0.98))' }, edge: 'gold', scroll: true },
+    type: 'Panel', id: 'c-logpanel', props: { bg: { custom: 'linear-gradient(160deg,rgba(20,14,26,0.97),rgba(10,7,16,0.98))' }, edge: 'gold', scroll: true, pattern: 'stripe' },
     layout: { x: FIELD_W - 366, y: 84, width: 350, height: 456, direction: 'column', gap: 6, padding: 14 },
     children: [
       {
@@ -712,8 +715,8 @@ function buildShowdown(sd: ShowdownView, board: Card[], l: Lang): LayoutNode {
     };
   });
   const card: LayoutNode = {
-    type: 'Panel', id: 'c-sd-card', props: { bg: { custom: 'linear-gradient(160deg,rgba(34,22,38,0.98),rgba(14,9,18,0.99))' }, edge: 'gold', accent: true },
-    layout: { x: Math.round(FIELD_W / 2 - 375), y: 40, width: 750, height: 640, direction: 'column', align: 'stretch', gap: 12, padding: 22, radius: 16, allowOverlap: true },
+    type: 'Panel', id: 'c-sd-card', props: { bg: { custom: 'linear-gradient(160deg,rgba(34,22,38,0.98),rgba(14,9,18,0.99))' }, edge: 'gold', accent: true, pattern: 'stripe' },
+    layout: { x: Math.round(FIELD_W / 2 - 375), y: 40, width: 750, height: 640, direction: 'column', align: 'stretch', gap: 12, padding: 22, radius: 16, allowOverlap: true, fx: [{ kind: 'sheen' }] },
     children: [
       { type: 'Label', id: 'c-sd-title', props: { text: fmtShowdownTitle(l, sd.potTotal), font: 'impact', size: 26, color: 'gold', glow: true } },
       boardRow,
@@ -735,8 +738,8 @@ function buildFinale(f: FinaleView, l: Lang): LayoutNode {
     ],
   });
   const card: LayoutNode = {
-    type: 'Panel', id: 'c-fin-card', props: { bg: { custom: f.win ? 'linear-gradient(160deg,#2a1e0e,#160f0b)' : 'linear-gradient(160deg,#2a0f11,#160b0c)' }, edge: f.win ? 'gold' : 'danger', accent: true },
-    layout: { x: Math.round(FIELD_W / 2 - 260), y: 150, width: 520, direction: 'column', align: 'center', gap: 16, padding: 30, radius: 16, allowOverlap: true },
+    type: 'Panel', id: 'c-fin-card', props: { bg: { custom: f.win ? 'linear-gradient(160deg,#2a1e0e,#160f0b)' : 'linear-gradient(160deg,#2a0f11,#160b0c)' }, edge: f.win ? 'gold' : 'danger', accent: true, pattern: 'stripe' },
+    layout: { x: Math.round(FIELD_W / 2 - 260), y: 150, width: 520, direction: 'column', align: 'center', gap: 16, padding: 30, radius: 16, allowOverlap: true, fx: [{ kind: 'sheen' }] },
     children: [
       { type: 'Label', id: 'c-fin-sub', props: { text: f.win ? t(l, 'fin.winSub') : t(l, 'fin.loseSub'), font: 'impact', size: 20, color: f.win ? 'gold' : 'danger' } },
       { type: 'Label', id: 'c-fin-title', props: { text: f.win ? t(l, 'fin.winTitle') : t(l, 'fin.loseTitle'), font: 'serif', size: 52, bold: true, color: f.win ? 'gold' : 'danger', glow: true } },
@@ -768,8 +771,10 @@ function buildHeroPanel(v: TableView): LayoutNode {
   const name = l === 'en' ? STORY_HERO.nameEn : STORY_HERO.name;
   return {
     type: 'Panel', id: 'c-hero-panel',
-    props: { bg: { custom: CARD_FILL_HERO }, edge: 'gold', action: 'seat_view', actionArg: '0', ...(h.isActor ? { fx: [{ kind: 'glow' as const, color: 'gold' as const }] } : {}) },
-    layout: { x: 59, y: 435, width: 214, height: 66, direction: 'row', gap: 11, align: 'center', padding: 11, radius: 14 },
+    // owner 2026-07-23「贴图 UI + 流光」：纹样 stripe（贴图质感）+ fx sheen 流光（轮到你再叠金光晕 glow）。
+    // 注：fx/sheen 是 LayoutConstraints（renderNode 读 node.layout·非 props）——旧 fx 误置 props 是空转，此处归位 layout。
+    props: { bg: { custom: CARD_FILL_HERO }, edge: 'gold', pattern: 'stripe', action: 'seat_view', actionArg: '0' },
+    layout: { x: 59, y: 435, width: 214, height: 66, direction: 'row', gap: 11, align: 'center', padding: 11, radius: 14, fx: h.isActor ? [{ kind: 'glow' as const, color: 'gold' as const }, { kind: 'sheen' as const }] : [{ kind: 'sheen' as const }] },
     children: [
       { type: 'Avatar', id: 'c-hero-av', props: { name: '你', size: 52, shape: 'circle' } },
       {
@@ -800,8 +805,8 @@ function buildPartnerAdvice(v: TableView): LayoutNode {
     children: [
       { type: 'Avatar', id: 'c-partner-av', props: { name: STORY_PARTNER.name.slice(-1), size: 44, shape: 'circle' } },
       {
-        type: 'Panel', id: 'c-partner-bub', props: { bg: { custom: PARTNER_FILL }, edge: 'mine' },
-        layout: { direction: 'column', gap: 2, padding: 10, radius: 12, flex: 1 },
+        type: 'Panel', id: 'c-partner-bub', props: { bg: { custom: PARTNER_FILL }, edge: 'mine', pattern: 'stripe' },
+        layout: { direction: 'column', gap: 2, padding: 10, radius: 12, flex: 1, fx: [{ kind: 'sheen' }] },
         children: [
           { type: 'Label', id: 'c-partner-nm', props: { text: `${pname} · ${l === 'en' ? 'Partner' : '搭档'}`, size: 'xs', color: 'mine' } },
           { type: 'Label', id: 'c-partner-tx', props: { text: advice, size: 'sm', color: 'text' } },
@@ -818,9 +823,9 @@ function buildPot(v: TableView): LayoutNode {
     type: 'Panel', id: 'c-pot', props: { bare: true },
     layout: { x: Math.round(FIELD_W / 2 - 140), y: 414, width: 280, direction: 'row', justify: 'center', align: 'center' },
     children: [{
-      // 底池胶囊（稿·深底金边 pill·粉 label + 金 serif 值）。
+      // 底池胶囊（稿·深底金边 pill·粉 label + 金 serif 值）·owner 2026-07-23 叠流光 sheen（桌心焦点·金光扫过）。
       type: 'Panel', id: 'c-pot-pill', props: { bg: { custom: 'rgba(9,5,12,0.72)' }, edge: 'gold' },
-      layout: { direction: 'row', align: 'center', gap: 7, padding: 6, radius: 16 },
+      layout: { direction: 'row', align: 'center', gap: 7, padding: 6, radius: 16, fx: [{ kind: 'sheen' }] },
       children: [
         { type: 'Label', id: 'c-pot-l', props: { text: t(l, 'story.pot'), font: 'mono', size: 'xs', color: 'foe' } },
         { type: 'Label', id: 'c-pot-v', props: { text: fmt(v.pot), font: 'serif', size: 18, bold: true, color: 'gold' } },
@@ -836,7 +841,8 @@ function buildStoryActionBar(v: TableView): LayoutNode {
   // 统一按钮：深底金边 + press3d 按压反馈（弃牌/跟注/加注一致·将来整体换美术贴图 buttonSkins）。
   const actBtn = (id: string, action: string, width: number, kids: LayoutNode[], arg?: string): LayoutNode => ({
     type: 'Panel', id, props: { bg: { custom: BTN_DARK }, edge: 'gold', action, ...(arg ? { actionArg: arg } : {}) },
-    layout: { width, direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 12, radius: 13, press3d: true },
+    // owner 2026-07-23「贴图 UI + 流光」：金边深底键叠 fx sheen 流光斜扫（闭集特效·render-only·press3d 并存）。
+    layout: { width, direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 12, radius: 13, press3d: true, fx: [{ kind: 'sheen' }] },
     children: kids,
   });
   const children: LayoutNode[] = [
@@ -862,7 +868,7 @@ function buildStoryActionBar(v: TableView): LayoutNode {
         { type: 'Button', id: 'c-raise-inc', props: { label: '+', kind: 'ghost', action: 'set_raise', actionArg: 'inc' }, layout: { width: 40 } },
         {
           type: 'Panel', id: 'c-act-allin', props: { bg: { custom: BTN_ALLIN }, action: 'act_raise', actionArg: 'allin' },
-          layout: { height: 44, direction: 'row', align: 'center', justify: 'center', padding: 14, radius: 10, press3d: true },
+          layout: { height: 44, direction: 'row', align: 'center', justify: 'center', padding: 14, radius: 10, press3d: true, fx: [{ kind: 'sheen' }] },
           children: [{ type: 'Label', id: 'c-act-allin-t', props: { text: t(l, 'quick.allin'), size: 15, bold: true, color: 'text' } }],
         },
       ],
