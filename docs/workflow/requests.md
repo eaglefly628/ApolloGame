@@ -56,6 +56,12 @@
 > **建议（PUI 裁）**：给 `PanelProps` 加 cover `skin?`（+`skinSlice?`）·语义同 `ButtonProps.skin`（`render.ts renderPanel` 消费·`skinSlice` 走 border-image 九宫格/缺省 cover·guard `!bare`·缺省无=面板零变化）。游戏侧即可 `skin: textureOverrideUri('game-c/ui/btn-fold') ?? undefined` 换主行动键皮。**评判**：现闭集真表达不了复合按钮换皮（`bgTexture` 平铺不对·`Button` 丢复合内容）→ 真缺口·非重组可解。game-c 次级按钮（Button·kind 皮）已接·此条只差复合 Panel 皮。
 > **owner 2026-07-22 追加决策依据（评估过替代方案·仍要此条）**：① 考虑过「文字烤进贴图·纯 cover 皮不叠字」——owner 接受**丢本地化**，但**跟注键金额是动态的**（「跟注 50」的 50 每手随下注额变·`50→200→800`）→ **动态数字无法烤进固定图**·必须「贴图打底 + 文字/金额叠渲」= 本条 cover-skin（叠文字层）而非纯 cover。② 故 cover `skin` 需与既有子节点（复合 Label：局部化文案 + 动态金额两色）**共存叠渲**（skin 作底层背景·子节点照常在其上）——非替换内容。这样一举保住：贴图 + 动态金额 + 本地化 + 现深金边观感。owner 已同意报此条为正解、不走烤字 hack。
 
+### REQ-FX-SHEEN-HOVER · 流光 sheen 悬停触发变体（+cooldown·非常驻扫光） · [2026-07-23] · PE-C 报（owner「流光只在鼠标移上去的按钮才有·且有冷却」）→ PUI 裁 · status: open · 优先级: P3（观感·非阻断·game-c 已先撤常驻 sheen） · 类型: UI 特效库缺口（PUI 域）
+> **触发**：owner 看了常驻 `fx:[{kind:'sheen'}]`（`apollo-sheen-sweep 3.2s infinite`）觉得「太难看·太吵」——要「**鼠标移到那几个特别按钮上才流光·且有 cooldown**（扫一下→冷却→再触发·非无限循环）」。现 sheen CSS（`server.ts` `[data-fx~="sheen"]::after {animation …infinite}`）只有**常驻**一档；`ripple` 有 `:active` 触发先例、`flipcard` 有 `:hover` 先例，但 sheen 无悬停档。
+> **缺口**：闭集里没有「悬停触发 + 冷却」的 sheen——game-c 想让主行动键（弃/跟/加/All-in）悬停时扫一道流光、松开/冷却期不扫，表达不了（只能常驻或没有）。
+> **建议（PUI 裁·闭集内加档·勿散写 CSS）**：给 `sheen` 加触发档，二选一——① `fx:[{kind:'sheen', on:'hover'}]`（VisualEffect 加 `on?:'always'|'hover'`·缺省 always 向后兼容）→ CSS `[data-fx~="sheen-hover"]:hover::after{animation:apollo-sheen-sweep <ms> ease-out}`（非 infinite·一次·:hover 再触发天然带「移出→再移入」冷却）；或 ② 新 kind `sheen-once`/hover 语义同理。**cooldown** 可用「animation 播完即停 + `:hover` 才重播」实现（移开鼠标=重置·天然冷却）。落地后 game-c 主行动键填该档、其余面板不加（owner「只留那几个特别按钮」）。
+> **PE-C 现状（不阻塞）**：已先撤掉全部常驻 sheen（`hud.ts` 主行动键/底池/席卡/面板等）·仅保 `press3d` 按压反馈 + `pattern:'stripe'` 贴图质感；hover-sheen 档一到即接主行动键。
+
 <!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结迁归档（requests-archive.md）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
 
 
