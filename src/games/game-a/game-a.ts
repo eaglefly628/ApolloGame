@@ -38,6 +38,7 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
     return m;
   };
   let lastSessionOut: Record<string, SeatSessionOut> | null = null; // 终局回传（REQ-CHARCARD·经返回句柄 getSessionOut 暴露）
+  let dealAnim = false; // 发牌错落入场只在**开局/新盘首帧**播（owner 2026-07-22：别每次点击/提示/出牌都重跑手牌入场·那是过度表现）。
 
   const skel = mountHost(container, { fieldW: FIELD_W, fieldH: FIELD_H, sceneBackground: MANOR_BG, wrapperBackground: WRAPPER_BG });
   const { overlayHost } = skel;
@@ -238,7 +239,8 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
       return;
     }
     if (session.phase === 'playing') {
-      paint(buildPlay(playView(session)));
+      paint(buildPlay({ ...playView(session), freshDeal: dealAnim })); // freshDeal 只此首帧真→手牌发牌错落；随后置假·任何后续渲染不再重播
+      dealAnim = false;
     } else {
       lastSessionOut = computeSessionOut(session); // 盘/局终局：构造 SessionOut（REQ-CHARCARD·纯确定性）
       paint(buildResult(resultView(session)));
@@ -291,6 +293,7 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
     session = new GuandanSession({ seed: lastSeed, stake: selStake, tier: selDifficulty });
     selected = [];
     sortMode = 'rank';
+    dealAnim = true; // 开局发牌→手牌错落入场（仅此首帧）
     render(); // paint(buildPlay)
     scheduleAi();
   }
@@ -366,6 +369,7 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
       if (!session) return;
       if (session.nextRound()) {
         selected = [];
+        dealAnim = true; // 新盘发牌→手牌错落入场（仅此首帧）
         render();
         scheduleAi();
       }
