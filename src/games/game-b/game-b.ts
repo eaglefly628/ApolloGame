@@ -33,6 +33,8 @@ const clockSeed = (): number => Math.floor(Date.now() / 1000) % 0x7fffffff;
 // AI 出牌节奏基线（ms·设置屏可调）——owner 2026-07-21「1–3 秒」→ owner 2026-07-22「再快 30%」：基线×0.7·
 // 确定性抖动落在 ~700–2100ms（基线 700/1050/1680 + 抖动 %1050·上限 2100）。
 const AI_BASE_BY: Record<AiSpeed, number> = { fast: 700, normal: 1050, slow: 1680 };
+// 配牌演出总时长 ms（覆盖四组 staggered dealIn·play-ui DEAL_GRP 190×3 组 + 组内错 + dealIn 280 ≈ 1.1s·留富余）。
+const DEAL_MS = 1180;
 
 // 牌桌和室夜宴底（宿主装饰层·真美术=S6 背景件）。owner 2026-07-22「背景平铺整个场景·不随渲染器尺寸放缩」：
 // 此底挂在 **wrapper（全视窗·不缩放）** 而非 scene（定尺信箱盒）——满铺整个视窗、与信箱黑边无缝，牌局内容照旧
@@ -113,18 +115,26 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
     let rulesOpen = false;                  // 规则说明浮层（菜单→规则）
     let soundOn = true;                     // 声音开关（视觉态·音频系统待接）
     let aiTimer: ReturnType<typeof setTimeout> | null = null;
+    // 配牌演出（owner 2026-07-23「下一局开始有个发牌过程·四张四张」）：dealing 期手牌 staggered dealIn·期间不接输入、
+    //   不推 AI；DEAL_MS 后撤旗恢复。纯演出/驱动态（sim 已发好牌·仅动画其登场·不碰逻辑）。续局（resume）不演。
+    let dealing = !resume;
+    let dealTimer: ReturnType<typeof setTimeout> | null = null;
     skel.overlayHost.style.pointerEvents = 'auto'; // 对局 HUD 全可点
 
     const render = (): void => {
       if (match.over) lastSessionOut = computeSessionOut(match); // 终局回传就绪（REQ-CHARCARD·纯确定性·平台尚未消费）
-      ui.update(buildPlayHud(match, { logOpen, selectedKey, logCopied, menuOpen, rulesOpen, soundOn, lang }), NIGHT);
+      ui.update(buildPlayHud(match, { logOpen, selectedKey, logCopied, menuOpen, rulesOpen, soundOn, lang, dealing }), NIGHT);
     };
     const clearAi = (): void => { if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; } };
+    const clearDeal = (): void => { if (dealTimer) { clearTimeout(dealTimer); dealTimer = null; } };
+    // 起配牌演出：设旗 → 渲染（手牌逐组 dealIn）→ DEAL_MS 后撤旗、渲染定态、恢复 AI。
+    const startDeal = (): void => { clearDeal(); clearAi(); dealing = true; render(); dealTimer = setTimeout(() => { dealing = false; dealTimer = null; render(); scheduleAi(); }, DEAL_MS); };
     // AI 出牌用时（owner「1–3 秒」）：速度档基线 + 据牌局状态的确定性抖动（非裸随机·可复现）→ 落 1000–3000ms。
     const aiDelay = (): number => Math.min(2100, AI_BASE_BY[settings.aiSpeed] + (match.cur.wall.length * 37 + match.cur.turn * 101 + match.honba * 7) % 1050);
     // AI 席逐步推进（节奏可见）→ 到玩家行动 / 玩家待鸣窗口 / 菜单浮层 / 局终 停。
     const scheduleAi = (): void => {
       clearAi();
+      if (dealing) return; // 配牌演出期不推 AI（等发完牌再动）
       if (menuOpen || rulesOpen) return; // 菜单/规则浮层开着=暂停 AI（读秒停·别在浮层后偷跑）
       // 玩家待鸣窗口开着时绝不推进 AI（否则 aiTurn 会替玩家代决鸣牌）——停下等玩家点按钮。
       if (match.cur.phase === 'playing' && match.cur.turn !== 0 && match.cur.callWindow === null) {
@@ -137,7 +147,7 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
     const handlers: HandlerMap = {
       // 两步打牌（owner 需求）：第一下选中站起·同一张再点=打出·点别张=改选。
       [PLAY_TILE]: (arg?: string) => {
-        if (!isPlayerTurn(match) || arg == null) return;
+        if (dealing || !isPlayerTurn(match) || arg == null) return; // 配牌演出期不接点牌
         if (selectedKey === arg) {
           const code = keyToCode(arg);
           if (code != null) { discard(match, code); selectedKey = null; render(); scheduleAi(); }
@@ -154,14 +164,15 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
       [CALL_PASS]: () => { if (isPlayerCallWindow(match)) { playerPass(match); selectedKey = null; render(); scheduleAi(); } },
       // 自家回合暗杠/加杠（首个可杠·杠后岭上摸→仍玩家回合待打；加杠被抢则本局终）。
       [ACT_KAN]: () => {
+        if (dealing) return;
         if (canAnkan(match)) declareAnkan(match, ankanKinds(match)[0]!);
         else if (canKakan(match)) declareKakan(match, kakanKinds(match)[0]!);
         else return;
         selectedKey = null; render(); scheduleAi();
       },
-      [ACT_TSUMO]: () => { if (canTsumo(match)) { declareTsumo(match); selectedKey = null; render(); } },
-      [ACT_RIICHI]: () => { declareRiichi(match); selectedKey = null; render(); scheduleAi(); }, // 内含 canRiichi 门·宣言牌打出后推进
-      [NEXT_ROUND]: () => { if (!match.over) { nextRound(match); selectedKey = null; render(); scheduleAi(); } },
+      [ACT_TSUMO]: () => { if (!dealing && canTsumo(match)) { declareTsumo(match); selectedKey = null; render(); } },
+      [ACT_RIICHI]: () => { if (dealing) return; declareRiichi(match); selectedKey = null; render(); scheduleAi(); }, // 内含 canRiichi 门·宣言牌打出后推进
+      [NEXT_ROUND]: () => { if (!match.over) { nextRound(match); selectedKey = null; startDeal(); } }, // 下一局配牌演出
       [TOGGLE_LOG]: () => { logOpen = !logOpen; render(); },
       [COPY_LOG]: () => { // 复制完整日志到剪贴板（查 bug·贴给 owner）
         try {
@@ -179,12 +190,15 @@ export function mount(container: HTMLElement, host?: { exit?: () => void; sessio
       [BACK_MENU]: () => { savedMatch = match.over ? null : match; showMenu(); }, // 未终局暂存→菜单可续
     };
 
-    const ui = mountUI(skel.overlayHost, buildPlayHud(match, { logOpen, selectedKey, logCopied, lang }), handlers, NIGHT);
-    scheduleAi(); // 若当前为 AI 席（续局可能停在 AI 手）则自动推进
+    const ui = mountUI(skel.overlayHost, buildPlayHud(match, { logOpen, selectedKey, logCopied, lang, dealing }), handlers, NIGHT);
+    // 新局：首帧带配牌演出 → DEAL_MS 后撤旗恢复 AI；续局（resume）：不演·若停在 AI 手则自动推进。
+    if (dealing) dealTimer = setTimeout(() => { dealing = false; dealTimer = null; render(); scheduleAi(); }, DEAL_MS);
+    else scheduleAi();
     render();
 
     teardown = () => {
       clearAi();
+      clearDeal();
       ui();
       skel.teardown();
     };

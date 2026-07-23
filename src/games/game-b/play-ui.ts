@@ -217,10 +217,11 @@ function playField(m: MatchState, lang: Lang): LayoutNode[] {
 }
 
 // ── 自家手牌（底部大排·真牌面·两步打牌·动态张数）──────────────────────────────────────────
-function playerHand(m: MatchState, selectedKey: string | null): LayoutNode[] {
+const DEAL_GRP = 190; // 配牌：每 4 张一组的发牌节拍 ms（四张四张…owner 2026-07-23）。
+function playerHand(m: MatchState, selectedKey: string | null, dealing: boolean): LayoutNode[] {
   const rs = m.cur;
   const hand = rs.hands[0]!;
-  const canPlay = isPlayerTurn(m);
+  const canPlay = isPlayerTurn(m) && !dealing; // 发牌演出期不接点牌
   const locked = rs.riichi[0];
   const showDrawn = rs.drawn !== null && rs.turn === 0;
   const step = HW + 3;
@@ -232,19 +233,23 @@ function playerHand(m: MatchState, selectedKey: string | null): LayoutNode[] {
   const RAISE = 16;
   const dimOthers = selectedKey != null && canPlay && !locked;
   const forbid = (c: number): boolean => rs.forbiddenDiscard.includes(kindOf(c));
-  const mkTile = (c: number, key: string, x: number, disabled: boolean): LayoutNode => {
+  const mkTile = (c: number, key: string, x: number, disabled: boolean, dealIdx: number): LayoutNode => {
     const sel = selectedKey === key && !disabled;
     const kuikaeDim = canPlay && forbid(c);
     const op = kuikaeDim ? 0.4 : dimOthers && !sel ? 0.68 : 1;
+    // 配牌态：staggered dealIn（四张一组·组间 DEAL_GRP·组内微错）——仅 dealing 期挂；落定后驱动撤旗 → 动画字段消失
+    //   触发一次无痕重挂到稳定态、不复播（配 reconcile 键控：局内选牌/打牌不重挂邻牌·不闪·不重发）。
+    const dealAnim: { anim?: string; animMs?: number; animDelay?: number } = dealing
+      ? { anim: 'dealIn', animMs: 280, animDelay: Math.floor(dealIdx / 4) * DEAL_GRP + (dealIdx % 4) * 22 } : {};
     return {
       type: 'Button', id: `h-${key}`,
       props: { label: '', skin: faceUrl(c), kind: sel ? 'primary' : 'ghost', disabled, action: PLAY_TILE, actionArg: key },
-      layout: { x, y: sel ? BASE_Y - RAISE : BASE_Y, width: HW, height: HH, opacity: op },
+      layout: { x, y: sel ? BASE_Y - RAISE : BASE_Y, width: HW, height: HH, opacity: op, ...dealAnim },
     };
   };
-  const out: LayoutNode[] = hand.map((c, i) => mkTile(c, String(i), x0 + i * step, !canPlay || locked || forbid(c)));
-  // ツモ牌（刚摸的·分隔在右）=翠光高亮（owner 2026-07-23 动效·点明「这张是新摸的·留还是打？」）。
-  if (showDrawn) { const dt = mkTile(rs.drawn!, 'd', x0 + n * step + drawnGap - 3, !canPlay); out.push({ ...dt, layout: { ...dt.layout, fx: [{ kind: 'glow', color: 'jade' }] } }); }
+  const out: LayoutNode[] = hand.map((c, i) => mkTile(c, String(i), x0 + i * step, !canPlay || locked || forbid(c), i));
+  // ツモ牌（刚摸的·分隔在右）=翠光高亮（owner 2026-07-23 动效·点明「这张是新摸的·留还是打？」）。发牌期最后一张排在末组。
+  if (showDrawn) { const dt = mkTile(rs.drawn!, 'd', x0 + n * step + drawnGap - 3, !canPlay, n); out.push({ ...dt, layout: { ...dt.layout, fx: [{ kind: 'glow', color: 'jade' }] } }); }
   return out;
 }
 
@@ -518,7 +523,7 @@ function resultOverlay(m: MatchState, lang: Lang): LayoutNode {
   };
 }
 
-export interface PlayHudOpts { logOpen: boolean; selectedKey?: string | null; logCopied?: boolean; menuOpen?: boolean; rulesOpen?: boolean; soundOn?: boolean; lang?: Lang }
+export interface PlayHudOpts { logOpen: boolean; selectedKey?: string | null; logCopied?: boolean; menuOpen?: boolean; rulesOpen?: boolean; soundOn?: boolean; lang?: Lang; dealing?: boolean }
 
 export function buildPlayHud(m: MatchState, opts: PlayHudOpts): LayoutNode {
   const sel = opts.selectedKey ?? null;
@@ -531,7 +536,7 @@ export function buildPlayHud(m: MatchState, opts: PlayHudOpts): LayoutNode {
     ...[1, 2, 3].map((s) => tableAvatar(m, s, L)),
     playerBar(m, L),
     ...[0, 1, 2, 3].map((s) => meldBlock(m, s, L)).filter((n): n is LayoutNode => n !== null),
-    ...playerHand(m, sel),
+    ...playerHand(m, sel, opts.dealing ?? false),
     controls(L),
   ];
   const tb = turnBanner(m, L);
