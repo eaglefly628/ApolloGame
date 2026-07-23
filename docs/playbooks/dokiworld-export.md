@@ -18,6 +18,8 @@
 | 🌸 **DokiWorld 卡带（源码工程）** | 可构建 TS 工程 + `public/game.json`；`npm run build` 出 dist 再部署 | 交源码、对方要改代码/自己构建 |
 | 🌸 **DokiWorld 部署产物 dist** | 工作台直接 `vite build` 好的**独立可运行 dist 卡带**（zip 根另带预览启动器·JS 内联 three/react/cannon·art 全打入·**零外部模块/CDN**） | 落地即用、只需部署或本地 review |
 
+**打包出图（自动·owner 2026-07-22）**：打包时超 1080P 的 PNG 会**同比例缩进 1920×1080 框**（长边≤1920·短边≤1080·只缩不放·仅 PNG）。检测零依赖；确有超标图才需 `pip install Pillow`（无超标=不处理）。
+
 ## 3. 操作：怎么打包
 
 1. 仓库根 `python3 apollo.py workshop` → 开 `http://localhost:4000/workshop/`（首次先 `npm install`，dist 要真构建）。
@@ -67,6 +69,7 @@ README.txt
 | 图片全 404 | 没挂在 `/games/<slug>/` 路径 → 用 review 脚本 |
 | iframe 内模块 CORS 报错 | 服务端缺 §5 的两个 CORS 头 |
 | 导出报「不支持」 | 该游戏无计分映射 → 走 requests.md 提缺口·补 `GAME_PATCHES`/`GAME_META`，绝不手改源码 |
+| 打包报「需 pip install Pillow」 | 有超 1080P 的 PNG 要缩 → `pip install Pillow` 后重打（或先把大图换小） |
 
 ## 9. 验收清单（交付前逐项）
 

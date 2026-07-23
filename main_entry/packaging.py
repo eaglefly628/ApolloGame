@@ -125,6 +125,48 @@ def _pkg_build_zip(slug: str):
         _add(pub, 'assets/' if lib.is_dir() else '')
     return out
 
+# ── 打包出图：超 1080P 的 PNG 同比例缩到框内（owner 2026-07-22）───────────────────
+# 口径：等比缩小放进 1920×1080 框（长边≤1920·短边≤1080），只缩不放，仅 PNG。检测零依赖
+# （读 IHDR 拿尺寸）；仅当确有超标图才需 Pillow，缺则报错指路（无超标图=完全 no-op）。
+_PNG_MAX_W, _PNG_MAX_H = 1920, 1080
+
+def _png_size(path):
+    """零依赖读 PNG 宽高（IHDR）。非 PNG/损坏返回 None。"""
+    import struct
+    try:
+        with open(path, 'rb') as f:
+            head = f.read(24)
+    except OSError:
+        return None
+    if head[:8] != b'\x89PNG\r\n\x1a\n' or head[12:16] != b'IHDR':
+        return None
+    return struct.unpack('>II', head[16:24])
+
+def _resize_pngs_in(root):
+    """就地把 root 下超 1920×1080 框的 PNG 同比例缩进框内。返回处理张数。"""
+    from pathlib import Path
+    oversized = []
+    for p in Path(root).rglob('*.png'):
+        sz = _png_size(str(p))
+        if sz and (sz[0] > _PNG_MAX_W or sz[1] > _PNG_MAX_H):
+            oversized.append((p, sz))
+    if not oversized:
+        return 0
+    try:
+        from PIL import Image
+    except ImportError:
+        names = ', '.join(p.name for p, _ in oversized[:3])
+        raise RuntimeError(
+            f'检测到 {len(oversized)} 张超 1080P 的 PNG（{names}…）需缩图，但未装 Pillow → 请 pip install Pillow 后重试。')
+    for p, (w, h) in oversized:
+        scale = min(_PNG_MAX_W / w, _PNG_MAX_H / h)
+        nw, nh = max(1, round(w * scale)), max(1, round(h * scale))
+        im = Image.open(p)
+        if im.mode in ('P', 'LA'):
+            im = im.convert('RGBA')
+        im.resize((nw, nh), Image.LANCZOS).save(p, 'PNG', optimize=True)
+    return len(oversized)
+
 def _pkg_build_export(slug: str, target: str = 'plain'):
     """独立导出 zip（导出插件架构）：tools/export-game.mjs 追游戏 mount 入口的传递依赖闭包 → 剥掉平台
     （launcher/studio/账号/大厅/Steam/Electron/其它游戏）→ 自包含 TS+Vite 工程（<Game{X}/> React 封装
@@ -146,6 +188,7 @@ def _pkg_build_export(slug: str, target: str = 'plain'):
     if r.returncode != 0:
         tail = (r.stderr or r.stdout or '').strip().splitlines()[-1:] or ['']
         raise RuntimeError(f'导出失败（target={target}）：{slug}。{tail[0][:200]}')
+    _resize_pngs_in(work)  # 打包出图：超 1080P 的 PNG 同比例缩进 1920×1080 框
     out = ROOT / 'release' / slug / f'{slug}{suffix}.zip'
     top = f'{slug}{suffix}'
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
@@ -236,6 +279,7 @@ def _pkg_build_export_dist(slug: str):
     if r.returncode != 0:
         tail = (r.stderr or r.stdout or '').strip().splitlines()[-1:] or ['']
         raise RuntimeError(f'DokiWorld 导出失败：{slug}（纯数据库卡带/无 mount 入口不支持）。{tail[0][:180]}')
+    _resize_pngs_in(work)  # 打包出图：先把超 1080P 的 PNG 缩进 1920×1080 框，再 build 进 dist
     # 复用仓库 node_modules（依赖同版本·免每次整装）；直接 vite build（跳 tsc·已另行 typecheck 保证）。
     nm = work / 'node_modules'
     root_nm = ROOT / 'node_modules'
