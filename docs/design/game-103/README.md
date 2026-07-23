@@ -19,6 +19,7 @@
 | [`capability-plan.md`](./capability-plan.md) | 能力总览（门禁）：每系统对照 registry 实名消费能力 + §4 三处编排下沉裁决 |
 | [`gdd.md`](./gdd.md) | GDD：核心循环/操作/武器/进化/被动/敌人/掉落/数值曲线/里程碑 |
 | [`balance-design.md`](./balance-design.md) | 数值平衡：伤害公式/逐级成长/被动叠加/难度曲线/P-M 功率曲线验证/经济/sim spec |
+| [`art-plan.md`](./art-plan.md) | 美术解决方案：三段路径（占位几何→FreeArtLib CC0 库→风格包 AI 生成）+ 槽位映射 + 分工 |
 | [`ui-scene-design.md`](./ui-scene-design.md) | S4 场景/UI 布局交接：逐场景详案 + 控件映射 + 信号总表 + 美术槽位 |
 | [`survivor-hud-mockup.dc.html`](./survivor-hud-mockup.dc.html) | 设计稿：战斗 HUD + 升级三选一（PE 1:1 复刻基准） |
 | [`survivor-menu-result.dc.html`](./survivor-menu-result.dc.html) | 设计稿：主菜单 + 结算（胜利/失败）（PE 1:1 复刻基准） |
