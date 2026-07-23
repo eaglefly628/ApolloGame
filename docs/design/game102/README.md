@@ -15,10 +15,10 @@ GD 阶段**只产 `docs/design/game102/` 文档**、**不改 `src/launcher.tsx`*
 - 市场调研：✅ `market-research.md`
 - 立项 brief：✅ `brief.md`
 - GDD（核心设定+数值+关卡+商业化）：✅ `gdd.md`
-- 能力总览 capability-plan（开工前必过审）：✅ `capability-plan.md`（**已提请 Lead 评审** → 工单 `requests.md` REQ-G102-CAPREVIEW）
-- Claude Designer 设计图文稿：✅ `pixel-pour-designer.html`（自包含可视化设计稿）
-- 可玩核心玩法参考原型：✅ `prototype.html`（GD 设计参考·非引擎游戏代码）
-- 引擎能力缺口：⏳ 见 capability-plan §4，`conveyor-queue` 下沉 vs 组合表达=Lead 裁决点（工单 REQ-G102-CAPREVIEW）
+- 能力总览 capability-plan：✅ **Lead 已裁决 ①（2026-07-23）**——先组合表达·零运行时游戏层例外·不预下沉（工单 `requests.md` REQ-G102-CAPREVIEW 已完结）
+- Claude Designer 设计图文稿：✅ `pixel-pour-designer.html`（自包含可视化设计稿·已按实机截图校准）
+- 可玩核心玩法参考原型：✅ `prototype.html`（像素画棋盘+钥匙+弹药20·实机校准·非引擎游戏代码）
+- **下一步**：可交 PE 开工 §1-3 数据面 + §4 组合装配；位图棋盘落地核 `tilemap` 适配度，撞墙回工单报缺口
 
 ## 角色与边界（CLAUDE.md）
 

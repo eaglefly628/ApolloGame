@@ -67,6 +67,9 @@
 ## 6. 评审记录
 
 - 提交人 / 日期：GD（game102 / Pixel Pour）/ 2026-07-23
-- **已提请 Lead 评审**（工单 `docs/design/game102/requests.md` REQ-G102-CAPREVIEW·2026-07-23）
-- Lead 裁决：⏳ **待评审**（重点裁 §4 首行：传送带编排=组合表达 vs 下沉 `conveyor-queue`；若确认真需下沉，升级进引擎池 `docs/workflow/requests.md`）
-- 备注：本 plan 未过审前**不写任何游戏层代码**；`prototype.html` 为 GD 设计参考 mockup，非引擎实现。
+- **⚖ Lead 裁决：✅ 裁 ①（2026-07-23）**——准以「**先组合表达·零运行时游戏层例外**」立项，**不预下沉 `conveyor-queue`**（manifesto §4 先重组 + YAGNI；registry 六件全在）。全文见工单 `requests.md` REQ-G102-CAPREVIEW（已完结）。
+  - 三条时序疑点的组合摆法（Lead 给）：队首递进=`zone-occupancy`+`event-when` 到位边沿；突破 5→10=`event-when` 条件树切容量数据；弹尽入槽=`event-when`(`group-count`=0)→`tray`。
+  - 附两条 ✅ 准：像素画视图走 render 组件（不手写 DOM）；balance-sim=authoring-time 工具。
+  - 实机校准补充受理：钥匙/门= `event-when`+`resource`/`gauge` 表达；**位图棋盘 PE 落地核 `tilemap` 适配度**，不合再回工单报缺口。
+- **可开工范围**：§1-3 数据面 + §4 组合装配（PE）。撞墙（组合真表达不了）→回工单升级引擎池走下沉，**在此之前零游戏层 system 代码红线不破**。
+- 备注：`prototype.html` 为 GD 设计参考 mockup，非引擎实现。
