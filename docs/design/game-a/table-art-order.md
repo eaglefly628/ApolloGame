@@ -17,13 +17,20 @@
 | **Gen prompt（EN）** | top-down deep wine-red velvet felt card table surface, long rounded-rectangle shape, ornate thin gold trim following the rounded rectangle edge, soft warm central light pool, subtle plush velvet weave, luxurious chinese night-banquet mood, dark vignetted corners, transparent background outside the table, high resolution, clean game art |
 | **Gen prompt（CN）** | 掼蛋夜宴·长方形圆角呢桌面·酒红天鹅绒 + 细金边框（跟随圆角矩形）+ 桌心暖光池·俯视·透明背景·高清 |
 
-## 场景底：牌室背景（room behind·同屏但非桌面本体）
+## 场景底：牌室背景（room behind·同屏·衬桌面）
 
 | 字段 | 值 |
 |---|---|
-| **台账号 / 状态** | `art-02` · `filled`（程序占位·可后补真图） |
-| **消费槽 skinKey** | `game-a/bg/table`（`a-play` / `a-result` 屏满幅底图） |
-| **目标观感** | 胡桃木夜宴牌室·暖夜私宅·牌桌四周环境（虚化·不抢桌面） |
+| **台账号 / 状态** | `art-02` · `pending-art`（待真图·当前程序 SVG 占位） |
+| **消费槽 skinKey** | `game-a/bg/table`（`a-play` / `a-result` 屏满幅底图·`hud Screen.image`） |
+| **当前占位** | `bg/table.svg`（径向渐变 MANOR_BG #4a3020→#160e0a） |
+| **目标观感** | 深胡桃木夜宴私宅牌室·暖金顶光聚中心 + 虚化红灯笼/金饰散景 + 大理石地暖反光·**中心留空给牌桌**·深电影暗角；**虚化不抢桌面**（酒红桌 + UI 压在其上·环境只作氛围） |
+| **尺寸** | 2560×1440 px（=屏 1280×720 的 2×·16:9 满幅）·**不透明**（满幅底图） |
+| **风格锚** | modern-manor 夜宴华贵·与 SC-1 主菜单同调 |
+| **Gen prompt（EN）** | luxurious chinese night-banquet private card room interior, dark mahogany wood-paneled walls, warm golden downlight pooling toward the center, softly blurred bokeh of hanging red lanterns and gold ornament, marble floor with faint warm reflections, empty darkened center reserved for the card table, deep cinematic vignette, atmospheric depth of field, moody and opulent, high resolution, painterly game background, no people |
+| **Gen prompt（CN）** | 掼蛋夜宴·私宅牌室内景·深胡桃木墙板 + 暖金顶光聚中心 + 虚化红灯笼/金饰散景 + 大理石地暖反光 + 中心留空给牌桌 + 深电影暗角·华贵夜宴调·高清·无人物 |
+
+> **两图配合铁律**：牌室背景（bg/table·压深虚化）+ 桌面呢面（felt/table·酒红实体）分层——背景**别在中心画桌子/家具**（会和 felt 打架）；felt 透明桌外露出背景暗调即可。
 
 ## 交付后自检
 

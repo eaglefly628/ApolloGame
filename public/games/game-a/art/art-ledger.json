@@ -53,9 +53,9 @@
         "component": "Image",
         "field": "src"
       },
-      "query": "mahogany card room at night, warm downlight pool, marble floor, dark walls, empty table area, deep vignette",
+      "query": "luxurious chinese night-banquet private card room interior, dark mahogany wood-paneled walls, warm golden downlight pooling toward the center, softly blurred bokeh of hanging red lanterns and gold ornament, marble floor with faint warm reflections, empty darkened center reserved for the card table, deep cinematic vignette, atmospheric depth of field, moody and opulent, high resolution, painterly game background, no people",
       "placeholder": {
-        "current": "CSS 径向渐变 MANOR_BG（#4a3020→#160e0a）",
+        "current": "程序化径向渐变 SVG 占位（bg/table.svg·MANOR_BG #4a3020→#160e0a）——真高清牌室图待工坊生成替换",
         "source": "procedural",
         "count": 1,
         "instances": [
@@ -63,12 +63,12 @@
         ]
       },
       "spec": {
-        "w": 1280,
-        "h": 720,
+        "w": 2560,
+        "h": 1440,
         "transparent": false
       },
-      "context": "game-a SC-3 牌桌满幅底图（felt 之下）·风格锚 modern-manor·与 SC-1 同调·P0",
-      "status": "filled",
+      "context": "game-a《掼蛋夜宴》SC-3/SC-4 牌桌满幅底图（felt 之下·牌室环境·**虚化不抢桌面**）·风格锚 modern-manor 夜宴华贵·与 SC-1 主菜单同调·**真高清牌室待工坊生成**（当前=程序 SVG 占位·真图入库即热替换）·P0",
+      "status": "pending-art",
       "gen": {
         "source": "procedural",
         "servedPath": "/games/game-a/art/bg/table.svg",
@@ -80,7 +80,14 @@
         "consumed": true,
         "at": "hud.ts 牌桌/选桌/结算 Screen.image (BG_TABLE)"
       },
-      "skinKey": "game-a/bg/table"
+      "skinKey": "game-a/bg/table",
+      "provenance": {
+        "generator": "game-a-authored",
+        "prompt": "luxurious chinese night-banquet private card room interior, dark mahogany wood-paneled walls, warm golden downlight pooling toward the center, softly blurred bokeh of hanging red lanterns and gold ornament, marble floor with faint warm reflections, empty darkened center reserved for the card table, deep cinematic vignette, atmospheric depth of field, moody and opulent, high resolution, painterly game background, no people",
+        "model": "待工坊生成",
+        "mock": false
+      },
+      "prompt": "掼蛋夜宴·私宅牌室内景·深胡桃木墙板 + 暖金顶光聚中心 + 虚化红灯笼/金饰散景 + 大理石地暖反光 + 中心留空给牌桌 + 深电影暗角·华贵夜宴调·高清·无人物"
     },
     {
       "no": "art-03",
