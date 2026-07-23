@@ -68,12 +68,15 @@
         "transparent": false
       },
       "context": "game-a《掼蛋夜宴》SC-3/SC-4 牌桌满幅底图（felt 之下·牌室地面·**俯视视角**=与桌面同为正上方垂直俯视·虚化压深不抢桌面）·风格锚 modern-manor 夜宴华贵·**真高清俯视牌室地面待工坊生成**（当前=程序 SVG 占位·真图入库即热替换）·P0",
-      "status": "pending-art",
+      "status": "generated",
       "gen": {
-        "source": "procedural",
-        "servedPath": "/games/game-a/art/bg/table.svg",
-        "localId": "game-a/bg/table",
-        "model": "procedural-svg",
+        "provider": "seedream",
+        "model": "doubao-seedream-5-0-pro-260628",
+        "prompt": "俯视（正上方垂直往下看）·掼蛋夜宴牌室地面·深色抛光大理石 + 胡桃木地板·桌心暖金光池·四周淡雅地毯/金地纹·柔反光·中心留空给牌桌·四角压深暗角·华贵夜宴调·平铺俯视·高清·无人物·中心无家具, 精灵图, 现代奢华豪宅夜间室内：暖调灯光，木质牌桌，当代雅致陈设，温馨私密氛围，构图干净，游戏素材，无文字，无水印",
+        "cacheKey": "e04d6e4e8da90bb5",
+        "pack": "modern-manor",
+        "servedPath": "/games/game-a/art/gen/art-02.png",
+        "localId": "gen/art-02",
         "mock": false
       },
       "wired": {
@@ -82,12 +85,25 @@
       },
       "skinKey": "game-a/bg/table",
       "provenance": {
-        "generator": "game-a-authored",
-        "prompt": "top-down overhead view looking straight down at a luxurious chinese night-banquet card room floor, dark polished marble and mahogany wood flooring, warm golden light pool glowing at the center, faint ornamental rug and gold floor pattern around the edges, soft warm reflections, empty darkened center reserved for the card table, deep vignette toward the corners, moody opulent atmosphere, flat-lay top-down perspective, high resolution, painterly game background, no people, no furniture in center",
-        "model": "待工坊生成",
-        "mock": false
+        "model": "doubao-seedream-5-0-pro-260628",
+        "prompt": "俯视（正上方垂直往下看）·掼蛋夜宴牌室地面·深色抛光大理石 + 胡桃木地板·桌心暖金光池·四周淡雅地毯/金地纹·柔反光·中心留空给牌桌·四角压深暗角·华贵夜宴调·平铺俯视·高清·无人物·中心无家具, 精灵图, 现代奢华豪宅夜间室内：暖调灯光，木质牌桌，当代雅致陈设，温馨私密氛围，构图干净，游戏素材，无文字，无水印",
+        "date": "2026-07-23T04:39:03.005Z",
+        "license": "ByteDance Seedream/火山方舟 (按订阅商用授权)"
       },
-      "prompt": "俯视（正上方垂直往下看）·掼蛋夜宴牌室地面·深色抛光大理石 + 胡桃木地板·桌心暖金光池·四周淡雅地毯/金地纹·柔反光·中心留空给牌桌·四角压深暗角·华贵夜宴调·平铺俯视·高清·无人物·中心无家具"
+      "prompt": "俯视（正上方垂直往下看）·掼蛋夜宴牌室地面·深色抛光大理石 + 胡桃木地板·桌心暖金光池·四周淡雅地毯/金地纹·柔反光·中心留空给牌桌·四角压深暗角·华贵夜宴调·平铺俯视·高清·无人物·中心无家具",
+      "history": [
+        {
+          "action": "regen",
+          "at": "2026-07-23T04:39:03.003Z",
+          "prevQuery": "top-down overhead view looking straight down at a luxurious chinese night-banquet card room floor, dark polished marble and mahogany wood flooring, warm golden light pool glowing at the center, faint ornamental rug and gold floor pattern around the edges, soft warm reflections, empty darkened center reserved for the card table, deep vignette toward the corners, moody opulent atmosphere, flat-lay top-down perspective, high resolution, painterly game background, no people, no furniture in center",
+          "newQuery": "top-down overhead view looking straight down at a luxurious chinese night-banquet card room floor, dark polished marble and mahogany wood flooring, warm golden light pool glowing at the center, faint ornamental rug and gold floor pattern around the edges, soft warm reflections, empty darkened center reserved for the card table, deep vignette toward the corners, moody opulent atmosphere, flat-lay top-down perspective, high resolution, painterly game background, no people, no furniture in center"
+        }
+      ],
+      "orig": {
+        "status": "placeholder",
+        "gen": null,
+        "indexEntry": null
+      }
     },
     {
       "no": "art-03",
@@ -98,7 +114,7 @@
         "component": "Image",
         "field": "src"
       },
-      "query": "top-down deep wine-red velvet felt card table surface, long rounded-rectangle shape, ornate thin gold trim following the rounded rectangle edge, soft warm central light pool, subtle plush velvet weave, luxurious chinese night-banquet mood, dark vignetted corners, transparent background outside the table, high resolution, clean game art",
+      "query": "完全按照出图规格尺寸出，透明底，然后是长方形的，这样的一个桌子，酒红天鹅绒，吸金边框。",
       "placeholder": {
         "current": "程序化圆角矩形 SVG 占位（felt/table.svg·酒红径向渐变+桌心光池+细金边）——真高清图待工坊生成替换",
         "source": "procedural",
@@ -113,13 +129,16 @@
         "transparent": true
       },
       "context": "game-a《掼蛋夜宴》SC-3 牌桌面（a-felt 消费·长方形圆角 rx28）·风格锚 modern-manor 夜宴华贵·压深让白扑克不刺眼（A-007）·**真高清呢面待工坊生成**（当前=程序 SVG 占位·真图入库即热替换）·P1",
-      "status": "pending-art",
+      "status": "generated",
       "gen": {
-        "source": "procedural",
-        "servedPath": "/games/game-a/art/felt/table.svg",
-        "localId": "game-a/felt/table",
-        "model": "procedural-svg",
-        "mock": false
+        "provider": "qwen",
+        "model": "wanx2.1-t2i-turbo·mock",
+        "prompt": "掼蛋夜宴·长方形圆角呢桌面·酒红天鹅绒 + 细金边框（跟随圆角矩形）+ 桌心暖光池·俯视·透明背景·高清, 精灵图, 现代奢华豪宅夜间室内：暖调灯光，木质牌桌，当代雅致陈设，温馨私密氛围，构图干净，游戏素材，无文字，无水印",
+        "cacheKey": "0d6df28824226640",
+        "pack": "modern-manor",
+        "servedPath": "/games/game-a/art/gen/mock/art-03.png",
+        "localId": "gen/mock/art-03",
+        "mock": true
       },
       "wired": {
         "consumed": true,
@@ -127,12 +146,25 @@
       },
       "skinKey": "game-a/felt/table",
       "provenance": {
-        "generator": "game-a-authored",
-        "prompt": "top-down deep wine-red velvet felt card table surface, long rounded-rectangle shape, ornate thin gold trim following the rounded rectangle edge, soft warm central light pool, subtle plush velvet weave, luxurious chinese night-banquet mood, dark vignetted corners, transparent background outside the table, high resolution, clean game art",
-        "model": "待工坊生成",
-        "mock": false
+        "model": "wanx2.1-t2i-turbo·mock",
+        "prompt": "掼蛋夜宴·长方形圆角呢桌面·酒红天鹅绒 + 细金边框（跟随圆角矩形）+ 桌心暖光池·俯视·透明背景·高清, 精灵图, 现代奢华豪宅夜间室内：暖调灯光，木质牌桌，当代雅致陈设，温馨私密氛围，构图干净，游戏素材，无文字，无水印",
+        "date": "2026-07-23T04:46:42.482Z",
+        "license": "Qwen/DashScope 万相 (按订阅授权)"
       },
-      "prompt": "掼蛋夜宴·长方形圆角呢桌面·酒红天鹅绒 + 细金边框（跟随圆角矩形）+ 桌心暖光池·俯视·透明背景·高清"
+      "prompt": "掼蛋夜宴·长方形圆角呢桌面·酒红天鹅绒 + 细金边框（跟随圆角矩形）+ 桌心暖光池·俯视·透明背景·高清",
+      "history": [
+        {
+          "action": "regen",
+          "at": "2026-07-23T04:46:42.481Z",
+          "prevQuery": "完全是顶视图，尺寸跟出图规格的长宽比尺寸都是是完全一致的，透明底PNG的。然后需要有天鹅绒材质、细金边框。的矩形",
+          "newQuery": "完全按照出图规格尺寸出，透明底，然后是长方形的，这样的一个桌子，酒红天鹅绒，吸金边框。"
+        }
+      ],
+      "orig": {
+        "status": "placeholder",
+        "gen": null,
+        "indexEntry": null
+      }
     },
     {
       "no": "art-08",
