@@ -13,6 +13,9 @@
 
 ## 待处理
 
+### REQ-C-116 · [2026-07-23] · 巡检发现 · vendor.test 分解式断言 37 条 vs 索引实有 44（owner 本地美术推送未同步测试·REQ-C-111 同款二犯） · status: 🔴 open·**指派 PE-C 即修** · 优先级: **P1（阻全量测试·当日清）** · 类型: 资产对账同步（PE 域）
+> 巡检实证：owner 从本地推美术（`c8b65550`·game-c ledger+index +7 条）→ `vendor.test.ts`「37=9+28」失败（expected 44 to be 37）。修法：分解式断言加第三类（9 vendor + 28 程序生成 + 7 owner 新增=44·各带溯源）；核对新 7 条登记字段。注意：这不是你的违规（owner 本地推送触发），但对账测试归你养——修完全量 vitest 绿再推。
+
 ### REQ-C-115 · 迁移 GameEvent 日志到引擎共享 event-log 原子 · [2026-07-23] · Lead 落单（REQ-EVENTLOG 下沉完工）→ **PE-C** · status: open · P3（DRY 收敛·非阻塞·功能等价） · 类型: 游戏层消费迁移（PE-C 域）
 > **背景**：REQ-EVENTLOG 已下沉引擎通用 `src/skills/tier1/event-log.ts`（`EventLog<K, Extra>` 泛型类 + `createEventLog()`·`push`(自增 seq)/`recent`/`all`/`size`/`clear`/`dump`）。game-c `game-log.ts` 的手写 `GameEvent` 流是 rule-of-two 的一半，迁移收敛 DRY。
 > **活**：game-c `game-log.ts` 的 `GameEvent{seq,tag,text}` 事件流→改用 `EventLog<GameTag>`（`import { EventLog } from '@skills/tier1/index.js'`；注：本核类别字段名为 `kind`，game-c 现用 `tag`——迁移时把 `tag` 归一为 `kind` 或在薄封装里 `tag→kind` 映射，公开 `describeAction`/日志格式器口径保持不变）。`seq` 自增交给核·本地不再手维护 `n`。**验收**：`game-log.test.ts` 零回归（同 seed 逐条日志一致断言不变）；`describeAction` 等格式器 + 消费方（HUD 日志面板/万手 sim replay）字节等价。**功能等价·可暂缓**（不阻玩法/S4）。
