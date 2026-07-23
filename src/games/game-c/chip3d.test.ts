@@ -14,7 +14,7 @@ const stacks = (e: Engine): string[] => [...e.world.queryEntities('Mesh3D')].fil
 const seatStack = (e: Engine, seat: number): string[] => [...e.world.queryEntities('Mesh3D')].filter((id) => id.startsWith(`c-stk-${seat}-`));
 
 describe('game-c chip3d — 3D 物理筹码抛掷 + 主角堆（render-only·owner 2026-07-18）', () => {
-  it('抛注 → 生成筹码 RigidBody3D(cylinder)（随机初速 + 三轴翻滚）', () => {
+  it('抛注 → 生成筹码 RigidBody3D(cylinder)（随机初速 + 只绕竖轴平旋·不翻转防立边）', () => {
     const e = freshEngine();
     expect(thrown(e)).toHaveLength(0);
     const chip = new Chip3D(e, 1);
@@ -25,7 +25,11 @@ describe('game-c chip3d — 3D 物理筹码抛掷 + 主角堆（render-only·own
     expect(rb.shape).toBe('cylinder');
     expect(rb.mass).toBe(1);
     expect(Math.abs(rb.vx ?? 0) + Math.abs(rb.vy ?? 0) + Math.abs(rb.vz ?? 0)).toBeGreaterThan(0); // 有抛速
-    expect(Math.abs(rb.avx ?? 0) + Math.abs(rb.avy ?? 0) + Math.abs(rb.avz ?? 0)).toBeGreaterThan(0); // 有翻滚
+    // bug 修复（owner 2026-07-23「筹码有时立在桌面上」根因=三轴翻滚落地停圆柱侧面）：只保留 avy 竖轴平旋、
+    //   avx/avz 恒 0 → 筹码平飞平落不翻转、不再立边。此不变量钉死防回归。
+    expect(rb.avx ?? 0).toBe(0);
+    expect(rb.avz ?? 0).toBe(0);
+    expect(Math.abs(rb.avy ?? 0)).toBeGreaterThan(0); // 仍有平旋（飞碟式·活泼）
     expect(e.world.getComponent<Mesh3D>(bodies[0], 'Mesh3D')!.shape).toBe('cylinder');
   });
 

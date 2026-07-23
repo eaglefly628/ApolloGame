@@ -51,12 +51,15 @@ export class Chip3D {
       w.addComponent(id, { type: 'Transform3D', x: startX + (this.rng() - 0.5) * 0.18, y: 1.35 + i * 0.07, z: startZ + (this.rng() - 0.5) * 0.18 } as unknown as Component);
       w.addComponent(id, { type: 'Mesh3D', shape: 'cylinder', width: CHIP_R, height: CHIP_H, frontTint: CHIP_COLORS[ci] } as unknown as Component);
       w.addComponent(id, { type: 'Material3D', preset: 'matte', color: CHIP_COLORS[ci], map: CHIP_ART[ci] } as unknown as Component); // 顶盖筹码面贴图·无真图回退色
-      // 随机速度+力量：朝底池的水平初速按 [0.8,1.35] 随机倍率 + 小横向抖动（多数落池心堆起）+ 上抛弧度随机 + 三轴翻滚。
+      // 随机速度+力量：朝底池的水平初速按 [0.8,1.35] 随机倍率 + 小横向抖动（多数落池心堆起）+ 上抛弧度随机。
       const power = 0.8 + this.rng() * 0.55;
+      // 只绕竖直 Y 轴自旋（avy·飞碟式平旋）·**不给 avx/avz 翻转** → 筹码全程保持平面朝上、平飞平落，不再翻着落地立在桌沿上
+      //   （owner 2026-07-23 bug「筹码有时立在桌面上」根因=三轴翻滚落地停在圆柱侧面）。低弹性 restitution 0.12 减少落地弹跳再翻立。
+      //   彻底根治（含落地被别的筹码撞立）需引擎侧角约束锁——已提 requests-3d.md REQ-3D-RB-ANGFACTOR（RigidBody3D.angularFactor·下沉后此处填 [0,1,0]）。
       w.addComponent(id, {
-        type: 'RigidBody3D', shape: 'cylinder', mass: 1, restitution: 0.3, friction: 0.62,
-        vx: dx * power + (this.rng() - 0.5) * 0.45, vy: 1.15 + this.rng() * 0.9, vz: dz * power + (this.rng() - 0.5) * 0.45,
-        avx: (this.rng() - 0.5) * 12, avy: (this.rng() - 0.5) * 12, avz: (this.rng() - 0.5) * 12,
+        type: 'RigidBody3D', shape: 'cylinder', mass: 1, restitution: 0.12, friction: 0.72,
+        vx: dx * power + (this.rng() - 0.5) * 0.45, vy: 1.1 + this.rng() * 0.7, vz: dz * power + (this.rng() - 0.5) * 0.45,
+        avx: 0, avy: (this.rng() - 0.5) * 10, avz: 0,
       } as unknown as Component);
     }
   }

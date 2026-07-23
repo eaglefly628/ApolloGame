@@ -6,7 +6,13 @@
 
 ---
 
-## REQ-3D-DECAL-TEX · 可换真图的「平贴 + alpha + 自定义贴图」贴花（Decal3D 无贴图槽）· [2026-07-22] · PE-C 提（game-c 下注线 REQ-C-113）→ P3D · status: **✅ done（P3D 2026-07-22·取方案①·已推·见回执）** · 优先级: P3 · 类型: 3D 线能力缺口（贴花贴图）
+## REQ-3D-RB-ANGFACTOR · RigidBody3D 角约束（angularFactor·锁转轴防圆盘立边）· [2026-07-23] · PE-C 提（game-c 筹码 bug）→ P3D · status: open · 优先级: P2（owner 报的可见 bug·game-c 已上游戏侧缓解·根治缺此能力）· 类型: 3D 线能力缺口（物理角约束）
+> **触发（owner 2026-07-23 报 bug）**：game-c 3D 物理筹码（薄圆柱 r0.17×h0.06·cannon-es）落桌后**有时立在桌面上**（停在圆柱侧面=硬币立起）。根因：抛注给了三轴随机角速度（avx/avy/avz），翻着落地就可能停在侧面这个半稳态。
+> **game-c 侧已缓解（已推·不阻塞）**：`chip3d.ts` 抛注改**只绕竖直 Y 轴平旋**（avx=avz=0·飞碟式平飞平落）+ 降 restitution 0.12 → 绝大多数不再立边。**但落地被别的筹码撞、或落在筹码堆边沿仍可能被顶立**——数据侧无法根治（Transform3D.quat 每帧被物理写回·游戏层改不动落定姿态）。
+> **缺口**：`RigidBody3D` 无任何**角约束/锁转轴**字段（现只有初速 vx.. + 初角速 avx..）；cannon-es 本体支持 `body.angularFactor`（各轴角响应 0..1·0=锁该轴不转），但组件没暴露 → 游戏层锁不了「圆盘只许绕竖轴转、永不翻倒」。
+> **建议（P3D 裁·opt-in·向后兼容）**：给 `RigidBody3D` 加 `angularFactor?: readonly [number, number, number]`（缺省 `[1,1,1]`=现行不变）；`physics.ts spawn()` 里 `if (rb.angularFactor) body.angularFactor.set(ax,ay,az)`（并 `body.angularFactor` 初值同步·防睡醒重置）。落地后 game-c 筹码填 `[0,1,0]`=**只准平旋·永不立边**（100% 根治·含被撞）。
+> **复用面**：任何硬币/筹码/冰球/圆盘（保持平面）、或「只许绕某轴转」的门/轮/摆（等价 hinge 但免建约束体）、`[0,0,0]`=完全锁转（稳态骰子停面/招牌不晃）。标准物理引擎（Rapier/PhysX）都有 lockRotation·对齐 cannon API。
+> **PE-C 侧就绪**：API 落地后 `chip3d.ts` throwBet + setStack 各加一字段即根治·测试同步钉 `[0,1,0]`。**非阻塞**：已上缓解版·观感基本无立边。
 > **缺口**：想在呢面上平贴一张**可被工坊生成图替换**的下注线/发牌区贴花（台账槽 `game-c/table/betline`），闭集里没有干净件——`Decal3D`=**程序化**（kind blob/ring/disc·无贴图键·不碰 assets）→ 换不了真图；`Material3D.map` 平贴 mesh 有 map 但 **PBR 路无 alpha**（透明底 PNG 的透明区渲成不透明黑）；`Billboard3D.tex` 有贴图 + alpha 但**永远朝相机**（陡俯视下立起 ~26°·不平贴）。三者都缺「平 + alpha + 自定义贴图」这一交集。
 > **建议（P3D 裁·二选一）**：① 给 `Decal3D` 加 `tex?` 贴图键（走 `pbrMapTexture`/assets 解析·decal 本就平 + alpha·最贴合）；或 ② 给 `Material3D` map 路加 `transparent`/`alphaMap`（平贴 mesh 就能透）。落地后 game-c betline 即从程序化金环换成台账真图（`build3d.ts` 已留位·现程序化 `Decal3D{kind:'ring'}` 占位）。**非阻塞**：betline 是次要贴花·现金环占位可接受。
 > **game-c 现状**：chips（`Material3D.map` 顶盖）、fx（`Billboard3D.tex` 瞬时）已接真图；仅 betline 卡此缺口。
