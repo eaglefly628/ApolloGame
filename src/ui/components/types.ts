@@ -170,10 +170,13 @@ export interface LabelProps {
    *    terminal(VT323 终端) / comic(Bangers 漫画) / stencil(Black Ops One 军械镂空) / western(Rye 西部) /
    *    retro(Monoton 复古霓虹) / marker(Permanent Marker 记号笔) / bubbly(Baloo 2 圆润) / gothic(Pirata One 哥特) /
    *    fashion(Abril Fatface 时尚粗衬) / shadow(Bungee Shade 立体投影)。
+   *  CJK 艺术字槽（内嵌 SIL OFL 中/日字·**能渲汉字/假名**·url 惰性载·owner 2026-07-23）：
+   *    cnbrush(马善政 中文毛笔行楷) / cnwen(站酷小薇 中文文艺细宋) / jpbrush(筑紫 日文毛筆明朝) / jppen(Klee One 日文楷書ペン)。
    *  缺省按 mono 布尔回退。红线同 color：只收**枚举槽名**(最弱 LLM 能填)，绝不收自由 font-family 串。 */
   font?: 'ui' | 'mono' | 'pixel' | 'display' | 'serif'
     | 'impact' | 'heavy' | 'epic' | 'fantasy' | 'elegant' | 'script' | 'hand' | 'scifi' | 'terminal' | 'comic'
-    | 'stencil' | 'western' | 'retro' | 'marker' | 'bubbly' | 'gothic' | 'fashion' | 'shadow';
+    | 'stencil' | 'western' | 'retro' | 'marker' | 'bubbly' | 'gothic' | 'fashion' | 'shadow'
+    | 'cnbrush' | 'cnwen' | 'jpbrush' | 'jppen';
   /** 磷光发光(text-shadow·琥珀时钟/霓虹标题)：true 时按当前 color 描一圈柔光。纯表现。 */
   glow?: boolean;
   /** 描边字(comic outline·卡通/休闲粗描边标题)：true 时字外描一圈深色轮廓(text-stroke·paint-order:stroke fill 保填色可读)。纯表现·与 glow 可叠。 */

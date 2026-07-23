@@ -24,4 +24,11 @@ export const ART_FONT_FAMILY: Record<string, string> = {
   gothic: "'Pirata One'",
   fashion: "'Abril Fatface'",
   shadow: "'Bungee Shade'",
+  // CJK 艺术字（SIL OFL·中/日·@font-face url 见 art-fonts-cjk.ts·owner 2026-07-23）——**能渲汉字/假名**，
+  // 故排字族前、系统 CJK 兜底其后（缺字回退）。@font-face 声明常驻（极小）·woff2 由浏览器**按需惰性下载**
+  // （只在真渲染该字族时拉·非 CJK 游戏零下载）。渲染 render.ts 拼 `${family}, PingFang SC…` 已含兜底链。
+  cnbrush: "'Ma Shan Zheng'",
+  cnwen: "'ZCOOL XiaoWei'",
+  jpbrush: "'Yuji Syuku'",
+  jppen: "'Klee One'",
 };

@@ -6,6 +6,7 @@
 
 import { renderNode, renderVListWindow, formatNumber } from './render.js';
 import { ART_FONT_CSS } from './art-fonts.js';
+import { ART_FONT_CJK_CSS } from './art-fonts-cjk.js';
 import { SHELL } from '../shell-theme.js';
 import type { LayoutNode, HandlerMap, ActionSink, UITheme, ToastProps, VirtualListProps, WebFont } from './types.js';
 
@@ -207,7 +208,8 @@ export function ensureArtFonts(doc?: Document): void {
   if (d.getElementById('apollo-art-fonts')) return;
   const st = d.createElement('style');
   st.id = 'apollo-art-fonts';
-  st.textContent = ART_FONT_CSS;
+  // 拉丁 18 款=base64 内嵌（小·常驻）+ CJK 中/日=url() 引用（大·浏览器按需惰性下载·只在真渲染该字族时拉）。
+  st.textContent = ART_FONT_CSS + ART_FONT_CJK_CSS;
   (d.head ?? d.documentElement).appendChild(st);
 }
 

@@ -1266,6 +1266,24 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           ],
         })) },
 
+      divider('d-cjkfont'),
+      sectionTitle('t-cjkfont', 'LABEL · CJK 艺术字（内嵌 SIL OFL 中/日字·**能渲汉字/假名**·url 惰性载·owner 2026-07-23）'),
+      { type: 'Label', id: 'cjkfont-note', props: {
+        text: '前 18 款艺术字皆拉丁字形（贴 CJK 自动回退主字体）。这 4 款是真 CJK 字体，能把「雀宴」这类汉字/假名渲成毛笔/文艺/楷体。woff2 子集化（只留 src 用到的字 + 全假名）·浏览器按需惰性下载（只在真用时拉那一个）。', color: 'sub', size: 'sm' } },
+      { type: 'Panel', id: 'cjkfont-wall', props: {}, layout: { direction: 'column', gap: 8, padding: 16 },
+        children: ([
+          ['cnbrush', '雀宴 · 中文毛笔行楷 · 東南西北發財', 'gold'],
+          ['cnwen', '雀宴 · 中文文艺细宋 · 立直門前清', 'text'],
+          ['jpbrush', '雀宴 · 日文毛筆明朝 · リーチ一発ツモ', 'jade'],
+          ['jppen', '雀宴 · 日文楷書ペン · 麻雀あがり', 'ok'],
+        ] as const).map(([f, txt, color]): LayoutNode => ({
+          type: 'Panel', id: `cjkr-${f}`, props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 12 },
+          children: [
+            { type: 'Label', id: `cjkn-${f}`, props: { text: `#${nextSubNo()}`, size: 'sm', color: 'gold', bold: true }, layout: { width: 52 } },
+            { type: 'Label', id: `cjk-${f}`, props: { text: txt, size: 'xl', font: f, color } },
+          ],
+        })) },
+
       divider('d-n17'),
       sectionTitle('t-fx', 'FX · UI 特效库（库 A·layout.fx 闭集合集·可叠加·render-only CSS·一个字段一串特效）'),
       { type: 'Label', id: 'fx-note', props: {
