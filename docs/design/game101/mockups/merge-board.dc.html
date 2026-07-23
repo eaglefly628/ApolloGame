@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0d1b26;font-family:"Baloo 2","Nunito","PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:#4A3B2A}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+</style>
+</helmet>
+
+<!-- 画布 1080×1920 竖屏 -->
+<div style="position:relative;width:1080px;height:1920px;overflow:hidden;background:linear-gradient(180deg,#8fd6ec 0%,#bfe8f2 12%,#FFF7EC 34%,#FFF1DE 100%);font-family:'Baloo 2','Nunito','PingFang SC',sans-serif">
+
+  <!-- 顶部海面波纹装饰 -->
+  <svg width="1080" height="300" viewBox="0 0 1080 300" style="position:absolute;left:0;top:0;pointer-events:none" aria-hidden="true">
+    <path d="M0,210 C160,180 250,240 420,220 C600,198 700,250 900,220 C1000,206 1050,224 1080,214 L1080,300 L0,300 Z" fill="#FFF7EC" opacity="0.55"></path>
+    <circle cx="920" cy="90" r="54" fill="#FFE39B" opacity="0.85"></circle>
+    <circle cx="920" cy="90" r="72" fill="#FFE39B" opacity="0.25"></circle>
+  </svg>
+
+  <!-- ═══════ S4 顶部 HUD ═══════ -->
+  <!-- 玩家块 -->
+  <div style="position:absolute;left:40px;top:48px;display:flex;align-items:center;gap:16px">
+    <div style="position:relative;width:88px;height:88px;border-radius:50%;background:linear-gradient(150deg,#FFB765,#FF9A3C);border:4px solid #fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:40px;color:#fff;box-shadow:0 8px 18px -6px rgba(255,120,40,.6)">夏
+      <div style="position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);font-weight:800;font-size:18px;color:#fff;background:#3EC5E8;border:2px solid #fff;border-radius:20px;padding:0 12px">Lv 6</div>
+    </div>
+  </div>
+
+  <!-- 资源胶囊 ×3 -->
+  <div style="position:absolute;right:36px;top:52px;display:flex;gap:12px">
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.9);border-radius:22px;padding:7px 16px 7px 12px;box-shadow:0 6px 14px -6px rgba(150,100,60,.5)"><span style="font-size:26px">⭐</span><span style="font-weight:800;font-size:24px;color:#C98A1E">18</span><span style="font-weight:800;color:#3EC5E8;font-size:22px">＋</span></div>
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.9);border-radius:22px;padding:7px 16px 7px 12px;box-shadow:0 6px 14px -6px rgba(150,100,60,.5)"><span style="font-size:26px">🪙</span><span style="font-weight:800;font-size:24px;color:#B8860B">1,240</span><span style="font-weight:800;color:#3EC5E8;font-size:22px">＋</span></div>
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.9);border-radius:22px;padding:7px 16px 7px 12px;box-shadow:0 6px 14px -6px rgba(150,100,60,.5)"><span style="font-size:26px">💎</span><span style="font-weight:800;font-size:24px;color:#8A5CF6">36</span><span style="font-weight:800;color:#3EC5E8;font-size:22px">＋</span></div>
+  </div>
+
+  <!-- 体力条 -->
+  <div style="position:absolute;left:150px;top:64px;display:flex;align-items:center;gap:12px">
+    <div style="position:relative;width:340px;height:44px;border-radius:24px;background:rgba(255,255,255,.85);box-shadow:inset 0 2px 5px rgba(150,100,60,.25);overflow:hidden">
+      <div style="position:absolute;left:0;top:0;height:100%;width:34%;background:linear-gradient(90deg,#FFD34E,#FFC43D);border-radius:24px"></div>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;padding-left:14px;gap:8px"><span style="font-size:24px">⚡</span><span style="font-weight:800;font-size:22px;color:#7a5a10">34/100</span></div>
+    </div>
+    <div style="font-weight:700;font-size:18px;color:#7a6a52;background:rgba(255,255,255,.7);border-radius:14px;padding:4px 10px">⏱ 1:58</div>
+  </div>
+
+  <!-- ═══════ 任务提示条（→S5）═══════ -->
+  <div style="position:absolute;left:40px;top:196px;width:1000px;height:76px;border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 8px 18px -8px rgba(150,100,60,.5);display:flex;align-items:center;padding:0 22px;gap:18px">
+    <div style="font-weight:800;font-size:26px;color:#FF7A3C">第 1 天</div>
+    <div style="font-weight:700;font-size:24px;color:#4A3B2A">回到汐味馆</div>
+    <div style="flex:1;height:18px;border-radius:12px;background:#F0E3CE;overflow:hidden;position:relative"><div style="position:absolute;left:0;top:0;height:100%;width:60%;background:linear-gradient(90deg,#FF9A3C,#FFC43D);border-radius:12px"></div></div>
+    <div style="font-weight:800;font-size:22px;color:#fff;background:linear-gradient(160deg,#FF9A3C,#FF7A3C);border-radius:18px;padding:8px 20px;box-shadow:0 5px 12px -4px rgba(255,120,40,.7)">任务 ▸</div>
+  </div>
+
+  <!-- 美术占位签（showLedger）-->
+  <sc-if value="{{ showLedger }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;left:40px;top:1250px;font-family:ui-monospace,monospace;font-size:15px;letter-spacing:.5px;color:rgba(120,90,60,.7);border:1.5px dashed rgba(255,154,60,.5);border-radius:10px;padding:5px 12px;background:rgba(255,255,255,.6)">⚠ 物品/生成器=皮肤槽占位（emoji 示意·art:item_*/gen_*）· sprite 命名对齐 config-schema</div>
+  </sc-if>
+
+  <!-- ═══════ S1 合并棋盘 play-field（7×7）═══════ -->
+  <!-- 背景格 -->
+  <sc-for list="{{ bg }}" as="t" hint-placeholder-count="49"><div style="{{ t.style }}"></div></sc-for>
+  <!-- 物品 -->
+  <sc-for list="{{ items }}" as="it" hint-placeholder-count="10"><div style="{{ it.style }}">{{ it.glyph }}</div></sc-for>
+  <!-- 气泡锁物品（金币购买打开）-->
+  <div style="{{ bubble.style }}">{{ bubble.glyph }}</div>
+  <div style="position:absolute;left:628px;top:928px;font-weight:800;font-size:19px;color:#fff;background:linear-gradient(160deg,#F7C94B,#F4B740);border-radius:14px;padding:2px 11px;box-shadow:0 3px 8px rgba(120,80,20,.35);z-index:6">🪙40</div>
+  <!-- 合并高亮提示（在可合并对上方）-->
+  <div style="position:absolute;left:214px;top:262px;font-weight:800;font-size:20px;color:#fff;background:#FFD34E;color:#7a5a10;border-radius:16px;padding:3px 12px;box-shadow:0 4px 10px -3px rgba(255,180,40,.8);animation:bob 2.4s ease-in-out infinite;z-index:6">可合并 ✦</div>
+
+  <!-- 生成器 ×3（点击型·耗体力）-->
+  <div style="position:absolute;left:72px;top:572px;width:120px;height:120px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:66px;background:linear-gradient(160deg,#FFC98A,#FF9A3C);box-shadow:0 12px 24px -6px rgba(255,120,40,.65),inset 0 -5px 0 rgba(190,90,20,.4);border:4px solid #fff;z-index:5">🧺
+    <div style="position:absolute;top:-14px;right:-12px;font-weight:800;font-size:20px;color:#fff;background:#4A3B2A;border-radius:20px;padding:1px 11px;box-shadow:0 3px 8px rgba(0,0,0,.3)">⚡1</div>
+    <div style="position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);white-space:nowrap;font-weight:800;font-size:19px;color:#4A3B2A;background:rgba(255,255,255,.85);border-radius:14px;padding:2px 12px">食材袋</div>
+  </div>
+  <div style="position:absolute;left:888px;top:572px;width:120px;height:120px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:66px;background:linear-gradient(160deg,#8fe0ef,#3EC5E8);box-shadow:0 12px 24px -6px rgba(40,150,190,.6),inset 0 -5px 0 rgba(20,110,150,.4);border:4px solid #fff;z-index:5">🐟
+    <div style="position:absolute;top:-14px;right:-12px;font-weight:800;font-size:20px;color:#fff;background:#4A3B2A;border-radius:20px;padding:1px 11px;box-shadow:0 3px 8px rgba(0,0,0,.3)">⚡1</div>
+    <div style="position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);white-space:nowrap;font-weight:800;font-size:19px;color:#4A3B2A;background:rgba(255,255,255,.85);border-radius:14px;padding:2px 12px">渔获箱</div>
+  </div>
+  <div style="position:absolute;left:480px;top:1116px;width:120px;height:120px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:64px;background:linear-gradient(160deg,#ffd08a,#e8a24a);box-shadow:0 12px 24px -6px rgba(180,120,40,.6),inset 0 -5px 0 rgba(150,90,20,.4);border:4px solid #fff;z-index:5">🧰
+    <div style="position:absolute;inset:0;border-radius:24px;background:rgba(30,20,10,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff"><span style="font-size:34px">⏳</span><span style="font-weight:800;font-size:22px">5s</span></div>
+    <div style="position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);white-space:nowrap;font-weight:800;font-size:19px;color:#4A3B2A;background:rgba(255,255,255,.85);border-radius:14px;padding:2px 12px">工具箱 · 冷却中</div>
+  </div>
+  <!-- 咖啡机（owner 举例·主力生成器）-->
+  <div style="position:absolute;left:72px;top:980px;width:120px;height:120px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:62px;background:linear-gradient(160deg,#d9b38a,#a9764a);box-shadow:0 12px 24px -6px rgba(120,80,40,.6),inset 0 -5px 0 rgba(90,60,20,.4);border:4px solid #fff;z-index:5">☕
+    <div style="position:absolute;top:-14px;right:-12px;font-weight:800;font-size:20px;color:#fff;background:#4A3B2A;border-radius:20px;padding:1px 11px;box-shadow:0 3px 8px rgba(0,0,0,.3)">⚡1</div>
+    <div style="position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);white-space:nowrap;font-weight:800;font-size:19px;color:#4A3B2A;background:rgba(255,255,255,.85);border-radius:14px;padding:2px 12px">咖啡机</div>
+  </div>
+
+  <!-- ═══════ S3 订单栏（横向滑动）═══════ -->
+  <div style="position:absolute;left:0;top:1300px;width:1080px;height:250px;display:flex;align-items:center;gap:20px;padding:0 40px;overflow:hidden">
+    <!-- 可交付卡（高亮）-->
+    <div style="position:relative;width:224px;height:210px;border-radius:26px;background:#fff;box-shadow:0 0 0 4px #7BD88F,0 14px 26px -8px rgba(90,180,110,.7);display:flex;flex-direction:column;align-items:center;padding:16px 12px;flex:0 0 auto">
+      <div style="display:flex;align-items:center;gap:8px;align-self:flex-start"><span style="font-size:34px">👩</span><span style="font-weight:800;font-size:20px;color:#4A3B2A">苏晴</span></div>
+      <div style="margin-top:10px;width:96px;height:96px;border-radius:20px;background:linear-gradient(160deg,#fff,#ffe9cf);box-shadow:inset 0 -3px 0 rgba(220,170,120,.35);display:flex;align-items:center;justify-content:center;font-size:56px">🍝</div>
+      <div style="margin-top:12px;display:flex;gap:9px;font-weight:800;font-size:19px"><span style="color:#7C5CFF">⬆15</span><span style="color:#B8860B">🪙90</span><span style="color:#C98A1E">⭐2</span></div>
+      <div style="position:absolute;top:-12px;right:-8px;font-weight:800;font-size:16px;color:#fff;background:#7BD88F;border-radius:16px;padding:2px 12px">可交付</div>
+    </div>
+    <!-- 普通订单卡 -->
+    <div style="position:relative;width:224px;height:210px;border-radius:26px;background:#fff;box-shadow:0 12px 22px -10px rgba(150,100,60,.5);display:flex;flex-direction:column;align-items:center;padding:16px 12px;flex:0 0 auto">
+      <div style="display:flex;align-items:center;gap:8px;align-self:flex-start"><span style="font-size:34px">🧔</span><span style="font-weight:800;font-size:20px;color:#4A3B2A">周航</span></div>
+      <div style="margin-top:10px;width:96px;height:96px;border-radius:20px;background:linear-gradient(160deg,#fff,#eef6fb);box-shadow:inset 0 -3px 0 rgba(150,180,200,.35);display:flex;align-items:center;justify-content:center;font-size:56px;filter:grayscale(.15)">🐟</div>
+      <div style="margin-top:12px;display:flex;gap:10px;font-weight:800;font-size:20px"><span style="color:#B8860B">🪙45</span><span style="color:#7a5a10">⚡5</span></div>
+    </div>
+    <!-- 普通订单卡 -->
+    <div style="position:relative;width:224px;height:210px;border-radius:26px;background:#fff;box-shadow:0 12px 22px -10px rgba(150,100,60,.5);display:flex;flex-direction:column;align-items:center;padding:16px 12px;flex:0 0 auto">
+      <div style="display:flex;align-items:center;gap:8px;align-self:flex-start"><span style="font-size:34px">👨‍🔧</span><span style="font-weight:800;font-size:20px;color:#4A3B2A">老陈</span></div>
+      <div style="margin-top:10px;width:96px;height:96px;border-radius:20px;background:linear-gradient(160deg,#fff,#fbf0dd);box-shadow:inset 0 -3px 0 rgba(200,160,110,.35);display:flex;align-items:center;justify-content:center;font-size:56px">🔧</div>
+      <div style="margin-top:12px;display:flex;gap:10px;font-weight:800;font-size:20px"><span style="color:#B8860B">🪙60</span><span style="color:#C98A1E">⭐2</span></div>
+    </div>
+    <!-- 半露第四张（示意横滑）-->
+    <div style="width:160px;height:210px;border-radius:26px;background:rgba(255,255,255,.7);box-shadow:0 12px 22px -10px rgba(150,100,60,.4);display:flex;flex-direction:column;align-items:center;padding:16px 12px;flex:0 0 auto">
+      <div style="display:flex;align-items:center;gap:8px;align-self:flex-start"><span style="font-size:34px">👵</span><span style="font-weight:800;font-size:20px;color:#4A3B2A">阿雅</span></div>
+      <div style="margin-top:10px;width:96px;height:96px;border-radius:20px;background:linear-gradient(160deg,#fff,#ffe9cf);display:flex;align-items:center;justify-content:center;font-size:56px">🍰</div>
+    </div>
+  </div>
+
+  <!-- ═══════ 底部导航 ═══════ -->
+  <div style="position:absolute;left:0;bottom:0;width:1080px;height:230px;background:linear-gradient(180deg,rgba(255,247,236,0),#FFF1DE 38%);display:flex;align-items:center;justify-content:space-around;padding:0 40px 78px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:800;font-size:20px;color:#B0987E"><span style="font-size:40px">🏠</span>菜单</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:800;font-size:20px;color:#B0987E;position:relative"><span style="font-size:40px">📋</span>任务<span style="position:absolute;top:-4px;right:6px;width:16px;height:16px;border-radius:50%;background:#FF6F91;border:2px solid #fff"></span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+      <div style="width:96px;height:96px;border-radius:50%;background:linear-gradient(160deg,#FF9A3C,#FF7A3C);border:5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:46px;box-shadow:0 10px 22px -6px rgba(255,120,40,.7);animation:breathe 3s ease-in-out infinite">🛒</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:800;font-size:20px;color:#B0987E"><span style="font-size:40px">🎁</span>活动</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:800;font-size:20px;color:#B0987E"><span style="font-size:40px">⚙️</span>设置</div>
+  </div>
+
+  <!-- 标题水印 -->
+  <div style="position:absolute;left:40px;bottom:200px;font-weight:800;font-size:15px;letter-spacing:2px;color:rgba(120,90,60,.35)">game101 ·《海港绯闻》· S1 合并主界面 · 1080×1920 · dc v1</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1080,&quot;height&quot;:1920},&quot;showLedger&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;占位&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const showLedger = this.props.showLedger ?? true;
+    const cols = 7, rows = 7, cell = 120, gap = 16, x0 = 72, y0 = 300;
+    const pos = (c, r) => ({ left: x0 + c * (cell + gap), top: y0 + r * (cell + gap) });
+
+    const bg = [];
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const p = pos(c, r);
+      bg.push({ style: "position:absolute;left:" + p.left + "px;top:" + p.top + "px;width:" + cell + "px;height:" + cell + "px;border-radius:20px;background:rgba(255,255,255,.4);box-shadow:inset 0 2px 6px rgba(150,110,70,.16),inset 0 -1px 0 rgba(255,255,255,.6);z-index:1" });
+    }
+
+    const tile = (p, extra) => "position:absolute;left:" + p.left + "px;top:" + p.top + "px;width:" + cell + "px;height:" + cell + "px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:62px;background:linear-gradient(160deg,#fff,#ffe9cf);box-shadow:0 8px 16px -6px rgba(160,110,60,.4),inset 0 -3px 0 rgba(220,170,120,.35);z-index:3;" + (extra || "");
+    const itemDefs = [
+      { c: 2, r: 1, g: "🍅", glow: true }, { c: 3, r: 1, g: "🍅", glow: true },
+      { c: 1, r: 3, g: "🐟" }, { c: 4, r: 2, g: "🐟" }, { c: 5, r: 4, g: "🔧" },
+      { c: 2, r: 5, g: "🍝" }, { c: 5, r: 1, g: "🥫" }, { c: 1, r: 5, g: "🔩" },
+      { c: 2, r: 3, g: "🫘" }, { c: 5, r: 5, g: "☕" },
+    ];
+    const items = itemDefs.map((d) => {
+      const p = pos(d.c, d.r);
+      const glow = d.glow ? "box-shadow:0 0 0 4px rgba(255,211,78,.95),0 10px 22px -6px rgba(255,154,60,.6);z-index:4;" : "";
+      return { style: tile(p, glow), glyph: d.g };
+    });
+
+    const bp = pos(4, 4);
+    const bubble = {
+      style: "position:absolute;left:" + bp.left + "px;top:" + bp.top + "px;width:" + cell + "px;height:" + cell + "px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:60px;color:rgba(90,70,50,.4);background:radial-gradient(58% 52% at 36% 30%, rgba(255,255,255,.95), rgba(180,225,245,.6) 55%, rgba(120,200,235,.5));box-shadow:0 8px 16px -6px rgba(70,150,190,.5),inset 0 0 0 3px rgba(255,255,255,.55);z-index:4",
+      glyph: "🍅",
+    };
+
+    return { showLedger, bg, items, bubble };
+  }
+}
+</script>
+</body>
+</html>

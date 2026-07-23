@@ -46,6 +46,17 @@
     ]
   },
   {
+    "id": "coffee",
+    "name": "咖啡链（owner 举例）",
+    "levels": [
+      { "lvl": 1, "item": "coffee_1", "name": "咖啡豆",   "sell": 3,   "sprite": "item_coffee_1" },
+      { "lvl": 2, "item": "coffee_2", "name": "咖啡粉",   "sell": 7,   "sprite": "item_coffee_2" },
+      { "lvl": 3, "item": "coffee_3", "name": "浓缩咖啡", "sell": 16,  "sprite": "item_coffee_3" },
+      { "lvl": 4, "item": "coffee_4", "name": "拿铁",     "sell": 36,  "sprite": "item_coffee_4" },
+      { "lvl": 5, "item": "coffee_5", "name": "招牌特调", "sell": 80,  "sprite": "item_coffee_5" }
+    ]
+  },
+  {
     "id": "tool",
     "name": "工具链",
     "levels": [
@@ -60,25 +71,38 @@
 ```
 > 展开成 MergeRule：`{template:"food_1", need:2, into:"food_2"}` … 到 `food_5→food_6`；`food_6` 不写规则=封顶。价值曲线 `sell` 每级 ≈×2.2（往高合更划算）。
 
-## 3. 生成器 `generators.json`（→ `prefab-spawn`+`w1-random`+`clickable`+`f1-resource`·门控 G1）
+## 3. 生成器 `generators.json`（→ `prefab-spawn`+`w1-random`+`clickable`+`f1-resource`·门控 G1；`cooldownSec`→`timer-advance` G4）
 
 ```json
 [
   {
-    "id": "gen_grocery", "name": "食材袋", "energyCost": 1, "sprite": "gen_grocery",
+    "id": "gen_coffee", "name": "咖啡机", "energyCost": 1, "cooldownSec": 0, "sprite": "gen_coffee",
+    "dropTable": [ { "item": "coffee_1", "w": 65 }, { "item": "coffee_2", "w": 35 } ]
+  },
+  {
+    "id": "gen_fridge", "name": "冰箱", "energyCost": 1, "cooldownSec": 0, "sprite": "gen_fridge",
     "dropTable": [ { "item": "food_1", "w": 60 }, { "item": "food_2", "w": 30 }, { "item": "food_3", "w": 10 } ]
   },
   {
-    "id": "gen_fishbox", "name": "渔获箱", "energyCost": 1, "sprite": "gen_fishbox",
+    "id": "gen_fishbox", "name": "渔获箱", "energyCost": 1, "cooldownSec": 0, "sprite": "gen_fishbox",
     "dropTable": [ { "item": "fish_1", "w": 60 }, { "item": "fish_2", "w": 30 }, { "item": "fish_3", "w": 10 } ]
   },
   {
-    "id": "gen_toolbox", "name": "工具箱", "energyCost": 1, "sprite": "gen_toolbox",
+    "id": "gen_toolbox", "name": "工具箱", "energyCost": 1, "cooldownSec": 8, "sprite": "gen_toolbox",
     "dropTable": [ { "item": "tool_1", "w": 70 }, { "item": "tool_2", "w": 30 } ]
   }
 ]
 ```
-> 免体力生成器（M4·G4）追加 `"energyCost": 0, "capacity": 10, "regenSec": 30`（产能条）。`w` = 权重（种子 PRNG 加权抽样）。
+> `咖啡机/冰箱`=owner 举例。`cooldownSec`>0 = owner「生成器冷却 CD」：产出后冷却 N 秒才能再点（工具箱示例 8s·促碎片化）。免体力生成器（M4·G4）追加 `"energyCost": 0, "capacity": 10, "regenSec": 30`（产能条）。`w` = 权重（种子 PRNG 加权抽样）。
+
+## 3.5 泡泡 `bubbles.json`（owner「泡泡购买」·金币回收/变现·→ `resource-apply`+`f2-flag`+`clickable`·G3）
+
+```json
+{
+  "coinCostByLevel": { "1": 8, "2": 16, "3": 40, "4": 90, "5": 200 },
+  "note": "新产出物被临时泡泡包住=locked flag；点泡泡→按物品等级扣金币→清 flag（可合并/可拖）。金币不足=拒绝。这是官方金币回收出口。"
+}
+```
 
 ## 4. 体力 `energy.json`（→ `f1-resource`+`timer-advance`）
 
@@ -97,13 +121,21 @@
 
 ```json
 [
-  { "id": "o_pasta", "char": "sudarling", "needItem": "food_5", "qty": 1, "reward": { "coins": 90,  "energy": 0, "stars": 2 } },
-  { "id": "o_fish",  "char": "zhouhang",  "needItem": "fish_4", "qty": 1, "reward": { "coins": 45,  "energy": 5, "stars": 1 } },
-  { "id": "o_fix",   "char": "laochen",   "needItem": "tool_4", "qty": 1, "reward": { "coins": 60,  "energy": 0, "stars": 2 } },
-  { "id": "o_combo", "char": "ayana",     "needItem": "food_6", "qty": 1, "reward": { "coins": 200, "energy": 0, "stars": 3 } }
+  { "id": "o_latte", "char": "sudarling", "needItem": "coffee_4", "qty": 1, "reward": { "exp": 12, "coins": 70,  "energy": 0, "stars": 2 } },
+  { "id": "o_pasta", "char": "sudarling", "needItem": "food_5",   "qty": 1, "reward": { "exp": 15, "coins": 90,  "energy": 0, "stars": 2 } },
+  { "id": "o_fish",  "char": "zhouhang",  "needItem": "fish_4",   "qty": 1, "reward": { "exp": 8,  "coins": 45,  "energy": 5, "stars": 1 } },
+  { "id": "o_fix",   "char": "laochen",   "needItem": "tool_4",   "qty": 1, "reward": { "exp": 10, "coins": 60,  "energy": 0, "stars": 2 } },
+  { "id": "o_combo", "char": "ayana",     "needItem": "food_6",   "qty": 1, "reward": { "exp": 30, "coins": 200, "energy": 0, "stars": 3 } }
 ]
 ```
-> 交付=拖 needItem 到订单区消耗→按 reward 发奖（`effect-apply`）。订单随时刷新、可跳过。
+> 交付=拖 needItem 到订单区消耗→按 reward 发**经验+金币+星星(+能量)**（`effect-apply`）。经验累积升等级（见 §4.5）。订单随时刷新、可跳过。
+
+## 4.5 玩家等级 `levels.json`（经验→等级·→ `f1-resource`）
+
+```json
+{ "expToNext": "40 + level * 25", "unlocksByLevel": { "3": "gen_fishbox", "5": "gen_toolbox", "8": "board_expand_1" } }
+```
+> 订单产出经验；满级阈值解锁新生成器/扩板等（数据驱动·`event-when`/`effect-apply`）。
 
 ## 6. 剧情/天 `story.json`（→ `event-when`+`effect-apply`+`f2-flag`；演出走 `dialogue`）
 
@@ -126,7 +158,8 @@
 ```json
 [
   {
-    "id": "bar_fix", "scene": "restaurant", "name": "吧台",
+    "id": "bar_fix", "scene": "restaurant", "region": "前厅", "action": "fix", "costStars": 5,
+    "name": "吧台", "story": "script_day1_bar",
     "styles": [
       { "id": "wood",   "name": "温馨木质", "sprite": "reno_bar_wood" },
       { "id": "modern", "name": "现代简约", "sprite": "reno_bar_modern" },
@@ -136,6 +169,7 @@
   }
 ]
 ```
+> `action` ∈ 清洁 clean / 修复 fix / 装修 decorate（owner 三类动作）；破败建筑按 `region` 分多区域；`styles` = **3 选 1** 外观（owner·可回改 `changeable`）；花 `costStars` 完成 → 解锁 flag + 切皮肤 + 触发 `story` 一段主线剧情。
 
 ## 8. 剧情脚本 `dialogue/script_day1_end.json`（→ `dialogue`）
 

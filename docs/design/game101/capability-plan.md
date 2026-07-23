@@ -19,7 +19,7 @@ Merge-2 合并板 + 视觉小说剧情 Meta 的休闲复刻（对标 **Gossip Ha
 | `t2-drag-place` / `drop-zone` | 拖物到目标（合并落点 / 订单交付区） | ✅ 现有 |
 | `prefab-spawn` / `k1-spawn` | 生成器产出物品（prefab 展开·带 PrefabOrigin 戳供 merge-rule 计数） | ✅ 现有 |
 | `t2-clickable`（clickable） | 点击生成器 / 点破气泡 / 点交付 | ✅ 现有 |
-| `f1-resource` / `resource-apply` | 体力 / 金币 / 星星 / 宝石作为资源 + 增减 | ✅ 现有 |
+| `f1-resource` / `resource-apply` | 体力 / 金币 / 星星 / 宝石 / **经验（升等级）** 作为资源 + 增减；泡泡购买扣金币；订单发经验 | ✅ 现有 |
 | `e1-timer` / `timer-advance` | 体力按 tick 恢复（每 2min +1）；生成器冷却 / 免体力生成器产能条 | ✅ 现有 |
 | `w1-random`（种子 PRNG） | 生成器掉落表随机（**游戏层禁裸 Math.random**·REQ 硬线） | ✅ 现有 |
 | `t2-event-when`（event-when） | 触发器：订单可交付 / 剧情任务完成 / 装修节点满足 → 发信号 | ✅ 现有 |
@@ -39,17 +39,19 @@ Merge-2 合并板 + 视觉小说剧情 Meta 的休闲复刻（对标 **Gossip Ha
 |---|---|---|---|
 | G1 | **生成器点击的"耗体力→按掉落表产出"门控编排**：点击时若体力≥cost 则扣费并 `w1-random` 抽掉落表 → `prefab-spawn`；不足则拒绝 | `clickable`+`event-when`(条件:体力≥cost)+`effect-apply`(扣费)+`w1-random`+`prefab-spawn` 组合。若"条件门控扣费"表达不顺 → 下沉通用 `tap-cost-spawn` | ？ |
 | G2 | **订单交付 = 消耗棋盘上某模板的一个实例 → 发奖**（普查/消耗棋盘实例） | `drop-zone`+`craft-recipe`（消耗输入实例→产出资源增量）。需确认 craft-recipe 能消耗"带 PrefabOrigin 的棋盘实例"并产出"资源"。否则下沉通用 `order-fulfill` | ？ |
-| G3 | **气泡锁**：新产出物 locked，点击解锁后才可合并/拖动 | `f2-flag`(locked)+`clickable`(clear flag)。需确认 `merge-rule`/`drag-place` 尊重 locked flag（不合并/不可拖被锁物）。若不尊重 → 提 requests 让相关能力读该 flag | ？ |
-| G4 | **免体力生成器产能条**（capacity 自然恢复、耗尽停产） | `timer-advance`+`f1-resource`（把"产能"做成生成器局部资源）组合 | ？ |
+| G3 | **泡泡（气泡锁）金币购买**：新产出物 locked；点泡泡→**扣金币**（按等级 `bubbles.json`）→清锁才可合并/拖动（owner 金币回收出口） | `f2-flag`(locked)+`clickable`+`resource-apply`(扣金币·不足则拒)。需确认 `merge-rule`/`drag-place` 尊重 locked flag。若不尊重 → 提 requests 让相关能力读该 flag | ？ |
+| G4 | **生成器冷却 CD**（owner·产出后冷却 N 秒）+ **免体力生成器产能条**（capacity 自然恢复） | `timer-advance`（点击后置 CD·冷却中 `clickable` 拒绝）+`f1-resource`（把"产能"做成局部资源）。倾向组合表达；若"点击后置冷却门控"不顺 → 并入 G1 的 `tap-cost-spawn` 一并下沉 | ？ |
 
 ## 3. 摆成数据的规则面
 
 | 数据表 | 内容 | 谁解释它 |
 |---|---|---|
 | `MERGE_CHAINS`（每链每级一条 MergeRule need:2 into 次级） | 物品链（食材/渔获/工具/能量/货币…） | `t3-merge-rule`（不许游戏层自写合成解释器） |
-| `GENERATOR_CATALOG`（energyCost / dropTable / capacity?） | 生成器目录 | `prefab-spawn`+`w1-random`+`f1-resource`+`clickable`（G1 待裁） |
+| `GENERATOR_CATALOG`（energyCost / dropTable / cooldownSec / capacity?） | 生成器目录（含咖啡机/冰箱·CD） | `prefab-spawn`+`w1-random`+`f1-resource`+`clickable`+`timer-advance`（G1/G4 待裁） |
+| `BUBBLE_COST`（coinCostByLevel） | 泡泡金币购买价 | `resource-apply`+`f2-flag`+`clickable`（G3 待裁） |
+| `PLAYER_LEVELS`（expToNext / unlocksByLevel） | 经验升等级 + 解锁 | `f1-resource`+`event-when`+`effect-apply` |
 | `ENERGY_CONFIG`（cap=100 / regen=1 per 2min / sources） | 体力 | `f1-resource`+`timer-advance` |
-| `ORDER_CATALOG`（needItem / rewardCoins/Stars/Energy） | 角色气泡订单 | `event-when`+`effect-apply`（或 `craft-recipe`·G2 待裁） |
+| `ORDER_CATALOG`（needItem / reward: exp+coins+stars+energy） | 角色气泡订单 | `event-when`+`effect-apply`（或 `craft-recipe`·G2 待裁） |
 | `STORY_DAYS`（每 Day 任务清单：costStars / needItem → unlock） | 剧情任务 / Day 推进 | `event-when`+`effect-apply`+`f2-flag`（或 `craft-recipe`·G2 待裁） |
 | `DIALOGUE_SCRIPT`（说话人 / 立绘 / 表情 / 对白 / 可选二选一） | 视觉小说演出 | `dialogue` |
 | `RENOVATION_NODES`（costStars → unlock flag → 场景皮肤切换 / 风格可选） | 装修 Meta | `event-when`+`effect-apply`+`f2-flag`+ Sprite 皮肤槽 |

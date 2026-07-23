@@ -1,0 +1,41 @@
+# game101 · 原作参考（Gossip Harbor 截图与画面拆解）
+
+> 用途：给设计师/PE 的**原作对照参考**。本 session 的网络出口策略**拦截了 app 商店/维基/图片 CDN**（`apps.apple.com`/`play.google.com`/`*.mzstatic.com`/`static.wikia.nocookie.net`/`play-lh.googleusercontent.com` 均被网关 403），**无法把原作截图 PNG 拉进仓库**。故本档只留**官方看图入口 URL + 文字拆解**；截图请在无此策略的环境自行打开查看。
+> ⚠ 版权：Gossip Harbor 截图为 Microfun 版权物，**不入库**；我们只复刻机制、原创美术（换皮见 `gdd.md` §角色与世界观）。
+
+## 官方看图入口（自行打开）
+
+| 来源 | URL | 有什么 |
+|---|---|---|
+| Apple App Store | https://apps.apple.com/us/app/gossip-harbor-merge-story/id1623318294 | 官方竖屏预览图（合并板/订单/剧情/装修）|
+| Google Play | https://play.google.com/store/apps/details?id=com.mergegames.gossipharbor | 官方截图 + 预告视频 |
+| Fandom Wiki · Board | https://gossip-harbor.fandom.com/wiki/Board | 厨房板布局、生成器、格子说明 |
+| Fandom Wiki · Player Guide | https://gossip-harbor.fandom.com/wiki/Player_Guide | 能量/生成器/合成链细节 |
+| APKPure | https://apkpure.com/gossip-harbor-merge-story/com.mergegames.gossipharbor | 截图集 |
+
+## 真实画面拆解（据 WebSearch 调研·文字口径）
+
+> 用于校准我们的设计稿；数字/机制以研究口径为准，我们的换皮值见 `config-schema.md`。
+
+1. **厨房合并板（Kitchen Board）**：竖屏；**merge-2**（拖两个同物合成）。入口=界面**右下角"打蛋器+锅铲"图标**。生成器沿板边摆放、点击**耗能量**产出物品；棋盘格子有限=核心约束。产出物带**气泡锁**需点开。
+2. **订单（Kitchen Orders）**：把食材合成菜品（**咖啡 / 三明治 / 海鲜**等）交付顾客订单 → 推进剧情。订单以角色需求呈现。
+3. **能量**：黄色能量上限 **100**、每 **2 分钟 +1**；点生成器消耗；另有粉色能量供活动；中后期**果树**=免体力生成器。
+4. **剧情（Story）**：视觉小说式（立绘+对话）；主角 **Quinn**（单亲、离婚重建生活）；**餐厅"食物中毒"丑闻**→查真相/修复声誉/重开业。追剧式分章。
+5. **装修/装饰 Meta**：花星星做清洁/修复/装修动作，**每次 3 选 1 外观风格、可回改**；每片区域解锁新剧情。
+
+> **我方换皮口径（owner 2026-07-23）**：主线悬疑用**纵火案真相**（原作是"食物中毒"）+ 家族秘密 + 情感纠葛；生成器举例**咖啡机/冰箱**，链举例**咖啡豆→浓缩→拿铁**；泡泡=**金币购买打开**（金币回收出口）。详见 `brief.md` / `gdd.md`。
+
+## 与我方设计稿（S1 `mockups/merge-board.dc.html`）的对照
+
+| 原作特征 | 我方 S1 稿 | 状态 |
+|---|---|---|
+| 竖屏 merge-2 厨房板·生成器沿边·气泡锁 | 竖屏 7×7·食材袋/渔获箱/工具箱沿边·气泡锁物品 | ✅ 对齐 |
+| 顶部能量条(数值+恢复)·货币 | ⚡34/100+⏱倒计时·星/币/宝石胶囊 | ✅ 对齐 |
+| 底部/侧栏角色订单(需求物+奖励) | 底部横滑订单卡(头像+需求物+金币/星星/能量) | ✅ 对齐（原作订单位或在右侧，我方置底带·竖屏更顺手）|
+| 合成链：食材→菜品(咖啡/三明治/海鲜) | 食材/渔获/工具三链(config-schema) | ✅ 机制对齐·内容换皮 |
+| 剧情 VN·装修选风格 | S6 dialogue / S7 装修选风格(ui-brief) | 🟡 稿待出(P1) |
+| 右下"打蛋器+锅铲"板入口图标 | 我方底部导航用 🛒/🏠 等·**未含"切板入口"图标** | ⚠ 待定：单板起步无需切板；多板(厨房/事件)引入时补该入口 |
+
+## 待用户/无策略环境补充
+
+若需**逐屏像素级比对**（字号/间距/配色/图标位），请在可访问上述 URL 的环境截图后贴给我或放入 `mockups/refs/`，我据此把 `ui-brief.md` 的视觉规格对齐到原作（当前稿依机制+品类通用最佳实践搭建，非逐像素抄原作）。

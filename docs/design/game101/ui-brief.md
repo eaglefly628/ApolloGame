@@ -4,7 +4,7 @@
 > **视觉定稿 = claude designer 交付包**（`docs/design/game101/mockups/*.dc.html`·**1:1 复刻基准**；GD-101 收到后录入 + 写 `mockups/README.md` 编目 + ⚠口径警示表，冲突处一律以 `gdd.md`/`config-schema.md` 为准）。
 > **接线铁律**：M5 以 `.dc.html` 为 1:1 基准，但**全部元素映射现有 LayoutNode 闭集 + play-field 渲染组件，零新控件，禁止直接挪用 .dc.html 的 HTML/CSS/JS 代码**。缺控件走 `requests.md` 提 PUI。
 > **基线画布**：**竖屏 1080×1920（9:16）**，比例位铺（百分比锚点），非绝对像素；安全区上下各留 ~120px。
-> ⚠开放项：本品类天然竖屏；若平台出货线强制横屏（game-g 口径 1280×720），请标给 PUI 裁决后再定稿。
+> ✅ **朝向定稿**：owner 2026-07-23 拍板**竖屏 1080×1920**（不适配横屏·REQ-101-03 closed）。
 > 做 UI 前必读 `docs/design/ui-playbook.md` + `docs/playbooks/ui.md`；交付前过 `/check-ui` 四关。
 
 ---
@@ -67,7 +67,7 @@
 |---|---|---|---|
 | 顶带 HUD | 见 S4 | — | — |
 | 任务提示条 | Panel+Label+Gauge+Button | "第N天 · 进度"+整体进度条 | `open_tasks` |
-| 合并棋盘 | **play-field**（grid-drag-square 渲染层·非 LayoutNode） | 63/49 格·物品/生成器/气泡锁 | 拖动合并=field 手势；点生成器=`gen_tap(genId)`；点破泡=`pop_bubble(cell)`；长按=`sell_item(cell)` |
+| 合并棋盘 | **play-field**（grid-drag-square 渲染层·非 LayoutNode） | 49 格·物品/生成器（含**咖啡机/冰箱**·部分带**冷却 CD 环**）/**泡泡（带金币购买价签）** | 拖动合并=field 手势；点生成器=`gen_tap(genId)`（CD 中禁）；**点泡泡=`buy_bubble(cell)`（扣金币打开）**；长按=`sell_item(cell)` |
 | 订单栏 | 见 S3 | 横滑 2–4 角色卡 | 见 S3 |
 | 底部导航 | Panel+Button×4 | 菜单/任务/商店/活动·带红点 | `nav(menu/tasks/shop/events)` |
 
@@ -85,7 +85,7 @@
 
 | 元素 | 控件 | 内容/状态 | 写世界信号 |
 |---|---|---|---|
-| 订单卡 ×N（底部横滑） | Panel+Image(角色头像圆形)+Image(需求物)+Label(数量)+Image(奖励小图标·金币/星星/能量) | 可交付=高亮发光/加边框；缺物=灰态 | 点卡展开详情=`order_detail(id)` |
+| 订单卡 ×N（底部横滑） | Panel+Image(角色头像圆形)+Image(需求物)+Label(数量)+Image(奖励小图标·**经验/金币/星星/能量**) | 可交付=高亮发光/加边框；缺物=灰态 | 点卡展开详情=`order_detail(id)` |
 | 交付 | play-field 拖物到卡 / 卡上 Button | 拖 needItem 到订单区 | `deliver_order(orderId)` |
 | 交付成功 | Timeline fx | 物品飞入 + 奖励飞出到 HUD 对应资源位（juice.json `deliver`） | — |
 
