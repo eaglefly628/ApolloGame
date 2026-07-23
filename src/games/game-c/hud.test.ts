@@ -73,9 +73,9 @@ describe('game-c hud — LayoutNode 合法性（UI 铁律·闭集控件零发明
       for (const c of (n.children ?? []) as { id?: string; children?: unknown[] }[]) walk(c);
     };
     walk(table);
-    expect(ids.has('c-hero-panel')).toBe(true);   // 主角=底左面板（你&沈玉薇）
+    expect(ids.has('c-hero-panel')).toBe(true);   // 主角=底左面板（你&林晚）
     expect(ids.has('c-seat-0')).toBe(false);      // 主角不再是环桌席卡
-    expect(ids.has('c-partner')).toBe(true);      // 搭档沈玉薇旁白
+    expect(ids.has('c-partner')).toBe(true);      // 搭档林晚旁白
     for (const seat of [1, 2, 3]) { // 对面三座（左/中·主/右）·各带席卡 + 分层立绘框
       expect(ids.has(`c-seat-${seat}`)).toBe(true);
       expect(ids.has(`c-port-${seat}`)).toBe(true);

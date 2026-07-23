@@ -31,7 +31,7 @@ export interface TableView {
   lang: Lang; // 界面语言（owner 2026-07-20 中英切换·默认 en·宿主持久）
   playerCount: number; // 入局人数（剧情局=4·owner 2026-07-21 STORY-POKER V2 稿）
   street: Street; // 当前街（顶带「第 N 局 · 翻牌圈」）
-  partnerAdvice?: string; // 搭档沈玉薇旁白（手牌建议·advice_show）
+  partnerAdvice?: string; // 搭档林晚旁白（手牌建议·advice_show）
   blindLabel: string; handNo: number; pot: number;
   board: Card[]; heroHole: Card[]; heroHandName: string; // heroHandName=宿主已本地化的牌型显示名（现不显·保留供他用）
   heroBest?: Card[]; // 主角最优五张组合（bestOf7.best·高亮圈出用·owner 2026-07-21「高亮最大组合」）
@@ -754,7 +754,7 @@ function buildFinale(f: FinaleView, l: Lang): LayoutNode {
   return { type: 'Panel', id: 'c-fin-scrim', props: { bg: { custom: 'rgba(4,2,8,0.82)' } }, layout: { x: 0, y: 0, width: FIELD_W, height: FIELD_H, allowOverlap: true }, children: [card] };
 }
 
-// ── 主角一座（剧情局·底左「你 & 沈玉薇」面板·点开衣柜·轮到你=翠边发光）───────────────────────
+// ── 主角一座（剧情局·底左「你 & 林晚」面板·点开衣柜·轮到你=翠边发光）───────────────────────
 function buildHeroPanel(v: TableView): LayoutNode {
   const l = v.lang;
   const h = v.seats.find((s) => s.isHero)!;
@@ -782,7 +782,7 @@ function buildHeroPanel(v: TableView): LayoutNode {
   };
 }
 
-// ── 搭档旁白（剧情局·沈玉薇给手牌建议·advice_show）：头像 + 台词气泡 ────────────────────────────
+// ── 搭档旁白（剧情局·林晚给手牌建议·advice_show）：头像 + 台词气泡 ────────────────────────────
 function buildPartnerAdvice(v: TableView): LayoutNode {
   const l = v.lang;
   const pname = l === 'en' ? STORY_PARTNER.nameEn : STORY_PARTNER.name;

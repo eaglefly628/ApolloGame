@@ -112,7 +112,7 @@ export const SEAT_W = 150;
 export const SEAT_H = 86;
 
 // ── 剧情局 STORY-POKER V2（owner 2026-07-21·GD-C 稿「四人德州·剧情局」·完全复刻·docs/design/game-c/cloud-design/story-poker-v2-ref.png）──
-//   4 座：对面三座（左/中·主/右·各带分层立绘）+ 主角一座（你&沈玉薇·底左面板）。固定斜俯视·电影化场景。
+//   4 座：对面三座（左/中·主/右·各带分层立绘）+ 主角一座（你&林晚·底左面板）。固定斜俯视·电影化场景。
 //   位置 = 1280×720 px（席卡中心 / 立绘矩形中心+尺寸）。中座=剧情主角（恋爱线对象·立绘最大）。
 export interface StorySeatDef {
   seat: number; name: string; nameEn: string;
@@ -128,15 +128,16 @@ export const STORY_OPPONENTS: readonly StorySeatDef[] = [
   // owner 2026-07-21：立绘太大占满屏 → 缩小 40%（×0.6·中座 214×288→128×172·边座 186×252→112×150）。
   // owner 2026-07-22：对手底牌**贴紧各自席位**（在他面前呢面上·不再飘向桌心）——原位太靠中心与公共牌(x462-818/y320-410)重合。
   //   中座=席卡下方、公共牌之上的窄带(holeCy 288)；边座=席卡正下方、各自那一侧(holeCy 384·避开公共牌 x 带)。
-  // owner 2026-07-23 默认名定档：冷色长发→林曼笙（中·恋爱线主）、粉衣笑颜「三姨太」→顾念念（右）；左座谢经理保留（owner 未给第三名）。
+  // owner 2026-07-23 默认名定档（demo·三对手=三女主）：左=沈玉薇、中=林曼笙（冷色长发·恋爱线主）、右=顾念念（粉衣笑颜「三姨太」）。
+  //   （沈玉薇原拟主角队友，因 owner「三个人都用这三女主」→ 落对手左座；搭档旁白改回林晚避免同名重影·见 STORY_PARTNER。）
   // owner 2026-07-23 长方桌排位：中座=对面远边（不动）；左/右座立绘从顶角下移贴各自席卡上沿（portCy 130→175·portCx 对齐 cardCx）——
   //   长方桌比旧椭圆窄，立绘留在顶角会飘在暗边；下移后每位对手=「立绘+名牌」一体、坐在长方桌左/右长边。
   { seat: 1, name: '林曼笙', nameEn: 'Lin Mansheng', cardCx: 640, cardCy: 194, portCx: 640, portCy: 108, portW: 128, portH: 172, holeCx: 640, holeCy: 288, main: true }, // 中·主（恋爱线·冷色长发·远边·底牌在席卡下/公共牌上窄带）
-  { seat: 2, name: '谢经理', nameEn: 'Mgr. Xie', cardCx: 256, cardCy: 288, portCx: 256, portCy: 175, portW: 112, portH: 150, holeCx: 300, holeCy: 384 },              // 左长边（立绘贴名牌上沿·底牌贴左席下方·呢面左半）
+  { seat: 2, name: '沈玉薇', nameEn: 'Shen Yuwei', cardCx: 256, cardCy: 288, portCx: 256, portCy: 175, portW: 112, portH: 150, holeCx: 300, holeCy: 384 },              // 左长边（酒红旗袍·立绘贴名牌上沿·底牌贴左席下方·呢面左半）
   { seat: 3, name: '顾念念', nameEn: 'Gu Niannian', cardCx: 1024, cardCy: 288, portCx: 1024, portCy: 175, portW: 112, portH: 150, holeCx: 980, holeCy: 384 },          // 右长边（粉衣笑颜「三姨太」·立绘贴名牌上沿·底牌贴右席下方·呢面右半）
 ] as const;
-export const STORY_HERO = { name: '你 & 沈玉薇', nameEn: 'You & Shen Yuwei' };   // 主角一座（底左面板·队友=沈玉薇·酒红旗袍）
-export const STORY_PARTNER = { name: '沈玉薇', nameEn: 'Shen Yuwei' };            // 搭档旁白（队友·手牌建议 advice_show）
+export const STORY_HERO = { name: '你 & 林晚', nameEn: 'You & Linwan' };   // 主角一座（底左面板·搭档=林晚·三女主全落对手席）
+export const STORY_PARTNER = { name: '林晚', nameEn: 'Linwan' };            // 搭档旁白（手牌建议 advice_show·非三女主之一·避免与左座沈玉薇同名）
 
 /** 锚点 %（中心）→ 绝对定位左上角 px（1280×720 基准）。 */
 export function anchorTopLeft(a: SeatAnchor): { x: number; y: number } {
