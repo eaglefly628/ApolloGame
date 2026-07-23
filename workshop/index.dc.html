@@ -1335,7 +1335,17 @@ class Component extends DCLogic {
     if (provsEmpty && !this._provsLoading) {
       this._provsLoading = true;
       fetch('/api/assets/generate/providers').then(r => r.json())
-        .then(d => this.setState({ genProviders: (d && d.providers) || [] }))
+        .then(d => {
+          const provs = (d && d.providers) || [];
+          // 默认自动选一个「已配 key」的 2D 文生图 provider（owner 07-16：否则「自动」落到风格包默认通道·
+          // 若那个没配 key → 重新生成静默出 mock 噪声图。已配 key 的优先→直接出真图·省得每次手动点）。
+          const patch = { genProviders: provs };
+          if (!this.state.artProv) {
+            const keyed = provs.find(p => p.keyConfigured && (!p.kind || p.kind === 'texture')); // 2D 文生图=texture（对齐 artProvsArr·曾误写 'image' 永不匹配）
+            if (keyed) patch.artProv = keyed.id;
+          }
+          this.setState(patch);
+        })
         .catch(() => this.setState({ genProviders: [] }))
         .finally(() => { this._provsLoading = false; });
     }
