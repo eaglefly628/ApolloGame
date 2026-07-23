@@ -24,13 +24,14 @@
 | **台账号 / 状态** | `art-02` · `pending-art`（待真图·当前程序 SVG 占位） |
 | **消费槽 skinKey** | `game-a/bg/table`（`a-play` / `a-result` 屏满幅底图·`hud Screen.image`） |
 | **当前占位** | `bg/table.svg`（径向渐变 MANOR_BG #4a3020→#160e0a） |
-| **目标观感** | 深胡桃木夜宴私宅牌室·暖金顶光聚中心 + 虚化红灯笼/金饰散景 + 大理石地暖反光·**中心留空给牌桌**·深电影暗角；**虚化不抢桌面**（酒红桌 + UI 压在其上·环境只作氛围） |
+| **视角（关键）** | **俯视=正上方垂直往下看地面**（与桌面同机位·非平视墙面内景）——画的是**牌室地面**（大理石/木地板 + 地毯 + 地纹），**不是墙/灯笼/家具立面** |
+| **目标观感** | 俯视深胡桃木/大理石牌室**地面**·桌心暖金光池 + 四周淡雅地毯/金地纹 + 柔反光·**中心留空给牌桌**·四角压深暗角；**虚化不抢桌面**（酒红桌 + UI 压在其上·地面只作氛围） |
 | **尺寸** | 2560×1440 px（=屏 1280×720 的 2×·16:9 满幅）·**不透明**（满幅底图） |
 | **风格锚** | modern-manor 夜宴华贵·与 SC-1 主菜单同调 |
-| **Gen prompt（EN）** | luxurious chinese night-banquet private card room interior, dark mahogany wood-paneled walls, warm golden downlight pooling toward the center, softly blurred bokeh of hanging red lanterns and gold ornament, marble floor with faint warm reflections, empty darkened center reserved for the card table, deep cinematic vignette, atmospheric depth of field, moody and opulent, high resolution, painterly game background, no people |
-| **Gen prompt（CN）** | 掼蛋夜宴·私宅牌室内景·深胡桃木墙板 + 暖金顶光聚中心 + 虚化红灯笼/金饰散景 + 大理石地暖反光 + 中心留空给牌桌 + 深电影暗角·华贵夜宴调·高清·无人物 |
+| **Gen prompt（EN）** | top-down overhead view looking straight down at a luxurious chinese night-banquet card room floor, dark polished marble and mahogany wood flooring, warm golden light pool glowing at the center, faint ornamental rug and gold floor pattern around the edges, soft warm reflections, empty darkened center reserved for the card table, deep vignette toward the corners, moody opulent atmosphere, flat-lay top-down perspective, high resolution, painterly game background, no people, no furniture in center |
+| **Gen prompt（CN）** | 俯视（正上方垂直往下看）·掼蛋夜宴牌室地面·深色抛光大理石 + 胡桃木地板·桌心暖金光池·四周淡雅地毯/金地纹·柔反光·中心留空给牌桌·四角压深暗角·华贵夜宴调·平铺俯视·高清·无人物·中心无家具 |
 
-> **两图配合铁律**：牌室背景（bg/table·压深虚化）+ 桌面呢面（felt/table·酒红实体）分层——背景**别在中心画桌子/家具**（会和 felt 打架）；felt 透明桌外露出背景暗调即可。
+> **两图配合铁律**：**同一正上方俯视机位**——牌室地面（bg/table·俯视·压深虚化）+ 桌面呢面（felt/table·俯视·酒红实体）叠层，视角一致才不穿帮。背景**别画墙/灯笼/家具立面、别在中心画桌子**（会和 felt 打架且视角错）；felt 透明桌外露出地面暗调即可。
 
 ## 特效美术（owner 2026-07-22「特效需要的美术出美术台」·逐条评过）
 

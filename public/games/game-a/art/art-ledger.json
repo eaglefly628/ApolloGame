@@ -46,14 +46,14 @@
     },
     {
       "no": "art-02",
-      "desc": "牌桌场景背景·胡桃木牌室",
+      "desc": "牌桌场景背景·俯视胡桃木牌室地面",
       "kind": "sprite",
       "slot": {
         "entity": "bg/table",
         "component": "Image",
         "field": "src"
       },
-      "query": "luxurious chinese night-banquet private card room interior, dark mahogany wood-paneled walls, warm golden downlight pooling toward the center, softly blurred bokeh of hanging red lanterns and gold ornament, marble floor with faint warm reflections, empty darkened center reserved for the card table, deep cinematic vignette, atmospheric depth of field, moody and opulent, high resolution, painterly game background, no people",
+      "query": "top-down overhead view looking straight down at a luxurious chinese night-banquet card room floor, dark polished marble and mahogany wood flooring, warm golden light pool glowing at the center, faint ornamental rug and gold floor pattern around the edges, soft warm reflections, empty darkened center reserved for the card table, deep vignette toward the corners, moody opulent atmosphere, flat-lay top-down perspective, high resolution, painterly game background, no people, no furniture in center",
       "placeholder": {
         "current": "程序化径向渐变 SVG 占位（bg/table.svg·MANOR_BG #4a3020→#160e0a）——真高清牌室图待工坊生成替换",
         "source": "procedural",
@@ -67,7 +67,7 @@
         "h": 1440,
         "transparent": false
       },
-      "context": "game-a《掼蛋夜宴》SC-3/SC-4 牌桌满幅底图（felt 之下·牌室环境·**虚化不抢桌面**）·风格锚 modern-manor 夜宴华贵·与 SC-1 主菜单同调·**真高清牌室待工坊生成**（当前=程序 SVG 占位·真图入库即热替换）·P0",
+      "context": "game-a《掼蛋夜宴》SC-3/SC-4 牌桌满幅底图（felt 之下·牌室地面·**俯视视角**=与桌面同为正上方垂直俯视·虚化压深不抢桌面）·风格锚 modern-manor 夜宴华贵·**真高清俯视牌室地面待工坊生成**（当前=程序 SVG 占位·真图入库即热替换）·P0",
       "status": "pending-art",
       "gen": {
         "source": "procedural",
@@ -83,11 +83,11 @@
       "skinKey": "game-a/bg/table",
       "provenance": {
         "generator": "game-a-authored",
-        "prompt": "luxurious chinese night-banquet private card room interior, dark mahogany wood-paneled walls, warm golden downlight pooling toward the center, softly blurred bokeh of hanging red lanterns and gold ornament, marble floor with faint warm reflections, empty darkened center reserved for the card table, deep cinematic vignette, atmospheric depth of field, moody and opulent, high resolution, painterly game background, no people",
+        "prompt": "top-down overhead view looking straight down at a luxurious chinese night-banquet card room floor, dark polished marble and mahogany wood flooring, warm golden light pool glowing at the center, faint ornamental rug and gold floor pattern around the edges, soft warm reflections, empty darkened center reserved for the card table, deep vignette toward the corners, moody opulent atmosphere, flat-lay top-down perspective, high resolution, painterly game background, no people, no furniture in center",
         "model": "待工坊生成",
         "mock": false
       },
-      "prompt": "掼蛋夜宴·私宅牌室内景·深胡桃木墙板 + 暖金顶光聚中心 + 虚化红灯笼/金饰散景 + 大理石地暖反光 + 中心留空给牌桌 + 深电影暗角·华贵夜宴调·高清·无人物"
+      "prompt": "俯视（正上方垂直往下看）·掼蛋夜宴牌室地面·深色抛光大理石 + 胡桃木地板·桌心暖金光池·四周淡雅地毯/金地纹·柔反光·中心留空给牌桌·四角压深暗角·华贵夜宴调·平铺俯视·高清·无人物·中心无家具"
     },
     {
       "no": "art-03",
