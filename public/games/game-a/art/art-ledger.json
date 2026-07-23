@@ -53,7 +53,7 @@
         "component": "Image",
         "field": "src"
       },
-      "query": "top-down overhead view looking straight down at a luxurious chinese night-banquet card room floor, dark polished marble and mahogany wood flooring, warm golden light pool glowing at the center, faint ornamental rug and gold floor pattern around the edges, soft warm reflections, empty darkened center reserved for the card table, deep vignette toward the corners, moody opulent atmosphere, flat-lay top-down perspective, high resolution, painterly game background, no people, no furniture in center",
+      "query": "orthographic top-down view, directly overhead at 90 degrees, flat plan view, no perspective distortion, no tilt, no walls — luxurious chinese night-banquet card room floor, dark polished marble and mahogany wood flooring, warm golden light pool glowing at the center, faint ornamental rug and gold floor pattern around the edges, soft warm reflections, empty darkened center reserved for the card table, deep vignette toward the corners, moody opulent atmosphere, high resolution, painterly game background, no people, no furniture",
       "placeholder": {
         "current": "程序化径向渐变 SVG 占位（bg/table.svg·MANOR_BG #4a3020→#160e0a）——真高清牌室图待工坊生成替换",
         "source": "procedural",
@@ -83,11 +83,11 @@
       "skinKey": "game-a/bg/table",
       "provenance": {
         "generator": "game-a-authored",
-        "prompt": "top-down overhead view looking straight down at a luxurious chinese night-banquet card room floor, dark polished marble and mahogany wood flooring, warm golden light pool glowing at the center, faint ornamental rug and gold floor pattern around the edges, soft warm reflections, empty darkened center reserved for the card table, deep vignette toward the corners, moody opulent atmosphere, flat-lay top-down perspective, high resolution, painterly game background, no people, no furniture in center",
+        "prompt": "orthographic top-down view, directly overhead at 90 degrees, flat plan view, no perspective distortion, no tilt, no walls — luxurious chinese night-banquet card room floor, dark polished marble and mahogany wood flooring, warm golden light pool glowing at the center, faint ornamental rug and gold floor pattern around the edges, soft warm reflections, empty darkened center reserved for the card table, deep vignette toward the corners, moody opulent atmosphere, high resolution, painterly game background, no people, no furniture",
         "model": "待工坊生成",
         "mock": false
       },
-      "prompt": "俯视（正上方垂直往下看）·掼蛋夜宴牌室地面·深色抛光大理石 + 胡桃木地板·桌心暖金光池·四周淡雅地毯/金地纹·柔反光·中心留空给牌桌·四角压深暗角·华贵夜宴调·平铺俯视·高清·无人物·中心无家具"
+      "prompt": "顶视图（正上方垂直向下 90°·正交平面·无透视·无倾斜·无墙）·掼蛋夜宴牌室地面·深色抛光大理石 + 胡桃木地板·桌心暖金光池·四周淡雅地毯/金地纹·柔反光·中心留空给牌桌·四角压深·华贵夜宴调·高清·无人物"
     },
     {
       "no": "art-03",
@@ -98,7 +98,7 @@
         "component": "Image",
         "field": "src"
       },
-      "query": "top-down deep wine-red velvet felt card table surface, long rounded-rectangle shape, ornate thin gold trim following the rounded rectangle edge, soft warm central light pool, subtle plush velvet weave, luxurious chinese night-banquet mood, dark vignetted corners, transparent background outside the table, high resolution, clean game art",
+      "query": "orthographic top-down view, directly overhead, flat lay, no perspective, no tilt — deep wine-red velvet felt card table surface, long rounded-rectangle shape, ornate thin gold trim following the rounded-rectangle edge, soft warm central light pool, subtle plush velvet weave, luxurious chinese night-banquet mood, dark vignetted corners, transparent background outside the table, high resolution, clean game art",
       "placeholder": {
         "current": "程序化圆角矩形 SVG 占位（felt/table.svg·酒红径向渐变+桌心光池+细金边）——真高清图待工坊生成替换",
         "source": "procedural",
@@ -128,11 +128,11 @@
       "skinKey": "game-a/felt/table",
       "provenance": {
         "generator": "game-a-authored",
-        "prompt": "top-down deep wine-red velvet felt card table surface, long rounded-rectangle shape, ornate thin gold trim following the rounded rectangle edge, soft warm central light pool, subtle plush velvet weave, luxurious chinese night-banquet mood, dark vignetted corners, transparent background outside the table, high resolution, clean game art",
+        "prompt": "orthographic top-down view, directly overhead, flat lay, no perspective, no tilt — deep wine-red velvet felt card table surface, long rounded-rectangle shape, ornate thin gold trim following the rounded-rectangle edge, soft warm central light pool, subtle plush velvet weave, luxurious chinese night-banquet mood, dark vignetted corners, transparent background outside the table, high resolution, clean game art",
         "model": "待工坊生成",
         "mock": false
       },
-      "prompt": "掼蛋夜宴·长方形圆角呢桌面·酒红天鹅绒 + 细金边框（跟随圆角矩形）+ 桌心暖光池·俯视·透明背景·高清"
+      "prompt": "顶视图（正上方垂直向下·正交平铺·无透视·无倾斜）·掼蛋夜宴长方形圆角呢桌面·酒红天鹅绒 + 细金边框（跟随圆角矩形）+ 桌心暖光池·透明背景·高清"
     },
     {
       "no": "art-08",

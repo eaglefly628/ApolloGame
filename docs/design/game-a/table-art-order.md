@@ -3,6 +3,8 @@
 > owner 2026-07-22 拍板：牌桌面=**长方形圆角**（退 2D 长方桌）。本页=该桌面的美术生产单，供工坊/美术出真图。
 > 机读真相=`public/games/game-a/art/art-ledger.json`（本页人读摘要·数字/prompt 以台账为准）。
 > **接入铁律**：真图入库（工坊 art-replace 按 **skinKey** 写 `index.json` 别名·或落 servedPath）→ mount 期 `loadArtOverrides` 拉到 → 消费点热替换上画；**真图未到=程序 SVG 占位兜底永不丢**（观感零字节变化）。render-only·不进 sim/hash。
+>
+> **⚠ 视角铁律（owner 2026-07-22·踩过坑）**：桌面/背景**一律「顶视图」= 正上方垂直向下、正交投影、平铺、无透视、无倾斜**（AI 生图关键词用 **`orthographic top-down` / `directly overhead` / `flat lay` / `no perspective` / `顶视图`**）。**别用「俯视 / bird's-eye」**——那被理解成**斜角高视点（带透视）**，生出来会有墙面/立面/歪斜=乱。所有本页 prompt 已按此校准。
 
 ## 主体：桌面呢面（tabletop felt）
 
@@ -11,11 +13,12 @@
 | **台账号 / 状态** | `art-03` · `pending-art`（待真图·当前程序 SVG 占位） |
 | **消费槽 skinKey** | `game-a/felt/table`（`a-felt` 面板 bg·`theme.feltTexture()`） |
 | **当前占位** | `felt/table.svg`（圆角矩形·酒红径向渐变 + 桌心光池 + 细金边） |
+| **视角（关键）** | **顶视图**=正上方垂直向下·正交平铺·**无透视/无倾斜**（非「俯视」斜角） |
 | **目标观感** | 长方形圆角（rx≈28·对齐面板）酒红**天鹅绒**呢面 + 跟随圆角矩形的**细金边框** + 桌心暖光池；夜宴华贵·深压四角暗角·**桌外透明** |
 | **尺寸** | 1632×644 px（=面板 816×322 的 2×·长方比 2.53:1）·**透明 PNG** |
 | **风格锚** | modern-manor 夜宴华贵（非写实赌场）·压深让白扑克不刺眼（A-007） |
-| **Gen prompt（EN）** | top-down deep wine-red velvet felt card table surface, long rounded-rectangle shape, ornate thin gold trim following the rounded rectangle edge, soft warm central light pool, subtle plush velvet weave, luxurious chinese night-banquet mood, dark vignetted corners, transparent background outside the table, high resolution, clean game art |
-| **Gen prompt（CN）** | 掼蛋夜宴·长方形圆角呢桌面·酒红天鹅绒 + 细金边框（跟随圆角矩形）+ 桌心暖光池·俯视·透明背景·高清 |
+| **Gen prompt（EN）** | orthographic top-down view, directly overhead, flat lay, no perspective, no tilt — deep wine-red velvet felt card table surface, long rounded-rectangle shape, ornate thin gold trim following the rounded-rectangle edge, soft warm central light pool, subtle plush velvet weave, luxurious chinese night-banquet mood, dark vignetted corners, transparent background outside the table, high resolution, clean game art |
+| **Gen prompt（CN）** | 顶视图（正上方垂直向下·正交平铺·无透视·无倾斜）·掼蛋夜宴长方形圆角呢桌面·酒红天鹅绒 + 细金边框（跟随圆角矩形）+ 桌心暖光池·透明背景·高清 |
 
 ## 场景底：牌室背景（room behind·同屏·衬桌面）
 
@@ -24,14 +27,14 @@
 | **台账号 / 状态** | `art-02` · `pending-art`（待真图·当前程序 SVG 占位） |
 | **消费槽 skinKey** | `game-a/bg/table`（`a-play` / `a-result` 屏满幅底图·`hud Screen.image`） |
 | **当前占位** | `bg/table.svg`（径向渐变 MANOR_BG #4a3020→#160e0a） |
-| **视角（关键）** | **俯视=正上方垂直往下看地面**（与桌面同机位·非平视墙面内景）——画的是**牌室地面**（大理石/木地板 + 地毯 + 地纹），**不是墙/灯笼/家具立面** |
-| **目标观感** | 俯视深胡桃木/大理石牌室**地面**·桌心暖金光池 + 四周淡雅地毯/金地纹 + 柔反光·**中心留空给牌桌**·四角压深暗角；**虚化不抢桌面**（酒红桌 + UI 压在其上·地面只作氛围） |
+| **视角（关键）** | **顶视图=正上方垂直向下 90° 看地面**（正交·无透视/无倾斜·非「俯视」斜角）——画的是**牌室地面**（大理石/木地板 + 地毯 + 地纹），**不是墙/灯笼/家具立面** |
+| **目标观感** | 顶视深胡桃木/大理石牌室**地面**·桌心暖金光池 + 四周淡雅地毯/金地纹 + 柔反光·**中心留空给牌桌**·四角压深暗角；**虚化不抢桌面**（酒红桌 + UI 压在其上·地面只作氛围） |
 | **尺寸** | 2560×1440 px（=屏 1280×720 的 2×·16:9 满幅）·**不透明**（满幅底图） |
 | **风格锚** | modern-manor 夜宴华贵·与 SC-1 主菜单同调 |
-| **Gen prompt（EN）** | top-down overhead view looking straight down at a luxurious chinese night-banquet card room floor, dark polished marble and mahogany wood flooring, warm golden light pool glowing at the center, faint ornamental rug and gold floor pattern around the edges, soft warm reflections, empty darkened center reserved for the card table, deep vignette toward the corners, moody opulent atmosphere, flat-lay top-down perspective, high resolution, painterly game background, no people, no furniture in center |
-| **Gen prompt（CN）** | 俯视（正上方垂直往下看）·掼蛋夜宴牌室地面·深色抛光大理石 + 胡桃木地板·桌心暖金光池·四周淡雅地毯/金地纹·柔反光·中心留空给牌桌·四角压深暗角·华贵夜宴调·平铺俯视·高清·无人物·中心无家具 |
+| **Gen prompt（EN）** | orthographic top-down view, directly overhead at 90 degrees, flat plan view, no perspective distortion, no tilt, no walls — luxurious chinese night-banquet card room floor, dark polished marble and mahogany wood flooring, warm golden light pool glowing at the center, faint ornamental rug and gold floor pattern around the edges, soft warm reflections, empty darkened center reserved for the card table, deep vignette toward the corners, moody opulent atmosphere, high resolution, painterly game background, no people, no furniture |
+| **Gen prompt（CN）** | 顶视图（正上方垂直向下 90°·正交平面·无透视·无倾斜·无墙）·掼蛋夜宴牌室地面·深色抛光大理石 + 胡桃木地板·桌心暖金光池·四周淡雅地毯/金地纹·柔反光·中心留空给牌桌·四角压深·华贵夜宴调·高清·无人物 |
 
-> **两图配合铁律**：**同一正上方俯视机位**——牌室地面（bg/table·俯视·压深虚化）+ 桌面呢面（felt/table·俯视·酒红实体）叠层，视角一致才不穿帮。背景**别画墙/灯笼/家具立面、别在中心画桌子**（会和 felt 打架且视角错）；felt 透明桌外露出地面暗调即可。
+> **两图配合铁律**：**同一正上方顶视机位（正交·无透视）**——牌室地面（bg/table·顶视·压深虚化）+ 桌面呢面（felt/table·顶视·酒红实体）叠层，视角一致才不穿帮。背景**别画墙/灯笼/家具立面、别在中心画桌子**（会和 felt 打架且视角错）；felt 透明桌外露出地面暗调即可。
 
 ## 特效美术（owner 2026-07-22「特效需要的美术出美术台」·逐条评过）
 
