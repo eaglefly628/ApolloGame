@@ -101,6 +101,8 @@ function tableAvatar(m: MatchState, seat: number, lang: Lang): LayoutNode {
     ],
   };
   const tags: LayoutNode[] = [
+    // 親（庄家·连庄/加符权重）金光徽标（owner 2026-07-23·Tag 无 gold 档 → accent + glow 令其醒目区别他 tag）。
+    ...(seat === m.dealer ? [{ type: 'Tag' as const, id: `seat-${seat}-d`, props: { label: '親', tone: 'accent' as const, size: 'sm' as const }, layout: { fx: DORA_FX } }] : []),
     ...(active ? [{ type: 'Tag' as const, id: `seat-${seat}-t`, props: { label: t(lang, 'play.playing'), tone: 'accent' as const, size: 'sm' as const } }] : []),
     ...(m.cur.riichi[seat] ? [{ type: 'Tag' as const, id: `seat-${seat}-r`, props: { label: t(lang, 'play.riichiTag'), tone: 'accent' as const, size: 'sm' as const }, layout: { fx: RIICHI_FX } }] : []),
   ];
@@ -130,6 +132,7 @@ function playerBar(m: MatchState, lang: Lang): LayoutNode {
     layout: active ? { ...base, fx: ACTIVE_FX } : base,
     children: [
       { type: 'Tag', id: 'seat-0-w', props: { label: wind, tone: 'accent', size: 'sm' } },
+      ...(m.dealer === 0 ? [{ type: 'Tag' as const, id: 'seat-0-d', props: { label: '親', tone: 'accent' as const, size: 'sm' as const }, layout: { fx: DORA_FX } }] : []), // 主角当庄=親 金光徽标
       { type: 'Label', id: 'seat-0-n', props: { text: heroDisplay(lang, m.seatNames[0]!), size: 'sm', bold: true, color: 'text' }, layout: { flex: 1 } },
       ...(m.cur.riichi[0] ? [{ type: 'Tag' as const, id: 'seat-0-r', props: { label: t(lang, 'play.riichiTag'), tone: 'accent' as const, size: 'sm' as const }, layout: { fx: RIICHI_FX } }] : []),
       { type: 'Label', id: 'seat-0-s', props: { text: m.scores[0]!.toLocaleString('en-US'), size: 'sm', bold: true, color: 'gold' } },
@@ -161,7 +164,12 @@ function riverTiles(m: MatchState, seat: number): LayoutNode | null {
   return {
     type: 'Panel', id: `river-${seat}`, props: { bare: true },
     layout: { x: z.x + Math.round((z.w - gridW) / 2), y: z.y + Math.round((z.h - gridH) / 2), width: gridW, direction: 'grid', cols: z.cols, gap: RG },
-    children: show.map((c, i): LayoutNode => ({ type: 'Image', id: `river-${seat}-${i}`, props: { src: faceUrl(c), fit: 'contain' }, layout: { width: z.tw, height: z.th } })),
+    // owner 2026-07-23 动效：打出的牌落河带一下 pop。id 用**绝对牌序**（river.length-show.length+i·稳定键）→
+    // 只有刚打出的那张（各家河最新一张=新挂载元素）会真播 pop，旧牌复用不重播；窗口滑动也不误触（键随牌走）。
+    children: show.map((c, i): LayoutNode => {
+      const newest = i === show.length - 1;
+      return { type: 'Image', id: `river-${seat}-${river.length - show.length + i}`, props: { src: faceUrl(c), fit: 'contain' }, layout: { width: z.tw, height: z.th, ...(newest ? { fx: [{ kind: 'pop' as const }] } : {}) } };
+    }),
   };
 }
 function playField(m: MatchState, lang: Lang): LayoutNode[] {
@@ -249,7 +257,8 @@ function meldBlock(m: MatchState, seat: number, lang: Lang): LayoutNode | null {
     type: 'Panel', id: `melds-${seat}`, props: { bg: { custom: 'rgba(20,10,20,0.5)' } },
     layout: { x: pos.x, y: pos.y, direction: 'row', gap: 5, padding: 4, align: 'center' },
     children: melds.map((md, i): LayoutNode => ({
-      type: 'Panel', id: `meld-${seat}-${i}`, props: { bare: true }, layout: { direction: 'column', gap: 1, align: 'center' },
+      // owner 2026-07-23 动效：鸣牌（碰/吃/杠）副露亮相 pop——最新一副（刚鸣的=新挂载元素）真播 pop·旧副露复用不重播。
+      type: 'Panel', id: `meld-${seat}-${i}`, props: { bare: true }, layout: { direction: 'column', gap: 1, align: 'center', ...(i === melds.length - 1 ? { fx: [{ kind: 'pop' as const }] } : {}) },
       children: [
         {
           type: 'Panel', id: `meld-${seat}-${i}-t`, props: { bare: true }, layout: { direction: 'row', gap: 1, align: 'center' },
@@ -487,8 +496,15 @@ function resultOverlay(m: MatchState, lang: Lang): LayoutNode {
   const stripSum = (r.stripped ?? []).map((n, i) => (n > 0 ? fmtStrip(lang, heroDisplay(lang, m.seatNames[i]!), n, m.clothing[i]!, STRIP_ITEMS) : null)).filter(Boolean);
   if (stripSum.length) rows.push({ type: 'Label', id: 'res-strip', props: { text: `${fmtStripHead(lang)}${stripSum.join('　')}`, size: 'sm', color: 'danger' } });
   rows.push({
-    type: 'Panel', id: 'res-delta', props: { bare: true }, layout: { direction: 'column', gap: 2 },
-    children: r.delta.map((d, i): LayoutNode => ({ type: 'Label', id: `res-d-${i}`, props: { text: fmtDelta(lang, heroDisplay(lang, m.seatNames[i]!), d, m.scores[i]!), size: 'sm', color: d > 0 ? 'ok' : d < 0 ? 'danger' : 'sub' } })),
+    type: 'Panel', id: 'res-delta', props: { bare: true }, layout: { direction: 'column', gap: 2, align: 'center' },
+    // owner 2026-07-23 动效：点数变动=终值从旧点滚到新点（tween·结算更有戏）。头（名 ±变动 →）+ 滚动终点数。
+    children: r.delta.map((d, i): LayoutNode => ({
+      type: 'Panel', id: `res-d-${i}`, props: { bare: true }, layout: { direction: 'row', gap: 5, align: 'center', justify: 'center' },
+      children: [
+        { type: 'Label', id: `res-d-${i}-h`, props: { text: `${heroDisplay(lang, m.seatNames[i]!)}　${d >= 0 ? '+' : ''}${d}　→`, size: 'sm', color: d > 0 ? 'ok' : d < 0 ? 'danger' : 'sub' } },
+        { type: 'Label', id: `res-d-${i}-s`, props: { tween: { from: m.scores[i]! - d, to: m.scores[i]!, ms: 850 }, size: 'sm', bold: true, color: 'gold' } },
+      ],
+    })),
   });
   rows.push({ type: 'Button', id: 'res-next', props: { label: m.over ? t(lang, 'res.home') : t(lang, 'res.next'), kind: 'hero', action: m.over ? BACK_MENU : NEXT_ROUND } });
   return {
