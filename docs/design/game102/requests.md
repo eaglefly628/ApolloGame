@@ -7,10 +7,12 @@
 
 ## 待处理 / 进行中
 
-### REQ-G102-ADAPTER · 补 acceptance-adapter（S4 真门·GD 验收阻断）· [2026-07-24] · GD 验收发现 → **PE** · status: **open** · 优先级: P0 · 类型: 验收接线
-> **GD 验收实测（2026-07-24）**：`npx vite-node scripts/acceptance-run.mjs --game game102` → **FAIL·缺 `src/games/game102/acceptance-adapter.ts`**。→ GD 的 8 份验收剧本（`acceptance/01~08`）**跑不起来**，S4 玩法关**真门未过**（手册：PE 自写 walkthrough 只是下限·GD 剧本 conformance 才是 S4 完成证据）。
-> **要 PE 做**：落**薄适配器**（纯接线零规则）——动作词表（tapSupply/tapSupply:rainbow|chain/useSpecial:laser/aim/tapSlot/tick）→ 引擎 action 信号；机读态词表（remain.<color>/remain.total/keys/doorOpen/score/combo/conveyor.count/tray.count/flow）→ Resource/Flag/StringVar 投影（契约见 `acceptance/README.md`）。**不得改剧本**（剧本错=GD 改）。
-> **验收标准**：`acceptance-run.mjs --game game102` 全绿（8/8）；进 `scripts/acceptance.test.mjs` 推送门禁。剧本 03(钥匙门)/04(突破)/06~08(特殊炮) 依赖对应玩法落地——未落地的剧本先标 pending 不算红，但 01/02/05 应即刻能过。
+### REQ-G102-ADAPTER · S4 验收适配器（PE 落 adapter·剧本 schema 阻塞报 GD）· [2026-07-24] · GD 验收发现 → PE 落 → 回 GD · status: **in-review（阻塞在剧本 schema·待 GD 改）** · 优先级: P0 · 类型: 验收接线
+> **GD 验收实测**：`acceptance-run.mjs --game game102` → 原缺 `acceptance-adapter.ts`。**PE 已落**（下 ①），但暴露真阻塞在剧本 schema（②）。
+> **① adapter 已落**：`src/games/game102/acceptance-adapter.ts`（createWorld/applySignal/readWorld·纯接线零规则·不改剧本）。动作已接 `tapSupply:<color>`/`tapSlot:<i>`；投影已接 `remain.<color>`/`remain.total`/`conveyor.count`/`tray.count`/`score`/`combo`/`moves`/`flow`(StringVar 投自 GameFlow)。特殊炮 rainbow/chain/laser/aim + keys/doorOpen = REQ-G102-SPECIAL/关型后续（pending）。
+> **② 阻塞·剧本 schema 不符（剧本错=GD 改·PE 不改剧本铁律）**：`acceptance/01~08` 写成 `{level, steps:[{do,then,expect对象}]}` DSL，而 harness（`scripts/acceptance-schema.mjs`）只认 `{game, config, steps:[{signal}|{tick:N}|{expect:[{res,eq}]}]}`——8 份全报「坏剧本·schema」（缺 `game`、用 `level` 非 `config`、`do/then/expect对象` 非 `signal/tick/expect数组`）。**跑 `acceptance-run.mjs` 现零剧本可解析**（adapter 齐了也跑不了）。
+>   **请 GD**：把 8 份改成 harness schema（每步拆 `{signal:"tapSupply:blue"}`→`{tick:60}`→`{expect:[{res:"remain.blue",eq:0},…]}`·`level`→`config`·补 `game:"game102"`）；或经 Lead 裁 harness 扩展支持 README 的 DSL。PE 可提供转好格式的草案供 GD 审（不擅改）。
+> **③ 核心行为已按剧本确切数字自验**（walkthrough·`game102.walkthrough.test.ts`）：01 消色(remain.blue=0/red=1/total=1/score>0/playing) · 02 弹尽入槽(remain.blue=3/conveyor=0/tray=1)+点槽复用(→0/victory) · 05 判负(remain.blue=2/defeat)。剧本改成 harness 格式即可跑真 conformance（GD 二次对抗性验收）。
 
 ### REQ-G102-SPECIAL · 特殊炮三门（彩虹/连锁/激光）· [2026-07-24] · GD 提 → **PE** · status: **open** · 优先级: P1 · 类型: 玩法扩展
 > **spec**：`docs/design/game102/special-cannons.md`（owner 2026-07-24 拍板三选）。验收剧本 `acceptance/06~08`（GD 已出）。

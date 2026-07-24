@@ -23,7 +23,7 @@ import {
 } from '@skills/tier2/index.js';
 import { flowCapability, aggroCapability, prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
-  PALETTE, CELL_BIT, CANNON_BIT, KEY_BIT, BELT_BIT, TRAY_BIT, ZONE_BIT, FIRE, FIELD_W,
+  PALETTE, CELL_BIT, CANNON_BIT, KEY_BIT, BELT_BIT, TRAY_BIT, ZONE_BIT, FIRE, FIELD_W, CONFIG,
   PIPE, PICTURE, BOARD_PAD, BOARD_GAP, TRAY, SUPPLY, ACTION_BAR,
 } from './theme.js';
 import type { Level } from './levels.js';
@@ -75,7 +75,7 @@ function boardCells(level: Level): Record<string, EntityBlueprint> {
         Tag: { flags: pc.bit | CELL_BIT | (isKey ? KEY_BIT : 0) },
         Resource: { id: 'hp', current: hp, min: 0, max: hp },
         Color: col(pc.tint, 1),
-        Mortal: { resource: 'hp', atOrBelow: 0 }, // hp 归零→自毁（消除·被同色 zap 打掉）
+        Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: 'scoreblip' }, // hp 归零→消除 + 掉 scoreblip 计分
       };
     }
   }
@@ -211,6 +211,12 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
       Caster: { onSignal: 'tapSlot', at: 'self', template: `cannon_${name}` },
     } } };
   }
+  // 计分粒子：像素块消除时 Mortal 掉此件 → ResourceModify 全局 +SCORE_CLEAR → 1 拍后自毁。
+  templates['scoreblip'] = { entities: { s: {
+    Transform: XF(0, 0),
+    ResourceModify: { resourceId: 'score', amount: CONFIG.SCORE_CLEAR, scope: 'global' },
+    Timer: { id: 'life', elapsed: 0, duration: 1, loop: false },
+  } } };
   return { prefabs: { PrefabLibrary: { seq: 0, templates } } };
 }
 

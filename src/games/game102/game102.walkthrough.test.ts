@@ -13,6 +13,8 @@ const base = { conveyorCap: 5, burstCap: 10, slots: 5, beltSpeed: 95, stars: [0,
 const S01: Level = { no: 101, name: 's01', cols: 5, rows: 1, palette: ['blue', 'red'], ammo: 5, ...base, limit: { kind: 'moves', n: 3 }, goals: [{ kind: 'clear' }], seed: 20101, bitmap: ['000.1'] };
 // 剧本 02：6×1 · blue×6 · ammo3 · 弹尽入槽 + 点槽复用。
 const S02: Level = { no: 102, name: 's02', cols: 6, rows: 1, palette: ['blue'], ammo: 3, ...base, limit: { kind: 'moves', n: 5 }, goals: [{ kind: 'clear' }], seed: 20102, bitmap: ['000000'] };
+// 剧本 05：3×1 · blue×3 · ammo1 · moves1 → 只能消 1 · 剩 2 → 判负。
+const S05: Level = { no: 105, name: 's05', cols: 3, rows: 1, palette: ['blue'], ammo: 1, ...base, limit: { kind: 'moves', n: 1 }, goals: [{ kind: 'clear' }], seed: 20105, bitmap: ['000'] };
 
 function driven(level: Level) {
   const input = new QueuedInputSource('g102');
@@ -41,6 +43,7 @@ describe('Game 102 · Pixel Pour（S4 · 照验收剧本自验）', () => {
     expect(g.res('remain-blue')).toBe(0);
     expect(g.res('remain-red')).toBe(1);
     expect(g.res('remain-total')).toBe(1);
+    expect(g.res('score')).toBeGreaterThan(0);   // 消除计分（scoreblip·剧本01 score>0）
     expect(g.flow()).toBe('playing');
   });
 
@@ -75,6 +78,15 @@ describe('Game 102 · Pixel Pour（S4 · 照验收剧本自验）', () => {
     g.step(60);
     expect(g.res('remain-blue')).toBe(b0);
     expect(g.flow()).toBe('playing');
+  });
+
+  it('剧本05 限额判负：ammo1/moves1 只清 1 → remain.blue=2 → defeat', () => {
+    const g = driven(S05);
+    g.step(2);
+    g.tapSupply('blue');
+    g.step(60);
+    expect(g.res('remain-blue')).toBe(2);
+    expect(g.flow()).toBe('defeat');
   });
 
   it('确定性：同操作两次同 hash（lockstep-safe）', () => {
