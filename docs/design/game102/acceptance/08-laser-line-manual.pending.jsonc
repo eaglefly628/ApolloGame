@@ -1,0 +1,15 @@
+{
+  // PENDING · 依赖 REQ-G102-SPECIAL ③ 激光炮(手动 aim) + adapter useSpecial:laser/aim:col。落地后改名激活。
+  // 对抗目标：手动 aim / 清列 effect 失效 → 目标列同色不归零 / 误伤他列。
+  "name": "激光炮·手动瞄准清整列同色",
+  "game": "game102",
+  "seed": 20108,
+  "config": { "cols": 3, "rows": 3, "palette": ["blue", "red"], "ammo": 20,
+    "conveyorCap": 5, "burstCap": 10, "slots": 5, "beltSpeed": 95,
+    "limit": { "kind": "moves", "n": 5 }, "goals": [{ "kind": "clear" }],
+    "bitmap": ["101", "101", "101"], "grant": { "laser": 1 } },
+  "steps": [
+    { "tick": 2 }, { "signal": "useSpecial:laser" }, { "signal": "aim:col:1" }, { "tick": 10 },
+    { "expect": [ { "res": "remain.blue", "eq": 0 }, { "res": "remain.red", "eq": 6 }, { "sv": "flow", "eq": "playing" } ] }
+  ]
+}

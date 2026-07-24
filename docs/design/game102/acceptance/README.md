@@ -54,3 +54,11 @@
 ## 与八阶段的关系
 - 这 5 份是 **S4 玩法关机器门**的一部分（walkthrough vitest 绿 **+ 本剧本 conformance 绿**）。
 - 剧本作者=GD·harness 驱动真引擎·PE 只写适配器不改剧本（验收剧本循环律·CLAUDE.md）。
+
+---
+
+## 状态（2026-07-24 · GD 二次验收）
+
+- **剧本格式已修**（GD·剧本错=GD 改）：改为 harness 真 schema `{name,game,seed,config,steps:[{signal}|{tick}|{expect:[{res,eq/gte/lte}|{sv,eq}|{flag,eq}]}]}`；**断言 id 用 Resource.id 字段（点号）**——`remain.blue`/`remain.red`/`remain.total`/`conveyor.count`/`tray.count`/`score`/`combo`/`moves`·`sv:flow`（注意：实体 id 是连字符 `remain-blue`，harness 读的是 Resource.id 点号，勿混）。
+- **活跃 3 份·`acceptance-run.mjs --game game102` = PASS**：`01 基础消色` / `02 弹尽入槽+复用` / `05 限额判负`（满足 S4 门 ≥3 conformance 绿）。
+- **pending 5 份·`.pending.jsonc`（harness 不加载·转正=改回 `.scenario.jsonc`）**：`03 钥匙开门`（待关型 + adapter keys/doorOpen 投影）· `04 突破`（待 burst 容量切换）· `06 彩虹/07 连锁/08 激光`（待 REQ-G102-SPECIAL + adapter grant/tapSupply:rainbow|chain/useSpecial|aim）。各文件头注了依赖与激活方式。

@@ -1,0 +1,15 @@
+{
+  // PENDING · 依赖 REQ-G102-SPECIAL ① 彩虹炮(matchAny) + adapter grant/tapSupply:rainbow。落地后改名激活。
+  // 对抗目标：matchAny 失效（退化只打某单色）→ 另一色 remain 不降。
+  "name": "彩虹炮·命中任意色（百搭）",
+  "game": "game102",
+  "seed": 20106,
+  "config": { "cols": 4, "rows": 1, "palette": ["blue", "red"], "ammo": 20,
+    "conveyorCap": 5, "burstCap": 10, "slots": 5, "beltSpeed": 95,
+    "limit": { "kind": "moves", "n": 3 }, "goals": [{ "kind": "clear" }], "bitmap": ["0011"],
+    "grant": { "rainbow": 1 } },
+  "steps": [
+    { "tick": 2 }, { "signal": "tapSupply:rainbow" }, { "tick": 60 },
+    { "expect": [ { "res": "remain.blue", "eq": 0 }, { "res": "remain.red", "eq": 0 }, { "res": "remain.total", "eq": 0 }, { "sv": "flow", "eq": "victory" } ] }
+  ]
+}

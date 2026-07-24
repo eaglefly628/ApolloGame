@@ -1,0 +1,16 @@
+{
+  // PENDING · 依赖突破态 5→10 容量切换落地（+adapter 快连多发）。落地后改名 04-burst-over-cap.scenario.jsonc 激活。
+  // 对抗目标：突破态不切容量 → 第 6 发被卡在 cap=5·conveyor-count 停在 5。
+  "name": "快连突破容量 5→10",
+  "game": "game102",
+  "seed": 20104,
+  "config": { "cols": 12, "rows": 1, "palette": ["blue"], "ammo": 1,
+    "conveyorCap": 5, "burstCap": 10, "slots": 5, "beltSpeed": 20,
+    "limit": { "kind": "moves", "n": 12 }, "goals": [{ "kind": "clear" }], "bitmap": ["000000000000"] },
+  "steps": [
+    { "signal": "tapSupply:blue" }, { "signal": "tapSupply:blue" }, { "signal": "tapSupply:blue" },
+    { "signal": "tapSupply:blue" }, { "signal": "tapSupply:blue" }, { "signal": "tapSupply:blue" },
+    { "tick": 1 },
+    { "expect": [ { "res": "conveyor.count", "eq": 6 }, { "sv": "flow", "eq": "playing" } ] }
+  ]
+}

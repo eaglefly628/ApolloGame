@@ -1,0 +1,16 @@
+{
+  // PENDING · 依赖钥匙/宝箱门关型落地 + adapter 投影 keys(Resource)/doorOpen(Flag)。落地后改名激活。
+  // 对抗目标：钥匙不计数 / 门不判达标 → keys/doorOpen/victory 不成立。
+  "name": "钥匙收集 → 集齐开宝箱门 → 过关",
+  "game": "game102",
+  "seed": 20103,
+  "config": { "cols": 4, "rows": 1, "palette": ["blue"], "ammo": 5,
+    "conveyorCap": 5, "burstCap": 10, "slots": 5, "beltSpeed": 95,
+    "limit": { "kind": "moves", "n": 3 },
+    "goals": [{ "kind": "clear" }, { "kind": "keys", "n": 2 }, { "kind": "door", "needKeys": 2, "target": 100 }],
+    "bitmap": ["0.0."], "keys": [[0, 0], [2, 0]] },
+  "steps": [
+    { "tick": 2 }, { "signal": "tapSupply:blue" }, { "tick": 60 },
+    { "expect": [ { "res": "remain.blue", "eq": 0 }, { "res": "keys", "eq": 2 }, { "flag": "doorOpen", "eq": true }, { "sv": "flow", "eq": "victory" } ] }
+  ]
+}

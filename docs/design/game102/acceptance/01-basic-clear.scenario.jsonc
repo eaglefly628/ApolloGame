@@ -1,18 +1,22 @@
 {
+  // GD 验收剧本 01 · 基础消色（自动同色连喷）。规则 gdd §2.2/2.3·数字与 walkthrough 一致。
+  // 对抗目标：去同色过滤/launch 不触发 → remain-blue 不降。
   "name": "基础消色·自动同色连喷",
+  "game": "game102",
   "seed": 20101,
-  "gdd": "gdd.md §2.2/2.3 · pe-handoff.md §3.2",
-  "intent": "对抗目标：去掉『只打同色』过滤或 launch 不触发 → remain.blue 不下降；清空判定失效 → flow 不变",
-  "level": {
-    "cols": 5, "rows": 1,
-    "palette": ["blue", "red"],
-    "ammo": 5, "conveyorCap": 5, "burstCap": 10, "slots": 5, "beltSpeed": 95,
-    "limit": { "kind": "moves", "n": 3 },
-    "goals": [ { "kind": "clear" } ],
-    "bitmap": [ "000.1" ]              // 0=blue×3, .=空, 1=red×1
-  },
+  "config": { "cols": 5, "rows": 1, "palette": ["blue", "red"], "ammo": 5,
+    "conveyorCap": 5, "burstCap": 10, "slots": 5, "beltSpeed": 95,
+    "limit": { "kind": "moves", "n": 3 }, "goals": [{ "kind": "clear" }], "bitmap": ["000.1"] },
   "steps": [
-    { "do": ["tapSupply:blue"], "then": "tick:60",
-      "expect": { "remain.blue": 0, "remain.red": 1, "remain.total": 1, "flow": "playing", "score": ">0" } }
+    { "tick": 2 },
+    { "signal": "tapSupply:blue" },
+    { "tick": 60 },
+    { "expect": [
+      { "res": "remain.blue", "eq": 0 },
+      { "res": "remain.red", "eq": 1 },
+      { "res": "remain.total", "eq": 1 },
+      { "res": "score", "gte": 1 },
+      { "sv": "flow", "eq": "playing" }
+    ] }
   ]
 }

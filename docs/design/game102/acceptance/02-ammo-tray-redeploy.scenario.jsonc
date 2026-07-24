@@ -1,20 +1,27 @@
 {
+  // GD 验收剧本 02 · 弹尽入槽 + 点槽复用装填。对抗目标：弹尽不入 tray / 复用不装满 → 第二步不归零。
   "name": "弹尽入槽 + 点槽复用装填",
+  "game": "game102",
   "seed": 20102,
-  "gdd": "gdd.md §2.2/2.5 · pe-handoff.md §3.3",
-  "intent": "对抗目标：弹尽不入 tray / 复用不重装满 → 第二步 remain.blue 不归零、flow 不 victory",
-  "level": {
-    "cols": 6, "rows": 1,
-    "palette": ["blue"],
-    "ammo": 3, "conveyorCap": 5, "burstCap": 10, "slots": 5, "beltSpeed": 95,
-    "limit": { "kind": "moves", "n": 5 },
-    "goals": [ { "kind": "clear" } ],
-    "bitmap": [ "000000" ]            // blue×6
-  },
+  "config": { "cols": 6, "rows": 1, "palette": ["blue"], "ammo": 3,
+    "conveyorCap": 5, "burstCap": 10, "slots": 5, "beltSpeed": 95,
+    "limit": { "kind": "moves", "n": 5 }, "goals": [{ "kind": "clear" }], "bitmap": ["000000"] },
   "steps": [
-    { "do": ["tapSupply:blue"], "then": "tick:60",
-      "expect": { "remain.blue": 3, "tray.count": 1, "conveyor.count": 0, "flow": "playing" } },
-    { "do": ["tapSlot:0"], "then": "tick:60",
-      "expect": { "remain.blue": 0, "remain.total": 0, "flow": "victory" } }
+    { "tick": 2 },
+    { "signal": "tapSupply:blue" },
+    { "tick": 60 },
+    { "expect": [
+      { "res": "remain.blue", "eq": 3 },
+      { "res": "conveyor.count", "eq": 0 },
+      { "res": "tray.count", "eq": 1 },
+      { "sv": "flow", "eq": "playing" }
+    ] },
+    { "signal": "tapSlot:0" },
+    { "tick": 60 },
+    { "expect": [
+      { "res": "remain.blue", "eq": 0 },
+      { "res": "remain.total", "eq": 0 },
+      { "sv": "flow", "eq": "victory" }
+    ] }
   ]
 }
