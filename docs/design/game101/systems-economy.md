@@ -108,4 +108,4 @@
 
 - 数据字段并入 `config-schema.md`：`generators`(多链 dropTable + `charges`/`rechargeSec`/`mergeInto`) · `bubbles`(copyBubble: ttlSec/buyCost/expirePayout) · `orders`(orderRhythm 模板) · 新 `webbed.json`。
 - 缺口 **G5 order-director** 记 `capability-plan.md §2.5`（报 Lead）；G3/G4 注记扩 TTL/gem/charges。
-- **下一步（owner 若要）**：`economy-balance.md`——体力/金币**单日产耗比**数值平衡表（把上述漏斗的"公平版"锚点算出来）。
+- ✅ **已出 `economy-balance.md`**：体力/金币/星星/经验**单日产耗闭环** + 合成成本模型（taps→等级）+ KPI + 公平版 config 锚点。
