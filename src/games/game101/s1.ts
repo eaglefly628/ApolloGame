@@ -14,7 +14,7 @@ export function buildS1(): LayoutNode {
 
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
 export interface CellView { emoji: string; gen?: string; deliverable?: boolean }
-export interface OrderView { char: string; itemEmoji: string; coins: number; deliverable: boolean }
+export interface OrderView { char: string; itemEmoji: string; coins: number; stars: number; deliverable: boolean }
 export interface S1State {
   energy: number; coins: number; gems: number; level: number;
   cells: (CellView | null)[]; orders: OrderView[];
@@ -66,23 +66,33 @@ function orders(s: S1State): N {
     type: 'Panel', id: 'orders', props: { bare: true },
     layout: { direction: 'row', align: 'stretch', justify: 'between', gap: 8, padding: 8 },
     children: s.orders.map((o, i) => ({
-      type: 'Panel', id: `ord-${i}`, props: { bg: o.deliverable ? 'ok' : 'panel' },
-      layout: { direction: 'column', align: 'center', gap: 3, padding: 8, radius: 16, flex: 1 },
+      type: 'Panel', id: `ord-${i}`, props: { bg: 'panel' },
+      layout: { direction: 'column', align: 'center', justify: 'between', gap: 6, padding: 10, radius: 18, flex: 1 },
       children: [
         {
           type: 'Panel', id: `ord-${i}-top`, props: { bare: true },
-          layout: { direction: 'row', align: 'center', justify: 'between', gap: 6 },
+          layout: { direction: 'row', align: 'center', gap: 8 },
           children: [
-            { type: 'Avatar', id: `ord-${i}-av`, props: { name: o.char, size: 44, shape: 'rounded' } },
-            ...(o.deliverable ? [{ type: 'Badge', id: `ord-${i}-ok`, props: { text: '✓ 可交付', tone: 'ok' } } as N] : []),
+            { type: 'Avatar', id: `ord-${i}-av`, props: { name: o.char, size: 52, shape: 'circle' } },
+            { type: 'Label', id: `ord-${i}-nm`, props: { text: o.char, size: 'sm', bold: true } },
           ],
         },
         {
           type: 'Panel', id: `ord-${i}-plate`, props: { bg: 'raised' },
-          layout: { direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 8, radius: 14 },
+          layout: { direction: 'column', align: 'center', justify: 'center', gap: 4, padding: 10, radius: 16, flex: 1 },
           children: [
-            { type: 'Label', id: `ord-${i}-it`, props: { text: o.itemEmoji, size: 44 } }, // 大·需求物看得清
-            { type: 'Badge', id: `ord-${i}-rw`, props: { text: `🪙${o.coins}`, tone: 'warn' } },
+            { type: 'Label', id: `ord-${i}-it`, props: { text: o.itemEmoji, size: 56 } }, // 大·需求物看得清
+            o.deliverable
+              ? { type: 'Badge', id: `ord-${i}-ok`, props: { text: '✓ 可交付', tone: 'warn' } } as N
+              : { type: 'Label', id: `ord-${i}-hint`, props: { text: '需要', size: 'xs', color: 'dim' } } as N,
+          ],
+        },
+        {
+          type: 'Panel', id: `ord-${i}-rw`, props: { bare: true },
+          layout: { direction: 'row', align: 'center', justify: 'center', gap: 8 },
+          children: [
+            { type: 'Badge', id: `ord-${i}-rc`, props: { text: `🪙${o.coins}`, tone: 'warn' } },
+            ...(o.stars > 0 ? [{ type: 'Badge', id: `ord-${i}-rs`, props: { text: `⭐${o.stars}`, tone: 'ok' } } as N] : []),
           ],
         },
       ],
@@ -101,17 +111,17 @@ function board(s: S1State): N {
     return {
       type: 'Panel', id: `t-live-${i}`,
       props: cv?.gen ? { bg: { custom: GEN_BG }, action: `tap_${cv.gen}` } : { bg: { custom: CELL_BG } },
-      layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 16, height: 150 },
+      layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 16, height: 168 },
       children: kids,
     } as N;
   });
   return {
     type: 'Panel', id: 'board', props: { bg: { custom: FRAME } },
-    layout: { direction: 'column', gap: 0, padding: 10, radius: 22 },
+    layout: { direction: 'column', gap: 0, padding: 10, radius: 22, flex: 1 },
     children: [
       {
         type: 'Panel', id: 'board-well', props: { bg: { custom: WELL } },
-        layout: { direction: 'grid', cols: GAME.board.cols, gap: 6, padding: 8, radius: 16 },
+        layout: { direction: 'grid', cols: GAME.board.cols, gap: 6, padding: 8, radius: 16, flex: 1 },
         children: cells,
       },
     ],

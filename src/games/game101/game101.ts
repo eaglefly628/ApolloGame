@@ -57,7 +57,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     const need = new Set(ORDERS.filter((o) => onBoard.has(o.needItem)).map((o) => o.needItem));
     for (let i = 0; i < cells.length; i++) if (cells[i] && cellTpl[i] && need.has(cellTpl[i]!)) cells[i]!.deliverable = true;
     const orders: OrderView[] = ORDERS.map((o) => ({
-      char: o.char, itemEmoji: ITEM_EMOJI[o.needItem] ?? '❓', coins: o.reward.coins, deliverable: onBoard.has(o.needItem),
+      char: o.char, itemEmoji: ITEM_EMOJI[o.needItem] ?? '❓', coins: o.reward.coins, stars: o.reward.stars ?? 0, deliverable: onBoard.has(o.needItem),
     }));
     return { energy: res(RES.energy), coins: res(RES.coins), gems: 8, level: 12, cells, orders };
   }

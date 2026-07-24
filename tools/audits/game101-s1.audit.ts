@@ -11,10 +11,10 @@ cells[7] = { emoji: '🍅' }; cells[8] = { emoji: '🥗', deliverable: true };
 const state: S1State = {
   energy: 34, coins: 305, gems: 8, level: 12, cells,
   orders: [
-    { char: '周航', itemEmoji: '🥗', coins: 44, deliverable: true },
-    { char: '老陈', itemEmoji: '🐠', coins: 38, deliverable: false },
-    { char: '苏晴', itemEmoji: '☕', coins: 178, deliverable: false },
-    { char: '阿雅', itemEmoji: '🔧', coins: 88, deliverable: false },
+    { char: '周航', itemEmoji: '🥗', coins: 44, stars: 2, deliverable: true },
+    { char: '老陈', itemEmoji: '🐠', coins: 38, stars: 0, deliverable: false },
+    { char: '苏晴', itemEmoji: '☕', coins: 178, stars: 3, deliverable: false },
+    { char: '阿雅', itemEmoji: '🔧', coins: 88, stars: 1, deliverable: false },
   ],
 };
 mountUI(document.getElementById('root')!, buildS1Live(state), {}, GAME101_THEME);

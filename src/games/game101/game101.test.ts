@@ -119,7 +119,7 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     const cells = new Array(63).fill(null);
     cells[0] = { emoji: '🧊', gen: 'gen_fridge' };
     cells[8] = { emoji: '🥗', deliverable: true };
-    const live = buildS1Live({ energy: 34, coins: 305, gems: 8, level: 12, cells, orders: [{ char: '周航', itemEmoji: '🥗', coins: 44, deliverable: true }, { char: '老陈', itemEmoji: '🐠', coins: 38, deliverable: false }] });
+    const live = buildS1Live({ energy: 34, coins: 305, gems: 8, level: 12, cells, orders: [{ char: '周航', itemEmoji: '🥗', coins: 44, stars: 2, deliverable: true }, { char: '老陈', itemEmoji: '🐠', coins: 38, stars: 0, deliverable: false }] });
     expect(live.type).toBe('Screen');
     expect(validateLayoutNode(live)).toEqual([]);
   });
