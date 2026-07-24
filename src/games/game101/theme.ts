@@ -12,6 +12,7 @@ import gameCfg from './config/game.json';
 import chainsCfg from './config/chains.json';
 import energyCfg from './config/energy.json';
 import generatorsCfg from './config/generators.json';
+import ordersCfg from './config/orders.json';
 
 // ── 类型（config 结构的 TS 视图·只读）─────────────────────────────────────────
 export interface ChainLevel { lvl: number; item: string; name: string; sell: number; sprite: string }
@@ -22,10 +23,16 @@ export interface GeneratorDef {
   sprite: string; cell: number; emoji: string; dropTable: { item: string; w: number }[];
 }
 
+export interface OrderDef {
+  id: string; char: string; needItem: string; qty: number;
+  reward: { coins: number; exp?: number; stars?: number };
+}
+
 export const GAME = gameCfg;
 export const CHAINS = chainsCfg as Chain[];
 export const ENERGY = energyCfg;
 export const GENERATORS = generatorsCfg as GeneratorDef[];
+export const ORDERS = ordersCfg as OrderDef[];
 
 // 生成器固定产出（weighted-spawn 缓建前）：取掉落表首项（最高权重档）。weighted-spawn 落地后改吃全表。
 export function generatorOutput(g: GeneratorDef): string { return g.dropTable[0].item; }

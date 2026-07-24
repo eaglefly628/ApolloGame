@@ -12,9 +12,9 @@ import { mountUI } from '@ui/components/index.js';
 import type { HandlerMap, MountHandle } from '@ui/components/index.js';
 import type { Resource, PrefabOrigin, Transform, MergeDrop } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
-import { buildS1Live, type S1State, type CellView } from './s1.js';
+import { buildS1Live, type S1State, type CellView, type OrderView } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';
-import { GAME, RES, GENERATORS, ITEM_EMOJI, cellIndexOf, cellCenter } from './theme.js';
+import { GAME, RES, GENERATORS, ORDERS, ITEM_EMOJI, cellIndexOf, cellCenter } from './theme.js';
 
 const GEN_CELLS = new Set(GENERATORS.map((g) => g.cell));
 
@@ -43,14 +43,23 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     const cells: (CellView | null)[] = new Array(GAME.board.cols * GAME.board.rows).fill(null);
     cellEntity.fill(null);
     for (const g of GENERATORS) cells[g.cell] = { emoji: g.emoji, gen: g.id };
+    const onBoard = new Set<string>(); // 板上现有的物品模板集（订单可交付判定）
+    const cellTpl: (string | null)[] = new Array(cells.length).fill(null);
     for (const [eid] of w.query('PrefabOrigin')) {
       const po = w.getComponent<PrefabOrigin>(eid, 'PrefabOrigin');
       const t = w.getComponent<Transform>(eid, 'Transform');
       if (!po || !t) continue;
+      onBoard.add(po.templateId);
       const idx = cellIndexOf(t.x, t.y);
-      if (idx >= 0 && !cells[idx]) { cells[idx] = { emoji: ITEM_EMOJI[po.templateId] ?? '❓' }; cellEntity[idx] = eid; }
+      if (idx >= 0 && !cells[idx]) { cells[idx] = { emoji: ITEM_EMOJI[po.templateId] ?? '❓' }; cellEntity[idx] = eid; cellTpl[idx] = po.templateId; }
     }
-    return { energy: res(RES.energy), coins: res(RES.coins), cells };
+    // 订单可交付 = 板上有该 needItem；对应板格标✓。
+    const need = new Set(ORDERS.filter((o) => onBoard.has(o.needItem)).map((o) => o.needItem));
+    for (let i = 0; i < cells.length; i++) if (cells[i] && cellTpl[i] && need.has(cellTpl[i]!)) cells[i]!.deliverable = true;
+    const orders: OrderView[] = ORDERS.map((o) => ({
+      char: o.char, itemEmoji: ITEM_EMOJI[o.needItem] ?? '❓', coins: o.reward.coins, deliverable: onBoard.has(o.needItem),
+    }));
+    return { energy: res(RES.energy), coins: res(RES.coins), gems: 8, level: 12, cells, orders };
   }
 
   // ── 拖拽合并（宿主手势 → MergeDrop 意图 → merge-on-place 引擎裁决）──────────────
@@ -91,7 +100,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   let lastSig = '';
   const unsub = engine.subscribe(() => {
     const st = readState();
-    const sig = `${Math.round(st.energy)}|${Math.round(st.coins)}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '')).join(',')}`;
+    const sig = `${Math.round(st.energy)}|${Math.round(st.coins)}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '')).join(',')}|${st.orders.map((o) => o.deliverable ? '1' : '0').join('')}`;
     if (sig !== lastSig) { lastSig = sig; ui.update(buildS1Live(st), GAME101_THEME); }
   });
 
