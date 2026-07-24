@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { applyCommands, QueuedInputSource } from '@net/index.js';
-import type { Resource, Transform } from '@engine/protocol/components.js';
+import type { Resource, Transform, GameFlow } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { LEVEL_1 } from './levels.js';
 
@@ -61,6 +61,16 @@ describe('Game 102 · Pixel Pour（S4 玩法关 · 点炮开火消色）', () =>
     click(x, y);
     step(80);
     expect(remain(e, 'red')).toBe(red0);               // 红格不受绿炮影响
+  });
+
+  it('通关：点齐所有颜色炮 → 清空整幅像素画 → flow 到 victory（可完成的游戏）', () => {
+    const { e, click, step } = driven();
+    step(2);
+    for (const name of LEVEL_1.palette) { const t = e.world.getComponent<Transform>(`cannon-${name}`, 'Transform')!; click(t.x, t.y); }
+    step(700);                                         // 全色连喷清盘
+    expect(remain(e, 'green')).toBe(0);                // 主色清空
+    expect(e.world.getComponent<Resource>('cells-total', 'Resource')?.current ?? -1).toBe(0); // 全盘清空
+    expect(e.world.getComponent<GameFlow>('flow', 'GameFlow')?.current).toBe('victory');       // 通关
   });
 
   it('确定性：同操作两次跑出同 hash（lockstep-safe）', () => {

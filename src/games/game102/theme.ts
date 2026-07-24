@@ -30,10 +30,10 @@ export const ZONE_BIT   = 1 << 0;  // 命中判定区标记 = 引擎 trigger-zon
 
 // ── 开火节拍（S4 玩法·全 config·数据驱动）──────────────────────────────────
 export const FIRE = {
-  reload: 6,        // 装填 tick（每 6 tick 喷一发·连喷手感）
+  reload: 3,        // 装填 tick（每 3 tick 喷一发·连喷手感）
   sightRadius: 0,   // 0 = 无限视野（整幅画内任意同色格皆可索敌）
-  zapRadius: 14,    // 命中判定区半径（覆盖一格·确保 overlap 命中）
-  zapLife: 6,       // 命中区兜底回收 tick
+  zapRadius: 26,    // 命中判定区半径（~1.5 格·AOE 一发清同色小簇·像"倒一摊颜料"）
+  zapLife: 4,       // 命中区兜底回收 tick
 } as const;
 
 // ── play-field 尺寸 = design-ref 定尺舞台 650×1424（1:1 复刻基准·mountHost 等比信箱缩放到设备）──

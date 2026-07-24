@@ -24,7 +24,7 @@ import {
 } from '@skills/tier2/index.js';
 import { flowCapability, aggroCapability, prefabCapability } from '@skills/tier3/index.js';
 import {
-  PALETTE, CELL_BIT, CANNON_BIT, KEY_BIT, ZONE_BIT, FIRE,
+  PALETTE, CELL_BIT, CANNON_BIT, KEY_BIT, ZONE_BIT, FIRE, FIELD_W,
   PIPE, PICTURE, BOARD_PAD, BOARD_GAP, CONVEYOR, TRAY, SUPPLY, ACTION_BAR,
 } from './theme.js';
 import type { Level } from './levels.js';
@@ -124,13 +124,15 @@ function colorCounters(level: Level): Record<string, EntityBlueprint> {
 function supplies(level: Level): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   const { colLeft, w, h, frontTop, midTop, backTop } = SUPPLY;
-  // 前排（可点开火·每列一色·index 对齐 palette·超出列数则循环取色）。
+  // 前排：**每个 palette 色一门可点炮**（全色可清→棋盘可完全清空→可通关）。沿补给行等距铺开。
   // 点炮 → 置 firing_<color> 旗 → SelfRule 每 reload 拍向最近同色格 spawn 命中区 zap（game-q 塔开火同构）。
   // Tag **不带色位**（否则 Perception 会把补给炮当同色目标·自打自）——只有棋盘格带色位。
-  colLeft.forEach((lx, i) => {
-    const name = level.palette[i % level.palette.length];
+  const n = level.palette.length;
+  const spanL = 40, spanR = FIELD_W - 40 - w;
+  level.palette.forEach((name, i) => {
     const pc = PALETTE[name];
     if (!pc) return;
+    const lx = n > 1 ? Math.round(spanL + (spanR - spanL) * (i / (n - 1))) : spanL;
     out[`cannon-${name}`] = {
       Transform: XF(lx + w / 2, frontTop + h / 2),
       Shape: box(w - 8, h - 8),
@@ -176,7 +178,8 @@ function zapTemplate(pc: typeof PALETTE[string]): { entities: Record<string, Rec
         Color: col(pc.tint, 0),
         Sensor: {},
         Tag: { flags: ZONE_BIT },
-        Hitbox: { resource: 'hp', amount: 1, targetMask: pc.bit | CELL_BIT, consumeOnHit: true },
+        // consumeOnHit:false → AOE fan-out：一发命中区把半径内**所有同色格**一起消除（倒色成簇·非单格点射）。
+        Hitbox: { resource: 'hp', amount: 1, targetMask: pc.bit | CELL_BIT, consumeOnHit: false },
         Timer: { id: 'life', elapsed: 0, duration: FIRE.zapLife, loop: false },
       },
     },
@@ -240,13 +243,20 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
         capacity: level.slots, requiredTag: CANNON_BIT,
       },
     },
-    // 关卡流程状态机。
+    // 全盘像素块计数（→ cells_left·驱动通关判定）。
+    'cells-total': {
+      GroupCount: { countResource: 'cells_left', requiredTag: CELL_BIT },
+      Resource: { id: 'cells_left', current: 0, min: 0, max: 99999 },
+    },
+    // 关卡流程状态机：清空全部像素块 → 通关（cells_left 首拍=0 是"未填充"假象·故 after≥2 拍再判）。
     flow: {
       GameFlow: {
         id: 'main',
         current: 'playing',
         states: [
-          { id: 'playing', transitions: [] },
+          { id: 'playing', transitions: [
+            { when: { kind: 'resource', id: 'cells_left', cmp: 'lte', value: 0 }, after: 2, to: 'victory' },
+          ] },
           { id: 'victory' },
           { id: 'defeat' },
         ],
