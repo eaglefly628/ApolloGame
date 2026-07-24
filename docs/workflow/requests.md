@@ -20,7 +20,8 @@
 > - **pull 吸附（进化 黑洞脉冲）**：`t2-steering` 是「自身朝/离目标」·无「把一群他者拉向锚点」（作用对象相反）。裁：敌临时挂 seek 指黑洞锚点重组 / 下沉 `pull-field`。
 > 撞墙实证＝`src/games/game-103/`（M2 六武器 straight/nova/beam/boomerang/orbit/pet 已落·这 3 类射法表达不了）。
 
-### REQ-SURVIVOR群体-大规模敌群「分离避让 + 2D 批绘」（幸存者/RTS/crowd 通用）· [2026-07-24] · GD-103 升级（owner 试玩 v1 BUG-02/05）→ Lead/P3D 裁 · status: open · 优先级: P1（game-103 核心手感+性能·非全库阻断） · 类型: 引擎能力缺口（steering 群体 + renderer 2D 批绘）
+### REQ-SURVIVOR群体-大规模敌群「分离避让 + 2D 批绘」（幸存者/RTS/crowd 通用）· [2026-07-24] · GD-103 升级（owner 试玩 v1 BUG-02/05）→ Lead/P3D 裁 · status: **拆路（owner 2026-07-24）：①群体分离=主程引擎 open·②渲染效率=转 P3D 池 `REQ-3D-RENDER-EFFICIENCY`（owner 优先·先做）** · 优先级: P1（game-103 核心手感+性能·非全库阻断） · 类型: 引擎能力缺口（steering 群体 + renderer 2D 批绘）
+> **拆路（owner 2026-07-24「先把渲染效率提高」）**：**②2D 批绘/渲染半场已移入 P3D 池 `REQ-3D-RENDER-EFFICIENCY`（P1·owner 优先）**——本单只留 **①群体分离/避让（主程引擎 steering 域·open·待建）**。
 > owner 试玩实证：敌群 follow 最近路径 → **全体挤成一点**（重合）+ 数百实体逐个 drawImage → **overdraw 卡顿**。GD 读码核查（先重组后下沉）：**两处真缺口**。
 > **① 群体分离/局部避让（steering 缺）**：`t2-steering` 仅 `seek`/`flee`（`steering.ts:42`）·无 separation（邻居斥力）；2D 侧只有 `collision-resolve-3d`·**无 2D 推开**。→ 敌群叠一点（原生幸存者=boid separation 或软碰撞推开·让敌**环绕**玩家）。裁：`t2-steering` 加 `separation`/`flock` 模式（读邻域 `spatial-query` 算斥力）**或**下沉 2D `collision-resolve`/`push-apart` 薄件。**通用**（每个 survivor/RTS/crowd 都要）。
 > **② 2D 批绘/实例化（renderer 缺）**：`CanvasRenderer` 逐实体 `ctx.drawImage`（`canvas-renderer.ts:153`）·**无批处理**；实例化只在 3D three-renderer（P3D 域）。owner 指名"用 Instanced Draw"。→ 百敌=百 draw call。裁（P3D/renderer）：2D 同纹理批绘（sprite atlas + 减状态切换）**或** massive-entity 场景走 WebGL2 批渲路径。**注**：2D canvas 无 GPU instancing 语义·真解=批绘/WebGL 批渲·框定准确别照搬 3D instancing 名词。

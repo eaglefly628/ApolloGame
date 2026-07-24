@@ -6,6 +6,13 @@
 
 ---
 
+## REQ-3D-RENDER-EFFICIENCY · 渲染效率提高（大规模同屏实体·批绘/实例化）· [2026-07-24] · **owner 拍板「先把渲染效率提高」** → P3D · status: open · 优先级: **P1（owner 明示先做·game-103 百敌卡顿实证）** · 类型: 渲染性能（2D 批绘 + 3D 实例化·render-only）
+> **owner 指令（2026-07-24）**：**先把渲染的效率提高**。承 `REQ-SURVIVOR群体`（引擎池）② 半场——该条 ①群体分离仍归主程引擎（steering），**②渲染半场移入本单归 P3D 主理**。
+> **缺口（实证）**：① 2D `CanvasRenderer` 逐实体 `ctx.drawImage`（`src/renderer/canvas-renderer.ts:153`）**无批处理**——game-103 幸存者百级同屏敌=百 draw call → overdraw 卡顿（owner 试玩 v1 BUG-05）；② 高效实例化绘制现**只在 3D `three-renderer`**，2D / 大规模实体场景无高效路径。
+> **要什么（P3D 主理·框方向·技术路 P3D 定）**：给「大量同纹理实体」一条高效渲染路——**2D**=同 atlas 合批（减 draw call + 减状态切换）或大规模场景走 WebGL2 批渲/实例化；**3D**=复核 `three-renderer` 现有实例化绘制覆盖度（若某游戏走 3D 盒庭则直接用）。owner 指名参考「**Instanced Draw**」思路。**注（Lead）**：2D canvas 无 GPU instancing 语义——真解=合批 drawImage / 离屏 atlas / 转 WebGL 批渲，框定准确、别照搬 3D instancing 名词当 2D 用。
+> **性能目标**：数百同屏实体流畅（60fps 目标·退档 30）；配对象池 + 同屏 cap（`spawn-director` 已界上限=缓解非根治）。验收=真浏览器目击百敌流畅 + `ApolloBench` 帧时对比（前后 delta）。
+> **边界**：`src/renderer/**`（`canvas-renderer.ts`/`three-renderer.ts` + `three-projection.ts`）= **P3D 独占域**；Lead 评审标状态。**render-only 旁路·不进 sim/hash**（批绘不改玩法确定性/回放/balance-sim）。撞墙实证=`docs/design/game-103/requests.md BUG-05` + `REQ-SURVIVOR群体`②。
+
 ## REQ-3D-G102-DEBRIS · game102 消除→真3D 物理碎片 + 平台落地 · [2026-07-24] · GD-game102 提 → **P3D（Lead 裁架构）** · status: open · 优先级: P2（签名视觉·非玩法阻塞） · 类型: 3D 表现（物理碎片 + 舞台）
 > **spec**：`docs/design/game102/fx-3d-debris.md`（owner 2026-07-24 拍板 B·真3D + 平台真物理·雕刻碎片落地感）。
 > **要什么**：每消一像素 → 炸成同色小方块（`Mesh3D` box + `Material3D` toon/flat+surface 雕刻质感）+ `RigidBody3D`(cannon-es·mass/restitution) + `Impulse3D` 迸溅 → **真物理落到下方平台**（`Mesh3D`+静态 `RigidBody3D`/heightfield）弹跳/堆叠 → 落定超时 despawn。打击 = `Camera3D.shake`。**全 render-only**（不进 sim/hash·不影响玩法确定性/验收/balance-sim）。先例=game-d `throw3d.ts` / game-c `chip3d.ts`（cannon-es 已用）。
