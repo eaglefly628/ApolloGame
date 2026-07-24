@@ -8,6 +8,12 @@
 
 ## 待处理 / 进行中
 
+### REQ-UI-异型容器 shape + 槽位容器 Slots（Panel/Card 非矩形 + 多槽餐盘/背包格通用）· [2026-07-24] · PE-101 报（owner「多 slot + 异型 UI 是底层需求」定性）→ PUI 裁 · status: open · 优先级: P2（game101 顾客卡基准保真·非阻断·现用闭集顶着） · 类型: UI 基座控件缺口（PUI 域·全游戏通用）
+> owner 2026-07-24 把「多 slot 餐盘」「异型限时菜单」定性为**底层需求**。PE-101 架构评审（先评判）后拆成一主一辅，报 PUI：
+> - **① 异型容器（真缺口·主）**：基座异型只在 `Button.shape`（8 款 ShapeToken）+ `layout.chamfer`（矩形切角）；**`Panel`/`Card` 无 shape 枚举**，非矩形容器（如 Gossip Harbor 顾客行右侧「动态异形限时菜单」卡）只能靠贴图皮硬凑。**建议薄加性**：给 `Panel`（含 `Card`）加 `shape?:ShapeToken`（**复用现有闭集枚举 + `render.ts SHAPE_CSS`**·非自由 clip-path），命中区=包围盒（同 Button）。异型须给足 width/height。
+> - **② 槽位容器 Slots（便利下沉·辅·可选）**：多 slot 餐盘/背包格用 `Panel(row)+N 子 Card` **现有闭集已能表达**（非硬缺口）；但值得下沉语义控件 `Slots{count, items:[{icon?,filled,deliverable?}], onDropAction?}`（空槽虚线/满槽✓/拖入高亮统一封装·订单餐盘＋背包＋合成台通用）。PUI 裁是否值得建，或维持游戏层拼装。
+> **边界**：`src/ui/**`（catalog/types/render/validate + 主题）=PUI 独占域；game101 只经数据消费。game101 侧指针见 `docs/design/game101/requests.md REQ-101-07`。**PE 不越界改 `src/ui/**`**；落地前 game101 顾客卡用现有 `Panel+children` 顶着（异型菜单降级为矩形卡·待本件落地升级）。
+
 ### REQ-SURVIVOR武器缺口-3 薄件（弹射 bounce / 诱饵 aggro 重定向 / pull 吸附）· [2026-07-24] · PE-game-103 报（capability-plan §4 E4「待核」的回报）→ Lead 裁 · status: **⚖ Lead triaged（2026-07-24·三条定形·M3 开工时建·不阻塞 M2·现不预建 YAGNI）** · 优先级: P2（game-103 M3 武器·**不阻塞 M2**） · 类型: 引擎 capability 薄缺口（Roguelite 武器通用·先重组再下沉）
 > **⚖ Lead 裁（2026-07-24·triaged）**：三条 PE 已源码复核实锤真薄缺口·定形如下·**M3 武器开工时按此建**（M2 六武器不受影响·现不预建）：
 > - **bounce（W7）→ 薄加性字段 `Launch.bounce?:{times,targetTag}`**（命中后 up to times 次 nearestByTag 重定向该抛射体）。launch fire-once 无法干净重组「同一抛射体转向」→ 加字段是对的薄口·通用于任何跳弹。

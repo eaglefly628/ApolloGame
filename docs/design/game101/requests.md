@@ -29,6 +29,12 @@
 ### REQ-101-05 · 美术台账推导脚本命名 · 2026-07-23 · 提出人 GD-101 → 指派 PA · status: open · 优先级: P2 · 类型: 美术管线
 > `capability-plan.md` §4.5 编译期皮肤台账推导脚本名待定（照 game-q 样板）。M1 接线时定名并回填 plan。
 
+### REQ-101-07 · 顾客卡基准保真·待 PUI 异型容器 + 多槽 · 2026-07-24 · 提出人 PE-101 → 指派 PUI（引擎池 REQ-UI-异型容器） · status: open（基准保真·非阻断） · 优先级: P2 · 类型: UI 基座依赖
+> owner 对基准截图定「顾客托盘最多 3 slot + 右侧动态异形限时菜单」为**底层需求**（ui-brief §4.0/4.1/4.2）。PE 评审：
+> - **多 slot 显示**=现有闭集（`Panel+N 子 Card`）可表达 → 游戏层直接落地，不阻塞。
+> - **异型限时菜单卡**=基座 `Panel` 无 shape 枚举 → 报引擎池 `REQ-UI-异型容器`（PUI）。落地前 game101 用矩形卡顶着，本件落地即升级异型。
+> **不越界**：不在游戏层塞 clip-path/硬贴图逃生（manifesto 红线）——按流程报 PUI。
+
 ### REQ-101-06 · 生成器接线撞墙·待引擎加权 spawn · 2026-07-24 · 提出人 PE-101 → 指派 主程/Lead（引擎池 REQ-TAPSPAWN） · status: open（阻塞·非全库阻断） · 优先级: P1 · 类型: 实现阻塞
 > M1 生成器（G1）按 Lead §6「组合」接线时**撞墙**（子代理源码复核确认）：扣费半场 `clickable`+`craft-recipe` 可组合，但**加权运行时 spawn 无引擎原语**（`caster`/`self-rule` 固定 template·`effect-apply` 不能 spawn·`draft-offer` 未接世界 `RandomSeed`/未接线）。
 > 已按 §6「撞墙→回报下沉 tap-cost-spawn」报**引擎池** `docs/workflow/requests.md REQ-TAPSPAWN`。**`generators.json` 已备数据·待该能力落地即接线**（clickable+craft-recipe 扣费 + 新 weighted-spawn 产出）。其余 M1 面（合并/资源/体力/S1）不受阻·已绿（8/8 测试）。
