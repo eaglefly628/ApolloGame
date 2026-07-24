@@ -51,38 +51,7 @@
   <line x1="0" y1="558" x2="1280" y2="558" stroke="#f0c96a" stroke-opacity="0.12" stroke-width="1.5"/>
   <ellipse cx="600" cy="686" rx="540" ry="120" fill="url(#m_pool)"/>
 
-  <!-- tall floor window on the right -->
-  <g>
-    <rect x="902" y="66" width="292" height="548" rx="6" fill="url(#m_sky)"/>
-    <!-- city bokeh -->
-    <g>
-      <circle cx="948" cy="132" r="7" fill="url(#m_bokeh)"/>
-      <circle cx="1010" cy="98" r="5" fill="url(#m_bokeh)"/>
-      <circle cx="1074" cy="150" r="8" fill="url(#m_bokeh)"/>
-      <circle cx="1132" cy="112" r="5" fill="url(#m_bokeh)"/>
-      <circle cx="1168" cy="176" r="6" fill="url(#m_bokeh)"/>
-      <circle cx="964" cy="214" r="4" fill="url(#m_bokeh)"/>
-      <circle cx="1032" cy="196" r="6" fill="url(#m_bokeh)"/>
-      <circle cx="1108" cy="238" r="5" fill="url(#m_bokeh)"/>
-      <circle cx="1160" cy="286" r="7" fill="url(#m_bokeh)"/>
-      <circle cx="936" cy="300" r="5" fill="url(#m_bokeh)"/>
-      <circle cx="1000" cy="332" r="4" fill="url(#m_bokeh)"/>
-      <circle cx="1070" cy="360" r="6" fill="url(#m_bokeh)"/>
-      <circle cx="1140" cy="398" r="4" fill="url(#m_bokeh)"/>
-      <circle cx="976" cy="430" r="5" fill="url(#m_bokeh)"/>
-      <circle cx="1046" cy="470" r="4" fill="url(#m_bokeh)"/>
-      <circle cx="1118" cy="506" r="5" fill="url(#m_bokeh)"/>
-    </g>
-    <!-- mullions -->
-    <g stroke="#160e0a" stroke-width="7">
-      <line x1="998" y1="66" x2="998" y2="614"/>
-      <line x1="1098" y1="66" x2="1098" y2="614"/>
-      <line x1="902" y1="342" x2="1194" y2="342"/>
-    </g>
-    <!-- gold window frame -->
-    <rect x="902" y="66" width="292" height="548" rx="6" fill="none" stroke="#f0c96a" stroke-opacity="0.34" stroke-width="2.5"/>
-    <rect x="890" y="54" width="316" height="572" rx="10" fill="none" stroke="#f0c96a" stroke-opacity="0.14" stroke-width="2"/>
-  </g>
+  <!-- 夜窗改画进场内 LayoutNode（a-menu-frame·hud.ts）——修不同分辨率错位（bg cover vs 场 letterbox 漂移）。此处只留暖室氛围底。 -->
 
   <rect width="1280" height="720" fill="url(#m_vig)"/>
 </svg>

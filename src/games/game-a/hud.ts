@@ -77,6 +77,17 @@ export function buildMenu(v: MenuView): LayoutNode {
     props: { bg: { custom: MENU_BG }, image: art('bg/menu') },
     layout: { width: FIELD_W, height: FIELD_H },
     children: [
+      // 夜窗框（owner 2026-07-22 修「不同分辨率下按钮/框错位」根因）：窗框原画在 bg 图里走 background cover（按纵横比裁切），
+      //   而标题/按钮在 letterbox 缩放的**场内坐标**——两套坐标系在非 16:9 分辨率下漂移=框离开按钮。修法：把窗框**画进场内
+      //   LayoutNode**（与按钮同坐标系·任何分辨率恒对齐）：深夜空底 + 金边 + 城市微光 Particles。作首子=垫在标题/按钮之下。
+      {
+        type: 'Panel', id: 'a-menu-frame',
+        props: { bg: { custom: 'linear-gradient(180deg,#0e0a08,#1a120d 68%,#2c1d12)' }, edge: 'gold' },
+        layout: { x: 890, y: 54, width: 316, height: 572, radius: 10, allowOverlap: true },
+        children: [
+          { type: 'Particles', id: 'a-menu-frame-lights', props: { kind: 'sparkle', count: 16, loop: true }, layout: { x: 0, y: 0, width: 316, height: 572, allowOverlap: true } },
+        ],
+      },
       // 主角立绘占位（左·300×440·斜纹虚框·真立绘 S6 台账 A-CHAR-HERO）
       {
         type: 'Panel',
