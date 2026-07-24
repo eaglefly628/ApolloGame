@@ -2,8 +2,8 @@
   "version": 1,
   "game": "game101",
   "mode": "requirements",
-  "count": 26,
-  "instances": 26,
+  "count": 31,
+  "instances": 93,
   "rows": [
     {
       "skinKey": "item_coffee_1",
@@ -807,6 +807,168 @@
         "transparent": true
       },
       "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_5（未填时回退 2D 色块 box·#d2cbff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "board_cell",
+      "no": "art-27",
+      "desc": "cellbg, rectangular shape, main color #ffffff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "cellbg-0",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "cellbg",
+      "placeholder": {
+        "current": "皮肤槽 board_cell（未填时回退 2D 色块 box·#ffffff）",
+        "source": "procedural",
+        "count": 63,
+        "instances": [
+          "cellbg-0",
+          "cellbg-1",
+          "cellbg-2",
+          "cellbg-3",
+          "cellbg-4",
+          "cellbg-5",
+          "cellbg-6",
+          "cellbg-7"
+        ]
+      },
+      "spec": {
+        "w": 90,
+        "h": 90,
+        "displayW": 90,
+        "displayH": 90,
+        "transparent": true
+      },
+      "context": "美术需求：「cellbg」（场景实体·×63 实例）·2D 平面·当前占位=皮肤槽 board_cell（未填时回退 2D 色块 box·#ffffff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "gen_coffee",
+      "no": "art-28",
+      "desc": "gen gen coffee, rectangular shape, main color #c8871e, interactive build spot, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "gen-gen_coffee",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "gen gen coffee",
+      "placeholder": {
+        "current": "皮肤槽 gen_coffee（未填时回退 2D 色块 box·#c8871e）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "gen-gen_coffee"
+        ]
+      },
+      "spec": {
+        "w": 90,
+        "h": 90,
+        "displayW": 90,
+        "displayH": 90,
+        "transparent": true
+      },
+      "context": "美术需求：「gen gen coffee」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_coffee（未填时回退 2D 色块 box·#c8871e）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "gen_fishbox",
+      "no": "art-29",
+      "desc": "gen gen fishbox, rectangular shape, main color #c8871e, interactive build spot, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "gen-gen_fishbox",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "gen gen fishbox",
+      "placeholder": {
+        "current": "皮肤槽 gen_fishbox（未填时回退 2D 色块 box·#c8871e）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "gen-gen_fishbox"
+        ]
+      },
+      "spec": {
+        "w": 90,
+        "h": 90,
+        "displayW": 90,
+        "displayH": 90,
+        "transparent": true
+      },
+      "context": "美术需求：「gen gen fishbox」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_fishbox（未填时回退 2D 色块 box·#c8871e）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "gen_fridge",
+      "no": "art-30",
+      "desc": "gen gen fridge, rectangular shape, main color #c8871e, interactive build spot, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "gen-gen_fridge",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "gen gen fridge",
+      "placeholder": {
+        "current": "皮肤槽 gen_fridge（未填时回退 2D 色块 box·#c8871e）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "gen-gen_fridge"
+        ]
+      },
+      "spec": {
+        "w": 90,
+        "h": 90,
+        "displayW": 90,
+        "displayH": 90,
+        "transparent": true
+      },
+      "context": "美术需求：「gen gen fridge」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_fridge（未填时回退 2D 色块 box·#c8871e）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "gen_toolbox",
+      "no": "art-31",
+      "desc": "gen gen toolbox, rectangular shape, main color #c8871e, interactive build spot, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "gen-gen_toolbox",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "gen gen toolbox",
+      "placeholder": {
+        "current": "皮肤槽 gen_toolbox（未填时回退 2D 色块 box·#c8871e）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "gen-gen_toolbox"
+        ]
+      },
+      "spec": {
+        "w": 90,
+        "h": 90,
+        "displayW": 90,
+        "displayH": 90,
+        "transparent": true
+      },
+      "context": "美术需求：「gen gen toolbox」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_toolbox（未填时回退 2D 色块 box·#c8871e）·需透明底",
       "status": "needs-art",
       "gen": null,
       "provenance": null

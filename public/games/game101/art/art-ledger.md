@@ -14,7 +14,7 @@
 | 薯条链 | 4 | `item_fries_*` | merge 板物品 sprite |
 | 咖啡链 | 5 | `item_coffee_*` | merge 板物品 sprite |
 | 工具链 | 5 | `item_tool_*` | merge 板物品 sprite |
-| **合计** | **26** | | |
+| **合计** | **31** | | |
 
 > 规格统一：**84×84px·透明底**（2D 俯视·棋盘格内 82% 显示）。状态：⬜ 待美术=当前全部（零真资产·待 S6 生成）。
 
@@ -70,4 +70,4 @@
 | art-26 | L5 | 维修套装（售 100）| `item_tool_5` | `#d2cbff` | 84×84px·透明底 | ⬜ 待美术 |
 
 ---
-共 26 项皮肤槽。生成/替换走 art-pipeline（`docs/playbooks/art-pipeline.md`）：台账→风格锚→一键全量→写回→人审。
+共 31 项皮肤槽。生成/替换走 art-pipeline（`docs/playbooks/art-pipeline.md`）：台账→风格锚→一键全量→写回→人审。

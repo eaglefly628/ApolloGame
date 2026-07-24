@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { validateLayoutNode } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin } from '@engine/protocol/components.js';
+import type { Resource, PrefabOrigin, InputQueue, RawInputData } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1 } from './s1.js';
-import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules } from './theme.js';
+import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, generatorOutput, cellCenter } from './theme.js';
 
 // ── headless 助手 ─────────────────────────────────────────────────────────────
 function res(e: Engine, id: string): number { return e.world.getComponent<Resource>(id, 'Resource')?.current ?? 0; }
@@ -16,6 +16,20 @@ function countTemplate(e: Engine, templateId: string): number {
     if (po && po.templateId === templateId) n++;
   }
   return n;
+}
+function setInput(e: Engine, actions: RawInputData[]): void {
+  const eid = 'input';
+  if (!e.world.hasComponent(eid, 'InputQueue')) e.world.createEntity(eid);
+  e.world.addComponent(eid, { type: 'InputQueue', actions } as InputQueue);
+}
+// 模拟点某生成器一次：注入 down → tick（clickable→craft-recipe）→ 清输入 → 再 tick（event-when→caster→prefab）。
+function tapGen(e: Engine, genCell: number): void {
+  const p = cellCenter(genCell);
+  setInput(e, [{ source: 't', x: p.x, y: p.y, phase: 'down' } as RawInputData]);
+  e.world.tick();
+  setInput(e, []);
+  e.world.tick(); // event-when 发 do_spawn → caster 发 SpawnRequest
+  e.world.tick(); // prefab 展开成实例（盖 PrefabOrigin）
 }
 
 describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据驱动）', () => {
@@ -85,5 +99,51 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     const tree = buildS1();
     expect(tree.type).toBe('Screen');
     expect(validateLayoutNode(tree)).toEqual([]);
+  });
+
+  // ── 生成器（S4 可玩核·点击→耗体力→固定产出·原子）─────────────────────────
+  it('生成器点击：耗 1 体力 + 产出该生成器的固定 L1 物品（原子·非加权）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    const g = GENERATORS[0]; // 冰箱 cell 0 → food_1
+    const out = generatorOutput(g);
+    tickN(e, 4); // 先让 seed 展开+合并稳定
+    const e0 = res(e, RES.energy);
+    const c0 = countTemplate(e, out);
+    tapGen(e, g.cell);
+    expect(res(e, RES.energy)).toBe(e0 - g.energyCost); // 扣体力
+    expect(countTemplate(e, out)).toBe(c0 + 1);          // 产出一个固定 L1
+  });
+
+  it('体力不足拒绝：能量=0 时点生成器不扣不产（craft-recipe 原子 afford）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 4);
+    e.world.getComponent<Resource>('energy', 'Resource')!.current = 0;
+    const g = GENERATORS[0];
+    const out = generatorOutput(g);
+    const c0 = countTemplate(e, out);
+    tapGen(e, g.cell);
+    expect(res(e, RES.energy)).toBe(0);          // 不扣
+    expect(countTemplate(e, out)).toBe(c0);      // 不产
+  });
+
+  it('产出即入合并流：连点工具箱 2 次 → 2×tool_1 自动合并成 1×tool_2（工具链无 seed·干净）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 4);
+    expect(countTemplate(e, 'tool_1')).toBe(0); // 工具链无 seed
+    expect(countTemplate(e, 'tool_2')).toBe(0);
+    tapGen(e, 3); // 工具箱 → +1 tool_1
+    tapGen(e, 3); // +1 tool_1 → 2 个 → 自动合并
+    tickN(e, 2);
+    expect(countTemplate(e, 'tool_1')).toBe(0);  // 两个已合掉
+    expect(countTemplate(e, 'tool_2')).toBe(1);  // 合成一个次级
+  });
+
+  it('确定性：接生成器后两把同操作序列 → 同 hash（可回放）', () => {
+    const a = new Engine(); a.load(buildBlueprint());
+    const b = new Engine(); b.load(buildBlueprint());
+    tickN(a, 4); tickN(b, 4);
+    tapGen(a, 1); tapGen(b, 1);
+    tickN(a, 20); tickN(b, 20);
+    expect(a.hash()).toBe(b.hash());
   });
 });

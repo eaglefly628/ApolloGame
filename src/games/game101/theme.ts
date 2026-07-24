@@ -3,21 +3,32 @@
 // 数据驱动铁律：本文件只做「JSON 配置 → 引擎数据结构」的**纯派生**（无玩法逻辑、无随机、无自由代码）。
 // 所有玩法内容来自 config/*.json（GD-101 立项档 config-schema.md 的落地）；解释权归现有引擎能力。
 //
-// ⚠ 接线状态（capability-plan §6 Lead 已过审 2026-07-23）：本 M1a groundwork 落未涉门能力面——
-//   merge-rule（合并链）/ f1-resource（体力/金币/星星/经验）/ over-time（体力恢复）/ prefab（物品模板）。
-//   G1 生成器按 §6 组合接线经源码复核撞墙（加权运行时 spawn 无引擎原语）→ 报引擎池
-//   docs/workflow/requests.md REQ-TAPSPAWN；generators.json 已备·待该能力落地再接线。G2/G3=后续 slice。
+// ⚠ 接线状态（capability-plan §6 Lead 已过审 2026-07-23）：
+//   已接（S4 可玩核）：merge-rule 自动合并 / f1-resource / over-time 体力恢复 / prefab 物品库 /
+//     生成器点击产出（clickable+craft-recipe 耗体力+event-when+caster **固定产出**·非加权）。
+//   缺口（引擎/主程域·非 PE）：①加权掉落 `weighted-spawn`（⏸缓建·owner 定 M1 不急）→ 生成器暂固定产出；
+//     ②真·拖拽合并 `merge-on-place`（拖同类才合·现无能力）→ 报 requests.md REQ-MERGE-ON-PLACE，暂用自动合并。
 import gameCfg from './config/game.json';
 import chainsCfg from './config/chains.json';
 import energyCfg from './config/energy.json';
+import generatorsCfg from './config/generators.json';
 
 // ── 类型（config 结构的 TS 视图·只读）─────────────────────────────────────────
 export interface ChainLevel { lvl: number; item: string; name: string; sell: number; sprite: string }
 export interface Chain { id: string; name: string; levels: ChainLevel[] }
 
+export interface GeneratorDef {
+  id: string; name: string; energyCost: number; cooldownSec: number;
+  sprite: string; cell: number; emoji: string; dropTable: { item: string; w: number }[];
+}
+
 export const GAME = gameCfg;
 export const CHAINS = chainsCfg as Chain[];
 export const ENERGY = energyCfg;
+export const GENERATORS = generatorsCfg as GeneratorDef[];
+
+// 生成器固定产出（weighted-spawn 缓建前）：取掉落表首项（最高权重档）。weighted-spawn 落地后改吃全表。
+export function generatorOutput(g: GeneratorDef): string { return g.dropTable[0].item; }
 
 // ── 模拟频率（引擎固定步长 60Hz·Engine 默认 tickRate）→ 秒换算 tick。─────────
 export const TICKS_PER_SEC = 60;
@@ -26,8 +37,10 @@ export const ENERGY_REGEN_TICKS = ENERGY.regenIntervalSec * TICKS_PER_SEC;
 // ── 资源 id（f1-resource）──────────────────────────────────────────────────────
 export const RES = { energy: 'energy', coins: 'coins', stars: 'stars', exp: 'exp' } as const;
 
-// ── Tag 位（合并板物品）────────────────────────────────────────────────────────
+// ── Tag 位（合并板物品 / 生成器）──────────────────────────────────────────────
 export const ITEM = 1 << 0;
+export const GEN_TAG = 1 << 1;
+export const GEN_TINT = 0xc8871e; // 生成器格占位色（暖金·美术就绪即被 gen sprite 皮盖过）
 
 // ── 棋盘几何（世界像素·占位灰盒·M1b 接 UI 时以 layout 稿为准）──────────────────
 export const CELL = 96;

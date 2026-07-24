@@ -35,6 +35,12 @@
 > - **卡在哪**：缺「加权运行时 spawn」原语（＝§6 预判的 `tap-cost-spawn`）。**禁游戏层手写加权/裸 Math.random**（manifesto 红线）→ 必须下沉引擎。
 > - **建议方案（§6 已预祝福其形）· 边界**：下沉通用能力 `tap-cost-spawn`（或 `weighted-caster`）——组件 `TapSpawn{ onSignal, cost?:{id,amount}, table:[{item,w}] }`；系统在信号时（可选 afford+扣 cost）→ 读世界 `RandomSeed` 走 `nextRandom` 加权抽 → 发 `SpawnRequest{templateId, at:self}`。**必用世界 RandomSeed（禁 fixed seed·保 hash 确定性/回放）**。可拆两件：①从 `draft-offer` 抽出并**导出纯函数 `weightedPick(items,weights,rand)`**；② `caster` 加 `table?` 变体 / 新 `weighted-caster` capability 消费之。**触碰范围**：`src/skills/**`（新 capability + 导出 draft-offer 纯函数 + 测试），game101 只经数据消费。撞墙实证＝`docs/design/game101/requests.md REQ-101-06`。
 
+### REQ-MERGE-ON-PLACE-方格拖放合并原语（拖同类才合·非自动合并）· [2026-07-24] · PE-101 报（S4 可玩接线源码复核）→ Lead/主程 裁 · status: open · 优先级: P3（**owner：game101 M1 不急同 REQ-TAPSPAWN**·当前用自动合并可玩·非阻断） · 类型: 引擎通用能力缺口（merge/消除品类·主程域）
+> - **想实现的行为**：真·合并手感——玩家**拖**一个物到另一个**同模板**物所在格才合成次级（拖到空格=移动·拖到异类=交换/不动）；物品平时**不自动合并**。Gossip Harbor/合并品类标配。
+> - **已试（子代理源码复核·PE 域内组合）**：❌ 无原语。`t3-merge-rule` 是**自动合并**（每拍数 PrefabOrigin≥need 即合·不看位置）→ 板上 2 同类必自动塌缩，非拖拽触发。`t2-drag-place` 能移动已放置物但**只吸六角 HexPos·无方格分支·且落占用格只做交换、不查占用者模板/不触发合成**。`t2-grid-drag-square` 是**托盘 polyomino 盖章**（不移动已放置物·不合并）。`match3-*`=连线消除非 N 合 1。无任何能力做「方格拖放·落同类格→combine」。
+> - **卡在哪**：缺「方格拖放合并」原语（drop-onto-same-template→combine at drop cell）。
+> - **建议方案 · 边界**：下沉通用 `merge-on-place`——组件 `MergeOnPlace{ boardId, need }`；系统消费拖拽 drop 动作（`synthesizeDrag` 已产）→ 方格 `squarePointToCell` 定落格 → 若落格占用者与被拖物**同模板**且计数≥need → 发 `DestroyRequest`×need + `SpawnRequest{into, at:drop cell}`；否则移动/交换（复用 drag-place 落位逻辑的方格版）。**触碰范围**：`src/skills/**`（新 capability + 方格拖放桥·或给 drag-place 加方格分支 + 合成钩）+ 测试；game101 只经数据消费。**当前 game101 用 `merge-rule` 自动合并顶着可玩**（本件落地后换真拖拽手感）。
+
 ### REQ-STYLE-SWAP-工坊风格库（命名风格预设 + 一键换风格）· [2026-07-22] · owner 拍板（「加风格类型下拉·新建风格·存本地·Apply 换掉全部 UI 风格」）→ **引擎侧 Lead ✅ done · 工坊 UI 指派 PST** · status: **引擎 ✅ done（Lead 2026-07-22）；工坊 UI open（PST）** · 优先级: P1 · 类型: 风格换装（引擎已具·工坊 UI 缺口）
 > **owner 愿景**：美术台本加「风格类型」下拉——可**新建风格**（存本地）、选一套风格**一键 Apply** → 当前游戏全部美术按该风格重生成换掉。多套命名风格可存本地、随时切。
 > **架构评审（Lead·先评判）**：换皮引擎 + 风格包 + 选择器**大半已存在**（9 内置风格包=已定义风格·批量生成+替换写回=换皮·工坊已有风格包 chips + 整体风格锚输入）——不重建。真缺口=①owner **自建命名风格存本地**②一键 Apply。
