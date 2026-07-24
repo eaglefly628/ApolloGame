@@ -6,6 +6,14 @@
 
 ---
 
+## REQ-3D-G102-DEBRIS · game102 消除→真3D 物理碎片 + 平台落地 · [2026-07-24] · GD-game102 提 → **P3D（Lead 裁架构）** · status: open · 优先级: P2（签名视觉·非玩法阻塞） · 类型: 3D 表现（物理碎片 + 舞台）
+> **spec**：`docs/design/game102/fx-3d-debris.md`（owner 2026-07-24 拍板 B·真3D + 平台真物理·雕刻碎片落地感）。
+> **要什么**：每消一像素 → 炸成同色小方块（`Mesh3D` box + `Material3D` toon/flat+surface 雕刻质感）+ `RigidBody3D`(cannon-es·mass/restitution) + `Impulse3D` 迸溅 → **真物理落到下方平台**（`Mesh3D`+静态 `RigidBody3D`/heightfield）弹跳/堆叠 → 落定超时 despawn。打击 = `Camera3D.shake`。**全 render-only**（不进 sim/hash·不影响玩法确定性/验收/balance-sim）。先例=game-d `throw3d.ts` / game-c `chip3d.ts`（cannon-es 已用）。
+> **⚖ 请 Lead + P3D 裁的关键架构（spec §2）**：3D 碎片与当前 2D 棋盘怎么合成——**A** 2D 棋盘 + 3D 叠层（正交相机对齐像素格·screenToWorld 定位·改动小）；**B** 全 3D 盒庭棋盘（像素=薄 Mesh3D 瓦片·消除原地炸碎片落平台·物理最自洽+签名差异化·但棋盘渲染 2D→3D 迁移大）。**GD 倾向 B**（真物理落台需同一 3D 空间才自洽·且 3D 做卖点），最终 Lead/P3D 裁（涉棋盘渲染归属 + 性能）。
+> **性能预算（P3D 主理·spec §3）**：并发刚体上限 ≤120·落定/超时 despawn（sleep 后 1.5-2.5s 回收）·对象池·连锁/激光碎片洪峰需节流（超上限退轻量 Vfx3D 替真刚体）·画质档可降 dpr/阴影/AO。
+> **边界**：3D 渲染线 = P3D 独占·GD 只出 spec·PE 不碰 3D 线。验收走 `visual-scorecard.md`（真浏览器目击碎片落台弹跳堆叠）。
+> **依赖/顺序**：非玩法阻塞（sim 层碎片=纯表现）——可待 PE 的 S3/S4 玩法核（2D 判定）落地后并行；若裁 B，需与 PE 协调棋盘渲染迁移排期。
+
 ## REQ-3D-RB-ANGFACTOR · RigidBody3D 角约束（angularFactor·锁转轴防圆盘立边）· [2026-07-23] · PE-C 提（game-c 筹码 bug）→ P3D · status: open · 优先级: P2（owner 报的可见 bug·game-c 已上游戏侧缓解·根治缺此能力）· 类型: 3D 线能力缺口（物理角约束）
 > **触发（owner 2026-07-23 报 bug）**：game-c 3D 物理筹码（薄圆柱 r0.17×h0.06·cannon-es）落桌后**有时立在桌面上**（停在圆柱侧面=硬币立起）。根因：抛注给了三轴随机角速度（avx/avy/avz），翻着落地就可能停在侧面这个半稳态。
 > **game-c 侧已缓解（已推·不阻塞）**：`chip3d.ts` 抛注改**只绕竖直 Y 轴平旋**（avx=avz=0·飞碟式平飞平落）+ 降 restitution 0.12 → 绝大多数不再立边。**但落地被别的筹码撞、或落在筹码堆边沿仍可能被顶立**——数据侧无法根治（Transform3D.quat 每帧被物理写回·游戏层改不动落定姿态）。
