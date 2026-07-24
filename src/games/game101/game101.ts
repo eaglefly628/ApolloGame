@@ -16,7 +16,7 @@ import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop }
 import { buildBlueprint } from './blueprint.js';
 import { buildS1Live, type S1State, type CellView, type OrderView, type SlotView } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';
-import { GAME, RES, GENERATORS, ORDERS, ITEM_EMOJI, cellIndexOf, cellCenter } from './theme.js';
+import { GAME, RES, GENERATORS, ORDERS, ORDER_SAT_MAX, ITEM_EMOJI, moodFace, cellIndexOf, cellCenter } from './theme.js';
 
 const GEN_CELLS = new Set(GENERATORS.map((g) => g.cell));
 
@@ -66,7 +66,8 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
         if (!filled) wanted.add(tpl);
         return { itemEmoji: ITEM_EMOJI[tpl] ?? '❓', filled, want: !filled && onBoard.has(tpl) };
       });
-      return { char: o.char, slots, coins: o.reward.coins, stars: o.reward.stars ?? 0, deliverable: slots.some((sl) => sl.want) };
+      const sat = res(`sat_${o.id}`);
+      return { char: o.char, slots, coins: o.reward.coins, stars: o.reward.stars ?? 0, deliverable: slots.some((sl) => sl.want), mood: sat / ORDER_SAT_MAX, moodFace: moodFace(sat) };
     });
     // 板格 ✓ = 该成品被某订单未满槽需要（可拖去交付）。
     for (let i = 0; i < cells.length; i++) if (cells[i] && cellTpl[i] && wanted.has(cellTpl[i]!)) cells[i]!.deliverable = true;
@@ -175,7 +176,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       return;
     }
     lastCoins = coins;
-    const sig = `${Math.round(st.energy)}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('')).join('|')}`;
+    const sig = `${Math.round(st.energy)}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('') + o.moodFace).join('|')}`;
     if (sig !== lastSig) { lastSig = sig; paint(st); }
   });
 

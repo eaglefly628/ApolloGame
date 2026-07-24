@@ -15,7 +15,7 @@ export function buildS1(): LayoutNode {
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
 export interface CellView { emoji: string; gen?: string; deliverable?: boolean }
 export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
-export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; fly?: { id: string; label: string } }
+export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; fly?: { id: string; label: string } }
 export interface S1State {
   energy: number; coins: number; gems: number; level: number;
   cells: (CellView | null)[]; orders: OrderView[];
@@ -76,7 +76,21 @@ function orders(s: S1State): N {
           layout: { direction: 'row', align: 'center', gap: 8 },
           children: [
             { type: 'Avatar', id: `ord-${i}-av`, props: { name: o.char, size: 52, shape: 'circle' } },
-            { type: 'Label', id: `ord-${i}-nm`, props: { text: o.char, size: 'sm', bold: true } },
+            {
+              type: 'Panel', id: `ord-${i}-idn`, props: { bare: true },
+              layout: { direction: 'column', align: 'start', gap: 2 },
+              children: [
+                {
+                  type: 'Panel', id: `ord-${i}-nmrow`, props: { bare: true },
+                  layout: { direction: 'row', align: 'center', gap: 4 },
+                  children: [
+                    { type: 'Label', id: `ord-${i}-nm`, props: { text: o.char, size: 'sm', bold: true } },
+                    { type: 'Label', id: `ord-${i}-mf`, props: { text: o.moodFace, size: 'md' } }, // 心情脸（满意度越高越开心）
+                  ],
+                },
+                { type: 'ProgressBar', id: `ord-${i}-mood`, props: { value: Math.round(o.mood * 100), max: 100, tone: 'ok' } }, // 满意度条
+              ],
+            },
           ],
         },
         {

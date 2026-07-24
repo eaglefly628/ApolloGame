@@ -28,7 +28,7 @@ import {
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
-  GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, generatorOutput,
+  GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, generatorOutput,
   cellCenter, mergeRules, itemTemplates, CELL, GEN_TAG, GEN_TINT,
 } from './theme.js';
 
@@ -120,11 +120,14 @@ function boardCellEntities(): Record<string, EntityBlueprint> {
 function orderEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   for (const o of ORDERS) {
+    const satId = `sat_${o.id}`;
     const reward = [
       { resourceId: RES.coins, amount: o.reward.coins },
       ...(o.reward.stars ? [{ resourceId: RES.stars, amount: o.reward.stars }] : []),
       ...(o.reward.exp ? [{ resourceId: RES.exp, amount: o.reward.exp }] : []),
+      { resourceId: satId, amount: 1 }, // 每完成一单 → 该顾客满意度 +1（心情涨·发奖表数据·钳进 max）
     ];
+    out[satId] = { Resource: { id: satId, current: 0, min: 0, max: ORDER_SAT_MAX } }; // 实体 key = 资源 id（order-fulfill 按 id 定位）
     out[`order-${o.id}`] = {
       Order: { orderId: o.id, needItems: o.needItems, filled: o.needItems.map(() => false), reward, resetOnComplete: true },
     };

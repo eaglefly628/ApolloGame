@@ -129,8 +129,8 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     cells[8] = { emoji: '🥗', deliverable: true };
     cells[9] = { emoji: '🍝' };
     const live = buildS1Live({ energy: 34, coins: 305, gems: 8, level: 12, cells, burstCell: 9, orders: [
-      { char: '周航', slots: [{ itemEmoji: '🥗', filled: false, want: true }], coins: 44, stars: 2, deliverable: true, fly: { id: 'fly-0', label: '🪙+44' } },
-      { char: '老陈', slots: [{ itemEmoji: '🐠', filled: true, want: false }, { itemEmoji: '🐠', filled: false, want: false }], coins: 78, stars: 2, deliverable: false },
+      { char: '周航', slots: [{ itemEmoji: '🥗', filled: false, want: true }], coins: 44, stars: 2, deliverable: true, mood: 0.4, moodFace: '😊', fly: { id: 'fly-0', label: '🪙+44' } },
+      { char: '老陈', slots: [{ itemEmoji: '🐠', filled: true, want: false }, { itemEmoji: '🐠', filled: false, want: false }], coins: 78, stars: 2, deliverable: false, mood: 0, moodFace: '😐' },
     ] });
     expect(live.type).toBe('Screen');
     expect(validateLayoutNode(live)).toEqual([]);
@@ -183,9 +183,11 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(countTemplate(e, 'food_2')).toBe(1);
     const dish = itemsOf(e, 'food_2')[0];
     const c0 = res(e, RES.coins);
+    const sat0 = res(e, 'sat_o_zhou');
     deliverTo(e, dish, 'o_zhou');
     expect(res(e, RES.coins)).toBe(c0 + 44);       // 单槽集齐即发奖
     expect(countTemplate(e, 'food_2')).toBe(0);    // 成品实例被消耗
+    expect(res(e, 'sat_o_zhou')).toBe(sat0 + 1);   // 满意度（心情）+1
   });
 
   it('订单交付：交错模板不误交（拖 fish_2 给要 food_2 的周航 → 不消耗不发奖）', () => {

@@ -37,6 +37,15 @@ export const ORDERS = ordersCfg as OrderDef[];
 // 生成器固定产出（weighted-spawn 缓建前）：取掉落表首项（最高权重档）。weighted-spawn 落地后改吃全表。
 export function generatorOutput(g: GeneratorDef): string { return g.dropTable[0].item; }
 
+// ── 顾客满意度（心情）：每完成一单 +1·满 ORDER_SAT_MAX 即最开心。资源化·order-fulfill 发奖时涨。──
+export const ORDER_SAT_MAX = 5;
+// 满意度分数 → 心情脸（0..max·越交越开心）。纯派生·无逻辑。
+export function moodFace(sat: number): string {
+  const faces = ['😐', '🙂', '😊', '😄', '😍'];
+  const i = Math.max(0, Math.min(faces.length - 1, Math.round((sat / ORDER_SAT_MAX) * (faces.length - 1))));
+  return faces[i];
+}
+
 // ── 模拟频率（引擎固定步长 60Hz·Engine 默认 tickRate）→ 秒换算 tick。─────────
 export const TICKS_PER_SEC = 60;
 export const ENERGY_REGEN_TICKS = ENERGY.regenIntervalSec * TICKS_PER_SEC;
