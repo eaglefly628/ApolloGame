@@ -24,12 +24,13 @@ import {
   cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
   steeringCapability, launchCapability, selfRuleCapability,
 } from '@skills/tier2/index.js';
-import { prefabCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
+import { keybindCapability } from '@skills/tier2/index.js';
+import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
 import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
   PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, TINT,
   PLAYER_DEF, KUNAI, SHAMBLER, GEM_BLUE, GEM_LIFE, SPAWNS,
-  LEVEL_XP, LEVEL_HEAL, LEVEL_POWER_ADD, type WeaponDef, type EnemyDef, type GemDef,
+  LEVEL_XP, DRAFT_POOL, POWER_ADD, HEAL, ORBIT, type WeaponDef, type EnemyDef, type GemDef,
 } from './theme.js';
 
 const XF0 = { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
@@ -121,6 +122,42 @@ function gemTemplate(g: GemDef): { entities: Record<string, Record<string, unkno
   };
 }
 
+// 护盾环（升级三选一「新武器」·跟随玩家的灼烧光环·child of player·持续 AoE 贴身敌）。
+function orbitTemplate(): { entities: Record<string, Record<string, unknown>> } {
+  return {
+    entities: {
+      ring: {
+        Hierarchy: { parentId: 'player', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 },
+        Transform: { ...XF0 },
+        Sensor: {},
+        Tag: { flags: ZONE },
+        Shape: { kind: 'circle', radius: ORBIT.radius },
+        Sprite: { textureKey: ORBIT.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽
+        Color: { tint: ORBIT.tint, alpha: 0.16 },
+        Hitbox: { resource: 'hp', amount: ORBIT.dmgPerTick, targetMask: ENEMY, scaleByResource: 'power' },
+      },
+    },
+  };
+}
+
+// 升级三选一 pick 接线（纯数据·每候选一条 KeyBinding + 效果）：
+//  伤害类→Effect modify power；治疗类→Effect modify hp；新武器 orbit→Caster spawn 护盾环。
+//  宿主 draft 选中 → hudQueue.enqueueAction(effectSignal) → KeyBinding→Signal → 下面消费。
+function draftPickEntities(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  for (const u of DRAFT_POOL) {
+    out[`kb-${u.id}`] = { KeyBinding: { key: u.effectSignal, signal: u.effectSignal } };
+    if (u.id === 'blade' || u.id === 'crit') {
+      out[`fx-${u.id}`] = { Effect: { onSignal: u.effectSignal, kind: 'modify-resource', targetId: 'power', op: 'add', value: POWER_ADD[u.id] } };
+    } else if (u.id === 'heart' || u.id === 'vigor') {
+      out[`fx-${u.id}`] = { Effect: { onSignal: u.effectSignal, kind: 'modify-resource', targetId: 'hp', op: 'add', value: HEAL[u.id] } };
+    } else if (u.id === 'orbit') {
+      out['aura-caster'] = { Caster: { onSignal: u.effectSignal, template: 'weapon_orbit', at: 'self', originEntity: 'player' } };
+    }
+  }
+  return out;
+}
+
 // ── 生怪票（授权期纯数据·Timer 到点 self-rule 展开一只怪·非 E3 rate/cap director）──
 function spawnTicketEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
@@ -149,12 +186,10 @@ export function buildBlueprint(): WorldBlueprint {
       OverTime: { effects: [{ id: 'tick', resource: 'clock', amountPerTick: 1, period: TPS, duration: 999999999, elapsed: 0 }] },
     },
 
-    // ── 升级机（xp 满阈值 edge → 固定强化占位·三选一 draft 待 S2/E1）──
+    // ── 升级机（xp 满阈值 edge → 等级 +1 + 扣阈值·自动记账；强化本身=三选一 draft 由玩家选·见 draftPickEntities）──
     'levelup-gate': { EventWhen: { signal: 'levelup', when: { kind: 'resource', id: 'xp', cmp: 'gte', value: LEVEL_XP }, mode: 'edge', armed: false } },
     'lv-fx-xp': { Effect: { onSignal: 'levelup', kind: 'modify-resource', targetId: 'xp', op: 'add', value: -LEVEL_XP } },
     'lv-fx-level': { Effect: { onSignal: 'levelup', kind: 'modify-resource', targetId: 'level', op: 'add', value: 1 } },
-    'lv-fx-heal': { Effect: { onSignal: 'levelup', kind: 'modify-resource', targetId: 'hp', op: 'add', value: LEVEL_HEAL } },
-    'lv-fx-power': { Effect: { onSignal: 'levelup', kind: 'modify-resource', targetId: 'power', op: 'add', value: LEVEL_POWER_ADD } },
 
     // ── 相机（跟随玩家·视野钳场地）──
     camera: {
@@ -229,10 +264,12 @@ export function buildBlueprint(): WorldBlueprint {
           [`proj_${KUNAI.key}`]: projTemplate(KUNAI),
           [`enemy_${SHAMBLER.key}`]: enemyTemplate(SHAMBLER, `gem_${SHAMBLER.gem}`),
           [`gem_${GEM_BLUE.key}`]: gemTemplate(GEM_BLUE),
+          weapon_orbit: orbitTemplate(),
         },
       },
     },
 
+    ...draftPickEntities(),
     ...spawnTicketEntities(),
   };
 
@@ -244,8 +281,8 @@ export function buildBlueprint(): WorldBlueprint {
       motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
       boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
       cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
-      steeringCapability, launchCapability, selfRuleCapability,
-      prefabCapability, aggroCapability, flowCapability,
+      steeringCapability, launchCapability, selfRuleCapability, keybindCapability,
+      prefabCapability, casterCapability, aggroCapability, flowCapability,
     ],
     entities,
   };

@@ -84,11 +84,35 @@ export interface GemDef { key: string; value: number; radius: number; tint: numb
 export const GEM_BLUE: GemDef = { key: 'blue', value: 1, radius: 6, tint: TINT.gemBlue, skin: '103/gem-blue' };
 export const GEM_LIFE = 1800; // 未拾取宝石寿命 tick（30s）
 
-// ── 升级=固定强化占位（M1·三选一 draft 待 Lead 签 S2·E1）──────────────────
-// 每级：经验环满 LEVEL_XP → 扣阈值 + 等级 +1 + 治疗 + 全局 power ×加成（子弹伤害 = dmg × power）。
-export const LEVEL_XP = 5;        // 固定升级阈值（M1 占位·真曲线 expToNext=5+lvl×10 待 E1）
-export const LEVEL_HEAL = 15;     // 每级固定治疗
-export const LEVEL_POWER_ADD = 0.15; // 每级全局伤害系数 +0.15
+// ── 升级三选一（M2·draft-offer E1 已下沉·Lead 清 S2）────────────────────────
+// 经验环满 LEVEL_XP → 等级 +1 + 扣阈值（自动记账）→ 时停三选一 draft（rollOffer 过滤候选 →
+// 玩家选 → applyPick + 该项 effectSignal 应用到世界）。子弹伤害 = KUNAI.dmg × 全局 power 资源。
+export const LEVEL_XP = 5;        // 升级阈值（M2 占位固定·真曲线 expToNext=5+lvl×10 后续）
+
+// 升级候选池（纯数据·draft-offer 的 DraftCandidate + 展示/接线元数据）。
+// slot/weight/maxLevel 喂 rollOffer 过滤+加权抽；effectSignal=选中时入队的信号名（KeyBinding→Effect 应用）。
+export interface UpgradeDef {
+  id: string;
+  name: string;
+  desc: string;
+  slot: 'weapon' | 'passive';
+  weight: number;
+  maxLevel: number;
+  effectSignal: string;
+  accent: 'active' | 'passive'; // 卡片描边色（红=主动/武器·蓝=被动）
+}
+export const DRAFT_POOL: UpgradeDef[] = [
+  { id: 'blade', name: '锋刃手册', desc: '全武器伤害 +20%', slot: 'passive', weight: 10, maxLevel: 5, effectSignal: 'pick_blade', accent: 'passive' },
+  { id: 'crit', name: '暴击核心', desc: '全武器伤害 +35%（稀有）', slot: 'passive', weight: 5, maxLevel: 5, effectSignal: 'pick_crit', accent: 'passive' },
+  { id: 'heart', name: '生命护心', desc: '立即回复 30 生命', slot: 'passive', weight: 9, maxLevel: 9, effectSignal: 'pick_heart', accent: 'passive' },
+  { id: 'vigor', name: '疾行护符', desc: '立即回复 15 生命', slot: 'passive', weight: 9, maxLevel: 9, effectSignal: 'pick_vigor', accent: 'passive' },
+  { id: 'orbit', name: '护盾环', desc: '召唤环绕光环·持续灼烧贴身敌（新武器）', slot: 'weapon', weight: 8, maxLevel: 3, effectSignal: 'pick_orbit', accent: 'active' },
+];
+export const DRAFT_N = 3;                 // 三选一
+export const SLOT_CAP = { weapon: 6, passive: 6 } as const; // 槽位上限（gdd §三）
+export const POWER_ADD = { blade: 0.2, crit: 0.35 } as const; // 伤害系数增量
+export const HEAL = { heart: 30, vigor: 15 } as const;         // 治疗量
+export const ORBIT = { radius: 74, dmgPerTick: 0.5, tint: 0x7dff4d, skin: '103/orbit' } as const; // 护盾环武器
 
 // ── 单敌群 spawn 时间表（授权期纯数据·无 Math.random·环绕出生）────────────
 // M1「单敌群」：玩家四周确定性环上逐个刷怪，做出 Survivor.io「一睁眼就被围住 + 持续加压」的张力。

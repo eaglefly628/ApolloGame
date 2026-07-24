@@ -99,6 +99,44 @@ export function buildHud(s: HudState): LayoutNode {
   };
 }
 
+// ── 升级三选一（CHOOSE SKILL·时停 draft·SC Level Up）───────────────────────
+// offers=draft-offer.rollOffer 产出的候选(经宿主映射)。整张卡可点→action=该项 effectSignal→宿主 applyPick。
+export interface LevelUpOffer {
+  id: string; name: string; desc: string;
+  accent: 'active' | 'passive'; // 红=主动/武器·蓝=被动
+  level: number; max: number; isNew: boolean; action: string;
+}
+function offerCard(o: LevelUpOffer): LayoutNode {
+  const hue = o.accent === 'active' ? 'linear-gradient(155deg,#ff7a4d,#d63b1f)' : 'linear-gradient(155deg,#7fd0ff,#2f7fd0)';
+  return {
+    type: 'Panel', id: `c-${o.id}`,
+    props: { bg: { custom: 'linear-gradient(#ecdcc0,#e0cfa8)' }, edge: o.accent === 'active' ? 'danger' : 'jade', action: o.action },
+    layout: { direction: 'column', align: 'center', gap: 5, padding: 10, radius: 14, width: 118 },
+    children: [
+      { type: 'Label', id: `c-${o.id}-n`, props: { text: o.name, font: 'heavy', size: 14, color: o.accent === 'active' ? 'danger' : 'jade', bold: true, stroke: true } },
+      { type: 'Label', id: `c-${o.id}-t`, props: { text: o.isNew ? 'New' : 'Level Up', size: 11, bold: true, color: o.isNew ? 'ok' : 'gold' } },
+      { type: 'Panel', id: `c-${o.id}-ico`, props: { bg: { custom: hue } }, layout: { width: 56, height: 56, radius: 14 } },
+      { type: 'Label', id: `c-${o.id}-d`, props: { text: o.desc, size: 11, color: 'ink' } },
+      { type: 'Rating', id: `c-${o.id}-s`, props: { value: o.level, max: o.max } },
+    ],
+  };
+}
+export function buildLevelUp(offers: LevelUpOffer[]): LayoutNode {
+  return {
+    type: 'Screen', id: 's-levelup',
+    props: { center: true, bg: { custom: 'linear-gradient(rgba(42,46,53,0.94),rgba(30,33,39,0.96))' } },
+    layout: { direction: 'column', align: 'center', justify: 'center', gap: 22, padding: 18 },
+    children: [
+      { type: 'Button', id: 's-lu-banner', props: { label: 'CHOOSE SKILL', kind: 'hero', shape: 'ribbon' } },
+      {
+        type: 'Panel', id: 's-lu-cards', props: { bare: true },
+        layout: { direction: 'row', align: 'stretch', justify: 'center', gap: 10 },
+        children: offers.map(offerCard),
+      },
+    ],
+  };
+}
+
 // ── 结算浮层（Victory=parchment 卷轴 + confetti·Defeat=同版式无庆祝·SC Victory）──
 export function buildResult(s: HudState): LayoutNode {
   const win = s.status === 'victory';

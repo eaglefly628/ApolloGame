@@ -3,10 +3,30 @@ import { Engine } from '../../runtime/engine.js';
 import { applyCommands } from '@net/index.js';
 import type { Command } from '@net/index.js';
 import type { Resource, Tag, GameFlow, Transform } from '@engine/protocol/components.js';
+import { QueuedInputSource } from '@net/index.js';
+import { rollOffer } from '@skills/tier2/index.js';
+import type { DraftCandidate } from '@skills/tier2/index.js';
 import { validateLayoutNode } from '@ui/components/index.js';
+import type { Sprite } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
-import { buildHud, buildResult } from './hud.js';
-import { ENEMY, ZONE, START, KUNAI, SHAMBLER, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF } from './theme.js';
+import { buildHud, buildResult, buildLevelUp } from './hud.js';
+import { ENEMY, ZONE, START, KUNAI, SHAMBLER, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, POWER_ADD, ORBIT } from './theme.js';
+
+// 一步 sim（复刻引擎 step：每拍都注入命令→清 InputQueue·空则清空·防陈留信号重复触发）。
+function step(e: Engine, cmds: Command[] = []): void {
+  applyCommands(e.world, cmds);
+  e.world.tick();
+}
+// 驱动一个动作信号（enqueueAction → applyCommands 路由进 InputQueue → keybind→Signal→Effect·仅本拍在场）。
+function fireAction(e: Engine, name: string): void {
+  const input = new QueuedInputSource('hud');
+  input.enqueueAction(name);
+  step(e, input.commandsForTick(e.world.getVersion() + 1));
+}
+function hasSprite(e: Engine, key: string): boolean {
+  for (const [id] of e.world.query('Sprite')) { const s = e.world.getComponent<Sprite>(id, 'Sprite'); if (s && s.textureKey === key) return true; }
+  return false;
+}
 
 // ── 小工具 ──────────────────────────────────────────────────────────────────
 function res(e: Engine, eid: string, id = 'Resource'): number { return e.world.getComponent<Resource>(eid, id)?.current ?? 0; }
@@ -99,11 +119,41 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(flowState(e)).toBe('victory');
   });
 
-  it('UI 卫生：HUD/结算 LayoutNode 树 validateLayoutNode 零 issue（check-ui 机械门）', () => {
+  it('UI 卫生：HUD/结算/三选一 LayoutNode 树 validateLayoutNode 零 issue（check-ui 机械门）', () => {
     const st = { hp: 72, maxHp: 100, xp: 3, xpMax: LEVEL_XP, level: 4, elapsed: 522, score: 387, status: 'playing' as const };
     expect(validateLayoutNode(buildHud(st))).toEqual([]);
     expect(validateLayoutNode(buildResult({ ...st, status: 'victory' }))).toEqual([]);
     expect(validateLayoutNode(buildResult({ ...st, status: 'defeat' }))).toEqual([]);
+    const offers = DRAFT_POOL.slice(0, 3).map((u) => ({ id: u.id, name: u.name, desc: u.desc, accent: u.accent, level: 1, max: u.maxLevel, isNew: false, action: u.effectSignal }));
+    expect(validateLayoutNode(buildLevelUp(offers))).toEqual([]);
+  });
+
+  it('三选一 draft：rollOffer 从候选池过滤+加权抽 3 个不重复（确定性·同 seed 同结果）', () => {
+    const pool: DraftCandidate[] = DRAFT_POOL.map((u) => ({ id: u.id, weight: u.weight, slot: u.slot, maxLevel: u.maxLevel }));
+    const state = { owned: {}, slots: { weapon: { used: 0, cap: 6 }, passive: { used: 0, cap: 6 } } };
+    const a = rollOffer(pool, state, { n: DRAFT_N, seed: 2 });
+    const b = rollOffer(pool, state, { n: DRAFT_N, seed: 2 });
+    expect(a.length).toBe(3);
+    expect(new Set(a.map((c) => c.id)).size).toBe(3);       // 不重复
+    expect(a.map((c) => c.id)).toEqual(b.map((c) => c.id)); // 确定性
+  });
+
+  it('升级选中「锋刃手册」→ 全局 power 系数 +0.2（KeyBinding→Effect·子弹伤害随之涨）', () => {
+    const e = fresh();
+    tickN(e, 3);
+    const p0 = resById(e, 'power');
+    fireAction(e, 'pick_blade');
+    step(e); step(e); // 清队 + Effect 写入下一拍生效（不重复触发）
+    expect(resById(e, 'power')).toBeCloseTo(p0 + POWER_ADD.blade, 5);
+  });
+
+  it('升级选中「护盾环」→ Caster 生成跟随玩家的灼烧光环武器（新武器·带皮肤槽）', () => {
+    const e = fresh();
+    tickN(e, 3);
+    expect(hasSprite(e, ORBIT.skin)).toBe(false);
+    fireAction(e, 'pick_orbit');
+    step(e); step(e);
+    expect(hasSprite(e, ORBIT.skin)).toBe(true); // 护盾环实例已展开
   });
 
   it('确定性：两把独立同 tick → 同 hash（可回放/balance-sim）', () => {
