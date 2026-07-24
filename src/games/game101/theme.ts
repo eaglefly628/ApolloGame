@@ -24,7 +24,7 @@ export interface GeneratorDef {
 }
 
 export interface OrderDef {
-  id: string; char: string; needItem: string; qty: number;
+  id: string; char: string; needItems: string[]; // 各 slot 要的模板 id（顺序即 slot 序·最多 3）
   reward: { coins: number; exp?: number; stars?: number };
 }
 

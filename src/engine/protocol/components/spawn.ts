@@ -81,6 +81,27 @@ export interface MergeDrop extends Component {
   y: number;
 }
 
+// ── Order（多槽交付订单·REQ-101-07/order-fulfill）── 「集齐 N 个指定模板成品 → 发奖」的声明式订单。
+// 顾客点单/任务收集/合成台通用：needItems=各 slot 要的模板 id（最多 N）·filled=各 slot 是否已交付（等长）·
+// reward=集齐后发的资源增量表（数据·非硬编码）。order-fulfill 消费 DeliverDrop 时按模板匹配未满 slot 落格。
+export interface Order extends Component {
+  readonly type: 'Order';
+  orderId: string;
+  needItems: string[]; // 各 slot 需要的模板 id（顺序即 slot 序·长度=slot 数·最多 N）
+  filled: boolean[]; // 各 slot 是否已交付（与 needItems 等长·初始全 false）
+  reward: { resourceId: string; amount: number }[]; // 全 slot 集齐后一次性发的资源增量（钳进各资源 min/max）
+  resetOnComplete?: boolean; // 集齐发奖后是否清空 filled 重新接单（缺省 true·顾客走了换新单）
+}
+
+// ── DeliverDrop（交付意图·order-fulfill 消费）── 把「拖成品 item 去交给订单 order」的一次性意图交给引擎裁决：
+// item 的 PrefabOrigin.templateId 命中 order 某个未满 slot 的 needItem → 销毁 item + 该 slot 置满；全满则发奖（+可重置）。
+// 由宿主拖拽手势合成（host 解析被拖成品 item + 落点顾客卡对应的 order 实体），事件式、消费后即清。
+export interface DeliverDrop extends Component {
+  readonly type: 'DeliverDrop';
+  item: EntityId; // 被拖去交付的成品实例（带 PrefabOrigin）
+  order: EntityId; // 目标订单实体（带 Order）
+}
+
 // ── Caster ── 信号→生成桥（D-002）：把"按键/点地/条件成立"的 Signal 变成一条算好坐标的 SpawnRequest，
 // 由 prefab 能力展开成技能/陷阱/召唤/掉落。补上 prefab 缺的"运行时释放"入口（REQ-008 显式延后的那块）。
 // at 决定生成位置：'self'=施法者自身、'pointer'=光标世界坐标(screenToWorld 逆投影)、'target'=最近的 targetTag 阵营。

@@ -14,7 +14,8 @@ export function buildS1(): LayoutNode {
 
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
 export interface CellView { emoji: string; gen?: string; deliverable?: boolean }
-export interface OrderView { char: string; itemEmoji: string; coins: number; stars: number; deliverable: boolean }
+export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
+export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean }
 export interface S1State {
   energy: number; coins: number; gems: number; level: number;
   cells: (CellView | null)[]; orders: OrderView[];
@@ -66,7 +67,7 @@ function orders(s: S1State): N {
     type: 'Panel', id: 'orders', props: { bare: true },
     layout: { direction: 'row', align: 'stretch', justify: 'between', gap: 8, padding: 8 },
     children: s.orders.map((o, i) => ({
-      type: 'Panel', id: `ord-${i}`, props: { bg: 'panel' },
+      type: 'Panel', id: `ord-${i}`, props: { bg: 'panel' }, // 整卡=交付落点（宿主按 DOM id 几何识别·拖成品到此→DeliverDrop）
       layout: { direction: 'column', align: 'center', justify: 'between', gap: 6, padding: 10, radius: 18, flex: 1 },
       children: [
         {
@@ -78,14 +79,18 @@ function orders(s: S1State): N {
           ],
         },
         {
-          type: 'Panel', id: `ord-${i}-plate`, props: { bg: 'raised' },
-          layout: { direction: 'column', align: 'center', justify: 'center', gap: 4, padding: 10, radius: 16, flex: 1 },
-          children: [
-            { type: 'Label', id: `ord-${i}-it`, props: { text: o.itemEmoji, size: 56 } }, // 大·需求物看得清
-            o.deliverable
-              ? { type: 'Badge', id: `ord-${i}-ok`, props: { text: '✓ 可交付', tone: 'warn' } } as N
-              : { type: 'Label', id: `ord-${i}-hint`, props: { text: '需要', size: 'xs', color: 'dim' } } as N,
-          ],
+          // 餐盘（托盘）：最多 3 slot 横排——已交付=✓ 绿槽·可交付=金槽高亮·未满=素槽显需求物。
+          type: 'Panel', id: `ord-${i}-plate`, props: { bg: 'sunken' },
+          layout: { direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 8, radius: 16, flex: 1 },
+          children: o.slots.map((sl, j) => ({
+            type: 'Panel', id: `ord-${i}-s${j}`, props: { bg: sl.filled ? 'ok' : sl.want ? 'gold' : 'raised' },
+            layout: { direction: 'column', align: 'center', justify: 'center', padding: 6, radius: 12, height: 68, flex: 1 },
+            children: [
+              sl.filled
+                ? { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: '✓', size: 34, bold: true, color: 'ink' } } as N
+                : { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: sl.itemEmoji, size: 40 } } as N,
+            ],
+          })),
         },
         {
           type: 'Panel', id: `ord-${i}-rw`, props: { bare: true },

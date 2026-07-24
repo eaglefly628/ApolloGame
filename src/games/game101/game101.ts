@@ -4,15 +4,17 @@
 //   引擎 sim 跑（生成器点击产出/资源/体力恢复/自动合并·headless 测过），每帧把世界态投影进 S1 板格
 //   （物品显真 Twemoji·合并即变·生成器格可点·体力/金币实时）。宿主只搭 UI/输入/投影胶水·零玩法逻辑。
 // 交互：生成器格 Panel.action=tap_<id> → mountUI ActionSink 入队 → KeyBinding 转信号 → craft-recipe/caster。
-// ⚠ 缺口（主程域·数据已备待接）：真·拖拽合并 REQ-MERGE-ON-PLACE（现自动合并）；加权掉落 REQ-TAPSPAWN（现固定产出）。
+// 交付（G2 核心 meta·已接）：拖成品落顾客卡 → DeliverDrop{item,order} → t2-order-fulfill 裁模板匹配未满槽
+//   → 销毁该实例 + 置满槽 + 集齐发奖（钳限·可重置）。多槽（最多 3·orders.json needItems 数组）天然内建。
+// ⚠ 缺口（主程/PUI 域·数据已备待接）：加权掉落 REQ-TAPSPAWN（现固定产出）；异型限时菜单卡 REQ-UI-异型容器（PUI·现矩形卡顶着）。
 import { Engine } from '../../runtime/engine.js';
 import { QueuedInputSource } from '@net/index.js';
 import { mountHost } from '@engine/host/mount-host.js';
 import { mountUI } from '@ui/components/index.js';
 import type { HandlerMap, MountHandle } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin, Transform, MergeDrop } from '@engine/protocol/components.js';
+import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
-import { buildS1Live, type S1State, type CellView, type OrderView } from './s1.js';
+import { buildS1Live, type S1State, type CellView, type OrderView, type SlotView } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';
 import { GAME, RES, GENERATORS, ORDERS, ITEM_EMOJI, cellIndexOf, cellCenter } from './theme.js';
 
@@ -53,12 +55,21 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       const idx = cellIndexOf(t.x, t.y);
       if (idx >= 0 && !cells[idx]) { cells[idx] = { emoji: ITEM_EMOJI[po.templateId] ?? '❓' }; cellEntity[idx] = eid; cellTpl[idx] = po.templateId; }
     }
-    // 订单可交付 = 板上有该 needItem；对应板格标✓。
-    const need = new Set(ORDERS.filter((o) => onBoard.has(o.needItem)).map((o) => o.needItem));
-    for (let i = 0; i < cells.length; i++) if (cells[i] && cellTpl[i] && need.has(cellTpl[i]!)) cells[i]!.deliverable = true;
-    const orders: OrderView[] = ORDERS.map((o) => ({
-      char: o.char, itemEmoji: ITEM_EMOJI[o.needItem] ?? '❓', coins: o.reward.coins, stars: o.reward.stars ?? 0, deliverable: onBoard.has(o.needItem),
-    }));
+    // 订单交付态（读 Order 组件·多槽）：各 slot filled/需求物；want=板上有该物且此槽未满。
+    const wanted = new Set<string>(); // 当前被某订单未满槽需要的模板集（板格 ✓ 提示）
+    const orders: OrderView[] = ORDERS.map((o) => {
+      const ord = w.getComponent<Order>(`order-${o.id}`, 'Order');
+      const need = ord?.needItems ?? o.needItems;
+      const filledArr = ord?.filled ?? o.needItems.map(() => false);
+      const slots: SlotView[] = need.map((tpl, j) => {
+        const filled = !!filledArr[j];
+        if (!filled) wanted.add(tpl);
+        return { itemEmoji: ITEM_EMOJI[tpl] ?? '❓', filled, want: !filled && onBoard.has(tpl) };
+      });
+      return { char: o.char, slots, coins: o.reward.coins, stars: o.reward.stars ?? 0, deliverable: slots.some((sl) => sl.want) };
+    });
+    // 板格 ✓ = 该成品被某订单未满槽需要（可拖去交付）。
+    for (let i = 0; i < cells.length; i++) if (cells[i] && cellTpl[i] && wanted.has(cellTpl[i]!)) cells[i]!.deliverable = true;
     return { energy: res(RES.energy), coins: res(RES.coins), gems: 8, level: 12, cells, orders };
   }
 
@@ -74,6 +85,16 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     }
     return -1;
   };
+  // 找落点所属**顾客卡 Panel**（id=ord-<i>）——跳过内层槽/头像（ord-<i>-... 也匹配前缀·会误解析）。
+  const orderIdxFromEl = (el: Element | null): number => {
+    let cur: Element | null = el?.closest?.('[id^="ord-"]') ?? null;
+    while (cur) {
+      const m = /^ord-(\d+)$/.exec(cur.id);
+      if (m) return Number(m[1]);
+      cur = cur.parentElement?.closest?.('[id^="ord-"]') ?? null;
+    }
+    return -1;
+  };
   let dragFrom = -1;
   const onDown = (ev: PointerEvent): void => {
     const idx = cellIdxFromEl(ev.target as Element);
@@ -82,8 +103,19 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   const onUp = (ev: PointerEvent): void => {
     if (dragFrom < 0) return;
     const from = cellEntity[dragFrom]; const fromIdx = dragFrom; dragFrom = -1;
-    const toIdx = cellIdxFromEl(document.elementFromPoint(ev.clientX, ev.clientY));
-    if (!from || toIdx < 0 || toIdx === fromIdx || GEN_CELLS.has(toIdx)) return; // 落生成器/空放/原格=忽略
+    if (!from) return;
+    const dropEl = document.elementFromPoint(ev.clientX, ev.clientY);
+    // ① 落在顾客卡 → 交付意图（DeliverDrop）：引擎 order-fulfill 裁模板匹配→销毁实例+置满槽+集齐发奖。
+    const ordIdx = orderIdxFromEl(dropEl);
+    if (ordIdx >= 0 && ordIdx < ORDERS.length) {
+      const cid = 'host-deliver';
+      if (!engine.world.hasComponent(cid, 'DeliverDrop')) engine.world.createEntity(cid);
+      engine.world.addComponent(cid, { type: 'DeliverDrop', item: from, order: `order-${ORDERS[ordIdx].id}` } as DeliverDrop);
+      return;
+    }
+    // ② 落在板格 → 合并/移动/交换意图（MergeDrop）。
+    const toIdx = cellIdxFromEl(dropEl);
+    if (toIdx < 0 || toIdx === fromIdx || GEN_CELLS.has(toIdx)) return; // 落生成器/空放/原格=忽略
     const to = cellEntity[toIdx] ?? undefined; const p = cellCenter(toIdx);
     const cid = 'host-drop';
     if (!engine.world.hasComponent(cid, 'MergeDrop')) engine.world.createEntity(cid);
@@ -100,7 +132,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   let lastSig = '';
   const unsub = engine.subscribe(() => {
     const st = readState();
-    const sig = `${Math.round(st.energy)}|${Math.round(st.coins)}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '')).join(',')}|${st.orders.map((o) => o.deliverable ? '1' : '0').join('')}`;
+    const sig = `${Math.round(st.energy)}|${Math.round(st.coins)}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('')).join('|')}`;
     if (sig !== lastSig) { lastSig = sig; ui.update(buildS1Live(st), GAME101_THEME); }
   });
 

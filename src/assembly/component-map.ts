@@ -60,6 +60,8 @@ import type {
   Material3D,
   MergeRule,
   MergeDrop,
+  Order,
+  DeliverDrop,
   Mesh3D,
   ModifierSource,
   ModifierTotals,
@@ -186,6 +188,8 @@ export interface ComponentDataMap {
   Material3D: Omit<Material3D, 'type'>;
   MergeRule: Omit<MergeRule, 'type'>;
   MergeDrop: Omit<MergeDrop, 'type'>;
+  Order: Omit<Order, 'type'>;
+  DeliverDrop: Omit<DeliverDrop, 'type'>;
   Mesh3D: Omit<Mesh3D, 'type'>;
   ModifierSource: Omit<ModifierSource, 'type'>;
   ModifierTotals: Omit<ModifierTotals, 'type'>;

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { validateLayoutNode } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop } from '@engine/protocol/components.js';
+import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop, DeliverDrop, Order } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1, buildS1Live } from './s1.js';
 import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, generatorOutput, cellCenter } from './theme.js';
@@ -47,6 +47,14 @@ function dragMerge(e: Engine, from: string, to: string): void {
   e.world.addComponent(cid, { type: 'MergeDrop', from, to, x: t?.x ?? 0, y: t?.y ?? 0 } as MergeDrop);
   e.world.tick(); // merge-on-place → destroy from+to + spawn into
   e.world.tick(); // prefab 展开次级
+}
+// 拖成品去交付（order-fulfill）：注入 DeliverDrop{item,order} → 裁模板匹配 + 销毁实例 + 集齐发奖。
+function deliverTo(e: Engine, item: string, orderId: string): void {
+  const cid = 'deliver-test';
+  if (!e.world.hasComponent(cid, 'DeliverDrop')) e.world.createEntity(cid);
+  e.world.addComponent(cid, { type: 'DeliverDrop', item, order: `order-${orderId}` } as DeliverDrop);
+  e.world.tick(); // order-fulfill：匹配→DestroyRequest+发奖
+  e.world.tick(); // destroy-apply 回收实例
 }
 
 describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据驱动）', () => {
@@ -119,7 +127,10 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     const cells = new Array(63).fill(null);
     cells[0] = { emoji: '🧊', gen: 'gen_fridge' };
     cells[8] = { emoji: '🥗', deliverable: true };
-    const live = buildS1Live({ energy: 34, coins: 305, gems: 8, level: 12, cells, orders: [{ char: '周航', itemEmoji: '🥗', coins: 44, stars: 2, deliverable: true }, { char: '老陈', itemEmoji: '🐠', coins: 38, stars: 0, deliverable: false }] });
+    const live = buildS1Live({ energy: 34, coins: 305, gems: 8, level: 12, cells, orders: [
+      { char: '周航', slots: [{ itemEmoji: '🥗', filled: false, want: true }], coins: 44, stars: 2, deliverable: true },
+      { char: '老陈', slots: [{ itemEmoji: '🐠', filled: true, want: false }, { itemEmoji: '🐠', filled: false, want: false }], coins: 78, stars: 2, deliverable: false },
+    ] });
     expect(live.type).toBe('Screen');
     expect(validateLayoutNode(live)).toEqual([]);
   });
@@ -160,6 +171,34 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     dragMerge(e, ids[0], ids[1]); // 拖合成
     expect(countTemplate(e, 'tool_1')).toBe(0);
     expect(countTemplate(e, 'tool_2')).toBe(1);
+  });
+
+  // ── 订单交付（G2 核心 meta·order-fulfill 闭环）───────────────────────────────
+  it('订单交付：合出 food_2 拖给周航 → 消耗该成品实例 + 金币 +44（order-fulfill 闭环）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 2); // seed food_1 展开
+    const f1 = itemsOf(e, 'food_1');
+    dragMerge(e, f1[0], f1[1]); // 拖合成 food_2（周航订单 needItems=['food_2']）
+    expect(countTemplate(e, 'food_2')).toBe(1);
+    const dish = itemsOf(e, 'food_2')[0];
+    const c0 = res(e, RES.coins);
+    deliverTo(e, dish, 'o_zhou');
+    expect(res(e, RES.coins)).toBe(c0 + 44);       // 单槽集齐即发奖
+    expect(countTemplate(e, 'food_2')).toBe(0);    // 成品实例被消耗
+  });
+
+  it('订单交付：交错模板不误交（拖 fish_2 给要 food_2 的周航 → 不消耗不发奖）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 2);
+    const s1 = itemsOf(e, 'fish_1');
+    dragMerge(e, s1[0], s1[1]); // → fish_2
+    const wrong = itemsOf(e, 'fish_2')[0];
+    const c0 = res(e, RES.coins);
+    deliverTo(e, wrong, 'o_zhou'); // 周航要 food_2·非 fish_2
+    expect(res(e, RES.coins)).toBe(c0);            // 不发奖
+    expect(countTemplate(e, 'fish_2')).toBe(1);    // 不消耗
+    const ord = e.world.getComponent<Order>('order-o_zhou', 'Order');
+    expect(ord?.filled).toEqual([false]);          // 槽未满
   });
 
   it('确定性：接生成器后两把同操作序列 → 同 hash（可回放）', () => {

@@ -24,11 +24,11 @@ import {
 } from '@atom-skills/index.js';
 import {
   overTimeCapability, clickableCapability, craftRecipeCapability,
-  effectApplyCapability, eventWhenCapability, keybindCapability, mergeOnPlaceCapability,
+  effectApplyCapability, eventWhenCapability, keybindCapability, mergeOnPlaceCapability, orderFulfillCapability,
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
-  GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, generatorOutput,
+  GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, generatorOutput,
   cellCenter, mergeRules, itemTemplates, CELL, GEN_TAG, GEN_TINT,
 } from './theme.js';
 
@@ -114,6 +114,24 @@ function boardCellEntities(): Record<string, EntityBlueprint> {
   return out;
 }
 
+// ── 订单实体（多槽交付·order-fulfill 消费 DeliverDrop）──────────────────────────
+// 每单一个 Order 实体：needItems=各 slot 要的成品模板·filled 初始全 false·reward=集齐发的资源增量表（数据）。
+// 交付=宿主拖成品落顾客卡 → DeliverDrop{item,order} → order-fulfill 匹配未满 slot→销毁实例+置满·集齐发奖重置。
+function orderEntities(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  for (const o of ORDERS) {
+    const reward = [
+      { resourceId: RES.coins, amount: o.reward.coins },
+      ...(o.reward.stars ? [{ resourceId: RES.stars, amount: o.reward.stars }] : []),
+      ...(o.reward.exp ? [{ resourceId: RES.exp, amount: o.reward.exp }] : []),
+    ];
+    out[`order-${o.id}`] = {
+      Order: { orderId: o.id, needItems: o.needItems, filled: o.needItems.map(() => false), reward, resetOnComplete: true },
+    };
+  }
+  return out;
+}
+
 // ── 合并规则实体（每条 MergeRule 一个承载实体）────────────────────────────────
 function mergeRuleEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
@@ -127,6 +145,7 @@ export function buildBlueprint(): WorldBlueprint {
     library: { PrefabLibrary: { seq: 0, templates: itemTemplates() } },
     ...boardCellEntities(),
     ...mergeRuleEntities(),
+    ...orderEntities(),
     ...generatorEntities(),
     ...seedItemEntities(),
   };
@@ -136,7 +155,7 @@ export function buildBlueprint(): WorldBlueprint {
       transformCapability, tagCapability, shapeCapability, colorCapability,
       spriteCapability, resourceCapability, destroyCapability, flagCapability, timerCapability,
       overTimeCapability, clickableCapability, craftRecipeCapability, effectApplyCapability, eventWhenCapability, keybindCapability,
-      mergeOnPlaceCapability, prefabCapability, casterCapability,
+      mergeOnPlaceCapability, orderFulfillCapability, prefabCapability, casterCapability,
     ],
     entities,
   };
