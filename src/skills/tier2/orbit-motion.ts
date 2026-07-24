@@ -1,4 +1,5 @@
 import { defineCapability } from '@engine/core/define-capability.js';
+import { SystemPhase } from '@engine/core/types.js';
 import type { IWorld } from '@engine/core/types.js';
 import type { Orbit, Transform } from '@engine/protocol/components.js';
 
@@ -75,8 +76,13 @@ export const orbitMotionCapability = defineCapability({
   systems: [
     {
       id: 'orbit-motion',
-      // runsAfter motion-apply：圆心(如 player)本 tick 若已移动，取其更新后位置绕转（跟随移动的圆心）。
-      runsAfter: ['motion-apply'],
+      // 定序（首个真消费者 game-103 撞环暴露·2026-07-24）：orbit 读圆心 Transform + 写自身 Transform=RMW Transform，
+      // 与 hierarchy-resolve（PostResolve·同 RMW Transform）在同组件上互为前驱→纯拓扑成环。orbit 本质=「基于已解算
+      // 结果再定位」（同 hierarchy 跟随），故落 **PostResolve 阶段**（跨阶段按阶段号定序·自动排在 Update 的 motion-apply /
+      // 默认阶段 camera-follow 之后、Commit 的 bounds-clamp 之前=无环）；阶段内对 hierarchy-resolve 显式 runsAfter
+      // 钉死（圆心的层级位先解算完再绕）。
+      phase: SystemPhase.PostResolve,
+      runsAfter: ['motion-apply', 'hierarchy-resolve'],
       reads: ['Orbit', 'Transform'],
       writes: ['Transform'],
       consumes: [],

@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
 import type { Orbit, Transform } from '@engine/protocol/components.js';
 import { orbitMotionCapability, orbitAt } from './orbit-motion.js';
+import { motionApplyCapability, hierarchyResolveCapability, hierarchyCascadeCapability } from '@skills/tier1/index.js';
+import { cameraFollowCapability, boundsClampCapability } from '@skills/tier2/index.js';
 
 // orbit-motion 圆周运动测试（REQ-SURVIVOR护盾绕转·VBUG-02）。运行时零 sin/cos·rotor 状态·确定性。
 const xf = (x: number, y: number): Transform => ({ type: 'Transform', x, y, rotation: 0, scaleX: 1, scaleY: 1 });
@@ -98,6 +100,25 @@ describe('orbit-motion — 双球对位 + 确定性', () => {
       return JSON.stringify(w.snapshot());
     };
     expect(run()).toBe(run());
+  });
+});
+
+describe('orbit-motion — 调度定序（首个消费者 game-103 撞环回归）', () => {
+  it('与 motion-apply/hierarchy-resolve/hierarchy-cascade/camera-follow/bounds-clamp 同装不成环·可 tick', () => {
+    // 复现 PE-103 报的「装一起拓扑成环→蓝图 load 不了」：全部读写 Transform 的系统 + orbit 同装。
+    const w = new World();
+    for (const cap of [
+      motionApplyCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
+      cameraFollowCapability, boundsClampCapability, orbitMotionCapability,
+    ]) for (const s of cap.systems) w.addSystem(s);
+    w.createEntity('player');
+    w.addComponent('player', xf(0, 0));
+    w.addComponent('player', { type: 'Velocity', vx: 1, vy: 0, angular: 0 } as never);
+    orbiter(w, 'shield', orbitAt(40, 0, 0.05, 'player'));
+    // 成环则调度器在 tick 时抛错；这里断言可连跑不抛 + orbit 仍绕 player。
+    expect(() => { for (let i = 0; i < 5; i++) w.tick(); }).not.toThrow();
+    const p = pos(w, 'player');
+    expect(Math.hypot(pos(w, 'shield').x - p.x, pos(w, 'shield').y - p.y)).toBeCloseTo(40, 4);
   });
 });
 

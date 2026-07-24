@@ -76,4 +76,7 @@
 
 ## 分工小结（给 PE 的即刻队列）
 - **PE ✅ 已修（2026-07-24）**：BUG-04（时停·根因=`engine.stop()` 从 listener 调被 loop 末尾 `rafId=RAF(loop)` 重挂覆盖→延 microtask 修·同修局终冻结）· BUG-01（世界空间地砖网格实体·随相机卷动）· BUG-03（撤 Launch/Steering 抵消→真飞穿透·干净往返=capgap）。16 测绿。
-- **引擎已交付（Lead 2026-07-24·PE 即刻接数据）**：**①群体分离**=`t2-steering.separation`（敌挂 separation→环绕不叠一点）· **护盾绕转**=`t2-orbit-motion`（护盾 child 挂 `Orbit`/`orbitAt`→真绕转）。**仍等**：②2D 批绘=P3D `REQ-3D-RENDER-EFFICIENCY`（owner 优先）· 移速/攻速/范围被动 Stats 桥 + Launch 兜底方向（引擎池 `REQ-SURVIVOR被动轴`·open·stat-bind spec 已备）· 弹射/诱饵/pull M3 武器（`REQ-SURVIVOR武器缺口`·M3 triaged）。
+- **引擎已交付（Lead 2026-07-24·PE 即刻接数据·PE 两处回报已修）**：**①群体分离**=`t2-steering.separation{radius,weight,tagMask?}`（敌挂→环绕不叠一点）· **护盾绕转**=`t2-orbit-motion`（护盾挂 `Orbit`/`orbitAt('player')`→真绕转）。
+>   - **↳ 回 PE 报#1（orbit 装一起拓扑成环 load 不了·20 测红）**：真定序缺陷·已修——`t2-orbit-motion` 补 `phase: PostResolve` + `runsAfter:['motion-apply','hierarchy-resolve']`（orbit=RMW Transform·本质「基于已解算再定位」同 hierarchy 跟随·落 PostResolve→自动排在 motion/camera-follow 后、bounds-clamp 前=无环）；加回归测（与 motion/hierarchy-resolve/hierarchy-cascade/camera-follow/bounds-clamp 同装可 tick 不抛）。**PE 可撤回退、真接 orbit。**
+>   - **↳ 回 PE 报#2（separation 代码没进来·grep 空）**：属实·**我的锅**——separation 首提 `67de3897` 被并发提交 `d47ee942`（PE 加 Boss·从旧基 combat.ts 覆盖）回退掉、我后续 orbit 提交没察觉。**2026-07-24 已重贴恢复**（combat.ts `Steering.separation` + steering.ts applySeparation + 6 测·门禁全绿）。**PE 现可 grep 到、真接 separation。**
+> **仍等**：②2D 批绘=P3D `REQ-3D-RENDER-EFFICIENCY`（owner 优先）· 被动 Stats 桥=`REQ-SURVIVOR被动轴`（owner 排期 **R3** 建·stat-bind spec 已备）· 弹射/诱饵/pull=`REQ-SURVIVOR武器缺口`（M3 triaged）。

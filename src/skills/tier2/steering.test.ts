@@ -124,3 +124,84 @@ describe('aggro + steering = ai-chase（纯数据组合，对齐周期表）', (
     expect(run()).toBe(run());
   });
 });
+
+describe('steering — 群体分离 (separation·REQ-SURVIVOR群体①)', () => {
+  const ENEMY = 1 << 3;
+
+  it('分离：两个同群 agent 追同一目标 → 垂直斥开（不塌成一点）', () => {
+    const w = world();
+    target(w, 'p', 100, 0);
+    agent(w, 'A', 0, 0, { mode: 'seek', speed: 3, stopRange: 5, separation: { radius: 10, weight: 2 } }, 'p');
+    agent(w, 'B', 0, 2, { mode: 'seek', speed: 3, stopRange: 5, separation: { radius: 10, weight: 2 } }, 'p');
+    w.tick();
+    expect(vel(w, 'A').vy).toBeLessThan(0);
+    expect(vel(w, 'B').vy).toBeGreaterThan(0);
+    expect(vel(w, 'A').vx).toBeGreaterThan(0);
+  });
+
+  it('零回归：无 separation → 纯 seek（vx=speed·vy=0·不被邻居推）', () => {
+    const w = world();
+    target(w, 'p', 100, 0);
+    agent(w, 'A', 0, 0, { mode: 'seek', speed: 3, stopRange: 5 }, 'p');
+    agent(w, 'B', 0, 2, { mode: 'seek', speed: 3, stopRange: 5 }, 'p');
+    w.tick();
+    expect(vel(w, 'A').vx).toBe(3);
+    expect(vel(w, 'A').vy).toBe(0);
+  });
+
+  it('clamp：分离叠加后速度模长不超过 speed', () => {
+    const w = world();
+    target(w, 'p', 100, 0);
+    agent(w, 'A', 0, 0, { mode: 'seek', speed: 3, stopRange: 5, separation: { radius: 10, weight: 99 } }, 'p');
+    agent(w, 'B', 0, 1, { mode: 'seek', speed: 3, stopRange: 5, separation: { radius: 10, weight: 99 } }, 'p');
+    w.tick();
+    const v = vel(w, 'A');
+    expect(Math.hypot(v.vx, v.vy)).toBeCloseTo(3, 6);
+  });
+
+  it('tagMask：只被带该 Tag 的邻居斥、不被无 tag 邻居斥', () => {
+    const wNo = world();
+    target(wNo, 'p', 100, 0);
+    agent(wNo, 'A', 0, 0, { mode: 'seek', speed: 3, stopRange: 5, separation: { radius: 10, weight: 2, tagMask: ENEMY } }, 'p');
+    wNo.createEntity('deco');
+    wNo.addComponent('deco', xf(0, 2));
+    wNo.tick();
+    expect(vel(wNo, 'A').vy).toBe(0);
+
+    const wYes = world();
+    target(wYes, 'p', 100, 0);
+    agent(wYes, 'A', 0, 0, { mode: 'seek', speed: 3, stopRange: 5, separation: { radius: 10, weight: 2, tagMask: ENEMY } }, 'p');
+    wYes.createEntity('foe');
+    wYes.addComponent('foe', xf(0, 2));
+    wYes.addComponent('foe', { type: 'Tag', flags: ENEMY } as Tag);
+    wYes.tick();
+    expect(vel(wYes, 'A').vy).toBeLessThan(0);
+  });
+
+  it('stopRange 环绕：到攻击距离(base v=0)仍分离、不叠一点', () => {
+    const w = world();
+    target(w, 'p', 100, 0);
+    agent(w, 'A', 98, 0, { mode: 'seek', speed: 3, stopRange: 5, separation: { radius: 10, weight: 2 } }, 'p');
+    agent(w, 'B', 98, 2, { mode: 'seek', speed: 3, stopRange: 5, separation: { radius: 10, weight: 2 } }, 'p');
+    w.tick();
+    expect(vel(w, 'A').vy).toBeLessThan(0);
+    expect(vel(w, 'B').vy).toBeGreaterThan(0);
+  });
+
+  it('确定性：同布局两次 → 同速度', () => {
+    const build = (): World => {
+      const w = world();
+      target(w, 'p', 100, 0);
+      for (const [id, y] of [['A', 0], ['B', 2], ['C', 4], ['D', 6]] as const) {
+        agent(w, id, 0, y, { mode: 'seek', speed: 3, stopRange: 5, separation: { radius: 20, weight: 1.5 } }, 'p');
+      }
+      return w;
+    };
+    const run = (): string => {
+      const w = build();
+      for (let i = 0; i < 10; i++) w.tick();
+      return JSON.stringify(w.snapshot());
+    };
+    expect(run()).toBe(run());
+  });
+});
