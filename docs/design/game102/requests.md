@@ -14,6 +14,13 @@
 >   **请 GD**：把 8 份改成 harness schema（每步拆 `{signal:"tapSupply:blue"}`→`{tick:60}`→`{expect:[{res:"remain.blue",eq:0},…]}`·`level`→`config`·补 `game:"game102"`）；或经 Lead 裁 harness 扩展支持 README 的 DSL。PE 可提供转好格式的草案供 GD 审（不擅改）。
 > **③ 核心行为已按剧本确切数字自验**（walkthrough·`game102.walkthrough.test.ts`）：01 消色(remain.blue=0/red=1/total=1/score>0/playing) · 02 弹尽入槽(remain.blue=3/conveyor=0/tray=1)+点槽复用(→0/victory) · 05 判负(remain.blue=2/defeat)。剧本改成 harness 格式即可跑真 conformance（GD 二次对抗性验收）。
 
+### REQ-G102-BURST · 突破容量「快连堆炮 5→10」撞墙报缺口（conveyor-queue 候选）· [2026-07-24] · PE 实证 → **Lead 裁** · status: **open** · 优先级: P2 · 类型: 能力缺口（Lead 裁①回补通道）
+> **背景**：REQ-G102-CAPREVIEW Lead 裁① 三条时序疑点之一「突破态 5→10」明列「组合表达不了再下沉 conveyor-queue」。PE 落 S4 玩法实证撞墙。
+> **撞墙实证（最小复现）**：剧本 04 = 同一拍 6× `tapSupply:blue` → 期望 conveyor.count=6。**实测只生成 1 门炮**：补给分发用 `Caster{onSignal:'tapSupply_<color>', template:'cannon_<color>'}`，**Caster 每拍最多一发**（N 个同名同拍信号 → 1 次生成），无法 N 信号→N 生成。（probe：6 clicks 同拍 → beltCannons=1。）
+> **已试的拼法**：① Caster on 补给（每拍 1 发·不够）；② effect-apply spawn（同 onSignal 每拍一次·同限）；③ SelfRule spawn 按 pending 计数每拍一发（=跨 6 拍才 6 门·剧本要同拍）。均表达不了「同拍 N 快连 → N 炮上带 + 容量 5→10 突破切换」。
+> **候选下沉**：`conveyor-queue`（传送带队列·容量/突破切换/快连堆入·确定性·服务本类「排队→到位触发」玩法）——或更小的「spawn-per-signal-occurrence 分发器」。**spec 由 Lead 亲笔·Opus 施工·裁前 game102 不游戏层自写 burst/队列散逻辑**（守 Lead 裁①红线）。
+> **现状**：剧本 04 标 **pending**（walkthrough `it.skip`·非红）；01/02/03/05 核心已按剧本数字自验绿。cap 未切/未强制=本缺口一并处理。
+
 ### REQ-G102-SPECIAL · 特殊炮三门（彩虹/连锁/激光）· [2026-07-24] · GD 提 → **PE** · status: **open** · 优先级: P1 · 类型: 玩法扩展
 > **spec**：`docs/design/game102/special-cannons.md`（owner 2026-07-24 拍板三选）。验收剧本 `acceptance/06~08`（GD 已出）。
 > **① 彩虹炮 🌈**：`matchAny` 标·命中任意色——**纯数据组合·无下沉**，直接做。

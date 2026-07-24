@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { applyCommands, QueuedInputSource } from '@net/index.js';
-import type { Resource, Transform, GameFlow, Tag } from '@engine/protocol/components.js';
+import type { Resource, Transform, GameFlow, Tag, Flag } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import type { Level } from './levels.js';
 import { TRAY_BIT } from './theme.js';
@@ -15,6 +15,10 @@ const S01: Level = { no: 101, name: 's01', cols: 5, rows: 1, palette: ['blue', '
 const S02: Level = { no: 102, name: 's02', cols: 6, rows: 1, palette: ['blue'], ammo: 3, ...base, limit: { kind: 'moves', n: 5 }, goals: [{ kind: 'clear' }], seed: 20102, bitmap: ['000000'] };
 // 剧本 05：3×1 · blue×3 · ammo1 · moves1 → 只能消 1 · 剩 2 → 判负。
 const S05: Level = { no: 105, name: 's05', cols: 3, rows: 1, palette: ['blue'], ammo: 1, ...base, limit: { kind: 'moves', n: 1 }, goals: [{ kind: 'clear' }], seed: 20105, bitmap: ['000'] };
+// 剧本 03：4×1 · blue 于 col0/col2 皆钥匙 · needKeys2 → 收集 2 钥匙 → 开门 → 过关。
+const S03: Level = { no: 103, name: 's03', cols: 4, rows: 1, palette: ['blue'], ammo: 5, ...base, limit: { kind: 'moves', n: 3 }, goals: [{ kind: 'clear' }, { kind: 'keys', n: 2 }, { kind: 'door', needKeys: 2, target: 100 }], seed: 20103, bitmap: ['0.0.'], keys: [[0, 0], [2, 0]] };
+// 剧本 04：12×1 · blue×12 · ammo1 · 快连 6 门 → conveyor.count=6（突破 5→10）。
+const S04: Level = { no: 104, name: 's04', cols: 12, rows: 1, palette: ['blue'], ammo: 1, ...base, limit: { kind: 'moves', n: 12 }, goals: [{ kind: 'clear' }], seed: 20104, bitmap: ['000000000000'] };
 
 function driven(level: Level) {
   const input = new QueuedInputSource('g102');
@@ -87,6 +91,27 @@ describe('Game 102 · Pixel Pour（S4 · 照验收剧本自验）', () => {
     g.step(60);
     expect(g.res('remain-blue')).toBe(2);
     expect(g.flow()).toBe('defeat');
+  });
+
+  it('剧本03 钥匙开门：清 2 钥匙格 → keys=2 → doorOpen → victory', () => {
+    const g = driven(S03);
+    g.step(2);
+    g.tapSupply('blue');
+    g.step(60);
+    expect(g.res('remain-blue')).toBe(0);
+    expect(g.res('keys')).toBe(2);
+    expect(g.e.world.getComponent<Flag>('doorflag', 'Flag')?.active).toBe(true);
+    expect(g.flow()).toBe('victory');
+  });
+
+  // 剧本04 突破容量 = pending（撞墙报缺口·requests.md REQ-G102-BURST）：同拍 6 tapSupply 只生成 1 门炮
+  // （Caster 每拍一发·N 信号→1 生成），"快连堆炮/突破 5→10" 需 conveyor-queue 下沉·裁前不游戏层自写。
+  it.skip('剧本04 突破容量：快连 6 门 → conveyor.count=6（pending·待 conveyor-queue 下沉）', () => {
+    const g = driven(S04);
+    g.step(2);
+    for (let i = 0; i < 6; i++) g.tapSupply('blue');
+    g.step(1);
+    expect(g.res('conveyor-count')).toBe(6);
   });
 
   it('确定性：同操作两次同 hash（lockstep-safe）', () => {

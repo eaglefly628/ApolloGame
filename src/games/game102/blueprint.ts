@@ -19,7 +19,7 @@ import {
 import { motionApplyCapability, lifetimeCapability } from '@skills/tier1/index.js';
 import {
   clickableCapability, groupCountCapability, effectApplyCapability, launchCapability,
-  selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability,
+  selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability,
 } from '@skills/tier2/index.js';
 import { flowCapability, aggroCapability, prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
@@ -75,7 +75,8 @@ function boardCells(level: Level): Record<string, EntityBlueprint> {
         Tag: { flags: pc.bit | CELL_BIT | (isKey ? KEY_BIT : 0) },
         Resource: { id: 'hp', current: hp, min: 0, max: hp },
         Color: col(pc.tint, 1),
-        Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: 'scoreblip' }, // hp 归零→消除 + 掉 scoreblip 计分
+        // hp 归零→消除；钥匙格掉 keyblip(计分+钥匙+1)，普通格掉 scoreblip(计分)。
+        Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: isKey ? 'keyblip' : 'scoreblip' },
       };
     }
   }
@@ -217,21 +218,36 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
     ResourceModify: { resourceId: 'score', amount: CONFIG.SCORE_CLEAR, scope: 'global' },
     Timer: { id: 'life', elapsed: 0, duration: 1, loop: false },
   } } };
+  // 钥匙粒子：钥匙格消除时掉此件 → 计分 + 钥匙 +1（两粒·各一 ResourceModify·全局）。
+  templates['keyblip'] = { entities: {
+    s: { Transform: XF(0, 0), ResourceModify: { resourceId: 'score', amount: CONFIG.SCORE_CLEAR, scope: 'global' }, Timer: { id: 'life', elapsed: 0, duration: 1, loop: false } },
+    k: { Transform: XF(0, 0), ResourceModify: { resourceId: 'keys', amount: 1, scope: 'global' }, Timer: { id: 'life', elapsed: 0, duration: 1, loop: false } },
+  } };
   return { prefabs: { PrefabLibrary: { seq: 0, templates } } };
 }
 
-// 计量 + moves + 复用自毁 Effect。
+// 计量 + moves + 钥匙/门 + 复用自毁 Effect。
 function meters(level: Level): Record<string, EntityBlueprint> {
+  const doorGoal = level.goals.find((g) => g.kind === 'door') as { needKeys: number } | undefined;
+  const keyGoal = level.goals.find((g) => g.kind === 'keys') as { n: number } | undefined;
+  const needKeys = doorGoal?.needKeys ?? keyGoal?.n ?? (level.keys?.length ?? 0);
   const out: Record<string, EntityBlueprint> = {
     score: { Resource: { id: 'score', current: 0, min: 0, max: 9_999_999 } },
     combo: { Resource: { id: 'combo', current: 0, min: 0, max: 999 } },
     moves: { Resource: { id: 'moves', current: level.limit.kind === 'moves' ? level.limit.n : 9999, min: 0, max: 9999 } },
+    keys: { Resource: { id: 'keys', current: 0, min: 0, max: 999 } },
+    doorflag: { Flag: { id: 'doorOpen', active: false } },
   };
   // tapSlot → 销毁被点的 tray 炮（@signal-source）；同信号 tray 炮身上的 Caster 已生成满弹上带炮。
   out['redeploy-fx'] = { Effect: { onSignal: 'tapSlot', kind: 'destroy', targetEntity: '@signal-source', value: true } };
   // 每色 tapSupply → moves-1（gdd：取炮 = 1 move）。
   for (const name of level.palette) {
     out[`move-fx-${name}`] = { Effect: { onSignal: `tapSupply_${name}`, kind: 'modify-resource', targetId: 'moves', op: 'add', value: -1 } };
+  }
+  // 钥匙集齐 needKeys → 发 open_door 信号 → 置 doorOpen 旗（gdd §2.4·event-when 边沿 + effect-apply）。
+  if (needKeys > 0) {
+    out['door-when'] = { EventWhen: { signal: 'open_door', when: { kind: 'resource', id: 'keys', cmp: 'gte', value: needKeys }, mode: 'edge' } };
+    out['door-open-fx'] = { Effect: { onSignal: 'open_door', kind: 'set-flag', targetId: 'doorOpen', value: true } };
   }
   return out;
 }
@@ -290,7 +306,7 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
       motionApplyCapability, lifetimeCapability,
       // tier2 玩法能力
       clickableCapability, groupCountCapability, effectApplyCapability, launchCapability,
-      selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability,
+      selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability,
       // tier3（生成 + 索敌 + 流程）
       flowCapability, aggroCapability, prefabCapability, casterCapability,
     ],
