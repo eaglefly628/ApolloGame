@@ -8,14 +8,21 @@
 
 ## 待处理 / 进行中
 
-### REQ-SURVIVOR武器缺口-3 薄件（弹射 bounce / 诱饵 aggro 重定向 / pull 吸附）· [2026-07-24] · PE-game-103 报（capability-plan §4 E4「待核」的回报）→ Lead 裁 · status: open · 优先级: P2（game-103 M3 武器·**不阻塞 M2**） · 类型: 引擎 capability 薄缺口（Roguelite 武器通用·先重组再下沉）
+### REQ-SURVIVOR武器缺口-3 薄件（弹射 bounce / 诱饵 aggro 重定向 / pull 吸附）· [2026-07-24] · PE-game-103 报（capability-plan §4 E4「待核」的回报）→ Lead 裁 · status: **⚖ Lead triaged（2026-07-24·三条定形·M3 开工时建·不阻塞 M2·现不预建 YAGNI）** · 优先级: P2（game-103 M3 武器·**不阻塞 M2**） · 类型: 引擎 capability 薄缺口（Roguelite 武器通用·先重组再下沉）
+> **⚖ Lead 裁（2026-07-24·triaged）**：三条 PE 已源码复核实锤真薄缺口·定形如下·**M3 武器开工时按此建**（M2 六武器不受影响·现不预建）：
+> - **bounce（W7）→ 薄加性字段 `Launch.bounce?:{times,targetTag}`**（命中后 up to times 次 nearestByTag 重定向该抛射体）。launch fire-once 无法干净重组「同一抛射体转向」→ 加字段是对的薄口·通用于任何跳弹。
+> - **lure（W8）→ 薄加性 aggro/Perception `lureTag` + lure 标记**（带 lure tag 的诱饵实体在半径内盖过默认目标优先级）·通用于嘲讽/诱饵。（备选重组=诱饵在场信号→改一群敌 steering 目标·需区域施加器·同 pull——倾向 lure 薄口更干净。）
+> - **pull（黑洞）→ 优先重组**：黑洞锚点 + 半径内敌临时挂 `Steering{target:锚点,seek}`＝被拉向锚点（steering 本就 self-toward-target）。真缺口=「按邻近给一群实体批量设 steering 目标」的**区域施加器**——现无则下沉薄 `pull-field`；M3 先试重组·撞墙再沉。
+> **结论**：三条留 open P2·形已定·M3 开工时建（bounce/lure 薄加性·pull 先试重组）；撞墙 spec Lead 亲笔·Opus 施工。
 > 三条 M3 武器缺口（细节另存本地 `.apollo/cap-gaps.jsonl`·gitignored·故要点内联于此供 Lead 裁）。GD 立场（capability-plan §4）：倾向重组·真薄缺口才下沉；M1–M2 已具核心武器/三选一/波次能力、不受影响。
 > - **弹射 bounce（W7 跳弹）**：`t2-launch` 只一次定向直飞(fire-and-forget)·无「命中后按剩余次数 nearestByTag 重定向连锁」。裁：launch 加 `bounce` 字段 / 下沉薄件 `bounce-relay`。
 > - **诱饵 aggro 重定向（W8）**：`t3-aggro` 的 Perception 恒认阵营 tag·无「临时把某群敌目标改指诱饵实体」（放置✅+自爆✅·缺 aggro 改指）。裁：Perception 加目标优先/lure 半径 / 下沉 `lure-taunt` 薄件。
 > - **pull 吸附（进化 黑洞脉冲）**：`t2-steering` 是「自身朝/离目标」·无「把一群他者拉向锚点」（作用对象相反）。裁：敌临时挂 seek 指黑洞锚点重组 / 下沉 `pull-field`。
 > 撞墙实证＝`src/games/game-103/`（M2 六武器 straight/nova/beam/boomerang/orbit/pet 已落·这 3 类射法表达不了）。
 
-### REQ-TAPSPAWN-加权掉表生成器原语（tap→耗资源→加权 spawn） · [2026-07-24] · PE-101 报（capability-plan §6 G1「撞墙→下沉 tap-cost-spawn」的回报）→ Lead/主程 裁 · status: open · 优先级: P2（game101 M1 生成器阻塞·非全库阻断） · 类型: 引擎通用能力缺口（合并/idle/gacha 通用·主程域）
+### REQ-TAPSPAWN-加权掉表生成器原语（tap→耗资源→加权 spawn） · [2026-07-24] · PE-101 报（capability-plan §6 G1「撞墙→下沉 tap-cost-spawn」的回报）→ Lead/主程 裁 · status: **⚖ Lead 裁 ✅ 下沉 `weighted-spawn`（2026-07-24·待建·主程/Opus·阻 game101 M1→优先）** · 优先级: P1（升级·阻 game101 M1 生成器核心循环） · 类型: 引擎通用能力缺口（合并/idle/gacha 通用·主程域）
+> **⚖ Lead 裁（2026-07-24）：✅ 下沉**——PE-101 已源码复核实锤真墙（无「加权运行时 spawn」原语·`caster`/`self-rule` 只固定 template·`effect-apply` 不能 create·`draft-offer` 加权核 private + 自建 seed 不接世界 `RandomSeed`）；正是 G1 §6 预祝福的 `tap-cost-spawn`。合并/idle/gacha/loot 通用·真缺口非重组可得（宪法 §2）。
+> **⚖ Lead spec（→主程/Opus 施工）**：新 **ECS capability `weighted-spawn`**（`src/skills/tier2/weighted-spawn.ts`·`defineCapability`·登记 `src/assembly/capability-registry.ts`）——组件 `WeightedSpawn{ onSignal, cost?:{id,amount}, table:[{templateId,weight}] }`；系统：收 `Signal.name==onSignal` → 若 cost 则**原子 afford**（不足整单不动·同 `craft-recipe` 口径）+扣 → 读**世界 `RandomSeed` 单例** `nextRandom` 加权抽 templateId → 发 `SpawnRequest{templateId, x/y=自身 Transform}`；相位早于 spawner 消费。**必用世界 RandomSeed（禁 fixed seed·保 sim hash/回放确定性）**。**并**从 `draft-offer` 抽出+导出纯函数 `weightedPick(entries, rand)`（DRY·draft-offer 内部复用之）。测试：afford 拒/扣·同 RandomSeed 序列同抽·加权分布·SpawnRequest 落点·空表/权重 0 边角。game101 只经 `generators.json` 数据消费（零游戏层加权/裸 Math.random）。
 > - **想实现的行为**：生成器（merge/idle 通用）——点一下 → 若资源(体力)≥cost 扣费 → 从掉落表 `[{item,w}]` 按**引擎种子 PRNG** 加权抽一个 item → 在生成器处 `SpawnRequest` 该 item。数据已备 `src/games/game101/config/generators.json`。
 > - **已试（子代理源码复核契约）**：✅ 扣费半场可组合＝`clickable`(点→Signal)+`craft-recipe`(onSignal·costs 原子 afford+扣)（game-q build-pad 近乎现成模板）。❌ **加权 spawn 半场无原语**：`caster`/`self-rule` 只 spawn **固定 template**；`effect-apply` writes 无 SpawnRequest（能 destroy 不能 create）；`draft-offer.weightedPickDistinct` **private 未导出**、`rollOffer` 导出但**自建 mulberry32(seed)·不接世界 `RandomSeed`**、且**未接线成 SpawnRequest**。无任何能力把 `{item,w}[]`+`RandomSeed`→选 template→`SpawnRequest`。❌ 且单点「afford→spawn」不干净可组合（craft-recipe 无成功 Signal·caster 无 cost）。
 > - **卡在哪**：缺「加权运行时 spawn」原语（＝§6 预判的 `tap-cost-spawn`）。**禁游戏层手写加权/裸 Math.random**（manifesto 红线）→ 必须下沉引擎。
