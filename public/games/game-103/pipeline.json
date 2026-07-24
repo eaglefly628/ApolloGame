@@ -7,12 +7,23 @@
     "refs": "Survivor.io,Vampire Survivors",
     "style": "俯视 2D 竖屏 9:16·暗色战场·占位几何体（皮肤就绪即换装）"
   },
-  "signoffs": {},
+  "signoffs": {
+    "S3": {
+      "by": "PE-game-103",
+      "note": "真渲染目击：无头 Chromium 深链 ?game=game-103 挂载 CanvasRenderer→玩家居中(相机跟随)/飞镖自动开火/蹒跚者环外逼近/经验宝石掉落/HUD 全绘(经验条·计时·HP·Lv·武器格·暂停)。scratchpad/game-103-hud.png",
+      "at": "2026-07-24T07:00:33.134Z"
+    }
+  },
   "evidence": {},
   "history": [
     {
       "action": "concept",
       "at": "2026-07-24T05:16:27.105Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S3",
+      "at": "2026-07-24T07:00:33.134Z"
     }
   ]
 }
