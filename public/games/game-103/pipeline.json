@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "slug": "game-103",
+  "concept": {
+    "name": "幸存者核心原型",
+    "pitch": "俯视 2D 单摇杆走位、武器全自动开火的吸血鬼幸存者式割草 Roguelite（参照 Survivor.io / Vampire Survivors）：唯一操作=走位，武器自动索敌开火，击杀掉经验攒满升级，从被群追到清屏，限时活满即胜。",
+    "refs": "Survivor.io,Vampire Survivors",
+    "style": "俯视 2D 竖屏 9:16·暗色战场·占位几何体（皮肤就绪即换装）"
+  },
+  "signoffs": {},
+  "evidence": {},
+  "history": [
+    {
+      "action": "concept",
+      "at": "2026-07-24T05:16:27.105Z"
+    }
+  ]
+}

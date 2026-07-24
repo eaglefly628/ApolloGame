@@ -158,6 +158,17 @@ export const GAMES: GameEntry[] = [
     icon: '🃏',
     status: 'playable',
   },
+  {
+    id: 'game-103',
+    title: 'Game 103: 幸存者核心',
+    subtitle: '俯视割草 Roguelite · 吸血鬼幸存者式',
+    description:
+      '俯视 2D 单摇杆走位、武器全自动开火的吸血鬼幸存者式割草 Roguelite（参照 Survivor.io / Vampire Survivors）：唯一操作=走位，武器自动索敌开火，击杀掉经验、攒满升级变强，从被群追到清屏，限时活满即胜。走位/自动开火/敌群追击/接触伤害/经验拾取/等级/边界/相机跟随/胜负全由通用能力（controllable/motion-apply/aggro/steering/self-rule/launch/hitbox/mortal/over-time/event-when/effect/camera-follow/flow）涌现，零幸存者专属系统代码。当前=M1 灰盒：走位+单武器自动开火+单敌群+经验拾取升级（固定强化占位）+接触伤害死亡+相机跟随+胜负。升级三选一 draft/武器进化/波次 director=编排能力待 Lead 签 S2 接入。',
+    color: '#0a1a24',
+    accentColor: '#4aa8ff',
+    icon: '🧟',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════

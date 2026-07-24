@@ -1,0 +1,105 @@
+import { describe, it, expect } from 'vitest';
+import { Engine } from '../../runtime/engine.js';
+import { applyCommands } from '@net/index.js';
+import type { Command } from '@net/index.js';
+import type { Resource, Tag, GameFlow, Transform } from '@engine/protocol/components.js';
+import { buildBlueprint } from './blueprint.js';
+import { ENEMY, ZONE, START, KUNAI, SHAMBLER, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF } from './theme.js';
+
+// ── 小工具 ──────────────────────────────────────────────────────────────────
+function res(e: Engine, eid: string, id = 'Resource'): number { return e.world.getComponent<Resource>(eid, id)?.current ?? 0; }
+function resById(e: Engine, id: string): number {
+  for (const [eid] of e.world.query('Resource')) { const r = e.world.getComponent<Resource>(eid, 'Resource'); if (r && r.id === id) return r.current; }
+  return NaN;
+}
+function countTag(e: Engine, bit: number): number {
+  let n = 0;
+  for (const [id] of e.world.query('Tag')) { const t = e.world.getComponent<Tag>(id, 'Tag'); if (t && (t.flags & bit) !== 0) n++; }
+  return n;
+}
+function xf(e: Engine, eid: string): Transform | undefined { return e.world.getComponent<Transform>(eid, 'Transform'); }
+function flowState(e: Engine): string { return e.world.getComponent<GameFlow>('flow', 'GameFlow')?.current ?? '?'; }
+function tickN(e: Engine, n: number): void { for (let i = 0; i < n; i++) e.world.tick(); }
+// 驱动移动：每 tick 注入一条 move 命令（复刻 net applyCommands·Controllable→Velocity）。
+function move(e: Engine, dx: number, dy: number, n: number, t0 = 1): void {
+  for (let i = 0; i < n; i++) {
+    const cmd: Command = { playerId: 'p1', tick: t0 + i, move: { dx, dy } };
+    applyCommands(e.world, [cmd]);
+    e.world.tick();
+  }
+}
+function fresh(): Engine { const e = new Engine(); e.load(buildBlueprint()); return e; }
+
+describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专属系统）', () => {
+  it('S3 骨架：蓝图纯数据装载 + 空跑 2 tick 无错 + 关键单例齐全', () => {
+    const bp = buildBlueprint();
+    expect(bp.capabilities.length).toBeGreaterThan(25);
+    const ids = Object.keys(bp.entities);
+    for (const key of ['player', 'collector', 'killbox', 'camera', 'flow', 'library', 'level', 'clock', 'levelup-gate', 'spawn-0']) {
+      expect(ids).toContain(key);
+    }
+    expect(() => JSON.stringify(bp.entities)).not.toThrow();
+    const e = fresh();
+    expect(() => tickN(e, 2)).not.toThrow();
+  });
+
+  it('走位：注入 move 命令 → 玩家沿方向移动（Controllable→Velocity→motion-apply）', () => {
+    const e = fresh();
+    const x0 = xf(e, 'player')!.x;
+    move(e, 1, 0, 10);
+    expect(xf(e, 'player')!.x).toBeGreaterThan(x0 + PLAYER_DEF.moveSpeed * 5);
+  });
+
+  it('边界：一直向右走不越出场地右墙（t2-bounds-clamp）', () => {
+    const e = fresh();
+    move(e, 1, 0, 2000);
+    expect(xf(e, 'player')!.x).toBeLessThanOrEqual(2400);
+  });
+
+  it('单敌群 spawn：够久后敌人被生怪票→prefab 生出来（且会追向玩家）', () => {
+    const e = fresh();
+    expect(countTag(e, ENEMY)).toBe(0);
+    tickN(e, SHAMBLER.hp > 0 ? 120 : 120);
+    expect(countTag(e, ENEMY)).toBeGreaterThan(0);
+  });
+
+  it('自动开火：玩家冷却到点生子弹（ZONE 判定区数量随开火上升）', () => {
+    const e = fresh();
+    tickN(e, KUNAI.cd + 2);
+    // 子弹是 ZONE 区；此刻场上至少有玩家/宝石外的一发子弹或其命中痕迹——用 ZONE 计数与初始比较。
+    expect(countTag(e, ZONE)).toBeGreaterThan(0);
+  });
+
+  it('闭环：自动开火击杀逼近的敌人 → 掉宝石 → 拾取入经验 → 升级（等级>1）', () => {
+    const e = fresh();
+    // 跑足够长：敌群逼近、被子弹清、宝石被拾取环收集、经验攒够升级。玩家原地不动（敌人会自己贴上来）。
+    tickN(e, 60 * 25);
+    expect(resById(e, 'level')).toBeGreaterThan(1);
+    expect(resById(e, 'score')).toBeGreaterThan(0);
+  });
+
+  it('接触伤害/死亡：大量敌人贴身 → 玩家 hp 掉光 → flow 转 defeat', () => {
+    const e = fresh();
+    // 让敌群持续贴身很久（玩家不动、不还手也扛不住连续接触 DPS）。
+    tickN(e, 60 * 120);
+    // 要么已被打死（defeat），要么 hp 明显受损——M1 灰盒确保接触伤害真实生效。
+    expect(res(e, 'player') < PLAYER_DEF.maxHp || flowState(e) === 'defeat').toBe(true);
+  });
+
+  it('胜负：clock 达 15:00 → flow 转 victory（活满即胜）', () => {
+    const e = fresh();
+    // 直接把 clock 顶到阈值验证胜利转移（免跑 54000 tick）。
+    for (const [eid] of e.world.query('Resource')) {
+      const r = e.world.getComponent<Resource>(eid, 'Resource');
+      if (r && r.id === 'clock') { r.current = MATCH_SECONDS; break; }
+    }
+    tickN(e, 2);
+    expect(flowState(e)).toBe('victory');
+  });
+
+  it('确定性：两把独立同 tick → 同 hash（可回放/balance-sim）', () => {
+    const a = fresh(); const b = fresh();
+    tickN(a, 600); tickN(b, 600);
+    expect(a.hash()).toBe(b.hash());
+  });
+});

@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "game": "game-103",
+  "mode": "requirements",
+  "count": 6,
+  "instances": 6,
+  "rows": [
+    {
+      "skinKey": "103/player",
+      "no": "art-01",
+      "desc": "player, round shape, main color #4aa8ff, small on screen (26x26), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "player",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "player",
+      "placeholder": {
+        "current": "皮肤槽 103/player（未填时回退 2D 色块 circle·#4aa8ff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "player"
+        ]
+      },
+      "spec": {
+        "w": 26,
+        "h": 26,
+        "displayW": 26,
+        "displayH": 26,
+        "transparent": true
+      },
+      "context": "美术需求：「player」（场景实体·单例）·2D 平面·当前占位=皮肤槽 103/player（未填时回退 2D 色块 circle·#4aa8ff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-02",
+      "desc": "player core, round shape, main color #9fd0ff, small on screen (14x14), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "player-core",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "player core",
+      "placeholder": {
+        "current": "2D 色块（circle·#9fd0ff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "player-core"
+        ]
+      },
+      "spec": {
+        "w": 14,
+        "h": 14,
+        "displayW": 14,
+        "displayH": 14,
+        "transparent": true
+      },
+      "context": "美术需求：「player core」（场景实体·单例）·2D 平面·当前占位=2D 色块（circle·#9fd0ff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "103/enemy-shambler",
+      "no": "art-03",
+      "desc": "enemy shambler body, round shape, main color #ff4d5e, defensive turret that senses and attacks enemies in range, small on screen (22x22), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:enemy_shambler:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "enemy shambler body",
+      "placeholder": {
+        "current": "皮肤槽 103/enemy-shambler（未填时回退 2D 色块 circle·#ff4d5e）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:enemy_shambler:body"
+        ]
+      },
+      "spec": {
+        "w": 22,
+        "h": 22,
+        "displayW": 22,
+        "displayH": 22,
+        "transparent": true
+      },
+      "context": "美术需求：「enemy shambler body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-shambler（未填时回退 2D 色块 circle·#ff4d5e）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "no": "art-04",
+      "desc": "enemy shambler inner, round shape, main color #ff9aa6, small on screen (12x12), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:enemy_shambler:inner",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "enemy shambler inner",
+      "placeholder": {
+        "current": "2D 色块（circle·#ff9aa6）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:enemy_shambler:inner"
+        ]
+      },
+      "spec": {
+        "w": 12,
+        "h": 12,
+        "displayW": 12,
+        "displayH": 12,
+        "transparent": true
+      },
+      "context": "美术需求：「enemy shambler inner」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#ff9aa6）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "103/gem-blue",
+      "no": "art-05",
+      "desc": "gem blue body, round shape, main color #4aa8ff, small on screen (12x12), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:gem_blue:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "gem blue body",
+      "placeholder": {
+        "current": "皮肤槽 103/gem-blue（未填时回退 2D 色块 circle·#4aa8ff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:gem_blue:body"
+        ]
+      },
+      "spec": {
+        "w": 12,
+        "h": 12,
+        "displayW": 12,
+        "displayH": 12,
+        "transparent": true
+      },
+      "context": "美术需求：「gem blue body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/gem-blue（未填时回退 2D 色块 circle·#4aa8ff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "103/proj-kunai",
+      "no": "art-06",
+      "desc": "proj kunai p, round shape, main color #ffffff, small on screen (10x10), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:proj_kunai:p",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "proj kunai p",
+      "placeholder": {
+        "current": "皮肤槽 103/proj-kunai（未填时回退 2D 色块 circle·#ffffff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:proj_kunai:p"
+        ]
+      },
+      "spec": {
+        "w": 10,
+        "h": 10,
+        "displayW": 10,
+        "displayH": 10,
+        "transparent": true
+      },
+      "context": "美术需求：「proj kunai p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/proj-kunai（未填时回退 2D 色块 circle·#ffffff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    }
+  ]
+}
