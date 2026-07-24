@@ -19,7 +19,8 @@ GD 阶段**只产 `docs/design/game102/` 文档**、**不改 `src/launcher.tsx`*
 - Claude Designer 设计图文稿：✅ `pixel-pour-designer.html`（自包含可视化设计稿·已按实机截图校准）
 - **UI 布局设计稿**：✅ `ui-layout-spec.html`（四屏·映射真实 LayoutNode 控件·零新控件需求·交 PUI 作 .dc.html/LayoutNode 1:1 基准）
 - 可玩核心玩法参考原型：✅ `prototype.html`（像素画棋盘+钥匙+弹药20·实机校准·非引擎游戏代码）
-- **下一步**：① PE 开工 §1-3 数据面 + §4 组合装配（位图棋盘核 `tilemap` 适配度）；② PUI 据 `ui-layout-spec.html` 出 .dc.html + LayoutNode（工单 REQ-G102-UI）
+- **PE 开工 handoff**：✅ `pe-handoff.md`（单文件入口·数据 schema + manifest 装配 + 能力接线 + 验收剧本 + 八阶段清单·从 S3 开工）
+- **下一步（可派工开工）**：① **PE** 读 `pe-handoff.md` 从 **S3 骨架关**开工（`board game102`）；② **PUI** 据 `ui-layout-spec.html` 出 .dc.html + LayoutNode（工单 REQ-G102-UI）；两线可并行
 
 ## 角色与边界（CLAUDE.md）
 
