@@ -191,7 +191,7 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     const e = fresh();
     tickN(e, 60); // 待开局怪生出
     let hasGauge = false;
-    for (const [id] of e.world.query('Gauge')) { const g = e.world.getComponent<{ resourceId: string }>(id, 'Gauge'); if (g && g.resourceId === 'hp') { hasGauge = true; break; } }
+    for (const [id] of e.world.query('Gauge')) { const g = e.world.getComponent<{ type: 'Gauge'; resourceId: string }>(id, 'Gauge'); if (g && g.resourceId === 'hp') { hasGauge = true; break; } }
     expect(hasGauge).toBe(true);
   });
 
