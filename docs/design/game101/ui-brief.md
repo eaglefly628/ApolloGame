@@ -119,6 +119,11 @@
 - 落地映射：LayoutNode `Panel`(不规则观感靠 skin 皮肤槽·`bg`异形纹样) + `Label`(⏱倒计时·由 `e1-timer` 驱动) + `Badge`；倒计时数据来自引擎计时器组件，**不在游戏层写自由计时逻辑**。
 - **基座缺口已报（owner 定性=底层需求）**：`Panel`/`Card` 无 shape 枚举 → 引擎池 `REQ-UI-异型容器`（PUI 域·建议复用 ShapeToken 到 Panel）+ game101 侧 `REQ-101-07`。落地前用矩形卡顶着，本件落地即升级。**绝不手写 DOM/clip-path。**
 
+### 4.2b 交付发奖飞行轨迹（✅ 已落地 2026-07-24·juice）
+
+- 交付集齐发奖时，金币从顾客卡沿弧**飞进 HUD 钱包**——用基座 `layout.flyTo{to:'hud-coins',ms,arc}`（唯一飞行原语·**非自造**·render-only 不进 sim/hash）。宿主订阅金币增量→短暂注入 fly 节点→播完清（setTimeout=纯表现层清理）。
+- 后续 juice（合成迸发 `Particles`/`popOut`、满意度、破泡）同走基座件（rendering-fx.md / ui.md juice 行），缺口才报 requests.md。
+
 ### 4.2 物件级倒计时时钟（owner 2026-07-24 记录·棋盘/托盘上单个食物物件带时钟）
 
 - 部分食物**物件本身带一个倒计时时钟**（角标）：**时钟归零 → 该物件销毁**（如限时投放的鲜货/活动物）。

@@ -111,6 +111,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       const cid = 'host-deliver';
       if (!engine.world.hasComponent(cid, 'DeliverDrop')) engine.world.createEntity(cid);
       engine.world.addComponent(cid, { type: 'DeliverDrop', item: from, order: `order-${ORDERS[ordIdx].id}` } as DeliverDrop);
+      pendingDeliverIdx = ordIdx; // 供发奖飞行轨迹归位（金币从该卡飞进钱包）
       return;
     }
     // ② 落在板格 → 合并/移动/交换意图（MergeDrop）。
@@ -129,17 +130,47 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   const handlers: HandlerMap = { open_shop: noop, open_menu: noop, open_tasks: noop, open_reno: noop, open_events: noop, deliver_order: noop, gen_left: noop, gen_right: noop, delete_sel: noop };
 
   const ui: MountHandle = mountUI(scene, buildS1Live(readState()), handlers, GAME101_THEME, input);
+
+  // 交付发奖飞行轨迹（juice·render-only·不进 sim/hash）：金币从顾客卡沿弧飞进 HUD 钱包。
+  // 用基座 layout.flyTo（唯一飞行原语·非自造）。activeFly 短暂注入进 OrderView·播完清（setTimeout=纯表现层清理）。
+  let activeFly: { idx: number; id: string; label: string } | null = null;
+  let flySeq = 0;
+  let pendingDeliverIdx = -1;
+  let lastCoins = Math.round(readState().coins);
+  const flyTimers = new Set<ReturnType<typeof setTimeout>>();
+  const paint = (st: S1State): void => {
+    const orders = activeFly ? st.orders.map((o, i) => (i === activeFly!.idx ? { ...o, fly: { id: activeFly!.id, label: activeFly!.label } } : o)) : st.orders;
+    ui.update(buildS1Live({ ...st, orders }), GAME101_THEME);
+  };
+
   let lastSig = '';
   const unsub = engine.subscribe(() => {
     const st = readState();
-    const sig = `${Math.round(st.energy)}|${Math.round(st.coins)}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('')).join('|')}`;
-    if (sig !== lastSig) { lastSig = sig; ui.update(buildS1Live(st), GAME101_THEME); }
+    const coins = Math.round(st.coins);
+    // 金币增加（仅交付发奖来源）+ 有待归位交付 → 触发飞行轨迹。
+    if (coins > lastCoins && pendingDeliverIdx >= 0) {
+      const gain = coins - lastCoins;
+      const id = `fly-${flySeq++}`;
+      activeFly = { idx: pendingDeliverIdx, id, label: `🪙+${gain}` };
+      pendingDeliverIdx = -1;
+      paint(st);
+      const t = setTimeout(() => { activeFly = null; flyTimers.delete(t); paint(readState()); }, 900);
+      flyTimers.add(t);
+      lastCoins = coins;
+      lastSig = ''; // 强制下一帧重绘（fly 清除后）
+      return;
+    }
+    lastCoins = coins;
+    const sig = `${Math.round(st.energy)}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('')).join('|')}`;
+    if (sig !== lastSig) { lastSig = sig; paint(st); }
   });
 
   engine.start();
 
   return () => {
     unsub();
+    for (const t of flyTimers) clearTimeout(t);
+    flyTimers.clear();
     engine.stop();
     scene.removeEventListener('pointerdown', onDown);
     scene.removeEventListener('pointerup', onUp);

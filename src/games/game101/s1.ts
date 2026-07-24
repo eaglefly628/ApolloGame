@@ -15,7 +15,7 @@ export function buildS1(): LayoutNode {
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
 export interface CellView { emoji: string; gen?: string; deliverable?: boolean }
 export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
-export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean }
+export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; fly?: { id: string; label: string } }
 export interface S1State {
   energy: number; coins: number; gems: number; level: number;
   cells: (CellView | null)[]; orders: OrderView[];
@@ -100,6 +100,11 @@ function orders(s: S1State): N {
             ...(o.stars > 0 ? [{ type: 'Badge', id: `ord-${i}-rs`, props: { text: `⭐${o.stars}`, tone: 'ok' } } as N] : []),
           ],
         },
+        // 交付发奖飞行轨迹（juice·render-only）：金币从顾客卡沿弧飞进 HUD 钱包（flyTo→hud-coins）。绝对定位不占流。
+        ...(o.fly ? [{
+          type: 'Label', id: o.fly.id, props: { text: o.fly.label, size: 30, bold: true, color: 'gold' },
+          layout: { x: 20, y: 8, allowOverlap: true, flyTo: { to: 'hud-coins', ms: 820, arc: 70 } },
+        } as N] : []),
       ],
     })),
   };

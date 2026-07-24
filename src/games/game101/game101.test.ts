@@ -128,7 +128,7 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     cells[0] = { emoji: '🧊', gen: 'gen_fridge' };
     cells[8] = { emoji: '🥗', deliverable: true };
     const live = buildS1Live({ energy: 34, coins: 305, gems: 8, level: 12, cells, orders: [
-      { char: '周航', slots: [{ itemEmoji: '🥗', filled: false, want: true }], coins: 44, stars: 2, deliverable: true },
+      { char: '周航', slots: [{ itemEmoji: '🥗', filled: false, want: true }], coins: 44, stars: 2, deliverable: true, fly: { id: 'fly-0', label: '🪙+44' } },
       { char: '老陈', slots: [{ itemEmoji: '🐠', filled: true, want: false }, { itemEmoji: '🐠', filled: false, want: false }], coins: 78, stars: 2, deliverable: false },
     ] });
     expect(live.type).toBe('Screen');
