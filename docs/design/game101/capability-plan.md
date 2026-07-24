@@ -40,7 +40,8 @@ Merge-2 合并板 + 视觉小说剧情 Meta 的休闲复刻（对标 **Gossip Ha
 | G1 | **生成器点击的"耗体力→按掉落表产出"门控编排**：点击时若体力≥cost 则扣费并 `w1-random` 抽掉落表 → `prefab-spawn`；不足则拒绝 | `clickable`+`event-when`(条件:体力≥cost)+`effect-apply`(扣费)+`w1-random`+`prefab-spawn` 组合。若"条件门控扣费"表达不顺 → 下沉通用 `tap-cost-spawn` | ？ |
 | G2 | **订单交付 = 消耗棋盘上某模板的一个实例 → 发奖**（普查/消耗棋盘实例） | `drop-zone`+`craft-recipe`（消耗输入实例→产出资源增量）。需确认 craft-recipe 能消耗"带 PrefabOrigin 的棋盘实例"并产出"资源"。否则下沉通用 `order-fulfill` | ？ |
 | G3 | **泡泡（气泡锁）金币购买**：新产出物 locked；点泡泡→**扣金币**（按等级 `bubbles.json`）→清锁才可合并/拖动（owner 金币回收出口） | `f2-flag`(locked)+`clickable`+`resource-apply`(扣金币·不足则拒)。需确认 `merge-rule`/`drag-place` 尊重 locked flag。若不尊重 → 提 requests 让相关能力读该 flag | ？ |
-| G4 | **生成器冷却 CD**（owner·产出后冷却 N 秒）+ **免体力生成器产能条**（capacity 自然恢复） | `timer-advance`（点击后置 CD·冷却中 `clickable` 拒绝）+`f1-resource`（把"产能"做成局部资源）。倾向组合表达；若"点击后置冷却门控"不顺 → 并入 G1 的 `tap-cost-spawn` 一并下沉 | ？ |
+| G4 | **生成器冷却 CD** + **产能条** + **次数劣化 charges**（systems-economy §2·生成器有限点击次数·升级设新 charge） | `timer-advance`（CD/恢复）+`f1-resource`（每实例 charges 局部资源·点一次 -1）+`merge-rule`(升级 intoOverrides 设新 charge)。倾向组合表达 | ？ |
+| G5 | **订单导演 order-director**（systems-economy §4-B·棋盘态自适应发单 DDA·读 census+规则权重→确定性选单） | 游戏层自写=虚胖数据(禁)。**倾向下沉通用 `order-director` capability**（census 输入·确定性·可回放）；本期先用「情绪曲线数据模板」(orderRhythm·不读棋盘)替代·对抗性卡点延后 | ？ |
 
 ## 3. 摆成数据的规则面
 
