@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  body{margin:0;background:#181b21}
+  @keyframes warn{0%,100%{transform:translateX(-50%) scale(1);opacity:1}50%{transform:translateX(-50%) scale(1.12);opacity:.6}}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  @keyframes shine{0%{left:-40%}100%{left:130%}}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:20px;padding:28px 16px 60px;font-family:'Baloo 2',sans-serif;background:radial-gradient(120% 90% at 50% 0%,#252932,#14161b)">
+
+  <div style="text-align:center;color:#e8ecf2">
+    <div style="font-family:'Luckiest Guy',cursive;font-size:26px;letter-spacing:.5px;color:#fff;-webkit-text-stroke:4px #12141a;paint-order:stroke fill;text-shadow:0 4px 0 rgba(0,0,0,.4)">SURVIVOR&nbsp;IO&nbsp;·&nbsp;UI&nbsp;KIT</div>
+    <div style="font-weight:600;font-size:13px;color:#8b93a1;margin-top:2px">Mobile survivor HUD &amp; menu system</div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:440px">
+    <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="5">
+      <button onClick="{{ tab.onClick }}" style="font-family:'Baloo 2';font-weight:800;font-size:14px;padding:9px 16px;border:none;border-radius:12px;cursor:pointer;background:{{ tab.bg }};color:{{ tab.color }};box-shadow:{{ tab.shadow }}">{{ tab.label }}</button>
+    </sc-for>
+  </div>
+
+  <div style="padding:12px;background:linear-gradient(#0e1013,#05060a);border-radius:46px;box-shadow:0 24px 60px rgba(0,0,0,.6),inset 0 1px 0 #2c313a">
+    <div style="position:relative;width:400px;height:711px;border-radius:34px;overflow:hidden;background:#7f838b">
+
+      <!-- ===================== COMBAT HUD ===================== -->
+      <sc-if value="{{ isCombat }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;overflow:hidden">
+        <div style="position:absolute;inset:0;background:linear-gradient(#868a92,#797d85)"></div>
+        <div style="position:absolute;top:0;bottom:0;left:27%;width:46%;background:#787c84;box-shadow:inset 3px 0 0 #6c7078,inset -3px 0 0 #6c7078"></div>
+        <div style="position:absolute;left:0;right:0;top:46%;height:24%;background:#787c84;box-shadow:inset 0 3px 0 #6c7078,inset 0 -3px 0 #6c7078"></div>
+        <!-- green xp orbs -->
+        <div style="position:absolute;top:34%;left:22%;width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c6ff6e,#4fa524);box-shadow:0 0 0 1px #2c6a1a"></div>
+        <div style="position:absolute;top:40%;left:70%;width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c6ff6e,#4fa524);box-shadow:0 0 0 1px #2c6a1a"></div>
+        <div style="position:absolute;top:58%;left:32%;width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c6ff6e,#4fa524);box-shadow:0 0 0 1px #2c6a1a"></div>
+        <div style="position:absolute;top:62%;left:78%;width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c6ff6e,#4fa524);box-shadow:0 0 0 1px #2c6a1a"></div>
+        <div style="position:absolute;top:72%;left:18%;width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c6ff6e,#4fa524);box-shadow:0 0 0 1px #2c6a1a"></div>
+        <div style="position:absolute;top:30%;left:52%;width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c6ff6e,#4fa524);box-shadow:0 0 0 1px #2c6a1a"></div>
+
+        <!-- boss sprite slot -->
+        <div style="position:absolute;top:150px;left:50%;transform:translateX(-50%);width:130px;height:120px;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))">
+          <image-slot id="sio-boss" shape="rounded" radius="18" placeholder="Boss sprite"></image-slot>
+          <div style="position:absolute;top:-6px;right:8px;font-family:'Luckiest Guy';font-size:15px;color:#ff4136;-webkit-text-stroke:3px #2a0000;paint-order:stroke fill">21</div>
+        </div>
+
+        <!-- attack telegraph beam -->
+        <div style="position:absolute;top:198px;left:50%;transform:translateX(-50%);width:74px;height:210px;background:linear-gradient(rgba(226,59,46,.32),rgba(226,59,46,.05));border-radius:6px"></div>
+
+        <!-- hero group -->
+        <div style="position:absolute;top:352px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+          <div style="position:relative;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(120,200,255,.35),rgba(120,200,255,0) 70%);display:flex;align-items:center;justify-content:center">
+            <div style="width:60px;height:60px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.4))"><image-slot id="sio-hero" shape="circle" placeholder="Hero"></image-slot></div>
+          </div>
+          <div style="width:52px;height:9px;border-radius:5px;background:#2a2a2a;box-shadow:0 0 0 1px #000;margin-top:-6px;overflow:hidden"><div style="height:100%;width:80%;background:linear-gradient(#7dff4d,#3fbf1f)"></div></div>
+          <div style="width:60px;height:56px;margin-top:6px;background:linear-gradient(#ff5a4a,#d61f11);clip-path:polygon(50% 6%,96% 92%,4% 92%);position:relative;animation:warn 1s infinite;box-shadow:0 3px 5px rgba(0,0,0,.35)">
+            <div style="position:absolute;left:50%;top:52%;transform:translateX(-50%);font-family:'Luckiest Guy';font-size:24px;color:#fff;-webkit-text-stroke:3px #7a0000;paint-order:stroke fill">!</div>
+          </div>
+        </div>
+
+        <!-- joystick -->
+        <div style="position:absolute;bottom:70px;left:50%;transform:translateX(-50%);width:130px;height:130px;border-radius:50%;background:rgba(30,34,40,.28);border:3px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center">
+          <div style="width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#3a3f47,#1c1f25);border:3px solid rgba(255,255,255,.35)"></div>
+        </div>
+
+        <!-- ===== TOP HUD ===== -->
+        <div style="position:absolute;top:12px;left:12px;right:12px;display:flex;align-items:flex-start;justify-content:space-between">
+          <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(#5c6672,#39424d);border:3px solid #222a32;box-shadow:inset 0 2px 0 #7d8794,0 3px 4px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;gap:5px">
+            <div style="width:6px;height:20px;border-radius:2px;background:#d7dde4"></div><div style="width:6px;height:20px;border-radius:2px;background:#d7dde4"></div>
+          </div>
+          <div style="width:118px;height:42px;margin-top:2px;background:linear-gradient(#5c6672,#39424d);border:3px solid #222a32;clip-path:polygon(0 0,100% 0,100% 60%,50% 100%,0 60%);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 4px rgba(0,0,0,.35)">
+            <span style="font-family:'Luckiest Guy';font-size:22px;color:#fff;-webkit-text-stroke:3px #1b2026;paint-order:stroke fill">02:00</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+            <div style="display:flex;align-items:center;gap:6px"><div style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3a0,#e0a11a);border:2px solid #a06a08"></div><span style="font-family:'Luckiest Guy';font-size:19px;color:#fff;-webkit-text-stroke:3px #1b2026;paint-order:stroke fill">120</span></div>
+            <div style="display:flex;align-items:center;gap:6px"><div style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#e8ecf2;filter:drop-shadow(0 1px 0 #000)">💀</div><span style="font-family:'Luckiest Guy';font-size:19px;color:#fff;-webkit-text-stroke:3px #1b2026;paint-order:stroke fill">387</span></div>
+          </div>
+        </div>
+
+        <!-- boss hp bar -->
+        <div style="position:absolute;top:66px;left:14px;right:14px;display:flex;align-items:center;gap:8px">
+          <div style="width:34px;height:34px;border-radius:9px;background:radial-gradient(circle at 40% 30%,#7fb3d6,#3a5b72);border:2px solid #1b2b36;display:flex;align-items:center;justify-content:center;gap:4px;flex:none">
+            <div style="width:6px;height:6px;border-radius:50%;background:#ff3b30"></div><div style="width:6px;height:6px;border-radius:50%;background:#ff3b30"></div>
+          </div>
+          <div style="flex:1;height:20px;border-radius:6px;background:#151515;border:2px solid #000;overflow:hidden;box-shadow:inset 0 2px 3px rgba(0,0,0,.6)">
+            <div style="height:100%;width:98%;background:repeating-linear-gradient(90deg,#f0473a 0 15px,#c22e22 15px 17px)"></div>
+          </div>
+        </div>
+
+        <!-- milestone bar -->
+        <div style="position:absolute;top:100px;left:52px;right:52px;height:8px;background:#2b3038;border-radius:5px;border:1px solid #10141a">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:34%;background:linear-gradient(#ffe14d,#f5b100);border-radius:5px 0 0 5px"></div>
+          <div style="position:absolute;left:34%;top:50%;transform:translate(-50%,-50%) rotate(45deg);width:12px;height:12px;background:linear-gradient(#ffe14d,#f5b100);border:2px solid #7a4f00"></div>
+          <div style="position:absolute;left:56%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:5px;background:#2b3038;border:2px solid #10141a"></div>
+          <div style="position:absolute;left:74%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:5px;background:#2b3038;border:2px solid #10141a"></div>
+          <div style="position:absolute;left:100%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:5px;background:#7a1512;border:2px solid #3a0806"></div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===================== LEVEL UP ===================== -->
+      <sc-if value="{{ isLevelUp }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:linear-gradient(#3a3f48,#2b2f36);padding:0;display:flex;flex-direction:column;align-items:center">
+        <div style="width:100%;padding:12px 12px 0;box-sizing:border-box;display:flex;align-items:flex-start;justify-content:space-between">
+          <div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(#5c6672,#39424d);border:3px solid #222a32;display:flex;align-items:center;justify-content:center;gap:5px"><div style="width:5px;height:18px;border-radius:2px;background:#d7dde4"></div><div style="width:5px;height:18px;border-radius:2px;background:#d7dde4"></div></div>
+          <div style="width:108px;height:38px;background:linear-gradient(#5c6672,#39424d);border:3px solid #222a32;clip-path:polygon(0 0,100% 0,100% 60%,50% 100%,0 60%);display:flex;align-items:center;justify-content:center"><span style="font-family:'Luckiest Guy';font-size:19px;color:#fff;-webkit-text-stroke:3px #1b2026;paint-order:stroke fill">00:44</span></div>
+          <div style="display:flex;align-items:center;gap:6px"><div style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:16px">💀</div><span style="font-family:'Luckiest Guy';font-size:17px;color:#fff;-webkit-text-stroke:3px #1b2026;paint-order:stroke fill">62</span></div>
+        </div>
+        <!-- xp bar -->
+        <div style="width:calc(100% - 24px);height:22px;margin-top:10px;border-radius:7px;background:#1a1a1a;border:2px solid #000;overflow:hidden;position:relative">
+          <div style="height:100%;width:100%;background:repeating-linear-gradient(90deg,#ff9a1f 0 17px,#e07c10 17px 19px)"></div>
+          <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-family:'Luckiest Guy';font-size:13px;color:#fff;-webkit-text-stroke:2px #2a1a00;paint-order:stroke fill">Lv 4</span>
+        </div>
+        <!-- banner -->
+        <div style="position:relative;margin-top:34px;width:300px;height:52px;background:linear-gradient(#ffd23f,#f5a623);border:3px solid #fff;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 0 #b8730c,0 8px 12px rgba(0,0,0,.4)">
+          <span style="font-family:'Luckiest Guy';font-size:25px;color:#fff;-webkit-text-stroke:4px #a85e08;paint-order:stroke fill">CHOOSE SKILL</span>
+          <div style="position:absolute;left:-20px;top:6px;width:24px;height:40px;background:#c47a0a;clip-path:polygon(0 0,100% 20%,100% 80%,0 100%)"></div>
+          <div style="position:absolute;right:-20px;top:6px;width:24px;height:40px;background:#c47a0a;clip-path:polygon(100% 0,0 20%,0 80%,100% 100%)"></div>
+        </div>
+        <!-- cards -->
+        <div style="display:flex;gap:12px;margin-top:26px;padding:0 12px">
+          <sc-for list="{{ cards }}" as="c" hint-placeholder-count="3">
+            <div style="width:112px;border-radius:14px;overflow:hidden;background:{{ c.body }};border:4px solid {{ c.accent }};box-shadow:0 6px 10px rgba(0,0,0,.4)">
+              <div style="position:relative;height:26px;background:{{ c.accent }};display:flex;align-items:center;justify-content:center">
+                <span style="font-family:'Luckiest Guy';font-size:13px;color:#fff;-webkit-text-stroke:2px rgba(0,0,0,.45);paint-order:stroke fill">{{ c.name }}</span>
+              </div>
+              <div style="text-align:center;font-family:'Baloo 2';font-weight:800;font-size:13px;color:{{ c.tagColor }};margin-top:4px;text-shadow:0 1px 0 rgba(0,0,0,.35)">{{ c.tag }}</div>
+              <div style="width:64px;height:64px;margin:6px auto 4px;border-radius:16px;background:{{ c.gem }};box-shadow:inset 0 -4px 6px rgba(0,0,0,.25),0 3px 4px rgba(0,0,0,.25)"></div>
+              <div style="font-family:'Baloo 2';font-weight:600;font-size:12px;color:#4a3316;line-height:1.2;padding:0 8px;min-height:42px">{{ c.desc }}</div>
+              <div style="display:flex;justify-content:center;gap:2px;padding:6px 0 8px">
+                <sc-for list="{{ c.stars }}" as="st" hint-placeholder-count="5">
+                  <div style="width:16px;height:16px;background:{{ st.color }};clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);filter:drop-shadow(0 1px 0 rgba(0,0,0,.5))"></div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===================== LUCKY WHEEL ===================== -->
+      <sc-if value="{{ isWheel }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:linear-gradient(#2a2e35,#1e2127);display:flex;flex-direction:column;align-items:center">
+        <div style="width:100%;padding:12px 12px 0;box-sizing:border-box;display:flex;align-items:flex-start;justify-content:space-between">
+          <div style="width:42px;height:42px;border-radius:11px;background:linear-gradient(#5c6672,#39424d);border:3px solid #222a32;display:flex;align-items:center;justify-content:center;gap:5px"><div style="width:5px;height:18px;border-radius:2px;background:#d7dde4"></div><div style="width:5px;height:18px;border-radius:2px;background:#d7dde4"></div></div>
+          <div style="width:108px;height:38px;background:linear-gradient(#5c6672,#39424d);border:3px solid #222a32;clip-path:polygon(0 0,100% 0,100% 60%,50% 100%,0 60%);display:flex;align-items:center;justify-content:center"><span style="font-family:'Luckiest Guy';font-size:19px;color:#fff;-webkit-text-stroke:3px #1b2026;paint-order:stroke fill">02:01</span></div>
+          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+            <div style="display:flex;align-items:center;gap:5px"><div style="width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3a0,#e0a11a);border:2px solid #a06a08"></div><span style="font-family:'Luckiest Guy';font-size:15px;color:#fff;-webkit-text-stroke:2px #1b2026;paint-order:stroke fill">120</span></div>
+            <div style="display:flex;align-items:center;gap:5px"><span style="font-size:14px">💀</span><span style="font-family:'Luckiest Guy';font-size:15px;color:#fff;-webkit-text-stroke:2px #1b2026;paint-order:stroke fill">388</span></div>
+          </div>
+        </div>
+        <!-- title banner -->
+        <div style="position:relative;margin-top:16px;width:320px;height:52px;background:linear-gradient(#ffd23f,#f5a623);border:3px solid #fff;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 0 #b8730c,0 8px 12px rgba(0,0,0,.4)">
+          <span style="font-family:'Luckiest Guy';font-size:27px;color:#fff;-webkit-text-stroke:4px #a85e08;paint-order:stroke fill">LUCKY WHEEL</span>
+          <div style="position:absolute;left:-22px;top:6px;width:26px;height:40px;background:#c47a0a;clip-path:polygon(0 0,100% 20%,100% 80%,0 100%)"></div>
+          <div style="position:absolute;right:-22px;top:6px;width:26px;height:40px;background:#c47a0a;clip-path:polygon(100% 0,0 20%,0 80%,100% 100%)"></div>
+        </div>
+        <!-- panel -->
+        <div style="margin-top:18px;width:344px;background:linear-gradient(#6d7c8d,#47535f);border:4px solid #2b333c;border-radius:20px;padding:14px;box-shadow:inset 0 3px 0 #9fb0c0,0 8px 14px rgba(0,0,0,.4)">
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:7px">
+            <sc-for list="{{ wheel }}" as="t" hint-placeholder-count="16">
+              <div style="grid-column:{{ t.col }};grid-row:{{ t.row }};aspect-ratio:1;border-radius:11px;background:linear-gradient(#3a4048,#262b32);border:2px solid #171a1f;box-shadow:inset 0 2px 0 #566270,inset 0 -3px 0 #171a1f;display:flex;align-items:center;justify-content:center">
+                <div style="width:66%;height:66%;border-radius:10px;background:{{ t.gem }};box-shadow:inset 0 -3px 4px rgba(0,0,0,.3)"></div>
+              </div>
+            </sc-for>
+            <div style="grid-column:2 / 5;grid-row:2 / 5;border-radius:12px;overflow:hidden;background:linear-gradient(#6fb6e0,#3f7fb0);border:2px solid #2a5a80"><image-slot id="sio-portrait" shape="rect" placeholder="Hero portrait"></image-slot></div>
+          </div>
+          <!-- coin counter -->
+          <div style="margin:14px auto 2px;width:150px;height:30px;background:#20252b;border:2px solid #10141a;border-radius:16px;display:flex;align-items:center;padding-left:4px;box-shadow:inset 0 2px 4px rgba(0,0,0,.5)">
+            <div style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3a0,#e0a11a);border:2px solid #a06a08;flex:none"></div>
+            <span style="flex:1;text-align:center;font-family:'Luckiest Guy';font-size:16px;color:#fff;-webkit-text-stroke:2px #1b2026;paint-order:stroke fill">0</span>
+          </div>
+        </div>
+        <!-- buttons -->
+        <div style="display:flex;gap:14px;margin-top:22px">
+          <button style="width:150px;height:58px;border:3px solid #fff;border-radius:12px;background:linear-gradient(#ffd23f,#f5a623);cursor:pointer;font-family:'Luckiest Guy';font-size:24px;color:#fff;-webkit-text-stroke:4px #a85e08;paint-order:stroke fill;box-shadow:0 5px 0 #b8730c,0 7px 10px rgba(0,0,0,.4)">SPIN</button>
+          <div style="width:150px">
+            <button style="width:100%;height:58px;border:3px solid #fff;border-radius:12px;background:linear-gradient(#b45cf0,#8a2fd6);cursor:pointer;position:relative;overflow:hidden;box-shadow:0 5px 0 #5e1c96,0 7px 10px rgba(0,0,0,.4)">
+              <span style="font-family:'Luckiest Guy';font-size:19px;color:#fff;-webkit-text-stroke:3px #4a1580;paint-order:stroke fill">Spin +1</span>
+              <span style="position:absolute;right:8px;bottom:5px;font-size:9px;font-weight:800;background:#2a2a2a;color:#fff;padding:1px 5px;border-radius:4px;font-family:'Baloo 2'">▶ AD</span>
+            </button>
+            <div style="text-align:center;font-family:'Baloo 2';font-weight:700;font-size:11px;color:#d7dde4;margin-top:4px;text-shadow:0 1px 0 #000">Next ad: + 2 skills</div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===================== SKILLS ===================== -->
+      <sc-if value="{{ isSkills }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:linear-gradient(#2a2e35,#1e2127);padding:16px 14px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;overflow:auto">
+        <!-- active panel -->
+        <div style="background:linear-gradient(#d8955a,#c07a3e);border:4px solid #e0402e;border-radius:16px;padding:26px 12px 12px;position:relative;box-shadow:0 6px 12px rgba(0,0,0,.4)">
+          <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:linear-gradient(#f0574a,#d62a1c);border:3px solid #fff;border-radius:10px;padding:4px 22px;box-shadow:0 3px 5px rgba(0,0,0,.4)"><span style="font-family:'Luckiest Guy';font-size:17px;color:#fff;-webkit-text-stroke:3px #7a0f08;paint-order:stroke fill">Active</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+            <sc-for list="{{ active }}" as="it" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:9px;background:linear-gradient(#e0b884,#cf9d5f);border:2px solid #6e4620;border-radius:10px;padding:7px 9px">
+                <div style="width:34px;height:34px;border-radius:9px;background:{{ it.gem }};box-shadow:inset 0 -2px 3px rgba(0,0,0,.3);flex:none"></div>
+                <div style="display:flex;gap:2px;flex-wrap:wrap">
+                  <sc-if value="{{ it.maxed }}" hint-placeholder-val="{{ false }}"><div style="width:22px;height:22px;background:#e23b2e;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);filter:drop-shadow(0 1px 0 rgba(0,0,0,.5))"></div></sc-if>
+                  <sc-if value="{{ it.notMaxed }}" hint-placeholder-val="{{ true }}">
+                    <sc-for list="{{ it.stars }}" as="st" hint-placeholder-count="5"><div style="width:14px;height:14px;background:{{ st.color }};clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);filter:drop-shadow(0 1px 0 rgba(0,0,0,.5))"></div></sc-for>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <!-- passive panel -->
+        <div style="background:linear-gradient(#d8955a,#c07a3e);border:4px solid #2f9fe0;border-radius:16px;padding:26px 12px 12px;position:relative;box-shadow:0 6px 12px rgba(0,0,0,.4)">
+          <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:linear-gradient(#4bb4f0,#2f8fd6);border:3px solid #fff;border-radius:10px;padding:4px 20px;box-shadow:0 3px 5px rgba(0,0,0,.4)"><span style="font-family:'Luckiest Guy';font-size:17px;color:#fff;-webkit-text-stroke:3px #0f4f7a;paint-order:stroke fill">Passive</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+            <sc-for list="{{ passive }}" as="it" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:9px;background:linear-gradient(#e0b884,#cf9d5f);border:2px solid #6e4620;border-radius:10px;padding:7px 9px">
+                <div style="width:34px;height:34px;border-radius:9px;background:{{ it.gem }};box-shadow:inset 0 -2px 3px rgba(0,0,0,.3);flex:none"></div>
+                <div style="display:flex;gap:2px">
+                  <sc-for list="{{ it.stars }}" as="st" hint-placeholder-count="5"><div style="width:14px;height:14px;background:{{ st.color }};clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);filter:drop-shadow(0 1px 0 rgba(0,0,0,.5))"></div></sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===================== VICTORY ===================== -->
+      <sc-if value="{{ isVictory }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:linear-gradient(#26292f,#191b20);display:flex;flex-direction:column;align-items:center;padding-top:14px">
+        <div style="width:100%;padding:0 12px;box-sizing:border-box;display:flex;align-items:flex-start;justify-content:space-between">
+          <div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(#5c6672,#39424d);border:3px solid #222a32;display:flex;align-items:center;justify-content:center;gap:4px"><div style="width:5px;height:16px;border-radius:2px;background:#d7dde4"></div><div style="width:5px;height:16px;border-radius:2px;background:#d7dde4"></div></div>
+          <div style="width:100px;height:36px;background:linear-gradient(#5c6672,#39424d);border:3px solid #222a32;clip-path:polygon(0 0,100% 0,100% 60%,50% 100%,0 60%);display:flex;align-items:center;justify-content:center"><span style="font-family:'Luckiest Guy';font-size:17px;color:#fff;-webkit-text-stroke:3px #1b2026;paint-order:stroke fill">06:03</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end"><div style="display:flex;align-items:center;gap:5px"><div style="width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3a0,#e0a11a);border:2px solid #a06a08"></div><span style="font-family:'Luckiest Guy';font-size:14px;color:#fff;-webkit-text-stroke:2px #1b2026;paint-order:stroke fill">768</span></div><div style="display:flex;align-items:center;gap:5px"><span style="font-size:13px">💀</span><span style="font-family:'Luckiest Guy';font-size:14px;color:#fff;-webkit-text-stroke:2px #1b2026;paint-order:stroke fill">4500</span></div></div>
+        </div>
+        <!-- victory scroll -->
+        <div style="position:relative;margin-top:40px;width:300px;background:linear-gradient(#ecd6a8,#dcbf88);border:5px solid #d6432c;border-radius:14px;padding:44px 20px 22px;box-shadow:0 10px 20px rgba(0,0,0,.5)">
+          <div style="position:absolute;top:-22px;left:50%;transform:translateX(-50%);background:linear-gradient(#f0574a,#d62a1c);border:3px solid #b02216;border-radius:8px;padding:6px 30px;box-shadow:0 4px 6px rgba(0,0,0,.4)"><span style="font-family:'Luckiest Guy';font-size:24px;color:#fff;-webkit-text-stroke:4px #7a0f08;paint-order:stroke fill">VICTORY</span></div>
+          <div style="text-align:center;font-family:'Baloo 2';font-weight:800;font-size:20px;color:#5a3a1c">Chapter 1</div>
+          <div style="position:relative;margin:8px auto 16px;width:220px;height:38px;background:linear-gradient(#ffd23f,#f5a623);border:3px solid #fff;border-radius:6px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 #b8730c">
+            <span style="font-family:'Luckiest Guy';font-size:18px;color:#fff;-webkit-text-stroke:3px #a85e08;paint-order:stroke fill">ALL CLEAR!</span>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px">
+            <div style="display:flex;align-items:center;gap:5px;background:#3a2a16;border-radius:14px;padding:3px 12px"><span style="font-size:13px">💀</span><span style="font-family:'Luckiest Guy';font-size:15px;color:#fff;-webkit-text-stroke:2px #1b1006;paint-order:stroke fill">4500</span></div>
+            <div style="display:flex;align-items:center;gap:5px;background:#3a2a16;border-radius:14px;padding:3px 12px"><div style="width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3a0,#e0a11a);border:2px solid #a06a08"></div><span style="font-family:'Luckiest Guy';font-size:15px;color:#fff;-webkit-text-stroke:2px #1b1006;paint-order:stroke fill">768</span></div>
+          </div>
+          <div style="background:#b89a6a;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px">
+              <sc-for list="{{ rew1 }}" as="r" hint-placeholder-count="4">
+                <div style="position:relative;aspect-ratio:1;border-radius:9px;background:linear-gradient(#f2e2bd,#e2ca8f);border:2px solid #8a6a38;display:flex;align-items:center;justify-content:center">
+                  <div style="width:66%;height:66%;border-radius:8px;background:{{ r.gem }};box-shadow:inset 0 -2px 3px rgba(0,0,0,.3)"></div>
+                  <span style="position:absolute;right:2px;bottom:1px;font-family:'Luckiest Guy';font-size:11px;color:#fff;-webkit-text-stroke:2px #1b1006;paint-order:stroke fill">{{ r.count }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+              <sc-for list="{{ rew2 }}" as="r" hint-placeholder-count="3">
+                <div style="position:relative;aspect-ratio:1;border-radius:9px;background:linear-gradient(#f2e2bd,#e2ca8f);border:3px solid #2f9fe0;display:flex;align-items:center;justify-content:center">
+                  <div style="width:64%;height:64%;border-radius:50%;background:{{ r.gem }};box-shadow:inset 0 -2px 3px rgba(0,0,0,.3)"></div>
+                  <span style="position:absolute;right:2px;bottom:1px;font-family:'Luckiest Guy';font-size:11px;color:#fff;-webkit-text-stroke:2px #1b1006;paint-order:stroke fill">{{ r.count }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <button style="margin-top:26px;width:180px;height:56px;border:3px solid #fff;border-radius:12px;background:linear-gradient(#ffd23f,#f5a623);cursor:pointer;font-family:'Luckiest Guy';font-size:26px;color:#fff;-webkit-text-stroke:4px #a85e08;paint-order:stroke fill;box-shadow:0 5px 0 #b8730c,0 7px 10px rgba(0,0,0,.4)">OK</button>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { screen: 'combat' };
+  star(n, total) {
+    return Array.from({ length: total }, (_, i) => ({ color: i < n ? '#ffd23f' : '#15130f' }));
+  }
+  renderVals() {
+    const s = this.state.screen;
+    const set = (id) => () => this.setState({ screen: id });
+    const gem = (a, b) => `radial-gradient(circle at 34% 28%, rgba(255,255,255,.55), transparent 45%), linear-gradient(155deg, ${a}, ${b})`;
+    const hues = [['#ff7a4d','#d63b1f'],['#aab6c2','#5b6b7d'],['#7fd0ff','#2f7fd0'],['#d0d6dd','#8a929c'],['#c9a3ff','#7b47d6'],['#8affc0','#28a06a'],['#ffd36b','#e0952a'],['#ff9ecb','#d64f95']];
+
+    const tabDefs = [['combat','Combat'],['levelup','Level Up'],['wheel','Lucky Wheel'],['skills','Skills'],['victory','Victory']];
+    const tabs = tabDefs.map(([id, label]) => {
+      const active = s === id;
+      return {
+        label, onClick: set(id),
+        bg: active ? 'linear-gradient(#ffd23f,#f5a623)' : 'linear-gradient(#3a4350,#28303a)',
+        color: active ? '#3a2600' : '#c7d0da',
+        shadow: active ? '0 3px 0 #b8730c,0 5px 8px rgba(0,0,0,.4)' : '0 2px 0 rgba(0,0,0,.45)'
+      };
+    });
+
+    const cards = [
+      { name: 'Mjolnir', accent: '#e0402e', body: 'linear-gradient(#ecd0a6,#e0a48e)', tag: 'New', tagColor: '#38d430', desc: 'Throws a lightning on 1 random target area', stars: this.star(1, 5) },
+      { name: "Hermes's Wings", accent: '#2f9fe0', body: 'linear-gradient(#e6ddc8,#bcd6e6)', tag: 'New', tagColor: '#38d430', desc: 'Bullet flight speed +10%', stars: this.star(1, 5) },
+      { name: 'Gold bar', accent: '#2f9fe0', body: 'linear-gradient(#e6ddc8,#bcd6e6)', tag: 'Level up', tagColor: '#ffd23f', desc: 'Gold gain +12%', stars: this.star(2, 5) }
+    ].map((c, i) => ({ ...c, gem: gem(...hues[i]) }));
+
+    const pos = [[1,1],[1,2],[1,3],[1,4],[1,5],[2,5],[3,5],[4,5],[5,5],[5,4],[5,3],[5,2],[5,1],[4,1],[3,1],[2,1]];
+    const wheel = pos.map((p, i) => ({ row: p[0], col: p[1], gem: gem(...hues[i % hues.length]) }));
+
+    const mk = (i, filled, total, maxed) => ({ gem: gem(...hues[i % hues.length]), stars: this.star(filled, total), maxed: !!maxed, notMaxed: !maxed });
+    const active = [mk(0,4,5), mk(2,5,5), mk(6,1,5), mk(0,0,1,true), mk(7,4,5), mk(1,2,5)];
+    const passive = [mk(6,1,5), mk(2,2,5), mk(5,1,5), mk(4,1,5), mk(3,2,5), mk(7,4,5)];
+
+    const rew1 = [
+      { gem: gem(...hues[3]), count: 'Lv 1' },
+      { gem: gem(...hues[6]), count: 'x1' },
+      { gem: gem(...hues[5]), count: 'x1' },
+      { gem: gem(...hues[0]), count: 'x1' }
+    ];
+    const rew2 = [
+      { gem: gem(...hues[4]), count: 'x2' },
+      { gem: gem(...hues[6]), count: 'x5768' },
+      { gem: gem(...hues[0]), count: 'x1000' }
+    ];
+
+    return {
+      isCombat: s === 'combat', isLevelUp: s === 'levelup', isWheel: s === 'wheel', isSkills: s === 'skills', isVictory: s === 'victory',
+      tabs, cards, wheel, active, passive, rew1, rew2
+    };
+  }
+}
+</script>
+</body>
+</html>
