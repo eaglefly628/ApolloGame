@@ -19,6 +19,7 @@ export interface OrderView { char: string; slots: SlotView[]; coins: number; sta
 export interface S1State {
   energy: number; coins: number; gems: number; level: number;
   cells: (CellView | null)[]; orders: OrderView[];
+  burstCell?: number; // 合成迸发格（juice·render-only·该格叠一次性星光爆）
 }
 
 type N = LayoutNode;
@@ -118,6 +119,11 @@ function board(s: S1State): N {
       kids.push({ type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: 74 } });
       if (cv.deliverable) kids.push({ type: 'Badge', id: `t-live-${i}-b`, props: { text: '✓', tone: 'ok' } });
     }
+    // 合成迸发（juice·render-only）：该格叠一次性星光爆（基座 Particles·非自造 CSS）。绝对定位不占流。
+    if (i === s.burstCell) kids.push({
+      type: 'Particles', id: `t-live-${i}-burst`, props: { kind: 'stars', count: 14, loop: false },
+      layout: { x: 0, y: 0, width: 120, height: 120, allowOverlap: true },
+    } as N);
     return {
       type: 'Panel', id: `t-live-${i}`,
       props: cv?.gen ? { bg: { custom: GEN_BG }, action: `tap_${cv.gen}` } : { bg: { custom: CELL_BG } },

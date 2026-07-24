@@ -118,6 +118,12 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     const toIdx = cellIdxFromEl(dropEl);
     if (toIdx < 0 || toIdx === fromIdx || GEN_CELLS.has(toIdx)) return; // 落生成器/空放/原格=忽略
     const to = cellEntity[toIdx] ?? undefined; const p = cellCenter(toIdx);
+    // 合成迸发（juice）：落格同模板=真合成 → 该格叠一次性星光爆。
+    if (to) {
+      const fpo = engine.world.getComponent<PrefabOrigin>(from, 'PrefabOrigin');
+      const tpo = engine.world.getComponent<PrefabOrigin>(to, 'PrefabOrigin');
+      if (fpo && tpo && fpo.templateId === tpo.templateId) fireBurst(toIdx);
+    }
     const cid = 'host-drop';
     if (!engine.world.hasComponent(cid, 'MergeDrop')) engine.world.createEntity(cid);
     engine.world.addComponent(cid, { type: 'MergeDrop', from, ...(to ? { to } : {}), x: p.x, y: p.y } as MergeDrop);
@@ -134,14 +140,22 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   // 交付发奖飞行轨迹（juice·render-only·不进 sim/hash）：金币从顾客卡沿弧飞进 HUD 钱包。
   // 用基座 layout.flyTo（唯一飞行原语·非自造）。activeFly 短暂注入进 OrderView·播完清（setTimeout=纯表现层清理）。
   let activeFly: { idx: number; id: string; label: string } | null = null;
+  let activeBurst = -1; // 合成迸发格（juice·render-only）
   let flySeq = 0;
   let pendingDeliverIdx = -1;
   let lastCoins = Math.round(readState().coins);
   const flyTimers = new Set<ReturnType<typeof setTimeout>>();
   const paint = (st: S1State): void => {
     const orders = activeFly ? st.orders.map((o, i) => (i === activeFly!.idx ? { ...o, fly: { id: activeFly!.id, label: activeFly!.label } } : o)) : st.orders;
-    ui.update(buildS1Live({ ...st, orders }), GAME101_THEME);
+    ui.update(buildS1Live({ ...st, orders, burstCell: activeBurst >= 0 ? activeBurst : undefined }), GAME101_THEME);
   };
+  // 合成迸发：该格叠一次性星光爆，700ms 后清（纯表现层）。
+  function fireBurst(cell: number): void {
+    activeBurst = cell;
+    paint(readState());
+    const t = setTimeout(() => { if (activeBurst === cell) activeBurst = -1; flyTimers.delete(t); paint(readState()); }, 700);
+    flyTimers.add(t);
+  }
 
   let lastSig = '';
   const unsub = engine.subscribe(() => {
