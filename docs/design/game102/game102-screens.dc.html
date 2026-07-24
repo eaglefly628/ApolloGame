@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>game102《色流工坊 / Pixel Pour》· PUI 视觉稿 v1（四屏·1:1 复刻基准）</title>
+<style>
+  :root{
+    --bg:#16122e; --bg2:#1b1636; --panel:#231d45; --panel2:#2b2455; --line:#3a3268; --line2:#4a3f7a;
+    --ink:#ece8ff; --sub:#b7add9; --dim:#8a7fc4;
+    --gold:#ffd54a; --gold2:#e0a92e; --cyan:#4fc3ff; --orange:#ff9d4d; --ok:#5ee8a0; --warn:#ff5d6c; --rose:#ff6fae;
+    --shadow:0 14px 40px rgba(0,0,0,.45);
+    --fpix:"Silkscreen","Courier New",ui-monospace,monospace;
+  }
+  :root[data-theme="light"]{ --bg:#f3f0fb; --bg2:#ece7f9; --panel:#fff; --panel2:#f6f3ff; --line:#e0d9f4; --line2:#d3c9ef;
+    --ink:#231d45; --sub:#4c4470; --dim:#6c619c; --shadow:0 12px 34px rgba(90,70,160,.16); }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);line-height:1.5;padding:26px 16px 60px;
+    font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background-image:radial-gradient(circle at 50% -8%,var(--bg2),var(--bg) 55%);-webkit-font-smoothing:antialiased}
+  .head{max-width:1000px;margin:0 auto 22px;text-align:center}
+  .head h1{font-size:22px;letter-spacing:.4px;background:linear-gradient(92deg,var(--cyan),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .head p{color:var(--sub);font-size:13px;margin-top:6px}
+  .head .meta{color:var(--dim);font-size:12px;margin-top:8px}
+  .stage{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;align-items:flex-start;max-width:1120px;margin:0 auto}
+  .col{display:flex;flex-direction:column;align-items:center;gap:11px;width:296px}
+  .cap{font-size:12.5px;color:var(--sub);text-align:center}
+  .cap b{color:var(--ink)}
+  .tag{display:inline-block;font-size:10.5px;color:var(--dim);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:2px 7px;margin:2px 2px 0 0;white-space:nowrap}
+  .tag.ui{color:var(--cyan);border-color:rgba(79,195,255,.4)} .tag.r{color:var(--orange);border-color:rgba(255,157,77,.4)}
+
+  /* phone */
+  .phone{width:296px;background:var(--panel2);border:1px solid var(--line);border-radius:26px;padding:11px;box-shadow:var(--shadow)}
+  .scr{background:linear-gradient(180deg,#1a1440,#120d2b);border-radius:17px;overflow:hidden;display:flex;flex-direction:column;height:582px;position:relative}
+  :root[data-theme="light"] .scr{background:linear-gradient(180deg,#efeafd,#e4ddf7)}
+
+  .bar{display:flex;align-items:center;gap:8px;padding:9px 11px}
+  .chip{display:inline-flex;align-items:center;gap:5px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-weight:800;font-size:12px}
+  .chip .k{color:var(--gold)} .chip.score .k{color:var(--cyan)}
+  .iconbtn{width:32px;height:32px;border-radius:10px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;font-size:15px;color:var(--sub)}
+  .grow{flex:1}
+  .lvl{font-family:var(--fpix);font-weight:800;font-size:15px;color:var(--ink);letter-spacing:.5px}
+
+  .doorbar{margin:0 11px 6px;display:flex;align-items:center;gap:8px}
+  .doorbar .lab{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+  .track{flex:1;height:11px;border-radius:99px;background:#0e0a22;border:1px solid var(--line);overflow:hidden;position:relative}
+  .fill{position:absolute;inset:0;width:62%;background:linear-gradient(90deg,var(--gold2),var(--gold));border-radius:99px}
+  .doorbar .pct{font-size:11px;font-weight:800;color:var(--gold);font-family:var(--fpix)}
+
+  /* play-field (render layer) */
+  .field{flex:1;margin:2px 8px;border-radius:12px;border:1px dashed var(--orange);background:
+    repeating-linear-gradient(45deg,rgba(255,157,77,.05) 0 8px,transparent 8px 16px),rgba(255,157,77,.05);
+    position:relative;overflow:hidden}
+  .rn{position:absolute;top:6px;left:8px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--orange);background:var(--panel);border:1px solid rgba(255,157,77,.3);border-radius:5px;padding:1px 6px}
+  .whale{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;color:var(--dim);text-align:center}
+  .pixgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;width:150px;height:104px}
+  .px{border-radius:2px}
+  .float{position:absolute;top:30%;left:54%;transform:translateX(-50%);text-align:center;pointer-events:none}
+  .float .combo{font-family:var(--fpix);font-weight:800;font-size:22px;color:var(--gold);text-shadow:0 0 10px rgba(255,213,74,.6),0 2px 0 #7a5a00}
+  .float .plus{font-family:var(--fpix);font-size:13px;color:var(--ok);font-weight:800}
+  .spark{position:absolute;width:5px;height:5px;border-radius:50%}
+
+  /* conveyor / tray / supply (render frames) */
+  .strip{margin:3px 8px;border-radius:11px;border:1px dashed var(--orange);background:rgba(255,157,77,.05);padding:7px 9px 8px;position:relative}
+  .striprow{display:flex;gap:5px;align-items:center;margin-top:9px}
+  .cannon{width:30px;height:30px;border-radius:9px;border:2px solid rgba(255,255,255,.25);display:grid;place-items:center;font-family:var(--fpix);font-size:11px;font-weight:800;color:#11102a;box-shadow:inset 0 -3px 0 rgba(0,0,0,.22)}
+  .fire{width:34px;height:34px;border-radius:10px;border:2px solid var(--gold);box-shadow:0 0 0 3px rgba(255,213,74,.25);display:grid;place-items:center;font-size:14px}
+  .slot{flex:1;height:30px;border-radius:8px;background:#0e0a22;border:1px solid var(--line);display:grid;place-items:center;font-size:11px;color:var(--dim);font-family:var(--fpix)}
+  .slot.full{border-color:var(--line2)}
+  .sup{position:relative}
+  .supcell{flex:1;height:40px;border-radius:10px;display:grid;place-items:center;font-family:var(--fpix);font-weight:800;font-size:13px;color:#11102a;position:relative;box-shadow:inset 0 -4px 0 rgba(0,0,0,.22)}
+  .supbadge{position:absolute;top:-6px;right:-4px;background:var(--panel);border:1px solid var(--line);border-radius:99px;font-size:9px;font-weight:800;color:var(--ink);padding:1px 5px;font-family:var(--fpix)}
+
+  /* modal */
+  .dim{position:absolute;inset:0;background:linear-gradient(rgba(12,9,28,.55),rgba(12,9,28,.72));display:grid;place-items:center;padding:16px}
+  .modal{width:88%;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);border-radius:18px;padding:20px 18px;box-shadow:0 0 0 1px rgba(255,213,74,.12),var(--shadow);text-align:center;position:relative}
+  .modal .ttl{font-family:var(--fpix);font-weight:800;font-size:24px;background:linear-gradient(92deg,var(--cyan),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.5px}
+  .stars{font-size:26px;letter-spacing:4px;margin:10px 0 6px}
+  .stars .on{color:var(--gold);text-shadow:0 0 10px rgba(255,213,74,.5)} .stars .off{color:var(--line2)}
+  .kbadge{display:inline-flex;align-items:center;gap:5px;background:rgba(255,213,74,.14);border:1px solid rgba(255,213,74,.4);color:var(--gold);border-radius:999px;padding:3px 11px;font-size:12px;font-weight:800}
+  .bigscore{font-family:var(--fpix);font-weight:800;font-size:26px;color:var(--gold);margin:10px 0 2px}
+  .scorelab{font-size:11px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+  .btnrow{display:flex;gap:10px;margin-top:16px}
+  .btn{flex:1;height:44px;border-radius:12px;font-weight:800;font-size:14px;display:grid;place-items:center;border:0;cursor:pointer}
+  .btn.hero{background:linear-gradient(180deg,var(--gold),var(--gold2));color:#3a2606;box-shadow:0 5px 0 #a97e18,0 8px 16px rgba(0,0,0,.3)}
+  .btn.ghost{background:var(--panel);border:1px solid var(--line2);color:var(--sub)}
+  .btn.ad{background:linear-gradient(180deg,#ffe27a,var(--gold2));color:#3a2606;box-shadow:0 5px 0 #a97e18}
+  .btn.buy{background:linear-gradient(180deg,var(--ok),#33b877);color:#053021;box-shadow:0 5px 0 #1c8a56}
+  .confetti{position:absolute;width:7px;height:11px;border-radius:2px}
+
+  /* level select */
+  .selhead{display:flex;align-items:center;gap:8px;padding:10px 11px}
+  .path{flex:1;position:relative;margin:6px 12px;overflow:hidden}
+  .pnode{position:absolute;width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-family:var(--fpix);font-weight:800;font-size:16px;box-shadow:0 5px 0 rgba(0,0,0,.3)}
+  .pnode.done{background:linear-gradient(180deg,#5ee8a0,#33b877);color:#053021}
+  .pnode.cur{background:linear-gradient(180deg,var(--gold),var(--gold2));color:#3a2606;box-shadow:0 0 0 4px rgba(255,213,74,.3),0 5px 0 #a97e18}
+  .pnode.lock{background:var(--panel);border:1px solid var(--line2);color:var(--dim)}
+  .pstars{position:absolute;font-size:11px;color:var(--gold);white-space:nowrap;transform:translateX(-50%)}
+  .pline{position:absolute;height:4px;border-radius:99px;background:var(--line2)}
+
+  .toast{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:8px 14px;font-size:12px;color:var(--ink);box-shadow:var(--shadow);white-space:nowrap}
+
+  .toggle{position:fixed;top:12px;right:12px;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:12px;cursor:pointer;box-shadow:var(--shadow)}
+  .legend{max-width:1000px;margin:22px auto 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--sub)}
+  .legend .p{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:var(--panel)}
+  .sw{width:10px;height:10px;border-radius:3px}
+</style>
+</head>
+<body>
+<button class="toggle" id="tg">◐ 主题</button>
+<div class="head">
+  <h1>《色流工坊 / Pixel Pour》· PUI 视觉稿 v1</h1>
+  <p>据 GD 布局稿 <code>ui-layout-spec.html</code> 出的四屏 1:1 复刻基准（卡通像素风）· UI chrome=LayoutNode（<span style="color:var(--cyan)">青</span>）/ play-field=render 层（<span style="color:var(--orange)">橙虚框</span>）</p>
+  <p class="meta">PUI · 2026-07-23 · 控件全落 34 闭集 · 零新控件</p>
+</div>
+
+<div class="stage">
+  <!-- ① 对局屏 -->
+  <div class="col">
+    <div class="phone"><div class="scr">
+      <div class="bar">
+        <span class="lvl">关 7</span>
+        <span class="chip"><span class="k">🔑</span>3/8</span>
+        <div class="grow"></div>
+        <span class="chip score"><span class="k">◆</span>8,420</span>
+        <span class="iconbtn">⏸</span>
+      </div>
+      <div class="doorbar"><span class="lab">宝箱门</span><span class="track"><span class="fill"></span></span><span class="pct">62%</span></div>
+
+      <div class="field">
+        <span class="rn">Play-field · 像素画棋盘 (render)</span>
+        <div class="whale"><div><div class="pixgrid" id="pg"></div><div style="margin-top:8px">像素画（鲸）+ 🔑金钥匙 + 🚪宝箱门 · 弹道</div></div></div>
+        <div class="float"><div class="combo">COMBO ×4</div><div class="plus">+320</div></div>
+        <span class="spark" style="top:34%;left:44%;background:var(--cyan)"></span>
+        <span class="spark" style="top:38%;left:62%;background:var(--rose)"></span>
+        <span class="spark" style="top:28%;left:58%;background:var(--ok)"></span>
+      </div>
+
+      <div class="strip"><span class="rn">传送带 5/5 · 发射位 (render)</span>
+        <div class="striprow">
+          <span class="fire">🔥</span>
+          <span class="cannon" style="background:linear-gradient(180deg,#7fd4ff,#4fc3ff)">7</span>
+          <span class="cannon" style="background:linear-gradient(180deg,#89f0bf,#5ee8a0)">7</span>
+          <span class="cannon" style="background:linear-gradient(180deg,#ffe27a,#ffd54a)">7</span>
+          <span class="cannon" style="background:linear-gradient(180deg,#ff9bb4,#ff5d6c)">7</span>
+        </div>
+      </div>
+
+      <div class="strip"><span class="rn">待命槽 ×5 (render+clickable) · 框标 Panel</span>
+        <div class="striprow">
+          <span class="cannon" style="background:linear-gradient(180deg,#89f0bf,#5ee8a0)">3</span>
+          <span class="slot full">·</span><span class="slot">2</span><span class="slot">3</span><span class="slot">4</span><span class="slot">5</span>
+        </div>
+      </div>
+
+      <div class="strip sup"><span class="rn">补给区 (render+clickable) · 剩余角标 Badge</span>
+        <div class="striprow">
+          <span class="supcell" style="background:linear-gradient(180deg,#7fd4ff,#4fc3ff)">补<span class="supbadge">20</span></span>
+          <span class="supcell" style="background:linear-gradient(180deg,#89f0bf,#5ee8a0)">补<span class="supbadge">20</span></span>
+          <span class="supcell" style="background:linear-gradient(180deg,#ffe27a,#ffd54a)">补<span class="supbadge">14</span></span>
+          <span class="supcell" style="background:linear-gradient(180deg,#ff9bb4,#ff5d6c)">补<span class="supbadge">20</span></span>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><b>① 对局屏（核心）</b><br>
+      <span class="tag ui">HUD Panel</span><span class="tag ui">Label</span><span class="tag ui">Badge</span><span class="tag ui">ProgressBar</span><span class="tag ui">Button</span><span class="tag ui">Float</span><span class="tag ui">Particles</span><span class="tag r">render:PixelBoard/Conveyor/Tray/Supply</span>
+    </div>
+  </div>
+
+  <!-- ② 结算屏 -->
+  <div class="col">
+    <div class="phone"><div class="scr">
+      <div class="field" style="opacity:.4;margin:8px"><span class="rn">Play-field（定格·通关）</span><div class="whale">画满了 ✨</div></div>
+      <div class="dim">
+        <div class="modal">
+          <span class="confetti" style="top:12px;left:16%;background:var(--gold);transform:rotate(18deg)"></span>
+          <span class="confetti" style="top:20px;left:78%;background:var(--cyan);transform:rotate(-24deg)"></span>
+          <span class="confetti" style="top:40px;left:40%;background:var(--rose);transform:rotate(10deg)"></span>
+          <div class="ttl">通关！</div>
+          <div class="stars"><span class="on">★</span><span class="on">★</span><span class="off">★</span></div>
+          <div class="kbadge">🔑 8/8 · 宝箱门开启</div>
+          <div class="bigscore">12,340</div><div class="scorelab">本关得分</div>
+          <div class="btnrow">
+            <div class="btn ghost">重来</div>
+            <div class="btn hero">下一关 →</div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="cap"><b>② 结算屏</b> · 星级=Rating<br>
+      <span class="tag ui">Modal</span><span class="tag ui">Rating</span><span class="tag ui">Badge</span><span class="tag ui">Label</span><span class="tag ui">Button</span><span class="tag ui">Particles</span>
+    </div>
+  </div>
+
+  <!-- ③ 选关屏 -->
+  <div class="col">
+    <div class="phone"><div class="scr">
+      <div class="selhead">
+        <span class="iconbtn">←</span>
+        <div class="grow" style="text-align:center"><span class="lvl" style="font-size:16px">色流工坊</span></div>
+        <span class="chip"><span class="k">🪙</span>2,180</span>
+      </div>
+      <div class="path" id="path"></div>
+    </div></div>
+    <div class="cap"><b>③ 选关屏</b> · LevelPath（game-t 同款）<br>
+      <span class="tag ui">LevelPath</span><span class="tag ui">Label</span><span class="tag ui">Button</span><span class="tag ui">Badge</span>
+    </div>
+  </div>
+
+  <!-- ④ 失败/续命 -->
+  <div class="col">
+    <div class="phone"><div class="scr">
+      <div class="field" style="opacity:.45;margin:8px"><span class="rn">Play-field（灰屏定格）</span><div class="whale">差一点…就画满了</div></div>
+      <div class="dim" style="align-items:end;padding-bottom:26px">
+        <div class="modal">
+          <div class="ttl" style="font-size:20px">再来一发就赢！</div>
+          <div style="color:var(--sub);font-size:12.5px;margin-top:6px">还差 1 块就点亮宝箱门</div>
+          <div class="btnrow" style="flex-direction:column">
+            <div class="btn ad">📺 看广告复活</div>
+            <div class="btn buy">$6.99 续命 · 补 3 发</div>
+            <div class="btn ghost" style="height:38px">放弃 · 回选关</div>
+          </div>
+        </div>
+      </div>
+      <div class="toast">已复活 · 补 3 发色炮 ✨</div>
+    </div></div>
+    <div class="cap"><b>④ 失败/续命屏</b> · 失败点变现<br>
+      <span class="tag ui">Modal</span><span class="tag ui">Button</span><span class="tag ui">Toast</span>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <span class="p"><span class="sw" style="background:var(--cyan)"></span>UI chrome = LayoutNode 纯数据（PUI 域）</span>
+  <span class="p"><span class="sw" style="background:var(--orange)"></span>play-field/传送带/待命槽/补给 = 引擎 render 层（PE 域）</span>
+  <span class="p"><span class="sw" style="background:var(--ok)"></span>零新控件（34 闭集全覆盖）</span>
+</div>
+
+<script>
+  // 像素画（鲸剪影·随机上色演示）
+  const PAL=['#4fc3ff','#5ee8a0','#ffd54a','#ff5d6c','#ff6fae','#b07bff'];
+  const WH=[0,0,0,1,1,1,1,0,0,0, 0,0,1,1,1,1,1,1,0,0, 0,1,1,2,1,1,1,1,1,0, 1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,0,0, 0,1,1,1,1,1,1,0,1,0, 0,0,1,1,0,1,1,0,0,0, 0,0,0,0,0,0,0,0,0,0];
+  const pg=document.getElementById('pg');
+  WH.forEach((v,i)=>{const d=document.createElement('div');d.className='px';
+    d.style.background = v===0 ? 'transparent' : v===2 ? '#11102a' : PAL[(i*7)%PAL.length];
+    if(v===0) d.style.opacity=.15, d.style.background='#2b2455';
+    pg.appendChild(d);});
+  // 选关蛇形路径
+  const path=document.getElementById('path');
+  const nodes=[{n:1,s:'done',st:3},{n:2,s:'done',st:3},{n:3,s:'done',st:2},{n:4,s:'done',st:3},{n:5,s:'done',st:1},{n:6,s:'done',st:2},{n:7,s:'cur',st:0},{n:8,s:'lock'},{n:9,s:'lock'}];
+  const cols=3, cw=88, rh=92, x0=30, y0=18;
+  nodes.forEach((nd,i)=>{const row=Math.floor(i/cols); let c=i%cols; if(row%2) c=cols-1-c;
+    const x=x0+c*cw, y=y0+row*rh;
+    if(i>0){const p=nodes[i-1]; const pr=Math.floor((i-1)/cols); let pc=(i-1)%cols; if(pr%2) pc=cols-1-pc;
+      const px=x0+pc*cw+28, py=y0+pr*rh+28; const nx=x+28, ny=y+28;
+      const line=document.createElement('div');line.className='pline';
+      const len=Math.hypot(nx-px,ny-py), ang=Math.atan2(ny-py,nx-px)*180/Math.PI;
+      line.style.width=len+'px';line.style.left=px+'px';line.style.top=(py-2)+'px';line.style.transform=`rotate(${ang}deg)`;line.style.transformOrigin='0 50%';
+      path.appendChild(line);}
+    const el=document.createElement('div');el.className='pnode '+nd.s;el.style.left=x+'px';el.style.top=y+'px';
+    el.textContent=nd.s==='lock'?'🔒':nd.n; path.appendChild(el);
+    if(nd.st!==undefined){const st=document.createElement('div');st.className='pstars';st.style.left=(x+28)+'px';st.style.top=(y-14)+'px';
+      st.textContent='★'.repeat(nd.st)+'☆'.repeat(3-nd.st); path.appendChild(st);}
+  });
+  // theme toggle
+  (function(){var root=document.documentElement,b=document.getElementById('tg');
+    b.onclick=function(){var c=root.getAttribute('data-theme');if(!c)c=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+      root.setAttribute('data-theme',c==='dark'?'light':'dark');};})();
+</script>
+</body>
+</html>

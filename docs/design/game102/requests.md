@@ -7,16 +7,6 @@
 
 ## 待处理 / 进行中
 
-### REQ-G102-UI · UI 实装（据布局稿出 .dc.html + LayoutNode）· [2026-07-23] · GD 提 → **PUI** · status: **open** · 优先级: P1 · 类型: UI 实装
-> **交付基准**：`docs/design/game102/ui-layout-spec.html`（GD 布局稿·四屏·已映射真实控件·零新控件需求）。
-> **请 PUI**：① 据布局稿出四屏 `.dc.html` 视觉稿（卡通像素风·「稿=1:1 复刻基准」铁律）；② LayoutNode 纯数据实装（对局 HUD / 结算 Modal+Rating / 选关 LevelPath / 失败续命 Modal）；写世界=action 信号入队。
-> **控件**：全部落在 34 闭集内（`Panel/Label/Badge/ProgressBar/Button/Modal/Rating/LevelPath/Card/Float/Particles/Toast`）——如实装发现缺控件，回本表报缺口，绝不手写逃生。
-> **待定项**（请 PUI/PE 会审）：待命槽/补给的交互层归属＝render+clickable（play-field）还是 LayoutNode。
-> **边界**：play-field（像素画/传送带/色炮/弹道）= PE 的 render 层·非本单范围。
-> **前置**：capability-plan 已过 Lead 裁①（数据面可开工）；本单可与 PE 数据装配并行。
-
----
-
 ### REQ-G102-TILEMAP-VERDICT · S3 tilemap 适配核对回执（PE 落地实证）· [2026-07-24] · PE 提 → 存档 · status: **✅ done（组合表达·无引擎缺口）** · 优先级: P1 · 类型: 适配核对
 > **背景**：pe-handoff §2 待验 + Lead 裁①实机校准补充——「位图棋盘倾向 `tilemap`，PE 落地核对适配度，不合再报缺口」。
 > **实证结论：`t2-tilemap` 不适配中央「可消除像素画棋盘」——但这不是引擎缺口，改用现有实体路线即可（零下沉·守 Lead 裁①）。**
@@ -26,6 +16,15 @@
 > - **未来若需静态背景/墙层**（本作无）方可另起 tilemap 层——与棋盘无关。**无新能力缺口·不升级引擎池。**
 
 ## 已完结（附 commit·done 迁此）
+
+### REQ-G102-UI · UI 实装（据布局稿出 .dc.html + LayoutNode）· [2026-07-23→2026-07-24] · GD 提 → **PUI** · status: **✅ done（本次提交）** · 优先级: P1 · 类型: UI 实装
+> **交付基准**：`ui-layout-spec.html`（GD 布局稿·四屏·零新控件）+ `game102-screens.dc.html`（PUI 视觉稿·卡通像素风·「稿=1:1 复刻基准」）。
+> **产出**：① 四屏 `.dc.html` 视觉稿真渲染目击（双主题）；② LayoutNode 纯数据实装 `src/games/game102/hud.ts`——`buildTopBar`（对局 HUD：关号/🔑Badge/得分/暂停 + 宝箱门 ProgressBar）· `buildBurst`（连击 Float 飘分 + 突破 Particles 星爆）· `buildResult`（结算 Rating 星级 + 钥匙 Badge + confetti）· `buildSelect`（LevelPath 蛇形选关）· `buildRevive`（失败续命 Modal + Toast）；③ `pixelPour` 皮（`ui-theme.ts`·夜紫底 + 天青主强调 + 缃金点睛 + 像素糖果厚唇钮·程序化 data-URI·零外部资产）。
+> **控件**：全落 34 闭集（Panel/Label/Badge/ProgressBar/Button/Modal/Rating/LevelPath/Float/Particles/Toast·`hud.test.ts` 有闭集守卫）——**零新控件·零手写逃生**（符合 manifesto 先重组）。
+> **写世界纪律**：全 action 信号（pause/resume/retry/next/back/play/revive_ad/revive_pay/give_up）皆宿主生命周期动作·handler 不塞自由逻辑/DOM；play-field 落子走 render+clickable（不经 UI）。
+> **待定项裁定**：待命槽/补给交互层 = **PE render+clickable**（play-field 域·实体带 hp/命中/按色计数·与 REQ-G102-TILEMAP-VERDICT 的实体棋盘同源）；PUI 侧不出其框标（避免与 render 实体双拥），HUD 顶栏/飘层/结算/选关/续命为 PUI 全部产出。
+> **边界守恒**：play-field（像素画/传送带/色炮/弹道/待命槽/补给实体）= PE render 层·不在本单文件。
+> **门禁**：四屏 `tools/audits/game102-*.audit.ts` 过 `ui-audit` 照妖镜（0 重叠·0 对比硬失败·390×844）；`hud.test.ts` 7 例（validateLayoutNode 零 issue 多态覆盖 + 闭集守卫）绿；tsc/build 全绿。
 
 ### REQ-G102-CAPREVIEW · capability-plan 评审（提请 Lead）· [2026-07-23] · GD 提 → **Lead 评审** · status: **✅ done（⚖ Lead 裁决 ①·2026-07-23）** · 优先级: P1 · 类型: 能力评审 + 架构裁决
 > **⚖ Lead 裁决（2026-07-23·核过 §4 组合路径 + registry 六件源码存在）：裁 ①——准以「先组合表达·零运行时游戏层例外」立项，不预下沉 `conveyor-queue`。**
