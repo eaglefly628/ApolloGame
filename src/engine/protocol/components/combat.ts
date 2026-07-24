@@ -98,6 +98,13 @@ export interface Steering extends Component {
   speed: number; // 移动速度（写入 Velocity 的模长，单位/tick）
   stopRange: number; // seek 到此距离内即停（攻击/保持距离）；flee 忽略
   haltStatusMask?: number; // 自身 Status 含这些位时停止行动（冻结/眩晕/定身 CC → 速度归零）；缺省不受控
+  // 群体分离/局部避让（REQ-SURVIVOR群体①）：seek 时被半径内同群邻居斥开——防「敌群 follow 同一目标全挤成一点」，
+  // 让 crowd 环绕目标而非塌缩（幸存者/RTS/塔防通用）。缺省无=零回归（不查邻居·纯 seek/flee）。
+  separation?: {
+    radius: number; // 斥力作用半径（>0 才启用；≤0/缺省=不分离）
+    weight: number; // 斥力融进转向输出的强度（乘在线性衰减归一斥力上·再连同基础转向 clamp 回 speed）
+    tagMask?: number; // 只与含这些 Tag.flags 位的邻居互斥（缺省=只与其它带 Steering 的群体成员互斥·不推开玩家/子弹）
+  };
 }
 
 // ── Mortal ── 逐实体死亡/可破坏（D-001 配套）：自身 resource <= atOrBelow 即发 DestroyRequest 销毁自己。

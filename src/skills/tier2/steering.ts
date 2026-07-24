@@ -1,6 +1,47 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Steering, Transform, Velocity, Relation, Status } from '@engine/protocol/components.js';
+import type { Steering, Transform, Velocity, Relation, Status, Tag } from '@engine/protocol/components.js';
+import { queryRange } from '@atom-skills/index.js';
+
+// 群体分离（REQ-SURVIVOR群体①·seek 专属）：在 separation.radius 内被同群邻居线性衰减斥力推开，
+// 叠加到基础转向后连同 clamp 回 speed。同群=给 tagMask 按 Tag.flags 位筛，否则只认带 Steering 的邻居
+// （不推开玩家/子弹）。确定性：邻居 id 排序遍历 + IEEE 数学；完全重合(d=0)本 tick 跳过（近距斥力已强，
+// 实际到不了精确重合）。缺 separation/radius≤0/weight≤0 → no-op（零回归）。
+function applySeparation(world: IWorld, id: string, t: Transform, s: Steering, v: Velocity): void {
+  const sep = s.separation;
+  if (!sep || !(sep.radius > 0) || !(sep.weight > 0)) return;
+  const neighbors = queryRange(world, t.x, t.y, sep.radius).slice().sort();
+  let rx = 0;
+  let ry = 0;
+  for (const nid of neighbors) {
+    if (nid === id) continue;
+    if (sep.tagMask !== undefined) {
+      const tag = world.getComponent<Tag>(nid, 'Tag');
+      if (!tag || (tag.flags & sep.tagMask) === 0) continue;
+    } else if (!world.getComponent<Steering>(nid, 'Steering')) {
+      continue; // 缺省只与其它群体成员（带 Steering）互斥
+    }
+    const nt = world.getComponent<Transform>(nid, 'Transform');
+    if (!nt) continue;
+    const dx = t.x - nt.x;
+    const dy = t.y - nt.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d === 0) continue; // 完全重合：本 tick 不加（避免除零/无定向）
+    const falloff = 1 - d / sep.radius; // 线性衰减：越近越强（(0,1]）
+    if (falloff <= 0) continue;
+    rx += (dx / d) * falloff;
+    ry += (dy / d) * falloff;
+  }
+  if (rx === 0 && ry === 0) return;
+  v.vx += sep.weight * rx;
+  v.vy += sep.weight * ry;
+  // clamp 到 speed（分离不让整体超过设定速度）。
+  const m = Math.sqrt(v.vx * v.vx + v.vy * v.vy);
+  if (m > s.speed) {
+    v.vx = (v.vx / m) * s.speed;
+    v.vy = (v.vy / m) * s.speed;
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  steering —— 数据驱动 AI 的「转向」段（D-001）。读自身 Relation{kind:'target'}（由 aggro 写）→ 朝目标
@@ -43,10 +84,11 @@ export const steeringCapability = defineCapability({
           speed: { type: 'number', describe: '移动速度（写入 Velocity 模长，单位/tick）' },
           stopRange: { type: 'number', describe: 'seek 到此距离内即停（攻击/保持距离）；flee 忽略' },
           haltStatusMask: { type: 'number', describe: '自身 Status 含这些位时停止行动（冻结/眩晕/定身 CC）' },
+          separation: { type: 'string', describe: '群体分离 {radius,weight,tagMask?}：seek 时被半径内同群邻居线性衰减斥开→防敌群挤成一点、环绕目标（幸存者/RTS/塔防）。缺省无=纯 seek/flee 零回归' },
         },
       },
     },
-    reads: ['Steering', 'Transform', 'Relation', 'Velocity', 'Status'],
+    reads: ['Steering', 'Transform', 'Relation', 'Velocity', 'Status', 'Tag'],
     writes: ['Velocity'],
     consumes: [],
   },
@@ -62,7 +104,7 @@ export const steeringCapability = defineCapability({
       // 声明 steering 跑在状态施加者之前 = 读"上一拍"的 Status（冻结延迟一帧生效，与 Condition→Effect 同纪律）。
       // 这两个 id 在无 hitbox/over-time 的世界里被忽略（steering 仍可独立用）。
       runsBefore: ['motion-apply', 'hitbox', 'over-time'],
-      reads: ['Steering', 'Transform', 'Relation', 'Velocity', 'Status'],
+      reads: ['Steering', 'Transform', 'Relation', 'Velocity', 'Status', 'Tag'],
       writes: ['Velocity'],
       consumes: [],
       execute(world: IWorld) {
@@ -117,6 +159,8 @@ export const steeringCapability = defineCapability({
               v.vx = ux * s.speed;
               v.vy = uy * s.speed;
             }
+            // 群体分离（seek 专属·含 stopRange 环绕）：斥力叠加到基础转向、clamp 回 speed。
+            applySeparation(world, id, t, s, v);
           }
         }
       },
