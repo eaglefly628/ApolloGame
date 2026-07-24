@@ -56,6 +56,13 @@ export function cellCenter(i: number): { x: number; y: number } {
   const row = Math.floor(i / GAME.board.cols);
   return { x: BOARD_PAD + col * CELL + CELL / 2, y: BOARD_PAD + row * CELL + CELL / 2 };
 }
+// 世界坐标 → 格 index（cellCenter 逆运算·活板投影用）。越界返回 -1。
+export function cellIndexOf(x: number, y: number): number {
+  const col = Math.round((x - BOARD_PAD - CELL / 2) / CELL);
+  const row = Math.round((y - BOARD_PAD - CELL / 2) / CELL);
+  if (col < 0 || col >= GAME.board.cols || row < 0 || row >= GAME.board.rows) return -1;
+  return row * GAME.board.cols + col;
+}
 
 // ── 链主色（灰盒占位观感·美术就绪即被 Sprite 皮肤盖过）────────────────────────
 const CHAIN_TINT: Record<string, number> = {
@@ -68,6 +75,16 @@ function levelTint(base: number, lvl: number, maxLvl: number): number {
   const r = (base >> 16) & 0xff, g = (base >> 8) & 0xff, b = base & 0xff;
   return (mix(r) << 16) | (mix(g) << 8) | mix(b);
 }
+
+// ── 物品占位 emoji（Twemoji 活板显示·美术就绪即被 sprite 皮盖过）──────────────
+// 每条链每级一个 emoji·体现升级进程（真原创套图走 S6 台账皮肤槽替换）。
+export const ITEM_EMOJI: Record<string, string> = {
+  food_1: '🍅', food_2: '🥗', food_3: '🔪', food_4: '🥫', food_5: '🍝', food_6: '🍽️',
+  fish_1: '🐟', fish_2: '🐠', fish_3: '🍣', fish_4: '🍤', fish_5: '🐡', fish_6: '🍱',
+  fries_1: '🥔', fries_2: '🍠', fries_3: '🍟', fries_4: '🍱',
+  coffee_1: '🫘', coffee_2: '☕', coffee_3: '☕', coffee_4: '🥛', coffee_5: '🥤',
+  tool_1: '🔩', tool_2: '🔧', tool_3: '🧰', tool_4: '🪫', tool_5: '🛠️',
+};
 
 // ── 全部物品级的索引（item id → {chain, level 数据}）──────────────────────────
 export interface ItemDef extends ChainLevel { chainId: string }

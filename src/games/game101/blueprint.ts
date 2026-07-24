@@ -24,7 +24,7 @@ import {
 } from '@atom-skills/index.js';
 import {
   overTimeCapability, clickableCapability, craftRecipeCapability,
-  effectApplyCapability, eventWhenCapability,
+  effectApplyCapability, eventWhenCapability, keybindCapability,
 } from '@skills/tier2/index.js';
 import { prefabCapability, mergeRuleCapability, casterCapability } from '@skills/tier3/index.js';
 import {
@@ -92,6 +92,8 @@ function generatorEntities(): Record<string, EntityBlueprint> {
     };
     out[`ew-${g.id}`] = { EventWhen: { signal: doSig, when: { kind: 'flag', id: spawnFlag }, mode: 'edge', armed: false } };
     out[`fx-reset-${g.id}`] = { Effect: { onSignal: doSig, kind: 'set-flag', targetId: spawnFlag, value: false } };
+    // LayoutNode 活板：生成器格 Panel.action → mountUI ActionSink 入队 → KeyBinding 转成 tap 信号 → craft-recipe。
+    out[`kb-${g.id}`] = { KeyBinding: { key: tapSig, signal: tapSig } };
   }
   return out;
 }
@@ -133,7 +135,7 @@ export function buildBlueprint(): WorldBlueprint {
     capabilities: [
       transformCapability, tagCapability, shapeCapability, colorCapability,
       spriteCapability, resourceCapability, destroyCapability, flagCapability, timerCapability,
-      overTimeCapability, clickableCapability, craftRecipeCapability, effectApplyCapability, eventWhenCapability,
+      overTimeCapability, clickableCapability, craftRecipeCapability, effectApplyCapability, eventWhenCapability, keybindCapability,
       prefabCapability, mergeRuleCapability, casterCapability,
     ],
     entities,
