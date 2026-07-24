@@ -83,9 +83,43 @@ export function buildMenu(v: MenuView): LayoutNode {
       {
         type: 'Panel', id: 'a-menu-frame',
         props: { bg: { custom: 'linear-gradient(180deg,#0e0a08,#1a120d 68%,#2c1d12)' }, edge: 'gold' },
-        layout: { x: 890, y: 54, width: 316, height: 572, radius: 10, allowOverlap: true },
+        // 级牌/标题/副标/按钮**全嵌进框**（同一坐标系·框内居中·flex 列）——整框随缩放等比缩，任何分辨率恒对齐居中、
+        //   标题不超框、按钮居中（owner 2026-07-22：确保随放缩率不变）。padding 留边、gap 分隔、中段 flex 撑开把按钮推到下半。
+        layout: { x: 890, y: 54, width: 316, height: 572, radius: 10, direction: 'column', align: 'center', padding: 20, gap: 10, allowOverlap: true },
         children: [
           { type: 'Particles', id: 'a-menu-frame-lights', props: { kind: 'sparkle', count: 16, loop: true }, layout: { x: 0, y: 0, width: 316, height: 572, allowOverlap: true } },
+          // 本家级牌（顶·满宽行右对齐）
+          {
+            type: 'Panel', id: 'a-menu-level', props: { bare: true },
+            layout: { width: 276, direction: 'row', align: 'center', justify: 'end', gap: 10 },
+            children: [
+              { type: 'Label', id: 'a-menu-level-l', props: { text: t(l, 'menu.levelLabel'), size: 'sm', color: 'sub' } },
+              {
+                type: 'Panel', id: 'a-menu-level-v',
+                props: { bg: { custom: 'linear-gradient(160deg,rgba(200,53,43,.9),rgba(122,26,18,.92))' } },
+                layout: { direction: 'row', align: 'center', gap: 3, padding: 7, radius: 10 },
+                children: [
+                  { type: 'Label', id: 'a-menu-level-v-t', props: { text: t(l, 'menu.levelBadge'), size: 'sm', bold: true, color: 'text' } },
+                  { type: 'Label', id: 'a-menu-level-v-n', props: { text: String(v.level), size: 'md', bold: true, color: 'gold' } },
+                ],
+              },
+            ],
+          },
+          // 标题（居中·62 缩到框内不超框·原 80 超框） + 副标（居中）
+          { type: 'Label', id: 'a-menu-title-t', props: { size: 62, font: 'serif', bold: true, color: 'text', spans: [{ text: t(l, 'menu.titleA') }, { text: t(l, 'menu.titleB'), color: 'danger' }] } },
+          { type: 'Label', id: 'a-menu-title-sub', props: { text: t(l, 'menu.subtitle'), size: 'md', color: 'sub' } },
+          { type: 'Panel', id: 'a-menu-gap', props: { bare: true }, layout: { flex: 1 } },
+          // 红包 tip + 三按钮组（固定宽 276·align stretch=等宽·框内居中）
+          {
+            type: 'Panel', id: 'a-menu-btns', props: { bare: true },
+            layout: { width: 276, direction: 'column', gap: 12, align: 'stretch' },
+            children: [
+              { type: 'Badge', id: 'a-menu-tip', props: { text: t(l, 'menu.tip'), tone: 'warn' } },
+              { type: 'Button', id: 'a-menu-start', props: { label: t(l, 'menu.start'), kind: 'hero', action: 'menu.start' } }, // hero=金渐变底+深墨字+倒角流光=蓝本主 CTA（skin 皮强制白字→浅金失读·故用引擎 hero kind）
+              { type: 'Button', id: 'a-menu-resume', props: { label: t(l, 'menu.resume'), kind: 'ghost', action: 'menu.start' } },
+              { type: 'Button', id: 'a-menu-settings', props: { label: t(l, 'menu.settings'), kind: 'ghost', action: 'menu.settings' } },
+            ],
+          },
         ],
       },
       // 主角立绘占位（左·300×440·斜纹虚框·真立绘 S6 台账 A-CHAR-HERO）
@@ -125,50 +159,6 @@ export function buildMenu(v: MenuView): LayoutNode {
               coinTag('a-menu-player-money', fmtMoney(v.wallet)),
             ],
           },
-        ],
-      },
-      // 标题（右上·本家级牌 + 掼蛋夜宴大字 + 副标·右对齐）
-      {
-        type: 'Panel',
-        id: 'a-menu-title',
-        props: { bare: true },
-        layout: { x: 520, y: 74, width: 680, direction: 'column', align: 'end', gap: 12 },
-        children: [
-          {
-            type: 'Panel',
-            id: 'a-menu-level',
-            props: { bare: true },
-            layout: { direction: 'row', align: 'center', gap: 10 },
-            children: [
-              { type: 'Label', id: 'a-menu-level-l', props: { text: t(l, 'menu.levelLabel'), size: 'sm', color: 'sub' } },
-              // 级牌红徽（稿=朱砂红渐变·闭集 Tag/Badge 无 danger 档→创作者指定红底 custom·同 felt 先例）
-              {
-                type: 'Panel',
-                id: 'a-menu-level-v',
-                props: { bg: { custom: 'linear-gradient(160deg,rgba(200,53,43,.9),rgba(122,26,18,.92))' } },
-                layout: { direction: 'row', align: 'center', gap: 3, padding: 7, radius: 10 },
-                children: [
-                  { type: 'Label', id: 'a-menu-level-v-t', props: { text: t(l, 'menu.levelBadge'), size: 'sm', bold: true, color: 'text' } },
-                  { type: 'Label', id: 'a-menu-level-v-n', props: { text: String(v.level), size: 'md', bold: true, color: 'gold' } },
-                ],
-              },
-            ],
-          },
-          { type: 'Label', id: 'a-menu-title-t', props: { size: 80, font: 'serif', bold: true, color: 'text', spans: [{ text: t(l, 'menu.titleA') }, { text: t(l, 'menu.titleB'), color: 'danger' }] } },
-          { type: 'Label', id: 'a-menu-title-sub', props: { text: t(l, 'menu.subtitle'), size: 'md', color: 'sub' } },
-        ],
-      },
-      // 按钮列（右·红包 tip + 开始上桌金 CTA + 继续 + 设置）
-      {
-        type: 'Panel',
-        id: 'a-menu-btns',
-        props: { bare: true },
-        layout: { x: 960, y: 352, width: 240, direction: 'column', gap: 14, align: 'stretch' },
-        children: [
-          { type: 'Badge', id: 'a-menu-tip', props: { text: t(l, 'menu.tip'), tone: 'warn' } },
-          { type: 'Button', id: 'a-menu-start', props: { label: t(l, 'menu.start'), kind: 'hero', action: 'menu.start' } }, // hero=金渐变底+深墨字+倒角流光=蓝本主 CTA「深字金底」（skin 皮会强制白字→浅金上失读·故用引擎 hero kind 非贴皮·owner 2026-07-20 金按钮）
-          { type: 'Button', id: 'a-menu-resume', props: { label: t(l, 'menu.resume'), kind: 'ghost', action: 'menu.start' } },
-          { type: 'Button', id: 'a-menu-settings', props: { label: t(l, 'menu.settings'), kind: 'ghost', action: 'menu.settings' } },
         ],
       },
       // 语言段控（右上·EN/中·mirror game-c 主菜单右上角）
