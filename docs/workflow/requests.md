@@ -8,6 +8,13 @@
 
 ## 待处理 / 进行中
 
+### REQ-SURVIVOR武器缺口-3 薄件（弹射 bounce / 诱饵 aggro 重定向 / pull 吸附）· [2026-07-24] · PE-game-103 报（capability-plan §4 E4「待核」的回报）→ Lead 裁 · status: open · 优先级: P2（game-103 M3 武器·**不阻塞 M2**） · 类型: 引擎 capability 薄缺口（Roguelite 武器通用·先重组再下沉）
+> 三条 M3 武器缺口（细节另存本地 `.apollo/cap-gaps.jsonl`·gitignored·故要点内联于此供 Lead 裁）。GD 立场（capability-plan §4）：倾向重组·真薄缺口才下沉；M1–M2 已具核心武器/三选一/波次能力、不受影响。
+> - **弹射 bounce（W7 跳弹）**：`t2-launch` 只一次定向直飞(fire-and-forget)·无「命中后按剩余次数 nearestByTag 重定向连锁」。裁：launch 加 `bounce` 字段 / 下沉薄件 `bounce-relay`。
+> - **诱饵 aggro 重定向（W8）**：`t3-aggro` 的 Perception 恒认阵营 tag·无「临时把某群敌目标改指诱饵实体」（放置✅+自爆✅·缺 aggro 改指）。裁：Perception 加目标优先/lure 半径 / 下沉 `lure-taunt` 薄件。
+> - **pull 吸附（进化 黑洞脉冲）**：`t2-steering` 是「自身朝/离目标」·无「把一群他者拉向锚点」（作用对象相反）。裁：敌临时挂 seek 指黑洞锚点重组 / 下沉 `pull-field`。
+> 撞墙实证＝`src/games/game-103/`（M2 六武器 straight/nova/beam/boomerang/orbit/pet 已落·这 3 类射法表达不了）。
+
 ### REQ-TAPSPAWN-加权掉表生成器原语（tap→耗资源→加权 spawn） · [2026-07-24] · PE-101 报（capability-plan §6 G1「撞墙→下沉 tap-cost-spawn」的回报）→ Lead/主程 裁 · status: open · 优先级: P2（game101 M1 生成器阻塞·非全库阻断） · 类型: 引擎通用能力缺口（合并/idle/gacha 通用·主程域）
 > - **想实现的行为**：生成器（merge/idle 通用）——点一下 → 若资源(体力)≥cost 扣费 → 从掉落表 `[{item,w}]` 按**引擎种子 PRNG** 加权抽一个 item → 在生成器处 `SpawnRequest` 该 item。数据已备 `src/games/game101/config/generators.json`。
 > - **已试（子代理源码复核契约）**：✅ 扣费半场可组合＝`clickable`(点→Signal)+`craft-recipe`(onSignal·costs 原子 afford+扣)（game-q build-pad 近乎现成模板）。❌ **加权 spawn 半场无原语**：`caster`/`self-rule` 只 spawn **固定 template**；`effect-apply` writes 无 SpawnRequest（能 destroy 不能 create）；`draft-offer.weightedPickDistinct` **private 未导出**、`rollOffer` 导出但**自建 mulberry32(seed)·不接世界 `RandomSeed`**、且**未接线成 SpawnRequest**。无任何能力把 `{item,w}[]`+`RandomSeed`→选 template→`SpawnRequest`。❌ 且单点「afford→spawn」不干净可组合（craft-recipe 无成功 Signal·caster 无 cost）。
