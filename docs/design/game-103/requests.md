@@ -40,7 +40,8 @@
 - 现象：打完一批敌人、Lv8 就结束；理论上无限流、敌人越来越多、越来越硬（一发打不死）。
 - 修（PE·纯数据）：① 有限生怪表→**跟随玩家的环形 spawner**（Timer loop 永不停=无限·`ringSpawnerEntities`）；② **同屏 cap**（`GroupCount` 计活敌 → spawner `whenGlobal` 门 `enemies_alive<48`·无限但有界·防实体爆炸/卡顿）；③ **难度分层**（疾行者 25s / 胖子 55s 后经 `SelfRule.whenGlobal` clock 门加入·胖子 hp90=飞镖 7-8 发才死）。
 
-### VBUG-02 · 护盾不绕我转 · [P1·引擎] · ✅ **done（Lead 下沉 `t2-orbit-motion`·2026-07-24）·PE 接 orbitAt**
+### VBUG-02 · 护盾不绕我转 · [P1·引擎] · 🔴 **回退（PE 接线撞调度环·回报 Lead 补 orbit-motion 定序）**
+- **⚠ PE 接线撞墙（2026-07-24·回报 Lead）**：`t2-orbit-motion` 只声明 `runsAfter:['motion-apply']`。本游戏把它与 `hierarchy-cascade`+`camera-follow`（都读改写 Transform）一起装载 → 调度器**硬成环**（"Circular dependency detected among systems: …motion-apply, hierarchy-cascade, …, orbit-motion, …"）→ 蓝图无法 load。**首个真消费者暴露 orbit-motion 定序不全**。裁向（Lead）：给 orbit-motion 补定序（如 `runsBefore:['camera-follow','hierarchy-cascade']` 或明确 phase）使其能与标准 motion/hierarchy/camera 栈共存。PE 暂回退静态环（Hierarchy child·仍造伤·绕转待补定序）。20 测绿。
 - 现象：护盾环光球是静态的、不绕玩家旋转。
 - 根因（**引擎缺口**）：`hierarchy-resolve.ts:23` 明写「子本地偏移**不随父旋转旋转**（避免 sin/cos）」；`rotation-apply` 只转朝向不移位。真·圆周运动 = `pos=center+r·(cos,sin)`·需 sin/cos·sim 禁（确定性）。→ PE 表达不了。
 - **✅ Lead 裁决 + 施工（2026-07-24·裁向②）**：下沉 **`t2-orbit-motion`**（`src/skills/tier2/orbit-motion.ts`·已建+测+登记 registry）——`Orbit{centerId?,radius,dirX,dirY,cosStep,sinStep}` 绕 centerId(缺省原点) 匀速环绕·每 tick 写 Transform.x/y。**运行时零 sin/cos**（rotor 状态 dirX/dirY + 常量步 cosStep/sinStep 旋量乘 + sqrt 归一防漂移·确定性 lockstep 安全；四 trig 常量=数据·`orbitAt` authoring 期一次性算）。10 测（半径守恒/双球对位/跟随移动圆心/确定性/orbitAt）。裁向① hierarchy 旋转子偏移=否（会给核心 hierarchy 加每 tick sin/cos·orbit-motion 用常量 rotor 绕开·更干净）。

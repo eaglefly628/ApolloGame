@@ -74,6 +74,9 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
 //  其余=child 发射器（Timer 到点 SelfRule spawn proj_<key> at:self）。
 function weaponMount(w: WeaponDef): { entities: Record<string, Record<string, unknown>> } {
   if (w.pattern === 'orbit') {
+    // VBUG-02：Lead 交付了 t2-orbit-motion，但它只声明 runsAfter:['motion-apply']，与本游戏的
+    // hierarchy-cascade + camera-follow（都碰 Transform）一起装载→调度器硬成环（首个真消费者暴露其定序不全·
+    // 已回报 Lead）。暂回退静态环（Hierarchy child·仍造伤·观感待 orbit-motion 补定序）。
     const ents: Record<string, Record<string, unknown>> = {};
     for (let i = 0; i < w.amount; i++) {
       const a = (Math.PI * 2 * i) / w.amount;
