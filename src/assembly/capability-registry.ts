@@ -49,6 +49,7 @@ import {
   match3DragSwapCapability,
   modifierStackCapability,
   behaviorTreeCapability,
+  orbitMotionCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability, blockGridCapability, handPatternCapability } from '@skills/tier3/index.js';
 
@@ -118,6 +119,9 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   // t2-behavior-tree（REQ-BT）：通用行为树·纯数据树（五节点闭集）+ 确定性解释器；黑板复用既有 Resource/Flag/StringVar
   // （不新立组件·provides 空）；叶=消费方注册表（TS 例外口径）；随机经传入 RandomSeed→回放/万手 sim 安全。
   behaviorTreeCapability,
+  // t2-orbit-motion（REQ-SURVIVOR护盾绕转·VBUG-02）：圆周运动——绕 centerId/原点匀速环绕、写 Transform。
+  // 运行时零 sin/cos（rotor 状态 + 常量步 + sqrt 归一·确定性 lockstep 安全）；护盾/卫星/环刃/环绕镜头通用。
+  orbitMotionCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,

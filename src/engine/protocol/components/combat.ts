@@ -100,6 +100,20 @@ export interface Steering extends Component {
   haltStatusMask?: number; // 自身 Status 含这些位时停止行动（冻结/眩晕/定身 CC → 速度归零）；缺省不受控
 }
 
+// ── Orbit ── 圆周运动（REQ-SURVIVOR护盾绕转·VBUG-02）：绕 centerId（缺省世界原点）半径 radius 匀速环绕，
+// 每 tick 写自身 Transform.x/y。**确定性/lockstep 安全**：不用每 tick sin/cos——存单位方向 (dirX,dirY) 为 rotor
+// 状态，每 tick 用常量旋转步 (cosStep,sinStep) 做旋量乘 + sqrt 归一（防漂移）。四个 trig 常量为**数据**（作者
+// authoring 期一次性 Math.cos/sin 算好、烤进蓝图=跨机同字节；运行时零 sin/cos）。绕转护盾/卫星/环刃/摄像机通用。
+export interface Orbit extends Component {
+  readonly type: 'Orbit';
+  centerId?: string; // 圆心实体 id（读其 Transform）；缺省绕世界原点 (0,0)
+  radius: number; // 轨道半径
+  dirX: number; // 当前单位方向 x（rotor 状态·初值=起始角 cos·每 tick 步进）
+  dirY: number; // 当前单位方向 y（初值=起始角 sin）
+  cosStep: number; // 每 tick 旋转步 cos（数据·authoring 一次性算·免运行时 sin/cos）
+  sinStep: number; // 每 tick 旋转步 sin（>0 逆时针 / <0 顺时针）
+}
+
 // ── Mortal ── 逐实体死亡/可破坏（D-001 配套）：自身 resource <= atOrBelow 即发 DestroyRequest 销毁自己。
 // 补"涌现逻辑层是全局-id、表达不了 N 怪各自 hp<=0 死亡"的缺口。怪死/可破坏障碍/到期拾取物通用。
 export interface Mortal extends Component {

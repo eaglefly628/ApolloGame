@@ -39,6 +39,9 @@ export type { DraftCandidate, DraftState, RollOfferOpts } from './draft-offer.js
 // 波表 + 每秒速率累积 + 同屏 cap 上限 → tickDirector 出本 tick 该发的 SpawnRequest 列（真生成交 k1-spawn）。
 export { createDirector, tickDirector } from './spawn-director.js';
 export type { DirectorWave, Director, SpawnRing, TickOpts } from './spawn-director.js';
+// orbit-motion（REQ-SURVIVOR护盾绕转·VBUG-02）：圆周运动能力——绕 centerId/原点匀速环绕、每 tick 写 Transform。
+// 运行时零 sin/cos（rotor 状态 + 常量步 + sqrt 归一·确定性 lockstep 安全）；orbitAt 助手 authoring 期算 trig 常量。
+export { orbitMotionCapability, orbitAt } from './orbit-motion.js';
 // card-pile（REQ-017）：牌库/手牌 sim 内确定性管理（发牌/选牌下标/补牌/弃牌）——回合流程数据化 + lockstep 共同前置。
 export { cardPileCapability } from './card-pile.js';
 // self-rule（REQ-021）：逻辑链实体本地(self)作用域——对每个实体读自身条件→对自身施效。补动态多实体自治缺口。

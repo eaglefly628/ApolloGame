@@ -68,6 +68,7 @@
     "NavGraph",
     "NavMesh",
     "NavPath",
+    "Orbit",
     "OverTime",
     "Overlap",
     "Overlap3D",
