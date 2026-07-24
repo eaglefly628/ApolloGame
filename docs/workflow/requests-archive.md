@@ -2,6 +2,23 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-SURVIVOR编排-幸存者三处编排能力归属（三选一 draft / 进化替换 / 波次刷怪）· [2026-07-23] · GD-103 报（owner 拍板「下沉新能力·交 Lead」）→ Lead 裁决 · status: **✅ done（2026-07-23）：2 下沉已建+测(draft-offer/spawn-director·Lead) + 2 回驳(重组·E2/E4)·归档腾槽** · 优先级: P2 · 类型: 引擎 capability 下沉裁决（Roguelite 通用编排·先重组再下沉）
+> **✅ 施工完工（Lead 2026-07-23）**：两下沉件按 spec 落地（确定性纯函数核·先例 dice.ts·非 defineCapability——game-103 编译期 TS 游戏直调函数；ECS/数据卡带封装待数据卡带消费方出现再加·YAGNI）——`src/skills/tier2/draft-offer.ts`（`rollOffer`/`applyPick`/`isEligible`·12 测）+ `src/skills/tier2/spawn-director.ts`（`createDirector`/`tickDirector`·出真 SpawnRequest·10 测）·均自 `@skills/tier2/index.js` 导出。tsc0 + 全量 vitest 绿。E2/E4 回驳=GD 照裁决摆数据重组（撞墙回本单开薄缺口）。**game-103 §1-3 数据面 + E1/E3 消费 + E2/E4 重组接线可开工。**
+> **⚖ Lead 裁决（2026-07-23·核 registry 属实 + 读 game-103 §4）**：
+> - **E1 三选一 draft → ✅ 下沉 `draft-offer`**（真缺口·通用）。dice-roll 只加权抽·无「按持有 + 槽满否过滤候选池 → offer N → 选中回填」。`rollOffer(pool, state, {n, seed})`（过滤不合格→加权抽 N 不重复）+ `applyPick`。
+> - **E2 进化触发替换 → 🔁 回驳·重组**。条件门=`t2-event-when`（武器 lv5 且被动在场→edge Signal）+ 替换=Signal→`spawn`(进化模板)+退场旧武器。`t3-merge-rule` 是「N 同→1」计数触发·不匹配单实体换模板。若实测无干净「信号→退场旧实体」路径→回开薄 `evolve` 缺口。
+> - **E3 波次刷怪 → ✅ 下沉 `spawn-director`**（薄缺口）。`spawn` 单发·无 rate/cap/波表。`tickDirector(director,{now,aliveCounts,ring?})`→本 tick 该发的 SpawnRequest 列（rate 累积 + cap 上限 + 波表 + 开波爆发 + 可选环形布点）·消费 k1-spawn。
+> - **E4 质变 flag → 🔁 回驳·重组·capgap**。homing=`t2-steering`+`t3-aggro`·fan=`Launch.amount>1`·pull=反向 steering（走 capgap·不占本单）。
+> **背景**：game-103《幸存者核心原型》（吸血鬼幸存者式割草·编译期 TS 游戏·owner 2026-07-23）。证据全文=`docs/design/game-103/capability-plan.md §4`。
+
+### REQ-EVENTLOG-下沉共享事件日志原子 · game-b + game-c 各造一份 → 引擎缺 log/journal 件 · [2026-07-21] · PE-B 报（数据驱动 review 档 B）→ Lead 裁决 · status: **✅ atom done（2026-07-23·Lead·`src/skills/tier1/event-log.ts` + 9 测·tsc0/全量绿·归档腾槽）；迁移转游戏池 B-013(PE-B)/C-115(PE-C)** · 优先级: P2 · 类型: 引擎原子下沉（DRY·跨游戏复用）
+> **✅ atom 完工（Lead 2026-07-23）**：`src/skills/tier1/event-log.ts`——`EventLog<K, Extra>` 泛型类 + `createEventLog()` 工厂·`push`(自增 seq)/`recent(k=14)`/`all()`/`size()`/`clear()`/`dump(fmt?)`·kind 泛型闭集 + text + Extra(round/actor/tile…) 由消费方填·纯数据零随机不进 hash·9 测·自 `@skills/tier1/index.js` 导出。
+> **⚖ Lead 裁决（2026-07-23·核过两款源码）**：✅ **下沉**——rule-of-two 属实（game-b `core/game-log.ts` `GameLog` 类 + game-c `game-log.ts` 各手写一份带 seq 的类型化事件流·core 骨架逐字近同），第三款卡牌必再造，宪法 §2 成立；`tier3/timeline`=演出时序调度·非流水日志。下沉为 headless 泛型数据结构（非 defineCapability·同 dice.ts 先例）·能力只管容器与 seq 骨架·不碰文案/kind 语义。**迁移**（游戏域·atom 落地后接）：B-013(PE-B: game-b `GameLog`→薄封装)/C-115(PE-C: game-c `GameEvent`→同)——落各自游戏池、不占引擎槽。证据全文 `docs/design/game-b/data-driven-review.md` §3 档 B。
+
+### REQ-ASSET-导入抠图 · 创作台导入时「背景移除→真 alpha」选项（选型 rembg） · [2026-07-16] · owner 拍板「搞起·用 rembg」→ PA（能力+端点·✅）+ PST（导入向导 UI·✅ v1） · status: **✅ done（核心交付·PA + PST v1·2026-07-23 归档腾槽；enhancement=before/after 预览 + tolerance/despill 控件·owner 要时重开小条）** · 优先级: P1 · 类型: 资产线能力 + 创作台导入 UI（authoring-time·不碰 sim/hash）
+> **PST v1 完工回执（2026-07-17·门禁 tsc0/vitest3242/build）**：`src/studio/AssetImportWizard.tsx` step4 加「🎯 背景移除 → 真 alpha（抠图）」勾选 + 模式选（flood / rembg）；提交时导入前逐图过 `POST /api/assets/matte`、用真 alpha 图入库、provenance 记 matte 步；任一图失败即整批中止；sheet 模式不适用。纯函数 `matteImportFiles` 导出 + 单测（4 例）。**余（enhancement·非阻塞·按需重开）**：before/after 预览 + tolerance/despill 控件。
+> **PA 完工回执（2026-07-16）**：`scripts/asset-matte.mjs`（+`.test.mjs` 5 测·纯 Node 零依赖）——① 确定性主路 flood-fill（纯 Node PNG 编解码·四角/种子灌水碰轮廓即停→真 alpha·实测「绿幕但主体也有绿」主体内部保留 alpha 255·确定性）② despill ③ 多种子 ④ rembg 兜底档（mock 门控·不静默顶替）⑤ provenance 记方式/tolerance/model。端点 `POST /api/assets/matte`（`main_entry/assets.py`·独立端点·非改 import）。**选型 rembg**（MIT·可商用·本地 CLI；排除 @imgly AGPL）；发行前 PA 复核最终模型授权（u2net=Apache-2.0）。红线：authoring-time·纯像素·不碰 sim/hash/LayoutNode·auto-matte 必过人审。**背景**：owner 让 Gemini 生「透明背景」拿到棋盘格假透明→导入处加真 alpha 兜底（无「透明色键」概念·统一 PNG 真 alpha）。
+
 ### REQ-HANDPAT-歧义自洽 · t3-hand-pattern legalResponses 与 act/beats 判读口径一致化 · [2026-07-18] · PE-A 报（A-008）→ Lead 裁决 ✅ 接 → 指派 Opus · status: **✅ done（`214fc846`·Lead 验收 PASS·2026-07-23 归档腾槽）** · 优先级: P1 · 类型: 引擎 capability bug（正确性关键·不降档）
 > **根因**：`legalResponses` 按「意图家族」枚举应对并以该家族比压制；`act`/`legalCheck`/`beats` 走 `matchPattern` **最强判读**——含逢人配的一手多判读时，最强判读落到另一普通型家族→跨家族压不过→legalResponses 承诺的牌 act 拒收（实证：墩=钢板 JJJ-QQQ，QQ+KK+两♥5 按钢板 QQQ-KKK 返回，规范判读=三连对 Q-K-A 更强→拒）。后果=提示按钮给「打不出去的牌」/AI 空过（game-a 已游戏层兜底滤除·引擎修好可退）。
 > **⚖ Lead spec（已落地）**：修 `legalResponses`——每个候选生成后用规范口径自洽复核：应对仅当 `beats(play.cards, target, cfg)`=true 才纳入；领出仅当 `matchPattern` 非空。不改 beats/legalCheck 语义。测试：① A-008 实证例复现（修前红修后绿）；② 不变量测=∀ legalResponses 返回项 legalCheck 必过（含逢人配多手枚举）；③ 既有 conformance 测零回归。**完工**：`214fc846` fix(engine)·Lead 验收 PASS（game-a A-008 记档·兜底 filter 可退=PE-A 自裁·幂等保留亦无害）。
