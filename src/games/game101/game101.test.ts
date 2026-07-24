@@ -4,7 +4,7 @@ import { validateLayoutNode } from '@ui/components/index.js';
 import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop, DeliverDrop, Order } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1, buildS1Live } from './s1.js';
-import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, generatorOutput, cellCenter } from './theme.js';
+import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, generatorOutput, cellCenter, TIMED_ITEM, TIMED_SEC, TICKS_PER_SEC } from './theme.js';
 
 // ── headless 助手 ─────────────────────────────────────────────────────────────
 function res(e: Engine, id: string): number { return e.world.getComponent<Resource>(id, 'Resource')?.current ?? 0; }
@@ -128,12 +128,21 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     cells[0] = { emoji: '🧊', gen: 'gen_fridge' };
     cells[8] = { emoji: '🥗', deliverable: true };
     cells[9] = { emoji: '🍝' };
+    cells[10] = { emoji: '🦀', timer: 12 };
     const live = buildS1Live({ energy: 34, coins: 305, gems: 8, level: 12, cells, burstCell: 9, orders: [
       { char: '周航', slots: [{ itemEmoji: '🥗', filled: false, want: true }], coins: 44, stars: 2, deliverable: true, mood: 0.4, moodFace: '😊', fly: { id: 'fly-0', label: '🪙+44' } },
       { char: '老陈', slots: [{ itemEmoji: '🐠', filled: true, want: false }, { itemEmoji: '🐠', filled: false, want: false }], coins: 78, stars: 2, deliverable: false, mood: 0, moodFace: '😐' },
     ] });
     expect(live.type).toBe('Screen');
     expect(validateLayoutNode(live)).toEqual([]);
+  });
+
+  it('限时物：带 life Timer 的鲜货到期自毁（timer + lifetime 能力组合）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 2); // seed 展开
+    expect(countTemplate(e, TIMED_ITEM)).toBe(1);       // 限时鲜货在板
+    tickN(e, TIMED_SEC * TICKS_PER_SEC);                 // 跑满存活期
+    expect(countTemplate(e, TIMED_ITEM)).toBe(0);       // 到期 lifetime 销毁
   });
 
   // ── 生成器（S4 可玩核·点击→耗体力→固定产出·原子）─────────────────────────

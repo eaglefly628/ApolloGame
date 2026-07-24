@@ -12,11 +12,11 @@ import { QueuedInputSource } from '@net/index.js';
 import { mountHost } from '@engine/host/mount-host.js';
 import { mountUI } from '@ui/components/index.js';
 import type { HandlerMap, MountHandle } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop } from '@engine/protocol/components.js';
+import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop, Timer } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1Live, type S1State, type CellView, type OrderView, type SlotView } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';
-import { GAME, RES, GENERATORS, ORDERS, ORDER_SAT_MAX, ITEM_EMOJI, moodFace, cellIndexOf, cellCenter } from './theme.js';
+import { GAME, RES, GENERATORS, ORDERS, ORDER_SAT_MAX, TICKS_PER_SEC, ITEM_EMOJI, moodFace, cellIndexOf, cellCenter } from './theme.js';
 
 const GEN_CELLS = new Set(GENERATORS.map((g) => g.cell));
 
@@ -53,7 +53,12 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       if (!po || !t) continue;
       onBoard.add(po.templateId);
       const idx = cellIndexOf(t.x, t.y);
-      if (idx >= 0 && !cells[idx]) { cells[idx] = { emoji: ITEM_EMOJI[po.templateId] ?? '❓' }; cellEntity[idx] = eid; cellTpl[idx] = po.templateId; }
+      if (idx >= 0 && !cells[idx]) {
+        cells[idx] = { emoji: ITEM_EMOJI[po.templateId] ?? '❓' }; cellEntity[idx] = eid; cellTpl[idx] = po.templateId;
+        // 限时物：读 id='life' 的 Timer → 剩余秒（到 0 由 lifetime 销毁）。
+        const tm = w.getComponent<Timer>(eid, 'Timer');
+        if (tm && tm.id === 'life') cells[idx]!.timer = Math.max(0, Math.ceil((tm.duration - tm.elapsed) / TICKS_PER_SEC));
+      }
     }
     // 订单交付态（读 Order 组件·多槽）：各 slot filled/需求物；want=板上有该物且此槽未满。
     const wanted = new Set<string>(); // 当前被某订单未满槽需要的模板集（板格 ✓ 提示）
@@ -176,7 +181,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       return;
     }
     lastCoins = coins;
-    const sig = `${Math.round(st.energy)}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('') + o.moodFace).join('|')}`;
+    const sig = `${Math.round(st.energy)}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '') + (c?.timer != null ? `t${c.timer}` : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('') + o.moodFace).join('|')}`;
     if (sig !== lastSig) { lastSig = sig; paint(st); }
   });
 

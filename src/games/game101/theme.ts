@@ -48,6 +48,10 @@ export function moodFace(sat: number): string {
 
 // ── 模拟频率（引擎固定步长 60Hz·Engine 默认 tickRate）→ 秒换算 tick。─────────
 export const TICKS_PER_SEC = 60;
+
+// ── 限时鲜货（物件级倒计时·owner 基准需求 ui-brief §4.2）：带 id='life' 的 Timer·到期 lifetime 销毁。──
+export const TIMED_SEC = 20; // 限时物存活秒数（到 0 自毁）
+export const TIMED_ITEM = 'timed_fresh';
 export const ENERGY_REGEN_TICKS = ENERGY.regenIntervalSec * TICKS_PER_SEC;
 
 // ── 资源 id（f1-resource）──────────────────────────────────────────────────────
@@ -100,6 +104,7 @@ export const ITEM_EMOJI: Record<string, string> = {
   fries_1: '🥔', fries_2: '🍠', fries_3: '🍟', fries_4: '🍱',
   coffee_1: '🫘', coffee_2: '☕', coffee_3: '☕', coffee_4: '🥛', coffee_5: '🥤',
   tool_1: '🔩', tool_2: '🔧', tool_3: '🧰', tool_4: '🪫', tool_5: '🛠️',
+  timed_fresh: '🦀', // 限时鲜货（带倒计时·到期自毁）
 };
 
 // ── 全部物品级的索引（item id → {chain, level 数据}）──────────────────────────
@@ -125,6 +130,26 @@ export function mergeRules(): MergeRuleDef[] {
 // ── 派生 2：物品 prefab 模板（每个物品级一个单实体模板·带皮肤槽 Sprite）─────────
 // prefab 展开时自动盖 PrefabOrigin 戳 → merge-rule 按 templateId 计数合成。
 export interface PrefabTemplateData { entities: Record<string, Record<string, unknown>> }
+
+// ── 限时鲜货模板（物件级倒计时）：body 带 id='life' 的 Timer → timer-advance 每拍 +1·到 duration 发 TimerDone
+//    → lifetime 销毁。纯能力组合（timer + lifetime）·游戏层零计时逻辑。
+export function timedTemplates(): Record<string, PrefabTemplateData> {
+  return {
+    [TIMED_ITEM]: {
+      entities: {
+        body: {
+          Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
+          Tag: { flags: ITEM },
+          Shape: { kind: 'box', width: CELL - 12, height: CELL - 12 },
+          Sprite: { textureKey: 'item_timed_fresh', anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽
+          Color: { tint: 0xff8a3c, alpha: 1 },
+          Timer: { id: 'life', elapsed: 0, duration: TIMED_SEC * TICKS_PER_SEC, loop: false }, // 到期 lifetime 销毁
+        },
+      },
+    },
+  };
+}
+
 export function itemTemplates(): Record<string, PrefabTemplateData> {
   const out: Record<string, PrefabTemplateData> = {};
   for (const def of Object.values(ITEMS)) {

@@ -22,14 +22,15 @@ import {
   transformCapability, tagCapability, shapeCapability, colorCapability,
   spriteCapability, resourceCapability, destroyCapability, flagCapability, timerCapability,
 } from '@atom-skills/index.js';
+import { lifetimeCapability } from '@skills/tier1/index.js';
 import {
   overTimeCapability, clickableCapability, craftRecipeCapability,
   effectApplyCapability, eventWhenCapability, keybindCapability, mergeOnPlaceCapability, orderFulfillCapability,
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
-  GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, generatorOutput,
-  cellCenter, mergeRules, itemTemplates, CELL, GEN_TAG, GEN_TINT,
+  GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, TIMED_ITEM, generatorOutput,
+  cellCenter, mergeRules, itemTemplates, timedTemplates, CELL, GEN_TAG, GEN_TINT,
 } from './theme.js';
 
 // ── 资源单例（f1-resource）───────────────────────────────────────────────────
@@ -145,7 +146,9 @@ function mergeRuleEntities(): Record<string, EntityBlueprint> {
 export function buildBlueprint(): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {
     ...resourceEntities(),
-    library: { PrefabLibrary: { seq: 0, templates: itemTemplates() } },
+    library: { PrefabLibrary: { seq: 0, templates: { ...itemTemplates(), ...timedTemplates() } } },
+    // 限时鲜货 seed（物件级倒计时·到期 lifetime 自毁）：摆一个在板上第三行空位。
+    'seed-timed': { SpawnRequest: { templateId: TIMED_ITEM, ...cellCenter(GAME.board.cols * 2) } },
     ...boardCellEntities(),
     ...mergeRuleEntities(),
     ...orderEntities(),
@@ -156,7 +159,7 @@ export function buildBlueprint(): WorldBlueprint {
   return {
     capabilities: [
       transformCapability, tagCapability, shapeCapability, colorCapability,
-      spriteCapability, resourceCapability, destroyCapability, flagCapability, timerCapability,
+      spriteCapability, resourceCapability, destroyCapability, flagCapability, timerCapability, lifetimeCapability,
       overTimeCapability, clickableCapability, craftRecipeCapability, effectApplyCapability, eventWhenCapability, keybindCapability,
       mergeOnPlaceCapability, orderFulfillCapability, prefabCapability, casterCapability,
     ],
