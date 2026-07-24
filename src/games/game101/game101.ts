@@ -60,6 +60,9 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
         if (tm && tm.id === 'life') cells[idx]!.timer = Math.max(0, Math.ceil((tm.duration - tm.elapsed) / TICKS_PER_SEC));
       }
     }
+    // 限时特惠订单倒计时（读共享 menu Timer 剩余秒·循环）。
+    const menuTm = w.getComponent<Timer>('menu-timer', 'Timer');
+    const menuLeft = menuTm ? Math.max(0, Math.ceil((menuTm.duration - menuTm.elapsed) / TICKS_PER_SEC)) : undefined;
     // 订单交付态（读 Order 组件·多槽）：各 slot filled/需求物；want=板上有该物且此槽未满。
     const wanted = new Set<string>(); // 当前被某订单未满槽需要的模板集（板格 ✓ 提示）
     const orders: OrderView[] = ORDERS.map((o) => {
@@ -72,7 +75,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
         return { itemEmoji: ITEM_EMOJI[tpl] ?? '❓', filled, want: !filled && onBoard.has(tpl) };
       });
       const sat = res(`sat_${o.id}`);
-      return { char: o.char, slots, coins: o.reward.coins, stars: o.reward.stars ?? 0, deliverable: slots.some((sl) => sl.want), mood: sat / ORDER_SAT_MAX, moodFace: moodFace(sat) };
+      return { char: o.char, slots, coins: o.reward.coins, stars: o.reward.stars ?? 0, deliverable: slots.some((sl) => sl.want), mood: sat / ORDER_SAT_MAX, moodFace: moodFace(sat), timed: o.timed, timeLeft: o.timed ? menuLeft : undefined };
     });
     // 板格 ✓ = 该成品被某订单未满槽需要（可拖去交付）。
     for (let i = 0; i < cells.length; i++) if (cells[i] && cellTpl[i] && wanted.has(cellTpl[i]!)) cells[i]!.deliverable = true;
@@ -181,7 +184,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       return;
     }
     lastCoins = coins;
-    const sig = `${Math.round(st.energy)}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '') + (c?.timer != null ? `t${c.timer}` : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('') + o.moodFace).join('|')}`;
+    const sig = `${Math.round(st.energy)}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '') + (c?.timer != null ? `t${c.timer}` : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('') + o.moodFace + (o.timeLeft ?? '')).join('|')}`;
     if (sig !== lastSig) { lastSig = sig; paint(st); }
   });
 

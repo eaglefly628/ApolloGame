@@ -29,7 +29,7 @@ import {
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
-  GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, TIMED_ITEM, generatorOutput,
+  GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, TIMED_ITEM, MENU_TIMER_SEC, TICKS_PER_SEC, generatorOutput,
   cellCenter, mergeRules, itemTemplates, timedTemplates, CELL, GEN_TAG, GEN_TINT,
 } from './theme.js';
 
@@ -132,6 +132,11 @@ function orderEntities(): Record<string, EntityBlueprint> {
     out[`order-${o.id}`] = {
       Order: { orderId: o.id, needItems: o.needItems, filled: o.needItems.map(() => false), reward, resetOnComplete: true },
     };
+  }
+  // 限时特惠订单倒计时（循环刷新）：一个共享菜单 Timer{id:'menu',loop}·timer-advance 每拍推进·到期归零重来。
+  // 纯 e1-timer·不销毁（区别 life）；宿主读其剩余秒渲染 ⏱。有 timed 订单才建。
+  if (ORDERS.some((o) => o.timed)) {
+    out['menu-timer'] = { Timer: { id: 'menu', elapsed: 0, duration: MENU_TIMER_SEC * TICKS_PER_SEC, loop: true } };
   }
   return out;
 }

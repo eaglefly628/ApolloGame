@@ -26,6 +26,7 @@ export interface GeneratorDef {
 export interface OrderDef {
   id: string; char: string; needItems: string[]; // 各 slot 要的模板 id（顺序即 slot 序·最多 3）
   reward: { coins: number; exp?: number; stars?: number };
+  timed?: boolean; // 限时特惠订单：卡上显示 ⏱ 倒计时（菜单 Timer 驱动·循环刷新）
 }
 
 export const GAME = gameCfg;
@@ -52,6 +53,7 @@ export const TICKS_PER_SEC = 60;
 // ── 限时鲜货（物件级倒计时·owner 基准需求 ui-brief §4.2）：带 id='life' 的 Timer·到期 lifetime 销毁。──
 export const TIMED_SEC = 20; // 限时物存活秒数（到 0 自毁）
 export const TIMED_ITEM = 'timed_fresh';
+export const MENU_TIMER_SEC = 30; // 限时特惠订单倒计时周期（循环刷新·菜单 Timer）
 export const ENERGY_REGEN_TICKS = ENERGY.regenIntervalSec * TICKS_PER_SEC;
 
 // ── 资源 id（f1-resource）──────────────────────────────────────────────────────

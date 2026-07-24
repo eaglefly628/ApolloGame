@@ -15,7 +15,7 @@ export function buildS1(): LayoutNode {
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
 export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number } // timer=剩余秒（限时物·到 0 自毁）
 export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
-export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; fly?: { id: string; label: string } }
+export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; timed?: boolean; timeLeft?: number; fly?: { id: string; label: string } }
 export interface S1State {
   energy: number; coins: number; gems: number; level: number;
   cells: (CellView | null)[]; orders: OrderView[];
@@ -68,13 +68,17 @@ function orders(s: S1State): N {
     type: 'Panel', id: 'orders', props: { bare: true },
     layout: { direction: 'row', align: 'stretch', justify: 'between', gap: 8, padding: 8 },
     children: s.orders.map((o, i) => ({
-      type: 'Panel', id: `ord-${i}`, props: { bg: 'panel' }, // 整卡=交付落点（宿主按 DOM id 几何识别·拖成品到此→DeliverDrop）
+      // 整卡=交付落点（宿主按 DOM id 几何识别）。限时特惠订单=金框 + ⏱ 倒计时（动态限时菜单）。
+      // ⚠ 异型外形待 PUI REQ-UI-异型容器（Panel 无 shape 枚举）——现用矩形金框顶着，本件落地即升级异型。
+      // 金框(edge)非金底(bg)：保内部素底·徽章对比达标（金底会压暗 warn/ok 徽章）。
+      type: 'Panel', id: `ord-${i}`, props: o.timed ? { bg: 'panel', edge: 'gold' } : { bg: 'panel' },
       layout: { direction: 'column', align: 'center', justify: 'between', gap: 6, padding: 10, radius: 18, flex: 1 },
       children: [
         {
           type: 'Panel', id: `ord-${i}-top`, props: { bare: true },
           layout: { direction: 'row', align: 'center', gap: 8 },
           children: [
+            ...(o.timed && o.timeLeft != null ? [{ type: 'Badge', id: `ord-${i}-clk`, props: { text: `⏱${o.timeLeft}`, tone: 'warn' } } as N] : []),
             { type: 'Avatar', id: `ord-${i}-av`, props: { name: o.char, size: 52, shape: 'circle' } },
             {
               type: 'Panel', id: `ord-${i}-idn`, props: { bare: true },

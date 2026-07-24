@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { validateLayoutNode } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop, DeliverDrop, Order } from '@engine/protocol/components.js';
+import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop, DeliverDrop, Order, Timer } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1, buildS1Live } from './s1.js';
 import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, generatorOutput, cellCenter, TIMED_ITEM, TIMED_SEC, TICKS_PER_SEC } from './theme.js';
@@ -132,9 +132,20 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     const live = buildS1Live({ energy: 34, coins: 305, gems: 8, level: 12, cells, burstCell: 9, orders: [
       { char: '周航', slots: [{ itemEmoji: '🥗', filled: false, want: true }], coins: 44, stars: 2, deliverable: true, mood: 0.4, moodFace: '😊', fly: { id: 'fly-0', label: '🪙+44' } },
       { char: '老陈', slots: [{ itemEmoji: '🐠', filled: true, want: false }, { itemEmoji: '🐠', filled: false, want: false }], coins: 78, stars: 2, deliverable: false, mood: 0, moodFace: '😐' },
+      { char: '苏晴', slots: [{ itemEmoji: '☕', filled: false, want: false }], coins: 220, stars: 3, deliverable: false, mood: 1, moodFace: '😍', timed: true, timeLeft: 24 },
     ] });
     expect(live.type).toBe('Screen');
     expect(validateLayoutNode(live)).toEqual([]);
+  });
+
+  it('限时菜单：共享 menu Timer 循环推进驱动限时订单 ⏱（e1-timer·不销毁·区别 life）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    const t0 = e.world.getComponent<Timer>('menu-timer', 'Timer');
+    expect(t0?.id).toBe('menu');
+    expect(t0?.loop).toBe(true);        // 循环刷新
+    const el0 = t0!.elapsed;
+    tickN(e, 60);
+    expect(e.world.getComponent<Timer>('menu-timer', 'Timer')!.elapsed).toBeGreaterThan(el0); // 每拍推进
   });
 
   it('限时物：带 life Timer 的鲜货到期自毁（timer + lifetime 能力组合）', () => {

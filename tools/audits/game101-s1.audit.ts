@@ -13,7 +13,7 @@ const state: S1State = {
   orders: [
     { char: '周航', slots: [{ itemEmoji: '🥗', filled: false, want: true }], coins: 44, stars: 0, deliverable: true, mood: 0.2, moodFace: '🙂' },
     { char: '老陈', slots: [{ itemEmoji: '🐠', filled: true, want: false }, { itemEmoji: '🐠', filled: false, want: false }], coins: 78, stars: 2, deliverable: false, mood: 0.6, moodFace: '😄' },
-    { char: '苏晴', slots: [{ itemEmoji: '☕', filled: false, want: false }, { itemEmoji: '🥗', filled: false, want: true }, { itemEmoji: '🔧', filled: false, want: false }], coins: 220, stars: 3, deliverable: true, mood: 1, moodFace: '😍' },
+    { char: '苏晴', slots: [{ itemEmoji: '☕', filled: false, want: false }, { itemEmoji: '🥗', filled: false, want: true }, { itemEmoji: '🔧', filled: false, want: false }], coins: 220, stars: 3, deliverable: true, mood: 1, moodFace: '😍', timed: true, timeLeft: 24 },
     { char: '阿雅', slots: [{ itemEmoji: '🔧', filled: false, want: false }], coins: 88, stars: 2, deliverable: false, mood: 0, moodFace: '😐' },
   ],
 };
