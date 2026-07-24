@@ -31,7 +31,7 @@ export const LEVEL_1: Level = {
   no: 1,
   name: '鲸',
   cols: 8, rows: 6,
-  palette: ['blue', 'lblue', 'teal'],
+  palette: ['green', 'orange', 'red'],
   ammo: 20,
   conveyorCap: 5, burstCap: 10, slots: 5,
   beltSpeed: 90,

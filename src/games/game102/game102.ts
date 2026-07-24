@@ -11,9 +11,8 @@ import { buildBlueprint } from './blueprint.js';
 import { LEVEL_1 } from './levels.js';
 import { FIELD_W, FIELD_H } from './theme.js';
 
-// 沙盒背景：柔和海洋渐变（呼应「鲸」关·卡通像素工坊风·真皮走 S6 美术台账）。
-const FIELD_BG =
-  'radial-gradient(circle at 50% 30%, #12335c 0%, #0a2038 62%, #06121f 100%)';
+// 沙盒背景：design-ref 对局屏石板渐变（#5b6488→#4c5578·真皮/管道金属观感走 S6 美术台账）。
+const FIELD_BG = 'linear-gradient(180deg,#5b6488,#4c5578)';
 
 export function mount(container: HTMLElement, _host?: { exit: () => void }): () => void {
   // 宿主骨架（render-only helper·非 sim）：wrapper > scene(定尺缩放盒·信箱化)。

@@ -10,9 +10,9 @@ const res = (e: Engine, entityId: string): number =>
   e.world.getComponent<Resource>(entityId, 'Resource')?.current ?? NaN;
 
 // L1 位图逐色像素块统计（断言用·手数）。
-function paintedByColor(): { blue: number; lblue: number; teal: number; total: number } {
-  const acc = { blue: 0, lblue: 0, teal: 0, total: 0 };
-  const names = ['blue', 'lblue', 'teal'] as const;
+function paintedByColor(): { green: number; orange: number; red: number; total: number } {
+  const acc = { green: 0, orange: 0, red: 0, total: 0 };
+  const names = ['green', 'orange', 'red'] as const;
   for (const row of LEVEL_1.bitmap) {
     for (const ch of row) {
       if (ch === '.') continue;
@@ -58,9 +58,9 @@ describe('Game 102 · Pixel Pour（S3 骨架关）', () => {
     e.load(buildBlueprint());
     e.world.tick(); e.world.tick();
     const p = paintedByColor();
-    expect(res(e, 'remain-blue')).toBe(p.blue);
-    expect(res(e, 'remain-lblue')).toBe(p.lblue);
-    expect(res(e, 'remain-teal')).toBe(p.teal);
+    expect(res(e, 'remain-green')).toBe(p.green);
+    expect(res(e, 'remain-orange')).toBe(p.orange);
+    expect(res(e, 'remain-red')).toBe(p.red);
   });
 
   it('确定性：同 seed 两次装载 tick 后 hash 一致（lockstep-safe）', () => {

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ font-family:"Fredoka","PingFang SC","Microsoft YaHei",system-ui,sans-serif; }
+  a{ color:#4fc3ff; text-decoration:none; } a:hover{ color:#7ad4ff; }
+  @keyframes pop{ 0%{ transform:scale(.2); } 60%{ transform:scale(1.2); } 100%{ transform:scale(1); } }
+  @keyframes reveal{ 0%{ transform:scale(1.35); opacity:0; } 60%{ transform:scale(.92); } 100%{ transform:scale(1); opacity:1; } }
+  @keyframes floatup{ 0%{ transform:translate(-50%,0) scale(.6); opacity:0; } 20%{ transform:translate(-50%,-20px) scale(1.1); opacity:1; } 100%{ transform:translate(-50%,-110px) scale(1); opacity:0; } }
+  @keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-7px); } }
+  @keyframes confetti{ 0%{ transform:translateY(-20px) rotate(0); opacity:1; } 100%{ transform:translateY(520px) rotate(680deg); opacity:0; } }
+  @keyframes flowH{ 0%{ background-position:0 0; } 100%{ background-position:40px 0; } }
+</style>
+</helmet>
+<div style="min-height:100vh; width:100%; display:grid; place-items:center; padding:34px 16px; background:#0e0b22; background-image:radial-gradient(circle at 50% -12%, #241a52, #0e0b22 58%); font-family:'Fredoka','PingFang SC',sans-serif;">
+  <div style="display:flex; flex-direction:column; align-items:center; gap:14px;">
+
+    <!-- iPhone 15 · 屏幕 390x844 -->
+    <div style="position:relative; width:414px; height:868px; border-radius:56px; padding:12px; background:linear-gradient(155deg,#3a3268,#211c40); box-shadow:0 30px 70px rgba(0,0,0,.55), inset 0 2px 3px rgba(255,255,255,.14);">
+      <div style="position:absolute; top:22px; left:50%; transform:translateX(-50%); width:126px; height:28px; border-radius:0 0 16px 16px; background:#0b0918; z-index:40;"></div>
+      <div style="position:relative; width:390px; height:844px; border-radius:44px; overflow:hidden; background:#141026;">
+
+        <!-- ================= 选关屏 ================= -->
+        <sc-if value="{{ isSelect }}" hint-placeholder-val="{{ true }}">
+          <div style="width:100%; height:100%; display:flex; flex-direction:column; background:radial-gradient(circle at 50% 8%, #2a2258, #141026 62%); overflow:hidden;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:46px 20px 10px;">
+              <div style="display:flex; align-items:center; gap:7px; background:#231d45; border:1px solid #3a3268; border-radius:999px; padding:6px 14px 6px 10px;">
+                <span style="font-size:19px;">🪙</span><span style="color:#ffd54a; font-weight:700; font-size:16px;">2,480</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:7px; background:#231d45; border:1px solid #3a3268; border-radius:999px; padding:6px 14px 6px 10px;">
+                <span style="font-size:18px;">❤️</span><span style="color:#ff8a97; font-weight:700; font-size:16px;">5</span>
+              </div>
+            </div>
+            <div style="text-align:center; padding:6px 0 2px;">
+              <div style="font-size:12px; letter-spacing:.34em; color:#8a7fc4; font-weight:600;">PIXEL POUR</div>
+              <div style="font-size:30px; font-weight:800; font-family:'Baloo 2',sans-serif; background:linear-gradient(92deg,#4fc3ff,#ffd54a); -webkit-background-clip:text; background-clip:text; color:transparent;">色流工坊</div>
+            </div>
+            <div style="flex:1; overflow:hidden; position:relative; padding:14px 26px 0;">
+              <div style="position:absolute; inset:0; padding:22px 40px; display:flex; flex-direction:column; justify-content:flex-end; gap:26px;">
+                <sc-for list="{{ levelNodes }}" as="n" hint-placeholder-count="3">
+                  <div onClick="{{ n.onClick }}" style="{{ n.wrapStyle }}">
+                    <div style="{{ n.medalStyle }}">
+                      <div style="font-size:34px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));">{{ n.emoji }}</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:3px;">
+                      <div style="font-weight:700; color:#ece8ff; font-size:16px;">{{ n.title }}</div>
+                      <div style="display:flex; gap:3px;">
+                        <sc-for list="{{ n.starsArr }}" as="s" hint-placeholder-count="3">
+                          <span style="{{ s.style }}">★</span>
+                        </sc-for>
+                      </div>
+                    </div>
+                    <sc-if value="{{ n.locked }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-left:auto; font-size:20px; opacity:.7;">🔒</div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="text-align:center; padding:12px 0 22px; color:#8a7fc4; font-size:12.5px;">选择关卡，把颜料倒进像素画点亮它！</div>
+          </div>
+        </sc-if>
+
+        <!-- ================= 对局屏 (650x1424 定尺舞台) ================= -->
+        <sc-if value="{{ isGame }}" hint-placeholder-val="{{ false }}">
+          <div style="position:relative; width:100%; height:100%; overflow:hidden; background:linear-gradient(180deg,#5b6488,#4c5578);">
+            <div style="position:absolute; left:50%; top:0; width:650px; height:1424px; transform:translateX(-50%) scale(.5927); transform-origin:top center;">
+
+              <!-- HUD -->
+              <div onClick="{{ onPause }}" style="position:absolute; left:44px; top:42px; width:74px; height:74px; border-radius:50%; display:grid; place-items:center; background:radial-gradient(circle at 38% 30%,#ff6a6a,#d1332f); border:4px solid #ffffff2e; box-shadow:0 6px 0 #9e2320,0 9px 14px rgba(0,0,0,.4); cursor:pointer; font-size:34px;">⚙️</div>
+              <div style="position:absolute; left:225px; top:48px; width:200px; height:56px; display:grid; place-items:center; border-radius:28px; background:radial-gradient(circle at 40% 25%,#ff6a6a,#d1332f); border:4px solid #ffffff2e; box-shadow:0 6px 0 #9e2320,0 9px 14px rgba(0,0,0,.4); font-family:'Baloo 2',sans-serif; font-weight:800; color:#fff; font-size:30px; text-shadow:0 2px 0 rgba(0,0,0,.25);">{{ gameLevelName }}</div>
+              <div style="position:absolute; left:448px; top:50px; width:60px; height:60px; border-radius:50%; background:radial-gradient(circle at 38% 30%,#ffe98a,#f2b21e); border:3px solid #d99a12; box-shadow:inset 0 -3px 4px rgba(0,0,0,.25);"></div>
+              <div style="position:absolute; left:512px; top:54px; width:76px; text-align:center; font-family:'Baloo 2',sans-serif; font-weight:800; color:#fff; font-size:42px; text-shadow:0 2px 3px rgba(0,0,0,.4);">{{ coinsText }}</div>
+              <div style="position:absolute; left:594px; top:58px; width:48px; height:48px; border-radius:12px; display:grid; place-items:center; background:radial-gradient(circle at 40% 30%,#ffe98a,#f2b21e); border:2px solid #d99a12; color:#7a4b00; font-weight:800; font-size:34px;">+</div>
+
+              <!-- 管道框 · 双轨圆管 -->
+              <div style="position:absolute; left:15px; top:118px; width:620px; height:758px; border-radius:66px; background:linear-gradient(150deg,#c6cfee,#8891b8 52%,#5c6590); box-shadow:0 12px 26px rgba(0,0,0,.42), inset 0 3px 5px rgba(255,255,255,.65), inset 0 -8px 14px rgba(0,0,0,.32);">
+                <div style="position:absolute; inset:13px; border-radius:56px; background:#4a5379; box-shadow:inset 0 3px 7px rgba(0,0,0,.45);"></div>
+                <div style="position:absolute; inset:22px; border-radius:48px; background:linear-gradient(150deg,#c2cbe8,#7e88b0 55%,#5a6390); box-shadow:inset 0 2px 3px rgba(255,255,255,.55), inset 0 -4px 8px rgba(0,0,0,.28);"></div>
+                <div style="position:absolute; inset:40px; border-radius:38px; background:#3b4468; box-shadow:inset 0 4px 12px rgba(0,0,0,.5);"></div>
+              </div>
+
+              <!-- 流向箭头：顶‹ 左⌄ 底› 右⌃ -->
+              <div style="position:absolute; left:150px; top:196px; width:350px; display:flex; justify-content:space-between; color:#9aa4cd; font-size:22px; font-weight:800; z-index:2;"><sc-for list="{{ chevRow }}" as="v" hint-placeholder-count="6"><span>‹</span></sc-for></div>
+              <div style="position:absolute; left:62px; top:280px; height:440px; display:flex; flex-direction:column; justify-content:space-between; color:#9aa4cd; font-size:22px; font-weight:800; z-index:2;"><sc-for list="{{ chevCol }}" as="v" hint-placeholder-count="6"><span>⌄</span></sc-for></div>
+              <div style="position:absolute; left:150px; top:792px; width:350px; display:flex; justify-content:space-between; color:#9aa4cd; font-size:22px; font-weight:800; z-index:2;"><sc-for list="{{ chevRow }}" as="v" hint-placeholder-count="6"><span>›</span></sc-for></div>
+              <div style="position:absolute; left:574px; top:280px; height:440px; display:flex; flex-direction:column; justify-content:space-between; color:#9aa4cd; font-size:22px; font-weight:800; z-index:2;"><sc-for list="{{ chevCol }}" as="v" hint-placeholder-count="6"><span>⌃</span></sc-for></div>
+
+              <!-- 弹簧进料口（起点） -->
+              <div style="position:absolute; left:-2px; top:690px; width:34px; height:58px; border-radius:6px; background:repeating-linear-gradient(180deg,#eef2ff 0 3px,#a2acd0 3px 6px); border:2px solid #7f89b0; box-shadow:0 2px 4px rgba(0,0,0,.3); z-index:4;"></div>
+              <div style="position:absolute; left:-6px; top:788px; width:40px; height:82px; border-radius:8px; background:repeating-linear-gradient(180deg,#eef2ff 0 4px,#909bc6 4px 8px); border:3px solid #6f79a4; box-shadow:0 3px 6px rgba(0,0,0,.4); z-index:4;"></div>
+
+              <!-- 像素画窗口 -->
+              <div style="position:absolute; left:93px; top:248px; width:467px; height:512px; border-radius:12px; overflow:hidden; background:#1a1c2e; box-shadow:inset 0 0 0 3px rgba(0,0,0,.4); z-index:3;">
+                <div style="position:absolute; inset:0; background:url('assets/board_picture.png') center/cover;"></div>
+                <div style="position:absolute; inset:0; display:grid; grid-template-columns:repeat(9,1fr); grid-template-rows:repeat(8,1fr); gap:3px; padding:3px;">
+                  <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="72"><div onClick="{{ t.onClick }}" style="{{ t.style }}"></div></sc-for>
+                </div>
+                <div style="position:absolute; top:50%; left:50%; pointer-events:none; z-index:5;">{{ floatEl }}</div>
+              </div>
+
+              <!-- 计数 -->
+              <div style="position:absolute; left:30px; top:884px; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:44px; color:#fff; text-shadow:0 3px 3px rgba(0,0,0,.45);">{{ progressText }}</div>
+
+              <!-- 待命槽 ×5 -->
+              <sc-for list="{{ standbySlots }}" as="t" hint-placeholder-count="5">
+                <div style="{{ t.style }}"></div>
+              </sc-for>
+
+              <!-- 补给区 · 后备两排（8个独立色罐） -->
+              <sc-for list="{{ reserveCans }}" as="r" hint-placeholder-count="8">
+                <div style="{{ r.style }}"></div>
+              </sc-for>
+              <!-- 补给区 · 前排（4个 可选色罐） -->
+              <sc-for list="{{ supplyList }}" as="s" hint-placeholder-count="4">
+                <div onClick="{{ s.onClick }}" style="{{ s.wrapStyle }}">
+                  <div style="{{ s.imgStyle }}"></div>
+                  <div style="{{ s.ringStyle }}"></div>
+                  <div style="{{ s.badgeStyle }}">×{{ s.count }}</div>
+                </div>
+              </sc-for>
+
+              <!-- 底部红色操作栏 -->
+              <div style="position:absolute; left:0; bottom:0; width:650px; height:118px; background:linear-gradient(180deg,#e0433f,#c22f2c); border-top:4px solid #ff7a76; box-shadow:0 -5px 16px rgba(0,0,0,.35); z-index:6;"></div>
+              <sc-for list="{{ actionBtns }}" as="b" hint-placeholder-count="4">
+                <div onClick="{{ b.onClick }}" style="{{ b.style }}">
+                  <span style="font-size:38px;">{{ b.icon }}</span>
+                  <div style="position:absolute; right:-4px; bottom:-4px; width:36px; height:36px; border-radius:50%; background:radial-gradient(circle at 40% 30%,#7ee27e,#3aa03a); border:3px solid #fff; display:grid; place-items:center; color:#fff; font-weight:800; font-size:26px; line-height:1;">+</div>
+                </div>
+              </sc-for>
+
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ================= 结算屏 ================= -->
+        <sc-if value="{{ isSettle }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; background:radial-gradient(circle at 50% 30%, #2c2460, #141026 66%); position:relative; overflow:hidden;">
+            <div style="position:absolute; inset:0; pointer-events:none;">{{ confettiEls }}</div>
+            <div style="width:100%; background:linear-gradient(180deg,#2b2455,#231d45); border:1px solid #3a3268; border-radius:26px; padding:26px 22px; box-shadow:0 20px 50px rgba(0,0,0,.5); text-align:center; position:relative; z-index:2;">
+              <div style="font-size:13px; letter-spacing:.28em; color:#8a7fc4; font-weight:600;">LEVEL CLEAR</div>
+              <div style="font-size:30px; font-weight:800; font-family:'Baloo 2',sans-serif; background:linear-gradient(92deg,#ffd54a,#ff9d4d); -webkit-background-clip:text; background-clip:text; color:transparent; margin-top:2px;">通关啦！</div>
+              <div style="width:118px; height:118px; margin:16px auto 4px; border-radius:20px; overflow:hidden; border:3px solid #4fc3ff55; box-shadow:0 0 22px #4fc3ff44;"><div style="width:100%; height:100%; background:url('assets/board_picture.png') center/cover;"></div></div>
+              <div style="display:flex; justify-content:center; gap:12px; margin:8px 0 6px;">
+                <sc-for list="{{ settleStars }}" as="s" hint-placeholder-count="3">
+                  <div style="{{ s.style }}">★</div>
+                </sc-for>
+              </div>
+              <div style="display:flex; justify-content:center; gap:10px; margin-top:10px;">
+                <div style="flex:1; background:#1a1538; border:1px solid #3a3268; border-radius:14px; padding:10px;">
+                  <div style="font-size:22px;">🪙</div>
+                  <div style="font-weight:700; color:#ffd54a; font-size:17px;">+{{ rewardCoins }}</div>
+                  <div style="font-size:10px; color:#8a7fc4;">金币</div>
+                </div>
+                <div style="flex:1.4; background:#1a1538; border:1px solid #3a3268; border-radius:14px; padding:10px;">
+                  <div style="font-size:22px;">🏆</div>
+                  <div style="font-weight:700; color:#5ee8a0; font-size:17px;">{{ scoreText }}</div>
+                  <div style="font-size:10px; color:#8a7fc4;">得分</div>
+                </div>
+              </div>
+              <div style="font-size:12.5px; color:#b7add9; margin-top:14px;">{{ settleMsg }}</div>
+              <div style="display:flex; gap:10px; margin-top:18px;">
+                <div onClick="{{ onRetry }}" style="flex:1; background:#2b2455; border:1px solid #3a3268; border-radius:16px; padding:13px; font-weight:700; color:#b7add9; text-align:center; cursor:pointer;">重来</div>
+                <div onClick="{{ onNext }}" style="flex:1.6; background:linear-gradient(180deg,#5ee8a0,#2fa86a); border-radius:16px; padding:13px; font-weight:800; color:#0c3322; text-align:center; cursor:pointer; box-shadow:0 5px 0 #22794c, 0 8px 14px rgba(0,0,0,.3);">下一关 →</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ================= 失败/续命屏 ================= -->
+        <sc-if value="{{ isFail }}" hint-placeholder-val="{{ false }}">
+          <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:flex-end; background:linear-gradient(180deg,#3b4468,#141026); position:relative; overflow:hidden;">
+            <div style="position:absolute; top:80px; left:50%; transform:translateX(-50%); width:190px; height:190px; border-radius:18px; overflow:hidden; filter:grayscale(1) brightness(.5); border:3px solid #ffffff22;"><div style="width:100%; height:100%; background:url('assets/board_picture.png') center/cover;"></div></div>
+            <div style="position:absolute; top:50px; left:0; right:0; text-align:center; color:#cfd3e8; font-size:15px; font-weight:600;">就差一点点…😣</div>
+            <div style="position:relative; z-index:2; margin:16px; background:linear-gradient(180deg,#2b2455,#231d45); border:1px solid #3a3268; border-radius:24px; padding:22px; box-shadow:0 -12px 40px rgba(0,0,0,.5); text-align:center;">
+              <div style="font-size:22px; font-weight:800; font-family:'Baloo 2',sans-serif; color:#ece8ff;">再来一罐就赢！</div>
+              <div style="font-size:12.5px; color:#8a7fc4; margin-top:4px;">补充颜料罐，继续点亮像素画</div>
+              <div onClick="{{ onReviveAd }}" style="display:flex; align-items:center; justify-content:center; gap:9px; margin-top:16px; background:linear-gradient(180deg,#ffd54a,#ff9d4d); border-radius:16px; padding:14px; font-weight:800; color:#4a2c00; cursor:pointer; box-shadow:0 5px 0 #c47a10, 0 8px 14px rgba(0,0,0,.3);">
+                <span style="font-size:18px;">📺</span> 看广告复活
+              </div>
+              <div style="display:flex; gap:10px; margin-top:11px;">
+                <div onClick="{{ onRevivePay }}" style="flex:1; background:#2b2455; border:1px solid #5ee8a0; border-radius:16px; padding:12px; font-weight:700; color:#5ee8a0; cursor:pointer;">💎 $6.99 续命</div>
+                <div onClick="{{ onGiveUp }}" style="flex:1; background:#241f47; border:1px solid #3a3268; border-radius:16px; padding:12px; font-weight:600; color:#8a7fc4; cursor:pointer;">放弃</div>
+              </div>
+              <div style="{{ toastStyle }}">{{ toastText }}</div>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+
+    <!-- dev nav -->
+    <div style="display:flex; gap:7px; padding:6px 10px; background:rgba(35,29,69,.7); border:1px solid #3a3268; border-radius:999px;">
+      <sc-for list="{{ devNav }}" as="d" hint-placeholder-count="4">
+        <div onClick="{{ d.onClick }}" style="{{ d.style }}">{{ d.label }}</div>
+      </sc-for>
+    </div>
+    <div style="color:#5a4f8c; font-size:11px;">game102 · Pixel Pour — iPhone 390×844 · 1:1 复刻</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.CANS = [
+      { id:'green',  img:'assets/col_green.png',  x:104 },
+      { id:'black',  img:'assets/col_black.png',  x:214 },
+      { id:'red',    img:'assets/col_red.png',    x:328 },
+      { id:'green2', img:'assets/col_green2.png', x:444 },
+    ];
+    this.LEVELS = [
+      { title:'Level 934', emoji:'🐷', pic:'assets/board_picture.png', cols:9, rows:8 },
+      { title:'Level 935', emoji:'🐱', pic:'assets/board_picture.png', cols:9, rows:8, locked:true },
+      { title:'Level 936', emoji:'🌻', pic:'assets/board_picture.png', cols:9, rows:8, locked:true },
+    ];
+    this.state = {
+      screen:'select', levelIndex:0, unlocked:1, starMap:{},
+      cols:9, rows:8, reveal:[], cans:{}, activeCan:'green',
+      score:0, coins:90, lastFloat:null, cannonKick:0, toast:null, stars:0,
+    };
+  }
+
+  startLevel(i){
+    const lv = this.LEVELS[i];
+    const N = lv.cols*lv.rows;
+    const cans = {}; this.CANS.forEach(c=> cans[c.id]=20);
+    this.setState({ screen:'game', levelIndex:i, cols:lv.cols, rows:lv.rows,
+      reveal:new Array(N).fill(false), cans, activeCan:'green',
+      score:0, lastFloat:null, toast:null });
+  }
+
+  pour(idx){
+    const s = this.state;
+    if(s.reveal[idx]) return;
+    const ac = s.activeCan;
+    if((s.cans[ac]||0) <= 0){ this.setState({ lastFloat:{ id:Date.now(), text:'颜料用完了!', bad:true } }); return; }
+    const reveal = s.reveal.slice(); reveal[idx]=true;
+    const cans = { ...s.cans, [ac]: s.cans[ac]-1 };
+    const gain = 50;
+    const left = reveal.filter(x=>!x).length;
+    this.setState({ reveal, cans, score:s.score+gain, cannonKick:Date.now(), lastFloat:{ id:Date.now(), text:'+'+gain } });
+    if(left===0){ setTimeout(()=>this.finishLevel(), 460); return; }
+    const totalPaint = Object.values(cans).reduce((a,b)=>a+b,0);
+    if(totalPaint===0 && left>0) setTimeout(()=>this.setState({screen:'fail'}), 500);
+  }
+
+  finishLevel(){
+    const s = this.state;
+    const paintLeft = Object.values(s.cans).reduce((a,b)=>a+b,0);
+    const stars = paintLeft>=12 ? 3 : (paintLeft>=5 ? 2 : 1);
+    const starMap = { ...s.starMap, [s.levelIndex]: Math.max(stars, s.starMap[s.levelIndex]||0) };
+    const unlocked = Math.max(s.unlocked, s.levelIndex+2);
+    this.setState({ screen:'settle', stars, starMap, unlocked, coins:s.coins+(stars*30) });
+  }
+
+  showToast(t){ this.setState({ toast:{ id:Date.now(), text:t } });
+    setTimeout(()=>{ if(this.state.toast && this.state.toast.text===t) this.setState({toast:null}); }, 1800); }
+
+  renderVals(){
+    const s = this.state;
+    const lv = this.LEVELS[s.levelIndex];
+    const N = s.cols*s.rows;
+    const filled = s.reveal.filter(Boolean).length;
+
+    const tiles = s.reveal.map((rv,i)=>{
+      if(rv) return { style:'border-radius:4px; background:rgba(255,255,255,.06); box-shadow:inset 0 3px 4px rgba(255,255,255,.55), inset 0 -3px 4px rgba(0,0,0,.22); animation:reveal .35s ease;', onClick:null };
+      return {
+        onClick: (s.screen==='game') ? (()=>this.pour(i)) : null,
+        style:'border-radius:4px; cursor:pointer; background:rgba(8,10,22,.16); box-shadow:inset 0 1px 2px rgba(255,255,255,.1), inset 0 -2px 3px rgba(0,0,0,.4);',
+      };
+    });
+
+    let floatEl = null;
+    if(s.lastFloat){
+      const f = s.lastFloat;
+      floatEl = React.createElement('div',{ key:f.id, style:{
+        position:'absolute', left:0, top:0, transform:'translate(-50%,0)', whiteSpace:'nowrap',
+        fontFamily:"'Baloo 2',sans-serif", fontWeight:800, fontSize: f.bad?'30px':'40px',
+        color: f.bad?'#ff5d6c':'#fff', WebkitTextStroke:'1.5px rgba(0,0,0,.35)',
+        textShadow:'0 3px 8px rgba(0,0,0,.6)', animation:'floatup 1s ease forwards' } }, f.text);
+    }
+
+    // 补给区：3排×4列 = 12 个独立色罐（绝对定位，1:1）
+    const SPR = { green:'assets/can_green.png', black:'assets/can_black.png', red:'assets/can_red.png', orange:'assets/can_orange.png', yellow:'assets/can_yellow.png' };
+    const colLeft = [104,218,332,446];
+    const frontColors = ['green','black','red','green'];
+    const midColors   = ['green','green','orange','yellow'];
+    const backColors  = ['red','yellow','orange','black'];
+
+    const supplyList = this.CANS.map((c,ci)=>{
+      const active = s.activeCan===c.id; const empty = (s.cans[c.id]||0)<=0;
+      const spr = SPR[frontColors[ci]];
+      return {
+        onClick: ()=>this.setState({activeCan:c.id}),
+        wrapStyle:'position:absolute; left:'+colLeft[ci]+'px; top:1040px; width:104px; height:118px; z-index:5; cursor:pointer;'+(empty?' opacity:.4; filter:grayscale(.5);':''),
+        imgStyle:'position:absolute; inset:0; background:url(\''+spr+'\') center/contain no-repeat;'+(active?' filter:drop-shadow(0 0 13px rgba(255,213,74,.95));':''),
+        ringStyle: active ? 'position:absolute; left:-6px; top:-6px; width:116px; height:132px; border-radius:20px; border:5px solid #ffd54a; box-shadow:0 0 20px rgba(255,213,74,.6); pointer-events:none;' : 'display:none;',
+        badgeStyle:'position:absolute; bottom:-6px; right:0; padding:2px 12px; border-radius:999px; background:#161826e0; color:'+(empty?'#ff6a76':'#fff')+'; font-family:\'Baloo 2\',sans-serif; font-weight:800; font-size:22px; pointer-events:none;',
+        count: s.cans[c.id]||0,
+      };
+    });
+
+    const mkReserve = (colors,top,op,z)=> colors.map((col,ci)=>({
+      style:'position:absolute; left:'+colLeft[ci]+'px; top:'+top+'px; width:104px; height:118px; z-index:'+z+'; opacity:'+op+'; background:url(\''+SPR[col]+'\') center/contain no-repeat;',
+    }));
+    const reserveCans = [ ...mkReserve(midColors,1150,0.62,3), ...mkReserve(backColors,1248,0.34,1) ];
+
+    // 待命槽 ×5（绝对定位）
+    const standbySlots = [0,1,2,3,4].map(i=>({
+      style:'position:absolute; left:'+(40+i*118)+'px; top:956px; width:104px; height:80px; border-radius:18px; background:#333a5c; border:3px solid #262b45; box-shadow:inset 0 3px 6px rgba(0,0,0,.45);'
+    }));
+
+    // 操作栏按钮（绝对定位）
+    const btnMeta = [ ['🃏',94], ['👆',250], ['🔄',404], ['🐹',555] ];
+    const handlers = [
+      ()=>this.showToast('道具：额外颜料罐'),
+      ()=>this.showToast('道具：精准指引'),
+      ()=>this.showToast('已刷新颜料队列'),
+      ()=>this.showToast('道具：小助手'),
+    ];
+    const actionBtns = btnMeta.map(([icon,cx],i)=>({
+      icon, onClick: handlers[i],
+      style:'position:absolute; left:'+(cx-43)+'px; top:1316px; width:86px; height:86px; border-radius:50%; display:grid; place-items:center; background:radial-gradient(circle at 40% 28%,#ff8a86,#d1332f); border:4px solid #ffffff45; box-shadow:0 5px 0 #9e2320, inset 0 3px 4px rgba(255,255,255,.4); cursor:pointer; z-index:7;',
+    }));
+
+    // 选关节点
+    const levelNodes = this.LEVELS.map((l,i)=>{
+      const stars = s.starMap[i]||0; const locked = i>=s.unlocked;
+      return { idx:i, title:l.title, emoji:l.emoji, locked,
+        onClick: locked ? null : (()=>this.startLevel(i)),
+        wrapStyle:'display:flex;align-items:center;gap:13px;padding:11px 15px;border-radius:20px;'
+          +'background:'+(locked?'#191430':'linear-gradient(150deg,#2b2455,#231d45)')+';border:1px solid '+(locked?'#2a2450':'#4a3f80')+';'
+          +(locked?'opacity:.6;':'cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.32);')+'align-self:'+(i%2? 'flex-end':'flex-start')+';min-width:210px;',
+        medalStyle:'width:58px;height:58px;border-radius:16px;display:grid;place-items:center;flex-shrink:0;'
+          +'background:'+(locked?'#221c44':'radial-gradient(circle at 40% 30%,#3a3268,#241f47)')+';border:1px solid '+(locked?'#2a2450':'#4fc3ff44')+';'
+          +(locked?'':'animation:bob 3.2s ease-in-out infinite;'),
+        starsArr:[0,1,2].map(k=>({ style:'font-size:14px;color:'+(k<stars?'#ffd54a':'#3a3268')+';'+(k<stars?'text-shadow:0 0 6px #ffd54a88;':'') })),
+      };
+    }).reverse();
+
+    const settleStars = [0,1,2].map(k=>({ style:
+      'font-size:'+(k===1?'52px':'42px')+';line-height:1;'+(k<(s.stars||0)?'color:#ffd54a;text-shadow:0 0 16px #ffd54acc;animation:pop .5s ease '+(k*0.12)+'s both;':'color:#3a3268;')
+      +(k===1?'margin-top:-8px;':'') }));
+    const settleMsg = (s.stars===3)?'完美！颜料省得漂亮，三星拿下！':(s.stars===2)?'不错！再省点颜料就三星啦。':'过关！试试用更少颜料点亮它。';
+
+    let confettiEls = null;
+    if(s.screen==='settle'){
+      const cols=['#4fc3ff','#5ee8a0','#ffd54a','#ff5d6c','#ff9d4d'];
+      confettiEls = [...Array(16)].map((_,i)=> React.createElement('div',{ key:i, style:{
+        position:'absolute', top:'-20px', left:(6+i*6)+'%', width:'9px', height:'13px', borderRadius:'2px',
+        background:cols[i%5], animation:'confetti '+(1.6+(i%4)*0.4)+'s linear '+((i%6)*0.18)+'s infinite' } }));
+    }
+
+    const toastStyle = 'margin-top:12px;font-size:12px;font-weight:600;color:#ffd54a;'+(s.toast?'opacity:1;':'opacity:0;')+'transition:opacity .3s;min-height:16px;';
+
+    const navItems = [['select','选关'],['game','对局'],['settle','结算'],['fail','续命']];
+    const devNav = navItems.map(([key,label])=>({
+      label, style:'padding:5px 12px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;'
+        +(s.screen===key?'background:#4fc3ff;color:#0e1a26;':'color:#8a7fc4;'),
+      onClick: ()=>{
+        if(key==='game'){ if(!s.reveal.length) this.startLevel(s.levelIndex); else this.setState({screen:'game'}); }
+        else if(key==='settle'){ if(!s.reveal.length) this.startLevel(s.levelIndex); this.setState({screen:'settle', stars:s.stars||2}); }
+        else if(key==='fail'){ if(!s.reveal.length) this.startLevel(s.levelIndex); this.setState({screen:'fail'}); }
+        else this.setState({screen:'select'});
+      },
+    }));
+
+    return {
+      isSelect:s.screen==='select', isGame:s.screen==='game', isSettle:s.screen==='settle', isFail:s.screen==='fail',
+      levelNodes,
+      gameLevelName: lv.title,
+      coinsText: s.coins,
+      scoreText: (s.score||0).toLocaleString(),
+      rewardCoins: (s.stars||0)*30,
+      progressText: filled+'/'+N,
+      tiles, floatEl,
+      chevRow:[0,1,2,3,4,5], chevCol:[0,1,2,3,4,5],
+      standbySlots, supplyList, reserveCans, actionBtns,
+      settleStars, settleMsg, confettiEls,
+      toastStyle, toastText: s.toast?s.toast.text:'',
+      onPause: ()=>this.setState({screen:'select'}),
+      onNext: ()=>{ const nx=Math.min(s.levelIndex+1,this.LEVELS.length-1); this.startLevel(nx); },
+      onRetry: ()=>this.startLevel(s.levelIndex),
+      onReviveAd: ()=>{ this.showToast('广告加载中…✅ 已复活！'); setTimeout(()=>{ const cans={...s.cans}; this.CANS.forEach(c=>cans[c.id]=(cans[c.id]||0)+8); this.setState({screen:'game',cans}); },700); },
+      onRevivePay: ()=>{ this.showToast('感谢支持！已续命 💎'); setTimeout(()=>{ const cans={...s.cans}; this.CANS.forEach(c=>cans[c.id]=(cans[c.id]||0)+8); this.setState({screen:'game',cans}); },700); },
+      onGiveUp: ()=>this.setState({screen:'select'}),
+      devNav,
+    };
+  }
+}
+</script>
+</body>
+</html>

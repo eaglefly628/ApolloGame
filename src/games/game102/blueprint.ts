@@ -21,13 +21,27 @@ import {
 } from '@skills/tier2/index.js';
 import { flowCapability } from '@skills/tier3/index.js';
 import {
-  PALETTE, CELL_BIT, CANNON_BIT, KEY_BIT, CELL_SIZE, BOARD_X, BOARD_Y,
-  CONVEYOR, TRAY, SUPPLY,
+  PALETTE, CELL_BIT, CANNON_BIT, KEY_BIT,
+  PIPE, PICTURE, BOARD_PAD, BOARD_GAP, CONVEYOR, TRAY, SUPPLY, ACTION_BAR,
 } from './theme.js';
 import type { Level } from './levels.js';
 import { LEVEL_1 } from './levels.js';
 
 const XF = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation: 0, scaleX: 1, scaleY: 1 });
+const box = (w: number, h: number): Record<string, unknown> => ({ kind: 'box', width: w, height: h });
+const col = (tint: number, alpha = 1): Record<string, unknown> => ({ tint, alpha });
+
+// 棋盘格铺进 PICTURE 窗口：按 cols/rows 自适应格宽、居中。返回 {cell,ox,oy}（供 boardCells 用）。
+function boardFit(level: Level): { cell: number; ox: number; oy: number } {
+  const availW = PICTURE.w - BOARD_PAD * 2 - BOARD_GAP * (level.cols - 1);
+  const availH = PICTURE.h - BOARD_PAD * 2 - BOARD_GAP * (level.rows - 1);
+  const cell = Math.floor(Math.min(availW / level.cols, availH / level.rows));
+  const gridW = level.cols * cell + BOARD_GAP * (level.cols - 1);
+  const gridH = level.rows * cell + BOARD_GAP * (level.rows - 1);
+  const ox = PICTURE.x + (PICTURE.w - gridW) / 2;
+  const oy = PICTURE.y + (PICTURE.h - gridH) / 2;
+  return { cell, ox, oy };
+}
 const paletteColor = (level: Level, idx: number): typeof PALETTE[string] => {
   const name = level.palette[idx];
   const col = name ? PALETTE[name] : undefined;
@@ -35,10 +49,11 @@ const paletteColor = (level: Level, idx: number): typeof PALETTE[string] => {
   return col;
 };
 
-// 位图 → BoardCell 实体阵（一格一实体）。'.'=空；数字=palette[index]；hp 层可选。
+// 位图 → BoardCell 实体阵（一格一实体·铺进 PICTURE 窗口）。'.'=空；数字=palette[index]；hp 层可选。
 function boardCells(level: Level): Record<string, EntityBlueprint> {
   const cells: Record<string, EntityBlueprint> = {};
   const keySet = new Set((level.keys ?? []).map(([c, r]) => `${c},${r}`));
+  const { cell, ox, oy } = boardFit(level);
   for (let r = 0; r < level.rows; r++) {
     const row = level.bitmap[r] ?? '';
     for (let c = 0; c < level.cols; c++) {
@@ -46,22 +61,44 @@ function boardCells(level: Level): Record<string, EntityBlueprint> {
       if (!ch || ch === '.') continue;
       const idx = Number(ch);
       if (Number.isNaN(idx)) continue;
-      const col = paletteColor(level, idx);
+      const pc = paletteColor(level, idx);
       const hpCh = level.hp?.[r]?.[c];
       const hp = hpCh && hpCh !== '.' ? Number(hpCh) || 1 : 1;
       const isKey = keySet.has(`${c},${r}`);
-      const x = BOARD_X + c * CELL_SIZE + CELL_SIZE / 2;
-      const y = BOARD_Y + r * CELL_SIZE + CELL_SIZE / 2;
+      const x = ox + c * (cell + BOARD_GAP) + cell / 2;
+      const y = oy + r * (cell + BOARD_GAP) + cell / 2;
       cells[`cell-${c}-${r}`] = {
         Transform: XF(x, y),
-        Shape: { kind: 'box', width: CELL_SIZE - 2, height: CELL_SIZE - 2 },
-        Tag: { flags: col.bit | CELL_BIT | (isKey ? KEY_BIT : 0) },
+        Shape: box(cell - 1, cell - 1),
+        Tag: { flags: pc.bit | CELL_BIT | (isKey ? KEY_BIT : 0) },
         Resource: { id: 'hp', current: hp, min: 0, max: hp },
-        Color: { tint: col.tint, alpha: 1 },
+        Color: col(pc.tint, 1),
       };
     }
   }
   return cells;
+}
+
+// play-field 装饰件（render-only·非 sim 逻辑·design-ref 定尺布局）。金属/圆角/内阴影观感留 S6 Sprite 皮。
+function decor(level: Level): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  const rect = (id: string, x: number, y: number, w: number, h: number, tint: number, alpha = 1): void => {
+    out[id] = { Transform: XF(x + w / 2, y + h / 2), Shape: box(w, h), Color: col(tint, alpha) };
+  };
+  // 管道框（分层灰盒近似双轨圆管）。
+  rect('pipe-outer', PIPE.x, PIPE.y, PIPE.w, PIPE.h, 0x8891b8);
+  rect('pipe-groove', PIPE.x + 13, PIPE.y + 13, PIPE.w - 26, PIPE.h - 26, 0x4a5379);
+  rect('pipe-rail', PIPE.x + 22, PIPE.y + 22, PIPE.w - 44, PIPE.h - 44, 0x7e88b0);
+  rect('pipe-floor', PIPE.x + 40, PIPE.y + 40, PIPE.w - 80, PIPE.h - 80, 0x3b4468);
+  // 像素画窗口底衬（board_picture.png 底图待 S6·此为暗底占位）。
+  rect('picture-window', PICTURE.x, PICTURE.y, PICTURE.w, PICTURE.h, PICTURE.bg);
+  // 待命槽 ×5（top:956·104×80·left=40+i*118）。
+  for (let i = 0; i < level.slots; i++) {
+    rect(`tray-slot-${i}`, 40 + i * 118, TRAY.top, TRAY.w, TRAY.h, 0x333a5c);
+  }
+  // 底部红色操作栏底衬（4 圆钮=PUI chrome）。
+  rect('action-bar', ACTION_BAR.x, ACTION_BAR.y, ACTION_BAR.w, ACTION_BAR.h, 0xd1332f);
+  return out;
 }
 
 // 每关颜色 → 一个 group-count 计数器（在板同色格数 → Resource remain_<color>）。
@@ -78,20 +115,39 @@ function colorCounters(level: Level): Record<string, EntityBlueprint> {
   return out;
 }
 
-// 补给源（每色一个·点击发 take_<color> 信号）。
+// 补给区（design-ref README「Supply — 12 canisters」）：前排 4 个可点色罐 + 后备两排装饰罐。
+// 罐身「20」标 + 金属观感 = S6 Sprite（can_<color>.png 皮）；S3 素坯用色块 + 选中金框。
 function supplies(level: Level): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
-  level.palette.forEach((name, i) => {
-    const col = PALETTE[name];
-    if (!col) return;
-    out[`supply-${name}`] = {
-      Transform: XF(SUPPLY.originX + i * SUPPLY.gap, SUPPLY.originY),
-      Shape: { kind: 'box', width: 48, height: 48 },
-      Color: { tint: col.tint, alpha: 1 },
+  const { colLeft, w, h, frontTop, midTop, backTop } = SUPPLY;
+  // 前排（可点·每列一色·index 对齐 palette·超出列数则循环取色）。
+  colLeft.forEach((lx, i) => {
+    const name = level.palette[i % level.palette.length];
+    const pc = PALETTE[name];
+    if (!pc) return;
+    out[`supply-${i}`] = {
+      Transform: XF(lx + w / 2, frontTop + h / 2),
+      Shape: box(w - 8, h - 8),
+      Color: col(pc.tint, 1),
       Clickable: { action: `take_${name}`, phase: 'down' },
-      Tag: { flags: col.bit },
+      Tag: { flags: pc.bit },
     };
   });
+  // 后备两排（装饰·render-only·半透）。
+  const reserve = (tag: string, top: number, alpha: number): void => {
+    colLeft.forEach((lx, i) => {
+      const name = level.palette[(i + 1) % level.palette.length];
+      const pc = PALETTE[name];
+      if (!pc) return;
+      out[`reserve-${tag}-${i}`] = {
+        Transform: XF(lx + w / 2, top + h / 2),
+        Shape: box(w - 8, h - 8),
+        Color: col(pc.tint, alpha),
+      };
+    });
+  };
+  reserve('mid', midTop, 0.62);
+  reserve('back', backTop, 0.34);
   return out;
 }
 
@@ -108,10 +164,21 @@ function meters(level: Level): Record<string, EntityBlueprint> {
 }
 
 export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
+  const { cell, ox, oy } = boardFit(level);
+  const doorMarker: EntityBlueprint = level.door
+    ? {
+        Transform: XF(
+          ox + (level.door.col + level.door.w / 2) * (cell + BOARD_GAP),
+          oy + (level.door.row + level.door.h / 2) * (cell + BOARD_GAP),
+        ),
+        Shape: box(level.door.w * cell, level.door.h * cell),
+        Color: col(0xf7c948, 0.85),
+      }
+    : {};
   const entities: Record<string, EntityBlueprint> = {
     // 确定性随机源（关卡 seed → 摆盘/补给出色·禁裸 Math.random）。
     rng: { RandomSeed: { seed: level.seed, sequence: 0 } },
-    // 传送带容量区（队首=发射位·outFlag 满位）。
+    // 传送带容量区（队首=发射位·outFlag 满位·逻辑不可见）。
     conveyor: {
       Zone: {
         outFlag: 'conveyor_full',
@@ -119,24 +186,13 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
         requiredTag: CANNON_BIT, count: level.conveyorCap,
       },
     },
-    // 待命槽（5 槽）。
+    // 待命槽逻辑件（5 槽·render 槽位由 decor 画）。
     tray: {
       Tray: {
         originX: TRAY.originX, originY: TRAY.originY, gap: TRAY.gap,
         capacity: level.slots, requiredTag: CANNON_BIT,
       },
     },
-    // 宝箱门装饰件（render 计量·非可射）。
-    'door-marker': level.door
-      ? {
-          Transform: XF(
-            BOARD_X + (level.door.col + level.door.w / 2) * CELL_SIZE,
-            BOARD_Y + (level.door.row + level.door.h / 2) * CELL_SIZE,
-          ),
-          Shape: { kind: 'box', width: level.door.w * CELL_SIZE, height: level.door.h * CELL_SIZE },
-          Color: { tint: PALETTE.gold.tint, alpha: 0.85 },
-        }
-      : {},
     // 关卡流程状态机。
     flow: {
       GameFlow: {
@@ -151,8 +207,11 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
     },
     ...meters(level),
     ...colorCounters(level),
+    // render 顺序（后画覆盖先画）：装饰底衬 → 补给/后备 → 棋盘格 → 门标。
+    ...decor(level),
     ...supplies(level),
     ...boardCells(level),
+    'door-marker': doorMarker,
   };
 
   return {
