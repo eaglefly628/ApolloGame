@@ -180,6 +180,17 @@ export const GAMES: GameEntry[] = [
     icon: '⚓',
     status: 'playable',
   },
+  {
+    id: 'game102',
+    title: 'Game 102: 色流工坊 Pixel Pour',
+    subtitle: '像素倒色 · 休闲益智',
+    description:
+      '竖屏休闲益智：传送带承载色炮到发射位、自动向中央同色像素块连喷消色，5 待命槽复用+连击突破——清空整幅像素画棋盘（含金钥匙/开宝箱门）过关。中央棋盘=一格一实体 BoardCell（Transform+Shape+Tag(色位)+Resource(hp)+Color·非 tilemap：其唯一系统只做墙碰撞、无 per-cell hp/消除/按色计数），按色 group-count、抛射 launch、传送带 zone-occupancy、待命槽 tray、流程 flow 全走现有能力（Lead 裁①·零游戏层 system 代码）。当前=S3 骨架：蓝图立起 + CanvasRenderer 画出棋盘/传送带位/待命槽/补给区；玩法链(event-when/launch)=S4、UI 四屏(LayoutNode)=PUI。',
+    color: '#0a2038',
+    accentColor: '#2e6cf6',
+    icon: '🎨',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════

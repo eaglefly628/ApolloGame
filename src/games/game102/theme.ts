@@ -25,6 +25,10 @@ export const CANNON_BIT = 1 << 12; // 传送带上的色炮
 export const CELL_BIT   = 1 << 13; // 中央棋盘像素块
 export const KEY_BIT    = 1 << 14; // 金钥匙收集件（叠加在其所在格上）
 
+// ── play-field 尺寸（渲染画布逻辑尺寸·竖屏）─────────────────────────────────
+export const FIELD_W = 340;
+export const FIELD_H = 700;
+
 // ── 棋盘几何（世界坐标·渲染/命中共用）────────────────────────────────────────
 export const CELL_SIZE = 32;   // 每格像素
 export const BOARD_X = 40;      // 格(0,0)左上角世界 x
