@@ -20,20 +20,26 @@ export const PALETTE: Readonly<Record<string, PaletteColor>> = {
   orange: { name: 'orange', bit: 1 << 4, tint: 0xef8a2b },
   yellow: { name: 'yellow', bit: 1 << 5, tint: 0xf2c21e },
   white:  { name: 'white',  bit: 1 << 6, tint: 0xeaf2ff },
+  blue:   { name: 'blue',   bit: 1 << 7, tint: 0x2e6cf6 }, // 鲸关海洋色（验收剧本 01/02 用）
+  lblue:  { name: 'lblue',  bit: 1 << 8, tint: 0x7db8ff },
+  teal:   { name: 'teal',   bit: 1 << 9, tint: 0x1fb6a6 },
 };
 
-// 身份位（与颜色位分段·不冲突）。
-export const CANNON_BIT = 1 << 12; // 传送带上的色炮
+// 身份位（与颜色位分段·不冲突·bit 0 保留给引擎 ZONE_FLAG）。
+export const CANNON_BIT = 1 << 12; // 色炮（belt/tray 通用身份）
 export const CELL_BIT   = 1 << 13; // 中央棋盘像素块
 export const KEY_BIT    = 1 << 14; // 金钥匙收集件（叠加在其所在格上）
+export const BELT_BIT   = 1 << 15; // 炮在传送带上（→ conveyor.count）
+export const TRAY_BIT   = 1 << 16; // 炮在待命槽（弹尽入槽·→ tray.count）
 export const ZONE_BIT   = 1 << 0;  // 命中判定区标记 = 引擎 trigger-zone 的 ZONE_FLAG 保留位（必须 1<<0）
 
-// ── 开火节拍（S4 玩法·全 config·数据驱动）──────────────────────────────────
+// ── 开火节拍（S4 玩法·全 config·数据驱动·按 gdd §2.2「连喷一长串·每发命中同色 -1」）─────────
 export const FIRE = {
-  reload: 3,        // 装填 tick（每 3 tick 喷一发·连喷手感）
+  reload: 8,        // 装填 tick（每 4 tick 喷一发子弹·连喷）
   sightRadius: 0,   // 0 = 无限视野（整幅画内任意同色格皆可索敌）
-  zapRadius: 26,    // 命中判定区半径（~1.5 格·AOE 一发清同色小簇·像"倒一摊颜料"）
-  zapLife: 4,       // 命中区兜底回收 tick
+  bulletSpeed: 130, // 子弹初速（快到 travel<reload·每发锁新格·可见弹道）
+  bulletRadius: 7,  // 子弹命中半径
+  bulletLife: 40,   // 子弹未命中兜底回收 tick
 } as const;
 
 // ── play-field 尺寸 = design-ref 定尺舞台 650×1424（1:1 复刻基准·mountHost 等比信箱缩放到设备）──

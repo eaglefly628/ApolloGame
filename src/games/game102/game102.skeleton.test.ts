@@ -33,9 +33,9 @@ describe('Game 102 · Pixel Pour（S3 骨架关）', () => {
     // 声明的能力全是引擎既有能力对象。
     expect(bp.capabilities.length).toBeGreaterThanOrEqual(10);
     for (const cap of bp.capabilities) expect(typeof cap.id).toBe('string');
-    // 关键结构单例齐全。
+    // 关键结构单例齐全（新模型：计数器 + 计量 + 流程 + 模板库）。
     const ids = Object.keys(bp.entities);
-    for (const key of ['rng', 'conveyor', 'tray', 'flow', 'score', 'combo', 'keys', 'door', 'door-marker']) {
+    for (const key of ['rng', 'flow', 'score', 'combo', 'moves', 'remain-total', 'conveyor-count', 'tray-count', 'prefabs', 'door-marker']) {
       expect(ids).toContain(key);
     }
     // 每色一个 group-count 计数器。

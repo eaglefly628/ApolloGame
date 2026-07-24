@@ -13,19 +13,18 @@
 import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assembly.js';
 import {
   transformCapability, shapeCapability, tagCapability, colorCapability,
-  resourceCapability, flagCapability, randomCapability,
+  resourceCapability, flagCapability, randomCapability, velocityCapability,
   timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
 } from '@atom-skills/index.js';
-import { lifetimeCapability } from '@skills/tier1/index.js';
+import { motionApplyCapability, lifetimeCapability } from '@skills/tier1/index.js';
 import {
-  clickableCapability, groupCountCapability, zoneOccupancyCapability, trayCapability,
-  eventWhenCapability, effectApplyCapability, launchCapability, gaugeCapability,
+  clickableCapability, groupCountCapability, effectApplyCapability, launchCapability,
   selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability,
 } from '@skills/tier2/index.js';
-import { flowCapability, aggroCapability, prefabCapability } from '@skills/tier3/index.js';
+import { flowCapability, aggroCapability, prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
-  PALETTE, CELL_BIT, CANNON_BIT, KEY_BIT, ZONE_BIT, FIRE, FIELD_W,
-  PIPE, PICTURE, BOARD_PAD, BOARD_GAP, CONVEYOR, TRAY, SUPPLY, ACTION_BAR,
+  PALETTE, CELL_BIT, CANNON_BIT, KEY_BIT, BELT_BIT, TRAY_BIT, ZONE_BIT, FIRE, FIELD_W,
+  PIPE, PICTURE, BOARD_PAD, BOARD_GAP, TRAY, SUPPLY, ACTION_BAR,
 } from './theme.js';
 import type { Level } from './levels.js';
 import { LEVEL_1 } from './levels.js';
@@ -105,61 +104,57 @@ function decor(level: Level): Record<string, EntityBlueprint> {
   return out;
 }
 
-// 每关颜色 → 一个 group-count 计数器（在板同色格数 → Resource remain_<color>）。
-function colorCounters(level: Level): Record<string, EntityBlueprint> {
+// group-count 计数器（机读态·对齐验收剧本 remain.*/conveyor.count/tray.count）：
+//   remain.<color>=在板同色格 · remain.total=全盘格 · conveyor.count=带上炮 · tray.count=槽中炮。
+function counters(level: Level): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   for (const name of level.palette) {
-    const col = PALETTE[name];
-    if (!col) continue;
+    const pc = PALETTE[name];
+    if (!pc) continue;
     out[`remain-${name}`] = {
-      GroupCount: { countResource: `remain_${name}`, requiredTag: col.bit | CELL_BIT },
-      Resource: { id: `remain_${name}`, current: 0, min: 0, max: 9999 },
+      GroupCount: { countResource: `remain.${name}`, requiredTag: pc.bit | CELL_BIT },
+      Resource: { id: `remain.${name}`, current: 0, min: 0, max: 99999 },
     };
   }
+  out['remain-total'] = {
+    GroupCount: { countResource: 'remain.total', requiredTag: CELL_BIT },
+    Resource: { id: 'remain.total', current: 0, min: 0, max: 99999 },
+  };
+  out['conveyor-count'] = {
+    GroupCount: { countResource: 'conveyor.count', requiredTag: CANNON_BIT | BELT_BIT },
+    Resource: { id: 'conveyor.count', current: 0, min: 0, max: 999 },
+  };
+  out['tray-count'] = {
+    GroupCount: { countResource: 'tray.count', requiredTag: CANNON_BIT | TRAY_BIT },
+    Resource: { id: 'tray.count', current: 0, min: 0, max: 999 },
+  };
   return out;
 }
 
-// 补给区（design-ref README「Supply — 12 canisters」）：前排 4 个可点色罐 + 后备两排装饰罐。
-// 罐身「20」标 + 金属观感 = S6 Sprite（can_<color>.png 皮）；S3 素坯用色块 + 选中金框。
+// 补给区：每色一个**可点分发器**（点→Caster 生成一门"上带色炮"·= 1 move·gdd §1）。reserve 两排装饰保留。
 function supplies(level: Level): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   const { colLeft, w, h, frontTop, midTop, backTop } = SUPPLY;
-  // 前排：**每个 palette 色一门可点炮**（全色可清→棋盘可完全清空→可通关）。沿补给行等距铺开。
-  // 点炮 → 置 firing_<color> 旗 → SelfRule 每 reload 拍向最近同色格 spawn 命中区 zap（game-q 塔开火同构）。
-  // Tag **不带色位**（否则 Perception 会把补给炮当同色目标·自打自）——只有棋盘格带色位。
   const n = level.palette.length;
   const spanL = 40, spanR = FIELD_W - 40 - w;
   level.palette.forEach((name, i) => {
     const pc = PALETTE[name];
     if (!pc) return;
     const lx = n > 1 ? Math.round(spanL + (spanR - spanL) * (i / (n - 1))) : spanL;
-    out[`cannon-${name}`] = {
+    out[`supply-${name}`] = {
       Transform: XF(lx + w / 2, frontTop + h / 2),
       Shape: box(w - 8, h - 8),
       Color: col(pc.tint, 1),
-      Clickable: { action: `fire_${name}`, phase: 'down' },
-      Perception: { targetTag: pc.bit | CELL_BIT, sightRadius: FIRE.sightRadius }, // 索最近同色棋盘格→Relation(target)
-      Relation: { kind: 'target', targetId: '' },                                   // aggro 写入位（初值空）
-      Timer: { id: 'reload', elapsed: 0, duration: FIRE.reload, loop: true },
-      SelfRule: {
-        whenGlobal: { kind: 'flag', id: `firing_${name}` },                         // 点炮后才开火
-        when: { kind: 'timer', id: 'reload', cmp: 'gte', value: FIRE.reload - 1 },  // 装填峰值
-        do: [{ kind: 'spawn', template: `zap_${name}`, at: 'target' }],             // 在目标格生成命中区
-        once: true, armed: false,
-      },
+      Clickable: { action: `tapSupply_${name}`, phase: 'down' },
+      Caster: { onSignal: `tapSupply_${name}`, at: 'self', template: `cannon_${name}` },
     };
   });
-  // 后备两排（装饰·render-only·半透）。
   const reserve = (tag: string, top: number, alpha: number): void => {
     colLeft.forEach((lx, i) => {
       const name = level.palette[(i + 1) % level.palette.length];
       const pc = PALETTE[name];
       if (!pc) return;
-      out[`reserve-${tag}-${i}`] = {
-        Transform: XF(lx + w / 2, top + h / 2),
-        Shape: box(w - 8, h - 8),
-        Color: col(pc.tint, alpha),
-      };
+      out[`reserve-${tag}-${i}`] = { Transform: XF(lx + w / 2, top + h / 2), Shape: box(w - 8, h - 8), Color: col(pc.tint, alpha) };
     });
   };
   reserve('mid', midTop, 0.62);
@@ -167,50 +162,72 @@ function supplies(level: Level): Record<string, EntityBlueprint> {
   return out;
 }
 
-// 命中判定区模板（zap·game-q zapTemplate 同构）：隐形 Sensor 区·命中同色格扣 hp·consumeOnHit 单发·Timer 兜底回收。
-function zapTemplate(pc: typeof PALETTE[string]): { entities: Record<string, Record<string, unknown>> } {
-  return {
-    entities: {
-      hit: {
-        Transform: XF(0, 0),
-        Visibility: { visible: false, active: true },
-        Shape: { kind: 'circle', radius: FIRE.zapRadius },
-        Color: col(pc.tint, 0),
-        Sensor: {},
-        Tag: { flags: ZONE_BIT },
-        // consumeOnHit:false → AOE fan-out：一发命中区把半径内**所有同色格**一起消除（倒色成簇·非单格点射）。
-        Hitbox: { resource: 'hp', amount: 1, targetMask: pc.bit | CELL_BIT, consumeOnHit: false },
-        Timer: { id: 'life', elapsed: 0, duration: FIRE.zapLife, loop: false },
-      },
-    },
-  };
-}
-
-// 开火链数据：每色一面 firing 旗 + 点炮信号→置旗 Effect + zap 模板库。
-function fireChain(level: Level): Record<string, EntityBlueprint> {
-  const out: Record<string, EntityBlueprint> = {};
+// prefab 模板库：每色一套 cannon(上带·连喷 ammo 发)/bullet(可见子弹·单格)/tray(弹尽入槽·点击复用)。
+function prefabs(level: Level): Record<string, EntityBlueprint> {
   const templates: Record<string, unknown> = {};
+  const { w, h } = SUPPLY;
   for (const name of level.palette) {
     const pc = PALETTE[name];
     if (!pc) continue;
-    out[`firing-${name}`] = { Flag: { id: `firing_${name}`, active: false } };
-    out[`fire-fx-${name}`] = { Effect: { onSignal: `fire_${name}`, kind: 'set-flag', targetId: `firing_${name}`, value: true } };
-    templates[`zap_${name}`] = zapTemplate(pc);
+    // 上带色炮：ammo 发 → 每 reload 拍喷 1 发子弹打最近同色 + ammo-1 → 弹尽(ammo≤0) Mortal 自毁掉一门 tray 炮。
+    templates[`cannon_${name}`] = { entities: { body: {
+      Transform: XF(0, 0),
+      Shape: box(w - 8, h - 8),
+      Color: col(pc.tint, 1),
+      Tag: { flags: CANNON_BIT | BELT_BIT },
+      Resource: { id: 'ammo', current: level.ammo, min: -1, max: level.ammo },
+      Perception: { targetTag: pc.bit, sightRadius: FIRE.sightRadius },
+      Relation: { kind: 'target', targetId: '' },
+      Timer: { id: 'reload', elapsed: 0, duration: FIRE.reload, loop: true },
+      // 逐发喷子弹：ammo≥0 时每 reload 拍向最近同色格 spawn 子弹 + ammo-1。fire ammo+1 次·最后一发（ammo0→-1）
+      // 恰被同拍 Mortal(atOrBelow:-1) 回收（生成实体死于同拍·确定性）→ 净落弹 = ammo·弹尽入槽（弹尽入槽时序）。
+      SelfRule: {
+        when: { kind: 'and', of: [
+          { kind: 'timer', id: 'reload', cmp: 'gte', value: FIRE.reload - 1 }, // 装填峰值
+          { kind: 'resource', id: 'ammo', cmp: 'gte', value: 0 },             // 含最后一发缓冲
+        ] },
+        do: [ { kind: 'spawn', template: `bullet_${name}`, at: 'target' }, { kind: 'modify-resource', op: 'add', value: -1 } ],
+        once: true, armed: false,
+      },
+      Mortal: { resource: 'ammo', atOrBelow: -1, dropTemplate: `tray_${name}` },
+    } } };
+    // 子弹命中：在"当前最近同色格"生成即时命中区（aggro 每拍重锁 → 逐发打不同格·一发一格·无穿隧）。
+    templates[`bullet_${name}`] = { entities: { b: {
+      Transform: XF(0, 0),
+      Shape: { kind: 'circle', radius: FIRE.bulletRadius },
+      Color: col(pc.tint, 0.9),
+      Sensor: {},
+      Tag: { flags: ZONE_BIT },
+      Hitbox: { resource: 'hp', amount: 1, targetMask: pc.bit, consumeOnHit: true },
+      Timer: { id: 'life', elapsed: 0, duration: FIRE.bulletLife, loop: false },
+    } } };
+    // 待命槽炮：弹尽入槽·点它 → Caster 重新部署一门满弹上带炮（redeploy-fx 同信号自毁本槽炮）。
+    templates[`tray_${name}`] = { entities: { slot: {
+      Transform: XF(0, 0),
+      Shape: box(w - 8, h - 8),
+      Color: col(pc.tint, 0.85),
+      Tag: { flags: CANNON_BIT | TRAY_BIT },
+      Clickable: { action: 'tapSlot', phase: 'down' },
+      Caster: { onSignal: 'tapSlot', at: 'self', template: `cannon_${name}` },
+    } } };
   }
-  out['prefabs'] = { PrefabLibrary: { seq: 0, templates } };
-  return out;
+  return { prefabs: { PrefabLibrary: { seq: 0, templates } } };
 }
 
-// 计量资源单例（得分/连击/钥匙/门目标）。
+// 计量 + moves + 复用自毁 Effect。
 function meters(level: Level): Record<string, EntityBlueprint> {
-  const keyGoal = level.goals.find((g) => g.kind === 'keys') as { n: number } | undefined;
-  const doorGoal = level.goals.find((g) => g.kind === 'door') as { target: number } | undefined;
-  return {
+  const out: Record<string, EntityBlueprint> = {
     score: { Resource: { id: 'score', current: 0, min: 0, max: 9_999_999 } },
     combo: { Resource: { id: 'combo', current: 0, min: 0, max: 999 } },
-    keys: { Resource: { id: 'keys', current: 0, min: 0, max: keyGoal?.n ?? (level.keys?.length ?? 0) } },
-    door: { Resource: { id: 'door', current: 0, min: 0, max: doorGoal?.target ?? 100 } },
+    moves: { Resource: { id: 'moves', current: level.limit.kind === 'moves' ? level.limit.n : 9999, min: 0, max: 9999 } },
   };
+  // tapSlot → 销毁被点的 tray 炮（@signal-source）；同信号 tray 炮身上的 Caster 已生成满弹上带炮。
+  out['redeploy-fx'] = { Effect: { onSignal: 'tapSlot', kind: 'destroy', targetEntity: '@signal-source', value: true } };
+  // 每色 tapSupply → moves-1（gdd：取炮 = 1 move）。
+  for (const name of level.palette) {
+    out[`move-fx-${name}`] = { Effect: { onSignal: `tapSupply_${name}`, kind: 'modify-resource', targetId: 'moves', op: 'add', value: -1 } };
+  }
+  return out;
 }
 
 export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
@@ -225,37 +242,22 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
         Color: col(0xf7c948, 0.85),
       }
     : {};
+  const movesLimit = level.limit.kind === 'moves';
   const entities: Record<string, EntityBlueprint> = {
-    // 确定性随机源（关卡 seed → 摆盘/补给出色·禁裸 Math.random）。
+    // 确定性随机源（关卡 seed·禁裸 Math.random）。
     rng: { RandomSeed: { seed: level.seed, sequence: 0 } },
-    // 传送带容量区（队首=发射位·outFlag 满位·逻辑不可见）。
-    conveyor: {
-      Zone: {
-        outFlag: 'conveyor_full',
-        minX: CONVEYOR.minX, minY: CONVEYOR.minY, maxX: CONVEYOR.maxX, maxY: CONVEYOR.maxY,
-        requiredTag: CANNON_BIT, count: level.conveyorCap,
-      },
-    },
-    // 待命槽逻辑件（5 槽·render 槽位由 decor 画）。
-    tray: {
-      Tray: {
-        originX: TRAY.originX, originY: TRAY.originY, gap: TRAY.gap,
-        capacity: level.slots, requiredTag: CANNON_BIT,
-      },
-    },
-    // 全盘像素块计数（→ cells_left·驱动通关判定）。
-    'cells-total': {
-      GroupCount: { countResource: 'cells_left', requiredTag: CELL_BIT },
-      Resource: { id: 'cells_left', current: 0, min: 0, max: 99999 },
-    },
-    // 关卡流程状态机：清空全部像素块 → 通关（cells_left 首拍=0 是"未填充"假象·故 after≥2 拍再判）。
+    // 关卡流程：清空全部像素块 → victory；moves 尽仍有格 → defeat（首拍 remain.total=0 是"未填充"假象·after≥2 再判）。
     flow: {
       GameFlow: {
         id: 'main',
         current: 'playing',
         states: [
           { id: 'playing', transitions: [
-            { when: { kind: 'resource', id: 'cells_left', cmp: 'lte', value: 0 }, after: 2, to: 'victory' },
+            { when: { kind: 'resource', id: 'remain.total', cmp: 'lte', value: 0 }, after: 2, to: 'victory' },
+            ...(movesLimit ? [{ when: { kind: 'and', of: [
+              { kind: 'resource', id: 'moves', cmp: 'lte', value: 0 },
+              { kind: 'resource', id: 'remain.total', cmp: 'gte', value: 1 },
+            ] }, after: 2, to: 'defeat' }] : []),
           ] },
           { id: 'victory' },
           { id: 'defeat' },
@@ -263,8 +265,8 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
       },
     },
     ...meters(level),
-    ...colorCounters(level),
-    ...fireChain(level),
+    ...counters(level),
+    ...prefabs(level),
     // render 顺序（后画覆盖先画）：装饰底衬 → 补给/后备 → 棋盘格 → 门标。
     ...decor(level),
     ...supplies(level),
@@ -276,16 +278,15 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
     capabilities: [
       // atoms
       transformCapability, shapeCapability, tagCapability, colorCapability,
-      resourceCapability, flagCapability, randomCapability,
+      resourceCapability, flagCapability, randomCapability, velocityCapability,
       timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
-      // tier1
-      lifetimeCapability,
+      // tier1（子弹运动 + 生命期）
+      motionApplyCapability, lifetimeCapability,
       // tier2 玩法能力
-      clickableCapability, groupCountCapability, zoneOccupancyCapability, trayCapability,
-      eventWhenCapability, effectApplyCapability, launchCapability, gaugeCapability,
+      clickableCapability, groupCountCapability, effectApplyCapability, launchCapability,
       selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability,
-      // tier3
-      flowCapability, aggroCapability, prefabCapability,
+      // tier3（生成 + 索敌 + 流程）
+      flowCapability, aggroCapability, prefabCapability, casterCapability,
     ],
     entities,
   };

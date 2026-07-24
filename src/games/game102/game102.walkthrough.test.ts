@@ -1,81 +1,85 @@
-// Game 102 · Pixel Pour —— S4 玩法关 walkthrough：点炮台 → 按色喷弹命中 → 同色格消除（「点了有反应」）。
-// 断言的是**行为**（点绿炮→绿格减少/清空），非常量——故意不点则零消除（假信心自查）。
+// Game 102 · Pixel Pour —— S4 walkthrough：**照 GD 验收剧本的确切数字**自验（不是自己发明的数）。
+// 机制（gdd §1/§2·剧本 01/02/04）：点补给色→生成上带色炮(ammo)→逐发单子弹打同色→弹尽入槽→点槽复用。
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { applyCommands, QueuedInputSource } from '@net/index.js';
-import type { Resource, Transform, GameFlow } from '@engine/protocol/components.js';
+import type { Resource, Transform, GameFlow, Tag } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
-import { LEVEL_1 } from './levels.js';
+import type { Level } from './levels.js';
+import { TRAY_BIT } from './theme.js';
 
-function remain(e: Engine, color: string): number {
-  return e.world.getComponent<Resource>(`remain-${color}`, 'Resource')?.current ?? NaN;
-}
-function cellCount(e: Engine): number {
-  let n = 0;
-  for (const [id] of e.world.query('Tag', 'Transform')) if (id.startsWith('cell-')) n++;
-  return n;
-}
-// 驱动引擎（复刻宿主循环：注入本 tick 输入 → world.tick）。
-function driven(): { e: Engine; click: (x: number, y: number) => void; step: (n?: number) => void } {
+const base = { conveyorCap: 5, burstCap: 10, slots: 5, beltSpeed: 95, stars: [0, 0, 0] as [number, number, number] };
+// 剧本 01：5×1 · blue×3 + red×1 · ammo5 · 目标清空。
+const S01: Level = { no: 101, name: 's01', cols: 5, rows: 1, palette: ['blue', 'red'], ammo: 5, ...base, limit: { kind: 'moves', n: 3 }, goals: [{ kind: 'clear' }], seed: 20101, bitmap: ['000.1'] };
+// 剧本 02：6×1 · blue×6 · ammo3 · 弹尽入槽 + 点槽复用。
+const S02: Level = { no: 102, name: 's02', cols: 6, rows: 1, palette: ['blue'], ammo: 3, ...base, limit: { kind: 'moves', n: 5 }, goals: [{ kind: 'clear' }], seed: 20102, bitmap: ['000000'] };
+
+function driven(level: Level) {
   const input = new QueuedInputSource('g102');
   const e = new Engine({ input });
-  e.load(buildBlueprint());
+  e.load(buildBlueprint(level));
   let tk = 0;
   const step = (n = 1): void => { for (let i = 0; i < n; i++) { applyCommands(e.world, input.commandsForTick(++tk)); e.world.tick(); } };
-  const click = (x: number, y: number): void => input.enqueue({ source: 'g102', x, y, phase: 'down' });
-  return { e, click, step };
+  const clickAt = (x: number, y: number): void => input.enqueue({ source: 'g102', x, y, phase: 'down' });
+  const res = (entityId: string): number => e.world.getComponent<Resource>(entityId, 'Resource')?.current ?? NaN;
+  const flow = (): string => e.world.getComponent<GameFlow>('flow', 'GameFlow')?.current ?? '?';
+  const tapSupply = (color: string): void => { const t = e.world.getComponent<Transform>(`supply-${color}`, 'Transform')!; clickAt(t.x, t.y); };
+  const tapSlot = (): void => {              // 点第一门待命槽炮（Tag 含 TRAY_BIT）
+    for (const [id] of e.world.query('Tag', 'Transform')) {
+      const tg = e.world.getComponent<Tag>(id, 'Tag'); if (tg && (tg.flags & TRAY_BIT) !== 0) { const t = e.world.getComponent<Transform>(id, 'Transform')!; clickAt(t.x, t.y); return; }
+    }
+  };
+  return { e, step, res, flow, tapSupply, tapSlot };
 }
-// cannon-<color> 实体的世界坐标（点它开火）。
-function cannonPos(e: Engine, color: string): { x: number; y: number } {
-  const t = e.world.getComponent<Transform>(`cannon-${color}`, 'Transform')!;
-  return { x: t.x, y: t.y };
-}
 
-describe('Game 102 · Pixel Pour（S4 玩法关 · 点炮开火消色）', () => {
-  it('点绿炮 → 绿色像素块被喷弹逐步消除（核心循环有反应）', () => {
-    const { e, click, step } = driven();
-    step(2);                                           // 先跑两拍让 group-count 填数、aggro 就绪
-    const green0 = remain(e, 'green');
-    expect(green0).toBeGreaterThan(0);                 // 前置：确有绿格
-    const { x, y } = cannonPos(e, 'green');
-    click(x, y);                                       // 点绿炮 → fire_green 信号 → 置 firing_green 旗
-    step(80);                                          // 连喷若干拍
-    expect(remain(e, 'green')).toBeLessThan(green0);   // 绿格被消除（行为断言·非常量）
+describe('Game 102 · Pixel Pour（S4 · 照验收剧本自验）', () => {
+  it('剧本01 基础消色：点 blue 炮 → 连喷清 3 蓝格 → remain.blue=0 / red=1 / total=1 / playing', () => {
+    const g = driven(S01);
+    g.step(2);
+    g.tapSupply('blue');
+    g.step(60);
+    expect(g.res('remain-blue')).toBe(0);
+    expect(g.res('remain-red')).toBe(1);
+    expect(g.res('remain-total')).toBe(1);
+    expect(g.flow()).toBe('playing');
   });
 
-  it('不点炮 → 零消除（假信心自查：没有输入就不该有世界改动）', () => {
-    const { e, step } = driven();
-    step(2);
-    const green0 = remain(e, 'green');
-    const cells0 = cellCount(e);
-    step(80);
-    expect(remain(e, 'green')).toBe(green0);
-    expect(cellCount(e)).toBe(cells0);
+  it('剧本02 弹尽入槽：ammo3 只清 3 蓝 → remain.blue=3 / conveyor=0 / tray=1', () => {
+    const g = driven(S02);
+    g.step(2);
+    g.tapSupply('blue');
+    g.step(60);
+    expect(g.res('remain-blue')).toBe(3);
+    expect(g.res('conveyor-count')).toBe(0);
+    expect(g.res('tray-count')).toBe(1);
+    expect(g.flow()).toBe('playing');
   });
 
-  it('只消同色：点绿炮不减红格（按色索敌·targetMask 隔离）', () => {
-    const { e, click, step } = driven();
-    step(2);
-    const red0 = remain(e, 'red');
-    const { x, y } = cannonPos(e, 'green');
-    click(x, y);
-    step(80);
-    expect(remain(e, 'red')).toBe(red0);               // 红格不受绿炮影响
+  it('剧本02 点槽复用：tapSlot → 重装满补火 → remain.blue=0 → victory', () => {
+    const g = driven(S02);
+    g.step(2);
+    g.tapSupply('blue');
+    g.step(60);
+    expect(g.res('remain-blue')).toBe(3);   // 前置：第一门打光
+    g.tapSlot();
+    g.step(60);
+    expect(g.res('remain-blue')).toBe(0);
+    expect(g.res('remain-total')).toBe(0);
+    expect(g.flow()).toBe('victory');
   });
 
-  it('通关：点齐所有颜色炮 → 清空整幅像素画 → flow 到 victory（可完成的游戏）', () => {
-    const { e, click, step } = driven();
-    step(2);
-    for (const name of LEVEL_1.palette) { const t = e.world.getComponent<Transform>(`cannon-${name}`, 'Transform')!; click(t.x, t.y); }
-    step(700);                                         // 全色连喷清盘
-    expect(remain(e, 'green')).toBe(0);                // 主色清空
-    expect(e.world.getComponent<Resource>('cells-total', 'Resource')?.current ?? -1).toBe(0); // 全盘清空
-    expect(e.world.getComponent<GameFlow>('flow', 'GameFlow')?.current).toBe('victory');       // 通关
+  it('不点炮 → 零消除（假信心自查：没输入就不该有世界改动）', () => {
+    const g = driven(S01);
+    g.step(2);
+    const b0 = g.res('remain-blue');
+    g.step(60);
+    expect(g.res('remain-blue')).toBe(b0);
+    expect(g.flow()).toBe('playing');
   });
 
-  it('确定性：同操作两次跑出同 hash（lockstep-safe）', () => {
-    const a = driven(); a.step(2); const pa = cannonPos(a.e, 'green'); a.click(pa.x, pa.y); a.step(40);
-    const b = driven(); b.step(2); const pb = cannonPos(b.e, 'green'); b.click(pb.x, pb.y); b.step(40);
+  it('确定性：同操作两次同 hash（lockstep-safe）', () => {
+    const a = driven(S02); a.step(2); a.tapSupply('blue'); a.step(30);
+    const b = driven(S02); b.step(2); b.tapSupply('blue'); b.step(30);
     expect(a.e.hash()).toBe(b.e.hash());
   });
 });
