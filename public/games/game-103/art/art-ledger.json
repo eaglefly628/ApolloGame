@@ -32,9 +32,18 @@
         "transparent": true
       },
       "context": "美术需求：「player」（场景实体·单例）·2D 平面·当前占位=皮肤槽 103/player（未填时回退 2D 色块 circle·#4aa8ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game-103-art-gen.mjs",
+        "style": "survivor-io bright chunky cartoon (glossy)"
+      },
+      "provenance": {
+        "generator": "apollo-procedural",
+        "path": "/games/game-103/art/player.svg",
+        "license": "CC0",
+        "mock": false
+      }
     },
     {
       "no": "art-02",
@@ -93,9 +102,18 @@
         "transparent": true
       },
       "context": "美术需求：「enemy shambler body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-shambler（未填时回退 2D 色块 circle·#ff4d5e）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game-103-art-gen.mjs",
+        "style": "survivor-io bright chunky cartoon (glossy)"
+      },
+      "provenance": {
+        "generator": "apollo-procedural",
+        "path": "/games/game-103/art/enemy-shambler.svg",
+        "license": "CC0",
+        "mock": false
+      }
     },
     {
       "no": "art-04",
@@ -154,9 +172,18 @@
         "transparent": true
       },
       "context": "美术需求：「gem blue body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/gem-blue（未填时回退 2D 色块 circle·#4aa8ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game-103-art-gen.mjs",
+        "style": "survivor-io bright chunky cartoon (glossy)"
+      },
+      "provenance": {
+        "generator": "apollo-procedural",
+        "path": "/games/game-103/art/gem-blue.svg",
+        "license": "CC0",
+        "mock": false
+      }
     },
     {
       "skinKey": "103/proj-kunai",
@@ -185,9 +212,18 @@
         "transparent": true
       },
       "context": "美术需求：「proj kunai p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/proj-kunai（未填时回退 2D 色块 circle·#ffffff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game-103-art-gen.mjs",
+        "style": "survivor-io bright chunky cartoon (glossy)"
+      },
+      "provenance": {
+        "generator": "apollo-procedural",
+        "path": "/games/game-103/art/proj-kunai.svg",
+        "license": "CC0",
+        "mock": false
+      }
     }
   ]
 }

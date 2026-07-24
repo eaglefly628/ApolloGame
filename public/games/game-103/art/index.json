@@ -5,25 +5,27 @@
    "id": "103/player",
    "type": "texture",
    "status": "filled",
-   "path": "/games/game-103/art/player.png",
-   "description": "玩家角色（俯视人形英雄）· Dungeon Crawl human player tile",
+   "path": "/games/game-103/art/player.svg",
+   "description": "玩家英雄（俯视）· bright chunky cartoon 蓝色 glossy 圆盘 + 卡通大头",
    "spec": {
-    "format": "png",
+    "format": "svg",
     "usage": "sprite"
    },
    "category": "sprite.character",
    "tags": [
     "player",
     "hero",
-    "human",
     "top-down",
-    "character"
+    "cartoon",
+    "glossy",
+    "blue"
    ],
    "license": "CC0",
-   "source": "FreeArtLib (Dungeon Crawl Stone Soup 32x32 tiles · https://opengameart.org/content/dungeon-crawl-32x32-tiles) · monster/human.png",
+   "source": "apollo-procedural (scripts/game-103-art-gen.mjs · 自产矢量 · survivor-io-ui-kit bright cartoon glossy-disc 风格锚)",
    "provenance": {
-    "generator": "vendor-copy",
-    "source": "assets/FreeArtLib/monster/human.png",
+    "generator": "apollo-procedural",
+    "source": "scripts/game-103-art-gen.mjs",
+    "style": "survivor-io bright chunky cartoon (glossy disc · radial highlight + linear two-hue)",
     "mock": false
    }
   },
@@ -31,25 +33,28 @@
    "id": "103/enemy-shambler",
    "type": "texture",
    "status": "filled",
-   "path": "/games/game-103/art/enemy-shambler.png",
-   "description": "敌人「蹒跚者」（褐色软泥·丧尸类群怪）· Dungeon Crawl brown ooze tile",
+   "path": "/games/game-103/art/enemy-shambler.svg",
+   "description": "敌人「蹒跚者」（丧尸/软泥群怪·俯视）· bright cartoon 红紫 glossy 软泥怪 + 两只怒眼",
    "spec": {
-    "format": "png",
+    "format": "svg",
     "usage": "sprite"
    },
    "category": "sprite.enemy",
    "tags": [
     "enemy",
     "shambler",
+    "zombie",
     "ooze",
-    "undead",
-    "top-down"
+    "top-down",
+    "cartoon",
+    "glossy"
    ],
    "license": "CC0",
-   "source": "FreeArtLib (Dungeon Crawl Stone Soup 32x32 tiles · https://opengameart.org/content/dungeon-crawl-32x32-tiles) · monster/brown_ooze.png",
+   "source": "apollo-procedural (scripts/game-103-art-gen.mjs · 自产矢量 · survivor-io-ui-kit bright cartoon glossy-disc 风格锚)",
    "provenance": {
-    "generator": "vendor-copy",
-    "source": "assets/FreeArtLib/monster/brown_ooze.png",
+    "generator": "apollo-procedural",
+    "source": "scripts/game-103-art-gen.mjs",
+    "style": "survivor-io bright chunky cartoon (glossy disc · radial highlight + linear two-hue)",
     "mock": false
    }
   },
@@ -57,26 +62,29 @@
    "id": "103/gem-blue",
    "type": "texture",
    "status": "filled",
-   "path": "/games/game-103/art/gem-blue.png",
-   "description": "蓝色经验宝石（掉落物·小）· Dungeon Crawl crystal tile",
+   "path": "/games/game-103/art/gem-blue.svg",
+   "description": "经验宝珠（掉落物·小）· bright cartoon 蓝绿 glossy 发光圆珠 + 外发光环",
    "spec": {
-    "format": "png",
+    "format": "svg",
     "usage": "sprite"
    },
    "category": "sprite.pickup",
    "tags": [
     "gem",
-    "crystal",
+    "orb",
     "xp",
     "pickup",
-    "blue",
-    "top-down"
+    "top-down",
+    "cartoon",
+    "glossy",
+    "teal"
    ],
    "license": "CC0",
-   "source": "FreeArtLib (Dungeon Crawl Stone Soup 32x32 tiles · https://opengameart.org/content/dungeon-crawl-32x32-tiles) · item/misc/misc_crystal_new.png",
+   "source": "apollo-procedural (scripts/game-103-art-gen.mjs · 自产矢量 · survivor-io-ui-kit xp-orb glossy 风格锚)",
    "provenance": {
-    "generator": "vendor-copy",
-    "source": "assets/FreeArtLib/item/misc/misc_crystal_new.png",
+    "generator": "apollo-procedural",
+    "source": "scripts/game-103-art-gen.mjs",
+    "style": "survivor-io bright chunky cartoon (xp-orb glossy glow)",
     "mock": false
    }
   },
@@ -84,10 +92,10 @@
    "id": "103/proj-kunai",
    "type": "texture",
    "status": "filled",
-   "path": "/games/game-103/art/proj-kunai.png",
-   "description": "飞镖/子弹（横向飞行物）· Dungeon Crawl arrow effect tile",
+   "path": "/games/game-103/art/proj-kunai.svg",
+   "description": "飞镖/子弹（横向飞行物）· bright cartoon 白亮弹体 + 亮蓝描边高光 + 拖尾",
    "spec": {
-    "format": "png",
+    "format": "svg",
     "usage": "sprite"
    },
    "category": "sprite.projectile",
@@ -95,14 +103,17 @@
     "projectile",
     "kunai",
     "dart",
-    "arrow",
-    "top-down"
+    "bullet",
+    "top-down",
+    "cartoon",
+    "glossy"
    ],
    "license": "CC0",
-   "source": "FreeArtLib (Dungeon Crawl Stone Soup 32x32 tiles · https://opengameart.org/content/dungeon-crawl-32x32-tiles) · effect/arrow_0.png",
+   "source": "apollo-procedural (scripts/game-103-art-gen.mjs · 自产矢量 · survivor-io-ui-kit bright cartoon glossy 风格锚)",
    "provenance": {
-    "generator": "vendor-copy",
-    "source": "assets/FreeArtLib/effect/arrow_0.png",
+    "generator": "apollo-procedural",
+    "source": "scripts/game-103-art-gen.mjs",
+    "style": "survivor-io bright chunky cartoon (glossy bullet)",
     "mock": false
    }
   }
