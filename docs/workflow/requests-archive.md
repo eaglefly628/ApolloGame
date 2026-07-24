@@ -2,11 +2,6 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
-### REQ-SURVIVOR群体-大规模敌群「分离避让 + 2D 批绘」· [2026-07-24] · GD-103 升级（owner 试玩 v1 BUG-02/05）→ Lead/P3D 裁 · status: **✅ done（2026-07-24·①群体分离已建+测·②渲染转 P3D·归档腾槽）** · 优先级: P1 · 类型: 引擎能力缺口（steering 群体 + renderer 2D 批绘）
-> **①群体分离/局部避让 ✅ 已建（Lead 2026-07-24）**：`t2-steering` 加**加性 `separation?:{radius,weight,tagMask?}`**——seek 时用 `queryRange` 取半径内同群邻居（tagMask 按 `Tag.flags` 筛·缺省只认带 Steering 的成员·不推玩家/子弹）→ 线性衰减斥力叠加基础转向 → clamp 回 speed。防「敌群 follow 同目标全挤成一点」·让 crowd 环绕目标（幸存者/RTS/塔防通用）。缺 separation/radius≤0/weight≤0=零回归。确定性（邻居 id 排序 + IEEE·d=0 本 tick 跳）。改 `src/engine/protocol/components/combat.ts`（Steering 加 separation）+ `src/skills/tier2/steering.ts`（applySeparation·reads 加 Tag）；`steering.test.ts` +6 测（垂直斥开/零回归/clamp/tagMask 筛/stopRange 环绕/确定性）。tsc0 + 全量 vitest + build 全绿。game-103 敌数据挂 `separation` 即消除叠一点。
-> **②2D 批绘/渲染效率 → 移交 P3D**：`REQ-3D-RENDER-EFFICIENCY`（`requests-3d.md`·P1·owner 2026-07-24「先把渲染效率提高」）——百敌逐 drawImage overdraw 卡顿归 renderer 域（P3D）。
-> owner 试玩实证：敌群 follow 最近路径 → 全体挤成一点（重合）+ 数百实体逐个 drawImage → overdraw 卡顿。①分离=主程引擎（本条 done）·②渲染=P3D 池续。
-
 ### REQ-SURVIVOR编排-幸存者三处编排能力归属（三选一 draft / 进化替换 / 波次刷怪）· [2026-07-23] · GD-103 报（owner 拍板「下沉新能力·交 Lead」）→ Lead 裁决 · status: **✅ done（2026-07-23）：2 下沉已建+测(draft-offer/spawn-director·Lead) + 2 回驳(重组·E2/E4)·归档腾槽** · 优先级: P2 · 类型: 引擎 capability 下沉裁决（Roguelite 通用编排·先重组再下沉）
 > **✅ 施工完工（Lead 2026-07-23）**：两下沉件按 spec 落地（确定性纯函数核·先例 dice.ts·非 defineCapability——game-103 编译期 TS 游戏直调函数；ECS/数据卡带封装待数据卡带消费方出现再加·YAGNI）——`src/skills/tier2/draft-offer.ts`（`rollOffer`/`applyPick`/`isEligible`·12 测）+ `src/skills/tier2/spawn-director.ts`（`createDirector`/`tickDirector`·出真 SpawnRequest·10 测）·均自 `@skills/tier2/index.js` 导出。tsc0 + 全量 vitest 绿。E2/E4 回驳=GD 照裁决摆数据重组（撞墙回本单开薄缺口）。**game-103 §1-3 数据面 + E1/E3 消费 + E2/E4 重组接线可开工。**
 > **⚖ Lead 裁决（2026-07-23·核 registry 属实 + 读 game-103 §4）**：

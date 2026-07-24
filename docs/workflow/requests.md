@@ -20,6 +20,13 @@
 > - **pull 吸附（进化 黑洞脉冲）**：`t2-steering` 是「自身朝/离目标」·无「把一群他者拉向锚点」（作用对象相反）。裁：敌临时挂 seek 指黑洞锚点重组 / 下沉 `pull-field`。
 > 撞墙实证＝`src/games/game-103/`（M2 六武器 straight/nova/beam/boomerang/orbit/pet 已落·这 3 类射法表达不了）。
 
+### REQ-SURVIVOR被动轴-玩家属性 modifier 桥 + Launch 无目标兜底方向 · [2026-07-24] · PE-game-103 报（owner v2「接全 8 被动」撞墙）→ Lead 裁 · status: open · 优先级: P2（game-103 M2 被动·部分被动阻塞·非全阻） · 类型: 引擎能力缺口（stat/modifier 消费桥 + launch 边角）
+> owner 要接全 gdd §五 8 个正牌被动。**伤害/暴击/回血**PE 已纯数据接（×power 系数 / modify hp）；但**移速/攻速/范围**三轴撞引擎坑：
+> - **玩家属性烘死、不吃 modifier**：移速=`Controllable.speed`（`applyCommands` 引擎读死值）、攻速=武器 `Timer.duration`（固定）、范围=prefab `Shape.radius`（固定）——都**不读 `t2-modifier-stack` 的 ModifierTotals**。`Stats` 件有、但这些消费端没接。→ 移速/攻速/范围/最大生命 类被动游戏层表达不了。
+>   裁向（Lead）：给「Stats.effective → Controllable.speed / 武器 Timer.duration / Shape.radius / Resource.max」的**消费桥**（消费端读 effective，或 modifier-apply 每帧同步进这些字段）；通用于任何有养成属性的 ARPG/Roguelite。
+> - **Launch 无目标兜底方向（子弹冻结）**：`t2-launch` toward:'target' 无敌时**清零速度**（`launch.ts:17`）→ 场上无敌那刻发出的子弹卡原地。现无限刷怪已基本无此窗口，但仍是边角。裁：Launch 加 `fallbackDir?`（无目标时用它·或沿发射者朝向）。**薄加性字段**。
+> 撞墙实证＝`src/games/game-103/`（被动 4/8 已接·移速/攻速/范围待桥；子弹 launch 无目标冻结）。
+
 ### REQ-TAPSPAWN-加权掉表生成器原语（tap→耗资源→加权 spawn） · [2026-07-24] · PE-101 报（capability-plan §6 G1「撞墙→下沉 tap-cost-spawn」的回报）→ Lead/主程 裁 · status: **⚖ Lead 裁 ✅ 下沉 `weighted-spawn`（2026-07-24·spec 已备·⏸ 缓建）** · 优先级: P3（**owner 2026-07-24：game101 先迭代设计·M1 不急** → 不现在建·待 M1 提上日程再动手·spec 现成） · 类型: 引擎通用能力缺口（合并/idle/gacha 通用·主程域）
 > **⏸ 缓建（owner 2026-07-24「game1 先迭代·M1 不急」）**：裁决 ✅ 下沉 + spec 已定（下方），但**不现在建**——game101 先做设计/布局/经济迭代（GD-101/PE-101 域），M1 灰盒（需本件）待 owner 提上日程再由主程/Opus 照 spec 施工。
 > **⚖ Lead 裁（2026-07-24）：✅ 下沉**——PE-101 已源码复核实锤真墙（无「加权运行时 spawn」原语·`caster`/`self-rule` 只固定 template·`effect-apply` 不能 create·`draft-offer` 加权核 private + 自建 seed 不接世界 `RandomSeed`）；正是 G1 §6 预祝福的 `tap-cost-spawn`。合并/idle/gacha/loot 通用·真缺口非重组可得（宪法 §2）。

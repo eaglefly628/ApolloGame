@@ -10,7 +10,7 @@ import { validateLayoutNode } from '@ui/components/index.js';
 import type { Sprite } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp } from './hud.js';
-import { ENEMY, ZONE, START, KUNAI, SHAMBLER, BRUTE, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
+import { ENEMY, ZONE, START, KUNAI, SHAMBLER, BRUTE, BOSS, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
 
 // 一步 sim（复刻引擎 step：每拍都注入命令→清 InputQueue·空则清空·防陈留信号重复触发）。
 function step(e: Engine, cmds: Command[] = []): void {
@@ -187,11 +187,20 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(BRUTE.hp / KUNAI.dmg).toBeGreaterThan(3);             // 飞镖一发打不死（多发才行）
   });
 
+  it('Boss：首领敌层在册（周期出现·afterSec 时间门）+ 巨血（无限局 escalation 节点）', () => {
+    const boss = SPAWNER_TIERS.find((t) => t.key === 'boss');
+    expect(boss).toBeDefined();
+    expect(boss!.afterSec).toBeGreaterThan(0);            // 时间门=局中才现身
+    expect(BOSS.hp).toBeGreaterThan(BRUTE.hp * 10);       // 首领远肉于普通敌
+    const lib = (buildBlueprint().entities.library as { PrefabLibrary: { templates: Record<string, unknown> } }).PrefabLibrary.templates;
+    expect(lib).toHaveProperty('enemy_boss');             // 库含首领 prefab
+  });
+
   it('v2④ 敌人头顶血条：敌 prefab 带 Gauge(绑 hp)→受击缩短=伤害反馈可见', () => {
     const e = fresh();
     tickN(e, 60); // 待开局怪生出
     let hasGauge = false;
-    for (const [id] of e.world.query('Gauge')) { const g = e.world.getComponent<{ type: 'Gauge'; resourceId: string }>(id, 'Gauge'); if (g && g.resourceId === 'hp') { hasGauge = true; break; } }
+    for (const [id] of e.world.query('Gauge')) { const g = e.world.getComponent(id, 'Gauge') as { resourceId?: string } | undefined; if (g && g.resourceId === 'hp') { hasGauge = true; break; } }
     expect(hasGauge).toBe(true);
   });
 
