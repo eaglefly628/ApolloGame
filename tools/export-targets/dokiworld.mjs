@@ -97,37 +97,34 @@ function mapCharacter(character?: DokiWorldCharacter): Record<string, never> {
   return {};
 }`;
 
+// schema v2 (spec §3): supplier declares capability + locales(name/description/aliases) +
+// minPlayers. status/selection/promptHint are NOT supplier-set (they live in DokiWorld's
+// registration file). Runtime protocol stays dokiworld.game/1 (v2 lifecycle is disabled).
 const GAME_META = {
   'game-a': {
+    capability: 'game.cards.guandan',
     locales: {
-      en: { name: 'Guandan Night Banquet', description: 'A 4-player Guandan (tribute card game) match against three AI rivals — ranked tricks, tribute, and escalating levels.' },
-      'zh-cn': { name: '掼蛋夜宴', description: '四人两副牌·升级同盟·逢局必争——对阵三名 AI 对手的掼蛋对局。' },
+      en: { name: 'Guandan Night Banquet', description: 'A 4-player Guandan (tribute card game) match against three AI rivals — ranked tricks, tribute, and escalating levels.', aliases: ['Guandan', 'Guandan Night Banquet'] },
+      'zh-cn': { name: '掼蛋夜宴', description: '四人两副牌·升级同盟·逢局必争——对阵三名 AI 对手的掼蛋对局。', aliases: ['掼蛋', '掼蛋夜宴'] },
     },
-    selection: { tags: ['cards', 'strategic', 'guandan'], promptHint: {
-      en: 'Pick this when the scene calls for a tense, strategic card duel among close rivals.',
-      'zh-cn': '当情节需要一场紧张、讲策略的牌桌博弈时选择该游戏。' } },
     minPlayers: 4,
     mapperTs: BLANK_MAPPER,
   },
   'game-b': {
+    capability: 'game.tiles.riichi-mahjong',
     locales: {
-      en: { name: 'Sparrow Feast · Riichi Mahjong', description: 'A 4-player East-round Riichi mahjong table against AI opponents — calls, riichi, and real scoring.' },
-      'zh-cn': { name: '雀宴 · 立直麻将', description: '四人东风战·立直麻将·暖夜和室——对阵 AI 的真算分麻将。' },
+      en: { name: 'Sparrow Feast · Riichi Mahjong', description: 'A 4-player East-round Riichi mahjong table against AI opponents — calls, riichi, and real scoring.', aliases: ['Riichi Mahjong', 'Mahjong'] },
+      'zh-cn': { name: '雀宴 · 立直麻将', description: '四人东风战·立直麻将·暖夜和室——对阵 AI 的真算分麻将。', aliases: ['立直麻将', '日本麻将', '麻将'] },
     },
-    selection: { tags: ['mahjong', 'tiles', 'strategic'], promptHint: {
-      en: 'Pick this for a refined, patient tile-game scene of reading and misdirection.',
-      'zh-cn': '当情节适合一场含蓄、比耐心与读牌的麻将时选择该游戏。' } },
     minPlayers: 4,
     mapperTs: BLANK_MAPPER,
   },
   'game-c': {
+    capability: 'game.cards.texas-holdem',
     locales: {
-      en: { name: 'Six-Seat Hold’em', description: 'A 6-seat no-limit Texas Hold’em cash game against five AI rivals — blinds, betting, showdowns.' },
-      'zh-cn': { name: '六人德州', description: '单人对阵五名 AI 的六人桌标准德州扑克现金局——盲注·下注·摊牌。' },
+      en: { name: 'Six-Seat Hold’em', description: 'A 6-seat no-limit Texas Hold’em cash game against five AI rivals — blinds, betting, showdowns.', aliases: ["Texas Hold'em", 'Poker'] },
+      'zh-cn': { name: '六人德州', description: '单人对阵五名 AI 的六人桌标准德州扑克现金局——盲注·下注·摊牌。', aliases: ['德州扑克', '德州', '六人德州'] },
     },
-    selection: { tags: ['poker', 'cards', 'bluffing'], promptHint: {
-      en: 'Pick this for a high-stakes bluffing scene of nerve and reading opponents.',
-      'zh-cn': '当情节需要一场高注、比胆识与读人的德州扑克时选择该游戏。' } },
     minPlayers: 2,
     mapperTs: BLANK_MAPPER,
   },
@@ -142,21 +139,22 @@ export default {
     const { gameId, COMP, entryImport } = ctx;
     const meta = GAME_META[gameId];
     return {
-      // game.json — DokiWorld registration manifest (spec §2). Deployed at the game dir root.
+      // game.json — App manifest, schema v2 (spec §3). Deployed at the app dir root.
+      // Supplier does NOT set status/selection/promptHint (those live in DokiWorld's
+      // registration file). Runtime stays dokiworld.game/1 (v2 lifecycle is disabled).
       'public/game.json': JSON.stringify({
-        schemaVersion: 1,
+        schemaVersion: 2,
         id: gameId,
-        status: 'active',
+        kind: 'game',
+        capability: meta.capability,
         entry: 'index.html',
-        protocolVersion: 1,
-        // 启动资格：最少总玩家数（去重 AI 角色 + 1 真人）。spec §2.1/§6.1：a/b=4、c=2。
+        // 启动资格：最少总参与方数（去重 AI 角色 + 1 真人）。spec §3：a/b=4、c=2。
         launchRequirements: { minPlayers: meta.minPlayers },
-        // Owner decision: character context is mapped into an opponent seat, so the card
-        // scopes are declared required. NOTE: activation is gated on the adult-confirmation
-        // decision (these titles are adult-themed; the card service requires adultConfirmed).
-        contextScopes: { required: ['character.identity', 'character.avatar', 'character.card'], optional: [] },
+        // Owner decision: character context is mapped into an opponent seat → card scopes
+        // required. (Activation gated on the adult-confirmation decision — mapCharacter blank.)
+        context: { requiredScopes: ['character.identity', 'character.avatar', 'character.card'], optionalScopes: [] },
         locales: meta.locales,
-        selection: meta.selection,
+        runtime: { protocol: 'dokiworld.game', protocolVersion: 1 },
       }, null, 2) + '\n',
 
       // Protocol bridge (DokiWorld Game Protocol v1 — spec §6). protocolVersion is the

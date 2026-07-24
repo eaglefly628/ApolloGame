@@ -46,7 +46,7 @@ README.txt
 ## 6. 插件自动做的（对应契约·验收对照）
 
 1. **协议桥**（`tools/export-targets/dokiworld.mjs` 注入产物内 `dokiworldBridge`）：`protocolVersion=1`；ready/init/initialized/result/close/resize；init 全校验（source===parent·origin 钉定复检·grantedScopes 子集+去重·context schema·逐 scope 字段）；幂等 init；`initialized` Promise；standalone 惰性。
-2. **`game.json`**（落 dist 根 = `/games/<id>/game.json`）：id/status/entry/protocolVersion/**launchRequirements.minPlayers**（a=4·b=4·c=2）/contextScopes(required 三角色 scope)/locales(en+zh-cn)/selection。
+2. **`game.json`（schema v2）**（落 dist 根 = `/games/<id>/game.json`）：`schemaVersion:2`·id·`kind:game`·`capability`·entry·**launchRequirements.minPlayers**（a=4·b=4·c=2）·`context.{requiredScopes,optionalScopes}`·locales(en+zh-cn·含 `aliases`)·`runtime:{protocol:'dokiworld.game',protocolVersion:1}`。**供应方不设 `status`/`selection`**（移交 DokiWorld registration）。
 3. **资源展平**：vite `base:'./'` + `closeBundle` 把 `dist/games/<id>/*→dist/*`（禁嵌套 `games/game-x/`）。
 4. **计分注入**：各游戏**已有终局一次性闸**调 `host.complete(...)`，一局一次。映射（契约 §6.1）：a=胜100/负0（metrics 轮数·钱包）·b=四人名次线性0..100（第一名 win）·c=主角胜100/0（metrics 手数·筹码）。
 
@@ -67,7 +67,7 @@ README.txt
 
 ## 9. 验收清单（交付前逐项）
 - [ ] `tsc` + `vite build` 通过；dist 有 `index.html`+`game.json`+`assets/`，无嵌套 `games/`。
-- [ ] `game.json`：id=目录名·minPlayers 正确·locales(en+zh-cn)·required scope 只用平台支持的。
+- [ ] `game.json`（schema v2）：id=目录名·kind/capability 有·minPlayers 正确·locales(en+zh-cn+aliases)·context.requiredScopes 只用平台支持的·runtime=dokiworld.game/1·**无 status/selection**。
 - [ ] review 脚本能起服务、握手（真 iframe 下 ready→init→initialized）。
 - [ ] result 只一次·`normalizedScore` 为 0..100 整数（桥已保证钳位）。
 - [ ] 部署目录 `<slug>/` 不含 review/审计脚本；服务端带 CORS 头。
