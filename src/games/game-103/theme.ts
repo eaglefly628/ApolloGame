@@ -89,13 +89,17 @@ export interface EnemyDef {
   speed: number;    // px/tick（steering 写 Velocity 模长）
   radius: number;
   contact: number;  // 接触伤害 / tick（连续接触 DPS·iframe=S7 打磨项）
+  // BUG-02① PE 缓解：steering stopRange=贴身距离 → 敌到此距离即停 = 环绕玩家成圈，而非全挤到玩家那一点。
+  // 真·群体分离(boid separation·敌间互斥)=引擎缺口·Lead 域 REQ-SURVIVOR群体；此为纯数据缓解（用现成 steering 字段）。
+  // 取 ≈ 玩家半径+敌半径-小重叠 → 停在玩家表面外圈但接触区(radius)仍与玩家 Shape 相交=接触伤害照常。
+  stopRange: number;
   tint: number;
   inTint: number;
   gem: 'blue';      // 死亡掉落宝石类型
   skin: string;
 }
 export const SHAMBLER: EnemyDef = {
-  key: 'shambler', name: '蹒跚者', hp: 20, speed: 1.0, radius: 11, contact: 0.3,
+  key: 'shambler', name: '蹒跚者', hp: 20, speed: 1.0, radius: 11, contact: 0.3, stopRange: 18,
   tint: TINT.enemyShambler, inTint: TINT.enemyShamblerIn, gem: 'blue', skin: '103/enemy-shambler',
 };
 
@@ -155,12 +159,13 @@ export const SPAWNS: SpawnRow[] = (() => {
   const put = (at: number, ang: number, r: number): void => {
     rows.push({ at, x: Math.round(START.x + Math.cos(ang) * r), y: Math.round(START.y + Math.sin(ang) * r), key: SHAMBLER.key });
   };
-  // ① 开局包围圈：t≈0.5s 一次性铺满 360°（22 只·半径带 260–360）——开屏即被群围。
-  const RING0 = 22;
-  for (let i = 0; i < RING0; i++) put(30, (Math.PI * 2 * i) / RING0, 260 + (i % 3) * 50);
-  // ② 持续加压流：每 ~0.25s 一只，黄金角铺满四周、半径带循环，一直刷到 ~40s（M1 灰盒足够展示雪球）。
-  const STREAM = 150;
-  for (let i = 0; i < STREAM; i++) put(75 + i * 15, i * GOLDEN, 300 + (i % 5) * 40);
+  // ① 开局包围圈：t≈0.5s 铺一圈（半径带 280–360）——开屏即被群围。
+  // BUG-02② PE 缓解：降同屏数量减 overdraw（16 圈 + 每 ~0.47s 一只）；2D 批绘真解=Lead/P3D 域 REQ-SURVIVOR群体。
+  const RING0 = 16;
+  for (let i = 0; i < RING0; i++) put(30, (Math.PI * 2 * i) / RING0, 280 + (i % 2) * 60);
+  // ② 持续加压流：每 ~0.47s 一只，黄金角铺满四周、半径带循环。
+  const STREAM = 90;
+  for (let i = 0; i < STREAM; i++) put(75 + i * 28, i * GOLDEN, 300 + (i % 5) * 40);
   return rows;
 })();
 

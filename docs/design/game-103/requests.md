@@ -16,6 +16,7 @@
 - **现象**：敌人接近时挤成一点、严重 overdraw、卡顿；owner 指名"该用 Instanced Draw"。
 - **根因**（GD 读码·**真引擎缺口**）：① `t2-steering` **只有 seek/flee·无 separation/避让**（`steering.ts:42`）→ 全体朝玩家同一点挤 = 重合（BUG-05 同根）；且 2D 只有 `collision-resolve-3d`·**无 2D 推开**。② `CanvasRenderer` 逐实体 `ctx.drawImage`（`canvas-renderer.ts:153`）·**2D 无批绘/实例化**（实例化只在 3D 渲染器/P3D 域）→ 百敌=百 draw call。
 - **修向**：**升级 Lead**（引擎域·见 `requests.md REQ-SURVIVOR群体`）——群体分离 capability + 2D 批绘/实例化路径。PE 侧临时可减同屏 cap（spawn-director）缓解，非根治。
+- **PE 缓解已上（2026-07-24·纯数据·非根治）**：① 敌 `Steering.stopRange` 0→18（贴身即停=**环绕玩家成圈**而非全叠一点·接触伤害照常）；② 降同屏数量（开局圈 22→16·加压流 150→90/慢一倍）减 overdraw。真解（boid separation 敌间互斥 + 2D 批绘）仍等 Lead/P3D，`steering.ts` 现只有 seek/flee、`src/skills`/`src/renderer` 非 PE 域不碰。
 
 ### BUG-03 · 回旋镖武器停在原地 · [P1·PE] · ✅ done（PE·撤 Steering 抵消·真飞穿透；干净往返段=capgap 待 Lead）
 - **现象**：boomerang 不飞出/返回。

@@ -122,7 +122,7 @@ function enemyTemplate(e: EnemyDef, gemTemplate: string): { entities: Record<str
         Resource: { id: 'hp', current: e.hp, min: 0, max: e.hp },
         Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: gemTemplate },
         Perception: { targetTag: PLAYER, sightRadius: 0 },     // 0=无限视野·恒追玩家
-        Steering: { mode: 'seek', speed: e.speed, stopRange: 0 },
+        Steering: { mode: 'seek', speed: e.speed, stopRange: e.stopRange }, // BUG-02①缓解：贴身即停=环绕不叠一点
       },
       inner: { // 内芯（render-only·体积感）
         Hierarchy: child('@local:body'),
