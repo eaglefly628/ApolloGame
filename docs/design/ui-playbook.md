@@ -81,6 +81,12 @@ node tools/ui-audit.mjs tools/audits/<你的页面>.audit.ts    # 退出码 0=�
 - **透明不能用来「制造对比」**：一段灰字看着「还行」可能只是因为背后恰好是深的；换个背景就废。对比度要按**解析到的实底**算（§2.3）。
 - 纯表现的半透明叠层（vignette 暗角 / pattern 纹理 / sheen 流光）OK——它们是**装饰**不是**内容载体**，不承载需读的文字。
 
+### 3.1 反向 · 透明 art 贴图（cutout PNG「放对层就透，放错层不是 bug」）
+> owner 2026-07-24 复核：「透明贴图放进去不太对」——实测**格式全支持**，症结只在放哪层 / 源图真假。守卫 `src/ui/components/alpha-texture.test.ts`。
+- **`Image` / `Panel.skin(cover)` / bare `Panel.bgTexture`**：渲染层零强塞底 → 真 alpha 原生透出父层（页面/牌桌/面板）。放这些层，透明就是透明。
+- **假透明**（源图烤了棋盘格/白底·非真 RGBA）是**抠图没真做**——走 `/api/assets/matte`（rembg·`docs/playbooks/assets.md`）真去背，别怪渲染。判真假：`spec.transparent` + studio「· 透明」标。
+- **`PlayingCard.faceArt`**：cutout 叠在**卡面不透明底**之上——透出的是卡面色、非桌面（卡有卡面·设计如此）。要贴图浮在 play-field 上无卡背 → 用 `Image`/render `Sprite`，别用 faceArt。
+
 ---
 
 ## 4. 准则 · 布局卫生（杂项·一眼能查）
