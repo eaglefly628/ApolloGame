@@ -74,18 +74,5 @@ README.txt
 
 要支持新游戏/改计分映射/接第二个外部引擎 → `docs/workflow/requests.md` 提缺口（Lead 评审），补 `GAME_PATCHES`/`GAME_META` 或加 `tools/export-targets/<engine>.mjs`。**绝不手改游戏源码。**
 
----
-
 ## 11. 备忘 · v2 通用协议迁移（🟡 待办·阻塞中·勿现在做）
-
-DokiWorld 新版《外部 App 接入指南》定义了通用生命周期协议 **`dokiworld.app/2`**（App 化·非游戏专属）。**当前明确 registration `disabled`、需先与 DokiWorld 完成宿主接入 + registration 审核才启用**——所以现在**继续 v1（`dokiworld.game/1`），不迁 v2**（一个构建产物只能实现一个协议版本，禁运行时协商）。
-
-**解阻塞条件**（等 DokiWorld 侧就绪）：① v2 registration 开放；② 分配/审核我们的 `runtime.input`、`runtime.outputs` 的 `doki.*`（或授权命名空间）contract 名。
-
-**届时的工作量**（都在导出插件层·引擎主干仍不动）：
-- 桥改 `dokiworld-app-*` 消息族：`ready`(带 `instanceId`)/`init`/`initialized`/`complete`+**`complete-ack`**（幂等 `resultId`·收到 `accepted` 才算结算·丢 ack 用同 resultId 重发）/`request-exit`+`prepare-exit`+`exit-state`+`exit-decision`（stay/discard/suspend）；身份四元组 `appId+instanceId+runId+messageId` 全匹配、旧 iframe 迟到消息丢弃。
-- 可选扩展按需声明：`progress`(非权威)/`checkpoint`/`resume`(同 runId 新 instanceId)/`resize`。
-- `game.json` 加 `runtime.input`(empty contract 亦可) + `runtime.outputs`(≥1)；游戏结果从「分数」改成 `output.contract` 数据（编码后 ≤64KiB·深度≤12·≤2000 节点）。
-- 验收：`npm run generate:games` + `tests/gameCatalogBuild` + `tests/externalAppProtocol` + `npm run build`。
-
-**触发**：DokiWorld 通知 v2 可接入时，把本节升级为 `requests.md` 正式条目（届时腾槽）派工。
+DokiWorld 新版定义通用生命周期协议 **`dokiworld.app/2`**（App 化），但 registration 现 `disabled`——**继续 v1（`dokiworld.game/1`），不迁 v2**（一产物一协议·禁运行时协商）。解阻塞=DokiWorld 开放 v2 registration + 审核我们的 `runtime.input/outputs` contract 名。届时工作量全在导出插件层（引擎主干不动）：桥改 `dokiworld-app-*` 消息族（含 `complete-ack` 幂等结算 + `request-exit`/`prepare-exit`/`exit-decision` 退出协商 + `appId/instanceId/runId/messageId` 四元组身份）·`game.json` 加 `runtime.input/outputs`·结果从分数改 `output.contract`（≤64KiB）·验收 `generate:games`+`gameCatalogBuild`+`externalAppProtocol`+`build`。**触发**：DokiWorld 通知可接入时，把本节升级为 `requests.md` 正式条目派工（细节届时展开）。
