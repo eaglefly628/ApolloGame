@@ -6,6 +6,7 @@
 // 交互/HUD（LayoutNode 四屏 = PUI·REQ-G102-UI）与玩法链（event-when/launch = S4）后续接入。
 import { Engine } from '../../runtime/engine.js';
 import { CanvasRenderer } from '@renderer/index.js';
+import { QueuedInputSource, canvasPointerToScreen } from '@net/index.js';
 import { mountHost } from '@engine/host/mount-host.js';
 import { buildBlueprint } from './blueprint.js';
 import { LEVEL_1 } from './levels.js';
@@ -23,16 +24,29 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     wrapperBackground: '#06121f',
   });
 
-  // sim + 渲染器：引擎固定步长循环驱动 world.tick + renderer.sync（rAF）。
-  const engine = new Engine();
+  // sim + 渲染器 + 指针输入：引擎固定步长循环（rAF）每拍先注入本 tick 输入命令再 world.tick。
+  const input = new QueuedInputSource('g102');
+  const engine = new Engine({ input });
   engine.load(buildBlueprint(LEVEL_1));
   const renderer = new CanvasRenderer({ width: FIELD_W, height: FIELD_H, background: 'transparent' });
   engine.attachRenderer(renderer, scene);
+
+  // 画布点击 → 逆投影为世界坐标（无相机=画布逻辑坐标·信箱缩放已由 mountHost 处理）→ 入队；
+  // 补给炮 Clickable 命中 → fire_<color> 信号 → 置 firing 旗 → 炮向最近同色格喷弹消除（blueprint 开火链）。
+  const canvas = scene.querySelector('canvas') as HTMLCanvasElement;
+  const onDown = (e: PointerEvent): void => {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    const p = canvasPointerToScreen(e.clientX, e.clientY, rect, canvas.width / dpr, canvas.height / dpr);
+    input.enqueue({ source: 'g102', x: p.x, y: p.y, phase: 'down' });
+  };
+  canvas.addEventListener('pointerdown', onDown);
   engine.start();
 
-  // cleanup（launcher 卸载时调）：停循环 → 摘渲染器 → 拆宿主骨架。
+  // cleanup（launcher 卸载时调）：停循环 → 摘监听 → 摘渲染器 → 拆宿主骨架。
   return () => {
     engine.stop();
+    canvas.removeEventListener('pointerdown', onDown);
     renderer.destroy();
     teardown();
   };

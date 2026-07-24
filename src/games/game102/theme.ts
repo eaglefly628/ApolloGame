@@ -13,18 +13,28 @@
 // 色板对齐 design-ref/README「补给罐」闭集（花园主题·绿/黑/红/橙/黄）+ 像素画常用白。
 export interface PaletteColor { readonly name: string; readonly bit: number; readonly tint: number; }
 export const PALETTE: Readonly<Record<string, PaletteColor>> = {
-  green:  { name: 'green',  bit: 1 << 0, tint: 0x5cb544 },
-  black:  { name: 'black',  bit: 1 << 1, tint: 0x2f3140 },
-  red:    { name: 'red',    bit: 1 << 2, tint: 0xe0433f },
-  orange: { name: 'orange', bit: 1 << 3, tint: 0xef8a2b },
-  yellow: { name: 'yellow', bit: 1 << 4, tint: 0xf2c21e },
-  white:  { name: 'white',  bit: 1 << 5, tint: 0xeaf2ff },
+  // ⚠ 色位从 1<<1 起——bit 0 是引擎 trigger-zone 的 ZONE_FLAG 保留位（占它=色格被误判触发区+命中区标识撞车）。
+  green:  { name: 'green',  bit: 1 << 1, tint: 0x5cb544 },
+  black:  { name: 'black',  bit: 1 << 2, tint: 0x2f3140 },
+  red:    { name: 'red',    bit: 1 << 3, tint: 0xe0433f },
+  orange: { name: 'orange', bit: 1 << 4, tint: 0xef8a2b },
+  yellow: { name: 'yellow', bit: 1 << 5, tint: 0xf2c21e },
+  white:  { name: 'white',  bit: 1 << 6, tint: 0xeaf2ff },
 };
 
 // 身份位（与颜色位分段·不冲突）。
 export const CANNON_BIT = 1 << 12; // 传送带上的色炮
 export const CELL_BIT   = 1 << 13; // 中央棋盘像素块
 export const KEY_BIT    = 1 << 14; // 金钥匙收集件（叠加在其所在格上）
+export const ZONE_BIT   = 1 << 0;  // 命中判定区标记 = 引擎 trigger-zone 的 ZONE_FLAG 保留位（必须 1<<0）
+
+// ── 开火节拍（S4 玩法·全 config·数据驱动）──────────────────────────────────
+export const FIRE = {
+  reload: 6,        // 装填 tick（每 6 tick 喷一发·连喷手感）
+  sightRadius: 0,   // 0 = 无限视野（整幅画内任意同色格皆可索敌）
+  zapRadius: 14,    // 命中判定区半径（覆盖一格·确保 overlap 命中）
+  zapLife: 6,       // 命中区兜底回收 tick
+} as const;
 
 // ── play-field 尺寸 = design-ref 定尺舞台 650×1424（1:1 复刻基准·mountHost 等比信箱缩放到设备）──
 export const FIELD_W = 650;

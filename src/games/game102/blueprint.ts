@@ -14,14 +14,17 @@ import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assemb
 import {
   transformCapability, shapeCapability, tagCapability, colorCapability,
   resourceCapability, flagCapability, randomCapability,
+  timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
 } from '@atom-skills/index.js';
+import { lifetimeCapability } from '@skills/tier1/index.js';
 import {
   clickableCapability, groupCountCapability, zoneOccupancyCapability, trayCapability,
   eventWhenCapability, effectApplyCapability, launchCapability, gaugeCapability,
+  selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability,
 } from '@skills/tier2/index.js';
-import { flowCapability } from '@skills/tier3/index.js';
+import { flowCapability, aggroCapability, prefabCapability } from '@skills/tier3/index.js';
 import {
-  PALETTE, CELL_BIT, CANNON_BIT, KEY_BIT,
+  PALETTE, CELL_BIT, CANNON_BIT, KEY_BIT, ZONE_BIT, FIRE,
   PIPE, PICTURE, BOARD_PAD, BOARD_GAP, CONVEYOR, TRAY, SUPPLY, ACTION_BAR,
 } from './theme.js';
 import type { Level } from './levels.js';
@@ -73,6 +76,7 @@ function boardCells(level: Level): Record<string, EntityBlueprint> {
         Tag: { flags: pc.bit | CELL_BIT | (isKey ? KEY_BIT : 0) },
         Resource: { id: 'hp', current: hp, min: 0, max: hp },
         Color: col(pc.tint, 1),
+        Mortal: { resource: 'hp', atOrBelow: 0 }, // hp 归零→自毁（消除·被同色 zap 打掉）
       };
     }
   }
@@ -120,17 +124,27 @@ function colorCounters(level: Level): Record<string, EntityBlueprint> {
 function supplies(level: Level): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   const { colLeft, w, h, frontTop, midTop, backTop } = SUPPLY;
-  // 前排（可点·每列一色·index 对齐 palette·超出列数则循环取色）。
+  // 前排（可点开火·每列一色·index 对齐 palette·超出列数则循环取色）。
+  // 点炮 → 置 firing_<color> 旗 → SelfRule 每 reload 拍向最近同色格 spawn 命中区 zap（game-q 塔开火同构）。
+  // Tag **不带色位**（否则 Perception 会把补给炮当同色目标·自打自）——只有棋盘格带色位。
   colLeft.forEach((lx, i) => {
     const name = level.palette[i % level.palette.length];
     const pc = PALETTE[name];
     if (!pc) return;
-    out[`supply-${i}`] = {
+    out[`cannon-${name}`] = {
       Transform: XF(lx + w / 2, frontTop + h / 2),
       Shape: box(w - 8, h - 8),
       Color: col(pc.tint, 1),
-      Clickable: { action: `take_${name}`, phase: 'down' },
-      Tag: { flags: pc.bit },
+      Clickable: { action: `fire_${name}`, phase: 'down' },
+      Perception: { targetTag: pc.bit | CELL_BIT, sightRadius: FIRE.sightRadius }, // 索最近同色棋盘格→Relation(target)
+      Relation: { kind: 'target', targetId: '' },                                   // aggro 写入位（初值空）
+      Timer: { id: 'reload', elapsed: 0, duration: FIRE.reload, loop: true },
+      SelfRule: {
+        whenGlobal: { kind: 'flag', id: `firing_${name}` },                         // 点炮后才开火
+        when: { kind: 'timer', id: 'reload', cmp: 'gte', value: FIRE.reload - 1 },  // 装填峰值
+        do: [{ kind: 'spawn', template: `zap_${name}`, at: 'target' }],             // 在目标格生成命中区
+        once: true, armed: false,
+      },
     };
   });
   // 后备两排（装饰·render-only·半透）。
@@ -148,6 +162,39 @@ function supplies(level: Level): Record<string, EntityBlueprint> {
   };
   reserve('mid', midTop, 0.62);
   reserve('back', backTop, 0.34);
+  return out;
+}
+
+// 命中判定区模板（zap·game-q zapTemplate 同构）：隐形 Sensor 区·命中同色格扣 hp·consumeOnHit 单发·Timer 兜底回收。
+function zapTemplate(pc: typeof PALETTE[string]): { entities: Record<string, Record<string, unknown>> } {
+  return {
+    entities: {
+      hit: {
+        Transform: XF(0, 0),
+        Visibility: { visible: false, active: true },
+        Shape: { kind: 'circle', radius: FIRE.zapRadius },
+        Color: col(pc.tint, 0),
+        Sensor: {},
+        Tag: { flags: ZONE_BIT },
+        Hitbox: { resource: 'hp', amount: 1, targetMask: pc.bit | CELL_BIT, consumeOnHit: true },
+        Timer: { id: 'life', elapsed: 0, duration: FIRE.zapLife, loop: false },
+      },
+    },
+  };
+}
+
+// 开火链数据：每色一面 firing 旗 + 点炮信号→置旗 Effect + zap 模板库。
+function fireChain(level: Level): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  const templates: Record<string, unknown> = {};
+  for (const name of level.palette) {
+    const pc = PALETTE[name];
+    if (!pc) continue;
+    out[`firing-${name}`] = { Flag: { id: `firing_${name}`, active: false } };
+    out[`fire-fx-${name}`] = { Effect: { onSignal: `fire_${name}`, kind: 'set-flag', targetId: `firing_${name}`, value: true } };
+    templates[`zap_${name}`] = zapTemplate(pc);
+  }
+  out['prefabs'] = { PrefabLibrary: { seq: 0, templates } };
   return out;
 }
 
@@ -207,6 +254,7 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
     },
     ...meters(level),
     ...colorCounters(level),
+    ...fireChain(level),
     // render 顺序（后画覆盖先画）：装饰底衬 → 补给/后备 → 棋盘格 → 门标。
     ...decor(level),
     ...supplies(level),
@@ -218,12 +266,16 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
     capabilities: [
       // atoms
       transformCapability, shapeCapability, tagCapability, colorCapability,
-      resourceCapability, flagCapability, randomCapability, clickableCapability,
-      // tier2 玩法能力（S4 接线·S3 先立位）
-      groupCountCapability, zoneOccupancyCapability, trayCapability,
+      resourceCapability, flagCapability, randomCapability,
+      timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
+      // tier1
+      lifetimeCapability,
+      // tier2 玩法能力
+      clickableCapability, groupCountCapability, zoneOccupancyCapability, trayCapability,
       eventWhenCapability, effectApplyCapability, launchCapability, gaugeCapability,
-      // tier3 流程
-      flowCapability,
+      selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability,
+      // tier3
+      flowCapability, aggroCapability, prefabCapability,
     ],
     entities,
   };
