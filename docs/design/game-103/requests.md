@@ -75,4 +75,4 @@
 
 ## 分工小结（给 PE 的即刻队列）
 - **PE ✅ 已修（2026-07-24）**：BUG-04（时停·根因=`engine.stop()` 从 listener 调被 loop 末尾 `rafId=RAF(loop)` 重挂覆盖→延 microtask 修·同修局终冻结）· BUG-01（世界空间地砖网格实体·随相机卷动）· BUG-03（撤 Launch/Steering 抵消→真飞穿透·干净往返=capgap）。16 测绿。
-- **引擎已交付（Lead 2026-07-24·PE 即刻接数据）**：**①群体分离**=`t2-steering.separation`（敌挂 separation→环绕不叠一点）· **护盾绕转**=`t2-orbit-motion`（护盾 child 挂 `Orbit`/`orbitAt`→真绕转）。**仍等**：②2D 批绘=P3D `REQ-3D-RENDER-EFFICIENCY`（owner 优先）· 移速/攻速/范围被动 Stats 桥（引擎池 `REQ-STATS-BRIDGE`·open）· 弹射/诱饵/pull M3 武器（`REQ-SURVIVOR武器缺口`·M3 triaged）。
+- **引擎已交付（Lead 2026-07-24·PE 即刻接数据）**：**①群体分离**=`t2-steering.separation`（敌挂 separation→环绕不叠一点）· **护盾绕转**=`t2-orbit-motion`（护盾 child 挂 `Orbit`/`orbitAt`→真绕转）。**仍等**：②2D 批绘=P3D `REQ-3D-RENDER-EFFICIENCY`（owner 优先）· 移速/攻速/范围被动 Stats 桥 + Launch 兜底方向（引擎池 `REQ-SURVIVOR被动轴`·open·stat-bind spec 已备）· 弹射/诱饵/pull M3 武器（`REQ-SURVIVOR武器缺口`·M3 triaged）。
