@@ -3,10 +3,10 @@
 // 数据驱动铁律：本文件只做「JSON 配置 → 引擎数据结构」的**纯派生**（无玩法逻辑、无随机、无自由代码）。
 // 所有玩法内容来自 config/*.json（GD-101 立项档 config-schema.md 的落地）；解释权归现有引擎能力。
 //
-// ⚠ 门禁范围（REQ-101-01 前置门·未过审）：本 M1a groundwork 只落**未涉门的**能力面——
-//   merge-rule（合并链）/ f1-resource（金币·星星·经验·体力）/ over-time（体力恢复）/ prefab（物品模板）。
-//   §2.5 缺口 G1（生成器耗体力·加权掉落）/ G2（订单交付消耗棋盘实例）/ G3（气泡锁金币购买）
-//   现有能力表达不了、需 Lead 裁决下沉为引擎通用能力（详见目录 requests.md）——**未接线**。
+// ⚠ 接线状态（capability-plan §6 Lead 已过审 2026-07-23）：本 M1a groundwork 落未涉门能力面——
+//   merge-rule（合并链）/ f1-resource（体力/金币/星星/经验）/ over-time（体力恢复）/ prefab（物品模板）。
+//   G1 生成器按 §6 组合接线经源码复核撞墙（加权运行时 spawn 无引擎原语）→ 报引擎池
+//   docs/workflow/requests.md REQ-TAPSPAWN；generators.json 已备·待该能力落地再接线。G2/G3=后续 slice。
 import gameCfg from './config/game.json';
 import chainsCfg from './config/chains.json';
 import energyCfg from './config/energy.json';

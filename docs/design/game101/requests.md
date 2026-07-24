@@ -28,3 +28,8 @@
 
 ### REQ-101-05 · 美术台账推导脚本命名 · 2026-07-23 · 提出人 GD-101 → 指派 PA · status: open · 优先级: P2 · 类型: 美术管线
 > `capability-plan.md` §4.5 编译期皮肤台账推导脚本名待定（照 game-q 样板）。M1 接线时定名并回填 plan。
+
+### REQ-101-06 · 生成器接线撞墙·待引擎加权 spawn · 2026-07-24 · 提出人 PE-101 → 指派 主程/Lead（引擎池 REQ-TAPSPAWN） · status: open（阻塞·非全库阻断） · 优先级: P1 · 类型: 实现阻塞
+> M1 生成器（G1）按 Lead §6「组合」接线时**撞墙**（子代理源码复核确认）：扣费半场 `clickable`+`craft-recipe` 可组合，但**加权运行时 spawn 无引擎原语**（`caster`/`self-rule` 固定 template·`effect-apply` 不能 spawn·`draft-offer` 未接世界 `RandomSeed`/未接线）。
+> 已按 §6「撞墙→回报下沉 tap-cost-spawn」报**引擎池** `docs/workflow/requests.md REQ-TAPSPAWN`。**`generators.json` 已备数据·待该能力落地即接线**（clickable+craft-recipe 扣费 + 新 weighted-spawn 产出）。其余 M1 面（合并/资源/体力/S1）不受阻·已绿（8/8 测试）。
+> **不违规**：不在游戏层手写加权/裸 Math.random（manifesto 红线）——故按流程报引擎缺口，不硬接。

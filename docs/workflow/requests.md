@@ -8,6 +8,12 @@
 
 ## 待处理 / 进行中
 
+### REQ-TAPSPAWN-加权掉表生成器原语（tap→耗资源→加权 spawn） · [2026-07-24] · PE-101 报（capability-plan §6 G1「撞墙→下沉 tap-cost-spawn」的回报）→ Lead/主程 裁 · status: open · 优先级: P2（game101 M1 生成器阻塞·非全库阻断） · 类型: 引擎通用能力缺口（合并/idle/gacha 通用·主程域）
+> - **想实现的行为**：生成器（merge/idle 通用）——点一下 → 若资源(体力)≥cost 扣费 → 从掉落表 `[{item,w}]` 按**引擎种子 PRNG** 加权抽一个 item → 在生成器处 `SpawnRequest` 该 item。数据已备 `src/games/game101/config/generators.json`。
+> - **已试（子代理源码复核契约）**：✅ 扣费半场可组合＝`clickable`(点→Signal)+`craft-recipe`(onSignal·costs 原子 afford+扣)（game-q build-pad 近乎现成模板）。❌ **加权 spawn 半场无原语**：`caster`/`self-rule` 只 spawn **固定 template**；`effect-apply` writes 无 SpawnRequest（能 destroy 不能 create）；`draft-offer.weightedPickDistinct` **private 未导出**、`rollOffer` 导出但**自建 mulberry32(seed)·不接世界 `RandomSeed`**、且**未接线成 SpawnRequest**。无任何能力把 `{item,w}[]`+`RandomSeed`→选 template→`SpawnRequest`。❌ 且单点「afford→spawn」不干净可组合（craft-recipe 无成功 Signal·caster 无 cost）。
+> - **卡在哪**：缺「加权运行时 spawn」原语（＝§6 预判的 `tap-cost-spawn`）。**禁游戏层手写加权/裸 Math.random**（manifesto 红线）→ 必须下沉引擎。
+> - **建议方案（§6 已预祝福其形）· 边界**：下沉通用能力 `tap-cost-spawn`（或 `weighted-caster`）——组件 `TapSpawn{ onSignal, cost?:{id,amount}, table:[{item,w}] }`；系统在信号时（可选 afford+扣 cost）→ 读世界 `RandomSeed` 走 `nextRandom` 加权抽 → 发 `SpawnRequest{templateId, at:self}`。**必用世界 RandomSeed（禁 fixed seed·保 hash 确定性/回放）**。可拆两件：①从 `draft-offer` 抽出并**导出纯函数 `weightedPick(items,weights,rand)`**；② `caster` 加 `table?` 变体 / 新 `weighted-caster` capability 消费之。**触碰范围**：`src/skills/**`（新 capability + 导出 draft-offer 纯函数 + 测试），game101 只经数据消费。撞墙实证＝`docs/design/game101/requests.md REQ-101-06`。
+
 ### REQ-STYLE-SWAP-工坊风格库（命名风格预设 + 一键换风格）· [2026-07-22] · owner 拍板（「加风格类型下拉·新建风格·存本地·Apply 换掉全部 UI 风格」）→ **引擎侧 Lead ✅ done · 工坊 UI 指派 PST** · status: **引擎 ✅ done（Lead 2026-07-22）；工坊 UI open（PST）** · 优先级: P1 · 类型: 风格换装（引擎已具·工坊 UI 缺口）
 > **owner 愿景**：美术台本加「风格类型」下拉——可**新建风格**（存本地）、选一套风格**一键 Apply** → 当前游戏全部美术按该风格重生成换掉。多套命名风格可存本地、随时切。
 > **架构评审（Lead·先评判）**：换皮引擎 + 风格包 + 选择器**大半已存在**（9 内置风格包=已定义风格·批量生成+替换写回=换皮·工坊已有风格包 chips + 整体风格锚输入）——不重建。真缺口=①owner **自建命名风格存本地**②一键 Apply。

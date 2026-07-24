@@ -5,10 +5,13 @@
 //   货币/资源   = f1-resource（体力 energy / 金币 coins / 星星 stars / 经验 exp）
 //   体力恢复    = t2-over-time（每 regenIntervalSec +1·涓流·钳进 cap）
 //
-// ⚠ 门禁范围（前置门 REQ-101-01 未过审）：本 M1a groundwork **只接未涉门的能力面**。
-//   §2.5 缺口 G1/G2/G3（生成器加权掉落·订单交付消耗棋盘实例·气泡锁金币购买）经独立复核确认
-//   「现有能力组合表达不了」→ 需 Lead 裁决下沉为引擎通用 capability（src/skills·非游戏层 system）。
-//   在裁决 + 引擎能力落地前，生成器/订单/气泡**不接线**（裁决单=docs/design/game101/requests.md REQ-101-01 §2.5）。
+// ⚠ 生成器/订单/气泡接线状态（capability-plan §6 Lead 已过审 2026-07-23·零预下沉）：
+//   本 M1a groundwork 接未涉门能力面（merge/resource/over-time/prefab/seed）。
+//   G1 生成器按 §6「组合」接线经源码复核**撞墙**：扣费半场(clickable+craft-recipe)可组合，但
+//   「加权运行时 spawn」无引擎原语(caster/self-rule 固定 template·effect-apply 不能 spawn·
+//   draft-offer 未接世界 RandomSeed/未接线)→ 按 §6「撞墙→下沉 tap-cost-spawn」报引擎池
+//   docs/workflow/requests.md REQ-TAPSPAWN；generators.json 已备数据·待该能力落地再接线。
+//   G2 订单 / G3 气泡=后续 slice（G3 bubble-wrapper 零引擎改动路）。
 //   初始棋盘物品由 game.json.seedItems 数据摆放（初始态·非生成器机制）。
 //
 // 能力总览：docs/design/game101/capability-plan.md。
