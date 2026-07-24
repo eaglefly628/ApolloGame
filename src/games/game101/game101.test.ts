@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
+import { validateLayoutNode } from '@ui/components/index.js';
 import type { Resource, PrefabOrigin } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
+import { buildS1 } from './s1.js';
 import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules } from './theme.js';
 
 // ── headless 助手 ─────────────────────────────────────────────────────────────
@@ -77,5 +79,11 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(res(e, RES.energy)).toBe(ENERGY.cap);
     tickN(e, ENERGY_REGEN_TICKS * 2);
     expect(res(e, RES.energy)).toBe(ENERGY.cap);      // 不超 cap
+  });
+
+  it('S1 主界面是合法 LayoutNode（validate 零 issue·GD 布局稿移植·数据一致）', () => {
+    const tree = buildS1();
+    expect(tree.type).toBe('Screen');
+    expect(validateLayoutNode(tree)).toEqual([]);
   });
 });
