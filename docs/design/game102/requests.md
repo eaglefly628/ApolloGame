@@ -17,6 +17,14 @@
 
 ---
 
+### REQ-G102-TILEMAP-VERDICT · S3 tilemap 适配核对回执（PE 落地实证）· [2026-07-24] · PE 提 → 存档 · status: **✅ done（组合表达·无引擎缺口）** · 优先级: P1 · 类型: 适配核对
+> **背景**：pe-handoff §2 待验 + Lead 裁①实机校准补充——「位图棋盘倾向 `tilemap`，PE 落地核对适配度，不合再报缺口」。
+> **实证结论：`t2-tilemap` 不适配中央「可消除像素画棋盘」——但这不是引擎缺口，改用现有实体路线即可（零下沉·守 Lead 裁①）。**
+> - **为何不适配**：`t2-tilemap`（`src/skills/tier2/tilemap.ts`）**唯一系统 = `tile-collision`**（把动态 box 体推出实心墙格 + 渲染器画格）；瓦片显式「**非实体**、不进 tick」。它**没有** per-cell hp 递减、命中消除/移除格、按色计数 的任何解释器。而本作核心循环=「同色弹命中格 → hp-1 → 归零消除 → 按色 `group-count` → 收集钥匙」全部要求作用在**实体**上：`t2-group-count`/`t2-launch`/`t2-hitbox` 均 `world.query(...)` 实体组件、**读不到 Tilemap**（已核源码）。用 tilemap 装棋盘 = 填了一张没有解释器消费的死数据（虚胖数据·宪法禁）。
+> - **采纳路线（组合表达·现有能力原生消费）**：棋盘 = **一格一实体 BoardCell**（`Transform`+`Shape(box)`+`Tag(色位|CELL_BIT[|KEY_BIT])`+`Resource(hp)`+`Color`）。按色计数 = `t2-group-count{requiredTag:色位|CELL_BIT → Resource remain_<color>}`；命中消除/钥匙收集 = S4 用 `t2-launch`/`t2-hitbox`/`t2-event-when`/`t2-effect-apply` 接线。**与 capability-plan §4 第二行 GD 倾向（「方块=带颜色+hp 的实体阵」）一致。**
+> - **证据**：`src/games/game102/blueprint.ts`（`boardCells()`/`colorCounters()`）+ `game102.skeleton.test.ts`（load+2tick 绿 + group-count 按色数出在板同色格：blue=9/lblue=10/teal=2）。故 game102 蓝图**不含 `t2-tilemap`**。
+> - **未来若需静态背景/墙层**（本作无）方可另起 tilemap 层——与棋盘无关。**无新能力缺口·不升级引擎池。**
+
 ## 已完结（附 commit·done 迁此）
 
 ### REQ-G102-CAPREVIEW · capability-plan 评审（提请 Lead）· [2026-07-23] · GD 提 → **Lead 评审** · status: **✅ done（⚖ Lead 裁决 ①·2026-07-23）** · 优先级: P1 · 类型: 能力评审 + 架构裁决
