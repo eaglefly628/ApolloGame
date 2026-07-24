@@ -5,7 +5,6 @@
 ---
 
 ## 1. 这是什么 / 何时用
-
 - 用途：把游戏导成 DokiWorld 能在 `sandbox="allow-scripts"` iframe 里加载的**独立卡带**（协议桥 + 计分回传 + `game.json`）。
 - 实现：导出插件 `tools/export-targets/dokiworld.mjs`（core=`tools/export-game.mjs` 的 `--target` 插件架构·不绑定 DokiWorld·接别的引擎再加一个插件）。
 - **当前支持**：`game-a / game-b / game-c`。别的游戏会报错指路，不伪造产物。
@@ -21,7 +20,6 @@
 **打包出图（自动·owner 2026-07-22）**：打包时超 1080P 的 PNG 会**同比例缩进 1920×1080 框**（长边≤1920·短边≤1080·只缩不放·仅 PNG）。检测零依赖；确有超标图才需 `pip install Pillow`（无超标=不处理）。
 
 ## 3. 操作：怎么打包
-
 1. 仓库根 `python3 apollo.py workshop` → 开 `http://localhost:4000/workshop/`（首次先 `npm install`，dist 要真构建）。
 2. 进**发布屏** → 找到游戏（game-a / b / c）。
 3. 选平台行 → 点 **「打包」**（状态 `⏳ 打包中…`；dist 走 `vite build` 慢十几~几十秒·**串行**一次一个）。
@@ -63,7 +61,6 @@ README.txt
 - 🟡 **result 未在真实终局实测**：注入代码编译+桥单测（钳位/runId/幂等）全绿，但未玩到终局触发真实 `dokiworld-game-result`。
 
 ## 8. 常见问题
-
 | 现象 | 原因 / 处置 |
 |---|---|
 | 双击 index.html 白屏/报错 | file:// 不能加载 ES 模块 → 用 `review.bat`/`review.sh` |
@@ -73,7 +70,6 @@ README.txt
 | 打包报「需 pip install Pillow」 | 有超 1080P 的 PNG 要缩 → `pip install Pillow` 后重打（或先把大图换小） |
 
 ## 9. 验收清单（交付前逐项）
-
 - [ ] `tsc` + `vite build` 通过；dist 有 `index.html`+`game.json`+`assets/`，无嵌套 `games/`。
 - [ ] `game.json`：id=目录名·minPlayers 正确·locales(en+zh-cn)·required scope 只用平台支持的。
 - [ ] review 脚本能起服务、握手（真 iframe 下 ready→init→initialized）。
