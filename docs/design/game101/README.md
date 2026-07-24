@@ -26,6 +26,7 @@
 | [`ui-brief.md`](./ui-brief.md) | 逐屏 UI 规格（控件映射 + 信号·据此用 LayoutNode 出各屏） | 🟢 v1 |
 | [`refs.md`](./refs.md) | 原作真机截图拆解 + 对照（版权图不入库·仅文字） | 🟢 |
 | [`layout/`](./layout/) | **真 LayoutNode 库 UI 布局**（`s1-merge-board.layout.json` + 暖色主题 + 效果图·纯数据） | 🟢 S1 |
+| [`impl-plan.md`](./impl-plan.md) | **程序实现方案**（屏→文件 / 数据→能力 / 信号 / 占位美术 / 施工顺序·PE 蓝图） | 🟢 v1 |
 | [`requests.md`](./requests.md) | 游戏级工单（不占引擎池槽；能力缺口→引擎 requests.md 提 LEAD） | 🟢 |
 
 ## 状态
