@@ -9,7 +9,8 @@
 - **S2 capability-plan**：✅ 送审稿 → `capability-plan.md`（⏳ 待 Lead 审；§4 三处编排下沉已提 `REQ-SURVIVOR编排`·GD 已诚实核查 event-when/merge-rule/dice-roll 覆盖度；**过审前零游戏层代码**）
 - **S3 GDD + 数值**：✅ v1 → `gdd.md` + `balance-design.md`（伤害公式/逐级成长/难度曲线/**P-M 功率曲线手算验证**/经济/balance-sim spec）
 - **S4 UI/场景设计交接**：✅ v1 → `ui-scene-design.md` + 设计稿 `survivor-hud-mockup.dc.html`（战斗+三选一）+ `survivor-menu-result.dc.html`（主菜单+结算胜/负）·均渲染目击在案·PE 1:1 复刻基准
-- S5+ 交 PE 实现：⬜（等 capability-plan 过审 + slot 骨架）
+- **PE 开工交接**：✅ v1 → `pe-handoff.md`（流程板 S3–S8 映射 + 各线手册 + 现有能力接线 + 门禁分清）
+- S5+ 交 PE 实现：⬜（S3 骨架/M1 灰盒可现在起步；E1–E4 编排等 Lead 签 S2）
 
 ## 文档索引
 
@@ -23,6 +24,7 @@
 | [`ui-scene-design.md`](./ui-scene-design.md) | S4 场景/UI 布局交接：逐场景详案 + 控件映射 + 信号总表 + 美术槽位 |
 | [`survivor-hud-mockup.dc.html`](./survivor-hud-mockup.dc.html) | 设计稿：战斗 HUD + 升级三选一（PE 1:1 复刻基准） |
 | [`survivor-menu-result.dc.html`](./survivor-menu-result.dc.html) | 设计稿：主菜单 + 结算（胜利/失败）（PE 1:1 复刻基准） |
+| [`pe-handoff.md`](./pe-handoff.md) | PE 开工交接：流程板 S3–S8 映射 + 各线手册 + 实体能力接线 + 门禁分清（可做/阻塞） |
 
 ## 一句话
 
