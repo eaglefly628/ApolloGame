@@ -1,6 +1,6 @@
 // game101 ·《海港绯闻》—— play-field 世界 = 纯数据（WorldBlueprint）。零游戏专属系统代码。
 //
-//   合并        = t3-merge-rule（每链每级一条 need:2·跨级连锁·distinct-seq 最老先合·确定）
+//   拖放合并    = t2-merge-on-place（玩家拖同类才合·MergeRule 提供 template→into 链数据·非自动合并）
 //   物品产出戳  = t3-prefab（PrefabLibrary 模板 → SpawnRequest 展开 → PrefabOrigin 供 merge 计数）
 //   货币/资源   = f1-resource（体力 energy / 金币 coins / 星星 stars / 经验 exp）
 //   体力恢复    = t2-over-time（每 regenIntervalSec +1·涓流·钳进 cap）
@@ -24,9 +24,9 @@ import {
 } from '@atom-skills/index.js';
 import {
   overTimeCapability, clickableCapability, craftRecipeCapability,
-  effectApplyCapability, eventWhenCapability, keybindCapability,
+  effectApplyCapability, eventWhenCapability, keybindCapability, mergeOnPlaceCapability,
 } from '@skills/tier2/index.js';
-import { prefabCapability, mergeRuleCapability, casterCapability } from '@skills/tier3/index.js';
+import { prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
   GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, generatorOutput,
   cellCenter, mergeRules, itemTemplates, CELL, GEN_TAG, GEN_TINT,
@@ -136,7 +136,7 @@ export function buildBlueprint(): WorldBlueprint {
       transformCapability, tagCapability, shapeCapability, colorCapability,
       spriteCapability, resourceCapability, destroyCapability, flagCapability, timerCapability,
       overTimeCapability, clickableCapability, craftRecipeCapability, effectApplyCapability, eventWhenCapability, keybindCapability,
-      prefabCapability, mergeRuleCapability, casterCapability,
+      mergeOnPlaceCapability, prefabCapability, casterCapability,
     ],
     entities,
   };

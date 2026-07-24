@@ -69,6 +69,18 @@ export interface MergeRule extends Component {
   intoOverrides?: SpawnOverrides; // 新实例的参数补丁（@local:/槽位语义同 F-032/033 管道）
 }
 
+// ── MergeDrop（拖放合并意图·REQ-MERGE-ON-PLACE）── merge-on-place 消费：把「拖 from 落到 to 格」的
+// 一次性拖放意图交给引擎裁决——同模板且有 MergeRule → 合成次级于 to 处；异模板 → 交换位置；空格 → 移动 from。
+// 由宿主层拖拽手势合成（host 解析源实体 from + 落格占用者 to·纯坐标 x/y=落点），事件式、消费后即清。
+// 区别 MergeRule（自动合并·不看位置）：本件是**玩家拖拽触发**的位置感知合并（Gossip Harbor 合并手感）。
+export interface MergeDrop extends Component {
+  readonly type: 'MergeDrop';
+  from: EntityId; // 被拖的物品实例（带 PrefabOrigin+Transform）
+  to?: EntityId; // 落格占用的物品实例（host 解析·空格则缺省）
+  x: number; // 落点世界坐标（空格移动时 from 落此处）
+  y: number;
+}
+
 // ── Caster ── 信号→生成桥（D-002）：把"按键/点地/条件成立"的 Signal 变成一条算好坐标的 SpawnRequest，
 // 由 prefab 能力展开成技能/陷阱/召唤/掉落。补上 prefab 缺的"运行时释放"入口（REQ-008 显式延后的那块）。
 // at 决定生成位置：'self'=施法者自身、'pointer'=光标世界坐标(screenToWorld 逆投影)、'target'=最近的 targetTag 阵营。

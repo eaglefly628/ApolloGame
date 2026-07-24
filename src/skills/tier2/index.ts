@@ -12,6 +12,7 @@ export { effectApplyCapability } from './effect-apply.js';
 export { cameraFollowCapability } from './camera-follow.js';
 export { clickableCapability } from './clickable.js';
 export { craftRecipeCapability } from './craft-recipe.js';
+export { mergeOnPlaceCapability } from './merge-on-place.js';
 export { zoneOccupancyCapability } from './zone-occupancy.js';
 export { hitboxCapability } from './hitbox.js';
 export { overTimeCapability } from './over-time.js';

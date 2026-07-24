@@ -59,6 +59,7 @@ import type {
   MatchBoard,
   Material3D,
   MergeRule,
+  MergeDrop,
   Mesh3D,
   ModifierSource,
   ModifierTotals,
@@ -184,6 +185,7 @@ export interface ComponentDataMap {
   MatchBoard: Omit<MatchBoard, 'type'>;
   Material3D: Omit<Material3D, 'type'>;
   MergeRule: Omit<MergeRule, 'type'>;
+  MergeDrop: Omit<MergeDrop, 'type'>;
   Mesh3D: Omit<Mesh3D, 'type'>;
   ModifierSource: Omit<ModifierSource, 'type'>;
   ModifierTotals: Omit<ModifierTotals, 'type'>;

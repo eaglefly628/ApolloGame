@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { validateLayoutNode } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin, InputQueue, RawInputData } from '@engine/protocol/components.js';
+import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1 } from './s1.js';
 import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, generatorOutput, cellCenter } from './theme.js';
@@ -30,6 +30,23 @@ function tapGen(e: Engine, genCell: number): void {
   setInput(e, []);
   e.world.tick(); // event-when 发 do_spawn → caster 发 SpawnRequest
   e.world.tick(); // prefab 展开成实例（盖 PrefabOrigin）
+}
+// 拖放合并（merge-on-place）：把 from 拖到 to → 注入 MergeDrop → 裁决 + prefab 展开。
+function itemsOf(e: Engine, template: string): string[] {
+  const out: string[] = [];
+  for (const [id] of e.world.query('PrefabOrigin')) {
+    const po = e.world.getComponent<PrefabOrigin>(id, 'PrefabOrigin');
+    if (po && po.templateId === template) out.push(id);
+  }
+  return out;
+}
+function dragMerge(e: Engine, from: string, to: string): void {
+  const t = e.world.getComponent<Transform>(to, 'Transform');
+  const cid = 'drop-test';
+  if (!e.world.hasComponent(cid, 'MergeDrop')) e.world.createEntity(cid);
+  e.world.addComponent(cid, { type: 'MergeDrop', from, to, x: t?.x ?? 0, y: t?.y ?? 0 } as MergeDrop);
+  e.world.tick(); // merge-on-place → destroy from+to + spawn into
+  e.world.tick(); // prefab 展开次级
 }
 
 describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据驱动）', () => {
@@ -60,14 +77,16 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(countTemplate(e, 'coffee_1')).toBe(2);
   });
 
-  it('merge-2 确定性合并：2×food_1 → 1×food_2（need:2·最老先合·封顶自然终止）', () => {
+  it('拖放合并：seed 两个 food_1 不自动合并·拖一个到另一个才合成 food_2（merge-on-place）', () => {
     const e = new Engine(); e.load(buildBlueprint());
-    tickN(e, 6); // 展开 → 合并 → prefab 落产物，留足连锁拍数
+    tickN(e, 2); // seed 展开
+    expect(countTemplate(e, 'food_1')).toBe(2); // ★ 不自动合并（区别 merge-rule）
+    tickN(e, 10);
+    expect(countTemplate(e, 'food_1')).toBe(2); // 跑再多拍也不自动合
+    const ids = itemsOf(e, 'food_1');
+    dragMerge(e, ids[0], ids[1]); // 拖同类 → 合成
     expect(countTemplate(e, 'food_1')).toBe(0);
     expect(countTemplate(e, 'food_2')).toBe(1);
-    // 其它链同样各合成一个次级
-    expect(countTemplate(e, 'fish_2')).toBe(1);
-    expect(countTemplate(e, 'coffee_2')).toBe(1);
   });
 
   it('确定性：两把独立跑同 tick → 同 hash（可回放/lockstep 就绪）', () => {
@@ -126,16 +145,17 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(countTemplate(e, out)).toBe(c0);      // 不产
   });
 
-  it('产出即入合并流：连点工具箱 2 次 → 2×tool_1 自动合并成 1×tool_2（工具链无 seed·干净）', () => {
+  it('生成器产出 + 拖放合并：点工具箱 2 次→2×tool_1（不自动合）→ 拖合成 tool_2', () => {
     const e = new Engine(); e.load(buildBlueprint());
     tickN(e, 4);
     expect(countTemplate(e, 'tool_1')).toBe(0); // 工具链无 seed
-    expect(countTemplate(e, 'tool_2')).toBe(0);
-    tapGen(e, 3); // 工具箱 → +1 tool_1
-    tapGen(e, 3); // +1 tool_1 → 2 个 → 自动合并
-    tickN(e, 2);
-    expect(countTemplate(e, 'tool_1')).toBe(0);  // 两个已合掉
-    expect(countTemplate(e, 'tool_2')).toBe(1);  // 合成一个次级
+    tapGen(e, 3); tapGen(e, 3); // 产 2 个 tool_1
+    tickN(e, 1);
+    expect(countTemplate(e, 'tool_1')).toBe(2); // 不自动合并
+    const ids = itemsOf(e, 'tool_1');
+    dragMerge(e, ids[0], ids[1]); // 拖合成
+    expect(countTemplate(e, 'tool_1')).toBe(0);
+    expect(countTemplate(e, 'tool_2')).toBe(1);
   });
 
   it('确定性：接生成器后两把同操作序列 → 同 hash（可回放）', () => {

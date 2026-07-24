@@ -10,11 +10,13 @@ import { QueuedInputSource } from '@net/index.js';
 import { mountHost } from '@engine/host/mount-host.js';
 import { mountUI } from '@ui/components/index.js';
 import type { HandlerMap, MountHandle } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin, Transform } from '@engine/protocol/components.js';
+import type { Resource, PrefabOrigin, Transform, MergeDrop } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1Live, type S1State, type CellView } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';
-import { GAME, RES, GENERATORS, ITEM_EMOJI, cellIndexOf } from './theme.js';
+import { GAME, RES, GENERATORS, ITEM_EMOJI, cellIndexOf, cellCenter } from './theme.js';
+
+const GEN_CELLS = new Set(GENERATORS.map((g) => g.cell));
 
 const SCREEN_W = 1080;
 const SCREEN_H = 1920;
@@ -31,21 +33,55 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   const engine = new Engine({ input });
   engine.load(buildBlueprint());
 
-  // 世界态 → S1State（纯读·outcome-first）：板格=生成器(可点)/物品 Twemoji；HUD=真资源。
+  // cell index → 物品实例 id（拖拽用·readState 每帧刷新）。
+  const cellEntity: (string | null)[] = new Array(GAME.board.cols * GAME.board.rows).fill(null);
+
+  // 世界态 → S1State（纯读·outcome-first）：板格=生成器(可点)/物品 Twemoji；HUD=真资源。同帧刷新 cellEntity。
   function readState(): S1State {
     const w = engine.world;
     const res = (id: string): number => w.getComponent<Resource>(id, 'Resource')?.current ?? 0;
     const cells: (CellView | null)[] = new Array(GAME.board.cols * GAME.board.rows).fill(null);
+    cellEntity.fill(null);
     for (const g of GENERATORS) cells[g.cell] = { emoji: g.emoji, gen: g.id };
     for (const [eid] of w.query('PrefabOrigin')) {
       const po = w.getComponent<PrefabOrigin>(eid, 'PrefabOrigin');
       const t = w.getComponent<Transform>(eid, 'Transform');
       if (!po || !t) continue;
       const idx = cellIndexOf(t.x, t.y);
-      if (idx >= 0 && !cells[idx]) cells[idx] = { emoji: ITEM_EMOJI[po.templateId] ?? '❓' };
+      if (idx >= 0 && !cells[idx]) { cells[idx] = { emoji: ITEM_EMOJI[po.templateId] ?? '❓' }; cellEntity[idx] = eid; }
     }
     return { energy: res(RES.energy), coins: res(RES.coins), cells };
   }
+
+  // ── 拖拽合并（宿主手势 → MergeDrop 意图 → merge-on-place 引擎裁决）──────────────
+  // 板格 DOM id=t-live-<idx>；按下物品格→记源，抬起于目标格→注入 MergeDrop{from,to?}（引擎裁合并/移动/交换）。
+  // 找到落点所属**格 Panel**（id=t-live-<idx>）——跳过内层 Label（t-live-<idx>-l 也匹配前缀·会误解析）。
+  const cellIdxFromEl = (el: Element | null): number => {
+    let cur: Element | null = el?.closest?.('[id^="t-live-"]') ?? null;
+    while (cur) {
+      const m = /^t-live-(\d+)$/.exec(cur.id);
+      if (m) return Number(m[1]);
+      cur = cur.parentElement?.closest?.('[id^="t-live-"]') ?? null;
+    }
+    return -1;
+  };
+  let dragFrom = -1;
+  const onDown = (ev: PointerEvent): void => {
+    const idx = cellIdxFromEl(ev.target as Element);
+    if (idx >= 0 && !GEN_CELLS.has(idx) && cellEntity[idx]) dragFrom = idx; // 只拖物品格（非生成器/空格）
+  };
+  const onUp = (ev: PointerEvent): void => {
+    if (dragFrom < 0) return;
+    const from = cellEntity[dragFrom]; const fromIdx = dragFrom; dragFrom = -1;
+    const toIdx = cellIdxFromEl(document.elementFromPoint(ev.clientX, ev.clientY));
+    if (!from || toIdx < 0 || toIdx === fromIdx || GEN_CELLS.has(toIdx)) return; // 落生成器/空放/原格=忽略
+    const to = cellEntity[toIdx] ?? undefined; const p = cellCenter(toIdx);
+    const cid = 'host-drop';
+    if (!engine.world.hasComponent(cid, 'MergeDrop')) engine.world.createEntity(cid);
+    engine.world.addComponent(cid, { type: 'MergeDrop', from, ...(to ? { to } : {}), x: p.x, y: p.y } as MergeDrop);
+  };
+  scene.addEventListener('pointerdown', onDown);
+  scene.addEventListener('pointerup', onUp);
 
   // 导航信号占位（真弹层=后续 slice）；生成器 tap_<id> **不放 handler** → 走 ActionSink 入队 → sim。
   const noop = (): void => {};
@@ -64,6 +100,8 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   return () => {
     unsub();
     engine.stop();
+    scene.removeEventListener('pointerdown', onDown);
+    scene.removeEventListener('pointerup', onUp);
     ui();
     teardown();
   };
