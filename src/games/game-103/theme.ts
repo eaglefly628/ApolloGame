@@ -118,16 +118,18 @@ export const SKIN = {
   gemBlue: GEM_BLUE.skin,
 } as const;
 
-// ── HUD 主题（UITheme·暗色战场·屏内文字恒亮·对齐 .dc.html 令牌）────────────
+// ── HUD 主题（UITheme·bright chunky cartoon·对齐 survivor-io-ui-kit 设计令牌）──
+// 令牌照 survivor-io-ui-kit-handoff.md：gold #ffd23f/#f5a623·slate #5c6672/#39424d·
+// hp-red #f0473a·xp-orange #ff9a1f·xp-green #7dff4d·accent-active #e0402e·accent-passive #2f9fe0。
 export const SURVIVOR_THEME: UITheme = {
-  bg0: '#04070c', bg1: '#0e1116', bg2: '#161b22', bg3: '#1f2733', pageBg: '#04070c',
-  line: 'rgba(120,160,190,0.18)',
-  text: '#e6edf3', sub: '#9aa7b4', dim: '#66707c',
-  jade: '#2fd6a5', jadeWash: 'rgba(47,214,165,0.12)', jadeLine: 'rgba(47,214,165,0.4)',
-  gold: '#ffcf4a',
-  ok: '#54e08a', okWash: 'rgba(84,224,138,0.14)', warn: '#f59e0b', warnWash: 'rgba(245,158,11,0.14)',
-  danger: '#ff4d5e',
-  ink: '#0a0d12',
-  fontUi: "-apple-system,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif",
+  bg0: '#14161b', bg1: '#2a2e35', bg2: '#3a3f48', bg3: '#47535f', pageBg: '#1e2127',
+  line: 'rgba(255,255,255,0.14)',
+  text: '#ffffff', sub: '#c7d0da', dim: '#8b93a1',
+  jade: '#2f9fe0', jadeWash: 'rgba(47,159,224,0.16)', jadeLine: 'rgba(47,159,224,0.5)', // jade 槽=蓝 accent-passive
+  gold: '#ffd23f',
+  ok: '#7dff4d', okWash: 'rgba(125,255,77,0.16)', warn: '#ff9a1f', warnWash: 'rgba(255,154,31,0.16)',
+  danger: '#e0402e',
+  ink: '#12141a',
+  fontUi: "'Baloo 2',-apple-system,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif",
   fontMono: "ui-monospace,'SFMono-Regular',Menlo,monospace",
 };

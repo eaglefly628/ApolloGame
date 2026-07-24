@@ -1,10 +1,9 @@
 // game-103《幸存者核心原型》—— HUD = 纯 LayoutNode 数据（UI 铁律·禁手写 React/DOM）。
 // 写世界只经 action 信号名（restart）→ 宿主 ActionSink 入队。
-// 结构照 docs/design/game-103/survivor-hud-mockup.dc.html（SC-2 战斗 HUD·SC-4 结算）1:1 素坯复刻。
-// ⚠ SC-3 升级三选一 modal 未接：draft 三选一=E1 编排（draft-offer 过滤候选），待 Lead 签 S2（REQ-SURVIVOR编排）。
-//    M1 用「升级=固定强化」占位（等级++ / 治疗 / 全局 power+·见 blueprint levelup Effect），无时停弹窗。
+// 结构照 docs/design/game-103/survivor-io-ui-kit.dc.html（Combat HUD + Victory）+ handoff 设计令牌。
+// bright chunky cartoon：chevron 计时徽章 / 分段血经验条 / chunky 描边字 / 金带横幅 / parchment 结算卷轴。
+// ⚠ Level Up 三选一(CHOOSE SKILL) / Lucky Wheel / Skills 三屏=后续切片（draft-offer 逻辑接线·见 requests）。
 import type { LayoutNode } from '@ui/components/index.js';
-import { KUNAI } from './theme.js';
 
 export interface HudState {
   hp: number; maxHp: number;
@@ -20,117 +19,114 @@ function mmss(sec: number): string {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
 
-// ── 顶部：经验条 + 状态行（血/攻·计时/等级·击杀/暂停）────────────────────────
-function topBlock(s: HudState): LayoutNode {
-  return {
-    type: 'Panel', id: 's-top', props: { bare: true },
-    layout: { direction: 'column', gap: 6, padding: 8 },
-    children: [
-      // 经验条（满屏顶·tone accent）
-      { type: 'ProgressBar', id: 's-xp', props: { value: s.xp, max: s.xpMax, tone: 'accent' } },
-      {
-        type: 'Panel', id: 's-statrow', props: { bare: true },
-        layout: { direction: 'row', align: 'start', justify: 'between', gap: 8 },
-        children: [
-          // 左坞：血条 + 攻击
-          {
-            type: 'Panel', id: 's-dock-l', props: { bare: true },
-            layout: { direction: 'column', align: 'start', gap: 3 },
-            children: [
-              { type: 'ProgressBar', id: 's-hp', props: { value: s.hp, max: s.maxHp, tone: 'danger', showValue: true } },
-              { type: 'Label', id: 's-atk', props: { text: `⚔️ ${KUNAI.dmg}`, size: 'sm', bold: true, color: 'text' } },
-            ],
-          },
-          // 中：计时 + 等级
-          {
-            type: 'Panel', id: 's-mid', props: { bare: true },
-            layout: { direction: 'column', align: 'center', gap: 2 },
-            children: [
-              { type: 'Label', id: 's-timer', props: { text: mmss(s.elapsed), size: 'xxl', bold: true, color: 'text', glow: true } },
-              { type: 'Badge', id: 's-level', props: { text: `Lv.${s.level}`, tone: 'gold' } },
-            ],
-          },
-          // 右坞：击杀 + 暂停
-          {
-            type: 'Panel', id: 's-dock-r', props: { bare: true },
-            layout: { direction: 'column', align: 'end', gap: 3 },
-            children: [
-              { type: 'Label', id: 's-score', props: { text: `🪙 ${s.score}`, size: 'sm', bold: true, color: 'gold' } },
-            ],
-          },
-        ],
-      },
-    ],
-  };
+// chunky 描边显示字（Luckiest Guy 近似=impact/heavy + stroke·handoff 允许同字符替换）。
+function display(id: string, text: string, size: number, color: HudColor = 'text'): LayoutNode {
+  return { type: 'Label', id, props: { text, font: 'heavy', size, color, bold: true, stroke: true } };
 }
+type HudColor = 'text' | 'gold' | 'ok' | 'warn' | 'danger' | 'sub' | 'jade';
 
-// ── 底部：武器/被动格（M1 只 1 武器·其余占位·art 皮就绪即换装）──────────────
-function bottomTrays(): LayoutNode {
-  const slot = (id: string, icon: string, pip: string, filled: boolean): LayoutNode => ({
-    type: 'Badge', id, props: { text: pip ? `${icon}${pip}` : icon, tone: filled ? 'ok' : 'dim' },
+// ── 顶部 HUD 行：暂停 / chevron 计时徽章 / 金币·击杀 ────────────────────────
+function topBar(s: HudState): LayoutNode {
+  const counter = (id: string, icon: string, val: string): LayoutNode => ({
+    type: 'Panel', id, props: { bare: true },
+    layout: { direction: 'row', align: 'center', gap: 5 },
+    children: [
+      { type: 'Label', id: `${id}-i`, props: { text: icon, size: 18 } },
+      display(`${id}-v`, val, 18, 'text'),
+    ],
   });
   return {
-    type: 'Panel', id: 's-trays', props: { bare: true },
-    layout: { direction: 'column', align: 'center', gap: 5, padding: 8 },
+    type: 'Panel', id: 's-topbar', props: { bare: true },
+    layout: { direction: 'row', align: 'start', justify: 'between', padding: 12, gap: 8 },
     children: [
+      { type: 'Button', id: 's-pause', props: { label: '❚❚', kind: 'quiet', shape: 'cut', action: 'pause' } },
+      // chevron 计时徽章（slate·居中大字）
+      { type: 'Button', id: 's-timer', props: { label: mmss(s.elapsed), kind: 'primary', shape: 'chevron' } },
       {
-        type: 'Panel', id: 's-wrow', props: { bare: true },
-        layout: { direction: 'row', justify: 'center', gap: 5 },
-        children: [
-          slot('s-w0', '⚔️', 'Lv1', true),
-          slot('s-w1', '·', '', false), slot('s-w2', '·', '', false),
-          slot('s-w3', '·', '', false), slot('s-w4', '·', '', false), slot('s-w5', '·', '', false),
-        ],
-      },
-      {
-        type: 'Panel', id: 's-prow', props: { bare: true },
-        layout: { direction: 'row', justify: 'center', gap: 5 },
-        children: [
-          slot('s-p0', '·', '', false), slot('s-p1', '·', '', false), slot('s-p2', '·', '', false),
-          slot('s-p3', '·', '', false), slot('s-p4', '·', '', false), slot('s-p5', '·', '', false),
-        ],
+        type: 'Panel', id: 's-counters', props: { bare: true },
+        layout: { direction: 'column', align: 'end', gap: 5 },
+        children: [counter('s-coin', '🪙', '0'), counter('s-kill', '💀', String(s.score))],
       },
     ],
   };
 }
 
-// ── 战斗 HUD（overlay·pointer-events 由宿主管·SC-2）──────────────────────────
+// ── 经验条（orange 分段感·tone warn）+ 等级徽章 ─────────────────────────────
+function xpRow(s: HudState): LayoutNode {
+  return {
+    type: 'Panel', id: 's-xprow', props: { bare: true },
+    layout: { direction: 'row', align: 'center', gap: 8, padding: 12 },
+    children: [
+      { type: 'ProgressBar', id: 's-xp', props: { value: s.xp, max: s.xpMax, tone: 'warn' } },
+      display('s-lv', `Lv ${s.level}`, 15, 'gold'),
+    ],
+  };
+}
+
+// ── 底部：玩家血条（green）+ 摇杆视觉（M2 键盘走位·触屏摇杆=输入缺口报 PUI）──
+function bottomBar(s: HudState): LayoutNode {
+  return {
+    type: 'Panel', id: 's-bottom', props: { bare: true },
+    layout: { direction: 'column', align: 'center', gap: 12, padding: 16 },
+    children: [
+      {
+        type: 'Panel', id: 's-hpwrap', props: { bare: true },
+        layout: { direction: 'row', align: 'center', gap: 6 },
+        children: [
+          { type: 'Label', id: 's-hp-i', props: { text: '❤', size: 14, color: 'ok' } },
+          { type: 'ProgressBar', id: 's-hp', props: { value: s.hp, max: s.maxHp, tone: 'ok', showValue: true } },
+        ],
+      },
+      // 摇杆环 + 摇杆头（静态视觉·占位·真触屏输入待接）
+      {
+        type: 'Panel', id: 's-joy', props: { bg: { custom: 'rgba(30,34,40,.28)' } },
+        layout: { direction: 'row', align: 'center', justify: 'center', width: 110, height: 110, radius: 55 },
+        children: [{ type: 'Panel', id: 's-joy-knob', props: { bg: { custom: 'radial-gradient(circle at 40% 35%,#5c6672,#1c1f25)' } }, layout: { width: 50, height: 50, radius: 25 } }],
+      },
+    ],
+  };
+}
+
+// ── 战斗 HUD（overlay·SC Combat）────────────────────────────────────────────
 export function buildHud(s: HudState): LayoutNode {
   return {
     type: 'Screen', id: 's-hud', props: { bg: 'transparent' },
     layout: { direction: 'column', justify: 'between' },
-    children: [topBlock(s), bottomTrays()],
+    children: [
+      { type: 'Panel', id: 's-hud-top', props: { bare: true }, layout: { direction: 'column', gap: 2 }, children: [topBar(s), xpRow(s)] },
+      bottomBar(s),
+    ],
   };
 }
 
-// ── 结算浮层（SC-4·胜/败同版式·败无 confetti）────────────────────────────────
+// ── 结算浮层（Victory=parchment 卷轴 + confetti·Defeat=同版式无庆祝·SC Victory）──
 export function buildResult(s: HudState): LayoutNode {
   const win = s.status === 'victory';
-  const statCell = (id: string, label: string, val: string, gold = false): LayoutNode => ({
-    type: 'Panel', id, props: { bare: true },
-    layout: { direction: 'column', align: 'center', gap: 2 },
-    children: [
-      { type: 'Label', id: `${id}-l`, props: { text: label, size: 'xs', color: 'sub' } },
-      { type: 'Label', id: `${id}-v`, props: { text: val, size: 'lg', bold: true, color: gold ? 'gold' : 'text' } },
-    ],
+  const statPill = (id: string, icon: string, val: string): LayoutNode => ({
+    type: 'Panel', id, props: { bg: { custom: '#3a2a16' } },
+    layout: { direction: 'row', align: 'center', gap: 6, padding: 8, radius: 14 },
+    children: [{ type: 'Label', id: `${id}-i`, props: { text: icon, size: 14 } }, display(`${id}-v`, val, 15, 'text')],
   });
+  const scroll: LayoutNode = {
+    type: 'Panel', id: 's-scroll', props: { bg: { custom: 'linear-gradient(#ecd6a8,#dcbf88)' }, edge: 'danger' },
+    layout: { direction: 'column', align: 'center', gap: 12, padding: 22, radius: 14 },
+    children: [
+      { type: 'Button', id: 's-r-ribbon', props: { label: win ? 'VICTORY' : 'DEFEAT', kind: win ? 'hero' : 'primary', shape: 'ribbon' } },
+      { type: 'Label', id: 's-r-sub', props: { text: win ? 'Chapter 1 · 幸存到底' : `${mmss(s.elapsed)} 阵亡`, font: 'heavy', size: 18, color: 'danger', bold: true } },
+      {
+        type: 'Panel', id: 's-r-pills', props: { bare: true },
+        layout: { direction: 'row', justify: 'center', gap: 8 },
+        children: [statPill('s-r-kill', '💀', String(s.score)), statPill('s-r-time', '⏱', mmss(s.elapsed)), statPill('s-r-lv', '⭐', `Lv ${s.level}`)],
+      },
+      { type: 'Button', id: 's-r-ok', props: { label: 'OK', kind: 'hero', action: 'restart' } },
+    ],
+  };
   return {
     type: 'Screen', id: 's-result',
-    props: { center: true, bg: { custom: 'linear-gradient(rgba(4,7,12,0.92),rgba(4,7,12,0.95))' } },
+    props: { center: true, bg: { custom: 'linear-gradient(rgba(20,22,27,0.92),rgba(20,22,27,0.96))' } },
     layout: { direction: 'column', align: 'center', justify: 'center', gap: 16, padding: 24 },
-    children: [
-      { type: 'Label', id: 's-r-title', props: { text: win ? '胜利！' : '你倒下了', font: 'impact', size: 'xxxl', bold: true, color: win ? 'ok' : 'danger', glow: true } },
-      { type: 'Label', id: 's-r-sub', props: { text: win ? '活满 15:00 · 幸存到底' : `生命归零 · ${mmss(s.elapsed)} 阵亡`, size: 'sm', color: 'sub' } },
-      {
-        type: 'Panel', id: 's-r-stats', props: { bare: true },
-        layout: { direction: 'row', justify: 'center', gap: 22 },
-        children: [
-          statCell('s-r-time', '存活时长', mmss(s.elapsed)),
-          statCell('s-r-kills', '击杀数', String(s.score)),
-          statCell('s-r-lv', '最高等级', `Lv.${s.level}`),
-        ],
-      },
-      { type: 'Button', id: 's-r-retry', props: { label: '再来一局', kind: 'hero', action: 'restart' } },
-    ],
+    children: win
+      ? [{ type: 'Particles', id: 's-r-confetti', props: { kind: 'confetti' }, layout: { width: 320, height: 120 } }, scroll]
+      : [scroll],
   };
 }
