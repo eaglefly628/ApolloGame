@@ -40,12 +40,15 @@
 > **建议（P3D 裁·opt-in·向后兼容）**：给 `Material3D` 加 `alphaTest?`(cutout·硬边·透明像素 discard·无排序问题·最适合桌面透明角/贴花) + 可选 `transparent?`(软混合·配 opacity)；`buildPbrMaterial` 据此设 `m.alphaTest`/`m.transparent`。缺省不设=现行不透明行为零变。**顺带**：可让台账 `spec.transparent:true` 在 3D 消费端自动置 `transparent`（对齐 owner 直觉·2D/3D 声明一致）。
 > **PE-C 侧就绪**：`build3d.ts` table-surface 已在册；API 落地后我加 `alphaTest`（或 `transparent`）一字段即透。**workaround（不等 P3D）**：owner 改出**不透明**顶视桌图（四周深色/环境烤进图·填满 16:9），`spec.transparent:false` 即正常显（现台账已 false）。
 
-## REQ-3D-资产就绪自动重渲 · 静态场景 × 异步贴图迟到 = 脏帧跳渲吞掉换图帧 · [2026-07-17] · PE-B 提 → P3D 评审 · status: open · 类型: 渲染健壮（W1-C 脏帧跳渲的盲区）
+## REQ-3D-资产就绪自动重渲 · 静态场景 × 异步贴图迟到 = 脏帧跳渲吞掉换图帧 · [2026-07-17] · PE-B 提 → P3D · status: **✅ done（P3D 2026-07-24·取方案①变体·渲染器自愈·已推·见回执）** · 类型: 渲染健壮（W1-C 脏帧跳渲的盲区）
 
 > **现象（game-b S3 实证）**：全静态 3D 场景（无动画/无相机动）+ Material3D.map 贴图异步 fetch 迟到——`ensurePbrMesh` 在贴图就绪后按 mode 正确重建了 mesh，但 `renderSig`（位姿/相机/灯/后处理…）不含资产就绪态 → 跳渲判「画面没变」→ 新贴图永不上屏（canvas 停在旧帧）。动态场景（game-z 恒动）撞不到此坑，纯静态陈列场景必撞。
 > **game-b 侧 workaround 在案**：宿主胶水 `assets.loadAll()` 收尾后调公开 `renderer.invalidate()`（`src/games/game-b/{assets,game-b}.ts`·可参考）。
 > **提议（P3D 裁决取一）**：① renderSig 折入 AssetManager 就绪版本号（资产每 ready 一枚 version++·最通用）；② attachRenderer 侧监听 loadAll 完成自动 invalidate；③ 维持宿主手动 invalidate 但回填 `playbooks/3d.md` 一行「静态场景+异步贴图必调」（最省·先堵手册）。
-> **连带小缺口（同域顺记）**：Material3D.map 无 alpha 路（transparent/alphaTest 均不设）→ 透明底 PNG 透明像素渲黑。game-b 占位牌面已按「程序化出路」授权期合成不透明贴图绕开（`scripts/game-b-compose-tiles.mjs`）；若后续真有「透明贴花面」需求再议 `alphaTest?` opt-in，眼下不催。
+>
+> **★ P3D 落地回执（2026-07-24·取方案①的渲染器自愈变体·不碰 AssetManager 域·全在 renderer/three 我域）**：新 `AssetReadyTracker`（`renderer/three/asset-ready.ts`·纯逻辑无 GL）——渲染器每帧备料时对每个被请求资产 `mark(key, ready)`：某资产从**待办→就绪**（=迟到就绪）时 `gen++`；把 `gen` 折进 `renderSig`（`ag<n>`）。迟到贴图/模型一就绪 → renderSig 变 → 跳渲失效 → 那帧真正重绘上屏；就绪即出待办、不反复触发（收敛·零多余重渲）。**覆盖两类资产**：贴图走 `pbrMapTexture`（materials/billboards/decals 全经此）、模型走 `models.ensure`（同坑·一并修）。**首帧即就绪不 bump**（非「迟到」）。为何取渲染器自愈而非改 AssetManager：`src/assets` 按契约 🔒 主程/PA 域，本修全在我域 renderer/three（三行 mark + 一枚 renderSig token），零跨域、对所有游戏透明生效。
+> **善后**：game-b 宿主手动 `renderer.invalidate()` workaround **现已冗余**（渲染器自愈）——PE-B 可删（无害·留着也不重复触发·非阻塞）。测试：`asset-ready.test.ts` 4 例（待办→就绪 bump/收敛不反复/首帧即就绪不 bump/多资产各计一枚）。门禁 tsc0/vitest3294/build0·game-z 无回归截图（狐狸模型 + 木箱贴图 + 地面纹理照常渲）。
+> **连带小缺口（同域顺记·仍 open·非本单）**：Material3D.map 无 alpha 路（transparent/alphaTest 均不设）→ 透明底 PNG 透明像素渲黑。game-b 占位牌面已按「程序化出路」授权期合成不透明贴图绕开；若后续真有「透明贴图面（非贴花）」需求再议 `alphaTest?` opt-in（贴花透明已由 REQ-3D-DECAL-TEX 的 Decal3D.tex 覆盖·MeshBasic transparent）。
 
 ## REQ-3D-程序化动画方法集 · Anim3D 扩为底层可组合运动原语（osc/noise/ease）· [2026-07-06] · owner → P3D · status: **✅ done（P3D 2026-07-06·已推·见回执）** · 类型: 渲染能力补全（程序化动画底座）
 

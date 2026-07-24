@@ -31,6 +31,7 @@ import { PathSystem } from './three/path.js';
 import { pivotMatrix, applyPivot } from './three/pivot.js';
 import { WorldUiLayer } from './three/world-ui.js';
 import { IndexDebug } from './three/index-debug.js';
+import { AssetReadyTracker } from './three/asset-ready.js';
 import type { PhysicsSystem } from './three/physics.js'; // 运行时**懒加载**（见 ensurePhysics）：physics.ts 依赖 cannon-es 重包·仅在有 RigidBody3D 时才进图，无刚体的游戏(如 game-d)不连带解析 cannon-es（修 vite dev「Failed to resolve cannon-es」）
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
@@ -85,6 +86,7 @@ export class ThreeRenderer implements RendererBackend {
   private debugNav = false;
   private readonly indexDebug = new IndexDebug(); // 实体编号覆盖（debug·开关见 setDebugIndices）
   private debugIndices = false;
+  private readonly assetReady = new AssetReadyTracker(); // 异步资产就绪版本号（折进 renderSig·修静态场景迟到贴图/模型被跳渲吞帧）
   private readonly vfx = new VfxSystem(); // 数据驱动粒子（TA Phase 1·render-only）
   private readonly trails = new TrailSystem(); // 运动拖尾（Trail3D·render-only·超休闲残影）
   private readonly lines = new LineSystem(); // 世界折线（Line3D·瞄准线/牵引/路径·render-only）
@@ -290,6 +292,7 @@ export class ThreeRenderer implements RendererBackend {
       // 导入式 glTF 模型（Model3D）：圆润真模型。位姿与 Mesh3D 同套路。未就绪本帧不画（向后兼容）。
       if (r.model3d) {
         const obj = this.models.ensure(this.scene, r.entityId, r.model3d);
+        this.assetReady.mark(r.model3d.modelKey, !!obj); // 就绪版本号：迟到模型就绪同样迫使重绘（静态场景防吞帧）
         if (obj) {
           const ms = r.model3d.scale ?? 1;
           const rawPose: Pose3D = (r.transform3d || cam3d)
@@ -384,7 +387,7 @@ export class ThreeRenderer implements RendererBackend {
     const camTweenActive = this.cameras.tickTween(cam3d?.tween, performance.now());
     // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
     const flashAmt = this.flash.update(post?.flash, performance.now());
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}|ag${this.assetReady.gen}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -781,7 +784,8 @@ export class ThreeRenderer implements RendererBackend {
   // ——供作者对特殊贴图（如线性反照率、sRGB 数据图）显式覆盖；缺省仍按槽位（albedo=sRGB·法线/粗糙/AO=线性）。
   private pbrMapTexture(key: string, srgbDefault: boolean, tiling?: Material3D['tiling']): THREE.Texture | null {
     const res = this.assets?.get(key);
-    if (!res || !isImageHandle(res.handle)) return null;
+    if (!res || !isImageHandle(res.handle)) { this.assetReady.mark(key, false); return null; } // 未就绪→记待办
+    this.assetReady.mark(key, true); // 就绪版本号：迟到贴图就绪 → gen++ → renderSig 变 → 跳渲失效上屏
     const decl = (res.descriptor as { colorSpace?: 'srgb' | 'linear' }).colorSpace;
     const srgb = decl ? decl === 'srgb' : srgbDefault;
     const rep = tiling?.repeat ?? 1, ox = tiling?.offset?.[0] ?? 0, oy = tiling?.offset?.[1] ?? 0;
