@@ -10,7 +10,7 @@ import { validateLayoutNode } from '@ui/components/index.js';
 import type { Sprite } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp } from './hud.js';
-import { ENEMY, ZONE, START, KUNAI, SHAMBLER, BRUTE, BOSS, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
+import { ENEMY, ZONE, START, KUNAI, SHAMBLER, BRUTE, BOSS, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, WEAPON_BIT, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
 
 // 一步 sim（复刻引擎 step：每拍都注入命令→清 InputQueue·空则清空·防陈留信号重复触发）。
 function step(e: Engine, cmds: Command[] = []): void {
@@ -155,6 +155,21 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     fireAction(e, 'pick_orbit');
     step(e); step(e);
     expect(hasSprite(e, WEAPON_BY_KEY.orbit.skin)).toBe(true); // 护盾环光球已展开
+  });
+
+  it('进化系统（E2·重组）：evo 信号 destroy-tagged 删基础武器挂点 + Caster spawn 进化体', () => {
+    const e = fresh();
+    tickN(e, 3);
+    fireAction(e, 'pick_orbit');                 // 拿护盾环
+    step(e); step(e);
+    expect(hasSprite(e, WEAPON_BY_KEY.orbit.skin)).toBe(true);
+    const orbitBallsBefore = countTag(e, WEAPON_BIT.orbit);
+    expect(orbitBallsBefore).toBeGreaterThan(0); // 基础护盾环挂点在场（带武器 Tag 位）
+    fireAction(e, 'evo_orbit');                   // 进化！
+    stepN(e, 4);
+    // 基础护盾环挂点被 destroy-tagged 清掉；进化体「无限回环」挂点已 spawn（5 球·带 orbitevo Tag 位）
+    expect(countTag(e, WEAPON_BIT.orbit)).toBe(0);
+    expect(countTag(e, WEAPON_BIT.orbitevo)).toBeGreaterThan(orbitBallsBefore); // 进化体球更多
   });
 
   it('武器册全射法：每把武器都能被 draft 生成并射出（straight/nova/beam/boomerang/orbit/pet）', () => {

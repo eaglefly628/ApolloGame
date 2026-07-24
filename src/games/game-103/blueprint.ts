@@ -29,7 +29,7 @@ import { prefabCapability, casterCapability, aggroCapability, flowCapability } f
 import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
   PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, TINT,
-  PLAYER_DEF, KUNAI, WEAPONS, ENEMIES, GEMS, GEM_LIFE, SPAWNS, SPAWNER_TIERS, SPAWNER_RING, SPAWN_CAP,
+  PLAYER_DEF, KUNAI, WEAPONS, WEAPON_BIT, ENEMIES, GEMS, GEM_LIFE, SPAWNS, SPAWNER_TIERS, SPAWNER_RING, SPAWN_CAP,
   LEVEL_XP, DRAFT_POOL, PASSIVE_BY_KEY, type WeaponDef, type EnemyDef, type GemDef,
 } from './theme.js';
 
@@ -77,13 +77,14 @@ function weaponMount(w: WeaponDef): { entities: Record<string, Record<string, un
     // VBUG-02：Lead 交付了 t2-orbit-motion，但它只声明 runsAfter:['motion-apply']，与本游戏的
     // hierarchy-cascade + camera-follow（都碰 Transform）一起装载→调度器硬成环（首个真消费者暴露其定序不全·
     // 已回报 Lead）。暂回退静态环（Hierarchy child·仍造伤·观感待 orbit-motion 补定序）。
+    const wbit = WEAPON_BIT[w.key] ?? 0; // 武器 Tag 位（进化 destroy-tagged 按位删）
     const ents: Record<string, Record<string, unknown>> = {};
     for (let i = 0; i < w.amount; i++) {
       const a = (Math.PI * 2 * i) / w.amount;
       ents[`ball${i}`] = {
         Hierarchy: { parentId: 'player', localX: Math.round(Math.cos(a) * w.radius), localY: Math.round(Math.sin(a) * w.radius), localRotation: 0, localScaleX: 1, localScaleY: 1 },
         Transform: { ...XF0 },
-        Sensor: {}, Tag: { flags: ZONE },
+        Sensor: {}, Tag: { flags: ZONE | wbit },
         Shape: { kind: 'circle', radius: 12 },
         Sprite: { textureKey: w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽
         Color: { tint: w.tint, alpha: 0.9 },
@@ -96,6 +97,7 @@ function weaponMount(w: WeaponDef): { entities: Record<string, Record<string, un
     return { entities: { pet: {
       Transform: { ...XF0 }, Velocity: { vx: 0, vy: 0, angular: 0 },
       Perception: { targetTag: PLAYER, sightRadius: 0 }, Steering: { mode: 'seek', speed: 2.4, stopRange: 56 }, // 跟随玩家
+      Tag: { flags: WEAPON_BIT[w.key] ?? 0 },
       Shape: { kind: 'circle', radius: 10 },
       Sprite: { textureKey: w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 2 }, Color: { tint: w.tint, alpha: 1 },
       Timer: { id: 'fire', elapsed: 0, duration: w.cd, loop: true },
@@ -106,9 +108,24 @@ function weaponMount(w: WeaponDef): { entities: Record<string, Record<string, un
   return { entities: { m: {
     Hierarchy: { parentId: 'player', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 },
     Transform: { ...XF0 },
+    Tag: { flags: WEAPON_BIT[w.key] ?? 0 },
     Timer: { id: 'fire', elapsed: 0, duration: w.cd, loop: true },
     SelfRule: { when: { kind: 'timer', id: 'fire', cmp: 'gte', value: Math.max(1, w.cd - 1) }, do: [{ kind: 'spawn', template: `proj_${w.key}`, at: 'self' }], once: true, armed: false },
   } } };
+}
+
+// 进化接线（E2·重组）：每把可进化武器一条 KeyBinding 'evo_<key>' → Effect destroy-tagged(删基础武器挂点)
+// + Caster spawn 进化体挂点（child of player）。宿主满级+持有 req 被动时弹金卡·选中入队 evo_<key>。
+function evoPickEntities(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  for (const w of WEAPONS) {
+    if (!w.evo) continue;
+    const sig = `evo_${w.key}`;
+    out[`kb-evo-${w.key}`] = { KeyBinding: { key: sig, signal: sig } };
+    out[`fx-evo-del-${w.key}`] = { Effect: { onSignal: sig, kind: 'destroy-tagged', targetId: '', value: WEAPON_BIT[w.key] } }; // 删基础武器挂点（Tag 位）
+    out[`cast-evo-${w.key}`] = { Caster: { onSignal: sig, template: `weapon_${w.evo.to}`, at: 'self', originEntity: 'player' } };
+  }
+  return out;
 }
 
 // 敌人：aggro(Perception)→Relation(target=玩家) + steering(seek) 追击；接触伤害在隐形 child 触伤区；死亡掉宝石。
@@ -359,6 +376,7 @@ export function buildBlueprint(): WorldBlueprint {
 
     ...groundGridEntities(),
     ...draftPickEntities(),
+    ...evoPickEntities(),
     ...openingBurstEntities(),
     ...ringSpawnerEntities(),
   };

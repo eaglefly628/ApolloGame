@@ -105,18 +105,20 @@ export interface LevelUpOffer {
   id: string; name: string; desc: string;
   accent: 'active' | 'passive'; // 红=主动/武器·蓝=被动
   level: number; max: number; isNew: boolean; action: string;
+  isEvo?: boolean; // 进化=金框高亮卡（.dc.html SC-3 evochoice）
 }
 function offerCard(o: LevelUpOffer): LayoutNode {
-  const hue = o.accent === 'active' ? 'linear-gradient(155deg,#ff7a4d,#d63b1f)' : 'linear-gradient(155deg,#7fd0ff,#2f7fd0)';
+  const hue = o.isEvo ? 'linear-gradient(155deg,#ffd36b,#e0952a)' : o.accent === 'active' ? 'linear-gradient(155deg,#ff7a4d,#d63b1f)' : 'linear-gradient(155deg,#7fd0ff,#2f7fd0)';
+  const nameColor = o.isEvo ? 'gold' : o.accent === 'active' ? 'danger' : 'jade';
   return {
     type: 'Panel', id: `c-${o.id}`,
-    props: { bg: { custom: 'linear-gradient(#ecdcc0,#e0cfa8)' }, edge: o.accent === 'active' ? 'danger' : 'jade', action: o.action },
-    layout: { direction: 'column', align: 'center', gap: 5, padding: 10, radius: 14, width: 118 },
+    props: { bg: { custom: o.isEvo ? 'linear-gradient(#2a2412,#3a2f16)' : 'linear-gradient(#ecdcc0,#e0cfa8)' }, edge: o.isEvo ? 'gold' : o.accent === 'active' ? 'danger' : 'jade', action: o.action },
+    layout: { direction: 'column', align: 'center', gap: 5, padding: 10, radius: 14, width: 118, fx: o.isEvo ? [{ kind: 'glow', color: 'gold' }] : undefined },
     children: [
-      { type: 'Label', id: `c-${o.id}-n`, props: { text: o.name, font: 'heavy', size: 14, color: o.accent === 'active' ? 'danger' : 'jade', bold: true, stroke: true } },
-      { type: 'Label', id: `c-${o.id}-t`, props: { text: o.isNew ? 'New' : 'Level Up', size: 11, bold: true, color: o.isNew ? 'ok' : 'gold' } },
+      { type: 'Label', id: `c-${o.id}-n`, props: { text: o.name, font: 'heavy', size: 14, color: nameColor, bold: true, stroke: true } },
+      { type: 'Label', id: `c-${o.id}-t`, props: { text: o.isEvo ? '⚡进化' : o.isNew ? 'New' : 'Level Up', size: 11, bold: true, color: o.isEvo ? 'gold' : o.isNew ? 'ok' : 'gold' } },
       { type: 'Panel', id: `c-${o.id}-ico`, props: { bg: { custom: hue } }, layout: { width: 56, height: 56, radius: 14 } },
-      { type: 'Label', id: `c-${o.id}-d`, props: { text: o.desc, size: 11, color: 'ink' } },
+      { type: 'Label', id: `c-${o.id}-d`, props: { text: o.desc, size: 11, color: o.isEvo ? 'text' : 'ink' } },
       { type: 'Rating', id: `c-${o.id}-s`, props: { value: o.level, max: o.max } },
     ],
   };

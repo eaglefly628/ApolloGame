@@ -14,7 +14,7 @@ import { rollOffer, applyPick } from '@skills/tier2/index.js';
 import type { DraftCandidate, DraftState } from '@skills/tier2/index.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp, type HudState, type LevelUpOffer } from './hud.js';
-import { VIEW_W, VIEW_H, PLAYER_DEF, LEVEL_XP, SURVIVOR_THEME, DRAFT_POOL, DRAFT_N, SLOT_CAP } from './theme.js';
+import { VIEW_W, VIEW_H, PLAYER_DEF, LEVEL_XP, SURVIVOR_THEME, DRAFT_POOL, DRAFT_N, SLOT_CAP, WEAPONS, WEAPON_BY_KEY } from './theme.js';
 
 // 战场底纹（暗色渐晕·render-only·屏幕固定）。BUG-01 修：移除原屏幕固定网格线（相机跟随时看着静止=像没动）；
 // 地砖网格改由世界空间实体承载（blueprint groundGridEntities·随相机卷动=相对位移）。
@@ -53,6 +53,7 @@ export function mount(container: HTMLElement): () => void {
   let draftState: DraftState = { owned: {}, slots: { weapon: { used: 0, cap: SLOT_CAP.weapon }, passive: { used: 0, cap: SLOT_CAP.passive } } };
   let prevLevel = 1;
   let showingLevelUp = false;
+  const evolved = new Set<string>(); // 已进化的武器 key（防重复进化）
 
   // 选中一项：applyPick 回填态 → 入队 effectSignal（KeyBinding→Effect 应用到世界）→ 恢复 sim。
   function onPick(id: string): void {
@@ -64,9 +65,22 @@ export function mount(container: HTMLElement): () => void {
     showingLevelUp = false;
     if (sim) sim.engine.start(); // 恢复（refreshHud 下拍重绘回战斗 HUD）
   }
+  // 进化（E2·重组）：选中金卡 → 标已进化 → 入队 evo_<key>（Effect destroy-tagged 删基础 + Caster spawn 进化体）→ 恢复。
+  function onEvo(key: string): void {
+    if (!showingLevelUp || evolved.has(key)) return;
+    evolved.add(key);
+    hudQueue.enqueueAction(`evo_${key}`);
+    showingLevelUp = false;
+    if (sim) sim.engine.start();
+  }
+  // 满级 + 持有 req 被动 + 未进化 → 该武器可进化。
+  function evoReady(): typeof WEAPONS {
+    return WEAPONS.filter((w) => w.evo && (draftState.owned[w.key] ?? 0) >= w.maxLevel && (draftState.owned[w.evo.req] ?? 0) >= 1 && !evolved.has(w.key));
+  }
 
   const handlers: HandlerMap = { restart: () => restart(), pause: () => {} };
   for (const u of DRAFT_POOL) handlers[u.effectSignal] = () => onPick(u.id);
+  for (const w of WEAPONS) if (w.evo) handlers[`evo_${w.key}`] = () => onEvo(w.key);
 
   const initial: HudState = { hp: PLAYER_DEF.maxHp, maxHp: PLAYER_DEF.maxHp, xp: 0, xpMax: LEVEL_XP, level: 1, elapsed: 0, score: 0, status: 'playing' };
   overlayHost.style.pointerEvents = 'auto';
@@ -80,15 +94,21 @@ export function mount(container: HTMLElement): () => void {
 
   // 等级上升 → 时停 + 三选一 draft（rollOffer 过滤候选·seed=level 确定性）。
   function openLevelUp(level: number): void {
+    const ready = evoReady();
     const offers = rollOffer(pool, draftState, { n: DRAFT_N, seed: level });
-    if (offers.length === 0) return; // 全满级→无候选·不停顿
+    if (offers.length === 0 && ready.length === 0) return; // 无候选也无进化→不停顿
     showingLevelUp = true;
     pauseSim();
-    const items: LevelUpOffer[] = offers.map((c) => {
+    const items: LevelUpOffer[] = [];
+    if (ready.length > 0) { // 进化就绪 → 金卡置顶（挤掉一张普通卡·保 3 张）
+      const w = ready[0];
+      items.push({ id: `evo-${w.key}`, name: WEAPON_BY_KEY[w.evo!.to].name, desc: WEAPON_BY_KEY[w.evo!.to].desc, accent: 'active', level: w.maxLevel, max: w.maxLevel, isNew: false, action: `evo_${w.key}`, isEvo: true });
+    }
+    for (const c of offers.slice(0, DRAFT_N - items.length)) {
       const u = DRAFT_POOL.find((d) => d.id === c.id)!;
       const lvl = draftState.owned[c.id] ?? 0;
-      return { id: u.id, name: u.name, desc: u.desc, accent: u.accent, level: lvl, max: u.maxLevel, isNew: lvl === 0, action: u.effectSignal };
-    });
+      items.push({ id: u.id, name: u.name, desc: u.desc, accent: u.accent, level: lvl, max: u.maxLevel, isNew: lvl === 0, action: u.effectSignal });
+    }
     hudUi.update(buildLevelUp(items), SURVIVOR_THEME);
   }
 
@@ -149,6 +169,7 @@ export function mount(container: HTMLElement): () => void {
     showingResult = false;
     showingLevelUp = false;
     prevLevel = 1;
+    evolved.clear();
     draftState = { owned: {}, slots: { weapon: { used: 0, cap: SLOT_CAP.weapon }, passive: { used: 0, cap: SLOT_CAP.passive } } };
     stopSim();
     hudUi.update(buildHud(initial), SURVIVOR_THEME);

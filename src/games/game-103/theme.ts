@@ -53,7 +53,8 @@ export type FirePattern =
   | 'beam'       // 横扫直线（快速大穿透弹·短寿命扫穿一线）
   | 'boomerang'  // 往返回旋（Launch 去 + Perception/Steering 拉回玩家）
   | 'orbit'      // 环绕光球（旋转 hub + 环上光球 child·持续贴身伤）
-  | 'pet';       // 宠物随从（跟随玩家的子体·自带 Timer+SelfRule 自动射）
+  | 'pet'        // 宠物随从（跟随玩家的子体·自带 Timer+SelfRule 自动射）
+  | 'homing';    // 追踪弹（Perception+Steering 锁敌·穿透·进化体质变）
 export interface WeaponDef {
   key: string;
   name: string;
@@ -65,21 +66,28 @@ export interface WeaponDef {
   life: number;      // 子弹寿命 tick
   radius: number;    // 判定半径（nova/orbit=范围半径）
   amount: number;    // orbit 光球数 / pet 数 / 多重发（默认 1）
-  weight: number;    // draft 加权
+  weight: number;    // draft 加权（0=不进 draft 池·进化体/起始武器）
   maxLevel: number;
   tint: number;
   skin: string;
+  // 进化（gdd §4.2·E2 重组·Lead 裁「重组」）：武器满级 + 持有 req 被动 → 满级下一次升级弹金卡·
+  // 选中即 destroy-tagged 删基础武器挂点 + Caster spawn 进化体挂点（2.5–4× + 质变）。
+  evo?: { to: string; req: string };
 }
 export const WEAPONS: WeaponDef[] = [
   { key: 'kunai', name: '飞镖 Kunai', desc: '直线飞镖·自动索敌（起始武器）', pattern: 'straight', dmg: 12, cd: 60, projSpeed: 8, life: 90, radius: 5, amount: 1, weight: 0, maxLevel: 5, tint: 0xffffff, skin: '103/proj-kunai' },
   { key: 'shock', name: '冲击波', desc: '近身范围爆·震开贴身敌群（AoE）', pattern: 'nova', dmg: 8, cd: 90, projSpeed: 0, life: 8, radius: 120, amount: 1, weight: 8, maxLevel: 5, tint: 0x7fd0ff, skin: '103/proj-shock' },
   { key: 'laser', name: '激光', desc: '高速横扫直线·穿透一线敌（远程）', pattern: 'beam', dmg: 6, cd: 110, projSpeed: 16, life: 26, radius: 8, amount: 1, weight: 7, maxLevel: 5, tint: 0xff5a4a, skin: '103/proj-laser' },
   { key: 'boom', name: '回旋镖', desc: '飞出穿透一线敌（远程·回旋段待 capgap）', pattern: 'boomerang', dmg: 5, cd: 96, projSpeed: 7, life: 120, radius: 7, amount: 1, weight: 7, maxLevel: 5, tint: 0xffd23f, skin: '103/proj-boom' },
-  { key: 'orbit', name: '护盾环', desc: '召唤环绕光球·持续灼烧贴身敌（近战）', pattern: 'orbit', dmg: 0.5, cd: 0, projSpeed: 0.045, life: 0, radius: 74, amount: 3, weight: 8, maxLevel: 3, tint: 0x7dff4d, skin: '103/proj-orbit' },
+  { key: 'orbit', name: '护盾环', desc: '召唤环绕光球·持续灼烧贴身敌（近战）', pattern: 'orbit', dmg: 0.5, cd: 0, projSpeed: 0.045, life: 0, radius: 74, amount: 3, weight: 8, maxLevel: 3, tint: 0x7dff4d, skin: '103/proj-orbit', evo: { to: 'orbitevo', req: 'blade' } },
   { key: 'pet', name: '宠物随从', desc: '召唤随从·跟随并自动索敌开火（随从）', pattern: 'pet', dmg: 9, cd: 70, projSpeed: 7, life: 80, radius: 5, amount: 1, weight: 6, maxLevel: 3, tint: 0xc9a3ff, skin: '103/proj-pet' },
+  // ── 进化体（weight 0·不进 draft 池·由进化机制生成）──
+  { key: 'orbitevo', name: '无限回环', desc: '常驻 5 枚光球·大环·灼烧翻倍（进化）', pattern: 'orbit', dmg: 1.1, cd: 0, projSpeed: 0.06, life: 0, radius: 96, amount: 5, weight: 0, maxLevel: 1, tint: 0x54e08a, skin: '103/proj-orbit' },
 ];
 export const KUNAI = WEAPONS[0]; // 起始武器（内置武器挂点）
 export const WEAPON_BY_KEY: Record<string, WeaponDef> = Object.fromEntries(WEAPONS.map((w) => [w.key, w]));
+// 每把武器一个 Tag 位（进化 destroy-tagged 按位删基础武器挂点）。位 5 起（0-4=ZONE/PLAYER/ENEMY/COLLECTOR/KILLBOX）。
+export const WEAPON_BIT: Record<string, number> = Object.fromEntries(WEAPONS.map((w, i) => [w.key, 1 << (5 + i)]));
 
 // ── 敌人定义（M1 单型=蹒跚者 E1·gdd §六）───────────────────────────────────
 export interface EnemyDef {
