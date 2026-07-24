@@ -33,6 +33,25 @@
 
 ---
 
+## owner 试玩 v2 反馈（2026-07-24 · 5 项）
+
+### VBUG-01 · Lv8 就没敌人了·应无限流 + 难度递增 · [P0·PE] · ✅ done
+- 现象：打完一批敌人、Lv8 就结束；理论上无限流、敌人越来越多、越来越硬（一发打不死）。
+- 修（PE·纯数据）：① 有限生怪表→**跟随玩家的环形 spawner**（Timer loop 永不停=无限·`ringSpawnerEntities`）；② **同屏 cap**（`GroupCount` 计活敌 → spawner `whenGlobal` 门 `enemies_alive<48`·无限但有界·防实体爆炸/卡顿）；③ **难度分层**（疾行者 25s / 胖子 55s 后经 `SelfRule.whenGlobal` clock 门加入·胖子 hp90=飞镖 7-8 发才死）。
+
+### VBUG-02 · 护盾不绕我转 · [P1·引擎] · 🔴 engine-blocked（capgap）
+- 现象：护盾环光球是静态的、不绕玩家旋转。
+- 根因（**引擎缺口**）：`hierarchy-resolve.ts:23` 明写「子本地偏移**不随父旋转旋转**（避免 sin/cos·后续刚体阶段补）」；`rotation-apply` 只把 angular 累加到 `Transform.rotation`（转朝向）、**不移动位置**。真·圆周运动 = `pos=center+r·(cos,sin)`·需 sin/cos·**sim 禁**（确定性）。→ PE 表达不了。
+- 裁向（Lead）：① hierarchy 补「本地偏移随父 rotation 旋转」（刚体阶段·`hierarchy-resolve` TODO 明写）→ 旋转 hub + 环上 child 即绕转；② 或下沉 `orbit-motion` 薄件（确定性增量旋转·免每 tick sin/cos）。**已并进 capgap**（`.apollo/cap-gaps.jsonl` + 下方 REQ 备注）。PE 侧先留静态护盾（仍造伤·观感待旋转）。
+
+### VBUG-03 · 敌人无头顶血条·看不出打了多少伤害 · [P0·PE] · ✅ done
+- 修（PE）：敌 prefab 加**头顶 `Gauge`（绑 hp·`fromParent`）** → 受击即缩短=伤害反馈可见。
+
+### VBUG-04 · 全程仍没有背景 · [P0·PE] · ✅ done
+- 修（PE·v2⑤）：世界空间 faint 点太淡→改**贯穿全场的网格线**（长细 box·横竖各一组·世界坐标）→ 相机跟随时线条卷动=清晰地面参照/相对位移。
+
+> v2 PE 三项（VBUG-01/03/04）✅ 已修·19 测绿；VBUG-02（护盾旋转）=引擎 sin/cos 缺口·已报 capgap 等 Lead。
+
 ## 分工小结（给 PE 的即刻队列）
 - **PE ✅ 已修（2026-07-24）**：BUG-04（时停·根因=`engine.stop()` 从 listener 调被 loop 末尾 `rafId=RAF(loop)` 重挂覆盖→延 microtask 修·同修局终冻结）· BUG-01（世界空间地砖网格实体·随相机卷动）· BUG-03（撤 Launch/Steering 抵消→真飞穿透·干净往返=capgap）。16 测绿。
 - **等引擎（Lead）**：BUG-02/05（群体分离 + 2D 批绘）——GD 已升级 `REQ-SURVIVOR群体`；PE 侧先降同屏 cap 缓解（后续）。

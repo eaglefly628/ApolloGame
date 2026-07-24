@@ -95,17 +95,29 @@ export interface EnemyDef {
   stopRange: number;
   tint: number;
   inTint: number;
-  gem: 'blue';      // 死亡掉落宝石类型
+  gem: string;      // 死亡掉落宝石类型（gem key）
   skin: string;
 }
 export const SHAMBLER: EnemyDef = {
   key: 'shambler', name: '蹒跚者', hp: 20, speed: 1.0, radius: 11, contact: 0.3, stopRange: 18,
   tint: TINT.enemyShambler, inTint: TINT.enemyShamblerIn, gem: 'blue', skin: '103/enemy-shambler',
 };
+// 难度分层（gdd §六·越晚出现越硬·让"一发打不死"成立）。runner=快脆·brute=慢肉（8 发才死）。
+export const RUNNER: EnemyDef = {
+  key: 'runner', name: '疾行者', hp: 30, speed: 1.9, radius: 9, contact: 0.25, stopRange: 15,
+  tint: 0xff9a1f, inTint: 0xffd6a0, gem: 'blue', skin: '103/enemy-runner',
+};
+export const BRUTE: EnemyDef = {
+  key: 'brute', name: '胖子', hp: 90, speed: 0.62, radius: 18, contact: 0.6, stopRange: 26,
+  tint: 0xc9a3ff, inTint: 0xe6ccff, gem: 'green', skin: '103/enemy-brute',
+};
+export const ENEMIES: EnemyDef[] = [SHAMBLER, RUNNER, BRUTE];
 
-// ── 宝石定义（gdd §七·蓝=1 经验）───────────────────────────────────────────
+// ── 宝石定义（gdd §七·蓝=1·绿=3 经验·肉敌掉更多）─────────────────────────
 export interface GemDef { key: string; value: number; radius: number; tint: number; skin: string }
 export const GEM_BLUE: GemDef = { key: 'blue', value: 1, radius: 6, tint: TINT.gemBlue, skin: '103/gem-blue' };
+export const GEM_GREEN: GemDef = { key: 'green', value: 3, radius: 7, tint: 0x7dff4d, skin: '103/gem-green' };
+export const GEMS: GemDef[] = [GEM_BLUE, GEM_GREEN];
 export const GEM_LIFE = 1800; // 未拾取宝石寿命 tick（30s）
 
 // ── 升级三选一（M2·draft-offer E1 已下沉·Lead 清 S2）────────────────────────
@@ -152,22 +164,30 @@ export const PASSIVE_BY_KEY: Record<string, PassiveDef> = Object.fromEntries(PAS
 // M1「单敌群」：玩家四周确定性环上逐个刷怪，做出 Survivor.io「一睁眼就被围住 + 持续加压」的张力。
 // 开局爆一圈(instant horde) + 之后半径带上稳定流。**非 E3 波次 rate/cap director**（那需 Lead 签 S2·E3）——
 // 这里只是一张更长更密的授权期常量表，无运行时限速/同屏上限逻辑。
-const GOLDEN = 2.399963; // 黄金角（rad·授权期常量·均匀铺角度·非随机）
+// 开局包围圈（一次性·环绕玩家出生点·"开屏即被围"）。
 export interface SpawnRow { at: number; x: number; y: number; key: string }
 export const SPAWNS: SpawnRow[] = (() => {
   const rows: SpawnRow[] = [];
-  const put = (at: number, ang: number, r: number): void => {
-    rows.push({ at, x: Math.round(START.x + Math.cos(ang) * r), y: Math.round(START.y + Math.sin(ang) * r), key: SHAMBLER.key });
-  };
-  // ① 开局包围圈：t≈0.5s 铺一圈（半径带 280–360）——开屏即被群围。
-  // BUG-02② PE 缓解：降同屏数量减 overdraw（16 圈 + 每 ~0.47s 一只）；2D 批绘真解=Lead/P3D 域 REQ-SURVIVOR群体。
-  const RING0 = 16;
-  for (let i = 0; i < RING0; i++) put(30, (Math.PI * 2 * i) / RING0, 280 + (i % 2) * 60);
-  // ② 持续加压流：每 ~0.47s 一只，黄金角铺满四周、半径带循环。
-  const STREAM = 90;
-  for (let i = 0; i < STREAM; i++) put(75 + i * 28, i * GOLDEN, 300 + (i % 5) * 40);
+  const RING0 = 12;
+  for (let i = 0; i < RING0; i++) {
+    const a = (Math.PI * 2 * i) / RING0;
+    rows.push({ at: 30, x: Math.round(START.x + Math.cos(a) * 320), y: Math.round(START.y + Math.sin(a) * 320), key: SHAMBLER.key });
+  }
   return rows;
 })();
+
+// ── 无限流刷怪（BUG v2③修·跟随玩家的环形 spawner·Timer loop·永不停=无限）──────
+// N 个 spawner=玩家的 Hierarchy child（散在出生环上·随玩家移动）；各 Timer(period,loop)+SelfRule 到点 spawn 敌 at:self。
+// 难度递增：分层 spawner 用 SelfRule.whenGlobal(clock>=门) 时间门——越晚，疾行者/胖子才加入（一发打不死）。
+// 全授权期纯数据（Timer+SelfRule+whenGlobal 现成能力）·非 E3 rate-cap director（那是同屏上限自适应·仍 Lead 域）。
+export interface SpawnerTier { key: string; count: number; period: number; afterSec: number } // afterSec=whenGlobal clock 门（秒）
+export const SPAWNER_RING = 360; // spawner 环半径（玩家周围·视口外缘）
+export const SPAWN_CAP = 48;     // 同屏敌上限（GroupCount 计活敌·满则 spawner 暂停）——无限但有界·防实体爆炸/卡顿
+export const SPAWNER_TIERS: SpawnerTier[] = [
+  { key: 'shambler', count: 6, period: 78, afterSec: 0 },  // 常驻弱敌流
+  { key: 'runner', count: 3, period: 132, afterSec: 25 },  // 25s 后疾行者加入
+  { key: 'brute', count: 2, period: 240, afterSec: 55 },   // 55s 后胖子加入（肉·escalation）
+];
 
 // ── 皮肤槽 key（美术就绪即换装·未就绪回退 Shape 色块·art-pipeline 红线）────────
 export const SKIN = {

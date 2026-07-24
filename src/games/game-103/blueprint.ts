@@ -24,12 +24,12 @@ import {
   cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
   steeringCapability, launchCapability, selfRuleCapability,
 } from '@skills/tier2/index.js';
-import { keybindCapability } from '@skills/tier2/index.js';
+import { keybindCapability, gaugeCapability, groupCountCapability } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
 import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
   PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, TINT,
-  PLAYER_DEF, KUNAI, WEAPONS, SHAMBLER, GEM_BLUE, GEM_LIFE, SPAWNS,
+  PLAYER_DEF, KUNAI, WEAPONS, ENEMIES, GEMS, GEM_LIFE, SPAWNS, SPAWNER_TIERS, SPAWNER_RING, SPAWN_CAP,
   LEVEL_XP, DRAFT_POOL, PASSIVE_BY_KEY, type WeaponDef, type EnemyDef, type GemDef,
 } from './theme.js';
 
@@ -130,6 +130,13 @@ function enemyTemplate(e: EnemyDef, gemTemplate: string): { entities: Record<str
         Shape: { kind: 'circle', radius: Math.round(e.radius * 0.5) },
         Color: { tint: e.inTint, alpha: 0.9 },
       },
+      hpbar: { // 头顶血条（BUG v2④修·Gauge 绑 hp·随受击缩短=伤害反馈可见）
+        Hierarchy: { parentId: '@local:body', localX: 0, localY: -(e.radius + 7), localRotation: 0, localScaleX: 1, localScaleY: 1 },
+        Transform: { ...XF0 },
+        Shape: { kind: 'box', width: e.radius * 2, height: 3 },
+        Color: { tint: 0x54e08a, alpha: 1 },
+        Gauge: { resourceId: 'hp', fromParent: true, width: e.radius * 2 },
+      },
       touch: { // 接触伤害区（隐形·连续 DPS·targetMask:PLAYER）
         Hierarchy: child('@local:body'),
         Transform: { ...XF0 },
@@ -191,26 +198,23 @@ function draftPickEntities(): Record<string, EntityBlueprint> {
   return out;
 }
 
-// BUG-01 修：世界空间地砖网格（render-only·随相机卷动→相对位移立现）。
-// 原 FIELD_BG 网格贴在宿主 div=屏幕固定·相机跟随时看着静止。这里铺世界坐标的faint 地砖点，随 Camera.offset 卷动。
+// BUG v2⑤修：世界空间地砖网格（render-only·随相机卷动→相对位移明显）。原 faint 点太淡=像没背景；
+// 改成贯穿全场的**网格线**（长细 box·横竖各一组·世界坐标），相机跟随时线条卷动=清晰的地面参照。
 function groundGridEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
-  const STEP = 200; // 地砖间距（px·世界坐标）
+  const STEP = 160; // 网格间距（px·世界坐标）
   let i = 0;
-  for (let x = STEP / 2; x < ARENA; x += STEP) {
-    for (let y = STEP / 2; y < ARENA; y += STEP) {
-      out[`grid-${i++}`] = {
-        Transform: { x, y, rotation: 0, scaleX: 1, scaleY: 1 },
-        Shape: { kind: 'box', width: 3, height: 3 },
-        Color: { tint: 0x3a4650, alpha: 0.55 }, // faint 地砖标记（zOrder 缺省最底）
-      };
-    }
+  for (let x = 0; x <= ARENA; x += STEP) {
+    out[`gridv-${i++}`] = { Transform: { x, y: ARENA / 2, rotation: 0, scaleX: 1, scaleY: 1 }, Shape: { kind: 'box', width: 2, height: ARENA }, Color: { tint: 0x2b3a48, alpha: 0.7 } };
+  }
+  for (let y = 0; y <= ARENA; y += STEP) {
+    out[`gridh-${i++}`] = { Transform: { x: ARENA / 2, y, rotation: 0, scaleX: 1, scaleY: 1 }, Shape: { kind: 'box', width: ARENA, height: 2 }, Color: { tint: 0x2b3a48, alpha: 0.7 } };
   }
   return out;
 }
 
-// ── 生怪票（授权期纯数据·Timer 到点 self-rule 展开一只怪·非 E3 rate/cap director）──
-function spawnTicketEntities(): Record<string, EntityBlueprint> {
+// ── 开局包围圈（一次性生怪票·授权期纯数据）──
+function openingBurstEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   SPAWNS.forEach((row, i) => {
     out[`spawn-${i}`] = {
@@ -226,11 +230,40 @@ function spawnTicketEntities(): Record<string, EntityBlueprint> {
   return out;
 }
 
+// ── 无限流刷怪（BUG v2③修）：跟随玩家的环形 spawner（Timer loop 永不停=无限）+ 分层时间门（难度递增）──
+function ringSpawnerEntities(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  let idx = 0;
+  for (const tier of SPAWNER_TIERS) {
+    for (let i = 0; i < tier.count; i++) {
+      const a = (Math.PI * 2 * i) / tier.count + idx * 0.7;
+      // whenGlobal 全局门（AND）：① 同屏敌 < cap（GroupCount 计数·满则暂停=无限但有界·防爆炸）② 时间门（难度递增）。
+      const gates: Array<Record<string, unknown>> = [{ kind: 'resource', id: 'enemies_alive', cmp: 'lt', value: SPAWN_CAP }];
+      if (tier.afterSec > 0) gates.push({ kind: 'resource', id: 'clock', cmp: 'gte', value: tier.afterSec });
+      const rule: Record<string, unknown> = {
+        when: { kind: 'timer', id: 'spawn', cmp: 'gte', value: Math.max(1, tier.period - 1) },
+        do: [{ kind: 'spawn', template: `enemy_${tier.key}`, at: 'self' }],
+        once: true, armed: false,
+        whenGlobal: gates.length === 1 ? gates[0] : { kind: 'and', of: gates },
+      };
+      out[`spawner-${tier.key}-${i}`] = {
+        Hierarchy: { parentId: 'player', localX: Math.round(Math.cos(a) * SPAWNER_RING), localY: Math.round(Math.sin(a) * SPAWNER_RING), localRotation: 0, localScaleX: 1, localScaleY: 1 },
+        Transform: { ...XF0 },
+        Timer: { id: 'spawn', elapsed: Math.floor((tier.period * i) / Math.max(1, tier.count)), duration: tier.period, loop: true }, // 错峰起始=不同时刻齐刷
+        SelfRule: rule,
+      };
+      idx++;
+    }
+  }
+  return out;
+}
+
 // ── 组装 ────────────────────────────────────────────────────────────────────
 export function buildBlueprint(): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {
     // ── 全局计数（各一实体一 Resource·组件模型每型一份）──
     level: { Resource: { id: 'level', current: 1, min: 1, max: 999 } },
+    'alive-count': { Resource: { id: 'enemies_alive', current: 0, min: 0, max: 9999 }, GroupCount: { countResource: 'enemies_alive', requiredTag: ENEMY } }, // 同屏活敌计数→spawner cap 门
     power: { Resource: { id: 'power', current: 1, min: 0, max: 99 } }, // 子弹伤害 = dmg × power（升级固定强化）
     clock: {
       Resource: { id: 'clock', current: 0, min: 0, max: MATCH_SECONDS },
@@ -312,8 +345,8 @@ export function buildBlueprint(): WorldBlueprint {
       PrefabLibrary: {
         seq: 0,
         templates: {
-          [`enemy_${SHAMBLER.key}`]: enemyTemplate(SHAMBLER, `gem_${SHAMBLER.gem}`),
-          [`gem_${GEM_BLUE.key}`]: gemTemplate(GEM_BLUE),
+          ...Object.fromEntries(ENEMIES.map((e) => [`enemy_${e.key}`, enemyTemplate(e, `gem_${e.gem}`)])),
+          ...Object.fromEntries(GEMS.map((g) => [`gem_${g.key}`, gemTemplate(g)])),
           // 全武器：每把一个 proj_<key>（射法模板）+ 非起始武器一个 weapon_<key>（挂点·draft 生成）。
           ...Object.fromEntries(WEAPONS.map((w) => [`proj_${w.key}`, projByPattern(w)])),
           ...Object.fromEntries(WEAPONS.filter((w) => w.key !== 'kunai').map((w) => [`weapon_${w.key}`, weaponMount(w)])),
@@ -323,7 +356,8 @@ export function buildBlueprint(): WorldBlueprint {
 
     ...groundGridEntities(),
     ...draftPickEntities(),
-    ...spawnTicketEntities(),
+    ...openingBurstEntities(),
+    ...ringSpawnerEntities(),
   };
 
   return {
@@ -334,7 +368,7 @@ export function buildBlueprint(): WorldBlueprint {
       motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
       boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
       cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
-      steeringCapability, launchCapability, selfRuleCapability, keybindCapability,
+      steeringCapability, launchCapability, selfRuleCapability, keybindCapability, gaugeCapability, groupCountCapability,
       prefabCapability, casterCapability, aggroCapability, flowCapability,
     ],
     entities,

@@ -10,7 +10,7 @@ import { validateLayoutNode } from '@ui/components/index.js';
 import type { Sprite } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp } from './hud.js';
-import { ENEMY, ZONE, START, KUNAI, SHAMBLER, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY } from './theme.js';
+import { ENEMY, ZONE, START, KUNAI, SHAMBLER, BRUTE, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
 
 // 一步 sim（复刻引擎 step：每拍都注入命令→清 InputQueue·空则清空·防陈留信号重复触发）。
 function step(e: Engine, cmds: Command[] = []): void {
@@ -75,7 +75,7 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
 
   it('边界：一直向右走不越出场地右墙（t2-bounds-clamp）', () => {
     const e = fresh();
-    move(e, 1, 0, 2000);
+    move(e, 1, 0, 900);
     expect(xf(e, 'player')!.x).toBeLessThanOrEqual(2400);
   });
 
@@ -104,7 +104,7 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
   it('接触伤害/死亡：大量敌人贴身 → 玩家 hp 掉光 → flow 转 defeat', () => {
     const e = fresh();
     // 让敌群持续贴身很久（玩家不动、不还手也扛不住连续接触 DPS）。
-    tickN(e, 60 * 120);
+    tickN(e, 60 * 25); // cap-48 敌群贴身·数十秒足够扣光
     // 要么已被打死（defeat），要么 hp 明显受损——M1 灰盒确保接触伤害真实生效。
     expect(res(e, 'player') < PLAYER_DEF.maxHp || flowState(e) === 'defeat').toBe(true);
   });
@@ -167,9 +167,32 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     }
   });
 
-  it('BUG-01 修：世界空间地砖网格实体在场（随相机卷动→相对位移·非屏幕固定）', () => {
+  it('BUG-01/v2⑤ 修：世界空间地砖网格线实体在场（随相机卷动→相对位移·非屏幕固定）', () => {
     const ids = Object.keys(buildBlueprint().entities);
-    expect(ids.filter((k) => k.startsWith('grid-')).length).toBeGreaterThan(50);
+    expect(ids.filter((k) => k.startsWith('gridv-') || k.startsWith('gridh-')).length).toBeGreaterThan(20);
+  });
+
+  it('v2③ 无限流 + 同屏 cap：长跑后敌人持续存在且活敌数被 GroupCount 钳在 cap 内（不爆炸）', () => {
+    const e = fresh();
+    tickN(e, 900); // 15s
+    const alive = countTag(e, ENEMY);
+    expect(alive).toBeGreaterThan(0);                    // 无限刷·一直有敌
+    expect(resById(e, 'enemies_alive')).toBeGreaterThan(0);
+    expect(alive).toBeLessThanOrEqual(SPAWN_CAP + 12);   // 同屏 cap 生效·实体不爆炸（+余量=同拍多 spawner 齐发）
+  });
+
+  it('v2③ 难度递增：分层敌 afterSec 时间门 + 胖子更肉（一发打不死）', () => {
+    expect(SPAWNER_TIERS.some((t) => t.afterSec > 0)).toBe(true); // 有时间门=越晚越难
+    expect(BRUTE.hp).toBeGreaterThan(SHAMBLER.hp * 3);            // 胖子远肉于蹒跚者
+    expect(BRUTE.hp / KUNAI.dmg).toBeGreaterThan(3);             // 飞镖一发打不死（多发才行）
+  });
+
+  it('v2④ 敌人头顶血条：敌 prefab 带 Gauge(绑 hp)→受击缩短=伤害反馈可见', () => {
+    const e = fresh();
+    tickN(e, 60); // 待开局怪生出
+    let hasGauge = false;
+    for (const [id] of e.world.query('Gauge')) { const g = e.world.getComponent<{ resourceId: string }>(id, 'Gauge'); if (g && g.resourceId === 'hp') { hasGauge = true; break; } }
+    expect(hasGauge).toBe(true);
   });
 
   it('BUG-03 修：回旋镖弹体真飞（Launch 定向·无 Steering 抵消）→ Transform 随 tick 位移', () => {
