@@ -3,10 +3,11 @@
 > 2026-07-23 · GD-103 出（设计侧施工序建议·非 code）。**PE 施工权威=各线手册 + 流程板**；本文只把设计映射到「哪步做什么·用哪本手册·哪个能力·门怎么过」。
 > 开工第一命令：`node scripts/game-pipeline.mjs board game-103`（看板→只做第一个非绿阶段·做完过三门再往前）。
 
-## 0. ⚠ 门禁前提（开工前必看·两条硬约束）
+## 0. ⚠ 门禁前提（开工前必看）
 
-1. **S2 capability-plan 待 Lead 签**（`REQ-SURVIVOR编排` 评审中）。**可以现在做**=S3 骨架 + 数据表 + **现有能力**接线（数据/蓝图·非新 system 代码）；**必须等 Lead 签 S2 才做**=E1–E4 编排 system（三选一 draft / 进化替换 / 波次 rate-cap director）。抢跑 E1–E4=违宪 + 审计红旗。见 §6。
+1. **✅ S2 已清（Lead 2026-07-23·`REQ-SURVIVOR编排` done）**：E1 `draft-offer` + E3 `spawn-director` **已下沉建好**（引擎侧·直接消费）；E2 进化替换 + E4 质变 flag **走现有能力重组**。**game-103 全量 M1–M3 可开工·无编排阻塞**。（旧 §6 阻塞项作废。）
 2. **形态=编译期 TS 游戏**（owner 拍板）→ 走「编译期游戏线」（art-pipeline.md·game-q 样板）；slot=`game-103` → `src/games/game-103/`、`public/games/game-103/art/`。
+3. **内容已按 Solo Survivor IO 照单全收扩展**（owner 2026-07-23）：8 武器（含宠物/弹射/诱饵）+ 远程敌 E7 + 地形/交互物 + 击杀数通关双轨 + Boss charge/basic + 装备 meta——见 `gdd.md` + `reference-solo-survivor-io.md`。**M1–M2 仍先做核心 5 武器 + 近战群 + 空场**（保雪球验证）；融合扩展排 M3–M4（能力薄缺口走 capgap）。
 
 ## 1. 开工必读（按序·每本 ≤80 行）
 
@@ -69,8 +70,11 @@ scripts/game-103-art-derive.mjs   台账推导（game-q 样板）
 scripts/game-103-balance-sim.mjs  数值 sim（GD 分析工具·balance-design §9）
 ```
 
-## 6. 🔒 阻塞项（等 Lead 签 S2·别抢跑）
-E1 三选一 draft（过滤候选+offer N 选 1）· E2 进化条件替换 · E3 波次 rate/cap director · E4 pull 等质变 flag。**Lead 裁「重组 vs 下沉」后**：重组的 GD 照写数据、下沉件 Lead 出 spec→Opus 施工。PE **勿在游戏层自写这些编排 system**（审计红线）。进度详见 `requests.md REQ-SURVIVOR编排`。
+## 6. ✅ 编排能力（已解除·Lead 2026-07-23 裁决）
+- E1 三选一 draft → **消费引擎 `draft-offer`**（已下沉·别在游戏层自写过滤/抽取循环）。
+- E3 波次 rate/cap 动态调度 → **消费引擎 `spawn-director`**（已下沉·击杀数模式的动态调频也用它）。
+- E2 进化替换 / E4 质变 flag（homing/fan/pull）→ **走现有能力重组**（event-when 条件门 + merge-rule/prefab 替换；steering/aggro/launch）。
+- 融合 M3–M4 薄缺口（弹射 bounce·诱饵 aggro 重定向·boss telegraph）→ 届时走 capgap 快速通道，别自造。
 
 ## 7. GD 待办（不阻塞 PE 起步·并行补）
 - **S4 验收剧本 ≥3 场景**（`docs/design/game-103/acceptance/`·纯数据 seed+操作+逐步期望·剧本作者=GD·PE 修码不改剧本）——GD 下一交付。

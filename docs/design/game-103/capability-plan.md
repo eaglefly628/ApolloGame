@@ -65,7 +65,8 @@
 | **E3 波次刷怪调度** | 时间门=`t2-event-when`（时间/资源条件→信号）✅ + `spawn` 原子逐个生成 ✅；**但 spawn 是单发·无 rate（每秒 N）/cap（同屏上限）** | **薄缺口** → 下沉 `spawn-director`（限速+同屏上限+按波表调度）；或 `timer(period)`+存活计数重组，Lead 定 |
 | **E4 进化质变 flag** | homing=`t2-steering`+`t3-aggro` ✅；fan=`Launch.amount>1` ✅；pull=反向 steering/吸引（待核） | 多数可重组·逐个核 describe；真缺口（如 pull 吸附）单独走 capgap |
 
-> **结论**：请 Lead 评审 `REQ-SURVIVOR编排`——回驳能重组的（E4 大半、E2 若 merge-rule 适配），只下沉真薄缺口（E1 `draft-offer`、E3 `spawn-director`、E2 换模板动作若缺）。**下沉件属引擎域·Lead/Opus 施工·GD 不碰代码；过审前不写任何游戏层 system。**
+> **✅ Lead 裁决（2026-07-23·`REQ-SURVIVOR编排` done）**：E1 `draft-offer` + E3 `spawn-director` **已下沉建好+测**（引擎侧）；E2 进化替换 + E4 质变 flag **回驳=走现有能力重组**；**game-103 可开工**。→ S2 门禁清除，PE 可做全量 M1–M3（不再有编排阻塞）。
+> **融合新机制（Solo Survivor IO·照单全收）的能力**：宠物/弹射/诱饵/远程敌/地形/交互物/Boss telegraph/击杀数模式——多数重组现有能力（`t3-prefab`/`t3-aggro`/`t2-launch`/`t2-pathfind`/`t2-trigger-zone`/`t2-event-when`），真薄缺口（弹射 bounce·诱饵 aggro 重定向·boss 红光预警）属 **M3–M4**，届时走 capgap 快速通道，详见 `reference-solo-survivor-io.md §3`。
 > 未列进本表的游戏层自由代码=违规。审计红旗（裸 Math.random / innerHTML / createElement / 零能力接入 / 零测试）不接受申请为例外。
 
 ## 4.5 美术接入
@@ -83,4 +84,5 @@
 
 - 提交人 / 日期：GD-103 / 2026-07-23
 - owner 拍板（2026-07-23）：形态=编译期 TS 游戏；slot=game-103；§4 编排下沉新能力交 Lead。
-- Lead 裁决：⬜ 待审（焦点=§4 三处编排 `REQ-SURVIVOR编排` 重组 vs 下沉哪几处薄缺口；及 §5 实时确定性/实体规模风险）
+- **Lead 裁决：✅ done（2026-07-23·`REQ-SURVIVOR编排`）**——E1 draft-offer + E3 spawn-director 已下沉；E2/E4 回驳走重组；**game-103 可开工**。§5 实时确定性/实体规模风险=PE 原型早验证（pe-handoff）。
+- 融合扩展（Solo Survivor IO·owner 2026-07-23 照单全收）：内容见 `reference-solo-survivor-io.md`；M3–M4 能力缺口走 capgap。
