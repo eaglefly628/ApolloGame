@@ -31,11 +31,12 @@ export function buildS1Live(state: S1State): LayoutNode {
   // 板格：取原格 layout 作模板（保观感一致），按 state.cells 重建 63 格。
   const grid = find(tree, 'board-grid');
   if (grid) {
-    const tmpl = (grid.children?.[0]?.layout ?? { align: 'center', justify: 'center', padding: 6, radius: 12, height: 154 }) as Record<string, unknown>;
+    // 比例对齐设计稿：格子填满屏（height≈150·9 行铺满板·无留白）、物品小巧（size 74≈占格 50%·非填满）。
+    const cellLayout = { align: 'center', justify: 'center', padding: 4, radius: 16, height: 150 };
     grid.children = state.cells.map((cv, i) => {
       const props: Record<string, unknown> = cv?.gen ? { bg: 'gold', action: `tap_${cv.gen}` } : { bg: 'panel' };
-      const kids: Node[] = cv ? [{ type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: 96 } }] : [];
-      return { type: 'Panel', id: `t-live-${i}`, props, layout: { ...tmpl }, children: kids } as Node;
+      const kids: Node[] = cv ? [{ type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: 74 } }] : [];
+      return { type: 'Panel', id: `t-live-${i}`, props, layout: { ...cellLayout }, children: kids } as Node;
     });
   }
 
