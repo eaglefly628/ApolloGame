@@ -20,7 +20,8 @@ GD 阶段**只产 `docs/design/game102/` 文档**、**不改 `src/launcher.tsx`*
 - **UI 布局设计稿**：✅ `ui-layout-spec.html`（四屏·映射真实 LayoutNode 控件·零新控件需求·交 PUI 作 .dc.html/LayoutNode 1:1 基准）
 - 可玩核心玩法参考原型：✅ `prototype.html`（像素画棋盘+钥匙+弹药20·实机校准·非引擎游戏代码）
 - **PE 开工 handoff**：✅ `pe-handoff.md`（单文件入口·数据 schema + manifest 装配 + 能力接线 + 八阶段清单·从 S3 开工）
-- **S4 验收剧本**：✅ `acceptance/`（5 份 `.scenario.jsonc` + README·GD 出·>门槛3·PE 只写适配器不改剧本）
+- **S4 验收剧本**：✅ `acceptance/`（8 份 `.scenario.jsonc` + README·GD 出·PE 只写适配器不改剧本）
+- **特殊炮 spec**：✅ `special-cannons.md`（owner 2026-07-24 拍板：彩虹🌈+连锁🔗+激光⚡手动·追加补给区·可强制激活）→ 工单 REQ-G102-SPECIAL(PE) / REQ-G102-UI-2(PUI)
 - **下一步（可派工开工）**：① **PE** 读 `pe-handoff.md` 从 **S3 骨架关**开工（`board game102`）；② **PUI** 据 `ui-layout-spec.html` 出 .dc.html + LayoutNode（工单 REQ-G102-UI）；两线可并行
 
 ## 角色与边界（CLAUDE.md）

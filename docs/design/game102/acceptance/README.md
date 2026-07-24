@@ -11,8 +11,13 @@
 | 动作 | 语义 |
 |---|---|
 | `tapSupply:<color>` | 点补给区该色 → 生成色炮上传送带（= 1 个 move）|
+| `tapSupply:rainbow` / `tapSupply:chain` | 部署已强制激活的**自动特殊炮**（彩虹/连锁·须先 `grant`）|
+| `useSpecial:laser` | 激活**激光炮**手动瞄准态（须先 `grant`）|
+| `aim:col:<i>` / `aim:row:<i>` | 瞄准态下选中该列/行并发射激光 |
 | `tapSlot:<i>` | 点第 i 个待命槽 → 该炮重装满弹药回传送带 |
 | `tick:<n>` | 推进 n tick（让传送带移动 + 发射/消除结算完成）|
+
+> **特殊炮强制激活**：关卡 `grant` 字段（如 `"grant": {"rainbow":1,"chain":1,"laser":1}`）在本局把特殊炮追加进补给区特殊炮区（= authoring 侧 `grant()`·spec special-cannons.md §0）。
 
 > 「fast 连发」= 同一 step 内多个 `tapSupply`（同 tick·落在 BURST_WINDOW 内）→ 触发突破态。
 
@@ -38,6 +43,9 @@
 | `03-keys-open-door` | 20103 | 钥匙收集 → 集齐开门 → 过关（§3.4）| 钥匙不计数 / 门不判达标 → doorOpen/victory 不成立 |
 | `04-burst-over-cap` | 20104 | 快连突破容量 5→10（§3.5）| 突破态不切容量 → conveyor.count 被卡在 5 |
 | `05-out-of-moves-defeat` | 20105 | 限额用尽仍有像素 → 判负（§3.5）| 负判缺失 → flow 不为 defeat |
+| `06-rainbow-any-color` | 20106 | 彩虹炮命中**任意色**（special-cannons §1）| matchAny 失效 → 异色 remain 不降 |
+| `07-chain-flood` | 20107 | 连锁炮一发清**连通同色区**（§2）| 去 flood 传播 → 只清命中 1 格·remain 剩一片 |
+| `08-laser-line-manual` | 20108 | 激光**手动瞄准**清整列同色（§3）| aim/清列失效 → 该列同色不归零 |
 
 - 全部用固定 seed（种子 PRNG 保同轨）；断言取**聚合计数**（`remain.<color>`）而非具体格，规避「多同色目标随机选中」的非确定性。
 - 每份剧本头注列「对抗目标」——改坏对应被测逻辑时哪条断言会变红（假信心自查）。

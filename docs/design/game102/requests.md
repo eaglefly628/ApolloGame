@@ -7,6 +7,17 @@
 
 ## 待处理 / 进行中
 
+### REQ-G102-SPECIAL · 特殊炮三门（彩虹/连锁/激光）· [2026-07-24] · GD 提 → **PE** · status: **open** · 优先级: P1 · 类型: 玩法扩展
+> **spec**：`docs/design/game102/special-cannons.md`（owner 2026-07-24 拍板三选）。验收剧本 `acceptance/06~08`（GD 已出）。
+> **① 彩虹炮 🌈**：`matchAny` 标·命中任意色——**纯数据组合·无下沉**，直接做。
+> **② 连锁炮 🔗**：连通同色 flood 消除——**先试 event-when 级联组合**；实证撞墙（无邻接连通解释器）→ 回本表报缺口，候选下沉 `flood-clear`（附最小复现+已试拼法·Lead 裁·**裁前不游戏层自写 flood**）。
+> **③ 激光炮 ⚡（手动触发）**：手动 aim 态 → 选行/列 → 清该线同色——**先试 clickable+action+Flag 组合**；撞墙 → 报缺口候选 `aim-target` 输入能力。UI 侧瞄准高亮/热区归属与 PUI 会审。
+> **通用**：强制激活来源/掉率/数值全 config（special-cannons §0/§5）；特殊炮=一次性稀有道具·追加补给区特殊炮区。
+> **边界**：本单=PE play-field/逻辑；补给区特殊炮槽 UI=PUI（REQ-G102-UI-2）。撞墙走缺口通道·守 Lead 裁①。
+
+### REQ-G102-UI-2 · 补给区「特殊炮区」+ 激光瞄准 overlay · [2026-07-24] · GD 提 → **PUI** · status: **open** · 优先级: P2 · 类型: UI 增量
+> 承 REQ-G102-UI（已 done）。据 special-cannons §4：① 补给区常规色炮**之后**追加「特殊炮区」（每门一槽·稀有色边 + 数量 `Badge`·可点）；② 激光手动瞄准态的**行/列高亮 overlay + 热区**（LayoutNode overlay vs render 高亮·与 PE 会审归属）。控件优先闭集内（Badge/Panel/Button）·缺则报缺口不手写。
+
 ### REQ-G102-TILEMAP-VERDICT · S3 tilemap 适配核对回执（PE 落地实证）· [2026-07-24] · PE 提 → 存档 · status: **✅ done（组合表达·无引擎缺口）** · 优先级: P1 · 类型: 适配核对
 > **背景**：pe-handoff §2 待验 + Lead 裁①实机校准补充——「位图棋盘倾向 `tilemap`，PE 落地核对适配度，不合再报缺口」。
 > **实证结论：`t2-tilemap` 不适配中央「可消除像素画棋盘」——但这不是引擎缺口，改用现有实体路线即可（零下沉·守 Lead 裁①）。**
