@@ -1,0 +1,815 @@
+{
+  "version": 1,
+  "game": "game101",
+  "mode": "requirements",
+  "count": 26,
+  "instances": 26,
+  "rows": [
+    {
+      "skinKey": "item_coffee_1",
+      "no": "art-01",
+      "desc": "coffee body, rectangular shape, main color #a9744f, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:coffee_1:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "coffee body",
+      "placeholder": {
+        "current": "皮肤槽 item_coffee_1（未填时回退 2D 色块 box·#a9744f）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:coffee_1:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_1（未填时回退 2D 色块 box·#a9744f）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_coffee_2",
+      "no": "art-02",
+      "desc": "coffee body, rectangular shape, main color #b58767, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:coffee_2:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "coffee body",
+      "placeholder": {
+        "current": "皮肤槽 item_coffee_2（未填时回退 2D 色块 box·#b58767）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:coffee_2:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_2（未填时回退 2D 色块 box·#b58767）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_coffee_3",
+      "no": "art-03",
+      "desc": "coffee body, rectangular shape, main color #c19a7f, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:coffee_3:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "coffee body",
+      "placeholder": {
+        "current": "皮肤槽 item_coffee_3（未填时回退 2D 色块 box·#c19a7f）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:coffee_3:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_3（未填时回退 2D 色块 box·#c19a7f）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_coffee_4",
+      "no": "art-04",
+      "desc": "coffee body, rectangular shape, main color #ccad98, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:coffee_4:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "coffee body",
+      "placeholder": {
+        "current": "皮肤槽 item_coffee_4（未填时回退 2D 色块 box·#ccad98）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:coffee_4:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_4（未填时回退 2D 色块 box·#ccad98）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_coffee_5",
+      "no": "art-05",
+      "desc": "coffee body, rectangular shape, main color #d8c0b0, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:coffee_5:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "coffee body",
+      "placeholder": {
+        "current": "皮肤槽 item_coffee_5（未填时回退 2D 色块 box·#d8c0b0）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:coffee_5:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_5（未填时回退 2D 色块 box·#d8c0b0）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_fish_1",
+      "no": "art-06",
+      "desc": "fish body, rectangular shape, main color #4da6ff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:fish_1:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "fish body",
+      "placeholder": {
+        "current": "皮肤槽 item_fish_1（未填时回退 2D 色块 box·#4da6ff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:fish_1:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_1（未填时回退 2D 色块 box·#4da6ff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_fish_2",
+      "no": "art-07",
+      "desc": "fish body, rectangular shape, main color #61b0ff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:fish_2:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "fish body",
+      "placeholder": {
+        "current": "皮肤槽 item_fish_2（未填时回退 2D 色块 box·#61b0ff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:fish_2:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_2（未填时回退 2D 色块 box·#61b0ff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_fish_3",
+      "no": "art-08",
+      "desc": "fish body, rectangular shape, main color #74baff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:fish_3:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "fish body",
+      "placeholder": {
+        "current": "皮肤槽 item_fish_3（未填时回退 2D 色块 box·#74baff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:fish_3:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_3（未填时回退 2D 色块 box·#74baff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_fish_4",
+      "no": "art-09",
+      "desc": "fish body, rectangular shape, main color #88c3ff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:fish_4:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "fish body",
+      "placeholder": {
+        "current": "皮肤槽 item_fish_4（未填时回退 2D 色块 box·#88c3ff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:fish_4:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_4（未填时回退 2D 色块 box·#88c3ff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_fish_5",
+      "no": "art-10",
+      "desc": "fish body, rectangular shape, main color #9bcdff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:fish_5:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "fish body",
+      "placeholder": {
+        "current": "皮肤槽 item_fish_5（未填时回退 2D 色块 box·#9bcdff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:fish_5:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_5（未填时回退 2D 色块 box·#9bcdff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_fish_6",
+      "no": "art-11",
+      "desc": "fish body, rectangular shape, main color #afd7ff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:fish_6:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "fish body",
+      "placeholder": {
+        "current": "皮肤槽 item_fish_6（未填时回退 2D 色块 box·#afd7ff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:fish_6:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_6（未填时回退 2D 色块 box·#afd7ff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_food_1",
+      "no": "art-12",
+      "desc": "food body, rectangular shape, main color #ff6b6b, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:food_1:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "food body",
+      "placeholder": {
+        "current": "皮肤槽 item_food_1（未填时回退 2D 色块 box·#ff6b6b）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:food_1:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_1（未填时回退 2D 色块 box·#ff6b6b）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_food_2",
+      "no": "art-13",
+      "desc": "food body, rectangular shape, main color #ff7b7b, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:food_2:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "food body",
+      "placeholder": {
+        "current": "皮肤槽 item_food_2（未填时回退 2D 色块 box·#ff7b7b）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:food_2:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_2（未填时回退 2D 色块 box·#ff7b7b）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_food_3",
+      "no": "art-14",
+      "desc": "food body, rectangular shape, main color #ff8c8c, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:food_3:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "food body",
+      "placeholder": {
+        "current": "皮肤槽 item_food_3（未填时回退 2D 色块 box·#ff8c8c）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:food_3:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_3（未填时回退 2D 色块 box·#ff8c8c）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_food_4",
+      "no": "art-15",
+      "desc": "food body, rectangular shape, main color #ff9c9c, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:food_4:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "food body",
+      "placeholder": {
+        "current": "皮肤槽 item_food_4（未填时回退 2D 色块 box·#ff9c9c）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:food_4:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_4（未填时回退 2D 色块 box·#ff9c9c）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_food_5",
+      "no": "art-16",
+      "desc": "food body, rectangular shape, main color #ffacac, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:food_5:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "food body",
+      "placeholder": {
+        "current": "皮肤槽 item_food_5（未填时回退 2D 色块 box·#ffacac）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:food_5:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_5（未填时回退 2D 色块 box·#ffacac）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_food_6",
+      "no": "art-17",
+      "desc": "food body, rectangular shape, main color #ffbcbc, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:food_6:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "food body",
+      "placeholder": {
+        "current": "皮肤槽 item_food_6（未填时回退 2D 色块 box·#ffbcbc）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:food_6:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_6（未填时回退 2D 色块 box·#ffbcbc）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_fries_1",
+      "no": "art-18",
+      "desc": "fries body, rectangular shape, main color #f4c04d, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:fries_1:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "fries body",
+      "placeholder": {
+        "current": "皮肤槽 item_fries_1（未填时回退 2D 色块 box·#f4c04d）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:fries_1:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「fries body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fries_1（未填时回退 2D 色块 box·#f4c04d）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_fries_2",
+      "no": "art-19",
+      "desc": "fries body, rectangular shape, main color #f6cc6e, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:fries_2:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "fries body",
+      "placeholder": {
+        "current": "皮肤槽 item_fries_2（未填时回退 2D 色块 box·#f6cc6e）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:fries_2:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「fries body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fries_2（未填时回退 2D 色块 box·#f6cc6e）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_fries_3",
+      "no": "art-20",
+      "desc": "fries body, rectangular shape, main color #f8d78e, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:fries_3:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "fries body",
+      "placeholder": {
+        "current": "皮肤槽 item_fries_3（未填时回退 2D 色块 box·#f8d78e）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:fries_3:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「fries body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fries_3（未填时回退 2D 色块 box·#f8d78e）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_fries_4",
+      "no": "art-21",
+      "desc": "fries body, rectangular shape, main color #fae3af, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:fries_4:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "fries body",
+      "placeholder": {
+        "current": "皮肤槽 item_fries_4（未填时回退 2D 色块 box·#fae3af）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:fries_4:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「fries body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fries_4（未填时回退 2D 色块 box·#fae3af）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_tool_1",
+      "no": "art-22",
+      "desc": "tool body, rectangular shape, main color #9b8cff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:tool_1:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "tool body",
+      "placeholder": {
+        "current": "皮肤槽 item_tool_1（未填时回退 2D 色块 box·#9b8cff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:tool_1:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_1（未填时回退 2D 色块 box·#9b8cff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_tool_2",
+      "no": "art-23",
+      "desc": "tool body, rectangular shape, main color #a99cff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:tool_2:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "tool body",
+      "placeholder": {
+        "current": "皮肤槽 item_tool_2（未填时回退 2D 色块 box·#a99cff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:tool_2:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_2（未填时回退 2D 色块 box·#a99cff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_tool_3",
+      "no": "art-24",
+      "desc": "tool body, rectangular shape, main color #b7acff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:tool_3:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "tool body",
+      "placeholder": {
+        "current": "皮肤槽 item_tool_3（未填时回退 2D 色块 box·#b7acff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:tool_3:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_3（未填时回退 2D 色块 box·#b7acff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_tool_4",
+      "no": "art-25",
+      "desc": "tool body, rectangular shape, main color #c4bbff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:tool_4:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "tool body",
+      "placeholder": {
+        "current": "皮肤槽 item_tool_4（未填时回退 2D 色块 box·#c4bbff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:tool_4:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_4（未填时回退 2D 色块 box·#c4bbff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "item_tool_5",
+      "no": "art-26",
+      "desc": "tool body, rectangular shape, main color #d2cbff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:tool_5:body",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "tool body",
+      "placeholder": {
+        "current": "皮肤槽 item_tool_5（未填时回退 2D 色块 box·#d2cbff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:tool_5:body"
+        ]
+      },
+      "spec": {
+        "w": 84,
+        "h": 84,
+        "displayW": 84,
+        "displayH": 84,
+        "transparent": true
+      },
+      "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_5（未填时回退 2D 色块 box·#d2cbff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    }
+  ]
+}
