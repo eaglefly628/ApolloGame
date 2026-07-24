@@ -1,0 +1,110 @@
+{
+ "version": 1,
+ "assets": [
+  {
+   "id": "103/player",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/player.png",
+   "description": "玩家角色（俯视人形英雄）· Dungeon Crawl human player tile",
+   "spec": {
+    "format": "png",
+    "usage": "sprite"
+   },
+   "category": "sprite.character",
+   "tags": [
+    "player",
+    "hero",
+    "human",
+    "top-down",
+    "character"
+   ],
+   "license": "CC0",
+   "source": "FreeArtLib (Dungeon Crawl Stone Soup 32x32 tiles · https://opengameart.org/content/dungeon-crawl-32x32-tiles) · monster/human.png",
+   "provenance": {
+    "generator": "vendor-copy",
+    "source": "assets/FreeArtLib/monster/human.png",
+    "mock": false
+   }
+  },
+  {
+   "id": "103/enemy-shambler",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/enemy-shambler.png",
+   "description": "敌人「蹒跚者」（褐色软泥·丧尸类群怪）· Dungeon Crawl brown ooze tile",
+   "spec": {
+    "format": "png",
+    "usage": "sprite"
+   },
+   "category": "sprite.enemy",
+   "tags": [
+    "enemy",
+    "shambler",
+    "ooze",
+    "undead",
+    "top-down"
+   ],
+   "license": "CC0",
+   "source": "FreeArtLib (Dungeon Crawl Stone Soup 32x32 tiles · https://opengameart.org/content/dungeon-crawl-32x32-tiles) · monster/brown_ooze.png",
+   "provenance": {
+    "generator": "vendor-copy",
+    "source": "assets/FreeArtLib/monster/brown_ooze.png",
+    "mock": false
+   }
+  },
+  {
+   "id": "103/gem-blue",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/gem-blue.png",
+   "description": "蓝色经验宝石（掉落物·小）· Dungeon Crawl crystal tile",
+   "spec": {
+    "format": "png",
+    "usage": "sprite"
+   },
+   "category": "sprite.pickup",
+   "tags": [
+    "gem",
+    "crystal",
+    "xp",
+    "pickup",
+    "blue",
+    "top-down"
+   ],
+   "license": "CC0",
+   "source": "FreeArtLib (Dungeon Crawl Stone Soup 32x32 tiles · https://opengameart.org/content/dungeon-crawl-32x32-tiles) · item/misc/misc_crystal_new.png",
+   "provenance": {
+    "generator": "vendor-copy",
+    "source": "assets/FreeArtLib/item/misc/misc_crystal_new.png",
+    "mock": false
+   }
+  },
+  {
+   "id": "103/proj-kunai",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/proj-kunai.png",
+   "description": "飞镖/子弹（横向飞行物）· Dungeon Crawl arrow effect tile",
+   "spec": {
+    "format": "png",
+    "usage": "sprite"
+   },
+   "category": "sprite.projectile",
+   "tags": [
+    "projectile",
+    "kunai",
+    "dart",
+    "arrow",
+    "top-down"
+   ],
+   "license": "CC0",
+   "source": "FreeArtLib (Dungeon Crawl Stone Soup 32x32 tiles · https://opengameart.org/content/dungeon-crawl-32x32-tiles) · effect/arrow_0.png",
+   "provenance": {
+    "generator": "vendor-copy",
+    "source": "assets/FreeArtLib/effect/arrow_0.png",
+    "mock": false
+   }
+  }
+ ]
+}
