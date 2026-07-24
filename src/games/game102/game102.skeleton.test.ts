@@ -9,19 +9,20 @@ import { LEVEL_1 } from './levels.js';
 const res = (e: Engine, entityId: string): number =>
   e.world.getComponent<Resource>(entityId, 'Resource')?.current ?? NaN;
 
-// L1 位图逐色像素块统计（断言用·手数）。
-function paintedByColor(): { green: number; orange: number; red: number; total: number } {
-  const acc = { green: 0, orange: 0, red: 0, total: 0 };
-  const names = ['green', 'orange', 'red'] as const;
+// L1 位图逐色像素块统计（断言用·palette 通用·index 对齐 LEVEL_1.palette）。
+function paintedByColor(): { byName: Record<string, number>; total: number } {
+  const byName: Record<string, number> = {};
+  for (const n of LEVEL_1.palette) byName[n] = 0;
+  let total = 0;
   for (const row of LEVEL_1.bitmap) {
     for (const ch of row) {
       if (ch === '.') continue;
       const idx = Number(ch);
-      if (Number.isNaN(idx)) continue;
-      acc[names[idx]]++; acc.total++;
+      if (Number.isNaN(idx) || !LEVEL_1.palette[idx]) continue;
+      byName[LEVEL_1.palette[idx]]++; total++;
     }
   }
-  return acc;
+  return { byName, total };
 }
 
 describe('Game 102 · Pixel Pour（S3 骨架关）', () => {
@@ -45,6 +46,8 @@ describe('Game 102 · Pixel Pour（S3 骨架关）', () => {
     const bp = buildBlueprint();
     const cellIds = Object.keys(bp.entities).filter((k) => k.startsWith('cell-'));
     expect(cellIds.length).toBe(paintedByColor().total);
+    // 满格像素画：无 '.' 空格 → 格数 = cols×rows。
+    expect(cellIds.length).toBe(LEVEL_1.cols * LEVEL_1.rows);
   });
 
   it('真引擎 load + 2tick 空跑不崩（能存必须能跑）', () => {
@@ -57,10 +60,10 @@ describe('Game 102 · Pixel Pour（S3 骨架关）', () => {
     const e = new Engine();
     e.load(buildBlueprint());
     e.world.tick(); e.world.tick();
-    const p = paintedByColor();
-    expect(res(e, 'remain-green')).toBe(p.green);
-    expect(res(e, 'remain-orange')).toBe(p.orange);
-    expect(res(e, 'remain-red')).toBe(p.red);
+    const { byName } = paintedByColor();
+    for (const name of LEVEL_1.palette) {
+      expect(res(e, `remain-${name}`)).toBe(byName[name]);
+    }
   });
 
   it('确定性：同 seed 两次装载 tick 后 hash 一致（lockstep-safe）', () => {
