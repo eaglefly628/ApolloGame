@@ -33,7 +33,8 @@ Merge-2 合并板 + 视觉小说剧情 Meta 的休闲复刻（对标 **Gossip Ha
 
 ## 2.5 缺口（需确认能否组合表达，否则**下沉成通用能力**·非 game101 私有 system）
 
-> 遵 manifesto §4：先重组现有能力；表达不了才下沉成通用、可复用、审计过的 capability（加在引擎，不在游戏层写 system）。以下 4 项请 Lead 裁"①组合表达 / ②下沉通用能力 / ③游戏层例外"。
+> 遵 manifesto §4：先重组现有能力；表达不了才下沉成通用、可复用、审计过的 capability（加在引擎，不在游戏层写 system）。请 Lead 裁"①组合表达 / ②下沉通用能力 / ③游戏层例外"。
+> **状态**：**G1–G4 已过审**（§6 Lead 裁决 2026-07-23·全组合/撞墙下沉）；**G5 为 systems-economy 后补**（棋盘态 DDA·§6 未覆盖）。
 
 | # | 缺口 | 倾向方案 | 待 Lead 裁 |
 |---|---|---|---|
@@ -41,7 +42,9 @@ Merge-2 合并板 + 视觉小说剧情 Meta 的休闲复刻（对标 **Gossip Ha
 | G2 | **订单交付 = 消耗棋盘上某模板的一个实例 → 发奖**（普查/消耗棋盘实例） | `drop-zone`+`craft-recipe`（消耗输入实例→产出资源增量）。需确认 craft-recipe 能消耗"带 PrefabOrigin 的棋盘实例"并产出"资源"。否则下沉通用 `order-fulfill` | ？ |
 | G3 | **泡泡（气泡锁）金币购买**：新产出物 locked；点泡泡→**扣金币**（按等级 `bubbles.json`）→清锁才可合并/拖动（owner 金币回收出口） | `f2-flag`(locked)+`clickable`+`resource-apply`(扣金币·不足则拒)。需确认 `merge-rule`/`drag-place` 尊重 locked flag。若不尊重 → 提 requests 让相关能力读该 flag | ？ |
 | G4 | **生成器冷却 CD** + **产能条** + **次数劣化 charges**（systems-economy §2·生成器有限点击次数·升级设新 charge） | `timer-advance`（CD/恢复）+`f1-resource`（每实例 charges 局部资源·点一次 -1）+`merge-rule`(升级 intoOverrides 设新 charge)。倾向组合表达 | ？ |
-| G5 | **订单导演 order-director**（systems-economy §4-B·棋盘态自适应发单 DDA·读 census+规则权重→确定性选单） | 游戏层自写=虚胖数据(禁)。**倾向下沉通用 `order-director` capability**（census 输入·确定性·可回放）；本期先用「情绪曲线数据模板」(orderRhythm·不读棋盘)替代·对抗性卡点延后 | ？ |
+| G5 | **订单导演 order-director**（systems-economy §4-B·棋盘态自适应发单 DDA·读 census+规则权重→确定性选单） | 游戏层自写=虚胖数据(禁)。**倾向下沉通用 `order-director` capability**（census 输入·确定性·可回放）；本期先用「情绪曲线数据模板」(orderRhythm·不读棋盘)替代·对抗性卡点延后 | ⏸ 延后·不阻塞 M1 |
+
+> **G5 口径**：G5 是 §6 Lead 过审**之后**的后补缺口，**本期延后**——M1 用「情绪曲线数据模板」(`orderRhythm`·不读棋盘·现有 event-when/计数即可)，**不触发 G5**、不阻塞开工；若后续做棋盘态自适应 DDA，再单独报 Lead 评估下沉 `order-director`。
 
 ## 3. 摆成数据的规则面
 
