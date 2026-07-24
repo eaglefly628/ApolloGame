@@ -1,0 +1,13 @@
+{
+  "board": { "cols": 7, "rows": 9 },
+  "mergeNeed": 2,
+  "startEnergy": 100,
+  "startCoins": 0,
+  "startStars": 0,
+  "startExp": 0,
+  "seedItems": [
+    { "item": "food_1", "count": 2 },
+    { "item": "fish_1", "count": 2 },
+    { "item": "coffee_1", "count": 2 }
+  ]
+}

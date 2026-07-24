@@ -1,0 +1,6 @@
+{
+  "cap": 100,
+  "regenPerTick": 1,
+  "regenIntervalSec": 120,
+  "overcapAllowed": true
+}
