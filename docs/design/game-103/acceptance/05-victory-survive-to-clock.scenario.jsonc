@@ -1,0 +1,21 @@
+// GD-103 验收剧本 ⑤ · 胜负判定·胜：活满单局时长 → status=victory（gdd §九）。
+//   ⚠ 需 adapter 支持 config:{matchSeconds} 缩短单局（否则要 tick 到 54000=15min·CI 太重）。
+//   PE 若暂不接 config → 本剧本标 skip，以 01–04（≥3）过 S4 门；config 接上再纳入（README §config 依赖）。
+//   config.matchSeconds=8 → tick 8×60+缓冲=520 拍后应判胜（clock≥8 且 status=victory）。
+// 对抗目标（改坏被测逻辑应变红）：
+//   · 活满不判胜（flow victory 门失效）→ status 断言红。
+//   · clock 达标提前/滞后（胜判阈值口径错）→ clock/status 断言红。
+{
+  "name": "胜·活满时长判 victory",
+  "game": "game-103",
+  "seed": 7,
+  "config": { "matchSeconds": 8 },
+  "steps": [
+    { "expect": [ { "sv": "status", "eq": "playing" } ] },
+    { "tick": 520 },
+    { "expect": [
+      { "res": "clock", "gte": 8 },
+      { "sv": "status", "eq": "victory" },
+    ] },
+  ],
+}

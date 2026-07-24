@@ -1,0 +1,22 @@
+// GD-103 验收剧本 ③ · 存活计时：clock 每秒+1 稳定推进、开局可活（gdd §九）。
+//   10s(600 tick) 后 clock≥9（容 1 拍误差）、玩家仍活（hp≥1）、局态 playing。
+// 对抗目标（改坏被测逻辑应变红）：
+//   · clock 不随时间推进（over-time +1/s 断线）→ clock 断言红。
+//   · 开局秒死（难度失衡）→ hp / status 断言红。
+{
+  "name": "存活·计时推进且开局可活",
+  "game": "game-103",
+  "seed": 7,
+  "steps": [
+    { "expect": [
+      { "res": "clock", "eq": 0 },
+      { "sv": "status", "eq": "playing" },
+    ] },
+    { "tick": 600 },
+    { "expect": [
+      { "res": "clock", "gte": 9 },
+      { "res": "hp", "gte": 1 },
+      { "sv": "status", "eq": "playing" },
+    ] },
+  ],
+}

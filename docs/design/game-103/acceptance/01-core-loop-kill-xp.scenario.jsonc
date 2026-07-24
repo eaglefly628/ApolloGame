@@ -1,0 +1,24 @@
+// GD-103 验收剧本 ① · 核心循环：武器自动开火→击杀→掉经验被拾（gdd §一/§四）。
+//   玩家不动（敌自来），起始武器 Kunai 自动索敌开火；10s(600 tick) 内应有击杀 + 经验拾取。
+// 对抗目标（改坏被测逻辑应变红）：
+//   · 武器不自动开火 / Hitbox 不扣血 → kills 断言红。
+//   · 击杀不掉经验 / 经验不被拾（pickup 半径/collector）→ xp 断言红。
+//   · 开局即死（不应）→ status 断言红。
+{
+  "name": "核心循环·自动开火击杀掉经验被拾",
+  "game": "game-103",
+  "seed": 7,
+  "steps": [
+    { "expect": [
+      { "res": "kills", "eq": 0 },
+      { "res": "xp", "eq": 0 },
+      { "sv": "status", "eq": "playing" },
+    ] },
+    { "tick": 600 },
+    { "expect": [
+      { "res": "kills", "gte": 1 },
+      { "res": "xp", "gte": 1 },
+      { "sv": "status", "eq": "playing" },
+    ] },
+  ],
+}

@@ -1,0 +1,22 @@
+// GD-103 验收剧本 ④ · 三选一 draft 接线：升级后发选项信号→被消费、sim 不炸、局面继续（gdd §八·draft-offer E1）。
+//   先 tick 到升级（level≥2），发 pick_shock（获得冲击波武器），再 tick 一段：局态仍 playing、等级保持。
+//   注：pick 的「属性效果」当前 world 态不可直接断言（被动轴桥未通·见 ../requests.md）——本剧本只验「信号接线不炸 + draft 流程活」，
+//       被动轴通后补「pick_blade→击杀更快」式行为剧本。
+// 对抗目标（改坏被测逻辑应变红）：
+//   · pick 信号未接线 / handler 抛错致 sim 崩 → status/level 断言红（或装载报错）。
+{
+  "name": "三选一·选项信号被消费局面继续",
+  "game": "game-103",
+  "seed": 7,
+  "steps": [
+    { "tick": 1800 },
+    { "expect": [ { "res": "level", "gte": 2 } ] },
+    { "signal": "pick_shock" },
+    { "tick": 300 },
+    { "expect": [
+      { "sv": "status", "eq": "playing" },
+      { "res": "level", "gte": 2 },
+      { "res": "kills", "gte": 1 },
+    ] },
+  ],
+}
