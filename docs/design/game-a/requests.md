@@ -2,8 +2,9 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
-### A-025 · [2026-07-23] · 巡检发现 · vendor.test 断言 55 条 vs 索引实有 58（owner 本地美术推送未同步测试） · status: 🔴 open·**指派 PE-A 即修** · 优先级: **P1（阻全量测试·当日清）** · 类型: 资产对账同步（PE 域）
-> 巡检实证：owner 从本地推美术（`e5db3d0e`·game-a art-02.png + index +3 条）→ `src/games/game-a/vendor.test.ts`「55 条」失败（expected 58 to be 55）。**修法照 game-c REQ-C-111 先例**：断言改分解式（55 vendor + N owner 新增=58·两类各带溯源断言），别只改总数糊过去；核对新 3 条的登记字段完整。修完跑全量 vitest 绿再推。
+### A-025 · [2026-07-23] · 巡检发现 · vendor.test 断言 55 条 vs 索引实有 58（owner 本地美术推送未同步测试） · status: ✅ **done（Lead 当场清·owner 2026-07-23「把红修复」在场授权）** · 优先级: **P1（阻全量测试·当日清）** · 类型: 资产对账同步（PE 域）
+> 巡检实证：owner 从本地推美术（`e5db3d0e`·game-a art-02.png + index +3 条）→ `src/games/game-a/vendor.test.ts`「55 条」失败（expected 58 to be 55）。
+> **✅ Lead 处置（2026-07-23·owner 在场「把它修复」授权·非自动巡检的 hands-off）**：新 3 条 = 2 真 seedream 生成（`gen/art-02`+`game-a/bg/table` 桌背 skinKey）+ **1 悬空 mock（`gen/mock/art-03`·文件 gitignored·qwen mock）**。① 删悬空 mock 条（enforce「mock 永不入库」铁律·文件本就不在库）→ index 57 条；② vendor.test 改**分解式断言**：55 vendor（vendoredFrom）+ 2 生成（generator·非 mock）=57·+「无 mock」护栏钉死（今后 mock 泄漏进 committed index 即红拦）。全量 vitest 绿。**根因**：`batchGenerate` 按设计把 mock 留本地 index 供墙预览（`art-replace.test` 钉死），但 mock 条不该随 index.json 提交（文件 gitignored→提交即悬空）——护栏已由 vendor.test「无 mock」承接。
 
 ### A-023 · 美术走索引消费（工坊替换才生效）· [2026-07-22] · owner 报（工坊替换游戏没看到·全游戏一体）→ Lead 诊断 → **PE-A** · status: ✅ PE-A 完结（索引解析接线·真机换背景验证成立·ledger-audit 孤儿归零） · 优先级: P1 · 类型: 接消费槽（REQ-ART-可消费槽铁律 option a·game-a 侧·同 game-b B-012）
 > **✅ PE-A 落地（2026-07-22·本 A-023）**：新增 `art-overrides.ts`（mirror game-c）——mount 尾 `loadArtOverrides('game-a')` 异步拉 `index.json`、收 `game-a/` 命名空间 + `gen:`/`vendored`/`tags:skin` 信号的 skinKey 别名 → `registerArtOverrides` → **`render()` 热替换**；theme `art(slot)` = `artUri('game-a/'+slot, 内置回退)`（覆盖优先·真图未到零字节变化·兜底永不丢）。hud 全部 Screen 底图/图标/felt 改经 `art(slot)`（硬编码 URL 退为回退）。台账 10 接线行各带 `skinKey game-a/<slot.entity>`（与 `art()` 键对齐·工坊写回同键即命中）、13 未接行退役进 `pending`（art 在库不删）。**完工判据全绿**：① 机制成立（真机注入 `game-a/bg/menu→bg/table` 别名→菜单底图即换·截图目击）；② `ledger:audit game-a --strict` 孤儿 0（10 行全有槽）；③ tsc 0·vitest game-a 74（+art-overrides 6 测·含覆盖/回退/headless/skinKey 契约）·build 0·验收 8 绿·S5 补戳；④ 真浏览器换背景成立。**牌面 54 张仍文字面**（换整卡 SVG 需 PUI 满面贴图槽·A-024①·非本 option-a 范畴）。

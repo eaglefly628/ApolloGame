@@ -965,32 +965,6 @@
    }
   },
   {
-   "id": "gen/mock/art-002",
-   "type": "texture",
-   "description": "green casino poker felt cloth, rectangular table top, flat even texture with fine woven nap, subtle warm light pool at center, seamless, high resolution, luxury night poker parlor, violet-and-gold noir, cinematic rim light, moody purple palette (#7d5570 velvet, #d8b878 gold, #c9a9dd violet glow, #d0483e danger), painterly premium mobile-game art, refined tasteful, isolated subject, no watermark · 生成(modern-manor·mock)",
-   "status": "filled",
-   "path": "/games/game-c/art/gen/mock/art-002.png",
-   "category": "ai-gen",
-   "tags": [
-    "gen",
-    "modern-manor",
-    "texture",
-    "mock"
-   ],
-   "license": "Qwen/DashScope 万相 (按订阅授权)",
-   "source": "gen:qwen",
-   "provenance": {
-    "generator": "qwen",
-    "prompt": "呢面 albedo·长方桌面整幅贴图, 贴图, 现代奢华豪宅夜间室内：暖调灯光，木质牌桌，当代雅致陈设，温馨私密氛围，构图干净，游戏素材，无文字，无水印",
-    "model": "wanx2.1-t2i-turbo·mock",
-    "mock": true,
-    "generatedAt": "2026-07-23T04:52:52.892Z",
-    "pack": "modern-manor",
-    "style": "现代豪宅夜局（game-a 场景锚）",
-    "vendoredFrom": null
-   }
-  },
-  {
    "id": "gen/art-002-up",
    "type": "texture",
    "description": "上传替换 art-002",

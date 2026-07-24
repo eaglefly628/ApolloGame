@@ -13,8 +13,9 @@
 
 ## 待处理
 
-### REQ-C-116 · [2026-07-23] · 巡检发现 · vendor.test 分解式断言 37 条 vs 索引实有 44（owner 本地美术推送未同步测试·REQ-C-111 同款二犯） · status: 🔴 open·**指派 PE-C 即修** · 优先级: **P1（阻全量测试·当日清）** · 类型: 资产对账同步（PE 域）
-> 巡检实证：owner 从本地推美术（`c8b65550`·game-c ledger+index +7 条）→ `vendor.test.ts`「37=9+28」失败（expected 44 to be 37）。修法：分解式断言加第三类（9 vendor + 28 程序生成 + 7 owner 新增=44·各带溯源）；核对新 7 条登记字段。注意：这不是你的违规（owner 本地推送触发），但对账测试归你养——修完全量 vitest 绿再推。
+### REQ-C-116 · [2026-07-23] · 巡检发现 · vendor.test 分解式断言 37 条 vs 索引实有 44（owner 本地美术推送未同步测试·REQ-C-111 同款二犯） · status: ✅ **done（Lead 当场清·owner 2026-07-23「把红修复」在场授权）** · 优先级: **P1（阻全量测试·当日清）** · 类型: 资产对账同步（PE 域）
+> 巡检实证：owner 从本地推美术（`c8b65550`·game-c ledger+index +7 条）→ `vendor.test.ts`「37=9+28」失败（expected 44 to be 37）。
+> **✅ Lead 处置（2026-07-23·owner 在场「把它修复」授权·非自动巡检的 hands-off）**：新 7 条 = 6 真上传（`gen/art-001/002/017-up`+`game-c/{scene/backdrop,table/felt-albedo,ui/btn-raise}`·generator:upload）+ **1 悬空 mock（`gen/mock/art-002`·文件 gitignored·qwen mock）**。① 删悬空 mock 条 → index 43 条；② vendor.test 改**三类分解断言**：9 vendor 筹码 + 28 程序生成（game-c-art-gen）+ 6 owner 上传（upload）=43·三类无缝覆盖全体·+「无 card/*·无 mock」护栏。全量 vitest 绿。**根因同 A-025**：mock 按设计留本地 index 供墙预览、但不该随 index.json 提交——护栏已由 vendor.test「无 mock」承接。
 
 ### REQ-C-115 · 迁移 GameEvent 日志到引擎共享 event-log 原子 · [2026-07-23] · Lead 落单（REQ-EVENTLOG 下沉完工）→ **PE-C** · status: open · P3（DRY 收敛·非阻塞·功能等价） · 类型: 游戏层消费迁移（PE-C 域）
 > **背景**：REQ-EVENTLOG 已下沉引擎通用 `src/skills/tier1/event-log.ts`（`EventLog<K, Extra>` 泛型类 + `createEventLog()`·`push`(自增 seq)/`recent`/`all`/`size`/`clear`/`dump`）。game-c `game-log.ts` 的手写 `GameEvent` 流是 rule-of-two 的一半，迁移收敛 DRY。

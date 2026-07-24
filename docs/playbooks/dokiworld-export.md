@@ -23,9 +23,7 @@
 1. 仓库根 `python3 apollo.py workshop` → 开 `http://localhost:4000/workshop/`（首次先 `npm install`，dist 要真构建）。
 2. 进**发布屏** → 找到游戏（game-a / b / c）。
 3. 选平台行 → 点 **「打包」**（状态 `⏳ 打包中…`；dist 走 `vite build` 慢十几~几十秒·**串行**一次一个）。
-4. 变 `✓ 就绪` → 点 **「下载」** → 拿到 `<game>-dokiworld[-dist].zip`。
-
-CLI 等价：`node tools/export-game.mjs <game> --target dokiworld`（源码工程）。
+4. 变 `✓ 就绪` → 点 **「下载」** → 拿到 `<game>-dokiworld[-dist].zip`。CLI 等价：`node tools/export-game.mjs <game> --target dokiworld`（源码工程）。
 
 ## 4. 操作：本地预览（review dist）
 
@@ -37,15 +35,13 @@ review.sh          ← mac/Linux（./review.sh）
 review.py          ← 跨平台核心（python3 review.py）
 README.txt
 ```
-- **双击 `review.bat`** / `./review.sh` → 自动挂到正确 `/games/<slug>/` 路径、开浏览器。
-- ⛔ **禁双击 `<slug>/index.html`**：ES 模块不能 file:// 加载，且游戏按绝对路径 `/games/<slug>/…` 取美术——必须 HTTP 挂在 `/games/<slug>/`（review 脚本已替你做）。
+- **双击 `review.bat`** / `./review.sh` → 自动挂到正确 `/games/<slug>/` 路径、开浏览器。⛔ **禁双击 `<slug>/index.html`**（ES 模块不能 file:// 加载·游戏按绝对路径取美术·必须 HTTP 挂 `/games/<slug>/`·review 脚本已替你做）。
 
 ## 5. 操作：交付部署到 DokiWorld
 
 - 把 dist 的 **`<slug>/` 目录** 放进 DokiWorld `frontend/public/games/<slug>/`（`game.json`+`index.html`+`assets/`+`art/` 直接在目录根）。
 - 服务端给美术资源加头：`Access-Control-Allow-Origin: *` + `Cross-Origin-Resource-Policy: cross-origin`（opaque-origin iframe 必需·DokiWorld 侧提供）。
-- 不要交付 review 脚本/审计/流水线文件到线上（部署只用 `<slug>/`）。
-- **mock/快照目录自动不打**（导出 + 打包两处均排除 `mock`/`mocks`/`__mocks__`/`snapshots`·spec §1 非运行时资源）。
+- 不要交付 review 脚本/审计/流水线文件到线上（部署只用 `<slug>/`）；**mock/快照目录自动不打**（导出+打包均排除 `mock`/`mocks`/`__mocks__`/`snapshots`·spec §1 非运行时资源）。
 
 ## 6. 插件自动做的（对应契约·验收对照）
 

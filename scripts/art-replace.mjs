@@ -566,6 +566,9 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
   }
   // 保留既有条目顺序（Map 从原数组建·set 改在原位·新条目追加末尾）——**不整表重排**，
   // 否则原索引若非 id 序（如 game-c）整表重排=全文 diff（owner 2026-07-22「只该那一行变」）。
+  // 注：mock 条目**留在本地 index**（`gen/mock/*` 墙预览用·文件 gitignored·别名不登记不上画面·上文 561）；
+  // 但 mock 条目**绝不该随 index.json 提交入库**（文件 gitignored→提交后悬空）——各游戏 vendor.test 钉死
+  // 「committed index 无 mock」把关（owner 2026-07-23 巡检实证 game-a/c 泄漏后补的护栏），提交前会红拦。
   index.assets = [...byId.values()];
   writeJson(idxFile, index);
   return { ok: true, ledger, summary };

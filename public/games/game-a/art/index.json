@@ -1584,32 +1584,6 @@
         "style": "现代豪宅夜局（game-a 场景锚）",
         "vendoredFrom": null
       }
-    },
-    {
-      "id": "gen/mock/art-03",
-      "type": "texture",
-      "description": "完全按照出图规格尺寸出，透明底，然后是长方形的，这样的一个桌子，酒红天鹅绒，吸金边框。 · 生成(modern-manor·mock)",
-      "status": "filled",
-      "path": "/games/game-a/art/gen/mock/art-03.png",
-      "category": "ai-gen",
-      "tags": [
-        "gen",
-        "modern-manor",
-        "sprite",
-        "mock"
-      ],
-      "license": "Qwen/DashScope 万相 (按订阅授权)",
-      "source": "gen:qwen",
-      "provenance": {
-        "generator": "qwen",
-        "prompt": "掼蛋夜宴·长方形圆角呢桌面·酒红天鹅绒 + 细金边框（跟随圆角矩形）+ 桌心暖光池·俯视·透明背景·高清, 精灵图, 现代奢华豪宅夜间室内：暖调灯光，木质牌桌，当代雅致陈设，温馨私密氛围，构图干净，游戏素材，无文字，无水印",
-        "model": "wanx2.1-t2i-turbo·mock",
-        "mock": true,
-        "generatedAt": "2026-07-23T04:46:42.482Z",
-        "pack": "modern-manor",
-        "style": "现代豪宅夜局（game-a 场景锚）",
-        "vendoredFrom": null
-      }
     }
   ]
 }
