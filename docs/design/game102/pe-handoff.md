@@ -142,13 +142,9 @@ PE 只负责 play-field 与 UI 的**信号对接**（写世界=action 信号入�
 ## 7. 验收剧本（S4 机器门 · **GD 出 · PE 不改**）
 
 > 依「验收剧本循环律」：玩法正确性裁判 = GD 写的剧本（seed+操作+逐步期望·纯数据），harness 驱动真引擎对账。
-> 剧本可执行形态待 S3 manifest + action API 定型后由 GD 落 `docs/design/game102/acceptance/`；**下为 ≥3 场景意图（PE 据此自检 walkthrough 下限）**：
-
-1. **基础消色**：seed=20001·单色 bitmap·发 1 炮 → 期望该色像素按弹药数递减、combo 累积、清空即 victory。
-2. **弹尽入槽 + 复用**：发到 ammo=0 → 期望炮入 tray 空槽；点槽 → 期望重装满回传送带、可再消。
-3. **钥匙开门**：布 needKeys=2·两钥匙格 → 打对色收集 2 钥匙 → 期望门 gauge 达标、发开门信号、goals[door] 满。
-4. **突破态**：BURST_WINDOW 内快连 6 次 → 期望容量切至 10、可堆 10 齐射（不越 burstCap）。
-5. **失败**：moves 尽仍有像素 → 期望 defeat（触发续命 offer 流·UI 侧）。
+> **✅ GD 已交付 5 份**（>门槛 3）= `docs/design/game102/acceptance/*.scenario.jsonc`（+ README 定义**动作词表/机读态词表**）。
+> **PE 只需写薄适配器** `src/games/game102/acceptance-adapter.ts`（纯接线：动作→引擎 action 信号、机读态→ README 投影表 Resource/Flag/StringVar），**不改剧本**；剧本写错=GD 改。
+> 跑：`npx vite-node scripts/acceptance-run.mjs --game game102`（进推送门禁）。5 份覆盖：①基础消色 ②弹尽入槽+复用 ③钥匙开门 ④突破 5→10 ⑤限额判负。
 
 ---
 

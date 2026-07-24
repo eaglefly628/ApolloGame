@@ -1,0 +1,18 @@
+{
+  "name": "限额用尽仍有像素 → 判负",
+  "seed": 20105,
+  "gdd": "gdd.md §4 · pe-handoff.md §3.5",
+  "intent": "对抗目标：负判缺失（flow 不接 limit 尽 + 有像素）→ flow 停在 playing 不 defeat",
+  "level": {
+    "cols": 3, "rows": 1,
+    "palette": ["blue"],
+    "ammo": 1, "conveyorCap": 5, "burstCap": 10, "slots": 5, "beltSpeed": 95,
+    "limit": { "kind": "moves", "n": 1 },
+    "goals": [ { "kind": "clear" } ],
+    "bitmap": [ "000" ]              // blue×3·ammo 1·moves 1 → 只能消 1·剩 2
+  },
+  "steps": [
+    { "do": ["tapSupply:blue"], "then": "tick:60",
+      "expect": { "remain.blue": 2, "flow": "defeat" } }
+  ]
+}

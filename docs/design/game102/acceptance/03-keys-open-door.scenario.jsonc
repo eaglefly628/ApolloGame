@@ -1,0 +1,19 @@
+{
+  "name": "钥匙收集 → 集齐开宝箱门 → 过关",
+  "seed": 20103,
+  "gdd": "gdd.md §2.4 解谜层 · pe-handoff.md §3.4",
+  "intent": "对抗目标：钥匙不计数 / 门不判 needKeys 达标 → doorOpen 不 true、goals[door] 不满、flow 不 victory",
+  "level": {
+    "cols": 4, "rows": 1,
+    "palette": ["blue"],
+    "ammo": 5, "conveyorCap": 5, "burstCap": 10, "slots": 5, "beltSpeed": 95,
+    "limit": { "kind": "moves", "n": 3 },
+    "goals": [ { "kind": "clear" }, { "kind": "keys", "n": 2 }, { "kind": "door", "needKeys": 2, "target": 100 } ],
+    "bitmap": [ "0.0." ],             // blue at col0, col2
+    "keys": [ [0, 0], [2, 0] ]        // 两枚钥匙都嵌在 blue 像素上
+  },
+  "steps": [
+    { "do": ["tapSupply:blue"], "then": "tick:60",
+      "expect": { "remain.blue": 0, "keys": 2, "doorOpen": true, "flow": "victory" } }
+  ]
+}
