@@ -1,89 +1,40 @@
 // game101 ·《海港绯闻》—— 卡带宿主层（工程师写的 mount/host·契约明许·零玩法逻辑）。
 //
-// S4 可玩：引擎 play-field 真板（CanvasRenderer 画物品/生成器）+ 指针点击输入（点生成器→耗体力→产出）+
-//   merge-rule 自动合并 + 顶部 HUD 实时投影（体力/金币·纯读世界·outcome-first）。玩法规则全在 blueprint 数据
-//   + 引擎能力里（见其头注）。宿主只搭渲染器/输入/HUD 胶水。
-// ⚠ 观感：play-field 物品/生成器当前=引擎色块占位（链色×等级亮度）——真 sprite 走 S6 美术台账皮肤槽。
-//   真·拖拽合并（拖同类才合）待引擎能力 REQ-MERGE-ON-PLACE；当前=自动合并（2 同类即合）。
-import { Engine } from '../../runtime/engine.js';
-import { CanvasRenderer } from '@renderer/index.js';
-import { QueuedInputSource, canvasPointerToScreen } from '@net/index.js';
+// 当前挂载 = 完整 S1 主界面（buildS1·GD 布局稿·HUD + 顾客订单 + Twemoji 合并板 + 底部导航）+ game101 暖色主题。
+// 全 UI = LayoutNode 闭集控件·纯数据·零手写 DOM（UI 铁律）。
+//
+// ⚠ 现状与路线（owner 2026-07-24 取舍）：这张 S1 好看但**板是静态 Twemoji 占位**（未接真拖拽合并）。
+//   玩法逻辑（生成器点击产出/资源/体力恢复/自动合并）已在 blueprint.ts 写实且 headless 12 测绿——
+//   但**尚未整合进这张界面**（引擎 play-field 真板需拖拽合并能力 REQ-MERGE-ON-PLACE·主程域 + 板上真美术 S6）。
+//   整合前：打开=这张完整 S1（chrome 齐全）；真·可玩板整合=后续步（chrome=LayoutNode + 中间嵌引擎真板）。
 import { mountHost } from '@engine/host/mount-host.js';
 import { mountUI } from '@ui/components/index.js';
-import type { LayoutNode, MountHandle } from '@ui/components/index.js';
-import type { Resource } from '@engine/protocol/components.js';
-import { buildBlueprint } from './blueprint.js';
+import type { HandlerMap } from '@ui/components/index.js';
+import { buildS1 } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';
-import { FIELD_W, FIELD_H, RES, ENERGY } from './theme.js';
 
-const TOP_BAR_H = 92;
-const SCENE_BG =
-  'radial-gradient(circle at 50% 20%, #bfeaf6 0%, #a6def0 45%, #7fcfe6 100%)';
-
-function buildHud(energy: number, coins: number): LayoutNode {
-  return {
-    type: 'Panel', id: 'hud', props: { bare: true },
-    layout: { direction: 'row', align: 'center', justify: 'between', gap: 12, padding: 12 },
-    children: [
-      {
-        type: 'Panel', id: 'hud-stats', props: { bare: true },
-        layout: { direction: 'row', align: 'center', gap: 14 },
-        children: [
-          { type: 'Label', id: 'hud-e', props: { text: `⚡ ${Math.round(energy)}/${ENERGY.cap}`, color: 'text', bold: true } },
-          { type: 'Label', id: 'hud-c', props: { text: `🪙 ${Math.round(coins)}`, color: 'gold', bold: true } },
-        ],
-      },
-      { type: 'Label', id: 'hud-hint', props: { text: '点生成器产出 · 同类自动合并', color: 'sub', size: 'sm' } },
-    ],
-  };
-}
+const SCREEN_W = 1080;
+const SCREEN_H = 1920;
 
 export function mount(container: HTMLElement, _host?: { exit: () => void }): () => void {
-  const { scene, topHost, teardown } = mountHost(container, {
-    fieldW: FIELD_W,
-    fieldH: FIELD_H,
-    topBarH: TOP_BAR_H,
-    sceneBackground: SCENE_BG,
+  const { scene, teardown } = mountHost(container, {
+    fieldW: SCREEN_W,
+    fieldH: SCREEN_H,
+    sceneBackground: GAME101_THEME.pageBg,
     wrapperBackground: '#2a1c12',
   });
 
-  const input = new QueuedInputSource('101');
-  const engine = new Engine({ input });
-  engine.load(buildBlueprint());
-
-  const renderer = new CanvasRenderer({ width: FIELD_W, height: FIELD_H, background: 'transparent' });
-  engine.attachRenderer(renderer, scene);
-  const canvas = scene.querySelector('canvas') as HTMLCanvasElement | null;
-  if (canvas) canvas.style.zIndex = '1';
-
-  // 画布点击 → 逆投影为世界坐标 → 入队；clickable 命中生成器 → 信号 → craft-recipe/caster 消费。
-  const onDown = (ev: PointerEvent): void => {
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
-    const p = canvasPointerToScreen(ev.clientX, ev.clientY, rect, canvas.width / dpr, canvas.height / dpr);
-    input.enqueue({ source: '101', x: p.x, y: p.y, phase: 'down' });
+  // 导航/交互信号占位（真交付/弹层=后续 slice·此处不塞自由逻辑）。
+  const noop = (): void => {};
+  const handlers: HandlerMap = {
+    open_shop: noop, open_menu: noop, open_tasks: noop, open_reno: noop, open_events: noop,
+    deliver_order: noop, gen_left: noop, gen_right: noop, delete_sel: noop,
   };
-  canvas?.addEventListener('pointerdown', onDown);
 
-  // HUD 实时投影（纯读世界·outcome-first）。
-  const readRes = (id: string): number => engine.world.getComponent<Resource>(id, 'Resource')?.current ?? 0;
-  const hud: MountHandle = mountUI(topHost, buildHud(readRes(RES.energy), readRes(RES.coins)), {}, GAME101_THEME);
-  let lastSig = '';
-  const unsub = engine.subscribe(() => {
-    const e = readRes(RES.energy), c = readRes(RES.coins);
-    const sig = `${Math.round(e)}|${Math.round(c)}`;
-    if (sig !== lastSig) { lastSig = sig; hud.update(buildHud(e, c), GAME101_THEME); }
-  });
-
-  engine.start();
+  const ui = mountUI(scene, buildS1(), handlers, GAME101_THEME);
 
   return () => {
-    unsub();
-    engine.stop();
-    canvas?.removeEventListener('pointerdown', onDown);
-    renderer.destroy();
-    hud();
+    ui();
     teardown();
   };
 }
