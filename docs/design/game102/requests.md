@@ -7,6 +7,11 @@
 
 ## 待处理 / 进行中
 
+### REQ-G102-ADAPTER · 补 acceptance-adapter（S4 真门·GD 验收阻断）· [2026-07-24] · GD 验收发现 → **PE** · status: **open** · 优先级: P0 · 类型: 验收接线
+> **GD 验收实测（2026-07-24）**：`npx vite-node scripts/acceptance-run.mjs --game game102` → **FAIL·缺 `src/games/game102/acceptance-adapter.ts`**。→ GD 的 8 份验收剧本（`acceptance/01~08`）**跑不起来**，S4 玩法关**真门未过**（手册：PE 自写 walkthrough 只是下限·GD 剧本 conformance 才是 S4 完成证据）。
+> **要 PE 做**：落**薄适配器**（纯接线零规则）——动作词表（tapSupply/tapSupply:rainbow|chain/useSpecial:laser/aim/tapSlot/tick）→ 引擎 action 信号；机读态词表（remain.<color>/remain.total/keys/doorOpen/score/combo/conveyor.count/tray.count/flow）→ Resource/Flag/StringVar 投影（契约见 `acceptance/README.md`）。**不得改剧本**（剧本错=GD 改）。
+> **验收标准**：`acceptance-run.mjs --game game102` 全绿（8/8）；进 `scripts/acceptance.test.mjs` 推送门禁。剧本 03(钥匙门)/04(突破)/06~08(特殊炮) 依赖对应玩法落地——未落地的剧本先标 pending 不算红，但 01/02/05 应即刻能过。
+
 ### REQ-G102-SPECIAL · 特殊炮三门（彩虹/连锁/激光）· [2026-07-24] · GD 提 → **PE** · status: **open** · 优先级: P1 · 类型: 玩法扩展
 > **spec**：`docs/design/game102/special-cannons.md`（owner 2026-07-24 拍板三选）。验收剧本 `acceptance/06~08`（GD 已出）。
 > **① 彩虹炮 🌈**：`matchAny` 标·命中任意色——**纯数据组合·无下沉**，直接做。
