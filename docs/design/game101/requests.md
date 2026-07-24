@@ -6,9 +6,14 @@
 
 ---
 
-### REQ-101-01 · capability-plan 评审 · 2026-07-23 · 提出人 GD-101 → 指派 LEAD · status: open · 优先级: P0 · 类型: 评审
-> `capability-plan.md` v1 草案待 Lead 备案评审。**重点裁 §2.5 G1–G4**（生成器耗体力门控 / 订单交付消耗棋盘实例 / 气泡锁 flag 尊重 / 免体力生成器产能条）走「①组合现有能力 / ②下沉通用 capability / ③游戏层例外」哪条；并裁 §4 装配胶水行数上限。
-> 边界：判为「下沉」的项转 `docs/workflow/requests.md` 引擎池（通用能力·非 game101 私有 system）。**过审前 PE-101 不得写游戏层系统代码。**
+### REQ-101-01 · capability-plan 评审 · 2026-07-23 · 提出人 GD-101 → 指派 LEAD · status: **✅ done（⚖ Lead 过审 2026-07-23·全文见 `capability-plan.md §6`）** · 优先级: P0 · 类型: 评审
+> **⚖ Lead 裁决（2026-07-23·核过 registry + craft-recipe/merge-rule/drag-place 源码·全文落 `capability-plan.md §6`）：✅ 过审·零预下沉·PE-101 可开工 M1（REQ-101-04）。**
+> - **G1 tap-cost-spawn → ① 组合**（`clickable`+`event-when`门控+`effect-apply`扣费+**引擎加权抽原语**掉落表+`prefab-spawn`；禁游戏层手写加权/裸 Math.random）。
+> - **G2 订单交付 → 先试组合·撞墙即下沉 `order-fulfill`**。⚠ **`craft-recipe` 不适配**（核实：只吞/产资源计数·不吞棋盘实体实例）；试 `drop-zone`+`event-when`+`k2-destroy`+`effect-apply`·M1 实证「消耗被投放实例」表达不了才下沉。
+> - **G3 泡泡锁 → ① 组合·推荐 bubble-wrapper**（锁=独立泡泡实体·点破+扣币→destroy 泡泡→spawn 真物·merge 按模板天然不碰·零引擎改动）。备选=给 merge-rule+drag-place 加 `Locked` flag 小守卫（Lead 做）·owner/GD 二选一。
+> - **G4 冷却+产能 → ① 组合**（`timer-advance` 置 CD + `clickable` 拒 + `f1-resource` 产能）。
+> - **§4 胶水 ≤120 行**（纯装配·禁写加权/门控/合成/交付 solver）。
+> **唯二可能触发引擎动作**（撞墙/选路后才走引擎池占槽·不预占）：G3 flag 路 / G2 下沉 order-fulfill。判「下沉」的项到时转 `docs/workflow/requests.md`。**PE-101 M1 照此开工·撞墙回本表报缺口。**
 
 ### REQ-101-02 · UI 布局设计 · 2026-07-23 · 提出人 GD-101 → 指派 GD-101 · status: in-progress · 优先级: P0 · 类型: UI
 > 【owner 2026-07-23「用我们 UI 库设计更好」→ 改口径】弃用 emoji `.dc.html`，改用真 **LayoutNode 闭集控件 + game101 暖色主题**出布局（纯数据）。

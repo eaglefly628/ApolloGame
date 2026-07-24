@@ -91,6 +91,11 @@ Merge-2 合并板 + 视觉小说剧情 Meta 的休闲复刻（对标 **Gossip Ha
 ## 6. 评审记录
 
 - 提交人 / 日期：GD-101 / 2026-07-23
-- Lead 裁决：⬜ 待评审（本 plan v1 草案）
-  - 请重点裁：§2.5 G1–G4 走"组合表达 / 下沉通用能力 / 游戏层例外"哪条；§4 装配胶水行数上限。
-  - 未过审前：PE-101 不得写 game101 游戏层系统代码（装配胶水待 Lead 明确豁免范围）。
+- **Lead 裁决：✅ 过审（v1·2026-07-23·核过 registry + craft-recipe/merge-rule/drag-place 源码）——零预下沉·PE-101 可开工 M1（REQ-101-04）**
+  - **§2.5 G1 生成器 tap-cost-spawn → ① 组合表达**（不下沉）。门控+扣费=`clickable`+`event-when`(体力≥cost)+`effect-apply`(扣费)；**掉落表加权抽必用引擎加权抽原语**（复用 `draft-offer` 加权核·n=1·空 state 退化为纯加权抽；或 Lead 抽出共享 `weightedPick` 纯函数）·**禁游戏层手写加权/裸 Math.random**；产出=`prefab-spawn`；编排在薄胶水串接。撞墙→回报下沉 `tap-cost-spawn`。
+  - **§2.5 G2 订单交付 order-fulfill → 先试组合·撞墙即下沉**（不预下沉）。**`craft-recipe` 确认不适配**（核源码：costs/gains 只吞/产**资源计数**·不吞棋盘**实体实例**）。试组合=`drop-zone`(drag-place)+`event-when`(投放物模板==订单 needItem)+`k2-destroy`(销毁该实例)+`effect-apply`(发奖)。**风险**：event-when 能否引用「被投放的那个具体实例」并干净销毁待 M1 实证；**表达不了→下沉薄 `order-fulfill`**（投放匹配→消耗该实例+发奖·通用于合并/交付游戏）。
+  - **§2.5 G3 泡泡锁 → ① 组合表达·推荐 bubble-wrapper**。核过 merge-rule/drag-place **当前不读任何 lock flag**。**推荐**：把锁建模成**独立泡泡实体**（generator 产 `bubble(itemX)`·非 itemX 本体）→点泡泡+扣金币(`clickable`+`resource-apply`)→`k2-destroy`泡泡→`prefab-spawn` 真 itemX；merge-rule 按模板匹配·泡泡天然不参与合并·**零引擎改动**。**备选**（团队要「就地锁 flag」）：给 merge-rule+drag-place 加「读标准 `Locked` flag·锁定实体跳过」小加性守卫（缺 flag=现行为·零回归·可复用）=引擎域小扩展·Lead 做。**owner/GD 二选一**。
+  - **§2.5 G4 冷却+产能 → ① 组合表达**。CD=`timer-advance`置冷却+`clickable`冷却期拒；产能=`f1-resource`局部资源。撞墙→并入 G1 复议。
+  - **§4 装配胶水 → 准 ≤120 行**（manifest 加载+板初始化+HUD↔资源绑定+场景切换·纯装配非玩法）。**红线**：胶水里**禁**手写加权抽/门控/合成/交付解释器（G1 加权走原语·G3 泡泡走实体+destroy·G2 走组合或下沉件）；超 120 行=藏 solver 信号→回报 Lead。
+  - **唯二可能触发引擎动作**（都**撞墙/选路后**才走引擎池占槽·不预占）：① G3 若走 flag 路（Lead 加 lock 守卫）；② G2 若撞墙（Lead 下沉 `order-fulfill`）。
+  - 装配胶水豁免范围=上「§4 ≤120 行」；除此 PE-101 无游戏层自由代码（审计红旗照旧不豁免）。
