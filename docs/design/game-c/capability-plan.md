@@ -84,4 +84,4 @@
 ## 6. 评审记录
 
 - 提交人 / 日期：GD-C / 2026-07-17
-- Lead 裁决：⏳ 待审
+- **Lead 裁决：✅ 过审（2026-07-23 补记·陈旧 ⏳ 同步）**——§4 游戏层例外经 `REQ-C-101/102/103` 逐条裁定在案（owner TS 授权下）：**101 摊牌评估 `holdem-eval.ts`（129 行）/ 102 下注圈边池 `betting-engine.ts`（367 行）= 留 game-c TS·不下沉**（实测无第二消费方·德州是唯一扑克/下注游戏·真出现第二个再下沉·rule-of-two 触发器已记档）；**103 行为树 = 已下沉引擎 `t2-behavior-tree`**（game-b 三姨太 AI 第二消费方达成的正例）。装配/render-only 胶水=惯例准（mountHost/RandomSeed 先例）。S1-S4 各门 Lead review + P0 bug（REQ-C-105 边池守恒）修复均在案。

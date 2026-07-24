@@ -84,5 +84,6 @@
 
 - 提交人 / 日期：GD-103 / 2026-07-23
 - owner 拍板（2026-07-23）：形态=编译期 TS 游戏；slot=game-103；§4 编排下沉新能力交 Lead。
-- **Lead 裁决：✅ done（2026-07-23·`REQ-SURVIVOR编排`）**——E1 draft-offer + E3 spawn-director 已下沉；E2/E4 回驳走重组；**game-103 可开工**。§5 实时确定性/实体规模风险=PE 原型早验证（pe-handoff）。
+- **Lead 裁决：✅ done / 过审（2026-07-23·`REQ-SURVIVOR编排`）**——E1 draft-offer + E3 spawn-director 已下沉建测；E2/E4 回驳走重组；**game-103 可开工**（§1-3 数据面 + E1/E3 消费 + E2/E4 重组接线）。
+  - **§5 实时确定性=准·附硬约束（Lead 补裁 2026-07-23）**：种子 PRNG（`t2-dice-roll`/atoms·**禁裸 Math.random**）✅；单机回放（balance-sim）→ **① 实体更新序按 entity id 稳定定序**（非插入/遍历序）·**② 输入按 tick 索引记录**（非墙钟）；实体规模（百敌）=M1 性能验证项（`spawn-director` cap 已界上限·超标走 ApolloBench）；lockstep/联机=out of scope。
 - 融合扩展（Solo Survivor IO·owner 2026-07-23 照单全收）：内容见 `reference-solo-survivor-io.md`；M3–M4 能力缺口走 capgap。
