@@ -29,15 +29,31 @@ export const RES = { energy: 'energy', coins: 'coins', stars: 'stars', exp: 'exp
 // ── Tag 位（合并板物品）────────────────────────────────────────────────────────
 export const ITEM = 1 << 0;
 
-// ── 棋盘几何（世界像素·占位·M1b 接 UI 时以 layout 稿为准）──────────────────────
+// ── 棋盘几何（世界像素·占位灰盒·M1b 接 UI 时以 layout 稿为准）──────────────────
 export const CELL = 96;
-export const BOARD_ORIGIN = { x: 0, y: 0 };
+export const BOARD_PAD = 48;
+export const BOARD_W = GAME.board.cols * CELL;
+export const BOARD_H = GAME.board.rows * CELL;
+export const FIELD_W = BOARD_W + BOARD_PAD * 2;
+export const FIELD_H = BOARD_H + BOARD_PAD * 2;
 
-// 物品格坐标（authoring 期确定性铺格·无随机）：按行优先给第 i 个物品一个格中心。
+// 物品格坐标（authoring 期确定性铺格·无随机）：按行优先给第 i 个物品一个格中心（居中留边）。
 export function cellCenter(i: number): { x: number; y: number } {
   const col = i % GAME.board.cols;
   const row = Math.floor(i / GAME.board.cols);
-  return { x: BOARD_ORIGIN.x + col * CELL, y: BOARD_ORIGIN.y + row * CELL };
+  return { x: BOARD_PAD + col * CELL + CELL / 2, y: BOARD_PAD + row * CELL + CELL / 2 };
+}
+
+// ── 链主色（灰盒占位观感·美术就绪即被 Sprite 皮肤盖过）────────────────────────
+const CHAIN_TINT: Record<string, number> = {
+  food: 0xff6b6b, fish: 0x4da6ff, fries: 0xf4c04d, coffee: 0xa9744f, tool: 0x9b8cff,
+};
+// 越高级越亮（每级向白靠拢）——合并升级视觉可辨。
+function levelTint(base: number, lvl: number, maxLvl: number): number {
+  const t = Math.min(1, (lvl - 1) / Math.max(1, maxLvl - 1)) * 0.55;
+  const mix = (c: number): number => Math.round(c + (255 - c) * t);
+  const r = (base >> 16) & 0xff, g = (base >> 8) & 0xff, b = base & 0xff;
+  return (mix(r) << 16) | (mix(g) << 8) | mix(b);
 }
 
 // ── 全部物品级的索引（item id → {chain, level 数据}）──────────────────────────
@@ -66,14 +82,16 @@ export interface PrefabTemplateData { entities: Record<string, Record<string, un
 export function itemTemplates(): Record<string, PrefabTemplateData> {
   const out: Record<string, PrefabTemplateData> = {};
   for (const def of Object.values(ITEMS)) {
+    const maxLvl = CHAINS.find((c) => c.id === def.chainId)!.levels.length;
+    const tint = levelTint(CHAIN_TINT[def.chainId] ?? 0x888888, def.lvl, maxLvl);
     out[def.item] = {
       entities: {
         body: {
           Transform: { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 },
           Tag: { flags: ITEM },
-          Shape: { kind: 'box', width: CELL - 8, height: CELL - 8 },
+          Shape: { kind: 'box', width: CELL - 12, height: CELL - 12 },
           Sprite: { textureKey: def.sprite, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽·Twemoji/原创套图就绪即换装
-          Color: { tint: 0xffffff, alpha: 1 },
+          Color: { tint, alpha: 1 }, // 灰盒占位色（链色×等级亮度）·美术就绪即被皮肤盖过
         },
       },
     };

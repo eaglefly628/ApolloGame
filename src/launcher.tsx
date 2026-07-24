@@ -169,6 +169,17 @@ export const GAMES: GameEntry[] = [
     icon: '🧟',
     status: 'playable',
   },
+  {
+    id: 'game101',
+    title: 'Game 101:《海港绯闻》',
+    subtitle: '海港合并 × 追剧 · Merge & Story 复刻',
+    description:
+      '回到海港小城汐味馆，一边把餐厅经营起来、一边在合并小游戏里解压、一边追一部狗血海港连续剧——点生成器（耗体力）→ 合并物品（merge-2）→ 交付订单 → 攒星星推进剧情与装修。当前=M1a 灰盒玩法核：merge-rule 每链每级 need:2 确定性合并、prefab 物品库、四资源（体力/金币/星星/经验）、over-time 体力涓流恢复——全数据驱动、零专属系统代码。棋盘物品=链色×等级亮度灰盒占位（美术皮肤槽就绪即换装）。生成器/订单/气泡（§2.5 缺口 G1/G2/G3）待 Lead 裁 REQ-101-01 下沉引擎能力后接线；HUD/拖放/剧情=M1b+。',
+    color: '#2a1c12',
+    accentColor: '#f0a35e',
+    icon: '⚓',
+    status: 'playable',
+  },
 ];
 
 // ══════════════════════════════════════
