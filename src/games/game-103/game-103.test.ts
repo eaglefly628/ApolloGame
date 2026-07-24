@@ -167,6 +167,28 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     }
   });
 
+  it('BUG-01 修：世界空间地砖网格实体在场（随相机卷动→相对位移·非屏幕固定）', () => {
+    const ids = Object.keys(buildBlueprint().entities);
+    expect(ids.filter((k) => k.startsWith('grid-')).length).toBeGreaterThan(50);
+  });
+
+  it('BUG-03 修：回旋镖弹体真飞（Launch 定向·无 Steering 抵消）→ Transform 随 tick 位移', () => {
+    const e = fresh();
+    tickN(e, 3);
+    fireAction(e, 'pick_boom');
+    stepN(e, WEAPON_BY_KEY.boom.cd + 5); // 待挂点发出 proj_boom
+    // 找到 proj_boom 弹体，记录位置
+    let boomId = '';
+    for (const [id] of e.world.query('Sprite')) { const s = e.world.getComponent<Sprite>(id, 'Sprite'); if (s && s.textureKey === WEAPON_BY_KEY.boom.skin) { boomId = id; break; } }
+    expect(boomId).not.toBe('');
+    const p0 = xf(e, boomId)!;
+    const x0 = p0.x, y0 = p0.y;
+    stepN(e, 6);
+    const p1 = xf(e, boomId);
+    // 弹体仍在(未消失)则必须移动了（不再"停原地"）；若已消失=已飞出回收，也算真飞（非卡住）。
+    if (p1) expect(Math.hypot(p1.x - x0, p1.y - y0)).toBeGreaterThan(1);
+  });
+
   it('确定性：两把独立同 tick → 同 hash（可回放/balance-sim）', () => {
     const a = fresh(); const b = fresh();
     tickN(a, 600); tickN(b, 600);

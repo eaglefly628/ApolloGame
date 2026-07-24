@@ -63,10 +63,9 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
     Color: { tint: w.tint, alpha: 1 },
     Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', ...(single ? { consumeOnHit: true } : {}) },
   };
-  if (w.pattern === 'boomerang') { // Launch 一次定向飞出 → self-remove 后 steering 朝玩家拉回=往返
-    p.Perception = { targetTag: PLAYER, sightRadius: 0 };
-    p.Steering = { mode: 'seek', speed: w.projSpeed, stopRange: 6 };
-  }
+  // BUG-03 修：boomerang 原来同挂 Launch(去)+Steering(回玩家)·两者每 tick 都写 Velocity·方向相反→抵消停原地。
+  // 干净往返(飞出→到点回旋)是 launch 缺的 out-return 段（已报 capgap·见 requests REQ-SURVIVOR武器缺口）。
+  // 此处先让它真飞：Launch 定向飞出 + 穿透(single=false·不 consumeOnHit)·长寿命=穿一线的回旋刃。
   return { entities: { p } };
 }
 
@@ -192,6 +191,24 @@ function draftPickEntities(): Record<string, EntityBlueprint> {
   return out;
 }
 
+// BUG-01 修：世界空间地砖网格（render-only·随相机卷动→相对位移立现）。
+// 原 FIELD_BG 网格贴在宿主 div=屏幕固定·相机跟随时看着静止。这里铺世界坐标的faint 地砖点，随 Camera.offset 卷动。
+function groundGridEntities(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  const STEP = 200; // 地砖间距（px·世界坐标）
+  let i = 0;
+  for (let x = STEP / 2; x < ARENA; x += STEP) {
+    for (let y = STEP / 2; y < ARENA; y += STEP) {
+      out[`grid-${i++}`] = {
+        Transform: { x, y, rotation: 0, scaleX: 1, scaleY: 1 },
+        Shape: { kind: 'box', width: 3, height: 3 },
+        Color: { tint: 0x3a4650, alpha: 0.55 }, // faint 地砖标记（zOrder 缺省最底）
+      };
+    }
+  }
+  return out;
+}
+
 // ── 生怪票（授权期纯数据·Timer 到点 self-rule 展开一只怪·非 E3 rate/cap director）──
 function spawnTicketEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
@@ -304,6 +321,7 @@ export function buildBlueprint(): WorldBlueprint {
       },
     },
 
+    ...groundGridEntities(),
     ...draftPickEntities(),
     ...spawnTicketEntities(),
   };

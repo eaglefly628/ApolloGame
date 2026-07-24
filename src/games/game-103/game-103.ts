@@ -16,11 +16,9 @@ import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp, type HudState, type LevelUpOffer } from './hud.js';
 import { VIEW_W, VIEW_H, PLAYER_DEF, LEVEL_XP, SURVIVOR_THEME, DRAFT_POOL, DRAFT_N, SLOT_CAP } from './theme.js';
 
-// 战场底纹（俯视网格·暗色渐晕·render-only）。
-const FIELD_BG =
-  'radial-gradient(120% 90% at 50% 55%, #0a1a24 0%, #04070c 82%),' +
-  'repeating-linear-gradient(0deg, rgba(80,140,170,0.06) 0 1px, transparent 1px 26px),' +
-  'repeating-linear-gradient(90deg, rgba(80,140,170,0.06) 0 1px, transparent 1px 26px)';
+// 战场底纹（暗色渐晕·render-only·屏幕固定）。BUG-01 修：移除原屏幕固定网格线（相机跟随时看着静止=像没动）；
+// 地砖网格改由世界空间实体承载（blueprint groundGridEntities·随相机卷动=相对位移）。
+const FIELD_BG = 'radial-gradient(120% 90% at 50% 45%, #12222c 0%, #060a10 82%)';
 
 export function mount(container: HTMLElement): () => void {
   const { scene, overlayHost, teardown } = mountHost(container, {
@@ -75,12 +73,17 @@ export function mount(container: HTMLElement): () => void {
   const hudUi: MountHandle = mountUI(overlayHost, buildHud(initial), handlers, SURVIVOR_THEME, hudQueue);
   let showingResult = false;
 
+  // ⚠ BUG-04 根因：engine.start() 的 loop 在 notifyListeners() 之后才 `rafId = RAF(loop)` 重挂——
+  // 从 listener(refreshHud) 里同步调 engine.stop() 会被下一行的重挂立刻覆盖，sim 根本停不下来（时停/局终冻结都失效）。
+  // 修：把 stop 延到 microtask——它在 loop() 返回后、重挂的 RAF 触发前执行 → 干净取消，sim 真停。
+  function pauseSim(): void { queueMicrotask(() => sim?.engine.stop()); }
+
   // 等级上升 → 时停 + 三选一 draft（rollOffer 过滤候选·seed=level 确定性）。
   function openLevelUp(level: number): void {
     const offers = rollOffer(pool, draftState, { n: DRAFT_N, seed: level });
     if (offers.length === 0) return; // 全满级→无候选·不停顿
     showingLevelUp = true;
-    if (sim) sim.engine.stop();
+    pauseSim();
     const items: LevelUpOffer[] = offers.map((c) => {
       const u = DRAFT_POOL.find((d) => d.id === c.id)!;
       const lvl = draftState.owned[c.id] ?? 0;
@@ -94,7 +97,7 @@ export function mount(container: HTMLElement): () => void {
     const st = readState(engine);
     if (st.status !== 'playing') {
       hudUi.update(buildResult(st), SURVIVOR_THEME);
-      if (!showingResult) { showingResult = true; engine.stop(); } // 局终冻结 sim
+      if (!showingResult) { showingResult = true; pauseSim(); } // 局终冻结 sim（同 BUG-04·延到 microtask）
       return;
     }
     if (showingResult) showingResult = false;

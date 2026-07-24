@@ -74,7 +74,7 @@ export const WEAPONS: WeaponDef[] = [
   { key: 'kunai', name: '飞镖 Kunai', desc: '直线飞镖·自动索敌（起始武器）', pattern: 'straight', dmg: 12, cd: 60, projSpeed: 8, life: 90, radius: 5, amount: 1, weight: 0, maxLevel: 5, tint: 0xffffff, skin: '103/proj-kunai' },
   { key: 'shock', name: '冲击波', desc: '近身范围爆·震开贴身敌群（AoE）', pattern: 'nova', dmg: 8, cd: 90, projSpeed: 0, life: 8, radius: 120, amount: 1, weight: 8, maxLevel: 5, tint: 0x7fd0ff, skin: '103/proj-shock' },
   { key: 'laser', name: '激光', desc: '高速横扫直线·穿透一线敌（远程）', pattern: 'beam', dmg: 6, cd: 110, projSpeed: 16, life: 26, radius: 8, amount: 1, weight: 7, maxLevel: 5, tint: 0xff5a4a, skin: '103/proj-laser' },
-  { key: 'boom', name: '回旋镖', desc: '飞出再回旋·往返双段伤（远程）', pattern: 'boomerang', dmg: 5, cd: 96, projSpeed: 7, life: 120, radius: 7, amount: 1, weight: 7, maxLevel: 5, tint: 0xffd23f, skin: '103/proj-boom' },
+  { key: 'boom', name: '回旋镖', desc: '飞出穿透一线敌（远程·回旋段待 capgap）', pattern: 'boomerang', dmg: 5, cd: 96, projSpeed: 7, life: 120, radius: 7, amount: 1, weight: 7, maxLevel: 5, tint: 0xffd23f, skin: '103/proj-boom' },
   { key: 'orbit', name: '护盾环', desc: '召唤环绕光球·持续灼烧贴身敌（近战）', pattern: 'orbit', dmg: 0.5, cd: 0, projSpeed: 0.045, life: 0, radius: 74, amount: 3, weight: 8, maxLevel: 3, tint: 0x7dff4d, skin: '103/proj-orbit' },
   { key: 'pet', name: '宠物随从', desc: '召唤随从·跟随并自动索敌开火（随从）', pattern: 'pet', dmg: 9, cd: 70, projSpeed: 7, life: 80, radius: 5, amount: 1, weight: 6, maxLevel: 3, tint: 0xc9a3ff, skin: '103/proj-pet' },
 ];
