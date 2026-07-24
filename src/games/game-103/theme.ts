@@ -91,22 +91,22 @@ export const LEVEL_HEAL = 15;     // 每级固定治疗
 export const LEVEL_POWER_ADD = 0.15; // 每级全局伤害系数 +0.15
 
 // ── 单敌群 spawn 时间表（授权期纯数据·无 Math.random·环绕出生）────────────
-// M1「单敌群」：沿玩家出生点四周的确定性环上按 tick 逐个刷怪（非 E3 波次 rate/cap director·那需 Lead 签 S2）。
+// M1「单敌群」：玩家四周确定性环上逐个刷怪，做出 Survivor.io「一睁眼就被围住 + 持续加压」的张力。
+// 开局爆一圈(instant horde) + 之后半径带上稳定流。**非 E3 波次 rate/cap director**（那需 Lead 签 S2·E3）——
+// 这里只是一张更长更密的授权期常量表，无运行时限速/同屏上限逻辑。
+const GOLDEN = 2.399963; // 黄金角（rad·授权期常量·均匀铺角度·非随机）
 export interface SpawnRow { at: number; x: number; y: number; key: string }
 export const SPAWNS: SpawnRow[] = (() => {
   const rows: SpawnRow[] = [];
-  const N = 48;                 // M1 敌群规模
-  const ringR = 320;            // 出生环半径（视口外缘附近）
-  for (let i = 0; i < N; i++) {
-    const ang = (Math.PI * 2 * ((i * 5) % N)) / N; // 确定性散布（黄金步长感·纯 authoring 常量）
-    const at = 60 + i * 45;                        // 每 0.75s 一只
-    rows.push({
-      at,
-      x: Math.round(START.x + Math.cos(ang) * ringR),
-      y: Math.round(START.y + Math.sin(ang) * ringR),
-      key: SHAMBLER.key,
-    });
-  }
+  const put = (at: number, ang: number, r: number): void => {
+    rows.push({ at, x: Math.round(START.x + Math.cos(ang) * r), y: Math.round(START.y + Math.sin(ang) * r), key: SHAMBLER.key });
+  };
+  // ① 开局包围圈：t≈0.5s 一次性铺满 360°（22 只·半径带 260–360）——开屏即被群围。
+  const RING0 = 22;
+  for (let i = 0; i < RING0; i++) put(30, (Math.PI * 2 * i) / RING0, 260 + (i % 3) * 50);
+  // ② 持续加压流：每 ~0.25s 一只，黄金角铺满四周、半径带循环，一直刷到 ~40s（M1 灰盒足够展示雪球）。
+  const STREAM = 150;
+  for (let i = 0; i < STREAM; i++) put(75 + i * 15, i * GOLDEN, 300 + (i % 5) * 40);
   return rows;
 })();
 
