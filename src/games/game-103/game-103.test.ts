@@ -10,13 +10,14 @@ import { validateLayoutNode } from '@ui/components/index.js';
 import type { Sprite } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp } from './hud.js';
-import { ENEMY, ZONE, START, KUNAI, SHAMBLER, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, POWER_ADD, ORBIT } from './theme.js';
+import { ENEMY, ZONE, START, KUNAI, SHAMBLER, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY } from './theme.js';
 
 // 一步 sim（复刻引擎 step：每拍都注入命令→清 InputQueue·空则清空·防陈留信号重复触发）。
 function step(e: Engine, cmds: Command[] = []): void {
   applyCommands(e.world, cmds);
   e.world.tick();
 }
+function stepN(e: Engine, n: number): void { for (let i = 0; i < n; i++) step(e); }
 // 驱动一个动作信号（enqueueAction → applyCommands 路由进 InputQueue → keybind→Signal→Effect·仅本拍在场）。
 function fireAction(e: Engine, name: string): void {
   const input = new QueuedInputSource('hud');
@@ -144,16 +145,26 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     const p0 = resById(e, 'power');
     fireAction(e, 'pick_blade');
     step(e); step(e); // 清队 + Effect 写入下一拍生效（不重复触发）
-    expect(resById(e, 'power')).toBeCloseTo(p0 + POWER_ADD.blade, 5);
+    expect(resById(e, 'power')).toBeCloseTo(p0 + PASSIVE_BY_KEY.blade.value, 5);
   });
 
-  it('升级选中「护盾环」→ Caster 生成跟随玩家的灼烧光环武器（新武器·带皮肤槽）', () => {
+  it('升级选中「护盾环」→ Caster 生成跟随玩家的环绕光球武器（新武器·带皮肤槽）', () => {
     const e = fresh();
     tickN(e, 3);
-    expect(hasSprite(e, ORBIT.skin)).toBe(false);
+    expect(hasSprite(e, WEAPON_BY_KEY.orbit.skin)).toBe(false);
     fireAction(e, 'pick_orbit');
     step(e); step(e);
-    expect(hasSprite(e, ORBIT.skin)).toBe(true); // 护盾环实例已展开
+    expect(hasSprite(e, WEAPON_BY_KEY.orbit.skin)).toBe(true); // 护盾环光球已展开
+  });
+
+  it('武器册全射法：每把武器都能被 draft 生成并射出（straight/nova/beam/boomerang/orbit/pet）', () => {
+    for (const w of WEAPONS.filter((x) => x.key !== 'kunai')) {
+      const e = fresh();
+      tickN(e, 3);
+      fireAction(e, `pick_${w.key}`);
+      stepN(e, w.cd + 5); // 清队推进·让挂点发出子弹（orbit/pet 即刻·发射器待 cd）
+      expect(hasSprite(e, w.skin)).toBe(true); // 该武器子弹/光球皮肤在场=射法生效
+    }
   });
 
   it('确定性：两把独立同 tick → 同 hash（可回放/balance-sim）', () => {

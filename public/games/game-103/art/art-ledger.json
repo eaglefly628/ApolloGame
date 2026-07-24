@@ -2,8 +2,8 @@
   "version": 1,
   "game": "game-103",
   "mode": "requirements",
-  "count": 6,
-  "instances": 6,
+  "count": 13,
+  "instances": 15,
   "rows": [
     {
       "skinKey": "103/player",
@@ -224,6 +224,225 @@
         "license": "CC0",
         "mock": false
       }
+    },
+    {
+      "skinKey": "103/proj-boom",
+      "no": "art-07",
+      "desc": "proj boom p, round shape, main color #ffd23f, defensive turret that senses and attacks enemies in range, small on screen (14x14), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:proj_boom:p",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "proj boom p",
+      "placeholder": {
+        "current": "皮肤槽 103/proj-boom（未填时回退 2D 色块 circle·#ffd23f）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:proj_boom:p"
+        ]
+      },
+      "spec": {
+        "w": 14,
+        "h": 14,
+        "displayW": 14,
+        "displayH": 14,
+        "transparent": true
+      },
+      "context": "美术需求：「proj boom p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/proj-boom（未填时回退 2D 色块 circle·#ffd23f）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "103/proj-laser",
+      "no": "art-08",
+      "desc": "proj laser p, rectangular shape, main color #ff5a4a, small on screen (40x8), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:proj_laser:p",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "proj laser p",
+      "placeholder": {
+        "current": "皮肤槽 103/proj-laser（未填时回退 2D 色块 box·#ff5a4a）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:proj_laser:p"
+        ]
+      },
+      "spec": {
+        "w": 40,
+        "h": 8,
+        "displayW": 40,
+        "displayH": 8,
+        "transparent": true
+      },
+      "context": "美术需求：「proj laser p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/proj-laser（未填时回退 2D 色块 box·#ff5a4a）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "103/proj-orbit",
+      "no": "art-09",
+      "desc": "proj orbit p, round shape, main color #7dff4d, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:proj_orbit:p",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "proj orbit p",
+      "placeholder": {
+        "current": "皮肤槽 103/proj-orbit（未填时回退 2D 色块 circle·#7dff4d）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:proj_orbit:p"
+        ]
+      },
+      "spec": {
+        "w": 148,
+        "h": 148,
+        "displayW": 148,
+        "displayH": 148,
+        "transparent": true
+      },
+      "context": "美术需求：「proj orbit p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/proj-orbit（未填时回退 2D 色块 circle·#7dff4d）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "103/proj-pet",
+      "no": "art-10",
+      "desc": "proj pet p, round shape, main color #c9a3ff, small on screen (10x10), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:proj_pet:p",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "proj pet p",
+      "placeholder": {
+        "current": "皮肤槽 103/proj-pet（未填时回退 2D 色块 circle·#c9a3ff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:proj_pet:p"
+        ]
+      },
+      "spec": {
+        "w": 10,
+        "h": 10,
+        "displayW": 10,
+        "displayH": 10,
+        "transparent": true
+      },
+      "context": "美术需求：「proj pet p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/proj-pet（未填时回退 2D 色块 circle·#c9a3ff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "103/proj-shock",
+      "no": "art-11",
+      "desc": "proj shock p, round shape, main color #7fd0ff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:proj_shock:p",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "proj shock p",
+      "placeholder": {
+        "current": "皮肤槽 103/proj-shock（未填时回退 2D 色块 circle·#7fd0ff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:proj_shock:p"
+        ]
+      },
+      "spec": {
+        "w": 240,
+        "h": 240,
+        "displayW": 240,
+        "displayH": 240,
+        "transparent": true
+      },
+      "context": "美术需求：「proj shock p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/proj-shock（未填时回退 2D 色块 circle·#7fd0ff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "103/proj-orbit",
+      "no": "art-12",
+      "desc": "weapon orbit ball, round shape, main color #7dff4d, small on screen (24x24), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:weapon_orbit:ball0",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "weapon orbit ball",
+      "placeholder": {
+        "current": "皮肤槽 103/proj-orbit（未填时回退 2D 色块 circle·#7dff4d）",
+        "source": "procedural",
+        "count": 3,
+        "instances": [
+          "prefab:weapon_orbit:ball0",
+          "prefab:weapon_orbit:ball1",
+          "prefab:weapon_orbit:ball2"
+        ]
+      },
+      "spec": {
+        "w": 24,
+        "h": 24,
+        "displayW": 24,
+        "displayH": 24,
+        "transparent": true
+      },
+      "context": "美术需求：「weapon orbit ball」（预制模板（生成的每个实例共用一套美术）·×3 实例）·2D 平面·当前占位=皮肤槽 103/proj-orbit（未填时回退 2D 色块 circle·#7dff4d）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
+    },
+    {
+      "skinKey": "103/proj-pet",
+      "no": "art-13",
+      "desc": "weapon pet pet, round shape, main color #c9a3ff, defensive turret that senses and attacks enemies in range, small on screen (20x20), top-down 2d game view, isolated subject, transparent background",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:weapon_pet:pet",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "weapon pet pet",
+      "placeholder": {
+        "current": "皮肤槽 103/proj-pet（未填时回退 2D 色块 circle·#c9a3ff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:weapon_pet:pet"
+        ]
+      },
+      "spec": {
+        "w": 20,
+        "h": 20,
+        "displayW": 20,
+        "displayH": 20,
+        "transparent": true
+      },
+      "context": "美术需求：「weapon pet pet」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/proj-pet（未填时回退 2D 色块 circle·#c9a3ff）·需透明底",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null
     }
   ]
 }

@@ -29,8 +29,8 @@ import { prefabCapability, casterCapability, aggroCapability, flowCapability } f
 import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
   PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, TINT,
-  PLAYER_DEF, KUNAI, SHAMBLER, GEM_BLUE, GEM_LIFE, SPAWNS,
-  LEVEL_XP, DRAFT_POOL, POWER_ADD, HEAL, ORBIT, type WeaponDef, type EnemyDef, type GemDef,
+  PLAYER_DEF, KUNAI, WEAPONS, SHAMBLER, GEM_BLUE, GEM_LIFE, SPAWNS,
+  LEVEL_XP, DRAFT_POOL, PASSIVE_BY_KEY, type WeaponDef, type EnemyDef, type GemDef,
 } from './theme.js';
 
 const XF0 = { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
@@ -38,24 +38,75 @@ const child = (parentId: string) => ({ parentId, localX: 0, localY: 0, localRota
 
 // ── prefab 模板 ──────────────────────────────────────────────────────────────
 
-// 子弹：spawn 即 Launch 朝最近敌人一次定向直飞 → hitbox 命中扣血（×power 系数·单发 consumeOnHit）→ 寿命回收。
-function projTemplate(w: WeaponDef): { entities: Record<string, Record<string, unknown>> } {
-  return {
-    entities: {
-      p: {
-        Transform: { ...XF0 },
-        Velocity: { vx: 0, vy: 0, angular: 0 },
-        Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY },
-        Sensor: {},
-        Tag: { flags: ZONE },
-        Shape: { kind: 'circle', radius: w.radius },
-        Sprite: { textureKey: w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 2 }, // 皮肤槽
-        Color: { tint: w.tint, alpha: 1 },
-        Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, consumeOnHit: true, scaleByResource: 'power' },
-        Timer: { id: 'life', elapsed: 0, duration: w.life, loop: false }, // lifetime 回收
-      },
-    },
+// 子弹（按射法 pattern 组装·非运行时解释器·authoring 期 builder 同 game-q towerTemplate）：
+//  straight=Launch 直飞·单发命中；beam=快速长条·穿一线(连续 per-tick)；boomerang=Launch 去 + Perception/Steering 拉回；
+//  nova=自身大范围 Hitbox·短寿命扫全场(per-tick)。命中一律 ×power 系数·寿命回收。
+function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, unknown>> } {
+  const base: Record<string, unknown> = {
+    Transform: { ...XF0 },
+    Sensor: {}, Tag: { flags: ZONE },
+    Sprite: { textureKey: w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 2 }, // 皮肤槽
+    Timer: { id: 'life', elapsed: 0, duration: w.life, loop: false },      // lifetime 回收
   };
+  if (w.pattern === 'nova') {
+    return { entities: { p: { ...base,
+      Shape: { kind: 'circle', radius: w.radius },
+      Color: { tint: w.tint, alpha: 0.26 },
+      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // per-tick·扫全范围
+    } } };
+  }
+  const single = w.pattern === 'straight' || w.pattern === 'pet'; // 单发命中 vs 穿透 per-tick
+  const p: Record<string, unknown> = { ...base,
+    Velocity: { vx: 0, vy: 0, angular: 0 },
+    Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY },
+    Shape: w.pattern === 'beam' ? { kind: 'box', width: w.radius * 5, height: w.radius } : { kind: 'circle', radius: w.radius },
+    Color: { tint: w.tint, alpha: 1 },
+    Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', ...(single ? { consumeOnHit: true } : {}) },
+  };
+  if (w.pattern === 'boomerang') { // Launch 一次定向飞出 → self-remove 后 steering 朝玩家拉回=往返
+    p.Perception = { targetTag: PLAYER, sightRadius: 0 };
+    p.Steering = { mode: 'seek', speed: w.projSpeed, stopRange: 6 };
+  }
+  return { entities: { p } };
+}
+
+// 武器挂点（draft 选中即 Caster spawn·child of player 跟随）：按 pattern 造持续伤/发射器。
+//  orbit=环上静态光球 child（持续贴身 AoE）；pet=独立跟随子体（自带 Timer+SelfRule 自动射）；
+//  其余=child 发射器（Timer 到点 SelfRule spawn proj_<key> at:self）。
+function weaponMount(w: WeaponDef): { entities: Record<string, Record<string, unknown>> } {
+  if (w.pattern === 'orbit') {
+    const ents: Record<string, Record<string, unknown>> = {};
+    for (let i = 0; i < w.amount; i++) {
+      const a = (Math.PI * 2 * i) / w.amount;
+      ents[`ball${i}`] = {
+        Hierarchy: { parentId: 'player', localX: Math.round(Math.cos(a) * w.radius), localY: Math.round(Math.sin(a) * w.radius), localRotation: 0, localScaleX: 1, localScaleY: 1 },
+        Transform: { ...XF0 },
+        Sensor: {}, Tag: { flags: ZONE },
+        Shape: { kind: 'circle', radius: 12 },
+        Sprite: { textureKey: w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽
+        Color: { tint: w.tint, alpha: 0.9 },
+        Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' },
+      };
+    }
+    return { entities: ents };
+  }
+  if (w.pattern === 'pet') {
+    return { entities: { pet: {
+      Transform: { ...XF0 }, Velocity: { vx: 0, vy: 0, angular: 0 },
+      Perception: { targetTag: PLAYER, sightRadius: 0 }, Steering: { mode: 'seek', speed: 2.4, stopRange: 56 }, // 跟随玩家
+      Shape: { kind: 'circle', radius: 10 },
+      Sprite: { textureKey: w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 2 }, Color: { tint: w.tint, alpha: 1 },
+      Timer: { id: 'fire', elapsed: 0, duration: w.cd, loop: true },
+      SelfRule: { when: { kind: 'timer', id: 'fire', cmp: 'gte', value: Math.max(1, w.cd - 1) }, do: [{ kind: 'spawn', template: `proj_${w.key}`, at: 'self' }], once: true, armed: false },
+    } } };
+  }
+  // straight/nova/beam/boomerang：child 发射器（跟随玩家·按 cd 发 proj）
+  return { entities: { m: {
+    Hierarchy: { parentId: 'player', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 },
+    Transform: { ...XF0 },
+    Timer: { id: 'fire', elapsed: 0, duration: w.cd, loop: true },
+    SelfRule: { when: { kind: 'timer', id: 'fire', cmp: 'gte', value: Math.max(1, w.cd - 1) }, do: [{ kind: 'spawn', template: `proj_${w.key}`, at: 'self' }], once: true, armed: false },
+  } } };
 }
 
 // 敌人：aggro(Perception)→Relation(target=玩家) + steering(seek) 追击；接触伤害在隐形 child 触伤区；死亡掉宝石。
@@ -123,36 +174,19 @@ function gemTemplate(g: GemDef): { entities: Record<string, Record<string, unkno
 }
 
 // 护盾环（升级三选一「新武器」·跟随玩家的灼烧光环·child of player·持续 AoE 贴身敌）。
-function orbitTemplate(): { entities: Record<string, Record<string, unknown>> } {
-  return {
-    entities: {
-      ring: {
-        Hierarchy: { parentId: 'player', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 },
-        Transform: { ...XF0 },
-        Sensor: {},
-        Tag: { flags: ZONE },
-        Shape: { kind: 'circle', radius: ORBIT.radius },
-        Sprite: { textureKey: ORBIT.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽
-        Color: { tint: ORBIT.tint, alpha: 0.16 },
-        Hitbox: { resource: 'hp', amount: ORBIT.dmgPerTick, targetMask: ENEMY, scaleByResource: 'power' },
-      },
-    },
-  };
-}
-
 // 升级三选一 pick 接线（纯数据·每候选一条 KeyBinding + 效果）：
-//  伤害类→Effect modify power；治疗类→Effect modify hp；新武器 orbit→Caster spawn 护盾环。
+//  被动(power/heal)→Effect 改资源；武器→Caster spawn 该武器挂点（child of player·at:self）。
 //  宿主 draft 选中 → hudQueue.enqueueAction(effectSignal) → KeyBinding→Signal → 下面消费。
 function draftPickEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   for (const u of DRAFT_POOL) {
     out[`kb-${u.id}`] = { KeyBinding: { key: u.effectSignal, signal: u.effectSignal } };
-    if (u.id === 'blade' || u.id === 'crit') {
-      out[`fx-${u.id}`] = { Effect: { onSignal: u.effectSignal, kind: 'modify-resource', targetId: 'power', op: 'add', value: POWER_ADD[u.id] } };
-    } else if (u.id === 'heart' || u.id === 'vigor') {
-      out[`fx-${u.id}`] = { Effect: { onSignal: u.effectSignal, kind: 'modify-resource', targetId: 'hp', op: 'add', value: HEAL[u.id] } };
-    } else if (u.id === 'orbit') {
-      out['aura-caster'] = { Caster: { onSignal: u.effectSignal, template: 'weapon_orbit', at: 'self', originEntity: 'player' } };
+    if (u.slot === 'passive') {
+      const p = PASSIVE_BY_KEY[u.id];
+      const targetId = p.kind === 'power' ? 'power' : 'hp';
+      out[`fx-${u.id}`] = { Effect: { onSignal: u.effectSignal, kind: 'modify-resource', targetId, op: 'add', value: p.value } };
+    } else {
+      out[`cast-${u.id}`] = { Caster: { onSignal: u.effectSignal, template: `weapon_${u.id}`, at: 'self', originEntity: 'player' } };
     }
   }
   return out;
@@ -261,10 +295,11 @@ export function buildBlueprint(): WorldBlueprint {
       PrefabLibrary: {
         seq: 0,
         templates: {
-          [`proj_${KUNAI.key}`]: projTemplate(KUNAI),
           [`enemy_${SHAMBLER.key}`]: enemyTemplate(SHAMBLER, `gem_${SHAMBLER.gem}`),
           [`gem_${GEM_BLUE.key}`]: gemTemplate(GEM_BLUE),
-          weapon_orbit: orbitTemplate(),
+          // 全武器：每把一个 proj_<key>（射法模板）+ 非起始武器一个 weapon_<key>（挂点·draft 生成）。
+          ...Object.fromEntries(WEAPONS.map((w) => [`proj_${w.key}`, projByPattern(w)])),
+          ...Object.fromEntries(WEAPONS.filter((w) => w.key !== 'kunai').map((w) => [`weapon_${w.key}`, weaponMount(w)])),
         },
       },
     },

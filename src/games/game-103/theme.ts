@@ -43,23 +43,43 @@ export const PLAYER_DEF = {
   skin: '103/player',
 } as const;
 
-// ── 武器定义（M1 首发=飞镖 Kunai·gdd §4.1 / balance §2）──────────────────────
-// dmg/cd/projSpeed/life 皆 tick 化；命中由 t2-hitbox 结算·飞行由 t2-launch(toward:target)+t1-motion-apply。
+// ── 武器册（gdd §4·统一数据表·pattern 声明射法）────────────────────────────
+// 每把武器=一条纯数据；authoring 期 prefab builder（blueprint.ts）按 pattern 组装成现有能力的组件蓝图
+// （Launch/Hitbox/Steering/Perception/rotation…）——非运行时游戏层解释器（同 game-q towerTemplate 先例·合规）。
+// dmg/cd/projSpeed/life 皆 tick 化；命中由 t2-hitbox 结算（× 全局 power 系数）。
+export type FirePattern =
+  | 'straight'   // 直线飞弹（Launch toward:target·单发 consumeOnHit）
+  | 'nova'       // 近身 AoE 爆（自身大范围 Hitbox·短寿命·扫全场贴身敌）
+  | 'beam'       // 横扫直线（快速大穿透弹·短寿命扫穿一线）
+  | 'boomerang'  // 往返回旋（Launch 去 + Perception/Steering 拉回玩家）
+  | 'orbit'      // 环绕光球（旋转 hub + 环上光球 child·持续贴身伤）
+  | 'pet';       // 宠物随从（跟随玩家的子体·自带 Timer+SelfRule 自动射）
 export interface WeaponDef {
   key: string;
   name: string;
-  dmg: number;      // 基础伤害（× 全局 power 资源·升级固定强化）
-  cd: number;       // 冷却 tick（60=1.0s）
-  projSpeed: number;// 子弹初速 px/tick
-  life: number;     // 子弹寿命 tick
-  radius: number;   // 子弹判定半径
+  desc: string;      // 三选一卡描述
+  pattern: FirePattern;
+  dmg: number;       // 基础伤害（× 全局 power）
+  cd: number;        // 冷却 tick（发射节拍·orbit 忽略）
+  projSpeed: number; // 子弹初速 px/tick（nova/orbit 忽略）
+  life: number;      // 子弹寿命 tick
+  radius: number;    // 判定半径（nova/orbit=范围半径）
+  amount: number;    // orbit 光球数 / pet 数 / 多重发（默认 1）
+  weight: number;    // draft 加权
+  maxLevel: number;
   tint: number;
   skin: string;
 }
-export const KUNAI: WeaponDef = {
-  key: 'kunai', name: '飞镖 Kunai', dmg: 12, cd: 60, projSpeed: 8, life: 90, radius: 5,
-  tint: TINT.proj, skin: '103/proj-kunai',
-};
+export const WEAPONS: WeaponDef[] = [
+  { key: 'kunai', name: '飞镖 Kunai', desc: '直线飞镖·自动索敌（起始武器）', pattern: 'straight', dmg: 12, cd: 60, projSpeed: 8, life: 90, radius: 5, amount: 1, weight: 0, maxLevel: 5, tint: 0xffffff, skin: '103/proj-kunai' },
+  { key: 'shock', name: '冲击波', desc: '近身范围爆·震开贴身敌群（AoE）', pattern: 'nova', dmg: 8, cd: 90, projSpeed: 0, life: 8, radius: 120, amount: 1, weight: 8, maxLevel: 5, tint: 0x7fd0ff, skin: '103/proj-shock' },
+  { key: 'laser', name: '激光', desc: '高速横扫直线·穿透一线敌（远程）', pattern: 'beam', dmg: 6, cd: 110, projSpeed: 16, life: 26, radius: 8, amount: 1, weight: 7, maxLevel: 5, tint: 0xff5a4a, skin: '103/proj-laser' },
+  { key: 'boom', name: '回旋镖', desc: '飞出再回旋·往返双段伤（远程）', pattern: 'boomerang', dmg: 5, cd: 96, projSpeed: 7, life: 120, radius: 7, amount: 1, weight: 7, maxLevel: 5, tint: 0xffd23f, skin: '103/proj-boom' },
+  { key: 'orbit', name: '护盾环', desc: '召唤环绕光球·持续灼烧贴身敌（近战）', pattern: 'orbit', dmg: 0.5, cd: 0, projSpeed: 0.045, life: 0, radius: 74, amount: 3, weight: 8, maxLevel: 3, tint: 0x7dff4d, skin: '103/proj-orbit' },
+  { key: 'pet', name: '宠物随从', desc: '召唤随从·跟随并自动索敌开火（随从）', pattern: 'pet', dmg: 9, cd: 70, projSpeed: 7, life: 80, radius: 5, amount: 1, weight: 6, maxLevel: 3, tint: 0xc9a3ff, skin: '103/proj-pet' },
+];
+export const KUNAI = WEAPONS[0]; // 起始武器（内置武器挂点）
+export const WEAPON_BY_KEY: Record<string, WeaponDef> = Object.fromEntries(WEAPONS.map((w) => [w.key, w]));
 
 // ── 敌人定义（M1 单型=蹒跚者 E1·gdd §六）───────────────────────────────────
 export interface EnemyDef {
@@ -89,30 +109,40 @@ export const GEM_LIFE = 1800; // 未拾取宝石寿命 tick（30s）
 // 玩家选 → applyPick + 该项 effectSignal 应用到世界）。子弹伤害 = KUNAI.dmg × 全局 power 资源。
 export const LEVEL_XP = 5;        // 升级阈值（M2 占位固定·真曲线 expToNext=5+lvl×10 后续）
 
-// 升级候选池（纯数据·draft-offer 的 DraftCandidate + 展示/接线元数据）。
-// slot/weight/maxLevel 喂 rollOffer 过滤+加权抽；effectSignal=选中时入队的信号名（KeyBinding→Effect 应用）。
+// 被动册（gdd §五·modifier 类·选中即数值加成）。
+export interface PassiveDef {
+  key: string; name: string; desc: string;
+  kind: 'power' | 'heal';  // power=全局伤害系数+ / heal=即时回血
+  value: number;
+  weight: number; maxLevel: number;
+}
+export const PASSIVES: PassiveDef[] = [
+  { key: 'blade', name: '锋刃手册', desc: '全武器伤害 +20%', kind: 'power', value: 0.2, weight: 10, maxLevel: 5 },
+  { key: 'crit', name: '暴击核心', desc: '全武器伤害 +35%（稀有）', kind: 'power', value: 0.35, weight: 5, maxLevel: 5 },
+  { key: 'heart', name: '生命护心', desc: '立即回复 30 生命', kind: 'heal', value: 30, weight: 9, maxLevel: 9 },
+  { key: 'vigor', name: '疾行护符', desc: '立即回复 15 生命', kind: 'heal', value: 15, weight: 9, maxLevel: 9 },
+];
+
+// 统一 draft 候选：武器（起始 Kunai 除外·slot=weapon·accent=红）+ 被动（slot=passive·accent=蓝）。
+// effectSignal='pick_'+key → 宿主选中入队 → KeyBinding→（武器:Caster spawn 挂点 / 被动:Effect 改资源）。
 export interface UpgradeDef {
-  id: string;
-  name: string;
-  desc: string;
+  id: string; name: string; desc: string;
   slot: 'weapon' | 'passive';
-  weight: number;
-  maxLevel: number;
+  weight: number; maxLevel: number;
   effectSignal: string;
-  accent: 'active' | 'passive'; // 卡片描边色（红=主动/武器·蓝=被动）
+  accent: 'active' | 'passive';
 }
 export const DRAFT_POOL: UpgradeDef[] = [
-  { id: 'blade', name: '锋刃手册', desc: '全武器伤害 +20%', slot: 'passive', weight: 10, maxLevel: 5, effectSignal: 'pick_blade', accent: 'passive' },
-  { id: 'crit', name: '暴击核心', desc: '全武器伤害 +35%（稀有）', slot: 'passive', weight: 5, maxLevel: 5, effectSignal: 'pick_crit', accent: 'passive' },
-  { id: 'heart', name: '生命护心', desc: '立即回复 30 生命', slot: 'passive', weight: 9, maxLevel: 9, effectSignal: 'pick_heart', accent: 'passive' },
-  { id: 'vigor', name: '疾行护符', desc: '立即回复 15 生命', slot: 'passive', weight: 9, maxLevel: 9, effectSignal: 'pick_vigor', accent: 'passive' },
-  { id: 'orbit', name: '护盾环', desc: '召唤环绕光环·持续灼烧贴身敌（新武器）', slot: 'weapon', weight: 8, maxLevel: 3, effectSignal: 'pick_orbit', accent: 'active' },
+  ...WEAPONS.filter((w) => w.key !== 'kunai').map((w): UpgradeDef => ({
+    id: w.key, name: w.name, desc: w.desc, slot: 'weapon', weight: w.weight, maxLevel: w.maxLevel, effectSignal: `pick_${w.key}`, accent: 'active',
+  })),
+  ...PASSIVES.map((p): UpgradeDef => ({
+    id: p.key, name: p.name, desc: p.desc, slot: 'passive', weight: p.weight, maxLevel: p.maxLevel, effectSignal: `pick_${p.key}`, accent: 'passive',
+  })),
 ];
 export const DRAFT_N = 3;                 // 三选一
 export const SLOT_CAP = { weapon: 6, passive: 6 } as const; // 槽位上限（gdd §三）
-export const POWER_ADD = { blade: 0.2, crit: 0.35 } as const; // 伤害系数增量
-export const HEAL = { heart: 30, vigor: 15 } as const;         // 治疗量
-export const ORBIT = { radius: 74, dmgPerTick: 0.5, tint: 0x7dff4d, skin: '103/orbit' } as const; // 护盾环武器
+export const PASSIVE_BY_KEY: Record<string, PassiveDef> = Object.fromEntries(PASSIVES.map((p) => [p.key, p]));
 
 // ── 单敌群 spawn 时间表（授权期纯数据·无 Math.random·环绕出生）────────────
 // M1「单敌群」：玩家四周确定性环上逐个刷怪，做出 Survivor.io「一睁眼就被围住 + 持续加压」的张力。
