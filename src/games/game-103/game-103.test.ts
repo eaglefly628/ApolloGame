@@ -3,7 +3,9 @@ import { Engine } from '../../runtime/engine.js';
 import { applyCommands } from '@net/index.js';
 import type { Command } from '@net/index.js';
 import type { Resource, Tag, GameFlow, Transform } from '@engine/protocol/components.js';
+import { validateLayoutNode } from '@ui/components/index.js';
 import { buildBlueprint } from './blueprint.js';
+import { buildHud, buildResult } from './hud.js';
 import { ENEMY, ZONE, START, KUNAI, SHAMBLER, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF } from './theme.js';
 
 // ── 小工具 ──────────────────────────────────────────────────────────────────
@@ -95,6 +97,13 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     }
     tickN(e, 2);
     expect(flowState(e)).toBe('victory');
+  });
+
+  it('UI 卫生：HUD/结算 LayoutNode 树 validateLayoutNode 零 issue（check-ui 机械门）', () => {
+    const st = { hp: 72, maxHp: 100, xp: 3, xpMax: LEVEL_XP, level: 4, elapsed: 522, score: 387, status: 'playing' as const };
+    expect(validateLayoutNode(buildHud(st))).toEqual([]);
+    expect(validateLayoutNode(buildResult({ ...st, status: 'victory' }))).toEqual([]);
+    expect(validateLayoutNode(buildResult({ ...st, status: 'defeat' }))).toEqual([]);
   });
 
   it('确定性：两把独立同 tick → 同 hash（可回放/balance-sim）', () => {
