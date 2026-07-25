@@ -8,6 +8,17 @@
 
 ## 待处理 / 进行中
 
+### REQ-PATHFOLLOW-轨道环绕跟随（写 Velocity·可与索敌/抛射簇共存）· [2026-07-25] · PE-game102 报（owner「炮台沿轨道走一圈+锁色发射」是功能·定性下沉）→ Lead 裁 · status: **open** · 优先级: P1（game102 核心可见玩法·owner 急件·roguelite/塔防/传送带通用） · 类型: 引擎移动能力缺口（主程域·先重组再下沉）
+> **想实现的行为**：实体沿一条**固定轨道/航线（闭环或折线）匀速跑一圈**（Pixel Pour 色炮沿管道环绕像素画一周；通用于巡逻兵/传送带载具/环形弹幕），**同时**该实体照常 `aggro` 锁最近同色目标、`launch` 逐发抛射（子弹按颜色 targetMask 锁敌即发）。即「按轨道走位」与「逐格索敌开火」**共存**。
+> **已试（PE 源码复核 + 实测拓扑环复现）**：
+> - `t2-orbit-motion`（圆周运动·survivor 护盾件）能画圆环，但**与索敌/抛射簇成不可破拓扑环**：`orbit-motion` `runsAfter motion-apply` 且**写 Transform**，被 `aggro`(读 Transform·`runsBefore motion-apply`) 读 → 边 `aggro→motion-apply→orbit-motion→aggro` 死环，引擎 `src/engine/core/topological-sort.ts` 抛 `Circular dependency`（game102 加 orbit+aggro **实测复现**·非推断）。`launch`/`steering` 同族（皆 `runsBefore motion-apply`+读 Transform）→ 同环。**故「真轨道环绕 + 逐格索敌开火」当前引擎无任一组合可表达。**
+> - 折中已交付（REQ-G102-VISCANNON）：弃 orbit·改 `steering` 驾炮**游向**目标格（可见移动但非沿轨道环一周）——满足「可见」但不满足 owner 要的「沿轨道走一圈」。
+> **卡在哪 / 缺什么**：缺一条**写 `Velocity`（非绝对 Transform）、`runsBefore motion-apply` 的轨道跟随移动**——因写 Velocity 且在移动前定速，它天然落在 `steering`/`launch` 同一「先定速→motion-apply 积分」链里，**与 `aggro` 无环**（根因：orbit 之所以成环，正因它写 Transform 且排在 motion 之后）。
+> **建议方案（Lead 裁·二选一·倾向①更通用）**：
+> - **① 下沉 `path-follow`（轨道/航点跟随·推荐）**：组件 `PathFollow{ waypoints:[{x,y}], loop?:bool, speed, arriveRadius? }`；系统 `runsBefore motion-apply`·读自身 Transform + 当前航点 → 写 `Velocity`=朝当前航点单位向量×speed·到 arriveRadius 内进下一航点（loop 则环回）。确定性（sqrt/÷ 归一·同 steering 口径·无随机）。通用于巡逻/传送带/环形轨道；与 aggro/launch/steering 天然共存（同 pre-motion 链）。作者把管道环采样成航点数组烤进蓝图（纯数据）。
+> - **② 给 `orbit-motion` 加 Velocity 模式（次选·薄）**：`Orbit.mode?:'transform'|'velocity'`，velocity 模式改写 `Velocity`（切向×speed）+ `runsBefore motion-apply`（缺省 transform=现行为零回归）。只解圆环、不解任意折线轨道，通用性弱于①。
+> **边界（本单允许触碰）**：`src/skills/**`（新 `path-follow.ts` 或改 `orbit-motion.ts` + `src/assembly/capability-registry.ts` 登记 + 测试）；game102 只经数据挂 `PathFollow{waypoints:管道环采样点}` 消费·零游戏层 system。撞墙实证＝`src/games/game102/blueprint.ts`（orbit+aggro 触发 Circular dependency）+ 折中件 REQ-G102-VISCANNON。
+
 ### REQ-UI-异型容器 shape + 槽位容器 Slots（Panel/Card 非矩形 + 多槽餐盘/背包格通用）· [2026-07-24] · PE-101 报（owner「多 slot + 异型 UI 是底层需求」定性）→ PUI 裁 · status: open · 优先级: P2（game101 顾客卡基准保真·非阻断·现用闭集顶着） · 类型: UI 基座控件缺口（PUI 域·全游戏通用）
 > owner 2026-07-24 把「多 slot 餐盘」「异型限时菜单」定性为**底层需求**。PE-101 架构评审（先评判）后拆成一主一辅，报 PUI：
 > - **① 异型容器（真缺口·主）**：基座异型只在 `Button.shape`（8 款 ShapeToken）+ `layout.chamfer`（矩形切角）；**`Panel`/`Card` 无 shape 枚举**，非矩形容器（如 Gossip Harbor 顾客行右侧「动态异形限时菜单」卡）只能靠贴图皮硬凑。**建议薄加性**：给 `Panel`（含 `Card`）加 `shape?:ShapeToken`（**复用现有闭集枚举 + `render.ts SHAPE_CSS`**·非自由 clip-path），命中区=包围盒（同 Button）。异型须给足 width/height。
