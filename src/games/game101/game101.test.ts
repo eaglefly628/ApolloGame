@@ -4,7 +4,7 @@ import { validateLayoutNode } from '@ui/components/index.js';
 import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop, DeliverDrop, Order, Timer } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1, buildS1Live } from './s1.js';
-import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, generatorOutput, cellCenter, TIMED_ITEM, TIMED_SEC, TICKS_PER_SEC } from './theme.js';
+import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, generatorOutput, cellCenter, cellIndexOf, TIMED_ITEM, TIMED_SEC, TICKS_PER_SEC } from './theme.js';
 
 // ── headless 助手 ─────────────────────────────────────────────────────────────
 function res(e: Engine, id: string): number { return e.world.getComponent<Resource>(id, 'Resource')?.current ?? 0; }
@@ -167,6 +167,27 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     tapGen(e, g.cell);
     expect(res(e, RES.energy)).toBe(e0 - g.energyCost); // 扣体力
     expect(countTemplate(e, out)).toBe(c0 + 1);          // 产出一个固定 L1
+  });
+
+  it('产出可见性（bug 修复）：生成器产出落在自己格 → 移动意图挪到空格（否则盖生成器下=点了没反应）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 4);
+    const g = GENERATORS[0]; // 冰箱 cell 0 → food_1
+    const c0 = countTemplate(e, 'food_1');
+    tapGen(e, g.cell);
+    const fresh = itemsOf(e, 'food_1').find((id) => {
+      const t = e.world.getComponent<Transform>(id, 'Transform');
+      return t && cellIndexOf(t.x, t.y) === g.cell; // 根因：caster at:self 落生成器自己格
+    });
+    expect(countTemplate(e, 'food_1')).toBe(c0 + 1);
+    expect(fresh).toBeTruthy(); // 确认产出确实落在生成器格（被盖住不可见）
+    // 宿主修复机制：注入移动意图（MergeDrop 无 to）→ merge-on-place 挪到空格 20 → 可见可拖。
+    const free = cellCenter(20);
+    e.world.createEntity('reloc');
+    e.world.addComponent('reloc', { type: 'MergeDrop', from: fresh!, x: free.x, y: free.y } as MergeDrop);
+    e.world.tick();
+    const t2 = e.world.getComponent<Transform>(fresh!, 'Transform')!;
+    expect(cellIndexOf(t2.x, t2.y)).toBe(20); // 挪到空格 = 可见
   });
 
   it('体力不足拒绝：能量=0 时点生成器不扣不产（craft-recipe 原子 afford）', () => {

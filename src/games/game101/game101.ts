@@ -36,7 +36,35 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   engine.load(buildBlueprint());
 
   // cell index → 物品实例 id（拖拽用·readState 每帧刷新）。
-  const cellEntity: (string | null)[] = new Array(GAME.board.cols * GAME.board.rows).fill(null);
+  const TOTAL_CELLS = GAME.board.cols * GAME.board.rows;
+  const cellEntity: (string | null)[] = new Array(TOTAL_CELLS).fill(null);
+
+  // 生成器产出落点修正：caster at:'self' 把新物产在生成器**自己那格**（被生成器盖住=不可见/不可拖）。
+  // 宿主每帧扫描落在生成器格上的物 → 用 merge-on-place 的**移动意图**把它挪到最近空格（引擎做实际移动·
+  // 宿主只挑目标空格=同拖拽落点合成·非游戏逻辑）。让「点生成器→物弹进空格」真正可见可玩。
+  function relocateGenSpawns(): void {
+    const w = engine.world;
+    const occupied = new Set<number>(GENERATORS.map((g) => g.cell));
+    const stray: string[] = [];
+    for (const [eid] of w.query('PrefabOrigin')) {
+      const t = w.getComponent<Transform>(eid, 'Transform');
+      if (!t) continue;
+      const idx = cellIndexOf(t.x, t.y);
+      if (idx < 0) continue;
+      if (GEN_CELLS.has(idx)) stray.push(eid); // 落在生成器格 = 待挪
+      else occupied.add(idx);
+    }
+    for (const eid of stray) {
+      let free = -1;
+      for (let i = 0; i < TOTAL_CELLS; i++) if (!occupied.has(i)) { free = i; break; }
+      if (free < 0) break; // 板满
+      occupied.add(free);
+      const p = cellCenter(free);
+      const cid = `reloc-${eid}`;
+      if (!w.hasComponent(cid, 'MergeDrop')) w.createEntity(cid);
+      w.addComponent(cid, { type: 'MergeDrop', from: eid, x: p.x, y: p.y } as MergeDrop); // 无 to = 移动到空格
+    }
+  }
 
   // 世界态 → S1State（纯读·outcome-first）：板格=生成器(可点)/物品 Twemoji；HUD=真资源。同帧刷新 cellEntity。
   function readState(): S1State {
@@ -168,6 +196,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
 
   let lastSig = '';
   const unsub = engine.subscribe(() => {
+    relocateGenSpawns(); // 生成器产出弹进空格（不然盖在生成器下不可见=像点了没反应）
     const st = readState();
     const coins = Math.round(st.coins);
     // 金币增加（仅交付发奖来源）+ 有待归位交付 → 触发飞行轨迹。
