@@ -166,8 +166,11 @@ function eboltTemplate(e: EnemyDef): { entities: Record<string, Record<string, u
 // 敌人：aggro(Perception)→Relation(target=玩家) + steering(seek) 追击；接触伤害在隐形 child 触伤区；死亡掉宝石。
 // E7 远程敌（e.ranged）：body 额外挂 Timer('shoot')+SelfRule 周期 spawn ebolt_<key>（stopRange 大=保持中距 kiting）。
 function enemyTemplate(e: EnemyDef, gemTemplate: string): { entities: Record<string, Record<string, unknown>> } {
+  // 视觉体型（owner「Boss 该 scale 大一点」）：emoji 皮为定尺 → 用 Transform.scale 按半径缩放
+  // → Boss 巨大、精英大、杂兵小=层级一眼可辨。hierarchy 会把 scale 传给子体，故 hpbar 反向缩放抵消保正常尺寸。
+  const artScale = Math.max(0.6, e.radius / 15); // shambler≈0.73 / brute≈1.2 / boss≈2.4
   const body: Record<string, unknown> = {
-    Transform: { ...XF0 },
+    Transform: { x: 0, y: 0, rotation: 0, scaleX: artScale, scaleY: artScale },
     Velocity: { vx: 0, vy: 0, angular: 0 },
     Tag: { flags: ENEMY },
     Shape: { kind: 'circle', radius: e.radius },
@@ -192,8 +195,8 @@ function enemyTemplate(e: EnemyDef, gemTemplate: string): { entities: Record<str
         Shape: { kind: 'circle', radius: Math.round(e.radius * 0.5) },
         Color: { tint: e.inTint, alpha: 0.9 },
       },
-      hpbar: { // 头顶血条（BUG v2④修·Gauge 绑 hp·随受击缩短=伤害反馈可见）。调宽加高=更醒目（owner「血条不够长」）。
-        Hierarchy: { parentId: '@local:body', localX: 0, localY: -(e.radius + 9), localRotation: 0, localScaleX: 1, localScaleY: 1 },
+      hpbar: { // 头顶血条（Gauge 绑 hp·随受击缩短）。反向缩放(1/artScale)抵消 body 体型缩放→血条保持正常尺寸不被 Boss 放大。
+        Hierarchy: { parentId: '@local:body', localX: 0, localY: -(e.radius + 9), localRotation: 0, localScaleX: 1 / artScale, localScaleY: 1 / artScale },
         Transform: { ...XF0 },
         Shape: { kind: 'box', width: Math.max(28, e.radius * 2.6), height: 5 },
         Color: { tint: 0x54e08a, alpha: 1 },

@@ -51,14 +51,23 @@ function topBar(s: HudState): LayoutNode {
   };
 }
 
-// ── 经验条（orange 分段感·tone warn）+ 等级徽章 ─────────────────────────────
+// ── 经验条（醒目·tone warn）+ 当前/下一级数值（owner「不知道经验条在哪/还差多少」）+ 等级徽章 ──
 function xpRow(s: HudState): LayoutNode {
   return {
     type: 'Panel', id: 's-xprow', props: { bare: true },
-    layout: { direction: 'row', align: 'center', gap: 8, padding: 12 },
+    layout: { direction: 'column', gap: 2, padding: 12 },
     children: [
+      // 数值行：等级 + 当前/下一级经验（看得见还差多少·owner「不知道经验条在哪/还差多少」）
+      {
+        type: 'Panel', id: 's-xplabels', props: { bare: true },
+        layout: { direction: 'row', align: 'center', justify: 'between', gap: 8 },
+        children: [
+          display('s-lv', `Lv ${s.level}`, 16, 'gold'),
+          { type: 'Label', id: 's-xp-num', props: { text: `EXP ${s.xp}/${s.xpMax} · 还差 ${Math.max(0, s.xpMax - s.xp)}`, size: 12, bold: true, color: 'text' } },
+        ],
+      },
+      // 经验条（满宽·醒目）
       { type: 'ProgressBar', id: 's-xp', props: { value: s.xp, max: s.xpMax, tone: 'warn' } },
-      display('s-lv', `Lv ${s.level}`, 15, 'gold'),
     ],
   };
 }

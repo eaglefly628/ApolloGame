@@ -267,10 +267,10 @@ export const SPAWNS: SpawnRow[] = (() => {
 // capBypass=true → 该层刷怪**不受同屏 cap 门**（boss/精英必现·否则弱敌占满 cap 导致 boss 永不刷·owner「全程没见过 boss」根因）。
 export interface SpawnerTier { key: string; count: number; period: number; afterSec: number; capBypass?: boolean }
 export const SPAWNER_RING = 360; // spawner 环半径（玩家周围·视口外缘）
-export const SPAWN_CAP = 72;     // 同屏弱敌上限（cap 只钳普通杂兵·精英/Boss 走 capBypass 无视它·2D 批绘真解仍待 P3D）
+export const SPAWN_CAP = 150;    // 同屏杂兵上限（实测 cap160+密刷仍锁 60fps·软件GL 最坏情形→翻倍无压力·精英/Boss 另走 capBypass·真机可再上探）
 export const SPAWNER_TIERS: SpawnerTier[] = [
   // ── 杂兵流（受 cap 钳·horde 底噪·别太多免糊屏）──
-  { key: 'shambler', count: 6, period: 60, afterSec: 0 },  // 常驻弱敌（略降杂兵·给精英腾同屏空间·owner「小怪太多」）
+  { key: 'shambler', count: 10, period: 46, afterSec: 0 },  // 常驻弱敌（略降杂兵·给精英腾同屏空间·owner「小怪太多」）
   { key: 'runner', count: 4, period: 90, afterSec: 20 },   // 20s 疾行者（快脆·施压走位）
   { key: 'shambler', count: 5, period: 54, afterSec: 90 }, // 90s 再叠一条蹒跚（中期加压）
   // ── 威胁/精英流（capBypass·必现·真难度来源·owner「攻击性高的敌人/远程/boss」）──
