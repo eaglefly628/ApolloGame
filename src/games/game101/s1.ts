@@ -69,11 +69,11 @@ function orders(s: S1State): N {
     type: 'Panel', id: 'orders', props: { bare: true },
     layout: { direction: 'row', align: 'stretch', justify: 'between', gap: 8, padding: 8 },
     children: s.orders.map((o, i) => ({
-      // 整卡=交付落点（宿主按 DOM id 几何识别）。限时特惠订单=金框 + ⏱ 倒计时（动态限时菜单）。
-      // ⚠ 异型外形待 PUI REQ-UI-异型容器（Panel 无 shape 枚举）——现用矩形金框顶着，本件落地即升级异型。
-      // 金框(edge)非金底(bg)：保内部素底·徽章对比达标（金底会压暗 warn/ok 徽章）。
-      type: 'Panel', id: `ord-${i}`, props: o.timed ? { bg: 'panel', edge: 'gold' } : { bg: 'panel' },
-      layout: { direction: 'column', align: 'center', justify: 'between', gap: 6, padding: 10, radius: 18, flex: 1 },
+      // 整卡=交付落点（宿主按 DOM id 几何识别）。限时特惠订单=**异形切角卡(Panel.shape:'cut')** + 金框 + ⏱ 倒计时
+      // （动态限时菜单·REQ-UI-异型容器 PUI 已交·真异形非矩形）。金框(edge)非金底(bg)保徽章对比；cut=八边切角
+      // 内容安全(不裁 slot/奖励·区别 hexagon/diamond 重裁)·给足 padding。
+      type: 'Panel', id: `ord-${i}`, props: o.timed ? { bg: 'panel', edge: 'gold', shape: 'cut' } : { bg: 'panel' },
+      layout: { direction: 'column', align: 'center', justify: 'between', gap: 6, padding: o.timed ? 14 : 10, radius: 18, flex: 1 },
       children: [
         {
           type: 'Panel', id: `ord-${i}-top`, props: { bare: true },

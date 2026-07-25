@@ -254,7 +254,7 @@ describe('stat-bind —— 撞环回归（第二坑）', () => {
     totalsSink(w, 'totals', { maxHp: 100, attackSpeed: 2 });
     w.createEntity('hero');
     w.addComponent('hero', { type: 'Resource', id: 'hp', current: 50, max: 50 } as Resource);
-    w.addComponent('hero', { type: 'Timer', duration: 60, remaining: 60 } as Timer);
+    w.addComponent('hero', { type: 'Timer', id: 'atk', elapsed: 0, duration: 60, loop: false } as Timer);
     bind(w, 'hero', [
       { source: 'ModifierTotals', key: 'maxHp', component: 'Resource', field: 'max', op: 'set' },
       { source: 'ModifierTotals', key: 'attackSpeed', component: 'Timer', field: 'duration', op: 'div', base: 60 },

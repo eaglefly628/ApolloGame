@@ -29,11 +29,10 @@
 ### REQ-101-05 · 美术台账推导脚本命名 · 2026-07-23 · 提出人 GD-101 → 指派 PA · status: open · 优先级: P2 · 类型: 美术管线
 > `capability-plan.md` §4.5 编译期皮肤台账推导脚本名待定（照 game-q 样板）。M1 接线时定名并回填 plan。
 
-### REQ-101-07 · 顾客卡基准保真·待 PUI 异型容器 · 2026-07-24 · 提出人 PE-101 → 指派 PUI（引擎池 REQ-UI-异型容器） · status: open（异型待 PUI·多槽已落） · 优先级: P2 · 类型: UI 基座依赖
+### REQ-101-07 · 顾客卡基准保真（多槽 + 异型限时菜单）· 2026-07-24 · 提出人 PE-101 → 指派 PUI（引擎池 REQ-UI-异型容器） · status: **✅ done（2026-07-25·多槽 + 异型均已落）** · 优先级: P2 · 类型: UI 基座依赖
 > owner 对基准截图定「顾客托盘最多 3 slot + 右侧动态异形限时菜单」为**底层需求**（ui-brief §4.0/4.1/4.2）。PE 评审：
-> - **✅ 多 slot 显示已落地（2026-07-24）**：现有闭集（`Panel(row)+N 子 slot`）表达·orders.json needItems 数组驱动（1–3 槽）·`order-fulfill` 交付逐槽置满·真渲染目击在案。
-> - **异型限时菜单卡 = 仍待 PUI**：基座 `Panel` 无 shape 枚举 → 引擎池 `REQ-UI-异型容器`（PUI）。落地前 game101 用矩形卡顶着，本件落地即升级异型。
-> **不越界**：不在游戏层塞 clip-path/硬贴图逃生（manifesto 红线）——按流程报 PUI。
+> - **✅ 多 slot 显示（2026-07-24）**：现有闭集（`Panel(row)+N 子 slot`）表达·orders.json needItems 数组驱动（1–3 槽）·`order-fulfill` 交付逐槽置满·真渲染目击。
+> - **✅ 异型限时菜单卡（2026-07-25·PUI 交 `Panel.shape` 后接）**：PUI `REQ-UI-异型容器` 已交（commit fff62209·Panel.shape 8 款 ShapeToken 复用 Button clip-path）→ 限时特惠订单卡（苏晴）升级 `shape:'cut'`（八边切角·内容安全不裁 slot/奖励·区别 hexagon/diamond 重裁）+ 金框 edge:'gold' + ⏱ 倒计时。clip-path polygon 目击在案·ui-audit 0 阻断。**不再手写 clip-path·用基座闭集。**（本条完结·下次清理迁归档）
 
 ### REQ-101-06 · 生成器接线撞墙·待引擎加权 spawn · 2026-07-24 · 提出人 PE-101 → 指派 主程/Lead（引擎池 REQ-TAPSPAWN） · status: open（阻塞·非全库阻断） · 优先级: P1 · 类型: 实现阻塞
 > M1 生成器（G1）按 Lead §6「组合」接线时**撞墙**（子代理源码复核确认）：扣费半场 `clickable`+`craft-recipe` 可组合，但**加权运行时 spawn 无引擎原语**（`caster`/`self-rule` 固定 template·`effect-apply` 不能 spawn·`draft-offer` 未接世界 `RandomSeed`/未接线）。
