@@ -46,7 +46,7 @@ export const TINT = {
 // ── 玩家定义（gdd §三 PLAYER 表）──────────────────────────────────────────────
 export const PLAYER_DEF = {
   maxHp: 100,
-  moveSpeed: 3,          // px/tick（≈180/s·gdd 200/s 起点·灰盒略调）
+  moveSpeed: 2.7,        // px/tick（3→2.7 收紧·让追猎者(2.8)能咬住·反「移速远大于怪·无脑绕圈」·配障碍/远程/成群=真张力）
   radius: 13,
   pickupRadius: 62,      // 收取真空区半径（贴身走过即吃·磁石被动 stat-bind 放大它=更强吸力）。飞入动画待引擎空间索引后复接。
   skin: '103/player',
@@ -87,7 +87,7 @@ export interface WeaponDef {
 export const WEAPONS: WeaponDef[] = [
   { key: 'kunai', name: '飞镖 Kunai', desc: '直线飞镖·穿透索敌（起始武器·mow 一线）', pattern: 'straight', dmg: 7, cd: 34, projSpeed: 9, life: 90, radius: 7, amount: 1, weight: 0, maxLevel: 5, tint: 0xffffff, skin: '103/proj-kunai', pierce: true },
   { key: 'shock', name: '冲击波', desc: '近身范围爆·震开贴身敌群（AoE）', pattern: 'nova', dmg: 8, cd: 90, projSpeed: 0, life: 8, radius: 120, amount: 1, weight: 8, maxLevel: 5, tint: 0x7fd0ff, skin: '103/proj-shock' },
-  { key: 'laser', name: '激光', desc: '高速横扫直线·穿透一线敌（远程）', pattern: 'beam', dmg: 6, cd: 110, projSpeed: 16, life: 26, radius: 8, amount: 1, weight: 7, maxLevel: 5, tint: 0xff5a4a, skin: '103/proj-laser' },
+  { key: 'laser', name: '激光', desc: '巨长激光·瞬穿一线敌（远程·贯穿）', pattern: 'beam', dmg: 6, cd: 110, projSpeed: 26, life: 16, radius: 13, amount: 1, weight: 7, maxLevel: 5, tint: 0xff5a4a, skin: '103/proj-laser' },
   { key: 'boom', name: '回旋镖', desc: '飞出穿透一线敌（远程·回旋段待 capgap）', pattern: 'boomerang', dmg: 5, cd: 96, projSpeed: 7, life: 120, radius: 7, amount: 1, weight: 7, maxLevel: 5, tint: 0xffd23f, skin: '103/proj-boom' },
   { key: 'orbit', name: '护盾环', desc: '召唤环绕光球·持续灼烧贴身敌（近战）', pattern: 'orbit', dmg: 0.5, cd: 0, projSpeed: 0.045, life: 0, radius: 74, amount: 3, weight: 8, maxLevel: 3, tint: 0x7dff4d, skin: '103/proj-orbit', evo: { to: 'orbitevo', req: 'blade' } },
   { key: 'pet', name: '宠物随从', desc: '召唤随从·跟随并自动索敌开火（随从）', pattern: 'pet', dmg: 9, cd: 70, projSpeed: 7, life: 80, radius: 5, amount: 1, weight: 6, maxLevel: 3, tint: 0xc9a3ff, skin: '103/proj-pet' },
@@ -113,7 +113,8 @@ export const FX_SHEETS = {
 export const WEAPON_ANIM: Record<string, FxAnim> = {
   kunai: FX_SHEETS.magic_dart,   // 直线飞镖=紫能量镖
   shock: FX_SHEETS.flame,        // 近身 nova=火焰爆
-  laser: FX_SHEETS.searing_ray,  // 激光=红灼热星
+  // laser 不用 fx 动画帧 → 画长条 Shape box 本体=巨长激光观感（fx 是团状·撑不出"长"）。
+  //   真·随开火方向旋转的激光需引擎「Transform 旋转」能力（facing 只水平翻转·不能任意转向）→ 已报 Lead。
   boom:  FX_SHEETS.gold_sparkles,// 回旋镖=金光旋
   orbit: FX_SHEETS.sting,        // 护盾环=绿环（贴合环绕）
   orbitevo: FX_SHEETS.sting,     // 进化环=绿环
@@ -168,6 +169,12 @@ export const ARCHER: EnemyDef = {
   tint: 0xb07bff, inTint: 0xe6ccff, gem: 'blue', skin: '103/enemy-archer',
   ranged: { cd: 84, dmg: 10, projSpeed: 4.2, life: 78, radius: 10 },
 };
+// 追猎者（反 kiting·owner「移速远大于怪·无脑绕圈无趣」）：**几乎和玩家同速**(2.8 vs 3)的地面快敌·贴身缠斗·
+// 逼你不能慢慢绕——必须用武器清、用障碍甩、用走位躲，而非无脑跑。中期成群加入=真张力。
+export const STALKER: EnemyDef = {
+  key: 'stalker', name: '追猎者', hp: 58, speed: 2.8, radius: 10, contact: 0.55, stopRange: 12,
+  tint: 0xff5ea8, inTint: 0xffd0e6, gem: 'blue', skin: '103/enemy-shambler',
+};
 // 精英·狙击手（攻击性高的远程威胁·中期加入）：血厚、射得勤且狠、弹更大更快=真威胁（owner「攻击性高的敌人也要会远程」）。
 export const SNIPER: EnemyDef = {
   key: 'sniper', name: '精英狙击', hp: 150, speed: 1.0, radius: 13, contact: 0.4, stopRange: 240,
@@ -204,10 +211,11 @@ export const SHAMBLER_T3 = scaledEnemy(SHAMBLER, 5.5, '_t3'); // hp≈154
 export const RUNNER_T2 = scaledEnemy(RUNNER, 3.0, '_t2');     // hp≈126
 export const BRUTE_T2 = scaledEnemy(BRUTE, 2.4, '_t2');       // hp≈528
 export const ARCHER_T2 = scaledEnemy(ARCHER, 3.2, '_t2');     // hp≈192·弹更狠
+export const STALKER_T2 = scaledEnemy(STALKER, 3.0, '_t2');   // hp≈174·后期快敌换厚血
 
 export const ENEMIES: EnemyDef[] = [
-  SHAMBLER, RUNNER, BRUTE, ARCHER, SNIPER, BRUISER, BOSS,
-  SHAMBLER_T2, SHAMBLER_T3, RUNNER_T2, BRUTE_T2, ARCHER_T2, // 时间缩放变体（难度=血量）
+  SHAMBLER, RUNNER, BRUTE, ARCHER, STALKER, SNIPER, BRUISER, BOSS,
+  SHAMBLER_T2, SHAMBLER_T3, RUNNER_T2, BRUTE_T2, ARCHER_T2, STALKER_T2, // 时间缩放变体（难度=血量）
 ];
 export const EBOLT_SKIN = '103/enemy-bolt'; // 敌弹皮肤槽
 
@@ -325,8 +333,10 @@ export const SPAWNER_TIERS: SpawnerTier[] = [
   { key: 'archer', count: 2, period: 168, afterSec: 60, capBypass: true },  // 60s 远程射手（中距弹幕）
   { key: 'brute', count: 2, period: 190, afterSec: 90, capBypass: true },   // 90s 胖子（肉·血条看得见）
   { key: 'runner', count: 4, period: 96, afterSec: 120 },   // 120s 疾行者加压
+  { key: 'stalker', count: 3, period: 120, afterSec: 100, capBypass: true }, // 100s 追猎者(几乎同速)=反 kiting 核心威胁
   // ── 阶段③（150-300s·血量升级 + 精英·难度=血量）──
   { key: 'shambler_t2', count: 5, period: 60, afterSec: 150 }, // 150s 蹒跚换更厚血
+  { key: 'stalker', count: 3, period: 96, afterSec: 200, capBypass: true }, // 200s 追猎者加压
   { key: 'sniper', count: 2, period: 200, afterSec: 180, capBypass: true },  // 180s 精英狙击（攻击性高）
   { key: 'archer_t2', count: 2, period: 168, afterSec: 210, capBypass: true },// 210s 射手升级
   { key: 'bruiser', count: 1, period: 240, afterSec: 240, capBypass: true }, // 240s 精英重装（大肉压空间）

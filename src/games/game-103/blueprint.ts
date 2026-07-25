@@ -76,7 +76,7 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
     // RBUG-01② 子弹朝向：t2-facing 与 bounds-clamp 都在 Commit 写 Transform→调度器成环（facing 未声明相对定序·
     // 回报 Lead 补 facing 定序）。暂不挂 Facing（次要·水平翻转）；orbit/separation 已接。
     Shape: w.pattern === 'beam'
-      ? { kind: 'box', width: w.radius * 5, height: w.radius, category: CL.BULLET, mask: CL.ENEMY }
+      ? { kind: 'box', width: w.radius * 26, height: Math.round(w.radius * 0.7), category: CL.BULLET, mask: CL.ENEMY } // 巨长激光条（贯穿·owner「长得像激光」）
       : { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY }, // 只和敌配对（不和别的子弹/宝石/敌↔敌）
     Color: { tint: w.tint, alpha: 1 },
     Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', ...(single ? { consumeOnHit: true } : {}) },
