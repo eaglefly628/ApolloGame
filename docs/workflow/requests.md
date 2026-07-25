@@ -19,6 +19,10 @@
 > **卡在哪 / 缺什么**：缺「**PathFollow 绕完一圈→落一件 + 自毁**」的路径终点触发（=Mortal 的 path-完成版）。有它即可：belt 炮 loop:false 绕完 → 落 `tray_`(满弹·tray 自动落空槽) + 自毁离带；打光消失仍走 Mortal。两独立触发、无冲突。
 > **建议方案（Lead 裁·择一·都薄）· 边界**：① **`PathFollow` 加 `onEnd?:{dropTemplate?:string, destroy?:boolean}`**——loop:false 到末点时（同 Mortal 语义）发 SpawnRequest(dropTemplate@自身位) + 自毁（最贴本用例·最薄）；或 ② `effect-apply` 加 `set-tag{setMask,clearMask}` kind + `PathFollow` 加 `onEndSignal` → 组合换 Tag（更通用但两件）。**触碰范围**：`src/skills/tier2/path-follow.ts`(+组件字段) 或 `effect-apply.ts` + 测试；game102 只经数据消费（`cannon_*` 挂 onEnd:{dropTemplate:tray_<color>,destroy:true}）。撞墙实证＝`src/games/game102/blueprint.ts`（cannon body Mortal 打光消失已接·缺 lap-end→tray）+ `conveyor-queue-compose.test.ts`（M3 tray 落座证明·但未证 belt→tray 转换）。
 
+### REQ-ORDERROT-订单轮换（完成即从池取下一单·换 needItems/reward）· [2026-07-25] · PE-101 报（owner「顾客满足后就没事了=循环空转」）→ Lead 裁 · status: **open** · 优先级: P1（game101 meta 循环命门·收集/点单类通用） · 类型: 引擎能力缺口（主程域·先重组已证不可得）
+> **想实现的行为**：订单集齐发奖后，顾客换**下一样不同需求**（按序列或加权池·可逐级升级 food_2→food_3…），而非永远重复同一单。这是 merge/收集游戏 meta 循环的核心「续单」环。
+> **实测缺口（PE 源码复核）**：`t2-order-fulfill` 集齐后 `resetOnComplete`（默认真）**只清空 `filled`·`needItems`/`reward` 原样不动** → 同一单无限重复。无任何现有能力表达「完成即从池取下一单并写回 needItems」：`effect-apply` writes 不能改 `Order.needItems`/`reward` 数组字段；`caster` 只 spawn 实体；`event-when` 只发信号读不了/写不了订单内容。**禁游戏层手写换单 solver**（manifesto §3 红线·且须确定性进 hash）→ 下沉引擎。
+> **建议方案（Lead 裁·扩 order-fulfill 或姊妹件 `order-rotate`）· 边界**：`Order` 加可选 `pool?:{needItems,reward}[]` + `rotateMode?:'sequence'|'weighted'` + `cursor?:number`；集齐发奖后（现 resetOnComplete 路径内）**从 pool 取下一单**写回 `needItems`/`reward`（weighted 走世界 `RandomSeed`·确定性/回放·`sequence` 按 cursor 递进环回）；pool 走完可发 `exhausted` 信号（供 game101 ③顾客流转 event-when 接之换脸）。空 pool = 退化回现状（清 filled 重复本单·零回归·既有测全绿）。**触碰范围**：`src/skills/tier2/order-fulfill.ts`（+ 可能 `Order` 组件加字段 + component-map/baseline）+ 测试；game101 只经 `orders.json` 数据消费。撞墙实证＝`docs/design/game101/systems-economy.md §4.5` + `src/skills/tier2/order-fulfill.ts:93`（只重置 filled）。
 
 
 
