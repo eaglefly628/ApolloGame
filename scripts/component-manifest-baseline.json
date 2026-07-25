@@ -1,6 +1,6 @@
 {
   "_doc": "引擎共同零件（组件）清单基线——所有游戏共用的积木。改/加/删任一零件必须同提交跑 `node scripts/component-manifest-guard.mjs --update` 更新本文件（让共同语言的变动在 diff 里可见）。",
-  "count": 131,
+  "count": 134,
   "components": [
     "Acceleration",
     "Action",
@@ -10,6 +10,7 @@
     "Billboard3D",
     "BlockGrid",
     "BlockTrayPiece",
+    "Blocker",
     "BoardCell",
     "Bounds",
     "Camera",
@@ -59,6 +60,8 @@
     "MatchBoard",
     "Material3D",
     "MergeDrop",
+    "MergeEvent",
+    "MergeProximity",
     "MergeRule",
     "Mesh3D",
     "Model3D",

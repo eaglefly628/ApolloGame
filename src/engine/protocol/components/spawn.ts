@@ -102,6 +102,32 @@ export interface DeliverDrop extends Component {
   order: EntityId; // 目标订单实体（带 Order）
 }
 
+// ── Blocker（挖掘阻碍层·REQ-101-08/merge-proximity-clear）── 盖住某格的阻碍层：layers>0=不可拖/不可落子；
+// 邻近二消每次给 layers −dec；layers 归零 → 清层（DestroyRequest 自身）+ 按 reveal 露出内容
+// （spawn=SpawnRequest 该模板 / resource=给某资源 +amount）。挖掘式区域解锁·空间即奖励（Gossip Harbor 同型·纯数据）。
+export interface Blocker extends Component {
+  readonly type: 'Blocker';
+  layers: number; // 剩余阻碍层数（>0=盖住·不可用）
+  reveal: { kind: 'spawn' | 'resource'; templateId?: string; resourceId?: string; amount?: number }; // 归零露出物
+}
+
+// ── MergeEvent（合并事件·merge-on-place 产·read-then-consume）── 「某处刚发生一次二消合并」的一次性事件：
+// merge-on-place 每次合成在合并落点发一条 MergeEvent{x,y}。下游（merge-proximity-clear/juice/统计）读它响应·消费即清。
+export interface MergeEvent extends Component {
+  readonly type: 'MergeEvent';
+  x: number; // 合并落点世界坐标
+  y: number;
+}
+
+// ── MergeProximity（邻格清阻碍配置·单例·merge-proximity-clear 读）── 「合并→邻格 Blocker 减层」的空间参数：
+// cellSize=格边长（世界像素·把 radius 格数换成世界距离）·radius=影响半径（格·1=3×3）·dec=每次二消减层数。
+export interface MergeProximity extends Component {
+  readonly type: 'MergeProximity';
+  cellSize: number;
+  radius: number; // 单位=格（Chebyshev·1→3×3）
+  dec: number; // 每次合并给邻格 Blocker.layers 减多少
+}
+
 // ── Caster ── 信号→生成桥（D-002）：把"按键/点地/条件成立"的 Signal 变成一条算好坐标的 SpawnRequest，
 // 由 prefab 能力展开成技能/陷阱/召唤/掉落。补上 prefab 缺的"运行时释放"入口（REQ-008 显式延后的那块）。
 // at 决定生成位置：'self'=施法者自身、'pointer'=光标世界坐标(screenToWorld 逆投影)、'target'=最近的 targetTag 阵营。

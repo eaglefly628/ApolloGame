@@ -25,11 +25,12 @@ import {
 import { lifetimeCapability } from '@skills/tier1/index.js';
 import {
   overTimeCapability, clickableCapability, craftRecipeCapability,
-  effectApplyCapability, eventWhenCapability, keybindCapability, mergeOnPlaceCapability, orderFulfillCapability,
+  effectApplyCapability, eventWhenCapability, keybindCapability, mergeOnPlaceCapability, orderFulfillCapability, mergeProximityClearCapability,
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
-  GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, TIMED_ITEM, MENU_TIMER_SEC, TICKS_PER_SEC, generatorOutput,
+  GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, TIMED_ITEM, MENU_TIMER_SEC, TICKS_PER_SEC,
+  BOARD_COVER, coverReveal, generatorOutput,
   cellCenter, mergeRules, itemTemplates, timedTemplates, CELL, GEN_TAG, GEN_TINT,
 } from './theme.js';
 
@@ -141,6 +142,23 @@ function orderEntities(): Record<string, EntityBlueprint> {
   return out;
 }
 
+// ── 挖掘阻碍层实体（board-cover·merge-proximity-clear）──────────────────────────
+// 每覆盖格一个 Blocker+Transform 实体（layers>0=盖住·不可拖）；+ 一个 MergeProximity 单例定空间参数。
+// 「合并→减 3×3 邻格阻碍」全在引擎 merge-proximity-clear 里做（游戏层只摆数据·零手写扫格）。
+function coverEntities(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  for (const cc of BOARD_COVER.cells) {
+    const p = cellCenter(cc.cell);
+    out[`cover-${cc.cell}`] = {
+      Transform: { x: p.x, y: p.y, rotation: 0, scaleX: 1, scaleY: 1 },
+      Blocker: { layers: cc.layers, reveal: coverReveal(cc.reveal) },
+    };
+  }
+  // 空间参数单例：cellSize=格边长·radius=影响半径(格)·dec=每次二消减层。
+  out['merge-proximity'] = { MergeProximity: { cellSize: CELL, radius: BOARD_COVER.radius, dec: BOARD_COVER.decPerMerge } };
+  return out;
+}
+
 // ── 合并规则实体（每条 MergeRule 一个承载实体）────────────────────────────────
 function mergeRuleEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
@@ -157,6 +175,7 @@ export function buildBlueprint(): WorldBlueprint {
     ...boardCellEntities(),
     ...mergeRuleEntities(),
     ...orderEntities(),
+    ...coverEntities(),
     ...generatorEntities(),
     ...seedItemEntities(),
   };
@@ -166,7 +185,7 @@ export function buildBlueprint(): WorldBlueprint {
       transformCapability, tagCapability, shapeCapability, colorCapability,
       spriteCapability, resourceCapability, destroyCapability, flagCapability, timerCapability, lifetimeCapability,
       overTimeCapability, clickableCapability, craftRecipeCapability, effectApplyCapability, eventWhenCapability, keybindCapability,
-      mergeOnPlaceCapability, orderFulfillCapability, prefabCapability, casterCapability,
+      mergeOnPlaceCapability, orderFulfillCapability, mergeProximityClearCapability, prefabCapability, casterCapability,
     ],
     entities,
   };

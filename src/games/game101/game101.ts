@@ -12,7 +12,7 @@ import { QueuedInputSource } from '@net/index.js';
 import { mountHost } from '@engine/host/mount-host.js';
 import { mountUI } from '@ui/components/index.js';
 import type { HandlerMap, MountHandle } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop, Timer } from '@engine/protocol/components.js';
+import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop, Timer, Blocker } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1Live, type S1State, type CellView, type OrderView, type SlotView } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';
@@ -38,13 +38,14 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   // cell index → 物品实例 id（拖拽用·readState 每帧刷新）。
   const TOTAL_CELLS = GAME.board.cols * GAME.board.rows;
   const cellEntity: (string | null)[] = new Array(TOTAL_CELLS).fill(null);
+  const coveredCells = new Set<number>(); // 阻碍层覆盖格（不可拖入/不可落子·readState 每帧刷新）
 
   // 生成器产出落点修正：caster at:'self' 把新物产在生成器**自己那格**（被生成器盖住=不可见/不可拖）。
   // 宿主每帧扫描落在生成器格上的物 → 用 merge-on-place 的**移动意图**把它挪到最近空格（引擎做实际移动·
   // 宿主只挑目标空格=同拖拽落点合成·非游戏逻辑）。让「点生成器→物弹进空格」真正可见可玩。
   function relocateGenSpawns(): void {
     const w = engine.world;
-    const occupied = new Set<number>(GENERATORS.map((g) => g.cell));
+    const occupied = new Set<number>([...GENERATORS.map((g) => g.cell), ...coveredCells]); // 覆盖格也不占用产出
     const stray: string[] = [];
     for (const [eid] of w.query('PrefabOrigin')) {
       const t = w.getComponent<Transform>(eid, 'Transform');
@@ -72,7 +73,16 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     const res = (id: string): number => w.getComponent<Resource>(id, 'Resource')?.current ?? 0;
     const cells: (CellView | null)[] = new Array(GAME.board.cols * GAME.board.rows).fill(null);
     cellEntity.fill(null);
+    coveredCells.clear();
     for (const g of GENERATORS) cells[g.cell] = { emoji: g.emoji, gen: g.id };
+    // 阻碍层覆盖格（挖掘解锁）：占格、盖住、不可拖；邻近二消由引擎 merge-proximity-clear 挖开。
+    for (const [bid] of w.query('Blocker')) {
+      const bk = w.getComponent<Blocker>(bid, 'Blocker');
+      const t = w.getComponent<Transform>(bid, 'Transform');
+      if (!bk || !t || bk.layers <= 0) continue;
+      const idx = cellIndexOf(t.x, t.y);
+      if (idx >= 0 && !cells[idx]) { cells[idx] = { emoji: '🔒', cover: bk.layers }; coveredCells.add(idx); }
+    }
     const onBoard = new Set<string>(); // 板上现有的物品模板集（订单可交付判定）
     const cellTpl: (string | null)[] = new Array(cells.length).fill(null);
     for (const [eid] of w.query('PrefabOrigin')) {
@@ -153,7 +163,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     }
     // ② 落在板格 → 合并/移动/交换意图（MergeDrop）。
     const toIdx = cellIdxFromEl(dropEl);
-    if (toIdx < 0 || toIdx === fromIdx || GEN_CELLS.has(toIdx)) return; // 落生成器/空放/原格=忽略
+    if (toIdx < 0 || toIdx === fromIdx || GEN_CELLS.has(toIdx) || coveredCells.has(toIdx)) return; // 落生成器/覆盖格/空放/原格=忽略
     const to = cellEntity[toIdx] ?? undefined; const p = cellCenter(toIdx);
     // 合成迸发（juice）：落格同模板=真合成 → 该格叠一次性星光爆。
     if (to) {
@@ -213,7 +223,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       return;
     }
     lastCoins = coins;
-    const sig = `${Math.round(st.energy)}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '') + (c?.timer != null ? `t${c.timer}` : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('') + o.moodFace + (o.timeLeft ?? '')).join('|')}`;
+    const sig = `${Math.round(st.energy)}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '') + (c?.timer != null ? `t${c.timer}` : '') + (c?.cover != null ? `k${c.cover}` : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('') + o.moodFace + (o.timeLeft ?? '')).join('|')}`;
     if (sig !== lastSig) { lastSig = sig; paint(st); }
   });
 

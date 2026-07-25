@@ -1,0 +1,13 @@
+{
+  "coverSprite": "cover_sand",
+  "decPerMerge": 1,
+  "radius": 1,
+  "cells": [
+    { "cell": 15, "layers": 1, "reveal": { "kind": "item",   "item": "coffee_1" } },
+    { "cell": 16, "layers": 2, "reveal": { "kind": "energy", "amount": 20 } },
+    { "cell": 17, "layers": 3, "reveal": { "kind": "gem",    "amount": 1 } },
+    { "cell": 22, "layers": 1, "reveal": { "kind": "item",   "item": "fish_1" } },
+    { "cell": 23, "layers": 2, "reveal": { "kind": "chest",  "amount": 100 } },
+    { "cell": 24, "layers": 4, "reveal": { "kind": "gem",    "amount": 2 } }
+  ]
+}

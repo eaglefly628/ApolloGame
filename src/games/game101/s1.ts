@@ -13,7 +13,7 @@ export function buildS1(): LayoutNode {
 }
 
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
-export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number } // timer=剩余秒（限时物·到 0 自毁）
+export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number } // timer=剩余秒；cover=阻碍层数（>0 盖住·不可拖）
 export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
 export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; timed?: boolean; timeLeft?: number; fly?: { id: string; label: string } }
 export interface S1State {
@@ -27,6 +27,7 @@ const FRAME = '#f2e3c2';   // 板外框奶油
 const WELL = '#7f97dd';    // 蓝色板井
 const CELL_BG = '#c3cef0'; // 格底浅蓝
 const GEN_BG = '#c8871e';  // 生成器格金
+const COVER_BG = '#b8895a'; // 阻碍层沙色（覆盖格·挖掘解锁）
 
 // ── HUD 行（等级 / 体力+计时 / 金币 / 宝石 / 商店）────────────────────────────
 function hud(s: S1State): N {
@@ -133,6 +134,17 @@ function orders(s: S1State): N {
 function board(s: S1State): N {
   const cells: N[] = s.cells.map((cv, i) => {
     const kids: N[] = [];
+    // 阻碍层覆盖格（挖掘解锁）：沙色 🔒 + 剩余层数·不可拖（邻近二消挖开）。
+    if (cv?.cover != null) {
+      return {
+        type: 'Panel', id: `t-live-${i}`, props: { bg: { custom: COVER_BG } },
+        layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 16, height: 168 },
+        children: [
+          { type: 'Label', id: `t-live-${i}-lk`, props: { text: '🔒', size: 52 } },
+          { type: 'Label', id: `t-live-${i}-cl`, props: { text: `${cv.cover}`, size: 'lg', bold: true, color: 'ink' } },
+        ],
+      } as N;
+    }
     if (cv) {
       kids.push({ type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: 74 } });
       if (cv.deliverable) kids.push({ type: 'Badge', id: `t-live-${i}-b`, props: { text: '✓', tone: 'ok' } });

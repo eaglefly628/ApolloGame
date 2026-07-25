@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase, type IWorld } from '@engine/core/types.js';
-import type { MergeDrop, PrefabOrigin, Transform, MergeRule, DestroyRequest, SpawnRequest } from '@engine/protocol/components.js';
+import type { MergeDrop, PrefabOrigin, Transform, MergeRule, DestroyRequest, SpawnRequest, MergeEvent } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  merge-on-place —— 玩家**拖放**触发的位置感知合并（REQ-MERGE-ON-PLACE·Gossip Harbor/合并品类手感）。
@@ -45,7 +45,7 @@ export const mergeOnPlaceCapability = defineCapability({
       },
     },
     reads: ['MergeDrop', 'PrefabOrigin', 'Transform', 'MergeRule'],
-    writes: ['Transform', 'DestroyRequest', 'SpawnRequest'],
+    writes: ['Transform', 'DestroyRequest', 'SpawnRequest', 'MergeEvent'],
     consumes: ['MergeDrop'],
   },
 
@@ -56,7 +56,7 @@ export const mergeOnPlaceCapability = defineCapability({
       id: 'merge-on-place',
       phase: SystemPhase.Update,
       reads: ['MergeDrop', 'PrefabOrigin', 'Transform', 'MergeRule'],
-      writes: ['Transform', 'DestroyRequest', 'SpawnRequest'],
+      writes: ['Transform', 'DestroyRequest', 'SpawnRequest', 'MergeEvent'],
       consumes: ['MergeDrop'],
       execute(world: IWorld) {
         // 链数据：template → into（合并品类 need≤2）。
@@ -85,6 +85,10 @@ export const mergeOnPlaceCapability = defineCapability({
                     const carrier = `mop:${into.get(fromPO.templateId)}:${mergeN++}`;
                     world.createEntity(carrier);
                     world.addComponent(carrier, { type: 'SpawnRequest', templateId: into.get(fromPO.templateId)!, x: toT.x, y: toT.y } as SpawnRequest);
+                    // 合并事件（下游 merge-proximity-clear/juice 响应·read-then-consume）：在合并落点发一条。
+                    const ev = `mev:${mergeN}`;
+                    world.createEntity(ev);
+                    world.addComponent(ev, { type: 'MergeEvent', x: toT.x, y: toT.y } as MergeEvent);
                   } else {
                     // ② 异模板/封顶：交换位置。
                     const fx = fromT.x, fy = fromT.y;

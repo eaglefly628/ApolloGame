@@ -40,7 +40,14 @@
 > 已按 §6「撞墙→回报下沉 tap-cost-spawn」报**引擎池** `docs/workflow/requests.md REQ-TAPSPAWN`。**`generators.json` 已备数据·待该能力落地即接线**（clickable+craft-recipe 扣费 + 新 weighted-spawn 产出）。其余 M1 面（合并/资源/体力/S1）不受阻·已绿（8/8 测试）。
 > **不违规**：不在游戏层手写加权/裸 Math.random（manifesto 红线）——故按流程报引擎缺口，不硬接。
 
-### REQ-101-08 · 挖掘式区域解锁（阻碍层·二消清邻·核心乐趣）· 2026-07-25 · 提出人 owner→GD-101 → 指派 **主程/Lead（引擎能力 G6）+ PE（游戏数据/接线）** · status: open · 优先级: P1 · 类型: 机制（引擎下沉 + 游戏数据）
+### REQ-101-08 · 挖掘式区域解锁（阻碍层·二消清邻·核心乐趣）· 2026-07-25 · 提出人 owner→GD-101 → 指派 **主程/Lead（引擎能力 G6）+ PE（游戏数据/接线）** · status: **✅ 实现已交·待 Lead 复核**（引擎能力 `t2-merge-proximity-clear` + 游戏数据接线·PE-101 按 owner「game101 核心循环端到端建」标准建·同 merge-on-place/order-fulfill 口径） · 优先级: P1 · 类型: 机制（引擎下沉 + 游戏数据）
+> **✅ 实现（2026-07-25·PE-101·标记 Lead 复核）**：
+> - **引擎能力** `src/skills/tier2/merge-proximity-clear.ts`（`t2-merge-proximity-clear`·登记 registry）：读 `MergeEvent`（merge-on-place 合成时发·新增）+ 单例 `MergeProximity{cellSize,radius,dec}` → 对半径内 `Blocker` 各 −dec·归零发 DestroyRequest + reveal（spawn=SpawnRequest / resource=资源+amount 钳限）。**减层全在引擎 sim·零游戏层/宿主扫格**（红线守）。7 单测 + merge-on-place 加发 MergeEvent（5 测仍绿）。
+> - **组件**：`Blocker{layers,reveal}`·`MergeEvent{x,y}`·`MergeProximity{cellSize,radius,dec}`（component-map + baseline 已更）。
+> - **游戏数据**：`config/board-cover.json`（6 覆盖格·layers/reveal）；theme `coverReveal` 友好 kind→引擎 reveal（item→spawn·energy/gem/chest→resource）；blueprint `coverEntities` 摆 Blocker+Transform + MergeProximity 单例。
+> - **渲染**：覆盖格沙色 🔒+层数·不可拖（host onDown 天然跳·onUp/relocate 排除覆盖格）。2 集成测（邻近二消挖开 cell15 露 coffee_1·远格 cell24 不动）+ ui-audit 0 阻断。
+> - **真机目击**：二消 🍅🍅→🥗 → 邻格 cover 15(1层)清层露 🫘·cover 16(2层)减到 1（截图在案）。
+> - **引擎池** `REQ-MERGEDIG` 同步标「实现已交·待 Lead 复核」。**Lead 若判 API/边界需调**，PE 配合改。
 > **需求（owner 2026-07-25·参考图 Gossip Harbor 实机·IP 不入库）**：每格除消除外有**阻碍/锁定层**；**二消时周边 3×3 格阻碍各 −1**；减到 0 **解锁**露出格内内容（能量⚡/宝箱/宝石💎/物品）。**核心乐趣之一**——合并身兼爬链 + 挖板、空间即奖励。设计详见 `systems-economy.md §5.5` + `config-schema.md §10 board-cover.json` + `capability-plan.md §2.5 G6`。
 > **架构裁断（GD·别在游戏层手写扫格 solver）**：
 > - ✅ **游戏层（PE）**：只摆 `board-cover.json`（覆盖格 `Blocker{layers, reveal}` 数据）；覆盖格不可拖/不可落子（同 §5 尊重锁 flag）；`layers==0` 解锁按 `reveal.kind` 走 prefab / resource-apply / 开箱。**零手写玩法逻辑**。

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { validateLayoutNode } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop, DeliverDrop, Order, Timer } from '@engine/protocol/components.js';
+import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop, DeliverDrop, Order, Timer, Blocker } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1, buildS1Live } from './s1.js';
 import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, generatorOutput, cellCenter, cellIndexOf, TIMED_ITEM, TIMED_SEC, TICKS_PER_SEC } from './theme.js';
@@ -129,6 +129,7 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     cells[8] = { emoji: '🥗', deliverable: true };
     cells[9] = { emoji: '🍝' };
     cells[10] = { emoji: '🦀', timer: 12 };
+    cells[11] = { emoji: '🔒', cover: 3 };
     const live = buildS1Live({ energy: 34, coins: 305, gems: 8, level: 12, cells, burstCell: 9, orders: [
       { char: '周航', slots: [{ itemEmoji: '🥗', filled: false, want: true }], coins: 44, stars: 2, deliverable: true, mood: 0.4, moodFace: '😊', fly: { id: 'fly-0', label: '🪙+44' } },
       { char: '老陈', slots: [{ itemEmoji: '🐠', filled: true, want: false }, { itemEmoji: '🐠', filled: false, want: false }], coins: 78, stars: 2, deliverable: false, mood: 0, moodFace: '😐' },
@@ -154,6 +155,29 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(countTemplate(e, TIMED_ITEM)).toBe(1);       // 限时鲜货在板
     tickN(e, TIMED_SEC * TICKS_PER_SEC);                 // 跑满存活期
     expect(countTemplate(e, TIMED_ITEM)).toBe(0);       // 到期 lifetime 销毁
+  });
+
+  it('挖掘解锁：邻近二消挖开阻碍层·归零露出物（merge-proximity-clear 闭环·核心乐趣）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 2); // seed 展开（food_1 在 cell 7,8）
+    expect(e.world.getComponent<Blocker>('cover-15', 'Blocker')?.layers).toBe(1); // cell 15 覆盖·1 层
+    const coffee0 = countTemplate(e, 'coffee_1');
+    const f1 = itemsOf(e, 'food_1');
+    dragMerge(e, f1[0], f1[1]); // 在 cell 7/8 二消 → MergeEvent → 挖 3×3 邻格（含 cell 15）
+    tickN(e, 2); // 清层 + reveal 展开
+    expect(e.world.hasComponent('cover-15', 'Blocker')).toBe(false); // 1 层归零 → 清层解锁
+    expect(countTemplate(e, 'coffee_1')).toBe(coffee0 + 1); // 露出 coffee_1（reveal item）
+    // cell 16（2 层·同在 3×3）只减 1、未清。
+    expect(e.world.getComponent<Blocker>('cover-16', 'Blocker')?.layers).toBe(1);
+  });
+
+  it('挖掘：覆盖格远离合并点不受影响（cell 24 距 seed 二消远）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 2);
+    const f1 = itemsOf(e, 'food_1');
+    dragMerge(e, f1[0], f1[1]);
+    tickN(e, 2);
+    expect(e.world.getComponent<Blocker>('cover-24', 'Blocker')?.layers).toBe(4); // 远格不动
   });
 
   // ── 生成器（S4 可玩核·点击→耗体力→固定产出·原子）─────────────────────────

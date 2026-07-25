@@ -62,6 +62,9 @@ import type {
   MergeDrop,
   Order,
   DeliverDrop,
+  Blocker,
+  MergeEvent,
+  MergeProximity,
   Mesh3D,
   ModifierSource,
   ModifierTotals,
@@ -190,6 +193,9 @@ export interface ComponentDataMap {
   MergeDrop: Omit<MergeDrop, 'type'>;
   Order: Omit<Order, 'type'>;
   DeliverDrop: Omit<DeliverDrop, 'type'>;
+  Blocker: Omit<Blocker, 'type'>;
+  MergeEvent: Omit<MergeEvent, 'type'>;
+  MergeProximity: Omit<MergeProximity, 'type'>;
   Mesh3D: Omit<Mesh3D, 'type'>;
   ModifierSource: Omit<ModifierSource, 'type'>;
   ModifierTotals: Omit<ModifierTotals, 'type'>;

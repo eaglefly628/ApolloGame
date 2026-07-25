@@ -13,6 +13,7 @@ import chainsCfg from './config/chains.json';
 import energyCfg from './config/energy.json';
 import generatorsCfg from './config/generators.json';
 import ordersCfg from './config/orders.json';
+import boardCoverCfg from './config/board-cover.json';
 
 // ── 类型（config 结构的 TS 视图·只读）─────────────────────────────────────────
 export interface ChainLevel { lvl: number; item: string; name: string; sell: number; sprite: string }
@@ -27,6 +28,20 @@ export interface OrderDef {
   id: string; char: string; needItems: string[]; // 各 slot 要的模板 id（顺序即 slot 序·最多 3）
   reward: { coins: number; exp?: number; stars?: number };
   timed?: boolean; // 限时特惠订单：卡上显示 ⏱ 倒计时（菜单 Timer 驱动·循环刷新）
+}
+
+// ── 挖掘阻碍层（board-cover·REQ-101-08·merge-proximity-clear）───────────────────
+export interface CoverCell { cell: number; layers: number; reveal: { kind: 'item' | 'energy' | 'gem' | 'chest'; item?: string; amount?: number } }
+export interface BoardCover { coverSprite: string; decPerMerge: number; radius: number; cells: CoverCell[] }
+export const BOARD_COVER = boardCoverCfg as BoardCover;
+// 友好 reveal.kind → 引擎 Blocker.reveal 通用形（item→spawn·energy/gem/chest→resource）。gem→星星·chest→金币包。
+export function coverReveal(rv: CoverCell['reveal']): { kind: 'spawn' | 'resource'; templateId?: string; resourceId?: string; amount?: number } {
+  switch (rv.kind) {
+    case 'item': return { kind: 'spawn', templateId: rv.item };
+    case 'energy': return { kind: 'resource', resourceId: 'energy', amount: rv.amount ?? 0 };
+    case 'gem': return { kind: 'resource', resourceId: 'stars', amount: rv.amount ?? 0 };
+    case 'chest': return { kind: 'resource', resourceId: 'coins', amount: rv.amount ?? 0 };
+  }
 }
 
 export const GAME = gameCfg;

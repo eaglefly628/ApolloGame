@@ -8,6 +8,7 @@ import { GAME101_THEME } from '../../src/games/game101/ui-theme.js';
 const cells: S1State['cells'] = new Array(63).fill(null);
 cells[0] = { emoji: '🧊', gen: 'gen_fridge' };
 cells[7] = { emoji: '🍅' }; cells[8] = { emoji: '🥗', deliverable: true };
+cells[15] = { emoji: '🔒', cover: 2 }; cells[16] = { emoji: '🦀', timer: 12 };
 const state: S1State = {
   energy: 34, coins: 305, gems: 8, level: 12, cells,
   orders: [
