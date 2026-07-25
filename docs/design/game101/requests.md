@@ -45,5 +45,5 @@
 > **架构裁断（GD·别在游戏层手写扫格 solver）**：
 > - ✅ **游戏层（PE）**：只摆 `board-cover.json`（覆盖格 `Blocker{layers, reveal}` 数据）；覆盖格不可拖/不可落子（同 §5 尊重锁 flag）；`layers==0` 解锁按 `reveal.kind` 走 prefab / resource-apply / 开箱。**零手写玩法逻辑**。
 > - 🔴 **引擎层（主程/Lead·G6 下沉）**：**「merge-on-place 合并 → 3×3 网格邻格 `Blocker.layers` 各 −1·归零发信号」** 空间邻格效应。原语 `spatial-query.queryRange` 已有 + `match3-board` 同型「格层减层·`neighbors4` 减邻格 blockers·line 527」已证；下沉通用 `merge-proximity-clear`（或 merge-on-place 姊妹件）。**禁游戏层/宿主手写扫 3×3 减邻格**（manifesto §3 红线·且宿主非确定性 sim）。
-> **前置**：G6 引擎能力需 Lead 裁下沉 + 占引擎池（`docs/workflow/requests.md`·现池近满·由 Lead 清槽/排期）。能力落地前 PE 可先备 `board-cover.json` 数据 + 覆盖格渲染（阻碍层皮·不可拖），**不硬接减层逻辑**。
+> **前置**：G6 引擎能力已挂引擎池 `docs/workflow/requests.md REQ-MERGEDIG`（待 Lead/主程 裁下沉·排期）。能力落地前 PE 可先备 `board-cover.json` 数据 + 覆盖格渲染（阻碍层皮·不可拖），**不硬接减层逻辑**。
 > **验收**：headless — 覆盖格不可拖；在其 3×3 内二消 N 次 → 该格 `layers` 减 N；归零 → 清层 + 露出 `reveal` 内容 + 确定性同 hash。真玩 — 挖开一片露出能量/宝箱、可用空间扩大。

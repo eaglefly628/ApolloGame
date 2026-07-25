@@ -46,7 +46,7 @@ Merge-2 合并板 + 视觉小说剧情 Meta 的休闲复刻（对标 **Gossip Ha
 | G6 | **二消邻格清阻碍 merge-proximity-clear**（systems-economy §5.5·挖掘式区域解锁·**owner 核心乐趣**）：merge-on-place 在 cell C 合并 → C 的 3×3 网格邻格 `Blocker.layers` 各 −1·归零发解锁信号 | ✅可组合部分=`Blocker`数据 + `event-when`(0)+`destroy`+`caster/resource-apply`(露物)。🔴 缺口=**「合并→减 3×3 邻格」空间邻格效应**：`spatial-query.queryRange` 原语 + `match3-board`「格层减层·`neighbors4` 减邻格 blockers·line 527」同型逻辑均已存在，但 merge-on-place 无此挂钩。**倾向下沉通用 `merge-proximity-clear`**（或 merge-on-place 姊妹件）·**禁游戏层/宿主手写扫格 solver**（红线） | 报 Lead 裁下沉 |
 
 > **G5 口径**：G5 是 §6 Lead 过审**之后**的后补缺口，**本期延后**——M1 用「情绪曲线数据模板」(`orderRhythm`·不读棋盘·现有 event-when/计数即可)，**不触发 G5**、不阻塞开工；若后续做棋盘态自适应 DDA，再单独报 Lead 评估下沉 `order-director`。
-> **G6 口径**：owner 2026-07-25 追加·**核心乐趣**（非次要）。**该做**（回驳理由不成立：非现有能力可直接组合·非已覆盖·是真表达缺口）。**怎么做**：游戏层只摆 `board-cover.json`（`Blocker{layers,reveal}` 数据）；「合并→减 3×3 邻格阻碍」空间效应**下沉引擎通用能力**（复用 `queryRange` + 参照 `match3-board` 邻格减层逻辑·非游戏层 system）。**报 `docs/workflow/requests.md` 引擎池待 Lead 裁下沉**（占槽需 Lead·现池近满）。工单 `docs/design/game101/requests.md REQ-101-08`。
+> **G6 口径**：owner 2026-07-25 追加·**核心乐趣**（非次要）。**该做**（回驳理由不成立：非现有能力可直接组合·非已覆盖·是真表达缺口）。**怎么做**：游戏层只摆 `board-cover.json`（`Blocker{layers,reveal}` 数据）；「合并→减 3×3 邻格阻碍」空间效应**下沉引擎通用能力**（复用 `queryRange` + 参照 `match3-board` 邻格减层逻辑·非游戏层 system）。**已挂引擎池 `docs/workflow/requests.md REQ-MERGEDIG`**（待 Lead/主程 裁下沉·排期）。游戏工单 `docs/design/game101/requests.md REQ-101-08`。
 
 ## 3. 摆成数据的规则面
 
