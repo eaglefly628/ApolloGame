@@ -15,13 +15,22 @@ import type { PathFollow, Transform, Velocity } from '@engine/protocol/component
 //
 //  确定性：只用 IEEE sqrt/÷（Math.hypot 求距，内部即 sqrt，与 steering/orbit-motion 同类安全）；
 //  无 Math.random/Date.now/墙钟。index 游标是运行时状态、进 snapshot，回放/rollback 安全。
+//
+//  queueId/minGap（REQ-CONVEYOR-CAP M1：有序不重叠占位 + 队列递进——传送带/排队通用，非 game102 专属）：
+//  同 queueId 成员按「path 进度」pathProgress(wps,index,remainingDist) = 沿 waypoints 到 index 的累计弧长
+//  − 到当前航点的剩余直线距离，排序（降序=离终点越近排越前）。每个非排头成员的「本 tick 有效前进量」夹在
+//  「前一名（进度更高者）本 tick **起点**进度 − minGap」——用起点（非本 tick 终点）进度做界，避免同 tick
+//  内产生"谁先算谁吃亏"的处理序依赖（前一名自己本 tick 也只会前进不会后退，界只会更松，不会有负值间隔）。
+//  超界则按比例缩短本 tick 的速度矢量模长（保方向），压到 0 即原地不动（不倒退）；排头（组内进度最高者）
+//  不受限、行为与不带 queueId 完全一致。tie-break：进度相同按 id 升序（与其余能力同款确定性口径）。
+//  不设 queueId=零回归（现有 pathFollowAt/PathFollow 用法字节不变）。
 // ═══════════════════════════════════════════════════════════════
 
 /** authoring 助手：由航点表 + 速度 + 选项算出 PathFollow 组件数据（index 初值 0）。供蓝图烤数据。 */
 export function pathFollowAt(
   waypoints: { x: number; y: number }[],
   speed: number,
-  opts?: { loop?: boolean; arriveRadius?: number },
+  opts?: { loop?: boolean; arriveRadius?: number; queueId?: string; minGap?: number },
 ): Omit<PathFollow, 'type'> {
   return {
     waypoints,
@@ -29,7 +38,17 @@ export function pathFollowAt(
     index: 0,
     ...(opts?.loop !== undefined ? { loop: opts.loop } : {}),
     ...(opts?.arriveRadius !== undefined ? { arriveRadius: opts.arriveRadius } : {}),
+    ...(opts?.queueId !== undefined ? { queueId: opts.queueId } : {}),
+    ...(opts?.minGap !== undefined ? { minGap: opts.minGap } : {}),
   };
+}
+
+// 沿 waypoints 到 index 的累计弧长 − 到当前航点的剩余直线距离（见文件头 queueId/minGap 注释）。
+// O(index) per call：waypoints 表通常几十项、成员数十——按 tick×成员重算足够快，避免额外缓存状态（简单优先）。
+function pathProgress(wps: { x: number; y: number }[], index: number, remaining: number): number {
+  let cum = 0;
+  for (let k = 1; k <= index; k++) cum += Math.hypot(wps[k].x - wps[k - 1].x, wps[k].y - wps[k - 1].y);
+  return cum - remaining;
 }
 
 export const pathFollowCapability = defineCapability({
@@ -60,6 +79,8 @@ export const pathFollowCapability = defineCapability({
           speed: { type: 'number', describe: '移动速度（写入 Velocity 模长，单位/tick）' },
           arriveRadius: { type: 'number', describe: '进入该半径算「到达」当前航点、游标前进；缺省 4' },
           index: { type: 'number', describe: '当前目标航点游标（运行时状态·缺省 0·随 snapshot 存读）' },
+          queueId: { type: 'string', describe: '队列分组键：同 queueId 成员按 path 进度排序、互不超车（缺省不分组=不受限）' },
+          minGap: { type: 'number', describe: '与「前一名」的最小 path 进度间距（仅 queueId 设了才生效）；缺省 0' },
         },
       },
     },
@@ -85,6 +106,9 @@ export const pathFollowCapability = defineCapability({
       consumes: [],
       execute(world: IWorld) {
         const ids = world.query('PathFollow', 'Transform').map(([id]) => id).sort();
+        // REQ-CONVEYOR-CAP M1：queueId 成员本 tick 的「起点 path 进度」（clamp 用，见文件头注释）——
+        // 用本 tick **移动前**的 index/剩余距离算，故所有成员的界都基于同一时间切片，无处理序依赖。
+        const queued: { id: string; queueId: string; minGap: number; progress: number }[] = [];
         for (const id of ids) {
           const pf = world.getComponent<PathFollow>(id, 'PathFollow')!;
           const t = world.getComponent<Transform>(id, 'Transform')!;
@@ -129,6 +153,35 @@ export const pathFollowCapability = defineCapability({
             // d===0：正好压在航点且（非 loop 末点）无处可去 → 停。
             v.vx = 0;
             v.vy = 0;
+          }
+
+          if (pf.queueId !== undefined) {
+            queued.push({ id, queueId: pf.queueId, minGap: pf.minGap ?? 0, progress: pathProgress(wps, i, d) });
+          }
+        }
+
+        if (queued.length > 0) {
+          // 按 queueId 分组，组内按进度降序（排头=进度最高）排序，tie-break 按 id 升序（确定性）。
+          const groups = new Map<string, typeof queued>();
+          for (const q of queued) {
+            const g = groups.get(q.queueId);
+            if (g) g.push(q); else groups.set(q.queueId, [q]);
+          }
+          for (const g of groups.values()) {
+            g.sort((a, b) => b.progress - a.progress || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+            for (let k = 1; k < g.length; k++) {
+              const leader = g[k - 1];
+              const follower = g[k];
+              const allowed = leader.progress - follower.minGap; // 前一名起点进度 − minGap（排头不设界）
+              const maxAdvance = Math.max(0, allowed - follower.progress);
+              const v = world.getComponent<Velocity>(follower.id, 'Velocity')!;
+              const step = Math.hypot(v.vx, v.vy);
+              if (step > maxAdvance) {
+                const scale = maxAdvance > 0 ? maxAdvance / step : 0;
+                v.vx *= scale;
+                v.vy *= scale;
+              }
+            }
           }
         }
       },

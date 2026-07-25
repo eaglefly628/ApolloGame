@@ -128,6 +128,11 @@ export interface PullAnchor extends Component {
 // 算到达→游标前进（loop=回到 0，否则停在末点）→ 写 Velocity（被 motion-apply 积分）。与 steering 同链
 // （先定速→motion-apply 积分），区别于它的是"固定轨道"而非"追/逃 Relation(target)"——巡逻/传送带/固定弹道路径通用。
 // 确定性：方向归一化用 IEEE sqrt/÷（Math.hypot 求距，同 Steering 类安全）。
+//
+// queueId/minGap（REQ-CONVEYOR-CAP M1：有序不重叠占位 + 队列递进）：同 queueId 的成员按「path 进度」
+// （沿 waypoints 累计弧长 − 到当前航点剩余距离，见 path-follow.ts pathProgress）排序；每个非排头成员
+// 每 tick 的有效前进量夹在「前一名（进度更高者）本 tick 起点进度 − minGap」——绝不超车/叠位，排头不受限。
+// 缺省 minGap=0（仍不超车，允许贴到 0 间距）；不设 queueId=完全不受本机制影响（零回归）。
 export interface PathFollow extends Component {
   readonly type: 'PathFollow';
   waypoints: { x: number; y: number }[]; // 轨道航点（≥1）
@@ -135,6 +140,8 @@ export interface PathFollow extends Component {
   speed: number; // 写入 Velocity 模长（单位/tick）
   arriveRadius?: number; // 进入该半径算「到达」进下一航点；缺省 4
   index?: number; // 当前目标航点游标（运行时状态·缺省 0·序列化进 snapshot）
+  queueId?: string; // 队列分组键（传送带/队列 id）；同 queueId 成员按 path 进度排序、互不超车
+  minGap?: number; // 与「前一名」的最小 path 进度间距；缺省 0（仍不超车）
 }
 
 // ── Orbit ── 圆周运动（REQ-SURVIVOR护盾绕转·VBUG-02）：绕 centerId（缺省世界原点）半径 radius 匀速环绕，

@@ -123,6 +123,78 @@ describe('path-follow — 确定性', () => {
   });
 });
 
+describe('path-follow — queueId/minGap 队列递进（REQ-CONVEYOR-CAP M1）', () => {
+  // 三成员同 queueId、同轨（loop 环带），起点按不同 path 进度摆位（index=1，目标 wp1=x10，
+  // arriveRadius=1 避免本 tick 就到达打乱进度基准）：a 进度8（离wp1最近=排头）> b 进度5 > c 进度1。
+  const wps = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 20, y: 0 }, { x: 30, y: 0 }];
+  function queueMember(w: World, id: string, x: number, minGap: number): void {
+    follower(w, id, x, 0, { waypoints: wps, speed: 2, index: 1, arriveRadius: 1, queueId: 'belt', minGap });
+  }
+
+  it('后车追到 minGap 内即被夹住（不叠）；再往后的车按剩余空间部分前进（不超车）', () => {
+    const w = world();
+    queueMember(w, 'a', 8, 3); // 进度 10-2=8（排头，minGap 对排头不生效）
+    queueMember(w, 'b', 5, 3); // 进度 10-5=5；离 a 恰好=minGap(3) → 本 tick 前进量夹到 0
+    queueMember(w, 'c', 1, 3); // 进度 10-9=1；离 b(5) 差 4>minGap(3) → 允许前进 min(speed, 4-3=1)=1
+    w.tick();
+    expect(vel(w, 'a').vx).toBeCloseTo(2, 9); // 排头不受限，全速
+    expect(vel(w, 'b').vx).toBe(0); // 恰贴 minGap → 夹死，不越界叠上排头
+    expect(vel(w, 'c').vx).toBeCloseTo(1, 9); // 半速前进，刚好顶到「b 起点进度 − minGap」的界
+    // 位置不重叠：一 tick 后 a（全速前进）> b（原地）> c（部分前进），顺序不倒、不叠位。
+    expect(pos(w, 'a').x).toBeGreaterThan(pos(w, 'b').x);
+    expect(pos(w, 'b').x).toBeGreaterThan(pos(w, 'c').x - 1e-9);
+  });
+
+  it('排头出队（离开 queueId 分组）后，原二当家转正 → 不再受限、全速前进（队列前移天然涌现）', () => {
+    const w = world();
+    queueMember(w, 'a', 8, 3);
+    queueMember(w, 'b', 5, 3);
+    queueMember(w, 'c', 1, 3);
+    w.tick();
+    expect(vel(w, 'b').vx).toBe(0); // 第一拍仍被 a 挡住
+    w.removeComponent('a', 'PathFollow'); // 排头出队（如：抵达终点被摘下/回收）
+    w.tick();
+    expect(vel(w, 'b').vx).toBeCloseTo(2, 9); // a 一走，b 转正排头 → 全速
+  });
+
+  it('minGap 缺省=0：仍不超车（贴到 0 间距即夹死），但不强加额外间距', () => {
+    const w = world();
+    follower(w, 'lead', 8, 0, { waypoints: wps, speed: 2, index: 1, arriveRadius: 1, queueId: 'q0' });
+    follower(w, 'tail', 6, 0, { waypoints: wps, speed: 2, index: 1, arriveRadius: 1, queueId: 'q0' }); // 进度差=2<speed(2)
+    w.tick();
+    expect(vel(w, 'lead').vx).toBeCloseTo(2, 9);
+    expect(vel(w, 'tail').vx).toBeCloseTo(2, 9); // 进度差(2) == 允许前进量(speed) → 恰好顶到边界、不缩放不越界
+  });
+
+  it('进度打平 tie-break 按 id 升序（更小 id 判定为排头，确定性、无随机）', () => {
+    const w = world();
+    queueMember(w, 'z', 5, 3); // 与 'a' 进度打平（同 x=5）
+    queueMember(w, 'a', 5, 3);
+    w.tick();
+    expect(vel(w, 'a').vx).toBeCloseTo(2, 9); // id 更小 → 判排头，不受限
+    expect(vel(w, 'z').vx).toBe(0); // 判跟车 → 贴着排头被夹死（进度差=0<minGap）
+  });
+
+  it('不设 queueId：现有单体行为字节不变（零回归）', () => {
+    const w = world();
+    follower(w, 'solo', 8, 0, { waypoints: wps, speed: 2, index: 1, arriveRadius: 1 });
+    w.tick();
+    expect(vel(w, 'solo').vx).toBeCloseTo(2, 9);
+  });
+
+  it('确定性：queueId 队列双跑 snapshot 相等', () => {
+    const run = (): string => {
+      const w = world();
+      queueMember(w, 'a', 8, 3);
+      queueMember(w, 'b', 5, 3);
+      queueMember(w, 'c', 1, 3);
+      for (let i = 0; i < 20; i++) w.tick();
+      return JSON.stringify(w.snapshot());
+    };
+    expect(run()).toBe(run());
+  });
+});
+
 describe('path-follow — 调度定序（撞环回归·同 orbit-motion「调度定序」先例）', () => {
   it('与 motion-apply/steering/aggro/launch 同装不成环·可 tick', () => {
     // 真撞环（不是假设）：path-follow 与 steering 都声明 reads+writes Velocity（对齐 steering 的既有口径、
