@@ -24,7 +24,7 @@ import {
 import { flowCapability, aggroCapability, prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
   PALETTE, CELL_BIT, CANNON_BIT, KEY_BIT, BELT_BIT, TRAY_BIT, ZONE_BIT, FIRE, FIELD_W, CONFIG,
-  PIPE, PICTURE, BOARD_PAD, BOARD_GAP, TRAY, SUPPLY, ACTION_BAR,
+  PIPE, PICTURE, BOARD_PAD, BOARD_GAP, TRAY, ACTION_BAR,
 } from './theme.js';
 import type { Level } from './levels.js';
 import { LEVEL_1 } from './levels.js';
@@ -156,34 +156,46 @@ function counters(level: Level): Record<string, EntityBlueprint> {
   return out;
 }
 
-// 补给区：每色一个**可点分发器**（点→Caster 生成一门"上带色炮"·= 1 move·gdd §1）。reserve 两排装饰保留。
-function supplies(level: Level): Record<string, EntityBlueprint> {
+// 位图逐色像素数（递进队列按此守恒配炮）。
+function colorCounts(level: Level): Record<string, number> {
+  const cnt: Record<string, number> = {};
+  for (const row of level.bitmap) for (const ch of row) {
+    if (!ch || ch === '.') continue;
+    const idx = Number(ch); if (Number.isNaN(idx)) continue;
+    const name = level.palette[idx]; if (name) cnt[name] = (cnt[name] ?? 0) + 1;
+  }
+  return cnt;
+}
+// 待发弹库 = **递进队列**（core-gameplay §2）：由像素图逐色格数守恒配炮（每色 ceil(格数/ammo) 门·打蛋器图标+弹数）。
+// 每门**独立可点部署**（唯一 deploy_i 信号·点→Caster 生成上带色炮 + Effect 自毁本槽=消费）。非无限分发器。
+const POOL = { top: 1052, rowH: 66, perRow: 6, marginX: 46 } as const;
+function deployQueue(level: Level): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
-  const { colLeft, w, h, frontTop, midTop, backTop } = SUPPLY;
-  const n = level.palette.length;
-  const spanL = 40, spanR = FIELD_W - 40 - w;
-  level.palette.forEach((name, i) => {
+  const counts = colorCounts(level);
+  // 按 palette 顺序（外→内约定序）展开每色所需炮数。
+  const queue: string[] = [];
+  for (const name of level.palette) {
+    const need = Math.ceil((counts[name] ?? 0) / Math.max(1, level.ammo));
+    for (let k = 0; k < need; k++) queue.push(name);
+  }
+  const gapX = (FIELD_W - POOL.marginX * 2) / (POOL.perRow - 1);
+  queue.forEach((name, i) => {
     const pc = PALETTE[name];
     if (!pc) return;
-    const lx = n > 1 ? Math.round(spanL + (spanR - spanL) * (i / (n - 1))) : spanL;
-    out[`supply-${name}`] = {
-      Transform: XF(lx + w / 2, frontTop + h / 2),
-      Shape: box(w - 8, h - 8),
+    const cx = POOL.marginX + (i % POOL.perRow) * gapX;
+    const cy = POOL.top + Math.floor(i / POOL.perRow) * POOL.rowH;
+    const sig = `deploy_${i}`;
+    out[`pool-${i}`] = {
+      Transform: XF(cx, cy),
+      Shape: box(CG.bodyW, CG.bodyH),
       Color: col(pc.tint, 1),
-      Clickable: { action: `tapSupply_${name}`, phase: 'down' },
-      Caster: { onSignal: `tapSupply_${name}`, at: 'self', template: `cannon_${name}` },
+      Clickable: { action: sig, phase: 'down' },
+      Caster: { onSignal: sig, at: 'self', template: `cannon_${name}` },   // 点→在此位生成上带色炮（PathFollow 驾其上轨）
+      Effect: { onSignal: sig, kind: 'destroy', targetEntity: '@signal-source', value: true }, // 消费本槽（递进队列取走）
     };
+    const parts = eggBeaterParts(`pool-${i}`, pc.tint, level.ammo, false);
+    for (const [k, v] of Object.entries(parts)) out[`pool-${i}-${k}`] = v;
   });
-  const reserve = (tag: string, top: number, alpha: number): void => {
-    colLeft.forEach((lx, i) => {
-      const name = level.palette[(i + 1) % level.palette.length];
-      const pc = PALETTE[name];
-      if (!pc) return;
-      out[`reserve-${tag}-${i}`] = { Transform: XF(lx + w / 2, top + h / 2), Shape: box(w - 8, h - 8), Color: col(pc.tint, alpha) };
-    });
-  };
-  reserve('mid', midTop, 0.62);
-  reserve('back', backTop, 0.34);
   return out;
 }
 
@@ -373,7 +385,7 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
     ...prefabs(level),
     // render 顺序（后画覆盖先画）：装饰底衬 → 补给/后备 → 棋盘格 → 门标。
     ...decor(level),
-    ...supplies(level),
+    ...deployQueue(level),
     ...boardCells(level),
     'door-marker': doorMarker,
   };

@@ -32,8 +32,13 @@ describe('pixelgen · Path B 程序化满格生成', () => {
   it('确定性：同 seed 同产物（可复现·可 check-in 为数据）', () => {
     expect(genGarden(22, 22, 20001).bitmap).toEqual(genGarden(22, 22, 20001).bitmap);
   });
-  it('LEVEL_1 = genGarden(22,22,20001) 的 check-in 产物（数据与生成器一致）', () => {
-    expect(LEVEL_1.bitmap).toEqual(genGarden(22, 22, 20001).bitmap);
-    expect(LEVEL_1.keys).toEqual(genGarden(22, 22, 20001).specials.keys);
+  // genGarden 生成器仍自成一套（可用于批量出题）；但 LEVEL_1 现改为**手作同心靶**（owner 2026-07-25·
+  // 粗粒连块·演示外→内剥离），不再是 genGarden 产物 → 只校验 LEVEL_1 结构合法（满格·index 在 palette 内）。
+  it('LEVEL_1 手作同心靶：满格·每格 index 落在 palette 内（结构合法）', () => {
+    expect(LEVEL_1.bitmap.length).toBe(LEVEL_1.rows);
+    for (const row of LEVEL_1.bitmap) {
+      expect(row.length).toBe(LEVEL_1.cols);
+      for (const ch of row) { const idx = Number(ch); expect(idx).toBeGreaterThanOrEqual(0); expect(idx).toBeLessThan(LEVEL_1.palette.length); }
+    }
   });
 });
