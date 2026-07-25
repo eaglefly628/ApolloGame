@@ -15,7 +15,7 @@ export function buildS1(): LayoutNode {
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
 export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number; coverReward?: string } // cover=阻碍层数(>0 盖住)·coverReward=沙下埋的奖励预览(⚡/💎/🎁)
 export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
-export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; timed?: boolean; timeLeft?: number; fly?: { id: string; label: string }; celebrate?: boolean }
+export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; timed?: boolean; timeLeft?: number; portrait?: string; fly?: { id: string; label: string }; celebrate?: boolean }
 export interface S1State {
   energy: number; coins: number; gems: number; level: number;
   cells: (CellView | null)[]; orders: OrderView[];
@@ -58,7 +58,9 @@ function hud(s: S1State): N {
         layout: { direction: 'row', align: 'center', justify: 'center', gap: 10, padding: 16, radius: 26 },
         children: [
           { type: 'Label', id: 'hud-e-g', props: { text: '⚡', size: 'xxl' } },
-          { type: 'ProgressBar', id: 'hud-e-bar', props: { value: Math.round(s.energy), max: ENERGY.cap, tone: 'warn', showValue: true } },
+          // 能量数值=大字（原 ProgressBar.showValue 太小·owner）：显著大值 + 细进度条只作填充观感。
+          { type: 'Label', id: 'hud-e-v', props: { text: `${Math.round(s.energy)}`, color: 'gold', bold: true, size: 'xxxl' } },
+          { type: 'ProgressBar', id: 'hud-e-bar', props: { value: Math.round(s.energy), max: ENERGY.cap, tone: 'warn' } },
         ],
       },
       pill('hud-coins', '🪙', `${Math.round(s.coins)}`, 'gold'),
@@ -80,51 +82,46 @@ function orders(s: S1State): N {
       // 可交付顾客卡=绿框 + 发光脉冲（醒目「可以交给我了」）；限时卡=金框异形；两者叠加时可交付绿框优先示意。
       type: 'Panel', id: `ord-${i}`,
       props: o.timed ? { bg: 'panel', edge: o.deliverable ? 'ok' : 'gold', shape: 'cut' } : o.deliverable ? { bg: 'panel', edge: 'ok' } : { bg: 'panel' },
-      layout: { direction: 'column', align: 'center', justify: 'between', gap: 6, padding: o.timed ? 14 : 10, radius: 18, flex: 1, ...(o.deliverable ? { anim: 'glow' } : {}) },
+      // 长条形卡（owner）：真立绘在左作背景图层 + 需求（盘子）叠在右，横向排布=扁而宽。
+      layout: { direction: 'row', align: 'center', gap: 8, padding: o.timed ? 12 : 8, radius: 18, flex: 1, ...(o.deliverable ? { anim: 'glow' } : {}) },
       children: [
+        // 左：真人物立绘（asset-manager vendor 的 CC0 头像·src 就绪即真图·name 作缺省首字兜底）。
+        { type: 'Avatar', id: `ord-${i}-av`, props: { src: o.portrait, name: o.char, size: 84, shape: 'rounded' } },
         {
-          type: 'Panel', id: `ord-${i}-top`, props: { bare: true },
-          layout: { direction: 'row', align: 'center', gap: 8 },
+          type: 'Panel', id: `ord-${i}-r`, props: { bare: true },
+          layout: { direction: 'column', align: 'stretch', justify: 'center', gap: 4, flex: 1 },
           children: [
-            ...(o.timed && o.timeLeft != null ? [{ type: 'Badge', id: `ord-${i}-clk`, props: { text: `⏱${o.timeLeft}`, tone: 'warn' } } as N] : []),
-            { type: 'Avatar', id: `ord-${i}-av`, props: { name: o.char, size: 96, shape: 'circle' } }, // 大人物立绘（对齐原图比例·餐台角色显著）
             {
-              type: 'Panel', id: `ord-${i}-idn`, props: { bare: true },
-              layout: { direction: 'column', align: 'start', gap: 2 },
+              type: 'Panel', id: `ord-${i}-nmrow`, props: { bare: true },
+              layout: { direction: 'row', align: 'center', justify: 'between', gap: 4 },
               children: [
-                {
-                  type: 'Panel', id: `ord-${i}-nmrow`, props: { bare: true },
-                  layout: { direction: 'row', align: 'center', gap: 4 },
-                  children: [
-                    { type: 'Label', id: `ord-${i}-nm`, props: { text: o.char, size: 'sm', bold: true } },
-                    { type: 'Label', id: `ord-${i}-mf`, props: { text: o.moodFace, size: 'md' } }, // 心情脸（满意度越高越开心）
-                  ],
-                },
-                { type: 'ProgressBar', id: `ord-${i}-mood`, props: { value: Math.round(o.mood * 100), max: 100, tone: 'ok' } }, // 满意度条
+                { type: 'Label', id: `ord-${i}-nm`, props: { text: o.char, size: 'sm', bold: true } },
+                { type: 'Label', id: `ord-${i}-mf`, props: { text: o.moodFace, size: 'md' } }, // 心情脸
+                ...(o.timed && o.timeLeft != null ? [{ type: 'Badge', id: `ord-${i}-clk`, props: { text: `⏱${o.timeLeft}`, tone: 'warn' } } as N] : []),
               ],
             },
-          ],
-        },
-        {
-          // 餐盘（托盘）：最多 3 slot 横排——已交付=✓ 绿槽·可交付=金槽高亮·未满=素槽显需求物。
-          type: 'Panel', id: `ord-${i}-plate`, props: { bg: 'sunken' },
-          layout: { direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 8, radius: 16, flex: 1 },
-          children: o.slots.map((sl, j) => ({
-            type: 'Panel', id: `ord-${i}-s${j}`, props: { bg: sl.filled ? 'ok' : sl.want ? 'gold' : 'raised' },
-            layout: { direction: 'column', align: 'center', justify: 'center', padding: 6, radius: 12, height: 68, flex: 1 },
-            children: [
-              sl.filled
-                ? { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: '✓', size: 40, bold: true, color: 'ink' } } as N
-                : { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: sl.itemEmoji, size: 56 } } as N, // 顾客需求物大图·看得清
-            ],
-          })),
-        },
-        {
-          type: 'Panel', id: `ord-${i}-rw`, props: { bare: true },
-          layout: { direction: 'row', align: 'center', justify: 'center', gap: 8 },
-          children: [
-            { type: 'Badge', id: `ord-${i}-rc`, props: { text: `🪙${o.coins}`, tone: 'warn' } },
-            ...(o.stars > 0 ? [{ type: 'Badge', id: `ord-${i}-rs`, props: { text: `⭐${o.stars}`, tone: 'ok' } } as N] : []),
+            {
+              // 需求盘（叠在立绘旁）：最多 3 slot·已交付 ✓ 绿槽·可交付金槽·未满显需求物。
+              type: 'Panel', id: `ord-${i}-plate`, props: { bg: 'sunken' },
+              layout: { direction: 'row', align: 'center', justify: 'center', gap: 5, padding: 6, radius: 14 },
+              children: o.slots.map((sl, j) => ({
+                type: 'Panel', id: `ord-${i}-s${j}`, props: { bg: sl.filled ? 'ok' : sl.want ? 'gold' : 'raised' },
+                layout: { direction: 'column', align: 'center', justify: 'center', padding: 4, radius: 10, height: 56, flex: 1 },
+                children: [
+                  sl.filled
+                    ? { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: '✓', size: 32, bold: true, color: 'ink' } } as N
+                    : { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: sl.itemEmoji, size: 44 } } as N,
+                ],
+              })),
+            },
+            {
+              type: 'Panel', id: `ord-${i}-rw`, props: { bare: true },
+              layout: { direction: 'row', align: 'center', justify: 'center', gap: 6 },
+              children: [
+                { type: 'Badge', id: `ord-${i}-rc`, props: { text: `🪙${o.coins}`, tone: 'warn' } },
+                ...(o.stars > 0 ? [{ type: 'Badge', id: `ord-${i}-rs`, props: { text: `⭐${o.stars}`, tone: 'ok' } } as N] : []),
+              ],
+            },
           ],
         },
         // 交付发奖飞行轨迹（juice·render-only）：金币从顾客卡沿弧飞进 HUD 钱包（flyTo→hud-coins）。绝对定位不占流。

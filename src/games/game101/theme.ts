@@ -69,6 +69,13 @@ export const TICKS_PER_SEC = 60;
 export const TIMED_SEC = 20; // 限时物存活秒数（到 0 自毁）
 export const TIMED_ITEM = 'timed_fresh';
 export const MENU_TIMER_SEC = 30; // 限时特惠订单倒计时周期（循环刷新·菜单 Timer）
+
+// 顾客立绘（asset-manager 2026-07-25 vendor 的 CC0 头像·public served·顾客卡背景图层·美术就绪即换）。
+export const CUST_PORTRAITS = [
+  '/games/game101/art/superpowers/ninja-adventure/characters/faceset/1.png',
+  '/games/game101/art/superpowers/ninja-adventure/characters/faceset/5.png',
+  '/games/game101/art/superpowers/ninja-adventure/characters/faceset/12.png',
+];
 export const ENERGY_REGEN_TICKS = ENERGY.regenIntervalSec * TICKS_PER_SEC;
 
 // ── 资源 id（f1-resource）──────────────────────────────────────────────────────

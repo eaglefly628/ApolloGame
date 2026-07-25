@@ -16,7 +16,7 @@ import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop, 
 import { buildBlueprint } from './blueprint.js';
 import { buildS1Live, type S1State, type CellView, type OrderView, type SlotView } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';
-import { GAME, RES, GENERATORS, ORDERS, ORDER_SAT_MAX, TICKS_PER_SEC, ITEM_EMOJI, moodFace, cellIndexOf, cellCenter } from './theme.js';
+import { GAME, RES, GENERATORS, ORDERS, ORDER_SAT_MAX, TICKS_PER_SEC, CUST_PORTRAITS, ITEM_EMOJI, moodFace, cellIndexOf, cellCenter } from './theme.js';
 
 const GEN_CELLS = new Set(GENERATORS.map((g) => g.cell));
 
@@ -114,7 +114,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     const menuLeft = menuTm ? Math.max(0, Math.ceil((menuTm.duration - menuTm.elapsed) / TICKS_PER_SEC)) : undefined;
     // 订单交付态（读 Order 组件·多槽）：各 slot filled/需求物；want=板上有该物且此槽未满。
     const wanted = new Set<string>(); // 当前被某订单未满槽需要的模板集（板格 ✓ 提示）
-    const orders: OrderView[] = ORDERS.map((o) => {
+    const orders: OrderView[] = ORDERS.map((o, oi) => {
       const ord = w.getComponent<Order>(`order-${o.id}`, 'Order');
       const need = ord?.needItems ?? o.needItems;
       const filledArr = ord?.filled ?? o.needItems.map(() => false);
@@ -124,7 +124,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
         return { itemEmoji: ITEM_EMOJI[tpl] ?? '❓', filled, want: !filled && onBoard.has(tpl) };
       });
       const sat = res(`sat_${o.id}`);
-      return { char: o.char, slots, coins: o.reward.coins, stars: o.reward.stars ?? 0, deliverable: slots.some((sl) => sl.want), mood: sat / ORDER_SAT_MAX, moodFace: moodFace(sat), timed: o.timed, timeLeft: o.timed ? menuLeft : undefined };
+      return { char: o.char, slots, coins: o.reward.coins, stars: o.reward.stars ?? 0, deliverable: slots.some((sl) => sl.want), mood: sat / ORDER_SAT_MAX, moodFace: moodFace(sat), timed: o.timed, timeLeft: o.timed ? menuLeft : undefined, portrait: CUST_PORTRAITS[oi % CUST_PORTRAITS.length] };
     });
     // 板格 ✓ = 该成品被某订单未满槽需要（可拖去交付）。
     for (let i = 0; i < cells.length; i++) if (cells[i] && cellTpl[i] && wanted.has(cellTpl[i]!)) cells[i]!.deliverable = true;
