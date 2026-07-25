@@ -16,6 +16,7 @@
 | 生产线 | 手册 | 基座核心 | 负责角色/agent |
 |---|---|---|---|
 | **游戏生产总线（八阶段流程板）** | `playbooks/game-production.md` | 生产流程板 pipeline.json · 每步三门（机器+复查+人）· `scripts/game-pipeline.mjs` | **全员（任何新游戏/续做先看板）**；判官=Lead |
+| **流程验收问题层（每步答 YES 才过）** | `playbooks/game-flow-questions.md` | 八阶段的**游戏性问题层**（含 T2 竖切）· 门测下限·问题测好不好玩 | **全员（防「门绿但不是游戏」）**；判官=Lead |
 | **超休闲/休闲工具箱（速查·2D+3D 汇总）** | `playbooks/casual-toolkit.md` | 按「你要做什么」汇 Juice/3D UI/卡通观感/手感/物理玩具/世界 UI · 指向 registry+catalog 取字段 · 活范例=game-i | **做休闲/超休闲游戏先看**（UI 细则→ui.md·3D 细则→3d.md） |
 | **复查门（三门制·每关另一双眼睛）** | `playbooks/review-gates.md` | checklist→对抗核证→review 落账 · S7=八维评分卡（任一维 0=红） | **复查 session（复查人≠施工人）**；裁=Lead |
 | UI / HUD / 菜单 | `docs/design/ui-playbook.md`（先读）+ `playbooks/ui.md`（接线图） | LayoutNode 34 控件闭集 · mountUI 信号 · Label.font 艺术字 18 款(OFL 内嵌) · 色库三态填充(令牌/预设/custom·非裸 hex) · 异形按钮 8 形 + 贴图皮 + 按压反馈 | 各游戏 PE；活范例=game-i |
