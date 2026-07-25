@@ -36,6 +36,7 @@ import {
   tilemapCapability,
   animStateCapability,
   facingCapability,
+  faceRotateCapability,
   cardPlayCapability,
   diceRollCapability,
   cardPileCapability,
@@ -107,6 +108,9 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   tilemapCapability,
   animStateCapability,
   facingCapability,
+  // t2-face-rotate（REQ-FACE-ROTATE）：facing 姊妹件——按 velocity/Relation(target) 方向写 FaceDir 单位向量
+  // （sim 零 trig·sqrt 归一）；渲染器读它算 atan2 转视觉旋转角（render-only，2D 路径专用）。
+  faceRotateCapability,
   cardPlayCapability,
   diceRollCapability,
   cardPileCapability,

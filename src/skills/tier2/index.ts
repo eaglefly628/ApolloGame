@@ -29,6 +29,9 @@ export { bounceRelayCapability } from './bounce-relay.js';
 export { tilemapCapability, findTilemap, isSolidTile } from './tilemap.js';
 export { animStateCapability } from './anim-state.js';
 export { facingCapability } from './facing.js';
+// face-rotate（REQ-FACE-ROTATE）：俯视有向物按方向旋转贴图——sim 写单位方向向量 FaceDir(sqrt 归一·零 trig)，
+// 渲染器读它算 atan2 转视觉旋转角（render-only）。facing 的姊妹件：facing 输出左右镜像，本件输出整体旋转角。
+export { faceRotateCapability } from './face-rotate.js';
 // card-play（REQ-016/017）：卡牌「出牌」确定性输入接缝——命令流→按 owner 路由各玩家 PlayedHand + scoring Flag。可 lockstep 多人。
 export { cardPlayCapability, decodeCard, encodeCard } from './card-play.js';
 // dice-roll（REQ-GAMED #1）：掷一份声明好的骰池——rollOnSignal 触发→消费 RandomSeed 确定性掷 DicePool→写 RolledDice。

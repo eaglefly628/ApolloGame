@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { screenToWorld, chooseRenderMode } from './renderable.js';
+import { screenToWorld, chooseRenderMode, resolveRotation2D } from './renderable.js';
 import type { CameraView, Renderable } from './renderable.js';
-import type { Shape, Sprite, Text } from '@engine/protocol/components.js';
+import type { Shape, Sprite, Text, FaceDir } from '@engine/protocol/components.js';
 
 describe('screenToWorld — 屏幕→世界逆投影（Q5）', () => {
   const cam: CameraView = { centerX: 100, centerY: 50, zoom: 2 };
@@ -48,5 +48,23 @@ describe('chooseRenderMode — Sprite 优先盖过 Shape（REQ-005）', () => {
     expect(chooseRenderMode({ ...base, shape }, false)).toBe('shape');
     expect(chooseRenderMode({ ...base, text, shape }, false)).toBe('text');
     expect(chooseRenderMode({ ...base }, false)).toBe('none');
+  });
+});
+
+describe('resolveRotation2D — FaceDir → 视觉旋转角（REQ-FACE-ROTATE，2D 渲染路径，render-only atan2）', () => {
+  const base: Renderable = { entityId: 'e', x: 0, y: 0, rotation: 0.42, scaleX: 1, scaleY: 1, zOrder: 0 };
+
+  it('无 FaceDir → 照旧用 Transform.rotation（零回归）', () => {
+    expect(resolveRotation2D(base)).toBe(0.42);
+  });
+
+  it('有 FaceDir → atan2(y,x)，覆盖 Transform.rotation', () => {
+    const diag: FaceDir = { type: 'FaceDir', x: Math.SQRT1_2, y: Math.SQRT1_2 }; // 斜 45°
+    expect(resolveRotation2D({ ...base, faceDir: diag })).toBeCloseTo(Math.PI / 4, 9);
+  });
+
+  it('FaceDir 指向左(-1,0) → atan2 = π（不是被 Transform.rotation 顶替）', () => {
+    const left: FaceDir = { type: 'FaceDir', x: -1, y: 0 };
+    expect(resolveRotation2D({ ...base, faceDir: left })).toBeCloseTo(Math.PI, 9);
   });
 });

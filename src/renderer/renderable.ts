@@ -1,5 +1,5 @@
 import type { IWorld } from '@engine/core/types.js';
-import type { Transform, Transform3D, Shape, Color, Sprite, Text, Visibility, Frame, Mesh3D, Model3D, Material3D } from '@engine/protocol/components.js';
+import type { Transform, Transform3D, Shape, Color, Sprite, Text, Visibility, Frame, Mesh3D, Model3D, Material3D, FaceDir } from '@engine/protocol/components.js';
 
 // 相机视图与世界↔屏幕投影已下沉为共享契约（renderer 正向投影 + clickable 逆向命中的单一真相）。
 // 此处重导出，保持既有 `@renderer/renderable` 消费者（canvas-renderer / 测试）的 import 不变。
@@ -19,6 +19,8 @@ export interface Renderable {
   color?: Color;
   sprite?: Sprite;
   frame?: Frame; // 当前帧索引（序列帧/命名动画用；渲染器据此 resolve(textureKey, frame.index)）
+  faceDir?: FaceDir; // 可选「表现层朝向」（REQ-FACE-ROTATE，sim 写的单位方向向量·零 trig）：2D 后端据此算 atan2
+  // 覆盖视觉旋转角，见 `resolveRotation2D`；3D 后端不读此字段（不受影响，r.rotation 仍作翻面角原样使用）。
   text?: Text;
   mesh3d?: Mesh3D; // 可选「3D 物件」描述：3D 后端渲成有体积/双面/可翻的 box/plane；2D 后端画其正面（per-object opt-in 3D）
   model3d?: Model3D; // 可选「导入式 3D 模型」(glTF)：3D 后端据 modelKey 取资产解析显示；2D 后端无视（圆润模型，opt-in）
@@ -37,6 +39,15 @@ export function chooseRenderMode(r: Renderable, spriteReady: boolean): RenderMod
   if (r.shape) return 'shape';
   if (r.sprite) return 'placeholder';
   return 'none';
+}
+
+// FaceDir → 视觉旋转角（REQ-FACE-ROTATE，**2D 渲染路径专用、render-only**）：sim 侧只写单位方向向量
+// （sqrt 归一·零 trig·可安全进 hash，见 skills/tier2/face-rotate.ts）；atan2 跨机不保证逐位一致，绝不能
+// 进 sim/hash——这里是它唯一允许出现的地方：每帧重算、不进快照。无 FaceDir → 照旧用 Transform.rotation
+// （零回归）。**只供 2D 后端**（CanvasRenderer 等）调用；three-projection/three-renderer 仍直接读
+// `r.rotation` 做 Mesh3D 翻面语义，不调用本函数、不受影响（P3D 域零改动）。
+export function resolveRotation2D(r: Renderable): number {
+  return r.faceDir ? Math.atan2(r.faceDir.y, r.faceDir.x) : r.rotation;
 }
 
 // 从世界提取可渲染项：所有挂 Transform 且未被 Visibility 隐藏的实体，按 zOrder 排序。
@@ -62,6 +73,7 @@ export function collectRenderables(world: IWorld): Renderable[] {
       color: world.getComponent<Color>(id, 'Color'),
       sprite,
       frame: world.getComponent<Frame>(id, 'Frame'),
+      faceDir: world.getComponent<FaceDir>(id, 'FaceDir'),
       text: world.getComponent<Text>(id, 'Text'),
       mesh3d: world.getComponent<Mesh3D>(id, 'Mesh3D'),
       material3d: world.getComponent<Material3D>(id, 'Material3D'),

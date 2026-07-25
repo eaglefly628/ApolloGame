@@ -582,6 +582,21 @@ export interface Facing extends Component {
   mode: 'velocity' | 'target'; // 按移动方向 or 按 Relation(target) 方向定朝向
 }
 
+// ── FaceDir / face-rotate（REQ-FACE-ROTATE）── 俯视有向物按方向旋转贴图，sim 侧零三角函数。
+// 铁律：sim 跨机不保证 sin/cos/atan2 逐位一致（lockstep 危险，同 orbit-motion 避 per-tick trig 的先例）→
+// sim 只写**单位方向向量**（sqrt 归一，IEEE 确定性类，可安全进 hash）；渲染器读它自己算 atan2 转视觉旋转角
+// （render-only，绝不进 sim/hash）。FaceDir = 输出（表现层，每帧由 face-rotate 系统写）；
+// FaceRotate = 配置（挂在实体上声明朝向来源），仿 Facing.mode 的取向口径。
+export interface FaceDir extends Component {
+  readonly type: 'FaceDir';
+  x: number; // 单位方向向量 x（|FaceDir|≈1；sqrt 归一，零 trig）
+  y: number; // 单位方向向量 y
+}
+export interface FaceRotate extends Component {
+  readonly type: 'FaceRotate';
+  source: 'velocity' | 'target'; // 按移动方向(velocity) or 按 Relation(target) 方向(target) 取朝向
+}
+
 // ── L4 sound ── 播放什么声音
 export interface Sound extends Component {
   readonly type: 'Sound';

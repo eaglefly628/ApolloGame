@@ -11,7 +11,8 @@
 | 上色 / 透明度 | `l2-color`（组件 `Color`） | 挂 `Color{...,alpha}`；淡入淡出用 `t1-tween` 驱动 alpha |
 | sprite-sheet 帧 | `l3-frame`（组件 `Frame`） | 挂 `Frame{...}`；逐帧动画用 `t1-animation`（读 Frame+TimerDone） |
 | 状态切动作动画 | `t2-anim-state` | 挂 `AnimState{clips,moveClip,idleClip}`+`Frame`+`Sprite`（走/站/打/死自动切） |
-| 朝移动方向翻转 | `t2-facing` | 挂 `Facing{mode:"velocity"}`；配 anim-state |
+| 朝移动方向翻转（左右镜像） | `t2-facing` | 挂 `Facing{mode:"velocity"}`；配 anim-state |
+| 俯视有向物按方向转贴图（整体旋转，非镜像） | `t2-face-rotate` | 挂 `FaceRotate{source:"velocity"\|"target"}`；sim 写 `FaceDir{x,y}` 单位向量（零 trig），渲染器读它 atan2（`resolveRotation2D`，render-only）；碰撞仍 AABB 不随转 |
 | 世界文字 / 数字条 | `l6-text`（组件 `Text`）/`t2-text-binding` | `Text` + `TextBinding{resourceId}` 绑资源实时数字 |
 | 血条/蓝条/读条 | `t2-gauge` | 宿主加子实体 `Hierarchy`+`Shape`+`Color`+`Gauge`（随资源实时变化） |
 | 相机跟随/取景 | `t2-camera-follow`（组件 `Camera`） | 目标挂 `CameraTarget`，相机挂 `Camera`（合作相机取中点+缩放） |

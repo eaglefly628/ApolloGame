@@ -34,6 +34,8 @@ import type {
   Effect,
   EventWhen,
   Facing,
+  FaceDir,
+  FaceRotate,
   Flag,
   Fog3D,
   Frame,
@@ -167,6 +169,8 @@ export interface ComponentDataMap {
   Effect: Omit<Effect, 'type'>;
   EventWhen: Omit<EventWhen, 'type'>;
   Facing: Omit<Facing, 'type'>;
+  FaceDir: Omit<FaceDir, 'type'>;
+  FaceRotate: Omit<FaceRotate, 'type'>;
   Flag: Omit<Flag, 'type'>;
   Fog3D: Omit<Fog3D, 'type'>;
   Frame: Omit<Frame, 'type'>;

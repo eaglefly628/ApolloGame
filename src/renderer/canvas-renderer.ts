@@ -2,7 +2,7 @@ import type { IWorld, RendererBackend } from '@engine/core/types.js';
 import type { Tilemap } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
-import { collectRenderables, getCameraView, chooseRenderMode } from './renderable.js';
+import { collectRenderables, getCameraView, chooseRenderMode, resolveRotation2D } from './renderable.js';
 import { wrapLines } from './text-layout.js';
 
 export interface CanvasRendererOptions {
@@ -78,7 +78,7 @@ export class CanvasRenderer implements RendererBackend {
     for (const r of collectRenderables(world)) {
       ctx.save();
       ctx.translate(r.x, r.y);
-      ctx.rotate(r.rotation);
+      ctx.rotate(resolveRotation2D(r)); // FaceDir 在场则覆盖（render-only atan2·REQ-FACE-ROTATE），否则=Transform.rotation（零回归）
       ctx.scale(r.scaleX, r.scaleY);
       ctx.globalAlpha = r.color?.alpha ?? 1;
       ctx.fillStyle = r.color ? `#${(r.color.tint & 0xffffff).toString(16).padStart(6, '0')}` : '#e2e8f0';
