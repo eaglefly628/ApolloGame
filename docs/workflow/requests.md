@@ -8,6 +8,11 @@
 
 ## 待处理 / 进行中
 
+### REQ-FACE-ROTATE-实体按运动/目标方向旋转 Transform（表现层·rotor 无 atan2）· [2026-07-25] · PE-game-103 报（子弹朝向 + 巨长激光贯穿方向）→ Lead 裁 · status: **open** · 优先级: P2（割草子弹/激光观感·俯视有向物通用·非阻塞玩法） · 类型: 引擎能力薄缺口（表现层·主程域）
+> **想实现的行为**：俯视有向物（子弹/飞刀/激光条/箭）**贴着运动方向或 Relation(target) 方向旋转** `Transform.rotation`——让「子弹朝向它飞的目标」「巨长激光沿开火方向贯穿屏幕」成立。owner 两条实测：① 子弹发出不朝向目标 ② 激光要「长得像激光·顺方向贯穿」而非横条。
+> **已试重组（不可得）**：`t2-facing` **只做水平镜像**（Transform.scaleX 符号·`facing.ts:73`），**不能任意角度旋转**；sim 禁 atan2/sin/cos（确定性）→ 游戏层算不出朝向角。当前激光只能画**轴对齐长条**（横向发射最像·斜向变横条）·子弹无朝向。
+> **建议方案（Lead 裁）· 边界**：加一个「face-rotate」表现能力（或给 facing 扩 `mode:'rotate'`）——从 Velocity/Relation 方向用**rotor 手法**（同 orbit-motion 的 dirX/dirY 单位向量→Transform.rotation·或直接存朝向向量供渲染器旋转）写 rotation，**运行时零 atan2/trig**（方向向量已有·归一化用 sqrt 同 steering 类）。表现层只写 rotation、不驱动逻辑（同 facing 铁律）·Commit 相位·确定性 lockstep 安全。**触碰范围**：`src/skills/tier2/facing.ts`（扩 mode）或新薄件 + 测试；game-103 只经数据挂。**（注：回旋镖「飞出→回旋返回」是另一缺口=`t2-launch` 的 out-return 弹道段·属 `REQ-SURVIVOR武器缺口` 已归档条·M3 武器时重开·与本旋转条不同。）**
+
 ### REQ-PATHEND-DROP-PathFollow 绕完一圈自动落件（belt→缓冲槽 handoff·CONVEYOR-CAP 收尾）· [2026-07-25] · PE-game102 报（接完整循环撞墙）→ Lead 裁 · status: **open** · 优先级: P1（game102 核心循环收尾·传送带/巡逻类通用） · 类型: 引擎能力薄缺口（主程域·先重组已证不可得）
 > **想实现的行为**：色炮沿传送带 `PathFollow{loop:false}` **绕完一圈到末点** → 若还带弹（ammo>0·选错色/够不到没打）→ **自动离带、落到 `t2-tray` 缓冲槽的空位**（成为待命炮·点击可复部署）；打光(ammo=0)的走 `Mortal→消失`。这两条一起 → 传送带/缓冲区**双 full → 死锁判负**（M2/M4 已可组合）。
 > **已试（PE 源码复核·已接 per-shot 扣弹 + queueId 有序带 + Mortal 打光消失·commit 56d7a564）**：belt→tray 的**转换本身**表达不了——① `effect-apply` 无「换 Tag 位/增删组件」kind（`set-flag/modify-resource/set-state/set-sensor/set-visible/destroy/destroy-tagged/reset-timer`），**无法把 BELT_BIT 成员变成 TRAY_BIT 成员**（tray 靠 requiredTag 含齐认成员）；② `PathFollow` **无「绕完/到末点」信号或条件**（`index` 到 `len-1` 停·但无 event/condition 可读）→ 无法在 lap-end 触发；③ **一实体一 Mortal**（已被 ammo≤0→消失占用）+ 一 Timer（reload 占用）→ 无第二退场槽；④ `Mortal.dropTemplate` 固定模板·不带 ammo（本作「带弹返回」恰是没开火=满弹·故 drop 满弹 tray_ 反而对·ammo 携带非阻塞）。
