@@ -151,3 +151,17 @@ export interface Caster extends Component {
   // （动态组件名读无法静态申报给调度器，未申报读违确定性纪律——评审记录见 requests.md F-049）。
   requireHexPos?: boolean;
 }
+
+// ── WeightedSpawn（加权掉落生成桥·REQ-TAPSPAWN）── 信号→按权重表抽一个模板生成，可选原子扣资源
+// （不足整单不动，同 craft-recipe 口径）。挂"生成器"实体：收到 onSignal 时，若声明 cost 则先做
+// afford 检查+扣（自身 Resource.current，钳 min），再消费世界 RandomSeed 单例按 table 权重抽一个
+// templateId，最终在自身 Transform 处发 SpawnRequest。table 空/权重全 0 → 静默不 spawn（不崩）。
+// 与 Caster（onSignal→固定 template）的区别：Caster 产出恒定，本组件按权重表**随机**选产出，
+// 且原生带"可选原子扣资源"闸门——点一下生成器、够体力才扣、扣了按权重吐一个随机物件的通用底座
+// （game101《海港绯闻》生成器缺口：此前只能 craft-recipe+caster 拼出"固定产出"，见 game101/blueprint.ts）。
+export interface WeightedSpawn extends Component {
+  readonly type: 'WeightedSpawn';
+  onSignal: string; // 收到此信号名才触发（clickable/event-when 等产出的 Signal.name）
+  cost?: { id: string; amount: number }; // 可选：原子扣自身 Resource（current<amount 整单不动·不扣不 spawn，同 craft-recipe；扣后钳进 min）
+  table: { templateId: string; weight: number }[]; // 加权掉落表（weightedPick 按权重抽一个；空表/权重全 0 = 不 spawn、不崩）
+}

@@ -14,6 +14,7 @@
 //  绝不 Math.random）；加权抽按稳定输入序 tie-break，结果唯一确定。
 // ═══════════════════════════════════════════════════════════════
 import { mulberry32 } from '@atom-skills/index.js';
+import { weightedPick } from './weighted-pick.js';
 
 /** 一个候选升级项（纯数据）。id 唯一；weight 加权抽权重（>0 才可抽）；
  *  slot 归属槽（如 'weapon'/'passive'，配 DraftState.slots 容量）；
@@ -62,24 +63,16 @@ export function isEligible(c: DraftCandidate, state: DraftState): boolean {
   return true;
 }
 
-/** 加权抽 N 个**不重复**（无放回）：反复按权重从剩余池抽一个、移出，直到抽满 N 或池空。
- *  确定性：同 rand 序列 + 同输入序 → 同结果；浮点越界回退末元素兜底。 */
+/** 加权抽 N 个**不重复**（无放回）：反复用共享核 weightedPick 从剩余池单抽一个、移出，直到抽满 N 或池空。
+ *  确定性：同 rand 序列 + 同输入序 → 同结果（weightedPick 内部浮点越界回退末元素兜底）。 */
 function weightedPickDistinct(candidates: readonly DraftCandidate[], n: number, rand: () => number): DraftCandidate[] {
   const remaining = [...candidates];
   const picked: DraftCandidate[] = [];
   while (picked.length < n && remaining.length > 0) {
-    let total = 0;
-    for (const c of remaining) total += c.weight;
-    if (!(total > 0)) break;
-    let r = rand() * total;
-    let idx = 0;
-    for (; idx < remaining.length; idx++) {
-      r -= remaining[idx].weight;
-      if (r < 0) break;
-    }
-    if (idx >= remaining.length) idx = remaining.length - 1; // 浮点兜底
-    picked.push(remaining[idx]);
-    remaining.splice(idx, 1);
+    const pick = weightedPick(remaining, rand);
+    if (!pick) break; // 权重总和 <=0（池非空但全零权重）→ 抽不动，同原实现语义
+    picked.push(pick);
+    remaining.splice(remaining.indexOf(pick), 1); // 候选按引用唯一（同一 pool 不重复放同一对象）→ indexOf 精确定位
   }
   return picked;
 }

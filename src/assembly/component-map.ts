@@ -131,6 +131,7 @@ import type {
   Velocity,
   Vfx3D,
   Visibility,
+  WeightedSpawn,
   WorldUI3D,
   Zone,
 } from '@engine/protocol/components.js';
@@ -263,6 +264,7 @@ export interface ComponentDataMap {
   Velocity: Omit<Velocity, 'type'>;
   Vfx3D: Omit<Vfx3D, 'type'>;
   Visibility: Omit<Visibility, 'type'>;
+  WeightedSpawn: Omit<WeightedSpawn, 'type'>;
   WorldUI3D: Omit<WorldUI3D, 'type'>;
   Zone: Omit<Zone, 'type'>;
   DialogueScript: Omit<DialogueScript, 'type'>;

@@ -106,3 +106,9 @@ export { statBindCapability, projectStatBind } from './stat-bind.js';
 // pull-anchor（REQ-SURVIVOR武器缺口 W9）：区域施加器——锚点每 tick 批量把邻近已挂 Steering 的实体
 // Relation(target) 改指向自己，复用 t2-steering 现成的 seek 把它们"拉"过来（黑洞/吸附类武器，重组非下沉）。
 export { pullAnchorCapability } from './pull-anchor.js';
+// weighted-pick（REQ-TAPSPAWN·DRY 抽取）：加权轮盘赌单抽共享纯函数核——按 weight 比例从 entries 选一个，
+// 浮点越界回退末元素兜底。draft-offer.weightedPickDistinct（去重多抽）与 weighted-spawn（单抽）共用。
+export { weightedPick } from './weighted-pick.js';
+// weighted-spawn（REQ-TAPSPAWN·game101 生成器缺口）：信号→（可选）原子扣自身资源→世界种子 PRNG 按权重表
+// 抽一个模板→发 SpawnRequest（真生成交现成 prefab-spawn）。runsAfter resource-apply 打破 RMW 伪环。
+export { weightedSpawnCapability } from './weighted-spawn.js';

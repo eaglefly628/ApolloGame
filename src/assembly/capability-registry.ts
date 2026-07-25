@@ -56,6 +56,7 @@ import {
   statBindCapability,
   bounceRelayCapability,
   pullAnchorCapability,
+  weightedSpawnCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability, blockGridCapability, handPatternCapability } from '@skills/tier3/index.js';
 
@@ -143,6 +144,9 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   // t2-pull-anchor（REQ-SURVIVOR武器缺口 W9）：区域施加器（重组·非下沉）——锚点批量把邻近已挂 Steering
   // 的实体 Relation(target) 改指自己，复用 t2-steering 现成 seek 拉过去（黑洞/吸附类武器）。
   pullAnchorCapability,
+  // t2-weighted-spawn（REQ-TAPSPAWN·game101 生成器缺口）：信号→（可选）原子扣自身资源→世界种子 PRNG
+  // 按权重表抽一个模板→发 SpawnRequest（真生成交现成 prefab-spawn）。runsAfter resource-apply 破 RMW 伪环。
+  weightedSpawnCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,

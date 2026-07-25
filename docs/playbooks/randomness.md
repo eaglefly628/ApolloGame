@@ -14,6 +14,7 @@
 | 确定性洗牌 | `seededShuffle(items,seed)` | 发牌 / 打乱池；纯函数不改输入 |
 | 脱离运行态的 PRNG | `mulberry32(seed)` | 装配期一次性取数（与 nextRandom 同算法） |
 | 掷声明骰池 | `t2-dice-roll`（组件 `DicePool`/`RolledDice`） | 消费世界 `RandomSeed` 确定性掷骰，见 combat.md |
+| 信号触发·按权重表随机选模板生成（可选先扣资源） | `t2-weighted-spawn`（组件 `WeightedSpawn`） | 挂"生成器"实体：收 onSignal 时（可选）原子扣自身 Resource、消费世界 `RandomSeed` 按 `table` 权重抽 templateId → 发 `SpawnRequest`（Commit 相位，runsAfter craft-recipe/effect-apply 破 RMW 伪环）；加权抽算法核见共享纯函数 `weightedPick`（weighted-pick.ts，draft-offer 同款） |
 
 ## ② 样例指针
 

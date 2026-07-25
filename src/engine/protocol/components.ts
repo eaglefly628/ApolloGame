@@ -35,7 +35,7 @@
 //        Mortal StatModifier Stats Launch Orbit
 //    ./components/spawn.js     — 预制/生成/销毁/合成/施法
 //        PrefabTemplate PrefabOrigin PrefabLibrary SpawnOverrides SpawnRequest
-//        DestroyRequest MergeRule Caster
+//        DestroyRequest MergeRule Caster WeightedSpawn
 //    ./components/render.js    — 表现层：可见/精灵/颜色/帧/血条/动画/朝向/音/相机/文字/缓动
 //        Visibility Sprite Color Frame Gauge AnimClip AnimState Facing Sound
 //        Camera CameraTarget Text TweenTarget TweenEasing TweenLoop Tween TextBinding
