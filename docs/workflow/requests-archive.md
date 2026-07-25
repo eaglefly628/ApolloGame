@@ -2,6 +2,12 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-SPATIAL-QUERY-INDEX-空间查询索引（nearestByTag/queryRange O(N²)→O(N)）· [2026-07-25] · PE-game-103 报 → Lead 裁 · status: **✅ done（`b926fc9a`·owner 授权 PE 代做·2026-07-25 Lead 验收 PASS·归档）** · 类型: 引擎性能缺口（主程域）
+> **Lead 验收 PASS（亲读+核测试）**：`spatial-query/index.ts` 均匀网格 hash（posGrid·CELL=96·queryRange 只扫 bbox 格）+ 标签位索引（byBit·nearestByTag 单阵营 O(1)）·缓存键=`getVersion()`（一 tick 建一次全体复用）。aggro 消费 nearestByTag / steering separation 消费 queryRange → O(N²)→O(N)（PE 剖析 79% 热点）。确定性（无随机墙钟·桶内 id tie-break·结果与旧全扫逐字一致）·29 测（spatial-query+aggro+steering）零回归。game-103 等零改自动提速→**恢复怪 cap 到几百 + 复接磁吸飞入**。原文见 git 史。
+
+### REQ-OVERLAP-LAYER-overlap-detect 碰撞分层（category+mask 宽相位过滤）· [2026-07-25] · PE-game-103 报 → Lead 裁 · status: **✅ done（`3b685aac`·2026-07-25 Lead 亲建+验 PASS·归档）** · 类型: 引擎能力缺口（主程域）
+> **交付（owner 明示做·Lead 亲验）**：`Shape` 加 category?/mask?（spatial.ts·加字段不加组件）；overlap-detect queryPairs 候选对窄相位前分层过滤 `(catA&maskB)===0||(catB&maskA)===0→continue`——被滤对不 contactBetween 不造 Overlap（省 enemy-enemy churn·PE 剖析 13% 次因）。Box2D 双向语义·缺省 `?? ~0` collide-all 逐字节零回归·3D 未动。10 测（滤除/保留/单向/零回归/确定性）+ collision-resolve/trigger-zone 下游零回归。gate 全绿。原文见 git 史。
+
 ### REQ-CONVEYOR-CAP-传送带容量+拥堵+空槽分配（本作核心难点）· [2026-07-25] · PE-game102 报 → Lead 裁 · status: **✅ 结案（`2890a44f`·M1 下沉·M2/M3/M4 回驳=重组·2026-07-25 Lead 亲验 PASS·归档腾槽）** · 类型: 引擎能力缺口（主程域·先重组）
 > **⚖ Lead 裁（亲读+建后核·只 M1 真缺口·避免造 ConveyorQueue/SlotBuffer 大件·宪法§2）**：
 > - **M1 有序占位+队列递进 ✅ 下沉**（`2890a44f`）：扩 `PathFollow` 加 `queueId?`/`minGap?`（非新件）——同 queueId 成员按 path 弧长进度排序·非排头本 tick 前进夹「前一名**起点**进度−minGap」→ 不超车/不叠·排头出队全体递进。起点进度做界=无处理序依赖·确定性（id tie-break）·不设 queueId 零回归。

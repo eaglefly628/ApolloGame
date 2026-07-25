@@ -9,16 +9,6 @@
 ## 待处理 / 进行中
 
 
-### REQ-OVERLAP-LAYER-overlap-detect 碰撞分层（category+mask 宽相位过滤）· [2026-07-25] · PE-game-103 报（割草同屏几百怪 perf 刚需 + 障碍碰撞分层）→ Lead 裁 · status: **⚖ Lead 裁 ✅ 真缺口·准下沉（2026-07-25·排 conveyor-queue 之后建）** · 优先级: P1（game-103 割草 perf 阻断·碰撞类通用） · 类型: 引擎能力缺口（主程域·先重组已证不可得）
-> **⚖ Lead 裁（2026-07-25·亲读 `src/skills/atoms/overlap-detect/index.ts`）：✅ 真缺口·下沉**——现 overlap-detect 宽相位=动态 AABB 树但**零分层**：所有 Transform+Shape 对只要 AABB 相交就窄相位 + 发 Overlap 实体。几百怪 enemy-enemy 对 O(局部²)·每帧造/毁几千无用 Overlap=ECS churn 热点。**下游 Tag 过滤在 Overlap 发出之后·省不掉 churn** → 要 perf 必须过滤进 overlap-detect 内部·非重组可得。category+mask=标准碰撞分层（通用：割草 perf + 障碍分层 + 子弹只打敌）·确定性（位运算）·加性零回归（缺省 collide-all）。
-> **形（建时定死）**：`Shape` 加 `category?:number`/`mask?:number` 位掩码（或独立 CollisionLayer 组件）→ `queryPairs` 命中对仅当 `(A.category & B.mask) && (B.category & A.mask)` 才窄相位 + 发 Overlap；两边都不设=collide-all（零回归·既有测全绿）。3D `overlap-detect-3d` 镜像可选（本单先 2D）。**触碰范围**：`src/skills/atoms/overlap-detect/**` + `Shape` 组件 + 测试；game-103 只经数据挂 category/mask。**排期**：owner 定 SPENDONFIRE+CONVEYOR-CAP 第一优先 → 本条排 conveyor-queue 之后。落地后 game-103 恢复怪 cap。
-
-
-### REQ-SPATIAL-QUERY-INDEX-空间查询索引（nearestByTag/queryRange O(N²)→O(N)）· [2026-07-25] · PE-game-103 报（割草同屏几百怪 perf 真瓶颈·逐系统剖析实证）→ Lead 裁 · status: **open** · 优先级: P0（game-103 割草 perf 头号阻断·比 REQ-OVERLAP-LAYER 更主因·索敌/群体类通用） · 类型: 引擎性能缺口（主程域·先重组已证不可得）
-> **实证（PE 逐系统 CPU 剖析·cap150 horde·621 实体·49ms/帧）**：`aggro` **21.9ms(45%)** + `steering`(含 separation) **16.8ms(34%)** = **79%**；`overlap-detect` 仅 6.4ms(13%)。→ **真瓶颈是 AI 空间查询·不是碰撞配对**（REQ-OVERLAP-LAYER 只削 13%那块）。
-> **根因（PE 亲读 `src/skills/atoms/spatial-query/index.ts`）**：`nearestByTag`（aggro 逐感知实体索敌）与 `queryRange`（steering 逐敌找分离邻居）都是**朴素全实体线性扫**（`for (const [id] of world.query('Transform'))`·每次 O(实体数)）。aggro=O(感知者×实体)、steering=O(敌×实体) → 整体 **O(N²)**。几百怪即爆（owner M5 都卡到玩不了）。
-> **已试重组（不可得）**：游戏侧只能砍同屏 cap（150→46·5.8ms 临时可玩）缓解=牺牲割草初衷（几百怪）；无法在游戏层给 O(N) 扫加索引。`SpatialIndex` 组件(`spatial.ts:164`)与 `DynamicAabbTree`(overlap-detect 用)**已存在但 nearestByTag/queryRange 没用它们**。
-> **建议方案（Lead 裁）· 边界**：让 `nearestByTag`/`queryRange`/`queryNearest` 走**共享空间索引**（均匀网格 hash 或复用现有 SpatialIndex/AabbTree·每帧建一次全体复用）→ O(N²)→O(N)。确定性（网格桶内按 id tie-break·同现 nearestByTag id 序·进 hash 不变）。加性零回归（索引仅加速·结果集与现全扫一致·既有测全绿）。**触碰范围**：`src/skills/atoms/spatial-query/**`（+ 可选 `src/engine/spatial/**` 复用 aabb-tree）+ 测试；game-103 等所有用 aggro/steering/spatial-query 的游戏**零改**自动提速。**落地后 game-103 恢复怪 cap 到几百·磁吸飞入动画复接**。**与 REQ-OVERLAP-LAYER 关系**：本条是主因(79%)、那条是次因(13%)；空间索引亦可顺带服务 overlap-detect 宽相位（可合并考量）。
 
 ### REQ-SCREENFILL-Screen 填满 mount-host 固定 scene 盒（去竖屏底部信箱空白） · [2026-07-25] · PE-101 报（owner「下面留这么大空」实测撞墙）→ PUI 裁 · status: **open** · 优先级: P2（所有 mountHost 竖屏游戏通用·非 game101 专属） · 类型: UI 基座缺口（PUI 域·`src/ui/components/render.ts`）
 > **想实现的行为**：`mountHost` 建的是**固定 `fieldW×fieldH`（如 1080×1920）的 scene 盒**再整体 `transform:scale()` 信箱化。Screen 作为其直接子应**填满该盒高度**（`flex` 子撑满 → 内部 `flex:1` 区块吃满剩余空间）。
