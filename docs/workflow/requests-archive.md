@@ -2,6 +2,11 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-ORDERROT-订单轮换（完成即从池取下一单）+ 进度批量域解锁（隐形缺口）· [2026-07-25] · PE-101 报 + Lead 判定 · status: **✅ done（`62dcc039`·2026-07-25 Lead 亲验 PASS·归档）** · 类型: 引擎能力薄缺口（主程域·game101 meta 循环）
+> **① order-rotate（扩 t2-order-fulfill）**：`Order` 加 `pool?/rotateMode?/cursor?`——集齐发奖后从 pool 取下一单写回 needItems/reward（`sequence` 按 cursor 环回·`weighted` 用世界 RandomSeed + `weightedPick` 共享核·缺 seed 失败关闭不崩）·升级链 food_2→food_3 成立。空 pool 逐字节零回归。解「顾客满足后循环空转」。
+> **② set-flag-tagged（扩 t2-effect-apply·owner「你判定并做」的隐形缺口）**：Lead 判定=真缺口——effect-apply 有 `destroy-tagged`/`set-visible-tagged` 批量但**无批量改 flag**，「过阈值一次解锁一整片格区」（清一片 webbed flag）原本只能一格一 Effect 不 scale。加 `set-flag-tagged` kind（复用现有 `tagMask`+`targetId`=Flag.id+`value`=bool·零新字段·纯集合操作·确定性·仅加 switch 分支零定序变更）。
+> Lead 亲验：weighted 用世界 RandomSeed 无裸随机·两条零回归（59 测 + 既有全绿）·撞环回归 not.toThrow·gate 全绿 3580 测·component-manifest 138 不变。game101 经 orders.json/progression.json 数据消费。原文见 git 史。
+
 ### REQ-SPATIAL-QUERY-INDEX-空间查询索引（nearestByTag/queryRange O(N²)→O(N)）· [2026-07-25] · PE-game-103 报 → Lead 裁 · status: **✅ done（`b926fc9a`·owner 授权 PE 代做·2026-07-25 Lead 验收 PASS·归档）** · 类型: 引擎性能缺口（主程域）
 > **Lead 验收 PASS（亲读+核测试）**：`spatial-query/index.ts` 均匀网格 hash（posGrid·CELL=96·queryRange 只扫 bbox 格）+ 标签位索引（byBit·nearestByTag 单阵营 O(1)）·缓存键=`getVersion()`（一 tick 建一次全体复用）。aggro 消费 nearestByTag / steering separation 消费 queryRange → O(N²)→O(N)（PE 剖析 79% 热点）。确定性（无随机墙钟·桶内 id tie-break·结果与旧全扫逐字一致）·29 测（spatial-query+aggro+steering）零回归。game-103 等零改自动提速→**恢复怪 cap 到几百 + 复接磁吸飞入**。原文见 git 史。
 
