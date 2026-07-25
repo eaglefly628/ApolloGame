@@ -2,6 +2,12 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-SPENDONFIRE-发射即扣发射源一发（per-shot 扣弹·N 实体各自计数）· [2026-07-25] · PE-game102 报 → Lead 裁 · status: **✅ done（`7970db12`·`ResourceModify.scope:'source'`·2026-07-25 Lead 亲验 PASS·归档腾槽）** · 类型: 引擎能力缺口（主程域）
+> **交付（方案①·Lead 亲验）**：`ResourceModify.scope` 加 `'source'`——resource-apply 遇 source → 读持有者 `PrefabOrigin.source` → `findSourceResource`(query.ts·抽自 hitbox findScaleResource·无 global 兜底) → 应用+钳；源缺/死/无该资源=静默跳过（不误扣 global 第一门）。**apply-once**=复用既有 `consumes:['ResourceModify']` 读后消费（World.tick 消费后删·子弹活多 tick 只扣一次·非复利）。hitbox.findScaleResource 改调共享 helper（零回归）。22 测（per-source 扣对炮/apply-once/源缺跳过/不误扣 global/确定性/game102 全 30 能力撞环 not.toThrow）。gate 全绿。game102 数据挂子弹模板 `ResourceModify{ammo,-1,scope:source}` 消费。原文见 git 史。
+
+### REQ-TAPSPAWN-加权掉表生成器原语 → `weighted-spawn` · [2026-07-24] · PE-101 报 → Lead 裁 · status: **✅ done（`66d38637`·下沉 `t2-weighted-spawn`·owner 07-25 game101 撞 M1 依赖→解缓建·Lead 亲验 PASS·归档腾槽）** · 类型: 引擎通用能力（合并/idle/gacha·主程域）
+> **交付（Lead 亲验·确定性/撞环/抽取零回归）**：`t2-weighted-spawn`——`WeightedSpawn{onSignal,cost?,table:[{templateId,weight}]}`·收信号→(cost 则原子 afford+扣·同 craft-recipe)→读**世界 RandomSeed** 加权抽→发 `SpawnRequest{at:self}`。共享纯函数 `weightedPick` 抽出 `weighted-pick.ts`（draft-offer 内部改调·12 测仍绿·DRY）。**唯一随机=世界 RandomSeed 单例 + nextRandom**（禁 Math.random/fixed seed）。落 Commit 相位 + runsAfter['craft-recipe','effect-apply']（破 event-when/craft/effect RMW 伪环·同 stat-bind 手法·一帧延迟同既有链）。15 测（afford 原子/空表/零权/无 seed fail-closed/同种子同抽/9:1 分布/双跑确定/game101 全能力集撞环）。component-manifest 138·randomness.md 回填。game101 经 generators.json 消费。原文见 git 史。
+
 ### REQ-UI-异型容器 shape + 槽位容器 Slots（Panel/Card 非矩形 + 多槽餐盘/背包格通用）· [2026-07-24] · PE-101 报（owner「多 slot + 异型 UI 是底层需求」定性）→ PUI 裁 · status: **✅ done（①落地 + ②裁回驳·PUI 2026-07-25·归档腾槽）** · 类型: UI 基座控件缺口（PUI 域·全游戏通用）
 > **① 异型容器（真缺口·主）✅ 落地**：`PanelProps.shape?:ShapeToken`（`types.ts`）——复用 Button 同一套闭集枚举 + `render.ts SHAPE_CSS`（**非自由 clip-path**）；`renderPanel` 在最外层裁形（与 `skin`/`edge`/`bgTexture` 可叠）·命中区=包围盒（同 Button）·异形须给足宽高。catalog Panel 补 shape 枚举项 + `ui.md` 异形行扩「容器同款」。测试 `src/ui/components/shape-container.test.ts`（六边/盾/菱 clip 注入 + 缺省零 clip 向后兼容 + 与 edge 叠）+ **真浏览器目击**（六边容器/盾形板/菱形带内容渲染成立）。game101 顾客卡「异形限时菜单」不必再贴图硬凑（REQ-101-07 依赖解除）。
 > **② 槽位容器 Slots（辅）⚖ 裁回驳（先重组·manifesto §2）**：多 slot 餐盘/背包格用 `Panel(row/grid)+N 子 Card/Panel` **现有闭集已能表达**（非硬缺口）——不下沉 `Slots` 语义件（YAGNI·避免「未撞墙先造」）。真到「拖入高亮/空槽虚线/满槽✓」统一封装成为反复手拼的痛点、且多游戏实证需要时，再回本池开薄件（附最小复现）。**裁前 game101 用 Panel+children 拼装（现已够用）。**
