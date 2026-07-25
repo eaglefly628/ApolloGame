@@ -80,3 +80,34 @@
 >   - **↳ 回 PE 报#1（orbit 装一起拓扑成环 load 不了·20 测红）**：真定序缺陷·已修——`t2-orbit-motion` 补 `phase: PostResolve` + `runsAfter:['motion-apply','hierarchy-resolve']`（orbit=RMW Transform·本质「基于已解算再定位」同 hierarchy 跟随·落 PostResolve→自动排在 motion/camera-follow 后、bounds-clamp 前=无环）；加回归测（与 motion/hierarchy-resolve/hierarchy-cascade/camera-follow/bounds-clamp 同装可 tick 不抛）。**PE 可撤回退、真接 orbit。**
 >   - **↳ 回 PE 报#2（separation 代码没进来·grep 空）**：属实·**我的锅**——separation 首提 `67de3897` 被并发提交 `d47ee942`（PE 加 Boss·从旧基 combat.ts 覆盖）回退掉、我后续 orbit 提交没察觉。**2026-07-24 已重贴恢复**（combat.ts `Steering.separation` + steering.ts applySeparation + 6 测·门禁全绿）。**PE 现可 grep 到、真接 separation。**
 > **仍等**：②2D 批绘=P3D `REQ-3D-RENDER-EFFICIENCY`（owner 优先）· 被动 Stats 桥=`REQ-SURVIVOR被动轴`（owner 排期 **R3** 建·stat-bind spec 已备）· 弹射/诱饵/pull=`REQ-SURVIVOR武器缺口`（M3 triaged）。
+
+## owner 试玩 v3 反馈（2026-07-25 · 经 PE-101 session 转录·待 GD-103/PE-103 triage 施工）
+
+> owner 在别的 session 报的 7 条·转录到此归队。**多数已在册**（下方标对应）；真新增 2 条（RBUG-04/05）。**归属=game-103 线（PE-103/GD-103），非 PE-101 域。**
+
+### RBUG-01 · 子弹不朝要攻击的敌人 + 无旋转 · [P1] · 部分已在册
+- **现象**：发出的子弹不朝目标敌人飞；子弹不旋转/不朝向。
+- **triage**：① 朝目标=`Launch toward:'target'` 靠 `Perception` 索敌·无目标那刻冻结 → **已在册 `REQ-SURVIVOR被动轴` 的 Launch `fallbackDir`**（引擎·owner 已排 R3）。② 无旋转/朝向=弹体缺 `t2-facing`（sprite 朝速度方向）→ **PE 可接**（游戏层数据·非引擎缺口）。
+
+### RBUG-02 · 10 级封顶不再升级 + 敌人无更强威胁 · [P1] · 已在册
+- **现象**：升到 10 级后不再升级；敌人也没变更强。
+- **triage**：LEVEL_XP=5 占位（Review 已记「经验曲线占位」）+ 难度 scaling 缺 → **PE 排期**：经验真曲线（无上限）+ 敌人随时间/等级加压。对应 Review「P1 经验真曲线 + 敌人补 3 型」。
+
+### RBUG-03 · 升级曲线奇怪·经验值需规定·太快到 10 级然后无事可干 · [P1] · 已在册（同 RBUG-02 根）
+- **triage**：`balance-design.md` 定真经验曲线（expToNext 递增）+ 掉落经验值分档 → **PE game-layer**（纯数据）。
+
+### RBUG-04 · 敌人掉的经验都一样大小·应按价值掉不同大小 · [P2·新] · PE game-layer
+- **现象**：所有经验宝石一样大。**应**：小怪掉小经验、精英/Boss 掉大经验（大小/颜色分档）。
+- **triage**：经验宝石 prefab 按 xp 值分档（`Shape` 尺寸/`Color` 分级·或多模板）→ **PE 纯数据/render**（无引擎缺口）。
+
+### RBUG-05 · 被打中无反馈效果 · [P2·新] · 可特效实现（非纯美术）
+- **现象**：玩家被击中时没有任何视觉反馈。
+- **triage**：**能用引擎 VFX 闭集做**（非只靠美术）——受击 `VisualEffect{kind:'flash'/'shake'}`（红闪+抖屏）+ 可选 `Particles`。owner 归为"美术的事"，但基座 EffectKind 闭集已可表达 → **PE 接线**（rendering-fx.md）。
+
+### RBUG-06 · 有些效果能否用特效实现 · [P2·新·泛] · 复用 VFX 闭集
+- **triage**：受击/暴击/拾取/升级/进化等强调统一走基座 `VisualEffect`（pulse/float/shake/pop/glow/flash）+ `Particles` → **PE 逐点接**（缺 kind 才报 requests）。
+
+### RBUG-07 · P3D 已做的 2D 渲染优化没接进来·以产生更多敌人 · [P1] · 已在册（引擎/P3D）
+- **triage**：**已在册 BUG-02② → `requests-3d.md REQ-3D-RENDER-EFFICIENCY`**（2D 批绘/实例化·owner 优先·P3D 域）。落地后同屏敌数上限可大幅抬高。PE 侧 spawn cap 现为缓解。
+
+> **归属提示（PE-101 转录）**：以上 7 条均属 game-103 线。RBUG-01②/02/03/04/05/06 = PE-103 游戏层可做；RBUG-01①/07 = 引擎/P3D（已在册·已排期）。**建议由 game-103 session 施工**（该线正活跃·PE-101 跨改会撞车）。
