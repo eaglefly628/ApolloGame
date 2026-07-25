@@ -18,7 +18,7 @@ import {
   overlapDetectCapability, timerCapability, resourceCapability, tagCapability,
   relationCapability, destroyCapability, colorCapability, controllableCapability, cameraCapability,
 } from '@atom-skills/index.js';
-import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability } from '@skills/tier1/index.js';
+import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, tweenCapability } from '@skills/tier1/index.js';
 import {
   boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
   cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
@@ -68,6 +68,16 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
       Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // per-tick·扫全范围
     } } };
   }
+  if (w.pattern === 'bomb') {
+    // 炸弹：小弹体飞向敌（Launch）·本体不造伤（category0）·寿命末 SelfRule spawn explosion_<key> 于落点=大爆炸 AoE。
+    return { entities: { p: { ...base,
+      Velocity: { vx: 0, vy: 0, angular: 0 },
+      Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY, fallbackDir: { x: 0, y: -1 } },
+      Shape: { kind: 'circle', radius: 8, category: 0, mask: 0 }, // 飞行弹本体不碰（伤害来自爆炸）
+      Color: { tint: w.tint, alpha: 1 },
+      SelfRule: { when: { kind: 'timer', id: 'life', cmp: 'gte', value: Math.max(1, w.life - 2) }, do: [{ kind: 'spawn', template: `explosion_${w.key}`, at: 'self' }], once: true, armed: false },
+    } } };
+  }
   const single = (w.pattern === 'straight' || w.pattern === 'pet') && !w.pierce; // 单发命中 vs 穿透 per-tick（pierce=强制穿透扫线）
   const p: Record<string, unknown> = { ...base,
     Velocity: { vx: 0, vy: 0, angular: 0 },
@@ -85,6 +95,19 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
   // 干净往返(飞出→到点回旋)是 launch 缺的 out-return 段（已报 capgap·见 requests REQ-SURVIVOR武器缺口）。
   // 此处先让它真飞：Launch 定向飞出 + 穿透(single=false·不 consumeOnHit)·长寿命=穿一线的回旋刃。
   return { entities: { p } };
+}
+
+// 炸弹落点爆炸（bomb 弹体寿命末 spawn 此）：大范围橙色爆炸圈·per-tick AoE 伤·短寿命·Tween 渐隐。
+function explosionTemplate(w: WeaponDef): { entities: Record<string, Record<string, unknown>> } {
+  return { entities: { p: {
+    Transform: { ...XF0 },
+    Sensor: {}, Tag: { flags: ZONE },
+    Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY }, // 爆炸判定圈=真 hitbox
+    Color: { tint: w.tint, alpha: 0.5 },
+    Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // per-tick 范围伤
+    Timer: { id: 'life', elapsed: 0, duration: 18, loop: false }, // 短命爆炸
+    Tween: { type: 'Tween', target: 'Color.alpha', from: 0.6, to: 0, elapsed: 0, duration: 18, easing: 'easeOut', done: false }, // 渐隐消散
+  } } };
 }
 
 // 武器挂点（draft 选中即 Caster spawn·child of player 跟随）：按 pattern 造持续伤/发射器。
@@ -228,6 +251,9 @@ function gemTemplate(g: GemDef): { entities: Record<string, Record<string, unkno
         Color: { tint: g.tint, alpha: 1 },
         Hitbox: { resource: 'xp', amount: -g.value, targetMask: COLLECTOR, consumeOnHit: true },
         Timer: { id: 'life', elapsed: 0, duration: GEM_LIFE, loop: false },
+        // 消失警告（owner「消失前会闪烁」）：Color.alpha 全程 easeIn 渐隐——前段几乎满亮·**最后十几秒明显变暗消失**=
+        // 「快没了·别一直等你回来」的视觉提示。（真·硬频闪需定时门控·Tween 无 delay·此渐隐是干净近似。）
+        Tween: { type: 'Tween', target: 'Color.alpha', from: 1, to: 0.12, elapsed: 0, duration: GEM_LIFE, easing: 'easeIn', done: false },
         // 磁力吸附（重组·aggro+steering·空间索引下沉后**便宜复接**）：宝石近距(sightRadius 130)看见玩家 →
         // aggro 写 Relation → steering seek 飞向玩家=经典「经验飞过来」动画；出半径=静止。收取=贴身真空区(collector)。
         // 空间索引(byBit[PLAYER]=1)让每颗宝石索敌 O(1) → 几百颗也不卡（撤磁吸的性能理由已被索引消除）。
@@ -481,6 +507,7 @@ export function buildBlueprint(): WorldBlueprint {
           ...Object.fromEntries(GEMS.map((g) => [`gem_${g.key}`, gemTemplate(g)])),
           // 全武器：每把一个 proj_<key>（射法模板）+ 非起始武器一个 weapon_<key>（挂点·draft 生成）。
           ...Object.fromEntries(WEAPONS.map((w) => [`proj_${w.key}`, projByPattern(w)])),
+          ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'bomb').map((w) => [`explosion_${w.key}`, explosionTemplate(w)])), // 炸弹落点爆炸
           ...Object.fromEntries(WEAPONS.filter((w) => w.key !== 'kunai').map((w) => [`weapon_${w.key}`, weaponMount(w)])),
         },
       },
@@ -500,7 +527,7 @@ export function buildBlueprint(): WorldBlueprint {
       transformCapability, hierarchyCapability, velocityCapability, shapeCapability,
       overlapDetectCapability, timerCapability, resourceCapability, tagCapability,
       relationCapability, destroyCapability, colorCapability, controllableCapability, cameraCapability,
-      motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
+      motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, tweenCapability,
       boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
       cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
       steeringCapability, launchCapability, selfRuleCapability, collisionResolveCapability, keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, animStateCapability,

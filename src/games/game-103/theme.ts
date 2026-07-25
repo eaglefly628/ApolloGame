@@ -63,6 +63,7 @@ export type FirePattern =
   | 'boomerang'  // 往返回旋（Launch 去 + Perception/Steering 拉回玩家）
   | 'orbit'      // 环绕光球（旋转 hub + 环上光球 child·持续贴身伤）
   | 'pet'        // 宠物随从（跟随玩家的子体·自带 Timer+SelfRule 自动射）
+  | 'bomb'       // 抛掷炸弹（飞向落点·寿命末 SelfRule spawn 爆炸 nova·大范围 AoE）
   | 'homing';    // 追踪弹（Perception+Steering 锁敌·穿透·进化体质变）
 export interface WeaponDef {
   key: string;
@@ -91,6 +92,8 @@ export const WEAPONS: WeaponDef[] = [
   { key: 'boom', name: '回旋镖', desc: '飞出穿透一线敌（远程·回旋段待 capgap）', pattern: 'boomerang', dmg: 5, cd: 96, projSpeed: 7, life: 120, radius: 7, amount: 1, weight: 7, maxLevel: 5, tint: 0xffd23f, skin: '103/proj-boom' },
   { key: 'orbit', name: '护盾环', desc: '召唤环绕光球·持续灼烧贴身敌（近战）', pattern: 'orbit', dmg: 0.5, cd: 0, projSpeed: 0.045, life: 0, radius: 74, amount: 3, weight: 8, maxLevel: 3, tint: 0x7dff4d, skin: '103/proj-orbit', evo: { to: 'orbitevo', req: 'blade' } },
   { key: 'pet', name: '宠物随从', desc: '召唤随从·跟随并自动索敌开火（随从）', pattern: 'pet', dmg: 9, cd: 70, projSpeed: 7, life: 80, radius: 5, amount: 1, weight: 6, maxLevel: 3, tint: 0xc9a3ff, skin: '103/proj-pet' },
+  // 炸弹：抛向敌·飞行 life=45 tick 后落点爆炸 nova（radius=爆炸半径·dmg=爆炸伤害/tick·大范围清群）。
+  { key: 'bomb', name: '炸弹', desc: '抛掷炸弹·落点大爆炸·范围炸伤（AoE 清群）', pattern: 'bomb', dmg: 16, cd: 128, projSpeed: 6, life: 45, radius: 104, amount: 1, weight: 7, maxLevel: 5, tint: 0xffa53f, skin: '103/proj-bomb' },
   // ── 进化体（weight 0·不进 draft 池·由进化机制生成）──
   { key: 'orbitevo', name: '无限回环', desc: '常驻 5 枚光球·大环·灼烧翻倍（进化）', pattern: 'orbit', dmg: 1.1, cd: 0, projSpeed: 0.06, life: 0, radius: 96, amount: 5, weight: 0, maxLevel: 1, tint: 0x54e08a, skin: '103/proj-orbit' },
 ];
@@ -222,11 +225,13 @@ export const EBOLT_SKIN = '103/enemy-bolt'; // 敌弹皮肤槽
 // ── 宝石定义（gdd §七·蓝=1·绿=3 经验·肉敌掉更多）─────────────────────────
 export interface GemDef { key: string; value: number; radius: number; tint: number; skin: string }
 // 三档经验宝石·大小随价值递增（v3 修「掉的经验都一样大小」）：蓝(小)→绿(中)→金(大)。
-export const GEM_BLUE: GemDef = { key: 'blue', value: 2, radius: 6, tint: TINT.gemBlue, skin: '103/gem-blue' };
-export const GEM_GREEN: GemDef = { key: 'green', value: 8, radius: 10, tint: 0x7dff4d, skin: '103/gem-green' };
-export const GEM_GOLD: GemDef = { key: 'gold', value: 30, radius: 15, tint: 0xffd23f, skin: '103/gem-gold' };
+// 大小与经验数量成正比（owner「很小的经验应更小」）：蓝(2)→小·绿(8)→中·金(30)→大。
+export const GEM_BLUE: GemDef = { key: 'blue', value: 2, radius: 5, tint: TINT.gemBlue, skin: '103/gem-blue' };
+export const GEM_GREEN: GemDef = { key: 'green', value: 8, radius: 9, tint: 0x7dff4d, skin: '103/gem-green' };
+export const GEM_GOLD: GemDef = { key: 'gold', value: 30, radius: 16, tint: 0xffd23f, skin: '103/gem-gold' };
 export const GEMS: GemDef[] = [GEM_BLUE, GEM_GREEN, GEM_GOLD];
-export const GEM_LIFE = 1800; // 未拾取宝石寿命 tick（30s）
+export const GEM_LIFE = 2700;      // 未拾取宝石寿命 tick（45s·比原 30s 长·但不永久=不能一直等你回来捡）
+export const GEM_BLINK_FROM = 900; // 最后 900 tick(15s) 起渐隐闪烁警告（Tween Color.alpha easeIn·消失前提示）
 
 // ── 升级三选一 + 真经验曲线（v3 修·阈值随级递增·EventWhen vsResource 动态阈值）────
 // 经验(xp)≥当前阈值(nextxp)→ 等级 +1 + xp 归零 + nextxp += XP_STEP（曲线爬升）→ 时停三选一 draft。
