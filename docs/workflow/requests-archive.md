@@ -2,6 +2,9 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-PATHFOLLOW-轨道跟随（写 Velocity·与索敌/抛射簇共存）· [2026-07-25] · PE-game102 报 → Lead 裁 · status: **✅ done（`daae3c3a`·下沉 `src/skills/tier2/path-follow.ts` `t2-path-follow`·2026-07-25 Lead 验收 PASS·归档腾槽）** · 类型: 引擎移动能力缺口（主程域）
+> **交付（方案①·Lead 亲验）**：`PathFollow{waypoints,speed,loop?,arriveRadius?,index}` + 助手 `pathFollowAt`；系统 `runsBefore motion-apply`·读 Transform/写 Velocity（同 steering/launch 链）→ 与 `aggro` 索敌 / `launch` 抛射同装**不成拓扑环**（解 orbit 写 Transform 成环之痛）。与 steering 皆 RMW Velocity 伪环 → 显式 `runsAfter:['steering']` 打破（`topological-sort.ts:46` 证实：未装的 id 被忽略·game102 无 steering 安全）。确定性仅 IEEE sqrt/÷·无随机墙钟·index 游标进 snapshot。9 测（航点推进/loop/速度模长/边界/确定性双跑 + 撞环回归 5-cap 同装 not.toThrow）。gate 全绿（tsc+3449 vitest+build+守卫·component-manifest 130→131）·`movement-pathfinding.md` 回填。game102 只经数据挂 `PathFollow{waypoints:管道环采样点}` 消费。原文全文见 git 史。
+
 ### REQ-PANELSKIN-Panel 贴图皮槽 · 复合按钮（Panel+子节点）换贴图皮 · [2026-07-22] · PE-C 报 → PUI 交付 · status: **✅ done（PUI·2026-07-25 Lead 代码级验收 PASS·归档腾槽）** · 类型: UI 基座控件缺口（PUI 域）
 > **交付**：`PanelProps.skin?`(+`skinSlice?`)·语义同 `ButtonProps.skin`——`render.ts panelSkinCss`（cover / border-image 九宫格）·`renderPanel` chrome 消费·guard `!bare`·不强制白字（children 各自定色）·children 与皮共存叠渲（皮作底·动态金额走活文字不烤进图）·配 action=整容器可点=复合贴图按钮。测试 `src/ui/components/panel-skin.test.ts`(5 例) + `alpha-texture.test.ts` 消费 Panel.skin。全绿 tsc0/vitest/build。
 > **Lead 验收（2026-07-25·代码级）**：grep 实锤 `PanelProps.skin`/`panelSkinCss`/`panel-skin.test.ts` 均在树；真浏览器目击留待 PE-C 接 game-c 主行动键时顺验（低风险附加属性·缺省零回归）。原文全文见 git 史。
