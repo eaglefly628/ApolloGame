@@ -1,16 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { PathFollow, Transform, Velocity } from '@engine/protocol/components.js';
+import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest } from '@engine/protocol/components.js';
 import { pathFollowCapability, pathFollowAt } from './path-follow.js';
-import { motionApplyCapability } from '@skills/tier1/index.js';
-import { steeringCapability, launchCapability } from '@skills/tier2/index.js';
-import { aggroCapability } from '@skills/tier3/index.js';
+import {
+  transformCapability, shapeCapability, tagCapability, colorCapability,
+  resourceCapability, flagCapability, randomCapability, velocityCapability,
+  timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
+} from '@atom-skills/index.js';
+import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability } from '@skills/tier1/index.js';
+import {
+  steeringCapability, launchCapability, clickableCapability, groupCountCapability, effectApplyCapability,
+  selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
+} from '@skills/tier2/index.js';
+import { aggroCapability, flowCapability, prefabCapability, casterCapability } from '@skills/tier3/index.js';
 
 // path-follow 固定航点轨道测试（REQ-PATHFOLLOW）。确定性·无随机/墙钟。
 const xf = (x: number, y: number): Transform => ({ type: 'Transform', x, y, rotation: 0, scaleX: 1, scaleY: 1 });
 const pos = (w: World, e: string): Transform => w.getComponent<Transform>(e, 'Transform')!;
 const vel = (w: World, e: string): Velocity => w.getComponent<Velocity>(e, 'Velocity')!;
 const pf = (w: World, e: string): PathFollow => w.getComponent<PathFollow>(e, 'PathFollow')!;
+const alive = (w: World, e: string): boolean => w.getAllEntities().includes(e);
 
 // path-follow(定速) + motion-apply(积分)。
 function world(): World {
@@ -216,5 +225,107 @@ describe('path-follow — 调度定序（撞环回归·同 orbit-motion「调度
       for (let i = 0; i < 5; i++) w.tick();
     }).not.toThrow();
     expect(pf(w, 'patroller').waypoints.length).toBe(2); // 仍在正常跑（未被拓扑排序破坏状态）
+  });
+});
+
+describe('path-follow — onEnd 路径终点触发（REQ-PATHEND-DROP）', () => {
+  // 两航点、arriveRadius=1 < speed=5：确保「到达」只在真正压到航点时判定（不会一开局就因起点距离
+  // 恰巧 <= arriveRadius 而提前触发，见文件头 speed/arriveRadius 取舍注释）。终点=(20,0)。
+  const wps = [{ x: 10, y: 0 }, { x: 20, y: 0 }];
+  function ender(w: World, id: string, onEnd: { dropTemplate?: string; destroy?: boolean }): void {
+    follower(w, id, 0, 0, pathFollowAt(wps, 5, { arriveRadius: 1, onEnd }));
+  }
+  const spawnReqs = (w: World): [string, SpawnRequest][] =>
+    w.query('SpawnRequest').map(([e]) => [e, w.getComponent<SpawnRequest>(e, 'SpawnRequest')!]);
+  const destroyReqs = (w: World): [string, DestroyRequest][] =>
+    w.query('DestroyRequest').map(([e]) => [e, w.getComponent<DestroyRequest>(e, 'DestroyRequest')!]);
+
+  it('loop:false 到末点 → 发 SpawnRequest(dropTemplate@自身)+DestroyRequest，只一次', () => {
+    const w = world();
+    ender(w, 'm', { dropTemplate: 'drop_x', destroy: true });
+    // 精确跑到终点耗 5 tick（见上方模拟：t=0→5→10→(index 前进)→15→20→到达触发）。
+    for (let i = 0; i < 5; i++) w.tick();
+    expect(pf(w, 'm').index).toBe(1); // 已推进到末航点
+    expect(pos(w, 'm').x).toBeCloseTo(20, 9); // 精确停在终点
+    expect(pf(w, 'm').ended).toBe(true);
+
+    const spawns = spawnReqs(w);
+    expect(spawns.length).toBe(1);
+    expect(spawns[0][1]).toMatchObject({ templateId: 'drop_x', x: 20, y: 0 }); // 落件在自身位
+
+    const destroys = destroyReqs(w);
+    expect(destroys.length).toBe(1);
+    expect(destroys[0][1].entityId).toBe('m');
+
+    // fire-once 钉死：到末点后再多 tick，drop/destroy 请求数不再增长（ended 守卫生效）。
+    for (let i = 0; i < 3; i++) w.tick();
+    expect(spawnReqs(w).length).toBe(1);
+    expect(destroyReqs(w).length).toBe(1);
+  });
+
+  it('fire-once：destroy:false（只落件不消失）实体持续存在多 tick，drop 仍只发一次', () => {
+    const w = world();
+    ender(w, 'm', { dropTemplate: 'drop_x' }); // 无 destroy
+    for (let i = 0; i < 5; i++) w.tick();
+    expect(spawnReqs(w).length).toBe(1);
+    // 实体未被销毁、继续原地停靠多 tick——最容易重发的场景，靠 ended 守卫防重发。
+    for (let i = 0; i < 10; i++) w.tick();
+    expect(spawnReqs(w).length).toBe(1);
+    expect(destroyReqs(w).length).toBe(0);
+    expect(alive(w, 'm')).toBe(true);
+  });
+
+  it('loop:true 永不触发 onEnd（即便设了 onEnd 也放行不炸）', () => {
+    const w = world();
+    follower(w, 'm', 0, 0, pathFollowAt(wps, 5, { arriveRadius: 1, loop: true, onEnd: { dropTemplate: 'drop_x', destroy: true } }));
+    for (let i = 0; i < 40; i++) w.tick(); // 往返跑很多趟（loop 语义：两航点间来回）
+    expect(spawnReqs(w).length).toBe(0);
+    expect(destroyReqs(w).length).toBe(0);
+    expect(pf(w, 'm').ended ?? false).toBe(false);
+  });
+
+  it('无 onEnd（缺省）→ 零回归：不发任何 SpawnRequest/DestroyRequest', () => {
+    const w = world();
+    follower(w, 'm', 0, 0, pathFollowAt(wps, 5, { arriveRadius: 1 }));
+    for (let i = 0; i < 10; i++) w.tick();
+    expect(spawnReqs(w).length).toBe(0);
+    expect(destroyReqs(w).length).toBe(0);
+  });
+
+  it('确定性：onEnd 双跑 snapshot 相等', () => {
+    const run = (): string => {
+      const w = world();
+      ender(w, 'm', { dropTemplate: 'drop_x', destroy: true });
+      for (let i = 0; i < 8; i++) w.tick();
+      return JSON.stringify(w.snapshot());
+    };
+    expect(run()).toBe(run());
+  });
+});
+
+describe('path-follow — onEnd 撞环回归（同 game102 blueprint 能力集：含 spawn/destroy 消费者）', () => {
+  it('与 game102 全套能力（destroy-apply/hierarchy-cascade/prefab 等 SpawnRequest/DestroyRequest 消费者）同装不成环·可 tick', () => {
+    // path-follow 新增 writes:['DestroyRequest','SpawnRequest']——真正读/consume 这两型的只有三家
+    // （destroy-apply consume DestroyRequest；hierarchy-cascade read+write DestroyRequest；prefab
+    // read+consume SpawnRequest），三家都不写 PathFollow/Transform/Velocity，故只产生单向边、不成环
+    // （见 path-follow.ts 文件头 onEnd 段注释）。这里按 game102/blueprint.ts 实际装配的能力集整装验证。
+    const w = new World();
+    for (const cap of [
+      transformCapability, shapeCapability, tagCapability, colorCapability,
+      resourceCapability, flagCapability, randomCapability, velocityCapability,
+      timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
+      motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
+      clickableCapability, groupCountCapability, effectApplyCapability, pathFollowCapability,
+      selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
+      flowCapability, aggroCapability, prefabCapability, casterCapability,
+    ]) {
+      for (const s of cap.systems) w.addSystem(s);
+    }
+    follower(w, 'cannon', 0, 0, pathFollowAt(
+      [{ x: 10, y: 0 }, { x: 20, y: 0 }], 5, { arriveRadius: 1, onEnd: { dropTemplate: 'tray_red', destroy: true } },
+    ));
+    expect(() => {
+      for (let i = 0; i < 5; i++) w.tick();
+    }).not.toThrow();
   });
 });

@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { PathFollow, Transform, Velocity } from '@engine/protocol/components.js';
+import type { PathFollow, Transform, Velocity, SpawnRequest, DestroyRequest } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  path-follow —— 固定航点轨道匀速跑（REQ-PATHFOLLOW）。实体沿一条摆好的航点轨道（闭环或折线）依次
@@ -24,13 +24,29 @@ import type { PathFollow, Transform, Velocity } from '@engine/protocol/component
 //  超界则按比例缩短本 tick 的速度矢量模长（保方向），压到 0 即原地不动（不倒退）；排头（组内进度最高者）
 //  不受限、行为与不带 queueId 完全一致。tie-break：进度相同按 id 升序（与其余能力同款确定性口径）。
 //  不设 queueId=零回归（现有 pathFollowAt/PathFollow 用法字节不变）。
+//
+//  onEnd（REQ-PATHEND-DROP：路径终点触发——传送带/巡逻绕完一圈→落一件+自毁，=Mortal 的 path-完成版）：
+//  loop!==true 且游标已到末航点（index===len-1）且本 tick 在 arriveRadius 内 → 触发一次：dropTemplate 有则
+//  发 SpawnRequest{templateId,x:自身,y:自身}（挂到独立 carrier 实体，同 mortal.ts dropTemplate 先例——
+//  自身可能同 tick 被 destroy:true 销毁，挂自身的组件会随之消失、赶不上 prefab 消费）；destroy 为 true 则
+//  发 DestroyRequest(self)。**fire-once**：实体到末点后会停在那（velocity 归零、d 仍 <=arriveRadius），
+//  若不加守卫会每 tick 重发 SpawnRequest——用组件自带的 `ended` 布尔守卫（进 snapshot，确定性），触发即置
+//  true、之后跳过。loop:true 永不触发（不读 onEnd）。定序：本系统 writes 补 SpawnRequest/DestroyRequest——
+//  两者消费者（prefab 展开 / destroy-apply 移除）只读/consume 这两型、不写 PathFollow/Transform/Velocity，
+//  故只产生"本系统→消费者"单向边，不与现有 runsAfter/runsBefore 成环（见回归测试）。
 // ═══════════════════════════════════════════════════════════════
 
 /** authoring 助手：由航点表 + 速度 + 选项算出 PathFollow 组件数据（index 初值 0）。供蓝图烤数据。 */
 export function pathFollowAt(
   waypoints: { x: number; y: number }[],
   speed: number,
-  opts?: { loop?: boolean; arriveRadius?: number; queueId?: string; minGap?: number },
+  opts?: {
+    loop?: boolean;
+    arriveRadius?: number;
+    queueId?: string;
+    minGap?: number;
+    onEnd?: { dropTemplate?: string; destroy?: boolean };
+  },
 ): Omit<PathFollow, 'type'> {
   return {
     waypoints,
@@ -40,6 +56,7 @@ export function pathFollowAt(
     ...(opts?.arriveRadius !== undefined ? { arriveRadius: opts.arriveRadius } : {}),
     ...(opts?.queueId !== undefined ? { queueId: opts.queueId } : {}),
     ...(opts?.minGap !== undefined ? { minGap: opts.minGap } : {}),
+    ...(opts?.onEnd !== undefined ? { onEnd: opts.onEnd } : {}),
   };
 }
 
@@ -81,11 +98,13 @@ export const pathFollowCapability = defineCapability({
           index: { type: 'number', describe: '当前目标航点游标（运行时状态·缺省 0·随 snapshot 存读）' },
           queueId: { type: 'string', describe: '队列分组键：同 queueId 成员按 path 进度排序、互不超车（缺省不分组=不受限）' },
           minGap: { type: 'number', describe: '与「前一名」的最小 path 进度间距（仅 queueId 设了才生效）；缺省 0' },
+          onEnd: { type: 'string', describe: '{dropTemplate?,destroy?}：非 loop 到末点时触发一次——落 dropTemplate 模板（自身位）/自毁；缺省不触发' },
+          ended: { type: 'boolean', describe: 'onEnd 是否已触发（运行时状态·缺省 false·随 snapshot 存读，fire-once 守卫）' },
         },
       },
     },
     reads: ['PathFollow', 'Transform', 'Velocity'],
-    writes: ['Velocity'],
+    writes: ['Velocity', 'DestroyRequest', 'SpawnRequest'],
     consumes: [],
   },
 
@@ -102,7 +121,7 @@ export const pathFollowCapability = defineCapability({
       runsAfter: ['steering'],
       runsBefore: ['motion-apply'],
       reads: ['PathFollow', 'Transform', 'Velocity'],
-      writes: ['Velocity'],
+      writes: ['Velocity', 'DestroyRequest', 'SpawnRequest'],
       consumes: [],
       execute(world: IWorld) {
         const ids = world.query('PathFollow', 'Transform').map(([id]) => id).sort();
@@ -144,6 +163,27 @@ export const pathFollowCapability = defineCapability({
             dx = wp.x - t.x;
             dy = wp.y - t.y;
             d = Math.hypot(dx, dy);
+          }
+
+          // onEnd（REQ-PATHEND-DROP）：非 loop 且游标已在末航点、本 tick 在 arriveRadius 内 → 触发一次
+          // （到达当帧与此后每帧原地停靠都满足此条件，靠 `ended` 守卫保证只触发一次——见文件头「第一坑」注释）。
+          if (pf.onEnd && !pf.loop && !pf.ended && i === len - 1 && d <= arrive) {
+            pf.ended = true;
+            if (pf.onEnd.dropTemplate) {
+              // 落件挂到独立 carrier 实体、不挂自身——自身可能同 tick 还会收到 DestroyRequest 被销毁，
+              // 挂自身的组件会随之消失、赶不上 prefab 消费（同 mortal.ts dropTemplate 先例）。
+              const carrier = `pathend:${id}`;
+              world.createEntity(carrier);
+              world.addComponent(carrier, {
+                type: 'SpawnRequest',
+                templateId: pf.onEnd.dropTemplate,
+                x: t.x,
+                y: t.y,
+              } as SpawnRequest);
+            }
+            if (pf.onEnd.destroy) {
+              world.addComponent(id, { type: 'DestroyRequest', entityId: id } as DestroyRequest);
+            }
           }
 
           if (d > 0) {

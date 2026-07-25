@@ -142,6 +142,8 @@ export interface PathFollow extends Component {
   index?: number; // 当前目标航点游标（运行时状态·缺省 0·序列化进 snapshot）
   queueId?: string; // 队列分组键（传送带/队列 id）；同 queueId 成员按 path 进度排序、互不超车
   minGap?: number; // 与「前一名」的最小 path 进度间距；缺省 0（仍不超车）
+  onEnd?: { dropTemplate?: string; destroy?: boolean }; // REQ-PATHEND-DROP：非 loop 到末点时触发一次（落件/自毁）；缺省不触发
+  ended?: boolean; // onEnd 是否已触发（运行时状态·fire-once 守卫·随 snapshot 存读，防重发）
 }
 
 // ── Orbit ── 圆周运动（REQ-SURVIVOR护盾绕转·VBUG-02）：绕 centerId（缺省世界原点）半径 radius 匀速环绕，
