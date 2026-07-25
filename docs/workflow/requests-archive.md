@@ -2,6 +2,9 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-PATHEND-DROP-PathFollow 绕完一圈落件+自毁（belt→tray handoff）· [2026-07-25] · PE-game102 报 → Lead 裁 · status: **✅ done（`8f1645d1`·形①·2026-07-25 Lead 亲验 PASS·归档）** · 类型: 引擎能力薄缺口（主程域·game102 循环收尾）
+> **交付（形①·亲验）**：`PathFollow` 加 `onEnd?:{dropTemplate?,destroy?}` + `ended?`（fire-once 守卫·进 snapshot）——loop:false 绕完到末点触发一次：dropTemplate→SpawnRequest(挂独立 carrier·同 Mortal 先例·防自身同 tick 被 destroy 带走)、destroy→DestroyRequest(self)。**fire-once**：到末点停住多 tick 只发一次（ended 守卫·测钉死）；loop:true 结构性不触发；SpawnRequest/DestroyRequest 消费者(prefab/destroy-apply/hierarchy-cascade)不写 PathFollow/Transform/Velocity→无环（29-cap 撞环回归验）。确定性无随机墙钟·21 测·gate 全绿 3588·基线 138 不变。→ **game102 完整循环闭合**（带→绕→落 tray 空槽→配 M2/M4 双 full 死锁判负）。game102 数据挂 `cannon_* PathFollow{loop:false,onEnd:{dropTemplate:tray_<color>,destroy:true}}`。原文见 git 史。
+
 ### REQ-ORDERROT-订单轮换（完成即从池取下一单）+ 进度批量域解锁（隐形缺口）· [2026-07-25] · PE-101 报 + Lead 判定 · status: **✅ done（`62dcc039`·2026-07-25 Lead 亲验 PASS·归档）** · 类型: 引擎能力薄缺口（主程域·game101 meta 循环）
 > **① order-rotate（扩 t2-order-fulfill）**：`Order` 加 `pool?/rotateMode?/cursor?`——集齐发奖后从 pool 取下一单写回 needItems/reward（`sequence` 按 cursor 环回·`weighted` 用世界 RandomSeed + `weightedPick` 共享核·缺 seed 失败关闭不崩）·升级链 food_2→food_3 成立。空 pool 逐字节零回归。解「顾客满足后循环空转」。
 > **② set-flag-tagged（扩 t2-effect-apply·owner「你判定并做」的隐形缺口）**：Lead 判定=真缺口——effect-apply 有 `destroy-tagged`/`set-visible-tagged` 批量但**无批量改 flag**，「过阈值一次解锁一整片格区」（清一片 webbed flag）原本只能一格一 Effect 不 scale。加 `set-flag-tagged` kind（复用现有 `tagMask`+`targetId`=Flag.id+`value`=bool·零新字段·纯集合操作·确定性·仅加 switch 分支零定序变更）。
