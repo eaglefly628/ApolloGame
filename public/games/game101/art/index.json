@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "cust_portrait_1",
+      "type": "texture",
+      "description": "1 · superpowers",
+      "status": "filled",
+      "path": "/games/game101/art/superpowers/ninja-adventure/characters/faceset/1.png",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "png",
+        "width": 38,
+        "height": 38,
+        "transparent": true
+      },
+      "category": "sheet",
+      "tags": [
+        "1",
+        "superpowers",
+        "pixel",
+        "rpg",
+        "sprite",
+        "ninja",
+        "game"
+      ],
+      "style": "pixel",
+      "license": "CC0-1.0",
+      "source": "superpowers",
+      "provenance": {
+        "repo": "sparklinlabs/superpowers-asset-packs",
+        "ref": "master",
+        "vendoredFrom": "sp/ninja/characters/faceset/1"
+      }
+    },
+    {
+      "id": "cust_portrait_2",
+      "type": "texture",
+      "description": "5 · superpowers",
+      "status": "filled",
+      "path": "/games/game101/art/superpowers/ninja-adventure/characters/faceset/5.png",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "png",
+        "width": 38,
+        "height": 38,
+        "transparent": true
+      },
+      "category": "sheet",
+      "tags": [
+        "5",
+        "superpowers",
+        "pixel",
+        "rpg",
+        "sprite",
+        "ninja",
+        "game"
+      ],
+      "style": "pixel",
+      "license": "CC0-1.0",
+      "source": "superpowers",
+      "provenance": {
+        "repo": "sparklinlabs/superpowers-asset-packs",
+        "ref": "master",
+        "vendoredFrom": "sp/ninja/characters/faceset/5"
+      }
+    },
+    {
+      "id": "cust_portrait_3",
+      "type": "texture",
+      "description": "12 · superpowers",
+      "status": "filled",
+      "path": "/games/game101/art/superpowers/ninja-adventure/characters/faceset/12.png",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "png",
+        "width": 38,
+        "height": 38,
+        "transparent": true
+      },
+      "category": "sheet",
+      "tags": [
+        "12",
+        "superpowers",
+        "pixel",
+        "rpg",
+        "sprite",
+        "ninja",
+        "game"
+      ],
+      "style": "pixel",
+      "license": "CC0-1.0",
+      "source": "superpowers",
+      "provenance": {
+        "repo": "sparklinlabs/superpowers-asset-packs",
+        "ref": "master",
+        "vendoredFrom": "sp/ninja/characters/faceset/12"
+      }
+    }
+  ]
+}
