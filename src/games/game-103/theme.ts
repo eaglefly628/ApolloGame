@@ -255,7 +255,8 @@ export const SPAWNS: SpawnRow[] = (() => {
   const RING0 = 12;
   for (let i = 0; i < RING0; i++) {
     const a = (Math.PI * 2 * i) / RING0;
-    rows.push({ at: 30, x: Math.round(START.x + Math.cos(a) * 320), y: Math.round(START.y + Math.sin(a) * 320), key: SHAMBLER.key });
+    // 错峰起始（at 30 + i×5 tick）：开局 12 只不再同一帧齐生（一帧实例化 12×4 实体=瞬时尖峰=早期卡顿）→ 摊到 ~1s 平滑生出。
+    rows.push({ at: 30 + i * 5, x: Math.round(START.x + Math.cos(a) * 320), y: Math.round(START.y + Math.sin(a) * 320), key: SHAMBLER.key });
   }
   return rows;
 })();

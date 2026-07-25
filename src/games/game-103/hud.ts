@@ -128,7 +128,10 @@ function offerCard(o: LevelUpOffer): LayoutNode {
       { type: 'Label', id: `c-${o.id}-t`, props: { text: o.isEvo ? '⚡进化' : o.isNew ? 'New' : 'Level Up', size: 11, bold: true, color: o.isEvo ? 'gold' : o.isNew ? 'ok' : 'gold' } },
       { type: 'Panel', id: `c-${o.id}-ico`, props: { bg: { custom: hue } }, layout: { width: 56, height: 56, radius: 14 } },
       { type: 'Label', id: `c-${o.id}-d`, props: { text: o.desc, size: 11, color: o.isEvo ? 'text' : 'ink' } },
-      { type: 'Rating', id: `c-${o.id}-s`, props: { value: o.level, max: o.max } },
+      // 等级展示：有限段位(≤6)用星星；无上限/大段位被动(如 might maxLevel 999)用数值 —— 否则 Rating 渲 999 颗星撑爆屏幕（owner 报 bug）。
+      o.max > 6
+        ? { type: 'Label', id: `c-${o.id}-s`, props: { text: `Lv ${o.level + 1}`, size: 12, bold: true, color: o.isEvo ? 'gold' : 'ink' } }
+        : { type: 'Rating', id: `c-${o.id}-s`, props: { value: o.level, max: o.max } },
     ],
   };
 }

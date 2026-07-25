@@ -357,6 +357,24 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(archer.ranged!.radius).toBeGreaterThanOrEqual(9);     // 敌弹调大=更清晰
   });
 
+  it('bug 修：升级卡技能星星不溢出屏幕（无上限被动 might maxLevel999 → 用数值不渲 999 颗星）', () => {
+    // 构造一张大段位卡（模拟 might maxLevel 999）+ 一张普通卡（max 5）
+    const offers = [
+      { id: 'might', name: '力量精粹', desc: '+8%', accent: 'passive' as const, level: 12, max: 999, isNew: false, action: 'pick_might' },
+      { id: 'blade', name: '锋刃', desc: '+20%', accent: 'passive' as const, level: 2, max: 5, isNew: false, action: 'pick_blade' },
+    ];
+    const tree = buildLevelUp(offers);
+    expect(validateLayoutNode(tree)).toEqual([]);
+    // 递归找所有 Rating 节点，断言没有 max>6（否则=999 颗星撑爆屏）
+    const ratings: Array<{ max?: number }> = [];
+    const walk = (n: { type: string; props?: { max?: number }; children?: unknown[] }): void => {
+      if (n.type === 'Rating') ratings.push(n.props ?? {});
+      for (const c of (n.children ?? []) as typeof n[]) walk(c);
+    };
+    walk(tree as never);
+    for (const r of ratings) expect(r.max ?? 0).toBeLessThanOrEqual(6);
+  });
+
   it('v2④ 敌人头顶血条：敌 prefab 带 Gauge(绑 hp)→受击缩短=伤害反馈可见', () => {
     const e = fresh();
     tickN(e, 60); // 待开局怪生出
