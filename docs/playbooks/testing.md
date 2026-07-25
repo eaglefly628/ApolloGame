@@ -21,6 +21,7 @@
 | 阶段复查（三门制·复查人≠施工人） | `game-pipeline.mjs checklist <SN>` → 对抗核证 → `review --verdict --note --by`（`docs/playbooks/review-gates.md`） | PASS/CONCERNS/FAIL |
 | 上下文预算（防信息膨胀·新 session 读得完） | `node scripts/context-budget-guard.mjs`（requests 池/T0 必读/手册行数各封顶·基线 `scripts/context-budget-baseline.json`·超顶正解=归档不是抬顶） | `CONTEXT-BUDGET: PASS` |
 | S4 玩法正确性（GD×PE 循环·防「绿门不可玩」） | 验收剧本 harness（`scripts/acceptance-run.mjs` + `acceptance.test.mjs`·REQ-ACCEPT） | 全部剧本绿 + ≥3 场景 |
+| **交互可玩性（防「绿门不可玩」渲染层盲区）** | **真浏览器手势目击**：playwright 点/拖**真 DOM 元素** → 断言**可见产出/落点**（非只机读态·非合成注入世界） | 见下红线「可玩性目击」·可见结果达成 + 附截图 |
 
 ## 验收剧本（S4 玩法关裁判·REQ-ACCEPT·「绿门不可玩」复盘）
 
@@ -30,6 +31,7 @@
 
 ## 红线（一体适用）
 
+- **可玩性目击（owner 2026-07-25 拍板·game101「点了没反应」复盘落地·全档位一体适用）**：**headless 全绿（sim 单测 + `validateLayoutNode` + 验收剧本机读态）≠ 能玩**——门禁与验收剧本都**不点真 DOM、不看渲染可见性**（剧本 schema 明写「不读 DOM」），故「逻辑对但渲染盖住 / 产出落点玩家看不见 / 信号没接到视图」这类 bug **全部漏网**。复盘实例：生成器产出用 `caster at:'self'` 落在**生成器自己那格**、被生成器图标盖住 → 点了体力静默扣、屏上无物 = 像坏了没法玩，却 sim 测全绿。**任何可点/可拖的交互特性，宣布「能玩 / done」前必须三步目击**：① 起真浏览器（`?game=<slug>`·`/opt/pw-browsers/chromium`）② 做**真实玩家手势**（点/拖真元素·**非**合成 RawInput 直插世界）③ 断言**可见产出**（新物/反馈出现在玩家**看得见、够得着**的格/位·非只机读态涨了）——三步缺一不算目击，截图进领工声明/复查。别再拿「门禁绿」当「能玩」。
 - **门禁=退出码**：`tsc + vitest + build` 全 0 才推；rebase 带进新提交必须重跑；禁 `vitest | grep` 吞失败码。
 - **快/慢双车道（owner 2026-07-21 提速）**：`npm test`（推送门禁+`scripts/scoped-gate.mjs` 走这条）=快车道·`vite.config.ts` 已排除冻结 game-f + 整局通关巨无霸 + 起进程 CLI 测试（占全量 CPU 近半却每推空转）；`npm run test:deep`（`APOLLO_DEEP=1`）=慢车道跑全 392 文件·**发版前/定期必跑=完整安全网**。缩的是「每次推的负担」非总覆盖。改动全在单游戏时 scoped-gate 只跑该游戏测试（详该脚本头注）。
 - **测试代码三禁**：真实时间等待（墙钟 sleep/setTimeout）、外部 IO 直连、无种子随机——FAIL 级，用信号/mock/种子 PRNG 替代（fake timers 合法）。
