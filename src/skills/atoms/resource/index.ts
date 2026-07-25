@@ -1,6 +1,7 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Resource, ResourceModify } from '@engine/protocol/components.js';
+import type { Resource, ResourceModify, PrefabOrigin } from '@engine/protocol/components.js';
+import { findSourceResource } from '@engine/core/query.js';
 
 // queueResourceMod —— 对一实体本帧排入一条资源改值，**同实体+同 resourceId+同 scope 则累加**（R14 真修 A）。
 // 解"同帧多段伤害"：N 个 hitbox/over-time 打同一敌人 hp → 各自 +amount 累加，不再后写覆盖前者丢伤害。
@@ -42,6 +43,7 @@ export const resourceCapability = defineCapability({
       '温度：Resource { id: "temp", current: 20, min: -50, max: 100 }',
       '受伤（同实体）：ResourceModify { resourceId: "hp", amount: -10 }',
       '全局路由（R11）：把 ResourceModify{ resourceId: "affection_S", amount: 5 } 挂在任意实体（如对话事件实体）→ 自动改到持有该 id 的资源，无需知道它住哪',
+      'per-shot 扣发射源（REQ-SPENDONFIRE）：子弹实体带 PrefabOrigin.source=炮台id + ResourceModify{ resourceId: "ammo", amount: -1, scope: "source" } → 只扣该炮台自己的 ammo，与其它炮台的同名资源互不影响',
     ],
   },
 
@@ -63,7 +65,12 @@ export const resourceCapability = defineCapability({
         fields: {
           resourceId: { type: 'string', describe: '目标资源的 id，与 Resource.id 匹配' },
           amount: { type: 'number', describe: '修改量，正数增加，负数减少' },
-          scope: { type: 'string', describe: "寻址作用域：'local'=仅同实体 / 'global'=强制按 id 全局 / 缺省 auto" },
+          scope: {
+            type: 'string',
+            describe:
+              "寻址作用域：'local'=仅同实体 / 'global'=强制按 id 全局 / 'source'=按本实体 PrefabOrigin.source 找发起者" +
+              '（per-shot 扣发射源资源，如子弹耗炮台的 ammo；源缺失/无该资源则静默跳过，不误扣同名全局资源）/ 缺省 auto',
+          },
         },
       },
     },
@@ -131,11 +138,20 @@ export const resourceCapability = defineCapability({
           if (!modify) continue;
           const scope = modify.scope ?? 'auto';
           let resource: Resource | undefined;
-          if (scope !== 'global') {
-            const local = world.getComponent<Resource>(entityId, 'Resource');
-            if (local && local.id === modify.resourceId) resource = local;
+          if (scope === 'source') {
+            // REQ-SPENDONFIRE：per-shot 扣发射源（N 炮各自计数，不像 global 那样扣到"第一个同名资源"）。
+            // 口径复用 hitbox.findScaleResource 同款查找（engine/core/query.ts findSourceResource：源自身
+            // 或其同次展开复合兄弟），但**不回退全局**——本实体无 PrefabOrigin / 无 source / 源已销毁 /
+            // 源无该资源，一律 resource 留 undefined → 下方静默跳过（不崩、不误扣别人的同名资源）。
+            const origin = world.getComponent<PrefabOrigin>(entityId, 'PrefabOrigin');
+            if (origin?.source) resource = findSourceResource(world, origin.source, modify.resourceId);
+          } else {
+            if (scope !== 'global') {
+              const local = world.getComponent<Resource>(entityId, 'Resource');
+              if (local && local.id === modify.resourceId) resource = local;
+            }
+            if (!resource && scope !== 'local') resource = globalFind(modify.resourceId);
           }
-          if (!resource && scope !== 'local') resource = globalFind(modify.resourceId);
           if (!resource) continue;
           const next = resource.current + modify.amount;
           resource.current = next < resource.min ? resource.min : next > resource.max ? resource.max : next;

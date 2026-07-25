@@ -18,8 +18,12 @@ export interface ResourceModify extends Component {
   resourceId: string;
   amount: number;
   // 寻址作用域（防"变量遮蔽"，Gemini Q4）：'local'=仅同实体；'global'=强制按 id 全局路由（不被同名局部资源静默抢走）；
+  // 'source'=按本实体的 PrefabOrigin.source 找发起者实体（REQ-SPENDONFIRE：per-shot 扣发射源资源，如子弹耗
+  // 发射炮自己的 ammo，N 炮各自计数）——本实体无 PrefabOrigin/无 source/源已销毁/源无该资源 → 静默跳过
+  // （不崩、不误扣同名全局资源；口径复用 hitbox.findScaleResource 的"源自身或同次展开复合兄弟"查找，见
+  // engine/core/query.ts 的 findSourceResource）。
   // 缺省=auto（同实体匹配优先，否则全局）。改全局态时显式写 'global' 更稳。
-  scope?: 'local' | 'global';
+  scope?: 'local' | 'global' | 'source';
 }
 
 // ── F2 flag ── 某个条件开还是关

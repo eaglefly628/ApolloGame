@@ -19,6 +19,7 @@
 | 按数据放技能/召唤 | `t3-caster` | 技能=`PrefabTemplate`，按键/点击→`Signal`→`Caster` 释放（配 `t3-prefab`） |
 | 掷骰判定 / roguelike | `t2-dice-roll`（`DicePool`） | 见 randomness.md；结果 `RolledDice` 供结算 |
 | 各掷战力比大小 | `opposedRoll`（纯函数） | `src/skills/tier2/dice.ts` 同骰族纯函数，种子化对掷 |
+| per-shot 扣发射源资源（弹药经济） | `f1-resource`（`ResourceModify.scope:'source'`） | 子弹带 `PrefabOrigin.source`=炮台实体 + `ResourceModify{resourceId:'ammo',amount:-1,scope:'source'}`：只扣该炮台自己的 ammo（N 炮各自计数，不像 `global` 扣到第一个同名资源）；源缺失/无该资源→静默跳过（REQ-SPENDONFIRE） |
 
 ## ② 样例指针
 
