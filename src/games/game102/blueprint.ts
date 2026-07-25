@@ -16,9 +16,9 @@ import {
   resourceCapability, flagCapability, randomCapability, velocityCapability,
   timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
 } from '@atom-skills/index.js';
-import { motionApplyCapability, lifetimeCapability } from '@skills/tier1/index.js';
+import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability } from '@skills/tier1/index.js';
 import {
-  clickableCapability, groupCountCapability, effectApplyCapability, launchCapability,
+  clickableCapability, groupCountCapability, effectApplyCapability, launchCapability, steeringCapability,
   selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability,
 } from '@skills/tier2/index.js';
 import { flowCapability, aggroCapability, prefabCapability, casterCapability } from '@skills/tier3/index.js';
@@ -31,6 +31,7 @@ import { LEVEL_1 } from './levels.js';
 
 const XF = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation: 0, scaleX: 1, scaleY: 1 });
 const box = (w: number, h: number): Record<string, unknown> => ({ kind: 'box', width: w, height: h });
+const circle = (r: number): Record<string, unknown> => ({ kind: 'circle', radius: r });
 const col = (tint: number, alpha = 1): Record<string, unknown> => ({ tint, alpha });
 
 // 棋盘格铺进 PICTURE 窗口：按 cols/rows 自适应格宽、居中。返回 {cell,ox,oy}（供 boardCells 用）。
@@ -170,32 +171,67 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
   for (const name of level.palette) {
     const pc = PALETTE[name];
     if (!pc) continue;
-    // 上带色炮：ammo 发 → 每 reload 拍喷 1 发子弹打最近同色 + ammo-1 → 弹尽(ammo≤0) Mortal 自毁掉一门 tray 炮。
-    templates[`cannon_${name}`] = { entities: { body: {
-      Transform: XF(0, 0),
-      Shape: box(w - 8, h - 8),
-      Color: col(pc.tint, 1),
-      Tag: { flags: CANNON_BIT | BELT_BIT },
-      Resource: { id: 'ammo', current: level.ammo, min: -1, max: level.ammo },
-      Perception: { targetTag: pc.bit, sightRadius: FIRE.sightRadius },
-      Relation: { kind: 'target', targetId: '' },
-      Timer: { id: 'reload', elapsed: 0, duration: FIRE.reload, loop: true },
-      // 逐发喷子弹：ammo≥0 时每 reload 拍向最近同色格 spawn 子弹 + ammo-1。fire ammo+1 次·最后一发（ammo0→-1）
-      // 恰被同拍 Mortal(atOrBelow:-1) 回收（生成实体死于同拍·确定性）→ 净落弹 = ammo·弹尽入槽（弹尽入槽时序）。
-      SelfRule: {
-        when: { kind: 'and', of: [
-          { kind: 'timer', id: 'reload', cmp: 'gte', value: FIRE.reload - 1 }, // 装填峰值
-          { kind: 'resource', id: 'ammo', cmp: 'gte', value: 0 },             // 含最后一发缓冲
-        ] },
-        do: [ { kind: 'spawn', template: `bullet_${name}`, at: 'target' }, { kind: 'modify-resource', op: 'add', value: -1 } ],
-        once: true, armed: false,
+    // 上带色炮：生成于补给口 → aggro 每拍锁最近同色格、steering 驾着它**可见地游向该格**（吸色车），
+    // 每 reload 拍 ①炮口喷可见曳光弹飞向该格 ②在格上生成即时命中区结算消除 ③ammo-1 → 弹尽(ammo≤0)
+    // Mortal 自毁掉一门 tray 炮。矢量图=亮色炮体圆盘 + 深色炮口小盘（hierarchy 随体走）。
+    templates[`cannon_${name}`] = { entities: {
+      body: {
+        Transform: XF(0, 0), // 落点=补给口（prefab 展开时按 spawn 位偏移）→ 之后 steering 驾其游向像素
+        Shape: circle(26),
+        Color: col(pc.tint, 1),
+        Tag: { flags: CANNON_BIT | BELT_BIT },
+        Resource: { id: 'ammo', current: level.ammo, min: -1, max: level.ammo },
+        Perception: { targetTag: pc.bit, sightRadius: FIRE.sightRadius },
+        Relation: { kind: 'target', targetId: '' },
+        // 驾向最近同色格（可见核心·到 stopRange 停下开火）。速度写 Velocity 交 motion-apply 积分。
+        Steering: { mode: 'seek', speed: FIRE.moveSpeed, stopRange: FIRE.stopRange },
+        Velocity: { vx: 0, vy: 0, angular: 0 },
+        Timer: { id: 'reload', elapsed: 0, duration: FIRE.reload, loop: true },
+        // 逐发喷子弹：ammo≥0 时每 reload 拍 ①在炮口发可见弹道曳光(tracer·飞向最近同色) ②在最近同色格生成
+        // 即时命中区结算消除 ③ammo-1。fire ammo+1 次·最后一发（ammo0→-1）恰被同拍 Mortal(atOrBelow:-1)
+        // 回收（生成实体死于同拍·确定性）→ 净落弹 = ammo·弹尽入槽（弹尽入槽时序）。
+        SelfRule: {
+          when: { kind: 'and', of: [
+            { kind: 'timer', id: 'reload', cmp: 'gte', value: FIRE.reload - 1 }, // 装填峰值
+            { kind: 'resource', id: 'ammo', cmp: 'gte', value: 0 },             // 含最后一发缓冲
+          ] },
+          do: [
+            { kind: 'spawn', template: `bullet_${name}`, at: 'target' }, // 即时命中结算（确定性消除·逐发重锁）
+            { kind: 'modify-resource', op: 'add', value: -1 },
+          ],
+          once: true, armed: false,
+        },
+        Mortal: { resource: 'ammo', atOrBelow: -1, dropTemplate: `tray_${name}` },
       },
-      Mortal: { resource: 'ammo', atOrBelow: -1, dropTemplate: `tray_${name}` },
+      // 炮口深盘（hierarchy 子件·随炮体移动·纯观感）+ 曳光发射口：同 reload 节拍在炮口发可见曳光弹飞向像素。
+      // （一实体一 SpawnRequest·body 那拍已被 bullet 占用 → 曳光挂在炮口这门独立发射·不与 body 争 SpawnRequest。）
+      muzzle: {
+        Transform: XF(0, 0),
+        Hierarchy: { parentId: '@local:body', localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 },
+        Shape: circle(13),
+        Color: col(0x141726, 0.9),
+        Timer: { id: 'muzzle', elapsed: 0, duration: FIRE.reload, loop: true },
+        SelfRule: {
+          when: { kind: 'timer', id: 'muzzle', cmp: 'gte', value: FIRE.reload - 1 },
+          do: [ { kind: 'spawn', template: `tracer_${name}`, at: 'self' } ],
+          once: true, armed: false,
+        },
+      },
+    } };
+    // 可见曳光弹（render-only·无 Hitbox/Sensor）：从炮口发射、朝最近同色格直飞、寿命到自毁。只做可见弹道，
+    // 不参与消除结算（消除由 bullet 即时命中区确定性完成）→ 不影响 sim 计数/胜负（验收剧本数不变）。
+    templates[`tracer_${name}`] = { entities: { t: {
+      Transform: XF(0, 0),
+      Shape: circle(FIRE.bulletRadius),
+      Color: col(pc.tint, 1),
+      Launch: { speed: FIRE.bulletSpeed / 6, toward: 'target', targetMask: pc.bit },
+      Velocity: { vx: 0, vy: 0, angular: 0 },
+      Timer: { id: 'life', elapsed: 0, duration: 24, loop: false },
     } } };
     // 子弹命中：在"当前最近同色格"生成即时命中区（aggro 每拍重锁 → 逐发打不同格·一发一格·无穿隧）。
     templates[`bullet_${name}`] = { entities: { b: {
       Transform: XF(0, 0),
-      Shape: { kind: 'circle', radius: FIRE.bulletRadius },
+      Shape: circle(FIRE.bulletRadius),
       Color: col(pc.tint, 0.9),
       Sensor: {},
       Tag: { flags: ZONE_BIT },
@@ -302,10 +338,10 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
       transformCapability, shapeCapability, tagCapability, colorCapability,
       resourceCapability, flagCapability, randomCapability, velocityCapability,
       timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
-      // tier1（子弹运动 + 生命期）
-      motionApplyCapability, lifetimeCapability,
+      // tier1（子弹运动 + 生命期 + 炮口子件挂接/级联销毁）
+      motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
       // tier2 玩法能力
-      clickableCapability, groupCountCapability, effectApplyCapability, launchCapability,
+      clickableCapability, groupCountCapability, effectApplyCapability, launchCapability, steeringCapability,
       selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability,
       // tier3（生成 + 索敌 + 流程）
       flowCapability, aggroCapability, prefabCapability, casterCapability,

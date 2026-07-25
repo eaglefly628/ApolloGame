@@ -7,6 +7,11 @@
 
 ## 待处理 / 进行中
 
+### REQ-G102-VISCANNON · 核心可见性：色炮上轨可见 + 可见子弹（owner 急件·本次提交）· [2026-07-25] · PE 落 → owner 验收 · status: **✅ done（本次提交·下附「真环轨」引擎限制）** · 优先级: P0 · 类型: play-field 可视化
+> **owner 反馈**：核心玩法看不见——「炮台看不到出现在轨道上，也看不到发出的子弹，无法判断为何吸掉像素」；要更好看的矢量图炮。
+> **PE 落地（组合表达·零游戏层 system·守裁①）**：色炮 = 亮色**圆盘炮体** + 深色**炮口小盘**（`hierarchy` 子件随体走）；生成于补给口后由 `aggro`(锁最近同色格)+`steering`(seek·`FIRE.moveSpeed/stopRange`)**可见地游向像素格**（吸色车）；每 `reload` 拍炮口发**可见曳光弹** `tracer_<color>`（`launch` 朝最近同色直飞·render-only 无 Hitbox·不参与结算）；消除仍由 `bullet_<color>` 即时命中区确定性完成（净落弹=ammo 不变）。新接能力：`steering`/`launch`/`hierarchy-resolve`/`hierarchy-cascade`（皆引擎既有）。验收剧本 01/02/03/05 数字不变（24 vitest 绿）。
+> **⚠ 引擎限制实证（真环轨做不成·非 PE 偷懒）**：owner 原意「从起点**环绕一圈**到终点」。`t2-orbit-motion`（圆周运动）与索敌/抛射簇（`aggro`/`launch`/`steering` 全 `runsBefore motion-apply`）**成拓扑环**——`orbit-motion` `runsAfter motion-apply` + 写 Transform 被 `aggro` 读 → `aggro→motion-apply→orbit-motion→aggro` 死环（引擎 `topological-sort` 报「Circular dependency」，实测复现）。故**「真圆环绕 + 逐格索敌开火」当前引擎无法共存**。取**可见游动吸色**折中（steering 驾炮游向像素·满幅像素画上移动明显）。若 owner 坚持真环轨 → 需引擎侧给 `orbit-motion` 与索敌簇的兼容定序（`docs/workflow/requests.md` 走下沉·Lead 裁）。
+
 ### REQ-G102-ADAPTER · S4 验收适配器（PE 落 adapter·剧本 schema 阻塞报 GD）· [2026-07-24] · GD 验收发现 → PE 落 → 回 GD · status: **in-review（阻塞在剧本 schema·待 GD 改）** · 优先级: P0 · 类型: 验收接线
 > **GD 验收实测**：`acceptance-run.mjs --game game102` → 原缺 `acceptance-adapter.ts`。**PE 已落**（下 ①），但暴露真阻塞在剧本 schema（②）。
 > **① adapter 已落**：`src/games/game102/acceptance-adapter.ts`（createWorld/applySignal/readWorld·纯接线零规则·不改剧本）。动作已接 `tapSupply:<color>`/`tapSlot:<i>`；投影已接 `remain.<color>`/`remain.total`/`conveyor.count`/`tray.count`/`score`/`combo`/`moves`/`flow`(StringVar 投自 GameFlow)。特殊炮 rainbow/chain/laser/aim + keys/doorOpen = REQ-G102-SPECIAL/关型后续（pending）。
