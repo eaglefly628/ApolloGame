@@ -13,7 +13,7 @@ export function buildS1(): LayoutNode {
 }
 
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
-export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number } // timer=剩余秒；cover=阻碍层数（>0 盖住·不可拖）
+export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number; coverReward?: string } // cover=阻碍层数(>0 盖住)·coverReward=沙下埋的奖励预览(⚡/💎/🎁)
 export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
 export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; timed?: boolean; timeLeft?: number; fly?: { id: string; label: string }; celebrate?: boolean }
 export interface S1State {
@@ -35,26 +35,26 @@ const COVER_BG = '#b8895a'; // 阻碍层沙色（覆盖格·挖掘解锁）
 function hud(s: S1State): N {
   const pill = (id: string, glyph: string, val: string, color: 'gold' | 'jade' | 'text'): N => ({
     type: 'Panel', id, props: { bg: 'panel' },
-    layout: { direction: 'row', align: 'center', gap: 4, padding: 8, radius: 16 },
+    layout: { direction: 'row', align: 'center', gap: 6, padding: 12, radius: 18 },
     children: [
-      { type: 'Label', id: `${id}-g`, props: { text: glyph, size: 'lg' } },
-      { type: 'Label', id: `${id}-v`, props: { text: val, color, bold: true, size: 'lg' } },
+      { type: 'Label', id: `${id}-g`, props: { text: glyph, size: 'xl' } },
+      { type: 'Label', id: `${id}-v`, props: { text: val, color, bold: true, size: 'xl' } },
     ],
   });
   return {
     type: 'Panel', id: 'hud', props: { bare: true },
-    layout: { direction: 'row', align: 'center', justify: 'between', gap: 8, padding: 10 },
+    layout: { direction: 'row', align: 'center', justify: 'between', gap: 8, padding: 12 },
     children: [
       {
         type: 'Panel', id: 'hud-lvl', props: { bg: 'gold' },
-        layout: { align: 'center', justify: 'center', padding: 10, radius: 26 },
-        children: [{ type: 'Label', id: 'hud-lvl-l', props: { text: `Lv ${s.level}`, color: 'ink', bold: true } }],
+        layout: { align: 'center', justify: 'center', padding: 16, radius: 28 },
+        children: [{ type: 'Label', id: 'hud-lvl-l', props: { text: `Lv ${s.level}`, color: 'ink', bold: true, size: 'xxl' } }],
       },
       {
         type: 'Panel', id: 'hud-energy', props: { bg: 'panel' },
-        layout: { direction: 'row', align: 'center', gap: 8, padding: 8, radius: 16 },
+        layout: { direction: 'row', align: 'center', gap: 8, padding: 12, radius: 18 },
         children: [
-          { type: 'Label', id: 'hud-e-g', props: { text: '⚡', size: 'lg' } },
+          { type: 'Label', id: 'hud-e-g', props: { text: '⚡', size: 'xl' } },
           { type: 'ProgressBar', id: 'hud-e-bar', props: { value: Math.round(s.energy), max: ENERGY.cap, tone: 'warn', showValue: true } },
         ],
       },
@@ -84,7 +84,7 @@ function orders(s: S1State): N {
           layout: { direction: 'row', align: 'center', gap: 8 },
           children: [
             ...(o.timed && o.timeLeft != null ? [{ type: 'Badge', id: `ord-${i}-clk`, props: { text: `⏱${o.timeLeft}`, tone: 'warn' } } as N] : []),
-            { type: 'Avatar', id: `ord-${i}-av`, props: { name: o.char, size: 52, shape: 'circle' } },
+            { type: 'Avatar', id: `ord-${i}-av`, props: { name: o.char, size: 96, shape: 'circle' } }, // 大人物立绘（对齐原图比例·餐台角色显著）
             {
               type: 'Panel', id: `ord-${i}-idn`, props: { bare: true },
               layout: { direction: 'column', align: 'start', gap: 2 },
@@ -143,19 +143,29 @@ function orders(s: S1State): N {
 function board(s: S1State): N {
   const cells: N[] = s.cells.map((cv, i) => {
     const kids: N[] = [];
-    // 阻碍层覆盖格（挖掘解锁）：沙色 🔒 + 剩余层数·不可拖（邻近二消挖开）。
+    // 阻碍层覆盖格（挖掘解锁·分阶段）：沙下埋物·层数越低越接近挖开。特殊格显奖励气泡（⚡/💎/🎁·对齐原图）。
+    // 阶段：埋沙(高层·只沙+锁数) → 蛛网 🕸️(低层·快挖开) → 露出(层归零=普通物)。
     if (cv?.cover != null) {
+      const ck: N[] = [];
+      if (cv.coverReward) {
+        // 沙下埋的奖励气泡：金圆牌显里面是什么（锁着也看得见·勾引玩家挖）。
+        ck.push({
+          type: 'Panel', id: `t-live-${i}-bub`, props: { bg: 'gold' },
+          layout: { align: 'center', justify: 'center', padding: 8, radius: 44 },
+          children: [{ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 'md', bold: true, color: 'ink' } }],
+        });
+      } else if (cv.cover <= 1) {
+        ck.push({ type: 'Label', id: `t-live-${i}-web`, props: { text: '🕸️', size: 44 } }); // 快挖开=蛛网阶段
+      }
+      ck.push({ type: 'Label', id: `t-live-${i}-cl`, props: { text: `🔒${cv.cover}`, size: 'sm', bold: true, color: 'ink' } }); // 剩余层数（深色·沙上可读）
       return {
         type: 'Panel', id: `t-live-${i}`, props: { bg: { custom: COVER_BG } },
-        layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 16, height: 168 },
-        children: [
-          { type: 'Label', id: `t-live-${i}-lk`, props: { text: '🔒', size: 52 } },
-          { type: 'Label', id: `t-live-${i}-cl`, props: { text: `${cv.cover}`, size: 'lg', bold: true, color: 'ink' } },
-        ],
+        layout: { direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 4, radius: 16, height: 128 },
+        children: ck,
       } as N;
     }
     if (cv) {
-      kids.push({ type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: i === s.liftedCell ? 74 : 92 }, layout: i === s.liftedCell ? { opacity: 0.28 } : {} }); // 大图标看得清·被拿起格淡化缩小
+      kids.push({ type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: i === s.liftedCell ? 52 : 66 }, layout: i === s.liftedCell ? { opacity: 0.28 } : {} }); // 板等比缩小(对齐原图比例)·被拿起格淡化缩小
       if (cv.deliverable) kids.push({ type: 'Badge', id: `t-live-${i}-b`, props: { text: '✓', tone: 'ok' } });
       if (cv.timer != null) kids.push({ type: 'Badge', id: `t-live-${i}-t`, props: { text: `⏱${cv.timer}`, tone: 'warn' } }); // 限时物倒计时
 
@@ -172,7 +182,7 @@ function board(s: S1State): N {
       type: 'Panel', id: `t-live-${i}`,
       props: cv?.gen ? { bg: { custom: GEN_BG }, action: `tap_${cv.gen}` } : deliverable ? { bg: { custom: CELL_BG }, edge: 'ok' } : { bg: { custom: CELL_BG } },
       // 手感：物品格 tilt3d 悬停立体抬起；生成器格 press3d 按压下沉；可交付物 anim:'glow' 发光脉冲醒目。基座闭集。
-      layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 16, height: 168, ...(deliverable ? { tilt3d: true, anim: 'glow' } : isItem ? { tilt3d: true } : cv?.gen ? { press3d: true } : {}) },
+      layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 16, height: 128, ...(deliverable ? { tilt3d: true, anim: 'glow' } : isItem ? { tilt3d: true } : cv?.gen ? { press3d: true } : {}) },
       children: kids,
     } as N;
   });

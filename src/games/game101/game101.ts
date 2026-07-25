@@ -86,7 +86,13 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       const t = w.getComponent<Transform>(bid, 'Transform');
       if (!bk || !t || bk.layers <= 0) continue;
       const idx = cellIndexOf(t.x, t.y);
-      if (idx >= 0 && !cells[idx]) { cells[idx] = { emoji: '🔒', cover: bk.layers }; coveredCells.add(idx); }
+      if (idx >= 0 && !cells[idx]) {
+        // 沙下埋的奖励预览（对齐原图：特殊格锁着也显里面是 ⚡/💎/🎁）。物品 reveal 不预览（纯沙）。
+        const rv = bk.reveal;
+        let coverReward: string | undefined;
+        if (rv?.kind === 'resource') coverReward = rv.resourceId === 'energy' ? `⚡${rv.amount ?? ''}` : rv.resourceId === 'stars' ? '💎' : rv.resourceId === 'coins' ? '🎁' : undefined;
+        cells[idx] = { emoji: '🔒', cover: bk.layers, coverReward }; coveredCells.add(idx);
+      }
     }
     const onBoard = new Set<string>(); // 板上现有的物品模板集（订单可交付判定）
     const cellTpl: (string | null)[] = new Array(cells.length).fill(null);

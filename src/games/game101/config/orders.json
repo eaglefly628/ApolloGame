@@ -1,6 +1,5 @@
 [
   { "id": "o_zhou",  "char": "周航", "needItems": ["food_2"],                       "reward": { "coins": 44,  "exp": 15, "stars": 0 } },
   { "id": "o_chen",  "char": "老陈", "needItems": ["fish_2", "fish_2"],             "reward": { "coins": 78,  "exp": 20, "stars": 2 } },
-  { "id": "o_su",    "char": "苏晴", "needItems": ["coffee_2", "food_2", "tool_2"], "reward": { "coins": 220, "exp": 40, "stars": 3 }, "timed": true },
-  { "id": "o_ya",    "char": "阿雅", "needItems": ["tool_2"],                       "reward": { "coins": 88,  "exp": 12, "stars": 2 } }
+  { "id": "o_su",    "char": "苏晴", "needItems": ["coffee_2", "food_2", "tool_2"], "reward": { "coins": 220, "exp": 40, "stars": 3 }, "timed": true }
 ]
