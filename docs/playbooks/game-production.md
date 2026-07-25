@@ -11,9 +11,9 @@
 复查门=另一 session 按清单对抗性核证（`docs/playbooks/review-gates.md`）；S7 品质关的复查形态=
 八维评分卡落账（任一维 0 分=红灯·全维≥2 才 premium——品质下限由这道门抬）。台账=`public/games/<slug>/pipeline.json`。
 
-> **门测下限·问题测游戏性**：每阶段除机器门外，另钉一个「真玩真看才答得出的 YES/NO 问题」——见
-> `docs/playbooks/game-flow-questions.md`（含新增 **T2 竖切**：先把一条核心循环做到「愿意再玩」才往外长）。
-> 门全绿 ≠ 是个游戏；「做完了」必须附对应任务问题的 YES + 证据。
+> **门测契约·先证闭环**：真正卡住的是**最基本的逻辑闭环**（开始→操作→分胜负/推进→重开跑不通），
+> 不是好不好玩。见 `docs/playbooks/game-flow-questions.md`——**T2 闭环竖切**把「一条最小循环跑通」用
+> 验收剧本 conformance（真引擎逐步对账）**机器证**成第一道强制门；好不好玩（T4/T7）排在闭环之后。
 
 ## 入口
 
