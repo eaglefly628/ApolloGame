@@ -412,7 +412,9 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
     : bare
       ? (tex ? `background:${tex}, transparent;` : '')
       : `background:${tex ? `${tex}, ` : ''}${panelTex ? `${panelTex}, ` : ''}${resolveFill(p.bg, t) ?? (p.glass ? 'rgba(20,24,32,0.5)' : t.bg1)};border:1px ${bStyle} ${border};border-radius:${rad}px;${glow}${p.glass ? 'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' : ''}`;
-  const style = `${box};padding:${pad}px;${chrome}position:relative;${overflow}${ls}`;
+  // 异形容器轮廓（REQ-UI-异型容器①·复用 Button 同一套 SHAPE_CSS 闭集·命中区=包围盒·裁在最外层·须给足宽高）。
+  const shape = p.shape && SHAPE_CSS[p.shape] ? `${SHAPE_CSS[p.shape]};` : '';
+  const style = `${box};padding:${pad}px;${chrome}${shape}position:relative;${overflow}${ls}`;
   // 标题图标（REQ-UI-标题图标槽）：titleIcon 在场 → 标题前 1.05em 内联图；无=纯文字标题字节不变。
   const titleIcon = p.titleIcon ? `<img src="${esc(p.titleIcon)}" alt="" style="height:1.05em;width:1.05em;object-fit:contain;vertical-align:-0.18em;margin-right:5px">` : '';
   const title = p.title
@@ -720,7 +722,7 @@ function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UIThe
   // 替代程序化牌面（角标/中央花色全隐）；label/value 覆盖层仍在。牌面即一张插画（掼蛋 54 牌面皮/TCG）。
   const faceArtHtml = p.faceArt
     ? (p.faceArtSlice !== undefined
-        ? `<div style="position:absolute;inset:0;border-radius:6px;border-image:url(${safeUrl(p.faceArt)}) ${num(p.faceArtSlice)} fill / ${num(p.faceArtSlice)}px stretch;pointer-events:none"></div>`
+        ? `<div style="position:absolute;inset:0;border-radius:6px;border-style:solid;border-width:${num(p.faceArtSlice)}px;border-image:url(${safeUrl(p.faceArt)}) ${num(p.faceArtSlice)} fill / ${num(p.faceArtSlice)}px / 0 stretch;pointer-events:none"></div>`
         : `<img src="${esc(p.faceArt)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:6px;pointer-events:none">`)
     : '';
   const inner = faceUp

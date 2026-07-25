@@ -129,7 +129,18 @@ try {
       low.push({ id: el.id || `<${el.tagName.toLowerCase()}>`, text: el.textContent.trim().slice(0, 18), ratio: Math.round(r * 100) / 100, need, hard });
     }
   }
-    return { positionedCount: positioned.length, overlaps, low };
+  // — border-image 前提守卫（REQ-FACEART③·工具债提前清）：设了 border-image-source 却缺 border-style/width →
+  //   真浏览器一像素不画（happy-dom 字符串断言测不出·faceArtSlice 就栽在此盲区）。缺前提=阻断。
+  const borderImageBroken = [];
+  for (const el of host.querySelectorAll('*')) {
+    const cs = getComputedStyle(el);
+    const src = cs.borderImageSource;
+    if (!src || src === 'none') continue;
+    const noStyle = /^(none\s*)+$/.test((cs.borderStyle || '').trim());
+    const noWidth = ((cs.borderWidth || '').match(/[\d.]+/g) || [0]).map(Number).every((w) => w === 0);
+    if (noStyle || noWidth) borderImageBroken.push({ id: el.id || `<${el.tagName.toLowerCase()}>`, why: noStyle ? 'border-style:none' : 'border-width:0' });
+  }
+    return { positionedCount: positioned.length, overlaps, low, borderImageBroken };
   }, { MOUNT, OVERLAP_TOL, MIN_CONTRAST, HARD_FLOOR });
 } finally {
   if (browser) await browser.close().catch(() => {});
@@ -148,8 +159,12 @@ for (const l of hardLow) console.log(`  ✕ ${l.id.padEnd(16)} "${l.text}"  rati
 console.log(`\n[对比·警告 ${HARD_FLOOR}–${MIN_CONTRAST}] ${warnLow.length} 处（多为 dim 次级文字·复核非阻断）`);
 for (const l of warnLow) console.log(`  ! ${l.id.padEnd(16)} "${l.text}"  ratio=${l.ratio} (AA 需≥${l.need})`);
 
-const fail = report.overlaps.length + hardLow.length;
+const biBroken = report.borderImageBroken ?? [];
+console.log(`\n[border-image 前提] ${biBroken.length} 处（设了皮却缺 border-style/width·真浏览器不画）— 阻断`);
+for (const b of biBroken) console.log(`  ✕ ${b.id.padEnd(16)} ${b.why}`);
+
+const fail = report.overlaps.length + hardLow.length + biBroken.length;
 console.log(`\n${fail === 0
-  ? `✅ 通过（阻断项 0）：无重叠、无硬性读不清文字。${warnLow.length ? ` 另有 ${warnLow.length} 处次级文字低于 AA·建议复核是否正文。` : ''}`
-  : `❌ 不合格：${report.overlaps.length} 重叠 + ${hardLow.length} 硬性低对比。按 ui-playbook.md §1/§2 修。`}`);
+  ? `✅ 通过（阻断项 0）：无重叠、无硬性读不清文字、border-image 前提齐。${warnLow.length ? ` 另有 ${warnLow.length} 处次级文字低于 AA·建议复核是否正文。` : ''}`
+  : `❌ 不合格：${report.overlaps.length} 重叠 + ${hardLow.length} 硬性低对比 + ${biBroken.length} border-image 缺前提。按 ui-playbook.md §1/§2 修。`}`);
 process.exit(fail === 0 ? 0 : 1);

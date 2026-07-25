@@ -263,6 +263,11 @@ export interface PanelProps {
   edge?: EdgeColor;
   /** 虚线描边（空格落点圈/占位/拖放目标框）：true → border-style:dashed。配 edge 取色 + radius 取圆。 */
   dashed?: boolean;
+  /** 异形容器轮廓（闭集 ShapeToken·复用 Button 同一套 render.ts SHAPE_CSS·**非自由 clip-path 坐标**·REQ-UI-异型容器①·
+   *  owner 2026-07-24「异型 UI 是底层需求」）。缺省=矩形（既有行为不变）。非矩形容器（异形限时菜单卡/盾形信息板/
+   *  六边蜂窝格）不必再靠透明贴图皮硬凑。命中区=包围盒（同 Button）；clip 会裁掉溢出多边形的子内容→**异形须给足
+   *  width/height**。与 skin/bgTexture/edge 可叠（clip 在最外层裁形）。 */
+  shape?: ShapeToken;
 }
 
 /** 单个开/关复选框。handler 收到 'true' | 'false'。 */

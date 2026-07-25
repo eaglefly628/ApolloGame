@@ -2,6 +2,20 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-UI-异型容器 shape + 槽位容器 Slots（Panel/Card 非矩形 + 多槽餐盘/背包格通用）· [2026-07-24] · PE-101 报（owner「多 slot + 异型 UI 是底层需求」定性）→ PUI 裁 · status: **✅ done（①落地 + ②裁回驳·PUI 2026-07-25·归档腾槽）** · 类型: UI 基座控件缺口（PUI 域·全游戏通用）
+> **① 异型容器（真缺口·主）✅ 落地**：`PanelProps.shape?:ShapeToken`（`types.ts`）——复用 Button 同一套闭集枚举 + `render.ts SHAPE_CSS`（**非自由 clip-path**）；`renderPanel` 在最外层裁形（与 `skin`/`edge`/`bgTexture` 可叠）·命中区=包围盒（同 Button）·异形须给足宽高。catalog Panel 补 shape 枚举项 + `ui.md` 异形行扩「容器同款」。测试 `src/ui/components/shape-container.test.ts`（六边/盾/菱 clip 注入 + 缺省零 clip 向后兼容 + 与 edge 叠）+ **真浏览器目击**（六边容器/盾形板/菱形带内容渲染成立）。game101 顾客卡「异形限时菜单」不必再贴图硬凑（REQ-101-07 依赖解除）。
+> **② 槽位容器 Slots（辅）⚖ 裁回驳（先重组·manifesto §2）**：多 slot 餐盘/背包格用 `Panel(row/grid)+N 子 Card/Panel` **现有闭集已能表达**（非硬缺口）——不下沉 `Slots` 语义件（YAGNI·避免「未撞墙先造」）。真到「拖入高亮/空槽虚线/满槽✓」统一封装成为反复手拼的痛点、且多游戏实证需要时，再回本池开薄件（附最小复现）。**裁前 game101 用 Panel+children 拼装（现已够用）。**
+> **边界**：改动全落 PUI 独占域（`src/ui/components/{types,render,catalog}.ts` + 测试 + `ui.md`）。gate 全绿。
+
+### REQ-FACEART-画框修缮 · faceArtSlice 9-slice 真浏览器不渲染 + 手册补行 + border-image 审计盲区提前清 · [2026-07-22] · Lead 复核发现 → **指派：PUI** · status: **✅ done（三项全交付·PUI 2026-07-25·归档腾槽）** · 类型: UI 基座缺陷修缮 + 工具债（PUI 域）
+> **① faceArtSlice 9-slice 渲染修复 ✅**：`render.ts` faceArtSlice 覆盖 div 补 `border-style:solid;border-width:${slice}px` + 对齐 `panelSkinCss` 口径（`border-image … / ${s}px / 0 stretch`）——**真浏览器目击**：slice:16 卡现出正确九宫格画框（四角固定/边中拉伸/中心填充·修前一像素不画）。测试 `shape-container.test.ts`（断言 border-style/width/image 三件齐 + 无 slice 走 cover 对照）。
+> **② 手册补行 ✅**：`docs/playbooks/ui.md` 图标行补 `Panel.titleIcon`/`Tabs.tab.icon`（原 ab2a316c 落地未回填）。
+> **③ border-image 审计盲区工具债 ✅ 提前清**：`tools/ui-audit.mjs` 加「border-image 前提」阻断检查——扫带 `border-image-source` 却缺 `border-style`/`border-width` 的元素（真浏览器不画·happy-dom 字符串断言测不出的同类病，正是本次 faceArtSlice 栽的坑）。验证有牙：手构坏元素被 catch、合法 9-slice 皮（candy buttonSkins/panelSkin）0 误报。
+> 附 Lead 裁决：REQ-UIRECON「通告 game-b/c」项豁免（引擎修复透明兜住·补知会=空跑）——沿用不变。
+
+### REQ-FX-SHEEN-HOVER · 流光 sheen 悬停触发变体（+cooldown·非常驻扫光） · [2026-07-23] · PE-C 报（owner「流光只在鼠标移上去的按钮才有·且有冷却」）→ PUI 裁 · status: **✅ done（已覆盖·PUI 核实 2026-07-25·归档腾槽）** · 类型: UI 特效库缺口（PUI 域）
+> **裁：已覆盖·无需再建**——`sheen-hover` 闭集档**已落地**（`9895b1c1`「悬停触发流光 sheen-hover·闭集新档·PUI 域·owner 准」）：`EffectKind` 含 `'sheen-hover'`（`types.ts`）· `render.ts fxToCss` 发 `data-fx~="sheen-hover"` · `server.ts` CSS `[data-fx~="sheen-hover"]:hover::after{animation:apollo-sheen-sweep .7s ease-out}`（**非 infinite·一次**·移出→再移入才重扫=**天然冷却**）——正是 owner 要的「移上去才扫一道 + cooldown」。用法：主行动键 `fx:[{kind:'sheen-hover'}]`、其余面板不加。ticket 立时未察其已落地→本次核实标 done 腾槽。
+
 ### REQ-PATHFOLLOW-轨道跟随（写 Velocity·与索敌/抛射簇共存）· [2026-07-25] · PE-game102 报 → Lead 裁 · status: **✅ done（`daae3c3a`·下沉 `src/skills/tier2/path-follow.ts` `t2-path-follow`·2026-07-25 Lead 验收 PASS·归档腾槽）** · 类型: 引擎移动能力缺口（主程域）
 > **交付（方案①·Lead 亲验）**：`PathFollow{waypoints,speed,loop?,arriveRadius?,index}` + 助手 `pathFollowAt`；系统 `runsBefore motion-apply`·读 Transform/写 Velocity（同 steering/launch 链）→ 与 `aggro` 索敌 / `launch` 抛射同装**不成拓扑环**（解 orbit 写 Transform 成环之痛）。与 steering 皆 RMW Velocity 伪环 → 显式 `runsAfter:['steering']` 打破（`topological-sort.ts:46` 证实：未装的 id 被忽略·game102 无 steering 安全）。确定性仅 IEEE sqrt/÷·无随机墙钟·index 游标进 snapshot。9 测（航点推进/loop/速度模长/边界/确定性双跑 + 撞环回归 5-cap 同装 not.toThrow）。gate 全绿（tsc+3449 vitest+build+守卫·component-manifest 130→131）·`movement-pathfinding.md` 回填。game102 只经数据挂 `PathFollow{waypoints:管道环采样点}` 消费。原文全文见 git 史。
 
