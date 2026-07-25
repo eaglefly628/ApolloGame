@@ -22,14 +22,14 @@ import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, 
 import {
   boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
   cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
-  steeringCapability, launchCapability, selfRuleCapability,
+  steeringCapability, launchCapability, selfRuleCapability, collisionResolveCapability,
 } from '@skills/tier2/index.js';
 import { keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, orbitAt, animStateCapability, modifierStackCapability, statBindCapability } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
 import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
-  PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, GEM, TINT,
-  PLAYER_DEF, KUNAI, WEAPONS, WEAPON_BIT, ENEMIES, GEMS, GEM_LIFE, SPAWNS, SPAWNER_TIERS, SPAWNER_RING, SPAWN_CAP,
+  PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, GEM, CL, TINT,
+  PLAYER_DEF, KUNAI, WEAPONS, WEAPON_BIT, ENEMIES, GEMS, GEM_LIFE, SPAWNS, SPAWNER_TIERS, SPAWNER_RING, SPAWN_CAP, OBSTACLES,
   XP_BASE, XP_STEP, DRAFT_POOL, PASSIVE_BY_KEY, STAT_PASSIVES, EBOLT_SKIN, WEAPON_ANIM, EBOLT_ANIM,
   type WeaponDef, type EnemyDef, type GemDef, type FxAnim,
 } from './theme.js';
@@ -63,7 +63,7 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
   };
   if (w.pattern === 'nova') {
     return { entities: { p: { ...base,
-      Shape: { kind: 'circle', radius: w.radius },
+      Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY }, // 只和敌配对
       Color: { tint: w.tint, alpha: 0.26 },
       Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // per-tick·扫全范围
     } } };
@@ -75,7 +75,9 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
     Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY, fallbackDir: { x: 0, y: -1 } },
     // RBUG-01② 子弹朝向：t2-facing 与 bounds-clamp 都在 Commit 写 Transform→调度器成环（facing 未声明相对定序·
     // 回报 Lead 补 facing 定序）。暂不挂 Facing（次要·水平翻转）；orbit/separation 已接。
-    Shape: w.pattern === 'beam' ? { kind: 'box', width: w.radius * 5, height: w.radius } : { kind: 'circle', radius: w.radius },
+    Shape: w.pattern === 'beam'
+      ? { kind: 'box', width: w.radius * 5, height: w.radius, category: CL.BULLET, mask: CL.ENEMY }
+      : { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY }, // 只和敌配对（不和别的子弹/宝石/敌↔敌）
     Color: { tint: w.tint, alpha: 1 },
     Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', ...(single ? { consumeOnHit: true } : {}) },
   };
@@ -100,7 +102,7 @@ function weaponMount(w: WeaponDef): { entities: Record<string, Record<string, un
         Transform: { ...XF0 },
         Orbit: orbitAt(w.radius, (Math.PI * 2 * i) / w.amount, w.projSpeed, 'player'), // projSpeed=每 tick 角步(rad)
         Sensor: {}, Tag: { flags: ZONE | wbit },
-        Shape: { kind: 'circle', radius: 12 },
+        Shape: { kind: 'circle', radius: 12, category: CL.BULLET, mask: CL.ENEMY },
         Sprite: { textureKey: anim ? anim.sheet : w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽（动画帧优先）
         ...fxAnimComps(anim),
         Color: { tint: w.tint, alpha: 0.9 },
@@ -114,7 +116,7 @@ function weaponMount(w: WeaponDef): { entities: Record<string, Record<string, un
       Transform: { ...XF0 }, Velocity: { vx: 0, vy: 0, angular: 0 },
       Perception: { targetTag: PLAYER, sightRadius: 0 }, Steering: { mode: 'seek', speed: 2.4, stopRange: 56 }, // 跟随玩家
       Tag: { flags: WEAPON_BIT[w.key] ?? 0 },
-      Shape: { kind: 'circle', radius: 10 },
+      Shape: { kind: 'circle', radius: 10, category: 0, mask: 0 }, // 宠物本体不参与碰撞配对（它靠 proj 打·省对）
       Sprite: { textureKey: w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 2 }, Color: { tint: w.tint, alpha: 1 },
       Timer: { id: 'fire', elapsed: 0, duration: w.cd, loop: true },
       SelfRule: { when: { kind: 'timer', id: 'fire', cmp: 'gte', value: Math.max(1, w.cd - 1) }, do: [{ kind: 'spawn', template: `proj_${w.key}`, at: 'self' }], once: true, armed: false },
@@ -153,7 +155,7 @@ function eboltTemplate(e: EnemyDef): { entities: Record<string, Record<string, u
     Transform: { ...XF0 },
     Velocity: { vx: 0, vy: 0, angular: 0 },
     Sensor: {}, Tag: { flags: ZONE },
-    Shape: { kind: 'circle', radius: r.radius },
+    Shape: { kind: 'circle', radius: r.radius, category: CL.EBOLT, mask: CL.PLAYER }, // 敌弹只打玩家
     Sprite: { textureKey: anim ? anim.sheet : EBOLT_SKIN, anchorX: 0.5, anchorY: 0.5, zOrder: 2 },
     ...fxAnimComps(anim),
     Color: { tint: anim ? 0xffffff : e.tint, alpha: 1 },
@@ -173,7 +175,9 @@ function enemyTemplate(e: EnemyDef, gemTemplate: string): { entities: Record<str
     Transform: { x: 0, y: 0, rotation: 0, scaleX: artScale, scaleY: artScale },
     Velocity: { vx: 0, vy: 0, angular: 0 },
     Tag: { flags: ENEMY },
-    Shape: { kind: 'circle', radius: e.radius },
+    // 碰撞层：敌 body 只和子弹配对（被打）+ 地面敌还和障碍配对（绕行）；**不和敌↔敌配对**（省 churn/perf）·
+    // **不和玩家 body 配对**（玩家穿过敌群·接触伤害走 touch 子区）。飞行敌 mask 不含 OBSTACLE=穿墙。
+    Shape: { kind: 'circle', radius: e.radius, category: CL.ENEMY, mask: CL.BULLET | (e.flying ? 0 : CL.OBSTACLE) },
     Sprite: { textureKey: e.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽
     Color: { tint: e.tint, alpha: 1 },
     Resource: { id: 'hp', current: e.hp, min: 0, max: e.hp },
@@ -193,7 +197,7 @@ function enemyTemplate(e: EnemyDef, gemTemplate: string): { entities: Record<str
       hpbar: { // 头顶血条（Gauge 绑 hp·随受击缩短）。反向缩放(1/artScale)抵消 body 体型缩放→血条保持正常尺寸不被 Boss 放大。
         Hierarchy: { parentId: '@local:body', localX: 0, localY: -(e.radius + 9), localRotation: 0, localScaleX: 1 / artScale, localScaleY: 1 / artScale },
         Transform: { ...XF0 },
-        Shape: { kind: 'box', width: Math.max(28, e.radius * 2.6), height: 5 },
+        Shape: { kind: 'box', width: Math.max(28, e.radius * 2.6), height: 5, category: 0, mask: 0 }, // 血条 render-only·不配对
         Color: { tint: 0x54e08a, alpha: 1 },
         Gauge: { resourceId: 'hp', fromParent: true, width: Math.max(28, e.radius * 2.6) },
       },
@@ -203,7 +207,7 @@ function enemyTemplate(e: EnemyDef, gemTemplate: string): { entities: Record<str
         Visibility: { visible: false, active: true },
         Sensor: {},
         Tag: { flags: ZONE },
-        Shape: { kind: 'circle', radius: e.radius },
+        Shape: { kind: 'circle', radius: e.radius, category: CL.TOUCH, mask: CL.PLAYER }, // 接触伤害区：只和玩家配对
         Color: { tint: 0xffffff, alpha: 0 },
         Hitbox: { resource: 'hp', amount: e.contact, targetMask: PLAYER },
       },
@@ -219,7 +223,7 @@ function gemTemplate(g: GemDef): { entities: Record<string, Record<string, unkno
         Transform: { ...XF0 },
         Sensor: {},
         Tag: { flags: ZONE | GEM }, // GEM 位=magnet pull-anchor 命中筛选
-        Shape: { kind: 'circle', radius: g.radius },
+        Shape: { kind: 'circle', radius: g.radius, category: CL.GEM, mask: CL.COLLECTOR }, // 宝石只和拾取环配对
         Sprite: { textureKey: g.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 0 }, // 皮肤槽
         Color: { tint: g.tint, alpha: 1 },
         Hitbox: { resource: 'xp', amount: -g.value, targetMask: COLLECTOR, consumeOnHit: true },
@@ -237,7 +241,7 @@ function gemTemplate(g: GemDef): { entities: Record<string, Record<string, unkno
         Visibility: { visible: false, active: true },
         Sensor: {},
         Tag: { flags: ZONE },
-        Shape: { kind: 'circle', radius: g.radius },
+        Shape: { kind: 'circle', radius: g.radius, category: CL.GEM, mask: CL.KILLBOX }, // 计分区只和计分环配对
         Color: { tint: 0xffffff, alpha: 0 },
         Hitbox: { resource: 'score', amount: -1, targetMask: KILLBOX, consumeOnHit: true },
       },
@@ -294,12 +298,35 @@ function groundGridEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   const STEP = 160; // 网格间距（px·世界坐标）
   let i = 0;
+  // 网格线巨长 AABB·render-only → category:0/mask:0 彻底退出 overlap-detect 宽相位（否则每根和全场配对=大浪费）。
+  const NOCOL = { category: 0, mask: 0 };
   for (let x = 0; x <= ARENA; x += STEP) {
-    out[`gridv-${i++}`] = { Transform: { x, y: ARENA / 2, rotation: 0, scaleX: 1, scaleY: 1 }, Shape: { kind: 'box', width: 2, height: ARENA }, Color: { tint: 0x2b3a48, alpha: 0.7 } };
+    out[`gridv-${i++}`] = { Transform: { x, y: ARENA / 2, rotation: 0, scaleX: 1, scaleY: 1 }, Shape: { kind: 'box', width: 2, height: ARENA, ...NOCOL }, Color: { tint: 0x2b3a48, alpha: 0.7 } };
   }
   for (let y = 0; y <= ARENA; y += STEP) {
-    out[`gridh-${i++}`] = { Transform: { x: ARENA / 2, y, rotation: 0, scaleX: 1, scaleY: 1 }, Shape: { kind: 'box', width: ARENA, height: 2 }, Color: { tint: 0x2b3a48, alpha: 0.7 } };
+    out[`gridh-${i++}`] = { Transform: { x: ARENA / 2, y, rotation: 0, scaleX: 1, scaleY: 1 }, Shape: { kind: 'box', width: ARENA, height: 2, ...NOCOL }, Color: { tint: 0x2b3a48, alpha: 0.7 } };
   }
+  return out;
+}
+
+// ── 场地障碍物（静态碰撞体·无 Velocity=collision-resolve 视为不可动→把动态玩家/地面敌推出=挡路/绕行；
+//    飞行敌 mask 不含 OBSTACLE=穿过）。反 kiting：破开阔场·逼走位卡位。世界坐标固定·随相机卷动。
+function obstacleEntities(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  OBSTACLES.forEach((o, i) => {
+    out[`obstacle-${i}`] = {
+      Transform: { x: o.x, y: o.y, rotation: 0, scaleX: 1, scaleY: 1 }, // 无 Velocity=静态
+      Shape: { kind: 'circle', radius: o.radius, category: CL.OBSTACLE, mask: CL.PLAYER | CL.ENEMY }, // 挡玩家+地面敌
+      Sprite: { textureKey: '103/obstacle', anchorX: 0.5, anchorY: 0.5, zOrder: 0 }, // 皮肤槽（未就绪→回退灰石 Shape）
+      Color: { tint: 0x5b6b7a, alpha: 1 }, // 灰岩石
+    };
+    out[`obstacle-cap-${i}`] = { // 顶盖高光（render-only·立体感·不配对）
+      Hierarchy: { parentId: `obstacle-${i}`, localX: 0, localY: -Math.round(o.radius * 0.3), localRotation: 0, localScaleX: 1, localScaleY: 1 },
+      Transform: { ...XF0 },
+      Shape: { kind: 'circle', radius: Math.round(o.radius * 0.62), category: 0, mask: 0 },
+      Color: { tint: 0x7c8ea0, alpha: 1 },
+    };
+  });
   return out;
 }
 
@@ -382,7 +409,8 @@ export function buildBlueprint(): WorldBlueprint {
       Velocity: { vx: 0, vy: 0, angular: 0 },
       Controllable: { playerId: 'p1', speed: PLAYER_DEF.moveSpeed }, // net applyCommands 写 Velocity（WASD/摇杆）
       Tag: { flags: PLAYER },
-      Shape: { kind: 'circle', radius: PLAYER_DEF.radius },
+      // 碰撞层：玩家只和 接触伤害区/敌弹/障碍 配对——**不和敌 body 配对**（穿过敌群·割草手感）·不和自己子弹/宝石配对。
+      Shape: { kind: 'circle', radius: PLAYER_DEF.radius, category: CL.PLAYER, mask: CL.TOUCH | CL.EBOLT | CL.OBSTACLE },
       Sprite: { textureKey: PLAYER_DEF.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 3 }, // 皮肤槽
       Color: { tint: TINT.player, alpha: 1 },
       Resource: { id: 'hp', current: PLAYER_DEF.maxHp, min: 0, max: PLAYER_DEF.maxHp },
@@ -403,14 +431,14 @@ export function buildBlueprint(): WorldBlueprint {
     },
     'player-core': { // 呼吸核（render-only）
       Hierarchy: child('player'), Transform: { ...XF0 },
-      Shape: { kind: 'circle', radius: Math.round(PLAYER_DEF.radius * 0.5) },
+      Shape: { kind: 'circle', radius: Math.round(PLAYER_DEF.radius * 0.5), category: 0, mask: 0 }, // render-only·不配对
       Color: { tint: TINT.playerCore, alpha: 1 },
     },
     collector: { // 拾取环（承 xp·宝石命中它入经验）
       Hierarchy: child('player'), Transform: { ...XF0 },
       Visibility: { visible: false, active: true },
       Tag: { flags: COLLECTOR },
-      Shape: { kind: 'circle', radius: PLAYER_DEF.pickupRadius },
+      Shape: { kind: 'circle', radius: PLAYER_DEF.pickupRadius, category: CL.COLLECTOR, mask: CL.GEM }, // 只和宝石配对
       Color: { tint: 0xffffff, alpha: 0 },
       Resource: { id: 'xp', current: 0, min: 0, max: 99999 }, // 累积经验（阈值由 nextxp 动态门·非 max）
       // 磁力护符：拾取吸真空区 = base × totals.pickup（t2-stat-bind 投影·磁石层数越高真空越大）。
@@ -420,7 +448,7 @@ export function buildBlueprint(): WorldBlueprint {
       Hierarchy: child('player'), Transform: { ...XF0 },
       Visibility: { visible: false, active: true },
       Tag: { flags: KILLBOX },
-      Shape: { kind: 'circle', radius: PLAYER_DEF.pickupRadius },
+      Shape: { kind: 'circle', radius: PLAYER_DEF.pickupRadius, category: CL.KILLBOX, mask: CL.GEM }, // 只和宝石计分区配对
       Color: { tint: 0xffffff, alpha: 0 },
       Resource: { id: 'score', current: 0, min: 0, max: 999999 },
     },
@@ -459,6 +487,7 @@ export function buildBlueprint(): WorldBlueprint {
     },
 
     ...groundGridEntities(),
+    ...obstacleEntities(),
     ...draftPickEntities(),
     ...evoPickEntities(),
     ...modifierAxisEntities(),
@@ -474,7 +503,7 @@ export function buildBlueprint(): WorldBlueprint {
       motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
       boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
       cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
-      steeringCapability, launchCapability, selfRuleCapability, keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, animStateCapability,
+      steeringCapability, launchCapability, selfRuleCapability, collisionResolveCapability, keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, animStateCapability,
       modifierStackCapability, statBindCapability,
       prefabCapability, casterCapability, aggroCapability, flowCapability,
     ],

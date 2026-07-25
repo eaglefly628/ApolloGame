@@ -21,6 +21,14 @@ export const COLLECTOR = 1 << 3; // 拾取环（承 xp·跟随玩家的 child·�
 export const KILLBOX = 1 << 4;   // 计分环（承 score·单调累计击杀）
 export const GEM = 1 << 12;      // 宝石（magnet 吸附标记·pull-anchor tagMask·位 12 避开武器位 5-11）
 
+// ── 碰撞层（Shape.category/mask·独立于 Tag·REQ-OVERLAP-LAYER 已下沉）───────────────
+// overlap-detect 只在「互相 mask 命中」的层间配对（(catA&maskB)&&(catB&maskA)）→ ① 敌↔敌不配对=省 churn/perf
+// ② 玩家穿过敌群(不配对)但撞障碍(配对) ③ 飞行敌不含 OBSTACLE 位=穿墙。缺省不设=全配对(零回归)。
+export const CL = {
+  PLAYER: 1 << 0, ENEMY: 1 << 1, BULLET: 1 << 2, EBOLT: 1 << 3, TOUCH: 1 << 4,
+  GEM: 1 << 5, COLLECTOR: 1 << 6, KILLBOX: 1 << 7, OBSTACLE: 1 << 8,
+} as const;
+
 // ── 时间基准（引擎定步·HUD 计时/冷却/寿命一律用 tick）──────────────────────
 export const TPS = 60;                       // ticks / 秒
 export const MATCH_SECONDS = 900;            // 单局时长（15:00·活满即胜）
@@ -135,6 +143,7 @@ export interface EnemyDef {
   inTint: number;
   gem: string;      // 死亡掉落宝石类型（gem key）
   skin: string;
+  flying?: boolean; // 飞行敌（幽灵/龙）：碰撞不含 OBSTACLE 层→穿墙飘过；地面敌绕障碍。
   // 远程攻击（gdd §六 E7·可选）：周期朝玩家射弹（Timer+SelfRule spawn ebolt·Launch toward:PLAYER）。
   // 「打你但打不远」=stopRange 大保持中距 kiting + bolt 寿命限射程（projSpeed×life≈射程）→ 玩家又紧张又能走位躲。
   ranged?: { cd: number; dmg: number; projSpeed: number; life: number; radius: number };
@@ -146,7 +155,7 @@ export const SHAMBLER: EnemyDef = {
 // 难度分层（gdd §六·越晚出现越硬·让"一发打不死"成立）。runner=快脆·brute=慢肉（多发才死·血条看得见）。
 export const RUNNER: EnemyDef = {
   key: 'runner', name: '疾行者', hp: 42, speed: 1.9, radius: 9, contact: 0.3, stopRange: 15,
-  tint: 0xff9a1f, inTint: 0xffd6a0, gem: 'blue', skin: '103/enemy-runner',
+  tint: 0xff9a1f, inTint: 0xffd6a0, gem: 'blue', skin: '103/enemy-runner', flying: true,
 };
 export const BRUTE: EnemyDef = {
   key: 'brute', name: '胖子', hp: 220, speed: 0.62, radius: 18, contact: 0.9, stopRange: 26,
@@ -173,7 +182,7 @@ export const BRUISER: EnemyDef = {
 // Boss（周期出现的大首领·gdd §六）：巨血巨体·撞脸重伤 + 周期弹幕（远程威胁·让 Boss 战不是站桩）。
 export const BOSS: EnemyDef = {
   key: 'boss', name: '首领', hp: 3200, speed: 0.52, radius: 36, contact: 2.0, stopRange: 60,
-  tint: 0xff4d5e, inTint: 0xffd23f, gem: 'gold', skin: '103/enemy-boss',
+  tint: 0xff4d5e, inTint: 0xffd23f, gem: 'gold', skin: '103/enemy-boss', flying: true,
   ranged: { cd: 54, dmg: 18, projSpeed: 3.8, life: 140, radius: 16 },
 };
 // ── 时间缩放变体（难度=血量·VS「Curse/HP×Level」精髓·参照 vampire-survivors.wiki）──────
@@ -272,6 +281,19 @@ export const PASSIVE_BY_KEY: Record<string, PassiveDef> = Object.fromEntries(PAS
 // 开局爆一圈(instant horde) + 之后半径带上稳定流。**非 E3 波次 rate/cap director**（那需 Lead 签 S2·E3）——
 // 这里只是一张更长更密的授权期常量表，无运行时限速/同屏上限逻辑。
 // 开局包围圈（一次性·环绕玩家出生点·"开屏即被围"）。
+// ── 场地障碍物（少量·gdd §六 地形战术·owner「加几个简单阻挡」）──────────────────
+// 静态碰撞体（无 Velocity=collision-resolve 视为不可动·把动态体推出）。玩家/地面敌撞它绕行·飞行敌穿过。
+// 也是反 kiting 工具：开阔场无脑绕圈=无趣，障碍逼你走位/卡位/被逼墙角=真张力（owner「乐趣不在数量」）。
+export interface ObstacleDef { x: number; y: number; radius: number }
+export const OBSTACLES: ObstacleDef[] = [
+  { x: START.x + 280, y: START.y - 180, radius: 52 },
+  { x: START.x - 320, y: START.y + 140, radius: 60 },
+  { x: START.x + 120, y: START.y + 380, radius: 46 },
+  { x: START.x - 220, y: START.y - 360, radius: 54 },
+  { x: START.x + 460, y: START.y + 280, radius: 64 },
+  { x: START.x - 480, y: START.y - 140, radius: 48 },
+];
+
 export interface SpawnRow { at: number; x: number; y: number; key: string }
 export const SPAWNS: SpawnRow[] = (() => {
   const rows: SpawnRow[] = [];
