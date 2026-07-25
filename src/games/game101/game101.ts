@@ -79,21 +79,24 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     const cells: (CellView | null)[] = new Array(GAME.board.cols * GAME.board.rows).fill(null);
     cellEntity.fill(null);
     coveredCells.clear();
-    for (const g of GENERATORS) cells[g.cell] = { emoji: g.emoji, gen: g.id };
-    // 阻碍层覆盖格（挖掘解锁）：占格、盖住、不可拖；邻近二消由引擎 merge-proximity-clear 挖开。
+    const genByCell = new Map(GENERATORS.map((g) => [g.cell, g]));
+    // ① 阻碍层覆盖格**先**占格（挖掘解锁·初始关卡：开局只挖开小洞·大半盖住·生成器也可被盖住待挖）。
     for (const [bid] of w.query('Blocker')) {
       const bk = w.getComponent<Blocker>(bid, 'Blocker');
       const t = w.getComponent<Transform>(bid, 'Transform');
       if (!bk || !t || bk.layers <= 0) continue;
       const idx = cellIndexOf(t.x, t.y);
       if (idx >= 0 && !cells[idx]) {
-        // 沙下埋的奖励预览（对齐原图：特殊格锁着也显里面是 ⚡/💎/🎁）。物品 reveal 不预览（纯沙）。
-        const rv = bk.reveal;
+        // 沙下埋的预览（锁着也显里面是啥·勾引挖）：⚡能量/💎宝石/🎁宝箱；覆盖的生成器格显其 emoji 预览。
+        const rv = bk.reveal; const g = genByCell.get(idx);
         let coverReward: string | undefined;
-        if (rv?.kind === 'resource') coverReward = rv.resourceId === 'energy' ? `⚡${rv.amount ?? ''}` : rv.resourceId === 'stars' ? '💎' : rv.resourceId === 'coins' ? '🎁' : undefined;
+        if (g) coverReward = g.emoji; // 埋着的生成器·显其观感
+        else if (rv?.kind === 'resource') coverReward = rv.resourceId === 'energy' ? `⚡${rv.amount ?? ''}` : rv.resourceId === 'stars' ? '💎' : rv.resourceId === 'coins' ? '🎁' : undefined;
         cells[idx] = { emoji: '🔒', cover: bk.layers, coverReward }; coveredCells.add(idx);
       }
     }
+    // ② 生成器：只在**未被覆盖**的格摆出（挖开生成器格→下一帧自动现·四基础料渐解锁）。
+    for (const g of GENERATORS) if (!coveredCells.has(g.cell) && !cells[g.cell]) cells[g.cell] = { emoji: g.emoji, gen: g.id };
     const onBoard = new Set<string>(); // 板上现有的物品模板集（订单可交付判定）
     const cellTpl: (string | null)[] = new Array(cells.length).fill(null);
     for (const [eid] of w.query('PrefabOrigin')) {
@@ -242,7 +245,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     prevCover.clear(); for (const [c, l] of nowCover) prevCover.set(c, l);
     if (dug.length) {
       dissolving = dug;
-      const t = setTimeout(() => { dissolving = []; flyTimers.delete(t); paint(readState()); }, 600);
+      const t = setTimeout(() => { dissolving = []; flyTimers.delete(t); paint(readState()); }, 850);
       flyTimers.add(t);
     }
   }

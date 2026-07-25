@@ -143,9 +143,13 @@ function orders(s: S1State): N {
 function board(s: S1State): N {
   const cells: N[] = s.cells.map((cv, i) => {
     const kids: N[] = [];
-    // 沙/蛛网消融（juice·render-only）：刚被挖到的格叠一把尘土 Particles（程序化消融表现·美术就绪即换）。
+    // 沙/蛛网消融（juice·render-only·表现力要强·owner）：刚被挖到的格叠**双层**爆——纸屑碎块(沙块崩飞)+星光闪
+    // ·满屏尘土感（程序化·美术就绪即换）。绝对定位不占流。
     const dissolve: N[] = s.dissolveCells?.includes(i)
-      ? [{ type: 'Particles', id: `t-live-${i}-dis`, props: { kind: 'sparkle', count: 16, loop: false }, layout: { x: 0, y: 0, width: 130, height: 130, allowOverlap: true } } as N]
+      ? [
+          { type: 'Particles', id: `t-live-${i}-dis`, props: { kind: 'confetti', count: 34, loop: false }, layout: { x: -12, y: -12, width: 170, height: 170, allowOverlap: true } } as N,
+          { type: 'Particles', id: `t-live-${i}-dis2`, props: { kind: 'sparkle', count: 20, loop: false }, layout: { x: 0, y: 0, width: 150, height: 150, allowOverlap: true } } as N,
+        ]
       : [];
     // 阻碍层覆盖格（挖掘解锁·分阶段）：沙下埋物·层数越低越接近挖开。特殊格显奖励气泡（⚡/💎/🎁·对齐原图）。
     // 阶段：埋沙(高层·只沙+锁数) → 蛛网 🕸️(低层·快挖开) → 露出(层归零=普通物)。

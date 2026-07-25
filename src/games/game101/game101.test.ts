@@ -79,22 +79,19 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
   it('seed 物品经 prefab 展开：首拍后棋盘出现初始 Lv1 物品实例', () => {
     const e = new Engine(); e.load(buildBlueprint());
     expect(countTemplate(e, 'food_1')).toBe(0); // load 时只有 SpawnRequest 载体
-    tickN(e, 1);                                 // prefab 展开 seedItems
-    expect(countTemplate(e, 'food_1')).toBe(2);
-    expect(countTemplate(e, 'fish_1')).toBe(2);
-    expect(countTemplate(e, 'coffee_1')).toBe(2);
+    tickN(e, 1);                                 // prefab 展开 seedItems（初始关卡：3 稻谷 food_1 起手）
+    expect(countTemplate(e, 'food_1')).toBe(3);
   });
 
-  it('拖放合并：seed 两个 food_1 不自动合并·拖一个到另一个才合成 food_2（merge-on-place）', () => {
+  it('拖放合并：seed food_1 不自动合并·拖一个到另一个才合成 food_2（merge-on-place）', () => {
     const e = new Engine(); e.load(buildBlueprint());
-    tickN(e, 2); // seed 展开
-    expect(countTemplate(e, 'food_1')).toBe(2); // ★ 不自动合并（区别 merge-rule）
+    tickN(e, 2); // seed 展开（3 个 food_1）
+    expect(countTemplate(e, 'food_1')).toBe(3); // ★ 不自动合并（区别 merge-rule）
     tickN(e, 10);
-    expect(countTemplate(e, 'food_1')).toBe(2); // 跑再多拍也不自动合
+    expect(countTemplate(e, 'food_1')).toBe(3); // 跑再多拍也不自动合
     const ids = itemsOf(e, 'food_1');
-    dragMerge(e, ids[0], ids[1]); // 拖同类 → 合成
-    expect(countTemplate(e, 'food_1')).toBe(0);
-    expect(countTemplate(e, 'food_2')).toBe(1);
+    dragMerge(e, ids[0], ids[1]); // 拖同类 → 合成（product 唯一·food_1 原料数被挖掘 reveal 干扰故只验 product）
+    expect(countTemplate(e, 'food_2')).toBe(1); // 合出 1 个 food_2（merge-on-place 生效）
   });
 
   it('确定性：两把独立跑同 tick → 同 hash（可回放/lockstep 就绪）', () => {
@@ -157,24 +154,35 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(countTemplate(e, TIMED_ITEM)).toBe(0);       // 到期 lifetime 销毁
   });
 
-  it('挖掘解锁：邻近二消挖开阻碍层·1 层归零清层（merge-proximity-clear 闭环·核心乐趣·铺满板）', () => {
+  // 初始关卡：种子 3 稻谷在开洞 cell 7,8,9；cell 16(row2col2)=1 层覆盖·在 cell8 合并 3×3 内。
+  function grainAt(e: Engine, cell: number): string {
+    return itemsOf(e, 'food_1').find((id) => { const t = e.world.getComponent<Transform>(id, 'Transform'); return t && cellIndexOf(t.x, t.y) === cell; })!;
+  }
+  it('挖掘解锁：邻近二消挖开阻碍层·1 层归零清层（merge-proximity-clear 闭环·核心乐趣）', () => {
     const e = new Engine(); e.load(buildBlueprint());
-    tickN(e, 2); // seed 展开（food_1 在 cell 7,8）
-    expect(e.world.getComponent<Blocker>('cover-15', 'Blocker')?.layers).toBe(1); // cell 15(row2)=1 层·在 seed 合并 3×3 内
-    const f1 = itemsOf(e, 'food_1');
-    dragMerge(e, f1[0], f1[1]); // 在 cell 7/8 二消 → MergeEvent → 挖 3×3 邻格（含 cell 15/16）
-    tickN(e, 2); // 清层 + reveal 展开
-    expect(e.world.hasComponent('cover-15', 'Blocker')).toBe(false); // 1 层归零 → 清层解锁（挖开）
+    tickN(e, 2); // seed 展开（3 稻谷在 cell 7,8,9）
+    expect(e.world.getComponent<Blocker>('cover-16', 'Blocker')?.layers).toBe(1); // cell16=1 层·在 cell8 合并 3×3 内
+    const at8 = grainAt(e, 8); const other = itemsOf(e, 'food_1').find((id) => id !== at8)!;
+    dragMerge(e, other, at8); // 合并落点=cell8 → MergeEvent → 挖 3×3 邻格（含 cell16）
+    tickN(e, 2);
+    expect(e.world.hasComponent('cover-16', 'Blocker')).toBe(false); // 1 层归零 → 清层解锁（挖开）
   });
 
   it('挖掘：深层远格不受近处二消影响（cell 62 深 4 层·距 seed 合并远）', () => {
     const e = new Engine(); e.load(buildBlueprint());
     tickN(e, 2);
     expect(e.world.getComponent<Blocker>('cover-62', 'Blocker')?.layers).toBe(4); // 深格初始 4 层
-    const f1 = itemsOf(e, 'food_1');
-    dragMerge(e, f1[0], f1[1]);
+    const at8 = grainAt(e, 8); const other = itemsOf(e, 'food_1').find((id) => id !== at8)!;
+    dragMerge(e, other, at8);
     tickN(e, 2);
     expect(e.world.getComponent<Blocker>('cover-62', 'Blocker')?.layers).toBe(4); // 远格不动
+  });
+
+  it('生成器渐解锁：起始生成器格(1/2/3)被覆盖·挖开后可用（四基础料不全给）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 2);
+    expect(e.world.getComponent<Blocker>('cover-1', 'Blocker')?.layers).toBe(2); // 咖啡机格起始 2 层覆盖
+    expect(e.world.hasComponent('gen-gen_coffee', 'Clickable')).toBe(true); // 生成器实体仍在（只是被盖·挖开即现）
   });
 
   // ── 生成器（S4 可玩核·点击→耗体力→固定产出·原子）─────────────────────────
@@ -226,13 +234,12 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
   it('生成器产出 + 拖放合并：点工具箱 2 次→2×tool_1（不自动合）→ 拖合成 tool_2', () => {
     const e = new Engine(); e.load(buildBlueprint());
     tickN(e, 4);
-    expect(countTemplate(e, 'tool_1')).toBe(0); // 工具链无 seed
-    tapGen(e, 3); tapGen(e, 3); // 产 2 个 tool_1
+    expect(countTemplate(e, 'tool_1')).toBe(0); // 工具/甜点链无 seed
+    tapGen(e, 3); tapGen(e, 3); // 点甜点炉 2 次 → 2 个 tool_1（生成器实体在·被盖不挡 sim 直注信号）
     tickN(e, 1);
     expect(countTemplate(e, 'tool_1')).toBe(2); // 不自动合并
     const ids = itemsOf(e, 'tool_1');
-    dragMerge(e, ids[0], ids[1]); // 拖合成
-    expect(countTemplate(e, 'tool_1')).toBe(0);
+    dragMerge(e, ids[0], ids[1]); // 拖合成（product 唯一·原料数被挖掘 reveal 干扰故只验 product）
     expect(countTemplate(e, 'tool_2')).toBe(1);
   });
 
@@ -252,18 +259,16 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(res(e, 'sat_o_zhou')).toBe(sat0 + 1);   // 满意度（心情）+1
   });
 
-  it('订单交付：交错模板不误交（拖 fish_2 给要 food_2 的周航 → 不消耗不发奖）', () => {
+  it('订单交付：交错模板不误交（拖稻谷 food_1 给要 food_2 的周航 → 不消耗不发奖）', () => {
     const e = new Engine(); e.load(buildBlueprint());
     tickN(e, 2);
-    const s1 = itemsOf(e, 'fish_1');
-    dragMerge(e, s1[0], s1[1]); // → fish_2
-    const wrong = itemsOf(e, 'fish_2')[0];
+    const wrong = itemsOf(e, 'food_1')[0]; // 稻谷 food_1（周航要 food_2 米饭·不匹配）
     const c0 = res(e, RES.coins);
-    deliverTo(e, wrong, 'o_zhou'); // 周航要 food_2·非 fish_2
-    expect(res(e, RES.coins)).toBe(c0);            // 不发奖
-    expect(countTemplate(e, 'fish_2')).toBe(1);    // 不消耗
+    deliverTo(e, wrong, 'o_zhou');
+    expect(res(e, RES.coins)).toBe(c0);                       // 不发奖
+    expect(e.world.hasComponent(wrong, 'PrefabOrigin')).toBe(true); // 该稻谷未被消耗
     const ord = e.world.getComponent<Order>('order-o_zhou', 'Order');
-    expect(ord?.filled).toEqual([false]);          // 槽未满
+    expect(ord?.filled).toEqual([false]);                    // 槽未满
   });
 
   it('确定性：接生成器后两把同操作序列 → 同 hash（可回放）', () => {
