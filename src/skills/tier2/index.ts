@@ -56,6 +56,9 @@ export type { Hex } from './hex.js';
 // pathfind（REQ-寻路）：连续自由空间寻路——航点图 NavGraph(摆放数据) + 通用 A*(astar.ts) + 沿路跟随写 Velocity。
 // grid-move(六格离散) 的连续坐标对偶；动态避让复用 collision-resolve（正交）。
 export { pathfindCapability, nearestNode, buildAdjacency } from './pathfind.js';
+// path-follow（REQ-PATHFOLLOW）：固定航点轨道匀速跑——沿 waypoints 依次朝下个航点走，到 arriveRadius
+// 算到达→游标前进（loop 回到 0/否则停末点）→ 写 Velocity。与 steering 同链，不索敌/不绕障，巡逻/传送带/固定弹道通用。
+export { pathFollowCapability, pathFollowAt } from './path-follow.js';
 // gauge（REQ-F-029）：Resource 比例 → 条形 Shape 投影（实时血条/蓝条/读条；左锚从右端缩，渲染器零改动）。
 export { gaugeCapability } from './gauge.js';
 // text-binding（REQ-F-043）：Resource 数字 → Text 投影（HUD 金币/回合/等级；gauge 管条、本件管数字）。

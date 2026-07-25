@@ -30,8 +30,8 @@
 //        CmpOp ConditionExpr EventWhen Signal Effect CraftRecipe StringVar StringSet
 //        FlowAction FlowTransition FlowState GameFlow SelfAction SelfRule GroupCount
 //    ./components/combat.js    — 身份/关系/状态 + 战斗/AI/属性/生命周期
-//        Tag Status Relation Hitbox TimedEffect OverTime Perception Steering
-//        Mortal StatModifier Stats Launch
+//        Tag Status Relation Hitbox TimedEffect OverTime Perception Steering PathFollow
+//        Mortal StatModifier Stats Launch Orbit
 //    ./components/spawn.js     — 预制/生成/销毁/合成/施法
 //        PrefabTemplate PrefabOrigin PrefabLibrary SpawnOverrides SpawnRequest
 //        DestroyRequest MergeRule Caster

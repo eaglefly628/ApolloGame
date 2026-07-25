@@ -107,6 +107,19 @@ export interface Steering extends Component {
   };
 }
 
+// ── PathFollow ── 固定航点轨道匀速跑（REQ-PATHFOLLOW）。沿 waypoints 依次朝下个航点走，进 arriveRadius
+// 算到达→游标前进（loop=回到 0，否则停在末点）→ 写 Velocity（被 motion-apply 积分）。与 steering 同链
+// （先定速→motion-apply 积分），区别于它的是"固定轨道"而非"追/逃 Relation(target)"——巡逻/传送带/固定弹道路径通用。
+// 确定性：方向归一化用 IEEE sqrt/÷（Math.hypot 求距，同 Steering 类安全）。
+export interface PathFollow extends Component {
+  readonly type: 'PathFollow';
+  waypoints: { x: number; y: number }[]; // 轨道航点（≥1）
+  loop?: boolean; // 闭环（跑完回到航点0）；缺省 false=停在末点
+  speed: number; // 写入 Velocity 模长（单位/tick）
+  arriveRadius?: number; // 进入该半径算「到达」进下一航点；缺省 4
+  index?: number; // 当前目标航点游标（运行时状态·缺省 0·序列化进 snapshot）
+}
+
 // ── Orbit ── 圆周运动（REQ-SURVIVOR护盾绕转·VBUG-02）：绕 centerId（缺省世界原点）半径 radius 匀速环绕，
 // 每 tick 写自身 Transform.x/y。**确定性/lockstep 安全**：不用每 tick sin/cos——存单位方向 (dirX,dirY) 为 rotor
 // 状态，每 tick 用常量旋转步 (cosStep,sinStep) 做旋量乘 + sqrt 归一（防漂移）。四个 trig 常量为**数据**（作者

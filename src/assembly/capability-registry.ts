@@ -51,6 +51,7 @@ import {
   modifierStackCapability,
   behaviorTreeCapability,
   orbitMotionCapability,
+  pathFollowCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability, blockGridCapability, handPatternCapability } from '@skills/tier3/index.js';
 
@@ -124,6 +125,9 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   // t2-orbit-motion（REQ-SURVIVOR护盾绕转·VBUG-02）：圆周运动——绕 centerId/原点匀速环绕、写 Transform。
   // 运行时零 sin/cos（rotor 状态 + 常量步 + sqrt 归一·确定性 lockstep 安全）；护盾/卫星/环刃/环绕镜头通用。
   orbitMotionCapability,
+  // t2-path-follow（REQ-PATHFOLLOW）：固定航点轨道匀速跑——沿 waypoints 依次朝下个航点走、到 arriveRadius
+  // 算到达进下一航点（loop/停末点）、写 Velocity。与 steering/launch 同链，不索敌不绕障，巡逻/传送带/固定弹道通用。
+  pathFollowCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,
