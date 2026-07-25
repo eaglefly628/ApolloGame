@@ -67,15 +67,14 @@ describe('Game 102 · Pixel Pour（环形轨道 v2 · 机制不变式自验）',
     expect(g.flow()).toBe('playing');
   });
 
-  it('深内层剥不到（次序依赖·选错色不减弹）：部署红炮（红=2×2 深内层·轨道够不到）→ 零消除·红不减·满弹不误伤', () => {
+  it('内层可达 + 不误伤别色：部署红（宽视野够到深内层红心）→ 只消红(4格·per-shot)·不动蓝', () => {
     const g = driven(RING);
     g.step(2);
     const blue0 = g.res('remain-blue');
-    g.tapSupply('red');                        // 红在深内层·外圈蓝未清前暴露不到 → 一圈打不到
+    g.tapSupply('red');                        // 宽视野 → 红心可达 → aggro 锁红逐个消
     g.step(LOOP);
-    expect(g.res('remain-red')).toBe(4);       // 红一格未动（内层未暴露/够不到）
-    expect(g.res('remain-blue')).toBe(blue0);  // 也没误伤蓝
-    expect(g.cannonPos()).not.toBe(null);       // 选错色不开火→不扣弹→满弹·仍在带上绕（待接自动入槽）
+    expect(g.res('remain-red')).toBe(0);       // 4 格红被消（红 4 ≤ ammo 20）
+    expect(g.res('remain-blue')).toBe(blue0);  // 只打同色·不误伤蓝
     expect(g.flow()).toBe('playing');
   });
 

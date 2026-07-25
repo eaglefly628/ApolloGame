@@ -46,7 +46,11 @@ function boardBounds(level: Level): { cell: number; ox: number; oy: number; grid
   return { cell, ox, oy, gridW, gridH };
 }
 const trackMargin = (cell: number): number => Math.round(cell * 0.85); // 轨道离棋盘外沿≈一格（炮贴外层格开火）
-const sightFor = (cell: number): number => Math.round(cell * 1.7);      // 视野=只够到直邻外层格（1.35格）·不及次层（2.35格）
+// 视野够到整板（填充像素画内层格也可达·aggro 取最近同色→近处优先·近似外→内）。⚠ 严格「只打暴露格」需暴露判定能力（见 requests REQ-EXPOSURE）。
+function sightFor(level: Level): number {
+  const { gridW, gridH } = boardBounds(level);
+  return Math.round(Math.hypot(gridW, gridH));
+}
 function trackWaypoints(level: Level): { x: number; y: number }[] {
   const { cell, ox, oy, gridW, gridH } = boardBounds(level);
   const m = trackMargin(cell);
@@ -137,6 +141,21 @@ function decor(level: Level): Record<string, EntityBlueprint> {
   return out;
 }
 
+// 可见轨道（灰色圆角跑道·照参考图）——**画在色炮真实绕行的矩形上**（boardBounds+trackMargin·非 PICTURE 窗口）。
+// 外框灰轨 + 内挖暗槽 = 跑道观感；色炮 PathFollow 正好沿此环跑（解「炮不在轨道上」）。
+function trackDecor(level: Level): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  const { cell, ox, oy, gridW, gridH } = boardBounds(level);
+  const m = trackMargin(cell);
+  const cx = ox + gridW / 2, cy = oy + gridH / 2;
+  const rw = 26; // 轨宽
+  const outerW = gridW + m * 2 + rw, outerH = gridH + m * 2 + rw;
+  out['track-bed'] = { Transform: XF(cx, cy), Shape: box(outerW, outerH), Color: col(0x5a6072, 1) };       // 灰轨底
+  out['track-groove'] = { Transform: XF(cx, cy), Shape: box(outerW - rw, outerH - rw), Color: col(0x3a3f4d, 1) }; // 内暗槽（跑道）
+  out['track-inner'] = { Transform: XF(cx, cy), Shape: box(gridW + 8, gridH + 8), Color: col(PICTURE.bg, 1) };    // 画面底衬（盖回中心·露轨环）
+  return out;
+}
+
 // group-count 计数器（机读态·对齐验收剧本 remain.*/conveyor.count/tray.count）：
 //   remain.<color>=在板同色格 · remain.total=全盘格 · conveyor.count=带上炮 · tray.count=槽中炮。
 function counters(level: Level): Record<string, EntityBlueprint> {
@@ -215,7 +234,8 @@ const CG = { bodyW: 52, bodyH: 60, numSize: 26 } as const;
 const hkid = (parentRef: string, lx: number, ly: number): Record<string, unknown> =>
   ({ parentId: parentRef, localX: lx, localY: ly, localRotation: 0, localScaleX: 1, localScaleY: 1 });
 // 炮台贴图 key（每色一张·打蛋器 recolor·美术就绪盖过 box 底·未就绪回退 box）。
-const cannonSprite = (name: string): Record<string, unknown> => ({ textureKey: `cannon/${name}`, anchorX: 0.5, anchorY: 0.5, zOrder: 5 });
+// zOrder:0 —— 与面上弹数(Text·zOrder 0)同层·数字模板序在炮身后 → 稳定排序下数字盖在贴图上（不被贴图遮住）。
+const cannonSprite = (name: string): Record<string, unknown> => ({ textureKey: `cannon/${name}`, anchorX: 0.5, anchorY: 0.5, zOrder: 0 });
 // 面上动态弹数（子件·挂 parentRef 下·盖在贴图脸上）。bindAmmo=true → 数字随宿主 ammo 实时（text-binding fromParent）。
 // 打蛋器竖柱由贴图自带（不再画矢量竖柱·避免与贴图重影）。
 function eggBeaterParts(parentRef: string, _tint: number, ammo: number, bindAmmo: boolean): Record<string, EntityBlueprint> {
@@ -247,7 +267,7 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
         Color: col(pc.tint, 1),
         Tag: { flags: CANNON_BIT | BELT_BIT },
         Resource: { id: 'ammo', current: level.ammo, min: 0, max: level.ammo }, // per-shot：每命中一发才 -1（子弹扣发射源）
-        Perception: { targetTag: pc.bit, sightRadius: sightFor(boardBounds(level).cell) }, // 有限视野=只打直邻外层同色（逐格顺序）
+        Perception: { targetTag: pc.bit, sightRadius: sightFor(level) }, // 视野够到板内同色（填充画内层格也可达·近处优先）
         Relation: { kind: 'target', targetId: '' },
         // 从弹簧口出发沿轨道绕行（loop·传送带持续绕）。同 queueId='belt' 成员按 path 进度**有序不重叠**（minGap≈一格·拥堵=排队）。
         PathFollow: pathFollowAt(trackWaypoints(level), FIRE.moveSpeed, { loop: true, arriveRadius: FIRE.moveSpeed + 2, queueId: 'belt', minGap: Math.round(boardBounds(level).cell * 1.4) }),
@@ -380,6 +400,7 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
     ...prefabs(level),
     // render 顺序（后画覆盖先画）：装饰底衬 → 补给/后备 → 棋盘格 → 门标。
     ...decor(level),
+    ...trackDecor(level),
     ...deployQueue(level),
     ...boardCells(level),
     'door-marker': doorMarker,
