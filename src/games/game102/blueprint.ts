@@ -168,7 +168,7 @@ function colorCounts(level: Level): Record<string, number> {
 }
 // 待发弹库 = **递进队列**（core-gameplay §2）：由像素图逐色格数守恒配炮（每色 ceil(格数/ammo) 门·打蛋器图标+弹数）。
 // 每门**独立可点部署**（唯一 deploy_i 信号·点→Caster 生成上带色炮 + Effect 自毁本槽=消费）。非无限分发器。
-const POOL = { top: 1052, rowH: 66, perRow: 6, marginX: 46 } as const;
+const POOL = { top: 1058, rowH: 84, perRow: 6, marginX: 52 } as const;
 function deployQueue(level: Level): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   const counts = colorCounts(level);
