@@ -76,4 +76,67 @@ describe('overlap-detect system', () => {
     world.tick();
     expect(overlaps(world)).toHaveLength(0);
   });
+
+  // ── REQ-OVERLAP-LAYER：碰撞分层（category/mask 位掩码宽相位过滤） ──
+  describe('collision layer filter (category/mask)', () => {
+    const ENEMY = 1 << 0;
+    const PLAYER = 1 << 1;
+
+    it('filters out enemy-enemy overlap when mask only wants player layer', () => {
+      place(world, 'e1', 0, 0, { ...box(32, 32), category: ENEMY, mask: PLAYER });
+      place(world, 'e2', 20, 0, { ...box(32, 32), category: ENEMY, mask: PLAYER });
+      world.tick();
+      expect(overlaps(world)).toHaveLength(0);
+    });
+
+    it('keeps enemy-player overlap when both sides accept each other layer', () => {
+      place(world, 'e1', 0, 0, { ...box(32, 32), category: ENEMY, mask: PLAYER });
+      place(world, 'p1', 20, 0, { ...box(32, 32), category: PLAYER, mask: ENEMY });
+      world.tick();
+      expect(overlaps(world)).toHaveLength(1);
+    });
+
+    it('requires bidirectional agreement: one-way mask match still filters', () => {
+      // e1 想碰 PLAYER 层，但 e2（本身是 ENEMY 层、mask 只想碰 ENEMY）不想被 e1 碰到。
+      place(world, 'e1', 0, 0, { ...box(32, 32), category: ENEMY, mask: PLAYER | ENEMY });
+      place(world, 'e2', 20, 0, { ...box(32, 32), category: ENEMY, mask: ENEMY });
+      // e1.mask 含 ENEMY 且 e2.category=ENEMY → catB & maskA != 0；
+      // 但 e1.category=ENEMY、e2.mask=ENEMY 也含 ENEMY → 双向都满足，应该碰上（用于反证下面单向案例）。
+      world.tick();
+      expect(overlaps(world)).toHaveLength(1);
+
+      world.destroyEntity('e1');
+      world.destroyEntity('e2');
+      // 真正单向案例：e1 想碰 PLAYER 层（不想碰 ENEMY），e2 是 ENEMY 层 → catB(ENEMY) & maskA(PLAYER) = 0 → 过滤。
+      place(world, 'f1', 0, 0, { ...box(32, 32), category: ENEMY, mask: PLAYER });
+      place(world, 'f2', 20, 0, { ...box(32, 32), category: ENEMY, mask: PLAYER | ENEMY });
+      world.tick();
+      expect(overlaps(world)).toHaveLength(0);
+    });
+
+    it('zero-regression: no category/mask set on either side still overlaps as before', () => {
+      place(world, 'a', 0, 0, box(32, 32));
+      place(world, 'b', 20, 0, box(32, 32));
+      world.tick();
+      expect(overlaps(world)).toHaveLength(1);
+    });
+
+    it('is deterministic: same layout ticked twice yields identical snapshot', () => {
+      place(world, 'e1', 0, 0, { ...box(32, 32), category: ENEMY, mask: PLAYER });
+      place(world, 'p1', 20, 0, { ...box(32, 32), category: PLAYER, mask: ENEMY });
+      place(world, 'e2', 100, 0, { ...box(32, 32), category: ENEMY, mask: PLAYER });
+      world.tick();
+      const first = overlaps(world);
+
+      const world2 = new World();
+      world2.addSystem(system);
+      place(world2, 'e1', 0, 0, { ...box(32, 32), category: ENEMY, mask: PLAYER });
+      place(world2, 'p1', 20, 0, { ...box(32, 32), category: PLAYER, mask: ENEMY });
+      place(world2, 'e2', 100, 0, { ...box(32, 32), category: ENEMY, mask: PLAYER });
+      world2.tick();
+      const second = overlaps(world2);
+
+      expect(second).toEqual(first);
+    });
+  });
 });

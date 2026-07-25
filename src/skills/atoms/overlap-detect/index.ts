@@ -63,6 +63,16 @@ export const overlapDetectCapability = defineCapability({
           const as = world.getComponent<Shape>(aId, 'Shape')!;
           const bt = world.getComponent<Transform>(bId, 'Transform')!;
           const bs = world.getComponent<Shape>(bId, 'Shape')!;
+
+          // 碰撞分层过滤（REQ-OVERLAP-LAYER）：插在宽相位候选对之后、窄相位/建实体之前——
+          // 被滤掉的对既不做精确接触测试也不建 Overlap 实体（省 churn）。缺省 category/mask = 全 1
+          // （`?? ~0`），两边都不设 → 与旧行为逐字节一致。标准 Box2D 双向语义：双方都愿碰对方所在层才算。
+          const catA = as.category ?? ~0;
+          const maskA = as.mask ?? ~0;
+          const catB = bs.category ?? ~0;
+          const maskB = bs.mask ?? ~0;
+          if ((catA & maskB) === 0 || (catB & maskA) === 0) continue;
+
           const hit = contactBetween(at, as, bt, bs);
           if (!hit) continue;
           const oid = `overlap:${aId}:${bId}`;

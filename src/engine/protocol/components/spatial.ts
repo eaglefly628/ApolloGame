@@ -43,6 +43,10 @@ export interface Shape extends Component {
   radius?: number;
   // polygon: 局部空间凸多边形顶点，扁平存 [x0,y0,x1,y1,...]（不含旋转，旋转留待刚体阶段）。
   vertices?: number[];
+  // ── REQ-OVERLAP-LAYER：碰撞分层宽相位过滤（Box2D 双向语义位掩码）。缺省 = 全 1（属于/愿碰所有层），
+  // 两边都不设 → 与旧行为逐字节一致（零回归）。语义见 overlap-detect 的过滤实现。
+  category?: number; // 本碰撞体所属层位掩码
+  mask?: number; // 本碰撞体愿与哪些层碰的位掩码
 }
 
 // ── bounds-clamp ── 实体允许活动的世界矩形（含边界）。bounds-clamp 据此把 AABB 钳进去。

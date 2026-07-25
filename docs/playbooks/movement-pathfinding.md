@@ -17,6 +17,7 @@
 | 传送带队列：有序不重叠占位 + 递进（不超车） | `t2-path-follow` | 同上 + `queueId,minGap?`（REQ-CONVEYOR-CAP M1）：同 `queueId` 按 path 进度排序，每个非排头成员夹在「前一名进度 − minGap」；容量 full 旗标/空槽分配/死锁**不建新能力**，组合 `group-count`+`event-when(level 双向)`+`effect-apply`（空槽用既有 `t2-tray`），见 `conveyor-queue-compose.test.ts` |
 | 定向抛射（火球/弹幕） | `t2-launch` | 飞弹 prefab 挂 `Launch{speed,toward}`+`Velocity`+`Hitbox`+`Timer(life)` |
 | 摩擦减速 / 不越界 | `t2-friction` / `t2-bounds-clamp` | 挂 `Bounds`+`Shape` 限界；friction 靠 Overlap 法线 |
+| 碰撞分层（跳过不该碰的组合，如 enemy-enemy） | `d1-overlap-detect` | `Shape.category/mask` 位掩码（Box2D 双向语义：`(catA&maskB)&&(catB&maskA)` 才碰）；缺省=全 1，两边不设=零回归 |
 | 导航网格烘焙 | `d2-navmesh-bake`（原子） | 静态几何烘焙成可走网格供寻路消费 |
 
 ## ② 样例指针
