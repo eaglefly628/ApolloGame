@@ -20,6 +20,7 @@ export interface S1State {
   energy: number; coins: number; gems: number; level: number;
   cells: (CellView | null)[]; orders: OrderView[];
   burstCell?: number; // 合成迸发格（juice·render-only·该格叠一次性星光爆）
+  dragGhost?: { emoji: string; x: number; y: number }; // 拖拽中跟手飞影（Screen 坐标·render-only）
 }
 
 type N = LayoutNode;
@@ -156,10 +157,12 @@ function board(s: S1State): N {
       type: 'Particles', id: `t-live-${i}-burst`, props: { kind: 'stars', count: 14, loop: false },
       layout: { x: 0, y: 0, width: 120, height: 120, allowOverlap: true },
     } as N);
+    const isItem = !!cv && !cv.gen; // 可拖物品格
     return {
       type: 'Panel', id: `t-live-${i}`,
       props: cv?.gen ? { bg: { custom: GEN_BG }, action: `tap_${cv.gen}` } : { bg: { custom: CELL_BG } },
-      layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 16, height: 168 },
+      // 手感：物品格 tilt3d 悬停立体抬起（手扶上去有反馈）；生成器格 press3d 按压下沉（点有反馈）。基座闭集·非自由 CSS。
+      layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 16, height: 168, ...(isItem ? { tilt3d: true } : cv?.gen ? { press3d: true } : {}) },
       children: kids,
     } as N;
   });
@@ -176,10 +179,19 @@ function board(s: S1State): N {
   };
 }
 
+// 拖拽跟手飞影（render-only）：一个绝对定位大 emoji 跟随指针（放大+半透=拿在手上的空中态）。
+function dragGhost(s: S1State): N[] {
+  if (!s.dragGhost) return [];
+  return [{
+    type: 'Label', id: 'drag-ghost', props: { text: s.dragGhost.emoji, size: 96 },
+    layout: { x: s.dragGhost.x - 48, y: s.dragGhost.y - 48, allowOverlap: true, opacity: 0.9 },
+  } as N];
+}
+
 export function buildS1Live(s: S1State): LayoutNode {
   return {
     type: 'Screen', id: 's1', props: {},
     layout: { direction: 'column', gap: 8, padding: 12, width: 1080, height: 1920 },
-    children: [hud(s), orders(s), board(s)],
+    children: [hud(s), orders(s), board(s), ...dragGhost(s)],
   };
 }

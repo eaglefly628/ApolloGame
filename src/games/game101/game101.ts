@@ -30,6 +30,11 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     sceneBackground: GAME101_THEME.pageBg,
     wrapperBackground: '#2a1c12',
   });
+  // 拖拽手感·宿主容器设定：禁文字多选高亮（游戏里拖拽不该像选文字）+ 禁触摸滚动/长按菜单（拖拽独占手势）。
+  scene.style.userSelect = 'none';
+  (scene.style as CSSStyleDeclaration & { webkitUserSelect?: string }).webkitUserSelect = 'none';
+  scene.style.touchAction = 'none';
+  (scene.style as CSSStyleDeclaration & { webkitTouchCallout?: string }).webkitTouchCallout = 'none';
 
   const input = new QueuedInputSource('101');
   const engine = new Engine({ input });
@@ -142,14 +147,37 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     }
     return -1;
   };
+  // 拖拽跟手飞影：指针视口坐标 → Screen(1080×1920) 坐标（scene 被 CSS 缩放·按 rect 反算）。
+  const sceneToScreen = (cx: number, cy: number): { x: number; y: number } => {
+    const r = scene.getBoundingClientRect();
+    return { x: (cx - r.left) * (SCREEN_W / r.width), y: (cy - r.top) * (SCREEN_H / r.height) };
+  };
+  const emojiAt = (idx: number): string => {
+    const eid = cellEntity[idx];
+    if (!eid) return '❓';
+    const po = engine.world.getComponent<PrefabOrigin>(eid, 'PrefabOrigin');
+    return po ? (ITEM_EMOJI[po.templateId] ?? '❓') : '❓';
+  };
   let dragFrom = -1;
+  let dragGhost: { emoji: string; x: number; y: number } | null = null; // 跟手飞影态（render-only）
+  let ghostRaf = 0; // rAF 节流句柄（拖动每帧至多重绘一次）
   const onDown = (ev: PointerEvent): void => {
     const idx = cellIdxFromEl(ev.target as Element);
-    if (idx >= 0 && !GEN_CELLS.has(idx) && cellEntity[idx]) dragFrom = idx; // 只拖物品格（非生成器/空格）
+    if (idx >= 0 && !GEN_CELLS.has(idx) && cellEntity[idx]) {
+      dragFrom = idx; // 只拖物品格（非生成器/空格）
+      dragGhost = { emoji: emojiAt(idx), ...sceneToScreen(ev.clientX, ev.clientY) }; // 拿起=飞影跟手
+      paint(readState());
+    }
+  };
+  const onMove = (ev: PointerEvent): void => {
+    if (dragFrom < 0 || !dragGhost) return;
+    dragGhost = { emoji: dragGhost.emoji, ...sceneToScreen(ev.clientX, ev.clientY) };
+    if (!ghostRaf) ghostRaf = requestAnimationFrame(() => { ghostRaf = 0; paint(readState()); }); // 每帧至多一次重绘
   };
   const onUp = (ev: PointerEvent): void => {
     if (dragFrom < 0) return;
     const from = cellEntity[dragFrom]; const fromIdx = dragFrom; dragFrom = -1;
+    if (dragGhost) { dragGhost = null; if (ghostRaf) { cancelAnimationFrame(ghostRaf); ghostRaf = 0; } paint(readState()); } // 落下=收飞影
     if (!from) return;
     const dropEl = document.elementFromPoint(ev.clientX, ev.clientY);
     // ① 落在顾客卡 → 交付意图（DeliverDrop）：引擎 order-fulfill 裁模板匹配→销毁实例+置满槽+集齐发奖。
@@ -176,6 +204,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     engine.world.addComponent(cid, { type: 'MergeDrop', from, ...(to ? { to } : {}), x: p.x, y: p.y } as MergeDrop);
   };
   scene.addEventListener('pointerdown', onDown);
+  scene.addEventListener('pointermove', onMove);
   scene.addEventListener('pointerup', onUp);
 
   // 导航信号占位（真弹层=后续 slice）；生成器 tap_<id> **不放 handler** → 走 ActionSink 入队 → sim。
@@ -194,7 +223,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   const flyTimers = new Set<ReturnType<typeof setTimeout>>();
   const paint = (st: S1State): void => {
     const orders = activeFly ? st.orders.map((o, i) => (i === activeFly!.idx ? { ...o, fly: { id: activeFly!.id, label: activeFly!.label } } : o)) : st.orders;
-    ui.update(buildS1Live({ ...st, orders, burstCell: activeBurst >= 0 ? activeBurst : undefined }), GAME101_THEME);
+    ui.update(buildS1Live({ ...st, orders, burstCell: activeBurst >= 0 ? activeBurst : undefined, dragGhost: dragGhost ?? undefined }), GAME101_THEME);
   };
   // 合成迸发：该格叠一次性星光爆，700ms 后清（纯表现层）。
   function fireBurst(cell: number): void {
@@ -234,7 +263,9 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     for (const t of flyTimers) clearTimeout(t);
     flyTimers.clear();
     engine.stop();
+    if (ghostRaf) cancelAnimationFrame(ghostRaf);
     scene.removeEventListener('pointerdown', onDown);
+    scene.removeEventListener('pointermove', onMove);
     scene.removeEventListener('pointerup', onUp);
     ui();
     teardown();
