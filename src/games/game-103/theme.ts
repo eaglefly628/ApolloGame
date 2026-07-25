@@ -39,7 +39,7 @@ export const PLAYER_DEF = {
   maxHp: 100,
   moveSpeed: 3,          // px/tick（≈180/s·gdd 200/s 起点·灰盒略调）
   radius: 13,
-  pickupRadius: 80,      // 拾取环半径（gdd pickupRadius 80）
+  pickupRadius: 130,     // 拾取环半径（调大·kiting 走位也能吸到宝石·磁石被动再叠·修「跑动时经验拾不到→不升级」）
   skin: '103/player',
 } as const;
 
@@ -65,6 +65,7 @@ export interface WeaponDef {
   projSpeed: number; // 子弹初速 px/tick（nova/orbit 忽略）
   life: number;      // 子弹寿命 tick
   radius: number;    // 判定半径（nova/orbit=范围半径）
+  pierce?: boolean;  // 直线类是否穿透（true=不 consumeOnHit·per-tick 扫一线敌·起始武器清群用）
   amount: number;    // orbit 光球数 / pet 数 / 多重发（默认 1）
   weight: number;    // draft 加权（0=不进 draft 池·进化体/起始武器）
   maxLevel: number;
@@ -75,7 +76,7 @@ export interface WeaponDef {
   evo?: { to: string; req: string };
 }
 export const WEAPONS: WeaponDef[] = [
-  { key: 'kunai', name: '飞镖 Kunai', desc: '直线飞镖·自动索敌（起始武器）', pattern: 'straight', dmg: 12, cd: 60, projSpeed: 8, life: 90, radius: 5, amount: 1, weight: 0, maxLevel: 5, tint: 0xffffff, skin: '103/proj-kunai' },
+  { key: 'kunai', name: '飞镖 Kunai', desc: '直线飞镖·穿透索敌（起始武器·mow 一线）', pattern: 'straight', dmg: 7, cd: 34, projSpeed: 9, life: 90, radius: 7, amount: 1, weight: 0, maxLevel: 5, tint: 0xffffff, skin: '103/proj-kunai', pierce: true },
   { key: 'shock', name: '冲击波', desc: '近身范围爆·震开贴身敌群（AoE）', pattern: 'nova', dmg: 8, cd: 90, projSpeed: 0, life: 8, radius: 120, amount: 1, weight: 8, maxLevel: 5, tint: 0x7fd0ff, skin: '103/proj-shock' },
   { key: 'laser', name: '激光', desc: '高速横扫直线·穿透一线敌（远程）', pattern: 'beam', dmg: 6, cd: 110, projSpeed: 16, life: 26, radius: 8, amount: 1, weight: 7, maxLevel: 5, tint: 0xff5a4a, skin: '103/proj-laser' },
   { key: 'boom', name: '回旋镖', desc: '飞出穿透一线敌（远程·回旋段待 capgap）', pattern: 'boomerang', dmg: 5, cd: 96, projSpeed: 7, life: 120, radius: 7, amount: 1, weight: 7, maxLevel: 5, tint: 0xffd23f, skin: '103/proj-boom' },
@@ -169,18 +170,18 @@ export const EBOLT_SKIN = '103/enemy-bolt'; // 敌弹皮肤槽
 // ── 宝石定义（gdd §七·蓝=1·绿=3 经验·肉敌掉更多）─────────────────────────
 export interface GemDef { key: string; value: number; radius: number; tint: number; skin: string }
 // 三档经验宝石·大小随价值递增（v3 修「掉的经验都一样大小」）：蓝(小)→绿(中)→金(大)。
-export const GEM_BLUE: GemDef = { key: 'blue', value: 1, radius: 6, tint: TINT.gemBlue, skin: '103/gem-blue' };
-export const GEM_GREEN: GemDef = { key: 'green', value: 5, radius: 10, tint: 0x7dff4d, skin: '103/gem-green' };
-export const GEM_GOLD: GemDef = { key: 'gold', value: 25, radius: 15, tint: 0xffd23f, skin: '103/gem-gold' };
+export const GEM_BLUE: GemDef = { key: 'blue', value: 2, radius: 6, tint: TINT.gemBlue, skin: '103/gem-blue' };
+export const GEM_GREEN: GemDef = { key: 'green', value: 8, radius: 10, tint: 0x7dff4d, skin: '103/gem-green' };
+export const GEM_GOLD: GemDef = { key: 'gold', value: 30, radius: 15, tint: 0xffd23f, skin: '103/gem-gold' };
 export const GEMS: GemDef[] = [GEM_BLUE, GEM_GREEN, GEM_GOLD];
 export const GEM_LIFE = 1800; // 未拾取宝石寿命 tick（30s）
 
 // ── 升级三选一 + 真经验曲线（v3 修·阈值随级递增·EventWhen vsResource 动态阈值）────
 // 经验(xp)≥当前阈值(nextxp)→ 等级 +1 + xp 归零 + nextxp += XP_STEP（曲线爬升）→ 时停三选一 draft。
 // expToNext(level) ≈ XP_BASE + level×XP_STEP（前期快·后期慢·雪球但不速通到顶就没事干）。
-export const LEVEL_XP = 5;        // 兼容旧引用（=XP_BASE）
-export const XP_BASE = 5;         // 首级阈值
-export const XP_STEP = 4;         // 每级阈值增量（Lv1→5, Lv2→9, Lv3→13…）
+export const LEVEL_XP = 6;        // 兼容旧引用（=XP_BASE）
+export const XP_BASE = 6;         // 首级阈值
+export const XP_STEP = 6;         // 每级阈值增量（Lv1→6, Lv2→12, Lv3→18…真曲线·非扁平速升）
 
 // 被动册（gdd §五·modifier 类·选中即数值加成）。
 //  power=全局伤害系数+（Effect 直改 power 资源）/ heal=即时回血（Effect 改 hp）/
@@ -255,11 +256,12 @@ export interface SpawnerTier { key: string; count: number; period: number; after
 export const SPAWNER_RING = 360; // spawner 环半径（玩家周围·视口外缘）
 export const SPAWN_CAP = 72;     // 同屏敌上限（v3 调高·出更多敌人·2D 批绘真解仍待 P3D）
 export const SPAWNER_TIERS: SpawnerTier[] = [
-  { key: 'shambler', count: 6, period: 78, afterSec: 0 },  // 常驻弱敌流
-  { key: 'runner', count: 3, period: 132, afterSec: 25 },  // 25s 后疾行者加入
-  { key: 'brute', count: 2, period: 240, afterSec: 55 },   // 55s 后胖子加入（肉·escalation）
-  { key: 'archer', count: 2, period: 210, afterSec: 40 },  // 40s 后远程射手加入（打破纯被追·中距威胁·E7）
-  { key: 'boss', count: 1, period: 60 * 90, afterSec: 90 },// 90s 起每 ~90s 一个首领（周期 Boss·无限局节点）
+  { key: 'shambler', count: 8, period: 54, afterSec: 0 },  // 常驻弱敌流（调密·更像 horde·清群靠穿透 kunai）
+  { key: 'shambler', count: 6, period: 48, afterSec: 60 }, // 60s 后再叠一条蹒跚流（难度递增·同屏更挤）
+  { key: 'runner', count: 4, period: 96, afterSec: 20 },   // 20s 后疾行者加入（更早·更多）
+  { key: 'brute', count: 2, period: 180, afterSec: 45 },   // 45s 后胖子加入（肉·escalation·更早）
+  { key: 'archer', count: 3, period: 168, afterSec: 35 },  // 35s 后远程射手加入（中距威胁·E7·更早更多）
+  { key: 'boss', count: 1, period: 60 * 75, afterSec: 75 },// 75s 起每 ~75s 一个首领（周期 Boss·无限局节点）
 ];
 
 // ── 皮肤槽 key（美术就绪即换装·未就绪回退 Shape 色块·art-pipeline 红线）────────

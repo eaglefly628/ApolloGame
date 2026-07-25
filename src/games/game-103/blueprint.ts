@@ -68,7 +68,7 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
       Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // per-tick·扫全范围
     } } };
   }
-  const single = w.pattern === 'straight' || w.pattern === 'pet'; // 单发命中 vs 穿透 per-tick
+  const single = (w.pattern === 'straight' || w.pattern === 'pet') && !w.pierce; // 单发命中 vs 穿透 per-tick（pierce=强制穿透扫线）
   const p: Record<string, unknown> = { ...base,
     Velocity: { vx: 0, vy: 0, angular: 0 },
     // fallbackDir（Lead 交付·REQ-SURVIVOR被动轴同批）：索敌落空不再冻原地→朝上默认发射（修 owner「没敌人时子弹不动」）。
@@ -320,7 +320,7 @@ function openingBurstEntities(): Record<string, EntityBlueprint> {
 function ringSpawnerEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   let idx = 0;
-  for (const tier of SPAWNER_TIERS) {
+  SPAWNER_TIERS.forEach((tier, ti) => {
     for (let i = 0; i < tier.count; i++) {
       const a = (Math.PI * 2 * i) / tier.count + idx * 0.7;
       // whenGlobal 全局门（AND）：① 同屏敌 < cap（GroupCount 计数·满则暂停=无限但有界·防爆炸）② 时间门（难度递增）。
@@ -332,7 +332,7 @@ function ringSpawnerEntities(): Record<string, EntityBlueprint> {
         once: true, armed: false,
         whenGlobal: gates.length === 1 ? gates[0] : { kind: 'and', of: gates },
       };
-      out[`spawner-${tier.key}-${i}`] = {
+      out[`spawner-${ti}-${tier.key}-${i}`] = { // ti=层序（同 key 多层不撞 id）
         Hierarchy: { parentId: 'player', localX: Math.round(Math.cos(a) * SPAWNER_RING), localY: Math.round(Math.sin(a) * SPAWNER_RING), localRotation: 0, localScaleX: 1, localScaleY: 1 },
         Transform: { ...XF0 },
         Timer: { id: 'spawn', elapsed: Math.floor((tier.period * i) / Math.max(1, tier.count)), duration: tier.period, loop: true }, // 错峰起始=不同时刻齐刷
@@ -340,7 +340,7 @@ function ringSpawnerEntities(): Record<string, EntityBlueprint> {
       };
       idx++;
     }
-  }
+  });
   return out;
 }
 
