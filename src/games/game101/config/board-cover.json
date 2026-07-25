@@ -49,75 +49,11 @@
    }
   },
   {
-   "cell": 10,
-   "layers": 1,
-   "reveal": {
-    "kind": "item",
-    "item": "fries_1"
-   }
-  },
-  {
-   "cell": 11,
-   "layers": 1,
-   "reveal": {
-    "kind": "item",
-    "item": "tool_1"
-   }
-  },
-  {
-   "cell": 12,
-   "layers": 1,
-   "reveal": {
-    "kind": "energy",
-    "amount": 25
-   }
-  },
-  {
-   "cell": 13,
-   "layers": 1,
-   "reveal": {
-    "kind": "chest",
-    "amount": 150
-   }
-  },
-  {
    "cell": 16,
    "layers": 1,
    "reveal": {
     "kind": "item",
     "item": "food_1"
-   }
-  },
-  {
-   "cell": 17,
-   "layers": 1,
-   "reveal": {
-    "kind": "item",
-    "item": "fries_1"
-   }
-  },
-  {
-   "cell": 18,
-   "layers": 1,
-   "reveal": {
-    "kind": "item",
-    "item": "tool_1"
-   }
-  },
-  {
-   "cell": 19,
-   "layers": 1,
-   "reveal": {
-    "kind": "energy",
-    "amount": 20
-   }
-  },
-  {
-   "cell": 20,
-   "layers": 1,
-   "reveal": {
-    "kind": "item",
-    "item": "fish_1"
    }
   },
   {

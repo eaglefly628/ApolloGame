@@ -34,10 +34,10 @@
 > - **✅ 多 slot 显示（2026-07-24）**：现有闭集（`Panel(row)+N 子 slot`）表达·orders.json needItems 数组驱动（1–3 槽）·`order-fulfill` 交付逐槽置满·真渲染目击。
 > - **✅ 异型限时菜单卡（2026-07-25·PUI 交 `Panel.shape` 后接）**：PUI `REQ-UI-异型容器` 已交（commit fff62209·Panel.shape 8 款 ShapeToken 复用 Button clip-path）→ 限时特惠订单卡（苏晴）升级 `shape:'cut'`（八边切角·内容安全不裁 slot/奖励·区别 hexagon/diamond 重裁）+ 金框 edge:'gold' + ⏱ 倒计时。clip-path polygon 目击在案·ui-audit 0 阻断。**不再手写 clip-path·用基座闭集。**（本条完结·下次清理迁归档）
 
-### REQ-101-06 · 生成器接线撞墙·待引擎加权 spawn · 2026-07-24 · 提出人 PE-101 → 指派 主程/Lead（引擎池 REQ-TAPSPAWN） · status: open（阻塞·非全库阻断） · 优先级: P1 · 类型: 实现阻塞
-> M1 生成器（G1）按 Lead §6「组合」接线时**撞墙**（子代理源码复核确认）：扣费半场 `clickable`+`craft-recipe` 可组合，但**加权运行时 spawn 无引擎原语**（`caster`/`self-rule` 固定 template·`effect-apply` 不能 spawn·`draft-offer` 未接世界 `RandomSeed`/未接线）。
-> 已按 §6「撞墙→回报下沉 tap-cost-spawn」报**引擎池** `docs/workflow/requests.md REQ-TAPSPAWN`。**`generators.json` 已备数据·待该能力落地即接线**（clickable+craft-recipe 扣费 + 新 weighted-spawn 产出）。其余 M1 面（合并/资源/体力/S1）不受阻·已绿（8/8 测试）。
-> **不违规**：不在游戏层手写加权/裸 Math.random（manifesto 红线）——故按流程报引擎缺口，不硬接。
+### REQ-101-06 · 生成器接线撞墙·待引擎加权 spawn · 2026-07-24 · 提出人 PE-101 → 指派 主程/Lead（引擎池 REQ-TAPSPAWN） · status: **✅ done（2026-07-25·weighted-spawn 已落地并接线）** · 优先级: P1 · 类型: 实现阻塞
+> **✅ 解除阻塞并接线（2026-07-25）**：引擎 `t2-weighted-spawn` 已落地（Lead 裁 REQ-TAPSPAWN），生成器接线完成——`Clickable`(点)+`CraftRecipe`(全局体力 afford 闸门·按 id 扣全局 energy)+`EventWhen`(旗→do_spawn)+`WeightedSpawn{onSignal:do_spawn, table:dropTable}`(按权重抽产出·换掉原 caster 固定产表首项)。+ 世界 `RandomSeed` 单例（确定性/回放·禁裸 Math.random）。
+> **注（报 Lead·非阻断）**：weighted-spawn 自带的 `cost` 读的是**实体自身 Resource**（每实体预算模型）·不匹配 game101 全局体力池 → 故体力仍走 craft-recipe（全局 id 扣），weighted-spawn 只设 table 不设 cost。若 Lead 想让 cost 支持全局 id 口径（同 craft-recipe），可后续加 scope；当前组合已正确工作。
+> **验收**：23 测试绿（含加权分布测试·多点跨掉落表≥2 档=真加权非恒首项 + 确定性 hash）；浏览器目击（点米仓→稻谷落开放工作格→合出米饭🍚→顾客槽变绿可交付·体力逐点扣）。**同提交连带修**初始关卡开放工作格（原 6 开放格全占满→生成器产物无处落=没法玩·今开出 8 空工作格 10-13/17-20·核心循环闭环）。
 
 ### REQ-101-08 · 挖掘式区域解锁（阻碍层·二消清邻·核心乐趣）· 2026-07-25 · 提出人 owner→GD-101 → 指派 **主程/Lead（引擎能力 G6）+ PE（游戏数据/接线）** · status: **✅ 实现已交·待 Lead 复核**（引擎能力 `t2-merge-proximity-clear` + 游戏数据接线·PE-101 按 owner「game101 核心循环端到端建」标准建·同 merge-on-place/order-fulfill 口径） · 优先级: P1 · 类型: 机制（引擎下沉 + 游戏数据）
 > **✅ 实现（2026-07-25·PE-101·标记 Lead 复核）**：

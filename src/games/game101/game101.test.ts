@@ -1,14 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { validateLayoutNode } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop, DeliverDrop, Order, Timer, Blocker } from '@engine/protocol/components.js';
+import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop, DeliverDrop, Order, Timer, Blocker, SpawnRequest } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1, buildS1Live } from './s1.js';
-import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, generatorOutput, cellCenter, cellIndexOf, TIMED_ITEM, TIMED_SEC, TICKS_PER_SEC, BUBBLES } from './theme.js';
+import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, cellCenter, cellIndexOf, TIMED_ITEM, TIMED_SEC, TICKS_PER_SEC, BUBBLES } from './theme.js';
 
 // ── headless 助手 ─────────────────────────────────────────────────────────────
 function res(e: Engine, id: string): number { return e.world.getComponent<Resource>(id, 'Resource')?.current ?? 0; }
 function tickN(e: Engine, n: number): void { for (let i = 0; i < n; i++) e.world.tick(); }
+// 某生成器掉落表内所有物件的板上总数（加权产出=表内任一·故按表求和验「产了一个」）。
+function dropCount(e: Engine, g: { dropTable: { item: string }[] }): number {
+  return g.dropTable.reduce((s, d) => s + countTemplate(e, d.item), 0);
+}
 function countTemplate(e: Engine, templateId: string): number {
   let n = 0;
   for (const [id] of e.world.query('PrefabOrigin')) {
@@ -185,31 +189,45 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(e.world.hasComponent('gen-gen_coffee', 'Clickable')).toBe(true); // 生成器实体仍在（只是被盖·挖开即现）
   });
 
-  // ── 生成器（S4 可玩核·点击→耗体力→固定产出·原子）─────────────────────────
-  it('生成器点击：耗 1 体力 + 产出该生成器的固定 L1 物品（原子·非加权）', () => {
+  // ── 生成器（S4 可玩核·点击→耗全局体力→weighted-spawn 加权抽产出）─────────────
+  it('生成器点击：耗 1 体力（全局 craft-recipe）+ weighted-spawn 产出掉落表内一个物件', () => {
     const e = new Engine(); e.load(buildBlueprint());
-    const g = GENERATORS[0]; // 冰箱 cell 0 → food_1
-    const out = generatorOutput(g);
+    const g = GENERATORS[0]; // 米仓 cell 0 → food 链掉落表
     tickN(e, 4); // 先让 seed 展开+合并稳定
     const e0 = res(e, RES.energy);
-    const c0 = countTemplate(e, out);
+    const c0 = dropCount(e, g);
     tapGen(e, g.cell);
-    expect(res(e, RES.energy)).toBe(e0 - g.energyCost); // 扣体力
-    expect(countTemplate(e, out)).toBe(c0 + 1);          // 产出一个固定 L1
+    expect(res(e, RES.energy)).toBe(e0 - g.energyCost); // 扣全局体力
+    expect(dropCount(e, g)).toBe(c0 + 1);               // 掉落表内恰多一个（具体哪档由加权抽定）
+  });
+
+  it('生成器加权：多次点米仓 → 产出跨掉落表多档（证真加权·非恒吐首项）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    const g = GENERATORS[0]; // food_1 w60 / food_2 w30 / food_3 w10
+    tickN(e, 4);
+    e.world.getComponent<Resource>('energy', 'Resource')!.current = 100; // 备足体力多点
+    const base = g.dropTable.map((d) => countTemplate(e, d.item));
+    for (let i = 0; i < 24; i++) tapGen(e, g.cell); // 固定种子=确定性序列
+    const now = g.dropTable.map((d) => countTemplate(e, d.item));
+    const gained = now.map((v, i) => v - base[i]);
+    expect(gained.reduce((a, b) => a + b, 0)).toBe(24);       // 每点恰产一个
+    expect(gained.filter((x) => x > 0).length).toBeGreaterThan(1); // ≥2 档命中=真加权（非恒首项）
   });
 
   it('产出可见性（bug 修复）：生成器产出落在自己格 → 移动意图挪到空格（否则盖生成器下=点了没反应）', () => {
     const e = new Engine(); e.load(buildBlueprint());
     tickN(e, 4);
-    const g = GENERATORS[0]; // 冰箱 cell 0 → food_1
-    const c0 = countTemplate(e, 'food_1');
+    const g = GENERATORS[0]; // 米仓 cell 0
+    const c0 = dropCount(e, g);
     tapGen(e, g.cell);
-    const fresh = itemsOf(e, 'food_1').find((id) => {
+    // 加权产出=掉落表内任一 → 按落点（生成器格）而非模板找刚产的实例。
+    const fresh = e.world.query('PrefabOrigin').map(([id]) => id).find((id) => {
+      const po = e.world.getComponent<PrefabOrigin>(id, 'PrefabOrigin');
       const t = e.world.getComponent<Transform>(id, 'Transform');
-      return t && cellIndexOf(t.x, t.y) === g.cell; // 根因：caster at:self 落生成器自己格
+      return po && g.dropTable.some((d) => d.item === po.templateId) && t && cellIndexOf(t.x, t.y) === g.cell;
     });
-    expect(countTemplate(e, 'food_1')).toBe(c0 + 1);
-    expect(fresh).toBeTruthy(); // 确认产出确实落在生成器格（被盖住不可见）
+    expect(dropCount(e, g)).toBe(c0 + 1);
+    expect(fresh).toBeTruthy(); // 确认产出确实落在生成器格（weighted-spawn at 自身位·被盖住不可见）
     // 宿主修复机制：注入移动意图（MergeDrop 无 to）→ merge-on-place 挪到空格 20 → 可见可拖。
     const free = cellCenter(20);
     e.world.createEntity('reloc');
@@ -224,22 +242,25 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     tickN(e, 4);
     e.world.getComponent<Resource>('energy', 'Resource')!.current = 0;
     const g = GENERATORS[0];
-    const out = generatorOutput(g);
-    const c0 = countTemplate(e, out);
+    const c0 = dropCount(e, g);
     tapGen(e, g.cell);
-    expect(res(e, RES.energy)).toBe(0);          // 不扣
-    expect(countTemplate(e, out)).toBe(c0);      // 不产
+    expect(res(e, RES.energy)).toBe(0);      // 不扣
+    expect(dropCount(e, g)).toBe(c0);        // craft-recipe afford 挡在前 → 无信号进 weighted-spawn → 不产
   });
 
-  it('生成器产出 + 拖放合并：点工具箱 2 次→2×tool_1（不自动合）→ 拖合成 tool_2', () => {
+  it('生成器产链可拖合：注入 2×tool_1（甜点链）→ 拖合成 tool_2', () => {
     const e = new Engine(); e.load(buildBlueprint());
     tickN(e, 4);
     expect(countTemplate(e, 'tool_1')).toBe(0); // 工具/甜点链无 seed
-    tapGen(e, 3); tapGen(e, 3); // 点甜点炉 2 次 → 2 个 tool_1（生成器实体在·被盖不挡 sim 直注信号）
+    // 直接注入两个 tool_1（避开生成器加权 RNG 耦合·合成机制独立验）：SpawnRequest 载体·prefab 首拍展开自回收。
+    for (let k = 0; k < 2; k++) {
+      const c = cellCenter(30 + k); e.world.createEntity(`inj-tool-${k}`);
+      e.world.addComponent(`inj-tool-${k}`, { type: 'SpawnRequest', templateId: 'tool_1', x: c.x, y: c.y } as SpawnRequest);
+    }
     tickN(e, 1);
     expect(countTemplate(e, 'tool_1')).toBe(2); // 不自动合并
     const ids = itemsOf(e, 'tool_1');
-    dragMerge(e, ids[0], ids[1]); // 拖合成（product 唯一·原料数被挖掘 reveal 干扰故只验 product）
+    dragMerge(e, ids[0], ids[1]); // 拖合成
     expect(countTemplate(e, 'tool_2')).toBe(1);
   });
 

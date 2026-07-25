@@ -26,11 +26,12 @@ import { lifetimeCapability } from '@skills/tier1/index.js';
 import {
   overTimeCapability, clickableCapability, craftRecipeCapability,
   effectApplyCapability, eventWhenCapability, keybindCapability, mergeOnPlaceCapability, orderFulfillCapability, mergeProximityClearCapability,
+  weightedSpawnCapability,
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
   GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, TIMED_ITEM, MENU_TIMER_SEC, TICKS_PER_SEC,
-  BOARD_COVER, coverReveal, BUBBLES, BUBBLE_TAG, generatorOutput,
+  BOARD_COVER, coverReveal, BUBBLES, BUBBLE_TAG,
   cellCenter, mergeRules, itemTemplates, timedTemplates, CELL, GEN_TAG, GEN_TINT,
 } from './theme.js';
 
@@ -77,7 +78,6 @@ function generatorEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   for (const g of GENERATORS) {
     const p = cellCenter(g.cell);
-    const out1 = generatorOutput(g);
     const tapSig = `tap_${g.id}`;
     const spawnFlag = `spawn_${g.id}`;
     const doSig = `do_spawn_${g.id}`;
@@ -89,8 +89,12 @@ function generatorEntities(): Record<string, EntityBlueprint> {
       Sprite: { textureKey: g.sprite, anchorX: 0.5, anchorY: 0.5, zOrder: 2 }, // 皮肤槽·gen 皮就绪即换装
       Color: { tint: GEN_TINT, alpha: 1 },
       Clickable: { action: tapSig },
+      // 分工：craft-recipe 管**全局体力**闸门（按 id 扣全局 energy 实体·afford 原子），weighted-spawn 管
+      // **加权抽产出**（REQ-101-06 解锁·换掉原 caster 的固定产表首项 → 真按 dropTable 权重随机）。
+      // 注：weighted-spawn 自带的 cost 读的是「实体自身 Resource」（每实体预算模型）·不匹配 game101 全局体力
+      //     → 故体力仍走 craft-recipe（全局 id 扣），weighted-spawn 只吃产出、不设 cost。
       CraftRecipe: { onSignal: tapSig, costs: [{ id: RES.energy, amount: g.energyCost }], grantsFlag: spawnFlag },
-      Caster: { onSignal: doSig, template: out1, at: 'self' },
+      WeightedSpawn: { onSignal: doSig, table: g.dropTable.map((d) => ({ templateId: d.item, weight: d.w })) },
     };
     out[`ew-${g.id}`] = { EventWhen: { signal: doSig, when: { kind: 'flag', id: spawnFlag }, mode: 'edge', armed: false } };
     out[`fx-reset-${g.id}`] = { Effect: { onSignal: doSig, kind: 'set-flag', targetId: spawnFlag, value: false } };
@@ -199,6 +203,8 @@ export function buildBlueprint(): WorldBlueprint {
     library: { PrefabLibrary: { seq: 0, templates: { ...itemTemplates(), ...timedTemplates() } } },
     // 限时鲜货 seed（物件级倒计时·到期 lifetime 自毁）：摆一个在板上第三行空位。
     'seed-timed': { SpawnRequest: { templateId: TIMED_ITEM, ...cellCenter(GAME.board.cols * 2) } },
+    // 世界随机种子单例（weighted-spawn 生成器加权抽的唯一随机源·确定性/回放安全·禁游戏层裸 Math.random）。
+    'random-seed': { RandomSeed: { seed: 0x1a2b3c4d, sequence: 0 } },
     ...boardCellEntities(),
     ...mergeRuleEntities(),
     ...orderEntities(),
@@ -213,7 +219,7 @@ export function buildBlueprint(): WorldBlueprint {
       transformCapability, tagCapability, shapeCapability, colorCapability,
       spriteCapability, resourceCapability, destroyCapability, flagCapability, timerCapability, lifetimeCapability,
       overTimeCapability, clickableCapability, craftRecipeCapability, effectApplyCapability, eventWhenCapability, keybindCapability,
-      mergeOnPlaceCapability, orderFulfillCapability, mergeProximityClearCapability, prefabCapability, casterCapability,
+      mergeOnPlaceCapability, orderFulfillCapability, mergeProximityClearCapability, weightedSpawnCapability, prefabCapability, casterCapability,
     ],
     entities,
   };
