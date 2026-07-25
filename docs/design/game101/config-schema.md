@@ -207,6 +207,23 @@
 }
 ```
 
+## 10. 挖掘阻碍层 `board-cover.json`（→ `Blocker`{layers,reveal} + G6 `merge-proximity-clear`·systems-economy §5.5）
+
+```json
+{
+  "coverSprite": "cover_sand",
+  "decPerMerge": 1,
+  "radius": 1,
+  "cells": [
+    { "cell": 3,  "layers": 2, "reveal": { "kind": "item",   "item": "coffee_1" } },
+    { "cell": 5,  "layers": 3, "reveal": { "kind": "energy",  "amount": 20 } },
+    { "cell": 6,  "layers": 1, "reveal": { "kind": "chest",   "chest": "chest_small" } },
+    { "cell": 55, "layers": 4, "reveal": { "kind": "gem",     "amount": 1 } }
+  ]
+}
+```
+> owner 核心乐趣（IMG_6056）：覆盖格 `layers`>0 = 不可拖/不可落子；**二消**在某格发生 → 其 `radius`(=1→3×3) 邻格 `Blocker.layers` 各 −`decPerMerge`；归零 → 清层 + 按 `reveal.kind`（item→prefab / energy·gem→resource-apply / chest→开箱）露出内容。**合并→减邻格 = 引擎缺口 G6·下沉**（capability-plan §2.5）·游戏层只摆本表。
+
 ---
 
 *配套：`gdd.md`（策划案）、`capability-plan.md`（能力映射与缺口）、`ui-brief.md`（设计稿规格）。数值均为 M1 起点。*

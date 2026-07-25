@@ -92,11 +92,46 @@
 
 ---
 
-## 6. 唯一真缺口 → capability-plan §2.5 G5
+## 5.5 挖掘式区域解锁（阻碍层·二消清邻·**核心乐趣**）— owner 2026-07-25 追加·接受
+
+> owner 2026-07-25 交参考图（Gossip Harbor 实机·**IP·不入库**）+ 口径：**「每一格除了消除还有一个锁定/阻碍状态；当你二消时，周边 9 格（3×3）都产生把阻碍状态 −1 的效果；减到 0 再解锁露出格内的东西。这是核心乐趣之一。」**
+
+**机制（挖掘感）**：开局整板大半被**阻碍层**（沙层/脆饼纹·带 🔒）盖住、不可用；玩家在**可用区二消**（合并）→ 该合并格的 **3×3 邻格阻碍层各 −1** → 某格减到 0 → **清层解锁**，露出格内预置内容（L1 物 / 能量包 ⚡ / 宝箱 / 宝石 💎 / 特殊物）。可用空间随游玩**渐进挖开**——**每次合并身兼两职（爬链 + 挖板），空间即奖励**。这正是让心流"停不下来"的加成器：合并不只升级，还在开图。
+
+**与 §5 蛛网的区别（两种解锁·并存·非重复）**：
+- §5 蛛网/区域解封 = **目标导向**：交指定成品/花星 → 整片解封（章节引导）。
+- §5.5 挖掘阻碍层 = **过程涌现**：任意二消 → 周边 3×3 阻碍 −1 → 归零自解（每步都在挖·组织度奖励）。
+
+**数据（新 `board-cover.json`·纯数据）**：
+```json
+{
+  "coverSprite": "cover_sand",           // 阻碍层皮（沙/脆饼·美术槽·分层可用不同磨损帧）
+  "decPerMerge": 1,                      // 每次二消给 3×3 邻格阻碍 −1（可配）
+  "radius": 1,                           // 影响半径（1 = 3×3·数据可调）
+  "cells": [
+    { "cell": 3,  "layers": 2, "reveal": { "kind": "item",   "item": "coffee_1" } },
+    { "cell": 5,  "layers": 3, "reveal": { "kind": "energy",  "amount": 20 } },
+    { "cell": 6,  "layers": 1, "reveal": { "kind": "chest",   "chest": "chest_small" } },
+    { "cell": 55, "layers": 4, "reveal": { "kind": "gem",     "amount": 1 } }
+  ]
+}
+```
+- 每个覆盖格 = 带 `Blocker{layers, reveal}` 组件的实体（`layers`=剩余阻碍层数·`reveal`=归零露出物）。
+- 覆盖格**不可拖/不可落子**（同 §5「尊重锁 flag」）；`layers==0` → 清层 + 按 `reveal.kind` 产出（`item`→prefab 展开 / `energy`·`gem`→resource-apply / `chest`→开箱子流程）。
+
+**能力判断（架构评审·重要·别在游戏层手写扫格）**：
+- ✅ **可组合部分**：阻碍层 = `Blocker` 组件（数据）；覆盖格不可拖 = 同 §5「尊重锁 flag」；归零解锁 = `event-when`(layers==0) + `destroy`(清层) + `caster/prefab`(露物) / `resource-apply`(露能量/宝石)。
+- 🔴 **真缺口 = G6（需下沉·非游戏层）**：**「二消(`merge-on-place`)在 cell C 发生 → 对 C 的 3×3 网格邻格 `Blocker.layers` 各 −1」** 这步**空间邻格效应**。原语已备（`spatial-query.queryRange` 半径查询）、同型逻辑已证（`match3-board` 清格→`neighbors4`→减邻格 `blockers`·source line 527「格层减层」），但 **`merge-on-place` 无此挂钩**。**禁**在游戏层/宿主手写"扫 3×3 减邻格"solver（manifesto §3 红线·且宿主非确定性 sim）→ **下沉通用能力**（capability-plan §2.5 **G6**）。
+
+---
+
+## 6. 真缺口 → capability-plan §2.5 G5 / **G6**
 
 **G5 · 订单导演 order-director（棋盘态自适应发单·DDA-B）**：读棋盘存量 census + 规则权重 → 确定性选订单。倾向**下沉成通用能力**（可回放·可测）；未下沉前本期用 §4-A 情绪曲线数据模板替代。对抗性卡点延后。
 
-其余全部落在**已有能力 + 已列缺口**：多链掉率(w1-random)、生成器 charges/劣化(G4)、复制泡泡 TTL/gem/expiry(G3 扩)、蛛网格(G3 类·grid 尊重 flag)。**无需为 1/2/3/5 新增游戏层 system**。
+**G6 · 二消邻格清阻碍 merge-proximity-clear（§5.5·挖掘解锁·核心乐趣）**：merge-on-place 合并事件 → 对 3×3 网格邻格 `Blocker.layers` 各 −1，归零发解锁信号。`queryRange` 原语 + `match3-board` 同型逻辑已存在，倾向**下沉通用能力**（或作 merge-on-place 姊妹件）——游戏层只摆 `board-cover.json` 数据。**报 Lead 裁下沉。**
+
+其余全部落在**已有能力 + 已列缺口**：多链掉率(w1-random)、生成器 charges/劣化(G4)、复制泡泡 TTL/gem/expiry(G3 扩)、蛛网格(G3 类·grid 尊重 flag)。**无需为 1/2/3/5 新增游戏层 system**；G6 = 引擎域下沉（非游戏层 system）。
 
 ## 7. 范围 / 伦理口径（重要·owner 决策）
 
