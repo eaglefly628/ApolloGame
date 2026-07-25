@@ -22,6 +22,7 @@ export interface S1State {
   burstCell?: number; // 合成迸发格（juice·render-only·该格叠一次性星光爆）
   dragGhost?: { emoji: string; x: number; y: number }; // 拖拽中跟手飞影（Screen 坐标·render-only）
   liftedCell?: number; // 被拿起的源格（淡化=物已拿在手上·render-only）
+  dissolveCells?: number[]; // 刚被挖到的格（沙/蛛网消融·叠尘土 Particles·render-only）
 }
 
 type N = LayoutNode;
@@ -33,28 +34,30 @@ const COVER_BG = '#b8895a'; // 阻碍层沙色（覆盖格·挖掘解锁）
 
 // ── HUD 行（等级 / 体力+计时 / 金币 / 宝石 / 商店）────────────────────────────
 function hud(s: S1State): N {
+  // pill 竖向撑满 HUD 带（align:stretch）·大字·圆润胶囊——正式美术资源就绪时同样有位置撑表现。
   const pill = (id: string, glyph: string, val: string, color: 'gold' | 'jade' | 'text'): N => ({
     type: 'Panel', id, props: { bg: 'panel' },
-    layout: { direction: 'row', align: 'center', gap: 6, padding: 12, radius: 18 },
+    layout: { direction: 'row', align: 'center', justify: 'center', gap: 8, padding: 16, radius: 26 },
     children: [
-      { type: 'Label', id: `${id}-g`, props: { text: glyph, size: 'xl' } },
-      { type: 'Label', id: `${id}-v`, props: { text: val, color, bold: true, size: 'xl' } },
+      { type: 'Label', id: `${id}-g`, props: { text: glyph, size: 'xxl' } },
+      { type: 'Label', id: `${id}-v`, props: { text: val, color, bold: true, size: 'xxl' } },
     ],
   });
   return {
+    // HUD 状态栏=一条明显的高带（对齐原图比例·拉长）：所有件 align:'stretch' 等高撑满，读得清、留美术位。
     type: 'Panel', id: 'hud', props: { bare: true },
-    layout: { direction: 'row', align: 'center', justify: 'between', gap: 8, padding: 12 },
+    layout: { direction: 'row', align: 'stretch', justify: 'between', gap: 10, padding: 12, height: 150 },
     children: [
       {
         type: 'Panel', id: 'hud-lvl', props: { bg: 'gold' },
-        layout: { align: 'center', justify: 'center', padding: 16, radius: 28 },
-        children: [{ type: 'Label', id: 'hud-lvl-l', props: { text: `Lv ${s.level}`, color: 'ink', bold: true, size: 'xxl' } }],
+        layout: { align: 'center', justify: 'center', padding: 20, radius: 30 },
+        children: [{ type: 'Label', id: 'hud-lvl-l', props: { text: `Lv ${s.level}`, color: 'ink', bold: true, size: 'xxxl' } }],
       },
       {
         type: 'Panel', id: 'hud-energy', props: { bg: 'panel' },
-        layout: { direction: 'row', align: 'center', gap: 8, padding: 12, radius: 18 },
+        layout: { direction: 'row', align: 'center', justify: 'center', gap: 10, padding: 16, radius: 26 },
         children: [
-          { type: 'Label', id: 'hud-e-g', props: { text: '⚡', size: 'xl' } },
+          { type: 'Label', id: 'hud-e-g', props: { text: '⚡', size: 'xxl' } },
           { type: 'ProgressBar', id: 'hud-e-bar', props: { value: Math.round(s.energy), max: ENERGY.cap, tone: 'warn', showValue: true } },
         ],
       },
@@ -143,6 +146,10 @@ function orders(s: S1State): N {
 function board(s: S1State): N {
   const cells: N[] = s.cells.map((cv, i) => {
     const kids: N[] = [];
+    // 沙/蛛网消融（juice·render-only）：刚被挖到的格叠一把尘土 Particles（程序化消融表现·美术就绪即换）。
+    const dissolve: N[] = s.dissolveCells?.includes(i)
+      ? [{ type: 'Particles', id: `t-live-${i}-dis`, props: { kind: 'sparkle', count: 16, loop: false }, layout: { x: 0, y: 0, width: 130, height: 130, allowOverlap: true } } as N]
+      : [];
     // 阻碍层覆盖格（挖掘解锁·分阶段）：沙下埋物·层数越低越接近挖开。特殊格显奖励气泡（⚡/💎/🎁·对齐原图）。
     // 阶段：埋沙(高层·只沙+锁数) → 蛛网 🕸️(低层·快挖开) → 露出(层归零=普通物)。
     if (cv?.cover != null) {
@@ -161,7 +168,7 @@ function board(s: S1State): N {
       return {
         type: 'Panel', id: `t-live-${i}`, props: { bg: { custom: COVER_BG } },
         layout: { direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 4, radius: 16, height: 128 },
-        children: ck,
+        children: [...ck, ...dissolve],
       } as N;
     }
     if (cv) {
@@ -175,6 +182,7 @@ function board(s: S1State): N {
       type: 'Particles', id: `t-live-${i}-burst`, props: { kind: 'stars', count: 14, loop: false },
       layout: { x: 0, y: 0, width: 120, height: 120, allowOverlap: true },
     } as N);
+    kids.push(...dissolve); // 消融尘土（覆盖格刚挖开变物品/空格也叠一把）
     const isItem = !!cv && !cv.gen; // 可拖物品格
     // 可交付物：绿框 + 循环发光脉冲 = 醒目「这个能交给顾客了」标识（区别普通物·基座 edge/anim·非自由 CSS）。
     const deliverable = isItem && cv?.deliverable;

@@ -223,14 +223,29 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   // 用基座 layout.flyTo（唯一飞行原语·非自造）。activeFly 短暂注入进 OrderView·播完清（setTimeout=纯表现层清理）。
   let activeFly: { idx: number; id: string; label: string } | null = null;
   let activeBurst = -1; // 合成迸发格（juice·render-only）
+  let dissolving: number[] = []; // 刚被挖到的格（沙/蛛网消融·render-only）
   let flySeq = 0;
   let pendingDeliverIdx = -1;
   let lastCoins = Math.round(readState().coins);
+  const prevCover = new Map<number, number>(); // cell → 上帧阻碍层数（挖到=层减/消失→消融）
   const flyTimers = new Set<ReturnType<typeof setTimeout>>();
   const paint = (st: S1State): void => {
     const orders = activeFly ? st.orders.map((o, i) => (i === activeFly!.idx ? { ...o, fly: { id: activeFly!.id, label: activeFly!.label }, celebrate: true } : o)) : st.orders;
-    ui.update(buildS1Live({ ...st, orders, burstCell: activeBurst >= 0 ? activeBurst : undefined, dragGhost: dragGhost ?? undefined, liftedCell: dragFrom >= 0 ? dragFrom : undefined }), GAME101_THEME);
+    ui.update(buildS1Live({ ...st, orders, burstCell: activeBurst >= 0 ? activeBurst : undefined, dragGhost: dragGhost ?? undefined, liftedCell: dragFrom >= 0 ? dragFrom : undefined, dissolveCells: dissolving.length ? dissolving : undefined }), GAME101_THEME);
   };
+  // 沙/蛛网消融：对比上帧阻碍层，被挖到的格（层减或清）叠尘土 Particles，600ms 后清。
+  function detectDissolve(st: S1State): void {
+    const dug: number[] = [];
+    const nowCover = new Map<number, number>();
+    st.cells.forEach((c, i) => { if (c?.cover != null) nowCover.set(i, c.cover); });
+    for (const [cell, prev] of prevCover) { const cur = nowCover.get(cell); if (cur === undefined || cur < prev) dug.push(cell); }
+    prevCover.clear(); for (const [c, l] of nowCover) prevCover.set(c, l);
+    if (dug.length) {
+      dissolving = dug;
+      const t = setTimeout(() => { dissolving = []; flyTimers.delete(t); paint(readState()); }, 600);
+      flyTimers.add(t);
+    }
+  }
   // 合成迸发：该格叠一次性星光爆，700ms 后清（纯表现层）。
   function fireBurst(cell: number): void {
     activeBurst = cell;
@@ -243,6 +258,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   const unsub = engine.subscribe(() => {
     relocateGenSpawns(); // 生成器产出弹进空格（不然盖在生成器下不可见=像点了没反应）
     const st = readState();
+    detectDissolve(st); // 沙/蛛网被挖到 → 消融尘土
     const coins = Math.round(st.coins);
     // 金币增加（仅交付发奖来源）+ 有待归位交付 → 触发飞行轨迹。
     if (coins > lastCoins && pendingDeliverIdx >= 0) {
