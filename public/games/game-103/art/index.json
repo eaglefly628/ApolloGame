@@ -34,7 +34,7 @@
    "type": "texture",
    "status": "filled",
    "path": "/games/game-103/art/enemy-shambler.svg",
-   "description": "敌人「蹒跚者」（丧尸/软泥群怪·俯视）· bright cartoon 红紫 glossy 软泥怪 + 两只怒眼",
+   "description": "敌人「蹒跚者」丧尸群怪(俯身侧影)· game-icons 蹒跚丧尸剪影·烘红 #ff4d5e + 深描边 + gloss",
    "spec": {
     "format": "svg",
     "usage": "sprite"
@@ -44,17 +44,18 @@
     "enemy",
     "shambler",
     "zombie",
-    "ooze",
-    "top-down",
-    "cartoon",
-    "glossy"
+    "silhouette",
+    "cartoon"
    ],
-   "license": "CC0",
-   "source": "apollo-procedural (scripts/game-103-art-gen.mjs · 自产矢量 · survivor-io-ui-kit bright cartoon glossy-disc 风格锚)",
+   "license": "CC-BY-3.0",
+   "source": "game-icons.net (Delapouite · delapouite/shambling-zombie) · vendored+recolored (bg 剥离·fill 烘入 theme 色·加 gloss 高光)",
    "provenance": {
-    "generator": "apollo-procedural",
-    "source": "scripts/game-103-art-gen.mjs",
-    "style": "survivor-io bright chunky cartoon (glossy disc · radial highlight + linear two-hue)",
+    "generator": "game-103-enemy-bake",
+    "source": "assets/gameicons/delapouite/shambling-zombie.svg",
+    "author": "Delapouite",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "origin": "https://game-icons.net",
+    "recolored": true,
     "mock": false
    }
   },
@@ -312,6 +313,182 @@
     "generator": "game-103-fx-pack",
     "source": "assets/FreeArtLib/effect/gold_sparkles_*.png",
     "packed": true,
+    "mock": false
+   }
+  },
+  {
+   "id": "103/enemy-runner",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/enemy-runner.svg",
+   "description": "敌人「疾行者」快速冲刺怪· game-icons 奔跑忍者剪影·烘橙 #ff9a1f + 深描边 + gloss",
+   "spec": {
+    "format": "svg",
+    "usage": "sprite"
+   },
+   "category": "sprite.enemy",
+   "tags": [
+    "enemy",
+    "runner",
+    "fast",
+    "silhouette",
+    "cartoon"
+   ],
+   "license": "CC-BY-3.0",
+   "source": "game-icons.net (DarkZaitzev · darkzaitzev/running-ninja) · vendored+recolored (bg 剥离·fill 烘入 theme 色·加 gloss 高光)",
+   "provenance": {
+    "generator": "game-103-enemy-bake",
+    "source": "assets/gameicons/darkzaitzev/running-ninja.svg",
+    "author": "DarkZaitzev",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "origin": "https://game-icons.net",
+    "recolored": true,
+    "mock": false
+   }
+  },
+  {
+   "id": "103/enemy-brute",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/enemy-brute.svg",
+   "description": "敌人「蛮兵」高血肉盾怪· game-icons 壮汉剪影·烘紫 #c9a3ff + 深描边 + gloss",
+   "spec": {
+    "format": "svg",
+    "usage": "sprite"
+   },
+   "category": "sprite.enemy",
+   "tags": [
+    "enemy",
+    "brute",
+    "tank",
+    "silhouette",
+    "cartoon"
+   ],
+   "license": "CC-BY-3.0",
+   "source": "game-icons.net (Delapouite · delapouite/brute) · vendored+recolored (bg 剥离·fill 烘入 theme 色·加 gloss 高光)",
+   "provenance": {
+    "generator": "game-103-enemy-bake",
+    "source": "assets/gameicons/delapouite/brute.svg",
+    "author": "Delapouite",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "origin": "https://game-icons.net",
+    "recolored": true,
+    "mock": false
+   }
+  },
+  {
+   "id": "103/enemy-archer",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/enemy-archer.svg",
+   "description": "敌人「射手」远程放弹怪· game-icons 弓箭手剪影·烘紫 #b07bff + 深描边 + gloss",
+   "spec": {
+    "format": "svg",
+    "usage": "sprite"
+   },
+   "category": "sprite.enemy",
+   "tags": [
+    "enemy",
+    "archer",
+    "ranged",
+    "silhouette",
+    "cartoon"
+   ],
+   "license": "CC-BY-3.0",
+   "source": "game-icons.net (Delapouite · delapouite/archer) · vendored+recolored (bg 剥离·fill 烘入 theme 色·加 gloss 高光)",
+   "provenance": {
+    "generator": "game-103-enemy-bake",
+    "source": "assets/gameicons/delapouite/archer.svg",
+    "author": "Delapouite",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "origin": "https://game-icons.net",
+    "recolored": true,
+    "mock": false
+   }
+  },
+  {
+   "id": "103/enemy-boss",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/enemy-boss.svg",
+   "description": "敌人「首领」大型 Boss· game-icons 九头蛇剪影·烘红 #ff4d5e + 金描边 #ffd23f + gloss(区别小怪)",
+   "spec": {
+    "format": "svg",
+    "usage": "sprite"
+   },
+   "category": "sprite.enemy",
+   "tags": [
+    "enemy",
+    "boss",
+    "elite",
+    "silhouette",
+    "cartoon"
+   ],
+   "license": "CC-BY-3.0",
+   "source": "game-icons.net (Lorc · lorc/hydra) · vendored+recolored (bg 剥离·fill 烘入 theme 色·加 gloss 高光)",
+   "provenance": {
+    "generator": "game-103-enemy-bake",
+    "source": "assets/gameicons/lorc/hydra.svg",
+    "author": "Lorc",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "origin": "https://game-icons.net",
+    "recolored": true,
+    "mock": false
+   }
+  },
+  {
+   "id": "103/gem-green",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/gem-green.svg",
+   "description": "经验宝珠·绿(中值)· glossy 发光圆珠 #7dff4d",
+   "spec": {
+    "format": "svg",
+    "usage": "sprite"
+   },
+   "category": "sprite.pickup",
+   "tags": [
+    "gem",
+    "orb",
+    "xp",
+    "pickup",
+    "green",
+    "glossy"
+   ],
+   "license": "CC0",
+   "source": "apollo-procedural (scripts/game-103-art-gen.mjs 同款 glossy-orb 风格·recolor)",
+   "provenance": {
+    "generator": "apollo-procedural",
+    "source": "game-103 gem-blue 同款 xp-orb glossy",
+    "style": "survivor-io bright cartoon xp-orb",
+    "mock": false
+   }
+  },
+  {
+   "id": "103/gem-gold",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/gem-gold.svg",
+   "description": "经验宝珠·金(高值)· glossy 发光圆珠 #ffd23f",
+   "spec": {
+    "format": "svg",
+    "usage": "sprite"
+   },
+   "category": "sprite.pickup",
+   "tags": [
+    "gem",
+    "orb",
+    "xp",
+    "pickup",
+    "gold",
+    "glossy"
+   ],
+   "license": "CC0",
+   "source": "apollo-procedural (scripts/game-103-art-gen.mjs 同款 glossy-orb 风格·recolor)",
+   "provenance": {
+    "generator": "apollo-procedural",
+    "source": "game-103 gem-blue 同款 xp-orb glossy",
+    "style": "survivor-io bright cartoon xp-orb",
     "mock": false
    }
   }
