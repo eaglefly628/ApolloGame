@@ -8,6 +8,13 @@
 
 ## 待处理 / 进行中
 
+### REQ-PATHEND-DROP-PathFollow 绕完一圈自动落件（belt→缓冲槽 handoff·CONVEYOR-CAP 收尾）· [2026-07-25] · PE-game102 报（接完整循环撞墙）→ Lead 裁 · status: **open** · 优先级: P1（game102 核心循环收尾·传送带/巡逻类通用） · 类型: 引擎能力薄缺口（主程域·先重组已证不可得）
+> **想实现的行为**：色炮沿传送带 `PathFollow{loop:false}` **绕完一圈到末点** → 若还带弹（ammo>0·选错色/够不到没打）→ **自动离带、落到 `t2-tray` 缓冲槽的空位**（成为待命炮·点击可复部署）；打光(ammo=0)的走 `Mortal→消失`。这两条一起 → 传送带/缓冲区**双 full → 死锁判负**（M2/M4 已可组合）。
+> **已试（PE 源码复核·已接 per-shot 扣弹 + queueId 有序带 + Mortal 打光消失·commit 56d7a564）**：belt→tray 的**转换本身**表达不了——① `effect-apply` 无「换 Tag 位/增删组件」kind（`set-flag/modify-resource/set-state/set-sensor/set-visible/destroy/destroy-tagged/reset-timer`），**无法把 BELT_BIT 成员变成 TRAY_BIT 成员**（tray 靠 requiredTag 含齐认成员）；② `PathFollow` **无「绕完/到末点」信号或条件**（`index` 到 `len-1` 停·但无 event/condition 可读）→ 无法在 lap-end 触发；③ **一实体一 Mortal**（已被 ammo≤0→消失占用）+ 一 Timer（reload 占用）→ 无第二退场槽；④ `Mortal.dropTemplate` 固定模板·不带 ammo（本作「带弹返回」恰是没开火=满弹·故 drop 满弹 tray_ 反而对·ammo 携带非阻塞）。
+> **卡在哪 / 缺什么**：缺「**PathFollow 绕完一圈→落一件 + 自毁**」的路径终点触发（=Mortal 的 path-完成版）。有它即可：belt 炮 loop:false 绕完 → 落 `tray_`(满弹·tray 自动落空槽) + 自毁离带；打光消失仍走 Mortal。两独立触发、无冲突。
+> **建议方案（Lead 裁·择一·都薄）· 边界**：① **`PathFollow` 加 `onEnd?:{dropTemplate?:string, destroy?:boolean}`**——loop:false 到末点时（同 Mortal 语义）发 SpawnRequest(dropTemplate@自身位) + 自毁（最贴本用例·最薄）；或 ② `effect-apply` 加 `set-tag{setMask,clearMask}` kind + `PathFollow` 加 `onEndSignal` → 组合换 Tag（更通用但两件）。**触碰范围**：`src/skills/tier2/path-follow.ts`(+组件字段) 或 `effect-apply.ts` + 测试；game102 只经数据消费（`cannon_*` 挂 onEnd:{dropTemplate:tray_<color>,destroy:true}）。撞墙实证＝`src/games/game102/blueprint.ts`（cannon body Mortal 打光消失已接·缺 lap-end→tray）+ `conveyor-queue-compose.test.ts`（M3 tray 落座证明·但未证 belt→tray 转换）。
+
+
 
 
 ### REQ-SCREENFILL-Screen 填满 mount-host 固定 scene 盒（去竖屏底部信箱空白） · [2026-07-25] · PE-101 报（owner「下面留这么大空」实测撞墙）→ PUI 裁 · status: **open** · 优先级: P2（所有 mountHost 竖屏游戏通用·非 game101 专属） · 类型: UI 基座缺口（PUI 域·`src/ui/components/render.ts`）
