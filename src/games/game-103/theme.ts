@@ -105,6 +105,9 @@ export interface EnemyDef {
   inTint: number;
   gem: string;      // 死亡掉落宝石类型（gem key）
   skin: string;
+  // 远程攻击（gdd §六 E7·可选）：周期朝玩家射弹（Timer+SelfRule spawn ebolt·Launch toward:PLAYER）。
+  // 「打你但打不远」=stopRange 大保持中距 kiting + bolt 寿命限射程（projSpeed×life≈射程）→ 玩家又紧张又能走位躲。
+  ranged?: { cd: number; dmg: number; projSpeed: number; life: number; radius: number };
 }
 export const SHAMBLER: EnemyDef = {
   key: 'shambler', name: '蹒跚者', hp: 20, speed: 1.0, radius: 11, contact: 0.3, stopRange: 18,
@@ -119,12 +122,21 @@ export const BRUTE: EnemyDef = {
   key: 'brute', name: '胖子', hp: 90, speed: 0.62, radius: 18, contact: 0.6, stopRange: 26,
   tint: 0xc9a3ff, inTint: 0xe6ccff, gem: 'green', skin: '103/enemy-brute',
 };
-// Boss（周期出现的大首领·gdd §六·无限局的 escalation 节点）：巨血巨体·撞脸重伤·掉一堆经验。
-export const BOSS: EnemyDef = {
-  key: 'boss', name: '首领', hp: 1400, speed: 0.5, radius: 36, contact: 1.2, stopRange: 44,
-  tint: 0xff4d5e, inTint: 0xffd23f, gem: 'gold', skin: '103/enemy-boss',
+// E7 远程射手（gdd §六·M3 融合·打破"纯近战被追"）：保持中距(stopRange 200)、周期朝玩家射弹·脆。
+// 「打不了太远」= bolt 射程 ≈ projSpeed 4 × life 70 = 280px，且 stopRange 200 保持中距（不跨屏狙）。
+export const ARCHER: EnemyDef = {
+  key: 'archer', name: '远程射手', hp: 34, speed: 1.15, radius: 10, contact: 0.2, stopRange: 200,
+  tint: 0xb07bff, inTint: 0xe6ccff, gem: 'blue', skin: '103/enemy-archer',
+  ranged: { cd: 96, dmg: 7, projSpeed: 4, life: 70, radius: 6 },
 };
-export const ENEMIES: EnemyDef[] = [SHAMBLER, RUNNER, BRUTE, BOSS];
+// Boss（周期出现的大首领·gdd §六）：巨血巨体·撞脸重伤 + 周期弹幕（远程威胁·让 Boss 战不是站桩）。
+export const BOSS: EnemyDef = {
+  key: 'boss', name: '首领', hp: 1400, speed: 0.5, radius: 36, contact: 1.2, stopRange: 60,
+  tint: 0xff4d5e, inTint: 0xffd23f, gem: 'gold', skin: '103/enemy-boss',
+  ranged: { cd: 66, dmg: 11, projSpeed: 3.6, life: 130, radius: 9 },
+};
+export const ENEMIES: EnemyDef[] = [SHAMBLER, RUNNER, BRUTE, ARCHER, BOSS];
+export const EBOLT_SKIN = '103/enemy-bolt'; // 敌弹皮肤槽
 
 // ── 宝石定义（gdd §七·蓝=1·绿=3 经验·肉敌掉更多）─────────────────────────
 export interface GemDef { key: string; value: number; radius: number; tint: number; skin: string }
@@ -206,6 +218,7 @@ export const SPAWNER_TIERS: SpawnerTier[] = [
   { key: 'shambler', count: 6, period: 78, afterSec: 0 },  // 常驻弱敌流
   { key: 'runner', count: 3, period: 132, afterSec: 25 },  // 25s 后疾行者加入
   { key: 'brute', count: 2, period: 240, afterSec: 55 },   // 55s 后胖子加入（肉·escalation）
+  { key: 'archer', count: 2, period: 210, afterSec: 40 },  // 40s 后远程射手加入（打破纯被追·中距威胁·E7）
   { key: 'boss', count: 1, period: 60 * 90, afterSec: 90 },// 90s 起每 ~90s 一个首领（周期 Boss·无限局节点）
 ];
 

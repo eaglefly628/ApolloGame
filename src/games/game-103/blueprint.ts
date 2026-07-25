@@ -30,7 +30,7 @@ import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
   PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, TINT,
   PLAYER_DEF, KUNAI, WEAPONS, WEAPON_BIT, ENEMIES, GEMS, GEM_LIFE, SPAWNS, SPAWNER_TIERS, SPAWNER_RING, SPAWN_CAP,
-  XP_BASE, XP_STEP, DRAFT_POOL, PASSIVE_BY_KEY, type WeaponDef, type EnemyDef, type GemDef,
+  XP_BASE, XP_STEP, DRAFT_POOL, PASSIVE_BY_KEY, EBOLT_SKIN, type WeaponDef, type EnemyDef, type GemDef,
 } from './theme.js';
 
 const XF0 = { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
@@ -128,23 +128,46 @@ function evoPickEntities(): Record<string, EntityBlueprint> {
   return out;
 }
 
+// 敌弹（E7 远程·朝玩家直飞·寿命限射程=「打你但打不远」）：Launch toward:PLAYER + Hitbox targetMask:PLAYER·单发命中。
+//  射程 ≈ projSpeed × life（px）；玩家可走位躲。皮肤 EBOLT_SKIN·未就绪回退敌色圆点。
+function eboltTemplate(e: EnemyDef): { entities: Record<string, Record<string, unknown>> } {
+  const r = e.ranged!;
+  return { entities: { p: {
+    Transform: { ...XF0 },
+    Velocity: { vx: 0, vy: 0, angular: 0 },
+    Sensor: {}, Tag: { flags: ZONE },
+    Shape: { kind: 'circle', radius: r.radius },
+    Sprite: { textureKey: EBOLT_SKIN, anchorX: 0.5, anchorY: 0.5, zOrder: 2 },
+    Color: { tint: e.tint, alpha: 1 },
+    Launch: { speed: r.projSpeed, toward: 'target', targetMask: PLAYER },
+    Hitbox: { resource: 'hp', amount: r.dmg, targetMask: PLAYER, consumeOnHit: true },
+    Timer: { id: 'life', elapsed: 0, duration: r.life, loop: false }, // 寿命=射程上限
+  } } };
+}
+
 // 敌人：aggro(Perception)→Relation(target=玩家) + steering(seek) 追击；接触伤害在隐形 child 触伤区；死亡掉宝石。
+// E7 远程敌（e.ranged）：body 额外挂 Timer('shoot')+SelfRule 周期 spawn ebolt_<key>（stopRange 大=保持中距 kiting）。
 function enemyTemplate(e: EnemyDef, gemTemplate: string): { entities: Record<string, Record<string, unknown>> } {
+  const body: Record<string, unknown> = {
+    Transform: { ...XF0 },
+    Velocity: { vx: 0, vy: 0, angular: 0 },
+    Tag: { flags: ENEMY },
+    Shape: { kind: 'circle', radius: e.radius },
+    Sprite: { textureKey: e.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽
+    Color: { tint: e.tint, alpha: 1 },
+    Resource: { id: 'hp', current: e.hp, min: 0, max: e.hp },
+    Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: gemTemplate },
+    Perception: { targetTag: PLAYER, sightRadius: 0 },     // 0=无限视野·恒追玩家
+    // BUG-02①真解（Lead 交付 t2-steering.separation）：敌群互斥斥力→环绕玩家而非全叠一点（幸存者手感）。
+    Steering: { mode: 'seek', speed: e.speed, stopRange: Math.min(e.stopRange, e.ranged ? e.stopRange : 10), separation: { radius: e.radius * 2.4, weight: 1.6, tagMask: ENEMY } },
+  };
+  if (e.ranged) { // 远程敌：到点朝玩家射弹（Timer loop + SelfRule spawn ebolt·body 本无 SelfRule 故安全）
+    body.Timer = { id: 'shoot', elapsed: 0, duration: e.ranged.cd, loop: true };
+    body.SelfRule = { when: { kind: 'timer', id: 'shoot', cmp: 'gte', value: Math.max(1, e.ranged.cd - 1) }, do: [{ kind: 'spawn', template: `ebolt_${e.key}`, at: 'self' }], once: true, armed: false };
+  }
   return {
     entities: {
-      body: {
-        Transform: { ...XF0 },
-        Velocity: { vx: 0, vy: 0, angular: 0 },
-        Tag: { flags: ENEMY },
-        Shape: { kind: 'circle', radius: e.radius },
-        Sprite: { textureKey: e.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽
-        Color: { tint: e.tint, alpha: 1 },
-        Resource: { id: 'hp', current: e.hp, min: 0, max: e.hp },
-        Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: gemTemplate },
-        Perception: { targetTag: PLAYER, sightRadius: 0 },     // 0=无限视野·恒追玩家
-        // BUG-02①真解（Lead 交付 t2-steering.separation）：敌群互斥斥力→环绕玩家而非全叠一点（幸存者手感）。
-        Steering: { mode: 'seek', speed: e.speed, stopRange: Math.min(e.stopRange, 10), separation: { radius: e.radius * 2.4, weight: 1.6, tagMask: ENEMY } },
-      },
+      body,
       inner: { // 内芯（render-only·体积感）
         Hierarchy: child('@local:body'),
         Transform: { ...XF0 },
@@ -370,6 +393,7 @@ export function buildBlueprint(): WorldBlueprint {
         seq: 0,
         templates: {
           ...Object.fromEntries(ENEMIES.map((e) => [`enemy_${e.key}`, enemyTemplate(e, `gem_${e.gem}`)])),
+          ...Object.fromEntries(ENEMIES.filter((e) => e.ranged).map((e) => [`ebolt_${e.key}`, eboltTemplate(e)])), // E7 敌弹
           ...Object.fromEntries(GEMS.map((g) => [`gem_${g.key}`, gemTemplate(g)])),
           // 全武器：每把一个 proj_<key>（射法模板）+ 非起始武器一个 weapon_<key>（挂点·draft 生成）。
           ...Object.fromEntries(WEAPONS.map((w) => [`proj_${w.key}`, projByPattern(w)])),

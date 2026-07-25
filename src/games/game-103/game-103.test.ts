@@ -10,7 +10,7 @@ import { validateLayoutNode } from '@ui/components/index.js';
 import type { Sprite } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp } from './hud.js';
-import { ENEMY, ZONE, START, KUNAI, SHAMBLER, BRUTE, BOSS, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, WEAPON_BIT, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
+import { ENEMY, ZONE, PLAYER, START, KUNAI, SHAMBLER, BRUTE, BOSS, ARCHER, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, WEAPON_BIT, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
 
 // 一步 sim（复刻引擎 step：每拍都注入命令→清 InputQueue·空则清空·防陈留信号重复触发）。
 function step(e: Engine, cmds: Command[] = []): void {
@@ -231,6 +231,31 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(BOSS.hp).toBeGreaterThan(BRUTE.hp * 10);       // 首领远肉于普通敌
     const lib = (buildBlueprint().entities.library as { PrefabLibrary: { templates: Record<string, unknown> } }).PrefabLibrary.templates;
     expect(lib).toHaveProperty('enemy_boss');             // 库含首领 prefab
+  });
+
+  it('E7 远程敌（archer/boss）：body 挂 Timer(shoot)+SelfRule spawn ebolt·库含敌弹·弹朝玩家且射程有界（打不了太远）', () => {
+    const lib = (buildBlueprint().entities.library as { PrefabLibrary: { templates: Record<string, { entities: Record<string, Record<string, unknown>> }> } }).PrefabLibrary.templates;
+    // 近战敌无远程挂点·远程敌有
+    const shBody = lib.enemy_shambler.entities.body;
+    expect(shBody.SelfRule).toBeUndefined();
+    const arBody = lib.enemy_archer.entities.body as { Timer?: { id: string }; SelfRule?: { do: Array<{ template: string }> } };
+    expect(arBody.Timer?.id).toBe('shoot');
+    expect(arBody.SelfRule?.do[0].template).toBe('ebolt_archer');
+    // 库含敌弹·朝玩家（Launch targetMask:PLAYER）·命中玩家扣血
+    expect(lib).toHaveProperty('ebolt_archer');
+    expect(lib).toHaveProperty('ebolt_boss');
+    const bolt = lib.ebolt_archer.entities.p as { Launch: { toward: string; targetMask: number }; Hitbox: { targetMask: number; amount: number } };
+    expect(bolt.Launch.toward).toBe('target');
+    expect(bolt.Launch.targetMask).toBe(PLAYER);
+    expect(bolt.Hitbox.targetMask).toBe(PLAYER);
+    expect(bolt.Hitbox.amount).toBeGreaterThan(0);
+    // 「打不了太远」：射程 ≈ projSpeed×life 有界·且明显小于场地跨度（玩家可走位躲）
+    const range = ARCHER.ranged!.projSpeed * ARCHER.ranged!.life;
+    expect(range).toBeGreaterThan(150);   // 够到中距=有紧张感
+    expect(range).toBeLessThan(400);      // 不跨屏狙=能躲
+    // spawner 有 archer 层·时间门>0
+    const at = SPAWNER_TIERS.find((t) => t.key === 'archer');
+    expect(at?.afterSec).toBeGreaterThan(0);
   });
 
   it('v2④ 敌人头顶血条：敌 prefab 带 Gauge(绑 hp)→受击缩短=伤害反馈可见', () => {
