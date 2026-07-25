@@ -4,7 +4,7 @@ import { validateLayoutNode } from '@ui/components/index.js';
 import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop, DeliverDrop, Order, Timer, Blocker } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1, buildS1Live } from './s1.js';
-import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, generatorOutput, cellCenter, cellIndexOf, TIMED_ITEM, TIMED_SEC, TICKS_PER_SEC } from './theme.js';
+import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, generatorOutput, cellCenter, cellIndexOf, TIMED_ITEM, TIMED_SEC, TICKS_PER_SEC, BUBBLES } from './theme.js';
 
 // ── headless 助手 ─────────────────────────────────────────────────────────────
 function res(e: Engine, id: string): number { return e.world.getComponent<Resource>(id, 'Resource')?.current ?? 0; }
@@ -269,6 +269,34 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(e.world.hasComponent(wrong, 'PrefabOrigin')).toBe(true); // 该稻谷未被消耗
     const ord = e.world.getComponent<Order>('order-o_zhou', 'Order');
     expect(ord?.filled).toEqual([false]);                    // 槽未满
+  });
+
+  // ── 泡泡锁（G3·bubble-wrapper·点破扣金币→spawn 真物→destroy 泡泡·金币回收出口）──
+  it('泡泡锁：金币足→点破扣 30 币 + 出真物 coffee_2 + 泡泡实体销毁', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 2);
+    const b = BUBBLES[0]; // b_coffee @ cell 15 · coffee_2 · 30
+    e.world.getComponent<Resource>(RES.coins, 'Resource')!.current = 50; // 白盒授币（足付）
+    expect(e.world.hasComponent(`bubble-${b.id}`, 'Tag')).toBe(true);
+    const c0 = countTemplate(e, b.item);
+    tapGen(e, b.cell); // 点 = down@泡泡格 → clickable→craft-recipe 扣币→event-when→caster+effect
+    tickN(e, 1);
+    expect(res(e, RES.coins)).toBe(20);                     // 50-30=扣币
+    expect(countTemplate(e, b.item)).toBe(c0 + 1);          // 出真物
+    expect(e.world.hasComponent(`bubble-${b.id}`, 'Tag')).toBe(false); // 泡泡销毁
+  });
+
+  it('泡泡锁：金币不足→不扣不破（craft-recipe 原子 afford·回收门槛）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 2);
+    const b = BUBBLES[0];
+    e.world.getComponent<Resource>(RES.coins, 'Resource')!.current = 10; // 不足 30
+    const c0 = countTemplate(e, b.item);
+    tapGen(e, b.cell);
+    tickN(e, 1);
+    expect(res(e, RES.coins)).toBe(10);                     // 不扣
+    expect(countTemplate(e, b.item)).toBe(c0);              // 不产
+    expect(e.world.hasComponent(`bubble-${b.id}`, 'Tag')).toBe(true); // 泡泡仍在
   });
 
   it('确定性：接生成器后两把同操作序列 → 同 hash（可回放）', () => {

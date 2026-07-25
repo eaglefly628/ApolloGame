@@ -13,7 +13,7 @@ export function buildS1(): LayoutNode {
 }
 
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
-export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number; coverReward?: string } // cover=阻碍层数(>0 盖住)·coverReward=沙下埋的奖励预览(⚡/💎/🎁)
+export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number; coverReward?: string; bubble?: { itemEmoji: string; cost: number; id: string } } // bubble=泡泡锁（点破扣币出真物）
 export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
 export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; timed?: boolean; timeLeft?: number; portrait?: string; fly?: { id: string; label: string }; celebrate?: boolean }
 export interface S1State {
@@ -170,6 +170,18 @@ function board(s: S1State): N {
         type: 'Panel', id: `t-live-${i}`, props: { bg: { custom: COVER_BG } },
         layout: { direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 4, radius: 16, height: 128 },
         children: [...ck, ...dissolve],
+      } as N;
+    }
+    // 泡泡锁格（G3·点破扣币出真物）：半透蓝泡里透出包裹的物 + 🪙价签。tap 发 pop_${id} 信号→craft-recipe 扣币→spawn。
+    if (cv?.bubble) {
+      return {
+        type: 'Panel', id: `t-live-${i}`, props: { bg: { custom: '#bfe4ff' }, action: `pop_${cv.bubble.id}` },
+        layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 40, height: 128, opacity: 0.9, press3d: true, anim: 'float' },
+        children: [
+          { type: 'Label', id: `t-live-${i}-bi`, props: { text: cv.bubble.itemEmoji, size: 52 } },
+          { type: 'Label', id: `t-live-${i}-bc`, props: { text: `🪙${cv.bubble.cost}`, size: 'sm', bold: true, color: 'ink' } },
+          ...dissolve,
+        ],
       } as N;
     }
     if (cv) {

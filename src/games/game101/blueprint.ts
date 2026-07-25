@@ -30,7 +30,7 @@ import {
 import { prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
   GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, TIMED_ITEM, MENU_TIMER_SEC, TICKS_PER_SEC,
-  BOARD_COVER, coverReveal, generatorOutput,
+  BOARD_COVER, coverReveal, BUBBLES, BUBBLE_TAG, generatorOutput,
   cellCenter, mergeRules, itemTemplates, timedTemplates, CELL, GEN_TAG, GEN_TINT,
 } from './theme.js';
 
@@ -96,6 +96,33 @@ function generatorEntities(): Record<string, EntityBlueprint> {
     out[`fx-reset-${g.id}`] = { Effect: { onSignal: doSig, kind: 'set-flag', targetId: spawnFlag, value: false } };
     // LayoutNode 活板：生成器格 Panel.action → mountUI ActionSink 入队 → KeyBinding 转成 tap 信号 → craft-recipe。
     out[`kb-${g.id}`] = { KeyBinding: { key: tapSig, signal: tapSig } };
+  }
+  return out;
+}
+
+// ── 泡泡锁实体（bubble-wrapper·G3·点破扣金币→spawn 真物→destroy 泡泡）──────────────
+// capability-plan §6：锁=独立泡泡实体（非物品本体）→ merge 按模板天然不碰。接线同生成器：
+//   clickable 发 pop 信号 → craft-recipe 原子扣金币 + 置 popped 旗 → event-when(旗) 发 do_pop
+//   → caster at:self 产真物 + effect destroy 泡泡自身。金币不足=craft-recipe 整单不动=不扣不破（金币回收出口）。
+function bubbleEntities(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  for (const b of BUBBLES) {
+    const p = cellCenter(b.cell);
+    const popSig = `pop_${b.id}`; const doSig = `do_pop_${b.id}`; const popFlag = `popped_${b.id}`;
+    out[`flag-${popFlag}`] = { Flag: { id: popFlag, active: false } };
+    out[`bubble-${b.id}`] = {
+      Transform: { x: p.x, y: p.y, rotation: 0, scaleX: 1, scaleY: 1 },
+      Tag: { flags: BUBBLE_TAG },
+      Shape: { kind: 'box', width: CELL - 6, height: CELL - 6 },
+      Sprite: { textureKey: 'bubble', anchorX: 0.5, anchorY: 0.5, zOrder: 3 }, // 皮肤槽·泡泡皮就绪即换
+      Color: { tint: 0xbfe4ff, alpha: 0.85 },
+      Clickable: { action: popSig },
+      CraftRecipe: { onSignal: popSig, costs: [{ id: RES.coins, amount: b.cost }], grantsFlag: popFlag },
+      Caster: { onSignal: doSig, template: b.item, at: 'self' },
+    };
+    out[`ew-${b.id}`] = { EventWhen: { signal: doSig, when: { kind: 'flag', id: popFlag }, mode: 'edge', armed: false } };
+    out[`fx-pop-${b.id}`] = { Effect: { onSignal: doSig, kind: 'destroy', targetEntity: `bubble-${b.id}` } };
+    out[`kb-${b.id}`] = { KeyBinding: { key: popSig, signal: popSig } };
   }
   return out;
 }
@@ -176,6 +203,7 @@ export function buildBlueprint(): WorldBlueprint {
     ...mergeRuleEntities(),
     ...orderEntities(),
     ...coverEntities(),
+    ...bubbleEntities(),
     ...generatorEntities(),
     ...seedItemEntities(),
   };

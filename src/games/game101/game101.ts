@@ -16,7 +16,7 @@ import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop, 
 import { buildBlueprint } from './blueprint.js';
 import { buildS1Live, type S1State, type CellView, type OrderView, type SlotView } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';
-import { GAME, RES, GENERATORS, ORDERS, ORDER_SAT_MAX, TICKS_PER_SEC, CUST_PORTRAITS, ITEM_EMOJI, moodFace, cellIndexOf, cellCenter } from './theme.js';
+import { GAME, RES, GENERATORS, ORDERS, ORDER_SAT_MAX, TICKS_PER_SEC, CUST_PORTRAITS, BUBBLES, ITEM_EMOJI, moodFace, cellIndexOf, cellCenter } from './theme.js';
 
 const GEN_CELLS = new Set(GENERATORS.map((g) => g.cell));
 
@@ -44,13 +44,14 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   const TOTAL_CELLS = GAME.board.cols * GAME.board.rows;
   const cellEntity: (string | null)[] = new Array(TOTAL_CELLS).fill(null);
   const coveredCells = new Set<number>(); // 阻碍层覆盖格（不可拖入/不可落子·readState 每帧刷新）
+  const bubbleCells = new Set<number>(); // 泡泡锁格（不可拖入/不可落子·点破才出物）
 
   // 生成器产出落点修正：caster at:'self' 把新物产在生成器**自己那格**（被生成器盖住=不可见/不可拖）。
   // 宿主每帧扫描落在生成器格上的物 → 用 merge-on-place 的**移动意图**把它挪到最近空格（引擎做实际移动·
   // 宿主只挑目标空格=同拖拽落点合成·非游戏逻辑）。让「点生成器→物弹进空格」真正可见可玩。
   function relocateGenSpawns(): void {
     const w = engine.world;
-    const occupied = new Set<number>([...GENERATORS.map((g) => g.cell), ...coveredCells]); // 覆盖格也不占用产出
+    const occupied = new Set<number>([...GENERATORS.map((g) => g.cell), ...coveredCells, ...bubbleCells]); // 覆盖格/泡泡格也不占用产出
     const stray: string[] = [];
     for (const [eid] of w.query('PrefabOrigin')) {
       const t = w.getComponent<Transform>(eid, 'Transform');
@@ -95,7 +96,15 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
         cells[idx] = { emoji: '🔒', cover: bk.layers, coverReward }; coveredCells.add(idx);
       }
     }
-    // ② 生成器：只在**未被覆盖**的格摆出（挖开生成器格→下一帧自动现·四基础料渐解锁）。
+    // ② 泡泡锁格（未被覆盖处·泡泡实体尚在=未点破）：显 🫧 裹真物 + 金币价·点破扣币出真物。
+    bubbleCells.clear();
+    for (const b of BUBBLES) {
+      if (coveredCells.has(b.cell) || cells[b.cell]) continue;
+      if (!w.hasComponent(`bubble-${b.id}`, 'Tag')) continue; // 已点破=实体销毁=不再显
+      cells[b.cell] = { emoji: '🫧', bubble: { itemEmoji: ITEM_EMOJI[b.item] ?? '❓', cost: b.cost, id: b.id } };
+      bubbleCells.add(b.cell);
+    }
+    // ③ 生成器：只在**未被覆盖/非泡泡**的格摆出（挖开生成器格→下一帧自动现·四基础料渐解锁）。
     for (const g of GENERATORS) if (!coveredCells.has(g.cell) && !cells[g.cell]) cells[g.cell] = { emoji: g.emoji, gen: g.id };
     const onBoard = new Set<string>(); // 板上现有的物品模板集（订单可交付判定）
     const cellTpl: (string | null)[] = new Array(cells.length).fill(null);
@@ -200,7 +209,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     }
     // ② 落在板格 → 合并/移动/交换意图（MergeDrop）。
     const toIdx = cellIdxFromEl(dropEl);
-    if (toIdx < 0 || toIdx === fromIdx || GEN_CELLS.has(toIdx) || coveredCells.has(toIdx)) return; // 落生成器/覆盖格/空放/原格=忽略
+    if (toIdx < 0 || toIdx === fromIdx || GEN_CELLS.has(toIdx) || coveredCells.has(toIdx) || bubbleCells.has(toIdx)) return; // 落生成器/覆盖格/泡泡格/空放/原格=忽略
     const to = cellEntity[toIdx] ?? undefined; const p = cellCenter(toIdx);
     // 合成迸发（juice）：落格同模板=真合成 → 该格叠一次性星光爆。
     if (to) {

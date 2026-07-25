@@ -14,6 +14,7 @@ import energyCfg from './config/energy.json';
 import generatorsCfg from './config/generators.json';
 import ordersCfg from './config/orders.json';
 import boardCoverCfg from './config/board-cover.json';
+import bubblesCfg from './config/bubbles.json';
 
 // ── 类型（config 结构的 TS 视图·只读）─────────────────────────────────────────
 export interface ChainLevel { lvl: number; item: string; name: string; sell: number; sprite: string }
@@ -86,6 +87,10 @@ export const RES = { energy: 'energy', coins: 'coins', stars: 'stars', exp: 'exp
 // ── Tag 位（合并板物品 / 生成器）──────────────────────────────────────────────
 export const ITEM = 1 << 0;
 export const GEN_TAG = 1 << 1;
+export const BUBBLE_TAG = 1 << 2; // 泡泡锁实体位（点破扣币→spawn 真物·merge 天然不碰）
+
+export interface BubbleDef { id: string; cell: number; item: string; cost: number }
+export const BUBBLES = bubblesCfg as BubbleDef[];
 export const GEN_TINT = 0xc8871e; // 生成器格占位色（暖金·美术就绪即被 gen sprite 皮盖过）
 
 // ── 棋盘几何（世界像素·占位灰盒·M1b 接 UI 时以 layout 稿为准）──────────────────
