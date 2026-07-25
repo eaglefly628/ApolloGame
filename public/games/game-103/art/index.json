@@ -33,29 +33,28 @@
    "id": "103/enemy-shambler",
    "type": "texture",
    "status": "filled",
-   "path": "/games/game-103/art/enemy-shambler.svg",
-   "description": "敌人「蹒跚者」丧尸群怪(俯身侧影)· game-icons 蹒跚丧尸剪影·烘红 #ff4d5e + 深描边 + gloss",
+   "path": "/games/game-103/art/enemy-shambler.png",
+   "description": "敌人「蹒跚者」弱怪(量大)· 可爱太空侵略者 emoji",
    "spec": {
-    "format": "svg",
-    "usage": "sprite"
+    "usage": "sprite",
+    "colorSpace": "srgb"
    },
    "category": "sprite.enemy",
    "tags": [
     "enemy",
     "shambler",
-    "zombie",
-    "silhouette",
-    "cartoon"
+    "emoji",
+    "cute"
    ],
-   "license": "CC-BY-3.0",
-   "source": "game-icons.net (Delapouite · delapouite/shambling-zombie) · vendored+recolored (bg 剥离·fill 烘入 theme 色·加 gloss 高光)",
+   "license": "CC-BY-4.0",
+   "source": "assets/emoji (twemoji · codepoint 1f47e · 👾) · vendored",
    "provenance": {
-    "generator": "game-103-enemy-bake",
-    "source": "assets/gameicons/delapouite/shambling-zombie.svg",
-    "author": "Delapouite",
-    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
-    "origin": "https://game-icons.net",
-    "recolored": true,
+    "generator": "game-103-emoji-vendor",
+    "repo": "twitter/twemoji",
+    "codepoint": "1f47e",
+    "emoji": "👾",
+    "source": "assets/emoji/1f47e.png",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
     "mock": false
    }
   },
@@ -320,29 +319,28 @@
    "id": "103/enemy-runner",
    "type": "texture",
    "status": "filled",
-   "path": "/games/game-103/art/enemy-runner.svg",
-   "description": "敌人「疾行者」快速冲刺怪· game-icons 奔跑忍者剪影·烘橙 #ff9a1f + 深描边 + gloss",
+   "path": "/games/game-103/art/enemy-runner.png",
+   "description": "敌人「疾行者」飘行怪· 可爱幽灵 emoji",
    "spec": {
-    "format": "svg",
-    "usage": "sprite"
+    "usage": "sprite",
+    "colorSpace": "srgb"
    },
    "category": "sprite.enemy",
    "tags": [
     "enemy",
     "runner",
-    "fast",
-    "silhouette",
-    "cartoon"
+    "emoji",
+    "cute"
    ],
-   "license": "CC-BY-3.0",
-   "source": "game-icons.net (DarkZaitzev · darkzaitzev/running-ninja) · vendored+recolored (bg 剥离·fill 烘入 theme 色·加 gloss 高光)",
+   "license": "CC-BY-4.0",
+   "source": "assets/emoji (twemoji · codepoint 1f47b · 👻) · vendored",
    "provenance": {
-    "generator": "game-103-enemy-bake",
-    "source": "assets/gameicons/darkzaitzev/running-ninja.svg",
-    "author": "DarkZaitzev",
-    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
-    "origin": "https://game-icons.net",
-    "recolored": true,
+    "generator": "game-103-emoji-vendor",
+    "repo": "twitter/twemoji",
+    "codepoint": "1f47b",
+    "emoji": "👻",
+    "source": "assets/emoji/1f47b.png",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
     "mock": false
    }
   },
@@ -350,29 +348,28 @@
    "id": "103/enemy-brute",
    "type": "texture",
    "status": "filled",
-   "path": "/games/game-103/art/enemy-brute.svg",
-   "description": "敌人「蛮兵」高血肉盾怪· game-icons 壮汉剪影·烘紫 #c9a3ff + 深描边 + gloss",
+   "path": "/games/game-103/art/enemy-brute.png",
+   "description": "敌人「蛮兵」肉盾大块· 红鬼 emoji",
    "spec": {
-    "format": "svg",
-    "usage": "sprite"
+    "usage": "sprite",
+    "colorSpace": "srgb"
    },
    "category": "sprite.enemy",
    "tags": [
     "enemy",
     "brute",
-    "tank",
-    "silhouette",
-    "cartoon"
+    "emoji",
+    "cute"
    ],
-   "license": "CC-BY-3.0",
-   "source": "game-icons.net (Delapouite · delapouite/brute) · vendored+recolored (bg 剥离·fill 烘入 theme 色·加 gloss 高光)",
+   "license": "CC-BY-4.0",
+   "source": "assets/emoji (twemoji · codepoint 1f479 · 👹) · vendored",
    "provenance": {
-    "generator": "game-103-enemy-bake",
-    "source": "assets/gameicons/delapouite/brute.svg",
-    "author": "Delapouite",
-    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
-    "origin": "https://game-icons.net",
-    "recolored": true,
+    "generator": "game-103-emoji-vendor",
+    "repo": "twitter/twemoji",
+    "codepoint": "1f479",
+    "emoji": "👹",
+    "source": "assets/emoji/1f479.png",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
     "mock": false
    }
   },
@@ -380,29 +377,28 @@
    "id": "103/enemy-archer",
    "type": "texture",
    "status": "filled",
-   "path": "/games/game-103/art/enemy-archer.svg",
-   "description": "敌人「射手」远程放弹怪· game-icons 弓箭手剪影·烘紫 #b07bff + 深描边 + gloss",
+   "path": "/games/game-103/art/enemy-archer.png",
+   "description": "敌人「射手」远程· 天狗面 emoji",
    "spec": {
-    "format": "svg",
-    "usage": "sprite"
+    "usage": "sprite",
+    "colorSpace": "srgb"
    },
    "category": "sprite.enemy",
    "tags": [
     "enemy",
     "archer",
-    "ranged",
-    "silhouette",
-    "cartoon"
+    "emoji",
+    "cute"
    ],
-   "license": "CC-BY-3.0",
-   "source": "game-icons.net (Delapouite · delapouite/archer) · vendored+recolored (bg 剥离·fill 烘入 theme 色·加 gloss 高光)",
+   "license": "CC-BY-4.0",
+   "source": "assets/emoji (twemoji · codepoint 1f47a · 👺) · vendored",
    "provenance": {
-    "generator": "game-103-enemy-bake",
-    "source": "assets/gameicons/delapouite/archer.svg",
-    "author": "Delapouite",
-    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
-    "origin": "https://game-icons.net",
-    "recolored": true,
+    "generator": "game-103-emoji-vendor",
+    "repo": "twitter/twemoji",
+    "codepoint": "1f47a",
+    "emoji": "👺",
+    "source": "assets/emoji/1f47a.png",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
     "mock": false
    }
   },
@@ -410,29 +406,28 @@
    "id": "103/enemy-boss",
    "type": "texture",
    "status": "filled",
-   "path": "/games/game-103/art/enemy-boss.svg",
-   "description": "敌人「首领」大型 Boss· game-icons 九头蛇剪影·烘红 #ff4d5e + 金描边 #ffd23f + gloss(区别小怪)",
+   "path": "/games/game-103/art/enemy-boss.png",
+   "description": "敌人「首领」大型 Boss· 龙 emoji",
    "spec": {
-    "format": "svg",
-    "usage": "sprite"
+    "usage": "sprite",
+    "colorSpace": "srgb"
    },
    "category": "sprite.enemy",
    "tags": [
     "enemy",
     "boss",
-    "elite",
-    "silhouette",
-    "cartoon"
+    "emoji",
+    "cute"
    ],
-   "license": "CC-BY-3.0",
-   "source": "game-icons.net (Lorc · lorc/hydra) · vendored+recolored (bg 剥离·fill 烘入 theme 色·加 gloss 高光)",
+   "license": "CC-BY-4.0",
+   "source": "assets/emoji (twemoji · codepoint 1f409 · 🐉) · vendored",
    "provenance": {
-    "generator": "game-103-enemy-bake",
-    "source": "assets/gameicons/lorc/hydra.svg",
-    "author": "Lorc",
-    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
-    "origin": "https://game-icons.net",
-    "recolored": true,
+    "generator": "game-103-emoji-vendor",
+    "repo": "twitter/twemoji",
+    "codepoint": "1f409",
+    "emoji": "🐉",
+    "source": "assets/emoji/1f409.png",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
     "mock": false
    }
   },

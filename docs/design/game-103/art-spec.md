@@ -16,18 +16,18 @@
 | 槽 | 交付前 | 本次(Part A) | 说明 |
 |---|---|---|---|
 | `103/player` | 程序化 glossy 蓝盘 SVG | 保留 | 已上style，够用到真美术 |
-| `103/enemy-shambler` | 程序化 glossy 红blob SVG | **换** game-icons 蹒跚丧尸剪影(烘红+gloss) | 更可辨识为丧尸 |
-| `103/enemy-runner` | 缺→占位色块 | **补** 奔跑忍者剪影(烘橙) | 从色块升级 |
-| `103/enemy-brute` | 缺→占位色块 | **补** 壮汉剪影(烘紫) | 从色块升级 |
-| `103/enemy-archer` | 缺→占位色块 | **补** 弓箭手剪影(烘紫) | 从色块升级 |
-| `103/enemy-boss` | 缺→占位色块 | **补** 九头蛇剪影(烘红+金描边) | 从色块升级·金边区别小怪 |
+| `103/enemy-shambler` | 程序化 glossy 红blob SVG | **换** 可爱 emoji 👾(1f47e.png) | 预上色·可爱·量大弱怪 |
+| `103/enemy-runner` | 缺→占位色块 | **换** 可爱 emoji 👻(1f47b.png) | 飘行感 |
+| `103/enemy-brute` | 缺→占位色块 | **换** 可爱 emoji 👹(1f479.png) | 红鬼·壮 |
+| `103/enemy-archer` | 缺→占位色块 | **换** 可爱 emoji 👺(1f47a.png) | 天狗·远程辨识 |
+| `103/enemy-boss` | 缺→占位色块 | **换** 可爱 emoji 🐉(1f409.png) | 龙·Boss |
 | `103/gem-green` | 缺→占位色块 | **补** glossy 绿珠 | 与 gem-blue 同款 |
 | `103/gem-gold` | 缺→占位色块 | **补** glossy 金珠 | 与 gem-blue 同款 |
 | `103/proj-kunai` | glossy 飞镖 SVG | 保留 | — |
 | `103/fx-*`(6) | DCSS 动画帧 | 保留(勿动) | 子弹动画已就绪 |
 | `103/proj-{shock,laser,boom,orbit,pet}` · `103/enemy-bolt` | 缺→占位色块 | 未补 | 抽象/形态待真美术·见下 |
 
-Part A 换入的敌人为 **game-icons.net 单色剪影**（CC-BY 3.0），已剥黑底、把 theme 色烘进 fill、加一枚白色 gloss 高光。诚实定位：**这是「统一 + 可辨识 + 正确配色」的过渡皮，非终稿**——它们是**扁平剪影**，缺 Survivor.io 那种立体 glossy 卡通厚度与逐帧动作。真正的观感升级（尤其「会走的怪」）必须靠下方 Part B 生产。共享库里没有「非像素 + 会走路的卡通怪序列帧」，故过渡阶段只能到剪影这一步。
+Part A 换入的 5 敌人为 **可爱 emoji PNG**（twemoji · CC-BY-4.0 · 72×72 透明底 · 预上色，无需烘色/染色，CanvasRenderer 原样 drawImage 即正确）。诚实定位：**这是「可爱 + 统一 + 好辨识」的过渡皮，非终稿**——emoji 是**单帧静态**，无逐帧动作。真正的观感升级（尤其 owner 要的「会走的怪」）必须靠下方 Part B 生产。共享库无「非像素 + 会走路的卡通怪序列帧」，故过渡阶段止于静态 emoji。
 
 ---
 
@@ -51,31 +51,31 @@ Part A 换入的敌人为 **game-icons.net 单色剪影**（CC-BY 3.0），已�
 - **语义**：最基础群怪，成群缓慢逼近。数量最多 → 剪影要在小尺寸下秒辨。
 - **画布**：96×96。**动画**：walk 4 帧（左右摇摆蹒跚）+ death 3 帧（瘫软/融化）。
 - **配色**：主 `#ff4d5e`(红) · 内亮 `#ff9aa6` · 深描边暗红。
-- **参考**：Survivor.io 丧尸群、game-icons `delapouite/shambling-zombie`（当前过渡皮）。
+- **参考**：Survivor.io 丧尸群。当前过渡皮 = 👾 emoji(1f47e)。
 
 ### `103/enemy-runner` — 疾行者（快速冲刺怪）
 - **语义**：移速快、体型瘦小，突进型威胁。剪影要有「前倾冲刺」动势。
 - **画布**：96×96。**动画**：run 4–6 帧（大幅摆臂迈腿·比 shambler 快）+ death 3 帧。
 - **配色**：主 `#ff9a1f`(橙) · 内亮 `#ffd6a0` · 深描边暗棕。
-- **参考**：Survivor.io 冲刺小怪、game-icons `darkzaitzev/running-ninja`（过渡皮）。
+- **参考**：Survivor.io 冲刺小怪。当前过渡皮 = 👻 emoji(1f47b)。
 
 ### `103/enemy-brute` — 蛮兵（高血肉盾）
 - **语义**：大体型、慢、高血量肉盾。剪影厚重宽肩，与 runner 形成体型对比。
 - **画布**：128×128（比小怪大一圈）。**动画**：walk 4 帧（沉重踏步）+ death 3 帧（倒地）+ 可选 telegraph 2 帧（举手预警）。
 - **配色**：主 `#c9a3ff`(浅紫) · 内亮 `#e6ccff` · 深描边深紫。
-- **参考**：game-icons `delapouite/brute`（过渡皮）、survivor 精英壮汉。
+- **参考**：survivor 精英壮汉。当前过渡皮 = 👹 emoji(1f479)。
 
 ### `103/enemy-archer` — 射手（远程放弹）
 - **语义**：远程站桩放 `enemy-bolt`。剪影带弓/持械识别特征。
 - **画布**：96×96。**动画**：walk 4 帧 + **attack/draw 3 帧**（拉弓→放）+ death 3 帧。
 - **配色**：主 `#b07bff`(紫) · 内亮 `#e6ccff` · 深描边深紫。
-- **参考**：game-icons `delapouite/archer`（过渡皮）。
+- **参考**：survivor 远程兵。当前过渡皮 = 👺 emoji(1f47a)。
 
 ### `103/enemy-boss` — 首领（大型 Boss）
 - **语义**：阶段 Boss，体型远大于杂兵，需威慑感 + 独立血条搭配（HUD 已有 boss HP 条）。
 - **画布**：256×256。**动画**：idle 4 帧（呼吸/浮动）+ walk/move 4–6 帧 + attack 3–4 帧 + death 4–6 帧（夸张倒地/爆散）。
 - **配色**：主 `#ff4d5e`(红) + **金描边/王冠点缀 `#ffd23f`**（与红色小怪拉开层级）· 内亮 `#ffd6a0`。
-- **参考**：Survivor.io 章节 Boss、game-icons `lorc/hydra`（过渡皮）。
+- **参考**：Survivor.io 章节 Boss。当前过渡皮 = 🐉 emoji(1f409)。
 
 ### `103/enemy-bolt` — 敌方子弹（射手用）
 - **语义**：archer 放出的横向飞弹。小、醒目、与玩家子弹配色区分（敌=暖警示色）。
@@ -151,4 +151,4 @@ Part A 换入的敌人为 **game-icons.net 单色剪影**（CC-BY 3.0），已�
 - **命名动画 / 状态机**：`t2-anim-state` 驱动 idle/walk/attack/death 切换（帧率 `fps`）。theme `SHOOT_FX` 是「武器→fx 序列」映射先例，敌人可同法建「敌种→动画」映射。
 - **透明底**：所有 sprite 用透明 PNG（或 SVG）。
 - **换装零改码**：产出后落 `public/games/game-103/art/`，在 `index.json` 加/改 `filled` 条目（`spec.usage:'sprite'`，动画填 `spec.sheet`），游戏自动生效。
-- **许可**：仅收 CC0 / 自产 / 明确授权；来源与作者写进条目 `license` + `provenance`（当前过渡剪影 = CC-BY 3.0 game-icons.net·须保留署名）。
+- **许可**：仅收 CC0 / 自产 / 明确授权；来源与作者写进条目 `license` + `provenance`（当前敌人过渡皮 = twemoji CC-BY-4.0·须保留署名）。

@@ -10,7 +10,7 @@ import { validateLayoutNode } from '@ui/components/index.js';
 import type { Sprite } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp } from './hud.js';
-import { ENEMY, ZONE, PLAYER, START, KUNAI, SHAMBLER, BRUTE, BOSS, ARCHER, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, WEAPON_ANIM, WEAPON_BIT, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
+import { ENEMY, ZONE, PLAYER, START, KUNAI, SHAMBLER, BRUTE, BOSS, ARCHER, ENEMIES, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, WEAPON_ANIM, WEAPON_BIT, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
 // 子弹现用序列帧 fx 精灵表覆盖静态 skin：在场皮肤 = 动画帧 sheet（若有）否则原 skin。
 const skinOf = (key: string): string => WEAPON_ANIM[key]?.sheet ?? WEAPON_BY_KEY[key].skin;
 
@@ -320,6 +320,41 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     // laser（beam）同样带 fallbackDir
     const ll = lib.proj_laser.entities.p.Launch as { fallbackDir?: unknown };
     expect(ll.fallbackDir).toBeDefined();
+  });
+
+  it('Boss/精英必现（capBypass）：boss 刷怪票不被同屏 cap 门挡（修「全程没见过 boss」根因）', () => {
+    const ents = buildBlueprint().entities as Record<string, { SelfRule?: { whenGlobal?: unknown } }>;
+    // 找 boss 的 spawner（key 含 boss），其 whenGlobal 不得包含 enemies_alive 门（capBypass）。
+    const bossSpawners = Object.entries(ents).filter(([k]) => /^spawner-\d+-boss-/.test(k));
+    expect(bossSpawners.length).toBeGreaterThan(0);
+    const hasAliveGate = (g: unknown): boolean => {
+      if (!g || typeof g !== 'object') return false;
+      const o = g as { kind?: string; id?: string; of?: unknown[] };
+      if (o.kind === 'resource' && o.id === 'enemies_alive') return true;
+      if (o.kind === 'and' && Array.isArray(o.of)) return o.of.some(hasAliveGate);
+      return false;
+    };
+    for (const [, sp] of bossSpawners) expect(hasAliveGate(sp.SelfRule?.whenGlobal)).toBe(false);
+    // 杂兵(shambler)反之：受 cap 门约束。
+    const trash = Object.entries(ents).find(([k]) => /^spawner-\d+-shambler-/.test(k));
+    expect(hasAliveGate((trash![1] as { SelfRule?: { whenGlobal?: unknown } }).SelfRule?.whenGlobal)).toBe(true);
+  });
+
+  it('磁力吸附：宝石带 Perception(玩家)+Steering→靠近时飞向玩家（经验飞过来·修「吸附时经验不飞过来」）', () => {
+    const lib = (buildBlueprint().entities.library as { PrefabLibrary: { templates: Record<string, { entities: Record<string, Record<string, unknown>> }> } }).PrefabLibrary.templates;
+    const gemBody = lib.gem_blue.entities.body as { Perception?: { targetTag: number; sightRadius: number }; Steering?: { mode: string }; Velocity?: unknown };
+    expect(gemBody.Perception?.targetTag).toBe(PLAYER);
+    expect(gemBody.Perception?.sightRadius).toBeGreaterThan(100); // 吸附半径
+    expect(gemBody.Steering?.mode).toBe('seek');
+    expect(gemBody.Velocity).toBeDefined();
+  });
+
+  it('难度：胖子/精英血厚(非一枪死)+远程弹更大更清晰', () => {
+    expect(BRUTE.hp).toBeGreaterThan(150);                 // 肉·血条看得见（owner「血条不够长/一枪死」）
+    expect(ENEMIES.some((x) => x.key === 'sniper')).toBe(true);  // 精英狙击=攻击性高的远程
+    expect(ENEMIES.some((x) => x.key === 'bruiser')).toBe(true); // 精英重装=大肉
+    const archer = ENEMIES.find((x) => x.key === 'archer')!;
+    expect(archer.ranged!.radius).toBeGreaterThanOrEqual(9);     // 敌弹调大=更清晰
   });
 
   it('v2④ 敌人头顶血条：敌 prefab 带 Gauge(绑 hp)→受击缩短=伤害反馈可见', () => {

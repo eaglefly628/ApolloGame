@@ -19,6 +19,7 @@ export const PLAYER = 1 << 1;    // 玩家本体（承 hp·接触伤害目标）
 export const ENEMY = 1 << 2;     // 敌人（子弹目标）
 export const COLLECTOR = 1 << 3; // 拾取环（承 xp·跟随玩家的 child·宝石命中它入经验）
 export const KILLBOX = 1 << 4;   // 计分环（承 score·单调累计击杀）
+export const GEM = 1 << 12;      // 宝石（magnet 吸附标记·pull-anchor tagMask·位 12 避开武器位 5-11）
 
 // ── 时间基准（引擎定步·HUD 计时/冷却/寿命一律用 tick）──────────────────────
 export const TPS = 60;                       // ticks / 秒
@@ -139,32 +140,43 @@ export interface EnemyDef {
   ranged?: { cd: number; dmg: number; projSpeed: number; life: number; radius: number };
 }
 export const SHAMBLER: EnemyDef = {
-  key: 'shambler', name: '蹒跚者', hp: 20, speed: 1.0, radius: 11, contact: 0.3, stopRange: 18,
+  key: 'shambler', name: '蹒跚者', hp: 28, speed: 1.0, radius: 11, contact: 0.3, stopRange: 18,
   tint: TINT.enemyShambler, inTint: TINT.enemyShamblerIn, gem: 'blue', skin: '103/enemy-shambler',
 };
-// 难度分层（gdd §六·越晚出现越硬·让"一发打不死"成立）。runner=快脆·brute=慢肉（8 发才死）。
+// 难度分层（gdd §六·越晚出现越硬·让"一发打不死"成立）。runner=快脆·brute=慢肉（多发才死·血条看得见）。
 export const RUNNER: EnemyDef = {
-  key: 'runner', name: '疾行者', hp: 30, speed: 1.9, radius: 9, contact: 0.25, stopRange: 15,
+  key: 'runner', name: '疾行者', hp: 42, speed: 1.9, radius: 9, contact: 0.3, stopRange: 15,
   tint: 0xff9a1f, inTint: 0xffd6a0, gem: 'blue', skin: '103/enemy-runner',
 };
 export const BRUTE: EnemyDef = {
-  key: 'brute', name: '胖子', hp: 90, speed: 0.62, radius: 18, contact: 0.6, stopRange: 26,
+  key: 'brute', name: '胖子', hp: 220, speed: 0.62, radius: 18, contact: 0.9, stopRange: 26,
   tint: 0xc9a3ff, inTint: 0xe6ccff, gem: 'green', skin: '103/enemy-brute',
 };
-// E7 远程射手（gdd §六·M3 融合·打破"纯近战被追"）：保持中距(stopRange 200)、周期朝玩家射弹·脆。
-// 「打不了太远」= bolt 射程 ≈ projSpeed 4 × life 70 = 280px，且 stopRange 200 保持中距（不跨屏狙）。
+// E7 远程射手（gdd §六·M3 融合·打破"纯近战被追"）：保持中距(stopRange 200)、周期朝玩家射弹。
+// 「打不了太远」= bolt 射程 ≈ projSpeed 4.2 × life 78 ≈ 330px，且 stopRange 200 保持中距（不跨屏狙）。子弹调大更清晰。
 export const ARCHER: EnemyDef = {
-  key: 'archer', name: '远程射手', hp: 34, speed: 1.15, radius: 10, contact: 0.2, stopRange: 200,
+  key: 'archer', name: '远程射手', hp: 60, speed: 1.15, radius: 10, contact: 0.2, stopRange: 200,
   tint: 0xb07bff, inTint: 0xe6ccff, gem: 'blue', skin: '103/enemy-archer',
-  ranged: { cd: 96, dmg: 7, projSpeed: 4, life: 70, radius: 6 },
+  ranged: { cd: 84, dmg: 10, projSpeed: 4.2, life: 78, radius: 10 },
+};
+// 精英·狙击手（攻击性高的远程威胁·中期加入）：血厚、射得勤且狠、弹更大更快=真威胁（owner「攻击性高的敌人也要会远程」）。
+export const SNIPER: EnemyDef = {
+  key: 'sniper', name: '精英狙击', hp: 150, speed: 1.0, radius: 13, contact: 0.4, stopRange: 240,
+  tint: 0x4de0ff, inTint: 0xd0f6ff, gem: 'green', skin: '103/enemy-archer',
+  ranged: { cd: 60, dmg: 16, projSpeed: 5, life: 96, radius: 13 },
+};
+// 精英·重装（大肉·撞脸重伤·后期挤压空间）：血条超长、慢但压迫（升到高级也不速通）。
+export const BRUISER: EnemyDef = {
+  key: 'bruiser', name: '精英重装', hp: 620, speed: 0.7, radius: 24, contact: 1.6, stopRange: 30,
+  tint: 0xa855ff, inTint: 0xe6ccff, gem: 'green', skin: '103/enemy-brute',
 };
 // Boss（周期出现的大首领·gdd §六）：巨血巨体·撞脸重伤 + 周期弹幕（远程威胁·让 Boss 战不是站桩）。
 export const BOSS: EnemyDef = {
-  key: 'boss', name: '首领', hp: 1400, speed: 0.5, radius: 36, contact: 1.2, stopRange: 60,
+  key: 'boss', name: '首领', hp: 3200, speed: 0.52, radius: 36, contact: 2.0, stopRange: 60,
   tint: 0xff4d5e, inTint: 0xffd23f, gem: 'gold', skin: '103/enemy-boss',
-  ranged: { cd: 66, dmg: 11, projSpeed: 3.6, life: 130, radius: 9 },
+  ranged: { cd: 54, dmg: 18, projSpeed: 3.8, life: 140, radius: 16 },
 };
-export const ENEMIES: EnemyDef[] = [SHAMBLER, RUNNER, BRUTE, ARCHER, BOSS];
+export const ENEMIES: EnemyDef[] = [SHAMBLER, RUNNER, BRUTE, ARCHER, SNIPER, BRUISER, BOSS];
 export const EBOLT_SKIN = '103/enemy-bolt'; // 敌弹皮肤槽
 
 // ── 宝石定义（gdd §七·蓝=1·绿=3 经验·肉敌掉更多）─────────────────────────
@@ -252,16 +264,21 @@ export const SPAWNS: SpawnRow[] = (() => {
 // N 个 spawner=玩家的 Hierarchy child（散在出生环上·随玩家移动）；各 Timer(period,loop)+SelfRule 到点 spawn 敌 at:self。
 // 难度递增：分层 spawner 用 SelfRule.whenGlobal(clock>=门) 时间门——越晚，疾行者/胖子才加入（一发打不死）。
 // 全授权期纯数据（Timer+SelfRule+whenGlobal 现成能力）·非 E3 rate-cap director（那是同屏上限自适应·仍 Lead 域）。
-export interface SpawnerTier { key: string; count: number; period: number; afterSec: number } // afterSec=whenGlobal clock 门（秒）
+// capBypass=true → 该层刷怪**不受同屏 cap 门**（boss/精英必现·否则弱敌占满 cap 导致 boss 永不刷·owner「全程没见过 boss」根因）。
+export interface SpawnerTier { key: string; count: number; period: number; afterSec: number; capBypass?: boolean }
 export const SPAWNER_RING = 360; // spawner 环半径（玩家周围·视口外缘）
-export const SPAWN_CAP = 72;     // 同屏敌上限（v3 调高·出更多敌人·2D 批绘真解仍待 P3D）
+export const SPAWN_CAP = 72;     // 同屏弱敌上限（cap 只钳普通杂兵·精英/Boss 走 capBypass 无视它·2D 批绘真解仍待 P3D）
 export const SPAWNER_TIERS: SpawnerTier[] = [
-  { key: 'shambler', count: 8, period: 54, afterSec: 0 },  // 常驻弱敌流（调密·更像 horde·清群靠穿透 kunai）
-  { key: 'shambler', count: 6, period: 48, afterSec: 60 }, // 60s 后再叠一条蹒跚流（难度递增·同屏更挤）
-  { key: 'runner', count: 4, period: 96, afterSec: 20 },   // 20s 后疾行者加入（更早·更多）
-  { key: 'brute', count: 2, period: 180, afterSec: 45 },   // 45s 后胖子加入（肉·escalation·更早）
-  { key: 'archer', count: 3, period: 168, afterSec: 35 },  // 35s 后远程射手加入（中距威胁·E7·更早更多）
-  { key: 'boss', count: 1, period: 60 * 75, afterSec: 75 },// 75s 起每 ~75s 一个首领（周期 Boss·无限局节点）
+  // ── 杂兵流（受 cap 钳·horde 底噪·别太多免糊屏）──
+  { key: 'shambler', count: 6, period: 60, afterSec: 0 },  // 常驻弱敌（略降杂兵·给精英腾同屏空间·owner「小怪太多」）
+  { key: 'runner', count: 4, period: 90, afterSec: 20 },   // 20s 疾行者（快脆·施压走位）
+  { key: 'shambler', count: 5, period: 54, afterSec: 90 }, // 90s 再叠一条蹒跚（中期加压）
+  // ── 威胁/精英流（capBypass·必现·真难度来源·owner「攻击性高的敌人/远程/boss」）──
+  { key: 'archer', count: 3, period: 150, afterSec: 30, capBypass: true },  // 30s 远程射手（中距弹幕·清晰大弹）
+  { key: 'brute', count: 2, period: 165, afterSec: 45, capBypass: true },   // 45s 胖子（肉·血条看得见）
+  { key: 'sniper', count: 2, period: 210, afterSec: 80, capBypass: true },  // 80s 精英狙击（攻击性高·射得勤且狠）
+  { key: 'bruiser', count: 1, period: 260, afterSec: 120, capBypass: true },// 120s 精英重装（大肉·压空间·后期不速通）
+  { key: 'boss', count: 1, period: 60 * 70, afterSec: 60, capBypass: true },// 60s 起每 ~70s 一个首领（必现·无视 cap）
 ];
 
 // ── 皮肤槽 key（美术就绪即换装·未就绪回退 Shape 色块·art-pipeline 红线）────────

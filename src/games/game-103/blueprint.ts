@@ -28,7 +28,7 @@ import { keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCa
 import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
 import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
-  PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, TINT,
+  PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, GEM, TINT,
   PLAYER_DEF, KUNAI, WEAPONS, WEAPON_BIT, ENEMIES, GEMS, GEM_LIFE, SPAWNS, SPAWNER_TIERS, SPAWNER_RING, SPAWN_CAP,
   XP_BASE, XP_STEP, DRAFT_POOL, PASSIVE_BY_KEY, STAT_PASSIVES, EBOLT_SKIN, WEAPON_ANIM, EBOLT_ANIM,
   type WeaponDef, type EnemyDef, type GemDef, type FxAnim,
@@ -192,12 +192,12 @@ function enemyTemplate(e: EnemyDef, gemTemplate: string): { entities: Record<str
         Shape: { kind: 'circle', radius: Math.round(e.radius * 0.5) },
         Color: { tint: e.inTint, alpha: 0.9 },
       },
-      hpbar: { // 头顶血条（BUG v2④修·Gauge 绑 hp·随受击缩短=伤害反馈可见）
-        Hierarchy: { parentId: '@local:body', localX: 0, localY: -(e.radius + 7), localRotation: 0, localScaleX: 1, localScaleY: 1 },
+      hpbar: { // 头顶血条（BUG v2④修·Gauge 绑 hp·随受击缩短=伤害反馈可见）。调宽加高=更醒目（owner「血条不够长」）。
+        Hierarchy: { parentId: '@local:body', localX: 0, localY: -(e.radius + 9), localRotation: 0, localScaleX: 1, localScaleY: 1 },
         Transform: { ...XF0 },
-        Shape: { kind: 'box', width: e.radius * 2, height: 3 },
+        Shape: { kind: 'box', width: Math.max(28, e.radius * 2.6), height: 5 },
         Color: { tint: 0x54e08a, alpha: 1 },
-        Gauge: { resourceId: 'hp', fromParent: true, width: e.radius * 2 },
+        Gauge: { resourceId: 'hp', fromParent: true, width: Math.max(28, e.radius * 2.6) },
       },
       touch: { // 接触伤害区（隐形·连续 DPS·targetMask:PLAYER）
         Hierarchy: child('@local:body'),
@@ -220,12 +220,18 @@ function gemTemplate(g: GemDef): { entities: Record<string, Record<string, unkno
       body: {
         Transform: { ...XF0 },
         Sensor: {},
-        Tag: { flags: ZONE },
+        Tag: { flags: ZONE | GEM }, // GEM 位=magnet pull-anchor 命中筛选
         Shape: { kind: 'circle', radius: g.radius },
         Sprite: { textureKey: g.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 0 }, // 皮肤槽
         Color: { tint: g.tint, alpha: 1 },
         Hitbox: { resource: 'xp', amount: -g.value, targetMask: COLLECTOR, consumeOnHit: true },
         Timer: { id: 'life', elapsed: 0, duration: GEM_LIFE, loop: false },
+        // 磁力吸附（重组·aggro+steering）：宝石带 Perception(只看玩家·sightRadius=吸附半径) → t3-aggro 在半径内
+        // 写 Relation(target)=玩家 → t2-steering seek 把它飞向玩家（经典「经验飞过来」）；半径外无目标=静止不动。
+        // 飞到玩家拾取真空区(collector Shape)即被 Hitbox 收取。半径 260 > 收取区 → 有可见飞行段。
+        Velocity: { vx: 0, vy: 0, angular: 0 },
+        Perception: { targetTag: PLAYER, sightRadius: 260 },
+        Steering: { mode: 'seek', speed: 7.5, stopRange: 0 },
       },
       kill: { // 计分区（隐形·随 body 级联销毁）
         Hierarchy: child('@local:body'),
@@ -323,15 +329,17 @@ function ringSpawnerEntities(): Record<string, EntityBlueprint> {
   SPAWNER_TIERS.forEach((tier, ti) => {
     for (let i = 0; i < tier.count; i++) {
       const a = (Math.PI * 2 * i) / tier.count + idx * 0.7;
-      // whenGlobal 全局门（AND）：① 同屏敌 < cap（GroupCount 计数·满则暂停=无限但有界·防爆炸）② 时间门（难度递增）。
-      const gates: Array<Record<string, unknown>> = [{ kind: 'resource', id: 'enemies_alive', cmp: 'lt', value: SPAWN_CAP }];
+      // whenGlobal 全局门（AND）：① 同屏敌 < cap（杂兵防爆炸·capBypass 层跳过=boss/精英必现·修「全程没 boss」）② 时间门（难度递增）。
+      const gates: Array<Record<string, unknown>> = [];
+      if (!tier.capBypass) gates.push({ kind: 'resource', id: 'enemies_alive', cmp: 'lt', value: SPAWN_CAP });
       if (tier.afterSec > 0) gates.push({ kind: 'resource', id: 'clock', cmp: 'gte', value: tier.afterSec });
       const rule: Record<string, unknown> = {
         when: { kind: 'timer', id: 'spawn', cmp: 'gte', value: Math.max(1, tier.period - 1) },
         do: [{ kind: 'spawn', template: `enemy_${tier.key}`, at: 'self' }],
         once: true, armed: false,
-        whenGlobal: gates.length === 1 ? gates[0] : { kind: 'and', of: gates },
       };
+      if (gates.length === 1) rule.whenGlobal = gates[0]; // 单门直挂
+      else if (gates.length > 1) rule.whenGlobal = { kind: 'and', of: gates }; // 多门 AND；无门(capBypass+afterSec0)=不挂=恒真
       out[`spawner-${ti}-${tier.key}-${i}`] = { // ti=层序（同 key 多层不撞 id）
         Hierarchy: { parentId: 'player', localX: Math.round(Math.cos(a) * SPAWNER_RING), localY: Math.round(Math.sin(a) * SPAWNER_RING), localRotation: 0, localScaleX: 1, localScaleY: 1 },
         Transform: { ...XF0 },
@@ -407,7 +415,7 @@ export function buildBlueprint(): WorldBlueprint {
       Shape: { kind: 'circle', radius: PLAYER_DEF.pickupRadius },
       Color: { tint: 0xffffff, alpha: 0 },
       Resource: { id: 'xp', current: 0, min: 0, max: 99999 }, // 累积经验（阈值由 nextxp 动态门·非 max）
-      // 磁力护符：拾取范围 = base × totals.pickup（t2-stat-bind 投影·磁石层数越高吸得越远）。
+      // 磁力护符：拾取吸真空区 = base × totals.pickup（t2-stat-bind 投影·磁石层数越高真空越大）。
       StatBind: { bindings: [{ source: 'ModifierTotals', key: 'pickup', component: 'Shape', field: 'radius', op: 'mul', base: PLAYER_DEF.pickupRadius }] },
     },
     killbox: { // 计分环（承 score·单调累计击杀）
