@@ -6,6 +6,7 @@
 // 交互/HUD（LayoutNode 四屏 = PUI·REQ-G102-UI）与玩法链（event-when/launch = S4）后续接入。
 import { Engine } from '../../runtime/engine.js';
 import { CanvasRenderer } from '@renderer/index.js';
+import { AssetManager, ImageAssetLoader, registerAssetIndex, parseAssetIndex } from '@assets/index.js';
 import { QueuedInputSource, canvasPointerToScreen } from '@net/index.js';
 import { mountHost } from '@engine/host/mount-host.js';
 import { buildBlueprint } from './blueprint.js';
@@ -28,7 +29,17 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   const input = new QueuedInputSource('g102');
   const engine = new Engine({ input });
   engine.load(buildBlueprint(LEVEL_1));
-  const renderer = new CanvasRenderer({ width: FIELD_W, height: FIELD_H, background: 'transparent' });
+  // 炮台贴图资产（打蛋器 recolor·美术就绪即盖过 box·无 index/失败=回退方体·美术是增量非依赖）。
+  const assets = new AssetManager(new ImageAssetLoader());
+  void (async () => {
+    try {
+      const r = await fetch('/games/game102/art/index.json', { cache: 'no-store' });
+      if (!r.ok) return;
+      registerAssetIndex(assets, parseAssetIndex(await r.json()));
+      await assets.loadAll();
+    } catch { /* 无美术目录 → 回退 box 观感·不炸游戏 */ }
+  })();
+  const renderer = new CanvasRenderer({ width: FIELD_W, height: FIELD_H, background: 'transparent', assets });
   engine.attachRenderer(renderer, scene);
 
   // 画布点击 → 逆投影为世界坐标（无相机=画布逻辑坐标·信箱缩放已由 mountHost 处理）→ 入队；

@@ -188,6 +188,7 @@ function deployQueue(level: Level): Record<string, EntityBlueprint> {
     out[`pool-${i}`] = {
       Transform: XF(cx, cy),
       Shape: box(CG.bodyW, CG.bodyH),
+      Sprite: cannonSprite(name),
       Color: col(pc.tint, 1),
       Clickable: { action: sig, phase: 'down' },
       Caster: { onSignal: sig, at: 'self', template: `cannon_${name}` },   // 点→在此位生成上带色炮（PathFollow 驾其上轨）
@@ -202,16 +203,17 @@ function deployQueue(level: Level): Record<string, EntityBlueprint> {
 // ── 炮台矢量图（打蛋器·实机特写 IMG_6063）：圆角方体炮身 + 顶部两根竖柱（打蛋器丝）+ 面上动态弹数 ──
 // 渲染器只有 box/circle/text → 用 box 近似圆角方体、两 box 作竖柱、Text+text-binding 投 ammo 到面上。
 // 竖柱/弹数皆 hierarchy 子件（parentId=同模板 '@local:body'）→ 随炮身移动；hierarchy-cascade 随炮身销毁。
-const CG = { bodyW: 46, bodyH: 54, prongW: 12, prongH: 24, prongDX: 13, prongDY: -30, numSize: 26 } as const;
+const CG = { bodyW: 52, bodyH: 60, numSize: 26 } as const;
 const hkid = (parentRef: string, lx: number, ly: number): Record<string, unknown> =>
   ({ parentId: parentRef, localX: lx, localY: ly, localRotation: 0, localScaleX: 1, localScaleY: 1 });
-// 打蛋器竖柱×2 + 面上弹数（子件·挂 parentRef 下）。bindAmmo=true → 数字随宿主 ammo 实时（text-binding fromParent）。
-function eggBeaterParts(parentRef: string, tint: number, ammo: number, bindAmmo: boolean): Record<string, EntityBlueprint> {
+// 炮台贴图 key（每色一张·打蛋器 recolor·美术就绪盖过 box 底·未就绪回退 box）。
+const cannonSprite = (name: string): Record<string, unknown> => ({ textureKey: `cannon/${name}`, anchorX: 0.5, anchorY: 0.5, zOrder: 5 });
+// 面上动态弹数（子件·挂 parentRef 下·盖在贴图脸上）。bindAmmo=true → 数字随宿主 ammo 实时（text-binding fromParent）。
+// 打蛋器竖柱由贴图自带（不再画矢量竖柱·避免与贴图重影）。
+function eggBeaterParts(parentRef: string, _tint: number, ammo: number, bindAmmo: boolean): Record<string, EntityBlueprint> {
   return {
-    prongL: { Transform: XF(0, 0), Hierarchy: hkid(parentRef, -CG.prongDX, CG.prongDY), Shape: box(CG.prongW, CG.prongH), Color: col(tint, 1) },
-    prongR: { Transform: XF(0, 0), Hierarchy: hkid(parentRef, CG.prongDX, CG.prongDY), Shape: box(CG.prongW, CG.prongH), Color: col(tint, 1) },
     num: {
-      Transform: XF(0, 0), Hierarchy: hkid(parentRef, 0, 3),
+      Transform: XF(0, 0), Hierarchy: hkid(parentRef, 0, 6),
       Text: { content: String(ammo), fontSize: CG.numSize, fontFamily: 'sans-serif', anchor: 'center', lineSpacing: 0 },
       Color: col(0xffffff, 1),
       ...(bindAmmo ? { TextBinding: { resourceId: 'ammo', fromParent: true } } : {}),
@@ -232,7 +234,8 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
     templates[`cannon_${name}`] = { entities: {
       body: {
         Transform: XF(0, 0), // 落点=补给口（prefab 展开时按 spawn 位偏移）→ PathFollow 驾其从弹簧上轨绕一圈
-        Shape: box(CG.bodyW, CG.bodyH), // 打蛋器圆角方体炮身（近似）
+        Shape: box(CG.bodyW, CG.bodyH), // 底：贴图未就绪时回退方体
+        Sprite: cannonSprite(name),     // 打蛋器贴图（recolor·就绪盖过 box）
         Color: col(pc.tint, 1),
         Tag: { flags: CANNON_BIT | BELT_BIT },
         Resource: { id: 'ammo', current: level.ammo, min: -1, max: level.ammo },
@@ -297,6 +300,7 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
       slot: {
         Transform: XF(0, 0),
         Shape: box(CG.bodyW, CG.bodyH),
+        Sprite: cannonSprite(name),
         Color: col(pc.tint, 0.9),
         Tag: { flags: CANNON_BIT | TRAY_BIT },
         Resource: { id: 'ammo', current: level.ammo, min: -1, max: level.ammo }, // 面上弹数（返回态·静态显示）
