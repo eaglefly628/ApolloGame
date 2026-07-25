@@ -36,7 +36,7 @@
 
 - **环形轨道绕行** = `Path3D`（闭环 loop·faceDir·三图轨道是矩形闭环）或 2D 等价环路移动；**多炮** = 多实体各挂路径进度。
 - **过位侧向开火** = 关键难点：炮沿轨道位置 → 判定它当前对着哪条边/哪条 lane → 对该 lane 外沿**暴露的**同色 BoardCell 开火（`event-when` 位置/邻接条件 + `launch`/`hitbox`）。**这是比 v1 线性远更复杂的目标模型**。
-- **⚠ 诚实预判**：v1 时 Lead 裁①把 `conveyor-queue` 判为 YAGNI 不下沉——**但 v2 的「环形轨道 + 过位侧向剥离 + 多炮时机」很可能就是当初说的『撞墙』**。PE 先试 `Path3D`+`event-when`(lane 检测)+`launch` 组合；若实证表达不了（尤其"过位判定当前边的暴露同色"），**回 `requests.md` 报缺口**，候选下沉 `track-shooter`/`orbit-fire`（确定性·可复用"绕轨过位触发"玩法）——附最小复现，**Lead 裁·裁前不游戏层自写编排**。
+- **✅ 撞墙已发生并已解（2026-07-25 更新）**：PE 实证 `t2-orbit-motion`+索敌簇成拓扑死环（`aggro→motion-apply→orbit-motion→aggro`·真圆环绕+逐格索敌当时无法共存·REQ-G102-VISCANNON），已下沉 **`REQ-PATHFOLLOW`（写 Velocity 的轨道跟随·与索敌共存）· 引擎团队已 done（commit daae3c3a）**。→ **真环轨现在可做**：game102 挂 `PathFollow{waypoints: 管道环采样}` 让炮**绕轨一圈**，配 `aggro`(锁当前边暴露同色)+`launch` 过位开火，换掉 VISCANNON 的 steering 折中。若「过位判定当前边暴露同色」仍有表达不了处，再回 `requests.md` 报缺口（Lead 裁·裁前不游戏层自写编排）。
 - **解锁/盲盒/分段/画内锁块** = `gauge`/`flag`/`event-when`/`effect-apply` + 关卡数据（多为数据层·非新缺口）。
 - **3D**：轨道 + 绕行炮 + 剥离碎片落平台 = 与 `fx-3d-debris.md` 的「全3D盒庭」方向**天然契合**（ref 三图本就是 3D 盒庭观感）——A/B 架构里更倾向 **B 全3D**（轨道/炮/画/碎片同一 3D 空间）。
 
