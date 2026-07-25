@@ -8,6 +8,12 @@
 
 ## 待处理 / 进行中
 
+### REQ-SPENDONFIRE-发射即扣发射源一发（per-shot 扣弹·N 实体各自计数）· [2026-07-25] · PE-game102 报（owner 环轨玩法「面上还剩几发/打光消失/选错色满弹返回」撞墙）→ Lead 裁 · status: **open** · 优先级: P1（game102 核心机制前提·塔防/射击/弹药类通用） · 类型: 引擎能力缺口（主程域·先重组已证不可得）
+> **想实现的行为**：一门炮有 `ammo` 发子弹；**每真正命中一发才 ammo-1**（选错色/空过那圈**不减**）→ ① 炮面动态显示「还剩几发」② 打光即中途消失 ③ 选错色满弹返回平台。轨道上**同时 N 门炮各持自己的 ammo**。通用于塔防/射击/任何「N 个发射体各自弹药计数」。
+> **已试（PE 源码复核）**：开火 = `self-rule{ do:[spawn bullet at:'target', modify-resource ammo -1] }`。**两条都不成**：① `at:'target'` 无目标时天然跳过 spawn（对），但**同 do 里的 `modify-resource` 无条件照跑** → 空过也扣弹（`self-rule.ts` do 动作彼此独立·无「spawn 成功才扣」绑定）；② 想让**子弹**回头扣发射源的 ammo：`ResourceModify` 仅 `local`/`global` 作用域（`components/logic.ts`）——local=改子弹自己、global=按 id 串扣**第一门**同名 ammo炮（N 炮全共享 `ammo` id → 扣错炮）。**无 source 路由**（虽 `PrefabOrigin.source` 已存在、`hitbox.ts findScaleResource` 已用它做 per-caster 读，但**写**侧无对应）。`self-rule` 的 `when` 条件闭集（resource/flag/state/timer/string）**无「有 target 才成立」门** → 也无法把扣弹 gate 在开火上。
+> **卡在哪 / 缺什么**：缺「**命中/发射即扣其发射源实体一发**」的 per-entity per-shot 消耗——N 实体各自计数、确定性、进 hash。**禁游戏层自写 N 炮弹药散逻辑**（红线）→ 下沉引擎。
+> **建议方案（Lead 裁·二选一）· 边界**：① **`ResourceModify` 加 `scope:'source'`**——resource-apply 遇 source 作用域时改 `PrefabOrigin.source` 实体上的该 id 资源（复用已有 source 盖章·最薄）；子弹模板挂 `ResourceModify{resourceId:'ammo', amount:-1, scope:'source'}` → 子弹只在**真生成时**（=有目标）才存在 → 天然 per-shot 扣发射源。或 ② 新薄件 `spend-on-fire`：发射体命中/生成即对 `PrefabOrigin.source` 扣一发。**触碰范围**：`src/skills/**`（resource-apply 加 source 路由 + 测试）+ `src/engine/protocol/components/logic.ts`（scope 枚举加 'source'）；game102 只经数据消费。撞墙实证＝`docs/design/game102/core-experience-v2.md §2.1 F` + `src/games/game102/blueprint.ts`（`cannon_*` 开火 do）。
+
 ### REQ-TAPSPAWN-加权掉表生成器原语（tap→耗资源→加权 spawn） · [2026-07-24] · PE-101 报（capability-plan §6 G1「撞墙→下沉 tap-cost-spawn」的回报）→ Lead/主程 裁 · status: **⚖ Lead 裁 ✅ 下沉 `weighted-spawn`（2026-07-24·spec 已备·⏸ 缓建）** · 优先级: P3（**owner 2026-07-24：game101 先迭代设计·M1 不急** → 不现在建·待 M1 提上日程再动手·spec 现成） · 类型: 引擎通用能力缺口（合并/idle/gacha 通用·主程域）
 > **⏸ 缓建（owner 2026-07-24「game1 先迭代·M1 不急」）**：裁决 ✅ 下沉 + spec 已定（下方），但**不现在建**——game101 先做设计/布局/经济迭代（GD-101/PE-101 域），M1 灰盒（需本件）待 owner 提上日程再由主程/Opus 照 spec 施工。
 > **⚖ Lead 裁（2026-07-24）：✅ 下沉**——PE-101 已源码复核实锤真墙（无「加权运行时 spawn」原语·`caster`/`self-rule` 只固定 template·`effect-apply` 不能 create·`draft-offer` 加权核 private + 自建 seed 不接世界 `RandomSeed`）；正是 G1 §6 预祝福的 `tap-cost-spawn`。合并/idle/gacha/loot 通用·真缺口非重组可得（宪法 §2）。
