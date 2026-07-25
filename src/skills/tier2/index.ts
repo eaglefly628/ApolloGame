@@ -23,6 +23,9 @@ export { steeringCapability } from './steering.js';
 export { keybindCapability } from './keybind.js';
 export { statsCapability, computeEffective } from './stats.js';
 export { launchCapability } from './launch.js';
+// bounce-relay（REQ-SURVIVOR武器缺口 W7）：跳弹命中重定向段——消费 Launch.bounce 落地的持久 Bounce
+// 状态（launch 自删前一次性落地，因 Launch 是 fire-once 装不下"命中后还能再弹几次"的运行时状态）。
+export { bounceRelayCapability } from './bounce-relay.js';
 export { tilemapCapability, findTilemap, isSolidTile } from './tilemap.js';
 export { animStateCapability } from './anim-state.js';
 export { facingCapability } from './facing.js';
@@ -100,3 +103,6 @@ export type { BTNode, BTNodeType, BTStatus, BTAction, BTLeafResult, BTLeafFn, BT
 // 按 key 投影到本实体任意其它组件字段（幂等：每 tick 从 base 重算，不读当前字段值）。modifier-stack/stats
 // 只产出总表/effective，本能力才是"接线到具体组件字段"那一步（moveSpeed→Controllable.speed 等）。
 export { statBindCapability, projectStatBind } from './stat-bind.js';
+// pull-anchor（REQ-SURVIVOR武器缺口 W9）：区域施加器——锚点每 tick 批量把邻近已挂 Steering 的实体
+// Relation(target) 改指向自己，复用 t2-steering 现成的 seek 把它们"拉"过来（黑洞/吸附类武器，重组非下沉）。
+export { pullAnchorCapability } from './pull-anchor.js';

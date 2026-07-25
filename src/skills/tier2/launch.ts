@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Launch, Transform, Velocity } from '@engine/protocol/components.js';
+import type { Bounce, Launch, Transform, Velocity } from '@engine/protocol/components.js';
 import { nearestByTag } from '@skills/atoms/spatial-query/index.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -16,6 +16,9 @@ import { nearestByTag } from '@skills/atoms/spatial-query/index.js';
 //    ② 写一次 Velocity = 单位方向 × speed（无 Velocity 则创建）。
 //    ③ removeComponent('Launch')（一次性，之后 motion-apply 直飞；无目标 → fizzle：清 Launch+零速度，靠 lifetime 回收；
 //       声明 fallbackDir 则不哑火，改沿它发射——AOE/弹幕落空仍要有个默认去向的场景，薄加性字段，缺省=现行为零回归）。
+//  ④ 声明了 bounce（REQ-SURVIVOR武器缺口 W7·薄加性）：在 removeComponent('Launch') 前落地持久
+//     Bounce{remaining:times, targetTag, speed}——因为 Launch 本身发射即自删，装不下"命中后还能再弹
+//     几次"这份运行时状态。之后每次命中的实际重定向交 t2-bounce-relay 接管（见 bounce-relay.ts）。
 //  定序：runsBefore motion-apply（先定速再积分）。确定性：sqrt/÷ 归一（IEEE 安全，同 steering）；nearestByTag id tie-break。
 // ═══════════════════════════════════════════════════════════════
 
@@ -34,6 +37,7 @@ export const launchCapability = defineCapability({
       '固定方向弹幕：Launch{ speed:8, toward:"dir", dirX:1, dirY:0 }',
       '无目标 → fizzle（清 Launch + 零速度，靠 lifetime 回收）',
       '索敌落空不哑火：Launch{ speed:6, toward:"target", targetMask:ENEMY, fallbackDir:{x:0,y:1} } → 无目标时朝 (0,1) 发射而非冻结',
+      '跳弹三次：Launch{ speed:6, toward:"target", targetMask:ENEMY, bounce:{ times:3, targetTag:ENEMY } } → 自删 Launch 前落地 Bounce{remaining:3}，命中后由 t2-bounce-relay 接管重定向',
     ],
   },
 
@@ -49,11 +53,13 @@ export const launchCapability = defineCapability({
           dirX: { type: 'number', describe: "toward:'dir' 时方向 X（会归一化）" },
           dirY: { type: 'number', describe: "toward:'dir' 时方向 Y（会归一化）" },
           fallbackDir: { type: 'string', describe: "toward:'target' 索敌落空时的兜底方向 {x,y}（会归一化×speed）；缺省=现行为不变（清零速度冻结原地）" },
+          bounce: { type: 'string', describe: '声明跳弹 {times,targetTag}：自删 Launch 前落地持久 Bounce{remaining:times,targetTag,speed}，命中后转向交 t2-bounce-relay；缺省=不跳弹（现行为不变）' },
         },
       },
     },
     reads: ['Launch', 'Transform', 'Tag'],
-    writes: ['Velocity', 'Launch'],
+    // Bounce：写不读——launch 只在发射瞬间一次性落地初始状态（见④），之后的读改写全在 bounce-relay。
+    writes: ['Velocity', 'Launch', 'Bounce'],
     consumes: [],
   },
 
@@ -64,7 +70,7 @@ export const launchCapability = defineCapability({
       id: 'launch',
       runsBefore: ['motion-apply'],
       reads: ['Launch', 'Transform', 'Tag'],
-      writes: ['Velocity', 'Launch'],
+      writes: ['Velocity', 'Launch', 'Bounce'],
       consumes: [],
       execute(world: IWorld) {
         const ids = world.query('Launch', 'Transform').map(([id]) => id).sort();
@@ -104,6 +110,15 @@ export const launchCapability = defineCapability({
           } else {
             v.vx = 0; // 无方向/无目标/无 fallbackDir → fizzle（零速度，靠 lifetime 回收）
             v.vy = 0;
+          }
+          // 声明了 bounce → 落地持久 Bounce（Launch 自删前的最后一刻，见文件头④）。零回归：无 bounce 不写。
+          if (l.bounce && l.bounce.times > 0) {
+            world.addComponent(id, {
+              type: 'Bounce',
+              remaining: l.bounce.times,
+              targetTag: l.bounce.targetTag,
+              speed: l.speed,
+            } as Bounce);
           }
           world.removeComponent(id, 'Launch'); // 一次性：之后 motion-apply 直飞
         }

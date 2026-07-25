@@ -13,6 +13,11 @@ import { nearestByTag } from '@skills/atoms/spatial-query/index.js';
 //
 //  这是把单体 AI 拆开后的"感知"原子：模式/转移(巡逻↔追击↔逃跑)交给 state+condition 当数据，行为=数据组合而非代码。
 //  确定性：nearestByTag 按 id 升序 tie-break；runsBefore motion-apply（据本帧位置感知，再移动）。
+//
+//  lureTag（薄加性·REQ-SURVIVOR武器缺口 W8·零回归）：声明后，感知阶段先在 sightRadius 内找带
+//  Tag.flags & lureTag 位的实体（诱饵/嘲讽物）——找到则直接选它为目标，**盖过**默认 targetTag 选择
+//  （多个候选时 nearestByTag 自带 id tie-break）；范围内没有 lure 才回落原有的 targetTag 最近目标逻辑。
+//  缺省 undefined = 现行为完全不变（不查 lure，直接走 targetTag）。诱饵/嘲讽机制通用，非本游戏专属。
 // ═══════════════════════════════════════════════════════════════
 
 export const aggroCapability = defineCapability({
@@ -29,6 +34,7 @@ export const aggroCapability = defineCapability({
       '怪锁玩家：Perception{ targetTag:PLAYER, sightRadius:300 } → Relation{kind:"target", targetId:"hero"}',
       '炮塔锁敌：Perception{ targetTag:ENEMY, sightRadius:400 } → 供 caster at:"target" 自动开火',
       '视野丢失：目标离开 sightRadius → 清 Relation(target) → steering 回 idle',
+      '诱饵盖过默认目标：Perception{ targetTag:PLAYER, sightRadius:300, lureTag:LURE } → 视野内有带 LURE 位的诱饵实体时优先锁它，无诱饵才回落锁 PLAYER',
     ],
   },
 
@@ -36,10 +42,11 @@ export const aggroCapability = defineCapability({
     provides: {
       Perception: {
         category: 'config',
-        describe: '声明「感知 sightRadius 内最近的 targetTag 阵营 → 写 Relation(target)」。索敌=数据。',
+        describe: '声明「感知 sightRadius 内最近的 targetTag 阵营 → 写 Relation(target)；若声明 lureTag 且范围内有匹配实体则优先选它」。索敌=数据。',
         fields: {
           targetTag: { type: 'number', describe: '感知的阵营位（Tag.flags & targetTag）' },
           sightRadius: { type: 'number', describe: '感知半径（<=0=无限视野）' },
+          lureTag: { type: 'number', describe: 'sightRadius 内若有 Tag.flags 含此位的实体，优先选它为目标（盖过 targetTag 默认选择）；无则回落 targetTag。缺省=不查 lure（零回归）' },
         },
       },
     },
@@ -62,7 +69,9 @@ export const aggroCapability = defineCapability({
         for (const id of ids) {
           const p = world.getComponent<Perception>(id, 'Perception')!;
           const t = world.getComponent<Transform>(id, 'Transform')!;
-          const targetId = nearestByTag(world, t.x, t.y, p.targetTag, { excludeId: id, maxRadius: p.sightRadius });
+          // lureTag 优先：范围内有诱饵 → 盖过默认 targetTag 选择；否则回落默认索敌（零回归口径）。
+          const targetId = (p.lureTag ? nearestByTag(world, t.x, t.y, p.lureTag, { excludeId: id, maxRadius: p.sightRadius }) : undefined)
+            ?? nearestByTag(world, t.x, t.y, p.targetTag, { excludeId: id, maxRadius: p.sightRadius });
           const rel = world.getComponent<Relation>(id, 'Relation');
           if (targetId) {
             if (!rel) world.addComponent(id, { type: 'Relation', kind: 'target', targetId } as Relation);

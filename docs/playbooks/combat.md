@@ -13,6 +13,9 @@
 | 修正总表（字段表+混合策略+门控） | `t2-modifier-stack` | 挂多条 `ModifierSource{target,op,value/valueFrom,gate}`（op=add/mul/max/min/or/floor）+ 一个 `ModifierTotals` 单例；消费方读 `totals`。计分修正/逐字段 sum·max·or/buff 汇总 |
 | DoT / regen / 定时状态 | `t2-over-time` | 挂 `OverTime{effects:[{resource,amountPerTick,period,duration}]}`（可多个并行） |
 | 自动索敌锁最近目标 | `t3-aggro` | 挂 `Perception{targetTag,sightRadius}`；下游读 `Relation(target)`（steering 追、caster at:target） |
+| 诱饵/嘲讽盖过默认目标 | `t3-aggro`（`lureTag`） | `Perception` 加 `lureTag`：半径内有带该 Tag 位的实体则优先锁它（盖过 `targetTag`），无则回落默认索敌 |
+| 跳弹（命中后转向下一个目标） | `t2-launch`（`bounce`）+ `t2-bounce-relay` | `Launch{bounce:{times,targetTag}}`：自删 Launch 前落地持久 `Bounce`；命中后由 `bounce-relay` 找 `nearestByTag` 下一个目标重定向（保持 speed 模长）、`times-1`；无新目标不再弹 |
+| 黑洞/吸附（拉一群敌人向锚点） | `t2-pull-anchor` | 锚点挂 `PullAnchor{radius,tagMask}`：半径内已挂 `Steering` 的实体 `Relation` 改指锚点，复用 `steering` 现成 seek 拉过去（仅对已挂 `Steering` 的实体生效） |
 | 按数据放技能/召唤 | `t3-caster` | 技能=`PrefabTemplate`，按键/点击→`Signal`→`Caster` 释放（配 `t3-prefab`） |
 | 掷骰判定 / roguelike | `t2-dice-roll`（`DicePool`） | 见 randomness.md；结果 `RolledDice` 供结算 |
 | 各掷战力比大小 | `opposedRoll`（纯函数） | `src/skills/tier2/dice.ts` 同骰族纯函数，种子化对掷 |

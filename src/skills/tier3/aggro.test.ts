@@ -69,3 +69,51 @@ describe('aggro — 索敌 → Relation(target)', () => {
     expect(rel(w, 'm')).toMatchObject({ targetId: 'p' }); // 跳过非目标阵营的更近者
   });
 });
+
+describe('aggro — lureTag（薄加性·REQ-SURVIVOR武器缺口 W8·诱饵盖过默认目标）', () => {
+  const LURE = 1 << 3;
+
+  it('声明 lureTag 且范围内有诱饵 → 盖过默认 targetTag 选择', () => {
+    const w = world();
+    perceiver(w, 'm', 0, 0, { targetTag: PLAYER, sightRadius: 0, lureTag: LURE });
+    target(w, 'p', 20, 0, PLAYER); // 默认会锁的最近玩家
+    target(w, 'decoy', 100, 0, LURE); // 更远，但带诱饵标记
+    w.tick();
+    expect(rel(w, 'm')).toMatchObject({ kind: 'target', targetId: 'decoy' }); // 诱饵盖过更近的玩家
+  });
+
+  it('声明 lureTag 但范围内无诱饵 → 回落 targetTag 默认索敌', () => {
+    const w = world();
+    perceiver(w, 'm', 0, 0, { targetTag: PLAYER, sightRadius: 0, lureTag: LURE });
+    target(w, 'p', 20, 0, PLAYER);
+    w.tick();
+    expect(rel(w, 'm')).toMatchObject({ targetId: 'p' });
+  });
+
+  it('多个诱饵 → 选最近的（nearestByTag id tie-break，同 targetTag 口径）', () => {
+    const w = world();
+    perceiver(w, 'm', 0, 0, { targetTag: PLAYER, sightRadius: 0, lureTag: LURE });
+    target(w, 'far_decoy', 100, 0, LURE);
+    target(w, 'near_decoy', 10, 0, LURE);
+    w.tick();
+    expect(rel(w, 'm')).toMatchObject({ targetId: 'near_decoy' });
+  });
+
+  it('诱饵在 sightRadius 外 → 不生效，仍回落 targetTag（lureTag 复用同一半径门）', () => {
+    const w = world();
+    perceiver(w, 'm', 0, 0, { targetTag: PLAYER, sightRadius: 30, lureTag: LURE });
+    target(w, 'p', 20, 0, PLAYER);
+    target(w, 'decoy', 100, 0, LURE); // 超出 sightRadius
+    w.tick();
+    expect(rel(w, 'm')).toMatchObject({ targetId: 'p' });
+  });
+
+  it('零回归：未声明 lureTag → 现行为不变（即使场上有 LURE 标记实体也不受影响）', () => {
+    const w = world();
+    perceiver(w, 'm', 0, 0, { targetTag: PLAYER, sightRadius: 0 }); // 无 lureTag
+    target(w, 'p', 20, 0, PLAYER);
+    target(w, 'decoy', 5, 0, LURE); // 更近，但本 Perception 没声明 lureTag → 不查它
+    w.tick();
+    expect(rel(w, 'm')).toMatchObject({ targetId: 'p' });
+  });
+});

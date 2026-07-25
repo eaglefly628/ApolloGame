@@ -54,6 +54,8 @@ import {
   orbitMotionCapability,
   pathFollowCapability,
   statBindCapability,
+  bounceRelayCapability,
+  pullAnchorCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability, blockGridCapability, handPatternCapability } from '@skills/tier3/index.js';
 
@@ -135,6 +137,12 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   // 投影到本实体任意组件字段（moveSpeed→Controllable.speed、range→Shape.radius、attackSpeed→Timer.duration
   // 等），幂等重算不复利。runsAfter modifier-stack/stat-apply/resource-apply/timer-advance 打破传递环。
   statBindCapability,
+  // t2-bounce-relay（REQ-SURVIVOR武器缺口 W7）：跳弹命中重定向——消费 Launch.bounce 落地的持久 Bounce
+  // 状态，命中后按剩余次数 nearestByTag 转向下一个目标（保持速度模长）。
+  bounceRelayCapability,
+  // t2-pull-anchor（REQ-SURVIVOR武器缺口 W9）：区域施加器（重组·非下沉）——锚点批量把邻近已挂 Steering
+  // 的实体 Relation(target) 改指自己，复用 t2-steering 现成 seek 拉过去（黑洞/吸附类武器）。
+  pullAnchorCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,

@@ -86,6 +86,10 @@ export interface Perception extends Component {
   readonly type: 'Perception';
   targetTag: number; // 感知的阵营（Tag.flags & targetTag）
   sightRadius: number; // 感知半径（<=0 = 无限视野）
+  // lureTag（薄加性·REQ-SURVIVOR武器缺口 W8·零回归）：sightRadius 内若存在 Tag.flags 含此位的实体，
+  // 优先选它为目标（覆盖 targetTag 默认选择；多个候选按 nearestByTag 的 id tie-break）；范围内无 lure
+  // 才回落 targetTag 默认索敌。缺省 undefined = 现行为不变（诱饵/嘲讽标记通用，不限本游戏）。
+  lureTag?: number;
 }
 
 // ── Steering ── 数据驱动 AI 的"转向"原子（D-001）。读自身 Relation{kind:'target'} → 朝目标 seek（到 stopRange
@@ -105,6 +109,19 @@ export interface Steering extends Component {
     weight: number; // 斥力融进转向输出的强度（乘在线性衰减归一斥力上·再连同基础转向 clamp 回 speed）
     tagMask?: number; // 只与含这些 Tag.flags 位的邻居互斥（缺省=只与其它带 Steering 的群体成员互斥·不推开玩家/子弹）
   };
+}
+
+// ── PullAnchor ── 区域施加器（REQ-SURVIVOR武器缺口 W9·黑洞/吸附类武器·**重组**：不新写位移数学，
+// 只批量改写"已带 Steering 的邻近实体"的 Relation(target)→自身，让 t2-steering 既有的 seek 逻辑把它们
+// "拉"过来（含其 stopRange/separation 免费复用）。挂在锚点实体（需 Transform）：每 tick queryRange 半径内
+// 找 Tag.flags 含 tagMask 且**已挂 Steering**的实体，把它们的 Relation 覆盖为 {kind:'target', targetId:锚点}
+// （对齐 aggro 的"Relation 另作他用则让位"礼让口径）。边界：只对已有 Steering 的实体生效——不能拉玩家/
+// 道具/子弹等无 Steering 的实体（那类需求超出本重组能力，见 pull-anchor.ts 文件头）。
+// 确定性：queryRange/锚点均按 id 排序遍历，无随机。
+export interface PullAnchor extends Component {
+  readonly type: 'PullAnchor';
+  radius: number; // 施加半径（queryRange 半径；>0 才生效）
+  tagMask: number; // 命中筛选：目标 Tag.flags & tagMask（0 = 不限阵营，仍需持有 Steering 才会被拉）
 }
 
 // ── PathFollow ── 固定航点轨道匀速跑（REQ-PATHFOLLOW）。沿 waypoints 依次朝下个航点走，进 arriveRadius
@@ -180,4 +197,21 @@ export interface Launch extends Component {
   // 声明此字段则改沿它发射（归一化×speed）而非冻结——弹幕/AOE 落空不哑火，仍朝一个默认方向飞出去。
   // 缺省 undefined = 现行为不变。
   fallbackDir?: { x: number; y: number };
+  // bounce（薄加性·零回归·REQ-SURVIVOR武器缺口 W7）：声明"跳弹"次数与目标阵营。launch 是发射瞬间定向
+  // 后即自删 Launch 的一次性组件（fire-and-forget），无法持有"命中后还能再弹几次"的运行时状态——
+  // 声明本字段时，launch 系统在自删 Launch 前会把它落地成持久的 Bounce{remaining,targetTag,speed}
+  // 组件（见 bounce-relay.ts），命中后的实际重定向由 t2-bounce-relay 接管。缺省 undefined = 现行为不变。
+  bounce?: { times: number; targetTag: number };
+}
+
+// ── Bounce ── 跳弹的持久运行时状态（REQ-SURVIVOR武器缺口 W7）。由 launch 在声明了 Launch.bounce 的
+// 抛射体自删 Launch 前一次性落地（remaining=times、speed=发射时的 Launch.speed，之后不再逐帧重算）；
+// 之后由 t2-bounce-relay 在每次命中时消费：nearestByTag(targetTag, exclude=刚命中的) 找下一个目标 →
+// 重定向 Velocity（保持 speed 模长）→ remaining-1。remaining<=0 或找不到新目标 → 不再弹（照常按
+// Timer(life) 回收，本组件不必移除，只是从此静默）。
+export interface Bounce extends Component {
+  readonly type: 'Bounce';
+  remaining: number; // 剩余可弹射次数（成功弹射一次 -1；未命中/无新目标不消耗）
+  targetTag: number; // 弹射目标阵营（Tag.flags & targetTag，同 nearestByTag 的 tagMask 语义）
+  speed: number; // 弹射后保持的速度模长（发射时的 Launch.speed，一次性抄录，不逐帧重算）
 }
