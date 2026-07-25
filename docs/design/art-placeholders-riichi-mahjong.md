@@ -16,6 +16,8 @@
 | 背/面/空 | `mahjong/{back,front,blank}` | `mahjong/tex/{back,front,blank}` | 牌背/牌面白/空白 |
 
 > **3D 牌 = 立方体贴牌面**：一个 box（象牙白牌身·压成牌比例）+ `Material3D` 正面贴 `mahjong/tex/<牌>`（PNG）。货架已有 `mesh/cube` 可缩放。
+>
+> ⚠ **透明底陷阱（PA 2026-07-22 会审补·PE-B S3 撞出）**：FluffyStuff 字形 PNG 原生=**透明底**，直接作 `Material3D.map` 会被不透明材质渲黑（无 alpha 路）。**货架 `mahjong/tex/*` 已由 PA 预压不透明象牙底**（`scripts/asset-flatten.mjs` 压 `front.png` 底·provenance 记 `flattened`）——**vendor 进来即是可用 albedo，无需再合成**。通则：**任何透明底精灵 PNG 要当 3D albedo，先 `asset-flatten` 压不透明底**（`asset-matte` 的反操作）。
 
 ## ✅ 复用（不用扒）
 
