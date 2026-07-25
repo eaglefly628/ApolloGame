@@ -95,19 +95,19 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(countTag(e, ZONE)).toBeGreaterThan(0);
   });
 
-  it('闭环：自动开火击杀逼近的敌人 → 掉宝石 → 拾取入经验 → 升级（等级>1）', () => {
+  it('闭环：走位吃怪 → 掉宝石 → 磁吸拾取入经验 → 升级（等级>1）', () => {
     const e = fresh();
-    // 跑足够长：敌群逼近、被子弹清、宝石被拾取环收集、经验攒够升级。玩家原地不动（敌人会自己贴上来）。
-    tickN(e, 60 * 25);
+    // 真实玩法=玩家走位穿过怪群/宝石（慢起步下敌稀·原地会被远程清光收不到经验·需移动收集）。绕圈 60s。
+    for (let s = 0; s < 60; s++) move(e, [1, 0, -1, 0][Math.floor(s / 2) % 4], [0, 1, 0, -1][Math.floor(s / 2) % 4], 60, 1 + s * 60);
     expect(resById(e, 'level')).toBeGreaterThan(1);
     expect(resById(e, 'score')).toBeGreaterThan(0);
   });
 
-  it('接触伤害/死亡：大量敌人贴身 → 玩家 hp 掉光 → flow 转 defeat', () => {
+  it('接触伤害/死亡：长时间贴身敌群 → 玩家 hp 掉光 → flow 转 defeat（慢起步·后期密度才致命）', () => {
     const e = fresh();
-    // 让敌群持续贴身很久（玩家不动、不还手也扛不住连续接触 DPS）。
-    tickN(e, 60 * 25); // cap-48 敌群贴身·数十秒足够扣光
-    // 要么已被打死（defeat），要么 hp 明显受损——M1 灰盒确保接触伤害真实生效。
+    // 慢起步：前期稀疏可控·跑久（90s·进阶段②③密度上来）原地不还手扛不住连续接触 DPS。
+    tickN(e, 60 * 90);
+    // 要么已被打死（defeat），要么 hp 明显受损——接触伤害真实生效。
     expect(res(e, 'player') < PLAYER_DEF.maxHp || flowState(e) === 'defeat').toBe(true);
   });
 
@@ -340,17 +340,18 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(hasAliveGate((trash![1] as { SelfRule?: { whenGlobal?: unknown } }).SelfRule?.whenGlobal)).toBe(true);
   });
 
-  it('拾取（性能）：宝石不挂 Perception（避免每颗跑 O(N) 索敌扫描）；收取=贴身真空区+磁石被动放大', () => {
+  it('磁力吸附（空间索引下沉后便宜复接）：宝石近距 Perception+Steering→飞向玩家；收取环受磁石被动放大', () => {
     const bp = buildBlueprint();
     const lib = (bp.entities.library as { PrefabLibrary: { templates: Record<string, { entities: Record<string, Record<string, unknown>> }> } }).PrefabLibrary.templates;
-    const gemBody = lib.gem_blue.entities.body as { Perception?: unknown; Hitbox?: { resource: string; targetMask: number } };
-    expect(gemBody.Perception).toBeUndefined();               // 宝石不进 aggro 扫描（性能）
-    expect(gemBody.Hitbox?.resource).toBe('xp');              // 贴身收取仍在（命中拾取环入经验）
+    const gemBody = lib.gem_blue.entities.body as { Perception?: { targetTag: number; sightRadius: number }; Steering?: { mode: string }; Hitbox?: { resource: string } };
+    expect(gemBody.Perception?.targetTag).toBe(PLAYER);       // 近距索敌玩家→飞入
+    expect(gemBody.Perception?.sightRadius).toBeGreaterThan(PLAYER_DEF.pickupRadius); // 吸附半径 > 收取真空区=有飞行段
+    expect(gemBody.Steering?.mode).toBe('seek');
+    expect(gemBody.Hitbox?.resource).toBe('xp');
     // 磁石被动放大收取真空区：collector 有 pickup→Shape.radius 的 StatBind。
     const collector = bp.entities.collector as { StatBind?: { bindings: Array<{ key: string; component: string; field: string }> } };
     const b = collector.StatBind?.bindings.find((x) => x.key === 'pickup');
     expect(b?.component).toBe('Shape');
-    expect(b?.field).toBe('radius');
   });
 
   it('难度：胖子/精英血厚(非一枪死)+远程弹更大更清晰', () => {

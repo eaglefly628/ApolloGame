@@ -224,9 +224,12 @@ function gemTemplate(g: GemDef): { entities: Record<string, Record<string, unkno
         Color: { tint: g.tint, alpha: 1 },
         Hitbox: { resource: 'xp', amount: -g.value, targetMask: COLLECTOR, consumeOnHit: true },
         Timer: { id: 'life', elapsed: 0, duration: GEM_LIFE, loop: false },
-        // 磁力吸附暂撤（性能）：宝石挂 Perception 会让**每颗宝石**都跑 aggro 的 O(N) 最近目标扫描
-        // （几百颗宝石 × 全实体扫 = O(N²) 大头之一）。改回贴身收取（collector Shape·磁石被动放大真空区）。
-        // 「经验飞入动画」待引擎补空间索引(nearestByTag O(N²)→O(N)) 后以便宜方式复接（见 requests Lead 单）。
+        // 磁力吸附（重组·aggro+steering·空间索引下沉后**便宜复接**）：宝石近距(sightRadius 130)看见玩家 →
+        // aggro 写 Relation → steering seek 飞向玩家=经典「经验飞过来」动画；出半径=静止。收取=贴身真空区(collector)。
+        // 空间索引(byBit[PLAYER]=1)让每颗宝石索敌 O(1) → 几百颗也不卡（撤磁吸的性能理由已被索引消除）。
+        Velocity: { vx: 0, vy: 0, angular: 0 },
+        Perception: { targetTag: PLAYER, sightRadius: 130 },
+        Steering: { mode: 'seek', speed: 6, stopRange: 0 },
       },
       kill: { // 计分区（隐形·随 body 级联销毁）
         Hierarchy: child('@local:body'),

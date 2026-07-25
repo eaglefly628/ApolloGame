@@ -176,7 +176,30 @@ export const BOSS: EnemyDef = {
   tint: 0xff4d5e, inTint: 0xffd23f, gem: 'gold', skin: '103/enemy-boss',
   ranged: { cd: 54, dmg: 18, projSpeed: 3.8, life: 140, radius: 16 },
 };
-export const ENEMIES: EnemyDef[] = [SHAMBLER, RUNNER, BRUTE, ARCHER, SNIPER, BRUISER, BOSS];
+// ── 时间缩放变体（难度=血量·VS「Curse/HP×Level」精髓·参照 vampire-survivors.wiki）──────
+// 割草难度真相（网搜实证·VS）：敌人 HP 在**出生瞬间**按玩家等级/时间乘一个系数并冻结；全局「Curse」
+// 随时间涨（+150%@10min）推 hp/速度/密度。引擎当前不支持"出生时按全局值缩放 hp"（stat-bind 只改 max 非 current）
+// → 用**时间门分层的更肉变体**离散逼近这条曲线：越晚的怪血越厚（玩家火力涨·敌人也涨=不速通）。
+const scaledEnemy = (base: EnemyDef, mult: number, suffix: string): EnemyDef => ({
+  ...base,
+  key: base.key + suffix,
+  name: `${base.name}+`,
+  hp: Math.round(base.hp * mult),
+  contact: Math.round(base.contact * Math.min(mult, 1.8) * 100) / 100,
+  gem: mult >= 4 ? 'gold' : mult >= 2 ? 'green' : base.gem,
+  ...(base.ranged ? { ranged: { ...base.ranged, dmg: Math.round(base.ranged.dmg * Math.min(mult, 1.8)) } } : {}),
+});
+// 蹒跚者三档血量升级（中/后期换血更厚的同型·血条肉眼可见变长）。
+export const SHAMBLER_T2 = scaledEnemy(SHAMBLER, 2.6, '_t2'); // hp≈73
+export const SHAMBLER_T3 = scaledEnemy(SHAMBLER, 5.5, '_t3'); // hp≈154
+export const RUNNER_T2 = scaledEnemy(RUNNER, 3.0, '_t2');     // hp≈126
+export const BRUTE_T2 = scaledEnemy(BRUTE, 2.4, '_t2');       // hp≈528
+export const ARCHER_T2 = scaledEnemy(ARCHER, 3.2, '_t2');     // hp≈192·弹更狠
+
+export const ENEMIES: EnemyDef[] = [
+  SHAMBLER, RUNNER, BRUTE, ARCHER, SNIPER, BRUISER, BOSS,
+  SHAMBLER_T2, SHAMBLER_T3, RUNNER_T2, BRUTE_T2, ARCHER_T2, // 时间缩放变体（难度=血量）
+];
 export const EBOLT_SKIN = '103/enemy-bolt'; // 敌弹皮肤槽
 
 // ── 宝石定义（gdd §七·蓝=1·绿=3 经验·肉敌掉更多）─────────────────────────
@@ -252,7 +275,7 @@ export const PASSIVE_BY_KEY: Record<string, PassiveDef> = Object.fromEntries(PAS
 export interface SpawnRow { at: number; x: number; y: number; key: string }
 export const SPAWNS: SpawnRow[] = (() => {
   const rows: SpawnRow[] = [];
-  const RING0 = 12;
+  const RING0 = 5;
   for (let i = 0; i < RING0; i++) {
     const a = (Math.PI * 2 * i) / RING0;
     // 错峰起始（at 30 + i×5 tick）：开局 12 只不再同一帧齐生（一帧实例化 12×4 实体=瞬时尖峰=早期卡顿）→ 摊到 ~1s 平滑生出。
@@ -268,18 +291,29 @@ export const SPAWNS: SpawnRow[] = (() => {
 // capBypass=true → 该层刷怪**不受同屏 cap 门**（boss/精英必现·否则弱敌占满 cap 导致 boss 永不刷·owner「全程没见过 boss」根因）。
 export interface SpawnerTier { key: string; count: number; period: number; afterSec: number; capBypass?: boolean }
 export const SPAWNER_RING = 360; // spawner 环半径（玩家周围·视口外缘）
-export const SPAWN_CAP = 46;     // 同屏杂兵上限（大幅下调·难度改走 HP 分层非堆数量·且 overlap-detect 宽相位∝实体²→少实体=不卡·owner M5 都卡=680实体/2800 overlap/60ms一帧）
+export const SPAWN_CAP = 140;    // 同屏杂兵上限（空间索引下沉后 645实体仍 13ms/60fps→可放大 horde·精英/Boss 另 capBypass·真机可再上探）
+// 慢起步·梯度递增（owner「一开始不该这么多·慢慢来」+ VS 精髓：密度/血量随时间涨=难度曲线）。
+// 前 30s 稀疏弱敌（学操作）→ 每 30-60s 加一层（更多/更快/更肉/远程/精英）→ 后期同型换更厚血变体（难度=血量）。
 export const SPAWNER_TIERS: SpawnerTier[] = [
-  // ── 杂兵流（受 cap 钳·horde 底噪·别太多免糊屏）──
-  { key: 'shambler', count: 10, period: 46, afterSec: 0 },  // 常驻弱敌（略降杂兵·给精英腾同屏空间·owner「小怪太多」）
-  { key: 'runner', count: 4, period: 90, afterSec: 20 },   // 20s 疾行者（快脆·施压走位）
-  { key: 'shambler', count: 5, period: 54, afterSec: 90 }, // 90s 再叠一条蹒跚（中期加压）
-  // ── 威胁/精英流（capBypass·必现·真难度来源·owner「攻击性高的敌人/远程/boss」）──
-  { key: 'archer', count: 3, period: 150, afterSec: 30, capBypass: true },  // 30s 远程射手（中距弹幕·清晰大弹）
-  { key: 'brute', count: 2, period: 165, afterSec: 45, capBypass: true },   // 45s 胖子（肉·血条看得见）
-  { key: 'sniper', count: 2, period: 210, afterSec: 80, capBypass: true },  // 80s 精英狙击（攻击性高·射得勤且狠）
-  { key: 'bruiser', count: 1, period: 260, afterSec: 120, capBypass: true },// 120s 精英重装（大肉·压空间·后期不速通）
-  { key: 'boss', count: 1, period: 60 * 70, afterSec: 60, capBypass: true },// 60s 起每 ~70s 一个首领（必现·无视 cap）
+  // ── 阶段①（0-60s·稀疏·学操作·别糊屏）──
+  { key: 'shambler', count: 3, period: 96, afterSec: 0 },   // 开局很少·慢慢来
+  { key: 'runner', count: 2, period: 150, afterSec: 30 },   // 30s 疾行者点缀
+  // ── 阶段②（60-150s·成群 + 首批威胁）──
+  { key: 'shambler', count: 5, period: 66, afterSec: 60 },  // 60s 密度上来=真 horde
+  { key: 'archer', count: 2, period: 168, afterSec: 60, capBypass: true },  // 60s 远程射手（中距弹幕）
+  { key: 'brute', count: 2, period: 190, afterSec: 90, capBypass: true },   // 90s 胖子（肉·血条看得见）
+  { key: 'runner', count: 4, period: 96, afterSec: 120 },   // 120s 疾行者加压
+  // ── 阶段③（150-300s·血量升级 + 精英·难度=血量）──
+  { key: 'shambler_t2', count: 5, period: 60, afterSec: 150 }, // 150s 蹒跚换更厚血
+  { key: 'sniper', count: 2, period: 200, afterSec: 180, capBypass: true },  // 180s 精英狙击（攻击性高）
+  { key: 'archer_t2', count: 2, period: 168, afterSec: 210, capBypass: true },// 210s 射手升级
+  { key: 'bruiser', count: 1, period: 240, afterSec: 240, capBypass: true }, // 240s 精英重装（大肉压空间）
+  // ── 阶段④（300s+·高压·同型再换更厚血）──
+  { key: 'shambler_t3', count: 6, period: 54, afterSec: 300 }, // 300s 蹒跚再升血（后期不速通）
+  { key: 'brute_t2', count: 2, period: 200, afterSec: 330, capBypass: true },// 330s 胖子升级
+  { key: 'runner_t2', count: 4, period: 90, afterSec: 360 },  // 360s 疾行者升血
+  // ── 周期 Boss（capBypass 必现·60s 起每 ~80s 一个）──
+  { key: 'boss', count: 1, period: 60 * 80, afterSec: 60, capBypass: true },
 ];
 
 // ── 皮肤槽 key（美术就绪即换装·未就绪回退 Shape 色块·art-pipeline 红线）────────
