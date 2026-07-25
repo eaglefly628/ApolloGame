@@ -2,6 +2,9 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-MERGE-ON-PLACE-方格拖放合并原语 · [2026-07-24] · PE-101 报 → Lead 裁 · status: **✅ done（`54748393`·下沉 `src/skills/tier2/merge-on-place.ts` + game101 真拖拽合并接线·2026-07-24 归档腾槽）** · 类型: 引擎通用能力（merge/消除品类）
+> 真缺口=「方格拖放·落同类格→combine」（`t3-merge-rule` 是自动合并不看位置·`drag-place` 只六角无方格合成分支·`grid-drag-square` 是托盘盖章）。下沉 `merge-on-place`（`MergeOnPlace{boardId,need}`·消费拖拽 drop→方格落格→同模板且计数≥need 则 DestroyRequest×need + SpawnRequest{into,at:drop cell}·否则移动/交换）；game101 只经数据消费换真拖拽手感。
+
 ### REQ-SURVIVOR编排-幸存者三处编排能力归属（三选一 draft / 进化替换 / 波次刷怪）· [2026-07-23] · GD-103 报（owner 拍板「下沉新能力·交 Lead」）→ Lead 裁决 · status: **✅ done（2026-07-23）：2 下沉已建+测(draft-offer/spawn-director·Lead) + 2 回驳(重组·E2/E4)·归档腾槽** · 优先级: P2 · 类型: 引擎 capability 下沉裁决（Roguelite 通用编排·先重组再下沉）
 > **✅ 施工完工（Lead 2026-07-23）**：两下沉件按 spec 落地（确定性纯函数核·先例 dice.ts·非 defineCapability——game-103 编译期 TS 游戏直调函数；ECS/数据卡带封装待数据卡带消费方出现再加·YAGNI）——`src/skills/tier2/draft-offer.ts`（`rollOffer`/`applyPick`/`isEligible`·12 测）+ `src/skills/tier2/spawn-director.ts`（`createDirector`/`tickDirector`·出真 SpawnRequest·10 测）·均自 `@skills/tier2/index.js` 导出。tsc0 + 全量 vitest 绿。E2/E4 回驳=GD 照裁决摆数据重组（撞墙回本单开薄缺口）。**game-103 §1-3 数据面 + E1/E3 消费 + E2/E4 重组接线可开工。**
 > **⚖ Lead 裁决（2026-07-23·核 registry 属实 + 读 game-103 §4）**：
