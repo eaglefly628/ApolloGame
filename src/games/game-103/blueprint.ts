@@ -24,17 +24,28 @@ import {
   cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
   steeringCapability, launchCapability, selfRuleCapability,
 } from '@skills/tier2/index.js';
-import { keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, orbitAt } from '@skills/tier2/index.js';
+import { keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, orbitAt, animStateCapability } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
 import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
   PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, TINT,
   PLAYER_DEF, KUNAI, WEAPONS, WEAPON_BIT, ENEMIES, GEMS, GEM_LIFE, SPAWNS, SPAWNER_TIERS, SPAWNER_RING, SPAWN_CAP,
-  XP_BASE, XP_STEP, DRAFT_POOL, PASSIVE_BY_KEY, EBOLT_SKIN, type WeaponDef, type EnemyDef, type GemDef,
+  XP_BASE, XP_STEP, DRAFT_POOL, PASSIVE_BY_KEY, EBOLT_SKIN, WEAPON_ANIM, EBOLT_ANIM,
+  type WeaponDef, type EnemyDef, type GemDef, type FxAnim,
 } from './theme.js';
 
 const XF0 = { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
 const child = (parentId: string) => ({ parentId, localX: 0, localY: 0, localRotation: 0, localScaleX: 1, localScaleY: 1 });
+
+// 序列帧动画组件（t2-anim-state）：单 clip 'fly' 循环覆盖全帧；move/idle 都指它→无论有无 Velocity 都常播。
+// 返回空对象=无动画（保持静态 skin）。皮肤槽已由调用处按 anim.sheet 覆盖 textureKey。
+function fxAnimComps(anim: FxAnim | undefined): Record<string, unknown> {
+  if (!anim) return {};
+  return {
+    Frame: { index: 0, total: anim.frames },
+    AnimState: { clips: { fly: { from: 0, count: anim.frames, fps: anim.fps, loop: true } }, moveClip: 'fly', idleClip: 'fly', current: 'fly', elapsed: 0 },
+  };
+}
 
 // ── prefab 模板 ──────────────────────────────────────────────────────────────
 
@@ -42,10 +53,12 @@ const child = (parentId: string) => ({ parentId, localX: 0, localY: 0, localRota
 //  straight=Launch 直飞·单发命中；beam=快速长条·穿一线(连续 per-tick)；boomerang=Launch 去 + Perception/Steering 拉回；
 //  nova=自身大范围 Hitbox·短寿命扫全场(per-tick)。命中一律 ×power 系数·寿命回收。
 function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, unknown>> } {
+  const anim = WEAPON_ANIM[w.key]; // 子弹序列帧（在则盖过静态 skin）
   const base: Record<string, unknown> = {
     Transform: { ...XF0 },
     Sensor: {}, Tag: { flags: ZONE },
-    Sprite: { textureKey: w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 2 }, // 皮肤槽
+    Sprite: { textureKey: anim ? anim.sheet : w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 2 }, // 皮肤槽（动画帧优先）
+    ...fxAnimComps(anim),
     Timer: { id: 'life', elapsed: 0, duration: w.life, loop: false },      // lifetime 回收
   };
   if (w.pattern === 'nova') {
@@ -79,6 +92,7 @@ function weaponMount(w: WeaponDef): { entities: Record<string, Record<string, un
     // VBUG-02 真接（Lead 已修 orbit-motion 定序·PostResolve+runsAfter→不再成环）：光球挂 Orbit 绕玩家真圆周运动。
     // orbit-motion 每 tick 写光球 Transform.x/y（绕 centerId=player 半径 radius·相位差 startAngle）；Hitbox 随位置=命中位置。
     const wbit = WEAPON_BIT[w.key] ?? 0; // 武器 Tag 位（进化 destroy-tagged 按位删）
+    const anim = WEAPON_ANIM[w.key];     // 光球序列帧（绿环动画）
     const ents: Record<string, Record<string, unknown>> = {};
     for (let i = 0; i < w.amount; i++) {
       ents[`ball${i}`] = {
@@ -86,7 +100,8 @@ function weaponMount(w: WeaponDef): { entities: Record<string, Record<string, un
         Orbit: orbitAt(w.radius, (Math.PI * 2 * i) / w.amount, w.projSpeed, 'player'), // projSpeed=每 tick 角步(rad)
         Sensor: {}, Tag: { flags: ZONE | wbit },
         Shape: { kind: 'circle', radius: 12 },
-        Sprite: { textureKey: w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽
+        Sprite: { textureKey: anim ? anim.sheet : w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽（动画帧优先）
+        ...fxAnimComps(anim),
         Color: { tint: w.tint, alpha: 0.9 },
         Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' },
       };
@@ -132,13 +147,15 @@ function evoPickEntities(): Record<string, EntityBlueprint> {
 //  射程 ≈ projSpeed × life（px）；玩家可走位躲。皮肤 EBOLT_SKIN·未就绪回退敌色圆点。
 function eboltTemplate(e: EnemyDef): { entities: Record<string, Record<string, unknown>> } {
   const r = e.ranged!;
+  const anim = EBOLT_ANIM[e.key]; // 敌弹序列帧（黄沙爆/红灼热·辨敌我）
   return { entities: { p: {
     Transform: { ...XF0 },
     Velocity: { vx: 0, vy: 0, angular: 0 },
     Sensor: {}, Tag: { flags: ZONE },
     Shape: { kind: 'circle', radius: r.radius },
-    Sprite: { textureKey: EBOLT_SKIN, anchorX: 0.5, anchorY: 0.5, zOrder: 2 },
-    Color: { tint: e.tint, alpha: 1 },
+    Sprite: { textureKey: anim ? anim.sheet : EBOLT_SKIN, anchorX: 0.5, anchorY: 0.5, zOrder: 2 },
+    ...fxAnimComps(anim),
+    Color: { tint: anim ? 0xffffff : e.tint, alpha: 1 },
     Launch: { speed: r.projSpeed, toward: 'target', targetMask: PLAYER },
     Hitbox: { resource: 'hp', amount: r.dmg, targetMask: PLAYER, consumeOnHit: true },
     Timer: { id: 'life', elapsed: 0, duration: r.life, loop: false }, // 寿命=射程上限
@@ -417,7 +434,7 @@ export function buildBlueprint(): WorldBlueprint {
       motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
       boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
       cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
-      steeringCapability, launchCapability, selfRuleCapability, keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability,
+      steeringCapability, launchCapability, selfRuleCapability, keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, animStateCapability,
       prefabCapability, casterCapability, aggroCapability, flowCapability,
     ],
     entities,

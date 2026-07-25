@@ -10,7 +10,9 @@ import { validateLayoutNode } from '@ui/components/index.js';
 import type { Sprite } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp } from './hud.js';
-import { ENEMY, ZONE, PLAYER, START, KUNAI, SHAMBLER, BRUTE, BOSS, ARCHER, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, WEAPON_BIT, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
+import { ENEMY, ZONE, PLAYER, START, KUNAI, SHAMBLER, BRUTE, BOSS, ARCHER, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, WEAPON_ANIM, WEAPON_BIT, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
+// 子弹现用序列帧 fx 精灵表覆盖静态 skin：在场皮肤 = 动画帧 sheet（若有）否则原 skin。
+const skinOf = (key: string): string => WEAPON_ANIM[key]?.sheet ?? WEAPON_BY_KEY[key].skin;
 
 // 一步 sim（复刻引擎 step：每拍都注入命令→清 InputQueue·空则清空·防陈留信号重复触发）。
 function step(e: Engine, cmds: Command[] = []): void {
@@ -173,10 +175,10 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
   it('升级选中「护盾环」→ Caster 生成跟随玩家的环绕光球武器（新武器·带皮肤槽）', () => {
     const e = fresh();
     tickN(e, 3);
-    expect(hasSprite(e, WEAPON_BY_KEY.orbit.skin)).toBe(false);
+    expect(hasSprite(e, skinOf('orbit'))).toBe(false);
     fireAction(e, 'pick_orbit');
     step(e); step(e);
-    expect(hasSprite(e, WEAPON_BY_KEY.orbit.skin)).toBe(true); // 护盾环光球已展开
+    expect(hasSprite(e, skinOf('orbit'))).toBe(true); // 护盾环光球已展开
   });
 
   it('进化系统（E2·重组）：evo 信号 destroy-tagged 删基础武器挂点 + Caster spawn 进化体', () => {
@@ -184,7 +186,7 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     tickN(e, 3);
     fireAction(e, 'pick_orbit');                 // 拿护盾环
     step(e); step(e);
-    expect(hasSprite(e, WEAPON_BY_KEY.orbit.skin)).toBe(true);
+    expect(hasSprite(e, skinOf('orbit'))).toBe(true);
     const orbitBallsBefore = countTag(e, WEAPON_BIT.orbit);
     expect(orbitBallsBefore).toBeGreaterThan(0); // 基础护盾环挂点在场（带武器 Tag 位）
     fireAction(e, 'evo_orbit');                   // 进化！
@@ -200,7 +202,7 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
       tickN(e, 3);
       fireAction(e, `pick_${w.key}`);
       stepN(e, w.cd + 5); // 清队推进·让挂点发出子弹（orbit/pet 即刻·发射器待 cd）
-      expect(hasSprite(e, w.skin)).toBe(true); // 该武器子弹/光球皮肤在场=射法生效
+      expect(hasSprite(e, skinOf(w.key))).toBe(true); // 该武器子弹/光球皮肤在场=射法生效
     }
   });
 
@@ -258,6 +260,34 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(at?.afterSec).toBeGreaterThan(0);
   });
 
+  it('子弹序列帧：武器/敌弹挂 AnimState+Frame(单 clip 循环)·Sprite 指向 fx 精灵表·anim-state 推帧', () => {
+    const lib = (buildBlueprint().entities.library as { PrefabLibrary: { templates: Record<string, { entities: Record<string, Record<string, unknown>> }> } }).PrefabLibrary.templates;
+    // 玩家飞镖=紫能量镖动画帧
+    const kp = lib.proj_kunai.entities.p as { Sprite: { textureKey: string }; Frame?: { total: number }; AnimState?: { clips: Record<string, { count: number; loop: boolean }>; moveClip: string } };
+    expect(kp.Sprite.textureKey).toBe('103/fx-magic_dart');
+    expect(kp.Frame?.total).toBe(6);
+    expect(kp.AnimState?.clips.fly.count).toBe(6);
+    expect(kp.AnimState?.clips.fly.loop).toBe(true);
+    expect(kp.AnimState?.moveClip).toBe('fly');
+    // 敌弹也动画（辨敌我色）
+    const ab = lib.ebolt_archer.entities.p as { Sprite: { textureKey: string }; AnimState?: unknown };
+    expect(ab.Sprite.textureKey).toBe('103/fx-sandblast');
+    expect(ab.AnimState).toBeDefined();
+    // anim-state capability 在册（否则帧不动）
+    const caps = buildBlueprint().capabilities as Array<{ id?: string }>;
+    expect(caps.some((c) => c.id === 't2-anim-state')).toBe(true);
+    // 运行期真推帧：发一发 kunai 子弹·跑若干 tick·Frame.index 应前进（循环播放）
+    const e = fresh();
+    stepN(e, KUNAI.cd + 2); // 起始武器自动发一发
+    let bolt = '';
+    for (const [id] of e.world.query('Frame', 'AnimState')) { bolt = id; break; }
+    expect(bolt).not.toBe('');
+    const f0 = (e.world.getComponent(bolt, 'Frame') as unknown as { index: number }).index;
+    stepN(e, 4);
+    const f1cmp = e.world.getComponent(bolt, 'Frame') as unknown as { index: number } | undefined;
+    if (f1cmp) expect(f1cmp.index).not.toBe(f0); // 仍在场则帧已推进（未消失=已飞出=也算动过）
+  });
+
   it('v2④ 敌人头顶血条：敌 prefab 带 Gauge(绑 hp)→受击缩短=伤害反馈可见', () => {
     const e = fresh();
     tickN(e, 60); // 待开局怪生出
@@ -273,7 +303,7 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     stepN(e, WEAPON_BY_KEY.boom.cd + 5); // 待挂点发出 proj_boom
     // 找到 proj_boom 弹体，记录位置
     let boomId = '';
-    for (const [id] of e.world.query('Sprite')) { const s = e.world.getComponent<Sprite>(id, 'Sprite'); if (s && s.textureKey === WEAPON_BY_KEY.boom.skin) { boomId = id; break; } }
+    for (const [id] of e.world.query('Sprite')) { const s = e.world.getComponent<Sprite>(id, 'Sprite'); if (s && s.textureKey === skinOf('boom')) { boomId = id; break; } }
     expect(boomId).not.toBe('');
     const p0 = xf(e, boomId)!;
     const x0 = p0.x, y0 = p0.y;

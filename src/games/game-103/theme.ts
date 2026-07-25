@@ -86,6 +86,34 @@ export const WEAPONS: WeaponDef[] = [
 ];
 export const KUNAI = WEAPONS[0]; // 起始武器（内置武器挂点）
 export const WEAPON_BY_KEY: Record<string, WeaponDef> = Object.fromEntries(WEAPONS.map((w) => [w.key, w]));
+
+// ── 子弹序列帧皮肤（DCSS FreeArtLib 动画帧·vendored+packed·public/games/game-103/art/fx/*.png）──
+// 每张 = 单行横条精灵表(32×frames · 32)；引擎 t2-anim-state 按 fps 推 Frame.index 循环播放（能量弹动起来）。
+// 列了的武器/敌用动画帧盖过静态 skin；没列的保持原静态皮肤。
+export interface FxAnim { sheet: string; frames: number; fps: number }
+export const FX_SHEETS = {
+  magic_dart:    { sheet: '103/fx-magic_dart', frames: 6, fps: 3 },   // 紫能量镖
+  searing_ray:   { sheet: '103/fx-searing_ray', frames: 6, fps: 3 },  // 红灼热星
+  flame:         { sheet: '103/fx-flame', frames: 3, fps: 4 },        // 火焰爆
+  sting:         { sheet: '103/fx-sting', frames: 3, fps: 4 },        // 绿环
+  sandblast:     { sheet: '103/fx-sandblast', frames: 3, fps: 4 },    // 黄沙爆
+  gold_sparkles: { sheet: '103/fx-gold_sparkles', frames: 3, fps: 4 },// 金光
+} as const;
+// 武器 key → 子弹动画帧（配色区分：玩家多紫/绿/金/红·敌弹另用色以辨敌我）。
+export const WEAPON_ANIM: Record<string, FxAnim> = {
+  kunai: FX_SHEETS.magic_dart,   // 直线飞镖=紫能量镖
+  shock: FX_SHEETS.flame,        // 近身 nova=火焰爆
+  laser: FX_SHEETS.searing_ray,  // 激光=红灼热星
+  boom:  FX_SHEETS.gold_sparkles,// 回旋镖=金光旋
+  orbit: FX_SHEETS.sting,        // 护盾环=绿环（贴合环绕）
+  orbitevo: FX_SHEETS.sting,     // 进化环=绿环
+  pet:   FX_SHEETS.magic_dart,   // 随从弹=紫能量镖
+};
+// 敌 key → 敌弹动画帧（用黄/红=敌意色·和玩家紫绿分开）。
+export const EBOLT_ANIM: Record<string, FxAnim> = {
+  archer: FX_SHEETS.sandblast,   // 射手弹=黄沙爆
+  boss:   FX_SHEETS.searing_ray, // 首领弹=红灼热星（大威胁）
+};
 // 每把武器一个 Tag 位（进化 destroy-tagged 按位删基础武器挂点）。位 5 起（0-4=ZONE/PLAYER/ENEMY/COLLECTOR/KILLBOX）。
 export const WEAPON_BIT: Record<string, number> = Object.fromEntries(WEAPONS.map((w, i) => [w.key, 1 << (5 + i)]));
 

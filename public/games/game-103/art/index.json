@@ -116,6 +116,204 @@
     "style": "survivor-io bright chunky cartoon (glossy bullet)",
     "mock": false
    }
+  },
+  {
+   "id": "103/fx-magic_dart",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/fx/magic_dart.png",
+   "description": "子弹动画·紫色能量镖·6 帧序列",
+   "spec": {
+    "sheet": {
+     "frameWidth": 32,
+     "frameHeight": 32,
+     "columns": 6,
+     "count": 6
+    },
+    "usage": "sprite",
+    "colorSpace": "srgb"
+   },
+   "category": "sprite.fx",
+   "tags": [
+    "bullet",
+    "projectile",
+    "animated",
+    "magic",
+    "energy"
+   ],
+   "license": "CC0",
+   "source": "DCSS FreeArtLib (assets/FreeArtLib/effect · vendored+packed)",
+   "provenance": {
+    "generator": "game-103-fx-pack",
+    "source": "assets/FreeArtLib/effect/magic_dart_*.png",
+    "packed": true,
+    "mock": false
+   }
+  },
+  {
+   "id": "103/fx-searing_ray",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/fx/searing_ray.png",
+   "description": "子弹动画·灼热射线·6 帧序列",
+   "spec": {
+    "sheet": {
+     "frameWidth": 32,
+     "frameHeight": 32,
+     "columns": 6,
+     "count": 6
+    },
+    "usage": "sprite",
+    "colorSpace": "srgb"
+   },
+   "category": "sprite.fx",
+   "tags": [
+    "bullet",
+    "projectile",
+    "animated",
+    "fire",
+    "beam"
+   ],
+   "license": "CC0",
+   "source": "DCSS FreeArtLib (assets/FreeArtLib/effect · vendored+packed)",
+   "provenance": {
+    "generator": "game-103-fx-pack",
+    "source": "assets/FreeArtLib/effect/searing_ray_*.png",
+    "packed": true,
+    "mock": false
+   }
+  },
+  {
+   "id": "103/fx-flame",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/fx/flame.png",
+   "description": "弹幕动画·火焰·3 帧序列",
+   "spec": {
+    "sheet": {
+     "frameWidth": 32,
+     "frameHeight": 32,
+     "columns": 3,
+     "count": 3
+    },
+    "usage": "sprite",
+    "colorSpace": "srgb"
+   },
+   "category": "sprite.fx",
+   "tags": [
+    "bullet",
+    "projectile",
+    "animated",
+    "fire",
+    "flame"
+   ],
+   "license": "CC0",
+   "source": "DCSS FreeArtLib (assets/FreeArtLib/effect · vendored+packed)",
+   "provenance": {
+    "generator": "game-103-fx-pack",
+    "source": "assets/FreeArtLib/effect/flame_*.png",
+    "packed": true,
+    "mock": false
+   }
+  },
+  {
+   "id": "103/fx-sting",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/fx/sting.png",
+   "description": "弹幕动画·毒刺·3 帧序列",
+   "spec": {
+    "sheet": {
+     "frameWidth": 32,
+     "frameHeight": 32,
+     "columns": 3,
+     "count": 3
+    },
+    "usage": "sprite",
+    "colorSpace": "srgb"
+   },
+   "category": "sprite.fx",
+   "tags": [
+    "bullet",
+    "projectile",
+    "animated",
+    "poison",
+    "sting"
+   ],
+   "license": "CC0",
+   "source": "DCSS FreeArtLib (assets/FreeArtLib/effect · vendored+packed)",
+   "provenance": {
+    "generator": "game-103-fx-pack",
+    "source": "assets/FreeArtLib/effect/sting_*.png",
+    "packed": true,
+    "mock": false
+   }
+  },
+  {
+   "id": "103/fx-sandblast",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/fx/sandblast.png",
+   "description": "弹幕动画·沙爆·3 帧序列",
+   "spec": {
+    "sheet": {
+     "frameWidth": 32,
+     "frameHeight": 32,
+     "columns": 3,
+     "count": 3
+    },
+    "usage": "sprite",
+    "colorSpace": "srgb"
+   },
+   "category": "sprite.fx",
+   "tags": [
+    "bullet",
+    "projectile",
+    "animated",
+    "sand",
+    "blast"
+   ],
+   "license": "CC0",
+   "source": "DCSS FreeArtLib (assets/FreeArtLib/effect · vendored+packed)",
+   "provenance": {
+    "generator": "game-103-fx-pack",
+    "source": "assets/FreeArtLib/effect/sandblast_*.png",
+    "packed": true,
+    "mock": false
+   }
+  },
+  {
+   "id": "103/fx-gold_sparkles",
+   "type": "texture",
+   "status": "filled",
+   "path": "/games/game-103/art/fx/gold_sparkles.png",
+   "description": "弹幕动画·金光·3 帧序列",
+   "spec": {
+    "sheet": {
+     "frameWidth": 32,
+     "frameHeight": 32,
+     "columns": 3,
+     "count": 3
+    },
+    "usage": "sprite",
+    "colorSpace": "srgb"
+   },
+   "category": "sprite.fx",
+   "tags": [
+    "bullet",
+    "projectile",
+    "animated",
+    "gold",
+    "sparkle"
+   ],
+   "license": "CC0",
+   "source": "DCSS FreeArtLib (assets/FreeArtLib/effect · vendored+packed)",
+   "provenance": {
+    "generator": "game-103-fx-pack",
+    "source": "assets/FreeArtLib/effect/gold_sparkles_*.png",
+    "packed": true,
+    "mock": false
+   }
   }
  ]
 }
