@@ -8,13 +8,6 @@
 
 ## 待处理 / 进行中
 
-### REQ-CONVEYOR-CAP-传送带容量+拥堵+空槽分配（本作核心难点·原 REQ-G102-BURST 升级）· [2026-07-25] · PE-game102 报（owner 定稿「Traffic Management 死锁」为核心）→ Lead 裁 · status: **open** · 优先级: P1（game102 核心难点·非可选·传送带/队列调度类通用） · 类型: 引擎能力缺口（主程域·先重组已证不可得）
-> **想实现的行为（core-experience-v2 §2.2 权威机制）**：炮进**环绕图案的传送带**（有序移动·**严格容量上限 N**）→ ① 带上炮数达 N 时**新部署被拦/排队**（不硬塞）② 带上炮**有序占位不重叠**（拥堵=可见排队而非叠一起）③ 炮绕完带弹→**落到 5 等待槽中的空槽**（占位分配·满则拦）④ **死锁判定真相**：带满 且 5 槽满 → 无处可去 → 判负。**这是本作核心难点**（动态流量管理），非边角。
-> **已试（PE 源码复核）**：`group-count` 能**数**带上炮（`conveyor.count`）/槽中炮（`tray.count`）✅，`flow` 能据两数判负 ✅——但**只能读数、不能约束**：① `caster`/`tapSupply` 部署**无容量门**（带满照生成→超员）；② `PathFollow` 各炮独立进度**不互避**（超员=叠在一起·非有序拥堵）；③ `tray_` 炮落点是**固定 spawn 位·非「5 槽第一个空位」**（无空槽分配器）。无任一能力表达「容量约束 + 有序占位 + 空槽分配」。
-> **卡在哪 / 缺什么**：缺**「有限容量的有序队列/传送带」原语**——带上按序占位（容量满→拦入/排队）+ 缓冲槽空位分配（满→拦）。**禁游戏层自写队列/容量散逻辑**（红线·且须确定性进 hash）→ 下沉引擎。
-> **建议方案（Lead 裁）· 边界**：下沉 **`conveyor-queue`**（或复用/扩 `t2-zone-occupancy` 的容量+队首语义）——组件 `ConveyorQueue{capacity, slots?}`：入队满则拒（发 `full` 信号供 flow/部署门读）·带上有序占位（沿 PathFollow 进度排布·不重叠）·缓冲槽 `firstFreeSlot` 分配。确定性（id/序 tie-break·无随机·进 hash）。**触碰范围**：`src/skills/**`（新件或扩 zone-occupancy + 测试）；game102 只经数据消费。撞墙实证＝`docs/design/game102/core-experience-v2.md §2.2/§3` + `src/games/game102/blueprint.ts`。**（原 `docs/design/game102/requests.md REQ-G102-BURST` 的「快连堆炮 5→10」即本缺口子集·并入此条。）**
-
-
 
 ### REQ-OVERLAP-LAYER-overlap-detect 碰撞分层（category+mask 宽相位过滤）· [2026-07-25] · PE-game-103 报（割草同屏几百怪 perf 刚需 + 障碍碰撞分层）→ Lead 裁 · status: **⚖ Lead 裁 ✅ 真缺口·准下沉（2026-07-25·排 conveyor-queue 之后建）** · 优先级: P1（game-103 割草 perf 阻断·碰撞类通用） · 类型: 引擎能力缺口（主程域·先重组已证不可得）
 > **⚖ Lead 裁（2026-07-25·亲读 `src/skills/atoms/overlap-detect/index.ts`）：✅ 真缺口·下沉**——现 overlap-detect 宽相位=动态 AABB 树但**零分层**：所有 Transform+Shape 对只要 AABB 相交就窄相位 + 发 Overlap 实体。几百怪 enemy-enemy 对 O(局部²)·每帧造/毁几千无用 Overlap=ECS churn 热点。**下游 Tag 过滤在 Overlap 发出之后·省不掉 churn** → 要 perf 必须过滤进 overlap-detect 内部·非重组可得。category+mask=标准碰撞分层（通用：割草 perf + 障碍分层 + 子弹只打敌）·确定性（位运算）·加性零回归（缺省 collide-all）。

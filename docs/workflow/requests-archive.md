@@ -2,6 +2,14 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-CONVEYOR-CAP-传送带容量+拥堵+空槽分配（本作核心难点）· [2026-07-25] · PE-game102 报 → Lead 裁 · status: **✅ 结案（`2890a44f`·M1 下沉·M2/M3/M4 回驳=重组·2026-07-25 Lead 亲验 PASS·归档腾槽）** · 类型: 引擎能力缺口（主程域·先重组）
+> **⚖ Lead 裁（亲读+建后核·只 M1 真缺口·避免造 ConveyorQueue/SlotBuffer 大件·宪法§2）**：
+> - **M1 有序占位+队列递进 ✅ 下沉**（`2890a44f`）：扩 `PathFollow` 加 `queueId?`/`minGap?`（非新件）——同 queueId 成员按 path 弧长进度排序·非排头本 tick 前进夹「前一名**起点**进度−minGap」→ 不超车/不叠·排头出队全体递进。起点进度做界=无处理序依赖·确定性（id tie-break）·不设 queueId 零回归。
+> - **M2 容量 full 🔁 重组**：`group-count`(conveyor.count)+`event-when`(level·gte capacity/not)+`effect-apply`(set-flag)→full flag；部署门读 full 拦。
+> - **M3 空槽分配 🔁 重组**：`t2-tray` ② `lowestFree` 现成（无座→最小空槽→钉 Transform + 中槽补位·tray.test 已证）——**game102 只差 blueprint 接 `trayCapability`+Tray**（theme.ts TRAY 常量已 1:1·纯 PE 数据接线·非引擎缺口）。满则拦=M2 配方 on tray.count。
+> - **M4 死锁 🔁 重组**：两 full flag→`t3-flow` transitions.when 或 `event-when` and→判负。
+> **证据**：`src/skills/tier2/conveyor-queue-compose.test.ts`（M2/M3/M4 全链跑通+撞环回归 5-cap not.toThrow）。**PE-102 待办（游戏数据域）**：blueprint 接 trayCapability+Tray+两 full-flag 配方+flow 死锁；炮沿带 `pathFollowAt(...,{queueId,minGap})`。原文见 git 史。
+
 ### REQ-SPENDONFIRE-发射即扣发射源一发（per-shot 扣弹·N 实体各自计数）· [2026-07-25] · PE-game102 报 → Lead 裁 · status: **✅ done（`7970db12`·`ResourceModify.scope:'source'`·2026-07-25 Lead 亲验 PASS·归档腾槽）** · 类型: 引擎能力缺口（主程域）
 > **交付（方案①·Lead 亲验）**：`ResourceModify.scope` 加 `'source'`——resource-apply 遇 source → 读持有者 `PrefabOrigin.source` → `findSourceResource`(query.ts·抽自 hitbox findScaleResource·无 global 兜底) → 应用+钳；源缺/死/无该资源=静默跳过（不误扣 global 第一门）。**apply-once**=复用既有 `consumes:['ResourceModify']` 读后消费（World.tick 消费后删·子弹活多 tick 只扣一次·非复利）。hitbox.findScaleResource 改调共享 helper（零回归）。22 测（per-source 扣对炮/apply-once/源缺跳过/不误扣 global/确定性/game102 全 30 能力撞环 not.toThrow）。gate 全绿。game102 数据挂子弹模板 `ResourceModify{ammo,-1,scope:source}` 消费。原文见 git 史。
 
