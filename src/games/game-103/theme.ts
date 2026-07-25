@@ -183,10 +183,14 @@ export const XP_BASE = 5;         // 首级阈值
 export const XP_STEP = 4;         // 每级阈值增量（Lv1→5, Lv2→9, Lv3→13…）
 
 // 被动册（gdd §五·modifier 类·选中即数值加成）。
+//  power=全局伤害系数+（Effect 直改 power 资源）/ heal=即时回血（Effect 改 hp）/
+//  stat=属性轴（选中 +1 该被动的 lvl 资源 → modifier-stack 聚合 → t2-stat-bind 投影到具体组件字段）。
+//  stat 类的 stat 字段=modifier target key（moveSpeed/attackSpeed/pickup/maxHp），value=每层贡献量。
 export interface PassiveDef {
   key: string; name: string; desc: string;
-  kind: 'power' | 'heal';  // power=全局伤害系数+ / heal=即时回血
+  kind: 'power' | 'heal' | 'stat';
   value: number;
+  stat?: string;   // kind:'stat' 时=modifier target key（对应 StatBind 投影）
   weight: number; maxLevel: number;
 }
 export const PASSIVES: PassiveDef[] = [
@@ -194,9 +198,17 @@ export const PASSIVES: PassiveDef[] = [
   { key: 'crit', name: '暴击核心', desc: '全武器伤害 +35%（稀有）', kind: 'power', value: 0.35, weight: 5, maxLevel: 5 },
   { key: 'heart', name: '生命护心', desc: '立即回复 30 生命', kind: 'heal', value: 30, weight: 9, maxLevel: 9 },
   { key: 'vigor', name: '疾行护符', desc: '立即回复 15 生命', kind: 'heal', value: 15, weight: 9, maxLevel: 9 },
+  // ── 属性轴被动（REQ-SURVIVOR被动轴·stat-bind 已下沉）→ build 多样性核心（gdd §五）──
+  { key: 'swift', name: '疾风之靴', desc: '移动速度 +10%/层', kind: 'stat', stat: 'moveSpeed', value: 0.10, weight: 8, maxLevel: 5 },
+  { key: 'magnet', name: '磁力护符', desc: '拾取范围 +30%/层', kind: 'stat', stat: 'pickup', value: 0.30, weight: 7, maxLevel: 5 },
+  { key: 'fort', name: '铁壁体魄', desc: '最大生命 +12%/层', kind: 'stat', stat: 'maxHp', value: 0.12, weight: 7, maxLevel: 5 },
+  // 注：攻速轴（attackSpeed→Timer.duration）暂缓——本游戏开火 = SelfRule 静态阈值(cd-1) fires·
+  //     缩短 duration 会低于阈值致哑火；需 rate-friendly 开火原语或 when.value 可绑（引擎缺口·已记 requests）。
   // 常驻小强化（maxLevel 极大=永不满级）→ draft 池永不清空、升满级不断档（v3 修「升到10级没事干」）。
   { key: 'might', name: '力量精粹', desc: '全武器伤害 +8%（可叠）', kind: 'power', value: 0.08, weight: 6, maxLevel: 999 },
 ];
+// 属性轴被动（供 blueprint 建 lvl 资源 + ModifierSource + StatBind 投影）。
+export const STAT_PASSIVES = PASSIVES.filter((p) => p.kind === 'stat');
 
 // 统一 draft 候选：武器（起始 Kunai 除外·slot=weapon·accent=红）+ 被动（slot=passive·accent=蓝）。
 // effectSignal='pick_'+key → 宿主选中入队 → KeyBinding→（武器:Caster spawn 挂点 / 被动:Effect 改资源）。

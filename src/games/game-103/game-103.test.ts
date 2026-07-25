@@ -288,6 +288,40 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     if (f1cmp) expect(f1cmp.index).not.toBe(f0); // 仍在场则帧已推进（未消失=已飞出=也算动过）
   });
 
+  it('被动属性轴（stat-bind）：选疾风→移速真变快；选磁石→拾取环真变大（modifier-stack→ModifierTotals→投影）', () => {
+    const e = fresh();
+    tickN(e, 2);
+    // 基准：玩家移速 = Controllable.speed；拾取环半径 = collector Shape.radius。
+    const speed0 = (e.world.getComponent('player', 'Controllable') as unknown as { speed: number }).speed;
+    const pick0 = (e.world.getComponent('collector', 'Shape') as unknown as { radius: number }).radius;
+    // 选 3 层疾风 + 2 层磁石
+    for (let i = 0; i < 3; i++) fireAction(e, 'pick_swift');
+    for (let i = 0; i < 2; i++) fireAction(e, 'pick_magnet');
+    stepN(e, 3); // 待 modifier-stack 聚合 → stat-bind 投影（stepN 清 InputQueue·防陈留信号重复加层）
+    const speed1 = (e.world.getComponent('player', 'Controllable') as unknown as { speed: number }).speed;
+    const pick1 = (e.world.getComponent('collector', 'Shape') as unknown as { radius: number }).radius;
+    expect(speed1).toBeGreaterThan(speed0); // 移速 = base×(1+0.10×3)=1.3×
+    expect(pick1).toBeGreaterThan(pick0);   // 拾取范围 = base×(1+0.30×2)=1.6×
+    expect(speed1).toBeCloseTo(speed0 * 1.3, 4);
+    expect(pick1).toBeCloseTo(pick0 * 1.6, 4);
+    // 幂等：再跑多拍不复利漂移（从 base 重算·不滚雪球）
+    stepN(e, 30);
+    const speed2 = (e.world.getComponent('player', 'Controllable') as unknown as { speed: number }).speed;
+    expect(speed2).toBeCloseTo(speed1, 6);
+  });
+
+  it('无目标不哑火（Launch.fallbackDir）：直飞类子弹 Launch 声明 fallbackDir（修「没敌人时子弹不动」）', () => {
+    const lib = (buildBlueprint().entities.library as { PrefabLibrary: { templates: Record<string, { entities: Record<string, Record<string, unknown>> }> } }).PrefabLibrary.templates;
+    // 直线/穿透类（straight/beam/boomerang/pet）子弹都带兜底方向 → 索敌落空沿它发射而非冻原地。
+    const kl = lib.proj_kunai.entities.p.Launch as { toward: string; targetMask: number; fallbackDir?: { x: number; y: number } };
+    expect(kl.toward).toBe('target');
+    expect(kl.fallbackDir).toBeDefined();
+    expect(Math.hypot(kl.fallbackDir!.x, kl.fallbackDir!.y)).toBeGreaterThan(0); // 非零方向
+    // laser（beam）同样带 fallbackDir
+    const ll = lib.proj_laser.entities.p.Launch as { fallbackDir?: unknown };
+    expect(ll.fallbackDir).toBeDefined();
+  });
+
   it('v2④ 敌人头顶血条：敌 prefab 带 Gauge(绑 hp)→受击缩短=伤害反馈可见', () => {
     const e = fresh();
     tickN(e, 60); // 待开局怪生出

@@ -24,13 +24,13 @@ import {
   cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
   steeringCapability, launchCapability, selfRuleCapability,
 } from '@skills/tier2/index.js';
-import { keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, orbitAt, animStateCapability } from '@skills/tier2/index.js';
+import { keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, orbitAt, animStateCapability, modifierStackCapability, statBindCapability } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
 import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
   PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, TINT,
   PLAYER_DEF, KUNAI, WEAPONS, WEAPON_BIT, ENEMIES, GEMS, GEM_LIFE, SPAWNS, SPAWNER_TIERS, SPAWNER_RING, SPAWN_CAP,
-  XP_BASE, XP_STEP, DRAFT_POOL, PASSIVE_BY_KEY, EBOLT_SKIN, WEAPON_ANIM, EBOLT_ANIM,
+  XP_BASE, XP_STEP, DRAFT_POOL, PASSIVE_BY_KEY, STAT_PASSIVES, EBOLT_SKIN, WEAPON_ANIM, EBOLT_ANIM,
   type WeaponDef, type EnemyDef, type GemDef, type FxAnim,
 } from './theme.js';
 
@@ -71,7 +71,8 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
   const single = w.pattern === 'straight' || w.pattern === 'pet'; // 单发命中 vs 穿透 per-tick
   const p: Record<string, unknown> = { ...base,
     Velocity: { vx: 0, vy: 0, angular: 0 },
-    Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY },
+    // fallbackDir（Lead 交付·REQ-SURVIVOR被动轴同批）：索敌落空不再冻原地→朝上默认发射（修 owner「没敌人时子弹不动」）。
+    Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY, fallbackDir: { x: 0, y: -1 } },
     // RBUG-01② 子弹朝向：t2-facing 与 bounds-clamp 都在 Commit 写 Transform→调度器成环（facing 未声明相对定序·
     // 回报 Lead 补 facing 定序）。暂不挂 Facing（次要·水平翻转）；orbit/separation 已接。
     Shape: w.pattern === 'beam' ? { kind: 'box', width: w.radius * 5, height: w.radius } : { kind: 'circle', radius: w.radius },
@@ -250,11 +251,35 @@ function draftPickEntities(): Record<string, EntityBlueprint> {
     out[`kb-${u.id}`] = { KeyBinding: { key: u.effectSignal, signal: u.effectSignal } };
     if (u.slot === 'passive') {
       const p = PASSIVE_BY_KEY[u.id];
-      const targetId = p.kind === 'power' ? 'power' : 'hp';
-      out[`fx-${u.id}`] = { Effect: { onSignal: u.effectSignal, kind: 'modify-resource', targetId, op: 'add', value: p.value } };
+      if (p.kind === 'stat') {
+        // 属性轴：选中 → +1 该被动的层数资源 lvl_<key>（modifier-stack 读它 → totals → stat-bind 投影）。
+        out[`fx-${u.id}`] = { Effect: { onSignal: u.effectSignal, kind: 'modify-resource', targetId: `lvl_${u.id}`, op: 'add', value: 1 } };
+      } else {
+        // power=改全局伤害系数 power / heal=即时改 hp。
+        const targetId = p.kind === 'power' ? 'power' : 'hp';
+        out[`fx-${u.id}`] = { Effect: { onSignal: u.effectSignal, kind: 'modify-resource', targetId, op: 'add', value: p.value } };
+      }
     } else {
       out[`cast-${u.id}`] = { Caster: { onSignal: u.effectSignal, template: `weapon_${u.id}`, at: 'self', originEntity: 'player' } };
     }
+  }
+  return out;
+}
+
+// ── 属性轴（REQ-SURVIVOR被动轴·stat-bind 已下沉）───────────────────────────────
+// 管线：被动 pick +1 到 lvl_<key> 资源 → t2-modifier-stack 聚合全场 ModifierSource → 写 ModifierTotals.totals →
+// t2-stat-bind 把 totals[key] 投影到玩家/拾取环/武器挂点的具体组件字段（幂等·从 base 重算）。零游戏层 system。
+// 每个 stat target 两条 ModifierSource：base（add 1·0 层=系数 1=无变化）+ scaled（add·valueFrom lvl×每层量）。
+// → totals[key] = 1 + value×层数。消费方 base×totals（moveSpeed/pickup/maxHp）或 base÷totals（attackSpeed·攻速越高冷却越短）。
+function modifierAxisEntities(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {
+    mods: { ModifierTotals: { totals: {} } }, // 世界单例聚合表（modifier-stack 每 tick 重算写入）
+  };
+  for (const p of STAT_PASSIVES) {
+    const target = p.stat!;
+    out[`lvl-${p.key}`] = { Resource: { id: `lvl_${p.key}`, current: 0, min: 0, max: p.maxLevel } }; // 该被动层数
+    out[`mod-base-${p.key}`] = { ModifierSource: { id: `${target}-base`, target, op: 'add', value: 1 } };        // 系数底 1
+    out[`mod-lvl-${p.key}`] = { ModifierSource: { id: `${target}-lvl`, target, op: 'add', valueFrom: { resourceId: `lvl_${p.key}`, scale: p.value } } }; // +value×层
   }
   return out;
 }
@@ -363,6 +388,12 @@ export function buildBlueprint(): WorldBlueprint {
         do: [{ kind: 'spawn', template: `proj_${KUNAI.key}`, at: 'self' }],
         once: true, armed: false,
       },
+      // 属性轴投影（REQ-SURVIVOR被动轴·t2-stat-bind）：移速→Controllable.speed、最大生命→Resource.max。
+      // 幂等：每 tick 从 base 重算（0 层 totals=1→无变化）。attackSpeed 暂不投影（见 theme 注·哑火风险）。
+      StatBind: { bindings: [
+        { source: 'ModifierTotals', key: 'moveSpeed', component: 'Controllable', field: 'speed', op: 'mul', base: PLAYER_DEF.moveSpeed },
+        { source: 'ModifierTotals', key: 'maxHp', component: 'Resource', field: 'max', op: 'mul', base: PLAYER_DEF.maxHp },
+      ] },
     },
     'player-core': { // 呼吸核（render-only）
       Hierarchy: child('player'), Transform: { ...XF0 },
@@ -376,6 +407,8 @@ export function buildBlueprint(): WorldBlueprint {
       Shape: { kind: 'circle', radius: PLAYER_DEF.pickupRadius },
       Color: { tint: 0xffffff, alpha: 0 },
       Resource: { id: 'xp', current: 0, min: 0, max: 99999 }, // 累积经验（阈值由 nextxp 动态门·非 max）
+      // 磁力护符：拾取范围 = base × totals.pickup（t2-stat-bind 投影·磁石层数越高吸得越远）。
+      StatBind: { bindings: [{ source: 'ModifierTotals', key: 'pickup', component: 'Shape', field: 'radius', op: 'mul', base: PLAYER_DEF.pickupRadius }] },
     },
     killbox: { // 计分环（承 score·单调累计击杀）
       Hierarchy: child('player'), Transform: { ...XF0 },
@@ -422,6 +455,7 @@ export function buildBlueprint(): WorldBlueprint {
     ...groundGridEntities(),
     ...draftPickEntities(),
     ...evoPickEntities(),
+    ...modifierAxisEntities(),
     ...openingBurstEntities(),
     ...ringSpawnerEntities(),
   };
@@ -435,6 +469,7 @@ export function buildBlueprint(): WorldBlueprint {
       boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
       cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
       steeringCapability, launchCapability, selfRuleCapability, keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, animStateCapability,
+      modifierStackCapability, statBindCapability,
       prefabCapability, casterCapability, aggroCapability, flowCapability,
     ],
     entities,
