@@ -24,7 +24,7 @@ import {
   cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
   steeringCapability, launchCapability, selfRuleCapability,
 } from '@skills/tier2/index.js';
-import { keybindCapability, gaugeCapability, groupCountCapability } from '@skills/tier2/index.js';
+import { keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, orbitAt } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
 import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
@@ -59,6 +59,8 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
   const p: Record<string, unknown> = { ...base,
     Velocity: { vx: 0, vy: 0, angular: 0 },
     Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY },
+    // RBUG-01② 子弹朝向：t2-facing 与 bounds-clamp 都在 Commit 写 Transform→调度器成环（facing 未声明相对定序·
+    // 回报 Lead 补 facing 定序）。暂不挂 Facing（次要·水平翻转）；orbit/separation 已接。
     Shape: w.pattern === 'beam' ? { kind: 'box', width: w.radius * 5, height: w.radius } : { kind: 'circle', radius: w.radius },
     Color: { tint: w.tint, alpha: 1 },
     Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', ...(single ? { consumeOnHit: true } : {}) },
@@ -74,16 +76,14 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
 //  其余=child 发射器（Timer 到点 SelfRule spawn proj_<key> at:self）。
 function weaponMount(w: WeaponDef): { entities: Record<string, Record<string, unknown>> } {
   if (w.pattern === 'orbit') {
-    // VBUG-02：Lead 交付了 t2-orbit-motion，但它只声明 runsAfter:['motion-apply']，与本游戏的
-    // hierarchy-cascade + camera-follow（都碰 Transform）一起装载→调度器硬成环（首个真消费者暴露其定序不全·
-    // 已回报 Lead）。暂回退静态环（Hierarchy child·仍造伤·观感待 orbit-motion 补定序）。
+    // VBUG-02 真接（Lead 已修 orbit-motion 定序·PostResolve+runsAfter→不再成环）：光球挂 Orbit 绕玩家真圆周运动。
+    // orbit-motion 每 tick 写光球 Transform.x/y（绕 centerId=player 半径 radius·相位差 startAngle）；Hitbox 随位置=命中位置。
     const wbit = WEAPON_BIT[w.key] ?? 0; // 武器 Tag 位（进化 destroy-tagged 按位删）
     const ents: Record<string, Record<string, unknown>> = {};
     for (let i = 0; i < w.amount; i++) {
-      const a = (Math.PI * 2 * i) / w.amount;
       ents[`ball${i}`] = {
-        Hierarchy: { parentId: 'player', localX: Math.round(Math.cos(a) * w.radius), localY: Math.round(Math.sin(a) * w.radius), localRotation: 0, localScaleX: 1, localScaleY: 1 },
         Transform: { ...XF0 },
+        Orbit: orbitAt(w.radius, (Math.PI * 2 * i) / w.amount, w.projSpeed, 'player'), // projSpeed=每 tick 角步(rad)
         Sensor: {}, Tag: { flags: ZONE | wbit },
         Shape: { kind: 'circle', radius: 12 },
         Sprite: { textureKey: w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 1 }, // 皮肤槽
@@ -142,7 +142,8 @@ function enemyTemplate(e: EnemyDef, gemTemplate: string): { entities: Record<str
         Resource: { id: 'hp', current: e.hp, min: 0, max: e.hp },
         Mortal: { resource: 'hp', atOrBelow: 0, dropTemplate: gemTemplate },
         Perception: { targetTag: PLAYER, sightRadius: 0 },     // 0=无限视野·恒追玩家
-        Steering: { mode: 'seek', speed: e.speed, stopRange: e.stopRange }, // BUG-02①缓解：贴身即停=环绕不叠一点
+        // BUG-02①真解（Lead 交付 t2-steering.separation）：敌群互斥斥力→环绕玩家而非全叠一点（幸存者手感）。
+        Steering: { mode: 'seek', speed: e.speed, stopRange: Math.min(e.stopRange, 10), separation: { radius: e.radius * 2.4, weight: 1.6, tagMask: ENEMY } },
       },
       inner: { // 内芯（render-only·体积感）
         Hierarchy: child('@local:body'),
@@ -392,7 +393,7 @@ export function buildBlueprint(): WorldBlueprint {
       motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
       boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
       cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
-      steeringCapability, launchCapability, selfRuleCapability, keybindCapability, gaugeCapability, groupCountCapability,
+      steeringCapability, launchCapability, selfRuleCapability, keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability,
       prefabCapability, casterCapability, aggroCapability, flowCapability,
     ],
     entities,
