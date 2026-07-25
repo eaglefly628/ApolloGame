@@ -358,6 +358,43 @@ describe('T2 effect-apply — 物理 kind（REQ-008：信号→物理改动，�
     expect(w.getComponent<Visibility>('d', 'Visibility')!.visible).toBe(true); // 别的 tag 不动
   });
 
+  it('set-flag-tagged（REQ-ORDERROT 姊妹条）：Tag 掩码命中 + Flag.id===targetId 者批量置 active；用例=过阈值解锁东区 webbed', () => {
+    const w = worldWithEffect();
+    const ZONE_EAST = 1 << 5;
+    // a/b 在东区且挂 webbed flag（应被清）；c 在东区但挂的是别的 flag id（不该被碰，需指名 targetId）；
+    // d 挂 webbed 但不在东区（掩码不命中，不该被碰）。
+    w.createEntity('a'); w.addComponent('a', { type: 'Tag', flags: ZONE_EAST } as Tag); w.addComponent('a', { type: 'Flag', id: 'webbed', active: true } as Flag);
+    w.createEntity('b'); w.addComponent('b', { type: 'Tag', flags: ZONE_EAST } as Tag); w.addComponent('b', { type: 'Flag', id: 'webbed', active: true } as Flag);
+    w.createEntity('c'); w.addComponent('c', { type: 'Tag', flags: ZONE_EAST } as Tag); w.addComponent('c', { type: 'Flag', id: 'locked', active: true } as Flag);
+    w.createEntity('d'); w.addComponent('d', { type: 'Tag', flags: 1 << 6 } as Tag); w.addComponent('d', { type: 'Flag', id: 'webbed', active: true } as Flag);
+    effect(w, 'ef', { onSignal: 'S_progress_50', kind: 'set-flag-tagged', tagMask: ZONE_EAST, targetId: 'webbed', value: false });
+    signal(w, 'S_progress_50');
+    w.tick();
+    expect(w.getComponent<Flag>('a', 'Flag')!.active).toBe(false); // 命中掩码 + id 匹配
+    expect(w.getComponent<Flag>('b', 'Flag')!.active).toBe(false); // 命中掩码 + id 匹配
+    expect(w.getComponent<Flag>('c', 'Flag')!.active).toBe(true); // 命中掩码但 flag id 不匹配 → 不动
+    expect(w.getComponent<Flag>('d', 'Flag')!.active).toBe(true); // id 匹配但掩码不命中 → 不动
+  });
+
+  it('set-flag-tagged：命中掩码但无 Flag 组件的实体不受影响（不凭空 add，同 set-visible-tagged 纪律）', () => {
+    const w = worldWithEffect();
+    const MASK = 1 << 2;
+    w.createEntity('nof'); w.addComponent('nof', { type: 'Tag', flags: MASK } as Tag); // 无 Flag
+    effect(w, 'ef', { onSignal: 'x', kind: 'set-flag-tagged', tagMask: MASK, targetId: 'webbed', value: true });
+    signal(w, 'x');
+    expect(() => w.tick()).not.toThrow();
+    expect(w.hasComponent('nof', 'Flag')).toBe(false);
+  });
+
+  it('set-flag-tagged：信号不在场 → 不施加', () => {
+    const w = worldWithEffect();
+    const MASK = 1 << 2;
+    w.createEntity('a'); w.addComponent('a', { type: 'Tag', flags: MASK } as Tag); w.addComponent('a', { type: 'Flag', id: 'webbed', active: true } as Flag);
+    effect(w, 'ef', { onSignal: 'never', kind: 'set-flag-tagged', tagMask: MASK, targetId: 'webbed', value: false });
+    w.tick(); // 无信号
+    expect(w.getComponent<Flag>('a', 'Flag')!.active).toBe(true);
+  });
+
   it('destroy → 在目标实体发 DestroyRequest（清障碍，destroy-apply 随后移除）', () => {
     const w = worldWithEffect();
     w.createEntity('rock');

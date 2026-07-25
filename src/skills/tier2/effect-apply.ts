@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase, type IWorld } from '@engine/core/types.js';
-import type { Effect, Signal, Sensor, Visibility, DestroyRequest, Timer, Tag, PrefabOrigin, RandomSeed } from '@engine/protocol/components.js';
+import type { Effect, Signal, Sensor, Visibility, DestroyRequest, Timer, Tag, PrefabOrigin, RandomSeed, Flag } from '@engine/protocol/components.js';
 import { buildConditionLookup } from './condition.js';
 import { chancePass } from '@atom-skills/index.js';
 import { findScoreTrace, appendScoreEvent } from '../score-trace.js';
@@ -36,7 +36,7 @@ export const effectApplyCapability = defineCapability({
 
   describe: {
     name: 'effect-apply',
-    summary: '信号在场时施加声明式效果（置 Flag / 改 Resource / 设 State，均按 id 全局定位）。Condition→Event→Effect 的 Effect 侧。',
+    summary: '信号在场时施加声明式效果（置 Flag / 改 Resource / 设 State，均按 id 全局定位；亦可按 Tag 掩码批量作用一片实体）。Condition→Event→Effect 的 Effect 侧。',
     semantic: ['tier2', 'logic', 'effect'],
     whenToUse:
       '想让一个 Signal（由 event-when 产出）直接产生世界改动而不写游戏代码时。挂 Effect{onSignal,kind,targetId,value}。跑在 Commit，效果下一 tick 被条件读到（一拍反馈）。',
@@ -49,6 +49,7 @@ export const effectApplyCapability = defineCapability({
       'Balatro 最终计分 score += chips×mult(REQ-013)：Effect{ onSignal:"commit", kind:"modify-resource", targetId:"score", op:"add", valueFrom:{ resourceId:"chips", timesResourceId:"mult" } }',
       'Bull「每 $1 +2 筹码」(REQ-013)：Effect{ onSignal:"score", kind:"modify-resource", targetId:"chips", op:"add", valueFrom:{ resourceId:"money", coeff:2 } }',
       '限时门(REQ-009)：踩开关 → 重置/启动计时器：Effect{ onSignal:"plate_on", kind:"reset-timer", targetEntity:"door_timer", value:120 }（elapsed=0、duration=120）→ 配 condition(timer gte 120)→关门',
+      '过阈值解锁东区(REQ-ORDERROT)：Effect{ onSignal:"S_progress_50", kind:"set-flag-tagged", tagMask:ZONE_EAST_BIT, targetId:"webbed", value:false } → 清 ZONE_EAST 所有格的 webbed flag → 整片可拖',
     ],
   },
 
@@ -56,13 +57,13 @@ export const effectApplyCapability = defineCapability({
     provides: {
       Effect: {
         category: 'config',
-        describe: '声明「当 onSignal 在场时施加的效果」。kind 决定改 Flag/Resource/State，targetId 按 id 全局定位。',
+        describe: '声明「当 onSignal 在场时施加的效果」。kind 决定改 Flag/Resource/State（按 id 全局定位）或按 Tag 掩码批量作用一片实体。',
         fields: {
           onSignal: { type: 'string', describe: '触发该效果的信号名（event-when 产出的 Signal.name）' },
-          kind: { type: 'string', describe: "逻辑:'set-flag'|'modify-resource'|'set-state'；物理(REQ-008):'set-sensor'|'set-visible'|'destroy'；批量(REQ-F-032):'destroy-tagged'(value=Tag掩码,清场)；时序(REQ-009):'reset-timer'" },
-          targetId: { type: 'string', describe: '逻辑 kind：Flag.id / Resource.id / State.fsmId（按 id 全局定位）' },
+          kind: { type: 'string', describe: "逻辑:'set-flag'|'modify-resource'|'set-state'；物理(REQ-008):'set-sensor'|'set-visible'|'destroy'；批量(按Tag掩码):'destroy-tagged'(value=Tag掩码,清场REQ-F-032)|'set-visible-tagged'(tagMask=Tag掩码,批量切可见REQ-F-056)|'set-flag-tagged'(tagMask=Tag掩码+targetId=Flag.id,批量置flag)；时序(REQ-009):'reset-timer'" },
+          targetId: { type: 'string', describe: '逻辑 kind：Flag.id / Resource.id / State.fsmId（按 id 全局定位）；set-flag-tagged：Flag.id（tagMask 命中的实体里再按此 id 指名哪个 Flag）' },
           targetEntity: { type: 'EntityId', describe: '物理/时序 kind：set-sensor/set-visible/destroy/reset-timer 的目标实体 id' },
-          value: { type: 'string', describe: 'modify-resource=数值；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名；destroy 忽略' },
+          value: { type: 'string', describe: 'modify-resource=数值；set-flag/set-flag-tagged/set-sensor/set-visible/set-visible-tagged=布尔；set-state=目标状态名；destroy/destroy-tagged 忽略' },
           op: { type: 'string', describe: "modify-resource 运算(REQ-012)：'add'(默认,current+value)|'mul'(current*value,×倍率)|'set'(=value)" },
           order: { type: 'number', describe: '结算顺序(REQ-012)：同信号命中的 Effect 按 order 升序依次结算（缺省 0）。乘法依赖顺序时必填。' },
           valueFrom: { type: 'string', describe: "动态值(REQ-013/E-023①)：{resourceId?,coeff?,timesResourceId?,countOf?}，v=base×factor；base=countOf(按Tag掩码数实体)或具名Resource，factor=另一资源|系数。解 score+=chips×mult、每$1+2c、abstract每小丑+3倍；缺省用静态 value" },
@@ -125,6 +126,28 @@ export const effectApplyCapability = defineCapability({
               const f = lookup.flag(ef.targetId);
               // 显式布尔/字符串判定，避免 Boolean("false")===true 的 JS 陷阱（Reviewer Bug1）。
               if (f) f.active = ef.value === true || ef.value === 'true';
+              break;
+            }
+            // ── set-flag-tagged（REQ-ORDERROT 姊妹条·批量 tag 域解锁）：destroy-tagged/set-visible-tagged 的
+            // Flag 孪生——tagMask 命中的实体里，谁的 Flag.id 恰好等于 targetId，就把它的 Flag.active 设为 value。
+            // 运行时实例 id 装配期不可知 → 按 Tag 批量寻址（同 destroy-tagged/set-visible-tagged）；须再按
+            // targetId 指名具体哪个 Flag——因为同一 tagMask 命中的实体群里可能各自挂着不同语义的 Flag（webbed/
+            // locked/…），set-flag 的全局单点 lookup 只会碰到第一个同 id 的 Flag，表达不了"一整片区域各自的
+            // Flag 逐个置位"。集合语义与遍历序无关（纯集合操作，Tag 扫描按 id 升序·无随机）；只触已有 Flag
+            // 且 id 匹配的实体（不凭空 add，同 set-visible-tagged 纪律）。用例：进度过阈值 → 解锁东区蛛网格
+            // （Effect{ onSignal, kind:'set-flag-tagged', tagMask:ZONE_EAST_BIT, targetId:'webbed', value:false }）。
+            case 'set-flag-tagged': {
+              const mask = Number(ef.tagMask);
+              if (Number.isFinite(mask) && mask !== 0) {
+                const active = ef.value === true || ef.value === 'true';
+                for (const [tid] of world.query('Tag')) {
+                  const tg = world.getComponent<Tag>(tid, 'Tag');
+                  if (tg && (tg.flags & mask) !== 0) {
+                    const fl = world.getComponent<Flag>(tid, 'Flag');
+                    if (fl && fl.id === ef.targetId) fl.active = active;
+                  }
+                }
+              }
               break;
             }
             case 'modify-resource': {

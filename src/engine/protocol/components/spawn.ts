@@ -84,13 +84,23 @@ export interface MergeDrop extends Component {
 // ── Order（多槽交付订单·REQ-101-07/order-fulfill）── 「集齐 N 个指定模板成品 → 发奖」的声明式订单。
 // 顾客点单/任务收集/合成台通用：needItems=各 slot 要的模板 id（最多 N）·filled=各 slot 是否已交付（等长）·
 // reward=集齐后发的资源增量表（数据·非硬编码）。order-fulfill 消费 DeliverDrop 时按模板匹配未满 slot 落格。
+//
+// 订单轮换（REQ-ORDERROT）：pool 非空时，集齐发奖后**从 pool 取下一单**写回 needItems/reward + 清 filled，
+// 而非停在原地重复同一单——「顾客换下一样需求」的续单循环（可逐级升级 food_2→food_3…）。rotateMode 选
+// 'sequence'（按 cursor 顺序环回，缺省）还是 'weighted'（按 pool 项 weight 用世界 RandomSeed 加权抽·
+// 缺 weight 视为等权）。空 pool = 完全退化回旧行为（resetOnComplete 决定是否清 filled·逐字节零回归）。
 export interface Order extends Component {
   readonly type: 'Order';
   orderId: string;
   needItems: string[]; // 各 slot 需要的模板 id（顺序即 slot 序·长度=slot 数·最多 N）
   filled: boolean[]; // 各 slot 是否已交付（与 needItems 等长·初始全 false）
   reward: { resourceId: string; amount: number }[]; // 全 slot 集齐后一次性发的资源增量（钳进各资源 min/max）
-  resetOnComplete?: boolean; // 集齐发奖后是否清空 filled 重新接单（缺省 true·顾客走了换新单）
+  resetOnComplete?: boolean; // 集齐发奖后是否清空 filled 重新接单（缺省 true·顾客走了换新单）；pool 非空时此字段被轮换逻辑接管（见下）
+  // 续单池（REQ-ORDERROT）：集齐发奖后取下一单的候选表。每项是完整的 needItems/reward 替换（+可选 weight，
+  // 仅 rotateMode:'weighted' 用；缺省视为等权 1）。空数组/未设 = 无池，退化回 resetOnComplete 旧行为。
+  pool?: { needItems: string[]; reward: { resourceId: string; amount: number }[]; weight?: number }[];
+  rotateMode?: 'sequence' | 'weighted'; // pool 取下一单的方式：sequence=按 cursor 顺序环回（缺省）；weighted=世界 RandomSeed 加权抽
+  cursor?: number; // sequence 模式下一次要取的 pool 下标（缺省 0）；每次轮换后 (cursor+1)%pool.length 环回
 }
 
 // ── DeliverDrop（交付意图·order-fulfill 消费）── 把「拖成品 item 去交给订单 order」的一次性意图交给引擎裁决：

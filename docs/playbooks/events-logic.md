@@ -10,6 +10,8 @@
 |---|---|---|
 | 条件成立时发信号 | `t2-event-when` | 挂 `EventWhen{signal,when,mode}`（threshold/状态/门控）；下游 query Signal 消费 |
 | 信号直接改世界 | `t2-effect-apply` | 挂 `Effect{onSignal,kind,targetId,value}`（Commit 相位，下拍生效） |
+| 按 Tag 掩码批量解锁一片区域的 Flag | `t2-effect-apply`（`kind:'set-flag-tagged'`） | `Effect{onSignal,kind:'set-flag-tagged',tagMask,targetId,value}`：tagMask 命中的实体里 `Flag.id===targetId` 者批量置 active（destroy-tagged/set-visible-tagged 的 Flag 孪生·webbed 区域解锁同款） |
+| 顾客点单/收集类多槽交付 + 集齐续单 | `t2-order-fulfill` | 挂 `Order{needItems,filled,reward,pool?,rotateMode?,cursor?}`；`DeliverDrop` 消费落格；`pool` 非空则集齐发奖后轮换下一单（`sequence` 按 cursor 环回 / `weighted` 用世界 `RandomSeed` 加权抽） |
 | 点世界实体发信号 | `t2-clickable` | 挂 `Clickable{action}`；命中即入队信号 |
 | 按键/具名动作发信号 | `t2-keybind` | 挂 `KeyBinding{key,signal}`；人/AI 共用动作总线 |
 | 进入触发区 | `t2-trigger-zone` | 挂 `Tag(ZONE_FLAG)`；靠 overlap-detect 的 Overlap，写 `Trigger` |

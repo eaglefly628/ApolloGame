@@ -108,8 +108,10 @@ export interface Effect extends Component {
   onSignal: string; // 当本 tick 存在此名 Signal 时触发
   // destroy-tagged（REQ-F-032 清场）：value=Tag 掩码，命中者全部发自销毁请求（运行时展开的实例
   // id 装配期不可知，单 targetEntity 寻址不可用——批量按 Tag 是唯一的数据寻址方式）。
-  kind: 'set-flag' | 'modify-resource' | 'set-state' | 'set-sensor' | 'set-visible' | 'set-visible-tagged' | 'destroy' | 'destroy-tagged' | 'reset-timer';
-  targetId: string; // 逻辑 kind：set-flag→Flag.id；modify-resource→Resource.id；set-state→State.fsmId（按 id 全局定位）
+  // set-flag-tagged（订单轮换姊妹条·批量 tag 域解锁）：tagMask 命中的实体里，Flag.id===targetId 者
+  // 把 Flag.active 设为 value（set-flag 的批量版——一整片区域各自的 Flag 逐个置位，而非全局单点）。
+  kind: 'set-flag' | 'set-flag-tagged' | 'modify-resource' | 'set-state' | 'set-sensor' | 'set-visible' | 'set-visible-tagged' | 'destroy' | 'destroy-tagged' | 'reset-timer';
+  targetId: string; // 逻辑 kind：set-flag/set-flag-tagged→Flag.id；modify-resource→Resource.id；set-state→State.fsmId（按 id 全局/tag 批量定位）
   // 物理 kind（set-sensor/set-visible/destroy，REQ-008）：要改动的目标实体 id（按实体定位，不走全局 id 路由）。
   // 哨兵 '@signal-source'（REQ-F-041）：作用于触发本 onSignal 的 Signal.source 实体（可多个，同拍点两个席位
   // 各自生效）——「点谁卖谁/点谁选谁」的指针标配寻址；运行时实例 id 装配期不可知，信号源是唯一数据可达句柄。
@@ -117,11 +119,13 @@ export interface Effect extends Component {
   // set-visible-tagged（REQ-F-056，destroy-tagged 的可见性孪生）：tagMask=Tag 掩码，命中者全部把 Visibility.visible
   // 设为 value（布尔）。运行时实例 id 装配期不可知 → 单 targetEntity 寻址不可用，按 Tag 批量是唯一数据寻址；
   // 用于「阶段性显隐」：备战占位 token / 编辑模式 gizmo / 相位 UI 只在某 Flag/相位显示（区别于 destroy-tagged 的不可逆销毁）。
+  // set-flag-tagged 复用同一字段：tagMask 挑实体、targetId 指名 Flag.id、value 设布尔——三卡（destroy/
+  // visible/flag 的 tagged 批量版）共享同一套字段布局，零新增。
   tagMask?: number;
   // destroy-tagged 的保额（REQ-F-048①）：设了则不全清——按 PrefabOrigin.seq 升序（无戳者排最后）保留
   // 前 N 个（N=该全局 Resource.current），只清多余=**入场逆序**（超员自动卖/波次限额）。缺省=全清（原语义）。
   keepResource?: string;
-  value: number | string | boolean; // modify-resource=数值增量；set-flag/set-sensor/set-visible=布尔；set-state=目标状态名
+  value: number | string | boolean; // modify-resource=数值增量；set-flag/set-flag-tagged/set-sensor/set-visible/set-visible-tagged=布尔；set-state=目标状态名
   // modify-resource 的运算（REQ-012，让「×倍率」成为数据）：'add'=current+value / 'mul'=current*value / 'set'=value。
   // 缺省 'add'（老数据零改动）；结算后照常钳进 [min,max]。Balatro 小丑的 ×mult、伤害倍率、属性乘区皆用此。
   op?: 'add' | 'mul' | 'set';
