@@ -340,15 +340,17 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(hasAliveGate((trash![1] as { SelfRule?: { whenGlobal?: unknown } }).SelfRule?.whenGlobal)).toBe(true);
   });
 
-  it('磁力吸附：宝石带 Perception(玩家)+Steering→靠近时飞向玩家（经验飞过来·修「吸附时经验不飞过来」）', () => {
-    const lib = (buildBlueprint().entities.library as { PrefabLibrary: { templates: Record<string, { entities: Record<string, Record<string, unknown>> }> } }).PrefabLibrary.templates;
-    const gemBody = lib.gem_blue.entities.body as { Perception?: { targetTag: number; sightRadius: number }; Steering?: { mode: string }; Velocity?: unknown };
-    expect(gemBody.Perception?.targetTag).toBe(PLAYER);
-    // 短程吸附（修 owner「很远都飞过来」）：只近距(~一两个身位)吸·不是全屏；> 收取真空区(pickupRadius) 才有可见飞行段。
-    expect(gemBody.Perception?.sightRadius).toBeGreaterThan(PLAYER_DEF.pickupRadius);
-    expect(gemBody.Perception?.sightRadius).toBeLessThan(160); // 近距·非全屏磁吸
-    expect(gemBody.Steering?.mode).toBe('seek');
-    expect(gemBody.Velocity).toBeDefined();
+  it('拾取（性能）：宝石不挂 Perception（避免每颗跑 O(N) 索敌扫描）；收取=贴身真空区+磁石被动放大', () => {
+    const bp = buildBlueprint();
+    const lib = (bp.entities.library as { PrefabLibrary: { templates: Record<string, { entities: Record<string, Record<string, unknown>> }> } }).PrefabLibrary.templates;
+    const gemBody = lib.gem_blue.entities.body as { Perception?: unknown; Hitbox?: { resource: string; targetMask: number } };
+    expect(gemBody.Perception).toBeUndefined();               // 宝石不进 aggro 扫描（性能）
+    expect(gemBody.Hitbox?.resource).toBe('xp');              // 贴身收取仍在（命中拾取环入经验）
+    // 磁石被动放大收取真空区：collector 有 pickup→Shape.radius 的 StatBind。
+    const collector = bp.entities.collector as { StatBind?: { bindings: Array<{ key: string; component: string; field: string }> } };
+    const b = collector.StatBind?.bindings.find((x) => x.key === 'pickup');
+    expect(b?.component).toBe('Shape');
+    expect(b?.field).toBe('radius');
   });
 
   it('难度：胖子/精英血厚(非一枪死)+远程弹更大更清晰', () => {

@@ -224,12 +224,9 @@ function gemTemplate(g: GemDef): { entities: Record<string, Record<string, unkno
         Color: { tint: g.tint, alpha: 1 },
         Hitbox: { resource: 'xp', amount: -g.value, targetMask: COLLECTOR, consumeOnHit: true },
         Timer: { id: 'life', elapsed: 0, duration: GEM_LIFE, loop: false },
-        // 磁力吸附（重组·aggro+steering·短程）：宝石只在**近距**(sightRadius 92·约一两个身位)看见玩家 → aggro 写
-        // Relation → steering seek 飞向玩家=可见飞入动画；出了这半径=静止不动（修 owner「很远都飞过来」bug）。
-        // 飞到贴身真空区(collector Shape·磁石被动放大)被收取。attract(92) > 收取(34) → 全程有可见飞行段（近的也飞·不再瞬吸）。
-        Velocity: { vx: 0, vy: 0, angular: 0 },
-        Perception: { targetTag: PLAYER, sightRadius: 92 },
-        Steering: { mode: 'seek', speed: 6, stopRange: 0 },
+        // 磁力吸附暂撤（性能）：宝石挂 Perception 会让**每颗宝石**都跑 aggro 的 O(N) 最近目标扫描
+        // （几百颗宝石 × 全实体扫 = O(N²) 大头之一）。改回贴身收取（collector Shape·磁石被动放大真空区）。
+        // 「经验飞入动画」待引擎补空间索引(nearestByTag O(N²)→O(N)) 后以便宜方式复接（见 requests Lead 单）。
       },
       kill: { // 计分区（隐形·随 body 级联销毁）
         Hierarchy: child('@local:body'),

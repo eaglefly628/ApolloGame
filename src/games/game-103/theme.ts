@@ -40,7 +40,7 @@ export const PLAYER_DEF = {
   maxHp: 100,
   moveSpeed: 3,          // px/tick（≈180/s·gdd 200/s 起点·灰盒略调）
   radius: 13,
-  pickupRadius: 34,      // 收取真空区半径（贴身·「接近才吃」·磁石被动 stat-bind 放大此值=更强吸力）。远距吸附另由宝石短程 attract 提供（见 blueprint gem）。
+  pickupRadius: 62,      // 收取真空区半径（贴身走过即吃·磁石被动 stat-bind 放大它=更强吸力）。飞入动画待引擎空间索引后复接。
   skin: '103/player',
 } as const;
 
