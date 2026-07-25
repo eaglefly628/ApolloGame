@@ -52,21 +52,22 @@ describe('Game 102 · Pixel Pour（环形轨道 v2 · 机制不变式自验）',
     expect(maxY - minY).toBeGreaterThan(200);
   });
 
-  it('过位剥离：从弹库部署正确色（蓝）→ 绕一圈啃下外沿暴露蓝格（cleared>0）→ 退役入待命槽', () => {
+  it('过位剥离 + per-shot 扣弹：部署蓝（外圈可达）→ 沿边逐格一一命中·每命中扣一发 → 打光(ammo=0)消失', () => {
     const g = driven(RING);
     g.step(2);
     const before = g.res('remain-blue');
     g.tapSupply('blue');
-    g.step(LOOP);
+    g.step(560);                               // 够炮沿轨绕行把 ammo 打光（moveSpeed 5·慢）
     const after = g.res('remain-blue');
     expect(before).toBe(60);                   // 8×8 外蓝 60 格
-    expect(after).toBeLessThan(before);        // 过位剥掉了外沿暴露的蓝
-    expect(after).toBeGreaterThanOrEqual(0);
-    expect(g.res('tray-count')).toBe(1);        // 绕完退役入待命槽
+    expect(after).toBeLessThan(before);        // 过位逐格剥掉外沿暴露蓝
+    // per-shot：净消除 == 该炮 ammo（20）——每命中才扣一发·打满即消失（守恒·非巡逻时长）。
+    expect(before - after).toBe(20);
+    expect(g.cannonPos()).toBe(null);          // 打光→物理退场（消失·不占轨道）
     expect(g.flow()).toBe('playing');
   });
 
-  it('深内层剥不到（次序依赖）：部署红炮（红=2×2 深内层·一圈轨道 sightRadius 够不到）→ 绕一圈零消除·满弹返回', () => {
+  it('深内层剥不到（次序依赖·选错色不减弹）：部署红炮（红=2×2 深内层·轨道够不到）→ 零消除·红不减·满弹不误伤', () => {
     const g = driven(RING);
     g.step(2);
     const blue0 = g.res('remain-blue');
@@ -74,7 +75,7 @@ describe('Game 102 · Pixel Pour（环形轨道 v2 · 机制不变式自验）',
     g.step(LOOP);
     expect(g.res('remain-red')).toBe(4);       // 红一格未动（内层未暴露/够不到）
     expect(g.res('remain-blue')).toBe(blue0);  // 也没误伤蓝
-    expect(g.res('tray-count')).toBe(1);        // 绕完退役入槽（这一圈空转）
+    expect(g.cannonPos()).not.toBe(null);       // 选错色不开火→不扣弹→满弹·仍在带上绕（待接自动入槽）
     expect(g.flow()).toBe('playing');
   });
 

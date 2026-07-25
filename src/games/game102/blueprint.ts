@@ -246,28 +246,24 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
         Sprite: cannonSprite(name),     // 打蛋器贴图（recolor·就绪盖过 box）
         Color: col(pc.tint, 1),
         Tag: { flags: CANNON_BIT | BELT_BIT },
-        Resource: { id: 'ammo', current: level.ammo, min: -1, max: level.ammo },
+        Resource: { id: 'ammo', current: level.ammo, min: 0, max: level.ammo }, // per-shot：每命中一发才 -1（子弹扣发射源）
         Perception: { targetTag: pc.bit, sightRadius: sightFor(boardBounds(level).cell) }, // 有限视野=只打直邻外层同色（逐格顺序）
         Relation: { kind: 'target', targetId: '' },
-        // 从弹簧口出发沿轨道跑**一圈**（loop:false·跑完停在弹簧口→由 Mortal 退役入平台）。PathFollow 写 Velocity。
-        PathFollow: pathFollowAt(trackWaypoints(level), FIRE.moveSpeed, { loop: false, arriveRadius: FIRE.moveSpeed + 2 }),
+        // 从弹簧口出发沿轨道绕行（loop·传送带持续绕）。同 queueId='belt' 成员按 path 进度**有序不重叠**（minGap≈一格·拥堵=排队）。
+        PathFollow: pathFollowAt(trackWaypoints(level), FIRE.moveSpeed, { loop: true, arriveRadius: FIRE.moveSpeed + 2, queueId: 'belt', minGap: Math.round(boardBounds(level).cell * 1.4) }),
         Velocity: { vx: 0, vy: 0, angular: 0 },
         Timer: { id: 'reload', elapsed: 0, duration: FIRE.reload, loop: true },
-        // 逐发精准命中：每 reload 拍向**当前所经边直邻的同色外层格**（有限 sightRadius=只够到直邻外层·随炮沿边
-        // 移动→逐格顺序命中一一消除）生成即时命中区。⚠ 现 ammo=巡逻预算每拍-1（per-shot 精确扣弹 + 打光消失/
-        // 带弹入槽 = REQ-SPENDONFIRE+REQ-CONVEYOR-CAP·见 requests）。**去掉了乱飞曳光（launch 无半径→飞向全局最近）**。
+        // 逐发精准命中（预定命中·无 miss）：每 reload 拍向**直邻同色外层格**生成即时命中区（aggro 有限视野→逐格顺序）。
+        // 子弹自身带 ResourceModify{ammo,-1,source} → **每真命中一发才扣发射源一发**（选错色/够不到=不扣·满弹）。
         SelfRule: {
           when: { kind: 'and', of: [
             { kind: 'timer', id: 'reload', cmp: 'gte', value: FIRE.reload - 1 }, // 装填峰值
-            { kind: 'resource', id: 'ammo', cmp: 'gte', value: 0 },
+            { kind: 'resource', id: 'ammo', cmp: 'gt', value: 0 },
           ] },
-          do: [
-            { kind: 'spawn', template: `bullet_${name}`, at: 'target' }, // 命中直邻同色外层格（aggro 有限视野→逐格顺序）
-            { kind: 'modify-resource', op: 'add', value: -1 },
-          ],
+          do: [ { kind: 'spawn', template: `bullet_${name}`, at: 'target' } ], // 命中直邻同色外层格（扣弹由子弹 source 作用域做）
           once: true, armed: false,
         },
-        Mortal: { resource: 'ammo', atOrBelow: -1, dropTemplate: `tray_${name}` }, // 巡逻尽→退役（真机=打光消失/带弹入空槽·待缺口）
+        Mortal: { resource: 'ammo', atOrBelow: 0, dropTemplate: 'vanishfx' }, // 打光(ammo=0)→物理退场（消失特效）
       },
       // 面上动态弹数（随 body.ammo 实时·text-binding fromParent）。
       ...eggBeaterParts('@local:body', pc.tint, level.ammo, true),
@@ -280,6 +276,7 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
       Sensor: {},
       Tag: { flags: ZONE_BIT },
       Hitbox: { resource: 'hp', amount: 1, targetMask: pc.bit, consumeOnHit: true },
+      ResourceModify: { resourceId: 'ammo', amount: -1, scope: 'source' }, // per-shot：命中一发扣发射源(炮)一发（REQ-SPENDONFIRE）
       Timer: { id: 'life', elapsed: 0, duration: FIRE.bulletLife, loop: false },
     } } };
     // 待命槽炮（返回平台态·打蛋器图标同款）：点它 → Caster 重新部署一门满弹上带炮（redeploy-fx 同信号自毁本槽炮）。
@@ -297,6 +294,13 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
       ...eggBeaterParts('@local:slot', pc.tint, level.ammo, true),
     } };
   }
+  // 打光消失特效：炮 ammo=0 退场时 Mortal 掉此件（白亮闪一下即自毁·render-only）。
+  templates['vanishfx'] = { entities: { v: {
+    Transform: XF(0, 0),
+    Shape: circle(22),
+    Color: col(0xffffff, 0.85),
+    Timer: { id: 'life', elapsed: 0, duration: 8, loop: false },
+  } } };
   // 计分粒子：像素块消除时 Mortal 掉此件 → ResourceModify 全局 +SCORE_CLEAR → 1 拍后自毁。
   templates['scoreblip'] = { entities: { s: {
     Transform: XF(0, 0),
