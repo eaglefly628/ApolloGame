@@ -1,10 +1,86 @@
 [
-  { "id": "gen_fridge",  "name": "冰箱",   "energyCost": 1, "cooldownSec": 0, "sprite": "gen_fridge",  "cell": 0, "emoji": "🧊",
-    "dropTable": [ { "item": "food_1", "w": 60 }, { "item": "food_2", "w": 30 }, { "item": "food_3", "w": 10 } ] },
-  { "id": "gen_coffee",  "name": "咖啡机", "energyCost": 1, "cooldownSec": 0, "sprite": "gen_coffee",  "cell": 1, "emoji": "☕",
-    "dropTable": [ { "item": "coffee_1", "w": 65 }, { "item": "coffee_2", "w": 35 } ] },
-  { "id": "gen_fishbox", "name": "渔获箱", "energyCost": 1, "cooldownSec": 0, "sprite": "gen_fishbox", "cell": 2, "emoji": "🎣",
-    "dropTable": [ { "item": "fish_1", "w": 60 }, { "item": "fish_2", "w": 30 }, { "item": "fish_3", "w": 10 } ] },
-  { "id": "gen_toolbox", "name": "工具箱", "energyCost": 1, "cooldownSec": 8, "sprite": "gen_toolbox", "cell": 3, "emoji": "🧰",
-    "dropTable": [ { "item": "tool_1", "w": 70 }, { "item": "tool_2", "w": 30 } ] }
+  {
+    "id": "gen_fridge",
+    "name": "米仓",
+    "energyCost": 1,
+    "cooldownSec": 0,
+    "sprite": "gen_fridge",
+    "cell": 0,
+    "emoji": "🌾",
+    "dropTable": [
+      {
+        "item": "food_1",
+        "w": 60
+      },
+      {
+        "item": "food_2",
+        "w": 30
+      },
+      {
+        "item": "food_3",
+        "w": 10
+      }
+    ]
+  },
+  {
+    "id": "gen_coffee",
+    "name": "咖啡机",
+    "energyCost": 1,
+    "cooldownSec": 0,
+    "sprite": "gen_coffee",
+    "cell": 1,
+    "emoji": "☕",
+    "dropTable": [
+      {
+        "item": "coffee_1",
+        "w": 65
+      },
+      {
+        "item": "coffee_2",
+        "w": 35
+      }
+    ]
+  },
+  {
+    "id": "gen_fishbox",
+    "name": "渔获箱",
+    "energyCost": 1,
+    "cooldownSec": 0,
+    "sprite": "gen_fishbox",
+    "cell": 2,
+    "emoji": "🎣",
+    "dropTable": [
+      {
+        "item": "fish_1",
+        "w": 60
+      },
+      {
+        "item": "fish_2",
+        "w": 30
+      },
+      {
+        "item": "fish_3",
+        "w": 10
+      }
+    ]
+  },
+  {
+    "id": "gen_toolbox",
+    "name": "甜点炉",
+    "energyCost": 1,
+    "cooldownSec": 8,
+    "sprite": "gen_toolbox",
+    "cell": 3,
+    "emoji": "🧁",
+    "dropTable": [
+      {
+        "item": "tool_1",
+        "w": 70
+      },
+      {
+        "item": "tool_2",
+        "w": 30
+      }
+    ]
+  }
 ]

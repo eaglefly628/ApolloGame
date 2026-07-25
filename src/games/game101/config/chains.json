@@ -1,58 +1,214 @@
 [
   {
     "id": "food",
-    "name": "食材链",
+    "name": "粮食链",
     "levels": [
-      { "lvl": 1, "item": "food_1", "name": "番茄", "sell": 3, "sprite": "item_food_1" },
-      { "lvl": 2, "item": "food_2", "name": "洗净番茄", "sell": 7, "sprite": "item_food_2" },
-      { "lvl": 3, "item": "food_3", "name": "切片", "sell": 16, "sprite": "item_food_3" },
-      { "lvl": 4, "item": "food_4", "name": "番茄酱", "sell": 36, "sprite": "item_food_4" },
-      { "lvl": 5, "item": "food_5", "name": "意面", "sell": 80, "sprite": "item_food_5" },
-      { "lvl": 6, "item": "food_6", "name": "招牌意面", "sell": 180, "sprite": "item_food_6" }
+      {
+        "lvl": 1,
+        "item": "food_1",
+        "name": "稻谷",
+        "sell": 3,
+        "sprite": "item_food_1"
+      },
+      {
+        "lvl": 2,
+        "item": "food_2",
+        "name": "米饭",
+        "sell": 7,
+        "sprite": "item_food_2"
+      },
+      {
+        "lvl": 3,
+        "item": "food_3",
+        "name": "面包",
+        "sell": 16,
+        "sprite": "item_food_3"
+      },
+      {
+        "lvl": 4,
+        "item": "food_4",
+        "name": "可颂",
+        "sell": 36,
+        "sprite": "item_food_4"
+      },
+      {
+        "lvl": 5,
+        "item": "food_5",
+        "name": "蛋糕",
+        "sell": 80,
+        "sprite": "item_food_5"
+      },
+      {
+        "lvl": 6,
+        "item": "food_6",
+        "name": "华丽蛋糕",
+        "sell": 180,
+        "sprite": "item_food_6"
+      }
     ]
   },
   {
     "id": "fish",
     "name": "渔获链",
     "levels": [
-      { "lvl": 1, "item": "fish_1", "name": "小鱼", "sell": 3, "sprite": "item_fish_1" },
-      { "lvl": 2, "item": "fish_2", "name": "鲜鱼", "sell": 7, "sprite": "item_fish_2" },
-      { "lvl": 3, "item": "fish_3", "name": "处理好的鱼", "sell": 16, "sprite": "item_fish_3" },
-      { "lvl": 4, "item": "fish_4", "name": "鱼柳", "sell": 36, "sprite": "item_fish_4" },
-      { "lvl": 5, "item": "fish_5", "name": "香煎鱼", "sell": 80, "sprite": "item_fish_5" },
-      { "lvl": 6, "item": "fish_6", "name": "主厨鱼料理", "sell": 180, "sprite": "item_fish_6" }
+      {
+        "lvl": 1,
+        "item": "fish_1",
+        "name": "小鱼",
+        "sell": 3,
+        "sprite": "item_fish_1"
+      },
+      {
+        "lvl": 2,
+        "item": "fish_2",
+        "name": "鲜鱼",
+        "sell": 7,
+        "sprite": "item_fish_2"
+      },
+      {
+        "lvl": 3,
+        "item": "fish_3",
+        "name": "鲜虾",
+        "sell": 16,
+        "sprite": "item_fish_3"
+      },
+      {
+        "lvl": 4,
+        "item": "fish_4",
+        "name": "寿司",
+        "sell": 36,
+        "sprite": "item_fish_4"
+      },
+      {
+        "lvl": 5,
+        "item": "fish_5",
+        "name": "鱼板",
+        "sell": 80,
+        "sprite": "item_fish_5"
+      },
+      {
+        "lvl": 6,
+        "item": "fish_6",
+        "name": "海鲜便当",
+        "sell": 180,
+        "sprite": "item_fish_6"
+      }
     ]
   },
   {
     "id": "fries",
-    "name": "薯条链",
+    "name": "蔬果链",
     "levels": [
-      { "lvl": 1, "item": "fries_1", "name": "土豆", "sell": 3, "sprite": "item_fries_1" },
-      { "lvl": 2, "item": "fries_2", "name": "薯块", "sell": 7, "sprite": "item_fries_2" },
-      { "lvl": 3, "item": "fries_3", "name": "薯条", "sell": 16, "sprite": "item_fries_3" },
-      { "lvl": 4, "item": "fries_4", "name": "招牌薯条", "sell": 36, "sprite": "item_fries_4" }
+      {
+        "lvl": 1,
+        "item": "fries_1",
+        "name": "土豆",
+        "sell": 3,
+        "sprite": "item_fries_1"
+      },
+      {
+        "lvl": 2,
+        "item": "fries_2",
+        "name": "胡萝卜",
+        "sell": 7,
+        "sprite": "item_fries_2"
+      },
+      {
+        "lvl": 3,
+        "item": "fries_3",
+        "name": "沙拉",
+        "sell": 16,
+        "sprite": "item_fries_3"
+      },
+      {
+        "lvl": 4,
+        "item": "fries_4",
+        "name": "蔬菜煲",
+        "sell": 36,
+        "sprite": "item_fries_4"
+      }
     ]
   },
   {
     "id": "coffee",
-    "name": "咖啡链",
+    "name": "饮品链",
     "levels": [
-      { "lvl": 1, "item": "coffee_1", "name": "咖啡豆", "sell": 3, "sprite": "item_coffee_1" },
-      { "lvl": 2, "item": "coffee_2", "name": "咖啡粉", "sell": 7, "sprite": "item_coffee_2" },
-      { "lvl": 3, "item": "coffee_3", "name": "浓缩咖啡", "sell": 16, "sprite": "item_coffee_3" },
-      { "lvl": 4, "item": "coffee_4", "name": "拿铁", "sell": 36, "sprite": "item_coffee_4" },
-      { "lvl": 5, "item": "coffee_5", "name": "招牌特调", "sell": 80, "sprite": "item_coffee_5" }
+      {
+        "lvl": 1,
+        "item": "coffee_1",
+        "name": "咖啡豆",
+        "sell": 3,
+        "sprite": "item_coffee_1"
+      },
+      {
+        "lvl": 2,
+        "item": "coffee_2",
+        "name": "咖啡",
+        "sell": 7,
+        "sprite": "item_coffee_2"
+      },
+      {
+        "lvl": 3,
+        "item": "coffee_3",
+        "name": "拿铁",
+        "sell": 16,
+        "sprite": "item_coffee_3"
+      },
+      {
+        "lvl": 4,
+        "item": "coffee_4",
+        "name": "冰饮",
+        "sell": 36,
+        "sprite": "item_coffee_4"
+      },
+      {
+        "lvl": 5,
+        "item": "coffee_5",
+        "name": "奶茶",
+        "sell": 80,
+        "sprite": "item_coffee_5"
+      }
     ]
   },
   {
     "id": "tool",
-    "name": "工具链",
+    "name": "甜点链",
     "levels": [
-      { "lvl": 1, "item": "tool_1", "name": "螺丝", "sell": 4, "sprite": "item_tool_1" },
-      { "lvl": 2, "item": "tool_2", "name": "扳手", "sell": 9, "sprite": "item_tool_2" },
-      { "lvl": 3, "item": "tool_3", "name": "工具包", "sell": 20, "sprite": "item_tool_3" },
-      { "lvl": 4, "item": "tool_4", "name": "电钻", "sell": 45, "sprite": "item_tool_4" },
-      { "lvl": 5, "item": "tool_5", "name": "维修套装", "sell": 100, "sprite": "item_tool_5" }
+      {
+        "lvl": 1,
+        "item": "tool_1",
+        "name": "巧克力",
+        "sell": 4,
+        "sprite": "item_tool_1"
+      },
+      {
+        "lvl": 2,
+        "item": "tool_2",
+        "name": "糖果",
+        "sell": 9,
+        "sprite": "item_tool_2"
+      },
+      {
+        "lvl": 3,
+        "item": "tool_3",
+        "name": "甜甜圈",
+        "sell": 20,
+        "sprite": "item_tool_3"
+      },
+      {
+        "lvl": 4,
+        "item": "tool_4",
+        "name": "纸杯蛋糕",
+        "sell": 45,
+        "sprite": "item_tool_4"
+      },
+      {
+        "lvl": 5,
+        "item": "tool_5",
+        "name": "华夫饼",
+        "sell": 100,
+        "sprite": "item_tool_5"
+      }
     ]
   }
 ]

@@ -21,6 +21,7 @@ export interface S1State {
   cells: (CellView | null)[]; orders: OrderView[];
   burstCell?: number; // 合成迸发格（juice·render-only·该格叠一次性星光爆）
   dragGhost?: { emoji: string; x: number; y: number }; // 拖拽中跟手飞影（Screen 坐标·render-only）
+  liftedCell?: number; // 被拿起的源格（淡化=物已拿在手上·render-only）
 }
 
 type N = LayoutNode;
@@ -110,8 +111,8 @@ function orders(s: S1State): N {
             layout: { direction: 'column', align: 'center', justify: 'center', padding: 6, radius: 12, height: 68, flex: 1 },
             children: [
               sl.filled
-                ? { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: '✓', size: 34, bold: true, color: 'ink' } } as N
-                : { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: sl.itemEmoji, size: 40 } } as N,
+                ? { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: '✓', size: 40, bold: true, color: 'ink' } } as N
+                : { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: sl.itemEmoji, size: 56 } } as N, // 顾客需求物大图·看得清
             ],
           })),
         },
@@ -154,7 +155,7 @@ function board(s: S1State): N {
       } as N;
     }
     if (cv) {
-      kids.push({ type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: 74 } });
+      kids.push({ type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: i === s.liftedCell ? 74 : 92 }, layout: i === s.liftedCell ? { opacity: 0.28 } : {} }); // 大图标看得清·被拿起格淡化缩小
       if (cv.deliverable) kids.push({ type: 'Badge', id: `t-live-${i}-b`, props: { text: '✓', tone: 'ok' } });
       if (cv.timer != null) kids.push({ type: 'Badge', id: `t-live-${i}-t`, props: { text: `⏱${cv.timer}`, tone: 'warn' } }); // 限时物倒计时
 
@@ -188,12 +189,13 @@ function board(s: S1State): N {
   };
 }
 
-// 拖拽跟手飞影（render-only）：一个绝对定位大 emoji 跟随指针（放大+半透=拿在手上的空中态）。
+// 拖拽跟手飞影（render-only·动效要充分）：绝对定位超大 emoji 跟指针，循环脉冲放大（anim:'pulse'）
+// + 落影(fx:'holo' 彩光)——"拿在手上、活着"的空中态。size 大于格内(92)=明显举起来了。
 function dragGhost(s: S1State): N[] {
   if (!s.dragGhost) return [];
   return [{
-    type: 'Label', id: 'drag-ghost', props: { text: s.dragGhost.emoji, size: 96 },
-    layout: { x: s.dragGhost.x - 48, y: s.dragGhost.y - 48, allowOverlap: true, opacity: 0.9 },
+    type: 'Label', id: 'drag-ghost', props: { text: s.dragGhost.emoji, size: 120 },
+    layout: { x: s.dragGhost.x - 60, y: s.dragGhost.y - 60, allowOverlap: true, anim: 'pulse' },
   } as N];
 }
 

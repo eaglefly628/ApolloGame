@@ -115,12 +115,18 @@ function levelTint(base: number, lvl: number, maxLvl: number): number {
 
 // ── 物品占位 emoji（Twemoji 活板显示·美术就绪即被 sprite 皮盖过）──────────────
 // 每条链每级一个 emoji·体现升级进程（真原创套图走 S6 台账皮肤槽替换）。
+// 每条链=**连贯的食物进化**（owner 2026-07-25：从小到大·稻谷→面包→蛋糕这种，别放刀/工具这种非食物）。
 export const ITEM_EMOJI: Record<string, string> = {
-  food_1: '🍅', food_2: '🥗', food_3: '🔪', food_4: '🥫', food_5: '🍝', food_6: '🍽️',
-  fish_1: '🐟', fish_2: '🐠', fish_3: '🍣', fish_4: '🍤', fish_5: '🐡', fish_6: '🍱',
-  fries_1: '🥔', fries_2: '🍠', fries_3: '🍟', fries_4: '🍱',
-  coffee_1: '🫘', coffee_2: '☕', coffee_3: '☕', coffee_4: '🥛', coffee_5: '🥤',
-  tool_1: '🔩', tool_2: '🔧', tool_3: '🧰', tool_4: '🪫', tool_5: '🛠️',
+  // 粮食链：稻谷 → 米饭 → 面包 → 可颂 → 蛋糕 → 华丽蛋糕
+  food_1: '🌾', food_2: '🍚', food_3: '🍞', food_4: '🥐', food_5: '🍰', food_6: '🎂',
+  // 渔获链：小鱼 → 鲜鱼 → 虾 → 寿司 → 鱼板 → 海鲜便当
+  fish_1: '🐟', fish_2: '🐠', fish_3: '🦐', fish_4: '🍣', fish_5: '🍥', fish_6: '🍱',
+  // 蔬果链：土豆 → 胡萝卜 → 沙拉 → 蔬菜煲
+  fries_1: '🥔', fries_2: '🥕', fries_3: '🥗', fries_4: '🥘',
+  // 饮品链：咖啡豆 → 咖啡 → 拿铁 → 冰饮 → 奶茶
+  coffee_1: '🫘', coffee_2: '☕', coffee_3: '🥛', coffee_4: '🥤', coffee_5: '🧋',
+  // 甜点链：巧克力 → 糖果 → 甜甜圈 → 纸杯蛋糕 → 华夫饼
+  tool_1: '🍫', tool_2: '🍬', tool_3: '🍩', tool_4: '🧁', tool_5: '🧇',
   timed_fresh: '🦀', // 限时鲜货（带倒计时·到期自毁）
 };
 
