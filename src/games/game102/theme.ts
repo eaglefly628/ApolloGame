@@ -36,12 +36,11 @@ export const ZONE_BIT   = 1 << 0;  // 命中判定区标记 = 引擎 trigger-zon
 // ── 开火节拍（S4 玩法·全 config·数据驱动·按 gdd §2.2「连喷一长串·每发命中同色 -1」）─────────
 export const FIRE = {
   reload: 8,        // 装填 tick（每 8 tick 喷一发子弹·连喷）
-  sightRadius: 0,   // 0 = 无限视野（整幅画内任意同色格皆可索敌）
+  sightRadius: 78,  // **有限视野**=只打当前所经边外沿暴露的同色（过位剥离核心·从外向里啃·选错边=空转）
   bulletSpeed: 130, // 曳光弹初速（可见弹道·render-only 不参与结算）
   bulletRadius: 7,  // 子弹命中半径
   bulletLife: 40,   // 子弹未命中兜底回收 tick
-  moveSpeed: 5,     // 色炮驾向目标格的移动速度 px/tick（steering seek·可见"吸色车"游动）
-  stopRange: 28,    // 到目标格此距离内即停下开火（略大于格半宽·贴着格打）
+  moveSpeed: 13,    // 色炮沿环形轨道绕行速度 px/tick（PathFollow·可见绕圈·调到「巡逻预算 ≈ 绕一圈」）
 } as const;
 
 // ── play-field 尺寸 = design-ref 定尺舞台 650×1424（1:1 复刻基准·mountHost 等比信箱缩放到设备）──

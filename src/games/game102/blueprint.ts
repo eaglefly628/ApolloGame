@@ -18,7 +18,7 @@ import {
 } from '@atom-skills/index.js';
 import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability } from '@skills/tier1/index.js';
 import {
-  clickableCapability, groupCountCapability, effectApplyCapability, launchCapability, steeringCapability,
+  clickableCapability, groupCountCapability, effectApplyCapability, launchCapability, pathFollowCapability, pathFollowAt,
   selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability,
 } from '@skills/tier2/index.js';
 import { flowCapability, aggroCapability, prefabCapability, casterCapability } from '@skills/tier3/index.js';
@@ -33,6 +33,26 @@ const XF = (x: number, y: number): Record<string, unknown> => ({ x, y, rotation:
 const box = (w: number, h: number): Record<string, unknown> => ({ kind: 'box', width: w, height: h });
 const circle = (r: number): Record<string, unknown> => ({ kind: 'circle', radius: r });
 const col = (tint: number, alpha = 1): Record<string, unknown> => ({ tint, alpha });
+
+// ── 环形轨道（core-experience-v2 §1·实机三图）：一条绕像素画一周的闭环跑道·色炮 PathFollow 沿它绕圈跑 ──
+// 轨道矩形 = PICTURE 外扩 margin（骑在管道内轨、包住画面）；顺时针采样成航点表烤进 PathFollow（纯数据）。
+const TRACK_MARGIN = 34;      // 轨道离像素画外沿的间距（px·炮体贴着外沿向内开火）
+const TRACK_STEP = 44;        // 航点采样步长（px·越小越贴合矩形）
+function trackWaypoints(): { x: number; y: number }[] {
+  const x0 = PICTURE.x - TRACK_MARGIN, y0 = PICTURE.y - TRACK_MARGIN;
+  const x1 = PICTURE.x + PICTURE.w + TRACK_MARGIN, y1 = PICTURE.y + PICTURE.h + TRACK_MARGIN;
+  const wp: { x: number; y: number }[] = [];
+  const edge = (ax: number, ay: number, bx: number, by: number): void => {
+    const len = Math.hypot(bx - ax, by - ay);
+    const n = Math.max(1, Math.round(len / TRACK_STEP));
+    for (let i = 0; i < n; i++) { const t = i / n; wp.push({ x: Math.round(ax + (bx - ax) * t), y: Math.round(ay + (by - ay) * t) }); }
+  };
+  edge(x0, y0, x1, y0); // 上（→）
+  edge(x1, y0, x1, y1); // 右（↓）
+  edge(x1, y1, x0, y1); // 下（←）
+  edge(x0, y1, x0, y0); // 左（↑）
+  return wp;
+}
 
 // 棋盘格铺进 PICTURE 窗口：按 cols/rows 自适应格宽、居中。返回 {cell,ox,oy}（供 boardCells 用）。
 function boardFit(level: Level): { cell: number; ox: number; oy: number } {
@@ -171,20 +191,21 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
   for (const name of level.palette) {
     const pc = PALETTE[name];
     if (!pc) continue;
-    // 上带色炮：生成于补给口 → aggro 每拍锁最近同色格、steering 驾着它**可见地游向该格**（吸色车），
-    // 每 reload 拍 ①炮口喷可见曳光弹飞向该格 ②在格上生成即时命中区结算消除 ③ammo-1 → 弹尽(ammo≤0)
-    // Mortal 自毁掉一门 tray 炮。矢量图=亮色炮体圆盘 + 深色炮口小盘（hierarchy 随体走）。
+    // 上带色炮（环形轨道·实机核心）：生成于补给口 → PathFollow 驾其**绕像素画一周**（可见于轨道上）；
+    // 绕行中 aggro 只锁 sightRadius 内（=当前所经边外沿）同色格 → 每 reload 拍 ①炮口喷可见曳光弹 ②在该格
+    // 生成即时命中区结算消除（过位剥离·从外向里啃）③ammo(巡逻预算)-1 → 预算尽 Mortal 自毁掉一门 tray 炮。
+    // 选错色/该边无暴露同色 → sightRadius 内无目标 → 不开火（at:'target' 天然跳过）→ 绕一圈啥也没打。
     templates[`cannon_${name}`] = { entities: {
       body: {
-        Transform: XF(0, 0), // 落点=补给口（prefab 展开时按 spawn 位偏移）→ 之后 steering 驾其游向像素
+        Transform: XF(0, 0), // 落点=补给口（prefab 展开时按 spawn 位偏移）→ PathFollow 驾其上轨绕圈
         Shape: circle(26),
         Color: col(pc.tint, 1),
         Tag: { flags: CANNON_BIT | BELT_BIT },
         Resource: { id: 'ammo', current: level.ammo, min: -1, max: level.ammo },
-        Perception: { targetTag: pc.bit, sightRadius: FIRE.sightRadius },
+        Perception: { targetTag: pc.bit, sightRadius: FIRE.sightRadius }, // 有限视野=只打当前经过边的暴露同色（过位剥离）
         Relation: { kind: 'target', targetId: '' },
-        // 驾向最近同色格（可见核心·到 stopRange 停下开火）。速度写 Velocity 交 motion-apply 积分。
-        Steering: { mode: 'seek', speed: FIRE.moveSpeed, stopRange: FIRE.stopRange },
+        // 沿环形轨道航点匀速绕圈跑（可见核心·闭环 loop）。PathFollow 写 Velocity 交 motion-apply 积分。
+        PathFollow: pathFollowAt(trackWaypoints(), FIRE.moveSpeed, { loop: true, arriveRadius: FIRE.moveSpeed + 2 }),
         Velocity: { vx: 0, vy: 0, angular: 0 },
         Timer: { id: 'reload', elapsed: 0, duration: FIRE.reload, loop: true },
         // 逐发喷子弹：ammo≥0 时每 reload 拍 ①在炮口发可见弹道曳光(tracer·飞向最近同色) ②在最近同色格生成
@@ -341,7 +362,7 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
       // tier1（子弹运动 + 生命期 + 炮口子件挂接/级联销毁）
       motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
       // tier2 玩法能力
-      clickableCapability, groupCountCapability, effectApplyCapability, launchCapability, steeringCapability,
+      clickableCapability, groupCountCapability, effectApplyCapability, launchCapability, pathFollowCapability,
       selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability,
       // tier3（生成 + 索敌 + 流程）
       flowCapability, aggroCapability, prefabCapability, casterCapability,
