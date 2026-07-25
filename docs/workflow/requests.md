@@ -27,6 +27,12 @@
 > **已试重组（不可得）**：游戏侧只能砍同屏 cap（150→46·5.8ms 临时可玩）缓解=牺牲割草初衷（几百怪）；无法在游戏层给 O(N) 扫加索引。`SpatialIndex` 组件(`spatial.ts:164`)与 `DynamicAabbTree`(overlap-detect 用)**已存在但 nearestByTag/queryRange 没用它们**。
 > **建议方案（Lead 裁）· 边界**：让 `nearestByTag`/`queryRange`/`queryNearest` 走**共享空间索引**（均匀网格 hash 或复用现有 SpatialIndex/AabbTree·每帧建一次全体复用）→ O(N²)→O(N)。确定性（网格桶内按 id tie-break·同现 nearestByTag id 序·进 hash 不变）。加性零回归（索引仅加速·结果集与现全扫一致·既有测全绿）。**触碰范围**：`src/skills/atoms/spatial-query/**`（+ 可选 `src/engine/spatial/**` 复用 aabb-tree）+ 测试；game-103 等所有用 aggro/steering/spatial-query 的游戏**零改**自动提速。**落地后 game-103 恢复怪 cap 到几百·磁吸飞入动画复接**。**与 REQ-OVERLAP-LAYER 关系**：本条是主因(79%)、那条是次因(13%)；空间索引亦可顺带服务 overlap-detect 宽相位（可合并考量）。
 
+### REQ-SCREENFILL-Screen 填满 mount-host 固定 scene 盒（去竖屏底部信箱空白） · [2026-07-25] · PE-101 报（owner「下面留这么大空」实测撞墙）→ PUI 裁 · status: **open** · 优先级: P2（所有 mountHost 竖屏游戏通用·非 game101 专属） · 类型: UI 基座缺口（PUI 域·`src/ui/components/render.ts`）
+> **想实现的行为**：`mountHost` 建的是**固定 `fieldW×fieldH`（如 1080×1920）的 scene 盒**再整体 `transform:scale()` 信箱化。Screen 作为其直接子应**填满该盒高度**（`flex` 子撑满 → 内部 `flex:1` 区块吃满剩余空间）。
+> **实测缺口**：`renderScreen`（`src/ui/components/render.ts:505`）写死 `min-height:100vh`——`100vh`=**真实浏览器视口**（本例 960px 缩放态）而非 scene 盒的 1920px；Screen 遂只长到**内容自然高**，盒底空出信箱条（game101 实测底部空 ~372px/19%）。且 Screen 节点自带的 `layout.height:1920` 被 renderScreen 完全忽略。
+> **卡在哪**：游戏侧只能靠**把内容精确撑到 1920** 规避（game101 现已这么做·但脆——布局一动缝就回来），非真填充。Screen 的高度语义应绑 mountHost 盒而非视口。
+> **建议方案（PUI 裁）· 边界**：renderScreen 用 `min-height:100%`（吃父 scene 盒的显式 1920px 高）替代/叠加 `100vh`，或加 `ScreenProps.fill?` 令牌显式启用「填满宿主盒」。**触碰范围**：`src/ui/components/{render.ts,types.ts}` + 点名测试 + `docs/playbooks/ui.md` 回填。撞墙实证＝`src/games/game101/s1.ts`（orders `height:530` 硬撑到 1920 的规避）+ `src/engine/host/mount-host.ts:104`（scene 固定 `height:${fieldH}px`）。
+
 ### REQ-STYLESET-风格库 apollo-toon · 迪士尼×Supercell×中国水墨混风·全类型 house style · [2026-07-16] · owner 拍板（全形态换装非调色·先现装可视版·其他风格收敛）→ **指派：PA（M0 台账底座）+ PUI（M0.5 现装可视版·先行）** · status: **M0 ✅ PASS + M0.5 ✅ PASS（Lead 对抗性验收 2026-07-16）；M1 试产 open·等真 key（连 REQ-AIGEN 卡口）** · 优先级: P1 · 类型: 引擎级风格资产库 + UI 基座消费
 > 图纸唯一真相=`docs/design/styleset-artlib-plan-2026-07-16.md`（§二 三增量·§六 首批清单 spec + M0/M0.5 交付边界·风格锚 v2 单一真相在风格包·**IP 红线：锚用描述词不写厂牌词**）。M1 试产/M2 建库等真 key（连 REQ-AIGEN 卡口）；M3 对齐（examples 进 game-i）；M4 D/G 出口游戏换装。完工各标 ✅ 待 Lead 对抗性验收（真浏览器截图必查）。
 > **+ M0.6 主题指针（owner 2026-07-16·game-t 连带需求·指派 PUI）**：UITheme 加 `cursor?` 主题令牌（data-URI 图 + hotspot + 按压态·缺省无=老主题零变化·沿 panelTexture 先例：guard+点名测试+ui.md 回填）；apollo-toon 配墨笔尖造型指针（程序化 SVG 占位·台账行留真图位）；触屏无指针不受影响。"墨迹拖尾跟随"记二期候选不做。

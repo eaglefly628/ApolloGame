@@ -74,7 +74,8 @@ function hud(s: S1State): N {
 function orders(s: S1State): N {
   return {
     type: 'Panel', id: 'orders', props: { bare: true },
-    layout: { direction: 'row', align: 'stretch', justify: 'between', gap: 8, padding: 8 },
+    // 顾客栏=醒目高条带（owner「不够长·卡太小·放大一波」）：显式撑高 → 立绘/餐盘大幅放大 + 填满上方避免底部空白。
+    layout: { direction: 'row', align: 'stretch', justify: 'between', gap: 10, padding: 6, height: 530 },
     children: s.orders.map((o, i) => ({
       // 整卡=交付落点（宿主按 DOM id 几何识别）。限时特惠订单=**异形切角卡(Panel.shape:'cut')** + 金框 + ⏱ 倒计时
       // （动态限时菜单·REQ-UI-异型容器 PUI 已交·真异形非矩形）。金框(edge)非金底(bg)保徽章对比；cut=八边切角
@@ -82,35 +83,35 @@ function orders(s: S1State): N {
       // 可交付顾客卡=绿框 + 发光脉冲（醒目「可以交给我了」）；限时卡=金框异形；两者叠加时可交付绿框优先示意。
       type: 'Panel', id: `ord-${i}`,
       props: o.timed ? { bg: 'panel', edge: o.deliverable ? 'ok' : 'gold', shape: 'cut' } : o.deliverable ? { bg: 'panel', edge: 'ok' } : { bg: 'panel' },
-      // 长条形卡（owner）：真立绘在左作背景图层 + 需求（盘子）叠在右，横向排布=扁而宽。
-      layout: { direction: 'row', align: 'center', gap: 8, padding: o.timed ? 12 : 8, radius: 18, flex: 1, ...(o.deliverable ? { anim: 'glow' } : {}) },
+      // 竖高卡（owner「不够长·太小·放大」）：大立绘在上作主视觉 + 需求盘/奖励叠在下，纵向排布=高而醒目。
+      layout: { direction: 'column', align: 'stretch', justify: 'start', gap: 8, padding: o.timed ? 14 : 10, radius: 20, flex: 1, ...(o.deliverable ? { anim: 'glow' } : {}) },
       children: [
-        // 左：真人物立绘（asset-manager vendor 的 CC0 头像·src 就绪即真图·name 作缺省首字兜底）。
-        { type: 'Avatar', id: `ord-${i}-av`, props: { src: o.portrait, name: o.char, size: 84, shape: 'rounded' } },
+        // 顶：大人物立绘（asset-manager vendor 的 CC0 头像·src 就绪即真图·name 作缺省首字兜底）。撑满卡宽作主视觉。
+        { type: 'Avatar', id: `ord-${i}-av`, props: { src: o.portrait, name: o.char, size: 190, shape: 'rounded' }, layout: { align: 'center' } },
         {
           type: 'Panel', id: `ord-${i}-r`, props: { bare: true },
-          layout: { direction: 'column', align: 'stretch', justify: 'center', gap: 4, flex: 1 },
+          layout: { direction: 'column', align: 'stretch', justify: 'start', gap: 8, flex: 1 },
           children: [
             {
               type: 'Panel', id: `ord-${i}-nmrow`, props: { bare: true },
               layout: { direction: 'row', align: 'center', justify: 'between', gap: 4 },
               children: [
-                { type: 'Label', id: `ord-${i}-nm`, props: { text: o.char, size: 'sm', bold: true } },
-                { type: 'Label', id: `ord-${i}-mf`, props: { text: o.moodFace, size: 'md' } }, // 心情脸
+                { type: 'Label', id: `ord-${i}-nm`, props: { text: o.char, size: 'lg', bold: true } },
+                { type: 'Label', id: `ord-${i}-mf`, props: { text: o.moodFace, size: 'xl' } }, // 心情脸
                 ...(o.timed && o.timeLeft != null ? [{ type: 'Badge', id: `ord-${i}-clk`, props: { text: `⏱${o.timeLeft}`, tone: 'warn' } } as N] : []),
               ],
             },
             {
               // 需求盘（叠在立绘旁）：最多 3 slot·已交付 ✓ 绿槽·可交付金槽·未满显需求物。
               type: 'Panel', id: `ord-${i}-plate`, props: { bg: 'sunken' },
-              layout: { direction: 'row', align: 'center', justify: 'center', gap: 5, padding: 6, radius: 14 },
+              layout: { direction: 'row', align: 'center', justify: 'center', gap: 8, padding: 10, radius: 18 },
               children: o.slots.map((sl, j) => ({
                 type: 'Panel', id: `ord-${i}-s${j}`, props: { bg: sl.filled ? 'ok' : sl.want ? 'gold' : 'raised' },
-                layout: { direction: 'column', align: 'center', justify: 'center', padding: 4, radius: 10, height: 56, flex: 1 },
+                layout: { direction: 'column', align: 'center', justify: 'center', padding: 6, radius: 14, height: 104, flex: 1 },
                 children: [
                   sl.filled
-                    ? { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: '✓', size: 32, bold: true, color: 'ink' } } as N
-                    : { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: sl.itemEmoji, size: 44 } } as N,
+                    ? { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: '✓', size: 56, bold: true, color: 'ink' } } as N
+                    : { type: 'Label', id: `ord-${i}-s${j}-v`, props: { text: sl.itemEmoji, size: 72 } } as N,
                 ],
               })),
             },
