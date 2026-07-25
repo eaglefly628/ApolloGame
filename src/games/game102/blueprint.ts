@@ -18,7 +18,7 @@ import {
 } from '@atom-skills/index.js';
 import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability } from '@skills/tier1/index.js';
 import {
-  clickableCapability, groupCountCapability, effectApplyCapability, launchCapability, pathFollowCapability, pathFollowAt,
+  clickableCapability, groupCountCapability, effectApplyCapability, pathFollowCapability, pathFollowAt,
   selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
 } from '@skills/tier2/index.js';
 import { flowCapability, aggroCapability, prefabCapability, casterCapability } from '@skills/tier3/index.js';
@@ -37,12 +37,20 @@ const col = (tint: number, alpha = 1): Record<string, unknown> => ({ tint, alpha
 // ── 环形轨道（core-experience-v2 §2.1·实机三图 IMG_6064）：绕像素画一周的跑道·色炮 PathFollow 沿它跑一圈 ──
 // 轨道矩形 = PICTURE 外扩 margin（骑在管道内轨、包住画面）。**出发点=弹簧（左下角·约7点）**，实机流向：
 // 下沿→右 · 右沿→上 · 上沿→左 · 左沿→下 · 回到弹簧收尾（loop:false·一圈即停在弹簧口→退役入平台）。
-const TRACK_MARGIN = 34;      // 轨道离像素画外沿的间距（px·炮体贴着外沿向内开火）
-const TRACK_STEP = 44;        // 航点采样步长（px·越小越贴合矩形）
-const SPRING = { x: PICTURE.x - TRACK_MARGIN, y: PICTURE.y + PICTURE.h + TRACK_MARGIN } as const; // 弹簧口=轨道左下角（出发/收尾）
-function trackWaypoints(): { x: number; y: number }[] {
-  const x0 = PICTURE.x - TRACK_MARGIN, y0 = PICTURE.y - TRACK_MARGIN;
-  const x1 = PICTURE.x + PICTURE.w + TRACK_MARGIN, y1 = PICTURE.y + PICTURE.h + TRACK_MARGIN;
+const TRACK_STEP = 40;        // 航点采样步长（px·越小越贴合矩形）
+// 棋盘外接矩形（含格间距）——轨道贴它外沿走，非贴 PICTURE 窗口（棋盘居中留白·贴窗口会离外层格太远打不到）。
+function boardBounds(level: Level): { cell: number; ox: number; oy: number; gridW: number; gridH: number } {
+  const { cell, ox, oy } = boardFit(level);
+  const gridW = level.cols * cell + BOARD_GAP * (level.cols - 1);
+  const gridH = level.rows * cell + BOARD_GAP * (level.rows - 1);
+  return { cell, ox, oy, gridW, gridH };
+}
+const trackMargin = (cell: number): number => Math.round(cell * 0.85); // 轨道离棋盘外沿≈一格（炮贴外层格开火）
+const sightFor = (cell: number): number => Math.round(cell * 1.7);      // 视野=只够到直邻外层格（1.35格）·不及次层（2.35格）
+function trackWaypoints(level: Level): { x: number; y: number }[] {
+  const { cell, ox, oy, gridW, gridH } = boardBounds(level);
+  const m = trackMargin(cell);
+  const x0 = ox - m, y0 = oy - m, x1 = ox + gridW + m, y1 = oy + gridH + m;
   const wp: { x: number; y: number }[] = [];
   const edge = (ax: number, ay: number, bx: number, by: number): void => {
     const len = Math.hypot(bx - ax, by - ay);
@@ -239,53 +247,32 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
         Color: col(pc.tint, 1),
         Tag: { flags: CANNON_BIT | BELT_BIT },
         Resource: { id: 'ammo', current: level.ammo, min: -1, max: level.ammo },
-        Perception: { targetTag: pc.bit, sightRadius: FIRE.sightRadius }, // 有限视野=只打当前经过边的暴露同色（过位剥离）
+        Perception: { targetTag: pc.bit, sightRadius: sightFor(boardBounds(level).cell) }, // 有限视野=只打直邻外层同色（逐格顺序）
         Relation: { kind: 'target', targetId: '' },
         // 从弹簧口出发沿轨道跑**一圈**（loop:false·跑完停在弹簧口→由 Mortal 退役入平台）。PathFollow 写 Velocity。
-        PathFollow: pathFollowAt(trackWaypoints(), FIRE.moveSpeed, { loop: false, arriveRadius: FIRE.moveSpeed + 2 }),
+        PathFollow: pathFollowAt(trackWaypoints(level), FIRE.moveSpeed, { loop: false, arriveRadius: FIRE.moveSpeed + 2 }),
         Velocity: { vx: 0, vy: 0, angular: 0 },
         Timer: { id: 'reload', elapsed: 0, duration: FIRE.reload, loop: true },
-        // 逐发喷子弹：每 reload 拍 ①在炮口发可见曳光(tracer·飞向暴露同色) ②在该同色格生成即时命中区结算消除。
-        // ⚠ per-shot 扣弹待引擎 REQ-SPENDONFIRE 落地（现 ammo 为巡逻预算·每拍-1·近似绕一圈退役；面上数字先按此显示）。
+        // 逐发精准命中：每 reload 拍向**当前所经边直邻的同色外层格**（有限 sightRadius=只够到直邻外层·随炮沿边
+        // 移动→逐格顺序命中一一消除）生成即时命中区。⚠ 现 ammo=巡逻预算每拍-1（per-shot 精确扣弹 + 打光消失/
+        // 带弹入槽 = REQ-SPENDONFIRE+REQ-CONVEYOR-CAP·见 requests）。**去掉了乱飞曳光（launch 无半径→飞向全局最近）**。
         SelfRule: {
           when: { kind: 'and', of: [
             { kind: 'timer', id: 'reload', cmp: 'gte', value: FIRE.reload - 1 }, // 装填峰值
             { kind: 'resource', id: 'ammo', cmp: 'gte', value: 0 },
           ] },
           do: [
-            { kind: 'spawn', template: `bullet_${name}`, at: 'target' }, // 即时命中结算（确定性消除·逐发重锁）
+            { kind: 'spawn', template: `bullet_${name}`, at: 'target' }, // 命中直邻同色外层格（aggro 有限视野→逐格顺序）
             { kind: 'modify-resource', op: 'add', value: -1 },
           ],
           once: true, armed: false,
         },
-        Mortal: { resource: 'ammo', atOrBelow: -1, dropTemplate: `tray_${name}` }, // 巡逻尽→退役入待命平台
+        Mortal: { resource: 'ammo', atOrBelow: -1, dropTemplate: `tray_${name}` }, // 巡逻尽→退役（真机=打光消失/带弹入空槽·待缺口）
       },
-      // 曳光发射口（invisible·随炮身移动·同 reload 节拍发可见曳光弹）。一实体一 SpawnRequest·body 那拍已被 bullet
-      // 占用 → 曳光挂此独立子件发射·不与 body 争 SpawnRequest。
-      emitter: {
-        Transform: XF(0, 0),
-        Hierarchy: hkid('@local:body', 0, 0),
-        Timer: { id: 'muzzle', elapsed: 0, duration: FIRE.reload, loop: true },
-        SelfRule: {
-          when: { kind: 'timer', id: 'muzzle', cmp: 'gte', value: FIRE.reload - 1 },
-          do: [ { kind: 'spawn', template: `tracer_${name}`, at: 'self' } ],
-          once: true, armed: false,
-        },
-      },
-      // 打蛋器双竖柱 + 面上动态弹数（随 body.ammo 实时·text-binding fromParent）。
+      // 面上动态弹数（随 body.ammo 实时·text-binding fromParent）。
       ...eggBeaterParts('@local:body', pc.tint, level.ammo, true),
     } };
-    // 可见曳光弹（render-only·无 Hitbox/Sensor）：从炮口发射、朝最近同色格直飞、寿命到自毁。只做可见弹道，
-    // 不参与消除结算（消除由 bullet 即时命中区确定性完成）→ 不影响 sim 计数/胜负（验收剧本数不变）。
-    templates[`tracer_${name}`] = { entities: { t: {
-      Transform: XF(0, 0),
-      Shape: circle(FIRE.bulletRadius),
-      Color: col(pc.tint, 1),
-      Launch: { speed: FIRE.bulletSpeed / 6, toward: 'target', targetMask: pc.bit },
-      Velocity: { vx: 0, vy: 0, angular: 0 },
-      Timer: { id: 'life', elapsed: 0, duration: 24, loop: false },
-    } } };
-    // 子弹命中：在"当前最近同色格"生成即时命中区（aggro 每拍重锁 → 逐发打不同格·一发一格·无穿隧）。
+    // 子弹命中：在"直邻同色外层格"生成即时命中区（有限视野 aggro 每拍锁直邻→逐格顺序·一发一格·无穿隧·无飞弹乱窜）。
     templates[`bullet_${name}`] = { entities: { b: {
       Transform: XF(0, 0),
       Shape: circle(FIRE.bulletRadius),
@@ -403,7 +390,7 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
       // tier1（子弹运动 + 生命期 + 炮口子件挂接/级联销毁）
       motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability,
       // tier2 玩法能力
-      clickableCapability, groupCountCapability, effectApplyCapability, launchCapability, pathFollowCapability,
+      clickableCapability, groupCountCapability, effectApplyCapability, pathFollowCapability,
       selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
       // tier3（生成 + 索敌 + 流程）
       flowCapability, aggroCapability, prefabCapability, casterCapability,

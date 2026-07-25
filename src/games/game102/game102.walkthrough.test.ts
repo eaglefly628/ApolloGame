@@ -48,8 +48,8 @@ describe('Game 102 · Pixel Pour（环形轨道 v2 · 机制不变式自验）',
     for (let s = 0; s < 34; s++) { g.step(6); const p = g.cannonPos(); if (p) { sawCannon = true; minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); } }
     expect(sawCannon).toBe(true);
     // 轨道矩形宽 ≈ PICTURE.w + 2*margin ≈ 535；一圈应横扫过半、纵向也大幅移动（证明真在绕圈非原地/直线）。
-    expect(maxX - minX).toBeGreaterThan(260);
-    expect(maxY - minY).toBeGreaterThan(260);
+    expect(maxX - minX).toBeGreaterThan(200);
+    expect(maxY - minY).toBeGreaterThan(200);
   });
 
   it('过位剥离：从弹库部署正确色（蓝）→ 绕一圈啃下外沿暴露蓝格（cleared>0）→ 退役入待命槽', () => {
