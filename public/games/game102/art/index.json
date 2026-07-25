@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "cannon/green",
+      "type": "texture",
+      "description": "打蛋器 cannon · green tint (#5cb544) · 去背+消数字+换色自 owner 参考图",
+      "status": "filled",
+      "path": "/games/game102/art/cannon-green.png",
+      "category": "sprite.cannon",
+      "tags": ["cannon", "green", "sprite", "game102"],
+      "style": "cartoon",
+      "license": "proprietary",
+      "source": "owner-supplied reference (IMG_6063)",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "png",
+        "width": 631,
+        "height": 727,
+        "transparent": true
+      },
+      "provenance": {
+        "method": "matte(flood)+number-blank+hsv-recolor",
+        "originalFile": "IMG_6063.jpeg",
+        "sourceHue": "purple",
+        "targetHue": "#5cb544",
+        "note": "authoring-time deterministic recolor; luminance/value preserved, hue/sat replaced; baked '40' painted over with body mid-tone for live dynamic overlay"
+      }
+    },
+    {
+      "id": "cannon/yellow",
+      "type": "texture",
+      "description": "打蛋器 cannon · yellow tint (#f2c21e) · 去背+消数字+换色自 owner 参考图",
+      "status": "filled",
+      "path": "/games/game102/art/cannon-yellow.png",
+      "category": "sprite.cannon",
+      "tags": ["cannon", "yellow", "sprite", "game102"],
+      "style": "cartoon",
+      "license": "proprietary",
+      "source": "owner-supplied reference (IMG_6063)",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "png",
+        "width": 631,
+        "height": 727,
+        "transparent": true
+      },
+      "provenance": {
+        "method": "matte(flood)+number-blank+hsv-recolor",
+        "originalFile": "IMG_6063.jpeg",
+        "sourceHue": "purple",
+        "targetHue": "#f2c21e",
+        "note": "authoring-time deterministic recolor; luminance/value preserved, hue/sat replaced; baked '40' painted over with body mid-tone for live dynamic overlay"
+      }
+    },
+    {
+      "id": "cannon/blue",
+      "type": "texture",
+      "description": "打蛋器 cannon · blue tint (#2e6cf6) · 去背+消数字+换色自 owner 参考图",
+      "status": "filled",
+      "path": "/games/game102/art/cannon-blue.png",
+      "category": "sprite.cannon",
+      "tags": ["cannon", "blue", "sprite", "game102"],
+      "style": "cartoon",
+      "license": "proprietary",
+      "source": "owner-supplied reference (IMG_6063)",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "png",
+        "width": 631,
+        "height": 727,
+        "transparent": true
+      },
+      "provenance": {
+        "method": "matte(flood)+number-blank+hsv-recolor",
+        "originalFile": "IMG_6063.jpeg",
+        "sourceHue": "purple",
+        "targetHue": "#2e6cf6",
+        "note": "authoring-time deterministic recolor; luminance/value preserved, hue/sat replaced; baked '40' painted over with body mid-tone for live dynamic overlay"
+      }
+    },
+    {
+      "id": "cannon/red",
+      "type": "texture",
+      "description": "打蛋器 cannon · red tint (#e0433f) · 去背+消数字+换色自 owner 参考图",
+      "status": "filled",
+      "path": "/games/game102/art/cannon-red.png",
+      "category": "sprite.cannon",
+      "tags": ["cannon", "red", "sprite", "game102"],
+      "style": "cartoon",
+      "license": "proprietary",
+      "source": "owner-supplied reference (IMG_6063)",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "png",
+        "width": 631,
+        "height": 727,
+        "transparent": true
+      },
+      "provenance": {
+        "method": "matte(flood)+number-blank+hsv-recolor",
+        "originalFile": "IMG_6063.jpeg",
+        "sourceHue": "purple",
+        "targetHue": "#e0433f",
+        "note": "authoring-time deterministic recolor; luminance/value preserved, hue/sat replaced; baked '40' painted over with body mid-tone for live dynamic overlay"
+      }
+    }
+  ]
+}
