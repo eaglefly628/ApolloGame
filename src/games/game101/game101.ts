@@ -222,7 +222,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   let lastCoins = Math.round(readState().coins);
   const flyTimers = new Set<ReturnType<typeof setTimeout>>();
   const paint = (st: S1State): void => {
-    const orders = activeFly ? st.orders.map((o, i) => (i === activeFly!.idx ? { ...o, fly: { id: activeFly!.id, label: activeFly!.label } } : o)) : st.orders;
+    const orders = activeFly ? st.orders.map((o, i) => (i === activeFly!.idx ? { ...o, fly: { id: activeFly!.id, label: activeFly!.label }, celebrate: true } : o)) : st.orders;
     ui.update(buildS1Live({ ...st, orders, burstCell: activeBurst >= 0 ? activeBurst : undefined, dragGhost: dragGhost ?? undefined }), GAME101_THEME);
   };
   // 合成迸发：该格叠一次性星光爆，700ms 后清（纯表现层）。

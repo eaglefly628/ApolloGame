@@ -15,7 +15,7 @@ export function buildS1(): LayoutNode {
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
 export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number } // timer=剩余秒；cover=阻碍层数（>0 盖住·不可拖）
 export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
-export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; timed?: boolean; timeLeft?: number; fly?: { id: string; label: string } }
+export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; timed?: boolean; timeLeft?: number; fly?: { id: string; label: string }; celebrate?: boolean }
 export interface S1State {
   energy: number; coins: number; gems: number; level: number;
   cells: (CellView | null)[]; orders: OrderView[];
@@ -73,8 +73,10 @@ function orders(s: S1State): N {
       // 整卡=交付落点（宿主按 DOM id 几何识别）。限时特惠订单=**异形切角卡(Panel.shape:'cut')** + 金框 + ⏱ 倒计时
       // （动态限时菜单·REQ-UI-异型容器 PUI 已交·真异形非矩形）。金框(edge)非金底(bg)保徽章对比；cut=八边切角
       // 内容安全(不裁 slot/奖励·区别 hexagon/diamond 重裁)·给足 padding。
-      type: 'Panel', id: `ord-${i}`, props: o.timed ? { bg: 'panel', edge: 'gold', shape: 'cut' } : { bg: 'panel' },
-      layout: { direction: 'column', align: 'center', justify: 'between', gap: 6, padding: o.timed ? 14 : 10, radius: 18, flex: 1 },
+      // 可交付顾客卡=绿框 + 发光脉冲（醒目「可以交给我了」）；限时卡=金框异形；两者叠加时可交付绿框优先示意。
+      type: 'Panel', id: `ord-${i}`,
+      props: o.timed ? { bg: 'panel', edge: o.deliverable ? 'ok' : 'gold', shape: 'cut' } : o.deliverable ? { bg: 'panel', edge: 'ok' } : { bg: 'panel' },
+      layout: { direction: 'column', align: 'center', justify: 'between', gap: 6, padding: o.timed ? 14 : 10, radius: 18, flex: 1, ...(o.deliverable ? { anim: 'glow' } : {}) },
       children: [
         {
           type: 'Panel', id: `ord-${i}-top`, props: { bare: true },
@@ -126,6 +128,11 @@ function orders(s: S1State): N {
           type: 'Label', id: o.fly.id, props: { text: o.fly.label, size: 30, bold: true, color: 'gold' },
           layout: { x: 20, y: 8, allowOverlap: true, flyTo: { to: 'hud-coins', ms: 820, arc: 70 } },
         } as N] : []),
+        // 交付庆祝（juice·render-only）：满足顾客瞬间在其卡上撒一把星光/纸屑。
+        ...(o.celebrate ? [{
+          type: 'Particles', id: `ord-${i}-cel`, props: { kind: 'sparkle', count: 18, loop: false },
+          layout: { x: 0, y: 0, width: 200, height: 200, allowOverlap: true },
+        } as N] : []),
       ],
     })),
   };
@@ -158,11 +165,13 @@ function board(s: S1State): N {
       layout: { x: 0, y: 0, width: 120, height: 120, allowOverlap: true },
     } as N);
     const isItem = !!cv && !cv.gen; // 可拖物品格
+    // 可交付物：绿框 + 循环发光脉冲 = 醒目「这个能交给顾客了」标识（区别普通物·基座 edge/anim·非自由 CSS）。
+    const deliverable = isItem && cv?.deliverable;
     return {
       type: 'Panel', id: `t-live-${i}`,
-      props: cv?.gen ? { bg: { custom: GEN_BG }, action: `tap_${cv.gen}` } : { bg: { custom: CELL_BG } },
-      // 手感：物品格 tilt3d 悬停立体抬起（手扶上去有反馈）；生成器格 press3d 按压下沉（点有反馈）。基座闭集·非自由 CSS。
-      layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 16, height: 168, ...(isItem ? { tilt3d: true } : cv?.gen ? { press3d: true } : {}) },
+      props: cv?.gen ? { bg: { custom: GEN_BG }, action: `tap_${cv.gen}` } : deliverable ? { bg: { custom: CELL_BG }, edge: 'ok' } : { bg: { custom: CELL_BG } },
+      // 手感：物品格 tilt3d 悬停立体抬起；生成器格 press3d 按压下沉；可交付物 anim:'glow' 发光脉冲醒目。基座闭集。
+      layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 16, height: 168, ...(deliverable ? { tilt3d: true, anim: 'glow' } : isItem ? { tilt3d: true } : cv?.gen ? { press3d: true } : {}) },
       children: kids,
     } as N;
   });
