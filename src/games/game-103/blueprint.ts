@@ -30,7 +30,7 @@ import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
   PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, TINT,
   PLAYER_DEF, KUNAI, WEAPONS, WEAPON_BIT, ENEMIES, GEMS, GEM_LIFE, SPAWNS, SPAWNER_TIERS, SPAWNER_RING, SPAWN_CAP,
-  LEVEL_XP, DRAFT_POOL, PASSIVE_BY_KEY, type WeaponDef, type EnemyDef, type GemDef,
+  XP_BASE, XP_STEP, DRAFT_POOL, PASSIVE_BY_KEY, type WeaponDef, type EnemyDef, type GemDef,
 } from './theme.js';
 
 const XF0 = { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
@@ -291,9 +291,12 @@ export function buildBlueprint(): WorldBlueprint {
     },
 
     // ── 升级机（xp 满阈值 edge → 等级 +1 + 扣阈值·自动记账；强化本身=三选一 draft 由玩家选·见 draftPickEntities）──
-    'levelup-gate': { EventWhen: { signal: 'levelup', when: { kind: 'resource', id: 'xp', cmp: 'gte', value: LEVEL_XP }, mode: 'edge', armed: false } },
-    'lv-fx-xp': { Effect: { onSignal: 'levelup', kind: 'modify-resource', targetId: 'xp', op: 'add', value: -LEVEL_XP } },
+    // v3 真经验曲线：xp≥当前阈值 nextxp（EventWhen vsResource 动态阈值）→ 等级+1 + xp 归零 + 阈值+XP_STEP（爬升）。
+    nextxp: { Resource: { id: 'nextxp', current: XP_BASE, min: 1, max: 99999 } },
+    'levelup-gate': { EventWhen: { signal: 'levelup', when: { kind: 'resource', id: 'xp', cmp: 'gte', value: XP_BASE, vsResource: 'nextxp' }, mode: 'edge', armed: false } },
+    'lv-fx-xp': { Effect: { onSignal: 'levelup', kind: 'modify-resource', targetId: 'xp', op: 'set', value: 0 } },
     'lv-fx-level': { Effect: { onSignal: 'levelup', kind: 'modify-resource', targetId: 'level', op: 'add', value: 1 } },
+    'lv-fx-curve': { Effect: { onSignal: 'levelup', kind: 'modify-resource', targetId: 'nextxp', op: 'add', value: XP_STEP } },
 
     // ── 相机（跟随玩家·视野钳场地）──
     camera: {
@@ -331,7 +334,7 @@ export function buildBlueprint(): WorldBlueprint {
       Tag: { flags: COLLECTOR },
       Shape: { kind: 'circle', radius: PLAYER_DEF.pickupRadius },
       Color: { tint: 0xffffff, alpha: 0 },
-      Resource: { id: 'xp', current: 0, min: 0, max: LEVEL_XP },
+      Resource: { id: 'xp', current: 0, min: 0, max: 99999 }, // 累积经验（阈值由 nextxp 动态门·非 max）
     },
     killbox: { // 计分环（承 score·单调累计击杀）
       Hierarchy: child('player'), Transform: { ...XF0 },

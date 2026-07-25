@@ -122,21 +122,25 @@ export const BRUTE: EnemyDef = {
 // Boss（周期出现的大首领·gdd §六·无限局的 escalation 节点）：巨血巨体·撞脸重伤·掉一堆经验。
 export const BOSS: EnemyDef = {
   key: 'boss', name: '首领', hp: 1400, speed: 0.5, radius: 36, contact: 1.2, stopRange: 44,
-  tint: 0xff4d5e, inTint: 0xffd23f, gem: 'green', skin: '103/enemy-boss',
+  tint: 0xff4d5e, inTint: 0xffd23f, gem: 'gold', skin: '103/enemy-boss',
 };
 export const ENEMIES: EnemyDef[] = [SHAMBLER, RUNNER, BRUTE, BOSS];
 
 // ── 宝石定义（gdd §七·蓝=1·绿=3 经验·肉敌掉更多）─────────────────────────
 export interface GemDef { key: string; value: number; radius: number; tint: number; skin: string }
+// 三档经验宝石·大小随价值递增（v3 修「掉的经验都一样大小」）：蓝(小)→绿(中)→金(大)。
 export const GEM_BLUE: GemDef = { key: 'blue', value: 1, radius: 6, tint: TINT.gemBlue, skin: '103/gem-blue' };
-export const GEM_GREEN: GemDef = { key: 'green', value: 3, radius: 7, tint: 0x7dff4d, skin: '103/gem-green' };
-export const GEMS: GemDef[] = [GEM_BLUE, GEM_GREEN];
+export const GEM_GREEN: GemDef = { key: 'green', value: 5, radius: 10, tint: 0x7dff4d, skin: '103/gem-green' };
+export const GEM_GOLD: GemDef = { key: 'gold', value: 25, radius: 15, tint: 0xffd23f, skin: '103/gem-gold' };
+export const GEMS: GemDef[] = [GEM_BLUE, GEM_GREEN, GEM_GOLD];
 export const GEM_LIFE = 1800; // 未拾取宝石寿命 tick（30s）
 
-// ── 升级三选一（M2·draft-offer E1 已下沉·Lead 清 S2）────────────────────────
-// 经验环满 LEVEL_XP → 等级 +1 + 扣阈值（自动记账）→ 时停三选一 draft（rollOffer 过滤候选 →
-// 玩家选 → applyPick + 该项 effectSignal 应用到世界）。子弹伤害 = KUNAI.dmg × 全局 power 资源。
-export const LEVEL_XP = 5;        // 升级阈值（M2 占位固定·真曲线 expToNext=5+lvl×10 后续）
+// ── 升级三选一 + 真经验曲线（v3 修·阈值随级递增·EventWhen vsResource 动态阈值）────
+// 经验(xp)≥当前阈值(nextxp)→ 等级 +1 + xp 归零 + nextxp += XP_STEP（曲线爬升）→ 时停三选一 draft。
+// expToNext(level) ≈ XP_BASE + level×XP_STEP（前期快·后期慢·雪球但不速通到顶就没事干）。
+export const LEVEL_XP = 5;        // 兼容旧引用（=XP_BASE）
+export const XP_BASE = 5;         // 首级阈值
+export const XP_STEP = 4;         // 每级阈值增量（Lv1→5, Lv2→9, Lv3→13…）
 
 // 被动册（gdd §五·modifier 类·选中即数值加成）。
 export interface PassiveDef {
@@ -150,6 +154,8 @@ export const PASSIVES: PassiveDef[] = [
   { key: 'crit', name: '暴击核心', desc: '全武器伤害 +35%（稀有）', kind: 'power', value: 0.35, weight: 5, maxLevel: 5 },
   { key: 'heart', name: '生命护心', desc: '立即回复 30 生命', kind: 'heal', value: 30, weight: 9, maxLevel: 9 },
   { key: 'vigor', name: '疾行护符', desc: '立即回复 15 生命', kind: 'heal', value: 15, weight: 9, maxLevel: 9 },
+  // 常驻小强化（maxLevel 极大=永不满级）→ draft 池永不清空、升满级不断档（v3 修「升到10级没事干」）。
+  { key: 'might', name: '力量精粹', desc: '全武器伤害 +8%（可叠）', kind: 'power', value: 0.08, weight: 6, maxLevel: 999 },
 ];
 
 // 统一 draft 候选：武器（起始 Kunai 除外·slot=weapon·accent=红）+ 被动（slot=passive·accent=蓝）。
@@ -195,7 +201,7 @@ export const SPAWNS: SpawnRow[] = (() => {
 // 全授权期纯数据（Timer+SelfRule+whenGlobal 现成能力）·非 E3 rate-cap director（那是同屏上限自适应·仍 Lead 域）。
 export interface SpawnerTier { key: string; count: number; period: number; afterSec: number } // afterSec=whenGlobal clock 门（秒）
 export const SPAWNER_RING = 360; // spawner 环半径（玩家周围·视口外缘）
-export const SPAWN_CAP = 48;     // 同屏敌上限（GroupCount 计活敌·满则 spawner 暂停）——无限但有界·防实体爆炸/卡顿
+export const SPAWN_CAP = 72;     // 同屏敌上限（v3 调高·出更多敌人·2D 批绘真解仍待 P3D）
 export const SPAWNER_TIERS: SpawnerTier[] = [
   { key: 'shambler', count: 6, period: 78, afterSec: 0 },  // 常驻弱敌流
   { key: 'runner', count: 3, period: 132, afterSec: 25 },  // 25s 后疾行者加入

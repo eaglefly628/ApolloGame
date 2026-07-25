@@ -40,7 +40,7 @@ export function mount(container: HTMLElement): () => void {
       hp: Math.max(0, Math.round(resOf(engine, 'player'))),
       maxHp: PLAYER_DEF.maxHp,
       xp: Math.round(resOf(engine, 'collector')),
-      xpMax: resMax(engine, 'collector') || LEVEL_XP,
+      xpMax: Math.round(resOf(engine, 'nextxp')) || LEVEL_XP, // v3 动态阈值（随级递增）
       level: Math.round(resOf(engine, 'level')),
       elapsed: Math.round(resOf(engine, 'clock')),
       score: Math.round(resOf(engine, 'killbox')),

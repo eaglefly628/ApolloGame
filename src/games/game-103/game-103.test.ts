@@ -109,6 +109,28 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(res(e, 'player') < PLAYER_DEF.maxHp || flowState(e) === 'defeat').toBe(true);
   });
 
+  it('v3 经验曲线：升级后阈值 nextxp 递增（XP_STEP）+ xp 归零（曲线爬升·非固定）', () => {
+    const e = fresh();
+    tickN(e, 2);
+    const base = resById(e, 'nextxp');
+    // 手动灌满经验到阈值 → 触发升级
+    for (const [eid] of e.world.query('Resource')) { const r = e.world.getComponent<Resource>(eid, 'Resource'); if (r && r.id === 'xp') { r.current = base; break; } }
+    tickN(e, 3);
+    expect(resById(e, 'level')).toBeGreaterThan(1);
+    expect(resById(e, 'nextxp')).toBeGreaterThan(base);   // 阈值涨了（下级更贵）
+    expect(resById(e, 'xp')).toBeLessThan(base);          // xp 归零重来
+  });
+
+  it('v3 升满不断档：所有武器/被动 owned 到满，rollOffer 仍出「力量精粹」（maxLevel 极大·永不空）', () => {
+    const pool: DraftCandidate[] = DRAFT_POOL.map((u) => ({ id: u.id, weight: u.weight, slot: u.slot, maxLevel: u.maxLevel }));
+    const owned: Record<string, number> = {};
+    for (const u of DRAFT_POOL) owned[u.id] = u.maxLevel; // 全满级
+    owned.might = 5; // 力量精粹已持有但远未满（maxLevel 999）→ 仍可选
+    const offers = rollOffer(pool, { owned, slots: { weapon: { used: 6, cap: 6 }, passive: { used: 6, cap: 6 } } }, { n: DRAFT_N, seed: 7 });
+    expect(offers.length).toBeGreaterThan(0);             // 池不空（might maxLevel 999 未满）
+    expect(offers.some((c) => c.id === 'might')).toBe(true);
+  });
+
   it('胜负：clock 达 15:00 → flow 转 victory（活满即胜）', () => {
     const e = fresh();
     // 直接把 clock 顶到阈值验证胜利转移（免跑 54000 tick）。
