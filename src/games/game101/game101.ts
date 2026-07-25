@@ -93,6 +93,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
         let coverReward: string | undefined;
         if (g) coverReward = g.emoji; // 埋着的生成器·显其观感
         else if (rv?.kind === 'resource') coverReward = rv.resourceId === 'energy' ? `⚡${rv.amount ?? ''}` : rv.resourceId === 'stars' ? '💎' : rv.resourceId === 'coins' ? '🎁' : undefined;
+        else if (rv?.kind === 'spawn' && rv.templateId) coverReward = ITEM_EMOJI[rv.templateId] ?? '📦'; // 埋着的物品·显该物大图标（owner：锁着也看清里面）
         cells[idx] = { emoji: '🔒', cover: bk.layers, coverReward }; coveredCells.add(idx);
       }
     }

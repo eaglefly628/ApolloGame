@@ -157,19 +157,17 @@ function board(s: S1State): N {
     if (cv?.cover != null) {
       const ck: N[] = [];
       if (cv.coverReward) {
-        // 沙下埋的奖励气泡：金圆牌显里面是什么（锁着也看得见·勾引玩家挖）。
-        ck.push({
-          type: 'Panel', id: `t-live-${i}-bub`, props: { bg: 'gold' },
-          layout: { align: 'center', justify: 'center', padding: 8, radius: 44 },
-          children: [{ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 'md', bold: true, color: 'ink' } }],
-        });
+        // 沙下埋物**大图标直显**（owner：锁着也要跟挖开后一样大看得清·勾引玩家挖）——尺寸对齐普通物件(60)，
+        // 微降透明度示意「隔着沙」，锁层数缩成右上小角标不再挡内容。
+        ck.push({ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 60 }, layout: { opacity: 0.9 } });
       } else if (cv.cover <= 1) {
-        ck.push({ type: 'Label', id: `t-live-${i}-web`, props: { text: '🕸️', size: 44 } }); // 快挖开=蛛网阶段
+        ck.push({ type: 'Label', id: `t-live-${i}-web`, props: { text: '🕸️', size: 60 } }); // 快挖开=蛛网阶段（同样放大）
       }
-      ck.push({ type: 'Label', id: `t-live-${i}-cl`, props: { text: `🔒${cv.cover}`, size: 'sm', bold: true, color: 'ink' } }); // 剩余层数（深色·沙上可读）
+      // 剩余层数=大图标下方小字（ink 深色·沙上可读·正常流不裁切·仍读得到「还挖几层」）。
+      ck.push({ type: 'Label', id: `t-live-${i}-cl`, props: { text: `🔒${cv.cover}`, size: 'sm', bold: true, color: 'ink' } });
       return {
         type: 'Panel', id: `t-live-${i}`, props: { bg: { custom: COVER_BG } },
-        layout: { direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 4, radius: 16, height: 128 },
+        layout: { direction: 'column', align: 'center', justify: 'center', gap: 0, padding: 4, radius: 16, height: 128, allowOverlap: true },
         children: [...ck, ...dissolve],
       } as N;
     }
