@@ -7,10 +7,18 @@
 
 ## 待处理 / 进行中
 
-### REQ-G102-VISCANNON · 核心可见性：色炮上轨可见 + 可见子弹（owner 急件·本次提交）· [2026-07-25] · PE 落 → owner 验收 · status: **✅ done（本次提交·下附「真环轨」引擎限制）** · 优先级: P0 · 类型: play-field 可视化
+### REQ-G102-CORE-V2 · 核心机制重做：环形轨道+多炮绕行+过位侧向剥离（实机三图校正）· [2026-07-24] · GD 提（owner 三图）→ **PE（Lead 裁能力路线）** · status: **open（path-follow 已落地·可上真环轨）** · 优先级: **P0（核心重定义·压过其它 game102 单）** · 类型: 核心玩法重做
+> **spec**：`docs/design/game102/core-experience-v2.md` + **参考图 `ref/pixelflow-ref-01~03.png`（唯一复刻基准·看图目击优先）**。
+> **校正要点**：v1「单条直线传送带·单发射位·打任意同色」**是简化错的**。真机=**环形轨道绕像素画四边·多炮同时绕圈跑·各自时间差·经过某边时向内剥离该边外沿暴露的同色像素·选错色/时机则空转一圈啥也不打**。部署池含 🔒解锁 + 盲盒；每关 x/5 分段；画内嵌 🔑/🔒。
+> **DELTA（要改）**：轨道 直线→**环形**；发射 单点打任意同色→**过位侧向打暴露同色**；单队列→**多炮绕行时机博弈**；补给区→**大池+解锁+盲盒**；+分段。详 spec §2 对照表。
+> **✅ 能力路线已解锁（承 REQ-G102-VISCANNON 实证 + REQ-PATHFOLLOW 落地）**：PE 已实证「orbit-motion+索敌」成拓扑死环、真环轨走不通 → 已下沉 **`REQ-PATHFOLLOW`（写 Velocity 的轨道跟随·与索敌簇共存）· 引擎团队已 done（commit daae3c3a）**。→ **现在真环轨可做**：game102 挂 `PathFollow{waypoints:管道环采样}` 让色炮**绕轨一圈**，配 `aggro`/`launch` 过位锁同色开火，换掉 VISCANNON 的 steering 折中。「过位侧向剥离」= PathFollow 位置 + aggro 锁当前边暴露同色；若仍有表达不了处再回本表报缺口。
+> **对已有产出的影响**：验收剧本 01/02/05 结果语义（消同色/弹尽入槽/判负）仍成立·触发方式随环轨改（GD 随之更新剧本）；hud/UI 增轨道/池/锁/盲盒/分段（PUI 增量）。3D 与 `fx-3d-debris.md` 全3D盒庭天然契合。
+> **边界**：核心逻辑=PE；轨道/池/锁/盲盒/分段 UI=PUI；3D=P3D。撞墙走缺口通道·守宪法。
+
+### REQ-G102-VISCANNON · 核心可见性：色炮上轨可见 + 可见子弹（owner 急件）· [2026-07-25] · PE 落 → owner 验收 · status: **✅ done（附「真环轨」引擎限制→已由 REQ-PATHFOLLOW 解）** · 优先级: P0 · 类型: play-field 可视化
 > **owner 反馈**：核心玩法看不见——「炮台看不到出现在轨道上，也看不到发出的子弹，无法判断为何吸掉像素」；要更好看的矢量图炮。
 > **PE 落地（组合表达·零游戏层 system·守裁①）**：色炮 = 亮色**圆盘炮体** + 深色**炮口小盘**（`hierarchy` 子件随体走）；生成于补给口后由 `aggro`(锁最近同色格)+`steering`(seek·`FIRE.moveSpeed/stopRange`)**可见地游向像素格**（吸色车）；每 `reload` 拍炮口发**可见曳光弹** `tracer_<color>`（`launch` 朝最近同色直飞·render-only 无 Hitbox·不参与结算）；消除仍由 `bullet_<color>` 即时命中区确定性完成（净落弹=ammo 不变）。新接能力：`steering`/`launch`/`hierarchy-resolve`/`hierarchy-cascade`（皆引擎既有）。验收剧本 01/02/03/05 数字不变（24 vitest 绿）。
-> **⚠ 引擎限制实证（真环轨做不成·非 PE 偷懒）**：owner 原意「从起点**环绕一圈**到终点」。`t2-orbit-motion`（圆周运动）与索敌/抛射簇（`aggro`/`launch`/`steering` 全 `runsBefore motion-apply`）**成拓扑环**——`orbit-motion` `runsAfter motion-apply` + 写 Transform 被 `aggro` 读 → `aggro→motion-apply→orbit-motion→aggro` 死环（引擎 `topological-sort` 报「Circular dependency」，实测复现）。故**「真圆环绕 + 逐格索敌开火」当前引擎无法共存**。取**可见游动吸色**折中（steering 驾炮游向像素·满幅像素画上移动明显）。owner 已定性「沿轨道走一圈 + 锁色发射」为真功能 → **已下沉引擎池 `docs/workflow/requests.md` REQ-PATHFOLLOW**（写 Velocity 的轨道跟随·与索敌簇共存·Lead 裁）。落地后 game102 挂 `PathFollow{waypoints:管道环采样}` 换掉本折中的 steering 游动。
+> **⚠ 引擎限制实证（真环轨做不成·非 PE 偷懒）**：`t2-orbit-motion` 与索敌/抛射簇（`aggro`/`launch`/`steering` 全 `runsBefore motion-apply`）**成拓扑环**（`aggro→motion-apply→orbit-motion→aggro` 死环·topological-sort 报 Circular dependency 实测复现）。取**可见游动吸色**折中。**→ 已下沉 `REQ-PATHFOLLOW`（写 Velocity 的轨道跟随·与索敌共存）· 引擎已 done（daae3c3a）**。后续 REQ-G102-CORE-V2 用 PathFollow 换掉本折中的 steering，做成真环轨。
 
 ### REQ-G102-ADAPTER · S4 验收适配器（PE 落 adapter·剧本 schema 阻塞报 GD）· [2026-07-24] · GD 验收发现 → PE 落 → 回 GD · status: **in-review（阻塞在剧本 schema·待 GD 改）** · 优先级: P0 · 类型: 验收接线
 > **GD 验收实测**：`acceptance-run.mjs --game game102` → 原缺 `acceptance-adapter.ts`。**PE 已落**（下 ①），但暴露真阻塞在剧本 schema（②）。
