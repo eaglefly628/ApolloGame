@@ -15,6 +15,7 @@ import generatorsCfg from './config/generators.json';
 import ordersCfg from './config/orders.json';
 import boardCoverCfg from './config/board-cover.json';
 import bubblesCfg from './config/bubbles.json';
+import progressionCfg from './config/progression.json';
 
 // ── 类型（config 结构的 TS 视图·只读）─────────────────────────────────────────
 export interface ChainLevel { lvl: number; item: string; name: string; sell: number; sprite: string }
@@ -88,9 +89,17 @@ export const RES = { energy: 'energy', coins: 'coins', stars: 'stars', exp: 'exp
 export const ITEM = 1 << 0;
 export const GEN_TAG = 1 << 1;
 export const BUBBLE_TAG = 1 << 2; // 泡泡锁实体位（点破扣币→spawn 真物·merge 天然不碰）
+export const STARLOCK_TAG_BASE = 3; // 星锁区 Tag 位起点：里程碑 i 用 1 << (STARLOCK_TAG_BASE + i)（marker 实体·非 Blocker·免被挖掘误减）
 
 export interface BubbleDef { id: string; cell: number; item: string; cost: number }
 export const BUBBLES = bubblesCfg as BubbleDef[];
+
+// ── 进度推进（②·一关进度弧：攒星 → 里程碑解锁新区 → 达标关卡完成）──────────────────
+export interface MilestoneDef { id: string; atStars: number; label: string; cells: number[] }
+export interface ProgressionDef { goalStars: number; milestones: MilestoneDef[] }
+export const PROGRESSION = progressionCfg as ProgressionDef;
+export const LEVEL_DONE_FLAG = 'level_done';
+export function milestoneTag(i: number): number { return 1 << (STARLOCK_TAG_BASE + i); }
 export const GEN_TINT = 0xc8871e; // 生成器格占位色（暖金·美术就绪即被 gen sprite 皮盖过）
 
 // ── 棋盘几何（世界像素·占位灰盒·M1b 接 UI 时以 layout 稿为准）──────────────────

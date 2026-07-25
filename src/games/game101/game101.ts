@@ -12,11 +12,11 @@ import { QueuedInputSource } from '@net/index.js';
 import { mountHost } from '@engine/host/mount-host.js';
 import { mountUI } from '@ui/components/index.js';
 import type { HandlerMap, MountHandle } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop, Timer, Blocker } from '@engine/protocol/components.js';
+import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop, Timer, Blocker, Flag } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1Live, type S1State, type CellView, type OrderView, type SlotView } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';
-import { GAME, RES, GENERATORS, ORDERS, ORDER_SAT_MAX, TICKS_PER_SEC, CUST_PORTRAITS, BUBBLES, ITEM_EMOJI, moodFace, cellIndexOf, cellCenter } from './theme.js';
+import { GAME, RES, GENERATORS, ORDERS, ORDER_SAT_MAX, TICKS_PER_SEC, CUST_PORTRAITS, BUBBLES, PROGRESSION, LEVEL_DONE_FLAG, ITEM_EMOJI, moodFace, cellIndexOf, cellCenter } from './theme.js';
 
 const GEN_CELLS = new Set(GENERATORS.map((g) => g.cell));
 
@@ -45,13 +45,14 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   const cellEntity: (string | null)[] = new Array(TOTAL_CELLS).fill(null);
   const coveredCells = new Set<number>(); // 阻碍层覆盖格（不可拖入/不可落子·readState 每帧刷新）
   const bubbleCells = new Set<number>(); // 泡泡锁格（不可拖入/不可落子·点破才出物）
+  const starLockCells = new Set<number>(); // 星锁区格（不可拖入/不可落子·攒够星里程碑解锁）
 
   // 生成器产出落点修正：caster at:'self' 把新物产在生成器**自己那格**（被生成器盖住=不可见/不可拖）。
   // 宿主每帧扫描落在生成器格上的物 → 用 merge-on-place 的**移动意图**把它挪到最近空格（引擎做实际移动·
   // 宿主只挑目标空格=同拖拽落点合成·非游戏逻辑）。让「点生成器→物弹进空格」真正可见可玩。
   function relocateGenSpawns(): void {
     const w = engine.world;
-    const occupied = new Set<number>([...GENERATORS.map((g) => g.cell), ...coveredCells, ...bubbleCells]); // 覆盖格/泡泡格也不占用产出
+    const occupied = new Set<number>([...GENERATORS.map((g) => g.cell), ...coveredCells, ...bubbleCells, ...starLockCells]); // 覆盖格/泡泡格/星锁格也不占用产出
     const stray: string[] = [];
     for (const [eid] of w.query('PrefabOrigin')) {
       const t = w.getComponent<Transform>(eid, 'Transform');
@@ -105,6 +106,16 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       cells[b.cell] = { emoji: '🫧', bubble: { itemEmoji: ITEM_EMOJI[b.item] ?? '❓', cost: b.cost, id: b.id } };
       bubbleCells.add(b.cell);
     }
+    // ②b 星锁区格（进度推进②）：marker 实体还在=未解锁 → 显 ⭐N 解锁门槛（攒够星里程碑 destroy-tagged 清之）。
+    starLockCells.clear();
+    PROGRESSION.milestones.forEach((m) => {
+      for (const cell of m.cells) {
+        if (coveredCells.has(cell) || cells[cell]) continue;
+        if (!w.hasComponent(`starlock-${m.id}-${cell}`, 'Tag')) continue; // 已解锁=marker 销毁=不再显
+        cells[cell] = { emoji: '⭐', starLock: { needStars: m.atStars } };
+        starLockCells.add(cell);
+      }
+    });
     // ③ 生成器：只在**未被覆盖/非泡泡**的格摆出（挖开生成器格→下一帧自动现·四基础料渐解锁）。
     for (const g of GENERATORS) if (!coveredCells.has(g.cell) && !cells[g.cell]) cells[g.cell] = { emoji: g.emoji, gen: g.id };
     const onBoard = new Set<string>(); // 板上现有的物品模板集（订单可交付判定）
@@ -141,7 +152,14 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     });
     // 板格 ✓ = 该成品被某订单未满槽需要（可拖去交付）。
     for (let i = 0; i < cells.length; i++) if (cells[i] && cellTpl[i] && wanted.has(cellTpl[i]!)) cells[i]!.deliverable = true;
-    return { energy: res(RES.energy), coins: res(RES.coins), gems: 8, level: 12, cells, orders };
+    // 进度推进②：星数 → 目标进度条 + 已过里程碑数（关卡等级）+ 达标关卡完成旗。
+    const stars = Math.round(res(RES.stars));
+    const passed = PROGRESSION.milestones.filter((m) => stars >= m.atStars).length;
+    const levelComplete = !!w.getComponent<Flag>('level-flag', 'Flag')?.active;
+    return {
+      energy: res(RES.energy), coins: res(RES.coins), gems: Math.round(res(RES.stars)), level: 1 + passed, cells, orders,
+      progress: { stars, goal: PROGRESSION.goalStars }, levelComplete,
+    };
   }
 
   // ── 拖拽合并（宿主手势 → MergeDrop 意图 → merge-on-place 引擎裁决）──────────────
@@ -210,7 +228,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     }
     // ② 落在板格 → 合并/移动/交换意图（MergeDrop）。
     const toIdx = cellIdxFromEl(dropEl);
-    if (toIdx < 0 || toIdx === fromIdx || GEN_CELLS.has(toIdx) || coveredCells.has(toIdx) || bubbleCells.has(toIdx)) return; // 落生成器/覆盖格/泡泡格/空放/原格=忽略
+    if (toIdx < 0 || toIdx === fromIdx || GEN_CELLS.has(toIdx) || coveredCells.has(toIdx) || bubbleCells.has(toIdx) || starLockCells.has(toIdx)) return; // 落生成器/覆盖/泡泡/星锁格/空放/原格=忽略
     const to = cellEntity[toIdx] ?? undefined; const p = cellCenter(toIdx);
     // 合成迸发（juice）：落格同模板=真合成 → 该格叠一次性星光爆。
     if (to) {

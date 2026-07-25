@@ -31,7 +31,7 @@ import {
 import { prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
   GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, TIMED_ITEM, MENU_TIMER_SEC, TICKS_PER_SEC,
-  BOARD_COVER, coverReveal, BUBBLES, BUBBLE_TAG,
+  BOARD_COVER, coverReveal, BUBBLES, BUBBLE_TAG, PROGRESSION, milestoneTag, LEVEL_DONE_FLAG,
   cellCenter, mergeRules, itemTemplates, timedTemplates, CELL, GEN_TAG, GEN_TINT,
 } from './theme.js';
 
@@ -131,6 +131,33 @@ function bubbleEntities(): Record<string, EntityBlueprint> {
   return out;
 }
 
+// ── 进度推进（②·组合·零引擎改动）：星锁区 marker + 里程碑阈值触发 + 关卡完成旗 ─────────
+// capability-plan：进度=复用交付发的 `stars` 资源；阈值→解锁=`event-when{resource gte, edge}`
+//   发里程碑信号 → `effect-apply destroy-tagged`(清该区 marker=开出新工作区)；达标同法置 level_done 旗。
+//   星锁格=独立 marker 实体（Tag·非 Blocker → 免被挖掘二消误减·仅靠攒星解锁）·宿主按 Tag 排除拖放。
+function progressionEntities(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  PROGRESSION.milestones.forEach((m, i) => {
+    const tag = milestoneTag(i);
+    // 每格一个星锁 marker（Tag 归属该里程碑区·Transform 定位·渲染/宿主据此显锁+排除拖放）。
+    for (const cell of m.cells) {
+      const p = cellCenter(cell);
+      out[`starlock-${m.id}-${cell}`] = {
+        Transform: { x: p.x, y: p.y, rotation: 0, scaleX: 1, scaleY: 1 },
+        Tag: { flags: tag },
+      };
+    }
+    // 攒够 atStars ⭐ → edge 发解锁信号 → destroy-tagged 清该区全部 marker（开区）。
+    out[`ms-ew-${m.id}`] = { EventWhen: { signal: `unlock_${m.id}`, when: { kind: 'resource', id: RES.stars, cmp: 'gte', value: m.atStars }, mode: 'edge', armed: false } };
+    out[`ms-fx-${m.id}`] = { Effect: { onSignal: `unlock_${m.id}`, kind: 'destroy-tagged', value: tag } };
+  });
+  // 关卡完成：攒够 goalStars ⭐ → edge 发 level_done → 置旗（readState 读旗 → 关卡完成横幅）。
+  out['level-flag'] = { Flag: { id: LEVEL_DONE_FLAG, active: false } };
+  out['level-ew'] = { EventWhen: { signal: LEVEL_DONE_FLAG, when: { kind: 'resource', id: RES.stars, cmp: 'gte', value: PROGRESSION.goalStars }, mode: 'edge', armed: false } };
+  out['level-fx'] = { Effect: { onSignal: LEVEL_DONE_FLAG, kind: 'set-flag', targetId: LEVEL_DONE_FLAG, value: true } };
+  return out;
+}
+
 // ── 棋盘格背景（render-only·纯装饰·非 sim 逻辑）：7×9 每格一块半透白圆角底，画出板。──
 function boardCellEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
@@ -210,6 +237,7 @@ export function buildBlueprint(): WorldBlueprint {
     ...orderEntities(),
     ...coverEntities(),
     ...bubbleEntities(),
+    ...progressionEntities(),
     ...generatorEntities(),
     ...seedItemEntities(),
   };

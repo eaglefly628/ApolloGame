@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Engine } from '../../runtime/engine.js';
 import { validateLayoutNode } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop, DeliverDrop, Order, Timer, Blocker, SpawnRequest } from '@engine/protocol/components.js';
+import type { Resource, PrefabOrigin, InputQueue, RawInputData, Transform, MergeDrop, DeliverDrop, Order, Timer, Blocker, SpawnRequest, Flag } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1, buildS1Live } from './s1.js';
 import { RES, ENERGY, ENERGY_REGEN_TICKS, mergeRules, GENERATORS, cellCenter, cellIndexOf, TIMED_ITEM, TIMED_SEC, TICKS_PER_SEC, BUBBLES } from './theme.js';
@@ -172,14 +172,14 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(e.world.hasComponent('cover-16', 'Blocker')).toBe(false); // 1 层归零 → 清层解锁（挖开）
   });
 
-  it('挖掘：深层远格不受近处二消影响（cell 62 深 4 层·距 seed 合并远）', () => {
+  it('挖掘：深层远格不受近处二消影响（cell 48 深 3 层·距 seed 合并远）', () => {
     const e = new Engine(); e.load(buildBlueprint());
     tickN(e, 2);
-    expect(e.world.getComponent<Blocker>('cover-62', 'Blocker')?.layers).toBe(4); // 深格初始 4 层
+    expect(e.world.getComponent<Blocker>('cover-48', 'Blocker')?.layers).toBe(3); // 深格初始 3 层
     const at8 = grainAt(e, 8); const other = itemsOf(e, 'food_1').find((id) => id !== at8)!;
     dragMerge(e, other, at8);
     tickN(e, 2);
-    expect(e.world.getComponent<Blocker>('cover-62', 'Blocker')?.layers).toBe(4); // 远格不动
+    expect(e.world.getComponent<Blocker>('cover-48', 'Blocker')?.layers).toBe(3); // 远格不动
   });
 
   it('生成器渐解锁：起始生成器格(1/2/3)被覆盖·挖开后可用（四基础料不全给）', () => {
@@ -318,6 +318,29 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(res(e, RES.coins)).toBe(10);                     // 不扣
     expect(countTemplate(e, b.item)).toBe(c0);              // 不产
     expect(e.world.hasComponent(`bubble-${b.id}`, 'Tag')).toBe(true); // 泡泡仍在
+  });
+
+  // ── 进度推进②（攒星 → 里程碑解锁新区 → 达标关卡完成·全组合·零引擎改动）──────────
+  it('里程碑解锁：攒够 3⭐ → 西仓星锁 marker 批量销毁（destroy-tagged 开区）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 2);
+    // 星锁 marker 初始在场（西仓 cell 49-55）。
+    expect(e.world.hasComponent('starlock-m_west-49', 'Tag')).toBe(true);
+    expect(e.world.hasComponent('starlock-m_east-56', 'Tag')).toBe(true); // 东仓 6⭐ 未达
+    e.world.getComponent<Resource>('stars', 'Resource')!.current = 3; // 白盒攒够西仓门槛
+    tickN(e, 2); // event-when(stars≥3·edge) → effect destroy-tagged 清西仓 marker
+    expect(e.world.hasComponent('starlock-m_west-49', 'Tag')).toBe(false); // 西仓开区
+    expect(e.world.hasComponent('starlock-m_west-55', 'Tag')).toBe(false);
+    expect(e.world.hasComponent('starlock-m_east-56', 'Tag')).toBe(true);  // 东仓仍锁（6⭐ 未到）
+  });
+
+  it('关卡完成：攒够目标 10⭐ → level_done 旗置真', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 2);
+    expect(e.world.getComponent<Flag>('level-flag', 'Flag')?.active).toBe(false);
+    e.world.getComponent<Resource>('stars', 'Resource')!.current = 10; // 达标
+    tickN(e, 2); // event-when(stars≥10·edge) → set-flag level_done
+    expect(e.world.getComponent<Flag>('level-flag', 'Flag')?.active).toBe(true);
   });
 
   it('确定性：接生成器后两把同操作序列 → 同 hash（可回放）', () => {

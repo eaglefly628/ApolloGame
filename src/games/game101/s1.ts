@@ -13,12 +13,15 @@ export function buildS1(): LayoutNode {
 }
 
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
-export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number; coverReward?: string; bubble?: { itemEmoji: string; cost: number; id: string } } // bubble=泡泡锁（点破扣币出真物）
+export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number; coverReward?: string; bubble?: { itemEmoji: string; cost: number; id: string }; starLock?: { needStars: number } } // bubble=泡泡锁·starLock=星锁区（攒够星里程碑解锁）
 export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
 export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; timed?: boolean; timeLeft?: number; portrait?: string; fly?: { id: string; label: string }; celebrate?: boolean }
 export interface S1State {
   energy: number; coins: number; gems: number; level: number;
   cells: (CellView | null)[]; orders: OrderView[];
+  progress?: { stars: number; goal: number }; // 进度推进②：星→关卡目标进度条
+  levelComplete?: boolean;                     // 达标 → 关卡完成横幅
+
   burstCell?: number; // 合成迸发格（juice·render-only·该格叠一次性星光爆）
   dragGhost?: { emoji: string; x: number; y: number }; // 拖拽中跟手飞影（Screen 坐标·render-only）
   liftedCell?: number; // 被拿起的源格（淡化=物已拿在手上·render-only）
@@ -49,9 +52,16 @@ function hud(s: S1State): N {
     layout: { direction: 'row', align: 'stretch', justify: 'between', gap: 10, padding: 12, height: 150 },
     children: [
       {
+        // 关卡 + 星进度（进度推进②的 HUD 家）：Lv + ⭐进度条向本关目标·让「越玩越有奔头」看得见。
         type: 'Panel', id: 'hud-lvl', props: { bg: 'gold' },
-        layout: { align: 'center', justify: 'center', padding: 20, radius: 30 },
-        children: [{ type: 'Label', id: 'hud-lvl-l', props: { text: `Lv ${s.level}`, color: 'ink', bold: true, size: 'xxxl' } }],
+        layout: { direction: 'column', align: 'center', justify: 'center', gap: 4, padding: 12, radius: 30 },
+        children: [
+          { type: 'Label', id: 'hud-lvl-l', props: { text: `Lv ${s.level}`, color: 'ink', bold: true, size: 'xxl' } },
+          ...(s.progress ? [
+            { type: 'ProgressBar', id: 'hud-lvl-bar', props: { value: Math.min(s.progress.stars, s.progress.goal), max: s.progress.goal, tone: 'ok' } } as N,
+            { type: 'Label', id: 'hud-lvl-p', props: { text: `⭐${s.progress.stars}/${s.progress.goal}`, color: 'ink', bold: true, size: 'sm' } } as N,
+          ] : []),
+        ],
       },
       {
         type: 'Panel', id: 'hud-energy', props: { bg: 'panel' },
@@ -183,6 +193,18 @@ function board(s: S1State): N {
         ],
       } as N;
     }
+    // 星锁区格（进度推进②）：紫金锁区显 ⭐N 解锁门槛（攒够星里程碑一次性开区）。区别沙下挖掘=靠交付攒星。
+    if (cv?.starLock) {
+      return {
+        type: 'Panel', id: `t-live-${i}`, props: { bg: { custom: '#6a5acd' } },
+        layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 16, height: 128, opacity: 0.92 },
+        children: [
+          { type: 'Label', id: `t-live-${i}-sl`, props: { text: '🔒', size: 46 } },
+          { type: 'Label', id: `t-live-${i}-sn`, props: { text: `⭐${cv.starLock.needStars}`, size: 'sm', bold: true, color: 'gold' } },
+          ...dissolve,
+        ],
+      } as N;
+    }
     if (cv) {
       kids.push({ type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: i === s.liftedCell ? 52 : 66 }, layout: i === s.liftedCell ? { opacity: 0.28 } : {} }); // 板等比缩小(对齐原图比例)·被拿起格淡化缩小
       if (cv.deliverable) kids.push({ type: 'Badge', id: `t-live-${i}-b`, props: { text: '✓', tone: 'ok' } });
@@ -229,10 +251,24 @@ function dragGhost(s: S1State): N[] {
   } as N];
 }
 
+// 关卡完成横幅（进度推进②·达标 = 达成目标星·render-only 庆祝层·绝对定位盖全屏中央）。
+function levelBanner(s: S1State): N[] {
+  if (!s.levelComplete) return [];
+  return [{
+    type: 'Panel', id: 'lvl-done', props: { bg: 'gold', edge: 'ok' },
+    layout: { x: 140, y: 760, width: 800, height: 400, direction: 'column', align: 'center', justify: 'center', gap: 20, padding: 40, radius: 40, allowOverlap: true, anim: 'pulse' },
+    children: [
+      { type: 'Label', id: 'lvl-done-t', props: { text: '🎉 关卡完成！', size: 'xxxl', bold: true, color: 'ink' } },
+      { type: 'Label', id: 'lvl-done-s', props: { text: `⭐ ${s.progress?.goal ?? ''} 星达成 · 码头声名远扬`, size: 'lg', bold: true, color: 'ink' } },
+      { type: 'Particles', id: 'lvl-done-fx', props: { kind: 'confetti', count: 60, loop: true }, layout: { x: 0, y: 0, width: 800, height: 400, allowOverlap: true } },
+    ],
+  } as N];
+}
+
 export function buildS1Live(s: S1State): LayoutNode {
   return {
     type: 'Screen', id: 's1', props: {},
     layout: { direction: 'column', gap: 8, padding: 12, width: 1080, height: 1920 },
-    children: [hud(s), orders(s), board(s), ...dragGhost(s)],
+    children: [hud(s), orders(s), board(s), ...dragGhost(s), ...levelBanner(s)],
   };
 }

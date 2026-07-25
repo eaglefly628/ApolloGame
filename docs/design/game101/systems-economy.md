@@ -86,9 +86,9 @@
 - **spec（→ Lead·扩 `order-fulfill` 或姊妹件 `order-rotate`）**：`Order` 加可选 `pool?: { needItems, reward }[]` + `rotateMode?: 'sequence'|'weighted'` + `cursor?`；集齐发奖后（`resetOnComplete` 路径）**从 pool 取下一单**写回 `needItems`/`reward`（weighted 走世界 `RandomSeed`·确定性/回放）。空 pool = 退化回现状（清 filled 重复本单·零回归）。
 - **游戏数据（能力落地后接）**：`orders.json` 每顾客加 `pool`（递进需求链）。
 
-**② 进度推进（中价值·大半游戏数据）**：交付累积**星级/关卡计量**，过阈值**解锁新格区 / 新链 / 新顾客**。给「越玩越有奔头」。
-- **判定 = 大半可组合**：进度 = 一个 `Resource{id:'progress'}`（交付 reward 已发 stars/exp·复用之）；阈值解锁 = `event-when`(progress≥N → 清某片 `Blocker`/`webbed` flag·同 §5/§5.5 挖掘解锁路) + 可选 `dialogue` 演出。**纯数据/组合·接受**。少量若撞「阈值触发多目标批量解锁」再看是否需薄件。
-- **游戏数据**：`progression.json`（阈值→解锁目标列表）。
+**② 进度推进（中价值·大半游戏数据）✅ done（2026-07-25·纯组合·零引擎改动）**：交付累积**星级/关卡计量**，过阈值**解锁新格区**。给「越玩越有奔头」。
+- **✅ 实现（全组合·撞墙验证无缺口）**：进度 = 复用交付发的 `stars` 资源；阈值解锁 = `event-when{when:{kind:'resource',id:'stars',cmp:'gte',value:N}, mode:'edge'}` 发里程碑信号 → `effect-apply{kind:'destroy-tagged', value:regionTag}` 批量清该区**星锁 marker**（Tag 实体·非 Blocker → 免被挖掘二消误减）= 开出新工作区；关卡完成同法 `set-flag level_done`。数据 `config/progression.json`（goalStars + milestones[{atStars,cells}]）。UI：HUD 星进度条(Lv+⭐/goal) + 紫色星锁区(🔒⭐N) + 关卡完成庆祝横幅。25 测试绿（里程碑解锁 marker 批量销毁 + level_done 置旗）+ 浏览器目击（进度条/星锁区/完成横幅）。
+- **红线守**：星锁/解锁全走 event-when+effect-apply 数据路·零游戏层 solver·destroy-tagged 确定性进 hash。
 
 **③ 顾客流转（锦上添花·依赖①）**：满足的顾客**离开、新顾客带新脸+新单进场**。给「川流不息的小镇」感。
 - **判定 = ① 之上叠顾客池**：顾客槽=固定 N 位（现 3）·每位维护「当前顾客身份(脸/名/pool)」；一位顾客 pool 走完/达标 → 换下一位顾客身份（同①的轮换机制·换的是整个顾客而非单条需求）。若①的 `order-rotate` 设计到「pool 走完发 `exhausted` 信号」，③ 用 `event-when` 接之换脸即可组合。**多为数据 + ①的复用·接受**。
