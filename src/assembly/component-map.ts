@@ -107,6 +107,7 @@ import type {
   Sprite,
   State,
   StateChanged,
+  StatBind,
   Stats,
   Status,
   Steering,
@@ -238,6 +239,7 @@ export interface ComponentDataMap {
   Sprite: Omit<Sprite, 'type'>;
   State: Omit<State, 'type'>;
   StateChanged: Omit<StateChanged, 'type'>;
+  StatBind: Omit<StatBind, 'type'>;
   Stats: Omit<Stats, 'type'>;
   Status: Omit<Status, 'type'>;
   Steering: Omit<Steering, 'type'>;

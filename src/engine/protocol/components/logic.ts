@@ -266,6 +266,34 @@ export interface ModifierTotals extends Component {
   totals: Record<string, number | boolean>; // target → 聚合值（消费方读取后与自身 base 结合）
 }
 
+// ── stat-bind（REQ-SURVIVOR被动轴）── 属性桥/投影器：把 ModifierTotals(世界单例聚合值) 或 Stats(本实体
+// effective 值) 按 key 取出，投影到本实体**任意其它组件**的某个字段（如 Controllable.speed、Shape.radius、
+// Timer.duration、Resource.max）。modifier-stack/stats 各自只产出「一张总表 / 一份 effective」，谁都不知道
+// 该写回哪个具体组件字段——这道「聚合值 → 具体组件字段」的接线，此前无处表达（游戏层只能手写 system 抄字段）。
+// 一条 binding = 一次接线：source 选读源（ModifierTotals 全局单例 或 Stats 本实体）、key 选源里的字段、
+// component+field 选投影目的地。
+//
+// ⚠️ 幂等投影铁律：目标字段 = binding.base（**不是**当前字段值）与源值按 op 组合，每 tick 从 base 重算。
+// 绝不 `c[field] = c[field] * v` 这类读当前字段再改——那样每 tick 复利滚雪球，几拍就爆、破确定性
+// （同 modifier-stack/stats 的"每帧从源头全量重算"纪律，见 aggregateModifiers/computeEffective 注释）。
+// op：set(=v) / mul(=base×v) / add(=base+v) / div(=base÷v，防除零回退 base；攻速→冷却的逆映射专用)。
+//
+// 定序：读 ModifierTotals/Stats 必须排在 modifier-stack/stat-apply 之后（消费它们的产出）；同时因
+// modifier-stack 自身也读 Resource/Timer（valueFrom/gate），而 stat-bind 又写 Resource/Timer 等目标组件，
+// 三者会连成 resource-apply→modifier-stack→stat-bind→resource-apply 的传递环——见 stat-bind.ts 系统声明
+// 的 runsAfter 注释（第二坑：撞环，非本文件关注点，此处只声明数据形状）。
+export interface StatBind extends Component {
+  readonly type: 'StatBind';
+  bindings: {
+    source: 'ModifierTotals' | 'Stats'; // ModifierTotals=读世界单例聚合表 totals[key]；Stats=读本实体 Stats.effective[key]
+    key: string; // 源里取哪个字段（如 'moveSpeed'/'range'/'attackSpeed'/'maxHp'）
+    component: string; // 投影到本实体哪个组件（如 'Controllable'/'Steering'/'Shape'/'Timer'/'Resource'）
+    field: string; // 组件的哪个字段（如 'speed'/'radius'/'duration'/'max'）
+    op?: 'set' | 'mul' | 'add' | 'div'; // 合并算子，缺省 'set'
+    base?: number; // mul/add/div 的基数（幂等投影的锚点，见上）；set 不用
+  }[];
+}
+
 // ── timeline（REQ-CAP 下沉）── 演出时间线：sim 侧**确定性 tick 调度器**（绝不走墙钟 → lockstep 红线）。
 // 「何时发生什么」= 一份 cue 数据（at:tick + do:闭集动作）；表现层（UI/渲染）订阅 cue 发的信号自行演。
 // 分工铁律：**timeline 管「何时」、tween 管「怎么动」**，互不越权——cue 只发信号/写 Flag/写 Resource/发

@@ -14,7 +14,8 @@ import { nearestByTag } from '@skills/atoms/spatial-query/index.js';
 //    ① 解方向：toward:'target' → 朝最近 targetMask 阵营（复用 spatial-query.nearestByTag）；
 //             toward:'dir'   → 固定 (dirX,dirY)。
 //    ② 写一次 Velocity = 单位方向 × speed（无 Velocity 则创建）。
-//    ③ removeComponent('Launch')（一次性，之后 motion-apply 直飞；无目标 → fizzle：清 Launch+零速度，靠 lifetime 回收）。
+//    ③ removeComponent('Launch')（一次性，之后 motion-apply 直飞；无目标 → fizzle：清 Launch+零速度，靠 lifetime 回收；
+//       声明 fallbackDir 则不哑火，改沿它发射——AOE/弹幕落空仍要有个默认去向的场景，薄加性字段，缺省=现行为零回归）。
 //  定序：runsBefore motion-apply（先定速再积分）。确定性：sqrt/÷ 归一（IEEE 安全，同 steering）；nearestByTag id tie-break。
 // ═══════════════════════════════════════════════════════════════
 
@@ -32,6 +33,7 @@ export const launchCapability = defineCapability({
       '朝最近敌人射火球：Launch{ speed:6, toward:"target", targetMask:ENEMY }',
       '固定方向弹幕：Launch{ speed:8, toward:"dir", dirX:1, dirY:0 }',
       '无目标 → fizzle（清 Launch + 零速度，靠 lifetime 回收）',
+      '索敌落空不哑火：Launch{ speed:6, toward:"target", targetMask:ENEMY, fallbackDir:{x:0,y:1} } → 无目标时朝 (0,1) 发射而非冻结',
     ],
   },
 
@@ -46,6 +48,7 @@ export const launchCapability = defineCapability({
           targetMask: { type: 'number', describe: "toward:'target' 时索敌阵营（Tag.flags & targetMask）" },
           dirX: { type: 'number', describe: "toward:'dir' 时方向 X（会归一化）" },
           dirY: { type: 'number', describe: "toward:'dir' 时方向 Y（会归一化）" },
+          fallbackDir: { type: 'string', describe: "toward:'target' 索敌落空时的兜底方向 {x,y}（会归一化×speed）；缺省=现行为不变（清零速度冻结原地）" },
         },
       },
     },
@@ -88,12 +91,18 @@ export const launchCapability = defineCapability({
             world.addComponent(id, { type: 'Velocity', vx: 0, vy: 0, angular: 0 } as Velocity);
             v = world.getComponent<Velocity>(id, 'Velocity')!;
           }
-          const dist = Math.sqrt(dx * dx + dy * dy);
+          let dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist === 0 && l.fallbackDir) {
+            // 索敌落空但声明了兜底方向 → 改沿它发射（不冻结原地）。零回归：无 fallbackDir 时行为不变。
+            dx = l.fallbackDir.x;
+            dy = l.fallbackDir.y;
+            dist = Math.sqrt(dx * dx + dy * dy);
+          }
           if (dist > 0) {
             v.vx = (dx / dist) * l.speed;
             v.vy = (dy / dist) * l.speed;
           } else {
-            v.vx = 0; // 无方向/无目标 → fizzle（零速度，靠 lifetime 回收）
+            v.vx = 0; // 无方向/无目标/无 fallbackDir → fizzle（零速度，靠 lifetime 回收）
             v.vy = 0;
           }
           world.removeComponent(id, 'Launch'); // 一次性：之后 motion-apply 直飞

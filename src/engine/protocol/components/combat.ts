@@ -176,4 +176,8 @@ export interface Launch extends Component {
   targetMask?: number; // toward:'target' 时索敌阵营（Tag.flags & targetMask）
   dirX?: number; // toward:'dir' 时方向（会归一化；缺省 0）
   dirY?: number;
+  // fallbackDir（薄加性·零回归）：toward:'target' 且索敌落空时，缺省=清零速度冻结原地（fizzle）；
+  // 声明此字段则改沿它发射（归一化×speed）而非冻结——弹幕/AOE 落空不哑火，仍朝一个默认方向飞出去。
+  // 缺省 undefined = 现行为不变。
+  fallbackDir?: { x: number; y: number };
 }

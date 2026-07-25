@@ -53,6 +53,7 @@ import {
   behaviorTreeCapability,
   orbitMotionCapability,
   pathFollowCapability,
+  statBindCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability, blockGridCapability, handPatternCapability } from '@skills/tier3/index.js';
 
@@ -130,6 +131,10 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   // t2-path-follow（REQ-PATHFOLLOW）：固定航点轨道匀速跑——沿 waypoints 依次朝下个航点走、到 arriveRadius
   // 算到达进下一航点（loop/停末点）、写 Velocity。与 steering/launch 同链，不索敌不绕障，巡逻/传送带/固定弹道通用。
   pathFollowCapability,
+  // t2-stat-bind（REQ-SURVIVOR被动轴）：属性桥——把 ModifierTotals(单例)/Stats(本实体 effective) 按 key
+  // 投影到本实体任意组件字段（moveSpeed→Controllable.speed、range→Shape.radius、attackSpeed→Timer.duration
+  // 等），幂等重算不复利。runsAfter modifier-stack/stat-apply/resource-apply/timer-advance 打破传递环。
+  statBindCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,

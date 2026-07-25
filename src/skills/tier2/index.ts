@@ -96,3 +96,7 @@ export {
   MAX_BT_DEPTH,
 } from './behavior-tree.js';
 export type { BTNode, BTNodeType, BTStatus, BTAction, BTLeafResult, BTLeafFn, BTLeafTable, BTTickResult, BehaviorTree, BTValidateOptions } from './behavior-tree.js';
+// stat-bind（REQ-SURVIVOR被动轴）：属性桥/投影器——把 ModifierTotals(世界单例聚合表)/Stats(本实体 effective)
+// 按 key 投影到本实体任意其它组件字段（幂等：每 tick 从 base 重算，不读当前字段值）。modifier-stack/stats
+// 只产出总表/effective，本能力才是"接线到具体组件字段"那一步（moveSpeed→Controllable.speed 等）。
+export { statBindCapability, projectStatBind } from './stat-bind.js';
