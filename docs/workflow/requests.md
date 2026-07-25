@@ -8,11 +8,6 @@
 
 ## 待处理 / 进行中
 
-### REQ-FACE-ROTATE-实体按运动/目标方向旋转 Transform（表现层·rotor 无 atan2）· [2026-07-25] · PE-game-103 报（子弹朝向 + 巨长激光贯穿方向）→ Lead 裁 · status: **open** · 优先级: P2（割草子弹/激光观感·俯视有向物通用·非阻塞玩法） · 类型: 引擎能力薄缺口（表现层·主程域）
-> **想实现的行为**：俯视有向物（子弹/飞刀/激光条/箭）**贴着运动方向或 Relation(target) 方向旋转** `Transform.rotation`——让「子弹朝向它飞的目标」「巨长激光沿开火方向贯穿屏幕」成立。owner 两条实测：① 子弹发出不朝向目标 ② 激光要「长得像激光·顺方向贯穿」而非横条。
-> **已试重组（不可得）**：`t2-facing` **只做水平镜像**（Transform.scaleX 符号·`facing.ts:73`），**不能任意角度旋转**；sim 禁 atan2/sin/cos（确定性）→ 游戏层算不出朝向角。当前激光只能画**轴对齐长条**（横向发射最像·斜向变横条）·子弹无朝向。
-> **建议方案（Lead 裁）· 边界**：加一个「face-rotate」表现能力（或给 facing 扩 `mode:'rotate'`）——从 Velocity/Relation 方向用**rotor 手法**（同 orbit-motion 的 dirX/dirY 单位向量→Transform.rotation·或直接存朝向向量供渲染器旋转）写 rotation，**运行时零 atan2/trig**（方向向量已有·归一化用 sqrt 同 steering 类）。表现层只写 rotation、不驱动逻辑（同 facing 铁律）·Commit 相位·确定性 lockstep 安全。**触碰范围**：`src/skills/tier2/facing.ts`（扩 mode）或新薄件 + 测试；game-103 只经数据挂。**（注：回旋镖「飞出→回旋返回」是另一缺口=`t2-launch` 的 out-return 弹道段·属 `REQ-SURVIVOR武器缺口` 已归档条·M3 武器时重开·与本旋转条不同。）**
-
 
 ### REQ-SCREENFILL-Screen 填满 mount-host 固定 scene 盒（去竖屏底部信箱空白） · [2026-07-25] · PE-101 报（owner「下面留这么大空」实测撞墙）→ PUI 裁 · status: **open** · 优先级: P2（所有 mountHost 竖屏游戏通用·非 game101 专属） · 类型: UI 基座缺口（PUI 域·`src/ui/components/render.ts`）
 > **想实现的行为**：`mountHost` 建的是**固定 `fieldW×fieldH`（如 1080×1920）的 scene 盒**再整体 `transform:scale()` 信箱化。Screen 作为其直接子应**填满该盒高度**（`flex` 子撑满 → 内部 `flex:1` 区块吃满剩余空间）。

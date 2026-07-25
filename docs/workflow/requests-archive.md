@@ -2,6 +2,9 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-FACE-ROTATE-实体按方向旋转 sprite（表现层·sim 零 trig）· [2026-07-25] · PE-game-103 报 → Lead 裁 · status: **✅ done（`d0296d72`·form b render-side·2026-07-25 Lead 亲验+截图 PASS·归档）** · 类型: 引擎能力薄缺口（表现层·主程域）
+> **交付（Lead 定 render-side dir 向量·sim 零 trig）**：新 `t2-face-rotate` 从 velocity/Relation(target) sqrt 归一写单位向量 `FaceDir{x,y}`（进 hash 安全·无 sin/cos/atan2·测正则自证）；2D 渲染器 `resolveRotation2D(r)=r.faceDir?atan2(y,x):r.rotation`——**atan2 只在 render·绝不进 sim/hash**（跨机不逐位一致·lockstep 安全·同 orbit 避 per-tick trig 之由）。canvas-renderer 消费；3D(P3D)/frame-svg 不碰。表现层不驱动逻辑（碰撞仍 AABB·激光视觉转/命中轴对齐·PE 接受 P2）。FaceDir/FaceRotate 两新组件（基线 138→140）·**真浏览器目击**斜向 sprite 转到 45.01°（对照组 -1.4° 零回归）·19 测·gate 全绿 3600。game-103 子弹/激光数据挂 FaceRotate 消费。原文见 git 史。
+
 ### REQ-PATHEND-DROP-PathFollow 绕完一圈落件+自毁（belt→tray handoff）· [2026-07-25] · PE-game102 报 → Lead 裁 · status: **✅ done（`8f1645d1`·形①·2026-07-25 Lead 亲验 PASS·归档）** · 类型: 引擎能力薄缺口（主程域·game102 循环收尾）
 > **交付（形①·亲验）**：`PathFollow` 加 `onEnd?:{dropTemplate?,destroy?}` + `ended?`（fire-once 守卫·进 snapshot）——loop:false 绕完到末点触发一次：dropTemplate→SpawnRequest(挂独立 carrier·同 Mortal 先例·防自身同 tick 被 destroy 带走)、destroy→DestroyRequest(self)。**fire-once**：到末点停住多 tick 只发一次（ended 守卫·测钉死）；loop:true 结构性不触发；SpawnRequest/DestroyRequest 消费者(prefab/destroy-apply/hierarchy-cascade)不写 PathFollow/Transform/Velocity→无环（29-cap 撞环回归验）。确定性无随机墙钟·21 测·gate 全绿 3588·基线 138 不变。→ **game102 完整循环闭合**（带→绕→落 tray 空槽→配 M2/M4 双 full 死锁判负）。game102 数据挂 `cannon_* PathFollow{loop:false,onEnd:{dropTemplate:tray_<color>,destroy:true}}`。原文见 git 史。
 
