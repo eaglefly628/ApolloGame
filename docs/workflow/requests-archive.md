@@ -2,6 +2,14 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-PANELSKIN-Panel 贴图皮槽 · 复合按钮（Panel+子节点）换贴图皮 · [2026-07-22] · PE-C 报 → PUI 交付 · status: **✅ done（PUI·2026-07-25 Lead 代码级验收 PASS·归档腾槽）** · 类型: UI 基座控件缺口（PUI 域）
+> **交付**：`PanelProps.skin?`(+`skinSlice?`)·语义同 `ButtonProps.skin`——`render.ts panelSkinCss`（cover / border-image 九宫格）·`renderPanel` chrome 消费·guard `!bare`·不强制白字（children 各自定色）·children 与皮共存叠渲（皮作底·动态金额走活文字不烤进图）·配 action=整容器可点=复合贴图按钮。测试 `src/ui/components/panel-skin.test.ts`(5 例) + `alpha-texture.test.ts` 消费 Panel.skin。全绿 tsc0/vitest/build。
+> **Lead 验收（2026-07-25·代码级）**：grep 实锤 `PanelProps.skin`/`panelSkinCss`/`panel-skin.test.ts` 均在树；真浏览器目击留待 PE-C 接 game-c 主行动键时顺验（低风险附加属性·缺省零回归）。原文全文见 git 史。
+
+### REQ-STYLE-SWAP-工坊风格库（命名风格预设 + 一键换风格）· [2026-07-22] · owner 拍板 → 引擎侧 Lead ✅ done · status: **✅ 引擎 done（Lead 2026-07-22·在树核实）·归档腾槽（2026-07-25）；工坊 UI 余项转 PST（feature 已可用）** · 类型: 风格换装（引擎已具·工坊 UI 便利层）
+> **引擎交付（在树核实 `scripts/style-packs.mjs`）**：本地命名风格库 `.apollo-styles.json`(gitignored) 并入 STYLE_PACKS + `validateStylePack`/`saveLocalStyle`/`deleteLocalStyle`/`readLocalStyles`·`listStylePacks` 带 local 标位；端点 `POST /api/art/styles`(存)·`/api/art/styles/delete`(删)·`GET /api/art/style-packs`(带 local)；提示词按 kind 分层（修「换皮把 UI 画成场景」·bg/splash 用场景词·sprite/ui 用孤立配色质感词）；一键 Apply=现有 `POST /api/art/batch{slug,packId}`；手动尺寸=`/api/art/regenerate{size}` 已透传。
+> **余项（非引擎·转 PST 自板）**：工坊 `workshop/index.dc.html` 加 风格下拉/新建表单/Apply 按钮/尺寸输入框——**纯便利 UI·feature 现已可经 `/api/art/batch` 端点使用**·不占引擎池槽。各内置包 uiPrompt 变体补全=PA（缺=回退·不阻塞）。原文全文见 git 史。
+
 ### REQ-MERGE-ON-PLACE-方格拖放合并原语 · [2026-07-24] · PE-101 报 → Lead 裁 · status: **✅ done（`54748393`·下沉 `src/skills/tier2/merge-on-place.ts` + game101 真拖拽合并接线·2026-07-24 归档腾槽）** · 类型: 引擎通用能力（merge/消除品类）
 > 真缺口=「方格拖放·落同类格→combine」（`t3-merge-rule` 是自动合并不看位置·`drag-place` 只六角无方格合成分支·`grid-drag-square` 是托盘盖章）。下沉 `merge-on-place`（`MergeOnPlace{boardId,need}`·消费拖拽 drop→方格落格→同模板且计数≥need 则 DestroyRequest×need + SpawnRequest{into,at:drop cell}·否则移动/交换）；game101 只经数据消费换真拖拽手感。
 
