@@ -40,7 +40,7 @@ export const PLAYER_DEF = {
   maxHp: 100,
   moveSpeed: 3,          // px/tick（≈180/s·gdd 200/s 起点·灰盒略调）
   radius: 13,
-  pickupRadius: 130,     // 拾取环半径（调大·kiting 走位也能吸到宝石·磁石被动再叠·修「跑动时经验拾不到→不升级」）
+  pickupRadius: 34,      // 收取真空区半径（贴身·「接近才吃」·磁石被动 stat-bind 放大此值=更强吸力）。远距吸附另由宝石短程 attract 提供（见 blueprint gem）。
   skin: '103/player',
 } as const;
 
@@ -268,7 +268,7 @@ export const SPAWNS: SpawnRow[] = (() => {
 // capBypass=true → 该层刷怪**不受同屏 cap 门**（boss/精英必现·否则弱敌占满 cap 导致 boss 永不刷·owner「全程没见过 boss」根因）。
 export interface SpawnerTier { key: string; count: number; period: number; afterSec: number; capBypass?: boolean }
 export const SPAWNER_RING = 360; // spawner 环半径（玩家周围·视口外缘）
-export const SPAWN_CAP = 150;    // 同屏杂兵上限（实测 cap160+密刷仍锁 60fps·软件GL 最坏情形→翻倍无压力·精英/Boss 另走 capBypass·真机可再上探）
+export const SPAWN_CAP = 46;     // 同屏杂兵上限（大幅下调·难度改走 HP 分层非堆数量·且 overlap-detect 宽相位∝实体²→少实体=不卡·owner M5 都卡=680实体/2800 overlap/60ms一帧）
 export const SPAWNER_TIERS: SpawnerTier[] = [
   // ── 杂兵流（受 cap 钳·horde 底噪·别太多免糊屏）──
   { key: 'shambler', count: 10, period: 46, afterSec: 0 },  // 常驻弱敌（略降杂兵·给精英腾同屏空间·owner「小怪太多」）

@@ -344,7 +344,9 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     const lib = (buildBlueprint().entities.library as { PrefabLibrary: { templates: Record<string, { entities: Record<string, Record<string, unknown>> }> } }).PrefabLibrary.templates;
     const gemBody = lib.gem_blue.entities.body as { Perception?: { targetTag: number; sightRadius: number }; Steering?: { mode: string }; Velocity?: unknown };
     expect(gemBody.Perception?.targetTag).toBe(PLAYER);
-    expect(gemBody.Perception?.sightRadius).toBeGreaterThan(100); // 吸附半径
+    // 短程吸附（修 owner「很远都飞过来」）：只近距(~一两个身位)吸·不是全屏；> 收取真空区(pickupRadius) 才有可见飞行段。
+    expect(gemBody.Perception?.sightRadius).toBeGreaterThan(PLAYER_DEF.pickupRadius);
+    expect(gemBody.Perception?.sightRadius).toBeLessThan(160); // 近距·非全屏磁吸
     expect(gemBody.Steering?.mode).toBe('seek');
     expect(gemBody.Velocity).toBeDefined();
   });

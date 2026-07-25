@@ -189,12 +189,7 @@ function enemyTemplate(e: EnemyDef, gemTemplate: string): { entities: Record<str
   return {
     entities: {
       body,
-      inner: { // 内芯（render-only·体积感）
-        Hierarchy: child('@local:body'),
-        Transform: { ...XF0 },
-        Shape: { kind: 'circle', radius: Math.round(e.radius * 0.5) },
-        Color: { tint: e.inTint, alpha: 0.9 },
-      },
+      // 性能：删除装饰性内芯 inner（render-only·每敌 1 个 Shape → 164 敌=164 个多余 Shape 进 overlap-detect 宽相位）。
       hpbar: { // 头顶血条（Gauge 绑 hp·随受击缩短）。反向缩放(1/artScale)抵消 body 体型缩放→血条保持正常尺寸不被 Boss 放大。
         Hierarchy: { parentId: '@local:body', localX: 0, localY: -(e.radius + 9), localRotation: 0, localScaleX: 1 / artScale, localScaleY: 1 / artScale },
         Transform: { ...XF0 },
@@ -229,12 +224,12 @@ function gemTemplate(g: GemDef): { entities: Record<string, Record<string, unkno
         Color: { tint: g.tint, alpha: 1 },
         Hitbox: { resource: 'xp', amount: -g.value, targetMask: COLLECTOR, consumeOnHit: true },
         Timer: { id: 'life', elapsed: 0, duration: GEM_LIFE, loop: false },
-        // 磁力吸附（重组·aggro+steering）：宝石带 Perception(只看玩家·sightRadius=吸附半径) → t3-aggro 在半径内
-        // 写 Relation(target)=玩家 → t2-steering seek 把它飞向玩家（经典「经验飞过来」）；半径外无目标=静止不动。
-        // 飞到玩家拾取真空区(collector Shape)即被 Hitbox 收取。半径 260 > 收取区 → 有可见飞行段。
+        // 磁力吸附（重组·aggro+steering·短程）：宝石只在**近距**(sightRadius 92·约一两个身位)看见玩家 → aggro 写
+        // Relation → steering seek 飞向玩家=可见飞入动画；出了这半径=静止不动（修 owner「很远都飞过来」bug）。
+        // 飞到贴身真空区(collector Shape·磁石被动放大)被收取。attract(92) > 收取(34) → 全程有可见飞行段（近的也飞·不再瞬吸）。
         Velocity: { vx: 0, vy: 0, angular: 0 },
-        Perception: { targetTag: PLAYER, sightRadius: 260 },
-        Steering: { mode: 'seek', speed: 7.5, stopRange: 0 },
+        Perception: { targetTag: PLAYER, sightRadius: 92 },
+        Steering: { mode: 'seek', speed: 6, stopRange: 0 },
       },
       kill: { // 计分区（隐形·随 body 级联销毁）
         Hierarchy: child('@local:body'),
