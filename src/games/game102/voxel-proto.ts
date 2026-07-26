@@ -29,7 +29,6 @@ const CAM_DIST = N * PITCH * 3.9; // 相机距离（越大立方越小·owner「
 const TRAVEL_MS = 600;   // 子弹飞行时长（配「同时只一发」→ 一发一破·反馈清晰）
 const FRAG_N = 7;        // 碎裂片数
 const GRAV = 900;        // 碎片重力（世界单位/秒²·自管运动积分·非 cannon-es·零冻结风险）
-const MUZZLE_W = { x: 0, y: -MAXC * 1.5, z: MAXC * 3.0 }; // 炮口在**立方前方**(相机侧·z 大)偏下→子弹从外侧接近暴露面·不穿透立方；x=0 仍与底部炮台水平对齐
 // 金色镂空棱框（12 根细金条·包住瞄中格·与格本色完全独立·作 pivot 子随立方转）。
 const GOLD = 0xffd24a;
 const FH = VOX / 2 + 2.5, FT = 3, FL = VOX + 6; // 半边/条粗/条长
@@ -402,9 +401,14 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     const aimColor = colorAt.get(vid(i, j, k))!;
     const same = aimColor === activeColor;                    // 同色→破·异色→弹（玩家切色对准准星那格）
     const to = voxWorld(i, j, k);
+    // 出膛点 = 该格**外法线方向**的外侧点（立方居中原点→格世界位≈外向）。子弹从**暴露面外侧**射入→
+    // 无论朝相机的是哪个面(顶/侧/前)都从外面打到表面·绝不穿透立方内部（真·从屏幕方向打到表面）。
+    const L = Math.hypot(to[0], to[1], to[2]) || 1;
+    const D = MAXC * 1.9;
+    const from: [number, number, number] = [to[0] + (to[0] / L) * D, to[1] + (to[1] / L) * D, to[2] + (to[2] / L) * D];
     const id = `blt-${movN}`;
-    spawnEnt(id, MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z, VOX * 0.5, PALETTE[activeColor].tint);
-    movers.push({ kind: 'bullet', id, t: 0, from: [MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z], to, aim: [i, j, k], color: activeColor, same });
+    spawnEnt(id, from[0], from[1], from[2], VOX * 0.5, PALETTE[activeColor].tint);
+    movers.push({ kind: 'bullet', id, t: 0, from, to, aim: [i, j, k], color: activeColor, same });
     pushLog(`fire aim=${i},${j},${k} aimC=${aimColor} active=${activeColor} → ${same ? '将破' : '将弹'} rem=${remaining}`);
   };
   // 子弹飞抵结算（同色破+碎裂·异色反弹）。
