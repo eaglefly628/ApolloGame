@@ -1,0 +1,286 @@
+<title>game-103《幸存者》· 美术台本图</title>
+<style>
+  :root{
+    --bg:#0e1119; --bg2:#0a0d14; --panel:#161b28; --panel2:#1c2333;
+    --line:#2a3346; --line2:#39445c;
+    --ink:#eef3fb; --sub:#aeb9cf; --mute:#7f8aa3;
+    --hero:#4aa8ff; --heroInk:#9fd0ff;
+    --gold:#ffd23f; --danger:#ff4d5e;
+    --disp:"Arial Black","Helvetica Neue",system-ui,sans-serif;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --maxw:1080px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:
+      radial-gradient(1200px 520px at 78% -8%, rgba(74,168,255,.14), transparent 60%),
+      radial-gradient(900px 500px at 8% 4%, rgba(255,210,63,.06), transparent 55%),
+      var(--bg);
+    color:var(--ink);font-family:var(--body);line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:clamp(20px,4vw,56px) clamp(16px,3vw,32px) 80px}
+  .disp{font-family:var(--disp);font-weight:900;letter-spacing:-.02em;line-height:.98;
+    text-shadow:0 2px 0 #06090f, 0 0 1px #06090f, -1px 0 0 #06090f, 1px 0 0 #06090f;}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--hero);font-weight:700}
+  a{color:var(--hero)}
+  /* ---- hero ---- */
+  .hero{position:relative;border:1px solid var(--line);border-radius:22px;overflow:hidden;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.022) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0 1px, transparent 1px 44px),
+      linear-gradient(160deg, var(--panel) 0%, var(--bg2) 100%);
+    padding:clamp(26px,4vw,48px);margin-bottom:14px}
+  .hero h1{margin:.32em 0 .18em;font-size:clamp(38px,7vw,76px)}
+  .hero h1 .hl{color:var(--hero)}
+  .hero p{max-width:60ch;color:var(--sub);font-size:clamp(15px,1.6vw,17px);margin:0}
+  .hero .marks{position:absolute;top:0;right:0;display:flex;gap:14px;padding:20px 24px;font-size:34px;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}
+  .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--sub);
+    border:1px solid var(--line2);border-radius:999px;padding:5px 11px;background:rgba(255,255,255,.02)}
+  /* ---- section scaffolding ---- */
+  section{margin-top:40px}
+  .shead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:18px;
+    padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .shead h2{font-family:var(--disp);font-weight:900;font-size:clamp(20px,2.6vw,26px);margin:0;letter-spacing:-.01em}
+  .shead .n{font-family:var(--mono);color:var(--hero);font-size:13px;font-weight:700}
+  .shead .note{color:var(--mute);font-size:13px;margin-left:auto}
+  .lead{color:var(--sub);max-width:70ch;margin:-6px 0 20px;font-size:15px}
+  .grid{display:grid;gap:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+  /* ---- glossy disc (the core art recipe, demonstrated) ---- */
+  .disc{--c:#888;--c2:#ccc;width:var(--sz,72px);height:var(--sz,72px);border-radius:50%;
+    background:
+      radial-gradient(42% 34% at 34% 26%, rgba(255,255,255,.92), rgba(255,255,255,0) 60%),
+      radial-gradient(90% 90% at 50% 44%, var(--c2), var(--c) 62%, color-mix(in srgb,var(--c) 55%, #000) 100%);
+    box-shadow:0 0 0 4px #0c1017, 0 0 0 6px color-mix(in srgb,var(--c) 40%,#000), 0 8px 14px rgba(0,0,0,.5);
+    flex:0 0 auto}
+  .crowned{position:relative}
+  .crowned::after{content:"♛";position:absolute;top:-14px;left:50%;transform:translateX(-50%);color:var(--gold);
+    font-size:22px;text-shadow:0 1px 0 #000}
+  /* ---- entity roster ---- */
+  .roster{grid-template-columns:repeat(auto-fill,minmax(232px,1fr))}
+  .ent{display:flex;gap:14px;align-items:flex-start}
+  .ent .meta h3{margin:0 0 2px;font-size:16px;font-family:var(--disp);font-weight:900;letter-spacing:-.01em}
+  .ent .role{font-size:12.5px;color:var(--sub);margin:0 0 8px}
+  .ent .spec{font-family:var(--mono);font-size:11px;color:var(--mute);line-height:1.5}
+  .ph{font-size:12px;color:var(--mute);margin-top:8px;display:flex;align-items:center;gap:6px}
+  .ph b{color:var(--sub);font-weight:600}
+  .chipbar{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .chip{font-family:var(--mono);font-size:10.5px;padding:3px 7px;border-radius:6px;border:1px solid var(--line2);color:var(--sub)}
+  /* ---- palette swatches ---- */
+  .sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .swatch{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+  .swatch .cap{height:52px}
+  .swatch .lab{padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--sub);display:flex;justify-content:space-between;gap:8px}
+  .swatch .lab b{color:var(--ink);font-weight:600}
+  /* ---- gems ---- */
+  .gems{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end}
+  .gemcol{text-align:center}
+  .gemcol .lab{font-family:var(--mono);font-size:12px;color:var(--sub);margin-top:10px}
+  .gemcol .val{color:var(--gold);font-weight:700}
+  /* ---- weapon vfx table ---- */
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+  table{border-collapse:collapse;width:100%;min-width:560px;font-size:13.5px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line)}
+  thead th{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);background:var(--bg2)}
+  tbody tr:last-child td{border-bottom:0}
+  td .dot{display:inline-block;width:13px;height:13px;border-radius:50%;vertical-align:-2px;margin-right:8px;box-shadow:0 0 0 2px rgba(0,0,0,.4), 0 0 8px 1px currentColor}
+  td.k{font-family:var(--mono);font-size:12px;color:var(--sub)}
+  /* ---- juice mockups ---- */
+  .stage{position:relative;background:
+      radial-gradient(120% 90% at 50% 120%, #2b3140, #15181f 70%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 40px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 40px), #868a92;
+    background-blend-mode:normal;border:1px solid var(--line);border-radius:16px;
+    min-height:210px;padding:16px;overflow:hidden}
+  .stage .field-note{position:absolute;bottom:8px;right:12px;font-family:var(--mono);font-size:10.5px;color:rgba(255,255,255,.45)}
+  .combo{font-family:var(--disp);font-weight:900;font-size:clamp(26px,5vw,44px);color:var(--gold);
+    text-shadow:0 0 1px #000,-2px 0 0 #7a0f18,2px 0 0 #7a0f18,0 2px 0 #7a0f18,0 3px 6px rgba(0,0,0,.6);
+    animation:flash 1.05s steps(1) infinite}
+  .combo.r{position:absolute;right:16px;top:16px}.combo.l{position:absolute;left:16px;top:16px}
+  @keyframes flash{50%{color:var(--danger)}}
+  .toast{position:absolute;left:50%;top:64px;transform:translateX(-50%);
+    display:flex;align-items:center;gap:8px;background:linear-gradient(180deg,#33280b,#241c07);
+    border:1px solid var(--gold);border-radius:12px;padding:8px 16px;box-shadow:0 6px 16px rgba(0,0,0,.5)}
+  .toast .i{font-size:20px}
+  .toast .t{font-family:var(--disp);font-weight:900;font-size:14px;color:var(--gold);text-shadow:0 1px 0 #000}
+  .hero-dot{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%)}
+  .spark{position:absolute;left:calc(50% + 46px);top:50%;width:6px;height:6px;border-radius:50%;background:#fff;
+    box-shadow:14px -6px 0 -1px #fff,-12px 8px 0 -2px #ffe9a8,4px 15px 0 -2px #fff}
+  .ebolt{position:absolute;right:64px;bottom:40px;width:16px;height:16px;border-radius:50%;background:#ff1030;
+    box-shadow:0 0 0 5px rgba(255,51,85,.32),0 0 12px 3px rgba(255,16,48,.7)}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--sub)}
+  .legend b{color:var(--ink)}
+  /* ---- roadmap ---- */
+  .road{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+  .rp{border-left:3px solid var(--line2);padding:2px 0 2px 14px}
+  .rp .p{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em}
+  .rp.p0{border-color:var(--danger)} .rp.p0 .p{color:var(--danger)}
+  .rp.p1{border-color:var(--hero)} .rp.p1 .p{color:var(--hero)}
+  .rp.p2{border-color:var(--gold)} .rp.p2 .p{color:var(--gold)}
+  .rp.p3{border-color:var(--line2)} .rp.p3 .p{color:var(--mute)}
+  .rp h4{margin:4px 0 4px;font-size:14.5px}
+  .rp p{margin:0;font-size:12.5px;color:var(--sub)}
+  .callout{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line2);
+    border-radius:14px;padding:16px 18px;font-size:13.5px;color:var(--sub)}
+  .callout b{color:var(--ink)}
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:var(--mute);font-size:12.5px;
+    display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--mono)}
+  @media (prefers-reduced-motion:reduce){.combo{animation:none}}
+</style>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="marks">👾 👻 👹 👺 🐉</div>
+    <div class="eyebrow">game-103 · 幸存者核心原型 · 美术台本图</div>
+    <h1 class="disp">明亮 · 圆润 · <span class="hl">厚描边</span><br>俯视割草</h1>
+    <p>一张统一的美术真相板：风格锚、主色板、敌种<b style="color:var(--sub)">威胁配色语言</b>、武器/特效色、HUD 打击感与生产路线。终稿=会走的卡通怪；当前=可爱 emoji 过渡皮 + 程序化 glossy 观感。</p>
+    <div class="tags">
+      <span class="tag">bright chunky cartoon</span>
+      <span class="tag">Survivor.io 风</span>
+      <span class="tag">俯视 / 半侧俯视 2D</span>
+      <span class="tag">透明底 PNG</span>
+      <span class="tag">色烘进图 · CanvasRenderer 不乘色</span>
+    </div>
+  </header>
+
+  <p class="callout"><b>一条画师必读的渲染事实：</b>game-103 用 <code style="font-family:var(--mono)">CanvasRenderer</code>，对已就绪的 Sprite 贴图<b>原样 drawImage、不做 tint 乘色</b>。所以颜色必须<b>烘进图片本身</b>；theme 里的 <code style="font-family:var(--mono)">tint</code> 只作用于几何占位块（回退观感），不染真图。下方每个色都是<b>目标烘入色</b>。</p>
+
+  <!-- PALETTE -->
+  <section>
+    <div class="shead"><span class="n">01</span><h2>主色板</h2><span class="note">饱和 · glossy · 厚黑描边</span></div>
+    <div class="sw">
+      <div class="swatch"><div class="cap" style="background:linear-gradient(135deg,#9fd0ff,#4aa8ff)"></div><div class="lab"><b>玩家 · 电蓝</b><span>#4aa8ff</span></div></div>
+      <div class="swatch"><div class="cap" style="background:linear-gradient(135deg,#ff9aa6,#ff4d5e)"></div><div class="lab"><b>蹒跚者 · 红</b><span>#ff4d5e</span></div></div>
+      <div class="swatch"><div class="cap" style="background:linear-gradient(135deg,#ffd6a0,#ff9a1f)"></div><div class="lab"><b>疾行者 · 橙</b><span>#ff9a1f</span></div></div>
+      <div class="swatch"><div class="cap" style="background:linear-gradient(135deg,#e6ccff,#c9a3ff)"></div><div class="lab"><b>蛮兵 · 浅紫</b><span>#c9a3ff</span></div></div>
+      <div class="swatch"><div class="cap" style="background:linear-gradient(135deg,#e6ccff,#b07bff)"></div><div class="lab"><b>射手 · 紫</b><span>#b07bff</span></div></div>
+      <div class="swatch"><div class="cap" style="background:linear-gradient(135deg,#ff4d5e 60%,#ffd23f)"></div><div class="lab"><b>Boss · 红+金冠</b><span>#ffd23f</span></div></div>
+      <div class="swatch"><div class="cap" style="background:linear-gradient(135deg,#7dff4d,#3fbf2a)"></div><div class="lab"><b>宝石 · 绿</b><span>#7dff4d</span></div></div>
+      <div class="swatch"><div class="cap" style="background:linear-gradient(135deg,#ffe488,#ffd23f)"></div><div class="lab"><b>宝石/连杀 · 金</b><span>#ffd23f</span></div></div>
+      <div class="swatch"><div class="cap" style="background:linear-gradient(135deg,#ff5a6b,#ff1030)"></div><div class="lab"><b>敌弹 · 危险红</b><span>#ff1030</span></div></div>
+      <div class="swatch"><div class="cap" style="background:linear-gradient(135deg,#868a92,#797d85)"></div><div class="lab"><b>战场地面</b><span>#868a92</span></div></div>
+    </div>
+  </section>
+
+  <!-- READABILITY -->
+  <section>
+    <div class="shead"><span class="n">02</span><h2>威胁配色语言</h2><span class="note">「打对敌人」= 颜色即角色</span></div>
+    <p class="lead">核心乐趣是<b style="color:var(--ink)">选对武器、打对敌人</b>——所以颜色不是装饰，是信息：一眼分清谁是杂兵、谁快、谁肉、谁远程。终稿剪影也要在小尺寸下秒辨（体型对比 + 冠冕/弓械识别特征）。</p>
+    <div class="grid roster">
+      <div class="panel ent">
+        <div class="disc" style="--c:#ff4d5e;--c2:#ff9aa6"></div>
+        <div class="meta"><h3>蹒跚者</h3><p class="role">最基础群怪 · 成群缓慢逼近 · 数量最多</p>
+          <div class="spec">96×96 · walk 4 帧 + death 3 帧<br>红 #ff4d5e · 内亮 #ff9aa6</div>
+          <div class="ph">过渡皮 <b>👾</b> twemoji 静态</div></div>
+      </div>
+      <div class="panel ent">
+        <div class="disc" style="--c:#ff9a1f;--c2:#ffd6a0"></div>
+        <div class="meta"><h3>疾行者</h3><p class="role">移速快 · 瘦小前倾 · 突进威胁</p>
+          <div class="spec">96×96 · run 4–6 帧 + death 3 帧<br>橙 #ff9a1f · 内亮 #ffd6a0</div>
+          <div class="ph">过渡皮 <b>👻</b> twemoji 静态</div></div>
+      </div>
+      <div class="panel ent">
+        <div class="disc" style="--sz:84px;--c:#c9a3ff;--c2:#e6ccff"></div>
+        <div class="meta"><h3>蛮兵</h3><p class="role">大体型 · 慢 · 高血肉盾 · 厚重宽肩</p>
+          <div class="spec">128×128 · walk 4 帧 + death 3 帧<br>浅紫 #c9a3ff · 内亮 #e6ccff</div>
+          <div class="ph">过渡皮 <b>👹</b> twemoji 静态</div></div>
+      </div>
+      <div class="panel ent">
+        <div class="disc" style="--c:#b07bff;--c2:#e6ccff"></div>
+        <div class="meta"><h3>射手</h3><p class="role">远程站桩放弹 · 持械识别特征</p>
+          <div class="spec">96×96 · walk 4 + draw 3 + death 3<br>紫 #b07bff · 内亮 #e6ccff</div>
+          <div class="ph">过渡皮 <b>👺</b> twemoji 静态</div></div>
+      </div>
+      <div class="panel ent">
+        <div class="disc crowned" style="--sz:96px;--c:#ff4d5e;--c2:#ffd6a0"></div>
+        <div class="meta"><h3>首领 Boss</h3><p class="role">体型远超杂兵 · 金冠拉开层级 · 威慑感</p>
+          <div class="spec">256×256 · idle/move/attack/death 全套<br>红 #ff4d5e + 金冠 #ffd23f</div>
+          <div class="ph">过渡皮 <b>🐉</b> twemoji 静态</div></div>
+      </div>
+      <div class="panel ent">
+        <div class="disc" style="--sz:56px;--c:#4aa8ff;--c2:#9fd0ff"></div>
+        <div class="meta"><h3>玩家英雄</h3><p class="role">屏上恒居中 · 蓝色系 · 圆润厚描边</p>
+          <div class="spec">128×128 · walk 4–6 + hit 1 + idle 2<br>主蓝 #4aa8ff · 内芯 #9fd0ff</div>
+          <div class="ph">已上 <b>glossy 蓝盘</b> · 够用到真美术</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GEMS -->
+  <section>
+    <div class="shead"><span class="n">03</span><h2>经验宝石 · 三档价值</h2><span class="note">同形不同色+体型 · 一眼判价值</span></div>
+    <div class="panel">
+      <div class="gems">
+        <div class="gemcol"><div class="disc" style="--sz:40px;--c:#4aa8ff;--c2:#bfe0ff"></div><div class="lab">蓝宝珠 · <span class="val">value 2</span></div></div>
+        <div class="gemcol"><div class="disc" style="--sz:54px;--c:#7dff4d;--c2:#d3ffbf"></div><div class="lab">绿宝珠 · <span class="val">value 8</span></div></div>
+        <div class="gemcol"><div class="disc" style="--sz:70px;--c:#ffd23f;--c2:#fff2b0"></div><div class="lab">金宝珠 · <span class="val">value 30</span> · 最大最亮 · 4 帧闪</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WEAPON VFX -->
+  <section>
+    <div class="shead"><span class="n">04</span><h2>武器 / 特效色语言</h2><span class="note">玩家弹=能量动画帧 · 敌弹=实心红</span></div>
+    <p class="lead">玩家子弹走 DCSS 能量序列帧（紫/绿/金/蓝，按方向旋转）；敌弹刻意<b style="color:var(--ink)">纯实心红球 + 红光环 + 脉冲</b>，一眼分敌我、好躲。激光=箭形多边形（细尾→宽箭头），冲击波去圆环只留放射粒子（升级同步放大）。</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>武器</th><th>射法</th><th>目标色</th><th>观感</th></tr></thead>
+        <tbody>
+          <tr><td class="k">kunai 飞镖</td><td>straight 穿透</td><td style="color:#eef3fb"><span class="dot" style="color:#dfe8ff"></span>白亮 #ffffff</td><td>直线穿透 · 蓝描边拖尾</td></tr>
+          <tr><td class="k">shock 冲击波</td><td>nova 近身 AoE</td><td style="color:#7fd0ff"><span class="dot"></span>青蓝 #7fd0ff</td><td>去圆环 · 放射粒子 · 升级放大</td></tr>
+          <tr><td class="k">laser 激光</td><td>beam 贯穿</td><td style="color:#ff5a4a"><span class="dot"></span>红 #ff5a4a</td><td>箭形多边形 · 细尾宽箭头</td></tr>
+          <tr><td class="k">boom 回旋镖</td><td>boomerang 往返</td><td style="color:#ffd23f"><span class="dot"></span>金 #ffd23f</td><td>飞出 + Steering 拉回 · 旋转</td></tr>
+          <tr><td class="k">orbit 护盾环</td><td>orbit 环绕</td><td style="color:#7dff4d"><span class="dot"></span>绿 #7dff4d</td><td>glossy 光球 · 呼吸辉光</td></tr>
+          <tr><td class="k">pet 宠物随从</td><td>pet 跟随自射</td><td style="color:#c9a3ff"><span class="dot"></span>紫 #c9a3ff</td><td>小 cartoon 随从 · 自带朝向</td></tr>
+          <tr><td class="k">bomb 炸弹</td><td>bomb 抛掷 AoE</td><td style="color:#ffa53f"><span class="dot"></span>橙 #ffa53f</td><td>飞向落点 · 大爆炸圈渐隐</td></tr>
+          <tr><td class="k">missile 追踪导弹</td><td>homing 锁敌</td><td style="color:#ff8fe0"><span class="dot"></span>粉 #ff8fe0</td><td>拐弯追击 · 弹头指向目标</td></tr>
+          <tr><td class="k">enemy-bolt 敌弹</td><td>archer 远程</td><td style="color:#ff1030"><span class="dot"></span>危险红 #ff1030</td><td>实心红球 + 红光环 + 脉冲</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- JUICE -->
+  <section>
+    <div class="shead"><span class="n">05</span><h2>HUD 打击感 · 连杀与成就</h2><span class="note">下方为真样式预览</span></div>
+    <div class="stage" role="img" aria-label="战场 HUD 打击感预览：左右上角连杀数字、居中成就横幅、命中火花、敌弹">
+      <div class="combo l">🔥14 连杀</div>
+      <div class="combo r">🔥14 连杀</div>
+      <div class="toast"><span class="i">⚔️</span><span class="t">成就解锁 · 杀意奔涌 · 20 连杀</span></div>
+      <div class="disc hero-dot" style="--sz:44px;--c:#4aa8ff;--c2:#9fd0ff"></div>
+      <div class="spark"></div>
+      <div class="ebolt"></div>
+      <div class="field-note">战场地面 #868a92 · 世界网格随相机卷动</div>
+    </div>
+    <div class="legend">
+      <span><b>连杀</b> 2 秒窗内 ≥8 杀 · 左右上角金/红交替闪 · 字号随连杀数放大</span>
+      <span><b>成就</b> 居中金带 · 首次达成弹 ~2.5s · localStorage 持久解锁</span>
+      <span><b>命中</b> 克制小白花（穿透弹逐命中）</span>
+      <span><b>敌弹</b> 实心红 + 光环 · 与玩家能量弹一眼分敌我</span>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section>
+    <div class="shead"><span class="n">06</span><h2>生产路线</h2><span class="note">终稿走 AIGEN / 画师流水线</span></div>
+    <div class="grid road">
+      <div class="rp p0"><div class="p">P0</div><h4>5 敌人 walk + death 序列帧</h4><p>owner 要「会动的怪」· 最直接决定战斗观感 · 当前全是静态 emoji 剪影。</p></div>
+      <div class="rp p0"><div class="p">P0</div><h4>Boss 全套 idle/move/attack/death</h4><p>关卡高潮 · 静态剪影撑不住 · 256×256 + 金冠威慑。</p></div>
+      <div class="rp p1"><div class="p">P1</div><h4>玩家 walk / hit 帧</h4><p>主角恒在屏中央 · 动起来提升代入。</p></div>
+      <div class="rp p1"><div class="p">P1</div><h4>宝石辉光脉动 + 射手 draw 帧</h4><p>打磨拾取反馈与远程识别。</p></div>
+      <div class="rp p2"><div class="p">P2</div><h4>proj 静态皮 + 命中/死亡特效</h4><p>多数已被 DCSS fx 覆盖 · 回退槽补齐 · 打击感打磨层。</p></div>
+      <div class="rp p3"><div class="p">P3</div><h4>地面可平铺贴图</h4><p>几何网格已够灰盒 · 锦上添花。</p></div>
+    </div>
+    <p class="callout" style="margin-top:16px"><b>诚实边界：</b>终稿栅格/动画贴图需走 <b>AIGEN 生产流水线</b>（真 key + 资产管理 PA + 授权登记）——不在本 session 自动产出。本板=<b>把方向锁死</b>：色号、威胁配色、特效色语言、打击感样式全部定死，交付即可 1:1 施工。换装零改码——产出落 <code style="font-family:var(--mono)">public/games/game-103/art/</code> + <code style="font-family:var(--mono)">index.json</code> 即生效。</p>
+  </section>
+
+  <footer>
+    <span>game-103 · 美术台本图 · 单一深色街机世界（刻意锁定 · 映射战场本身）</span>
+    <span>真相来源 · art-spec.md / survivor-io-ui-kit-handoff.md</span>
+  </footer>
+
+</div>
