@@ -6,7 +6,7 @@
 //   + 蓝色合并板井（7×9·物品小巧 size74≈占格50%·生成器格金色·可交付格标✓）。全由引擎世界态每帧投影。
 import type { LayoutNode } from '@ui/components/types.js';
 import s1Tree from './layout/s1.layout.json';
-import { GAME, ENERGY, CHAINS, ITEM_EMOJI } from './theme.js';
+import { GAME, CHAINS, ITEM_EMOJI } from './theme.js';
 
 export function buildS1(): LayoutNode {
   return s1Tree as unknown as LayoutNode;
@@ -40,46 +40,43 @@ const COVER_BG = '#b8895a'; // 阻碍层沙色（覆盖格·挖掘解锁）
 
 // ── HUD 行（等级 / 体力+计时 / 金币 / 宝石 / 商店）────────────────────────────
 function hud(s: S1State): N {
-  // pill 竖向撑满 HUD 带（align:stretch）·大字·圆润胶囊——正式美术资源就绪时同样有位置撑表现。
-  const pill = (id: string, glyph: string, val: string, color: 'gold' | 'jade' | 'text'): N => ({
+  // 资源胶囊：横向（宽>高）·统一 flex 等宽·大图标+大值。基准=ui-brief §S4「[Lv][⚡/100][🪙][💎][🛒]」横向一行。
+  const pill = (id: string, glyph: string, val: string, color: 'gold' | 'jade' | 'text', flex = 1): N => ({
     type: 'Panel', id, props: { bg: 'panel' },
-    layout: { direction: 'row', align: 'center', justify: 'center', gap: 8, padding: 16, radius: 26 },
+    layout: { direction: 'row', align: 'center', justify: 'center', gap: 8, padding: 10, radius: 22, flex, height: 96 },
     children: [
-      { type: 'Label', id: `${id}-g`, props: { text: glyph, size: 'xxl' } },
+      { type: 'Label', id: `${id}-g`, props: { text: glyph, size: 44 } },
       { type: 'Label', id: `${id}-v`, props: { text: val, color, bold: true, size: 'xxl' } },
     ],
   });
   return {
-    // HUD 状态栏=一条明显的高带（对齐原图比例·拉长）：所有件 align:'stretch' 等高撑满，读得清、留美术位。
+    // HUD = 一条**扁横带**（宽>高·非又高又窄）：资源胶囊 flex 等宽撑开、按钮固定方尺寸。height 收到 108。
     type: 'Panel', id: 'hud', props: { bare: true },
-    layout: { direction: 'row', align: 'stretch', justify: 'between', gap: 10, padding: 12, height: 150 },
+    layout: { direction: 'row', align: 'center', gap: 8, padding: 8, height: 108 },
     children: [
       {
-        // 关卡 + 星进度（进度推进②的 HUD 家）：Lv + ⭐进度条向本关目标·让「越玩越有奔头」看得见。
+        // 关卡 + 星进度（进度②的家）：Lv + ⭐进度条 + N/目标·横向胶囊等宽。
         type: 'Panel', id: 'hud-lvl', props: { bg: 'gold' },
-        layout: { direction: 'column', align: 'center', justify: 'center', gap: 4, padding: 12, radius: 30 },
+        layout: { direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 8, radius: 22, flex: 1, height: 96 },
         children: [
-          { type: 'Label', id: 'hud-lvl-l', props: { text: `Lv ${s.level}`, color: 'ink', bold: true, size: 'xxl' } },
+          { type: 'Label', id: 'hud-lvl-l', props: { text: `Lv ${s.level}`, color: 'ink', bold: true, size: 'xl' } },
           ...(s.progress ? [
             { type: 'ProgressBar', id: 'hud-lvl-bar', props: { value: Math.min(s.progress.stars, s.progress.goal), max: s.progress.goal, tone: 'ok' } } as N,
             { type: 'Label', id: 'hud-lvl-p', props: { text: `⭐${s.progress.stars}/${s.progress.goal}`, color: 'ink', bold: true, size: 'sm' } } as N,
           ] : []),
         ],
       },
+      pill('hud-energy', '⚡', `${Math.round(s.energy)}`, 'gold', 1.15),
+      pill('hud-coins', '🪙', `${Math.round(s.coins)}`, 'gold', 1),
+      pill('hud-gems', '💎', `${s.gems}`, 'jade', 1),
+      // 菜单入口：固定方尺寸面板整框可点（Button 无固有宽会缩窄条·用 Panel.action 保方形·同 ui.md 框 Panel 法）。
       {
-        type: 'Panel', id: 'hud-energy', props: { bg: 'panel' },
-        layout: { direction: 'row', align: 'center', justify: 'center', gap: 10, padding: 16, radius: 26 },
-        children: [
-          { type: 'Label', id: 'hud-e-g', props: { text: '⚡', size: 'xxl' } },
-          // 能量数值=大字（原 ProgressBar.showValue 太小·owner）：显著大值 + 细进度条只作填充观感。
-          { type: 'Label', id: 'hud-e-v', props: { text: `${Math.round(s.energy)}`, color: 'gold', bold: true, size: 'xxxl' } },
-          { type: 'ProgressBar', id: 'hud-e-bar', props: { value: Math.round(s.energy), max: ENERGY.cap, tone: 'warn' } },
-        ],
+        type: 'Panel', id: 'hud-menu-frame', props: { bg: 'gold', action: 'open_menu' },
+        layout: { width: 108, height: 96, align: 'center', justify: 'center', radius: 22 },
+        children: [{ type: 'Label', id: 'hud-menu-i', props: { text: '☰', size: 48, bold: true, color: 'ink' } }],
       },
-      pill('hud-coins', '🪙', `${Math.round(s.coins)}`, 'gold'),
-      pill('hud-gems', '💎', `${s.gems}`, 'jade'),
-      { type: 'Button', id: 'hud-cart', props: { label: '🛒', kind: 'primary', action: 'open_shop' } },
-      { type: 'Button', id: 'hud-menu', props: { label: '☰', kind: 'primary', action: 'open_menu' } }, // 右上信息菜单（玩法/链条/日志）
+      // 右上角留给壳层齿轮 ⚙（退出菜单·非本游戏画）——空占位把 ☰ 顶到齿轮左侧不重叠。
+      { type: 'Panel', id: 'hud-corner-gap', props: { bare: true }, layout: { width: 72, height: 96 } },
     ],
   };
 }
@@ -94,24 +91,24 @@ function menuTab(id: string, label: string, active: boolean, action: string): N 
 }
 // 糖果色卡片底（暖港卡通调·柔和高饱和·区别彼此）。
 const CANDY = ['#ffd7a6', '#ffc2cf', '#bff0d4', '#bfe0ff', '#fff0a0', '#e2d0ff', '#ffd0b0', '#c8ecff'];
-// emoji 放进白色圆牌里更"卡通糖果"（大图标 + 圆底高光感）。
-function emojiChip(id: string, emoji: string, size: number, bg = '#ffffff'): N {
+// emoji 放进白色圆牌里更"卡通糖果"（大图标 + 圆底高光感）。dim=圆牌直径（信息最大化=把牌+图标撑大填满卡）。
+function emojiChip(id: string, emoji: string, size: number, dim = 140, bg = '#ffffff'): N {
   return {
     type: 'Panel', id, props: { bg: { custom: bg } },
-    layout: { width: 96, height: 96, align: 'center', justify: 'center', radius: 48, allowOverlap: false },
+    layout: { width: dim, height: dim, align: 'center', justify: 'center', radius: Math.round(dim / 2), allowOverlap: false },
     children: [{ type: 'Label', id: `${id}-e`, props: { text: emoji, size } }],
   } as N;
 }
 function menuContent(s: S1State): N[] {
   const tab = s.menuTab ?? 'play';
   if (tab === 'chains') {
-    // 合成链条：每链一张糖果卡（flex:1 填满）·名+级数 + 大 emoji 递进链。数据取 CHAINS + ITEM_EMOJI（单一真相）。
+    // 合成链条：每链一张糖果卡（flex:1 填满）·名+级数 + **大** emoji 递进链（信息最大化·填满卡）。
     return CHAINS.map((c, i) => ({
       type: 'Panel', id: `menu-chain-${c.id}`, props: { bg: { custom: CANDY[i % CANDY.length] } },
-      layout: { direction: 'column', align: 'start', justify: 'center', gap: 10, padding: 22, radius: 26, flex: 1 },
+      layout: { direction: 'column', align: 'start', justify: 'center', gap: 14, padding: 26, radius: 26, flex: 1 },
       children: [
-        { type: 'Label', id: `menu-chain-${c.id}-n`, props: { text: `${c.name} · ${c.levels.length} 级`, size: 'lg', bold: true, color: 'ink' } },
-        { type: 'Label', id: `menu-chain-${c.id}-e`, props: { text: c.levels.map((l) => ITEM_EMOJI[l.item] ?? '❓').join(' → '), size: 40 } },
+        { type: 'Label', id: `menu-chain-${c.id}-n`, props: { text: `${c.name} · ${c.levels.length} 级`, size: 'xxl', bold: true, color: 'ink' } },
+        { type: 'Label', id: `menu-chain-${c.id}-e`, props: { text: c.levels.map((l) => ITEM_EMOJI[l.item] ?? '❓').join(' → '), size: 58 } },
       ],
     } as N));
   }
@@ -120,24 +117,24 @@ function menuContent(s: S1State): N[] {
     if (!log.length) {
       return [{
         type: 'Panel', id: 'menu-log-empty', props: { bg: { custom: CANDY[3] } },
-        layout: { direction: 'column', align: 'center', justify: 'center', gap: 16, padding: 40, radius: 28, flex: 1 },
+        layout: { direction: 'column', align: 'center', justify: 'center', gap: 24, padding: 40, radius: 28, flex: 1 },
         children: [
-          { type: 'Label', id: 'menu-log-empty-i', props: { text: '📭', size: 100 } },
-          { type: 'Label', id: 'menu-log-empty-t', props: { text: '还没有记录哦', size: 'xl', bold: true, color: 'ink' } },
-          { type: 'Label', id: 'menu-log-empty-s', props: { text: '去交付订单、挖沙、解锁星仓，这里会记下你的每一步！', size: 'md', color: 'ink' } },
+          { type: 'Label', id: 'menu-log-empty-i', props: { text: '📭', size: 200 } },
+          { type: 'Label', id: 'menu-log-empty-t', props: { text: '还没有记录哦', size: 'xxxl', bold: true, color: 'ink' } },
+          { type: 'Label', id: 'menu-log-empty-s', props: { text: '去交付订单、挖沙、解锁星仓，这里会记下你的每一步！', size: 'xl', color: 'ink' } },
         ],
       } as N];
     }
     return log.map((line, i) => ({
       type: 'Panel', id: `menu-log-${i}`, props: { bg: { custom: i === 0 ? '#fff0a0' : CANDY[(i + 2) % CANDY.length] } },
-      layout: { direction: 'row', align: 'center', gap: 12, padding: 18, radius: 22, flex: 1 },
+      layout: { direction: 'row', align: 'center', gap: 20, padding: 20, radius: 22, flex: 1 },
       children: [
-        emojiChip(`menu-log-${i}-c`, i === 0 ? '🆕' : '•', i === 0 ? 44 : 30, '#ffffff'),
-        { type: 'Label', id: `menu-log-${i}-t`, props: { text: line, size: 'lg', bold: i === 0, color: 'ink' } },
+        emojiChip(`menu-log-${i}-c`, i === 0 ? '🆕' : '📌', i === 0 ? 68 : 52, 120),
+        { type: 'Label', id: `menu-log-${i}-t`, props: { text: line, size: 'xxl', bold: i === 0, color: 'ink' } },
       ],
     } as N));
   }
-  // 玩法说明（默认页）：核心操作逐条·每条一张糖果卡（flex:1 填满整屏·不留空白）。
+  // 玩法说明（默认页）：核心操作逐条·每条一张糖果卡（flex:1 填满·内容也放大填满卡·不留内部空白）。
   const rules: [string, string][] = [
     ['🖐️', '拖动两个相同物件叠一起 → 合并升级（2 合 1）'],
     ['🏭', '点生成器（金格）耗 1 体力 → 掉一个原料'],
@@ -150,10 +147,10 @@ function menuContent(s: S1State): N[] {
   ];
   return rules.map(([icon, txt], i) => ({
     type: 'Panel', id: `menu-rule-${i}`, props: { bg: { custom: CANDY[i % CANDY.length] } },
-    layout: { direction: 'row', align: 'center', gap: 16, padding: 16, radius: 24, flex: 1 },
+    layout: { direction: 'row', align: 'center', gap: 22, padding: 20, radius: 24, flex: 1 },
     children: [
-      emojiChip(`menu-rule-${i}-c`, icon, 52),
-      { type: 'Label', id: `menu-rule-${i}-t`, props: { text: txt, size: 'lg', bold: true, color: 'ink' } },
+      emojiChip(`menu-rule-${i}-c`, icon, 76, 150),
+      { type: 'Label', id: `menu-rule-${i}-t`, props: { text: txt, size: 'xxl', bold: true, color: 'ink' } },
     ],
   } as N));
 }
@@ -276,21 +273,21 @@ function board(s: S1State): N {
     // 阶段：埋沙(高层·只沙+锁数) → 蛛网 🕸️(低层·快挖开) → 露出(层归零=普通物)。
     if (cv?.cover != null) {
       const ck: N[] = [];
-      // 「还要炸几次解锁」= 主视觉·最大化在前（owner：锁太小看不清·要大在最前面）：金色底牌 + 大号 💥N，一眼读到剩余层数。
+      // 埋物预览=半透明底图（owner：底下那个东西半透明画出来·隔沙朦胧）——放最下作背景层。
+      if (cv.coverReward) {
+        ck.push({ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 44 }, layout: { opacity: 0.4 } });
+      } else if (cv.cover <= 1) {
+        ck.push({ type: 'Label', id: `t-live-${i}-web`, props: { text: '🕸️', size: 44 }, layout: { opacity: 0.4 } });
+      }
+      // 「还要炸几次解锁」= 主视觉·金牌大号 💥N（尺寸收进格内·不溢出 grid 框·owner：数字要在方框里）。
       ck.push({
         type: 'Panel', id: `t-live-${i}-lk`, props: { bg: 'gold' },
-        layout: { align: 'center', justify: 'center', padding: 8, radius: 18 },
-        children: [{ type: 'Label', id: `t-live-${i}-lkn`, props: { text: `💥${cv.cover}`, size: 44, bold: true, color: 'ink' } }],
+        layout: { align: 'center', justify: 'center', padding: 5, radius: 14 },
+        children: [{ type: 'Label', id: `t-live-${i}-lkn`, props: { text: `💥${cv.cover}`, size: 34, bold: true, color: 'ink' } }],
       });
-      // 埋物预览退为下方**半透明**小图标（owner：底下那个东西半透明画出来·隔沙朦胧仍看得到里面是啥）。
-      if (cv.coverReward) {
-        ck.push({ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 40 }, layout: { opacity: 0.5 } });
-      } else if (cv.cover <= 1) {
-        ck.push({ type: 'Label', id: `t-live-${i}-web`, props: { text: '🕸️', size: 40 }, layout: { opacity: 0.5 } }); // 快挖开=蛛网阶段
-      }
       return {
         type: 'Panel', id: `t-live-${i}`, props: { bg: { custom: COVER_BG } },
-        layout: { direction: 'column', align: 'center', justify: 'center', gap: 4, padding: 4, radius: 16, height: 128, allowOverlap: true },
+        layout: { direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 6, radius: 16, height: 128, allowOverlap: true },
         children: [...ck, ...dissolve],
       } as N;
     }
