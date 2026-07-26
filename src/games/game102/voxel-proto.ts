@@ -18,10 +18,11 @@ import type { Transform3D, Pivot3D } from '@engine/protocol/components.js';
 // ── 配置（手感旋钮）──────────────────────────────────────────────────────────────────────────
 const N = 10;             // 立方边长（N×N×N 实心点阵）
 const PITCH = 22;
-const VOX = 20;
+const VOX = 22;           // = PITCH：体素相接·无缝→剥层露内层彩格·不再透黑（去掉暗内核块）
 const MAXC = ((N - 1) / 2) * PITCH;
-const BEAT_MS = 420;
-const AMMO_SLACK = 1.3;
+const BEAT_MS = 380;
+const TIME_LIMIT = 75;    // 计时（秒）·时间到按破坏度评分
+const PASS = 0.55;        // 过关破坏度阈值
 const IDLE_SPIN = 0.22;   // 待机自转 rad/秒（0=关）
 const IDLE_DELAY = 1400;  // 松手后 ms 无操作才启动待机自转
 const CAM_DIST = N * PITCH * 3.9; // 相机距离（越大立方越小·owner「缩 20% 留白给以后 3D 轨道」）
@@ -87,8 +88,8 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     return nb.some(([a, b, c]) => !inB(a) || !inB(b) || !inB(c) || !present.has(vid(a, b, c)));
   };
 
-  const cannons = PALETTE.map((_p, i) => ({ color: i, ammo: Math.ceil(count[i] * AMMO_SLACK) }));
-  let activeIdx = 0;
+  let activeColor = 0;              // 玩家当前选中的炮色（可切换·无限弹）
+  let timeLeft = TIME_LIMIT;        // 剩余秒（时间到按破坏度评分）
   let remaining = present.size;
   const total = present.size;
   let over: 'win' | 'lose' | null = null;
@@ -103,8 +104,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
       entities[id] = { Transform3D: { x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) }, Mesh3D: voxMesh(PALETTE[colorAt.get(id)!].tint) as EntityBlueprint['Mesh3D'] };
       ids.push(id); rendered.add(id);
     }
-    entities['cube-core'] = { Transform3D: { x: 0, y: 0, z: 0 }, Mesh3D: { shape: 'box', width: MAXC * 2, height: MAXC * 2, depth: MAXC * 2, frontTint: 0x0b1220, backTint: 0x0b1220, edgeTint: 0x0b1220 } };
-    ids.push('cube-core');
+    // （去掉暗内核块：体素已相接·无透视缝；剥层露的是内层彩格·不再是黑）
     entities['cube-pivot'] = { Transform3D: { x: 0, y: 0, z: 0, rotX: -0.35, rotY: 0.5 }, Pivot3D: { children: ids, centerX: 0, centerY: 0, centerZ: 0 } };
     entities['cam'] = { Transform3D: { x: 0, y: 0, z: 0 }, Camera3D: { yaw: 0, pitch: 0.18, distance: CAM_DIST, pivotX: 0, pivotY: 0, pivotZ: 0, projection: 'perspective', fov: 40 } };
     entities['sky'] = { Sky3D: { top: 0x0c1730, bottom: 0x14243f, env: 0.5 } };
@@ -131,7 +131,8 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   // ── chrome ──
   const top = el('div', 'position:absolute;left:0;right:0;top:16px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;pointer-events:none;');
   top.appendChild(el('div', 'width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ff6a5e,#c62f2b);box-shadow:0 4px 0 #8e1f1c,0 6px 10px #0007;display:flex;align-items:center;justify-content:center;font-size:24px;', '⚙️'));
-  top.appendChild(el('div', 'padding:10px 30px;border-radius:24px;background:linear-gradient(#f0554f,#d0322d);box-shadow:0 4px 0 #9e1f1b,0 6px 12px #0007;color:#fff;font:800 22px system-ui;', 'Level 1'));
+  const timePill = el('div', 'padding:10px 30px;border-radius:24px;background:linear-gradient(#3a7bd5,#2a5cae);box-shadow:0 4px 0 #1c3e7a,0 6px 12px #0007;color:#fff;font:800 22px system-ui;', '⏱ 1:15');
+  top.appendChild(timePill);
   const coin = el('div', 'display:flex;align-items:center;gap:8px;padding:8px 16px 8px 10px;border-radius:22px;background:#0c1a30;border:2px solid #26385c;box-shadow:0 3px 8px #0006;color:#fff;font:800 20px system-ui;', '<span style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffe27a,#f2b70e);display:inline-block;box-shadow:inset 0 0 0 3px #c98f06"></span><span id="coins">0</span>');
   top.appendChild(coin);
   wrapper.appendChild(top);
@@ -151,10 +152,15 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   coreTrack.appendChild(coreFill); coreWrap.appendChild(coreTrack);
   const coreMul = el('div', 'color:#ffd77a;font:800 18px system-ui;', 'x0'); coreWrap.appendChild(coreMul);
   bottom.appendChild(coreWrap);
-  const nextRow = el('div', 'display:flex;align-items:center;gap:10px;');
-  nextRow.appendChild(el('div', 'color:#8fb0e0;font:800 16px system-ui;letter-spacing:1px;', 'NEXT'));
-  const nextDots = el('div', 'display:flex;gap:10px;'); nextRow.appendChild(nextDots);
-  bottom.appendChild(nextRow);
+  // 颜色切换器（点色块 → 换当前炮色·手型点击不触发立方拖拽）。
+  const pickerRow = el('div', 'display:flex;align-items:center;gap:10px;pointer-events:auto;');
+  const swatches: HTMLElement[] = [];
+  PALETTE.forEach((p, i) => {
+    const sw = el('div', `width:40px;height:40px;border-radius:11px;background:${p.css};box-shadow:0 2px 6px #0007;cursor:pointer;border:3px solid transparent;transition:transform .1s,border-color .1s;`);
+    sw.addEventListener('pointerdown', (e) => { e.stopPropagation(); activeColor = i; refreshChrome(); pushLog(`switch color=${i}`); });
+    swatches.push(sw); pickerRow.appendChild(sw);
+  });
+  bottom.appendChild(pickerRow);
   const cannon = el('div', 'width:70px;height:56px;border-radius:12px 12px 8px 8px;background:#5cb544;box-shadow:0 0 26px 6px #5cb54488,0 5px 0 #3c8a2c;display:flex;align-items:center;justify-content:center;color:#fff;font:800 24px system-ui;text-shadow:0 1px 3px #0009;');
   bottom.appendChild(cannon);
   wrapper.appendChild(bottom);
@@ -162,20 +168,18 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   wrapper.appendChild(banner);
 
   let hits = 0;
+  const fmtTime = (sec: number): string => { const s = Math.max(0, Math.ceil(sec)); return `⏱ ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   const refreshChrome = (): void => {
-    const c = cannons[activeIdx];
-    if (c) {
-      cannon.style.background = PALETTE[c.color].css;
-      cannon.style.boxShadow = `0 0 26px 6px ${PALETTE[c.color].css}88,0 5px 0 #0006`;
-      cannon.textContent = String(Math.max(0, c.ammo));  // 剩余弹数（打一发少一发）
-      beam.style.background = `linear-gradient(${PALETTE[c.color].css}88,${PALETTE[c.color].css}00)`;
-    } else { cannon.textContent = ''; }
-    nextDots.innerHTML = '';
-    for (let i = activeIdx + 1; i < Math.min(activeIdx + 6, cannons.length); i++)
-      nextDots.appendChild(el('div', `width:30px;height:30px;border-radius:50%;background:${PALETTE[cannons[i].color].css};box-shadow:0 2px 5px #0006;display:flex;align-items:center;justify-content:center;color:#fff;font:800 12px system-ui;text-shadow:0 1px 2px #0009;`, String(cannons[i].ammo)));
-    coreFill.style.width = `${Math.round(((total - remaining) / total) * 100)}%`;
-    coreMul.textContent = `x${hits}`;
-    (coin.querySelector('#coins') as HTMLElement).textContent = String(hits);
+    const css = PALETTE[activeColor].css;
+    cannon.style.background = css;
+    cannon.style.boxShadow = `0 0 26px 6px ${css}88,0 5px 0 #0006`;
+    beam.style.background = `linear-gradient(${css}88,${css}00)`;
+    swatches.forEach((sw, i) => { sw.style.borderColor = i === activeColor ? '#fff' : 'transparent'; sw.style.transform = i === activeColor ? 'scale(1.16)' : 'scale(1)'; });
+    const pct = Math.round(((total - remaining) / total) * 100);
+    coreFill.style.width = `${pct}%`;
+    coreMul.textContent = `${pct}% / ${Math.round(PASS * 100)}%`;
+    (coin.querySelector('#coins') as HTMLElement).textContent = String(total - remaining);
+    timePill.textContent = fmtTime(timeLeft);
   };
   refreshChrome();
 
@@ -208,7 +212,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   const onRej = (e: PromiseRejectionEvent): void => pushLog(`REJECT ${String(e.reason?.message ?? e.reason)}\n${e.reason?.stack?.split('\n').slice(0, 4).join('\n') ?? ''}`, true);
   window.addEventListener('error', onWinErr);
   window.addEventListener('unhandledrejection', onRej);
-  pushLog(`start · cube ${N}³ · voxels=${total} · ammo=${cannons.map((c) => c.ammo).join('/')}`);
+  pushLog(`start · cube ${N}³ · voxels=${total} · 各色=${count.join('/')} · time=${TIME_LIMIT}s pass=${Math.round(PASS * 100)}%`);
 
   // ── 旋转（拖拽·手型光标）+ 待机自转计时 ──
   wrapper.style.cursor = 'grab';
@@ -297,7 +301,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   };
   let bounceN = 0;
   const bounceFx = (): void => {
-    const dx = (hash3(bounceN++, remaining, activeIdx) - 0.5) * 160;
+    const dx = (hash3(bounceN++, remaining, activeColor) - 0.5) * 160;
     const dot = el('div', 'position:absolute;left:50%;top:46%;width:14px;height:14px;border-radius:50%;background:#ff7a6a;box-shadow:0 0 10px #ff6a6a;transform:translate(-50%,-50%);transition:transform .35s ease-out,opacity .35s;pointer-events:none;');
     wrapper.appendChild(dot);
     requestAnimationFrame(() => { dot.style.transform = `translate(calc(-50% + ${dx}px),-140px)`; dot.style.opacity = '0'; });
@@ -306,7 +310,8 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   const finish = (win: boolean): void => {
     if (over) return;
     over = win ? 'win' : 'lose';
-    banner.textContent = win ? '🎉 全清！' : '弹尽 · 未清空';
+    const pct = Math.round(((total - remaining) / total) * 100);
+    banner.innerHTML = `<div style="text-align:center;line-height:1.3">${win ? '🎉 过关！' : '⏱ 时间到'}<div style="font-size:26px;margin-top:10px;color:#eaf2ff">破坏度 ${pct}%${win ? '' : ` · 需 ${Math.round(PASS * 100)}%`}</div></div>`;
     banner.style.color = win ? '#8affa0' : '#ff8a8a';
   };
 
@@ -340,26 +345,23 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     }
   };
 
+  const CC = Math.round((N - 1) / 2); // 面心索引（准星正对那一格·精确瞄准）
   const onBeat = (): void => {
     if (over) return;
-    const c = cannons[activeIdx];
-    if (!c) return;
     const s = frontSide();
-    let aim = aimFace(s, c.color); let same = true;          // 先找该面同色可见格（可靠出破碎）
-    if (!aim) { aim = aimFace(s, null); same = false; }       // 无同色→朝最靠中心可见格空放（反弹）
-    if (!aim) { pushLog(`beat side=${s} aim=∅ (该面空)`); return; } // 整面空·不耗弹
+    const aim = faceVisible(s, CC, CC);                       // ★ 精确瞄准星正对的那一格（非自动锁·靠切色对准）
+    if (!aim) return;                                         // 中心列已剥空
     const aimColor = colorAt.get(vid(aim[0], aim[1], aim[2]))!;
+    const same = aimColor === activeColor;                    // 同色→破·异色→弹（玩家切色对准）
     const to = voxWorld(aim[0], aim[1], aim[2]);
     const id = `blt-${movN}`;
-    spawnEnt(id, MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z, VOX * 0.7, PALETTE[c.color].css ? PALETTE[c.color].tint : 0xffffff);
-    movers.push({ kind: 'bullet', id, t: 0, from: [MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z], to, aim: [aim[0], aim[1], aim[2]], color: c.color, same });
-    c.ammo -= 1;                                              // 打一发少一发（发射即扣·数字实时）
-    pushLog(`fire side=${s} aim=${aim.join(',')} aimC=${aimColor} active=${c.color} → ${same ? '将破' : '将弹'} ammo=${c.ammo}`);
-    if (c.ammo <= 0) activeIdx++;                             // 弹尽轮下一色（在飞子弹用快照·不受影响）
-    refreshChrome();
+    spawnEnt(id, MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z, VOX * 0.55, PALETTE[activeColor].tint);
+    movers.push({ kind: 'bullet', id, t: 0, from: [MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z], to, aim: [aim[0], aim[1], aim[2]], color: activeColor, same });
+    pushLog(`fire side=${s} aim=${aim.join(',')} aimC=${aimColor} active=${activeColor} → ${same ? '将破' : '将弹'} rem=${remaining}`);
   };
   // 子弹飞抵结算（同色破+碎裂·异色反弹）。
   const resolveBullet = (b: Bullet): void => {
+    if (over) return;
     if (b.same && present.has(vid(b.aim[0], b.aim[1], b.aim[2]))) {
       const wp = voxWorld(b.aim[0], b.aim[1], b.aim[2]);
       breakVox(b.aim[0], b.aim[1], b.aim[2]); hits++;
@@ -404,8 +406,12 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
           if (mv.life <= 0 || mv.p[1] < -MAXC * 4) { despawnEnt(mv.id); movers.splice(m, 1); }
         }
       }
-      // 负局：弹尽（无炮）且无子弹在飞且仍有格。
-      if (!over && activeIdx >= cannons.length && !movers.some((x) => x.kind === 'bullet') && remaining > 0) finish(false);
+      // 计时倒数（时间到→按破坏度评分）。
+      if (!over) {
+        timeLeft -= dt / 1000;
+        timePill.textContent = fmtTime(timeLeft);
+        if (timeLeft <= 0) { timeLeft = 0; finish(remaining === 0 || (total - remaining) / total >= PASS); }
+      }
     } catch (e) { pushLog(`FRAME ${(e as Error).message}\n${(e as Error).stack?.split('\n').slice(0, 5).join('\n') ?? ''}`, true); }
     try { renderer.sync(engine.world); } catch (e) { pushLog(`RENDER ${(e as Error).message}\n${(e as Error).stack?.split('\n').slice(0, 5).join('\n') ?? ''}`, true); }
     renderLog();
