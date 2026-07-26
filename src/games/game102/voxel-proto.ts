@@ -2,11 +2,13 @@
 //
 // ⚠ 验证「好不好玩」+ 复刻概念图场景的一次性原型（不是数据驱动正式游戏）：旋转 + 命中判定跑在 mount 宿主胶水里
 // （game-z「拖拽转视角」输入胶水先例的同类·render-only·不进 sim/hash）。HUD 暂 DOM 叠层（正式版 = PUI）。
-// 证明好玩后再把「可旋转立方 + 射线命中 + 逐层剥 + 同色破/异色弹 + 吸附」sink 成引擎能力做纯数据版。
+// 证明好玩后再把「可旋转立方 + 射线命中 + 逐层剥 + 吸附」sink 成引擎能力做纯数据版。
 //
-// ★ 几何：立方 = **真 N×N×N 实心体素点阵**（棱恒对齐）；只渲**当前暴露层**（打掉一格→其后一格暴露→显出=流入下一层）。
-// ★ 开火：底部炮台按拍朝屏心准星射子弹 → 命中前面中心列最外现存格：**同色打破**（该格掉·露下一层）/ **异色反弹**（不破·空放）。
+// ★ 几何：立方 = 真 N×N×N 实心体素点阵（棱恒对齐）；只渲**当前暴露层**（打掉一格→其后一格暴露→显出=流入下一层）。
+// ★ 开火：底部炮台按拍朝屏心准星射子弹 → 命中前面中心列最外现存格：**同色打破**（露下一层）/ **异色反弹**（不破·空放）。
 // ★ 待机自转：不操作时立方缓缓自转（松手 IDLE_DELAY 后启动·操作时停·不飘不坑）。
+// ⚠ 真物理（子弹立方/碎裂迸溅/落台）暂撤——首版实现里 cannon-es physics.sync 抛错会连带冻结整个渲染循环（连拖拽都停）；
+//   物理留作单独一步、验证过再接回（见文末 TODO）。本版先保证「能转·能打·逐层剥」稳。
 import { Engine } from '../../runtime/engine.js';
 import { QueuedInputSource } from '@net/index.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
@@ -22,11 +24,7 @@ const BEAT_MS = 420;
 const AMMO_SLACK = 1.3;
 const IDLE_SPIN = 0.22;   // 待机自转 rad/秒（0=关）
 const IDLE_DELAY = 1400;  // 松手后 ms 无操作才启动待机自转
-const PLATFORM_Y = -((N - 1) / 2) * 22 * 2.7; // 平台高度（立方下方）
-const MUZZLE = { x: 0, y: -((N - 1) / 2) * 22 * 1.9, z: ((N - 1) / 2) * 22 * 0.9 }; // 炮口世界位（立方前下方）
-const BULLET = 16;        // 子弹立方边长
-const FLIGHT_MS = 150;    // 子弹飞抵立方用时（到点结算·碎裂/反弹）
-const DEBRIS_MS = 4200;   // 碎片存活（落台后回收）
+const CAM_DIST = N * PITCH * 3.9; // 相机距离（越大立方越小·owner「缩 20% 留白给以后 3D 轨道」）
 const PALETTE = [
   { name: '红', tint: 0xe0433f, css: '#e0433f' },
   { name: '黄', tint: 0xf2c21e, css: '#f2c21e' },
@@ -36,7 +34,6 @@ const PALETTE = [
   { name: '紫', tint: 0x8b5cf6, css: '#8b5cf6' },
 ];
 
-// 六侧：法向 n（朝炮口检测）+ 固定轴/取值 + 面内两自由轴。
 const SIDES: { n: [number, number, number]; axis: number; val: number; ua: number; ub: number }[] = [
   { n: [0, 0, 1],  axis: 2, val: N - 1, ua: 0, ub: 1 },
   { n: [0, 0, -1], axis: 2, val: 0,     ua: 0, ub: 1 },
@@ -72,7 +69,6 @@ function el(tag: string, css: string, html?: string): HTMLElement {
 }
 
 export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => void }): () => void {
-  // 完整实心点阵配色（守恒配弹）。
   const colorAt = new Map<string, number>();
   const present = new Set<string>();
   const count: number[] = PALETTE.map(() => 0);
@@ -93,7 +89,6 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   const total = present.size;
   let over: 'win' | 'lose' | null = null;
 
-  // ── 场景（只渲初始暴露壳）──
   const rendered = new Set<string>();
   const buildScene = (): WorldBlueprint => {
     const entities: Record<string, EntityBlueprint> = {};
@@ -107,14 +102,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     entities['cube-core'] = { Transform3D: { x: 0, y: 0, z: 0 }, Mesh3D: { shape: 'box', width: MAXC * 2, height: MAXC * 2, depth: MAXC * 2, frontTint: 0x0b1220, backTint: 0x0b1220, edgeTint: 0x0b1220 } };
     ids.push('cube-core');
     entities['cube-pivot'] = { Transform3D: { x: 0, y: 0, z: 0, rotX: -0.35, rotY: 0.5 }, Pivot3D: { children: ids, centerX: 0, centerY: 0, centerZ: 0 } };
-    // 下方平台（静态刚体·碎片/反弹子弹落其上）——**不入 pivot**（世界空间·不随立方转）。
-    entities['platform'] = {
-      Transform3D: { x: 0, y: PLATFORM_Y, z: 0 },
-      Mesh3D: { shape: 'box', width: MAXC * 5, height: 24, depth: MAXC * 5, frontTint: 0x243350, backTint: 0x243350, edgeTint: 0x1a2740 },
-      RigidBody3D: { shape: 'box', mass: 0, restitution: 0.3, friction: 0.7 },
-    };
-    // 相机：缩 ~20% 留白（以后接 3D 轨道）+ 下移取景框住平台。
-    entities['cam'] = { Transform3D: { x: 0, y: 0, z: 0 }, Camera3D: { yaw: 0, pitch: 0.28, distance: N * PITCH * 3.9, pivotX: 0, pivotY: -MAXC * 1.15, pivotZ: 0, projection: 'perspective', fov: 40 } };
+    entities['cam'] = { Transform3D: { x: 0, y: 0, z: 0 }, Camera3D: { yaw: 0, pitch: 0.18, distance: CAM_DIST, pivotX: 0, pivotY: 0, pivotZ: 0, projection: 'perspective', fov: 40 } };
     entities['sky'] = { Sky3D: { top: 0x0c1730, bottom: 0x14243f, env: 0.5 } };
     entities['sun'] = { Light3D: { kind: 'directional', color: 0xffffff, intensity: 1.15, dirX: -0.45, dirY: -0.9, dirZ: -0.55, castShadow: true } };
     entities['amb'] = { Light3D: { kind: 'ambient', color: 0xa8bce0, intensity: 0.6 } };
@@ -215,7 +203,6 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     }
     return best;
   };
-  // 显露一格（打掉外层后·其后一格暴露→加实体·流入下一层）。
   const reveal = (i: number, j: number, k: number): void => {
     const id = vid(i, j, k);
     if (rendered.has(id) || !present.has(id) || !exposed(i, j, k)) return;
@@ -235,11 +222,9 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
       rendered.delete(id);
     }
     remaining--;
-    // 邻格若因此暴露 → 显露（流入下一层）。
     ([[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]] as [number,number,number][])
       .forEach(([a, b, c]) => { if (inB(a) && inB(b) && inB(c)) reveal(a, b, c); });
   };
-  // 前面中心列最外现存格（准星点瞄·吸附前用几何中心列）。
   const aimVox = (s: number): [number, number, number] | null => {
     const S = SIDES[s];
     const c0 = Math.round((N - 1) / 2);
@@ -252,53 +237,26 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     return null;
   };
 
+  const timers = new Set<ReturnType<typeof setTimeout>>();
+  const later = (fn: () => void, ms: number): void => { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); };
   const flashReticle = (ok: boolean): void => {
     reticle.style.filter = ok ? 'drop-shadow(0 0 8px #8affa0)' : 'drop-shadow(0 0 8px #ff6a6a)';
-    setTimeout(() => { reticle.style.filter = ''; }, 120);
+    later(() => { reticle.style.filter = ''; }, 120);
     beam.style.filter = 'brightness(2.2)';
-    setTimeout(() => { beam.style.filter = ''; }, 80);
+    later(() => { beam.style.filter = ''; }, 80);
+  };
+  let bounceN = 0;
+  const bounceFx = (): void => {
+    const dx = (hash3(bounceN++, remaining, activeIdx) - 0.5) * 160;
+    const dot = el('div', 'position:absolute;left:50%;top:46%;width:14px;height:14px;border-radius:50%;background:#ff7a6a;box-shadow:0 0 10px #ff6a6a;transform:translate(-50%,-50%);transition:transform .35s ease-out,opacity .35s;pointer-events:none;');
+    wrapper.appendChild(dot);
+    requestAnimationFrame(() => { dot.style.transform = `translate(calc(-50% + ${dx}px),-140px)`; dot.style.opacity = '0'; });
+    later(() => dot.remove(), 400);
   };
   const finish = (): void => {
     over = remaining === 0 ? 'win' : 'lose';
     banner.textContent = over === 'win' ? '🎉 全清！' : '弹尽 · 未清空';
     banner.style.color = over === 'win' ? '#8affa0' : '#ff8a8a';
-  };
-
-  // ── 物理（cannon-es·渲染侧·world-space·不入 pivot）──
-  const phys = new Set<string>();
-  const timers = new Set<ReturnType<typeof setTimeout>>();
-  const later = (fn: () => void, ms: number): void => { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); };
-  let spawnN = 0;
-  const addBody = (id: string, x: number, y: number, z: number, size: number, tint: number, rb: Record<string, unknown>): void => {
-    engine.world.addComponent(id, { type: 'Transform3D', x, y, z } as unknown as Transform3D);
-    engine.world.addComponent(id, { type: 'Mesh3D', shape: 'box', width: size, height: size, depth: size, frontTint: tint, backTint: tint, edgeTint: shade(tint, 0.82) } as never);
-    engine.world.addComponent(id, { type: 'RigidBody3D', shape: 'box', ...rb } as never);
-    phys.add(id);
-  };
-  const kill = (id: string): void => { if (phys.has(id)) { engine.world.destroyEntity(id); phys.delete(id); } };
-  const rnd = (a: number, b: number): number => a + hash3(spawnN++, hits, remaining) * (b - a); // 确定性伪随机（无 Math.random）
-  // 立方局部格 → 当前世界位（叠 pivot 旋转）。
-  const voxWorld = (i: number, j: number, k: number): [number, number, number] => {
-    const t = pivotT();
-    return rotVec(idx2pos(i), idx2pos(j), idx2pos(k), t?.rotX ?? 0, t?.rotY ?? 0);
-  };
-  // 从炮口朝目标发射一枚物理子弹立方（初速指向目标·mode velocity 近似）。
-  const fireBullet = (tint: number, tx: number, ty: number, tz: number): string => {
-    const id = `blt-${spawnN}`;
-    const dx = tx - MUZZLE.x, dy = ty - MUZZLE.y, dz = tz - MUZZLE.z;
-    const d = Math.hypot(dx, dy, dz) || 1;
-    const sp = d / (FLIGHT_MS / 1000);
-    addBody(id, MUZZLE.x, MUZZLE.y, MUZZLE.z, BULLET, tint, { mass: 1.2, restitution: 0.45, friction: 0.5, vx: dx / d * sp, vy: dy / d * sp, vz: dz / d * sp });
-    return id;
-  };
-  // 碎裂：目标格位炸出一簇小物理立方（迸溅→落台）。
-  const shatter = (wx: number, wy: number, wz: number, tint: number): void => {
-    for (let n = 0; n < 6; n++) {
-      const id = `deb-${spawnN}`;
-      addBody(id, wx + rnd(-6, 6), wy + rnd(-6, 6), wz + rnd(-6, 6), BULLET * 0.6, tint,
-        { mass: 0.4, restitution: 0.35, friction: 0.6, vx: rnd(-120, 120), vy: rnd(40, 150), vz: rnd(-120, 120), avx: rnd(-6, 6), avy: rnd(-6, 6), avz: rnd(-6, 6) });
-      const did = id; later(() => kill(did), DEBRIS_MS);
-    }
   };
 
   const onBeat = (): void => {
@@ -307,32 +265,14 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     if (!c) { finish(); return; }
     const s = frontSide();
     const aim = aimVox(s);
-    const sameColor = !!aim && colorAt.get(vid(aim[0], aim[1], aim[2])) === c.color;
-    const wtar = aim ? voxWorld(aim[0], aim[1], aim[2]) : [0, 0, 0] as [number, number, number];
-    const bulletTint = PALETTE[c.color].tint;
-    const bid = fireBullet(bulletTint, wtar[0], wtar[1], wtar[2]);
-    if (sameColor && aim) {
-      // 同色：飞抵瞬间打破该格 + 碎裂迸溅落台·子弹消失。
-      const a = aim;
-      later(() => {
-        const wp = voxWorld(a[0], a[1], a[2]);
-        breakVox(a[0], a[1], a[2]);
-        shatter(wp[0], wp[1], wp[2], bulletTint);
-        kill(bid);
-        renderer.invalidate?.();
-      }, FLIGHT_MS);
-      hits++;
+    let hit = false;
+    if (aim && colorAt.get(vid(aim[0], aim[1], aim[2])) === c.color) {
+      breakVox(aim[0], aim[1], aim[2]); hit = true; hits++;   // 同色 → 打破·露下一层
     } else if (aim) {
-      // 异色：飞抵瞬间反弹（横向+下压冲量→弹开落台）·不破。
-      later(() => {
-        engine.world.addComponent(bid, { type: 'Impulse3D', trigger: 1, mode: 'velocity', x: rnd(-160, 160), y: 90, z: 180 } as never);
-        later(() => kill(bid), DEBRIS_MS);
-      }, FLIGHT_MS);
-    } else {
-      later(() => kill(bid), DEBRIS_MS);
+      bounceFx();                                             // 异色 → 反弹·空放
     }
     c.ammo -= 1;
-    flashReticle(sameColor);
+    flashReticle(hit);
     if (remaining === 0) { finish(); refreshChrome(); return; }
     if (c.ammo <= 0) { activeIdx++; if (activeIdx >= cannons.length) finish(); }
     refreshChrome();
@@ -343,7 +283,6 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   const unsub = engine.subscribe(() => {
     const now = performance.now();
     const dt = now - last; last = now;
-    // 待机自转（不操作·不结束时）。
     if (IDLE_SPIN > 0 && !dragging && !over && now - lastInteract > IDLE_DELAY) {
       const t = pivotT(); if (t) { t.rotY = (t.rotY ?? 0) + IDLE_SPIN * dt / 1000; renderer.invalidate?.(); }
     }
@@ -364,3 +303,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     outer.remove();
   };
 }
+
+// TODO(物理·单独一步)：子弹立方 + 同色碎裂迸溅 + 落台 + 异色反弹（cannon-es RigidBody3D/Impulse3D）。
+//   首版失败教训：physics.sync 在 renderer.sync 内、抛错早于 rAF 重排 → 整循环冻结（连拖拽都停）。
+//   接回前先：①单独最小场景验证一个物理体能落到平台不炸循环 ②给每帧 onBeat/物理调用包 try/catch 兜底不杀循环。
