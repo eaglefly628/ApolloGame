@@ -13,8 +13,8 @@ import { mountHost } from '@engine/host/mount-host.js';
 import { rollOffer, applyPick } from '@skills/tier2/index.js';
 import type { DraftCandidate, DraftState } from '@skills/tier2/index.js';
 import { buildBlueprint } from './blueprint.js';
-import { buildHud, buildResult, buildLevelUp, type HudState, type LevelUpOffer } from './hud.js';
-import { VIEW_W, VIEW_H, PLAYER_DEF, LEVEL_XP, SURVIVOR_THEME, DRAFT_POOL, DRAFT_N, SLOT_CAP, WEAPONS, WEAPON_BY_KEY } from './theme.js';
+import { buildHud, buildResult, buildLevelUp, COMBO_MIN, type HudState, type LevelUpOffer } from './hud.js';
+import { VIEW_W, VIEW_H, PLAYER_DEF, LEVEL_XP, SURVIVOR_THEME, DRAFT_POOL, DRAFT_N, SLOT_CAP, WEAPONS, WEAPON_BY_KEY, TPS } from './theme.js';
 
 // 战场底纹（暗色渐晕·render-only·屏幕固定）。BUG-01 修：移除原屏幕固定网格线（相机跟随时看着静止=像没动）；
 // 地砖网格改由世界空间实体承载（blueprint groundGridEntities·随相机卷动=相对位移）。
@@ -44,6 +44,7 @@ export function mount(container: HTMLElement): () => void {
       level: Math.round(resOf(engine, 'level')),
       elapsed: Math.round(resOf(engine, 'clock')),
       score: Math.round(resOf(engine, 'killbox')),
+      combo: 0, comboFlash: 0, // host 派生（refreshHud 填）·非 sim
       status: cur === 'victory' ? 'victory' : cur === 'defeat' ? 'defeat' : 'playing',
     };
   }
@@ -82,7 +83,7 @@ export function mount(container: HTMLElement): () => void {
   for (const u of DRAFT_POOL) handlers[u.effectSignal] = () => onPick(u.id);
   for (const w of WEAPONS) if (w.evo) handlers[`evo_${w.key}`] = () => onEvo(w.key);
 
-  const initial: HudState = { hp: PLAYER_DEF.maxHp, maxHp: PLAYER_DEF.maxHp, xp: 0, xpMax: LEVEL_XP, level: 1, elapsed: 0, score: 0, status: 'playing' };
+  const initial: HudState = { hp: PLAYER_DEF.maxHp, maxHp: PLAYER_DEF.maxHp, xp: 0, xpMax: LEVEL_XP, level: 1, elapsed: 0, score: 0, combo: 0, comboFlash: 0, status: 'playing' };
   overlayHost.style.pointerEvents = 'auto';
   const hudUi: MountHandle = mountUI(overlayHost, buildHud(initial), handlers, SURVIVOR_THEME, hudQueue);
   let showingResult = false;
@@ -112,6 +113,22 @@ export function mount(container: HTMLElement): () => void {
     hudUi.update(buildLevelUp(items), SURVIVOR_THEME);
   }
 
+  // ── 连杀（连击）host 派生（owner「1 秒内杀 5 个=连杀·左右上角闪动态数字」）───────────────
+  // 击杀真相=sim 的 score（累计击杀·gem 入 killbox 环记 +1）。host 侧维护 1 秒滑窗击杀时刻表→窗内计数=combo。
+  // 纯表现派生（不进 sim/hash·零确定性影响·零碰撞开销），换色闪由 simTick 相位驱动。
+  let simTick = 0;
+  let prevScore = 0;
+  let killWin: number[] = []; // 窗内每次击杀的 simTick
+  function computeCombo(score: number): { combo: number; comboFlash: number } {
+    simTick++;
+    const gained = score - prevScore;
+    if (gained > 0) { for (let i = 0; i < gained; i++) killWin.push(simTick); prevScore = score; }
+    else if (score < prevScore) prevScore = score; // 重开回退
+    const cutoff = simTick - TPS; // 1 秒窗
+    while (killWin.length && killWin[0] < cutoff) killWin.shift();
+    return { combo: killWin.length, comboFlash: Math.floor(simTick / 5) % 2 }; // 每 5 拍换色=闪
+  }
+
   let lastSig = '';
   function refreshHud(engine: Engine): void {
     const st = readState(engine);
@@ -121,11 +138,15 @@ export function mount(container: HTMLElement): () => void {
       return;
     }
     if (showingResult) showingResult = false;
+    const c = computeCombo(st.score);
+    st.combo = c.combo; st.comboFlash = c.comboFlash;
     // 升级检测（等级上升 → 弹三选一·时停）——只在未展示时触发。
     if (st.level > prevLevel && !showingLevelUp) { prevLevel = st.level; openLevelUp(st.level); return; }
     prevLevel = st.level;
     if (showingLevelUp) return; // 时停中不重绘战斗 HUD
-    const sig = `${st.hp}|${st.xp}|${st.level}|${st.elapsed}|${st.score}`;
+    // 连杀达门槛时把 combo+闪相位并入 sig → 每拍重绘（闪）；未连杀只按常规字段变化重绘（省）。
+    const comboSig = st.combo >= COMBO_MIN ? `${st.combo}|${st.comboFlash}` : '0';
+    const sig = `${st.hp}|${st.xp}|${st.level}|${st.elapsed}|${st.score}|${comboSig}`;
     if (sig !== lastSig) { lastSig = sig; hudUi.update(buildHud(st), SURVIVOR_THEME); }
   }
 
@@ -170,6 +191,7 @@ export function mount(container: HTMLElement): () => void {
     showingLevelUp = false;
     prevLevel = 1;
     evolved.clear();
+    prevScore = 0; killWin = []; // 连杀窗重置（重开）
     draftState = { owned: {}, slots: { weapon: { used: 0, cap: SLOT_CAP.weapon }, passive: { used: 0, cap: SLOT_CAP.passive } } };
     stopSim();
     hudUi.update(buildHud(initial), SURVIVOR_THEME);

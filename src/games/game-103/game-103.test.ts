@@ -7,6 +7,7 @@ import { QueuedInputSource } from '@net/index.js';
 import { rollOffer } from '@skills/tier2/index.js';
 import type { DraftCandidate } from '@skills/tier2/index.js';
 import { validateLayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@ui/components/index.js';
 import type { Sprite } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp } from './hud.js';
@@ -145,12 +146,38 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
   });
 
   it('UI 卫生：HUD/结算/三选一 LayoutNode 树 validateLayoutNode 零 issue（check-ui 机械门）', () => {
-    const st = { hp: 72, maxHp: 100, xp: 3, xpMax: LEVEL_XP, level: 4, elapsed: 522, score: 387, status: 'playing' as const };
+    const st = { hp: 72, maxHp: 100, xp: 3, xpMax: LEVEL_XP, level: 4, elapsed: 522, score: 387, combo: 0, comboFlash: 0, status: 'playing' as const };
     expect(validateLayoutNode(buildHud(st))).toEqual([]);
+    expect(validateLayoutNode(buildHud({ ...st, combo: 12, comboFlash: 1 }))).toEqual([]); // 连杀横幅态也零 issue
     expect(validateLayoutNode(buildResult({ ...st, status: 'victory' }))).toEqual([]);
     expect(validateLayoutNode(buildResult({ ...st, status: 'defeat' }))).toEqual([]);
     const offers = DRAFT_POOL.slice(0, 3).map((u) => ({ id: u.id, name: u.name, desc: u.desc, accent: u.accent, level: 1, max: u.maxLevel, isNew: false, action: u.effectSignal }));
     expect(validateLayoutNode(buildLevelUp(offers))).toEqual([]);
+  });
+
+  it('连杀横幅（owner「1 秒内杀 5+=连杀·左右上角闪动态数字」）：<门槛不显·达门槛左右两角大数字·随连杀数放大·闪换色', () => {
+    const base = { hp: 80, maxHp: 100, xp: 1, xpMax: LEVEL_XP, level: 2, elapsed: 30, score: 40, status: 'playing' as const };
+    const labels = (node: LayoutNode): Array<{ id: string; text: string; size: number; color: string }> => {
+      const out: Array<{ id: string; text: string; size: number; color: string }> = [];
+      const walk = (n: LayoutNode): void => {
+        if (n.id?.startsWith('s-combo-') && n.props) { const p = n.props as Record<string, unknown>; out.push({ id: n.id, text: String(p.text), size: Number(p.size), color: String(p.color) }); }
+        (n.children ?? []).forEach(walk);
+      };
+      walk(node); return out;
+    };
+    // 未达门槛（combo 4 < 5）→ 无连杀数字
+    expect(labels(buildHud({ ...base, combo: 4, comboFlash: 0 })).length).toBe(0);
+    // 达门槛（combo 8）→ 左右两枚大数字·含连杀数
+    const l8 = labels(buildHud({ ...base, combo: 8, comboFlash: 0 }));
+    expect(l8.length).toBe(2);
+    expect(l8.every((x) => x.text.includes('8'))).toBe(true);
+    // 连杀越多字越大（动态放缩）
+    const l20 = labels(buildHud({ ...base, combo: 20, comboFlash: 0 }));
+    expect(l20[0].size).toBeGreaterThan(l8[0].size);
+    // 闪：comboFlash 0/1 换色
+    const c0 = labels(buildHud({ ...base, combo: 8, comboFlash: 0 }))[0].color;
+    const c1 = labels(buildHud({ ...base, combo: 8, comboFlash: 1 }))[0].color;
+    expect(c0).not.toBe(c1);
   });
 
   it('三选一 draft：rollOffer 从候选池过滤+加权抽 3 个不重复（确定性·同 seed 同结果）', () => {

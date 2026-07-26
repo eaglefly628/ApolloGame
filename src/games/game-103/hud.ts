@@ -11,7 +11,26 @@ export interface HudState {
   level: number;
   elapsed: number;   // 存活秒数
   score: number;     // 累计击杀
+  combo: number;     // 1 秒窗口内击杀数（连杀·host 派生·非 sim）
+  comboFlash: number;// 闪烁相位（0/1·驱动连杀数字换色闪）
   status: 'playing' | 'victory' | 'defeat';
+}
+
+// 连杀门槛（owner「1 秒内杀 5 个以上=连杀」）：达此才亮醒目大数字。
+export const COMBO_MIN = 5;
+
+// 连杀横幅（owner「醒目·动态放缩·左上+右上角闪」）：达门槛才显——左右两角各一枚大数字，
+// 字号随连杀数放大、颜色按 comboFlash 相位金/红交替闪。未达门槛=空 bare panel（近零高·不挤 HUD）。
+function comboRow(s: HudState): LayoutNode {
+  if (s.combo < COMBO_MIN) return { type: 'Panel', id: 's-combo', props: { bare: true }, layout: { direction: 'row' }, children: [] };
+  const size = Math.min(56, 26 + (s.combo - COMBO_MIN) * 3); // 动态放缩·封顶 56
+  const color: HudColor = s.comboFlash ? 'gold' : 'danger';   // 金/红交替=闪
+  const badge = (id: string): LayoutNode => ({ type: 'Label', id, props: { text: `🔥${s.combo} 连杀`, font: 'heavy', size, color, bold: true, stroke: true } });
+  return {
+    type: 'Panel', id: 's-combo', props: { bare: true },
+    layout: { direction: 'row', justify: 'between', align: 'start', padding: 10 },
+    children: [badge('s-combo-l'), badge('s-combo-r')],
+  };
 }
 
 function mmss(sec: number): string {
@@ -102,7 +121,7 @@ export function buildHud(s: HudState): LayoutNode {
     type: 'Screen', id: 's-hud', props: { bg: 'transparent' },
     layout: { direction: 'column', justify: 'between' },
     children: [
-      { type: 'Panel', id: 's-hud-top', props: { bare: true }, layout: { direction: 'column', gap: 2 }, children: [topBar(s), xpRow(s)] },
+      { type: 'Panel', id: 's-hud-top', props: { bare: true }, layout: { direction: 'column', gap: 2 }, children: [comboRow(s), topBar(s), xpRow(s)] },
       bottomBar(s),
     ],
   };
