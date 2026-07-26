@@ -67,8 +67,7 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
     void _s;
     return { entities: { p: { ...noSprite,
       Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY }, // 只和敌配对
-      Color: { tint: w.tint, alpha: 0.18 }, // 伤害圈淡淡的·主视觉交给粒子
-      Tween: { type: 'Tween', target: 'Color.alpha', from: 0.22, to: 0, elapsed: 0, duration: Math.max(2, w.life), easing: 'easeOut', done: false },
+      Color: { tint: w.tint, alpha: 0 }, // **不画圈**（owner「圆环太难看」）·伤害圈全透明·主视觉=粒子
       Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // per-tick·数值小
       // 生成瞬间喷一圈粒子（once·armed:false·timer gte 0 首拍即触发）。
       SelfRule: { when: { kind: 'timer', id: 'life', cmp: 'gte', value: 0 }, do: [{ kind: 'spawn', template: `sparks_${w.key}`, at: 'self' }], once: true, armed: false },
@@ -84,27 +83,68 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
       SelfRule: { when: { kind: 'timer', id: 'life', cmp: 'gte', value: Math.max(1, w.life - 2) }, do: [{ kind: 'spawn', template: `explosion_${w.key}`, at: 'self' }], once: true, armed: false },
     } } };
   }
+  if (w.pattern === 'homing') {
+    // 追踪导弹：Perception 锁最近敌 → aggro 写 Relation → Steering 拐弯追（慢速）。FaceRotate 让弹头指向目标=导弹感。
+    return { entities: { p: { ...base,
+      Velocity: { vx: 0, vy: 0, angular: 0 },
+      Perception: { targetTag: ENEMY, sightRadius: 0 },
+      Steering: { mode: 'seek', speed: w.projSpeed, stopRange: 0 },
+      FaceRotate: { source: 'velocity' }, FaceDir: { x: 1, y: 0 },
+      Shape: { kind: 'box', width: w.radius * 3, height: Math.round(w.radius * 1.4), category: CL.BULLET, mask: CL.ENEMY }, // 小导弹条·随向目标转
+      Color: { tint: w.tint, alpha: 1 },
+      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', consumeOnHit: true }, // 单发命中·高伤
+    } } };
+  }
+  if (w.pattern === 'boomerang') {
+    // 真回旋（两段·修 owner「没回旋回来」）：第①段 Launch 飞出(半寿命·穿透)，寿命末 SelfRule spawn <key>_return，
+    // 第②段(<key>_return)从远处 Steering seek 玩家=飞回来。同帧 Launch+Steering 会抵消(飞出即被拉回)→故拆两段。
+    return { entities: { p: { ...base,
+      Velocity: { vx: 0, vy: 0, angular: 0 },
+      FaceRotate: { source: 'velocity' }, FaceDir: { x: 1, y: 0 },
+      Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY, fallbackDir: { x: 0, y: -1 } },
+      Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY },
+      Color: { tint: w.tint, alpha: 1 },
+      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // 穿透·不 consume
+      Timer: { id: 'life', elapsed: 0, duration: Math.round(w.life / 2), loop: false }, // 飞出段=半寿命
+      SelfRule: { when: { kind: 'timer', id: 'life', cmp: 'gte', value: Math.max(1, Math.round(w.life / 2) - 1) }, do: [{ kind: 'spawn', template: `${w.key}_return`, at: 'self' }], once: true, armed: false },
+    } } };
+  }
   const single = (w.pattern === 'straight' || w.pattern === 'pet') && !w.pierce; // 单发命中 vs 穿透 per-tick（pierce=强制穿透扫线）
+  const isBeam = w.pattern === 'beam';
   const p: Record<string, unknown> = { ...base,
     Velocity: { vx: 0, vy: 0, angular: 0 },
-    // 子弹按飞行方向旋转贴图（REQ-FACE-ROTATE·Lead 已交付）：飞刀/激光条朝它飞的方向转——激光遂沿开火方向贯穿·
-    // 子弹也朝向目标（修 owner「子弹不朝向目标」「激光要顺方向」）。渲染器读 FaceDir 覆盖旋转·sim 零 trig。
+    // 子弹按飞行方向旋转贴图（REQ-FACE-ROTATE·Lead 已交付）：激光沿开火方向贯穿·子弹朝目标。渲染器读 FaceDir·sim 零 trig。
     FaceRotate: { source: 'velocity' },
     FaceDir: { x: 1, y: 0 },
-    // fallbackDir（Lead 交付·REQ-SURVIVOR被动轴同批）：索敌落空不再冻原地→朝上默认发射（修 owner「没敌人时子弹不动」）。
     Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY, fallbackDir: { x: 0, y: -1 } },
-    // RBUG-01② 子弹朝向：t2-facing 与 bounds-clamp 都在 Commit 写 Transform→调度器成环（facing 未声明相对定序·
-    // 回报 Lead 补 facing 定序）。暂不挂 Facing（次要·水平翻转）；orbit/separation 已接。
-    Shape: w.pattern === 'beam'
-      ? { kind: 'box', width: w.radius * 26, height: Math.round(w.radius * 0.7), category: CL.BULLET, mask: CL.ENEMY } // 巨长激光条（贯穿·owner「长得像激光」）
-      : { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY }, // 只和敌配对（不和别的子弹/宝石/敌↔敌）
-    Color: { tint: w.tint, alpha: 1 },
+    Shape: isBeam
+      ? { kind: 'box', width: w.radius * 26, height: Math.round(w.radius * 0.7), category: CL.BULLET, mask: CL.ENEMY } // 巨长激光条（贯穿）
+      : { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY },
+    // 激光淡入（修 owner「先水平再旋转=十字闪」）：初始 alpha 0·Tween 3 拍拉到 1 → 首帧不显·等转好方向才亮出。
+    Color: { tint: w.tint, alpha: isBeam ? 0 : 1 },
+    ...(isBeam ? { Tween: { type: 'Tween', target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 3, easing: 'linear', done: false } } : {}),
     Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', ...(single ? { consumeOnHit: true } : {}) },
   };
-  // BUG-03 修：boomerang 原来同挂 Launch(去)+Steering(回玩家)·两者每 tick 都写 Velocity·方向相反→抵消停原地。
-  // 干净往返(飞出→到点回旋)是 launch 缺的 out-return 段（已报 capgap·见 requests REQ-SURVIVOR武器缺口）。
-  // 此处先让它真飞：Launch 定向飞出 + 穿透(single=false·不 consumeOnHit)·长寿命=穿一线的回旋刃。
   return { entities: { p } };
+}
+
+// 回旋镖返回段（飞出段寿命末 spawn·从远处 Steering seek 玩家=飞回来）：无 Launch·穿透·同皮肤。
+function boomReturnTemplate(w: WeaponDef): { entities: Record<string, Record<string, unknown>> } {
+  const anim = WEAPON_ANIM[w.key];
+  return { entities: { p: {
+    Transform: { ...XF0 },
+    Sensor: {}, Tag: { flags: ZONE },
+    Sprite: { textureKey: anim ? anim.sheet : w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 2 },
+    ...fxAnimComps(anim),
+    Velocity: { vx: 0, vy: 0, angular: 0 },
+    Perception: { targetTag: PLAYER, sightRadius: 0 },
+    Steering: { mode: 'seek', speed: Math.round(w.projSpeed * 1.25), stopRange: 0 }, // 飞回玩家·稍快追上
+    FaceRotate: { source: 'velocity' }, FaceDir: { x: 1, y: 0 },
+    Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY },
+    Color: { tint: w.tint, alpha: 1 },
+    Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // 回程照样穿透伤敌
+    Timer: { id: 'life', elapsed: 0, duration: Math.round(w.life / 2) + 20, loop: false }, // 回程寿命
+  } } };
 }
 
 // 粒子爆发（数据驱动"粒子特效"·owner「冲击波用粒子·炫酷点」）：n 颗小火花从中心**放射状飞出** + Tween 渐隐 +
@@ -206,19 +246,27 @@ function evoPickEntities(): Record<string, EntityBlueprint> {
 //  射程 ≈ projSpeed × life（px）；玩家可走位躲。皮肤 EBOLT_SKIN·未就绪回退敌色圆点。
 function eboltTemplate(e: EnemyDef): { entities: Record<string, Record<string, unknown>> } {
   const r = e.ranged!;
-  const anim = EBOLT_ANIM[e.key]; // 敌弹序列帧（黄沙爆/红灼热·辨敌我）
-  return { entities: { p: {
-    Transform: { ...XF0 },
-    Velocity: { vx: 0, vy: 0, angular: 0 },
-    Sensor: {}, Tag: { flags: ZONE },
-    Shape: { kind: 'circle', radius: r.radius, category: CL.EBOLT, mask: CL.PLAYER }, // 敌弹只打玩家
-    Sprite: { textureKey: anim ? anim.sheet : EBOLT_SKIN, anchorX: 0.5, anchorY: 0.5, zOrder: 2 },
-    ...fxAnimComps(anim),
-    Color: { tint: anim ? 0xffffff : e.tint, alpha: 1 },
-    Launch: { speed: r.projSpeed, toward: 'target', targetMask: PLAYER },
-    Hitbox: { resource: 'hp', amount: r.dmg, targetMask: PLAYER, consumeOnHit: true },
-    Timer: { id: 'life', elapsed: 0, duration: r.life, loop: false }, // 寿命=射程上限
-  } } };
+  // 敌弹**极强辨识**（owner「敌人子弹必须非常清楚区分于玩家子弹·好躲」）：统一**实心亮红大圆 + 缓慢脉冲 + 红光环**
+  // ——玩家子弹=动画能量帧(紫/绿/金/蓝)，敌弹=纯实心红球，一眼分敌我。不用动画帧（=不和玩家能量弹混）。
+  return { entities: {
+    p: {
+      Transform: { ...XF0 },
+      Velocity: { vx: 0, vy: 0, angular: 0 },
+      Sensor: {}, Tag: { flags: ZONE },
+      Shape: { kind: 'circle', radius: Math.round(r.radius * 1.25), category: CL.EBOLT, mask: CL.PLAYER }, // 敌弹只打玩家·调大更醒目
+      Color: { tint: 0xff1030, alpha: 1 }, // 危险深红·实心
+      Tween: { type: 'Tween', target: 'Color.alpha', from: 1, to: 0.55, elapsed: 0, duration: 22, easing: 'easeInOut', done: false, loop: 'pingpong' }, // 亮度脉冲=危险闪
+      Launch: { speed: r.projSpeed, toward: 'target', targetMask: PLAYER },
+      Hitbox: { resource: 'hp', amount: r.dmg, targetMask: PLAYER, consumeOnHit: true },
+      Timer: { id: 'life', elapsed: 0, duration: r.life, loop: false }, // 寿命=射程上限
+    },
+    glow: { // 外红光环（render-only·更醒目·不配对）
+      Hierarchy: child('@local:p'),
+      Transform: { ...XF0 },
+      Shape: { kind: 'circle', radius: Math.round(r.radius * 2), category: 0, mask: 0 },
+      Color: { tint: 0xff3355, alpha: 0.28 },
+    },
+  } };
 }
 
 // 敌人：aggro(Perception)→Relation(target=玩家) + steering(seek) 追击；接触伤害在隐形 child 触伤区；死亡掉宝石。
@@ -542,6 +590,7 @@ export function buildBlueprint(): WorldBlueprint {
           ...Object.fromEntries(WEAPONS.map((w) => [`proj_${w.key}`, projByPattern(w)])),
           ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'bomb').map((w) => [`explosion_${w.key}`, explosionTemplate(w)])), // 炸弹落点爆炸
           ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'nova').map((w) => [`sparks_${w.key}`, sparksTemplate(16, 5.5, w.tint, 18, 3.2)])), // 冲击波粒子爆发
+          ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'boomerang').map((w) => [`${w.key}_return`, boomReturnTemplate(w)])), // 回旋镖第②段（飞回）
           ...Object.fromEntries(WEAPONS.filter((w) => w.key !== 'kunai').map((w) => [`weapon_${w.key}`, weaponMount(w)])),
         },
       },

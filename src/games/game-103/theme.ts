@@ -94,6 +94,8 @@ export const WEAPONS: WeaponDef[] = [
   { key: 'pet', name: '宠物随从', desc: '召唤随从·跟随并自动索敌开火（随从）', pattern: 'pet', dmg: 9, cd: 70, projSpeed: 7, life: 80, radius: 5, amount: 1, weight: 6, maxLevel: 3, tint: 0xc9a3ff, skin: '103/proj-pet' },
   // 炸弹：抛向敌·飞行 life=45 tick 后落点爆炸 nova（radius=爆炸半径·dmg=爆炸伤害/tick·大范围清群）。
   { key: 'bomb', name: '炸弹', desc: '抛掷炸弹·落点大爆炸·范围炸伤（AoE 清群）', pattern: 'bomb', dmg: 16, cd: 128, projSpeed: 6, life: 45, radius: 104, amount: 1, weight: 7, maxLevel: 5, tint: 0xffa53f, skin: '103/proj-bomb' },
+  // 追踪导弹（homing·Perception+Steering 锁最近敌·慢速但拐弯咬人·单发高伤）。升级=多一枚（挂点重复=更多导弹）。
+  { key: 'missile', name: '追踪导弹', desc: '锁定最近敌·拐弯追击·单发高伤（慢速追踪）', pattern: 'homing', dmg: 24, cd: 104, projSpeed: 3.2, life: 130, radius: 7, amount: 1, weight: 7, maxLevel: 5, tint: 0xff8fe0, skin: '103/proj-missile' },
   // ── 进化体（weight 0·不进 draft 池·由进化机制生成）──
   { key: 'orbitevo', name: '无限回环', desc: '常驻 5 枚光球·大环·灼烧翻倍（进化）', pattern: 'orbit', dmg: 1.1, cd: 0, projSpeed: 0.06, life: 0, radius: 96, amount: 5, weight: 0, maxLevel: 1, tint: 0x54e08a, skin: '103/proj-orbit' },
 ];

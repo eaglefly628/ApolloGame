@@ -276,10 +276,11 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(kp.AnimState?.clips.fly.count).toBe(6);
     expect(kp.AnimState?.clips.fly.loop).toBe(true);
     expect(kp.AnimState?.moveClip).toBe('fly');
-    // 敌弹也动画（辨敌我色）
-    const ab = lib.ebolt_archer.entities.p as { Sprite: { textureKey: string }; AnimState?: unknown };
-    expect(ab.Sprite.textureKey).toBe('103/fx-sandblast');
-    expect(ab.AnimState).toBeDefined();
+    // 敌弹=实心亮红球（辨敌我·owner「敌弹必须一眼区分」）：纯 Color 深红·脉冲 Tween·红光环 child，不用动画帧
+    const ab = lib.ebolt_archer.entities.p as { Color: { tint: number }; Tween?: { loop?: string }; Shape: { category: number } };
+    expect(ab.Color.tint).toBe(0xff1030);
+    expect(ab.Tween?.loop).toBe('pingpong');
+    expect((lib.ebolt_archer.entities.glow as { Color: { tint: number } }).Color.tint).toBe(0xff3355);
     // anim-state capability 在册（否则帧不动）
     const caps = buildBlueprint().capabilities as Array<{ id?: string }>;
     expect(caps.some((c) => c.id === 't2-anim-state')).toBe(true);
