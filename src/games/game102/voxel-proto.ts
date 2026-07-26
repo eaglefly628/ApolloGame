@@ -16,8 +16,8 @@ import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assemb
 import type { Transform3D, Pivot3D, Mesh3D } from '@engine/protocol/components.js';
 
 // ── 配置（手感旋钮）──────────────────────────────────────────────────────────────────────────
-const N = 10;             // 立方边长（N×N×N 实心点阵）
-const PITCH = 22;
+const N = 7;              // 立方边长（N×N×N·奇数→有真面心格·准星更好对）——owner 试 7(343)
+const PITCH = 22;         // （相机按 N*PITCH 自适配·改 PITCH 不变屏占·单格变大靠减 N）
 const VOX = 22;           // = PITCH：体素相接·无缝→剥层露内层彩格·不再透黑（去掉暗内核块）
 const MAXC = ((N - 1) / 2) * PITCH;
 const BEAT_MS = 380;
@@ -26,17 +26,25 @@ const PASS = 0.55;        // 过关破坏度阈值
 const IDLE_SPIN = 0.22;   // 待机自转 rad/秒（0=关）
 const IDLE_DELAY = 1400;  // 松手后 ms 无操作才启动待机自转
 const CAM_DIST = N * PITCH * 3.9; // 相机距离（越大立方越小·owner「缩 20% 留白给以后 3D 轨道」）
-const TRAVEL_MS = 1200;  // 子弹飞行时长（再放慢一半·看清轨迹·owner 连番「再慢一半」）
+const TRAVEL_MS = 600;   // 子弹飞行时长（配「同时只一发」→ 一发一破·反馈清晰）
 const FRAG_N = 7;        // 碎裂片数
 const GRAV = 900;        // 碎片重力（世界单位/秒²·自管运动积分·非 cannon-es·零冻结风险）
-const MUZZLE_W = { x: 0, y: -MAXC * 2.1, z: MAXC * 1.5 }; // 炮口世界位（立方前下方）
-const PALETTE = [
+const MUZZLE_W = { x: 0, y: -MAXC * 2.2, z: 0 }; // 炮口世界位（正下方·在轴上→子弹竖直升到准星·对齐）
+// 金色镂空棱框（12 根细金条·包住瞄中格·与格本色完全独立·作 pivot 子随立方转）。
+const GOLD = 0xffd24a;
+const FH = VOX / 2 + 2.5, FT = 3, FL = VOX + 6; // 半边/条粗/条长
+const FRAME_OFF: [number, number, number, number, number, number][] = (() => {
+  const o: [number, number, number, number, number, number][] = [];
+  for (const sy of [-FH, FH]) for (const sz of [-FH, FH]) o.push([0, sy, sz, FL, FT, FT]);   // 4 根沿 X
+  for (const sx of [-FH, FH]) for (const sz of [-FH, FH]) o.push([sx, 0, sz, FT, FL, FT]);   // 4 根沿 Y
+  for (const sx of [-FH, FH]) for (const sy of [-FH, FH]) o.push([sx, sy, 0, FT, FT, FL]);   // 4 根沿 Z
+  return o;
+})();
+const PALETTE = [        // 4 色（owner「多了眼花」）
   { name: '红', tint: 0xe0433f, css: '#e0433f' },
   { name: '黄', tint: 0xf2c21e, css: '#f2c21e' },
   { name: '绿', tint: 0x5cb544, css: '#5cb544' },
   { name: '蓝', tint: 0x2e6cf6, css: '#2e6cf6' },
-  { name: '白', tint: 0xeaf2ff, css: '#eaf2ff' },
-  { name: '紫', tint: 0x8b5cf6, css: '#8b5cf6' },
 ];
 
 const SIDES: { n: [number, number, number]; axis: number; val: number; ua: number; ub: number }[] = [
@@ -95,7 +103,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   let activeColor = 0;              // 玩家当前选中的炮色（可切换·无限弹）
   let timeLeft = TIME_LIMIT;        // 剩余秒（时间到按破坏度评分）
   let targetVox: [number, number, number] | null = null; // 准星射线命中的那一格（精确瞄准）
-  let hlId: string | null = null;   // 当前高亮格 id
+  const colorRemain = count.slice(); // 每色剩余格数（换色器上显示·破一格减一）
   let remaining = present.size;
   const total = present.size;
   let over: 'win' | 'lose' | null = null;
@@ -110,6 +118,12 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
       entities[id] = { Transform3D: { x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) }, Mesh3D: voxMesh(PALETTE[colorAt.get(id)!].tint) as EntityBlueprint['Mesh3D'], Pickable3D: { signal: 'hit' } as EntityBlueprint['Pickable3D'] };
       ids.push(id); rendered.add(id);
     }
+    // 金色镂空棱框（12 细金条·作 pivot 子随立方转·初始移出屏外·updateAim 每帧移到瞄中格）。
+    FRAME_OFF.forEach((o, n) => {
+      const id = `frame-${n}`;
+      entities[id] = { Transform3D: { x: 0, y: 1e6, z: 0 }, Mesh3D: { shape: 'box', width: o[3], height: o[4], depth: o[5], frontTint: GOLD, backTint: GOLD, edgeTint: GOLD } as EntityBlueprint['Mesh3D'] };
+      ids.push(id);
+    });
     // （去掉暗内核块：体素已相接·无透视缝；剥层露的是内层彩格·不再是黑）
     entities['cube-pivot'] = { Transform3D: { x: 0, y: 0, z: 0, rotX: -0.35, rotY: 0.5 }, Pivot3D: { children: ids, centerX: 0, centerY: 0, centerZ: 0 } };
     entities['cam'] = { Transform3D: { x: 0, y: 0, z: 0 }, Camera3D: { yaw: 0, pitch: 0.18, distance: CAM_DIST, pivotX: 0, pivotY: 0, pivotZ: 0, projection: 'perspective', fov: 40 } };
@@ -162,7 +176,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   const pickerRow = el('div', 'display:flex;align-items:center;gap:10px;pointer-events:auto;');
   const swatches: HTMLElement[] = [];
   PALETTE.forEach((p, i) => {
-    const sw = el('div', `width:40px;height:40px;border-radius:11px;background:${p.css};box-shadow:0 2px 6px #0007;cursor:pointer;border:3px solid transparent;transition:transform .1s,border-color .1s;`);
+    const sw = el('div', `width:54px;height:54px;border-radius:12px;background:${p.css};box-shadow:0 2px 6px #0007;cursor:pointer;border:3px solid transparent;transition:transform .1s,border-color .1s;display:flex;align-items:center;justify-content:center;color:#fff;font:800 17px system-ui;text-shadow:0 1px 3px #000b;`);
     sw.addEventListener('pointerdown', (e) => { e.stopPropagation(); activeColor = i; refreshChrome(); pushLog(`switch color=${i}`); });
     swatches.push(sw); pickerRow.appendChild(sw);
   });
@@ -180,7 +194,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     cannon.style.background = css;
     cannon.style.boxShadow = `0 0 26px 6px ${css}88,0 5px 0 #0006`;
     beam.style.background = `linear-gradient(${css}88,${css}00)`;
-    swatches.forEach((sw, i) => { sw.style.borderColor = i === activeColor ? '#fff' : 'transparent'; sw.style.transform = i === activeColor ? 'scale(1.16)' : 'scale(1)'; });
+    swatches.forEach((sw, i) => { sw.style.borderColor = i === activeColor ? '#fff' : 'transparent'; sw.style.transform = i === activeColor ? 'scale(1.16)' : 'scale(1)'; sw.textContent = String(colorRemain[i]); });
     const pct = Math.round(((total - remaining) / total) * 100);
     coreFill.style.width = `${pct}%`;
     coreMul.textContent = `${pct}% / ${Math.round(PASS * 100)}%`;
@@ -270,6 +284,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   };
   const breakVox = (i: number, j: number, k: number): void => {
     const id = vid(i, j, k);
+    const cc = colorAt.get(id); if (cc != null) colorRemain[cc]--; // 该色剩余 -1（换色器数字）
     present.delete(id);
     if (rendered.has(id)) {
       engine.world.destroyEntity(id);
@@ -360,26 +375,28 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     }
   };
 
-  // 高亮准星命中的那一格：**只给金色棱框**·本色不变（玩家既知打哪格、又看得清该切什么色）。
-  const GOLD = 0xffd24a;
-  const setHighlight = (id: string | null): void => {
-    if (hlId === id) return;
-    if (hlId) { const m = engine.world.getComponent<Mesh3D>(hlId, 'Mesh3D'); const cc = colorAt.get(hlId); if (m && cc != null) m.edgeTint = shade(PALETTE[cc].tint, 0.82); } // 复原本色棱
-    hlId = id;
-    if (id) { const m = engine.world.getComponent<Mesh3D>(id, 'Mesh3D'); if (m) m.edgeTint = GOLD; } // 金框（front/back 本色不动）
+  // 移动金色镂空棱框到瞄中格（局部坐标·随 pivot 转·null=移出屏外）。本色完全不动·真镂空框。
+  const setFrame = (t: [number, number, number] | null): void => {
+    const lx = t ? idx2pos(t[0]) : 0, ly = t ? idx2pos(t[1]) : 0, lz = t ? idx2pos(t[2]) : 0;
+    for (let n = 0; n < FRAME_OFF.length; n++) {
+      const tr = engine.world.getComponent<Transform3D>(`frame-${n}`, 'Transform3D');
+      if (!tr) continue;
+      if (t) { tr.x = lx + FRAME_OFF[n][0]; tr.y = ly + FRAME_OFF[n][1]; tr.z = lz + FRAME_OFF[n][2]; } else tr.y = 1e6;
+    }
   };
-  // 每帧：从准星（屏心偏上）投射线 → 命中最前体素 = 精确瞄点。
+  // 每帧：从准星（屏心偏上）投射线 → 命中最前体素 = 精确瞄点·金框套住。
   const updateAim = (): void => {
     const rect = wrapper.getBoundingClientRect();
     const hit = renderer.pick(rect.left + rect.width * 0.5, rect.top + rect.height * 0.46);
     if (hit && hit.entityId.startsWith('v-')) {
       const p = hit.entityId.split('-');
       targetVox = [Number(p[1]), Number(p[2]), Number(p[3])];
-      setHighlight(hit.entityId);
-    } else { targetVox = null; setHighlight(null); }
+      setFrame(targetVox);
+    } else { targetVox = null; setFrame(null); }
   };
   const onBeat = (): void => {
     if (over || !targetVox) return;
+    if (movers.some((m) => m.kind === 'bullet')) return;      // 同时只一发在飞→一发一破·反馈清晰（去掉"要打几下"错觉）
     const [i, j, k] = targetVox;
     if (!present.has(vid(i, j, k))) return;
     const aimColor = colorAt.get(vid(i, j, k))!;
