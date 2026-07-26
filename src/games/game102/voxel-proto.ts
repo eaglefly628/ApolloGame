@@ -11,13 +11,16 @@ import { ThreeRenderer } from '@renderer/three-renderer.js';
 import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assembly.js';
 import type { Transform3D, Pivot3D } from '@engine/protocol/components.js';
 
-const N = 16;             // 立方边长（P3D 实例化入库→可上大立方·壳~1352格归批~5 draw call）
+const N = 12;             // 立方边长（揭示模式·适中→剥到阈值可现形·实例化撑得住）
 const PITCH = 22;
 const VOX = 22;           // =PITCH：相接无缝·剥层露内层彩格
 const MAXC = ((N - 1) / 2) * PITCH;
 const FACE_MS = 5000;     // 每面停留（ms）→ 转下一面
 const TWEEN = 0.010;      // 转面缓动系数（×dt）
-const FIRE_MS = 110;      // 长按连发间隔（扫射手感）
+const FIRE_MS = 150;      // 自动发射节拍（每门炮每此间隔射一发·无需按）
+const AMMO_SLACK = 1.4;   // 每色弹药 = 该色外料数 ×此（40% 浪费余量·超则该色打不完→输）
+const REVEAL_PASS = 0.7;  // 剥掉多少外料算「雕像现形」过关
+const GOLD_TINT = 0xffd24a; // 雕像色（受保护·gold）
 const TRAVEL_MS = 260;    // 子弹飞抵（爽快版·快）
 const FRAG_N = 6;
 const GRAV = 900;
@@ -74,23 +77,28 @@ const STYLES: Style[] = [
 function el(tag: string, css: string, html?: string): HTMLElement { const e = document.createElement(tag); e.style.cssText = css; if (html !== undefined) e.innerHTML = html; return e; }
 
 export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => void }): () => void {
-  const colorAt = new Map<string, number>();
+  const cxc = (N - 1) / 2;
+  const isSculpt = (i: number, j: number, k: number): boolean => Math.abs(i - cxc) + Math.abs(j - cxc) + Math.abs(k - cxc) <= N * 0.36; // 居中八面体雕像
+  const colorAt = new Map<string, number>();          // 0..4=外料色 · 5=雕像(gold·受保护·炮打不到)
   const present = new Set<string>();
-  const count: number[] = PALETTE.map(() => 0);
+  const coverByColor: number[] = PALETTE.map(() => 0); // 每色外料数（=弹药基准）
   for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) for (let k = 0; k < N; k++) {
-    const color = Math.floor(hash3(i, j, k) * PALETTE.length) % PALETTE.length;
-    colorAt.set(vid(i, j, k), color); present.add(vid(i, j, k)); count[color]++;
+    const id = vid(i, j, k); present.add(id);
+    if (isSculpt(i, j, k)) { colorAt.set(id, 5); }
+    else { const c = Math.floor(hash3(i, j, k) * PALETTE.length) % PALETTE.length; colorAt.set(id, c); coverByColor[c]++; }
   }
+  const coverTotal = coverByColor.reduce((a, b) => a + b, 0);
+  let coverRemaining = coverTotal;
+  const ammo = coverByColor.map((n) => Math.ceil(n * AMMO_SLACK));
+  const tintOf = (id: string): number => { const c = colorAt.get(id); return c === 5 ? GOLD_TINT : PALETTE[c ?? 0].tint; };
   const inB = (v: number): boolean => v >= 0 && v < N;
   const exposed = (i: number, j: number, k: number): boolean => {
     if (!present.has(vid(i, j, k))) return false;
     return [[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]].some(([a, b, c]) => !inB(a) || !inB(b) || !inB(c) || !present.has(vid(a, b, c)));
   };
-  const colorRemain = count.slice();
-  const slots = Array.from({ length: SLOT_N }, (_, i) => i % PALETTE.length); // 3 槽当前色
-  let selSlot = 0;         // 选中的槽（点色装入它·金色强调）
+  const slots = Array.from({ length: SLOT_N }, (_, i) => i % PALETTE.length); // 3 炮当前色
+  let selSlot = 0;         // 选中的炮（点色装入它·金色强调）
   let styleIdx = 0;
-  let remaining = present.size; const total = present.size;
   let orientIdx = 0, faceLeft = FACE_MS;
   let curRx = ORIENT[0][0], curRy = ORIENT[0][1];
 
@@ -166,9 +174,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     const num = el('div', 'position:absolute;right:5px;bottom:2px;color:#fff;font:800 17px system-ui;text-shadow:0 1px 3px #000,0 0 4px #000;');
     s.appendChild(icon); s.appendChild(num);
     const idx = i;
-    s.addEventListener('pointerdown', (e) => { e.stopPropagation(); selSlot = idx; startFire(idx); s.style.transform = 'scale(.9)'; s.setPointerCapture?.(e.pointerId); refresh(); });
-    const end = (): void => { stopFire(idx); refresh(); };
-    s.addEventListener('pointerup', end); s.addEventListener('pointercancel', end); s.addEventListener('pointerleave', end);
+    s.addEventListener('pointerdown', (e) => { e.stopPropagation(); selSlot = idx; refresh(); }); // 点炮=选中（炮自动发射·无需按）
     slotEls.push(s); slotIcon.push(icon); slotNum.push(num); slotRow.appendChild(s);
   }
   bottom.appendChild(slotRow);
@@ -193,14 +199,14 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     slotEls[flashed].animate?.([{ transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { duration: 220 });
   };
   const refresh = (): void => {
-    chips.forEach((ch, c) => { ch.textContent = String(colorRemain[c]); ch.style.opacity = colorRemain[c] > 0 ? '1' : '0.28'; }); // 库存色始终可点·不锁
+    chips.forEach((ch, c) => { ch.textContent = String(ammo[c]); ch.style.opacity = ammo[c] > 0 ? '1' : '0.28'; }); // 显每色剩余弹
     slotEls.forEach((s, i) => {
       const col = PALETTE[slots[i]].css;
-      slotIcon[i].style.background = col; slotNum[i].textContent = String(colorRemain[slots[i]]);
+      slotIcon[i].style.background = col; slotNum[i].textContent = String(ammo[slots[i]]);
       if (i === selSlot) { s.style.boxShadow = `0 0 0 4px #ffd24a,0 0 22px 6px ${col}cc`; s.style.transform = 'scale(1.1)'; s.style.background = '#16233d'; }
       else { s.style.boxShadow = '0 4px 10px #0008'; s.style.transform = 'scale(1)'; s.style.background = '#0c1a30'; }
     });
-    dmg.textContent = `破坏 ${Math.round(((total - remaining) / total) * 100)}%`;
+    dmg.textContent = `露出 ${Math.round(((coverTotal - coverRemaining) / coverTotal) * 100)}% / ${Math.round(REVEAL_PASS * 100)}%`;
   };
   refresh();
 
@@ -217,7 +223,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   const despawnEnt = (id: string): void => { if (movEnt.has(id)) { try { engine.world.destroyEntity(id); } catch { /* */ } movEnt.delete(id); } };
   const setPos = (id: string, x: number, y: number, z: number): void => { const t = engine.world.getComponent<Transform3D>(id, 'Transform3D'); if (t) { t.x = x; t.y = y; t.z = z; } };
   const voxWorld = (i: number, j: number, k: number): [number, number, number] => rotVec(idx2pos(i), idx2pos(j), idx2pos(k), curRx, curRy);
-  const prand = (): number => hash3(movN++, remaining, total);
+  const prand = (): number => hash3(movN++, coverRemaining, coverTotal);
   const spawnFrags = (wx: number, wy: number, wz: number, tint: number): void => {
     // 碎片总量封顶（防积多卡）：超 140 先回收最老的。
     let fc = 0; for (const m of movers) if (m.kind === 'frag') fc++;
@@ -246,31 +252,40 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     const id = vid(i, j, k); if (rendered.has(id) || !present.has(id) || !exposed(i, j, k)) return;
     try { engine.world.createEntity(id); } catch { /* */ }
     engine.world.addComponent(id, { type: 'Transform3D', x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) } as unknown as Transform3D);
-    const t = PALETTE[colorAt.get(id)!].tint;
-    engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(t) } as never); // 无 Material3D → 归批实例化
+    engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(tintOf(id)) } as never); // 无 Material3D → 归批实例化（雕像露出=gold）
     engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D')?.children.push(id); rendered.add(id);
   };
   const breakVox = (i: number, j: number, k: number): void => {
-    const id = vid(i, j, k); const cc = colorAt.get(id); if (cc != null) colorRemain[cc]--;
+    const id = vid(i, j, k); const cc = colorAt.get(id);
+    if (cc === 5) return;                          // 雕像受保护·不碎
+    if (cc != null) coverByColor[cc]--;
+    coverRemaining--;
     present.delete(id);
     if (rendered.has(id)) { engine.world.destroyEntity(id); const piv = engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D'); if (piv) { const x = piv.children.indexOf(id); if (x >= 0) piv.children.splice(x, 1); } rendered.delete(id); }
-    remaining--;
     ([[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]] as [number,number,number][]).forEach(([a, b, c]) => { if (inB(a) && inB(b) && inB(c)) reveal(a, b, c); });
   };
 
-  let over = false;
-  const fire = (color: number): void => {
+  let over: 'win' | 'lose' | null = null;
+  const checkEnd = (): void => {
     if (over) return;
-    const aim = aimFace(frontSide(), color); if (!aim) return;   // 该面无此色暴露格 → 空按不发
-    const to = voxWorld(aim[0], aim[1], aim[2]);
-    const L = Math.hypot(to[0], to[1], to[2]) || 1, D = MAXC * 1.9;
-    const from: [number, number, number] = [to[0] + (to[0] / L) * D, to[1] + (to[1] / L) * D, to[2] + (to[2] / L) * D];
-    const id = `blt-${movN}`; spawnEnt(id, from[0], from[1], from[2], VOX * 0.55, PALETTE[color].tint);
-    movers.push({ kind: 'bullet', id, t: 0, from, to, aim: [aim[0], aim[1], aim[2]] });
+    if (coverRemaining === 0 || (coverTotal - coverRemaining) / coverTotal >= REVEAL_PASS) { over = 'win'; banner.textContent = '🎉 雕像现形！'; banner.style.color = '#8affa0'; return; }
+    for (let c = 0; c < PALETTE.length; c++) if (coverByColor[c] > 0 && ammo[c] <= 0) { over = 'lose'; banner.textContent = '弹尽 · 雕像未露'; banner.style.color = '#ff8a8a'; return; }
   };
-  const fireTimers: (ReturnType<typeof setInterval> | null)[] = Array.from({ length: SLOT_N }, () => null);
-  const startFire = (i: number): void => { fire(slots[i]); if (fireTimers[i] == null) fireTimers[i] = setInterval(() => fire(slots[i]), FIRE_MS); };
-  const stopFire = (i: number): void => { if (fireTimers[i] != null) { clearInterval(fireTimers[i]!); fireTimers[i] = null; } };
+  // 单发（自动炮调用）：扣一发弹；正对这面有同色暴露格→射子弹清一格·否则空放浪费。
+  const fire = (color: number): void => {
+    if (over || ammo[color] <= 0) return;
+    ammo[color]--;
+    const aim = aimFace(frontSide(), color);
+    if (aim) {
+      const to = voxWorld(aim[0], aim[1], aim[2]);
+      const L = Math.hypot(to[0], to[1], to[2]) || 1, D = MAXC * 1.9;
+      const from: [number, number, number] = [to[0] + (to[0] / L) * D, to[1] + (to[1] / L) * D, to[2] + (to[2] / L) * D];
+      const id = `blt-${movN}`; spawnEnt(id, from[0], from[1], from[2], VOX * 0.55, PALETTE[color].tint);
+      movers.push({ kind: 'bullet', id, t: 0, from, to, aim: [aim[0], aim[1], aim[2]] });
+    }
+    checkEnd(); refresh();
+  };
+  let afAcc = 0; // 自动发射节拍累加
 
   // ── 主循环（自管·全 try/catch·绝不冻结）──
   let raf = 0, last = performance.now();
@@ -287,6 +302,8 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
         const piv = engine.world.getComponent<Transform3D>('cube-pivot', 'Transform3D'); if (piv) { piv.rotX = curRx; piv.rotY = curRy; }
         facePill.textContent = `⏱ ${(faceLeft / 1000).toFixed(1)}`;
         timeBar.style.width = `${(faceLeft / FACE_MS) * 100}%`;
+        // ★ 自动发射：3 门炮按拍各射一发（无需按）·扣弹→无同色暴露则浪费。
+        afAcc += dt; while (afAcc >= FIRE_MS) { afAcc -= FIRE_MS; for (const c of slots) fire(c); }
       }
       // 运动体积分。
       const ds = Math.min(dt, 50) / 1000;
@@ -297,9 +314,8 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
           setPos(mv.id, mv.from[0] + (mv.to[0] - mv.from[0]) * f, mv.from[1] + (mv.to[1] - mv.from[1]) * f, mv.from[2] + (mv.to[2] - mv.from[2]) * f);
           if (f >= 1) {
             despawnEnt(mv.id); movers.splice(m, 1);
-            if (present.has(vid(mv.aim[0], mv.aim[1], mv.aim[2]))) { const wp = voxWorld(mv.aim[0], mv.aim[1], mv.aim[2]); breakVox(mv.aim[0], mv.aim[1], mv.aim[2]); spawnFrags(wp[0], wp[1], wp[2], PALETTE[colorAt.get(vid(mv.aim[0], mv.aim[1], mv.aim[2]))!]?.tint ?? 0xffffff); }
-            refresh();
-            if (remaining === 0 && !over) { over = true; banner.textContent = '🎉 全清！'; }
+            if (present.has(vid(mv.aim[0], mv.aim[1], mv.aim[2]))) { const wp = voxWorld(mv.aim[0], mv.aim[1], mv.aim[2]); const ft = tintOf(vid(mv.aim[0], mv.aim[1], mv.aim[2])); breakVox(mv.aim[0], mv.aim[1], mv.aim[2]); spawnFrags(wp[0], wp[1], wp[2], ft); }
+            refresh(); checkEnd();
           }
         } else {
           mv.v[1] -= GRAV * ds; mv.p[0] += mv.v[0] * ds; mv.p[1] += mv.v[1] * ds; mv.p[2] += mv.v[2] * ds;
@@ -318,7 +334,6 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
 
   return () => {
     if (raf) cancelAnimationFrame(raf);
-    fireTimers.forEach((t) => t && clearInterval(t));
     movers.forEach((mv) => despawnEnt(mv.id));
     engine.stop();
     renderer.destroy();
