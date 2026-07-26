@@ -330,8 +330,17 @@ export class ThreeRenderer implements RendererBackend {
           const mesh = this.ensureDieMesh3D(r, r.mesh3d);
           applyPose(mesh, pose);
         } else if (r.mesh3d.voxelTex) {
-          const mesh = this.ensureVoxelMesh3D(r, r.mesh3d);
-          applyPose(mesh, pose);
+          // 体素（voxelTex 提速块贴图）：不透明 → 按 voxelMode 签名**归批实例化**（同款体素 1 draw call·
+          //   game102 大立方几百体素只剩 ~几批·「又大又细」·REQ-3D-RENDER-EFFICIENCY 3D 半场）；透明 → 单 mesh。
+          if ((r.color?.alpha ?? 1) >= 1) {
+            const key = voxelMode(r.mesh3d);
+            let g = instGroups.get(key);
+            if (!g) { g = []; instGroups.set(key, g); }
+            g.push({ r, pose });
+          } else {
+            const mesh = this.ensureVoxelMesh3D(r, r.mesh3d);
+            applyPose(mesh, pose);
+          }
         } else if (r.material3d) {
           const mesh = this.ensurePbrMesh(r, r.mesh3d, r.material3d);
           applyPose(mesh, pose);

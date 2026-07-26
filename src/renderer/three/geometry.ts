@@ -213,7 +213,8 @@ function loadTiledTexture(src: string, rx: number, ry: number): THREE.Texture {
   return t;
 }
 /** 体素贴图 box：地台=顶面网格纹 + 四周侧纹；wall=六面侧墙纹。手绘 URL(topSrc/sideSrc) 优先，否则程序化。纹理按尺寸重复出网格。 */
-export function buildVoxelMesh3D(m: Mesh3D): THREE.Mesh {
+// 体素方块的几何 + 六面材质（供单 mesh 与**实例化批**共用·同 voxelMode 签名的体素共享一份 → 实例化 1 draw call）。
+export function buildVoxelGeoMats(m: Mesh3D): { geo: THREE.BoxGeometry; mats: THREE.Material[] } {
   const v = m.voxelTex!;
   const depth = mesh3dDepth(m.shape, m.width, m.height, m.depth);
   const tile = v.tile ?? 2;
@@ -227,7 +228,11 @@ export function buildVoxelMesh3D(m: Mesh3D): THREE.Mesh {
   const sideMat = new THREE.MeshStandardMaterial({ map: sideT, roughness: .9 });
   // 面序 [px,nx,py,ny,pz,nz] = [右,左,顶,底,前,后]。地台：顶面用 topMat；wall：全用 sideMat。
   const mats = v.wall ? [sideMat, sideMat, sideMat, sideMat, sideMat, sideMat] : [sideMat, sideMat, topMat, sideMat, sideMat, sideMat];
-  return new THREE.Mesh(new THREE.BoxGeometry(m.width, m.height, depth), mats);
+  return { geo: new THREE.BoxGeometry(m.width, m.height, depth), mats };
+}
+export function buildVoxelMesh3D(m: Mesh3D): THREE.Mesh {
+  const { geo, mats } = buildVoxelGeoMats(m);
+  return new THREE.Mesh(geo, mats);
 }
 export function voxelMode(m: Mesh3D): string {
   const v = m.voxelTex!;

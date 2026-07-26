@@ -2,7 +2,12 @@ import * as THREE from 'three';
 import type { Mesh3D } from '@engine/protocol/components.js';
 import type { Renderable } from '../renderable.js';
 import type { Pose3D } from '../three-projection.js';
-import { applyPose, buildInstancedMesh3DGeometry } from './geometry.js';
+import { applyPose, buildInstancedMesh3DGeometry, buildVoxelGeoMats } from './geometry.js';
+
+// 释放 InstancedMesh 的材质（单个或六面数组·voxelTex 走数组）。
+function disposeMat(mat: THREE.Material | THREE.Material[]): void {
+  if (Array.isArray(mat)) for (const m of mat) m.dispose(); else mat.dispose();
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  three/InstancedBatches —— W1-A 实例化绘制子系统。
@@ -52,21 +57,30 @@ export class InstancedBatches {
     for (const [, b] of this.batches) {
       scene.remove(b.mesh);
       b.mesh.geometry.dispose();
-      (b.mesh.material as THREE.Material).dispose();
+      disposeMat(b.mesh.material);
     }
     this.batches.clear();
   }
 
-  // 建/复用批：签名编码几何+逐面色（烤进 vertexColors），同签名共享一个 InstancedMesh。超容量 ×2 扩容重建（摊还）。
-  // frustumCulled=false——实例散布全场，按单实例包围盒剔会误剔整批。
+  // 建/复用批：签名编码几何+逐面色（烤进 vertexColors）或 voxelTex 六面材质，同签名共享一个 InstancedMesh。
+  // 超容量 ×2 扩容重建（摊还）。frustumCulled=false——实例散布全场，按单实例包围盒剔会误剔整批。
   private ensure(scene: THREE.Scene, key: string, sample: Mesh3D, needed: number): { mesh: THREE.InstancedMesh; cap: number } {
     const existing = this.batches.get(key);
     if (existing && needed <= existing.cap) return existing;
-    if (existing) { scene.remove(existing.mesh); existing.mesh.geometry.dispose(); (existing.mesh.material as THREE.Material).dispose(); }
+    if (existing) { scene.remove(existing.mesh); existing.mesh.geometry.dispose(); disposeMat(existing.mesh.material); }
     const cap = Math.max(needed, existing ? existing.cap * 2 : 8);
-    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0 }); // 不透明·哑光
-    if (sample.shape === 'plane') mat.side = THREE.DoubleSide;
-    const mesh = new THREE.InstancedMesh(buildInstancedMesh3DGeometry(sample), mat, cap);
+    // voxelTex 体素 → 复用单 mesh 的几何 + 六面贴图材质（提速块观感·同 voxelMode 签名的体素共享一份·实例化 1 draw call）；
+    // 否则平色盒/图元 → 逐面色烤进 vertexColors 的哑光材质（原路）。
+    const geo = sample.voxelTex ? undefined : buildInstancedMesh3DGeometry(sample);
+    let mesh: THREE.InstancedMesh;
+    if (sample.voxelTex) {
+      const gm = buildVoxelGeoMats(sample);
+      mesh = new THREE.InstancedMesh(gm.geo, gm.mats, cap);
+    } else {
+      const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0 }); // 不透明·哑光
+      if (sample.shape === 'plane') mat.side = THREE.DoubleSide;
+      mesh = new THREE.InstancedMesh(geo!, mat, cap);
+    }
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.frustumCulled = false;
