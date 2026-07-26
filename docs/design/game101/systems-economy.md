@@ -81,10 +81,9 @@
 
 **问题（owner 目击）**：现状交付集齐 → `order-fulfill.resetOnComplete` **只清空 `filled`·`needItems` 不变** → 顾客永远重复要**同一样东西**。技术上循环在转，但零变化/零推进/零反馈 = 空转，玩家直觉「没事了」。**这是 meta 循环设计缺口**（非 bug）。owner 定：做**全套三层**。
 
-**① 订单轮换（循环命门·必做）**：交付后顾客换**下一样不同需求**（按序列/加权池·可逐级升级 food_2→food_3…）。让循环真「活」。
-- **判定 = 真引擎缺口**：`order-fulfill` 只重置 `filled`、不能换 `needItems`/`reward`；无任何现有能力表达「完成即从池取下一单」（`effect-apply` 不能改数组字段·`caster` 只 spawn 实体）。**禁游戏层手写换单 solver**（manifesto §3 红线）。→ 报引擎池下沉。
-- **spec（→ Lead·扩 `order-fulfill` 或姊妹件 `order-rotate`）**：`Order` 加可选 `pool?: { needItems, reward }[]` + `rotateMode?: 'sequence'|'weighted'` + `cursor?`；集齐发奖后（`resetOnComplete` 路径）**从 pool 取下一单**写回 `needItems`/`reward`（weighted 走世界 `RandomSeed`·确定性/回放）。空 pool = 退化回现状（清 filled 重复本单·零回归）。
-- **游戏数据（能力落地后接）**：`orders.json` 每顾客加 `pool`（递进需求链）。
+**① 订单轮换（循环命门）✅ done（2026-07-25·Lead 引擎件 `62dcc039` + PE 接线）**：交付后顾客换**下一样不同需求**（序列升级 food_2→food_3→…→环回）。让循环真「活」。
+- **✅ Lead 已下沉**（扩 `t2-order-fulfill`·REQ-ORDERROT 归档）：`Order` 加 `pool?/rotateMode?/cursor?`——集齐发奖后从 pool 按 `sequence` cursor 环回取下一单写回 `needItems`/`reward`/`filled`（`weighted` 走世界 RandomSeed）。空 pool 逐字节零回归。
+- **✅ PE 接线**：`orders.json` 每顾客配递进 pool（周航 food 链·老陈 fish 链·苏晴混合限时·各 3–4 单升级 + 环回·奖励随级涨）；blueprint `mapReward` 复用映射顶层单 + pool 每单，传 `pool/rotateMode:'sequence'/cursor:0`。26 测试绿（交付 food_2→换 food_3·cursor 递进）+ 浏览器实操目击（拖米饭给周航→其需求刷成面包🍞）。星奖励喂②进度表 → 三层 meta 循环打通。
 
 **② 进度推进（中价值·大半游戏数据）✅ done（2026-07-25·纯组合·零引擎改动）**：交付累积**星级/关卡计量**，过阈值**解锁新格区**。给「越玩越有奔头」。
 - **✅ 实现（全组合·撞墙验证无缺口）**：进度 = 复用交付发的 `stars` 资源；阈值解锁 = `event-when{when:{kind:'resource',id:'stars',cmp:'gte',value:N}, mode:'edge'}` 发里程碑信号 → `effect-apply{kind:'destroy-tagged', value:regionTag}` 批量清该区**星锁 marker**（Tag 实体·非 Blocker → 免被挖掘二消误减）= 开出新工作区；关卡完成同法 `set-flag level_done`。数据 `config/progression.json`（goalStars + milestones[{atStars,cells}]）。UI：HUD 星进度条(Lv+⭐/goal) + 紫色星锁区(🔒⭐N) + 关卡完成庆祝横幅。25 测试绿（里程碑解锁 marker 批量销毁 + level_done 置旗）+ 浏览器目击（进度条/星锁区/完成横幅）。

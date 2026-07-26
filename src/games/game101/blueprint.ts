@@ -30,7 +30,7 @@ import {
 } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
-  GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, TIMED_ITEM, MENU_TIMER_SEC, TICKS_PER_SEC,
+  GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, TIMED_ITEM, MENU_TIMER_SEC, TICKS_PER_SEC, type OrderReward,
   BOARD_COVER, coverReveal, BUBBLES, BUBBLE_TAG, PROGRESSION, milestoneTag, LEVEL_DONE_FLAG,
   cellCenter, mergeRules, itemTemplates, timedTemplates, CELL, GEN_TAG, GEN_TINT,
 } from './theme.js';
@@ -181,15 +181,22 @@ function orderEntities(): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   for (const o of ORDERS) {
     const satId = `sat_${o.id}`;
-    const reward = [
-      { resourceId: RES.coins, amount: o.reward.coins },
-      ...(o.reward.stars ? [{ resourceId: RES.stars, amount: o.reward.stars }] : []),
-      ...(o.reward.exp ? [{ resourceId: RES.exp, amount: o.reward.exp }] : []),
+    // 发奖表映射（coins/stars/exp + 每单顾客满意度 +1）：顶层单与 pool 每单同口径复用。
+    const mapReward = (r: OrderReward) => [
+      { resourceId: RES.coins, amount: r.coins },
+      ...(r.stars ? [{ resourceId: RES.stars, amount: r.stars }] : []),
+      ...(r.exp ? [{ resourceId: RES.exp, amount: r.exp }] : []),
       { resourceId: satId, amount: 1 }, // 每完成一单 → 该顾客满意度 +1（心情涨·发奖表数据·钳进 max）
     ];
     out[satId] = { Resource: { id: satId, current: 0, min: 0, max: ORDER_SAT_MAX } }; // 实体 key = 资源 id（order-fulfill 按 id 定位）
+    // 续单池（①订单轮换·REQ-ORDERROT）：pool 各单 needItems + 映射 reward → 集齐后 sequence 环回换下一单。
+    const pool = o.pool?.map((p) => ({ needItems: p.needItems, reward: mapReward(p.reward) }));
     out[`order-${o.id}`] = {
-      Order: { orderId: o.id, needItems: o.needItems, filled: o.needItems.map(() => false), reward, resetOnComplete: true },
+      Order: {
+        orderId: o.id, needItems: o.needItems, filled: o.needItems.map(() => false), reward: mapReward(o.reward),
+        resetOnComplete: true,
+        ...(pool && pool.length ? { pool, rotateMode: 'sequence' as const, cursor: 0 } : {}),
+      },
     };
   }
   // 限时特惠订单倒计时（循环刷新）：一个共享菜单 Timer{id:'menu',loop}·timer-advance 每拍推进·到期归零重来。

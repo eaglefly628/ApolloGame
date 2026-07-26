@@ -26,10 +26,14 @@ export interface GeneratorDef {
   sprite: string; cell: number; emoji: string; dropTable: { item: string; w: number }[];
 }
 
+export interface OrderReward { coins: number; exp?: number; stars?: number }
 export interface OrderDef {
   id: string; char: string; needItems: string[]; // 各 slot 要的模板 id（顺序即 slot 序·最多 3）
-  reward: { coins: number; exp?: number; stars?: number };
+  reward: OrderReward;
   timed?: boolean; // 限时特惠订单：卡上显示 ⏱ 倒计时（菜单 Timer 驱动·循环刷新）
+  // 续单池（REQ-ORDERROT·①订单轮换）：集齐后按 sequence 环回取下一单（needItems/reward 全替换）。
+  // 递进升级 + 循环 → 顾客满足后换新需求，不再重复同单（解「循环空转」）。缺省无池=重复本单。
+  pool?: { needItems: string[]; reward: OrderReward }[];
 }
 
 // ── 挖掘阻碍层（board-cover·REQ-101-08·merge-proximity-clear）───────────────────

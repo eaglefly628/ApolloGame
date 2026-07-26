@@ -280,6 +280,20 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(res(e, 'sat_o_zhou')).toBe(sat0 + 1);   // 满意度（心情）+1
   });
 
+  it('订单轮换①：周航交付 food_2 → 集齐后换下一单 food_3（sequence 环回·非重复同单）', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    tickN(e, 2);
+    const zhou0 = e.world.getComponent<Order>('order-o_zhou', 'Order');
+    expect(zhou0?.needItems).toEqual(['food_2']); // 初始单
+    const f1 = itemsOf(e, 'food_1');
+    dragMerge(e, f1[0], f1[1]);
+    deliverTo(e, itemsOf(e, 'food_2')[0], 'o_zhou');
+    const zhou1 = e.world.getComponent<Order>('order-o_zhou', 'Order');
+    expect(zhou1?.needItems).toEqual(['food_3']); // 集齐 → 轮到 pool[0]=面包
+    expect(zhou1?.filled).toEqual([false]);        // 新单未交
+    expect(zhou1?.cursor).toBe(1);                 // cursor 递进
+  });
+
   it('订单交付：交错模板不误交（拖稻谷 food_1 给要 food_2 的周航 → 不消耗不发奖）', () => {
     const e = new Engine(); e.load(buildBlueprint());
     tickN(e, 2);
