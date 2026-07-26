@@ -175,18 +175,27 @@ function boomReturnTemplate(w: WeaponDef): { entities: Record<string, Record<str
 
 // 粒子爆发（数据驱动"粒子特效"·owner「冲击波用粒子·炫酷点」）：n 颗小火花从中心**放射状飞出** + Tween 渐隐 +
 // 缩小·短命·零碰撞(category0)。cos/sin 在 authoring 期一次性算方向（同 orbitAt·非运行时 trig）→ 确定性。
-function sparksTemplate(n: number, speed: number, tint: number, life: number, size: number): { entities: Record<string, Record<string, unknown>> } {
+// scaleKey 在场（如 'shockRadius'）→ 每颗火花挂 StatBind：升级把 total 乘到**飞行速度(vx/vy)+尺寸(radius)**
+// → 冲击波升级后粒子飞更远/更大=爆发更盛（owner「升级后粒子也应更高」·纯数据·与 hitbox 半径同一 total 同步）。
+function sparksTemplate(n: number, speed: number, tint: number, life: number, size: number, scaleKey?: string): { entities: Record<string, Record<string, unknown>> } {
   const out: Record<string, Record<string, unknown>> = {};
   for (let i = 0; i < n; i++) {
     const a = (Math.PI * 2 * i) / n + (i % 2) * 0.26; // 交错角度=更自然
     const sp = speed * (0.7 + (i % 3) * 0.2); // 三档速度=层次
+    const vx0 = Math.cos(a) * sp;
+    const vy0 = Math.sin(a) * sp;
     out[`s${i}`] = {
       Transform: { ...XF0 },
-      Velocity: { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, angular: 0 },
+      Velocity: { vx: vx0, vy: vy0, angular: 0 },
       Shape: { kind: 'circle', radius: size, category: 0, mask: 0 },
       Color: { tint, alpha: 1 },
       Timer: { id: 'life', elapsed: 0, duration: life, loop: false },
       Tween: { type: 'Tween', target: 'Color.alpha', from: 1, to: 0, elapsed: 0, duration: life, easing: 'easeOut', done: false }, // 飞出渐隐
+      ...(scaleKey ? { StatBind: { bindings: [
+        { source: 'ModifierTotals', key: scaleKey, component: 'Velocity', field: 'vx', op: 'mul', base: vx0 }, // 升级飞更远
+        { source: 'ModifierTotals', key: scaleKey, component: 'Velocity', field: 'vy', op: 'mul', base: vy0 },
+        { source: 'ModifierTotals', key: scaleKey, component: 'Shape', field: 'radius', op: 'mul', base: size }, // 升级更大颗
+      ] } } : {}),
     };
   }
   return { entities: out };
@@ -625,7 +634,7 @@ export function buildBlueprint(): WorldBlueprint {
           // 全武器：每把一个 proj_<key>（射法模板）+ 非起始武器一个 weapon_<key>（挂点·draft 生成）。
           ...Object.fromEntries(WEAPONS.map((w) => [`proj_${w.key}`, projByPattern(w)])),
           ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'bomb').map((w) => [`explosion_${w.key}`, explosionTemplate(w)])), // 炸弹落点爆炸
-          ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'nova').map((w) => [`sparks_${w.key}`, sparksTemplate(16, 5.5, w.tint, 18, 3.2)])), // 冲击波粒子爆发
+          ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'nova').map((w) => [`sparks_${w.key}`, sparksTemplate(16, 5.5, w.tint, 18, 3.2, w.radiusPerLevel ? `${w.key}Radius` : undefined)])), // 冲击波粒子爆发（升级同步放大）
           ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'boomerang').map((w) => [`${w.key}_return`, boomReturnTemplate(w)])), // 回旋镖第②段（飞回）
           ...Object.fromEntries(WEAPONS.filter((w) => w.key !== 'kunai').map((w) => [`weapon_${w.key}`, weaponMount(w)])),
         },

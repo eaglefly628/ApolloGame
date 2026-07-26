@@ -381,6 +381,10 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(bind.component).toBe('Shape');
     expect(bind.field).toBe('radius');
     expect(bind.op).toBe('mul');
+    // 粒子也随级放大（owner「升级后粒子也应更高」）：每颗火花挂 StatBind 把 shockRadius 乘到 Velocity(飞更远)+Shape(更大)。
+    const spark = lib.sparks_shock.entities.s0.StatBind as { bindings: Array<{ key: string; component: string; field: string }> };
+    expect(spark.bindings.some((x) => x.key === 'shockRadius' && x.component === 'Velocity' && x.field === 'vx')).toBe(true);
+    expect(spark.bindings.some((x) => x.key === 'shockRadius' && x.component === 'Shape' && x.field === 'radius')).toBe(true);
     // ⑤ 运行期真放大：拿 3 次冲击波 → 跑到发射 → nova proj 的 Shape.radius > 基础 120
     const e = fresh();
     for (let i = 0; i < 3; i++) fireAction(e, 'pick_shock');
