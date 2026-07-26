@@ -2,6 +2,10 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-HIT-FX-命中反馈钩子（穿透/子弹/激光击中敌人喷小特效）· [2026-07-26] · GD-103 报 → 主程裁 · status: **✅ done（`f2e18de1`·2026-07-26 Lead 亲验 PASS·归档）** · 类型: tier2 能力缺口（hitbox onHit 出口）
+> **交付（Lead 裁 ✅ 真缺口·亲验）**：`Hitbox` 加 `onHit?:{spawnTemplate}`——命中结算那拍对每个被命中目标在其位置发 SpawnRequest（击中火花/受击特效）；穿透/AOE 每 Trigger 各喷（fan-out·同伤害 cadence）。carrier `onhit:<zone>:<target>` **幂等重建**（destroy-then-create·避 consumes 剥 SpawnRequest 后裸 createEntity 撞 dangling·子代理实测捕获并修）。SpawnRequest 消费者 prefab 不写 hitbox reads→无环。缺省无=零回归。24 测（fan-out/零回归/确定性/端到端撞环）·gate 全绿 3605·基线 140 不变·combat.md 回填。game-103 proj 模板挂 onHit:{spawnTemplate:sparks}。原文见 git 史。
+> **附 Bug 1b（冲击波半径随等级）→ 🔁 回驳·重组（Lead 2026-07-26）**：非缺口——`ModifierSource{target:'shockRadius',op:'add',valueFrom:{resourceId:'weaponLevel',scale:X}}`（modifier-stack valueFrom·level×X）→ `ModifierTotals.shockRadius` → `StatBind{source:'ModifierTotals',key:'shockRadius',component:'Hitbox',field:'radius',op:'add',base:基础半径}`（stat-bind 幂等投影）= radius=base+level×X。全已发能力·纯数据接线·落 game-103 数据·无引擎活。
+
 ### REQ-FACE-ROTATE-实体按方向旋转 sprite（表现层·sim 零 trig）· [2026-07-25] · PE-game-103 报 → Lead 裁 · status: **✅ done（`d0296d72`·form b render-side·2026-07-25 Lead 亲验+截图 PASS·归档）** · 类型: 引擎能力薄缺口（表现层·主程域）
 > **交付（Lead 定 render-side dir 向量·sim 零 trig）**：新 `t2-face-rotate` 从 velocity/Relation(target) sqrt 归一写单位向量 `FaceDir{x,y}`（进 hash 安全·无 sin/cos/atan2·测正则自证）；2D 渲染器 `resolveRotation2D(r)=r.faceDir?atan2(y,x):r.rotation`——**atan2 只在 render·绝不进 sim/hash**（跨机不逐位一致·lockstep 安全·同 orbit 避 per-tick trig 之由）。canvas-renderer 消费；3D(P3D)/frame-svg 不碰。表现层不驱动逻辑（碰撞仍 AABB·激光视觉转/命中轴对齐·PE 接受 P2）。FaceDir/FaceRotate 两新组件（基线 138→140）·**真浏览器目击**斜向 sprite 转到 45.01°（对照组 -1.4° 零回归）·19 测·gate 全绿 3600。game-103 子弹/激光数据挂 FaceRotate 消费。原文见 git 史。
 
