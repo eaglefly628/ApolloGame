@@ -13,7 +13,7 @@ export function buildS1(): LayoutNode {
 }
 
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
-export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number; coverReward?: string; bubble?: { itemEmoji: string; cost: number; id: string }; starLock?: { needStars: number } } // bubble=泡泡锁·starLock=星锁区（攒够星里程碑解锁）
+export interface CellView { emoji: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number; coverReward?: string; bubble?: { itemEmoji: string; cost: number; id: string }; starLock?: { needStars: number }; cd?: number } // bubble=泡泡锁·starLock=星锁区·cd=生成器冷却剩余秒
 export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
 export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; timed?: boolean; timeLeft?: number; portrait?: string; fly?: { id: string; label: string }; celebrate?: boolean }
 export interface S1State {
@@ -319,13 +319,22 @@ function board(s: S1State): N {
       kids.push({ type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: i === s.liftedCell ? 52 : 66 }, layout: i === s.liftedCell ? { opacity: 0.28 } : {} }); // 板等比缩小(对齐原图比例)·被拿起格淡化缩小
       if (cv.deliverable) kids.push({ type: 'Badge', id: `t-live-${i}-b`, props: { text: '✓', tone: 'ok' } });
       if (cv.timer != null) kids.push({ type: 'Badge', id: `t-live-${i}-t`, props: { text: `⏱${cv.timer}`, tone: 'warn' } }); // 限时物倒计时
+      if (cv.cd != null) kids.push({ type: 'Badge', id: `t-live-${i}-cd`, props: { text: `⏱${cv.cd}`, tone: 'warn' } }); // 生成器冷却剩余秒（G4·冷却中不可点·warn 色醒目）
 
     }
     // 合成迸发（juice·render-only）：该格叠一次性星光爆（基座 Particles·非自造 CSS）。绝对定位不占流。
-    if (i === s.burstCell) kids.push({
-      type: 'Particles', id: `t-live-${i}-burst`, props: { kind: 'stars', count: 14, loop: false },
-      layout: { x: 0, y: 0, width: 120, height: 120, allowOverlap: true },
-    } as N);
+    if (i === s.burstCell) {
+      kids.push({
+        type: 'Particles', id: `t-live-${i}-burst`, props: { kind: 'stars', count: 14, loop: false },
+        layout: { x: 0, y: 0, width: 120, height: 120, allowOverlap: true },
+      } as N);
+      // 合并成功气泡（owner：合成有个提示像气泡浮上去）：金色小胶囊「✨ 合成!」从格上方升冒淡出（anim:'floatUp'·基座件）。
+      kids.push({
+        type: 'Panel', id: `t-live-${i}-mf`, props: { bg: 'gold' },
+        layout: { x: 4, y: -46, align: 'center', justify: 'center', padding: 8, radius: 16, allowOverlap: true, anim: 'floatUp' },
+        children: [{ type: 'Label', id: `t-live-${i}-mft`, props: { text: '✨ 合成!', size: 'md', bold: true, color: 'ink' } }],
+      } as N);
+    }
     kids.push(...dissolve); // 消融尘土（覆盖格刚挖开变物品/空格也叠一把）
     const isItem = !!cv && !cv.gen; // 可拖物品格
     // 可交付物：绿框 + 循环发光脉冲 = 醒目「这个能交给顾客了」标识（区别普通物·基座 edge/anim·非自由 CSS）。

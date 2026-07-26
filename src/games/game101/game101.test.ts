@@ -216,11 +216,34 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     tickN(e, 4);
     e.world.getComponent<Resource>('energy', 'Resource')!.current = 100; // 备足体力多点
     const base = g.dropTable.map((d) => countTemplate(e, d.item));
-    for (let i = 0; i < 24; i++) tapGen(e, g.cell); // 固定种子=确定性序列
+    // 每点之间等过冷却（G4·CD）——tapGen 后推进 cooldownSec 秒让 ready 旗复位，否则第二点起被 CD 挡。
+    for (let i = 0; i < 24; i++) { tapGen(e, g.cell); tickN(e, g.cooldownSec * TICKS_PER_SEC + 2); }
     const now = g.dropTable.map((d) => countTemplate(e, d.item));
     const gained = now.map((v, i) => v - base[i]);
     expect(gained.reduce((a, b) => a + b, 0)).toBe(24);       // 每点恰产一个
     expect(gained.filter((x) => x > 0).length).toBeGreaterThan(1); // ≥2 档命中=真加权（非恒首项）
+  });
+
+  it('生成器冷却 G4：产出后进 CD（charge=0·再点被 craft-recipe afford 挡不扣不产）→ 过 cooldownSec 补 charge 可再产', () => {
+    const e = new Engine(); e.load(buildBlueprint());
+    const g = GENERATORS[0]; // 米仓·cooldownSec 2
+    tickN(e, 4);
+    e.world.getComponent<Resource>('energy', 'Resource')!.current = 100;
+    const charge = () => res(e, `charge_${g.id}`);
+    expect(charge()).toBe(1);                   // 初始满 charge（就绪）
+    const c0 = countTemplate(e, 'food_1') + countTemplate(e, 'food_2') + countTemplate(e, 'food_3');
+    tapGen(e, g.cell);
+    const produced = () => countTemplate(e, 'food_1') + countTemplate(e, 'food_2') + countTemplate(e, 'food_3');
+    expect(produced()).toBe(c0 + 1);            // 产一个
+    expect(charge()).toBe(0);                   // charge 扣光=进冷却
+    const e1 = res(e, RES.energy);
+    tapGen(e, g.cell);                          // 冷却中再点
+    expect(produced()).toBe(c0 + 1);            // 不产（craft-recipe afford charge=0 整单不动）
+    expect(res(e, RES.energy)).toBe(e1);        // 不扣体力（原子 afford）
+    tickN(e, g.cooldownSec * TICKS_PER_SEC + 2); // 等过冷却
+    expect(charge()).toBe(1);                   // charge 补回=就绪
+    tapGen(e, g.cell);
+    expect(produced()).toBe(c0 + 2);            // 冷却后可再产
   });
 
   it('产出可见性（bug 修复）：生成器产出落在自己格 → 移动意图挪到空格（否则盖生成器下=点了没反应）', () => {

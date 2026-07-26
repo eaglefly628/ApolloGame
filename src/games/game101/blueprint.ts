@@ -81,6 +81,16 @@ function generatorEntities(): Record<string, EntityBlueprint> {
     const tapSig = `tap_${g.id}`;
     const spawnFlag = `spawn_${g.id}`;
     const doSig = `do_spawn_${g.id}`;
+    // ── 冷却 CD（G4·组合·owner：每个生成器产出后要有冷却）──────────────────────────
+    // 门=**每生成器一个 charge 资源**列进 craft-recipe.costs（afford 原子·charge=0 则整单不动=不扣体力不产）。
+    // 关键：真游戏点生成器走 Panel.action→keybind→**craft-recipe**（非 Clickable 指针命中）→ 门必须在 craft-recipe
+    // 才对两条路都生效。产出瞬间 charge 已被 craft-recipe 扣光 + reset-timer 起冷却；event-when 检 timer 到 cdTicks
+    // → modify-resource 把 charge 补回 1（可再产）。全 craft-recipe/timer/event-when/effect-apply 组合·零游戏层 solver。
+    const hasCd = (g.cooldownSec ?? 0) > 0;
+    const cdTicks = Math.round((g.cooldownSec ?? 0) * TICKS_PER_SEC);
+    const chargeId = `charge_${g.id}`;
+    const cdTimerId = `cd_${g.id}`;
+    const rdySig = `rdy_${g.id}`;
     out[`flag-${spawnFlag}`] = { Flag: { id: spawnFlag, active: false } };
     out[`gen-${g.id}`] = {
       Transform: { x: p.x, y: p.y, rotation: 0, scaleX: 1, scaleY: 1 },
@@ -89,17 +99,24 @@ function generatorEntities(): Record<string, EntityBlueprint> {
       Sprite: { textureKey: g.sprite, anchorX: 0.5, anchorY: 0.5, zOrder: 2 }, // 皮肤槽·gen 皮就绪即换装
       Color: { tint: GEN_TINT, alpha: 1 },
       Clickable: { action: tapSig },
-      // 分工：craft-recipe 管**全局体力**闸门（按 id 扣全局 energy 实体·afford 原子），weighted-spawn 管
-      // **加权抽产出**（REQ-101-06 解锁·换掉原 caster 的固定产表首项 → 真按 dropTable 权重随机）。
-      // 注：weighted-spawn 自带的 cost 读的是「实体自身 Resource」（每实体预算模型）·不匹配 game101 全局体力
-      //     → 故体力仍走 craft-recipe（全局 id 扣），weighted-spawn 只吃产出、不设 cost。
-      CraftRecipe: { onSignal: tapSig, costs: [{ id: RES.energy, amount: g.energyCost }], grantsFlag: spawnFlag },
+      // craft-recipe 管 afford 门：扣全局体力 + （有 CD 则）扣 1 charge（冷却中 charge=0 → 整单不动）。weighted-spawn 管加权产出。
+      CraftRecipe: { onSignal: tapSig, costs: [{ id: RES.energy, amount: g.energyCost }, ...(hasCd ? [{ id: chargeId, amount: 1 }] : [])], grantsFlag: spawnFlag },
       WeightedSpawn: { onSignal: doSig, table: g.dropTable.map((d) => ({ templateId: d.item, weight: d.w })) },
     };
     out[`ew-${g.id}`] = { EventWhen: { signal: doSig, when: { kind: 'flag', id: spawnFlag }, mode: 'edge', armed: false } };
     out[`fx-reset-${g.id}`] = { Effect: { onSignal: doSig, kind: 'set-flag', targetId: spawnFlag, value: false } };
     // LayoutNode 活板：生成器格 Panel.action → mountUI ActionSink 入队 → KeyBinding 转成 tap 信号 → craft-recipe。
     out[`kb-${g.id}`] = { KeyBinding: { key: tapSig, signal: tapSig } };
+    if (hasCd) {
+      // charge 资源起始满 1（可产）；cd 计时器起始 done（elapsed=cdTicks·不占冷却）。charge 实体 key = 资源 id。
+      out[chargeId] = { Resource: { id: chargeId, current: 1, min: 0, max: 1 } };
+      out[`cd-${g.id}`] = { Timer: { id: cdTimerId, elapsed: cdTicks, duration: cdTicks, loop: false } };
+      // 产出瞬间：reset-timer 起冷却计（charge 已被 craft-recipe 扣为 0）。
+      out[`fx-cdstart-${g.id}`] = { Effect: { onSignal: doSig, kind: 'reset-timer', targetEntity: `cd-${g.id}` } };
+      // 计时到 cdTicks → 发 rdy → modify-resource 把 charge 补回 +1（钳 max 1·冷却结束可再产）。
+      out[`ew-cd-${g.id}`] = { EventWhen: { signal: rdySig, when: { kind: 'timer', id: cdTimerId, cmp: 'gte', value: cdTicks }, mode: 'edge', armed: false } };
+      out[`fx-charge-${g.id}`] = { Effect: { onSignal: rdySig, kind: 'modify-resource', targetId: chargeId, value: 1 } };
+    }
   }
   return out;
 }
