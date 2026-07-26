@@ -56,6 +56,15 @@ const shortDelta = (a: number, b: number): number => { let d = (b - a) % (Math.P
 const vid = (i: number, j: number, k: number): string => `v-${i}-${j}-${k}`;
 const idx2pos = (i: number): number => (i - (N - 1) / 2) * PITCH;
 const voxMesh = (t: number): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: shade(t, 0.82) });
+// ── 渲染样式集（owner「做几个版本对比」）：材质(果冻/卡通/黏土/平涂/糖果) + 对应后处理(AO/bloom/描边/分级)──
+type Style = { name: string; mat: (t: number) => Record<string, unknown>; post: Record<string, unknown> };
+const STYLES: Style[] = [
+  { name: '果冻', mat: (t) => ({ preset: 'plastic', color: t, roughness: 0.24, metalness: 0, surface: { pattern: 'bumps', normal: 1.4, rough: 0.5 } }), post: { ao: { intensity: 1.1, radius: 5 }, bloom: { strength: 0.22, threshold: 0.75 }, aa: true } },
+  { name: '卡通', mat: (t) => ({ preset: 'plastic', color: t, shading: 'toon', toonSteps: 3, outline: { width: 1.4, color: 0x10141d } }), post: { ao: { intensity: 0.8, radius: 5 }, aa: true } },
+  { name: '黏土', mat: (t) => ({ preset: 'matte', color: t, roughness: 0.95, surface: { pattern: 'bumps', normal: 0.8, rough: 0.6 } }), post: { ao: { intensity: 1.5, radius: 6 }, vignette: { intensity: 0.35 }, grade: { saturation: 1.08 }, aa: true } },
+  { name: '平涂', mat: (t) => ({ preset: 'plastic', color: t, shading: 'flat' }), post: { ao: { intensity: 0.6, radius: 5 }, bloom: { strength: 0.4, threshold: 0.7 } } },
+  { name: '糖果', mat: (t) => ({ preset: 'plastic', color: t, roughness: 0.12, metalness: 0.12 }), post: { ao: { intensity: 0.8, radius: 5 }, bloom: { strength: 0.6, threshold: 0.65 }, grade: { saturation: 1.2, contrast: 1.08 }, aa: true } },
+];
 function el(tag: string, css: string, html?: string): HTMLElement { const e = document.createElement(tag); e.style.cssText = css; if (html !== undefined) e.innerHTML = html; return e; }
 
 export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => void }): () => void {
@@ -72,6 +81,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     return [[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]].some(([a, b, c]) => !inB(a) || !inB(b) || !inB(c) || !present.has(vid(a, b, c)));
   };
   const colorRemain = count.slice();
+  let styleIdx = 0;
   let remaining = present.size; const total = present.size;
   let orientIdx = 0, faceLeft = FACE_MS;
   let curRx = ORIENT[0][0], curRy = ORIENT[0][1];
@@ -81,12 +91,14 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     const entities: Record<string, EntityBlueprint> = {}; const ids: string[] = [];
     for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) for (let k = 0; k < N; k++) {
       if (!exposed(i, j, k)) continue;
-      const id = vid(i, j, k);
-      entities[id] = { Transform3D: { x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) }, Mesh3D: voxMesh(PALETTE[colorAt.get(id)!].tint) as EntityBlueprint['Mesh3D'] };
+      const id = vid(i, j, k); const t = PALETTE[colorAt.get(id)!].tint;
+      entities[id] = { Transform3D: { x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) }, Mesh3D: voxMesh(t) as EntityBlueprint['Mesh3D'], Material3D: { ...STYLES[0].mat(t) } as unknown as EntityBlueprint['Material3D'] };
       ids.push(id); rendered.add(id);
     }
+    entities['post'] = { Post3D: { ...STYLES[0].post } as unknown as EntityBlueprint['Post3D'] };
     entities['cube-pivot'] = { Transform3D: { x: 0, y: 0, z: 0, rotX: curRx, rotY: curRy }, Pivot3D: { children: ids, centerX: 0, centerY: 0, centerZ: 0 } };
-    entities['cam'] = { Transform3D: { x: 0, y: 0, z: 0 }, Camera3D: { yaw: 0, pitch: 0.16, distance: N * PITCH * 3.9, pivotX: 0, pivotY: 0, pivotZ: 0, projection: 'perspective', fov: 40 } };
+    // 相机略斜(yaw+pitch)→看得到立体棱面·不再正对死板(owner「稍微斜一点」)。
+    entities['cam'] = { Transform3D: { x: 0, y: 0, z: 0 }, Camera3D: { yaw: 0.42, pitch: 0.42, distance: N * PITCH * 4.0, pivotX: 0, pivotY: 0, pivotZ: 0, projection: 'perspective', fov: 40 } };
     entities['sky'] = { Sky3D: { top: 0x0c1730, bottom: 0x14243f, env: 0.5 } };
     entities['sun'] = { Light3D: { kind: 'directional', color: 0xffffff, intensity: 1.15, dirX: -0.45, dirY: -0.9, dirZ: -0.55, castShadow: true } };
     entities['amb'] = { Light3D: { kind: 'ambient', color: 0xa8bce0, intensity: 0.6 } };
@@ -115,6 +127,24 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   wrapper.appendChild(timeBar);
   const banner = el('div', 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 44px system-ui;color:#8affa0;text-shadow:0 3px 14px #000;pointer-events:none;');
   wrapper.appendChild(banner);
+
+  // 渲染样式切换（点循环 5 种·对比看）。
+  const styleBtn = el('button', 'position:absolute;right:8px;top:60px;z-index:20;pointer-events:auto;background:#1a2740ee;color:#cfe;border:1px solid #35507a;border-radius:8px;padding:6px 12px;cursor:pointer;font:700 14px system-ui;box-shadow:0 2px 8px #0007;', `🎨 ${STYLES[0].name}`);
+  styleBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+  const applyStyle = (idx: number): void => {
+    styleIdx = ((idx % STYLES.length) + STYLES.length) % STYLES.length;
+    const st = STYLES[styleIdx];
+    engine.world.removeComponent('post', 'Post3D');
+    engine.world.addComponent('post', { type: 'Post3D', ...st.post } as never);
+    for (const id of rendered) {
+      const cc = colorAt.get(id); if (cc == null) continue;
+      engine.world.removeComponent(id, 'Material3D');
+      engine.world.addComponent(id, { type: 'Material3D', ...st.mat(PALETTE[cc].tint) } as never);
+    }
+    styleBtn.textContent = `🎨 ${st.name}`;
+  };
+  styleBtn.onclick = () => applyStyle(styleIdx + 1);
+  wrapper.appendChild(styleBtn);
 
   // ── 底部：4 色发射键（长按连发·显示每色剩余）──
   const pad = el('div', 'position:absolute;left:0;right:0;bottom:20px;display:flex;justify-content:center;gap:14px;pointer-events:none;');
@@ -152,6 +182,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     const L = Math.hypot(wx, wy, wz) || 1, ox = wx / L, oy = wy / L, oz = wz / L;
     for (let n = 0; n < FRAG_N; n++) {
       const id = `frag-${movN}`; spawnEnt(id, wx, wy, wz, VOX * 0.6, tint);
+      engine.world.addComponent(id, { type: 'Anim3D', channels: [{ kind: 'spring', field: 'scale', from: 0.35, to: 1, freq: 8, damping: 0.35 }] } as never); // 弹Q 弹出
       movers.push({ kind: 'frag', id, p: [wx, wy, wz], v: [ox * 260 + (prand() - 0.5) * 220, oy * 260 + 160 + prand() * 150, oz * 260 + (prand() - 0.5) * 220], life: 1.5 });
     }
   };
@@ -172,7 +203,9 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     const id = vid(i, j, k); if (rendered.has(id) || !present.has(id) || !exposed(i, j, k)) return;
     try { engine.world.createEntity(id); } catch { /* */ }
     engine.world.addComponent(id, { type: 'Transform3D', x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) } as unknown as Transform3D);
-    engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(PALETTE[colorAt.get(id)!].tint) } as never);
+    const t = PALETTE[colorAt.get(id)!].tint;
+    engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(t) } as never);
+    engine.world.addComponent(id, { type: 'Material3D', ...STYLES[styleIdx].mat(t) } as never);
     engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D')?.children.push(id); rendered.add(id);
   };
   const breakVox = (i: number, j: number, k: number): void => {
