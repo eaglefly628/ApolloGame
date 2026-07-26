@@ -6,7 +6,7 @@
 //   + 蓝色合并板井（7×9·物品小巧 size74≈占格50%·生成器格金色·可交付格标✓）。全由引擎世界态每帧投影。
 import type { LayoutNode } from '@ui/components/types.js';
 import s1Tree from './layout/s1.layout.json';
-import { GAME, ENERGY } from './theme.js';
+import { GAME, ENERGY, CHAINS, ITEM_EMOJI } from './theme.js';
 
 export function buildS1(): LayoutNode {
   return s1Tree as unknown as LayoutNode;
@@ -21,6 +21,9 @@ export interface S1State {
   cells: (CellView | null)[]; orders: OrderView[];
   progress?: { stars: number; goal: number }; // 进度推进②：星→关卡目标进度条
   levelComplete?: boolean;                     // 达标 → 关卡完成横幅
+  menuOpen?: boolean;                          // 信息菜单开关（右上☰ → 玩法/链条/日志）
+  menuTab?: 'play' | 'chains' | 'log';         // 菜单当前页
+  log?: string[];                              // 事件日志（新→旧）
 
   burstCell?: number; // 合成迸发格（juice·render-only·该格叠一次性星光爆）
   dragGhost?: { emoji: string; x: number; y: number }; // 拖拽中跟手飞影（Screen 坐标·render-only）
@@ -76,6 +79,113 @@ function hud(s: S1State): N {
       pill('hud-coins', '🪙', `${Math.round(s.coins)}`, 'gold'),
       pill('hud-gems', '💎', `${s.gems}`, 'jade'),
       { type: 'Button', id: 'hud-cart', props: { label: '🛒', kind: 'primary', action: 'open_shop' } },
+      { type: 'Button', id: 'hud-menu', props: { label: '☰', kind: 'primary', action: 'open_menu' } }, // 右上信息菜单（玩法/链条/日志）
+    ],
+  };
+}
+
+// ── 信息菜单（右上☰ 开·玩法说明 + 合成链条 + 日志·纯 LayoutNode 数据覆盖层）─────────
+function menuTab(id: string, label: string, active: boolean, action: string): N {
+  return {
+    type: 'Button', id: `menu-tab-${id}`,
+    props: { label, kind: active ? 'hero' : 'ghost', action },
+    layout: { flex: 1 },
+  };
+}
+// 糖果色卡片底（暖港卡通调·柔和高饱和·区别彼此）。
+const CANDY = ['#ffd7a6', '#ffc2cf', '#bff0d4', '#bfe0ff', '#fff0a0', '#e2d0ff', '#ffd0b0', '#c8ecff'];
+// emoji 放进白色圆牌里更"卡通糖果"（大图标 + 圆底高光感）。
+function emojiChip(id: string, emoji: string, size: number, bg = '#ffffff'): N {
+  return {
+    type: 'Panel', id, props: { bg: { custom: bg } },
+    layout: { width: 96, height: 96, align: 'center', justify: 'center', radius: 48, allowOverlap: false },
+    children: [{ type: 'Label', id: `${id}-e`, props: { text: emoji, size } }],
+  } as N;
+}
+function menuContent(s: S1State): N[] {
+  const tab = s.menuTab ?? 'play';
+  if (tab === 'chains') {
+    // 合成链条：每链一张糖果卡（flex:1 填满）·名+级数 + 大 emoji 递进链。数据取 CHAINS + ITEM_EMOJI（单一真相）。
+    return CHAINS.map((c, i) => ({
+      type: 'Panel', id: `menu-chain-${c.id}`, props: { bg: { custom: CANDY[i % CANDY.length] } },
+      layout: { direction: 'column', align: 'start', justify: 'center', gap: 10, padding: 22, radius: 26, flex: 1 },
+      children: [
+        { type: 'Label', id: `menu-chain-${c.id}-n`, props: { text: `${c.name} · ${c.levels.length} 级`, size: 'lg', bold: true, color: 'ink' } },
+        { type: 'Label', id: `menu-chain-${c.id}-e`, props: { text: c.levels.map((l) => ITEM_EMOJI[l.item] ?? '❓').join(' → '), size: 40 } },
+      ],
+    } as N));
+  }
+  if (tab === 'log') {
+    const log = s.log ?? [];
+    if (!log.length) {
+      return [{
+        type: 'Panel', id: 'menu-log-empty', props: { bg: { custom: CANDY[3] } },
+        layout: { direction: 'column', align: 'center', justify: 'center', gap: 16, padding: 40, radius: 28, flex: 1 },
+        children: [
+          { type: 'Label', id: 'menu-log-empty-i', props: { text: '📭', size: 100 } },
+          { type: 'Label', id: 'menu-log-empty-t', props: { text: '还没有记录哦', size: 'xl', bold: true, color: 'ink' } },
+          { type: 'Label', id: 'menu-log-empty-s', props: { text: '去交付订单、挖沙、解锁星仓，这里会记下你的每一步！', size: 'md', color: 'ink' } },
+        ],
+      } as N];
+    }
+    return log.map((line, i) => ({
+      type: 'Panel', id: `menu-log-${i}`, props: { bg: { custom: i === 0 ? '#fff0a0' : CANDY[(i + 2) % CANDY.length] } },
+      layout: { direction: 'row', align: 'center', gap: 12, padding: 18, radius: 22, flex: 1 },
+      children: [
+        emojiChip(`menu-log-${i}-c`, i === 0 ? '🆕' : '•', i === 0 ? 44 : 30, '#ffffff'),
+        { type: 'Label', id: `menu-log-${i}-t`, props: { text: line, size: 'lg', bold: i === 0, color: 'ink' } },
+      ],
+    } as N));
+  }
+  // 玩法说明（默认页）：核心操作逐条·每条一张糖果卡（flex:1 填满整屏·不留空白）。
+  const rules: [string, string][] = [
+    ['🖐️', '拖动两个相同物件叠一起 → 合并升级（2 合 1）'],
+    ['🏭', '点生成器（金格）耗 1 体力 → 掉一个原料'],
+    ['🍽️', '把成品拖给顾客 → 交付赚 🪙 金币 + ⭐ 星'],
+    ['🔁', '顾客满足后自动换新单（需求逐级升级）'],
+    ['⛏️', '在沙格旁边合并 → 周边沙层减一，挖开露出宝物'],
+    ['🫧', '点泡泡、花 🪙 金币 → 解锁里面包着的物件'],
+    ['🔒', '攒够 ⭐ 星 → 解锁星锁区（码头西仓 / 东仓）'],
+    ['🎯', `攒够 ⭐ ${s.progress?.goal ?? 10} 星 → 关卡完成！`],
+  ];
+  return rules.map(([icon, txt], i) => ({
+    type: 'Panel', id: `menu-rule-${i}`, props: { bg: { custom: CANDY[i % CANDY.length] } },
+    layout: { direction: 'row', align: 'center', gap: 16, padding: 16, radius: 24, flex: 1 },
+    children: [
+      emojiChip(`menu-rule-${i}-c`, icon, 52),
+      { type: 'Label', id: `menu-rule-${i}-t`, props: { text: txt, size: 'lg', bold: true, color: 'ink' } },
+    ],
+  } as N));
+}
+// 菜单 = 整屏替换（正常流·与主界面同款 Screen 布局·不用绝对定位/遮罩 → 缩放场景里必然正确）。
+function menuScreen(s: S1State): LayoutNode {
+  const tab = s.menuTab ?? 'play';
+  return {
+    type: 'Screen', id: 's1', props: {},
+    layout: { direction: 'column', gap: 16, padding: 28, width: 1080, height: 1920 },
+    children: [
+      { // 标题行 + 关闭
+        type: 'Panel', id: 'menu-head', props: { bg: 'gold' },
+        layout: { direction: 'row', align: 'center', justify: 'between', gap: 10, padding: 20, radius: 24 },
+        children: [
+          { type: 'Label', id: 'menu-title', props: { text: '📖 海港绯闻 · 说明', size: 'xxl', bold: true, color: 'ink' } },
+          { type: 'Button', id: 'menu-close', props: { label: '✕ 返回游戏', kind: 'hero', action: 'close_menu' } },
+        ],
+      },
+      { // 页签行
+        type: 'Panel', id: 'menu-tabs', props: { bare: true },
+        layout: { direction: 'row', align: 'stretch', gap: 10 },
+        children: [
+          menuTab('play', '🎮 玩法说明', tab === 'play', 'menu_play'),
+          menuTab('chains', '🔗 合成链条', tab === 'chains', 'menu_chains'),
+          menuTab('log', '📜 日志', tab === 'log', 'menu_log'),
+        ],
+      },
+      { // 内容区：显式高度撑满 scene 盒（renderScreen 只 min-height:100vh 不达 1920·同主界面手法·避免底部空白）。
+        type: 'Panel', id: 'menu-body', props: { bg: 'sunken' },
+        layout: { direction: 'column', align: 'stretch', gap: 14, padding: 24, radius: 22, height: 1620 },
+        children: menuContent(s),
+      },
     ],
   };
 }
@@ -266,6 +376,7 @@ function levelBanner(s: S1State): N[] {
 }
 
 export function buildS1Live(s: S1State): LayoutNode {
+  if (s.menuOpen) return menuScreen(s); // 菜单打开 → 整屏替换（正常流·稳）
   return {
     type: 'Screen', id: 's1', props: {},
     layout: { direction: 'column', gap: 8, padding: 12, width: 1080, height: 1920 },

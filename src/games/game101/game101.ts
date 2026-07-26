@@ -31,6 +31,11 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     wrapperBackground: '#2a1c12',
   });
   // 拖拽手感·宿主容器设定：禁文字多选高亮（游戏里拖拽不该像选文字）+ 禁触摸滚动/长按菜单（拖拽独占手势）。
+  // 防 focus-scroll 位移（右缘按钮被点=浏览器把它 scrollIntoView·滚动 overflow:hidden 的 wrapper·整屏偏移）：
+  // scene 布局宽 1080 > 视口(scale 前)，任意右缘按钮 focus 即滚。监听 wrapper.scroll 立即归零消除偏移。
+  const sceneWrapper = scene.parentElement;
+  const resetScroll = (): void => { if (sceneWrapper && (sceneWrapper.scrollLeft || sceneWrapper.scrollTop)) { sceneWrapper.scrollLeft = 0; sceneWrapper.scrollTop = 0; } };
+  sceneWrapper?.addEventListener('scroll', resetScroll, { passive: true });
   scene.style.userSelect = 'none';
   (scene.style as CSSStyleDeclaration & { webkitUserSelect?: string }).webkitUserSelect = 'none';
   scene.style.touchAction = 'none';
@@ -46,6 +51,13 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   const coveredCells = new Set<number>(); // 阻碍层覆盖格（不可拖入/不可落子·readState 每帧刷新）
   const bubbleCells = new Set<number>(); // 泡泡锁格（不可拖入/不可落子·点破才出物）
   const starLockCells = new Set<number>(); // 星锁区格（不可拖入/不可落子·攒够星里程碑解锁）
+  // 信息菜单（view 态·host 持·local handler 切换·非写世界）：开关 + 当前页 + 事件日志环。
+  let menuOpen = false;
+  let menuTab: 'play' | 'chains' | 'log' = 'play';
+  const eventLog: string[] = [];
+  const pushLog = (s: string): void => { eventLog.unshift(s); if (eventLog.length > 14) eventLog.pop(); };
+  let lastPassed = 0; // 已过里程碑数（新过 → 记日志）
+  let lastLevelDone = false;
 
   // 生成器产出落点修正：caster at:'self' 把新物产在生成器**自己那格**（被生成器盖住=不可见/不可拖）。
   // 宿主每帧扫描落在生成器格上的物 → 用 merge-on-place 的**移动意图**把它挪到最近空格（引擎做实际移动·
@@ -246,7 +258,15 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
 
   // 导航信号占位（真弹层=后续 slice）；生成器 tap_<id> **不放 handler** → 走 ActionSink 入队 → sim。
   const noop = (): void => {};
-  const handlers: HandlerMap = { open_shop: noop, open_menu: noop, open_tasks: noop, open_reno: noop, open_events: noop, deliver_order: noop, gen_left: noop, gen_right: noop, delete_sel: noop };
+  // 菜单开关/切页 = 纯 view 态 local handler（不入 sim·不写世界）→ 改 host 态后立即重绘。
+  const handlers: HandlerMap = {
+    open_menu: () => { menuOpen = true; paint(readState()); },
+    close_menu: () => { menuOpen = false; paint(readState()); },
+    menu_play: () => { menuTab = 'play'; paint(readState()); },
+    menu_chains: () => { menuTab = 'chains'; paint(readState()); },
+    menu_log: () => { menuTab = 'log'; paint(readState()); },
+    open_shop: noop, open_tasks: noop, open_reno: noop, open_events: noop, deliver_order: noop, gen_left: noop, gen_right: noop, delete_sel: noop,
+  };
 
   const ui: MountHandle = mountUI(scene, buildS1Live(readState()), handlers, GAME101_THEME, input);
 
@@ -262,7 +282,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   const flyTimers = new Set<ReturnType<typeof setTimeout>>();
   const paint = (st: S1State): void => {
     const orders = activeFly ? st.orders.map((o, i) => (i === activeFly!.idx ? { ...o, fly: { id: activeFly!.id, label: activeFly!.label }, celebrate: true } : o)) : st.orders;
-    ui.update(buildS1Live({ ...st, orders, burstCell: activeBurst >= 0 ? activeBurst : undefined, dragGhost: dragGhost ?? undefined, liftedCell: dragFrom >= 0 ? dragFrom : undefined, dissolveCells: dissolving.length ? dissolving : undefined }), GAME101_THEME);
+    ui.update(buildS1Live({ ...st, orders, burstCell: activeBurst >= 0 ? activeBurst : undefined, dragGhost: dragGhost ?? undefined, liftedCell: dragFrom >= 0 ? dragFrom : undefined, dissolveCells: dissolving.length ? dissolving : undefined, menuOpen, menuTab, log: eventLog.slice() }), GAME101_THEME);
   };
   // 沙/蛛网消融：对比上帧阻碍层，被挖到的格（层减或清）叠尘土 Particles，600ms 后清。
   function detectDissolve(st: S1State): void {
@@ -290,10 +310,16 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     relocateGenSpawns(); // 生成器产出弹进空格（不然盖在生成器下不可见=像点了没反应）
     const st = readState();
     detectDissolve(st); // 沙/蛛网被挖到 → 消融尘土
+    // 事件日志（菜单「日志」页）：里程碑解锁 + 关卡完成（交付在下方金币块记）。
+    const starsNow = Math.round(st.progress?.stars ?? 0);
+    const passed = PROGRESSION.milestones.filter((m) => starsNow >= m.atStars).length;
+    if (passed > lastPassed) { for (let k = lastPassed; k < passed; k++) pushLog(`🔓 解锁 ${PROGRESSION.milestones[k].label}`); lastPassed = passed; }
+    if (st.levelComplete && !lastLevelDone) { pushLog('🎉 关卡完成！码头声名远扬'); lastLevelDone = true; }
     const coins = Math.round(st.coins);
     // 金币增加（仅交付发奖来源）+ 有待归位交付 → 触发飞行轨迹。
     if (coins > lastCoins && pendingDeliverIdx >= 0) {
       const gain = coins - lastCoins;
+      pushLog(`✅ ${ORDERS[pendingDeliverIdx].char} 订单达成 · 🪙+${gain}`);
       const id = `fly-${flySeq++}`;
       activeFly = { idx: pendingDeliverIdx, id, label: `🪙+${gain}` };
       pendingDeliverIdx = -1;
@@ -317,6 +343,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     flyTimers.clear();
     engine.stop();
     if (ghostRaf) cancelAnimationFrame(ghostRaf);
+    sceneWrapper?.removeEventListener('scroll', resetScroll);
     scene.removeEventListener('pointerdown', onDown);
     scene.removeEventListener('pointermove', onMove);
     scene.removeEventListener('pointerup', onUp);

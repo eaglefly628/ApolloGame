@@ -8,6 +8,11 @@
 
 ## 待处理 / 进行中
 
+### REQ-FOCUSSCROLL-mount-host wrapper 禁 focus-scroll 位移（右缘按钮点击=整屏偏移）· [2026-07-25] · PE-101 报（菜单按钮实测）→ Lead/PUI 裁 · status: **open** · 优先级: P2（所有 mountHost 游戏通用·右缘可聚焦控件即触发） · 类型: 引擎缺陷（主程域·`src/engine/host/mount-host.ts`）
+> **实测缺陷**：scene 布局宽 = `fieldW`(如 1080) > 视口(scale 前)，wrapper `overflow:hidden`。点击**靠右缘的按钮**（如 HUD 右上菜单钮）→ 浏览器 `focus` 自动 `scrollIntoView` → 滚动 wrapper（`overflow:hidden` 挡滚动条**但挡不住程序化 focus-scroll**）`scrollLeft` 到 254 → 整个 scene 视觉左移、右缘空出黑条、且**不自动复位**（resize 也不修）。game101 加菜单钮即中招（诊断：`wrapper.scrollLeft===254`）。
+> **游戏侧 workaround（已上·非根治）**：`src/games/game101/game101.ts` 给 `scene.parentElement` 挂 `scroll` 监听即时归零 `scrollLeft/scrollTop`。每个游戏各自补=重复。
+> **建议方案（Lead/PUI 裁）· 边界**：mount-host 的 wrapper 用 **`overflow:clip`**（禁一切滚动含程序化·替 `overflow:hidden`）或内建同款 scroll-reset 兜底。**触碰范围**：`src/engine/host/mount-host.ts:95`（wrapper style）+ 点名测试；落地后各游戏删自己的 workaround。撞墙实证＝`src/games/game101/game101.ts`（resetScroll 监听）。
+
 
 ### REQ-EXPOSURE-TARGETING-暴露/垂直扫描线索敌（周界轨道逐层剥内层）· [2026-07-26] · PE-game102 报（owner 授权）→ 主程裁 · status: **open** · 优先级: P0（挡 game102 通关·多层像素画不可解） · 类型: tier2/3 索敌能力缺口
 > **想实现**：沿 PathFollow 周界轨道跑的色炮，向**路径切线法向（画面内侧）**投格对齐扫描线，命中线上第一颗**暴露(邻空)同色**格（逐层从外剥到里·预计算无 miss）。

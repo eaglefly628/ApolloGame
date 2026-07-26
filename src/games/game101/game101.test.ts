@@ -140,6 +140,15 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(validateLayoutNode(live)).toEqual([]);
   });
 
+  it('信息菜单三页均为合法 LayoutNode（玩法/链条/日志·validate 零 issue）', () => {
+    const base = { energy: 100, coins: 0, gems: 0, level: 1, cells: new Array(63).fill(null), orders: [], progress: { stars: 0, goal: 10 }, menuOpen: true, log: ['✅ 周航 订单达成 · 🪙+44', '🔓 解锁 码头西仓'] };
+    for (const tab of ['play', 'chains', 'log'] as const) {
+      const m = buildS1Live({ ...base, menuTab: tab });
+      expect(m.type).toBe('Screen');
+      expect(validateLayoutNode(m)).toEqual([]);
+    }
+  });
+
   it('限时菜单：共享 menu Timer 循环推进驱动限时订单 ⏱（e1-timer·不销毁·区别 life）', () => {
     const e = new Engine(); e.load(buildBlueprint());
     const t0 = e.world.getComponent<Timer>('menu-timer', 'Timer');
