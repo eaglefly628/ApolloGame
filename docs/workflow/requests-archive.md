@@ -2,6 +2,9 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-EXPOSURE-TARGETING-暴露/垂直扫描线索敌 · [2026-07-26] · PE-game102 报 → 主程裁 · status: **🚫 wontfix（owner 2026-07-26 撤：game102 改了一套新做法/新锁定方式·此扫描线索敌 spec 作废·不建）** · 类型: tier2/3 索敌能力缺口（作废）
+> owner 2026-07-26：「game102 改了一种新做法·可能加新锁定方法·现在不想做这些·重做了一套」→ EXPOSURE-TARGETING（perp-to-path 扫描线取首颗暴露同色）**spec 被新方案取代·移出池不建**。若新做法定稿后仍缺索敌能力，另开新单（不复用此作废 spec）。
+
 ### REQ-HIT-FX-命中反馈钩子（穿透/子弹/激光击中敌人喷小特效）· [2026-07-26] · GD-103 报 → 主程裁 · status: **✅ done（`f2e18de1`·2026-07-26 Lead 亲验 PASS·归档）** · 类型: tier2 能力缺口（hitbox onHit 出口）
 > **交付（Lead 裁 ✅ 真缺口·亲验）**：`Hitbox` 加 `onHit?:{spawnTemplate}`——命中结算那拍对每个被命中目标在其位置发 SpawnRequest（击中火花/受击特效）；穿透/AOE 每 Trigger 各喷（fan-out·同伤害 cadence）。carrier `onhit:<zone>:<target>` **幂等重建**（destroy-then-create·避 consumes 剥 SpawnRequest 后裸 createEntity 撞 dangling·子代理实测捕获并修）。SpawnRequest 消费者 prefab 不写 hitbox reads→无环。缺省无=零回归。24 测（fan-out/零回归/确定性/端到端撞环）·gate 全绿 3605·基线 140 不变·combat.md 回填。game-103 proj 模板挂 onHit:{spawnTemplate:sparks}。原文见 git 史。
 > **附 Bug 1b（冲击波半径随等级）→ 🔁 回驳·重组（Lead 2026-07-26）**：非缺口——`ModifierSource{target:'shockRadius',op:'add',valueFrom:{resourceId:'weaponLevel',scale:X}}`（modifier-stack valueFrom·level×X）→ `ModifierTotals.shockRadius` → `StatBind{source:'ModifierTotals',key:'shockRadius',component:'Hitbox',field:'radius',op:'add',base:基础半径}`（stat-bind 幂等投影）= radius=base+level×X。全已发能力·纯数据接线·落 game-103 数据·无引擎活。

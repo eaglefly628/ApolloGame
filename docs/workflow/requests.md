@@ -14,11 +14,6 @@
 > **建议方案（Lead/PUI 裁）· 边界**：mount-host 的 wrapper 用 **`overflow:clip`**（禁一切滚动含程序化·替 `overflow:hidden`）或内建同款 scroll-reset 兜底。**触碰范围**：`src/engine/host/mount-host.ts:95`（wrapper style）+ 点名测试；落地后各游戏删自己的 workaround。撞墙实证＝`src/games/game101/game101.ts`（resetScroll 监听）。
 
 
-### REQ-EXPOSURE-TARGETING-暴露/垂直扫描线索敌（周界轨道逐层剥内层）· [2026-07-26] · PE-game102 报（owner 授权）→ 主程裁 · status: **open** · 优先级: P0（挡 game102 通关·多层像素画不可解） · 类型: tier2/3 索敌能力缺口
-> **想实现**：沿 PathFollow 周界轨道跑的色炮，向**路径切线法向（画面内侧）**投格对齐扫描线，命中线上第一颗**暴露(邻空)同色**格（逐层从外剥到里·预计算无 miss）。
-> **已试**：`aggro`（Perception 半径最近同色）——放宽半径=空中开火/打对角非正对格/穿层；收紧半径=周界轨道离内层恒远够不到。半径「圆 vs 扫描线·距离 vs 暴露」双重错配·无解。
-> **缺什么**：建议 `ScanTarget{axis:'perp-to-path',maxDepth,targetTag,requireExposed}`（每 tick 投内侧扫描线取首颗暴露同色写 Relation.target·整数格+排序·零 trig 确定性），或板级 `SweepPlan` 预解清除序。命中/扣弹/消除链已就绪只等换索敌。
-> **全文 + 影响面**：`docs/design/game102/主程热修报告-targeting-pool.md §缺口①`。
 
 ### REQ-POOL-ADVANCE-弹库队列头可点+上浮 · [2026-07-26] · PE-game102 报（owner 授权）→ 主程裁 · status: **open** · 优先级: P1 · 类型: tier2 队列布局能力缺口
 > **想实现**：双排弹库仅前排（队首）可点·消费后后排自动上浮补位并激活可点。
