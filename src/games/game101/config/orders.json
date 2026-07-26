@@ -6,6 +6,7 @@
       { "needItems": ["food_3"],           "reward": { "coins": 70,  "exp": 20, "stars": 1 } },
       { "needItems": ["food_2", "food_3"], "reward": { "coins": 110, "exp": 28, "stars": 2 } },
       { "needItems": ["food_4"],           "reward": { "coins": 150, "exp": 35, "stars": 2 } },
+      { "needItems": ["food_5"],           "reward": { "coins": 240, "exp": 48, "stars": 3 } },
       { "needItems": ["food_2"],           "reward": { "coins": 44,  "exp": 15, "stars": 1 } }
     ]
   },
@@ -16,6 +17,7 @@
       { "needItems": ["fish_3"],           "reward": { "coins": 90,  "exp": 24, "stars": 2 } },
       { "needItems": ["fish_2", "fish_3"], "reward": { "coins": 130, "exp": 30, "stars": 2 } },
       { "needItems": ["fish_4"],           "reward": { "coins": 180, "exp": 38, "stars": 3 } },
+      { "needItems": ["fish_5"],           "reward": { "coins": 300, "exp": 52, "stars": 3 } },
       { "needItems": ["fish_2", "fish_2"], "reward": { "coins": 78,  "exp": 20, "stars": 2 } }
     ]
   },
@@ -23,9 +25,10 @@
     "id": "o_su", "char": "苏晴", "needItems": ["coffee_2", "food_2", "tool_2"],
     "reward": { "coins": 220, "exp": 40, "stars": 3 }, "timed": true,
     "pool": [
-      { "needItems": ["coffee_3", "food_3"],           "reward": { "coins": 200, "exp": 36, "stars": 2 } },
-      { "needItems": ["coffee_2", "fish_2", "tool_2"], "reward": { "coins": 240, "exp": 42, "stars": 3 } },
-      { "needItems": ["coffee_2", "food_2", "tool_2"], "reward": { "coins": 220, "exp": 40, "stars": 3 } }
+      { "needItems": ["coffee_3", "food_3"],            "reward": { "coins": 200, "exp": 36, "stars": 2 } },
+      { "needItems": ["coffee_2", "fish_2", "tool_2"],  "reward": { "coins": 240, "exp": 42, "stars": 3 } },
+      { "needItems": ["coffee_4", "food_4", "tool_3"],  "reward": { "coins": 360, "exp": 56, "stars": 4 } },
+      { "needItems": ["coffee_2", "food_2", "tool_2"],  "reward": { "coins": 220, "exp": 40, "stars": 3 } }
     ]
   }
 ]

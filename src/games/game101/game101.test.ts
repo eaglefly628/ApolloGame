@@ -67,8 +67,8 @@ describe('game101 ·《海港绯闻》M1a 玩法核（未涉门能力面·数据
     expect(bp.capabilities.length).toBeGreaterThanOrEqual(8);
     const ids = Object.keys(bp.entities);
     for (const key of ['energy', 'coins', 'stars', 'exp', 'library']) expect(ids).toContain(key);
-    // 每链每级一条 merge 规则（最高级封顶不写）：食6+渔6+薯4+咖5+工5 各 -1 = 5+5+3+4+4 = 21 条。
-    expect(mergeRules().length).toBe(21);
+    // 每链每级一条 merge 规则（最高级封顶不写）：食9+渔9+薯7+咖8+工8 各 -1 = 8+8+6+7+7 = 36 条。
+    expect(mergeRules().length).toBe(36);
     expect(() => JSON.stringify(bp.entities)).not.toThrow();
   });
 
