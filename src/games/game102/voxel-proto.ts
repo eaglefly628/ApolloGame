@@ -360,12 +360,13 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     }
   };
 
-  // 高亮准星射线命中的那一格（提白+白棱·让玩家一眼看到"打哪里"）。
+  // 高亮准星命中的那一格：**只给金色棱框**·本色不变（玩家既知打哪格、又看得清该切什么色）。
+  const GOLD = 0xffd24a;
   const setHighlight = (id: string | null): void => {
     if (hlId === id) return;
-    if (hlId) { const m = engine.world.getComponent<Mesh3D>(hlId, 'Mesh3D'); const cc = colorAt.get(hlId); if (m && cc != null) { const t = PALETTE[cc].tint; m.frontTint = t; m.backTint = t; m.edgeTint = shade(t, 0.82); } }
+    if (hlId) { const m = engine.world.getComponent<Mesh3D>(hlId, 'Mesh3D'); const cc = colorAt.get(hlId); if (m && cc != null) m.edgeTint = shade(PALETTE[cc].tint, 0.82); } // 复原本色棱
     hlId = id;
-    if (id) { const m = engine.world.getComponent<Mesh3D>(id, 'Mesh3D'); const cc = colorAt.get(id); if (m && cc != null) { const t = lighten(PALETTE[cc].tint, 0.45); m.frontTint = t; m.backTint = t; m.edgeTint = 0xffffff; } }
+    if (id) { const m = engine.world.getComponent<Mesh3D>(id, 'Mesh3D'); if (m) m.edgeTint = GOLD; } // 金框（front/back 本色不动）
   };
   // 每帧：从准星（屏心偏上）投射线 → 命中最前体素 = 精确瞄点。
   const updateAim = (): void => {
