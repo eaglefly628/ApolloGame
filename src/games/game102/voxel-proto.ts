@@ -188,8 +188,9 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   const btnBug = el('button', 'position:absolute;left:8px;bottom:8px;z-index:51;pointer-events:auto;background:#1a2740cc;color:#cfe;border:1px solid #35507a;border-radius:6px;padding:4px 8px;cursor:pointer;font:12px monospace;', '🐞');
   wrapper.appendChild(btnBug);
   let logDirty = false;
+  const t0 = performance.now();
   const pushLog = (line: string, err = false): void => {
-    logs.push((err ? '❌ ' : '') + line);
+    logs.push(`[${((performance.now() - t0) / 1000).toFixed(1)}s] ` + (err ? '❌ ' : '') + line);
     if (logs.length > 400) logs.shift();
     logDirty = true;
     if (err && logPanel.style.display === 'none') { logPanel.style.display = 'flex'; }
@@ -314,10 +315,12 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
 
   // ── 自管渲染循环（**全程 try/catch·任何一处抛错都只记日志·绝不冻结循环**）──────────────────
   // 教训：engine.start() 内 renderer.sync/notifyListeners 抛错早于 rAF 重排 → 整循环死。这里自己驱动、逐段兜底。
-  let raf = 0, acc = 0, last = performance.now();
+  let raf = 0, acc = 0, last = performance.now(), hb = performance.now(), frames = 0;
   const frame = (now: number): void => {
     try {
       const dt = now - last; last = now;
+      frames++;
+      if (now - hb > 2000) { pushLog(`❤ fps≈${Math.round(frames / ((now - hb) / 1000))} rendered=${rendered.size} rem=${remaining} drag=${dragging}`); hb = now; frames = 0; }
       if (IDLE_SPIN > 0 && !dragging && !over && now - lastInteract > IDLE_DELAY) {
         const t = pivotT(); if (t) t.rotY = (t.rotY ?? 0) + IDLE_SPIN * dt / 1000;
       }
