@@ -105,6 +105,7 @@ export function coreCubeVoxels(cfg: VoxelGridConfig = VOX): { entities: Record<s
 export function buildVoxelScene(cfg: VoxelGridConfig = VOX): WorldBlueprint {
   const { entities: voxels, ids } = coreCubeVoxels(cfg);
   const span = cfg.core * cfg.pitch; // 立方世界边长（估相机距离）
+  const CAM_BACK = 3.4; // 相机后拉倍数（越大立方在屏上越小·owner「cube 太大」调此值）
 
   const entities: Record<string, EntityBlueprint> = {
     ...voxels,
@@ -120,7 +121,7 @@ export function buildVoxelScene(cfg: VoxelGridConfig = VOX): WorldBlueprint {
     // 盒庭轨道相机（等距俯视环绕·框住立方）。
     cam: {
       Transform3D: { x: 0, y: 0, z: 0 },
-      Camera3D: { yaw: 0.6, pitch: 0.5, distance: span * 2.1, pivotX: 0, pivotY: 0, pivotZ: 0, projection: 'perspective', fov: 40 },
+      Camera3D: { yaw: 0.6, pitch: 0.5, distance: span * CAM_BACK, pivotX: 0, pivotY: 0, pivotZ: 0, projection: 'perspective', fov: 40 },
     },
     // 天空盒 + 光。
     sky: { Sky3D: { top: 0x243b6b, bottom: 0x8fb6e8, clouds: true, cloudTint: 0xffffff, scroll: 0.02, env: 0.6 } },
