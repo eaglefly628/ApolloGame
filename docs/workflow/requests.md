@@ -9,6 +9,18 @@
 ## 待处理 / 进行中
 
 
+### REQ-EXPOSURE-TARGETING-暴露/垂直扫描线索敌（周界轨道逐层剥内层）· [2026-07-26] · PE-game102 报（owner 授权）→ 主程裁 · status: **open** · 优先级: P0（挡 game102 通关·多层像素画不可解） · 类型: tier2/3 索敌能力缺口
+> **想实现**：沿 PathFollow 周界轨道跑的色炮，向**路径切线法向（画面内侧）**投格对齐扫描线，命中线上第一颗**暴露(邻空)同色**格（逐层从外剥到里·预计算无 miss）。
+> **已试**：`aggro`（Perception 半径最近同色）——放宽半径=空中开火/打对角非正对格/穿层；收紧半径=周界轨道离内层恒远够不到。半径「圆 vs 扫描线·距离 vs 暴露」双重错配·无解。
+> **缺什么**：建议 `ScanTarget{axis:'perp-to-path',maxDepth,targetTag,requireExposed}`（每 tick 投内侧扫描线取首颗暴露同色写 Relation.target·整数格+排序·零 trig 确定性），或板级 `SweepPlan` 预解清除序。命中/扣弹/消除链已就绪只等换索敌。
+> **全文 + 影响面**：`docs/design/game102/主程热修报告-targeting-pool.md §缺口①`。
+
+### REQ-POOL-ADVANCE-弹库队列头可点+上浮 · [2026-07-26] · PE-game102 报（owner 授权）→ 主程裁 · status: **open** · 优先级: P1 · 类型: tier2 队列布局能力缺口
+> **想实现**：双排弹库仅前排（队首）可点·消费后后排自动上浮补位并激活可点。
+> **已试**：双排布局 + 每门 Clickable/Caster/自毁已就绪；「上浮 + 头可点」需运行时**移动实体 + 增删 Clickable 组件**——`effect-apply` 无 move-to / set-clickable kind。
+> **缺什么**：`QueueSlots{slots,headCount,memberTag}`（成员按序占位·仅头 N 可点·销毁后整体前移重算），或给 effect-apply 加 `move-to`+`set-clickable` 两 kind。
+> **全文**：`docs/design/game102/主程热修报告-targeting-pool.md §缺口②`。现状降级=全排可点（功能可用·缺约束感·owner 已知）。
+
 ### REQ-SCREENFILL-Screen 填满 mount-host 固定 scene 盒（去竖屏底部信箱空白） · [2026-07-25] · PE-101 报（owner「下面留这么大空」实测撞墙）→ PUI 裁 · status: **open** · 优先级: P2（所有 mountHost 竖屏游戏通用·非 game101 专属） · 类型: UI 基座缺口（PUI 域·`src/ui/components/render.ts`）
 > **想实现的行为**：`mountHost` 建的是**固定 `fieldW×fieldH`（如 1080×1920）的 scene 盒**再整体 `transform:scale()` 信箱化。Screen 作为其直接子应**填满该盒高度**（`flex` 子撑满 → 内部 `flex:1` 区块吃满剩余空间）。
 > **实测缺口**：`renderScreen`（`src/ui/components/render.ts:505`）写死 `min-height:100vh`——`100vh`=**真实浏览器视口**（本例 960px 缩放态）而非 scene 盒的 1920px；Screen 遂只长到**内容自然高**，盒底空出信箱条（game101 实测底部空 ~372px/19%）。且 Screen 节点自带的 `layout.height:1920` 被 renderScreen 完全忽略。

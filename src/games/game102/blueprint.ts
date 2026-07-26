@@ -20,6 +20,7 @@ import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, 
 import {
   clickableCapability, groupCountCapability, effectApplyCapability, pathFollowCapability, pathFollowAt,
   selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
+  faceRotateCapability,
 } from '@skills/tier2/index.js';
 import { flowCapability, aggroCapability, prefabCapability, casterCapability } from '@skills/tier3/index.js';
 import {
@@ -46,11 +47,9 @@ function boardBounds(level: Level): { cell: number; ox: number; oy: number; grid
   return { cell, ox, oy, gridW, gridH };
 }
 const trackMargin = (cell: number): number => Math.round(cell * 0.85); // 轨道离棋盘外沿≈一格（炮贴外层格开火）
-// 视野够到整板（填充像素画内层格也可达·aggro 取最近同色→近处优先·近似外→内）。⚠ 严格「只打暴露格」需暴露判定能力（见 requests REQ-EXPOSURE）。
-function sightFor(level: Level): number {
-  const { gridW, gridH } = boardBounds(level);
-  return Math.round(Math.hypot(gridW, gridH));
-}
+// 视野=只够到轨道**直邻**外层同色格（≈1.5 格）→ ①在轨道上贴边才开火（进场滑行远离格=不空中乱消）②位置对应
+// （逐格顺序命中）。⚠ 填充画内层格（离轨道远）打不到=次序依赖真相待「暴露/垂直射线」targeting 能力（见主程报告）。
+function sightFor(level: Level): number { return Math.round(boardBounds(level).cell * 1.9); }
 function trackWaypoints(level: Level): { x: number; y: number }[] {
   const { cell, ox, oy, gridW, gridH } = boardBounds(level);
   const m = trackMargin(cell);
@@ -195,7 +194,10 @@ function colorCounts(level: Level): Record<string, number> {
 }
 // 待发弹库 = **递进队列**（core-gameplay §2）：由像素图逐色格数守恒配炮（每色 ceil(格数/ammo) 门·打蛋器图标+弹数）。
 // 每门**独立可点部署**（唯一 deploy_i 信号·点→Caster 生成上带色炮 + Effect 自毁本槽=消费）。非无限分发器。
-const POOL = { top: 1058, rowH: 84, perRow: 6, marginX: 52 } as const;
+// 待发弹库 = **双排递进队列**（owner「一开始是双排设置·有安排性·先配置」）：策划序（palette 外→内）展开每色所需炮，
+// 分**恰两排**铺（rows:2·perRow=ceil(len/2)）·每排居中。前排=队首（可点部署）·后排=候补（部署后上浮·advance 需运行时
+// 组件重构=引擎缺口·见主程报告 REQ-POOL-ADVANCE）。
+const POOL = { top: 1040, rowH: 96, rows: 2, marginX: 72 } as const;
 function deployQueue(level: Level): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   const counts = colorCounts(level);
@@ -205,12 +207,17 @@ function deployQueue(level: Level): Record<string, EntityBlueprint> {
     const need = Math.ceil((counts[name] ?? 0) / Math.max(1, level.ammo));
     for (let k = 0; k < need; k++) queue.push(name);
   }
-  const gapX = (FIELD_W - POOL.marginX * 2) / (POOL.perRow - 1);
+  const perRow = Math.max(1, Math.ceil(queue.length / POOL.rows)); // 恰两排：每排格数
   queue.forEach((name, i) => {
     const pc = PALETTE[name];
     if (!pc) return;
-    const cx = POOL.marginX + (i % POOL.perRow) * gapX;
-    const cy = POOL.top + Math.floor(i / POOL.perRow) * POOL.rowH;
+    const rowIdx = Math.floor(i / perRow);
+    const colIdx = i % perRow;
+    const rowLen = Math.min(perRow, queue.length - rowIdx * perRow); // 本排实际件数（末排可能不满）→ 居中铺
+    const usableW = FIELD_W - POOL.marginX * 2;
+    const gapX = rowLen > 1 ? usableW / (rowLen - 1) : 0;
+    const cx = rowLen > 1 ? POOL.marginX + colIdx * gapX : FIELD_W / 2;
+    const cy = POOL.top + rowIdx * POOL.rowH;
     const sig = `deploy_${i}`;
     out[`pool-${i}`] = {
       Transform: XF(cx, cy),
@@ -269,6 +276,8 @@ function prefabs(level: Level): Record<string, EntityBlueprint> {
         Resource: { id: 'ammo', current: level.ammo, min: 0, max: level.ammo }, // per-shot：每命中一发才 -1（子弹扣发射源）
         Perception: { targetTag: pc.bit, sightRadius: sightFor(level) }, // 视野够到板内同色（填充画内层格也可达·近处优先）
         Relation: { kind: 'target', targetId: '' },
+        // 炮头朝向当前锁定的同色格（=朝画面内侧/中心方向）：render-only·复用 aggro 写的 Relation(target)·转弯时头指向内。
+        FaceRotate: { source: 'target' },
         // 从弹簧口出发沿轨道绕行（loop·传送带持续绕）。同 queueId='belt' 成员按 path 进度**有序不重叠**（minGap≈一格·拥堵=排队）。
         PathFollow: pathFollowAt(trackWaypoints(level), FIRE.moveSpeed, { loop: true, arriveRadius: FIRE.moveSpeed + 2, queueId: 'belt', minGap: Math.round(boardBounds(level).cell * 1.4) }),
         Velocity: { vx: 0, vy: 0, angular: 0 },
@@ -417,6 +426,7 @@ export function buildBlueprint(level: Level = LEVEL_1): WorldBlueprint {
       // tier2 玩法能力
       clickableCapability, groupCountCapability, effectApplyCapability, pathFollowCapability,
       selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
+      faceRotateCapability,
       // tier3（生成 + 索敌 + 流程）
       flowCapability, aggroCapability, prefabCapability, casterCapability,
     ],

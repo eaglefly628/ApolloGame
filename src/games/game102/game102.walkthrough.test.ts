@@ -67,14 +67,20 @@ describe('Game 102 · Pixel Pour（环形轨道 v2 · 机制不变式自验）',
     expect(g.flow()).toBe('playing');
   });
 
-  it('内层可达 + 不误伤别色：部署红（宽视野够到深内层红心）→ 只消红(4格·per-shot)·不动蓝', () => {
+  // ⚠ 已知能力缺口（owner 授权·主程报告 REQ-EXPOSURE-TARGETING）：色炮沿**固定周界轨道**绕行，索敌 = 半径内最近
+  // 同色（aggro）。收紧半径（修「空中开火/位置不对应」）后，**深内层格离周界轨道恒远 → 永远够不到**；放宽半径又
+  // 会空中乱消/忽略分层。二者皆非正解——真需引擎「暴露(邻空)+ 垂直扫描线」targeting 才能逐层从外剥到里。
+  // 本测记录当前真相：部署红（红心=纯内层·四邻皆蓝未剥）→ 周界轨道够不到 → 0 消。不误伤蓝仍成立。
+  it('深内层够不到（能力缺口·待暴露 targeting）+ 不误伤别色：部署红（红心被蓝包裹·周界轨道够不到）→ 红 0 消·蓝不动', () => {
     const g = driven(RING);
     g.step(2);
     const blue0 = g.res('remain-blue');
-    g.tapSupply('red');                        // 宽视野 → 红心可达 → aggro 锁红逐个消
+    const red0 = g.res('remain-red');
+    g.tapSupply('red');
     g.step(LOOP);
-    expect(g.res('remain-red')).toBe(0);       // 4 格红被消（红 4 ≤ ammo 20）
-    expect(g.res('remain-blue')).toBe(blue0);  // 只打同色·不误伤蓝
+    expect(red0).toBe(4);                       // 红心 2×2 = 4 格
+    expect(g.res('remain-red')).toBe(red0);     // 收紧半径 → 纯内层红够不到（缺口·主程报告）
+    expect(g.res('remain-blue')).toBe(blue0);   // 只可能打同色·绝不误伤蓝
     expect(g.flow()).toBe('playing');
   });
 
