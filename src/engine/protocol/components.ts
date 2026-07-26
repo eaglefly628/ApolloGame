@@ -41,8 +41,8 @@
 //        Camera CameraTarget Text TweenTarget TweenEasing TweenLoop Tween TextBinding
 //    ./components/input.js     — 输入：原始信号/动作/队列/键位/点击/操控
 //        RawInput Action RawInputData InputQueue KeyBinding Clickable Controllable
-//    ./components/autochess.js — 自走棋：六边形棋盘/网格移动 + 拖拽/托盘/落点
-//        Draggable Tray TraySeat DropZone HexBoard HexPos GridMover
+//    ./components/autochess.js — 自走棋：六边形棋盘/网格移动 + 拖拽/托盘/落点/压实队列
+//        Draggable Tray TraySeat DropZone HexBoard HexPos GridMover QueueSlots QueueMember
 //    ./components/cardboard.js — 牌与棋盘算法（Tier3 解释器）：三消/扑克/逐张计分/计分trace/牌库/骰池
 //        MatchBoard BoardCell Card PlayedHand PokerHand PerCardWhen PerCardScore
 //        PerCardRule PerCardRetrigger ScoreEvent ScoreTrace CardPile

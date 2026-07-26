@@ -26,6 +26,13 @@ describe('mountHost（引擎公用宿主骨架）', () => {
     expect(h.scene.children.length).toBe(3);
   });
 
+  it('wrapper 用 overflow:clip 而非 hidden（REQ-FOCUSSCROLL·hidden 挡不住程序化 focus-scroll 的 scrollLeft/Top 位移）', () => {
+    const container = makeContainer();
+    const h = mountHost(container, { fieldW: 800, fieldH: 600 });
+    expect(h.wrapper.style.overflow).toBe('clip');
+    expect(h.wrapper.style.cssText).not.toContain('hidden');
+  });
+
   it('容器骨架样式：定尺 scene / 分层 z-index / overlay 默认不吃指针 / 背景注入', () => {
     const container = makeContainer();
     const h = mountHost(container, {

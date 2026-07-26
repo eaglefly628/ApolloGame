@@ -73,6 +73,10 @@ export { textBindingCapability } from './text-binding.js';
 // drag-place（REQ-F-045）：拖拽摆放输入桥——壳层合成 drag 动作→命中 Draggable→hex 吸附/回席/限额（摆子/放塔通用）。
 export { dragPlaceCapability } from './drag-place.js';
 export { trayCapability } from './tray.js';
+// queue-slots（REQ-POOL-ADVANCE 缺口）：压实队列——存活成员每 tick 重排成连续 0..N-1（消费队首/中间
+// 任一成员即全体前移，槽间不留空隙）；前 headCount 个自动挂/摘 Clickable。与 tray（占坑制、老成员不
+// 前移）互补，用哪个看场景是"占坑"还是"排队递补"。
+export { queueSlotsCapability } from './queue-slots.js';
 // grid-drag-square（REQ-CAP·Block Blast 机制②）：方形网格 polyomino 拖放输入桥——命中托盘块取 slot、
 // 终点吸附方格 → 写 PlaceBlockIntent（block-grid 消费）。区别于 drag-place 的六边+移子（此为方形+盖章）。
 export { gridDragSquareCapability, squarePointToCell } from './grid-drag-square.js';

@@ -48,6 +48,7 @@ import {
   textBindingCapability,
   dragPlaceCapability,
   trayCapability,
+  queueSlotsCapability,
   gridDragSquareCapability,
   match3DragSwapCapability,
   modifierStackCapability,
@@ -122,6 +123,10 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   textBindingCapability,
   dragPlaceCapability,
   trayCapability,
+  // t2-queue-slots（REQ-POOL-ADVANCE 缺口）：压实队列——消费队首/中间任一成员，存活成员整体前移
+  // 补成连续 0..N-1（槽间不留空）；前 headCount 个自动挂/摘 Clickable。tray 的姊妹件：tray=占坑制
+  // 不前移，本件=排队递补，两者互补而非重叠。
+  queueSlotsCapability,
   gridDragSquareCapability,
   // t2-match3-drag-swap（REQ-INPUT-拖拽交换）：三消拖拽滑动手势输入桥——drag 动作→主轴邻格选中 Signal（同点选形）。
   match3DragSwapCapability,

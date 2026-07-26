@@ -35,6 +35,28 @@ export interface TraySeat extends Component {
   index: number; // 所在槽下标（0 起）
 }
 
+// ── QueueSlots / QueueMember（REQ-POOL-ADVANCE 缺口·compacting 队列）── 与 Tray 的关键区别：Tray
+// 只填最小空槽、队首消费后老成员不前移；QueueSlots 每 tick 把当前存活成员**整体压实**成连续 0..N-1
+// （队首/中间空出即全体前移，槽间不留空隙——排队叫号/传送带补位的核心形）。位置钉死到槽（瞬时；平滑
+// 上浮动画由游戏层 Tween 叠加，不在本能力职责内）。头 headCount 个成员自动挂/摘 Clickable{action}
+// （同 Tray 增删 TraySeat 的先例：有则不重加、无则摘）。确定性：成员按既有 QueueMember.index（新成员
+// 无则排末尾）+ id 升序 tie-break 稳定排序后重新编号，纯整数运算，无随机无墙钟。
+export interface QueueSlots extends Component {
+  readonly type: 'QueueSlots';
+  memberTag: number; // 成员掩码（Tag.flags 含齐即算成员；语义同 Tray.requiredTag）
+  capacity: number; // 声明槽数（当前版本非强制上限——同 Tray 已知豁口注记：真正入队闸门在别处/容量资源把门）
+  headCount: number; // 压实后 index < headCount 的成员可点（挂 Clickable），其余摘
+  originX: number; // 0 号槽世界 x
+  originY: number; // 0 号槽世界 y
+  gap: number; // 槽距（px）
+  axis?: 'x' | 'y'; // 排布轴向（缺省 'x'：沿 x 展开；'y'：沿 y 展开）
+  action: string; // 头部成员 Clickable.action（点击产出的 Signal.name）
+}
+export interface QueueMember extends Component {
+  readonly type: 'QueueMember';
+  index: number; // 压实后的槽下标（0 起，系统每 tick 重算写回；POD 进 snapshot）
+}
+
 // ── DropZone（REQ-F-058 垃圾桶/出售槽）── 拖放落点区：drag-place 自由落点命中本实体 Shape →
 // **替被拖实体"代点"一下**（发 Signal{name: 被拖者 Clickable.action, source: 被拖者}）——
 // 「扔进垃圾桶=卖出」零新链路：既有 '@signal-source' 卖出效果原样复用；被拖者无 Clickable 则无事发生。

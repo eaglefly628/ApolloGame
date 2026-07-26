@@ -91,8 +91,14 @@ export function mountHost(container: HTMLElement, opts: MountHostOptions): HostS
   const { fieldW, fieldH, topBarH = 0, bottomBarH = 0, sceneBackground, wrapperBackground, sceneBgSkin } = opts;
 
   const wrapper = document.createElement('div');
+  // overflow:clip（非 hidden，REQ-FOCUSSCROLL）：hidden 挡不住程序化 focus/scrollIntoView 对 scrollLeft/Top
+  // 的位移（浏览器仍会把 hidden 容器当可滚动目标去滚，只是滚完看不见回弹前的中间态）——某些宿主内的
+  // 可聚焦控件被点击/聚焦时会触发 scrollIntoView 把 wrapper 整体滚偏，肉眼可见的定尺场景错位。clip 是
+  // 严格更强的裁切：禁一切滚动（含程序化），从根上不给浏览器可滚的余地。两者视觉裁切效果一致，clip 无
+  // 额外兼容性代价（现代浏览器基线支持）。（game101 因此在游戏层自建了 resetScroll 兜底监听——
+  // 本修复落地后那层 workaround 冗余，可由 PE 另行清理，本 ticket 不碰游戏层代码。）
   wrapper.style.cssText =
-    'position:absolute;inset:0;overflow:hidden;display:flex;align-items:center;justify-content:center;' +
+    'position:absolute;inset:0;overflow:clip;display:flex;align-items:center;justify-content:center;' +
     '-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale' +
     (wrapperBackground ? `;background:${wrapperBackground}` : '');
 
