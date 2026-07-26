@@ -117,6 +117,8 @@ export function mount(container: HTMLElement): () => void {
   // ── 连杀（连击）host 派生（owner「1 秒内杀 5 个=连杀·左右上角闪动态数字」）───────────────
   // 击杀真相=sim 的 score（累计击杀·gem 入 killbox 环记 +1）。host 侧维护 1 秒滑窗击杀时刻表→窗内计数=combo。
   // 纯表现派生（不进 sim/hash·零确定性影响·零碰撞开销），换色闪由 simTick 相位驱动。
+  const COMBO_WINDOW_SEC = 2;                     // 连杀滑窗秒数（owner 2026-07-26「放宽·2 秒杀 8 个」·配 COMBO_MIN=8）
+  const COMBO_WINDOW_TICKS = Math.round(TPS * COMBO_WINDOW_SEC);
   let simTick = 0;
   let prevScore = 0;
   let killWin: number[] = []; // 窗内每次击杀的 simTick
@@ -125,7 +127,7 @@ export function mount(container: HTMLElement): () => void {
     const gained = score - prevScore;
     if (gained > 0) { for (let i = 0; i < gained; i++) killWin.push(simTick); prevScore = score; }
     else if (score < prevScore) prevScore = score; // 重开回退
-    const cutoff = simTick - TPS; // 1 秒窗
+    const cutoff = simTick - COMBO_WINDOW_TICKS; // 滑窗
     while (killWin.length && killWin[0] < cutoff) killWin.shift();
     return { combo: killWin.length, comboFlash: Math.floor(simTick / 5) % 2 }; // 每 5 拍换色=闪
   }

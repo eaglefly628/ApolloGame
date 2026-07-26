@@ -17,8 +17,8 @@ export interface HudState {
   status: 'playing' | 'victory' | 'defeat';
 }
 
-// 连杀门槛（owner「1 秒内杀 5 个以上=连杀」）：达此才亮醒目大数字。
-export const COMBO_MIN = 5;
+// 连杀门槛（owner 2026-07-26 调「放宽·2 秒杀 8 个」）：2 秒窗内达此杀数才亮醒目大数字。窗长见 game-103.ts COMBO_WINDOW_SEC。
+export const COMBO_MIN = 8;
 
 // 连杀横幅（owner「醒目·动态放缩·左上+右上角闪」）：达门槛才显——左右两角各一枚大数字，
 // 字号随连杀数放大、颜色按 comboFlash 相位金/红交替闪。未达门槛=空 bare panel（近零高·不挤 HUD）。
