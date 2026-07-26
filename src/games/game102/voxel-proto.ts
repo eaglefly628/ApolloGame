@@ -174,6 +174,36 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   };
   refreshChrome();
 
+  // ── 调试窗口（owner 要求：日志 + 错误上屏·可复制贴回）──────────────────────────────────────
+  const logs: string[] = [];
+  const logPanel = el('div', 'position:absolute;left:8px;right:8px;bottom:8px;height:34%;background:#000d;border:1px solid #2b3d5c;border-radius:8px;display:none;flex-direction:column;z-index:50;font:11px/1.4 monospace;color:#cfe;');
+  const logHead = el('div', 'display:flex;gap:6px;align-items:center;padding:5px 8px;border-bottom:1px solid #2b3d5c;');
+  logHead.appendChild(el('div', 'flex:1;color:#8fb0e0;font-weight:700;', '🐞 DEBUG'));
+  const btnCopy = el('button', 'pointer-events:auto;background:#1a2740;color:#cfe;border:1px solid #35507a;border-radius:5px;padding:2px 8px;cursor:pointer;', '复制');
+  const btnClear = el('button', 'pointer-events:auto;background:#1a2740;color:#cfe;border:1px solid #35507a;border-radius:5px;padding:2px 8px;cursor:pointer;', '清空');
+  logHead.appendChild(btnCopy); logHead.appendChild(btnClear);
+  const logPre = el('pre', 'flex:1;margin:0;padding:6px 8px;overflow:auto;white-space:pre-wrap;user-select:text;-webkit-user-select:text;');
+  logPanel.appendChild(logHead); logPanel.appendChild(logPre);
+  wrapper.appendChild(logPanel);
+  const btnBug = el('button', 'position:absolute;left:8px;bottom:8px;z-index:51;pointer-events:auto;background:#1a2740cc;color:#cfe;border:1px solid #35507a;border-radius:6px;padding:4px 8px;cursor:pointer;font:12px monospace;', '🐞');
+  wrapper.appendChild(btnBug);
+  let logDirty = false;
+  const pushLog = (line: string, err = false): void => {
+    logs.push((err ? '❌ ' : '') + line);
+    if (logs.length > 400) logs.shift();
+    logDirty = true;
+    if (err && logPanel.style.display === 'none') { logPanel.style.display = 'flex'; }
+  };
+  const renderLog = (): void => { if (!logDirty) return; logDirty = false; logPre.textContent = logs.join('\n'); logPre.scrollTop = logPre.scrollHeight; };
+  btnBug.onclick = () => { logPanel.style.display = logPanel.style.display === 'none' ? 'flex' : 'none'; logDirty = true; renderLog(); };
+  btnClear.onclick = () => { logs.length = 0; logDirty = true; renderLog(); };
+  btnCopy.onclick = () => { const r = document.createRange(); r.selectNodeContents(logPre); const sel = getSelection(); sel?.removeAllRanges(); sel?.addRange(r); try { document.execCommand('copy'); btnCopy.textContent = '已复制'; setTimeout(() => (btnCopy.textContent = '复制'), 1000); } catch { /* 手动选 */ } };
+  const onWinErr = (e: ErrorEvent): void => pushLog(`WINERR ${e.message} @${(e.filename || '').split('/').pop()}:${e.lineno}\n${e.error?.stack?.split('\n').slice(0, 4).join('\n') ?? ''}`, true);
+  const onRej = (e: PromiseRejectionEvent): void => pushLog(`REJECT ${String(e.reason?.message ?? e.reason)}\n${e.reason?.stack?.split('\n').slice(0, 4).join('\n') ?? ''}`, true);
+  window.addEventListener('error', onWinErr);
+  window.addEventListener('unhandledrejection', onRej);
+  pushLog(`start · cube ${N}³ · voxels=${total} · ammo=${cannons.map((c) => c.ammo).join('/')}`);
+
   // ── 旋转（拖拽·手型光标）+ 待机自转计时 ──
   wrapper.style.cursor = 'grab';
   let dragging = false, lastX = 0, lastY = 0, lastInteract = performance.now();
@@ -206,6 +236,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   const reveal = (i: number, j: number, k: number): void => {
     const id = vid(i, j, k);
     if (rendered.has(id) || !present.has(id) || !exposed(i, j, k)) return;
+    try { engine.world.createEntity(id); } catch { /* 已存在 → 忽略 */ } // ★ addComponent 对不存在实体会抛错·先建实体（首版冻结根因）
     engine.world.addComponent(id, { type: 'Transform3D', x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) } as unknown as Transform3D);
     engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(PALETTE[colorAt.get(id)!].tint) } as never);
     const piv = engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D');
@@ -266,12 +297,14 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     const s = frontSide();
     const aim = aimVox(s);
     let hit = false;
-    if (aim && colorAt.get(vid(aim[0], aim[1], aim[2])) === c.color) {
+    const aimColor = aim ? colorAt.get(vid(aim[0], aim[1], aim[2])) : null;
+    if (aim && aimColor === c.color) {
       breakVox(aim[0], aim[1], aim[2]); hit = true; hits++;   // 同色 → 打破·露下一层
     } else if (aim) {
       bounceFx();                                             // 异色 → 反弹·空放
     }
     c.ammo -= 1;
+    pushLog(`beat side=${s} aim=${aim ? aim.join(',') : '∅'} aimC=${aimColor ?? '-'} active=${c.color} → ${hit ? '破' : aim ? '弹' : '空'} · rem=${remaining} ammo=${c.ammo} rendered=${rendered.size}`);
     flashReticle(hit);
     if (remaining === 0) { finish(); refreshChrome(); return; }
     if (c.ammo <= 0) { activeIdx++; if (activeIdx >= cannons.length) finish(); }
@@ -279,22 +312,32 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     renderer.invalidate?.();
   };
 
-  let acc = 0, last = performance.now();
-  const unsub = engine.subscribe(() => {
-    const now = performance.now();
-    const dt = now - last; last = now;
-    if (IDLE_SPIN > 0 && !dragging && !over && now - lastInteract > IDLE_DELAY) {
-      const t = pivotT(); if (t) { t.rotY = (t.rotY ?? 0) + IDLE_SPIN * dt / 1000; renderer.invalidate?.(); }
-    }
-    acc += dt; if (acc > 2000) acc = BEAT_MS;
-    while (acc >= BEAT_MS) { acc -= BEAT_MS; onBeat(); }
-  });
-  engine.start();
+  // ── 自管渲染循环（**全程 try/catch·任何一处抛错都只记日志·绝不冻结循环**）──────────────────
+  // 教训：engine.start() 内 renderer.sync/notifyListeners 抛错早于 rAF 重排 → 整循环死。这里自己驱动、逐段兜底。
+  let raf = 0, acc = 0, last = performance.now();
+  const frame = (now: number): void => {
+    try {
+      const dt = now - last; last = now;
+      if (IDLE_SPIN > 0 && !dragging && !over && now - lastInteract > IDLE_DELAY) {
+        const t = pivotT(); if (t) t.rotY = (t.rotY ?? 0) + IDLE_SPIN * dt / 1000;
+      }
+      acc += dt; if (acc > 2000) acc = BEAT_MS;
+      let guard = 0;
+      while (acc >= BEAT_MS && guard++ < 8) { acc -= BEAT_MS; onBeat(); } // guard 防死循环暴发
+      if (acc >= BEAT_MS) acc = 0;
+    } catch (e) { pushLog(`FRAME ${(e as Error).message}\n${(e as Error).stack?.split('\n').slice(0, 5).join('\n') ?? ''}`, true); }
+    try { renderer.sync(engine.world); } catch (e) { pushLog(`RENDER ${(e as Error).message}\n${(e as Error).stack?.split('\n').slice(0, 5).join('\n') ?? ''}`, true); }
+    renderLog();
+    raf = requestAnimationFrame(frame);
+  };
+  raf = requestAnimationFrame(frame);
 
   return () => {
-    unsub();
+    if (raf) cancelAnimationFrame(raf);
     engine.stop();
     timers.forEach(clearTimeout);
+    window.removeEventListener('error', onWinErr);
+    window.removeEventListener('unhandledrejection', onRej);
     wrapper.removeEventListener('pointerdown', onDown);
     wrapper.removeEventListener('pointermove', onMove);
     wrapper.removeEventListener('pointerup', onUp);
