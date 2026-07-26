@@ -11,7 +11,7 @@ import { ThreeRenderer } from '@renderer/three-renderer.js';
 import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assembly.js';
 import type { Transform3D, Pivot3D } from '@engine/protocol/components.js';
 
-const N = 12;             // 立方边长（体素多→更细更爽·只渲外壳~728格）
+const N = 16;             // 立方边长（P3D 实例化入库→可上大立方·壳~1352格归批~5 draw call）
 const PITCH = 22;
 const VOX = 22;           // =PITCH：相接无缝·剥层露内层彩格
 const MAXC = ((N - 1) / 2) * PITCH;
@@ -57,15 +57,16 @@ function rotVec(x: number, y: number, z: number, rx: number, ry: number): [numbe
 const shortDelta = (a: number, b: number): number => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; };
 const vid = (i: number, j: number, k: number): string => `v-${i}-${j}-${k}`;
 const idx2pos = (i: number): number => (i - (N - 1) / 2) * PITCH;
-const voxMesh = (t: number): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: shade(t, 0.82) });
-// ── 渲染样式集（owner「做几个版本对比」）：材质(果冻/卡通/黏土/平涂/糖果) + 对应后处理(AO/bloom/描边/分级)──
-type Style = { name: string; mat: (t: number) => Record<string, unknown>; post: Record<string, unknown> };
+// ★ 实例化友好：Mesh3D voxelTex（P3D 大规模渲染入库·同款体素归批 InstancedMesh）→ 立方可又大又细。
+//   **不挂 Material3D**（挂了会退化成单 mesh/格·卡且做不大·见 three-renderer:312）。观感靠 GTAO/post 出厚度。
+const voxMesh = (t: number): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: shade(t, 0.82), voxelTex: { top: t, side: shade(t, 0.8), pattern: 'plain', tile: VOX } });
+// ── 渲染样式集（instancing-safe·只切后处理·GTAO/bloom/暗角/分级）——保持实例化不破·大立方也能切 ──
+type Style = { name: string; post: Record<string, unknown> };
 const STYLES: Style[] = [
-  { name: '果冻', mat: (t) => ({ preset: 'plastic', color: t, roughness: 0.24, metalness: 0, surface: { pattern: 'bumps', normal: 1.4, rough: 0.5 } }), post: { ao: { intensity: 1.1, radius: 5 }, bloom: { strength: 0.22, threshold: 0.75 }, aa: true } },
-  { name: '卡通', mat: (t) => ({ preset: 'plastic', color: t, shading: 'toon', toonSteps: 3, outline: { width: 1.4, color: 0x10141d } }), post: { ao: { intensity: 0.8, radius: 5 }, aa: true } },
-  { name: '黏土', mat: (t) => ({ preset: 'matte', color: t, roughness: 0.95, surface: { pattern: 'bumps', normal: 0.8, rough: 0.6 } }), post: { ao: { intensity: 1.5, radius: 6 }, vignette: { intensity: 0.35 }, grade: { saturation: 1.08 }, aa: true } },
-  { name: '平涂', mat: (t) => ({ preset: 'plastic', color: t, shading: 'flat' }), post: { ao: { intensity: 0.6, radius: 5 }, bloom: { strength: 0.4, threshold: 0.7 } } },
-  { name: '糖果', mat: (t) => ({ preset: 'plastic', color: t, roughness: 0.12, metalness: 0.12 }), post: { ao: { intensity: 0.8, radius: 5 }, bloom: { strength: 0.6, threshold: 0.65 }, grade: { saturation: 1.2, contrast: 1.08 }, aa: true } },
+  { name: '标准', post: { ao: { intensity: 1.2, radius: 6 }, bloom: { strength: 0.22, threshold: 0.75 }, aa: true } },
+  { name: '厚AO', post: { ao: { intensity: 1.8, radius: 7 }, vignette: { intensity: 0.38 }, aa: true } },
+  { name: '鲜艳', post: { ao: { intensity: 0.9, radius: 6 }, bloom: { strength: 0.45, threshold: 0.65 }, grade: { saturation: 1.22, contrast: 1.08 }, aa: true } },
+  { name: '柔光', post: { ao: { intensity: 1.0, radius: 6 }, bloom: { strength: 0.62, threshold: 0.6 }, grade: { brightness: 0.05 }, aa: true } },
 ];
 function el(tag: string, css: string, html?: string): HTMLElement { const e = document.createElement(tag); e.style.cssText = css; if (html !== undefined) e.innerHTML = html; return e; }
 
@@ -96,7 +97,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) for (let k = 0; k < N; k++) {
       if (!exposed(i, j, k)) continue;
       const id = vid(i, j, k); const t = PALETTE[colorAt.get(id)!].tint;
-      entities[id] = { Transform3D: { x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) }, Mesh3D: voxMesh(t) as EntityBlueprint['Mesh3D'], Material3D: { ...STYLES[0].mat(t) } as unknown as EntityBlueprint['Material3D'] };
+      entities[id] = { Transform3D: { x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) }, Mesh3D: voxMesh(t) as EntityBlueprint['Mesh3D'] }; // 无 Material3D → 归批实例化
       ids.push(id); rendered.add(id);
     }
     entities['post'] = { Post3D: { ...STYLES[0].post } as unknown as EntityBlueprint['Post3D'] };
@@ -139,12 +140,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     styleIdx = ((idx % STYLES.length) + STYLES.length) % STYLES.length;
     const st = STYLES[styleIdx];
     engine.world.removeComponent('post', 'Post3D');
-    engine.world.addComponent('post', { type: 'Post3D', ...st.post } as never);
-    for (const id of rendered) {
-      const cc = colorAt.get(id); if (cc == null) continue;
-      engine.world.removeComponent(id, 'Material3D');
-      engine.world.addComponent(id, { type: 'Material3D', ...st.mat(PALETTE[cc].tint) } as never);
-    }
+    engine.world.addComponent('post', { type: 'Post3D', ...st.post } as never); // 只切后处理·实例化不破
     styleBtn.textContent = `🎨 ${st.name}`;
   };
   styleBtn.onclick = () => applyStyle(styleIdx + 1);
@@ -227,8 +223,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     try { engine.world.createEntity(id); } catch { /* */ }
     engine.world.addComponent(id, { type: 'Transform3D', x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) } as unknown as Transform3D);
     const t = PALETTE[colorAt.get(id)!].tint;
-    engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(t) } as never);
-    engine.world.addComponent(id, { type: 'Material3D', ...STYLES[styleIdx].mat(t) } as never);
+    engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(t) } as never); // 无 Material3D → 归批实例化
     engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D')?.children.push(id); rendered.add(id);
   };
   const breakVox = (i: number, j: number, k: number): void => {
