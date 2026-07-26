@@ -105,11 +105,18 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   const total = cells.length;
   let over: 'win' | 'lose' | null = null;
 
+  // 外层信箱（填满容器·深色边）+ 竖版机框（照参考图 9:16 竖屏·居中·letterbox）。
+  const outer = el('div', 'position:absolute;inset:0;overflow:hidden;background:#060d18;display:flex;align-items:center;justify-content:center;');
+  container.appendChild(outer);
+  const ASPECT = 0.5625; // w/h = 9:16 竖屏
+  const cw = outer.clientWidth || 900, ch = outer.clientHeight || 1400;
+  let fw = Math.round(ch * ASPECT), fh = ch;
+  if (fw > cw) { fw = cw; fh = Math.round(cw / ASPECT); }
   // 背景：暗底 + 淡网格（概念图）。
-  const wrapper = el('div', 'position:absolute;inset:0;overflow:hidden;touch-action:none;background:#0e1a30;'
-    + 'background-image:linear-gradient(#ffffff10 1px,transparent 1px),linear-gradient(90deg,#ffffff10 1px,transparent 1px);background-size:48px 48px;');
-  container.appendChild(wrapper);
-  const w = wrapper.clientWidth || 900, h = wrapper.clientHeight || 1400;
+  const wrapper = el('div', `position:relative;width:${fw}px;height:${fh}px;overflow:hidden;touch-action:none;background:#0e1a30;`
+    + 'background-image:linear-gradient(#ffffff10 1px,transparent 1px),linear-gradient(90deg,#ffffff10 1px,transparent 1px);background-size:48px 48px;box-shadow:0 0 40px #000a;');
+  outer.appendChild(wrapper);
+  const w = fw, h = fh;
 
   const { blueprint } = buildProtoScene(cells);
   const engine = new Engine({ input: new QueuedInputSource('g102p') });
@@ -268,6 +275,6 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     wrapper.removeEventListener('pointerup', onUp);
     wrapper.removeEventListener('pointercancel', onUp);
     renderer.destroy();
-    wrapper.remove();
+    outer.remove();
   };
 }
