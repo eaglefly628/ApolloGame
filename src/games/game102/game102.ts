@@ -8,6 +8,7 @@ import { Engine } from '../../runtime/engine.js';
 import { CanvasRenderer } from '@renderer/index.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
 import { buildVoxelScene } from './voxel.js';
+import { mountVoxelProto } from './voxel-proto.js';
 import { AssetManager, ImageAssetLoader, registerAssetIndex, parseAssetIndex } from '@assets/index.js';
 import { QueuedInputSource, canvasPointerToScreen } from '@net/index.js';
 import { mountHost } from '@engine/host/mount-host.js';
@@ -44,6 +45,12 @@ export function mountVoxel3D(container: HTMLElement, _host?: { exit: () => void 
 // 启动入口（launcher 调 mount）：owner 2026-07-26 定案 → 现默认渲**3D 旋转体素立方**（先目击效果）。
 // 玩法链（炮塔轨道/派炮/命中消体素）在 3D 空间接线中；旧 2D 棋盘玩法保留在 mount2D 供逐步移植。
 export function mount(container: HTMLElement, host?: { exit: () => void }): () => void {
+  // owner 2026-07-26：核心循环手感原型（转立方喂炮·完成制+空放浪费）——先验证好不好玩。
+  return mountVoxelProto(container, host);
+}
+
+// 纯旋转体素立方展示（无玩法·观感调参用）。
+export function mountCubeShowcase(container: HTMLElement, host?: { exit: () => void }): () => void {
   return mountVoxel3D(container, host);
 }
 
