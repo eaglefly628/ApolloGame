@@ -13,7 +13,7 @@ import { Engine } from '../../runtime/engine.js';
 import { QueuedInputSource } from '@net/index.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
 import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assembly.js';
-import type { Transform3D, Pivot3D } from '@engine/protocol/components.js';
+import type { Transform3D, Pivot3D, Mesh3D } from '@engine/protocol/components.js';
 
 // ── 配置（手感旋钮）──────────────────────────────────────────────────────────────────────────
 const N = 10;             // 立方边长（N×N×N 实心点阵）
@@ -26,7 +26,7 @@ const PASS = 0.55;        // 过关破坏度阈值
 const IDLE_SPIN = 0.22;   // 待机自转 rad/秒（0=关）
 const IDLE_DELAY = 1400;  // 松手后 ms 无操作才启动待机自转
 const CAM_DIST = N * PITCH * 3.9; // 相机距离（越大立方越小·owner「缩 20% 留白给以后 3D 轨道」）
-const TRAVEL_MS = 640;   // 子弹飞行时长（再放慢一半·看得见轨迹·owner「降低一半」）
+const TRAVEL_MS = 1200;  // 子弹飞行时长（再放慢一半·看清轨迹·owner 连番「再慢一半」）
 const FRAG_N = 7;        // 碎裂片数
 const GRAV = 900;        // 碎片重力（世界单位/秒²·自管运动积分·非 cannon-es·零冻结风险）
 const MUZZLE_W = { x: 0, y: -MAXC * 2.1, z: MAXC * 1.5 }; // 炮口世界位（立方前下方）
@@ -51,6 +51,10 @@ const SIDES: { n: [number, number, number]; axis: number; val: number; ua: numbe
 function shade(tint: number, k: number): number {
   const r = Math.round(((tint >> 16) & 0xff) * k), g = Math.round(((tint >> 8) & 0xff) * k), b = Math.round((tint & 0xff) * k);
   return (r << 16) | (g << 8) | b;
+}
+function lighten(tint: number, k: number): number { // 向白混（高亮瞄中格）
+  const r = (tint >> 16) & 0xff, g = (tint >> 8) & 0xff, b = tint & 0xff;
+  return ((Math.round(r + (255 - r) * k)) << 16) | ((Math.round(g + (255 - g) * k)) << 8) | Math.round(b + (255 - b) * k);
 }
 function hash3(a: number, b: number, c: number): number {
   let h = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791);
@@ -90,6 +94,8 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
 
   let activeColor = 0;              // 玩家当前选中的炮色（可切换·无限弹）
   let timeLeft = TIME_LIMIT;        // 剩余秒（时间到按破坏度评分）
+  let targetVox: [number, number, number] | null = null; // 准星射线命中的那一格（精确瞄准）
+  let hlId: string | null = null;   // 当前高亮格 id
   let remaining = present.size;
   const total = present.size;
   let over: 'win' | 'lose' | null = null;
@@ -101,7 +107,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) for (let k = 0; k < N; k++) {
       if (!exposed(i, j, k)) continue;
       const id = vid(i, j, k);
-      entities[id] = { Transform3D: { x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) }, Mesh3D: voxMesh(PALETTE[colorAt.get(id)!].tint) as EntityBlueprint['Mesh3D'] };
+      entities[id] = { Transform3D: { x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) }, Mesh3D: voxMesh(PALETTE[colorAt.get(id)!].tint) as EntityBlueprint['Mesh3D'], Pickable3D: { signal: 'hit' } as EntityBlueprint['Pickable3D'] };
       ids.push(id); rendered.add(id);
     }
     // （去掉暗内核块：体素已相接·无透视缝；剥层露的是内层彩格·不再是黑）
@@ -205,9 +211,16 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     if (err && logPanel.style.display === 'none') { logPanel.style.display = 'flex'; }
   };
   const renderLog = (): void => { if (!logDirty) return; logDirty = false; logPre.textContent = logs.join('\n'); logPre.scrollTop = logPre.scrollHeight; };
+  // 调试控件的 pointerdown 拦截·不触发立方拖拽。
+  [btnBug, btnCopy, btnClear, logPanel].forEach((b) => b.addEventListener('pointerdown', (e) => e.stopPropagation()));
   btnBug.onclick = () => { logPanel.style.display = logPanel.style.display === 'none' ? 'flex' : 'none'; logDirty = true; renderLog(); };
   btnClear.onclick = () => { logs.length = 0; logDirty = true; renderLog(); };
-  btnCopy.onclick = () => { const r = document.createRange(); r.selectNodeContents(logPre); const sel = getSelection(); sel?.removeAllRanges(); sel?.addRange(r); try { document.execCommand('copy'); btnCopy.textContent = '已复制'; setTimeout(() => (btnCopy.textContent = '复制'), 1000); } catch { /* 手动选 */ } };
+  btnCopy.onclick = () => {
+    const all = logs.join('\n');                          // 复制**全部**日志（不受滚动/选区限制）
+    const done = (): void => { btnCopy.textContent = '已复制✓'; setTimeout(() => (btnCopy.textContent = '复制'), 1200); };
+    if (navigator.clipboard?.writeText) { navigator.clipboard.writeText(all).then(done).catch(() => { logPre.textContent = all; const r = document.createRange(); r.selectNodeContents(logPre); const s = getSelection(); s?.removeAllRanges(); s?.addRange(r); try { document.execCommand('copy'); done(); } catch { /* 手动选 */ } }); }
+    else { const r = document.createRange(); r.selectNodeContents(logPre); const s = getSelection(); s?.removeAllRanges(); s?.addRange(r); try { document.execCommand('copy'); done(); } catch { /* */ } }
+  };
   const onWinErr = (e: ErrorEvent): void => pushLog(`WINERR ${e.message} @${(e.filename || '').split('/').pop()}:${e.lineno}\n${e.error?.stack?.split('\n').slice(0, 4).join('\n') ?? ''}`, true);
   const onRej = (e: PromiseRejectionEvent): void => pushLog(`REJECT ${String(e.reason?.message ?? e.reason)}\n${e.reason?.stack?.split('\n').slice(0, 4).join('\n') ?? ''}`, true);
   window.addEventListener('error', onWinErr);
@@ -249,6 +262,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     try { engine.world.createEntity(id); } catch { /* 已存在 → 忽略 */ } // ★ addComponent 对不存在实体会抛错·先建实体（首版冻结根因）
     engine.world.addComponent(id, { type: 'Transform3D', x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) } as unknown as Transform3D);
     engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(PALETTE[colorAt.get(id)!].tint) } as never);
+    engine.world.addComponent(id, { type: 'Pickable3D', signal: 'hit' } as never);
     const piv = engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D');
     piv?.children.push(id);
     rendered.add(id);
@@ -345,19 +359,34 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     }
   };
 
-  const CC = Math.round((N - 1) / 2); // 面心索引（准星正对那一格·精确瞄准）
+  // 高亮准星射线命中的那一格（提白+白棱·让玩家一眼看到"打哪里"）。
+  const setHighlight = (id: string | null): void => {
+    if (hlId === id) return;
+    if (hlId) { const m = engine.world.getComponent<Mesh3D>(hlId, 'Mesh3D'); const cc = colorAt.get(hlId); if (m && cc != null) { const t = PALETTE[cc].tint; m.frontTint = t; m.backTint = t; m.edgeTint = shade(t, 0.82); } }
+    hlId = id;
+    if (id) { const m = engine.world.getComponent<Mesh3D>(id, 'Mesh3D'); const cc = colorAt.get(id); if (m && cc != null) { const t = lighten(PALETTE[cc].tint, 0.45); m.frontTint = t; m.backTint = t; m.edgeTint = 0xffffff; } }
+  };
+  // 每帧：从准星（屏心偏上）投射线 → 命中最前体素 = 精确瞄点。
+  const updateAim = (): void => {
+    const rect = wrapper.getBoundingClientRect();
+    const hit = renderer.pick(rect.left + rect.width * 0.5, rect.top + rect.height * 0.46);
+    if (hit && hit.entityId.startsWith('v-')) {
+      const p = hit.entityId.split('-');
+      targetVox = [Number(p[1]), Number(p[2]), Number(p[3])];
+      setHighlight(hit.entityId);
+    } else { targetVox = null; setHighlight(null); }
+  };
   const onBeat = (): void => {
-    if (over) return;
-    const s = frontSide();
-    const aim = faceVisible(s, CC, CC);                       // ★ 精确瞄准星正对的那一格（非自动锁·靠切色对准）
-    if (!aim) return;                                         // 中心列已剥空
-    const aimColor = colorAt.get(vid(aim[0], aim[1], aim[2]))!;
-    const same = aimColor === activeColor;                    // 同色→破·异色→弹（玩家切色对准）
-    const to = voxWorld(aim[0], aim[1], aim[2]);
+    if (over || !targetVox) return;
+    const [i, j, k] = targetVox;
+    if (!present.has(vid(i, j, k))) return;
+    const aimColor = colorAt.get(vid(i, j, k))!;
+    const same = aimColor === activeColor;                    // 同色→破·异色→弹（玩家切色对准准星那格）
+    const to = voxWorld(i, j, k);
     const id = `blt-${movN}`;
-    spawnEnt(id, MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z, VOX * 0.55, PALETTE[activeColor].tint);
-    movers.push({ kind: 'bullet', id, t: 0, from: [MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z], to, aim: [aim[0], aim[1], aim[2]], color: activeColor, same });
-    pushLog(`fire side=${s} aim=${aim.join(',')} aimC=${aimColor} active=${activeColor} → ${same ? '将破' : '将弹'} rem=${remaining}`);
+    spawnEnt(id, MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z, VOX * 0.5, PALETTE[activeColor].tint);
+    movers.push({ kind: 'bullet', id, t: 0, from: [MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z], to, aim: [i, j, k], color: activeColor, same });
+    pushLog(`fire aim=${i},${j},${k} aimC=${aimColor} active=${activeColor} → ${same ? '将破' : '将弹'} rem=${remaining}`);
   };
   // 子弹飞抵结算（同色破+碎裂·异色反弹）。
   const resolveBullet = (b: Bullet): void => {
@@ -381,7 +410,8 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     try {
       const dt = now - last; last = now;
       frames++;
-      if (now - hb > 2000) { pushLog(`❤ fps≈${Math.round(frames / ((now - hb) / 1000))} rendered=${rendered.size} rem=${remaining} drag=${dragging}`); hb = now; frames = 0; }
+      if (now - hb > 2000) { pushLog(`❤ fps≈${Math.round(frames / ((now - hb) / 1000))} rendered=${rendered.size} rem=${remaining} tgt=${targetVox ? targetVox.join(',') : '∅'}`); hb = now; frames = 0; }
+      updateAim(); // 准星射线求最前体素 → 高亮 + 记为瞄点
       if (IDLE_SPIN > 0 && !dragging && !over && now - lastInteract > IDLE_DELAY) {
         const t = pivotT(); if (t) t.rotY = (t.rotY ?? 0) + IDLE_SPIN * dt / 1000;
       }
