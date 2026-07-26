@@ -6,7 +6,8 @@
 
 ---
 
-## REQ-3D-RENDER-EFFICIENCY · 渲染效率提高（大规模同屏实体·批绘/实例化）· [2026-07-24] · **owner 拍板「先把渲染效率提高」** → P3D · status: open · 优先级: **P1（owner 明示先做·game-103 百敌卡顿实证）** · 类型: 渲染性能（2D 批绘 + 3D 实例化·render-only）
+## REQ-3D-RENDER-EFFICIENCY · 渲染效率提高（大规模同屏实体·批绘/实例化）· [2026-07-24] · **owner 拍板「先把渲染效率提高」** → P3D · status: **🚧 增量①✅ done（P3D 2026-07-26·canvas2D 去每实体 save/restore·已推）；增量②WebGL2 批渲待（仅当 canvas2D 仍不达标/上千实体再上）** · 优先级: **P1（owner 明示先做·game-103 百敌卡顿实证）** · 类型: 渲染性能（2D 批绘 + 3D 实例化·render-only）
+> **★ P3D 增量① 回执（2026-07-26·canvas2D 热路径·不上 WebGL2）**：诊断=`canvas-renderer` 实体循环对**每个**实体 `save/translate/rotate/scale/restore` + 独立 drawImage → 百级敌=百次状态栈压弹 + 百次冗余变换调用。修法=把 **DPR×相机×实体** 三层变换在 JS 合成一个 6 元仿射（新纯模块 `canvas-transform.ts`·`rot=0` 跳 trig 热路径），每实体一次 `ctx.setTransform` → **免每实体 save/restore**；相机也从 `ctx.save/translate/scale` 改成 base 仿射（瓦片同基变换按世界坐标画）；`globalAlpha/fillStyle` 冗余状态消除（无 save/restore 复位后仅变化才写）。DPR/相机零丢失（都折进矩阵）·headless dpr=1 无相机逐位等价旧行为。**保 FaceDir**（`resolveRotation2D` 喂 entityMatrix）。测试 `canvas-transform.test` 5 例（base/实体矩阵/三层合成等价）。**跨游戏真浏览器目击零回归**：game-103（tilemap+相机+精灵+shape+HUD 文本）、game-q NEON SIEGE（标题/HUD/折线路径/六边精灵/动作栏）。tsc0/vitest3606/build0。**增量②（WebGL2 批渲/离屏 atlas）**：只在 canvas2D 优化后实测仍到不了 60fps 或需上千实体时再上（大改·单开）——现按「数百」目标先交增量①。rigorous 前后 FPS bench 待真浏览器 100+ 敌场景实测补。
 > **owner 指令（2026-07-24）**：**先把渲染的效率提高**。承 `REQ-SURVIVOR群体`（引擎池）② 半场——该条 ①群体分离仍归主程引擎（steering），**②渲染半场移入本单归 P3D 主理**。
 > **缺口（实证）**：① 2D `CanvasRenderer` 逐实体 `ctx.drawImage`（`src/renderer/canvas-renderer.ts:153`）**无批处理**——game-103 幸存者百级同屏敌=百 draw call → overdraw 卡顿（owner 试玩 v1 BUG-05）；② 高效实例化绘制现**只在 3D `three-renderer`**，2D / 大规模实体场景无高效路径。
 > **要什么（P3D 主理·框方向·技术路 P3D 定）**：给「大量同纹理实体」一条高效渲染路——**2D**=同 atlas 合批（减 draw call + 减状态切换）或大规模场景走 WebGL2 批渲/实例化；**3D**=复核 `three-renderer` 现有实例化绘制覆盖度（若某游戏走 3D 盒庭则直接用）。owner 指名参考「**Instanced Draw**」思路。**注（Lead）**：2D canvas 无 GPU instancing 语义——真解=合批 drawImage / 离屏 atlas / 转 WebGL 批渲，框定准确、别照搬 3D instancing 名词当 2D 用。
@@ -28,6 +29,8 @@
 > **建议（P3D 裁·opt-in·向后兼容）**：给 `RigidBody3D` 加 `angularFactor?: readonly [number, number, number]`（缺省 `[1,1,1]`=现行不变）；`physics.ts spawn()` 里 `if (rb.angularFactor) body.angularFactor.set(ax,ay,az)`（并 `body.angularFactor` 初值同步·防睡醒重置）。落地后 game-c 筹码填 `[0,1,0]`=**只准平旋·永不立边**（100% 根治·含被撞）。
 > **复用面**：任何硬币/筹码/冰球/圆盘（保持平面）、或「只许绕某轴转」的门/轮/摆（等价 hinge 但免建约束体）、`[0,0,0]`=完全锁转（稳态骰子停面/招牌不晃）。标准物理引擎（Rapier/PhysX）都有 lockRotation·对齐 cannon API。
 > **PE-C 侧就绪**：API 落地后 `chip3d.ts` throwBet + setStack 各加一字段即根治·测试同步钉 `[0,1,0]`。**非阻塞**：已上缓解版·观感基本无立边。
+
+## REQ-3D-DECAL-TEX · 可换真图的「平贴 + alpha + 自定义贴图」贴花（Decal3D 无贴图槽）· [2026-07-22] · PE-C 提（game-c 下注线 REQ-C-113）→ P3D · status: **✅ done（P3D 2026-07-22·取方案①·已推·见回执）** · 优先级: P3 · 类型: 3D 线能力缺口（贴花贴图）
 > **缺口**：想在呢面上平贴一张**可被工坊生成图替换**的下注线/发牌区贴花（台账槽 `game-c/table/betline`），闭集里没有干净件——`Decal3D`=**程序化**（kind blob/ring/disc·无贴图键·不碰 assets）→ 换不了真图；`Material3D.map` 平贴 mesh 有 map 但 **PBR 路无 alpha**（透明底 PNG 的透明区渲成不透明黑）；`Billboard3D.tex` 有贴图 + alpha 但**永远朝相机**（陡俯视下立起 ~26°·不平贴）。三者都缺「平 + alpha + 自定义贴图」这一交集。
 > **建议（P3D 裁·二选一）**：① 给 `Decal3D` 加 `tex?` 贴图键（走 `pbrMapTexture`/assets 解析·decal 本就平 + alpha·最贴合）；或 ② 给 `Material3D` map 路加 `transparent`/`alphaMap`（平贴 mesh 就能透）。落地后 game-c betline 即从程序化金环换成台账真图（`build3d.ts` 已留位·现程序化 `Decal3D{kind:'ring'}` 占位）。**非阻塞**：betline 是次要贴花·现金环占位可接受。
 > **game-c 现状**：chips（`Material3D.map` 顶盖）、fx（`Billboard3D.tex` 瞬时）已接真图；仅 betline 卡此缺口。
