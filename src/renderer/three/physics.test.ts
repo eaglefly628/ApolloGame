@@ -39,6 +39,26 @@ describe('PhysicsSystem：真物理刚体（cannon-es·render-only 表现）', (
     phys.dispose();
   });
 
+  it('angularFactor 锁转轴（[0,1,0]）：薄圆盘带 X 翻滚初速也永不立边（只准平旋）', () => {
+    const w = new World();
+    w.createEntity('disc');
+    w.addComponent('disc', { type: 'Transform3D', x: 0, y: 10, z: 0 } as Transform3D);
+    w.addComponent('disc', { type: 'Mesh3D', shape: 'cylinder', width: 6, height: 0.6, frontTint: 0xffffff } as Mesh3D); // 薄圆盘（筹码）
+    // 给 X 翻滚初速（本会立起/翻倒）+ angularFactor 锁 X/Z → 只准绕 Y 平旋
+    w.addComponent('disc', { type: 'RigidBody3D', shape: 'cylinder', mass: 1, avx: 8, avy: 3, angularFactor: [0, 1, 0] } as RigidBody3D);
+    const phys = new PhysicsSystem();
+    const t = (): Transform3D => w.getComponent<Transform3D>('disc', 'Transform3D')!;
+    for (let i = 1; i <= 240; i++) phys.sync(w, i * 16.7);
+    const q = t().quat!; // [x,y,z,w]·orientation
+    // 锁 X/Z → 姿态只含 Y 轴旋转 → quat 的 x、z 分量恒 ≈0（永远平躺·不立边）
+    expect(Math.abs(q[0])).toBeLessThan(0.02); // 无 X 翻
+    expect(Math.abs(q[2])).toBeLessThan(0.02); // 无 Z 翻
+    // 上向量 up=q·(0,1,0) 的 y 分量 ≈1（盘面朝上·彻底平）
+    const upY = 1 - 2 * (q[0] * q[0] + q[2] * q[2]);
+    expect(upY).toBeGreaterThan(0.999);
+    phys.dispose();
+  });
+
   it('capsule 碰撞形（角色）：下落立地不穿地', () => {
     const w = new World();
     w.createEntity('cap');

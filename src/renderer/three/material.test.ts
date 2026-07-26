@@ -1,7 +1,7 @@
 // PBR 材质消费端（REQ-Resource ①·真实贴图走 texture-key 路线）：map 签名 + 贴图挂载 + 色彩空间/基色处理。
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { buildPbrMaterial, buildShadedMaterial, buildOutline, toonGradient, pbrSig, applyMaterialRef, type PbrMaps } from './material.js';
+import { buildPbrMaterial, buildShadedMaterial, buildOutline, toonGradient, pbrSig, applyMaterialRef, buildPbrMesh3D, type PbrMaps } from './material.js';
 import { resolvePbr, type MaterialSpec } from '@assets/index.js';
 import type { Mesh3D, Material3D } from '@engine/protocol/components.js';
 
@@ -134,5 +134,26 @@ describe('REQ-3D ④ 贴图槽补齐 pbrSig（新槽 + tiling 进签名）', () 
     const t2: Material3D = { ...base, map: 'tex/a', tiling: { repeat: 4 } };
     expect(pbrSig(mesh(), t1)).not.toBe(pbrSig(mesh(), t2));
     expect(pbrSig(mesh(), t1)).not.toBe(pbrSig(mesh(), { ...base, map: 'tex/a' })); // 有无 tiling 也不同
+  });
+});
+
+describe('REQ-3D-MAT-ALPHA 透明贴图路（alphaTest/transparent opt-in）', () => {
+  const wood: Material3D = { type: 'Material3D', preset: 'wood' };
+  it('缺省不动=不透明（three 默认 alphaTest 0·transparent false）', () => {
+    const mat = buildPbrMesh3D(mesh(), wood).material as THREE.Material;
+    expect(mat.alphaTest).toBe(0);
+    expect(mat.transparent).toBe(false);
+  });
+  it('alphaTest → material.alphaTest 生效（cutout·透明底 PNG 裁剪）', () => {
+    const mat = buildPbrMesh3D(mesh(), { ...wood, alphaTest: 0.5 }).material as THREE.Material;
+    expect(mat.alphaTest).toBe(0.5);
+  });
+  it('transparent → material.transparent 生效（软混合）', () => {
+    const mat = buildPbrMesh3D(mesh(), { ...wood, transparent: true }).material as THREE.Material;
+    expect(mat.transparent).toBe(true);
+  });
+  it('pbrSig 纳入 alphaTest/transparent（改 → 重建 mesh）', () => {
+    expect(pbrSig(mesh(), wood)).not.toBe(pbrSig(mesh(), { ...wood, alphaTest: 0.5 }));
+    expect(pbrSig(mesh(), wood)).not.toBe(pbrSig(mesh(), { ...wood, transparent: true }));
   });
 });

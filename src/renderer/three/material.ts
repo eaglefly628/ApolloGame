@@ -145,6 +145,12 @@ export function buildPbrMesh3D(m: Mesh3D, mat: Material3D, maps?: PbrMaps): THRE
   const material = mat.shading
     ? buildShadedMaterial(def, mat.shading, mat.toonSteps, mat.surface, maps) // 平涂/卡通着色（超休闲）
     : buildPbrMaterial(def, mat.surface, maps); // PBR 物理（缺省）
+  // 透明贴图路（REQ-3D-MAT-ALPHA·opt-in·缺省不动=现行不透明）：让 map 的 alpha 通道生效（透明底 PNG 不渲成黑）。
+  if (mat.alphaTest !== undefined || mat.transparent) {
+    if (mat.alphaTest !== undefined) material.alphaTest = mat.alphaTest; // cutout·硬边·无排序坑
+    if (mat.transparent) material.transparent = true; // 软混合
+    material.needsUpdate = true;
+  }
   const mesh = new THREE.Mesh(geo, material);
   mesh.castShadow = true;
   mesh.receiveShadow = mat.shading !== 'flat'; // 无光平涂不吃阴影（MeshBasicMaterial 不响应光）
@@ -159,5 +165,5 @@ export function pbrSig(m: Mesh3D, mat: Material3D): string {
   const mk = `${mat.map ?? ''}.${mat.normalMap ?? ''}.${mat.roughnessMap ?? ''}.${mat.aoMap ?? ''}.${mat.metalnessMap ?? ''}.${mat.emissiveMap ?? ''}.${mat.ormMap ?? ''}`;
   const tl = mat.tiling ? `${mat.tiling.repeat ?? ''}.${mat.tiling.offset?.[0] ?? ''}.${mat.tiling.offset?.[1] ?? ''}` : '';
   const ol = mat.outline ? `${mat.outline.width ?? ''}.${mat.outline.color ?? ''}` : '';
-  return `pbr|${mat.preset}|${mat.shading ?? ''}|${mat.toonSteps ?? ''}|${ol}|${mat.color ?? ''}|${mat.roughness ?? ''}|${mat.metalness ?? ''}|${mat.emissive ?? ''}|${m.shape}|${m.width}|${m.height}|${m.depth ?? ''}|${ss}|${mk}|${tl}`;
+  return `pbr|${mat.preset}|${mat.shading ?? ''}|${mat.toonSteps ?? ''}|${ol}|${mat.color ?? ''}|${mat.roughness ?? ''}|${mat.metalness ?? ''}|${mat.emissive ?? ''}|${m.shape}|${m.width}|${m.height}|${m.depth ?? ''}|${ss}|${mk}|${tl}|${mat.alphaTest ?? ''}|${mat.transparent ? 't' : ''}`;
 }

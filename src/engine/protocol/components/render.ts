@@ -204,6 +204,9 @@ export interface RigidBody3D extends Component {
   friction?: number; // 摩擦·缺省 0.4
   vx?: number; vy?: number; vz?: number; // 初速度
   avx?: number; avy?: number; avz?: number; // 初角速度（翻滚）
+  // 角约束/锁转轴（REQ-3D-RB-ANGFACTOR·opt-in·缺省 [1,1,1]=现行自由翻）：各轴角响应 0..1（0=锁该轴不转）。
+  //   `[0,1,0]`=只准绕竖轴平旋·永不翻倒（硬币/筹码/冰球/圆盘·根治「立边」）；`[0,0,0]`=完全锁转（稳态骰面/招牌不晃）。
+  angularFactor?: readonly [number, number, number];
 }
 
 // ── Joint3D（render-only·不进 hash·物理关节/约束）── 在两个 RigidBody3D 之间（或本体↔世界固定锚）建 cannon 约束：绳/秋千/吊桥/布娃娃/铰链门。
@@ -381,6 +384,11 @@ export interface Material3D extends Component {
     scrollX?: number; scrollY?: number; // UV 每秒滚动速度（scroll 模式·作用于本材质所有贴图槽）
     fps?: number; cols?: number; rows?: number; // 序列帧（flipbook 模式·fps>0 且 cols/rows≥1 启用·逐格循环）
   };
+  // 透明贴图路（REQ-3D-MAT-ALPHA·opt-in·缺省=现行不透明）：让 map 的 alpha 通道生效（透明底 PNG 不再渲成黑）。
+  //   alphaTest=cutout 阈值 0..1（透明像素 discard·硬边·无排序问题·最适合桌面透明角/贴花/树叶）；
+  //   transparent=软混合（配 opacity·有排序·适合渐隐）。二者独立·可只给 alphaTest（推荐·无排序坑）。
+  alphaTest?: number; // 透明度裁剪阈值（>0 启用 cutout）
+  transparent?: boolean; // 软透明混合（缺省 false）
 }
 
 // 程序化表面细节（render-only·TA Phase 5）：渲染器据参数生成 normal + roughness 贴图（DataTexture）—— **不需美术贴图文件**，

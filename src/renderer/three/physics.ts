@@ -184,6 +184,7 @@ export class PhysicsSystem {
     }
     if (rb.vx || rb.vy || rb.vz) body.velocity.set(rb.vx ?? 0, rb.vy ?? 0, rb.vz ?? 0);
     if (rb.avx || rb.avy || rb.avz) body.angularVelocity.set(rb.avx ?? 0, rb.avy ?? 0, rb.avz ?? 0);
+    if (rb.angularFactor) body.angularFactor.set(rb.angularFactor[0], rb.angularFactor[1], rb.angularFactor[2]); // 锁转轴（[0,1,0]=只平旋永不立边·REQ-3D-RB-ANGFACTOR）
     body.allowSleep = true; body.sleepSpeedLimit = 0.6; body.sleepTimeLimit = 0.4; // 静下来就睡（省算力·色子停稳）
     this.world!.addBody(body);
     this.bodies.set(id, body);
