@@ -30,7 +30,7 @@ import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
   PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, GEM, CL, TINT,
   PLAYER_DEF, KUNAI, WEAPONS, WEAPON_BIT, ENEMIES, GEMS, GEM_LIFE, SPAWNS, SPAWNER_TIERS, SPAWNER_RING, SPAWN_CAP, OBSTACLES,
-  XP_BASE, XP_STEP, DRAFT_POOL, PASSIVE_BY_KEY, STAT_PASSIVES, EBOLT_SKIN, WEAPON_ANIM, EBOLT_ANIM,
+  XP_BASE, XP_STEP, DRAFT_POOL, PASSIVE_BY_KEY, STAT_PASSIVES, EBOLT_SKIN, WEAPON_ANIM, EBOLT_ANIM, WEAPON_BY_KEY,
   type WeaponDef, type EnemyDef, type GemDef, type FxAnim,
 } from './theme.js';
 
@@ -67,6 +67,8 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
     void _s;
     return { entities: { p: { ...noSprite,
       Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY }, // 只和敌配对
+      // 升级半径调制（owner「冲击波升级范围越来越大」·数据配方）：StatBind 读 <key>Radius total × base 半径 → 每级更大。
+      ...(w.radiusPerLevel ? { StatBind: { bindings: [{ source: 'ModifierTotals', key: `${w.key}Radius`, component: 'Shape', field: 'radius', op: 'mul', base: w.radius }] } } : {}),
       Color: { tint: w.tint, alpha: 0 }, // **不画圈**（owner「圆环太难看」）·伤害圈全透明·主视觉=粒子
       Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // per-tick·数值小
       // 生成瞬间喷一圈粒子（once·armed:false·timer gte 0 首拍即触发）。
@@ -109,20 +111,44 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
       SelfRule: { when: { kind: 'timer', id: 'life', cmp: 'gte', value: Math.max(1, Math.round(w.life / 2) - 1) }, do: [{ kind: 'spawn', template: `${w.key}_return`, at: 'self' }], once: true, armed: false },
     } } };
   }
+  if (w.pattern === 'beam') {
+    // 激光=**箭形多边形**（owner「不要纯色长条·头部箭头·尾部更细/淡」）：细尾尖 → 渐宽杆 → 宽箭头。
+    // 多边形按 velocity FaceRotate 整体转向开火方向；碰撞走 SAT（逐位不变·确定性），worldVertices 不吃 scale。
+    const L = Math.round(w.radius * 26);            // 巨长贯穿
+    const half = Math.round(L / 2);
+    const headLen = Math.round(L * 0.18);           // 箭头段长
+    const sh = Math.max(2, Math.round(w.radius * 0.5)); // 杆半高（细=尾部渐淡观感）
+    const hh = Math.round(w.radius * 1.35);         // 箭头半高（宽倒钩）
+    const arrow = [
+      -half, 0,               // 尾尖（细·渐淡观感）
+      half - headLen, sh,     // 杆上沿 @ 箭头根
+      half - headLen, hh,     // 箭头上倒钩
+      half, 0,                // 箭头尖
+      half - headLen, -hh,    // 箭头下倒钩
+      half - headLen, -sh,    // 杆下沿 @ 箭头根
+    ];
+    return { entities: { p: { ...base,
+      // 修「先横过来再旋转=十字闪」：生成帧 scaleX=0（零长不可见）→ Tween 3 拍拉到 1，等 Launch/faceRotate
+      // 定好方向才沿箭身「射出」显形（几何显形·非变色·owner 拒绝变色淡入）。碰撞不吃 scale → 判定全程满尺寸。
+      Transform: { x: 0, y: 0, rotation: 0, scaleX: 0, scaleY: 1 },
+      Tween: { type: 'Tween', target: 'Transform.scaleX', from: 0, to: 1, elapsed: 0, duration: 3, easing: 'easeOut', done: false },
+      Velocity: { vx: 0, vy: 0, angular: 0 },
+      FaceRotate: { source: 'velocity' }, FaceDir: { x: 1, y: 0 },
+      Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY, fallbackDir: { x: 0, y: -1 } },
+      Shape: { kind: 'polygon', vertices: arrow, category: CL.BULLET, mask: CL.ENEMY },
+      Color: { tint: w.tint, alpha: 1 },
+      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // 贯穿·不 consume
+    } } };
+  }
   const single = (w.pattern === 'straight' || w.pattern === 'pet') && !w.pierce; // 单发命中 vs 穿透 per-tick（pierce=强制穿透扫线）
-  const isBeam = w.pattern === 'beam';
   const p: Record<string, unknown> = { ...base,
     Velocity: { vx: 0, vy: 0, angular: 0 },
-    // 子弹按飞行方向旋转贴图（REQ-FACE-ROTATE·Lead 已交付）：激光沿开火方向贯穿·子弹朝目标。渲染器读 FaceDir·sim 零 trig。
+    // 子弹按飞行方向旋转贴图（REQ-FACE-ROTATE·Lead 已交付）：子弹朝目标。渲染器读 FaceDir·sim 零 trig。
     FaceRotate: { source: 'velocity' },
     FaceDir: { x: 1, y: 0 },
     Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY, fallbackDir: { x: 0, y: -1 } },
-    Shape: isBeam
-      ? { kind: 'box', width: w.radius * 26, height: Math.round(w.radius * 0.7), category: CL.BULLET, mask: CL.ENEMY } // 巨长激光条（贯穿）
-      : { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY },
-    // 激光淡入（修 owner「先水平再旋转=十字闪」）：初始 alpha 0·Tween 3 拍拉到 1 → 首帧不显·等转好方向才亮出。
-    Color: { tint: w.tint, alpha: isBeam ? 0 : 1 },
-    ...(isBeam ? { Tween: { type: 'Tween', target: 'Color.alpha', from: 0, to: 1, elapsed: 0, duration: 3, easing: 'linear', done: false } } : {}),
+    Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY },
+    Color: { tint: w.tint, alpha: 1 },
     Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', ...(single ? { consumeOnHit: true } : {}) },
   };
   return { entities: { p } };
@@ -376,6 +402,9 @@ function draftPickEntities(): Record<string, EntityBlueprint> {
       }
     } else {
       out[`cast-${u.id}`] = { Caster: { onSignal: u.effectSignal, template: `weapon_${u.id}`, at: 'self', originEntity: 'player' } };
+      // 升级半径调制武器（如冲击波）：pick 同时 +1 层数资源 lvl_<key>（modifier-stack 读它 → <key>Radius total → nova proj StatBind 投影）。
+      const wd = WEAPON_BY_KEY[u.id];
+      if (wd?.radiusPerLevel) out[`fx-lvl-${u.id}`] = { Effect: { onSignal: u.effectSignal, kind: 'modify-resource', targetId: `lvl_${u.id}`, op: 'add', value: 1 } };
     }
   }
   return out;
@@ -395,6 +424,13 @@ function modifierAxisEntities(): Record<string, EntityBlueprint> {
     out[`lvl-${p.key}`] = { Resource: { id: `lvl_${p.key}`, current: 0, min: 0, max: p.maxLevel } }; // 该被动层数
     out[`mod-base-${p.key}`] = { ModifierSource: { id: `${target}-base`, target, op: 'add', value: 1 } };        // 系数底 1
     out[`mod-lvl-${p.key}`] = { ModifierSource: { id: `${target}-lvl`, target, op: 'add', valueFrom: { resourceId: `lvl_${p.key}`, scale: p.value } } }; // +value×层
+  }
+  // 升级半径调制武器（冲击波等·同一 modifier 管线复用）：<key>Radius total = 1 + radiusPerLevel×层数 → nova proj 乘到 Shape.radius。
+  for (const w of WEAPONS.filter((x) => x.radiusPerLevel)) {
+    const target = `${w.key}Radius`;
+    out[`lvl-${w.key}`] = { Resource: { id: `lvl_${w.key}`, current: 0, min: 0, max: w.maxLevel } };
+    out[`mod-base-${w.key}`] = { ModifierSource: { id: `${target}-base`, target, op: 'add', value: 1 } };
+    out[`mod-lvl-${w.key}`] = { ModifierSource: { id: `${target}-lvl`, target, op: 'add', valueFrom: { resourceId: `lvl_${w.key}`, scale: w.radiusPerLevel } } };
   }
   return out;
 }

@@ -362,6 +362,39 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(b?.component).toBe('Shape');
   });
 
+  it('冲击波升级范围越来越大（owner·数据配方·零引擎活）：pick +1 lvl_shock → shockRadius total → nova proj StatBind 乘 Shape.radius', () => {
+    const bp = buildBlueprint();
+    const ents = bp.entities as Record<string, Record<string, unknown>>;
+    // ① 层数资源 lvl_shock 在场（0 层起）
+    expect((ents['lvl-shock']?.Resource as { id: string })?.id).toBe('lvl_shock');
+    // ② 两条 ModifierSource：shockRadius-base(底 1) + shockRadius-lvl(读 lvl_shock×radiusPerLevel)
+    expect((ents['mod-base-shock']?.ModifierSource as { target: string })?.target).toBe('shockRadius');
+    const mlvl = ents['mod-lvl-shock']?.ModifierSource as { valueFrom: { resourceId: string; scale: number } };
+    expect(mlvl.valueFrom.resourceId).toBe('lvl_shock');
+    expect(mlvl.valueFrom.scale).toBeGreaterThan(0);
+    // ③ pick_shock 同时 +1 lvl_shock
+    expect((ents['fx-lvl-shock']?.Effect as { targetId: string })?.targetId).toBe('lvl_shock');
+    // ④ nova proj 挂 StatBind：ModifierTotals[shockRadius] × base → Shape.radius
+    const lib = (ents.library as { PrefabLibrary: { templates: Record<string, { entities: Record<string, Record<string, unknown>> }> } }).PrefabLibrary.templates;
+    const sb = lib.proj_shock.entities.p.StatBind as { bindings: Array<{ key: string; component: string; field: string; op: string }> };
+    const bind = sb.bindings.find((x) => x.key === 'shockRadius')!;
+    expect(bind.component).toBe('Shape');
+    expect(bind.field).toBe('radius');
+    expect(bind.op).toBe('mul');
+    // ⑤ 运行期真放大：拿 3 次冲击波 → 跑到发射 → nova proj 的 Shape.radius > 基础 120
+    const e = fresh();
+    for (let i = 0; i < 3; i++) fireAction(e, 'pick_shock');
+    let maxR = 0;
+    for (let i = 0; i < WEAPON_BY_KEY.shock.cd + 4; i++) {
+      step(e);
+      for (const [id] of e.world.query('StatBind', 'Shape')) {
+        const s = e.world.getComponent(id, 'Shape') as unknown as { radius?: number };
+        if ((s.radius ?? 0) > maxR) maxR = s.radius ?? 0;
+      }
+    }
+    expect(maxR).toBeGreaterThan(120); // 3 层 → 明显 > 基础半径
+  });
+
   it('难度：胖子/精英血厚(非一枪死)+远程弹更大更清晰', () => {
     expect(BRUTE.hp).toBeGreaterThan(150);                 // 肉·血条看得见（owner「血条不够长/一枪死」）
     expect(ENEMIES.some((x) => x.key === 'sniper')).toBe(true);  // 精英狙击=攻击性高的远程

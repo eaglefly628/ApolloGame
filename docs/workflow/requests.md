@@ -35,6 +35,13 @@
 > **⚖ Lead 对抗性验收（2026-07-16·双线判 PASS）**：门禁独立复跑六项全绿（tsc·vitest 349 文件/2642·build·双守卫·reconcile 三方一致）；域界核对 M0=80 文件全 PA 域、M0.5=12 文件全 PUI 域（引擎域零触碰）；真浏览器亲验（swiftshader）——选单恰 3 项且水墨玩趣置顶、切主题后三签名成立（厚底唇糖果钮/纸纹面/水墨远山）。**偏差裁决**：M0 四条（reconcile 跳台账·风格包全字段·行数落点 72·kind 词表 texture/mesh）全 INTENTIONAL 准许——kind 词表在 M1 接链时须与 art-replace 词表映射对齐；M0.5 `panelTexture` 闭集扩展 INTENTIONAL 准许（沿 texture/wash 先例·guard+点名测试+手册回填齐）。**遗留**：①ui-audit border-image 盲区 + 亮主题 dim 假阳 = PUI 工具债（非阻断·随后续批修）；②换皮**置顶未改默认**（默认仍青瓷·墨蓝）——是否连默认切 apollo-toon 留 owner 拍板（M3 对齐时顺手做）。
 > **+ 三游戏风格锚条目 ✅ done（PA·2026-07-17·待 Lead 验收）**：`scripts/style-packs.json` 加 3 条（照 apollo-toon 样板全字段·无厂牌词·refImage:null·negative/post/params 同样板·seed 1776-78·各 8 色 palette）——`sakura-nijigen`（三游戏共用·女性向二次元人物锚·出处 game-b gdd §九+REQ-C-ART 修订①）·`vegas-victoriana`（game-c 场景锚·REQ-C-ART ① 原文锚+鎏金/呢绿/酒红等 8 色）·`modern-manor`（game-a 场景锚·brief §2.2 现代私宅夜局+暖木/夜蓝/灯金等 8 色）。门禁全绿（tsc+vitest 全量+build+双守卫）；art-replace pack 迭代校验绿。
 
+### REQ-HIT-FX-命中反馈钩子（穿透/子弹/激光击中敌人喷克制小特效） · [2026-07-26] · GD-103 报（owner 授权）→ 主程裁 · status: **open** · 优先级: P1（幸存者类通用手感·非 game103 专属） · 类型: tier2 能力缺口（hitbox onHit 出口）
+> **想实现（owner「子弹/激光击中敌人没有受击效果·尤其穿透武器·要克制的小特效」）**：`Hitbox` 命中某敌那一拍，在命中点/受击敌身上 spawn 一个小特效 prefab（克制·短命·非碰撞·如 3–5 颗火花 sparks）。穿透武器每命中一个敌都触发一次。
+> **已试**：`Hitbox` 只写 resource 扣血·无「命中即回调」出口；`SelfRule` 的 timer/resource 门是**自身**状态不感知「我刚命中了谁」；敌侧挂 SelfRule 监 hp 变化可近似但**每敌都要挂**且拿不到命中点/无法只在被穿透武器打中时触发·且 per-tick AoE 会连喷。
+> **缺什么**：建议 `Hitbox.onHit?: { template, at:'target'|'self' }`——命中结算那拍对每个被命中目标 spawn 一个特效（引擎在 hitbox 结算处已知命中对+坐标·顺手 spawn·确定性）。或独立 `HitSpark` 组件挂在 hitbox 实体上声明命中特效。
+> **边界**：`src/skills/atoms/hitbox`（或 overlap 结算处）+ 点名测试 + 手册回填；game-103 侧只等能力就绪后接线（proj 模板加 onHit spawn sparks）。现状：命中无反馈（已知·占位）。
+> **注**：owner 2026-07-26 已裁「1b 冲击波半径随等级」= 🔁 回驳·重组（数据配方·PE/游戏层数据接·无引擎活）→ 不进本池，落 game-103 数据实现。
+
 <!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结迁归档（requests-archive.md）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
 
 

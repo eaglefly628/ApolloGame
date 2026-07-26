@@ -84,10 +84,13 @@ export interface WeaponDef {
   // 进化（gdd §4.2·E2 重组·Lead 裁「重组」）：武器满级 + 持有 req 被动 → 满级下一次升级弹金卡·
   // 选中即 destroy-tagged 删基础武器挂点 + Caster spawn 进化体挂点（2.5–4× + 质变）。
   evo?: { to: string; req: string };
+  // 升级半径调制（owner「冲击波升级范围越来越大」·数据配方·零引擎活）：拿一层 +radiusPerLevel×base 半径。
+  // 管线=pick +1 lvl_<key> → ModifierSource(<key>Radius=1+scale×层) → nova proj StatBind 投影 Shape.radius。
+  radiusPerLevel?: number;
 }
 export const WEAPONS: WeaponDef[] = [
   { key: 'kunai', name: '飞镖 Kunai', desc: '直线飞镖·穿透索敌（起始武器·mow 一线）', pattern: 'straight', dmg: 7, cd: 34, projSpeed: 9, life: 90, radius: 7, amount: 1, weight: 0, maxLevel: 5, tint: 0xffffff, skin: '103/proj-kunai', pierce: true },
-  { key: 'shock', name: '冲击波', desc: '近身范围爆·震开贴身敌群（AoE）', pattern: 'nova', dmg: 8, cd: 90, projSpeed: 0, life: 8, radius: 120, amount: 1, weight: 8, maxLevel: 5, tint: 0x7fd0ff, skin: '103/proj-shock' },
+  { key: 'shock', name: '冲击波', desc: '近身范围爆·震开贴身敌群（AoE·升级范围越来越大）', pattern: 'nova', dmg: 8, cd: 90, projSpeed: 0, life: 8, radius: 120, amount: 1, weight: 8, maxLevel: 5, tint: 0x7fd0ff, skin: '103/proj-shock', radiusPerLevel: 0.22 },
   { key: 'laser', name: '激光', desc: '巨长激光·瞬穿一线敌（远程·贯穿）', pattern: 'beam', dmg: 6, cd: 110, projSpeed: 26, life: 16, radius: 13, amount: 1, weight: 7, maxLevel: 5, tint: 0xff5a4a, skin: '103/proj-laser' },
   { key: 'boom', name: '回旋镖', desc: '飞出穿透一线敌（远程·回旋段待 capgap）', pattern: 'boomerang', dmg: 5, cd: 96, projSpeed: 7, life: 120, radius: 7, amount: 1, weight: 7, maxLevel: 5, tint: 0xffd23f, skin: '103/proj-boom' },
   { key: 'orbit', name: '护盾环', desc: '召唤环绕光球·持续灼烧贴身敌（近战）', pattern: 'orbit', dmg: 0.5, cd: 0, projSpeed: 0.045, life: 0, radius: 74, amount: 3, weight: 8, maxLevel: 3, tint: 0x7dff4d, skin: '103/proj-orbit', evo: { to: 'orbitevo', req: 'blade' } },
@@ -118,8 +121,8 @@ export const FX_SHEETS = {
 export const WEAPON_ANIM: Record<string, FxAnim> = {
   kunai: FX_SHEETS.magic_dart,   // 直线飞镖=紫能量镖
   // shock(冲击波 nova) 不用 fx 帧：32px 团帧撑不满 120 半径爆炸圈=看不见→改画大爆炸圈本体+渐隐闪（见 blueprint nova 分支）。
-  // laser 不用 fx 动画帧 → 画长条 Shape box 本体=巨长激光观感（fx 是团状·撑不出"长"）。
-  //   真·随开火方向旋转的激光需引擎「Transform 旋转」能力（facing 只水平翻转·不能任意转向）→ 已报 Lead。
+  // laser 不用 fx 动画帧 → 画**箭形多边形** Shape 本体=有头箭激光（细尾→宽箭头·FaceRotate 随开火方向整体转向）。
+  //   scaleX 0→1 沿箭身射出显形，避开生成帧水平闪（见 blueprint beam 分支）。
   boom:  FX_SHEETS.gold_sparkles,// 回旋镖=金光旋
   orbit: FX_SHEETS.sting,        // 护盾环=绿环（贴合环绕）
   orbitevo: FX_SHEETS.sting,     // 进化环=绿环
