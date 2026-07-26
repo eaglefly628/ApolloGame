@@ -6,6 +6,8 @@
 // 交互/HUD（LayoutNode 四屏 = PUI·REQ-G102-UI）与玩法链（event-when/launch = S4）后续接入。
 import { Engine } from '../../runtime/engine.js';
 import { CanvasRenderer } from '@renderer/index.js';
+import { ThreeRenderer } from '@renderer/three-renderer.js';
+import { buildVoxelScene } from './voxel.js';
 import { AssetManager, ImageAssetLoader, registerAssetIndex, parseAssetIndex } from '@assets/index.js';
 import { QueuedInputSource, canvasPointerToScreen } from '@net/index.js';
 import { mountHost } from '@engine/host/mount-host.js';
@@ -16,7 +18,37 @@ import { FIELD_W, FIELD_H } from './theme.js';
 // 沙盒背景：design-ref 对局屏石板渐变（#5b6488→#4c5578·真皮/管道金属观感走 S6 美术台账）。
 const FIELD_BG = 'linear-gradient(180deg,#5b6488,#4c5578)';
 
-export function mount(container: HTMLElement, _host?: { exit: () => void }): () => void {
+// ── 3D 体素立方核心（owner 2026-07-26 定案·「先把旋转立方效果做出来」）───────────────────────
+// 中央被打目标 = 旋转的 Minecraft 提速块立方（voxel.ts·纯数据）。ThreeRenderer 盒庭模式渲染（同 game-z 宿主先例）。
+// 玩法链（炮塔轨道/派炮/命中消体素）后续接：先把立方转起来给 owner 目击。
+export function mountVoxel3D(container: HTMLElement, _host?: { exit: () => void }): () => void {
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:absolute;inset:0;background:#06121f;overflow:hidden;';
+  container.appendChild(wrapper);
+  const w = wrapper.clientWidth || 720, h = wrapper.clientHeight || 1280;
+
+  const input = new QueuedInputSource('g102-3d');
+  const engine = new Engine({ input });
+  engine.load(buildVoxelScene());
+  const renderer = new ThreeRenderer({ width: w, height: h, background: 0x06121f, antialias: true, dprCap: 1.5, shadowMapSize: 1024 });
+  engine.attachRenderer(renderer, wrapper); // ThreeRenderer 自挂 ResizeObserver·随容器尺寸自适应
+  engine.start();
+
+  return () => {
+    engine.stop();
+    renderer.destroy();
+    wrapper.remove();
+  };
+}
+
+// 启动入口（launcher 调 mount）：owner 2026-07-26 定案 → 现默认渲**3D 旋转体素立方**（先目击效果）。
+// 玩法链（炮塔轨道/派炮/命中消体素）在 3D 空间接线中；旧 2D 棋盘玩法保留在 mount2D 供逐步移植。
+export function mount(container: HTMLElement, host?: { exit: () => void }): () => void {
+  return mountVoxel3D(container, host);
+}
+
+// 旧 2D 像素画玩法宿主（保留·玩法链移植到 3D 时参照）。
+export function mount2D(container: HTMLElement, _host?: { exit: () => void }): () => void {
   // 宿主骨架（render-only helper·非 sim）：wrapper > scene(定尺缩放盒·信箱化)。
   const { scene, teardown } = mountHost(container, {
     fieldW: FIELD_W,
