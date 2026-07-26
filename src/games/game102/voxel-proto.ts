@@ -191,7 +191,8 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
 
   // ── 调试窗口（owner 要求：日志 + 错误上屏·可复制贴回）──────────────────────────────────────
   const logs: string[] = [];
-  const logPanel = el('div', 'position:absolute;left:8px;right:8px;bottom:8px;height:34%;background:#000d;border:1px solid #2b3d5c;border-radius:8px;display:none;flex-direction:column;z-index:50;font:11px/1.4 monospace;color:#cfe;');
+  // 默认开·置于上部（不挡底部换色器）·可用 🐞 收起。
+  const logPanel = el('div', 'position:absolute;left:8px;right:8px;top:120px;height:30%;background:#000e;border:1px solid #2b3d5c;border-radius:8px;display:flex;flex-direction:column;z-index:50;font:11px/1.4 monospace;color:#cfe;');
   const logHead = el('div', 'display:flex;gap:6px;align-items:center;padding:5px 8px;border-bottom:1px solid #2b3d5c;');
   logHead.appendChild(el('div', 'flex:1;color:#8fb0e0;font-weight:700;', '🐞 DEBUG'));
   const btnCopy = el('button', 'pointer-events:auto;background:#1a2740;color:#cfe;border:1px solid #35507a;border-radius:5px;padding:2px 8px;cursor:pointer;', '复制');
