@@ -29,7 +29,7 @@ const CAM_DIST = N * PITCH * 3.9; // 相机距离（越大立方越小·owner「
 const TRAVEL_MS = 600;   // 子弹飞行时长（配「同时只一发」→ 一发一破·反馈清晰）
 const FRAG_N = 7;        // 碎裂片数
 const GRAV = 900;        // 碎片重力（世界单位/秒²·自管运动积分·非 cannon-es·零冻结风险）
-const MUZZLE_W = { x: 0, y: -MAXC * 2.2, z: 0 }; // 炮口世界位（正下方·在轴上→子弹竖直升到准星·对齐）
+const MUZZLE_W = { x: 0, y: -MAXC * 1.5, z: MAXC * 3.0 }; // 炮口在**立方前方**(相机侧·z 大)偏下→子弹从外侧接近暴露面·不穿透立方；x=0 仍与底部炮台水平对齐
 // 金色镂空棱框（12 根细金条·包住瞄中格·与格本色完全独立·作 pivot 子随立方转）。
 const GOLD = 0xffd24a;
 const FH = VOX / 2 + 2.5, FT = 3, FL = VOX + 6; // 半边/条粗/条长
