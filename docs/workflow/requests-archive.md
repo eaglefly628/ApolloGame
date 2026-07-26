@@ -2,6 +2,13 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-POOL-ADVANCE-弹库队列头可点+上浮（→ compacting 队列 queue-slots）· [2026-07-26] · PE-game102 报 → 主程裁 · status: **✅ done（`afa3d6e8`·Lead 拆解+亲验 PASS·归档）** · 类型: tier2 队列布局能力缺口
+> **⚖ Lead 拆解（owner「为何是需求不是队列能力」之问）**：① 队列逻辑=**真新缺口**（tray 占坑制·队首消费老成员不前移；「消费即整体递补」它做不到）→ 下沉 `t2-queue-slots`；② 「上浮」**非新**（现成 tween 表达·owner「用移动来表达」）→ 不入能力；③ 仅头可点=小缺口并进①。
+> **交付**：`t2-queue-slots`（`src/skills/tier2/queue-slots.ts`）——`QueueSlots{memberTag,capacity,headCount,originX,originY,gap,axis?,action}` + `QueueMember{index}`。每 tick 稳定排序（既有 index→id tie-break·不赖 Array.sort 稳定性）→压实重排 0..N-1（队首/队中任意消费→全体前移不留空·与 tray 互补）→钉 Transform 到槽→前 headCount 增删 Clickable（同 tray 增删 TraySeat 先例）。确定性无随机·Update 相位 runsBefore grid-move/motion-apply/tween。10 测（压实前移钉死/头可点/确定性双跑/边界/撞环）·基线 140→142·gate 全绿 3634。game102 弹库挂 QueueSlots·平滑上浮游戏层叠 tween。原文见 git 史。
+
+### REQ-FOCUSSCROLL-mount-host wrapper 禁 focus-scroll 位移 · [2026-07-25] · PE-101 报 → Lead/PUI 裁 · status: **✅ done（`afa3d6e8`·2026-07-26 Lead 亲验 PASS·归档）** · 类型: 引擎缺陷（主程域）
+> **交付**：`src/engine/host/mount-host.ts` wrapper `overflow:hidden`→`overflow:clip`（clip 禁程序化 focus/scrollIntoView 的 scrollLeft 位移·hidden 挡不住）→ 右缘按钮点击不再整屏左移。点名测试（wrapper.style.overflow==='clip'）。**PE 可删各游戏的 resetScroll workaround**（如 game101.ts·本次未碰游戏层）。gate 全绿。原文见 git 史。
+
 ### REQ-EXPOSURE-TARGETING-暴露/垂直扫描线索敌 · [2026-07-26] · PE-game102 报 → 主程裁 · status: **🚫 wontfix（owner 2026-07-26 撤：game102 改了一套新做法/新锁定方式·此扫描线索敌 spec 作废·不建）** · 类型: tier2/3 索敌能力缺口（作废）
 > owner 2026-07-26：「game102 改了一种新做法·可能加新锁定方法·现在不想做这些·重做了一套」→ EXPOSURE-TARGETING（perp-to-path 扫描线取首颗暴露同色）**spec 被新方案取代·移出池不建**。若新做法定稿后仍缺索敌能力，另开新单（不复用此作废 spec）。
 
