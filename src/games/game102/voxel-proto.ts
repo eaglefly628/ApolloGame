@@ -40,6 +40,11 @@ const FACES: { n: [number, number, number]; u: [number, number, number]; v: [num
   { n: [0, -1, 0], u: [1, 0, 0],  v: [0, 0, 1] },
 ];
 
+// 压暗一个 0xRRGGBB 色（k<1·给方块侧面/棱做阴影·仍带本色·不发灰）。
+function shade(tint: number, k: number): number {
+  const r = Math.round(((tint >> 16) & 0xff) * k), g = Math.round(((tint >> 8) & 0xff) * k), b = Math.round((tint & 0xff) * k);
+  return (r << 16) | (g << 8) | b;
+}
 function hash3(a: number, b: number, c: number): number {
   let h = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791);
   h = (h ^ (h >>> 13)) >>> 0;
@@ -66,10 +71,18 @@ function buildProtoScene(cells: Cell[]): { blueprint: WorldBlueprint; ids: strin
         y: f.n[1] * H + f.u[1] * ca + f.v[1] * cb,
         z: f.n[2] * H + f.u[2] * ca + f.v[2] * cb,
       },
-      Mesh3D: { shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: PALETTE[cell.color ?? 0].tint, edgeTint: 0x141826 },
+      // 六面全上本色（frontTint=+z 面·backTint=-z 面·edgeTint=四侧面）——否则一转就露灰侧面。侧面压暗 0.82 做立体阴影。
+      Mesh3D: (() => { const t = PALETTE[cell.color ?? 0].tint; return { shape: 'box' as const, width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: shade(t, 0.82) }; })(),
     };
     ids.push(cell.id);
   }
+  // 实心内核块（不可打·随立方转）：垫在外壳体素背后·堵住格间缝的「透视看穿对面」→ 缝变凹槽阴影。
+  // 尺寸略小于外壳外沿、覆盖体素侧向范围、面沉在体素正面之后（露出 = 凹槽深度）。深色 = 槽内阴影。
+  entities['cube-core'] = {
+    Transform3D: { x: 0, y: 0, z: 0 },
+    Mesh3D: { shape: 'box', width: H * 2, height: H * 2, depth: H * 2, frontTint: 0x0b1220, backTint: 0x0b1220, edgeTint: 0x0b1220 },
+  };
+  ids.push('cube-core');
   entities['cube-pivot'] = {
     Transform3D: { x: 0, y: 0, z: 0, rotX: -0.35, rotY: 0.5 }, // 初始 3/4 视角（同概念图斜俯视）
     Pivot3D: { children: ids, centerX: 0, centerY: 0, centerZ: 0 },
