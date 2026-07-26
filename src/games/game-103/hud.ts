@@ -13,6 +13,7 @@ export interface HudState {
   score: number;     // 累计击杀
   combo: number;     // 1 秒窗口内击杀数（连杀·host 派生·非 sim）
   comboFlash: number;// 闪烁相位（0/1·驱动连杀数字换色闪）
+  toast: { icon: string; name: string } | null; // 成就解锁横幅（host 派生·null=不显）
   status: 'playing' | 'victory' | 'defeat';
 }
 
@@ -21,6 +22,19 @@ export const COMBO_MIN = 5;
 
 // 连杀横幅（owner「醒目·动态放缩·左上+右上角闪」）：达门槛才显——左右两角各一枚大数字，
 // 字号随连杀数放大、颜色按 comboFlash 相位金/红交替闪。未达门槛=空 bare panel（近零高·不挤 HUD）。
+// 成就解锁横幅（owner「解锁些成就」）：居中金带 `🏆 成就解锁 · <名>`；无 toast=空 panel 不占位。
+function achievementToast(s: HudState): LayoutNode {
+  if (!s.toast) return { type: 'Panel', id: 's-ach', props: { bare: true }, layout: { direction: 'row' }, children: [] };
+  return {
+    type: 'Panel', id: 's-ach', props: {},
+    layout: { direction: 'row', align: 'center', justify: 'center', gap: 6, padding: 10 },
+    children: [
+      { type: 'Label', id: 's-ach-i', props: { text: s.toast.icon, size: 22 } },
+      { type: 'Label', id: 's-ach-t', props: { text: `成就解锁 · ${s.toast.name}`, font: 'heavy', size: 15, color: 'gold', bold: true, stroke: true } },
+    ],
+  };
+}
+
 function comboRow(s: HudState): LayoutNode {
   if (s.combo < COMBO_MIN) return { type: 'Panel', id: 's-combo', props: { bare: true }, layout: { direction: 'row' }, children: [] };
   const size = Math.min(56, 26 + (s.combo - COMBO_MIN) * 3); // 动态放缩·封顶 56
@@ -121,7 +135,7 @@ export function buildHud(s: HudState): LayoutNode {
     type: 'Screen', id: 's-hud', props: { bg: 'transparent' },
     layout: { direction: 'column', justify: 'between' },
     children: [
-      { type: 'Panel', id: 's-hud-top', props: { bare: true }, layout: { direction: 'column', gap: 2 }, children: [comboRow(s), topBar(s), xpRow(s)] },
+      { type: 'Panel', id: 's-hud-top', props: { bare: true }, layout: { direction: 'column', gap: 2 }, children: [comboRow(s), achievementToast(s), topBar(s), xpRow(s)] },
       bottomBar(s),
     ],
   };

@@ -14,6 +14,7 @@ import { rollOffer, applyPick } from '@skills/tier2/index.js';
 import type { DraftCandidate, DraftState } from '@skills/tier2/index.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp, COMBO_MIN, type HudState, type LevelUpOffer } from './hud.js';
+import { newlyUnlocked, loadUnlocked, saveUnlocked, type RunStats } from './achievements.js';
 import { VIEW_W, VIEW_H, PLAYER_DEF, LEVEL_XP, SURVIVOR_THEME, DRAFT_POOL, DRAFT_N, SLOT_CAP, WEAPONS, WEAPON_BY_KEY, TPS } from './theme.js';
 
 // 战场底纹（暗色渐晕·render-only·屏幕固定）。BUG-01 修：移除原屏幕固定网格线（相机跟随时看着静止=像没动）；
@@ -44,7 +45,7 @@ export function mount(container: HTMLElement): () => void {
       level: Math.round(resOf(engine, 'level')),
       elapsed: Math.round(resOf(engine, 'clock')),
       score: Math.round(resOf(engine, 'killbox')),
-      combo: 0, comboFlash: 0, // host 派生（refreshHud 填）·非 sim
+      combo: 0, comboFlash: 0, toast: null, // host 派生（refreshHud 填）·非 sim
       status: cur === 'victory' ? 'victory' : cur === 'defeat' ? 'defeat' : 'playing',
     };
   }
@@ -83,7 +84,7 @@ export function mount(container: HTMLElement): () => void {
   for (const u of DRAFT_POOL) handlers[u.effectSignal] = () => onPick(u.id);
   for (const w of WEAPONS) if (w.evo) handlers[`evo_${w.key}`] = () => onEvo(w.key);
 
-  const initial: HudState = { hp: PLAYER_DEF.maxHp, maxHp: PLAYER_DEF.maxHp, xp: 0, xpMax: LEVEL_XP, level: 1, elapsed: 0, score: 0, combo: 0, comboFlash: 0, status: 'playing' };
+  const initial: HudState = { hp: PLAYER_DEF.maxHp, maxHp: PLAYER_DEF.maxHp, xp: 0, xpMax: LEVEL_XP, level: 1, elapsed: 0, score: 0, combo: 0, comboFlash: 0, toast: null, status: 'playing' };
   overlayHost.style.pointerEvents = 'auto';
   const hudUi: MountHandle = mountUI(overlayHost, buildHud(initial), handlers, SURVIVOR_THEME, hudQueue);
   let showingResult = false;
@@ -129,6 +130,23 @@ export function mount(container: HTMLElement): () => void {
     return { combo: killWin.length, comboFlash: Math.floor(simTick / 5) % 2 }; // 每 5 拍换色=闪
   }
 
+  // ── 成就（owner「解锁些成就」）：host 每帧比对局内统计 → 首次达成即持久解锁 + 排队弹横幅 ~2.5s ──
+  const unlocked = loadUnlocked();          // 跨局持久集（localStorage）
+  let peakCombo = 0;                         // 本局峰值连杀
+  let toastUntil = 0;                        // 当前横幅显示到第几 simTick
+  const toastQueue: Array<{ icon: string; name: string }> = [];
+  let curToast: { icon: string; name: string } | null = null;
+  const TOAST_TICKS = Math.round(TPS * 2.5); // 每条横幅显示时长
+  function pumpAchievements(combo: number, st: HudState): { icon: string; name: string } | null {
+    if (combo > peakCombo) peakCombo = combo;
+    const stats: RunStats = { peakCombo, kills: st.score, elapsed: st.elapsed, level: st.level };
+    for (const a of newlyUnlocked(stats, unlocked)) { unlocked.add(a.id); toastQueue.push({ icon: a.icon, name: a.name }); }
+    if (toastQueue.length) saveUnlocked(unlocked);
+    if (!curToast && toastQueue.length) { curToast = toastQueue.shift()!; toastUntil = simTick + TOAST_TICKS; }
+    if (curToast && simTick >= toastUntil) { curToast = toastQueue.length ? toastQueue.shift()! : null; if (curToast) toastUntil = simTick + TOAST_TICKS; }
+    return curToast;
+  }
+
   let lastSig = '';
   function refreshHud(engine: Engine): void {
     const st = readState(engine);
@@ -140,13 +158,14 @@ export function mount(container: HTMLElement): () => void {
     if (showingResult) showingResult = false;
     const c = computeCombo(st.score);
     st.combo = c.combo; st.comboFlash = c.comboFlash;
+    st.toast = pumpAchievements(c.combo, st);
     // 升级检测（等级上升 → 弹三选一·时停）——只在未展示时触发。
     if (st.level > prevLevel && !showingLevelUp) { prevLevel = st.level; openLevelUp(st.level); return; }
     prevLevel = st.level;
     if (showingLevelUp) return; // 时停中不重绘战斗 HUD
     // 连杀达门槛时把 combo+闪相位并入 sig → 每拍重绘（闪）；未连杀只按常规字段变化重绘（省）。
     const comboSig = st.combo >= COMBO_MIN ? `${st.combo}|${st.comboFlash}` : '0';
-    const sig = `${st.hp}|${st.xp}|${st.level}|${st.elapsed}|${st.score}|${comboSig}`;
+    const sig = `${st.hp}|${st.xp}|${st.level}|${st.elapsed}|${st.score}|${comboSig}|${st.toast?.name ?? ''}`;
     if (sig !== lastSig) { lastSig = sig; hudUi.update(buildHud(st), SURVIVOR_THEME); }
   }
 
@@ -192,6 +211,7 @@ export function mount(container: HTMLElement): () => void {
     prevLevel = 1;
     evolved.clear();
     prevScore = 0; killWin = []; // 连杀窗重置（重开）
+    peakCombo = 0; curToast = null; toastQueue.length = 0; toastUntil = 0; // 成就横幅态重置（解锁集持久·不清）
     draftState = { owned: {}, slots: { weapon: { used: 0, cap: SLOT_CAP.weapon }, passive: { used: 0, cap: SLOT_CAP.passive } } };
     stopSim();
     hudUi.update(buildHud(initial), SURVIVOR_THEME);

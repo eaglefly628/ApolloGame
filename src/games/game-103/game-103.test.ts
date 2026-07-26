@@ -11,6 +11,7 @@ import type { LayoutNode } from '@ui/components/index.js';
 import type { Sprite } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp } from './hud.js';
+import { newlyUnlocked } from './achievements.js';
 import { ENEMY, ZONE, PLAYER, START, KUNAI, SHAMBLER, BRUTE, BOSS, ARCHER, ENEMIES, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, WEAPON_ANIM, WEAPON_BIT, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
 // 子弹现用序列帧 fx 精灵表覆盖静态 skin：在场皮肤 = 动画帧 sheet（若有）否则原 skin。
 const skinOf = (key: string): string => WEAPON_ANIM[key]?.sheet ?? WEAPON_BY_KEY[key].skin;
@@ -146,7 +147,7 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
   });
 
   it('UI 卫生：HUD/结算/三选一 LayoutNode 树 validateLayoutNode 零 issue（check-ui 机械门）', () => {
-    const st = { hp: 72, maxHp: 100, xp: 3, xpMax: LEVEL_XP, level: 4, elapsed: 522, score: 387, combo: 0, comboFlash: 0, status: 'playing' as const };
+    const st = { hp: 72, maxHp: 100, xp: 3, xpMax: LEVEL_XP, level: 4, elapsed: 522, score: 387, combo: 0, comboFlash: 0, toast: null, status: 'playing' as const };
     expect(validateLayoutNode(buildHud(st))).toEqual([]);
     expect(validateLayoutNode(buildHud({ ...st, combo: 12, comboFlash: 1 }))).toEqual([]); // 连杀横幅态也零 issue
     expect(validateLayoutNode(buildResult({ ...st, status: 'victory' }))).toEqual([]);
@@ -156,7 +157,7 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
   });
 
   it('连杀横幅（owner「1 秒内杀 5+=连杀·左右上角闪动态数字」）：<门槛不显·达门槛左右两角大数字·随连杀数放大·闪换色', () => {
-    const base = { hp: 80, maxHp: 100, xp: 1, xpMax: LEVEL_XP, level: 2, elapsed: 30, score: 40, status: 'playing' as const };
+    const base = { hp: 80, maxHp: 100, xp: 1, xpMax: LEVEL_XP, level: 2, elapsed: 30, score: 40, toast: null, status: 'playing' as const };
     const labels = (node: LayoutNode): Array<{ id: string; text: string; size: number; color: string }> => {
       const out: Array<{ id: string; text: string; size: number; color: string }> = [];
       const walk = (n: LayoutNode): void => {
@@ -447,6 +448,28 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
       }
     }
     expect(sawFx).toBe(true);
+  });
+
+  it('成就（owner「解锁些成就」·纯数据阈值表 + 纯判定）：达阈值首次解锁·已解锁不重弹·横幅渲染', () => {
+    // newlyUnlocked：峰值连杀 10 → 解 combo10；已解不再返回
+    const s1 = newlyUnlocked({ peakCombo: 10, kills: 5, elapsed: 20, level: 2 }, new Set());
+    expect(s1.some((a) => a.id === 'combo10')).toBe(true);
+    expect(s1.some((a) => a.id === 'combo20')).toBe(false); // 20 未到
+    const s2 = newlyUnlocked({ peakCombo: 10, kills: 5, elapsed: 20, level: 2 }, new Set(['combo10']));
+    expect(s2.length).toBe(0); // 已解锁不重复
+    // 多路统计各自解锁：累计击杀/等级/存活
+    const s3 = newlyUnlocked({ peakCombo: 0, kills: 100, elapsed: 300, level: 10 }, new Set());
+    expect(s3.map((a) => a.id).sort()).toEqual(['kills100', 'level10', 'survive300']);
+    // HUD 成就横幅：toast 在场 → 渲染金带含成就名；null → 不渲染文本
+    const base = { hp: 90, maxHp: 100, xp: 0, xpMax: LEVEL_XP, level: 1, elapsed: 5, score: 3, combo: 0, comboFlash: 0, status: 'playing' as const };
+    const findText = (node: LayoutNode, id: string): string | null => {
+      let hit: string | null = null;
+      const walk = (n: LayoutNode): void => { if (n.id === id && n.props) hit = String((n.props as Record<string, unknown>).text); (n.children ?? []).forEach(walk); };
+      walk(node); return hit;
+    };
+    expect(findText(buildHud({ ...base, toast: null }), 's-ach-t')).toBeNull();
+    const t = findText(buildHud({ ...base, toast: { icon: '🔥', name: '小试锋芒 · 10 连杀' } }), 's-ach-t');
+    expect(t).toContain('小试锋芒');
   });
 
   it('难度：胖子/精英血厚(非一枪死)+远程弹更大更清晰', () => {
