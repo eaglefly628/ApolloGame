@@ -21,12 +21,14 @@ const FIRE_MS = 110;      // 长按连发间隔（扫射手感）
 const TRAVEL_MS = 260;    // 子弹飞抵（爽快版·快）
 const FRAG_N = 6;
 const GRAV = 900;
-const PALETTE = [
+const PALETTE = [        // 总 5 色·但同时只有 3 个发射槽（稀缺调度）
   { name: '红', tint: 0xe0433f, css: '#e0433f' },
   { name: '黄', tint: 0xf2c21e, css: '#f2c21e' },
   { name: '绿', tint: 0x5cb544, css: '#5cb544' },
   { name: '蓝', tint: 0x2e6cf6, css: '#2e6cf6' },
+  { name: '紫', tint: 0x8b5cf6, css: '#8b5cf6' },
 ];
+const SLOT_N = 3;         // 发射槽数（< 颜色数 → 你得快速换槽对齐这一面的色）
 // 6 面朝相机(+Z)的目标欧拉角（idx 循环）。
 const ORIENT: [number, number][] = [
   [0, 0], [0, -Math.PI / 2], [0, -Math.PI], [0, -Math.PI * 1.5], [-Math.PI / 2, 0], [Math.PI / 2, 0],
@@ -81,6 +83,8 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     return [[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]].some(([a, b, c]) => !inB(a) || !inB(b) || !inB(c) || !present.has(vid(a, b, c)));
   };
   const colorRemain = count.slice();
+  const slots = Array.from({ length: SLOT_N }, (_, i) => i % PALETTE.length); // 3 槽当前色
+  let selSlot = 0;         // 选中的槽（点色装入它·金色强调）
   let styleIdx = 0;
   let remaining = present.size; const total = present.size;
   let orientIdx = 0, faceLeft = FACE_MS;
@@ -146,20 +150,39 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   styleBtn.onclick = () => applyStyle(styleIdx + 1);
   wrapper.appendChild(styleBtn);
 
-  // ── 底部：4 色发射键（长按连发·显示每色剩余）──
-  const pad = el('div', 'position:absolute;left:0;right:0;bottom:20px;display:flex;justify-content:center;gap:14px;pointer-events:none;');
-  const btns: HTMLElement[] = [];
+  // ── 底部：5 色库存(点色→装入选中槽) + 3 发射槽(点=发射+选中·选中槽金色强调) ──
+  const bottom = el('div', 'position:absolute;left:0;right:0;bottom:16px;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;');
+  bottom.appendChild(el('div', 'color:#8fb0e0;font:700 12px system-ui;letter-spacing:1px;', '库存 · 点色装入选中槽'));
+  const invRow = el('div', 'display:flex;gap:8px;pointer-events:auto;');
+  const chips: HTMLElement[] = [];
   PALETTE.forEach((p, c) => {
-    const b = el('div', `pointer-events:auto;width:66px;height:66px;border-radius:16px;background:${p.css};box-shadow:0 4px 0 ${shadeCss(p.tint)},0 6px 12px #0008;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;color:#fff;font:800 20px system-ui;text-shadow:0 1px 3px #000b;transition:transform .05s;`);
-    b.addEventListener('pointerdown', (e) => { e.stopPropagation(); startFire(c); b.style.transform = 'scale(.92)'; b.setPointerCapture?.(e.pointerId); });
-    const end = (): void => { stopFire(c); b.style.transform = 'scale(1)'; };
-    b.addEventListener('pointerup', end); b.addEventListener('pointercancel', end); b.addEventListener('pointerleave', end);
-    btns.push(b); pad.appendChild(b);
+    const chip = el('div', `width:46px;height:46px;border-radius:10px;background:${p.css};box-shadow:0 2px 5px #0007;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;color:#fff;font:800 15px system-ui;text-shadow:0 1px 2px #000b;`);
+    chip.addEventListener('pointerdown', (e) => { e.stopPropagation(); loadColor(c); });
+    chips.push(chip); invRow.appendChild(chip);
   });
-  wrapper.appendChild(pad);
-  function shadeCss(t: number): string { return '#' + shade(t, 0.6).toString(16).padStart(6, '0'); }
+  bottom.appendChild(invRow);
+  const slotRow = el('div', 'display:flex;gap:18px;pointer-events:auto;margin-top:4px;');
+  const slotEls: HTMLElement[] = [];
+  for (let i = 0; i < SLOT_N; i++) {
+    const s = el('div', 'width:72px;height:72px;border-radius:16px;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;color:#fff;font:800 24px system-ui;text-shadow:0 1px 3px #000b;transition:transform .06s,box-shadow .1s;');
+    const idx = i;
+    s.addEventListener('pointerdown', (e) => { e.stopPropagation(); selSlot = idx; startFire(idx); s.style.transform = 'scale(.9)'; s.setPointerCapture?.(e.pointerId); refresh(); });
+    const end = (): void => { stopFire(idx); refresh(); };
+    s.addEventListener('pointerup', end); s.addEventListener('pointercancel', end); s.addEventListener('pointerleave', end);
+    slotEls.push(s); slotRow.appendChild(s);
+  }
+  bottom.appendChild(slotRow);
+  wrapper.appendChild(bottom);
+
+  const loadColor = (c: number): void => { slots[selSlot] = c; refresh(); slotEls[selSlot].animate?.([{ transform: 'scale(1.3)' }, { transform: 'scale(1.08)' }], { duration: 220 }); };
   const refresh = (): void => {
-    btns.forEach((b, c) => { b.textContent = String(colorRemain[c]); b.style.opacity = colorRemain[c] > 0 ? '1' : '0.35'; });
+    chips.forEach((ch, c) => { ch.textContent = String(colorRemain[c]); ch.style.opacity = colorRemain[c] > 0 ? '1' : '0.28'; ch.style.border = slots.includes(c) ? '2px solid #fff8' : '2px solid #0000'; });
+    slotEls.forEach((s, i) => {
+      const col = PALETTE[slots[i]].css;
+      s.style.background = col; s.textContent = String(colorRemain[slots[i]]);
+      if (i === selSlot) { s.style.boxShadow = `0 0 0 4px #ffd24a,0 0 24px 7px ${col}cc,0 5px 0 #0006`; s.style.transform = 'scale(1.1)'; }
+      else { s.style.boxShadow = '0 5px 0 #0006,0 4px 10px #0008'; s.style.transform = 'scale(1)'; }
+    });
     dmg.textContent = `破坏 ${Math.round(((total - remaining) / total) * 100)}%`;
   };
   refresh();
@@ -226,9 +249,9 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     const id = `blt-${movN}`; spawnEnt(id, from[0], from[1], from[2], VOX * 0.55, PALETTE[color].tint);
     movers.push({ kind: 'bullet', id, t: 0, from, to, aim: [aim[0], aim[1], aim[2]] });
   };
-  const fireTimers: (ReturnType<typeof setInterval> | null)[] = PALETTE.map(() => null);
-  const startFire = (c: number): void => { fire(c); if (fireTimers[c] == null) fireTimers[c] = setInterval(() => fire(c), FIRE_MS); };
-  const stopFire = (c: number): void => { if (fireTimers[c] != null) { clearInterval(fireTimers[c]!); fireTimers[c] = null; } };
+  const fireTimers: (ReturnType<typeof setInterval> | null)[] = Array.from({ length: SLOT_N }, () => null);
+  const startFire = (i: number): void => { fire(slots[i]); if (fireTimers[i] == null) fireTimers[i] = setInterval(() => fire(slots[i]), FIRE_MS); };
+  const stopFire = (i: number): void => { if (fireTimers[i] != null) { clearInterval(fireTimers[i]!); fireTimers[i] = null; } };
 
   // ── 主循环（自管·全 try/catch·绝不冻结）──
   let raf = 0, last = performance.now();
