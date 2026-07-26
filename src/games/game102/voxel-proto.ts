@@ -25,6 +25,10 @@ const AMMO_SLACK = 1.3;
 const IDLE_SPIN = 0.22;   // 待机自转 rad/秒（0=关）
 const IDLE_DELAY = 1400;  // 松手后 ms 无操作才启动待机自转
 const CAM_DIST = N * PITCH * 3.9; // 相机距离（越大立方越小·owner「缩 20% 留白给以后 3D 轨道」）
+const TRAVEL_MS = 320;   // 子弹飞行时长（放慢·看得见轨迹·owner「太快看不见」）
+const FRAG_N = 7;        // 碎裂片数
+const GRAV = 900;        // 碎片重力（世界单位/秒²·自管运动积分·非 cannon-es·零冻结风险）
+const MUZZLE_W = { x: 0, y: -MAXC * 2.1, z: MAXC * 1.5 }; // 炮口世界位（立方前下方）
 const PALETTE = [
   { name: '红', tint: 0xe0433f, css: '#e0433f' },
   { name: '黄', tint: 0xf2c21e, css: '#f2c21e' },
@@ -151,7 +155,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   nextRow.appendChild(el('div', 'color:#8fb0e0;font:800 16px system-ui;letter-spacing:1px;', 'NEXT'));
   const nextDots = el('div', 'display:flex;gap:10px;'); nextRow.appendChild(nextDots);
   bottom.appendChild(nextRow);
-  const cannon = el('div', 'width:66px;height:52px;border-radius:12px 12px 8px 8px;background:#5cb544;box-shadow:0 0 26px 6px #5cb54488,0 5px 0 #3c8a2c;');
+  const cannon = el('div', 'width:70px;height:56px;border-radius:12px 12px 8px 8px;background:#5cb544;box-shadow:0 0 26px 6px #5cb54488,0 5px 0 #3c8a2c;display:flex;align-items:center;justify-content:center;color:#fff;font:800 24px system-ui;text-shadow:0 1px 3px #0009;');
   bottom.appendChild(cannon);
   wrapper.appendChild(bottom);
   const banner = el('div', 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 46px system-ui;color:#fff;text-shadow:0 3px 14px #000;pointer-events:none;');
@@ -163,11 +167,12 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     if (c) {
       cannon.style.background = PALETTE[c.color].css;
       cannon.style.boxShadow = `0 0 26px 6px ${PALETTE[c.color].css}88,0 5px 0 #0006`;
+      cannon.textContent = String(Math.max(0, c.ammo));  // 剩余弹数（打一发少一发）
       beam.style.background = `linear-gradient(${PALETTE[c.color].css}88,${PALETTE[c.color].css}00)`;
-    }
+    } else { cannon.textContent = ''; }
     nextDots.innerHTML = '';
     for (let i = activeIdx + 1; i < Math.min(activeIdx + 6, cannons.length); i++)
-      nextDots.appendChild(el('div', `width:26px;height:26px;border-radius:50%;background:${PALETTE[cannons[i].color].css};box-shadow:0 2px 5px #0006;`));
+      nextDots.appendChild(el('div', `width:30px;height:30px;border-radius:50%;background:${PALETTE[cannons[i].color].css};box-shadow:0 2px 5px #0006;display:flex;align-items:center;justify-content:center;color:#fff;font:800 12px system-ui;text-shadow:0 1px 2px #0009;`, String(cannons[i].ammo)));
     coreFill.style.width = `${Math.round(((total - remaining) / total) * 100)}%`;
     coreMul.textContent = `x${hits}`;
     (coin.querySelector('#coins') as HTMLElement).textContent = String(hits);
@@ -285,32 +290,69 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     requestAnimationFrame(() => { dot.style.transform = `translate(calc(-50% + ${dx}px),-140px)`; dot.style.opacity = '0'; });
     later(() => dot.remove(), 400);
   };
-  const finish = (): void => {
-    over = remaining === 0 ? 'win' : 'lose';
-    banner.textContent = over === 'win' ? '🎉 全清！' : '弹尽 · 未清空';
-    banner.style.color = over === 'win' ? '#8affa0' : '#ff8a8a';
+  const finish = (win: boolean): void => {
+    if (over) return;
+    over = win ? 'win' : 'lose';
+    banner.textContent = win ? '🎉 全清！' : '弹尽 · 未清空';
+    banner.style.color = win ? '#8affa0' : '#ff8a8a';
+  };
+
+  // ── 自管运动体（子弹 + 碎片·3D 世界空间·非 pivot 子·非 cannon-es·每帧我自己积分·零冻结风险）──
+  type Bullet = { kind: 'bullet'; id: string; t: number; from: [number, number, number]; to: [number, number, number]; aim: [number, number, number]; color: number; same: boolean };
+  type Frag = { kind: 'frag'; id: string; p: [number, number, number]; v: [number, number, number]; life: number };
+  const movers: (Bullet | Frag)[] = [];
+  const movEnt = new Set<string>();
+  let movN = 0;
+  const spawnEnt = (id: string, x: number, y: number, z: number, size: number, tint: number): void => {
+    try { engine.world.createEntity(id); } catch { /* 已存在 */ }
+    engine.world.addComponent(id, { type: 'Transform3D', x, y, z } as unknown as Transform3D);
+    engine.world.addComponent(id, { type: 'Mesh3D', shape: 'box', width: size, height: size, depth: size, frontTint: tint, backTint: tint, edgeTint: shade(tint, 0.8) } as never);
+    movEnt.add(id);
+  };
+  const despawnEnt = (id: string): void => { if (movEnt.has(id)) { try { engine.world.destroyEntity(id); } catch { /* */ } movEnt.delete(id); } };
+  const setPos = (id: string, x: number, y: number, z: number): void => { const t = engine.world.getComponent<Transform3D>(id, 'Transform3D'); if (t) { t.x = x; t.y = y; t.z = z; } };
+  const voxWorld = (i: number, j: number, k: number): [number, number, number] => {
+    const t = pivotT(); return rotVec(idx2pos(i), idx2pos(j), idx2pos(k), t?.rotX ?? 0, t?.rotY ?? 0);
+  };
+  const prand = (): number => hash3(movN++, remaining, hits); // 确定性伪随机（非 Math.random）
+  const spawnFragments = (wx: number, wy: number, wz: number, tint: number): void => {
+    for (let n = 0; n < FRAG_N; n++) {
+      const id = `frag-${movN}`;
+      spawnEnt(id, wx, wy, wz, VOX * 0.5, tint);
+      movers.push({ kind: 'frag', id, p: [wx, wy, wz], v: [(prand() - 0.5) * 420, 120 + prand() * 300, (prand() - 0.5) * 420], life: 1.2 });
+    }
   };
 
   const onBeat = (): void => {
     if (over) return;
     const c = cannons[activeIdx];
-    if (!c) { finish(); return; }
+    if (!c) return;
     const s = frontSide();
     const aim = aimVox(s);
-    let hit = false;
-    const aimColor = aim ? colorAt.get(vid(aim[0], aim[1], aim[2])) : null;
-    if (aim && aimColor === c.color) {
-      breakVox(aim[0], aim[1], aim[2]); hit = true; hits++;   // 同色 → 打破·露下一层
-    } else if (aim) {
-      bounceFx();                                             // 异色 → 反弹·空放
-    }
-    c.ammo -= 1;
-    pushLog(`beat side=${s} aim=${aim ? aim.join(',') : '∅'} aimC=${aimColor ?? '-'} active=${c.color} → ${hit ? '破' : aim ? '弹' : '空'} · rem=${remaining} ammo=${c.ammo} rendered=${rendered.size}`);
-    flashReticle(hit);
-    if (remaining === 0) { finish(); refreshChrome(); return; }
-    if (c.ammo <= 0) { activeIdx++; if (activeIdx >= cannons.length) finish(); }
+    if (!aim) { pushLog(`beat side=${s} aim=∅ (该面空)`); return; } // 该面无格可打·不耗弹
+    const aimColor = colorAt.get(vid(aim[0], aim[1], aim[2]))!;
+    const same = aimColor === c.color;
+    const to = voxWorld(aim[0], aim[1], aim[2]);
+    const id = `blt-${movN}`;
+    spawnEnt(id, MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z, VOX * 0.7, PALETTE[c.color].css ? PALETTE[c.color].tint : 0xffffff);
+    movers.push({ kind: 'bullet', id, t: 0, from: [MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z], to, aim: [aim[0], aim[1], aim[2]], color: c.color, same });
+    c.ammo -= 1;                                              // 打一发少一发（发射即扣·数字实时）
+    pushLog(`fire side=${s} aim=${aim.join(',')} aimC=${aimColor} active=${c.color} → ${same ? '将破' : '将弹'} ammo=${c.ammo}`);
+    if (c.ammo <= 0) activeIdx++;                             // 弹尽轮下一色（在飞子弹用快照·不受影响）
     refreshChrome();
-    renderer.invalidate?.();
+  };
+  // 子弹飞抵结算（同色破+碎裂·异色反弹）。
+  const resolveBullet = (b: Bullet): void => {
+    if (b.same && present.has(vid(b.aim[0], b.aim[1], b.aim[2]))) {
+      const wp = voxWorld(b.aim[0], b.aim[1], b.aim[2]);
+      breakVox(b.aim[0], b.aim[1], b.aim[2]); hits++;
+      spawnFragments(wp[0], wp[1], wp[2], PALETTE[b.color].tint);
+      flashReticle(true);
+      if (remaining === 0) finish(true);
+    } else {
+      bounceFx(); flashReticle(false);
+    }
+    refreshChrome();
   };
 
   // ── 自管渲染循环（**全程 try/catch·任何一处抛错都只记日志·绝不冻结循环**）──────────────────
@@ -328,6 +370,25 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
       let guard = 0;
       while (acc >= BEAT_MS && guard++ < 8) { acc -= BEAT_MS; onBeat(); } // guard 防死循环暴发
       if (acc >= BEAT_MS) acc = 0;
+      // 运动体积分（子弹匀速飞抵→结算·碎片抛物线落下→超时/落底回收）。
+      const ds = Math.min(dt, 50) / 1000;
+      for (let m = movers.length - 1; m >= 0; m--) {
+        const mv = movers[m];
+        if (mv.kind === 'bullet') {
+          mv.t += dt;
+          const f = Math.min(1, mv.t / TRAVEL_MS);
+          setPos(mv.id, mv.from[0] + (mv.to[0] - mv.from[0]) * f, mv.from[1] + (mv.to[1] - mv.from[1]) * f, mv.from[2] + (mv.to[2] - mv.from[2]) * f);
+          if (f >= 1) { despawnEnt(mv.id); movers.splice(m, 1); resolveBullet(mv); }
+        } else {
+          mv.v[1] -= GRAV * ds;
+          mv.p[0] += mv.v[0] * ds; mv.p[1] += mv.v[1] * ds; mv.p[2] += mv.v[2] * ds;
+          mv.life -= ds;
+          setPos(mv.id, mv.p[0], mv.p[1], mv.p[2]);
+          if (mv.life <= 0 || mv.p[1] < -MAXC * 4) { despawnEnt(mv.id); movers.splice(m, 1); }
+        }
+      }
+      // 负局：弹尽（无炮）且无子弹在飞且仍有格。
+      if (!over && activeIdx >= cannons.length && !movers.some((x) => x.kind === 'bullet') && remaining > 0) finish(false);
     } catch (e) { pushLog(`FRAME ${(e as Error).message}\n${(e as Error).stack?.split('\n').slice(0, 5).join('\n') ?? ''}`, true); }
     try { renderer.sync(engine.world); } catch (e) { pushLog(`RENDER ${(e as Error).message}\n${(e as Error).stack?.split('\n').slice(0, 5).join('\n') ?? ''}`, true); }
     renderLog();
@@ -338,6 +399,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   return () => {
     if (raf) cancelAnimationFrame(raf);
     engine.stop();
+    movers.forEach((mv) => despawnEnt(mv.id));
     timers.forEach(clearTimeout);
     window.removeEventListener('error', onWinErr);
     window.removeEventListener('unhandledrejection', onRej);
