@@ -24,7 +24,7 @@ import {
   cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
   steeringCapability, launchCapability, selfRuleCapability, collisionResolveCapability,
 } from '@skills/tier2/index.js';
-import { keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, orbitAt, animStateCapability, modifierStackCapability, statBindCapability } from '@skills/tier2/index.js';
+import { keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, orbitAt, animStateCapability, modifierStackCapability, statBindCapability, faceRotateCapability } from '@skills/tier2/index.js';
 import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
 import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
@@ -62,14 +62,16 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
     Timer: { id: 'life', elapsed: 0, duration: w.life, loop: false },      // lifetime 回收
   };
   if (w.pattern === 'nova') {
-    // 冲击波：身边**可见大爆炸圈**（撤 32px 团帧→画满半径的圈本体）+ Tween 渐隐=一下炸开的闪（owner「要有爆炸效果」）。
-    const { Sprite: _s, ...noSprite } = base; // 去掉 base 的小 Sprite（撑不满爆炸圈）
+    // 冲击波：淡淡的伤害圈（低 alpha·per-tick AoE）+ **放射粒子爆发**（sparks_<key>·炫酷·owner「用粒子特效」）。
+    const { Sprite: _s, ...noSprite } = base; // 去掉 base 的小 Sprite
     void _s;
     return { entities: { p: { ...noSprite,
       Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY }, // 只和敌配对
-      Color: { tint: w.tint, alpha: 0.55 },
-      Tween: { type: 'Tween', target: 'Color.alpha', from: 0.6, to: 0, elapsed: 0, duration: Math.max(2, w.life), easing: 'easeOut', done: false }, // 炸开渐隐
-      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // per-tick·扫全范围·数值小
+      Color: { tint: w.tint, alpha: 0.18 }, // 伤害圈淡淡的·主视觉交给粒子
+      Tween: { type: 'Tween', target: 'Color.alpha', from: 0.22, to: 0, elapsed: 0, duration: Math.max(2, w.life), easing: 'easeOut', done: false },
+      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // per-tick·数值小
+      // 生成瞬间喷一圈粒子（once·armed:false·timer gte 0 首拍即触发）。
+      SelfRule: { when: { kind: 'timer', id: 'life', cmp: 'gte', value: 0 }, do: [{ kind: 'spawn', template: `sparks_${w.key}`, at: 'self' }], once: true, armed: false },
     } } };
   }
   if (w.pattern === 'bomb') {
@@ -85,6 +87,10 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
   const single = (w.pattern === 'straight' || w.pattern === 'pet') && !w.pierce; // 单发命中 vs 穿透 per-tick（pierce=强制穿透扫线）
   const p: Record<string, unknown> = { ...base,
     Velocity: { vx: 0, vy: 0, angular: 0 },
+    // 子弹按飞行方向旋转贴图（REQ-FACE-ROTATE·Lead 已交付）：飞刀/激光条朝它飞的方向转——激光遂沿开火方向贯穿·
+    // 子弹也朝向目标（修 owner「子弹不朝向目标」「激光要顺方向」）。渲染器读 FaceDir 覆盖旋转·sim 零 trig。
+    FaceRotate: { source: 'velocity' },
+    FaceDir: { x: 1, y: 0 },
     // fallbackDir（Lead 交付·REQ-SURVIVOR被动轴同批）：索敌落空不再冻原地→朝上默认发射（修 owner「没敌人时子弹不动」）。
     Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY, fallbackDir: { x: 0, y: -1 } },
     // RBUG-01② 子弹朝向：t2-facing 与 bounds-clamp 都在 Commit 写 Transform→调度器成环（facing 未声明相对定序·
@@ -99,6 +105,25 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
   // 干净往返(飞出→到点回旋)是 launch 缺的 out-return 段（已报 capgap·见 requests REQ-SURVIVOR武器缺口）。
   // 此处先让它真飞：Launch 定向飞出 + 穿透(single=false·不 consumeOnHit)·长寿命=穿一线的回旋刃。
   return { entities: { p } };
+}
+
+// 粒子爆发（数据驱动"粒子特效"·owner「冲击波用粒子·炫酷点」）：n 颗小火花从中心**放射状飞出** + Tween 渐隐 +
+// 缩小·短命·零碰撞(category0)。cos/sin 在 authoring 期一次性算方向（同 orbitAt·非运行时 trig）→ 确定性。
+function sparksTemplate(n: number, speed: number, tint: number, life: number, size: number): { entities: Record<string, Record<string, unknown>> } {
+  const out: Record<string, Record<string, unknown>> = {};
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI * 2 * i) / n + (i % 2) * 0.26; // 交错角度=更自然
+    const sp = speed * (0.7 + (i % 3) * 0.2); // 三档速度=层次
+    out[`s${i}`] = {
+      Transform: { ...XF0 },
+      Velocity: { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, angular: 0 },
+      Shape: { kind: 'circle', radius: size, category: 0, mask: 0 },
+      Color: { tint, alpha: 1 },
+      Timer: { id: 'life', elapsed: 0, duration: life, loop: false },
+      Tween: { type: 'Tween', target: 'Color.alpha', from: 1, to: 0, elapsed: 0, duration: life, easing: 'easeOut', done: false }, // 飞出渐隐
+    };
+  }
+  return { entities: out };
 }
 
 // 炸弹落点爆炸（bomb 弹体寿命末 spawn 此）：大范围橙色爆炸圈·per-tick AoE 伤·短寿命·Tween 渐隐。
@@ -516,6 +541,7 @@ export function buildBlueprint(): WorldBlueprint {
           // 全武器：每把一个 proj_<key>（射法模板）+ 非起始武器一个 weapon_<key>（挂点·draft 生成）。
           ...Object.fromEntries(WEAPONS.map((w) => [`proj_${w.key}`, projByPattern(w)])),
           ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'bomb').map((w) => [`explosion_${w.key}`, explosionTemplate(w)])), // 炸弹落点爆炸
+          ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'nova').map((w) => [`sparks_${w.key}`, sparksTemplate(16, 5.5, w.tint, 18, 3.2)])), // 冲击波粒子爆发
           ...Object.fromEntries(WEAPONS.filter((w) => w.key !== 'kunai').map((w) => [`weapon_${w.key}`, weaponMount(w)])),
         },
       },
@@ -538,7 +564,7 @@ export function buildBlueprint(): WorldBlueprint {
       motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, tweenCapability,
       boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
       cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
-      steeringCapability, launchCapability, selfRuleCapability, collisionResolveCapability, keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, animStateCapability,
+      steeringCapability, launchCapability, selfRuleCapability, collisionResolveCapability, keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, animStateCapability, faceRotateCapability,
       modifierStackCapability, statBindCapability,
       prefabCapability, casterCapability, aggroCapability, flowCapability,
     ],
