@@ -122,7 +122,7 @@
 
 1. **顾客立绘不在自动台账内**：`CUST_PORTRAITS` 是 `Avatar.src`（外部图片路径·非 `Sprite.textureKey` 皮肤槽），`deriveRequirements` 只扫 Sprite 皮肤槽 → 顾客立绘漏出 Sprite 台账。**本文域 1 已补**。属预期分工，非 bug。
 2. **生成器「格底衬皮」vs「生成器 Sprite」两层**：art-ledger 覆盖生成器 `Sprite.textureKey`（gen_fridge 等·物件本体）；但棋盘 gen 格底还有一层 `bg custom #c8871e` 格衬皮（s1.ts），不在 Sprite 域。本文域 3 已补登记。
-3. **命名一致性**：generators.json 里 `gen_fridge` 中文名已从「冰箱」改为「米仓」（产 food 粮食链）、`gen_toolbox` 改「甜点炉」（产 tool 甜点链），但 ui-brief §2/§11 与 refs 仍写「冰箱/工具箱」。**仅文档措辞滞后·不影响 key**；建议 owner 定稿后回填 ui-brief（未擅改）。
+3. **命名一致性（已回填 2026-07-26）**：generators.json 里 `gen_fridge` 中文名为「米仓」（产 food 粮食链）、`gen_toolbox` 为「甜点炉」（产 tool 甜点链）。ui-brief / refs 旧措辞「冰箱/工具箱/食材袋」已同步回填成现名（**仅措辞·不影响 key**）。
 4. **CC0 占位风格债**：ninja-adventure faceset 为像素 RPG 风·38×38，与本品「轻插画 2.5D 糖果感」+ 订单卡 190 显示尺寸均不符 → 域 1 全部标 ⬜ 待原创替换（已在 index.json `license:CC0-1.0`·可安全替换）。
 </content>
 </invoke>
