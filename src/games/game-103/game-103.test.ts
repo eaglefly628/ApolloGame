@@ -399,6 +399,29 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(maxR).toBeGreaterThan(120); // 3 层 → 明显 > 基础半径
   });
 
+  it('命中反馈（REQ-HIT-FX·主程 Hitbox.onHit）：定向弹命中敌→喷 hitfx 小火花；穿透弹逐命中各喷', () => {
+    const lib = (buildBlueprint().entities.library as { PrefabLibrary: { templates: Record<string, { entities: Record<string, Record<string, unknown>> }> } }).PrefabLibrary.templates;
+    // hitfx 模板在册（3 颗小火花·category0 零碰撞）
+    expect(lib.hitfx).toBeDefined();
+    expect(Object.keys(lib.hitfx.entities).length).toBe(3);
+    // 定向弹 Hitbox 挂 onHit:hitfx；nova/爆炸（AOE per-tick）不挂（防刷屏）
+    const kunaiHit = lib.proj_kunai.entities.p.Hitbox as { onHit?: { spawnTemplate: string } };
+    expect(kunaiHit.onHit?.spawnTemplate).toBe('hitfx'); // 穿透飞镖有命中反馈
+    const shockHit = lib.proj_shock.entities.p.Hitbox as { onHit?: unknown };
+    expect(shockHit.onHit).toBeUndefined();               // nova AOE 不挂（每敌每拍喷=刷屏）
+    // 运行期：飞镖命中敌 → 世界里冒出 hitfx 火花实体（Timer+Color+无 Hitbox 的小粒子）
+    const e = fresh();
+    let sawFx = false;
+    for (let i = 0; i < 200 && !sawFx; i++) {
+      step(e);
+      for (const [id] of e.world.query('Timer', 'Color', 'Shape')) {
+        const s = e.world.getComponent(id, 'Shape') as unknown as { radius?: number; category?: number };
+        if (s.category === 0 && (s.radius ?? 0) <= 3 && !e.world.getComponent(id, 'Hitbox')) { sawFx = true; break; }
+      }
+    }
+    expect(sawFx).toBe(true);
+  });
+
   it('难度：胖子/精英血厚(非一枪死)+远程弹更大更清晰', () => {
     expect(BRUTE.hp).toBeGreaterThan(150);                 // 肉·血条看得见（owner「血条不够长/一枪死」）
     expect(ENEMIES.some((x) => x.key === 'sniper')).toBe(true);  // 精英狙击=攻击性高的远程

@@ -94,7 +94,7 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
       FaceRotate: { source: 'velocity' }, FaceDir: { x: 1, y: 0 },
       Shape: { kind: 'box', width: w.radius * 3, height: Math.round(w.radius * 1.4), category: CL.BULLET, mask: CL.ENEMY }, // 小导弹条·随向目标转
       Color: { tint: w.tint, alpha: 1 },
-      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', consumeOnHit: true }, // 单发命中·高伤
+      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', consumeOnHit: true, ...HIT_ON }, // 单发命中·高伤
     } } };
   }
   if (w.pattern === 'boomerang') {
@@ -106,7 +106,7 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
       Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY, fallbackDir: { x: 0, y: -1 } },
       Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY },
       Color: { tint: w.tint, alpha: 1 },
-      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // 穿透·不 consume
+      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', ...HIT_ON }, // 穿透·不 consume
       Timer: { id: 'life', elapsed: 0, duration: Math.round(w.life / 2), loop: false }, // 飞出段=半寿命
       SelfRule: { when: { kind: 'timer', id: 'life', cmp: 'gte', value: Math.max(1, Math.round(w.life / 2) - 1) }, do: [{ kind: 'spawn', template: `${w.key}_return`, at: 'self' }], once: true, armed: false },
     } } };
@@ -137,7 +137,7 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
       Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY, fallbackDir: { x: 0, y: -1 } },
       Shape: { kind: 'polygon', vertices: arrow, category: CL.BULLET, mask: CL.ENEMY },
       Color: { tint: w.tint, alpha: 1 },
-      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // 贯穿·不 consume
+      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', ...HIT_ON }, // 贯穿·不 consume
     } } };
   }
   const single = (w.pattern === 'straight' || w.pattern === 'pet') && !w.pierce; // 单发命中 vs 穿透 per-tick（pierce=强制穿透扫线）
@@ -149,7 +149,7 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
     Launch: { speed: w.projSpeed, toward: 'target', targetMask: ENEMY, fallbackDir: { x: 0, y: -1 } },
     Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY },
     Color: { tint: w.tint, alpha: 1 },
-    Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', ...(single ? { consumeOnHit: true } : {}) },
+    Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', ...(single ? { consumeOnHit: true } : {}), ...HIT_ON },
   };
   return { entities: { p } };
 }
@@ -168,7 +168,7 @@ function boomReturnTemplate(w: WeaponDef): { entities: Record<string, Record<str
     FaceRotate: { source: 'velocity' }, FaceDir: { x: 1, y: 0 },
     Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY },
     Color: { tint: w.tint, alpha: 1 },
-    Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // 回程照样穿透伤敌
+    Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', ...HIT_ON }, // 回程照样穿透伤敌
     Timer: { id: 'life', elapsed: 0, duration: Math.round(w.life / 2) + 20, loop: false }, // 回程寿命
   } } };
 }
@@ -199,6 +199,14 @@ function sparksTemplate(n: number, speed: number, tint: number, life: number, si
     };
   }
   return { entities: out };
+}
+
+// 命中反馈钩子（REQ-HIT-FX·主程已下沉 Hitbox.onHit）：命中敌那拍在受击点喷一小簇火花（穿透武器每命中各喷·同伤害 cadence）。
+// **克制**（owner「不能太大·子弹多」）：只 3 颗·极短命·小颗·白亮=一眼「打中了」。挂在**定向弹**（子弹/激光/导弹/回旋镖）
+// 的 Hitbox 上；nova/爆炸 = per-tick AOE 全场（每敌每拍喷=刷屏）故不挂——它们本身已有大特效。
+const HIT_ON = { onHit: { spawnTemplate: 'hitfx' } };
+function hitFxTemplate(): { entities: Record<string, Record<string, unknown>> } {
+  return sparksTemplate(3, 2.4, 0xffffff, 6, 2.2); // 小白花·6 拍·放射微爆（复用粒子模板·category0 零碰撞）
 }
 
 // 炸弹落点爆炸（bomb 弹体寿命末 spawn 此）：大范围橙色爆炸圈·per-tick AoE 伤·短寿命·Tween 渐隐。
@@ -636,6 +644,7 @@ export function buildBlueprint(): WorldBlueprint {
           ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'bomb').map((w) => [`explosion_${w.key}`, explosionTemplate(w)])), // 炸弹落点爆炸
           ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'nova').map((w) => [`sparks_${w.key}`, sparksTemplate(16, 5.5, w.tint, 18, 3.2, w.radiusPerLevel ? `${w.key}Radius` : undefined)])), // 冲击波粒子爆发（升级同步放大）
           ...Object.fromEntries(WEAPONS.filter((w) => w.pattern === 'boomerang').map((w) => [`${w.key}_return`, boomReturnTemplate(w)])), // 回旋镖第②段（飞回）
+          hitfx: hitFxTemplate(), // 命中反馈小火花（Hitbox.onHit 命中即喷·穿透逐命中·REQ-HIT-FX 主程已下沉）
           ...Object.fromEntries(WEAPONS.filter((w) => w.key !== 'kunai').map((w) => [`weapon_${w.key}`, weaponMount(w)])),
         },
       },
