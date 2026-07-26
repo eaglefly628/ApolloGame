@@ -1,55 +1,58 @@
-// Game 102 · 3D 体素立方 —— **核心循环手感原型（throwaway·render-only·丢弃版）**。
+// Game 102 · 3D 体素立方 —— **核心场景手感原型（throwaway·render-only·丢弃版）**。
 //
-// ⚠ 这是**验证「好不好玩」的一次性手感原型**，不是数据驱动的正式游戏：旋转 + 命中判定跑在 mount 宿主胶水里
-// （game-z「拖拽转 Camera3D」输入胶水先例的同类·render-only·不进 sim/hash）。**证明好玩后**再把「可旋转立方 +
-// 面对齐开火」sink 成引擎能力、正式做成纯数据蓝图（当前规则禁玩法逻辑进宿主·此原型仅为拍板服务·经 owner 同意）。
+// ⚠ 这是**验证「好不好玩」+ 复刻概念图场景**的一次性原型，不是数据驱动正式游戏：旋转 + 命中判定跑在 mount
+// 宿主胶水里（game-z「拖拽转视角」输入胶水先例的同类·render-only·不进 sim/hash）。HUD 暂用 DOM 叠层
+// （正式版 = PUI LayoutNode）。**证明好玩后**再把「可旋转立方 + 面对齐开火 + 吸附」sink 成引擎能力做纯数据版。
 //
-// 核心循环（owner 2026-07-26 拍板）：唯一操作=拖拽旋转立方；当前炮台按拍自动开火 → 你把同色面转到炮口（世界 +Z）
-// → 正对同色命中消除·错色/空格空放浪费（弹照扣）→ 打完这门弹才轮下一色 → 全清即胜·炮弹用尽仍有格则负。
+// 场景（owner 2026-07-26 概念图）：暗底网格 + 中央多彩体素立方（唯一操作 = 鼠标在立方上呈手型·上下左右拖拽旋转）
+// + 屏心准星（炮口瞄点）+ 底部发光炮台朝上开火 + NEXT 下一批炮色队列 + CORE 进度条 + 顶部 关卡/金币/设置 chrome。
+// 循环：底部炮台按拍朝准星开火 → 你转立方把同色格转到准星 → 正对同色命中·错色/空格空放浪费 → 打完轮下一色。
+// 吸附（把选中格精确对齐准星）owner 明示「后面再说」——本里程碑先把场景立起来。
 import { Engine } from '../../runtime/engine.js';
 import { QueuedInputSource } from '@net/index.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
 import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assembly.js';
-import type { Transform3D, Pivot3D, Mesh3D } from '@engine/protocol/components.js';
+import type { Transform3D, Pivot3D } from '@engine/protocol/components.js';
 
 // ── 配置（手感旋钮·随便调）──────────────────────────────────────────────────────────────────
-const N = 6;              // 每面 N×N 格
-const PITCH = 24;         // 格步距
-const VOX = 22;           // 方块边长（露缝＝网格线）
-const H = (N * PITCH) / 2; // 立方半边（面板贴在 ±H）
-const BEAT_MS = 380;      // 开火节拍（越小越紧张）
-const AMMO_SLACK = 1.25;  // 每色弹药 = 该色格数 × 此值（>1 给容错·空放才不必然死）
+const N = 8;              // 每面 N×N 格（概念图约 8）
+const PITCH = 22;
+const VOX = 20;
+const H = (N * PITCH) / 2;
+const BEAT_MS = 420;      // 开火节拍
+const AMMO_SLACK = 1.3;   // 每色弹药 = 该色格数 × 此值（容错）
+// 概念图 6 色：红·黄·绿·蓝·白·紫。
 const PALETTE = [
-  { name: '红', tint: 0xe0433f },
-  { name: '绿', tint: 0x5cb544 },
-  { name: '蓝', tint: 0x2e6cf6 },
+  { name: '红', tint: 0xe0433f, css: '#e0433f' },
+  { name: '黄', tint: 0xf2c21e, css: '#f2c21e' },
+  { name: '绿', tint: 0x5cb544, css: '#5cb544' },
+  { name: '蓝', tint: 0x2e6cf6, css: '#2e6cf6' },
+  { name: '白', tint: 0xeaf2ff, css: '#eaf2ff' },
+  { name: '紫', tint: 0x8b5cf6, css: '#8b5cf6' },
 ];
 
-// 六面：法向 n + 面内两轴 u,v（格心 = n·H + u·ca + v·cb）。
 const FACES: { n: [number, number, number]; u: [number, number, number]; v: [number, number, number] }[] = [
-  { n: [0, 0, 1],  u: [1, 0, 0],  v: [0, 1, 0] },  // +Z 前
-  { n: [0, 0, -1], u: [-1, 0, 0], v: [0, 1, 0] },  // -Z 后
-  { n: [1, 0, 0],  u: [0, 0, -1], v: [0, 1, 0] },  // +X 右
-  { n: [-1, 0, 0], u: [0, 0, 1],  v: [0, 1, 0] },  // -X 左
-  { n: [0, 1, 0],  u: [1, 0, 0],  v: [0, 0, -1] }, // +Y 顶
-  { n: [0, -1, 0], u: [1, 0, 0],  v: [0, 0, 1] },  // -Y 底
+  { n: [0, 0, 1],  u: [1, 0, 0],  v: [0, 1, 0] },
+  { n: [0, 0, -1], u: [-1, 0, 0], v: [0, 1, 0] },
+  { n: [1, 0, 0],  u: [0, 0, -1], v: [0, 1, 0] },
+  { n: [-1, 0, 0], u: [0, 0, 1],  v: [0, 1, 0] },
+  { n: [0, 1, 0],  u: [1, 0, 0],  v: [0, 0, -1] },
+  { n: [0, -1, 0], u: [1, 0, 0],  v: [0, 0, 1] },
 ];
 
-// 整数哈希（确定性配色·无 Math.random）。
 function hash3(a: number, b: number, c: number): number {
   let h = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791);
   h = (h ^ (h >>> 13)) >>> 0;
   return (h % 997) / 997;
 }
 function rotVec(x: number, y: number, z: number, rx: number, ry: number): [number, number, number] {
-  const cy1 = y * Math.cos(rx) - z * Math.sin(rx), cz1 = y * Math.sin(rx) + z * Math.cos(rx); // Rx
-  const cx2 = x * Math.cos(ry) + cz1 * Math.sin(ry), cz2 = -x * Math.sin(ry) + cz1 * Math.cos(ry); // Ry
+  const cy1 = y * Math.cos(rx) - z * Math.sin(rx), cz1 = y * Math.sin(rx) + z * Math.cos(rx);
+  const cx2 = x * Math.cos(ry) + cz1 * Math.sin(ry), cz2 = -x * Math.sin(ry) + cz1 * Math.cos(ry);
   return [cx2, cy1, cz2];
 }
 
 interface Cell { id: string; face: number; a: number; b: number; color: number | null; }
 
-// ── 原型场景蓝图（体素面板 + pivot + 相机 + 光）──────────────────────────────────────────────
 function buildProtoScene(cells: Cell[]): { blueprint: WorldBlueprint; ids: string[] } {
   const entities: Record<string, EntityBlueprint> = {};
   const ids: string[] = [];
@@ -57,120 +60,156 @@ function buildProtoScene(cells: Cell[]): { blueprint: WorldBlueprint; ids: strin
   for (const cell of cells) {
     const f = FACES[cell.face];
     const ca = (cell.a - c0) * PITCH, cb = (cell.b - c0) * PITCH;
-    const x = f.n[0] * H + f.u[0] * ca + f.v[0] * cb;
-    const y = f.n[1] * H + f.u[1] * ca + f.v[1] * cb;
-    const z = f.n[2] * H + f.u[2] * ca + f.v[2] * cb;
-    const tint = PALETTE[cell.color ?? 0].tint;
     entities[cell.id] = {
-      Transform3D: { x, y, z },
-      Mesh3D: { shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: tint, edgeTint: 0x1c1f2b },
+      Transform3D: {
+        x: f.n[0] * H + f.u[0] * ca + f.v[0] * cb,
+        y: f.n[1] * H + f.u[1] * ca + f.v[1] * cb,
+        z: f.n[2] * H + f.u[2] * ca + f.v[2] * cb,
+      },
+      Mesh3D: { shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: PALETTE[cell.color ?? 0].tint, edgeTint: 0x141826 },
     };
     ids.push(cell.id);
   }
   entities['cube-pivot'] = {
-    Transform3D: { x: 0, y: 0, z: 0, rotX: 0, rotY: 0 },
+    Transform3D: { x: 0, y: 0, z: 0, rotX: -0.35, rotY: 0.5 }, // 初始 3/4 视角（同概念图斜俯视）
     Pivot3D: { children: ids, centerX: 0, centerY: 0, centerZ: 0 },
   };
-  // 炮台（固定于世界 +Z·朝立方·随当前色换 tint）——不入 pivot（不随立方转）。
-  entities['cannon'] = {
-    Transform3D: { x: 0, y: 0, z: H + 90, rotX: Math.PI / 2 },
-    Mesh3D: { shape: 'cone', width: 40, height: 60, frontTint: PALETTE[0].tint, edgeTint: 0x222633 },
-  };
-  entities['cam'] = { Transform3D: { x: 0, y: 0, z: 0 }, Camera3D: { yaw: 0, pitch: 0.22, distance: H * 7.2, pivotX: 0, pivotY: 0, pivotZ: 0, projection: 'perspective', fov: 42 } };
-  entities['sky'] = { Sky3D: { top: 0x1a2748, bottom: 0x6f93c8, clouds: true, cloudTint: 0xffffff, scroll: 0.015, env: 0.55 } };
-  entities['sun'] = { Light3D: { kind: 'directional', color: 0xffffff, intensity: 1.15, dirX: -0.4, dirY: -1, dirZ: -0.5, castShadow: true } };
-  entities['amb'] = { Light3D: { kind: 'ambient', color: 0x9fb4d8, intensity: 0.55 } };
+  entities['cam'] = { Transform3D: { x: 0, y: 0, z: 0 }, Camera3D: { yaw: 0, pitch: 0.18, distance: H * 7.6, pivotX: 0, pivotY: 0, pivotZ: 0, projection: 'perspective', fov: 40 } };
+  entities['sky'] = { Sky3D: { top: 0x0c1730, bottom: 0x14243f, env: 0.5 } };
+  entities['sun'] = { Light3D: { kind: 'directional', color: 0xffffff, intensity: 1.15, dirX: -0.45, dirY: -0.9, dirZ: -0.55, castShadow: true } };
+  entities['amb'] = { Light3D: { kind: 'ambient', color: 0xa8bce0, intensity: 0.6 } };
   return { blueprint: { capabilities: [], entities }, ids };
 }
 
-// ── 手感原型挂载 ────────────────────────────────────────────────────────────────────────────
+// ── DOM chrome（原型叠层·复刻概念图布局）─────────────────────────────────────────────────────
+function el(tag: string, css: string, html?: string): HTMLElement {
+  const e = document.createElement(tag);
+  e.style.cssText = css;
+  if (html !== undefined) e.innerHTML = html;
+  return e;
+}
+
 export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => void }): () => void {
-  // 造格 + 配色（守恒：弹药按色数配）。
   const cells: Cell[] = [];
   const count: number[] = PALETTE.map(() => 0);
-  for (let face = 0; face < 6; face++) {
-    for (let a = 0; a < N; a++) {
+  for (let face = 0; face < 6; face++)
+    for (let a = 0; a < N; a++)
       for (let b = 0; b < N; b++) {
         const color = Math.floor(hash3(face, a, b) * PALETTE.length) % PALETTE.length;
         count[color]++;
         cells.push({ id: `c-${face}-${a}-${b}`, face, a, b, color });
       }
-    }
-  }
-  const cannons = PALETTE.map((p, i) => ({ color: i, ammo: Math.ceil(count[i] * AMMO_SLACK) }));
+  const cannons = PALETTE.map((_p, i) => ({ color: i, ammo: Math.ceil(count[i] * AMMO_SLACK) }));
   let activeIdx = 0;
   let remaining = cells.length;
+  const total = cells.length;
   let over: 'win' | 'lose' | null = null;
 
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:absolute;inset:0;background:#0a1424;overflow:hidden;touch-action:none;';
+  // 背景：暗底 + 淡网格（概念图）。
+  const wrapper = el('div', 'position:absolute;inset:0;overflow:hidden;touch-action:none;background:#0e1a30;'
+    + 'background-image:linear-gradient(#ffffff10 1px,transparent 1px),linear-gradient(90deg,#ffffff10 1px,transparent 1px);background-size:48px 48px;');
   container.appendChild(wrapper);
-  const w = wrapper.clientWidth || 960, h = wrapper.clientHeight || 540;
+  const w = wrapper.clientWidth || 900, h = wrapper.clientHeight || 1400;
 
   const { blueprint } = buildProtoScene(cells);
   const engine = new Engine({ input: new QueuedInputSource('g102p') });
   engine.load(blueprint);
-  const renderer = new ThreeRenderer({ width: w, height: h, background: 0x0a1424, antialias: true, dprCap: 1.5, shadowMapSize: 1024 });
+  const renderer = new ThreeRenderer({ width: w, height: h, background: 0x0e1a30, antialias: true, dprCap: 1.5, shadowMapSize: 1024 });
   engine.attachRenderer(renderer, wrapper);
 
-  // HUD（DOM 叠层·原型用·正式版走 PUI LayoutNode）。
-  const hud = document.createElement('div');
-  hud.style.cssText = 'position:absolute;left:16px;top:14px;font:600 15px/1.5 system-ui,sans-serif;color:#eaf2ff;text-shadow:0 1px 3px #000;pointer-events:none;';
-  wrapper.appendChild(hud);
-  const banner = document.createElement('div');
-  banner.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 44px system-ui,sans-serif;color:#fff;text-shadow:0 3px 12px #000;pointer-events:none;';
-  wrapper.appendChild(banner);
-  const tip = document.createElement('div');
-  tip.style.cssText = 'position:absolute;left:0;right:0;bottom:14px;text-align:center;font:500 13px system-ui,sans-serif;color:#9fb4d8;pointer-events:none;';
-  tip.textContent = '拖拽旋转立方 —— 把当前颜色的面转到下方炮口，炮按拍自动开火（横屏体验最佳）';
-  wrapper.appendChild(tip);
-  const swatch = (t: number): string => '#' + t.toString(16).padStart(6, '0');
-  const updateHud = (lastHit?: boolean): void => {
-    const c = cannons[activeIdx];
-    const nm = c ? PALETTE[c.color].name : '—';
-    const tint = c ? PALETTE[c.color].tint : 0x888888;
-    hud.innerHTML = `<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${swatch(tint)};vertical-align:-2px;margin-right:6px"></span>`
-      + `当前炮台：<b>${nm}</b> &nbsp; 弹药 <b>${c ? c.ammo : 0}</b> &nbsp; 剩余格 <b>${remaining}</b>`
-      + (lastHit === false ? ' &nbsp; <span style="color:#ff8a8a">空放！</span>' : lastHit ? ' &nbsp; <span style="color:#8affa0">命中</span>' : '');
-  };
-  updateHud();
+  // ── 顶部 chrome：设置 / Level / 金币 ──
+  const top = el('div', 'position:absolute;left:0;right:0;top:16px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;pointer-events:none;');
+  top.appendChild(el('div', 'width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ff6a5e,#c62f2b);box-shadow:0 4px 0 #8e1f1c,0 6px 10px #0007;display:flex;align-items:center;justify-content:center;font-size:24px;', '⚙️'));
+  top.appendChild(el('div', 'padding:10px 30px;border-radius:24px;background:linear-gradient(#f0554f,#d0322d);box-shadow:0 4px 0 #9e1f1b,0 6px 12px #0007;color:#fff;font:800 22px system-ui;letter-spacing:.5px;', 'Level 1'));
+  const coin = el('div', 'display:flex;align-items:center;gap:8px;padding:8px 16px 8px 10px;border-radius:22px;background:#0c1a30;border:2px solid #26385c;box-shadow:0 3px 8px #0006;color:#fff;font:800 20px system-ui;', '<span style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffe27a,#f2b70e);display:inline-block;box-shadow:inset 0 0 0 3px #c98f06"></span><span id="coins">0</span>');
+  top.appendChild(coin);
+  wrapper.appendChild(top);
 
-  // 立方旋转（拖拽·render-only 改 pivot 欧拉角）。
+  // ── 屏心准星（炮口瞄点）──
+  const reticle = el('div', `position:absolute;left:50%;top:46%;width:74px;height:74px;transform:translate(-50%,-50%);pointer-events:none;`);
+  reticle.innerHTML = `<svg width="74" height="74" viewBox="0 0 74 74" fill="none" stroke="#7fe3ff" stroke-width="4" stroke-linecap="round">
+    <path d="M6 20 V6 H20"/><path d="M54 6 H68 V20"/><path d="M68 54 V68 H54"/><path d="M20 68 H6 V54"/></svg>`;
+  wrapper.appendChild(reticle);
+
+  // ── 底部：CORE 进度条 + NEXT 队列 + 发光炮台 + 炮线 ──
+  const beam = el('div', 'position:absolute;left:50%;bottom:96px;width:4px;height:220px;transform:translateX(-50%);background:linear-gradient(#7fe3ff88,#7fe3ff00);pointer-events:none;');
+  wrapper.appendChild(beam);
+
+  const bottom = el('div', 'position:absolute;left:0;right:0;bottom:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:12px;padding-bottom:14px;');
+  // CORE 条
+  const coreWrap = el('div', 'display:flex;align-items:center;gap:12px;width:86%;');
+  coreWrap.appendChild(el('div', 'color:#8fb0e0;font:800 18px system-ui;', 'CORE'));
+  const coreTrack = el('div', 'flex:1;height:16px;border-radius:10px;background:#0c1a30;border:2px solid #26385c;overflow:hidden;');
+  const coreFill = el('div', 'height:100%;width:0%;border-radius:8px;background:linear-gradient(90deg,#ffb020,#ffe07a);transition:width .2s;');
+  coreTrack.appendChild(coreFill);
+  coreWrap.appendChild(coreTrack);
+  const coreMul = el('div', 'color:#ffd77a;font:800 18px system-ui;', 'x0');
+  coreWrap.appendChild(coreMul);
+  bottom.appendChild(coreWrap);
+  // NEXT 队列
+  const nextRow = el('div', 'display:flex;align-items:center;gap:10px;');
+  nextRow.appendChild(el('div', 'color:#8fb0e0;font:800 16px system-ui;letter-spacing:1px;', 'NEXT'));
+  const nextDots = el('div', 'display:flex;gap:10px;');
+  nextRow.appendChild(nextDots);
+  bottom.appendChild(nextRow);
+  // 发光炮台
+  const cannon = el('div', 'width:66px;height:52px;border-radius:12px 12px 8px 8px;background:#5cb544;box-shadow:0 0 26px 6px #5cb54488,0 5px 0 #3c8a2c;');
+  bottom.appendChild(cannon);
+  wrapper.appendChild(bottom);
+
+  const banner = el('div', 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 46px system-ui;color:#fff;text-shadow:0 3px 14px #000;pointer-events:none;');
+  wrapper.appendChild(banner);
+
+  let hits = 0;
+  const refreshChrome = (): void => {
+    const c = cannons[activeIdx];
+    // 炮台 + 准星染当前色。
+    if (c) {
+      cannon.style.background = PALETTE[c.color].css;
+      cannon.style.boxShadow = `0 0 26px 6px ${PALETTE[c.color].css}88,0 5px 0 #0006`;
+      beam.style.background = `linear-gradient(${PALETTE[c.color].css}88,${PALETTE[c.color].css}00)`;
+    }
+    // NEXT = 之后几门炮的色。
+    nextDots.innerHTML = '';
+    for (let i = activeIdx + 1; i < Math.min(activeIdx + 6, cannons.length); i++) {
+      nextDots.appendChild(el('div', `width:26px;height:26px;border-radius:50%;background:${PALETTE[cannons[i].color].css};box-shadow:0 2px 5px #0006;`));
+    }
+    const cleared = total - remaining;
+    coreFill.style.width = `${Math.round((cleared / total) * 100)}%`;
+    coreMul.textContent = `x${hits}`;
+    (coin.querySelector('#coins') as HTMLElement).textContent = String(hits);
+  };
+  refreshChrome();
+
+  // ── 立方旋转（拖拽·手型光标）──
+  wrapper.style.cursor = 'grab';
   let dragging = false, lastX = 0, lastY = 0;
   const pivotT = (): Transform3D | undefined => engine.world.getComponent<Transform3D>('cube-pivot', 'Transform3D');
-  const onDown = (e: PointerEvent): void => { dragging = true; lastX = e.clientX; lastY = e.clientY; wrapper.setPointerCapture?.(e.pointerId); };
+  const onDown = (e: PointerEvent): void => { dragging = true; lastX = e.clientX; lastY = e.clientY; wrapper.style.cursor = 'grabbing'; wrapper.setPointerCapture?.(e.pointerId); };
   const onMove = (e: PointerEvent): void => {
     if (!dragging) return;
     const t = pivotT(); if (!t) return;
-    t.rotY = (t.rotY ?? 0) + (e.clientX - lastX) * 0.011;   // 水平拖 → 绕竖轴
-    const rx = (t.rotX ?? 0) + (e.clientY - lastY) * 0.011; // 垂直拖 → 俯仰（夹 ±1.6 让顶/底面也能转到炮口）
-    t.rotX = Math.max(-1.6, Math.min(1.6, rx));
+    t.rotY = (t.rotY ?? 0) + (e.clientX - lastX) * 0.011;
+    t.rotX = Math.max(-1.6, Math.min(1.6, (t.rotX ?? 0) + (e.clientY - lastY) * 0.011));
     lastX = e.clientX; lastY = e.clientY;
     renderer.invalidate?.();
   };
-  const onUp = (e: PointerEvent): void => { dragging = false; wrapper.releasePointerCapture?.(e.pointerId); };
+  const onUp = (e: PointerEvent): void => { dragging = false; wrapper.style.cursor = 'grab'; wrapper.releasePointerCapture?.(e.pointerId); };
   wrapper.addEventListener('pointerdown', onDown);
   wrapper.addEventListener('pointermove', onMove);
   wrapper.addEventListener('pointerup', onUp);
   wrapper.addEventListener('pointercancel', onUp);
 
-  // 当前朝炮口（世界 +Z）的面 = 旋转后法向与 (0,0,1) 点积最大者。
   const frontFace = (): number => {
     const t = pivotT(); const rx = t?.rotX ?? 0, ry = t?.rotY ?? 0;
     let best = 0, bestDot = -Infinity;
     for (let i = 0; i < 6; i++) {
-      const [, , nz] = rotVec(FACES[i].n[0], FACES[i].n[1], FACES[i].n[2], rx, ry);
+      const nz = rotVec(FACES[i].n[0], FACES[i].n[1], FACES[i].n[2], rx, ry)[2];
       if (nz > bestDot) { bestDot = nz; best = i; }
     }
     return best;
   };
-  // 按面索引取该面某格。
   const byId = new Map(cells.map((c) => [c.id, c]));
-  const setCannonTint = (): void => {
-    const m = engine.world.getComponent<Mesh3D>('cannon', 'Mesh3D');
-    const c = cannons[activeIdx];
-    if (m && c) m.frontTint = PALETTE[c.color].tint;
-  };
   const clearCell = (cell: Cell): void => {
     cell.color = null;
     engine.world.destroyEntity(cell.id);
@@ -183,6 +222,10 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     banner.textContent = over === 'win' ? '🎉 全清！' : '弹尽 · 未清空';
     banner.style.color = over === 'win' ? '#8affa0' : '#ff8a8a';
   };
+  const flash = (ok: boolean): void => {
+    reticle.style.filter = ok ? 'drop-shadow(0 0 8px #8affa0)' : 'drop-shadow(0 0 8px #ff6a6a)';
+    setTimeout(() => { reticle.style.filter = ''; }, 120);
+  };
 
   const onBeat = (): void => {
     if (over) return;
@@ -190,28 +233,29 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     if (!c) { finish(); return; }
     const F = frontFace();
     const c0 = (N - 1) / 2;
-    // 该面剩余同色格中取最靠面心者（逐圈往里剥·手感更顺）。
-    let target: Cell | null = null, bestR = Infinity;
+    // 瞄准星 = 前面**最靠面心的现存格**（吸附前的近似点瞄）。
+    let aim: Cell | null = null, bestR = Infinity;
     for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) {
       const cell = byId.get(`c-${F}-${a}-${b}`);
-      if (!cell || cell.color !== c.color) continue;
+      if (!cell || cell.color === null) continue;
       const r = (a - c0) ** 2 + (b - c0) ** 2;
-      if (r < bestR) { bestR = r; target = cell; }
+      if (r < bestR) { bestR = r; aim = cell; }
     }
     let hit = false;
-    if (target) { clearCell(target); hit = true; }
-    c.ammo -= 1;               // 空放浪费：命中与否都扣一发
-    if (remaining === 0) { finish(); updateHud(hit); return; }
-    if (c.ammo <= 0) { activeIdx++; setCannonTint(); if (activeIdx >= cannons.length) { finish(); } }
-    updateHud(hit);
+    if (aim && aim.color === c.color) { clearCell(aim); hit = true; hits++; }
+    c.ammo -= 1;
+    flash(hit);
+    if (remaining === 0) { finish(); refreshChrome(); return; }
+    if (c.ammo <= 0) { activeIdx++; if (activeIdx >= cannons.length) finish(); }
+    refreshChrome();
     renderer.invalidate?.();
   };
 
-  // 每帧钩子（engine.start 每帧 renderer.sync + notifyListeners）：跑开火节拍。
   let acc = 0, last = performance.now();
   const unsub = engine.subscribe(() => {
     const now = performance.now();
     acc += now - last; last = now;
+    if (acc > 2000) acc = BEAT_MS; // 后台标签页回来不暴发
     while (acc >= BEAT_MS) { acc -= BEAT_MS; onBeat(); }
   });
   engine.start();
