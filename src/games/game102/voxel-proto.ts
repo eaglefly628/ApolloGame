@@ -184,13 +184,16 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   wrapper.appendChild(bottom);
 
   const loadColor = (c: number): void => {
-    const cur = slots[selSlot]; if (c === cur) return;
-    const other = slots.indexOf(c); if (other >= 0) slots[other] = cur;  // 冲突→交换（三炮颜色互斥）
-    slots[selSlot] = c; refresh();
-    slotEls[selSlot].animate?.([{ transform: 'scale(1.28)' }, { transform: 'scale(1.1)' }], { duration: 220 });
+    const other = slots.indexOf(c);
+    if (other >= 0 && other !== selSlot) slots[other] = slots[selSlot]; // 已在别炮→交换（三炮互斥）
+    slots[selSlot] = c;
+    const flashed = selSlot;
+    selSlot = (selSlot + 1) % SLOT_N;  // ★ 自动移到下一炮 → 连点几色即可填/换·每色永远可点
+    refresh();
+    slotEls[flashed].animate?.([{ transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { duration: 220 });
   };
   const refresh = (): void => {
-    chips.forEach((ch, c) => { ch.textContent = String(colorRemain[c]); ch.style.opacity = colorRemain[c] > 0 ? '1' : '0.28'; ch.style.border = slots.includes(c) ? '2px solid #fff8' : '2px solid #0000'; });
+    chips.forEach((ch, c) => { ch.textContent = String(colorRemain[c]); ch.style.opacity = colorRemain[c] > 0 ? '1' : '0.28'; }); // 库存色始终可点·不锁
     slotEls.forEach((s, i) => {
       const col = PALETTE[slots[i]].css;
       slotIcon[i].style.background = col; slotNum[i].textContent = String(colorRemain[slots[i]]);
