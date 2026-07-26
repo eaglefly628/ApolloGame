@@ -276,18 +276,21 @@ function board(s: S1State): N {
     // 阶段：埋沙(高层·只沙+锁数) → 蛛网 🕸️(低层·快挖开) → 露出(层归零=普通物)。
     if (cv?.cover != null) {
       const ck: N[] = [];
+      // 「还要炸几次解锁」= 主视觉·最大化在前（owner：锁太小看不清·要大在最前面）：金色底牌 + 大号 💥N，一眼读到剩余层数。
+      ck.push({
+        type: 'Panel', id: `t-live-${i}-lk`, props: { bg: 'gold' },
+        layout: { align: 'center', justify: 'center', padding: 8, radius: 18 },
+        children: [{ type: 'Label', id: `t-live-${i}-lkn`, props: { text: `💥${cv.cover}`, size: 44, bold: true, color: 'ink' } }],
+      });
+      // 埋物预览退为下方**半透明**小图标（owner：底下那个东西半透明画出来·隔沙朦胧仍看得到里面是啥）。
       if (cv.coverReward) {
-        // 沙下埋物**大图标直显**（owner：锁着也要跟挖开后一样大看得清·勾引玩家挖）——尺寸对齐普通物件(60)，
-        // 微降透明度示意「隔着沙」，锁层数缩成右上小角标不再挡内容。
-        ck.push({ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 60 }, layout: { opacity: 0.9 } });
+        ck.push({ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 40 }, layout: { opacity: 0.5 } });
       } else if (cv.cover <= 1) {
-        ck.push({ type: 'Label', id: `t-live-${i}-web`, props: { text: '🕸️', size: 60 } }); // 快挖开=蛛网阶段（同样放大）
+        ck.push({ type: 'Label', id: `t-live-${i}-web`, props: { text: '🕸️', size: 40 }, layout: { opacity: 0.5 } }); // 快挖开=蛛网阶段
       }
-      // 剩余层数=大图标下方小字（ink 深色·沙上可读·正常流不裁切·仍读得到「还挖几层」）。
-      ck.push({ type: 'Label', id: `t-live-${i}-cl`, props: { text: `🔒${cv.cover}`, size: 'sm', bold: true, color: 'ink' } });
       return {
         type: 'Panel', id: `t-live-${i}`, props: { bg: { custom: COVER_BG } },
-        layout: { direction: 'column', align: 'center', justify: 'center', gap: 0, padding: 4, radius: 16, height: 128, allowOverlap: true },
+        layout: { direction: 'column', align: 'center', justify: 'center', gap: 4, padding: 4, radius: 16, height: 128, allowOverlap: true },
         children: [...ck, ...dissolve],
       } as N;
     }
