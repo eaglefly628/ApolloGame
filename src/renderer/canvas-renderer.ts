@@ -4,6 +4,7 @@ import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
 import { collectRenderables, getCameraView, chooseRenderMode, resolveRotation2D } from './renderable.js';
 import { wrapLines } from './text-layout.js';
+import { deviceBase, entityMatrix } from './canvas-transform.js';
 
 export interface CanvasRendererOptions {
   width?: number;
@@ -61,27 +62,25 @@ export class CanvasRenderer implements RendererBackend {
       ctx.fillRect(0, 0, this.logicalW, this.logicalH);
     }
 
-    // 世界→屏幕投影（卷轴）：有相机则把世界向相机反方向平移并缩放，使相机中心落在视口中心；
-    // 无相机则世界坐标 1:1（与原行为一致）。整段 renderable 绘制都在此变换下。
-    const cam = getCameraView(world);
-    ctx.save();
-    if (cam) {
-      ctx.translate(this.logicalW / 2, this.logicalH / 2);
-      ctx.scale(cam.zoom, cam.zoom);
-      ctx.translate(-cam.centerX, -cam.centerY);
-    }
+    // 世界→设备基变换（DPR × 相机·卷轴·REQ-3D-RENDER-EFFICIENCY）：相机把世界向相机反方向平移并缩放使
+    // 相机中心落视口中心；无相机=1:1。折成一个仿射 base，下面每实体一次 setTransform 直接合成本层——
+    // **免每实体 save/translate/rotate/scale/restore**（百级同屏实体去掉百次状态栈压弹 + 冗余变换调用）。
+    const base = deviceBase(this.dpr, getCameraView(world), this.logicalW, this.logicalH);
 
-    // 瓦片地图（背景层，实体之下）：读 Tilemap 单例，按 tileId 从 tileset 图取源矩形画到世界位置。
+    // 瓦片地图（背景层，实体之下）：在 world→device 基变换下按世界坐标画。
+    ctx.setTransform(base.s, 0, 0, base.s, base.e, base.f);
     this.drawTilemap(ctx, world);
 
     const seenText = new Set<string>(); // 本帧被渲染为文本的实体 → 帧末据此清理 textCache（防无界泄漏）
+    let curAlpha = -1; let curFill = ''; // 冗余状态消除：无 save/restore 复位后，globalAlpha/fillStyle 仅变化时才写
     for (const r of collectRenderables(world)) {
-      ctx.save();
-      ctx.translate(r.x, r.y);
-      ctx.rotate(resolveRotation2D(r)); // FaceDir 在场则覆盖（render-only atan2·REQ-FACE-ROTATE），否则=Transform.rotation（零回归）
-      ctx.scale(r.scaleX, r.scaleY);
-      ctx.globalAlpha = r.color?.alpha ?? 1;
-      ctx.fillStyle = r.color ? `#${(r.color.tint & 0xffffff).toString(16).padStart(6, '0')}` : '#e2e8f0';
+      // 三层变换（DPR×相机×实体）合成一个仿射 → 一次 setTransform（rot=0 跳 trig·热路径）·免 save/restore。
+      // 朝向：FaceDir 在场则覆盖（render-only atan2·REQ-FACE-ROTATE），否则=Transform.rotation（零回归）。
+      ctx.setTransform(...entityMatrix(base, r.x, r.y, resolveRotation2D(r), r.scaleX, r.scaleY));
+      const alpha = r.color?.alpha ?? 1;
+      if (alpha !== curAlpha) { ctx.globalAlpha = alpha; curAlpha = alpha; }
+      const fill = r.color ? `#${(r.color.tint & 0xffffff).toString(16).padStart(6, '0')}` : '#e2e8f0';
+      if (fill !== curFill) { ctx.fillStyle = fill; curFill = fill; }
 
       // 绘制模式：优先 Sprite（贴图就绪盖过 Shape，给可碰撞实体穿皮，REQ-005），否则退化几何/占位。
       const spriteReady = r.sprite ? this.spriteReady(r.sprite.textureKey, r.frame?.index) : false;
@@ -125,16 +124,13 @@ export class CanvasRenderer implements RendererBackend {
       } else if (mode === 'placeholder') {
         ctx.fillRect(-8, -8, 16, 16); // 有 Sprite 但资产未就绪 → 占位方块
       }
-
-      ctx.restore();
     }
 
     // textCache 反向清理：剔除本帧未渲染为文本（已销毁/转其它模式）的实体缓存，杜绝无界增长（Gemini code review）。
     if (this.textCache.size > seenText.size) {
       for (const k of this.textCache.keys()) if (!seenText.has(k)) this.textCache.delete(k);
     }
-
-    ctx.restore(); // 收尾相机投影变换
+    // 变换不复位：帧首 setTransform(dpr) 会重置（无 save/restore 需配对）。
   }
 
   // 贴图是否就绪（资产已加载且是图像句柄）。用于绘制模式选择：就绪才让 Sprite 盖过 Shape（REQ-005）。
