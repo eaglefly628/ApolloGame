@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import type { IWorld } from '@engine/core/types.js';
-import type { Trigger, Hitbox, Tag, Status, Resource, DestroyRequest, PrefabOrigin } from '@engine/protocol/components.js';
+import type { Trigger, Hitbox, Tag, Status, Resource, DestroyRequest, PrefabOrigin, Transform, SpawnRequest } from '@engine/protocol/components.js';
 import { findByComponentId, findSourceResource } from '@engine/core/query.js';
 import { queueResourceMod } from '@skills/atoms/resource/index.js';
 import { addTimedEffect } from './over-time.js';
@@ -45,11 +45,44 @@ function findScaleResource(world: IWorld, zoneId: string, resId: string): Resour
 //
 //  已知约束（R14 同源）：一实体一组件 → 同一目标同一 tick 被多个 hitbox 命中时，后写的 ResourceModify
 //  覆盖前者（少数同帧多 AOE 叠加场景）。瞬时技能逐拍单发不触发；批量叠加待 R14 的"批改资源"演进。
+//
+//  onHit（薄缺口，2026-07-26 Lead 裁：命中即生成——击中火花/受击特效，穿透武器每命中一喷）：命中
+//  （过滤门通过）时若 hb.onHit.spawnTemplate 存在 → 在 target 位置发 SpawnRequest（spawnOnHit helper，
+//  独立 carrier 实体，同 mortal/path-follow 先例）。cadence 与伤害**同拍**：持续重叠多 tick（常驻光环/
+//  贯穿激光滞留）→ 每 tick 每 Trigger 各喷一次（与伤害每 tick 结算一致，符合预期）；一次性命中（抛射体
+//  撞完即毁）=一次。若某游戏要「每目标只喷一次」= 游戏层 cooldown/调优，不在本引擎缺口内。AOE/穿透
+//  fan-out 天然成立（多 Trigger 各自 spawnOnHit）。缺省不填 = 零回归，现有 hitbox 行为逐字节不变。
 // ═══════════════════════════════════════════════════════════════
 
 function maxOf(world: IWorld, entity: string, resourceId: string): number {
   const r = world.getComponent<Resource>(entity, 'Resource');
   return r && r.id === resourceId ? r.max : 0;
+}
+
+// 命中特效（onHit）：在 target 位置（命中点近似，读 target 自己的 Transform）发 SpawnRequest。
+// 挂到独立 carrier 实体（同 mortal.ts dropTemplate / path-follow.ts onEnd 先例——不挂 target 自身，
+// 避免同 tick 多个 zone 命中同一 target 时互相覆盖 target 上的组件，也避免 target 恰好本 tick 被
+// 销毁时组件跟着消失）。carrier id = `onhit:<zone>:<target>`，与 trigger-zone 的 `trigger:<zone>:<other>`
+// 同一 (zone,target) 配对下天然唯一（每 tick 至多一条同 key Trigger）。
+// 幂等重建、勿裸 createEntity（同 battle-timeline.ts pump() 的 try-destroy-then-create 先例）：持续重叠
+// 场景本函数每 tick 都会用同一 carrier id 再发一次。正常路径下 prefab 当拍已消费**并销毁**整个 carrier
+// 实体，下一拍这里等价于"不存在→新建"。但若这局没装 prefab（或消费者尚未跑到）——引擎 tick() 的通用
+// consumes 清理会在 prefab-spawn 执行后无条件剥掉 SpawnRequest 组件（不管 system 内部代码是否真读到，
+// 见 world.ts tick()），只留一具 0 组件的空壳实体：光查"组件还在不在"判不出"实体还在不在"，必须显式
+// destroy 再 create。destroyEntity 对不存在的 id 是安全 no-op（World.destroyEntity 实现），故无条件调用
+// 零风险；两次调用都只读写整数/字符串 id，无随机无墙钟，确定性不变。
+function spawnOnHit(world: IWorld, zoneId: string, hb: Hitbox, target: string): void {
+  if (!hb.onHit?.spawnTemplate) return;
+  const t = world.getComponent<Transform>(target, 'Transform');
+  const carrier = `onhit:${zoneId}:${target}`;
+  world.destroyEntity(carrier);
+  world.createEntity(carrier);
+  world.addComponent(carrier, {
+    type: 'SpawnRequest',
+    templateId: hb.onHit.spawnTemplate,
+    x: t?.x ?? 0,
+    y: t?.y ?? 0,
+  } as SpawnRequest);
 }
 
 export const hitboxCapability = defineCapability({
@@ -89,11 +122,12 @@ export const hitboxCapability = defineCapability({
           dotPerTick: { type: 'number', describe: '>0：每 dotPeriod tick 对目标 resource 造成此真伤（中毒/燃烧 DoT，挂 OverTime）' },
           dotPeriod: { type: 'number', describe: 'DoT 结算周期 tick（缺省 1）' },
           dotDuration: { type: 'number', describe: 'DoT 总时长 tick' },
+          onHit: { type: 'string', describe: '{spawnTemplate}：命中（过滤门通过后）在目标位置发 SpawnRequest；缺省不发（击中火花/受击特效/穿透弹逐命中生成）' },
         },
       },
     },
     reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource'],
-    writes: ['ResourceModify', 'Status', 'OverTime', 'DestroyRequest'],
+    writes: ['ResourceModify', 'Status', 'OverTime', 'DestroyRequest', 'SpawnRequest'],
     consumes: [],
   },
 
@@ -104,7 +138,9 @@ export const hitboxCapability = defineCapability({
       id: 'hitbox',
       reads: ['Trigger', 'Hitbox', 'Tag', 'Status', 'Resource'],
       // DestroyRequest：REQ-F-044 consumeOnHit 自毁（写者→cascade/destroy-apply 单向汇入，无回边）。
-      writes: ['ResourceModify', 'Status', 'OverTime', 'DestroyRequest'],
+      // SpawnRequest：onHit 命中特效——唯一读+consume 它的是 prefab（t3-prefab），prefab 不写
+      // Trigger/Hitbox/Tag/Status/Resource，只产生本系统→prefab 单向边，不成环（见文件头/回归测试）。
+      writes: ['ResourceModify', 'Status', 'OverTime', 'DestroyRequest', 'SpawnRequest'],
       consumes: [],
       runsAfter: ['trigger-zone'],
       // 先施加伤害/状态/挂 OverTime，再让 over-time tick 既有状态效果，最后 resource-apply 结算。
@@ -139,6 +175,7 @@ export const hitboxCapability = defineCapability({
             if (hb.executeBelow !== undefined && hasHp && tr!.current > 0 && tr!.current < tr!.max * hb.executeBelow) {
               queueResourceMod(world, target, hb.resource, -tr!.current, 'local'); // 清 0 = 处决
               settled.add(trig.zone);
+              spawnOnHit(world, trig.zone, hb, target); // 处决也是命中，同样喷 onHit
               continue; // 处决即终结，跳过常规伤害/状态，避免双结算
             }
           }
@@ -155,6 +192,7 @@ export const hitboxCapability = defineCapability({
             queueResourceMod(world, target, hb.resource, -dmg, 'local');
           }
           settled.add(trig.zone); // 过了阵营/状态门=真结算（含纯状态命中）
+          spawnOnHit(world, trig.zone, hb, target); // onHit：命中即生成（击中火花/受击特效，穿透每命中各喷一个）
           // ④ Status 置/清位
           if (hb.setMask || hb.clearMask) {
             let st = world.getComponent<Status>(target, 'Status');

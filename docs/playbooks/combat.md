@@ -8,6 +8,7 @@
 | 任务 | 能力实名 | 怎么接（一句） |
 |---|---|---|
 | 伤害结算（命中扣血） | `t2-hitbox` | 伤害区挂 `Hitbox`+`Shape`+`Sensor`+`Tag(ZONE_FLAG)`；目标挂 `Tag(阵营)`+`Resource(hp)` |
+| 命中特效（击中火花/受击特效，穿透每命中一喷） | `t2-hitbox`（`onHit`） | `Hitbox` 加 `onHit:{spawnTemplate}`：命中即在目标位置发 `SpawnRequest`（配 `t3-prefab` 展开），与伤害同拍、AOE/穿透天然 fan-out |
 | 死亡移除 | `t2-mortal` | 挂 `Mortal{resource:"hp",atOrBelow:0}` + destroy 原子执行移除 |
 | 装备/buff 改攻防速（实体属性） | `t2-stats` | 挂 `Stats{base,mods,effective}`；装备往 mods push，卸下按 source 滤（只做 (base+Σadd)×Πmul） |
 | 修正总表（字段表+混合策略+门控） | `t2-modifier-stack` | 挂多条 `ModifierSource{target,op,value/valueFrom,gate}`（op=add/mul/max/min/or/floor）+ 一个 `ModifierTotals` 单例；消费方读 `totals`。计分修正/逐字段 sum·max·or/buff 汇总 |

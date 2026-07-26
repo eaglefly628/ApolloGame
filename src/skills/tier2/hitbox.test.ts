@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
-import type { Hitbox, Tag, Status, Resource, Trigger, Transform, Shape, Sensor, OverTime, PrefabOrigin } from '@engine/protocol/components.js';
+import type { Hitbox, Tag, Status, Resource, Trigger, Transform, Shape, Sensor, OverTime, PrefabOrigin, SpawnRequest } from '@engine/protocol/components.js';
 import { hitboxCapability } from './hitbox.js';
 import { triggerZoneCapability, ZONE_FLAG } from './trigger-zone.js';
-import { resourceCapability } from '@atom-skills/index.js';
+import { overTimeCapability } from './over-time.js';
+import { resourceCapability, destroyCapability } from '@atom-skills/index.js';
 import { overlapDetectCapability } from '@skills/atoms/overlap-detect/index.js';
+import { prefabCapability } from '@skills/tier3/index.js';
 
 // 阵营/状态位（游戏数据自定义；测试里固定一套）。
 const ENEMY = 1 << 1;
@@ -227,6 +229,100 @@ describe('hitbox — AOE fan-out', () => {
     expect(hp(w, 'm1')).toBe(90);
     expect(hp(w, 'm2')).toBe(90);
     expect(status(w, 'm2') & FROZEN).toBe(FROZEN);
+  });
+});
+
+describe('hitbox — onHit 命中即生成（薄缺口，2026-07-26：击中火花/受击特效/穿透逐命中喷）', () => {
+  function mobAt(w: World, id: string, x: number, y: number, tagFlags = ENEMY): void {
+    mob(w, id, tagFlags);
+    w.addComponent(id, { type: 'Transform', x, y, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+  }
+  const spawnReqs = (w: World): [string, SpawnRequest][] =>
+    w.query('SpawnRequest').map(([e]) => [e, w.getComponent<SpawnRequest>(e, 'SpawnRequest')!]);
+
+  it('命中一个目标 → 在目标位置发 1 个 SpawnRequest{spawnTemplate}', () => {
+    const w = combatWorld();
+    zone(w, 'nova', { resource: 'hp', amount: 5, targetMask: ENEMY, onHit: { spawnTemplate: 'hit_spark' } });
+    mobAt(w, 'm1', 30, 40);
+    trigger(w, 'nova', 'm1');
+    w.tick();
+    expect(hp(w, 'm1')).toBe(95); // 伤害仍照常结算（加性，零回归）
+    const spawns = spawnReqs(w);
+    expect(spawns.length).toBe(1);
+    expect(spawns[0][1]).toMatchObject({ templateId: 'hit_spark', x: 30, y: 40 }); // 命中点=目标位置
+  });
+
+  it('穿透/AOE：一伤害区命中 N 目标 → N 个 SpawnRequest（各在各自目标位，fan-out 天然成立）', () => {
+    const w = combatWorld();
+    zone(w, 'beam', { resource: 'hp', amount: 3, targetMask: ENEMY, onHit: { spawnTemplate: 'hit_spark' } });
+    mobAt(w, 'm1', 10, 0);
+    mobAt(w, 'm2', 20, 5);
+    mobAt(w, 'm3', 30, 9);
+    trigger(w, 'beam', 'm1');
+    trigger(w, 'beam', 'm2');
+    trigger(w, 'beam', 'm3');
+    w.tick();
+    const spawns = spawnReqs(w).map(([, s]) => s);
+    expect(spawns.length).toBe(3);
+    const byX = new Map(spawns.map((s) => [s.x, s]));
+    expect(byX.get(10)).toMatchObject({ templateId: 'hit_spark', y: 0 });
+    expect(byX.get(20)).toMatchObject({ templateId: 'hit_spark', y: 5 });
+    expect(byX.get(30)).toMatchObject({ templateId: 'hit_spark', y: 9 });
+  });
+
+  it('无 onHit（缺省）→ 零 SpawnRequest，现有 hitbox 行为逐字节不变（零回归）', () => {
+    const w = combatWorld();
+    zone(w, 'nova', { resource: 'hp', amount: 5, targetMask: ENEMY, setMask: FROZEN });
+    mobAt(w, 'm1', 1, 2);
+    trigger(w, 'nova', 'm1');
+    w.tick();
+    expect(spawnReqs(w).length).toBe(0);
+    expect(hp(w, 'm1')).toBe(95);
+    expect(status(w, 'm1') & FROZEN).toBe(FROZEN);
+  });
+
+  it('确定性：onHit 双跑 snapshot 相等（无随机/墙钟，单端录放一致）', () => {
+    const run = (): string => {
+      const w = combatWorld();
+      zone(w, 'nova', { resource: 'hp', amount: 5, targetMask: ENEMY, onHit: { spawnTemplate: 'hit_spark' } });
+      mobAt(w, 'm1', 5, 6);
+      mobAt(w, 'm2', 7, 8);
+      trigger(w, 'nova', 'm1');
+      trigger(w, 'nova', 'm2');
+      w.tick();
+      return JSON.stringify(w.snapshot());
+    };
+    expect(run()).toBe(run());
+  });
+});
+
+describe('hitbox — onHit 撞环回归（同 path-follow「撞环回归」先例·写 SpawnRequest 后与消费者 prefab 同装）', () => {
+  it('overlap-detect→trigger-zone→hitbox(onHit)→prefab 全链路（+over-time/destroy/resource）同装 tick×5 not.toThrow', () => {
+    // hitbox 新增 writes:['SpawnRequest']——唯一真正读+consume 它的是 prefab（t3-prefab），prefab 只
+    // 读/consume SpawnRequest + 读/写 PrefabLibrary，不写 Trigger/Hitbox/Tag/Status/Resource，故只产生
+    // "hitbox→prefab" 单向边，不与 hitbox 既有 runsAfter trigger-zone / runsBefore resource-apply,over-time
+    // 成环（组件拓扑自动定序，见 hitbox.ts 文件头注释）。用真实 overlap（非手摆 Trigger）——trigger-zone
+    // 每帧先清后重算，手摆的 Trigger 会在第一拍就被清掉、后续拍测不到 onHit 真正跑起来。
+    const w = new World();
+    for (const cap of [overlapDetectCapability, triggerZoneCapability, hitboxCapability, overTimeCapability, resourceCapability, destroyCapability, prefabCapability]) {
+      for (const s of cap.systems) w.addSystem(s as never);
+    }
+    w.createEntity('nova');
+    w.addComponent('nova', { type: 'Transform', x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+    w.addComponent('nova', { type: 'Shape', kind: 'box', width: 100, height: 100 } as Shape);
+    w.addComponent('nova', { type: 'Sensor' } as Sensor);
+    w.addComponent('nova', { type: 'Tag', flags: ZONE_FLAG } as Tag);
+    w.addComponent('nova', { type: 'Hitbox', resource: 'hp', amount: 5, targetMask: ENEMY, onHit: { spawnTemplate: 'hit_spark' }, dotPerTick: 1, dotPeriod: 1, dotDuration: 10 } as Hitbox);
+
+    w.createEntity('enemy');
+    w.addComponent('enemy', { type: 'Transform', x: 10, y: 0, rotation: 0, scaleX: 1, scaleY: 1 } as Transform);
+    w.addComponent('enemy', { type: 'Shape', kind: 'box', width: 20, height: 20 } as Shape);
+    w.addComponent('enemy', { type: 'Tag', flags: ENEMY } as Tag);
+    w.addComponent('enemy', { type: 'Resource', id: 'hp', current: 100, min: 0, max: 100 } as Resource);
+
+    expect(() => {
+      for (let i = 0; i < 5; i++) w.tick();
+    }).not.toThrow();
   });
 });
 

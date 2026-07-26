@@ -54,6 +54,10 @@ export interface Hitbox extends Component {
   requireHpFracBelow?: number; // 仅作用于 hp 比例 < 此值的目标（残血技：target.current < max×此值）。
   requireHpFracAbove?: number; // 仅作用于 hp 比例 >= 此值的目标（满血/精英开胃技）。
   executeBelow?: number; // 命中且 hp 比例 < 此值 → 处决（清 0）；与 amount 同存 = 「低于阈值斩杀、否则常规伤害」。
+  // ── 命中特效（薄缺口，2026-07-26 Lead 裁）：命中即生成——击中火花/受击特效/穿透弹每命中一喷。──
+  // 缺省不填 = 零回归（现有 hitbox 行为逐字节不变）。发 SpawnRequest 在**被命中目标位置**（命中点近似），
+  // 与伤害同一结算循环、同拍：穿透/AOE（一伤害区 N Trigger）→ 每个 other 各喷一个（fan-out 天然成立）。
+  onHit?: { spawnTemplate: string }; // 命中（过滤门通过后）在 target 位置发 SpawnRequest{templateId:此值}。
 }
 
 // ── TimedEffect ── 一个限时/持续效果（DoT/regen/定时状态）。多个并存在 OverTime.effects 列表里。
