@@ -49,6 +49,11 @@ function thumbUrl(r: LedgerRow): string | null {
   if (r.kind !== 'model3d' && r.gen?.servedPath) return r.gen.servedPath;
   return null;
 }
+// 真图 URL（游戏实际加载/渲染的皮肤）：从该游戏 art/index.json 的 filled 资产按 skinKey 取——**这是玩家在游戏里
+// 真正看到的东西**（emoji/SVG 等），优先于 servedPath/占位色块，修「素材库预览 visual 上对不上游戏」的错位。
+function realUrl(r: LedgerRow, real: Record<string, string>): string | null {
+  return (r.skinKey && real[r.skinKey]) || null;
+}
 // 占位色块图（未生成时的默认「这长啥样」缩略图）：从 placeholder.current 里的「形状·#色」画个 SVG 色块 →
 // 一眼认出「粉圆=基础敌」「品红多边=炮塔」，配卡面 query 就不再是「一屏全 art-NN 分不清」。解析不出→null 退回图标。
 function swatchDataUri(r: LedgerRow): string | null {
@@ -77,9 +82,9 @@ const rowDesc = (r: LedgerRow): string => r.desc || r.query || r.slot?.entity ||
 // 优先渲真图；真图 404 → onError 落程序占位签（免 fs 探测）；status placeholder/tbf 且无真图（fileless）→ 直渲占位签。
 // 占位签 = 类目色底 + desc 文案 + status 标签（一眼可辨「待产占位行」·永不空白）。needs-art 等仍走原色块/图标回退。
 // ⚠ 显示层专用：不写文件、不入台账、不改行状态（MOCK 债照记）。
-function ThumbCell({ r, height = 96 }: { r: LedgerRow; height?: number }): React.ReactElement {
+function ThumbCell({ r, height = 96, real = {} }: { r: LedgerRow; height?: number; real?: Record<string, string> }): React.ReactElement {
   const [imgErr, setImgErr] = useState(false);
-  const thumb = thumbUrl(r);
+  const thumb = realUrl(r, real) ?? thumbUrl(r); // 真图（游戏实载）优先 → 素材库与游戏一致
   useEffect(() => { setImgErr(false); }, [thumb]); // URL 变（如重生成后热替换）→ 重试加载
   const fileless = r.status === 'placeholder' || r.status === 'tbf';
   const boxBase: React.CSSProperties = { width: '100%', height, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: `1px solid ${SHELL.line}` };
@@ -175,6 +180,7 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
   const [styleDirty, setStyleDirty] = useState(false);
   const [genProvider, setGenProvider] = useState(''); // ''=风格包默认；否则点名覆盖 qwen/tripo/meshy（owner review ④）
   const triedDerive = useRef(false); // library 卡带缺台账 → 自动 derive 一次（防循环）
+  const [realMap, setRealMap] = useState<Record<string, string>>({}); // skinKey → 真图路径（游戏 index.json filled·渲染真相）
 
   const load = useCallback(() => {
     setLoading(true);
@@ -198,6 +204,20 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
       .finally(() => setLoading(false));
   }, [slug, kind, styleDirty]);
   useEffect(() => load(), [load]);
+  // 真图映射：拉该游戏 art/index.json（游戏实际加载的皮肤真相）→ skinKey→path，供预览显示玩家真正看到的图。
+  useEffect(() => {
+    let dead = false;
+    fetch(`/games/${slug}/art/index.json`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { assets?: Array<{ id?: string; path?: string; status?: string }> } | null) => {
+        if (dead || !j?.assets) return;
+        const m: Record<string, string> = {};
+        for (const a of j.assets) if (a.id && a.path && a.status === 'filled') m[a.id] = a.path;
+        setRealMap(m);
+      })
+      .catch(() => { /* 无 index=库拉不到 → 空映射·退回原占位预览 */ });
+    return () => { dead = true; };
+  }, [slug]);
   useEffect(() => {
     fetch(`${API}/api/art/style-packs`).then((r) => r.json()).then((j) => { const p = (j?.packs ?? []) as Pack[]; setPacks(p); if (p[0]) { setRegenPack(p[0].packId); setReskinPack(p[1]?.packId ?? p[0].packId); } }).catch(() => setPacks([]));
   }, []);
@@ -312,7 +332,7 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
                       <span style={{ fontFamily: SHELL.fontMono, fontSize: 11, color: SHELL.jade, fontWeight: 700 }}>{r.no}</span>
                       <span style={{ ...sBadge(b.tone), fontSize: 9, marginLeft: 'auto' }}>{b.text}</span>
                     </div>
-                    <ThumbCell r={r} />
+                    <ThumbCell r={r} real={realMap} />
                     <div title={r.query} style={{ fontSize: 11, color: SHELL.sub, fontWeight: 600, lineHeight: 1.25, maxHeight: 28, overflow: 'hidden' }}>{r.desc || r.query || entity}</div>
                     <div style={{ fontSize: 9, color: SHELL.dim, wordBreak: 'break-all', lineHeight: 1.2, maxHeight: 22, overflow: 'hidden' }}>{entity} · {r.kind}{r.placeholder?.count && r.placeholder.count > 1 ? ` ×${r.placeholder.count}` : ''}</div>
                   </div>
@@ -329,11 +349,11 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
               {sel.skinKey && <div style={{ fontSize: 10, color: SHELL.dim, fontFamily: SHELL.fontMono }}>皮肤 key: {sel.skinKey}（生成/上传即按此 id 登记·游戏自动换装）</div>}
               {/* ⑤ 并排预览：占位 vs 现用 */}
               {(() => {
-                const cur = thumbUrl(sel);
+                const cur = realUrl(sel, realMap) ?? thumbUrl(sel); // 真图（游戏实载）优先
                 return (
                   <div style={{ display: 'flex', gap: 8 }}>
                     <PreviewBox lab="占位/原始" img={swatchDataUri(sel)} desc={sel.placeholder?.current || sel.placeholder?.ref || rowDesc(sel)} />
-                    <PreviewBox lab="现用" img={cur} desc={sel.gen?.localId || rowDesc(sel) || '待生成'} />
+                    <PreviewBox lab="现用（游戏实载）" img={cur} desc={sel.gen?.localId || rowDesc(sel) || '待生成'} />
                   </div>
                 );
               })()}
