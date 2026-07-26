@@ -115,7 +115,7 @@ export const FX_SHEETS = {
 // 武器 key → 子弹动画帧（配色区分：玩家多紫/绿/金/红·敌弹另用色以辨敌我）。
 export const WEAPON_ANIM: Record<string, FxAnim> = {
   kunai: FX_SHEETS.magic_dart,   // 直线飞镖=紫能量镖
-  shock: FX_SHEETS.flame,        // 近身 nova=火焰爆
+  // shock(冲击波 nova) 不用 fx 帧：32px 团帧撑不满 120 半径爆炸圈=看不见→改画大爆炸圈本体+渐隐闪（见 blueprint nova 分支）。
   // laser 不用 fx 动画帧 → 画长条 Shape box 本体=巨长激光观感（fx 是团状·撑不出"长"）。
   //   真·随开火方向旋转的激光需引擎「Transform 旋转」能力（facing 只水平翻转·不能任意转向）→ 已报 Lead。
   boom:  FX_SHEETS.gold_sparkles,// 回旋镖=金光旋

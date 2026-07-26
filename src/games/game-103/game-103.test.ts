@@ -196,13 +196,20 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(countTag(e, WEAPON_BIT.orbitevo)).toBeGreaterThan(orbitBallsBefore); // 进化体球更多
   });
 
-  it('武器册全射法：每把武器都能被 draft 生成并射出（straight/nova/beam/boomerang/orbit/pet）', () => {
+  it('武器册全射法：每把武器都能被 draft 生成并射出（straight/nova/beam/boomerang/orbit/pet/bomb）', () => {
+    const hasBigNova = (e: Engine): boolean => { // nova/爆炸=无 sprite 画大圈：找 Hitbox 且 Shape 大半径
+      for (const [id] of e.world.query('Hitbox', 'Shape')) { const s = e.world.getComponent(id, 'Shape') as unknown as { radius?: number }; if ((s.radius ?? 0) >= 80) return true; }
+      return false;
+    };
     for (const w of WEAPONS.filter((x) => x.key !== 'kunai')) {
       const e = fresh();
       tickN(e, 3);
       fireAction(e, `pick_${w.key}`);
-      stepN(e, w.cd + 5); // 清队推进·让挂点发出子弹（orbit/pet 即刻·发射器待 cd）
-      expect(hasSprite(e, skinOf(w.key))).toBe(true); // 该武器子弹/光球皮肤在场=射法生效
+      // 逐拍推进·任一拍命中即算生效（nova/爆炸短命·跑完就消失·须过程中捕获）。
+      const wantNova = w.pattern === 'nova' || w.pattern === 'bomb';
+      let ok = false;
+      for (let i = 0; i < w.cd + w.life + 6 && !ok; i++) { step(e); ok = wantNova ? hasBigNova(e) : hasSprite(e, skinOf(w.key)); }
+      expect(ok).toBe(true);
     }
   });
 

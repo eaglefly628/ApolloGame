@@ -62,10 +62,14 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
     Timer: { id: 'life', elapsed: 0, duration: w.life, loop: false },      // lifetime 回收
   };
   if (w.pattern === 'nova') {
-    return { entities: { p: { ...base,
+    // 冲击波：身边**可见大爆炸圈**（撤 32px 团帧→画满半径的圈本体）+ Tween 渐隐=一下炸开的闪（owner「要有爆炸效果」）。
+    const { Sprite: _s, ...noSprite } = base; // 去掉 base 的小 Sprite（撑不满爆炸圈）
+    void _s;
+    return { entities: { p: { ...noSprite,
       Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY }, // 只和敌配对
-      Color: { tint: w.tint, alpha: 0.26 },
-      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // per-tick·扫全范围
+      Color: { tint: w.tint, alpha: 0.55 },
+      Tween: { type: 'Tween', target: 'Color.alpha', from: 0.6, to: 0, elapsed: 0, duration: Math.max(2, w.life), easing: 'easeOut', done: false }, // 炸开渐隐
+      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // per-tick·扫全范围·数值小
     } } };
   }
   if (w.pattern === 'bomb') {
@@ -136,8 +140,12 @@ function weaponMount(w: WeaponDef): { entities: Record<string, Record<string, un
   }
   if (w.pattern === 'pet') {
     return { entities: { pet: {
-      Transform: { ...XF0 }, Velocity: { vx: 0, vy: 0, angular: 0 },
-      Perception: { targetTag: PLAYER, sightRadius: 0 }, Steering: { mode: 'seek', speed: 2.4, stopRange: 56 }, // 跟随玩家
+      Transform: { x: 40, y: -24, rotation: 0, scaleX: 1, scaleY: 1 }, // 出生带偏移=破对称（否则两只完全重叠·分离无方向可推）
+      Velocity: { vx: 0, vy: 0, angular: 0 },
+      // 跟随玩家 + **被玩家推到外环 + 宠物间互斥**（修「2 级以上宠物重合」）：separation 掩码含 PLAYER=被玩家斥出成环、
+      // 含 pet 位=彼此斥开→多只散在玩家周围一圈不叠一点。stopRange 0=尽量贴环（靠 separation 撑开距离）。
+      Perception: { targetTag: PLAYER, sightRadius: 0 },
+      Steering: { mode: 'seek', speed: 2.4, stopRange: 0, separation: { radius: 78, weight: 2.6, tagMask: PLAYER | (WEAPON_BIT[w.key] ?? 0) } },
       Tag: { flags: WEAPON_BIT[w.key] ?? 0 },
       Shape: { kind: 'circle', radius: 10, category: 0, mask: 0 }, // 宠物本体不参与碰撞配对（它靠 proj 打·省对）
       Sprite: { textureKey: w.skin, anchorX: 0.5, anchorY: 0.5, zOrder: 2 }, Color: { tint: w.tint, alpha: 1 },
