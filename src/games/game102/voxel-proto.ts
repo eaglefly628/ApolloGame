@@ -25,7 +25,7 @@ const AMMO_SLACK = 1.3;
 const IDLE_SPIN = 0.22;   // 待机自转 rad/秒（0=关）
 const IDLE_DELAY = 1400;  // 松手后 ms 无操作才启动待机自转
 const CAM_DIST = N * PITCH * 3.9; // 相机距离（越大立方越小·owner「缩 20% 留白给以后 3D 轨道」）
-const TRAVEL_MS = 320;   // 子弹飞行时长（放慢·看得见轨迹·owner「太快看不见」）
+const TRAVEL_MS = 640;   // 子弹飞行时长（再放慢一半·看得见轨迹·owner「降低一半」）
 const FRAG_N = 7;        // 碎裂片数
 const GRAV = 900;        // 碎片重力（世界单位/秒²·自管运动积分·非 cannon-es·零冻结风险）
 const MUZZLE_W = { x: 0, y: -MAXC * 2.1, z: MAXC * 1.5 }; // 炮口世界位（立方前下方）
@@ -190,7 +190,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   const logPre = el('pre', 'flex:1;margin:0;padding:6px 8px;overflow:auto;white-space:pre-wrap;user-select:text;-webkit-user-select:text;');
   logPanel.appendChild(logHead); logPanel.appendChild(logPre);
   wrapper.appendChild(logPanel);
-  const btnBug = el('button', 'position:absolute;left:8px;bottom:8px;z-index:51;pointer-events:auto;background:#1a2740cc;color:#cfe;border:1px solid #35507a;border-radius:6px;padding:4px 8px;cursor:pointer;font:12px monospace;', '🐞');
+  const btnBug = el('button', 'position:absolute;right:8px;top:78px;z-index:51;pointer-events:auto;background:#1a2740ee;color:#cfe;border:1px solid #35507a;border-radius:8px;padding:6px 12px;cursor:pointer;font:700 13px monospace;box-shadow:0 2px 8px #0007;', '🐞 LOG');
   wrapper.appendChild(btnBug);
   let logDirty = false;
   const t0 = performance.now();
@@ -262,16 +262,29 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     ([[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]] as [number,number,number][])
       .forEach(([a, b, c]) => { if (inB(a) && inB(b) && inB(c)) reveal(a, b, c); });
   };
-  const aimVox = (s: number): [number, number, number] | null => {
+  // 某面 (a,b) 列**最外层现存格**（该面此刻可见的那一格·随剥层变深）。
+  const faceVisible = (s: number, a: number, b: number): [number, number, number] | null => {
     const S = SIDES[s];
-    const c0 = Math.round((N - 1) / 2);
     for (let d = 0; d < N; d++) {
       const co = [0, 0, 0];
       co[S.axis] = S.val === N - 1 ? N - 1 - d : d;
-      co[S.ua] = c0; co[S.ub] = c0;
+      co[S.ua] = a; co[S.ub] = b;
       if (present.has(vid(co[0], co[1], co[2]))) return [co[0], co[1], co[2]];
     }
     return null;
+  };
+  // 该面上「可见 + （若指定色则同色）」的格中·最靠面心者（demo：朝立方转向炮口那面自动锁同色·可靠出破碎）。
+  const aimFace = (s: number, color: number | null): [number, number, number] | null => {
+    const c0 = (N - 1) / 2;
+    let best: [number, number, number] | null = null, bestR = Infinity;
+    for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) {
+      const v = faceVisible(s, a, b);
+      if (!v) continue;
+      if (color !== null && colorAt.get(vid(v[0], v[1], v[2])) !== color) continue;
+      const r = (a - c0) ** 2 + (b - c0) ** 2;
+      if (r < bestR) { bestR = r; best = v; }
+    }
+    return best;
   };
 
   const timers = new Set<ReturnType<typeof setTimeout>>();
@@ -316,10 +329,14 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   };
   const prand = (): number => hash3(movN++, remaining, hits); // 确定性伪随机（非 Math.random）
   const spawnFragments = (wx: number, wy: number, wz: number, tint: number): void => {
+    const L = Math.hypot(wx, wy, wz) || 1;                    // 外向单位向量（立方居中原点→格位即朝外）
+    const ox = wx / L, oy = wy / L, oz = wz / L;
     for (let n = 0; n < FRAG_N; n++) {
       const id = `frag-${movN}`;
-      spawnEnt(id, wx, wy, wz, VOX * 0.5, tint);
-      movers.push({ kind: 'frag', id, p: [wx, wy, wz], v: [(prand() - 0.5) * 420, 120 + prand() * 300, (prand() - 0.5) * 420], life: 1.2 });
+      spawnEnt(id, wx, wy, wz, VOX * 0.62, tint);
+      movers.push({ kind: 'frag', id, p: [wx, wy, wz],
+        v: [ox * 260 + (prand() - 0.5) * 200, oy * 260 + 160 + prand() * 140, oz * 260 + (prand() - 0.5) * 200], // 朝外迸溅 + 上抛
+        life: 1.6 });
     }
   };
 
@@ -328,10 +345,10 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     const c = cannons[activeIdx];
     if (!c) return;
     const s = frontSide();
-    const aim = aimVox(s);
-    if (!aim) { pushLog(`beat side=${s} aim=∅ (该面空)`); return; } // 该面无格可打·不耗弹
+    let aim = aimFace(s, c.color); let same = true;          // 先找该面同色可见格（可靠出破碎）
+    if (!aim) { aim = aimFace(s, null); same = false; }       // 无同色→朝最靠中心可见格空放（反弹）
+    if (!aim) { pushLog(`beat side=${s} aim=∅ (该面空)`); return; } // 整面空·不耗弹
     const aimColor = colorAt.get(vid(aim[0], aim[1], aim[2]))!;
-    const same = aimColor === c.color;
     const to = voxWorld(aim[0], aim[1], aim[2]);
     const id = `blt-${movN}`;
     spawnEnt(id, MUZZLE_W.x, MUZZLE_W.y, MUZZLE_W.z, VOX * 0.7, PALETTE[c.color].css ? PALETTE[c.color].tint : 0xffffff);
