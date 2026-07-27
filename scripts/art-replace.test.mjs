@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame, sizeForSpec, genSizeForTarget, resizeImageTo, errText, isPngBuffer, sniffImageFmt } from './art-replace.mjs';
+import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame, sizeForSpec, genSizeForTarget, resizeImageTo, errText, isPngBuffer, sniffImageFmt, backupOrigFile } from './art-replace.mjs';
 import { encodePng } from './ai-gen.mjs';
 import { decodePng } from './asset-matte.mjs';
 import { STYLE_PACKS, STYLE_PACK_IDS } from './style-packs.mjs';
@@ -202,6 +202,24 @@ describe('resetRow 非破坏性 + 点名 regen 恒重出（owner 2026-07-27「�
     const r2 = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true, only: 'art-03' }); // 点名重出
     expect(r2.summary.cached).toBe(0);    // only 行不吃缓存
     expect(r2.summary.generated).toBe(1); // 确实重出了
+  }));
+});
+
+describe('backupOrigFile·原图备份（owner 2026-07-27「回退就没了这张图·要备份」）', () => {
+  it('拷原图到 orig/<no>（独立命名空间·gen 覆盖不到·还原精确复原）', () => withRoot((root) => {
+    const dir = join(root, 'public/games/g/art/gen'); mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'art-01.png'), Buffer.from([1, 2, 3, 4]));
+    const bak = backupOrigFile(root, 'g', 'art-01', '/games/g/art/gen/art-01.png');
+    expect(bak).toBe('/games/g/art/orig/art-01.png');
+    expect(readFileSync(join(root, 'public/games/g/art/orig/art-01.png'))).toEqual(Buffer.from([1, 2, 3, 4]));
+    // 备份在 orig/ 命名空间·后续 gen 覆盖 gen/art-01.png 也顶不到备份
+    writeFileSync(join(dir, 'art-01.png'), Buffer.from([9, 9]));
+    expect(readFileSync(join(root, 'public/games/g/art/orig/art-01.png'))).toEqual(Buffer.from([1, 2, 3, 4]));
+  }));
+  it('原本无图片文件（程序化槽）=null·路径穿越拒绝', () => withRoot((root) => {
+    expect(backupOrigFile(root, 'g', 'art-02', '/games/g/art/nope.png')).toBeNull();
+    expect(backupOrigFile(root, 'g', 'art-03', '/games/g/art/../../../etc/passwd')).toBeNull();
+    expect(backupOrigFile(root, 'g', 'art-04', null)).toBeNull();
   }));
 });
 

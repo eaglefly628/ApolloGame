@@ -167,6 +167,32 @@ def _upsert_asset(assets: list, entry: dict) -> None:
             return
     assets.append(entry)
 
+def _backup_orig(slug: str, no: str, orig_entry, gen):
+    """首次替换前把原图文件拷到永不被覆盖的备份 art/orig/<no>.<ext>（owner 2026-07-27「回退就没了这张图·要备份」）：
+    gen/upload 复用同名 gen/art-NN·gen/NN-up → 新图覆盖原文件·orig.indexEntry 的 path 内容被顶掉·还原找不回。
+    拷独立备份 → 还原从备份精确复原。返回备份 served 路径；原本无图片文件（程序化槽）=None。"""
+    served = None
+    if isinstance(orig_entry, dict) and orig_entry.get('path'):
+        served = orig_entry.get('path')
+    elif isinstance(gen, dict) and gen.get('servedPath'):
+        served = gen.get('servedPath')
+    prefix = f'/games/{slug}/art/'
+    if not (isinstance(served, str) and served.startswith(prefix)):
+        return None
+    rel = served[len(prefix):]
+    if '..' in rel or rel.startswith('/'):
+        return None
+    src = ROOT / 'public' / 'games' / slug / 'art' / rel
+    if not src.is_file():
+        return None
+    ext = (src.suffix.lstrip('.') or 'png').lower()
+    bak_rel = f'orig/{no}.{ext}'
+    bak_abs = ROOT / 'public' / 'games' / slug / 'art' / bak_rel
+    bak_abs.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(src, bak_abs)
+    return f'{prefix}{bak_rel}'
+
+
 def handle_art_upload(body: dict) -> dict:
     """POST /api/art/upload {slug, no, dataBase64, ext}。上传一张图/模型替换某槽（写盘+登记本地 index+钉引用）。"""
     slug = str(body.get('slug', '')).strip(); no = str(body.get('no', '')).strip(); ext = str(body.get('ext', 'png')).strip().lower()
@@ -194,23 +220,16 @@ def handle_art_upload(body: dict) -> dict:
         return {'success': False, 'error': f'文件内容与扩展名 .{ext} 不符（magic bytes 校验失败）'}
     rel = f'gen/{no}-up.{ext}'
     abs_path = ROOT / 'public' / 'games' / slug / 'art' / rel
-    abs_path.parent.mkdir(parents=True, exist_ok=True)
-    abs_path.write_bytes(raw)
-    # 登记本地 index（上传物 = filled·provenance 记 user-upload）
     idx_f = ROOT / 'public' / 'games' / slug / 'art' / 'index.json'
     idx = json.loads(idx_f.read_text('utf-8')) if idx_f.is_file() else {'version': 1, 'assets': []}
     if not isinstance(idx.get('assets'), list):
         idx['assets'] = []
     local_id = f'gen/{no}-up'
-    _upsert_asset(idx['assets'], {
-        'id': local_id, 'type': 'mesh' if ext == 'glb' else 'texture', 'description': f'上传替换 {no}',
-        'status': 'filled', 'path': f'/games/{slug}/art/{rel}', 'category': 'ai-gen', 'tags': ['upload', no],
-        'license': '用户上传', 'source': 'upload',
-        'provenance': {'generator': 'upload', 'prompt': '', 'model': 'user-upload', 'mock': False, 'generatedAt': ''},
-    })
     # 编译期游戏（无 manifest·有台账）：写回=skinKey 别名登记 + 台账行直更（无 manifest 可钉）。
     is_game = not (LIBRARY_DIR / slug / 'manifest.json').is_file()
     led_f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    ledger = row = skin = None
+    # ⚠ 备份必须在写新文件**之前**：上传目标 gen/{no}-up 可能正是原图路径·先写就把原图冲掉了（owner 2026-07-27 报 restore 得到新图）。
     if is_game:
         if not led_f.is_file():
             return {'success': False, 'error': '无台账（编译期游戏需先产 art-ledger.json）'}
@@ -219,11 +238,23 @@ def handle_art_upload(body: dict) -> dict:
         if row is None:
             return {'success': False, 'error': f'台账无 {no}'}
         skin = row.get('skinKey')
-        # 首次写回快照原始态（供「一键还原」·保存原 status/gen + 原 index 皮肤条目·此刻 idx 里 skin 仍是原条目）。
+        # 首次写回快照原始态（供「一键还原」·保存原 status/gen + 原 index 皮肤条目 + 原图文件备份·此刻磁盘上仍是原图）。
         if 'orig' not in row:
             _orig_entry = next((a for a in idx['assets'] if a.get('id') == skin), None) if skin else None
+            _bak = _backup_orig(slug, no, _orig_entry, row.get('gen'))  # 原图文件独立备份（永不被覆盖）
             row['orig'] = {'status': row.get('status'), 'gen': row.get('gen'),
-                           'indexEntry': json.loads(json.dumps(_orig_entry)) if _orig_entry else None}
+                           'indexEntry': json.loads(json.dumps(_orig_entry)) if _orig_entry else None,
+                           'backupPath': _bak}
+    # 备份妥了才落新文件（覆盖原图路径安全）。登记本地 index（上传物 = filled·provenance 记 user-upload）
+    abs_path.parent.mkdir(parents=True, exist_ok=True)
+    abs_path.write_bytes(raw)
+    _upsert_asset(idx['assets'], {
+        'id': local_id, 'type': 'mesh' if ext == 'glb' else 'texture', 'description': f'上传替换 {no}',
+        'status': 'filled', 'path': f'/games/{slug}/art/{rel}', 'category': 'ai-gen', 'tags': ['upload', no],
+        'license': '用户上传', 'source': 'upload',
+        'provenance': {'generator': 'upload', 'prompt': '', 'model': 'user-upload', 'mock': False, 'generatedAt': ''},
+    })
+    if is_game:
         if skin:  # 别名=游戏消费的皮肤 key → 贴图即上画面
             _upsert_asset(idx['assets'], {
                 'id': skin, 'type': 'mesh' if ext == 'glb' else 'texture', 'description': f'上传替换 {no}（皮肤槽 {skin}）',
@@ -275,9 +306,17 @@ def handle_art_restore(body: dict) -> dict:
         row['status'] = orig.get('status')
         row['gen'] = orig.get('gen')
         oe = orig.get('indexEntry')
-        if isinstance(oe, dict):  # 原皮肤条目（多为程序化图）原地复位 → 工作台缩略图也回原样
+        bak = orig.get('backupPath')
+        prefix = f'/games/{slug}/art/'
+        bak_abs = (ROOT / 'public' / 'games' / slug / 'art' / bak[len(prefix):]) if isinstance(bak, str) and bak.startswith(prefix) and '..' not in bak else None
+        if bak_abs is not None and bak_abs.is_file() and skin:  # 有原图备份 → 皮肤别名指向备份（文件永不被覆盖·原图精确复原·工作台预览也回来）
+            e = json.loads(json.dumps(oe)) if isinstance(oe, dict) else {'id': skin, 'type': 'texture', 'category': 'ai-gen', 'tags': ['orig']}
+            e['id'] = skin; e['path'] = bak; e['status'] = 'filled'
+            _upsert_asset(idx['assets'], e)
+            row['status'] = 'replaced'; row['gen'] = {'source': 'orig-restore', 'servedPath': bak}
+        elif isinstance(oe, dict):  # 无备份·有原皮肤条目 → 原地复位
             _upsert_asset(idx['assets'], oe)
-        elif skin:  # 原本无该皮肤条目 → 删覆盖别名
+        elif skin:  # 原本无图片文件（程序化/emoji 槽）→ 删覆盖别名·游戏回退内置绘制
             idx['assets'] = [a for a in idx['assets'] if a.get('id') != skin]
         row.pop('orig', None)
     else:  # 无快照（本更新前写回）→ 删覆盖别名·回退占位；游戏无覆盖=内置程序化/emoji 正确

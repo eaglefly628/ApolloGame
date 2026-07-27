@@ -9,7 +9,7 @@
 //   node scripts/art-replace.mjs packs                     → 列风格包
 // 纯函数（deriveLedger/applyReplacements/…）导出供单测直接跑（无需起服务）。
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
@@ -535,6 +535,24 @@ export function sniffImageFmt(b) {
   return '未知格式';
 }
 
+/** 首次替换前把原图文件拷到永不被覆盖的备份 art/orig/<no>.<ext>（owner 2026-07-27「回退就没了这张图·要备份」）：
+ *  gen/upload 复用同名 gen/art-NN·gen/NN-up → 新图会覆盖原文件·故 orig.indexEntry 的 path 内容被顶掉·还原找不回。
+ *  拷一份独立备份 → 还原从备份精确复原。返回备份 served 路径；原本无图片文件（程序化槽）=null。 */
+export function backupOrigFile(root, game, no, servedPath) {
+  const prefix = `/games/${game}/art/`;
+  if (typeof servedPath !== 'string' || !servedPath.startsWith(prefix)) return null;
+  const rel = servedPath.slice(prefix.length);
+  if (rel.includes('..') || rel.startsWith('/')) return null;
+  const src = join(root, 'public', 'games', game, 'art', rel);
+  if (!existsSync(src)) return null;
+  const ext = (rel.split('.').pop() || 'png').toLowerCase();
+  const bakRel = `orig/${no}.${ext}`;
+  const bakAbs = join(root, 'public', 'games', game, 'art', bakRel);
+  mkdirSync(dirname(bakAbs), { recursive: true });
+  copyFileSync(src, bakAbs);
+  return `${prefix}${bakRel}`;
+}
+
 /** 逐行生成落盘 + 登记游戏本地 index + 更新台账。断点续跑=命中缓存(cacheKey+文件在)不重扣费；无 key=探针+mock。 */
 export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = true, env = process.env, at = new Date().toISOString(), only = null, provider: providerOverride = null, allowMock = false, debug = false } = {}) {
   const pack = STYLE_PACKS[packId];
@@ -568,7 +586,9 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     // 之前 orig 只在上传路径存·AI 生成不存 → 生成后还原找不到快照走 fallback=色块。此处补齐 → 还原精确复位。
     if (!('orig' in row)) {
       const skinEntry = row.skinKey ? byId.get(row.skinKey) : null;
-      row.orig = { status: row.status ?? null, gen: row.gen ?? null, indexEntry: skinEntry ? JSON.parse(JSON.stringify(skinEntry)) : null };
+      const curServed = (skinEntry && skinEntry.path) || (row.gen && row.gen.servedPath) || null;
+      const backupPath = backupOrigFile(root, game, row.no, curServed); // 原图文件独立备份（永不被覆盖·还原精确复原）
+      row.orig = { status: row.status ?? null, gen: row.gen ?? null, indexEntry: skinEntry ? JSON.parse(JSON.stringify(skinEntry)) : null, backupPath };
     }
     let a;
     try { a = await genRowAsset(row, pack, { mock: useMock, apiKey, gameStyle, provider: providerOverride }); }
