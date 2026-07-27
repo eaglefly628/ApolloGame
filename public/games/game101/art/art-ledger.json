@@ -1038,15 +1038,36 @@
         "transparent": true
       },
       "context": "美术需求：「gen gen coffee」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_coffee（未填时回退 2D 色块 box·#c8871e）·需透明底",
-      "status": "filled",
+      "status": "replaced",
       "gen": {
-        "source": "apollo-procedural",
-        "script": "scripts/game101-art-gen.mjs",
-        "style": "gossip-harbor cozy candy cartoon (glossy)",
-        "servedPath": "/games/game101/art/gen_coffee.svg"
+        "source": "upload",
+        "localId": "gen/art-28-up",
+        "servedPath": "/games/game101/art/gen/art-28-up.png"
       },
-      "provenance": null,
-      "prompt": "a shiny espresso coffee machine, cozy candy-style casual merge game generator machine, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2.5D view, single isolated centered appliance, transparent background, soft drop shadow, polished mobile game icon"
+      "provenance": {
+        "model": "user-upload",
+        "prompt": "gen gen coffee",
+        "date": "",
+        "license": "用户上传"
+      },
+      "prompt": "a shiny espresso coffee machine, cozy candy-style casual merge game generator machine, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2.5D view, single isolated centered appliance, transparent background, soft drop shadow, polished mobile game icon",
+      "orig": {
+        "status": "filled",
+        "gen": {
+          "source": "apollo-procedural",
+          "script": "scripts/game101-art-gen.mjs",
+          "style": "gossip-harbor cozy candy cartoon (glossy)",
+          "servedPath": "/games/game101/art/gen_coffee.svg"
+        },
+        "indexEntry": null,
+        "backupPath": "/games/game101/art/orig/art-28.svg"
+      },
+      "history": [
+        {
+          "action": "upload",
+          "assetId": "gen/art-28-up"
+        }
+      ]
     },
     {
       "skinKey": "gen_fishbox",
@@ -1075,15 +1096,36 @@
         "transparent": true
       },
       "context": "美术需求：「gen gen fishbox」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_fishbox（未填时回退 2D 色块 box·#c8871e）·需透明底",
-      "status": "filled",
+      "status": "replaced",
       "gen": {
-        "source": "apollo-procedural",
-        "script": "scripts/game101-art-gen.mjs",
-        "style": "gossip-harbor cozy candy cartoon (glossy)",
-        "servedPath": "/games/game101/art/gen_fishbox.svg"
+        "source": "upload",
+        "localId": "gen/art-29-up",
+        "servedPath": "/games/game101/art/gen/art-29-up.png"
       },
-      "provenance": null,
-      "prompt": "a wooden fish-catch crate packed with fish on ice, cozy candy-style casual merge game generator machine, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2.5D view, single isolated centered appliance, transparent background, soft drop shadow, polished mobile game icon"
+      "provenance": {
+        "model": "user-upload",
+        "prompt": "gen gen fishbox",
+        "date": "",
+        "license": "用户上传"
+      },
+      "prompt": "a wooden fish-catch crate packed with fish on ice, cozy candy-style casual merge game generator machine, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2.5D view, single isolated centered appliance, transparent background, soft drop shadow, polished mobile game icon",
+      "orig": {
+        "status": "filled",
+        "gen": {
+          "source": "apollo-procedural",
+          "script": "scripts/game101-art-gen.mjs",
+          "style": "gossip-harbor cozy candy cartoon (glossy)",
+          "servedPath": "/games/game101/art/gen_fishbox.svg"
+        },
+        "indexEntry": null,
+        "backupPath": "/games/game101/art/orig/art-29.svg"
+      },
+      "history": [
+        {
+          "action": "upload",
+          "assetId": "gen/art-29-up"
+        }
+      ]
     },
     {
       "skinKey": "gen_fridge",
@@ -1112,15 +1154,36 @@
         "transparent": true
       },
       "context": "美术需求：「gen gen fridge」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_fridge（未填时回退 2D 色块 box·#c8871e）·需透明底",
-      "status": "filled",
+      "status": "replaced",
       "gen": {
-        "source": "apollo-procedural",
-        "script": "scripts/game101-art-gen.mjs",
-        "style": "gossip-harbor cozy candy cartoon (glossy)",
-        "servedPath": "/games/game101/art/gen_fridge.svg"
+        "source": "upload",
+        "localId": "gen/art-30-up",
+        "servedPath": "/games/game101/art/gen/art-30-up.png"
       },
-      "provenance": null,
-      "prompt": "a wooden rice granary storage bin filled with grain, a rice mill machine, cozy candy-style casual merge game generator machine, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2.5D view, single isolated centered appliance, transparent background, soft drop shadow, polished mobile game icon"
+      "provenance": {
+        "model": "user-upload",
+        "prompt": "gen gen fridge",
+        "date": "",
+        "license": "用户上传"
+      },
+      "prompt": "a wooden rice granary storage bin filled with grain, a rice mill machine, cozy candy-style casual merge game generator machine, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2.5D view, single isolated centered appliance, transparent background, soft drop shadow, polished mobile game icon",
+      "orig": {
+        "status": "filled",
+        "gen": {
+          "source": "apollo-procedural",
+          "script": "scripts/game101-art-gen.mjs",
+          "style": "gossip-harbor cozy candy cartoon (glossy)",
+          "servedPath": "/games/game101/art/gen_fridge.svg"
+        },
+        "indexEntry": null,
+        "backupPath": "/games/game101/art/orig/art-30.svg"
+      },
+      "history": [
+        {
+          "action": "upload",
+          "assetId": "gen/art-30-up"
+        }
+      ]
     },
     {
       "skinKey": "gen_toolbox",
@@ -1149,15 +1212,36 @@
         "transparent": true
       },
       "context": "美术需求：「gen gen toolbox」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_toolbox（未填时回退 2D 色块 box·#c8871e）·需透明底",
-      "status": "filled",
+      "status": "replaced",
       "gen": {
-        "source": "apollo-procedural",
-        "script": "scripts/game101-art-gen.mjs",
-        "style": "gossip-harbor cozy candy cartoon (glossy)",
-        "servedPath": "/games/game101/art/gen_toolbox.svg"
+        "source": "upload",
+        "localId": "gen/art-31-up",
+        "servedPath": "/games/game101/art/gen/art-31-up.png"
       },
-      "provenance": null,
-      "prompt": "a warm pastry baking oven with desserts, a dessert oven, cozy candy-style casual merge game generator machine, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2.5D view, single isolated centered appliance, transparent background, soft drop shadow, polished mobile game icon"
+      "provenance": {
+        "model": "user-upload",
+        "prompt": "gen gen toolbox",
+        "date": "",
+        "license": "用户上传"
+      },
+      "prompt": "a warm pastry baking oven with desserts, a dessert oven, cozy candy-style casual merge game generator machine, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2.5D view, single isolated centered appliance, transparent background, soft drop shadow, polished mobile game icon",
+      "orig": {
+        "status": "filled",
+        "gen": {
+          "source": "apollo-procedural",
+          "script": "scripts/game101-art-gen.mjs",
+          "style": "gossip-harbor cozy candy cartoon (glossy)",
+          "servedPath": "/games/game101/art/gen_toolbox.svg"
+        },
+        "indexEntry": null,
+        "backupPath": "/games/game101/art/orig/art-31.svg"
+      },
+      "history": [
+        {
+          "action": "upload",
+          "assetId": "gen/art-31-up"
+        }
+      ]
     },
     {
       "skinKey": "bubble",
