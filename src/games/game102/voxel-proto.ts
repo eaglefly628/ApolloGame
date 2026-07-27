@@ -19,7 +19,7 @@ const PITCH = 33;
 const VOX = 33;           // =PITCH：相接无缝·1.5× 更大更易辨
 const MAXC = ((N - 1) / 2) * PITCH;
 const FACE_MS = 6000;     // 每面总停留（含 换色窗 + 开火窗）→ 转下一面
-const PICK_MS = 2000;     // 换色窗：停稳后此段不开火·给你看清+选色（只做一件事=选色）
+const PICK_MS = 3000;     // 换色窗：停稳后此段不开火·给你看清+选色（只做一件事=选色·owner：来不及看→3s）
 const TOTAL_MS = 90000;   // 全局限时（归零=输·加时格喂它）= 主难度旋钮
 const TWEEN = 0.010;      // 转面缓动系数（×dt）
 const FIRE_MS = 170;      // 开火窗内发射节拍（单炮·当前色·比原三炮齐射清爽）
@@ -194,6 +194,18 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
   // 阶段提示（换色 / 点方块）。
   const hint = el('div', 'position:absolute;left:50%;top:44%;transform:translateX(-50%);z-index:22;pointer-events:none;padding:7px 18px;border-radius:16px;background:#0c1a30dd;border:1px solid #7fe3ff66;color:#dff;font:800 17px system-ui;opacity:0;transition:opacity .15s;white-space:nowrap;');
   wrapper.appendChild(hint);
+  // 前置屏幕提醒（强调 UI·bigtext 风·换色窗一开砸出来·抓注意不错过选色）。
+  const announce = el('div', 'position:absolute;left:0;right:0;top:38%;display:flex;justify-content:center;pointer-events:none;z-index:32;');
+  const announceInner = el('div', 'padding:14px 40px;border-radius:20px;background:linear-gradient(#ffe58a,#f2b21e);color:#5a3800;font:900 40px system-ui;letter-spacing:2px;box-shadow:0 6px 0 #b97e12,0 10px 30px #000a,inset 0 2px 0 #fff8;text-shadow:0 2px 0 #fff6;opacity:0;', '🎨 换色');
+  announce.appendChild(announceInner); wrapper.appendChild(announce);
+  const showAnnounce = (): void => {
+    announceInner.animate?.([
+      { opacity: 0, transform: 'scale(0.5) rotate(-6deg)' },
+      { opacity: 1, transform: 'scale(1.12) rotate(2deg)', offset: 0.35 },
+      { opacity: 1, transform: 'scale(1) rotate(0deg)', offset: 0.6 },
+      { opacity: 0, transform: 'scale(0.96)' },
+    ], { duration: 1100, easing: 'cubic-bezier(.2,1.4,.4,1)' });
+  };
   // 本面补给清单（当前面有哪些功能格·什么色）。
   const legend = el('div', 'position:absolute;left:0;right:0;top:56px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:0 12px;pointer-events:none;');
   wrapper.appendChild(legend);
@@ -336,7 +348,7 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
     if (cc != null) coverByColor[cc]--;
     coverRemaining--;
     cellType.delete(id); gemSet.delete(id); present.delete(id); legendDirty = true;
-    if (focusTarget && focusTarget[0] === i && focusTarget[1] === j && focusTarget[2] === k) focusTarget = null;
+    // focusTarget 不因这格碎了而清 → 火力以「你点的那格」为中心持续砸周围（区域集中·非单格·owner）。
     if (rendered.has(id)) { engine.world.destroyEntity(id); const piv = engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D'); if (piv) { const x = piv.children.indexOf(id); if (x >= 0) piv.children.splice(x, 1); } rendered.delete(id); }
     if (chain) { const wp = voxWorld(i, j, k); spawnFrags(wp[0], wp[1], wp[2], PALETTE[cc ?? 0].tint); }
     if (isGem) { gemsGot++; cellFx('💎 宝石！', GEM_CSS); impactFx(0.5); const wp = voxWorld(i, j, k); spawnFrags(wp[0], wp[1], wp[2], 0xbff6ff); }
@@ -408,7 +420,7 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
         // 停稳判定 → 两阶段状态机（换色窗 → 开火窗）·转动中不做任何事（修打错面）。
         const tgt = ORIENT[orientIdx];
         const settled = Math.abs(shortDelta(curRx, tgt[0])) < 0.03 && Math.abs(shortDelta(curRy, tgt[1])) < 0.03;
-        if (settled && !wasSettled) { phase = 'pick'; pickLeft = PICK_MS; focusTarget = null; } // 新面 → 进换色窗·清上一面的集中点
+        if (settled && !wasSettled) { phase = 'pick'; pickLeft = PICK_MS; focusTarget = null; showAnnounce(); } // 新面 → 进换色窗·前置强调提醒·清上一面集中点
         wasSettled = settled;
         if (!settled) { hint.style.opacity = '0'; afAcc = 0; }
         else if (phase === 'pick') {
