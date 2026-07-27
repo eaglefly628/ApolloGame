@@ -12,6 +12,7 @@ import type { Sprite } from '@engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp } from './hud.js';
 import { newlyUnlocked } from './achievements.js';
+import { recordScore, BOARD_MAX, type ScoreEntry } from './leaderboard.js';
 import { ENEMY, ZONE, PLAYER, START, KUNAI, SHAMBLER, BRUTE, BOSS, ARCHER, ENEMIES, LEVEL_XP, MATCH_SECONDS, PLAYER_DEF, DRAFT_POOL, DRAFT_N, WEAPONS, PASSIVE_BY_KEY, WEAPON_BY_KEY, WEAPON_ANIM, WEAPON_BIT, SPAWN_CAP, SPAWNER_TIERS } from './theme.js';
 // 子弹现用序列帧 fx 精灵表覆盖静态 skin：在场皮肤 = 动画帧 sheet（若有）否则原 skin。
 const skinOf = (key: string): string => WEAPON_ANIM[key]?.sheet ?? WEAPON_BY_KEY[key].skin;
@@ -470,6 +471,33 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(findText(buildHud({ ...base, toast: null }), 's-ach-t')).toBeNull();
     const t = findText(buildHud({ ...base, toast: { icon: '🔥', name: '小试锋芒 · 10 连杀' } }), 's-ach-t');
     expect(t).toContain('小试锋芒');
+  });
+
+  it('本地排行榜（owner「死亡后排行榜+成绩一起展示·存本地」）：击杀排序·名次·截 MAX·结算屏渲染', () => {
+    const mk = (score: number, time = 30, at = score): ScoreEntry => ({ score, time, level: 2, win: false, at });
+    // 击杀降序排 + 返回本局名次
+    const prev = [mk(50), mk(30), mk(10)];
+    const r1 = recordScore(mk(40), prev);
+    expect(r1.board.map((e) => e.score)).toEqual([50, 40, 30, 10]);
+    expect(r1.rank).toBe(2); // 40 排第 2
+    // 并列击杀 → 存活时长更长者靠前
+    const r2 = recordScore({ score: 30, time: 99, level: 2, win: false, at: 999 }, prev);
+    expect(r2.board[1].time).toBe(99); // 同 30 杀·time99 在前
+    // 超过 MAX 截断·垫底成绩未进榜 rank=0
+    const many = Array.from({ length: BOARD_MAX }, (_, i) => mk(100 + i));
+    const rLow = recordScore(mk(1), many);
+    expect(rLow.board.length).toBe(BOARD_MAX);
+    expect(rLow.rank).toBe(0); // 未进榜
+    // 结算屏渲染排行榜（含本局高亮行 + 标题）·validateLayoutNode 零 issue
+    const st = { hp: 0, maxHp: 100, xp: 0, xpMax: LEVEL_XP, level: 3, elapsed: 88, score: 40, combo: 0, comboFlash: 0, toast: null,
+      board: r1.board, rank: r1.rank, status: 'defeat' as const };
+    const tree = buildResult(st);
+    expect(validateLayoutNode(tree)).toEqual([]);
+    const ids: string[] = [];
+    const walk = (n: LayoutNode): void => { if (n.id) ids.push(n.id); (n.children ?? []).forEach(walk); };
+    walk(tree);
+    expect(ids).toContain('s-lb-title');     // 排行榜标题在场
+    expect(ids.filter((x) => /^s-lb-\d+$/.test(x)).length).toBe(4); // 4 行榜单
   });
 
   it('难度：胖子/精英血厚(非一枪死)+远程弹更大更清晰', () => {

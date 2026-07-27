@@ -4,6 +4,8 @@
 // bright chunky cartoon：chevron 计时徽章 / 分段血经验条 / chunky 描边字 / 金带横幅 / parchment 结算卷轴。
 // ⚠ Level Up 三选一(CHOOSE SKILL) / Lucky Wheel / Skills 三屏=后续切片（draft-offer 逻辑接线·见 requests）。
 import type { LayoutNode } from '@ui/components/index.js';
+import type { ScoreEntry } from './leaderboard.js';
+import { BOARD_SHOW } from './leaderboard.js';
 
 export interface HudState {
   hp: number; maxHp: number;
@@ -14,6 +16,8 @@ export interface HudState {
   combo: number;     // 1 秒窗口内击杀数（连杀·host 派生·非 sim）
   comboFlash: number;// 闪烁相位（0/1·驱动连杀数字换色闪）
   toast: { icon: string; name: string } | null; // 成就解锁横幅（host 派生·null=不显）
+  board?: ScoreEntry[]; // 本地排行榜（结算屏展示·host 派生）
+  rank?: number;        // 本局名次（1 基·0=未进榜·高亮用）
   status: 'playing' | 'victory' | 'defeat';
 }
 
@@ -185,6 +189,40 @@ export function buildLevelUp(offers: LevelUpOffer[]): LayoutNode {
 }
 
 // ── 结算浮层（Victory=parchment 卷轴 + confetti·Defeat=同版式无庆祝·SC Victory）──
+// 本地排行榜（owner「死亡后排行榜 + 成绩一起展示」）：击杀排序·前 BOARD_SHOW 行·本局高亮（🏅 + 金底）。
+function leaderboardPanel(s: HudState): LayoutNode {
+  const board = (s.board ?? []).slice(0, BOARD_SHOW);
+  const medal = (i: number): string => (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`);
+  const row = (e: ScoreEntry, i: number): LayoutNode => {
+    const mine = s.rank === i + 1; // 本局那一行
+    return {
+      type: 'Panel', id: `s-lb-${i}`, props: mine ? { bg: { custom: '#5a4210' } } : { bare: true },
+      layout: { direction: 'row', align: 'center', gap: 8, padding: 5, radius: 8 },
+      children: [
+        { type: 'Label', id: `s-lb-${i}-r`, props: { text: medal(i), size: 14, bold: true, color: mine ? 'gold' : 'sub' } },
+        { type: 'Label', id: `s-lb-${i}-k`, props: { text: `💀 ${e.score}`, font: 'heavy', size: 14, bold: true, color: mine ? 'gold' : 'text', stroke: true } },
+        { type: 'Label', id: `s-lb-${i}-t`, props: { text: mmss(e.time), size: 12, color: 'sub' } },
+        { type: 'Label', id: `s-lb-${i}-l`, props: { text: `Lv${e.level}`, size: 12, color: 'sub' } },
+        { type: 'Label', id: `s-lb-${i}-w`, props: { text: e.win ? '🏆' : (mine ? '👈 本局' : ''), size: 12, color: mine ? 'gold' : 'sub' } },
+      ],
+    };
+  };
+  const rows: LayoutNode[] = board.length
+    ? board.map(row)
+    : [{ type: 'Label', id: 's-lb-empty', props: { text: '暂无记录·打出第一名！', size: 12, color: 'sub' } }];
+  // 本局未进前 BOARD_SHOW → 追加一行「你的成绩 · 第 N 名 / 未进榜」
+  const offBoard = (s.rank ?? 0) > BOARD_SHOW || (s.rank === 0 && board.length > 0);
+  if (offBoard) rows.push({ type: 'Label', id: 's-lb-you', props: { text: s.rank ? `你 · 第 ${s.rank} 名 · 💀 ${s.score}` : `你 · 💀 ${s.score} · 未进榜`, size: 12, bold: true, color: 'gold' } });
+  return {
+    type: 'Panel', id: 's-lb', props: { bg: { custom: '#2a2013' }, edge: 'gold' },
+    layout: { direction: 'column', align: 'stretch', gap: 3, padding: 12, radius: 12 },
+    children: [
+      { type: 'Label', id: 's-lb-title', props: { text: '🏆 本地排行榜', font: 'heavy', size: 15, bold: true, color: 'gold', stroke: true } },
+      ...rows,
+    ],
+  };
+}
+
 export function buildResult(s: HudState): LayoutNode {
   const win = s.status === 'victory';
   const statPill = (id: string, icon: string, val: string): LayoutNode => ({
@@ -203,6 +241,7 @@ export function buildResult(s: HudState): LayoutNode {
         layout: { direction: 'row', justify: 'center', gap: 8 },
         children: [statPill('s-r-kill', '💀', String(s.score)), statPill('s-r-time', '⏱', mmss(s.elapsed)), statPill('s-r-lv', '⭐', `Lv ${s.level}`)],
       },
+      leaderboardPanel(s), // 排行榜 + 本局成绩一起展示（owner）
       { type: 'Button', id: 's-r-ok', props: { label: 'OK', kind: 'hero', action: 'restart' } },
     ],
   };
