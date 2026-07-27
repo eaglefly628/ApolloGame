@@ -71,11 +71,10 @@ let voxSurface: VoxelSurface = 'gem';  // 默认宝石感（当前展示态·下
 const voxMesh = (t: number): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: shade(t, 0.82), voxelTex: VOXEL_SURFACES[voxSurface](t) });
 // ── 渲染样式集（instancing-safe·只切后处理·GTAO/bloom/暗角/分级）——保持实例化不破·大立方也能切 ──
 type Style = { name: string; post: Record<string, unknown> };
-const STYLES: Style[] = [
-  { name: '标准', post: { ao: { intensity: 1.2, radius: 6 }, bloom: { strength: 0.22, threshold: 0.75 }, aa: true } },
+const STYLES: Style[] = [           // 厚AO 置首=默认（owner）·去掉柔光（发糊看不清）
   { name: '厚AO', post: { ao: { intensity: 1.8, radius: 7 }, vignette: { intensity: 0.38 }, aa: true } },
+  { name: '标准', post: { ao: { intensity: 1.2, radius: 6 }, bloom: { strength: 0.22, threshold: 0.75 }, aa: true } },
   { name: '鲜艳', post: { ao: { intensity: 0.9, radius: 6 }, bloom: { strength: 0.45, threshold: 0.65 }, grade: { saturation: 1.22, contrast: 1.08 }, aa: true } },
-  { name: '柔光', post: { ao: { intensity: 1.0, radius: 6 }, bloom: { strength: 0.62, threshold: 0.6 }, grade: { brightness: 0.05 }, aa: true } },
 ];
 function el(tag: string, css: string, html?: string): HTMLElement { const e = document.createElement(tag); e.style.cssText = css; if (html !== undefined) e.innerHTML = html; return e; }
 
