@@ -319,19 +319,18 @@ function board(s: S1State): N {
       } as N;
     }
     if (cv) {
-      // 皮肤槽就绪 → 渲美术图(Image·就绪即换装)；否则回退 Twemoji Label。被拿起格淡化缩小·冷却中淡化(让圆环醒目)。
-      const cdDim = cv.cd != null;
-      kids.push(cv.skin
-        ? { type: 'Image', id: `t-live-${i}-l`, props: { src: cv.skin, fit: 'contain' }, layout: i === s.liftedCell ? { width: 108, height: 108, opacity: 0.28 } : cdDim ? { width: 126, height: 126, opacity: 0.4 } : { width: 126, height: 126 } }
-        : { type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: i === s.liftedCell ? 52 : 66 }, layout: i === s.liftedCell ? { opacity: 0.28 } : cdDim ? { opacity: 0.4 } : {} });
+      // 生成器冷却（G4）：格内唯一居中倒计时圆环（cell 天然 align/justify center → 稳居中·基座 ProgressBar
+      // shape:'ring'·conic 弧随剩余秒收缩·中心显剩余秒）。冷却中不渲生成器图·避免叠层/偏心。
+      if (cv.cd != null) {
+        kids.push({ type: 'ProgressBar', id: `t-live-${i}-cd`, props: { shape: 'ring', value: cv.cd, max: cv.cdMax ?? cv.cd, tone: 'warn', size: 96, label: `${cv.cd}` }, layout: { align: 'center' } } as N);
+      } else {
+        // 皮肤槽就绪 → 渲美术图(Image·就绪即换装)；否则回退 Twemoji Label。被拿起格淡化缩小。
+        kids.push(cv.skin
+          ? { type: 'Image', id: `t-live-${i}-l`, props: { src: cv.skin, fit: 'contain' }, layout: i === s.liftedCell ? { width: 108, height: 108, opacity: 0.28 } : { width: 126, height: 126 } }
+          : { type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: i === s.liftedCell ? 52 : 66 }, layout: i === s.liftedCell ? { opacity: 0.28 } : {} });
+      }
       if (cv.deliverable) kids.push({ type: 'Badge', id: `t-live-${i}-b`, props: { text: '✓', tone: 'ok' } });
       if (cv.timer != null) kids.push({ type: 'Badge', id: `t-live-${i}-t`, props: { text: `⏱${cv.timer}`, tone: 'warn' } }); // 限时物倒计时
-      // 生成器冷却（G4）：格内居中倒计时圆环（基座 ProgressBar shape:'ring'·conic 弧随剩余秒收缩·中心显剩余秒）。
-      if (cv.cd != null) kids.push({
-        type: 'Panel', id: `t-live-${i}-cdwrap`, props: { bg: 'transparent' },
-        layout: { x: 0, y: 0, width: 116, height: 116, align: 'center', justify: 'center', allowOverlap: true },
-        children: [{ type: 'ProgressBar', id: `t-live-${i}-cd`, props: { shape: 'ring', value: cv.cd, max: cv.cdMax ?? cv.cd, tone: 'warn', size: 92, label: `${cv.cd}` } }],
-      } as N);
     }
     // 合成迸发（juice·render-only）：该格叠一次性星光爆（基座 Particles·非自造 CSS）。绝对定位不占流。
     if (i === s.burstCell) {
