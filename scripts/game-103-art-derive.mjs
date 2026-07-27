@@ -17,6 +17,34 @@ const prev = existsSync(LEDGER_FILE) ? JSON.parse(readFileSync(LEDGER_FILE, 'utf
 const ledger = mergeLedger(prev, deriveRequirements({ entities: bp.entities }, { game: 'game-103' }));
 
 const OUT = process.env.ARTREQ_OUT || join(tmpdir(), 'game-103-artreq');
+// 素材库=「有意义的美术资产」清单（owner 反馈：创作台里 59 个纯色块·多是内部几何非游戏素材）。
+// 全实体扫描会把血条/网格线/光环/粒子/核/多敌变体逐个当独立槽 → 噪声。收敛为**每个唯一皮肤（skinKey）一行**：
+//  ① 丢无 skinKey 的纯几何（血条/网格/光环/粒子/障碍帽/核=程序化渲染件·无需美术图）；
+//  ② 同一皮肤被多实体（如各敌变体共用 enemy-brute）复用 → 只留代表行（首见·保编号）。
+// → 库里剩「玩家/各敌/Boss/三宝石/各武器弹/障碍」等一眼认得的真资产。纯 VFX（冲击波粒子/敌弹）走程序化·不入库。
+{
+  const seenSkin = new Set();
+  ledger.rows = ledger.rows.filter((r) => {
+    if (!r.skinKey) return false;
+    if (seenSkin.has(r.skinKey)) return false;
+    seenSkin.add(r.skinKey);
+    return true;
+  });
+  ledger.count = ledger.rows.length;
+  ledger.instances = ledger.rows.length;
+  // 状态/路径对齐真相：以游戏实载 index.json（filled 资产）回填 status + provenance.path，令徽标(已填回/待配)与
+  // 「现用」预览都指向玩家真正看到的图（emoji/SVG）——修台账 status/provenance 陈旧（如 shambler 标 .svg 实为 .png）。
+  const INDEX_FILE = join(ROOT, 'public', 'games', 'game-103', 'art', 'index.json');
+  if (existsSync(INDEX_FILE)) {
+    const idx = JSON.parse(readFileSync(INDEX_FILE, 'utf8'));
+    const filled = new Map((idx.assets || []).filter((a) => a.status === 'filled' && a.id && a.path).map((a) => [a.id, a.path]));
+    for (const r of ledger.rows) {
+      const p = r.skinKey && filled.get(r.skinKey);
+      // servedPath 也指真图：现网创作台缩略图读 gen.servedPath → 无需重部署前端即可显示真图（服务端实时读本台账）。
+      if (p) { r.status = 'filled'; r.provenance = { ...(r.provenance || {}), path: p }; r.gen = { ...(r.gen || {}), servedPath: p }; }
+    }
+  }
+}
 mkdirSync(dirname(LEDGER_FILE), { recursive: true });
 mkdirSync(OUT, { recursive: true });
 writeFileSync(LEDGER_FILE, JSON.stringify(ledger, null, 2) + '\n');

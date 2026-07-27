@@ -2,8 +2,8 @@
   "version": 1,
   "game": "game-103",
   "mode": "requirements",
-  "count": 60,
-  "instances": 124,
+  "count": 17,
+  "instances": 17,
   "rows": [
     {
       "skinKey": "103/player",
@@ -36,7 +36,8 @@
       "gen": {
         "source": "apollo-procedural",
         "script": "scripts/game-103-art-gen.mjs",
-        "style": "survivor-io bright chunky cartoon (glossy)"
+        "style": "survivor-io bright chunky cartoon (glossy)",
+        "servedPath": "/games/game-103/art/player.svg"
       },
       "provenance": {
         "generator": "apollo-procedural",
@@ -44,36 +45,6 @@
         "license": "CC0",
         "mock": false
       }
-    },
-    {
-      "no": "art-02",
-      "desc": "player core, round shape, main color #9fd0ff, small on screen (14x14), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "player-core",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "player core",
-      "placeholder": {
-        "current": "2D 色块（circle·#9fd0ff）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "player-core"
-        ]
-      },
-      "spec": {
-        "w": 14,
-        "h": 14,
-        "displayW": 14,
-        "displayH": 14,
-        "transparent": true
-      },
-      "context": "美术需求：「player core」（场景实体·单例）·2D 平面·当前占位=2D 色块（circle·#9fd0ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
     },
     {
       "skinKey": "103/enemy-shambler",
@@ -106,44 +77,15 @@
       "gen": {
         "source": "apollo-procedural",
         "script": "scripts/game-103-art-gen.mjs",
-        "style": "survivor-io bright chunky cartoon (glossy)"
+        "style": "survivor-io bright chunky cartoon (glossy)",
+        "servedPath": "/games/game-103/art/enemy-shambler.png"
       },
       "provenance": {
         "generator": "apollo-procedural",
-        "path": "/games/game-103/art/enemy-shambler.svg",
+        "path": "/games/game-103/art/enemy-shambler.png",
         "license": "CC0",
         "mock": false
       }
-    },
-    {
-      "no": "art-04",
-      "desc": "enemy shambler inner, round shape, main color #ff9aa6, small on screen (12x12), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_shambler:inner",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "enemy shambler inner",
-      "placeholder": {
-        "current": "2D 色块（circle·#ff9aa6）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_shambler:inner"
-        ]
-      },
-      "spec": {
-        "w": 12,
-        "h": 12,
-        "displayW": 12,
-        "displayH": 12,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy shambler inner」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#ff9aa6）·需透明底",
-      "status": "retired",
-      "gen": null,
-      "provenance": null
     },
     {
       "skinKey": "103/gem-blue",
@@ -176,7 +118,8 @@
       "gen": {
         "source": "apollo-procedural",
         "script": "scripts/game-103-art-gen.mjs",
-        "style": "survivor-io bright chunky cartoon (glossy)"
+        "style": "survivor-io bright chunky cartoon (glossy)",
+        "servedPath": "/games/game-103/art/gem-blue.svg"
       },
       "provenance": {
         "generator": "apollo-procedural",
@@ -216,11 +159,12 @@
       "gen": {
         "source": "apollo-procedural",
         "script": "scripts/game-103-art-gen.mjs",
-        "style": "survivor-io bright chunky cartoon (glossy)"
+        "style": "survivor-io bright chunky cartoon (glossy)",
+        "servedPath": "/games/game-103/art/fx/magic_dart.png"
       },
       "provenance": {
         "generator": "apollo-procedural",
-        "path": "/games/game-103/art/proj-kunai.svg",
+        "path": "/games/game-103/art/fx/magic_dart.png",
         "license": "CC0",
         "mock": false
       }
@@ -252,9 +196,13 @@
         "transparent": true
       },
       "context": "美术需求：「proj boom p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/fx-gold_sparkles（未填时回退 2D 色块 circle·#ffd23f）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
+      "status": "filled",
+      "gen": {
+        "servedPath": "/games/game-103/art/fx/gold_sparkles.png"
+      },
+      "provenance": {
+        "path": "/games/game-103/art/fx/gold_sparkles.png"
+      }
     },
     {
       "skinKey": "103/proj-laser",
@@ -314,103 +262,13 @@
         "transparent": true
       },
       "context": "美术需求：「proj orbit p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/fx-sting（未填时回退 2D 色块 circle·#7dff4d）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/fx-magic_dart",
-      "no": "art-10",
-      "desc": "proj pet p, round shape, main color #c9a3ff, small on screen (10x10), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:proj_pet:p",
-        "component": "Sprite",
-        "field": "textureKey"
+      "status": "filled",
+      "gen": {
+        "servedPath": "/games/game-103/art/fx/sting.png"
       },
-      "query": "proj pet p",
-      "placeholder": {
-        "current": "皮肤槽 103/fx-magic_dart（未填时回退 2D 色块 circle·#c9a3ff）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:proj_pet:p"
-        ]
-      },
-      "spec": {
-        "w": 10,
-        "h": 10,
-        "displayW": 10,
-        "displayH": 10,
-        "transparent": true
-      },
-      "context": "美术需求：「proj pet p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/fx-magic_dart（未填时回退 2D 色块 circle·#c9a3ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-11",
-      "desc": "proj shock p, round shape, main color #7fd0ff, medium size on screen, top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:proj_shock:p",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "proj shock p",
-      "placeholder": {
-        "current": "2D 色块（circle·#7fd0ff）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:proj_shock:p"
-        ]
-      },
-      "spec": {
-        "w": 240,
-        "h": 240,
-        "displayW": 240,
-        "displayH": 240,
-        "transparent": true
-      },
-      "context": "美术需求：「proj shock p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#7fd0ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/fx-sting",
-      "no": "art-12",
-      "desc": "weapon orbit ball, round shape, main color #7dff4d, small on screen (24x24), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:weapon_orbit:ball0",
-        "component": "Sprite",
-        "field": "textureKey"
-      },
-      "query": "weapon orbit ball",
-      "placeholder": {
-        "current": "皮肤槽 103/fx-sting（未填时回退 2D 色块 circle·#7dff4d）",
-        "source": "procedural",
-        "count": 3,
-        "instances": [
-          "prefab:weapon_orbit:ball0",
-          "prefab:weapon_orbit:ball1",
-          "prefab:weapon_orbit:ball2"
-        ]
-      },
-      "spec": {
-        "w": 24,
-        "h": 24,
-        "displayW": 24,
-        "displayH": 24,
-        "transparent": true
-      },
-      "context": "美术需求：「weapon orbit ball」（预制模板（生成的每个实例共用一套美术）·×3 实例）·2D 平面·当前占位=皮肤槽 103/fx-sting（未填时回退 2D 色块 circle·#7dff4d）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
+      "provenance": {
+        "path": "/games/game-103/art/fx/sting.png"
+      }
     },
     {
       "skinKey": "103/proj-pet",
@@ -439,80 +297,6 @@
         "transparent": true
       },
       "context": "美术需求：「weapon pet pet」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/proj-pet（未填时回退 2D 色块 circle·#c9a3ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-14",
-      "desc": "gridh, rectangular shape, main color #2b3a48, large on screen, top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "gridh-16",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "gridh",
-      "placeholder": {
-        "current": "2D 色块（box·#2b3a48）",
-        "source": "procedural",
-        "count": 16,
-        "instances": [
-          "gridh-16",
-          "gridh-17",
-          "gridh-18",
-          "gridh-19",
-          "gridh-20",
-          "gridh-21",
-          "gridh-22",
-          "gridh-23"
-        ]
-      },
-      "spec": {
-        "w": 2400,
-        "h": 2,
-        "displayW": 2400,
-        "displayH": 2,
-        "transparent": true
-      },
-      "context": "美术需求：「gridh」（场景实体·×16 实例）·2D 平面·当前占位=2D 色块（box·#2b3a48）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-15",
-      "desc": "gridv, rectangular shape, main color #2b3a48, small on screen (2x2400), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "gridv-0",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "gridv",
-      "placeholder": {
-        "current": "2D 色块（box·#2b3a48）",
-        "source": "procedural",
-        "count": 16,
-        "instances": [
-          "gridv-0",
-          "gridv-1",
-          "gridv-2",
-          "gridv-3",
-          "gridv-4",
-          "gridv-5",
-          "gridv-6",
-          "gridv-7"
-        ]
-      },
-      "spec": {
-        "w": 2,
-        "h": 2400,
-        "displayW": 2,
-        "displayH": 2400,
-        "transparent": true
-      },
-      "context": "美术需求：「gridv」（场景实体·×16 实例）·2D 平面·当前占位=2D 色块（box·#2b3a48）·需透明底",
       "status": "needs-art",
       "gen": null,
       "provenance": null
@@ -554,312 +338,6 @@
       "provenance": null
     },
     {
-      "no": "art-17",
-      "desc": "obstacle cap, round shape, main color #7c8ea0, medium size on screen, top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "obstacle-cap-0",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "obstacle cap",
-      "placeholder": {
-        "current": "2D 色块（circle·#7c8ea0）",
-        "source": "procedural",
-        "count": 6,
-        "instances": [
-          "obstacle-cap-0",
-          "obstacle-cap-1",
-          "obstacle-cap-2",
-          "obstacle-cap-3",
-          "obstacle-cap-4",
-          "obstacle-cap-5"
-        ]
-      },
-      "spec": {
-        "w": 64,
-        "h": 64,
-        "displayW": 64,
-        "displayH": 64,
-        "transparent": true
-      },
-      "context": "美术需求：「obstacle cap」（场景实体·×6 实例）·2D 平面·当前占位=2D 色块（circle·#7c8ea0）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/fx-gold_sparkles",
-      "no": "art-18",
-      "desc": "boom return p, round shape, main color #ffd23f, defensive turret that senses and attacks enemies in range, small on screen (14x14), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:boom_return:p",
-        "component": "Sprite",
-        "field": "textureKey"
-      },
-      "query": "boom return p",
-      "placeholder": {
-        "current": "皮肤槽 103/fx-gold_sparkles（未填时回退 2D 色块 circle·#ffd23f）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:boom_return:p"
-        ]
-      },
-      "spec": {
-        "w": 14,
-        "h": 14,
-        "displayW": 14,
-        "displayH": 14,
-        "transparent": true
-      },
-      "context": "美术需求：「boom return p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/fx-gold_sparkles（未填时回退 2D 色块 circle·#ffd23f）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-19",
-      "desc": "ebolt archer t glow, round shape, main color #ff3355, small on screen (40x40), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:ebolt_archer_t2:glow",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "ebolt archer t glow",
-      "placeholder": {
-        "current": "2D 色块（circle·#ff3355）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:ebolt_archer_t2:glow"
-        ]
-      },
-      "spec": {
-        "w": 40,
-        "h": 40,
-        "displayW": 40,
-        "displayH": 40,
-        "transparent": true
-      },
-      "context": "美术需求：「ebolt archer t glow」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#ff3355）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-20",
-      "desc": "ebolt archer t p, round shape, main color #ff1030, small on screen (26x26), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:ebolt_archer_t2:p",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "ebolt archer t p",
-      "placeholder": {
-        "current": "2D 色块（circle·#ff1030）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:ebolt_archer_t2:p"
-        ]
-      },
-      "spec": {
-        "w": 26,
-        "h": 26,
-        "displayW": 26,
-        "displayH": 26,
-        "transparent": true
-      },
-      "context": "美术需求：「ebolt archer t p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#ff1030）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-21",
-      "desc": "ebolt archer glow, round shape, main color #ff3355, small on screen (40x40), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:ebolt_archer:glow",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "ebolt archer glow",
-      "placeholder": {
-        "current": "2D 色块（circle·#ff3355）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:ebolt_archer:glow"
-        ]
-      },
-      "spec": {
-        "w": 40,
-        "h": 40,
-        "displayW": 40,
-        "displayH": 40,
-        "transparent": true
-      },
-      "context": "美术需求：「ebolt archer glow」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#ff3355）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-22",
-      "desc": "ebolt archer p, round shape, main color #ff1030, small on screen (26x26), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:ebolt_archer:p",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "ebolt archer p",
-      "placeholder": {
-        "current": "2D 色块（circle·#ff1030）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:ebolt_archer:p"
-        ]
-      },
-      "spec": {
-        "w": 26,
-        "h": 26,
-        "displayW": 26,
-        "displayH": 26,
-        "transparent": true
-      },
-      "context": "美术需求：「ebolt archer p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#ff1030）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-23",
-      "desc": "ebolt boss glow, round shape, main color #ff3355, medium size on screen, top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:ebolt_boss:glow",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "ebolt boss glow",
-      "placeholder": {
-        "current": "2D 色块（circle·#ff3355）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:ebolt_boss:glow"
-        ]
-      },
-      "spec": {
-        "w": 64,
-        "h": 64,
-        "displayW": 64,
-        "displayH": 64,
-        "transparent": true
-      },
-      "context": "美术需求：「ebolt boss glow」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#ff3355）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-24",
-      "desc": "ebolt boss p, round shape, main color #ff1030, small on screen (40x40), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:ebolt_boss:p",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "ebolt boss p",
-      "placeholder": {
-        "current": "2D 色块（circle·#ff1030）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:ebolt_boss:p"
-        ]
-      },
-      "spec": {
-        "w": 40,
-        "h": 40,
-        "displayW": 40,
-        "displayH": 40,
-        "transparent": true
-      },
-      "context": "美术需求：「ebolt boss p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#ff1030）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-25",
-      "desc": "ebolt sniper glow, round shape, main color #ff3355, small on screen (52x52), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:ebolt_sniper:glow",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "ebolt sniper glow",
-      "placeholder": {
-        "current": "2D 色块（circle·#ff3355）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:ebolt_sniper:glow"
-        ]
-      },
-      "spec": {
-        "w": 52,
-        "h": 52,
-        "displayW": 52,
-        "displayH": 52,
-        "transparent": true
-      },
-      "context": "美术需求：「ebolt sniper glow」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#ff3355）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-26",
-      "desc": "ebolt sniper p, round shape, main color #ff1030, small on screen (32x32), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:ebolt_sniper:p",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "ebolt sniper p",
-      "placeholder": {
-        "current": "2D 色块（circle·#ff1030）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:ebolt_sniper:p"
-        ]
-      },
-      "spec": {
-        "w": 32,
-        "h": 32,
-        "displayW": 32,
-        "displayH": 32,
-        "transparent": true
-      },
-      "context": "美术需求：「ebolt sniper p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#ff1030）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
       "skinKey": "103/enemy-archer",
       "no": "art-27",
       "desc": "enemy archer t body, round shape, main color #b07bff, defensive turret that senses and attacks enemies in range, small on screen (20x20), top-down 2d game view, isolated subject, transparent background",
@@ -886,100 +364,13 @@
         "transparent": true
       },
       "context": "美术需求：「enemy archer t body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-archer（未填时回退 2D 色块 circle·#b07bff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-28",
-      "desc": "enemy archer t hpbar, rectangular shape, main color #54e08a, with a status bar, small on screen (28x5), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_archer_t2:hpbar",
-        "component": "Shape",
-        "field": "art"
+      "status": "filled",
+      "gen": {
+        "servedPath": "/games/game-103/art/enemy-archer.png"
       },
-      "query": "enemy archer t hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_archer_t2:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 28,
-        "h": 5,
-        "displayW": 28,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy archer t hpbar」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/enemy-archer",
-      "no": "art-29",
-      "desc": "enemy archer body, round shape, main color #b07bff, defensive turret that senses and attacks enemies in range, small on screen (20x20), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_archer:body",
-        "component": "Sprite",
-        "field": "textureKey"
-      },
-      "query": "enemy archer body",
-      "placeholder": {
-        "current": "皮肤槽 103/enemy-archer（未填时回退 2D 色块 circle·#b07bff）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_archer:body"
-        ]
-      },
-      "spec": {
-        "w": 20,
-        "h": 20,
-        "displayW": 13,
-        "displayH": 13,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy archer body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-archer（未填时回退 2D 色块 circle·#b07bff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-30",
-      "desc": "enemy archer hpbar, rectangular shape, main color #54e08a, with a status bar, small on screen (28x5), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_archer:hpbar",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "enemy archer hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_archer:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 28,
-        "h": 5,
-        "displayW": 28,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy archer hpbar」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
+      "provenance": {
+        "path": "/games/game-103/art/enemy-archer.png"
+      }
     },
     {
       "skinKey": "103/enemy-boss",
@@ -1008,39 +399,13 @@
         "transparent": true
       },
       "context": "美术需求：「enemy boss body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-boss（未填时回退 2D 色块 circle·#ff4d5e）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-32",
-      "desc": "enemy boss hpbar, rectangular shape, main color #54e08a, with a status bar, medium size on screen, top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_boss:hpbar",
-        "component": "Shape",
-        "field": "art"
+      "status": "filled",
+      "gen": {
+        "servedPath": "/games/game-103/art/enemy-boss.png"
       },
-      "query": "enemy boss hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_boss:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 94,
-        "h": 5,
-        "displayW": 94,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy boss hpbar」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
+      "provenance": {
+        "path": "/games/game-103/art/enemy-boss.png"
+      }
     },
     {
       "skinKey": "103/enemy-brute",
@@ -1069,161 +434,13 @@
         "transparent": true
       },
       "context": "美术需求：「enemy bruiser body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-brute（未填时回退 2D 色块 circle·#a855ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-34",
-      "desc": "enemy bruiser hpbar, rectangular shape, main color #54e08a, with a status bar, small on screen (62x5), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_bruiser:hpbar",
-        "component": "Shape",
-        "field": "art"
+      "status": "filled",
+      "gen": {
+        "servedPath": "/games/game-103/art/enemy-brute.png"
       },
-      "query": "enemy bruiser hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_bruiser:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 62,
-        "h": 5,
-        "displayW": 62,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy bruiser hpbar」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/enemy-brute",
-      "no": "art-35",
-      "desc": "enemy brute t body, round shape, main color #c9a3ff, defensive turret that senses and attacks enemies in range, small on screen (36x36), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_brute_t2:body",
-        "component": "Sprite",
-        "field": "textureKey"
-      },
-      "query": "enemy brute t body",
-      "placeholder": {
-        "current": "皮肤槽 103/enemy-brute（未填时回退 2D 色块 circle·#c9a3ff）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_brute_t2:body"
-        ]
-      },
-      "spec": {
-        "w": 36,
-        "h": 36,
-        "displayW": 43,
-        "displayH": 43,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy brute t body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-brute（未填时回退 2D 色块 circle·#c9a3ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-36",
-      "desc": "enemy brute t hpbar, rectangular shape, main color #54e08a, with a status bar, small on screen (47x5), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_brute_t2:hpbar",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "enemy brute t hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_brute_t2:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 47,
-        "h": 5,
-        "displayW": 47,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy brute t hpbar」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/enemy-brute",
-      "no": "art-37",
-      "desc": "enemy brute body, round shape, main color #c9a3ff, defensive turret that senses and attacks enemies in range, small on screen (36x36), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_brute:body",
-        "component": "Sprite",
-        "field": "textureKey"
-      },
-      "query": "enemy brute body",
-      "placeholder": {
-        "current": "皮肤槽 103/enemy-brute（未填时回退 2D 色块 circle·#c9a3ff）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_brute:body"
-        ]
-      },
-      "spec": {
-        "w": 36,
-        "h": 36,
-        "displayW": 43,
-        "displayH": 43,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy brute body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-brute（未填时回退 2D 色块 circle·#c9a3ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-38",
-      "desc": "enemy brute hpbar, rectangular shape, main color #54e08a, with a status bar, small on screen (47x5), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_brute:hpbar",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "enemy brute hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_brute:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 47,
-        "h": 5,
-        "displayW": 47,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy brute hpbar」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
+      "provenance": {
+        "path": "/games/game-103/art/enemy-brute.png"
+      }
     },
     {
       "skinKey": "103/enemy-runner",
@@ -1252,406 +469,13 @@
         "transparent": true
       },
       "context": "美术需求：「enemy runner t body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-runner（未填时回退 2D 色块 circle·#ff9a1f）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-40",
-      "desc": "enemy runner t hpbar, rectangular shape, main color #54e08a, with a status bar, small on screen (28x5), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_runner_t2:hpbar",
-        "component": "Shape",
-        "field": "art"
+      "status": "filled",
+      "gen": {
+        "servedPath": "/games/game-103/art/enemy-runner.png"
       },
-      "query": "enemy runner t hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_runner_t2:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 28,
-        "h": 5,
-        "displayW": 28,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy runner t hpbar」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/enemy-runner",
-      "no": "art-41",
-      "desc": "enemy runner body, round shape, main color #ff9a1f, defensive turret that senses and attacks enemies in range, small on screen (18x18), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_runner:body",
-        "component": "Sprite",
-        "field": "textureKey"
-      },
-      "query": "enemy runner body",
-      "placeholder": {
-        "current": "皮肤槽 103/enemy-runner（未填时回退 2D 色块 circle·#ff9a1f）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_runner:body"
-        ]
-      },
-      "spec": {
-        "w": 18,
-        "h": 18,
-        "displayW": 11,
-        "displayH": 11,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy runner body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-runner（未填时回退 2D 色块 circle·#ff9a1f）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-42",
-      "desc": "enemy runner hpbar, rectangular shape, main color #54e08a, with a status bar, small on screen (28x5), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_runner:hpbar",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "enemy runner hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_runner:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 28,
-        "h": 5,
-        "displayW": 28,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy runner hpbar」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/enemy-shambler",
-      "no": "art-43",
-      "desc": "enemy shambler t body, round shape, main color #ff4d5e, defensive turret that senses and attacks enemies in range, small on screen (22x22), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_shambler_t2:body",
-        "component": "Sprite",
-        "field": "textureKey"
-      },
-      "query": "enemy shambler t body",
-      "placeholder": {
-        "current": "皮肤槽 103/enemy-shambler（未填时回退 2D 色块 circle·#ff4d5e）",
-        "source": "procedural",
-        "count": 2,
-        "instances": [
-          "prefab:enemy_shambler_t2:body",
-          "prefab:enemy_shambler_t3:body"
-        ]
-      },
-      "spec": {
-        "w": 22,
-        "h": 22,
-        "displayW": 16,
-        "displayH": 16,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy shambler t body」（预制模板（生成的每个实例共用一套美术）·×2 实例）·2D 平面·当前占位=皮肤槽 103/enemy-shambler（未填时回退 2D 色块 circle·#ff4d5e）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-44",
-      "desc": "enemy shambler t hpbar, rectangular shape, main color #54e08a, with a status bar, small on screen (29x5), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_shambler_t2:hpbar",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "enemy shambler t hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 2,
-        "instances": [
-          "prefab:enemy_shambler_t2:hpbar",
-          "prefab:enemy_shambler_t3:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 29,
-        "h": 5,
-        "displayW": 29,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy shambler t hpbar」（预制模板（生成的每个实例共用一套美术）·×2 实例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-45",
-      "desc": "enemy shambler hpbar, rectangular shape, main color #54e08a, with a status bar, small on screen (29x5), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_shambler:hpbar",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "enemy shambler hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_shambler:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 29,
-        "h": 5,
-        "displayW": 29,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy shambler hpbar」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/enemy-archer",
-      "no": "art-46",
-      "desc": "enemy sniper body, round shape, main color #4de0ff, defensive turret that senses and attacks enemies in range, small on screen (26x26), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_sniper:body",
-        "component": "Sprite",
-        "field": "textureKey"
-      },
-      "query": "enemy sniper body",
-      "placeholder": {
-        "current": "皮肤槽 103/enemy-archer（未填时回退 2D 色块 circle·#4de0ff）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_sniper:body"
-        ]
-      },
-      "spec": {
-        "w": 26,
-        "h": 26,
-        "displayW": 23,
-        "displayH": 23,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy sniper body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-archer（未填时回退 2D 色块 circle·#4de0ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-47",
-      "desc": "enemy sniper hpbar, rectangular shape, main color #54e08a, with a status bar, small on screen (34x5), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_sniper:hpbar",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "enemy sniper hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_sniper:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 34,
-        "h": 5,
-        "displayW": 34,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy sniper hpbar」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/enemy-shambler",
-      "no": "art-48",
-      "desc": "enemy stalker t body, round shape, main color #ff5ea8, defensive turret that senses and attacks enemies in range, small on screen (20x20), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_stalker_t2:body",
-        "component": "Sprite",
-        "field": "textureKey"
-      },
-      "query": "enemy stalker t body",
-      "placeholder": {
-        "current": "皮肤槽 103/enemy-shambler（未填时回退 2D 色块 circle·#ff5ea8）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_stalker_t2:body"
-        ]
-      },
-      "spec": {
-        "w": 20,
-        "h": 20,
-        "displayW": 13,
-        "displayH": 13,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy stalker t body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-shambler（未填时回退 2D 色块 circle·#ff5ea8）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-49",
-      "desc": "enemy stalker t hpbar, rectangular shape, main color #54e08a, with a status bar, small on screen (28x5), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_stalker_t2:hpbar",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "enemy stalker t hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_stalker_t2:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 28,
-        "h": 5,
-        "displayW": 28,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy stalker t hpbar」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/enemy-shambler",
-      "no": "art-50",
-      "desc": "enemy stalker body, round shape, main color #ff5ea8, defensive turret that senses and attacks enemies in range, small on screen (20x20), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_stalker:body",
-        "component": "Sprite",
-        "field": "textureKey"
-      },
-      "query": "enemy stalker body",
-      "placeholder": {
-        "current": "皮肤槽 103/enemy-shambler（未填时回退 2D 色块 circle·#ff5ea8）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_stalker:body"
-        ]
-      },
-      "spec": {
-        "w": 20,
-        "h": 20,
-        "displayW": 13,
-        "displayH": 13,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy stalker body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/enemy-shambler（未填时回退 2D 色块 circle·#ff5ea8）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-51",
-      "desc": "enemy stalker hpbar, rectangular shape, main color #54e08a, with a status bar, small on screen (28x5), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:enemy_stalker:hpbar",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "enemy stalker hpbar",
-      "placeholder": {
-        "current": "2D 色块（box·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:enemy_stalker:hpbar"
-        ]
-      },
-      "spec": {
-        "w": 28,
-        "h": 5,
-        "displayW": 28,
-        "displayH": 5,
-        "transparent": true
-      },
-      "context": "美术需求：「enemy stalker hpbar」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（box·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-52",
-      "desc": "explosion bomb p, round shape, main color #ffa53f, medium size on screen, top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:explosion_bomb:p",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "explosion bomb p",
-      "placeholder": {
-        "current": "2D 色块（circle·#ffa53f）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:explosion_bomb:p"
-        ]
-      },
-      "spec": {
-        "w": 208,
-        "h": 208,
-        "displayW": 208,
-        "displayH": 208,
-        "transparent": true
-      },
-      "context": "美术需求：「explosion bomb p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=2D 色块（circle·#ffa53f）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
+      "provenance": {
+        "path": "/games/game-103/art/enemy-runner.png"
+      }
     },
     {
       "skinKey": "103/gem-gold",
@@ -1680,9 +504,13 @@
         "transparent": true
       },
       "context": "美术需求：「gem gold body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/gem-gold（未填时回退 2D 色块 circle·#ffd23f）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
+      "status": "filled",
+      "gen": {
+        "servedPath": "/games/game-103/art/gem-gold.svg"
+      },
+      "provenance": {
+        "path": "/games/game-103/art/gem-gold.svg"
+      }
     },
     {
       "skinKey": "103/gem-green",
@@ -1711,41 +539,13 @@
         "transparent": true
       },
       "context": "美术需求：「gem green body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/gem-green（未填时回退 2D 色块 circle·#7dff4d）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-55",
-      "desc": "hitfx s, round shape, main color #ffffff, small on screen (4x4), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:hitfx:s0",
-        "component": "Shape",
-        "field": "art"
+      "status": "filled",
+      "gen": {
+        "servedPath": "/games/game-103/art/gem-green.svg"
       },
-      "query": "hitfx s",
-      "placeholder": {
-        "current": "2D 色块（circle·#ffffff）",
-        "source": "procedural",
-        "count": 3,
-        "instances": [
-          "prefab:hitfx:s0",
-          "prefab:hitfx:s1",
-          "prefab:hitfx:s2"
-        ]
-      },
-      "spec": {
-        "w": 4,
-        "h": 4,
-        "displayW": 4,
-        "displayH": 4,
-        "transparent": true
-      },
-      "context": "美术需求：「hitfx s」（预制模板（生成的每个实例共用一套美术）·×3 实例）·2D 平面·当前占位=2D 色块（circle·#ffffff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
+      "provenance": {
+        "path": "/games/game-103/art/gem-green.svg"
+      }
     },
     {
       "skinKey": "103/proj-bomb",
@@ -1805,109 +605,6 @@
         "transparent": true
       },
       "context": "美术需求：「proj missile p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/proj-missile（未填时回退 2D 色块 box·#ff8fe0）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/fx-sting",
-      "no": "art-58",
-      "desc": "proj orbitevo p, round shape, main color #54e08a, medium size on screen, top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:proj_orbitevo:p",
-        "component": "Sprite",
-        "field": "textureKey"
-      },
-      "query": "proj orbitevo p",
-      "placeholder": {
-        "current": "皮肤槽 103/fx-sting（未填时回退 2D 色块 circle·#54e08a）",
-        "source": "procedural",
-        "count": 1,
-        "instances": [
-          "prefab:proj_orbitevo:p"
-        ]
-      },
-      "spec": {
-        "w": 192,
-        "h": 192,
-        "displayW": 192,
-        "displayH": 192,
-        "transparent": true
-      },
-      "context": "美术需求：「proj orbitevo p」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 103/fx-sting（未填时回退 2D 色块 circle·#54e08a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "no": "art-59",
-      "desc": "sparks shock s, round shape, main color #7fd0ff, small on screen (6x6), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:sparks_shock:s0",
-        "component": "Shape",
-        "field": "art"
-      },
-      "query": "sparks shock s",
-      "placeholder": {
-        "current": "2D 色块（circle·#7fd0ff）",
-        "source": "procedural",
-        "count": 16,
-        "instances": [
-          "prefab:sparks_shock:s0",
-          "prefab:sparks_shock:s1",
-          "prefab:sparks_shock:s2",
-          "prefab:sparks_shock:s3",
-          "prefab:sparks_shock:s4",
-          "prefab:sparks_shock:s5",
-          "prefab:sparks_shock:s6",
-          "prefab:sparks_shock:s7"
-        ]
-      },
-      "spec": {
-        "w": 6,
-        "h": 6,
-        "displayW": 6,
-        "displayH": 6,
-        "transparent": true
-      },
-      "context": "美术需求：「sparks shock s」（预制模板（生成的每个实例共用一套美术）·×16 实例）·2D 平面·当前占位=2D 色块（circle·#7fd0ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
-      "provenance": null
-    },
-    {
-      "skinKey": "103/fx-sting",
-      "no": "art-60",
-      "desc": "weapon orbitevo ball, round shape, main color #54e08a, small on screen (24x24), top-down 2d game view, isolated subject, transparent background",
-      "kind": "sprite",
-      "slot": {
-        "entity": "prefab:weapon_orbitevo:ball0",
-        "component": "Sprite",
-        "field": "textureKey"
-      },
-      "query": "weapon orbitevo ball",
-      "placeholder": {
-        "current": "皮肤槽 103/fx-sting（未填时回退 2D 色块 circle·#54e08a）",
-        "source": "procedural",
-        "count": 5,
-        "instances": [
-          "prefab:weapon_orbitevo:ball0",
-          "prefab:weapon_orbitevo:ball1",
-          "prefab:weapon_orbitevo:ball2",
-          "prefab:weapon_orbitevo:ball3",
-          "prefab:weapon_orbitevo:ball4"
-        ]
-      },
-      "spec": {
-        "w": 24,
-        "h": 24,
-        "displayW": 24,
-        "displayH": 24,
-        "transparent": true
-      },
-      "context": "美术需求：「weapon orbitevo ball」（预制模板（生成的每个实例共用一套美术）·×5 实例）·2D 平面·当前占位=皮肤槽 103/fx-sting（未填时回退 2D 色块 circle·#54e08a）·需透明底",
       "status": "needs-art",
       "gen": null,
       "provenance": null
