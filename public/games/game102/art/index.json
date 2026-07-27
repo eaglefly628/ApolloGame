@@ -8,7 +8,12 @@
       "status": "filled",
       "path": "/games/game102/art/cannon-green.png",
       "category": "sprite.cannon",
-      "tags": ["cannon", "green", "sprite", "game102"],
+      "tags": [
+        "cannon",
+        "green",
+        "sprite",
+        "game102"
+      ],
       "style": "cartoon",
       "license": "proprietary",
       "source": "owner-supplied reference (IMG_6063)",
@@ -35,7 +40,12 @@
       "status": "filled",
       "path": "/games/game102/art/cannon-yellow.png",
       "category": "sprite.cannon",
-      "tags": ["cannon", "yellow", "sprite", "game102"],
+      "tags": [
+        "cannon",
+        "yellow",
+        "sprite",
+        "game102"
+      ],
       "style": "cartoon",
       "license": "proprietary",
       "source": "owner-supplied reference (IMG_6063)",
@@ -62,7 +72,12 @@
       "status": "filled",
       "path": "/games/game102/art/cannon-blue.png",
       "category": "sprite.cannon",
-      "tags": ["cannon", "blue", "sprite", "game102"],
+      "tags": [
+        "cannon",
+        "blue",
+        "sprite",
+        "game102"
+      ],
       "style": "cartoon",
       "license": "proprietary",
       "source": "owner-supplied reference (IMG_6063)",
@@ -89,7 +104,12 @@
       "status": "filled",
       "path": "/games/game102/art/cannon-red.png",
       "category": "sprite.cannon",
-      "tags": ["cannon", "red", "sprite", "game102"],
+      "tags": [
+        "cannon",
+        "red",
+        "sprite",
+        "game102"
+      ],
       "style": "cartoon",
       "license": "proprietary",
       "source": "owner-supplied reference (IMG_6063)",
@@ -107,6 +127,171 @@
         "sourceHue": "purple",
         "targetHue": "#e0433f",
         "note": "authoring-time deterministic recolor; luminance/value preserved, hue/sat replaced; baked '40' painted over with body mid-tone for live dynamic overlay"
+      }
+    },
+    {
+      "id": "cannon-tower/red",
+      "type": "texture",
+      "description": "加农炮台精灵 · red · 程序化生成（voxel-proto 底部发射炮）",
+      "status": "filled",
+      "path": "/games/game102/art/cannon-tower-red.png",
+      "category": "sprite.cannon",
+      "tags": [
+        "cannon",
+        "tower",
+        "red",
+        "sprite",
+        "game102",
+        "proto"
+      ],
+      "style": "cartoon",
+      "license": "CC0",
+      "source": "procedural (scripts/game-102-cannon-gen.mjs)",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "png",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      },
+      "provenance": {
+        "method": "procedural-raster (disc/capsule/roundRect + cylindrical shading + cartoon outline)",
+        "generator": "scripts/game-102-cannon-gen.mjs",
+        "tint": "#e0433f",
+        "note": "deterministic; zero external assets/network; barrel recolored per palette, neutral wood carriage/wheels"
+      }
+    },
+    {
+      "id": "cannon-tower/yellow",
+      "type": "texture",
+      "description": "加农炮台精灵 · yellow · 程序化生成（voxel-proto 底部发射炮）",
+      "status": "filled",
+      "path": "/games/game102/art/cannon-tower-yellow.png",
+      "category": "sprite.cannon",
+      "tags": [
+        "cannon",
+        "tower",
+        "yellow",
+        "sprite",
+        "game102",
+        "proto"
+      ],
+      "style": "cartoon",
+      "license": "CC0",
+      "source": "procedural (scripts/game-102-cannon-gen.mjs)",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "png",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      },
+      "provenance": {
+        "method": "procedural-raster (disc/capsule/roundRect + cylindrical shading + cartoon outline)",
+        "generator": "scripts/game-102-cannon-gen.mjs",
+        "tint": "#f2c21e",
+        "note": "deterministic; zero external assets/network; barrel recolored per palette, neutral wood carriage/wheels"
+      }
+    },
+    {
+      "id": "cannon-tower/green",
+      "type": "texture",
+      "description": "加农炮台精灵 · green · 程序化生成（voxel-proto 底部发射炮）",
+      "status": "filled",
+      "path": "/games/game102/art/cannon-tower-green.png",
+      "category": "sprite.cannon",
+      "tags": [
+        "cannon",
+        "tower",
+        "green",
+        "sprite",
+        "game102",
+        "proto"
+      ],
+      "style": "cartoon",
+      "license": "CC0",
+      "source": "procedural (scripts/game-102-cannon-gen.mjs)",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "png",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      },
+      "provenance": {
+        "method": "procedural-raster (disc/capsule/roundRect + cylindrical shading + cartoon outline)",
+        "generator": "scripts/game-102-cannon-gen.mjs",
+        "tint": "#5cb544",
+        "note": "deterministic; zero external assets/network; barrel recolored per palette, neutral wood carriage/wheels"
+      }
+    },
+    {
+      "id": "cannon-tower/blue",
+      "type": "texture",
+      "description": "加农炮台精灵 · blue · 程序化生成（voxel-proto 底部发射炮）",
+      "status": "filled",
+      "path": "/games/game102/art/cannon-tower-blue.png",
+      "category": "sprite.cannon",
+      "tags": [
+        "cannon",
+        "tower",
+        "blue",
+        "sprite",
+        "game102",
+        "proto"
+      ],
+      "style": "cartoon",
+      "license": "CC0",
+      "source": "procedural (scripts/game-102-cannon-gen.mjs)",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "png",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      },
+      "provenance": {
+        "method": "procedural-raster (disc/capsule/roundRect + cylindrical shading + cartoon outline)",
+        "generator": "scripts/game-102-cannon-gen.mjs",
+        "tint": "#2e6cf6",
+        "note": "deterministic; zero external assets/network; barrel recolored per palette, neutral wood carriage/wheels"
+      }
+    },
+    {
+      "id": "cannon-tower/purple",
+      "type": "texture",
+      "description": "加农炮台精灵 · purple · 程序化生成（voxel-proto 底部发射炮）",
+      "status": "filled",
+      "path": "/games/game102/art/cannon-tower-purple.png",
+      "category": "sprite.cannon",
+      "tags": [
+        "cannon",
+        "tower",
+        "purple",
+        "sprite",
+        "game102",
+        "proto"
+      ],
+      "style": "cartoon",
+      "license": "CC0",
+      "source": "procedural (scripts/game-102-cannon-gen.mjs)",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "png",
+        "width": 128,
+        "height": 128,
+        "transparent": true
+      },
+      "provenance": {
+        "method": "procedural-raster (disc/capsule/roundRect + cylindrical shading + cartoon outline)",
+        "generator": "scripts/game-102-cannon-gen.mjs",
+        "tint": "#8b5cf6",
+        "note": "deterministic; zero external assets/network; barrel recolored per palette, neutral wood carriage/wheels"
       }
     }
   ]

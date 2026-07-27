@@ -10,6 +10,7 @@ import { QueuedInputSource } from '@net/index.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
 import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assembly.js';
 import type { Transform3D, Pivot3D } from '@engine/protocol/components.js';
+import { VOXEL_SURFACES, VOXEL_SURFACE_NAMES, type VoxelSurface } from './voxel-surfaces.js';
 
 const N = 12;             // 立方边长（揭示模式·适中→剥到阈值可现形·实例化撑得住）
 const PITCH = 22;
@@ -24,12 +25,14 @@ const GOLD_TINT = 0xffd24a; // 雕像色（受保护·gold）
 const TRAVEL_MS = 260;    // 子弹飞抵（爽快版·快）
 const FRAG_N = 6;
 const GRAV = 900;
+// sprite = 炮台精灵资产的站点绝对路径（已登记 public/games/game102/art/index.json·id `cannon-tower/<color>`·
+//   由 scripts/game-102-cannon-gen.mjs 程序化生成·CC0）。DOM 炮图标直接 background-image 消费此 URL。
 const PALETTE = [        // 总 5 色·但同时只有 3 个发射槽（稀缺调度）
-  { name: '红', tint: 0xe0433f, css: '#e0433f' },
-  { name: '黄', tint: 0xf2c21e, css: '#f2c21e' },
-  { name: '绿', tint: 0x5cb544, css: '#5cb544' },
-  { name: '蓝', tint: 0x2e6cf6, css: '#2e6cf6' },
-  { name: '紫', tint: 0x8b5cf6, css: '#8b5cf6' },
+  { name: '红', tint: 0xe0433f, css: '#e0433f', sprite: '/games/game102/art/cannon-tower-red.png' },
+  { name: '黄', tint: 0xf2c21e, css: '#f2c21e', sprite: '/games/game102/art/cannon-tower-yellow.png' },
+  { name: '绿', tint: 0x5cb544, css: '#5cb544', sprite: '/games/game102/art/cannon-tower-green.png' },
+  { name: '蓝', tint: 0x2e6cf6, css: '#2e6cf6', sprite: '/games/game102/art/cannon-tower-blue.png' },
+  { name: '紫', tint: 0x8b5cf6, css: '#8b5cf6', sprite: '/games/game102/art/cannon-tower-purple.png' },
 ];
 const SLOT_N = 3;         // 发射槽数（< 颜色数 → 你得快速换槽对齐这一面的色）
 // 6 面朝相机(+Z)的目标欧拉角（idx 循环）。
@@ -37,8 +40,6 @@ const ORIENT: [number, number][] = [
   [0, 0], [0, -Math.PI / 2], [0, -Math.PI], [0, -Math.PI * 1.5], [-Math.PI / 2, 0], [Math.PI / 2, 0],
 ];
 const PLATE_Y = -MAXC * 1.8, PLATE_HALF = MAXC * 1.35, PLATE_TH = 18; // 底部接碎片的盘子
-// 炮台图标(game-icons pirate-cannon·仅图形路径)→ 作 CSS mask·背景色染成炮色。
-const CANNON_MASK = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="#fff" d="M406.4 67.25c-2.1 0-4 .8-5.7 1.9-4.3 2.9-7.6 8.4-.8 18.6l53.4 79.85c6.8 10.2 13.2 9.3 17.5 6.4 4.4-2.9 7.7-8.4.9-18.6l-53.5-79.85c-4.2-6.4-8.3-8.4-11.8-8.3zM392 108.4l-141.2 88.5c4.6 12.4 12.1 26.2 21.1 38.8l1.8 2.4a24 24 0 0 1 3.6-.3 24 24 0 0 1 22.2 15h21.6l109.2-87.2zm-156.8 98.3l-99.1 62.2c4.1 17.3 11.5 33.6 21.7 47.9h54.5v-64h42.8a24 24 0 0 1 3-5.4c-.3-.4-.6-.9-.9-1.3-9-12.6-16.7-26.1-22-39.4zm-4.9 64.1v64h-64v64h-64v46h209.1c-6.9-8.5-11.1-19.3-11.1-31 0-23.9 17.3-43.9 40-48.2v-94.8zm-110.2 8.1l-34.2 21.5c-25.6 18.3-12.3 58.4 11.54 80.4h50.86v-46.6c-12.9-16.3-22.6-35.1-28.2-55.3zm309.2 39.9c-17.2 0-31 13.8-31 31 0 5.6 1.4 10.8 4 15.3 10.7 1 20.4 5.6 28 12.5 7-6.4 16-10.8 25.9-12.3 2.6-4.5 4.1-9.8 4.1-15.5 0-17.2-13.8-31-31-31zM66.66 370.9c-3.61 4-8.24 7.8-13.57 11-11.26 6.8-25.19 11.1-35.41 11.4l.58 18c14.31-.5 30.29-5.6 44.18-14 5.38-3.3 10.5-7.1 14.96-11.5-4-4.6-7.61-9.6-10.74-14.9zm282.64 11.9c-17.2 0-31 13.8-31 31s13.8 31 31 31c3.2 0 6.2-.5 9-1.3-6.2-8.3-10-18.6-10-29.7 0-11.1 3.8-21.4 10-29.7-2.8-.8-5.8-1.3-9-1.3zm48 0c-17.2 0-31 13.8-31 31s13.8 31 31 31 31-13.8 31-31-13.8-31-31-31zm66 0c-8.7 0-16.5 3.5-22.1 9.2 3.2 6.6 5.1 14 5.1 21.8 0 7.8-1.9 15.2-5.1 21.8 5.6 5.7 13.4 9.2 22.1 9.2 17.2 0 31-13.8 31-31s-13.8-31-31-31z"/></svg>');
 const SIDES: { n: [number, number, number]; axis: number; val: number; ua: number; ub: number }[] = [
   { n: [0, 0, 1],  axis: 2, val: N - 1, ua: 0, ub: 1 },
   { n: [0, 0, -1], axis: 2, val: 0,     ua: 0, ub: 1 },
@@ -65,7 +66,9 @@ const vid = (i: number, j: number, k: number): string => `v-${i}-${j}-${k}`;
 const idx2pos = (i: number): number => (i - (N - 1) / 2) * PITCH;
 // ★ 实例化友好：Mesh3D voxelTex（P3D 大规模渲染入库·同款体素归批 InstancedMesh）→ 立方可又大又细。
 //   **不挂 Material3D**（挂了会退化成单 mesh/格·卡且做不大·见 three-renderer:312）。观感靠 GTAO/post 出厚度。
-const voxMesh = (t: number): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: shade(t, 0.82), voxelTex: { top: t, side: shade(t, 0.8), pattern: 'plain', tile: VOX } });
+//   表面观感走 voxel-surfaces 预设配方（数据驱动·闭集·同 (surface,color) 一批 → 不破归批）。
+let voxSurface: VoxelSurface = 'gem';  // 默认宝石感（当前展示态·下方按钮可循环切换）
+const voxMesh = (t: number): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: shade(t, 0.82), voxelTex: VOXEL_SURFACES[voxSurface](t) });
 // ── 渲染样式集（instancing-safe·只切后处理·GTAO/bloom/暗角/分级）——保持实例化不破·大立方也能切 ──
 type Style = { name: string; post: Record<string, unknown> };
 const STYLES: Style[] = [
@@ -164,13 +167,29 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   styleBtn.onclick = () => applyStyle(styleIdx + 1);
   wrapper.appendChild(styleBtn);
 
+  // 体素表面材质预设切换（提速块 / 宝石 / 素面·循环）——只换 voxelTex 参数配方·同款仍归批·实例化不破。
+  const surfBtn = el('button', 'position:absolute;right:8px;top:100px;z-index:20;pointer-events:auto;background:#1a2740ee;color:#cfe;border:1px solid #35507a;border-radius:8px;padding:6px 12px;cursor:pointer;font:700 14px system-ui;box-shadow:0 2px 8px #0007;', `🧊 ${voxSurface}`);
+  surfBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+  const SURF_LABEL: Record<VoxelSurface, string> = { speed: '提速块', gem: '宝石', matte: '素面' };
+  surfBtn.onclick = () => {
+    const cur = VOXEL_SURFACE_NAMES.indexOf(voxSurface);
+    voxSurface = VOXEL_SURFACE_NAMES[(cur + 1) % VOXEL_SURFACE_NAMES.length];
+    surfBtn.textContent = `🧊 ${SURF_LABEL[voxSurface]}`;
+    for (const id of rendered) {                        // 就地换所有已渲染体素的表面配方（不重置对局）
+      engine.world.removeComponent(id, 'Mesh3D');
+      engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(tintOf(id)) } as never);
+    }
+  };
+  surfBtn.textContent = `🧊 ${SURF_LABEL[voxSurface]}`;
+  wrapper.appendChild(surfBtn);
+
   // ── 底部：3 发射炮台(上·炮台图标染当前色·点=发射+选中) + 5 色备选(下·点装入选中炮·三炮互斥) ──
   const bottom = el('div', 'position:absolute;left:0;right:0;bottom:16px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;');
   const slotRow = el('div', 'display:flex;gap:20px;pointer-events:auto;');
   const slotEls: HTMLElement[] = []; const slotIcon: HTMLElement[] = []; const slotNum: HTMLElement[] = [];
   for (let i = 0; i < SLOT_N; i++) {
     const s = el('div', 'position:relative;width:78px;height:78px;border-radius:16px;background:#0c1a30;cursor:pointer;user-select:none;transition:transform .06s,box-shadow .1s;');
-    const icon = el('div', `position:absolute;inset:9px;-webkit-mask:url("${CANNON_MASK}") center/contain no-repeat;mask:url("${CANNON_MASK}") center/contain no-repeat;`);
+    const icon = el('div', 'position:absolute;inset:7px;background-position:center;background-repeat:no-repeat;background-size:contain;filter:drop-shadow(0 2px 3px #0009);');
     const num = el('div', 'position:absolute;right:5px;bottom:2px;color:#fff;font:800 17px system-ui;text-shadow:0 1px 3px #000,0 0 4px #000;');
     s.appendChild(icon); s.appendChild(num);
     const idx = i;
@@ -202,7 +221,8 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     chips.forEach((ch, c) => { ch.textContent = String(ammo[c]); ch.style.opacity = ammo[c] > 0 ? '1' : '0.28'; }); // 显每色剩余弹
     slotEls.forEach((s, i) => {
       const col = PALETTE[slots[i]].css;
-      slotIcon[i].style.background = col; slotNum[i].textContent = String(ammo[slots[i]]);
+      slotIcon[i].style.backgroundImage = `url("${PALETTE[slots[i]].sprite}")`; slotNum[i].textContent = String(ammo[slots[i]]); // 按槽色选对应色炮台精灵
+
       if (i === selSlot) { s.style.boxShadow = `0 0 0 4px #ffd24a,0 0 22px 6px ${col}cc`; s.style.transform = 'scale(1.1)'; s.style.background = '#16233d'; }
       else { s.style.boxShadow = '0 4px 10px #0008'; s.style.transform = 'scale(1)'; s.style.background = '#0c1a30'; }
     });
