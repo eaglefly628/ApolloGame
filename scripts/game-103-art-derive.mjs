@@ -17,19 +17,50 @@ const prev = existsSync(LEDGER_FILE) ? JSON.parse(readFileSync(LEDGER_FILE, 'utf
 const ledger = mergeLedger(prev, deriveRequirements({ entities: bp.entities }, { game: 'game-103' }));
 
 const OUT = process.env.ARTREQ_OUT || join(tmpdir(), 'game-103-artreq');
-// 素材库=「有意义的美术资产」清单（owner 反馈：创作台里 59 个纯色块·多是内部几何非游戏素材）。
-// 全实体扫描会把血条/网格线/光环/粒子/核/多敌变体逐个当独立槽 → 噪声。收敛为**每个唯一皮肤（skinKey）一行**：
-//  ① 丢无 skinKey 的纯几何（血条/网格/光环/粒子/障碍帽/核=程序化渲染件·无需美术图）；
-//  ② 同一皮肤被多实体（如各敌变体共用 enemy-brute）复用 → 只留代表行（首见·保编号）。
-// → 库里剩「玩家/各敌/Boss/三宝石/各武器弹/障碍」等一眼认得的真资产。纯 VFX（冲击波粒子/敌弹）走程序化·不入库。
+// 素材库=**完整但干净**的美术清单（owner「要更全·含背景」+ 反前次「59 个纯色块·多是内部几何」）。规则：
+//  ① 有 skinKey 的实体：按 skinKey 去重（多敌变体共用一张图→一行）——玩家/各敌/Boss/三宝石/各武器弹/障碍。
+//  ② 无 skinKey 的**有意义程序化视觉**：每类归并一行（敌弹/冲击波/爆炸/命中火花）——现走程序化·但美术可换皮，入库列为需求。
+//  ③ 补全场景层：**战场背景**（art-spec §6·现用几何网格占位）。
+//  ④ 丢纯 UI/几何噪声：血条/网格线实例/光环/内芯/障碍帽/计分区（程序化·无需独立美术图）。
+const KEEP_VFX = [
+  { re: /ebolt/, id: 'vfx:enemy-bolt', name: '敌方子弹（射手弹幕）', desc: 'enemy projectile bolt, glowing crimson hostile energy orb with red halo, top-down 2d, isolated subject, transparent background', w: 20, h: 20 },
+  { re: /sparks_shock|proj_shock/, id: 'vfx:shock', name: '冲击波特效', desc: 'shockwave nova burst, radial cyan energy particles exploding outward, top-down 2d, isolated subject, transparent background', w: 120, h: 120 },
+  { re: /explosion/, id: 'vfx:explosion', name: '炸弹爆炸特效', desc: 'bomb explosion blast, orange fireball ring, top-down 2d, isolated subject, transparent background', w: 208, h: 208 },
+  { re: /hitfx/, id: 'vfx:hit-spark', name: '命中火花', desc: 'hit spark impact, tiny white-yellow flash burst, top-down 2d, isolated subject, transparent background', w: 12, h: 12 },
+];
+const DROP_RE = /hpbar|:inner|-core\b|core$|glow|gridh-|gridv-|obstacle-cap|killbox|collector/;
 {
-  const seenSkin = new Set();
-  ledger.rows = ledger.rows.filter((r) => {
-    if (!r.skinKey) return false;
-    if (seenSkin.has(r.skinKey)) return false;
-    seenSkin.add(r.skinKey);
-    return true;
+  const seen = new Set();
+  const out = [];
+  for (const r of ledger.rows) {
+    if (r.skinKey) {
+      if (seen.has(r.skinKey)) continue;
+      seen.add(r.skinKey); out.push(r); continue;
+    }
+    const e = r.slot?.entity || '';
+    if (DROP_RE.test(e)) continue;                      // 纯几何/子件（含敌弹 glow）→ 丢
+    const vfx = KEEP_VFX.find((v) => v.re.test(e));
+    if (!vfx) continue;                                 // 其余无名几何 → 丢
+    if (seen.has(vfx.id)) continue;                     // 同类 VFX 多实例 → 只留一行
+    seen.add(vfx.id);
+    r.query = vfx.name; r.desc = vfx.name;
+    r.context = `美术需求：${vfx.name}（程序化视觉·可换皮）·${vfx.desc}`;
+    r.prompt = vfx.desc;
+    r.spec = { ...(r.spec || {}), w: vfx.w, h: vfx.h, displayW: vfx.w, displayH: vfx.h, transparent: true };
+    out.push(r);
+  }
+  // ③ 战场背景槽（game 现用几何网格·art-spec §6 要背景/地砖·库里应列出为需求）。
+  out.push({
+    no: 'art-bg', kind: 'bg', skinKey: '103/field-bg',
+    slot: { entity: 'field-background', component: 'Tilemap', field: 'art' },
+    query: '战场地面背景', desc: '战场地面背景',
+    prompt: 'top-down survival arena ground, dark tileable terrain with subtle texture, seamless repeat, no subject',
+    spec: { w: 512, h: 512, displayW: 512, displayH: 512, transparent: false },
+    placeholder: { current: '几何网格线（程序化·gridh/gridv）', source: 'procedural', count: 1 },
+    context: '美术需求：战场地面背景（可平铺 tile·art-spec §6）·当前=世界网格线占位·填后地面贴图化',
+    status: 'needs-art',
   });
+  ledger.rows = out;
   ledger.count = ledger.rows.length;
   ledger.instances = ledger.rows.length;
   // 状态/路径对齐真相：以游戏实载 index.json（filled 资产）回填 status + provenance.path，令徽标(已填回/待配)与

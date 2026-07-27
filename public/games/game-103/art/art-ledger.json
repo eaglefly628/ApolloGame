@@ -2,8 +2,8 @@
   "version": 1,
   "game": "game-103",
   "mode": "requirements",
-  "count": 17,
-  "instances": 17,
+  "count": 22,
+  "instances": 22,
   "rows": [
     {
       "skinKey": "103/player",
@@ -608,6 +608,159 @@
       "status": "needs-art",
       "gen": null,
       "provenance": null
+    },
+    {
+      "no": "art-64",
+      "desc": "敌方子弹（射手弹幕）",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:ebolt_archer_t2:p",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "敌方子弹（射手弹幕）",
+      "placeholder": {
+        "current": "2D 色块（circle·#ff1030）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:ebolt_archer_t2:p"
+        ]
+      },
+      "spec": {
+        "w": 20,
+        "h": 20,
+        "displayW": 20,
+        "displayH": 20,
+        "transparent": true
+      },
+      "context": "美术需求：敌方子弹（射手弹幕）（程序化视觉·可换皮）·enemy projectile bolt, glowing crimson hostile energy orb with red halo, top-down 2d, isolated subject, transparent background",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "enemy projectile bolt, glowing crimson hostile energy orb with red halo, top-down 2d, isolated subject, transparent background"
+    },
+    {
+      "no": "art-92",
+      "desc": "炸弹爆炸特效",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:explosion_bomb:p",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "炸弹爆炸特效",
+      "placeholder": {
+        "current": "2D 色块（circle·#ffa53f）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:explosion_bomb:p"
+        ]
+      },
+      "spec": {
+        "w": 208,
+        "h": 208,
+        "displayW": 208,
+        "displayH": 208,
+        "transparent": true
+      },
+      "context": "美术需求：炸弹爆炸特效（程序化视觉·可换皮）·bomb explosion blast, orange fireball ring, top-down 2d, isolated subject, transparent background",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "bomb explosion blast, orange fireball ring, top-down 2d, isolated subject, transparent background"
+    },
+    {
+      "no": "art-93",
+      "desc": "命中火花",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:hitfx:s0",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "命中火花",
+      "placeholder": {
+        "current": "2D 色块（circle·#ffffff）",
+        "source": "procedural",
+        "count": 3,
+        "instances": [
+          "prefab:hitfx:s0",
+          "prefab:hitfx:s1",
+          "prefab:hitfx:s2"
+        ]
+      },
+      "spec": {
+        "w": 12,
+        "h": 12,
+        "displayW": 12,
+        "displayH": 12,
+        "transparent": true
+      },
+      "context": "美术需求：命中火花（程序化视觉·可换皮）·hit spark impact, tiny white-yellow flash burst, top-down 2d, isolated subject, transparent background",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "hit spark impact, tiny white-yellow flash burst, top-down 2d, isolated subject, transparent background"
+    },
+    {
+      "no": "art-96",
+      "desc": "冲击波特效",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:proj_shock:p",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "冲击波特效",
+      "placeholder": {
+        "current": "2D 色块（circle·#7fd0ff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:proj_shock:p"
+        ]
+      },
+      "spec": {
+        "w": 120,
+        "h": 120,
+        "displayW": 120,
+        "displayH": 120,
+        "transparent": true
+      },
+      "context": "美术需求：冲击波特效（程序化视觉·可换皮）·shockwave nova burst, radial cyan energy particles exploding outward, top-down 2d, isolated subject, transparent background",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "shockwave nova burst, radial cyan energy particles exploding outward, top-down 2d, isolated subject, transparent background"
+    },
+    {
+      "no": "art-bg",
+      "kind": "bg",
+      "skinKey": "103/field-bg",
+      "slot": {
+        "entity": "field-background",
+        "component": "Tilemap",
+        "field": "art"
+      },
+      "query": "战场地面背景",
+      "desc": "战场地面背景",
+      "prompt": "top-down survival arena ground, dark tileable terrain with subtle texture, seamless repeat, no subject",
+      "spec": {
+        "w": 512,
+        "h": 512,
+        "displayW": 512,
+        "displayH": 512,
+        "transparent": false
+      },
+      "placeholder": {
+        "current": "几何网格线（程序化·gridh/gridv）",
+        "source": "procedural",
+        "count": 1
+      },
+      "context": "美术需求：战场地面背景（可平铺 tile·art-spec §6）·当前=世界网格线占位·填后地面贴图化",
+      "status": "needs-art"
     }
   ]
 }
