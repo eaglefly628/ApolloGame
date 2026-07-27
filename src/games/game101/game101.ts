@@ -137,7 +137,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       if (coveredCells.has(g.cell) || cells[g.cell]) continue;
       const cd = (g.cooldownSec ?? 0) > 0 && res(`charge_${g.id}`) < 1 ? timerLeft(`cd_${g.id}`) : undefined;
       const gsk = skinMap[g.sprite];
-      cells[g.cell] = { emoji: g.emoji, gen: g.id, ...(gsk ? { skin: gsk } : {}), ...(cd ? { cd } : {}) };
+      cells[g.cell] = { emoji: g.emoji, gen: g.id, ...(gsk ? { skin: gsk } : {}), ...(cd ? { cd, cdMax: g.cooldownSec } : {}) };
     }
     const onBoard = new Set<string>(); // 板上现有的物品模板集（订单可交付判定）
     const cellTpl: (string | null)[] = new Array(cells.length).fill(null);
