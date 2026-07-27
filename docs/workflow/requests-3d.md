@@ -46,7 +46,7 @@
 > **建议（P3D 裁·opt-in·向后兼容）**：给 `Material3D` 加 `alphaTest?`(cutout·硬边·透明像素 discard·无排序问题·最适合桌面透明角/贴花) + 可选 `transparent?`(软混合·配 opacity)；`buildPbrMaterial` 据此设 `m.alphaTest`/`m.transparent`。缺省不设=现行不透明行为零变。**顺带**：可让台账 `spec.transparent:true` 在 3D 消费端自动置 `transparent`（对齐 owner 直觉·2D/3D 声明一致）。
 > **PE-C 侧就绪**：`build3d.ts` table-surface 已在册；API 落地后我加 `alphaTest`（或 `transparent`）一字段即透。**workaround（不等 P3D）**：owner 改出**不透明**顶视桌图（四周深色/环境烤进图·填满 16:9），`spec.transparent:false` 即正常显（现台账已 false）。
 
-## REQ-3D-资产就绪自动重渲 · 静态场景 × 异步贴图迟到 = 脏帧跳渲吞掉换图帧 · [2026-07-17] · PE-B 提 → P3D 评审 · status: open · 类型: 渲染健壮（W1-C 脏帧跳渲的盲区）
+## REQ-3D-资产就绪自动重渲 · 静态场景 × 异步贴图迟到 = 脏帧跳渲吞掉换图帧 · [2026-07-17] · PE-B 提 → P3D · status: **✅ done（P3D 2026-07-24·渲染器自愈 AssetReadyTracker·已推 c55a71aa；2026-07-26 被 game-103 提交 d47ee942 误删→重新落地）** · 类型: 渲染健壮（W1-C 脏帧跳渲的盲区）
 
 > **现象（game-b S3 实证）**：全静态 3D 场景（无动画/无相机动）+ Material3D.map 贴图异步 fetch 迟到——`ensurePbrMesh` 在贴图就绪后按 mode 正确重建了 mesh，但 `renderSig`（位姿/相机/灯/后处理…）不含资产就绪态 → 跳渲判「画面没变」→ 新贴图永不上屏（canvas 停在旧帧）。动态场景（game-z 恒动）撞不到此坑，纯静态陈列场景必撞。
 > **game-b 侧 workaround 在案**：宿主胶水 `assets.loadAll()` 收尾后调公开 `renderer.invalidate()`（`src/games/game-b/{assets,game-b}.ts`·可参考）。
