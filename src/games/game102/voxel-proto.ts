@@ -74,11 +74,20 @@ function rotVec(x: number, y: number, z: number, rx: number, ry: number): [numbe
 }
 const shortDelta = (a: number, b: number): number => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; };
 const vid = (i: number, j: number, k: number): string => `v-${i}-${j}-${k}`;
-// 普通格 = **纯平色·无描边·无贴图纹**（owner：任何尺寸都不要缝合线·一整片平滑面）→ 同色相邻无缝融成一片·靠真几何+光影出体积。
-const voxMesh = (t: number): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: t });
+// 普通格：描边 = 深 edgeTint + 体素略小于 PITCH 留细缝（方块间那根线）；纹理 = **每色一套主题材质**（instancing 安全·不破归批）。
+//   owner 主题：红=火焰 / 蓝=水 / 黄=黄金 / 紫=紫罗兰 / 绿=草木。真实火/水动图需 Material3D 逐格(破实例化·限尺寸)→ 此处用程序化 voxelTex 近似。
+const CELLSZ = PITCH - 3; // 体素渲染边长 < PITCH(33) → 细缝 = 像素格分隔线（描边）
+const COLOR_TEX: ((t: number) => Record<string, unknown>)[] = [
+  (t) => ({ top: shade(t, 1.3), side: shade(t, 0.7), top2: shade(t, 1.6), trim: 0xffc79a, pattern: 'crystal', tile: 30 }),  // 0 红=火焰（暖·亮闪）
+  (t) => ({ top: shade(t, 1.24), side: shade(t, 0.68), top2: shade(t, 1.65), trim: 0xfff0b0, pattern: 'crystal', tile: 22 }), // 1 黄=黄金（金属高光）
+  (t) => ({ top: shade(t, 1.1), side: shade(t, 0.8), pattern: 'grass', tile: 22 }),                                          // 2 绿=草木
+  (t) => ({ top: shade(t, 1.18), side: shade(t, 0.86), top2: shade(t, 1.42), trim: 0xcfeaff, pattern: 'crystal', tile: 40 }), // 3 蓝=水（清凉波光）
+  (t) => ({ top: shade(t, 1.2), side: shade(t, 0.8), top2: shade(t, 1.46), trim: 0xe6ccff, pattern: 'crystal', tile: 26 }),  // 4 紫=紫罗兰（宝石）
+];
+const voxMesh = (t: number, ci = 0): Record<string, unknown> => ({ shape: 'box', width: CELLSZ, height: CELLSZ, depth: CELLSZ, frontTint: t, backTint: t, edgeTint: shade(t, 0.6), voxelTex: COLOR_TEX[ci % COLOR_TEX.length](t) });
 // 功能格贴图 key（美术台账·数据映射）→ 当 emissiveMap（透明底白符号·只符号处发光·底色=方块本身调色板色透出）。
 const CELL_ICON_KEY: Record<CellKind, string> = { power: 'cell-icon/fire', time: 'cell-icon/time', bomb: 'cell-icon/bomb', ammo: 'cell-icon/ammo' };
-const gemMesh = (): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: 0x9ff2ff, backTint: 0x9ff2ff, edgeTint: GEM_EDGE, voxelTex: { top: 0xd8ffff, side: 0x7fe0ff, top2: 0xffffff, trim: 0xffffff, pattern: 'crystal', tile: 8 } });
+const gemMesh = (): Record<string, unknown> => ({ shape: 'box', width: CELLSZ, height: CELLSZ, depth: CELLSZ, frontTint: 0x9ff2ff, backTint: 0x9ff2ff, edgeTint: GEM_EDGE, voxelTex: { top: 0xd8ffff, side: 0x7fe0ff, top2: 0xffffff, trim: 0xffffff, pattern: 'crystal', tile: 20 } });
 type Style = { name: string; post: Record<string, unknown> };
 const STYLES: Style[] = [
   { name: '厚AO', post: { ao: { intensity: 1.8, radius: 7 }, vignette: { intensity: 0.38 }, aa: true } },
@@ -159,7 +168,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     if (!present.has(vid(i, j, k))) return false;
     return [[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]].some(([a, b, c]) => !inB(a) || !inB(b) || !inB(c) || !present.has(vid(a, b, c)));
   };
-  const meshOf = (id: string): Record<string, unknown> => gemSet.has(id) ? gemMesh() : voxMesh(tintOf(id)); // 功能格底盒=本色·图标走 Material3D emissiveMap
+  const meshOf = (id: string): Record<string, unknown> => gemSet.has(id) ? gemMesh() : voxMesh(tintOf(id), colorAt.get(id) ?? 0); // 每色一套主题材质·功能格底盒同(图标走 emissiveMap)
   const materialOf = (id: string): Record<string, unknown> | null => { const k = cellType.get(id); return k ? { preset: 'matte', color: tintOf(id), emissive: 0xffffff, emissiveIntensity: 1.35, emissiveMap: CELL_ICON_KEY[k] } : null; }; // 底色=本色·白符号发光叠加
 
   // ── 对局状态 ──
