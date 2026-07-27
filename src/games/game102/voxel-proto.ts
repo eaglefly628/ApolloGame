@@ -85,6 +85,15 @@ const COLOR_TEX: ((t: number) => Record<string, unknown>)[] = [
   (t) => ({ top: shade(t, 1.2), side: shade(t, 0.8), top2: shade(t, 1.46), trim: 0xe6ccff, pattern: 'crystal', tile: 26 }),  // 4 紫=紫罗兰（宝石）
 ];
 const voxMesh = (t: number, ci = 0): Record<string, unknown> => ({ shape: 'box', width: CELLSZ, height: CELLSZ, depth: CELLSZ, frontTint: t, backTint: t, edgeTint: shade(t, 0.6), voxelTex: COLOR_TEX[ci % COLOR_TEX.length](t) });
+// 真材质库（owner「限尺寸」·仅小关 N≤6 用·每格 Material3D 单 mesh）：红=发光火/黄=真金/蓝=玻璃水/紫=光泽紫/绿=草地(无PBR·退 voxelTex)。
+const COLOR_MAT: (Record<string, unknown> | null)[] = [
+  { preset: 'emissive', color: 0x4a1206, emissive: 0xff5a1e, emissiveIntensity: 1.5 }, // 0 红=火焰
+  { preset: 'gold' },                                                                   // 1 黄=黄金
+  null,                                                                                 // 2 绿=草地（voxelTex grass）
+  { preset: 'glass', color: 0x2e6cf6 },                                                 // 3 蓝=水（玻璃透光）
+  { preset: 'plastic', color: 0x8b5cf6, roughness: 0.24 },                              // 4 紫=紫罗兰（光泽）
+];
+const plainBox = (t: number): Record<string, unknown> => ({ shape: 'box', width: CELLSZ, height: CELLSZ, depth: CELLSZ, frontTint: t, backTint: t, edgeTint: shade(t, 0.6) });
 // 功能格贴图 key（美术台账·数据映射）→ 当 emissiveMap（透明底白符号·只符号处发光·底色=方块本身调色板色透出）。
 const CELL_ICON_KEY: Record<CellKind, string> = { power: 'cell-icon/fire', time: 'cell-icon/time', bomb: 'cell-icon/bomb', ammo: 'cell-icon/ammo' };
 const gemMesh = (): Record<string, unknown> => ({ shape: 'box', width: CELLSZ, height: CELLSZ, depth: CELLSZ, frontTint: 0x9ff2ff, backTint: 0x9ff2ff, edgeTint: GEM_EDGE, voxelTex: { top: 0xd8ffff, side: 0x7fe0ff, top2: 0xffffff, trim: 0xffffff, pattern: 'crystal', tile: 20 } });
@@ -168,8 +177,19 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     if (!present.has(vid(i, j, k))) return false;
     return [[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]].some(([a, b, c]) => !inB(a) || !inB(b) || !inB(c) || !present.has(vid(a, b, c)));
   };
-  const meshOf = (id: string): Record<string, unknown> => gemSet.has(id) ? gemMesh() : voxMesh(tintOf(id), colorAt.get(id) ?? 0); // 每色一套主题材质·功能格底盒同(图标走 emissiveMap)
-  const materialOf = (id: string): Record<string, unknown> | null => { const k = cellType.get(id); return k ? { preset: 'matte', color: tintOf(id), emissive: 0xffffff, emissiveIntensity: 1.35, emissiveMap: CELL_ICON_KEY[k] } : null; }; // 底色=本色·白符号发光叠加
+  // owner「真材质库·限尺寸」：小关(N≤6)覆盖格用真 PBR(Material3D 单 mesh)·大关退实例化 voxelTex（真 PBR 归批=引擎缺口·已提 P3D）。
+  const richMat = N <= 6;
+  const meshOf = (id: string): Record<string, unknown> => {
+    if (gemSet.has(id)) return gemMesh();
+    const ci = colorAt.get(id) ?? 0;
+    return richMat && ci !== 2 && COLOR_MAT[ci] ? plainBox(tintOf(id)) : voxMesh(tintOf(id), ci); // 富材质格几何由 Material3D 上色·绿=草地走 voxelTex
+  };
+  const materialOf = (id: string): Record<string, unknown> | null => {
+    const k = cellType.get(id);
+    if (k) return { preset: 'matte', color: tintOf(id), emissive: 0xffffff, emissiveIntensity: 1.35, emissiveMap: CELL_ICON_KEY[k] }; // 功能格：本色底 + 图标发光
+    const ci = colorAt.get(id) ?? 0;
+    return richMat && ci !== 2 ? COLOR_MAT[ci] : null; // 富材质关的非绿覆盖格 → 真材质
+  };
 
   // ── 对局状态 ──
   let currentColor = 0;
