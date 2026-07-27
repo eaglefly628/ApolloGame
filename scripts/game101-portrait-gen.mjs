@@ -103,4 +103,32 @@ const idxPath = join(ART, 'index.json');
 const idx = existsSync(idxPath) ? JSON.parse(readFileSync(idxPath, 'utf8')) : { version: 1, assets: [] };
 idx.assets = (idx.assets || []).filter((a) => !/^cust_portrait_/.test(a.id)).concat(assets);
 writeFileSync(idxPath, JSON.stringify(idx, null, 2) + '\n');
-console.error('[game101-portrait-gen] wrote', CHARS.length, 'portraits + index.json（cust_portrait_1..' + CHARS.length + '）');
+
+// 回写 art-ledger.json：把 6 位立绘作为**台账行**并入（美术台账读此文件·owner 可走替换管线换图）。
+// 按 skinKey 去重(重跑幂等)·no 编号接在既有 sprite 行之后。人工精调 prompt 供真出图。
+const PROMPT = {
+  zhou: 'cozy 2.5D cartoon half-body portrait of a sunny young fisherman, tan skin, dark hair with a blue bandana, friendly grin, warm harbor palette, soft lighting, transparent-ready',
+  chen: 'cozy 2.5D cartoon half-body portrait of a kindly middle-aged handyman, tan skin, short greying hair under a work cap, short beard, warm smile, warm harbor palette',
+  su: 'cozy 2.5D cartoon half-body portrait of a gentle young urban woman, fair skin, long wavy brown hair, soft smile, warm coral palette, soft lighting',
+  linxia: 'cozy 2.5D cartoon half-body portrait of the heroine, a calm woman who moved back home, fair skin, long dark-brown hair, serene expression, warm amber palette',
+  guodong: 'cozy 2.5D cartoon half-body portrait of a stern elderly father, greying hair, round glasses, reserved expression, muted blue palette',
+  aya: 'cozy 2.5D cartoon half-body portrait of a lively young girl, fair skin, orange twin-tail hair, cheerful grin, playful violet palette',
+};
+const ledPath = join(ART, 'art-ledger.json');
+if (existsSync(ledPath)) {
+  const led = JSON.parse(readFileSync(ledPath, 'utf8'));
+  led.rows = led.rows || [];
+  const maxNo = led.rows.reduce((m, r) => Math.max(m, Number(String(r.no || '').replace(/\D/g, '')) || 0), 0);
+  let n = maxNo;
+  for (let i = 0; i < CHARS.length; i++) {
+    const c = CHARS[i];
+    const skinKey = `cust_portrait_${i + 1}`;
+    const servedPath = `/games/game101/art/portraits/${c.key}.svg`;
+    const gen = { source: 'apollo-procedural', script: 'scripts/game101-portrait-gen.mjs', style: 'cozy-cartoon portrait', servedPath };
+    const existing = led.rows.find((r) => (r.skinKey || r.id) === skinKey);
+    if (existing) { existing.status = 'filled'; existing.gen = gen; existing.kind = 'portrait'; existing.prompt = PROMPT[c.key]; existing.desc = `${c.name}·顾客卡通立绘`; continue; }
+    led.rows.push({ no: `art-${String(++n).padStart(2, '0')}`, skinKey, kind: 'portrait', desc: `${c.name}·顾客卡通立绘`, prompt: PROMPT[c.key], status: 'filled', gen });
+  }
+  writeFileSync(ledPath, JSON.stringify(led, null, 2) + '\n');
+}
+console.error('[game101-portrait-gen] wrote', CHARS.length, 'portraits + index.json + 台账 6 行（cust_portrait_1..' + CHARS.length + '）');

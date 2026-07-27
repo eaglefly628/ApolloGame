@@ -15,6 +15,7 @@ import type { DraftCandidate, DraftState } from '@skills/tier2/index.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp, COMBO_MIN, type HudState, type LevelUpOffer } from './hud.js';
 import { newlyUnlocked, loadUnlocked, saveUnlocked, type RunStats } from './achievements.js';
+import { recordScore, loadBoard, saveBoard, type ScoreEntry } from './leaderboard.js';
 import { VIEW_W, VIEW_H, PLAYER_DEF, LEVEL_XP, SURVIVOR_THEME, DRAFT_POOL, DRAFT_N, SLOT_CAP, WEAPONS, WEAPON_BY_KEY, TPS } from './theme.js';
 
 // 战场底纹（暗色渐晕·render-only·屏幕固定）。BUG-01 修：移除原屏幕固定网格线（相机跟随时看着静止=像没动）；
@@ -149,12 +150,25 @@ export function mount(container: HTMLElement): () => void {
     return curToast;
   }
 
+  // ── 本地排行榜（owner「死亡后排行榜 + 成绩一起展示·存本地」）：局终记一次成绩（击杀/时长/等级）→ localStorage ──
+  let lastBoard: ScoreEntry[] = [];
+  let lastRank = 0;
+
   let lastSig = '';
   function refreshHud(engine: Engine): void {
     const st = readState(engine);
     if (st.status !== 'playing') {
+      if (!showingResult) {
+        showingResult = true;
+        // 记本局成绩一次（幂等·靠 showingResult 门）→ 并入榜 + 存回 localStorage。
+        const entry: ScoreEntry = { score: st.score, time: st.elapsed, level: st.level, win: st.status === 'victory', at: Date.now() };
+        const res = recordScore(entry, loadBoard());
+        saveBoard(res.board);
+        lastBoard = res.board; lastRank = res.rank;
+        pauseSim(); // 局终冻结 sim（同 BUG-04·延到 microtask）
+      }
+      st.board = lastBoard; st.rank = lastRank;
       hudUi.update(buildResult(st), SURVIVOR_THEME);
-      if (!showingResult) { showingResult = true; pauseSim(); } // 局终冻结 sim（同 BUG-04·延到 microtask）
       return;
     }
     if (showingResult) showingResult = false;
@@ -214,6 +228,7 @@ export function mount(container: HTMLElement): () => void {
     evolved.clear();
     prevScore = 0; killWin = []; // 连杀窗重置（重开）
     peakCombo = 0; curToast = null; toastQueue.length = 0; toastUntil = 0; // 成就横幅态重置（解锁集持久·不清）
+    lastBoard = []; lastRank = 0; // 排行榜展示态重置（榜持久·下次局终重算）
     draftState = { owned: {}, slots: { weapon: { used: 0, cap: SLOT_CAP.weapon }, passive: { used: 0, cap: SLOT_CAP.passive } } };
     stopSim();
     hudUi.update(buildHud(initial), SURVIVOR_THEME);

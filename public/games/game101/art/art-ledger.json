@@ -1871,6 +1871,90 @@
       },
       "provenance": null,
       "prompt": "a honey jar with a wooden dipper, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
+    },
+    {
+      "no": "art-49",
+      "skinKey": "cust_portrait_1",
+      "kind": "portrait",
+      "desc": "周航·顾客卡通立绘",
+      "prompt": "cozy 2.5D cartoon half-body portrait of a sunny young fisherman, tan skin, dark hair with a blue bandana, friendly grin, warm harbor palette, soft lighting, transparent-ready",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-portrait-gen.mjs",
+        "style": "cozy-cartoon portrait",
+        "servedPath": "/games/game101/art/portraits/zhou.svg"
+      }
+    },
+    {
+      "no": "art-50",
+      "skinKey": "cust_portrait_2",
+      "kind": "portrait",
+      "desc": "老陈·顾客卡通立绘",
+      "prompt": "cozy 2.5D cartoon half-body portrait of a kindly middle-aged handyman, tan skin, short greying hair under a work cap, short beard, warm smile, warm harbor palette",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-portrait-gen.mjs",
+        "style": "cozy-cartoon portrait",
+        "servedPath": "/games/game101/art/portraits/chen.svg"
+      }
+    },
+    {
+      "no": "art-51",
+      "skinKey": "cust_portrait_3",
+      "kind": "portrait",
+      "desc": "苏晴·顾客卡通立绘",
+      "prompt": "cozy 2.5D cartoon half-body portrait of a gentle young urban woman, fair skin, long wavy brown hair, soft smile, warm coral palette, soft lighting",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-portrait-gen.mjs",
+        "style": "cozy-cartoon portrait",
+        "servedPath": "/games/game101/art/portraits/su.svg"
+      }
+    },
+    {
+      "no": "art-52",
+      "skinKey": "cust_portrait_4",
+      "kind": "portrait",
+      "desc": "林夏·顾客卡通立绘",
+      "prompt": "cozy 2.5D cartoon half-body portrait of the heroine, a calm woman who moved back home, fair skin, long dark-brown hair, serene expression, warm amber palette",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-portrait-gen.mjs",
+        "style": "cozy-cartoon portrait",
+        "servedPath": "/games/game101/art/portraits/linxia.svg"
+      }
+    },
+    {
+      "no": "art-53",
+      "skinKey": "cust_portrait_5",
+      "kind": "portrait",
+      "desc": "林国栋·顾客卡通立绘",
+      "prompt": "cozy 2.5D cartoon half-body portrait of a stern elderly father, greying hair, round glasses, reserved expression, muted blue palette",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-portrait-gen.mjs",
+        "style": "cozy-cartoon portrait",
+        "servedPath": "/games/game101/art/portraits/guodong.svg"
+      }
+    },
+    {
+      "no": "art-54",
+      "skinKey": "cust_portrait_6",
+      "kind": "portrait",
+      "desc": "阿雅·顾客卡通立绘",
+      "prompt": "cozy 2.5D cartoon half-body portrait of a lively young girl, fair skin, orange twin-tail hair, cheerful grin, playful violet palette",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-portrait-gen.mjs",
+        "style": "cozy-cartoon portrait",
+        "servedPath": "/games/game101/art/portraits/aya.svg"
+      }
     }
   ]
 }
