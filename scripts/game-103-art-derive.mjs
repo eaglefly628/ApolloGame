@@ -50,8 +50,12 @@ const DROP_RE = /hpbar|:inner|-core\b|core$|glow|gridh-|gridv-|obstacle-cap|kill
     out.push(r);
   }
   // ③ 战场背景槽（game 现用几何网格·art-spec §6 要背景/地砖·库里应列出为需求）。
-  out.push({
-    no: 'art-bg', kind: 'bg', skinKey: '103/field-bg',
+  // 先剔除任何旧 field-bg 行（含上次非法编号 art-bg）→ 再以合法 art-NN 数字重注（后端 regenerate 校验 `art-\d+`）。
+  const outNoBg = out.filter((r) => r.skinKey !== '103/field-bg');
+  const maxNo = outNoBg.reduce((m, r) => { const n = parseInt(String(r.no || '').replace(/^art-/, ''), 10); return Number.isFinite(n) && n > m ? n : m; }, 0);
+  const bgNo = `art-${String(maxNo + 1).padStart(2, '0')}`;
+  outNoBg.push({
+    no: bgNo, kind: 'bg', skinKey: '103/field-bg',
     slot: { entity: 'field-background', component: 'Tilemap', field: 'art' },
     query: '战场地面背景', desc: '战场地面背景',
     prompt: 'top-down survival arena ground, dark tileable terrain with subtle texture, seamless repeat, no subject',
@@ -60,7 +64,7 @@ const DROP_RE = /hpbar|:inner|-core\b|core$|glow|gridh-|gridv-|obstacle-cap|kill
     context: '美术需求：战场地面背景（可平铺 tile·art-spec §6）·当前=世界网格线占位·填后地面贴图化',
     status: 'needs-art',
   });
-  ledger.rows = out;
+  ledger.rows = outNoBg;
   ledger.count = ledger.rows.length;
   ledger.instances = ledger.rows.length;
   // 状态/路径对齐真相：以游戏实载 index.json（filled 资产）回填 status + provenance.path，令徽标(已填回/待配)与
