@@ -1881,7 +1881,10 @@ class Component extends DCLogic {
       : '';
 
     // assets（真台账墙）
-    const mergedSlugs = allCarts.map(cc => cc.slug).concat(allLive.map(gg => gg.id)).slice(0, 12); // 素材库页签不受 games filter 影响
+    // 素材库页签不受 games filter 影响。排序：卡带 → 有本地美术台账的内置（art 相关最优先·绝不被裁）→ 其余内置。
+    // 修 owner 07-27：曾 .slice(0,12) 按目录名排序裁切，数字命名（game101/game102）排在所有 game-x 之后被切掉；改为台账优先 + 提高上限。
+    const liveSorted = allLive.slice().sort((a, b) => (Number(!!b.hasLedger || !!b.hasLocalArt) - Number(!!a.hasLedger || !!a.hasLocalArt)));
+    const mergedSlugs = allCarts.map(cc => cc.slug).concat(liveSorted.map(gg => gg.id)).slice(0, 20);
     const assetGameTabs = mergedSlugs.map(slug => ({ label: slug,
       style: { border: '3px solid #3a2312', borderRadius: '12px', padding: '8px 16px', cursor: 'pointer', fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '13px',
         background: s.assetsSlug === slug ? 'linear-gradient(180deg,#8fe05a,#6cbf37)' : 'linear-gradient(180deg,#fffdf5,#fff0cf)',
