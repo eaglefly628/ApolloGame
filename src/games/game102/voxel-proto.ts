@@ -10,7 +10,8 @@ import { QueuedInputSource } from '@net/index.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
 import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assembly.js';
 import type { Transform3D, Pivot3D } from '@engine/protocol/components.js';
-import { VOXEL_SURFACES, VOXEL_SURFACE_NAMES, type VoxelSurface } from './voxel-surfaces.js';
+import { VOXEL_SURFACES, type VoxelSurface } from './voxel-surfaces.js';
+import { AssetManager, ImageAssetLoader, registerAssetIndex, parseAssetIndex } from '@assets/index.js';
 
 const PITCH = 33, VOX = 33; // 体素尺寸固定（立方随 N 变大·相机距离按 N 缩放 → 屏上观感一致）
 const FACE_MS = 6000;     // 每面总停留（含换色窗 + 开火窗）
@@ -74,10 +75,10 @@ function rotVec(x: number, y: number, z: number, rx: number, ry: number): [numbe
 const shortDelta = (a: number, b: number): number => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; };
 const vid = (i: number, j: number, k: number): string => `v-${i}-${j}-${k}`;
 let voxSurface: VoxelSurface = 'matte';
-const funcTex = (t: number, kind: CellKind): Record<string, unknown> => ({ top: shade(t, 1.22), side: shade(t, 0.9), top2: shade(t, 1.45), side2: shade(t, 1.1), trim: CELLS[kind].edge, pattern: 'crystal', tile: 8 });
-const voxMesh = (t: number, kind?: CellKind): Record<string, unknown> => kind
-  ? { shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: shade(t, 1.1), backTint: t, edgeTint: CELLS[kind].edge, voxelTex: funcTex(t, kind) }
-  : { shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: shade(t, 0.82), voxelTex: VOXEL_SURFACES[voxSurface](t) };
+// 普通格 = 干净素面（本色·实例化）。功能格 = 一个纯色底盒 + Material3D 图标贴图（icon 贴到面上·一眼看类型）→ 单 mesh（少数·可接受）。
+const voxMesh = (t: number): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: shade(t, 0.82), voxelTex: VOXEL_SURFACES[voxSurface](t) });
+const funcBoxMesh = (kind: CellKind): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: CELLS[kind].edge, backTint: shade(CELLS[kind].edge, 0.7), edgeTint: 0x0c0c0c });
+const CELL_ICON_KEY: Record<CellKind, string> = { power: 'cell-icon/fire', time: 'cell-icon/time', bomb: 'cell-icon/bomb', ammo: 'cell-icon/ammo' };
 const gemMesh = (): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: 0x9ff2ff, backTint: 0x9ff2ff, edgeTint: GEM_EDGE, voxelTex: { top: 0xd8ffff, side: 0x7fe0ff, top2: 0xffffff, trim: 0xffffff, pattern: 'crystal', tile: 8 } });
 type Style = { name: string; post: Record<string, unknown> };
 const STYLES: Style[] = [
@@ -159,7 +160,8 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     if (!present.has(vid(i, j, k))) return false;
     return [[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]].some(([a, b, c]) => !inB(a) || !inB(b) || !inB(c) || !present.has(vid(a, b, c)));
   };
-  const meshOf = (id: string): Record<string, unknown> => gemSet.has(id) ? gemMesh() : voxMesh(tintOf(id), cellType.get(id));
+  const meshOf = (id: string): Record<string, unknown> => { if (gemSet.has(id)) return gemMesh(); const k = cellType.get(id); return k ? funcBoxMesh(k) : voxMesh(tintOf(id)); };
+  const materialOf = (id: string): Record<string, unknown> | null => { const k = cellType.get(id); return k ? { map: CELL_ICON_KEY[k] } : null; }; // 功能格 → 图标贴图（Material3D.map）
 
   // ── 对局状态 ──
   let currentColor = 0;
@@ -177,8 +179,8 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     const entities: Record<string, EntityBlueprint> = {}; const ids: string[] = [];
     for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) for (let k = 0; k < N; k++) {
       if (!exposed(i, j, k)) continue;
-      const id = vid(i, j, k);
-      entities[id] = { Transform3D: { x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) }, Mesh3D: meshOf(id) as EntityBlueprint['Mesh3D'], Pickable3D: { signal: 'hit' } } as unknown as EntityBlueprint;
+      const id = vid(i, j, k); const mat = materialOf(id);
+      entities[id] = { Transform3D: { x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) }, Mesh3D: meshOf(id), Pickable3D: { signal: 'hit' }, ...(mat ? { Material3D: mat } : {}) } as unknown as EntityBlueprint;
       ids.push(id); rendered.add(id);
     }
     entities['post'] = { Post3D: { ...STYLES[0].post } as unknown as EntityBlueprint['Post3D'] };
@@ -206,7 +208,10 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
 
   const engine = new Engine({ input: new QueuedInputSource('g102p') });
   engine.load(buildScene());
-  const renderer = new ThreeRenderer({ width: fw, height: fh, background: 0x0e1a30, antialias: true, dprCap: 1.5, shadowMapSize: 1024 });
+  // 功能格图标贴图资产（异步·就绪后 assetReady 触发重渲上屏·未就绪=纯色底盒回退·不炸）。
+  const assets = new AssetManager(new ImageAssetLoader());
+  void (async () => { try { const r = await fetch('/games/game102/art/index.json', { cache: 'no-store' }); if (!r.ok) return; registerAssetIndex(assets, parseAssetIndex(await r.json())); await assets.loadAll(); } catch { /* 无美术目录 → 回退纯色底盒·不炸 */ } })();
+  const renderer = new ThreeRenderer({ width: fw, height: fh, background: 0x0e1a30, antialias: true, dprCap: 1.5, shadowMapSize: 1024, assets });
   engine.attachRenderer(renderer, wrapper);
 
   // ── 顶部：破坏率 + 宝石 + 时间(时间关) + 弹药(弹药关) ──
@@ -359,6 +364,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     engine.world.addComponent(id, { type: 'Transform3D', x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) } as unknown as Transform3D);
     engine.world.addComponent(id, { type: 'Mesh3D', ...meshOf(id) } as never);
     engine.world.addComponent(id, { type: 'Pickable3D', signal: 'hit' } as never);
+    const mat = materialOf(id); if (mat) engine.world.addComponent(id, { type: 'Material3D', ...mat } as never); // 功能格图标贴图
     engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D')?.children.push(id); rendered.add(id);
     legendDirty = true;
   };
