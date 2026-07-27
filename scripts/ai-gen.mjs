@@ -59,6 +59,17 @@ export function curlFor(request, keyEnv = 'ARK_API_KEY') {
   return `curl -X ${request.method} '${request.endpoint}' ${headers} -d '${JSON.stringify(request.body)}'`;
 }
 
+// fetch + 连接层重试（owner 2026-07-27「第一次连不上·第二次连上」·疑代理/冷启动）：只对 fetch 抛错
+// （连接失败=fetch failed/DNS/超时/TLS）重试；HTTP 4xx 是 Response·不抛→不重试（确定性错误不该重试）。
+export async function fetchRetry(url, opts = {}, { tries = 3, baseDelay = 500 } = {}) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try { return await fetch(url, opts); }
+    catch (e) { last = e; if (i < tries - 1) await new Promise((r) => setTimeout(r, baseDelay * (i + 1))); }
+  }
+  throw last;
+}
+
 // ── 适配器（kind=资产类型·envKey=密钥环境变量·generate=产 buffer+meta）──
 export const ADAPTERS = {
   tripo: {
@@ -80,7 +91,7 @@ export const ADAPTERS = {
         await new Promise((r) => setTimeout(r, 3000));
       }
       if (!url) throw new Error('tripo: 轮询超时');
-      const buffer = Buffer.from(await fetch(url).then((r) => r.arrayBuffer()));
+      const buffer = Buffer.from(await fetchRetry(url).then((r) => r.arrayBuffer()));
       return { buffer, model: 'tripo-text-to-model', mock: false, spec: { scale: 1, genCollision: 'hull' } };
     },
   },
@@ -104,7 +115,7 @@ export const ADAPTERS = {
         await new Promise((r) => setTimeout(r, 3000));
       }
       if (!url) throw new Error('meshy: 轮询超时');
-      const buffer = Buffer.from(await fetch(url).then((r) => r.arrayBuffer()));
+      const buffer = Buffer.from(await fetchRetry(url).then((r) => r.arrayBuffer()));
       return { buffer, model: 'meshy-preview-text-to-3d', mock: false, spec: { scale: 1, genCollision: 'hull' } };
     },
   },
@@ -114,7 +125,7 @@ export const ADAPTERS = {
       if (mock || !apiKey) { const { buffer, w, h } = mockImage(prompt); return { buffer, model: 'wanx-mock', mock: true, spec: { format: 'png', width: w, height: h, usage: 'sprite' } }; }
       // 真调 DashScope 万相 text2image（异步任务·门控）
       const H = { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json', 'X-DashScope-Async': 'enable' };
-      const sub = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis', { method: 'POST', headers: H, body: JSON.stringify({ model: 'wanx2.1-t2i-turbo', input: { prompt }, parameters: { n: 1, size: '1024*1024' } }) }).then((r) => r.json());
+      const sub = await fetchRetry('https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis', { method: 'POST', headers: H, body: JSON.stringify({ model: 'wanx2.1-t2i-turbo', input: { prompt }, parameters: { n: 1, size: '1024*1024' } }) }).then((r) => r.json());
       const taskId = sub?.output?.task_id; if (!taskId) throw new Error('qwen: 无 task_id ' + JSON.stringify(sub));
       let url = null;
       for (let i = 0; i < 60; i++) {
@@ -124,7 +135,7 @@ export const ADAPTERS = {
         await new Promise((r) => setTimeout(r, 3000));
       }
       if (!url) throw new Error('qwen: 轮询超时');
-      const buffer = Buffer.from(await fetch(url).then((r) => r.arrayBuffer()));
+      const buffer = Buffer.from(await fetchRetry(url).then((r) => r.arrayBuffer()));
       return { buffer, model: 'wanx2.1-t2i-turbo', mock: false, spec: { format: 'png', width: 1024, height: 1024, usage: 'sprite' } };
     },
   },
@@ -140,10 +151,10 @@ export const ADAPTERS = {
       const request = seedreamRequest(prompt, { model, size }); // 恒构造·mock 也回显「本该发的完整请求」（debug 免花 key）
       if (mock || !apiKey) { const { buffer, w, h } = mockImage(prompt); return { buffer, model: 'seedream-mock', mock: true, spec: { format: 'png', width: w, height: h, usage: 'sprite' }, request }; }
       const H = { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' };
-      const res = await fetch(request.endpoint, { method: 'POST', headers: H, body: JSON.stringify(request.body) }).then((r) => r.json());
+      const res = await fetchRetry(request.endpoint, { method: 'POST', headers: H, body: JSON.stringify(request.body) }).then((r) => r.json());
       const url = res?.data?.[0]?.url;
       if (!url) throw new Error('seedream: 无 image url ' + JSON.stringify(res?.error ?? res).slice(0, 300));
-      const buffer = Buffer.from(await fetch(url).then((r) => r.arrayBuffer()));
+      const buffer = Buffer.from(await fetchRetry(url).then((r) => r.arrayBuffer()));
       return { buffer, model, mock: false, spec: { format: 'png', usage: 'sprite' }, request };
     },
   },

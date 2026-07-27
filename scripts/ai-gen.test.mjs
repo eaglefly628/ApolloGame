@@ -3,7 +3,22 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ADAPTERS, buildEntry, mockImage, encodePng, providerSettings, demo, writePending, reviewPending, listPending, locations, provenanceMissing, seedreamRequest, curlFor } from './ai-gen.mjs';
+import { ADAPTERS, buildEntry, mockImage, encodePng, providerSettings, demo, writePending, reviewPending, listPending, locations, provenanceMissing, seedreamRequest, curlFor, fetchRetry } from './ai-gen.mjs';
+
+describe('fetchRetry 连接层重试（owner 2026-07-27「第一次连不上·第二次连上」·疑代理冷启动）', () => {
+  it('首次连接失败·重试后成功（只重试 fetch 抛错）', async () => {
+    const orig = globalThis.fetch; let n = 0;
+    globalThis.fetch = async () => { n++; if (n < 2) throw new TypeError('fetch failed'); return { ok: true, status: 200 }; };
+    try { const r = await fetchRetry('http://x', {}, { tries: 3, baseDelay: 0 }); expect(n).toBe(2); expect(r.status).toBe(200); }
+    finally { globalThis.fetch = orig; }
+  });
+  it('始终失败 → 抛最后一个错（不吞·上层据此分诊）', async () => {
+    const orig = globalThis.fetch;
+    globalThis.fetch = async () => { throw new TypeError('fetch failed'); };
+    try { await expect(fetchRetry('http://x', {}, { tries: 2, baseDelay: 0 })).rejects.toThrow('fetch failed'); }
+    finally { globalThis.fetch = orig; }
+  });
+});
 
 describe('ai-gen 框架 · 适配器注册表', () => {
   it('注册了 tripo·meshy(3D) + qwen·seedream(2D)，各带 kind/envKey/license', () => {
