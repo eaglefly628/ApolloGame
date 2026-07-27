@@ -16,7 +16,7 @@ import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop, 
 import { buildBlueprint } from './blueprint.js';
 import { buildS1Live, type S1State, type CellView, type OrderView, type SlotView } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';
-import { GAME, RES, GENERATORS, ORDERS, ORDER_SAT_MAX, TICKS_PER_SEC, CUST_PORTRAITS, BUBBLES, PROGRESSION, LEVEL_DONE_FLAG, ITEM_EMOJI, moodFace, cellIndexOf, cellCenter } from './theme.js';
+import { GAME, RES, GENERATORS, ORDERS, ORDER_SAT_MAX, TICKS_PER_SEC, CUST_PORTRAITS, BUBBLES, PROGRESSION, LEVEL_DONE_FLAG, ITEM_EMOJI, ITEMS, moodFace, cellIndexOf, cellCenter } from './theme.js';
 
 const GEN_CELLS = new Set(GENERATORS.map((g) => g.cell));
 
@@ -51,6 +51,9 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   const coveredCells = new Set<number>(); // 阻碍层覆盖格（不可拖入/不可落子·readState 每帧刷新）
   const bubbleCells = new Set<number>(); // 泡泡锁格（不可拖入/不可落子·点破才出物）
   const starLockCells = new Set<number>(); // 星锁区格（不可拖入/不可落子·攒够星里程碑解锁）
+  // 皮肤槽映射（textureKey → 当前美术图 URL）：mount 时读 art-ledger.json 填充·美术就绪/被替换即在板上换装。
+  // 空=回退 Twemoji（美术是增量非依赖·读失败不炸）。owner 在创作台替换台账图后·此 map 指向新图 → 板上即换。
+  let skinMap: Record<string, string> = {};
   // 信息菜单（view 态·host 持·local handler 切换·非写世界）：开关 + 当前页 + 事件日志环。
   let menuOpen = false;
   let menuTab: 'play' | 'chains' | 'log' = 'play';
@@ -133,7 +136,8 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     for (const g of GENERATORS) {
       if (coveredCells.has(g.cell) || cells[g.cell]) continue;
       const cd = (g.cooldownSec ?? 0) > 0 && res(`charge_${g.id}`) < 1 ? timerLeft(`cd_${g.id}`) : undefined;
-      cells[g.cell] = { emoji: g.emoji, gen: g.id, ...(cd ? { cd } : {}) };
+      const gsk = skinMap[g.sprite];
+      cells[g.cell] = { emoji: g.emoji, gen: g.id, ...(gsk ? { skin: gsk } : {}), ...(cd ? { cd } : {}) };
     }
     const onBoard = new Set<string>(); // 板上现有的物品模板集（订单可交付判定）
     const cellTpl: (string | null)[] = new Array(cells.length).fill(null);
@@ -144,7 +148,8 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       onBoard.add(po.templateId);
       const idx = cellIndexOf(t.x, t.y);
       if (idx >= 0 && !cells[idx]) {
-        cells[idx] = { emoji: ITEM_EMOJI[po.templateId] ?? '❓' }; cellEntity[idx] = eid; cellTpl[idx] = po.templateId;
+        const isk = skinMap[ITEMS[po.templateId]?.sprite ?? ''];
+        cells[idx] = { emoji: ITEM_EMOJI[po.templateId] ?? '❓', ...(isk ? { skin: isk } : {}) }; cellEntity[idx] = eid; cellTpl[idx] = po.templateId;
         // 限时物：读 id='life' 的 Timer → 剩余秒（到 0 由 lifetime 销毁）。
         const tm = w.getComponent<Timer>(eid, 'Timer');
         if (tm && tm.id === 'life') cells[idx]!.timer = Math.max(0, Math.ceil((tm.duration - tm.elapsed) / TICKS_PER_SEC));
@@ -289,6 +294,26 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     const orders = activeFly ? st.orders.map((o, i) => (i === activeFly!.idx ? { ...o, fly: { id: activeFly!.id, label: activeFly!.label }, celebrate: true } : o)) : st.orders;
     ui.update(buildS1Live({ ...st, orders, burstCell: activeBurst >= 0 ? activeBurst : undefined, dragGhost: dragGhost ?? undefined, liftedCell: dragFrom >= 0 ? dragFrom : undefined, dissolveCells: dissolving.length ? dissolving : undefined, menuOpen, menuTab, log: eventLog.slice() }), GAME101_THEME);
   };
+
+  // 皮肤槽装载（美术就绪即换装·非依赖）：读 art-ledger.json → textureKey→当前图 URL。
+  // 现况优先 gen.servedPath（apollo-procedural 占位 / owner 创作台替换图皆走此字段）> path > placeholder.servedPath。
+  // 读失败/无台账 → skinMap 空 → 板回退 Twemoji（美术是增量·绝不炸游戏）。装载完重绘一次即换装。
+  void (async () => {
+    try {
+      const r = await fetch('/games/game101/art/art-ledger.json', { cache: 'no-store' });
+      if (!r.ok) return;
+      const led = await r.json() as { rows?: Array<{ skinKey?: string; id?: string; status?: string; path?: string; gen?: { servedPath?: string }; placeholder?: { servedPath?: string } }> };
+      const map: Record<string, string> = {};
+      for (const row of led.rows ?? []) {
+        const key = row.skinKey ?? row.id;
+        const url = row.gen?.servedPath ?? row.path ?? row.placeholder?.servedPath;
+        if (key && url && row.status !== 'retired') map[key] = url;
+      }
+      skinMap = map;
+      paint(readState()); // 换装重绘（美术就绪即上板）
+    } catch { /* 无台账/读失败 → 回退 Twemoji */ }
+  })();
+
   // 沙/蛛网消融：对比上帧阻碍层，被挖到的格（层减或清）叠尘土 Particles，600ms 后清。
   function detectDissolve(st: S1State): void {
     const dug: number[] = [];
