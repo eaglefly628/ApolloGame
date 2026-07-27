@@ -170,7 +170,10 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
         return { itemEmoji: ITEM_EMOJI[tpl] ?? '❓', filled, want: !filled && onBoard.has(tpl) };
       });
       const sat = res(`sat_${o.id}`);
-      return { char: o.char, slots, coins: o.reward.coins, stars: o.reward.stars ?? 0, deliverable: slots.some((sl) => sl.want), mood: sat / ORDER_SAT_MAX, moodFace: moodFace(sat), timed: o.timed, timeLeft: o.timed ? menuLeft : undefined, portrait: CUST_PORTRAITS[oi % CUST_PORTRAITS.length] };
+      // 立绘皮肤槽：优先台账当前图（skinMap cust_portrait_N·美术就绪/owner 替换即换脸）·回退硬编码 CUST_PORTRAITS。
+      const pIdx = oi % CUST_PORTRAITS.length;
+      const portrait = skinMap[`cust_portrait_${pIdx + 1}`] ?? CUST_PORTRAITS[pIdx];
+      return { char: o.char, slots, coins: o.reward.coins, stars: o.reward.stars ?? 0, deliverable: slots.some((sl) => sl.want), mood: sat / ORDER_SAT_MAX, moodFace: moodFace(sat), timed: o.timed, timeLeft: o.timed ? menuLeft : undefined, portrait };
     });
     // 板格 ✓ = 该成品被某订单未满槽需要（可拖去交付）。
     for (let i = 0; i < cells.length; i++) if (cells[i] && cellTpl[i] && wanted.has(cellTpl[i]!)) cells[i]!.deliverable = true;
