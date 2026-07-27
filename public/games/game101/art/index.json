@@ -4,101 +4,158 @@
     {
       "id": "cust_portrait_1",
       "type": "texture",
-      "description": "1 · superpowers",
+      "description": "周航·卡通立绘占位（apollo-procedural）",
       "status": "filled",
-      "path": "/games/game101/art/superpowers/ninja-adventure/characters/faceset/1.png",
+      "path": "/games/game101/art/portraits/zhou.svg",
       "spec": {
         "usage": "sprite",
         "colorSpace": "srgb",
-        "format": "png",
-        "width": 38,
-        "height": 38,
-        "transparent": true
+        "format": "svg",
+        "width": 256,
+        "height": 320,
+        "transparent": false
       },
-      "category": "sheet",
+      "category": "portrait",
       "tags": [
-        "1",
-        "superpowers",
-        "pixel",
-        "rpg",
-        "sprite",
-        "ninja",
-        "game"
+        "portrait",
+        "cartoon",
+        "cozy",
+        "placeholder",
+        "zhou"
       ],
-      "style": "pixel",
-      "license": "CC0-1.0",
-      "source": "superpowers",
-      "provenance": {
-        "repo": "sparklinlabs/superpowers-asset-packs",
-        "ref": "master",
-        "vendoredFrom": "sp/ninja/characters/faceset/1"
-      }
+      "style": "cozy-cartoon",
+      "license": "apollo-procedural",
+      "source": "scripts/game101-portrait-gen.mjs"
     },
     {
       "id": "cust_portrait_2",
       "type": "texture",
-      "description": "5 · superpowers",
+      "description": "老陈·卡通立绘占位（apollo-procedural）",
       "status": "filled",
-      "path": "/games/game101/art/superpowers/ninja-adventure/characters/faceset/5.png",
+      "path": "/games/game101/art/portraits/chen.svg",
       "spec": {
         "usage": "sprite",
         "colorSpace": "srgb",
-        "format": "png",
-        "width": 38,
-        "height": 38,
-        "transparent": true
+        "format": "svg",
+        "width": 256,
+        "height": 320,
+        "transparent": false
       },
-      "category": "sheet",
+      "category": "portrait",
       "tags": [
-        "5",
-        "superpowers",
-        "pixel",
-        "rpg",
-        "sprite",
-        "ninja",
-        "game"
+        "portrait",
+        "cartoon",
+        "cozy",
+        "placeholder",
+        "chen"
       ],
-      "style": "pixel",
-      "license": "CC0-1.0",
-      "source": "superpowers",
-      "provenance": {
-        "repo": "sparklinlabs/superpowers-asset-packs",
-        "ref": "master",
-        "vendoredFrom": "sp/ninja/characters/faceset/5"
-      }
+      "style": "cozy-cartoon",
+      "license": "apollo-procedural",
+      "source": "scripts/game101-portrait-gen.mjs"
     },
     {
       "id": "cust_portrait_3",
       "type": "texture",
-      "description": "12 · superpowers",
+      "description": "苏晴·卡通立绘占位（apollo-procedural）",
       "status": "filled",
-      "path": "/games/game101/art/superpowers/ninja-adventure/characters/faceset/12.png",
+      "path": "/games/game101/art/portraits/su.svg",
       "spec": {
         "usage": "sprite",
         "colorSpace": "srgb",
-        "format": "png",
-        "width": 38,
-        "height": 38,
-        "transparent": true
+        "format": "svg",
+        "width": 256,
+        "height": 320,
+        "transparent": false
       },
-      "category": "sheet",
+      "category": "portrait",
       "tags": [
-        "12",
-        "superpowers",
-        "pixel",
-        "rpg",
-        "sprite",
-        "ninja",
-        "game"
+        "portrait",
+        "cartoon",
+        "cozy",
+        "placeholder",
+        "su"
       ],
-      "style": "pixel",
-      "license": "CC0-1.0",
-      "source": "superpowers",
-      "provenance": {
-        "repo": "sparklinlabs/superpowers-asset-packs",
-        "ref": "master",
-        "vendoredFrom": "sp/ninja/characters/faceset/12"
-      }
+      "style": "cozy-cartoon",
+      "license": "apollo-procedural",
+      "source": "scripts/game101-portrait-gen.mjs"
+    },
+    {
+      "id": "cust_portrait_4",
+      "type": "texture",
+      "description": "林夏·卡通立绘占位（apollo-procedural）",
+      "status": "filled",
+      "path": "/games/game101/art/portraits/linxia.svg",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "svg",
+        "width": 256,
+        "height": 320,
+        "transparent": false
+      },
+      "category": "portrait",
+      "tags": [
+        "portrait",
+        "cartoon",
+        "cozy",
+        "placeholder",
+        "linxia"
+      ],
+      "style": "cozy-cartoon",
+      "license": "apollo-procedural",
+      "source": "scripts/game101-portrait-gen.mjs"
+    },
+    {
+      "id": "cust_portrait_5",
+      "type": "texture",
+      "description": "林国栋·卡通立绘占位（apollo-procedural）",
+      "status": "filled",
+      "path": "/games/game101/art/portraits/guodong.svg",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "svg",
+        "width": 256,
+        "height": 320,
+        "transparent": false
+      },
+      "category": "portrait",
+      "tags": [
+        "portrait",
+        "cartoon",
+        "cozy",
+        "placeholder",
+        "guodong"
+      ],
+      "style": "cozy-cartoon",
+      "license": "apollo-procedural",
+      "source": "scripts/game101-portrait-gen.mjs"
+    },
+    {
+      "id": "cust_portrait_6",
+      "type": "texture",
+      "description": "阿雅·卡通立绘占位（apollo-procedural）",
+      "status": "filled",
+      "path": "/games/game101/art/portraits/aya.svg",
+      "spec": {
+        "usage": "sprite",
+        "colorSpace": "srgb",
+        "format": "svg",
+        "width": 256,
+        "height": 320,
+        "transparent": false
+      },
+      "category": "portrait",
+      "tags": [
+        "portrait",
+        "cartoon",
+        "cozy",
+        "placeholder",
+        "aya"
+      ],
+      "style": "cozy-cartoon",
+      "license": "apollo-procedural",
+      "source": "scripts/game101-portrait-gen.mjs"
     }
   ]
 }

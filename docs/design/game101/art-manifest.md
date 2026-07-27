@@ -15,7 +15,7 @@
 ## 域 1 · 顾客立绘（character portraits）
 
 > 消费位：`theme.ts CUST_PORTRAITS[]` → 订单卡 `Avatar.src`（`s1.ts` `ord-{i}-av`·`size:190·shape:rounded`）。剧情演出（S6 dialogue）另需半身立绘 + 表情差分。
-> **当前占位**：CC0 faceset（`superpowers/ninja-adventure/characters/faceset/{1,5,12}.png`·38×38 像素头·asset-manager 2026-07-25 vendor·已登记本地 index.json `cust_portrait_1..`）。像素风与本品「轻插画 2.5D 糖果感」**风格不符**，且尺寸远小于订单卡 190 显示 → 全部待原创替换。
+> **当前占位（2026-07-27 升级）**：`scripts/game101-portrait-gen.mjs` 自产**卡通半身立绘**（`portraits/{zhou,chen,su,linxia,guodong,aya}.svg`·256×320·apollo-procedural·参数化脸+发型/配饰/表情差分·cozy 糖果感）→ 已接 `theme.ts CUST_PORTRAITS[]` + 本地 `index.json cust_portrait_1..6`。风格已对齐本品「轻插画 2.5D 糖果感」·矢量任意缩放清晰。**占位性质**：owner 真出图管线就绪即逐张替换（换 `portraits/*.svg`/`index.json path` 即可）。旧 CC0 像素 faceset 已弃用。
 > 角色设定见 `gdd.md §角色与世界观`（纵火案悬疑·家族秘密·情感纠葛）。**当前 orders.json 只用到 周航/老陈/苏晴 三位**；林夏（女主）/林国栋/阿雅为剧情线角色，随 Day 内容上线。
 
 ### 1a · 订单柜台小立绘（半身·表情差分·棋盘常驻）
@@ -109,7 +109,7 @@
 
 | 域 | 项数 | 阻塞待美术 | 备注 |
 |---|---:|---:|---|
-| 1 · 顾客立绘 | 6 角色（+20 表情态） | 6 立绘 + 表情差分 | 现 CC0 像素占位·风格/尺寸均不符 |
+| 1 · 顾客立绘 | 6 角色（+20 表情态） | 表情差分（半身立绘已上卡通占位） | ✅ 6 半身立绘 = apollo-procedural 卡通占位（已接线·风格对齐）；剧情表情差分仍待 |
 | 2 · 场景/背景 | 12 | 12 | 含 owner 要的港湾卡通背景 |
 | 3 · UI 皮 | 15 类 | 15 类 | 对应 s1.ts 令牌/custom hex 占位 |
 | 4 · FX/特效 | 6 类 | 0（全程序化可长用·真素材可选） | — |

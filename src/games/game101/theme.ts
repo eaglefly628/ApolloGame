@@ -78,11 +78,15 @@ export const TIMED_SEC = 20; // 限时物存活秒数（到 0 自毁）
 export const TIMED_ITEM = 'timed_fresh';
 export const MENU_TIMER_SEC = 30; // 限时特惠订单倒计时周期（循环刷新·菜单 Timer）
 
-// 顾客立绘（asset-manager 2026-07-25 vendor 的 CC0 头像·public served·顾客卡背景图层·美术就绪即换）。
+// 顾客立绘（scripts/game101-portrait-gen.mjs 自产卡通半身占位·apollo-procedural·真出图就绪即逐张替换）。
+// 顺序对齐 orders.json：[0]周航 [1]老陈 [2]苏晴（当前 3 单顾客）·[3..]林夏/林国栋/阿雅备剧情线。
 export const CUST_PORTRAITS = [
-  '/games/game101/art/superpowers/ninja-adventure/characters/faceset/1.png',
-  '/games/game101/art/superpowers/ninja-adventure/characters/faceset/5.png',
-  '/games/game101/art/superpowers/ninja-adventure/characters/faceset/12.png',
+  '/games/game101/art/portraits/zhou.svg',
+  '/games/game101/art/portraits/chen.svg',
+  '/games/game101/art/portraits/su.svg',
+  '/games/game101/art/portraits/linxia.svg',
+  '/games/game101/art/portraits/guodong.svg',
+  '/games/game101/art/portraits/aya.svg',
 ];
 export const ENERGY_REGEN_TICKS = ENERGY.regenIntervalSec * TICKS_PER_SEC;
 
