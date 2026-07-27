@@ -22,9 +22,23 @@ const FACE_MS = 5000;     // 每面停留（ms）→ 转下一面
 const TWEEN = 0.010;      // 转面缓动系数（×dt）
 const FIRE_MS = 150;      // 自动发射节拍（每门炮每此间隔射一发·无需按）
 const AMMO_POOL_FRAC = 0.9; // 全局弹药池 = 外料总数 ×此（<1 → 打空前必须靠"少浪费"露够·空放吃预算）= 过关难度旋钮
-const AMMO_CELL_FRAC = 0.08; // 约此比例外料格 = 弹药格（打碎返弹·金边发光·散布各色各面）
-const AMMO_REFUND = 3;      // 每颗弹药格返还的子弹数（正反馈：好调度→抢补给→撑更久）
-const AMMO_EDGE = 0xffe08a; // 弹药格金边高亮（body 仍是本色 → 仍按色瞄准·edge 亮=一眼识别值钱）
+const CELL_FRAC = 0.09;    // 约此比例外料格 = 特殊格（携带 payload·打碎触发效果·发光边一眼识别）
+const AMMO_REFUND = 3;     // 弹药格返还子弹数
+const POWER_MS = 3500;     // 火力格：三炮齐射频率翻倍持续时长
+const TIME_BONUS = 2500;   // 加时格：给当前面倒计时 +此（ms）
+const BOMB_R = 1;          // 引爆格：炸半径（1 = 3×3×3 邻域·同为引爆格则连锁）
+// ── 特殊格类型表（数据驱动雏形·下沉正式版即 cellEffects 表的行）──
+//   body 仍是本色（→ 仍按色瞄准）·edge 发光色 + glyph 编码类型（一眼识别值钱/危险）。
+type CellKind = 'ammo' | 'power' | 'time' | 'bomb';
+const CELLS: Record<CellKind, { edge: number; glyph: string; label: string; css: string; weight: number }> = {
+  ammo:  { edge: 0xffe08a, glyph: '🔫', label: '弹药', css: '#ffe08a', weight: 42 }, // +弹
+  power: { edge: 0xff7a3a, glyph: '🔥', label: '火力', css: '#ff8a4a', weight: 20 }, // 短时齐射翻倍
+  time:  { edge: 0x6ad0ff, glyph: '⏱', label: '加时', css: '#6ad0ff', weight: 20 }, // 当前面 +时间
+  bomb:  { edge: 0xff4a3a, glyph: '💥', label: '引爆', css: '#ff5a4a', weight: 18 }, // 3×3×3 连锁炸
+};
+const CELL_KINDS = Object.keys(CELLS) as CellKind[];
+const CELL_WSUM = CELL_KINDS.reduce((a, k) => a + CELLS[k].weight, 0);
+const pickCellKind = (r: number): CellKind => { let x = r * CELL_WSUM; for (const k of CELL_KINDS) { x -= CELLS[k].weight; if (x < 0) return k; } return 'ammo'; };
 const REVEAL_PASS = 0.7;  // 剥掉多少外料算「雕像现形」过关
 const GOLD_TINT = 0xffd24a; // 雕像色（受保护·gold）
 const TRAVEL_MS = 260;    // 子弹飞抵（爽快版·快）
@@ -73,7 +87,7 @@ const idx2pos = (i: number): number => (i - (N - 1) / 2) * PITCH;
 //   **不挂 Material3D**（挂了会退化成单 mesh/格·卡且做不大·见 three-renderer:312）。观感靠 GTAO/post 出厚度。
 //   表面观感走 voxel-surfaces 预设配方（数据驱动·闭集·同 (surface,color) 一批 → 不破归批）。
 let voxSurface: VoxelSurface = 'gem';  // 默认宝石感（当前展示态·下方按钮可循环切换）
-const voxMesh = (t: number, ammo = false): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: ammo ? AMMO_EDGE : shade(t, 0.82), voxelTex: VOXEL_SURFACES[voxSurface](t) });
+const voxMesh = (t: number, kind?: CellKind): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: kind ? CELLS[kind].edge : shade(t, 0.82), voxelTex: VOXEL_SURFACES[voxSurface](t) });
 // ── 渲染样式集（instancing-safe·只切后处理·GTAO/bloom/暗角/分级）——保持实例化不破·大立方也能切 ──
 type Style = { name: string; post: Record<string, unknown> };
 const STYLES: Style[] = [           // 厚AO 置首=默认（owner）·去掉柔光（发糊看不清）
@@ -88,14 +102,14 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   const isSculpt = (i: number, j: number, k: number): boolean => Math.abs(i - cxc) + Math.abs(j - cxc) + Math.abs(k - cxc) <= N * 0.36; // 居中八面体雕像
   const colorAt = new Map<string, number>();          // 0..4=外料色 · 5=雕像(gold·受保护·炮打不到)
   const present = new Set<string>();
-  const ammoSet = new Set<string>();                   // 弹药格（外料子集·打碎返弹·金边高亮）
+  const cellType = new Map<string, CellKind>();        // 特殊格（外料子集·携带 payload·打碎触发·发光边）
   const coverByColor: number[] = PALETTE.map(() => 0); // 每色外料数（=弹药基准）
   for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) for (let k = 0; k < N; k++) {
     const id = vid(i, j, k); present.add(id);
     if (isSculpt(i, j, k)) { colorAt.set(id, 5); }
     else {
       const c = Math.floor(hash3(i, j, k) * PALETTE.length) % PALETTE.length; colorAt.set(id, c); coverByColor[c]++;
-      if (hash3(i + 7, j + 13, k + 29) < AMMO_CELL_FRAC) ammoSet.add(id); // 确定性撒点=弹药格
+      if (hash3(i + 7, j + 13, k + 29) < CELL_FRAC) cellType.set(id, pickCellKind(hash3(i + 31, j + 17, k + 5))); // 确定性撒点+定型
     }
   }
   const coverTotal = coverByColor.reduce((a, b) => a + b, 0);
@@ -112,6 +126,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   let styleIdx = 0;
   let orientIdx = 0, faceLeft = FACE_MS;
   let curRx = ORIENT[0][0], curRy = ORIENT[0][1];
+  let rapidLeft = 0;       // 火力格：>0 时三炮齐射频率翻倍（每帧递减）
 
   const rendered = new Set<string>();
   const buildScene = (): WorldBlueprint => {
@@ -119,7 +134,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) for (let k = 0; k < N; k++) {
       if (!exposed(i, j, k)) continue;
       const id = vid(i, j, k); const t = PALETTE[colorAt.get(id)!].tint;
-      entities[id] = { Transform3D: { x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) }, Mesh3D: voxMesh(t, ammoSet.has(id)) as EntityBlueprint['Mesh3D'] }; // 无 Material3D → 归批实例化
+      entities[id] = { Transform3D: { x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) }, Mesh3D: voxMesh(t, cellType.get(id)) as EntityBlueprint['Mesh3D'] }; // 无 Material3D → 归批实例化
       ids.push(id); rendered.add(id);
     }
     entities['post'] = { Post3D: { ...STYLES[0].post } as unknown as EntityBlueprint['Post3D'] };
@@ -162,6 +177,9 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   wrapper.appendChild(timeBar);
   const banner = el('div', 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 44px system-ui;color:#8affa0;text-shadow:0 3px 14px #000;pointer-events:none;');
   wrapper.appendChild(banner);
+  // 本面补给清单（Q2 可读性）：告诉你当前面有哪些特殊格·什么色 → 你据此装色去收（不必看清单颗像素）。
+  const legend = el('div', 'position:absolute;left:0;right:0;top:56px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:0 12px;pointer-events:none;');
+  wrapper.appendChild(legend);
 
   // 渲染样式切换（点循环 5 种·对比看）。
   const styleBtn = el('button', 'position:absolute;right:8px;top:60px;z-index:20;pointer-events:auto;background:#1a2740ee;color:#cfe;border:1px solid #35507a;border-radius:8px;padding:6px 12px;cursor:pointer;font:700 14px system-ui;box-shadow:0 2px 8px #0007;', `🎨 ${STYLES[0].name}`);
@@ -186,7 +204,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     surfBtn.textContent = `🧊 ${SURF_LABEL[voxSurface]}`;
     for (const id of rendered) {                        // 就地换所有已渲染体素的表面配方（不重置对局）
       engine.world.removeComponent(id, 'Mesh3D');
-      engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(tintOf(id), ammoSet.has(id)) } as never);
+      engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(tintOf(id), cellType.get(id)) } as never);
     }
   };
   surfBtn.textContent = `🧊 ${SURF_LABEL[voxSurface]}`;
@@ -240,15 +258,34 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     ammoPill.style.color = ammoPool <= coverTotal * 0.15 ? '#ff9a6a' : '#c7f27a'; // 见底告警
     dmg.textContent = `露出 ${Math.round(((coverTotal - coverRemaining) / coverTotal) * 100)}% / ${Math.round(REVEAL_PASS * 100)}%`;
   };
-  // 弹药格返弹反馈：pill 弹一下 + 冒 "+N" 金字（正反馈可见=玩家学会去抢弹药格）。
-  const ammoRefundFx = (): void => {
-    ammoPill.animate?.([{ transform: 'scale(1.28)' }, { transform: 'scale(1)' }], { duration: 260 });
-    const tick = el('div', 'position:absolute;left:50%;top:52px;transform:translateX(-50%);color:#c7f27a;font:900 20px system-ui;text-shadow:0 2px 6px #000;pointer-events:none;z-index:30;', `+${AMMO_REFUND}`);
+  // 特殊格触发反馈：中上冒一行发光字（正反馈可见=玩家学会去抢特殊格）。
+  const cellFx = (text: string, css: string): void => {
+    const tick = el('div', `position:absolute;left:50%;top:52px;transform:translateX(-50%);color:${css};font:900 22px system-ui;text-shadow:0 2px 8px #000,0 0 12px ${css};pointer-events:none;z-index:30;white-space:nowrap;`, text);
     wrapper.appendChild(tick);
-    tick.animate?.([{ transform: 'translate(-50%,0)', opacity: 1 }, { transform: 'translate(-50%,-26px)', opacity: 0 }], { duration: 620 });
-    setTimeout(() => tick.remove(), 640);
+    tick.animate?.([{ transform: 'translate(-50%,0)', opacity: 1 }, { transform: 'translate(-50%,-30px)', opacity: 0 }], { duration: 680 });
+    setTimeout(() => tick.remove(), 700);
   };
   refresh();
+
+  // 本面补给清单：扫前面每列最外露格·统计 (类型,颜色) → 芯片"[色点]glyph×n"。只在换面/有破坏时重算（省）。
+  let legendSide = -1, legendDirty = true;
+  const updateFaceLegend = (s: number): void => {
+    const tally = new Map<string, { kind: CellKind; color: number; n: number }>();
+    for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) {
+      const v = faceVisible(s, a, b); if (!v) continue; const id = vid(v[0], v[1], v[2]);
+      const kind = cellType.get(id); if (!kind) continue; const color = colorAt.get(id) ?? 0;
+      const key = `${kind}-${color}`; const e = tally.get(key); if (e) e.n++; else tally.set(key, { kind, color, n: 1 });
+    }
+    legend.innerHTML = '';
+    if (tally.size === 0) return; // 无特殊格 → 不占屏
+    const rows = [...tally.values()].sort((x, y) => y.n - x.n).slice(0, 6);
+    for (const r of rows) {
+      const chip = el('div', `display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:14px;background:#0c1a30cc;border:2px solid ${PALETTE[r.color].css};font:800 14px system-ui;color:#fff;text-shadow:0 1px 2px #000;`);
+      chip.appendChild(el('span', `width:11px;height:11px;border-radius:3px;background:${PALETTE[r.color].css};display:inline-block;`));
+      chip.appendChild(el('span', '', `${CELLS[r.kind].glyph}×${r.n}`));
+      legend.appendChild(chip);
+    }
+  };
 
   // ── 运动体（子弹/碎片·自管积分）──
   type Bullet = { kind: 'bullet'; id: string; t: number; from: [number, number, number]; to: [number, number, number]; aim: [number, number, number] };
@@ -282,27 +319,46 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     for (let d = 0; d < N; d++) { const co = [0, 0, 0]; co[S.axis] = S.val === N - 1 ? N - 1 - d : d; co[S.ua] = a; co[S.ub] = b; if (present.has(vid(co[0], co[1], co[2]))) return [co[0], co[1], co[2]]; }
     return null;
   };
-  // 前面上「暴露 + 同色」中最靠面心者（零瞄准·从中心往外啃）。
+  // 前面上「暴露 + 同色」中的目标（零瞄准）：★优先同色特殊格（你用"装哪色"操控打谁）·否则最靠面心者。
   const aimFace = (s: number, color: number): [number, number, number] | null => {
-    const c0 = (N - 1) / 2; let best: [number, number, number] | null = null, bestR = Infinity;
-    for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) { const v = faceVisible(s, a, b); if (!v || colorAt.get(vid(v[0], v[1], v[2])) !== color) continue; const r = (a - c0) ** 2 + (b - c0) ** 2; if (r < bestR) { bestR = r; best = v; } }
-    return best;
+    const c0 = (N - 1) / 2;
+    let best: [number, number, number] | null = null, bestR = Infinity;
+    let bestSp: [number, number, number] | null = null, bestSpR = Infinity;
+    for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) {
+      const v = faceVisible(s, a, b); if (!v) continue; const id = vid(v[0], v[1], v[2]);
+      if (colorAt.get(id) !== color) continue;
+      const r = (a - c0) ** 2 + (b - c0) ** 2;
+      if (r < bestR) { bestR = r; best = v; }
+      if (cellType.has(id) && r < bestSpR) { bestSpR = r; bestSp = v; } // 同色特殊格优先
+    }
+    return bestSp ?? best;
   };
   const reveal = (i: number, j: number, k: number): void => {
     const id = vid(i, j, k); if (rendered.has(id) || !present.has(id) || !exposed(i, j, k)) return;
     try { engine.world.createEntity(id); } catch { /* */ }
     engine.world.addComponent(id, { type: 'Transform3D', x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) } as unknown as Transform3D);
-    engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(tintOf(id), ammoSet.has(id)) } as never); // 无 Material3D → 归批实例化（雕像露出=gold·弹药格金边）
+    engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(tintOf(id), cellType.get(id)) } as never); // 无 Material3D → 归批实例化（雕像露出=gold·特殊格发光边）
     engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D')?.children.push(id); rendered.add(id);
+    legendDirty = true;
   };
-  const breakVox = (i: number, j: number, k: number): void => {
+  // 破坏一格：记账 + 触发特殊格效果 + 露内层；引爆格连锁炸 3×3×3。chain=true 表示是被连锁波及（自己冒碎片）。
+  const breakVox = (i: number, j: number, k: number, chain = false): void => {
     const id = vid(i, j, k); const cc = colorAt.get(id);
-    if (cc === 5) return;                          // 雕像受保护·不碎
+    if (cc === 5 || !present.has(id)) return;       // 雕像受保护·不碎；已碎不重复
+    const kind = cellType.get(id);
     if (cc != null) coverByColor[cc]--;
     coverRemaining--;
-    if (ammoSet.has(id)) { ammoPool += AMMO_REFUND; ammoSet.delete(id); ammoRefundFx(); } // ★ 弹药格返弹
+    cellType.delete(id);
     present.delete(id);
+    legendDirty = true;
     if (rendered.has(id)) { engine.world.destroyEntity(id); const piv = engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D'); if (piv) { const x = piv.children.indexOf(id); if (x >= 0) piv.children.splice(x, 1); } rendered.delete(id); }
+    // 连锁波及格：自己也冒一簇碎片（主命中格的碎片由子弹落点侧生成）。
+    if (chain) { const wp = voxWorld(i, j, k); spawnFrags(wp[0], wp[1], wp[2], tintOf(id) === GOLD_TINT ? GOLD_TINT : PALETTE[cc ?? 0].tint); }
+    // ★ 特殊格效果分发（下沉正式版 = cellEffects 表的行）。
+    if (kind === 'ammo')  { ammoPool += AMMO_REFUND; ammoPill.animate?.([{ transform: 'scale(1.28)' }, { transform: 'scale(1)' }], { duration: 260 }); cellFx(`🔫 +${AMMO_REFUND}`, CELLS.ammo.css); }
+    else if (kind === 'power') { rapidLeft = POWER_MS; cellFx('🔥 齐射翻倍!', CELLS.power.css); }
+    else if (kind === 'time')  { faceLeft += TIME_BONUS; cellFx(`⏱ +${(TIME_BONUS / 1000).toFixed(1)}s`, CELLS.time.css); }
+    else if (kind === 'bomb')  { cellFx('💥 连爆!', CELLS.bomb.css); for (let di = -BOMB_R; di <= BOMB_R; di++) for (let dj = -BOMB_R; dj <= BOMB_R; dj++) for (let dk = -BOMB_R; dk <= BOMB_R; dk++) { const a = i + di, b = j + dj, c = k + dk; if ((di || dj || dk) && inB(a) && inB(b) && inB(c) && colorAt.get(vid(a, b, c)) !== 5) breakVox(a, b, c, true); } } // 3×3×3 连锁（引爆格递归引爆·雕像免疫）
     ([[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]] as [number,number,number][]).forEach(([a, b, c]) => { if (inB(a) && inB(b) && inB(c)) reveal(a, b, c); });
   };
 
@@ -342,9 +398,14 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
         curRy += shortDelta(curRy, try_) * Math.min(1, dt * TWEEN);
         const piv = engine.world.getComponent<Transform3D>('cube-pivot', 'Transform3D'); if (piv) { piv.rotX = curRx; piv.rotY = curRy; }
         facePill.textContent = `⏱ ${(faceLeft / 1000).toFixed(1)}`;
-        timeBar.style.width = `${(faceLeft / FACE_MS) * 100}%`;
+        timeBar.style.width = `${Math.min(100, (faceLeft / FACE_MS) * 100)}%`;
+        // 火力格：齐射频率翻倍（rapidLeft>0 期间节拍减半）。
+        if (rapidLeft > 0) rapidLeft = Math.max(0, rapidLeft - dt);
+        const cad = rapidLeft > 0 ? FIRE_MS * 0.45 : FIRE_MS;
         // ★ 自动发射：3 门炮按拍各射一发（无需按）·扣弹→无同色暴露则浪费。
-        afAcc += dt; while (afAcc >= FIRE_MS) { afAcc -= FIRE_MS; for (const c of slots) fire(c); }
+        afAcc += dt; while (afAcc >= cad) { afAcc -= cad; for (const c of slots) fire(c); }
+        // 本面补给清单（换面或有破坏时重算）。
+        const fs = frontSide(); if (fs !== legendSide || legendDirty) { legendSide = fs; legendDirty = false; updateFaceLegend(fs); }
       }
       // 运动体积分。
       const ds = Math.min(dt, 50) / 1000;
