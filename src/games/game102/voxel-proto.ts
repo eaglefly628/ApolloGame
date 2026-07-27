@@ -1,8 +1,10 @@
 // Game 102 · 3D 体素立方 —— **雕刻爽快版原型（throwaway·render-only·丢弃版）**。
 //
-// owner 2026-07-26 定案 v1：立方**自动转**·每 5 秒转到下一面·6 面循环。当前面朝你 5 秒内你**狂按颜色发射键**
-// → 轰碎那面的**同色暴露格**（零瞄准·从中心往外啃=扫射感）·海量碎片=爽。立方小而体素多(N=12)。
-// Pixel Flow 的 DNA：不瞄准 + 同色 + 暴露逐层；张力换成**每面限时 + 破坏度**（非稀缺死锁）。道具(别色弹/炸弹)下一版接。
+// owner 2026-07-26 定案 v1：立方**自动转**·每 5 秒转到下一面·6 面循环。3 门炮自动扫射当前面**同色暴露格**
+// （零瞄准·从中心往外啃=扫射感）·海量碎片=爽。立方小而体素多(N=12)。
+// owner 2026-07-27 定案 v2·**全局共享弹药**：弹药 = 全局一个池（任何颜色都从这一池扣·打空即输）·不再每色/每面回满。
+// → 空放（槽色没对齐这面 = 无同色暴露格 = 打不出去仍扣弹）直接吃掉总预算 → 换槽/调度有全局重量 = Pixel Flow 调度焦虑。
+// Pixel Flow 的 DNA：不瞄准 + 同色 + 暴露逐层；张力 = **限时转面 + 全局弹药预算**（错配 → 池耗尽 → 输）。道具(别色弹/炸弹)下一版接。
 //
 // ⚠ 一次性手感原型（宿主胶水·render-only·非数据驱动正式版）。物理/运动全**自管每帧积分**(非 cannon-es)→ 零冻结。
 import { Engine } from '../../runtime/engine.js';
@@ -19,7 +21,7 @@ const MAXC = ((N - 1) / 2) * PITCH;
 const FACE_MS = 5000;     // 每面停留（ms）→ 转下一面
 const TWEEN = 0.010;      // 转面缓动系数（×dt）
 const FIRE_MS = 150;      // 自动发射节拍（每门炮每此间隔射一发·无需按）
-const AMMO_SLACK = 1.4;   // 每色弹药 = 该色外料数 ×此（40% 浪费余量·超则该色打不完→输）
+const AMMO_POOL_FRAC = 0.9; // 全局弹药池 = 外料总数 ×此（<1 → 打空前必须靠"少浪费"露够·空放吃预算）
 const REVEAL_PASS = 0.7;  // 剥掉多少外料算「雕像现形」过关
 const GOLD_TINT = 0xffd24a; // 雕像色（受保护·gold）
 const TRAVEL_MS = 260;    // 子弹飞抵（爽快版·快）
@@ -91,7 +93,7 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   }
   const coverTotal = coverByColor.reduce((a, b) => a + b, 0);
   let coverRemaining = coverTotal;
-  const ammo = coverByColor.map((n) => Math.ceil(n * AMMO_SLACK));
+  let ammoPool = Math.ceil(coverTotal * AMMO_POOL_FRAC); // ★ 全局共享弹药池（任何色都从这里扣·打空即输）
   const tintOf = (id: string): number => { const c = colorAt.get(id); return c === 5 ? GOLD_TINT : PALETTE[c ?? 0].tint; };
   const inB = (v: number): boolean => v >= 0 && v < N;
   const exposed = (i: number, j: number, k: number): boolean => {
@@ -146,8 +148,9 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   // ── 顶部：破坏度 + 每面倒计时 ──
   const top = el('div', 'position:absolute;left:0;right:0;top:14px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;pointer-events:none;');
   const dmg = el('div', 'padding:8px 18px;border-radius:20px;background:#0c1a30;border:2px solid #26385c;color:#ffd77a;font:800 18px system-ui;', '破坏 0%');
+  const ammoPill = el('div', 'padding:8px 18px;border-radius:20px;background:#0c1a30;border:2px solid #4a5c3a;color:#c7f27a;font:800 18px system-ui;', '🔫 0'); // 全局共享弹药池
   const facePill = el('div', 'padding:8px 20px;border-radius:20px;background:linear-gradient(#3a7bd5,#2a5cae);color:#fff;font:800 18px system-ui;box-shadow:0 3px 0 #1c3e7a;', '⏱ 5.0');
-  top.appendChild(dmg); top.appendChild(facePill); wrapper.appendChild(top);
+  top.appendChild(dmg); top.appendChild(ammoPill); top.appendChild(facePill); wrapper.appendChild(top);
   const timeBar = el('div', 'position:absolute;left:0;top:0;height:5px;background:#7fe3ff;width:100%;');
   wrapper.appendChild(timeBar);
   const banner = el('div', 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 44px system-ui;color:#8affa0;text-shadow:0 3px 14px #000;pointer-events:none;');
@@ -217,14 +220,17 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     slotEls[flashed].animate?.([{ transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { duration: 220 });
   };
   const refresh = (): void => {
-    chips.forEach((ch, c) => { ch.textContent = String(ammo[c]); ch.style.opacity = ammo[c] > 0 ? '1' : '0.28'; }); // 显每色剩余弹
+    const dry = ammoPool <= 0;
+    chips.forEach((ch) => { ch.style.opacity = dry ? '0.28' : '1'; }); // 全局共享池：弹尽=全色变暗（不再每色独立数）
     slotEls.forEach((s, i) => {
       const col = PALETTE[slots[i]].css;
-      slotIcon[i].style.backgroundImage = `url("${PALETTE[slots[i]].sprite}")`; slotNum[i].textContent = String(ammo[slots[i]]); // 按槽色选对应色炮台精灵
+      slotIcon[i].style.backgroundImage = `url("${PALETTE[slots[i]].sprite}")`; slotNum[i].textContent = ''; // 弹药走顶部共享池·槽内不再单列数
 
       if (i === selSlot) { s.style.boxShadow = `0 0 0 4px #ffd24a,0 0 22px 6px ${col}cc`; s.style.transform = 'scale(1.1)'; s.style.background = '#16233d'; }
       else { s.style.boxShadow = '0 4px 10px #0008'; s.style.transform = 'scale(1)'; s.style.background = '#0c1a30'; }
     });
+    ammoPill.textContent = `🔫 ${ammoPool}`;
+    ammoPill.style.color = ammoPool <= coverTotal * 0.15 ? '#ff9a6a' : '#c7f27a'; // 见底告警
     dmg.textContent = `露出 ${Math.round(((coverTotal - coverRemaining) / coverTotal) * 100)}% / ${Math.round(REVEAL_PASS * 100)}%`;
   };
   refresh();
@@ -288,12 +294,12 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   const checkEnd = (): void => {
     if (over) return;
     if (coverRemaining === 0 || (coverTotal - coverRemaining) / coverTotal >= REVEAL_PASS) { over = 'win'; banner.textContent = '🎉 雕像现形！'; banner.style.color = '#8affa0'; return; }
-    for (let c = 0; c < PALETTE.length; c++) if (coverByColor[c] > 0 && ammo[c] <= 0) { over = 'lose'; banner.textContent = '弹尽 · 雕像未露'; banner.style.color = '#ff8a8a'; return; }
+    if (ammoPool <= 0) { over = 'lose'; banner.textContent = '弹尽 · 雕像未露'; banner.style.color = '#ff8a8a'; return; } // 全局池空且未露够→输
   };
-  // 单发（自动炮调用）：扣一发弹；正对这面有同色暴露格→射子弹清一格·否则空放浪费。
+  // 单发（自动炮调用）：从全局池扣一发弹；正对这面有同色暴露格→射子弹清一格·否则空放浪费（仍扣池）。
   const fire = (color: number): void => {
-    if (over || ammo[color] <= 0) return;
-    ammo[color]--;
+    if (over || ammoPool <= 0) return;
+    ammoPool--;
     const aim = aimFace(frontSide(), color);
     if (aim) {
       const to = voxWorld(aim[0], aim[1], aim[2]);
