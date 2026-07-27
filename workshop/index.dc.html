@@ -1402,8 +1402,13 @@ class Component extends DCLogic {
         if (fl > 0) {
           tone = 'fail';
           const errs = (sm.errors || []).map(e => e.no + '：' + String(e.error)).join('\n');
+          // fetch failed / ENOTFOUND / ECONNREFUSED / timeout / CERT = 连不上（网络/DNS/TLS/代理），发生在拿到 HTTP 响应之前；
+          // key 无效/额度=会拿到 HTTP 4xx（错误里带 code/message，不是 fetch failed）。据此分诊，别把连不上错当成 key 问题。
+          const netFail = /fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|CONNECT_TIMEOUT|EAI_AGAIN|CERT_|TLS/i.test(errs);
           msg = '✕ ' + label + '：' + fl + ' 张真调失败（图未更新）\n' + (errs || '(无错误详情)') +
-            '\n提示：真图需 ARK_API_KEY 有效 + 能连火山方舟（ark.cn-beijing.volces.com）。多为 key 无效/额度/网络不可达。';
+            (netFail
+              ? '\n诊断：这是「连不上」火山方舟（DNS/TLS/网络/代理）——不是 key（key 错会返 HTTP 401）。本机跑 `node scripts/seedream-probe.mjs` 定位；若浏览器能开但 Node 连不上=走了系统代理而 Node 不自动用。'
+              : '\n提示：真图需 ARK_API_KEY 有效 + 已开通 Doubao-Seedream（额度足）。跑 `node scripts/seedream-probe.mjs` 看原始返回定位 key/模型/额度。');
         } else if (mk > 0) {
           tone = 'mock';
           const p0 = (sm.probes && sm.probes[0]) || null;

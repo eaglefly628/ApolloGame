@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame, sizeForSpec, genSizeForTarget, resizeImageTo } from './art-replace.mjs';
+import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame, sizeForSpec, genSizeForTarget, resizeImageTo, errText } from './art-replace.mjs';
 import { encodePng } from './ai-gen.mjs';
 import { decodePng } from './asset-matte.mjs';
 import { STYLE_PACKS, STYLE_PACK_IDS } from './style-packs.mjs';
@@ -181,6 +181,24 @@ describe('T1 ⑤ 对位替换', () => {
     expect(r.summary.cached).toBe(3); // 其余 3 行命中缓存不动（不重扣费）
     expect(r.summary.generated).toBe(1); // 只重生成 art-03
   }));
+});
+
+describe('errText 摊平 fetch 真因（owner 2026-07-27「fetch failed 看不出真因」）', () => {
+  it('undici fetch failed → 带出 e.cause 的 code（网络类可分诊·非 key）', () => {
+    const e = new TypeError('fetch failed');
+    e.cause = Object.assign(new Error('getaddrinfo ENOTFOUND ark.cn-beijing.volces.com'), { code: 'ENOTFOUND' });
+    const s = errText(e);
+    expect(s).toContain('fetch failed');
+    expect(s).toContain('ENOTFOUND'); // 关键：真因摊出来了，不再只剩 'fetch failed'
+  });
+  it('AggregateError（多次连接尝试）→ 取首个 error 的 code', () => {
+    const e = new TypeError('fetch failed');
+    e.cause = { errors: [Object.assign(new Error('connect ECONNREFUSED 1.2.3.4:443'), { code: 'ECONNREFUSED' })] };
+    expect(errText(e)).toContain('ECONNREFUSED');
+  });
+  it('普通 Error 无 cause → 原样（含 HTTP 错误体的 code，如 ModelNotOpen）', () => {
+    expect(errText(new Error('seedream: 无 image url {"error":{"code":"ModelNotOpen"}}'))).toContain('ModelNotOpen');
+  });
 });
 
 describe('mock 永不写回（owner 2026-07-10「Mock 数据不该这样做」·生产默认）', () => {

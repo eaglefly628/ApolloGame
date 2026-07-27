@@ -48,7 +48,11 @@ async function tryModel(key, model) {
     if (res.ok && url) return { model, ok: true, status: res.status, note: '✅ 出图成功 → ' + url.slice(0, 80) + '…' };
     return { model, ok: false, status: res.status, note: `✗ HTTP ${res.status}` + (errCode ? ` · code=${errCode}` : '') + (errMsg ? ` · ${String(errMsg).slice(0, 160)}` : ` · ${text.slice(0, 160)}`) };
   } catch (e) {
-    return { model, ok: false, status: 0, note: `✗ 网络/连接失败：${String(e).slice(0, 160)}（本机能否访问 ark.cn-beijing.volces.com？）` };
+    // 摊平 e.cause 链的真因：ENOTFOUND=DNS 解析不到（域名/网络）·ECONNREFUSED=拒连·UND_ERR_CONNECT_TIMEOUT=连接超时·
+    // CERT_*=证书（多为代理中间人）——全是「连不上」，与 key 无关（key 错会是 HTTP 4xx 走上一分支）。
+    const cause = e && e.cause;
+    const code = (cause && (cause.code || (Array.isArray(cause.errors) && cause.errors[0] && cause.errors[0].code))) || '';
+    return { model, ok: false, status: 0, note: `✗ 网络/连接失败：${code ? code + ' · ' : ''}${String(e && e.message || e).slice(0, 120)}（连不上·非 key 问题；本机能否访问 ark.cn-beijing.volces.com？走代理的话 Node 不自动用系统代理）` };
   }
 }
 

@@ -498,6 +498,22 @@ export async function genRowAsset(row, pack, { mock = true, apiKey = null, gameS
 
 // ═══ ④ 批量生成器（并发留给 apollo 层·此处确定性顺序·缓存/续跑/探针）═══
 
+/** 把 fetch/网络错误的真因摊平（e.cause 链的 code/message）——否则只剩 'fetch failed' 无从下手：
+ *  网络类=ENOTFOUND(DNS)/ECONNREFUSED/UND_ERR_CONNECT_TIMEOUT/CERT_*（连不上·非 key 问题），
+ *  key/额度/模型类才走 HTTP 4xx（在 adapter 里带 res.error 抛·不是 fetch failed）。owner 2026-07-27 报「fetch failed 看不出真因」。 */
+export function errText(e) {
+  const parts = [e && e.message ? e.message : String(e)];
+  let c = e && e.cause;
+  for (let i = 0; i < 3 && c; i++) {
+    const first = Array.isArray(c.errors) ? c.errors[0] : null;
+    const code = c.code || (first && first.code);
+    const msg = c.message || (first && first.message) || String(c);
+    parts.push((code ? code + ': ' : '') + msg);
+    c = c.cause;
+  }
+  return [...new Set(parts.filter(Boolean))].join(' ← ').replace(/\s+/g, ' ').trim().slice(0, 260);
+}
+
 /** 逐行生成落盘 + 登记游戏本地 index + 更新台账。断点续跑=命中缓存(cacheKey+文件在)不重扣费；无 key=探针+mock。 */
 export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = true, env = process.env, at = new Date().toISOString(), only = null, provider: providerOverride = null, allowMock = false, debug = false } = {}) {
   const pack = STYLE_PACKS[packId];
@@ -535,7 +551,7 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     }
     let a;
     try { a = await genRowAsset(row, pack, { mock: useMock, apiKey, gameStyle, provider: providerOverride }); }
-    catch (e) { row.status = 'failed'; row.gen = { provider, error: String(e).slice(0, 200) }; summary.failed++; summary.errors.push({ no: row.no, provider, error: String(e).slice(0, 200) }); continue; }
+    catch (e) { const em = errText(e); row.status = 'failed'; row.gen = { provider, error: em }; summary.failed++; summary.errors.push({ no: row.no, provider, error: em }); continue; }
     // debug 回显：实际（或本该）发给文生图的完整提示词 + 请求 + curl 命令行（key 打码·mock 也有）。
     const dbg = { no: row.no, provider: a.provider, model: a.model, kind: row.kind, mock: !!a.mock, prompt: a.prompt, size: a.request?.size ?? null, endpoint: a.request?.endpoint ?? null, body: a.request?.body ?? null, curl: a.request ? curlFor(a.request, ENVKEY[a.provider]) : null };
     summary.debug.push(dbg);
