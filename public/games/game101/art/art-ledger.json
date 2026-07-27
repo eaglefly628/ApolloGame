@@ -1878,12 +1878,59 @@
       "kind": "portrait",
       "desc": "周航·顾客卡通立绘",
       "prompt": "cozy 2.5D cartoon half-body portrait of a sunny young fisherman, tan skin, dark hair with a blue bandana, friendly grin, warm harbor palette, soft lighting, transparent-ready",
-      "status": "filled",
+      "status": "replaced",
       "gen": {
-        "source": "apollo-procedural",
-        "script": "scripts/game101-portrait-gen.mjs",
-        "style": "cozy-cartoon portrait",
-        "servedPath": "/games/game101/art/portraits/zhou.svg"
+        "source": "upload",
+        "localId": "gen/art-49-up",
+        "servedPath": "/games/game101/art/gen/art-49-up.png"
+      },
+      "orig": {
+        "status": "filled",
+        "gen": {
+          "source": "apollo-procedural",
+          "script": "scripts/game101-portrait-gen.mjs",
+          "style": "cozy-cartoon portrait",
+          "servedPath": "/games/game101/art/portraits/zhou.svg"
+        },
+        "indexEntry": {
+          "id": "cust_portrait_1",
+          "type": "texture",
+          "description": "周航·卡通立绘占位（apollo-procedural）",
+          "status": "filled",
+          "path": "/games/game101/art/portraits/zhou.svg",
+          "spec": {
+            "usage": "sprite",
+            "colorSpace": "srgb",
+            "format": "svg",
+            "width": 256,
+            "height": 320,
+            "transparent": false
+          },
+          "category": "portrait",
+          "tags": [
+            "portrait",
+            "cartoon",
+            "cozy",
+            "placeholder",
+            "zhou"
+          ],
+          "style": "cozy-cartoon",
+          "license": "apollo-procedural",
+          "source": "scripts/game101-portrait-gen.mjs"
+        },
+        "backupPath": "/games/game101/art/orig/art-49.svg"
+      },
+      "history": [
+        {
+          "action": "upload",
+          "assetId": "gen/art-49-up"
+        }
+      ],
+      "provenance": {
+        "model": "user-upload",
+        "prompt": "",
+        "date": "",
+        "license": "用户上传"
       }
     },
     {
@@ -1892,12 +1939,59 @@
       "kind": "portrait",
       "desc": "老陈·顾客卡通立绘",
       "prompt": "cozy 2.5D cartoon half-body portrait of a kindly middle-aged handyman, tan skin, short greying hair under a work cap, short beard, warm smile, warm harbor palette",
-      "status": "filled",
+      "status": "replaced",
       "gen": {
-        "source": "apollo-procedural",
-        "script": "scripts/game101-portrait-gen.mjs",
-        "style": "cozy-cartoon portrait",
-        "servedPath": "/games/game101/art/portraits/chen.svg"
+        "source": "upload",
+        "localId": "gen/art-50-up",
+        "servedPath": "/games/game101/art/gen/art-50-up.png"
+      },
+      "orig": {
+        "status": "filled",
+        "gen": {
+          "source": "apollo-procedural",
+          "script": "scripts/game101-portrait-gen.mjs",
+          "style": "cozy-cartoon portrait",
+          "servedPath": "/games/game101/art/portraits/chen.svg"
+        },
+        "indexEntry": {
+          "id": "cust_portrait_2",
+          "type": "texture",
+          "description": "老陈·卡通立绘占位（apollo-procedural）",
+          "status": "filled",
+          "path": "/games/game101/art/portraits/chen.svg",
+          "spec": {
+            "usage": "sprite",
+            "colorSpace": "srgb",
+            "format": "svg",
+            "width": 256,
+            "height": 320,
+            "transparent": false
+          },
+          "category": "portrait",
+          "tags": [
+            "portrait",
+            "cartoon",
+            "cozy",
+            "placeholder",
+            "chen"
+          ],
+          "style": "cozy-cartoon",
+          "license": "apollo-procedural",
+          "source": "scripts/game101-portrait-gen.mjs"
+        },
+        "backupPath": "/games/game101/art/orig/art-50.svg"
+      },
+      "history": [
+        {
+          "action": "upload",
+          "assetId": "gen/art-50-up"
+        }
+      ],
+      "provenance": {
+        "model": "user-upload",
+        "prompt": "",
+        "date": "",
+        "license": "用户上传"
       }
     },
     {
@@ -1906,12 +2000,59 @@
       "kind": "portrait",
       "desc": "苏晴·顾客卡通立绘",
       "prompt": "cozy 2.5D cartoon half-body portrait of a gentle young urban woman, fair skin, long wavy brown hair, soft smile, warm coral palette, soft lighting",
-      "status": "filled",
+      "status": "replaced",
       "gen": {
-        "source": "apollo-procedural",
-        "script": "scripts/game101-portrait-gen.mjs",
-        "style": "cozy-cartoon portrait",
-        "servedPath": "/games/game101/art/portraits/su.svg"
+        "source": "upload",
+        "localId": "gen/art-51-up",
+        "servedPath": "/games/game101/art/gen/art-51-up.png"
+      },
+      "orig": {
+        "status": "filled",
+        "gen": {
+          "source": "apollo-procedural",
+          "script": "scripts/game101-portrait-gen.mjs",
+          "style": "cozy-cartoon portrait",
+          "servedPath": "/games/game101/art/portraits/su.svg"
+        },
+        "indexEntry": {
+          "id": "cust_portrait_3",
+          "type": "texture",
+          "description": "苏晴·卡通立绘占位（apollo-procedural）",
+          "status": "filled",
+          "path": "/games/game101/art/portraits/su.svg",
+          "spec": {
+            "usage": "sprite",
+            "colorSpace": "srgb",
+            "format": "svg",
+            "width": 256,
+            "height": 320,
+            "transparent": false
+          },
+          "category": "portrait",
+          "tags": [
+            "portrait",
+            "cartoon",
+            "cozy",
+            "placeholder",
+            "su"
+          ],
+          "style": "cozy-cartoon",
+          "license": "apollo-procedural",
+          "source": "scripts/game101-portrait-gen.mjs"
+        },
+        "backupPath": "/games/game101/art/orig/art-51.svg"
+      },
+      "history": [
+        {
+          "action": "upload",
+          "assetId": "gen/art-51-up"
+        }
+      ],
+      "provenance": {
+        "model": "user-upload",
+        "prompt": "",
+        "date": "",
+        "license": "用户上传"
       }
     },
     {
@@ -1920,12 +2061,59 @@
       "kind": "portrait",
       "desc": "林夏·顾客卡通立绘",
       "prompt": "cozy 2.5D cartoon half-body portrait of the heroine, a calm woman who moved back home, fair skin, long dark-brown hair, serene expression, warm amber palette",
-      "status": "filled",
+      "status": "replaced",
       "gen": {
-        "source": "apollo-procedural",
-        "script": "scripts/game101-portrait-gen.mjs",
-        "style": "cozy-cartoon portrait",
-        "servedPath": "/games/game101/art/portraits/linxia.svg"
+        "source": "upload",
+        "localId": "gen/art-52-up",
+        "servedPath": "/games/game101/art/gen/art-52-up.png"
+      },
+      "orig": {
+        "status": "filled",
+        "gen": {
+          "source": "apollo-procedural",
+          "script": "scripts/game101-portrait-gen.mjs",
+          "style": "cozy-cartoon portrait",
+          "servedPath": "/games/game101/art/portraits/linxia.svg"
+        },
+        "indexEntry": {
+          "id": "cust_portrait_4",
+          "type": "texture",
+          "description": "林夏·卡通立绘占位（apollo-procedural）",
+          "status": "filled",
+          "path": "/games/game101/art/portraits/linxia.svg",
+          "spec": {
+            "usage": "sprite",
+            "colorSpace": "srgb",
+            "format": "svg",
+            "width": 256,
+            "height": 320,
+            "transparent": false
+          },
+          "category": "portrait",
+          "tags": [
+            "portrait",
+            "cartoon",
+            "cozy",
+            "placeholder",
+            "linxia"
+          ],
+          "style": "cozy-cartoon",
+          "license": "apollo-procedural",
+          "source": "scripts/game101-portrait-gen.mjs"
+        },
+        "backupPath": "/games/game101/art/orig/art-52.svg"
+      },
+      "history": [
+        {
+          "action": "upload",
+          "assetId": "gen/art-52-up"
+        }
+      ],
+      "provenance": {
+        "model": "user-upload",
+        "prompt": "",
+        "date": "",
+        "license": "用户上传"
       }
     },
     {
