@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { ADAPTERS, encodePng, curlFor } from './ai-gen.mjs';
 import { decodePng, encodePngRGBA } from './asset-matte.mjs';
+import { decodeJpeg } from './jpeg-decode.mjs';
 import { STYLE_PACKS, listStylePacks, saveLocalStyle, deleteLocalStyle } from './style-packs.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -440,10 +441,11 @@ export function sizeForSpec(row) {
  */
 export function resizeImageTo(buffer, tw, th) {
   if (!(tw > 0 && th > 0)) return buffer;
+  const png = isPngBuffer(buffer);
   let img;
-  try { img = decodePng(buffer); } catch { return buffer; }
+  try { img = png ? decodePng(buffer) : decodeJpeg(buffer); } catch { return buffer; } // PNG 或 JPEG（seedream 真图）·都解不了=原样兜底
   const { w: sw, h: sh, rgba } = img;
-  if (tw >= sw && th >= sh) return buffer; // 不放大（保留原分辨率）
+  if (tw >= sw && th >= sh) return png ? buffer : encodePngRGBA(sw, sh, rgba); // 不缩：PNG 原样·JPEG 转 PNG（管线按 .png 存·JPEG 无 alpha）
   const out = Buffer.alloc(tw * th * 4);
   for (let y = 0; y < th; y++) {
     const y0 = Math.floor((y * sh) / th), y1 = Math.max(y0 + 1, Math.floor(((y + 1) * sh) / th));
@@ -492,15 +494,18 @@ export async function genRowAsset(row, pack, { mock = true, apiKey = null, gameS
     return { buffer: encodePng(w, h, rgb), ext: 'png', provider, model: pack.params.model + '·mock', mock: true, prompt, cacheKey: ck, request };
   }
   const g = await ADAPTERS[provider].generate(prompt, { mock: false, apiKey, size }); // 真调（放大生成到 GEN_MIN）
-  // scale-back：把返回大图缩回目标尺寸（非场景 kind·有 target）。需要缩小却拿到非 PNG（provider 出了 JPEG/WEBP·
-  // 我们的解码器只吃 PNG）→ 明确报错·绝不把大图原样塞进小槽（owner 2026-07-27「生成很大·没缩回 26×26·变巨大底色」）。
+  // scale-back：把返回大图缩回目标尺寸（非场景 kind·有 target）。PNG/JPEG 都能解码缩放→再编码 PNG
+  // （seedream 真图返 JPEG·owner 2026-07-27 实证）；仅 WEBP/GIF 等还解不了·需缩却解不了→明确报错·绝不塞大图进小槽。
+  const fmt = sniffImageFmt(g.buffer);
   let buffer = g.buffer;
   if (target && !isScene) {
     const needShrink = gs && (gs.w > target.w || gs.h > target.h);
-    if (needShrink && !isPngBuffer(g.buffer)) {
-      throw new Error(`生成图为 ${sniffImageFmt(g.buffer)}·非 PNG，无法缩放到 ${target.w}×${target.h}（不把大图原样塞进小槽）。让 provider 出 PNG，或补 JPEG 解码。`);
+    if (needShrink && fmt !== 'PNG' && fmt !== 'JPEG') {
+      throw new Error(`生成图为 ${fmt}·当前只支持 PNG/JPEG 缩放到 ${target.w}×${target.h}（不把大图原样塞进小槽）。让 provider 出 PNG/JPEG。`);
     }
-    buffer = resizeImageTo(g.buffer, target.w, target.h);
+    buffer = resizeImageTo(g.buffer, target.w, target.h); // PNG/JPEG → 解码·缩放·再编码 PNG
+  } else if (fmt === 'JPEG') {
+    try { const im = decodeJpeg(g.buffer); buffer = encodePngRGBA(im.w, im.h, im.rgba); } catch { /* 解不了=原样 */ } // 场景/无定尺寸：JPEG→PNG（不缩）
   }
   return { buffer, ext: 'png', provider, model: g.model, mock: false, prompt, cacheKey: ck, request: g.request ?? null };
 }
