@@ -203,8 +203,11 @@ function orders(s: S1State): N {
       // 竖高卡（owner「不够长·太小·放大」）：大立绘在上作主视觉 + 需求盘/奖励叠在下，纵向排布=高而醒目。
       layout: { direction: 'column', align: 'stretch', justify: 'start', gap: 8, padding: o.timed ? 14 : 10, radius: 20, flex: 1, ...(o.deliverable ? { anim: 'glow' } : {}) },
       children: [
-        // 顶：大人物立绘（asset-manager vendor 的 CC0 头像·src 就绪即真图·name 作缺省首字兜底）。撑满卡宽作主视觉。
-        { type: 'Avatar', id: `ord-${i}-av`, props: { src: o.portrait, name: o.char, size: 190, shape: 'rounded' }, layout: { align: 'center' } },
+        // 顶：大人物立绘（皮肤槽·就绪即真图）。撑满卡宽 + 固定高 → 立绘 scale 满整个立绘框(cover·无留白·owner「scale 到框 size」)。
+        // 无立绘 URL（静态稿/未接图）→ 回退 Avatar 首字兜底（Image 必填 src·不给会 invalid）。
+        o.portrait
+          ? { type: 'Image', id: `ord-${i}-av`, props: { src: o.portrait, alt: o.char, fit: 'cover', radius: 18 }, layout: { align: 'stretch', width: 999, height: 300 } }
+          : { type: 'Avatar', id: `ord-${i}-av`, props: { name: o.char, size: 190, shape: 'rounded' }, layout: { align: 'center' } },
         {
           type: 'Panel', id: `ord-${i}-r`, props: { bare: true },
           layout: { direction: 'column', align: 'stretch', justify: 'start', gap: 8, flex: 1 },
@@ -319,7 +322,7 @@ function board(s: S1State): N {
       // 皮肤槽就绪 → 渲美术图(Image·就绪即换装)；否则回退 Twemoji Label。被拿起格淡化缩小·冷却中淡化(让圆环醒目)。
       const cdDim = cv.cd != null;
       kids.push(cv.skin
-        ? { type: 'Image', id: `t-live-${i}-l`, props: { src: cv.skin, fit: 'contain' }, layout: i === s.liftedCell ? { width: 74, height: 74, opacity: 0.28 } : cdDim ? { width: 88, height: 88, opacity: 0.4 } : { width: 88, height: 88 } }
+        ? { type: 'Image', id: `t-live-${i}-l`, props: { src: cv.skin, fit: 'contain' }, layout: i === s.liftedCell ? { width: 108, height: 108, opacity: 0.28 } : cdDim ? { width: 126, height: 126, opacity: 0.4 } : { width: 126, height: 126 } }
         : { type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: i === s.liftedCell ? 52 : 66 }, layout: i === s.liftedCell ? { opacity: 0.28 } : cdDim ? { opacity: 0.4 } : {} });
       if (cv.deliverable) kids.push({ type: 'Badge', id: `t-live-${i}-b`, props: { text: '✓', tone: 'ok' } });
       if (cv.timer != null) kids.push({ type: 'Badge', id: `t-live-${i}-t`, props: { text: `⏱${cv.timer}`, tone: 'warn' } }); // 限时物倒计时
@@ -351,17 +354,17 @@ function board(s: S1State): N {
       type: 'Panel', id: `t-live-${i}`,
       props: cv?.gen ? { bg: { custom: GEN_BG }, action: `tap_${cv.gen}` } : deliverable ? { bg: { custom: CELL_BG }, edge: 'ok' } : { bg: { custom: CELL_BG } },
       // 手感：物品格 tilt3d 悬停立体抬起；生成器格 press3d 按压下沉；可交付物 anim:'glow' 发光脉冲醒目。基座闭集。
-      layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 4, radius: 16, height: 128, ...(deliverable ? { tilt3d: true, anim: 'glow' } : isItem ? { tilt3d: true } : cv?.gen ? { press3d: true } : {}) },
+      layout: { direction: 'column', align: 'center', justify: 'center', gap: 1, padding: 1, radius: 16, height: 128, ...(deliverable ? { tilt3d: true, anim: 'glow' } : isItem ? { tilt3d: true } : cv?.gen ? { press3d: true } : {}) },
       children: kids,
     } as N;
   });
   return {
     type: 'Panel', id: 'board', props: { bg: { custom: FRAME } },
-    layout: { direction: 'column', gap: 0, padding: 10, radius: 22, flex: 1 },
+    layout: { direction: 'column', gap: 0, padding: 5, radius: 22, flex: 1 },
     children: [
       {
         type: 'Panel', id: 'board-well', props: { bg: { custom: WELL } },
-        layout: { direction: 'grid', cols: GAME.board.cols, gap: 6, padding: 8, radius: 16, flex: 1 },
+        layout: { direction: 'grid', cols: GAME.board.cols, gap: 3, padding: 4, radius: 16, flex: 1 },
         children: cells,
       },
     ],

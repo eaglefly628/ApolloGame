@@ -39,10 +39,10 @@ function tile(id, base, top, emoji, round = 15) {
   return S(
     `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">` +
     `<stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${base}"/></linearGradient></defs>` +
-    `<rect x="4" y="4" width="56" height="56" rx="${round + 2}" fill="${hex(...darker(CHAIN_TINT._cur || [40, 26, 18], 0.5))}"/>` +
-    `<rect x="6" y="6" width="52" height="52" rx="${round}" fill="url(#${gid})"/>` +
-    gloss(24, 20, 13, 7, 0.34) +
-    `<text x="32" y="33" font-size="30" text-anchor="middle" dominant-baseline="central">${emoji}</text>`,
+    `<rect x="1.5" y="1.5" width="61" height="61" rx="${round + 2}" fill="${hex(...darker(CHAIN_TINT._cur || [40, 26, 18], 0.5))}"/>` +
+    `<rect x="3.5" y="3.5" width="57" height="57" rx="${round}" fill="url(#${gid})"/>` +
+    gloss(24, 20, 15, 8, 0.34) +
+    `<text x="32" y="35" font-size="46" text-anchor="middle" dominant-baseline="central">${emoji}</text>`,
   );
 }
 

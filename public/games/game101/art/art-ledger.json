@@ -1038,11 +1038,12 @@
         "transparent": true
       },
       "context": "美术需求：「gen gen coffee」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_coffee（未填时回退 2D 色块 box·#c8871e）·需透明底",
-      "status": "replaced",
+      "status": "filled",
       "gen": {
-        "source": "upload",
-        "localId": "gen/art-28-up",
-        "servedPath": "/games/game101/art/gen/art-28-up.png"
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/gen_coffee.svg"
       },
       "provenance": {
         "model": "user-upload",
@@ -1096,11 +1097,12 @@
         "transparent": true
       },
       "context": "美术需求：「gen gen fishbox」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_fishbox（未填时回退 2D 色块 box·#c8871e）·需透明底",
-      "status": "replaced",
+      "status": "filled",
       "gen": {
-        "source": "upload",
-        "localId": "gen/art-29-up",
-        "servedPath": "/games/game101/art/gen/art-29-up.png"
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/gen_fishbox.svg"
       },
       "provenance": {
         "model": "user-upload",
@@ -1154,11 +1156,12 @@
         "transparent": true
       },
       "context": "美术需求：「gen gen fridge」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_fridge（未填时回退 2D 色块 box·#c8871e）·需透明底",
-      "status": "replaced",
+      "status": "filled",
       "gen": {
-        "source": "upload",
-        "localId": "gen/art-30-up",
-        "servedPath": "/games/game101/art/gen/art-30-up.png"
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/gen_fridge.svg"
       },
       "provenance": {
         "model": "user-upload",
@@ -1212,11 +1215,12 @@
         "transparent": true
       },
       "context": "美术需求：「gen gen toolbox」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_toolbox（未填时回退 2D 色块 box·#c8871e）·需透明底",
-      "status": "replaced",
+      "status": "filled",
       "gen": {
-        "source": "upload",
-        "localId": "gen/art-31-up",
-        "servedPath": "/games/game101/art/gen/art-31-up.png"
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/gen_toolbox.svg"
       },
       "provenance": {
         "model": "user-upload",
