@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame, sizeForSpec, genSizeForTarget, resizeImageTo, errText } from './art-replace.mjs';
+import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame, sizeForSpec, genSizeForTarget, resizeImageTo, errText, isPngBuffer, sniffImageFmt } from './art-replace.mjs';
 import { encodePng } from './ai-gen.mjs';
 import { decodePng } from './asset-matte.mjs';
 import { STYLE_PACKS, STYLE_PACK_IDS } from './style-packs.mjs';
@@ -183,6 +183,39 @@ describe('T1 ⑤ 对位替换', () => {
   }));
 });
 
+describe('resetRow 非破坏性 + 点名 regen 恒重出（owner 2026-07-27「生成失败→图没了→色块」）', () => {
+  it('resetRow 不再预清 status/gen/provenance（旧好图留到结果落定·失败可保住）', () => {
+    const l = deriveLedger(MANIFEST, { game: 'g' });
+    const row = l.rows.find((x) => x.no === 'art-03');
+    row.status = 'generated';
+    row.gen = { provider: 'qwen', servedPath: '/games/g/art/gen/art-03.png', cacheKey: 'ck1' };
+    row.provenance = { model: 'm', prompt: 'p', date: 'd', license: 'l' };
+    const rr = resetRow(l, 'art-03', { query: '新词' });
+    expect(rr.ok).toBe(true);
+    expect(row.status).toBe('generated');                // 没被清成 placeholder（否则失败=空槽/色块）
+    expect(row.gen && row.gen.servedPath).toBeTruthy();  // 旧图指针还在
+    expect(row.query).toBe('新词');                       // query 照常更新
+  });
+  it('点名 regen（only）恒重出·不吃缓存（同词也换新卷·非 only 批处理仍走缓存续跑）', () => withRoot(async (root) => {
+    const l = deriveLedger(MANIFEST, { game: 'g' });
+    await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true });                          // 首生成
+    const r2 = await batchGenerate(l, 'pixel-retro', { root, game: 'g', mock: true, only: 'art-03' }); // 点名重出
+    expect(r2.summary.cached).toBe(0);    // only 行不吃缓存
+    expect(r2.summary.generated).toBe(1); // 确实重出了
+  }));
+});
+
+describe('sniffImageFmt·非 PNG 不塞小槽（owner 2026-07-27「生成很大·没缩回 26×26·变巨大底色」）', () => {
+  it('嗅探 PNG / JPEG 魔数（缩小前判格式·非 PNG 明确报错不静默塞大图）', () => {
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const jpg = Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0, 0, 0, 0]);
+    expect(isPngBuffer(png)).toBe(true);
+    expect(isPngBuffer(jpg)).toBe(false);
+    expect(sniffImageFmt(png)).toBe('PNG');
+    expect(sniffImageFmt(jpg)).toBe('JPEG');
+  });
+});
+
 describe('errText 摊平 fetch 真因（owner 2026-07-27「fetch failed 看不出真因」）', () => {
   it('undici fetch failed → 带出 e.cause 的 code（网络类可分诊·非 key）', () => {
     const e = new TypeError('fetch failed');
@@ -262,14 +295,14 @@ describe('需求推导（retrofit·色块游戏无 art: 槽位时）', () => {
 });
 
 describe('T2 单槽重解析地基（点名优化/三式替换）', () => {
-  it('resetRow：单行打回待生成·可改 query·留 history', () => {
+  it('resetRow：改 query·留 history·非破坏（旧图保留·owner 2026-07-27 修「失败→图没了→色块」）', () => {
     const l = deriveLedger(MANIFEST, { game: 'g' });
-    l.rows[0].status = 'generated'; l.rows[0].gen = { cacheKey: 'x' };
+    l.rows[0].status = 'generated'; l.rows[0].gen = { cacheKey: 'x', servedPath: '/g/x.png' };
     const r = resetRow(l, l.rows[0].no, { query: 'new prompt' });
     expect(r.ok).toBe(true);
-    expect(l.rows[0].status).toBe('placeholder');
     expect(l.rows[0].query).toBe('new prompt');
-    expect(l.rows[0].gen).toBeNull();
+    expect(l.rows[0].status).toBe('generated'); // 非破坏：不再预清成 placeholder（否则失败=空槽/色块）
+    expect(l.rows[0].gen && l.rows[0].gen.servedPath).toBeTruthy(); // 旧图保留·生成成功才覆盖
     expect(l.rows[0].history[0].action).toBe('regen');
     expect(resetRow(l, 'art-99', {}).ok).toBe(false); // 无此编号
   });

@@ -476,7 +476,8 @@ export async function genRowAsset(row, pack, { mock = true, apiKey = null, gameS
   const ck = cacheKey(provider, prompt, pack.params);
   const isScene = row.kind === 'bg' || row.kind === 'splash' || row.kind === 'model3d';
   const target = targetSizeOf(row, targetSize);            // 最终尺寸
-  const size = (target && !isScene) ? genSizeForTarget(target.w, target.h).size : null; // 生成尺寸（放大到 GEN_MIN）
+  const gs = (target && !isScene) ? genSizeForTarget(target.w, target.h) : null; // 生成尺寸（放大到 GEN_MIN）
+  const size = gs ? gs.size : null;
   if (row.kind === 'model3d') {
     const g = await ADAPTERS[provider].generate(prompt, { mock, apiKey });
     return { buffer: g.buffer, ext: 'glb', provider, model: g.model, mock: !!g.mock, prompt, cacheKey: ck, request: g.request ?? null };
@@ -491,8 +492,16 @@ export async function genRowAsset(row, pack, { mock = true, apiKey = null, gameS
     return { buffer: encodePng(w, h, rgb), ext: 'png', provider, model: pack.params.model + '·mock', mock: true, prompt, cacheKey: ck, request };
   }
   const g = await ADAPTERS[provider].generate(prompt, { mock: false, apiKey, size }); // 真调（放大生成到 GEN_MIN）
-  // scale-back：把返回大图缩回目标尺寸（非场景 kind·有 target）；decode 失败/无 target=保留原图（安全兜底）。
-  const buffer = (target && !isScene) ? resizeImageTo(g.buffer, target.w, target.h) : g.buffer;
+  // scale-back：把返回大图缩回目标尺寸（非场景 kind·有 target）。需要缩小却拿到非 PNG（provider 出了 JPEG/WEBP·
+  // 我们的解码器只吃 PNG）→ 明确报错·绝不把大图原样塞进小槽（owner 2026-07-27「生成很大·没缩回 26×26·变巨大底色」）。
+  let buffer = g.buffer;
+  if (target && !isScene) {
+    const needShrink = gs && (gs.w > target.w || gs.h > target.h);
+    if (needShrink && !isPngBuffer(g.buffer)) {
+      throw new Error(`生成图为 ${sniffImageFmt(g.buffer)}·非 PNG，无法缩放到 ${target.w}×${target.h}（不把大图原样塞进小槽）。让 provider 出 PNG，或补 JPEG 解码。`);
+    }
+    buffer = resizeImageTo(g.buffer, target.w, target.h);
+  }
   return { buffer, ext: 'png', provider, model: g.model, mock: false, prompt, cacheKey: ck, request: g.request ?? null };
 }
 
@@ -512,6 +521,18 @@ export function errText(e) {
     c = c.cause;
   }
   return [...new Set(parts.filter(Boolean))].join(' ← ').replace(/\s+/g, ' ').trim().slice(0, 260);
+}
+
+/** PNG 魔数判定（decodePng/resizeImageTo 只吃 PNG）。 */
+export function isPngBuffer(b) { return !!b && b.length >= 8 && b.readUInt32BE(0) === 0x89504e47; }
+/** 嗅探图片格式（报错用·让「非 PNG 缩不了」有真相）——provider 可能返回 JPEG/WEBP。 */
+export function sniffImageFmt(b) {
+  if (!b || b.length < 4) return '未知';
+  if (b[0] === 0xFF && b[1] === 0xD8) return 'JPEG';
+  if (isPngBuffer(b)) return 'PNG';
+  if (b.length >= 12 && b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') return 'WEBP';
+  if (b.toString('ascii', 0, 3) === 'GIF') return 'GIF';
+  return '未知格式';
 }
 
 /** 逐行生成落盘 + 登记游戏本地 index + 更新台账。断点续跑=命中缓存(cacheKey+文件在)不重扣费；无 key=探针+mock。 */
@@ -542,7 +563,7 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     const outRel = useMock ? `gen/mock/${row.no}.${ext}` : `gen/${row.no}.${ext}`;
     const outAbs = genAbs(root, game, outRel);
     const ck = cacheKey(provider, dialectPrompt(row, pack, gameStyle), pack.params);
-    if (['generated', 'replaced'].includes(row.status) && row.gen?.cacheKey === ck && existsSync(outAbs)) { summary.cached++; continue; } // 命中·不重扣费
+    if (!only && ['generated', 'replaced'].includes(row.status) && row.gen?.cacheKey === ck && existsSync(outAbs)) { summary.cached++; continue; } // 命中·不重扣费（点名 regen=only→恒重出·不吃缓存·同词也换新卷）
     // 首次覆盖前存原始态快照（供「一键还原」·对齐上传路径 handle_art_upload·owner 2026-07-21 报「还原变色块」修）：
     // 之前 orig 只在上传路径存·AI 生成不存 → 生成后还原找不到快照走 fallback=色块。此处补齐 → 还原精确复位。
     if (!('orig' in row)) {
@@ -551,7 +572,14 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     }
     let a;
     try { a = await genRowAsset(row, pack, { mock: useMock, apiKey, gameStyle, provider: providerOverride }); }
-    catch (e) { const em = errText(e); row.status = 'failed'; row.gen = { provider, error: em }; summary.failed++; summary.errors.push({ no: row.no, provider, error: em }); continue; }
+    catch (e) {
+      const em = errText(e); summary.failed++; summary.errors.push({ no: row.no, provider, error: em });
+      // 失败=对图无副作用（owner 2026-07-27「生成失败→图没了→色块」）：此前已有真图就保住·只记 lastError；
+      // 本就无图（首生成失败）才标 failed。绝不因一次失败抹掉上一版好图（配合 resetRow 非破坏化）。
+      if (['generated', 'replaced'].includes(row.status) && row.gen && row.gen.servedPath) row.lastError = em;
+      else { row.status = 'failed'; row.gen = { provider, error: em }; }
+      continue;
+    }
     // debug 回显：实际（或本该）发给文生图的完整提示词 + 请求 + curl 命令行（key 打码·mock 也有）。
     const dbg = { no: row.no, provider: a.provider, model: a.model, kind: row.kind, mock: !!a.mock, prompt: a.prompt, size: a.request?.size ?? null, endpoint: a.request?.endpoint ?? null, body: a.request?.body ?? null, curl: a.request ? curlFor(a.request, ENVKEY[a.provider]) : null };
     summary.debug.push(dbg);
@@ -577,7 +605,7 @@ export async function batchGenerate(ledger, packId, { root = ROOT, game, mock = 
     if (row.skinKey && (!a.mock || allowMock)) byId.set(row.skinKey, { ...entry, id: row.skinKey, description: `${row.query} · 皮肤槽(${row.skinKey})`, tags: [...entry.tags, 'skin'] });
     row.status = 'generated';
     row.gen = { provider: a.provider, model: a.model, prompt: a.prompt, cacheKey: ck, pack: packId, servedPath, localId: id, mock: !!a.mock };
-    row.provenance = { model: a.model, prompt: a.prompt, date: at, license: LICENSE[a.provider] }; // M2.5 口径硬字段
+    row.provenance = { model: a.model, prompt: a.prompt, date: at, license: LICENSE[a.provider] }; delete row.lastError; // M2.5 口径硬字段·成功清失败标
     summary.generated++; if (a.mock) summary.mock++;
   }
   // 保留既有条目顺序（Map 从原数组建·set 改在原位·新条目追加末尾）——**不整表重排**，
@@ -632,7 +660,8 @@ export function resetRow(ledger, no, { query, targetSize, at = new Date().toISOS
   // 手动尺寸覆盖（owner 2026-07-22）：{w,h}=存该行 targetSize（生成放大到 GEN_MIN·回缩到此）；null=清除回 spec。
   if (targetSize && targetSize.w > 0 && targetSize.h > 0) row.targetSize = { w: targetSize.w | 0, h: targetSize.h | 0 };
   else if (targetSize === null) delete row.targetSize;
-  row.status = 'placeholder'; row.gen = null; row.provenance = null;
+  // 非破坏性（owner 2026-07-27「生成失败→图没了→色块」）：不再预清 status/gen/provenance。旧好图保留，
+  // 生成成功才被覆盖·失败则原样保住（batchGenerate 对 only 行恒重出绕缓存·失败保留旧图·成功清 lastError）。
   return { ok: true, row };
 }
 
