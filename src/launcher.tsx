@@ -35,6 +35,17 @@ import { ProfileCard } from './launcher/profile-card.js';
 // GAMES 不拆走：main_entry/games_list.py 以正则从 src/launcher.tsx 解析本表（内置卡片元信息单一真相·只读）。
 export const GAMES: GameEntry[] = [
   {
+    id: 'game102',
+    title: 'Game 102: 色流工坊 Pixel Pour',
+    subtitle: '3D 体素雕刻 · 转面喂炮揭雕像',
+    description:
+      '3D 体素立方自动转面（6 面 5 秒循环）；你只调度 3 门自动炮的颜色（总 5 色·三炮互斥），对齐转到面前那面的颜色→自动开火剥掉彩色外料；剥到阈值露出里面隐藏的金色雕像=过关，装错色自动浪费弹→某色弹尽而外料未清=负。无瞄准/无狂按·纯颜色调度（Pixel Flow 魂）。体素 voxelTex 归批实例化（P3D 大规模渲染）·GTAO/碎片落盘·render-only 手感原型。',
+    color: '#0a2038',
+    accentColor: '#2e6cf6',
+    icon: '🧊',
+    status: 'playable',
+  },
+  {
     id: 'game-e',
     title: 'Game E: Balatro-like',
     subtitle: '小丑牌 · 卡牌构建',
@@ -178,17 +189,6 @@ export const GAMES: GameEntry[] = [
     color: '#2a1c12',
     accentColor: '#f0a35e',
     icon: '⚓',
-    status: 'playable',
-  },
-  {
-    id: 'game102',
-    title: 'Game 102: 色流工坊 Pixel Pour',
-    subtitle: '像素倒色 · 休闲益智',
-    description:
-      '竖屏休闲益智：传送带承载色炮到发射位、自动向中央同色像素块连喷消色，5 待命槽复用+连击突破——清空整幅像素画棋盘（含金钥匙/开宝箱门）过关。中央棋盘=一格一实体 BoardCell（Transform+Shape+Tag(色位)+Resource(hp)+Color·非 tilemap：其唯一系统只做墙碰撞、无 per-cell hp/消除/按色计数），按色 group-count、抛射 launch、传送带 zone-occupancy、待命槽 tray、流程 flow 全走现有能力（Lead 裁①·零游戏层 system 代码）。当前=S3 骨架：蓝图立起 + CanvasRenderer 画出棋盘/传送带位/待命槽/补给区；玩法链(event-when/launch)=S4、UI 四屏(LayoutNode)=PUI。',
-    color: '#0a2038',
-    accentColor: '#2e6cf6',
-    icon: '🎨',
     status: 'playable',
   },
 ];
