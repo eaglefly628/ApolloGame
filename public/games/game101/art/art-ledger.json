@@ -32,8 +32,13 @@
         "transparent": true
       },
       "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_1（未填时回退 2D 色块 box·#a9744f）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_coffee_1.svg"
+      },
       "provenance": null,
       "prompt": "a small pile of roasted coffee beans, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -64,8 +69,13 @@
         "transparent": true
       },
       "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_2（未填时回退 2D 色块 box·#b07f5d）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_coffee_2.svg"
+      },
       "provenance": null,
       "prompt": "a cup of hot black coffee, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -96,8 +106,13 @@
         "transparent": true
       },
       "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_3（未填时回退 2D 色块 box·#b78a6b）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_coffee_3.svg"
+      },
       "provenance": null,
       "prompt": "a latte with leaf latte art, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -128,8 +143,13 @@
         "transparent": true
       },
       "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_4（未填时回退 2D 色块 box·#bd9578）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_coffee_4.svg"
+      },
       "provenance": null,
       "prompt": "a tall iced drink with a straw, refined and appetizing, a few decorative touches, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -160,8 +180,13 @@
         "transparent": true
       },
       "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_5（未填时回退 2D 色块 box·#c4a086）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_coffee_5.svg"
+      },
       "provenance": null,
       "prompt": "a cup of bubble milk tea with pearls, refined and appetizing, a few decorative touches, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -192,8 +217,13 @@
         "transparent": true
       },
       "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_1（未填时回退 2D 色块 box·#4da6ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fish_1.svg"
+      },
       "provenance": null,
       "prompt": "a tiny fresh little fish, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -224,8 +254,13 @@
         "transparent": true
       },
       "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_2（未填时回退 2D 色块 box·#59acff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fish_2.svg"
+      },
       "provenance": null,
       "prompt": "a plump fresh whole fish, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -256,8 +291,13 @@
         "transparent": true
       },
       "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_3（未填时回退 2D 色块 box·#65b2ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fish_3.svg"
+      },
       "provenance": null,
       "prompt": "a fresh pink shrimp, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -288,8 +328,13 @@
         "transparent": true
       },
       "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_4（未填时回退 2D 色块 box·#72b8ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fish_4.svg"
+      },
       "provenance": null,
       "prompt": "a piece of nigiri sushi, refined and appetizing, a few decorative touches, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -320,8 +365,13 @@
         "transparent": true
       },
       "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_5（未填时回退 2D 色块 box·#7ebeff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fish_5.svg"
+      },
       "provenance": null,
       "prompt": "a slice of pink-swirl fish cake (kamaboko), refined and appetizing, a few decorative touches, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -352,8 +402,13 @@
         "transparent": true
       },
       "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_6（未填时回退 2D 色块 box·#8ac5ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fish_6.svg"
+      },
       "provenance": null,
       "prompt": "a seafood bento lunch box, refined and appetizing, a few decorative touches, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -384,8 +439,13 @@
         "transparent": true
       },
       "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_1（未填时回退 2D 色块 box·#ff6b6b）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_food_1.svg"
+      },
       "provenance": null,
       "prompt": "a small bundle of golden rice stalks with raw grains, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -416,8 +476,13 @@
         "transparent": true
       },
       "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_2（未填时回退 2D 色块 box·#ff7575）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_food_2.svg"
+      },
       "provenance": null,
       "prompt": "a bowl of fluffy steamed white rice, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -448,8 +513,13 @@
         "transparent": true
       },
       "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_3（未填时回退 2D 色块 box·#ff7f7f）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_food_3.svg"
+      },
       "provenance": null,
       "prompt": "a rustic loaf of crusty bread, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -480,8 +550,13 @@
         "transparent": true
       },
       "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_4（未填时回退 2D 色块 box·#ff8a8a）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_food_4.svg"
+      },
       "provenance": null,
       "prompt": "a golden buttery croissant, refined and appetizing, a few decorative touches, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -512,8 +587,13 @@
         "transparent": true
       },
       "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_5（未填时回退 2D 色块 box·#ff9494）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_food_5.svg"
+      },
       "provenance": null,
       "prompt": "a slice of soft sponge cake, refined and appetizing, a few decorative touches, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -544,8 +624,13 @@
         "transparent": true
       },
       "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_6（未填时回退 2D 色块 box·#ff9e9e）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_food_6.svg"
+      },
       "provenance": null,
       "prompt": "an ornate multi-layer decorated cake, refined and appetizing, a few decorative touches, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -576,8 +661,13 @@
         "transparent": true
       },
       "context": "美术需求：「fries body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fries_1（未填时回退 2D 色块 box·#f4c04d）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fries_1.svg"
+      },
       "provenance": null,
       "prompt": "a plump brown potato, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -608,8 +698,13 @@
         "transparent": true
       },
       "context": "美术需求：「fries body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fries_2（未填时回退 2D 色块 box·#f5c65d）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fries_2.svg"
+      },
       "provenance": null,
       "prompt": "a fresh orange carrot with green top, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -640,8 +735,13 @@
         "transparent": true
       },
       "context": "美术需求：「fries body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fries_3（未填时回退 2D 色块 box·#f6cc6e）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fries_3.svg"
+      },
       "provenance": null,
       "prompt": "a bowl of fresh green garden salad, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -672,8 +772,13 @@
         "transparent": true
       },
       "context": "美术需求：「fries body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fries_4（未填时回退 2D 色块 box·#f7d17e）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fries_4.svg"
+      },
       "provenance": null,
       "prompt": "a clay pot of braised mixed vegetables, refined and appetizing, a few decorative touches, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -704,8 +809,13 @@
         "transparent": true
       },
       "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_1（未填时回退 2D 色块 box·#9b8cff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_tool_1.svg"
+      },
       "provenance": null,
       "prompt": "a chocolate bar, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -736,8 +846,13 @@
         "transparent": true
       },
       "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_2（未填时回退 2D 色块 box·#a395ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_tool_2.svg"
+      },
       "provenance": null,
       "prompt": "a wrapped hard candy, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -768,8 +883,13 @@
         "transparent": true
       },
       "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_3（未填时回退 2D 色块 box·#ab9eff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_tool_3.svg"
+      },
       "provenance": null,
       "prompt": "a glazed donut with sprinkles, simple and humble, plain presentation, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -800,8 +920,13 @@
         "transparent": true
       },
       "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_4（未填时回退 2D 色块 box·#b3a7ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_tool_4.svg"
+      },
       "provenance": null,
       "prompt": "a frosted cupcake with a cherry, refined and appetizing, a few decorative touches, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -832,8 +957,13 @@
         "transparent": true
       },
       "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_5（未填时回退 2D 色块 box·#bab0ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_tool_5.svg"
+      },
       "provenance": null,
       "prompt": "a golden waffle with berries and syrup, refined and appetizing, a few decorative touches, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -871,8 +1001,13 @@
         "transparent": true
       },
       "context": "美术需求：「cellbg」（场景实体·×63 实例）·2D 平面·当前占位=皮肤槽 board_cell（未填时回退 2D 色块 box·#ffffff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/board_cell.svg"
+      },
       "provenance": null,
       "prompt": "a rounded merge-board grid cell tile, cozy warm cream and soft blue operating surface with gentle inner shadow, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -903,8 +1038,13 @@
         "transparent": true
       },
       "context": "美术需求：「gen gen coffee」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_coffee（未填时回退 2D 色块 box·#c8871e）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/gen_coffee.svg"
+      },
       "provenance": null,
       "prompt": "a shiny espresso coffee machine, cozy candy-style casual merge game generator machine, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2.5D view, single isolated centered appliance, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -935,8 +1075,13 @@
         "transparent": true
       },
       "context": "美术需求：「gen gen fishbox」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_fishbox（未填时回退 2D 色块 box·#c8871e）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/gen_fishbox.svg"
+      },
       "provenance": null,
       "prompt": "a wooden fish-catch crate packed with fish on ice, cozy candy-style casual merge game generator machine, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2.5D view, single isolated centered appliance, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -967,8 +1112,13 @@
         "transparent": true
       },
       "context": "美术需求：「gen gen fridge」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_fridge（未填时回退 2D 色块 box·#c8871e）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/gen_fridge.svg"
+      },
       "provenance": null,
       "prompt": "a wooden rice granary storage bin filled with grain, a rice mill machine, cozy candy-style casual merge game generator machine, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2.5D view, single isolated centered appliance, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -999,8 +1149,13 @@
         "transparent": true
       },
       "context": "美术需求：「gen gen toolbox」（场景实体·单例）·2D 平面·当前占位=皮肤槽 gen_toolbox（未填时回退 2D 色块 box·#c8871e）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/gen_toolbox.svg"
+      },
       "provenance": null,
       "prompt": "a warm pastry baking oven with desserts, a dessert oven, cozy candy-style casual merge game generator machine, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2.5D view, single isolated centered appliance, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1031,8 +1186,13 @@
         "transparent": true
       },
       "context": "美术需求：「bubble b coffee」（场景实体·单例）·2D 平面·当前占位=皮肤槽 bubble（未填时回退 2D 色块 box·#bfe4ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/bubble.svg"
+      },
       "provenance": null,
       "prompt": "a glossy translucent bubble lock capsule sealing a hidden item inside, shiny highlight and rim light, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1063,8 +1223,13 @@
         "transparent": true
       },
       "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_6（未填时回退 2D 色块 box·#cbab94）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_coffee_6.svg"
+      },
       "provenance": null,
       "prompt": "a glass of fresh fruit juice, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1095,8 +1260,13 @@
         "transparent": true
       },
       "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_7（未填时回退 2D 色块 box·#d2b6a2）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_coffee_7.svg"
+      },
       "provenance": null,
       "prompt": "a cup of floral herbal tea, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1127,8 +1297,13 @@
         "transparent": true
       },
       "context": "美术需求：「coffee body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_coffee_8（未填时回退 2D 色块 box·#d8c0b0）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_coffee_8.svg"
+      },
       "provenance": null,
       "prompt": "a colorful tropical cocktail with umbrella, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1159,8 +1334,13 @@
         "transparent": true
       },
       "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_7（未填时回退 2D 色块 box·#96cbff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fish_7.svg"
+      },
       "provenance": null,
       "prompt": "crispy fried tempura shrimp, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1191,8 +1371,13 @@
         "transparent": true
       },
       "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_8（未填时回退 2D 色块 box·#a3d1ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fish_8.svg"
+      },
       "provenance": null,
       "prompt": "a bowl of oden hot-pot skewers, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1223,8 +1408,13 @@
         "transparent": true
       },
       "context": "美术需求：「fish body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fish_9（未填时回退 2D 色块 box·#afd7ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fish_9.svg"
+      },
       "provenance": null,
       "prompt": "a steaming seafood hot pot, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1255,8 +1445,13 @@
         "transparent": true
       },
       "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_7（未填时回退 2D 色块 box·#ffa8a8）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_food_7.svg"
+      },
       "provenance": null,
       "prompt": "a golden baked fruit pie, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1287,8 +1482,13 @@
         "transparent": true
       },
       "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_8（未填时回退 2D 色块 box·#ffb2b2）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_food_8.svg"
+      },
       "provenance": null,
       "prompt": "a tall ice-cream sundae in a glass, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1319,8 +1519,13 @@
         "transparent": true
       },
       "context": "美术需求：「food body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_food_9（未填时回退 2D 色块 box·#ffbcbc）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_food_9.svg"
+      },
       "provenance": null,
       "prompt": "a lavish grand feast platter piled with food, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1351,8 +1556,13 @@
         "transparent": true
       },
       "context": "美术需求：「fries body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fries_5（未填时回退 2D 色块 box·#f8d78e）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fries_5.svg"
+      },
       "provenance": null,
       "prompt": "an ear of yellow corn with husk, refined and appetizing, a few decorative touches, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1383,8 +1593,13 @@
         "transparent": true
       },
       "context": "美术需求：「fries body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fries_6（未填时回退 2D 色块 box·#f9dd9f）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fries_6.svg"
+      },
       "provenance": null,
       "prompt": "a hearty bowl of vegetable stew, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1415,8 +1630,13 @@
         "transparent": true
       },
       "context": "美术需求：「fries body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_fries_7（未填时回退 2D 色块 box·#fae3af）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_fries_7.svg"
+      },
       "provenance": null,
       "prompt": "a plate of vegetable curry with rice, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1447,8 +1667,13 @@
         "transparent": true
       },
       "context": "美术需求：「timed fresh body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_timed_fresh（未填时回退 2D 色块 box·#ff8a3c）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_timed_fresh.svg"
+      },
       "provenance": null,
       "prompt": "a fresh red crab, glistening limited-time seafood, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1479,8 +1704,13 @@
         "transparent": true
       },
       "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_6（未填时回退 2D 色块 box·#c2b9ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_tool_6.svg"
+      },
       "provenance": null,
       "prompt": "a colorful swirl lollipop, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1511,8 +1741,13 @@
         "transparent": true
       },
       "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_7（未填时回退 2D 色块 box·#cac2ff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_tool_7.svg"
+      },
       "provenance": null,
       "prompt": "a chocolate-chip cookie, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     },
@@ -1543,8 +1778,13 @@
         "transparent": true
       },
       "context": "美术需求：「tool body」（预制模板（生成的每个实例共用一套美术）·单例）·2D 平面·当前占位=皮肤槽 item_tool_8（未填时回退 2D 色块 box·#d2cbff）·需透明底",
-      "status": "needs-art",
-      "gen": null,
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/item_tool_8.svg"
+      },
       "provenance": null,
       "prompt": "a honey jar with a wooden dipper, ornate and luxurious, glossy highlights, rich decoration, sparkles, premium plating, cozy candy-style casual merge game item, warm sunny harbor color palette, soft rounded forms, clean bold outline, top-down 2D view, single isolated centered subject, transparent background, soft drop shadow, polished mobile game icon"
     }
