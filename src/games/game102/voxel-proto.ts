@@ -97,7 +97,15 @@ const STYLES: Style[] = [           // 厚AO 置首=默认（owner）·去掉柔
 ];
 function el(tag: string, css: string, html?: string): HTMLElement { const e = document.createElement(tag); e.style.cssText = css; if (html !== undefined) e.innerHTML = html; return e; }
 
-export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => void }): () => void {
+// 对外入口：包一层支持「再来一局」——重开 = 拆掉当前实例 + 重新 boot（状态全新生成·确定性撒点一致）。
+export function mountVoxelProto(container: HTMLElement, host?: { exit: () => void }): () => void {
+  let dispose = (): void => {};
+  const boot = (): void => { const d = runOne(container, host, () => { d(); boot(); }); dispose = d; };
+  boot();
+  return () => dispose();
+}
+
+function runOne(container: HTMLElement, _host: { exit: () => void } | undefined, restart: () => void): () => void {
   const cxc = (N - 1) / 2;
   const isSculpt = (i: number, j: number, k: number): boolean => Math.abs(i - cxc) + Math.abs(j - cxc) + Math.abs(k - cxc) <= N * 0.36; // 居中八面体雕像
   const colorAt = new Map<string, number>();          // 0..4=外料色 · 5=雕像(gold·受保护·炮打不到)
@@ -180,6 +188,18 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
   // 本面补给清单（Q2 可读性）：告诉你当前面有哪些特殊格·什么色 → 你据此装色去收（不必看清单颗像素）。
   const legend = el('div', 'position:absolute;left:0;right:0;top:56px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:0 12px;pointer-events:none;');
   wrapper.appendChild(legend);
+  // 再来一局（仅结算时出现·点=拆当前实例重开）——playtest 必备·不用刷新页面。
+  const againBtn = el('button', 'position:absolute;left:50%;top:56%;transform:translateX(-50%);display:none;z-index:40;pointer-events:auto;background:linear-gradient(#ffcf4a,#f2a81e);color:#3a2500;border:none;border-radius:14px;padding:12px 30px;cursor:pointer;font:900 20px system-ui;box-shadow:0 5px 0 #b97e12,0 8px 18px #0008;', '↻ 再来一局');
+  againBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); restart(); });
+  wrapper.appendChild(againBtn);
+  // 冲击特效：屏震（wrapper 抖）+ 一闪暖光罩（引爆用·爽感）。
+  const flash = el('div', 'position:absolute;inset:0;pointer-events:none;z-index:25;background:radial-gradient(circle,#ffdca066,#ff6a2a00 70%);opacity:0;');
+  wrapper.appendChild(flash);
+  const impactFx = (strength: number): void => {
+    const s = Math.min(1, strength);
+    wrapper.animate?.([{ transform: 'translate(0,0)' }, { transform: `translate(${6 * s}px,${-5 * s}px)` }, { transform: `translate(${-5 * s}px,${4 * s}px)` }, { transform: 'translate(0,0)' }], { duration: 220 });
+    flash.animate?.([{ opacity: 0.55 * s }, { opacity: 0 }], { duration: 300 });
+  };
 
   // 渲染样式切换（点循环 5 种·对比看）。
   const styleBtn = el('button', 'position:absolute;right:8px;top:60px;z-index:20;pointer-events:auto;background:#1a2740ee;color:#cfe;border:1px solid #35507a;border-radius:8px;padding:6px 12px;cursor:pointer;font:700 14px system-ui;box-shadow:0 2px 8px #0007;', `🎨 ${STYLES[0].name}`);
@@ -358,15 +378,17 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
     if (kind === 'ammo')  { ammoPool += AMMO_REFUND; ammoPill.animate?.([{ transform: 'scale(1.28)' }, { transform: 'scale(1)' }], { duration: 260 }); cellFx(`🔫 +${AMMO_REFUND}`, CELLS.ammo.css); }
     else if (kind === 'power') { rapidLeft = POWER_MS; cellFx('🔥 齐射翻倍!', CELLS.power.css); }
     else if (kind === 'time')  { faceLeft += TIME_BONUS; cellFx(`⏱ +${(TIME_BONUS / 1000).toFixed(1)}s`, CELLS.time.css); }
-    else if (kind === 'bomb')  { cellFx('💥 连爆!', CELLS.bomb.css); for (let di = -BOMB_R; di <= BOMB_R; di++) for (let dj = -BOMB_R; dj <= BOMB_R; dj++) for (let dk = -BOMB_R; dk <= BOMB_R; dk++) { const a = i + di, b = j + dj, c = k + dk; if ((di || dj || dk) && inB(a) && inB(b) && inB(c) && colorAt.get(vid(a, b, c)) !== 5) breakVox(a, b, c, true); } } // 3×3×3 连锁（引爆格递归引爆·雕像免疫）
+    else if (kind === 'bomb')  { cellFx('💥 连爆!', CELLS.bomb.css); impactFx(0.9); for (let di = -BOMB_R; di <= BOMB_R; di++) for (let dj = -BOMB_R; dj <= BOMB_R; dj++) for (let dk = -BOMB_R; dk <= BOMB_R; dk++) { const a = i + di, b = j + dj, c = k + dk; if ((di || dj || dk) && inB(a) && inB(b) && inB(c) && colorAt.get(vid(a, b, c)) !== 5) breakVox(a, b, c, true); } } // 3×3×3 连锁（引爆格递归引爆·雕像免疫）
     ([[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]] as [number,number,number][]).forEach(([a, b, c]) => { if (inB(a) && inB(b) && inB(c)) reveal(a, b, c); });
   };
 
   let over: 'win' | 'lose' | null = null;
+  const endGame = (kind: 'win' | 'lose', text: string, color: string): void => { over = kind; banner.textContent = text; banner.style.color = color; againBtn.style.display = 'block'; };
   const checkEnd = (): void => {
     if (over) return;
-    if (coverRemaining === 0 || (coverTotal - coverRemaining) / coverTotal >= REVEAL_PASS) { over = 'win'; banner.textContent = '🎉 雕像现形！'; banner.style.color = '#8affa0'; return; }
-    if (ammoPool <= 0) { over = 'lose'; banner.textContent = '弹尽 · 雕像未露'; banner.style.color = '#ff8a8a'; return; } // 全局池空且未露够→输
+    if (coverRemaining === 0 || (coverTotal - coverRemaining) / coverTotal >= REVEAL_PASS) { endGame('win', '🎉 雕像现形！', '#8affa0'); return; }
+    // 弹尽才判输——但仍有子弹在飞（可能打进阈值）时先不判·等落地结算（公平）。
+    if (ammoPool <= 0 && !movers.some((m) => m.kind === 'bullet')) { endGame('lose', '弹尽 · 雕像未露', '#ff8a8a'); return; }
   };
   // 单发（自动炮调用）：从全局池扣一发弹；正对这面有同色暴露格→射子弹清一格·否则空放浪费（仍扣池）。
   const fire = (color: number): void => {
@@ -399,9 +421,15 @@ export function mountVoxelProto(container: HTMLElement, _host?: { exit: () => vo
         const piv = engine.world.getComponent<Transform3D>('cube-pivot', 'Transform3D'); if (piv) { piv.rotX = curRx; piv.rotY = curRy; }
         facePill.textContent = `⏱ ${(faceLeft / 1000).toFixed(1)}`;
         timeBar.style.width = `${Math.min(100, (faceLeft / FACE_MS) * 100)}%`;
-        // 火力格：齐射频率翻倍（rapidLeft>0 期间节拍减半）。
+        // 火力格：齐射频率翻倍（rapidLeft>0 期间节拍减半）+ 可见指示（facePill 转火橙）。
+        const wasRapid = rapidLeft > 0;
         if (rapidLeft > 0) rapidLeft = Math.max(0, rapidLeft - dt);
-        const cad = rapidLeft > 0 ? FIRE_MS * 0.45 : FIRE_MS;
+        const isRapid = rapidLeft > 0;
+        if (isRapid !== wasRapid) {
+          facePill.style.background = isRapid ? 'linear-gradient(#ff9a3a,#f2671e)' : 'linear-gradient(#3a7bd5,#2a5cae)';
+          facePill.style.boxShadow = isRapid ? '0 3px 0 #b8430f,0 0 16px #ff8a3a' : '0 3px 0 #1c3e7a';
+        }
+        const cad = isRapid ? FIRE_MS * 0.45 : FIRE_MS;
         // ★ 自动发射：3 门炮按拍各射一发（无需按）·扣弹→无同色暴露则浪费。
         afAcc += dt; while (afAcc >= cad) { afAcc -= cad; for (const c of slots) fire(c); }
         // 本面补给清单（换面或有破坏时重算）。
