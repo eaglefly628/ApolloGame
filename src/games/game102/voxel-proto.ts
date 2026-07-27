@@ -14,18 +14,19 @@ import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assemb
 import type { Transform3D, Pivot3D } from '@engine/protocol/components.js';
 import { VOXEL_SURFACES, VOXEL_SURFACE_NAMES, type VoxelSurface } from './voxel-surfaces.js';
 
-const N = 12;             // 立方边长（揭示模式·适中→剥到阈值可现形·实例化撑得住）
-const PITCH = 22;
-const VOX = 22;           // =PITCH：相接无缝·剥层露内层彩格
+const N = 8;              // 立方边长（owner：放大格子=少排数·12→8·配 1.5× size 总尺寸不变·更易看清）
+const PITCH = 33;
+const VOX = 33;           // =PITCH：相接无缝·1.5× 更大更易辨（原 22）
 const MAXC = ((N - 1) / 2) * PITCH;
-const FACE_MS = 5000;     // 每面停留（ms）→ 转下一面
+const FACE_MS = 5000;     // 每面停留（ms）→ 转下一面（固定·永不延长·总有节奏地轮面）
+const TOTAL_MS = 75000;   // ★ 全局限时（整局倒计时·归零=输）·加时格喂这个·非每面
 const TWEEN = 0.010;      // 转面缓动系数（×dt）
-const FIRE_MS = 150;      // 自动发射节拍（每门炮每此间隔射一发·无需按）
+const FIRE_MS = 300;      // 自动发射节拍（轮流一门炮射一发·慢下来=不乱·原 150 太密）
 const AMMO_POOL_FRAC = 0.9; // 全局弹药池 = 外料总数 ×此（<1 → 打空前必须靠"少浪费"露够·空放吃预算）= 过关难度旋钮
-const CELL_FRAC = 0.09;    // 约此比例外料格 = 特殊格（携带 payload·打碎触发效果·发光边一眼识别）
+const CELL_FRAC = 0.11;    // 约此比例外料格 = 特殊格（格子变少→略提密度保可见量）
 const AMMO_REFUND = 3;     // 弹药格返还子弹数
-const POWER_MS = 3500;     // 火力格：三炮齐射频率翻倍持续时长
-const TIME_BONUS = 2500;   // 加时格：给当前面倒计时 +此（ms）
+const POWER_MS = 3500;     // 火力格：齐射频率翻倍持续时长
+const TIME_BONUS = 4000;   // 加时格：给全局倒计时 +此（ms）
 const BOMB_R = 1;          // 引爆格：炸半径（1 = 3×3×3 邻域·同为引爆格则连锁）
 // ── 特殊格类型表（数据驱动雏形·下沉正式版即 cellEffects 表的行）──
 //   body 仍是本色（→ 仍按色瞄准）·edge 发光色 + glyph 编码类型（一眼识别值钱/危险）。
@@ -133,6 +134,7 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
   let selSlot = 0;         // 选中的炮（点色装入它·金色强调）
   let styleIdx = 0;
   let orientIdx = 0, faceLeft = FACE_MS;
+  let globalLeft = TOTAL_MS; // 全局倒计时（加时格喂它·归零=输）
   let curRx = ORIENT[0][0], curRy = ORIENT[0][1];
   let rapidLeft = 0;       // 火力格：>0 时三炮齐射频率翻倍（每帧递减）
 
@@ -179,7 +181,7 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
   const top = el('div', 'position:absolute;left:0;right:0;top:14px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;pointer-events:none;');
   const dmg = el('div', 'padding:8px 18px;border-radius:20px;background:#0c1a30;border:2px solid #26385c;color:#ffd77a;font:800 18px system-ui;', '破坏 0%');
   const ammoPill = el('div', 'padding:8px 18px;border-radius:20px;background:#0c1a30;border:2px solid #4a5c3a;color:#c7f27a;font:800 18px system-ui;', '🔫 0'); // 全局共享弹药池
-  const facePill = el('div', 'padding:8px 20px;border-radius:20px;background:linear-gradient(#3a7bd5,#2a5cae);color:#fff;font:800 18px system-ui;box-shadow:0 3px 0 #1c3e7a;', '⏱ 5.0');
+  const facePill = el('div', 'padding:8px 20px;border-radius:20px;background:linear-gradient(#3a7bd5,#2a5cae);color:#fff;font:800 18px system-ui;box-shadow:0 3px 0 #1c3e7a;', `⏱ ${Math.ceil(TOTAL_MS / 1000)}`); // 全局限时
   top.appendChild(dmg); top.appendChild(ammoPill); top.appendChild(facePill); wrapper.appendChild(top);
   const timeBar = el('div', 'position:absolute;left:0;top:0;height:5px;background:#7fe3ff;width:100%;');
   wrapper.appendChild(timeBar);
@@ -261,7 +263,7 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
     slots[selSlot] = c;
     const flashed = selSlot;
     selSlot = (selSlot + 1) % SLOT_N;  // ★ 自动移到下一炮 → 连点几色即可填/换·每色永远可点
-    refresh();
+    refresh(); syncBeacons(); // 换色 → 重算"现在能打"的高亮光标
     slotEls[flashed].animate?.([{ transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { duration: 220 });
   };
   const refresh = (): void => {
@@ -304,6 +306,46 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
       chip.appendChild(el('span', `width:11px;height:11px;border-radius:3px;background:${PALETTE[r.color].css};display:inline-block;`));
       chip.appendChild(el('span', '', `${CELLS[r.kind].glyph}×${r.n}`));
       legend.appendChild(chip);
+    }
+  };
+
+  // ── 特殊格 3D 光标（beacon）：贴在每个暴露特殊格的外露面上·浮出一个亮块 → 一眼看清哪些是功能格。
+  //   随立方转（pivot 子）。当前装载色的格子光标更大更亮 = "现在能打的目标"（配 aimFace 优先=你用装色操控打谁）。
+  const DIRS: [number, number, number][] = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+  const outNormal = (i: number, j: number, k: number): [number, number, number] => {
+    for (const [dx, dy, dz] of DIRS) { const a = i + dx, b = j + dy, c = k + dz; if (!inB(a) || !inB(b) || !inB(c) || !present.has(vid(a, b, c))) return [dx, dy, dz]; }
+    return [0, 0, 1];
+  };
+  const beacons = new Set<string>();
+  const beaconId = (i: number, j: number, k: number): string => `bc-${i}-${j}-${k}`;
+  const syncBeacons = (): void => {
+    const piv = engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D');
+    const want = new Set<string>();
+    for (const [id, kind] of cellType) {
+      if (!present.has(id)) continue;
+      const [, si, sj, sk] = id.split('-'); const i = +si, j = +sj, k = +sk;
+      if (!exposed(i, j, k)) continue;
+      want.add(id);
+      const bid = beaconId(i, j, k);
+      const [nx, ny, nz] = outNormal(i, j, k);
+      const loaded = slots.includes(colorAt.get(id) ?? -1);
+      const sz = loaded ? VOX * 0.5 : VOX * 0.34;      // 装载色 = 更大 = "现在能打"
+      const tint = CELLS[kind].edge;
+      const bx = idx2pos(i) + nx * PITCH * 0.62, by = idx2pos(j) + ny * PITCH * 0.62, bz = idx2pos(k) + nz * PITCH * 0.62;
+      if (!beacons.has(id)) {
+        try { engine.world.createEntity(bid); } catch { /* */ }
+        engine.world.addComponent(bid, { type: 'Transform3D', x: bx, y: by, z: bz } as unknown as Transform3D);
+        piv?.children.push(bid); beacons.add(id);
+      }
+      engine.world.removeComponent(bid, 'Mesh3D');
+      engine.world.addComponent(bid, { type: 'Mesh3D', shape: 'box', width: sz, height: sz, depth: sz, frontTint: tint, backTint: tint, edgeTint: 0xffffff } as never);
+      const tr = engine.world.getComponent<Transform3D>(bid, 'Transform3D'); if (tr) { tr.x = bx; tr.y = by; tr.z = bz; }
+    }
+    for (const id of [...beacons]) if (!want.has(id)) {
+      const [, si, sj, sk] = id.split('-'); const bid = beaconId(+si, +sj, +sk);
+      try { engine.world.destroyEntity(bid); } catch { /* */ }
+      const piv2 = engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D'); if (piv2) { const x = piv2.children.indexOf(bid); if (x >= 0) piv2.children.splice(x, 1); }
+      beacons.delete(id);
     }
   };
 
@@ -377,7 +419,7 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
     // ★ 特殊格效果分发（下沉正式版 = cellEffects 表的行）。
     if (kind === 'ammo')  { ammoPool += AMMO_REFUND; ammoPill.animate?.([{ transform: 'scale(1.28)' }, { transform: 'scale(1)' }], { duration: 260 }); cellFx(`🔫 +${AMMO_REFUND}`, CELLS.ammo.css); }
     else if (kind === 'power') { rapidLeft = POWER_MS; cellFx('🔥 齐射翻倍!', CELLS.power.css); }
-    else if (kind === 'time')  { faceLeft += TIME_BONUS; cellFx(`⏱ +${(TIME_BONUS / 1000).toFixed(1)}s`, CELLS.time.css); }
+    else if (kind === 'time')  { globalLeft += TIME_BONUS; facePill.animate?.([{ transform: 'scale(1.22)' }, { transform: 'scale(1)' }], { duration: 260 }); cellFx(`⏱ +${(TIME_BONUS / 1000).toFixed(0)}s`, CELLS.time.css); }
     else if (kind === 'bomb')  { cellFx('💥 连爆!', CELLS.bomb.css); impactFx(0.9); for (let di = -BOMB_R; di <= BOMB_R; di++) for (let dj = -BOMB_R; dj <= BOMB_R; dj++) for (let dk = -BOMB_R; dk <= BOMB_R; dk++) { const a = i + di, b = j + dj, c = k + dk; if ((di || dj || dk) && inB(a) && inB(b) && inB(c) && colorAt.get(vid(a, b, c)) !== 5) breakVox(a, b, c, true); } } // 3×3×3 连锁（引爆格递归引爆·雕像免疫）
     ([[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]] as [number,number,number][]).forEach(([a, b, c]) => { if (inB(a) && inB(b) && inB(c)) reveal(a, b, c); });
   };
@@ -387,6 +429,7 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
   const checkEnd = (): void => {
     if (over) return;
     if (coverRemaining === 0 || (coverTotal - coverRemaining) / coverTotal >= REVEAL_PASS) { endGame('win', '🎉 雕像现形！', '#8affa0'); return; }
+    if (globalLeft <= 0) { endGame('lose', '⏱ 时间到 · 雕像未露', '#ff8a8a'); return; } // 全局限时归零→输
     // 弹尽才判输——但仍有子弹在飞（可能打进阈值）时先不判·等落地结算（公平）。
     if (ammoPool <= 0 && !movers.some((m) => m.kind === 'bullet')) { endGame('lose', '弹尽 · 雕像未露', '#ff8a8a'); return; }
   };
@@ -404,7 +447,7 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
     }
     checkEnd(); refresh();
   };
-  let afAcc = 0; // 自动发射节拍累加
+  let afAcc = 0, fireCursor = 0; // 自动发射节拍累加 + 轮流开火游标
 
   // ── 主循环（自管·全 try/catch·绝不冻结）──
   let raf = 0, last = performance.now();
@@ -413,14 +456,17 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
       const dt = now - last; last = now;
       // 自动转面：倒计时→到点切下一面·平滑缓动到目标角。
       if (!over) {
+        // 全局限时：归零判负（在飞子弹落地会再 checkEnd·此处只递减+显示）。
+        globalLeft = Math.max(0, globalLeft - dt);
+        // 每面固定停留·永不延长 → 到点必转下一面（有节奏地轮面·加时格不再锁死单面）。
         faceLeft -= dt;
         if (faceLeft <= 0) { orientIdx = (orientIdx + 1) % ORIENT.length; faceLeft = FACE_MS; }
         const [trx, try_] = ORIENT[orientIdx];
         curRx += shortDelta(curRx, trx) * Math.min(1, dt * TWEEN);
         curRy += shortDelta(curRy, try_) * Math.min(1, dt * TWEEN);
         const piv = engine.world.getComponent<Transform3D>('cube-pivot', 'Transform3D'); if (piv) { piv.rotX = curRx; piv.rotY = curRy; }
-        facePill.textContent = `⏱ ${(faceLeft / 1000).toFixed(1)}`;
-        timeBar.style.width = `${Math.min(100, (faceLeft / FACE_MS) * 100)}%`;
+        facePill.textContent = `⏱ ${(globalLeft / 1000).toFixed(globalLeft < 10000 ? 1 : 0)}`;
+        timeBar.style.width = `${Math.min(100, (faceLeft / FACE_MS) * 100)}%`; // 细条 = 本面转面进度
         // 火力格：齐射频率翻倍（rapidLeft>0 期间节拍减半）+ 可见指示（facePill 转火橙）。
         const wasRapid = rapidLeft > 0;
         if (rapidLeft > 0) rapidLeft = Math.max(0, rapidLeft - dt);
@@ -429,11 +475,12 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
           facePill.style.background = isRapid ? 'linear-gradient(#ff9a3a,#f2671e)' : 'linear-gradient(#3a7bd5,#2a5cae)';
           facePill.style.boxShadow = isRapid ? '0 3px 0 #b8430f,0 0 16px #ff8a3a' : '0 3px 0 #1c3e7a';
         }
-        const cad = isRapid ? FIRE_MS * 0.45 : FIRE_MS;
-        // ★ 自动发射：3 门炮按拍各射一发（无需按）·扣弹→无同色暴露则浪费。
-        afAcc += dt; while (afAcc >= cad) { afAcc -= cad; for (const c of slots) fire(c); }
-        // 本面补给清单（换面或有破坏时重算）。
-        const fs = frontSide(); if (fs !== legendSide || legendDirty) { legendSide = fs; legendDirty = false; updateFaceLegend(fs); }
+        const cad = isRapid ? FIRE_MS * 0.5 : FIRE_MS;
+        // ★ 自动发射：轮流一门炮射一发（不再三炮齐射=不乱·慢节拍）·扣弹→无同色暴露则浪费。
+        afAcc += dt; while (afAcc >= cad) { afAcc -= cad; fire(slots[fireCursor % SLOT_N]); fireCursor++; }
+        if (globalLeft <= 0) checkEnd();
+        // 本面补给清单 + 特殊格光标（换面或有破坏时重算）。
+        const fs = frontSide(); if (fs !== legendSide || legendDirty) { legendSide = fs; legendDirty = false; updateFaceLegend(fs); syncBeacons(); }
       }
       // 运动体积分。
       const ds = Math.min(dt, 50) / 1000;
