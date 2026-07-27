@@ -26,8 +26,9 @@ export type VoxelSurface = 'matte' | 'speed' | 'gem';
 
 /** 预设表：surface 名 → (tint)⇒VoxelTex 配方。每个配方按传入主色染色，保留观感母题。 */
 export const VOXEL_SURFACES: Record<VoxelSurface, (tint: number) => VoxelTex> = {
-  // 素面（当前基线）：纯颗粒 + 勾缝，一格一面。观感靠 GTAO/post 出厚度。
-  matte: (t) => ({ top: t, side: shade(t, 0.8), pattern: 'plain', tile: 22 }),
+  // 素面（当前基线·owner：一个放大的干净体素·8×8·中间无拼缝线）：纯色一格一面·顶亮侧暗出体积。
+  //   tile:8 = 每面 8×8 像素（干净像素块·非重复母题 → 不再"两块拼一块"的中缝）。观感靠 GTAO/post 出厚度。
+  matte: (t) => ({ top: t, side: shade(t, 0.82), pattern: 'plain', tile: 8 }),
 
   // 提速块（Minecraft 感）：石纹母题（竖裂 + 深勾缝）· 顶亮侧暗分明 · 小 tile 出块面网格。
   speed: (t) => ({

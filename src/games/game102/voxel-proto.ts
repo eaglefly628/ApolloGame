@@ -21,7 +21,8 @@ const MAXC = ((N - 1) / 2) * PITCH;
 const FACE_MS = 5000;     // 每面停留（ms）→ 转下一面（固定·永不延长·总有节奏地轮面）
 const TOTAL_MS = 75000;   // ★ 全局限时（整局倒计时·归零=输）·加时格喂这个·非每面
 const TWEEN = 0.010;      // 转面缓动系数（×dt）
-const FIRE_MS = 300;      // 自动发射节拍（轮流一门炮射一发·慢下来=不乱·原 150 太密）
+const FIRE_MS = 340;      // 自动发射节拍（轮流一门炮射一发·慢下来=不乱·原 150 太密）
+const OBSERVE_MS = 900;   // 每面停稳后的观察窗（此间不开火·给玩家看清+选色·不再"看戏"）
 const AMMO_POOL_FRAC = 0.9; // 全局弹药池 = 外料总数 ×此（<1 → 打空前必须靠"少浪费"露够·空放吃预算）= 过关难度旋钮
 const CELL_FRAC = 0.11;    // 约此比例外料格 = 特殊格（格子变少→略提密度保可见量）
 const AMMO_REFUND = 3;     // 弹药格返还子弹数
@@ -87,8 +88,12 @@ const idx2pos = (i: number): number => (i - (N - 1) / 2) * PITCH;
 // ★ 实例化友好：Mesh3D voxelTex（P3D 大规模渲染入库·同款体素归批 InstancedMesh）→ 立方可又大又细。
 //   **不挂 Material3D**（挂了会退化成单 mesh/格·卡且做不大·见 three-renderer:312）。观感靠 GTAO/post 出厚度。
 //   表面观感走 voxel-surfaces 预设配方（数据驱动·闭集·同 (surface,color) 一批 → 不破归批）。
-let voxSurface: VoxelSurface = 'gem';  // 默认宝石感（当前展示态·下方按钮可循环切换）
-const voxMesh = (t: number, kind?: CellKind): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: kind ? CELLS[kind].edge : shade(t, 0.82), voxelTex: VOXEL_SURFACES[voxSurface](t) });
+let voxSurface: VoxelSurface = 'matte'; // 默认干净素面（owner：一个放大的干净体素·中间无拼缝线）·按钮可切
+// 普通格 = 干净素面（本色）；功能格 = **在这一面上就有发光晶纹 + 类型色亮边**（贴图本身即功能标记·一眼可辨·非额外浮块）。
+const funcTex = (t: number, kind: CellKind): Record<string, unknown> => ({ top: shade(t, 1.22), side: shade(t, 0.9), top2: shade(t, 1.45), side2: shade(t, 1.1), trim: CELLS[kind].edge, pattern: 'crystal', tile: 8 });
+const voxMesh = (t: number, kind?: CellKind): Record<string, unknown> => kind
+  ? { shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: shade(t, 1.1), backTint: t, edgeTint: CELLS[kind].edge, voxelTex: funcTex(t, kind) }
+  : { shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: shade(t, 0.82), voxelTex: VOXEL_SURFACES[voxSurface](t) };
 // ── 渲染样式集（instancing-safe·只切后处理·GTAO/bloom/暗角/分级）——保持实例化不破·大立方也能切 ──
 type Style = { name: string; post: Record<string, unknown> };
 const STYLES: Style[] = [           // 厚AO 置首=默认（owner）·去掉柔光（发糊看不清）
@@ -190,6 +195,9 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
   // 本面补给清单（Q2 可读性）：告诉你当前面有哪些特殊格·什么色 → 你据此装色去收（不必看清单颗像素）。
   const legend = el('div', 'position:absolute;left:0;right:0;top:56px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:0 12px;pointer-events:none;');
   wrapper.appendChild(legend);
+  // 观察窗提示（转到新面停稳后短暂出现·此间不开火·提示玩家看清选色）。
+  const hint = el('div', 'position:absolute;left:50%;top:44%;transform:translateX(-50%);z-index:22;pointer-events:none;padding:6px 16px;border-radius:16px;background:#0c1a30cc;border:1px solid #7fe3ff66;color:#bfe9ff;font:800 15px system-ui;opacity:0;transition:opacity .15s;', '🔍 看清 · 选色');
+  wrapper.appendChild(hint);
   // 再来一局（仅结算时出现·点=拆当前实例重开）——playtest 必备·不用刷新页面。
   const againBtn = el('button', 'position:absolute;left:50%;top:56%;transform:translateX(-50%);display:none;z-index:40;pointer-events:auto;background:linear-gradient(#ffcf4a,#f2a81e);color:#3a2500;border:none;border-radius:14px;padding:12px 30px;cursor:pointer;font:900 20px system-ui;box-shadow:0 5px 0 #b97e12,0 8px 18px #0008;', '↻ 再来一局');
   againBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); restart(); });
@@ -263,7 +271,7 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
     slots[selSlot] = c;
     const flashed = selSlot;
     selSlot = (selSlot + 1) % SLOT_N;  // ★ 自动移到下一炮 → 连点几色即可填/换·每色永远可点
-    refresh(); syncBeacons(); // 换色 → 重算"现在能打"的高亮光标
+    refresh();
     slotEls[flashed].animate?.([{ transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { duration: 220 });
   };
   const refresh = (): void => {
@@ -309,45 +317,6 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
     }
   };
 
-  // ── 特殊格 3D 光标（beacon）：贴在每个暴露特殊格的外露面上·浮出一个亮块 → 一眼看清哪些是功能格。
-  //   随立方转（pivot 子）。当前装载色的格子光标更大更亮 = "现在能打的目标"（配 aimFace 优先=你用装色操控打谁）。
-  const DIRS: [number, number, number][] = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
-  const outNormal = (i: number, j: number, k: number): [number, number, number] => {
-    for (const [dx, dy, dz] of DIRS) { const a = i + dx, b = j + dy, c = k + dz; if (!inB(a) || !inB(b) || !inB(c) || !present.has(vid(a, b, c))) return [dx, dy, dz]; }
-    return [0, 0, 1];
-  };
-  const beacons = new Set<string>();
-  const beaconId = (i: number, j: number, k: number): string => `bc-${i}-${j}-${k}`;
-  const syncBeacons = (): void => {
-    const piv = engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D');
-    const want = new Set<string>();
-    for (const [id, kind] of cellType) {
-      if (!present.has(id)) continue;
-      const [, si, sj, sk] = id.split('-'); const i = +si, j = +sj, k = +sk;
-      if (!exposed(i, j, k)) continue;
-      want.add(id);
-      const bid = beaconId(i, j, k);
-      const [nx, ny, nz] = outNormal(i, j, k);
-      const loaded = slots.includes(colorAt.get(id) ?? -1);
-      const sz = loaded ? VOX * 0.5 : VOX * 0.34;      // 装载色 = 更大 = "现在能打"
-      const tint = CELLS[kind].edge;
-      const bx = idx2pos(i) + nx * PITCH * 0.62, by = idx2pos(j) + ny * PITCH * 0.62, bz = idx2pos(k) + nz * PITCH * 0.62;
-      if (!beacons.has(id)) {
-        try { engine.world.createEntity(bid); } catch { /* */ }
-        engine.world.addComponent(bid, { type: 'Transform3D', x: bx, y: by, z: bz } as unknown as Transform3D);
-        piv?.children.push(bid); beacons.add(id);
-      }
-      engine.world.removeComponent(bid, 'Mesh3D');
-      engine.world.addComponent(bid, { type: 'Mesh3D', shape: 'box', width: sz, height: sz, depth: sz, frontTint: tint, backTint: tint, edgeTint: 0xffffff } as never);
-      const tr = engine.world.getComponent<Transform3D>(bid, 'Transform3D'); if (tr) { tr.x = bx; tr.y = by; tr.z = bz; }
-    }
-    for (const id of [...beacons]) if (!want.has(id)) {
-      const [, si, sj, sk] = id.split('-'); const bid = beaconId(+si, +sj, +sk);
-      try { engine.world.destroyEntity(bid); } catch { /* */ }
-      const piv2 = engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D'); if (piv2) { const x = piv2.children.indexOf(bid); if (x >= 0) piv2.children.splice(x, 1); }
-      beacons.delete(id);
-    }
-  };
 
   // ── 运动体（子弹/碎片·自管积分）──
   type Bullet = { kind: 'bullet'; id: string; t: number; from: [number, number, number]; to: [number, number, number]; aim: [number, number, number] };
@@ -424,8 +393,32 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
     ([[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]] as [number,number,number][]).forEach(([a, b, c]) => { if (inB(a) && inB(b) && inB(c)) reveal(a, b, c); });
   };
 
+  // ★ 通关揭示：轰掉所有剩余外料（冒一波碎片）→ 只留雕像（全渲金）→ 慢转展示 = "哦这是XX!" 成就感。
+  let winShow = false;
+  const revealSculpture = (): void => {
+    winShow = true;
+    const piv = engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D');
+    let burst = 0;
+    for (const [id, c] of [...colorAt]) {
+      if (c === 5 || !present.has(id)) continue;
+      const [, si, sj, sk] = id.split('-'); const i = +si, j = +sj, k = +sk;
+      if (rendered.has(id) && burst < 60) { const wp = voxWorld(i, j, k); spawnFrags(wp[0], wp[1], wp[2], PALETTE[c].tint); burst++; } // 只给可见外料冒碎片（够爽·不爆量）
+      present.delete(id);
+      if (rendered.has(id)) { engine.world.destroyEntity(id); if (piv) { const x = piv.children.indexOf(id); if (x >= 0) piv.children.splice(x, 1); } rendered.delete(id); }
+    }
+    legend.innerHTML = '';
+    for (const [id, c] of colorAt) {                 // 补渲全部雕像格（含原来埋在里面的）→ 完整金雕像
+      if (c !== 5 || rendered.has(id)) continue;
+      const [, si, sj, sk] = id.split('-'); const i = +si, j = +sj, k = +sk;
+      try { engine.world.createEntity(id); } catch { /* */ }
+      engine.world.addComponent(id, { type: 'Transform3D', x: idx2pos(i), y: idx2pos(j), z: idx2pos(k) } as unknown as Transform3D);
+      engine.world.addComponent(id, { type: 'Mesh3D', ...voxMesh(GOLD_TINT) } as never);
+      piv?.children.push(id); rendered.add(id);
+    }
+  };
+
   let over: 'win' | 'lose' | null = null;
-  const endGame = (kind: 'win' | 'lose', text: string, color: string): void => { over = kind; banner.textContent = text; banner.style.color = color; againBtn.style.display = 'block'; };
+  const endGame = (kind: 'win' | 'lose', text: string, color: string): void => { over = kind; banner.textContent = text; banner.style.color = color; againBtn.style.display = 'block'; if (kind === 'win') revealSculpture(); };
   const checkEnd = (): void => {
     if (over) return;
     if (coverRemaining === 0 || (coverTotal - coverRemaining) / coverTotal >= REVEAL_PASS) { endGame('win', '🎉 雕像现形！', '#8affa0'); return; }
@@ -448,6 +441,7 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
     checkEnd(); refresh();
   };
   let afAcc = 0, fireCursor = 0; // 自动发射节拍累加 + 轮流开火游标
+  let observeLeft = 0, wasSettled = false; // 观察窗剩余 + 上帧是否停稳（边沿触发观察窗）
 
   // ── 主循环（自管·全 try/catch·绝不冻结）──
   let raf = 0, last = performance.now();
@@ -476,12 +470,22 @@ function runOne(container: HTMLElement, _host: { exit: () => void } | undefined,
           facePill.style.boxShadow = isRapid ? '0 3px 0 #b8430f,0 0 16px #ff8a3a' : '0 3px 0 #1c3e7a';
         }
         const cad = isRapid ? FIRE_MS * 0.5 : FIRE_MS;
-        // ★ 自动发射：轮流一门炮射一发（不再三炮齐射=不乱·慢节拍）·扣弹→无同色暴露则浪费。
-        afAcc += dt; while (afAcc >= cad) { afAcc -= cad; fire(slots[fireCursor % SLOT_N]); fireCursor++; }
+        // ★ 只在「转面停稳 + 观察窗过后」开火：①修打错面 bug（转动中面朝向不定·绝不打）②给玩家看清+选色时间。
+        const tgt = ORIENT[orientIdx];
+        const settled = Math.abs(shortDelta(curRx, tgt[0])) < 0.03 && Math.abs(shortDelta(curRy, tgt[1])) < 0.03;
+        if (settled && !wasSettled) observeLeft = OBSERVE_MS;
+        wasSettled = settled;
+        if (settled && observeLeft > 0) observeLeft = Math.max(0, observeLeft - dt);
+        hint.style.opacity = settled && observeLeft > 0 ? '1' : '0';
+        // 轮流一门炮射一发（不再三炮齐射=不乱·慢节拍）·扣弹→无同色暴露则浪费。
+        if (settled && observeLeft <= 0) { afAcc += dt; while (afAcc >= cad) { afAcc -= cad; fire(slots[fireCursor % SLOT_N]); fireCursor++; } }
+        else afAcc = 0;
         if (globalLeft <= 0) checkEnd();
         // 本面补给清单 + 特殊格光标（换面或有破坏时重算）。
-        const fs = frontSide(); if (fs !== legendSide || legendDirty) { legendSide = fs; legendDirty = false; updateFaceLegend(fs); syncBeacons(); }
+        const fs = frontSide(); if (fs !== legendSide || legendDirty) { legendSide = fs; legendDirty = false; updateFaceLegend(fs); }
       }
+      // 通关展示：只留金雕像·慢慢自转给玩家看清是什么形（成就感）。
+      if (over === 'win' && winShow) { curRy += dt * 0.0009; const piv = engine.world.getComponent<Transform3D>('cube-pivot', 'Transform3D'); if (piv) piv.rotY = curRy; }
       // 运动体积分。
       const ds = Math.min(dt, 50) / 1000;
       for (let m = movers.length - 1; m >= 0; m--) {
