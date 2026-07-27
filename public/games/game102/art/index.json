@@ -297,7 +297,7 @@
     {
       "id": "cell-icon/fire",
       "type": "texture",
-      "description": "功能格图标贴图 · 火 · 程序化生成（voxel 功能格方块面·满幅不透明）",
+      "description": "功能格图标贴图 · 火 · 程序化生成（voxel 功能格方块面 emissiveMap·透明底白符号）",
       "status": "filled",
       "path": "/games/game102/art/cell-icon-fire.png",
       "category": "texture.cell-icon",
@@ -305,6 +305,7 @@
         "cell-icon",
         "fire",
         "texture",
+        "emissive",
         "voxel",
         "game102",
         "proto"
@@ -313,25 +314,24 @@
       "license": "CC0",
       "source": "procedural (scripts/game-102-cell-icon-gen.mjs)",
       "spec": {
-        "usage": "texture",
+        "usage": "emissive",
         "colorSpace": "srgb",
         "wrap": "clamp",
         "format": "png",
         "width": 128,
         "height": 128,
-        "transparent": false
+        "transparent": true
       },
       "provenance": {
-        "method": "procedural-raster (roundRect tile + polygon-scanline white glyph + dark same-hue border)",
+        "method": "procedural-raster (transparent background + polygon-scanline white glyph)",
         "generator": "scripts/game-102-cell-icon-gen.mjs",
-        "tint": "#ff7a3a",
-        "note": "deterministic; zero external assets/network; full-frame opaque face texture for 3D voxel cell blocks"
+        "note": "deterministic; zero external assets/network; transparent-background white-symbol texture used as emissiveMap on 3D voxel cell faces (transparent/black = no glow = cube palette color shows; white symbol = glows)"
       }
     },
     {
       "id": "cell-icon/time",
       "type": "texture",
-      "description": "功能格图标贴图 · 时钟 · 程序化生成（voxel 功能格方块面·满幅不透明）",
+      "description": "功能格图标贴图 · 时钟 · 程序化生成（voxel 功能格方块面 emissiveMap·透明底白符号）",
       "status": "filled",
       "path": "/games/game102/art/cell-icon-time.png",
       "category": "texture.cell-icon",
@@ -339,6 +339,7 @@
         "cell-icon",
         "time",
         "texture",
+        "emissive",
         "voxel",
         "game102",
         "proto"
@@ -347,25 +348,24 @@
       "license": "CC0",
       "source": "procedural (scripts/game-102-cell-icon-gen.mjs)",
       "spec": {
-        "usage": "texture",
+        "usage": "emissive",
         "colorSpace": "srgb",
         "wrap": "clamp",
         "format": "png",
         "width": 128,
         "height": 128,
-        "transparent": false
+        "transparent": true
       },
       "provenance": {
-        "method": "procedural-raster (roundRect tile + polygon-scanline white glyph + dark same-hue border)",
+        "method": "procedural-raster (transparent background + polygon-scanline white glyph)",
         "generator": "scripts/game-102-cell-icon-gen.mjs",
-        "tint": "#6ad0ff",
-        "note": "deterministic; zero external assets/network; full-frame opaque face texture for 3D voxel cell blocks"
+        "note": "deterministic; zero external assets/network; transparent-background white-symbol texture used as emissiveMap on 3D voxel cell faces (transparent/black = no glow = cube palette color shows; white symbol = glows)"
       }
     },
     {
       "id": "cell-icon/bomb",
       "type": "texture",
-      "description": "功能格图标贴图 · 爆炸 · 程序化生成（voxel 功能格方块面·满幅不透明）",
+      "description": "功能格图标贴图 · 爆炸 · 程序化生成（voxel 功能格方块面 emissiveMap·透明底白符号）",
       "status": "filled",
       "path": "/games/game102/art/cell-icon-bomb.png",
       "category": "texture.cell-icon",
@@ -373,6 +373,7 @@
         "cell-icon",
         "bomb",
         "texture",
+        "emissive",
         "voxel",
         "game102",
         "proto"
@@ -381,25 +382,24 @@
       "license": "CC0",
       "source": "procedural (scripts/game-102-cell-icon-gen.mjs)",
       "spec": {
-        "usage": "texture",
+        "usage": "emissive",
         "colorSpace": "srgb",
         "wrap": "clamp",
         "format": "png",
         "width": 128,
         "height": 128,
-        "transparent": false
+        "transparent": true
       },
       "provenance": {
-        "method": "procedural-raster (roundRect tile + polygon-scanline white glyph + dark same-hue border)",
+        "method": "procedural-raster (transparent background + polygon-scanline white glyph)",
         "generator": "scripts/game-102-cell-icon-gen.mjs",
-        "tint": "#ff4a3a",
-        "note": "deterministic; zero external assets/network; full-frame opaque face texture for 3D voxel cell blocks"
+        "note": "deterministic; zero external assets/network; transparent-background white-symbol texture used as emissiveMap on 3D voxel cell faces (transparent/black = no glow = cube palette color shows; white symbol = glows)"
       }
     },
     {
       "id": "cell-icon/ammo",
       "type": "texture",
-      "description": "功能格图标贴图 · 弹药 · 程序化生成（voxel 功能格方块面·满幅不透明）",
+      "description": "功能格图标贴图 · 弹药 · 程序化生成（voxel 功能格方块面 emissiveMap·透明底白符号）",
       "status": "filled",
       "path": "/games/game102/art/cell-icon-ammo.png",
       "category": "texture.cell-icon",
@@ -407,6 +407,7 @@
         "cell-icon",
         "ammo",
         "texture",
+        "emissive",
         "voxel",
         "game102",
         "proto"
@@ -415,19 +416,18 @@
       "license": "CC0",
       "source": "procedural (scripts/game-102-cell-icon-gen.mjs)",
       "spec": {
-        "usage": "texture",
+        "usage": "emissive",
         "colorSpace": "srgb",
         "wrap": "clamp",
         "format": "png",
         "width": 128,
         "height": 128,
-        "transparent": false
+        "transparent": true
       },
       "provenance": {
-        "method": "procedural-raster (roundRect tile + polygon-scanline white glyph + dark same-hue border)",
+        "method": "procedural-raster (transparent background + polygon-scanline white glyph)",
         "generator": "scripts/game-102-cell-icon-gen.mjs",
-        "tint": "#ffe08a",
-        "note": "deterministic; zero external assets/network; full-frame opaque face texture for 3D voxel cell blocks"
+        "note": "deterministic; zero external assets/network; transparent-background white-symbol texture used as emissiveMap on 3D voxel cell faces (transparent/black = no glow = cube palette color shows; white symbol = glows)"
       }
     }
   ]

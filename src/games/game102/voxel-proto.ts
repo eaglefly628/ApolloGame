@@ -10,13 +10,12 @@ import { QueuedInputSource } from '@net/index.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
 import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assembly.js';
 import type { Transform3D, Pivot3D } from '@engine/protocol/components.js';
-import { VOXEL_SURFACES, type VoxelSurface } from './voxel-surfaces.js';
 import { AssetManager, ImageAssetLoader, registerAssetIndex, parseAssetIndex } from '@assets/index.js';
 
 const PITCH = 33, VOX = 33; // 体素尺寸固定（立方随 N 变大·相机距离按 N 缩放 → 屏上观感一致）
 const FACE_MS = 6000;     // 每面总停留（含换色窗 + 开火窗）
-const PICK_MS = 3000;     // 换色窗：停稳后此段不开火·给你看清+选色
 const FIRE_MS = 170;      // 开火窗内发射节拍（单炮·当前色）
+const REACH_LAYERS = 2;   // 炮可达层数（表面第1层 + 第2层·打得进·第3层起打不到·owner）
 const TWEEN = 0.010;
 const POWER_MS = 3500;    // 火力格：频率翻倍时长
 const TIME_BONUS = 4000;  // 加时格：全局倒计时 +此（ms）
@@ -50,14 +49,15 @@ const ORIENT: [number, number][] = [
 
 // ── 关卡配置（资源按关·尺寸按关·功能格词表按关）──
 type Resource = 'time' | 'ammo' | 'both';
-interface LevelConfig { name: string; n: number; resource: Resource; totalMs?: number; ammoFrac?: number; revealPass: number; cells: CellKind[]; }
+// pickMs 缺省=不限时换色（观察窗内全局时间+转面都暂停·玩家从容选·按「开打」开始）；设了值=限时换色（倒计时自动开打·加压）。
+interface LevelConfig { name: string; n: number; resource: Resource; totalMs?: number; ammoFrac?: number; revealPass: number; cells: CellKind[]; pickMs?: number; }
 const LEVELS: LevelConfig[] = [
   { name: '入门 · 时间', n: 5, resource: 'time', totalMs: 70000, revealPass: 0.5, cells: ['time'] },
   { name: '火力 · 时间', n: 5, resource: 'time', totalMs: 65000, revealPass: 0.55, cells: ['power', 'time'] },
   { name: '连爆 · 时间', n: 6, resource: 'time', totalMs: 78000, revealPass: 0.55, cells: ['power', 'time', 'bomb'] },
   { name: '弹药 · 补给', n: 6, resource: 'ammo', ammoFrac: 0.85, revealPass: 0.55, cells: ['ammo', 'power', 'bomb'] },
   { name: '混合 · 进阶', n: 7, resource: 'both', totalMs: 88000, ammoFrac: 1.0, revealPass: 0.6, cells: ['ammo', 'power', 'time', 'bomb'] },
-  { name: '大师 · 8³', n: 8, resource: 'both', totalMs: 95000, ammoFrac: 0.92, revealPass: 0.6, cells: ['ammo', 'power', 'time', 'bomb'] },
+  { name: '大师 · 限时换色', n: 8, resource: 'both', totalMs: 95000, ammoFrac: 0.92, revealPass: 0.6, cells: ['ammo', 'power', 'time', 'bomb'], pickMs: 2800 },
 ];
 
 function shade(t: number, k: number): number {
@@ -74,10 +74,9 @@ function rotVec(x: number, y: number, z: number, rx: number, ry: number): [numbe
 }
 const shortDelta = (a: number, b: number): number => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; };
 const vid = (i: number, j: number, k: number): string => `v-${i}-${j}-${k}`;
-let voxSurface: VoxelSurface = 'matte';
-// 普通格 = 干净素面（本色·实例化）。功能格 = 一个纯色底盒 + Material3D 图标贴图（icon 贴到面上·一眼看类型）→ 单 mesh（少数·可接受）。
-const voxMesh = (t: number): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: shade(t, 0.82), voxelTex: VOXEL_SURFACES[voxSurface](t) });
-const funcBoxMesh = (kind: CellKind): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: CELLS[kind].edge, backTint: shade(CELLS[kind].edge, 0.7), edgeTint: 0x0c0c0c });
+// 普通格 = **纯平色·无描边·无贴图纹**（owner：任何尺寸都不要缝合线·一整片平滑面）→ 同色相邻无缝融成一片·靠真几何+光影出体积。
+const voxMesh = (t: number): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: t, backTint: t, edgeTint: t });
+// 功能格贴图 key（美术台账·数据映射）→ 当 emissiveMap（透明底白符号·只符号处发光·底色=方块本身调色板色透出）。
 const CELL_ICON_KEY: Record<CellKind, string> = { power: 'cell-icon/fire', time: 'cell-icon/time', bomb: 'cell-icon/bomb', ammo: 'cell-icon/ammo' };
 const gemMesh = (): Record<string, unknown> => ({ shape: 'box', width: VOX, height: VOX, depth: VOX, frontTint: 0x9ff2ff, backTint: 0x9ff2ff, edgeTint: GEM_EDGE, voxelTex: { top: 0xd8ffff, side: 0x7fe0ff, top2: 0xffffff, trim: 0xffffff, pattern: 'crystal', tile: 8 } });
 type Style = { name: string; post: Record<string, unknown> };
@@ -160,14 +159,15 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     if (!present.has(vid(i, j, k))) return false;
     return [[i+1,j,k],[i-1,j,k],[i,j+1,k],[i,j-1,k],[i,j,k+1],[i,j,k-1]].some(([a, b, c]) => !inB(a) || !inB(b) || !inB(c) || !present.has(vid(a, b, c)));
   };
-  const meshOf = (id: string): Record<string, unknown> => { if (gemSet.has(id)) return gemMesh(); const k = cellType.get(id); return k ? funcBoxMesh(k) : voxMesh(tintOf(id)); };
-  const materialOf = (id: string): Record<string, unknown> | null => { const k = cellType.get(id); return k ? { map: CELL_ICON_KEY[k] } : null; }; // 功能格 → 图标贴图（Material3D.map）
+  const meshOf = (id: string): Record<string, unknown> => gemSet.has(id) ? gemMesh() : voxMesh(tintOf(id)); // 功能格底盒=本色·图标走 Material3D emissiveMap
+  const materialOf = (id: string): Record<string, unknown> | null => { const k = cellType.get(id); return k ? { preset: 'matte', color: tintOf(id), emissive: 0xffffff, emissiveIntensity: 1.35, emissiveMap: CELL_ICON_KEY[k] } : null; }; // 底色=本色·白符号发光叠加
 
   // ── 对局状态 ──
   let currentColor = 0;
   let phase: 'pick' | 'fire' = 'pick';
-  let pickLeft = PICK_MS;
+  let pickLeft = cfg.pickMs ?? 0;
   let focusTarget: [number, number, number] | null = null;
+  let focusScreen: { x: number; y: number } | null = null; // 点中格的屏幕坐标（画虚线+选中标记·开火窗立方停稳→静止有效）
   let styleIdx = 0;
   let orientIdx = 0, faceLeft = FACE_MS;
   let globalLeft = cfg.totalMs ?? 90000;
@@ -226,7 +226,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   wrapper.appendChild(timeBar);
   const banner = el('div', 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font:900 38px system-ui;color:#8affa0;text-shadow:0 3px 14px #000;pointer-events:none;padding:0 20px;white-space:pre-line;');
   wrapper.appendChild(banner);
-  const hint = el('div', 'position:absolute;left:50%;top:44%;transform:translateX(-50%);z-index:22;pointer-events:none;padding:7px 18px;border-radius:16px;background:#0c1a30dd;border:1px solid #7fe3ff66;color:#dff;font:800 17px system-ui;opacity:0;transition:opacity .15s;white-space:nowrap;');
+  const hint = el('div', 'position:absolute;left:50%;top:92px;transform:translateX(-50%);z-index:22;pointer-events:none;padding:7px 18px;border-radius:16px;background:#0c1a30dd;border:1px solid #7fe3ff66;color:#dff;font:800 16px system-ui;opacity:0;transition:opacity .15s;white-space:nowrap;');
   wrapper.appendChild(hint);
   const announce = el('div', 'position:absolute;left:0;right:0;top:38%;display:flex;justify-content:center;pointer-events:none;z-index:32;');
   const announceInner = el('div', 'padding:14px 40px;border-radius:20px;background:linear-gradient(#ffe58a,#f2b21e);color:#5a3800;font:900 40px system-ui;letter-spacing:2px;box-shadow:0 6px 0 #b97e12,0 10px 30px #000a,inset 0 2px 0 #fff8;text-shadow:0 2px 0 #fff6;opacity:0;', '🎨 换色');
@@ -259,30 +259,76 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     wrapper.animate?.([{ transform: 'translate(0,0)' }, { transform: `translate(${6 * s}px,${-5 * s}px)` }, { transform: `translate(${-5 * s}px,${4 * s}px)` }, { transform: 'translate(0,0)' }], { duration: 220 });
     flash.animate?.([{ opacity: 0.55 * s }, { opacity: 0 }], { duration: 300 });
   };
+  // ── 炮台 + 选中虚线（owner：选中色进炮台·点方块给选中反馈 + 一根虚线从炮台指向中心）──
+  const cannonX = fw / 2, cannonY = fh - 150;
+  const NS = 'http://www.w3.org/2000/svg';
+  const aimSvg = document.createElementNS(NS, 'svg'); aimSvg.setAttribute('style', 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:23;');
+  const aimLine = document.createElementNS(NS, 'line'); aimLine.setAttribute('stroke', '#ffffff'); aimLine.setAttribute('stroke-width', '3'); aimLine.setAttribute('stroke-dasharray', '9 8'); aimLine.setAttribute('stroke-linecap', 'round'); aimLine.setAttribute('opacity', '0');
+  aimSvg.appendChild(aimLine); wrapper.appendChild(aimSvg);
+  const selMark = el('div', 'position:absolute;width:46px;height:46px;border:3px solid #fff;border-radius:9px;box-shadow:0 0 16px #fff,inset 0 0 8px #fff8;transform:translate(-50%,-50%);pointer-events:none;z-index:24;opacity:0;');
+  wrapper.appendChild(selMark);
+  const cannon = el('div', `position:absolute;left:${cannonX}px;top:${cannonY}px;z-index:24;pointer-events:none;`);
+  const barrel = el('div', `position:absolute;left:-11px;top:-54px;width:22px;height:54px;border-radius:9px 9px 4px 4px;background:${PALETTE[0].css};box-shadow:0 2px 6px #0009,inset 0 0 7px #fff7;transform-origin:50% 100%;transition:transform .12s;`);
+  const cbase = el('div', 'position:absolute;left:-27px;top:-27px;width:54px;height:54px;border-radius:50%;background:radial-gradient(#2a3a58,#0c1526);border:3px solid #3a5680;box-shadow:0 4px 12px #0008;');
+  cannon.appendChild(barrel); cannon.appendChild(cbase); wrapper.appendChild(cannon);
+  const updateAim = (): void => {
+    if (!over && phase === 'fire' && focusScreen) {
+      aimLine.setAttribute('x1', String(cannonX)); aimLine.setAttribute('y1', String(cannonY - 48));
+      aimLine.setAttribute('x2', String(focusScreen.x)); aimLine.setAttribute('y2', String(focusScreen.y)); aimLine.setAttribute('opacity', '0.9');
+      selMark.style.left = `${focusScreen.x}px`; selMark.style.top = `${focusScreen.y}px`; selMark.style.opacity = '1';
+      const dx = focusScreen.x - cannonX, dy = focusScreen.y - cannonY; barrel.style.transform = `rotate(${Math.atan2(dx, -dy) * 180 / Math.PI}deg)`;
+    } else { aimLine.setAttribute('opacity', '0'); selMark.style.opacity = '0'; barrel.style.transform = 'rotate(0deg)'; }
+  };
+  const loadFx = (c: number): void => { // 选中色 → 一个色块 cube 飞进中心炮管 + 炮台染色脉冲
+    barrel.style.background = PALETTE[c].css;
+    const cr = cubeWraps[c].getBoundingClientRect(), wr = wrapper.getBoundingClientRect();
+    const sx = cr.left - wr.left + cr.width / 2, sy = cr.top - wr.top + cr.height / 2;
+    const fly = el('div', `position:absolute;left:${sx}px;top:${sy}px;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:7px;background:${PALETTE[c].css};box-shadow:0 0 16px ${PALETTE[c].css},inset 0 0 8px #fff8;z-index:26;pointer-events:none;`);
+    wrapper.appendChild(fly);
+    const a = fly.animate?.([{ transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 }, { transform: `translate(${cannonX - sx}px,${cannonY - 48 - sy}px) rotate(230deg) scale(0.35)`, opacity: 0.6 }], { duration: 360, easing: 'cubic-bezier(.5,0,.9,.6)' });
+    const done = (): void => { fly.remove(); cbase.animate?.([{ transform: 'scale(1.22)' }, { transform: 'scale(1)' }], { duration: 220 }); barrel.animate?.([{ filter: 'brightness(1.9)' }, { filter: 'brightness(1)' }], { duration: 260 }); };
+    if (a) a.onfinish = done; else done();
+  };
   const styleBtn = el('button', 'position:absolute;right:8px;top:60px;z-index:20;pointer-events:auto;background:#1a2740ee;color:#cfe;border:1px solid #35507a;border-radius:8px;padding:6px 12px;cursor:pointer;font:700 13px system-ui;', `🎨 ${STYLES[0].name}`);
   styleBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
   const applyStyle = (idx: number): void => { styleIdx = ((idx % STYLES.length) + STYLES.length) % STYLES.length; const st = STYLES[styleIdx]; engine.world.removeComponent('post', 'Post3D'); engine.world.addComponent('post', { type: 'Post3D', ...st.post } as never); styleBtn.textContent = `🎨 ${st.name}`; };
   styleBtn.onclick = () => applyStyle(styleIdx + 1);
   wrapper.appendChild(styleBtn);
 
-  // ── 底部：5 色 = 当前主攻色 ──
-  const bottom = el('div', 'position:absolute;left:0;right:0;bottom:18px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;');
-  bottom.appendChild(el('div', 'color:#9fc0ee;font:800 12px system-ui;letter-spacing:1px;', '当前主攻色 · 点切换'));
-  const chipRow = el('div', 'display:flex;gap:12px;pointer-events:auto;');
-  const chips: HTMLElement[] = [];
-  PALETTE.forEach((p, c) => {
-    const chip = el('div', `width:58px;height:58px;border-radius:14px;background:${p.css};box-shadow:0 3px 6px #0008;cursor:pointer;user-select:none;transition:transform .06s,box-shadow .1s;`);
-    chip.addEventListener('pointerdown', (e) => { e.stopPropagation(); setColor(c); });
-    chips.push(chip); chipRow.appendChild(chip);
-  });
-  bottom.appendChild(chipRow);
+  // ── 底部：开打钮（换色阶段·不限时关·放颜色上方不挡观察）+ 5 个随机旋转的色块 cube = 当前主攻色 ──
+  const hex = (n: number): string => `#${((n >>> 0) & 0xffffff).toString(16).padStart(6, '0')}`;
+  const makeColorCube = (c: number): { wrap: HTMLElement; inner: HTMLElement } => {
+    const S = 52, h = S / 2, base = PALETTE[c].tint;
+    const wrap = el('div', `position:relative;width:${S}px;height:${S}px;perspective:200px;cursor:pointer;user-select:none;transition:filter .12s,transform .12s;`);
+    const inner = el('div', 'position:absolute;inset:0;transform-style:preserve-3d;');
+    const mkFace = (tf: string, k: number): HTMLElement => el('div', `position:absolute;width:${S}px;height:${S}px;background:${hex(shade(base, k))};transform:${tf};backface-visibility:hidden;`);
+    inner.appendChild(mkFace(`translateZ(${h}px)`, 1.0));
+    inner.appendChild(mkFace(`rotateY(180deg) translateZ(${h}px)`, 0.62));
+    inner.appendChild(mkFace(`rotateY(90deg) translateZ(${h}px)`, 0.8));
+    inner.appendChild(mkFace(`rotateY(-90deg) translateZ(${h}px)`, 0.8));
+    inner.appendChild(mkFace(`rotateX(90deg) translateZ(${h}px)`, 1.2));
+    inner.appendChild(mkFace(`rotateX(-90deg) translateZ(${h}px)`, 0.5));
+    wrap.appendChild(inner);
+    wrap.addEventListener('pointerdown', (e) => { e.stopPropagation(); setColor(c); });
+    return { wrap, inner };
+  };
+  const bottom = el('div', 'position:absolute;left:0;right:0;bottom:16px;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;');
+  const startBtn = el('button', 'pointer-events:auto;display:none;background:linear-gradient(#8affa0,#3fbf68);color:#06301a;border:none;border-radius:14px;padding:10px 36px;cursor:pointer;font:900 20px system-ui;box-shadow:0 5px 0 #2a8f4c;', '▶ 开打');
+  startBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); if (phase === 'pick') phase = 'fire'; });
+  bottom.appendChild(startBtn);
+  bottom.appendChild(el('div', 'color:#9fc0ee;font:800 12px system-ui;letter-spacing:1px;', '当前主攻色 · 点旋转方块切换'));
+  const cubeRow = el('div', 'display:flex;gap:14px;pointer-events:auto;');
+  const cubeWraps: HTMLElement[] = []; const cubeInners: HTMLElement[] = [];
+  const cubeAng = PALETTE.map((_, c) => ({ x: c * 0.7, y: c * 1.3, vx: 0.0009 + c * 0.00022, vy: 0.0013 - c * 0.00015 }));
+  PALETTE.forEach((_, c) => { const { wrap, inner } = makeColorCube(c); cubeWraps.push(wrap); cubeInners.push(inner); cubeRow.appendChild(wrap); });
+  bottom.appendChild(cubeRow);
   wrapper.appendChild(bottom);
 
-  const setColor = (c: number): void => { currentColor = c; refresh(); chips[c].animate?.([{ transform: 'scale(1.35)' }, { transform: 'scale(1)' }], { duration: 200 }); };
+  const setColor = (c: number): void => { currentColor = c; refresh(); cubeWraps[c].animate?.([{ transform: 'scale(1.4) translateY(-6px)' }, { transform: 'scale(1.24) translateY(-6px)' }], { duration: 200 }); loadFx(c); };
   const refresh = (): void => {
-    chips.forEach((ch, c) => {
-      if (c === currentColor) { ch.style.boxShadow = `0 0 0 4px #fff,0 0 22px 6px ${PALETTE[c].css};`; ch.style.transform = 'scale(1.14) translateY(-4px)'; }
-      else { ch.style.boxShadow = '0 3px 6px #0008'; ch.style.transform = 'scale(1)'; }
+    cubeWraps.forEach((w, c) => {
+      if (c === currentColor) { w.style.filter = `drop-shadow(0 0 10px ${PALETTE[c].css})`; w.style.transform = 'scale(1.24) translateY(-6px)'; }
+      else { w.style.filter = 'none'; w.style.transform = 'scale(1)'; }
     });
     dmg.textContent = `破坏 ${Math.round(((coverTotal - coverRemaining) / coverTotal) * 100)}% / ${Math.round(cfg.revealPass * 100)}%`;
     gemPill.textContent = `💎 ${gemsGot}/${GEM_N}`;
@@ -346,15 +392,25 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     for (let d = 0; d < N; d++) { const co = [0, 0, 0]; co[S.axis] = S.val === N - 1 ? N - 1 - d : d; co[S.ua] = a; co[S.ub] = b; if (present.has(vid(co[0], co[1], co[2]))) return [co[0], co[1], co[2]]; }
     return null;
   };
+  // 一列上最外的前 REACH_LAYERS 个 present 格（表面第1层 + 第2层·可达）。
+  const faceCells = (s: number, a: number, b: number): [number, number, number][] => {
+    const S = SIDES[s]; const out: [number, number, number][] = [];
+    for (let d = 0; d < N && out.length < REACH_LAYERS; d++) { const co = [0, 0, 0]; co[S.axis] = S.val === N - 1 ? N - 1 - d : d; co[S.ua] = a; co[S.ub] = b; if (present.has(vid(co[0], co[1], co[2]))) out.push([co[0], co[1], co[2]]); }
+    return out;
+  };
   const aimFace = (s: number, color: number, focus: [number, number, number] | null): [number, number, number] | null => {
     const c0 = (N - 1) / 2;
     let best: [number, number, number] | null = null, bestScore = Infinity, bestSp: [number, number, number] | null = null, bestSpScore = Infinity;
     for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) {
-      const v = faceVisible(s, a, b); if (!v) continue; const id = vid(v[0], v[1], v[2]);
-      if (colorAt.get(id) !== color) continue;
-      const score = focus ? (v[0] - focus[0]) ** 2 + (v[1] - focus[1]) ** 2 + (v[2] - focus[2]) ** 2 : (a - c0) ** 2 + (b - c0) ** 2;
-      if (score < bestScore) { bestScore = score; best = v; }
-      if ((cellType.has(id) || gemSet.has(id)) && score < bestSpScore) { bestSpScore = score; bestSp = v; }
+      const cells = faceCells(s, a, b);
+      for (let li = 0; li < cells.length; li++) {
+        const v = cells[li]; const id = vid(v[0], v[1], v[2]);
+        if (colorAt.get(id) !== color) continue;
+        const base = focus ? (v[0] - focus[0]) ** 2 + (v[1] - focus[1]) ** 2 + (v[2] - focus[2]) ** 2 : (a - c0) ** 2 + (b - c0) ** 2;
+        const score = base + li * 100; // 略偏好浅层（第1层优先于第2层）
+        if (score < bestScore) { bestScore = score; best = v; }
+        if ((cellType.has(id) || gemSet.has(id)) && score < bestSpScore) { bestSpScore = score; bestSp = v; }
+      }
     }
     return bestSp ?? best;
   };
@@ -425,8 +481,9 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     if (!hit || !hit.entityId.startsWith('v-')) return;
     const [, si, sj, sk] = hit.entityId.split('-'); focusTarget = [+si, +sj, +sk];
     const rect = wrapper.getBoundingClientRect();
-    const ring = el('div', `position:absolute;left:${e.clientX - rect.left - 18}px;top:${e.clientY - rect.top - 18}px;width:36px;height:36px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 12px #fff;pointer-events:none;z-index:24;`);
-    wrapper.appendChild(ring); ring.animate?.([{ transform: 'scale(0.5)', opacity: 1 }, { transform: 'scale(1.4)', opacity: 0 }], { duration: 380 }); setTimeout(() => ring.remove(), 400);
+    focusScreen = { x: e.clientX - rect.left, y: e.clientY - rect.top }; updateAim();
+    const ring = el('div', `position:absolute;left:${focusScreen.x - 18}px;top:${focusScreen.y - 18}px;width:36px;height:36px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 12px #fff;pointer-events:none;z-index:24;`);
+    wrapper.appendChild(ring); ring.animate?.([{ transform: 'scale(0.5)', opacity: 1 }, { transform: 'scale(1.6)', opacity: 0 }], { duration: 420 }); setTimeout(() => ring.remove(), 440);
   };
   wrapper.addEventListener('pointerdown', onTap);
 
@@ -434,33 +491,41 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   const frame = (now: number): void => {
     try {
       const dt = now - last; last = now;
+      // 底部 5 个色块 cube 随机旋转（始终转·不受对局暂停影响）。
+      for (let c = 0; c < cubeInners.length; c++) { const a = cubeAng[c]; a.x += a.vx * dt; a.y += a.vy * dt; cubeInners[c].style.transform = `rotateX(${a.x}rad) rotateY(${a.y}rad)`; }
       if (!over) {
-        if (hasTime) globalLeft = Math.max(0, globalLeft - dt);
-        faceLeft -= dt;
-        if (faceLeft <= 0) { orientIdx = (orientIdx + 1) % ORIENT.length; faceLeft = FACE_MS; }
-        const [trx, try_] = ORIENT[orientIdx];
-        curRx += shortDelta(curRx, trx) * Math.min(1, dt * TWEEN);
-        curRy += shortDelta(curRy, try_) * Math.min(1, dt * TWEEN);
+        // 先判停稳 → 决定是否暂停（换色观察窗：全局时间 + 转面都停·从容选色）。
+        const tgt = ORIENT[orientIdx];
+        const settled = Math.abs(shortDelta(curRx, tgt[0])) < 0.03 && Math.abs(shortDelta(curRy, tgt[1])) < 0.03;
+        if (settled && !wasSettled) { phase = 'pick'; pickLeft = cfg.pickMs ?? 0; focusTarget = null; focusScreen = null; showAnnounce(); }
+        wasSettled = settled;
+        const paused = settled && phase === 'pick'; // 观察窗 → 冻结时间与转面
+        if (!paused) {
+          if (hasTime) globalLeft = Math.max(0, globalLeft - dt);
+          faceLeft -= dt;
+          if (faceLeft <= 0) { orientIdx = (orientIdx + 1) % ORIENT.length; faceLeft = FACE_MS; }
+        }
+        curRx += shortDelta(curRx, tgt[0]) * Math.min(1, dt * TWEEN);
+        curRy += shortDelta(curRy, tgt[1]) * Math.min(1, dt * TWEEN);
         const piv = engine.world.getComponent<Transform3D>('cube-pivot', 'Transform3D'); if (piv) { piv.rotX = curRx; piv.rotY = curRy; }
         if (hasTime) facePill.textContent = `⏱ ${(globalLeft / 1000).toFixed(globalLeft < 10000 ? 1 : 0)}`;
         timeBar.style.width = `${Math.min(100, (faceLeft / FACE_MS) * 100)}%`;
-        const wasRapid = rapidLeft > 0; if (rapidLeft > 0) rapidLeft = Math.max(0, rapidLeft - dt); const isRapid = rapidLeft > 0;
+        const wasRapid = rapidLeft > 0; if (rapidLeft > 0 && !paused) rapidLeft = Math.max(0, rapidLeft - dt); const isRapid = rapidLeft > 0;
         if (isRapid !== wasRapid && hasTime) { facePill.style.background = isRapid ? 'linear-gradient(#ff9a3a,#f2671e)' : 'linear-gradient(#3a7bd5,#2a5cae)'; facePill.style.boxShadow = isRapid ? '0 3px 0 #b8430f,0 0 16px #ff8a3a' : '0 3px 0 #1c3e7a'; }
-        const tgt = ORIENT[orientIdx];
-        const settled = Math.abs(shortDelta(curRx, tgt[0])) < 0.03 && Math.abs(shortDelta(curRy, tgt[1])) < 0.03;
-        if (settled && !wasSettled) { phase = 'pick'; pickLeft = PICK_MS; focusTarget = null; showAnnounce(); }
-        wasSettled = settled;
-        if (!settled) { hint.style.opacity = '0'; afAcc = 0; }
+        // 阶段 UI + 开火。开打钮仅在「不限时换色关」的换色窗出现（放颜色上方·不挡观察）。
+        startBtn.style.display = paused && !cfg.pickMs ? 'block' : 'none';
+        if (!settled) { hint.style.opacity = '0'; afAcc = 0; if (focusScreen) focusScreen = null; }
         else if (phase === 'pick') {
-          pickLeft = Math.max(0, pickLeft - dt);
-          hint.textContent = `🎨 选色 · ${(pickLeft / 1000).toFixed(1)}s`; hint.style.opacity = '1'; afAcc = 0;
-          if (pickLeft <= 0) phase = 'fire';
+          if (cfg.pickMs) { pickLeft = Math.max(0, pickLeft - dt); hint.textContent = `🎨 选色 · ${(pickLeft / 1000).toFixed(1)}s`; if (pickLeft <= 0) phase = 'fire'; }
+          else hint.textContent = '🎨 观察 · 选色后按开打';
+          hint.style.opacity = '1'; afAcc = 0;
         } else {
-          hint.textContent = '👆 点方块 · 集中火力'; hint.style.opacity = focusTarget ? '0' : '1';
+          hint.textContent = '👆 点方块 · 集中火力'; hint.style.opacity = focusScreen ? '0' : '1';
           const cad = isRapid ? FIRE_MS * 0.5 : FIRE_MS;
           afAcc += dt; while (afAcc >= cad) { afAcc -= cad; fire(); }
         }
         if (hasTime && globalLeft <= 0) checkEnd();
+        updateAim();
         const fs = frontSide(); if (fs !== legendSide || legendDirty) { legendSide = fs; legendDirty = false; updateFaceLegend(fs); }
       }
       const ds = Math.min(dt, 50) / 1000;

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // game102《色流工坊 / Pixel Pour》· 功能格图标贴图生成器（程序化·零外部依赖·零网络·CC0 自产）。
 //
-// 为 voxel 功能格方块面生成 4 张 128×128 满幅不透明贴图：圆角方砖底 + 居中白色符号 + 深色描边框。
-// 贴到 3D 体素方块面上（Material3D.map），让玩家一眼认出格子类型。
+// 为 voxel 功能格方块面生成 4 张 128×128 透明底贴图：完全透明背景 + 居中白色粗符号。
+// 作 3D emissiveMap 用（Material3D.emissiveMap）：透明/黑处不发光=露出方块本身调色板底色，
+// 白符号处自发光叠加=图标发亮。让玩家一眼认出格子类型且不盖掉方块本身颜色。
 // 纯栅格绘制（fillRect / roundRect / 多边形扫描线填充 / disc），确定性、同输入同像素。
 // 用法：node scripts/game-102-cell-icon-gen.mjs
 //   → 写 public/games/game102/art/cell-icon-<kind>.png 并 upsert 本地索引 index.json（filled·spec 闭集）。
@@ -109,19 +110,9 @@ function polygon(cvs, points, color, alpha = 1) {
     }
 }
 
-// ── 方砖底 + 深色描边框（满幅不透明）──
-function tileBase(hex) {
-  const cvs = makeCanvas();
-  const base = rgb(hex);
-  const edge = shade(base, 0.42);   // 深色描边（同色系压暗·方块面之间分隔感）
-  const cx = S / 2, cy = S / 2;
-  // 深色底满幅（描边色）
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) cvs.px(x, y, edge, 1);
-  // 圆角方砖本体（内缩留描边框）
-  roundRect(cvs, cx, cy, 58, 58, 18, base, 1);
-  // 顶部柔和高光斜带（提立体感·仍不透明）
-  roundRect(cvs, cx, cy - 30, 50, 20, 14, shade(base, 1.14), 0.5);
-  return cvs;
+// ── 透明底画布（emissiveMap 用·背景 alpha=0 不发光·符号只画白色）──
+function tileBase(_hex) {
+  return makeCanvas(); // 全透明；符号由各 draw* 以纯白绘制
 }
 
 // ── 火焰 ──
@@ -211,20 +202,19 @@ for (const w of written) {
   byId.set(id, {
     id,
     type: 'texture',
-    description: `功能格图标贴图 · ${w.label} · 程序化生成（voxel 功能格方块面·满幅不透明）`,
+    description: `功能格图标贴图 · ${w.label} · 程序化生成（voxel 功能格方块面 emissiveMap·透明底白符号）`,
     status: 'filled',
     path: `/games/game102/art/${w.file}`,
     category: 'texture.cell-icon',
-    tags: ['cell-icon', w.key, 'texture', 'voxel', 'game102', 'proto'],
+    tags: ['cell-icon', w.key, 'texture', 'emissive', 'voxel', 'game102', 'proto'],
     style: 'flat-icon',
     license: 'CC0',
     source: 'procedural (scripts/game-102-cell-icon-gen.mjs)',
-    spec: { usage: 'texture', colorSpace: 'srgb', wrap: 'clamp', format: 'png', width: S, height: S, transparent: false },
+    spec: { usage: 'emissive', colorSpace: 'srgb', wrap: 'clamp', format: 'png', width: S, height: S, transparent: true },
     provenance: {
-      method: 'procedural-raster (roundRect tile + polygon-scanline white glyph + dark same-hue border)',
+      method: 'procedural-raster (transparent background + polygon-scanline white glyph)',
       generator: 'scripts/game-102-cell-icon-gen.mjs',
-      tint: `#${w.hex.toString(16).padStart(6, '0')}`,
-      note: 'deterministic; zero external assets/network; full-frame opaque face texture for 3D voxel cell blocks',
+      note: 'deterministic; zero external assets/network; transparent-background white-symbol texture used as emissiveMap on 3D voxel cell faces (transparent/black = no glow = cube palette color shows; white symbol = glows)',
     },
   });
 }
