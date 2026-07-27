@@ -2,6 +2,11 @@
 
 > 由主程 2026-07-03 归档手术生成：完结（✅/wontfix）条目全文移入本文件，活跃/排队条目留在主池。查旧条目先 grep 本文件。
 
+### REQ-SCREENFILL-Screen 填满 mount-host 固定 scene 盒（去竖屏底部信箱空白） · [2026-07-25] · PE-101 报（owner「下面留这么大空」）→ PUI 裁 · status: **✅ done（`ScreenProps.fill` 令牌·PUI 2026-07-25·归档腾槽）** · 类型: UI 基座缺口（PUI 域）
+> **裁：加性令牌 `ScreenProps.fill?`（不改默认·零回归）**——不无条件把 `100vh` 换 `100%`（会塌陷直挂无定高页面的 Screen：game-g lobby/game-c 等），改**显式 opt-in**：`renderScreen` `min-height:${fill?'100%':'100vh'}`。`fill:true` 吃父定尺盒的显式高（mountHost overlayHost `inset:0` 于 1920px scene→100%=1920）→ Screen 撑满盒、内部 `flex:1` 吃满剩余·**去竖屏底部信箱空白**；缺省 100vh（直挂页面吃视口·零回归）。
+> **交付**：`types.ts ScreenProps.fill?:boolean`（doc 注明「只在父有定高时用」）+ `render.ts renderScreen` 高度语义分支 + `src/ui/components/screen-fill.test.ts`（3 例·fill→100%/缺省→100vh/与 center/blur 叠）+ `docs/playbooks/ui.md` 新行。**真浏览器目击**（配截图）：viewport 300<盒 460 复现缺口条件——`fill:false` 底栏后露 160px 信箱空白、`fill:true` 撑满盒零空白（flex:1 中区吸满）。
+> **消费方**：mountHost 竖屏游戏（game101/game102）给 Screen 根挂 `fill:true` 即去底部空白·撤掉游戏层「把内容硬撑到 1920」的脆规避（PE 侧另清·本单不碰游戏层）。**触碰全落 PUI 域**（`src/ui/components/{types,render}.ts` + 测试 + `ui.md`）。gate 全绿。
+
 ### REQ-POOL-ADVANCE-弹库队列头可点+上浮（→ compacting 队列 queue-slots）· [2026-07-26] · PE-game102 报 → 主程裁 · status: **✅ done（`afa3d6e8`·Lead 拆解+亲验 PASS·归档）** · 类型: tier2 队列布局能力缺口
 > **⚖ Lead 拆解（owner「为何是需求不是队列能力」之问）**：① 队列逻辑=**真新缺口**（tray 占坑制·队首消费老成员不前移；「消费即整体递补」它做不到）→ 下沉 `t2-queue-slots`；② 「上浮」**非新**（现成 tween 表达·owner「用移动来表达」）→ 不入能力；③ 仅头可点=小缺口并进①。
 > **交付**：`t2-queue-slots`（`src/skills/tier2/queue-slots.ts`）——`QueueSlots{memberTag,capacity,headCount,originX,originY,gap,axis?,action}` + `QueueMember{index}`。每 tick 稳定排序（既有 index→id tie-break·不赖 Array.sort 稳定性）→压实重排 0..N-1（队首/队中任意消费→全体前移不留空·与 tray 互补）→钉 Transform 到槽→前 headCount 增删 Clickable（同 tray 增删 TraySeat 先例）。确定性无随机·Update 相位 runsBefore grid-move/motion-apply/tween。10 测（压实前移钉死/头可点/确定性双跑/边界/撞环）·基线 140→142·gate 全绿 3634。game102 弹库挂 QueueSlots·平滑上浮游戏层叠 tween。原文见 git 史。

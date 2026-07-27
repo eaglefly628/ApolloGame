@@ -316,6 +316,12 @@ export interface ScreenProps {
   bgTextureSize?: number;
   blur?: number;
   center?: boolean;
+  /** 填满宿主定尺盒（REQ-SCREENFILL·去竖屏底部信箱空白）：缺省 Screen 高=`min-height:100vh`（吃真实浏览器视口·
+   *  直挂页面时对）；但 `mountHost` 建的是**固定 fieldW×fieldH scene 盒再整体 transform:scale 信箱化**，此时 `100vh`
+   *  ≠ 盒高（1920）→ 内容只长到自然高、盒底空出信箱条。设 `fill:true` → 改 `min-height:100%`（吃父定尺盒的显式高·
+   *  如 mountHost overlayHost `inset:0` 于 1920px scene）→ Screen 撑满盒、内部 `flex:1` 区块吃满剩余空间。
+   *  **只在父有确定高度时用**（mountHost 场景盒 / 显式 height 容器）；直挂无定高页面的 Screen **别设**（`100%`→0 塌陷）。缺省 false=零回归。 */
+  fill?: boolean;
   /** UV 背景滚动（render-only·滚动 UI 特效）：背景每 ms(缺省 6000) 平移 (x,y) px 循环。配 texture/平铺底纹·mountUI 注入滚动动画。纯数字（弱模型能填）。 */
   bgScroll?: { x?: number; y?: number; ms?: number };
 }

@@ -502,7 +502,9 @@ function renderScreen(id: string, p: ScreenProps, children: LayoutNode[], t: UIT
   const center = p.center ? 'align-items:center;justify-content:center;' : 'align-items:stretch;';
   const bgImg  = p.image ? `background-image:url('${esc(p.image)}');background-size:cover;background-position:center;` : '';
   const blur   = p.blur ? `backdrop-filter:blur(${p.blur}px);` : '';
-  const style  = `width:100%;min-height:100vh;display:flex;flex-direction:column;${center}background:${bg};${bgImg}${blur}font-family:${t.fontUi};position:relative;`;
+  // 高度语义（REQ-SCREENFILL）：缺省 100vh（吃视口·直挂页面对）；fill=100%（吃父定尺盒·mountHost 信箱盒填满去底部空白）。
+  const minH   = p.fill ? '100%' : '100vh';
+  const style  = `width:100%;min-height:${minH};display:flex;flex-direction:column;${center}background:${bg};${bgImg}${blur}font-family:${t.fontUi};position:relative;`;
   return `<div id="${esc(id)}"${bgScrollAttr(p.bgScroll)} style="${style}">${children.map((ch) => renderNode(ch, t)).join('')}</div>`;
 }
 
