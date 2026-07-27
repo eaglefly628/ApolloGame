@@ -293,6 +293,142 @@
         "tint": "#8b5cf6",
         "note": "deterministic; zero external assets/network; barrel recolored per palette, neutral wood carriage/wheels"
       }
+    },
+    {
+      "id": "cell-icon/fire",
+      "type": "texture",
+      "description": "功能格图标贴图 · 火 · 程序化生成（voxel 功能格方块面·满幅不透明）",
+      "status": "filled",
+      "path": "/games/game102/art/cell-icon-fire.png",
+      "category": "texture.cell-icon",
+      "tags": [
+        "cell-icon",
+        "fire",
+        "texture",
+        "voxel",
+        "game102",
+        "proto"
+      ],
+      "style": "flat-icon",
+      "license": "CC0",
+      "source": "procedural (scripts/game-102-cell-icon-gen.mjs)",
+      "spec": {
+        "usage": "texture",
+        "colorSpace": "srgb",
+        "wrap": "clamp",
+        "format": "png",
+        "width": 128,
+        "height": 128,
+        "transparent": false
+      },
+      "provenance": {
+        "method": "procedural-raster (roundRect tile + polygon-scanline white glyph + dark same-hue border)",
+        "generator": "scripts/game-102-cell-icon-gen.mjs",
+        "tint": "#ff7a3a",
+        "note": "deterministic; zero external assets/network; full-frame opaque face texture for 3D voxel cell blocks"
+      }
+    },
+    {
+      "id": "cell-icon/time",
+      "type": "texture",
+      "description": "功能格图标贴图 · 时钟 · 程序化生成（voxel 功能格方块面·满幅不透明）",
+      "status": "filled",
+      "path": "/games/game102/art/cell-icon-time.png",
+      "category": "texture.cell-icon",
+      "tags": [
+        "cell-icon",
+        "time",
+        "texture",
+        "voxel",
+        "game102",
+        "proto"
+      ],
+      "style": "flat-icon",
+      "license": "CC0",
+      "source": "procedural (scripts/game-102-cell-icon-gen.mjs)",
+      "spec": {
+        "usage": "texture",
+        "colorSpace": "srgb",
+        "wrap": "clamp",
+        "format": "png",
+        "width": 128,
+        "height": 128,
+        "transparent": false
+      },
+      "provenance": {
+        "method": "procedural-raster (roundRect tile + polygon-scanline white glyph + dark same-hue border)",
+        "generator": "scripts/game-102-cell-icon-gen.mjs",
+        "tint": "#6ad0ff",
+        "note": "deterministic; zero external assets/network; full-frame opaque face texture for 3D voxel cell blocks"
+      }
+    },
+    {
+      "id": "cell-icon/bomb",
+      "type": "texture",
+      "description": "功能格图标贴图 · 爆炸 · 程序化生成（voxel 功能格方块面·满幅不透明）",
+      "status": "filled",
+      "path": "/games/game102/art/cell-icon-bomb.png",
+      "category": "texture.cell-icon",
+      "tags": [
+        "cell-icon",
+        "bomb",
+        "texture",
+        "voxel",
+        "game102",
+        "proto"
+      ],
+      "style": "flat-icon",
+      "license": "CC0",
+      "source": "procedural (scripts/game-102-cell-icon-gen.mjs)",
+      "spec": {
+        "usage": "texture",
+        "colorSpace": "srgb",
+        "wrap": "clamp",
+        "format": "png",
+        "width": 128,
+        "height": 128,
+        "transparent": false
+      },
+      "provenance": {
+        "method": "procedural-raster (roundRect tile + polygon-scanline white glyph + dark same-hue border)",
+        "generator": "scripts/game-102-cell-icon-gen.mjs",
+        "tint": "#ff4a3a",
+        "note": "deterministic; zero external assets/network; full-frame opaque face texture for 3D voxel cell blocks"
+      }
+    },
+    {
+      "id": "cell-icon/ammo",
+      "type": "texture",
+      "description": "功能格图标贴图 · 弹药 · 程序化生成（voxel 功能格方块面·满幅不透明）",
+      "status": "filled",
+      "path": "/games/game102/art/cell-icon-ammo.png",
+      "category": "texture.cell-icon",
+      "tags": [
+        "cell-icon",
+        "ammo",
+        "texture",
+        "voxel",
+        "game102",
+        "proto"
+      ],
+      "style": "flat-icon",
+      "license": "CC0",
+      "source": "procedural (scripts/game-102-cell-icon-gen.mjs)",
+      "spec": {
+        "usage": "texture",
+        "colorSpace": "srgb",
+        "wrap": "clamp",
+        "format": "png",
+        "width": 128,
+        "height": 128,
+        "transparent": false
+      },
+      "provenance": {
+        "method": "procedural-raster (roundRect tile + polygon-scanline white glyph + dark same-hue border)",
+        "generator": "scripts/game-102-cell-icon-gen.mjs",
+        "tint": "#ffe08a",
+        "note": "deterministic; zero external assets/network; full-frame opaque face texture for 3D voxel cell blocks"
+      }
     }
   ]
 }
