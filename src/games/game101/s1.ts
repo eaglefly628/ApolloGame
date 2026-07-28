@@ -303,14 +303,14 @@ function board(s: S1State): N {
     // 阶段：埋沙(高层·只沙+锁数) → 蛛网 🕸️(低层·快挖开) → 露出(层归零=普通物)。
     if (cv?.cover != null) {
       const ck: N[] = [];
-      // 埋物预览=半透明底图（owner：底下那个东西半透明画出来·隔沙朦胧）——放最下作背景层。
+      // 埋物预览=半透明**底图背景**（绝对定位居中·不与 💥N 竖排叠加撑高出框·owner：太大了出 grid）。
       if (cv.coverSkin) {
-        // 埋物预览用皮肤图（与解锁后同一美术资源·owner：换台账锁前锁后一起换）·半透朦胧。
-        ck.push({ type: 'Image', id: `t-live-${i}-rw`, props: { src: cv.coverSkin, fit: 'contain' }, layout: { width: 92, height: 92, opacity: 0.4 } });
+        // 埋物预览用皮肤图（与解锁后同一美术资源·换台账锁前锁后一起换）·半透朦胧·居中作背景层。
+        ck.push({ type: 'Image', id: `t-live-${i}-rw`, props: { src: cv.coverSkin, fit: 'contain', radius: 14 }, layout: { x: Math.round((CELL_W - 96) / 2), y: 14, width: 96, height: 96, opacity: 0.32, allowOverlap: true } });
       } else if (cv.coverReward) {
-        ck.push({ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 44 }, layout: { opacity: 0.4 } });
+        ck.push({ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 40 }, layout: { opacity: 0.4 } });
       } else if (cv.cover <= 1) {
-        ck.push({ type: 'Label', id: `t-live-${i}-web`, props: { text: '🕸️', size: 44 }, layout: { opacity: 0.4 } });
+        ck.push({ type: 'Label', id: `t-live-${i}-web`, props: { text: '🕸️', size: 40 }, layout: { opacity: 0.4 } });
       }
       // 「还要炸几次解锁」= 主视觉·金牌大号 💥N（尺寸收进格内·不溢出 grid 框·owner：数字要在方框里）。
       ck.push({
