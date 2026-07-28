@@ -354,7 +354,7 @@ function board(s: S1State): N {
       } else {
         // 皮肤槽就绪 → 渲美术图(Image·就绪即换装)；否则回退 Twemoji Label。被拿起格淡化缩小。
         kids.push(cv.skin
-          ? { type: 'Image', id: `t-live-${i}-l`, props: { src: cv.skin, fit: 'contain' }, layout: i === s.liftedCell ? { width: 108, height: 108, opacity: 0.28 } : { width: 126, height: 126 } }
+          ? { type: 'Image', id: `t-live-${i}-l`, props: { src: cv.skin, fit: 'contain', radius: 16 }, layout: i === s.liftedCell ? { width: 100, height: 100, opacity: 0.28 } : { width: 112, height: 112 } }
           : { type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: i === s.liftedCell ? 52 : 66 }, layout: i === s.liftedCell ? { opacity: 0.28 } : {} });
       }
       // 可交付：右下角绿色小勾（角标·绝对定位·非美术台账项·纯 UI 指示）。
