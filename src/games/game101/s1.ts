@@ -305,8 +305,11 @@ function board(s: S1State): N {
       const ck: N[] = [];
       // 埋物预览=半透明**底图背景**（绝对定位居中·不与 💥N 竖排叠加撑高出框·owner：太大了出 grid）。
       if (cv.coverSkin) {
-        // 埋物预览用皮肤图（与解锁后同一美术资源·换台账锁前锁后一起换）·半透朦胧·居中作背景层。
-        ck.push({ type: 'Image', id: `t-live-${i}-rw`, props: { src: cv.coverSkin, fit: 'contain', radius: 14 }, layout: { x: Math.round((CELL_W - 100) / 2), y: 12, width: 100, height: 100, opacity: 0.72, allowOverlap: true } });
+        // 埋物 = 清晰底图（与解锁后同一美术资源）+ 磨砂玻璃罩（backdrop-blur + 半透沙色）→「隔着磨砂沙层看埋物」
+        // ·owner 要磨砂效果·比纯降透明清楚。图在下·frost 在上模糊之·💥N 再叠其上。
+        const fx = Math.round((CELL_W - 104) / 2);
+        ck.push({ type: 'Image', id: `t-live-${i}-rw`, props: { src: cv.coverSkin, fit: 'contain', radius: 14 }, layout: { x: fx, y: 10, width: 104, height: 104, allowOverlap: true } });
+        ck.push({ type: 'Panel', id: `t-live-${i}-frost`, props: { bg: { custom: 'rgba(184,137,90,0.4)' }, glass: true }, layout: { x: fx, y: 10, width: 104, height: 104, radius: 14, allowOverlap: true } });
       } else if (cv.coverReward) {
         ck.push({ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 40 }, layout: { opacity: 0.4 } });
       } else if (cv.cover <= 1) {
