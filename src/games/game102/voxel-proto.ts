@@ -226,10 +226,10 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
 
   // ── 对局状态 ──
   let currentColor = 0;
-  let phase: 'pick' | 'fire' = 'pick';
-  let pickLeft = cfg.pickMs ?? 0;
   let focusTarget: [number, number, number] | null = null;
-  let focusScreen: { x: number; y: number } | null = null; // 点中格的屏幕坐标（画虚线+选中标记·开火窗立方停稳→静止有效）
+  let focusScreen: { x: number; y: number } | null = null; // 最近扫到格的屏幕坐标（画瞄准虚线）
+  let settledNow = false;                                   // 立方是否停稳（拖动扫射只在停稳的正面上生效）
+  let dragging = false; const hitThisDrag = new Set<string>(); // 一次拖动内已打过的格（不重复打）
   let styleIdx = 0;
   let orientIdx = 0, faceLeft = FACE_MS;
   let globalLeft = cfg.totalMs ?? 90000;
@@ -291,17 +291,6 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   wrapper.appendChild(banner);
   const hint = el('div', 'position:absolute;left:50%;top:92px;transform:translateX(-50%);z-index:22;pointer-events:none;padding:7px 18px;border-radius:16px;background:#0c1a30dd;border:1px solid #7fe3ff66;color:#dff;font:800 16px system-ui;opacity:0;transition:opacity .15s;white-space:nowrap;');
   wrapper.appendChild(hint);
-  const announce = el('div', 'position:absolute;left:0;right:0;top:38%;display:flex;justify-content:center;pointer-events:none;z-index:32;');
-  const announceInner = el('div', 'padding:14px 40px;border-radius:20px;background:linear-gradient(#ffe58a,#f2b21e);color:#5a3800;font:900 40px system-ui;letter-spacing:2px;box-shadow:0 6px 0 #b97e12,0 10px 30px #000a,inset 0 2px 0 #fff8;text-shadow:0 2px 0 #fff6;opacity:0;', '🎨 换色');
-  announce.appendChild(announceInner); wrapper.appendChild(announce);
-  const showAnnounce = (): void => {
-    announceInner.animate?.([
-      { opacity: 0, transform: 'scale(0.5) rotate(-6deg)' },
-      { opacity: 1, transform: 'scale(1.12) rotate(2deg)', offset: 0.35 },
-      { opacity: 1, transform: 'scale(1) rotate(0deg)', offset: 0.6 },
-      { opacity: 0, transform: 'scale(0.96)' },
-    ], { duration: 1100, easing: 'cubic-bezier(.2,1.4,.4,1)' });
-  };
   const legend = el('div', 'position:absolute;left:0;right:0;top:52px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:0 12px;pointer-events:none;');
   wrapper.appendChild(legend);
   // 结算按钮：再来 + 选关。
@@ -333,7 +322,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   wrapper.appendChild(selMark);
   // 炮台本体已是真 3D（buildScene cannon-base/barrel）·这里只留屏幕层的选中虚线 + 选中框（指向反馈）。
   const updateAim = (): void => {
-    if (!over && phase === 'fire' && focusScreen) {
+    if (!over && settledNow && focusScreen) {
       aimLine.setAttribute('x1', String(cannonX)); aimLine.setAttribute('y1', String(cannonY));
       aimLine.setAttribute('x2', String(focusScreen.x)); aimLine.setAttribute('y2', String(focusScreen.y)); aimLine.setAttribute('opacity', '0.85');
       selMark.style.left = `${focusScreen.x}px`; selMark.style.top = `${focusScreen.y}px`; selMark.style.opacity = '1';
@@ -371,9 +360,6 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     return { wrap, inner };
   };
   const bottom = el('div', 'position:absolute;left:0;right:0;bottom:16px;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;');
-  const startBtn = el('button', 'pointer-events:auto;display:none;background:linear-gradient(#8affa0,#3fbf68);color:#06301a;border:none;border-radius:14px;padding:10px 36px;cursor:pointer;font:900 20px system-ui;box-shadow:0 5px 0 #2a8f4c;', '▶ 开打');
-  startBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); if (phase === 'pick') phase = 'fire'; });
-  bottom.appendChild(startBtn);
   bottom.appendChild(el('div', 'color:#9fc0ee;font:800 12px system-ui;letter-spacing:1px;', '当前主攻色 · 点旋转方块切换'));
   const cubeRow = el('div', 'display:flex;gap:14px;pointer-events:auto;');
   const cubeWraps: HTMLElement[] = []; const cubeInners: HTMLElement[] = [];
@@ -526,28 +512,28 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     arr.sort((x, y) => x.score - y.score);
     return arr.slice(0, count).map((o) => o.v);
   };
-  let wasSettled = false;
-
-  const onTap = (e: PointerEvent): void => {
-    if (over || phase !== 'fire') return;
+  // ★ 拖动扫射：手指划过正面 → 沿路径逐格开火（同色→碎·异色→反弹）·一次拖动不重复打同格·爽感来自"一划一片"。
+  const sweepAt = (e: PointerEvent): void => {
+    if (over || !settledNow) return;
     const hit = renderer.pick(e.clientX, e.clientY);
     if (!hit || !hit.entityId.startsWith('v-')) return;
     const [, si, sj, sk] = hit.entityId.split('-'); const i = +si, j = +sj, k = +sk; const id = vid(i, j, k);
     const rect = wrapper.getBoundingClientRect();
     focusScreen = { x: e.clientX - rect.left, y: e.clientY - rect.top }; focusTarget = [i, j, k]; updateAim();
-    // 校验：只要是当前朝我这面 + 可达就能发射（异色 = 打过去反弹·不再"无效不发射"）。
-    const canFire = present.has(id) && frontReachable(i, j, k);
-    const sameColor = colorAt.get(id) === currentColor;
-    const rc = !canFire ? '#ff6a6a' : sameColor ? '#fff' : '#ffd24a'; // 红=打不到·白=同色会碎·黄=异色会反弹
-    const ring = el('div', `position:absolute;left:${focusScreen.x - 18}px;top:${focusScreen.y - 18}px;width:36px;height:36px;border-radius:50%;border:3px solid ${rc};box-shadow:0 0 12px ${rc};pointer-events:none;z-index:24;`);
-    wrapper.appendChild(ring); ring.animate?.([{ transform: 'scale(0.5)', opacity: 1 }, { transform: 'scale(1.6)', opacity: 0 }], { duration: 420 }); setTimeout(() => ring.remove(), 440);
-    if (!canFire) return;
-    // ★ 点哪打哪：发射一发到点中格（同色→碎·异色→反弹）·耗一发弹。
+    if (hitThisDrag.has(id) || !present.has(id) || !frontReachable(i, j, k)) return; // 已扫过/打不到/非正面→跳过
+    hitThisDrag.add(id);
     if (hasAmmo) { if (ammoPool <= 0) return; ammoPool--; }
-    fireBullet([i, j, k]);
+    fireBullet([i, j, k]); // 同色 currentColor→碎 · 异色→反弹（子弹落点判定）
     refresh(); if (hasAmmo) checkEnd();
   };
-  wrapper.addEventListener('pointerdown', onTap);
+  const onDown = (e: PointerEvent): void => { dragging = true; hitThisDrag.clear(); sweepAt(e); };
+  const onMove = (e: PointerEvent): void => { if (dragging) sweepAt(e); };
+  const onUp = (): void => { dragging = false; };
+  wrapper.addEventListener('pointerdown', onDown);
+  wrapper.addEventListener('pointermove', onMove);
+  wrapper.addEventListener('pointerup', onUp);
+  wrapper.addEventListener('pointercancel', onUp);
+  wrapper.addEventListener('pointerleave', onUp);
 
   let raf = 0, last = performance.now();
   const frame = (now: number): void => {
@@ -556,17 +542,13 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
       // 底部 5 个色块 cube 随机旋转（始终转·不受对局暂停影响）。
       for (let c = 0; c < cubeInners.length; c++) { const a = cubeAng[c]; a.x += a.vx * dt; a.y += a.vy * dt; cubeInners[c].style.transform = `rotateX(${a.x}rad) rotateY(${a.y}rad)`; }
       if (!over) {
-        // 先判停稳 → 决定是否暂停（换色观察窗：全局时间 + 转面都停·从容选色）。
+        // 时间 + 转面持续推进（无暂停/开打钮）。拖动扫射只在「停稳的正面」上生效。
         const tgt = ORIENT[orientIdx];
         const settled = Math.abs(shortDelta(curRx, tgt[0])) < 0.03 && Math.abs(shortDelta(curRy, tgt[1])) < 0.03;
-        if (settled && !wasSettled) { phase = 'pick'; pickLeft = cfg.pickMs ?? 0; focusTarget = null; focusScreen = null; showAnnounce(); }
-        wasSettled = settled;
-        const paused = settled && phase === 'pick'; // 观察窗 → 冻结时间与转面
-        if (!paused) {
-          if (hasTime) globalLeft = Math.max(0, globalLeft - dt);
-          faceLeft -= dt;
-          if (faceLeft <= 0) { orientIdx = (orientIdx + 1) % ORIENT.length; faceLeft = FACE_MS; }
-        }
+        settledNow = settled;
+        if (hasTime) globalLeft = Math.max(0, globalLeft - dt);
+        faceLeft -= dt;
+        if (faceLeft <= 0) { orientIdx = (orientIdx + 1) % ORIENT.length; faceLeft = FACE_MS; }
         curRx += shortDelta(curRx, tgt[0]) * Math.min(1, dt * TWEEN);
         curRy += shortDelta(curRy, tgt[1]) * Math.min(1, dt * TWEEN);
         const piv = engine.world.getComponent<Transform3D>('cube-pivot', 'Transform3D'); if (piv) { piv.rotX = curRx; piv.rotY = curRy; }
@@ -575,16 +557,11 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
         const isAuto = autoLeft > 0;
         if (isAuto !== wasAuto && hasTime) { facePill.style.background = isAuto ? 'linear-gradient(#ff9a3a,#f2671e)' : 'linear-gradient(#3a7bd5,#2a5cae)'; facePill.style.boxShadow = isAuto ? '0 3px 0 #b8430f,0 0 16px #ff8a3a' : '0 3px 0 #1c3e7a'; }
         wasAuto = isAuto;
-        // 阶段 UI + 开火。开打钮仅在「不限时换色关」的换色窗出现（放颜色上方·不挡观察）。
-        startBtn.style.display = paused && !cfg.pickMs ? 'block' : 'none';
-        if (!settled) { hint.style.opacity = '0'; if (focusScreen) focusScreen = null; }
-        else if (phase === 'pick') {
-          if (cfg.pickMs) { pickLeft = Math.max(0, pickLeft - dt); hint.textContent = `🎨 选色 · ${(pickLeft / 1000).toFixed(1)}s`; if (pickLeft <= 0) phase = 'fire'; }
-          else hint.textContent = '🎨 观察 · 选色后按开打';
+        if (!settled) { hint.style.opacity = '0'; if (focusScreen && !dragging) focusScreen = null; }
+        else {
+          hint.textContent = isAuto ? '🔥 自动扫射中 · 免弹' : '🖐 拖动同色扫射';
           hint.style.opacity = '1';
-        } else {
-          hint.textContent = isAuto ? '🔥 自动开火中 · 免弹' : '👆 点同色方块 · 点哪打哪'; hint.style.opacity = '1';
-          if (isAuto) { // 自动开火格奖励：此期间自动打当前面同色格·不耗弹（偏向你点的位置·否则面心）。
+          if (isAuto) { // 火力格奖励：自动扫射当前面同色·免弹（偏向你最后扫的位置·否则面心）。
             autoLeft = Math.max(0, autoLeft - dt); autoAcc += dt;
             const f: [number, number, number] = focusTarget ?? [Math.floor((N - 1) / 2), Math.floor((N - 1) / 2), Math.floor((N - 1) / 2)];
             while (autoAcc >= AUTO_FIRE_MS) { autoAcc -= AUTO_FIRE_MS; const aim = aimFaceMany(currentColor, f, 1)[0]; if (aim) fireBullet(aim); }
@@ -627,7 +604,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
 
   return () => {
     if (raf) cancelAnimationFrame(raf);
-    wrapper.removeEventListener('pointerdown', onTap);
+    wrapper.removeEventListener('pointerdown', onDown); wrapper.removeEventListener('pointermove', onMove); wrapper.removeEventListener('pointerup', onUp); wrapper.removeEventListener('pointercancel', onUp); wrapper.removeEventListener('pointerleave', onUp);
     movers.forEach((mv) => despawnEnt(mv.id));
     engine.stop();
     renderer.destroy();
