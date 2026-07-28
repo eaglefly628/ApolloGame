@@ -213,17 +213,26 @@ function rotateYaxis90(g) { // 绕 Y +90°：(x,y,z)->(z,y,-x)
   for (let k = 0; k < n.length; k += 3) { const x = n[k], z = n[k + 2]; n[k] = z; n[k + 2] = -x; }
 }
 
-// 部件表：name / geo / baseColor(RGB 0..1) / metallic / roughness
-// 金属 PBR：barrel = 中性钢 #C4C7C7（metalness=1·低粗糙出高光·中性色故 tint 乘法仍读真）；
-//           barrel_trim = 黄铜 #E7C27D（固定金色装饰箍·不 tint）；
-//           wheel = 青铜 #B87333（金属·撞色富质感）；carriage = 奶油卡通木座（非金属·与金属对比更精致）。
-const STEEL = [0.769, 0.780, 0.780];   // #C4C7C7
+// 部件表：name / geo / baseColor(RGB 0..1) / metallic / roughness / opts?
+//   opts = { alpha?, alphaMode?, transmission? } —— 透明/玻璃质感专用（缺省 = 不透明金属/材质）。
+// 材质设计：
+//   carriage    = 深青铜金属 #6E4A2F（磨砂金属·不发白·与黄铜箍/青铜轮同族更搭·撑质感）；
+//   barrel      = 半透明玻璃 —— 淡青玻璃色 + alphaMode BLEND + baseColor alpha≈0.45（保底看得见透）；
+//                 同时挂 KHR_materials_transmission（transmission 0.85 · ior 1.5）——渲染器若支持透射即真玻璃，
+//                 不支持则退回 alpha BLEND 混色，二者都能呈现透明感。玻璃低粗糙(0.06)出干净高光。
+//   barrel_trim = 黄铜 #E7C27D（不透明金属·固定金色装饰箍·与透明炮管强对比）；
+//   wheel       = 青铜 #B87333（金属·撞色富质感）。
+const STEEL = [0.769, 0.780, 0.780];   // #C4C7C7（保留常量·未用）
 const BRASS = [0.906, 0.760, 0.490];   // #E7C27D
 const BRONZE = [0.722, 0.451, 0.200];  // #B87333
+const DARK_BRONZE = [0.431, 0.290, 0.184]; // #6E4A2F 深青铜（底座·不发白）
+const GLASS = [0.72, 0.86, 0.90];      // #B8DBE6 淡青玻璃色
+void STEEL;
 const PARTS = [
-  ['carriage', carriageBody(), [0.98, 0.86, 0.55], 0.0, 0.6],   // 奶油木色底座（卡通·非金属）
-  ['barrel', barrelGeo(), STEEL, 1.0, 0.28],                    // 钢炮管（金属·中性可 tint）
-  ['barrel_trim', barrelTrimGeo(), BRASS, 1.0, 0.22],           // 黄铜装饰箍（金属·固定金色）
+  ['carriage', carriageBody(), DARK_BRONZE, 0.85, 0.45],        // 深青铜磨砂金属底座（不发白）
+  ['barrel', barrelGeo(), GLASS, 0.0, 0.06,                     // 半透明玻璃炮管
+    { alpha: 0.45, alphaMode: 'BLEND', transmission: 0.85, ior: 1.5 }],
+  ['barrel_trim', barrelTrimGeo(), BRASS, 1.0, 0.22],           // 黄铜装饰箍（不透明金属·固定金色）
   ['wheel_l', wheelGeo(-1), BRONZE, 1.0, 0.35],                 // 青铜车轮（金属）
   ['wheel_r', wheelGeo(1), BRONZE, 1.0, 0.35],
 ];
@@ -265,7 +274,8 @@ function buildGlb(parts) {
     return bufferViews.length - 1;
   };
 
-  parts.forEach(([name, geo, color, metallic, roughness], pi) => {
+  const usedExtensions = new Set();
+  parts.forEach(([name, geo, color, metallic, roughness, opts], pi) => {
     const positions = new Float32Array(geo.positions);
     const normals = new Float32Array(geo.normals);
     const maxIdx = geo.positions.length / 3;
@@ -289,10 +299,23 @@ function buildGlb(parts) {
     const nrmAcc = accessors.push({ bufferView: nrmView, componentType: 5126, count: normals.length / 3, type: 'VEC3' }) - 1;
     const idxAcc = accessors.push({ bufferView: idxView, componentType: useU32 ? 5125 : 5123, count: indices.length, type: 'SCALAR' }) - 1;
 
-    const matIdx = materials.push({
+    const alpha = opts && typeof opts.alpha === 'number' ? opts.alpha : 1;
+    const mat = {
       name: `${name}_mat`,
-      pbrMetallicRoughness: { baseColorFactor: [color[0], color[1], color[2], 1], metallicFactor: metallic, roughnessFactor: roughness },
-    }) - 1;
+      pbrMetallicRoughness: { baseColorFactor: [color[0], color[1], color[2], alpha], metallicFactor: metallic, roughnessFactor: roughness },
+    };
+    if (opts && opts.alphaMode) mat.alphaMode = opts.alphaMode;       // BLEND 保底透明
+    if (opts && opts.doubleSided) mat.doubleSided = true;
+    if (opts && typeof opts.transmission === 'number') {              // KHR 透射（真玻璃·渲染器支持则用）
+      mat.extensions = mat.extensions || {};
+      mat.extensions.KHR_materials_transmission = { transmissionFactor: opts.transmission };
+      usedExtensions.add('KHR_materials_transmission');
+      if (typeof opts.ior === 'number') {
+        mat.extensions.KHR_materials_ior = { ior: opts.ior };
+        usedExtensions.add('KHR_materials_ior');
+      }
+    }
+    const matIdx = materials.push(mat) - 1;
 
     const meshIdx = meshes.push({ name, primitives: [{ attributes: { POSITION: posAcc, NORMAL: nrmAcc }, indices: idxAcc, material: matIdx }] }) - 1;
     nodes.push({ name, mesh: meshIdx });
@@ -306,6 +329,7 @@ function buildGlb(parts) {
     nodes, meshes, materials, accessors, bufferViews,
     buffers: [{ byteLength: bin.length }],
   };
+  if (usedExtensions.size) gltf.extensionsUsed = [...usedExtensions];
   let json = Buffer.from(JSON.stringify(gltf), 'utf8');
   if (json.length % 4) json = Buffer.concat([json, Buffer.alloc(4 - (json.length % 4), 0x20)]);
   const header = Buffer.alloc(12);
