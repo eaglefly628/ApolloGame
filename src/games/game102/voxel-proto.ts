@@ -86,12 +86,13 @@ const COLOR_TEX: ((t: number) => Record<string, unknown>)[] = [
 ];
 const voxMesh = (t: number, ci = 0): Record<string, unknown> => ({ shape: 'box', width: CELLSZ, height: CELLSZ, depth: CELLSZ, frontTint: t, backTint: t, edgeTint: shade(t, 0.6), voxelTex: COLOR_TEX[ci % COLOR_TEX.length](t) });
 // 真材质库（owner「限尺寸」·仅小关 N≤6 用·每格 Material3D 单 mesh）：红=发光火/黄=真金/蓝=玻璃水/紫=光泽紫/绿=草地(无PBR·退 voxelTex)。
+// ★ 每色**保持调色板本色**（不再变橙）·只靠材质属性区分质感（金属/玻璃/光泽）。
 const COLOR_MAT: (Record<string, unknown> | null)[] = [
-  { preset: 'emissive', color: 0x4a1206, emissive: 0xff5a1e, emissiveIntensity: 1.5 }, // 0 红=火焰
-  { preset: 'gold' },                                                                   // 1 黄=黄金
-  null,                                                                                 // 2 绿=草地（voxelTex grass）
-  { preset: 'glass', color: 0x2e6cf6 },                                                 // 3 蓝=水（玻璃透光）
-  { preset: 'plastic', color: 0x8b5cf6, roughness: 0.24 },                              // 4 紫=紫罗兰（光泽）
+  { preset: 'plastic', color: 0xe0433f, roughness: 0.3 },                    // 0 红=光泽红（去掉橙色发光）
+  { preset: 'gold', color: 0xf2c21e, roughness: 0.28, metalness: 1 },        // 1 黄=金属金（黄本色·金属高光）
+  null,                                                                       // 2 绿=草地（voxelTex grass）
+  { preset: 'glass', color: 0x2e6cf6 },                                       // 3 蓝=玻璃水（蓝本色·透光）
+  { preset: 'plastic', color: 0x8b5cf6, roughness: 0.24 },                    // 4 紫=光泽紫
 ];
 const plainBox = (t: number): Record<string, unknown> => ({ shape: 'box', width: CELLSZ, height: CELLSZ, depth: CELLSZ, frontTint: t, backTint: t, edgeTint: shade(t, 0.6) });
 // 功能格贴图 key（美术台账·数据映射）→ 当 emissiveMap（透明底白符号·只符号处发光·底色=方块本身调色板色透出）。
@@ -178,7 +179,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   const CANNON_BASE = screenToWorld(fw * 0.2, fh * 0.85, CAM_DIST * 0.44); // 左下（旋钮：屏幕锚 x/y + 深度）
   const cdir = nrm3([-CANNON_BASE[0], -CANNON_BASE[1], -CANNON_BASE[2]]); // 指向立方中心(原点)
   const CANNON_YAW = Math.atan2(cdir[0], cdir[2]); // 仅偏航（模型直立·炮管自带静止仰角）
-  const MODEL_SCALE = 34; // asset-manager 建议（≈1.6 体素长）
+  const MODEL_SCALE = 17; // 再小一倍（owner）
   const ML: [number, number, number] = [0, 0.802, 1.013]; // 模型局部炮口偏移（asset-manager 提供）
   const MUZZLE: [number, number, number] = [CANNON_BASE[0] + ML[2] * MODEL_SCALE * Math.sin(CANNON_YAW), CANNON_BASE[1] + ML[1] * MODEL_SCALE, CANNON_BASE[2] + ML[2] * MODEL_SCALE * Math.cos(CANNON_YAW)];
 
