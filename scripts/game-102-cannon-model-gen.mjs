@@ -132,7 +132,7 @@ function carriageBody() {
     idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
   }
   // 顶部放一个浅“摇篮”座（半球缺口用小凸台近似）——加个小圆台承托炮管
-  const cradle = cylinderZ(0.3, 0.3, -0.16, 0.16, 16);
+  const cradle = cylinderZ(0.3, 0.3, -0.16, 0.16, 24);
   // 摇篮抬到炮管高度、绕 X 旋 90°让其轴向 X（作为鞍座）——简化：直接叠一个矮圆盘在顶
   translate(cradle, 0, h + 0.0, 0.0);
   // 旋转 cradle 使轴沿 Y（矮墩）
@@ -174,22 +174,33 @@ function mergeGeo(list) {
 const AXIS_Y = 0.52;   // 炮管轴心高度
 const TILT = -0.12;    // 轻微抬头（rad·负值 = 炮口上扬的休息姿态）
 
-// 炮管：略胖圆柱 + 后膛球台 + 炮口加粗环
+// 炮管主体：略胖圆柱 + 后膛球台 + 炮口加粗段（金属钢·中性色可 tint）。
+// seg 提到 28 让侧面更圆润·线条干净。
+const BSEG = 20;
 function barrelGeo() {
-  const body = cylinderZ(0.24, 0.26, -0.30, 0.86, 20);      // 主管（前端略粗·喇叭感）
-  const muzzle = cylinderZ(0.30, 0.33, 0.86, 1.00, 20);     // 炮口加粗段
-  const rim = torusZ(0.31, 0.055, 1.00, 20, 10);            // 炮口装饰圈
-  const breech = cylinderZ(0.24, 0.30, -0.44, -0.30, 18);   // 后膛收尾
-  const knob = cylinderZ(0.30, 0.0, -0.50, -0.44, 14);      // 后膛圆帽
-  const g = mergeGeo([breech, knob, body, muzzle, rim]);
+  const body = cylinderZ(0.235, 0.255, -0.30, 0.84, BSEG);   // 主管（前端略粗·喇叭感）
+  const muzzle = cylinderZ(0.30, 0.335, 0.84, 1.00, BSEG);   // 炮口加粗段
+  const breech = cylinderZ(0.235, 0.30, -0.44, -0.30, BSEG); // 后膛收尾
+  const knob = cylinderZ(0.30, 0.0, -0.50, -0.44, 18);       // 后膛圆帽
+  const g = mergeGeo([breech, knob, body, muzzle]);
+  translate(g, 0, AXIS_Y, 0);
+  tiltX(g, TILT, AXIS_Y, 0.0);
+  return g;
+}
+// 黄铜装饰环：炮口圈 + 前段加强箍 + 后膛箍（独立节点·固定金色·不参与 tint·点亮精致感）。
+function barrelTrimGeo() {
+  const muzzleRim = torusZ(0.33, 0.05, 1.00, BSEG, 8);      // 炮口装饰圈
+  const frontBand = torusZ(0.265, 0.035, 0.55, BSEG, 8);    // 前段加强箍
+  const breechBand = torusZ(0.30, 0.04, -0.28, BSEG, 8);    // 后膛箍
+  const g = mergeGeo([breechBand, frontBand, muzzleRim]);
   translate(g, 0, AXIS_Y, 0);
   tiltX(g, TILT, AXIS_Y, 0.0);
   return g;
 }
 // 车轮（侧面·带轮毂盖）
 function wheelGeo(sign) {
-  const tyre = torusZ(0.26, 0.10, 0, 20, 10);   // 轮胎（环平面 XY·需转到侧面 → 轴沿 X）
-  const hub = cylinderZ(0.12, 0.12, -0.055, 0.055, 14);
+  const tyre = torusZ(0.26, 0.10, 0, 20, 8);   // 轮胎（环平面 XY·需转到侧面 → 轴沿 X）
+  const hub = cylinderZ(0.12, 0.12, -0.055, 0.055, 18);
   let g = mergeGeo([tyre, hub]);
   // 现在环平面在 XY（轴 Z）。车轮应绕 X 轴滚动 → 轴沿 X：绕 Y 旋 90°
   rotateYaxis90(g);
@@ -203,11 +214,18 @@ function rotateYaxis90(g) { // 绕 Y +90°：(x,y,z)->(z,y,-x)
 }
 
 // 部件表：name / geo / baseColor(RGB 0..1) / metallic / roughness
+// 金属 PBR：barrel = 中性钢 #C4C7C7（metalness=1·低粗糙出高光·中性色故 tint 乘法仍读真）；
+//           barrel_trim = 黄铜 #E7C27D（固定金色装饰箍·不 tint）；
+//           wheel = 青铜 #B87333（金属·撞色富质感）；carriage = 奶油卡通木座（非金属·与金属对比更精致）。
+const STEEL = [0.769, 0.780, 0.780];   // #C4C7C7
+const BRASS = [0.906, 0.760, 0.490];   // #E7C27D
+const BRONZE = [0.722, 0.451, 0.200];  // #B87333
 const PARTS = [
-  ['carriage', carriageBody(), [0.98, 0.86, 0.55], 0.0, 0.65], // 奶油木色底座
-  ['barrel', barrelGeo(), [0.86, 0.88, 0.92], 0.15, 0.45],     // 浅中性炮管（供 tint 乘法染色）
-  ['wheel_l', wheelGeo(-1), [0.36, 0.28, 0.46], 0.0, 0.7],     // 深紫车轮（撞色点缀）
-  ['wheel_r', wheelGeo(1), [0.36, 0.28, 0.46], 0.0, 0.7],
+  ['carriage', carriageBody(), [0.98, 0.86, 0.55], 0.0, 0.6],   // 奶油木色底座（卡通·非金属）
+  ['barrel', barrelGeo(), STEEL, 1.0, 0.28],                    // 钢炮管（金属·中性可 tint）
+  ['barrel_trim', barrelTrimGeo(), BRASS, 1.0, 0.22],           // 黄铜装饰箍（金属·固定金色）
+  ['wheel_l', wheelGeo(-1), BRONZE, 1.0, 0.35],                 // 青铜车轮（金属）
+  ['wheel_r', wheelGeo(1), BRONZE, 1.0, 0.35],
 ];
 
 // 归一化：整体抬升使最低点恰落 y=0（炮台稳坐地面·轮胎着地），返回抬升量 dy。
