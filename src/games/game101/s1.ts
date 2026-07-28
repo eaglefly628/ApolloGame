@@ -22,7 +22,7 @@ export interface S1State {
   progress?: { stars: number; goal: number }; // 进度推进②：星→关卡目标进度条
   levelComplete?: boolean;                     // 达标 → 关卡完成横幅
   energyRegen?: number;                        // 体力涓流恢复剩余秒（未满时显·HUD「mm:ss」）
-  hudSkins?: { energy?: string; coins?: string; gems?: string; cart?: string; avatar?: string; barEnergy?: string; barCoins?: string; barGems?: string; barAvatar?: string; barCart?: string }; // HUD 图标 + 异形框皮肤槽（皆可替换）
+  hudSkins?: { energy?: string; coins?: string; gems?: string; cart?: string; avatar?: string; barEnergy?: string; barCoins?: string; barGems?: string; barAvatar?: string; barCart?: string; scene?: string; order?: string; menu?: string; board?: string; well?: string }; // HUD 图标 + 异形框 + UI 容器皮肤槽（皆可替换·满铺）
   menuOpen?: boolean;                          // 信息菜单开关（右上☰ → 玩法/链条/日志）
   menuTab?: 'play' | 'chains' | 'log';         // 菜单当前页
   log?: string[];                              // 事件日志（新→旧）
@@ -41,6 +41,10 @@ const GEN_BG = '#c8871e';  // 生成器格金
 const COVER_BG = '#b8895a'; // 阻碍层沙色（覆盖格·挖掘解锁）
 // 格宽（scene 1080·board pad5 + well pad4 + 格间 gap3·cols 均分）——用于右下角可交付 ✓ 勾绝对定位。
 const CELL_W = Math.floor((1080 - 10 - 8 - (GAME.board.cols - 1) * 3) / GAME.board.cols);
+// 容器满铺皮：给了皮肤图 → 整面贴图框(9-slice·满铺·owner「满铺=默认」)；否则回退语义令牌/色。
+function skinOr(skin: string | undefined, fallback: Record<string, unknown>, slice = 30): Record<string, unknown> {
+  return skin ? { skin, skinSlice: slice } : fallback;
+}
 
 // ── HUD 行（玩家头像+星级 / 体力+恢复计时 / 金币 / 宝石 / 商店车 / 菜单）──────────
 // owner 参考图基准：每格 = 图标(可替换皮肤槽·回退 emoji) + 数值(+ 体力另加 mm:ss) + 绿「+」。
@@ -189,7 +193,7 @@ function menuContent(s: S1State): N[] {
 function menuScreen(s: S1State): LayoutNode {
   const tab = s.menuTab ?? 'play';
   return {
-    type: 'Screen', id: 's1', props: {},
+    type: 'Screen', id: 's1', props: s.hudSkins?.scene ? { image: s.hudSkins.scene } : {},
     layout: { direction: 'column', gap: 16, padding: 28, width: 1080, height: 1920 },
     children: [
       { // 标题行 + 关闭
@@ -210,7 +214,7 @@ function menuScreen(s: S1State): LayoutNode {
         ],
       },
       { // 内容区：显式高度撑满 scene 盒（renderScreen 只 min-height:100vh 不达 1920·同主界面手法·避免底部空白）。
-        type: 'Panel', id: 'menu-body', props: { bg: 'sunken' },
+        type: 'Panel', id: 'menu-body', props: skinOr(s.hudSkins?.menu, { bg: 'sunken' }),
         layout: { direction: 'column', align: 'stretch', gap: 14, padding: 24, radius: 22, height: 1620 },
         children: menuContent(s),
       },
@@ -230,7 +234,8 @@ function orders(s: S1State): N {
       // 内容安全(不裁 slot/奖励·区别 hexagon/diamond 重裁)·给足 padding。
       // 可交付顾客卡=绿框 + 发光脉冲（醒目「可以交给我了」）；限时卡=金框异形；两者叠加时可交付绿框优先示意。
       type: 'Panel', id: `ord-${i}`,
-      props: o.timed ? { bg: 'panel', edge: o.deliverable ? 'ok' : 'gold', shape: 'cut' } : o.deliverable ? { bg: 'panel', edge: 'ok' } : { bg: 'panel' },
+      // 订单卡满铺框皮（ui_order·可替换）；无皮时保留原令牌 + 可交付绿边/限时金边异形。
+      props: s.hudSkins?.order ? { skin: s.hudSkins.order, skinSlice: 30 } : o.timed ? { bg: 'panel', edge: o.deliverable ? 'ok' : 'gold', shape: 'cut' } : o.deliverable ? { bg: 'panel', edge: 'ok' } : { bg: 'panel' },
       // 竖高卡（owner「不够长·太小·放大」）：大立绘在上作主视觉 + 需求盘/奖励叠在下，纵向排布=高而醒目。
       layout: { direction: 'column', align: 'stretch', justify: 'start', gap: 8, padding: o.timed ? 14 : 10, radius: 20, flex: 1, ...(o.deliverable ? { anim: 'glow' } : {}) },
       children: [
@@ -412,11 +417,11 @@ function board(s: S1State): N {
     } as N;
   });
   return {
-    type: 'Panel', id: 'board', props: { bg: { custom: FRAME } },
+    type: 'Panel', id: 'board', props: skinOr(s.hudSkins?.board, { bg: { custom: FRAME } }),
     layout: { direction: 'column', gap: 0, padding: 5, radius: 22, flex: 1 },
     children: [
       {
-        type: 'Panel', id: 'board-well', props: { bg: { custom: WELL } },
+        type: 'Panel', id: 'board-well', props: skinOr(s.hudSkins?.well, { bg: { custom: WELL } }),
         layout: { direction: 'grid', cols: GAME.board.cols, gap: 3, padding: 4, radius: 16, flex: 1 },
         children: cells,
       },
@@ -451,7 +456,8 @@ function levelBanner(s: S1State): N[] {
 export function buildS1Live(s: S1State): LayoutNode {
   if (s.menuOpen) return menuScreen(s); // 菜单打开 → 整屏替换（正常流·稳）
   return {
-    type: 'Screen', id: 's1', props: {},
+    // 整屏港湾背景（满铺·可替换 ui_scene 皮肤槽·空则纯色底）。
+    type: 'Screen', id: 's1', props: s.hudSkins?.scene ? { image: s.hudSkins.scene } : {},
     layout: { direction: 'column', gap: 8, padding: 12, width: 1080, height: 1920 },
     children: [hud(s), orders(s), board(s), ...dragGhost(s), ...levelBanner(s)],
   };

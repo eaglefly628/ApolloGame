@@ -194,6 +194,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     const hudSkins = {
       energy: skinMap.hud_energy, coins: skinMap.hud_coins, gems: skinMap.hud_gems, cart: skinMap.hud_cart, avatar: skinMap.hud_avatar,
       barEnergy: skinMap.hud_bar_energy, barCoins: skinMap.hud_bar_coins, barGems: skinMap.hud_bar_gems, barAvatar: skinMap.hud_bar_avatar, barCart: skinMap.hud_bar_cart,
+      scene: skinMap.ui_scene, order: skinMap.ui_order, menu: skinMap.ui_menu, board: skinMap.ui_board, well: skinMap.ui_well,
     };
     return {
       energy: res(RES.energy), coins: res(RES.coins), gems: Math.round(res(RES.stars)), level: 1 + passed, cells, orders,

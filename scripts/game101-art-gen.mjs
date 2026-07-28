@@ -160,6 +160,28 @@ const HUD = [
   for (const key of ['hud_bar_energy', 'hud_bar_coins', 'hud_bar_gems', 'hud_bar_avatar', 'hud_bar_cart']) {
     upsert(key, 'hud-frame', `HUD·异形框皮(${key})`, 'a cozy snow-topped rounded pill UI frame, cream cartoon candy style, for 9-slice', `/games/game101/art/${key}.svg`, hudFrame());
   }
+
+  // ── UI 容器满铺皮（owner：所有可替换 UI 出台账 + 满铺默认）：整屏背景 + 卡/菜单/板容器框皮 ──
+  const uiScene = () =>
+    '<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">' +
+    '<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#bfe9ff"/><stop offset="0.42" stop-color="#8fd0f0"/>' +
+    '<stop offset="0.66" stop-color="#5fb6e0"/><stop offset="0.82" stop-color="#ffe0b0"/><stop offset="1" stop-color="#ffcf94"/></linearGradient></defs>' +
+    '<rect width="1080" height="1920" fill="url(#sky)"/>' +
+    '<circle cx="860" cy="300" r="120" fill="#fff3c8" opacity="0.85"/>' +
+    '<ellipse cx="250" cy="360" rx="150" ry="46" fill="#ffffff" opacity="0.7"/>' +
+    '<ellipse cx="720" cy="470" rx="120" ry="38" fill="#ffffff" opacity="0.6"/>' +
+    '<path d="M0 1500 Q270 1450 540 1500 T1080 1500 V1920 H0 Z" fill="#4aa6d8" opacity="0.5"/></svg>\n';
+  const uiFrame = (border, fill) =>
+    `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="160" viewBox="0 0 200 160">` +
+    `<rect x="4" y="4" width="192" height="152" rx="34" fill="${border}"/>` +
+    `<rect x="10" y="10" width="180" height="140" rx="28" fill="${fill}"/>` +
+    `<rect x="16" y="16" width="168" height="26" rx="13" fill="#ffffff" opacity="0.4"/></svg>\n`;
+  upsert('ui_scene', 'ui-bg', 'UI·整屏港湾背景(满铺)', 'cozy harbor sunrise background, soft sky to sea gradient, warm cartoon illustration, 9:16', '/games/game101/art/ui_scene.svg', uiScene());
+  upsert('ui_order', 'ui-frame', 'UI·订单卡框皮(满铺)', 'a cozy cream rounded card frame, cartoon candy UI, 9-slice', '/games/game101/art/ui_order.svg', uiFrame('#e9c98f', '#fffdf5'));
+  upsert('ui_menu', 'ui-frame', 'UI·菜单面板皮(满铺)', 'a warm cream rounded panel frame, cozy cartoon UI, 9-slice', '/games/game101/art/ui_menu.svg', uiFrame('#e0b877', '#fff4df'));
+  upsert('ui_board', 'ui-frame', 'UI·合并板外框皮(满铺)', 'a warm wooden rounded board frame, cozy cartoon UI, 9-slice', '/games/game101/art/ui_board.svg', uiFrame('#d9a35a', '#f3e3c2'));
+  upsert('ui_well', 'ui-frame', 'UI·板井底纹皮(满铺)', 'a soft blue merge-board well texture, cozy cartoon UI, 9-slice', '/games/game101/art/ui_well.svg', uiFrame('#5f78c0', '#9fb4ea'));
 }
 
 ledger.updatedAt = ledger.updatedAt || undefined; // 保留原字段·不注入时间戳（脚本确定性）

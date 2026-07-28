@@ -2287,6 +2287,76 @@
         "style": "gossip-harbor cozy candy cartoon (glossy)",
         "servedPath": "/games/game101/art/hud_bar_cart.svg"
       }
+    },
+    {
+      "no": "art-65",
+      "skinKey": "ui_scene",
+      "kind": "ui-bg",
+      "desc": "UI·整屏港湾背景(满铺)",
+      "prompt": "cozy harbor sunrise background, soft sky to sea gradient, warm cartoon illustration, 9:16",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/ui_scene.svg"
+      }
+    },
+    {
+      "no": "art-66",
+      "skinKey": "ui_order",
+      "kind": "ui-frame",
+      "desc": "UI·订单卡框皮(满铺)",
+      "prompt": "a cozy cream rounded card frame, cartoon candy UI, 9-slice",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/ui_order.svg"
+      }
+    },
+    {
+      "no": "art-67",
+      "skinKey": "ui_menu",
+      "kind": "ui-frame",
+      "desc": "UI·菜单面板皮(满铺)",
+      "prompt": "a warm cream rounded panel frame, cozy cartoon UI, 9-slice",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/ui_menu.svg"
+      }
+    },
+    {
+      "no": "art-68",
+      "skinKey": "ui_board",
+      "kind": "ui-frame",
+      "desc": "UI·合并板外框皮(满铺)",
+      "prompt": "a warm wooden rounded board frame, cozy cartoon UI, 9-slice",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/ui_board.svg"
+      }
+    },
+    {
+      "no": "art-69",
+      "skinKey": "ui_well",
+      "kind": "ui-frame",
+      "desc": "UI·板井底纹皮(满铺)",
+      "prompt": "a soft blue merge-board well texture, cozy cartoon UI, 9-slice",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/ui_well.svg"
+      }
     }
   ]
 }
