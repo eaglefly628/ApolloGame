@@ -14,7 +14,6 @@ import { AssetManager, ImageAssetLoader, registerAssetIndex, parseAssetIndex } f
 
 const PITCH = 33, VOX = 33; // 体素尺寸固定（立方随 N 变大·相机距离按 N 缩放 → 屏上观感一致）
 const FACE_MS = 6000;     // 每面总停留（含换色窗 + 开火窗）
-const FIRE_MS = 170;      // 开火窗内发射节拍（单炮·当前色）
 const REACH_LAYERS = 2;   // 炮可达层数（表面第1层 + 第2层·打得进·第3层起打不到·owner）
 const TWEEN = 0.010;
 const POWER_MS = 3500;    // 火力格：频率翻倍时长
@@ -427,22 +426,6 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     for (let d = 0; d < N && out.length < REACH_LAYERS; d++) { const co = [0, 0, 0]; co[S.axis] = S.val === N - 1 ? N - 1 - d : d; co[S.ua] = a; co[S.ub] = b; if (present.has(vid(co[0], co[1], co[2]))) out.push([co[0], co[1], co[2]]); }
     return out;
   };
-  const aimFace = (s: number, color: number, focus: [number, number, number] | null): [number, number, number] | null => {
-    const c0 = (N - 1) / 2;
-    let best: [number, number, number] | null = null, bestScore = Infinity, bestSp: [number, number, number] | null = null, bestSpScore = Infinity;
-    for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) {
-      const cells = faceCells(s, a, b);
-      for (let li = 0; li < cells.length; li++) {
-        const v = cells[li]; const id = vid(v[0], v[1], v[2]);
-        if (colorAt.get(id) !== color) continue;
-        const base = focus ? (v[0] - focus[0]) ** 2 + (v[1] - focus[1]) ** 2 + (v[2] - focus[2]) ** 2 : (a - c0) ** 2 + (b - c0) ** 2;
-        const score = base + li * 100; // 略偏好浅层（第1层优先于第2层）
-        if (score < bestScore) { bestScore = score; best = v; }
-        if ((cellType.has(id) || gemSet.has(id)) && score < bestSpScore) { bestSpScore = score; bestSp = v; }
-      }
-    }
-    return bestSp ?? best;
-  };
   const reveal = (i: number, j: number, k: number): void => {
     const id = vid(i, j, k); if (rendered.has(id) || !present.has(id) || !exposed(i, j, k)) return;
     try { engine.world.createEntity(id); } catch { /* */ }
@@ -488,31 +471,43 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     if (hasTime && globalLeft <= 0) { endGame('lose', '⏱ 时间到 · 破坏不足', '#ff8a8a'); return; }
     if (hasAmmo && ammoPool <= 0) { endGame('lose', '🔫 弹尽 · 破坏不足', '#ff8a8a'); return; }
   };
-  const fire = (): void => {
-    if (over) return;
-    if (hasAmmo && ammoPool <= 0) return;
-    if (hasAmmo) { ammoPool--; refresh(); } // 消耗（含空放）→ 选错色也吃弹药 = 决策重量
-    const aim = aimFace(frontSide(), currentColor, focusTarget);
-    if (aim) {
-      const to = voxWorld(aim[0], aim[1], aim[2]);
-      const L = Math.hypot(to[0], to[1], to[2]) || 1, D = MAXC * 1.9;
-      const from: [number, number, number] = [to[0] + (to[0] / L) * D, to[1] + (to[1] / L) * D, to[2] + (to[2] / L) * D];
-      const id = `blt-${movN}`; spawnEnt(id, from[0], from[1], from[2], VOX * 0.55, PALETTE[currentColor].tint);
-      movers.push({ kind: 'bullet', id, t: 0, from, to, aim: [aim[0], aim[1], aim[2]] });
-    }
-    if (hasAmmo) checkEnd();
+  const fireBullet = (aim: [number, number, number]): void => {
+    const to = voxWorld(aim[0], aim[1], aim[2]);
+    const L = Math.hypot(to[0], to[1], to[2]) || 1, D = MAXC * 1.9;
+    const from: [number, number, number] = [to[0] + (to[0] / L) * D, to[1] + (to[1] / L) * D, to[2] + (to[2] / L) * D];
+    const id = `blt-${movN}`; spawnEnt(id, from[0], from[1], from[2], VOX * 0.55, PALETTE[currentColor].tint);
+    movers.push({ kind: 'bullet', id, t: 0, from, to, aim: [aim[0], aim[1], aim[2]] });
   };
-  let afAcc = 0, wasSettled = false;
+  // 点中的格是否「当前朝我这面 + 可达层(1/2)」——只打这一面·打不到别的面。
+  const frontReachable = (i: number, j: number, k: number): boolean => {
+    const s = frontSide(); const S = SIDES[s]; const co = [i, j, k];
+    return faceCells(s, co[S.ua], co[S.ub]).some((v) => v[0] === i && v[1] === j && v[2] === k);
+  };
+  // 前面上离 focus 最近的若干同色可达格（火力格 rapid 时一点带几发·小范围）。
+  const aimFaceMany = (color: number, focus: [number, number, number], count: number): [number, number, number][] => {
+    const s = frontSide(); const arr: { v: [number, number, number]; score: number }[] = [];
+    for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) { const cells = faceCells(s, a, b); for (let li = 0; li < cells.length; li++) { const v = cells[li]; if (colorAt.get(vid(v[0], v[1], v[2])) !== color) continue; arr.push({ v, score: (v[0] - focus[0]) ** 2 + (v[1] - focus[1]) ** 2 + (v[2] - focus[2]) ** 2 + li * 100 }); } }
+    arr.sort((x, y) => x.score - y.score);
+    return arr.slice(0, count).map((o) => o.v);
+  };
+  let wasSettled = false;
 
   const onTap = (e: PointerEvent): void => {
     if (over || phase !== 'fire') return;
     const hit = renderer.pick(e.clientX, e.clientY);
     if (!hit || !hit.entityId.startsWith('v-')) return;
-    const [, si, sj, sk] = hit.entityId.split('-'); focusTarget = [+si, +sj, +sk];
+    const [, si, sj, sk] = hit.entityId.split('-'); const i = +si, j = +sj, k = +sk; const id = vid(i, j, k);
     const rect = wrapper.getBoundingClientRect();
-    focusScreen = { x: e.clientX - rect.left, y: e.clientY - rect.top }; updateAim();
-    const ring = el('div', `position:absolute;left:${focusScreen.x - 18}px;top:${focusScreen.y - 18}px;width:36px;height:36px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 12px #fff;pointer-events:none;z-index:24;`);
+    focusScreen = { x: e.clientX - rect.left, y: e.clientY - rect.top }; focusTarget = [i, j, k]; updateAim();
+    // 校验：必须是当前朝我这面 + 当前主攻色 + 可达（否则点了不打·红圈提示）。
+    const ok = present.has(id) && colorAt.get(id) === currentColor && frontReachable(i, j, k);
+    const ring = el('div', `position:absolute;left:${focusScreen.x - 18}px;top:${focusScreen.y - 18}px;width:36px;height:36px;border-radius:50%;border:3px solid ${ok ? '#fff' : '#ff6a6a'};box-shadow:0 0 12px ${ok ? '#fff' : '#ff6a6a'};pointer-events:none;z-index:24;`);
     wrapper.appendChild(ring); ring.animate?.([{ transform: 'scale(0.5)', opacity: 1 }, { transform: 'scale(1.6)', opacity: 0 }], { duration: 420 }); setTimeout(() => ring.remove(), 440);
+    if (!ok) return;
+    // ★ 点哪打哪：精确打点中的这一格；火力格生效时一点带几发（含点中格 + 周边同色）。
+    const targets = rapidLeft > 0 ? [[i, j, k] as [number, number, number], ...aimFaceMany(currentColor, [i, j, k], 3).filter((v) => !(v[0] === i && v[1] === j && v[2] === k))] : [[i, j, k] as [number, number, number]];
+    for (const aim of targets) { if (hasAmmo) { if (ammoPool <= 0) break; ammoPool--; } fireBullet(aim); }
+    refresh(); if (hasAmmo) checkEnd();
   };
   wrapper.addEventListener('pointerdown', onTap);
 
@@ -543,15 +538,13 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
         if (isRapid !== wasRapid && hasTime) { facePill.style.background = isRapid ? 'linear-gradient(#ff9a3a,#f2671e)' : 'linear-gradient(#3a7bd5,#2a5cae)'; facePill.style.boxShadow = isRapid ? '0 3px 0 #b8430f,0 0 16px #ff8a3a' : '0 3px 0 #1c3e7a'; }
         // 阶段 UI + 开火。开打钮仅在「不限时换色关」的换色窗出现（放颜色上方·不挡观察）。
         startBtn.style.display = paused && !cfg.pickMs ? 'block' : 'none';
-        if (!settled) { hint.style.opacity = '0'; afAcc = 0; if (focusScreen) focusScreen = null; }
+        if (!settled) { hint.style.opacity = '0'; if (focusScreen) focusScreen = null; }
         else if (phase === 'pick') {
           if (cfg.pickMs) { pickLeft = Math.max(0, pickLeft - dt); hint.textContent = `🎨 选色 · ${(pickLeft / 1000).toFixed(1)}s`; if (pickLeft <= 0) phase = 'fire'; }
           else hint.textContent = '🎨 观察 · 选色后按开打';
-          hint.style.opacity = '1'; afAcc = 0;
+          hint.style.opacity = '1';
         } else {
-          hint.textContent = '👆 点方块 · 集中火力'; hint.style.opacity = focusScreen ? '0' : '1';
-          const cad = isRapid ? FIRE_MS * 0.5 : FIRE_MS;
-          afAcc += dt; while (afAcc >= cad) { afAcc -= cad; fire(); }
+          hint.textContent = isRapid ? '🔥 点同色方块 · 一点带几发' : '👆 点同色方块 · 点哪打哪'; hint.style.opacity = '1';
         }
         if (hasTime && globalLeft <= 0) checkEnd();
         updateAim();
