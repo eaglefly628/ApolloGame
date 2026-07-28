@@ -83,8 +83,8 @@ function hud(s: S1State): N {
         layout: { width: 124, height: 108, align: 'center', justify: 'center', radius: 22 },
         children: [
           s.hudSkins?.avatar
-            ? { type: 'Image', id: 'hud-av-i', props: { src: s.hudSkins.avatar, fit: 'cover', radius: 16 }, layout: { width: 108, height: 96 } }
-            : { type: 'Label', id: 'hud-av-i', props: { text: '🙂', size: 60 } },
+            ? { type: 'Image', id: 'hud-av-i', props: { src: s.hudSkins.avatar, fit: 'cover', radius: 18 }, layout: { width: 118, height: 104 } }
+            : { type: 'Label', id: 'hud-av-i', props: { text: '🙂', size: 64 } },
           { type: 'Badge', id: 'hud-av-lv', props: { text: `⭐${s.level}`, tone: 'ok' }, layout: { x: 2, y: 74, allowOverlap: true } },
         ],
       },
@@ -95,7 +95,7 @@ function hud(s: S1State): N {
         // 商店车（参考图第 5 个·框皮 + 图标皆皮肤槽可替换·商店待接=纯入口占位）。
         type: 'Panel', id: 'hud-cart', props: frame(s.hudSkins?.barCart),
         layout: { width: 100, height: 108, align: 'center', justify: 'center', radius: 22 },
-        children: [icon('hud-cart-i', s.hudSkins?.cart, '🛒', 52)],
+        children: [icon('hud-cart-i', s.hudSkins?.cart, '🛒', 80)],
       },
       {
         // 菜单入口（玩法/链条/日志）：固定方尺寸整框可点。
@@ -113,7 +113,7 @@ function menuTab(id: string, label: string, active: boolean, action: string): N 
   return {
     type: 'Button', id: `menu-tab-${id}`,
     props: { label, kind: active ? 'hero' : 'ghost', action },
-    layout: { flex: 1 },
+    layout: { flex: 1, height: 116 }, // owner：页签太窄·放大一倍
   };
 }
 // 糖果色卡片底（暖港卡通调·柔和高饱和·区别彼此）。
@@ -277,11 +277,17 @@ function orders(s: S1State): N {
           type: 'Label', id: o.fly.id, props: { text: o.fly.label, size: 30, bold: true, color: 'gold' },
           layout: { x: 20, y: 8, allowOverlap: true, flyTo: { to: 'hud-coins', ms: 820, arc: 70 } },
         } as N] : []),
-        // 交付庆祝（juice·render-only）：满足顾客瞬间在其卡上撒一把星光/纸屑。
-        ...(o.celebrate ? [{
-          type: 'Particles', id: `ord-${i}-cel`, props: { kind: 'sparkle', count: 18, loop: false },
-          layout: { x: 0, y: 0, width: 200, height: 200, allowOverlap: true },
-        } as N] : []),
+        // 交付庆祝（juice·render-only·owner：交付要有互动感·别直接换单）：满足顾客瞬间在其卡上
+        // 满屏纸屑+星光 + 中央「❤️ 谢谢!」气泡上浮淡出（floatUp）——一个明确的「订单达成」节拍。
+        ...(o.celebrate ? [
+          { type: 'Particles', id: `ord-${i}-cel`, props: { kind: 'confetti', count: 46, loop: false }, layout: { x: -10, y: -10, width: 360, height: 420, allowOverlap: true } } as N,
+          { type: 'Particles', id: `ord-${i}-cel2`, props: { kind: 'sparkle', count: 24, loop: false }, layout: { x: 0, y: 0, width: 340, height: 400, allowOverlap: true } } as N,
+          {
+            type: 'Panel', id: `ord-${i}-thx`, props: { bg: 'gold' },
+            layout: { x: 70, y: 150, align: 'center', justify: 'center', padding: 16, radius: 22, allowOverlap: true, anim: 'floatUp' },
+            children: [{ type: 'Label', id: `ord-${i}-thxt`, props: { text: '❤️ 谢谢!', size: 'xxl', bold: true, color: 'ink' } }],
+          } as N,
+        ] : []),
       ],
     })),
   };

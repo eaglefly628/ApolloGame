@@ -308,7 +308,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
   const prevCover = new Map<number, number>(); // cell → 上帧阻碍层数（挖到=层减/消失→消融）
   const flyTimers = new Set<ReturnType<typeof setTimeout>>();
   const paint = (st: S1State): void => {
-    const orders = activeFly ? st.orders.map((o, i) => (i === activeFly!.idx ? { ...o, fly: { id: activeFly!.id, label: activeFly!.label }, celebrate: true } : o)) : st.orders;
+    const orders = activeFly ? st.orders.map((o, i) => (i === activeFly!.idx ? { ...o, fly: { id: activeFly!.id, label: activeFly!.label }, celebrate: true, moodFace: '😍' } : o)) : st.orders;
     ui.update(buildS1Live({ ...st, orders, burstCell: activeBurst >= 0 ? activeBurst : undefined, dragGhost: dragGhost ?? undefined, liftedCell: dragFrom >= 0 ? dragFrom : undefined, dissolveCells: dissolving.length ? dissolving : undefined, menuOpen, menuTab, log: eventLog.slice() }), GAME101_THEME);
   };
 
@@ -371,7 +371,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       activeFly = { idx: pendingDeliverIdx, id, label: `🪙+${gain}` };
       pendingDeliverIdx = -1;
       paint(st);
-      const t = setTimeout(() => { activeFly = null; flyTimers.delete(t); paint(readState()); }, 900);
+      const t = setTimeout(() => { activeFly = null; flyTimers.delete(t); paint(readState()); }, 1250);
       flyTimers.add(t);
       lastCoins = coins;
       lastSig = ''; // 强制下一帧重绘（fly 清除后）
