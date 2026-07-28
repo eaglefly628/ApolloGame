@@ -78,13 +78,12 @@ function hud(s: S1State): N {
     layout: { direction: 'row', align: 'center', gap: 8, padding: 8, height: 120 },
     children: [
       {
-        // 玩家头像 + 绿星星等级角标（参考图左·框皮 + 立绘皆皮肤槽可替换）。
-        type: 'Panel', id: 'hud-av', props: frame(s.hudSkins?.barAvatar),
+        // 玩家头像：有自定义立绘 → 立绘**铺满整格**(Panel.skin cover·owner 的图自带框·别塞进小内框缩小)；
+        // 无 → 用框皮 + 🙂 兜底。绿星星等级角标(动态·不能烤进图)叠角。
+        type: 'Panel', id: 'hud-av', props: s.hudSkins?.avatar ? { skin: s.hudSkins.avatar } : frame(s.hudSkins?.barAvatar),
         layout: { width: 124, height: 108, align: 'center', justify: 'center', radius: 22 },
         children: [
-          s.hudSkins?.avatar
-            ? { type: 'Image', id: 'hud-av-i', props: { src: s.hudSkins.avatar, fit: 'cover', radius: 18 }, layout: { width: 118, height: 104 } }
-            : { type: 'Label', id: 'hud-av-i', props: { text: '🙂', size: 64 } },
+          ...(s.hudSkins?.avatar ? [] : [{ type: 'Label', id: 'hud-av-i', props: { text: '🙂', size: 64 } } as N]),
           { type: 'Badge', id: 'hud-av-lv', props: { text: `⭐${s.level}`, tone: 'ok' }, layout: { x: 2, y: 74, allowOverlap: true } },
         ],
       },
@@ -92,10 +91,14 @@ function hud(s: S1State): N {
       resPill('hud-coins', icon('hud-coins-i', s.hudSkins?.coins, '🪙'), `${Math.round(s.coins)}`, 'gold', 1.15, s.hudSkins?.barCoins),
       resPill('hud-gems', icon('hud-gems-i', s.hudSkins?.gems, '💎'), `${s.gems}`, 'jade', 1, s.hudSkins?.barGems),
       {
-        // 商店车（参考图第 5 个·框皮 + 图标皆皮肤槽可替换·商店待接=纯入口占位）。
-        type: 'Panel', id: 'hud-cart', props: frame(s.hudSkins?.barCart),
+        // 商店车：自定义图**铺满整格**(Image contain 100×102·owner 的图别塞小框缩小)·无 → 框皮 + 🛒 兜底。
+        type: 'Panel', id: 'hud-cart', props: s.hudSkins?.cart ? { bg: 'panel' } : frame(s.hudSkins?.barCart),
         layout: { width: 100, height: 108, align: 'center', justify: 'center', radius: 22 },
-        children: [icon('hud-cart-i', s.hudSkins?.cart, '🛒', 80)],
+        children: [
+          s.hudSkins?.cart
+            ? { type: 'Image', id: 'hud-cart-i', props: { src: s.hudSkins.cart, fit: 'contain', radius: 14 }, layout: { width: 100, height: 102 } }
+            : { type: 'Label', id: 'hud-cart-i', props: { text: '🛒', size: 56 } },
+        ],
       },
       {
         // 菜单入口（玩法/链条/日志）：固定方尺寸整框可点。
