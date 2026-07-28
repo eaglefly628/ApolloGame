@@ -1656,61 +1656,125 @@ function moduleBody(
       ], controls));
     case 'mod-3d-post': return buildSimStage('3dpost', '🔭', '景深 · 泛光 · Post3D',
       '后处理是数据：一个 Post3D 启 EffectComposer——移轴景深（中段清晰、上下虚化=微缩盒庭感）+ bloom 泛光（亮处发光）。同场景换不换 Post3D = 换不换后处理，蓝图一字不改。',
-      ['Post3D', 'tiltShift', 'bloom', 'Light3D']);
+      ['Post3D', 'tiltShift', 'bloom', 'Light3D'],
+      tuneDeck('3dpost', [
+        { key: 'ps.tilt', label: '虚化量', def: 'mid', opts: [{ v: 'soft', label: '弱' }, { v: 'mid', label: '中' }, { v: 'strong', label: '强' }] },
+        { key: 'ps.bloom', label: '泛光强', def: 'mid', opts: [{ v: 'low', label: '弱' }, { v: 'mid', label: '中' }, { v: 'high', label: '强' }] },
+        { key: 'ps.focus', label: '焦平面', def: 'mid', opts: [{ v: 'low', label: '下' }, { v: 'mid', label: '中' }, { v: 'high', label: '上' }] },
+      ], controls));
     case 'mod-3d-nav': return buildSimStage('3dnav', '🧭', '3D 寻路 · navmesh 自动烘焙',
       '摆一张 NavMesh 罩草地，navmesh-bake 每帧把 Collider3D 障碍栅格化、可走处自动织成 NavGraph（零手摆航点）。两个 NavAgent 追兵沿图绕障逼近左右巡逻的目标盒；相机 follow 目标（Camera3D follow 模式）。青点/线=自动导航图、黄线=当前规划路径。',
-      ['NavMesh', 'navmesh-bake', 'NavAgent', 'pathfind', 'Camera3D·follow']);
+      ['NavMesh', 'navmesh-bake', 'NavAgent', 'pathfind', 'Camera3D·follow'],
+      tuneDeck('3dnav', [
+        { key: 'nav.spd', label: '追速', def: 'mid', opts: [{ v: 'slow', label: '慢' }, { v: 'mid', label: '中' }, { v: 'fast', label: '快' }] },
+        { key: 'nav.cell', label: '网格精度', def: 'mid', opts: [{ v: 'coarse', label: '粗' }, { v: 'mid', label: '中' }, { v: 'fine', label: '细' }] },
+      ], controls));
     case 'mod-3d-collide': return buildSimStage('3dcollide', '🎯', '3D 碰撞 · Collider3D / Overlap3D',
       '两个盒（球碰撞体 / 盒碰撞体）来回穿过中央触发区，overlap-detect-3d 每帧解析判交、产 Overlap3D 事件（触发区只报不推）。线框=碰撞体（实心黄 / 触发绿），位置每帧跟随。',
       ['Collider3D', 'overlap-detect-3d', 'Overlap3D', 'trigger']);
     case 'mod-3d-particle': return buildSimStage('3dpart', '🎇', '3D 粒子（prefab）· prefab → Mesh3D',
       '2D 库B 套路搬到 3D：发射器 Timer→event-when→caster 周期引爆「爆炸环」prefab，一圈小盒火花放射（motion-apply）+ Timer 到期 lifetime 自毁，叠 Post3D bloom 发光。新特效=加一份 prefab 数据，ThreeRenderer 照渲。',
-      ['caster', 'prefab', 'Mesh3D', 'lifetime', 'Post3D·bloom']);
+      ['caster', 'prefab', 'Mesh3D', 'lifetime', 'Post3D·bloom'],
+      tuneDeck('3dpart', [
+        { key: 'pa.speed', label: '喷速', def: 'mid', opts: [{ v: 'slow', label: '慢' }, { v: 'mid', label: '中' }, { v: 'fast', label: '快' }] },
+        { key: 'pa.count', label: '火花数', def: 'mid', opts: [{ v: 'few', label: '少' }, { v: 'mid', label: '中' }, { v: 'many', label: '多' }] },
+        { key: 'pa.bloom', label: '泛光', def: 'mid', opts: [{ v: 'low', label: '弱' }, { v: 'mid', label: '中' }, { v: 'high', label: '强' }] },
+      ], controls));
     case 'mod-3d-vfx': return buildSimStage('3dvfx', '🌟', '3D 粒子（Vfx3D）· 数据驱动发射器',
       'TA「Niagara-lite」专门的粒子机：一个 Vfx3D 组件 = 一台发射器——锥形喷射 + 重力回落 + size/color over life 曲线/渐变 + 加色发光。三股金/玉/玫喷泉，render-only 不进 hash。比 prefab 那套更专业、参数即数据。',
-      ['Vfx3D', 'cone', 'gravity', 'colorGradient', 'Post3D·bloom']);
+      ['Vfx3D', 'cone', 'gravity', 'colorGradient', 'Post3D·bloom'],
+      tuneDeck('3dvfx', [
+        { key: 'vfx.rate', label: '喷量', def: 'mid', opts: [{ v: 'low', label: '疏' }, { v: 'mid', label: '中' }, { v: 'high', label: '密' }] },
+        { key: 'vfx.grav', label: '重力', def: 'mid', opts: [{ v: 'low', label: '飘' }, { v: 'mid', label: '中' }, { v: 'high', label: '坠' }] },
+        { key: 'vfx.spd', label: '初速', def: 'mid', opts: [{ v: 'low', label: '低' }, { v: 'mid', label: '中' }, { v: 'high', label: '高' }] },
+      ], controls));
     case 'mod-3d-primitives': return buildSimStage('3dprim', '🔷', '圆润图元 · Mesh3D.shape',
       'box 之外的 6 种图元：plane 双面薄片 + sphere 正球 + cylinder 柱 + cone 锥 + capsule 胶囊 + torus 环（three 内建几何·单材质单色）。一排七件各自缓转、头顶名牌标形。参数口径：圆润件 width=直径、height=柱/锥高（球忽略）、torus tube=管半径比。',
-      ['Mesh3D.shape', 'sphere/cylinder', 'cone/capsule/torus', 'tube']);
+      ['Mesh3D.shape', 'sphere/cylinder', 'cone/capsule/torus', 'tube'],
+      tuneDeck('3dprim', [
+        { key: 'prm.spin', label: '转速', def: 'mid', opts: [{ v: 'slow', label: '慢' }, { v: 'mid', label: '中' }, { v: 'fast', label: '快' }] },
+        { key: 'prm.cam', label: '机位', def: 'mid', opts: [{ v: 'near', label: '近' }, { v: 'mid', label: '中' }, { v: 'far', label: '远' }] },
+      ], controls));
     case 'mod-3d-text': return buildSimStage('3dtext', '🔤', '头顶 3D 文字 · WorldUI3D',
       '世界空间 UI（简写飘字）：每个盒挂一个 WorldUI3D.text（头顶名字/血量/状态），渲染器把实体锚点投影到屏幕、在该处用引擎 UI 库 mountUI 挂一棵 LayoutNode Label（UI 铁律·非手写 DOM）。相机转/物体动时标签跟着头顶飘。',
       ['WorldUI3D.text', 'mountUI', 'LayoutNode', '世界锚+投影']);
     case 'mod-3d-worldui': return buildSimStage('3dwui', '🪧', '世界空间面板 · WorldUI3D.node',
       '飘字进阶：WorldUI3D.node 挂**整棵 LayoutNode**——Boss/治疗/精英怪头顶各一块富名牌（Panel = Label 名字 + ProgressBar 血条/护盾/法力·raised 令牌面板·非手写 DOM），走引擎 UI 库 mountUI 渲染。治疗单位横向移动，名牌随单位每帧投影跟随（背相机/出屏自动隐）。',
-      ['WorldUI3D.node', 'Panel+ProgressBar', 'mountUI', '锚世界物+跟随']);
+      ['WorldUI3D.node', 'Panel+ProgressBar', 'mountUI', '锚世界物+跟随'],
+      tuneDeck('3dwui', [
+        { key: 'wui.cam', label: '机位', def: 'mid', opts: [{ v: 'near', label: '近' }, { v: 'mid', label: '中' }, { v: 'far', label: '远' }] },
+      ], controls));
     case 'mod-3d-ao': return buildSimStage('3dao', '🌑', '环境光遮蔽 · Post3D.ao（GTAO）',
       '一个 Post3D.ao 启 GTAO 地面真值环境光遮蔽：紧挨的盒堆在接触缝隙/墙根处被压暗 → 厚重「接地」的盒庭玩具感（关泛光以凸显 AO）。intensity/radius/scale 全是数据。',
-      ['Post3D.ao', 'GTAO', '接触压暗', '盒庭质感']);
+      ['Post3D.ao', 'GTAO', '接触压暗', '盒庭质感'],
+      tuneDeck('3dao', [
+        { key: 'ao.str', label: '遮蔽强', def: 'mid', opts: [{ v: 'low', label: '弱' }, { v: 'mid', label: '中' }, { v: 'high', label: '强' }] },
+        { key: 'ao.rad', label: '遮蔽半径', def: 'mid', opts: [{ v: 'tight', label: '窄' }, { v: 'mid', label: '中' }, { v: 'wide', label: '宽' }] },
+      ], controls));
     case 'mod-3d-material': return buildSimStage('3dmat', '🧱', 'PBR 材质预设 · Material3D + IBL',
       '材质是数据：一排盒各挂一个 Material3D 预设——金/钢/铜（IBL 环境反射出真金属光泽）、玻璃（透射折射）、木/岩（哑光）、自发光。Sky3D.env 开 IBL（中性影室环境贴图）金属才有反射可照。叠 Post3D 调色 + 抗锯齿。',
-      ['Material3D', 'PBR', 'IBL·Sky3D.env', 'grade', 'aa']);
+      ['Material3D', 'PBR', 'IBL·Sky3D.env', 'grade', 'aa'],
+      tuneDeck('3dmat', [
+        { key: 'mat.emit', label: '自发光', def: 'mid', opts: [{ v: 'low', label: '弱' }, { v: 'mid', label: '中' }, { v: 'high', label: '强' }] },
+        { key: 'mat.expo', label: '曝光', def: 'mid', opts: [{ v: 'dim', label: '暗' }, { v: 'mid', label: '中' }, { v: 'bright', label: '亮' }] },
+        { key: 'mat.sat', label: '饱和度', def: 'mid', opts: [{ v: 'low', label: '淡' }, { v: 'mid', label: '中' }, { v: 'high', label: '浓' }] },
+      ], controls));
     case 'mod-3d-toon': return buildSimStage('3dtoon', '🖍', '卡通描边 · Material3D.shading:toon + outline',
       '超休闲平涂招牌观感：一排图元走分段卡通着色（MeshToonMaterial 阶梯明暗·toonSteps 控阶数）+ inverted-hull 描边（沿法线外扩的背面壳=一圈实色轮廓）。大亮色 + 黑描边 = 卡通感。零美术文件·纯数据选着色模型。',
-      ['Material3D.shading:toon', 'outline', 'toonSteps', 'inverted-hull']);
+      ['Material3D.shading:toon', 'outline', 'toonSteps', 'inverted-hull'],
+      tuneDeck('3dtoon', [
+        { key: 'tn.steps', label: '色阶数', def: 'mix', opts: [{ v: 'mix', label: '混' }, { v: '2', label: '2阶' }, { v: '3', label: '3阶' }, { v: '4', label: '4阶' }] },
+        { key: 'tn.outline', label: '描边粗', def: 'mid', opts: [{ v: 'thin', label: '细' }, { v: 'mid', label: '中' }, { v: 'bold', label: '粗' }] },
+      ], controls));
     case 'mod-3d-billboard': return buildSimStage('3dbb', '🪙', '世界广告牌 + 地面贴花 · Billboard3D / Decal3D',
       '休闲拾取物经典组合：一圈始终朝相机的发光金币（Billboard3D·add 混合·参与深度排序会被遮挡·区别于 WorldUI3D 永在最上）+ Anim3D bob 上下浮 + 脚下 Decal3D blob 软阴影（便宜接触阴影·零美术文件）。另有 ring/disc 贴花做目标标记环/落点 splat。',
-      ['Billboard3D', 'Decal3D·blob/ring/disc', 'Anim3D·bob', '朝相机+深度排序']);
+      ['Billboard3D', 'Decal3D·blob/ring/disc', 'Anim3D·bob', '朝相机+深度排序'],
+      tuneDeck('3dbb', [
+        { key: 'bb.bob', label: '浮动幅', def: 'mid', opts: [{ v: 'low', label: '弱' }, { v: 'mid', label: '中' }, { v: 'high', label: '强' }] },
+        { key: 'bb.shadow', label: '阴影浓', def: 'mid', opts: [{ v: 'faint', label: '淡' }, { v: 'mid', label: '中' }, { v: 'dark', label: '浓' }] },
+        { key: 'bb.size', label: '币大小', def: 'mid', opts: [{ v: 'small', label: '小' }, { v: 'mid', label: '中' }, { v: 'large', label: '大' }] },
+      ], controls));
     case 'mod-3d-path': return buildSimStage('3dpath', '🛤', '路径跟随 · Path3D',
       '沿一串控制点按壁钟匀速走（帧率无关无漂移·render-only 只写 Transform3D）：巡逻平台走矩形折线（linear·移动平台/传送带）、巡逻兵朝运动方向平滑绕行（smooth + faceDir）、金币沿高空平滑闭环绕飞。loop=loop/pingpong/none。与 Anim3D 正交（一个沿路径行进·一个绕初值振荡）。',
-      ['Path3D', 'linear/smooth', 'faceDir', 'loop/pingpong']);
+      ['Path3D', 'linear/smooth', 'faceDir', 'loop/pingpong'],
+      tuneDeck('3dpath', [
+        { key: 'pt.speed', label: '巡速', def: 'mid', opts: [{ v: 'slow', label: '慢' }, { v: 'mid', label: '中' }, { v: 'fast', label: '快' }] },
+      ], controls));
     case 'mod-3d-spring': return buildSimStage('3dspring', '🟢', '弹簧动画 · Anim3D spring',
       '解析阻尼弹簧（欠阻尼带过冲回弹·spawn 弹入/吸附 juice）：进本页时一排盒子 scale 0→1 弹入 + 从高处 y 落定，各带不同 damping（0.12 弹久 → 0.55 硬）看回弹次数差。零缓动代码·只填 damping/freq/from/to。',
-      ['Anim3D·spring', 'damping', '过冲回弹', 'spawn juice']);
+      ['Anim3D·spring', 'damping', '过冲回弹', 'spawn juice'],
+      tuneDeck('3dspring', [
+        { key: 'sp.freq', label: '弹频', def: 'mid', opts: [{ v: 'slow', label: '慢' }, { v: 'mid', label: '中' }, { v: 'fast', label: '快' }] },
+      ], controls));
     case 'mod-3d-surface': return buildSimStage('3dsurf', '🪨', '程序化表面细节 · Material3D.surface',
       '零美术文件的表面质感：渲染器按数据生成 normal/roughness 贴图——凸点 bumps / 噪声 noise / 划痕 scratches 三种程序化图案 + 平铺/法线强度/粗糙起伏。最左是光面对照，右三块依次凹凸/磨砂/拉丝。同天空盒程序化纹理先例。',
-      ['Material3D.surface', '程序化 normal/rough', 'bumps/noise/scratches']);
+      ['Material3D.surface', '程序化 normal/rough', 'bumps/noise/scratches'],
+      tuneDeck('3dsurf', [
+        { key: 'sf.normal', label: '凹凸强', def: 'mid', opts: [{ v: 'flat', label: '弱' }, { v: 'mid', label: '中' }, { v: 'deep', label: '强' }] },
+        { key: 'sf.tiles', label: '密度', def: 'mid', opts: [{ v: 'coarse', label: '粗' }, { v: 'mid', label: '中' }, { v: 'fine', label: '细' }] },
+      ], controls));
     case 'mod-3d-model': return buildSimStage('3dmodel', '🦆', 'glTF 模型导入 · Model3D',
       'box/plane 原语表达不了圆润模型 → 导入真 glTF：居中主鸭缓转 + 左右两只染色鸭（同模板多实例·共享几何各自染色）+ 一个盒模型。模型自带材质 + 受软影。蓝图只持 modelKey（保纯·可哈希），ModelAssetLoader 取字节、ThreeRenderer 解析、未就绪本帧不画。',
-      ['Model3D', 'glTF 导入', 'AssetManager', '多实例 clone']);
+      ['Model3D', 'glTF 导入', 'AssetManager', '多实例 clone'],
+      tuneDeck('3dmodel', [
+        { key: 'mdl.spin', label: '转速', def: 'mid', opts: [{ v: 'slow', label: '慢' }, { v: 'mid', label: '中' }, { v: 'fast', label: '快' }] },
+        { key: 'mdl.cam', label: '机位', def: 'mid', opts: [{ v: 'near', label: '近' }, { v: 'mid', label: '中' }, { v: 'far', label: '远' }] },
+      ], controls));
     case 'mod-3d-fog': return buildSimStage('3dfog', '🌫', '距离雾 · Fog3D',
       '一个 Fog3D（雾色取天际·near 清晰 far 全雾）：两列尖塔夹道向远处退去、渐隐入雾——盒庭「装在玻璃盒里」的纵深感。天空盒不受雾影响。color/near/far 三个数。点调参台改雾浓度看纵深随数据变。',
       ['Fog3D', '距离雾', '纵深', 'scene.fog'],
       tuneDeck('3dfog', [
         { key: 'f.den', label: '雾浓度', def: 'mid', opts: [{ v: 'thin', label: '薄' }, { v: 'mid', label: '中' }, { v: 'thick', label: '浓' }] },
+        { key: 'f.near', label: '雾起点', def: 'mid', opts: [{ v: 'far', label: '远' }, { v: 'mid', label: '中' }, { v: 'near', label: '近' }] },
       ], controls));
     case 'mod-3d-pointlight': return buildSimStage('3dpl', '🔦', '点光源 / 聚光灯 · Light3D point·spot',
       'TA Phase 2 动态局部光：暗场里一盏移动暖点光（挂 Transform3D·tween 横扫白盒阵）+ 一盏冷聚光锥（从高处朝下·有锥角/半影）。点光随实体走、按 range/decay 衰减；叠 bloom 让光源发光。',
-      ['Light3D·point', 'Light3D·spot', 'range/decay', '可移动']);
+      ['Light3D·point', 'Light3D·spot', 'range/decay', '可移动'],
+      tuneDeck('3dpl', [
+        { key: 'pl.warm', label: '点光强', def: 'mid', opts: [{ v: 'dim', label: '弱' }, { v: 'mid', label: '中' }, { v: 'bright', label: '强' }] },
+        { key: 'pl.spot', label: '聚光强', def: 'mid', opts: [{ v: 'dim', label: '弱' }, { v: 'mid', label: '中' }, { v: 'bright', label: '强' }] },
+        { key: 'pl.angle', label: '锥角', def: 'mid', opts: [{ v: 'tight', label: '窄' }, { v: 'mid', label: '中' }, { v: 'wide', label: '宽' }] },
+      ], controls));
     case 'mod-physics': return buildSimStage('phys', '🟢', '运动与碰撞',
       'motion-apply（Velocity→Transform 运动学）+ overlap-detect（碰撞检测）+ collision-resolve（按质量推开=碰撞响应）。四物体相向运动、于中心相撞被推开。纯蓝图，无专属代码。',
       ['motion-apply', 'overlap-detect', 'collision-resolve']);
