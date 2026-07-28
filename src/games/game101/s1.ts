@@ -22,7 +22,7 @@ export interface S1State {
   progress?: { stars: number; goal: number }; // 进度推进②：星→关卡目标进度条
   levelComplete?: boolean;                     // 达标 → 关卡完成横幅
   energyRegen?: number;                        // 体力涓流恢复剩余秒（未满时显·HUD「mm:ss」）
-  hudSkins?: { energy?: string; coins?: string; gems?: string; cart?: string; avatar?: string }; // HUD 图标皮肤槽（可替换）
+  hudSkins?: { energy?: string; coins?: string; gems?: string; cart?: string; avatar?: string; barEnergy?: string; barCoins?: string; barGems?: string; barAvatar?: string; barCart?: string }; // HUD 图标 + 异形框皮肤槽（皆可替换）
   menuOpen?: boolean;                          // 信息菜单开关（右上☰ → 玩法/链条/日志）
   menuTab?: 'play' | 'chains' | 'log';         // 菜单当前页
   log?: string[];                              // 事件日志（新→旧）
@@ -55,9 +55,11 @@ function hud(s: S1State): N {
     type: 'Panel', id, props: { bg: 'ok' }, layout: { width: 46, height: 46, align: 'center', justify: 'center', radius: 15 },
     children: [{ type: 'Label', id: `${id}-t`, props: { text: '+', size: 34, bold: true, color: 'ink' } }],
   });
-  // 资源胶囊：图标 + 值(体力另叠 mm:ss) + 绿「+」。
-  const resPill = (id: string, iconNode: N, val: string, color: 'gold' | 'jade' | 'text', flex: number, sub?: string): N => ({
-    type: 'Panel', id, props: { bg: 'panel' },
+  // 框皮：给了皮肤图 → 整面异形贴图框(9-slice·owner 可替换)；否则回退语义令牌白底(不 make 空)。
+  const frame = (skin?: string): Record<string, unknown> => (skin ? { skin, skinSlice: 28 } : { bg: 'panel' });
+  // 资源胶囊：图标 + 值(体力另叠 mm:ss) + 绿「+」·底=可替换异形框皮。
+  const resPill = (id: string, iconNode: N, val: string, color: 'gold' | 'jade' | 'text', flex: number, barSkin?: string, sub?: string): N => ({
+    type: 'Panel', id, props: frame(barSkin),
     layout: { direction: 'row', align: 'center', justify: 'between', gap: 6, padding: 10, radius: 26, flex, height: 108 },
     children: [
       iconNode,
@@ -76,8 +78,8 @@ function hud(s: S1State): N {
     layout: { direction: 'row', align: 'center', gap: 8, padding: 8, height: 120 },
     children: [
       {
-        // 玩家头像 + 绿星星等级角标（参考图左·立绘皮肤槽可替换）。
-        type: 'Panel', id: 'hud-av', props: { bg: 'panel' },
+        // 玩家头像 + 绿星星等级角标（参考图左·框皮 + 立绘皆皮肤槽可替换）。
+        type: 'Panel', id: 'hud-av', props: frame(s.hudSkins?.barAvatar),
         layout: { width: 124, height: 108, align: 'center', justify: 'center', radius: 22 },
         children: [
           s.hudSkins?.avatar
@@ -86,12 +88,12 @@ function hud(s: S1State): N {
           { type: 'Badge', id: 'hud-av-lv', props: { text: `⭐${s.level}`, tone: 'ok' }, layout: { x: 2, y: 74, allowOverlap: true } },
         ],
       },
-      resPill('hud-energy', icon('hud-energy-i', s.hudSkins?.energy, '⚡'), `${Math.round(s.energy)}`, 'gold', 1.3, s.energyRegen != null ? mmss(s.energyRegen) : undefined),
-      resPill('hud-coins', icon('hud-coins-i', s.hudSkins?.coins, '🪙'), `${Math.round(s.coins)}`, 'gold', 1.15),
-      resPill('hud-gems', icon('hud-gems-i', s.hudSkins?.gems, '💎'), `${s.gems}`, 'jade', 1),
+      resPill('hud-energy', icon('hud-energy-i', s.hudSkins?.energy, '⚡'), `${Math.round(s.energy)}`, 'gold', 1.3, s.hudSkins?.barEnergy, s.energyRegen != null ? mmss(s.energyRegen) : undefined),
+      resPill('hud-coins', icon('hud-coins-i', s.hudSkins?.coins, '🪙'), `${Math.round(s.coins)}`, 'gold', 1.15, s.hudSkins?.barCoins),
+      resPill('hud-gems', icon('hud-gems-i', s.hudSkins?.gems, '💎'), `${s.gems}`, 'jade', 1, s.hudSkins?.barGems),
       {
-        // 商店车（参考图第 5 个·皮肤槽可替换·商店待接=纯入口占位）。
-        type: 'Panel', id: 'hud-cart', props: { bg: 'panel' },
+        // 商店车（参考图第 5 个·框皮 + 图标皆皮肤槽可替换·商店待接=纯入口占位）。
+        type: 'Panel', id: 'hud-cart', props: frame(s.hudSkins?.barCart),
         layout: { width: 100, height: 108, align: 'center', justify: 'center', radius: 22 },
         children: [icon('hud-cart-i', s.hudSkins?.cart, '🛒', 52)],
       },

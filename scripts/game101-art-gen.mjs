@@ -149,6 +149,17 @@ const HUD = [
   }
   // 玩家头像（女主·默认复用立绘 林夏·owner 可替换）
   upsert('hud_avatar', 'portrait', 'HUD·玩家头像(女主 林夏)', 'cozy 2.5D cartoon portrait of the heroine player avatar, warm palette', '/games/game101/art/portraits/linxia.svg', null);
+
+  // HUD 异形框皮（贴图 UI·9-slice·owner：框架本身也作台账可替换美术资源）：雪顶奶白圆角胶囊。
+  const hudFrame = () =>
+    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80" viewBox="0 0 200 80">' +
+    '<rect x="4" y="10" width="192" height="66" rx="30" fill="#e4cf9c"/>' +
+    '<rect x="8" y="13" width="184" height="60" rx="27" fill="#fff7ec"/>' +
+    '<path d="M30 16 Q100 5 170 16 Q150 26 100 24 Q50 26 30 16 Z" fill="#ffffff" opacity="0.9"/>' +
+    '<rect x="10" y="15" width="180" height="15" rx="9" fill="#ffffff" opacity="0.45"/></svg>\n';
+  for (const key of ['hud_bar_energy', 'hud_bar_coins', 'hud_bar_gems', 'hud_bar_avatar', 'hud_bar_cart']) {
+    upsert(key, 'hud-frame', `HUD·异形框皮(${key})`, 'a cozy snow-topped rounded pill UI frame, cream cartoon candy style, for 9-slice', `/games/game101/art/${key}.svg`, hudFrame());
+  }
 }
 
 ledger.updatedAt = ledger.updatedAt || undefined; // 保留原字段·不注入时间戳（脚本确定性）

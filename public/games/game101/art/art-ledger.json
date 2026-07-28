@@ -2217,6 +2217,76 @@
         "style": "gossip-harbor cozy candy cartoon (glossy)",
         "servedPath": "/games/game101/art/portraits/linxia.svg"
       }
+    },
+    {
+      "no": "art-60",
+      "skinKey": "hud_bar_energy",
+      "kind": "hud-frame",
+      "desc": "HUD·异形框皮(hud_bar_energy)",
+      "prompt": "a cozy snow-topped rounded pill UI frame, cream cartoon candy style, for 9-slice",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/hud_bar_energy.svg"
+      }
+    },
+    {
+      "no": "art-61",
+      "skinKey": "hud_bar_coins",
+      "kind": "hud-frame",
+      "desc": "HUD·异形框皮(hud_bar_coins)",
+      "prompt": "a cozy snow-topped rounded pill UI frame, cream cartoon candy style, for 9-slice",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/hud_bar_coins.svg"
+      }
+    },
+    {
+      "no": "art-62",
+      "skinKey": "hud_bar_gems",
+      "kind": "hud-frame",
+      "desc": "HUD·异形框皮(hud_bar_gems)",
+      "prompt": "a cozy snow-topped rounded pill UI frame, cream cartoon candy style, for 9-slice",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/hud_bar_gems.svg"
+      }
+    },
+    {
+      "no": "art-63",
+      "skinKey": "hud_bar_avatar",
+      "kind": "hud-frame",
+      "desc": "HUD·异形框皮(hud_bar_avatar)",
+      "prompt": "a cozy snow-topped rounded pill UI frame, cream cartoon candy style, for 9-slice",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/hud_bar_avatar.svg"
+      }
+    },
+    {
+      "no": "art-64",
+      "skinKey": "hud_bar_cart",
+      "kind": "hud-frame",
+      "desc": "HUD·异形框皮(hud_bar_cart)",
+      "prompt": "a cozy snow-topped rounded pill UI frame, cream cartoon candy style, for 9-slice",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/hud_bar_cart.svg"
+      }
     }
   ]
 }

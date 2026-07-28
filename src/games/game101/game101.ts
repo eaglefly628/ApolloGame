@@ -191,7 +191,10 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       }
     }
     // HUD 图标皮肤槽（可替换美术资源·就绪即换·空则回退 emoji 字形）。
-    const hudSkins = { energy: skinMap.hud_energy, coins: skinMap.hud_coins, gems: skinMap.hud_gems, cart: skinMap.hud_cart, avatar: skinMap.hud_avatar };
+    const hudSkins = {
+      energy: skinMap.hud_energy, coins: skinMap.hud_coins, gems: skinMap.hud_gems, cart: skinMap.hud_cart, avatar: skinMap.hud_avatar,
+      barEnergy: skinMap.hud_bar_energy, barCoins: skinMap.hud_bar_coins, barGems: skinMap.hud_bar_gems, barAvatar: skinMap.hud_bar_avatar, barCart: skinMap.hud_bar_cart,
+    };
     return {
       energy: res(RES.energy), coins: res(RES.coins), gems: Math.round(res(RES.stars)), level: 1 + passed, cells, orders,
       progress: { stars, goal: PROGRESSION.goalStars }, levelComplete, energyRegen, hudSkins,
