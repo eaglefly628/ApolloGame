@@ -21,6 +21,8 @@ export interface S1State {
   cells: (CellView | null)[]; orders: OrderView[];
   progress?: { stars: number; goal: number }; // 进度推进②：星→关卡目标进度条
   levelComplete?: boolean;                     // 达标 → 关卡完成横幅
+  energyRegen?: number;                        // 体力涓流恢复剩余秒（未满时显·HUD「mm:ss」）
+  hudSkins?: { energy?: string; coins?: string; gems?: string; cart?: string; avatar?: string }; // HUD 图标皮肤槽（可替换）
   menuOpen?: boolean;                          // 信息菜单开关（右上☰ → 玩法/链条/日志）
   menuTab?: 'play' | 'chains' | 'log';         // 菜单当前页
   log?: string[];                              // 事件日志（新→旧）
@@ -40,45 +42,66 @@ const COVER_BG = '#b8895a'; // 阻碍层沙色（覆盖格·挖掘解锁）
 // 格宽（scene 1080·board pad5 + well pad4 + 格间 gap3·cols 均分）——用于右下角可交付 ✓ 勾绝对定位。
 const CELL_W = Math.floor((1080 - 10 - 8 - (GAME.board.cols - 1) * 3) / GAME.board.cols);
 
-// ── HUD 行（等级 / 体力+计时 / 金币 / 宝石 / 商店）────────────────────────────
+// ── HUD 行（玩家头像+星级 / 体力+恢复计时 / 金币 / 宝石 / 商店车 / 菜单）──────────
+// owner 参考图基准：每格 = 图标(可替换皮肤槽·回退 emoji) + 数值(+ 体力另加 mm:ss) + 绿「+」。
 function hud(s: S1State): N {
-  // 资源胶囊：横向（宽>高）·统一 flex 等宽·大图标+大值。基准=ui-brief §S4「[Lv][⚡/100][🪙][💎][🛒]」横向一行。
-  const pill = (id: string, glyph: string, val: string, color: 'gold' | 'jade' | 'text', flex = 1): N => ({
+  const mmss = (sec: number): string => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+  // 图标：皮肤槽就绪渲 Image·否则回退 emoji 字形（可替换美术资源）。
+  const icon = (id: string, skin: string | undefined, glyph: string, size = 48): N =>
+    skin ? { type: 'Image', id, props: { src: skin, fit: 'contain' }, layout: { width: size, height: size } }
+         : { type: 'Label', id, props: { text: glyph, size } };
+  // 绿「+」加号（参考图右侧·购买入口占位·纯视觉·商店待接）。
+  const plus = (id: string): N => ({
+    type: 'Panel', id, props: { bg: 'ok' }, layout: { width: 46, height: 46, align: 'center', justify: 'center', radius: 15 },
+    children: [{ type: 'Label', id: `${id}-t`, props: { text: '+', size: 34, bold: true, color: 'ink' } }],
+  });
+  // 资源胶囊：图标 + 值(体力另叠 mm:ss) + 绿「+」。
+  const resPill = (id: string, iconNode: N, val: string, color: 'gold' | 'jade' | 'text', flex: number, sub?: string): N => ({
     type: 'Panel', id, props: { bg: 'panel' },
-    layout: { direction: 'row', align: 'center', justify: 'center', gap: 8, padding: 10, radius: 22, flex, height: 96 },
+    layout: { direction: 'row', align: 'center', justify: 'between', gap: 6, padding: 10, radius: 26, flex, height: 108 },
     children: [
-      { type: 'Label', id: `${id}-g`, props: { text: glyph, size: 44 } },
-      { type: 'Label', id: `${id}-v`, props: { text: val, color, bold: true, size: 'xxl' } },
+      iconNode,
+      {
+        type: 'Panel', id: `${id}-c`, props: { bare: true }, layout: { direction: 'column', align: 'center', justify: 'center', gap: 0, flex: 1 },
+        children: [
+          { type: 'Label', id: `${id}-v`, props: { text: val, color, bold: true, size: 'xxl' } },
+          ...(sub ? [{ type: 'Label', id: `${id}-s`, props: { text: sub, color: 'gold', bold: true, size: 'sm' } } as N] : []),
+        ],
+      },
+      plus(`${id}-p`),
     ],
   });
   return {
-    // HUD = 一条**扁横带**（宽>高·非又高又窄）：资源胶囊 flex 等宽撑开、按钮固定方尺寸。height 收到 108。
     type: 'Panel', id: 'hud', props: { bare: true },
-    layout: { direction: 'row', align: 'center', gap: 8, padding: 8, height: 108 },
+    layout: { direction: 'row', align: 'center', gap: 8, padding: 8, height: 120 },
     children: [
       {
-        // 关卡 + 星进度（进度②的家）：Lv + ⭐进度条 + N/目标·横向胶囊等宽。
-        type: 'Panel', id: 'hud-lvl', props: { bg: 'gold' },
-        layout: { direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 8, radius: 22, flex: 1, height: 96 },
+        // 玩家头像 + 绿星星等级角标（参考图左·立绘皮肤槽可替换）。
+        type: 'Panel', id: 'hud-av', props: { bg: 'panel' },
+        layout: { width: 124, height: 108, align: 'center', justify: 'center', radius: 22 },
         children: [
-          { type: 'Label', id: 'hud-lvl-l', props: { text: `Lv ${s.level}`, color: 'ink', bold: true, size: 'xl' } },
-          ...(s.progress ? [
-            { type: 'ProgressBar', id: 'hud-lvl-bar', props: { value: Math.min(s.progress.stars, s.progress.goal), max: s.progress.goal, tone: 'ok' } } as N,
-            { type: 'Label', id: 'hud-lvl-p', props: { text: `⭐${s.progress.stars}/${s.progress.goal}`, color: 'ink', bold: true, size: 'sm' } } as N,
-          ] : []),
+          s.hudSkins?.avatar
+            ? { type: 'Image', id: 'hud-av-i', props: { src: s.hudSkins.avatar, fit: 'cover', radius: 16 }, layout: { width: 108, height: 96 } }
+            : { type: 'Label', id: 'hud-av-i', props: { text: '🙂', size: 60 } },
+          { type: 'Badge', id: 'hud-av-lv', props: { text: `⭐${s.level}`, tone: 'ok' }, layout: { x: 2, y: 74, allowOverlap: true } },
         ],
       },
-      pill('hud-energy', '⚡', `${Math.round(s.energy)}`, 'gold', 1.15),
-      pill('hud-coins', '🪙', `${Math.round(s.coins)}`, 'gold', 1),
-      pill('hud-gems', '💎', `${s.gems}`, 'jade', 1),
-      // 菜单入口：固定方尺寸面板整框可点（Button 无固有宽会缩窄条·用 Panel.action 保方形·同 ui.md 框 Panel 法）。
+      resPill('hud-energy', icon('hud-energy-i', s.hudSkins?.energy, '⚡'), `${Math.round(s.energy)}`, 'gold', 1.3, s.energyRegen != null ? mmss(s.energyRegen) : undefined),
+      resPill('hud-coins', icon('hud-coins-i', s.hudSkins?.coins, '🪙'), `${Math.round(s.coins)}`, 'gold', 1.15),
+      resPill('hud-gems', icon('hud-gems-i', s.hudSkins?.gems, '💎'), `${s.gems}`, 'jade', 1),
       {
-        type: 'Panel', id: 'hud-menu-frame', props: { bg: 'gold', action: 'open_menu' },
-        layout: { width: 108, height: 96, align: 'center', justify: 'center', radius: 22 },
-        children: [{ type: 'Label', id: 'hud-menu-i', props: { text: '☰', size: 48, bold: true, color: 'ink' } }],
+        // 商店车（参考图第 5 个·皮肤槽可替换·商店待接=纯入口占位）。
+        type: 'Panel', id: 'hud-cart', props: { bg: 'panel' },
+        layout: { width: 100, height: 108, align: 'center', justify: 'center', radius: 22 },
+        children: [icon('hud-cart-i', s.hudSkins?.cart, '🛒', 52)],
       },
-      // 右上角留给壳层齿轮 ⚙（退出菜单·非本游戏画）——空占位把 ☰ 顶到齿轮左侧不重叠。
-      { type: 'Panel', id: 'hud-corner-gap', props: { bare: true }, layout: { width: 72, height: 96 } },
+      {
+        // 菜单入口（玩法/链条/日志）：固定方尺寸整框可点。
+        type: 'Panel', id: 'hud-menu-frame', props: { bg: 'gold', action: 'open_menu' },
+        layout: { width: 92, height: 108, align: 'center', justify: 'center', radius: 22 },
+        children: [{ type: 'Label', id: 'hud-menu-i', props: { text: '☰', size: 44, bold: true, color: 'ink' } }],
+      },
+      { type: 'Panel', id: 'hud-corner-gap', props: { bare: true }, layout: { width: 64, height: 108 } },
     ],
   };
 }

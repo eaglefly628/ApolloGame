@@ -16,7 +16,7 @@ import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop, 
 import { buildBlueprint } from './blueprint.js';
 import { buildS1Live, type S1State, type CellView, type OrderView, type SlotView } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';
-import { GAME, RES, GENERATORS, ORDERS, ORDER_SAT_MAX, TICKS_PER_SEC, CUST_PORTRAITS, BUBBLES, PROGRESSION, LEVEL_DONE_FLAG, ITEM_EMOJI, ITEMS, moodFace, cellIndexOf, cellCenter } from './theme.js';
+import { GAME, RES, ENERGY, GENERATORS, ORDERS, ORDER_SAT_MAX, TICKS_PER_SEC, CUST_PORTRAITS, BUBBLES, PROGRESSION, LEVEL_DONE_FLAG, ITEM_EMOJI, ITEMS, moodFace, cellIndexOf, cellCenter } from './theme.js';
 
 const GEN_CELLS = new Set(GENERATORS.map((g) => g.cell));
 
@@ -181,9 +181,20 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     const stars = Math.round(res(RES.stars));
     const passed = PROGRESSION.milestones.filter((m) => stars >= m.atStars).length;
     const levelComplete = !!w.getComponent<Flag>('level-flag', 'Flag')?.active;
+    // 体力涓流恢复倒计时（读 OverTime 'regen' 剩余·仅体力未满时显·HUD 参考图「00:34」）。
+    let energyRegen: number | undefined;
+    if (res(RES.energy) < ENERGY.cap) {
+      for (const [eid] of w.query('OverTime')) {
+        const ot = w.getComponent(eid, 'OverTime') as unknown as { effects?: { id: string; period: number; elapsed: number }[] } | undefined;
+        const e = ot?.effects?.find((x) => x.id === 'regen');
+        if (e && e.period > 0) { energyRegen = Math.max(0, Math.ceil((e.period - (e.elapsed % e.period)) / TICKS_PER_SEC)); break; }
+      }
+    }
+    // HUD 图标皮肤槽（可替换美术资源·就绪即换·空则回退 emoji 字形）。
+    const hudSkins = { energy: skinMap.hud_energy, coins: skinMap.hud_coins, gems: skinMap.hud_gems, cart: skinMap.hud_cart, avatar: skinMap.hud_avatar };
     return {
       energy: res(RES.energy), coins: res(RES.coins), gems: Math.round(res(RES.stars)), level: 1 + passed, cells, orders,
-      progress: { stars, goal: PROGRESSION.goalStars }, levelComplete,
+      progress: { stars, goal: PROGRESSION.goalStars }, levelComplete, energyRegen, hudSkins,
     };
   }
 
@@ -364,7 +375,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       return;
     }
     lastCoins = coins;
-    const sig = `${Math.round(st.energy)}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '') + (c?.timer != null ? `t${c.timer}` : '') + (c?.cover != null ? `k${c.cover}` : '') + (c?.cd != null ? `d${c.cd}` : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('') + o.moodFace + (o.timeLeft ?? '')).join('|')}`;
+    const sig = `${Math.round(st.energy)}|${st.energyRegen ?? ''}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '') + (c?.timer != null ? `t${c.timer}` : '') + (c?.cover != null ? `k${c.cover}` : '') + (c?.cd != null ? `d${c.cd}` : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('') + o.moodFace + (o.timeLeft ?? '')).join('|')}`;
     if (sig !== lastSig) { lastSig = sig; paint(st); }
   });
 

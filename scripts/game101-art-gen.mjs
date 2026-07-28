@@ -116,6 +116,41 @@ for (const row of ledger.rows) {
   row.gen = { source: 'apollo-procedural', script: 'scripts/game101-art-gen.mjs', style: STYLE, servedPath };
   made.push(file);
 }
+// ── HUD 顶栏图标（owner 参考图·5 数据·可替换美术资源）：圆牌 + emoji·各自主题色──────
+// hud_avatar 用女主立绘(林夏)为默认·其余 4 个自产圆牌图标。台账追加 art-49+（按 skinKey 去重·幂等）。
+function hudChip(emoji, c) {
+  const g = 'h' + emoji.codePointAt(0).toString(16);
+  return S(
+    `<defs><radialGradient id="${g}" cx="38%" cy="32%" r="72%">` +
+    `<stop offset="0" stop-color="${hex(...mixWhite(c, 0.5))}"/><stop offset="1" stop-color="${hex(...c)}"/></radialGradient></defs>` +
+    `<circle cx="32" cy="32" r="29" fill="${hex(...darker(c, 0.5))}"/>` +
+    `<circle cx="32" cy="32" r="26" fill="url(#${g})"/>` +
+    gloss(24, 22, 9, 5, 0.5) +
+    `<text x="32" y="35" font-size="34" text-anchor="middle" dominant-baseline="central">${emoji}</text>`,
+  );
+}
+const HUD = [
+  { key: 'hud_energy', emoji: '⚡', c: [0xff, 0xc4, 0x3d], desc: '体力图标' },
+  { key: 'hud_coins', emoji: '🪙', c: [0xf4, 0xb7, 0x40], desc: '金币图标' },
+  { key: 'hud_gems', emoji: '💎', c: [0xff, 0x6f, 0x91], desc: '宝石图标' },
+  { key: 'hud_cart', emoji: '🛒', c: [0x8f, 0xd0, 0x9a], desc: '商店车图标' },
+];
+{
+  let n = ledger.rows.reduce((m, r) => Math.max(m, Number(String(r.no || '').replace(/\D/g, '')) || 0), 0);
+  const upsert = (skinKey, kind, desc, prompt, servedPath, writeSvg) => {
+    if (writeSvg) writeFileSync(join(ART, skinKey + '.svg'), writeSvg);
+    const gen = { source: 'apollo-procedural', script: 'scripts/game101-art-gen.mjs', style: STYLE, servedPath };
+    const ex = ledger.rows.find((r) => (r.skinKey || r.id) === skinKey);
+    if (ex) { ex.status = 'filled'; ex.gen = gen; ex.kind = kind; ex.desc = desc; ex.prompt = prompt; return; }
+    ledger.rows.push({ no: `art-${String(++n).padStart(2, '0')}`, skinKey, kind, desc, prompt, status: 'filled', gen });
+  };
+  for (const h of HUD) {
+    upsert(h.key, 'hud-icon', `HUD·${h.desc}`, `a cute glossy cartoon ${h.desc} icon, cozy candy style, round badge, transparent-ready`, `/games/game101/art/${h.key}.svg`, hudChip(h.emoji, h.c));
+  }
+  // 玩家头像（女主·默认复用立绘 林夏·owner 可替换）
+  upsert('hud_avatar', 'portrait', 'HUD·玩家头像(女主 林夏)', 'cozy 2.5D cartoon portrait of the heroine player avatar, warm palette', '/games/game101/art/portraits/linxia.svg', null);
+}
+
 ledger.updatedAt = ledger.updatedAt || undefined; // 保留原字段·不注入时间戳（脚本确定性）
 writeFileSync(ledgerPath, JSON.stringify(ledger, null, 2) + '\n');
-console.error('[game101-art-gen] wrote', made.length, 'svg + 回写台账', made.length, '行 filled');
+console.error('[game101-art-gen] wrote', made.length, 'svg + 4 HUD 图标 + 台账回写');

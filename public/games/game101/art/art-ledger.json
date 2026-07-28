@@ -2147,6 +2147,76 @@
         "style": "cozy-cartoon portrait",
         "servedPath": "/games/game101/art/portraits/aya.svg"
       }
+    },
+    {
+      "no": "art-55",
+      "skinKey": "hud_energy",
+      "kind": "hud-icon",
+      "desc": "HUD·体力图标",
+      "prompt": "a cute glossy cartoon 体力图标 icon, cozy candy style, round badge, transparent-ready",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/hud_energy.svg"
+      }
+    },
+    {
+      "no": "art-56",
+      "skinKey": "hud_coins",
+      "kind": "hud-icon",
+      "desc": "HUD·金币图标",
+      "prompt": "a cute glossy cartoon 金币图标 icon, cozy candy style, round badge, transparent-ready",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/hud_coins.svg"
+      }
+    },
+    {
+      "no": "art-57",
+      "skinKey": "hud_gems",
+      "kind": "hud-icon",
+      "desc": "HUD·宝石图标",
+      "prompt": "a cute glossy cartoon 宝石图标 icon, cozy candy style, round badge, transparent-ready",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/hud_gems.svg"
+      }
+    },
+    {
+      "no": "art-58",
+      "skinKey": "hud_cart",
+      "kind": "hud-icon",
+      "desc": "HUD·商店车图标",
+      "prompt": "a cute glossy cartoon 商店车图标 icon, cozy candy style, round badge, transparent-ready",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/hud_cart.svg"
+      }
+    },
+    {
+      "no": "art-59",
+      "skinKey": "hud_avatar",
+      "kind": "portrait",
+      "desc": "HUD·玩家头像(女主 林夏)",
+      "prompt": "cozy 2.5D cartoon portrait of the heroine player avatar, warm palette",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-procedural",
+        "script": "scripts/game101-art-gen.mjs",
+        "style": "gossip-harbor cozy candy cartoon (glossy)",
+        "servedPath": "/games/game101/art/portraits/linxia.svg"
+      }
     }
   ]
 }
