@@ -149,20 +149,41 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   ];
   const hasTime = cfg.resource === 'time' || cfg.resource === 'both';
   const hasAmmo = cfg.resource === 'ammo' || cfg.resource === 'both';
-  // ── 真 3D 炮台（世界固定·置于左下角前方·子弹从炮口打出·owner）──
-  const CANNON_BASE: [number, number, number] = [-MAXC * 1.5, -MAXC * 1.25, MAXC * 1.85];
-  const _cl = Math.hypot(CANNON_BASE[0], CANNON_BASE[1], CANNON_BASE[2]) || 1;
-  const cdir: [number, number, number] = [-CANNON_BASE[0] / _cl, -CANNON_BASE[1] / _cl, -CANNON_BASE[2] / _cl]; // 指向立方中心
-  const CANNON_ROTX = -Math.asin(Math.max(-1, Math.min(1, cdir[1]))); // 炮管 +z 轴对齐 cdir（rx 抬俯 + ry 偏航）
+  // 相机参数（buildScene / 投影共用·保持一致）。
+  const CAM_YAW = 0.42, CAM_PITCH = 0.42, CAM_DIST = N * PITCH * 4.5, CAM_FOV = 40;
+  const CAM_PIVOT: [number, number, number] = [0, -MAXC * 0.55, 0];
+  // 画面尺寸（信箱化·早算·供投影/反投影）。
+  const ASPECT = 0.5625; const cw0 = container.clientWidth || 900, ch0 = container.clientHeight || 1400;
+  let fw = Math.round(ch0 * ASPECT), fh = ch0; if (fw > cw0) { fw = cw0; fh = Math.round(cw0 / ASPECT); }
+  // 相机基向量 + 世界↔屏幕投影（与 Camera3D 一致）。
+  const nrm3 = (v: [number, number, number]): [number, number, number] => { const L = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / L, v[1] / L, v[2] / L]; };
+  const cross3 = (a: [number, number, number], b: [number, number, number]): [number, number, number] => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const CAM_EYE: [number, number, number] = [CAM_PIVOT[0] + CAM_DIST * Math.cos(CAM_PITCH) * Math.sin(CAM_YAW), CAM_PIVOT[1] + CAM_DIST * Math.sin(CAM_PITCH), CAM_PIVOT[2] + CAM_DIST * Math.cos(CAM_PITCH) * Math.cos(CAM_YAW)];
+  const CAM_FWD = nrm3([CAM_PIVOT[0] - CAM_EYE[0], CAM_PIVOT[1] - CAM_EYE[1], CAM_PIVOT[2] - CAM_EYE[2]]);
+  const CAM_RIGHT = nrm3(cross3(CAM_FWD, [0, 1, 0]));
+  const CAM_UP = cross3(CAM_RIGHT, CAM_FWD);
+  const CAM_F = 1 / Math.tan((CAM_FOV * Math.PI / 180) / 2);
+  const worldToScreen = (P: [number, number, number]): { x: number; y: number } => {
+    const rel: [number, number, number] = [P[0] - CAM_EYE[0], P[1] - CAM_EYE[1], P[2] - CAM_EYE[2]];
+    const cx = rel[0] * CAM_RIGHT[0] + rel[1] * CAM_RIGHT[1] + rel[2] * CAM_RIGHT[2], cyv = rel[0] * CAM_UP[0] + rel[1] * CAM_UP[1] + rel[2] * CAM_UP[2], cz = rel[0] * CAM_FWD[0] + rel[1] * CAM_FWD[1] + rel[2] * CAM_FWD[2];
+    const d = cz || 1, aspect = fw / fh;
+    return { x: ((cx / d) * (CAM_F / aspect) * 0.5 + 0.5) * fw, y: (0.5 - (cyv / d) * CAM_F * 0.5) * fh };
+  };
+  const screenToWorld = (sx: number, sy: number, depth: number): [number, number, number] => {
+    const aspect = fw / fh, ndcX = 2 * sx / fw - 1, ndcY = 1 - 2 * sy / fh;
+    const cx = ndcX * depth * aspect / CAM_F, cyv = ndcY * depth / CAM_F;
+    return [CAM_EYE[0] + cx * CAM_RIGHT[0] + cyv * CAM_UP[0] + depth * CAM_FWD[0], CAM_EYE[1] + cx * CAM_RIGHT[1] + cyv * CAM_UP[1] + depth * CAM_FWD[1], CAM_EYE[2] + cx * CAM_RIGHT[2] + cyv * CAM_UP[2] + depth * CAM_FWD[2]];
+  };
+  // ── 3D 炮台：反投影 owner 标注的左下角框（相机前某深度）→ 世界位·朝立方中心·子弹从炮口打出 ──
+  const CANNON_BASE = screenToWorld(fw * 0.16, fh * 0.90, CAM_DIST * 0.4);
+  const cdir = nrm3([-CANNON_BASE[0], -CANNON_BASE[1], -CANNON_BASE[2]]); // 指向立方中心(原点)
+  const CANNON_ROTX = -Math.asin(Math.max(-1, Math.min(1, cdir[1]))); // 炮管 +z 对齐 cdir（rx 抬俯 + ry 偏航）
   const CANNON_ROTY = Math.atan2(cdir[0], cdir[2]);
   const BARREL_LEN = MAXC * 0.82;
   const MUZZLE: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN, CANNON_BASE[1] + cdir[1] * BARREL_LEN, CANNON_BASE[2] + cdir[2] * BARREL_LEN];
   const BARREL_CTR: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN * 0.5, CANNON_BASE[1] + cdir[1] * BARREL_LEN * 0.5, CANNON_BASE[2] + cdir[2] * BARREL_LEN * 0.5];
   const TIP_CTR: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN * 0.92, CANNON_BASE[1] + cdir[1] * BARREL_LEN * 0.92, CANNON_BASE[2] + cdir[2] * BARREL_LEN * 0.92];
-  const barrelMesh = (c: number): Record<string, unknown> => ({ shape: 'box', width: PITCH * 0.26, height: PITCH * 0.26, depth: BARREL_LEN, frontTint: shade(PALETTE[c].tint, 1.06), backTint: shade(PALETTE[c].tint, 0.75), edgeTint: shade(PALETTE[c].tint, 0.55) });
-  // 相机参数（buildScene 与 worldToScreen 共用·保持一致）。
-  const CAM_YAW = 0.42, CAM_PITCH = 0.42, CAM_DIST = N * PITCH * 4.5, CAM_FOV = 40;
-  const CAM_PIVOT: [number, number, number] = [0, -MAXC * 0.55, 0];
+  const barrelMesh = (c: number): Record<string, unknown> => ({ shape: 'box', width: PITCH * 0.3, height: PITCH * 0.3, depth: BARREL_LEN, frontTint: shade(PALETTE[c].tint, 1.06), backTint: shade(PALETTE[c].tint, 0.75), edgeTint: shade(PALETTE[c].tint, 0.55) });
 
   // ── 世界生成 ──
   const colorAt = new Map<string, number>();
@@ -239,7 +260,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     entities['sun'] = { Light3D: { kind: 'directional', color: 0xffffff, intensity: 1.15, dirX: -0.45, dirY: -0.9, dirZ: -0.55, castShadow: true } };
     entities['amb'] = { Light3D: { kind: 'ambient', color: 0xa8bce0, intensity: 0.6 } };
     // 3D 炮台（世界固定·不入 pivot）：底座 + 炮管（染当前色·指向立方中心）。
-    entities['cannon-base'] = { Transform3D: { x: CANNON_BASE[0], y: CANNON_BASE[1], z: CANNON_BASE[2] }, Mesh3D: { shape: 'sphere', width: PITCH * 0.66, height: PITCH * 0.66, depth: PITCH * 0.66, frontTint: 0x2c3c56, backTint: 0x2c3c56, edgeTint: 0x16233a } };
+    entities['cannon-base'] = { Transform3D: { x: CANNON_BASE[0], y: CANNON_BASE[1], z: CANNON_BASE[2] }, Mesh3D: { shape: 'sphere', width: PITCH * 1.15, height: PITCH * 1.15, depth: PITCH * 1.15, frontTint: 0x2c3c56, backTint: 0x2c3c56, edgeTint: 0x16233a } };
     entities['cannon-barrel'] = { Transform3D: { x: BARREL_CTR[0], y: BARREL_CTR[1], z: BARREL_CTR[2], rotX: CANNON_ROTX, rotY: CANNON_ROTY }, Mesh3D: barrelMesh(currentColor) as EntityBlueprint['Mesh3D'] };
     entities['cannon-tip'] = { Transform3D: { x: TIP_CTR[0], y: TIP_CTR[1], z: TIP_CTR[2], rotX: CANNON_ROTX, rotY: CANNON_ROTY }, Mesh3D: { shape: 'box', width: PITCH * 0.36, height: PITCH * 0.36, depth: PITCH * 0.18, frontTint: 0x1a2334, backTint: 0x1a2334, edgeTint: 0x0c1220 } };
     return { capabilities: [], entities };
@@ -247,8 +268,6 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
 
   const outer = el('div', 'position:absolute;inset:0;overflow:hidden;background:#060d18;display:flex;align-items:center;justify-content:center;');
   container.appendChild(outer);
-  const ASPECT = 0.5625; const cw = outer.clientWidth || 900, ch = outer.clientHeight || 1400;
-  let fw = Math.round(ch * ASPECT), fh = ch; if (fw > cw) { fw = cw; fh = Math.round(cw / ASPECT); }
   const wrapper = el('div', `position:relative;width:${fw}px;height:${fh}px;overflow:hidden;touch-action:none;background:#0e1a30;`
     + 'background-image:linear-gradient(#ffffff10 1px,transparent 1px),linear-gradient(90deg,#ffffff10 1px,transparent 1px);background-size:48px 48px;box-shadow:0 0 40px #000a;');
   outer.appendChild(wrapper);
@@ -305,22 +324,6 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     const s = Math.min(1, strength);
     wrapper.animate?.([{ transform: 'translate(0,0)' }, { transform: `translate(${6 * s}px,${-5 * s}px)` }, { transform: `translate(${-5 * s}px,${4 * s}px)` }, { transform: 'translate(0,0)' }], { duration: 220 });
     flash.animate?.([{ opacity: 0.55 * s }, { opacity: 0 }], { duration: 300 });
-  };
-  // 世界坐标 → 屏幕像素（与相机参数一致·用于把 3D 炮口投到屏幕：瞄准线起点 + 换色飞入落点）。
-  const worldToScreen = (P: [number, number, number]): { x: number; y: number } => {
-    const cy = Math.cos(CAM_PITCH), sy = Math.sin(CAM_PITCH), cyaw = Math.cos(CAM_YAW), syaw = Math.sin(CAM_YAW);
-    const eye: [number, number, number] = [CAM_PIVOT[0] + CAM_DIST * cy * syaw, CAM_PIVOT[1] + CAM_DIST * sy, CAM_PIVOT[2] + CAM_DIST * cy * cyaw];
-    const nrm = (v: [number, number, number]): [number, number, number] => { const L = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / L, v[1] / L, v[2] / L]; };
-    const fwd = nrm([CAM_PIVOT[0] - eye[0], CAM_PIVOT[1] - eye[1], CAM_PIVOT[2] - eye[2]]);
-    const cr = (a: [number, number, number], b: [number, number, number]): [number, number, number] => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-    const right = nrm(cr(fwd, [0, 1, 0])); const up = cr(right, fwd);
-    const rel: [number, number, number] = [P[0] - eye[0], P[1] - eye[1], P[2] - eye[2]];
-    const cx = rel[0] * right[0] + rel[1] * right[1] + rel[2] * right[2];
-    const cyv = rel[0] * up[0] + rel[1] * up[1] + rel[2] * up[2];
-    const cz = rel[0] * fwd[0] + rel[1] * fwd[1] + rel[2] * fwd[2];
-    const f = 1 / Math.tan((CAM_FOV * Math.PI / 180) / 2), aspect = fw / fh, d = cz || 1;
-    const ndcX = (cx / d) * (f / aspect), ndcY = (cyv / d) * f;
-    return { x: (ndcX * 0.5 + 0.5) * fw, y: (0.5 - ndcY * 0.5) * fh };
   };
   // ── 炮台屏幕投影（瞄准线从真炮口出发·换色飞入落到炮口）──
   const muzzleScreen = worldToScreen(MUZZLE);
