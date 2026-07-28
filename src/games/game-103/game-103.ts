@@ -16,7 +16,7 @@ import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp, COMBO_MIN, type HudState, type LevelUpOffer } from './hud.js';
 import { newlyUnlocked, loadUnlocked, saveUnlocked, type RunStats } from './achievements.js';
 import { recordScore, loadBoard, saveBoard, type ScoreEntry } from './leaderboard.js';
-import { VIEW_W, VIEW_H, PLAYER_DEF, LEVEL_XP, SURVIVOR_THEME, DRAFT_POOL, DRAFT_N, SLOT_CAP, WEAPONS, WEAPON_BY_KEY, TPS } from './theme.js';
+import { VIEW_W, VIEW_H, PLAYER_DEF, LEVEL_XP, SURVIVOR_THEME, DRAFT_POOL, DRAFT_N, SLOT_CAP, WEAPONS, WEAPON_BY_KEY, TPS, DRAFT_ICON } from './theme.js';
 
 // 战场底纹（暗色渐晕·render-only·屏幕固定）。BUG-01 修：移除原屏幕固定网格线（相机跟随时看着静止=像没动）；
 // 地砖网格改由世界空间实体承载（blueprint groundGridEntities·随相机卷动=相对位移）。
@@ -105,12 +105,12 @@ export function mount(container: HTMLElement): () => void {
     const items: LevelUpOffer[] = [];
     if (ready.length > 0) { // 进化就绪 → 金卡置顶（挤掉一张普通卡·保 3 张）
       const w = ready[0];
-      items.push({ id: `evo-${w.key}`, name: WEAPON_BY_KEY[w.evo!.to].name, desc: WEAPON_BY_KEY[w.evo!.to].desc, accent: 'active', level: w.maxLevel, max: w.maxLevel, isNew: false, action: `evo_${w.key}`, isEvo: true });
+      items.push({ id: `evo-${w.key}`, name: WEAPON_BY_KEY[w.evo!.to].name, desc: WEAPON_BY_KEY[w.evo!.to].desc, accent: 'active', level: w.maxLevel, max: w.maxLevel, isNew: false, action: `evo_${w.key}`, icon: DRAFT_ICON[w.evo!.to] ?? '🌀', isEvo: true });
     }
     for (const c of offers.slice(0, DRAFT_N - items.length)) {
       const u = DRAFT_POOL.find((d) => d.id === c.id)!;
       const lvl = draftState.owned[c.id] ?? 0;
-      items.push({ id: u.id, name: u.name, desc: u.desc, accent: u.accent, level: lvl, max: u.maxLevel, isNew: lvl === 0, action: u.effectSignal });
+      items.push({ id: u.id, name: u.name, desc: u.desc, accent: u.accent, level: lvl, max: u.maxLevel, isNew: lvl === 0, action: u.effectSignal, icon: u.icon });
     }
     hudUi.update(buildLevelUp(items), SURVIVOR_THEME);
   }

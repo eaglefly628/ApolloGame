@@ -153,8 +153,16 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(validateLayoutNode(buildHud({ ...st, combo: 12, comboFlash: 1 }))).toEqual([]); // 连杀横幅态也零 issue
     expect(validateLayoutNode(buildResult({ ...st, status: 'victory' }))).toEqual([]);
     expect(validateLayoutNode(buildResult({ ...st, status: 'defeat' }))).toEqual([]);
-    const offers = DRAFT_POOL.slice(0, 3).map((u) => ({ id: u.id, name: u.name, desc: u.desc, accent: u.accent, level: 1, max: u.maxLevel, isNew: false, action: u.effectSignal }));
+    const offers = DRAFT_POOL.slice(0, 3).map((u) => ({ id: u.id, name: u.name, desc: u.desc, accent: u.accent, level: 1, max: u.maxLevel, isNew: false, action: u.effectSignal, icon: u.icon }));
     expect(validateLayoutNode(buildLevelUp(offers))).toEqual([]);
+    // 升级卡图标（owner「纯色块换成有意义的图」）：每张卡的图标徽章渲染 emoji（非空色块）
+    const luTree = buildLevelUp(offers);
+    const emo: string[] = [];
+    const walkE = (n: LayoutNode): void => { if (n.id?.endsWith('-ico-e') && n.props) emo.push(String((n.props as Record<string, unknown>).text)); (n.children ?? []).forEach(walkE); };
+    walkE(luTree);
+    expect(emo.length).toBe(3);                          // 三张卡各一枚 emoji 图标
+    expect(emo.every((e) => e && e.length > 0)).toBe(true);
+    expect(DRAFT_POOL.every((u) => u.icon && u.icon.length > 0)).toBe(true); // 全候选都有图标
   });
 
   it('连杀横幅（owner「1 秒内杀 5+=连杀·左右上角闪动态数字」）：<门槛不显·达门槛左右两角大数字·随连杀数放大·闪换色', () => {

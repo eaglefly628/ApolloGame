@@ -281,13 +281,21 @@ export interface UpgradeDef {
   weight: number; maxLevel: number;
   effectSignal: string;
   accent: 'active' | 'passive';
+  icon: string; // 三选一卡图标 emoji（owner「纯色块换成有意义的图」·按武器/被动语义）
 }
+// 升级卡图标集（emoji·同敌人 twemoji 图形语言）：武器按射法/形态、被动按效果轴——一眼认出这张卡是什么。
+export const DRAFT_ICON: Record<string, string> = {
+  // 武器
+  kunai: '🔪', shock: '💥', laser: '⚡', boom: '🪃', orbit: '💫', pet: '🐺', bomb: '💣', missile: '🚀', orbitevo: '🌀',
+  // 被动
+  blade: '🗡️', crit: '🎯', heart: '❤️', vigor: '💗', swift: '👟', magnet: '🧲', fort: '🛡️', might: '💪',
+};
 export const DRAFT_POOL: UpgradeDef[] = [
   ...WEAPONS.filter((w) => w.key !== 'kunai').map((w): UpgradeDef => ({
-    id: w.key, name: w.name, desc: w.desc, slot: 'weapon', weight: w.weight, maxLevel: w.maxLevel, effectSignal: `pick_${w.key}`, accent: 'active',
+    id: w.key, name: w.name, desc: w.desc, slot: 'weapon', weight: w.weight, maxLevel: w.maxLevel, effectSignal: `pick_${w.key}`, accent: 'active', icon: DRAFT_ICON[w.key] ?? '⭐',
   })),
   ...PASSIVES.map((p): UpgradeDef => ({
-    id: p.key, name: p.name, desc: p.desc, slot: 'passive', weight: p.weight, maxLevel: p.maxLevel, effectSignal: `pick_${p.key}`, accent: 'passive',
+    id: p.key, name: p.name, desc: p.desc, slot: 'passive', weight: p.weight, maxLevel: p.maxLevel, effectSignal: `pick_${p.key}`, accent: 'passive', icon: DRAFT_ICON[p.key] ?? '⭐',
   })),
 ];
 export const DRAFT_N = 3;                 // 三选一

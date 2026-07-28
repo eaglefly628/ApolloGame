@@ -151,6 +151,7 @@ export interface LevelUpOffer {
   id: string; name: string; desc: string;
   accent: 'active' | 'passive'; // 红=主动/武器·蓝=被动
   level: number; max: number; isNew: boolean; action: string;
+  icon?: string; // 卡图标 emoji（owner「纯色块换成有意义的图」·缺省回退色块）
   isEvo?: boolean; // 进化=金框高亮卡（.dc.html SC-3 evochoice）
 }
 function offerCard(o: LevelUpOffer): LayoutNode {
@@ -163,7 +164,9 @@ function offerCard(o: LevelUpOffer): LayoutNode {
     children: [
       { type: 'Label', id: `c-${o.id}-n`, props: { text: o.name, font: 'heavy', size: 14, color: nameColor, bold: true, stroke: true } },
       { type: 'Label', id: `c-${o.id}-t`, props: { text: o.isEvo ? '⚡进化' : o.isNew ? 'New' : 'Level Up', size: 11, bold: true, color: o.isEvo ? 'gold' : o.isNew ? 'ok' : 'gold' } },
-      { type: 'Panel', id: `c-${o.id}-ico`, props: { bg: { custom: hue } }, layout: { width: 56, height: 56, radius: 14 } },
+      // 图标徽章：彩底 + 语义 emoji（owner「纯色块换成有意义的图」·缺省无 emoji=退回纯色块）
+      { type: 'Panel', id: `c-${o.id}-ico`, props: { bg: { custom: hue } }, layout: { width: 56, height: 56, radius: 14, align: 'center', justify: 'center' },
+        children: o.icon ? [{ type: 'Label', id: `c-${o.id}-ico-e`, props: { text: o.icon, size: 32 } }] : [] },
       { type: 'Label', id: `c-${o.id}-d`, props: { text: o.desc, size: 11, color: o.isEvo ? 'text' : 'ink' } },
       // 等级展示：有限段位(≤6)用星星；无上限/大段位被动(如 might maxLevel 999)用数值 —— 否则 Rating 渲 999 颗星撑爆屏幕（owner 报 bug）。
       o.max > 6
