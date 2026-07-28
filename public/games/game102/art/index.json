@@ -429,6 +429,43 @@
         "generator": "scripts/game-102-cell-icon-gen.mjs",
         "note": "deterministic; zero external assets/network; transparent-background white-symbol texture used as emissiveMap on 3D voxel cell faces (transparent/black = no glow = cube palette color shows; white symbol = glows)"
       }
+    },
+    {
+      "id": "model/cannon",
+      "type": "mesh",
+      "description": "卡通加农炮 3D 模型（GLB）· 程序化生成 · 圆润炮管+敦实底座+侧轮 · 替换盒子拼的临时炮台。接线约定：前向轴=+Z（炮口沿 local +Z 出膛）；原点=底座中心/旋转支点（底面/轮胎落 y=0）；muzzle(炮口)local=[0, 0.802, 1.013]；4 个命名节点 carriage/barrel/wheel_l/wheel_r，barrel 为浅中性底色可单独 tint 染色（乘法读真色）。",
+      "status": "filled",
+      "path": "/games/game102/art/cannon.glb",
+      "category": "mesh.cannon",
+      "tags": [
+        "cannon",
+        "model",
+        "glb",
+        "3d",
+        "cartoon",
+        "game102",
+        "proto"
+      ],
+      "style": "cartoon",
+      "license": "CC0",
+      "source": "procedural (scripts/game-102-cannon-model-gen.mjs)",
+      "spec": {
+        "scale": 34,
+        "genCollision": "none"
+      },
+      "provenance": {
+        "method": "procedural-glTF (cylinderZ/torusZ + trapezoid carriage + side wheels, per-part PBR baseColorFactor, zero external assets/network)",
+        "generator": "scripts/game-102-cannon-model-gen.mjs",
+        "forwardAxis": "+Z",
+        "origin": "base center / rotation pivot; sits on y=0 (wheels+carriage ground)",
+        "muzzleLocal": [0, 0.802, 1.013],
+        "nodes": ["carriage", "barrel", "wheel_l", "wheel_r"],
+        "tintTarget": "barrel node (light neutral baseColor #dbe0eb so multiplicative tint reads true); carriage=cream #fadc8c, wheels=deep purple #5c4776",
+        "triangles": 1676,
+        "bboxUnits": { "x": 1.39, "y": 1.162, "z": 1.615 },
+        "scaleNote": "scale 34 → 约 1.6 体素长(z·1.615*34≈55, PITCH=33)/~1.2 体素高；1.5~2 体素区间可用 31~41，restingTiltX=-0.12rad 上扬姿态",
+        "note": "deterministic; CC0 (纯我方程序化几何·无外部素材·无网络)"
+      }
     }
   ]
 }

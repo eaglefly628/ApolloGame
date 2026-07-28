@@ -10,7 +10,7 @@ import { QueuedInputSource } from '@net/index.js';
 import { ThreeRenderer } from '@renderer/three-renderer.js';
 import type { WorldBlueprint, EntityBlueprint } from '../../assembly/demo.assembly.js';
 import type { Transform3D, Pivot3D } from '@engine/protocol/components.js';
-import { AssetManager, ImageAssetLoader, registerAssetIndex, parseAssetIndex } from '@assets/index.js';
+import { AssetManager, ImageAssetLoader, ModelAssetLoader, registerAssetIndex, parseAssetIndex } from '@assets/index.js';
 
 const PITCH = 33, VOX = 33; // 体素尺寸固定（立方随 N 变大·相机距离按 N 缩放 → 屏上观感一致）
 const FACE_MS = 6000;     // 每面总停留（含换色窗 + 开火窗）
@@ -174,16 +174,13 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     const cx = ndcX * depth * aspect / CAM_F, cyv = ndcY * depth / CAM_F;
     return [CAM_EYE[0] + cx * CAM_RIGHT[0] + cyv * CAM_UP[0] + depth * CAM_FWD[0], CAM_EYE[1] + cx * CAM_RIGHT[1] + cyv * CAM_UP[1] + depth * CAM_FWD[1], CAM_EYE[2] + cx * CAM_RIGHT[2] + cyv * CAM_UP[2] + depth * CAM_FWD[2]];
   };
-  // ── 3D 炮台：反投影 owner 标注的左下角框（相机前某深度）→ 世界位·朝立方中心·子弹从炮口打出 ──
-  const CANNON_BASE = screenToWorld(fw * 0.2, fh * 0.85, CAM_DIST * 0.44); // 左下·稍内收上移·更协调（旋钮：屏幕锚 x/y + 深度）
+  // ── 3D 炮台（真 glTF 模型 model/cannon·CC0）：反投影 owner 标注的左下角框 → 世界位·直立(轮子着地)·偏航面向立方·子弹从模型炮口出 ──
+  const CANNON_BASE = screenToWorld(fw * 0.2, fh * 0.85, CAM_DIST * 0.44); // 左下（旋钮：屏幕锚 x/y + 深度）
   const cdir = nrm3([-CANNON_BASE[0], -CANNON_BASE[1], -CANNON_BASE[2]]); // 指向立方中心(原点)
-  const CANNON_ROTX = -Math.asin(Math.max(-1, Math.min(1, cdir[1]))); // 炮管 +z 对齐 cdir（rx 抬俯 + ry 偏航）
-  const CANNON_ROTY = Math.atan2(cdir[0], cdir[2]);
-  const BARREL_LEN = MAXC * 0.82;
-  const MUZZLE: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN, CANNON_BASE[1] + cdir[1] * BARREL_LEN, CANNON_BASE[2] + cdir[2] * BARREL_LEN];
-  const BARREL_CTR: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN * 0.5, CANNON_BASE[1] + cdir[1] * BARREL_LEN * 0.5, CANNON_BASE[2] + cdir[2] * BARREL_LEN * 0.5];
-  const TIP_CTR: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN * 0.92, CANNON_BASE[1] + cdir[1] * BARREL_LEN * 0.92, CANNON_BASE[2] + cdir[2] * BARREL_LEN * 0.92];
-  const barrelMesh = (c: number): Record<string, unknown> => ({ shape: 'box', width: PITCH * 0.3, height: PITCH * 0.3, depth: BARREL_LEN, frontTint: shade(PALETTE[c].tint, 1.06), backTint: shade(PALETTE[c].tint, 0.75), edgeTint: shade(PALETTE[c].tint, 0.55) });
+  const CANNON_YAW = Math.atan2(cdir[0], cdir[2]); // 仅偏航（模型直立·炮管自带静止仰角）
+  const MODEL_SCALE = 34; // asset-manager 建议（≈1.6 体素长）
+  const ML: [number, number, number] = [0, 0.802, 1.013]; // 模型局部炮口偏移（asset-manager 提供）
+  const MUZZLE: [number, number, number] = [CANNON_BASE[0] + ML[2] * MODEL_SCALE * Math.sin(CANNON_YAW), CANNON_BASE[1] + ML[1] * MODEL_SCALE, CANNON_BASE[2] + ML[2] * MODEL_SCALE * Math.cos(CANNON_YAW)];
 
   // ── 世界生成 ──
   const colorAt = new Map<string, number>();
@@ -259,10 +256,8 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     entities['sky'] = { Sky3D: { top: 0x0c1730, bottom: 0x14243f, env: 0.5 } };
     entities['sun'] = { Light3D: { kind: 'directional', color: 0xffffff, intensity: 1.15, dirX: -0.45, dirY: -0.9, dirZ: -0.55, castShadow: true } };
     entities['amb'] = { Light3D: { kind: 'ambient', color: 0xa8bce0, intensity: 0.6 } };
-    // 3D 炮台（世界固定·不入 pivot）：底座 + 炮管（染当前色·指向立方中心）。
-    entities['cannon-base'] = { Transform3D: { x: CANNON_BASE[0], y: CANNON_BASE[1], z: CANNON_BASE[2] }, Mesh3D: { shape: 'sphere', width: PITCH * 1.15, height: PITCH * 1.15, depth: PITCH * 1.15, frontTint: 0x2c3c56, backTint: 0x2c3c56, edgeTint: 0x16233a } };
-    entities['cannon-barrel'] = { Transform3D: { x: BARREL_CTR[0], y: BARREL_CTR[1], z: BARREL_CTR[2], rotX: CANNON_ROTX, rotY: CANNON_ROTY }, Mesh3D: barrelMesh(currentColor) as EntityBlueprint['Mesh3D'] };
-    entities['cannon-tip'] = { Transform3D: { x: TIP_CTR[0], y: TIP_CTR[1], z: TIP_CTR[2], rotX: CANNON_ROTX, rotY: CANNON_ROTY }, Mesh3D: { shape: 'box', width: PITCH * 0.36, height: PITCH * 0.36, depth: PITCH * 0.18, frontTint: 0x1a2334, backTint: 0x1a2334, edgeTint: 0x0c1220 } };
+    // 3D 炮台（真 glTF 模型·世界固定·不入 pivot·直立面向立方）。
+    entities['cannon'] = { Transform3D: { x: CANNON_BASE[0], y: CANNON_BASE[1], z: CANNON_BASE[2], rotY: CANNON_YAW }, Model3D: { modelKey: 'model/cannon', scale: MODEL_SCALE } } as unknown as EntityBlueprint;
     return { capabilities: [], entities };
   };
 
@@ -274,8 +269,9 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
 
   const engine = new Engine({ input: new QueuedInputSource('g102p') });
   engine.load(buildScene());
-  // 功能格图标贴图资产（异步·就绪后 assetReady 触发重渲上屏·未就绪=纯色底盒回退·不炸）。
-  const assets = new AssetManager(new ImageAssetLoader());
+  // 资产（功能格图标 image + 炮台 glTF model）：按 descriptor.kind 路由 loader（异步就绪触发重渲）。
+  const imgLoader = new ImageAssetLoader(), modelLoader = new ModelAssetLoader();
+  const assets = new AssetManager({ load: (d) => (d.kind === 'model' ? modelLoader.load(d) : imgLoader.load(d)) });
   void (async () => { try { const r = await fetch('/games/game102/art/index.json', { cache: 'no-store' }); if (!r.ok) return; registerAssetIndex(assets, parseAssetIndex(await r.json())); await assets.loadAll(); } catch { /* 无美术目录 → 回退纯色底盒·不炸 */ } })();
   const renderer = new ThreeRenderer({ width: fw, height: fh, background: 0x0e1a30, antialias: true, dprCap: 1.5, shadowMapSize: 1024, assets });
   engine.attachRenderer(renderer, wrapper);
@@ -387,7 +383,6 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
 
   const setColor = (c: number): void => {
     currentColor = c; refresh(); cubeWraps[c].animate?.([{ transform: 'scale(1.4) translateY(-6px)' }, { transform: 'scale(1.24) translateY(-6px)' }], { duration: 200 }); loadFx(c);
-    engine.world.removeComponent('cannon-barrel', 'Mesh3D'); engine.world.addComponent('cannon-barrel', { type: 'Mesh3D', ...barrelMesh(c) } as never); // 3D 炮管染当前色
   };
   const refresh = (): void => {
     cubeWraps.forEach((w, c) => {
