@@ -13,7 +13,7 @@ export function buildS1(): LayoutNode {
 }
 
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
-export interface CellView { emoji: string; skin?: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number; coverReward?: string; coverSkin?: string; bubble?: { itemEmoji: string; cost: number; id: string }; starLock?: { needStars: number }; cd?: number; cdMax?: number } // skin=皮肤槽美术图 URL(就绪即换装·空则回退 emoji)·bubble=泡泡锁·starLock=星锁区·cd=生成器冷却剩余秒
+export interface CellView { emoji: string; skin?: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number; coverReward?: string; coverSkin?: string; bubble?: { itemEmoji: string; cost: number; id: string }; starLock?: { needStars: number }; cd?: number; cdMax?: number; cdProg?: number } // skin=皮肤槽美术图 URL(就绪即换装·空则回退 emoji)·bubble=泡泡锁·starLock=星锁区·cd=生成器冷却剩余秒
 export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
 export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; timed?: boolean; timeLeft?: number; portrait?: string; fly?: { id: string; label: string }; celebrate?: boolean }
 export interface S1State {
@@ -376,7 +376,7 @@ function board(s: S1State): N {
           type: 'Panel', id: `t-live-${i}-cdw`, props: { bare: true },
           layout: { width: 96, height: 96, align: 'center', justify: 'center', allowOverlap: true },
           children: [
-            { type: 'ProgressBar', id: `t-live-${i}-cd`, props: { shape: 'ring', value: cv.cd, max: cv.cdMax ?? cv.cd, tone: 'ok', size: 96 }, layout: { x: 0, y: 0, allowOverlap: true } },
+            { type: 'ProgressBar', id: `t-live-${i}-cd`, props: { shape: 'ring', value: cv.cdProg ?? 0, max: 1, tone: 'ok', size: 96 }, layout: { x: 0, y: 0, allowOverlap: true } },
             // 数字包一层绝对定位居中壳（定位元素→绘于绝对定位 ring 之上·否则被 ring 盖住看不见）·Baloo2 艺术字。
             { type: 'Panel', id: `t-live-${i}-cdnw`, props: { bare: true }, layout: { x: 0, y: 0, width: 96, height: 96, align: 'center', justify: 'center', allowOverlap: true }, children: [{ type: 'Label', id: `t-live-${i}-cdn`, props: { text: `${cv.cd}`, size: 46, bold: true, color: 'jade' } }] },
           ],

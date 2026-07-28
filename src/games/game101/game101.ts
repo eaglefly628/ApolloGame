@@ -133,11 +133,15 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
     });
     // ③ 生成器：只在**未被覆盖/非泡泡**的格摆出；冷却中显 ⏱剩余秒（G4·CD·charge<满=冷却中·剩余读 cd 计时器）。
     const timerLeft = (tid: string): number => { for (const [eid] of w.query('Timer')) { const t = w.getComponent<Timer>(eid, 'Timer'); if (t && t.id === tid) return Math.max(0, Math.ceil((t.duration - t.elapsed) / TICKS_PER_SEC)); } return 0; };
+    // 冷却计时器的**分数进度**（remaining/duration·0..1）→ 圆环连续收缩(owner：连续减少·仿 game-i 逐帧驱动进度)。
+    const timerFrac = (tid: string): number => { for (const [eid] of w.query('Timer')) { const t = w.getComponent<Timer>(eid, 'Timer'); if (t && t.id === tid) return t.duration > 0 ? Math.max(0, Math.min(1, (t.duration - t.elapsed) / t.duration)) : 0; } return 0; };
     for (const g of GENERATORS) {
       if (coveredCells.has(g.cell) || cells[g.cell]) continue;
-      const cd = (g.cooldownSec ?? 0) > 0 && res(`charge_${g.id}`) < 1 ? timerLeft(`cd_${g.id}`) : undefined;
+      const cooling = (g.cooldownSec ?? 0) > 0 && res(`charge_${g.id}`) < 1;
+      const cd = cooling ? timerLeft(`cd_${g.id}`) : undefined;
+      const cdProg = cooling ? timerFrac(`cd_${g.id}`) : undefined;
       const gsk = skinMap[g.sprite];
-      cells[g.cell] = { emoji: g.emoji, gen: g.id, ...(gsk ? { skin: gsk } : {}), ...(cd ? { cd, cdMax: g.cooldownSec } : {}) };
+      cells[g.cell] = { emoji: g.emoji, gen: g.id, ...(gsk ? { skin: gsk } : {}), ...(cd ? { cd, cdMax: g.cooldownSec, cdProg } : {}) };
     }
     const onBoard = new Set<string>(); // 板上现有的物品模板集（订单可交付判定）
     const cellTpl: (string | null)[] = new Array(cells.length).fill(null);
@@ -379,7 +383,7 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       return;
     }
     lastCoins = coins;
-    const sig = `${Math.round(st.energy)}|${st.energyRegen ?? ''}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '') + (c?.timer != null ? `t${c.timer}` : '') + (c?.cover != null ? `k${c.cover}` : '') + (c?.cd != null ? `d${c.cd}` : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('') + o.moodFace + (o.timeLeft ?? '')).join('|')}`;
+    const sig = `${Math.round(st.energy)}|${st.energyRegen ?? ''}|${coins}|${st.cells.map((c) => (c ? c.emoji : '') + (c?.gen ?? '') + (c?.deliverable ? '✓' : '') + (c?.timer != null ? `t${c.timer}` : '') + (c?.cover != null ? `k${c.cover}` : '') + (c?.cd != null ? `d${Math.round((c.cdProg ?? 0) * 48)}` : '')).join(',')}|${st.orders.map((o) => o.slots.map((sl) => (sl.filled ? 'F' : sl.want ? 'W' : '.')).join('') + o.moodFace + (o.timeLeft ?? '')).join('|')}`;
     if (sig !== lastSig) { lastSig = sig; paint(st); }
   });
 
