@@ -180,7 +180,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   const cdir = nrm3([-CANNON_BASE[0], -CANNON_BASE[1], -CANNON_BASE[2]]); // 指向立方中心(原点)
   const CANNON_YAW = Math.atan2(cdir[0], cdir[2]); // 仅偏航（模型直立·炮管自带静止仰角）
   const MODEL_SCALE = 17; // 再小一倍（owner）
-  const ML: [number, number, number] = [0, 0.802, 1.013]; // 模型局部炮口偏移（asset-manager 提供）
+  const ML: [number, number, number] = [0, 1.102, 1.013]; // 模型局部炮口偏移（asset-manager 提供·炮筒上抬后 Y+0.30）
   const MUZZLE: [number, number, number] = [CANNON_BASE[0] + ML[2] * MODEL_SCALE * Math.sin(CANNON_YAW), CANNON_BASE[1] + ML[1] * MODEL_SCALE, CANNON_BASE[2] + ML[2] * MODEL_SCALE * Math.cos(CANNON_YAW)];
 
   // ── 世界生成 ──

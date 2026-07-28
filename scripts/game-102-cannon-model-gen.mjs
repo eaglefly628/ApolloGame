@@ -173,6 +173,9 @@ function mergeGeo(list) {
 // ── 组装各部件（每部件 = 一个 node/mesh/primitive·独立材质与颜色）──
 const AXIS_Y = 0.52;   // 炮管轴心高度
 const TILT = -0.12;    // 轻微抬头（rad·负值 = 炮口上扬的休息姿态）
+// 炮管整体（含黄铜箍/炮口圈）沿 +Y 上抬量：让透明玻璃炮筒清爽架在底座上方·不再插进底座。
+// 约 0.30 ≈ 一个炮管半径 / 半个直径量级。muzzle 局部 Y 随之增大（见 computeMuzzle）。
+const BARREL_LIFT = 0.30;
 
 // 炮管主体：略胖圆柱 + 后膛球台 + 炮口加粗段（金属钢·中性色可 tint）。
 // seg 提到 28 让侧面更圆润·线条干净。
@@ -185,6 +188,7 @@ function barrelGeo() {
   const g = mergeGeo([breech, knob, body, muzzle]);
   translate(g, 0, AXIS_Y, 0);
   tiltX(g, TILT, AXIS_Y, 0.0);
+  translate(g, 0, BARREL_LIFT, 0);   // 整体上抬·脱离底座
   return g;
 }
 // 黄铜装饰环：炮口圈 + 前段加强箍 + 后膛箍（独立节点·固定金色·不参与 tint·点亮精致感）。
@@ -195,6 +199,7 @@ function barrelTrimGeo() {
   const g = mergeGeo([breechBand, frontBand, muzzleRim]);
   translate(g, 0, AXIS_Y, 0);
   tiltX(g, TILT, AXIS_Y, 0.0);
+  translate(g, 0, BARREL_LIFT, 0);   // 与炮管同步上抬
   return g;
 }
 // 车轮（侧面·带轮毂盖）
@@ -216,7 +221,7 @@ function rotateYaxis90(g) { // 绕 Y +90°：(x,y,z)->(z,y,-x)
 // 部件表：name / geo / baseColor(RGB 0..1) / metallic / roughness / opts?
 //   opts = { alpha?, alphaMode?, transmission? } —— 透明/玻璃质感专用（缺省 = 不透明金属/材质）。
 // 材质设计：
-//   carriage    = 深青铜金属 #6E4A2F（磨砂金属·不发白·与黄铜箍/青铜轮同族更搭·撑质感）；
+//   carriage    = 青铜金属 #B87333（metalness=1·roughness=0.35·与车轮完全同材质·统一底座+轮子）；
 //   barrel      = 半透明玻璃 —— 淡青玻璃色 + alphaMode BLEND + baseColor alpha≈0.45（保底看得见透）；
 //                 同时挂 KHR_materials_transmission（transmission 0.85 · ior 1.5）——渲染器若支持透射即真玻璃，
 //                 不支持则退回 alpha BLEND 混色，二者都能呈现透明感。玻璃低粗糙(0.06)出干净高光。
@@ -227,9 +232,9 @@ const BRASS = [0.906, 0.760, 0.490];   // #E7C27D
 const BRONZE = [0.722, 0.451, 0.200];  // #B87333
 const DARK_BRONZE = [0.431, 0.290, 0.184]; // #6E4A2F 深青铜（底座·不发白）
 const GLASS = [0.72, 0.86, 0.90];      // #B8DBE6 淡青玻璃色
-void STEEL;
+void STEEL; void DARK_BRONZE;
 const PARTS = [
-  ['carriage', carriageBody(), DARK_BRONZE, 0.85, 0.45],        // 深青铜磨砂金属底座（不发白）
+  ['carriage', carriageBody(), BRONZE, 1.0, 0.35],             // 青铜金属底座（与车轮同材质·统一）
   ['barrel', barrelGeo(), GLASS, 0.0, 0.06,                     // 半透明玻璃炮管
     { alpha: 0.45, alphaMode: 'BLEND', transmission: 0.85, ior: 1.5 }],
   ['barrel_trim', barrelTrimGeo(), BRASS, 1.0, 0.22],           // 黄铜装饰箍（不透明金属·固定金色）
@@ -250,7 +255,7 @@ function groundAll(parts) {
 function computeMuzzle(dy) {
   const s = Math.sin(TILT), c = Math.cos(TILT);
   const y0 = AXIS_Y, z0 = 1.02;
-  const y = AXIS_Y + (y0 - AXIS_Y) * c - z0 * s + dy;
+  const y = AXIS_Y + (y0 - AXIS_Y) * c - z0 * s + BARREL_LIFT + dy;
   const z = (y0 - AXIS_Y) * s + z0 * c;
   return [0, y, z];
 }
