@@ -304,23 +304,21 @@ function board(s: S1State): N {
     if (cv?.cover != null) {
       const ck: N[] = [];
       const hasSkin = !!cv.coverSkin;
-      // 埋物 = 铺满整格的底图（Panel.skin cover）+ 全格磨砂玻璃罩（backdrop-blur + 半透沙色）→「整格隔着磨砂沙
-      // 玻璃看埋物」·owner：要真磨砂·别小方块+大片实心沙。frost 模糊底图 item·💥N 叠其上。
-      if (hasSkin) {
-        ck.push({ type: 'Panel', id: `t-live-${i}-frost`, props: { bg: { custom: 'rgba(180,137,90,0.34)' }, glass: true }, layout: { x: 0, y: 0, width: CELL_W, height: 128, radius: 16, allowOverlap: true } });
-      } else if (cv.coverReward) {
+      // owner 正解：埋物本体**清楚**（整格铺满底图·不磨砂）；解锁数 💥N 的**底板**才半透明（磨砂玻璃）叠其上。
+      // 无皮埋物（资源 ⚡/💎/🎁 / 蛛网）仍旧显 emoji。
+      if (!hasSkin && cv.coverReward) {
         ck.push({ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 40 }, layout: { opacity: 0.4 } });
-      } else if (cv.cover <= 1) {
+      } else if (!hasSkin && cv.cover <= 1) {
         ck.push({ type: 'Label', id: `t-live-${i}-web`, props: { text: '🕸️', size: 40 }, layout: { opacity: 0.4 } });
       }
-      // 「还要炸几次解锁」= 主视觉·金牌大号 💥N（尺寸收进格内·不溢出 grid 框·owner：数字要在方框里）。
+      // 「还要炸几次解锁」= 半透明磨砂底板 + 💥N（底板半透·让下方埋物透出·owner：爆炸图标底应半透明·别倒过来）。
       ck.push({
-        type: 'Panel', id: `t-live-${i}-lk`, props: { bg: 'gold' },
-        layout: { align: 'center', justify: 'center', padding: 5, radius: 14 },
-        children: [{ type: 'Label', id: `t-live-${i}-lkn`, props: { text: `💥${cv.cover}`, size: 34, bold: true, color: 'ink' } }],
+        type: 'Panel', id: `t-live-${i}-lk`, props: { bg: { custom: 'rgba(28,20,12,0.42)' }, glass: true },
+        layout: { align: 'center', justify: 'center', padding: 6, radius: 14 },
+        children: [{ type: 'Label', id: `t-live-${i}-lkn`, props: { text: `💥${cv.cover}`, size: 34, bold: true, color: 'gold' } }],
       });
       return {
-        // 有埋物 → 整格底 = 埋物图(skin cover·铺满)·frost 磨砂其上；无埋物 → 纯沙色底。
+        // 有埋物 → 整格底 = 埋物清晰底图(skin cover·铺满·不磨砂)；无埋物 → 纯沙色底。
         type: 'Panel', id: `t-live-${i}`, props: hasSkin ? { skin: cv.coverSkin } : { bg: { custom: COVER_BG } },
         layout: { direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 6, radius: 16, height: 128, allowOverlap: true },
         children: [...ck, ...dissolve],
@@ -351,10 +349,18 @@ function board(s: S1State): N {
       } as N;
     }
     if (cv) {
-      // 生成器冷却（G4）：格内唯一居中倒计时圆环（cell 天然 align/justify center → 稳居中·基座 ProgressBar
-      // shape:'ring'·conic 弧随剩余秒收缩·中心显剩余秒）。冷却中不渲生成器图·避免叠层/偏心。
+      // 生成器冷却（G4）：格内居中**绿色**可爱倒计时圆环 + 艺术字数字（owner）。ring 只画绿弧(不用其 mono 中心字)·
+      // 中心叠一枚 Label 显剩余秒 → 走主题 fontUi(Baloo 2 圆润艺术字)·比 ring 内置 mono 可爱。wrap 居中稳。
       if (cv.cd != null) {
-        kids.push({ type: 'ProgressBar', id: `t-live-${i}-cd`, props: { shape: 'ring', value: cv.cd, max: cv.cdMax ?? cv.cd, tone: 'warn', size: 96, label: `${cv.cd}` }, layout: { align: 'center' } } as N);
+        kids.push({
+          type: 'Panel', id: `t-live-${i}-cdw`, props: { bare: true },
+          layout: { width: 96, height: 96, align: 'center', justify: 'center', allowOverlap: true },
+          children: [
+            { type: 'ProgressBar', id: `t-live-${i}-cd`, props: { shape: 'ring', value: cv.cd, max: cv.cdMax ?? cv.cd, tone: 'ok', size: 96 }, layout: { x: 0, y: 0, allowOverlap: true } },
+            // 数字包一层绝对定位居中壳（定位元素→绘于绝对定位 ring 之上·否则被 ring 盖住看不见）·Baloo2 艺术字。
+            { type: 'Panel', id: `t-live-${i}-cdnw`, props: { bare: true }, layout: { x: 0, y: 0, width: 96, height: 96, align: 'center', justify: 'center', allowOverlap: true }, children: [{ type: 'Label', id: `t-live-${i}-cdn`, props: { text: `${cv.cd}`, size: 46, bold: true, color: 'jade' } }] },
+          ],
+        } as N);
       } else {
         // 皮肤槽就绪 → 渲美术图(Image·就绪即换装)；否则回退 Twemoji Label。被拿起格淡化缩小。
         kids.push(cv.skin
