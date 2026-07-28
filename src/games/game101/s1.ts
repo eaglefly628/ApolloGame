@@ -87,9 +87,9 @@ function hud(s: S1State): N {
           { type: 'Badge', id: 'hud-av-lv', props: { text: `⭐${s.level}`, tone: 'ok' }, layout: { x: 2, y: 74, allowOverlap: true } },
         ],
       },
-      resPill('hud-energy', icon('hud-energy-i', s.hudSkins?.energy, '⚡'), `${Math.round(s.energy)}`, 'gold', 1.3, s.hudSkins?.barEnergy, s.energyRegen != null ? mmss(s.energyRegen) : undefined),
-      resPill('hud-coins', icon('hud-coins-i', s.hudSkins?.coins, '🪙'), `${Math.round(s.coins)}`, 'gold', 1.15, s.hudSkins?.barCoins),
-      resPill('hud-gems', icon('hud-gems-i', s.hudSkins?.gems, '💎'), `${s.gems}`, 'jade', 1, s.hudSkins?.barGems),
+      resPill('hud-energy', icon('hud-energy-i', s.hudSkins?.energy, '⚡', 86), `${Math.round(s.energy)}`, 'gold', 1.3, s.hudSkins?.barEnergy, s.energyRegen != null ? mmss(s.energyRegen) : undefined),
+      resPill('hud-coins', icon('hud-coins-i', s.hudSkins?.coins, '🪙', 86), `${Math.round(s.coins)}`, 'gold', 1.15, s.hudSkins?.barCoins),
+      resPill('hud-gems', icon('hud-gems-i', s.hudSkins?.gems, '💎', 86), `${s.gems}`, 'jade', 1, s.hudSkins?.barGems),
       {
         // 商店车：自定义图**铺满整格**(Image contain 100×102·owner 的图别塞小框缩小)·无 → 框皮 + 🛒 兜底。
         type: 'Panel', id: 'hud-cart', props: s.hudSkins?.cart ? { bg: 'panel' } : frame(s.hudSkins?.barCart),
