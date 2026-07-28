@@ -312,10 +312,15 @@ function board(s: S1State): N {
         ck.push({ type: 'Label', id: `t-live-${i}-web`, props: { text: '🕸️', size: 40 }, layout: { opacity: 0.4 } });
       }
       // 「还要炸几次解锁」= 半透明磨砂底板 + 💥N（底板半透·让下方埋物透出·owner：爆炸图标底应半透明·别倒过来）。
+      // 包一层绝对定位满格居中壳 → 💥N 在**每格同一正中位置**（owner bug：之前随有无 emoji 在流内叠位漂移）。
       ck.push({
-        type: 'Panel', id: `t-live-${i}-lk`, props: { bg: { custom: 'rgba(28,20,12,0.42)' }, glass: true },
-        layout: { align: 'center', justify: 'center', padding: 6, radius: 14 },
-        children: [{ type: 'Label', id: `t-live-${i}-lkn`, props: { text: `💥${cv.cover}`, size: 34, bold: true, color: 'gold' } }],
+        type: 'Panel', id: `t-live-${i}-lkw`, props: { bare: true },
+        layout: { x: 0, y: 0, width: CELL_W, height: 128, align: 'center', justify: 'center', allowOverlap: true },
+        children: [{
+          type: 'Panel', id: `t-live-${i}-lk`, props: { bg: { custom: 'rgba(28,20,12,0.42)' }, glass: true },
+          layout: { align: 'center', justify: 'center', padding: 6, radius: 14 },
+          children: [{ type: 'Label', id: `t-live-${i}-lkn`, props: { text: `💥${cv.cover}`, size: 34, bold: true, color: 'gold' } }],
+        }],
       });
       return {
         // 有埋物 → 整格底 = 埋物清晰底图(skin cover·铺满·不磨砂)；无埋物 → 纯沙色底。
