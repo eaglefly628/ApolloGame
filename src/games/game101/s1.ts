@@ -303,13 +303,11 @@ function board(s: S1State): N {
     // 阶段：埋沙(高层·只沙+锁数) → 蛛网 🕸️(低层·快挖开) → 露出(层归零=普通物)。
     if (cv?.cover != null) {
       const ck: N[] = [];
-      // 埋物预览=半透明**底图背景**（绝对定位居中·不与 💥N 竖排叠加撑高出框·owner：太大了出 grid）。
-      if (cv.coverSkin) {
-        // 埋物 = 清晰底图（与解锁后同一美术资源）+ 磨砂玻璃罩（backdrop-blur + 半透沙色）→「隔着磨砂沙层看埋物」
-        // ·owner 要磨砂效果·比纯降透明清楚。图在下·frost 在上模糊之·💥N 再叠其上。
-        const fx = Math.round((CELL_W - 104) / 2);
-        ck.push({ type: 'Image', id: `t-live-${i}-rw`, props: { src: cv.coverSkin, fit: 'contain', radius: 14 }, layout: { x: fx, y: 10, width: 104, height: 104, allowOverlap: true } });
-        ck.push({ type: 'Panel', id: `t-live-${i}-frost`, props: { bg: { custom: 'rgba(184,137,90,0.4)' }, glass: true }, layout: { x: fx, y: 10, width: 104, height: 104, radius: 14, allowOverlap: true } });
+      const hasSkin = !!cv.coverSkin;
+      // 埋物 = 铺满整格的底图（Panel.skin cover）+ 全格磨砂玻璃罩（backdrop-blur + 半透沙色）→「整格隔着磨砂沙
+      // 玻璃看埋物」·owner：要真磨砂·别小方块+大片实心沙。frost 模糊底图 item·💥N 叠其上。
+      if (hasSkin) {
+        ck.push({ type: 'Panel', id: `t-live-${i}-frost`, props: { bg: { custom: 'rgba(180,137,90,0.34)' }, glass: true }, layout: { x: 0, y: 0, width: CELL_W, height: 128, radius: 16, allowOverlap: true } });
       } else if (cv.coverReward) {
         ck.push({ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 40 }, layout: { opacity: 0.4 } });
       } else if (cv.cover <= 1) {
@@ -322,7 +320,8 @@ function board(s: S1State): N {
         children: [{ type: 'Label', id: `t-live-${i}-lkn`, props: { text: `💥${cv.cover}`, size: 34, bold: true, color: 'ink' } }],
       });
       return {
-        type: 'Panel', id: `t-live-${i}`, props: { bg: { custom: COVER_BG } },
+        // 有埋物 → 整格底 = 埋物图(skin cover·铺满)·frost 磨砂其上；无埋物 → 纯沙色底。
+        type: 'Panel', id: `t-live-${i}`, props: hasSkin ? { skin: cv.coverSkin } : { bg: { custom: COVER_BG } },
         layout: { direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 6, radius: 16, height: 128, allowOverlap: true },
         children: [...ck, ...dissolve],
       } as N;
