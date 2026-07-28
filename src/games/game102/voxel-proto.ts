@@ -16,7 +16,8 @@ const PITCH = 33, VOX = 33; // 体素尺寸固定（立方随 N 变大·相机�
 const FACE_MS = 6000;     // 每面总停留（含换色窗 + 开火窗）
 const REACH_LAYERS = 2;   // 炮可达层数（表面第1层 + 第2层·打得进·第3层起打不到·owner）
 const TWEEN = 0.010;
-const POWER_MS = 3500;    // 火力格：频率翻倍时长
+const AUTO_MS = 4200;     // 火力格 = 自动开火格：打中后此时长内**自动开火·不耗弹**（奖励）
+const AUTO_FIRE_MS = 150; // 自动开火节拍
 const TIME_BONUS = 4000;  // 加时格：全局倒计时 +此（ms）
 const AMMO_REFUND = 6;    // 弹药格：返还子弹数（弹药关才有意义）
 const BOMB_R = 1;
@@ -25,7 +26,7 @@ const TRAVEL_MS = 240, FRAG_N = 6, GRAV = 900;
 // ── 功能格类型表（数据驱动雏形·加行即扩展）──
 type CellKind = 'power' | 'time' | 'bomb' | 'ammo';
 const CELLS: Record<CellKind, { edge: number; glyph: string; label: string; css: string; weight: number }> = {
-  power: { edge: 0xff7a3a, glyph: '🔥', label: '火力', css: '#ff8a4a', weight: 30 },
+  power: { edge: 0xff7a3a, glyph: '🔥', label: '自动', css: '#ff8a4a', weight: 30 }, // 自动开火(免弹)
   time:  { edge: 0x6ad0ff, glyph: '⏱', label: '加时', css: '#6ad0ff', weight: 30 },
   bomb:  { edge: 0xff4a3a, glyph: '💥', label: '引爆', css: '#ff5a4a', weight: 26 },
   ammo:  { edge: 0xffe08a, glyph: '🔫', label: '弹药', css: '#ffe08a', weight: 30 }, // 弹药关专属
@@ -200,7 +201,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   let orientIdx = 0, faceLeft = FACE_MS;
   let globalLeft = cfg.totalMs ?? 90000;
   let curRx = ORIENT[0][0], curRy = ORIENT[0][1];
-  let rapidLeft = 0;
+  let autoLeft = 0, autoAcc = 0, wasAuto = false; // 自动开火(免弹)剩余 + 节拍累加 + 指示边沿
 
   const rendered = new Set<string>();
   const buildScene = (): WorldBlueprint => {
@@ -446,7 +447,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     if (rendered.has(id)) { engine.world.destroyEntity(id); const piv = engine.world.getComponent<Pivot3D>('cube-pivot', 'Pivot3D'); if (piv) { const x = piv.children.indexOf(id); if (x >= 0) piv.children.splice(x, 1); } rendered.delete(id); }
     if (chain) { const wp = voxWorld(i, j, k); spawnFrags(wp[0], wp[1], wp[2], PALETTE[cc ?? 0].tint); }
     if (isGem) { gemsGot++; cellFx('💎 宝石！', GEM_CSS); impactFx(0.5); const wp = voxWorld(i, j, k); spawnFrags(wp[0], wp[1], wp[2], 0xbff6ff); }
-    if (kind === 'power') { rapidLeft = POWER_MS; cellFx('🔥 齐射翻倍!', CELLS.power.css); }
+    if (kind === 'power') { autoLeft = AUTO_MS; cellFx('🔥 自动开火!', CELLS.power.css); }
     else if (kind === 'time') { globalLeft += TIME_BONUS; if (hasTime) facePill.animate?.([{ transform: 'scale(1.22)' }, { transform: 'scale(1)' }], { duration: 260 }); cellFx(`⏱ +${(TIME_BONUS / 1000).toFixed(0)}s`, CELLS.time.css); }
     else if (kind === 'ammo') { ammoPool += AMMO_REFUND; if (hasAmmo) ammoPill.animate?.([{ transform: 'scale(1.22)' }, { transform: 'scale(1)' }], { duration: 260 }); cellFx(`🔫 +${AMMO_REFUND}`, CELLS.ammo.css); }
     else if (kind === 'bomb') { cellFx('💥 连爆!', CELLS.bomb.css); impactFx(0.9); for (let di = -BOMB_R; di <= BOMB_R; di++) for (let dj = -BOMB_R; dj <= BOMB_R; dj++) for (let dk = -BOMB_R; dk <= BOMB_R; dk++) { const a = i + di, b = j + dj, c = k + dk; if ((di || dj || dk) && inB(a) && inB(b) && inB(c) && present.has(vid(a, b, c))) breakVox(a, b, c, true); } }
@@ -505,8 +506,8 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     wrapper.appendChild(ring); ring.animate?.([{ transform: 'scale(0.5)', opacity: 1 }, { transform: 'scale(1.6)', opacity: 0 }], { duration: 420 }); setTimeout(() => ring.remove(), 440);
     if (!ok) return;
     // ★ 点哪打哪：精确打点中的这一格；火力格生效时一点带几发（含点中格 + 周边同色）。
-    const targets = rapidLeft > 0 ? [[i, j, k] as [number, number, number], ...aimFaceMany(currentColor, [i, j, k], 3).filter((v) => !(v[0] === i && v[1] === j && v[2] === k))] : [[i, j, k] as [number, number, number]];
-    for (const aim of targets) { if (hasAmmo) { if (ammoPool <= 0) break; ammoPool--; } fireBullet(aim); }
+    if (hasAmmo) { if (ammoPool <= 0) return; ammoPool--; } // 手动点射：耗一发（自动开火才免弹）
+    fireBullet([i, j, k]);
     refresh(); if (hasAmmo) checkEnd();
   };
   wrapper.addEventListener('pointerdown', onTap);
@@ -534,8 +535,9 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
         const piv = engine.world.getComponent<Transform3D>('cube-pivot', 'Transform3D'); if (piv) { piv.rotX = curRx; piv.rotY = curRy; }
         if (hasTime) facePill.textContent = `⏱ ${(globalLeft / 1000).toFixed(globalLeft < 10000 ? 1 : 0)}`;
         timeBar.style.width = `${Math.min(100, (faceLeft / FACE_MS) * 100)}%`;
-        const wasRapid = rapidLeft > 0; if (rapidLeft > 0 && !paused) rapidLeft = Math.max(0, rapidLeft - dt); const isRapid = rapidLeft > 0;
-        if (isRapid !== wasRapid && hasTime) { facePill.style.background = isRapid ? 'linear-gradient(#ff9a3a,#f2671e)' : 'linear-gradient(#3a7bd5,#2a5cae)'; facePill.style.boxShadow = isRapid ? '0 3px 0 #b8430f,0 0 16px #ff8a3a' : '0 3px 0 #1c3e7a'; }
+        const isAuto = autoLeft > 0;
+        if (isAuto !== wasAuto && hasTime) { facePill.style.background = isAuto ? 'linear-gradient(#ff9a3a,#f2671e)' : 'linear-gradient(#3a7bd5,#2a5cae)'; facePill.style.boxShadow = isAuto ? '0 3px 0 #b8430f,0 0 16px #ff8a3a' : '0 3px 0 #1c3e7a'; }
+        wasAuto = isAuto;
         // 阶段 UI + 开火。开打钮仅在「不限时换色关」的换色窗出现（放颜色上方·不挡观察）。
         startBtn.style.display = paused && !cfg.pickMs ? 'block' : 'none';
         if (!settled) { hint.style.opacity = '0'; if (focusScreen) focusScreen = null; }
@@ -544,7 +546,12 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
           else hint.textContent = '🎨 观察 · 选色后按开打';
           hint.style.opacity = '1';
         } else {
-          hint.textContent = isRapid ? '🔥 点同色方块 · 一点带几发' : '👆 点同色方块 · 点哪打哪'; hint.style.opacity = '1';
+          hint.textContent = isAuto ? '🔥 自动开火中 · 免弹' : '👆 点同色方块 · 点哪打哪'; hint.style.opacity = '1';
+          if (isAuto) { // 自动开火格奖励：此期间自动打当前面同色格·不耗弹（偏向你点的位置·否则面心）。
+            autoLeft = Math.max(0, autoLeft - dt); autoAcc += dt;
+            const f: [number, number, number] = focusTarget ?? [Math.floor((N - 1) / 2), Math.floor((N - 1) / 2), Math.floor((N - 1) / 2)];
+            while (autoAcc >= AUTO_FIRE_MS) { autoAcc -= AUTO_FIRE_MS; const aim = aimFaceMany(currentColor, f, 1)[0]; if (aim) fireBullet(aim); }
+          }
         }
         if (hasTime && globalLeft <= 0) checkEnd();
         updateAim();
