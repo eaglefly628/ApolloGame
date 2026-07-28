@@ -175,7 +175,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     return [CAM_EYE[0] + cx * CAM_RIGHT[0] + cyv * CAM_UP[0] + depth * CAM_FWD[0], CAM_EYE[1] + cx * CAM_RIGHT[1] + cyv * CAM_UP[1] + depth * CAM_FWD[1], CAM_EYE[2] + cx * CAM_RIGHT[2] + cyv * CAM_UP[2] + depth * CAM_FWD[2]];
   };
   // ── 3D 炮台：反投影 owner 标注的左下角框（相机前某深度）→ 世界位·朝立方中心·子弹从炮口打出 ──
-  const CANNON_BASE = screenToWorld(fw * 0.16, fh * 0.90, CAM_DIST * 0.4);
+  const CANNON_BASE = screenToWorld(fw * 0.2, fh * 0.85, CAM_DIST * 0.44); // 左下·稍内收上移·更协调（旋钮：屏幕锚 x/y + 深度）
   const cdir = nrm3([-CANNON_BASE[0], -CANNON_BASE[1], -CANNON_BASE[2]]); // 指向立方中心(原点)
   const CANNON_ROTX = -Math.asin(Math.max(-1, Math.min(1, cdir[1]))); // 炮管 +z 对齐 cdir（rx 抬俯 + ry 偏航）
   const CANNON_ROTY = Math.atan2(cdir[0], cdir[2]);
