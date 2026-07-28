@@ -149,6 +149,15 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   ];
   const hasTime = cfg.resource === 'time' || cfg.resource === 'both';
   const hasAmmo = cfg.resource === 'ammo' || cfg.resource === 'both';
+  // ── 真 3D 炮台（世界固定·置于正朝相机那面的正前方·子弹从炮口打出·owner）──
+  const CANNON_BASE: [number, number, number] = [0, -MAXC * 1.05, MAXC * 2.05];
+  const _cl = Math.hypot(CANNON_BASE[0], CANNON_BASE[1], CANNON_BASE[2]) || 1;
+  const cdir: [number, number, number] = [-CANNON_BASE[0] / _cl, -CANNON_BASE[1] / _cl, -CANNON_BASE[2] / _cl]; // 指向立方中心
+  const CANNON_ROTX = Math.atan2(-cdir[1], cdir[2]);
+  const BARREL_LEN = MAXC * 1.15;
+  const MUZZLE: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN, CANNON_BASE[1] + cdir[1] * BARREL_LEN, CANNON_BASE[2] + cdir[2] * BARREL_LEN];
+  const BARREL_CTR: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN * 0.5, CANNON_BASE[1] + cdir[1] * BARREL_LEN * 0.5, CANNON_BASE[2] + cdir[2] * BARREL_LEN * 0.5];
+  const barrelMesh = (c: number): Record<string, unknown> => ({ shape: 'box', width: PITCH * 0.74, height: PITCH * 0.74, depth: BARREL_LEN, frontTint: PALETTE[c].tint, backTint: shade(PALETTE[c].tint, 0.7), edgeTint: shade(PALETTE[c].tint, 0.5) });
 
   // ── 世界生成 ──
   const colorAt = new Map<string, number>();
@@ -224,6 +233,9 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     entities['sky'] = { Sky3D: { top: 0x0c1730, bottom: 0x14243f, env: 0.5 } };
     entities['sun'] = { Light3D: { kind: 'directional', color: 0xffffff, intensity: 1.15, dirX: -0.45, dirY: -0.9, dirZ: -0.55, castShadow: true } };
     entities['amb'] = { Light3D: { kind: 'ambient', color: 0xa8bce0, intensity: 0.6 } };
+    // 3D 炮台（世界固定·不入 pivot）：底座 + 炮管（染当前色·指向立方中心）。
+    entities['cannon-base'] = { Transform3D: { x: CANNON_BASE[0], y: CANNON_BASE[1], z: CANNON_BASE[2] }, Mesh3D: { shape: 'box', width: PITCH * 1.8, height: PITCH * 1.8, depth: PITCH * 1.8, frontTint: 0x30425f, backTint: 0x30425f, edgeTint: 0x16233a } };
+    entities['cannon-barrel'] = { Transform3D: { x: BARREL_CTR[0], y: BARREL_CTR[1], z: BARREL_CTR[2], rotX: CANNON_ROTX }, Mesh3D: barrelMesh(currentColor) as EntityBlueprint['Mesh3D'] };
     return { capabilities: [], entities };
   };
 
@@ -296,27 +308,21 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   aimSvg.appendChild(aimLine); wrapper.appendChild(aimSvg);
   const selMark = el('div', 'position:absolute;width:46px;height:46px;border:3px solid #fff;border-radius:9px;box-shadow:0 0 16px #fff,inset 0 0 8px #fff8;transform:translate(-50%,-50%);pointer-events:none;z-index:24;opacity:0;');
   wrapper.appendChild(selMark);
-  const cannon = el('div', `position:absolute;left:${cannonX}px;top:${cannonY}px;z-index:24;pointer-events:none;`);
-  const barrel = el('div', `position:absolute;left:-11px;top:-54px;width:22px;height:54px;border-radius:9px 9px 4px 4px;background:${PALETTE[0].css};box-shadow:0 2px 6px #0009,inset 0 0 7px #fff7;transform-origin:50% 100%;transition:transform .12s;`);
-  const cbase = el('div', 'position:absolute;left:-27px;top:-27px;width:54px;height:54px;border-radius:50%;background:radial-gradient(#2a3a58,#0c1526);border:3px solid #3a5680;box-shadow:0 4px 12px #0008;');
-  cannon.appendChild(barrel); cannon.appendChild(cbase); wrapper.appendChild(cannon);
+  // 炮台本体已是真 3D（buildScene cannon-base/barrel）·这里只留屏幕层的选中虚线 + 选中框（指向反馈）。
   const updateAim = (): void => {
     if (!over && phase === 'fire' && focusScreen) {
-      aimLine.setAttribute('x1', String(cannonX)); aimLine.setAttribute('y1', String(cannonY - 48));
-      aimLine.setAttribute('x2', String(focusScreen.x)); aimLine.setAttribute('y2', String(focusScreen.y)); aimLine.setAttribute('opacity', '0.9');
+      aimLine.setAttribute('x1', String(cannonX)); aimLine.setAttribute('y1', String(cannonY - 30));
+      aimLine.setAttribute('x2', String(focusScreen.x)); aimLine.setAttribute('y2', String(focusScreen.y)); aimLine.setAttribute('opacity', '0.85');
       selMark.style.left = `${focusScreen.x}px`; selMark.style.top = `${focusScreen.y}px`; selMark.style.opacity = '1';
-      const dx = focusScreen.x - cannonX, dy = focusScreen.y - cannonY; barrel.style.transform = `rotate(${Math.atan2(dx, -dy) * 180 / Math.PI}deg)`;
-    } else { aimLine.setAttribute('opacity', '0'); selMark.style.opacity = '0'; barrel.style.transform = 'rotate(0deg)'; }
+    } else { aimLine.setAttribute('opacity', '0'); selMark.style.opacity = '0'; }
   };
-  const loadFx = (c: number): void => { // 选中色 → 一个色块 cube 飞进中心炮管 + 炮台染色脉冲
-    barrel.style.background = PALETTE[c].css;
+  const loadFx = (c: number): void => { // 选中色 → 一个色块 cube 飞向炮台方向（屏下中心）
     const cr = cubeWraps[c].getBoundingClientRect(), wr = wrapper.getBoundingClientRect();
     const sx = cr.left - wr.left + cr.width / 2, sy = cr.top - wr.top + cr.height / 2;
     const fly = el('div', `position:absolute;left:${sx}px;top:${sy}px;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:7px;background:${PALETTE[c].css};box-shadow:0 0 16px ${PALETTE[c].css},inset 0 0 8px #fff8;z-index:26;pointer-events:none;`);
     wrapper.appendChild(fly);
-    const a = fly.animate?.([{ transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 }, { transform: `translate(${cannonX - sx}px,${cannonY - 48 - sy}px) rotate(230deg) scale(0.35)`, opacity: 0.6 }], { duration: 360, easing: 'cubic-bezier(.5,0,.9,.6)' });
-    const done = (): void => { fly.remove(); cbase.animate?.([{ transform: 'scale(1.22)' }, { transform: 'scale(1)' }], { duration: 220 }); barrel.animate?.([{ filter: 'brightness(1.9)' }, { filter: 'brightness(1)' }], { duration: 260 }); };
-    if (a) a.onfinish = done; else done();
+    const a = fly.animate?.([{ transform: 'translate(0,0) rotate(0deg) scale(1)', opacity: 1 }, { transform: `translate(${cannonX - sx}px,${cannonY - sy}px) rotate(230deg) scale(0.35)`, opacity: 0.5 }], { duration: 360, easing: 'cubic-bezier(.5,0,.9,.6)' });
+    if (a) a.onfinish = () => fly.remove(); else fly.remove();
   };
   const styleBtn = el('button', 'position:absolute;right:8px;top:60px;z-index:20;pointer-events:auto;background:#1a2740ee;color:#cfe;border:1px solid #35507a;border-radius:8px;padding:6px 12px;cursor:pointer;font:700 13px system-ui;', `🎨 ${STYLES[0].name}`);
   styleBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -353,7 +359,10 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   bottom.appendChild(cubeRow);
   wrapper.appendChild(bottom);
 
-  const setColor = (c: number): void => { currentColor = c; refresh(); cubeWraps[c].animate?.([{ transform: 'scale(1.4) translateY(-6px)' }, { transform: 'scale(1.24) translateY(-6px)' }], { duration: 200 }); loadFx(c); };
+  const setColor = (c: number): void => {
+    currentColor = c; refresh(); cubeWraps[c].animate?.([{ transform: 'scale(1.4) translateY(-6px)' }, { transform: 'scale(1.24) translateY(-6px)' }], { duration: 200 }); loadFx(c);
+    engine.world.removeComponent('cannon-barrel', 'Mesh3D'); engine.world.addComponent('cannon-barrel', { type: 'Mesh3D', ...barrelMesh(c) } as never); // 3D 炮管染当前色
+  };
   const refresh = (): void => {
     cubeWraps.forEach((w, c) => {
       if (c === currentColor) { w.style.filter = `drop-shadow(0 0 10px ${PALETTE[c].css})`; w.style.transform = 'scale(1.24) translateY(-6px)'; }
@@ -474,8 +483,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   };
   const fireBullet = (aim: [number, number, number]): void => {
     const to = voxWorld(aim[0], aim[1], aim[2]);
-    const L = Math.hypot(to[0], to[1], to[2]) || 1, D = MAXC * 1.9;
-    const from: [number, number, number] = [to[0] + (to[0] / L) * D, to[1] + (to[1] / L) * D, to[2] + (to[2] / L) * D];
+    const from: [number, number, number] = [MUZZLE[0], MUZZLE[1], MUZZLE[2]]; // 从 3D 炮口打出
     const id = `blt-${movN}`; spawnEnt(id, from[0], from[1], from[2], VOX * 0.55, PALETTE[currentColor].tint);
     movers.push({ kind: 'bullet', id, t: 0, from, to, aim: [aim[0], aim[1], aim[2]] });
   };
