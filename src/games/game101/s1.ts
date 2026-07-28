@@ -37,6 +37,8 @@ const WELL = '#7f97dd';    // 蓝色板井
 const CELL_BG = '#c3cef0'; // 格底浅蓝
 const GEN_BG = '#c8871e';  // 生成器格金
 const COVER_BG = '#b8895a'; // 阻碍层沙色（覆盖格·挖掘解锁）
+// 格宽（scene 1080·board pad5 + well pad4 + 格间 gap3·cols 均分）——用于右下角可交付 ✓ 勾绝对定位。
+const CELL_W = Math.floor((1080 - 10 - 8 - (GAME.board.cols - 1) * 3) / GAME.board.cols);
 
 // ── HUD 行（等级 / 体力+计时 / 金币 / 宝石 / 商店）────────────────────────────
 function hud(s: S1State): N {
@@ -329,7 +331,8 @@ function board(s: S1State): N {
           ? { type: 'Image', id: `t-live-${i}-l`, props: { src: cv.skin, fit: 'contain' }, layout: i === s.liftedCell ? { width: 108, height: 108, opacity: 0.28 } : { width: 126, height: 126 } }
           : { type: 'Label', id: `t-live-${i}-l`, props: { text: cv.emoji, size: i === s.liftedCell ? 52 : 66 }, layout: i === s.liftedCell ? { opacity: 0.28 } : {} });
       }
-      if (cv.deliverable) kids.push({ type: 'Badge', id: `t-live-${i}-b`, props: { text: '✓', tone: 'ok' } });
+      // 可交付：右下角绿色小勾（角标·绝对定位·非美术台账项·纯 UI 指示）。
+      if (cv.deliverable) kids.push({ type: 'Badge', id: `t-live-${i}-b`, props: { text: '✓', tone: 'ok' }, layout: { x: CELL_W - 44, y: 90, allowOverlap: true } });
       if (cv.timer != null) kids.push({ type: 'Badge', id: `t-live-${i}-t`, props: { text: `⏱${cv.timer}`, tone: 'warn' } }); // 限时物倒计时
     }
     // 合成迸发（juice·render-only）：该格叠一次性星光爆（基座 Particles·非自造 CSS）。绝对定位不占流。

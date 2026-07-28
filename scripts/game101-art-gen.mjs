@@ -68,11 +68,16 @@ function tileFor(key) {
   return null;
 }
 
-// 特例：生成器（暖木色底 + 器械 emoji）·泡泡锁·板格底。
+// 生成器 → 产出链（底色应与产出物同色·owner：四台机子别都咖啡色）。
+const GEN_CHAIN = { gen_fridge: 'food', gen_coffee: 'coffee', gen_fishbox: 'fish', gen_toolbox: 'tool' };
+// 特例：生成器（底色 = 产出链色·器械 emoji）·泡泡锁·板格底。
 function specialFor(key) {
   if (GEN_EMOJI[key]) {
-    CHAIN_TINT._cur = [0xc8, 0x87, 0x1e];
-    return tile(key, '#b06a1a', '#e6a94a', GEN_EMOJI[key], 13); // 暖木金·生成器
+    const ch = GEN_CHAIN[key];
+    const c = CHAIN_TINT[ch] || [0xc8, 0x87, 0x1e];
+    CHAIN_TINT._cur = c;
+    // 生成器 = 该链**满饱和**深色底（比物品更浓·一眼辨「这是产 X 的机子」）+ 器械 emoji。
+    return tile(key, hex(...c), hex(...mixWhite(c, 0.32)), GEN_EMOJI[key], 13);
   }
   if (key === 'bubble') {
     return S(
