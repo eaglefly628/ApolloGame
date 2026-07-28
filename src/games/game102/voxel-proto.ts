@@ -154,10 +154,14 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   const _cl = Math.hypot(CANNON_BASE[0], CANNON_BASE[1], CANNON_BASE[2]) || 1;
   const cdir: [number, number, number] = [-CANNON_BASE[0] / _cl, -CANNON_BASE[1] / _cl, -CANNON_BASE[2] / _cl]; // 指向立方中心
   const CANNON_ROTX = Math.atan2(-cdir[1], cdir[2]);
-  const BARREL_LEN = MAXC * 1.15;
+  const BARREL_LEN = MAXC * 0.95;
   const MUZZLE: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN, CANNON_BASE[1] + cdir[1] * BARREL_LEN, CANNON_BASE[2] + cdir[2] * BARREL_LEN];
   const BARREL_CTR: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN * 0.5, CANNON_BASE[1] + cdir[1] * BARREL_LEN * 0.5, CANNON_BASE[2] + cdir[2] * BARREL_LEN * 0.5];
-  const barrelMesh = (c: number): Record<string, unknown> => ({ shape: 'box', width: PITCH * 0.74, height: PITCH * 0.74, depth: BARREL_LEN, frontTint: PALETTE[c].tint, backTint: shade(PALETTE[c].tint, 0.7), edgeTint: shade(PALETTE[c].tint, 0.5) });
+  const TIP_CTR: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN * 0.92, CANNON_BASE[1] + cdir[1] * BARREL_LEN * 0.92, CANNON_BASE[2] + cdir[2] * BARREL_LEN * 0.92];
+  const barrelMesh = (c: number): Record<string, unknown> => ({ shape: 'box', width: PITCH * 0.34, height: PITCH * 0.34, depth: BARREL_LEN, frontTint: shade(PALETTE[c].tint, 1.06), backTint: shade(PALETTE[c].tint, 0.75), edgeTint: shade(PALETTE[c].tint, 0.55) });
+  // 相机参数（buildScene 与 worldToScreen 共用·保持一致）。
+  const CAM_YAW = 0.42, CAM_PITCH = 0.42, CAM_DIST = N * PITCH * 4.5, CAM_FOV = 40;
+  const CAM_PIVOT: [number, number, number] = [0, -MAXC * 0.55, 0];
 
   // ── 世界生成 ──
   const colorAt = new Map<string, number>();
@@ -229,13 +233,14 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     entities['rim-e'] = { Transform3D: { x: R, y: PLATE_Y + rimH / 2, z: 0 }, Mesh3D: { shape: 'box', width: rimT, height: rimH, depth: R * 2 + rimT, frontTint: 0x8a6440, backTint: 0x8a6440, edgeTint: 0x5c3c22 } };
     entities['rim-w'] = { Transform3D: { x: -R, y: PLATE_Y + rimH / 2, z: 0 }, Mesh3D: { shape: 'box', width: rimT, height: rimH, depth: R * 2 + rimT, frontTint: 0x8a6440, backTint: 0x8a6440, edgeTint: 0x5c3c22 } };
     entities['cube-pivot'] = { Transform3D: { x: 0, y: 0, z: 0, rotX: curRx, rotY: curRy }, Pivot3D: { children: ids, centerX: 0, centerY: 0, centerZ: 0 } };
-    entities['cam'] = { Transform3D: { x: 0, y: 0, z: 0 }, Camera3D: { yaw: 0.42, pitch: 0.42, distance: N * PITCH * 4.5, pivotX: 0, pivotY: -MAXC * 0.55, pivotZ: 0, projection: 'perspective', fov: 40 } };
+    entities['cam'] = { Transform3D: { x: 0, y: 0, z: 0 }, Camera3D: { yaw: CAM_YAW, pitch: CAM_PITCH, distance: CAM_DIST, pivotX: CAM_PIVOT[0], pivotY: CAM_PIVOT[1], pivotZ: CAM_PIVOT[2], projection: 'perspective', fov: CAM_FOV } };
     entities['sky'] = { Sky3D: { top: 0x0c1730, bottom: 0x14243f, env: 0.5 } };
     entities['sun'] = { Light3D: { kind: 'directional', color: 0xffffff, intensity: 1.15, dirX: -0.45, dirY: -0.9, dirZ: -0.55, castShadow: true } };
     entities['amb'] = { Light3D: { kind: 'ambient', color: 0xa8bce0, intensity: 0.6 } };
     // 3D 炮台（世界固定·不入 pivot）：底座 + 炮管（染当前色·指向立方中心）。
-    entities['cannon-base'] = { Transform3D: { x: CANNON_BASE[0], y: CANNON_BASE[1], z: CANNON_BASE[2] }, Mesh3D: { shape: 'box', width: PITCH * 1.8, height: PITCH * 1.8, depth: PITCH * 1.8, frontTint: 0x30425f, backTint: 0x30425f, edgeTint: 0x16233a } };
+    entities['cannon-base'] = { Transform3D: { x: CANNON_BASE[0], y: CANNON_BASE[1], z: CANNON_BASE[2] }, Mesh3D: { shape: 'sphere', width: PITCH * 0.95, height: PITCH * 0.95, depth: PITCH * 0.95, frontTint: 0x2c3c56, backTint: 0x2c3c56, edgeTint: 0x16233a } };
     entities['cannon-barrel'] = { Transform3D: { x: BARREL_CTR[0], y: BARREL_CTR[1], z: BARREL_CTR[2], rotX: CANNON_ROTX }, Mesh3D: barrelMesh(currentColor) as EntityBlueprint['Mesh3D'] };
+    entities['cannon-tip'] = { Transform3D: { x: TIP_CTR[0], y: TIP_CTR[1], z: TIP_CTR[2], rotX: CANNON_ROTX }, Mesh3D: { shape: 'box', width: PITCH * 0.46, height: PITCH * 0.46, depth: PITCH * 0.22, frontTint: 0x1a2334, backTint: 0x1a2334, edgeTint: 0x0c1220 } };
     return { capabilities: [], entities };
   };
 
@@ -300,8 +305,25 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     wrapper.animate?.([{ transform: 'translate(0,0)' }, { transform: `translate(${6 * s}px,${-5 * s}px)` }, { transform: `translate(${-5 * s}px,${4 * s}px)` }, { transform: 'translate(0,0)' }], { duration: 220 });
     flash.animate?.([{ opacity: 0.55 * s }, { opacity: 0 }], { duration: 300 });
   };
-  // ── 炮台 + 选中虚线（owner：选中色进炮台·点方块给选中反馈 + 一根虚线从炮台指向中心）──
-  const cannonX = fw / 2, cannonY = fh - 150;
+  // 世界坐标 → 屏幕像素（与相机参数一致·用于把 3D 炮口投到屏幕：瞄准线起点 + 换色飞入落点）。
+  const worldToScreen = (P: [number, number, number]): { x: number; y: number } => {
+    const cy = Math.cos(CAM_PITCH), sy = Math.sin(CAM_PITCH), cyaw = Math.cos(CAM_YAW), syaw = Math.sin(CAM_YAW);
+    const eye: [number, number, number] = [CAM_PIVOT[0] + CAM_DIST * cy * syaw, CAM_PIVOT[1] + CAM_DIST * sy, CAM_PIVOT[2] + CAM_DIST * cy * cyaw];
+    const nrm = (v: [number, number, number]): [number, number, number] => { const L = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / L, v[1] / L, v[2] / L]; };
+    const fwd = nrm([CAM_PIVOT[0] - eye[0], CAM_PIVOT[1] - eye[1], CAM_PIVOT[2] - eye[2]]);
+    const cr = (a: [number, number, number], b: [number, number, number]): [number, number, number] => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    const right = nrm(cr(fwd, [0, 1, 0])); const up = cr(right, fwd);
+    const rel: [number, number, number] = [P[0] - eye[0], P[1] - eye[1], P[2] - eye[2]];
+    const cx = rel[0] * right[0] + rel[1] * right[1] + rel[2] * right[2];
+    const cyv = rel[0] * up[0] + rel[1] * up[1] + rel[2] * up[2];
+    const cz = rel[0] * fwd[0] + rel[1] * fwd[1] + rel[2] * fwd[2];
+    const f = 1 / Math.tan((CAM_FOV * Math.PI / 180) / 2), aspect = fw / fh, d = cz || 1;
+    const ndcX = (cx / d) * (f / aspect), ndcY = (cyv / d) * f;
+    return { x: (ndcX * 0.5 + 0.5) * fw, y: (0.5 - ndcY * 0.5) * fh };
+  };
+  // ── 炮台屏幕投影（瞄准线从真炮口出发·换色飞入落到炮口）──
+  const muzzleScreen = worldToScreen(MUZZLE);
+  const cannonX = muzzleScreen.x, cannonY = muzzleScreen.y;
   const NS = 'http://www.w3.org/2000/svg';
   const aimSvg = document.createElementNS(NS, 'svg'); aimSvg.setAttribute('style', 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:23;');
   const aimLine = document.createElementNS(NS, 'line'); aimLine.setAttribute('stroke', '#ffffff'); aimLine.setAttribute('stroke-width', '3'); aimLine.setAttribute('stroke-dasharray', '9 8'); aimLine.setAttribute('stroke-linecap', 'round'); aimLine.setAttribute('opacity', '0');
@@ -311,7 +333,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   // 炮台本体已是真 3D（buildScene cannon-base/barrel）·这里只留屏幕层的选中虚线 + 选中框（指向反馈）。
   const updateAim = (): void => {
     if (!over && phase === 'fire' && focusScreen) {
-      aimLine.setAttribute('x1', String(cannonX)); aimLine.setAttribute('y1', String(cannonY - 30));
+      aimLine.setAttribute('x1', String(cannonX)); aimLine.setAttribute('y1', String(cannonY));
       aimLine.setAttribute('x2', String(focusScreen.x)); aimLine.setAttribute('y2', String(focusScreen.y)); aimLine.setAttribute('opacity', '0.85');
       selMark.style.left = `${focusScreen.x}px`; selMark.style.top = `${focusScreen.y}px`; selMark.style.opacity = '1';
     } else { aimLine.setAttribute('opacity', '0'); selMark.style.opacity = '0'; }
@@ -333,7 +355,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   // ── 底部：开打钮（换色阶段·不限时关·放颜色上方不挡观察）+ 5 个随机旋转的色块 cube = 当前主攻色 ──
   const hex = (n: number): string => `#${((n >>> 0) & 0xffffff).toString(16).padStart(6, '0')}`;
   const makeColorCube = (c: number): { wrap: HTMLElement; inner: HTMLElement } => {
-    const S = 52, h = S / 2, base = PALETTE[c].tint;
+    const S = 38, h = S / 2, base = PALETTE[c].tint; // 精致小方块（owner：小一点·看起来精致）
     const wrap = el('div', `position:relative;width:${S}px;height:${S}px;perspective:200px;cursor:pointer;user-select:none;transition:filter .12s,transform .12s;`);
     const inner = el('div', 'position:absolute;inset:0;transform-style:preserve-3d;');
     const mkFace = (tf: string, k: number): HTMLElement => el('div', `position:absolute;width:${S}px;height:${S}px;background:${hex(shade(base, k))};transform:${tf};backface-visibility:hidden;`);
