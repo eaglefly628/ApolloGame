@@ -110,10 +110,11 @@ function hud(s: S1State): N {
 
 // ── 信息菜单（右上☰ 开·玩法说明 + 合成链条 + 日志·纯 LayoutNode 数据覆盖层）─────────
 function menuTab(id: string, label: string, active: boolean, action: string): N {
+  // 页签=大号可点 Panel（Button label 字号不可调·会小字撑不满高格）：整框可点 + 大 Label（图标随字号一起放大）。
   return {
-    type: 'Button', id: `menu-tab-${id}`,
-    props: { label, kind: active ? 'hero' : 'ghost', action },
-    layout: { flex: 1, height: 116 }, // owner：页签太窄·放大一倍
+    type: 'Panel', id: `menu-tab-${id}`, props: { bg: active ? 'gold' : 'panel', action },
+    layout: { flex: 1, height: 116, align: 'center', justify: 'center', radius: 20 },
+    children: [{ type: 'Label', id: `menu-tab-${id}-l`, props: { text: label, size: 38, bold: true, color: 'ink' } }],
   };
 }
 // 糖果色卡片底（暖港卡通调·柔和高饱和·区别彼此）。
