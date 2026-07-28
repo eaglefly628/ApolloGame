@@ -149,16 +149,17 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   ];
   const hasTime = cfg.resource === 'time' || cfg.resource === 'both';
   const hasAmmo = cfg.resource === 'ammo' || cfg.resource === 'both';
-  // ── 真 3D 炮台（世界固定·置于正朝相机那面的正前方·子弹从炮口打出·owner）──
-  const CANNON_BASE: [number, number, number] = [0, -MAXC * 1.05, MAXC * 2.05];
+  // ── 真 3D 炮台（世界固定·置于左下角前方·子弹从炮口打出·owner）──
+  const CANNON_BASE: [number, number, number] = [-MAXC * 1.5, -MAXC * 1.25, MAXC * 1.85];
   const _cl = Math.hypot(CANNON_BASE[0], CANNON_BASE[1], CANNON_BASE[2]) || 1;
   const cdir: [number, number, number] = [-CANNON_BASE[0] / _cl, -CANNON_BASE[1] / _cl, -CANNON_BASE[2] / _cl]; // 指向立方中心
-  const CANNON_ROTX = Math.atan2(-cdir[1], cdir[2]);
-  const BARREL_LEN = MAXC * 0.95;
+  const CANNON_ROTX = -Math.asin(Math.max(-1, Math.min(1, cdir[1]))); // 炮管 +z 轴对齐 cdir（rx 抬俯 + ry 偏航）
+  const CANNON_ROTY = Math.atan2(cdir[0], cdir[2]);
+  const BARREL_LEN = MAXC * 0.82;
   const MUZZLE: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN, CANNON_BASE[1] + cdir[1] * BARREL_LEN, CANNON_BASE[2] + cdir[2] * BARREL_LEN];
   const BARREL_CTR: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN * 0.5, CANNON_BASE[1] + cdir[1] * BARREL_LEN * 0.5, CANNON_BASE[2] + cdir[2] * BARREL_LEN * 0.5];
   const TIP_CTR: [number, number, number] = [CANNON_BASE[0] + cdir[0] * BARREL_LEN * 0.92, CANNON_BASE[1] + cdir[1] * BARREL_LEN * 0.92, CANNON_BASE[2] + cdir[2] * BARREL_LEN * 0.92];
-  const barrelMesh = (c: number): Record<string, unknown> => ({ shape: 'box', width: PITCH * 0.34, height: PITCH * 0.34, depth: BARREL_LEN, frontTint: shade(PALETTE[c].tint, 1.06), backTint: shade(PALETTE[c].tint, 0.75), edgeTint: shade(PALETTE[c].tint, 0.55) });
+  const barrelMesh = (c: number): Record<string, unknown> => ({ shape: 'box', width: PITCH * 0.26, height: PITCH * 0.26, depth: BARREL_LEN, frontTint: shade(PALETTE[c].tint, 1.06), backTint: shade(PALETTE[c].tint, 0.75), edgeTint: shade(PALETTE[c].tint, 0.55) });
   // 相机参数（buildScene 与 worldToScreen 共用·保持一致）。
   const CAM_YAW = 0.42, CAM_PITCH = 0.42, CAM_DIST = N * PITCH * 4.5, CAM_FOV = 40;
   const CAM_PIVOT: [number, number, number] = [0, -MAXC * 0.55, 0];
@@ -238,9 +239,9 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     entities['sun'] = { Light3D: { kind: 'directional', color: 0xffffff, intensity: 1.15, dirX: -0.45, dirY: -0.9, dirZ: -0.55, castShadow: true } };
     entities['amb'] = { Light3D: { kind: 'ambient', color: 0xa8bce0, intensity: 0.6 } };
     // 3D 炮台（世界固定·不入 pivot）：底座 + 炮管（染当前色·指向立方中心）。
-    entities['cannon-base'] = { Transform3D: { x: CANNON_BASE[0], y: CANNON_BASE[1], z: CANNON_BASE[2] }, Mesh3D: { shape: 'sphere', width: PITCH * 0.95, height: PITCH * 0.95, depth: PITCH * 0.95, frontTint: 0x2c3c56, backTint: 0x2c3c56, edgeTint: 0x16233a } };
-    entities['cannon-barrel'] = { Transform3D: { x: BARREL_CTR[0], y: BARREL_CTR[1], z: BARREL_CTR[2], rotX: CANNON_ROTX }, Mesh3D: barrelMesh(currentColor) as EntityBlueprint['Mesh3D'] };
-    entities['cannon-tip'] = { Transform3D: { x: TIP_CTR[0], y: TIP_CTR[1], z: TIP_CTR[2], rotX: CANNON_ROTX }, Mesh3D: { shape: 'box', width: PITCH * 0.46, height: PITCH * 0.46, depth: PITCH * 0.22, frontTint: 0x1a2334, backTint: 0x1a2334, edgeTint: 0x0c1220 } };
+    entities['cannon-base'] = { Transform3D: { x: CANNON_BASE[0], y: CANNON_BASE[1], z: CANNON_BASE[2] }, Mesh3D: { shape: 'sphere', width: PITCH * 0.66, height: PITCH * 0.66, depth: PITCH * 0.66, frontTint: 0x2c3c56, backTint: 0x2c3c56, edgeTint: 0x16233a } };
+    entities['cannon-barrel'] = { Transform3D: { x: BARREL_CTR[0], y: BARREL_CTR[1], z: BARREL_CTR[2], rotX: CANNON_ROTX, rotY: CANNON_ROTY }, Mesh3D: barrelMesh(currentColor) as EntityBlueprint['Mesh3D'] };
+    entities['cannon-tip'] = { Transform3D: { x: TIP_CTR[0], y: TIP_CTR[1], z: TIP_CTR[2], rotX: CANNON_ROTX, rotY: CANNON_ROTY }, Mesh3D: { shape: 'box', width: PITCH * 0.36, height: PITCH * 0.36, depth: PITCH * 0.18, frontTint: 0x1a2334, backTint: 0x1a2334, edgeTint: 0x0c1220 } };
     return { capabilities: [], entities };
   };
 
@@ -421,7 +422,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
   };
 
   // ── 运动体 ──
-  type Bullet = { kind: 'bullet'; id: string; t: number; from: [number, number, number]; to: [number, number, number]; aim: [number, number, number] };
+  type Bullet = { kind: 'bullet'; id: string; t: number; from: [number, number, number]; to: [number, number, number]; aim: [number, number, number]; color: number };
   type Frag = { kind: 'frag'; id: string; p: [number, number, number]; v: [number, number, number]; life: number };
   const movers: (Bullet | Frag)[] = []; const movEnt = new Set<string>(); let movN = 0;
   const spawnEnt = (id: string, x: number, y: number, z: number, size: number, tint: number): void => {
@@ -443,6 +444,11 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
       engine.world.addComponent(id, { type: 'Anim3D', channels: [{ kind: 'spring', field: 'scale', from: 0.35, to: 1, freq: 8, damping: 0.35 }] } as never);
       movers.push({ kind: 'frag', id, p: [wx, wy, wz], v: [ox * 260 + (prand() - 0.5) * 220, oy * 260 + 160 + prand() * 150, oz * 260 + (prand() - 0.5) * 220], life: 2.6 });
     }
+  };
+  // 反弹火花（异色命中·不碎）：几粒子弹色向外弹开再落盘。
+  const spawnBounce = (wx: number, wy: number, wz: number, colorIdx: number): void => {
+    const tint = PALETTE[colorIdx].tint; const L = Math.hypot(wx, wy, wz) || 1, ox = wx / L, oy = wy / L, oz = wz / L;
+    for (let n = 0; n < 4; n++) { const id = `frag-${movN}`; spawnEnt(id, wx, wy, wz, VOX * 0.38, tint); movers.push({ kind: 'frag', id, p: [wx, wy, wz], v: [ox * 320 + (prand() - 0.5) * 170, oy * 320 + 120 + prand() * 110, oz * 320 + (prand() - 0.5) * 170], life: 1.4 }); }
   };
 
   const CAMV: [number, number, number] = [Math.sin(0.42) * Math.cos(0.42), Math.sin(0.42), Math.cos(0.42) * Math.cos(0.42)];
@@ -507,7 +513,7 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     const to = voxWorld(aim[0], aim[1], aim[2]);
     const from: [number, number, number] = [MUZZLE[0], MUZZLE[1], MUZZLE[2]]; // 从 3D 炮口打出
     const id = `blt-${movN}`; spawnEnt(id, from[0], from[1], from[2], VOX * 0.55, PALETTE[currentColor].tint);
-    movers.push({ kind: 'bullet', id, t: 0, from, to, aim: [aim[0], aim[1], aim[2]] });
+    movers.push({ kind: 'bullet', id, t: 0, from, to, aim: [aim[0], aim[1], aim[2]], color: currentColor });
   };
   // 点中的格是否「当前朝我这面 + 可达层(1/2)」——只打这一面·打不到别的面。
   const frontReachable = (i: number, j: number, k: number): boolean => {
@@ -530,13 +536,15 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
     const [, si, sj, sk] = hit.entityId.split('-'); const i = +si, j = +sj, k = +sk; const id = vid(i, j, k);
     const rect = wrapper.getBoundingClientRect();
     focusScreen = { x: e.clientX - rect.left, y: e.clientY - rect.top }; focusTarget = [i, j, k]; updateAim();
-    // 校验：必须是当前朝我这面 + 当前主攻色 + 可达（否则点了不打·红圈提示）。
-    const ok = present.has(id) && colorAt.get(id) === currentColor && frontReachable(i, j, k);
-    const ring = el('div', `position:absolute;left:${focusScreen.x - 18}px;top:${focusScreen.y - 18}px;width:36px;height:36px;border-radius:50%;border:3px solid ${ok ? '#fff' : '#ff6a6a'};box-shadow:0 0 12px ${ok ? '#fff' : '#ff6a6a'};pointer-events:none;z-index:24;`);
+    // 校验：只要是当前朝我这面 + 可达就能发射（异色 = 打过去反弹·不再"无效不发射"）。
+    const canFire = present.has(id) && frontReachable(i, j, k);
+    const sameColor = colorAt.get(id) === currentColor;
+    const rc = !canFire ? '#ff6a6a' : sameColor ? '#fff' : '#ffd24a'; // 红=打不到·白=同色会碎·黄=异色会反弹
+    const ring = el('div', `position:absolute;left:${focusScreen.x - 18}px;top:${focusScreen.y - 18}px;width:36px;height:36px;border-radius:50%;border:3px solid ${rc};box-shadow:0 0 12px ${rc};pointer-events:none;z-index:24;`);
     wrapper.appendChild(ring); ring.animate?.([{ transform: 'scale(0.5)', opacity: 1 }, { transform: 'scale(1.6)', opacity: 0 }], { duration: 420 }); setTimeout(() => ring.remove(), 440);
-    if (!ok) return;
-    // ★ 点哪打哪：精确打点中的这一格；火力格生效时一点带几发（含点中格 + 周边同色）。
-    if (hasAmmo) { if (ammoPool <= 0) return; ammoPool--; } // 手动点射：耗一发（自动开火才免弹）
+    if (!canFire) return;
+    // ★ 点哪打哪：发射一发到点中格（同色→碎·异色→反弹）·耗一发弹。
+    if (hasAmmo) { if (ammoPool <= 0) return; ammoPool--; }
     fireBullet([i, j, k]);
     refresh(); if (hasAmmo) checkEnd();
   };
@@ -595,7 +603,12 @@ function runOne(container: HTMLElement, cfg: LevelConfig, restart: () => void, t
           setPos(mv.id, mv.from[0] + (mv.to[0] - mv.from[0]) * f, mv.from[1] + (mv.to[1] - mv.from[1]) * f, mv.from[2] + (mv.to[2] - mv.from[2]) * f);
           if (f >= 1) {
             despawnEnt(mv.id); movers.splice(m, 1);
-            if (present.has(vid(mv.aim[0], mv.aim[1], mv.aim[2]))) { const wp = voxWorld(mv.aim[0], mv.aim[1], mv.aim[2]); const ft = tintOf(vid(mv.aim[0], mv.aim[1], mv.aim[2])); breakVox(mv.aim[0], mv.aim[1], mv.aim[2]); spawnFrags(wp[0], wp[1], wp[2], ft); }
+            const tid = vid(mv.aim[0], mv.aim[1], mv.aim[2]);
+            if (present.has(tid)) {
+              const wp = voxWorld(mv.aim[0], mv.aim[1], mv.aim[2]);
+              if (colorAt.get(tid) === mv.color) { const ft = tintOf(tid); breakVox(mv.aim[0], mv.aim[1], mv.aim[2]); spawnFrags(wp[0], wp[1], wp[2], ft); } // 同色→碎
+              else { spawnBounce(wp[0], wp[1], wp[2], mv.color); } // ★ 异色→反弹火花·不碎（打出去了·不是无效）
+            }
             refresh(); checkEnd();
           }
         } else {
