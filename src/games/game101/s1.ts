@@ -13,7 +13,7 @@ export function buildS1(): LayoutNode {
 }
 
 // ── 活板状态 ─────────────────────────────────────────────────────────────────
-export interface CellView { emoji: string; skin?: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number; coverReward?: string; bubble?: { itemEmoji: string; cost: number; id: string }; starLock?: { needStars: number }; cd?: number; cdMax?: number } // skin=皮肤槽美术图 URL(就绪即换装·空则回退 emoji)·bubble=泡泡锁·starLock=星锁区·cd=生成器冷却剩余秒
+export interface CellView { emoji: string; skin?: string; gen?: string; deliverable?: boolean; timer?: number; cover?: number; coverReward?: string; coverSkin?: string; bubble?: { itemEmoji: string; cost: number; id: string }; starLock?: { needStars: number }; cd?: number; cdMax?: number } // skin=皮肤槽美术图 URL(就绪即换装·空则回退 emoji)·bubble=泡泡锁·starLock=星锁区·cd=生成器冷却剩余秒
 export interface SlotView { itemEmoji: string; filled: boolean; want: boolean } // filled=已交付·want=板上有该物且此槽未满(可交付)
 export interface OrderView { char: string; slots: SlotView[]; coins: number; stars: number; deliverable: boolean; mood: number; moodFace: string; timed?: boolean; timeLeft?: number; portrait?: string; fly?: { id: string; label: string }; celebrate?: boolean }
 export interface S1State {
@@ -279,7 +279,10 @@ function board(s: S1State): N {
     if (cv?.cover != null) {
       const ck: N[] = [];
       // 埋物预览=半透明底图（owner：底下那个东西半透明画出来·隔沙朦胧）——放最下作背景层。
-      if (cv.coverReward) {
+      if (cv.coverSkin) {
+        // 埋物预览用皮肤图（与解锁后同一美术资源·owner：换台账锁前锁后一起换）·半透朦胧。
+        ck.push({ type: 'Image', id: `t-live-${i}-rw`, props: { src: cv.coverSkin, fit: 'contain' }, layout: { width: 92, height: 92, opacity: 0.4 } });
+      } else if (cv.coverReward) {
         ck.push({ type: 'Label', id: `t-live-${i}-rw`, props: { text: cv.coverReward, size: 44 }, layout: { opacity: 0.4 } });
       } else if (cv.cover <= 1) {
         ck.push({ type: 'Label', id: `t-live-${i}-web`, props: { text: '🕸️', size: 44 }, layout: { opacity: 0.4 } });

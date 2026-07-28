@@ -106,11 +106,11 @@ export function mount(container: HTMLElement, _host?: { exit: () => void }): () 
       if (idx >= 0 && !cells[idx]) {
         // 沙下埋的预览（锁着也显里面是啥·勾引挖）：⚡能量/💎宝石/🎁宝箱；覆盖的生成器格显其 emoji 预览。
         const rv = bk.reveal; const g = genByCell.get(idx);
-        let coverReward: string | undefined;
-        if (g) coverReward = g.emoji; // 埋着的生成器·显其观感
+        let coverReward: string | undefined; let coverSkin: string | undefined;
+        if (g) { coverReward = g.emoji; coverSkin = skinMap[g.sprite]; } // 埋着的生成器·显其观感（皮肤槽就绪即与解锁后同图·owner：锁前锁后同一美术资源）
         else if (rv?.kind === 'resource') coverReward = rv.resourceId === 'energy' ? `⚡${rv.amount ?? ''}` : rv.resourceId === 'stars' ? '💎' : rv.resourceId === 'coins' ? '🎁' : undefined;
-        else if (rv?.kind === 'spawn' && rv.templateId) coverReward = ITEM_EMOJI[rv.templateId] ?? '📦'; // 埋着的物品·显该物大图标（owner：锁着也看清里面）
-        cells[idx] = { emoji: '🔒', cover: bk.layers, coverReward }; coveredCells.add(idx);
+        else if (rv?.kind === 'spawn' && rv.templateId) { coverReward = ITEM_EMOJI[rv.templateId] ?? '📦'; coverSkin = skinMap[ITEMS[rv.templateId]?.sprite ?? '']; } // 埋着的物品·显该物大图标（皮肤槽就绪即同解锁后图）
+        cells[idx] = { emoji: '🔒', cover: bk.layers, coverReward, ...(coverSkin ? { coverSkin } : {}) }; coveredCells.add(idx);
       }
     }
     // ② 泡泡锁格（未被覆盖处·泡泡实体尚在=未点破）：显 🫧 裹真物 + 金币价·点破扣币出真物。
