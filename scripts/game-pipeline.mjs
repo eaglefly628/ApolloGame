@@ -105,6 +105,54 @@ export function acceptanceScenarioCount(root, slug) {
   return readdirSync(dir).filter((f) => f.endsWith('.scenario.jsonc')).length;
 }
 
+// ── 自证产物存在性（REQ-SELFCHECK·图纸①②·手册 docs/playbooks/self-check.md）─────────
+// owner 2026-07-29 拍板（101/102/103 复盘）：「门禁全绿」只证逻辑闭环——好不好看/好不好玩/
+// 和策划文本对不对得上，从来没人检查。故 S4/S5 门在原牙齿之上加一道**最便宜的前置**：
+// 施工 session 的自证产物（策划对齐单 + 真渲染自玩截图序列）不在档 → 拒跑重活（点名「自证未做」）。
+// 纯 fs 计数（不装载·不跑）——导出供 gate/board 与单测共用（compiled/builtin/cart 通用）。
+export const MIN_SELFCHECK_SHOTS = 5;
+export const SELFCHECK_HANDBOOK = 'docs/playbooks/self-check.md';
+
+/** shots/ 下的截图计数（png/jpg/jpeg·递归）：手册要求「每轮都做」，按轮分子目录（shots/r1/…）是
+ *  正当组织方式，不该被门罚——故递归计数；非图片文件（对齐单草稿/说明）不计。 */
+function countShots(dir) {
+  if (!existsSync(dir)) return 0;
+  let n = 0;
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) { n += countShots(p); continue; }
+    if (/\.(png|jpe?g)$/i.test(name)) n += 1;
+  }
+  return n;
+}
+
+/** 某关自证产物盘点：docs/design/<slug>/self-check/{SN-alignment.md, shots/}。纯 fs·无副作用。 */
+export function selfCheckArtifacts(root, slug, stage) {
+  const dir = join(root, 'docs', 'design', slug, 'self-check');
+  const alignment = `${stage}-alignment.md`;
+  const hasAlignment = existsSync(join(dir, alignment));
+  const shots = countShots(join(dir, 'shots'));
+  return { ok: hasAlignment && shots >= MIN_SELFCHECK_SHOTS, hasAlignment, shots, alignment, dir: `docs/design/${slug}/self-check/` };
+}
+
+/** 门拒判词（缺什么点名什么）：齐活=null 放行。导出供 gate 与单测共用。 */
+export function selfCheckBlock(a, stage) {
+  if (a.ok) return null;
+  const owes = [];
+  if (!a.hasAlignment) owes.push(`缺策划对齐单 ${a.alignment}`);
+  if (a.shots < MIN_SELFCHECK_SHOTS) owes.push(`截图 ${a.shots}/${MIN_SELFCHECK_SHOTS}（真渲染自玩序列：开局→关键操作≥3→失败路径→终局→重开）`);
+  return `✗ ${stage} 自证未做（见 ${SELFCHECK_HANDBOOK}）· ${owes.join(' · ')} · ${a.dir}`;
+}
+
+/** 板上自证提示（图纸②·新鲜度绑 gameHash）：产物缺=✗ 点名；产物在档但上次自证时的指纹已变=⚠ 过期
+ *  **提示**（不硬拦——图可能真没变，重玩重截或在对齐单注明即可）；否则 ✓。导出供单测。 */
+export function selfCheckNote(root, slug, stage, rec, freshHash) {
+  const a = selfCheckArtifacts(root, slug, stage);
+  if (!a.ok) return `自证 ✗ 未做（${a.hasAlignment ? `截图 ${a.shots}/${MIN_SELFCHECK_SHOTS}` : `缺 ${a.alignment}`} · 见 ${SELFCHECK_HANDBOOK}）`;
+  if (rec?.gameHash && rec.gameHash !== freshHash) return `自证 ⚠ 对齐单可能过期（游戏文件已变动·重玩重截或在单中注明未变）`;
+  return `自证 ✓（对齐单 + ${a.shots} 图${rec?.at ? ` @ ${String(rec.at).slice(0, 10)}` : ''}）`;
+}
+
 /** mock 债：live 行（非 retired）里 gen.mock 的计数——「mock 永不上画面」在终检关的机器化表达。无台账=0（纯免费库 placeholder 也算清账）。 */
 export function mockDebt(root, slug) {
   const l = led(root, slug);
@@ -145,8 +193,8 @@ export const REVIEW_STAGES = ['S2', 'S3', 'S4', 'S5', 'S8'];
 export const REVIEW_CHECKLISTS = {
   S2: ['能力清单逐条对 registry 实名核真（无幻觉能力）', '规则面全有现成解释器（无「数据表+待写解释器」虚胖）', '游戏层代码例外逐条有 Lead 裁决', '§4.5 美术接入已答（纯程序化须申请例外）'],
   S3: ['manifest 纯 JSON（无代码走私）', '实体/组件用途与 plan 一致（无 plan 外私加系统性机制）', '落盘门真跑过（load+2tick 证据新鲜）', '组件字段无「填了但没人解释」的死数据'],
-  S4: ['走查测试断言的是行为而非常量（假信心自查：故意改坏被测逻辑应变红）', '核心循环闭环：开局→行动→反馈→终局→可重开', '失败路径有测试（非法输入被拒/终局判定不误报）', '确定性：同 seed 同结果有断言', '验收剧本作者=GD 非 PE（git blame docs/design/<game>/acceptance/*.scenario.jsonc 抽查·PE 自写剧本=FAIL·REQ-ACCEPT 循环律）', '附真浏览器试玩截图序列（开局→N 步→终局→重开·非仅 CLI 绿）'],
-  S5: ['UI 全走 LayoutNode/引擎渲染（无手写 DOM 逃生）', 'audit 零新增红旗（棘轮绿）', '/check-ui 四关过（重叠/对比度/透明度/布局）', '交互可发现（按钮可见可点·不靠猜）'],
+  S4: ['走查测试断言的是行为而非常量（假信心自查：故意改坏被测逻辑应变红）', '核心循环闭环：开局→行动→反馈→终局→可重开', '失败路径有测试（非法输入被拒/终局判定不误报）', '确定性：同 seed 同结果有断言', '验收剧本作者=GD 非 PE（git blame docs/design/<game>/acceptance/*.scenario.jsonc 抽查·PE 自写剧本=FAIL·REQ-ACCEPT 循环律）', '附真浏览器试玩截图序列（开局→N 步→终局→重开·非仅 CLI 绿）', '自证对齐单抽样重走 ≥3 条（含 ⚠降格行的裁决去向核对）+ 好玩三问已作答非敷衍（docs/playbooks/self-check.md）'],
+  S5: ['UI 全走 LayoutNode/引擎渲染（无手写 DOM 逃生）', 'audit 零新增红旗（棘轮绿）', '/check-ui 四关过（重叠/对比度/透明度/布局）', '交互可发现（按钮可见可点·不靠猜）', '自证对齐单抽样重走 ≥3 条（含 ⚠降格行的裁决去向核对）+ 好玩三问已作答非敷衍（docs/playbooks/self-check.md）'],
   S8: ['三绿证据绑当前 HEAD 且净树', '本游戏走查在全量并发下仍绿（非单跑侥幸）', '复盘：本次撞到的手册缺口已回填或提单'],
 };
 // S7 评分卡（docs/playbooks/visual-scorecard.md 八维·0-3 分·premium=全维≥2·无证据不给分）。
@@ -225,12 +273,15 @@ export function boardFor(root, slug) {
         const scenNote = `验收剧本 ${nScen}/${MIN_ACCEPTANCE_SCENARIOS}${nScen < MIN_ACCEPTANCE_SCENARIOS ? '（GD 补）' : ' ✓'}`;
         if (machine.state === 'dim') machine.detail = form === 'cart' ? `未跑（gate=bench 五轴 + ${scenNote}）` : hasTests ? `未跑（gate=该游戏 vitest + ${scenNote}）` : `✗ 无 walkthrough 测试（testing.md：先补测试再谈玩法完成）· ${scenNote}`;
         if (machine.state === 'dim' && form !== 'cart' && !hasTests) machine.state = 'fail';
+        machine.detail += ` · ${selfCheckNote(root, slug, 'S4', pf.selfCheck?.S4, hashNow)}`;
         break;
       }
       case 'S5':
         machine = form === 'cart'
           ? { state: 'ok', detail: '纯数据卡带无游戏层代码（LayoutNode 纪律天然满足）' }
           : evalEvidence(pf.evidence?.S5, hashNow, head);
+        // 卡带 S5 本就免审计（无游戏层代码）→ 不加自证前置；其余形态板上常显自证态（缺=✗·陈旧=⚠）。
+        if (form !== 'cart') machine.detail += ` · ${selfCheckNote(root, slug, 'S5', pf.selfCheck?.S5, hashNow)}`;
         break;
       case 'S6':
         machine = artSubState(root, slug);
@@ -314,6 +365,10 @@ function gateRun(slug, stage, form) {
     if (nScen < MIN_ACCEPTANCE_SCENARIOS) {
       return { exit: 1, summary: `✗ 验收剧本不足（GD 补·需≥${MIN_ACCEPTANCE_SCENARIOS}·现 ${nScen}）· docs/design/${slug}/acceptance/*.scenario.jsonc` };
     }
+    // REQ-SELFCHECK·图纸①·自证产物存在性（同为 spawn 前的纯 fs 前置·缺=拒跑不空转）：
+    // 「先过自己这关」——对齐单 + 真渲染截图序列在档才许送机器门/复查门（手册 self-check.md）。
+    const scBlock = selfCheckBlock(selfCheckArtifacts(ROOT, slug, 'S4'), 'S4');
+    if (scBlock) return { exit: 1, summary: scBlock };
     // conformance：真引擎逐 step 对账 GD 剧本（无 adapter/断言不过=非零退出）。
     // 脚本用绝对路径 + 显式对齐 runner 的根（Lead 验收加固：ROOT 被测试注入临时根时，
     // 相对路径以 cwd=临时根解析不到脚本、runner 又按自身位置定根——两处都会错位成崩溃式落红）。
@@ -338,6 +393,10 @@ function gateRun(slug, stage, form) {
   }
   if (stage === 'S5') {
     if (form === 'cart') return { exit: 0, summary: '纯数据卡带免审计' };
+    // REQ-SELFCHECK·图纸①（UI 关同款前置·spawn audit 前的纯 fs 检查）：
+    // UI 好不好看/交互顺不顺，audit 判不了——自证对齐单 + 真渲染截图序列在档才许跑。
+    const scBlock5 = selfCheckBlock(selfCheckArtifacts(ROOT, slug, 'S5'), 'S5');
+    if (scBlock5) return { exit: 1, summary: scBlock5 };
     const r = run('node', ['scripts/game-skill-audit.mjs', slug]);
     const verdict = (r.stdout || '').split('\n').filter((l) => /^(AUDIT|RATCHET):/.test(l)).join(' · ');
     return { exit: r.status ?? 1, summary: verdict || (r.stderr || '').slice(0, 200) };
@@ -481,6 +540,12 @@ if (isMain) {
       ev.dirty = (spawnSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' }).stdout || '').trim().length > 0;
     } else {
       ev.gameHash = gameHash(ROOT, slug);
+    }
+    // 自证快照（REQ-SELFCHECK·图纸②）：产物齐活时记下**当时的游戏指纹**——此后游戏文件一动，
+    // 板上自证提示转 ⚠过期（提示不硬拦：图可能真没变）。产物不齐时不记（无快照=板显 ✗ 未做）。
+    if (stage === 'S4' || stage === 'S5') {
+      const a = selfCheckArtifacts(ROOT, slug, stage);
+      if (a.ok) pf.selfCheck = { ...(pf.selfCheck || {}), [stage]: { at: ev.at, shots: a.shots, gameHash: ev.gameHash || gameHash(ROOT, slug) } };
     }
     pf.evidence = { ...(pf.evidence || {}), [stage]: ev };
     (pf.history ||= []).push({ action: 'gate', stage, exit: res.exit, at: ev.at });

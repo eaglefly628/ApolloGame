@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { detectForm, gameHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS } from './game-pipeline.mjs';
+import { detectForm, gameHash, boardFor, artSubState, STAGES, GATE_STAGES, pipelineFile, mockDebt, writeConcept, priorGaps, orderGate, acceptanceScenarioCount, MIN_ACCEPTANCE_SCENARIOS, REVIEW_CHECKLISTS, selfCheckArtifacts, selfCheckBlock, selfCheckNote, MIN_SELFCHECK_SHOTS } from './game-pipeline.mjs';
 
 const withRoot = async (fn) => { const r = mkdtempSync(join(tmpdir(), 'gpipe-')); try { return await fn(r); } finally { rmSync(r, { recursive: true, force: true }); } };
 const put = (root, rel, content) => { const p = join(root, rel); mkdirSync(join(p, '..'), { recursive: true }); writeFileSync(p, typeof content === 'string' ? content : JSON.stringify(content, null, 2)); };
@@ -251,6 +251,71 @@ describe('acceptanceScenarioCount / S4 存在性门', () => {
   });
 });
 
+// ═══ S4/S5 自证门（REQ-SELFCHECK·图纸①②·「自己玩自己看对照策划」）═══
+describe('selfCheckArtifacts / selfCheckBlock（自证产物存在性·纯 fs）', () => {
+  const shots = (root, slug, names) => names.forEach((n) => put(root, `docs/design/${slug}/self-check/shots/${n}`, 'img'));
+  it('无目录=空盘点·计 png/jpg/jpeg·忽略非图片·子目录递归计入', () => withRoot(async (root) => {
+    put(root, 'src/games/g/index.ts', '// compiled');
+    expect(selfCheckArtifacts(root, 'g', 'S4')).toMatchObject({ ok: false, hasAlignment: false, shots: 0 });
+    shots(root, 'g', ['01.png', '02.PNG', '03.jpg', '04.jpeg']);
+    put(root, 'docs/design/g/self-check/shots/notes.md', '# 不是图'); // 非图片不计
+    expect(selfCheckArtifacts(root, 'g', 'S4').shots).toBe(4);
+    shots(root, 'g', ['r2/05.png']); // 按轮分子目录也算（手册要求「每轮都做」）
+    expect(selfCheckArtifacts(root, 'g', 'S4').shots).toBe(MIN_SELFCHECK_SHOTS);
+    expect(selfCheckArtifacts(root, 'g', 'S4').ok).toBe(false); // 图够了但对齐单还缺
+    put(root, 'docs/design/g/self-check/S4-alignment.md', '# 对齐单');
+    expect(selfCheckArtifacts(root, 'g', 'S4').ok).toBe(true);
+    expect(selfCheckArtifacts(root, 'g', 'S5').ok).toBe(false); // 对齐单逐关独立（S5 未做）
+  }));
+  it('MIN=5；判词点名缺什么（缺单/图不足各自点名·齐活=null 放行）', () => withRoot(async (root) => {
+    expect(MIN_SELFCHECK_SHOTS).toBe(5);
+    put(root, 'src/games/g/index.ts', '// compiled');
+    const b0 = selfCheckBlock(selfCheckArtifacts(root, 'g', 'S4'), 'S4');
+    expect(b0).toContain('自证未做');
+    expect(b0).toContain('self-check.md'); // 点名手册
+    expect(b0).toContain('缺策划对齐单 S4-alignment.md');
+    expect(b0).toContain('截图 0/5');
+    put(root, 'docs/design/g/self-check/S4-alignment.md', '# 对齐单');
+    shots(root, 'g', ['01.png', '02.png']);
+    const b1 = selfCheckBlock(selfCheckArtifacts(root, 'g', 'S4'), 'S4');
+    expect(b1).not.toContain('缺策划对齐单');
+    expect(b1).toContain('截图 2/5');
+    shots(root, 'g', ['03.png', '04.png', '05.png']);
+    expect(selfCheckBlock(selfCheckArtifacts(root, 'g', 'S4'), 'S4')).toBeNull();
+  }));
+});
+
+describe('selfCheckNote 新鲜度（图纸②·绑 gameHash·⚠提示不硬拦）', () => {
+  it('缺产物=✗·齐活=✓·快照指纹与现指纹不符=⚠过期', () => withRoot(async (root) => {
+    put(root, 'public/games/g/manifest.json', MANIFEST);
+    expect(selfCheckNote(root, 'g', 'S4', undefined, gameHash(root, 'g'))).toContain('自证 ✗');
+    put(root, 'docs/design/g/self-check/S4-alignment.md', '# 对齐单');
+    for (const n of ['1', '2', '3', '4', '5']) put(root, `docs/design/g/self-check/shots/${n}.png`, 'img');
+    const h = gameHash(root, 'g');
+    expect(selfCheckNote(root, 'g', 'S4', { at: '2026-07-29T00:00:00Z', gameHash: h }, h)).toContain('自证 ✓');
+    expect(selfCheckNote(root, 'g', 'S4', { at: '2026-07-29T00:00:00Z', gameHash: 'stale-hash' }, h)).toContain('⚠');
+    expect(selfCheckNote(root, 'g', 'S4', { gameHash: 'stale-hash' }, h)).toContain('过期');
+    expect(selfCheckNote(root, 'g', 'S4', {}, h)).toContain('自证 ✓'); // 无快照字段=不冤判过期
+  }));
+  it('板 S4/S5 机器门提示带自证态；cart 的 S5（天然免审计）不加自证提示', () => withRoot(async (root) => {
+    put(root, 'public/games/g/manifest.json', MANIFEST);
+    const stage = (slug, id) => boardFor(root, slug).stages.find((s) => s.id === id);
+    expect(stage('g', 'S4').machine.detail).toContain('自证 ✗');
+    expect(stage('g', 'S5').machine.detail).toContain('自证 ✗');
+    put(root, 'library/c/manifest.json', MANIFEST);
+    expect(stage('c', 'S5').machine.detail).not.toContain('自证');
+    expect(stage('c', 'S4').machine.detail).toContain('自证 ✗'); // 卡带的玩法关同受自证约束
+  }));
+  it('复查清单 S4/S5 各含「对齐单抽样重走 ≥3 条」+「好玩三问」行', () => {
+    for (const stage of ['S4', 'S5']) {
+      const joined = REVIEW_CHECKLISTS[stage].join('\n');
+      expect(joined).toContain('自证对齐单抽样重走 ≥3 条');
+      expect(joined).toContain('⚠降格行的裁决去向');
+      expect(joined).toContain('好玩三问');
+    }
+  });
+});
+
 // CLI 端到端：真跑 game-pipeline.mjs（APOLLO_PIPELINE_ROOT 注入临时根·不碰真仓库）。
 const CLI = fileURLToPath(new URL('./game-pipeline.mjs', import.meta.url));
 const runCli = (root, args) => spawnSync('node', [CLI, ...args], { env: { ...process.env, APOLLO_PIPELINE_ROOT: root }, encoding: 'utf8' });
@@ -306,14 +371,55 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
 
-  // Lead 验收加固：≥3 场景后 gate 真进 conformance——temp 根注入下 runner 根须对齐（绝对脚本路径 +
-  // APOLLO_ACCEPTANCE_ROOT 透传），落红须是真判词（缺 adapter），不许是脚本找不到的崩溃尾巴。
-  it('S4 gate：3 场景无 adapter → conformance 真判红（点名缺 adapter·非崩溃式落红）', () => {
+  // REQ-SELFCHECK·图纸①：自证产物缺 → S4/S5 门在 spawn 前拒（点名「自证未做·见 self-check.md」）。
+  const putSelfCheck = (root, slug, stage) => {
+    put(root, `docs/design/${slug}/self-check/${stage}-alignment.md`, '# 对齐单\n- 承诺 A ✅对齐');
+    for (const n of ['01', '02', '03', '04', '05']) put(root, `docs/design/${slug}/self-check/shots/${n}.png`, 'img');
+  };
+  const putScenarios = (root, slug) => {
+    for (const n of ['a', 'b', 'c']) put(root, `docs/design/${slug}/acceptance/${n}.scenario.jsonc`, JSON.stringify({ name: n, game: slug, seed: 1, steps: [{ tick: 1 }] }));
+  };
+
+  it('S4 gate：剧本够但自证产物缺 → 拒过·点名「自证未做」+手册（未进 conformance 重活）', () => {
     const root = mkFixture();
     try {
-      for (const n of ['a', 'b', 'c']) {
-        put(root, `docs/design/g/acceptance/${n}.scenario.jsonc`, JSON.stringify({ name: n, game: 'g', seed: 1, steps: [{ tick: 1 }] }));
-      }
+      putScenarios(root, 'g');
+      const r = runCli(root, ['gate', 'g', 'S4', '--out-of-order', '测 S4 自证门']);
+      expect(r.status).not.toBe(0);
+      const out = r.stdout + r.stderr;
+      expect(out).toContain('自证未做');
+      expect(out).toContain('self-check.md');
+      expect(out).not.toContain('conformance'); // 在 spawn 前就拒了（不空转跑重活）
+      const pf = JSON.parse(readFileSync(join(root, 'public', 'games', 'g', 'pipeline.json'), 'utf8'));
+      expect(pf.evidence.S4.exit).not.toBe(0);
+      expect(pf.selfCheck).toBeUndefined(); // 产物不齐不记快照
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it('S5 gate：自证产物缺 → 拒过·点名 S5-alignment.md；补齐后放行且落自证快照（绑 gameHash）', () => {
+    const root = mkFixture();
+    try {
+      const bad = runCli(root, ['gate', 'g', 'S5', '--out-of-order', '测 S5 自证门']);
+      expect(bad.status).not.toBe(0);
+      expect(bad.stdout + bad.stderr).toContain('S5-alignment.md');
+      putSelfCheck(root, 'g', 'S5');
+      const ok = runCli(root, ['gate', 'g', 'S5', '--out-of-order', '测 S5 自证门放行']);
+      const pf = JSON.parse(readFileSync(join(root, 'public', 'games', 'g', 'pipeline.json'), 'utf8'));
+      expect(ok.stdout + ok.stderr).not.toContain('自证未做'); // 已越过自证门（后续 audit 红是另一回事）
+      expect(pf.selfCheck.S5).toMatchObject({ shots: 5 });
+      expect(pf.selfCheck.S5.gameHash).toBeTruthy(); // 新鲜度锚（图纸②）
+      const b = runCli(root, ['board', 'g']);
+      expect(b.stdout).toContain('自证 ✓');
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  }, 60_000);
+
+  // Lead 验收加固：≥3 场景后 gate 真进 conformance——temp 根注入下 runner 根须对齐（绝对脚本路径 +
+  // APOLLO_ACCEPTANCE_ROOT 透传），落红须是真判词（缺 adapter），不许是脚本找不到的崩溃尾巴。
+  it('S4 gate：3 场景 + 自证齐 → conformance 真判红（点名缺 adapter·非崩溃式落红）', () => {
+    const root = mkFixture();
+    try {
+      putScenarios(root, 'g');
+      putSelfCheck(root, 'g', 'S4');
       const r = runCli(root, ['gate', 'g', 'S4', '--out-of-order', '测 conformance 根对齐']);
       expect(r.status).not.toBe(0);
       const out = r.stdout + r.stderr;
