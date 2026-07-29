@@ -6,6 +6,7 @@ import time
 import webbrowser
 import threading
 import socket
+from pathlib import Path
 
 from .server import start_api_server
 from .sysutil import ROOT, VITE_PORT, _cleanup, _processes, _spawn, banner, c, check_env, get_project_status, is_port_in_use
@@ -119,6 +120,26 @@ def cmd_workshop():
     except KeyboardInterrupt:
         _cleanup()
 
+def cmd_platform():
+    """平台离线打包运行入口：python3 apollo.py platform（platform-packaging-spec.md D2-D4）。
+    只起 API 服务器——它现在**同时伺服已构建的静态前端**（main_entry/server.py `_serve_static`
+    读 STATIC_DIST_DIR/APOLLO_STATIC_DIR）+ 全部 /api/*，一个端口担两职，供 electron loadURL
+    直连。不叫 check_env()（打包产物是纯 python 后端 + 预构建静态站，客户机器不装 node，
+    check_env 那套 npm/node 探测在这条路径上既无必要也会误报）、不拉 start_vite()（studio
+    前端已经是构建产物，不需要 dev server）、不开浏览器（electron 自己 loadURL；Linux/CI
+    冒烟走 curl，开浏览器在无头环境里只会噪音报错）。
+    健康检查口径：electron/CI 探测 `GET /` 200 即代表就绪（见 electron/platform-launch.cjs
+    waitForHealth · scripts/platform-launch-smoke.mjs）。"""
+    port = server.API_PORT
+    print(c("  [PLATFORM]", 'g'), f"启动平台后端（同端口伺服前端静态 + /api/*）→ http://127.0.0.1:{port}/")
+    static_dir = os.environ.get('APOLLO_STATIC_DIR') or str(ROOT / 'dist')
+    print(c("  [PLATFORM]", 'dim'), f"静态前端目录：{static_dir}" + ('（不存在——先 vite build）' if not Path(static_dir).is_dir() else ''))
+    start_api_server()
+    try:
+        threading.Event().wait()  # 阻塞主线程直到 Ctrl+C / 父进程（electron）杀掉本进程
+    except KeyboardInterrupt:
+        _cleanup()
+
 def cmd_test():
     check_env()
     sys.exit(subprocess.call(**_spawn(['npx', 'vitest', 'run']), cwd=ROOT))
@@ -154,6 +175,7 @@ def cmd_help():
     print(f"    {c('(default)', 'c').ljust(30)} Launch Game Library + Dev Tools")
     print(f"    {c('player', 'c').ljust(30)} 创作台玩家模式（空卡带架+创作向导·To-C）")
     print(f"    {c('workshop', 'c').ljust(30)} 对外展示工作台（原版设计·:4000/workshop/·不弹老界面）")
+    print(f"    {c('platform', 'c').ljust(30)} 离线打包运行入口（同端口伺服已构建前端+/api/*·不拉 vite/不开浏览器·供 electron/CI 用）")
     print(f"    {c('test', 'c').ljust(30)} Run all tests")
     print(f"    {c('typecheck', 'c').ljust(30)} TypeScript type check")
     print(f"    {c('build', 'c').ljust(30)} Production build")
@@ -170,8 +192,8 @@ def main():
         return
 
     dispatch = {
-        'launcher': cmd_launcher, 'player': cmd_player, 'workshop': cmd_workshop, 'test': cmd_test,
-        'typecheck': cmd_typecheck, 'build': cmd_build, 'bench': cmd_bench, 'status': cmd_status,
+        'launcher': cmd_launcher, 'player': cmd_player, 'workshop': cmd_workshop, 'platform': cmd_platform,
+        'test': cmd_test, 'typecheck': cmd_typecheck, 'build': cmd_build, 'bench': cmd_bench, 'status': cmd_status,
         'help': cmd_help, '-h': cmd_help,
     }
     cmd = args[0]

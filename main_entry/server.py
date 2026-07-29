@@ -1,5 +1,6 @@
 """API 服务器（APIHandler 分派器）+ start_api_server + API_PORT（写穿透属主）。"""
 import io
+import os
 import zipfile
 import json
 import re
@@ -36,7 +37,12 @@ from .t2_replace import handle_art_approve, handle_art_regenerate, handle_art_re
 from .ts_carts import handle_library_doctor, library_put_logic, library_set_flags
 from .workshop_state import handle_agent_chats_get, handle_agent_chats_put, handle_agent_session_reset, handle_ws_draft_get, handle_ws_draft_put
 
-API_PORT = 4000
+API_PORT = int(os.environ.get('APOLLO_API_PORT', '4000') or '4000')  # 平台打包：electron 挑空闲端口后经此 env 传入
+
+# 已构建的前端产物目录（平台打包：`vite build` 产出的 studio launcher 静态站）。缺省 ROOT/dist；
+# 电子壳/CI 可用 APOLLO_STATIC_DIR 另指（如 platform-dist/dist）——不设也不报错，纯 API 开发模式下
+# 该目录本就不存在，_serve_static 命中即 404，不影响任何现有 /api/* 端点。
+STATIC_DIST_DIR = Path(os.environ.get('APOLLO_STATIC_DIR') or (ROOT / 'dist'))
 
 # ── API 服务器 ──
 
@@ -201,6 +207,43 @@ class APIHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    _STATIC_CT = {
+        '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8',
+        '.mjs': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
+        '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml',
+        '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf',
+        '.ico': 'image/x-icon', '.glb': 'model/gltf-binary', '.map': 'application/json; charset=utf-8',
+    }
+
+    def _serve_static(self, path: str) -> None:
+        """GET 非 /api/* 且未命中任何专用路由 → 从已构建前端产物目录（STATIC_DIST_DIR，通常
+        `vite build` 的 dist/）伺服（平台打包 D2：后端 + 前端同源一个端口）。纯 API 开发态该目录
+        不存在 → 404（不影响任何现有行为·未构建时访问站点根路径就是"还没 build"，明确信号而非假 200）。
+        路径穿越防护同 _serve_workshop；SPA 兜底——非文件请求（无扩展名的深链）回退 index.html，
+        真正缺失的静态资源（有扩展名但 404）如实报 404，不吞成假 200 掩盖真坏链。"""
+        base = STATIC_DIST_DIR.resolve()
+        if not base.is_dir():
+            self.send_response(404); self.end_headers(); return
+        rel = 'index.html' if path in ('/', '') else path.lstrip('/')
+        try:
+            rel = urllib.parse.unquote(rel)
+        except Exception:
+            pass
+        target = (base / rel).resolve()
+        try:
+            target.relative_to(base)
+        except ValueError:
+            self.send_response(403); self.end_headers(); return
+        if not target.is_file():
+            if '.' in Path(rel).name:  # 有扩展名却缺文件 = 真缺资源，不伪装成 200
+                self.send_response(404); self.end_headers(); return
+            target = base / 'index.html'  # SPA 深链兜底（launcher 走 ?query 路由·当前用不上，留一般性兜底）
+            if not target.is_file():
+                self.send_response(404); self.end_headers(); return
+        ctype = self._STATIC_CT.get(target.suffix.lower(), 'application/octet-stream')
+        self._send_file(target, ctype)
+
     def _serve_export(self, slug: str) -> None:
         """GET /api/library/<slug>/export → 下载包 zip（owner 2026-07-11「发布=一个下载包」）。
         内容：卡带本体（manifest/meta/design）+ 游戏资产侧（public/games/<slug>·**排除 gen/mock 预览物**
@@ -259,6 +302,13 @@ class APIHandler(BaseHTTPRequestHandler):
 
         if path.startswith('/assets/'):
             self._serve_assets(path)
+            return
+
+        # 已构建前端静态伺服（平台打包 D2）：非 /api/* 且未命中以上任何专用路由 → 落这里
+        # （站点根 index.html + JS/CSS/字体等构建产物）。必须先于下面的 /api/* 分派链，
+        # 否则会被最终 else 分支吞成 200 {"error":"Unknown endpoint"} 的假 JSON 响应。
+        if not path.startswith('/api/'):
+            self._serve_static(path)
             return
 
         # 下载包导出（发布屏=下载包·binary 出，先于 library JSON 分派）。

@@ -43,8 +43,21 @@ function serveLiveGameAssets() {
   };
 }
 
+// 平台打包（D2·scripts/build-platform.mjs 设）：JS/CSS/字体产物挪出默认的 dist/assets/，
+// 因为 main_entry/server.py 早占了 `/assets/*` 这条路由给共享素材库 FreeArtLib（ROOT/assets/**·
+// assets/index.json + 缩略图，见 _serve_assets）——不挪会撞名：构建产物覆盖同名路径，浏览器把
+// 素材库当 JS 解析/把 JS 当素材 404，两头都坏。挪到 `app/` 只影响平台构建；不设该 env 时
+// （日常 `npm run dev`/`npm run build`）assetsDir 仍是 Vite 默认 'assets'，零回归。
+// copyPublicDir 同理为 false：平台构建改由 build-platform.mjs 精选拷贝 public/games/<9 白名单>，
+// 不能让 Vite 内建的"整个 public/ 原样搬进 dist/"把被过滤掉的游戏素材（game-f/x/d/q/t/a）也塞进去。
+const PLATFORM_BUILD = process.env.VITE_PLATFORM_BUILD === '1';
+
 export default defineConfig({
   plugins: [react(), serveLiveGameAssets(), copyUsedAssets(__dirname, 'dist')],
+  build: {
+    assetsDir: PLATFORM_BUILD ? 'app' : 'assets',
+    copyPublicDir: !PLATFORM_BUILD,
+  },
   // 启动提速（owner 07-15「老开发库启动要好久」·诊断根因#1）：chokidar 缺省盯全仓 39,283 个文件，
   // 其中 assets/ 素材库就 37,004 个——listen 后初扫风暴把事件循环饿死（"ready in 270ms" 但首响应 6.6s，
   // 冷盘机器分钟级）。这些目录全是运行时 HTTP fetch 消费、无 HMR 价值 → 不监听（A/B 实测 6.63s→1.74s，

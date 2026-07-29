@@ -32,6 +32,16 @@ import { ProfileCard } from './launcher/profile-card.js';
 //  Game Registry
 // ══════════════════════════════════════
 
+// 平台打包白名单（build 期 env·D2）：VITE_GAMES_ALLOWLIST="id1,id2,…" 时只留清单内 id；
+// 缺省/空串=全量（零回归——普通 dev/build 不设此 env，行为不变）。只影响下面这份**运行时渲染表**，
+// 不改字面量数组本身在源文件里的文本形状——main_entry/games_list.py 仍按原文件正则读到全量 15 个
+// （工坊内部工具照旧看得到全部内置游戏元信息），此过滤只砍客户端货架实际渲染出的卡片，即打包
+// 产物真正暴露给玩家的入口。GAMES_ALLOWLIST 为 null 即零过滤（filter 回调恒真）。
+const GAMES_ALLOWLIST: Set<string> | null = (() => {
+  const raw = (import.meta.env.VITE_GAMES_ALLOWLIST as string | undefined ?? '').trim();
+  return raw ? new Set(raw.split(',').map((s) => s.trim()).filter(Boolean)) : null;
+})();
+
 // GAMES 不拆走：main_entry/games_list.py 以正则从 src/launcher.tsx 解析本表（内置卡片元信息单一真相·只读）。
 export const GAMES: GameEntry[] = [
   {
@@ -193,6 +203,14 @@ export const GAMES: GameEntry[] = [
   },
 ];
 
+// 客户端货架实际渲染表（下方 Launcher 组件 + CartridgeCarousel 消费这份，不消费 GAMES 本身）：
+// GAMES 保持原始字面量类型标注不变（正则解析 + 字面量 status 联合类型收窄都靠它），过滤单独在
+// 派生表上做，两不相扰。GAMES_ALLOWLIST 为 null 时 .filter 回调恒真，等价于 VISIBLE_GAMES===GAMES
+// 的全量（零回归）。
+export const VISIBLE_GAMES: GameEntry[] = GAMES.filter(
+  (g) => GAMES_ALLOWLIST === null || GAMES_ALLOWLIST.has(g.id),
+);
+
 // ══════════════════════════════════════
 //  Main Launcher
 // ══════════════════════════════════════
@@ -204,7 +222,7 @@ export function Launcher() {
   // 系列 bug 的放大器（根因之一 stdout pipe 阻塞已修，此处把"导航被 reload 清零"永久防住）。
   const [launched, setLaunchedState] = useState<string | null>(() => {
     const q = new URLSearchParams(window.location.search).get('game');
-    return q && GAMES.some((g) => g.id === q && g.status === 'playable') ? q : null;
+    return q && VISIBLE_GAMES.some((g) => g.id === q && g.status === 'playable') ? q : null;
   });
   // Workshop ▶ 直达（REQ-WORKSHOP 续·owner 07-11）：?game=lib:<slug> 直启卡带；from=workshop 时返回=回创作台。
   const fromWorkshop = React.useMemo(
@@ -651,7 +669,7 @@ export function Launcher() {
           )}
         />
       ) : (
-        <CartridgeCarousel games={[...GAMES, ...libGameEntries]} onLaunch={onLaunchCartridge} renderLaunchArea={renderLaunchArea} selectId={selectSlug ?? undefined} onSelected={clearSelect} />
+        <CartridgeCarousel games={[...VISIBLE_GAMES, ...libGameEntries]} onLaunch={onLaunchCartridge} renderLaunchArea={renderLaunchArea} selectId={selectSlug ?? undefined} onSelected={clearSelect} />
       )}
 
       {/* 玩家模式·非空架：显式「＋ 新建游戏」入口（空架时 EmptyShelf 已有大卡位·此处不重复） */}

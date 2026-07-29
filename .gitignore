@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-cartridge/
+platform-dist/
 release/
 apollo-*-rk3562.html
 apollo-*-rk3562.tar.gz

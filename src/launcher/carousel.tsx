@@ -1,7 +1,7 @@
 // launcher.tsx 拆分而来（2026-07-16 纯搬运·行为不变）：卡带轮播 —— useKeyframes / Cartridge / CartridgeCarousel。
 import React, { useState, useEffect, useCallback } from 'react';
 import type { GameEntry } from '../studio/library-model.js';
-import { GAMES } from '../launcher.js';
+import { VISIBLE_GAMES } from '../launcher.js';
 
 export function useKeyframes() {
   useEffect(() => {
@@ -120,7 +120,7 @@ function Cartridge({ game, isSelected }: { game: GameEntry; isSelected: boolean 
   );
 }
 
-export function CartridgeCarousel({ onLaunch, games = GAMES, renderLaunchArea, selectId, onSelected }: {
+export function CartridgeCarousel({ onLaunch, games = VISIBLE_GAMES, renderLaunchArea, selectId, onSelected }: {
   onLaunch: (id: string) => void;
   games?: GameEntry[];
   /** 选中卡带的启动区自定义（library 卡带 → 四键操作条）；返回 null → 默认单个 LAUNCH 大按钮。 */
