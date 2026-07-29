@@ -41,7 +41,7 @@ describe('UI Components · renderNode', () => {
     const html = renderNode(node);
     expect(html).toContain('>Hello<');
     expect(html).toContain('font-size:16px');   // lg
-    expect(html).toContain('#9cd2c5');           // SHELL.jade
+    expect(html).toContain(SHELL.jade);          // 主色令牌（不 pin 字面 hex·随品牌换色不脆）
     expect(html).toContain('font-weight:700');
   });
 
@@ -49,7 +49,7 @@ describe('UI Components · renderNode', () => {
     const node: LayoutNode = { type: 'Label', id: 'lbl2', props: { text: 'X' } };
     const html = renderNode(node);
     expect(html).toContain('font-size:13px');
-    expect(html).toContain('#e3e8f0');  // SHELL.text
+    expect(html).toContain(SHELL.text);  // 正文色令牌（不 pin 字面 hex）
   });
 
   it('Dropdown: options + value selected + action', () => {
@@ -87,7 +87,7 @@ describe('UI Components · renderNode', () => {
     const dim  = renderNode({ type: 'Badge', id: 'b3', props: { text: 'DIM',  tone: 'dim'  } });
     expect(ok).toContain('#84c7a4');    // SHELL.ok
     expect(warn).toContain('#d6b277');  // SHELL.warn
-    expect(dim).toContain('#5d6880');   // SHELL.dim
+    expect(dim).toContain(SHELL.dim);   // 弱化色令牌（不 pin 字面 hex）
   });
 
   it('Input: placeholder + value + data-action', () => {

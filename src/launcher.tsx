@@ -506,7 +506,7 @@ export function Launcher() {
       {/* Header —— 壳层统一基调（清幽·高雅·秩序）：阔字距铭牌 + 青瓷×黛紫渐变字 + 发丝线分隔 */}
       <div style={{ textAlign: 'center', marginBottom: 26 }}>
         <div style={{ fontSize: 11, letterSpacing: 6, color: SHELL.faint, marginBottom: 8 }}>
-          A P O L L O &nbsp;E N G I N E
+          Z E R O C R A F T &nbsp;E N G I N E
         </div>
         <h1 style={{
           fontSize: 30,

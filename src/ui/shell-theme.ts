@@ -1,11 +1,11 @@
 import type { CSSProperties } from 'react';
 
 // ═══════════════════════════════════════════════════════════════
-//  Apollo Shell 统一视觉基调（引擎壳层：launcher / Studio / 资源库 / 游戏返回钮）
+//  ZeroCraft Shell 统一视觉基调（引擎壳层：launcher / Studio / 资源库 / 游戏返回钮）
 //
 //  气质定位：清幽 · 高雅 · 高级 · 秩序 —— 一台安静运转的 AI 引擎。
-//  · 墨蓝近黑作底（不是纯黑：保留一点蓝灰的"夜色"层次）
-//  · 主色「青瓷」（低饱和青绿，清幽）；辅色「黛紫」（沿袭旧紫但降噪）；点睛「淡金」（克制地表达高级）
+//  · 靛蓝近黑作底（不是纯黑：保留一点靛紫的"夜色"层次·呼应 ZeroCraft 立方体图标的靛底）
+//  · 主色「青」（teal 青碧，清幽·取自图标顶面）；辅色「靛紫」（indigo·取自图标蓝面）；点睛「淡金」（克制地表达高级）
 //  · 发丝线分隔（hairline）替代重边框；阔字距小标签表达秩序感
 //  · 语义色（成功/警示/危险）统一降饱和，不抢戏
 //
@@ -13,42 +13,42 @@ import type { CSSProperties } from 'react';
 //  规则：壳层组件一律从此取色/取样式，不再各自内联色值。
 // ═══════════════════════════════════════════════════════════════
 
-// Apollo Kit 玄铁 onyx 贴图底（owner 2026-06-25：引擎 chrome 换 Apollo Kit 脸）。程序化纹理·零资产。
-const APOLLO_APPBG  = 'radial-gradient(120% 120% at 50% -8%, #1d2d42 0%, #0f1b29 55%, #070e17 100%)'; // 径向底色
-const APOLLO_TEXTURE = 'repeating-linear-gradient(45deg, rgba(135,175,215,.05) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(135,175,215,.04) 0 1px, transparent 1px 9px)'; // 钢蓝斜向交叉细纹
-const APOLLO_WASH    = 'radial-gradient(120% 85% at 28% 8%, rgba(82,120,158,.22), transparent 55%), radial-gradient(100% 80% at 88% 100%, rgba(8,14,24,.5), transparent 55%)'; // 左上提亮 + 右下压暗
+// ZeroCraft 靛玄 onyx 贴图底（品牌重塑 2026-07-29：引擎 chrome 配 ZeroCraft 立方体图标脸·靛×青）。程序化纹理·零资产。
+const ZEROCRAFT_APPBG  = 'radial-gradient(120% 120% at 50% -8%, #2a2763 0%, #17153a 55%, #090816 100%)'; // 靛紫径向底色
+const ZEROCRAFT_TEXTURE = 'repeating-linear-gradient(45deg, rgba(150,140,240,.05) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(150,140,240,.04) 0 1px, transparent 1px 9px)'; // 靛紫斜向交叉细纹
+const ZEROCRAFT_WASH    = 'radial-gradient(120% 85% at 28% 8%, rgba(99,102,241,.20), transparent 55%), radial-gradient(100% 80% at 88% 100%, rgba(9,8,22,.55), transparent 55%)'; // 左上靛光提亮 + 右下压暗
 
 export const SHELL = {
-  // 底色（由深到浅四级）
-  bg0: '#06080d',
-  bg1: '#0a0e17',
-  bg2: '#0f1523',
-  bg3: '#151c2e',
+  // 底色（由深到浅四级·靛玄夜色）
+  bg0: '#070613',
+  bg1: '#0b0a1c',
+  bg2: '#12102a',
+  bg3: '#191634',
   /** 页面大背景渐变 */
-  pageBg: 'linear-gradient(180deg, #06080d 0%, #0b1120 100%)',
-  /** 引擎页面贴图底（Apollo Kit 玄铁 onyx 分层合成：wash , 纹理 , 径向底色）。launcher/Studio 等 React chrome 根背景用它。
+  pageBg: 'linear-gradient(180deg, #070613 0%, #0f0d28 100%)',
+  /** 引擎页面贴图底（ZeroCraft 靛玄 onyx 分层合成：wash , 纹理 , 径向底色）。launcher/Studio 等 React chrome 根背景用它。
    *  刻意只做这一个合成字段、不设 SHELL.texture/wash——否则会污染 renderNode 默认主题、给所有默认数据 Screen 平添贴图（非本需求）。 */
-  appBg: `${APOLLO_WASH}, ${APOLLO_TEXTURE}, ${APOLLO_APPBG}`,
+  appBg: `${ZEROCRAFT_WASH}, ${ZEROCRAFT_TEXTURE}, ${ZEROCRAFT_APPBG}`,
 
-  // 发丝线
-  line: 'rgba(154,170,196,0.10)',
-  lineStrong: 'rgba(154,170,196,0.22)',
+  // 发丝线（靛调）
+  line: 'rgba(164,166,214,0.10)',
+  lineStrong: 'rgba(164,166,214,0.22)',
 
   // 文字（亮 → 暗）
-  text: '#e3e8f0',
-  sub: '#96a2b8',
-  dim: '#5d6880',
-  faint: '#39435a',
+  text: '#e6e6f4',
+  sub: '#9b9ec2',
+  dim: '#63658a',
+  faint: '#3d3f63',
 
-  // 主色 · 青瓷
-  jade: '#9cd2c5',
-  jadeWash: 'rgba(156,210,197,0.10)',
-  jadeLine: 'rgba(156,210,197,0.35)',
+  // 主色 · 青（teal·图标顶面）
+  jade: '#5fdcc8',
+  jadeWash: 'rgba(95,220,200,0.10)',
+  jadeLine: 'rgba(95,220,200,0.35)',
 
-  // 辅色 · 黛紫
-  violet: '#a79ddb',
-  violetWash: 'rgba(167,157,219,0.10)',
-  violetLine: 'rgba(167,157,219,0.32)',
+  // 辅色 · 靛紫（indigo·图标蓝面）
+  violet: '#9aa0f5',
+  violetWash: 'rgba(129,140,248,0.12)',
+  violetLine: 'rgba(129,140,248,0.34)',
 
   // 点睛 · 淡金（克制使用：选中态/高亮数字）
   gold: '#d4bd8a',
@@ -154,7 +154,7 @@ export function sBadge(tone: 'ok' | 'warn' | 'dim'): CSSProperties {
 
 /** 棋盘格透明底（资产缩略图背景）。 */
 export const sChecker: CSSProperties = {
-  background: 'repeating-conic-gradient(#161c2b 0% 25%, #0d1220 0% 50%) 50% / 16px 16px',
+  background: 'repeating-conic-gradient(#1b1836 0% 25%, #110f28 0% 50%) 50% / 16px 16px',
 };
 
 /** 游戏内右上角壳层菜单 · 齿轮触发钮（替代旧常驻「返回」pill：缩成一颗图标，不再压住游戏右上角 HUD）。 */
