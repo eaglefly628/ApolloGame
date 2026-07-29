@@ -11,10 +11,13 @@
 // `create`/`read`/`paint`/`overlay` 回调提供（同 mount-host 纪律：只搭台，不进 sim/hash）。
 // 跳过或复用本件都不影响回放/hash/lockstep。
 //
-// ⚠ 冻结为何延到 microtask（BUG-04·game-103.ts:93-96 已验证的坑）：`Engine.start()` 的 loop 在
+// ⚠ 冻结为何延到 microtask（BUG-04·game-103.ts:93-96 已验证的坑）：`Engine.start()` 的 loop 旧序在
 // notifyListeners() **之后**才 `rafId = requestAnimationFrame(loop)` 重挂——从 listener 里同步调
 // engine.stop() 只会取消旧 rafId，紧接着那行又把 loop 重新挂上，sim 根本停不下来。延到 microtask
-// 执行时 loop 已返回、重挂的 RAF 还没触发 → 干净取消。故本件一律经 `defer` 冻结（默认 queueMicrotask）。
+// 执行时 loop 已返回、重挂的 RAF 还没触发 → 干净取消。
+// **引擎已修（REQ-LOOPSTOP·2026-07-29）**：重挂移到通知之前，listener 里同步 stop() 即刻生效
+// （回归 `src/runtime/engine.loop-stop.test.ts`）。此处的 `defer` 转为**防御性保留**——`SimHandle`
+// 是结构面，宿主可传任何自实现的 sim（未必有同样修好的重挂序），延一拍冻结无害且更稳。
 
 /** 一局引擎的最小结构面（不绑具体 Engine 类型·便于无头测试替身；`Engine` 天然满足）。 */
 export interface SimHandle {

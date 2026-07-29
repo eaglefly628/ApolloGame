@@ -73,8 +73,11 @@ export class Engine {
       for (let i = 0; i < steps; i++) this.step();
       this.renderer?.sync(this.world);
       for (const s of this.services) s.sync(this.world); // 音频/存档/平台服务每帧随渲染同步
-      this.notifyListeners();
+      // 先重挂下一帧、再通知监听者：监听者在回调里同步调 stop()（局终冻结的常见写法）时，
+      // cancel 掉的正是刚挂上的这一帧 → 停机即刻生效。反过来（通知在前、重挂在后）会把
+      // stop() 的取消覆盖掉，引擎照跑（REQ-LOOPSTOP）。
       this.rafId = requestAnimationFrame(loop);
+      this.notifyListeners();
     };
 
     this.rafId = requestAnimationFrame(loop);

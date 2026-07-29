@@ -22,8 +22,9 @@
 <!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结迁归档（requests-archive.md）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
 
 
-### REQ-LOOPSTOP-引擎循环停机覆盖 · 订阅回调里同步 stop() 被重挂覆盖=停不下来 · [2026-07-29] · REQ-SHELL 施工顺带发现（Lead 亲核 engine.ts:70-80 属实） → **指派：Opus** · status: in-progress（已派工） · 优先级: P1（正确性·game-q/t 局终冻结实际未生效） · 类型: 引擎核 bug（runtime 域·不降档）
+### REQ-LOOPSTOP-引擎循环停机覆盖 · 订阅回调里同步 stop() 被重挂覆盖=停不下来 · [2026-07-29] · REQ-SHELL 施工顺带发现（Lead 亲核 engine.ts:70-80 属实） → **指派：Opus** · status: **✅ done（Opus 2026-07-29·待 Lead 对抗性验收）** · 优先级: P1（正确性·game-q/t 局终冻结实际未生效） · 类型: 引擎核 bug（runtime 域·不降档）
 > **根因**：`src/runtime/engine.ts` loop 内 `notifyListeners()` 之后才 `this.rafId = requestAnimationFrame(loop)`——监听者同步调 `engine.stop()`（cancel+置 null）后被紧接的赋值覆盖，引擎照跑。**⚖ Lead spec**：重挂移到 `notifyListeners()` **之前**（回调里 stop() 即取消刚挂的帧·语义正确）；点名测试=监听者同步 stop → 无后续帧（假信心自查：改回旧序须红）；既有全量零回归。**不碰**壳层 run-loop（其 queueMicrotask 规避留着无害·注释更新为「引擎已修·防御性保留」可选）。game-q/t 现状不动（迁移单已写明迁移即修好）。
+> **✅ done（Opus 2026-07-29·待 Lead 对抗性验收）**：照 spec 一处换序——`src/runtime/engine.ts` loop 内 `this.rafId = requestAnimationFrame(loop)` 移到 `notifyListeners()` 之前（+3 行为何如此的注释），行为面净改 2 行。回归 `src/runtime/engine.loop-stop.test.ts`（新增 2 例·手驱 RAF 替身 stub `requestAnimationFrame`/`cancelAnimationFrame`）：①监听者回调里同步 stop() → 挂起帧归零、再 pump 不再通知且 `world.getVersion()` 冻住；②stop 后 start 可重启（帧重新挂上·通知继续·version 继续推进·再 stop 归零）。**假信心自查已亲验**：临时改回旧序 → 例①在 `expect(raf.pending).toBe(0)` 实收 1 报红（退出码 1），复原后绿。壳层 `src/engine/host/run-loop.ts` 只改头注（BUG-04 段落追记「引擎已修·`defer` 转防御性保留」·`SimHandle` 是结构面，宿主可传自实现 sim）——**零行为改动**。未碰 src/games、src/ui。门禁 `scoped-gate --run` 判 full 全绿（tsc + vitest 全量 + build + 双守卫·退出码 0）。commit：本回执同提交（`fix(engine): 循环重挂移到通知之前…`）。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
