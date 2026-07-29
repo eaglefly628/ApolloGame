@@ -23,6 +23,21 @@ CI 步骤全过程见 `.github/workflows/build-platform-mac.yml`：组装前端+
 python + `pip install`（`scripts/bundle-python-mac.mjs`）→ 零 key 门禁（必过，`scripts/assert-no-baked-key.mjs`）
 → `electron-builder --mac --config electron-builder.platform.yml` → 上传 `.dmg`。
 
+## 1.5 本地一键出包（自己就有 Apple 芯片 Mac·不想走 CI）
+
+不必开 GitHub。在你自己的 M 系列 Mac 上，克隆仓库到 `claude/mainbranch` 后一条命令搞定：
+
+```
+git clone -b claude/mainbranch <仓库地址> ApolloGame   # 已经有就跳过，进目录 git pull
+cd ApolloGame
+bash scripts/build-mac-dmg.sh
+```
+
+脚本 = 本地版的 CI：自检环境（macOS + arm64 + Node 18+）→ `npm ci` → `build-platform.mjs` →
+`bundle-python-mac.mjs`（下随包 python）→ 零 key 红线 → `electron-builder`。跑完 `.dmg` 落在
+`release/platform/bin/`，末尾会打印完整路径。首次约 10~20 分钟（大头是下载）。前提：装了 Node 18+
+（`nodejs.org` 下 LTS 或 `brew install node`）、能联网。
+
 ## 2. 客户机器怎么运行
 
 **本包只支持 Apple 芯片 Mac（M1/M2/M3/M4…）**，arm64-only（owner 07-26 拍板；Intel 客户需要
