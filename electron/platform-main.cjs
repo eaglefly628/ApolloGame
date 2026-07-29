@@ -65,12 +65,15 @@ async function startBackendAndWindow() {
     height: 860,
     backgroundColor: '#050510',
     autoHideMenuBar: true,
+    title: 'ZeroCraft Engine',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
     },
     show: false,
   });
+  // 窗口标题恒为品牌名——不让页面 <title> 覆盖标题栏（页面标题另有用途，标题栏只认品牌）。
+  win.on('page-title-updated', (e) => e.preventDefault());
   win.loadURL(url);
   win.once('ready-to-show', () => win.show());
   return win;

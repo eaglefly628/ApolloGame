@@ -823,7 +823,7 @@ export function Launcher() {
         letterSpacing: 2,
       }}>
         {/* 口径铁律：页脚不手抄数字/版本号（机读真相见 docs/llm-onboarding.md §0） */}
-        Apollo Engine · 数据驱动 · Deterministic Lockstep
+        ZeroCraft Engine · 数据驱动 · Deterministic Lockstep
       </div>
     </div>
   );
