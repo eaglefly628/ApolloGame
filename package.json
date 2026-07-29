@@ -22,6 +22,7 @@
     "build:cartridge:single": "VITE_SINGLEFILE=1 vite build --config vite.config.cartridge.ts",
     "pack:mac": "electron-builder --mac --config electron-builder.yml",
     "pack:win": "electron-builder --win --config electron-builder.yml",
+    "pack:platform:mac": "electron-builder --mac --config electron-builder.platform.yml",
     "dist": "python3 scripts/dist.py",
     "test:deep": "APOLLO_DEEP=1 vitest run"
   },

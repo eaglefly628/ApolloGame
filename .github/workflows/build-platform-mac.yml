@@ -1,0 +1,110 @@
+name: Build Platform (macOS)
+
+# D5（docs/workflow/platform-packaging-spec.md）—— 手动触发，在真 macOS runner 上产出「整套平台」
+# 的未签名/可选签名 .dmg。这是唯一一条真正跑得通 scripts/bundle-python-mac.mjs 下载/解压/
+# pip install 那段的地方（该脚本在非 darwin 平台会拒绝真跑，只能 --dry-run，见脚本内注释）。
+#
+# 签名/公证全程可选、不硬依赖 secret（owner 07-26 拍板）：
+#   · 仓库没配 CSC_LINK/CSC_KEY_PASSWORD → 走未签名路径，产出 ad-hoc .dmg，
+#     客户拿到后按 docs/workflow/platform-mac-run.md 的「右键→打开」流程绕过 Gatekeeper。
+#   · 配了 → 走签名路径；若还配了 APPLE_ID/APPLE_APP_SPECIFIC_PASSWORD/APPLE_TEAM_ID，
+#     electron-builder 会在签名后自动尝试公证（内置行为，这份 workflow 不需要额外步骤）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      pybuild_python_series:
+        description: '内置 standalone python 系列（如 3.11）'
+        required: false
+        default: '3.11'
+      pybuild_release_tag:
+        description: 'python-build-standalone 的 release tag（如 20250626）'
+        required: false
+        default: '20250626'
+
+permissions:
+  contents: read
+
+jobs:
+  build-mac-dmg:
+    # GitHub 现在的 macos-latest 是 Apple Silicon(arm64) 镜像，与打包目标架构（owner 拍板的
+    # arm64-only）天然一致，不用额外指定 macos-14 之类的具体版本标签。
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: 装 node 依赖
+        run: npm ci
+
+      - name: 组装平台产物骨架（前端 9 游戏白名单 + 后端源码，产 platform-dist/）
+        run: node scripts/build-platform.mjs
+
+      - name: 灌 standalone python + pip install（真跑，本步骤只有这台 mac runner 有效）
+        env:
+          PYBUILD_PYTHON_SERIES: ${{ github.event.inputs.pybuild_python_series }}
+          PYBUILD_RELEASE_TAG: ${{ github.event.inputs.pybuild_release_tag }}
+        run: node scripts/bundle-python-mac.mjs
+
+      - name: 零 key 门禁（安全红线·必过，见 platform-packaging-spec.md 决策②）
+        run: node scripts/assert-no-baked-key.mjs platform-dist
+
+      - name: 探测签名 secret 是否齐全（不齐全 = 未签名兜底路径，不当失败）
+        id: signing
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          if [ -n "$CSC_LINK" ] && [ -n "$CSC_KEY_PASSWORD" ]; then
+            echo "has_signing=true" >> "$GITHUB_OUTPUT"
+            echo "检测到 CSC_LINK + CSC_KEY_PASSWORD → 走签名路径"
+          else
+            echo "has_signing=false" >> "$GITHUB_OUTPUT"
+            echo "未配置签名 secret → 走未签名 ad-hoc 路径（owner 07-26 拍板的默认态）"
+          fi
+
+      - name: electron-builder 打包（未签名兜底路径）
+        if: steps.signing.outputs.has_signing == 'false'
+        env:
+          # 显式关掉自动身份发现，避免 runner 本地 keychain 里偶然存在的证书被误用，
+          # 保证这条路径稳定产出未签名 / ad-hoc 签名的 .dmg（不看 runner 环境脸色）。
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx electron-builder --mac --config electron-builder.platform.yml
+
+      - name: electron-builder 打包（签名 + 可选公证路径）
+        if: steps.signing.outputs.has_signing == 'true'
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          # 三个都配齐 electron-builder 才会尝试公证；缺任何一个就只签名不公证——同样不硬依赖。
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npx electron-builder --mac --config electron-builder.platform.yml
+
+      - name: 定位产出的 .dmg
+        id: locate
+        run: |
+          set -euo pipefail
+          DMG_PATH=$(find release/platform/bin -maxdepth 1 -name '*.dmg' | head -n1)
+          if [ -z "$DMG_PATH" ]; then
+            echo "::error::release/platform/bin 下没找到 .dmg 产物" >&2
+            exit 1
+          fi
+          echo "找到：$DMG_PATH"
+          echo "dmg_path=$DMG_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: 上传 .dmg 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: apollo-studio-mac-arm64-dmg
+          path: ${{ steps.locate.outputs.dmg_path }}
+          if-no-files-found: error
+          retention-days: 14

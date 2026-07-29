@@ -15,9 +15,20 @@
 //      长度都在个位数～十来个字符，真实 API key 主体普遍 30~100+ 字符，20 的门槛在两者间留足
 //      余量，不误伤合法数据（跑过一遍全仓验证，见交付说明）。
 //   二进制/字体/图片/视频/编译缓存不扫（噪声大且规范上不该含文本 key）。
+//
+//   D5（platform-packaging-spec.md）起 pybundle/ 灌进真 standalone python + Pillow 原生库——
+//   解释器可执行文件、`.so`/`.dylib`/`.a` 静态库这些大多没有常规扩展名或不在上面的跳过表里，
+//   若照单读 utf8 全文本：①几十兆的二进制当字符串解码 + 全文 regex，CPU/内存都白烧；②二进制
+//   熵里小概率巧合拼出形似 "sk-"/"ark-" 前缀的噪声，让红线断言变成偶发性抽风、不可复现。
+//   两层防护：常见原生库扩展名直接跳过（快路径，不用开文件）；再加一层通用二进制嗅探
+//   （读文件头 8KB，命中 NUL 字节即判定二进制→跳过）兜底那些没有扩展名的可执行文件
+//   （如 pybundle/bin/python3.11 本体）——嗅探对象只是「文件头是否含 NUL」，不产生假阴性：
+//   合法文本文件（含 CPython 标准库源码/pip 的 shebang 脚本）不含 NUL，不受影响。
 // ═══════════════════════════════════════════════════════════════
 
-import { readdirSync, statSync, readFileSync } from 'node:fs';
+import {
+  readdirSync, statSync, readFileSync, openSync, readSync, closeSync,
+} from 'node:fs';
 import { join, extname, basename } from 'node:path';
 
 const DANGEROUS_NAMES = new Set(['.env', '.apollo-config.json', '.apollo-styles.json']);
@@ -26,7 +37,31 @@ const SKIP_EXT = new Set([
   '.woff', '.woff2', '.ttf', '.otf', '.glb', '.gltf',
   '.mp3', '.mp4', '.wav', '.ogg', '.webm',
   '.pyc', '.zip', '.tar', '.gz', '.dmg',
+  '.so', '.dylib', '.a', '.whl', // standalone python + pip 装的原生库/wheel（D5 起真实出现）
 ]);
+
+const BINARY_SNIFF_BYTES = 8000; // 借鉴 git/grep -I 的「头部含 NUL→当二进制」经验阈值
+
+/** 只读文件头部若干字节判定是否二进制，不读整份文件（大二进制文件跑这条应是常数时间）。
+ * 打不开/读失败 → 保守当二进制处理（跳过总比误读半截垃圾内容去跑 regex 安全）。 */
+function isProbablyBinary(path) {
+  let fd;
+  try {
+    fd = openSync(path, 'r');
+  } catch {
+    return true;
+  }
+  try {
+    const buf = Buffer.alloc(BINARY_SNIFF_BYTES);
+    const n = readSync(fd, buf, 0, BINARY_SNIFF_BYTES, 0);
+    for (let i = 0; i < n; i++) if (buf[i] === 0) return true;
+    return false;
+  } catch {
+    return true;
+  } finally {
+    closeSync(fd);
+  }
+}
 const KEY_PATTERNS = [
   [/\bark-[A-Za-z0-9_-]{20,}/g, 'ark- 前缀 key（火山方舟）'],
   [/\bsk-[A-Za-z0-9_-]{20,}/g, 'sk- 前缀 key（OpenAI/Anthropic/DeepSeek 等常见格式）'],
@@ -57,6 +92,7 @@ export function scanDir(dir) {
       continue;
     }
     if (SKIP_EXT.has(extname(p).toLowerCase())) continue;
+    if (isProbablyBinary(p)) continue;
     let text;
     try { text = readFileSync(p, 'utf8'); } catch { continue; }
     scanned++;

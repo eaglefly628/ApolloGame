@@ -1,0 +1,74 @@
+# electron-builder 配置 —— 「整套平台」打包目标（D5·docs/workflow/platform-packaging-spec.md）。
+# 与现有单游戏 electron-builder.yml（dist-cartridge/ 单卡带，appId com.apollo.gameg）完全独立、
+# 互不覆盖：这份配置的主进程是 electron/platform-main.cjs，产物承载「整套创作平台 + 9 游戏白名单
+# + 随包 python」，跟单卡带打包不同源、不同生命周期。别把这两份配置的字段互抄。
+#
+# 只在 mac CI（.github/workflows/build-platform-mac.yml）上真正跑通 electron-builder；
+# Linux 上只能做「配置能被 electron-builder 解析、字段拼得对」这层静态校验（见交付说明）。
+
+appId: com.apollo.platform
+electronVersion: "33.0.0"
+productName: "Apollo Studio"
+copyright: "Copyright © 2026 Apollo Game Studio"
+
+# package.json 的 "main" 全局指向单游戏入口 electron/main.cjs（别的 pack:* 目标要用，不能改）；
+# 这份配置用 extraMetadata 单独把 electron 主进程改指向 platform-main.cjs，只影响这一个打包目标。
+extraMetadata:
+  main: electron/platform-main.cjs
+
+# asar 里只放 electron 主进程自己的代码，够小；真正的重量级内容（python 后端源码 + 9 游戏资产 +
+# standalone python）全走下面 extraResources，不塞进 asar（也没有 asarUnpack 原生模块要处理，
+# 跟 game-g 的 steamworks.js 场景不同，不需要那条配置）。
+# 显式排除 node_modules/**：electron-builder 默认会把 package.json "dependencies"
+# （react/react-dom/three/cannon-es，渲染进程/游戏代码用的，都是给 vite 打包网页用的源）自动塞进
+# asar——但 platform-main.cjs / platform-launch.cjs 只 require('electron') 和 node: 内置模块，
+# 运行时零 npm 依赖（用 --dir 在本仓库 Linux 机验证过：不排除时 app.asar 里会背进一整份 three.js/
+# react，纯体积浪费）。
+files:
+  - electron/platform-main.cjs
+  - electron/platform-launch.cjs
+  - package.json
+  - "!node_modules/**"
+
+# 两条 extraResources 分别对应 electron/platform-launch.cjs 里两个已经写死、带单测钉住的路径约定：
+#   ① resolveBackendDir() 打包态读 `resourcesPath/backend/`——platform-dist/** 整棵搬过去，
+#      但要摘掉 pybundle/（用 filter 排除），否则会被下面第②条重复打包一份，白白拖体积。
+#   ② resolvePythonBin() 打包态读 `resourcesPath/pybundle/bin/python3`——直接搬到资源根、
+#      和 backend/ 同级，不嵌在 backend/ 里面。
+# 这份 pybundle/ 由 mac CI 的 scripts/bundle-python-mac.mjs 步骤灌好之后才存在；Linux 开发机上
+# platform-dist/pybundle/ 目前只有 build-platform.mjs 写的 PLACEHOLDER.md 占位，字段依旧拼得通
+# （filter 语法本身不依赖目录内容），真正验证仍要等 mac CI 灌完真身跑一次 electron-builder。
+extraResources:
+  - from: platform-dist
+    to: backend
+    filter:
+      - "**/*"
+      - "!pybundle"
+      - "!pybundle/**"
+  - from: platform-dist/pybundle
+    to: pybundle
+
+directories:
+  output: release/platform/bin
+
+mac:
+  category: public.app-category.developer-tools
+  # 不在这里写 identity（既不写 null 也不写具体值）——理由：electron-builder 一旦读到
+  # `identity: null` 会硬性跳过签名，即便 CI 环境变量里给了 CSC_LINK/CSC_KEY_PASSWORD 也一样，
+  # 那就没法做到 spec 要求的「secret 存在就走签名、不存在就不签」两态可选。真正的开关放在
+  # CI workflow 那一层（.github/workflows/build-platform-mac.yml）：
+  #   · 没有签名 secret → 显式设 CSC_IDENTITY_AUTO_DISCOVERY=false，保证不会被 runner 本地
+  #     keychain 里偶然存在的开发者身份误触发部分签名，稳定产出 ad-hoc/未签名 .dmg
+  #     （即 owner 拍板的默认态：无 Apple 账号 → 未签名，客户「右键→打开」绕过 Gatekeeper）。
+  #   · 有签名 secret（CSC_LINK + CSC_KEY_PASSWORD）→ 不设那个 env，electron-builder 走它标准
+  #     的 CSC_* 环境变量签名流程；若还给了 APPLE_ID/APPLE_APP_SPECIFIC_PASSWORD/APPLE_TEAM_ID，
+  #     electron-builder ≥24 会在签名后自动尝试公证（无需在这份配置里再显式声明 mac.notarize——
+  #     它的默认行为就是"有对应 Apple 凭据 env 才公证，没有就跳过"，恰好也是"别硬依赖 secret"）。
+  hardenedRuntime: true # 只在真走 Developer ID 签名+公证那条路径时生效；未签名/ad-hoc 时这个字段本身不产生任何效果
+  target:
+    - target: dmg
+      arch: [arm64] # owner 07-26 拍板：目标机型 = Apple Silicon（macos-latest runner 本身也是 arm64）；Intel 客户走 x64/universal 是另一条后续需求，不在本次范围
+
+# 平台整机打包不出 Windows 目标（win-only 场景不在 D5 范围内，留空避免 electron-builder 误跑）。
+win:
+  target: []

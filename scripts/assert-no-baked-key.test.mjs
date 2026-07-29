@@ -60,6 +60,36 @@ describe('scanDir · 零 key 断言', () => {
     expect(scanned).toBe(0);
   });
 
+  it('跳过无扩展名的二进制文件（D5 起 pybundle/bin/python3 这类真解释器可执行文件）', () => {
+    // 头部塞 NUL 字节模拟真实二进制（ELF/Mach-O 头都含 NUL），紧跟着放一段「看起来像 key」的
+    // 噪声——如果嗅探没生效，旧的纯 utf8+regex 路径会把这当文本命中，验证嗅探确实拦住了它。
+    const noise = Buffer.concat([
+      Buffer.from([0x7f, 0x45, 0x4c, 0x46, 0x00, 0x00, 0x00]), // 类 ELF 魔数 + NUL
+      Buffer.from(`sk-${'x'.repeat(40)}`),
+    ]);
+    writeFileSync(join(dir, 'python3'), noise); // 无扩展名，故意不落在 SKIP_EXT 里
+    const { hits, scanned } = scanDir(dir);
+    expect(hits).toEqual([]);
+    expect(scanned).toBe(0);
+  });
+
+  it('跳过新增原生库/wheel 扩展名（.so/.dylib/.a/.whl）', () => {
+    writeFileSync(join(dir, 'libfoo.so'), Buffer.from([0, 1, 2]));
+    writeFileSync(join(dir, 'libfoo.dylib'), Buffer.from([0, 1, 2]));
+    writeFileSync(join(dir, 'libfoo.a'), Buffer.from([0, 1, 2]));
+    writeFileSync(join(dir, 'pip-1.0-py3-none-any.whl'), Buffer.from([0, 1, 2]));
+    const { hits, scanned } = scanDir(dir);
+    expect(hits).toEqual([]);
+    expect(scanned).toBe(0);
+  });
+
+  it('二进制嗅探不误伤合法纯文本（含真 key 的 .py 文件头部无 NUL）仍照常命中', () => {
+    writeFileSync(join(dir, 'leak.py'), `TOKEN = "sk-${'q'.repeat(30)}"`);
+    const { hits, scanned } = scanDir(dir);
+    expect(scanned).toBe(1);
+    expect(hits.length).toBe(1);
+  });
+
   it('递归扫子目录', () => {
     mkdirSync(join(dir, 'a', 'b'), { recursive: true });
     writeFileSync(join(dir, 'a', 'b', 'deep.py'), `x = "ark-${'z'.repeat(25)}"`);
