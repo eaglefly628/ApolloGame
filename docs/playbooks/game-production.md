@@ -40,8 +40,8 @@
 | S1 立项卡 | 名字+一句话玩法+参考+风格意向 | concept 字段非空 | owner/Lead 签 | `docs/llm-onboarding.md` |
 | S2 能力计划 | capability-plan 过审（纯数据卡带可记免 plan 裁决） | plan 在档 或 裁决在案 | Lead 签 | `docs/design/capability-plan-template.md` |
 | S3 骨架关 | manifest 立起来、引擎吃得下 | parseManifest 零 error **+ 真引擎装载 load+空跑2tick**（gate·「能存必须能跑」owner 07-11） | 挂载目击签 | `docs/playbooks/index.md`（找对应线） |
-| S4 玩法关 | 胜负/重开/核心循环闭环 | 该游戏 walkthrough vitest 绿 **+ GD 验收剧本 ≥3 场景 conformance 绿**（REQ-ACCEPT·剧本作者=GD 非 PE）；卡带=bench 五轴（gate） | 试玩签（附真浏览器试玩截图序列） | `docs/playbooks/testing.md` |
-| S5 UI 关 | HUD/菜单守 LayoutNode 纪律 | game-skill-audit 红旗零（gate）；卡带天然免 | /check-ui 结论签 | `docs/playbooks/ui.md` |
+| S4 玩法关 | 胜负/重开/核心循环闭环 | 该游戏 walkthrough vitest 绿 **+ GD 验收剧本 ≥3 场景 conformance 绿**（REQ-ACCEPT·剧本作者=GD 非 PE）；卡带=bench 五轴（gate） | 试玩签（附真浏览器截图序列·**自证对齐单在档** `self-check.md`） | `docs/playbooks/testing.md` |
+| S5 UI 关 | HUD/菜单守 LayoutNode 纪律 | game-skill-audit 红旗零（gate）；卡带天然免 | /check-ui 结论签 + **自证对齐单**（`self-check.md`） | `docs/playbooks/ui.md` |
 | S6 美术关 | 台账→风格锚→生成→写回→复核 | 台账推导（MOCK 不算完成） | **已内嵌**=平台逐行 ☑ 复核 | `docs/playbooks/art-pipeline.md` |
 | S7 品质关 | 视觉评分卡打分 | —（以人门为主） | 得分记 note 签 | `docs/playbooks/visual-scorecard.md` |
 | S8 终检关 | 全库门禁+复盘回填 | **卡带**=MOCK 债 0+manifest-check+bench 五轴（轻量终检·证据绑 gameHash）；**内置/编译游戏**=tsc+vitest+build 三绿（gate·证据绑 git HEAD+净树位） | 手册缺口回填/提单记 note 签 | `docs/playbooks/testing.md` |
@@ -69,6 +69,7 @@
 - **不许代签**：signoff 是人门——LLM 只能把「待人审」摆上看板，不得自己 signoff 冒充 owner/Lead（gate 随便跑，签核必须真人指令）。
 - **S6 的 MOCK 行不算完成**：mock 永不上画面（终态档 §六），流程板同口径。
 - **S8 过期即重跑**：rebase/新提交后 S8 证据自动过期——推送前必须净树重跑（呼应 CLAUDE.md 推送门禁）。
+- **自证先于复查（owner 2026-07-29 拍板）**：S4/S5 送复查门前，施工 session 必须完成 `docs/playbooks/self-check.md` 仪式——真渲染自玩+截图序列+策划对齐单零未解释偏差；缺=复查门直接 FAIL。
 - pipeline.json 是台账不是配置——只经 CLI/端点写，勿手改造假绿。
 
 ## 查不到怎么办

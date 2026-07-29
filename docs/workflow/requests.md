@@ -22,6 +22,13 @@
 <!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结迁归档（requests-archive.md）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
 
 
+### REQ-SELFCHECK-自证门牙 · S4/S5 机器门加自证产物存在性检查 + 复查清单抽查行 · [2026-07-29] · owner 拍板「自己玩自己看对照策划」→ Lead 出图 → **指派：Opus** · status: in-progress（已派工） · 优先级: P1（工作流基建） · 类型: 生产流程板门禁（scripts 域）
+> **⚖ Lead 图纸**：手册已立 `docs/playbooks/self-check.md`（真渲染自玩+截图序列+策划对齐单·零未解释偏差才送复查门）。给它加牙：
+> ① `game-pipeline.mjs` S4/S5 gate 前置存在性检查：`docs/design/<slug>/self-check/S4-alignment.md`（S5 同名）在档 且 `self-check/shots/` 内 ≥5 张图（png/jpg 计数）——缺=gate 拒（点名「自证未做·见 self-check.md」·照 acceptanceScenarioCount 先例做纯函数可测·<门槛在 spawn 前拒不空转）。
+> ② 对齐单新鲜度绑 gameHash（照既有证据过期机制口径·陈旧对齐单=⚠过期提示，不硬拦——图可能真没变）。
+> ③ REVIEW_CHECKLISTS S4/S5 各加一行「对齐单抽样重走 ≥3 条（含 ⚠降格行的裁决去向核对）+ 好玩三问已作答非敷衍」。
+> ④ 测试照 acceptance 存在性门先例：计数纯函数/板提示/CLI 拒过路径/清单行断言。**不碰 src/games、src/ui**。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
