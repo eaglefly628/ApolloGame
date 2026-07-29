@@ -12,3 +12,12 @@
 > **game-q 现绕法（已落地·不依赖本单）**：经济走「开局金 + 清波奖金（timeline resource-cue / `effect-apply` on `timeline:done:<wave>`）+ 波中缓速涓流」——全组合现有能力、确定性、无缺口依赖；逐怪赏金暂缓。
 > **建议下沉（待 Lead 排期·勿抢跑）**：择一——① `Hitbox.creditResource:{id,amount,scope:'global'|'caster'}`：命中/致死时给具名全局或攻击者（`PrefabOrigin.source`）资源记账；② `Mortal` 按致死资源/tag 分支 `dropTemplate`（塔杀 vs 漏怪不同掉落）。落地后 game-q 逐怪赏金 + 击杀计分一并干净接入。**证明它的测试**：塔杀敌→gold+N；漏怪→lives−1 且 gold 不变。
 > **裁决记录**：game-q 能力总览已 ✅（`docs/design/game-q/capability-plan.md §6`）——本单是其唯一记债项，不阻塞 game-q 出货。
+
+### REQ-Q-壳件迁移 · 换用引擎公共壳三件（host-runloop / game-art-load / local-store） · [2026-07-29] · Lead 派单（引擎池 `REQ-SHELL-公共壳三件` 已落地）→ **指派：PE-Q** · status: open · 类型: 壳层去重（render-only·观感零变化）
+> **件已在库**（带测·引擎侧同日落地）：`@engine/host/run-loop.js` `createRunLoop` · `@assets/index.js` `createArtAssets`/`loadGameArtInto` · `@services/persist/index.js` `localStore`/`flagCodec`。
+> **本游戏替换点**（file:line = 2026-07-29 基线）：
+> - `game-q.ts:87-110`（refreshHud 的 lastSig 差分 + 局终 overlay 挂摘 + 冻结）+ `112-167`（startSim/stopSim/restart）→ 合并成一个 `createRunLoop({ create, engineOf, read, sig, paint, over, overlay, dispose })`；`syncAudio` 照旧在 paint 里自理（本件不管音频）。
+> - `game-q.ts:115-125`（皮肤索引 fetch 那 8 行）→ `const skinAssets = createArtAssets(); void loadGameArtInto(skinAssets, 'game-q');`
+> - `sounds.ts:20-25`（静音位 `apollo-q-sfx-mute`）→ `localStore('apollo-q-sfx-mute', false, flagCodec)`——'1'/'0' 字节兼容，老玩家静音偏好不丢。
+> **顺带修一个真 bug**：`game-q.ts:104` 在 subscribe 回调里**同步**调 `engine.stop()`，被 `src/runtime/engine.ts:70-80` 的「notifyListeners 之后才重挂 RAF」覆盖（=BUG-04·`game-103.ts:93-96` 已记档），**局终其实没冻结**。`createRunLoop` 的冻结默认延到 microtask，迁移即顺手修好（这也是本次迁移唯一有意的行为变化）。
+> **验收**：观感/交互零变化（除上条冻结）+ game-q vitest 绿 + `node scripts/scoped-gate.mjs --run` 全绿。红线：不碰 sim/蓝图/hash 面，不趁迁移改玩法。

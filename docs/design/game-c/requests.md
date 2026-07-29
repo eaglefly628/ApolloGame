@@ -153,3 +153,12 @@
 > **会审项（GD-B×GD-C → 提案报 owner）**：b 三姨太与 c 五姨太是否同一家族人设（局外系统金钱/衣着互通暗示同宇宙）——若是则人设库共享（大/二/三共用立绘头像·c 增四/五两位·美术省近半），性格对位冲突处（如"三姨太"两案不一致）统一后报 owner 终定。
 
 > **⚖ owner 终字（2026-07-17·并 REQ-C-ART 修订①会审项销案）**：三套人设各自独立——五姨太由 GD-C 按 `sakura-nijigen` 人物锚自设五案（人设不与 a/b 共用·风格锚共用），按拍板包 ②的性格对位出图。
+
+### REQ-C-壳件迁移 · 换用引擎公共壳件（game-art-load / local-store） · [2026-07-29] · Lead 派单（引擎池 `REQ-SHELL-公共壳三件` 已落地）→ **指派：PE-C** · status: open · 类型: 壳层去重（render-only·观感零变化）
+> **件已在库**（带测·引擎侧同日落地）：`@assets/index.js` `loadGameArtOverrides`/`loadGameArtInto`/`createArtAssets` · `@services/persist/index.js` `localStore`/`textCodec`/`intCodec`。（game-c 无 sim 运行环，不涉 `host-runloop`。）
+> **本游戏替换点**（file:line = 2026-07-29 基线）：
+> - `art-overrides.ts:77-95 loadArtOverrides` → 整段删，改调 `loadGameArtOverrides('game-c')`。判据与引擎件逐字一致（`<slug>/` 前缀 + `gen:`/`vendored`/`tags:skin` 正向信号）；与 game-a 那份 57 行的近逐字重复由此消解。
+> - `art-overrides.ts:54-64 loadSkinIndex` → `loadGameArtInto(manager, 'game-c')`（同样静默回退·同样 baseUrl ''）；`66-69 makeSkinAssets` → `createArtAssets()`。
+> - `art-overrides.ts:10-45`（`registerTextureOverrides`/`textureOverrideUri`/`backdropUri`/`wearIconUri`/`buttonSkinsForTheme`）**留在游戏层**——game-c 自己的消费口径，非公共壳。
+> - `game-c.ts:121-123`（`gc_lang`）→ `localStore<Lang>('gc_lang', 'en', textCodec(['en','zh']))`；`game-c.ts:126-129`（`gc_players` 2~6 钳）→ `localStore('gc_players', 4, intCodec(2, 6))`——两者都是**原文**格式（不裹引号/不 JSON），与现存键字节兼容，老档不丢。
+> **验收**：观感/交互零变化 + game-c vitest 绿 + `node scripts/scoped-gate.mjs --run`。红线：不碰 sim/蓝图/hash 面。

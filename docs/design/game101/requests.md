@@ -53,3 +53,11 @@
 > - 🔴 **引擎层（主程/Lead·G6 下沉）**：**「merge-on-place 合并 → 3×3 网格邻格 `Blocker.layers` 各 −1·归零发信号」** 空间邻格效应。原语 `spatial-query.queryRange` 已有 + `match3-board` 同型「格层减层·`neighbors4` 减邻格 blockers·line 527」已证；下沉通用 `merge-proximity-clear`（或 merge-on-place 姊妹件）。**禁游戏层/宿主手写扫 3×3 减邻格**（manifesto §3 红线·且宿主非确定性 sim）。
 > **前置**：G6 引擎能力已挂引擎池 `docs/workflow/requests.md REQ-MERGEDIG`（待 Lead/主程 裁下沉·排期）。能力落地前 PE 可先备 `board-cover.json` 数据 + 覆盖格渲染（阻碍层皮·不可拖），**不硬接减层逻辑**。
 > **验收**：headless — 覆盖格不可拖；在其 3×3 内二消 N 次 → 该格 `layers` 减 N；归零 → 清层 + 露出 `reveal` 内容 + 确定性同 hash。真玩 — 挖开一片露出能量/宝箱、可用空间扩大。
+
+### REQ-101-壳件迁移 · 换用引擎公共壳件 host-runloop · [2026-07-29] · Lead 派单（引擎池 `REQ-SHELL-公共壳三件` 已落地）→ **指派：PE-101** · status: open · 类型: 壳层去重（render-only·观感零变化）
+> **件已在库**（带测·引擎侧同日落地）：`@engine/host/run-loop.js` `createRunLoop`。（game101 无本地美术索引装载、无 localStorage 小态，故本单只涉 ① 一件。）
+> **本游戏替换点**（file:line = 2026-07-29 基线）：
+> - `game101.ts:360-388`（`lastSig` 差分 + `engine.subscribe` 每帧投影）+ `392-404`（cleanup 里的 `unsub()`/`engine.stop()`）→ `createRunLoop({ create, engineOf, read, sig, paint })`：`create` 里建 engine + 挂渲染器，`dispose` 收 flyTimers/滚动与指针监听的清理，`paint` = 现 `paint(st)`，`sig` = 现那串签名。**无局终态**（Merge 无输赢局终）→ 不传 `over`/`overlay`，冻结逻辑不参与。
+> - `game101.ts:382` 的 `lastSig = ''` 强制重绘（飞行奖励清除后）→ `loop.invalidate()`。
+> - 顺带：`detectDissolve`/`fireBurst` 等纯表现层定时器仍是宿主自理（本件不管），只是把它们的清理挪进 `dispose`。
+> **验收**：观感/交互零变化 + game101 vitest 绿 + `node scripts/scoped-gate.mjs --run`。红线：不碰 sim/蓝图/hash 面。

@@ -19,6 +19,15 @@ export type {
 export { AssetManager, StubAssetLoader } from './asset-manager.js';
 export { ftpFrames, ftpToAtlasEntry, mergeAtlasIntoIndex, normalizeFrameName, type FtpAtlasJson } from './pack-atlas.js';
 export { ImageAssetLoader, isImageHandle, type ImageAssetHandle } from './image-loader.js';
+// 游戏本地美术索引装载（两形态·失败静默回退·REQ-SHELL ②）
+export {
+  gameArtIndexUrl,
+  loadGameArtInto,
+  loadGameArtOverrides,
+  pickArtOverrides,
+  createArtAssets,
+  type GameArtLoadOptions,
+} from './game-art-load.js';
 export { ModelAssetLoader, isModelHandle } from './model-loader.js';
 export { PBR_MATERIALS, resolvePbr, type PbrMaterialDef, type PbrPreset, type PbrOverrides } from './pbr-materials.js';
 export {

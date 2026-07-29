@@ -13,6 +13,7 @@
 | 存档后端（内存/web/文件/云） | `MemorySavePort`/`LocalStorageSavePort`/`FileSavePort`/`CloudSavePort` | 同 `SavePort` 契约；File 经文件桥（真桥 electron preload·测试 `createMemoryFileBridge`），Cloud 经 `SteamCloudBridge` |
 | 存档结构演进（数据 blob） | `SaveCodec.migrations` 链 | codec 声明 `schema` + `migrations[v]`（v→v+1 纯函数）；旧档 `openEnvelope` 自动链式升级，缺步/坏档报 `CorruptSaveError` |
 | 引擎快照结构演进 | 版本键 + 迁移函数 | 快照存档带版本键（如 `gameG-save-v1`），旧版进来跑一次性迁移（纯函数） |
+| 局外小态（偏好/进度/静音位/本地榜·非快照存档） | `localStore` + codec 闭集（`src/services/persist/`·REQ-SHELL ③） | `localStore(key, fallback, codec?)`——codec 四款 `jsonCodec`（blob+形状校验）/`textCodec`（原文枚举）/`intCodec`（整数+钳）/`flagCodec`（`'1'`\|`'0'` 位·与既有静音键字节兼容）；坏档回缺省、无存储/隐私模式静默降级、**绝不抛**。本地榜名次用 `insertRanked`（插入+排序+截断+1 基名次）。**别拿它替代下面两行**（快照/迁移链） |
 | 解锁成就/统计/排行 | `PlatformPort` | `unlockAchievement`/`setStat`/`uploadLeaderboard`（幂等·fire-and-forget） |
 | 富状态（好友列表显示） | `PlatformPort.setRichPresence` | sim 产纯数据 → 端口投递 |
 | 无原生壳降级 | `NullPlatformPort` | `isAvailable()=false`，游戏据此静默降级不报错 |

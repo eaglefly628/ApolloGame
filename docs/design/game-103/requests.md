@@ -111,3 +111,24 @@
 - **triage**：**已在册 BUG-02② → `requests-3d.md REQ-3D-RENDER-EFFICIENCY`**（2D 批绘/实例化·owner 优先·P3D 域）。落地后同屏敌数上限可大幅抬高。PE 侧 spawn cap 现为缓解。
 
 > **归属提示（PE-101 转录）**：以上 7 条均属 game-103 线。RBUG-01②/02/03/04/05/06 = PE-103 游戏层可做；RBUG-01①/07 = 引擎/P3D（已在册·已排期）。**建议由 game-103 session 施工**（该线正活跃·PE-101 跨改会撞车）。
+
+---
+
+## 壳件迁移 + 未报备游戏层代码销账（Lead 2026-07-29 派单）
+
+### REQ-103-壳件迁移 · 换用引擎公共壳三件（host-runloop / game-art-load / local-store） · [2026-07-29] · Lead 派单（引擎池 `REQ-SHELL-公共壳三件` 已落地）→ **指派：PE-103** · status: open · 类型: 壳层去重（render-only·观感零变化）
+> **件已在库**（带测·引擎侧同日落地）：`@engine/host/run-loop.js` `createRunLoop` · `@assets/index.js` `createArtAssets`/`loadGameArtInto` · `@services/persist/index.js` `localStore`/`jsonCodec`/`insertRanked`。
+> **本游戏替换点**（file:line = 2026-07-29 基线）：
+> - `game-103.ts:157-186`（refreshHud 的 lastSig 差分 + 局终首见门 `showingResult` + 记成绩 + `pauseSim()`）+ `199-238`（startSim/stopSim/restart）→ 一个 `createRunLoop`：`over: st => st.status !== 'playing'`、`onOver` 里记成绩并**就地把 board/rank 挂回 state**（本件把同一个 state 对象交给随后的 paint，故结算字段不会丢）、`overlay` 缺省不用（103 的结算是同一 hudUi 换树 → 走 `paint` 即可）、`reset` 收 restart 的那堆局内态清零（连杀窗/成就横幅/draft/榜展示态）。
+> - `game-103.ts:93-96` 的 `pauseSim()`（BUG-04 microtask 兜法）**可整段删**——本件冻结默认就走 `queueMicrotask`，同一坑已内建（时停 `openLevelUp` 用的那处若仍需手动暂停，保留一个私有 pauseSim 或改调 `loop.session` 的引擎面）。
+> - `game-103.ts:188-197`（皮肤索引 fetch）→ `const skinAssets = createArtAssets(); void loadGameArtInto(skinAssets, 'game-103');`
+> - `achievements.ts:38-54`（`game103-ach-v1` 解锁集）→ `localStore<string[]>('game103-ach-v1', () => [], jsonCodec(数组校验))`（Set ⇄ 数组转换留在游戏层一行）。
+> - `leaderboard.ts:17-22 recordScore` → `insertRanked(entry, prev, cmp, BOARD_MAX)`（同语义·同名次口径）；`24-40`（`game103-leaderboard-v1` 读写）→ `localStore<ScoreEntry[]>(…, () => [], jsonCodec(条目校验))`。
+> **验收**：观感/交互零变化 + game-103 vitest 绿 + `node scripts/scoped-gate.mjs --run`。红线：不碰 sim/蓝图/hash 面，不趁迁移调数值。
+
+### REQ-103-未报备代码销账 · achievements.ts + leaderboard.ts 94 行 · [2026-07-29] · Lead 记账（图纸 ④）→ **指派：PE-103（补 plan）** · status: open · 类型: 治理欠账（capability-plan 偏差）
+> **事实**：`src/games/game-103/achievements.ts`（54 行）+ `leaderboard.ts`（40 行）= **94 行游戏层代码，capability-plan 未报备**（plan §4 只裁了 E1–E4 编排三处，成就/排行榜两块从未进过例外表）。且二者与引擎既有件**功能重叠**：成就解锁/统计 = `services/platform` 的 `AchievementSync`+`ACHIEVEMENTS`+`PlatformPort.unlockAchievement/setStat`；排行榜上传 = `PlatformPort.uploadLeaderboard`；本地持久化 = 新落地的 `services/persist`。
+> **要求（两步·随上面的迁移单一起做完）**：
+> 1. **补 plan §4 条目**：在 `docs/design/game-103/capability-plan.md §4` 表后加一行例外记账（"E5 成就/本地榜 = 局外壳层表现件"），写清**为何当时没走 AchievementSync/PlatformPort**（可能的正当理由：无平台壳时的纯本地展示层），交 Lead 复裁。
+> 2. **随迁移消解**：持久化那半（`achievements.ts:38-54`+`leaderboard.ts:24-40`）改用 `services/persist`；判定/排序那半（`newlyUnlocked`/`recordScore`）——**排序并入 `insertRanked`**；`ACHIEVEMENTS` 阈值表 + `newlyUnlocked` 若与 `services/platform` 的 `AchievementSync` 语义等价则改接端口（`NullPlatformPort` 下自动静默降级=现有纯本地行为），**不等价再回报 Lead 留作已报备的游戏层例外**。
+> **红线**：这是治理欠账不是功能单——**不许借机加成就/改阈值**；消解后 plan 与实现零偏差，`node scripts/game-skill-audit.mjs game-103` 保持零红旗。

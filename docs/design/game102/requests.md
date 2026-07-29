@@ -73,5 +73,13 @@
 > - **附两条**：中央方块「同色可消/隐藏图案层」=render 组件视图路线（play-field 走渲染器·不手写 DOM）✅ 准；balance-sim 脚本例外=authoring-time 工具（同各游戏 sim 脚本先例·不进 manifest/运行时·产物入库照登记）✅ 准。
 > - **实机校准补充受理（2026-07-23）**：金钥匙收集件 + 宝箱门目标计量（100）= `event-when`+`resource`/`gauge`+`effect-apply` 表达（非新缺口）；中央棋盘位图像素画倾向 `tilemap`——**PE 落地时核对 `tilemap` 对「位图→带色格阵+特殊件坐标」的适配度**，不合再回本表报缺口。弹药 20 / 容量 5 均数据参数·不涉能力变更。
 > **结论**：game-102 可开工 §1-3 数据面 + §4 组合装配；撞墙即回本表补申请。
+
+### REQ-102-壳件迁移 · 换用引擎公共壳件 game-art-load · [2026-07-29] · Lead 派单（引擎池 `REQ-SHELL-公共壳三件` 已落地·**本条为施工方据实追加**：图纸点名的六家 art 装载里有两处在 game-102，不落单则重复留存）→ **指派：PE-102** · status: open · 类型: 壳层去重（render-only·观感零变化）
+> **件已在库**（带测·引擎侧同日落地）：`@assets/index.js` `createArtAssets`/`loadGameArtInto`。
+> **本游戏替换点**（file:line = 2026-07-29 基线）：
+> - `game102.ts:72-80`（炮台贴图索引 fetch 那 8 行）→ `const assets = createArtAssets(); void loadGameArtInto(assets, 'game102');`
+> - `voxel-proto.ts:276`（同一段的单行压缩版）→ 同上。
+> 两处的失败静默回退语义（无索引/非 200/解析失败 → 回退方体/纯色底盒）已是引擎件的默认行为，无需再写 try/catch。
+> **验收**：观感零变化 + game-102 vitest 绿 + `node scripts/scoped-gate.mjs --run`。红线：不碰 sim/蓝图/hash 面。
 > ——原评审请求全文——
 > **§4 首行——「传送带队列 + 自动同色开火」的编排怎么落？** GD 初判：可由现有能力组合表达——`event-when`/`effect-apply`（到位→查同色→触发）+ `zone-occupancy`（容量/队首）+ `tray`（待命槽）+ `launch`（抛射）+ `group-count`（剩余同色）。即「排队→到位触发」生产线管道，非真缺口。存疑：有序编排（队首递进、突破态 5→10 切换、弹尽入槽时序）若组合表达不了，倾向下沉通用 `conveyor-queue`。**边界自证**：GD 阶段零游戏层代码（`prototype.html`=设计参考 mockup）；正式 UI 走 LayoutNode，play-field 走 render 组件。

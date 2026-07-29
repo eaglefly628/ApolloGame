@@ -37,4 +37,14 @@
 > 关 3/7/12 摆盘经 sim 自动核验特殊棋子必现（92%/86%/94%·balance-report §5）；装配后真机走查确认手感即可（非阻塞）。
 
 ### T-STOP · game-t 停摆令（owner 2026-07-17「Game T 我不需要了」·Lead 记档） · status: **游戏暂停·停止一切施工**
+> ⚠ 下方 `REQ-T-壳件迁移` 为停摆期新入单——**owner 终字前不动工**（game-t 若"删/封"则本单随之作废；若复活则照单迁移）。
 > GD-T/PE-T run2 立即停工（owner 请关闭对应 session）；本池冻结、不再收单；生产板/审计维持现状不再推进。**处置待 owner 终字**：「删」=全删含策划案（git 历史留底）／「封」=下架注册保留档案（可复活）。终字前不做不可逆操作。引擎侧沉淀（match3 二期/拖拽/mountHost/REQ-M3 系列 spec）为引擎资产，无论删封均保留。
+
+### REQ-T-壳件迁移 · 换用引擎公共壳三件（host-runloop / local-store） · [2026-07-29] · Lead 派单（引擎池 `REQ-SHELL-公共壳三件` 已落地）→ **指派：PE-T** · status: **open·冻结中（等 game-t 停摆终字·勿抢跑）** · 类型: 壳层去重（render-only·观感零变化）
+> **件已在库**（带测·引擎侧同日落地）：`@engine/host/run-loop.js` `createRunLoop` · `@services/persist/index.js` `localStore`/`flagCodec`。（game-t 无本地美术索引，不涉 `game-art-load`。）
+> **本游戏替换点**（file:line = 2026-07-29 基线）：
+> - `game-t.ts:176-211`（refreshHud 的 lastSig 差分 + 结算浮层挂摘 + 冻结）+ `213-250`（sim 句柄/stopSim/startLevel 的建局段）→ 一个 `createRunLoop`：`create` 里保留输入接缝（seam→PointerInputSource）与 `inputDead` 闸，`dispose` 收 `input.dispose()`+`renderer.destroy()`；**每关一世界**的接法=先设好 `levelSpec` 再 `loop.restart()`（`create` 读闭包里的 levelSpec）；选关屏/章节过场仍是宿主自理的 UI，不进本件。
+> - `game-t.ts:30-48`（`apollo-t-progress-v1` 星级 JSON）→ `localStore<Record<number, number>>('apollo-t-progress-v1', () => ({}), jsonCodec(校验))`——**注意保持外层 `{ stars: … }` 信封**，老档才读得到。
+> - `sounds.ts:50-63`（静音位 `apollo-t-sfx-mute`）→ `localStore('apollo-t-sfx-mute', false, flagCodec)`（'1'/'0' 字节兼容）。
+> **顺带修一个真 bug**：`game-t.ts:207` 同步 `engine.stop()` 于 subscribe 回调内 → 被 `src/runtime/engine.ts:70-80` 的 RAF 重挂覆盖（BUG-04），局终并未真冻结；`createRunLoop` 冻结延到 microtask，迁移即修好。
+> **验收**：观感/交互零变化（除上条冻结）+ game-t vitest 绿 + `node scripts/scoped-gate.mjs --run`。红线：不碰 sim/蓝图/hash 面。
