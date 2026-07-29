@@ -22,13 +22,13 @@
 <!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结迁归档（requests-archive.md）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
 
 
-### REQ-SELFCHECK-自证门牙 · S4/S5 机器门加自证产物存在性检查 + 复查清单抽查行 · [2026-07-29] · owner 拍板「自己玩自己看对照策划」→ Lead 出图 → **指派：Opus** · status: **✅ done（Opus 2026-07-29·待 Lead 对抗性验收）** · 优先级: P1（工作流基建） · 类型: 生产流程板门禁（scripts 域）
-> **⚖ Lead 图纸**：手册已立 `docs/playbooks/self-check.md`（真渲染自玩+截图序列+策划对齐单·零未解释偏差才送复查门）。给它加牙：
-> ① `game-pipeline.mjs` S4/S5 gate 前置存在性检查：`docs/design/<slug>/self-check/S4-alignment.md`（S5 同名）在档 且 `self-check/shots/` 内 ≥5 张图（png/jpg 计数）——缺=gate 拒（点名「自证未做·见 self-check.md」·照 acceptanceScenarioCount 先例做纯函数可测·<门槛在 spawn 前拒不空转）。
-> ② 对齐单新鲜度绑 gameHash（照既有证据过期机制口径·陈旧对齐单=⚠过期提示，不硬拦——图可能真没变）。
-> ③ REVIEW_CHECKLISTS S4/S5 各加一行「对齐单抽样重走 ≥3 条（含 ⚠降格行的裁决去向核对）+ 好玩三问已作答非敷衍」。
-> ④ 测试照 acceptance 存在性门先例：计数纯函数/板提示/CLI 拒过路径/清单行断言。**不碰 src/games、src/ui**。
-> **✅ done（Opus 2026-07-29·待 Lead 对抗性验收）**：`scripts/game-pipeline.mjs` 加 `MIN_SELFCHECK_SHOTS=5` + `selfCheckArtifacts/selfCheckBlock/selfCheckNote` 三个导出纯函数（截图递归计 png/jpg/jpeg——按轮分子目录 `shots/r2/` 也算，手册要求「每轮都做」）。① S4 门在**验收剧本计数之后、conformance spawn 之前**拒（保留既有剧本判词优先），S5 门在 spawn audit 之前拒（cart 的 S5 本就免审计→不设自证前置；cart 的 S4 与 compiled/builtin 同受约束，同 acceptance 口径）；判词点名「SN 自证未做（见 docs/playbooks/self-check.md）· 缺策划对齐单 SN-alignment.md · 截图 n/5 · docs/design/<slug>/self-check/」。② 新鲜度：gate 跑时产物齐活即在 pipeline.json 记 `selfCheck.SN={at,shots,gameHash}` 快照，board 的 S4/S5 机器门详情尾追自证态（✗未做 / ⚠可能过期 / ✓对齐单+N 图）——**⚠ 只提示不硬拦**（图可能真没变）。③ `REVIEW_CHECKLISTS` S4/S5 各加「自证对齐单抽样重走 ≥3 条（含 ⚠降格行的裁决去向核对）+ 好玩三问已作答非敷衍」。④ 测试 +6 例（`scripts/game-pipeline.test.mjs` 32 例全绿·慢车道 `APOLLO_DEEP=1`）：计数/递归/逐关独立·判词点名·新鲜度三态·板提示（含 cart S5 不加提示）·清单行·CLI 真拒（S4 剧本够但自证缺=拒且**不进 conformance**、S5 拒后补齐放行并落 gameHash 快照）。手册回填：`self-check.md` 红线改为「机器卡已落地」+ 规格（≥5 图·可分子目录·过期语义），`game-production.md` S4/S5 机器门列前置自证。**据实偏差**：(a) 既有 CLI 测例「3 场景无 adapter → conformance 真判红」的 fixture 补加自证产物（否则被新门先拦·测的是 conformance 根对齐、非本门）；(b) 手册只说 `shots/`，实现放宽为递归计数（不罚按轮归档）；(c) 现有 8 款游戏均无自证产物 → **S4/S5 gate 从此为红是预期诚实态**（照 REQ-ACCEPT 先例·板上点名缺件，各 PE 补自证产物即转绿）。门禁：tsc=0·vitest 快车道=0·`APOLLO_DEEP=1` 流程板测=0·build=0·context-budget=0·docs-ref=0。
+### REQ-SHELL-公共壳三件 · host-runloop + game-art-load + local-store（101/102/103 沉淀盘点·owner 拍板沉淀） · [2026-07-29] · Lead 裁决（盘点=4~7 家重复实证·全是壳层非 sim） → **指派：Opus** · status: in-progress（已派工） · 优先级: P1 · 类型: 引擎 host/assets/services 公共设施（非 skills tier）
+> **⚖ Lead 图纸（三件一单·只建引擎件+落迁移单·不动任何游戏代码）**：
+> ① **host-runloop**（`src/engine/host/`·mount-host 姊妹件）：startSim/stopSim/restart + `lastSig` 差分重绘 + 局终冻结 sim + overlay 挂/摘——公倍数取自四家现状（game-103.ts:157-186,199-236 / game-q.ts:87-110,131-152 / game-t.ts:130-250 / game101.ts:360-388），API=宿主传回调（读态/建UI/终局钩）·~90-120 行+测。
+> ② **game-art-load**（`src/assets/`）：fetch `/games/<slug>/art/index.json` → 两形态返回（AssetManager 注册 / skinKey→URL 表）·失败静默回退（既有共识）·消解 game-a/c 两份近逐字 art-overrides（57 vs 95 行）·~60-80 行+测。
+> ③ **local-store**（`src/services/persist/`）：**提升 game-f `account.ts:19-30` 现成 KV 抽象**（game-f 冻结·只抄不动原文件）——typed KV：get/set/remove + JSON + 形状校验 + 无 storage 优雅降级·~50 行+测；附薄函数 local-leaderboard（插入排序+名次+截断·盘点候选 7 并入）。
+> ④ **迁移不在本单**：在 game-q/t/101/103/a/c 各自 `docs/design/<g>/requests.md` 落迁移工单（指派各 PE·引用本单件名）；**game-103 的单里额外记账**：achievements.ts+leaderboard.ts 94 行未报备且与 AchievementSync/PlatformPort 重叠——补 capability-plan §4 条目 + 随迁移消解。手册回填 assets.md/save-platform.md 各一行 + index.md。
+> ⑤ 红线：纯壳层·不进 sim/hash·不碰 src/games、src/ui、three-*；测试照 services 先例。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
