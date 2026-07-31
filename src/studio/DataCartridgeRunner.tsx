@@ -197,7 +197,7 @@ export function LibActionBar({ entry, onStart, onContinue, onHistory, onBench, o
 interface BenchAxisView { name: string; score: number; max: number; notes?: string[] }
 interface BenchResult { success?: boolean; error?: string; score?: number; pass?: boolean; threshold?: number; axes?: BenchAxisView[] }
 
-// 轴名中文注解（数据级"看得见"体检的直白解释；仅展示用，评分逻辑全在引擎 apollo-bench）。
+// 轴名中文注解（数据级"看得见"体检的直白解释；仅展示用，评分逻辑全在引擎 zerocraft-bench）。
 const AXIS_ZH: Record<string, string> = {
   Structure: '结构 · 装配意图',
   Load: '装载 · 能否成世界',
@@ -236,7 +236,7 @@ export function BenchOverlay({ api, slug, title, onClose }: {
       onClick={onClose}
       style={{ position: 'fixed', inset: 0, background: 'rgba(3,6,12,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 220 }}
     >
-      <div onClick={(e) => e.stopPropagation()} className="apollo-bench-overlay" style={{
+      <div onClick={(e) => e.stopPropagation()} className="zerocraft-bench-overlay" style={{
         width: 460, maxWidth: '92%', maxHeight: '84%', overflow: 'auto',
         background: SHELL.bg1, border: `1px solid ${SHELL.lineStrong}`, borderRadius: 12, padding: 20,
         fontFamily: SHELL.fontUi,

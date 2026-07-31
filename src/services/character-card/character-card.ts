@@ -3,7 +3,7 @@
 // 媒体键=平台真格式的平铺键（imageUrl/imageDataUrl/imageOssKey/avatar*/animation*）。
 
 import type {
-  ApolloCharacterCard,
+  ZeroCraftCharacterCard,
   CardIssue,
   CharacterMedia,
   CharacterPersona,
@@ -199,7 +199,7 @@ export function normalizeCharacterCard(
   }
 
   // —— 组卡 ——
-  const card: ApolloCharacterCard = {
+  const card: ZeroCraftCharacterCard = {
     id,
     name: name ?? '',
     media,
@@ -223,7 +223,7 @@ export function normalizeCharacterCard(
 }
 
 /** v1 席位卡投影：{id,name,avatar}（avatar 取头像·退回主图）。game-b 席位 adapter 零改动。 */
-export function toSeatCard(card: ApolloCharacterCard): SeatCard {
+export function toSeatCard(card: ZeroCraftCharacterCard): SeatCard {
   const seat: SeatCard = { id: card.id, name: card.name };
   const avatar = card.media.avatarUrl ?? card.media.imageUrl;
   if (avatar) seat.avatar = avatar;

@@ -1,6 +1,6 @@
-# Apollo UI 渲染后端移植契约（HTML → Canvas / 微信小游戏）
+# ZeroCraft UI 渲染后端移植契约（HTML → Canvas / 微信小游戏）
 
-> 给「把 Apollo 游戏库移植到微信小游戏」的团队：照本文实现一台 **Canvas 后端解释器**，
+> 给「把 ZeroCraft 游戏库移植到微信小游戏」的团队：照本文实现一台 **Canvas 后端解释器**，
 > 即可让**所有现有游戏的 UI 数据原样跑起来**，无需改任何游戏代码或控件契约。
 >
 > 配套读：`docs/design/apollo-ui-contract.md`（控件 props 总表）。本文只讲**怎么把数据画出来 + 收交互**。
@@ -9,7 +9,7 @@
 
 ## 0. 核心认知：你只需要换"解释器"，不碰数据
 
-Apollo UI = **数据（LayoutNode 树 + UITheme 令牌）** + **解释器（renderNode 画 + mountUI 收事件）**。
+ZeroCraft UI = **数据（LayoutNode 树 + UITheme 令牌）** + **解释器（renderNode 画 + mountUI 收事件）**。
 现有解释器是 **HTML/DOM 后端**（`src/ui/components/render.ts` 出 HTML 串、`server.ts` 绑 DOM 事件）。
 微信小游戏没有 DOM，所以你**重写一台 Canvas 后端解释器**，消费**同一份数据**。
 

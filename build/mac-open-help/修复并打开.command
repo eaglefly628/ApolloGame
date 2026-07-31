@@ -4,10 +4,10 @@
 set -e
 cd "$(dirname "$0")"
 
-# 在常见位置找 Apollo 系列 App（应用程序 / 用户应用程序 / 本文件夹旁）。
+# 在常见位置找 ZeroCraft 系列 App（应用程序 / 用户应用程序 / 本文件夹旁）。
 APP=""
 for DIR in "/Applications" "$HOME/Applications" "."; do
-  CAND=$(ls -dt "$DIR"/*.app 2>/dev/null | grep -iE 'Fateflip|Apollo|Balatro|Pixel|Kingdoms|Poker' | head -1 || true)
+  CAND=$(ls -dt "$DIR"/*.app 2>/dev/null | grep -iE 'Fateflip|ZeroCraft|Balatro|Pixel|Kingdoms|Poker' | head -1 || true)
   if [ -n "$CAND" ]; then APP="$CAND"; break; fi
 done
 

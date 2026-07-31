@@ -9,7 +9,7 @@
 appId: com.zerocraft.platform
 electronVersion: "33.0.0"
 productName: "ZeroCraft Engine"
-copyright: "Copyright © 2026 Apollo Game Studio"
+copyright: "Copyright © 2026 ZeroCraft Game Studio"
 
 # package.json 的 "main" 全局指向单游戏入口 electron/main.cjs（别的 pack:* 目标要用，不能改）；
 # 这份配置用 extraMetadata 单独把 electron 主进程改指向 platform-main.cjs，只影响这一个打包目标。

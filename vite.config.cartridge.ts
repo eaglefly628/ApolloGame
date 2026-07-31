@@ -5,7 +5,7 @@ import { copyUsedAssets, inlineUsedAssets } from './vite.assets';
 
 const targetGame = process.env.VITE_TARGET_GAME ?? 'game-f';
 
-// 每个游戏的真名（用于把 cartridge.html 的 <title> 从 "Apollo OS" 换成游戏名）。
+// 每个游戏的真名（用于把 cartridge.html 的 <title> 从 "ZeroCraft OS" 换成游戏名）。
 const GAME_TITLES: Record<string, string> = {
   'game-e': '小丑牌 · 卡牌构建',
   'game-f': '像素三分天下 · 自走棋', 'game-g': '翻命扑克 · 3D 掷命骨架',

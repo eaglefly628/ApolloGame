@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { benchBlueprint, BENCH_PASS_THRESHOLD } from './apollo-bench.js';
+import { benchBlueprint, BENCH_PASS_THRESHOLD } from './zerocraft-bench.js';
 import { BENCH_GAMES } from './games.js';
 import { buildGameFBlueprint } from '../games/game-f/index.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 
-describe('ApolloBench · 执行落地体检', () => {
+describe('ZeroCraftBench · 执行落地体检', () => {
   for (const g of BENCH_GAMES) {
     it(`${g.id}: 通过体检(total>=${BENCH_PASS_THRESHOLD})且分数可复现`, () => {
       const r1 = benchBlueprint(g.id, g.build);

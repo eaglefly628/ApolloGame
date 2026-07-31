@@ -1,6 +1,6 @@
-# UI 实操手册 · Apollo 数据驱动 UI 建库准则（LLM 必读）
+# UI 实操手册 · ZeroCraft 数据驱动 UI 建库准则（LLM 必读）
 
-> **定位**：你（LLM·尤其是弱模型）要用 Apollo Kit（`src/ui/components` 的 `LayoutNode`）做一套 UI / HUD / 菜单 / 面板时，**按本手册做就不会出大纰漏**。强模型也照此对齐，省得各凭直觉跑偏。
+> **定位**：你（LLM·尤其是弱模型）要用 ZeroCraft Kit（`src/ui/components` 的 `LayoutNode`）做一套 UI / HUD / 菜单 / 面板时，**按本手册做就不会出大纰漏**。强模型也照此对齐，省得各凭直觉跑偏。
 >
 > **本手册在「约束式数据合成」机器里的位置**：`catalog.ts`（喂你 schema + sample）+ `validate.ts`（挡掉非法数据）+ `sample`（game-i 给活范例）这台机器只能挡**schema 级**错误（未知组件 / 缺必填 / 错枚举）。本手册管**机器挡不住、但仍然是「坏 UI」的合理性**——**重叠、颜色/对比、透明度、布局卫生**。这些靠纪律 + 自检，不靠等用户指出。
 >

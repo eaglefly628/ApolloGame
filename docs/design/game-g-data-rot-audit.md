@@ -2,7 +2,7 @@
 
 > **尺子（宪法 `data-driven-manifesto.md`）**：「最弱的 LLM 能不能也产出一模一样的数据？」
 > 能 → 数据接口；不能（要写自由代码）→ 拒绝，做成 DSL 或下沉成 capability。
-> **范围**：**排除 UI**（UI 架构另由架构程序员基于 Apollo 重做；本审计不碰 `lobby-*`/`turn-battle-screen`/`game-g.tsx` 表现层）。聚焦**战斗 / 数据 / 装配**层。
+> **范围**：**排除 UI**（UI 架构另由架构程序员基于 ZeroCraft 重做；本审计不碰 `lobby-*`/`turn-battle-screen`/`game-g.tsx` 表现层）。聚焦**战斗 / 数据 / 装配**层。
 
 ## 0. 现状一句话
 上一轮去腐已退役「旧实时战斗核 `live-combat` + 旧战斗屏」。剩余非-UI 腐烂收敛为 **3 簇**，按价值排序。

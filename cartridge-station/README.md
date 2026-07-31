@@ -1,6 +1,6 @@
 # Cartridge Station
 
-Apollo 掌机**卡带包**的预览 / 管理 / 打包工具。**独立工具**——不依赖引擎或游戏代码，
+ZeroCraft 掌机**卡带包**的预览 / 管理 / 打包工具。**独立工具**——不依赖引擎或游戏代码，
 只用 Python 标准库（与掌机 `start.sh` 的 `python3 -m http.server` 同栈，RK3562 上也能跑）。
 
 ## 运行
@@ -17,7 +17,7 @@ python3 serve.py
 一个卡带包 = `<name>.tar.gz`，解开后：
 
 ```
-cartridge.html   Apollo OS 掌机壳（入口）
+cartridge.html   ZeroCraft OS 掌机壳（入口）
 assets/          Vite 构建的 JS / 字体 / 美术
 start.sh         python3 http.server + chromium --kiosk 启动脚本
 ```

@@ -51,7 +51,7 @@ def _generate_cart_logic(provider: str, model, slug: str, manifest: dict, catalo
     api_key = get_api_key(provider)
     if not api_key:
         return {'success': False, 'error': f'{provider} 无可用凭据'}
-    system = ('You are the Apollo cart logic programmer. Reply with exactly one ```ts block, no prose.\n\n'
+    system = ('You are the ZeroCraft cart logic programmer. Reply with exactly one ```ts block, no prose.\n\n'
               '## Capability catalog\n' + str(catalog or '') + '\n\n## Design docs\n' + _agent_design_digest(slug)
               + '\n\n## Final manifest\n' + json.dumps(manifest, ensure_ascii=False))
     messages = [{'role': 'user', 'content': _CART_LOGIC_TASK.replace('{SLUG}', slug)}]

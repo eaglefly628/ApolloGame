@@ -1,7 +1,7 @@
 # Skill 行为 Spec · check-ui
 
 > 对象：`.claude/skills/check-ui/SKILL.md` · 类型：技能 · 起卡日期：2026-07-04
-> 移植注：源自 CCGS skill-test-spec 七段骨架，Apollo 化（判词=工具退出码·无交互审批）。
+> 移植注：源自 CCGS skill-test-spec 七段骨架，ZeroCraft 化（判词=工具退出码·无交互审批）。
 
 ## Summary（这件零件做什么）
 

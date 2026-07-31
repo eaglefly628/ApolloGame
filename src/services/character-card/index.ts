@@ -10,7 +10,7 @@ export type {
   PlatformCharacterDraft,
   CharacterMedia,
   CharacterPersona,
-  ApolloCharacterCard,
+  ZeroCraftCharacterCard,
   CardIssue,
   NormalizeOptions,
   NormalizeResult,

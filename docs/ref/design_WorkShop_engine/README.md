@@ -1,7 +1,7 @@
-# Handoff: 爱萌互动 · Apollo Engine 工作台 UI
+# Handoff: 爱萌互动 · ZeroCraft Engine 工作台 UI
 
 ## Overview
-「爱萌互动 Apollo Engine」是一台 AI Native 休闲游戏引擎的**桌面端工作台 UI**（横屏 PC，1280×800）。创作者在此管理在研游戏、通过 AI 或模板库新建游戏、管理素材、发布、设置。整套视觉是 **Supercell（欧美卡通 / 预渲染 3D / Pixar 质感）× Disney（魔法装饰层）** 混搭基调。
+「爱萌互动 ZeroCraft Engine」是一台 AI Native 休闲游戏引擎的**桌面端工作台 UI**（横屏 PC，1280×800）。创作者在此管理在研游戏、通过 AI 或模板库新建游戏、管理素材、发布、设置。整套视觉是 **Supercell（欧美卡通 / 预渲染 3D / Pixar 质感）× Disney（魔法装饰层）** 混搭基调。
 
 ## About the Design Files
 本包内的 HTML 文件（`平台工作台 UI.dc.html`）是**用 HTML 制作的设计参考稿** —— 展示预期外观与交互的原型，**不是可直接照搬的生产代码**。任务是把这些设计在目标工程里**用 TypeScript（推荐 React + TypeScript）复刻出来**，采用工程既有的组件与规范；若尚无环境，则选最合适的框架实现。

@@ -11,7 +11,7 @@ import {
   toSeatCard,
   isCardUsable,
   type PlatformCharacterDraft,
-  type ApolloCharacterCard,
+  type ZeroCraftCharacterCard,
   type SeatCard,
 } from '../../services/character-card/index.js';
 
@@ -64,8 +64,8 @@ export interface GameBSessionIn {
  * 每席：优先取 sessionIn 平台草稿，否则内置默认；经 service 收敛（**必开成年硬闸**）——
  * 平台卡可用则用之，不可用（成年闸未过/空名等）则**回退内置默认卡**（默认恒可用·requireAdult 仍开）。
  */
-export function resolveSeatCards(sessionIn?: GameBSessionIn): Record<SeatId, ApolloCharacterCard> {
-  const out = {} as Record<SeatId, ApolloCharacterCard>;
+export function resolveSeatCards(sessionIn?: GameBSessionIn): Record<SeatId, ZeroCraftCharacterCard> {
+  const out = {} as Record<SeatId, ZeroCraftCharacterCard>;
   for (const id of SEAT_IDS) {
     const draft = sessionIn?.seats?.[id] ?? DEFAULT_SEAT_DRAFTS[id];
     const res = normalizeCharacterCard(draft, { id, requireAdult: true, resolveOssKey: sessionIn?.resolveOssKey });
@@ -77,12 +77,12 @@ export function resolveSeatCards(sessionIn?: GameBSessionIn): Record<SeatId, Apo
 }
 
 /** v1 席位投影 {id,name,avatar?}（游戏侧填铭牌/头像·既有 hud/席名零改动契约）。 */
-export function seatDisplay(card: ApolloCharacterCard): SeatCard {
+export function seatDisplay(card: ZeroCraftCharacterCard): SeatCard {
   return toSeatCard(card);
 }
 
 /** 四席显示名数组（座序 0..3·喂 core startMatch(seed, seatNames)）。 */
-export function seatNamesFrom(cards: Record<SeatId, ApolloCharacterCard>): string[] {
+export function seatNamesFrom(cards: Record<SeatId, ZeroCraftCharacterCard>): string[] {
   return SEAT_IDS.map((id) => seatDisplay(cards[id]).name);
 }
 
@@ -90,7 +90,7 @@ export function seatNamesFrom(cards: Record<SeatId, ApolloCharacterCard>): strin
  * 人设展示行（席位闲时问候/台词气泡·AI 风味）：取 opening，退 catchphrases[0]，再退空串。
  * **截断到 max 字**（超裁 + '…'）——卡文本=外部不可信输入·防超长撑破 UI（红线·展示层截断）。
  */
-export function seatFlavor(card: ApolloCharacterCard, max = 24): string {
+export function seatFlavor(card: ZeroCraftCharacterCard, max = 24): string {
   const line = card.persona.opening ?? card.persona.catchphrases[0] ?? '';
   return line.length > max ? line.slice(0, max) + '…' : line;
 }
@@ -116,7 +116,7 @@ export interface SeatSessionOut {
  * id 稳定=对账唯一硬要求（默认 id=席位 id 故唯一）。纯确定性：迭代 SEAT_IDS 恒定顺序。
  */
 export function buildSessionOut(
-  cards: Record<SeatId, ApolloCharacterCard>,
+  cards: Record<SeatId, ZeroCraftCharacterCard>,
   outcomes: Record<SeatId, SeatOutcome>,
 ): Record<string, SeatSessionOut> {
   const out: Record<string, SeatSessionOut> = {};

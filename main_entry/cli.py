@@ -48,7 +48,7 @@ def _open_browser_when_ready(open_url: str, probe_url: str) -> None:
     # 后台线程：HTTP 探测一成功就立刻开浏览器（= 页面最早能正常加载的瞬间），主线程不阻塞终端。
     # 比"阻塞 wait 完再开"快在：不占住主线程、轮询 0.1s 粒度、就绪即弹（不等满 wait 返回）。
     if wait_for_server(probe_url):
-        print(c("  [READY]", 'g'), f"Apollo Launcher: {c(open_url, 'c')}")
+        print(c("  [READY]", 'g'), f"ZeroCraft Launcher: {c(open_url, 'c')}")
     else:
         print(c("  [WARN]", 'y'), f"就绪探测超时，仍尝试打开 → {c(open_url, 'c')}")
     webbrowser.open(open_url)
@@ -65,7 +65,7 @@ def cmd_launcher(player: bool = False):
     # 第二个进程的 start_vite() 会因端口冲突立即退出，但 wait_for_server 仍返回 True
     # 再调 webbrowser.open → 弹出多余新标签。已在运行时直接开目标页即可（不重启服务）。
     if is_port_in_use(VITE_PORT):
-        print(c("  [INFO]", 'y'), f"Apollo 已在运行 → 直接打开 {c(url, 'c')}")
+        print(c("  [INFO]", 'y'), f"ZeroCraft 已在运行 → 直接打开 {c(url, 'c')}")
         print(c("  [INFO]", 'dim'), "如需重启服务，请先在原终端按 Ctrl+C 停止")
         webbrowser.open(url)
         return
@@ -153,7 +153,7 @@ def cmd_build():
     sys.exit(subprocess.call(**_spawn(['npx', 'vite', 'build']), cwd=ROOT))
 
 def cmd_bench():
-    # ApolloBench：执行落地体检（借鉴 OpenGame-Bench）。把每个游戏蓝图喂进真实引擎跑分。
+    # ZeroCraftBench：执行落地体检（借鉴 OpenGame-Bench）。把每个游戏蓝图喂进真实引擎跑分。
     check_env()
     sys.exit(subprocess.call(**_spawn(['npx', 'vite-node', 'src/bench/run-bench.ts']), cwd=ROOT))
 
@@ -179,7 +179,7 @@ def cmd_help():
     print(f"    {c('test', 'c').ljust(30)} Run all tests")
     print(f"    {c('typecheck', 'c').ljust(30)} TypeScript type check")
     print(f"    {c('build', 'c').ljust(30)} Production build")
-    print(f"    {c('bench', 'c').ljust(30)} ApolloBench 执行落地体检 (每个游戏跑分)")
+    print(f"    {c('bench', 'c').ljust(30)} ZeroCraftBench 执行落地体检 (每个游戏跑分)")
     print(f"    {c('status', 'c').ljust(30)} Project stats")
     print(f"    {c('help', 'c').ljust(30)} This help")
     print()

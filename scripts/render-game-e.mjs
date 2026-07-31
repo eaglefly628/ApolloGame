@@ -57,7 +57,7 @@ P.push(pill(LX + 170, '💰', '$4', '#ffd166'));
 // Ante / round
 P.push(`<rect x="${LX + 20}" y="430" width="${LW - 40}" height="44" rx="9" fill="#06121a"/>`);
 P.push(`<text x="${LX + 40}" y="458" fill="#cfe8ee" font-size="14">Ante 1 / 8</text><text x="${LX + LW - 40}" y="458" fill="#9fb3bd" font-size="13" text-anchor="end">第 3 道盲注</text>`);
-P.push(`<text x="${LX + LW / 2}" y="${H - 36}" fill="#3a5560" font-size="11" text-anchor="middle">小丑牌·Apollo</text>`);
+P.push(`<text x="${LX + LW / 2}" y="${H - 36}" fill="#3a5560" font-size="11" text-anchor="middle">小丑牌·ZeroCraft</text>`);
 
 // ───────── 右牌桌 ─────────
 const RX = 300;

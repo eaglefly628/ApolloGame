@@ -5,7 +5,7 @@ import type { Camera } from '@engine/protocol/components.js';
 import { collectRenderables, getCameraView } from '@renderer/renderable.js';
 
 // ═══════════════════════════════════════════════════════════════
-//  ApolloBench —— 执行落地的游戏体检 (借鉴 OpenGame-Bench)
+//  ZeroCraftBench —— 执行落地的游戏体检 (借鉴 OpenGame-Bench)
 //
 //  OpenGame 的核心洞见：别信 LLM 写的代码，**跑起来验**——启动游戏、驱动它、核验可玩性
 //  (渲染/操作/循环推进/胜负)，按 Build Health / Visual Usability / Intent Alignment 打分。

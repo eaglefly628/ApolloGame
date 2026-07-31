@@ -1,4 +1,4 @@
-# Apollo Engine — 原子 Skill 设计思考过程
+# ZeroCraft Engine — 原子 Skill 设计思考过程
 
 > 本文记录了从 v1→v3 的完整推导过程和设计决策，供外部审阅和反馈。
 
@@ -6,7 +6,7 @@
 
 ## 1. 我们在做什么
 
-Apollo Engine 是一个 AI-native 的游戏框架。核心理念是：**游戏由原子能力（Atom Skill）组合而成**。每个 Atom Skill 是一个自描述的 ECS Capability，包含组件定义、系统逻辑、LLM 描述和编辑器参数。
+ZeroCraft Engine 是一个 AI-native 的游戏框架。核心理念是：**游戏由原子能力（Atom Skill）组合而成**。每个 Atom Skill 是一个自描述的 ECS Capability，包含组件定义、系统逻辑、LLM 描述和编辑器参数。
 
 我们需要定义一张"游戏元素周期表"——列出所有简单 2D 游戏的基础原子构件。不为某个具体游戏设计，而是游戏这个概念本身的不可再分单元。
 

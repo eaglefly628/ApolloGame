@@ -98,7 +98,7 @@ export const settingsScreen: LayoutNode = {
     {
       type: 'Badge',
       id: 'version-badge',
-      props: { text: 'UI Server v0.1 · Apollo Engine', tone: 'dim' },
+      props: { text: 'UI Server v0.1 · ZeroCraft Engine', tone: 'dim' },
     },
   ],
 };

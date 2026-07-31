@@ -1,7 +1,7 @@
 # Handoff: Game F《像素三分天下》— 双性别向 UI 主题系统 + 组件库 + 商城
 
 ## Overview
-本交接包是 Apollo 引擎下自走棋游戏 **Game F（三国题材 TFT / 金铲铲制式）** 的一整套 UI 设计参考,核心是 **一套布局、两套可换肤主题** + **20 个标准基础组件** + **古风按钮/图标系统** + **商城**。两套皮肤:
+本交接包是 ZeroCraft 引擎下自走棋游戏 **Game F（三国题材 TFT / 金铲铲制式）** 的一整套 UI 设计参考,核心是 **一套布局、两套可换肤主题** + **20 个标准基础组件** + **古风按钮/图标系统** + **商城**。两套皮肤:
 - **玄铁 (Vanguard)** — 偏男性向:暗黑金属硬核,近黑钢冷底 + 熔岩橙,锐角、金属高光、碳纤底纹。
 - **锦霞 (Aurora)** — 偏女性向:宫廷锦绣,暖珍珠底 + 胭脂玫瑰 + 描金,大圆角、丝绸柔光、窗棂镂花底纹。
 
@@ -24,7 +24,7 @@
 | 文件 | 内容 |
 |---|---|
 | `designs/Game F 对战.dc.html` | **主对战界面(平盘重构版,1280×720)· 推荐主参考** —— 单人/双人×玄铁/锦霞 四组合切换。清爽擂台棋盘 + 羁绊栏 + 备战席(贴棋盘底) + 点将台招募弹窗 + 同盟镜像面板。双人棋盘 10 列 |
-| `designs/Apollo UI Kit.dc.html` | **20 个标准组件** × 两套皮肤 × 全交互态 + 基础(色板/字体/形状/五行分格)· 水墨×王者(色形纹神) |
+| `designs/ZeroCraft UI Kit.dc.html` | **20 个标准组件** × 两套皮肤 × 全交互态 + 基础(色板/字体/形状/五行分格)· 水墨×王者(色形纹神) |
 | `designs/Game F 对战.dc.html` | **对战界面(平盘,1280×720)** · 单人/多人(3人联机,AI 补位)× 玄铁/锦霞 · 点将台招募弹窗 · 右栏玩家战况六角点图 |
 | `designs/Game F 大厅.dc.html` | **局外大厅** 7 屏(大厅/组队/牌组/收藏/商城·市场/天梯)+ 好友栏 + 邀请 toast · 玄铁/锦霞 |
 | `designs/Game F 商城.dc.html` | 商城(1280×720):抽卡/皮肤/通行证/钻石/礼包 五分页 |
@@ -103,7 +103,7 @@
 
 ## Screens / Views
 
-### 1. 通用组件库 (`Apollo UI Kit.dc.html`) — hifi
+### 1. 通用组件库 (`ZeroCraft UI Kit.dc.html`) — hifi
 中性灰底文档页,每个组件一张白卡:卡头(编号 + 中/英名 + 字体标注)+ 描述 + **两皮并排**预览井(玄铁深色井 / 锦霞浅色井,各自挂该皮肤 token)。共 20 组件:
 
 1. **button** 按钮 — 主(accent 渐变)/次(btn-bg)/危险(danger);全状态见上。圆角 `--btn-radius`。
@@ -164,7 +164,7 @@
 四角装饰,按皮肤切换,内联 SVG 以 `data:image/svg+xml` 作 `background-image`,四角用 `transform: scaleX/Y(-1)` 镜像:
 - **玄铁 = 龙鳞装甲角**:熔岩橙折角支架 + 鳞刺 + 金铆钉。
 - **锦霞 = 凤羽卷草角**:玫瑰金凤羽卷曲羽流 + 小火苗。
-- SVG 源码见 `Apollo UI Kit.dc.html` / `Game F 商城.dc.html` 逻辑类中的 `dragonSvg` / `phoenixSvg`。
+- SVG 源码见 `ZeroCraft UI Kit.dc.html` / `Game F 商城.dc.html` 逻辑类中的 `dragonSvg` / `phoenixSvg`。
 
 ---
 
@@ -180,7 +180,7 @@
 
 ## 落地顺序建议
 1. 先用 `tokens/*.tokens.css` 在 `src/ui/themes/<name>/` 建两套主题变量层。
-2. 拆 `Apollo UI Kit.dc.html` 为 20 个基础组件的 CSS(每组件一份,变量驱动)。
+2. 拆 `ZeroCraft UI Kit.dc.html` 为 20 个基础组件的 CSS(每组件一份,变量驱动)。
 3. 照 `Game F 对战.dc.html` 搭对战壳层(单/双人共用骨架,双人棋盘 10 列)。
 4. 照 `Game F 商城.dc.html` 搭商城壳层(对局外 DOM)。
 

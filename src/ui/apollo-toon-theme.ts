@@ -1,4 +1,4 @@
-// Apollo Toon · 「水墨玩趣」house-style 主题（REQ-STYLESET M0.5 现装可视版·PUI）
+// ZeroCraft Toon · 「水墨玩趣」house-style 主题（REQ-STYLESET M0.5 现装可视版·PUI）
 //
 // 混风定稿（styleset 图纸 §六·风格锚 apollo-toon）：迪士尼圆润亲和 × Supercell 厚底唇糖果 3D 钮 × 中国水墨纸纹/笔触边。
 // **全部由既有 UITheme 闭集令牌 + 程序化 data-URI 皮表达**——零新控件、render-only、确定性（无裸随机·encodeURIComponent 一次）。

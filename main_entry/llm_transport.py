@@ -13,7 +13,7 @@ from .sysutil import ROOT, c
 
 # ── 游戏生成（Claude API / 其他 LLM）──
 
-GAME_GEN_SYSTEM_PROMPT = """You are Apollo Engine's game generator. You create playable 2D games by outputting Assembly blueprints (JSON).
+GAME_GEN_SYSTEM_PROMPT = """You are ZeroCraft Engine's game generator. You create playable 2D games by outputting Assembly blueprints (JSON).
 
 ## Output format — a canonical Manifest (JSON ONLY, no markdown, no explanation)
 

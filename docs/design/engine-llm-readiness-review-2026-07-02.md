@@ -1,4 +1,4 @@
-# Apollo 引擎「面向 LLM 的轻量游戏引擎」如实评审（2026-07-02）
+# ZeroCraft 引擎「面向 LLM 的轻量游戏引擎」如实评审（2026-07-02）
 
 > owner 委托：对原子架构 + 能力积木做 review，以 game-e（小丑牌）、game-g（翻命扑克）、game-d（骰途/骰盅）为样本，
 > 如实判定本引擎「未来竞争力」与「弱 LLM 产出游戏的能力」。
@@ -30,12 +30,12 @@
 ## 二、引擎底座盘点（这部分是真金）
 
 - **78 个注册 capability**：29 原子（注释口径仍写 26，漂移）+ 8 tier1 + 31 tier2 + 9 tier3（`capability-registry.ts:57-111`）。
-- **纯 JSON manifest 闭环真实存在且设计正确**：`{capabilities, entities}` 纯 JSON 可表达、**塞不进函数**（`manifest.ts:36-107`）；能力目录自动导出喂 LLM（`capability-catalog.ts:28-43`，"零 prompt 维护"）；`apollo.py` 五路 LLM provider 生成 → parseManifest 校验 → 透视器可跑；**ApolloBench** 无浏览器五轴体检，含确定性双跑同 hash（`apollo-bench.ts:7-23`）。
+- **纯 JSON manifest 闭环真实存在且设计正确**：`{capabilities, entities}` 纯 JSON 可表达、**塞不进函数**（`manifest.ts:36-107`）；能力目录自动导出喂 LLM（`capability-catalog.ts:28-43`，"零 prompt 维护"）；`apollo.py` 五路 LLM provider 生成 → parseManifest 校验 → 透视器可跑；**ZeroCraftBench** 无浏览器五轴体检，含确定性双跑同 hash（`zerocraft-bench.ts:7-23`）。
 - **UI 库 LayoutNode**：34 种控件闭集 + 全量自描述 catalog（喂 LLM/校验/样例三用）+ validateLayoutNode 五类校验；特效/颜色/字体全闭集枚举。
 - **测试面**：skills 88 个测试文件 9,492 行，测试:源码 ≈ 1.09:1；全仓 277 个测试文件。
 - **配套论证文档已存在**：`ai-data-editor.md`（LLM=受限表单填写器）、`weak-llm-thesis-redteam.md`（命题红队自审）——说明团队对命题风险有自觉。
 
-**这套底座在同类里是少见的完整**：市面上要么表达力极窄（PuzzleScript/Bitsy），要么庞大不轻量（GDevelop/Construct），要么放任 LLM 写自由代码（方差不可控）。Apollo 的差异化——**确定性、可审计、可 diff、双跑同 hash、LLM 方差归零**——是真实存在的，而且不随 LLM 变强而贬值（agent 时代"可验证的产物"反而更值钱）。
+**这套底座在同类里是少见的完整**：市面上要么表达力极窄（PuzzleScript/Bitsy），要么庞大不轻量（GDevelop/Construct），要么放任 LLM 写自由代码（方差不可控）。ZeroCraft 的差异化——**确定性、可审计、可 diff、双跑同 hash、LLM 方差归零**——是真实存在的，而且不随 LLM 变强而贬值（agent 时代"可验证的产物"反而更值钱）。
 
 ## 三、但硬伤同样真实（如实揭短）
 
@@ -65,7 +65,7 @@
 - manifest 字段校验只硬查 number/boolean；string/数组/嵌套对象（恰是 dialogue/GameFlow/Prefab 这些最复杂的数据）**不校验**（`validate-manifest.ts:17-18` 自认）；assetKey 校验是 opt-in。
 - 引用断链全部 warning 不拦截，运行期**静默吞**（`validate-references.ts:7-12`）。
 - validateLayoutNode 对未列字段宽松（props 塞任意键不报）。
-- ApolloBench 只测 2 个对象：demo + **已冻结的 game-f**；在营的 g/h/i/x/z 全不在 bench 里。
+- ZeroCraftBench 只测 2 个对象：demo + **已冻结的 game-f**；在营的 g/h/i/x/z 全不在 bench 里。
 - 对人类程序员这叫宽松；**对 LLM 用户这叫没有护栏**——弱 LLM 恰恰需要 error 级的硬反馈才能自我纠正。
 
 ### 3.6 纪律执行比能力缺口更拖后腿（game-d 是反面标本）
@@ -98,7 +98,7 @@ game-d 的问题几乎全不是"引擎做不到"：`capabilities: []` 零接入�
 |---|---|---|
 | **P0** | 下沉「修正聚合/加成栈」capability（字段表+merge 策略+条件门控） | 仓内已重复 3 套同构（§3.2），第 4 个卡牌游戏必然重写第 4 套 |
 | **P0** | 下沉「对掷判定+平局阶梯」（几十行、极通用） | game-g 已验证，game-d 骰途直接受益 |
-| **P0.5** | ApolloBench 纳入在营游戏 + 每游戏「数据占比/可执行数据率」入 bench 报表 | 宪法 §7 硬指标目前无人度量；虚胖数据（§3.4）需要「可执行率」指标曝光 |
+| **P0.5** | ZeroCraftBench 纳入在营游戏 + 每游戏「数据占比/可执行数据率」入 bench 报表 | 宪法 §7 硬指标目前无人度量；虚胖数据（§3.4）需要「可执行率」指标曝光 |
 | **P0.5** | 校验加 strict 模式（未知组件/断链/未列 props 可升 error） | LLM 用户需要硬反馈（§3.5）；对人保留 warning 模式 |
 | **P1** | 回合流程词汇补齐（flow + card-pile 参数化 + 动作互斥/mana ramp），选 game-e 或 game-g 试点回填 | 引擎已有底子，缺最后一层词汇；试点回填才算吃狗粮 |
 | **P1** | UI 绑定层设计（LayoutNode 模板 + 数据绑定表达式，目标：消灭 builder 函数） | 最大单一负债（§3.3）；没有它 UI 永远 40-50% 代码 |

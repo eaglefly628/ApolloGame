@@ -13,7 +13,7 @@
 ### JSON 序列化（当前推荐）
 - 优点：可读、可调试、前端原生支持。
 - 缺点：体积大、解析慢。
-- Apollo 组件都是 plain object，`JSON.stringify` 直接可用。
+- ZeroCraft 组件都是 plain object，`JSON.stringify` 直接可用。
 - 注意：EntityId 如果是 number 需确保 JSON 不丢精度。
 
 ### 结构化克隆（structuredClone）
@@ -74,7 +74,7 @@
 - 不存 World 快照，只存初始状态 + 每 tick 的输入序列。
 - 回放时重跑所有 tick — 存档极小，但加载慢（要重跑）。
 - 适合：格斗/竞技游戏的录像系统。
-- Apollo 的 debug/recorder.ts 已有此模式的基础实现。
+- ZeroCraft 的 debug/recorder.ts 已有此模式的基础实现。
 
 ## 常见陷阱
 
@@ -91,6 +91,6 @@
 
 ## 参考来源
 
-- Apollo debug/recorder.ts — 确定性回放录制的现有实现
+- ZeroCraft debug/recorder.ts — 确定性回放录制的现有实现
 - FlatBuffers — Google 的零拷贝序列化，适合大存档
 - IndexedDB API — 浏览器端大容量异步存储

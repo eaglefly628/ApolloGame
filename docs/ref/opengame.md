@@ -1,6 +1,6 @@
 # 参考库 · OpenGame（Open Agentic Coding for Games）
 
-> 加入我们 ref 的外部参考。目的：理解其设计 → 和 Apollo 对比 → 把能吸收的直接拿过来。
+> 加入我们 ref 的外部参考。目的：理解其设计 → 和 ZeroCraft 对比 → 把能吸收的直接拿过来。
 
 - 仓库：https://github.com/leigest519/OpenGame （Apache-2.0，TypeScript 为主，~2.5k★）
 - 论文：*OpenGame: Open Agentic Coding for Games*（arXiv 2604.18394，2026-04）
@@ -38,7 +38,7 @@ prompt
 
 ---
 
-## 2. 和 Apollo 对比
+## 2. 和 ZeroCraft 对比
 
 | 维度 | OpenGame | ApolloGame（我们） |
 |---|---|---|
@@ -58,15 +58,15 @@ prompt
 
 | # | 吸收点 | 来自 OpenGame | 状态 |
 |---|---|---|---|
-| 1 | **ApolloBench：执行落地体检** | OpenGame-Bench | ✅ **已实现**（`src/bench/`）。把每份蓝图喂进真实引擎跑 N tick，按 Structure/Load/Determinism/Numeric/Visual 五轴打分；**游戏类型感知**（空间 vs VN/sim，对应它的"游戏类型分类"）。`npm run bench` / `python3 apollo.py bench` / 启动器 Dev Tools「Bench」按钮 / 单测守 `src/bench/apollo-bench.test.ts`。 |
+| 1 | **ZeroCraftBench：执行落地体检** | OpenGame-Bench | ✅ **已实现**（`src/bench/`）。把每份蓝图喂进真实引擎跑 N tick，按 Structure/Load/Determinism/Numeric/Visual 五轴打分；**游戏类型感知**（空间 vs VN/sim，对应它的"游戏类型分类"）。`npm run bench` / `python3 apollo.py bench` / 启动器 Dev Tools「Bench」按钮 / 单测守 `src/bench/zerocraft-bench.test.ts`。 |
 | 2 | **Debug Skill：经验证修复协议** | Debug Skill | ✅ **已起头**（`docs/ref/verified-fixes.md`）。把本会话真修过的 bug（透视器白屏、Windows WinError 2）按"症状→根因→修复→守卫"立档，成长式追加。 |
-| 3 | 游戏类型分类 → 分型验证 | 类型分类 | ✅ 已并入 ApolloBench（spatial/non-spatial 不同评分口径）。 |
+| 3 | 游戏类型分类 → 分型验证 | 类型分类 | ✅ 已并入 ZeroCraftBench（spatial/non-spatial 不同评分口径）。 |
 | 4 | **GDD-first**：先出设计文档再生成 | reasoning 阶段 | 🔜 路线图。apollo.py 现在一步到位 prompt→JSON；可加"先出 GDD → 再装配蓝图"两段式提质。 |
 | 5 | Template 骨架库（成长式） | Template Skill | 🟡 部分。我们有 `PRESET_BLUEPRINTS` + 3 个游戏；可形式化成生成器可 scaffold 的模板注册表。 |
-| 6 | 真·视觉可用性（headless 浏览器 + VLM 评审） | Visual Usability | 🔜 路线图。需要 playwright/puppeteer（当前未装）+ VLM 接入；ApolloBench 的 Visual 轴是其**数据级代理**（渲染项有限且落在视口内），不是替代。 |
+| 6 | 真·视觉可用性（headless 浏览器 + VLM 评审） | Visual Usability | 🔜 路线图。需要 playwright/puppeteer（当前未装）+ VLM 接入；ZeroCraftBench 的 Visual 轴是其**数据级代理**（渲染项有限且落在视口内），不是替代。 |
 | 7 | 多模态素材生成分 provider（含 ABC 谱音频） | 素材管线 | 🔜 路线图。与我们既有资产 TBF/manifest 流程对接。 |
 
-> 诚实边界：第 6 项（像素级 VLM 评审）我们**现在做不了**（无 headless 浏览器/VLM）。ApolloBench 只在数据层逼近它——能抓"渲染不出东西/全跑到画面外/NaN 炸裂"，但不能替代"人眼/VLM 看一眼好不好看"。
+> 诚实边界：第 6 项（像素级 VLM 评审）我们**现在做不了**（无 headless 浏览器/VLM）。ZeroCraftBench 只在数据层逼近它——能抓"渲染不出东西/全跑到画面外/NaN 炸裂"，但不能替代"人眼/VLM 看一眼好不好看"。
 
 ---
 

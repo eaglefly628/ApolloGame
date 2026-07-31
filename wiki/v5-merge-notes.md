@@ -1,4 +1,4 @@
-# Apollo v5 合并决策记录
+# ZeroCraft v5 合并决策记录
 
 > v4 (Claude) 与 AIGP 蓝图 (Gemini) 的对比分析及合并决策。
 

@@ -94,6 +94,6 @@
 ## 参考来源
 
 - PixiJS — 数千款 HTML5 游戏验证的 2D WebGL 引擎
-- Apollo CanvasRenderer — 当前实现，升级时保持接口不变
+- ZeroCraft CanvasRenderer — 当前实现，升级时保持接口不变
 - Three.js（`three` + `three/addons`）— 3D 盒庭渲染线后端；GLTFLoader 走 addons
 - Khronos glTF-Sample-Assets — 基础测试模型来源（见 `public/models/CREDITS.md`）

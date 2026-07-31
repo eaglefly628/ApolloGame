@@ -20,7 +20,7 @@
 - 另一种空间索引：平衡二叉树，叶节点是实体 AABB，内部节点是合并 AABB。
 - 查询用 AABB 重叠测试从根往下剪枝。
 - 适合实体大小差异大的场景（大 boss + 小子弹共存）。
-- Apollo 已有 `src/engine/spatial/aabb-tree.ts` 实现。
+- ZeroCraft 已有 `src/engine/spatial/aabb-tree.ts` 实现。
 
 ## 范围检测（Range Detect）
 
@@ -44,4 +44,4 @@
 
 - Factorio 空间分区 — 百万实体级网格分区优化
 - *Real-Time Collision Detection* (Ericson) Ch.7 — 空间分区数据结构
-- Apollo aabb-tree.ts — 当前项目的 AABB 树实现
+- ZeroCraft aabb-tree.ts — 当前项目的 AABB 树实现

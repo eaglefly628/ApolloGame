@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apollo Game Builder — packages a single game for RK3562 Linux deployment
+# ZeroCraft Game Builder — packages a single game for RK3562 Linux deployment
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -58,12 +58,12 @@ build_game() {
   # Start script for RK3562
   cat > dist-cartridge/start.sh << 'STARTSCRIPT'
 #!/bin/sh
-# Apollo Game Launcher — RK3562 Linux
+# ZeroCraft Game Launcher — RK3562 Linux
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PORT=8080
 cd "$SCRIPT_DIR"
 
-echo "  Starting Apollo server on port $PORT..."
+echo "  Starting ZeroCraft server on port $PORT..."
 python3 -m http.server $PORT --bind 127.0.0.1 &
 SERVER_PID=$!
 sleep 1

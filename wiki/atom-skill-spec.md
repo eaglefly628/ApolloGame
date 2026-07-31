@@ -2,7 +2,7 @@
 
 ## 什么是 Atom Skill
 
-Atom Skill 是 Apollo Engine 的**最小可组合逻辑单元**。
+Atom Skill 是 ZeroCraft Engine 的**最小可组合逻辑单元**。
 
 每个 Atom Skill：
 - 独立一个目录

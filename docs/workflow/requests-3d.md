@@ -1,6 +1,6 @@
 # 3D 渲染线 · 需求 / 工单池（owner 2026-06-28 立独立池）
 
-> **这是什么**：Apollo「3D 盒庭」渲染线 + Game Z 的**需求 / 工单单一真相**（从主 `requests.md` 分出·避免 3D 条目淹没在通用 UI/游戏需求里）。
+> **这是什么**：ZeroCraft「3D 盒庭」渲染线 + Game Z 的**需求 / 工单单一真相**（从主 `requests.md` 分出·避免 3D 条目淹没在通用 UI/游戏需求里）。
 > **归属**：3D 渲染线由 **P3D** 主管（代码边界契约见 `docs/workflow/finish/P3D-game-z-handoff.md §0.1`）。本池由 owner/主程 派单、P3D 执行、Lead 评审标状态。
 > **新 3D 需求都进这里**（不进 `requests.md`）；通用 UI 库 / 其它游戏需求仍进 `requests.md`。
 
@@ -25,7 +25,7 @@
 > **owner 指令（2026-07-24）**：**先把渲染的效率提高**。承 `REQ-SURVIVOR群体`（引擎池）② 半场——该条 ①群体分离仍归主程引擎（steering），**②渲染半场移入本单归 P3D 主理**。
 > **缺口（实证）**：① 2D `CanvasRenderer` 逐实体 `ctx.drawImage`（`src/renderer/canvas-renderer.ts:153`）**无批处理**——game-103 幸存者百级同屏敌=百 draw call → overdraw 卡顿（owner 试玩 v1 BUG-05）；② 高效实例化绘制现**只在 3D `three-renderer`**，2D / 大规模实体场景无高效路径。
 > **要什么（P3D 主理·框方向·技术路 P3D 定）**：给「大量同纹理实体」一条高效渲染路——**2D**=同 atlas 合批（减 draw call + 减状态切换）或大规模场景走 WebGL2 批渲/实例化；**3D**=复核 `three-renderer` 现有实例化绘制覆盖度（若某游戏走 3D 盒庭则直接用）。owner 指名参考「**Instanced Draw**」思路。**注（Lead）**：2D canvas 无 GPU instancing 语义——真解=合批 drawImage / 离屏 atlas / 转 WebGL 批渲，框定准确、别照搬 3D instancing 名词当 2D 用。
-> **性能目标**：数百同屏实体流畅（60fps 目标·退档 30）；配对象池 + 同屏 cap（`spawn-director` 已界上限=缓解非根治）。验收=真浏览器目击百敌流畅 + `ApolloBench` 帧时对比（前后 delta）。
+> **性能目标**：数百同屏实体流畅（60fps 目标·退档 30）；配对象池 + 同屏 cap（`spawn-director` 已界上限=缓解非根治）。验收=真浏览器目击百敌流畅 + `ZeroCraftBench` 帧时对比（前后 delta）。
 > **边界**：`src/renderer/**`（`canvas-renderer.ts`/`three-renderer.ts` + `three-projection.ts`）= **P3D 独占域**；Lead 评审标状态。**render-only 旁路·不进 sim/hash**（批绘不改玩法确定性/回放/balance-sim）。撞墙实证=`docs/design/game-103/requests.md BUG-05` + `REQ-SURVIVOR群体`②。
 
 ## REQ-3D-G102-DEBRIS · game102 消除→真3D 物理碎片 + 平台落地 · [2026-07-24] · GD-game102 提 → **P3D（Lead 裁架构）** · status: open · 优先级: P2（签名视觉·非玩法阻塞） · 类型: 3D 表现（物理碎片 + 舞台）

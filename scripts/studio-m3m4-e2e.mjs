@@ -122,10 +122,10 @@ try {
   await page.getByRole('button', { name: /体检/ }).first().click();
 
   // 7) 五轴浮层出分
-  await page.waitForSelector('.apollo-bench-overlay', { timeout: 30000 });
+  await page.waitForSelector('.zerocraft-bench-overlay', { timeout: 30000 });
   // 等体检跑完（loading → done）：出现「及格线」即出分完成
-  await page.waitForSelector('.apollo-bench-overlay >> text=及格线', { timeout: 40000 });
-  const benchTxt = await page.locator('.apollo-bench-overlay').innerText();
+  await page.waitForSelector('.zerocraft-bench-overlay >> text=及格线', { timeout: 40000 });
+  const benchTxt = await page.locator('.zerocraft-bench-overlay').innerText();
   step('体检浮层出五轴分（含 及格线 70）', /及格线\s*70/.test(benchTxt), benchTxt.slice(0, 120));
   const fiveAxes = ['结构', '装载', '确定性', '数值', '可见'].every((a) => benchTxt.includes(a));
   step('浮层列全五轴（结构/装载/确定性/数值/可见）', fiveAxes, benchTxt.slice(0, 200));

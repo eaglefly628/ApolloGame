@@ -86,7 +86,7 @@
 
 ## 附录 B · owner 参考稿（工程实现细节）= 仅参考·不照搬架构
 
-owner 另提供一份工程稿（Unreal/Unity/Cocos 口径：`Voxel Manager 空间哈希` / `Spline 样条 + N 虚拟插槽` / `Dictionary<ColorID,List<Voxel>> ExposedVoxels` / `发射器 FSM: Spawn·Moving·Shooting·Buffer·Dead`）。**其玩法规则精化已吸收进正文（暴露判定 §3 / 插槽不重叠+容量 §4 / 射击锁定 §4）**；但**那套 FSM/Spline/Dictionary 架构不照搬**——本作走 **Apollo 确定性 ECS：能力（PathFollow/aggro/hitbox/group-count/flow…）+ 纯数据**，暴露判定用**确定性网格相邻检索**（非物理 raycast）。owner 明示"工程稿只是参考·玩法核心最重要"。
+owner 另提供一份工程稿（Unreal/Unity/Cocos 口径：`Voxel Manager 空间哈希` / `Spline 样条 + N 虚拟插槽` / `Dictionary<ColorID,List<Voxel>> ExposedVoxels` / `发射器 FSM: Spawn·Moving·Shooting·Buffer·Dead`）。**其玩法规则精化已吸收进正文（暴露判定 §3 / 插槽不重叠+容量 §4 / 射击锁定 §4）**；但**那套 FSM/Spline/Dictionary 架构不照搬**——本作走 **ZeroCraft 确定性 ECS：能力（PathFollow/aggro/hitbox/group-count/flow…）+ 纯数据**，暴露判定用**确定性网格相邻检索**（非物理 raycast）。owner 明示"工程稿只是参考·玩法核心最重要"。
 
 ## 附录 A · ⚠ 研究稿中的「连线解谜」= 另一款游戏（**不属于 game102·不实现**）
 

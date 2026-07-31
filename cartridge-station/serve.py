@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Cartridge Station — Apollo 掌机「OS 编辑器」
+Cartridge Station — ZeroCraft 掌机「OS 编辑器」
 ================================================================
 独立工具（仅 Python 标准库，与掌机 start.sh 的 python3 http.server 同栈）。
 
@@ -121,7 +121,7 @@ def parse_meta(cart_dir, pkg_name):
             except OSError: pass
     return {
         "id": os.path.basename(cart_dir), "pkg": pkg_name,
-        "title": title if title != base else f"Apollo {game_code.upper()}" if game_code else title,
+        "title": title if title != base else f"ZeroCraft {game_code.upper()}" if game_code else title,
         "rawtitle": title, "game": game_code, "hw": hw,
         "files": nfiles, "bytes": nbytes,
         "entry": "cartridge.html" if os.path.exists(idx) else None,
@@ -319,11 +319,11 @@ def build_game_objects(metas):
         cid = c["id"]; keymap = c.get("keymap")
         g = {
             "id": "gen-" + cid, "num": f"{i+1:03d}", "title": c["title"],
-            "genre": (c["game"] and f"Apollo / {c['game'].upper()}") or "Apollo",
+            "genre": (c["game"] and f"ZeroCraft / {c['game'].upper()}") or "ZeroCraft",
             "tags": [t for t in ["APOLLO", c["hw"].upper() if c["hw"] else "", "CARTRIDGE"] if t],
             "rating": "T", "ratingFull": "TEEN",
             "grad": GRADS[i % len(GRADS)], "accent": "#00dfa0", "color": "#00dfa0",
-            "desc": f"Apollo game build · {c['pkg']}",
+            "desc": f"ZeroCraft game build · {c['pkg']}",
             "keymap": keymap or default_keymap(), "_ts": 0,
         }
         html = open(os.path.join(LIBRARY, cid, 'cartridge.html'), encoding='utf-8', errors='ignore').read()
@@ -332,9 +332,9 @@ def build_game_objects(metas):
     return objs
 
 OS_START = """#!/bin/sh
-# Apollo OS — RK3562 Linux
+# ZeroCraft OS — RK3562 Linux
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"; PORT=8080; cd "$SCRIPT_DIR"
-echo "  Apollo OS server on $PORT..."
+echo "  ZeroCraft OS server on $PORT..."
 python3 -m http.server $PORT --bind 127.0.0.1 & SERVER_PID=$!; sleep 1
 URL="http://127.0.0.1:$PORT/cartridge.html"
 if command -v chromium-browser >/dev/null 2>&1; then chromium-browser --kiosk --noerrdialogs --no-sandbox "$URL"

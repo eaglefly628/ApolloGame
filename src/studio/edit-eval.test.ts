@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { applyEditOps, type Entities } from './edit-ops.js';
 import { resolveEdits, parseCommand, type LooseEdit } from './edit-resolve.js';
 import { parseManifest } from '../assembly/manifest.js';
-import { benchBlueprint } from '../bench/apollo-bench.js';
+import { benchBlueprint } from '../bench/zerocraft-bench.js';
 
 // 模型无关地基的回归：弱模型只需产「松散编辑」，下面证明 解析+应用 在确定性代码里把它做对。
 const CAPS = ['a1-transform', 'b1-velocity', 'b2-acceleration', 'c1-shape', 'l2-color',
@@ -78,7 +78,7 @@ describe('edit-eval · 模型无关编辑地基', () => {
     expect(JSON.stringify(run(ents(), edits).entities)).toBe(JSON.stringify(run(ents(), edits).entities));
   });
 
-  it('安全网：批量编辑后仍能 parseManifest + 过 ApolloBench（仍是合法可玩游戏）', () => {
+  it('安全网：批量编辑后仍能 parseManifest + 过 ZeroCraftBench（仍是合法可玩游戏）', () => {
     const r = run(ents(), [
       { entity: 'player', target: '重力', value: '0.8' },
       { entity: 'player', target: 'speed', factor: 1.3 },

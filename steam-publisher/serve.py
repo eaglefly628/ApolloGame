@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Steam Publisher — Apollo 游戏「一键傻瓜发布到 Steam」工具
+Steam Publisher — ZeroCraft 游戏「一键傻瓜发布到 Steam」工具
 ================================================================
 独立工具（仅 Python 标准库）。把 Electron 游戏经 SteamPipe(steamcmd) 推上 Steam：
   1. 填配置（AppID / 各平台 DepotID / builder 账号 / steamcmd 路径 / 选游戏）
@@ -26,14 +26,14 @@ PORT = int(os.environ.get('PORT', '8799'))
 os.makedirs(OUT, exist_ok=True)
 
 GAME_TITLES = {
-    'game-e': 'Apollo Balatro Deck（小丑牌）',
-    'game-f': 'Apollo Pixel Kingdoms（像素三分天下）',
+    'game-e': 'ZeroCraft Balatro Deck（小丑牌）',
+    'game-f': 'ZeroCraft Pixel Kingdoms（像素三分天下）',
     'game-g': 'Fateflip Poker（翻命扑克）',
 }
 
 DEFAULT_CONFIG = {
     'appId': '480',                 # 480=SpaceWar 演练位；换真 AppID
-    'description': 'Apollo build',
+    'description': 'ZeroCraft build',
     'setLive': '',                  # 分支名；留空=只传不设线上（推荐，后台手动 Set Live）
     'steamcmd': 'steamcmd',         # 命令或绝对路径
     'builder': '',                  # Steam builder 账号名（密码/令牌走 steamcmd 缓存登录）

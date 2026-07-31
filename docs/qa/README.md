@@ -1,6 +1,6 @@
 # 工作流零件 QA 层（docs/qa/）
 
-> 2026-07-04 立（owner 拍板「CCGS 可直接 copy 的直接操作」）。移植自 CCGS Skill Testing Framework 的**行为 spec 骨架**（源料 `docs/ref/`），按 Apollo 形态改造：无 director 门、无 May-I-write；判词=闭集 token、门禁=退出码、域边界=角色卡/handoff。
+> 2026-07-04 立（owner 拍板「CCGS 可直接 copy 的直接操作」）。移植自 CCGS Skill Testing Framework 的**行为 spec 骨架**（源料 `docs/ref/`），按 ZeroCraft 形态改造：无 director 门、无 May-I-write；判词=闭集 token、门禁=退出码、域边界=角色卡/handoff。
 
 ## 这里放什么
 

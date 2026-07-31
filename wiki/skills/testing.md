@@ -2,7 +2,7 @@
 
 > 覆盖：测试分类学、测试代码质量、覆盖映射、flakiness、QA 证据分级、bug/试玩流程
 > 主要参考：CCGS 框架三线深读（2026-07-04·蒸馏去向见 reference-claude-game-studios.md §八）+ 行业惯例
-> ⚠ 分工：本文=行业知识；「在 Apollo 怎么测」查 `docs/playbooks/testing.md`。
+> ⚠ 分工：本文=行业知识；「在 ZeroCraft 怎么测」查 `docs/playbooks/testing.md`。
 
 ## 核心原则
 

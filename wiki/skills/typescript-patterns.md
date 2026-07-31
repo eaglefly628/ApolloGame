@@ -10,7 +10,7 @@
 
 ## 判别联合（Discriminated Union）
 
-Apollo 组件的核心模式：用 `type` 字段区分组件种类。
+ZeroCraft 组件的核心模式：用 `type` 字段区分组件种类。
 
 ```typescript
 // 每个 Component 用 readonly type 做判别符
@@ -34,7 +34,7 @@ type Tick = number & { readonly __brand: 'Tick' };
 // EntityId 和 Tick 都是 number，但不能互相赋值
 ```
 
-- Apollo 的 EntityId 用此模式，防止把 tick 编号误当实体 ID。
+- ZeroCraft 的 EntityId 用此模式，防止把 tick 编号误当实体 ID。
 
 ## 泛型组件查询
 
@@ -97,11 +97,11 @@ for (...) results[count++] = e;
 ### Map vs Object
 - 键是动态字符串/数字 → 用 `Map`（哈希性能好、有 size、迭代顺序确定）。
 - 键是固定字符串集合 → 用 plain object（V8 隐藏类优化）。
-- Apollo 的 World 用 `Map<EntityId, Map<string, Component>>` — 正确选择。
+- ZeroCraft 的 World 用 `Map<EntityId, Map<string, Component>>` — 正确选择。
 
 ## 工具链
 
-| 工具 | 用途 | Apollo 配置 |
+| 工具 | 用途 | ZeroCraft 配置 |
 |------|------|------------|
 | **tsc** | 类型检查 | `tsc --noEmit`，只做检查不输出 |
 | **Vite** | 开发/构建 | esbuild 转译 TS（不做类型检查，快） |
@@ -131,6 +131,6 @@ for (...) results[count++] = e;
 
 ## 参考来源
 
-- Apollo src/engine/core/types.ts — EntityId branded type、Component 判别联合
-- Apollo src/engine/protocol/components.ts — 26 个组件接口的 TS 模式
+- ZeroCraft src/engine/core/types.ts — EntityId branded type、Component 判别联合
+- ZeroCraft src/engine/protocol/components.ts — 26 个组件接口的 TS 模式
 - TypeScript Handbook — 官方判别联合与类型守卫文档

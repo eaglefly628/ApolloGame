@@ -5,7 +5,7 @@
 
 ## 这是什么
 
-Game I 把 `docs/design/apollo-ui-contract.md`（Apollo UI 控件契约总表）落地成一个**活的控件画廊**：
+Game I 把 `docs/design/apollo-ui-contract.md`（ZeroCraft UI 控件契约总表）落地成一个**活的控件画廊**：
 
 - **控件全家桶**：引擎现有 30 个控件（Panel / Screen / Tabs / Table / Label / Badge / Image /
   Divider / Button / Input / Dropdown / Checkbox / Toggle / RadioGroup / Slider / ProgressBar /

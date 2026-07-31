@@ -1,7 +1,7 @@
 # Skill 行为 Spec · resource-manager
 
 > 对象：`.claude/skills/resource-manager/SKILL.md` · 类型：技能 · 起卡日期：2026-07-04
-> 移植注：源自 CCGS skill-test-spec 骨架，Apollo 化（判词=门禁退出码 + parseAssetIndex 注册期抛错）。
+> 移植注：源自 CCGS skill-test-spec 骨架，ZeroCraft 化（判词=门禁退出码 + parseAssetIndex 注册期抛错）。
 
 ## Summary（这件零件做什么）
 

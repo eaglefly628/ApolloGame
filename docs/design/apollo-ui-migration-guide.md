@@ -1,6 +1,6 @@
-# Apollo UI 迁移指南（手写 DOM/HTML → 数据驱动 UI）
+# ZeroCraft UI 迁移指南（手写 DOM/HTML → 数据驱动 UI）
 
-> 给把现有游戏 UI（手写 HTML 字符串 / React / 内联 CSS）迁到 **Apollo 数据驱动 UI** 的程序员。
+> 给把现有游戏 UI（手写 HTML 字符串 / React / 内联 CSS）迁到 **ZeroCraft 数据驱动 UI** 的程序员。
 > 以 **Game G（翻命扑克）** 为首个对象，但方法对 E/F/任意游戏通用。
 >
 > 配套读：

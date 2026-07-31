@@ -18,7 +18,7 @@
 
 ## 2. slot → 各游戏怎么消费（核心：ref/copy 的对接表）
 slot 是从**看样图**定的语义（名字看不出"透明/可平铺/分层"）：
-| slot | 是什么（样图特征） | 透明 | Apollo 怎么用 | 来自 cat |
+| slot | 是什么（样图特征） | 透明 | ZeroCraft 怎么用 | 来自 cat |
 |---|---|---|---|---|
 | `tile` | 不透明、可平铺地形 | 否 | **Tilemap 瓦片** / 背景 | dungeon |
 | `sprite.character` | 透明居中的生物/角色 | 是 | `Sprite.textureKey`（怪/NPC/英雄） | monster · emissaries |

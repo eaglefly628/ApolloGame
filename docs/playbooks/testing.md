@@ -1,6 +1,6 @@
 # 测试与验收线手册（接线图）
 
-> 行业知识见 `wiki/skills/testing.md`（建测试体系/定准则才读）；本手册只回答「在 Apollo 测 X 用哪个基座件」。全员适用，交付前必过。
+> 行业知识见 `wiki/skills/testing.md`（建测试体系/定准则才读）；本手册只回答「在 ZeroCraft 测 X 用哪个基座件」。全员适用，交付前必过。
 
 ## 做 X → 用什么
 
@@ -8,7 +8,7 @@
 |---|---|---|
 | 纯逻辑 / capability 语义 | vitest（`src/**/*.test.ts`） | 退出码 0 |
 | capability 注册完整性 | `src/assembly/registry-guard.test.ts`（漏注册即红·计数下限防空 glob 假绿） | vitest 内 |
-| 确定性 / 回放 / 性能 | ApolloBench（`src/bench/`·双跑同 hash）·单 manifest 走 `scripts/bench-manifest.mjs` | hash 一致 |
+| 确定性 / 回放 / 性能 | ZeroCraftBench（`src/bench/`·双跑同 hash）·单 manifest 走 `scripts/bench-manifest.mjs` | hash 一致 |
 | 数值平衡 | `scripts/game-d-balance-sim.mjs` · `src/games/game-g/simulate-balance.ts`（N=500 胜率扫描） | 胜率∈目标带 |
 | UI 卫生 | `/check-ui` 技能 + validateLayoutNode | issue 归零 |
 | 真浏览器旅程 | playwright-core e2e（`scripts/studio-*-e2e.mjs` 模式·chromium=/opt/pw-browsers） | 脚本退出码 |

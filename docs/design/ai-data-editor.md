@@ -1,12 +1,12 @@
 # AI 数据编辑器 —— 架构设计 + Gemini 评审请求（2026-06-07）
 
-> 双重用途：① Apollo「可视/AI 双模编辑器」的长期设计文档；② 自包含的 Gemini 外审包（含真实代码摘录 + §6 评审问题）。把整份发给 Gemini 即可评审，无需它读仓库。
+> 双重用途：① ZeroCraft「可视/AI 双模编辑器」的长期设计文档；② 自包含的 Gemini 外审包（含真实代码摘录 + §6 评审问题）。把整份发给 Gemini 即可评审，无需它读仓库。
 
 ---
 
 ## 0. 给 Gemini：背景 + 请评审什么
 
-Apollo Engine = **游戏即数据**：ECS 引擎是固定的确定性解释器；一局游戏 = 一份 **Manifest**（`{ capabilities:[能力id], entities:{ 实体id:{ 组件名:数据 } } }`），导出/导入对称（`exportManifest`/`parseManifest`）。原子组件（29 核心+1 扩展）+ Tier1/2/3 能力 + 逻辑链 Condition→Event→Effect。
+ZeroCraft Engine = **游戏即数据**：ECS 引擎是固定的确定性解释器；一局游戏 = 一份 **Manifest**（`{ capabilities:[能力id], entities:{ 实体id:{ 组件名:数据 } } }`），导出/导入对称（`exportManifest`/`parseManifest`）。原子组件（29 核心+1 扩展）+ Tier1/2/3 能力 + 逻辑链 Condition→Event→Effect。
 
 现在要在其上做一个**商业级编辑器**，目标两条：(a) 对人类友好（传统可视化编辑）；(b) **对任意强弱大语言模型都鲁棒**——我们刻意要支持多模型，弱到 7B 本地模型也要能稳定产出可用编辑，不赌单一强模型。
 
@@ -55,7 +55,7 @@ resolveCapabilities(ids) // 未知 id 立刻抛错  ｜ inferCapabilityIds(entit
 
 **1d. 加载管线**（`src/assembly/manifest.ts`，`parseManifestDetailed`）：raw → 结构校验 → 解析/推断 capabilities → 无 provider 告警 → **R12 类型校验（error 拒载）** → 可运行 `WorldBlueprint`。
 
-**1e. 执行落地体检 ApolloBench**（`src/bench/`）：把蓝图喂进真引擎跑 N tick，按 Structure/Load/Determinism/Numeric/Visual 打分 —— **编辑后的"安全网"**（改坏了：NaN/全跑出屏 → 分数掉，自动告警/驳回）。
+**1e. 执行落地体检 ZeroCraftBench**（`src/bench/`）：把蓝图喂进真引擎跑 N tick，按 Structure/Load/Determinism/Numeric/Visual 打分 —— **编辑后的"安全网"**（改坏了：NaN/全跑出屏 → 分数掉，自动告警/驳回）。
 
 ---
 
@@ -77,7 +77,7 @@ resolveCapabilities(ids) // 未知 id 立刻抛错  ｜ inferCapabilityIds(entit
         └─▶ 模糊解析（别名吸附:"重力"→Acceleration.ay）
               └─▶ 强校验（R12 + 注册表:非法丢弃/带错重试一次/Inspector 标红）
                     └─▶ 应用为数据 patch（不可变 diff）
-                          └─▶ 预览(parseManifest+引擎) + ApolloBench 打分 ─▶ 撤销/重做
+                          └─▶ 预览(parseManifest+引擎) + ZeroCraftBench 打分 ─▶ 撤销/重做
 ```
 - **收缩操作空间**：闭合 edit-op 集（`set/nudge/setColor/addComponent/removeComponent/addEntity/removeEntity/enableCapability`）。模型只做"从自然语言提取 组件名/字段名/数值 → 吐 JSON"，不写逻辑——7B 也能做好。
 - **上下文限定**：只喂**选中实体**的组件列表 + 相关 schema，不喂整局 JSON。上下文越小，弱模型注意力越集中。

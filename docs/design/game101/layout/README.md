@@ -1,6 +1,6 @@
 # game101 · S1 UI 布局（真 LayoutNode 库·非 emoji 稿）
 
-> owner 2026-07-23：「用我们 UI 库设计更好」。本目录 = 用项目自己的 **Apollo Kit（`src/ui/components` 的 `LayoutNode` 闭集控件）+ game101 暖色主题**产出的 S1 界面布局（**纯数据**·非 emoji 假稿·非手写 DOM）。这取代了早期的 `mockups/*.dc.html`（已删）。
+> owner 2026-07-23：「用我们 UI 库设计更好」。本目录 = 用项目自己的 **ZeroCraft Kit（`src/ui/components` 的 `LayoutNode` 闭集控件）+ game101 暖色主题**产出的 S1 界面布局（**纯数据**·非 emoji 假稿·非手写 DOM）。这取代了早期的 `mockups/*.dc.html`（已删）。
 
 ## 文件
 

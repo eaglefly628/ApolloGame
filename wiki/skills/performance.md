@@ -20,7 +20,7 @@
 | **总计** | **< 16.67ms** | |
 
 - 用 `performance.now()` 在关键段落插桩测量。
-- Apollo 的 Tracer 已有计时功能（src/debug/tracer.ts）。
+- ZeroCraft 的 Tracer 已有计时功能（src/debug/tracer.ts）。
 
 ## GC 回避
 
@@ -73,7 +73,7 @@ for (const e of entities) { if (!e.active) continue; ... }
 ### SoA vs AoS
 
 ```typescript
-// AoS (Array of Structures) — 当前 Apollo 方式
+// AoS (Array of Structures) — 当前 ZeroCraft 方式
 entities = [ { x: 1, y: 2, vx: 3, vy: 4 }, { x: 5, y: 6, vx: 7, vy: 8 } ]
 
 // SoA (Structure of Arrays) — 更缓存友好
@@ -81,7 +81,7 @@ xs = [1, 5]; ys = [2, 6]; vxs = [3, 7]; vys = [4, 8];
 ```
 
 - SoA 在 JS 里用 TypedArray（Float32Array）效果最好。
-- Apollo 当前用 AoS（Map<EntityId, Component>），百实体级够用。千实体级考虑 SoA。
+- ZeroCraft 当前用 AoS（Map<EntityId, Component>），百实体级够用。千实体级考虑 SoA。
 
 ## 空间分区复杂度
 
@@ -100,7 +100,7 @@ xs = [1, 5]; ys = [2, 6]; vxs = [3, 7]; vys = [4, 8];
 | Chrome DevTools Memory | 堆快照、分配追踪 |
 | `performance.now()` | 手动插桩计时 |
 | `performance.mark/measure` | 命名标记，DevTools 可视化 |
-| Apollo Tracer | System 级别计时 |
+| ZeroCraft Tracer | System 级别计时 |
 | `--js-flags="--trace-gc"` | Node.js GC 日志 |
 
 ## 渐进式优化路径

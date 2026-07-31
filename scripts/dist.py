@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apollo Dist Builder — 交互式菜单，选游戏 + 选平台，一键出包。"""
+"""ZeroCraft Dist Builder — 交互式菜单，选游戏 + 选平台，一键出包。"""
 from __future__ import annotations
 
 import os
@@ -136,7 +136,7 @@ def build_handheld(game_id: str) -> None:
 def main() -> None:
     print()
     print("  ╔══════════════════════════════════════╗")
-    print("  ║     Apollo Dist Builder              ║")
+    print("  ║     ZeroCraft Dist Builder              ║")
     print("  ╚══════════════════════════════════════╝")
 
     game_id = pick_game()

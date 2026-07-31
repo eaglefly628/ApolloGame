@@ -1,6 +1,6 @@
-// Apollo UI Kit —— 引擎基座主题（owner 2026-06-25：把 Cloud Design 给 game-f 的那套皮升格为引擎可复用基座）。
+// ZeroCraft UI Kit —— 引擎基座主题（owner 2026-06-25：把 Cloud Design 给 game-f 的那套皮升格为引擎可复用基座）。
 //
-// 来源：src/games/game-f/doc/design_handoff_game_f/designs/Apollo UI Kit.dc.html（玄铁 onyx / 锦霞 brocade 双皮）。
+// 来源：src/games/game-f/doc/design_handoff_game_f/designs/ZeroCraft UI Kit.dc.html（玄铁 onyx / 锦霞 brocade 双皮）。
 // 把交底里的 CSS 令牌映射进引擎 UITheme 形状；背景走**分层合成**(wash , texture , app-bg)——
 // texture 为程序化 CSS 纹理（玄铁=斜向交叉细纹·锦霞=波点+交叉纹），零资产、随主题缩放。
 // 用法：mountUI(host, tree, handlers, apolloOnyx)。配 Screen.bgScroll 可做滚动底纹特效。

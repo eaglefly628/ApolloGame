@@ -1,4 +1,4 @@
-# Apollo 平台后端依赖（apollo.py + main_entry/·2026-07-26 扫 import 固化）
+# ZeroCraft 平台后端依赖（apollo.py + main_entry/·2026-07-26 扫 import 固化）
 # 全后端仅 1 个第三方依赖：Pillow（出图/抠图/资产处理）。其余全走 python 标准库
 # （HTTP=http.server·模型调用=urllib.request·JSON=json）——无 Flask/numpy/模型 SDK，
 # 故「随包带独立 python」极简：standalone python + `pip install -r requirements.txt` 即齐。

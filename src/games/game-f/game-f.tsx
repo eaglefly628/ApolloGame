@@ -209,7 +209,7 @@ function buildMall(): HTMLElement {
   return root;
 }
 
-// —— 单人对局 DOM 设计 chrome（README 对战.dc.html solo 布局 + Apollo UI Kit 控件；接真实世界状态）——
+// —— 单人对局 DOM 设计 chrome（README 对战.dc.html solo 布局 + ZeroCraft UI Kit 控件；接真实世界状态）——
 // 顶 HUD（STAGE/相位/倒计时/主公血/连胜）+ 左羁绊栏 + 右状态·装备栏 + 武将台发光框。
 // 三边覆盖盖掉 canvas 旧 HUD；中间棋盘 + 下方备战席/商店露出，仍走 canvas 数据实体交互（不破坏可玩）。
 function buildSoloHud(click: (x: number, y: number) => void, play: (i: number) => void, faction: Faction = 'shu', deck?: Deck): { root: HTMLElement; update: (w: World) => void; renderAllies: (unitsList: { q: number; r: number; enemy: boolean; hpFrac: number }[][]) => void; renderCoop: (island: { progress: number; goal: number; owner: string | null; ranking?: { name: string; faction: string; contribution: number }[] }) => void; renderDeck: (w: World) => void; bag: string[]; equipped: EquipMap; renderBag: () => void; renderEquipped: () => void } {

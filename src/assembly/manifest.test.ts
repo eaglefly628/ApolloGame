@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parseManifest, parseManifestDetailed } from './manifest.js';
 import { exportManifest } from '../studio/inspect.js';
 import { Engine } from '../runtime/engine.js';
-import { benchBlueprint } from '../bench/apollo-bench.js';
+import { benchBlueprint } from '../bench/zerocraft-bench.js';
 import type { WorldBlueprint } from './demo.assembly.js';
 import { demoBlueprint } from './demo.assembly.js';
 
@@ -25,7 +25,7 @@ describe('manifest 桥接：导出↔导入对称、可加载、可玩', () => {
       expect(hashAfter(rebuilt)).toBe(hashAfter(orig));
     });
 
-    it(`${name}: 重建蓝图能过 ApolloBench`, () => {
+    it(`${name}: 重建蓝图能过 ZeroCraftBench`, () => {
       const rebuilt = () => parseManifest(JSON.parse(exportManifest(build())));
       expect(benchBlueprint(name, rebuilt).passed).toBe(true);
     });
@@ -48,7 +48,7 @@ describe('manifest 桥接：导出↔导入对称、可加载、可玩', () => {
     expect((bp.entities.e.Transform as Record<string, unknown>).x).toBe(1);
   });
 
-  it('canonical 预设形态(平台跳跃, 相机居中)→ parseManifest→load→过 ApolloBench', () => {
+  it('canonical 预设形态(平台跳跃, 相机居中)→ parseManifest→load→过 ZeroCraftBench', () => {
     // 镜像 apollo.py 的 platformer 预设结构：证明「在透视器里打开」的预设路径可加载可玩。
     const manifest = {
       name: 'preset-platformer',

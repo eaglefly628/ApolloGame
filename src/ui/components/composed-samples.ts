@@ -31,7 +31,7 @@ export const COMPOSED_SAMPLES: readonly ComposedSample[] = [
             { type: 'Button', id: 'mm-rank', props: { label: '🏆 天梯', kind: 'ghost', action: 'rank' } },
             { type: 'Button', id: 'mm-set', props: { label: '⚙ 设置', kind: 'quiet', action: 'settings' } },
           ] },
-          { type: 'Label', id: 'mm-ver', props: { text: 'Apollo Engine · v0.1', size: 'xs', color: 'dim' } },
+          { type: 'Label', id: 'mm-ver', props: { text: 'ZeroCraft Engine · v0.1', size: 'xs', color: 'dim' } },
         ],
       }],
     },

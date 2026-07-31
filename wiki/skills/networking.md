@@ -4,7 +4,7 @@
 
 ## 核心原则
 
-- Apollo 的联机模型是**确定性锁步（Deterministic Lockstep）**：所有客户端跑相同逻辑，只同步输入。
+- ZeroCraft 的联机模型是**确定性锁步（Deterministic Lockstep）**：所有客户端跑相同逻辑，只同步输入。
 - 确定性 = 相同输入 + 相同初始状态 → 相同结果。每 tick 的哈希必须一致。
 - 一旦确定性被破坏，两端状态会永久分叉 — 没有自愈机制。
 
@@ -28,7 +28,7 @@
 
 ## 输入延迟 vs 回滚
 
-- **输入延迟**（Apollo 当前）：收到所有人的输入才推进。简单可靠，延迟 = 最慢玩家的网络延迟。
+- **输入延迟**（ZeroCraft 当前）：收到所有人的输入才推进。简单可靠，延迟 = 最慢玩家的网络延迟。
 - **回滚（Rollback）**：先用预测输入推进，收到真实输入后回滚重算。延迟更低但实现复杂。
 - 格斗游戏用回滚（GGPO），RTS 用锁步（星际争霸）。
 
@@ -40,7 +40,7 @@
 
 ## BroadcastChannel（本地多 tab 联机）
 
-- Apollo 用 BroadcastChannel API 在浏览器多 tab 间同步输入。
+- ZeroCraft 用 BroadcastChannel API 在浏览器多 tab 间同步输入。
 - 适合开发调试：开两个 tab 就是两个玩家。
 - 生产环境替换为 WebSocket 后端，接口不变。
 
@@ -54,4 +54,4 @@
 
 - 守望先锋 (GDC 2017) — 确定性 63Hz tick + 网络回滚的工业实现
 - 星际争霸 lockstep — RTS 锁步同步的经典案例
-- Apollo frame-sync.md — 当前项目的帧同步设计文档
+- ZeroCraft frame-sync.md — 当前项目的帧同步设计文档

@@ -1,7 +1,7 @@
 # Game Z · 基础 3D 模型资产 · 出处与许可
 
 > 从 Khronos 官方示例库 [glTF-Sample-Assets](https://github.com/KhronosGroup/glTF-Sample-Assets)
-> 拉取的「最简单」glTF 二进制（`.glb`）模型，作为 Apollo 轻量 3D 渲染线的基础测试/示例资产。
+> 拉取的「最简单」glTF 二进制（`.glb`）模型，作为 ZeroCraft 轻量 3D 渲染线的基础测试/示例资产。
 > 均为可重新分发的许可，下附署名。新增模型请在此登记出处 + 许可。
 
 | 文件 | 模型 | 来源 | 许可 | 署名 |

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { injectInline, scanSelfContainment, readCartManifest, readCartMeta } from './package-web.mjs';
 
-const SHELL = '<!doctype html><html><head><title>Apollo OS</title></head><body><script type="module">/*bundle*/console.log("run")</script></body></html>';
+const SHELL = '<!doctype html><html><head><title>ZeroCraft OS</title></head><body><script type="module">/*bundle*/console.log("run")</script></body></html>';
 
 describe('injectInline · 注入内联卡带 globals', () => {
   it('把 __APOLLO_INLINE_CART__ 注进 <head>，且在 module bundle 之前执行', () => {
@@ -21,7 +21,7 @@ describe('injectInline · 注入内联卡带 globals', () => {
   it('覆盖 <title> 为游戏名', () => {
     const out = injectInline(SHELL, { cart: {}, title: '翻命扑克' });
     expect(out).toContain('<title>翻命扑克</title>');
-    expect(out).not.toContain('<title>Apollo OS</title>');
+    expect(out).not.toContain('<title>ZeroCraft OS</title>');
   });
 
   it('manifest 里的 "</script>" 被转义（不提前闭合内联 script）', () => {

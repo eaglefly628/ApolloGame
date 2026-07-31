@@ -35,5 +35,5 @@
 ## 参考来源
 
 - Celeste coyote time — 宽容时间窗的标准实现
-- Apollo MultiInputSource — 本地双人到联机的无缝切换实现
+- ZeroCraft MultiInputSource — 本地双人到联机的无缝切换实现
 - *Juice it or Lose it* (GDC 2012) — 输入手感优化的经典演讲

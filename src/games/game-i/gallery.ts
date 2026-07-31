@@ -855,7 +855,7 @@ function hubSection(id: string, title: string, sub: string, dim: '2d' | '3d'): L
 function buildHub(): LayoutNode {
   return {
     // 落地积木墙底：平铺点阵贴图 + 缓慢 UV 滚动（owner 早前想要的「积木墙点阵底纹」·现用 bgTexture/bgScroll 数据实现）。
-    type: 'Panel', id: 'hub', props: { title: '🧩 Apollo 引擎 · 底座能力展示台', scroll: true, bgTexture: TEXTURE_URI, bgTextureSize: 26, bgScroll: { y: 26, ms: 7000 } },
+    type: 'Panel', id: 'hub', props: { title: '🧩 ZeroCraft 引擎 · 底座能力展示台', scroll: true, bgTexture: TEXTURE_URI, bgTextureSize: 26, bgScroll: { y: 26, ms: 7000 } },
     layout: { direction: 'column', gap: 18, padding: 20 },
     children: [
       { type: 'Label', id: 'hub-sub', props: {
@@ -863,7 +863,7 @@ function buildHub(): LayoutNode {
       buildJumpBar(),
       hubSection('2d', '🟦 2D 能力', 'UI / 声音 / 输入 / 动画 / AI / 物理 / 战斗 / 特效 / 状态机 / 视频', '2d'),
       { type: 'Divider', id: 'hub-div', props: {} },
-      hubSection('3d', '🧊 3D 能力', '消费 Apollo 3D 渲染线（ThreeRenderer）——光照 / 景深 / 寻路 / 碰撞 / 粒子', '3d'),
+      hubSection('3d', '🧊 3D 能力', '消费 ZeroCraft 3D 渲染线（ThreeRenderer）——光照 / 景深 / 寻路 / 碰撞 / 粒子', '3d'),
     ],
   };
 }
@@ -1822,7 +1822,7 @@ export function buildGallery(
         children: [
           ...(currentModule ? [{ type: 'Button', id: 'hub-back', props: { label: '← 展台', kind: 'ghost', action: 'exitModule' } } as LayoutNode] : []),
           { type: 'Label', id: 'app-title', props: { text: title, size: 'lg', bold: true }, layout: { flex: 1 } },
-          { type: 'Badge', id: 'app-engine', props: { text: 'Apollo Engine · 数据驱动 UI', tone: 'dim' } },
+          { type: 'Badge', id: 'app-engine', props: { text: 'ZeroCraft Engine · 数据驱动 UI', tone: 'dim' } },
           { type: 'Label', id: 'theme-lbl', props: { text: '换皮', size: 'sm', color: 'sub' } },
           {
             type: 'Dropdown',

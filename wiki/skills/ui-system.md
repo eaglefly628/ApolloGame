@@ -10,7 +10,7 @@
 
 ## 架构：React Overlay 模式
 
-Apollo 当前方案：Canvas 画游戏，React DOM 叠加在上方做 UI。
+ZeroCraft 当前方案：Canvas 画游戏，React DOM 叠加在上方做 UI。
 
 ```
 ┌──────────────────────────┐
@@ -99,6 +99,6 @@ function useWorldVersion(engine: Engine): number {
 
 ## 参考来源
 
-- Apollo src/ui/GameOverlay.tsx — 当前 React Overlay 实现
-- Apollo src/ui/hooks/use-engine.ts — useWorldVersion 桥接 hook
+- ZeroCraft src/ui/GameOverlay.tsx — 当前 React Overlay 实现
+- ZeroCraft src/ui/hooks/use-engine.ts — useWorldVersion 桥接 hook
 - React 官方文档 — 组件化 UI 的最佳实践

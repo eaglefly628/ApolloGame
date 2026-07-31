@@ -1,7 +1,7 @@
 # Agent 行为 Spec · game-publisher
 
 > 对象：`.claude/agents/game-publisher.md` · 类型：子代理 · 起卡日期：2026-07-04
-> 移植注：源自 CCGS agent-test-spec 骨架，Apollo 化（上交对象=owner；诚实标注不伪造发布）。
+> 移植注：源自 CCGS agent-test-spec 骨架，ZeroCraft 化（上交对象=owner；诚实标注不伪造发布）。
 
 ## Summary（三行必填）
 

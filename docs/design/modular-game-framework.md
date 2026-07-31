@@ -1,4 +1,4 @@
-# Apollo Game Framework - AI 驱动的模块化游戏框架
+# ZeroCraft Game Framework - AI 驱动的模块化游戏框架
 
 > ⚠️ **早期愿景文档（2026-06-07 标注）。核心思想已落地，但「具体技术选型」已分叉——按此对照阅读：**
 > - 已**实现**的思想：LLM 编排而非生成 · **Manifest 数据格式**(`src/assembly/manifest.ts`) · **静态校验器**(R12，组件数据 schema 校验) · **引擎无关 Ports/Adapters**(`src/services/{storage,audio,aigp}`) · **Game Manifest=组装产物**(导出/导入对称)。
@@ -14,7 +14,7 @@
 
 **类比**：
 - 当前 AI 游戏 = ChatGPT 写作文（每次从零生成，质量不可控）
-- Apollo 框架 = 乐高 + 智能导购（积木精雕细琢，AI 帮你挑和拼）
+- ZeroCraft 框架 = 乐高 + 智能导购（积木精雕细琢，AI 帮你挑和拼）
 
 ### 1.1 护城河与突破点（最重要的战略前提）
 

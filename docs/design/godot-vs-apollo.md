@@ -1,6 +1,6 @@
-# Godot 4.x vs Apollo Engine —— 对比与「值得借鉴什么」
+# Godot 4.x vs ZeroCraft Engine —— 对比与「值得借鉴什么」
 
-> 给 owner 决策用。**结论先行**：Godot 是极好的**设计参考**，但它的代码/运行时与 Apollo 的两条铁律（数据驱动 + lockstep 确定性）**根本不同源**——所以价值在「把 Godot 的某些**概念**映射成 Apollo 的 `组件 + capability` 数据模型」，**绝不是搬代码**。
+> 给 owner 决策用。**结论先行**：Godot 是极好的**设计参考**，但它的代码/运行时与 ZeroCraft 的两条铁律（数据驱动 + lockstep 确定性）**根本不同源**——所以价值在「把 Godot 的某些**概念**映射成 ZeroCraft 的 `组件 + capability` 数据模型」，**绝不是搬代码**。
 > 调研基于 Godot 官方文档（docs.godotengine.org，stable=4.x，4.3/4.4/4.5 版页确认在线）+ 官方博客 + godot-jolt 维护者原话。本文由 P3D 汇编（owner 2026-06-30 授权调研，最终由 owner 裁决）。
 
 ---
@@ -16,9 +16,9 @@
 
 ---
 
-## 2. Apollo 是什么（一句话锚定）
+## 2. ZeroCraft 是什么（一句话锚定）
 
-Apollo = **TypeScript 的数据驱动 + lockstep 确定性 ECS 引擎**，配一条 three.js「盒庭」3D 渲染线。两条铁律：
+ZeroCraft = **TypeScript 的数据驱动 + lockstep 确定性 ECS 引擎**，配一条 three.js「盒庭」3D 渲染线。两条铁律：
 - **数据驱动**：整个游戏是数据（组件 + 蓝图）；代码只是一台**固定的确定性解释器**（capability）。尺子：「最弱的 LLM 能不能也产出一模一样的数据？」
 - **lockstep 确定性**：sim 必须跨机逐位一致（哈希校验 desync）；**render-only 是自由区**（不进 hash·可用随机/壁钟——VFX、IBL、骨骼动画、cannon-es 物理都落这里）。
 
@@ -26,7 +26,7 @@ Apollo = **TypeScript 的数据驱动 + lockstep 确定性 ECS 引擎**，配一
 
 ## 3. 并排对比
 
-| 维度 | Godot 4.x | Apollo | 关键差异 |
+| 维度 | Godot 4.x | ZeroCraft | 关键差异 |
 |---|---|---|---|
 | **架构** | 场景树 + Node（数据与逻辑**捆绑**在节点上·OOP） | ECS·组件=纯数据·capability=纯逻辑（数据/逻辑**分离**） | Godot 官方博文自承「无 Data/System 分离」——与我们正相反 |
 | **作者方式** | **代码驱动**：脚本挂节点、命令式 GDScript/C# | **数据驱动**：蓝图填数据·弱 LLM 可写 | 我们的护城河 |
@@ -42,13 +42,13 @@ Apollo = **TypeScript 的数据驱动 + lockstep 确定性 ECS 引擎**，配一
 
 ---
 
-## 4. 值得借鉴的 —— 作为**数据驱动概念**映射到 Apollo（绝非搬码）
+## 4. 值得借鉴的 —— 作为**数据驱动概念**映射到 ZeroCraft（绝非搬码）
 
 > 每条：Godot 怎么做 → 映射成我们的「组件 + capability」 → 价值/工作量
 
 **A. 动画状态机 + 混合树 + BlendSpace（★最高价值）**
 - Godot：`AnimationTree` 持一棵**资源化**的混合图（Blend2/Add/OneShot/Transition）+ `AnimationNodeStateMachine`（状态 + 转移条件 + xfade）+ `BlendSpace1D/2D`（按 blend_position 在多 clip 间三角插值，如按速度 walk→run）。gameplay 只 `set("parameters/...", value)`。
-- 映射 Apollo：扩 `AnimState3D` → **`AnimGraph3D`（render-only 数据）**：`{ states:[{name,clip}], transitions:[{from,to,when}], blend:{param, points:[{at,clip}]} }`；渲染侧解释器（已有 AnimationMixer 基础）按数据建 blend/crossfade。**触发参数若来自 sim（如速度）= 确定性输入·render-only 解释**。
+- 映射 ZeroCraft：扩 `AnimState3D` → **`AnimGraph3D`（render-only 数据）**：`{ states:[{name,clip}], transitions:[{from,to,when}], blend:{param, points:[{at,clip}]} }`；渲染侧解释器（已有 AnimationMixer 基础）按数据建 blend/crossfade。**触发参数若来自 sim（如速度）= 确定性输入·render-only 解释**。
 - 价值：**高**（追逐游戏立刻能 idle/run 平滑切换、按速度混合）。工作量：中。**建议下一个做这个。**
 
 **B.「animate any property」+ method-call 轨道 → 通用 Timeline 组件**
@@ -95,4 +95,4 @@ Apollo = **TypeScript 的数据驱动 + lockstep 确定性 ECS 引擎**，配一
 3. **资产 import 管线** —— 当 owner 想推进「真实贴图」时，用 Godot 的 sidecar 样板把贴图做成数据驱动（解他卡住的美术管线问题）。
 4. 通用 Timeline 组件、Resource 共享表 —— 锦上添花，按需。
 
-> **底线复诵**：Apollo 的差异化 = 数据驱动 + lockstep。任何从 Godot 借来的东西，必须 ① 表达成数据（弱-LLM 尺子）、② sim 侧保持确定（render-only 才自由）。满足这两条就借**概念**，否则只当反面参照。
+> **底线复诵**：ZeroCraft 的差异化 = 数据驱动 + lockstep。任何从 Godot 借来的东西，必须 ① 表达成数据（弱-LLM 尺子）、② sim 侧保持确定（render-only 才自由）。满足这两条就借**概念**，否则只当反面参照。

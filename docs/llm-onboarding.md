@@ -1,4 +1,4 @@
-# Apollo 引擎 · LLM / 新游戏接入手册（唯一入口）
+# ZeroCraft 引擎 · LLM / 新游戏接入手册（唯一入口）
 
 > 2026-07-02 立 · 主程维护。任何「教 LLM / 新 session / 新协作者接引擎」的问题从本文件出发。
 > 本文件只做**索引 + 协议**，不手抄数字表——手抄表必漂移（"26 原子"曾在 11 处漂移成教训）。
@@ -24,7 +24,7 @@ Manifest(纯 JSON) ──parseManifest──▶ WorldBlueprint ──engine.load
 - **代码 = 引擎 + capability 词汇表**（只有引擎团队增改）；**游戏 = 数据**。宪法：`docs/design/data-driven-manifesto.md`。
 - manifest 形态 `{ capabilities: string[], entities: { 实体id: { 组件名: 数据 } } }`——纯 JSON 可表达，**塞不进函数**。
 - 校验链：`validate-manifest`（number/boolean 硬校验 + assetKey 防编造）→ `validate-references`（信号/id/模板/图跳转断链体检）。
-- 确定性：一切随机走 `RandomSeed` + `nextRandom` 种子 PRNG；ApolloBench 双跑同 hash 钉死可回放。
+- 确定性：一切随机走 `RandomSeed` + `nextRandom` 种子 PRNG；ZeroCraftBench 双跑同 hash 钉死可回放。
 
 ## 2. LLM 产一个游戏的五步路径
 

@@ -1,7 +1,7 @@
 # Agent 行为 Spec · <代理名>（模板·复制起卡）
 
 > 对象：`.claude/agents/<name>.md` · 类型：子代理 · 起卡日期：YYYY-MM-DD
-> 移植注：源自 CCGS agent-test-spec 骨架，Apollo 化（无 director 层级；上交对象=Lead/owner·通道=requests.md）。
+> 移植注：源自 CCGS agent-test-spec 骨架，ZeroCraft 化（无 director 层级；上交对象=Lead/owner·通道=requests.md）。
 
 ## Summary（三行必填）
 

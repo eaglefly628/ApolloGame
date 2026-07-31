@@ -1,8 +1,8 @@
 {
-  "name": "apollo-engine",
+  "name": "zerocraft-engine",
   "version": "0.1.0",
-  "description": "Apollo Game Engine",
-  "author": "Apollo Game Studio",
+  "description": "ZeroCraft Game Engine",
+  "author": "ZeroCraft Game Studio",
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",

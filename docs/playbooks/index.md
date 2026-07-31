@@ -1,4 +1,4 @@
-# Apollo 生产线手册总目录（Playbooks · 唯一导航）
+# ZeroCraft 生产线手册总目录（Playbooks · 唯一导航）
 
 > 2026-07-03 立（owner 拍板）· 主程维护。**任何 session、任何模型档位，动手做生产任务前，先到这里找对应线的手册。**
 > 定位：手册 = 「在**本引擎**里做 X，该用哪个基座件、数据长什么样」的**接线图**；
@@ -34,7 +34,7 @@
 | 存档与平台 | `playbooks/save-platform.md` | storage/platform-hooks（云存档/成就） | 各游戏 PE；发布=**game-publisher agent** |
 | **外部引擎交付（DokiWorld 卡带）** | `playbooks/dokiworld-export.md` | 导出插件 `tools/export-targets/dokiworld.mjs` · 协议桥 v1 + game.json + 计分注入 + 资源展平 · 卡片桥权威不冲突 | 全员（导 a/b/c 给 DokiWorld 前必读）；工具=主程 |
 | 平台角色卡桥（外部数据→席位） | `playbooks/character-card.md` | `services/character-card`（normalizeCharacterCard/toSeatCard/isCardUsable）· 媒体取优 · 成年硬闸 · passthrough 对账 | 各游戏 PE（a/b/c 接卡）；桥=引擎 services |
-| **测试与验收** | `playbooks/testing.md` | vitest·registry-guard·ApolloBench·数值 sim·e2e·smoke·game-skill-audit | **全员（交付前必过）**；验收纪律=Lead |
+| **测试与验收** | `playbooks/testing.md` | vitest·registry-guard·ZeroCraftBench·数值 sim·e2e·smoke·game-skill-audit | **全员（交付前必过）**；验收纪律=Lead |
 | **视觉验收/出货门** | `playbooks/visual-scorecard.md` | 8 维 0-3 分·premium=全维≥2·证据台账·反捷径工艺律 | 判官=Lead/P3D；PS 出货内门（TGS 吸收·owner 2026-07-06 批） |
 
 > **宿主壳层公共件**（别手写·REQ-SHELL 三件）：`engine/host`（`mountHost` 骨架 + `createRunLoop` 运行环）·`assets/game-art-load`·`services/persist`（局外小态/本地榜）。

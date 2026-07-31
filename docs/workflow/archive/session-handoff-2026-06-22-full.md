@@ -91,7 +91,7 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 - **引擎** `src/engine/`：ECS World（snapshot/hash）；SystemPhase 拓扑排序
 - **能力库** `src/skills/`：Tier1（运动/动画/hierarchy-cascade）/ Tier2（物理/逻辑链/ARPG/tilemap/hex/gauge）/ Tier3（dialogue/match3/prefab/caster/aggro/poker-hand/card-scoring/flow/card-pile）
 - **桥接** `src/assembly/`：capability-registry + parseManifest/exportManifest + schema 校验 + validate-references
-- **Studio** `src/studio/`：数据透视器、资源库（art:<query>）、ApolloBench
+- **Studio** `src/studio/`：数据透视器、资源库（art:<query>）、ZeroCraftBench
 - **启动器** `apollo.py`：Vite+API+多 LLM；`bench` 命令
 
 ## 2. 五个游戏

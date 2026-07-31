@@ -1,4 +1,4 @@
-# Apollo UI 控件契约总表（数据驱动 UI 库 · 开工蓝图）
+# ZeroCraft UI 控件契约总表（数据驱动 UI 库 · 开工蓝图）
 
 > 本文是「阿波罗 UI」库的开工蓝图：把**现有引擎 UI 能力**盘清成数据接口规格，
 > 再把**待补控件**设计成同一风格的契约。新库建好后整份搬过去，按规格逐个实现。
@@ -30,7 +30,7 @@
 
 ---
 
-## 0. 设计不变量（Apollo UI 的红线 · 任何控件都不许破）
+## 0. 设计不变量（ZeroCraft UI 的红线 · 任何控件都不许破）
 
 1. **整个 UI 是数据**：一棵 `LayoutNode` 树，弱模型只填数据，引擎解释成像素。
 2. **控件是闭集 union**：`type` 取自固定枚举，不滑成图灵完备 UI DSL。
@@ -222,7 +222,7 @@ interface VirtualListProps { rows: { id: string; cells: Record<string,string> }[
 
 ## 4. 三套体系收编计划（碎片化 → 一套底座）
 
-现状：`@ui/components`（ComponentType·15 控件·串渲染·框架无关）、`@ui/shell` GameShell（UINode·9 种·React·**绑世界**）、`@ui/vn`（React 演出组件）三套节点 schema 互不相通，主题也分 `UITheme`/`GameTheme`/`SHELL` 三处。Apollo UI 以 `@ui/components` 为统一底座收编：
+现状：`@ui/components`（ComponentType·15 控件·串渲染·框架无关）、`@ui/shell` GameShell（UINode·9 种·React·**绑世界**）、`@ui/vn`（React 演出组件）三套节点 schema 互不相通，主题也分 `UITheme`/`GameTheme`/`SHELL` 三处。ZeroCraft UI 以 `@ui/components` 为统一底座收编：
 
 1. **并入世界绑定**（吃掉 shell 的独特价值）：给 LayoutNode 叶子加**绑定扩展**——
    ```ts

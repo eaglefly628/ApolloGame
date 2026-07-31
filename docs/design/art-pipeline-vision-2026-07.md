@@ -1,4 +1,4 @@
-# Apollo 美术工坊 · 引擎美术管线愿景（调研报告 + 目标形态）
+# ZeroCraft 美术工坊 · 引擎美术管线愿景（调研报告 + 目标形态）
 
 > 2026-07-04 · owner 提出「美术库改造成美术编辑器 + AI 产 2D/3D」→ Lead 调研出稿 · status: **设计稿·待 owner 审**
 > 行业扫描基于 2026-01 知识截面 + 库内 CCGS 参考；数字为快照，实时以 `assets/index.json` 为准。
@@ -29,7 +29,7 @@
 - **修复/加工类**（比生成更成熟、性价比最高）：超分、去背、调色板归一、九宫裁切、精灵帧补间、albedo→normal/ORM 推导；
 - **共识纪律**：AI 产物必须带 **provenance**（模型/prompt/日期/源图）、必须**人审后入库**（无自动入库）、许可标注升级为硬字段。
 
-## 三、目标形态：Apollo 美术工坊（美术编辑器）
+## 三、目标形态：ZeroCraft 美术工坊（美术编辑器）
 
 **定位一句话**：不是 DCC（不做画画/建模），是**「货架管理器 + AI 加工台 + 游戏接线器」三合一**，作为创作台的第三面板（复用 apollo.py 服务面 + BYO-key + 本地 Git），PA 角色主管。
 
@@ -109,7 +109,7 @@
 **对照裁决**：
 | 类 | 内容 | 裁决 |
 |---|---|---|
-| 他有我无·吸收 | 视觉评分卡门 | ✅ 移植 Apollo 版（见下 A）——正是我们 MANUAL CHECK 项的结构化载体 |
+| 他有我无·吸收 | 视觉评分卡门 | ✅ 移植 ZeroCraft 版（见下 A）——正是我们 MANUAL CHECK 项的结构化载体 |
 | 他有我无·吸收 | canvas 像素断言 | ✅ 升级 `shoot-game.mjs`（3D 线截图人审 → 机器断言可进门禁） |
 | 他有我无·吸收 | 音频生成线 | ✅ 我们声音货架=1 条（最大资产空洞）·补 audio adapter 进 ai-gen（BYO-key·mock 兜底·人审门） |
 | 他有我无·吸收 | 资产来源台账+反捷径律+凭证探针 | ✅ 台账并进人审门 provenance；工艺律一行进 playbooks/3d.md 红线；探针纪律进生成日志 |
@@ -118,7 +118,7 @@
 | 我有他无 | 确定性引擎/回放/数据宪法/index 治理/许可 provenance/棘轮门禁/sim 标定 | 🏰 我们的护城河·他的资产落盘无库存治理 |
 
 **吸收计划（A-D·owner 2026-07-06 已批·A/D ✅·C 移 3D 池·B ⏸ owner 2026-07-17 暂停——单已出主池，全文+B spec 见 `docs/workflow/requests-archive.md` REQ-ART-TGS吸收四件）**：
-- **A. Apollo 视觉评分卡**（新 `docs/playbooks/visual-scorecard.md`·≤80 行）：维度裁成我们的（艺术方向/主角面/世界密度/材质/渲染管线/VFX/UI 美术/性能证据），0-3 分制·premium 线=全维 ≥2；挂两处：P3D 视觉验收 + PS 出货内门（替代散文式 MANUAL CHECK）。
+- **A. ZeroCraft 视觉评分卡**（新 `docs/playbooks/visual-scorecard.md`·≤80 行）：维度裁成我们的（艺术方向/主角面/世界密度/材质/渲染管线/VFX/UI 美术/性能证据），0-3 分制·premium 线=全维 ≥2；挂两处：P3D 视觉验收 + PS 出货内门（替代散文式 MANUAL CHECK）。
 - **B. 音频生成线（工坊 M3.5）**：`ai-gen.mjs` 加 audio adapter（SFX/环境音/UI 音·BYO-key·无 key mock·人审门+provenance 同 2D/3D）；声音货架从 1 起步补齐；SynthAudioPort（合成）与采样并存。
 - **C. shoot-game 像素断言**：非黑占比/对比度/帧活动三断言 + 判词 token——3D 视觉 smoke 从人审升级为可进门禁（P3D 域）。
 - **D. 手册回填**：playbooks/3d.md 加工艺顺序红线+主角面禁纯程序化；生成端点日志补凭证探针纪律。

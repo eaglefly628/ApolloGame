@@ -1,4 +1,4 @@
-# Apollo · Agent / Skill 准则（怎么把工作流固化成 `.claude/` 基建）
+# ZeroCraft · Agent / Skill 准则（怎么把工作流固化成 `.claude/` 基建）
 
 > owner 2026-07-01 拍板：把散在 `CLAUDE.md` / `docs/workflow` / 各 session 脑子里的**角色 + 仪式**，固化成 Claude Code 可调用的 `.claude/agents`（角色）+ `.claude/skills`（仪式）。
 > **这本身就很数据驱动宣言**：让 harness **直接执行**工作流配置，而不是每个 session 口头复述一遍。本文 = 建/审这些基建的准则。

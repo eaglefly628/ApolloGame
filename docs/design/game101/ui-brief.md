@@ -1,6 +1,6 @@
 # game101 ·《海港绯闻》界面布局设计（ui-brief v1 · Claude Design）
 
-> GD-101 · 2026-07-23 · owner 指令「用我们 UI 库出设计布局，能设计得更好」——**改用真 Apollo Kit（`src/ui/components` 的 `LayoutNode` 闭集控件）+ game101 暖色主题**直接出布局（**纯数据**），不再用 emoji `.dc.html` 假稿。
+> GD-101 · 2026-07-23 · owner 指令「用我们 UI 库出设计布局，能设计得更好」——**改用真 ZeroCraft Kit（`src/ui/components` 的 `LayoutNode` 闭集控件）+ game101 暖色主题**直接出布局（**纯数据**），不再用 emoji `.dc.html` 假稿。
 > **S1 已落地 = `layout/s1-merge-board.layout.json`**（真 LayoutNode 树·`validateLayoutNode` 0 issue·`layout/s1-preview.png` 效果图）。本文各屏 ASCII/控件表 = 逐屏**规格**，据此把每屏都用 LayoutNode 出成 `layout/<screen>.layout.json`。
 > **接线铁律**：全部元素映射现有 LayoutNode 闭集 + play-field 渲染组件，**零新控件、零手写 DOM/React**；缺控件走 `requests.md` 提 PUI。合并板本身=play-field（引擎渲染·非 LayoutNode）。
 > **基线画布**：**竖屏 1080×1920（9:16）**；布局全流式（column/row/grid·天然防重叠），非绝对像素。

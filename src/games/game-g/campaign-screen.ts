@@ -1,6 +1,6 @@
 // campaign-screen.ts —— Game G 大厅「战役进度」屏·数据驱动 pilot（Step B·接力 home-screen 范式）。
 //
-// 用引擎 Apollo UI 层（`LayoutNode` 纯数据 + `mountUI` 解释器 + `GG_LOBBY_THEME` 换皮令牌）重写战役进度屏。
+// 用引擎 ZeroCraft UI 层（`LayoutNode` 纯数据 + `mountUI` 解释器 + `GG_LOBBY_THEME` 换皮令牌）重写战役进度屏。
 // 红线（同 home-screen / game-i）：本文件**只产数据 + 接信号**，不写一行 HTML/DOM 模板。
 //
 // 忠实对标 live 大厅 `lobby-screen.ts` 的 `campaignSection`：逐关卡片（锁/当前/已通关/可重打）+ 难度星 +

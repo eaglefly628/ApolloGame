@@ -2,7 +2,7 @@
 
 ## 概念
 
-Apollo Engine 使用 **Entity-Component-System (ECS)** 架构：
+ZeroCraft Engine 使用 **Entity-Component-System (ECS)** 架构：
 
 - **Entity** — 一个 ID，没有行为，只是组件的容器
 - **Component** — 纯数据，有 `type` 标识（如 `Health`, `Dead`）

@@ -1,6 +1,6 @@
-# Apollo Engine — 游戏开发知识库
+# ZeroCraft Engine — 游戏开发知识库
 
-> 按 Apollo 的 Tier 层级组织，每条资源直接映射到可开发的 skill。
+> 按 ZeroCraft 的 Tier 层级组织，每条资源直接映射到可开发的 skill。
 > 只收录经过 AAA/知名商业游戏验证的方案。调研时间：2026-06-03
 
 ---
@@ -8,14 +8,14 @@
 ## 原则
 
 - 只收录有**已上线游戏验证**的方案（标注验证游戏）
-- 每条资源标注它对 Apollo **哪个 Tier / 哪个 skill** 有指导价值
+- 每条资源标注它对 ZeroCraft **哪个 Tier / 哪个 skill** 有指导价值
 - "能变成 skill" > "有意思"
 
 ---
 
 ## 一、经验证的 ECS 架构参考
 
-| 来源 | 验证游戏 | 核心要点 | 对 Apollo 的价值 |
+| 来源 | 验证游戏 | 核心要点 | 对 ZeroCraft 的价值 |
 |------|---------|---------|-----------------|
 | **守望先锋 ECS** — Timothy Ford, GDC 2017 ([Vault](https://www.gdcvault.com/play/1024001/)) | Overwatch (暴雪) | 混合 ECS + 确定性 63Hz tick + 网络回滚 | Tier 1: motion-apply 的确定性循环设计；W1 random 的确定性种子方案 |
 | **地牢围攻数据驱动对象系统** — Scott Bilas, GDC 2002 ([PDF](https://www.gamedevs.org/uploads/data-driven-game-object-system.pdf)) | Dungeon Siege (Gas Powered Games) | 组合代替继承，处理 7300+ 对象类型 | defineCapability 模式的理论源头；assembly 蓝图设计 |
@@ -30,17 +30,17 @@
 
 ### Tier 1 — 直接结算 (Kinematic)
 
-| Apollo Skill | 参考来源 | 验证 | 要点 |
+| ZeroCraft Skill | 参考来源 | 验证 | 要点 |
 |-------------|---------|------|------|
 | **motion-apply** | Celeste source, *Game Programming Patterns* Ch.2 Game Loop | Celeste | 定步长 tick、子步进积分、整数/定点坐标避免浮点漂移 |
-| **accel-apply** | *Game Physics Engine Development* (Millington) Ch.3 | — | 显式欧拉 vs 半隐式欧拉积分，Apollo 用半隐式（先更新速度再更新位置） |
+| **accel-apply** | *Game Physics Engine Development* (Millington) Ch.3 | — | 显式欧拉 vs 半隐式欧拉积分，ZeroCraft 用半隐式（先更新速度再更新位置） |
 | **hierarchy-resolve** | Unity Transform 源码, Godot Node2D | Unity/Godot | 脏标记 + 延迟求解；避免每帧全量矩阵乘法 |
 | **animation** | *Game Programming Patterns* Ch.14 Type Object | — | frame.index++ per timer，帧动画是 timer → frame 的直接映射 |
 | **lifetime** | Dead Cells 实体池 | Dead Cells | timer done → destroy，配合对象池回收而非真正 delete |
 
 ### Tier 2 — 规则与约束 (Resolution)
 
-| Apollo Skill | 参考来源 | 验证 | 要点 |
+| ZeroCraft Skill | 参考来源 | 验证 | 要点 |
 |-------------|---------|------|------|
 | **gravity** | Box2D v3 b2World_Step, Celeste | 多款 | 重力是常量加速度，不是力——直接写 acceleration.ay，不走力学积分 |
 | **collision-separate** | *Real-Time Collision Detection* (Ericson) Ch.4, Box2D Position Solver | 行业标准 | AABB 穿透分离：按 mass 比推开，normal × depth |
@@ -54,7 +54,7 @@
 
 ### Tier 3 — 系统级玩法 (Mechanics)
 
-| Apollo Skill | 参考来源 | 验证 | 要点 |
+| ZeroCraft Skill | 参考来源 | 验证 | 要点 |
 |-------------|---------|------|------|
 | **health-system** | *Game Programming Patterns* Ch.5 Observer | 几乎所有游戏 | resource(hp) + resource-modify + ui-binding，事件链 |
 | **platformer-jump** | Celeste 跳跃手感调优, *Juice it or Lose it* (GDC 2012) | Celeste | action-map + flag(grounded) + velocity + 可变重力（上升轻、下落重） |
@@ -64,7 +64,7 @@
 
 ### Tier 4 — 心智与行为 (Behaviors)
 
-| Apollo Skill | 参考来源 | 验证 | 要点 |
+| ZeroCraft Skill | 参考来源 | 验证 | 要点 |
 |-------------|---------|------|------|
 | **ai-patrol** | *AI for Games* (Millington) Ch.3 Steering | 行业通用 | state + timer + velocity(方向切换)，巡逻路径点 |
 | **ai-chase** | F.E.A.R. GOAP — Jeff Orkin, GDC 2006 ([PDF](https://www.gamedevs.org/uploads/three-states-plan-ai-of-fear.pdf)) | F.E.A.R. | state + spatial-query(nearest) + relation(target)，GOAP 比 FSM 更灵活 |
@@ -73,7 +73,7 @@
 
 ### 乙游方向 (Tier 3/4 扩展)
 
-| Apollo Skill | 参考来源 | 验证 | 要点 |
+| ZeroCraft Skill | 参考来源 | 验证 | 要点 |
 |-------------|---------|------|------|
 | **check.resolve** | 效用 AI — Dave Mark, GDC 2010 ([Vault](https://www.gdcvault.com/play/1012410/)) | 多款策略/RPG | 响应曲线 + 权重计算检定分数，domainSlot 插入关系值修正 |
 | **love-interest.event** | 火焰纹章支援系统, 乙游通用 | FE 系列 | resource 阈值触发 → 情感选择 → 多路径后果 |
@@ -83,23 +83,23 @@
 
 ## 三、物理引擎选型（已验证）
 
-| 引擎 | 验证游戏 | 推荐场景 | Apollo 集成方式 |
+| 引擎 | 验证游戏 | 推荐场景 | ZeroCraft 集成方式 |
 |------|---------|---------|----------------|
 | **Box2D v3** | Angry Birds, Limbo, Crayon Physics | 标准 2D 物理 | 双世界同步：ECS Transform ↔ Box2D Body |
 | **Rapier 2D** | Bevy 生态游戏 | 需要跨平台确定性 | 同上 + 确定性保证 |
 | **Matter.js** | Phaser 内置 | 快速原型 | 最简集成，性能天花板低 |
-| **自写 AABB** | Celeste, Dead Cells | 平台跳跃类 | Apollo D1 overlap-detect 已有，足够 platformer |
+| **自写 AABB** | Celeste, Dead Cells | 平台跳跃类 | ZeroCraft D1 overlap-detect 已有，足够 platformer |
 
 ---
 
 ## 四、渲染与动画（已验证）
 
-| 技术 | 验证游戏/引擎 | Apollo 集成 |
+| 技术 | 验证游戏/引擎 | ZeroCraft 集成 |
 |------|-------------|------------|
 | **PixiJS** | 数千款 HTML5 游戏 | 替换 CanvasRenderer，Sprite 批处理性能提升 10 倍+ |
 | **Spine** | Hollow Knight, Dead Cells, Hades | 扩展层 X1 skeletal-pose 的姿态快照来源 |
 | **Live2D** | 明日方舟, 碧蓝航线, 大量乙游 | 扩展层 ×，参数快照模式，适合少量高品质角色 |
-| **Canvas2D** | Apollo 当前 | 够用于 MVP，后续可平滑升级 |
+| **Canvas2D** | ZeroCraft 当前 | 够用于 MVP，后续可平滑升级 |
 
 ---
 

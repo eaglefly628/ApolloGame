@@ -79,5 +79,5 @@ AudioContext
 ## 参考来源
 
 - Web Audio API (MDN) — 完整的节点类型和用法文档
-- Apollo src/engine/protocol/components.ts Sound 组件 — 当前数据结构
-- Howler.js — 流行的 Web 音频库，可作为 Apollo 音频后端的参考
+- ZeroCraft src/engine/protocol/components.ts Sound 组件 — 当前数据结构
+- Howler.js — 流行的 Web 音频库，可作为 ZeroCraft 音频后端的参考

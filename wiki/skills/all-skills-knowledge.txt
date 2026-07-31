@@ -1,5 +1,5 @@
 # ════════════════════════════════════════════════════════════
-#  Apollo Engine — 游戏开发技能知识库（完整合并版）
+#  ZeroCraft Engine — 游戏开发技能知识库（完整合并版）
 #  生成时间：2026-06-03 16:20
 #  模块数量：23
 #  用途：供项目经理 review 的完整导出
@@ -10,7 +10,7 @@
 # FILE: wiki/skills/index.md
 # ──────────────────────────────────────────────────────────
 
-# Apollo 游戏开发技能索引
+# ZeroCraft 游戏开发技能索引
 
 > Level 0 — 常驻加载。当你需要实现某类功能时，用 Read 工具读取对应文件。
 
@@ -117,7 +117,7 @@
 高速物体（子弹）一帧移动距离可能超过自身体积，导致穿透。解决方案：
 - 把一次大位移拆成多次小位移，每步做碰撞检测。
 - 或用射线检测（raycast）代替离散位移。
-- Apollo 当前用离散步进，高速场景需加子步进。
+- ZeroCraft 当前用离散步进，高速场景需加子步进。
 
 ## 常见陷阱
 
@@ -316,7 +316,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 ## 参考来源
 
 - Celeste coyote time — 宽容时间窗的标准实现
-- Apollo MultiInputSource — 本地双人到联机的无缝切换实现
+- ZeroCraft MultiInputSource — 本地双人到联机的无缝切换实现
 - *Juice it or Lose it* (GDC 2012) — 输入手感优化的经典演讲
 
 
@@ -368,7 +368,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 ## 参考来源
 
 - PixiJS — 数千款 HTML5 游戏验证的 2D WebGL 引擎
-- Apollo CanvasRenderer — 当前实现，升级时保持接口不变
+- ZeroCraft CanvasRenderer — 当前实现，升级时保持接口不变
 
 
 # ──────────────────────────────────────────────────────────
@@ -431,7 +431,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 
 - 游戏 AI 不是机器学习 — 是**手写规则让 NPC 看起来聪明**。
 - 三种主流方案：有限状态机（FSM）、行为树（BT）、目标导向行动规划（GOAP）。
-- Apollo 的 State 组件支撑 FSM；复杂 AI 可扩展为 BT 或 GOAP。
+- ZeroCraft 的 State 组件支撑 FSM；复杂 AI 可扩展为 BT 或 GOAP。
 
 ## FSM（有限状态机）
 
@@ -445,7 +445,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 - 树形结构：Selector（选一个能跑的）、Sequence（按顺序全跑）、Leaf（具体行动）。
 - 比 FSM 更好组合和复用 — 子树可以插拔。
 - 适合：中等复杂度 AI（10-30 种行为的 NPC）。
-- Apollo 当前不内置 BT，但可以用 State + 自定义 System 模拟。
+- ZeroCraft 当前不内置 BT，但可以用 State + 自定义 System 模拟。
 
 ## GOAP（目标导向行动规划）
 
@@ -565,7 +565,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 - 另一种空间索引：平衡二叉树，叶节点是实体 AABB，内部节点是合并 AABB。
 - 查询用 AABB 重叠测试从根往下剪枝。
 - 适合实体大小差异大的场景（大 boss + 小子弹共存）。
-- Apollo 已有 `src/engine/spatial/aabb-tree.ts` 实现。
+- ZeroCraft 已有 `src/engine/spatial/aabb-tree.ts` 实现。
 
 ## 范围检测（Range Detect）
 
@@ -589,7 +589,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 
 - Factorio 空间分区 — 百万实体级网格分区优化
 - *Real-Time Collision Detection* (Ericson) Ch.7 — 空间分区数据结构
-- Apollo aabb-tree.ts — 当前项目的 AABB 树实现
+- ZeroCraft aabb-tree.ts — 当前项目的 AABB 树实现
 
 
 # ──────────────────────────────────────────────────────────
@@ -602,7 +602,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 
 ## 核心原则
 
-- Apollo 的联机模型是**确定性锁步（Deterministic Lockstep）**：所有客户端跑相同逻辑，只同步输入。
+- ZeroCraft 的联机模型是**确定性锁步（Deterministic Lockstep）**：所有客户端跑相同逻辑，只同步输入。
 - 确定性 = 相同输入 + 相同初始状态 → 相同结果。每 tick 的哈希必须一致。
 - 一旦确定性被破坏，两端状态会永久分叉 — 没有自愈机制。
 
@@ -626,7 +626,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 
 ## 输入延迟 vs 回滚
 
-- **输入延迟**（Apollo 当前）：收到所有人的输入才推进。简单可靠，延迟 = 最慢玩家的网络延迟。
+- **输入延迟**（ZeroCraft 当前）：收到所有人的输入才推进。简单可靠，延迟 = 最慢玩家的网络延迟。
 - **回滚（Rollback）**：先用预测输入推进，收到真实输入后回滚重算。延迟更低但实现复杂。
 - 格斗游戏用回滚（GGPO），RTS 用锁步（星际争霸）。
 
@@ -638,7 +638,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 
 ## BroadcastChannel（本地多 tab 联机）
 
-- Apollo 用 BroadcastChannel API 在浏览器多 tab 间同步输入。
+- ZeroCraft 用 BroadcastChannel API 在浏览器多 tab 间同步输入。
 - 适合开发调试：开两个 tab 就是两个玩家。
 - 生产环境替换为 WebSocket 后端，接口不变。
 
@@ -652,7 +652,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 
 - 守望先锋 (GDC 2017) — 确定性 63Hz tick + 网络回滚的工业实现
 - 星际争霸 lockstep — RTS 锁步同步的经典案例
-- Apollo frame-sync.md — 当前项目的帧同步设计文档
+- ZeroCraft frame-sync.md — 当前项目的帧同步设计文档
 
 
 # ──────────────────────────────────────────────────────────
@@ -719,7 +719,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 - 火焰纹章支援系统 — 关系值 + 阈值事件的经典实现
 - Persona 系列 — 周期结算 + 日程管理的标杆
 - 效用 AI (Dave Mark, GDC 2010) — 响应曲线用于情感决策
-- wiki/otome-capability-binding.json — Apollo 的乙游能力绑定规范
+- wiki/otome-capability-binding.json — ZeroCraft 的乙游能力绑定规范
 
 
 # ──────────────────────────────────────────────────────────
@@ -741,7 +741,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 ### JSON 序列化（当前推荐）
 - 优点：可读、可调试、前端原生支持。
 - 缺点：体积大、解析慢。
-- Apollo 组件都是 plain object，`JSON.stringify` 直接可用。
+- ZeroCraft 组件都是 plain object，`JSON.stringify` 直接可用。
 - 注意：EntityId 如果是 number 需确保 JSON 不丢精度。
 
 ### 结构化克隆（structuredClone）
@@ -802,7 +802,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 - 不存 World 快照，只存初始状态 + 每 tick 的输入序列。
 - 回放时重跑所有 tick — 存档极小，但加载慢（要重跑）。
 - 适合：格斗/竞技游戏的录像系统。
-- Apollo 的 debug/recorder.ts 已有此模式的基础实现。
+- ZeroCraft 的 debug/recorder.ts 已有此模式的基础实现。
 
 ## 常见陷阱
 
@@ -819,7 +819,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 
 ## 参考来源
 
-- Apollo debug/recorder.ts — 确定性回放录制的现有实现
+- ZeroCraft debug/recorder.ts — 确定性回放录制的现有实现
 - FlatBuffers — Google 的零拷贝序列化，适合大存档
 - IndexedDB API — 浏览器端大容量异步存储
 
@@ -840,7 +840,7 @@ platformer 的跳跃手感核心：上升和下落用不同的重力值。
 
 ## 判别联合（Discriminated Union）
 
-Apollo 组件的核心模式：用 `type` 字段区分组件种类。
+ZeroCraft 组件的核心模式：用 `type` 字段区分组件种类。
 
 ```typescript
 // 每个 Component 用 readonly type 做判别符
@@ -864,7 +864,7 @@ type Tick = number & { readonly __brand: 'Tick' };
 // EntityId 和 Tick 都是 number，但不能互相赋值
 ```
 
-- Apollo 的 EntityId 用此模式，防止把 tick 编号误当实体 ID。
+- ZeroCraft 的 EntityId 用此模式，防止把 tick 编号误当实体 ID。
 
 ## 泛型组件查询
 
@@ -927,11 +927,11 @@ for (...) results[count++] = e;
 ### Map vs Object
 - 键是动态字符串/数字 → 用 `Map`（哈希性能好、有 size、迭代顺序确定）。
 - 键是固定字符串集合 → 用 plain object（V8 隐藏类优化）。
-- Apollo 的 World 用 `Map<EntityId, Map<string, Component>>` — 正确选择。
+- ZeroCraft 的 World 用 `Map<EntityId, Map<string, Component>>` — 正确选择。
 
 ## 工具链
 
-| 工具 | 用途 | Apollo 配置 |
+| 工具 | 用途 | ZeroCraft 配置 |
 |------|------|------------|
 | **tsc** | 类型检查 | `tsc --noEmit`，只做检查不输出 |
 | **Vite** | 开发/构建 | esbuild 转译 TS（不做类型检查，快） |
@@ -961,8 +961,8 @@ for (...) results[count++] = e;
 
 ## 参考来源
 
-- Apollo src/engine/core/types.ts — EntityId branded type、Component 判别联合
-- Apollo src/engine/protocol/components.ts — 26 个组件接口的 TS 模式
+- ZeroCraft src/engine/core/types.ts — EntityId branded type、Component 判别联合
+- ZeroCraft src/engine/protocol/components.ts — 26 个组件接口的 TS 模式
 - TypeScript Handbook — 官方判别联合与类型守卫文档
 
 
@@ -982,7 +982,7 @@ for (...) results[count++] = e;
 
 ## 架构：React Overlay 模式
 
-Apollo 当前方案：Canvas 画游戏，React DOM 叠加在上方做 UI。
+ZeroCraft 当前方案：Canvas 画游戏，React DOM 叠加在上方做 UI。
 
 ```
 ┌──────────────────────────┐
@@ -1071,8 +1071,8 @@ function useWorldVersion(engine: Engine): number {
 
 ## 参考来源
 
-- Apollo src/ui/GameOverlay.tsx — 当前 React Overlay 实现
-- Apollo src/ui/hooks/use-engine.ts — useWorldVersion 桥接 hook
+- ZeroCraft src/ui/GameOverlay.tsx — 当前 React Overlay 实现
+- ZeroCraft src/ui/hooks/use-engine.ts — useWorldVersion 桥接 hook
 - React 官方文档 — 组件化 UI 的最佳实践
 
 
@@ -1161,8 +1161,8 @@ AudioContext
 ## 参考来源
 
 - Web Audio API (MDN) — 完整的节点类型和用法文档
-- Apollo src/engine/protocol/components.ts Sound 组件 — 当前数据结构
-- Howler.js — 流行的 Web 音频库，可作为 Apollo 音频后端的参考
+- ZeroCraft src/engine/protocol/components.ts Sound 组件 — 当前数据结构
+- Howler.js — 流行的 Web 音频库，可作为 ZeroCraft 音频后端的参考
 
 
 # ──────────────────────────────────────────────────────────
@@ -1264,7 +1264,7 @@ interface LevelConfig {
 
 - Unity SceneManager — 场景加载/卸载的行业标准 API 设计
 - Godot SceneTree — 场景栈 + 节点持久化的参考实现
-- Apollo runtime/engine.ts — 当前 start/stop/load 接口
+- ZeroCraft runtime/engine.ts — 当前 start/stop/load 接口
 
 
 # ──────────────────────────────────────────────────────────
@@ -1415,7 +1415,7 @@ lerp(a, b, t) = a + (b - a) * t    // t ∈ [0, 1]
 
 - 用途：平滑移动（相机跟随）、颜色渐变、音量过渡。
 - t 不 clamp 会超调 — 除非故意要弹性效果。
-- 帧率无关 lerp：`value = lerp(value, target, 1 - Math.pow(smoothing, dt))`。Apollo 用固定 tick 所以直接用常量 t 即可。
+- 帧率无关 lerp：`value = lerp(value, target, 1 - Math.pow(smoothing, dt))`。ZeroCraft 用固定 tick 所以直接用常量 t 即可。
 
 ## 缓动函数（Easing）
 
@@ -1469,7 +1469,7 @@ remap(value, inMin, inMax, outMin, outMax) = outMin + (value-inMin)/(inMax-inMin
 
 ## 确定性随机
 
-- Apollo 用 RandomSeed 组件的 PRNG，不用 Math.random()。
+- ZeroCraft 用 RandomSeed 组件的 PRNG，不用 Math.random()。
 - 常用算法：xorshift32、mulberry32 — 简单快速，周期足够。
 - 随机范围：`min + (prng() % (max - min + 1))`（整数），`min + prng01() * (max - min)`（浮点）。
 - 洗牌：Fisher-Yates，用 PRNG 而非 Math.random。
@@ -1491,7 +1491,7 @@ remap(value, inMin, inMax, outMin, outMax) = outMin + (value-inMin)/(inMax-inMin
 
 - *Game Programming Patterns* — lerp 和缓动在游戏中的应用
 - easings.net — 所有标准缓动函数的可视化和公式
-- Apollo src/atom-skills/random/index.ts — 当前 PRNG 实现
+- ZeroCraft src/atom-skills/random/index.ts — 当前 PRNG 实现
 
 
 # ──────────────────────────────────────────────────────────
@@ -1520,7 +1520,7 @@ remap(value, inMin, inMax, outMin, outMax) = outMin + (value-inMin)/(inMax-inMin
 | **总计** | **< 16.67ms** | |
 
 - 用 `performance.now()` 在关键段落插桩测量。
-- Apollo 的 Tracer 已有计时功能（src/debug/tracer.ts）。
+- ZeroCraft 的 Tracer 已有计时功能（src/debug/tracer.ts）。
 
 ## GC 回避
 
@@ -1573,7 +1573,7 @@ for (const e of entities) { if (!e.active) continue; ... }
 ### SoA vs AoS
 
 ```typescript
-// AoS (Array of Structures) — 当前 Apollo 方式
+// AoS (Array of Structures) — 当前 ZeroCraft 方式
 entities = [ { x: 1, y: 2, vx: 3, vy: 4 }, { x: 5, y: 6, vx: 7, vy: 8 } ]
 
 // SoA (Structure of Arrays) — 更缓存友好
@@ -1581,7 +1581,7 @@ xs = [1, 5]; ys = [2, 6]; vxs = [3, 7]; vys = [4, 8];
 ```
 
 - SoA 在 JS 里用 TypedArray（Float32Array）效果最好。
-- Apollo 当前用 AoS（Map<EntityId, Component>），百实体级够用。千实体级考虑 SoA。
+- ZeroCraft 当前用 AoS（Map<EntityId, Component>），百实体级够用。千实体级考虑 SoA。
 
 ## 空间分区复杂度
 
@@ -1600,7 +1600,7 @@ xs = [1, 5]; ys = [2, 6]; vxs = [3, 7]; vys = [4, 8];
 | Chrome DevTools Memory | 堆快照、分配追踪 |
 | `performance.now()` | 手动插桩计时 |
 | `performance.mark/measure` | 命名标记，DevTools 可视化 |
-| Apollo Tracer | System 级别计时 |
+| ZeroCraft Tracer | System 级别计时 |
 | `--js-flags="--trace-gc"` | Node.js GC 日志 |
 
 ## 渐进式优化路径

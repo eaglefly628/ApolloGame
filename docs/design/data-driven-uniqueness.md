@@ -1,5 +1,5 @@
 # 为什么"用数据组织游戏驱动"是一种设计独特性
-### Apollo 技术原理白皮书（设计独特性 · Design Uniqueness）
+### ZeroCraft 技术原理白皮书（设计独特性 · Design Uniqueness）
 
 > 归档于 `docs/design/`。与《数据驱动第一性原则》(`data-driven-manifesto.md`) 配套：宪法讲"必须这样"，本文讲"**为什么这样独特、独特在设计层而非实现层**"。
 > 统一命名：**范式 = 「游戏即数据 Game-as-Data」；引擎 = 「确定性数据解释器 Deterministic Data Interpreter」；生成法 = 「约束式数据合成 Constrained Data Synthesis」。**
@@ -55,7 +55,7 @@
 
 ## 4. 横向对比（技术层）
 
-| | 传统引擎 (Unity/Unreal) | 代码生成 (Copilot / 一键生成) | 通用 RAG / 微调 | **Apollo（游戏即数据）** |
+| | 传统引擎 (Unity/Unreal) | 代码生成 (Copilot / 一键生成) | 通用 RAG / 微调 | **ZeroCraft（游戏即数据）** |
 |---|---|---|---|---|
 | AI 产出 | —（为程序员造） | 自由代码 / 黑盒 | 帮写代码 | **数据（闭集组件+能力）** |
 | 确定性 | 非一等不变量 | 无 | 检索常非确定 | **一等不变量（hash/回放）** |

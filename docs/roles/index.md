@@ -1,4 +1,4 @@
-# Apollo 项目组 · 角色名录与启动协议（唯一真相）
+# ZeroCraft 项目组 · 角色名录与启动协议（唯一真相）
 
 > 2026-07-03 立（owner 拍板：session 角色正规化）· 主程维护。
 > **启动协议**：owner 开新 session 时宣告「**角色=X · 任务=Y**」→ session 第一步读本文件找到角色卡照办（T0 必读自动叠加：CLAUDE.md 注入 + 宪法 + llm-onboarding）。未宣告角色 = 通用 session，按 CLAUDE.md 通例。

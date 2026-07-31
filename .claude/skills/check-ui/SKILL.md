@@ -1,10 +1,10 @@
 ---
 name: check-ui
-description: Apollo 2D UI 自检仪式。做完/改完任何 LayoutNode UI（HUD/菜单/面板/VN chrome）后、交付前跑它——过防重叠/对比度/透明度/布局卫生四关 + validateLayoutNode 零 issue + ui-audit 归零。凡碰 src/ui/components 的 LayoutNode、game UI 屏、HUD → 交付前用它自检。
+description: ZeroCraft 2D UI 自检仪式。做完/改完任何 LayoutNode UI（HUD/菜单/面板/VN chrome）后、交付前跑它——过防重叠/对比度/透明度/布局卫生四关 + validateLayoutNode 零 issue + ui-audit 归零。凡碰 src/ui/components 的 LayoutNode、game UI 屏、HUD → 交付前用它自检。
 when_to_use: 建或改任何 2D 数据驱动 UI 之后、宣布完成之前。防「重叠 / 糊字 / 透穿」这类 schema 挡不住但仍是坏 UI 的问题——靠工具量，不等 owner 挑错。
 ---
 
-# Apollo 2D UI 自检仪式
+# ZeroCraft 2D UI 自检仪式
 
 **完整手册（权威·先读对应段落，别复述记忆）**：`docs/design/ui-playbook.md`。本 skill = 它的可执行摘要 + 收尾门禁。最高纲领 `docs/design/data-driven-manifesto.md`：UI 也是数据；控件是闭集词汇；写世界靠 `action` 信号，handler 里绝不塞自由逻辑/CSS/DOM。
 

@@ -1,6 +1,6 @@
-# Steam Publisher — Apollo 一键傻瓜发布
+# Steam Publisher — ZeroCraft 一键傻瓜发布
 
-把 Apollo 的 Electron 游戏经 **SteamPipe（steamcmd）** 推上 Steam。纯 Python 标准库 + 网页界面，独立目录，不碰引擎/游戏代码。
+把 ZeroCraft 的 Electron 游戏经 **SteamPipe（steamcmd）** 推上 Steam。纯 Python 标准库 + 网页界面，独立目录，不碰引擎/游戏代码。
 
 ```
 python3 serve.py        # 浏览器自动开 http://127.0.0.1:8799

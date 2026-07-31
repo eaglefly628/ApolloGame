@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
-// Apollo Kit 基座 + 分层贴图底 / UV 滚动能力（owner 2026-06-25：把 game-f 的 Cloud Design 皮升格引擎基座）。
+// ZeroCraft Kit 基座 + 分层贴图底 / UV 滚动能力（owner 2026-06-25：把 game-f 的 Cloud Design 皮升格引擎基座）。
 //   · UITheme.texture/wash → renderScreen 合成「wash , texture , 底色」三层（无则纯底色·老主题零变化）。
 //   · Screen/Panel.bgScroll → mountUI 注入逐元素滚动关键帧（滚动 UI 特效）。
-//   · apolloOnyx/apolloBrocade = 从 Apollo UI Kit 交底映射出的真 UITheme（玄铁/锦霞双皮）。
+//   · apolloOnyx/apolloBrocade = 从 ZeroCraft UI Kit 交底映射出的真 UITheme（玄铁/锦霞双皮）。
 import { describe, it, expect } from 'vitest';
 import { renderNode, mountUI, apolloOnyx, apolloBrocade } from './index.js';
 import { SHELL } from '../shell-theme.js';
@@ -91,7 +91,7 @@ describe('UI Components · bgTexture 图片贴图层（平铺·Screen/Panel·三
   });
 });
 
-describe('UI Components · Apollo Kit 双皮主题（玄铁 onyx / 锦霞 brocade）', () => {
+describe('UI Components · ZeroCraft Kit 双皮主题（玄铁 onyx / 锦霞 brocade）', () => {
   it('apolloOnyx：暗墨蓝底 + 程序化交叉纹 texture + 熔岩橙主色', () => {
     expect(apolloOnyx.texture).toContain('repeating-linear-gradient');
     expect(apolloOnyx.wash).toContain('radial-gradient');

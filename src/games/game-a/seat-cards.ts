@@ -11,7 +11,7 @@ import {
   toSeatCard,
   isCardUsable,
   type PlatformCharacterDraft,
-  type ApolloCharacterCard,
+  type ZeroCraftCharacterCard,
   type SeatCard,
 } from '../../services/character-card/index.js';
 import { SEATS } from './rules.js';
@@ -74,8 +74,8 @@ export interface GameASessionIn {
  * 每席：优先取 sessionIn 提供的平台草稿，否则用内置默认；经 service 收敛（必开成年硬闸）——
  * 平台卡可用则用之，不可用（如成年闸未过）则**回退内置默认卡**（默认卡恒可用）。
  */
-export function resolveSeatCards(sessionIn?: GameASessionIn): Record<SeatId, ApolloCharacterCard> {
-  const out = {} as Record<SeatId, ApolloCharacterCard>;
+export function resolveSeatCards(sessionIn?: GameASessionIn): Record<SeatId, ZeroCraftCharacterCard> {
+  const out = {} as Record<SeatId, ZeroCraftCharacterCard>;
   for (const id of SEAT_IDS) {
     const draft = sessionIn?.seats?.[id] ?? DEFAULT_SEAT_DRAFTS[id];
     const res = normalizeCharacterCard(draft, {
@@ -94,7 +94,7 @@ export function resolveSeatCards(sessionIn?: GameASessionIn): Record<SeatId, Apo
 }
 
 /** v1 席位投影 {id,name,avatar?}（游戏侧填铭牌/头像·既有 hud 零改动契约）。 */
-export function seatDisplay(card: ApolloCharacterCard): SeatCard {
+export function seatDisplay(card: ZeroCraftCharacterCard): SeatCard {
   return toSeatCard(card);
 }
 
@@ -115,7 +115,7 @@ export const SEAT_PORTRAIT_SLOT: Partial<Record<SeatId, string>> = {
  *   ③ 都无 → undefined（"空的话就不画"·Avatar 组件退首字铭牌·永不裂图）。
  * artOverride 读 mount 期 loadArtOverrides 已填的覆盖注册表（异步就绪→re-render 时命中）。
  */
-export function seatPortrait(seatId: SeatId, card: ApolloCharacterCard): string | undefined {
+export function seatPortrait(seatId: SeatId, card: ZeroCraftCharacterCard): string | undefined {
   const passedIn = toSeatCard(card).avatar; // 平台卡头像（默认卡无媒体=undefined）
   if (passedIn) return passedIn;
   const slot = SEAT_PORTRAIT_SLOT[seatId];
@@ -126,7 +126,7 @@ export function seatPortrait(seatId: SeatId, card: ApolloCharacterCard): string 
  * 人设展示行（席位闲时问候气泡）：取 opening，退 catchphrases[0]，再退空串。
  * **截断到 max 字**（超出裁 max 字 + '…'）——卡文本=外部不可信输入·防超长撑破 UI（红线）。
  */
-export function seatFlavor(card: ApolloCharacterCard, max = 24): string {
+export function seatFlavor(card: ZeroCraftCharacterCard, max = 24): string {
   const line = card.persona.opening ?? card.persona.catchphrases[0] ?? '';
   return line.length > max ? line.slice(0, max) + '…' : line;
 }
@@ -151,7 +151,7 @@ export interface SeatSessionOut {
  * 纯确定性：迭代 SEAT_IDS 恒定顺序。
  */
 export function buildSessionOut(
-  cards: Record<SeatId, ApolloCharacterCard>,
+  cards: Record<SeatId, ZeroCraftCharacterCard>,
   outcomes: Record<SeatId, SeatOutcome>,
 ): Record<string, SeatSessionOut> {
   const out: Record<string, SeatSessionOut> = {};

@@ -3,10 +3,10 @@
 //  scripts/bench-manifest.mjs —— 单卡带体检薄 CLI（创作台 v1 · M4「🩺 体检」后端）
 //
 //  用法：cat game.json | npx vite-node scripts/bench-manifest.mjs
-//        （stdin 读规范 manifest JSON → parseManifest → 跑引擎真 ApolloBench 五轴体检 →
+//        （stdin 读规范 manifest JSON → parseManifest → 跑引擎真 ZeroCraftBench 五轴体检 →
 //         stdout 输出 { score, pass, threshold, axes, spatial, evolves } JSON）
 //
-//  为何是 CLI + 引擎真体检：与 manifest-check.mjs 同一形态——复用 src/bench/apollo-bench.ts 的
+//  为何是 CLI + 引擎真体检：与 manifest-check.mjs 同一形态——复用 src/bench/zerocraft-bench.ts 的
 //  benchBlueprint（120 tick 跑真引擎，五轴 Structure/Load/Determinism/Numeric/Visual），绝不另写
 //  一份"够用"的评分（那会漂移）。apollo.py 的 POST /api/library/<slug>/bench 起本 CLI 子进程透传结果。
 //
@@ -18,7 +18,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { parseManifest } from '../src/assembly/manifest.ts';
-import { benchBlueprint, BENCH_PASS_THRESHOLD } from '../src/bench/apollo-bench.ts';
+import { benchBlueprint, BENCH_PASS_THRESHOLD } from '../src/bench/zerocraft-bench.ts';
 
 function readStdin() {
   return new Promise((resolve, reject) => {

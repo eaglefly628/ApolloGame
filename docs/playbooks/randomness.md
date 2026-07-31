@@ -1,6 +1,6 @@
 # 随机与确定性手册
 
-> 全员必读（最短一本）。铁律：**游戏层一切随机走引擎种子 PRNG，绝不裸 `Math.random`**——它破坏 lockstep / 录放 / ApolloBench 双跑同 hash。
+> 全员必读（最短一本）。铁律：**游戏层一切随机走引擎种子 PRNG，绝不裸 `Math.random`**——它破坏 lockstep / 录放 / ZeroCraftBench 双跑同 hash。
 > 机读真相：`RandomSeed` 组件（`src/assembly/component-map.ts`）+ 取数函数（`src/skills/atoms/random/index.ts`）。
 
 ## ① 做 X → 用什么

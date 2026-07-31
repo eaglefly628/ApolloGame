@@ -44,7 +44,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'center', type: 'boolean', describe: '垂直水平居中子项' },
       { name: 'bgScroll', type: 'object', describe: 'UV 背景滚动 {x,y,ms}' },
     ],
-    sample: { type: 'Screen', id: 's-screen', props: { center: true }, children: [{ type: 'Label', id: 's-screen-t', props: { text: 'Hello Apollo', size: 'xl', color: 'gold', bold: true } }] },
+    sample: { type: 'Screen', id: 's-screen', props: { center: true }, children: [{ type: 'Label', id: 's-screen-t', props: { text: 'Hello ZeroCraft', size: 'xl', color: 'gold', bold: true } }] },
   },
   {
     type: 'Panel', summary: '容器（边框/底/圆角）或无框布局组（bare）', whenToUse: '分组/卡片/侧栏/牌桌；row/column/grid 布局都靠它。只做布局分组用 bare 避免层层框。', children: 'optional',

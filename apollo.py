@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Apollo dev/workshop 服务入口（薄壳）。
+"""ZeroCraft dev/workshop 服务入口（薄壳）。
 
 实体代码已按功能拆进 main_entry/ 包；本文件只做两件事：
 ① 把 main_entry 各模块聚合成 `import apollo` 的公共命名空间（读=聚合复制·写=按名路由到
    属主模块，保住 smoke 对 apollo.API_PORT/_MOCK_*/_CONFIG_CACHE 的赋值语义）；
 ② `python3 apollo.py [命令]` 时跑 main()。
 
-原壳职责（保留说明）：Apollo Engine Launcher —— Python 入口，同时启动 ① Vite 开发服务器（前端）
+原壳职责（保留说明）：ZeroCraft Engine Launcher —— Python 入口，同时启动 ① Vite 开发服务器（前端）
 ② API 服务器（工具命令后端）。用法：python3 apollo.py [命令]。
 """
 import sys, types
@@ -37,7 +37,7 @@ _WRITE_THROUGH = {
 }
 
 
-class _ApolloShim(types.ModuleType):
+class _ZeroCraftShim(types.ModuleType):
     def __getattr__(self, name):  # 仅在 __dict__ 未命中时触发
         tgt = _WRITE_THROUGH.get(name)
         if tgt is not None:
@@ -52,7 +52,7 @@ class _ApolloShim(types.ModuleType):
             super().__setattr__(name, value)
 
 
-_shim = _ApolloShim(__name__)
+_shim = _ZeroCraftShim(__name__)
 _shim.__dict__.update({'__file__': __file__, '__doc__': __doc__})
 # 聚合读命名空间：复制各模块公共名（写穿透名除外——它们走 __getattr__ 取活值）。
 for _m in _MODULES:

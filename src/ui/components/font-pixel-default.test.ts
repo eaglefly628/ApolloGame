@@ -1,4 +1,4 @@
-// REQ-UI-fontPixel令牌（PI 同步·2026-06-27）：默认主题(SHELL)/Apollo 基座补 fontPixel 令牌，
+// REQ-UI-fontPixel令牌（PI 同步·2026-06-27）：默认主题(SHELL)/ZeroCraft 基座补 fontPixel 令牌，
 // 让 Label.font:'pixel' 真生效，不再静默 fallback 成 sans-serif fontUi（像素字体槽形同虚设的洞）。
 import { describe, it, expect } from 'vitest';
 import { renderNode } from './index.js';

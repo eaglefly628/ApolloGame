@@ -74,9 +74,9 @@
 
 ---
 
-## 三、数据映射：自走棋机制 → Apollo 现有能力（复用清单）
+## 三、数据映射：自走棋机制 → ZeroCraft 现有能力（复用清单）
 
-| 自走棋机制 | Apollo 能力（现成） | 形态 | 证据/备注 |
+| 自走棋机制 | ZeroCraft 能力（现成） | 形态 | 证据/备注 |
 |---|---|---|---|
 | 英雄个体 | `Prefab`（Tag+Resource+Perception+Steering+EventWhen+Caster 组装） | 数据 | = Game D `enemy()` 的超集 |
 | 阵营 / 势力 / 职业 | `Tag.flags` 位掩码（队伍\|势力\|职业 全 OR 进一个 32 位字段） | 数据 | hitbox.targetMask / aggro.targetTag 已消费 Tag |

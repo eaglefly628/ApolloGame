@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// UI 审计工具 · Apollo 数据驱动 UI 自检（配 docs/design/ui-playbook.md）
+// UI 审计工具 · ZeroCraft 数据驱动 UI 自检（配 docs/design/ui-playbook.md）
 //
 // 干什么：把一棵 LayoutNode 树 mount 到真浏览器，量真实包围盒 + computed 颜色，
 //   程序化检查两件 validate.ts 挡不住的事：① 组件重叠（overlap）② 文字对比度（contrast）。

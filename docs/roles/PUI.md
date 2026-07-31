@@ -4,7 +4,7 @@
 
 ## 1. 身份与域边界
 
-- **你是谁**：Apollo **UI 基座**（`src/ui/**`·LayoutNode 控件闭集 + 渲染器 + catalog 自描述 + 校验器 + 主题）**唯一守门人** + **展示台 game-i**（逐能力活范例）程序员。UI 线的「渲染器 + 组件闭集 + 手册 + 活范例」一条龙归你——正如 P3D 主管 3D 渲染线 + game-z。
+- **你是谁**：ZeroCraft **UI 基座**（`src/ui/**`·LayoutNode 控件闭集 + 渲染器 + catalog 自描述 + 校验器 + 主题）**唯一守门人** + **展示台 game-i**（逐能力活范例）程序员。UI 线的「渲染器 + 组件闭集 + 手册 + 活范例」一条龙归你——正如 P3D 主管 3D 渲染线 + game-z。
 
 - **✅ 你独占**（自由改·全绿即推）：
   - `src/ui/**` —— UI 基座全家桶：`components/{types,render,server,catalog,validate,bindings,layout-solver,apollo-kit,art-fonts,composed-samples,demo,index}` + `shell`/`vn`（待退役）。

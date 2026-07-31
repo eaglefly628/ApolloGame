@@ -1,6 +1,6 @@
 # 骰途 · Cloud Design 1:1 参考代码（Three.js r128）
 
-owner 上传的**原型 1:1 TS 参考**。**用途：参考效果与精确数值，NOT 抄代码**——用 Apollo 引擎的 render-only 数据组件（Mesh3D/Transform3D/Glow3D/Material3D/Vfx3D…）+ 游戏层时间驱动（`engine.subscribe` 里改 render-only 分量，同 title 骰自转先例）复刻同款效果。**表达不了的 → 记在这里、告知 owner、按需下沉成通用 capability（P3D 域·render-only）。**
+owner 上传的**原型 1:1 TS 参考**。**用途：参考效果与精确数值，NOT 抄代码**——用 ZeroCraft 引擎的 render-only 数据组件（Mesh3D/Transform3D/Glow3D/Material3D/Vfx3D…）+ 游戏层时间驱动（`engine.subscribe` 里改 render-only 分量，同 title 骰自转先例）复刻同款效果。**表达不了的 → 记在这里、告知 owner、按需下沉成通用 capability（P3D 域·render-only）。**
 
 | # | 文件 | 效果 | 我方可行性 |
 |---|------|------|-----------|

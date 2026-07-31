@@ -1,16 +1,16 @@
 ---
 name: resource-manager
 description: >-
-  Apollo 引擎「资源管理 Agent」技能——管理美术/3D 资产走统一 Asset 数据路线。用于：①从共享资产库
+  ZeroCraft 引擎「资源管理 Agent」技能——管理美术/3D 资产走统一 Asset 数据路线。用于：①从共享资产库
   vendor（copy）一个资源进某游戏的本地美术目录并登记本地索引；②给游戏新增/编辑材质数据资产
   （type:'material'·引 texture key·非硬编码预设）；③给贴图/网格条目正确填 spec 闭集元数据
   （usage/colorSpace/wrap/genCollision）。凡涉及「引擎资产库、资源目录、材质、真实贴图导入、
   把共享库素材搬进游戏本地目录」的活，用此技能。
 ---
 
-# 资源管理 Agent 技能（Apollo · REQ-Resource ④⑤）
+# 资源管理 Agent 技能（ZeroCraft · REQ-Resource ④⑤）
 
-Apollo 是**数据驱动 + lockstep 确定性** ECS 引擎。资产（贴图/模型/材质）是 **render-only 表现层**——
+ZeroCraft 是**数据驱动 + lockstep 确定性** ECS 引擎。资产（贴图/模型/材质）是 **render-only 表现层**——
 sim 只持字符串 key（可哈希、可回滚），真实字节/材质只在资产层，怎么变都不威胁确定性。
 
 **动手前必读**：`docs/design/data-driven-manifesto.md`（宪法）+ `docs/design/asset-pipeline-review.md`（资产管线 review）。

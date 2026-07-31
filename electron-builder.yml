@@ -1,7 +1,7 @@
 appId: com.apollo.gameg
 electronVersion: "33.0.0"
 productName: FateflipPoker
-copyright: "Copyright © 2025 Apollo Game Studio"
+copyright: "Copyright © 2025 ZeroCraft Game Studio"
 
 # Only ship the Electron main + preload + Steam 绑定 + the pre-built web bundle; nothing else.
 files:

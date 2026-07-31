@@ -7,7 +7,7 @@
 
 ## ① 平台字段 → 规范卡映射
 
-| 平台 CharacterDraft | 规范卡 ApolloCharacterCard | 说明 |
+| 平台 CharacterDraft | 规范卡 ZeroCraftCharacterCard | 说明 |
 |---|---|---|
 | name | name（trim·空=error·不可用） | 显示名 |
 | id | id（`opts.id > draft.id > name`） | 回退到 name 记 warn |

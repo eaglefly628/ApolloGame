@@ -6,7 +6,7 @@
 
 - 游戏 AI 不是机器学习 — 是**手写规则让 NPC 看起来聪明**。
 - 三种主流方案：有限状态机（FSM）、行为树（BT）、目标导向行动规划（GOAP）。
-- Apollo 的 State 组件支撑 FSM；复杂 AI 可扩展为 BT 或 GOAP。
+- ZeroCraft 的 State 组件支撑 FSM；复杂 AI 可扩展为 BT 或 GOAP。
 
 ## FSM（有限状态机）
 
@@ -20,7 +20,7 @@
 - 树形结构：Selector（选一个能跑的）、Sequence（按顺序全跑）、Leaf（具体行动）。
 - 比 FSM 更好组合和复用 — 子树可以插拔。
 - 适合：中等复杂度 AI（10-30 种行为的 NPC）。
-- Apollo 当前不内置 BT，但可以用 State + 自定义 System 模拟。
+- ZeroCraft 当前不内置 BT，但可以用 State + 自定义 System 模拟。
 
 ## GOAP（目标导向行动规划）
 

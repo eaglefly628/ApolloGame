@@ -1,4 +1,4 @@
-# Apollo v6 — 跨引擎交叉验证报告
+# ZeroCraft v6 — 跨引擎交叉验证报告
 
 > 四引擎（Bevy / Unity DOTS / Godot / Phaser）实证研究 × Claude 推演 × Gemini 审核
 > 三方交叉验证，产出最终原子表。
@@ -9,7 +9,7 @@
 
 ### 我们的 v5 原子 vs 四大引擎
 
-| Apollo v5 原子 | Bevy | Unity DOTS | Godot 4 | Phaser 3 | 验证结论 |
+| ZeroCraft v5 原子 | Bevy | Unity DOTS | Godot 4 | Phaser 3 | 验证结论 |
 |---------------|------|------------|---------|----------|---------|
 | **A1 transform** | `Transform { translation, rotation, scale }` | `LocalTransform { Position, Rotation, Scale }` | `Node2D.position/rotation/scale` | `GameObject.x/y/angle/scale` | **全票通过** — 所有引擎都是单一组件 |
 | **A2 hierarchy** | `ChildOf(Entity)` + `Children` | `Parent { Value }` + `Child` buffer | `Node.get_parent()` + children | `Container.list` | **全票通过** — 全部独立于 Transform |

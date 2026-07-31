@@ -30,7 +30,7 @@ lerp(a, b, t) = a + (b - a) * t    // t ∈ [0, 1]
 
 - 用途：平滑移动（相机跟随）、颜色渐变、音量过渡。
 - t 不 clamp 会超调 — 除非故意要弹性效果。
-- 帧率无关 lerp：`value = lerp(value, target, 1 - Math.pow(smoothing, dt))`。Apollo 用固定 tick 所以直接用常量 t 即可。
+- 帧率无关 lerp：`value = lerp(value, target, 1 - Math.pow(smoothing, dt))`。ZeroCraft 用固定 tick 所以直接用常量 t 即可。
 
 ## 缓动函数（Easing）
 
@@ -84,7 +84,7 @@ remap(value, inMin, inMax, outMin, outMax) = outMin + (value-inMin)/(inMax-inMin
 
 ## 确定性随机
 
-- Apollo 用 RandomSeed 组件的 PRNG，不用 Math.random()。
+- ZeroCraft 用 RandomSeed 组件的 PRNG，不用 Math.random()。
 - 常用算法：xorshift32、mulberry32 — 简单快速，周期足够。
 - 随机范围：`min + (prng() % (max - min + 1))`（整数），`min + prng01() * (max - min)`（浮点）。
 - 洗牌：Fisher-Yates，用 PRNG 而非 Math.random。
@@ -106,4 +106,4 @@ remap(value, inMin, inMax, outMin, outMax) = outMin + (value-inMin)/(inMax-inMin
 
 - *Game Programming Patterns* — lerp 和缓动在游戏中的应用
 - easings.net — 所有标准缓动函数的可视化和公式
-- Apollo src/atom-skills/random/index.ts — 当前 PRNG 实现
+- ZeroCraft src/atom-skills/random/index.ts — 当前 PRNG 实现

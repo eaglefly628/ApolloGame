@@ -85,7 +85,7 @@ query(...types) {
 1. 实施 A（World 内部，~1 文件）。
 2. **回归**：全量 vitest 必须逐条绿（顺序保持 → 行为不变是设计目标）。
 3. **确定性**：跑 `coop-cards`/`net` lockstep 测，双 peer hash 不变。
-4. **微基准**：建一个 E=5000 实体世界，对比 query 前后 tick 耗时（ApolloBench 加一项或独立 bench）。
+4. **微基准**：建一个 E=5000 实体世界，对比 query 前后 tick 耗时（ZeroCraftBench 加一项或独立 bench）。
 5. 索引一致性单测：add/remove/destroy 后 query 结果 == 朴素全扫结果（对拍）。
 
 ## 7. 风险

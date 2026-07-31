@@ -1,6 +1,6 @@
 // Game I · 组合压力测试：MMO（魔兽世界风）HUD —— 纯 LayoutNode 数据复现一套最复杂的实时 HUD。
 //
-// 论点（数据驱动宣言）：不写一行手搭 React/自由 CSS，只用 Apollo Kit 现有控件「重组」，
+// 论点（数据驱动宣言）：不写一行手搭 React/自由 CSS，只用 ZeroCraft Kit 现有控件「重组」，
 // 就能拼出 WoW 那种「单位框 + 动作条 + 小地图 + 施法条 + 任务追踪 + 聊天 + 经验条 + Buff 栏」级别的复杂 HUD。
 // 全是绝对定位 Panel(x/y) 叠层 + ProgressBar/Avatar/Badge/Tag/Table/Tabs/Label + layout.fx 质感。
 // 任何一处「现有控件真表达不了」的，才记 requests.md 当缺口——本页全程零新控件、零逃生 React。

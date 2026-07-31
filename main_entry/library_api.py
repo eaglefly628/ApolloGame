@@ -157,7 +157,7 @@ def library_rollback(slug: str, body: dict) -> tuple:
     return (200, {'success': True, 'slug': slug, 'rev': rev, 'mode': 'snapshot'})
 
 def _run_bench(manifest: dict) -> tuple:
-    """跑 scripts/bench-manifest.mjs 子进程（vite-node·引擎真 ApolloBench 五轴）。返回 (ok, data|error)。"""
+    """跑 scripts/bench-manifest.mjs 子进程（vite-node·引擎真 ZeroCraftBench 五轴）。返回 (ok, data|error)。"""
     proc = subprocess.run(
         **_spawn(['npx', 'vite-node', 'scripts/bench-manifest.mjs']),
         cwd=ROOT, input=json.dumps(manifest, ensure_ascii=False),

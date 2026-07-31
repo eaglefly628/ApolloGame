@@ -2,7 +2,7 @@
 
 > **来源**: https://github.com/Donchitos/Claude-Code-Game-Studios
 > **源料入库**: `docs/ref/CCGS Skill Testing Framework/`（owner 2026-07-04 投放·自包含·勿入任何 onboarding 阅读路径）
-> **用途**: 作为 Apollo Engine 开发流程的技术参考，取其精华
+> **用途**: 作为 ZeroCraft Engine 开发流程的技术参考，取其精华
 > **§一~五**=2026-06-05 首轮分析（行动项现状注记见 §五头）；**§六~七**=2026-07-04 全量清单对照 + 测试框架裁决。
 
 ---
@@ -19,7 +19,7 @@
 
 ---
 
-## 二、值得 Apollo 借鉴的模式
+## 二、值得 ZeroCraft 借鉴的模式
 
 ### 1. Hook 驱动的质量门禁
 
@@ -36,7 +36,7 @@
 | PostCompact | `post-compact.sh` | 压缩后恢复/校验 |
 | Stop | `session-stop.sh` | session 结束时清理 |
 
-**Apollo 可借鉴**: 我们目前没有 hook。可以加：
+**ZeroCraft 可借鉴**: 我们目前没有 hook。可以加：
 - `validate-commit`: 确保 `tsc --noEmit` 和 `vitest run` 通过才能提交
 - `validate-assets`: 检查资产清单 `assets/index.json` 与实际文件一致
 - `session-start`: 自动输出当前项目状态（分支、测试、待办）
@@ -60,7 +60,7 @@
 └── prototype-code.md   → 原型代码（允许放宽标准）
 ```
 
-**Apollo 可借鉴**: 我们可以为不同目录设定规则：
+**ZeroCraft 可借鉴**: 我们可以为不同目录设定规则：
 - `src/skills/atoms/` — 每个原子必须有 defineCapability、必须有 test
 - `src/assembly/` — 只允许纯数据（JSON 蓝图），不允许逻辑代码
 - `docs/game-design/` — 文档格式模板
@@ -83,7 +83,7 @@ Tier 3 — 专员（Sonnet/Haiku）
   职责：具体实现、编写测试、修 bug
 ```
 
-**Apollo 可借鉴**: 我们多 session 并行开发时（用户 + PB + 我），可以参考这个分层：
+**ZeroCraft 可借鉴**: 我们多 session 并行开发时（用户 + PB + 我），可以参考这个分层：
 - 用户 = Producer（决定做什么、优先级）
 - 主程 Session = Lead Programmer（架构、代码审查）
 - 专项 Session = Specialist（具体功能实现）
@@ -99,7 +99,7 @@ Tier 3 — 专员（Sonnet/Haiku）
 **发布阶段**: `/release-checklist` `/launch-checklist` `/changelog` `/patch-notes`
 **运维阶段**: `/tech-debt` `/perf-profile` `/security-audit`
 
-**Apollo 可借鉴**: 我们可以建立自己的 slash command 体系：
+**ZeroCraft 可借鉴**: 我们可以建立自己的 slash command 体系：
 - `/apollo-status` — 项目状态一览
 - `/apollo-atom-new` — 创建新原子的脚手架
 - `/apollo-blueprint-validate` — 校验蓝图 JSON
@@ -124,13 +124,13 @@ Tier 3 — 专员（Sonnet/Haiku）
 - Configuration from data files, never hardcoded
 ```
 
-**Apollo 对应**: 我们的数据驱动第一性原则（`docs/design/data-driven-manifesto.md`）就是类似的约束。可以更具体化为 rule 文件。
+**ZeroCraft 对应**: 我们的数据驱动第一性原则（`docs/design/data-driven-manifesto.md`）就是类似的约束。可以更具体化为 rule 文件。
 
 ---
 
 ## 三、他们有但我们不需要的
 
-| 他们的设计 | 为什么 Apollo 不需要 |
+| 他们的设计 | 为什么 ZeroCraft 不需要 |
 |-----------|---------------------|
 | 多引擎支持（Godot/Unity/UE） | 我们是自研引擎，不需要适配第三方 |
 | 49 个 Agent 分工 | 我们团队小（2-3 session），过度分工反而慢 |
@@ -141,7 +141,7 @@ Tier 3 — 专员（Sonnet/Haiku）
 
 ## 四、他们没有但我们有的
 
-| Apollo 独有 | 意义 |
+| ZeroCraft 独有 | 意义 |
 |------------|------|
 | ECS 原子架构（26 atoms） | 比传统 OOP 更适合 AI 组装 |
 | Assembly 蓝图（纯 JSON） | 他们的游戏还是代码，我们的游戏是数据 |
@@ -152,7 +152,7 @@ Tier 3 — 专员（Sonnet/Haiku）
 
 ---
 
-## 五、建议的 Apollo 行动项
+## 五、建议的 ZeroCraft 行动项
 
 > **现状注记（2026-07-04·主程）**：本节多数已兑现——hook 已配（UserPromptSubmit 复诵规则+手册铁律）、门禁=铁律（tsc/vitest/build 退出码）、session 模板=角色启动协议（`docs/roles/index.md`）、路径规则=CLAUDE.md 域边界、code-review=Lead 对抗性验收流。未做且不打算做：statusline（低价值）。
 
@@ -172,28 +172,28 @@ Tier 3 — 专员（Sonnet/Haiku）
 
 ---
 
-## 六、CCGS 全量 Skill/Agent 清单 × Apollo 对照（游戏工作室常用能力谱系）
+## 六、CCGS 全量 Skill/Agent 清单 × ZeroCraft 对照（游戏工作室常用能力谱系）
 
 > 源料 `docs/ref/CCGS Skill Testing Framework/catalog.yaml`（机读登记表·72 skill + 49 agent）。
-> 裁决口径：✅=Apollo 已覆盖（形态可以不同）· 🔶=真缺口/值得排队 · ❌=不适用（多因「他们的游戏是代码、我们的游戏是数据」）。
+> 裁决口径：✅=ZeroCraft 已覆盖（形态可以不同）· 🔶=真缺口/值得排队 · ❌=不适用（多因「他们的游戏是代码、我们的游戏是数据」）。
 
 ### Skills 72 个（9 类）
 
-| CCGS 类 | 成员 | Apollo 对应物 | 裁决 |
+| CCGS 类 | 成员 | ZeroCraft 对应物 | 裁决 |
 |---|---|---|---|
 | **gate** (1) | gate-check | 门禁铁律（tsc/vitest/build 退出码）+ UserPromptSubmit hook + `game-skill-audit` 红旗 | ✅ hook+铁律形态 |
 | **review** (3) | design-review · architecture-review · review-all-gdds | Lead 亲审 + requests.md 裁决流（回驳/下沉）+ capability-plan 过审门 | ✅ Lead=人形 review |
 | **readiness** (2) | story-readiness · story-done | capability-plan 未过审不动工 + 工单完成标 ✅ + 对抗性验收 | ✅ 按工单不按 story |
 | **pipeline** (6) | create-epics · create-stories · dev-story · create-control-manifest · propagate-design-change · map-systems | requests.md 派单+spec 图纸；map-systems≈`buildCapabilityCatalog()`；propagate-design-change≈机读真相铁律（指针优先·不手抄数字→变更无需"传播"） | ✅ 防漂移从根上消掉传播问题 |
 | **authoring** (7) | design-system · quick-design · architecture-decision · ux-design · ux-review · art-bible · create-architecture | GDD/capability-plan 模板；ux≈`ui-playbook`+`/check-ui`；architecture-decision≈评审报告存档 | 🔶 **art-bible（美术圣经）无**——资产风格一致性现靠 asset-index 元数据；PA 线资产量上来后补（排队·不急） |
-| **analysis** (12) | consistency-check · code-review · balance-check · asset-audit · content-audit · tech-debt · scope-check · estimate · perf-profile · security-audit · test-evidence-review · test-flakiness | balance-check≈`game-d-balance-sim.mjs`+`game-g/simulate-balance.ts`；perf-profile≈ApolloBench 五轴；consistency-check≈机读真相；tech-debt≈底座评审报告；asset-audit≈asset-index 单一真相；test-flakiness→确定性引擎天然免疫 | ✅ 核心已覆盖；scope-check/estimate=owner 直管不套仪式 |
+| **analysis** (12) | consistency-check · code-review · balance-check · asset-audit · content-audit · tech-debt · scope-check · estimate · perf-profile · security-audit · test-evidence-review · test-flakiness | balance-check≈`game-d-balance-sim.mjs`+`game-g/simulate-balance.ts`；perf-profile≈ZeroCraftBench 五轴；consistency-check≈机读真相；tech-debt≈底座评审报告；asset-audit≈asset-index 单一真相；test-flakiness→确定性引擎天然免疫 | ✅ 核心已覆盖；scope-check/estimate=owner 直管不套仪式 |
 | **sprint** (6) | sprint-plan · sprint-status · milestone-review · retrospective · changelog · patch-notes | 无 sprint 仪式（owner 直驱 + requests.md 池）；复盘=问责定性（只问手册哪没接住） | ❌ 团队形态不同；**changelog/patch-notes 留给 PS 发行期**（白皮书补全时收编） |
 | **team** (9) | team-combat · team-narrative · team-audio · team-level · team-ui · team-qa · team-release · team-polish · team-live-ops | ≈我们的 8 角色名录（combat→甲 · ui→PE+主程UI库 · level→GD · release→PS）；audio/narrative/qa/polish/live-ops 未设专职 | ✅ 角色体系对应；空缺角色到需求出现再立（YAGNI） |
 | **utility** (26) | skill-test · skill-improve · start · help · brainstorm · project-stage-detect · setup-engine · reverse-document · bug-report · hotfix · prototype · playtest-report · onboard · localize · launch-checklist · release-checklist · adopt · smoke-check · soak-test · test-setup · test-helpers · regression-suite · qa-plan · bug-triage · asset-spec · day-one-patch | onboard≈`llm-onboarding.md`；prototype≈创作台设计先行流；bug-report/triage≈requests.md BUG-单；smoke-check≈各 smoke/e2e 脚本；regression-suite≈vitest 全量；asset-spec≈asset-index spec 元数据 | ✅ 大半覆盖；🔶 **skill-test/skill-improve 见 §七**；launch/release-checklist 留 PS 白皮书；localize 未到阶段 |
 
 ### Agents 49 个（7 层）
 
-| CCGS 层 | 成员概要 | Apollo 对照 | 裁决 |
+| CCGS 层 | 成员概要 | ZeroCraft 对照 | 裁决 |
 |---|---|---|---|
 | director (4) | creative/technical/art-director · producer | owner（创意+制作人）+ LEAD（技术） | ✅ 人少即扁平 |
 | lead (7) | lead-programmer · qa-lead · narrative/audio-director · game/systems/level-designer | 角色名录 8 员（LEAD/GD/PE/P3D/PS/PA/PST/OPS） | ✅ `docs/roles/index.md` |
@@ -202,7 +202,7 @@ Tier 3 — 专员（Sonnet/Haiku）
 | qa (3) | security-engineer · accessibility-specialist · qa-tester | 无专职；确定性+全量测试兜底 | ❌ 现阶段 YAGNI；无障碍留 PS 上架清单 |
 | operations (7) | devops · release-manager · live-ops-designer · community-manager · analytics-engineer · economy-designer · localization-lead | release≈PS+game-publisher agent；economy-designer≈GD 数值案+sim | ✅/❌ 发行相关归 PS，运营类未到阶段 |
 
-**一句话结论**：CCGS 的 121 员编制里，Apollo 用「8 角色 + 派单制子代理 + 铁律/hook」覆盖了所有当前需要的位置；他们最大的成本项（15 个引擎适配专员 + sprint 仪式层）恰是数据驱动宪法从根上砍掉的。真缺口只有两个半：**art-bible（排队）**、**skill 自测框架（§七·采思想不采全套）**、changelog/patch-notes（半个·PS 发行期收编）。
+**一句话结论**：CCGS 的 121 员编制里，ZeroCraft 用「8 角色 + 派单制子代理 + 铁律/hook」覆盖了所有当前需要的位置；他们最大的成本项（15 个引擎适配专员 + sprint 仪式层）恰是数据驱动宪法从根上砍掉的。真缺口只有两个半：**art-bible（排队）**、**skill 自测框架（§七·采思想不采全套）**、changelog/patch-notes（半个·PS 发行期收编）。
 
 ---
 
@@ -214,7 +214,7 @@ Tier 3 — 专员（Sonnet/Haiku）
 - ✅ **思想采纳——"工作流零件也要可测"与我们已有实践同构**：capability 层已有 `registry-guard.test.ts`（漏注册即红）；手册层已有「手册对产出负全责·绕基座=手册缺陷」问责闭环。
 - 🔶 **轻量落地（排队·low 档活）**：给三层工作流件配"指针有效性守护"——角色卡/手册/白皮书里引用的**路径、脚本名、agent 名**用脚本核一遍（本次角色卡验收已人肉核过 58 处，该固化成 `scripts/docs-ref-guard.mjs` 进 vitest）。防的正是我们最大的病：口径漂移。
 - ❌ **不采全套**：为 2 个 .claude/skill + 2 个 agent 建 catalog.yaml + 行为 spec 体系=杀鸡用牛刀；我们的 skill 面小、且真相已机读（registry/roles/playbooks 三张索引就是 catalog）。等 skill 数量上两位数再议。
-- **修正（owner 2026-07-04 拍板「可直接 copy 的直接操作」）**：spec 模板骨架已移植（Apollo 化·`docs/qa/`），现有 4 零件（check-ui/resource-manager/asset-manager/game-publisher）各起一份行为 spec；**catalog 仍不建**（文件列表即清单）。
+- **修正（owner 2026-07-04 拍板「可直接 copy 的直接操作」）**：spec 模板骨架已移植（ZeroCraft 化·`docs/qa/`），现有 4 零件（check-ui/resource-manager/asset-manager/game-publisher）各起一份行为 spec；**catalog 仍不建**（文件列表即清单）。
 
 ---
 
@@ -225,7 +225,7 @@ owner 指示对测试准则与游戏生产规则做深度研究后，蒸馏已�
 | 沉淀物 | 去向 |
 |---|---|
 | 行业测试准则（四类目录法/五标准/覆盖映射/flakiness/证据分级/bug 流程） | `wiki/skills/testing.md`（新建） |
-| Apollo 测试接线 + 红线 + 验收纪律（偏差三分法/判词闭集/seed+tick 复现） | `docs/playbooks/testing.md`（新建·入 playbooks 索引） |
+| ZeroCraft 测试接线 + 红线 + 验收纪律（偏差三分法/判词闭集/seed+tick 复现） | `docs/playbooks/testing.md`（新建·入 playbooks 索引） |
 | 发行双清单（内门/外门/delta 落档/hotfix 不豁免技术门） | `docs/roles/whitepapers/ps-whitepaper.md` |
 | 工具强化三件（audit 分层判词 / bench p99+delta / 测试代码体检） | requests.md「REQ-QA-测试审计强化三件」（排队·Opus） |
 | 文档指针守护（skill 自测思想首件落地） | requests.md「REQ-DOCS-指针守护脚本」（排队·Opus） |

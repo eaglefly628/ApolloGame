@@ -1,7 +1,7 @@
 // 平台角色卡桥 · 类型契约（REQ-CHARCARD·三游戏共用·外部数据桥·纯确定性）。
 //
 // 网页平台的角色卡草稿 `PlatformCharacterDraft`（**平台真格式=唯一真相·媒体键全部平铺·无嵌套**）
-// 经 normalizeCharacterCard 收敛为引擎规范卡 `ApolloCharacterCard`。此层**不进 skills tier**——
+// 经 normalizeCharacterCard 收敛为引擎规范卡 `ZeroCraftCharacterCard`。此层**不进 skills tier**——
 // 外部平台数据 ≠ sim capability；与 profile/voice 同为 services 基础设施端口。
 //
 // 红线：DataUrl/媒体不进美术台账、不进 sim hash；卡文本=外部不可信输入（展示层自行长度截断）。
@@ -86,7 +86,7 @@ export interface CharacterPersona {
 }
 
 /** 引擎规范角色卡（三游戏共用·normalizeCharacterCard 的产物）。 */
-export interface ApolloCharacterCard {
+export interface ZeroCraftCharacterCard {
   /** 稳定 id（对账键·opts.id ?? draft.id ?? name 回退）。 */
   id: string;
   /** 显示名（空=坏卡·isCardUsable 为 false）。 */
@@ -124,7 +124,7 @@ export interface NormalizeOptions {
 
 /** normalizeCharacterCard 的返回（绝不 throw·永远给出 card + issues）。 */
 export interface NormalizeResult {
-  card: ApolloCharacterCard;
+  card: ZeroCraftCharacterCard;
   issues: CardIssue[];
 }
 

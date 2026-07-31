@@ -1,7 +1,7 @@
 # Agent 行为 Spec · asset-manager
 
 > 对象：`.claude/agents/asset-manager.md` · 类型：子代理 · 起卡日期：2026-07-04
-> 移植注：源自 CCGS agent-test-spec 骨架，Apollo 化（上交对象=Lead via requests.md / owner）。
+> 移植注：源自 CCGS agent-test-spec 骨架，ZeroCraft 化（上交对象=Lead via requests.md / owner）。
 
 ## Summary（三行必填）
 

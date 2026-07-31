@@ -58,4 +58,4 @@
 - 火焰纹章支援系统 — 关系值 + 阈值事件的经典实现
 - Persona 系列 — 周期结算 + 日程管理的标杆
 - 效用 AI (Dave Mark, GDC 2010) — 响应曲线用于情感决策
-- wiki/otome-capability-binding.json — Apollo 的乙游能力绑定规范
+- wiki/otome-capability-binding.json — ZeroCraft 的乙游能力绑定规范

@@ -35,7 +35,7 @@ describe('Game I · 组合·MMO HUD（纯数据复现 WoW 风 HUD）', () => {
     expect(all.filter((i) => /^au-\d|^pb-\d/.test(i) && /-/.test(i)).filter((i) => i.match(/^(au|pb)-\d$/)).length).toBe(8);
   });
 
-  it('只用闭集控件（无逃生）：仅 Apollo Kit ComponentType', () => {
+  it('只用闭集控件（无逃生）：仅 ZeroCraft Kit ComponentType', () => {
     const used = types(hud);
     const allowed = new Set(['Panel', 'Label', 'Avatar', 'ProgressBar', 'Badge', 'Image', 'Tabs', 'Input', 'Button', 'Divider']);
     for (const t of used) expect(allowed.has(t), `非预期控件 ${t}`).toBe(true);

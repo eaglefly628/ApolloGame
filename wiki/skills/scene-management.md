@@ -93,4 +93,4 @@ interface LevelConfig {
 
 - Unity SceneManager — 场景加载/卸载的行业标准 API 设计
 - Godot SceneTree — 场景栈 + 节点持久化的参考实现
-- Apollo runtime/engine.ts — 当前 start/stop/load 接口
+- ZeroCraft runtime/engine.ts — 当前 start/stop/load 接口

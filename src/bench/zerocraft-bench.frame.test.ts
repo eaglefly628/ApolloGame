@@ -5,11 +5,11 @@ import {
   measureFrameTime,
   FRAME_BUDGET_MS,
   type FrameTimePrior,
-} from './apollo-bench.js';
+} from './zerocraft-bench.js';
 import { BENCH_GAMES } from './games.js';
 
 // 帧时轴（REQ-QA-测试审计强化三件）——统计/判定/delta 用**合成数组**测，不依赖墙钟（可复现）。
-describe('ApolloBench 帧时轴 · p99/max 判定 + delta 回归', () => {
+describe('ZeroCraftBench 帧时轴 · p99/max 判定 + delta 回归', () => {
   it('全部帧在预算内 → PASS，无超标帧', () => {
     const times = Array.from({ length: 100 }, () => 0.5); // 全 0.5ms，远低于 16.67ms 预算
     const s = computeFrameStats('t', times);

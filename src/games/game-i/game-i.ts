@@ -85,7 +85,7 @@ export function mount(container: HTMLElement): () => void {
   const galleryHostCss = 'flex:1;min-width:0;overflow-y:auto;background:#06080d';
   galleryHost.style.cssText = galleryHostCss;
 
-  // 右栏事件日志：宿主只提供「固定宽·可滚」的挂载容器；内容 100% 走 Apollo Kit（mountUI + LayoutNode·见 buildLogPanel）。
+  // 右栏事件日志：宿主只提供「固定宽·可滚」的挂载容器；内容 100% 走 ZeroCraft Kit（mountUI + LayoutNode·见 buildLogPanel）。
   const logPane = document.createElement('aside');
   logPane.style.cssText = 'width:320px;flex-shrink:0;overflow-y:auto;background:#06080d';
   root.append(galleryHost, logPane);
@@ -101,7 +101,7 @@ export function mount(container: HTMLElement): () => void {
   const now = (): string =>
     new Date().toLocaleTimeString('zh-CN', { hour12: false });
 
-  // 事件日志面板（纯数据·Apollo Kit）：Panel + 每行一个 Label（spans 多段着色：时间·dim / 信号名·jade / 参数·text）。
+  // 事件日志面板（纯数据·ZeroCraft Kit）：Panel + 每行一个 Label（spans 多段着色：时间·dim / 信号名·jade / 参数·text）。
   // Label 内置 esc 防注入；换皮随 theme 令牌走。最新在上、封顶 200 行。
   const buildLogPanel = (): LayoutNode => ({
     type: 'Panel', id: 'log-panel', props: { title: '事件日志 · EVENT LOG', scroll: true },
@@ -322,7 +322,7 @@ export function mount(container: HTMLElement): () => void {
 
   // 挂载一次；之后改状态都走 ui.update 局部更新（只补丁变化的子树·不整树重挂·Tab/滚动/输入态不丢·无黑屏）。
   let ui = mountUI(galleryHost, buildTree(), handlers, theme());
-  logUi = mountUI(logPane, buildLogPanel(), {}, theme()); // 事件日志面板：纯 LayoutNode 走 Apollo Kit
+  logUi = mountUI(logPane, buildLogPanel(), {}, theme()); // 事件日志面板：纯 LayoutNode 走 ZeroCraft Kit
   bindInputPad(); // 初次挂载后绑捕获板监听
   syncStage();    // 初次挂载：若直接进 sim 模块则挂渲染器
   nudgeRepaint(); // 初次挂载
