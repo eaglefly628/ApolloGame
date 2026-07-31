@@ -2,8 +2,8 @@
   "version": 1,
   "game": "game-103",
   "mode": "requirements",
-  "count": 22,
-  "instances": 22,
+  "count": 23,
+  "instances": 23,
   "rows": [
     {
       "skinKey": "103/player",
@@ -736,7 +736,38 @@
       "prompt": "shockwave nova burst, radial cyan energy particles exploding outward, top-down 2d, isolated subject, transparent background"
     },
     {
-      "no": "art-97",
+      "no": "art-133",
+      "desc": "尾迹刃灼烧段",
+      "kind": "sprite",
+      "slot": {
+        "entity": "prefab:proj_trail:p",
+        "component": "Shape",
+        "field": "art"
+      },
+      "query": "尾迹刃灼烧段",
+      "placeholder": {
+        "current": "2D 色块（circle·#00e5ff）",
+        "source": "procedural",
+        "count": 1,
+        "instances": [
+          "prefab:proj_trail:p"
+        ]
+      },
+      "spec": {
+        "w": 30,
+        "h": 30,
+        "displayW": 30,
+        "displayH": 30,
+        "transparent": true
+      },
+      "context": "美术需求：尾迹刃灼烧段（程序化视觉·可换皮）·movement trail scorch segment, glowing cyan energy burn circle fading out, top-down 2d, isolated subject, transparent background",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "prompt": "movement trail scorch segment, glowing cyan energy burn circle fading out, top-down 2d, isolated subject, transparent background"
+    },
+    {
+      "no": "art-134",
       "kind": "bg",
       "skinKey": "103/field-bg",
       "slot": {

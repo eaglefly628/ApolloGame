@@ -97,6 +97,19 @@ function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, 
       Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power', consumeOnHit: true, ...HIT_ON }, // 单发命中·高伤
     } } };
   }
+  if (w.pattern === 'trail') {
+    // 尾迹段（发射器每 cd 在玩家当前位置落一枚·静态不动）：per-tick 穿透灼烧（不 consume·踩着就烧）+ Tween 渐隐=拖尾观感。
+    // 无 Velocity/Launch → 钉在落点；玩家移动=段沿路径散布=伤害尾迹；寿命内一直伤，寿命末回收。
+    return { entities: { p: {
+      Transform: { ...XF0 },
+      Sensor: {}, Tag: { flags: ZONE },
+      Shape: { kind: 'circle', radius: w.radius, category: CL.BULLET, mask: CL.ENEMY },
+      Color: { tint: w.tint, alpha: 0.72 },
+      Hitbox: { resource: 'hp', amount: w.dmg, targetMask: ENEMY, scaleByResource: 'power' }, // per-tick 穿透（不挂 onHit·per-tick 全触=刷屏·同 nova）
+      Timer: { id: 'life', elapsed: 0, duration: w.life, loop: false },
+      Tween: { type: 'Tween', target: 'Color.alpha', from: 0.72, to: 0, elapsed: 0, duration: w.life, easing: 'easeOut', done: false }, // 尾巴渐隐
+    } } };
+  }
   if (w.pattern === 'boomerang') {
     // 真回旋（两段·修 owner「没回旋回来」）：第①段 Launch 飞出(半寿命·穿透)，寿命末 SelfRule spawn <key>_return，
     // 第②段(<key>_return)从远处 Steering seek 玩家=飞回来。同帧 Launch+Steering 会抵消(飞出即被拉回)→故拆两段。

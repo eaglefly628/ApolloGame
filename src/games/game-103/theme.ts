@@ -64,7 +64,8 @@ export type FirePattern =
   | 'orbit'      // 环绕光球（旋转 hub + 环上光球 child·持续贴身伤）
   | 'pet'        // 宠物随从（跟随玩家的子体·自带 Timer+SelfRule 自动射）
   | 'bomb'       // 抛掷炸弹（飞向落点·寿命末 SelfRule spawn 爆炸 nova·大范围 AoE）
-  | 'homing';    // 追踪弹（Perception+Steering 锁敌·穿透·进化体质变）
+  | 'homing'     // 追踪弹（Perception+Steering 锁敌·穿透·进化体质变）
+  | 'trail';     // 移动尾迹（跟随玩家的发射器按 cd 在当前位置落静态灼烧段·走位画出伤害尾迹·movement=weapon）
 export interface WeaponDef {
   key: string;
   name: string;
@@ -99,6 +100,9 @@ export const WEAPONS: WeaponDef[] = [
   { key: 'bomb', name: '炸弹', desc: '抛掷炸弹·落点大爆炸·范围炸伤（AoE 清群）', pattern: 'bomb', dmg: 16, cd: 128, projSpeed: 6, life: 45, radius: 104, amount: 1, weight: 7, maxLevel: 5, tint: 0xffa53f, skin: '103/proj-bomb' },
   // 追踪导弹（homing·Perception+Steering 锁最近敌·慢速但拐弯咬人·单发高伤）。升级=多一枚（挂点重复=更多导弹）。
   { key: 'missile', name: '追踪导弹', desc: '锁定最近敌·拐弯追击·单发高伤（慢速追踪）', pattern: 'homing', dmg: 24, cd: 104, projSpeed: 3.2, life: 130, radius: 7, amount: 1, weight: 7, maxLevel: 5, tint: 0xff8fe0, skin: '103/proj-missile' },
+  // 移动尾迹刃（微创新·movement=weapon）：跟随发射器每 cd 在玩家当前位置落一段静态灼烧圈·寿命内 per-tick 穿透伤·渐隐。
+  // 走位越多=尾迹越长=杀得越多；站定=原地烧一摊。cd 小=尾迹密·life 长=尾巴长。
+  { key: 'trail', name: '尾迹刃', desc: '移动时身后拖出灼烧尾迹·走位即是刀（画圈套敌）', pattern: 'trail', dmg: 3, cd: 5, projSpeed: 0, life: 42, radius: 15, amount: 1, weight: 8, maxLevel: 5, tint: 0x00e5ff, skin: '103/proj-trail' },
   // ── 进化体（weight 0·不进 draft 池·由进化机制生成）──
   { key: 'orbitevo', name: '无限回环', desc: '常驻 5 枚光球·大环·灼烧翻倍（进化）', pattern: 'orbit', dmg: 1.1, cd: 0, projSpeed: 0.06, life: 0, radius: 96, amount: 5, weight: 0, maxLevel: 1, tint: 0x54e08a, skin: '103/proj-orbit' },
 ];
@@ -286,7 +290,7 @@ export interface UpgradeDef {
 // 升级卡图标集（emoji·同敌人 twemoji 图形语言）：武器按射法/形态、被动按效果轴——一眼认出这张卡是什么。
 export const DRAFT_ICON: Record<string, string> = {
   // 武器
-  kunai: '🔪', shock: '💥', laser: '⚡', boom: '🪃', orbit: '💫', pet: '🐺', bomb: '💣', missile: '🚀', orbitevo: '🌀',
+  kunai: '🔪', shock: '💥', laser: '⚡', boom: '🪃', orbit: '💫', pet: '🐺', bomb: '💣', missile: '🚀', orbitevo: '🌀', trail: '🐍',
   // 被动
   blade: '🗡️', crit: '🎯', heart: '❤️', vigor: '💗', swift: '👟', magnet: '🧲', fort: '🛡️', might: '💪',
 };

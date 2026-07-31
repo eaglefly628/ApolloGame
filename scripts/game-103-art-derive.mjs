@@ -27,6 +27,7 @@ const KEEP_VFX = [
   { re: /sparks_shock|proj_shock/, id: 'vfx:shock', name: '冲击波特效', desc: 'shockwave nova burst, radial cyan energy particles exploding outward, top-down 2d, isolated subject, transparent background', w: 120, h: 120 },
   { re: /explosion/, id: 'vfx:explosion', name: '炸弹爆炸特效', desc: 'bomb explosion blast, orange fireball ring, top-down 2d, isolated subject, transparent background', w: 208, h: 208 },
   { re: /hitfx/, id: 'vfx:hit-spark', name: '命中火花', desc: 'hit spark impact, tiny white-yellow flash burst, top-down 2d, isolated subject, transparent background', w: 12, h: 12 },
+  { re: /proj_trail/, id: 'vfx:trail', name: '尾迹刃灼烧段', desc: 'movement trail scorch segment, glowing cyan energy burn circle fading out, top-down 2d, isolated subject, transparent background', w: 30, h: 30 },
 ];
 const DROP_RE = /hpbar|:inner|-core\b|core$|glow|gridh-|gridv-|obstacle-cap|killbox|collector/;
 {

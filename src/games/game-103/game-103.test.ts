@@ -233,9 +233,13 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(countTag(e, WEAPON_BIT.orbitevo)).toBeGreaterThan(orbitBallsBefore); // 进化体球更多
   });
 
-  it('武器册全射法：每把武器都能被 draft 生成并射出（straight/nova/beam/boomerang/orbit/pet/bomb）', () => {
+  it('武器册全射法：每把武器都能被 draft 生成并射出（straight/nova/beam/boomerang/orbit/pet/bomb/trail）', () => {
     const hasBigNova = (e: Engine): boolean => { // nova/爆炸=无 sprite 画大圈：找 Hitbox 且 Shape 大半径
       for (const [id] of e.world.query('Hitbox', 'Shape')) { const s = e.world.getComponent(id, 'Shape') as unknown as { radius?: number }; if ((s.radius ?? 0) >= 80) return true; }
+      return false;
+    };
+    const hasTint = (e: Engine, tint: number): boolean => { // 尾迹=无 sprite 画小圈·靠独有色辨识
+      for (const [id] of e.world.query('Hitbox', 'Color')) { const c = e.world.getComponent(id, 'Color') as unknown as { tint?: number }; if (c?.tint === tint) return true; }
       return false;
     };
     for (const w of WEAPONS.filter((x) => x.key !== 'kunai')) {
@@ -245,7 +249,7 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
       // 逐拍推进·任一拍命中即算生效（nova/爆炸短命·跑完就消失·须过程中捕获）。
       const wantNova = w.pattern === 'nova' || w.pattern === 'bomb';
       let ok = false;
-      for (let i = 0; i < w.cd + w.life + 6 && !ok; i++) { step(e); ok = wantNova ? hasBigNova(e) : hasSprite(e, skinOf(w.key)); }
+      for (let i = 0; i < w.cd + w.life + 6 && !ok; i++) { step(e); ok = w.pattern === 'trail' ? hasTint(e, w.tint) : wantNova ? hasBigNova(e) : hasSprite(e, skinOf(w.key)); }
       expect(ok).toBe(true);
     }
   });
@@ -479,6 +483,28 @@ describe('game-103《幸存者核心原型》· M1 灰盒（数据驱动·零专
     expect(findText(buildHud({ ...base, toast: null }), 's-ach-t')).toBeNull();
     const t = findText(buildHud({ ...base, toast: { icon: '🔥', name: '小试锋芒 · 10 连杀' } }), 's-ach-t');
     expect(t).toContain('小试锋芒');
+  });
+
+  it('尾迹刃（微创新·movement=weapon）：移动时身后落静态灼烧段·沿路径散布成尾迹（非堆一点）', () => {
+    const e = fresh();
+    tickN(e, 3);
+    fireAction(e, 'pick_trail');
+    // 玩家持续向右走若干拍 → 尾迹段应沿路径落在不同 x（散布=尾迹），而非全叠一处。
+    const TRAIL = WEAPON_BY_KEY.trail.tint;
+    const xs = new Set<number>();
+    let t = 100;
+    for (let i = 0; i < 40; i++) {
+      applyCommands(e.world, [{ playerId: 'p1', tick: t++, move: { dx: 1, dy: 0 } }]); // 一直向右走
+      e.world.tick();
+      for (const [id] of e.world.query('Hitbox', 'Color', 'Transform')) {
+        const c = e.world.getComponent(id, 'Color') as unknown as { tint?: number };
+        if (c?.tint === TRAIL) { const tf = e.world.getComponent(id, 'Transform') as unknown as { x: number }; xs.add(Math.round(tf.x)); }
+      }
+    }
+    expect(xs.size).toBeGreaterThan(3); // 多个不同 x=尾迹沿路径散布（非静止堆叠）
+    // 尾迹段是静态的（无 Velocity）·per-tick 穿透伤（Hitbox 打敌）
+    const seg = WEAPON_BY_KEY.trail;
+    expect(seg.projSpeed).toBe(0);
   });
 
   it('本地排行榜（owner「死亡后排行榜+成绩一起展示·存本地」）：击杀排序·名次·截 MAX·结算屏渲染', () => {
