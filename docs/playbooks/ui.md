@@ -3,6 +3,23 @@
 > **本页是薄壳。做任何 UI 前先读 `docs/design/ui-playbook.md`**（黄金流程 + 防重叠/对比度/透明度/布局卫生四准则 + 自检清单——schema 之外的合理性靠它）。
 > **UI 铁律**：所有游戏 UI/HUD/菜单/面板/VN chrome **必须用 `LayoutNode` 数据描述**（控件=闭集 `ComponentType`；显示绑定=resourceId/StringVar id；写世界=`action` 信号名入队）。play-field 走 render 组件（rendering-fx.md）。本页只补**引擎接线**。
 
+## ⭐ 华丽起手（新游戏 UI 别从空白搭·华丽度=第一要素·owner 2026-07）
+
+> **症结**：`mountUI` 缺省 `SHELL`（引擎清冷 chrome）+ 组件默认态 = 朴素；华丽件全 opt-in，不去拿就碰不到 → 新游戏都长得素。**起手三步立富底子**（ui-playbook §0 同款·此处给货架明细）。
+
+**第一步 · 起手传 house 主题**（别从零写 UITheme）：
+
+| house 主题 | import | 观感 | 适合 |
+|---|---|---|---|
+| **`STARTER_THEME`**（=apollo-toon「水墨玩趣」） | `@ui/starters` | 亮宣纸底 + 糖果厚唇钮 + 墨字 + 远山淡墨背景（程序化零资产） | 休闲/解谜/合成/大众向（**起手默认推荐**） |
+| `apolloOnyx`「玄铁」 | `@ui/components/apollo-kit` | 暗金属底 + 钢蓝细纹 + 熔岩橙点睛 | 硬核/科幻/战斗/暗色 |
+| `apolloBrocade`「锦霞」 | `@ui/components/apollo-kit` | 暖白锦缎 + 金/胭脂波点 + 玫瑰点睛 | 宫廷/女性向/卡牌 |
+| 自写 `UITheme` | — | 任意 | **仅当有明确美术方向**·记债·经审（否则回退上面三选一） |
+
+**第二步 · 常见屏 import 起手包 `@ui/starters`**（`src/ui/starters/`）：`buildStarterHome({title,subtitle?,actions})` = 富主菜单（糖果钮列 + 衬线大标题 + 环境微光 + 主 CTA 悬停流光）；`buildStarterResult({stars,score,hasNext?})` = 富结算（星级 Rating + 撒纸屑 + 数字格式化大分）。传数据即得一屏华丽 UI，再按游戏改/加件。
+
+**第三步 · 逛橱窗挑成熟件**：按你游戏「有什么」拿对应成熟件（卡牌→`faceArt`/翻面 · 选关→`LevelPath` · 庆祝→`Particles`/`Float` · 主 CTA→`sheen-hover`+`Panel.skin` · 数值→`Label.format` · 异形→`shape` · 环进度→`ProgressBar.shape:ring` · 立体→3D UI · 质感底→`UITheme.texture/panelTexture`+`Panel.glass`）——**完整「有 X→用这件→game-i 段」货架表见 `docs/design/ui-playbook.md §0` 华丽起手**。拿成熟件仍走闭集数据（`action` 信号·非自由 DOM）；缺件→`requests.md` 报 PUI。华丽 ≠ 破铁律 = **用足既有华丽件**。
+
 ## ① 引擎接线链（LayoutNode → 世界）
 
 | 环节 | 机制实名 | 一句 |

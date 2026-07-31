@@ -43,6 +43,12 @@
 - 台账产出：卡带=落库自动；编译期=照 game-q 样板写推导脚本（脚本名：\_\_\_）。
 - 「零外部图片 / 全程序化」**不再是美德**——那是美术管线上线（07-09）前的旧叙事；要走纯程序化必须在此申请例外并给理由，Lead 裁。
 
+## 4.6 UI 呈现 · 华丽起手（必填·2026-07 补·owner「华丽度=第一要素」·计划门此前不问 UI 华丽度）
+
+- **house 主题**：起手用哪个？——`STARTER_THEME`(apollo-toon) / apollo-kit `apolloOnyx` / `apolloBrocade` / 自写（**自写须给明确美术方向 + 记债·经 Lead/PUI 审**·否则回退三选一）。缺省 SHELL = 朴素 = 缺陷。
+- **起手包**：主菜单/结算等常见屏是否 import `@ui/starters`（`buildStarterHome`/`buildStarterResult`）？不用则说明用什么富屏替代（不接受"从空白搭朴素屏"）。
+- **成熟件清单**：按游戏「有什么」列将用的成熟华丽件（`docs/playbooks/ui.md`「华丽起手·橱窗货架」对照）——如 卡牌→`faceArt`/翻面 · 选关→`LevelPath` · 庆祝→`Particles` · 主 CTA→`sheen-hover`+`Panel.skin` · 数值→`Label.format` · 异形→`shape` · 立体→3D UI。**零成熟件 = 朴素缺陷**，须在此说明为何该玩法确实用不上（PUI 复查可打回）。
+
 ## 5. 确定性声明
 
 - 随机源：（引擎种子 PRNG？seed 从哪来？）

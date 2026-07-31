@@ -10,14 +10,36 @@
 
 ## 0. 黄金流程（做任何一套 UI，按顺序走）
 
+> **⭐ 起手第一动作 · 华丽度=第一要素（owner 2026-07 拍板）**：**别从空白搭朴素屏、别从零调色写 UITheme**——新游戏 UI「起手默认华丽」，三步立起富底子，再往上按游戏改：
+> 1. **传 house 主题**：`mountUI` 缺省 `SHELL`（引擎清冷 chrome）=朴素。起手显式传一个 **house 主题**——`STARTER_THEME`（`@ui/starters`·=apollo-toon 水墨玩趣·亮宣纸糖果厚唇钮·程序化零资产）/ apollo-kit `apolloOnyx`(暗金属)·`apolloBrocade`(暖锦缎)。**只有明确美术方向时才自写 UITheme**（记债·经审）。
+> 2. **常见屏 import 起手包**：主菜单/结算这类屏**直接 `@ui/starters`**（`buildStarterHome`/`buildStarterResult`——糖果皮钮 + 星级 Rating + 庆祝粒子 + 悬停流光 + 数字格式化已接线·传标题/按钮/分数即得一屏富 UI），再改数据/加件。
+> 3. **逛橱窗挑成熟件**：按你游戏「有什么」照**下方「橱窗货架」表**挑对应成熟件（卡牌→`faceArt`/翻面 · 选关→`LevelPath` · 庆祝→`Particles` · 主行动键→`Panel.skin`+`sheen-hover` · 数值→`Label.format` · 异形→`shape` · 立体→3D UI…），活范例=game-i 展示台逐特性段。
+>
+> 起手富了，下面黄金流程在此之上走（自检/校验一样不少）。
+
+**橱窗货架**（你游戏「有 X」→ 拿这件·别自己搓朴素版·活范例=game-i 展示台对应段）：
+
+| 你游戏有… | 就用这件 | game-i 段 |
+|---|---|---|
+| 卡牌/牌面 | `PlayingCard.faceArt`(整面插画) + `flipped`/`flipOnHover`(翻面) | 🧊 3D UI · `t-tapflip` |
+| 选关地图 | `LevelPath`(蛇形路径 + 状态节点 + 星标) | `t-levelpath` |
+| 通关/领奖/连击 | `Particles`(confetti/coins/stars/sparkle) + `Float`(飘分) + `anim:floatUp/popOut` | 🎉 Juice |
+| 主行动键/大 CTA | `Button.kind:'hero'`(金糖) + `fx:[{kind:'sheen-hover'}]`(悬停流光) + `Panel.skin`(复合贴图键) | `t-skin` |
+| 得分/货币/时间数字 | `Label.format`(compact 12.3K / time mm:ss / percent) + `tween`(滚动) | `t-format` |
+| 异形按钮/菜单/容器 | `Button.shape`/`Panel.shape`(六边/盾/菱…8 形·闭集) | `t-shape` |
+| 环形进度/血蓝耐力 | `ProgressBar.shape:'ring'` + `bind`(绑世界资源) | `t-ring` |
+| 头顶名牌/血条/伤害数 | `Float`/`Connector`(锚活动目标·render-only) | `t-anchor` |
+| 立体感/3D 展示 | 3D UI(`layout.rotateX/Y/z/tilt3d/press3d`) · 世界空间面板 `WorldUI3D` | 🧊 3D UI |
+| 高级质感底/换皮 | `UITheme.texture/wash/panelTexture`(house 底纹) + `Panel.glass`(磨砂) | 换皮下拉 |
+
 1. **选控件**：只从闭集 `ComponentType` 选 → 先读 `src/ui/components/catalog.ts`（每个控件的 `whenToUse` + 字段 schema + canonical sample）。**别凭记忆瞎猜 prop**。
-2. **抄范例**：去 sample `src/games/game-i/`（展示台）找最接近的写法照抄改数据。`gallery.ts` 的「🆕 新控件/特性」tab + `mmo-hud.ts`（最复杂组合）是活模板。
+2. **抄范例**：去 sample `src/games/game-i/`（展示台）找最接近的写法照抄改数据。`gallery.ts` 的「🆕 新控件/特性」tab + `mmo-hud.ts`（最复杂组合）是活模板；**成熟起手屏抄 `@ui/starters`**。
 3. **组合，别逃生**：能用现成控件重组表达就重组；表达不了 → 写 `docs/workflow/requests.md` 让主程扩**一个闭集 kind/控件**。**永远不手写 React 屏 / 自由 CSS·DOM**（UI 铁律）。
 4. **过四关自检**（下面 §1–§4，这是本手册的核心）：闭集校验 → 防重叠 → 颜色/对比/透明度 → 布局卫生。
 5. **跑校验器**：`validateLayoutNode(tree)`（`validate.ts`）必须**零 issue** 才算合法数据。
 6. **渲染实测**：mountUI 渲一帧，**跑 overlap 审计**（§1 工具），人眼 + 程序双确认。绿了才交。
 
-> 复诵：**选 catalog → 抄 sample → 组合不逃生 → 四关自检 → validate 零 issue → 渲染审计**。
+> 复诵：**起手传 house 主题 + 起手包/橱窗挑成熟件（华丽第一）→ 选 catalog → 抄 sample → 组合不逃生 → 四关自检 → validate 零 issue → 渲染审计**。
 
 ---
 
