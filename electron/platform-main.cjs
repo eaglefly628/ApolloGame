@@ -56,9 +56,12 @@ async function startBackendAndWindow() {
     console.error('[platform-main] 后端进程 spawn 失败', err);
   });
 
-  const url = `http://127.0.0.1:${port}/`;
-  await waitForHealth(url, { timeoutMs: 20000 });
-  console.log('[platform-main] 健康检查通过 →', url);
+  // 落地页 = 爱萌创作平台（工坊·workshop/index.dc.html，同源伺服于 /workshop/），
+  // 不是 React 游戏架 launcher（/）。owner 2026-08-01：默认要开新的创作平台、不是旧的。
+  const healthUrl = `http://127.0.0.1:${port}/`;   // 健康检查探根即可（后端起没起）
+  const url = `http://127.0.0.1:${port}/workshop/`; // 真正 loadURL 的落地页
+  await waitForHealth(healthUrl, { timeoutMs: 20000 });
+  console.log('[platform-main] 健康检查通过 →', healthUrl, '· 落地', url);
 
   const win = new BrowserWindow({
     width: 1360,
