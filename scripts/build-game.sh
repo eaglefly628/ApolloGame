@@ -18,7 +18,7 @@ GAME_NAMES=(
 # ── Menu ──────────────────────────────────────────────────────────────────────
 echo ""
 echo "  ╔══════════════════════════════════════════════╗"
-echo "  ║         APOLLO CARTRIDGE BUILDER             ║"
+echo "  ║         ZEROCRAFT CARTRIDGE BUILDER             ║"
 echo "  ║         Target: RK3562 · Linux               ║"
 echo "  ╚══════════════════════════════════════════════╝"
 echo ""

@@ -125,7 +125,7 @@ def build_one(game_id: str) -> None:
 def menu() -> list[str]:
     print()
     print("  ╔══════════════════════════════════════════════╗")
-    print("  ║          APOLLO CARTRIDGE BUILDER            ║")
+    print("  ║          ZEROCRAFT CARTRIDGE BUILDER            ║")
     print("  ║          Target: RK3562 · Linux              ║")
     print("  ╚══════════════════════════════════════════════╝")
     print()

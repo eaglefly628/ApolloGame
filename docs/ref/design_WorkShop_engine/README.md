@@ -200,7 +200,7 @@ interface State {
 ## 品牌 Branding
 - **logo 金牌**：金渐变胶囊 `linear-gradient(180deg,#ffe08a,#f5b731)`，3px 描边，`0 5px 0 #c98a1e`。
   - 主名「爱萌互动」ZCOOL KuaiLe 24px 奶油描边字。
-  - 副名「APOLLO ENGINE」Fredoka 700 9px，`letter-spacing:.14em`，色 `#8a5a1c`。
+  - 副名「ZEROCRAFT ENGINE」Fredoka 700 9px，`letter-spacing:.14em`，色 `#8a5a1c`。
 - 账号名：豆包工作室（示例，可替换）。
 
 ## Assets

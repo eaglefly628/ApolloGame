@@ -34,7 +34,7 @@ def main() -> None:
 
     with http.server.HTTPServer(("127.0.0.1", PORT), handler) as httpd:
         url = f"http://127.0.0.1:{PORT}/cartridge.html"
-        print(f"\n  APOLLO OS Preview → {url}")
+        print(f"\n  ZEROCRAFT OS Preview → {url}")
         print("  Press Ctrl+C to stop.\n")
         threading.Timer(0.4, lambda: webbrowser.open(url)).start()
         try:

@@ -79,7 +79,7 @@ describe('Workshop ▶ URL 直启卡带', () => {
       ['/assets/FreeArtLib', {}],
     ]);
     await act(async () => { root.render(<Launcher />); });
-    expect(container.textContent).not.toContain('APOLLO'); // 装载期无旧工作台铭牌
+    expect(container.textContent).not.toContain('ZEROCRAFT'); // 装载期无旧工作台铭牌
     await flush();
     expect(container.querySelector('canvas')).toBeTruthy();
   });

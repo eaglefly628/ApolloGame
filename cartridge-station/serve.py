@@ -320,7 +320,7 @@ def build_game_objects(metas):
         g = {
             "id": "gen-" + cid, "num": f"{i+1:03d}", "title": c["title"],
             "genre": (c["game"] and f"ZeroCraft / {c['game'].upper()}") or "ZeroCraft",
-            "tags": [t for t in ["APOLLO", c["hw"].upper() if c["hw"] else "", "CARTRIDGE"] if t],
+            "tags": [t for t in ["ZEROCRAFT", c["hw"].upper() if c["hw"] else "", "CARTRIDGE"] if t],
             "rating": "T", "ratingFull": "TEEN",
             "grad": GRADS[i % len(GRADS)], "accent": "#00dfa0", "color": "#00dfa0",
             "desc": f"ZeroCraft game build · {c['pkg']}",

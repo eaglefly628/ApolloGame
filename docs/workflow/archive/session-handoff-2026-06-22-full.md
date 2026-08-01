@@ -15,9 +15,9 @@
 
 > owner live playtest 边玩边提、主程（甲·战斗域）落地。本节=**单一真相**：做完的 / 待办 / git 分支标签态 / 工作流约束。下一程序员从这里接。
 
-### 🔴 P0 进行中：掌机「APOLLO OS 绿字 + 黑屏」（已修 zoom · 待真机烧版验证）
-- **现象**：owner 新烧 cartridge 包（掌机弱 GPU webview），开机绿字 APOLLO OS 后黑屏；**同代码 Mac 正常**。
-- **关键认知**：掌机烧的是 **cartridge 构建**（`npm run build:cartridge` → `dist-cartridge`·入口 `cartridge.html`+`src/cartridge-entry.ts`·`base:'./'`），**直接挂 game-g、无 launcher**；绿字 = `cartridge.html` 的「APOLLO OS」boot shell；黑 = `#game-root`。
+### 🔴 P0 进行中：掌机「ZEROCRAFT OS 绿字 + 黑屏」（已修 zoom · 待真机烧版验证）
+- **现象**：owner 新烧 cartridge 包（掌机弱 GPU webview），开机绿字 ZEROCRAFT OS 后黑屏；**同代码 Mac 正常**。
+- **关键认知**：掌机烧的是 **cartridge 构建**（`npm run build:cartridge` → `dist-cartridge`·入口 `cartridge.html`+`src/cartridge-entry.ts`·`base:'./'`），**直接挂 game-g、无 launcher**；绿字 = `cartridge.html` 的「ZEROCRAFT OS」boot shell；黑 = `#game-root`。
 - **定位（穷尽）**：非 JS 崩溃——cartridge 真产物在无头(happy-dom)挂 game-g 零报错、大厅/战斗 DOM 全渲(605KB)；tsc/vitest1664/build:cartridge 全绿。Mac 好 → 是掌机弱 GPU 的**合成/绘制**失败（无头测不出）。
 - **根因**：闪烁修(`7634b027`) 把战斗屏首帧烤成 **transform:scale 单合成图层**；弱 GPU 合成该整屏图层失败→黑（旧两段绘制至少 CPU 先画可见帧＝那正是"闪烁"）。
 - **修(`c5608bbc`)**：战斗屏 1340×858 适配 **transform:scale → CSS zoom**（CPU 布局缩放·不生成合成图层·消闪烁·Mac 等价·zoom 不支持也只裁切不黑＝fail-safe）。**待 owner 有真机再烧 cartridge 验证**。

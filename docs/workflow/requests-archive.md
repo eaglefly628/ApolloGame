@@ -607,7 +607,7 @@ _（REQ-3D-W1高效引擎 已移至 [`requests-3d.md`](./requests-3d.md)。）_
 
 > **补充（2026-07-01·owner 反馈按钮颜色不一致）**：**4. Button 自定义配色**——原型 hero 键是确切 `linear-gradient(180deg,#ffd982,#f0a93a)` + 文字 `#3a2406`；现 `Button kind:'hero'` 是引擎固定金色样式（受 `theme.gold` 驱动·渐变/文字色写死）。要逐像素得让 `ButtonProps` 收可选 `bg`/`fg`（闭集：令牌或 hex 串，同 Panel.bg 先例）。暂用 `theme.gold` 调暖逼近。
 
-### REQ-APOLLO-PROMPT-去手抄词汇表 · apollo.py 生成 prompt 改为全依赖自动 catalog · [2026-07-02] · 主程 → **指派：Opus** · status: **✅ 完成（2026-07-02）** · 类型: 防漂移收口
+### REQ-ZEROCRAFT-PROMPT-去手抄词汇表 · apollo.py 生成 prompt 改为全依赖自动 catalog · [2026-07-02] · 主程 → **指派：Opus** · status: **✅ 完成（2026-07-02）** · 类型: 防漂移收口
 > 改动摘要（2026-07-02）：删 `GAME_GEN_SYSTEM_PROMPT` 手写「## Available Atom Components」整节（漂移源）+ 冗余 platformer 能力清单；词汇一律靠 `{CAPABILITY_CATALOG}` 注入。保留结构性指导（manifest 形状/最小可跑示例/art:约定/640x400 画布/纯 JSON），Rules 内组件名收敛到少量已核实真名（Camera/Mass/Bounds/Color）。`_FALLBACK_CATALOG` 12 条对照 registry 核实无漂移，加「部分应急词汇表·完整目录由前端注入」注释+prompt 文案。顺修一处已删旧游戏的过期注释。tsc/vitest/build/ast 全绿。
 > 病灶（2026-07-02 归档盘点核实）：`GAME_GEN_SYSTEM_PROMPT` 手写组件清单漂移——漏 Hierarchy/StringVariable/全部 3D 原子，却把非原子的 Controllable/Grounded/Bounds 列在 "Atom Components" 标题下；手写清单与 registry 必然持续漂移（capability-catalog.ts 头注早已声明此规律）。
 > **实现 spec（Lead 已定）**：① 删 prompt 内手写组件/原子清单，词汇一律依赖 `{CAPABILITY_CATALOG}` 注入（buildCapabilityCatalog 自动派生·零 prompt 维护）；② 保留且仅保留结构性指导——manifest 形状、最小可跑 JSON 示例、`art:<关键词>` 资产约定、640x400 2D 画布约定；③ `_FALLBACK_CATALOG` 保留应急，但注释+prompt 文案标明"部分词汇，完整目录由前端注入"；④ 顺修 apollo.py:474 一带已删旧游戏的过期注释；⑤ 验证 = `python3 ast.parse` 语法 + tsc/vitest/build 三门禁全绿（防连带），直推 mainbranch，完工回本条标 ✅。

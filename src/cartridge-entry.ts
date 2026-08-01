@@ -52,7 +52,7 @@ async function main() {
   // 内联数据卡带：标题/副标题由 package-web.mjs 注入的 __APOLLO_INLINE_META__ 提供（无静态 GAMES 条目）。
   const inlineMeta = gameId === '__inline__' ? (window.__APOLLO_INLINE_META__ ?? {}) : undefined;
   const meta = inlineMeta
-    ? { title: inlineMeta.title || 'APOLLO CARTRIDGE', subtitle: inlineMeta.subtitle || '数据驱动卡带' }
+    ? { title: inlineMeta.title || 'ZEROCRAFT CARTRIDGE', subtitle: inlineMeta.subtitle || '数据驱动卡带' }
     : (GAMES[gameId] ?? { title: gameId.toUpperCase(), subtitle: '' });
   const cartLabel = inlineMeta ? (meta.title || 'CARTRIDGE') : gameId.toUpperCase();
 
@@ -61,7 +61,7 @@ async function main() {
 
   el('cart-title').textContent = meta.title;
   el('cart-subtitle').textContent = meta.subtitle;
-  el('cart-id').textContent = `${cartLabel} · APOLLO ENGINE`;
+  el('cart-id').textContent = `${cartLabel} · ZEROCRAFT ENGINE`;
 
   // Fire game load immediately (parallel with animation)
   const gamePromise = startLoad(gameId);
