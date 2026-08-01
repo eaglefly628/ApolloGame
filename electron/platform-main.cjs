@@ -65,7 +65,7 @@ async function startBackendAndWindow() {
     height: 860,
     backgroundColor: '#050510',
     autoHideMenuBar: true,
-    title: 'ZeroCraft Engine',
+    title: 'ZeroCraft Preview',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

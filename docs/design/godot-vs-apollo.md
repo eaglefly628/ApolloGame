@@ -1,4 +1,4 @@
-# Godot 4.x vs ZeroCraft Engine —— 对比与「值得借鉴什么」
+# Godot 4.x vs ZeroCraft Preview —— 对比与「值得借鉴什么」
 
 > 给 owner 决策用。**结论先行**：Godot 是极好的**设计参考**，但它的代码/运行时与 ZeroCraft 的两条铁律（数据驱动 + lockstep 确定性）**根本不同源**——所以价值在「把 Godot 的某些**概念**映射成 ZeroCraft 的 `组件 + capability` 数据模型」，**绝不是搬代码**。
 > 调研基于 Godot 官方文档（docs.godotengine.org，stable=4.x，4.3/4.4/4.5 版页确认在线）+ 官方博客 + godot-jolt 维护者原话。本文由 P3D 汇编（owner 2026-06-30 授权调研，最终由 owner 裁决）。

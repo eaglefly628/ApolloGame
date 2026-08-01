@@ -1822,7 +1822,7 @@ export function buildGallery(
         children: [
           ...(currentModule ? [{ type: 'Button', id: 'hub-back', props: { label: '← 展台', kind: 'ghost', action: 'exitModule' } } as LayoutNode] : []),
           { type: 'Label', id: 'app-title', props: { text: title, size: 'lg', bold: true }, layout: { flex: 1 } },
-          { type: 'Badge', id: 'app-engine', props: { text: 'ZeroCraft Engine · 数据驱动 UI', tone: 'dim' } },
+          { type: 'Badge', id: 'app-engine', props: { text: 'ZeroCraft Preview · 数据驱动 UI', tone: 'dim' } },
           { type: 'Label', id: 'theme-lbl', props: { text: '换皮', size: 'sm', color: 'sub' } },
           {
             type: 'Dropdown',

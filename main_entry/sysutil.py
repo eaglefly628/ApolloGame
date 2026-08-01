@@ -46,7 +46,7 @@ def c(text, color):
 def banner():
     print()
     print(c("  ╔══════════════════════════════════════╗", 'c'))
-    print(c("  ║", 'c') + c("     ZEROCRAFT ENGINE LAUNCHER v0.2     ", 'w') + c("║", 'c'))
+    print(c("  ║", 'c') + c("     ZEROCRAFT PREVIEW LAUNCHER v0.2     ", 'w') + c("║", 'c'))
     print(c("  ║", 'c') + c("     ECS Game Engine · 26 Atoms      ", 'dim') + c("║", 'c'))
     print(c("  ╚══════════════════════════════════════╝", 'c'))
     print()

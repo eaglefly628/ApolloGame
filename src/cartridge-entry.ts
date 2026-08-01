@@ -61,7 +61,7 @@ async function main() {
 
   el('cart-title').textContent = meta.title;
   el('cart-subtitle').textContent = meta.subtitle;
-  el('cart-id').textContent = `${cartLabel} · ZEROCRAFT ENGINE`;
+  el('cart-id').textContent = `${cartLabel} · ZEROCRAFT PREVIEW`;
 
   // Fire game load immediately (parallel with animation)
   const gamePromise = startLoad(gameId);

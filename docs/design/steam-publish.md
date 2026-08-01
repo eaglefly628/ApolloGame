@@ -1,4 +1,4 @@
-# ZeroCraft Engine —— 一键发布 Steam 架构设计
+# ZeroCraft Preview —— 一键发布 Steam 架构设计
 
 > 作者：Lead · 日期：2026-06-08 · 状态：设计蓝图（未施工，可独立立项、可并行）
 > 关联：`docs/design/modular-game-framework.md`（EnginePort / 函数式内核+命令式外壳）、

@@ -58,7 +58,7 @@ def _pick_template(prompt: str):
     return TEMPLATE_LIBRARY['bounce'], ['platform']
 
 TEMPLATE_EDIT_TASK = (
-    "Below is a runnable baseline ZeroCraft Engine manifest (it already passes engine validation) and the "
+    "Below is a runnable baseline ZeroCraft Preview manifest (it already passes engine validation) and the "
     "game the user wants. Modify the baseline into the user's game by editing ONLY what the idea needs — "
     "rename entities, tweak numbers, swap colors/art, add or remove a few entities. Reuse the baseline's "
     "capabilities and shape wherever possible. Enable ONLY capability ids that appear in the catalog in the "

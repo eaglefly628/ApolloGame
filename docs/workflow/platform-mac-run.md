@@ -1,4 +1,4 @@
-# ZeroCraft Engine · mac 离线包怎么拿 / 怎么跑
+# ZeroCraft Preview · mac 离线包怎么拿 / 怎么跑
 
 > D5 交付物（`docs/workflow/platform-packaging-spec.md`）——「整套平台」打包成一个 mac app，
 > 客户机器不装 node/python。产物架构见 spec 正文；本文档只管「怎么拿到 .dmg」+「客户怎么运行」+
@@ -16,7 +16,7 @@
    - `pybuild_release_tag`（默认 `20250626`）
 3. 等 runner 跑完（`macos-latest`，全程约 10~20 分钟，大头是下载 Electron + standalone python +
    `pip install`）。
-4. 跑完后在该次 run 页面底部 **Artifacts** 里下载 `zerocraft-engine-mac-arm64-dmg`（zip 包着一个
+4. 跑完后在该次 run 页面底部 **Artifacts** 里下载 `zerocraft-preview-mac-arm64-dmg`（zip 包着一个
    `.dmg`）。
 
 CI 步骤全过程见 `.github/workflows/build-platform-mac.yml`：组装前端+后端 → 灌 standalone
@@ -43,18 +43,18 @@ bash scripts/build-mac-dmg.sh
 **本包只支持 Apple 芯片 Mac（M1/M2/M3/M4…）**，arm64-only（owner 07-26 拍板；Intel 客户需要
 x64/universal 是另一条后续需求，不在本次范围）。苹果菜单 →「关于本机」可看芯片类型。
 
-1. 双击下载下来的 `.dmg`，把里面的 **ZeroCraft Engine.app** 拖进「应用程序」文件夹。
+1. 双击下载下来的 `.dmg`，把里面的 **ZeroCraft Preview.app** 拖进「应用程序」文件夹。
 2. **首次打开会被 Gatekeeper 拦**（报「已损坏，无法打开」或「无法验证开发者」）——这是因为本包
    默认**未签名**（无 Apple 开发者账号，owner 07-26 拍板；若某次 CI 跑配了签名 secret 则这步
    可以省，见 §5）。绕过方法（任选一种）：
    - **右键（或 Control+点按）App → 打开 → 再点一次「打开」**。
    - 若右键打开仍报「已损坏」（新版 macOS 对未签名 App 更严格），打开「终端」执行：
      ```
-     xattr -cr /Applications/ZeroCraft\ Engine.app
+     xattr -cr /Applications/ZeroCraft\ Preview.app
      ```
      然后正常双击。
    - 同款更详细的图文说明已经在仓库里现成一份（`build/mac-open-help/`），把里面的 App 名字换成
-     `ZeroCraft Engine.app` 就能直接照抄给客户用。
+     `ZeroCraft Preview.app` 就能直接照抄给客户用。
 3. 打开后是**首启引导**：填生图 key / Deepseek key，或直接跳过（跳过＝离线模式，见下面矩阵）。
    key 只落本机 gitignored 配置，绝不随包分发（`platform-packaging-spec.md` 决策②安全红线，
    CI 有 `assert-no-baked-key.mjs` 门禁挡）。

@@ -1,4 +1,4 @@
-# ZeroCraft Engine — 策划必读手册
+# ZeroCraft Preview — 策划必读手册
 
 > ⚠ **历史文档（口径已过期）**：原子数/能力数/游戏清单/测试数以机读真相为准（`docs/llm-onboarding.md` §0）。本文仅存考古价值，新 session/新 LLM 勿以此为教材。
 
@@ -277,5 +277,5 @@ A：ZeroCraft 不是要替代它们。ZeroCraft 的独特优势是**AI 原生** 
 
 ---
 
-*ZeroCraft Engine v0.6 · 2024.06*
+*ZeroCraft Preview v0.6 · 2024.06*
 *本文档由 Claude 生成，供内部策划团队参考*

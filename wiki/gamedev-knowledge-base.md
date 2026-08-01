@@ -1,4 +1,4 @@
-# ZeroCraft Engine — 游戏开发知识库
+# ZeroCraft Preview — 游戏开发知识库
 
 > 按 ZeroCraft 的 Tier 层级组织，每条资源直接映射到可开发的 skill。
 > 只收录经过 AAA/知名商业游戏验证的方案。调研时间：2026-06-03

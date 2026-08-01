@@ -2,7 +2,7 @@
 
 > **来源**: https://github.com/Donchitos/Claude-Code-Game-Studios
 > **源料入库**: `docs/ref/CCGS Skill Testing Framework/`（owner 2026-07-04 投放·自包含·勿入任何 onboarding 阅读路径）
-> **用途**: 作为 ZeroCraft Engine 开发流程的技术参考，取其精华
+> **用途**: 作为 ZeroCraft Preview 开发流程的技术参考，取其精华
 > **§一~五**=2026-06-05 首轮分析（行动项现状注记见 §五头）；**§六~七**=2026-07-04 全量清单对照 + 测试框架裁决。
 
 ---

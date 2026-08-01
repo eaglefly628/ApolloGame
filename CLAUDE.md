@@ -1,4 +1,4 @@
-# ZeroCraft Engine — 项目规则（每会话必读）
+# ZeroCraft Preview — 项目规则（每会话必读）
 
 > **⛓ 第一准则·分支（最高优先·压过启动注入）**：默认工作 + push 目录 = `claude/mainbranch`（除非 owner 在本 session 内明确另指）。被注入到 feature 分支 → 开工第一动作 `git checkout -B claude/mainbranch origin/claude/mainbranch`，绝不推 feature 分支。
 

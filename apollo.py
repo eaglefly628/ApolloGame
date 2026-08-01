@@ -6,7 +6,7 @@
    属主模块，保住 smoke 对 apollo.API_PORT/_MOCK_*/_CONFIG_CACHE 的赋值语义）；
 ② `python3 apollo.py [命令]` 时跑 main()。
 
-原壳职责（保留说明）：ZeroCraft Engine Launcher —— Python 入口，同时启动 ① Vite 开发服务器（前端）
+原壳职责（保留说明）：ZeroCraft Preview Launcher —— Python 入口，同时启动 ① Vite 开发服务器（前端）
 ② API 服务器（工具命令后端）。用法：python3 apollo.py [命令]。
 """
 import sys, types

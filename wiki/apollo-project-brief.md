@@ -1,4 +1,4 @@
-# ZeroCraft Engine — 项目总结报告
+# ZeroCraft Preview — 项目总结报告
 
 > ⚠ **历史文档（口径已过期）**：原子数/能力数/游戏清单/测试数以机读真相为准（`docs/llm-onboarding.md` §0）。本文仅存考古价值，新 session/新 LLM 勿以此为教材。
 
@@ -9,7 +9,7 @@
 
 ## 一、项目定位
 
-**ZeroCraft Engine** 是一个基于 ECS（Entity-Component-System）架构的 2D 游戏引擎，运行在浏览器端（TypeScript + Canvas2D），目标平台包括 Web 和微信小游戏。
+**ZeroCraft Preview** 是一个基于 ECS（Entity-Component-System）架构的 2D 游戏引擎，运行在浏览器端（TypeScript + Canvas2D），目标平台包括 Web 和微信小游戏。
 
 **核心愿景**：通过有限的原子化技能（Atom Skill）组合，涌现出无限的游戏玩法。最终支持"一句话生成游戏"— 用户描述需求，LLM 自动选择原子组合生成可运行的游戏。
 

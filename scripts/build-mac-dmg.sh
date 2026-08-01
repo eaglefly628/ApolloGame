@@ -6,7 +6,7 @@
 #  用法（在仓库根目录）：
 #      bash scripts/build-mac-dmg.sh
 #
-#  产物：release/platform/bin/ZeroCraft Engine-<版本>-arm64.dmg
+#  产物：release/platform/bin/ZeroCraft Preview-<版本>-arm64.dmg
 #  完事把这个 .dmg 拷到演讲者 Mac，双击装 → 拖进「应用程序」→ 首次右键「打开」绕 Gatekeeper。
 #
 #  前提（脚本会自检，不满足会明确报错停下）：
@@ -73,7 +73,7 @@ if [ -n "$DMG" ]; then
   say "完成 🎉"
   printf '   安装包：\033[1;33m%s\033[0m\n' "$ROOT/$DMG"
   printf '   大小：%s\n' "$(du -h "$DMG" | cut -f1)"
-  echo   '   拷到演讲者 Mac → 双击 .dmg → 把 ZeroCraft Engine 拖进「应用程序」。'
+  echo   '   拷到演讲者 Mac → 双击 .dmg → 把 ZeroCraft Preview 拖进「应用程序」。'
   echo   '   首次启动：右键图标 →「打开」→ 再点一次「打开」（未签名，需绕一次 Gatekeeper，之后正常双击）。'
   echo   '   首启会引导粘贴生图 key（不粘也能跑：平台 UI + 9 游戏离线照玩，只是实时生成灰掉）。'
 else

@@ -6,9 +6,9 @@
 # 只在 mac CI（.github/workflows/build-platform-mac.yml）上真正跑通 electron-builder；
 # Linux 上只能做「配置能被 electron-builder 解析、字段拼得对」这层静态校验（见交付说明）。
 
-appId: com.zerocraft.platform
+appId: com.zerocraft.preview
 electronVersion: "33.0.0"
-productName: "ZeroCraft Engine"
+productName: "ZeroCraft Preview"
 copyright: "Copyright © 2026 ZeroCraft Game Studio"
 
 # package.json 的 "main" 全局指向单游戏入口 electron/main.cjs（别的 pack:* 目标要用，不能改）；
@@ -53,7 +53,7 @@ directories:
 
 mac:
   category: public.app-category.developer-tools
-  # 品牌图标（ZeroCraft Engine·等距体素立方体·1024 PNG，electron-builder 在 mac 上自动转 .icns）。
+  # 品牌图标（ZeroCraft Preview·等距体素立方体·1024 PNG，electron-builder 在 mac 上自动转 .icns）。
   # 只在这份「整套平台」配置里引用；单游戏 electron-builder.yml 不共用（避免 game-g 误用本图标）。
   icon: build/zerocraft-icon.png
   # 不在这里写 identity（既不写 null 也不写具体值）——理由：electron-builder 一旦读到

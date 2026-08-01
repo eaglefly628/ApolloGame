@@ -18,7 +18,7 @@ When the four essentials are sufficiently covered, give a one-line summary of wh
 Never emit that marker before the essentials are genuinely covered."""
 
 # breakdown 头（mock 据此识别；也是 DESIGN_BREAKDOWN_SYSTEM 的真实开头，务必一致）。
-_DESIGN_BREAKDOWN_HEAD = "You are ZeroCraft Engine's game design breakdown generator"
+_DESIGN_BREAKDOWN_HEAD = "You are ZeroCraft Preview's game design breakdown generator"
 DESIGN_BREAKDOWN_SYSTEM = _DESIGN_BREAKDOWN_HEAD + """. You turn a design discussion (or a pitch) into a small Game Design Document (GDD) as a set of markdown files.
 
 ## Output format — STRICT JSON ONLY (no markdown fences, no prose)
@@ -39,5 +39,5 @@ For EACH system/rule in the design, name the engine capability that expresses it
 
 DESIGN_REVISE_SYSTEM = """You are a game design document editor. You are given one markdown design file and a revision instruction. Apply the instruction and output the COMPLETE revised file as markdown. Reply in the file's language. Do NOT wrap the output in code fences and do NOT add any explanation — output only the revised markdown document."""
 
-PROTOTYPE_TASK = """Below is the full Game Design Document (GDD). Read all of it, then output a single ZeroCraft Engine manifest (pure JSON) that is a PLAYABLE FIRST PROTOTYPE of the core loop. It does not need every system — focus on making the core loop visible and runnable. Follow the manifest format and capability catalog rules from the system prompt exactly."""
+PROTOTYPE_TASK = """Below is the full Game Design Document (GDD). Read all of it, then output a single ZeroCraft Preview manifest (pure JSON) that is a PLAYABLE FIRST PROTOTYPE of the core loop. It does not need every system — focus on making the core loop visible and runnable. Follow the manifest format and capability catalog rules from the system prompt exactly."""
 

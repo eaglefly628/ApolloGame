@@ -20,7 +20,7 @@ from .sysutil import ROOT, _spawn
 
 
 # 提交署名走本地 -c（不依赖机器有无全局 git 身份，避免 commit 因缺 user.email 失败）。
-_GIT_AUTHOR = ['-c', 'user.name=ZeroCraft Engine', '-c', 'user.email=studio@zerocraft.local']
+_GIT_AUTHOR = ['-c', 'user.name=ZeroCraft Preview', '-c', 'user.email=studio@zerocraft.local']
 _GIT_OK = None  # 缓存 git 可用性（写盘前探测一次）。
 
 def _git_ok() -> bool:
