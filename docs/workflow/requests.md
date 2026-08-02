@@ -22,6 +22,15 @@
 <!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结迁归档（requests-archive.md）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
 
 
+### REQ-SPLIT-引擎内容分离 · src/games 整体迁出为顶层 games/（虚幻式 Engine/Content 分治·owner 拍板「引擎核与游戏完全解耦」） · [2026-08-01] · owner 令 → Lead 出图 → **指派：Opus（xhigh·正确性关键）** · status: in-progress（已派工） · 优先级: **P0（全库爆炸半径·冻结窗内一次落地）** · 类型: 架构重构（引擎/内容边界物理化）
+> **⚖ Lead 图纸**：
+> ① **布局**：`git mv src/games games`（顶层·保 git 历史）。游戏 import 引擎**只许走别名**（@engine/@skills/@ui/@renderer/@services/@assets/@atom-skills/@net·现有集·不新增语义）；新增别名 `@games/*` → `games/*` 供 launcher/装配层装游戏。**逐个改写游戏内现存的 `../` 越界相对引用为别名**（侦察实证 game-a/c/103 等均有）。
+> ② **解耦守卫（本单真正的交付物·防回潮）**：新检查（并入 scoped-gate 或独立 `scripts/decouple-check.mjs`·退出码）——(a) `games/**` 禁相对路径逃出自己游戏目录；(b) `src/**` 禁 import `games/**`（运行时 URL 字符串 `/games/<g>/…` 与 public 资源路径**不算**·按 import 语句判）；引擎面测试文件若真 import 游戏→改本地 fixture 或迁到该游戏目录。
+> ③ **配置与脚本全量更址**：tsconfig（paths+include）/vite/vitest/scoped-gate 范围判定（games/ 前缀=单游戏面）/game-pipeline（detectForm·gameHash 根·acceptance adapterPath）/game-skill-audit/export-game（导出树拷贝源）/美术脚本/audit-baseline/tools/audits——侦察计 72 文件，逐个过。
+> ④ **文档清扫**：82 份含 `src/games` 的文档全量替换为 `games/`；CLAUDE.md 域边界行（P3D=games/game-z·PUI=games/game-i）、llm-onboarding、各手册同步；「文档与实现同一改动内同步」硬约束首次执行。
+> ⑤ **预期涟漪据实报不救火**：gameHash 覆盖路径变更→全部游戏门证过期属预期（下次 gate 重戳）；勿为压过期去改指纹语义。
+> ⑥ **验证**：全量门禁退出码全 0 + 三项冒烟=`board game-a`（能识别 compiled）+ `acceptance-run --game game-a`（8 剧本绿）+ 一次 dokiworld 导出真跑（tsc+build 通过）。**单一原子提交**（冻结窗口内落地·rebase 带新提交必须重跑全套）。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
