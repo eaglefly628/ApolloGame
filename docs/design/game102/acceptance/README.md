@@ -2,7 +2,7 @@
 
 > 作者=GD（懂规则方）。剧本=**纯数据**，harness 驱动**真引擎**（manifest World）逐步对账，
 > 断言只读**机读态**（Resource / Flag / StringVar·**不读 DOM**）。PE 落薄适配器
-> `src/games/game102/acceptance-adapter.ts`（纯接线零规则·把动作→引擎 action 信号、把机读态→下表投影），
+> `games/game102/acceptance-adapter.ts`（纯接线零规则·把动作→引擎 action 信号、把机读态→下表投影），
 > **不得改本目录剧本**；剧本写错=GD 改 + 记录。规则真相=`docs/design/game102/gdd.md` + 接线细则 `pe-handoff.md §3`。
 
 跑：`npx vite-node scripts/acceptance-run.mjs --game game102`（进 vitest `scripts/acceptance.test.mjs`·推送门禁自动咬）。

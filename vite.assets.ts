@@ -14,13 +14,13 @@ export function usedAssetRels(root: string, target?: string): string[] {
   const rels: string[] = [];
   if (!target || target === 'game-e') {
     rels.push('cardgame/cards.png', 'item/gold/gold_pile.png', 'gui/tavern.png', 'gui/spells/components/scroll.png');
-    const jn = parseNames(root, 'src/games/game-e/jokers.ts', /name: '([^']+)'/g);
+    const jn = parseNames(root, 'games/game-e/jokers.ts', /name: '([^']+)'/g);
     if (jn) for (const n of new Set(jn)) rels.push(`cardgame/card/${n.replace(/ /g, '_')}.webp`);
   }
   if (!target || target === 'game-f') {
-    const mn = parseNames(root, 'src/games/game-f/assets.ts', /dcss\('([^']+)'\)/g);
+    const mn = parseNames(root, 'games/game-f/assets.ts', /dcss\('([^']+)'\)/g);
     if (mn) for (const n of new Set(mn)) rels.push(`monster/${n}.png`);
-    const fn = parseNames(root, 'src/games/game-f/assets.ts', /fx\('([^']+)'\)/g);
+    const fn = parseNames(root, 'games/game-f/assets.ts', /fx\('([^']+)'\)/g);
     if (fn) for (const n of new Set(fn)) rels.push(`effect/${n}.png`);
   }
   return rels;

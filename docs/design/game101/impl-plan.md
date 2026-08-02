@@ -69,13 +69,13 @@
 ## 8. 施工顺序（M1 起·一会话一阶段·宣布完成贴 `game-pipeline board game101`）
 
 - **M1a 玩法核**（S3-S4）：manifest + 配置表落 JSON → play-field（合并/生成器/体力/订单/金币）→ headless 测试钉死。
-- **M1b 主界面 chrome**（S5 视觉）：移植 `layout/s1-merge-board.layout.json` 进 `src/games/game101/`（做成 `buildS1(): LayoutNode`）+ HUD resource 绑定 + Twemoji 占位接入 → `/check-ui`+`ui-audit`。
+- **M1b 主界面 chrome**（S5 视觉）：移植 `layout/s1-merge-board.layout.json` 进 `games/game101/`（做成 `buildS1(): LayoutNode`）+ HUD resource 绑定 + Twemoji 占位接入 → `/check-ui`+`ui-audit`。
 - **M2 追剧闭环**：星星→剧情任务（tasks 面板）→`dialogue` 演出→装修（reno 面板）→结算。
 - **M3 美术替换**：PA 原创套图替 Twemoji 占位（皮肤槽热替·观感零回归）。
 
 ## 9. 角色 / 边界
 
-- **PE-101**：`src/games/game101/**` 施工（capability-plan 过审后）。
+- **PE-101**：`games/game101/**` 施工（capability-plan 过审后）。
 - play-field render 组件缺件 → `docs/workflow/requests.md` 提主程（rendering-fx 线）。
 - `src/ui` 闭集缺控件/色令牌 → 报 **PUI**（`requests.md`）。3D 无需。
 - 资产 → **PA**（asset-manager）。

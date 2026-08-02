@@ -5,7 +5,7 @@
 
 ## Summary（这件零件做什么）
 
-输入=一棵刚建/改的 2D `LayoutNode` UI（HUD/菜单/面板/VN chrome）。流程：按序建（选闭集控件 `src/ui/components/catalog.ts` → 抄 `src/games/game-i/` 范例 → 组合不逃生）→ 交付前过「防重叠/对比度/透明度/布局卫生」四关 → 跑两个机械门禁：`npx vitest run src/ui/components`（`validateLayoutNode` 零 issue）+ `node tools/ui-audit.mjs tools/audits/<页面>.audit.ts`（overlap+对比度）。产出=一份归零的 UI + 门禁绿。**判词非命名 token，靠工具退出码**：ui-audit `0`=过 / `1`=有重叠或对比<3.0 / `2`=用法错。不合格必须回改坐标/配色到归零，不等 owner 挑错。
+输入=一棵刚建/改的 2D `LayoutNode` UI（HUD/菜单/面板/VN chrome）。流程：按序建（选闭集控件 `src/ui/components/catalog.ts` → 抄 `games/game-i/` 范例 → 组合不逃生）→ 交付前过「防重叠/对比度/透明度/布局卫生」四关 → 跑两个机械门禁：`npx vitest run src/ui/components`（`validateLayoutNode` 零 issue）+ `node tools/ui-audit.mjs tools/audits/<页面>.audit.ts`（overlap+对比度）。产出=一份归零的 UI + 门禁绿。**判词非命名 token，靠工具退出码**：ui-audit `0`=过 / `1`=有重叠或对比<3.0 / `2`=用法错。不合格必须回改坐标/配色到归零，不等 owner 挑错。
 
 ## 静态断言（结构·不需 fixture）
 
@@ -18,7 +18,7 @@
 ## 测例（5 原型·失败路径必测）
 
 ### Case 1 · Happy Path
-**Fixture**：`src/games/game-i/mmo-hud.ts` 的 `buildMmoHud()` + `tools/audits/mmo-hud.audit.ts` · **输入**：`npx vitest run src/ui/components` 后 `node tools/ui-audit.mjs tools/audits/mmo-hud.audit.ts` ·
+**Fixture**：`games/game-i/mmo-hud.ts` 的 `buildMmoHud()` + `tools/audits/mmo-hud.audit.ts` · **输入**：`npx vitest run src/ui/components` 后 `node tools/ui-audit.mjs tools/audits/mmo-hud.audit.ts` ·
 **期望**：1. validateLayoutNode 断言零 issue 2. ui-audit 无容差外相交、无对比<3.0 → 退出码 0
 **断言**：- [ ] validate 零 issue - [ ] ui-audit 退出码=0（判词=退出码 0）
 

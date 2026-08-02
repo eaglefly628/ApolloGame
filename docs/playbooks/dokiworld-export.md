@@ -8,7 +8,7 @@
 - 用途：把游戏导成 DokiWorld 能在 `sandbox="allow-scripts"` iframe 里加载的**独立卡带**（协议桥 + 计分回传 + `game.json`）。
 - 实现：导出插件 `tools/export-targets/dokiworld.mjs`（core=`tools/export-game.mjs` 的 `--target` 插件架构·不绑定 DokiWorld·接别的引擎再加一个插件）。
 - **当前支持**：`game-a / game-b / game-c`。别的游戏会报错指路，不伪造产物。
-- **铁律**：一律走导出（工作台/CLI），**绝不手改游戏源码**；引擎主干 `src/games/**` 零改动，注入只在导出产物上。
+- **铁律**：一律走导出（工作台/CLI），**绝不手改游戏源码**；引擎主干 `games/**` 零改动，注入只在导出产物上。
 
 ## 2. 两种产物（发布屏两个平台，按需选）
 

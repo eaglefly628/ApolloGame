@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { benchBlueprint, BENCH_PASS_THRESHOLD } from './zerocraft-bench.js';
 import { BENCH_GAMES } from './games.js';
-import { buildGameFBlueprint } from '../games/game-f/index.js';
+import { buildGameFBlueprint } from '@games/game-f/index.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 
 describe('ZeroCraftBench · 执行落地体检', () => {

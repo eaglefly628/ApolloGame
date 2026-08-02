@@ -25,8 +25,8 @@
 ## ② 样例指针
 
 - 机制说明：`src/assembly/resolve-art-refs.ts`（`art:` 解析 + `ArtResolution` 留痕）、`derive-asset-index.ts`。
-- 真实用法：`src/games/game-e/assets.ts`+`cards-atlas.ts`（牌面图集）、`src/games/game-g/art-textures.ts`。
-- **2D UI 贴图皮入库范例**：`src/games/game-i/ui-assets.ts` + `public/games/game-i/art/index.json`（贴图皮=`type:'texture'`·`usage:'sprite'` 正规资产·按 key `uiTextureUrl` 解析成 URL 喂 `Button.skin`·`ui-assets.test.ts` 自检）——2D DOM UI 侧「资产 key→已解析 URL」样板，**替代内联 data-URI 硬编码**。两条素材路径都在此示范：**自产程序化 SVG**（零外部文件·"游戏=数据"）+ **vendor 真美术**（Kenney UI Pack·CC0·`node scripts/vendor-asset.mjs kenney-ui/blue-button05 game-i --as tex/btn-blue`·带 `vendoredFrom` 溯源）。
+- 真实用法：`games/game-e/assets.ts`+`cards-atlas.ts`（牌面图集）、`games/game-g/art-textures.ts`。
+- **2D UI 贴图皮入库范例**：`games/game-i/ui-assets.ts` + `public/games/game-i/art/index.json`（贴图皮=`type:'texture'`·`usage:'sprite'` 正规资产·按 key `uiTextureUrl` 解析成 URL 喂 `Button.skin`·`ui-assets.test.ts` 自检）——2D DOM UI 侧「资产 key→已解析 URL」样板，**替代内联 data-URI 硬编码**。两条素材路径都在此示范：**自产程序化 SVG**（零外部文件·"游戏=数据"）+ **vendor 真美术**（Kenney UI Pack·CC0·`node scripts/vendor-asset.mjs kenney-ui/blue-button05 game-i --as tex/btn-blue`·带 `vendoredFrom` 溯源）。
 - 索引/类型：`src/assets/index.ts`（`ASSET_TYPES`/`AssetIndex`）、`assets/index.json`、`assets/FreeArtLib/index.json`。
 
 ## ③ 本线红线
@@ -50,7 +50,7 @@ Free Library（共享 `assets/index.json` + `FreeArtLib/`）= **货架·只被 c
 - 本地根：`public/games/<game>/art/`；本地索引：`public/games/<game>/art/index.json`（站点绝对路径 `/games/<game>/art/...` + `baseUrl ''`，游戏侧 `registerAssetIndex(parseAssetIndex(local))` 直接消费）。
 - 分类子目录（约定）：`textures/`（贴图）· `models/`（mesh glb）· `materials/`（`type:'material'` 数据资产·无文件可省目录）· `env/`（天空盒 hdr）。3D 别混进 2D 平铺目录。
 - 工具：`node scripts/vendor-asset.mjs <shared-id> <game> [--as <local-id>] [--json]`（2D/3D 同一条·携 spec/license/`provenance.vendoredFrom`·幂等；材质等数据型无文件也支持；`--json` 机读）。
-- **软件内直达**：Studio 资源库网格里**右键**任一「项目资产」→ 弹游戏列表 → 点某游戏即 copy 进它本地库（`POST /api/assets/vendor`·薄胶水 shell 调本脚本；`GET /api/games` 枚举 src/games/game-*）。FreeArtLib/游戏清单来源暂不支持右键 vendor（脚本源限共享 `assets/index.json`）。
+- **软件内直达**：Studio 资源库网格里**右键**任一「项目资产」→ 弹游戏列表 → 点某游戏即 copy 进它本地库（`POST /api/assets/vendor`·薄胶水 shell 调本脚本；`GET /api/games` 枚举 games/game-*）。FreeArtLib/游戏清单来源暂不支持右键 vendor（脚本源限共享 `assets/index.json`）。
 - 🚫 反例：游戏直引 `public/textures/` 等全局散落目录（绕过货架+本地索引）——正被 `REQ-PA-3D公用货架` ④b 消解。
 
 ## ⑦ 公用 3D 基础素材货架（可 vendor·`scripts/gen-shelf-3d.mjs` 备料）

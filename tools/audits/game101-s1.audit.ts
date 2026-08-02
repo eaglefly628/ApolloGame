@@ -1,8 +1,8 @@
 // 审计入口：game101《海港绯闻》S1 主界面（活板·benchmark 对齐版）。
 // 用法：node tools/ui-audit.mjs tools/audits/game101-s1.audit.ts
 import { mountUI } from '../../src/ui/components/index.js';
-import { buildS1Live, type S1State } from '../../src/games/game101/s1.js';
-import { GAME101_THEME } from '../../src/games/game101/ui-theme.js';
+import { buildS1Live, type S1State } from '../../games/game101/s1.js';
+import { GAME101_THEME } from '../../games/game101/ui-theme.js';
 
 // 样例态（含可交付订单/物品）供审计覆盖。
 const cells: S1State['cells'] = new Array(63).fill(null);

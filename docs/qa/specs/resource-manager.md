@@ -14,7 +14,7 @@
 - [x] 有明确的阶段/步骤结构（≥2 节：§1 Vendor / §2 材质 / §3 spec 元数据 / 边界纪律）
 - [ ] 判词属闭集 ——**现状缺口**：无命名判词；靠 parseAssetIndex 抛错 + 门禁退出码硬失败
 - [x] 危险/越域操作有域约束声明（三条红线 + 「`src/assets/**` 引擎核心跨界改动 Lead review」+「3D 资产需求进 `docs/workflow/requests-3d.md`」+「别引入新 `Resource` 类型」）
-- [x] 有下一步交接（契约/进度 `docs/workflow/finish/P3D-asset-layer-handoff.md`；自检 `src/games/game-z/vendor.test.ts`）
+- [x] 有下一步交接（契约/进度 `docs/workflow/finish/P3D-asset-layer-handoff.md`；自检 `games/game-z/vendor.test.ts`）
 
 ## 测例（5 原型·失败路径必测）
 

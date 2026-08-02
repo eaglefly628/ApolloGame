@@ -19,7 +19,7 @@
 
 ## 三、双数据源（同一个面板·差异只在写回）
 
-| | library 卡带（studio 产出） | 编译期游戏（src/games·如 game-q） |
+| | library 卡带（studio 产出） | 编译期游戏（games·如 game-q） |
 |---|---|---|
 | 台账来源 | `derive`（扫 manifest art: 槽位） | `deriveRequirements`（扫蓝图视觉实体·`scripts/game-q-art-requirements.mjs`） |
 | 写回机制 | 按编号**重钉 manifest 引用**（落盘前 parseManifest 零 error 铁律） | **skinKey 别名登记**进本地 index（蓝图零改动·见 §五） |

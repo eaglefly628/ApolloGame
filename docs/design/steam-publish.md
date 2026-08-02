@@ -78,7 +78,7 @@ Steam 能力全部经**端口（EnginePort 家族）**接入，与现有 AudioPo
 |---|---|
 | `src-tauri/`（或 `desktop/`）—— Tauri 壳，全新目录 | `src/engine/`（sim/协议核心） |
 | `src/services/steam/`—— SteamPort + 后端，全新（仿 audio/aigp 范式） | `src/skills/`（capabilities / 战斗簇） |
-| `src/services/storage/steam-cloud.ts`—— StoragePort 的新后端 | `src/games/*`（PA/PB/PC/PD 的游戏数据） |
+| `src/services/storage/steam-cloud.ts`—— StoragePort 的新后端 | `games/*`（PA/PB/PC/PD 的游戏数据） |
 | `scripts/publish-steam.mjs`—— 打包 CI，全新 | `src/renderer/` / `src/net/lockstep`（只读，不改） |
 | vite/tauri 配置文件 | 任何 manifest / 组件契约 |
 

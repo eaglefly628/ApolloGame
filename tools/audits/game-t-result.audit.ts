@@ -2,7 +2,7 @@
 // 用法：node tools/ui-audit.mjs tools/audits/game-t-result.audit.ts --w 440 --h 780
 // Particles=铺满父容器的装饰发射层（render-only 意图叠层）→ 标 data-allow-overlap。
 import { mountUI } from '../../src/ui/components/index.js';
-import { buildResultOverlay, type HudState } from '../../src/games/game-t/hud.js';
+import { buildResultOverlay, type HudState } from '../../games/game-t/hud.js';
 import { apolloToon } from '../../src/ui/apollo-toon-theme.js';
 
 const s: HudState = {

@@ -22,7 +22,7 @@
 
 - **合并板 = play-field**（引擎渲染组件·**按 UI 铁律不归 LayoutNode**）。本树里的 `board-grid` 是 **LayoutNode 网格占位·仅设计示意**；实装时板走引擎 render 组件（`grid-drag-square` + rendering-fx），LayoutNode 只管 chrome（HUD/订单/导航/弹层）。
 - **`src/ui/**` 与 `tools/audits/**` 是 PUI 地盘**，本设计**未改动**（渲染只读引用）。缺控件→走 requests.md 报 PUI，绝不手写 React。
-- **落地归 PE**：capability-plan 过审后，PE 把本树移植进 `src/games/game101/`（做成 `buildS1(): LayoutNode` builder·数据一致），并在落地时跑 `/check-ui`（防重叠/对比度/透明度/布局卫生）+ `node tools/ui-audit.mjs`。
+- **落地归 PE**：capability-plan 过审后，PE 把本树移植进 `games/game101/`（做成 `buildS1(): LayoutNode` builder·数据一致），并在落地时跑 `/check-ui`（防重叠/对比度/透明度/布局卫生）+ `node tools/ui-audit.mjs`。
 - **主题**：`game101-theme.tokens.json` 是设计令牌参考；正式 game101 UITheme 由 PE/PUI 建（参照 game-g `ui-theme.ts` 样板）。
 
 ## 复现渲染（设计侧自检·不改仓库）

@@ -1,7 +1,7 @@
 # Game A ·《掼蛋夜宴》验收剧本包（S4 裁判 · REQ-ACCEPT）
 
 > 作者=GD-A（懂规则方）。剧本=纯数据，harness 驱动**真引擎**（`GuandanSession`）逐步对账，
-> 断言只读机读态（Resource/Flag/StringVar·不读 DOM）。PE 落薄适配 `src/games/game-a/acceptance-adapter.ts`
+> 断言只读机读态（Resource/Flag/StringVar·不读 DOM）。PE 落薄适配 `games/game-a/acceptance-adapter.ts`
 > （纯接线零规则）、**不得改本目录剧本**；剧本写错=GD 改 + 记录。规则真相=`docs/design/game-a/gdd.md`。
 
 跑：`npx vite-node scripts/acceptance-run.mjs --game game-a`（全部进 vitest `scripts/acceptance.test.mjs` 推送门禁自动咬）。

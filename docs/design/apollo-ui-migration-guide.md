@@ -6,9 +6,9 @@
 > 配套读：
 > - `apollo-ui-contract.md` —— 30 控件 props 总表（填什么数据）
 > - `apollo-ui-porting-contract.md` —— 渲染后端（HTML→Canvas/微信小游戏）
-> - **活样板：`src/games/game-i/`** —— 30 控件 + 2 个组合演示 + 绑定/拖放/动画，照抄即可
+> - **活样板：`games/game-i/`** —— 30 控件 + 2 个组合演示 + 绑定/拖放/动画，照抄即可
 >
-> **分工**：UI 库（控件/能力/契约/样板/评审）归 Lead；**各游戏的屏迁移在自己 `src/games/<game>/` 里做**，缺能力提 `requests.md`，不自行改 `src/ui`。
+> **分工**：UI 库（控件/能力/契约/样板/评审）归 Lead；**各游戏的屏迁移在自己 `games/<game>/` 里做**，缺能力提 `requests.md`，不自行改 `src/ui`。
 
 ---
 
@@ -39,7 +39,7 @@ LayoutNode 树 ──┤
 
 ### 步骤 ② 事件 → 信号名 + HandlerMap
 - 每个可点元素填 `action` (+`actionArg`)；把原来 `onclick`/`data-act` 分支逻辑搬进 `handlers`。
-- 样板：`src/games/game-i/handlers.ts`（信号名 → 回调）。
+- 样板：`games/game-i/handlers.ts`（信号名 → 回调）。
 
 ### 步骤 ③ 状态驱动
 - **只读世界数据（HUD）**：用 `bind: 'resourceId'`，挂载前 `resolveBindings(tree, dataSource)` 自动填值。样板：game-i 活 HUD（`game-i.ts` 的 `dataSource` + `resolveBindings`）。

@@ -56,7 +56,7 @@ export interface Level {
   note?: string;
 }
 
-// ── 计分/模型常量 —— **口径与 runtime 严格对齐** (src/games/game-t/theme.ts) ──────
+// ── 计分/模型常量 —— **口径与 runtime 严格对齐** (games/game-t/theme.ts) ──────
 //   SCORE_PER_TILE=60 (coinResource='score'·coinPerTile=60·平铺)；BRUSH_PER_MOVE=1000 (收笔剩步×1000)。
 //   ⚠ CASCADE_MULT=1.0：引擎当前**平铺 60/珠·无连锁倍率**(GDD §四 的连锁×1.5 = 引擎 config 缺口·主池
 //   REQ-M3-计分倍率 未落地)。故 sim 按平铺定标以杜绝「sim↔runtime 口径漂移」(run1 教训·requests T-103)；

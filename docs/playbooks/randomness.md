@@ -19,7 +19,7 @@
 ## ② 样例指针
 
 - registry：`w1-random` 的 `describe.examples`（掉落 / 弹幕散射 / 重放存 seed）。
-- 真实用法：`src/games/game-g/clash-resolve.ts`（种子化对掷）、`src/games/game-g/coin-flip.ts`（种子硬币）。
+- 真实用法：`games/game-g/clash-resolve.ts`（种子化对掷）、`games/game-g/coin-flip.ts`（种子硬币）。
 - 算法/断言：`src/skills/atoms/random/random.test.ts`、`seeded-shuffle.test.ts`。
 
 ## ③ 本线红线
@@ -31,7 +31,7 @@
 ## ④ 正样例 / 反面教材
 
 - ✅ `src/skills/tier2/dice-roll.ts`：消费世界单例 `RandomSeed` 掷骰，`runsBefore` 打破 RMW 伪环。
-- ✅ `src/games/game-g/clash-resolve.ts`：对掷全程种子化。
+- ✅ `games/game-g/clash-resolve.ts`：对掷全程种子化。
 - ✖ 手写 `Math.random()` 做掉落/洗牌/掷骰（game-d 旧手写 sim 曾踩，已推倒）。
 
 ## ⑤ 查不到怎么办

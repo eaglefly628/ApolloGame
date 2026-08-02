@@ -1,6 +1,6 @@
 # 能力总览 Capability Plan — game101《海港绯闻》(Merge & Story 复刻)
 
-> 复制自 `docs/design/capability-plan-template.md` 填写。**代码游戏**（src/games/game101 将有装配/胶水层代码）→ 本 plan 须交 Lead 评审过审后才许写游戏层代码。
+> 复制自 `docs/design/capability-plan-template.md` 填写。**代码游戏**（games/game101 将有装配/胶水层代码）→ 本 plan 须交 Lead 评审过审后才许写游戏层代码。
 > 落地后用 `node scripts/game-skill-audit.mjs game101` 核对偏差。
 > **GD-101 视角判断：合并玩法与本引擎现有能力高度契合，绝大部分可数据表达；仅 4 处待确认缺口（§2.5），倾向"组合现有能力"或"下沉通用能力"，尽量不写 game101 私有 system。**
 

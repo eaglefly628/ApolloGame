@@ -1,7 +1,7 @@
 // 审计入口：game-a《掼蛋夜宴》S4 盘结算浮层（名次+金钱+级数·run-won 变体·纯 LayoutNode·缺省 SHELL 皮）。
 // 用法：node tools/ui-audit.mjs tools/audits/game-a-result.audit.ts --w 1280 --h 720
 import { mountUI } from '../../src/ui/components/index.js';
-import { buildResult, type ResultView } from '../../src/games/game-a/hud.js';
+import { buildResult, type ResultView } from '../../games/game-a/hud.js';
 
 const view: ResultView = {
   lang: 'zh',

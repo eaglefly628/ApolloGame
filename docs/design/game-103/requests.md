@@ -1,7 +1,7 @@
 # game-103《幸存者》· 游戏级工单池（bug / 迭代）
 
 > owner 试玩反馈驱动 · GD-103 triage（读源码定位根因·非施工）。游戏级工单随游戏走·不占引擎池槽（CLAUDE.md）。
-> 状态：`open` / `in-progress` / `done`（附 commit）。归属：**PE**=游戏层（`src/games/game-103/`）；**引擎**=Lead 域（升级到 `docs/workflow/requests.md`）。
+> 状态：`open` / `in-progress` / `done`（附 commit）。归属：**PE**=游戏层（`games/game-103/`）；**引擎**=Lead 域（升级到 `docs/workflow/requests.md`）。
 
 ---
 
@@ -127,7 +127,7 @@
 > **验收**：观感/交互零变化 + game-103 vitest 绿 + `node scripts/scoped-gate.mjs --run`。红线：不碰 sim/蓝图/hash 面，不趁迁移调数值。
 
 ### REQ-103-未报备代码销账 · achievements.ts + leaderboard.ts 94 行 · [2026-07-29] · Lead 记账（图纸 ④）→ **指派：PE-103（补 plan）** · status: open · 类型: 治理欠账（capability-plan 偏差）
-> **事实**：`src/games/game-103/achievements.ts`（54 行）+ `leaderboard.ts`（40 行）= **94 行游戏层代码，capability-plan 未报备**（plan §4 只裁了 E1–E4 编排三处，成就/排行榜两块从未进过例外表）。且二者与引擎既有件**功能重叠**：成就解锁/统计 = `services/platform` 的 `AchievementSync`+`ACHIEVEMENTS`+`PlatformPort.unlockAchievement/setStat`；排行榜上传 = `PlatformPort.uploadLeaderboard`；本地持久化 = 新落地的 `services/persist`。
+> **事实**：`games/game-103/achievements.ts`（54 行）+ `leaderboard.ts`（40 行）= **94 行游戏层代码，capability-plan 未报备**（plan §4 只裁了 E1–E4 编排三处，成就/排行榜两块从未进过例外表）。且二者与引擎既有件**功能重叠**：成就解锁/统计 = `services/platform` 的 `AchievementSync`+`ACHIEVEMENTS`+`PlatformPort.unlockAchievement/setStat`；排行榜上传 = `PlatformPort.uploadLeaderboard`；本地持久化 = 新落地的 `services/persist`。
 > **要求（两步·随上面的迁移单一起做完）**：
 > 1. **补 plan §4 条目**：在 `docs/design/game-103/capability-plan.md §4` 表后加一行例外记账（"E5 成就/本地榜 = 局外壳层表现件"），写清**为何当时没走 AchievementSync/PlatformPort**（可能的正当理由：无平台壳时的纯本地展示层），交 Lead 复裁。
 > 2. **随迁移消解**：持久化那半（`achievements.ts:38-54`+`leaderboard.ts:24-40`）改用 `services/persist`；判定/排序那半（`newlyUnlocked`/`recordScore`）——**排序并入 `insertRanked`**；`ACHIEVEMENTS` 阈值表 + `newlyUnlocked` 若与 `services/platform` 的 `AchievementSync` 语义等价则改接端口（`NullPlatformPort` 下自动静默降级=现有纯本地行为），**不等价再回报 Lead 留作已报备的游戏层例外**。

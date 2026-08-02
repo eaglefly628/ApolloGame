@@ -6,7 +6,7 @@
 ## 🔴 P0 — 不做就过不了 S4、也不好玩
 
 ### R1 · 落 acceptance-adapter + 跑验收剧本绿（S4 机器门的一半）
-- [ ] 建 `src/games/game-103/acceptance-adapter.ts`（`createWorld/applySignal/readWorld`·**纯接线零规则**·照 `src/games/game-a/acceptance-adapter.ts` 样板）。
+- [ ] 建 `games/game-103/acceptance-adapter.ts`（`createWorld/applySignal/readWorld`·**纯接线零规则**·照 `games/game-a/acceptance-adapter.ts` 样板）。
 - [ ] 投影 6 键（README 表）：`hp/xp/level/clock/kills` res + `status` sv(GameFlow.current)；转发 `pick_<key>`/`restart`。
 - [ ] `npx vite-node scripts/acceptance-run.mjs --game game-103` → **01–04 绿**（05 待 config）。
 - 判据：`gate game-103 S4` 机器门 ≥3 剧本 conformance 绿。

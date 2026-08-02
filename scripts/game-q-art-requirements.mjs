@@ -2,7 +2,7 @@
 // 的反面教材）→ 产出资产需求表（每条=一个视觉实体需要的美术 + 当前占位 + 美术需求描述）。
 // vite-node 跑（import game-q 的 TS buildBlueprint）。用法：npx vite-node scripts/game-q-art-requirements.mjs [--gen]
 //   --gen：额外把需求表喂批处理（mock·pixel-retro 风格包·无 key→占位），产物落 scratch root（不碰仓库 game-q）。
-import { buildBlueprint } from '../src/games/game-q/index.ts';
+import { buildBlueprint } from '../games/game-q/index.ts';
 import { deriveRequirements, batchGenerate, mergeLedger } from './art-replace.mjs';
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';

@@ -1,7 +1,7 @@
 # Game E · 小丑牌 Rollout 清单（150 全表 → 按能力分桶）
 
 > 配合 `docs/workflow/requests.md` 的 **REQ-E-023**。主程按「能力」实现，**每个能力的验收 = 下面对应分组里的小丑都能用纯数据表达并生效**。
-> 数据/型号源：`src/games/game-e/joker-catalog.ts`（150 全表元数据）。可执行子集见 `jokers.ts` 的 `STARTER_JOKERS`。
+> 数据/型号源：`games/game-e/joker-catalog.ts`（150 全表元数据）。可执行子集见 `jokers.ts` 的 `STARTER_JOKERS`。
 > 标注：`[chips/mult/money]` = 作用目标；`add/mul` = op；`per-card` = on_scored 逐张；`indep` = on_hand_scored 整手一次。
 
 ---

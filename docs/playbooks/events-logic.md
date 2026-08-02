@@ -25,7 +25,7 @@
 ## ② 样例指针
 
 - registry：`t2-event-when`/`t2-effect-apply`/`t3-flow`/`t3-timeline` 的 `describe.examples`。
-- 真实用法：`src/games/game-g/flow-walk.test.ts`（流程机）、`src/games/game-i/fsm-lab.ts`（状态机台）。
+- 真实用法：`games/game-g/flow-walk.test.ts`（流程机）、`games/game-i/fsm-lab.ts`（状态机台）。
 - UI 侧信号入队见 ui.md（`mountUI` 的 `ActionSink`）。
 
 ### 演出时序（timeline·管「何时」）

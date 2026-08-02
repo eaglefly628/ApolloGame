@@ -13,7 +13,7 @@ from .sysutil import ROOT, c
 
 # ── 打包任务（发布屏：每游戏×每平台 一次「打包」→ 出可分发产物 →「下载」·owner 07-12）──────
 # 平台闭集：web=单文件自包含 HTML（双击即玩）· mac=.dmg · win=.zip · handheld=掌机单HTML+tar.gz。
-# 内置 src/games 游戏（e/f/g/i/x 有卡带工程）走 VITE_TARGET_GAME 静态 import；生成的库卡带（纯数据
+# 内置 games 游戏（e/f/g/i/x 有卡带工程）走 VITE_TARGET_GAME 静态 import；生成的库卡带（纯数据
 # manifest）web 平台走 scripts/package-web.mjs（内联 manifest 打自包含单 HTML·REQ-PKG 引擎内联钩子已落地）。
 # 打包串行（共享 dist-cartridge/·避免并发互踩），一次一个。
 _PKG_JOBS: dict = {}
@@ -30,7 +30,7 @@ _PKG_PLATFORMS = {
     'doki':     {'label': 'DokiWorld 卡带 .zip', 'ext': 'zip', 'needMac': False},
     'doki-dist': {'label': 'DokiWorld 部署产物 dist .zip', 'ext': 'zip', 'needMac': False},
 }
-# 内置卡带工程游戏（有 src/games 入口·可打卡带/桌面）——与 scripts/dist.py 的 GAME_META 对齐。
+# 内置卡带工程游戏（有 games 入口·可打卡带/桌面）——与 scripts/dist.py 的 GAME_META 对齐。
 _PKG_BUILTIN_META = {
     'game-e': ('ApolloBalatroDeck', 'com.apollo.gamee'),
     'game-f': ('ApolloPixelKingdoms', 'com.apollo.gamef'),
@@ -359,7 +359,7 @@ def handle_package_job_start(body: dict) -> dict:
         return {'success': False, 'error': f'非法 slug: {slug}'}
     if platform not in _PKG_PLATFORMS:
         return {'success': False, 'error': f'未知平台: {platform}（web/mac/win/handheld/zip/react）'}
-    exists = (LIBRARY_DIR / slug / 'manifest.json').is_file() or (ROOT / 'src' / 'games' / slug).is_dir() \
+    exists = (LIBRARY_DIR / slug / 'manifest.json').is_file() or (ROOT / 'games' / slug).is_dir() \
         or (ROOT / 'public' / 'games' / slug / 'manifest.json').is_file()
     if not exists:
         return {'success': False, 'error': f'游戏不存在: {slug}'}

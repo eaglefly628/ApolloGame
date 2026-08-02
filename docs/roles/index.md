@@ -17,9 +17,9 @@
 |---|---|---|---|---|
 | **LEAD** | 主程 / 架构 | 引擎唯一守门人：评审/裁决/下沉/派工/对抗性验收；出图纸不施工（施工派 Opus） | `src/{engine,skills,assembly,services,net}` + 规则文档 | `roles/LEAD.md` |
 | **GD-\<game\>** | 游戏策划 | 单游戏设计（实例：GD-D/GD-G·owner 2026-07-04 拍板每游戏一个 GD）：GDD/capability-plan/数值/内容表；**只产数据与文档，零代码** | **只限本游戏** `docs/design/<自己的game>/**`；共用设计目录（`docs/design/` 根的宪法/评审/模板）与别的游戏目录**不许写**——跨游戏共性走 requests.md 提 LEAD | `roles/GD.md`（通用卡）+ 策划白皮书 |
-| **PE-\<game\>** | 游戏程序员 | 单游戏 gameplay（实例：PE-G 甲乙/程序A、PF 等）；先查线手册用基座件 | `src/games/<自己的game>/**` | `roles/PE.md`（通用卡）+ 各游戏 handoff |
+| **PE-\<game\>** | 游戏程序员 | 单游戏 gameplay（实例：PE-G 甲乙/程序A、PF 等）；先查线手册用基座件 | `games/<自己的game>/**` | `roles/PE.md`（通用卡）+ 各游戏 handoff |
 | **P3D** | 3D 引擎程序员 | 3D 盒庭渲染线 + game-z/d；render-only 红线 | 见其 handoff §0.1 三档表 | `docs/workflow/finish/P3D-game-z-handoff.md`（既有卡·即角色卡） |
-| **PUI**（草案·owner 2026-07-16 设立） | UI 基座 + 展示台程序员 | UI 库渲染线（LayoutNode 控件闭集 + catalog + 校验器 + 主题）+ game-i 展示台；UI 铁律红线（**P3D 的镜像**） | ✅ `src/ui/**` + `src/games/game-i/**` + `tools/ui-audit`+`audits/**` + UI 手册；🔶 launcher game-i 两行；🔒 其余引擎/游戏（见卡三档表） | `roles/PUI.md` |
+| **PUI**（草案·owner 2026-07-16 设立） | UI 基座 + 展示台程序员 | UI 库渲染线（LayoutNode 控件闭集 + catalog + 校验器 + 主题）+ game-i 展示台；UI 铁律红线（**P3D 的镜像**） | ✅ `src/ui/**` + `games/game-i/**` + `tools/ui-audit`+`audits/**` + UI 手册；🔶 launcher game-i 两行；🔒 其余引擎/游戏（见卡三档表） | `roles/PUI.md` |
 | **PS** | 发行工程师 | 打包/Steam 上架/平台接线（成就/云存档/富状态） | `steam-publisher/**`·`electron/**`·`scripts/dist*` | `roles/PS.md` + 发行白皮书 |
 | **PA** | 资产管理员 | 美术资产导入/登记/接线；asset-index 单一真相 | `assets/**` + 资产索引 | `roles/PA.md`（薄卡：主体=asset-manager agent 定义 + resource-manager 技能） |
 | **PST** | 创作台产品工程师 | 创作台产品线（apollo.py 服务面 + launcher/studio 前端）；引擎只读 | `apollo.py`·`src/launcher.tsx`·`src/studio/**` | `roles/PST.md` |

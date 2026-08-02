@@ -396,7 +396,7 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
   );
 }
 
-// ═══ 游戏选择器（owner 07-09 review ③）：美术平台入口=先选游戏目录——内置（src/games）+ library 卡带全列，
+// ═══ 游戏选择器（owner 07-09 review ③）：美术平台入口=先选游戏目录——内置（games）+ library 卡带全列，
 // 每个游戏一个美术资料库。点击进入该游戏的台账面板（library 缺台账会自动 derive 初始化）。 ═══
 export function ArtGamePicker({ onPick, onBack }: {
   onPick: (g: { slug: string; title: string; kind: 'builtin' | 'library' }) => void;
@@ -432,7 +432,7 @@ export function ArtGamePicker({ onPick, onBack }: {
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
         {loading ? <div style={{ color: SHELL.dim }}>加载游戏列表…</div> : (
           <>
-            <div style={{ ...sLabel, marginBottom: 8 }}>内置游戏（src/games）</div>
+            <div style={{ ...sLabel, marginBottom: 8 }}>内置游戏（games）</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
               {builtin.map((g) => card(g.id, g.id, g.hasLocalArt ? '已有本地美术目录' : '尚无本地美术目录', '编译期', () => onPick({ slug: g.id, title: g.id, kind: 'builtin' })))}
               {builtin.length === 0 && <div style={{ color: SHELL.dim, fontSize: 12 }}>（无）</div>}

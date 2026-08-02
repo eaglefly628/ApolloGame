@@ -45,7 +45,7 @@ describe('scanDir · 零 key 断言', () => {
   });
 
   it('不误伤短的合法 "sk-" 前缀数据 id（game-i 皮肤画廊命名习惯）', () => {
-    // 真实场景：src/games/game-i/gallery.ts 里的 'sk-wood-rib' / 'sk-scroll-pill' 等控件 id——
+    // 真实场景：games/game-i/gallery.ts 里的 'sk-wood-rib' / 'sk-scroll-pill' 等控件 id——
     // 短（个位数~十来个字符），必须放过；只有 20+ 字符的长串才该被当成疑似 key。
     writeFileSync(join(dir, 'gallery.js'), `const ids = ['sk-metal', 'sk-wood-rib', 'sk-scroll-pill', 'sk-9-slice'];`);
     const { hits } = scanDir(dir);

@@ -12,7 +12,7 @@
 
 ## 0. 你是谁 · 边界在哪（先读这条，别越界）
 
-- 你**主管两块**：① 引擎 **3D 盒庭渲染线**（`src/renderer` 的 3D 部分 + 几个 render-only 3D 组件）；② **Game Z**（`src/games/game-z`，纯数据盒庭游戏）。
+- 你**主管两块**：① 引擎 **3D 盒庭渲染线**（`src/renderer` 的 3D 部分 + 几个 render-only 3D 组件）；② **Game Z**（`games/game-z`，纯数据盒庭游戏）。
 - **数据驱动宣言是最高纲领**（`docs/design/data-driven-manifesto.md`）。尺子：「最弱的 LLM 能不能也产出一模一样的数据？」能→数据接口；不能→拒绝/下沉成 capability。**整个游戏是数据；代码只属于引擎这台固定的确定性解释器。**
 - **UI 铁律**：Game Z 的 HUD/菜单/面板必须用引擎 UI 库 `ui/components` 的 `LayoutNode` 纯数据（控件=闭集，写世界=action 信号入队）。**盒庭/战场本体走 render 组件 + 引擎渲染器**（也是数据，非 UI 库）。**禁止手写 React 屏 / 自由 CSS·DOM**。
 - **确定性红线**：所有 3D「观感」（相机/光/阴影/材质/后处理/天空盒/3D 位姿）是**纯表现**——**绝不被 sim 逻辑(Condition)读、绝不进 lockstep hash**。新增的 render-only 组件必须登记进 `src/net/determinism.ts` 的 `NON_DETERMINISTIC`。
@@ -26,8 +26,8 @@
 | `src/renderer/three-renderer.ts` | ✅ 你 | 3D 后端解释器。改前提：无 `Camera3D` 必退回原 2D 行为（别破坏 three-lab/2D 后端）。 |
 | `src/renderer/three-projection.ts` | ✅ 你 | 3D 纯函数（无 three）。新几何先在这写 + 单测。 |
 | `src/renderer/three-camera3d.test.ts` | ✅ 你 | 3D 渲染测试。 |
-| `src/games/game-z/**` | ✅ 你 | Game Z = **3D 渲染线实验台/提需求载体**（owner 2026-06-29 定·不再做玩法）。 |
-| `src/games/game-d/**` | ✅ 你 | 整个 Game D《骰途》——双人骰子 Roguelike（owner 2026-06-29 授权 P3D 用 game-d 槽位承载·D=Dice）。设计见 `docs/design/game-d/{gdd,combat-design}.md`。骰子/buff/meta 等 sim 系统落地时若需新能力走 `requests.md` 报主程。 |
+| `games/game-z/**` | ✅ 你 | Game Z = **3D 渲染线实验台/提需求载体**（owner 2026-06-29 定·不再做玩法）。 |
+| `games/game-d/**` | ✅ 你 | 整个 Game D《骰途》——双人骰子 Roguelike（owner 2026-06-29 授权 P3D 用 game-d 槽位承载·D=Dice）。设计见 `docs/design/game-d/{gdd,combat-design}.md`。骰子/buff/meta 等 sim 系统落地时若需新能力走 `requests.md` 报主程。 |
 | `scripts/shoot-game.mjs` | ✅ 你 | 截图 harness（工具）。 |
 | `wiki/skills/rendering.md`（3D 章节） | ✅ 你 | 补 3D 渲染知识库（现仅 2D）。 |
 | `src/engine/protocol/components/render.ts` | 🔶 共享 | **2D+3D 组件混居**。你只加/改 **3D render-only 组件块**（Mesh3D/Transform3D/Camera3D/Sky3D/未来 Model3D/Light3D）；**绝不碰** Sprite/Camera/Text/Tween/Gauge 等 2D/sim 组件。 |
@@ -40,7 +40,7 @@
 | `src/renderer/canvas-renderer.ts`·`ascii-renderer.ts`·`frame-svg.ts`·`index.ts` | 🔒 主程 | 2D 后端 + barrel。**走 `requests.md`**。 |
 | `src/ui/**` | 🔒 主程 | UI 库。你**消费** `LayoutNode` 搭 game-z HUD，但**不改库**；缺控件 → `requests.md`。 |
 | launcher 的 game-d 两行（GAMES 在 `src/launcher.tsx`·loaders 在 `src/launcher/game-runner.tsx`） | ✅ 你 | 同 game-z：只加 game-d 的 `GAMES`/`loaders` 注册两行。 |
-| 其它游戏 `src/games/game-{a..c,e..i,x}/**` | 🔒 别人 | 不碰（game-d 已划归 P3D·见上）。 |
+| 其它游戏 `games/game-{a..c,e..i,x}/**` | 🔒 别人 | 不碰（game-d 已划归 P3D·见上）。 |
 
 **三条总纲**：① 跨出「✅+🔶」范围的引擎改动 = 一律 `requests.md` 报主程评审，别直接动；② 改 🔶 共享文件**只动 3D 相关那部分**、且**改前知会**（多 session 并行，避免 rebase 互踩）；③ 任何改动**向后兼容**——不破坏 2D 后端 / three-lab / 现有游戏，**全绿才推**。
 
@@ -88,12 +88,12 @@
 
 ### 2.3 测试 / 工具
 - `src/renderer/three-camera3d.test.ts` —— 3D 纯函数 + 收集 + 「不进 hash」红线。
-- `src/games/game-z/diorama.test.ts` —— 盒庭蓝图/世界/角色走动。
+- `games/game-z/diorama.test.ts` —— 盒庭蓝图/世界/角色走动。
 - `scripts/shoot-game.mjs` —— **无头 Chromium(SwiftShader WebGL) 截图 harness**（出真 3D 预览图/回归图）。
 
 ---
 
-## 3. Game Z —— 现状（`src/games/game-z/`）
+## 3. Game Z —— 现状（`games/game-z/`）
 
 - `diorama.ts` —— **纯数据盒庭蓝图**：草地台 + 抬升石台站 Toad（红帽白身）+ 金阶梯 + 终点宝石 + 蘑菇 + 板条箱 + 天空盒 + **可控角色**。每物 = `Transform3D`(或角色用 2D `Transform`) + `Mesh3D`；一个 `Camera3D` + 一个 `Sky3D`。`capabilities:[motionApplyCapability]`（角色走动复用现成能力·无专属 system）。
 - `game-z.ts` —— 挂载：`Engine` 装载蓝图 → `ThreeRenderer` 渲染；HUD 走 `mountUI`(LayoutNode·含实时 FPS)；键盘（WASD/方向键）= 运行时输入胶水设角色 `Velocity`（`motion-apply` 每 tick 累加进 `Transform`·纯数据 sim·确定性）。

@@ -118,7 +118,7 @@ ST_BURNING = 1<<0;  ST_FROZEN = 1<<1;  ST_SHIELDED = 1<<2;
 
 ### 4.2 英雄 Prefab 结构要点
 
-> 引擎「一实体一组件类型」；hp 与 mana 须拆两实体（棋子本体 + mana sidecar）。唯一 id 策略：`mana_<id>`/`atk_<id>` 规避串台（§6 Gap A）。重复棋子待 REQ-021 落地后改。实际装配见 `src/games/game-f/blueprint.ts`。
+> 引擎「一实体一组件类型」；hp 与 mana 须拆两实体（棋子本体 + mana sidecar）。唯一 id 策略：`mana_<id>`/`atk_<id>` 规避串台（§6 Gap A）。重复棋子待 REQ-021 落地后改。实际装配见 `games/game-f/blueprint.ts`。
 
 ### 4.3 经济（banded，纯数据；Game E 已证此形态）
 

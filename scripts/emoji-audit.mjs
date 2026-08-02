@@ -25,11 +25,11 @@ function walk(dir, out = []) {
 }
 
 export function auditEmoji(game, { root = ROOT } = {}) {
-  const base = join(root, 'src', 'games', game);
+  const base = join(root, 'games', game);
   const files = walk(base);
   const hits = []; // {file, line, emoji, snippet}
   for (const f of files) {
-    const rel = f.slice(join(root, 'src', 'games', game).length + 1);
+    const rel = f.slice(join(root, 'games', game).length + 1);
     const lines = readFileSync(f, 'utf8').split('\n');
     lines.forEach((text, i) => {
       const t = text.trim();

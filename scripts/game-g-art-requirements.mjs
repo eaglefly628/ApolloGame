@@ -5,8 +5,8 @@
 //   · 3 个 UI 按钮皮（hero/primary/ghost·主题级 UITheme.buttonSkins 一体换）+ 牌背/对战背景接线（07-15 批29）
 // 用法：npx vite-node scripts/game-g-art-requirements.mjs
 // append-only：重跑 mergeLedger 并入现台账——保编号/状态/prompt/history；台账落 public/games/game-g/art/。
-import { HERO_CARDS } from '../src/games/game-g/hero-codex.ts';
-import { STORY_OPENING } from '../src/games/game-g/campaign-data.ts';
+import { HERO_CARDS } from '../games/game-g/hero-codex.ts';
+import { STORY_OPENING } from '../games/game-g/campaign-data.ts';
 import { mergeLedger } from './art-replace.mjs';
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';

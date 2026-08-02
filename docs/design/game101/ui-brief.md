@@ -246,5 +246,5 @@
 
 - 每屏产出 `layout/<screen>.layout.json` = **LayoutNode 纯数据树**（闭集控件·语义色令牌·`action` 信号）；用 game101 暖色主题（`layout/game101-theme.tokens.json`）。
 - 自检：`validateLayoutNode(tree)` 必须 **0 issue**；全流式布局防重叠；文字走语义色（对比达标）。设计侧用 `mountUI` 真渲染器出效果图（如 `layout/s1-preview.png`）。
-- 落地：PE 把 json 移植成 `src/games/game101/` 的 `buildXxx(): LayoutNode` builder，落地时跑 `/check-ui` + `tools/ui-audit.mjs`（PUI 域工具）。
+- 落地：PE 把 json 移植成 `games/game101/` 的 `buildXxx(): LayoutNode` builder，落地时跑 `/check-ui` + `tools/ui-audit.mjs`（PUI 域工具）。
 - **缺控件/缺色令牌 → `requests.md` 报 PUI 扩闭集，绝不手写 React/自由 CSS。**

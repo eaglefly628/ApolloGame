@@ -311,7 +311,7 @@ describe('resource-apply — scope:"source"（REQ-SPENDONFIRE：per-shot 扣发�
 });
 
 describe('resource-apply — 撞环回归（与 game102 blueprint.ts 能力清单同装）', () => {
-  // game102（src/games/game102/blueprint.ts）的完整 capabilities 清单原样搬来同装：证明
+  // game102（games/game102/blueprint.ts）的完整 capabilities 清单原样搬来同装：证明
   // ResourceModify.scope:'source' 的路由改动（读 PrefabOrigin、写任意实体 Resource）没有给这套
   // 已在生产蓝图使用的能力组合引入新的系统依赖环（topological-sort.ts 报 Circular 会在 addSystem/tick 炸出）。
   it('与 game102 全量能力清单同装 · 可 tick', () => {

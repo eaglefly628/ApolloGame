@@ -36,7 +36,7 @@
 | `camera`（原子） | 相机跟随玩家 | ✅ 现有 |
 | UI：`LayoutNode`（`ui/components`） | HUD（血/经验/计时）+ 升级三选一弹窗（action 信号入队） | ✅ 现有 |
 
-> 现成先例台：`src/games/game-i/physics-lab.ts`（运动）、`src/games/game-i/ai-lab.ts`（aggro+steering 群体追击）、`src/skills/tier2/hitbox.ts`/`over-time.ts`/`launch.ts`。
+> 现成先例台：`games/game-i/physics-lab.ts`（运动）、`games/game-i/ai-lab.ts`（aggro+steering 群体追击）、`src/skills/tier2/hitbox.ts`/`over-time.ts`/`launch.ts`。
 
 ## 3. 摆成数据的规则面
 

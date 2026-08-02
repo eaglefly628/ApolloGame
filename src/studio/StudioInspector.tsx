@@ -7,8 +7,8 @@ import type { WorldSnapshot } from '@engine/core/types.js';
 import { getCameraView } from '@engine/protocol/camera-view.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import { demoBlueprint } from '../assembly/demo.assembly.js';
-import { buildGameEBlueprint } from '../games/game-e/index.js';
-import { buildGameFBlueprint, GAME_F_ASSETS } from '../games/game-f/index.js';
+import { buildGameEBlueprint } from '@games/game-e/index.js';
+import { buildGameFBlueprint, GAME_F_ASSETS } from '@games/game-f/index.js';
 import {
   inspectBlueprint,
   blueprintStats,

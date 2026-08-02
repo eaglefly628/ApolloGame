@@ -86,6 +86,9 @@ export default defineConfig({
       '@renderer': resolve(__dirname, 'src/renderer'),
       '@ui': resolve(__dirname, 'src/ui'),
       '@net': resolve(__dirname, 'src/net'),
+      '@runtime': resolve(__dirname, 'src/runtime'),
+      '@assembly': resolve(__dirname, 'src/assembly'),
+      '@games': resolve(__dirname, 'games'),
     },
   },
   // 3D 渲染线的重依赖藏在**动态 import 的 3D 游戏**背后。Vite 冷启动扫描会跟进动态 import 把 three
@@ -125,8 +128,8 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**', '**/dist/**', '**/.claude/**',
       ...(process.env.APOLLO_DEEP === '1' ? [] : [
-        'src/games/game-f/**', // 冻结游戏（owner 勿删勿迁）·26s/133 测·没人开发→只慢车道跑
-        'src/games/game-g/flow-walk.test.ts', // 整局通关走查 8.4s/1 测·33 个单元文件已覆盖各片段
+        'games/game-f/**', // 冻结游戏（owner 勿删勿迁）·26s/133 测·没人开发→只慢车道跑
+        'games/game-g/flow-walk.test.ts', // 整局通关走查 8.4s/1 测·33 个单元文件已覆盖各片段
         'scripts/manifest-check.test.mjs', // 起进程跑 CLI 7.3s·库 manifest 校验（发版前跑够）
         'scripts/acceptance.test.mjs', // 起进程 3.1s·验收剧本harness
         'scripts/game-pipeline.test.mjs', // 起进程 2.4s·流程板 CLI（人用工具·不常改）

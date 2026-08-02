@@ -52,7 +52,7 @@
 
 - **GD-101**：本目录唯一写权限人（**只产数据与文档，零代码**）。
 - 能力缺口 / 跨游戏共性 → `docs/workflow/requests.md` 提 LEAD（引擎池·10 硬槽）；游戏级工单开本目录 `requests.md`（随游戏走·不占槽）。
-- 实现由 PE-101 领工（capability-plan 过审后）；UI 布局 GD-101 用真 LayoutNode 库出在 `layout/`，PE 移植进 `src/games/game101/`。
+- 实现由 PE-101 领工（capability-plan 过审后）；UI 布局 GD-101 用真 LayoutNode 库出在 `layout/`，PE 移植进 `games/game101/`。
 
 ## 开工词（owner 开 PE-101 施工 session 时整段粘贴·照 roles/index.md 标准模板）
 
@@ -63,13 +63,13 @@
 你被注入的 feature 分支是旧快照、绝不在其上开工。
 先决：capability-plan 必须 Lead 过审（未过审不得写游戏层系统代码）。
 本阶段只领 M1（八阶段·一会话一阶段·板未开先按 docs/playbooks/game-production.md 开板）：
-src/games/game101/ 用数据表 + 现有能力搭核心循环——merge-rule(need:2 每链一条) + grid-drag-square 板
+games/game101/ 用数据表 + 现有能力搭核心循环——merge-rule(need:2 每链一条) + grid-drag-square 板
 + prefab-spawn 生成器（clickable 触发·耗 f1-resource 体力）+ resource-apply(金币/星星) + timer-advance(体力恢复)
 + event-when/effect-apply(订单交付发奖) + w1-random(生成器掉落表·禁裸 Math.random)；
 headless 测试钉死（merge 确定性/掉落表同 seed 复现/体力恢复/订单交付发奖）。
 硬线不放松：种子 PRNG、禁手写 DOM（走 LayoutNode）、sim 确定性、零测试不出货。
 UI 布局用真 LayoutNode 库出在 docs/design/game101/layout/（纯数据·validateLayoutNode 0 issue），
-你按其移植成 src/games/game101/ 的 buildXxx(): LayoutNode，落地跑 /check-ui + ui-audit。
+你按其移植成 games/game101/ 的 buildXxx(): LayoutNode，落地跑 /check-ui + ui-audit。
 产出直推 claude/mainbranch（fetch→rebase→scoped-gate 全绿→push），绝不推 feature 分支。
 宣布「完成」必须贴 node scripts/game-pipeline.mjs board game101 输出——不全绿只许说「做到 SN」。
 ```

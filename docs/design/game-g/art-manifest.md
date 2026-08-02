@@ -17,7 +17,7 @@
 - ❌ 无本地美术目录 `public/games/game-g/art/`，无本地 `art/index.json`。
 - ❌ 无一处 `art:` 共享库引用、无 `assetKey` 字段 → `deriveAssetIndex` 对它导出空购物单。
 - ✅ 美术**全程序化**（SVG/canvas/CSS 生成 data-URI）——manifesto 合规（art=数据），但**不可被现有 vendor/ai-gen 平台"替换"**，因为槽位吃的是**函数产物**、不是**资产 id**。
-- ✅ **唯一真实资产文件** = 字体 ×12 `.woff2`（`src/games/game-g/assets/fonts/`，Vite 打包·本地 `@font-face`）。
+- ✅ **唯一真实资产文件** = 字体 ×12 `.woff2`（`games/game-g/assets/fonts/`，Vite 打包·本地 `@font-face`）。
 - ⚠️ **补漏（owner 2026-07-06 指出）：整个大厅/页面「底图·背板」漏在初版台账外**——就是全部大厅 UI 垫在最底下的那张背景。现状=纯 CSS 色/渐变（`.ggl-root{background:#0c0a08}` + 各 Screen `bg:var(--paper)` 渐变），**不是美术数据、是程序描述**，所以想「把底图那页画面换成一张图」时它不在台账上。已补为下表 **P0**。好消息：基座 `Screen` 控件**本就支持整图背景**（`props.image` = cover 整图 / `bgTexture` = 平铺 / `blur`），换图是数据活、无需扩控件。
 
 **结论**：要用新平台「替换」game-g 美术，得先把下表 P1/P2/P3 的程序化槽位**改接成 `art:` 引用或 ai-gen 落库**（接入步骤见 §2）。字体已是资产文件、可直接换。

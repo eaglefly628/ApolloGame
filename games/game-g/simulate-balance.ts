@@ -1,0 +1,327 @@
+// simulate-balance.ts -- Game-G 数值平衡仿真台（回合制战斗·关1温泉关通关率）
+// Run: npx vite-node games/game-g/simulate-balance.ts
+//
+// ⚠ Boss openingLevers 随旧 build-时 effect-apply 路（prepareArmies/applyInterventions）退役·已移除：
+//   军队改用裸生成器 armyFromFormation 造（玩家侧零效果·行为不变；Boss 侧丢弃起手干预）。
+//   sim 本就标「临时旧模型」，Boss 力量后续由 16 写死牌组 + 地煞 loader 表达，非本仿真台职责。
+import {
+  FORMATION_PRESETS, battleSpec, pickAiFormation, armyFromFormation,
+  TIANGANG_BY_ID, bossFor, RUN_BATTLES, deployCost, type ArmyCard,
+} from './index.js';
+import {
+  initTurnBattle, drawCard, deployUnit, castTengang, swapCard, endTurn, aiTakeTurn, bossOpeningGarrison,
+  OPENING_HAND, DRAW_COST, CAST_COST, SWAP_PER_TURN, type TurnBattle, type PokerCard, type TengangHandCard,
+} from './turn-combat.js';
+import { playerTakeTurnAI } from './player-ai.js'; // 终极版 Player-AI（前向推演搜索·owner 2026-07-03「推演敌人未来」）
+import { seededShuffle } from '@atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移）
+import { tengangFxOf, aggregateTengang } from './game-g-build.js'; // 天罡聚合改用 game-g-build 注册表版（删 sim 过期 if-else 复制·零漂移·Phase1 已证注册表==if-else）
+import { cardPoints, P_MAX } from './clash-resolve.js';
+import { loadLevel } from './level.js';
+
+declare const process: { exit(code: number): never };
+
+// ── Local helpers (pure functions from game-g.tsx, copied to avoid browser deps) ──
+
+const FAVOR_LO = 5, FAVOR_HI = 95;
+const favorToP = (favor: number): number =>
+  ((Math.max(FAVOR_LO, Math.min(FAVOR_HI, favor)) - FAVOR_LO) / (FAVOR_HI - FAVOR_LO)) * P_MAX;
+const cardRank = (c: ArmyCard): string => (c.rank === 'JOKER' ? '★' : c.rank);
+// 放牌费由 rank 查表写在卡上（契约B·deployCost）——否则 sim 里双方 cost 缺省=0=免费铺场→必 100%（owner 2026-06-21 修：sim 必须喂 cost 才真实）。
+const toPoker = (c: ArmyCard): PokerCard => ({
+  kind: 'poker', id: c.id, rank: cardRank(c), suit: c.suit, general: c.general,
+  buff: Math.round(favorToP(c.favor) - cardPoints(cardRank(c))),
+  cost: deployCost(cardRank(c)),
+});
+
+// 地支附魔（养成）：给玩家最值得镶的几张牌叠 favor。新手基线≈5 张铜地支(+4/张·INLAY_MAX=3/牌)。
+// 取最高 favor 的牌优先镶满（玩家就把地支镶在核心英雄上）；inlayFavorTotal=总加成点，按 ≤3 槽×档摊到顶尖牌。
+function applyInlayFavor(cards: ArmyCard[], inlayFavorTotal: number, perCardCap = 3 * 14): ArmyCard[] {
+  if (inlayFavorTotal <= 0) return cards;
+  const idxByFavor = cards.map((c, i) => ({ i, f: c.favor })).sort((a, b) => b.f - a.f).map((x) => x.i);
+  let left = inlayFavorTotal;
+  const out = cards.map((c) => ({ ...c }));
+  for (const i of idxByFavor) {
+    if (left <= 0) break;
+    const add = Math.min(left, perCardCap);
+    out[i] = { ...out[i], favor: Math.max(5, Math.min(95, out[i].favor + add)) };
+    left -= add;
+  }
+  return out;
+}
+
+// seededShuffle / tengangFxOf / aggregateTengang 已收敛——洗牌→atoms、天罡聚合→game-g-build（删本地过期复制·见上方 import）。
+// 注：game-g-build.aggregateTengang 内部走 TIANGANG_BY_ID（与原 sim 同源）→ 行为一致。
+
+// ── Player greedy agent（skill1 对照·owner 2026-07-03 更新到三行为自由模型）──
+// 新模型：抽/打/换互不互斥·只被源泉限制 → 贪心一回合内自由混：施天罡 + 换掉废牌(1/回合) + 按 cost 铺兵 + 手空补抽，全在一个回合里穿插。
+// Lane selection: prioritize lane most threatened by enemy (highest enemy count − own count).
+
+function playerTakeTurn(b: TurnBattle): void {
+  if (b.winner !== 'pending' || b.active !== 'a') return;
+  const sd = b.a;
+  // ① 施天罡（有就施·买得起·铺 buff）——现可与放牌自由混(不再互斥·打完接着放)。
+  {
+    let guard = 0;
+    while (guard++ < 6) {
+      const tIdx = sd.hand.findIndex((c) => c.kind === 'tengang');
+      if (tIdx === -1 || sd.mana < CAST_COST) break;
+      if (!castTengang(b, 'a', tIdx)) break;
+      sd.tengangA = aggregateTengang(sd.castIds);
+      sd.castFx = sd.castIds.map((id) => ({ id, fx: aggregateTengang([id]) }));
+    }
+  }
+  // ② 换牌（1/回合·免费·把最废的一张兵换成随机新牌·仅当明显低于手均才动用唯一换牌）。
+  if (sd.swapsUsed < SWAP_PER_TURN && sd.pokerDeck.length) {
+    const pokers = sd.hand.map((c, i) => ({ c: c as PokerCard, i })).filter((x) => x.c.kind === 'poker');
+    if (pokers.length >= 2) {
+      let worst = pokers[0]; for (const x of pokers) if (cardPoints(x.c.rank) < cardPoints(worst.c.rank)) worst = x;
+      const avg = pokers.reduce((s, x) => s + cardPoints(x.c.rank), 0) / pokers.length;
+      if (cardPoints(worst.c.rank) < avg - 1) swapCard(b, 'a', worst.i, 'poker');
+    }
+  }
+  // ③ 放牌（按 cost·优先最便宜买得起的兵铺场 → 凑曲线/连携）+ 手里没兵可放则抽（自由混·抽完继续放）。
+  let guard = 0;
+  while (guard++ < 60) {
+    const affordable = sd.hand
+      .map((c, i) => ({ c, i }))
+      .filter((x) => x.c.kind === 'poker' && ((x.c as PokerCard).cost ?? 0) <= sd.mana)
+      .sort((x, y) => ((x.c as PokerCard).cost ?? 0) - ((y.c as PokerCard).cost ?? 0));
+    if (affordable.length) {
+      const bestLane = [0, 1, 2].reduce((best, li) => {
+        const score = b.lanes[li].b.length * 2 - b.lanes[li].a.length;
+        const bscore = b.lanes[best].b.length * 2 - b.lanes[best].a.length;
+        return score > bscore ? li : best;
+      }, 0);
+      if (deployUnit(b, 'a', affordable[0].i, bestLane)) continue;
+    }
+    if (sd.mana >= DRAW_COST && sd.pokerDeck.length > 0 && !sd.hand.some((c) => c.kind === 'poker')) {
+      if (drawCard(b, 'a', 'poker')) continue; // 手里已无兵可放 → 抽一张(自由混)·抽完接着放
+    }
+    break;
+  }
+  endTurn(b);
+}
+
+// ── 玩家本关装备基线（owner 2026-06-21：sim 要考虑地支附魔 + 天罡加成）──
+//  · tiangang：本关 loadout（≤loadoutCap 张·新手区只解锁关1的虎符/旗手/老兵/广纳）。
+//  · inlayFavor：地支附魔总加成（新手基线≈5 张铜地支 = +20 favor·摊到核心英雄）。
+//  · deckBias：扑克 52 整体养成偏置（favor 基线·新手3/进阶6/老手9）。
+interface PlayerCfg { deckBias: number; tiangang: string[]; inlayFavor: number }
+
+// 关1-5 新手解锁的天罡（unlockStageOf<=1 在关1只有 4 张）；按 loadoutCap 取前 N。
+const STARTER_LOADOUT = ['tigertally', 'bannerman', 'veteran', 'widehand']; // 虎符全军+2 / 旗手主将光环 / 老兵续航 / 广纳手牌
+
+// ── Single battle runner ──
+
+interface BattleResult { winner: 'a' | 'b' | 'draw' | 'timeout'; turns: number; clashes: number; firstClashTurn: number; firstScoreTurn: number }
+
+function runBattle(
+  stage: number,
+  battleIdx: number, // 0-based within run
+  pcfg: PlayerCfg,
+  seed: number,
+  bossDelta = 0, // Boss/敌方 favorBias 调校量（标定 Boss 牌力的旋钮·design G 扫）
+  skill = 1, // 玩家决策档（owner 2026-07-03）：1=贪心脚本(对照) · 3=中级搜索(N=1) · 5=终极前向推演(N≥2+beam+Boss推演)
+  mirror = false, // ★裸镜像诊断（程序A 2026-07-04·design G 验收「双方同牌·公平底层」）：Boss 牌也 base-override(同玩家口径)
+                  //   + 无地煞 + 无开局布防 → 真·同牌同规则，只留「玩家 AI vs Boss AI」的纯算法对决(+玩家地支+先手)。
+                  //   用途：证明两套 AI 旗鼓相当。**非真机关卡口径**——真机 Boss 强弱由牌力/地煞/布防叠(见下方常规 runBattle 支)。
+): BattleResult {
+  const lvl = loadLevel(stage);
+  const spec = battleSpec(battleIdx);
+
+  let enemyBias: number;
+  let enemyForm = pickAiFormation(stage, 0, [], false);
+
+  // owner 2026-06-29「敌人和我都按基础牌」：敌方 base 偏置归零（与玩家 pip 基线对齐）→ Boss 强弱只来自天罡/地煞/布防/主将(明牌)。
+  // bossDelta = 标定旋钮（扫不同敌方偏置档·找合适难度）。
+  if (spec.boss) { enemyForm = bossFor(0).formation; enemyBias = bossDelta; }
+  else enemyBias = bossDelta;
+
+  // 裸军队生成器（旧 build-时 effect-apply 路 prepareArmies 已退役）：
+  //   玩家侧均衡布阵 + deckBias；Boss 侧用 boss/spec 的 enemyForm + enemyBias。
+  // 玩家侧本就传 tiangangs:[]/interventions:[]/planets:{}（零效果）→ army 行为不变（等价旧路）。
+  const a = armyFromFormation('a', pcfg.deckBias, FORMATION_PRESETS['均衡']);
+  const b = armyFromFormation('b', enemyBias, enemyForm);
+
+  // owner 2026-06-29「按基础牌」：玩家 base favor 归到牌点等价(favorToP=牌点 → buff≈0·与真机 save.deck 基线同口径)，
+  // 养成强弱只来自下方地支附魔(inlayFavor)；deckBias 仅再作 inlay 量分档(新手/进阶/老手·见 PlayerCfg)。
+  // 真机每侧只 1 主将（玩家 deck 1 个 general·Boss 1 个 hero）；armyFromFormation 每路 1 个=3 个 → 收成 1 个最强（否则 Boss 3 主将原地死守=三路全堵·远比真机难）。
+  const oneGeneral = (army: ArmyCard[]): ArmyCard[] => { let gi = 0; for (let i = 1; i < army.length; i++) if (army[i].favor > army[gi].favor) gi = i; return army.map((c, i) => ({ ...c, general: i === gi })); };
+  const baseFavor = (c: ArmyCard): ArmyCard => ({ ...c, favor: Math.max(5, Math.min(95, cardPoints(cardRank(c)) * 3 + 5)) });
+  // ⭐ Boss 牌力口径修正（design G 2026-07-04·owner 公平铁律「难度只来自明牌」）：Boss 牌**也 base-override**（=玩家 base 同口径），
+  //   `bossDelta` = **明牌牌力偏置**叠在 base 上（base + bossDelta·可见可破的教学弱/高难强旋钮）。
+  //   修掉旧 bug：旧常规支 Boss 保 rankFavor(K=80…)→ 每张比玩家 base 高 ~8-12=暗箱强牌(违公平铁律·line 132「都按基础牌」意图与代码曾出入·此处对齐)。
+  //   实证(2026-07-04·满kit·bossDelta0)：新手 skill1 **74.7%** ≈ 目标70%·高手 skill5 96% → 关1 数值本就对·之前 17% 全是本 bug。
+  const baseFavorBoss = (c: ArmyCard): ArmyCard => ({ ...c, favor: Math.max(5, Math.min(95, cardPoints(cardRank(c)) * 3 + 5 + bossDelta)) });
+  const aBase = oneGeneral(a.map(baseFavor));
+  // 地支附魔：把玩家整体养成的 inlayFavor 摊到最值得镶的核心英雄上（owner 要求 sim 计入地支加成）。
+  const aInlaid = applyInlayFavor(aBase, pcfg.inlayFavor);
+  // 镜像=纯 base(bossDelta 不叠·验算法对等)；常规=base + bossDelta(明牌牌力偏置)。Boss 难度自此只来自 明牌(牌力偏置 + 地煞 + 布防 + 天罡)·零暗箱强牌。
+  const bDeck = oneGeneral(mirror ? b.map(baseFavor) : b.map(baseFavorBoss));
+
+  const aTengang: TengangHandCard[] = pcfg.tiangang.map((id) => ({ kind: 'tengang', id }));
+  const bTengang: TengangHandCard[] = lvl.boss.tiangang.map((id) => ({ kind: 'tengang', id }));
+
+  const tb = initTurnBattle({
+    seed,
+    disha: mirror ? [] : lvl.boss.disha, // 镜像：无地煞(玩家无地煞·对称)
+    aiProfile: lvl.boss.aiProfile,
+    aiTier: lvl.boss.aiTier,
+    a: { pokerDeck: seededShuffle(aInlaid.map(toPoker), seed ^ 0x9e37), tengangDeck: aTengang },
+    b: { pokerDeck: seededShuffle(bDeck.map(toPoker), seed ^ 0x51ed), tengangDeck: bTengang },
+  });
+
+  for (let i = 0; i < OPENING_HAND && tb.a.pokerDeck.length; i++) tb.a.hand.push(tb.a.pokerDeck.shift()!);
+  for (let i = 0; i < OPENING_HAND && tb.b.pokerDeck.length; i++) tb.b.hand.push(tb.b.pokerDeck.shift()!);
+  if (!mirror) bossOpeningGarrison(tb, lvl.boss.garrisonMana, aggregateTengang); // 开局布防（owner 2026-06-29·敌方开场设防·与 live 一致）·按关分档 garrisonMana(关1=0)；镜像：无布防(对称)
+
+  let firstClashTurn = -1, firstScoreTurn = -1, prevClash = 0, prevHA = tb.homeA, prevHB = tb.homeB;
+  const MAX_TURNS = 300;
+  while (tb.winner === 'pending' && tb.turn <= MAX_TURNS) {
+    if (tb.active === 'a') { if (skill >= 3) playerTakeTurnAI(tb, skill); else playerTakeTurn(tb); } // 贪心(1) vs 终极搜索(≥3)
+    else aiTakeTurn(tb, aggregateTengang);
+    if (firstClashTurn === -1 && tb.clashSeq > prevClash) firstClashTurn = tb.turn;
+    if (firstScoreTurn === -1 && (tb.homeA < prevHA || tb.homeB < prevHB)) firstScoreTurn = tb.turn;
+    prevClash = tb.clashSeq; prevHA = tb.homeA; prevHB = tb.homeB;
+  }
+
+  return {
+    winner: tb.winner === 'pending' ? 'timeout' : tb.winner,
+    turns: tb.turn, clashes: tb.clashSeq,
+    firstClashTurn: firstClashTurn < 0 ? tb.turn : firstClashTurn,
+    firstScoreTurn: firstScoreTurn < 0 ? tb.turn : firstScoreTurn,
+  };
+}
+
+// ── Multi-battle run simulator (all RUN_BATTLES in sequence) ──
+
+interface RunResult { cleared: boolean; defeatedAt: number }
+
+function runOnce(stage: number, pcfg: PlayerCfg, baseSeed: number, bossDelta = 0, skill = 1): RunResult {
+  for (let bi = 0; bi < RUN_BATTLES; bi++) {
+    const r = runBattle(stage, bi, pcfg, baseSeed + bi * 1337, bossDelta, skill);
+    if (r.winner !== 'a') return { cleared: false, defeatedAt: bi };
+  }
+  return { cleared: true, defeatedAt: -1 };
+}
+
+// ── Report printer ──
+
+function runBattleSim(stage: number, battleIdx: number, pcfg: PlayerCfg, runs: number, label: string, bossDelta = 0, skill = 1, mirror = false): void {
+  let wins = 0, losses = 0, timeouts = 0, totalTurns = 0, totalClashes = 0, totalFC = 0, totalFS = 0;
+  const t0 = Date.now();
+  for (let i = 0; i < runs; i++) {
+    const r = runBattle(stage, battleIdx, pcfg, 100 + i * 7919, bossDelta, skill, mirror);
+    if (r.winner === 'a') wins++;
+    else if (r.winner === 'timeout') timeouts++;
+    else losses++;
+    totalTurns += r.turns; totalClashes += r.clashes;
+    totalFC += r.firstClashTurn; totalFS += r.firstScoreTurn;
+  }
+  const ms = Date.now() - t0;
+  const wr = ((wins / runs) * 100).toFixed(1);
+  const rounds = (totalTurns / runs / 2).toFixed(1); // tb.turn 双方合计，÷2 = 完整对局轮
+  const fc = (totalFC / runs / 2).toFixed(1);
+  const fs = (totalFS / runs / 2).toFixed(1);
+  const cl = (totalClashes / runs).toFixed(1);
+  console.log(`  ${label.padEnd(28)} 胜率 ${wr.padStart(5)}%  轮数 ${rounds.padStart(5)}轮  [首遭遇${fc}轮 首失血${fs}轮 遭遇${cl}次]  ${ms}ms`);
+}
+
+function clearRate(stage: number, pcfg: PlayerCfg, runs: number, bossDelta = 0, skill = 1): number {
+  let cleared = 0;
+  for (let i = 0; i < runs; i++) if (runOnce(stage, pcfg, 100 + i * 7919, bossDelta, skill).cleared) cleared++;
+  return cleared / runs;
+}
+
+function runStageSim(stage: number, pcfg: PlayerCfg, runs: number, label: string, bossDelta = 0, skill = 1): void {
+  let cleared = 0; const defeatedAt: number[] = [0, 0, 0, 0, 0];
+  const t0 = Date.now();
+  for (let i = 0; i < runs; i++) {
+    const r = runOnce(stage, pcfg, 100 + i * 7919, bossDelta, skill);
+    if (r.cleared) cleared++;
+    else if (r.defeatedAt >= 0) defeatedAt[r.defeatedAt]++;
+  }
+  const ms = Date.now() - t0;
+  const cr = ((cleared / runs) * 100).toFixed(1);
+  const loseBreakdown = defeatedAt.map((n, i) => `第${i + 1}战:${n}`).join(' ');
+  console.log(`  ${label.padEnd(28)} 通关率 ${cr.padStart(5)}%  通关${cleared}/总${runs}  [${loseBreakdown}]  ${ms}ms`);
+}
+
+// ── Main ──
+
+const STAGE = 1;
+const RUNS = 500;
+const lvl1 = loadLevel(STAGE);
+const LOADOUT = STARTER_LOADOUT.slice(0, lvl1.loadoutCap); // 关1 loadoutCap=2 → 虎符+旗手
+
+// 三档玩家画像：新手(浅养成)/进阶/老手(深养成·满地支+满loadout)
+const NEWBIE: PlayerCfg = { deckBias: 3, tiangang: LOADOUT, inlayFavor: 20 }; // 5 铜地支
+const MID: PlayerCfg = { deckBias: 6, tiangang: LOADOUT, inlayFavor: 40 };    // ~铜银混
+const VET: PlayerCfg = { deckBias: 9, tiangang: STARTER_LOADOUT.slice(0, Math.max(lvl1.loadoutCap, 3)), inlayFavor: 70 }; // 深养成
+
+console.log('\n╔══════════════════════════════════════════════════════════╗');
+console.log('║  Game-G 平衡仿真  ·  第1关「温泉关」(列奥尼达) · N=500  ║');
+console.log('╚══════════════════════════════════════════════════════════╝\n');
+console.log(`玩家装备基线：天罡 loadout=[${LOADOUT.join(',')}] (cap ${lvl1.loadoutCap}) · 放牌按点数收费 · 地支附魔已计入。`);
+console.log(`Boss：16写死模型未接前·暂用旧 favorBias(${bossFor(0).favorBias})+开局干预+${lvl1.boss.tiangang.length}天罡+地煞 模型；bossDelta=Boss牌力旋钮。\n`);
+
+console.log('【新手 deckBias=3 · 各战场单场胜率】  bossDelta=0（基准）');
+for (let bi = 0; bi < RUN_BATTLES; bi++) {
+  const spec = battleSpec(bi);
+  runBattleSim(STAGE, bi, NEWBIE, RUNS, `第${bi + 1}战 ${spec.label.slice(0, 8)}`);
+}
+
+console.log('\n【完整一关通关率 · 5战全胜 · bossDelta=0】');
+runStageSim(STAGE, NEWBIE, RUNS, 'deckBias=3 (新手·5铜地支·虎符旗手)');
+runStageSim(STAGE, MID, RUNS, 'deckBias=6 (进阶)');
+runStageSim(STAGE, VET, RUNS, 'deckBias=9 (老手·深养成)');
+
+// ── owner 2026-07-03：贪心(skill1) vs 终极前向推演(skill5) 对比 —— 让 sim 说人话（现贪心公平配置下关1Boss ~9%·终极应显著更高）──
+// 终极档搜索每回合前向推演 → 慢·用较小 N 保时长（几分钟内出数）。用同一 NEWBIE 装备/同 bossDelta=0，只换玩家决策器。
+const AI_RUNS = 200;          // 终极档场数（搜索开销大·压到 200 保时长；贪心对照亦用 200 同口径）
+const BOSS_BATTLE = RUN_BATTLES - 1; // 关1 第5战=Boss 战（列奥尼达·spec.boss）
+console.log('\n╔══════════════════════════════════════════════════════════╗');
+console.log('║  贪心 skill1  vs  终极前向推演 skill5  ·  关1（N=' + AI_RUNS + '）    ║');
+console.log('╚══════════════════════════════════════════════════════════╝');
+console.log(`\n【关1 Boss 单场胜率（第${BOSS_BATTLE + 1}战·列奥尼达）· 新手装备 · bossDelta=0】`);
+runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, AI_RUNS, '贪心 skill1（对照）', 0, 1);
+runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, AI_RUNS, '终极 skill5（前向推演）', 0, 5);
+console.log('\n【关1 完整通关率（5战全胜）· 新手装备 · bossDelta=0】');
+runStageSim(STAGE, NEWBIE, AI_RUNS, '贪心 skill1（对照）', 0, 1);
+runStageSim(STAGE, NEWBIE, AI_RUNS, '终极 skill5（前向推演）', 0, 5);
+
+// ── ★裸镜像诊断（程序A 2026-07-04·design G 验收「两套 AI 旗鼓相当·公平底层成立」）──────────────────────
+// 背景：design G 观察到「关1 Boss 战」skill5 仅 ~17% → 疑玩家 AI 弱。**诊断结论：不是玩家 AI 弱**。
+//   关1 Boss 战**不是镜像**——常规 runBattle 里 Boss 牌保 rankFavor(K=80/Q=66/…)、玩家牌被压到 base(cardPoints×3+5)，
+//   Boss 每张兵有效战力高玩家 ~8-12（clash 掷 [1,战力] 比大小 → 玩家系统性吃牌力亏·非算法亏）。
+// 下面用**真·镜像**(mirror=true：Boss 牌也 base-override + 无地煞 + 无布防·玩家仍带地支+先手) 隔离出「纯 AI vs AI」：
+//   若玩家 AI 真弱→镜像也会 <50%；实测 skill5 ~80% ≫ 50%、且 skill1<skill3<skill5 单调 → **玩家 AI 已足够强**。
+//   真机难度该由 Boss 牌力/地煞/布防(明牌)承担 → 交 design G/balance 线定夺(见报告 push-back)。
+const MIRROR_RUNS = 150;
+console.log('\n╔══════════════════════════════════════════════════════════╗');
+console.log('║  ★裸镜像诊断 · 双方同牌同规则 · 玩家+地支+先手 · N=' + MIRROR_RUNS + '     ║');
+console.log('╚══════════════════════════════════════════════════════════╝');
+console.log('（Boss 牌 base-override=与玩家同口径·无地煞·无布防 → 只留 玩家AI vs BossAI 的纯算法对决）');
+console.log('\n【关1 裸镜像·分档单调（skill1<3<5 = 高档更会打）· 新手装备】');
+runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, MIRROR_RUNS, '贪心 skill1（地板对照）', 0, 1, true);
+runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, MIRROR_RUNS, '中级 skill3（N=1 评估）', 0, 3, true);
+runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, MIRROR_RUNS, '终极 skill5（前向推演）', 0, 5, true);
+console.log('对照·同装备但常规口径(Boss 保 rankFavor 强牌·满地煞布防=真机关1 Boss 战)：');
+runBattleSim(STAGE, BOSS_BATTLE, NEWBIE, MIRROR_RUNS, '终极 skill5（常规·非镜像）', 0, 5, false);
+console.log('→ 裸镜像 skill5 ≫ 50% 证明「玩家 AI 已够强」；常规口径低=Boss 牌力/地煞难度旋钮所致·非 AI 弱。');
+
+console.log('\n【地支/天罡 消融实验 · 新手 deckBias=3 · 通关率】');
+runStageSim(STAGE, { deckBias: 3, tiangang: [], inlayFavor: 0 }, RUNS, '裸装(无天罡·无地支)');
+runStageSim(STAGE, { deckBias: 3, tiangang: LOADOUT, inlayFavor: 0 }, RUNS, '+天罡 loadout');
+runStageSim(STAGE, { deckBias: 3, tiangang: [], inlayFavor: 20 }, RUNS, '+地支附魔(5铜)');
+runStageSim(STAGE, NEWBIE, RUNS, '+天罡+地支(完整新手)');
+
+console.log('\n【Boss 牌力标定扫描 · 新手 deckBias=3 完整装备 · 通关率 vs bossDelta】');
+for (const d of [-6, -3, 0, 3, 6, 9, 12]) {
+  const cr = clearRate(STAGE, NEWBIE, 300, d) * 100;
+  console.log(`  bossDelta ${String(d).padStart(3)}  →  新手通关率 ${cr.toFixed(1).padStart(5)}%`);
+}
+
+console.log('\n说明：玩家=贪心(先施天罡→按点数铺最便宜兵→手空抽)；Boss=utility AI 用天罡+地煞。');
+console.log('地支附魔=核心英雄叠 favor；天罡 loadout 整局生效。轮数=tb.turn÷2。');
+console.log('⚠ Boss 16 写死牌组 + dishaScale 尚未接入 loader（doc27 §六派甲）→ 本扫描用旧 favorBias 模型，标定为「临时」；接入后重扫定稿。\n');

@@ -21,7 +21,7 @@
 ## ② 样例指针
 
 - `EffectKind`/`VisualEffect`/`EffectColor` 语义令牌闭集：`src/ui/components/types.ts`（防注入·主题令牌解析）。
-- 真实用法：`src/games/game-i/fx-lab.ts`（特效台）、`anim-lab.ts`（动画台）、`spawn-lab.ts`。
+- 真实用法：`games/game-i/fx-lab.ts`（特效台）、`anim-lab.ts`（动画台）、`spawn-lab.ts`。
 - 主题令牌（语义色 danger/gold/jade…→ 主题）：`src/ui/components/types.ts` 的 `UITheme`。
 
 ## ③ 本线红线
@@ -32,7 +32,7 @@
 
 ## ④ 正样例 / 反面教材
 
-- ✅ `src/games/game-i/fx-lab.ts`：VisualEffect 闭集纯数据驱动。
+- ✅ `games/game-i/fx-lab.ts`：VisualEffect 闭集纯数据驱动。
 - ✖ 游戏层自写 canvas 绘制 / 自由 CSS 动画 / 收 raw hex 破语义令牌。
 
 ## ⑤ 查不到怎么办

@@ -81,10 +81,10 @@ def handle_game_cover_generate(slug: str, body: dict) -> dict:
     return {'success': True, 'coverUrl': _game_cover_url(slug), 'mock': res.get('mock')}
 
 def handle_games_list() -> dict:
-    """GET /api/games。枚举 src/games/game-* 为权威游戏列表（标注是否已建本地美术目录 +
+    """GET /api/games。枚举 games/game-* 为权威游戏列表（标注是否已建本地美术目录 +
     内置游戏元信息 icon/title/description·从 launcher.tsx 解析 + 封面 coverUrl 若已生成）。"""
     games = []
-    gdir = ROOT / 'src' / 'games'
+    gdir = ROOT / 'games'
     bmeta = _builtin_games_meta()
     if gdir.is_dir():
         for d in sorted(gdir.iterdir()):

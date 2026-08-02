@@ -1,10 +1,10 @@
 // 审计入口：game-b《雀宴》鸣牌态 HUD（P4·四家副露展示 + 玩家鸣牌按钮条·碰/吃/荣/过）。
 // 用法：node tools/ui-audit.mjs tools/audits/game-b-calls.audit.ts --w 1120 --h 630
 import { mountUI } from '../../src/ui/components/index.js';
-import { buildPlayHud } from '../../src/games/game-b/play-ui.js';
-import { startMatch, aiTurn } from '../../src/games/game-b/core/game-state.js';
-import type { Meld } from '../../src/games/game-b/core/meld.js';
-import { SAKURA } from '../../src/games/game-b/theme.js';
+import { buildPlayHud } from '../../games/game-b/play-ui.js';
+import { startMatch, aiTurn } from '../../games/game-b/core/game-state.js';
+import type { Meld } from '../../games/game-b/core/meld.js';
+import { SAKURA } from '../../games/game-b/theme.js';
 
 const M = (n: number): number => n - 1;
 const P = (n: number): number => 9 + (n - 1);

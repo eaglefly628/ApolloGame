@@ -8,8 +8,8 @@
 //   · gold-sheen 加注键=金色渐变 FillPreset + ink 暗字→ 审计穿透到暗页底→暗字判 1.1；实际暗字压金键高对比可读（改亮字反降可读性=不干）。
 //   截图目击（scratchpad/2d-*.png）证公共牌/按钮清晰可读；ui-audit 无法量渐变底=工具盲区·非坏 UI。
 import { mountUI } from '../../src/ui/components/index.js';
-import { buildTable, type TableView } from '../../src/games/game-c/hud.js';
-import { GAME_C_THEME } from '../../src/games/game-c/theme.js';
+import { buildTable, type TableView } from '../../games/game-c/hud.js';
+import { GAME_C_THEME } from '../../games/game-c/theme.js';
 import type { Card } from '../../src/engine/protocol/components.js';
 
 const H = (suit: number, rank: number): Card => ({ suit, rank });

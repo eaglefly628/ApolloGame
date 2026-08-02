@@ -6,14 +6,14 @@
 ## 0. ⚠ 门禁前提（开工前必看）
 
 1. **✅ S2 已清（Lead 2026-07-23·`REQ-SURVIVOR编排` done）**：E1 `draft-offer` + E3 `spawn-director` **已下沉建好**（引擎侧·直接消费）；E2 进化替换 + E4 质变 flag **走现有能力重组**。**game-103 全量 M1–M3 可开工·无编排阻塞**。（旧 §6 阻塞项作废。）
-2. **形态=编译期 TS 游戏**（owner 拍板）→ 走「编译期游戏线」（art-pipeline.md·game-q 样板）；slot=`game-103` → `src/games/game-103/`、`public/games/game-103/art/`。
+2. **形态=编译期 TS 游戏**（owner 拍板）→ 走「编译期游戏线」（art-pipeline.md·game-q 样板）；slot=`game-103` → `games/game-103/`、`public/games/game-103/art/`。
 3. **内容已按 Solo Survivor IO 照单全收扩展**（owner 2026-07-23）：8 武器（含宠物/弹射/诱饵）+ 远程敌 E7 + 地形/交互物 + 击杀数通关双轨 + Boss charge/basic + 装备 meta——见 `gdd.md` + `reference-solo-survivor-io.md`。**M1–M2 仍先做核心 5 武器 + 近战群 + 空场**（保雪球验证）；融合扩展排 M3–M4（能力薄缺口走 capgap）。
 
 ## 1. 开工必读（按序·每本 ≤80 行）
 
 `playbooks/index.md`（总纲）→ 本任务涉及线：`randomness.md`（**最先·裸 Math.random=红线**）→ `movement-pathfinding.md` → `combat.md` → `rendering-fx.md` → `ui.md`（+ `docs/design/ui-playbook.md` 四准则）→ `art-pipeline.md` → `testing.md` → `review-gates.md`。设计真相=本目录 `gdd.md`/`balance-design.md`/`ui-scene-design.md`/`capability-plan.md`。
 
-## 2. 数据表（纯数据·JSON·落 `src/games/game-103/data/`）
+## 2. 数据表（纯数据·JSON·落 `games/game-103/data/`）
 
 结构与默认值=`gdd.md` + `balance-design.md`（数字为 sim 初始输入）。清单：
 `weapons.json`·`weapons_evo.json`·`passives.json`·`enemies.json`·`waves.json`·`drops.json`·`levelup_pool.json`·`meta_upgrades.json`。
@@ -64,7 +64,7 @@
 
 ## 5. 目录约定（PE 建）
 ```
-src/games/game-103/         骨架 + 蓝图 + data/*.json + *.test.ts
+games/game-103/         骨架 + 蓝图 + data/*.json + *.test.ts
 public/games/game-103/art/  index.json（skinKey 别名·资产就绪自动换装）
 scripts/game-103-art-derive.mjs   台账推导（game-q 样板）
 scripts/game-103-balance-sim.mjs  数值 sim（GD 分析工具·balance-design §9）

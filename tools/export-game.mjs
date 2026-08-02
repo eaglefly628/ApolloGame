@@ -6,7 +6,7 @@
 //     node tools/export-game.mjs game-c --out ../handoff/game-c
 //
 // What it does:
-//   1. BFS-traces the exact transitive import closure of src/games/<id>/index.ts
+//   1. BFS-traces the exact transitive import closure of games/<id>/index.ts
 //      (resolving @-aliases and .js->.ts/.tsx, skipping *.test.ts / *.spec.ts and
 //      node:*/bare npm specifiers).
 //   2. Copies just those files into <out>/src/game/** preserving layout.
@@ -33,6 +33,9 @@ const targetFlag = argv.indexOf('--target');
 const TARGET = targetFlag >= 0 ? argv[targetFlag + 1] : 'plain';
 const REPO = process.cwd();
 const SRC = path.join(REPO, 'src');
+// games/ lives at repo root (sibling of src/, REQ-SPLIT-引擎内容分离 2026-08 迁出) — the game's
+// OWN entry/closure files resolve from here; everything else (engine/skills/…) stays under SRC.
+const GAMES_ROOT = path.join(REPO, 'games');
 const OUT = path.resolve(outFlag >= 0 ? argv[outFlag + 1] : `export/${gameId}${TARGET === 'plain' ? '' : '-' + TARGET}`);
 const GAME_SRC_OUT = path.join(OUT, 'src', 'game');
 
@@ -46,6 +49,8 @@ const ALIASES = {
   '@renderer/': 'renderer/',
   '@ui/': 'ui/',
   '@net/': 'net/',
+  '@runtime/': 'runtime/',
+  '@assembly/': 'assembly/',
 };
 // NOTE: base tsconfig.json + vite.config.ts derive their alias maps from ALIASES above,
 // so adding an alias here propagates to the plain target automatically. The dokiworld
@@ -275,9 +280,9 @@ const RUNTIME_DEP_VERSIONS = { three: '^0.184.0', 'cannon-es': '^0.20.0' };
 // Auto-detect the file that exports `mount(container)` for this game.
 async function findEntry() {
   const candidates = [
-    path.join(SRC, 'games', gameId, 'index.ts'),
-    path.join(SRC, 'games', gameId, `${gameId}.tsx`),
-    path.join(SRC, 'games', gameId, `${gameId}.ts`),
+    path.join(GAMES_ROOT, gameId, 'index.ts'),
+    path.join(GAMES_ROOT, gameId, `${gameId}.tsx`),
+    path.join(GAMES_ROOT, gameId, `${gameId}.ts`),
     path.join(SRC, `${gameId}.tsx`),
     path.join(SRC, `${gameId}.ts`),
   ];
@@ -291,7 +296,7 @@ async function findEntry() {
 
 async function main() {
   const entry = await findEntry();
-  if (!entry) { console.error(`✗ no mount entry found for ${gameId} (looked in src/games/${gameId}/ and src/${gameId}.*)`); process.exit(1); }
+  if (!entry) { console.error(`✗ no mount entry found for ${gameId} (looked in games/${gameId}/ and src/${gameId}.*)`); process.exit(1); }
   // Wrapper import path = entry relative to SRC, under ./game/, with .js extension.
   const entryImport = './game/' + path.relative(SRC, entry).replace(/\.tsx?$/, '.js');
 

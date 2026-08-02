@@ -8,7 +8,7 @@ import { auditEmoji } from './emoji-audit.mjs';
 let root;
 beforeAll(() => {
   root = mkdtempSync(join(tmpdir(), 'emoji-'));
-  const dir = join(root, 'src', 'games', 'game-t');
+  const dir = join(root, 'games', 'game-t');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'screen.ts'), [
     `// 花色记号 ♠♥ 只在注释里——不该计入`,

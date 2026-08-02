@@ -27,56 +27,56 @@ const RESULT_TYPE =
 const GAME_PATCHES = {
   'game-a': () => [
     {
-      file: 'src/game/games/game-a/game-a.ts',
+      file: 'src/games/game-a/game-a.ts',
       find: `host?: { exit?: () => void; sessionIn?: GameASessionIn }`,
       replace: `host?: { exit?: () => void; sessionIn?: GameASessionIn; complete?: (r: ${RESULT_TYPE}) => void }`,
     },
     {
-      file: 'src/game/games/game-a/game-a.ts',
+      file: 'src/games/game-a/game-a.ts',
       find: `  let session: GuandanSession | null = null;`,
       replace: `  let session: GuandanSession | null = null;\n  let completedRun = false; // DokiWorld 终局一次性回传闸（与卡片 SessionOut 并存·不替换）`,
     },
     {
-      file: 'src/game/games/game-a/game-a.ts',
+      file: 'src/games/game-a/game-a.ts',
       find: `    session = new GuandanSession({ seed: lastSeed, stake: selStake, tier: selDifficulty });`,
       replace: `    session = new GuandanSession({ seed: lastSeed, stake: selStake, tier: selDifficulty });\n    completedRun = false;`,
     },
     {
-      file: 'src/game/games/game-a/game-a.ts',
+      file: 'src/games/game-a/game-a.ts',
       find: `      lastSessionOut = computeSessionOut(session); // 盘/局终局：构造 SessionOut（REQ-CHARCARD·纯确定性）`,
       replace: `      lastSessionOut = computeSessionOut(session); // 盘/局终局：构造 SessionOut（REQ-CHARCARD·纯确定性）\n      if (!completedRun && (session.phase === 'run-won' || session.phase === 'run-lost')) {\n        completedRun = true;\n        host?.complete?.({ normalizedScore: session.phase === 'run-won' ? 100 : 0, outcome: session.phase === 'run-won' ? 'win' : 'loss', metrics: { rounds: session.round, wallet: session.wallets.hero } });\n      }`,
     },
   ],
   'game-b': () => [
     {
-      file: 'src/game/games/game-b/game-b.ts',
+      file: 'src/games/game-b/game-b.ts',
       find: `host?: { exit?: () => void; sessionIn?: GameBSessionIn }`,
       replace: `host?: { exit?: () => void; sessionIn?: GameBSessionIn; complete?: (r: ${RESULT_TYPE}) => void }`,
     },
     {
-      file: 'src/game/games/game-b/game-b.ts',
+      file: 'src/games/game-b/game-b.ts',
       find: `    const match = resume ?? startMatch(seed, seatNames); // 席名走角色卡桥（REQ-CHARCARD）`,
       replace: `    const match = resume ?? startMatch(seed, seatNames); // 席名走角色卡桥（REQ-CHARCARD）\n    let completedMatch = false; // DokiWorld 终局一次性回传闸（与卡片 SessionOut 并存·不替换）`,
     },
     {
-      file: 'src/game/games/game-b/game-b.ts',
+      file: 'src/games/game-b/game-b.ts',
       find: `      if (match.over) lastSessionOut = computeSessionOut(match); // 终局回传就绪（REQ-CHARCARD·纯确定性·平台尚未消费）`,
       replace: `      if (match.over) lastSessionOut = computeSessionOut(match); // 终局回传就绪（REQ-CHARCARD·纯确定性·平台尚未消费）\n      if (match.over && !completedMatch) {\n        completedMatch = true;\n        const heroScore = match.scores[0] ?? 0;\n        const rank = [...match.scores].sort((a, b) => b - a).findIndex((s) => s === heroScore) + 1;\n        const normalizedScore = Math.round(100 * (match.scores.length - rank) / Math.max(1, match.scores.length - 1));\n        host?.complete?.({ normalizedScore, outcome: rank === 1 ? 'win' : 'loss', metrics: { rank, score: heroScore, round: match.roundNo } });\n      }`,
     },
   ],
   'game-c': () => [
     {
-      file: 'src/game/games/game-c/game-c.ts',
+      file: 'src/games/game-c/game-c.ts',
       find: `  host?: { exit?: () => void; session?: GameCSessionIn; onSessionOut?: (out: GameCSessionOut) => void },`,
       replace: `  host?: { exit?: () => void; session?: GameCSessionIn; onSessionOut?: (out: GameCSessionOut) => void; complete?: (r: ${RESULT_TYPE}) => void },`,
     },
     {
-      file: 'src/game/games/game-c/game-c.ts',
+      file: 'src/games/game-c/game-c.ts',
       find: `    sessionOutSent = true;\n    if (!host?.onSessionOut) return;`,
       replace: `    sessionOutSent = true;\n    host?.complete?.({ normalizedScore: session.winnerSide === 'hero' ? 100 : 0, outcome: session.winnerSide === 'hero' ? 'win' : 'loss', metrics: session.stats() });\n    if (!host?.onSessionOut) return;`,
     },
     {
-      file: 'src/game/games/game-c/game-c.ts',
+      file: 'src/games/game-c/game-c.ts',
       find: `    back_to_story: () => { clearAiTimer(); screen = 'menu'; openWardrobe = null; showLog = false; showMenu = false; showHelp = false; stop3D(); gcAudio.leaveTable(); remount(); },`,
       replace: `    back_to_story: () => { clearAiTimer(); if (host?.complete) { host?.exit?.(); /* 3D/audio teardown delegated to mount() cleanup when the host unmounts the iframe */ } else { screen = 'menu'; openWardrobe = null; showLog = false; showMenu = false; showHelp = false; stop3D(); gcAudio.leaveTable(); remount(); } },`,
     },
@@ -370,6 +370,8 @@ export default defineConfig({
       '@renderer': resolve(__dirname, 'src/game/renderer'),
       '@ui': resolve(__dirname, 'src/game/ui'),
       '@net': resolve(__dirname, 'src/game/net'),
+      '@runtime': resolve(__dirname, 'src/game/runtime'),
+      '@assembly': resolve(__dirname, 'src/game/assembly'),
     },
   },
   build: { outDir: 'dist', emptyOutDir: true },

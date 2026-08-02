@@ -8,7 +8,7 @@
 ## 一、跑绿(已亲验)
 
 - `npx tsc --noEmit` → **exit 0**。
-- `npx vitest run src/games/game-f` → **39/39 passed**(6 文件),含:
+- `npx vitest run games/game-f` → **39/39 passed**(6 文件),含:
   - 确定性 hash(同初值重跑 hash 一致);
   - 战斗涌现链(aggro+grid-move+timer→event-when→caster→hitbox 两队对冲);
   - 大招(over-time 回蓝→SelfRule 蓝满放招,全 per-instance 不串台);

@@ -6,8 +6,8 @@
 //   （c-top/座位/公共牌/底牌）——**意图模态遮罩**（同衣柜 c-wardrobe-scrim / 局终 c-fin-scrim），标 data-allow-overlap 排除。
 // 【对比·已知假阳】硬失败=**PlayingCard 'light' 牌面渐变**盲区（红黑点数穿透暗底判低对比·非本游戏可修·REQ-C-110 报 PUI·同牌桌屏先例）。
 import { mountUI } from '../../src/ui/components/index.js';
-import { buildTable, type TableView } from '../../src/games/game-c/hud.js';
-import { GAME_C_THEME } from '../../src/games/game-c/theme.js';
+import { buildTable, type TableView } from '../../games/game-c/hud.js';
+import { GAME_C_THEME } from '../../games/game-c/theme.js';
 import type { Card } from '../../src/engine/protocol/components.js';
 
 const H = (suit: number, rank: number): Card => ({ suit, rank });

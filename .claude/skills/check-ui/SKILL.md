@@ -10,7 +10,7 @@ when_to_use: 建或改任何 2D 数据驱动 UI 之后、宣布完成之前。�
 
 ## 建 UI 时按序（摘要）
 1. **选控件**：只从闭集 `ComponentType` 选 → 读 `src/ui/components/catalog.ts`（whenToUse + schema + sample）。别凭记忆猜 prop。
-2. **抄范例**：`src/games/game-i/`（`gallery.ts` 全控件 / `mmo-hud.ts` 最复杂 HUD）是活模板。
+2. **抄范例**：`games/game-i/`（`gallery.ts` 全控件 / `mmo-hud.ts` 最复杂 HUD）是活模板。
 3. **组合不逃生**：能重组就重组；表达不了 → 写 `docs/workflow/requests.md` 让主程扩**一个**闭集 kind/控件。**永不手写 React / 自由 CSS·DOM**（UI 铁律）。
 
 ## 四关自检（交付前必过·核心）
@@ -29,7 +29,7 @@ npx vitest run src/ui/components
 #    写法照 tools/audits/mmo-hud.audit.ts（import 你的 buildXxx() → mount → 审计）
 node tools/ui-audit.mjs tools/audits/<你的页面>.audit.ts
 ```
-**容差外相交 / 对比 <3.0 = 不合格 → 回去改坐标/配色到归零。** 参照标尺：`src/games/game-i`（MMO HUD 已从初版 9 处重叠修到 0）。
+**容差外相交 / 对比 <3.0 = 不合格 → 回去改坐标/配色到归零。** 参照标尺：`games/game-i`（MMO HUD 已从初版 9 处重叠修到 0）。
 
 ## 反面清单（出现即回炉）
 脑补尺寸摆坐标 · 非意图叠层 · raw hex 文字色 · 亮底放 dim 灰字 · 弹窗半透穿 · 「看着还行」当对比合格 · `fx` 挂 `x/y` · 漏 `id` · handler 写业务逻辑 · 千层嵌套框。

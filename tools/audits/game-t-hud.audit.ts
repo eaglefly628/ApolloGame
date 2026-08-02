@@ -3,7 +3,7 @@
 // 态选「吃紧」组合：步数告急(danger) + 已选格提示(jade) + 目标一成一欠 → 覆盖最紧配色。
 import { mountUI } from '../../src/ui/components/index.js';
 import type { LayoutNode } from '../../src/ui/components/index.js';
-import { buildTopBar, buildBottomBar, type HudState } from '../../src/games/game-t/hud.js';
+import { buildTopBar, buildBottomBar, type HudState } from '../../games/game-t/hud.js';
 import { apolloToon } from '../../src/ui/apollo-toon-theme.js';
 
 const s: HudState = {

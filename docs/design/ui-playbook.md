@@ -33,7 +33,7 @@
 | 高级质感底/换皮 | `UITheme.texture/wash/panelTexture`(house 底纹) + `Panel.glass`(磨砂) | 换皮下拉 |
 
 1. **选控件**：只从闭集 `ComponentType` 选 → 先读 `src/ui/components/catalog.ts`（每个控件的 `whenToUse` + 字段 schema + canonical sample）。**别凭记忆瞎猜 prop**。
-2. **抄范例**：去 sample `src/games/game-i/`（展示台）找最接近的写法照抄改数据。`gallery.ts` 的「🆕 新控件/特性」tab + `mmo-hud.ts`（最复杂组合）是活模板；**成熟起手屏抄 `@ui/starters`**。
+2. **抄范例**：去 sample `games/game-i/`（展示台）找最接近的写法照抄改数据。`gallery.ts` 的「🆕 新控件/特性」tab + `mmo-hud.ts`（最复杂组合）是活模板；**成熟起手屏抄 `@ui/starters`**。
 3. **组合，别逃生**：能用现成控件重组表达就重组；表达不了 → 写 `docs/workflow/requests.md` 让主程扩**一个闭集 kind/控件**。**永远不手写 React 屏 / 自由 CSS·DOM**（UI 铁律）。
 4. **过四关自检**（下面 §1–§4，这是本手册的核心）：闭集校验 → 防重叠 → 颜色/对比/透明度 → 布局卫生。
 5. **跑校验器**：`validateLayoutNode(tree)`（`validate.ts`）必须**零 issue** 才算合法数据。
@@ -129,7 +129,7 @@ node tools/ui-audit.mjs tools/audits/<你的页面>.audit.ts    # 退出码 0=�
 |---|---|
 | 有哪些控件、每个 prop 怎么填、闭集枚举值 | `src/ui/components/catalog.ts`（自描述目录·含 sample）+ `types.ts`（TS 形状） |
 | 校验我的 LayoutNode 树合不合法 | `src/ui/components/validate.ts` → `validateLayoutNode(tree)` |
-| 控件长啥样、复杂组合怎么写 | sample：`src/games/game-i/`（`gallery.ts` 全控件 + `mmo-hud.ts` 最复杂 HUD） |
+| 控件长啥样、复杂组合怎么写 | sample：`games/game-i/`（`gallery.ts` 全控件 + `mmo-hud.ts` 最复杂 HUD） |
 | 控件渲染成什么 HTML（debug 样式/定位） | `src/ui/components/render.ts` |
 | 视觉特效（pulse/glow/sheen/flash…）怎么用、两库怎么分 | `docs/design/effects-architecture.md` + `layout.fx`（types.ts `VisualEffect`） |
 | 主题令牌有哪些、换皮怎么做 | `src/ui/components/types.ts` `UITheme` + `wiki/skills/ui-theming.md` |
@@ -159,7 +159,7 @@ node tools/ui-audit.mjs tools/audits/<你的页面>.audit.ts    # 退出码 0=�
 
 ## 7. sample 即标尺：game-i 已照本手册落地
 
-`src/games/game-i` 是本手册的**活参照**，做新 UI 时照它对齐。跑 `node tools/ui-audit.mjs tools/audits/mmo-hud.audit.ts` 看实测：
+`games/game-i` 是本手册的**活参照**，做新 UI 时照它对齐。跑 `node tools/ui-audit.mjs tools/audits/mmo-hud.audit.ts` 看实测：
 - **闭集**：全程仅用 `ComponentType` 闭集控件，零手写 React（`mmo-hud.test.ts` 有「仅闭集控件」断言）。
 - **防重叠**：MMO HUD 经 overlap 审计 **0 重叠**（从初版 9 处修到 0）；`mmo-hud.ts` 注释标了定位壳绕 fx 坑。
 - **组合优先**：用现成控件拼出 WoW 级 HUD，**零新控件、零逃生**——证明闭集词汇够表达最复杂界面。

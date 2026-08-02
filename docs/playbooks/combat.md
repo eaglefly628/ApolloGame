@@ -25,7 +25,7 @@
 ## ② 样例指针
 
 - registry：`t2-hitbox`/`t2-over-time`/`t3-caster`/`t2-dice-roll` 的 `describe.examples`。
-- 真实用法：`src/games/game-g/clash-resolve.ts`（三路对掷战斗核）、`src/games/game-g/combat-types.ts`。
+- 真实用法：`games/game-g/clash-resolve.ts`（三路对掷战斗核）、`games/game-g/combat-types.ts`。
 - 抛射线（火球/弹幕）见 movement-pathfinding.md 的 `t2-launch`。
 
 ## ③ 本线红线

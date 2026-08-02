@@ -52,8 +52,8 @@
 
 ## ② 样例指针
 
-- **活范例**：`src/games/game-i/gallery.ts`（全控件 + 艺术字体墙 + 特效/纹理/大标题等新 prop 全覆盖）+ `mmo-hud.ts`（最复杂 HUD·纯数据复现 WoW）。
-- **达标大厅**：`src/games/game-g/lobby-dd.ts` + 六屏 `home/campaign/collection/craft/deck/turn-battle-screen.ts`（LayoutNode 纯数据）。
+- **活范例**：`games/game-i/gallery.ts`（全控件 + 艺术字体墙 + 特效/纹理/大标题等新 prop 全覆盖）+ `mmo-hud.ts`（最复杂 HUD·纯数据复现 WoW）。
+- **达标大厅**：`games/game-g/lobby-dd.ts` + 六屏 `home/campaign/collection/craft/deck/turn-battle-screen.ts`（LayoutNode 纯数据）。
 - 控件目录/形状：`src/ui/components/catalog.ts` + `types.ts`；渲染 debug：`render.ts`。
 
 ## ③ 本线红线（其余合理性准则见 ui-playbook）
@@ -66,7 +66,7 @@
 ## ④ 正样例 / 反面教材
 
 - ✅ game-i（LayoutNode 纯数据展示台）、game-g 大厅六屏（达标）。
-- ✖ 手写 React UI 屏两例勿模仿：`src/game-e.tsx`（1163 行·**注意入口在 src 根目录不在 games/game-e/——查它状态别掉这个坑**）与 `src/games/game-f/game-f.tsx`（970 行·冻结）。
+- ✖ 手写 React UI 屏两例勿模仿：`src/game-e.tsx`（1163 行·**注意入口在 src 根目录不在 games/game-e/——查它状态别掉这个坑**）与 `games/game-f/game-f.tsx`（970 行·冻结）。
 
 ## ⑤ 交付前 + 查不到怎么办
 

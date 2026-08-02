@@ -17,9 +17,9 @@
 ## ② 样例指针
 
 - registry：`t3-poker-hand`/`t3-card-scoring` 的 `describe.examples`（Balatro 式逐张结算）。
-- **正样例·计分核**：`src/games/game-e/session.ts`（回合逻辑，无 React 依赖可 headless 测）。
-- **正样例·数据小丑目录**：`src/games/game-e/joker-catalog.ts`（全量小丑元数据）+ `jokers.ts`（声明式 `{op,target,value,when}` 效果，弱 LLM 可产/校对）。
-- 装配：`src/games/game-e/blueprint.ts`。
+- **正样例·计分核**：`games/game-e/session.ts`（回合逻辑，无 React 依赖可 headless 测）。
+- **正样例·数据小丑目录**：`games/game-e/joker-catalog.ts`（全量小丑元数据）+ `jokers.ts`（声明式 `{op,target,value,when}` 效果，弱 LLM 可产/校对）。
+- 装配：`games/game-e/blueprint.ts`。
 
 ## ③ 本线红线
 

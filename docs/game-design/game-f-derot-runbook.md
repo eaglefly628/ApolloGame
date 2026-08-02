@@ -18,7 +18,7 @@
 > 平移类改动**必须语义等价**;靠肉眼对 794 行不可靠。**先加一个 deep-equal 快照守**:
 
 - **片 0(先做,零风险)**:加测 `blueprint.snapshot.test.ts` —— 把当前 `buildGameFBlueprint()` 的输出 `JSON.stringify` 钉成快照基线。**此后每个"平移片"改完,输出必须与基线逐键 deep-equal**(行为零变),否则即回退。
-- **绿灯逐关**:每片改完 `npx tsc --noEmit` + `npx vitest run src/games/game-f` **全绿才进下一片**;`world.hash()` 确定性测不许变。
+- **绿灯逐关**:每片改完 `npx tsc --noEmit` + `npx vitest run games/game-f` **全绿才进下一片**;`world.hash()` 确定性测不许变。
 
 ---
 
@@ -42,7 +42,7 @@
 1. **一次一片,绿灯才进**;平移片(1/2)拿 deep-equal 兜底,redesign 片(3/4)拿行为测兜底。
 2. **片 1/2 先行**(纯平移、低风险、有 deep-equal 安全网)——先证"manifest 化"方法成立;**再啃片 3/4**(redesign、风险高)。
 3. 每片单独提交(可回退);提交信息标片号。
-4. 引擎一行不改(交办明确);纯 `src/games/game-f` + `data/` + 接 `@ui/shell`。
+4. 引擎一行不改(交办明确);纯 `games/game-f` + `data/` + 接 `@ui/shell`。
 
 ---
 

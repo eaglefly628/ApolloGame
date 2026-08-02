@@ -22,7 +22,7 @@ sim 只持字符串 key（可哈希、可回滚），真实字节/材质只在�
 
 - **共享资产库** = `assets/index.json`（~3 万项 devicon/立绘等货架）。它是**被引用/被 copy 的源**，
   **游戏运行时不直接引它**。
-- **游戏本地库** = 每游戏自持一份 `AssetIndex`（TS 内联如 `src/games/game-z/assets.ts` 的 `GAME_Z_INDEX`，
+- **游戏本地库** = 每游戏自持一份 `AssetIndex`（TS 内联如 `games/game-z/assets.ts` 的 `GAME_Z_INDEX`，
   或本地 JSON `public/games/<game>/art/index.json`）。游戏**只引自己的本地索引**，保持本地目录 hermetic。
 - **要用共享库的资源** → 用 §1 的 vendor 工具 **copy 进游戏本地美术目录**，本地索引引这份拷贝。
   绝不让游戏直接引共享库条目，也绝不把游戏专属资产并进共享 `assets/index.json`。
@@ -54,7 +54,7 @@ import localIndex from './art/index.json'; // 或 fetch
 registerAssetIndex(assets, parseAssetIndex(localIndex));
 ```
 
-自检：`src/games/game-z/vendor.test.ts` 证明 vendor 产物可被统一 Asset 路线消费。
+自检：`games/game-z/vendor.test.ts` 证明 vendor 产物可被统一 Asset 路线消费。
 
 ---
 
@@ -77,7 +77,7 @@ registerAssetIndex(assets, parseAssetIndex(localIndex));
 
 **引用**：物件 `Material3D: { preset: 'matte', materialRef: 'mat/plank-wood' }`。
 渲染器据 `materialRef` 查目录合成有效材质（材质资源作基底，物件 inline 字段覆盖——见
-`renderer/three/material.applyMaterialRef`）。参考现成 demo：`src/games/game-z/diorama.ts` 的 `plank-crate`。
+`renderer/three/material.applyMaterialRef`）。参考现成 demo：`games/game-z/diorama.ts` 的 `plank-crate`。
 
 ---
 
@@ -101,7 +101,7 @@ registerAssetIndex(assets, parseAssetIndex(localIndex));
   绝不开自由代码/自由 CSS 口子；③ 增量·向后兼容（旧无 usage/colorSpace 的 texture 条目视作 sprite/srgb）。
 - **命名**：别引入新 `Resource` 类型（撞 sim `Resource` 组件 hp/mana）——统一用 `Asset*`。
 - **代码归属**：`src/assets/**` 是引擎核心（跨 2D/3D）→ 跨界改动**合并前 Lead review**；
-  `src/renderer/three/**` + `src/games/game-z/**` 是 P3D 域。3D 资产需求进 `docs/workflow/requests-3d.md`。
+  `src/renderer/three/**` + `games/game-z/**` 是 P3D 域。3D 资产需求进 `docs/workflow/requests-3d.md`。
 - **门禁**：改完 `tsc + vitest + build` 全绿才提交。
 
 ## 现有实现锚点

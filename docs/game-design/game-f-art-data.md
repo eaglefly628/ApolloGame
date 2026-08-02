@@ -26,7 +26,7 @@
 
 ## 三、起手棋子映射（MVP-0 骨架，6 英雄两队）
 
-> 占位 textureKey 已在 `src/games/game-f/assets.ts` 声明（势力色 token）。**真皮列**= 将来 1:1 换的 FreeArtLib DCSS id（已在货架核实存在）。
+> 占位 textureKey 已在 `games/game-f/assets.ts` 声明（势力色 token）。**真皮列**= 将来 1:1 换的 FreeArtLib DCSS id（已在货架核实存在）。
 
 | 英雄 | 势力(队/色) | 职业 | 占位 textureKey | 真皮 DCSS id（FreeArtLib） | 技能名(后续) |
 |---|---|---|---|---|---|

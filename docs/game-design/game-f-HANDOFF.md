@@ -33,7 +33,7 @@
 | 3 | **`game-f-tft-reference.md` + `game-f-flow-spec.md`(v2)** | ⭐ **战斗经营地基准则**（金铲铲流程图全转录）+ **流转单一真相**（三层状态机 + 数值表 + 审查 + 队列） |
 | 4 | `docs/game-design/game-f-auto-chess.md` | 设计基线：能力映射（§3）、三缺口评审（§6）、回驳清单（§7）、数据模板（§4） |
 | 5 | `docs/workflow/requests.md` 的 REQ-021/022/023 + REQ-F-024~032 | 缺口需求与裁决现状（021/022 已 done；**032 是 MVP-1 阻塞点**） |
-| 6 | **`src/games/game-f/blueprint.ts` + `game-f.test.ts`** | **当前实现**（纯数据装配 + 5 测试）——改流程前先看它已经怎么跑 |
+| 6 | **`games/game-f/blueprint.ts` + `game-f.test.ts`** | **当前实现**（纯数据装配 + 5 测试）——改流程前先看它已经怎么跑 |
 | 7 | `docs/workflow/SESSION-HANDOFF.md` | 引擎全局现状（能力库清单、已知债：性能 N²、跨端浮点未验证🟠） |
 
 ---

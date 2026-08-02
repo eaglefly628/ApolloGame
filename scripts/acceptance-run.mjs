@@ -6,7 +6,7 @@
 //  断言只读世界机读态（Resource/Flag/StringVar/组件字段），不读 DOM。失败报告=步号+期望 vs 实际
 //  +当步机读态快照（天然 bug 单格式）。同 seed 同轨（确定性）——引擎种子 PRNG 保证。
 //
-//  薄适配契约（src/games/<g>/acceptance-adapter.ts·PE 落·纯接线零规则·图纸③）：
+//  薄适配契约（games/<g>/acceptance-adapter.ts·PE 落·纯接线零规则·图纸③）：
 //    createWorld(seed, config?) → world     引擎 World（须可 .tick() / .getAllEntities() / .getComponent(id,type)）
 //    applySignal(world, signal, args?, by?) 把一条剧本信号翻成引擎输入（action-map/组件写）
 //    readWorld(world) → worldLike           读视图（标准游戏＝直接返回 world；纯接线）
@@ -134,7 +134,7 @@ export function formatScenarioResult(label, file, res = {}) {
 
 // ── 发现 / 装载 ────────────────────────────────────────────────
 const acceptanceDir = (root, slug) => join(root, 'docs', 'design', slug, 'acceptance');
-const adapterPath = (root, slug) => join(root, 'src', 'games', slug, 'acceptance-adapter.ts');
+const adapterPath = (root, slug) => join(root, 'games', slug, 'acceptance-adapter.ts');
 
 /** 有 acceptance/*.scenario.jsonc 的游戏 slug 列表。 */
 export function discoverGamesWithAcceptance(root) {
@@ -159,7 +159,7 @@ export function listScenarioFiles(root, slug) {
 /** 动态装载 adapter（named 或 default·须齐 createWorld/applySignal/readWorld）→ 规整对象 or 抛错。 */
 export async function loadAdapter(root, slug) {
   const p = adapterPath(root, slug);
-  if (!existsSync(p)) throw new Error(`缺 adapter: src/games/${slug}/acceptance-adapter.ts（PE 未落薄适配契约）`);
+  if (!existsSync(p)) throw new Error(`缺 adapter: games/${slug}/acceptance-adapter.ts（PE 未落薄适配契约）`);
   const mod = await import(pathToFileURL(p).href);
   const a = mod.default && typeof mod.default === 'object' ? { ...mod.default, ...mod } : mod;
   for (const fn of ['createWorld', 'applySignal', 'readWorld']) {

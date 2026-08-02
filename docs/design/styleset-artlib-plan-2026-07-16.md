@@ -21,7 +21,7 @@
 | spec 闭集 schema（Texture/Mesh/MaterialSpec） | `src/assets/asset-index.ts` | 库条目的元数据契约 |
 | UITheme 主题级皮槽（buttonSkins·一 kind 一皮全游戏换） | `docs/playbooks/ui.md` 换皮行 | UI 面的消费端 |
 | 公用 3D 货架生成器 | `scripts/gen-shelf-3d.mjs` | 3D 面的占位/程序化基线 |
-| game-i 展示台 + 换皮下拉（PUI 域） | `src/games/game-i/**` | 对齐验收场 |
+| game-i 展示台 + 换皮下拉（PUI 域） | `games/game-i/**` | 对齐验收场 |
 
 ## 二、三个新增件（本图纸的全部增量）
 

@@ -2,7 +2,7 @@
 
 > 命题：每关 = 一整幅**满格 cols×rows 像素画**，每格颜色 = power(补给罐)色之一；图上叠**南瓜头/钥匙/门**。
 > 「这张像素图怎么低成本批产」= 本作内容引擎的核心。**owner 拍板：此算法 game102 本地化，别的游戏一时用不上、不下沉引擎。**
-> 落点：`src/games/game102/pixelgen.ts`（PE 本地算法库·authoring-time 纯函数·确定性·零裸 Math.random）。
+> 落点：`games/game102/pixelgen.ts`（PE 本地算法库·authoring-time 纯函数·确定性·零裸 Math.random）。
 
 ## 0. 内容模型（数据契约）
 

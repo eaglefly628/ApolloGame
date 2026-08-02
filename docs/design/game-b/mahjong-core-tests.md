@@ -5,7 +5,7 @@
 > 施工形态对标 game-c M1 先例：**headless 纯逻辑核先行**（洗/配/摸打/判定/计分全在纯函数层测·不挂渲染），世界接线测试后补。⚖ TS 授权在案（capability-plan §4·记 t3-riichi-core 下沉债）。
 > 确定性总律：**一切随机只出自 SessionIn.seed 派生的引擎种子 PRNG**；每组测试凡涉随机必含「同 seed 复现」姊妹例。
 
-## 0. 测试文件规划（src/games/game-b/core/）
+## 0. 测试文件规划（games/game-b/core/）
 
 | 文件 | 管什么 |
 |---|---|

@@ -143,7 +143,7 @@ PE 只负责 play-field 与 UI 的**信号对接**（写世界=action 信号入�
 
 > 依「验收剧本循环律」：玩法正确性裁判 = GD 写的剧本（seed+操作+逐步期望·纯数据），harness 驱动真引擎对账。
 > **✅ GD 已交付 5 份**（>门槛 3）= `docs/design/game102/acceptance/*.scenario.jsonc`（+ README 定义**动作词表/机读态词表**）。
-> **PE 只需写薄适配器** `src/games/game102/acceptance-adapter.ts`（纯接线：动作→引擎 action 信号、机读态→ README 投影表 Resource/Flag/StringVar），**不改剧本**；剧本写错=GD 改。
+> **PE 只需写薄适配器** `games/game102/acceptance-adapter.ts`（纯接线：动作→引擎 action 信号、机读态→ README 投影表 Resource/Flag/StringVar），**不改剧本**；剧本写错=GD 改。
 > 跑：`npx vite-node scripts/acceptance-run.mjs --game game102`（进推送门禁）。5 份覆盖：①基础消色 ②弹尽入槽+复用 ③钥匙开门 ④突破 5→10 ⑤限额判负。
 
 ---
@@ -175,5 +175,5 @@ PE 只负责 play-field 与 UI 的**信号对接**（写世界=action 信号入�
 
 - 游戏层**零 system 自由代码**：机制=数据+现有能力（Lead 裁①）；撞墙→ `requests.md` 报缺口升级引擎池（spec 由 Lead 亲笔·Opus 施工），**在此之前不游戏层自写编排**。
 - 禁手写 DOM（UI 走 LayoutNode·play-field 走渲染器）· 禁裸 `Math.random` · 禁零测试出货 · 禁虚胖数据（填了没解释器的表）。
-- 域边界：`src/games/game102/**` = PE；`src/ui/**` = PUI；引擎 = Lead。跨域改走 `requests.md`。
+- 域边界：`games/game102/**` = PE；`src/ui/**` = PUI；引擎 = Lead。跨域改走 `requests.md`。
 - 提交署名 `Claude <noreply@anthropic.com>`·信息以 session URL 结尾·不写模型标识·推 `claude/mainbranch`（fetch→rebase→scoped-gate 全绿→push）。

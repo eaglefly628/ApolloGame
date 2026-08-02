@@ -1,7 +1,7 @@
 # game-103《幸存者》验收剧本包（S4 玩法关裁判 · REQ-ACCEPT）
 
 > 作者=GD-103（懂规则方）。剧本=**纯数据**，harness 驱动**真引擎**逐步对账，断言只读机读态（Resource/Flag/StringVar/Component·**不读 DOM**）。
-> PE 落薄适配 `src/games/game-103/acceptance-adapter.ts`（`createWorld/applySignal/readWorld`·**纯接线零规则**）、**不得改本目录剧本**；剧本写错=GD 改+记录。规则真相=`docs/design/game-103/gdd.md`。
+> PE 落薄适配 `games/game-103/acceptance-adapter.ts`（`createWorld/applySignal/readWorld`·**纯接线零规则**）、**不得改本目录剧本**；剧本写错=GD 改+记录。规则真相=`docs/design/game-103/gdd.md`。
 > 跑：`npx vite-node scripts/acceptance-run.mjs --game game-103`（并进 vitest `scripts/acceptance.test.mjs`·推送门禁自动咬）。**S4 门要 ≥3 剧本 conformance 绿。**
 
 ## PE 需落的 adapter 投影键（本包断言依赖）

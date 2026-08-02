@@ -4,7 +4,7 @@
 > 底线：adapter=**纯接线零规则·不改剧本**（剧本错=GD 改）；连锁/激光**撞墙回 `requests.md` 报缺口·绝不游戏层自写 flood/aim**。
 
 ## A. 先补真门 blocker（P0·REQ-G102-ADAPTER）
-- [ ] 落 `src/games/game102/acceptance-adapter.ts`（薄适配·契约见 `acceptance/README.md`）
+- [ ] 落 `games/game102/acceptance-adapter.ts`（薄适配·契约见 `acceptance/README.md`）
   - 动作词表→引擎 action：`tapSupply:<color>` / `tapSupply:rainbow|chain` / `useSpecial:laser` / `aim:col|row:<i>` / `tapSlot:<i>` / `tick:<n>`
   - 机读态→投影：`remain.<color>` `remain.total` `keys` `doorOpen` `score` `combo` `conveyor.count` `tray.count` `flow`(playing/victory/defeat)
 - [ ] `npx vite-node scripts/acceptance-run.mjs --game game102` 能跑（进 `scripts/acceptance.test.mjs` 门禁）

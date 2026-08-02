@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { validateReferences } from './validate-references.js';
 import { parseManifestDetailed } from './manifest.js';
 import { exportManifest } from '../studio/inspect.js';
-import { buildGameEBlueprint } from '../games/game-e/blueprint.js';
+import { buildGameEBlueprint } from '@games/game-e/blueprint.js';
 import type { WorldBlueprint } from './demo.assembly.js';
 
 // 引用链接器（P0）：id 交叉引用体检。两条军规：

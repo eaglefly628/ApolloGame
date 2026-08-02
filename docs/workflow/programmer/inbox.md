@@ -5,7 +5,7 @@
 
 ## 派发 · Game F 数据接线（2026-06-10，Lead/主程4）
 
-> **边界（用户 2026-06-10 拍板）**：游戏层（`src/games/**`）一律归各 PE，Lead 只动引擎+文档、不动手接线。
+> **边界（用户 2026-06-10 拍板）**：游戏层（`games/**`）一律归各 PE，Lead 只动引擎+文档、不动手接线。
 > **基线**：`claude/mainbranch` @ `f3fbc89`（引擎能力全部就绪：tsc + vitest 934 + build 全绿）。
 > **开工前必做**：`git fetch origin claude/mainbranch && git rebase origin/claude/mainbranch`（多 session 并行，push 前同样 fetch→rebase）。
 > 自检：tsc + vitest + build 全绿才推。完成在本节任务行标 done 并写 `outbox.md`。

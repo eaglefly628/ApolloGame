@@ -19,9 +19,12 @@
       "@services/*": ["./src/services/*"],
       "@renderer/*": ["./src/renderer/*"],
       "@ui/*": ["./src/ui/*"],
-      "@net/*": ["./src/net/*"]
+      "@net/*": ["./src/net/*"],
+      "@runtime/*": ["./src/runtime/*"],
+      "@assembly/*": ["./src/assembly/*"],
+      "@games/*": ["./games/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "games"],
   "exclude": ["node_modules"]
 }

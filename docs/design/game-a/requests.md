@@ -3,7 +3,7 @@
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
 ### A-025 · [2026-07-23] · 巡检发现 · vendor.test 断言 55 条 vs 索引实有 58（owner 本地美术推送未同步测试） · status: ✅ **done（Lead 当场清·owner 2026-07-23「把红修复」在场授权）** · 优先级: **P1（阻全量测试·当日清）** · 类型: 资产对账同步（PE 域）
-> 巡检实证：owner 从本地推美术（`e5db3d0e`·game-a art-02.png + index +3 条）→ `src/games/game-a/vendor.test.ts`「55 条」失败（expected 58 to be 55）。
+> 巡检实证：owner 从本地推美术（`e5db3d0e`·game-a art-02.png + index +3 条）→ `games/game-a/vendor.test.ts`「55 条」失败（expected 58 to be 55）。
 > **✅ Lead 处置（2026-07-23·owner 在场「把它修复」授权·非自动巡检的 hands-off）**：新 3 条 = 2 真 seedream 生成（`gen/art-02`+`game-a/bg/table` 桌背 skinKey）+ **1 悬空 mock（`gen/mock/art-03`·文件 gitignored·qwen mock）**。① 删悬空 mock 条（enforce「mock 永不入库」铁律·文件本就不在库）→ index 57 条；② vendor.test 改**分解式断言**：55 vendor（vendoredFrom）+ 2 生成（generator·非 mock）=57·+「无 mock」护栏钉死（今后 mock 泄漏进 committed index 即红拦）。全量 vitest 绿。**根因**：`batchGenerate` 按设计把 mock 留本地 index 供墙预览（`art-replace.test` 钉死），但 mock 条不该随 index.json 提交（文件 gitignored→提交即悬空）——护栏已由 vendor.test「无 mock」承接。
 
 ### A-023 · 美术走索引消费（工坊替换才生效）· [2026-07-22] · owner 报（工坊替换游戏没看到·全游戏一体）→ Lead 诊断 → **PE-A** · status: ✅ PE-A 完结（索引解析接线·真机换背景验证成立·ledger-audit 孤儿归零） · 优先级: P1 · 类型: 接消费槽（REQ-ART-可消费槽铁律 option a·game-a 侧·同 game-b B-012）
@@ -119,11 +119,11 @@ owner 意向 BT。GD 方案：BT 纯数据树+通用解释器（外层策略）+
 > **⚖ Lead 对照结论**：`flow` **能**表达盘/run 粗粒度生命周期（dealing→playing→settle→run-check·flag/resource 守卫转移——有平行施工变体实证可行·约 189 行宿主即可收墩圈轮转）；**不能**自然表达逐座墩圈轮转与进贡矩阵（事件形状不合·硬塞=数据造假）。落地版取**线性过程化 session 脚本**形态（照 game-e session.ts 先例·规则语义全在引擎 hand-pattern/BT/数据表，脚本只做顺序编排）——Lead 准许该形态（见 capability-plan §4① 裁决补正），**代价记债**：编排脚本 419 行 > 例外①预估 200 行，偿还计划照旧=b（麻将）/c（德州）牌桌轮转同构攒齐后下沉通用 `turn-flow`/`table-session` capability（b S4 已开工·c 有 betting-engine——同构证据在快速积累，此债优先级会自然上浮）。
 
 ### A-101 · S4 玩法关施工记录（领工声明·Lead 复查代录·2026-07-17） · status: 施工记录
-> **记账缘由（问责定性=制度刚立没接住·不问人）**：S4 落地提交 `d1c2934f`（PE-A session `01Wa2igGxHXZ9w9PmPUyeVAK`）未先写领工声明——「复查基准=领工声明」铁律当日刚由 review-gates 回填（`b305672d`），施工与立律赛跑。Lead 复查时按**提交自带域注+全文件清单**代录边界并逐一核对：`src/games/game-a/**`（guandan-session/ai/hud/game-a+双测试）+ `tools/audits/game-a-{play,result}.audit.ts`（PUI 域·域注知会·照 game-t 先例）+ `public/games/game-a/pipeline.json`——**零声明外文件**。后续 S5-S8 施工按铁律先写声明再动工。
+> **记账缘由（问责定性=制度刚立没接住·不问人）**：S4 落地提交 `d1c2934f`（PE-A session `01Wa2igGxHXZ9w9PmPUyeVAK`）未先写领工声明——「复查基准=领工声明」铁律当日刚由 review-gates 回填（`b305672d`），施工与立律赛跑。Lead 复查时按**提交自带域注+全文件清单**代录边界并逐一核对：`games/game-a/**`（guandan-session/ai/hud/game-a+双测试）+ `tools/audits/game-a-{play,result}.audit.ts`（PUI 域·域注知会·照 game-t 先例）+ `public/games/game-a/pipeline.json`——**零声明外文件**。后续 S5-S8 施工按铁律先写声明再动工。
 > **并发撞车记录**：Lead 派工的 S4 施工代理与 PE-A session 平行施工同关——PE-A 版先落地且功能更全（含进贡/还贡/抗贡 G1-G4），代理版未推送（并发纪律：不覆盖已落地工作），其「flow 粗粒度重组」设计洞见已收进 A-004 对照结论。**派工流程教训记档**：同关派工前先查在施 session，避免双工。
 
 ### A-005 · [2026-07-17] · GD-A · 生产板无法为零代码新立项开卡 · status: ✅ 结案（Lead 裁决 2026-07-18：明文「板自 S3 起」·手册已回填；design 态开卡=YAGNI 暂不做，真撞上再提） · 类型: 生产线工具缺口
-`game-pipeline.mjs detectForm` 只认 library/public 的 manifest.json 或 `src/games/<slug>/` 目录——但按八阶段设计 S1 立项卡/S2 plan **先于** S3 骨架，零代码新游戏开不了板、立项卡无处落。本项目权宜：S1 内容备于 `brief.md` §7，S2 过审后随骨架由 CLI 补落卡。建议 Lead 裁：detectForm 增认 `docs/design/<slug>/`（design 态）或明文「板自 S3 起」。（按问责定性=手册/工具缺陷记录，不问谁绕。）
+`game-pipeline.mjs detectForm` 只认 library/public 的 manifest.json 或 `games/<slug>/` 目录——但按八阶段设计 S1 立项卡/S2 plan **先于** S3 骨架，零代码新游戏开不了板、立项卡无处落。本项目权宜：S1 内容备于 `brief.md` §7，S2 过审后随骨架由 CLI 补落卡。建议 Lead 裁：detectForm 增认 `docs/design/<slug>/`（design 态）或明文「板自 S3 起」。（按问责定性=手册/工具缺陷记录，不问谁绕。）
 
 ### A-006 · [2026-07-17] · GD-A · 内容分级与平台合规跟踪（服饰罚要素） · status: 📌 长期跟踪 · 类型: 治理
 owner 07-17 追加服饰罚玩法（输盘方姨太脱一件·立绘阶梯呈现）。既定约束：①角色全员成年（硬线·角色卡年龄字段+成熟体型）②服饰阶梯含非裸露底线档、到底转金钱罚（硬线·露骨内容不做）③平台定位=出海成人向单机（Steam 成人分级+年龄门；移动双端/中国大陆不可发——owner 知情决策记录在案）。S6 美术、S7 品质、PS 发行各阶段复核本条。（07-17 三轮拍板：发行=**先自玩/内部**——本条降为潜在项，将来上架前重启复核。）

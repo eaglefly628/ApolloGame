@@ -172,4 +172,4 @@
 
 ---
 
-*配套：`brief.md`（立项+评判）、`capability-plan.md`（能力总览·门禁）。数据表实现期落 `library/`（卡带）或 `src/games/game-<slot>/data/`（编译期），JSON 结构见组内 schema 约定。*
+*配套：`brief.md`（立项+评判）、`capability-plan.md`（能力总览·门禁）。数据表实现期落 `library/`（卡带）或 `games/game-<slot>/data/`（编译期），JSON 结构见组内 schema 约定。*

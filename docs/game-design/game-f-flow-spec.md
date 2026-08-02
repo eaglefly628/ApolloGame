@@ -251,7 +251,7 @@
 
 > **相位可用性（准则 §一.4）**：买/刷/卖/锁店 **prep 与 combat 期均可用**；摆子/移回备战席 **仅 prep**。实现=操作信号的 Effect 加相位门（combat 期摆子信号无效化）。
 
-### 3.4 L3 · Combat 内（已实现 ✅，参考实现 = `src/games/game-f/blueprint.ts`）
+### 3.4 L3 · Combat 内（已实现 ✅，参考实现 = `games/game-f/blueprint.ts`）
 
 战斗内**没有状态机**，是涌现链（一拍不差地已在跑，5 个 vitest 盖住）：
 
@@ -368,7 +368,7 @@ aggro(锁最近敌) → grid-move(六角 A* 逐格走) → loop Timer(攻速) �
 
 ## 六、符合性审查（2026-06-10，对照 mainbranch@`706758e`）
 
-### 6.1 已达成 ✓（全部有测试背书，`src/games/game-f/game-f.test.ts` 10/10 绿）
+### 6.1 已达成 ✓（全部有测试背书，`games/game-f/game-f.test.ts` 10/10 绿）
 
 | 本规范条目 | 实现/测试证据 |
 |---|---|

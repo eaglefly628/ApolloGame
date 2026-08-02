@@ -7,7 +7,7 @@ import { studioAssets } from './assets-model.js';
 import { inspectBlueprint } from './inspect.js';
 import { parseManifest } from '../assembly/manifest.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
-import { buildGameFBlueprint } from '../games/game-f/index.js';
+import { buildGameFBlueprint } from '@games/game-f/index.js';
 import { demoBlueprint } from '../assembly/demo.assembly.js';
 
 // 回归：透视器曾因一款已删旧游戏蓝图的可选字段 Tween.loops=undefined → kindOf 落 'json' →

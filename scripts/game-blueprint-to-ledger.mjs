@@ -12,8 +12,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // game → 该游戏导出的 WorldBlueprint 构造器（新增蓝图游戏在此登记）。
 const BUILDERS = {
-  'game-d': async () => (await import('../src/games/game-d/rooms.ts')).baseBlueprint(),
-  'game-f': async () => (await import('../src/games/game-f/blueprint.ts')).buildGameFBlueprint(),
+  'game-d': async () => (await import('../games/game-d/rooms.ts')).baseBlueprint(),
+  'game-f': async () => (await import('../games/game-f/blueprint.ts')).buildGameFBlueprint(),
 };
 
 const game = process.argv[2];

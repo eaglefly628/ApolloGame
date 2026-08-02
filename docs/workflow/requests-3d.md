@@ -62,7 +62,7 @@
 ## REQ-3D-资产就绪自动重渲 · 静态场景 × 异步贴图迟到 = 脏帧跳渲吞掉换图帧 · [2026-07-17] · PE-B 提 → P3D · status: **✅ done（P3D 2026-07-24·渲染器自愈 AssetReadyTracker·已推 c55a71aa；2026-07-26 被 game-103 提交 d47ee942 误删→重新落地）** · 类型: 渲染健壮（W1-C 脏帧跳渲的盲区）
 
 > **现象（game-b S3 实证）**：全静态 3D 场景（无动画/无相机动）+ Material3D.map 贴图异步 fetch 迟到——`ensurePbrMesh` 在贴图就绪后按 mode 正确重建了 mesh，但 `renderSig`（位姿/相机/灯/后处理…）不含资产就绪态 → 跳渲判「画面没变」→ 新贴图永不上屏（canvas 停在旧帧）。动态场景（game-z 恒动）撞不到此坑，纯静态陈列场景必撞。
-> **game-b 侧 workaround 在案**：宿主胶水 `assets.loadAll()` 收尾后调公开 `renderer.invalidate()`（`src/games/game-b/{assets,game-b}.ts`·可参考）。
+> **game-b 侧 workaround 在案**：宿主胶水 `assets.loadAll()` 收尾后调公开 `renderer.invalidate()`（`games/game-b/{assets,game-b}.ts`·可参考）。
 > **提议（P3D 裁决取一）**：① renderSig 折入 AssetManager 就绪版本号（资产每 ready 一枚 version++·最通用）；② attachRenderer 侧监听 loadAll 完成自动 invalidate；③ 维持宿主手动 invalidate 但回填 `playbooks/3d.md` 一行「静态场景+异步贴图必调」（最省·先堵手册）。
 > **连带小缺口（同域顺记）**：Material3D.map 无 alpha 路（transparent/alphaTest 均不设）→ 透明底 PNG 透明像素渲黑。game-b 占位牌面已按「程序化出路」授权期合成不透明贴图绕开（`scripts/game-b-compose-tiles.mjs`）；若后续真有「透明贴花面」需求再议 `alphaTest?` opt-in，眼下不催。
 
@@ -393,7 +393,7 @@
 > - **P18「摇骰手感」pulse：真缺口·已下沉 ✅**（`baa`→本次）：根因=`Anim3DSystem` 同 field 多通道**相互覆盖(clobber)** → game-g 只能靠**游戏层 rAF 逐帧改 spin.rate**（绕基座 bypass）。修法**照 CORE RULE 首选「重组现有原语」**：让**同 field 通道叠加(compose)** → `spin(rotY)+bob(rotY)` = 变速自转（加速→减速）纯数据可表达。已实现 `renderer/three/anim3d.ts`（异 field 单通道结果不变·向后兼容）+ 测试 + 回填 `playbooks/3d.md`。**→ game-g 可删 `clash-dice-3d.ts` 的 rAF pulse 循环，改在 Anim3D 加 bob(rotX/rotY) 通道达同效**（game-g 域·你改；我不碰你文件）。
 > - **骰面 [1,power]>6 的映射**：game-g 用 `dieFaces[].src` 程序化数字面贴任意点数——**正解**（比 6 面 pip 更忠实战力值）·无异议。
 
-> **⚠ 更新 [2026-07-03·程序B/game-g]**：owner 2026-07-03 当面反复点名要程序B（game-g session）**当场把 3D 骰加进去**（「必须得用我们的底座和 3D 基础去做，不要绕过我的规则」「里面有个 3D 色子旋转的地方，你帮我加进去」）——**晚于本单 07-02 的「转 P3D」路由**，owner 直接指令优先。已交**游戏层数据驱动版**（`src/games/game-g/clash-dice-3d.ts`）：
+> **⚠ 更新 [2026-07-03·程序B/game-g]**：owner 2026-07-03 当面反复点名要程序B（game-g session）**当场把 3D 骰加进去**（「必须得用我们的底座和 3D 基础去做，不要绕过我的规则」「里面有个 3D 色子旋转的地方，你帮我加进去」）——**晚于本单 07-02 的「转 P3D」路由**，owner 直接指令优先。已交**游戏层数据驱动版**（`games/game-g/clash-dice-3d.ts`）：
 > - **零 P3D 文件改动**：只在 game 层声明 ECS 数据（`Transform3D`/`Mesh3D` box+dieFaces 数字骰面/`Vfx3D` 能量注入粒子/`Camera3D`/`Light3D`/`Sky3D`.env），由公有 `ThreeRenderer` 解释渲染——与 `game-d` Title 大骰同一条路子（game 层 new ThreeRenderer + createEntity/addComponent，不碰 three-renderer.ts）。**非 CSS 3D**（守数据驱动铁律 + 避战斗 zoom 画框放大 bug）。
 > - **UI↔世界锚 seam**（本单 §集成难点点名的那个）：`mountTurnBattle.syncDice3D` 量 `#clash-die3d-m/f` 锚点屏幕 rect → 各覆一张 `position:fixed` canvas（逃 innerHTML 重建 + zoom 裁剪）。three 走**动态 import**（600KB 只在首次掷命拉·不压 game-g 首屏）；无 WebGL(headless)→ 回退 🎲 emoji 占位（测试绿）。双骰绕 X/Y 缓转 + 粒子上涌；掷值仍由 `clash-die-m/f` 文本显（3D 骰纯装饰旋转·不落特定面）。
 > - **请 P3D 定夺**：(a) 认可这版游戏层覆层照用；或 (b) 把「UI↔世界锚 seam」下沉成 P3D 域通用能力（路线图「待长」项）、game-g 改消费那个通用件。当前已全绿上线（tsc+vitest+build），owner 要的「掷骰爽感」先满足；收编与否由你（P3D）评审。

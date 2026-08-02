@@ -186,7 +186,7 @@
 >
 > **【交接·程序B 已代做部分 · 2026-07-03 · owner 应急派 B 当场先做·请转记 A 账/A 接手余下】**
 > owner 要"看清战斗 + 用 timeline 不手写"，当场派程序B 先落地（本 REQ 原指派 A）。**程序B 已交（全绿·已推 main·commit 见 git log game-g）**：
-> - **宿主底座**：`src/games/game-g/battle-timeline.ts` —— game-g 侧 t3-timeline 宿主（起只跑 timeline capability 的 World·逐帧 pump·把 cue 信号交表现层订阅自演）。支持并发多条 timeline + `delay(ticks,cb)`（单 cue timeline·替 setTimeout）。含并发/清理/复用测试（`battle-timeline.test.ts`）。
+> - **宿主底座**：`games/game-g/battle-timeline.ts` —— game-g 侧 t3-timeline 宿主（起只跑 timeline capability 的 World·逐帧 pump·把 cue 信号交表现层订阅自演）。支持并发多条 timeline + `delay(ticks,cb)`（单 cue timeline·替 setTimeout）。含并发/清理/复用测试（`battle-timeline.test.ts`）。
 > - **已迁上 timeline 的演出拍**：① 战后生死（clash:slay 斩→survivor 对折→resume 续场）；② 行军慢放清标记（move:settle·连带修 760ms 打断 1.25s 动画的 bug）；③ 演出横幅 `showBanner` + 战前锚场 cue `showClashCue` 的延时 → `battleTl.delay`。表现层订阅信号自演（playGhost/浮层），回调不塞自由时序。
 > - **UI 延时是否提新引擎能力**：程序B 评判**回驳**——manifesto §4「延时 N→回调」已被 `t3-timeline` 单 cue / `Timer` 原子覆盖，不新增；消费现成的（记此账避免 A 重提）。
 > **A 接手余下（结构级·B 未动）**：`perfQueue/playPerf/advancePerf` **整套回合骨架退役** → 一整回合编排成主 `Timeline`（玩家门控点用点击桥接/skipOnSignal），advancePerf/playPerf 手写状态机删除。B 侧订阅模式已铺好（战后段即样板）可复用。**故意留 setTimeout 的三处**（非演出拍·别硬迁）：`flash` 提示条(需即时取消)、`startThinking`(有意随机时长)、`doClashRoll` 数字滚(多帧 tick·宜 Label.tween 另议)。

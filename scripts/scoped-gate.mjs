@@ -6,8 +6,8 @@
 // 铁律·只在**可证明安全**时缩范围，任何不确定一律 full（缩错=放过真 breakage=比慢更糟）：
 //   · full       —— 碰了引擎/共享面（src/{engine,skills,assembly,renderer,services,net,ui,runtime,launcher*}、
 //                    scripts/、tools/、vite.config/package.json/tsconfig）→ 下游全可能坏 → tsc+全量vitest+build。
-//   · game:<g>   —— 改动**全部**落在单个游戏自己的面（src/games/<g>/**、public/games/<g>/**、docs/design/<g>/**）
-//                    → 只有该游戏可能坏（它依赖的引擎没动）→ tsc + `vitest run src/games/<g>` + build。
+//   · game:<g>   —— 改动**全部**落在单个游戏自己的面（games/<g>/**、public/games/<g>/**、docs/design/<g>/**）
+//                    → 只有该游戏可能坏（它依赖的引擎没动）→ tsc + `vitest run games/<g>` + build。
 //   · docs-only  —— 只碰文档（docs/**、根 *.md），无任何编译产物变化 → 跳过 tsc/vitest/build，只跑文档守卫。
 //   · none       —— 无改动。
 // 多游戏同时改 / 游戏面+根文档混合但仍单游戏=game；只要掺进引擎/共享/多游戏=full（安全兜底）。
@@ -30,7 +30,7 @@ const ENGINE_FILES = new Set([
   'tsconfig.json', 'index.html',
 ]);
 const gameOf = (f) => {
-  const m = f.match(/^(?:src|public)\/games\/([a-z0-9-]+)\//) || f.match(/^docs\/design\/([a-z0-9-]+)\//);
+  const m = f.match(/^games\/([a-z0-9-]+)\//) || f.match(/^public\/games\/([a-z0-9-]+)\//) || f.match(/^docs\/design\/([a-z0-9-]+)\//);
   return m ? m[1] : null;
 };
 const isDoc = (f) => f.endsWith('.md') || f.startsWith('docs/');
@@ -85,19 +85,22 @@ function changedFiles(base) {
 
 // 门禁计划（scope → 要跑哪些步）。每步 {name, cmd}。
 function planFor(c) {
-  const DOC_GUARDS = [
+  // 常驻守卫（任何 scope 都跑·纯 fs 扫描+regex·秒级）：文档引用 + token 预算 + 引擎/内容边界
+  // （decouple-check·REQ-SPLIT-引擎内容分离图纸②·跟双守卫并列，防 games/src 边界回潮）。
+  const GUARDS = [
     { name: 'docs-ref', cmd: ['node', ['scripts/docs-ref-guard.mjs']] },
     { name: 'context-budget', cmd: ['node', ['scripts/context-budget-guard.mjs']] },
+    { name: 'decouple-check', cmd: ['node', ['scripts/decouple-check.mjs']] },
   ];
   const TSC = { name: 'tsc', cmd: ['npx', ['tsc', '--noEmit']] };
   const BUILD = { name: 'build', cmd: ['npm', ['run', 'build']] };
   if (c.scope === 'none') return [];
-  if (c.scope === 'docs-only') return DOC_GUARDS;
+  if (c.scope === 'docs-only') return GUARDS;
   if (c.scope === 'game') {
-    return [TSC, { name: `vitest:${c.game}`, cmd: ['npx', ['vitest', 'run', `src/games/${c.game}`]] }, BUILD, ...DOC_GUARDS];
+    return [TSC, { name: `vitest:${c.game}`, cmd: ['npx', ['vitest', 'run', `games/${c.game}`]] }, BUILD, ...GUARDS];
   }
   // full
-  return [TSC, { name: 'vitest:full', cmd: ['npx', ['vitest', 'run']] }, BUILD, ...DOC_GUARDS];
+  return [TSC, { name: 'vitest:full', cmd: ['npx', ['vitest', 'run']] }, BUILD, ...GUARDS];
 }
 
 function main() {

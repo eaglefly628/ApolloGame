@@ -2,7 +2,7 @@
 
 > 2026-07-23 · GD-103 记录 owner 口述 brief（"复刻 survivo.io 核心玩法"）+ 附资深程序/架构视角评判（CLAUDE.md CORE RULE §2/§3）。
 > 本稿=S1 输入，只钉方向；数值与规则细目在 `gdd.md`，能力消费在 `capability-plan.md`。
-> **slot 说明**：owner 在 session 内称此项目为「game103」，故文档暂落 `docs/design/game-103/`；`src/games/` 的字母位（如 game-h/…）由 owner/Lead 分配后再定，本文档可平移改名。
+> **slot 说明**：owner 在 session 内称此项目为「game103」，故文档暂落 `docs/design/game-103/`；`games/` 的字母位（如 game-h/…）由 owner/Lead 分配后再定，本文档可平移改名。
 
 ## 1. owner brief 要点（归纳）
 
@@ -36,7 +36,7 @@
 | 议题 | 拍板结果 |
 |---|---|
 | **平台/形态** | ✅ **编译期 TS 游戏**（owner 2026-07-23·接受 TS·例外逐条过 plan·audit 红线不豁免） |
-| **slot** | ✅ **`game-103`**（owner 拍板·不占字母位·"这样比较清楚"）→ 目录 `docs/design/game-103/`、`src/games/game-103/` |
+| **slot** | ✅ **`game-103`**（owner 拍板·不占字母位·"这样比较清楚"）→ 目录 `docs/design/game-103/`、`games/game-103/` |
 | **§4 编排能力** | ✅ **下沉新通用能力·交 Lead 做**（GD 已如实核查+提 `REQ-SURVIVOR编排`·见 capability-plan §4） |
 | 单局时长 | 15 分钟（标杆同款·GD 默认·可调） |
 | 首发内容量 | 5 武器 × 5 进化 × 8 被动 × 6 敌人（GD 默认·可调） |

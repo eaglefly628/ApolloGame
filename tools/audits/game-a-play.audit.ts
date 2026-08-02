@@ -1,9 +1,9 @@
 // 审计入口：game-a《掼蛋夜宴》S4 可玩牌桌屏（椭圆felt桌+席位环+扇形手牌+中央墩·纯 LayoutNode·夜宴皮）。
 // 用法：node tools/ui-audit.mjs tools/audits/game-a-play.audit.ts --w 1280 --h 720
 import { mountUI } from '../../src/ui/components/index.js';
-import { buildPlay, type PlayView, type SeatView } from '../../src/games/game-a/hud.js';
-import { SEATS, DRESS_TIERS, buildDeck108, codeRank, cardCode } from '../../src/games/game-a/rules.js';
-import { GAME_A_THEME } from '../../src/games/game-a/theme.js';
+import { buildPlay, type PlayView, type SeatView } from '../../games/game-a/hud.js';
+import { SEATS, DRESS_TIERS, buildDeck108, codeRank, cardCode } from '../../games/game-a/rules.js';
+import { GAME_A_THEME } from '../../games/game-a/theme.js';
 
 const sv = (id: SeatView['seat']['id'], cards: number): SeatView => ({ seat: SEATS.find((s) => s.id === id)!, cards, dress: DRESS_TIERS });
 // 满手 27 张（发牌后·按点数排序）看扇形弧列效果。

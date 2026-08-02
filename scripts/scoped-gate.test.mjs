@@ -18,12 +18,12 @@ describe('scoped-gate 分类器（缩范围只在可证明安全时）', () => {
   });
 
   it('引擎面 + 游戏面同改 → full（不因掺了游戏就缩）', () => {
-    expect(classify(['src/games/game-a/rules.ts', 'src/engine/x.ts']).scope).toBe('full');
+    expect(classify(['games/game-a/rules.ts', 'src/engine/x.ts']).scope).toBe('full');
   });
 
   it('改动收敛单游戏（src/public/docs 混合）→ game:<g>', () => {
     const c = classify([
-      'src/games/game-a/guandan-session.ts',
+      'games/game-a/guandan-session.ts',
       'public/games/game-a/art/index.json',
       'docs/design/game-a/requests.md',
     ]);
@@ -32,12 +32,12 @@ describe('scoped-gate 分类器（缩范围只在可证明安全时）', () => {
   });
 
   it('单游戏面 + 通用文档 → 仍 game:<g>（通用文档不影响编译）', () => {
-    const c = classify(['src/games/game-b/mahjong.ts', 'docs/workflow/requests.md']);
+    const c = classify(['games/game-b/mahjong.ts', 'docs/workflow/requests.md']);
     expect(c).toMatchObject({ scope: 'game', game: 'game-b' });
   });
 
   it('多游戏同改 → full（安全兜底）', () => {
-    expect(classify(['src/games/game-a/x.ts', 'src/games/game-b/y.ts']).scope).toBe('full');
+    expect(classify(['games/game-a/x.ts', 'games/game-b/y.ts']).scope).toBe('full');
   });
 
   it('仅通用文档 → docs-only（跳过编译门禁）', () => {

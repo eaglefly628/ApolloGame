@@ -59,6 +59,9 @@ export default defineConfig(async () => ({
       '@renderer':   resolve(__dirname, 'src/renderer'),
       '@ui':         resolve(__dirname, 'src/ui'),
       '@net':        resolve(__dirname, 'src/net'),
+      '@runtime':    resolve(__dirname, 'src/runtime'),
+      '@assembly':   resolve(__dirname, 'src/assembly'),
+      '@games':      resolve(__dirname, 'games'),
     },
   },
 }));

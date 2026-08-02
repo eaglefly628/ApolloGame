@@ -23,7 +23,7 @@
 
 ### REQ-G102-ADAPTER · S4 验收适配器（PE 落 adapter·剧本 schema 阻塞报 GD）· [2026-07-24] · GD 验收发现 → PE 落 → 回 GD · status: **in-review（阻塞在剧本 schema·待 GD 改）** · 优先级: P0 · 类型: 验收接线
 > **GD 验收实测**：`acceptance-run.mjs --game game102` → 原缺 `acceptance-adapter.ts`。**PE 已落**（下 ①），但暴露真阻塞在剧本 schema（②）。
-> **① adapter 已落**：`src/games/game102/acceptance-adapter.ts`（createWorld/applySignal/readWorld·纯接线零规则·不改剧本）。动作已接 `tapSupply:<color>`/`tapSlot:<i>`；投影已接 `remain.<color>`/`remain.total`/`conveyor.count`/`tray.count`/`score`/`combo`/`moves`/`flow`(StringVar 投自 GameFlow)。特殊炮 rainbow/chain/laser/aim + keys/doorOpen = REQ-G102-SPECIAL/关型后续（pending）。
+> **① adapter 已落**：`games/game102/acceptance-adapter.ts`（createWorld/applySignal/readWorld·纯接线零规则·不改剧本）。动作已接 `tapSupply:<color>`/`tapSlot:<i>`；投影已接 `remain.<color>`/`remain.total`/`conveyor.count`/`tray.count`/`score`/`combo`/`moves`/`flow`(StringVar 投自 GameFlow)。特殊炮 rainbow/chain/laser/aim + keys/doorOpen = REQ-G102-SPECIAL/关型后续（pending）。
 > **② 阻塞·剧本 schema 不符（剧本错=GD 改·PE 不改剧本铁律）**：`acceptance/01~08` 写成 `{level, steps:[{do,then,expect对象}]}` DSL，而 harness（`scripts/acceptance-schema.mjs`）只认 `{game, config, steps:[{signal}|{tick:N}|{expect:[{res,eq}]}]}`——8 份全报「坏剧本·schema」（缺 `game`、用 `level` 非 `config`、`do/then/expect对象` 非 `signal/tick/expect数组`）。**跑 `acceptance-run.mjs` 现零剧本可解析**（adapter 齐了也跑不了）。
 >   **请 GD**：把 8 份改成 harness schema（每步拆 `{signal:"tapSupply:blue"}`→`{tick:60}`→`{expect:[{res:"remain.blue",eq:0},…]}`·`level`→`config`·补 `game:"game102"`）；或经 Lead 裁 harness 扩展支持 README 的 DSL。PE 可提供转好格式的草案供 GD 审（不擅改）。
 > **③ 核心行为已按剧本确切数字自验**（walkthrough·`game102.walkthrough.test.ts`）：01 消色(remain.blue=0/red=1/total=1/score>0/playing) · 02 弹尽入槽(remain.blue=3/conveyor=0/tray=1)+点槽复用(→0/victory) · 05 判负(remain.blue=2/defeat)。剧本改成 harness 格式即可跑真 conformance（GD 二次对抗性验收）。
@@ -51,14 +51,14 @@
 > **实证结论：`t2-tilemap` 不适配中央「可消除像素画棋盘」——但这不是引擎缺口，改用现有实体路线即可（零下沉·守 Lead 裁①）。**
 > - **为何不适配**：`t2-tilemap`（`src/skills/tier2/tilemap.ts`）**唯一系统 = `tile-collision`**（把动态 box 体推出实心墙格 + 渲染器画格）；瓦片显式「**非实体**、不进 tick」。它**没有** per-cell hp 递减、命中消除/移除格、按色计数 的任何解释器。而本作核心循环=「同色弹命中格 → hp-1 → 归零消除 → 按色 `group-count` → 收集钥匙」全部要求作用在**实体**上：`t2-group-count`/`t2-launch`/`t2-hitbox` 均 `world.query(...)` 实体组件、**读不到 Tilemap**（已核源码）。用 tilemap 装棋盘 = 填了一张没有解释器消费的死数据（虚胖数据·宪法禁）。
 > - **采纳路线（组合表达·现有能力原生消费）**：棋盘 = **一格一实体 BoardCell**（`Transform`+`Shape(box)`+`Tag(色位|CELL_BIT[|KEY_BIT])`+`Resource(hp)`+`Color`）。按色计数 = `t2-group-count{requiredTag:色位|CELL_BIT → Resource remain_<color>}`；命中消除/钥匙收集 = S4 用 `t2-launch`/`t2-hitbox`/`t2-event-when`/`t2-effect-apply` 接线。**与 capability-plan §4 第二行 GD 倾向（「方块=带颜色+hp 的实体阵」）一致。**
-> - **证据**：`src/games/game102/blueprint.ts`（`boardCells()`/`colorCounters()`）+ `game102.skeleton.test.ts`（load+2tick 绿 + group-count 按色数出在板同色格：blue=9/lblue=10/teal=2）。故 game102 蓝图**不含 `t2-tilemap`**。
+> - **证据**：`games/game102/blueprint.ts`（`boardCells()`/`colorCounters()`）+ `game102.skeleton.test.ts`（load+2tick 绿 + group-count 按色数出在板同色格：blue=9/lblue=10/teal=2）。故 game102 蓝图**不含 `t2-tilemap`**。
 > - **未来若需静态背景/墙层**（本作无）方可另起 tilemap 层——与棋盘无关。**无新能力缺口·不升级引擎池。**
 
 ## 已完结（附 commit·done 迁此）
 
 ### REQ-G102-UI · UI 实装（据布局稿出 .dc.html + LayoutNode）· [2026-07-23→2026-07-24] · GD 提 → **PUI** · status: **✅ done（本次提交）** · 优先级: P1 · 类型: UI 实装
 > **交付基准**：`ui-layout-spec.html`（GD 布局稿·四屏·零新控件）+ `game102-screens.dc.html`（PUI 视觉稿·卡通像素风·「稿=1:1 复刻基准」）。
-> **产出**：① 四屏 `.dc.html` 视觉稿真渲染目击（双主题）；② LayoutNode 纯数据实装 `src/games/game102/hud.ts`——`buildTopBar`（对局 HUD：关号/🔑Badge/得分/暂停 + 宝箱门 ProgressBar）· `buildBurst`（连击 Float 飘分 + 突破 Particles 星爆）· `buildResult`（结算 Rating 星级 + 钥匙 Badge + confetti）· `buildSelect`（LevelPath 蛇形选关）· `buildRevive`（失败续命 Modal + Toast）；③ `pixelPour` 皮（`ui-theme.ts`·夜紫底 + 天青主强调 + 缃金点睛 + 像素糖果厚唇钮·程序化 data-URI·零外部资产）。
+> **产出**：① 四屏 `.dc.html` 视觉稿真渲染目击（双主题）；② LayoutNode 纯数据实装 `games/game102/hud.ts`——`buildTopBar`（对局 HUD：关号/🔑Badge/得分/暂停 + 宝箱门 ProgressBar）· `buildBurst`（连击 Float 飘分 + 突破 Particles 星爆）· `buildResult`（结算 Rating 星级 + 钥匙 Badge + confetti）· `buildSelect`（LevelPath 蛇形选关）· `buildRevive`（失败续命 Modal + Toast）；③ `pixelPour` 皮（`ui-theme.ts`·夜紫底 + 天青主强调 + 缃金点睛 + 像素糖果厚唇钮·程序化 data-URI·零外部资产）。
 > **控件**：全落 34 闭集（Panel/Label/Badge/ProgressBar/Button/Modal/Rating/LevelPath/Float/Particles/Toast·`hud.test.ts` 有闭集守卫）——**零新控件·零手写逃生**（符合 manifesto 先重组）。
 > **写世界纪律**：全 action 信号（pause/resume/retry/next/back/play/revive_ad/revive_pay/give_up）皆宿主生命周期动作·handler 不塞自由逻辑/DOM；play-field 落子走 render+clickable（不经 UI）。
 > **待定项裁定**：待命槽/补给交互层 = **PE render+clickable**（play-field 域·实体带 hp/命中/按色计数·与 REQ-G102-TILEMAP-VERDICT 的实体棋盘同源）；PUI 侧不出其框标（避免与 render 实体双拥），HUD 顶栏/飘层/结算/选关/续命为 PUI 全部产出。

@@ -2,7 +2,7 @@
 // 扫 buildBlueprint() 全视觉实体（含 PrefabLibrary 模板的 Sprite 皮肤槽）→ 产 art-ledger.json（每条=一个
 // 视觉实体的美术需求 + 当前占位几何体）。M1 阶段=零真资产·全占位色块 → 本表即「该配哪些美术」的完整清单。
 // vite-node 跑（import game-103 的 TS buildBlueprint）。用法：npx vite-node scripts/game-103-art-derive.mjs [--gen]
-import { buildBlueprint } from '../src/games/game-103/index.ts';
+import { buildBlueprint } from '../games/game-103/index.ts';
 import { deriveRequirements, batchGenerate, mergeLedger } from './art-replace.mjs';
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';

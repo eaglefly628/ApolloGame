@@ -20,7 +20,7 @@ beforeAll(() => {
     ],
   }));
   // 游戏 UI 源：🎲（exact）+ ★（alias→2b50）+ ☆（alias→2b50·与 ★ 去重）
-  const g = join(root, 'src', 'games', 'game-t');
+  const g = join(root, 'games', 'game-t');
   mkdirSync(g, { recursive: true });
   writeFileSync(join(g, 'screen.ts'), [`const a = { text: '🎲 掷骰' };`, `const b = '★ 满星 ☆ 空星';`].join('\n'));
 });

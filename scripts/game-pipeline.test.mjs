@@ -25,7 +25,7 @@ describe('形态识别', () => {
   it('library→cart · public manifest→builtin · src 目录→compiled · 都无→null', () => withRoot(async (root) => {
     put(root, 'library/g1/manifest.json', MANIFEST);
     put(root, 'public/games/g2/manifest.json', MANIFEST);
-    mkdirSync(join(root, 'src/games/g3'), { recursive: true });
+    mkdirSync(join(root, 'games/g3'), { recursive: true });
     expect(detectForm(root, 'g1')).toBe('cart');
     expect(detectForm(root, 'g2')).toBe('builtin');
     expect(detectForm(root, 'g3')).toBe('compiled');
@@ -225,7 +225,7 @@ describe('boardFor 乱序标记（板消费 outOfOrder·旧板零回归）', () 
 // ═══ S4 验收剧本门（REQ-ACCEPT·图纸④·「绿门不可玩」复盘）═══
 describe('acceptanceScenarioCount / S4 存在性门', () => {
   it('无 acceptance 目录=0·计 *.scenario.jsonc·忽略其它文件', () => withRoot(async (root) => {
-    put(root, 'src/games/g/index.ts', '// compiled');
+    put(root, 'games/g/index.ts', '// compiled');
     expect(acceptanceScenarioCount(root, 'g')).toBe(0);
     put(root, 'docs/design/g/acceptance/a.scenario.jsonc', '{}');
     put(root, 'docs/design/g/acceptance/b.scenario.jsonc', '{}');
@@ -255,7 +255,7 @@ describe('acceptanceScenarioCount / S4 存在性门', () => {
 describe('selfCheckArtifacts / selfCheckBlock（自证产物存在性·纯 fs）', () => {
   const shots = (root, slug, names) => names.forEach((n) => put(root, `docs/design/${slug}/self-check/shots/${n}`, 'img'));
   it('无目录=空盘点·计 png/jpg/jpeg·忽略非图片·子目录递归计入', () => withRoot(async (root) => {
-    put(root, 'src/games/g/index.ts', '// compiled');
+    put(root, 'games/g/index.ts', '// compiled');
     expect(selfCheckArtifacts(root, 'g', 'S4')).toMatchObject({ ok: false, hasAlignment: false, shots: 0 });
     shots(root, 'g', ['01.png', '02.PNG', '03.jpg', '04.jpeg']);
     put(root, 'docs/design/g/self-check/shots/notes.md', '# 不是图'); // 非图片不计
@@ -269,7 +269,7 @@ describe('selfCheckArtifacts / selfCheckBlock（自证产物存在性·纯 fs）
   }));
   it('MIN=5；判词点名缺什么（缺单/图不足各自点名·齐活=null 放行）', () => withRoot(async (root) => {
     expect(MIN_SELFCHECK_SHOTS).toBe(5);
-    put(root, 'src/games/g/index.ts', '// compiled');
+    put(root, 'games/g/index.ts', '// compiled');
     const b0 = selfCheckBlock(selfCheckArtifacts(root, 'g', 'S4'), 'S4');
     expect(b0).toContain('自证未做');
     expect(b0).toContain('self-check.md'); // 点名手册
@@ -321,9 +321,9 @@ const CLI = fileURLToPath(new URL('./game-pipeline.mjs', import.meta.url));
 const runCli = (root, args) => spawnSync('node', [CLI, ...args], { env: { ...process.env, APOLLO_PIPELINE_ROOT: root }, encoding: 'utf8' });
 
 describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F 点名）', () => {
-  // 编译期 fixture：src/games/<slug> 目录存在（compiled）·空立项卡 → S1/S2 非绿。
+  // 编译期 fixture：games/<slug> 目录存在（compiled）·空立项卡 → S1/S2 非绿。
   //   gate S3 对编译期游戏=「免 manifest 校验」exit0（不 spawn 重活）——放行路径便宜可测。
-  const mkFixture = () => { const r = mkdtempSync(join(tmpdir(), 'ord-cli-')); mkdirSync(join(r, 'src', 'games', 'g'), { recursive: true }); return r; };
+  const mkFixture = () => { const r = mkdtempSync(join(tmpdir(), 'ord-cli-')); mkdirSync(join(r, 'games', 'g'), { recursive: true }); return r; };
 
   it('前关欠 → gate 拒跑（退出码非 0 + stderr 指名欠项）', () => {
     const root = mkFixture();

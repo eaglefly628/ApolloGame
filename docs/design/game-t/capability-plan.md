@@ -35,7 +35,7 @@
 |---|---|---|---|---|
 | （无·目标=纯数据装配） | — | 0 | ✅ 以零例外立项；PE 落地若发现表达不了的点，回本表补申请再动工 | — |
 | balance-sim 脚本（GD 工具） | authoring-time 关卡验证 bot，非运行时游戏代码 | ~200（scripts/ 或 game-t 本地） | ✅ 准（工具·照 GD 白皮书 balance-sim 模式·确定性种子） | 无需偿还 |
-| **编译期薄壳宿主（PE-T 2026-07-16 回表申请·已落地）**：`src/games/game-t/` = game-q 同款 mount/host（Engine 装载/画布指针入队/资源→LayoutNode HUD 投影/选关⇄关卡切换/星级 localStorage/音效 diff）+ levels 纯数据表 + schema 纯函数（字符画解析/目标推导/星级结算） | 卡带/manifest 今日表达不了：①LayoutNode UI 通路（LevelPath 长卷/HUD/结算 Modal——mountUI 只有编译宿主可调，mountManifestGame=纯画布）②30 关多世界流程与进度存档。GDD §七已预授权「manifest 表达不了→编译期路线+回本表补审」 | 实测 ~990（含 331 行测试·对标 game-q 936） | ✅ **owner 2026-07-16 session 拍板「可以有 TS 代码，但要克制」**；克制落法=规则 0 行进 TS：机制全在 t3-match3-board config + t3-flow 数据，宿主零胜负代判、零消除逻辑（走查测试为证） | REQ-M3-三期④ MatchBoardView / manifest-UI 通路落地后回评卡带化（bench 保证随之补齐） |
+| **编译期薄壳宿主（PE-T 2026-07-16 回表申请·已落地）**：`games/game-t/` = game-q 同款 mount/host（Engine 装载/画布指针入队/资源→LayoutNode HUD 投影/选关⇄关卡切换/星级 localStorage/音效 diff）+ levels 纯数据表 + schema 纯函数（字符画解析/目标推导/星级结算） | 卡带/manifest 今日表达不了：①LayoutNode UI 通路（LevelPath 长卷/HUD/结算 Modal——mountUI 只有编译宿主可调，mountManifestGame=纯画布）②30 关多世界流程与进度存档。GDD §七已预授权「manifest 表达不了→编译期路线+回本表补审」 | 实测 ~990（含 331 行测试·对标 game-q 936） | ✅ **owner 2026-07-16 session 拍板「可以有 TS 代码，但要克制」**；克制落法=规则 0 行进 TS：机制全在 t3-match3-board config + t3-flow 数据，宿主零胜负代判、零消除逻辑（走查测试为证） | REQ-M3-三期④ MatchBoardView / manifest-UI 通路落地后回评卡带化（bench 保证随之补齐） |
 
 ## 4.5 美术接入（必填）
 

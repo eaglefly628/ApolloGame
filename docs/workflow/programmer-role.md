@@ -135,6 +135,6 @@ Lead 会通过 inbox 发送 review 任务（任务类型标记为 `review`）。
 
 ## 测试纪律（省 token）
 
-- **开发期只跑受影响的文件**：`npx vitest run <path>`（如 `npx vitest run src/games/game-f`），可配 `--reporter=dot` 压缩输出。别每改一处就把全量 1100+ 测试灌进上下文。
+- **开发期只跑受影响的文件**：`npx vitest run <path>`（如 `npx vitest run games/game-f`），可配 `--reporter=dot` 压缩输出。别每改一处就把全量 1100+ 测试灌进上下文。
 - **推前才跑全套**：`npx tsc --noEmit && npx vitest run && npm run build` 三件全绿才推（CLAUDE.md 铁律）；**rebase 带进新提交后必须重跑全套**——陈旧基线测的绿不算绿。
 - 全量挂了先用单文件复跑定位，别在全量输出里翻行。

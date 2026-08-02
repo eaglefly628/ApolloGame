@@ -1989,7 +1989,7 @@ class Component extends DCLogic {
     const assetsEmptyText = s.assetsSlug
       ? (s.ledger && (!s.ledger.rows || !ledRowsAll.length)
           ? (_emIsCode
-              ? '这是内置「代码游戏」——美术写死在源码（src/games/' + s.assetsSlug + '）里，没有数据美术台账。数据美术台账只对「生成的数据卡带」有效（game-j / game-m 那种纯 manifest 游戏）。'
+              ? '这是内置「代码游戏」——美术写死在源码（games/' + s.assetsSlug + '）里，没有数据美术台账。数据美术台账只对「生成的数据卡带」有效（game-j / game-m 那种纯 manifest 游戏）。'
               : '这盘还没生成玩法内容——美术台账是从 manifest 的视觉实体推导的，先去「我的游戏库→编辑」把玩法生成出来（设计先行 / 快速直出），玩法实体一落盘，台账就自动出来（含原始占位色块）。')
           : '')
       : '点上面的游戏页签查看它的美术台账';

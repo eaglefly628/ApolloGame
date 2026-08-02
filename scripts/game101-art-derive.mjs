@@ -3,8 +3,8 @@
 // （每条=一个视觉实体的美术需求 + 当前占位）。M1 阶段=零真资产·全占位 → 本表即「该配哪些美术」的完整清单。
 // 风格参照=Claude Design 稿 MergeBeach.dc.html（亮蓝沙滩美食风）；**美术全部原创·禁抠稿 PNG**（IP 铁律）。
 // vite-node 跑（import game101 的 TS buildBlueprint）。用法：npx vite-node scripts/game101-art-derive.mjs [--gen]
-import { buildBlueprint } from '../src/games/game101/blueprint.ts';
-import { CHAINS } from '../src/games/game101/theme.ts';
+import { buildBlueprint } from '../games/game101/blueprint.ts';
+import { CHAINS } from '../games/game101/theme.ts';
 import { deriveRequirements, batchGenerate, mergeLedger } from './art-replace.mjs';
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';

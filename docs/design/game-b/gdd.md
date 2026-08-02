@@ -133,7 +133,7 @@ SessionOut { ranks[4], pointsFinal[4], moneyDelta[4], clothing[姨太3席]: {rem
 |---|---|---|
 | S1 | 立项卡（本次已填·待 owner 签） | GD-B/owner |
 | S2 | `capability-plan.md` 过审（TS 例外 owner 已预授权·Lead 复核记档） | Lead |
-| S3 | 骨架：src/games/game-b 立起+装载空跑 | PE-B |
+| S3 | 骨架：games/game-b 立起+装载空跑 | PE-B |
 | S4 | 玩法：麻将核+AI+脱衣+金钱闭环·walkthrough vitest（一圈打通） | PE-B |
 | S5 | UI：LayoutNode 纪律·/check-ui | PE-B(+PUI 缺件) |
 | S6 | 美术：台账→女性向二次元锚→生成→逐行复核 | PA/美术平台 |

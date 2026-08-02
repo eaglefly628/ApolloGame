@@ -16,9 +16,9 @@
 
 ## ② 样例指针
 
-- **正样例**：`src/games/game-g/sfx.ts`（音色表 → `SynthAudioPort`）、`sound.ts`（静音持久 + 键）、`bgm.ts`（音符表 → `SynthMusicPort` 循环）。
+- **正样例**：`games/game-g/sfx.ts`（音色表 → `SynthAudioPort`）、`sound.ts`（静音持久 + 键）、`bgm.ts`（音符表 → `SynthMusicPort` 循环）。
 - 端口实现：`src/services/audio/synth-audio.ts`、`synth-music.ts`。
-- 试听台：`src/games/game-i/sounds.ts`。
+- 试听台：`games/game-i/sounds.ts`。
 
 ## ③ 本线红线
 

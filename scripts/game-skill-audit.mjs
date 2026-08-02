@@ -19,10 +19,10 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const GAMES_DIR = 'src/games';
+const GAMES_DIR = 'games';
 const wanted = process.argv.slice(2);
 
-// 历史遗留：个别游戏入口在 src/ 根目录而非 src/games/<g>/，不补上会审出「假干净」
+// 历史遗留：个别游戏入口在 src/ 根目录而非 games/<g>/，不补上会审出「假干净」
 const EXTRA_FILES = { 'game-e': ['src/game-e.tsx'] };
 
 /** 递归收集 .ts/.tsx 文件（跳过 doc/refcode 等非代码目录） */
@@ -105,7 +105,7 @@ function yellowBits(r) {
   const bits = [];
   if (r.flags.zeroCap) bits.push('零能力接入');
   if (r.tests === 0) bits.push('零测试');
-  try { statSync(join(GAMES_DIR, '..', '..', 'public', 'games', r.game, 'art', 'art-ledger.json')); }
+  try { statSync(join(GAMES_DIR, '..', 'public', 'games', r.game, 'art', 'art-ledger.json')); }
   catch { bits.push('无美术台账(art-pipeline.md 编译期三行接入)'); }
   return bits;
 }

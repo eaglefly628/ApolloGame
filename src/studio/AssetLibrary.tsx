@@ -15,8 +15,8 @@ import {
   type LibraryStatus,
 } from '@assets/index.js';
 import type { ArtLibIndex } from '@assets/artlib.js';
-import { GAME_F_ASSETS } from '../games/game-f/assets.js';
-import { JOKER_ART_MANIFEST } from '../games/game-e/assets.js';
+import { GAME_F_ASSETS } from '@games/game-f/assets.js';
+import { JOKER_ART_MANIFEST } from '@games/game-e/assets.js';
 import { SHELL, sBtn, sInput, sSelect, sChip, sLabel, sBadge, sChecker } from '../ui/shell-theme.js';
 import { AssetImportWizard } from './AssetImportWizard.js';
 import { AssetGenPanel } from './AssetGenPanel.js';

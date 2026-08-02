@@ -1,7 +1,7 @@
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import type { AssetIndex } from '@assets/index.js';
-import { JOKER_ART_FILES, JOKER_ART_MISSING, jokerArtKey } from '../games/game-e/assets.js';
-import { JOKER_CATALOG } from '../games/game-e/index.js';
+import { JOKER_ART_FILES, JOKER_ART_MISSING, jokerArtKey } from '@games/game-e/assets.js';
+import { JOKER_CATALOG } from '@games/game-e/index.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  资产透视 · 统一模型 (Asset Browser model — pure, no DOM/React)

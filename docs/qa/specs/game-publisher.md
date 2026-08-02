@@ -19,7 +19,7 @@
 ## 测例（5 原型·域外拒接必测）
 
 ### Case 1 · In-Domain Happy Path
-**Fixture**：`src/games/game-g/`（已接 `platform-hooks.ts`）· **输入**：发 game-g web + 平台冒烟 ·
+**Fixture**：`games/game-g/`（已接 `platform-hooks.ts`）· **输入**：发 game-g web + 平台冒烟 ·
 **期望**：1. 先读 `docs/workflow/finish/PS-steam-finish-list.md` + `docs/design/steam-publish.md` 2. 门禁全绿 3. `npm run build` 出 web 产物 4. `?steammock=1` 起 → 控制台 `[steam:mock] init/unlock` + 成就 toast（`scripts/shoot-game.mjs` / Playwright 验）
 **断言**：- [ ] 产物落在域内（`dist/`） - [ ] `PlatformPort` 契约未改、游戏只经 `platform-hooks` 接线
 

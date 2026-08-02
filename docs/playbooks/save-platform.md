@@ -23,8 +23,8 @@
 
 ## ② 样例指针
 
-- **正样例·平台接线**：`src/games/game-g/platform-hooks.ts`（`ggOnBattleWon`/`ggCloudSave`/`ggCloudLoad`）+ 测试 `platform-hooks.test.ts`（mock 端口断言调用）。
-- **正样例·存档层**：`src/games/game-g/game-g-save.ts`（纯数据 Save 类型 + 迁移，除 localStorage 外纯函数·可无头测）。
+- **正样例·平台接线**：`games/game-g/platform-hooks.ts`（`ggOnBattleWon`/`ggCloudSave`/`ggCloudLoad`）+ 测试 `platform-hooks.test.ts`（mock 端口断言调用）。
+- **正样例·存档层**：`games/game-g/game-g-save.ts`（纯数据 Save 类型 + 迁移，除 localStorage 外纯函数·可无头测）。
 - **创作台库版本化**：`src/studio/library-model.ts`（`LibraryMeta`/`GameEntry`·library/<slug>/meta.json）——用户游戏库前端数据模型（纯函数可单测）。
 - 无真账号测试：`resetMockSteam`/`createMockSteamBridge`（`src/services/platform/index.ts`）。
 - **离线单文件打包**：`scripts/package-web.mjs`（库卡带 manifest → 自包含 HTML）+ 引擎钩子 `src/cartridge-inline-run.ts`（读 `window.__APOLLO_INLINE_CART__` 走既有 parseManifest+load 跑·与在线 `DataCartridgeRunner` 共用 `cart-run-core.runBlueprintInto`）；端到端真构建冒烟 `scripts/package-web-smoke.mjs`（opt-in·不进默认门禁）。**注**：未解析的 `art:` 引用离线退化占位（art: 打包期解析 + 资产内联=后续件）。

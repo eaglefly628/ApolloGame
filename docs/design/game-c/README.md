@@ -30,7 +30,7 @@
 立项档=docs/design/game-c/（README→gdd→capability-plan→art-script→ui-brief）——以 mainbranch 最新为准，
 你被注入的 feature 分支是旧快照、绝不在其上开工。
 本阶段只领 M1（八阶段流程板·一会话一阶段·板未开先按 docs/playbooks/game-production.md 开板）：
-src/games/game-c/ 实现 holdem-eval.ts（7 选 5 最优+kicker 全序+平分）与 betting-engine.ts
+games/game-c/ 实现 holdem-eval.ts（7 选 5 最优+kicker 全序+平分）与 betting-engine.ts
 （下注圈轮转/min-raise/不足额 all-in 不重开/边池切层/死按钮）+ 衣物典当接线（craft-recipe 每件一条配方·数据）
 + headless 测试钉死（边池矩阵/kicker/平分/轮转边角/同 seed 复现）。
 owner 已批本项目 TS 口径（capability-plan §4 例外表为准）；硬线不放松：种子 PRNG（禁裸 Math.random）、

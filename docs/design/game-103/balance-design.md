@@ -175,4 +175,4 @@ dps₁ = 30.8×2/0.697 = 88.4   （裸 51.8 → +71%）
 
 ---
 
-*配套：`gdd.md`·`capability-plan.md`·`ui-scene-design.md`。数值进 PE 骨架后落 `src/games/game-103/data/*.json`。*
+*配套：`gdd.md`·`capability-plan.md`·`ui-scene-design.md`。数值进 PE 骨架后落 `games/game-103/data/*.json`。*

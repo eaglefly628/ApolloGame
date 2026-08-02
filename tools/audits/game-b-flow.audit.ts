@@ -1,8 +1,8 @@
 // 回合流向指示 + 副露来源标签 目击：中场（AI 出牌中）· 玩家已碰 · 中央指向条。
 import { mountUI } from '../../src/ui/components/index.js';
-import { buildPlayHud } from '../../src/games/game-b/play-ui.js';
-import { startMatch, aiTurn } from '../../src/games/game-b/core/game-state.js';
-import { SAKURA } from '../../src/games/game-b/theme.js';
+import { buildPlayHud } from '../../games/game-b/play-ui.js';
+import { startMatch, aiTurn } from '../../games/game-b/core/game-state.js';
+import { SAKURA } from '../../games/game-b/theme.js';
 const m = startMatch(20260717);
 m.interactiveCalls = true;
 for (let i=0;i<14 && m.cur.phase==='playing' && m.cur.turn!==0;i++) aiTurn(m); // 推到四家有河

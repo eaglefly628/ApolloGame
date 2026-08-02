@@ -31,5 +31,5 @@
 
 - 位置真相在 **sim**（`Transform`/`HexPos`，进 hash）；渲染层只是它的投影。
 - 3D 的相机 / 抛物线 / 旋转等是**表现编排**，活在渲染层，永不回写 sim。
-- game-g 的卡牌渲染器（`src/games/game-g/three-renderer.ts`，读 `Card3D` + 牌面纹理 + 抛飞编排）是
+- game-g 的卡牌渲染器（`games/game-g/three-renderer.ts`，读 `Card3D` + 牌面纹理 + 抛飞编排）是
   **游戏专属**表现，与本目录的**通用** Three 后端并存——单一编排不强行下沉（rule-of-three）。

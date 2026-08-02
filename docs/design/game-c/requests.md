@@ -49,7 +49,7 @@
 >
 > **⚖ PE-C 裁定＝要（2026-07-22·owner「处理这个需求」）**：owner 全程诉求=生成美术要能上画（「无限逼近」「AI 出图」「所有能替换的全列出来」），故**接消费槽**（数据接口=skinKey 别名·manifesto 合规）而非退役素坯；且带程序化兜底=**纯期权上行**（无真图→观感与现在逐字节一致；有真图→热替换），无任何回归风险，正合 Lead 红线。**不选「不要」**：那会与 owner 明确方向相悖，且素坯已生成、退役=浪费。
 > **✅ 回执（PE-C 2026-07-22·背幕槽落地 + 全库 skinKey 补齐）**：
-> - **根因两处齐修**：① `scripts/game-c-art-ledger.mjs` `add()` 补发**顶层 `skinKey` 字段**（原只落 `gen.localId`/`placeholder.instances`·故 art-replace 的 `if(row.skinKey)` 从不触发＝37 行全 null 的真因）——重跑后 37 行全带 skinKey·唯一（28 生成槽 `game-c/*` + 9 vendor 筹码 `chip/*`）。② `src/games/game-c/art-overrides.ts`（新·mirror game-g `art-textures`）：覆盖注册表 + `backdropUri()=textureOverrideUri('game-c/scene/backdrop') ?? STORY_BACKDROP` + `loadArtOverrides()`（**只收 `game-c/` 命名空间 + 正向 AI 信号** source `gen:`/`vendored` 或 tags `skin`·程序占位 `scene/backdrop` 因 id 无前缀+无顶层 source 天然不进）。`game-c.ts:57` 背幕改走 `backdropUri()` + mount 期异步拉索引热替换（disposed 守卫·headless 无 fetch 空安全）。
+> - **根因两处齐修**：① `scripts/game-c-art-ledger.mjs` `add()` 补发**顶层 `skinKey` 字段**（原只落 `gen.localId`/`placeholder.instances`·故 art-replace 的 `if(row.skinKey)` 从不触发＝37 行全 null 的真因）——重跑后 37 行全带 skinKey·唯一（28 生成槽 `game-c/*` + 9 vendor 筹码 `chip/*`）。② `games/game-c/art-overrides.ts`（新·mirror game-g `art-textures`）：覆盖注册表 + `backdropUri()=textureOverrideUri('game-c/scene/backdrop') ?? STORY_BACKDROP` + `loadArtOverrides()`（**只收 `game-c/` 命名空间 + 正向 AI 信号** source `gen:`/`vendored` 或 tags `skin`·程序占位 `scene/backdrop` 因 id 无前缀+无顶层 source 天然不进）。`game-c.ts:57` 背幕改走 `backdropUri()` + mount 期异步拉索引热替换（disposed 守卫·headless 无 fetch 空安全）。
 > - **验证**：art-overrides.test 6 例（无覆盖=STORY_BACKDROP 回退 / 登记即换 / headless 空安全 / 37 行 skinKey 全带唯一 / 命名空间分布 / 背幕 art-001）；合成索引端到端跑通=真 AI 别名 `game-c/scene/backdrop` 被收、程序占位 `scene/backdrop` 与 vendor `chip/1-white` 正确排除、`backdropUri()` 热切到 gen PNG。tsc+game-c vitest 132 例全绿。
 > - **follow-on（同模式·各自 `xxxUri()` 消费点·art-bible §5.1 登记）**：`game-c/table/felt-albedo|rail-albedo`→`Material3D.map`（**P3D 域·改前知会 P3D**）；`game-c/ui/btn-*`→`buttonSkins`（PUI 提供皮机制·PE-C 接键·owner「按钮变贴图」）；`game-c/icon/wear-*`→衣柜 `Image.src`（现 emoji）；`game-c/fx/*`→`Vfx3D`（未接）。均非阻塞·owner 排期再接。
 > - **GD-C 协同**：美术消费规范（哪些槽真进游戏）已在 art-bible §5.1 落档·背幕为首个 live 样板；余槽接线随各消费点 follow-on。
@@ -83,7 +83,7 @@
 ### REQ-C-107 · [S4 验收循环] PE-C 落 acceptance-adapter + 转正 GD 剧本 · [2026-07-18] · 提出人 GD-C → 指派 PE-C · status: open · 优先级: P1（S4 门·REQ-ACCEPT 循环）· 类型: 薄适配契约（PE 域·纯接线）
 > **背景**：REQ-ACCEPT harness（`scripts/acceptance.test.mjs`·Opus 已落）动态扫 `docs/design/<g>/acceptance/*.scenario.jsonc`——**有剧本无 adapter=红且阻塞全库门禁**（harness `227-232` 点名「缺 adapter」）。故 GD-C 4 本剧本 + 契约暂存 `docs/design/game-c/acceptance-draft/`（harness 不扫·不阻塞）。
 > **PE-C 活**（一批同推·此时 adapter 在→conformance 绿）：
-> ① 落 `src/games/game-c/acceptance-adapter.ts`——照 `acceptance-draft/README.md §1` 契约：`createWorld(seed,config)→new HoldemSession`、`applySignal` 映射 hero_fold/check/call/raise·pawn·next_hand 到 session 方法、`readWorld` 暴露 §1 词表机读态（含 **chips_net=Σseats.stack−chips_injected** 守恒探针、chips_injected、pot、hero_wardrobe、phase、hand_no 等）。纯接线零规则·~50 行·capability-plan §4 记账。
+> ① 落 `games/game-c/acceptance-adapter.ts`——照 `acceptance-draft/README.md §1` 契约：`createWorld(seed,config)→new HoldemSession`、`applySignal` 映射 hero_fold/check/call/raise·pawn·next_hand 到 session 方法、`readWorld` 暴露 §1 词表机读态（含 **chips_net=Σseats.stack−chips_injected** 守恒探针、chips_injected、pot、hero_wardrobe、phase、hand_no 等）。纯接线零规则·~50 行·capability-plan §4 记账。
 > ② 把 `acceptance-draft/` 转正为 `acceptance/`（git mv·同批推）。
 > ③ **剧本 04-multihand 会因 REQ-C-105 P0 跑红——这是预期**（chips_net 跌破 6000=边池蒸发）；先修 P0，04 转绿=P0 真修好（这就是验收循环闭环）。
 > **纪律**：剧本=GD 域纯数据·PE 不得改；跑红若疑剧本本身错→报 GD-C 改（不自行改剧本）。
@@ -115,7 +115,7 @@
 > **钉死**：`game-session.test.ts` 加「会话层守恒 + 健壮 fuzz」（500 局随机·主角随机行动+随机典当+AI 逐步·断言 Σ栈全程守恒·必终局·AI 出牌恒合法即零崩）。与 REQ-C-108②（hero 输入侧防御 no-op）互补：AI 侧=永不产非法（夹取）·hero 侧=容非法输入（no-op）。
 
 ### REQ-C-111 · [2026-07-22] · Lead 验收中发现 · **主干全量 vitest 红**：vendor.test 断言 62 条 vs 索引实有 90 条（自救 28 SVG 未同步测试即推送） · status: ✅ **done·PE-C 当日清（2026-07-22）** · 优先级: **P1（阻全员全量门禁·当日清）** · 类型: 门禁纪律欠账（game-c 域）
-> **实证（Lead 2026-07-22 于 origin tip）**：`src/games/game-c/vendor.test.ts`「索引合法：62 条」失败（expected 90 to be 62）。根因=`game-c-art-gen.mjs` 自救把 28 条占位 SVG 写进 `index.json`（62→90）但 vendor 测试未同步——**推送时门禁必已红**（scoped-gate 单游戏面会跑本测），违「全绿才推」。
+> **实证（Lead 2026-07-22 于 origin tip）**：`games/game-c/vendor.test.ts`「索引合法：62 条」失败（expected 90 to be 62）。根因=`game-c-art-gen.mjs` 自救把 28 条占位 SVG 写进 `index.json`（62→90）但 vendor 测试未同步——**推送时门禁必已红**（scoped-gate 单游戏面会跑本测），违「全绿才推」。
 > **修法二选一（PE-C 自裁）**：a) 测试断言更新为分解式（62 vendor + 28 placeholder=90·并断言两类各自计数与溯源字段，别只改总数糊过去）；b) 占位条目拆到独立 index（vendor 库不变式保 62）。**修完附全量 vitest 绿证据再推。**
 > **✅ 回执（PE-C·2026-07-22·选修法 a）**：`vendor.test.ts`「索引合法」测重写为**分解式对账**——按 id 前缀切两类：① vendor 62（`card/`53 + `chip/`9）逐条断言 `status='filled'` + `provenance.vendoredFrom===id`；② 程序生成 28（其余 id）逐条断言 `status='filled'` + `provenance.generator==='scripts/game-c-art-gen.mjs'` + 非 card/chip 前缀；合计断言 90。**未改总数糊过去**（两类计数 + 各自溯源字段独立咬）。**门禁证据**：全量 `npx vitest run` = **377 文件 / 3233 例全绿·exit 0**；`node scripts/scoped-gate.mjs --run` = **exit 0**（tsc 0 + game-c vitest + build + docs-ref + context-budget 全 PASS·scope=game:game-c）。
 > **问责定性（照制度只问流程）**：门本身咬得住（单游戏面即跑该测）——缺口在「推送前跑门」仍靠自觉、无服务端强制；此事记为 CI 服务端门禁议题（owner 决策仍挂起）的新实证。**PE-C 自省**：改 `index.json` 计数属改动本测覆盖面，当同提交同步测试断言并跑门；今后推送前 `scoped-gate --run` 必跑、看退出码（已内化）。

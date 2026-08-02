@@ -3,8 +3,8 @@
 // 约定：mount 到 #root。Screen justify:between → 顶条居顶、底条居底（复现实际布局），量重叠 + 对比度。
 import { mountUI } from '../../src/ui/components/index.js';
 import type { LayoutNode } from '../../src/ui/components/index.js';
-import { buildTopBar, buildBottomBar } from '../../src/games/game-q/hud.js';
-import { NEON_THEME } from '../../src/games/game-q/theme.js';
+import { buildTopBar, buildBottomBar } from '../../games/game-q/hud.js';
+import { NEON_THEME } from '../../games/game-q/theme.js';
 
 // 低血量 + pending 态（触发 danger 色 + hero/glow 强调 → 覆盖最"吃紧"配色）
 const s = { lives: 5, gold: 300, remaining: 12, pending: 'pulse' as const, status: 'playing' as const, muted: false };

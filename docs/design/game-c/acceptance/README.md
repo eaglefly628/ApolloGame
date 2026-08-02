@@ -3,7 +3,7 @@
 > **制度**（`docs/playbooks/testing.md`「验收剧本」+ REQ-ACCEPT）：GD 写剧本 → harness 驱动真引擎逐步对账 → PE 照红单修。**剧本=GD 域·PE 不得写/改**。
 > 本包 = `gdd.md` 德州规则的第三方可执行断言（S4 玩法关裁判·防「绿门不可玩」）。`npx vite-node scripts/acceptance-run.mjs --game game-c` → **4/4 PASS**。
 
-## 1. adapter 契约（PE-C 已落 `src/games/game-c/acceptance-adapter.ts`·session 层门面·纯接线）
+## 1. adapter 契约（PE-C 已落 `games/game-c/acceptance-adapter.ts`·session 层门面·纯接线）
 
 - **createWorld(seed, {smallBlind,bigBlind,startStack})** → 包 `HoldemSession`。
 - **applySignal**：`hero_act{action:fold/check/call/raise, to?}` · `next_hand` · `pawn{seat,item}`。

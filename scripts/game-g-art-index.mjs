@@ -6,9 +6,9 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { HERO_CARDS } from '../src/games/game-g/hero-codex.ts';
-import { heroPortrait } from '../src/games/game-g/portraits.ts';
-import { coinLatticeTile } from '../src/games/game-g/art-textures.ts';
+import { HERO_CARDS } from '../games/game-g/hero-codex.ts';
+import { heroPortrait } from '../games/game-g/portraits.ts';
+import { coinLatticeTile } from '../games/game-g/art-textures.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'public', 'games', 'game-g', 'art');

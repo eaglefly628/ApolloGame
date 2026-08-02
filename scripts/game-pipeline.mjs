@@ -39,11 +39,11 @@ const writeJson = (f, v) => { mkdirSync(dirname(f), { recursive: true }); writeF
 
 export const pipelineFile = (root, slug) => join(root, 'public', 'games', slug, 'pipeline.json');
 
-// 游戏形态：cart=创作台卡带（library/）· builtin=内置纯数据（public/games/<slug>/manifest.json tracked）· compiled=编译期（src/games/）。
+// 游戏形态：cart=创作台卡带（library/）· builtin=内置纯数据（public/games/<slug>/manifest.json tracked）· compiled=编译期（games/）。
 export function detectForm(root, slug) {
   if (existsSync(join(root, 'library', slug, 'manifest.json'))) return 'cart';
   if (existsSync(join(root, 'public', 'games', slug, 'manifest.json'))) return 'builtin';
-  if (existsSync(join(root, 'src', 'games', slug))) return 'compiled';
+  if (existsSync(join(root, 'games', slug))) return 'compiled';
   return null;
 }
 
@@ -59,7 +59,7 @@ export function gameHash(root, slug) {
   const roots = [
     join(root, 'library', slug),
     join(root, 'public', 'games', slug),
-    join(root, 'src', 'games', slug),
+    join(root, 'games', slug),
     join(root, 'docs', 'design', slug),
   ];
   const files = [];
@@ -243,8 +243,8 @@ export function boardFor(root, slug) {
   const hashNow = gameHash(root, slug);
   const head = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).stdout?.trim() || '';
   const c = pf.concept || {};
-  const hasTests = form !== 'cart' && existsSync(join(root, 'src', 'games', slug))
-    && readdirSync(join(root, 'src', 'games', slug)).some((f) => f.endsWith('.test.ts'));
+  const hasTests = form !== 'cart' && existsSync(join(root, 'games', slug))
+    && readdirSync(join(root, 'games', slug)).some((f) => f.endsWith('.test.ts'));
   const planFile = join(root, 'docs', 'design', slug, 'capability-plan.md');
 
   const stages = STAGES.map((st) => {
@@ -386,7 +386,7 @@ function gateRun(slug, stage, form) {
       if (!pass) return { exit: 1, summary: `✗ bench 五轴 score=${score}` };
       return { exit: 0, summary: `bench 五轴 score=${score} · 验收剧本 ${nScen} 场景绿` };
     }
-    const r = run('npx', ['vitest', 'run', `src/games/${slug}/`]);
+    const r = run('npx', ['vitest', 'run', `games/${slug}/`]);
     const tail = (r.stdout || '').trim().split('\n').filter((l) => /Tests|Test Files/.test(l)).join(' · ');
     if ((r.status ?? 1) !== 0) return { exit: r.status ?? 1, summary: `✗ walkthrough · ${tail.slice(0, 160) || (r.stderr || '').slice(0, 160)}` };
     return { exit: 0, summary: `walkthrough 绿（${tail.slice(0, 120)}）· 验收剧本 ${nScen} 场景绿` };

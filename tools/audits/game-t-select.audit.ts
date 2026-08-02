@@ -2,7 +2,7 @@
 // 用法：node tools/ui-audit.mjs tools/audits/game-t-select.audit.ts --w 440 --h 780
 // 态覆盖节点三态：done(带星)/current/locked。
 import { mountUI } from '../../src/ui/components/index.js';
-import { buildSelect } from '../../src/games/game-t/hud.js';
+import { buildSelect } from '../../games/game-t/hud.js';
 import { apolloToon } from '../../src/ui/apollo-toon-theme.js';
 
 const s = {

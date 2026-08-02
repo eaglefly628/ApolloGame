@@ -27,7 +27,7 @@
  LLM 读 schema        tsc + vitest       build_game.py
  → blueprint /         失败反馈 LLM        apollo-X-rk3562.tar.gz
    level data           最多 N 次重试
-   src/games/X/
+   games/X/
 ```
 
 ### 各段现状
@@ -69,7 +69,7 @@ LLM 需要三件事喂给 prompt：
 | 输入 | 来源 | 准备方式 |
 |---|---|---|
 | Schema context | `src/engine/protocol/components/` | 脚本自动提取 |
-| Few-shot examples | `src/assembly/*.ts` + `src/games/game-f/` | 手工精选截段 |
+| Few-shot examples | `src/assembly/*.ts` + `games/game-f/` | 手工精选截段 |
 | Design brief | 用户写的 `brief.md` | 用户填写 |
 
 **输出格式（两条路，用户决策中）**

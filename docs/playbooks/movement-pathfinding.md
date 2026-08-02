@@ -25,7 +25,7 @@
 ## ② 样例指针
 
 - registry：`t2-grid-move`/`t2-pathfind`/`t2-steering`/`t2-launch` 的 `describe.examples`。
-- 真实用法：`src/games/game-i/physics-lab.ts`（运动台）、`src/games/game-i/ai-lab.ts`（转向/索敌台）。
+- 真实用法：`games/game-i/physics-lab.ts`（运动台）、`games/game-i/ai-lab.ts`（转向/索敌台）。
 - 平台跳跃另见 `t2-jump`/`t2-ground-sense`；`src/skills/tier2/platformer.integration.test.ts`。
 
 ## ③ 本线红线

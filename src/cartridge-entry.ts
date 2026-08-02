@@ -17,10 +17,10 @@ const GAMES: Record<string, { title: string; subtitle: string }> = {
 function startLoad(id: string): Promise<GameModule> {
   if (id === '__inline__') return import('./cartridge-inline-run.js') as Promise<GameModule>;
   if (id === 'game-e') return import('./game-e.js') as Promise<GameModule>;
-  if (id === 'game-f') return import('./games/game-f/game-f.js') as Promise<GameModule>;
-  if (id === 'game-g') return import('./games/game-g/game-g.js') as Promise<GameModule>;
-  if (id === 'game-i') return import('./games/game-i/game-i.js') as Promise<GameModule>;
-  if (id === 'game-x') return import('./games/game-x/game-x.js') as Promise<GameModule>;
+  if (id === 'game-f') return import('@games/game-f/game-f.js') as Promise<GameModule>;
+  if (id === 'game-g') return import('@games/game-g/game-g.js') as Promise<GameModule>;
+  if (id === 'game-i') return import('@games/game-i/game-i.js') as Promise<GameModule>;
+  if (id === 'game-x') return import('@games/game-x/game-x.js') as Promise<GameModule>;
   return Promise.reject(new Error(`Unknown game: ${id}`));
 }
 

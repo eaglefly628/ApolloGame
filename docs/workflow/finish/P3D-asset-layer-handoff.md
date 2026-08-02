@@ -12,7 +12,7 @@
 
 | 标记 | 范围 | 谁 |
 |---|---|---|
-| ✅ **P3D 独占** | `src/renderer/three/**`（`material.ts`/`surface-tex.ts` 等）·`src/games/game-z/**` | P3D 自由改 |
+| ✅ **P3D 独占** | `src/renderer/three/**`（`material.ts`/`surface-tex.ts` 等）·`games/game-z/**` | P3D 自由改 |
 | 🔶 **共享·改前知会** | `src/engine/protocol/components/render.ts` 的 **render-only 3D 组件**（`Material3D` 加 map 字段=此列） | P3D 改·知会 Lead |
 | 🔓 **本单跨界授权**（owner 2026-07-01） | `src/assets/{asset-index,asset-types,pbr-materials}.ts` | **P3D 实现·合并前 Lead review**（照本契约 schema） |
 | 🔒 **Lead 独占** | `src/assets` 的 `spec` 闭集 schema **设计权**（本文 §2）· 其余 `src/{engine,skills,assembly}` | Lead |
@@ -145,7 +145,7 @@ interface MaterialSpec {           // 材质 = 引 texture key 的数据资产�
 >   `assets/index.json` copy 文件进 `public/games/<game>/art/<镜像子路径>` + upsert 本地 `AssetIndex`
 >   （`public/games/<game>/art/index.json`·携 spec/license/provenance + `vendoredFrom` 溯源）。确定性·幂等·零网络。
 > - demo：已 vendor `devicon/aarch64-original` → `game-z` 本地 `tex/vendor-demo`（证明端到端）。
-> - 自检 `src/games/game-z/vendor.test.ts`：本地索引 `parseAssetIndex + registerAssetIndex` 可消费·src 指向本地拷贝。
+> - 自检 `games/game-z/vendor.test.ts`：本地索引 `parseAssetIndex + registerAssetIndex` 可消费·src 指向本地拷贝。
 >
 > **资源管理 Agent Skill**：`.claude/skills/resource-manager/SKILL.md`——把「vendor 共享库资源 / 加材质数据资产 /
 > 填 spec 闭集元数据」封装成 agent 可调用技能（含 vendoring 架构、闭集 schema、边界纪律、实现锚点）。

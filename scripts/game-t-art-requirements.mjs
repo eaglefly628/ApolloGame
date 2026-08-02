@@ -6,7 +6,7 @@
 // 推导输入=「展示位关卡」（authoring-only·非真关）：六色全开 + 墨渍 + 冰纹瓷三态 + 砚石，
 // 让全部视觉实体族（墨珠格/皮肤定义/墨渍底衬）都在场。GDD §六 的场景/吉祥物/招式字等非实体件
 // 由美术平台阶段在台账上人工补行（styleset 静态枚举同款纪律）——本脚本只对蓝图可推导部分负责。
-import { buildLevelBlueprint } from '../src/games/game-t/index.ts';
+import { buildLevelBlueprint } from '../games/game-t/index.ts';
 import { deriveRequirements, batchGenerate, mergeLedger } from './art-replace.mjs';
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
