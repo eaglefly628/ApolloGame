@@ -11,7 +11,11 @@
 //     本脚本用 Node 自身的 require.resolve 走该目录的 node_modules 解出引擎真实路径，不是猜的）。
 //   · <game-dir>/tsconfig.json extends `@zerocraft/engine/tsconfig.game-base.json`（build 用；
 //     run/test 走本脚本注入的 vite/vitest 别名配置，不依赖这份 tsconfig——两条路径独立，
-//     同 CLAUDE.md「引擎自己 tsc paths + vite alias 双轨」的既有先例）。
+//     同 CLAUDE.md「引擎自己 tsc paths + vite alias 双轨」的既有先例）。**外部目录不装 vitest**
+//     （契约只要求 @zerocraft/engine 这一个依赖）——build 的 tsc 检查因此排除测试文件
+//     （`**/*.test.*`/`**/*.spec.*`），测试文件的类型检查归 `zerocraft test` 车道（Lead 终审
+//     返工①·2026-08-02：仓外最小重演不装任何 devDeps，build 若原样吃目标自己的 tsconfig.json
+//     会因 *.test.ts 里 `from 'vitest'` 报 TS2307）。
 //   · 游戏源码本身（.ts/.tsx）随便放，导出一个 `mount(container, host?)` 入口（本仓 games/**
 //     现有约定，见 tools/export-game.mjs 的 findEntry 同款探测）。
 //
@@ -177,15 +181,38 @@ async function cmdRun() {
   process.on('SIGTERM', shutdown);
 }
 
+// build 专用的派生 tsconfig：extends 目标目录自己的 tsconfig.json，只覆盖 exclude（追加测试
+// glob，保留目标原有 exclude）。**必须落在 gameDir 顶层**（与目标 tsconfig.json 同目录）——
+// TS 对 include/exclude 里的相对 glob 按「声明它的那个 config 文件所在目录」解析，不是按被
+// extends 的入口文件；放别处（比如临时目录）的话 exclude 压根锚不到 gameDir，形同虚设
+// （实测踩过这个坑，见 Lead 终审返工①）。用完即删，不留痕。
+const TEST_GLOBS = ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'];
+function writeBuildTsconfig(tsconfigPath) {
+  let own = {};
+  try { own = JSON.parse(readFileSync(tsconfigPath, 'utf8')); } catch { /* 目标自己的 tsconfig 有问题，交给 tsc 自己报 */ }
+  const ownExclude = Array.isArray(own.exclude) ? own.exclude : [];
+  const exclude = [...new Set([...ownExclude, ...TEST_GLOBS])];
+  const wrapperPath = join(gameDir, '.zerocraft-tsconfig.build.json');
+  writeFileSync(wrapperPath, JSON.stringify({ extends: './tsconfig.json', exclude }, null, 2) + '\n');
+  return wrapperPath;
+}
+
 async function cmdBuild() {
-  // ① tsc --noEmit（走外部目录自己的 tsconfig.json，须 extends tsconfig.game-base.json）
+  // ① tsc --noEmit（外部目录自己的 tsconfig.json 须 extends tsconfig.game-base.json；实际喂给
+  //    tsc 的是上面派生出的「排除测试文件」版本——测试类型检查归 `zerocraft test` 车道）。
   const tsconfigPath = join(gameDir, 'tsconfig.json');
   if (!existsSync(tsconfigPath)) {
     fail(`${gameDir} 缺 tsconfig.json（外部内容契约：需 extends "@zerocraft/engine/tsconfig.game-base.json"）`);
   }
-  const tsc = spawnSync(bin('tsc'), ['--noEmit', '-p', tsconfigPath], { stdio: 'inherit', cwd: gameDir });
+  const buildTsconfigPath = writeBuildTsconfig(tsconfigPath);
+  let tsc;
+  try {
+    tsc = spawnSync(bin('tsc'), ['--noEmit', '-p', buildTsconfigPath], { stdio: 'inherit', cwd: gameDir });
+  } finally {
+    rmSync(buildTsconfigPath, { force: true });
+  }
   if (tsc.status !== 0) fail(`tsc --noEmit 失败（退出码 ${tsc.status}）`);
-  console.log('✓ tsc --noEmit 通过');
+  console.log('✓ tsc --noEmit 通过（已排除测试文件·测试类型检查归 zerocraft test 车道）');
 
   // ② vite build（同 run 的别名/harness，出到 <game-dir>/dist）
   const harnessDir = writeHarness();
