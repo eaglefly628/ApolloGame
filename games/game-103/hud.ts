@@ -3,7 +3,7 @@
 // 结构照 docs/design/game-103/survivor-io-ui-kit.dc.html（Combat HUD + Victory）+ handoff 设计令牌。
 // bright chunky cartoon：chevron 计时徽章 / 分段血经验条 / chunky 描边字 / 金带横幅 / parchment 结算卷轴。
 // ⚠ Level Up 三选一(CHOOSE SKILL) / Lucky Wheel / Skills 三屏=后续切片（draft-offer 逻辑接线·见 requests）。
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import type { ScoreEntry } from './leaderboard.js';
 import { BOARD_SHOW } from './leaderboard.js';
 

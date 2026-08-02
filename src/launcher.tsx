@@ -312,7 +312,7 @@ export function Launcher() {
       if (r.success) setInstallMsg(`✓ 新装 ${r.installed?.length ?? 0} 张${(r.skipped?.length ?? 0) > 0 ? `（${r.skipped!.length} 张已在架）` : ''}：${[...(r.installed ?? [])].join(' / ') || '无新增'}`);
       else setInstallMsg(`✕ ${r.error ?? '安装失败'}`);
     } catch {
-      setInstallMsg('✕ 创作服务未启动——请用 python3 apollo.py 启动（它会一并拉起页面服务），别只跑 npm run dev');
+      setInstallMsg('✕ 创作服务未启动——请用 python3 zerocraft.py 启动（它会一并拉起页面服务），别只跑 npm run dev');
     }
     setInstalling(false);
     setLibRefresh((k) => k + 1);
@@ -652,7 +652,7 @@ export function Launcher() {
             rel="noreferrer"
             style={{ fontSize: 11, letterSpacing: 1, color: SHELL.faint, textDecoration: 'none' }}
           >
-            ⇄ Workshop 工作台（python apollo.py workshop）
+            ⇄ Workshop 工作台（python zerocraft.py workshop）
           </a>
         </div>
       </div>

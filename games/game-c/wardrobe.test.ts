@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { World } from '@engine/core/world.js';
-import type { Resource, Signal } from '@engine/protocol/components.js';
-import { craftRecipeCapability } from '@skills/tier2/craft-recipe.js';
+import { World } from '@zerocraft/engine/engine/core/world.js';
+import type { Resource, Signal } from '@zerocraft/engine/engine/protocol/components.js';
+import { craftRecipeCapability } from '@zerocraft/engine/skills/tier2/craft-recipe.js';
 import {
   CLOTHING_ITEMS, WARDROBE_TOTAL, buildPawnEntities,
   chipsResourceId, clothingResourceId, pawnSignal, wardrobeItemIds,

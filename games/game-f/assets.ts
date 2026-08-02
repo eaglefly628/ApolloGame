@@ -1,4 +1,4 @@
-import type { AssetManifest } from '@assets/index.js';
+import type { AssetManifest } from '@zerocraft/engine/assets/index.js';
 
 // Game F 美术资产清单（R9 TBF）—— 纯数据（声明 key → 占位图）。sim 只引用 textureKey，像素活在资产层、不进 hash。
 // 占位 = 内联 SVG 势力色棋子 token（无外部文件即可验证数据驱动管线 + 真穿皮）；真美术走 DCSS 换皮

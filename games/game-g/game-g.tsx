@@ -18,9 +18,9 @@ import { playSfx, isSfxOn, toggleSfx } from './sound.js';
 import { startBgm, stopBgm, toggleBgm as toggleBgmState, selectBgm as selectBgmState, setBgmVolume, isBgmOn, bgmTrackIdx, bgmVolume, BGM_TRACKS } from './bgm.js';
 import { makeCoachWorld, nextCoachStep, type BattleCoachStep } from './battle-coach.js';
 import { mountBattleTimeline } from './battle-timeline.js'; // 战斗演出走引擎 t3-timeline（owner 2026-07-03「用 timeline·不手写排程」）
-import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
-import { mountUI } from '@ui/components/index.js'; // 引擎数据驱动 UI 解释器（采纳·替手写 DOM）
-import type { LayoutNode, ButtonProps, LabelProps, PanelProps, ScreenProps } from '@ui/components/types.js';
+import { mountOnboardingOverlay } from '@zerocraft/engine/ui/onboarding-overlay.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js'; // 引擎数据驱动 UI 解释器（采纳·替手写 DOM）
+import type { LayoutNode, ButtonProps, LabelProps, PanelProps, ScreenProps } from '@zerocraft/engine/ui/components/types.js';
 import { GG_THEME_ONYX } from './ui-theme.js'; // game-g 古风主题（数据·喂引擎 UI 解释器换皮）
 import { registerPortraitOverrides } from './portraits.js'; // 立绘美术库覆盖（步2·渲染指向索引）
 import { registerTextureOverrides, textureOverrideUri } from './art-textures.js'; // 贴图槽覆盖（07-14 全面台账化·07-15 批30 扩三选一背景）

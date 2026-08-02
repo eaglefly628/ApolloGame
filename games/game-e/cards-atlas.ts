@@ -1,4 +1,4 @@
-import type { AssetManifest } from '@assets/index.js';
+import type { AssetManifest } from '@zerocraft/engine/assets/index.js';
 import type { Suit, Rank, Card as DataCard } from './deck.js';
 
 // ════════════════════════════════════════════════════════════════════════

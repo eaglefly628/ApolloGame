@@ -1,10 +1,10 @@
 // 爱诗视频样例：视图纯数据（含 Video 控件）+ 端口生成流程（NullAishePort → ready 句柄）。
 import { describe, it, expect } from 'vitest';
-import { renderNode } from '@ui/components/index.js';
+import { renderNode } from '@zerocraft/engine/ui/components/index.js';
 import { buildVideoLab, INITIAL_AISHE, SAMPLE_PROMPT, POSTER_URI } from './video-lab.js';
-import { NullAishePort } from '@services/aigp/index.js';
-import { SHELL } from '@ui/shell-theme.js';
-import type { LayoutNode } from '@ui/components/index.js';
+import { NullAishePort } from '@zerocraft/engine/services/aigp/index.js';
+import { SHELL } from '@zerocraft/engine/ui/shell-theme.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 
 describe('Game I · 爱诗视频样例', () => {
   it('视图纯数据·含 Video 控件 + 生成按钮', () => {

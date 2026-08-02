@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { buildGameFBlueprint } from './blueprint.js';
 import { FAST } from './game-f.helpers.js';
-import { frameSvg } from '@renderer/frame-svg.js';
+import { frameSvg } from '@zerocraft/engine/renderer/frame-svg.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  game-f 视觉回归（C）—— SVG「截图」+ 快照 diff（无浏览器、确定）。

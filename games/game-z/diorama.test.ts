@@ -1,11 +1,11 @@
 // Game Z 盒庭蓝图：纯数据（Transform3D + Mesh3D 体块 + 一个 Camera3D 单例），零专属 system。
 // 验证「蓝图装进真 ECS → 收集成 renderable」的逻辑面；WebGL 看相由 ThreeRenderer 在浏览器做。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { dioramaBlueprint } from './diorama.js';
-import { collectRenderables } from '@renderer/renderable.js';
-import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@engine/protocol/camera-view.js';
-import type { Transform, Transform3D, Velocity, Mesh3D, Collider3D, Material3D } from '@engine/protocol/components.js';
+import { collectRenderables } from '@zerocraft/engine/renderer/renderable.js';
+import { getCamera3D, getSky3D, getLights3D, getPost3D } from '@zerocraft/engine/engine/protocol/camera-view.js';
+import type { Transform, Transform3D, Velocity, Mesh3D, Collider3D, Material3D } from '@zerocraft/engine/engine/protocol/components.js';
 
 describe('Game Z · 3D 盒庭蓝图（纯数据 · 仅现成 motion-apply 能力）', () => {
   it('只用现成能力（motion-apply + overlap-detect-3d + navmesh-bake + 主程 pathfind·无专属 system）', () => {

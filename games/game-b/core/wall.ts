@@ -7,7 +7,7 @@
 // 本文件只补引擎没有的日麻缝：建 136 牌山（赤5 开关）、掷骰开门定劈口、王牌 14 枚分离、
 //   配牌各 13、活山余 70。役/符/振听/连庄=后续切片（清单 §2+·裁决行待 GD-B 会审）。
 // 确定性：单一 config.seed 贯穿（派生洗牌种子 + 骰点）→ 同 seed 整局逐张复现（walkthrough 依据）。
-import { seededShuffle, randomInt, type RandomSeed } from '@atom-skills/random/index.js';
+import { seededShuffle, randomInt, type RandomSeed } from '@zerocraft/engine/atom-skills/random/index.js';
 import {
   CODE_TO_KIND, RED_FIVE_KINDS, RED_OFFSET, NUM_KINDS, TILES_PER_KIND, FULL_WALL, kindOf,
 } from './tiles-def.js';

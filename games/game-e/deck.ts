@@ -8,7 +8,7 @@ export type Suit = 'spades' | 'hearts' | 'diamonds' | 'clubs';
 export type Rank = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
 
 import type { EnchantId } from './enchants.js';
-import { mulberry32, seededShuffle } from '@atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移·见 atoms/random/seeded-shuffle.test）
+import { mulberry32, seededShuffle } from '@zerocraft/engine/atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移·见 atoms/random/seeded-shuffle.test）
 
 export interface Card {
   readonly suit: Suit;

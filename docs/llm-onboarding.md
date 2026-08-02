@@ -29,8 +29,8 @@ Manifest(纯 JSON) ──parseManifest──▶ WorldBlueprint ──engine.load
 ## 2. LLM 产一个游戏的五步路径
 
 1. **开工前**：交能力总览 capability-plan（模板 `docs/design/capability-plan-template.md`），Lead 过审才动工（CLAUDE.md 铁律）。
-2. **拿词汇表**：`buildCapabilityCatalog()`（apollo.py 生成管线自动注入 `{CAPABILITY_CATALOG}` 占位符）。
-3. **写 manifest 纯 JSON**：可抄样例 = apollo.py `PRESET_BLUEPRINTS`、registry 各能力 describe.examples。
+2. **拿词汇表**：`buildCapabilityCatalog()`（zerocraft.py 生成管线自动注入 `{CAPABILITY_CATALOG}` 占位符）。
+3. **写 manifest 纯 JSON**：可抄样例 = zerocraft.py `PRESET_BLUEPRINTS`、registry 各能力 describe.examples。
 4. **UI/HUD 用 LayoutNode 数据**（34 控件闭集）：先读 `docs/design/ui-playbook.md`；活范例 = game-i（UI Gallery）。**⭐ 华丽起手（华丽度=第一要素·别从空白搭朴素屏）**：① `mountUI` 起手传 house 主题（`STARTER_THEME`/apollo-toon·apollo-kit onyx/brocade·非缺省 SHELL·非自写皮）；② 主菜单/结算直接 import `@ui/starters` 起手包；③ 按游戏「有什么」逛 game-i 挑成熟件（`faceArt`/`LevelPath`/`Particles`/`sheen-hover`/`Label.format`/`shape`/3D UI…·货架表 `docs/playbooks/ui.md`「华丽起手」）。朴素默认 UI = 缺陷（PUI 复查可打回）。
 5. **验证**：parseManifest 零 error → `npm run bench`（五轴 ≥70·含确定性双跑）→ launcher 透视器人验。
 
@@ -62,7 +62,7 @@ Manifest(纯 JSON) ──parseManifest──▶ WorldBlueprint ──engine.load
 | game-f 自走棋 | — | **owner 冻结勿动** |
 | game-x 残响 / game-z 盒庭 | 伴侣框架 / P3D 3D 渲染线底座 | sample·基建 |
 
-（game-h/j/k/m 与 block-blast-mini 已删除（owner 2026-07-16 清库）；任何文档再提到它们即为过期信号。**B 位 2026-07-17 重启为全新项目（雀宴·日式麻将）**（立项档 `docs/design/game-b/`·与已删旧作无关）。**A 位 2026-07-17 重启为全新项目**（立项档 `docs/design/game-a/`·与已删旧作无关——早于该日期的 game-a 提法均属旧作·旧作信息已依 owner 令全库抹除）。**C 位 2026-07-17 重启为全新项目（六人德州扑克）**（立项档 `docs/design/game-c/`·与已删旧作无关——早于该日期的 game-c 提法均属旧作·旧作痕迹已依 owner 令抹除，引擎注释仅存 REQ-C-001~004 归档工单号作能力出处）。装示例按钮装的是 apollo 内嵌 preset·与已删内置无关。）
+（game-h/j/k/m 与 block-blast-mini 已删除（owner 2026-07-16 清库）；任何文档再提到它们即为过期信号。**B 位 2026-07-17 重启为全新项目（雀宴·日式麻将）**（立项档 `docs/design/game-b/`·与已删旧作无关）。**A 位 2026-07-17 重启为全新项目**（立项档 `docs/design/game-a/`·与已删旧作无关——早于该日期的 game-a 提法均属旧作·旧作信息已依 owner 令全库抹除）。**C 位 2026-07-17 重启为全新项目（六人德州扑克）**（立项档 `docs/design/game-c/`·与已删旧作无关——早于该日期的 game-c 提法均属旧作·旧作痕迹已依 owner 令抹除，引擎注释仅存 REQ-C-001~004 归档工单号作能力出处）。装示例按钮装的是 zerocraft 内嵌 preset·与已删内置无关。）
 
 ## 5. 归档纪律
 

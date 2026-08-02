@@ -7,8 +7,8 @@
 //   ③ 地煞·战法（52 Boss 招牌战术·Accordion 折叠·campaignMax 控锁态）。
 //   ④ 天罡&闪艺（view.tiangangs / view.foils 卡格·纯展示）。
 // 诚实边界：英雄立绘 SVG（heroPortrait）是 bespoke 美术 flourish，pilot 用 Card 媒体字形近似；内容/过滤/换皮全数据化。
-import { mountUI } from '@ui/components/index.js';
-import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { LayoutNode, HandlerMap } from '@zerocraft/engine/ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { textureOverrideUri, iconUri } from './art-textures.js'; // 背景板槽（批30）+ 套装图标（批32）
 import { HERO_CARDS, type HeroCard, type HeroRar } from './hero-codex.js';

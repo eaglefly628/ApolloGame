@@ -9,9 +9,9 @@
 // 各覆一张 fixed canvas（逃 innerHTML 重建 + zoom 裁剪·同 tip 气泡路子）。骰绕 X/Y 缓转 + 粒子上涌（「在对决画面旋转」）；
 // 掷值数字仍由 clashNode 的 `clash-die-m/f` 文本显（驱动层就地哒哒哒滚·本 3D 骰纯装饰旋转·不落特定面）。
 // 无 WebGL（happy-dom 测试）→ mount 返回 null，🎲 emoji 占位照显（数据驱动回退·headless 安全）。
-import { Engine } from '@runtime/engine.js';
-import { ThreeRenderer } from '@renderer/three-renderer.js';
-import type { Component } from '@engine/core/types.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { ThreeRenderer } from '@zerocraft/engine/renderer/three-renderer.js';
+import type { Component } from '@zerocraft/engine/engine/core/types.js';
 
 export interface ClashDie3DOpts {
   power: number; // 战力（骰面点数上限 1~power）

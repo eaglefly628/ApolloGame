@@ -92,7 +92,7 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 - **能力库** `src/skills/`：Tier1（运动/动画/hierarchy-cascade）/ Tier2（物理/逻辑链/ARPG/tilemap/hex/gauge）/ Tier3（dialogue/match3/prefab/caster/aggro/poker-hand/card-scoring/flow/card-pile）
 - **桥接** `src/assembly/`：capability-registry + parseManifest/exportManifest + schema 校验 + validate-references
 - **Studio** `src/studio/`：数据透视器、资源库（art:<query>）、ZeroCraftBench
-- **启动器** `apollo.py`：Vite+API+多 LLM；`bench` 命令
+- **启动器** `zerocraft.py`：Vite+API+多 LLM；`bench` 命令
 
 ## 2. 五个游戏
 
@@ -126,5 +126,5 @@ Manifest(纯数据) ──parseManifest──▶ WorldBlueprint ──engine.loa
 ## 5. 关键文件
 
 - 宪法 `docs/design/data-driven-manifesto.md`｜需求 `requests.md`｜知识库 `wiki/skills/`
-- 代码 `src/{engine,skills,assembly,studio,bench,games}`｜`apollo.py`
+- 代码 `src/{engine,skills,assembly,studio,bench,games}`｜`zerocraft.py`
 - 参考 `docs/ref/verified-fixes.md`

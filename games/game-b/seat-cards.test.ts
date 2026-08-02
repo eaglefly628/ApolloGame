@@ -3,7 +3,7 @@
 //   resolveOssKey 头像 · seatFlavor 截断 · buildSessionOut 键控 card.id + passthrough 回带 · 纯确定性。
 // 服务本身的收敛/取优全量在 services/character-card 测（这里只验 game-b 侧接入正确）。
 import { describe, it, expect } from 'vitest';
-import { normalizeCharacterCard, isCardUsable } from '@services/character-card/index.js';
+import { normalizeCharacterCard, isCardUsable } from '@zerocraft/engine/services/character-card/index.js';
 import {
   DEFAULT_SEAT_DRAFTS, resolveSeatCards, seatDisplay, seatNamesFrom, seatFlavor, buildSessionOut,
   SEAT_IDS, SEAT_INDEX, type SeatId, type SeatOutcome,

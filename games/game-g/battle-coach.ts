@@ -1,6 +1,6 @@
-import { World } from '@engine/core/world.js';
-import type { IWorld } from '@engine/core/types.js';
-import type { Coachmark, Flag } from '@engine/protocol/components.js';
+import { World } from '@zerocraft/engine/engine/core/world.js';
+import type { IWorld } from '@zerocraft/engine/engine/core/types.js';
+import type { Coachmark, Flag } from '@zerocraft/engine/engine/protocol/components.js';
 
 // 战斗新手引导（甲·owner 2026-06-21·选「为 game-g 接 ECS coachmark 能力」）：用引擎通用 coachmark 能力
 // (REQ-ARCH-COACH) 表达——线性·情境首触·首通即教，seen_* 进 save 看过不再弹。本模块只建「承载引导的小 World」

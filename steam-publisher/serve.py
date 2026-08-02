@@ -129,7 +129,7 @@ def gen_vdf(cfg):
     return files
 
 # ── 判词 token 收口（Lead 2026-07-04 派工）─────────────────────────────────
-# 全管线对外状态**只用这套稳定字面**——apollo.py 薄代理 / studio 前端认它，消费端不再 scrape
+# 全管线对外状态**只用这套稳定字面**——zerocraft.py 薄代理 / studio 前端认它，消费端不再 scrape
 # 日志字符串或猜 ad-hoc 键。改字面 = 破契约，勿动。
 PUBLISH_STAGES = ('package', 'genvdf', 'upload')   # 三段命名（Lead 点名·顺序即执行序）
 # 段判词（plan / stage_* 用）：某段是否就绪
@@ -208,7 +208,7 @@ def login_argv(cfg):
 
 # ── 三段稳定契约（Lead 2026-07-04 派工：package → genVDF → upload）───────────────
 # 每段返回统一形状 {stage, status, ...}；status 用收口的判词 token。缺前置记 ST_BLOCKED+reason
-# 不抛（预览友好）。这三段 + plan_pipeline = apollo.py 薄代理 / studio 前端消费的稳定面。
+# 不抛（预览友好）。这三段 + plan_pipeline = zerocraft.py 薄代理 / studio 前端消费的稳定面。
 def stage_package(cfg):
     """① package：构造 electron-builder --dir 裸目录命令（不执行）。"""
     return {'stage': 'package', 'status': ST_OK, 'cwd': 'REPO', 'argv': build_argv(cfg)}

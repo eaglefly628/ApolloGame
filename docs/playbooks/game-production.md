@@ -20,7 +20,7 @@
 | 入口 | 用法 |
 |---|---|
 | UI：主屏「🏭 生产流程」（两模式）/ 架上操作条「🏭 生产板」/ 保存成功条「下一步→🏭」 | 选游戏 → 八阶段看板 → 每行可「▶ 跑机器门」「☑ 人门通过（note 必填）」；S1 侧栏可直接填改立项卡 |
-| Workshop 壳（`python apollo.py workshop` → 编辑工坊） | 八关灯摘要 + ⬇下载包；详情跳旧工作台生产板 |
+| Workshop 壳（`python zerocraft.py workshop` → 编辑工坊） | 八关灯摘要 + ⬇下载包；详情跳旧工作台生产板 |
 | CLI：`node scripts/game-pipeline.mjs board <slug>` | 看板（会话开工第一命令） |
 | CLI：`gate <slug> <S3\|S4\|S5\|S8>` | 真跑该阶段机器门 → 记证据（退出码+游戏内容指纹） |
 | CLI：`checklist <slug> <SN>` → 核证 → `review <slug> <SN> --verdict … --note … --by 复查人` | **复查门**（另一 session 照单对抗性核证·空 note 不收·绑内容指纹） |

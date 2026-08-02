@@ -8,7 +8,7 @@
 //
 //  为何是 CLI + 引擎真体检：与 manifest-check.mjs 同一形态——复用 src/bench/zerocraft-bench.ts 的
 //  benchBlueprint（120 tick 跑真引擎，五轴 Structure/Load/Determinism/Numeric/Visual），绝不另写
-//  一份"够用"的评分（那会漂移）。apollo.py 的 POST /api/library/<slug>/bench 起本 CLI 子进程透传结果。
+//  一份"够用"的评分（那会漂移）。zerocraft.py 的 POST /api/library/<slug>/bench 起本 CLI 子进程透传结果。
 //
 //  Determinism 轴要"两次独立跑到同 tick hash 一致"——benchBlueprint 会多次调 build()。故 build()
 //  每次从原始 JSON 文本重新 JSON.parse + parseManifest，产**全新**蓝图（不共享任何可变组件状态），

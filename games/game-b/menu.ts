@@ -2,7 +2,7 @@
 // 结构 1:1 = docs/design/game-b/mockups/main-menu.dc.html（渲染目击在案）：标题/副标/按钮竖排/
 // 主角立绘框/头像点数 badge/版本号——布局与信息层级照稿。皮=NIGHT 夜宴主题（凤翎/粉金/明朝·S5 精修）。
 // 文案换 gdd 拍板口径（mockups/README 警示）：半庄→东风战一圈；点数=金钱示意；人名=角色卡候选。
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { MENU_W, MENU_H } from './theme.js';
 import { t, type Lang } from './strings.js';
 

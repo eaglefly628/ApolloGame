@@ -22,7 +22,7 @@ import { SHELL, sBtn, sInput, sSelect, sChip, sLabel } from '../ui/shell-theme.j
 //  资产导入向导 —— 资源库的「数据导入器」面。四步：
 //   ① 放入文件 → ② 模式与归一化（散图/精灵表/乱目录） → ③ 预览映射表 → ④ 提交写库
 //  判定逻辑全在纯核心（@assets/import/*，已单测）；本组件只做交互/预览/写盘调用。
-//  写盘 = POST apollo.py /api/assets/import（文件落 assets/<type>/<分类>/ + index.json 增量）。
+//  写盘 = POST zerocraft.py /api/assets/import（文件落 assets/<type>/<分类>/ + index.json 增量）。
 // ═══════════════════════════════════════════════════════════════
 
 const API = 'http://localhost:4000';
@@ -365,7 +365,7 @@ export function AssetImportWizard({
         }
       }
     } catch (e) {
-      setResult({ ok: false, msg: `提交失败：${e instanceof Error ? e.message : String(e)}（需 python3 apollo.py 起 API）` });
+      setResult({ ok: false, msg: `提交失败：${e instanceof Error ? e.message : String(e)}（需 python3 zerocraft.py 起 API）` });
     } finally {
       setCommitting(false);
     }
@@ -665,7 +665,7 @@ export function AssetImportWizard({
             {!result && !committing && (
               <>
                 <div style={{ fontSize: 14 }}>将写入 <b style={{ color: SHELL.gold }}>{importableCount}</b> 个资产到 <span style={{ fontFamily: SHELL.fontMono, color: SHELL.jade }}>assets/</span> 并更新 index.json</div>
-                <div style={{ color: SHELL.dim, fontSize: 12 }}>写盘经 apollo.py API（限定 assets/ 子树）· 条目带来源溯源 provenance · 可在资源库立即看到</div>
+                <div style={{ color: SHELL.dim, fontSize: 12 }}>写盘经 zerocraft.py API（限定 assets/ 子树）· 条目带来源溯源 provenance · 可在资源库立即看到</div>
                 <div style={{ color: SHELL.dim, fontSize: 12 }}>颜色/明暗/体量等<b style={{ color: SHELL.sub }}>事实标签</b>由本地像素扫描自动打（免费·确定性·必跑）</div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: SHELL.sub, fontSize: 12, cursor: 'pointer' }}>
                   <input type="checkbox" checked={autotag} onChange={(e) => setAutotag(e.target.checked)} />

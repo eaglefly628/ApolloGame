@@ -23,7 +23,8 @@ _CLAUDE_CODE_TOOLS_OFF = ('Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Tas
 # 覆盖代理人格（同一实证的另一半根治）：-p 单发场景下把它钉成纯文本生成器。
 _CLAUDE_CODE_SYSTEM_PIN = ('你在无工具的单发文本模式下工作：只输出最终文本回复本身；'
                            '绝不调用任何工具（本会话工具已全部禁用）；不要做计划、不要反问、不要输出前言后记。')
-_CLAUDE_CODE_CWD = ROOT / '.apollo' / 'claude-code-cwd'  # 专用空目录（gitignore 的 .apollo 下）
+_CLAUDE_CODE_CWD = ROOT / '.zerocraft' / 'claude-code-cwd'  # 专用空目录（gitignore 的 .zerocraft 下·
+# 只是隔离沙盒、无持久数据，不需要旧 .apollo/ fallback）
 
 _CLAUDE_EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
 

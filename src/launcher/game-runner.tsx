@@ -116,7 +116,7 @@ export function BareListRetry({ onStuck, onRetry, onBack }: { onStuck: () => voi
   return (
     <div style={{ textAlign: 'center', fontSize: 12, color: SHELL.warn, lineHeight: 1.8 }}>
       15 秒没等到游戏库——多半是创作服务（:4000）没在跑。<br />
-      终端确认 <code>python apollo.py workshop</code> 还活着，然后
+      终端确认 <code>python zerocraft.py workshop</code> 还活着，然后
       <button onClick={onBack} style={{ marginLeft: 8, padding: '4px 12px', borderRadius: 6, background: SHELL.jadeWash, color: SHELL.jade, border: `1px solid ${SHELL.jadeLine}`, cursor: 'pointer' }}>← 回创作台</button>
     </div>
   );

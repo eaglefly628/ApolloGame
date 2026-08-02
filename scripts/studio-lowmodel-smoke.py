@@ -7,7 +7,7 @@
   ② 词汇裁剪：_slice_catalog 选出「基础原子+模板族+题材族」子集（远小于全量·字节稳定·排除无关能力）。
   ③ 校验错误 LLM 化：unknown-cap / 组件类型错误 → 指名 entity/字段 + 合法值示例的可执行指令。
   ④ token 卫生 + 交互日志：每轮落一行 JSONL（schema 齐·**无 API key**·verbose 才落全文）；promptChars 记录。
-  ⑤ 弱模基准自证：APOLLO_MOCK_BAD_MANIFEST_N=1 → 首轮产未知能力的 manifest → 断言错误指令化回喂 +
+  ⑤ 弱模基准自证：ZEROCRAFT_MOCK_BAD_MANIFEST_N=1 → 首轮产未知能力的 manifest → 断言错误指令化回喂 +
      词汇族按需扩 + 轮次裁剪（回喂只带上轮 manifest + 本轮错误·不累积历史失败）。
 任一断言失败 exit 1。真 deepseek 重测留给 owner/Lead（无 key 环境诚实标注）。
 用法：python3 scripts/studio-lowmodel-smoke.py
@@ -21,7 +21,7 @@ import subprocess
 import http.client
 from pathlib import Path
 
-os.environ.setdefault('APOLLO_MOCK_LLM', '1')
+os.environ.setdefault('ZEROCRAFT_MOCK_LLM', '1')
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -48,7 +48,7 @@ def _free_port() -> int:
     return p
 
 
-# 真全量 catalog（前端送 apollo.py 的那份的 parity；用 vite-node 派生一次）。
+# 真全量 catalog（前端送 zerocraft.py 的那份的 parity；用 vite-node 派生一次）。
 CATALOG = subprocess.run(
     ['npx', 'vite-node', 'scripts/dump-capability-catalog.mjs'],
     cwd=ROOT, capture_output=True, encoding='utf-8', timeout=180,
@@ -71,7 +71,7 @@ def req(method: str, path: str, body=None):
 
 print(f'[smoke] low-model 四件 on :{PORT}  (catalog {len(CATALOG)} 字符)')
 
-# 干净日志起点（本冒烟会真写 .apollo/llm-logs/·finally 清）。
+# 干净日志起点（本冒烟会真写 .zerocraft/llm-logs/·finally 清）。
 shutil.rmtree(apollo.LLM_LOGS_DIR, ignore_errors=True)
 CREATED_SLUGS = []
 
@@ -200,12 +200,12 @@ try:
               (r2['promptChars'] - r1['promptChars']) < r1['promptChars'], f'{r1["promptChars"]}→{r2["promptChars"]}')
 
     # verbose 落全文（仍无 key）
-    print('④ verbose 全文档（APOLLO_LOG_VERBOSE=1）')
+    print('④ verbose 全文档（ZEROCRAFT_LOG_VERBOSE=1）')
     shutil.rmtree(apollo.LLM_LOGS_DIR, ignore_errors=True)
-    os.environ['APOLLO_LOG_VERBOSE'] = '1'
+    os.environ['ZEROCRAFT_LOG_VERBOSE'] = '1'
     req('POST', '/api/generate',
         {'mode': 'template-edit', 'provider': 'mock', 'prompt': '掷骰子', 'catalog': CATALOG, 'autofix': True})
-    os.environ.pop('APOLLO_LOG_VERBOSE', None)
+    os.environ.pop('ZEROCRAFT_LOG_VERBOSE', None)
     vlog = sorted(apollo.LLM_LOGS_DIR.glob('*.jsonl'))
     vrec = json.loads(vlog[0].read_text(encoding='utf-8').strip().split('\n')[-1]) if vlog else {}
     check('verbose=1 落 prompt/response 全文', 'prompt' in vrec and 'response' in vrec and len(vrec.get('prompt', '')) > 500)

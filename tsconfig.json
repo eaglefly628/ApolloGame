@@ -22,7 +22,19 @@
       "@net/*": ["./src/net/*"],
       "@runtime/*": ["./src/runtime/*"],
       "@assembly/*": ["./src/assembly/*"],
-      "@games/*": ["./games/*"]
+      "@games/*": ["./games/*"],
+      // REQ-PKG-位置无关与正名：games/** 消费面走包名（self-reference·外部内容用真 npm 解析，
+      // 这里是仓内 tsc 的 paths 兜底）。src/ 内部相互引用不改，仍用上面的旧别名。
+      "@zerocraft/engine/engine/*": ["./src/engine/*"],
+      "@zerocraft/engine/skills/*": ["./src/skills/*"],
+      "@zerocraft/engine/atom-skills/*": ["./src/skills/atoms/*"],
+      "@zerocraft/engine/assets/*": ["./src/assets/*"],
+      "@zerocraft/engine/services/*": ["./src/services/*"],
+      "@zerocraft/engine/renderer/*": ["./src/renderer/*"],
+      "@zerocraft/engine/ui/*": ["./src/ui/*"],
+      "@zerocraft/engine/net/*": ["./src/net/*"],
+      "@zerocraft/engine/runtime/*": ["./src/runtime/*"],
+      "@zerocraft/engine/assembly/*": ["./src/assembly/*"]
     }
   },
   "include": ["src", "games"],

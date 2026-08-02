@@ -5,7 +5,7 @@
 //  每屏=parameterless LayoutNode builder（忠实静态态·代表性数据来自设计稿）。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { absence24Screen } from './absence-24h.js';
 import { absence48Screen } from './absence-48h.js';
 import { absence72Screen } from './absence-72h.js';

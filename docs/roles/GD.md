@@ -18,7 +18,7 @@
 
 ## 3. 技能与工具
 
-- 设计先行流：创作台（`apollo.py` + `src/studio/**`）的讨论→分解→对齐→定稿→原型五段流（GD 只用其设计面，不碰实现）。
+- 设计先行流：创作台（`zerocraft.py` + `src/studio/**`）的讨论→分解→对齐→定稿→原型五段流（GD 只用其设计面，不碰实现）。
 - 数值验证脚本：`scripts/game-d-balance-sim.mjs`（game-d）+ `games/game-g/simulate-balance.ts`（game-g·N=500 胜率扫描·难度曲线标定用）——数值案配套 sim 复核；别的游戏要 sim 走 requests.md 申请。
 - 范例文档：`docs/design/game-d/gdd.md`·`docs/design/game-d/balance-design.md`·`docs/design/game-g-master-overview.md`。
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Card } from '@engine/protocol/components.js';
+import type { Card } from '@zerocraft/engine/engine/protocol/components.js';
 import { replayDemoHand, replayFullHand, showdownLog, describeAction, cardStr, type GameEvent } from './game-log.js';
 import type { BettingConfig } from './betting-engine.js';
 

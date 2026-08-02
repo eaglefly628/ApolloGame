@@ -1,8 +1,8 @@
 // 战斗样例：弹道命中 → 扣血 → 死亡（销毁）。纯蓝图 + 现成战斗能力链。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { combatBlueprint } from './combat-lab.js';
-import type { Resource } from '@engine/protocol/components.js';
+import type { Resource } from '@zerocraft/engine/engine/protocol/components.js';
 
 describe('Game I · 战斗结算样例', () => {
   it('蓝图纯数据：三敌 + 三弹道（无专属 system）', () => {

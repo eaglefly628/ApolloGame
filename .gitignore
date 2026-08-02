@@ -22,6 +22,16 @@ public/games/*/cover.png
 .apollo/matlib-groups.json
 # 订阅通道子进程空 cwd（安全隔离目录·运行时产生）
 .apollo/claude-code-cwd/
+# 上面这批 .apollo/** 是旧目录名（去 Apollo 化前）——运行时仍按 dir_or_legacy() fallback 读，
+# 条目留着不删（存量数据兜底）。新数据一律落 .zerocraft/**（REQ-PKG-位置无关与正名·2026-08），
+# 同一份清单镜像一遍：
+.zerocraft/registry.json
+.zerocraft/design-drafts/
+.zerocraft/llm-logs/
+.zerocraft/workshop-chats/
+.zerocraft/cap-gaps.jsonl
+.zerocraft/matlib-groups.json
+.zerocraft/claude-code-cwd/
 .claude/worktrees/
 __pycache__/
 *.pyc

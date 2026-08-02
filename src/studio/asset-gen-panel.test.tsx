@@ -2,7 +2,7 @@
 // AssetGenPanel（新创作台「✨ AI 生成资产」面板）· Seedream 接入 + 模型版本下拉（owner 2026-07-21）。
 // 验：① Seedream 在生成器菜单（曾写死 qwen/tripo/meshy·漏 seedream）② 选中 Seedream → 出模型下拉 3 档
 //    ③ 改选 → PUT /api/settings 存 genOptions（本地持久化·生成时经 _gen_env 注入）。
-// fetch 全 mock·不依赖真 apollo.py。
+// fetch 全 mock·不依赖真 zerocraft.py。
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';

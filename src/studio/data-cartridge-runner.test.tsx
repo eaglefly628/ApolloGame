@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // 创作台 v1 · 卡带架组件无头测试：空库欢迎态 + 数据卡带自动运行 + 版本历史浮层回滚。
-// fetch 全部 vi.stubGlobal mock，不依赖真 apollo.py 服务。
+// fetch 全部 vi.stubGlobal mock，不依赖真 zerocraft.py 服务。
 // launcher 层的整线集成（玩家模式→点开始→canvas）另见 src/launcher.player.test.tsx。
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import React, { act } from 'react';

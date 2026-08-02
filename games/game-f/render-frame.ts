@@ -1,8 +1,8 @@
 // 一次性离线渲染：复用纯函数 collectRenderables（无需 DOM canvas）把 game-f 世界投影成 SVG 一帧。
 // 用途：无浏览器环境里"看一帧"——确定性、可截图。SVG 走 stdout：
 //   npx vite-node games/game-f/render-frame.ts > game-f-frame.svg
-import { Engine } from '@runtime/engine.js';
-import { collectRenderables, getCameraView } from '@renderer/renderable.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { collectRenderables, getCameraView } from '@zerocraft/engine/renderer/renderable.js';
 import { buildGameFBlueprint, GAME_F_ASSETS } from './index.js';
 
 const VIEWPORT_W = 1280;

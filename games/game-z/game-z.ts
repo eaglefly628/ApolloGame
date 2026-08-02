@@ -4,12 +4,12 @@
 // 盒庭本体走 render 组件（Mesh3D/Transform3D）+ 引擎渲染器（数据，非 UI 库）；HUD 走 LayoutNode（UI 铁律）。
 // 角色走动 = 现成 velocity→motion-apply 能力（纯数据 sim）；键盘=运行时输入胶水（input-capture 言明捕获是运行时职责）。
 // 玩法暂缓（owner 2026-06-27「先把玩法放一下·先长 3D 这条线」）。
-import { Engine } from '@runtime/engine.js';
-import { ThreeRenderer, type RenderStats } from '@renderer/three-renderer.js';
-import { AssetManager, registerAssetIndex } from '@assets/index.js';
-import { mountUI } from '@ui/components/index.js';
-import type { LayoutNode } from '@ui/components/index.js';
-import type { Velocity, Camera3D, Post3D, Fog3D, Transform, AnimState3D } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { ThreeRenderer, type RenderStats } from '@zerocraft/engine/renderer/three-renderer.js';
+import { AssetManager, registerAssetIndex } from '@zerocraft/engine/assets/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
+import type { Velocity, Camera3D, Post3D, Fog3D, Transform, AnimState3D } from '@zerocraft/engine/engine/protocol/components.js';
 import { dioramaBlueprint, HOME_CAM, PLATFORM_TWO_CAM, PLATFORM_THREE_CAM, PLATFORM_FOUR_CAM, TRACK_R } from './diorama.js';
 import { GAME_Z_INDEX, GAME_Z_MATERIALS, DioramaLoader } from './assets.js';
 

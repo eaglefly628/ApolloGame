@@ -6,12 +6,12 @@
 //  无新下沉（manifesto：先重组）。记忆=持久化 Flag；羁绊/阶段=Resource；callback=requires 门。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 import {
   resourceCapability, flagCapability, stateCapability, textCapability, randomCapability,
-} from '@atom-skills/index.js';
-import { dialogueCapability, DIALOGUE_FSM, type DialogueGraph } from '@skills/tier3/index.js';
-import type { ConditionExpr } from '@engine/protocol/components.js';
+} from '@zerocraft/engine/atom-skills/index.js';
+import { dialogueCapability, DIALOGUE_FSM, type DialogueGraph } from '@zerocraft/engine/skills/tier3/index.js';
+import type { ConditionExpr } from '@zerocraft/engine/engine/protocol/components.js';
 import type { Companion } from './characters.js';
 import type { SessionRecord } from './companion.js';
 import { bondOf, memoriesOf } from './record.js';

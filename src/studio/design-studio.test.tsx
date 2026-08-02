@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // 创作台 · 设计先行流无头集成测试：EntryChoice 双选 / ContinueChoice 双选 /
 // DesignStudio 全链路（讨论两轮→ready→分解→目录 4 文件→改一处 revise+PUT→定稿生成原型→预览 canvas→保存 onSaved）。
-// fetch 全 vi.stubGlobal mock：/api/generate 按 body.mode 路由，其余按 method+url。不依赖真 apollo.py。
+// fetch 全 vi.stubGlobal mock：/api/generate 按 body.mode 路由，其余按 method+url。不依赖真 zerocraft.py。
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';

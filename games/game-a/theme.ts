@@ -2,7 +2,7 @@
 // 色锚取自 owner 钦定蓝本 guandan-lite-mockup.html（深夜暖褐底 × 酒红呢桌 × 朱砂 × 米金）；
 // 跨夜宴系（a/b/c）色板统一（对齐 game-c GAME_C_THEME·art-data-manual §1）——掼蛋特色=**酒红牌桌**（德州=绿呢）。
 // 布局基准=ui-scene-design §1 / 蓝本：横屏 1280×720 逻辑分辨率·固定相机=席位屏幕锚点常量。
-import type { UITheme } from '@ui/components/index.js';
+import type { UITheme } from '@zerocraft/engine/ui/components/index.js';
 import { codeRank, codeSuit, RANK_BIG_JOKER, RANK_SMALL_JOKER } from './rules.js';
 import { artUri } from './art-overrides.js';
 

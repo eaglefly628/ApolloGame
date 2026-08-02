@@ -41,7 +41,7 @@ function findFreePort() {
 }
 
 /**
- * spawn 内置 python 跑 `apollo.py platform`（main_entry/cli.py cmd_platform：只起 API 服务器，
+ * spawn 内置 python 跑 `zerocraft.py platform`（main_entry/cli.py cmd_platform：只起 API 服务器，
  * 它现在同时伺服已构建的静态前端——见 main_entry/server.py `_serve_static`/STATIC_DIST_DIR）。
  * @param {{pythonBin:string, backendDir:string, port:number, staticDir?:string,
  *          onLog?:(line:string, stream:'stdout'|'stderr')=>void}} opts
@@ -50,10 +50,10 @@ function findFreePort() {
 function spawnBackend({ pythonBin, backendDir, port, staticDir, onLog }) {
   const env = {
     ...process.env,
-    APOLLO_API_PORT: String(port),
-    ...(staticDir ? { APOLLO_STATIC_DIR: staticDir } : {}),
+    ZEROCRAFT_API_PORT: String(port),
+    ...(staticDir ? { ZEROCRAFT_STATIC_DIR: staticDir } : {}),
   };
-  const child = spawn(pythonBin, ['apollo.py', 'platform'], { cwd: backendDir, env });
+  const child = spawn(pythonBin, ['zerocraft.py', 'platform'], { cwd: backendDir, env });
   if (onLog) {
     child.stdout.on('data', (b) => onLog(b.toString(), 'stdout'));
     child.stderr.on('data', (b) => onLog(b.toString(), 'stderr'));

@@ -9,10 +9,10 @@
 // 确定性：同 {seed, stake, tier} + 同 hero 输入序列 → 同全程（walkthrough 测试钉死双跑）。
 // A-004 对照结论：t3-flow 声明式转移表达不了「四家轮转+墩圈计数+接风」算法环 → 按例外①落此脚本；
 //   flow 保留在蓝图管粗相位（boot→table-idle），细轮转归本脚本（结论回填 requests.md A-004）。
-import { Engine } from '@runtime/engine.js';
-import type { Card, RandomSeed, Resource } from '@engine/protocol/components.js';
-import { mulberry32, seededShuffle } from '@atom-skills/index.js';
-import { matchPattern, beats, legalResponses, effRank, type HandPatternConfig, type PatternMatch } from '@skills/tier3/index.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import type { Card, RandomSeed, Resource } from '@zerocraft/engine/engine/protocol/components.js';
+import { mulberry32, seededShuffle } from '@zerocraft/engine/atom-skills/index.js';
+import { matchPattern, beats, legalResponses, effRank, type HandPatternConfig, type PatternMatch } from '@zerocraft/engine/skills/tier3/index.js';
 import { buildTableBlueprint } from './blueprint.js';
 import { chooseTurn, personalityOf, pickLead, pickMinResponse, type Personality } from './ai.js';
 import {

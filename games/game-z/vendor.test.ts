@@ -3,7 +3,7 @@
 // （parseAssetIndex 校验通过 + registerAssetIndex 桥接成可加载资产·站点绝对路径 baseUrl ''）。
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { parseAssetIndex, registerAssetIndex, buildMaterialCatalog, AssetManager, StubAssetLoader } from '@assets/index.js';
+import { parseAssetIndex, registerAssetIndex, buildMaterialCatalog, AssetManager, StubAssetLoader } from '@zerocraft/engine/assets/index.js';
 
 describe('REQ-Resource ⑤ vendoring 本地索引消费', () => {
   it('game-z 本地美术索引合法·可 registerAssetIndex 消费·携 vendoredFrom 溯源', async () => {

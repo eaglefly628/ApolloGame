@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
-import type { Resource, Transform, CardPile } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import type { Resource, Transform, CardPile } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildGameFBlueprint } from './blueprint.js';
 import { GAME_F_TEMPLATES } from './combat.js';
 import { PVE_CODES } from './stages.js';

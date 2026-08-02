@@ -5,13 +5,13 @@
 //   trigger-zone 产 Trigger → hitbox 校验阵营(targetMask)后扣 Resource(hp)、可挂 OverTime(DoT) →
 //   resource 结算 → mortal(hp≤0 → DestroyRequest) → destroy 移除。弹道自身 Timer(life) 到期自毁(lifetime)。
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 import {
   transformCapability, velocityCapability, shapeCapability, colorCapability,
   timerCapability, resourceCapability, overlapDetectCapability, destroyCapability,
-} from '@atom-skills/index.js';
-import { triggerZoneCapability, hitboxCapability, overTimeCapability, mortalCapability, ZONE_FLAG } from '@skills/tier2/index.js';
-import { motionApplyCapability, lifetimeCapability } from '@skills/tier1/index.js';
+} from '@zerocraft/engine/atom-skills/index.js';
+import { triggerZoneCapability, hitboxCapability, overTimeCapability, mortalCapability, ZONE_FLAG } from '@zerocraft/engine/skills/tier2/index.js';
+import { motionApplyCapability, lifetimeCapability } from '@zerocraft/engine/skills/tier1/index.js';
 
 const ENEMY = 1 << 2;
 

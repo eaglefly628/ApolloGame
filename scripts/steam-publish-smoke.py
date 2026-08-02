@@ -132,7 +132,7 @@ up2 = next((s for s in steps2 if s['stage'] == 'upload'), {})
 check('plan 未填 builder → upload 段 blocked+reason（不抛·预览友好）',
       up2.get('status') == serve.ST_BLOCKED and 'builder' in up2.get('reason', ''), f'{up2}')
 
-# 7b) 单段契约可独立调（stage_* 稳定命名·apollo.py 代理按需转发）
+# 7b) 单段契约可独立调（stage_* 稳定命名·zerocraft.py 代理按需转发）
 check('stage_genvdf 有效 cfg → status=ok', serve.stage_genvdf(dict(CFG))['status'] == serve.ST_OK)
 check('stage_upload 缺 builder → status=blocked', serve.stage_upload({**CFG, 'builder': ''})['status'] == serve.ST_BLOCKED)
 

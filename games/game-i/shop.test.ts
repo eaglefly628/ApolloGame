@@ -1,6 +1,6 @@
 // Game I · 组合演示「商店」联动测试——验证「UI=状态纯函数 + 纯 reducer」的复杂联动成立。
 import { describe, it, expect } from 'vitest';
-import { renderNode } from '@ui/components/index.js';
+import { renderNode } from '@zerocraft/engine/ui/components/index.js';
 import { onyx } from './themes.js';
 import {
   buildShop, applyShop, filterItems, ITEMS, INITIAL_SHOP, type ShopState,

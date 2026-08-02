@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""创作台 v1 库地基 —— apollo.py 库端点冒烟测试。
+"""创作台 v1 库地基 —— zerocraft.py 库端点冒烟测试。
 
 起 API 服务（进程内，随机空闲端口）→ create → GET 列表/manifest → PUT 合法/非法
 → history → rollback → 路径穿越（`..`）必须 4xx → 清理。任一步失败 exit 1。
@@ -122,7 +122,7 @@ st, d = req('POST', f'/api/library/{slug}/rollback', {'rev': first_rev})
 check('rollback 到首版 → 200', st == 200 and d.get('success'), f'{st} {d}')
 
 # 8) path traversal — literal `..` segment must 4xx and never leak files
-for bad in [f'/api/library/../{slug}/manifest', '/api/library/..%2Fapollo.py/manifest']:
+for bad in [f'/api/library/../{slug}/manifest', '/api/library/..%2Fzerocraft.py/manifest']:
     st, d = req('GET', bad)
     check(f'穿越防护 {bad} → 4xx', 400 <= st < 500, f'{st} {str(d)[:80]}')
 # PUT 穿越也须挡

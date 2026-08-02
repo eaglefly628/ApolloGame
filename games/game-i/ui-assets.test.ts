@@ -3,7 +3,7 @@
 // 且贴图文件真实存在、uiTextureUrl 按 key 解析出正确 URL（喂 Button.skin 的「已解析 URL」）。
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
-import { parseAssetIndex, registerAssetIndex, AssetManager, StubAssetLoader } from '@assets/index.js';
+import { parseAssetIndex, registerAssetIndex, AssetManager, StubAssetLoader } from '@zerocraft/engine/assets/index.js';
 import { GAME_I_UI_INDEX, uiTextureUrl, SKIN_METAL, SKIN_WOOD, SKIN_STONE, SKIN_SCROLL } from './ui-assets.js';
 
 describe('game-i 贴图 UI sample · 入库统一 Asset 路线', () => {

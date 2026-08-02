@@ -24,7 +24,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseAndValidate, formatErrors } from './acceptance-schema.mjs';
 
-const ROOT = process.env.APOLLO_ACCEPTANCE_ROOT || join(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = process.env.ZEROCRAFT_ACCEPTANCE_ROOT || process.env.APOLLO_ACCEPTANCE_ROOT || join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // ── 机读态提取（引擎协议·非游戏内部）───────────────────────────────
 /** 扫世界标量容器 → {res:{id:current}, flag:{id:active}, sv:{id:value}}。id 撞名后写覆盖（引擎 R11 语义下 id 唯一）。 */
@@ -204,9 +204,10 @@ export async function runGame(root, slug) {
 // 本脚本唯一的 import 方是 vitest（acceptance.test.mjs）；gate 是**另起进程 spawn** 而非 import。
 // 故：非 vitest 环境（VITEST 未置）即视为 CLI 直跑 → 跑 main。（game-pipeline.mjs 不 import 本模块·自带计数。）
 // Lead 验收加固：VITEST 变量会**穿透嵌套 spawn**（vitest 里跑 gate CLI → 传染进本子进程 → 误判被
-// import → 静默退 0 = conformance 假绿）。gate spawn 时显式传 APOLLO_ACCEPTANCE_CLI=1 握手，见之
-// 无条件跑 main——假绿路径封死；vitest 真 import 本模块时无此变量，照旧惰性。
-const forceCli = process.env.APOLLO_ACCEPTANCE_CLI === '1';
+// import → 静默退 0 = conformance 假绿）。gate spawn 时显式传 ZEROCRAFT_ACCEPTANCE_CLI=1（旧名
+// APOLLO_ACCEPTANCE_CLI 过渡期仍读）握手，见之无条件跑 main——假绿路径封死；vitest 真 import
+// 本模块时无此变量，照旧惰性。
+const forceCli = process.env.ZEROCRAFT_ACCEPTANCE_CLI === '1' || process.env.APOLLO_ACCEPTANCE_CLI === '1';
 const underVitest = !forceCli && (!!process.env.VITEST || !!process.env.VITEST_WORKER_ID);
 if (!underVitest) {
   const argv = process.argv.slice(2);

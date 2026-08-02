@@ -6,7 +6,7 @@ import { SHELL, sBtn, sBadge, sChecker } from '../ui/shell-theme.js';
 //  列 /api/assets/pending（共享货架 + 各游戏本地聚合）→ 每项预览 + provenance →
 //    ✓ 入库(approve·provenance 硬校验过才登记 index) / ✕ 弃置(reject·删文件)。
 //  宪法「无自动入库」：这里是生成产物进资源库的**唯一门**。
-//  API 走 apollo.py（CORS *）；预览图走相对 /assets|/games（vite 服务盘上待审文件）。
+//  API 走 zerocraft.py（CORS *）；预览图走相对 /assets|/games（vite 服务盘上待审文件）。
 // ═══════════════════════════════════════════════════════════════
 
 const API = 'http://localhost:4000';

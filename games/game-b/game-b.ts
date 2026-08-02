@@ -4,9 +4,9 @@
 //   ② 设置（NIGHT 皮·真接线选项：AI 速度 + 默认日志·治「设置=死键」）
 //   ③ 牌桌（3D 氛围场景 + sakura HUD·真牌局全走 2D LayoutNode·点真牌面打牌）。
 // 红线：UI 全 LayoutNode；3D 全 render-only 组件；随机只有蓝图 RandomSeed（宿主零随机）。
-import { mountHost } from '@engine/host/mount-host.js';
-import { mountUI } from '@ui/components/index.js';
-import type { HandlerMap } from '@ui/components/index.js';
+import { mountHost } from '@zerocraft/engine/engine/host/mount-host.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { HandlerMap } from '@zerocraft/engine/ui/components/index.js';
 import { buildMenu, initialMenu, MENU_START, MENU_CONTINUE, MENU_SETTINGS } from './menu.js';
 import { buildSettings, defaultSettings, SET_SPEED, SET_LOGDEFAULT, SETTINGS_BACK, type Settings, type AiSpeed } from './menu-settings.js';
 import {

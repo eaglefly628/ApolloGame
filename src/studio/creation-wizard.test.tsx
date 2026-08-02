@@ -2,7 +2,7 @@
 // 创作台 v1 · M2 创作向导无头集成测试：create（新建）与 revise（继续创作）全链路——
 // 填词 → 生成（mock /api/generate）→ 预览 canvas → 保存（create+PUT / PUT）→ onSaved。
 // 以及失败态（人话提示 + 原始错误可折叠）与 autofix 提示（attempts>1）。
-// fetch 全 vi.stubGlobal mock（method+url 路由），不依赖真 apollo.py。
+// fetch 全 vi.stubGlobal mock（method+url 路由），不依赖真 zerocraft.py。
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';

@@ -5,12 +5,13 @@ import re
 from pathlib import Path
 
 from .paths import _now_iso
-from .sysutil import APOLLO_DIR
+from .sysutil import ZEROCRAFT_DIR, dir_or_legacy
 
 # ── capgap 协议（owner 07-11 批准「缺口→强模型下沉快速通道」·features.capgap 可关）────
 # agent 遇到目录词表表达不了的机制：不发明、不硬凑——产一个 ```capgap 结构化提案围栏。
-# 服务端校验落 .apollo/cap-gaps.jsonl（追加型台账），壳出卡片；下沉仍走 Lead 裁决→派工，
-# 通道只是把「发现缺口→立单」从口口相传变成机器直达。
+# 服务端校验落 .zerocraft/cap-gaps.jsonl（追加型台账·写永远落新目录），壳出卡片；下沉仍走 Lead
+# 裁决→派工，通道只是把「发现缺口→立单」从口口相传变成机器直达。旧 .apollo/cap-gaps.jsonl 未迁移时
+# handle_capgaps_list 仍能读到（dir_or_legacy fallback），一旦新文件写过第一行就转读新文件。
 _CAPGAP_BLOCK_RE = re.compile(r'```capgap[ \t]*\n(.*?)```', re.S)
 _CAPGAP_FIELDS = ('title', 'need', 'proposal', 'acceptance')
 
@@ -29,20 +30,23 @@ def _split_capgap(text: str):
     gap = {k: str(cand.get(k, '')).strip()[:1200] for k in _CAPGAP_FIELDS}
     return rest, gap
 
-def _capgap_file() -> Path:
-    return APOLLO_DIR / 'cap-gaps.jsonl'  # APOLLO_DIR 定义在后文——调用期取（模块序无碍）
+def _capgap_file_write() -> Path:
+    return ZEROCRAFT_DIR / 'cap-gaps.jsonl'
+
+def _capgap_file_read() -> Path:
+    return dir_or_legacy('cap-gaps.jsonl')
 
 def _capgap_record(slug: str, role: str, gap: dict) -> dict:
     entry = {'id': f'gap-{int(time.time())}-{slug}', 'slug': slug, 'role': role, 'at': _now_iso(),
              'status': 'open', **gap}
-    f_path = _capgap_file()
+    f_path = _capgap_file_write()
     f_path.parent.mkdir(parents=True, exist_ok=True)
     with f_path.open('a', encoding='utf-8') as f:
         f.write(json.dumps(entry, ensure_ascii=False) + '\n')
     return entry
 
 def handle_capgaps_list(n: int = 50) -> dict:
-    f_path = _capgap_file()
+    f_path = _capgap_file_read()
     if not f_path.is_file():
         return {'success': True, 'gaps': []}
     try:

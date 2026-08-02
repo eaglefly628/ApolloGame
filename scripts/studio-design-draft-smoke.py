@@ -2,7 +2,7 @@
 """创作台 · 设计草稿持久化后端冒烟（无需 API key·进程内起 API 打真 HTTP）。
 
 覆盖 BUG-STUDIO-设计中间态丢失 的第一必达项——草稿 CRUD 生命周期：
-  未定名 PUT → 落 .apollo/design-drafts/<id>.json（不进 library）→ GET 列表/按 id 取全量 →
+  未定名 PUT → 落 .zerocraft/design-drafts/<id>.json（不进 library）→ GET 列表/按 id 取全量 →
   定名（建库后带 slug）再 PUT → 迁移到 library/<slug>/design/draft.json + 旧未定名文件被清 →
   DELETE 弃置 → 消失（named 只删 draft.json·卡带本体不动）。
   路径攻击（../、斜杠、超长 id）必 4xx；坏 JSON 草稿文件被列表跳过不炸。
@@ -16,7 +16,7 @@ import shutil
 import http.client
 from pathlib import Path
 
-os.environ.setdefault('APOLLO_MOCK_LLM', '1')
+os.environ.setdefault('ZEROCRAFT_MOCK_LLM', '1')
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -77,7 +77,7 @@ st, d = get('/api/design-drafts')
 before_ids = {x.get('id') for x in d.get('drafts', [])}
 check('GET /api/design-drafts → {drafts:[...]}', st == 200 and isinstance(d.get('drafts'), list), f'{st} {d}')
 
-# ── 2) 未定名草稿 PUT → 落 .apollo/design-drafts/<id>.json（不进 library）──
+# ── 2) 未定名草稿 PUT → 落 .zerocraft/design-drafts/<id>.json（不进 library）──
 draft = {
     'phase': 'chat',
     'ready': False,
@@ -93,7 +93,7 @@ st, d = put(f'/api/design-drafts/{UNNAMED_ID}', draft)
 check('未定名 PUT → success + location=unnamed', st == 200 and d.get('success') and d.get('location') == 'unnamed', f'{st} {d}')
 check('未定名 PUT → updatedAt 盖章', bool(d.get('updatedAt')), f'{d}')
 unnamed_path = apollo.DRAFTS_DIR / f'{UNNAMED_ID}.json'
-check('落盘 .apollo/design-drafts/<id>.json 存在', unnamed_path.is_file(), str(unnamed_path))
+check('落盘 .zerocraft/design-drafts/<id>.json 存在', unnamed_path.is_file(), str(unnamed_path))
 disk = json.loads(unnamed_path.read_text(encoding='utf-8')) if unnamed_path.is_file() else {}
 check('落盘内容含 messages/phase/name（白名单字段）',
       disk.get('phase') == 'chat' and len(disk.get('messages', [])) == 2 and disk.get('name') == '骰子对决草稿', f'{disk}')

@@ -7,9 +7,9 @@
 // 注：序列帧（spritesheet Frame.index 环绕）需要真实贴图资产才看得见，留待资产接入；本样例用
 // 几何形状 + tween 演示「连续动画」这一柱，无资产即可见。
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
-import { transformCapability, shapeCapability, colorCapability } from '@atom-skills/index.js';
-import { tweenCapability } from '@skills/tier1/index.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import { transformCapability, shapeCapability, colorCapability } from '@zerocraft/engine/atom-skills/index.js';
+import { tweenCapability } from '@zerocraft/engine/skills/tier1/index.js';
 
 const TWO_PI = 6.28318;
 

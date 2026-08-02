@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
-import type { Resource } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import type { Resource } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildGameFBlueprint, gameFEnemyPreview, TEAM_A, TEAM_B, rosterFor } from './blueprint.js';
 import { FAST, alive, mains, flag } from './game-f.helpers.js';
 

@@ -9,7 +9,7 @@
 //  右上「○ AWAY 72H」状态药丸绝对定位在场景里。全 LayoutNode 数据 + ZANKYOU 字体槽。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { deviceShell } from '../device-frame.js';
 import { svgUri } from '../scenes.js';
 

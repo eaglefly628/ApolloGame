@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { buildGameFBlueprint } from './blueprint.js';
 import { GAME_F_UI } from './game-f-ui.js';
-import { collectButtons, statDisplay, barFraction, readResource } from '@ui/shell/GameShell.js';
+import { collectButtons, statDisplay, barFraction, readResource } from '@zerocraft/engine/ui/shell/GameShell.js';
 import { FAST } from './game-f.helpers.js';
 
 // 去腐片4 验证（无浏览器）：用 GameShell 的纯绑定助手证明 GAME_F_UI 数据对 game-f 世界绑定正确。

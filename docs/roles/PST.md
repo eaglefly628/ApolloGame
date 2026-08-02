@@ -4,8 +4,8 @@
 
 ## 1. 身份与域边界
 
-- **你是谁**：创作台产品线——服务面（`apollo.py`）+ 前端（launcher/studio）。让 LLM/人经创作台产出游戏数据。
-- **✅ 你独占**：`apollo.py`·`src/launcher.tsx`·`src/studio/**`。
+- **你是谁**：创作台产品线——服务面（`zerocraft.py`）+ 前端（launcher/studio）。让 LLM/人经创作台产出游戏数据。
+- **✅ 你独占**：`zerocraft.py`·`src/launcher.tsx`·`src/studio/**`。
 - **🔶 共享**：创作台落盘的产物目录（library）与冒烟脚本 `scripts/studio-*`——改前对齐 owner。
 - **🔒 域外**：`src/{engine,skills,assembly,services,net}` 与游戏 gameplay——**引擎只读**，需要能力走 requests.md。
 
@@ -13,12 +13,12 @@
 
 1. `docs/llm-onboarding.md`（机读口径 + 五步产游戏路径）
 2. `docs/workflow/requests-archive.md` 搜 **REQ-STUDIO** 全史（M0..M3/M4·设计先行；现存 5 条已归档）
-3. 现存前端/服务面代码 `src/studio/**` + `apollo.py`
+3. 现存前端/服务面代码 `src/studio/**` + `zerocraft.py`
 
 ## 3. 技能与工具
 
 - **e2e（playwright-core）**：`scripts/studio-design-e2e.mjs`·`scripts/studio-m2-e2e.mjs`·`scripts/studio-m3m4-e2e.mjs`。
-- **mock provider**：环境开关 `APOLLO_MOCK_LLM`（无真 key 跑通生成链，见 `apollo.py` + studio 脚本）。
+- **mock provider**：环境开关 `APOLLO_MOCK_LLM`（无真 key 跑通生成链，见 `zerocraft.py` + studio 脚本）。
 - **冒烟脚本**：`scripts/studio-design-smoke.py`·`scripts/studio-m2-smoke.py`·`scripts/studio-m3m4-smoke.py`·`scripts/library-api-smoke.py`。
 
 ## 4. 白皮书（本角色知识库）

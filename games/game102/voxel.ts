@@ -10,7 +10,7 @@
 //   · 相机 = Camera3D 轨道机位（盒庭模式）；Sky3D/Light3D 给光。全是 ThreeRenderer 直接消费的 render-only 组件。
 // 引擎已有全部原语（Anim3D spin / Pivot3D / Mesh3D voxelTex / Camera3D）→ **无新能力缺口·无 system 代码**（守 Lead 裁①）。
 
-import type { WorldBlueprint, EntityBlueprint } from '@assembly/demo.assembly.js';
+import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 
 // ── 体素格配置（纯数据·一切可关卡覆盖）──────────────────────────────────────────────────────
 export interface VoxelGridConfig {

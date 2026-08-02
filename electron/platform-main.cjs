@@ -1,6 +1,6 @@
 'use strict';
 // Electron 平台主进程（docs/workflow/platform-packaging-spec.md D3·核心编排层）——
-// 启动 → spawn 内置 python 后端（apollo.py platform，同端口伺服已构建前端 + /api/*）
+// 启动 → spawn 内置 python 后端（zerocraft.py platform，同端口伺服已构建前端 + /api/*）
 // → 轮询健康检查 → loadURL(127.0.0.1:port) → 窗口关闭/quit 时 kill 后端子进程（防僵尸）。
 //
 // 别动现有单游戏 electron/main.cjs（dist-cartridge 单卡带先例，产物形态完全不同）——
@@ -30,9 +30,9 @@ function resolveBackendDir() {
 
 async function startBackendAndWindow() {
   const backendDir = resolveBackendDir();
-  if (!fs.existsSync(path.join(backendDir, 'apollo.py'))) {
+  if (!fs.existsSync(path.join(backendDir, 'zerocraft.py'))) {
     throw new Error(
-      `后端目录缺 apollo.py：${backendDir}\n`
+      `后端目录缺 zerocraft.py：${backendDir}\n`
       + '（先跑一次 `node scripts/build-platform.mjs` 组装 platform-dist/，dev 模式才有得读）',
     );
   }
@@ -108,7 +108,7 @@ process.on('exit', () => killBackend(backendProc));
 // Linux 真机实测过的口子（不是纸面假设）：外部直接 SIGTERM/SIGINT 主进程（装机管理器杀应用、
 // `kill <pid>`、CI 收尾）**不会**触发上面几个 Electron 生命周期事件——Node 的 'exit' 事件本身
 // 也只在"正常退出"时触发，被信号杀掉时不保证跑到。实测复现过：外部 kill -9 electron 主进程后，
-// `python3 apollo.py platform` 子进程原地变孤儿继续跑（xvfb-run + node smoke 交叉验证时抓到）。
+// `python3 zerocraft.py platform` 子进程原地变孤儿继续跑（xvfb-run + node smoke 交叉验证时抓到）。
 // 显式接管这两个信号、手动 killBackend 后再退出，才是这条清理路径的真正兜底。
 for (const sig of ['SIGTERM', 'SIGINT']) {
   process.on(sig, () => {

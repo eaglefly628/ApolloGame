@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
-import type { Resource, PlayedHand, Flag, Card as EngineCard } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import type { Resource, PlayedHand, Flag, Card as EngineCard } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   buildGameEBlueprint, buildJokerEntities, jokerToEntities,
   R_CHIPS, R_MULT, R_HAND_SCORE,

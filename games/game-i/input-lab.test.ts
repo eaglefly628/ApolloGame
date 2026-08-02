@@ -2,7 +2,7 @@
 // 全是确定性纯函数，无 DOM——抓事件是宿主运行时职责，不在此测。
 import { describe, it, expect } from 'vitest';
 import { resolveSignal, applyRawInput, buildInputLab, INITIAL_INPUT, LAB_BINDINGS } from './input-lab.js';
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 
 describe('Game I · 输入底座 · keybind 解析', () => {
   it('键盘 down 命中绑定 → 对应 signal', () => {

@@ -1,0 +1,39 @@
+{
+  "//": "REQ-PKG-位置无关与正名·Lead 图纸②——外部内容（居仓外的游戏目录）的 tsconfig.json 用 `extends` 继承本文件（specifier 形如 '@zerocraft/engine/tsconfig.game-base.json'，经该目录自己的 node_modules/@zerocraft/engine 这个真 npm 依赖解析，与 package.json 的 file: 依赖同一条链路）。编译期选项照本仓根 tsconfig.json 对齐；paths 把十个包名子路径指回同一个 node_modules 包内的 src/**（TS 源直出，无需引擎单独构建一份 .d.ts）。外部项目自己的 tsconfig.json 只需再加 include/exclude 与自身源码相关的设置，无需重复这些字段。",
+  "//paths-legacy": "paths 里同时列了包名子路径（游戏自己源码用）与十个旧短别名（@engine 等）——旧别名不是给外部游戏用的，是因为 tsc 顺着上面的映射把引擎 src/ 内部文件带进本项目的编译闭包后，那些文件彼此还在用未改的旧别名（CLAUDE.md：src/ 内部相互引用不改），同一份 paths 必须一并接住，否则引擎内部 import 在外部项目里解析不到。",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "paths": {
+      "@zerocraft/engine/engine/*": ["./node_modules/@zerocraft/engine/src/engine/*"],
+      "@zerocraft/engine/skills/*": ["./node_modules/@zerocraft/engine/src/skills/*"],
+      "@zerocraft/engine/atom-skills/*": ["./node_modules/@zerocraft/engine/src/skills/atoms/*"],
+      "@zerocraft/engine/ui/*": ["./node_modules/@zerocraft/engine/src/ui/*"],
+      "@zerocraft/engine/renderer/*": ["./node_modules/@zerocraft/engine/src/renderer/*"],
+      "@zerocraft/engine/services/*": ["./node_modules/@zerocraft/engine/src/services/*"],
+      "@zerocraft/engine/assets/*": ["./node_modules/@zerocraft/engine/src/assets/*"],
+      "@zerocraft/engine/net/*": ["./node_modules/@zerocraft/engine/src/net/*"],
+      "@zerocraft/engine/runtime/*": ["./node_modules/@zerocraft/engine/src/runtime/*"],
+      "@zerocraft/engine/assembly/*": ["./node_modules/@zerocraft/engine/src/assembly/*"],
+      "@engine/*": ["./node_modules/@zerocraft/engine/src/engine/*"],
+      "@skills/*": ["./node_modules/@zerocraft/engine/src/skills/*"],
+      "@atom-skills/*": ["./node_modules/@zerocraft/engine/src/skills/atoms/*"],
+      "@ui/*": ["./node_modules/@zerocraft/engine/src/ui/*"],
+      "@renderer/*": ["./node_modules/@zerocraft/engine/src/renderer/*"],
+      "@services/*": ["./node_modules/@zerocraft/engine/src/services/*"],
+      "@assets/*": ["./node_modules/@zerocraft/engine/src/assets/*"],
+      "@net/*": ["./node_modules/@zerocraft/engine/src/net/*"],
+      "@runtime/*": ["./node_modules/@zerocraft/engine/src/runtime/*"],
+      "@assembly/*": ["./node_modules/@zerocraft/engine/src/assembly/*"]
+    }
+  }
+}

@@ -5,9 +5,9 @@
 // handler 只做「选牌记账 + 调 session.act/hint/nextRound + 重渲 + 排 AI 步」——判型/压制/结算全在
 // guandan-session（capability-plan 例外①②·已过审）。AI 拟人延迟=表现层 setTimeout（不进 sim/hash）。
 // UI 全 LayoutNode（mountUI）·随机全在 session 侧种子 PRNG（宿主零随机·延迟计时不是随机）。
-import { mountHost } from '@engine/host/mount-host.js';
-import { mountUI } from '@ui/components/index.js';
-import type { MountHandle, HandlerMap, LayoutNode } from '@ui/components/index.js';
+import { mountHost } from '@zerocraft/engine/engine/host/mount-host.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { MountHandle, HandlerMap, LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { GuandanSession, TURN_ORDER, teamOf, FAMILY_CN, fmtCardCode, type SeatId } from './guandan-session.js';
 import { buildMenu, buildTableSelect, buildPlay, buildResult, type SeatView, type PlayView, type ResultView } from './hud.js';
 import { type Lang, t, handName, tierName, fmtComboLabel, fmtTributeResist, fmtTributeLine } from './strings.js';
@@ -15,7 +15,7 @@ import { SEATS, DRESS_TIERS, INITIAL_FUNDS, STAKES, LEVEL_START, codeSuit, codeR
 import { resolveSeatCards, seatPortrait, seatFlavor, buildSessionOut, type GameASessionIn, type SeatOutcome, type SeatSessionOut } from './seat-cards.js';
 import { loadArtOverrides, registerArtOverrides } from './art-overrides.js';
 import { FIELD_W, FIELD_H, MANOR_BG, WRAPPER_BG, GAME_A_THEME } from './theme.js';
-import { mulberry32 } from '@atom-skills/index.js';
+import { mulberry32 } from '@zerocraft/engine/atom-skills/index.js';
 
 // run 种子：时间派生（owner 2026-07-18·每局不同牌）。sim 仍确定性=给定种子可复现；
 // 菜单「设置」显种子供报 bug（宿主选种子不违「宿主零随机」——sim 逻辑无裸随机·Date.now 非 Math.random）。

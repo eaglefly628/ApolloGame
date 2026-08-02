@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AI 生成人审门（M2.5·REQ-ART）—— apollo.py 全链冒烟。
+"""AI 生成人审门（M2.5·REQ-ART）—— zerocraft.py 全链冒烟。
 
 宪法「无自动入库」的门禁自证：起 API 服务（进程内·随机空闲端口）→
   ① generate → 落**待审区**（pending·**不**进 index）+ 返回预览 URL

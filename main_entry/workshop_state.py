@@ -25,7 +25,7 @@ def handle_agent_session_reset(body: dict) -> dict:
 
 def handle_agent_chats_get(slug: str) -> dict:
     """GET /api/agent/chats?slug=<slug>。工坊对话历史（每卡带每角色·owner 07-11「session 持久性」）。
-    存 .apollo/workshop-chats/<slug>.json（gitignored·不进卡带版本史——聊天是工作台状态不是游戏数据）。"""
+    存 .zerocraft/workshop-chats/<slug>.json（gitignored·不进卡带版本史——聊天是工作台状态不是游戏数据）。"""
     if not _valid_slug(slug):
         return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
     empty = {r: [] for r in _AGENT_ROLES}

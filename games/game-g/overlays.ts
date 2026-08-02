@@ -5,8 +5,8 @@
 //   覆盖：帮助中心（Tabs 介绍/指导/手册）· 设置（皮肤 Segmented + 音效/音乐/引导 Toggle）·
 //        商城 Drawer（Tabs 抽卡/皮肤/钱包）· 今日卦象 Modal · 开场故事 Modal（typewriter 旁白）。
 // 关闭：Modal/Drawer closeAction='closeOverlay'（× 或点遮罩·引擎内建）。诚实边界：长文案/数值排版用 Label 近似。
-import { mountUI } from '@ui/components/index.js';
-import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { LayoutNode, HandlerMap } from '@zerocraft/engine/ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { textureOverrideUri, iconUri } from './art-textures.js'; // 插画/banner 槽（批30）+ 套装图标（批32）
 

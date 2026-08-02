@@ -8,7 +8,7 @@
 //  场景像素图走 Image(内联 SVG data-URI)，精确 hex 移植自设计稿（无蒸汽·静态·她 opacity 0.8 背身）。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { deviceShell } from '../device-frame.js';
 import { svgUri } from '../scenes.js';
 

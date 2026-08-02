@@ -2,7 +2,7 @@
 // 注册 + 换皮下拉置顶 + 选单收敛到 3；同一棵 gallery 数据在新主题下换皮生效（糖果皮 9-slice + 纸纹面 + 水墨背景）。
 
 import { describe, it, expect } from 'vitest';
-import { renderNode } from '@ui/components/index.js';
+import { renderNode } from '@zerocraft/engine/ui/components/index.js';
 import { buildGallery } from './gallery.js';
 import { THEMES, THEME_OPTIONS, apolloToon } from './themes.js';
 

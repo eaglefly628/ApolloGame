@@ -1,8 +1,8 @@
 // Game F 测试共享脚手架（从 game-f.test.ts 拆分时抽出，2026-06-13）：模块级纯 helper + 节奏常量。
 // 各主题 test 文件（combat/economy/flow/placement）import 本模块，免重复定义、降低多人并行在单一测试文件上的撞车。
 // 注：非 *.test.ts，不被 vitest 收集为测试文件。各测试内的局部 helper（res/click 等闭包 e）保持留在各自 it 内。
-import type { Engine } from '@runtime/engine.js';
-import type { Flag } from '@engine/protocol/components.js';
+import type { Engine } from '@zerocraft/engine/runtime/engine.js';
+import type { Flag } from '@zerocraft/engine/engine/protocol/components.js';
 import { GAME_F_HERO_IDS } from './blueprint.js';
 
 // 节奏：缺省=玩家档（备战30s）；测试统一快速档维持既有时序断言。

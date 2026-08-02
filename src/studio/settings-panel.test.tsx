@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // 创作台 v1 · M3/M4 组件无头测试：设置面板（打码回显/千问第一/测试连接）+ 体检浮层（五轴分）。
-// fetch 全部 vi.stubGlobal mock，不依赖真 apollo.py 服务。
+// fetch 全部 vi.stubGlobal mock，不依赖真 zerocraft.py 服务。
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';

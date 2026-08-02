@@ -1,4 +1,5 @@
-"""跨平台子进程/颜色输出/进程管理/环境检查/项目信息收集/端口检测/版本 + 基础路径常量（ROOT/APOLLO_DIR/VITE_PORT）。"""
+"""跨平台子进程/颜色输出/进程管理/环境检查/项目信息收集/端口检测/版本 + 基础路径常量（ROOT/ZEROCRAFT_DIR/VITE_PORT）
++ 新旧品牌名过渡期兼容 helper（env()/dir_or_legacy()，REQ-PKG-位置无关与正名·去 Apollo 化 2026-08）。"""
 import subprocess
 import sys
 import os
@@ -12,7 +13,34 @@ ROOT = Path(__file__).resolve().parent.parent
 os.chdir(ROOT)
 
 VITE_PORT = 5173
-APOLLO_DIR = ROOT / '.apollo'
+ZEROCRAFT_DIR = ROOT / '.zerocraft'
+_LEGACY_APOLLO_DIR = ROOT / '.apollo'  # 去 Apollo 化过渡期读旧目录 fallback（REQ-PKG-位置无关与正名）
+APOLLO_DIR = ZEROCRAFT_DIR  # 向后兼容别名：旧代码 `from .sysutil import APOLLO_DIR` 仍可用，指向新目录
+
+def env(new_name: str, old_name: str | None = None, default=None):
+    """新旧环境变量名过渡期读取：新名优先，旧名 fallback（REQ-PKG-位置无关与正名·去 Apollo 化，
+    2026-08）。old_name 缺省按 new_name 的 ZEROCRAFT_ 前缀自动推导对应 APOLLO_ 旧名。"""
+    if old_name is None and new_name.startswith('ZEROCRAFT_'):
+        old_name = 'APOLLO_' + new_name[len('ZEROCRAFT_'):]
+    v = os.environ.get(new_name)
+    if v is not None:
+        return v
+    if old_name is not None:
+        v = os.environ.get(old_name)
+        if v is not None:
+            return v
+    return default
+
+def dir_or_legacy(*parts) -> Path:
+    """给一段相对路径 parts：`.zerocraft/<parts>` 若已存在就用它；否则若旧 `.apollo/<parts>` 存在
+    就读旧目录/文件（数据还没迁）；两者都没有就回落新路径（调用方随后自己 mkdir(parents=True) 再写）。
+    只管**读**——写永远显式落 ZEROCRAFT_DIR，新数据不会再进旧目录（REQ-PKG-位置无关与正名·
+    去 Apollo 化过渡期 fallback：`.apollo/`→`.zerocraft/`）。"""
+    new = ZEROCRAFT_DIR.joinpath(*parts)
+    if new.exists():
+        return new
+    legacy = _LEGACY_APOLLO_DIR.joinpath(*parts)
+    return legacy if legacy.exists() else new
 
 # ── 跨平台子进程 ──
 # Windows 上 npm/npx/vite 是 .cmd 批处理外壳；subprocess 直传裸名 ['npm', ...] 会让

@@ -6,8 +6,8 @@
 // 诚实边界：原主页的「绿呢牌桌 / 旋转对决卡 / vignette」是 bespoke 视觉，数据驱动控件集只能近似——
 // 本 pilot 把主页的**内容 / 交互 / 换皮**全部数据化（标题/Boss 情报/今日卦象/出征 CTA/地煞），
 // 那层 flourish 视觉留作后续 bespoke 渲染层（关注点分离·见 docs apollo-ui 移植契约）。
-import { mountUI } from '@ui/components/index.js';
-import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { LayoutNode, HandlerMap } from '@zerocraft/engine/ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { stageDisha } from './disha.js';
 import { dishaNumberLine } from './lobby-types.js';

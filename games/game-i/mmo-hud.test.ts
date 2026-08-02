@@ -1,7 +1,7 @@
 // 组合压力测试：MMO HUD 纯 LayoutNode 数据 —— 树结构良构、关键部件齐全、能渲成 HTML（零手写 React）。
 import { describe, it, expect } from 'vitest';
-import { renderNode } from '@ui/components/index.js';
-import type { LayoutNode } from '@ui/components/index.js';
+import { renderNode } from '@zerocraft/engine/ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { buildMmoHud } from './mmo-hud.js';
 
 function ids(n: LayoutNode, acc: string[] = []): string[] {

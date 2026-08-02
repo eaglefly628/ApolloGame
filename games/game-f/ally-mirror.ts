@@ -2,13 +2,13 @@
 // 每个盟友 = 一台独立 game-f 引擎，自跑自己的 PvE（无需跨端确定性——浮点命门只在 lockstep 下成立）。
 // 表现层每帧经 state-sync 真实镜像路径（packKeyframe→applyPacket）取盟友快照，投影成右栏迷你棋盘。
 // 这里是「AI 补位」的本地实现：真人队友接入时（BroadcastChannel 跨页）由真实 peer 快照替换之。
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { buildGameFBlueprint } from './blueprint.js';
 import { templatesFor } from './combat.js';
 import { rosterFor, finalHp, type Faction } from './heroes.js';
-import { instantiate } from '@skills/tier3/index.js';
-import { getComponentById } from '@engine/core/query.js';
-import { packKeyframe, applyPacket } from '@net/state-sync.js';
+import { instantiate } from '@zerocraft/engine/skills/tier3/index.js';
+import { getComponentById } from '@zerocraft/engine/engine/core/query.js';
+import { packKeyframe, applyPacket } from '@zerocraft/engine/net/state-sync.js';
 import { TEAM_A, TEAM_B } from './constants.js';
 
 export interface MirrorUnit {

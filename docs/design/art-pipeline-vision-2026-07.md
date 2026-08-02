@@ -31,7 +31,7 @@
 
 ## 三、目标形态：ZeroCraft 美术工坊（美术编辑器）
 
-**定位一句话**：不是 DCC（不做画画/建模），是**「货架管理器 + AI 加工台 + 游戏接线器」三合一**，作为创作台的第三面板（复用 apollo.py 服务面 + BYO-key + 本地 Git），PA 角色主管。
+**定位一句话**：不是 DCC（不做画画/建模），是**「货架管理器 + AI 加工台 + 游戏接线器」三合一**，作为创作台的第三面板（复用 zerocraft.py 服务面 + BYO-key + 本地 Git），PA 角色主管。
 
 ```
 ┌ 美术工坊（studio 第三面板·?mode=art）─────────────────────────┐
@@ -83,7 +83,7 @@
 
 ## 七、现台改造评估（2026-07-04·owner 问「当前美术台能改造吗」——答：能，增量改造非推倒）
 
-**已存在的美术台**（此前盘点遗漏·edd2fe23 等）：`AssetLibrary/AssetBrowser/AssetGenPanel`（~616 行·含渲染测试）+ apollo.py 四端点（import/generate/providers/autotag·mock 兜底·路径防注入·密钥打码）+ `scripts/ai-gen.mjs`（**tripo 文生 3D PBR + qwen wanx 文生图两条真调路径都已写好**·无 key 自动 mock·带 provenance 字段）。
+**已存在的美术台**（此前盘点遗漏·edd2fe23 等）：`AssetLibrary/AssetBrowser/AssetGenPanel`（~616 行·含渲染测试）+ zerocraft.py 四端点（import/generate/providers/autotag·mock 兜底·路径防注入·密钥打码）+ `scripts/ai-gen.mjs`（**tripo 文生 3D PBR + qwen wanx 文生图两条真调路径都已写好**·无 key 自动 mock·带 provenance 字段）。
 
 | 愿景五区 | 现台 | 改造 gap |
 |---|---|---|

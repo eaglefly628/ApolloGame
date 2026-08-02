@@ -5,7 +5,7 @@
 //
 //  产出 platform-dist/：
 //    dist/                  vite build 产物（studio launcher·9 游戏白名单过滤·同源伺服前端）
-//    apollo.py               后端入口（薄壳，原样拷贝）
+//    zerocraft.py               后端入口（薄壳，原样拷贝）
 //    main_entry/              后端全部实现（"全部工坊工具不裁"·原样拷贝）
 //    requirements.txt          后端唯一三方依赖清单（Pillow）
 //    public/games/<9 slug>/     白名单游戏运行时资产（游戏代码自己 fetch('/games/<slug>/...')）
@@ -72,12 +72,12 @@ function pruneExcludedGameChunks() {
   log(`已剔除排除游戏的独立 chunk：${removed.length ? removed.join(', ') : '(无——本次构建未产生)'}`);
 }
 
-/** 后端源码：apollo.py + main_entry/ 全量（"全部工坊工具不裁"）+ requirements.txt +
+/** 后端源码：zerocraft.py + main_entry/ 全量（"全部工坊工具不裁"）+ requirements.txt +
  * workshop/（原版展示工作台静态壳·server.py `_serve_workshop` 直接从 ROOT/workshop 端文件，
  * 不带上 /workshop/ 就 404——"工坊可开"这条硬指标靠它，296K 很小，不裁）。 */
 function copyBackend() {
-  log('拷贝后端源码（apollo.py + main_entry/ + workshop/ + requirements.txt）…');
-  cpSync(join(ROOT, 'apollo.py'), join(OUT, 'apollo.py'));
+  log('拷贝后端源码（zerocraft.py + main_entry/ + workshop/ + requirements.txt）…');
+  cpSync(join(ROOT, 'zerocraft.py'), join(OUT, 'zerocraft.py'));
   cpSync(join(ROOT, 'main_entry'), join(OUT, 'main_entry'), {
     recursive: true,
     filter: (src) => !src.includes('__pycache__') && !src.endsWith('.pyc'),

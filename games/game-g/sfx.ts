@@ -2,7 +2,7 @@
 // 思路同程序化立绘：声音=数据（每种音的频率/波形/时长/音量是一张表），合成器=引擎 SynthAudioPort 固定解释器
 // （主程 2026-06-21 归并：原本地手写 Web Audio 与战斗音效重复，下沉到引擎统一端口·游戏层只剩数据）。
 // happy-dom/SSR 无 AudioContext → 静默 no-op（测试安全）。静音状态走 localStorage 持久（与战斗音效同键）。
-import { SynthAudioPort, type SfxSpec } from '@services/audio/index.js';
+import { SynthAudioPort, type SfxSpec } from '@zerocraft/engine/services/audio/index.js';
 import { SFX_MUTE_KEY } from './sound.js';
 
 export type Sfx = 'click' | 'open' | 'close' | 'coin' | 'play' | 'rare' | 'error';

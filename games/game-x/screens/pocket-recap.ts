@@ -15,7 +15,7 @@
 //  纯 CSS 的光标闪烁（rp-caret）按规则渲染成静态琥珀竖条。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { deviceShell } from '../device-frame.js';
 import { svgUri } from '../scenes.js';
 

@@ -11,7 +11,7 @@
 //
 // 闭集依据：`VoxelTex`（src/engine/protocol/components/render.ts）——top/side/top2/side2/trim/pattern/tile。
 // pattern 枚举 'grass'|'stone'|'crystal'|'plain' 为引擎既有闭集，本表只组合、不新增枚举/不碰渲染器。
-import type { VoxelTex } from '@engine/protocol/components/render.js';
+import type { VoxelTex } from '@zerocraft/engine/engine/protocol/components/render.js';
 
 /** 0xRRGGBB 乘系数明暗（clamp）。 */
 function shade(t: number, k: number): number {

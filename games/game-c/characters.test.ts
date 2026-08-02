@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { resolveSeatCharacters, personaFlavor, buildSessionOut, type GameCSessionIn } from './characters.js';
-import type { PlatformCharacterDraft } from '@services/character-card/index.js';
+import type { PlatformCharacterDraft } from '@zerocraft/engine/services/character-card/index.js';
 
 // REQ-CHARCARD 接线（手册 docs/playbooks/character-card.md §⑤）：SessionIn 席位草稿 → 席位卡 + persona + SessionOut。
 describe('game-c 角色卡接线（REQ-CHARCARD·§⑤）', () => {

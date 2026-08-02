@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { copyUsedAssets, inlineUsedAssets } from './vite.assets';
+import { engineAliases } from './scripts/engine-aliases.mjs';
 
 const targetGame = process.env.VITE_TARGET_GAME ?? 'game-f';
 
@@ -51,17 +52,8 @@ export default defineConfig(async () => ({
   },
   resolve: {
     alias: {
-      '@engine':     resolve(__dirname, 'src/engine'),
-      '@skills':     resolve(__dirname, 'src/skills'),
-      '@atom-skills':resolve(__dirname, 'src/skills/atoms'),
-      '@assets':     resolve(__dirname, 'src/assets'),
-      '@services':   resolve(__dirname, 'src/services'),
-      '@renderer':   resolve(__dirname, 'src/renderer'),
-      '@ui':         resolve(__dirname, 'src/ui'),
-      '@net':        resolve(__dirname, 'src/net'),
-      '@runtime':    resolve(__dirname, 'src/runtime'),
-      '@assembly':   resolve(__dirname, 'src/assembly'),
-      '@games':      resolve(__dirname, 'games'),
+      ...engineAliases(__dirname),
+      '@games': resolve(__dirname, 'games'),
     },
   },
 }));

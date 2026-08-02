@@ -1,7 +1,7 @@
 // Game B ·《雀宴》—— 设置屏（LayoutNode·NIGHT 皮·真可用选项·治「设置=死键」）。
 // 只放**真接线**的设置（改了立刻生效），不摆没接的假控件：AI 出牌速度（接 AI_DELAY）+ 开局默认
 // 展开日志（接 logOpen）。难度/音量/脱衣演出等待玩法完善再开（gdd §四/§五），现不放假钮。
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { MENU_W, MENU_H } from './theme.js';
 import { t, type Lang } from './strings.js';
 

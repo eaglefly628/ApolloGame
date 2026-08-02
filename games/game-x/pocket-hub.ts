@@ -5,7 +5,7 @@
 //  全 LayoutNode 数据；写世界只发信号。陪伴内容在这里铺开。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { deviceShell } from './device-frame.js';
 import { charSpriteUri } from './scenes.js';
 import type { Companion } from './characters.js';

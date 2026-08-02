@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SynthAudioPort, SynthMusicPort } from '@services/audio/index.js';
+import { SynthAudioPort, SynthMusicPort } from '@zerocraft/engine/services/audio/index.js';
 import { C_SFX, C_BGM, gcAudio, type CSfx } from './sound.js';
 
 // 声音=数据（音频手册铁律）：曲/音色纯数据，端口是引擎固定合成器；无 AudioContext（headless/test）→ 静默 no-op。

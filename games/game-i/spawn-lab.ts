@@ -5,15 +5,15 @@
 //   → prefab 展开 → 粒子带 Velocity 飞(motion-apply) + Tween 淡出 + Timer(life) 到期 → lifetime 自销毁(destroy)。
 // 全是数据（模板 + 计时 + 信号），最弱 LLM 能填。
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
-import type { PrefabTemplate } from '@engine/protocol/components.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import type { PrefabTemplate } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   transformCapability, velocityCapability, shapeCapability, colorCapability,
   timerCapability, destroyCapability,
-} from '@atom-skills/index.js';
-import { eventWhenCapability } from '@skills/tier2/index.js';
-import { casterCapability, prefabCapability } from '@skills/tier3/index.js';
-import { motionApplyCapability, lifetimeCapability, tweenCapability } from '@skills/tier1/index.js';
+} from '@zerocraft/engine/atom-skills/index.js';
+import { eventWhenCapability } from '@zerocraft/engine/skills/tier2/index.js';
+import { casterCapability, prefabCapability } from '@zerocraft/engine/skills/tier3/index.js';
+import { motionApplyCapability, lifetimeCapability, tweenCapability } from '@zerocraft/engine/skills/tier1/index.js';
 
 const LIFE = 70;
 // 粒子模板：飞 + 淡出 + 到期自毁。

@@ -3,7 +3,7 @@
 // 只保留 出牌区透视梯形（牌区占位框·2D 先行·3D 后放上面）+ 桌上三头像框 + 玩家座条 + 手牌 + 行动键，
 // 加最小控制：📜日志 + ☰返回菜单。画布缩到 920×640（mountHost 整块等比缩放·不乱位）。皮=NIGHT 暗紫。
 // 全 LayoutNode 闭集·写世界只走 action 信号。
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import type { MatchState } from './core/game-state.js';
 import { canTsumo, canRiichi, canAnkan, canKakan, labelTile, seatWind, isWinLikeEnd, isPlayerTurn, isPlayerCallWindow, STRIP_ITEMS } from './core/game-state.js';
 import { kindStr, isRed, kindOf } from './core/tiles-def.js';

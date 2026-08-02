@@ -8,8 +8,8 @@
 // 8 色板（GD 布局稿）：夜紫底 #16122e / 品紫面 #231d45 / 缃金 #ffd54a / 天青 #4fc3ff /
 //   渲染橙 #ff9d4d(PE 层专用·UI 不取) / 翠绿 #5ee8a0 / 玫红 #ff6fae / 警红 #ff5d6c。
 
-import { SHELL } from '@ui/shell-theme.js';
-import type { UITheme } from '@ui/components/index.js';
+import { SHELL } from '@zerocraft/engine/ui/shell-theme.js';
+import type { UITheme } from '@zerocraft/engine/ui/components/index.js';
 import { CONFIG } from './theme.js';
 
 // ── 展示常量（UI 侧只读·数值真相在 PE 的 theme.ts CONFIG；此处仅转 UI 语义 + HUD 缺省态）────────

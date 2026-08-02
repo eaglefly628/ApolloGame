@@ -2,18 +2,22 @@
 import json
 from pathlib import Path
 
-from .sysutil import APOLLO_DIR
+from .sysutil import ZEROCRAFT_DIR, dir_or_legacy
 
 # ── 素材库虚拟分组（owner 07-12「拖拽分组·虚拟层级·不动真目录」）────────────────
 # 纯工作台状态（gitignored）：{groups:[{id,name,items:[assetId…]}]}。素材本体一动不动——
 # 分组只是收藏夹式的引用列表，同一素材可进多组、删组不删素材。
-_MATLIB_GROUPS_FILE = None  # 延迟求值（APOLLO_DIR 定义在后文）
 
-def _matlib_groups_file() -> Path:
-    return APOLLO_DIR / 'matlib-groups.json'
+def _matlib_groups_file_read() -> Path:
+    """读：`.zerocraft/matlib-groups.json` 优先，旧 `.apollo/matlib-groups.json` fallback。"""
+    return dir_or_legacy('matlib-groups.json')
+
+def _matlib_groups_file_write() -> Path:
+    """写：永远落新目录（不再写回旧 `.apollo/`）。"""
+    return ZEROCRAFT_DIR / 'matlib-groups.json'
 
 def handle_matlib_groups_get() -> dict:
-    f = _matlib_groups_file()
+    f = _matlib_groups_file_read()
     if not f.is_file():
         return {'success': True, 'groups': []}
     try:
@@ -38,7 +42,7 @@ def handle_matlib_groups_put(body: dict) -> dict:
             return {'success': False, 'error': '组要有 id/name·items ≤10000'}
         clean.append({'id': gid, 'name': name,
                       'items': [str(i)[:200] for i in items if isinstance(i, str) and i.strip()]})
-    f = _matlib_groups_file()
+    f = _matlib_groups_file_write()
     f.parent.mkdir(parents=True, exist_ok=True)
     f.write_text(json.dumps({'version': 1, 'groups': clean}, ensure_ascii=False, indent=1), 'utf-8')
     return {'success': True, 'count': len(clean)}

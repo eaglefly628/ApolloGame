@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mulberry32 } from '@atom-skills/random/index.js';
+import { mulberry32 } from '@zerocraft/engine/atom-skills/random/index.js';
 import {
   startHand, act, legalActions, settle, potLayers, nextPositions, initialPositions, nextLiveSeat, cloneHand,
   type BettingConfig, type HandState, type SeatId, type Action,

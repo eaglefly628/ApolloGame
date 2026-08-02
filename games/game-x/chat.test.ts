@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { World } from '@engine/core/world.js';
-import type { State, Resource, Flag, InputQueue, RawInputData } from '@engine/protocol/components.js';
-import { DIALOGUE_ACTION_CHOOSE, optionAvailable } from '@skills/tier3/index.js';
+import { World } from '@zerocraft/engine/engine/core/world.js';
+import type { State, Resource, Flag, InputQueue, RawInputData } from '@zerocraft/engine/engine/protocol/components.js';
+import { DIALOGUE_ACTION_CHOOSE, optionAvailable } from '@zerocraft/engine/skills/tier3/index.js';
 import { QIYUE } from './characters.js';
 import { DEFAULT_RECORD } from './record.js';
 import { buildChatBlueprint, chatGraph, R_BOND } from './chat.js';

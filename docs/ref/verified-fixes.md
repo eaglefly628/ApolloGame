@@ -18,10 +18,10 @@
 
 ## FIX-002 · Windows 启动 `FileNotFoundError [WinError 2]`
 
-- **症状**：`python3 apollo.py` 在 Windows 上 `check_env` 处崩，`subprocess.call(['npm','install'])` 抛 `WinError 2 系统找不到指定的文件`。
+- **症状**：`python3 zerocraft.py` 在 Windows 上 `check_env` 处崩，`subprocess.call(['npm','install'])` 抛 `WinError 2 系统找不到指定的文件`。
 - **根因**：Windows 上 `npm`/`npx`/`vite` 是 `.cmd` 批处理外壳；`subprocess` 直传裸名列表 → `CreateProcess` 找不到可执行映像。launcher 原本 POSIX-only。
 - **修复**：单点跨平台壳 `_spawn(cmd)`：Windows 走 `shell=True`（cmd.exe 按 PATHEXT 解析 `.cmd`），POSIX 原样 list 执行（行为不变）。所有 npm/npx/git 调用都走它。另把 `find|wc` 的 unix-ism 换成 `pathlib`。
-- **守卫**：`_spawn` 两分支产物已核对；`python3 apollo.py typecheck` 经壳跑通真实 `npx tsc`。（真·Windows CI 是待办。）
+- **守卫**：`_spawn` 两分支产物已核对；`python3 zerocraft.py typecheck` 经壳跑通真实 `npx tsc`。（真·Windows CI 是待办。）
 - **通用教训**：任何 `subprocess` 调 node 工具链要考虑 Windows 的 `.cmd` 外壳；不要假设 POSIX。
 
 ---

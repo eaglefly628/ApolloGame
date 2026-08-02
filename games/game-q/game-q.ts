@@ -3,14 +3,14 @@
 // 职责（都在 sim 外）：建 Engine + CanvasRenderer + QueuedInputSource；把画布点击逆投影成世界坐标入队
 // （clickable/caster at:pointer 消费）；把 world 资源投影进 LayoutNode HUD；胜负浮层；重开；响应式缩放；cleanup。
 // 玩法规则一律在 blueprint.ts 的数据 + 引擎能力里（见其头注）。
-import { Engine } from '@runtime/engine.js';
-import { CanvasRenderer } from '@renderer/index.js';
-import { AssetManager, ImageAssetLoader, parseAssetIndex, registerAssetIndex } from '@assets/index.js';
-import { QueuedInputSource, canvasPointerToScreen } from '@net/index.js';
-import { mountUI } from '@ui/components/index.js';
-import type { MountHandle, HandlerMap } from '@ui/components/index.js';
-import type { GameFlow, Resource, Flag, Tag } from '@engine/protocol/components.js';
-import { mountHost } from '@engine/host/mount-host.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { CanvasRenderer } from '@zerocraft/engine/renderer/index.js';
+import { AssetManager, ImageAssetLoader, parseAssetIndex, registerAssetIndex } from '@zerocraft/engine/assets/index.js';
+import { QueuedInputSource, canvasPointerToScreen } from '@zerocraft/engine/net/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { MountHandle, HandlerMap } from '@zerocraft/engine/ui/components/index.js';
+import type { GameFlow, Resource, Flag, Tag } from '@zerocraft/engine/engine/protocol/components.js';
+import { mountHost } from '@zerocraft/engine/engine/host/mount-host.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildTopBar, buildBottomBar, buildOverlay, type HudState } from './hud.js';
 import { playQSfx, isMuted, setMuted } from './sounds.js';

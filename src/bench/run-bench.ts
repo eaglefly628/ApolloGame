@@ -14,7 +14,7 @@ import {
 // vite-node 在 node 下运行，process 存在；此处仅为 tsc 声明。
 declare const process: { exit(code: number): never };
 
-// ZeroCraftBench CLI：跑全部游戏体检并打印表格；有不及格则退出码 1（可接 CI / apollo.py bench）。
+// ZeroCraftBench CLI：跑全部游戏体检并打印表格；有不及格则退出码 1（可接 CI / zerocraft.py bench）。
 // 另跑「帧时轴」墙钟测量：p99/max 判定（均值绿尖峰红=CONCERNS·超标帧点名）+ 同场景 prior delta 回归行。
 // 帧时是墙钟性能维度，与确定性 total/hash 完全分离，只报告不进分（永不改退出码——性能是告警非硬闸）。
 

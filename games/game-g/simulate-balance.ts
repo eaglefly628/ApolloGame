@@ -13,7 +13,7 @@ import {
   OPENING_HAND, DRAW_COST, CAST_COST, SWAP_PER_TURN, type TurnBattle, type PokerCard, type TengangHandCard,
 } from './turn-combat.js';
 import { playerTakeTurnAI } from './player-ai.js'; // 终极版 Player-AI（前向推演搜索·owner 2026-07-03「推演敌人未来」）
-import { seededShuffle } from '@atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移）
+import { seededShuffle } from '@zerocraft/engine/atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移）
 import { tengangFxOf, aggregateTengang } from './game-g-build.js'; // 天罡聚合改用 game-g-build 注册表版（删 sim 过期 if-else 复制·零漂移·Phase1 已证注册表==if-else）
 import { cardPoints, P_MAX } from './clash-resolve.js';
 import { loadLevel } from './level.js';

@@ -1,14 +1,15 @@
 """工坊对话持久化底座（session 台账 + 角色闭集）。"""
 import json
 
-from .sysutil import ROOT
+from .sysutil import ZEROCRAFT_DIR, dir_or_legacy
 
 _AGENT_ROLES = ('gd', 'pe', 'art')
 
-_WORKSHOP_CHATS_DIR = ROOT / '.apollo' / 'workshop-chats'
+_WORKSHOP_CHATS_DIR = ZEROCRAFT_DIR / 'workshop-chats'  # 写永远落这
 
 def _ws_file_load(slug: str) -> dict:
-    f = _WORKSHOP_CHATS_DIR / f'{slug}.json'
+    # 读：新目录优先，旧 .apollo/workshop-chats/<slug>.json fallback（未迁移时）。
+    f = dir_or_legacy('workshop-chats', f'{slug}.json')
     try:
         d = json.loads(f.read_text('utf-8'))
         return d if isinstance(d, dict) else {}

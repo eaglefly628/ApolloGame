@@ -1,8 +1,8 @@
 // 运动与碰撞样例：motion-apply 推进位移 + overlap-detect 产出 Overlap 对。纯蓝图 + 现成能力。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { physicsBlueprint } from './physics-lab.js';
-import type { Transform } from '@engine/protocol/components.js';
+import type { Transform } from '@zerocraft/engine/engine/protocol/components.js';
 
 describe('Game I · 运动与碰撞样例', () => {
   it('蓝图纯数据：四物体（无专属 system）', () => {

@@ -40,6 +40,12 @@ const OUT = path.resolve(outFlag >= 0 ? argv[outFlag + 1] : `export/${gameId}${T
 const GAME_SRC_OUT = path.join(OUT, 'src', 'game');
 
 // Alias table (mirror of tsconfig paths). Extend if your repo adds aliases.
+// Both styles are listed on purpose (REQ-PKG-位置无关与正名): engine-internal files under
+// src/** still use the short legacy aliases (`@engine/…`, untouched by that migration —
+// see CLAUDE.md 工作规范), while games/** entry files now import via the package-name
+// subpaths (`@zerocraft/engine/engine/…`, see package.json "exports" / scripts/engine-aliases.mjs).
+// A traced closure can contain BOTH — the game's own files (new style) and everything they
+// pull in from src/** (old style) — so this exporter must resolve both, unchanged targets.
 const ALIASES = {
   '@engine/': 'engine/',
   '@skills/': 'skills/',
@@ -51,6 +57,16 @@ const ALIASES = {
   '@net/': 'net/',
   '@runtime/': 'runtime/',
   '@assembly/': 'assembly/',
+  '@zerocraft/engine/engine/': 'engine/',
+  '@zerocraft/engine/skills/': 'skills/',
+  '@zerocraft/engine/atom-skills/': 'skills/atoms/',
+  '@zerocraft/engine/assets/': 'assets/',
+  '@zerocraft/engine/services/': 'services/',
+  '@zerocraft/engine/renderer/': 'renderer/',
+  '@zerocraft/engine/ui/': 'ui/',
+  '@zerocraft/engine/net/': 'net/',
+  '@zerocraft/engine/runtime/': 'runtime/',
+  '@zerocraft/engine/assembly/': 'assembly/',
 };
 // NOTE: base tsconfig.json + vite.config.ts derive their alias maps from ALIASES above,
 // so adding an alias here propagates to the plain target automatically. The dokiworld
@@ -214,7 +230,7 @@ async function copyClosure(closure) {
 const COMP = gameId.replace(/[^a-z0-9]/gi, ' ').replace(/(?:^|\s)(\w)/g, (_, c) => c.toUpperCase()).replace(/\s/g, '');
 const files = {
   'package.json': (deps) => JSON.stringify({
-    name: `@apollo/${gameId}`, version: '0.1.0', type: 'module', private: true,
+    name: `@zerocraft/${gameId}`, version: '0.1.0', type: 'module', private: true,
     scripts: { dev: 'vite', build: 'tsc --noEmit && vite build', preview: 'vite preview', typecheck: 'tsc --noEmit' },
     dependencies: deps.runtime, peerDependencies: { react: '^18.0.0 || ^19.0.0', 'react-dom': '^18.0.0 || ^19.0.0' },
     devDependencies: {

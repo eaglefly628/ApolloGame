@@ -1,6 +1,6 @@
 // scripts/studio-lowmodel-e2e.mjs —— 创作台 · 低模「从模板改」真浏览器旅程（playwright-core + mock provider）。
 // 用法：node scripts/studio-lowmodel-e2e.mjs
-// 机制：APOLLO_MOCK_LLM=1 起 apollo.py（vite:5173 + API:4000）→ 无头 chromium 走玩家模式快速生成旅程：
+// 机制：ZEROCRAFT_MOCK_LLM=1 起 zerocraft.py（vite:5173 + API:4000）→ 无头 chromium 走玩家模式快速生成旅程：
 //   ＋新建 → 入口双选卡「⚡ 快速生成」→ 创作向导默认「从模板改」→ 填名+骰子创意 → 开始生成 →
 //   预览 canvas + 「基于模板修改」标注 → 保存入库 → 卡带上架。切「自由生成」→ 仍能生成（从零）。
 //   每步 PASS/FAIL；任一步失败 exit 1。造的库数据结束清理。
@@ -28,7 +28,7 @@ function killPorts() {
   for (const p of [5173, 4000]) {
     try { execSync(`fuser -k ${p}/tcp`, { stdio: 'ignore' }); } catch { /* none */ }
   }
-  try { execSync('pkill -f "apollo.py" || true', { stdio: 'ignore' }); } catch { /* none */ }
+  try { execSync('pkill -f "zerocraft.py" || true', { stdio: 'ignore' }); } catch { /* none */ }
 }
 function cleanupLibrary() {
   for (const s of [SLUG, `${SLUG}-2`, `${SLUG}-3`]) {
@@ -48,9 +48,9 @@ killPorts();
 cleanupLibrary();
 await new Promise((r) => setTimeout(r, 800));
 
-const server = spawn('python3', ['apollo.py'], {
+const server = spawn('python3', ['zerocraft.py'], {
   cwd: new URL('..', import.meta.url),
-  env: { ...process.env, APOLLO_MOCK_LLM: '1' },
+  env: { ...process.env, ZEROCRAFT_MOCK_LLM: '1' },
   stdio: 'inherit',
   detached: true,
 });
@@ -63,7 +63,7 @@ process.on('exit', shutdown);
 let browser;
 try {
   const up = await waitPort(VITE, 45000);
-  step('apollo.py 起服务（vite:5173）', up, 'vite 未就绪');
+  step('zerocraft.py 起服务（vite:5173）', up, 'vite 未就绪');
   if (!up) throw new Error('vite not ready');
   step('API:4000 就绪', await waitPort(`${API}/api/generate/providers`, 15000));
 

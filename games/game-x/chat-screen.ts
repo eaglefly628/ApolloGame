@@ -5,7 +5,7 @@
 //  + 底部话题菜单(choice 节点的选项) 或 继续/放回(line/end)。全 LayoutNode 数据。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { deviceShell } from './device-frame.js';
 import { charSpriteUri } from './scenes.js';
 import type { Companion } from './characters.js';

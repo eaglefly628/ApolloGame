@@ -5,7 +5,7 @@
 // 皆宿主生命周期动作，由宿主 HandlerMap 消化——不碰 sim（play-field 的落子/取炮走 render+clickable，不经 UI·PE 域）。
 // 边界：play-field（像素画棋盘 / 传送带 / 色炮 / 弹道 / 待命槽 / 补给实体）= PE 的 render 层·非本文件范围；
 //       本文件只出「浮在 render 层之上的 UI chrome」：对局 HUD 顶栏 / 连击突破飘层 / 结算 / 选关 / 失败续命。
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { KEYS_TOTAL, DOOR_GOAL } from './ui-theme.js';
 
 // 千分位（确定性·不依赖 locale·匹配视觉稿「12,340」）。

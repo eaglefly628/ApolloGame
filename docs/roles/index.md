@@ -22,7 +22,7 @@
 | **PUI**（草案·owner 2026-07-16 设立） | UI 基座 + 展示台程序员 | UI 库渲染线（LayoutNode 控件闭集 + catalog + 校验器 + 主题）+ game-i 展示台；UI 铁律红线（**P3D 的镜像**） | ✅ `src/ui/**` + `games/game-i/**` + `tools/ui-audit`+`audits/**` + UI 手册；🔶 launcher game-i 两行；🔒 其余引擎/游戏（见卡三档表） | `roles/PUI.md` |
 | **PS** | 发行工程师 | 打包/Steam 上架/平台接线（成就/云存档/富状态） | `steam-publisher/**`·`electron/**`·`scripts/dist*` | `roles/PS.md` + 发行白皮书 |
 | **PA** | 资产管理员 | 美术资产导入/登记/接线；asset-index 单一真相 | `assets/**` + 资产索引 | `roles/PA.md`（薄卡：主体=asset-manager agent 定义 + resource-manager 技能） |
-| **PST** | 创作台产品工程师 | 创作台产品线（apollo.py 服务面 + launcher/studio 前端）；引擎只读 | `apollo.py`·`src/launcher.tsx`·`src/studio/**` | `roles/PST.md` |
+| **PST** | 创作台产品工程师 | 创作台产品线（zerocraft.py 服务面 + launcher/studio 前端）；引擎只读 | `zerocraft.py`·`src/launcher.tsx`·`src/studio/**` | `roles/PST.md` |
 | **OPS** | 施工代理（子代理，非 session） | 领 requests.md「指派：Opus」的 spec 照图施工；无 spec 架构判断不得下放 | 单次工单授权范围 | （无卡·由派工 spec 约束） |
 
 ## 角色 × 必读矩阵（T0 之上按角色叠加）

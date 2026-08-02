@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
-import type { Resource, Flag, Shape, Status, Transform } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import type { Resource, Flag, Shape, Status, Transform } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildGameFBlueprint, GAME_F_HERO_IDS, GAME_F_TEMPLATES, FROZEN, TEAM_A } from './blueprint.js';
 import { offsetToAxial, project } from './hex.js';
 import { FAST, A_HEROES, B_HEROES, alive, mains, isBSide, mainOf, childOf, flag } from './game-f.helpers.js';

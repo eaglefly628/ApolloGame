@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { World } from '@engine/core/world.js';
-import type { State, Resource } from '@engine/protocol/components.js';
+import { World } from '@zerocraft/engine/engine/core/world.js';
+import type { State, Resource } from '@zerocraft/engine/engine/protocol/components.js';
 import { QIYUE, MIKA, companionById } from './characters.js';
 import {
   entryAt, sceneOf, hoursAway, absenceFor, stageOf, displayTemp, deskView, greetOf,
   type ClockReading, type SessionRecord,
 } from './companion.js';
 import { buildPocketBlueprint, pocketGraph, R_WARMTH, POCKET_START } from './pocket.js';
-import { DIALOGUE_ACTION_CHOOSE } from '@skills/tier3/index.js';
-import type { InputQueue, RawInputData } from '@engine/protocol/components.js';
+import { DIALOGUE_ACTION_CHOOSE } from '@zerocraft/engine/skills/tier3/index.js';
+import type { InputQueue, RawInputData } from '@zerocraft/engine/engine/protocol/components.js';
 
 const HOUR = 3_600_000;
 const clockAt = (hour: number, opts: Partial<ClockReading> = {}): ClockReading =>

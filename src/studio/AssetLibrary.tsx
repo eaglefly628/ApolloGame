@@ -54,7 +54,7 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
     fetch('/assets/FreeArtLib/index.json')
       .then((r) => r.json())
       .then((j) => setArtIndex(j as ArtLibIndex))
-      .catch((e) => setLoadErr(`FreeArtLib 索引加载失败：${String(e)}（需 python3 apollo.py 起 vite）`));
+      .catch((e) => setLoadErr(`FreeArtLib 索引加载失败：${String(e)}（需 python3 zerocraft.py 起 vite）`));
   }, []);
   useEffect(() => {
     fetch('/assets/curated/search-aliases.json')
@@ -70,7 +70,7 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
       .catch(() => setProjIndex(null));
   }, []);
   useEffect(() => reloadProject(), [reloadProject]);
-  // 待审计数（AI 生成人审门）：badge + 待审区入口用。走 apollo.py（CORS *）。
+  // 待审计数（AI 生成人审门）：badge + 待审区入口用。走 zerocraft.py（CORS *）。
   const refreshPending = useCallback(() => {
     fetch('http://localhost:4000/api/assets/pending')
       .then((r) => r.json())
@@ -475,7 +475,7 @@ export function AssetLibrary({ onBack }: { onBack: () => void }) {
             ) : (
               <>
                 <div style={{ padding: '2px 8px 5px', color: SHELL.violet }}>📦 copy 到游戏本地库…</div>
-                {games.length === 0 && <div style={{ padding: '4px 8px', color: SHELL.dim }}>无游戏（需 python3 apollo.py）</div>}
+                {games.length === 0 && <div style={{ padding: '4px 8px', color: SHELL.dim }}>无游戏（需 python3 zerocraft.py）</div>}
                 {games.map((g) => (
                   <div
                     key={g.id}

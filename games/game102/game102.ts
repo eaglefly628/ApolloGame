@@ -4,14 +4,14 @@
 // 玩法规则一律在 blueprint.ts 的数据 + 引擎能力里（Lead 裁①·零游戏层 system 代码）。
 // S3 骨架关：先把「像素画棋盘 + 传送带位 + 待命槽 + 补给区」的实体阵画出来（Shape+Color 由 CanvasRenderer 投影）；
 // 交互/HUD（LayoutNode 四屏 = PUI·REQ-G102-UI）与玩法链（event-when/launch = S4）后续接入。
-import { Engine } from '@runtime/engine.js';
-import { CanvasRenderer } from '@renderer/index.js';
-import { ThreeRenderer } from '@renderer/three-renderer.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { CanvasRenderer } from '@zerocraft/engine/renderer/index.js';
+import { ThreeRenderer } from '@zerocraft/engine/renderer/three-renderer.js';
 import { buildVoxelScene } from './voxel.js';
 import { mountVoxelProto } from './voxel-proto.js';
-import { AssetManager, ImageAssetLoader, registerAssetIndex, parseAssetIndex } from '@assets/index.js';
-import { QueuedInputSource, canvasPointerToScreen } from '@net/index.js';
-import { mountHost } from '@engine/host/mount-host.js';
+import { AssetManager, ImageAssetLoader, registerAssetIndex, parseAssetIndex } from '@zerocraft/engine/assets/index.js';
+import { QueuedInputSource, canvasPointerToScreen } from '@zerocraft/engine/net/index.js';
+import { mountHost } from '@zerocraft/engine/engine/host/mount-host.js';
 import { buildBlueprint } from './blueprint.js';
 import { LEVEL_1 } from './levels.js';
 import { FIELD_W, FIELD_H } from './theme.js';

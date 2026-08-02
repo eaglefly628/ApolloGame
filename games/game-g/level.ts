@@ -4,7 +4,7 @@
 import { campaignFor, TIANGANG_UNLOCK, isRetiredTiangang, type StageCampaign } from './blueprint.js';
 import { stageDisha } from './disha.js';
 import { NEUTRAL_AI, BOSS_GARRISON_MANA, type AiProfile, type PokerCard } from './turn-combat.js';
-import { seededShuffle } from '@atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移）
+import { seededShuffle } from '@zerocraft/engine/atom-skills/index.js'; // 洗牌收敛 atoms 单一真相（零漂移）
 
 export interface LevelDef {
   id: number; heroId: string; stars: number;

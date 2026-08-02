@@ -1,4 +1,4 @@
-import type { WorldBlueprint, EntityBlueprint } from '@assembly/demo.assembly.js';
+import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  game-c ·《六人德州》3D 牌桌 + 物理围栏（owner 2026-07-18：2D 俯视视角 + 3D 物理筹码扔进池·桌边 3D 围栏挡住）

@@ -91,9 +91,9 @@
 | 需求目录推导器 | ✅ `scripts/art-replace.mjs` derive/deriveRequirements（编号 append-only·mergeLedger） | 扫 manifest/蓝图→台账 art-ledger.json（=需求表） |
 | **逐游戏美术资产平台** | ✅ `src/studio/ArtLedgerPanel.tsx`（双数据源·唯一美术 UI·cockpit 已退役） | 风格包/mock 开关/一键全量/三式替换/换皮——**终态档 `docs/design/art-platform-2026-07-09.md`** |
 | 风格包库 | assets 侧 style-packs 数据文件（PA 契约·PST 消费） | 纯数据·闭集·工坊维护 |
-| 批量生成器 | apollo.py 批处理端点 + `scripts/ai-gen.mjs` adapters（已有 wanx/tripo/meshy） | 并发·缓存·断点续跑（status 就是断点） |
+| 批量生成器 | zerocraft.py 批处理端点 + `scripts/ai-gen.mjs` adapters（已有 wanx/tripo/meshy） | 并发·缓存·断点续跑（status 就是断点） |
 | 后处理 | `scripts/ai-gen.mjs` 后处理段（palette-snap/缩放） | 确定性·mock 也走 |
-| 对位替换 | apollo.py：按 no 重钉 manifest 引用+落盘（PUT 前 parseManifest 零 error 铁律不变） | 留替换历史 |
+| 对位替换 | zerocraft.py：按 no 重钉 manifest 引用+落盘（PUT 前 parseManifest 零 error 铁律不变） | 留替换历史 |
 | 浏览/点名 UI | ✅ 并入上行「美术资产平台」 | 缩略图+编号+status+三式替换（不再单列） |
 
 ## 六、验收口径

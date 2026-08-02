@@ -3,7 +3,7 @@
 //   buildSessionOut 键控 card.id + passthrough 回带 · 纯确定性（同输入深等）。
 // 服务本身的收敛/取优全量在 services/character-card 测（这里只验 game-a 侧接入正确）。
 import { describe, it, expect, afterEach } from 'vitest';
-import { normalizeCharacterCard, isCardUsable } from '@services/character-card/index.js';
+import { normalizeCharacterCard, isCardUsable } from '@zerocraft/engine/services/character-card/index.js';
 import { SEATS } from './rules.js';
 import { type SeatId } from './guandan-session.js';
 import {

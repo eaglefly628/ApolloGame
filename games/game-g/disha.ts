@@ -3,7 +3,7 @@
 // 难易 triage（design G）：🟢易=复用现成胜率/buff · 🟡中=新 hook game-side · 🔴难=给简化兜底（伙伴骑兵/连环船/机动调度）。
 // 与 live-combat TengangFx 同构：disha.ts 只定义数据 + 纯聚合，turn-combat import 类型 + 在掷命/推进/大本营 apply（无环依赖）。
 // 聚合内芯已迁引擎能力 `t2-modifier-stack`（REQ-G-修正栈迁移·owner 2026-07-04）：删本地自写逐字段聚合循环 → 走 `aggregateModifiers`（字段表+每字段合并策略的唯一确定性核）。disha.ts 只留数据 + 行编码 + totals→DishaFx 映射；输出结构体 DishaFx 与调用方全不变。
-import { aggregateModifiers, type ModifierRow, type ModifierCtx } from '@skills/tier2/modifier-stack.js';
+import { aggregateModifiers, type ModifierRow, type ModifierCtx } from '@zerocraft/engine/skills/tier2/modifier-stack.js';
 
 // Boss 侧战斗修正聚合（一关 3 张地煞 → 一个 DishaFx）。winPct 字段 = 加到 Boss 掷命胜率的百分点（玩家视角 wr 相应下调）。
 export interface DishaFx {

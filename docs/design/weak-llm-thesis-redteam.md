@@ -73,7 +73,7 @@ schema + 校验器保证的是**合法性**（必然能跑、不坏、确定性�
 
 | 假设 | 内容 | 怎么测 | 状态 |
 |---|---|---|---|
-| **H1 合法性** | 弱模型产 manifest 加载通过率 ≥95%（带链接器修复循环） | apollo.py 批跑 × parseManifest 通过率 | 积木全齐，随时可测 |
+| **H1 合法性** | 弱模型产 manifest 加载通过率 ≥95%（带链接器修复循环） | zerocraft.py 批跑 × parseManifest 通过率 | 积木全齐，随时可测 |
 | **H2 一致性** | 同意图 × {DeepSeek,Qwen,GPT,Claude} 的 ZeroCraftBench 方差比"自由代码对照组"小一个数量级 | 模型方差矩阵 harness（路线 P2） | harness 待建，一周内可出基线 |
 | **H3 可玩性** | 人类盲评「弱模型+ZeroCraft」vs「强模型+自由代码」可玩分 | 盲评协议（后置） | 现在设计、后置执行 |
 

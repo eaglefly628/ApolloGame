@@ -4,8 +4,8 @@
 // 左：地支附魔台（52 牌 ench 卡格 → 选一张 craftSel → 详情：已镶槽 removeInlay + 卡包可镶项 inlay）·MVU：选牌→reducer→update。
 // 右：天罡牌购买货架（金币 buyTiangang / 关未到 💎 diamondUnlock / 已拥有展示）。
 // 诚实边界：原稿镶嵌槽/牌面立绘是 bespoke 美术，pilot 用 Card + Label 近似；内容/选牌交互/换皮全数据化。
-import { mountUI } from '@ui/components/index.js';
-import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { LayoutNode, HandlerMap } from '@zerocraft/engine/ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { textureOverrideUri, zodiacIconUri, iconUri } from './art-textures.js'; // 背景板槽（批30）+ 生肖套装图标（批32）+ 套装图标（07-15 tiangang 接线）
 import { HERO_CARDS } from './hero-codex.js';

@@ -6,7 +6,7 @@
 //  红线不变：游戏只填令牌值（颜色/字体字符串），不写 CSS/DOM。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { UITheme } from '@ui/components/index.js';
+import type { UITheme } from '@zerocraft/engine/ui/components/index.js';
 
 export const ZANKYOU: UITheme = {
   bg0: '#0a0810', // 设备外框/最深

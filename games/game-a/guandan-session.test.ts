@@ -3,8 +3,8 @@
 // 金钱收付对称 / 服饰-1 与底线档翻倍 / 级数推进 / 过 A 三态 / 同种子双跑复现。
 // 判型正确性全量在引擎 hand-pattern.test（36 测）——本文件验编排脚本的规则装配。
 import { describe, it, expect } from 'vitest';
-import { matchPattern, type PatternMatch } from '@skills/tier3/index.js';
-import type { Resource } from '@engine/protocol/components.js';
+import { matchPattern, type PatternMatch } from '@zerocraft/engine/skills/tier3/index.js';
+import type { Resource } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   GuandanSession, TURN_ORDER, teamOf, partnerOf, fmtCardCode, type SeatId, type TrickPlay,
 } from './guandan-session.js';

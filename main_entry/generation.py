@@ -103,7 +103,7 @@ def _generate_with_autofix(provider: str, api_key: str, model: str, system: str,
 
 # ── 低模生成四件（REQ-STUDIO·让弱模型不在 81 项词表里从零作曲）─────────────────
 # ③ 校验错误 LLM 化：把 manifest-check 的机读错误改写成「一句可执行修改指令」（指名 entity/字段 +
-#   合法值示例）。侵入最小方案=纯 apollo.py 侧字符串映射层，不改引擎校验器（manifest-check.mjs）。
+#   合法值示例）。侵入最小方案=纯 zerocraft.py 侧字符串映射层，不改引擎校验器（manifest-check.mjs）。
 _RE_UNKNOWN_CAP = re.compile(r'未知 capability id[:：]\s*(.+?)（')
 # formatIssues 形状：「<entity>.<Comp>.<field> —— <Comp>.<field> 应为 number，实为 string」，
 # 把 entity.Comp.field 与其后的 应为<type> 绑起来抽取（entity id 允许连字符）。

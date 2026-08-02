@@ -17,18 +17,18 @@
 //   G2 订单 / G3 气泡（bubble-wrapper 零引擎改动路）=后续 slice。初始物由 game.json.seedItems 数据摆放。
 //
 // 能力总览：docs/design/game101/capability-plan.md。
-import type { WorldBlueprint, EntityBlueprint } from '@assembly/demo.assembly.js';
+import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 import {
   transformCapability, tagCapability, shapeCapability, colorCapability,
   spriteCapability, resourceCapability, destroyCapability, flagCapability, timerCapability,
-} from '@atom-skills/index.js';
-import { lifetimeCapability } from '@skills/tier1/index.js';
+} from '@zerocraft/engine/atom-skills/index.js';
+import { lifetimeCapability } from '@zerocraft/engine/skills/tier1/index.js';
 import {
   overTimeCapability, clickableCapability, craftRecipeCapability,
   effectApplyCapability, eventWhenCapability, keybindCapability, mergeOnPlaceCapability, orderFulfillCapability, mergeProximityClearCapability,
   weightedSpawnCapability,
-} from '@skills/tier2/index.js';
-import { prefabCapability, casterCapability } from '@skills/tier3/index.js';
+} from '@zerocraft/engine/skills/tier2/index.js';
+import { prefabCapability, casterCapability } from '@zerocraft/engine/skills/tier3/index.js';
 import {
   GAME, RES, ENERGY, ENERGY_REGEN_TICKS, ITEMS, GENERATORS, ORDERS, ORDER_SAT_MAX, TIMED_ITEM, MENU_TIMER_SEC, TICKS_PER_SEC, type OrderReward,
   BOARD_COVER, coverReveal, BUBBLES, BUBBLE_TAG, PROGRESSION, milestoneTag, LEVEL_DONE_FLAG,

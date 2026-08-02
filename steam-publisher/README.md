@@ -6,7 +6,7 @@
 python3 serve.py        # 浏览器自动开 http://127.0.0.1:8799
 ```
 
-> **程序化接入**（创作台 player 模式一键发布 / apollo.py 薄代理）：见 `PUBLISH-API.md`（稳定端点 + 三段/判词 token 契约）。无真账号验证：`python3 ../scripts/steam-publish-smoke.py`。
+> **程序化接入**（创作台 player 模式一键发布 / zerocraft.py 薄代理）：见 `PUBLISH-API.md`（稳定端点 + 三段/判词 token 契约）。无真账号验证：`python3 ../scripts/steam-publish-smoke.py`。
 
 ## 它做什么（界面四步）
 

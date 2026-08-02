@@ -5,7 +5,7 @@
 // 接线现状（宿主只能观测 world diff）：swap/clear*/win/lose/star/tap 已接；
 // illegal/spawn/scroll/seal/taiji/collect/land 需棋盘事件面（REQ-M3-三期④ 手感层）落地后接——
 // 音色数据先备齐，拟声细调待 GD 文案表。
-import { SynthAudioPort, type SfxSpec } from '@services/audio/index.js';
+import { SynthAudioPort, type SfxSpec } from '@zerocraft/engine/services/audio/index.js';
 
 export type TSfx =
   | 'swap' // 交换 whoosh

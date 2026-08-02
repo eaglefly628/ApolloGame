@@ -6,7 +6,7 @@
 //  屏模块只需给 interior(填满 640×480 的 LayoutNode 列表)，外壳一致由此产出。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 
 export interface ShellOpts {
   id: string;

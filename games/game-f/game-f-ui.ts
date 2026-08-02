@@ -1,4 +1,4 @@
-import type { UILayout } from '@ui/shell/types.js';
+import type { UILayout } from '@zerocraft/engine/ui/shell/types.js';
 
 // Game F · 局内 HUD「布局即数据」（去腐片4：取代 game-f.tsx 手写 React 壳的一份 UILayout）。
 // 喂 @ui/shell/GameShell 渲染：stat/bar 绑 Resource（按 id 全局寻址）、button→keybind 信号、image 绑资产 key。

@@ -6,15 +6,15 @@
 // 边界：只消费 3D 数据接口，渲染器/组件/game-z 一概不碰（P3D 域）。缺口→记 requests-3d.md，不 hack。
 // 注：蓝图组件值是无 `type` 判别符的字段对象（键=组件名·同 three-lab.ts 体例）。
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
-import type { LayoutNode } from '@ui/components/index.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import {
   transformCapability, velocityCapability, timerCapability, destroyCapability,
-} from '@atom-skills/index.js';
-import { tweenCapability, motionApplyCapability, lifetimeCapability } from '@skills/tier1/index.js';
-import { eventWhenCapability, pathfindCapability } from '@skills/tier2/index.js';
-import { casterCapability, prefabCapability } from '@skills/tier3/index.js';
-import { overlapDetect3dCapability, navmeshBakeCapability } from '@skills/atoms/index.js';
+} from '@zerocraft/engine/atom-skills/index.js';
+import { tweenCapability, motionApplyCapability, lifetimeCapability } from '@zerocraft/engine/skills/tier1/index.js';
+import { eventWhenCapability, pathfindCapability } from '@zerocraft/engine/skills/tier2/index.js';
+import { casterCapability, prefabCapability } from '@zerocraft/engine/skills/tier3/index.js';
+import { overlapDetect3dCapability, navmeshBakeCapability } from '@zerocraft/engine/skills/atoms/index.js';
 import { MODEL_DUCK, MODEL_BOX } from './assets3d.js';
 
 type Ent = WorldBlueprint['entities'][string];

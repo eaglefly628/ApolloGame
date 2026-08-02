@@ -10,9 +10,9 @@
 //   clock≥150 → flee  （金灭·红亮）
 //   clock≥230 → idle  （红灭·青亮 + 复位 clock 重新循环）
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
-import { transformCapability, shapeCapability, colorCapability, stateCapability, timerCapability } from '@atom-skills/index.js';
-import { eventWhenCapability, effectApplyCapability } from '@skills/tier2/index.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import { transformCapability, shapeCapability, colorCapability, stateCapability, timerCapability } from '@zerocraft/engine/atom-skills/index.js';
+import { eventWhenCapability, effectApplyCapability } from '@zerocraft/engine/skills/tier2/index.js';
 
 type Ent = WorldBlueprint['entities'][string];
 

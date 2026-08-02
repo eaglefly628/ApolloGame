@@ -2,7 +2,7 @@
 // 12 复刻屏验收：每屏 build() 产合法 Screen LayoutNode、renderNode 出非空 HTML、含关键文案；
 // 缺席按小时选屏；画廊菜单可建。确保 Designer 复刻屏全部可渲染、不回归。
 import { describe, it, expect } from 'vitest';
-import { renderNode } from '@ui/components/index.js';
+import { renderNode } from '@zerocraft/engine/ui/components/index.js';
 import { ZANKYOU } from '../theme.js';
 import { ALL_SCREENS, SCREEN_MAP, absenceScreenFor } from './index.js';
 

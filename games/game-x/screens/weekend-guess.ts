@@ -8,7 +8,7 @@
 //  全 LayoutNode 数据·Panel.bg 填设计稿精确 hex·Label 令牌字体/颜色·禁止手写 React/CSS。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { deviceShell } from '../device-frame.js';
 
 // ── 头部（标题微标 + 引导两行）─────────────────────────────────────────────

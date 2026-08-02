@@ -2,10 +2,10 @@
 // 蓝图真装载空跑（「能存必须能跑」编译期等价）· UI 骨架 LayoutNode 零 issue。
 // 淮安全套 conformance 全量在引擎 hand-pattern.test（36 测）——这里只验 game-a 自带 config 数据的正确性。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
-import { matchPattern, beats, legalResponses } from '@skills/tier3/index.js';
-import type { Card, GameFlow, Resource, CardPile, Flag } from '@engine/protocol/components.js';
-import { validateLayoutNode, type LayoutNode } from '@ui/components/index.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { matchPattern, beats, legalResponses } from '@zerocraft/engine/skills/tier3/index.js';
+import type { Card, GameFlow, Resource, CardPile, Flag } from '@zerocraft/engine/engine/protocol/components.js';
+import { validateLayoutNode, type LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import {
   buildDeck108, guandanConfig, cardCode, codeRank, codeSuit, sortHand,
   SEATS, DECK_SIZE, RANK_SMALL_JOKER, RANK_BIG_JOKER, SUIT_HEART, INITIAL_FUNDS, DRESS_TIERS,

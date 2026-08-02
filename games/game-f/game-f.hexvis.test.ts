@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { buildGameFBlueprint } from './blueprint.js';
 import { FAST, flag } from './game-f.helpers.js';
 import {

@@ -1,5 +1,5 @@
-import type { Card } from '@engine/protocol/components.js';
-import { mulberry32 } from '@atom-skills/random/index.js';
+import type { Card } from '@zerocraft/engine/engine/protocol/components.js';
+import { mulberry32 } from '@zerocraft/engine/atom-skills/random/index.js';
 import {
   startHand, act, legalActions, settle, initialPositions, nextLiveSeat,
   type BettingConfig, type HandState, type Action, type SeatId, type Positions,

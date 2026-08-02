@@ -1,4 +1,4 @@
-import { SynthAudioPort, type SfxSpec } from '@services/audio/index.js';
+import { SynthAudioPort, type SfxSpec } from '@zerocraft/engine/services/audio/index.js';
 
 // Game G 战斗音效（游戏部分·owner 2026-06-21）。
 // 数据驱动：每个事件 = 一段**纯数据**声音规格(SfxSpec)；引擎 SynthAudioPort 是把数据合成成声音的固定解释器。

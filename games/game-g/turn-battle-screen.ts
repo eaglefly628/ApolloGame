@@ -8,7 +8,7 @@ import { powerRows } from './game-g-clash-view.js'; // 战力逐行明细共享�
 import type { InlayEntry } from './dizhi-data.js';
 import { FONTS } from './fonts.js'; // 自托管字体（替代外部 Google Fonts <link>）
 import { heroNameOf } from './hero-codex.js'; // 场上牌悬浮显其对应武将名（owner 2026-06-21·数据已在 HERO_CARDS）
-import { renderNode, ensureUiKeyframes, type LayoutNode, type VisualEffect } from '@ui/components/index.js'; // 数据驱动 UI 库：HUD chrome 由 LayoutNode 描述、renderNode 出串（UI 铁律·战斗屏 HUD 迁移）。ensureUiKeyframes=手动注入 fx 关键帧（战斗走 renderNode+innerHTML 不经 mountUI·主程导出·REQ-UI-fx控件叠层②）
+import { renderNode, ensureUiKeyframes, type LayoutNode, type VisualEffect } from '@zerocraft/engine/ui/components/index.js'; // 数据驱动 UI 库：HUD chrome 由 LayoutNode 描述、renderNode 出串（UI 铁律·战斗屏 HUD 迁移）。ensureUiKeyframes=手动注入 fx 关键帧（战斗走 renderNode+innerHTML 不经 mountUI·主程导出·REQ-UI-fx控件叠层②）
 import { GG_BATTLE_THEME } from './ui-theme.js'; // 桥接 CSS 变量的引擎组件主题 → renderNode 片段随玄铁/锦霞皮自动换色
 import { textureOverrideUri, iconUri } from './art-textures.js'; // 对战屏背景板槽（台账 art-57 game-g/tex/battle-backdrop·批29 接线）+ 套装图标（07-15 dice/shield/mana 接线）
 import type { ClashDie3DHandle } from './clash-dice-3d.js'; // 掷命 3D 战力骰（引擎 ThreeRenderer + Transform3D/Mesh3D/Vfx3D 数据驱动·非 CSS 3D·owner 2026-07-03·REQ-3D-骰盅）·**动态 import**（three 600KB 只在首次掷命时才拉·不压 game-g 首屏）

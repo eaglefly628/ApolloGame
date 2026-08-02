@@ -5,8 +5,8 @@
 //   **真牌局（自家手牌·四家牌河·宝牌·结算）全部走 2D LayoutNode HUD**（play-ui.ts·牌面=真占位贴图·点牌即打），
 //   与 game-c「3D 牌房舞台 + 2D 牌面交互」同构，可靠、清晰、可点。
 // 全件走引擎 render-only 3D 组件（Mesh3D/Material3D/Camera3D/Light3D/Glow3D/Post3D）+ 种子 PRNG。
-import type { WorldBlueprint, EntityBlueprint } from '@assembly/demo.assembly.js';
-import { randomCapability } from '@atom-skills/index.js';
+import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import { randomCapability } from '@zerocraft/engine/atom-skills/index.js';
 import { U, TINT, CAM_MAIN } from './theme.js';
 import { wallLayout, sideHandLayout, SM_W, SM_H, SM_D, type Seat } from './tiles.js';
 

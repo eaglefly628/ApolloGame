@@ -130,7 +130,7 @@ def handle_settings_test(body: dict) -> dict:
     mock 直接成功；local 探 Ollama /api/version（2s 超时）；云 provider 发 max_tokens=8 的 ping。"""
     provider = str(body.get('provider') or '').strip()
     if provider == 'mock':
-        return {'ok': True} if _mock_enabled() else {'ok': False, 'error': 'mock provider 未启用（需 APOLLO_MOCK_LLM=1）'}
+        return {'ok': True} if _mock_enabled() else {'ok': False, 'error': 'mock provider 未启用（需 ZEROCRAFT_MOCK_LLM=1）'}
     if provider not in LLM_PROVIDERS:
         return {'ok': False, 'error': f'未知 provider: {provider}'}
     if provider == 'local':  # 本地 Ollama：探版本端点，2s 超时（未跑服务即快速失败）。

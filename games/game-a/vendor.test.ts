@@ -4,7 +4,7 @@
 // 两副 108 张=同 54 素材引两次（§5.1）。
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { parseAssetIndex, registerAssetIndex, AssetManager, StubAssetLoader } from '@assets/index.js';
+import { parseAssetIndex, registerAssetIndex, AssetManager, StubAssetLoader } from '@zerocraft/engine/assets/index.js';
 import { buildDeck108 } from './rules.js';
 import { cardAssetId, cardAssetUrl, CARD_BACK_ID } from './theme.js';
 

@@ -1,7 +1,7 @@
 // game101 ·《海港绯闻》暖色海港 UITheme（数据·换皮令牌）。
 // 来源=docs/design/game101/layout/game101-theme.tokens.json（GD 设计令牌）→ 落成正式引擎 UITheme。
 // 喂 mountUI/renderNode 即换皮：同一份 LayoutNode 数据、零改解释器（参照 game-g/ui-theme.ts 样板）。
-import type { UITheme } from '@ui/components/types.js';
+import type { UITheme } from '@zerocraft/engine/ui/components/types.js';
 
 export const GAME101_THEME: UITheme = {
   bg0: '#FFEFD8',

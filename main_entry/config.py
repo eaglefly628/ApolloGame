@@ -2,7 +2,7 @@
 import os
 import json
 
-from .sysutil import ROOT
+from .sysutil import ROOT, env
 
 # ── BYO-key 配置存储（.apollo-config.json·仓库根·已 gitignore）─────────────
 # 结构：{ "providers": { "<id>": { "apiKey"?: str, "model"?: str } }, "default"?: "<id>" }
@@ -43,7 +43,7 @@ def _config_model(pid: str):
 # capgap：agent 遇词表表达不了 → 产结构化能力提案（缺口→强模型下沉快速通道）。默认开、可关。
 # tsCarts：TS 例外卡带（打勾允许 logic.ts）。owner 07-13 转正：默认开=开关常驻卡带选项
 #   （打开时壳弹 warning 提示记债）；仍可全局关停：配置 {"features":{"tsCarts":false}}
-#   或环境 APOLLO_FEATURE_TSCARTS=0（配置可关原则不变）。
+#   或环境 ZEROCRAFT_FEATURE_TSCARTS=0（旧名 APOLLO_FEATURE_TSCARTS 过渡期仍读·配置可关原则不变）。
 _FEATURE_DEFAULTS = {'capgap': True, 'tsCarts': True}
 
 def _features() -> dict:
@@ -51,9 +51,9 @@ def _features() -> dict:
     cfg = cfg if isinstance(cfg, dict) else {}
     out = {}
     for k, dflt in _FEATURE_DEFAULTS.items():
-        env = os.environ.get(f'APOLLO_FEATURE_{k.upper()}')
-        if env is not None:
-            out[k] = env not in ('', '0', 'false', 'off')
+        envv = env(f'ZEROCRAFT_FEATURE_{k.upper()}')
+        if envv is not None:
+            out[k] = envv not in ('', '0', 'false', 'off')
         else:
             v = cfg.get(k)
             out[k] = bool(v) if isinstance(v, bool) else dflt

@@ -10,15 +10,15 @@
 //  SessionRecord.emotionTemp（跨会话持久），于是 Desk Mode 底部温度细线会因这次互动升温。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 import {
   resourceCapability,
   flagCapability,
   stateCapability,
   textCapability,
   randomCapability,
-} from '@atom-skills/index.js';
-import { dialogueCapability, DIALOGUE_FSM, type DialogueGraph } from '@skills/tier3/index.js';
+} from '@zerocraft/engine/atom-skills/index.js';
+import { dialogueCapability, DIALOGUE_FSM, type DialogueGraph } from '@zerocraft/engine/skills/tier3/index.js';
 import type { Companion } from './characters.js';
 
 export const R_WARMTH = 'warmth'; // 情感温度 0..100（本次互动累加，放回时回写 emotionTemp）

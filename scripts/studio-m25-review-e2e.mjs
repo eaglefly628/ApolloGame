@@ -1,6 +1,6 @@
 // scripts/studio-m25-review-e2e.mjs —— AI 生成人审门（M2.5·REQ-ART）真浏览器旅程（playwright-core）。
 // 用法：node scripts/studio-m25-review-e2e.mjs
-// 机制：起 apollo.py（vite:5173 + API:4000）→ 无头 chromium 走资源库 → ✨AI 生成 → 待审 → 审：
+// 机制：起 zerocraft.py（vite:5173 + API:4000）→ 无头 chromium 走资源库 → ✨AI 生成 → 待审 → 审：
 //   ① 资源库工具栏含「✨ AI 生成」+「🕒 待审区」入口
 //   ② 生成 → **待审态**（预览 + ✓入库/✕弃置·**无**「已生成并登记」直落文案）
 //   ③ ✕ 弃置 → 已弃置（reject·不入库·零仓库污染）
@@ -31,7 +31,7 @@ function step(label, cond, detail = '') {
 
 function killPorts() {
   for (const p of [5173, 4000]) { try { execSync(`fuser -k ${p}/tcp`, { stdio: 'ignore' }); } catch { /* none */ } }
-  try { execSync('pkill -f "apollo.py" || true', { stdio: 'ignore' }); } catch { /* none */ }
+  try { execSync('pkill -f "zerocraft.py" || true', { stdio: 'ignore' }); } catch { /* none */ }
 }
 
 async function waitPort(url, timeoutMs = 45000) {
@@ -58,15 +58,15 @@ try { mkdirSync(SHOTS, { recursive: true }); } catch { /* none */ }
 killPorts();
 await new Promise((r) => setTimeout(r, 800));
 
-const server = spawn('python3', ['apollo.py'], {
-  cwd: ROOT, env: { ...process.env, APOLLO_MOCK_LLM: '1' }, stdio: 'inherit', detached: true,
+const server = spawn('python3', ['zerocraft.py'], {
+  cwd: ROOT, env: { ...process.env, ZEROCRAFT_MOCK_LLM: '1' }, stdio: 'inherit', detached: true,
 });
 const shutdown = () => { try { process.kill(-server.pid, 'SIGTERM'); } catch { /* gone */ } killPorts(); };
 process.on('exit', shutdown);
 
 let browser;
 try {
-  step('apollo.py 起 vite:5173', await waitPort(VITE, 45000));
+  step('zerocraft.py 起 vite:5173', await waitPort(VITE, 45000));
   step('API:4000 就绪', await waitPort(`${API}/api/assets/pending`, 15000));
 
   browser = await chromium.launch({ headless: true, executablePath: EXEC, args: ['--no-sandbox'] });

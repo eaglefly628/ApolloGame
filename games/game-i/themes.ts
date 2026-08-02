@@ -3,9 +3,9 @@
 // 红线：游戏/测试场只填 UITheme 令牌（颜色/字体字符串，最弱 LLM 能填），
 // 不写 CSS/DOM。同一棵 LayoutNode + 不同令牌包 = 换皮（数据驱动·零改解释器）。
 
-import { SHELL } from '@ui/shell-theme.js';
-import { apolloToon } from '@ui/apollo-toon-theme.js';
-import type { UITheme } from '@ui/components/index.js';
+import { SHELL } from '@zerocraft/engine/ui/shell-theme.js';
+import { apolloToon } from '@zerocraft/engine/ui/apollo-toon-theme.js';
+import type { UITheme } from '@zerocraft/engine/ui/components/index.js';
 
 export { apolloToon };
 

@@ -3,13 +3,14 @@ import react from '@vitejs/plugin-react';
 import { resolve, extname, sep } from 'path';
 import { existsSync, statSync, createReadStream } from 'node:fs';
 import { copyUsedAssets } from './vite.assets';
+import { engineAliases } from './scripts/engine-aliases.mjs';
 
 // 开发期实况伺服 public/games/** 与 public/art/**（owner 07-15 根因·立绘大叉/图标不换）：
 // 这两处目录在下方 server.watch.ignored 里（避开 assets/ 3.7 万文件的启动监听风暴）。副作用是
 // Vite 内建 publicDir 中间件对**dev 启动后新建/上传的美术文件视而不见** → 请求落到 SPA 兜底
 // 返回 index.html（200 text/html）→ 浏览器把 HTML 当图片解码失败 → 立绘显示大叉、图标静默不换。
 // 工坊「⬆ 上传本地图 / ⚡ 生成」写盘即在这些目录下 → 正撞此坑。加一条前置中间件按盘直取（防穿越·
-// 与 apollo 的 _serve_public_games 同源同 content-type·no-cache），新文件无需重启 vite 即刻可见。
+// 与 zerocraft.py 的 _serve_public_games 同源同 content-type·no-cache），新文件无需重启 vite 即刻可见。
 const ASSET_CT: Record<string, string> = {
   '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp',
   '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml',
@@ -22,7 +23,7 @@ function serveLiveGameAssets() {
     '/art/': resolve(__dirname, 'public/art'),
   };
   return {
-    name: 'apollo-serve-live-game-assets',
+    name: 'zerocraft-serve-live-game-assets',
     configureServer(server: { middlewares: { use: (fn: (req: { url?: string }, res: { statusCode: number; setHeader: (k: string, v: string) => void; end: (b?: string) => void } & NodeJS.WritableStream, next: () => void) => void) => void } }) {
       // 直接 use（非返回后置钩子）→ 排在 Vite 内建中间件之前，抢在 SPA 兜底之前命中真文件。
       server.middlewares.use((req, res, next) => {
@@ -72,22 +73,14 @@ export default defineConfig({
         resolve(__dirname, 'docs') + '/**',
         resolve(__dirname, 'wiki') + '/**',
         resolve(__dirname, 'library') + '/**',
-        resolve(__dirname, '.apollo') + '/**',
+        resolve(__dirname, '.zerocraft') + '/**',
+        resolve(__dirname, '.apollo') + '/**', // 旧目录名过渡期兜底（REQ-PKG·去 Apollo 化）
       ],
     },
   },
   resolve: {
     alias: {
-      '@engine': resolve(__dirname, 'src/engine'),
-      '@skills': resolve(__dirname, 'src/skills'),
-      '@atom-skills': resolve(__dirname, 'src/skills/atoms'),
-      '@assets': resolve(__dirname, 'src/assets'),
-      '@services': resolve(__dirname, 'src/services'),
-      '@renderer': resolve(__dirname, 'src/renderer'),
-      '@ui': resolve(__dirname, 'src/ui'),
-      '@net': resolve(__dirname, 'src/net'),
-      '@runtime': resolve(__dirname, 'src/runtime'),
-      '@assembly': resolve(__dirname, 'src/assembly'),
+      ...engineAliases(__dirname),
       '@games': resolve(__dirname, 'games'),
     },
   },
@@ -123,11 +116,11 @@ export default defineConfig({
     //
     // 快/慢双车道（owner 2026-07-21·测试提速体检）：默认 `npm test`=快车道，排除下列
     // DEEP_GLOBS（冻结游戏 + 巨无霸整局通关 + 起子进程的工具测试·占全量 CPU 时间约一半却每次空转）；
-    // `npm run test:deep`（APOLLO_DEEP=1）=慢车道跑全部，发版前/定期用。缩范围只减「每次推」的负担、
-    // 不减总覆盖——慢车道仍是完整安全网。判据见 docs/playbooks/testing.md「双车道」。
+    // `npm run test:deep`（ZEROCRAFT_DEEP=1，旧名 APOLLO_DEEP 过渡期仍读）=慢车道跑全部，发版前/定期用。
+    // 缩范围只减「每次推」的负担、不减总覆盖——慢车道仍是完整安全网。判据见 docs/playbooks/testing.md「双车道」。
     exclude: [
       '**/node_modules/**', '**/dist/**', '**/.claude/**',
-      ...(process.env.APOLLO_DEEP === '1' ? [] : [
+      ...((process.env.ZEROCRAFT_DEEP ?? process.env.APOLLO_DEEP) === '1' ? [] : [
         'games/game-f/**', // 冻结游戏（owner 勿删勿迁）·26s/133 测·没人开发→只慢车道跑
         'games/game-g/flow-walk.test.ts', // 整局通关走查 8.4s/1 测·33 个单元文件已覆盖各片段
         'scripts/manifest-check.test.mjs', // 起进程跑 CLI 7.3s·库 manifest 校验（发版前跑够）

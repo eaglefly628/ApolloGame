@@ -1,4 +1,4 @@
-import { SynthMusicPort, type MusicTrack, type MusicNote } from '@services/audio/index.js';
+import { SynthMusicPort, type MusicTrack, type MusicNote } from '@zerocraft/engine/services/audio/index.js';
 
 // Game G 背景音乐（owner 2026-06-21）：3 首「非常轻柔·低音量」循环，数据驱动·零外部资产——
 // 引擎 SynthMusicPort 把音符表循环合成。曲=数据(频率/拍点/波形)，引擎=固定循环解释器。

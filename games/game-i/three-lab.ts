@@ -4,9 +4,9 @@
 // 当翻面角（flipAxis）。引擎 ThreeRenderer（同 CanvasRenderer 一样实现 RendererBackend，读同一份
 // collectRenderables）把它们渲成真 3D 场景，相机自适配取景。换后端即换维度，数据一字不改。
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
-import { transformCapability } from '@atom-skills/index.js';
-import { tweenCapability } from '@skills/tier1/index.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import { transformCapability } from '@zerocraft/engine/atom-skills/index.js';
+import { tweenCapability } from '@zerocraft/engine/skills/tier1/index.js';
 
 const TWO_PI = 6.28318;
 

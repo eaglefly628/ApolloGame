@@ -20,7 +20,7 @@
 
 - **`asset-manager` agent**：加贴图/模型/材质/图集/精灵表，维护 `assets/index.json`，按类型填 spec 元数据（贴图 usage/colorSpace、模型 scale…），把 key 接进渲染消费端。
 - **`resource-manager` 技能**（`.claude/skills/resource-manager`）：从共享库 vendor（copy）资源进游戏本地目录 + 登记本地索引；新增/编辑 material 数据资产；填贴图/网格 spec 闭集元数据。
-- **资产导入端点**（`apollo.py`）：`POST /api/assets/import`（导入登记）·`POST /api/assets/autotag`（视觉标注，tags 合并写回带 provenance.autotag 溯源）。
+- **资产导入端点**（`zerocraft.py`）：`POST /api/assets/import`（导入登记）·`POST /api/assets/autotag`（视觉标注，tags 合并写回带 provenance.autotag 溯源）。
 
 ## 4. 白皮书（本角色知识库）
 

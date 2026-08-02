@@ -2,7 +2,7 @@
 // 语义真相 = docs/design/game-a/gdd.md §2（淮安标准全套默认值表·owner 三轮拍板）。
 // 判型/压制序/逢人配的解释器 = 引擎 t3-hand-pattern（A-S1 条件②·游戏层禁自写判型）——
 // 本文件只提供它要吃的 config **数据**与牌码工具；发牌/轮转/结算的消费在 S4 玩法关接入。
-import type { HandPatternConfig } from '@skills/tier3/index.js';
+import type { HandPatternConfig } from '@zerocraft/engine/skills/tier3/index.js';
 
 // ── 牌码（card-pile 约定 code = suit*100 + rank）────────────────────────────────
 // suit：♠0 ♥1 ♦2 ♣3（protocol Card 约定）；rank：2..14（J=11 Q=12 K=13 A=14），小王 15、大王 16。

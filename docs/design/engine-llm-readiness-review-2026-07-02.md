@@ -30,7 +30,7 @@
 ## 二、引擎底座盘点（这部分是真金）
 
 - **78 个注册 capability**：29 原子（注释口径仍写 26，漂移）+ 8 tier1 + 31 tier2 + 9 tier3（`capability-registry.ts:57-111`）。
-- **纯 JSON manifest 闭环真实存在且设计正确**：`{capabilities, entities}` 纯 JSON 可表达、**塞不进函数**（`manifest.ts:36-107`）；能力目录自动导出喂 LLM（`capability-catalog.ts:28-43`，"零 prompt 维护"）；`apollo.py` 五路 LLM provider 生成 → parseManifest 校验 → 透视器可跑；**ZeroCraftBench** 无浏览器五轴体检，含确定性双跑同 hash（`zerocraft-bench.ts:7-23`）。
+- **纯 JSON manifest 闭环真实存在且设计正确**：`{capabilities, entities}` 纯 JSON 可表达、**塞不进函数**（`manifest.ts:36-107`）；能力目录自动导出喂 LLM（`capability-catalog.ts:28-43`，"零 prompt 维护"）；`zerocraft.py` 五路 LLM provider 生成 → parseManifest 校验 → 透视器可跑；**ZeroCraftBench** 无浏览器五轴体检，含确定性双跑同 hash（`zerocraft-bench.ts:7-23`）。
 - **UI 库 LayoutNode**：34 种控件闭集 + 全量自描述 catalog（喂 LLM/校验/样例三用）+ validateLayoutNode 五类校验；特效/颜色/字体全闭集枚举。
 - **测试面**：skills 88 个测试文件 9,492 行，测试:源码 ≈ 1.09:1；全仓 277 个测试文件。
 - **配套论证文档已存在**：`ai-data-editor.md`（LLM=受限表单填写器）、`weak-llm-thesis-redteam.md`（命题红队自审）——说明团队对命题风险有自觉。

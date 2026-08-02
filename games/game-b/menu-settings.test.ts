@@ -1,6 +1,6 @@
 // Game B ·《雀宴》设置屏 —— LayoutNode 校验 + 真接线（UI 铁律·治「设置=死键」的回归钉）。
 import { describe, it, expect } from 'vitest';
-import { validateLayoutNode, type LayoutNode } from '@ui/components/index.js';
+import { validateLayoutNode, type LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { buildSettings, defaultSettings, SET_SPEED, SET_LOGDEFAULT, SETTINGS_BACK } from './menu-settings.js';
 
 const collect = (n: LayoutNode, out: LayoutNode[] = []): LayoutNode[] => {

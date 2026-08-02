@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ggOnBattleWon, ggCloudSave, ggCloudLoad, __setGgPlatform } from './platform-hooks.js';
-import type { PlatformPort } from '@services/platform/index.js';
-import { resetMockSteamCloud } from '@services/storage/index.js';
+import type { PlatformPort } from '@zerocraft/engine/services/platform/index.js';
+import { resetMockSteamCloud } from '@zerocraft/engine/services/storage/index.js';
 
 function fakePort(): { port: PlatformPort; calls: string[] } {
   const calls: string[] = [];

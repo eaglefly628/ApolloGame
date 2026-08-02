@@ -8,11 +8,11 @@
 // 渲染（owner 2026-07-18 定稿·2D 视角 + 3D 物理筹码）：scene 层 = 3D 牌桌(陡俯视=2D 平面观感·椭圆呢面 + 一圈
 // 物理围栏墙)+ 3D 物理筹码（下注抛入池·速度力量随机·围栏挡住不滚出·主角堆越赢越高·build3d/chip3d·ThreeRenderer 消费）；
 // overlayHost 层 = 2D LayoutNode HUD（座位卡/公共牌/底池数/行动条·透明区透出 3D 桌）。无椅子。
-import { mountHost } from '@engine/host/mount-host.js';
-import { mountUI } from '@ui/components/index.js';
-import type { MountHandle, HandlerMap } from '@ui/components/index.js';
-import { Engine } from '@runtime/engine.js';
-import { ThreeRenderer } from '@renderer/three-renderer.js';
+import { mountHost } from '@zerocraft/engine/engine/host/mount-host.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { MountHandle, HandlerMap } from '@zerocraft/engine/ui/components/index.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { ThreeRenderer } from '@zerocraft/engine/renderer/three-renderer.js';
 import { FIELD_W, FIELD_H, ROOM_BG, WRAPPER_BG, GAME_C_THEME, OPPONENT_ANCHORS } from './theme.js';
 import { backdropUri, registerTextureOverrides, loadArtOverrides, loadSkinIndex, makeSkinAssets, buttonSkinsForTheme } from './art-overrides.js';
 import { type Lang, t, handName } from './strings.js';
@@ -20,10 +20,10 @@ import { buildTable, buildMenu, type TableView, type SeatView, type WardrobeView
 import { CLOTHING_ITEMS } from './wardrobe.js';
 import { bestOf7, HOLDEM_TYPE_ORDER } from './holdem-eval.js';
 import type { BettingConfig } from './betting-engine.js';
-import type { Card } from '@engine/protocol/components.js';
+import type { Card } from '@zerocraft/engine/engine/protocol/components.js';
 import { resolveSeatCharacters, buildSessionOut, personaFlavor, type GameCSessionIn, type GameCSessionOut, type SeatCharacter } from './characters.js';
 import { HoldemSession } from './game-session.js';
-import type { Component } from '@engine/core/types.js';
+import type { Component } from '@zerocraft/engine/engine/core/types.js';
 import { build3DTableBlueprint, POT3D } from './build3d.js';
 import { Chip3D } from './chip3d.js';
 import { gcAudio } from './sound.js';

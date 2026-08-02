@@ -9,8 +9,8 @@
 // 注意：画廊本体（gallery.ts）是 100% 数据；事件日志面板与换皮重挂属于宿主运行时，
 // 不是游戏数据——这正是契约里「工程师写 mountUI/host 层」该待的地方。
 
-import { mountUI, showToast, resolveBindings } from '@ui/components/index.js';
-import type { UITheme, UIDataSource, LayoutNode } from '@ui/components/index.js';
+import { mountUI, showToast, resolveBindings } from '@zerocraft/engine/ui/components/index.js';
+import type { UITheme, UIDataSource, LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { buildGallery, modalOverlay, drawerOverlay, INITIAL_CONTROLS, MODULE_NO, type ControlsState } from './gallery.js';
 import { buildHandlers } from './handlers.js';
 import { THEMES } from './themes.js';
@@ -19,12 +19,12 @@ import { applyPick, INITIAL_PICK, type PickState } from './pickcards.js';
 import { makeSoundPlayer, CHORDS } from './sounds.js';
 import { applyRawInput, INITIAL_INPUT, resolveSignal, type InputLabState, type RawInputData } from './input-lab.js';
 import { INITIAL_AISHE, SAMPLE_PROMPT, type AisheState } from './video-lab.js';
-import { NullAishePort } from '@services/aigp/index.js';
-import { Engine } from '@runtime/engine.js';
-import { CanvasRenderer } from '@renderer/index.js';
-import { ThreeRenderer } from '@renderer/three-renderer.js';
-import type { RendererBackend } from '@engine/core/types.js';
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
+import { NullAishePort } from '@zerocraft/engine/services/aigp/index.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { CanvasRenderer } from '@zerocraft/engine/renderer/index.js';
+import { ThreeRenderer } from '@zerocraft/engine/renderer/three-renderer.js';
+import type { RendererBackend } from '@zerocraft/engine/engine/core/types.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 import { animBlueprint } from './anim-lab.js';
 import { aiBlueprint } from './ai-lab.js';
 import { threeBlueprint } from './three-lab.js';
@@ -34,7 +34,7 @@ import { spawnBlueprint } from './spawn-lab.js';
 import { fxBlueprint } from './fx-lab.js';
 import { fsmBlueprint } from './fsm-lab.js';
 import { light3dBlueprint, post3dBlueprint, nav3dBlueprint, collide3dBlueprint, particle3dBlueprint, text3dBlueprint, ao3dBlueprint, vfx3dBlueprint, material3dBlueprint, fog3dBlueprint, pointlight3dBlueprint, surface3dBlueprint, model3dBlueprint, primitives3dBlueprint, worldui3dBlueprint, toon3dBlueprint, billboard3dBlueprint, path3dBlueprint, spring3dBlueprint } from './three3d.js';
-import { AssetManager, ModelAssetLoader } from '@assets/index.js';
+import { AssetManager, ModelAssetLoader } from '@zerocraft/engine/assets/index.js';
 import { GAME_I_ASSETS } from './assets3d.js';
 
 // 渲染/仿真模块 → 蓝图 + 渲染后端（canvas/three）。进模块时宿主在 #sim-stage 上 init 引擎实时绘制。

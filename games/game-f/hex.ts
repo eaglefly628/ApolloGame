@@ -9,8 +9,8 @@
 // **7×8 = 56 格错位矩形（用户 2026-06-11 钦定金铲铲真规格）**：单边 4×7、中线 r3/r4；
 // 每个居中格恰 6 邻接——贴脸/包抄/光环范围的数理底座。摆子数据用视觉 (col,row)，
 // 经 offsetToAxial 换算成 sim 的 axial (q,r)。（旧 12×12=144 格是注释与实现失配的历史错版。）
-import type { EntityBlueprint } from '@assembly/demo.assembly.js';
-import { offsetToAxial } from '@skills/tier2/hex.js';
+import type { EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import { offsetToAxial } from '@zerocraft/engine/skills/tier2/hex.js';
 
 export { offsetToAxial }; // 供 blueprint/测试以视觉 (col,row) 摆子
 export const COLS = 7;

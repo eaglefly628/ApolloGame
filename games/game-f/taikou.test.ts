@@ -3,9 +3,9 @@ import { TAIKOU_BEACHHEAD, TAIKOU_KOKUJIN, TAIKOU_BOSS, TAIKOU_ROSTER, STAGE_UNI
 import { GAME_F_TEMPLATES } from './combat.js';
 import { F_TAIKOU } from './assets.js';
 import { PVE_COMP } from './stages.js';
-import { Engine } from '@runtime/engine.js';
-import { getComponentById } from '@engine/core/query.js';
-import { instantiate } from '@skills/tier3/index.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { getComponentById } from '@zerocraft/engine/engine/core/query.js';
+import { instantiate } from '@zerocraft/engine/skills/tier3/index.js';
 import { buildGameFBlueprint } from './blueprint.js';
 import { TEAM_B, FROZEN, BUSHO, BOW } from './constants.js';
 import { FAST } from './game-f.helpers.js';

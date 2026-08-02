@@ -1,10 +1,10 @@
-import type { WorldBlueprint, EntityBlueprint } from '@assembly/demo.assembly.js';
-import type { PrefabTemplate } from '@engine/protocol/components.js';
-import { overlapDetectCapability } from '@skills/atoms/overlap-detect/index.js';
-import { destroyCapability } from '@skills/atoms/destroy/index.js';
-import { timerCapability } from '@skills/atoms/timer/index.js';
-import { resourceCapability } from '@atom-skills/index.js';
-import { lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, motionApplyCapability, tweenCapability } from '@skills/tier1/index.js';
+import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import type { PrefabTemplate } from '@zerocraft/engine/engine/protocol/components.js';
+import { overlapDetectCapability } from '@zerocraft/engine/skills/atoms/overlap-detect/index.js';
+import { destroyCapability } from '@zerocraft/engine/skills/atoms/destroy/index.js';
+import { timerCapability } from '@zerocraft/engine/skills/atoms/timer/index.js';
+import { resourceCapability } from '@zerocraft/engine/atom-skills/index.js';
+import { lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, motionApplyCapability, tweenCapability } from '@zerocraft/engine/skills/tier1/index.js';
 import {
   trayCapability,
   steeringCapability,
@@ -27,8 +27,8 @@ import {
   gridMoveCapability,
   dragPlaceCapability,
   ZONE_FLAG,
-} from '@skills/tier2/index.js';
-import { prefabCapability, casterCapability, aggroCapability, flowCapability, mergeRuleCapability } from '@skills/tier3/index.js';
+} from '@zerocraft/engine/skills/tier2/index.js';
+import { prefabCapability, casterCapability, aggroCapability, flowCapability, mergeRuleCapability } from '@zerocraft/engine/skills/tier3/index.js';
 import { F_HERO, F_FX_STRIKE, F_HEX_WARM, F_HEX_COOL, F_PEDESTAL, F_THRONE } from './assets.js';
 import { boardEntities, project, offsetToAxial, COLS, ROWS, TILE, ORIGIN_X, ORIGIN_Y, LAYOUT } from './hex.js';
 // 拆分（基于完整代码，干净重做）：常量/助手 → constants.ts；英雄名册/阵营/装备 → heroes.ts；

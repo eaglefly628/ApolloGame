@@ -2,16 +2,16 @@
 // 职责（都在 sim 外）：建 Engine + CanvasRenderer + 键盘输入源（WASD→move 命令·net applyCommands）；
 // 把 world 资源/流程投影进 LayoutNode HUD；胜负浮层；重开；响应式缩放；皮肤资产；cleanup。
 // 玩法规则一律在 blueprint.ts 的数据 + 引擎能力里（见其头注）。相机=引擎 camera-follow（play-field 卷动）。
-import { Engine } from '@runtime/engine.js';
-import { CanvasRenderer } from '@renderer/index.js';
-import { AssetManager, ImageAssetLoader, parseAssetIndex, registerAssetIndex } from '@assets/index.js';
-import { KeyboardInputSource, QueuedInputSource, MultiInputSource } from '@net/index.js';
-import { mountUI } from '@ui/components/index.js';
-import type { MountHandle, HandlerMap } from '@ui/components/index.js';
-import type { Resource, GameFlow } from '@engine/protocol/components.js';
-import { mountHost } from '@engine/host/mount-host.js';
-import { rollOffer, applyPick } from '@skills/tier2/index.js';
-import type { DraftCandidate, DraftState } from '@skills/tier2/index.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { CanvasRenderer } from '@zerocraft/engine/renderer/index.js';
+import { AssetManager, ImageAssetLoader, parseAssetIndex, registerAssetIndex } from '@zerocraft/engine/assets/index.js';
+import { KeyboardInputSource, QueuedInputSource, MultiInputSource } from '@zerocraft/engine/net/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { MountHandle, HandlerMap } from '@zerocraft/engine/ui/components/index.js';
+import type { Resource, GameFlow } from '@zerocraft/engine/engine/protocol/components.js';
+import { mountHost } from '@zerocraft/engine/engine/host/mount-host.js';
+import { rollOffer, applyPick } from '@zerocraft/engine/skills/tier2/index.js';
+import type { DraftCandidate, DraftState } from '@zerocraft/engine/skills/tier2/index.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildHud, buildResult, buildLevelUp, COMBO_MIN, type HudState, type LevelUpOffer } from './hud.js';
 import { newlyUnlocked, loadUnlocked, saveUnlocked, type RunStats } from './achievements.js';

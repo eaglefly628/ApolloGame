@@ -1,23 +1,23 @@
 """Mock provider + Mock 响应 + Mock 设计流响应 + mock 计数器/染色（写穿透属主）。"""
-import os
 import json
 
 from .blueprints import PRESET_BLUEPRINTS
 from .design_prompts import DESIGN_CHAT_SYSTEM, DESIGN_REVISE_SYSTEM, _DESIGN_BREAKDOWN_HEAD
+from .sysutil import env
 
 # ── Mock provider（测试基建·仅 env 开启时可见）─────────────────────────
-# APOLLO_MOCK_LLM=1 → providers 多一个恒 available 的 'mock'：generate 回内置合法 manifest、
-# revise 对传入 manifest 做一处确定性小改（改首个实体 Color.tint）、回显完整 JSON。供冒烟/e2e
-# 无 API key 可跑全链路。APOLLO_MOCK_BAD_N=<n> → 前 n 次响应回坏 JSON（测服务端 autofix 重试）。
-# mock 绝不进默认 providers 列表（无 env 时对生产完全不可见）。
+# ZEROCRAFT_MOCK_LLM=1（旧名 APOLLO_MOCK_LLM 过渡期仍读）→ providers 多一个恒 available 的 'mock'：
+# generate 回内置合法 manifest、revise 对传入 manifest 做一处确定性小改（改首个实体 Color.tint）、
+# 回显完整 JSON。供冒烟/e2e 无 API key 可跑全链路。ZEROCRAFT_MOCK_BAD_N=<n> → 前 n 次响应回坏
+# JSON（测服务端 autofix 重试）。mock 绝不进默认 providers 列表（无 env 时对生产完全不可见）。
 def _mock_enabled() -> bool:
-    return os.environ.get('APOLLO_MOCK_LLM', '') in ('1', 'true', 'yes')
+    return env('ZEROCRAFT_MOCK_LLM', default='') in ('1', 'true', 'yes')
 
 # 剩余「坏 JSON」次数（进程级可变状态；autofix 回路每消费一次自减）。
-_MOCK_BAD_REMAINING = int(os.environ.get('APOLLO_MOCK_BAD_N') or 0)
+_MOCK_BAD_REMAINING = int(env('ZEROCRAFT_MOCK_BAD_N') or 0)
 # 剩余「校验不过的 manifest」次数：产**合法 JSON 但含未知能力**（驱动 manifest-check 失败 →
 # 服务端错误指令化 + 词汇族扩 + 轮次裁剪回路，弱模基准自证用）。每消费一次自减。
-_MOCK_BAD_MANIFEST_REMAINING = int(os.environ.get('APOLLO_MOCK_BAD_MANIFEST_N') or 0)
+_MOCK_BAD_MANIFEST_REMAINING = int(env('ZEROCRAFT_MOCK_BAD_MANIFEST_N') or 0)
 # mock 修订用的确定性染色目标（与常见预设色不同 → 测试可断言「确实改了」）。
 _MOCK_REVISE_TINT = 0xff0000
 

@@ -1,4 +1,4 @@
-import { SynthAudioPort, SynthMusicPort, type SfxSpec, type MusicTrack, type MusicNote } from '@services/audio/index.js';
+import { SynthAudioPort, SynthMusicPort, type SfxSpec, type MusicTrack, type MusicNote } from '@zerocraft/engine/services/audio/index.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  game-c ·《六人德州》声音（owner 2026-07-18「没发现游戏有音乐」）——声音=数据（音频手册铁律）。

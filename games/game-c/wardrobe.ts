@@ -1,4 +1,4 @@
-import type { EntityBlueprint } from '@assembly/demo.assembly.js';
+import type { EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  game-c ·《六人德州》衣物典当接线（GDD §3.5·capability-plan §2 craft-recipe 行）

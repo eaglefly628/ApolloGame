@@ -12,7 +12,7 @@
 //    暖橙 #ffd9a8 你的字→warn / 琥珀 #caa05a·#ffb000→gold。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { deviceShell } from '../device-frame.js';
 import { svgUri } from '../scenes.js';
 

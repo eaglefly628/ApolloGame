@@ -1,6 +1,6 @@
 // Game I · 组合演示「选牌计分」测试——证伪「多选是缺口」+ 验证新能力进了数据。
 import { describe, it, expect } from 'vitest';
-import { renderNode } from '@ui/components/index.js';
+import { renderNode } from '@zerocraft/engine/ui/components/index.js';
 import { onyx } from './themes.js';
 import { buildPickHand, applyPick, evalHand, HAND, MAX_PICK, INITIAL_PICK, type PickState } from './pickcards.js';
 

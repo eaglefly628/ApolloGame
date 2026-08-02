@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
-import { applyCommands, QueuedInputSource } from '@net/index.js';
-import { validateLayoutNode } from '@ui/components/index.js';
-import type { Resource, Tag, GameFlow } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { applyCommands, QueuedInputSource } from '@zerocraft/engine/net/index.js';
+import { validateLayoutNode } from '@zerocraft/engine/ui/components/index.js';
+import type { Resource, Tag, GameFlow } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildTopBar, buildBottomBar, buildOverlay, type HudState } from './hud.js';
 import { ENEMY, TOWER, TICKET, START_GOLD, TOWERS, PAD_SPOTS, WAVE_SCHEDULE } from './theme.js';

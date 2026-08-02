@@ -1,8 +1,8 @@
-import type { WorldBlueprint, EntityBlueprint } from '@assembly/demo.assembly.js';
-import type { Card } from '@engine/protocol/components.js';
-import { resourceCapability, flagCapability, stringVariableCapability } from '@atom-skills/index.js';
-import { eventWhenCapability, effectApplyCapability } from '@skills/tier2/index.js';
-import { pokerHandCapability, cardScoringCapability } from '@skills/tier3/index.js';
+import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import type { Card } from '@zerocraft/engine/engine/protocol/components.js';
+import { resourceCapability, flagCapability, stringVariableCapability } from '@zerocraft/engine/atom-skills/index.js';
+import { eventWhenCapability, effectApplyCapability } from '@zerocraft/engine/skills/tier2/index.js';
+import { pokerHandCapability, cardScoringCapability } from '@zerocraft/engine/skills/tier3/index.js';
 import { HAND_RANKINGS, type HandType } from './hand-rankings.js';
 import { RANK_ORDER, type Card as DataCard } from './deck.js';
 import { ENCHANTS } from './enchants.js';

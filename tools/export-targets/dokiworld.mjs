@@ -362,6 +362,8 @@ export default defineConfig({
   plugins: [react(), flattenPublicGames()],
   resolve: {
     alias: {
+      // 旧短别名（src/game/** 里迁自引擎 src/ 内部的文件仍用它，未改）+ 新包名子路径
+      // （该游戏自己的入口文件用它，见 REQ-PKG-位置无关与正名）——两者并存，目标目录相同。
       '@engine': resolve(__dirname, 'src/game/engine'),
       '@skills': resolve(__dirname, 'src/game/skills'),
       '@atom-skills': resolve(__dirname, 'src/game/skills/atoms'),
@@ -372,6 +374,16 @@ export default defineConfig({
       '@net': resolve(__dirname, 'src/game/net'),
       '@runtime': resolve(__dirname, 'src/game/runtime'),
       '@assembly': resolve(__dirname, 'src/game/assembly'),
+      '@zerocraft/engine/engine': resolve(__dirname, 'src/game/engine'),
+      '@zerocraft/engine/skills': resolve(__dirname, 'src/game/skills'),
+      '@zerocraft/engine/atom-skills': resolve(__dirname, 'src/game/skills/atoms'),
+      '@zerocraft/engine/assets': resolve(__dirname, 'src/game/assets'),
+      '@zerocraft/engine/services': resolve(__dirname, 'src/game/services'),
+      '@zerocraft/engine/renderer': resolve(__dirname, 'src/game/renderer'),
+      '@zerocraft/engine/ui': resolve(__dirname, 'src/game/ui'),
+      '@zerocraft/engine/net': resolve(__dirname, 'src/game/net'),
+      '@zerocraft/engine/runtime': resolve(__dirname, 'src/game/runtime'),
+      '@zerocraft/engine/assembly': resolve(__dirname, 'src/game/assembly'),
     },
   },
   build: { outDir: 'dist', emptyOutDir: true },

@@ -3,7 +3,7 @@
 > **目标**：把**整套创作平台**（python 后端引擎 + 工坊/创作台前端 + 精选游戏）打成**一个自包含、双击即跑的 Mac app**——客户机器**不装 node/python、不配环境**。面向：给客户/评估者在**他自己 Mac** 上完整跑引擎（含工坊现场创作）。
 
 ## 三决策（owner 2026-07-26·锁定）
-1. **随包带「完全独立的 Python」**（可搬迁 standalone python + 预建 venv·**非 PyInstaller**·原生依赖 PIL/模型 SDK 走正常 pip、不折腾冻结）。electron 启动时 spawn 内置 python 跑 `apollo.py`。
+1. **随包带「完全独立的 Python」**（可搬迁 standalone python + 预建 venv·**非 PyInstaller**·原生依赖 PIL/模型 SDK 走正常 pip、不折腾冻结）。electron 启动时 spawn 内置 python 跑 `zerocraft.py`。
 2. **🔴 零 key 打包（安全红线·不可破）**：**任何我们的 key 绝不进产物**（生图/ARK/LLM 全不烤入）。运行时 **BYO-key**——owner 把生图 key **线下**给指定客户、客户首启粘贴；LLM 对话为**可选展示**（不给也行·或客户用自己的 Deepseek）。**无 key → 平台 UI + 精选游戏照常跑·live 生成/出图优雅禁用**（不是崩·是灰掉 + 提示填 key）。key 只存运行时 gitignored 配置（`.env`/settings·同现 BYO-key 机制）。
 3. **精选构建**：**全部工坊工具 + 创作平台**（不裁）+ **9 游戏白名单**（其余 build 期过滤掉·不入包、不占体积、不露内部 WIP）。
 
@@ -12,14 +12,14 @@
 **排除**：game-f / game-x / game-d / game-q / game-t / game-a。
 
 ## 架构
-Electron app 内含：① 静态前端（vite build·launcher GAMES 按白名单过滤）② 可搬迁 python + 预建 venv（后端全依赖）③ 后端源码 `apollo.py`+`main_entry/`（全工具·不裁）④ 9 游戏数据/资产。
-**启动流**：electron `main.cjs` → 挑空端口 spawn 内置 python 跑 `apollo.py` → 健康检查 → 前端 API base 指向它 → loadURL；退出时 kill 后端。**首启 BYO-key 引导**（填 or 跳过=离线模式）。**游戏永远离线可玩**（不依赖后端）。
+Electron app 内含：① 静态前端（vite build·launcher GAMES 按白名单过滤）② 可搬迁 python + 预建 venv（后端全依赖）③ 后端源码 `zerocraft.py`+`main_entry/`（全工具·不裁）④ 9 游戏数据/资产。
+**启动流**：electron `main.cjs` → 挑空端口 spawn 内置 python 跑 `zerocraft.py` → 健康检查 → 前端 API base 指向它 → loadURL；退出时 kill 后端。**首启 BYO-key 引导**（填 or 跳过=离线模式）。**游戏永远离线可玩**（不依赖后端）。
 
 ## 一周排期
 | 天 | 内容 | 风险 |
 |---|---|---|
 | **D1** | 可复现地基：生成 `requirements.txt`（现无·扫 import 固化）+ 干净 venv `pip install` 跑通 + 锁 node 依赖 | 低·先决 |
-| **D2** | 可搬迁 python spike：standalone python + venv 装全依赖 → 手动 spawn `apollo.py` API 跑通（原生依赖 PIL/模型 SDK 坐实） | 中 |
+| **D2** | 可搬迁 python spike：standalone python + venv 装全依赖 → 手动 spawn `zerocraft.py` API 跑通（原生依赖 PIL/模型 SDK 坐实） | 中 |
 | **D3** | electron 编排：spawn 后端 + 健康检查 + 前端 API base + 优雅退出 | 低（有 loadFile 先例） |
 | **D4** | BYO-key 首启 UX + 无 key 优雅降级（游戏照玩·生成灰掉）+ GAMES 白名单过滤 | 低 |
 | **D5** | electron-builder mac「整套平台」目标（现为单游戏）+ 体积 + Gatekeeper（无 Apple 账号→右键打开·要顺滑得公证=开账号） | 中（签名/公证） |

@@ -1,4 +1,4 @@
-import type { UITheme } from '@ui/components/types.js';
+import type { UITheme } from '@zerocraft/engine/ui/components/types.js';
 import { textureOverrideUri } from './art-textures.js';
 
 // 主题级按钮皮（批29 owner 07-15「按键也可换」）：台账 game-g/ui/btn-* 三行 → 引擎 UITheme.buttonSkins，

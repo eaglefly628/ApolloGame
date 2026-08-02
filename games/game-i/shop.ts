@@ -6,7 +6,7 @@
 // 宿主（game-i.ts）只负责：持有 state、把信号喂给 applyShop、按返回值弹 Toast、重挂。
 // 联动（过滤/选中/合计/买得起与否）全从「状态的纯函数」涌现，不写命令式 UI 代码。
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 
 export type ShopCat = 'all' | 'weapon' | 'armor' | 'potion';
 

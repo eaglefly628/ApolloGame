@@ -9,14 +9,14 @@
 // 视图现状（点选先行装配·owner 2026-07-16）：BoardCell=色块 tile（match-view-sync 写 Color.tint）；
 //   特殊棋子外观/格层实时视图/选中高亮/手感动画 = REQ-M3-三期①④（挂起待 owner 拉起）落地后接——
 //   格层在此先以静态摆盘参考色呈现（进度看 HUD 活计数），缺口台账见 docs/design/game-t/requests.md。
-import type { WorldBlueprint, EntityBlueprint } from '@assembly/demo.assembly.js';
-import type { ConditionExpr } from '@engine/protocol/components.js';
+import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import type { ConditionExpr } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   transformCapability, shapeCapability, colorCapability,
   resourceCapability, flagCapability, randomCapability,
-} from '@atom-skills/index.js';
-import { clickableCapability, match3DragSwapCapability } from '@skills/tier2/index.js';
-import { match3BoardCapability, flowCapability } from '@skills/tier3/index.js';
+} from '@zerocraft/engine/atom-skills/index.js';
+import { clickableCapability, match3DragSwapCapability } from '@zerocraft/engine/skills/tier2/index.js';
+import { match3BoardCapability, flowCapability } from '@zerocraft/engine/skills/tier3/index.js';
 import { type LevelSpec, parseLayout, goalRequirements } from './levels.js';
 import {
   CELL, TILE, STEP_DELAY, SETTLE_TICKS, SCORE_PER_TILE,

@@ -1,6 +1,6 @@
 // scripts/studio-design-draft-e2e.mjs —— BUG-STUDIO-设计中间态丢失 真浏览器验收（playwright-core + mock）。
 // 用法：node scripts/studio-design-draft-e2e.mjs
-// 机制：APOLLO_MOCK_LLM=1 起 apollo.py（vite:5173 + API:4000）→ 无头 chromium 走三例：
+// 机制：ZEROCRAFT_MOCK_LLM=1 起 zerocraft.py（vite:5173 + API:4000）→ 无头 chromium 走三例：
 //   A) 两轮讨论(mock) → 刷新页面 → 未完成草稿列表 → 一键恢复 → 线程完整回来（刷新永不丢）。
 //   B) 聊天框裸 Enter 不发送/不触发相变（只换行）；Ctrl+Enter 才发送。
 //   C) provider 失败（route 注入错误）→ 红条报错 + 线程原样保留（失败不降级）。
@@ -16,7 +16,7 @@ const { chromium } = require('playwright-core');
 const EXEC = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const VITE = 'http://localhost:5173';
 const API = 'http://localhost:4000';
-const DRAFTS_DIR = new URL('../.apollo/design-drafts/', import.meta.url);
+const DRAFTS_DIR = new URL('../.zerocraft/design-drafts/', import.meta.url);
 
 let PASS = 0, FAIL = 0;
 function step(label, cond, detail = '') {
@@ -25,7 +25,7 @@ function step(label, cond, detail = '') {
 }
 function killPorts() {
   for (const p of [5173, 4000]) { try { execSync(`fuser -k ${p}/tcp`, { stdio: 'ignore' }); } catch { /* none */ } }
-  try { execSync('pkill -f "apollo.py" || true', { stdio: 'ignore' }); } catch { /* none */ }
+  try { execSync('pkill -f "zerocraft.py" || true', { stdio: 'ignore' }); } catch { /* none */ }
 }
 function cleanDrafts() { try { rmSync(DRAFTS_DIR, { recursive: true, force: true }); } catch { /* none */ } }
 function cleanLibrary() {
@@ -57,9 +57,9 @@ cleanDrafts();
 cleanLibrary();
 await new Promise((r) => setTimeout(r, 800));
 
-const server = spawn('python3', ['apollo.py'], {
+const server = spawn('python3', ['zerocraft.py'], {
   cwd: new URL('..', import.meta.url),
-  env: { ...process.env, APOLLO_MOCK_LLM: '1' },
+  env: { ...process.env, ZEROCRAFT_MOCK_LLM: '1' },
   stdio: 'inherit',
   detached: true,
 });
@@ -69,7 +69,7 @@ process.on('exit', shutdown);
 let browser;
 try {
   const up = await waitPort(VITE, 45000);
-  step('apollo.py 起服务（vite:5173）', up, 'vite 未就绪');
+  step('zerocraft.py 起服务（vite:5173）', up, 'vite 未就绪');
   if (!up) throw new Error('vite not ready');
   step('API:4000 就绪', await waitPort(`${API}/api/generate/providers`, 15000));
 

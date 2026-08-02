@@ -22,8 +22,8 @@ function log(msg) { process.stdout.write(`[platform-launch-smoke] ${msg}\n`); }
 
 async function main(argv) {
   const backendDir = resolve(argv[0] || join(ROOT, 'platform-dist'));
-  if (!existsSync(join(backendDir, 'apollo.py'))) {
-    throw new Error(`后端目录缺 apollo.py：${backendDir}（先跑 node scripts/build-platform.mjs）`);
+  if (!existsSync(join(backendDir, 'zerocraft.py'))) {
+    throw new Error(`后端目录缺 zerocraft.py：${backendDir}（先跑 node scripts/build-platform.mjs）`);
   }
 
   log(`resolvePythonBin(null) → dev/Linux 回退系统 python3（resourcesPath 传 null 模拟未打包态）…`);

@@ -1,8 +1,8 @@
 // Game F · 战斗模板库（从 blueprint.ts 拆出）：普攻/弹道/大招打击区 + 棋子复合体 + 席位/野怪/结算/商店卡模板。
 // 全数据装配：strike/projectile/ultTemplate 是 PrefabTemplate 工厂；templatesFor 按当局 ROSTER 批量铺开三张/英雄。
-import type { PrefabTemplate } from '@engine/protocol/components.js';
-import type { EntityBlueprint } from '@assembly/demo.assembly.js';
-import { ZONE_FLAG } from '@skills/tier2/index.js';
+import type { PrefabTemplate } from '@zerocraft/engine/engine/protocol/components.js';
+import type { EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import { ZONE_FLAG } from '@zerocraft/engine/skills/tier2/index.js';
 import {
   TEAM_A, TEAM_B, SHU_RED, WEI_BLUE, FROZEN, ASSASSIN, PROTAG, LOOT, BAG, EQUIP, BENCH_OCC, MARKER_VIS, RESULT, PROJ,
   MOVE_PERIOD, ATK_CD, MANA_REGEN, FONT_DISPLAY, FONT_BODY, FONT_NUM, xf, sprite, zlift,

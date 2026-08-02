@@ -5,12 +5,12 @@
 // 尺寸按关升：5×5 教学 → 6/7/8×8（8 是选项非固定）。菜单先选关。功能格词表（火力/加时/引爆/弹药）= 会长大的东西·加行即扩展。
 //
 // ⚠ 一次性手感原型（宿主胶水·render-only·非数据驱动正式版）。物理/运动全**自管每帧积分**(非 cannon-es)→ 零冻结。
-import { Engine } from '@runtime/engine.js';
-import { QueuedInputSource } from '@net/index.js';
-import { ThreeRenderer } from '@renderer/three-renderer.js';
-import type { WorldBlueprint, EntityBlueprint } from '@assembly/demo.assembly.js';
-import type { Transform3D, Pivot3D } from '@engine/protocol/components.js';
-import { AssetManager, ImageAssetLoader, ModelAssetLoader, registerAssetIndex, parseAssetIndex } from '@assets/index.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { QueuedInputSource } from '@zerocraft/engine/net/index.js';
+import { ThreeRenderer } from '@zerocraft/engine/renderer/three-renderer.js';
+import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import type { Transform3D, Pivot3D } from '@zerocraft/engine/engine/protocol/components.js';
+import { AssetManager, ImageAssetLoader, ModelAssetLoader, registerAssetIndex, parseAssetIndex } from '@zerocraft/engine/assets/index.js';
 
 const PITCH = 33, VOX = 33; // 体素尺寸固定（立方随 N 变大·相机距离按 N 缩放 → 屏上观感一致）
 const FACE_MS = 6000;     // 每面总停留（含换色窗 + 开火窗）

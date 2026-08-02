@@ -8,7 +8,7 @@ import type { CapabilityDefinition } from '@engine/core/define-capability.js';
 //  "最弱 LLM 也能产对数据"那把尺子）。改为从 ALL_CAPABILITIES 自动派生：任何能力（hitbox/prefab/
 //  未来的）一登记进注册表，就自动对生成器可见，零 prompt 维护。单一真相 = 能力的 describe。
 //
-//  确定性/纯函数：只读 describe 元数据，无副作用。供 apollo.py 生成 prompt、studio、文档共用。
+//  确定性/纯函数：只读 describe 元数据，无副作用。供 zerocraft.py 生成 prompt、studio、文档共用。
 // ═══════════════════════════════════════════════════════════════
 
 export interface CatalogOptions {

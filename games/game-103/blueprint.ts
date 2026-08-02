@@ -12,20 +12,20 @@
 //   等级     = t2-event-when(xp>=阈值 edge)→signal → t2-effect-apply(扣阈值/等级+1/治疗/power+·固定强化占位)
 //   计时/胜负= clock 资源(t2-over-time 每秒+1) + t3-flow(hp<=0 败 / 活满 15:00 胜)
 // 能力总览：docs/design/game-103/capability-plan.md。（E1–E4 编排=三选一 draft/进化/波次 director 待 Lead 签 S2·未接。）
-import type { WorldBlueprint, EntityBlueprint } from '@assembly/demo.assembly.js';
+import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 import {
   transformCapability, hierarchyCapability, velocityCapability, shapeCapability,
   overlapDetectCapability, timerCapability, resourceCapability, tagCapability,
   relationCapability, destroyCapability, colorCapability, controllableCapability, cameraCapability,
-} from '@atom-skills/index.js';
-import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, tweenCapability } from '@skills/tier1/index.js';
+} from '@zerocraft/engine/atom-skills/index.js';
+import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, tweenCapability } from '@zerocraft/engine/skills/tier1/index.js';
 import {
   boundsClampCapability, triggerZoneCapability, eventWhenCapability, effectApplyCapability,
   cameraFollowCapability, hitboxCapability, overTimeCapability, mortalCapability,
   steeringCapability, launchCapability, selfRuleCapability, collisionResolveCapability,
-} from '@skills/tier2/index.js';
-import { keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, orbitAt, animStateCapability, modifierStackCapability, statBindCapability, faceRotateCapability } from '@skills/tier2/index.js';
-import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
+} from '@zerocraft/engine/skills/tier2/index.js';
+import { keybindCapability, gaugeCapability, groupCountCapability, orbitMotionCapability, orbitAt, animStateCapability, modifierStackCapability, statBindCapability, faceRotateCapability } from '@zerocraft/engine/skills/tier2/index.js';
+import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@zerocraft/engine/skills/tier3/index.js';
 import {
   VIEW_W, VIEW_H, ARENA, START, TPS, MATCH_SECONDS,
   PLAYER, ENEMY, ZONE, COLLECTOR, KILLBOX, GEM, CL, TINT,

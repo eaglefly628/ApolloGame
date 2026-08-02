@@ -3,9 +3,9 @@
 // sightRadius 内暴露的同色**（过位剥离·从外向里啃）→ 巡逻预算尽入待命槽。选错色/该边无暴露同色 → 空转一圈零消除。
 // ⚠ 精确逐格数 = GD 更新后的验收剧本（acceptance/*）为准；本处自验**机制不变式**（绕圈/过位剥离/空转/入槽/确定性）。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
-import { applyCommands, QueuedInputSource } from '@net/index.js';
-import type { Resource, Transform, GameFlow, Caster } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { applyCommands, QueuedInputSource } from '@zerocraft/engine/net/index.js';
+import type { Resource, Transform, GameFlow, Caster } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import type { Level } from './levels.js';
 

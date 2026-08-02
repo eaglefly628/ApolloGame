@@ -30,7 +30,7 @@ import http.client
 import urllib.parse
 from pathlib import Path
 
-os.environ['APOLLO_MOCK_LLM'] = '1'  # ⑦ 的 mock 通道（_mock_enabled 运行时读·对生产不可见）
+os.environ['ZEROCRAFT_MOCK_LLM'] = '1'  # ⑦ 的 mock 通道（_mock_enabled 运行时读·对生产不可见）
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -242,8 +242,8 @@ try:
           and 'boss' not in cg['chats'], '对话历史 GET 恢复（角色白名单·野角色不落）')
     _, cbad = req('GET', '/api/agent/chats?slug=../etc')
     check(cbad.get('success') is False, 'chats 坏 slug 拒')
-    chatf = ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json'
-    check(chatf.is_file(), '落 .apollo/workshop-chats/（gitignored·不进卡带版本史）')
+    chatf = ROOT / '.zerocraft' / 'workshop-chats' / f'{SLUG}.json'
+    check(chatf.is_file(), '落 .zerocraft/workshop-chats/（gitignored·不进卡带版本史）')
     chatf.unlink()
     st, sv = req('GET', '/api/settings')
     pids = [p.get('id') for p in (sv.get('providers') or [])]
@@ -265,7 +265,7 @@ try:
     art_rel = f'/games/{SLUG}/art/art-ledger.json'
     st8, h8, _ = raw('GET', art_rel)
     check(st8 == 200 and 'json' in h8.get('Content-Type', ''), f'静态 200 · {art_rel}')
-    st8, _, _ = raw('GET', '/games/../../apollo.py')
+    st8, _, _ = raw('GET', '/games/../../zerocraft.py')
     check(st8 == 403, '路径穿越 403')
     st8, _, _ = raw('GET', '/games/no-such/x.png')
     check(st8 == 404, '缺失 404')
@@ -290,9 +290,9 @@ try:
         check(hb.get('Location', '').startswith('http://localhost:') and '/?game=lib:x' in hb.get('Location', ''), '302 目标带原路径')
     else:
         # 07-15 兜底页改版（e8dcd563）：死链提示页 → 轮询 /api/bench-ready 自动跳转的转圈页——
-        # 断言对齐新语义：会自动跳（带轮询脚本）+ 仍告诉人怎么启动（apollo.py workshop）。
+        # 断言对齐新语义：会自动跳（带轮询脚本）+ 仍告诉人怎么启动（zerocraft.py workshop）。
         page = db.decode('utf-8')
-        check('bench-ready' in page and 'apollo.py workshop' in page, '提示页会自动跳转且说明怎么启动')
+        check('bench-ready' in page and 'zerocraft.py workshop' in page, '提示页会自动跳转且说明怎么启动')
     stb2, hb2, _ = raw2('/bench?to=' + urllib.parse.quote('//evil.com/x'))
     check(stb2 != 302 or 'evil.com' not in hb2.get('Location', ''), '防开放跳转（// 打回 /）')
 
@@ -393,21 +393,21 @@ try:
     check(sbad.get('success') is False, 'stats 缺游戏拒')
     apollo._ws_sessions_save(SLUG, 'gd', 'f00dbabe-cafe', 'hash-1')
     st13, cp2 = req('PUT', '/api/agent/chats', {'slug': SLUG, 'chats': {'gd': [{'role': 'user', 'content': 'x'}], 'pe': [], 'art': []}})
-    fdata = json.loads((ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json').read_text('utf-8'))
+    fdata = json.loads((ROOT / '.zerocraft' / 'workshop-chats' / f'{SLUG}.json').read_text('utf-8'))
     check(cp2.get('success') and fdata.get('sessions', {}).get('gd') == 'f00dbabe-cafe'
           and fdata.get('ctxHash', {}).get('gd') == 'hash-1', '对话覆盖存盘不抹 session 台账')
     _, cg2 = req('GET', f'/api/agent/chats?slug={SLUG}')
     check(cg2.get('success') and (cg2.get('sessions') or {}).get('gd') == 'f00dbabe-cafe'
           and (cg2.get('sessions') or {}).get('pe') is None, 'GET 回各角色 session id（壳标题栏亮牌·07-12）')
     _, rs = req('POST', '/api/agent/session/reset', {'slug': SLUG, 'role': 'gd'})
-    fdata2 = json.loads((ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json').read_text('utf-8'))
+    fdata2 = json.loads((ROOT / '.zerocraft' / 'workshop-chats' / f'{SLUG}.json').read_text('utf-8'))
     check(rs.get('success') and rs.get('hadSession') is True and 'gd' not in (fdata2.get('sessions') or {})
           and (fdata2.get('chats') or {}).get('gd'), '归档重开：解绑 session·聊天记录保留（07-12）')
     _, rs2 = req('POST', '/api/agent/session/reset', {'slug': SLUG, 'role': 'gd'})
     check(rs2.get('success') and rs2.get('hadSession') is False, '再重开=幂等（无 session 也成功）')
     _, rs3 = req('POST', '/api/agent/session/reset', {'slug': SLUG, 'role': 'boss'})
     check(rs3.get('success') is False, '坏 role 拒')
-    (ROOT / '.apollo' / 'workshop-chats' / f'{SLUG}.json').unlink()
+    (ROOT / '.zerocraft' / 'workshop-chats' / f'{SLUG}.json').unlink()
 
     import http.server as _hs
     check(apollo.start_api_server.__doc__ is None or True, '')  # 占位防误删
@@ -435,14 +435,14 @@ try:
     _, ft = req('GET', '/api/features')
     check(ft.get('success') and ft.get('capgap') is True and ft.get('tsCarts') is True,
           'features 默认态（capgap 开 · tsCarts 开=卡带选项级·壳打开时弹 warning）')
-    os.environ['APOLLO_FEATURE_TSCARTS'] = '0'  # 显式关停仍然有效（配置可关原则）
+    os.environ['ZEROCRAFT_FEATURE_TSCARTS'] = '0'  # 显式关停仍然有效（配置可关原则）
     try:
         st13, _f1 = req('POST', f'/api/library/{SLUG}/flags', {'allowTs': True})
         check(st13 == 403, '显式关停时打勾被拒（403）')
         st13, _l0 = req('PUT', f'/api/library/{SLUG}/logic', {'content': 'x'})
         check(st13 == 403, '显式关停时 PUT logic 被拒（403）')
     finally:
-        os.environ.pop('APOLLO_FEATURE_TSCARTS', None)
+        os.environ.pop('ZEROCRAFT_FEATURE_TSCARTS', None)
     # capgap：围栏解析（纯函数）+ mock 全链记台账
     rest, gap = apollo._split_capgap('说不行。\n```capgap\n{"title": "T", "need": "N", "proposal": "P", "acceptance": "A"}\n```\n完。')
     check(gap and gap['title'] == 'T' and '说不行' in rest and 'capgap' not in rest, 'capgap 围栏解析（对白剥净）')
@@ -454,7 +454,7 @@ try:
     _, gl = req('GET', '/api/capgaps')
     check(gl.get('success') and any(g.get('slug') == SLUG for g in gl.get('gaps', [])), '/api/capgaps 能查到该缺口')
     # 开启 tsCarts（环境旗=运行时读）→ 打勾 → mock pe 产 logicPatch → PUT 过真装载门落盘
-    os.environ['APOLLO_FEATURE_TSCARTS'] = '1'
+    os.environ['ZEROCRAFT_FEATURE_TSCARTS'] = '1'
     try:
         _, ft2 = req('GET', '/api/features')
         check(ft2.get('tsCarts') is True, '环境旗开启 tsCarts（运行时生效）')
@@ -478,7 +478,7 @@ try:
         check(st13 == 200 and lrm.get('removed') is True and not (ROOT / 'library' / SLUG / 'logic.ts').exists(),
               '空串=撤除 logic.ts（退出例外）')
     finally:
-        os.environ.pop('APOLLO_FEATURE_TSCARTS', None)
+        os.environ.pop('ZEROCRAFT_FEATURE_TSCARTS', None)
 
     print('⑭ 全库装载体检（owner 07-11「把加载失败的错误都 log 出来」）')
     # 直写盘造一盘「parse 过但装载炸」的旧账坏卡带（模拟批14 门禁上线前混进库的稿——不走 PUT 门）
@@ -549,7 +549,7 @@ try:
           '爱诗 PixVerse 视频 key 槽位在设置（adapter=后续单·同 Seedance 先例）')
 
     print('⑰ 原型链代码驱动分叉（owner 07-12「唯一区别=数据/代码驱动」·⚡卡带原型自动补 logic.ts）')
-    os.environ['APOLLO_FEATURE_TSCARTS'] = '1'
+    os.environ['ZEROCRAFT_FEATURE_TSCARTS'] = '1'
     try:
         req('POST', f'/api/library/{SLUG}/flags', {'allowTs': True})
         st17, jb17 = req('POST', '/api/generate/job', {'mode': 'prototype', 'slug': SLUG, 'provider': 'mock'})
@@ -567,7 +567,7 @@ try:
         req('PUT', f'/api/library/{SLUG}/logic', {'content': ''})  # 收尾撤 logic（不污染后续）
         req('POST', f'/api/library/{SLUG}/flags', {'allowTs': False})
     finally:
-        os.environ.pop('APOLLO_FEATURE_TSCARTS', None)
+        os.environ.pop('ZEROCRAFT_FEATURE_TSCARTS', None)
 
 except Exception as e:
     FAIL += 1

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { mulberry32 } from '@atom-skills/random/index.js';
+import { mulberry32 } from '@zerocraft/engine/atom-skills/random/index.js';
 import { HoldemSession, handStrength } from './game-session.js';
 import { CLOTHING_ITEMS, WARDROBE_TOTAL } from './wardrobe.js';
-import type { Card } from '@engine/protocol/components.js';
+import type { Card } from '@zerocraft/engine/engine/protocol/components.js';
 
 const H = (suit: number, rank: number): Card => ({ suit, rank });
 const START = 1000;

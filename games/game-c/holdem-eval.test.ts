@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Card } from '@engine/protocol/components.js';
+import type { Card } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   HOLDEM_TYPE_ORDER, rank5, bestOf7, holdemRank, compareRank,
   buildDeck, dealHoldem, cardToCode, codeToCard,

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { buildGameFBlueprint } from './blueprint.js';
 import { GAME_F_UI } from './game-f-ui.js';
-import { collectButtons } from '@ui/shell/GameShell.js';
+import { collectButtons } from '@zerocraft/engine/ui/shell/GameShell.js';
 import { FAST, flag } from './game-f.helpers.js';
-import { fullPathProbe, scanNonFinite, crawlStates, type FireFn } from '@runtime/fullpath-probe.js';
+import { fullPathProbe, scanNonFinite, crawlStates, type FireFn } from '@zerocraft/engine/runtime/fullpath-probe.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  Loop B — game-f 全路径回归：枚举 GAME_F_UI 声明的**所有按钮** → 逐个点（投信号）→ tick →

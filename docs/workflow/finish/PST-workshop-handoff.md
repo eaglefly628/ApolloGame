@@ -6,7 +6,7 @@
 
 ## 0. 一句话架构
 
-**Workshop 壳（`workshop/index.dc.html`·对外展示台）+ apollo.py（唯一后端）+ 旧工作台（launcher React·完整开发端）**
+**Workshop 壳（`workshop/index.dc.html`·对外展示台）+ zerocraft.py（唯一后端）+ 旧工作台（launcher React·完整开发端）**
 三者同源同数据：壳走 `/api/*` 与 `/games/*`，旧工作台走同一批端点——没有第二份状态。
 
 ## 1. 部件地图（改哪找哪）
@@ -14,13 +14,13 @@
 | 部件 | 文件 | 说明 |
 |---|---|---|
 | Workshop 壳 | `workshop/index.dc.html` | x-dc 模板 + 内嵌 `Component extends DCLogic`。**support.js 是生成的 dc-runtime，勿手编** |
-| 壳伺服 | `apollo.py` `_serve_workshop` | `GET /workshop/*`（`python apollo.py workshop` 一键起） |
-| 游戏资产静态 | `apollo.py` `_serve_public_games` | `GET /games/**`（只读·路径穿越 403）——台账 servedPath 缩略图同源可显 |
-| 下载包 | `apollo.py` `_serve_export` | `GET /api/library/<slug>/export`（内存 zip·排除 `.git/snapshots/mock`）·owner 拍板「发布=下载包」 |
-| 能力目录 | `apollo.py` `handle_catalog` | `GET /api/catalog`（vite-node dump·进程内缓存）——壳无 vite 侧 import，生成/程序对话词汇表从这取 |
-| 双角色对话 | `apollo.py` `handle_agent_chat` | `POST /api/agent/chat`（下详）·系统词 `AGENT_GD_SYSTEM`/`AGENT_PE_SYSTEM` |
-| 订阅通道 | `apollo.py` `_claude_code_*` | claude-code 子进程（下详·红线区） |
-| 数据桥 | `apollo.py` `library_create`/`library_put_manifest`/`handle_pipeline_concept`/`handle_art_reskin` | create 带 description→meta+S1 立项卡；PUT 即台账；换皮谱系 |
+| 壳伺服 | `zerocraft.py` `_serve_workshop` | `GET /workshop/*`（`python zerocraft.py workshop` 一键起） |
+| 游戏资产静态 | `zerocraft.py` `_serve_public_games` | `GET /games/**`（只读·路径穿越 403）——台账 servedPath 缩略图同源可显 |
+| 下载包 | `zerocraft.py` `_serve_export` | `GET /api/library/<slug>/export`（内存 zip·排除 `.git/snapshots/mock`）·owner 拍板「发布=下载包」 |
+| 能力目录 | `zerocraft.py` `handle_catalog` | `GET /api/catalog`（vite-node dump·进程内缓存）——壳无 vite 侧 import，生成/程序对话词汇表从这取 |
+| 双角色对话 | `zerocraft.py` `handle_agent_chat` | `POST /api/agent/chat`（下详）·系统词 `AGENT_GD_SYSTEM`/`AGENT_PE_SYSTEM` |
+| 订阅通道 | `zerocraft.py` `_claude_code_*` | claude-code 子进程（下详·红线区） |
+| 数据桥 | `zerocraft.py` `library_create`/`library_put_manifest`/`handle_pipeline_concept`/`handle_art_reskin` | create 带 description→meta+S1 立项卡；PUT 即台账；换皮谱系 |
 | 八阶段板 | `scripts/game-pipeline.mjs` + `src/studio/GamePipelinePanel.tsx` | cart-S8=轻量终检（mockDebt∧manifest-check∧bench·证据绑 gameHash） |
 | launcher 导流 | `src/launcher.tsx` + `src/studio/DataCartridgeRunner.tsx`（LibActionBar） | 🏭/⤓ 导出/保存成功「下一步→🏭」/⇄ Workshop 链接 |
 
@@ -41,12 +41,12 @@
   - `model`=该 provider models 白名单（claude-code: opus/fable/sonnet）；`effort`=low/medium/high/xhigh/max（默认 high·仅订阅通道生效）
   - 服务端**绝不代落盘**：manifest 只是提议——壳「✔ 应用改动」显式 PUT 才落
   - 校验失败自动回喂一轮（`_llm_ify_error`）；仍败则回 `manifestError`
-  - mock 短路（`APOLLO_MOCK_LLM=1`）：`_mock_revise` 确定性微调·过真校验门——冒烟/e2e 全链用
+  - mock 短路（`ZEROCRAFT_MOCK_LLM=1`（旧名 APOLLO_MOCK_LLM 过渡期仍读））：`_mock_revise` 确定性微调·过真校验门——冒烟/e2e 全链用
 - `GET/PUT /api/agent/chats` `?slug=` / `{slug, chats:{gd|pe|art:[…]}}`——工坊对话历史持久化（owner 07-11）：
-  存 `.apollo/workshop-chats/<slug>.json`（gitignored·**不进卡带版本史**）；守门=角色白名单·每条 ≤8000 字·每角色留末 80 条；
+  存 `.zerocraft/workshop-chats/<slug>.json`（gitignored·**不进卡带版本史**）；守门=角色白名单·每条 ≤8000 字·每角色留末 80 条；
   壳 openEdit 恢复、每轮回复后整份覆盖存
 - `GET /api/llm-logs?n=`——今天的 LLM 往返度量尾部（新在前·壳设置页🐞调试日志块消费）；**绝不出全文**
-  （全文只在 `.apollo/llm-logs/*.jsonl`·须 `APOLLO_LOG_VERBOSE=1` 才落）；服务终端另有 `[LLM] →/←` 进出打点（传输层唯一咽喉）
+  （全文只在 `.zerocraft/llm-logs/*.jsonl`·须 `ZEROCRAFT_LOG_VERBOSE=1`〔旧名 APOLLO_LOG_VERBOSE 过渡期仍读〕才落）；服务终端另有 `[LLM] →/←` 进出打点（传输层唯一咽喉）
 - `POST /api/generate/job` `{prompt}` 或 `{mode:'prototype', slug}`——**生成=服务端后台任务**（切屏/刷新不丢·完成自动入库）；
   `GET /api/generate/job?id=` / `GET /api/generate/jobs` 看板轮询（壳启动自动恢复活跃任务）；进程内注册表留 20 条
 - `GET /api/llm-live`——进行中请求的流式度量（chars/tail·空闲=空数组）；job 视图自带 liveChars/liveTail
@@ -69,8 +69,8 @@
   纯文本生成器钉子 + 禁用名单含计划/提问/技能类（07-11 实证：CLI 代理人格调工具→tool_use 吃回合→空 result）；
   **心跳看门狗非闹钟**：任何输出行=心跳，180s 零输出=停滞收割、1800s 绝对上限（推进中的长思考永不打断——owner 07-11 拍板）；result 缺失时打捞已流出的 text delta
 - **批15（owner 07-11 双拍板·REQ-ARCH）**：`GET /api/features` → `{capgap, tsCarts}`（配置 `features` 键或
-  `APOLLO_FEATURE_*` 环境旗·运行时读）。**capgap**：agent 回复的 ```capgap 围栏 → `_split_capgap` →
-  `.apollo/cap-gaps.jsonl`（gitignored）+ `GET /api/capgaps?n=` + chat 出参 `capGap`。**tsCarts（默认开·owner 07-13 转正=卡带选项级·打开弹记债 warning·配置/环境可全局关停）**：
+  `ZEROCRAFT_FEATURE_*` 环境旗（旧名 APOLLO_FEATURE_* 过渡期仍读）·运行时读）。**capgap**：agent 回复的 ```capgap 围栏 → `_split_capgap` →
+  `.zerocraft/cap-gaps.jsonl`（gitignored）+ `GET /api/capgaps?n=` + chat 出参 `capGap`。**tsCarts（默认开·owner 07-13 转正=卡带选项级·打开弹记债 warning·配置/环境可全局关停）**：
   `POST /api/library/<slug>/flags {allowTs}`（403 除非 feature 开）→ pe 系统词注入 `_TS_RULES_ON`（含当前 logic.ts）
   → ```ts 围栏 → `_run_cart_logic_check`（scripts/cart-logic-check.mjs：模块装载+cartCapability 契约+合体 2 tick）
   → chat 出参 `logicPatch|logicError` → 壳 ✔ 应用 `PUT /api/library/<slug>/logic {content}`（版本化·空串=撤除）。
@@ -97,23 +97,23 @@
 
 ## 3. 红线（动之前读三遍）
 
-1. **claude-code 子进程工具面全禁**：`_claude_code_args` 的 `--disallowedTools Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Task,NotebookEdit,TodoWrite` + `--max-turns 1` + 空目录 cwd（`.apollo/claude-code-cwd`）——**一个都不许放开**（安全红线·spec §四）。transcript 走 stdin（防 ARG_MAX）。
+1. **claude-code 子进程工具面全禁**：`_claude_code_args` 的 `--disallowedTools Bash,Edit,Write,Read,Glob,Grep,WebFetch,WebSearch,Task,NotebookEdit,TodoWrite` + `--max-turns 1` + 空目录 cwd（`.zerocraft/claude-code-cwd`）——**一个都不许放开**（安全红线·spec §四）。transcript 走 stdin（防 ARG_MAX）。
 2. **key/token 纪律**：只存 `.apollo-config.json`（gitignored）或 env；回显一律 `_mask_key` 打码；绝不落日志/入库。
 3. **mock 三道闸不变**：mock 命名空间 `gen/mock/`、applyReplacements 默认跳 mock、approve 拒 mock——壳/板不得绕。
 4. **不代签人门**：signoff 必须真人指令；agent-chat 不代落盘。
-5. **引擎目录零触碰**：`src/{engine,skills,assembly,renderer,services,net}` 是主程域；Workshop 维护全在 `workshop/ + apollo.py + scripts/ + src/studio/ + src/launcher.tsx` 层。
+5. **引擎目录零触碰**：`src/{engine,skills,assembly,renderer,services,net}` 是主程域；Workshop 维护全在 `workshop/ + zerocraft.py + scripts/ + src/studio/ + src/launcher.tsx` 层。
 6. **anthropic raw 通道 4.7+ 合规**：不发采样参数；`thinking:{type:adaptive}`；content blocks 遍历取 text；`stop_reason==refusal` 明报错；system 尾块 `cache_control:ephemeral`。型号表=`claude-opus-4-8`（默认·订阅档同型）/`claude-sonnet-5`/`claude-haiku-4-5`。
 
 ## 4. 验证方法（改完必跑·全部退出码判断）
 
 ```
-python3 -c "import ast; ast.parse(open('apollo.py').read())"   # AST 快查
+python3 -c "import ast; ast.parse(open('zerocraft.py').read())"   # AST 快查
 python3 scripts/pipeline-smoke.py     # 44 断言：数据桥+cart-S8+agent-chat+壳伺服面（⑧=壳/静态/zip/catalog）
 python3 scripts/art-replace-smoke.py  # 45 断言：美术管线+mock 三道闸
 npx tsc --noEmit && npx vitest run && npx vite build
 ```
-壳侧改 `index.dc.html` 后：起 `python apollo.py workshop` 真浏览器过一遍
-（八屏 + mock 生成链 `APOLLO_MOCK_LLM=1` + 对白编辑「✔ 应用改动」+ 下载包 + 设置保存打码回显）。
+壳侧改 `index.dc.html` 后：起 `python zerocraft.py workshop` 真浏览器过一遍
+（八屏 + mock 生成链 `ZEROCRAFT_MOCK_LLM=1`（旧名 APOLLO_MOCK_LLM 过渡期仍读） + 对白编辑「✔ 应用改动」+ 下载包 + 设置保存打码回显）。
 
 ## 5. 已知债 / 后续单（不在本单）
 

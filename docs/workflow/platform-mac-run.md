@@ -113,7 +113,7 @@ D5 交付时（本仓库是 Linux 环境）能验、已验的：
   这条完整链路（Linux 环境对 `api.github.com`/`github.com` 有沙箱代理限制，且下载下来的也是
   macOS 二进制，Linux 跑不了）。
 - 真 `.dmg` 产物本身（双击、Gatekeeper 拦截提示、右键打开绕过、内置 python 真的能 spawn 起
-  `apollo.py` 服务器）。
+  `zerocraft.py` 服务器）。
 - 签名/公证条件分支（`CSC_LINK`/`APPLE_ID` 等 secret 存在时的真实签名+公证流程）。
 - `resolvePythonBin()` 在真机上定位到 `pybundle/bin/python3`（而不是回退系统 `python3`）——
   这条单测钉的是查找逻辑本身（`electron/platform-launch.test.mjs`），真机路径存在性要等

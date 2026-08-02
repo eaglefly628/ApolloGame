@@ -4,7 +4,7 @@
 //   （id=skinKey·top-level source='gen:<provider>'·tags 含 'skin'）→ mount 期 loadArtOverrides 拉索引注册到这里；
 //   消费点（背幕等）先查覆盖、未命中回退程序化（STORY_BACKDROP 等）——**真图未到 = 观感零字节变化**（Lead 红线）。
 // render-only·不进 sim/hash·蓝图/确定性零影响。
-import { AssetManager, ImageAssetLoader, parseAssetIndex, registerAssetIndex } from '@assets/index.js';
+import { AssetManager, ImageAssetLoader, parseAssetIndex, registerAssetIndex } from '@zerocraft/engine/assets/index.js';
 import { STORY_BACKDROP } from './theme.js';
 
 const _texOverrides = new Map<string, string>();

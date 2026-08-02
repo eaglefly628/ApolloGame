@@ -293,7 +293,7 @@ export function providerSettings(env = process.env) {
 
 // 一键自测：两个适配器各 mock 生成一个到临时目录 → 打印落库条目 → 跑完自动清理（零仓库污染·零网络）。
 export async function demo(env = process.env) {
-  const dir = join(tmpdir(), 'apollo-ai-gen-demo');
+  const dir = join(tmpdir(), 'zerocraft-ai-gen-demo');
   rmSync(dir, { recursive: true, force: true }); mkdirSync(dir, { recursive: true });
   const out = [];
   try {

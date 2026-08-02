@@ -6,8 +6,8 @@
 // 忠实对标 live 大厅 `lobby-screen.ts` 的 `campaignSection`：逐关卡片（锁/当前/已通关/可重打）+ 难度星 +
 // 通关解锁天罡 + Boss 开场/劣势/败北对白 + 地煞（明牌·含数值行）+ 当前关「出征」CTA（action: 'play'）。
 // 诚实边界：原稿卡片的描边/渐变 flourish 由 GG_LOBBY_THEME 令牌近似；内容/交互/换皮全部数据化。
-import { mountUI } from '@ui/components/index.js';
-import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { LayoutNode, HandlerMap } from '@zerocraft/engine/ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { textureOverrideUri, iconUri } from './art-textures.js'; // 背景板槽（07-14 全面台账化·真图=cover·无=主题色）+ 套装图标（07-15 skull/deck 接线）
 import { STAGE_CAMPAIGN, type StageCampaign } from './campaign-data.js';

@@ -1,10 +1,10 @@
 // 游戏 AI 样例：蓝图装进真 ECS → aggro 锁定玩家（索敌）+ grid-move 沿 hex A* 逼近（寻路）。
 // 纯蓝图 + 现成能力，无专属 system。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { aiBlueprint } from './ai-lab.js';
-import { hexDistance } from '@skills/tier2/hex.js';
-import type { Relation, HexPos } from '@engine/protocol/components.js';
+import { hexDistance } from '@zerocraft/engine/skills/tier2/hex.js';
+import type { Relation, HexPos } from '@zerocraft/engine/engine/protocol/components.js';
 
 describe('Game I · 游戏 AI 样例（索敌 + 寻路蓝图）', () => {
   it('蓝图纯数据：玩家 + 5 敌 + 棋盘（无专属 system）', () => {

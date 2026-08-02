@@ -8,8 +8,8 @@
 //
 // 战斗屏：回合制走 turn-battle-screen.ts（live）。旧实时核（showMatch + battle-screen.ts 渲染器）已**退役删除**（2026-06-21）；本模块仍从 live-combat.ts 复用 cardStamina/掷命核/TengangFx 等纯件。
 import { pEff, cardPoints, P_MIN, P_MAX, rollWithMods, rollWinProbMods, type RollMods } from './clash-resolve.js';
-import { nextRandom } from '@atom-skills/index.js';
-import type { RandomSeed } from '@engine/protocol/components.js';
+import { nextRandom } from '@zerocraft/engine/atom-skills/index.js';
+import type { RandomSeed } from '@zerocraft/engine/engine/protocol/components.js';
 import { cardStamina, NO_TENGANG, type TengangFx, type ClashEvent, type ClashCard } from './combat-types.js';
 import { aggregateDisha, splitDisha, type DishaFx } from './disha.js';
 import { TIANGANG_BY_ID } from './tiangang-data.js'; // 纯数据·无 import → 无环依赖（读天罡 op 参数供选路 op 施法）

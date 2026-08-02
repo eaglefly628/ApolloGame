@@ -9,7 +9,7 @@ import socket
 from pathlib import Path
 
 from .server import start_api_server
-from .sysutil import ROOT, VITE_PORT, _cleanup, _processes, _spawn, banner, c, check_env, get_project_status, is_port_in_use
+from .sysutil import ROOT, VITE_PORT, _cleanup, _processes, _spawn, banner, c, check_env, env, get_project_status, is_port_in_use
 from . import server
 
 # ── Vite 服务器 ──
@@ -89,11 +89,11 @@ def cmd_launcher(player: bool = False):
         _cleanup()
 
 def cmd_player():
-    # 创作台玩家模式一键入口：python apollo.py player
+    # 创作台玩家模式一键入口：python zerocraft.py player
     cmd_launcher(player=True)
 
 def cmd_workshop():
-    """对外展示工作台一键入口：python apollo.py workshop。
+    """对外展示工作台一键入口：python zerocraft.py workshop。
     起 API 服务器（:4000）+ **一并拉起页面服务（vite :5173·owner 07-11 高优先级：▶ 运行永远直达，
     不再要求开第二个终端）** + 开浏览器到 /workshop/——不弹老 launcher/electron。"""
     url = f"http://localhost:{server.API_PORT}/workshop/"
@@ -121,9 +121,9 @@ def cmd_workshop():
         _cleanup()
 
 def cmd_platform():
-    """平台离线打包运行入口：python3 apollo.py platform（platform-packaging-spec.md D2-D4）。
+    """平台离线打包运行入口：python3 zerocraft.py platform（platform-packaging-spec.md D2-D4）。
     只起 API 服务器——它现在**同时伺服已构建的静态前端**（main_entry/server.py `_serve_static`
-    读 STATIC_DIST_DIR/APOLLO_STATIC_DIR）+ 全部 /api/*，一个端口担两职，供 electron loadURL
+    读 STATIC_DIST_DIR/ZEROCRAFT_STATIC_DIR）+ 全部 /api/*，一个端口担两职，供 electron loadURL
     直连。不叫 check_env()（打包产物是纯 python 后端 + 预构建静态站，客户机器不装 node，
     check_env 那套 npm/node 探测在这条路径上既无必要也会误报）、不拉 start_vite()（studio
     前端已经是构建产物，不需要 dev server）、不开浏览器（electron 自己 loadURL；Linux/CI
@@ -132,7 +132,7 @@ def cmd_platform():
     waitForHealth · scripts/platform-launch-smoke.mjs）。"""
     port = server.API_PORT
     print(c("  [PLATFORM]", 'g'), f"启动平台后端（同端口伺服前端静态 + /api/*）→ http://127.0.0.1:{port}/")
-    static_dir = os.environ.get('APOLLO_STATIC_DIR') or str(ROOT / 'dist')
+    static_dir = env('ZEROCRAFT_STATIC_DIR') or str(ROOT / 'dist')
     print(c("  [PLATFORM]", 'dim'), f"静态前端目录：{static_dir}" + ('（不存在——先 vite build）' if not Path(static_dir).is_dir() else ''))
     start_api_server()
     try:

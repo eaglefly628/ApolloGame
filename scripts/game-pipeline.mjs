@@ -30,9 +30,9 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 
-// ROOT=仓库根（默认）。APOLLO_PIPELINE_ROOT 仅供测试注入临时根（跑 CLI 端到端·不碰真仓库）——
-// 生产不设此环境变量，行为逐字节同旧版。
-const ROOT = process.env.APOLLO_PIPELINE_ROOT || join(dirname(fileURLToPath(import.meta.url)), '..');
+// ROOT=仓库根（默认）。ZEROCRAFT_PIPELINE_ROOT（旧名 APOLLO_PIPELINE_ROOT 过渡期仍读）仅供测试
+// 注入临时根（跑 CLI 端到端·不碰真仓库）——生产不设此环境变量，行为逐字节同旧版。
+const ROOT = process.env.ZEROCRAFT_PIPELINE_ROOT || process.env.APOLLO_PIPELINE_ROOT || join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const readJson = (f, fb) => { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return fb; } };
 const writeJson = (f, v) => { mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, JSON.stringify(v, null, 2) + '\n'); };
@@ -372,10 +372,10 @@ function gateRun(slug, stage, form) {
     // conformance：真引擎逐 step 对账 GD 剧本（无 adapter/断言不过=非零退出）。
     // 脚本用绝对路径 + 显式对齐 runner 的根（Lead 验收加固：ROOT 被测试注入临时根时，
     // 相对路径以 cwd=临时根解析不到脚本、runner 又按自身位置定根——两处都会错位成崩溃式落红）。
-    // APOLLO_ACCEPTANCE_CLI=1 是 CLI 握手：VITEST 变量会穿透嵌套 spawn 使 runner 误判被 import
-    // 而静默退 0（conformance 假绿）——显式握手封死该路径。
+    // ZEROCRAFT_ACCEPTANCE_CLI=1（旧名 APOLLO_ACCEPTANCE_CLI）是 CLI 握手：VITEST 变量会穿透嵌套
+    // spawn 使 runner 误判被 import 而静默退 0（conformance 假绿）——显式握手封死该路径。
     const accScript = join(dirname(fileURLToPath(import.meta.url)), 'acceptance-run.mjs');
-    const acc = run('npx', ['vite-node', accScript, '--game', slug], { env: { ...process.env, APOLLO_ACCEPTANCE_ROOT: ROOT, APOLLO_ACCEPTANCE_CLI: '1' } });
+    const acc = run('npx', ['vite-node', accScript, '--game', slug], { env: { ...process.env, ZEROCRAFT_ACCEPTANCE_ROOT: ROOT, ZEROCRAFT_ACCEPTANCE_CLI: '1' } });
     const accTail = (acc.stdout || acc.stderr || '').trim().split('\n').slice(-3).join(' / ').slice(0, 200);
     if ((acc.status ?? 1) !== 0) return { exit: acc.status ?? 1, summary: `✗ 验收剧本 conformance 未过（${nScen} 场景）· ${accTail}` };
     if (form === 'cart') {

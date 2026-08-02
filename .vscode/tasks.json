@@ -5,7 +5,7 @@
       "label": "🎨 workshop (对外展示工作台)",
       "detail": "只起 API + 开原版工作台 → http://localhost:4000/workshop/（不弹老界面）",
       "type": "shell",
-      "command": "python3 apollo.py workshop",
+      "command": "python3 zerocraft.py workshop",
       "isBackground": true,
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated" }

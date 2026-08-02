@@ -3,12 +3,12 @@
 // 内层出牌 = 候选枚举（t3-hand-pattern.legalResponses·确定性升序）+ 估值规则查表。
 // 确定性：无墙钟、无裸随机——「多变」性格的浮动经 mulberry32(种子) 取数；同种子同局面同决策。
 // 拟人思考延迟=宿主表现层（不进本层）。宗师偷看=发牌期种子化记录（session 侧），此处以进攻阈值消费。
-import type { IWorld } from '@engine/core/types.js';
-import type { Card, RandomSeed, Flag, Resource } from '@engine/protocol/components.js';
+import type { IWorld } from '@zerocraft/engine/engine/core/types.js';
+import type { Card, RandomSeed, Flag, Resource } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   tickBehaviorTree, registerBTLeaves, type BehaviorTree, type BTLeafTable,
-} from '@skills/tier2/index.js';
-import { legalResponses, beats, effRank, type HandPatternConfig, type PatternMatch } from '@skills/tier3/index.js';
+} from '@zerocraft/engine/skills/tier2/index.js';
+import { legalResponses, beats, effRank, type HandPatternConfig, type PatternMatch } from '@zerocraft/engine/skills/tier3/index.js';
 import { AI_TIERS, type AiTierSpec, type SeatSpec } from './rules.js';
 
 export const BT_GAME_ID = 'game-a';

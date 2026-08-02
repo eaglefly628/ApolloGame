@@ -6,7 +6,7 @@
 //   故本索引只剩 ① 9 枚筹码（vendored·未来 3D/HUD 消费）② 28 条夜金 SVG 程序占位（scene/table/ui/fx/icons）。
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { parseAssetIndex, registerAssetIndex, AssetManager, StubAssetLoader } from '@assets/index.js';
+import { parseAssetIndex, registerAssetIndex, AssetManager, StubAssetLoader } from '@zerocraft/engine/assets/index.js';
 
 const RAW = JSON.parse(readFileSync('public/games/game-c/art/index.json', 'utf8'));
 

@@ -13,7 +13,7 @@ import {
   type PlatformCharacterDraft,
   type ZeroCraftCharacterCard,
   type SeatCard,
-} from '@services/character-card/index.js';
+} from '@zerocraft/engine/services/character-card/index.js';
 
 // 四席 id（座 0=主角/南·1=绫/大姨太·2=莉世/二姨太·3=小夜/三姨太·迭代顺序恒定=确定性）。
 export type SeatId = 'hero' | 'daiyi' | 'eryi' | 'sanyi';

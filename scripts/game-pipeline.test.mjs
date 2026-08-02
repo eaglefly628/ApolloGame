@@ -316,9 +316,25 @@ describe('selfCheckNote 新鲜度（图纸②·绑 gameHash·⚠提示不硬拦�
   });
 });
 
-// CLI 端到端：真跑 game-pipeline.mjs（APOLLO_PIPELINE_ROOT 注入临时根·不碰真仓库）。
+// CLI 端到端：真跑 game-pipeline.mjs（ZEROCRAFT_PIPELINE_ROOT 注入临时根·不碰真仓库）。
 const CLI = fileURLToPath(new URL('./game-pipeline.mjs', import.meta.url));
-const runCli = (root, args) => spawnSync('node', [CLI, ...args], { env: { ...process.env, APOLLO_PIPELINE_ROOT: root }, encoding: 'utf8' });
+const runCli = (root, args) => spawnSync('node', [CLI, ...args], { env: { ...process.env, ZEROCRAFT_PIPELINE_ROOT: root }, encoding: 'utf8' });
+
+describe('去 Apollo 化过渡期 env 旧名 fallback（REQ-PKG-位置无关与正名）', () => {
+  it('只设旧名 APOLLO_PIPELINE_ROOT（不设 ZEROCRAFT_PIPELINE_ROOT）→ CLI 仍认那个临时根', () => {
+    const root = mkdtempSync(join(tmpdir(), 'ord-cli-legacy-'));
+    mkdirSync(join(root, 'games', 'g'), { recursive: true });
+    try {
+      // 故意只传旧名，且显式确保新名不在 env 里——只有 fallback 生效才会指到这个临时根。
+      const env = { ...process.env, APOLLO_PIPELINE_ROOT: root };
+      delete env.ZEROCRAFT_PIPELINE_ROOT;
+      const r = spawnSync('node', [CLI, 'gate', 'g', 'S3'], { env, encoding: 'utf8' });
+      expect(r.status).not.toBe(0); // 前关欠·同「前关欠」用例的判词——证明它真读到了这个临时根（非真仓库）
+      expect(r.stderr).toContain('顺序闸');
+      expect(r.stderr).toContain('S1');
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+});
 
 describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F 点名）', () => {
   // 编译期 fixture：games/<slug> 目录存在（compiled）·空立项卡 → S1/S2 非绿。
@@ -414,7 +430,7 @@ describe('gate 顺序闸 CLI（真退出码+落痕+板 ⚠·REQ-GATE-硬化 F �
   }, 60_000);
 
   // Lead 验收加固：≥3 场景后 gate 真进 conformance——temp 根注入下 runner 根须对齐（绝对脚本路径 +
-  // APOLLO_ACCEPTANCE_ROOT 透传），落红须是真判词（缺 adapter），不许是脚本找不到的崩溃尾巴。
+  // ZEROCRAFT_ACCEPTANCE_ROOT 透传），落红须是真判词（缺 adapter），不许是脚本找不到的崩溃尾巴。
   it('S4 gate：3 场景 + 自证齐 → conformance 真判红（点名缺 adapter·非崩溃式落红）', () => {
     const root = mkFixture();
     try {

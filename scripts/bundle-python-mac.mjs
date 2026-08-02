@@ -97,7 +97,7 @@ export function pickAsset(assets, series, tag) {
 
 /** GET JSON，带 UA（api.github.com 匿名请求没有 UA 会被 403）+ 可选 token。 */
 async function fetchJson(url) {
-  const headers = { 'User-Agent': 'apollo-platform-build', Accept: 'application/vnd.github+json' };
+  const headers = { 'User-Agent': 'zerocraft-platform-build', Accept: 'application/vnd.github+json' };
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`GET ${url} → HTTP ${res.status}`);
@@ -119,9 +119,9 @@ async function sha256Of(filePath) {
 
 /** 验证 platform-dist/ 已由 scripts/build-platform.mjs 生成（本脚本只管 pybundle 这一段）。 */
 function assertPlatformDistExists() {
-  if (!existsSync(join(OUT, 'apollo.py'))) {
+  if (!existsSync(join(OUT, 'zerocraft.py'))) {
     throw new Error(
-      `platform-dist/apollo.py 不存在——先跑一次 \`node scripts/build-platform.mjs\` 组装骨架，`
+      `platform-dist/zerocraft.py 不存在——先跑一次 \`node scripts/build-platform.mjs\` 组装骨架，`
       + '本脚本只负责往里面灌 pybundle/，不负责组装其余部分。',
     );
   }
@@ -190,7 +190,7 @@ async function main(argv) {
 
   if (dryRun) {
     log('--dry-run：以上是计划，不联网/不下载/不解压/不 pip install（这几步只在 mac 上有意义，真验证留给 mac CI）。');
-    log(`（若 platform-dist/ 已存在会顺带检查一下：${existsSync(join(OUT, 'apollo.py')) ? '✓ apollo.py 在' : '✗ 尚未跑过 build-platform.mjs（真跑前需要先跑）'}）`);
+    log(`（若 platform-dist/ 已存在会顺带检查一下：${existsSync(join(OUT, 'zerocraft.py')) ? '✓ zerocraft.py 在' : '✗ 尚未跑过 build-platform.mjs（真跑前需要先跑）'}）`);
     return;
   }
 
@@ -210,7 +210,7 @@ async function main(argv) {
   const asset = pickAsset(release.assets || [], series, tag);
   log(`  命中资产：${asset.name}`);
 
-  const tmpDir = await mkdtemp(join(tmpdir(), 'apollo-pybuild-'));
+  const tmpDir = await mkdtemp(join(tmpdir(), 'zerocraft-pybuild-'));
   try {
     const tarballPath = join(tmpDir, asset.name);
     log('② 下载…');

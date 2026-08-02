@@ -4,8 +4,8 @@
 // 复用已打样自验的六个 builder（home/campaign/collection/deck/craft 屏 + overlays 浮层）·零手写 DOM（红线）。
 // 信号 → 真存档：所有 action 路由到既有 LobbyHandlers（h.onPlay/onBuyTiangang/onTogglePick/...），持久态读 getView()。
 // 主树（顶栏 + 导航 + 当前页）挂 mainHost；浮层单独挂 overlayHost（开关不碰主树·套路同 game-i）。
-import { mountUI } from '@ui/components/index.js';
-import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { LayoutNode, HandlerMap } from '@zerocraft/engine/ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { textureOverrideUri, iconUri } from './art-textures.js'; // 大厅整壳背景板槽（批30）+ 套装图标（批32）
 import { LOBBY_CSS } from './lobby-styles.js';
@@ -18,9 +18,9 @@ import { buildDeckScreen } from './deck-screen.js';
 import { buildCraftScreen } from './craft-screen.js';
 import { buildOverlay, INITIAL_OVERLAY, type OverlayState } from './overlays.js';
 import { luckyFromVal, type LobbyView, type LobbyHandlers, type GachaResult } from './lobby-types.js';
-import { World } from '@engine/core/world.js';
-import type { Coachmark, Flag } from '@engine/protocol/components.js';
-import { mountOnboardingOverlay } from '@ui/onboarding-overlay.js';
+import { World } from '@zerocraft/engine/engine/core/world.js';
+import type { Coachmark, Flag } from '@zerocraft/engine/engine/protocol/components.js';
+import { mountOnboardingOverlay } from '@zerocraft/engine/ui/onboarding-overlay.js';
 import { GUIDE_COACH } from './lobby-types.js';
 
 const TABS: { id: string; label: string; anchor?: string }[] = [

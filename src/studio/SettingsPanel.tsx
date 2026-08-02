@@ -28,7 +28,7 @@ function ensureSettingsKeyframes(): void {
   document.head.appendChild(s);
 }
 
-/** GET /api/settings 的 provider 项（apollo.py `_settings_view`）。apiKeyMasked 打码回显，绝无原文。 */
+/** GET /api/settings 的 provider 项（zerocraft.py `_settings_view`）。apiKeyMasked 打码回显，绝无原文。 */
 export interface SettingsProvider {
   id: string;
   name: string;

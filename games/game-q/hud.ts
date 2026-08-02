@@ -1,6 +1,6 @@
 // Game Q · Neon Siege —— HUD = 纯 LayoutNode 数据（UI 铁律）。
 // 写世界只经 action 信号名（buy_pulse/buy_cannon/toggle_mute/restart）→ 宿主 ActionSink 入队 → sim 消费。
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { TOWERS } from './theme.js';
 
 export interface HudState {

@@ -5,10 +5,10 @@
 //   · 寻路（grid-move）：敌方挂 HexPos+GridMover+(aggro 写的)Relation → hex A* 求下一格、绕开占位、到相邻停 → 写 HexPos+投影 Transform。
 // 引擎 CanvasRenderer 实时绘制：玩家居中（金圆），五个敌人从四周沿六边形网格寻路逼近。全是数据，最弱 LLM 能填。
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
-import { transformCapability, shapeCapability, colorCapability } from '@atom-skills/index.js';
-import { aggroCapability } from '@skills/tier3/aggro.js';
-import { gridMoveCapability } from '@skills/tier2/grid-move.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import { transformCapability, shapeCapability, colorCapability } from '@zerocraft/engine/atom-skills/index.js';
+import { aggroCapability } from '@zerocraft/engine/skills/tier3/aggro.js';
+import { gridMoveCapability } from '@zerocraft/engine/skills/tier2/grid-move.js';
 
 // 阵营位（Tag.flags）：玩家 / 敌人。
 const PLAYER = 1 << 0; // 1

@@ -10,10 +10,10 @@
 //   ② delay(ticks,cb)—— 单发延时（替手写 setTimeout：banner/思考/cue）：内部即一条**单 cue timeline**（延时 N→回调）。
 // 「延时→回调」不新增引擎能力：manifesto §4 先重组——timeline 单 cue / Timer 原子早已覆盖（评判见 requests.md）。
 // 多条并发（不同 id 各一实体）+ 播完(timeline:done)自动销实体防泄漏。绝不走墙钟推进演出编排逻辑（时序=数据）。
-import { World } from '@engine/core/world.js';
-import { timelineCapability } from '@skills/tier3/timeline.js';
-import type { Component, IWorld } from '@engine/core/types.js';
-import type { Timeline, TimelineCue, Signal } from '@engine/protocol/components.js';
+import { World } from '@zerocraft/engine/engine/core/world.js';
+import { timelineCapability } from '@zerocraft/engine/skills/tier3/timeline.js';
+import type { Component, IWorld } from '@zerocraft/engine/engine/core/types.js';
+import type { Timeline, TimelineCue, Signal } from '@zerocraft/engine/engine/protocol/components.js';
 
 export interface TimelineSpec { id: string; cues: TimelineCue[]; speed?: number }
 export interface EmittedSignal { name: string; arg?: string }

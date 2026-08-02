@@ -8,14 +8,14 @@
 // 输入闸双保险：sim 侧 Clickable.onlyFlag='can-play'（flow 终局/结算窗 onEnter 落闸）；宿主侧在
 // status 离开 playing 时 dispose 输入源——t2-match3-drag-swap 现不查邻格 onlyFlag（缺口已提主池
 // REQ-INPUT-拖拽-onlyFlag），宿主停喂 drag 动作把窗口关死。
-import { Engine } from '@runtime/engine.js';
-import { CanvasRenderer } from '@renderer/index.js';
-import { mountHost } from '@engine/host/mount-host.js';
-import { PointerInputSource, type InputSource, type Command } from '@net/index.js';
-import { mountUI } from '@ui/components/index.js';
-import type { MountHandle, HandlerMap } from '@ui/components/index.js';
-import { apolloToon } from '@ui/apollo-toon-theme.js';
-import type { GameFlow, Resource, MatchBoard } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { CanvasRenderer } from '@zerocraft/engine/renderer/index.js';
+import { mountHost } from '@zerocraft/engine/engine/host/mount-host.js';
+import { PointerInputSource, type InputSource, type Command } from '@zerocraft/engine/net/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { MountHandle, HandlerMap } from '@zerocraft/engine/ui/components/index.js';
+import { apolloToon } from '@zerocraft/engine/ui/apollo-toon-theme.js';
+import type { GameFlow, Resource, MatchBoard } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildLevelBlueprint } from './blueprint.js';
 import { LEVELS, type LevelSpec, finalScore, starsFor, goalRequirements, progressStates, chapterStartingAt } from './levels.js';
 import { buildSelect, buildTopBar, buildBottomBar, buildResultOverlay, buildChapterIntro, type HudState } from './hud.js';

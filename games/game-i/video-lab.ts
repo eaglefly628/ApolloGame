@@ -7,8 +7,8 @@
 //
 // 红线：端口在 sim 之外（不碰 world/hash）；视图是纯 LayoutNode 数据；宿主只调端口 + 局部更新（同声音台）。
 
-import type { LayoutNode } from '@ui/components/index.js';
-import type { AisheVideoHandle } from '@services/aigp/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
+import type { AisheVideoHandle } from '@zerocraft/engine/services/aigp/index.js';
 
 export type { AisheVideoHandle };
 

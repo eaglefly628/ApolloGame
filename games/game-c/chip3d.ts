@@ -1,6 +1,6 @@
-import type { Engine } from '@runtime/engine.js';
-import type { Component } from '@engine/core/types.js';
-import { mulberry32 } from '@atom-skills/random/index.js';
+import type { Engine } from '@zerocraft/engine/runtime/engine.js';
+import type { Component } from '@zerocraft/engine/engine/core/types.js';
+import { mulberry32 } from '@zerocraft/engine/atom-skills/random/index.js';
 import { seatWorldPos, seatStackPos, POT3D } from './build3d.js';
 
 // ═══════════════════════════════════════════════════════════════

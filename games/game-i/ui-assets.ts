@@ -3,7 +3,7 @@
 // 走**统一 Asset 数据路线**（资产手册 §6）：贴图皮 = 登记进本地索引的正规资产，游戏侧按 **key** 引用，
 // 解析成站点绝对 URL 后喂 `Button.skin`（已解析 URL·同 Image.src 约定）。**不再内联 data-URI 硬编码**（旧 sample 的临时凑合）。
 // 真相文件：`public/games/game-i/art/index.json`（同一份·供站点服务 + vendor 自检测试）；此处 inline 一份供构建期消费。
-import { parseAssetIndex, type AssetIndex } from '@assets/index.js';
+import { parseAssetIndex, type AssetIndex } from '@zerocraft/engine/assets/index.js';
 
 // 自产程序化 SVG 皮（零外部素材·"游戏=数据"路径）
 export const SKIN_METAL = 'tex/skin-metal';

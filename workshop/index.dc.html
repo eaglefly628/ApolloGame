@@ -930,7 +930,7 @@
                 <sc-if value="{{ logsEmptyText }}" hint-placeholder-val="{{ false }}">
                   <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px">{{ logsEmptyText }}</div>
                 </sc-if>
-                <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;margin-top:8px">逐笔明细在 <span style="font-family:ui-monospace,Menlo,monospace">.apollo/llm-logs/</span>（JSONL）· 要含全文 prompt/response 用 <span style="font-family:ui-monospace,Menlo,monospace">APOLLO_LOG_VERBOSE=1</span> 起服 · 服务终端有 [LLM] 进出打点</div>
+                <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;margin-top:8px">逐笔明细在 <span style="font-family:ui-monospace,Menlo,monospace">.zerocraft/llm-logs/</span>（JSONL）· 要含全文 prompt/response 用 <span style="font-family:ui-monospace,Menlo,monospace">ZEROCRAFT_LOG_VERBOSE=1</span> 起服 · 服务终端有 [LLM] 进出打点</div>
               </div>
               <div style="text-align:center;font-family:'Fredoka';font-weight:600;color:rgba(26,79,110,.8);font-size:12px;padding:4px 0 0">爱萌互动 ZEROCRAFT PREVIEW {{ versionShort }} · key 明文只存本机 .apollo-config.json（gitignored）· 回显一律打码</div>
             </div>
@@ -1011,7 +1011,7 @@ class Component extends DCLogic {
       .then(d => this.setState({ version: (d && d.version) || '0.1.0' }))
       .catch(() => this.setState({ version: '0.1.0' }));
     this.refreshSettings();
-    // 设计先行现场恢复（owner 07-11「杀掉重开不重来」）：聊天/阶段/名字落盘于 .apollo/workshop-chats/_design-draft.json
+    // 设计先行现场恢复（owner 07-11「杀掉重开不重来」）：聊天/阶段/名字落盘于 .zerocraft/workshop-chats/_design-draft.json
     fetch('/api/workshop/draft').then(r => r.json()).then(d => {
       const dr = d && d.success && d.draft;
       if (!dr || !(dr.msgs || []).length) return;
@@ -1132,7 +1132,7 @@ class Component extends DCLogic {
     fetch('/api/library/' + encodeURIComponent(slug) + '/stats').then(r => r.json())
       .then(d => { if (this.state.editSlug === slug && d && d.success) this.setState({ editStats: d }); })
       .catch(() => {});
-    // 对话持久化（owner 07-11「session 持久性」）：进工坊即恢复该卡带三角色历史（服务端 .apollo/workshop-chats/）。
+    // 对话持久化（owner 07-11「session 持久性」）：进工坊即恢复该卡带三角色历史（服务端 .zerocraft/workshop-chats/）。
     fetch('/api/agent/chats?slug=' + encodeURIComponent(slug)).then(r => r.json())
       .then(d => { if (this.state.editSlug === slug && d && d.success && d.chats)
         this.setState({ chats: { gd: d.chats.gd || [], pe: d.chats.pe || [], art: d.chats.art || [] },
@@ -1385,7 +1385,7 @@ class Component extends DCLogic {
     if ('packId' in body && !body.packId) {
       const loaded = Array.isArray(this.state.artPacks) && this.state.artPacks.length > 0;
       this.setState({ artLastResult: { tone: 'fail', text: '✕ ' + label + '：没有可用的风格包（packId 为空）。' +
-        (loaded ? '请在上方「风格包」里点选一个再生成。' : '风格包还没加载完——正在重新拉取，稍等 1-2 秒再点；若一直空，刷新页面并确认 apollo.py 在跑（/api/art/style-packs 应返回风格包列表）。') } });
+        (loaded ? '请在上方「风格包」里点选一个再生成。' : '风格包还没加载完——正在重新拉取，稍等 1-2 秒再点；若一直空，刷新页面并确认 zerocraft.py 在跑（/api/art/style-packs 应返回风格包列表）。') } });
       this.showToast('先选风格包（未加载/未选）');
       this.ensureArtMeta && this.ensureArtMeta();
       return;
@@ -1485,7 +1485,7 @@ class Component extends DCLogic {
       const meta = d.elapsedMs ? ('⏱ ' + (d.elapsedMs / 1000).toFixed(1) + 's' + tok) : '';
       const withReply = msgs.concat([{ role: 'assistant', content: d.reply || '（空回复）', meta: meta || undefined }]);
       if (d.capGap) {  // 能力缺口台账即录（capgap 快速通道·owner 07-11 批准）——对话里留痕
-        withReply.push({ role: 'assistant', content: '🧩 能力缺口已记录：' + (d.capGap.title || '') + '（进 .apollo/cap-gaps 台账·主程下沉成引擎能力后即可用数据引用）' });
+        withReply.push({ role: 'assistant', content: '🧩 能力缺口已记录：' + (d.capGap.title || '') + '（进 .zerocraft/cap-gaps 台账·主程下沉成引擎能力后即可用数据引用）' });
       }
       this.watchChatLive(false);
       this.setState(cur => ({
@@ -1802,7 +1802,7 @@ class Component extends DCLogic {
           : window.open('/bench?to=' + encodeURIComponent('/?game=lib:' + cc.slug + '&from=workshop&bare=1'), '_blank'),
         edit: () => cc.valid ? this.openEdit(cc.slug, name, desc) : this.showToast('卡带 manifest 损坏，先在旧工作台修') };
     }).concat(liveList.map((gg, i) => ({
-      // 引擎内置：显示各自真图标 + 真名 + 题材副标 + 简介浮标（元信息来自 launcher.tsx·apollo /api/games 透出）
+      // 引擎内置：显示各自真图标 + 真名 + 题材副标 + 简介浮标（元信息来自 launcher.tsx·zerocraft /api/games 透出）
       k: coverKeys[(cartList.length + i) % coverKeys.length], cn: gg.title || gg.id, tag: '引擎内置', sc: coverGrads[(cartList.length + i) % coverGrads.length],
       icon: gg.icon || '', coverUrl: gg.coverUrl || '', desc: gg.description || (gg.title || gg.id),
       status: gg.hasLocalArt ? '有美术' : '待接美术', meta: gg.subtitle || (gg.hasLocalArt ? '本地美术就绪' : '零美术 · 程序色块'),

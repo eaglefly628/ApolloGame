@@ -1,7 +1,7 @@
 // Game F · 牌组加载器（T2，game-f-core-combat-dev.md「唯一新逻辑」）+ 首发牌组数据（T5）。
 // 宪法：游戏=数据。本模块不发明能力——只把「牌组数组」物化成现成 capability 的规则实体
 //（group-count / EventWhen / Effect / banded / card-pile 权重），最弱 LLM 也能产出牌组数据。
-import type { EntityBlueprint } from '@assembly/demo.assembly.js';
+import type { EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 import { FACT_WEI, FACT_SHU, ASSASSIN, TACTICIAN, BENCH_OCC, ENCHANT_MUL } from './constants.js';
 import type { Faction } from './heroes.js';
 

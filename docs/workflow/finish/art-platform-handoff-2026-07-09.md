@@ -8,7 +8,7 @@
 
 ## ── 致 PST（studio/平台线）──
 
-**你的域现在的样子**：`ArtLedgerPanel` = 唯一美术 UI（你 T2 的台账墙升级成双数据源平台）；`scripts/art-replace.mjs` = 大脑（你的 derive/batch/三式/换皮全保留）；`apollo.py` art/assets 端点归你维护。
+**你的域现在的样子**：`ArtLedgerPanel` = 唯一美术 UI（你 T2 的台账墙升级成双数据源平台）；`scripts/art-replace.mjs` = 大脑（你的 derive/batch/三式/换皮全保留）；`zerocraft.py` art/assets 端点归你维护。
 
 Lead 在你域里改了什么（diff 都在 `5401c68e`）：
 1. `/api/assets/generate` 与三式/换皮**去掉了全部硬编码 mock**——mock 只在请求显式带 `mock:true`；前端加了「mock 试跑」勾选框。**别再写死 mock**，这是 demo 死穴。

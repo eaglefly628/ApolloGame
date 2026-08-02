@@ -5,8 +5,8 @@ import { describe, it, expect } from 'vitest';
 import { loadoutPattern } from './game-d.js';
 import { makeDie, rollPool, type DieDef, type RolledDie } from './dice.js';
 import { detectPattern } from './combat.js';
-import { nextRandom } from '@skills/atoms/random/index.js';
-import type { RandomSeed } from '@engine/protocol/components.js';
+import { nextRandom } from '@zerocraft/engine/skills/atoms/random/index.js';
+import type { RandomSeed } from '@zerocraft/engine/engine/protocol/components.js';
 
 const def = (el: string): DieDef => ({ el } as unknown as DieDef);
 const seed = (s: number): RandomSeed => ({ type: 'RandomSeed', seed: s, sequence: 0 } as RandomSeed);

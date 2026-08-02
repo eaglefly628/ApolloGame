@@ -5,7 +5,7 @@
 //   · draggable/dropZone  把牌拖进「选入区」= 等同点选（拖放·引擎内建手势）
 // 视图 buildPickHand(state) 纯函数；reducer applyPick(state,信号) 纯函数·可单测。
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 
 export interface PCard { id: string; rank: number; suit: '♠' | '♥' | '♦' | '♣' }
 export interface PickState { selected: string[] }

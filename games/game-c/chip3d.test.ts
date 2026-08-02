@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { build3DTableBlueprint, seatWorldPos, seatStackPos, FELT_RX, FELT_RZ } from './build3d.js';
 import { Chip3D } from './chip3d.js';
-import type { RigidBody3D, Mesh3D } from '@engine/protocol/components.js';
+import type { RigidBody3D, Mesh3D } from '@zerocraft/engine/engine/protocol/components.js';
 
 function freshEngine(): Engine {
   const e = new Engine();

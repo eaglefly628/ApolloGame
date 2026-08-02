@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateLayoutNode, type LayoutNode } from '@ui/components/index.js';
+import { validateLayoutNode, type LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import {
   buildTopBar, buildBurst, buildResult, buildSelect, buildRevive, defaultHud,
   type SelectState, type ResultState, type BurstState, type ReviveState,

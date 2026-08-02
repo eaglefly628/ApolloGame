@@ -2,8 +2,8 @@
 // 验证「填数据即出 UI」：整棵画廊数据经引擎纯函数渲染，应含全部控件标记、且文本转义防 XSS。
 
 import { describe, it, expect } from 'vitest';
-import { renderNode, resolveBindings } from '@ui/components/index.js';
-import type { UIDataSource } from '@ui/components/index.js';
+import { renderNode, resolveBindings } from '@zerocraft/engine/ui/components/index.js';
+import type { UIDataSource } from '@zerocraft/engine/ui/components/index.js';
 import { buildGallery } from './gallery.js';
 import { THEMES, onyx } from './themes.js';
 

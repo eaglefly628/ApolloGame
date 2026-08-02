@@ -1,4 +1,4 @@
-import type { AssetManifest } from '@assets/index.js';
+import type { AssetManifest } from '@zerocraft/engine/assets/index.js';
 
 // ════════════════════════════════════════════════════════════════════════
 //  Game E · 小丑美术资产清单（纯数据：key → 图源）

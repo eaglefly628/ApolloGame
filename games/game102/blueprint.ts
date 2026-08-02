@@ -10,19 +10,19 @@
 //   胜负流程   = t3-flow（GameFlow：playing →(全清/门开)victory /(限额尽)defeat）
 //   计量       = f1-resource（得分/连击/钥匙/门目标）· 确定性随机 = w1-random（关卡 seed）
 // 能力总览：docs/design/game102/capability-plan.md（Lead 裁①：先组合表达·零运行时游戏层例外）。
-import type { WorldBlueprint, EntityBlueprint } from '@assembly/demo.assembly.js';
+import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 import {
   transformCapability, shapeCapability, tagCapability, colorCapability,
   resourceCapability, flagCapability, randomCapability, velocityCapability,
   timerCapability, relationCapability, destroyCapability, overlapDetectCapability,
-} from '@atom-skills/index.js';
-import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability } from '@skills/tier1/index.js';
+} from '@zerocraft/engine/atom-skills/index.js';
+import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability } from '@zerocraft/engine/skills/tier1/index.js';
 import {
   clickableCapability, groupCountCapability, effectApplyCapability, pathFollowCapability, pathFollowAt,
   selfRuleCapability, hitboxCapability, mortalCapability, triggerZoneCapability, eventWhenCapability, textBindingCapability,
   faceRotateCapability,
-} from '@skills/tier2/index.js';
-import { flowCapability, aggroCapability, prefabCapability, casterCapability } from '@skills/tier3/index.js';
+} from '@zerocraft/engine/skills/tier2/index.js';
+import { flowCapability, aggroCapability, prefabCapability, casterCapability } from '@zerocraft/engine/skills/tier3/index.js';
 import {
   PALETTE, CELL_BIT, CANNON_BIT, KEY_BIT, BELT_BIT, TRAY_BIT, ZONE_BIT, FIRE, FIELD_W, CONFIG,
   PIPE, PICTURE, BOARD_PAD, BOARD_GAP, TRAY, ACTION_BAR,

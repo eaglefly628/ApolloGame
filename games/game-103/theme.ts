@@ -4,8 +4,8 @@
 //
 // 设计真相：docs/design/game-103/gdd.md · balance-design.md · ui-scene-design.md（+4 张 .dc.html）。
 // 能力归属：docs/design/game-103/capability-plan.md。数据全摆成表，由现成引擎能力解释（见 blueprint.ts 头注）。
-import type { UITheme } from '@ui/components/index.js';
-import { ZONE_FLAG } from '@skills/tier2/index.js';
+import type { UITheme } from '@zerocraft/engine/ui/components/index.js';
+import { ZONE_FLAG } from '@zerocraft/engine/skills/tier2/index.js';
 
 // ── 画布/世界尺寸（竖屏 9:16 相机视口 + 有界大场地·相机跟随玩家）──────────────
 export const VIEW_W = 480;      // 相机视口宽（逻辑像素·CanvasRenderer 定尺盒）

@@ -156,7 +156,7 @@ export function DevTools() {
         color: '#475569',
         textAlign: 'center',
       }}>
-        Dev Tools offline — start with <code style={{ color: '#94a3b8' }}>python3 apollo.py</code> to enable
+        Dev Tools offline — start with <code style={{ color: '#94a3b8' }}>python3 zerocraft.py</code> to enable
       </div>
     );
   }

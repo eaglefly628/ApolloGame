@@ -7,10 +7,10 @@
 // Overlap{entityA,entityB,normal,depth} 碰撞事实）+ collision-resolve（按 Mass + 重叠法线把相撞体推开 →
 // 真·碰撞响应）。四物体相向运动，于中心相撞后被推开。全是数据，无专属 system。
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
-import { transformCapability, velocityCapability, shapeCapability, colorCapability, overlapDetectCapability } from '@atom-skills/index.js';
-import { motionApplyCapability } from '@skills/tier1/index.js';
-import { collisionResolveCapability } from '@skills/tier2/index.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import { transformCapability, velocityCapability, shapeCapability, colorCapability, overlapDetectCapability } from '@zerocraft/engine/atom-skills/index.js';
+import { motionApplyCapability } from '@zerocraft/engine/skills/tier1/index.js';
+import { collisionResolveCapability } from '@zerocraft/engine/skills/tier2/index.js';
 
 function body(x: number, y: number, vx: number, vy: number, tint: number): WorldBlueprint['entities'][string] {
   return {

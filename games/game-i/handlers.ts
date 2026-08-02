@@ -6,7 +6,7 @@
 // 测试场的逻辑很简单：把每个控件发来的信号 + 当前值打进事件日志，
 // 让你直观看到「填数据即出 UI、动一下就有信号」。换皮信号 setTheme 交给宿主重挂。
 
-import type { HandlerMap } from '@ui/components/index.js';
+import type { HandlerMap } from '@zerocraft/engine/ui/components/index.js';
 
 export interface GalleryHooks {
   /** 把一条信号写进事件日志。 */

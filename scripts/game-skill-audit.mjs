@@ -63,8 +63,9 @@ function audit(game) {
 
     for (let i = 0; i < lines.length; i++) {
       const ln = lines[i];
-      // 能力接入面：skills / atoms 的 import（含别名与相对路径）
-      const im = ln.match(/from\s+['"]([^'"]*(?:@atom-skills|@skills|\/skills\/)[^'"]*)['"]/);
+      // 能力接入面：skills / atoms 的 import（含旧别名 @atom-skills·@skills、新包名子路径
+      // @zerocraft/engine/atom-skills/·@zerocraft/engine/skills/、与相对路径 /skills/）
+      const im = ln.match(/from\s+['"]([^'"]*(?:@atom-skills|@skills|\/atom-skills\/|\/skills\/)[^'"]*)['"]/);
       if (im) capImports.add(im[1].replace(/^.*\/skills\//, 'skills/'));
       if (/\b(parseManifest|WorldBlueprint|createWorld|new World\b|mountManifestGame)/.test(ln)) usesWorldOrManifest++;
       // 红旗（游戏层禁区）
@@ -115,8 +116,9 @@ function adviceBits(r) {
   if (r.flags.nakedFill.length) bits.push(`裸bg色×${r.flags.nakedFill.length}`);
   return bits;
 }
-// ── 红旗棘轮基线（机读·随本工具同目录·APOLLO_AUDIT_BASELINE 可覆盖供对抗测试用固定基线）──
-const BASELINE_PATH = process.env.APOLLO_AUDIT_BASELINE || join('scripts', 'audit-baseline.json');
+// ── 红旗棘轮基线（机读·随本工具同目录·ZEROCRAFT_AUDIT_BASELINE 可覆盖供对抗测试用固定基线·
+//    旧名 APOLLO_AUDIT_BASELINE 过渡期仍读）──
+const BASELINE_PATH = process.env.ZEROCRAFT_AUDIT_BASELINE || process.env.APOLLO_AUDIT_BASELINE || join('scripts', 'audit-baseline.json');
 /** 基线三指标 → audit flags 键 → 展示名。 */
 const RATCHET_METRICS = [
   ['nakedRandom', 'mathRandom', '裸Math.random'],

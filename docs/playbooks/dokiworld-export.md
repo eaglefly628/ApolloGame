@@ -20,7 +20,7 @@
 **打包出图（自动·owner 2026-07-22）**：打包时超 1080P 的 PNG 会**同比例缩进 1920×1080 框**（长边≤1920·短边≤1080·只缩不放·仅 PNG）。检测零依赖；确有超标图才需 `pip install Pillow`（无超标=不处理）。
 
 ## 3. 操作：怎么打包
-1. 仓库根 `python3 apollo.py workshop` → 开 `http://localhost:4000/workshop/`（首次先 `npm install`，dist 要真构建）。
+1. 仓库根 `python3 zerocraft.py workshop` → 开 `http://localhost:4000/workshop/`（首次先 `npm install`，dist 要真构建）。
 2. 进**发布屏** → 找到游戏（game-a / b / c）。
 3. 选平台行 → 点 **「打包」**（状态 `⏳ 打包中…`；dist 走 `vite build` 慢十几~几十秒·**串行**一次一个）。
 4. 变 `✓ 就绪` → 点 **「下载」** → 拿到 `<game>-dokiworld[-dist].zip`。CLI 等价：`node tools/export-game.mjs <game> --target dokiworld`（源码工程）。

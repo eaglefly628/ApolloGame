@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
-import type { Resource, PlayedHand, Flag, Card, StringVar, PerCardRule, PerCardRetrigger } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import type { Resource, PlayedHand, Flag, Card, StringVar, PerCardRule, PerCardRetrigger } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   buildGameEBlueprint,
   card,

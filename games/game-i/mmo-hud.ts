@@ -5,7 +5,7 @@
 // 全是绝对定位 Panel(x/y) 叠层 + ProgressBar/Avatar/Badge/Tag/Table/Tabs/Label + layout.fx 质感。
 // 任何一处「现有控件真表达不了」的，才记 requests.md 当缺口——本页全程零新控件、零逃生 React。
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 
 // ── 小地图圆盘底（程序化 SVG·避免外部资产·data-URI 同 TEXTURE_URI 思路）────────────────
 const MAP_SVG =

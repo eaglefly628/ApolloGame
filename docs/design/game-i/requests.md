@@ -63,5 +63,5 @@
 > 契约同上（3d.md + render.ts）；勿改 three-renderer/three/**。
 
 ### REQ-I-gallery拆分 · gallery.ts 1620 行按展台分模块（token 优化③·owner 2026-07-15 批）· [2026-07-15] · Lead 转呈 → **指派：PUI（game-i 域·勿由他人代拆）** · status: open · 优先级: P2 · 类型: 结构拆分（零逻辑改）
-> 背景：owner 批「拆大文件」降低 session 读入成本（launcher.tsx 已由 Lead 拆·apollo.py 先例）。`games/game-i/gallery.ts` 1620 行=单文件 top1，但 game-i 是 PUI 地盘（CLAUDE.md 边界），Lead 不越界。
-> spec 建议（照 apollo.py/launcher 先例）：按展台/页签的自然缝拆 `games/game-i/gallery/*.ts`，gallery.ts 留薄入口 re-export；**逐字节搬运零逻辑改**；tsc+vitest（game-i 测试零改动照绿）+build 全绿直推；拆后单文件 ≤500 行。
+> 背景：owner 批「拆大文件」降低 session 读入成本（launcher.tsx 已由 Lead 拆·zerocraft.py 先例）。`games/game-i/gallery.ts` 1620 行=单文件 top1，但 game-i 是 PUI 地盘（CLAUDE.md 边界），Lead 不越界。
+> spec 建议（照 zerocraft.py/launcher 先例）：按展台/页签的自然缝拆 `games/game-i/gallery/*.ts`，gallery.ts 留薄入口 re-export；**逐字节搬运零逻辑改**；tsc+vitest（game-i 测试零改动照绿）+build 全绿直推；拆后单文件 ≤500 行。

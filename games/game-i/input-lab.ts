@@ -6,8 +6,8 @@
 // 红线（同声音台）：绑定表与解析是纯数据 + 确定性纯函数（可单测）；真正「抓 DOM 事件」是运行时职责，
 // 由宿主（game-i.ts）那薄薄一层监听胶水做——不是游戏数据。本文件不碰 DOM。
 
-import type { LayoutNode } from '@ui/components/index.js';
-import type { RawInputData, KeyBinding } from '@engine/protocol/components/input.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
+import type { RawInputData, KeyBinding } from '@zerocraft/engine/engine/protocol/components/input.js';
 
 export type { RawInputData };
 

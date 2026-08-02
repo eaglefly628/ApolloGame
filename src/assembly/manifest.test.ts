@@ -49,7 +49,7 @@ describe('manifest 桥接：导出↔导入对称、可加载、可玩', () => {
   });
 
   it('canonical 预设形态(平台跳跃, 相机居中)→ parseManifest→load→过 ZeroCraftBench', () => {
-    // 镜像 apollo.py 的 platformer 预设结构：证明「在透视器里打开」的预设路径可加载可玩。
+    // 镜像 zerocraft.py 的 platformer 预设结构：证明「在透视器里打开」的预设路径可加载可玩。
     const manifest = {
       name: 'preset-platformer',
       capabilities: ['a1-transform', 'b1-velocity', 'b2-acceleration', 'c1-shape', 'l2-color',

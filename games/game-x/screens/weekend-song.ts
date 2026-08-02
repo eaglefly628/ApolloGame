@@ -8,7 +8,7 @@
 //  全 LayoutNode 数据 + ZANKYOU 字体槽（Silkscreen/DotGothic16）；封面走 Image(内联像素 SVG)。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { deviceShell } from '../device-frame.js';
 import { svgUri } from '../scenes.js';
 

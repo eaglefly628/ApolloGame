@@ -1,4 +1,4 @@
-import type { Card } from '@engine/protocol/components.js';
+import type { Card } from '@zerocraft/engine/engine/protocol/components.js';
 import { cardFace } from './theme.js';
 import { dealHoldem, bestOf7, HOLDEM_TYPE_ORDER, holdemRank, type HoldemDeal, type HandRank } from './holdem-eval.js';
 import {

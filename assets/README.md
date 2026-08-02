@@ -40,7 +40,7 @@ assets/
 ## 资源库浏览器 / 导入器
 
 launcher 首页 →「🗃 资源库」：统一浏览**项目资产 + FreeArtLib + 各游戏清单**（搜索/分类树/tag 过滤），
-「📥 导入资产」走四步向导（散图批量 / 精灵表切割 / 乱目录归一化），提交经 apollo.py
+「📥 导入资产」走四步向导（散图批量 / 精灵表切割 / 乱目录归一化），提交经 zerocraft.py
 `POST /api/assets/import` 写盘（限 assets/ 子树）并增量更新本索引。设计见 `docs/design/asset-library.md`。
 
 ## To-Be-Filled（TBF）约定

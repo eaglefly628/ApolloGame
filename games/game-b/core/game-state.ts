@@ -7,7 +7,7 @@
 //   点数=真役/符/番计分（scoreWin·门清/开手 G1/G2/G3 均真算）；无役兜底走占位固定分（守恒优先）。
 //   ⚠ AI=**简版进张启发**（打孤张·PRNG tiebreak）；真人设 BT=gdd §五 t2-behavior-tree（B-006 记债）。
 //   鸣牌（吃碰杠）/立直/振听 = 后续切片（本切片=摸切打循环 + 门清和了·先让一局能跑通打穿）。
-import { randomInt, type RandomSeed } from '@atom-skills/random/index.js';
+import { randomInt, type RandomSeed } from '@zerocraft/engine/atom-skills/random/index.js';
 import { kindOf, isTerminalOrHonor } from './tiles-def.js';
 import { dealWall } from './wall.js';
 import { isWinningHand, tenpai, winsWithMelds, tenpaiWithMelds } from './hand-eval.js';

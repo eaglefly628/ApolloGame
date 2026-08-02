@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { validateLayoutNode } from '@ui/components/validate.js';
-import type { Card } from '@engine/protocol/components.js';
+import { validateLayoutNode } from '@zerocraft/engine/ui/components/validate.js';
+import type { Card } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildTable, buildMenu, type TableView } from './hud.js';
 import { CLOTHING_ITEMS } from './wardrobe.js';
 import { OPPONENT_ANCHORS } from './theme.js';

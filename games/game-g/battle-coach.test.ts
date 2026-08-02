@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { collectActiveCoachmarks } from '@renderer/coachmark.js';
+import { collectActiveCoachmarks } from '@zerocraft/engine/renderer/coachmark.js';
 import { BATTLE_COACH, nextCoachStep, makeCoachWorld } from './battle-coach.js';
 
 describe('Game G · 战斗新手引导（coachmark 能力接入·甲）', () => {

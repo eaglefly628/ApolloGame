@@ -1,8 +1,8 @@
 // Game 102 · Pixel Pour —— S3 骨架关机器门：manifest 立起 + 引擎 load + 2tick 空跑（「能存必须能跑」）。
 // 另证 tilemap 适配核对结论：棋盘=实体阵，group-count 能按色数出在板同色格（tilemap 做不到的事）。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
-import type { Resource } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import type { Resource } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { LEVEL_1 } from './levels.js';
 

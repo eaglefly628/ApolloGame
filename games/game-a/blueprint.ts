@@ -7,10 +7,10 @@
 //   输入闸     = Flag can-act（骨架关闸·S4 出牌轮开闸）
 // 判型不进 world：t3-hand-pattern 是纯函数解释器（无 ECS 系统），S4 由出牌链/AI 直接调用，
 // config 数据在 rules.ts guandanConfig()。
-import type { WorldBlueprint, EntityBlueprint } from '@assembly/demo.assembly.js';
-import { resourceCapability, flagCapability, randomCapability } from '@atom-skills/index.js';
-import { cardPileCapability } from '@skills/tier2/index.js';
-import { flowCapability } from '@skills/tier3/index.js';
+import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import { resourceCapability, flagCapability, randomCapability } from '@zerocraft/engine/atom-skills/index.js';
+import { cardPileCapability } from '@zerocraft/engine/skills/tier2/index.js';
+import { flowCapability } from '@zerocraft/engine/skills/tier3/index.js';
 import { buildDeck108, SEATS, INITIAL_FUNDS, LEVEL_START, DRESS_TIERS } from './rules.js';
 
 export interface TableOptions {

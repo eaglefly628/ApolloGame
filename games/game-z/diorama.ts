@@ -7,10 +7,10 @@
 //
 // 盒面着色约定（Mesh3D box）：top=主色（顶/侧·俯视最显眼）、front=暗一档阴面。盒中心 y=h/2 时下沿坐地（地台顶在 y=0）。
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
-import { motionApplyCapability } from '@skills/tier1/index.js';
-import { overlapDetect3dCapability, navmeshBakeCapability, collisionResolve3dCapability } from '@skills/atoms/index.js';
-import { pathfindCapability } from '@skills/tier2/index.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import { motionApplyCapability } from '@zerocraft/engine/skills/tier1/index.js';
+import { overlapDetect3dCapability, navmeshBakeCapability, collisionResolve3dCapability } from '@zerocraft/engine/skills/atoms/index.js';
+import { pathfindCapability } from '@zerocraft/engine/skills/tier2/index.js';
 import { MODEL_FOX, MAT_PLANK_WOOD, MAT_STONE, MAT_RUNE, TEX_RUNE_EMISSIVE, TEX_PLANK_ALBEDO } from './assets.js';
 
 type Ent = WorldBlueprint['entities'][string];

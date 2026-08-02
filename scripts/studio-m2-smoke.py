@@ -13,8 +13,8 @@ import socket
 import http.client
 from pathlib import Path
 
-os.environ['APOLLO_MOCK_LLM'] = '1'          # 开 mock provider（import 前置）
-os.environ.pop('APOLLO_MOCK_BAD_N', None)    # 坏 JSON 次数由测试逐项直接控 _MOCK_BAD_REMAINING
+os.environ['ZEROCRAFT_MOCK_LLM'] = '1'          # 开 mock provider（import 前置）
+os.environ.pop('ZEROCRAFT_MOCK_BAD_N', None)    # 坏 JSON 次数由测试逐项直接控 _MOCK_BAD_REMAINING
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -100,10 +100,10 @@ st, d = post('/api/generate', {'provider': 'mock', 'mode': 'revise', 'current_ma
 check('revise 缺 instruction → 失败', not d.get('success') and 'instruction' in str(d.get('error', '')), f'{str(d)[:120]}')
 
 # 6) mock 未启用时不可见（子函数级验证：临时关 env）
-os.environ['APOLLO_MOCK_LLM'] = '0'
+os.environ['ZEROCRAFT_MOCK_LLM'] = '0'
 check('mock 关闭 → get_api_key(mock)=None', apollo.get_api_key('mock') is None)
 check('mock 关闭 → providers 不含 mock', not any(p.get('id') == 'mock' for p in apollo.get_available_providers()))
-os.environ['APOLLO_MOCK_LLM'] = '1'
+os.environ['ZEROCRAFT_MOCK_LLM'] = '1'
 
 print(f'\n[smoke] PASS={PASS}  FAIL={FAIL}')
 sys.exit(1 if FAIL else 0)

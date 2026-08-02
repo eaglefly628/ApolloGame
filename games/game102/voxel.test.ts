@@ -1,8 +1,8 @@
 // Game 102 · 3D 体素立方核心 —— 数据结构不变式自验（确定性世界位 / 外壳只渲表面 / 立方居中 / pivot 自转 / 载入无错）。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
-import { QueuedInputSource } from '@net/index.js';
-import type { Pivot3D, Anim3D, Transform3D } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { QueuedInputSource } from '@zerocraft/engine/net/index.js';
+import type { Pivot3D, Anim3D, Transform3D } from '@zerocraft/engine/engine/protocol/components.js';
 import { VOX, coreBounds, voxelPos, isCoreSurface, coreCubeVoxels, buildVoxelScene } from './voxel.js';
 
 describe('Game 102 · 3D 体素立方（数据结构不变式）', () => {

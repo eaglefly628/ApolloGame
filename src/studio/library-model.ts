@@ -1,6 +1,6 @@
 // 创作台 v1 · 用户游戏库前端数据模型（纯函数·无副作用·可无头单测）。
 //  后端 library/<slug>/meta.json → 卡带架要的 GameEntry；provider 列表 → 顶栏状态灯判定。
-//  接后端见 apollo.py：GET /api/library（_list_library）与 GET /api/generate/providers（get_available_providers）。
+//  接后端见 zerocraft.py：GET /api/library（_list_library）与 GET /api/generate/providers（get_available_providers）。
 
 /** 卡带（内置游戏 + library 卡带共用的展示形状）。原在 launcher.tsx，抽此处以便 library 映射复用且可单测。 */
 export interface GameEntry {
@@ -18,7 +18,7 @@ export interface GameEntry {
   hasLogic?: boolean;
 }
 
-/** library/<slug>/meta.json 的形状（apollo.py `_write_meta` 落盘字段；description 可选·后端暂不写）。 */
+/** library/<slug>/meta.json 的形状（zerocraft.py `_write_meta` 落盘字段；description 可选·后端暂不写）。 */
 export interface LibraryMeta {
   name?: string;
   subtitle?: string;
@@ -36,7 +36,7 @@ export interface LibraryEntry {
   slug: string;
   meta: LibraryMeta;
   valid: boolean;
-  /** design/ 子树是否已有 .md 设计稿（apollo.py `_list_library`）。 */
+  /** design/ 子树是否已有 .md 设计稿（zerocraft.py `_list_library`）。 */
   hasDesign?: boolean;
   /** TS 例外（owner 07-11）：allowTs=卡带打了勾；hasLogic=盘上真有 logic.ts。 */
   allowTs?: boolean;
@@ -86,7 +86,7 @@ export interface ApiStatusLight {
   tone: 'ok' | 'warn';
 }
 
-// 本地 provider（Ollama）后端不需要 key 恒报 available=true（apollo.py get_api_key：env_key 空
+// 本地 provider（Ollama）后端不需要 key 恒报 available=true（zerocraft.py get_api_key：env_key 空
 // → 恒返 'local'），但本机未必真跑着服务——仅凭「不需要 key」不能算已连接（Lead 验收缺陷 #3）。
 // 判定只计配了 key 的云 provider；本地探活（localhost:11434/api/version）留 M3 设置页。
 export const LOCAL_PROVIDER_IDS: ReadonlySet<string> = new Set(['local', 'ollama']);

@@ -1,6 +1,6 @@
 // 战场特效样例（特效库 B）：定时引爆「爆炸环」prefab——实体数随引爆增长、火花到期自毁、总量有界。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { fxBlueprint } from './fx-lab.js';
 
 function entityCount(e: Engine): number {

@@ -1,6 +1,6 @@
-# 发布管线契约（apollo.py 薄代理 + studio 向导页照此建）
+# 发布管线契约（zerocraft.py 薄代理 + studio 向导页照此建）
 
-> PS 维护·2026-07-04。Lead 裁决（REQ-PUBLISH）：接入形态=**apollo.py 薄代理 `/api/publish/*` → 本 `serve.py`（只透传不塞逻辑）**，studio player 模式接向导页 UI。
+> PS 维护·2026-07-04。Lead 裁决（REQ-PUBLISH）：接入形态=**zerocraft.py 薄代理 `/api/publish/*` → 本 `serve.py`（只透传不塞逻辑）**，studio player 模式接向导页 UI。
 > **机读真相 = `serve.py` 本身**（常量/函数），本文件只描述契约意图与交接边界，不手抄字段表（防口径漂移）。
 
 ## 稳定判词 token（消费端只认这套·勿 scrape 日志）
@@ -10,7 +10,7 @@
 - **段判词** `ST_OK` / `ST_BLOCKED`（缺前置=未填 appId/depot/builder·带 `reason`·非错误·可预览可修）。
 - **任务判词** `JOB_IDLE / JOB_RUNNING / JOB_DONE / JOB_ERROR`（`job_status()`·= 进度口径）。
 
-## apollo.py 应透传的端点（薄代理·原样转发含日志流）
+## zerocraft.py 应透传的端点（薄代理·原样转发含日志流）
 
 | 端点 | 用途 | 返回要点（形状见 serve.py） |
 |---|---|---|
@@ -21,7 +21,7 @@
 | `POST /api/run` | 真跑（`build`/`gen-and-publish`/`publish`/`login`） | `ok`·`action`；进度经 `/api/log` 轮询 |
 | `GET /api/log?offset=` | 实时日志 + 进度 | `text`·`offset`·`job`(判词) |
 
-> 单段也可独立调：`stage_package/stage_genvdf/stage_upload(cfg)`（apollo.py 按需组合）。
+> 单段也可独立调：`stage_package/stage_genvdf/stage_upload(cfg)`（zerocraft.py 按需组合）。
 
 ## studio 向导页必须做到（Lead 硬要求）
 

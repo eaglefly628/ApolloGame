@@ -11,12 +11,12 @@
 //  分层红线：宿主=渲染器侧；UI 全 LayoutNode；聊天逻辑在引擎 dialogue 能力。
 // ════════════════════════════════════════════════════════════════════════
 
-import { Engine } from '@runtime/engine.js';
-import { QueuedInputSource } from '@net/index.js';
-import { mountUI } from '@ui/components/index.js';
-import type { LayoutNode, HandlerMap, MountHandle } from '@ui/components/index.js';
-import type { State, Resource, Flag } from '@engine/protocol/components.js';
-import { optionAvailable, DIALOGUE_ACTION_ADVANCE, DIALOGUE_ACTION_CHOOSE } from '@skills/tier3/index.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { QueuedInputSource } from '@zerocraft/engine/net/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { LayoutNode, HandlerMap, MountHandle } from '@zerocraft/engine/ui/components/index.js';
+import type { State, Resource, Flag } from '@zerocraft/engine/engine/protocol/components.js';
+import { optionAvailable, DIALOGUE_ACTION_ADVANCE, DIALOGUE_ACTION_CHOOSE } from '@zerocraft/engine/skills/tier3/index.js';
 import { deviceShell } from './device-frame.js';
 import { COMPANIONS, companionById, type Companion } from './characters.js';
 import { deskView, entryAt, hoursAway, type SessionRecord, type Weather, type ClockReading, type RelationStage } from './companion.js';

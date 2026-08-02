@@ -16,8 +16,8 @@ import shutil
 import http.client
 from pathlib import Path
 
-os.environ['APOLLO_MOCK_LLM'] = '1'
-os.environ.pop('APOLLO_MOCK_BAD_N', None)
+os.environ['ZEROCRAFT_MOCK_LLM'] = '1'
+os.environ.pop('ZEROCRAFT_MOCK_BAD_N', None)
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))

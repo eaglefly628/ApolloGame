@@ -6,7 +6,7 @@
 // ui-audit 残留角标对比=light 白扑克牌+扇形叠放盲区（A-007 报 PUI·不降格·owner 两层 1:1 律=视觉 1:1）。
 // 主 CTA 用 hero kind（金渐变底+深墨字·蓝本「深字金底」·真机≈8:1 可读）；ui-audit contrast 只读 background-color、
 // 读不到渐变底 → 误报「开始上桌」1.05 假阳（A-022 报 PUI·同 A-007 不降格·视觉真绿）。
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import type { SeatSpec } from './rules.js';
 import { DRESS_TIERS, codeRank, codeSuit, AI_TIERS, STAKES, BUYIN_MULT, SEATS } from './rules.js';
 import { MANOR_BG, feltTexture, art, FIELD_W, FIELD_H, SEAT_ANCHORS, SEAT_W, seatTopLeft } from './theme.js';

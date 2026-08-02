@@ -134,7 +134,7 @@ def handle_agent_chat(body: dict) -> dict:
     if effort not in _CLAUDE_EFFORTS:
         return {'success': False, 'error': f'effort 必须是 {"/".join(_CLAUDE_EFFORTS)}'}
 
-    # mock 短路（APOLLO_MOCK_LLM=1·冒烟/e2e 全链）：确定性染色微调 + 过真校验门
+    # mock 短路（ZEROCRAFT_MOCK_LLM=1·冒烟/e2e 全链）：确定性染色微调 + 过真校验门
     if provider == 'mock':
         revised = _mock_revise(current)
         ok, msg = _run_manifest_check(revised)

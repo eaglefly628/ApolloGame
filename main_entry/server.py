@@ -32,17 +32,17 @@ from .pipeline_board import handle_pipeline_board, handle_pipeline_concept, hand
 from .placeholder import handle_art_resolve
 from .protocols import handle_capgaps_list
 from .settings_api import handle_settings_get, handle_settings_put, handle_settings_test
-from .sysutil import ROOT, VITE_PORT, c, get_project_status, handle_version, is_port_in_use, run_command
+from .sysutil import ROOT, VITE_PORT, c, env, get_project_status, handle_version, is_port_in_use, run_command
 from .t2_replace import handle_art_approve, handle_art_regenerate, handle_art_reskin, handle_art_restore, handle_art_style, handle_art_swap, handle_art_upload
 from .ts_carts import handle_library_doctor, library_put_logic, library_set_flags
 from .workshop_state import handle_agent_chats_get, handle_agent_chats_put, handle_agent_session_reset, handle_ws_draft_get, handle_ws_draft_put
 
-API_PORT = int(os.environ.get('APOLLO_API_PORT', '4000') or '4000')  # 平台打包：electron 挑空闲端口后经此 env 传入
+API_PORT = int(env('ZEROCRAFT_API_PORT', default='4000') or '4000')  # 平台打包：electron 挑空闲端口后经此 env 传入
 
 # 已构建的前端产物目录（平台打包：`vite build` 产出的 studio launcher 静态站）。缺省 ROOT/dist；
-# 电子壳/CI 可用 APOLLO_STATIC_DIR 另指（如 platform-dist/dist）——不设也不报错，纯 API 开发模式下
-# 该目录本就不存在，_serve_static 命中即 404，不影响任何现有 /api/* 端点。
-STATIC_DIST_DIR = Path(os.environ.get('APOLLO_STATIC_DIR') or (ROOT / 'dist'))
+# 电子壳/CI 可用 ZEROCRAFT_STATIC_DIR 另指（旧名 APOLLO_STATIC_DIR 过渡期仍读，如 platform-dist/dist）——
+# 不设也不报错，纯 API 开发模式下该目录本就不存在，_serve_static 命中即 404，不影响任何现有 /api/* 端点。
+STATIC_DIST_DIR = Path(env('ZEROCRAFT_STATIC_DIR') or (ROOT / 'dist'))
 
 # ── API 服务器 ──
 
@@ -104,7 +104,7 @@ class APIHandler(BaseHTTPRequestHandler):
             self.send_header('Location', f'http://localhost:{port}{to}')
             self.end_headers()
             return
-        # 兜底页不再是死链（owner 07-15）：apollo.py workshop 拉 vite 是非阻塞的·冷启动几秒——
+        # 兜底页不再是死链（owner 07-15）：zerocraft.py workshop 拉 vite 是非阻塞的·冷启动几秒——
         # 这几秒里点 ▶ 就会撞这页。改成轮询 /api/bench-ready·vite 一就绪自动跳转（就绪前转圈·不要求重启）。
         safe_to = json.dumps(to)
         body = ('<!doctype html><meta charset="utf-8"><title>页面服务启动中…</title>'
@@ -114,12 +114,12 @@ class APIHandler(BaseHTTPRequestHandler):
                 '<style>@keyframes spin{to{transform:rotate(360deg)}}</style>'
                 '<h2 style="margin:0 0 8px">页面服务（vite）启动中…</h2>'
                 '<p id="hint" style="color:#94a3b8">就绪后<b>自动跳转</b>到游戏，无需操作（冷启动约几秒）。</p>'
-                '<p style="color:#64748b;font-size:13px">若长时间不动：回终端确认 <code style="background:#1e293b;padding:2px 8px;border-radius:6px">python apollo.py workshop</code> 在跑。</p>'
+                '<p style="color:#64748b;font-size:13px">若长时间不动：回终端确认 <code style="background:#1e293b;padding:2px 8px;border-radius:6px">python zerocraft.py workshop</code> 在跑。</p>'
                 '</div>'
                 '<script>'
                 'var to=' + safe_to + ',n=0;'
                 'function poll(){fetch("/api/bench-ready").then(function(r){return r.json()}).then(function(d){'
-                'if(d&&d.ready){location.replace(to)}else{n++;if(n>40){document.getElementById("hint").textContent="页面服务还没起来——回终端确认 python apollo.py workshop 在跑（或 npm run dev）。"}setTimeout(poll,1500)}'
+                'if(d&&d.ready){location.replace(to)}else{n++;if(n>40){document.getElementById("hint").textContent="页面服务还没起来——回终端确认 python zerocraft.py workshop 在跑（或 npm run dev）。"}setTimeout(poll,1500)}'
                 '}).catch(function(){setTimeout(poll,1500)})}'
                 'poll();'
                 '</script>').encode('utf-8')

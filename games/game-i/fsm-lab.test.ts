@@ -1,8 +1,8 @@
 // 状态机样例：clock 驱动 idle→alert→flee→idle 循环；event-when→effect-apply 改 State.current + 切指示块可见。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { fsmBlueprint } from './fsm-lab.js';
-import type { State, Visibility } from '@engine/protocol/components.js';
+import type { State, Visibility } from '@zerocraft/engine/engine/protocol/components.js';
 
 const stateOf = (e: Engine): string => e.world.getComponent<State>('mob', 'State')!.current;
 const visOf = (e: Engine, id: string): boolean => e.world.getComponent<Visibility>(id, 'Visibility')!.visible;

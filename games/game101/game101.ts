@@ -7,12 +7,12 @@
 // 交付（G2 核心 meta·已接）：拖成品落顾客卡 → DeliverDrop{item,order} → t2-order-fulfill 裁模板匹配未满槽
 //   → 销毁该实例 + 置满槽 + 集齐发奖（钳限·可重置）。多槽（最多 3·orders.json needItems 数组）天然内建。
 // ⚠ 缺口（主程/PUI 域·数据已备待接）：加权掉落 REQ-TAPSPAWN（现固定产出）；异型限时菜单卡 REQ-UI-异型容器（PUI·现矩形卡顶着）。
-import { Engine } from '@runtime/engine.js';
-import { QueuedInputSource } from '@net/index.js';
-import { mountHost } from '@engine/host/mount-host.js';
-import { mountUI } from '@ui/components/index.js';
-import type { HandlerMap, MountHandle } from '@ui/components/index.js';
-import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop, Timer, Blocker, Flag } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { QueuedInputSource } from '@zerocraft/engine/net/index.js';
+import { mountHost } from '@zerocraft/engine/engine/host/mount-host.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { HandlerMap, MountHandle } from '@zerocraft/engine/ui/components/index.js';
+import type { Resource, PrefabOrigin, Transform, MergeDrop, Order, DeliverDrop, Timer, Blocker, Flag } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildS1Live, type S1State, type CellView, type OrderView, type SlotView } from './s1.js';
 import { GAME101_THEME } from './ui-theme.js';

@@ -5,7 +5,7 @@
 //  完全对齐 bundle：双列卡（七月 OWNED 进入 / Mika 购买 $9.99）+ 社区/男性占位锁卡。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { COMPANIONS, type Companion } from './characters.js';
 import { charSpriteUri, wakingSpriteUri } from './scenes.js';
 

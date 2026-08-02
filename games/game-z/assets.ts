@@ -1,4 +1,4 @@
-import { ImageAssetLoader, ModelAssetLoader, parseAssetIndex, buildMaterialCatalog, type AssetIndex, type AssetLoader, type AssetDescriptor, type AssetHandle } from '@assets/index.js';
+import { ImageAssetLoader, ModelAssetLoader, parseAssetIndex, buildMaterialCatalog, type AssetIndex, type AssetLoader, type AssetDescriptor, type AssetHandle } from '@zerocraft/engine/assets/index.js';
 
 // Game Z 基础 3D 资产（glTF/glb 模型 + 真实贴图）。**贴图=game-z 本地美术目录** `public/games/game-z/art/textures/`
 // （REQ-3D-货架接入·停全局 public/textures 散落直引·自产贴图归本地）；模型 duck/box/fox 在 public/models/（**game-z/d/i 共享**·

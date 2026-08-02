@@ -123,7 +123,7 @@
 
 | 主张 | 仓库证据 |
 |---|---|
-| 多模型已驱动 | `apollo.py` 五后端（Claude/Qwen/OpenAI/**DeepSeek**/Ollama）生成规范 manifest；能力目录自描述注入 prompt，新能力零 prompt 维护 |
+| 多模型已驱动 | `zerocraft.py` 五后端（Claude/Qwen/OpenAI/**DeepSeek**/Ollama）生成规范 manifest；能力目录自描述注入 prompt，新能力零 prompt 维护 |
 | 弱模型错误被系统吸收 | R12 schema 校验（类型错拒载）+ assetKey 硬校验（编造资产拒载）+ 引用链接器（路线中） |
 | "游戏=数据"不是口号 | 5 个品类切片趋近纯数据；Balatro 计分链 = 纯数据装配零游戏代码；150 张小丑 = 150 条声明式数据 |
 | 质量可度量 | **ZeroCraftBench**：把生成蓝图喂进真引擎跑分（Structure/Load/Determinism/Numeric/Visual 五轴） |

@@ -9,15 +9,15 @@
 //   → 各自 Tween 淡出 + Timer(life) 到期 → lifetime 自毁。
 // 模板 = 数据，最弱 LLM 能填；要加新特效（拖尾/电弧/烟），就再加一份模板，绝不加 system 或布尔开关。
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
-import type { PrefabTemplate } from '@engine/protocol/components.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import type { PrefabTemplate } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   transformCapability, velocityCapability, shapeCapability, colorCapability,
   timerCapability, destroyCapability,
-} from '@atom-skills/index.js';
-import { eventWhenCapability } from '@skills/tier2/index.js';
-import { casterCapability, prefabCapability } from '@skills/tier3/index.js';
-import { motionApplyCapability, lifetimeCapability, tweenCapability } from '@skills/tier1/index.js';
+} from '@zerocraft/engine/atom-skills/index.js';
+import { eventWhenCapability } from '@zerocraft/engine/skills/tier2/index.js';
+import { casterCapability, prefabCapability } from '@zerocraft/engine/skills/tier3/index.js';
+import { motionApplyCapability, lifetimeCapability, tweenCapability } from '@zerocraft/engine/skills/tier1/index.js';
 
 const LIFE = 46;       // 火花寿命（tick）——爆发要短促
 const RING = 12;       // 一圈火花数

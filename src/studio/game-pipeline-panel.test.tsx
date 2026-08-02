@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // 生产板面板无头测试（REQ-QC-UI）：三门显示——机器门 + 复查门 + 人门；S7=评分卡判词（VISUAL/PREMIUM）；乱序放行痕。
-// fetch mock 返回 /api/pipeline 板 JSON（含 review 字段·端点已透传），不依赖真 apollo.py。
+// fetch mock 返回 /api/pipeline 板 JSON（含 review 字段·端点已透传），不依赖真 zerocraft.py。
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';

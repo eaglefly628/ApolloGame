@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { logistic, cardPoints, pEff, winrate, clashResolve, P_MAX, P_MIN, WR_MIN, WR_MAX, rollWithMods, rollDist, rollWinProb, rollWinProbMods, NO_ROLL_MODS, type RollMods } from './clash-resolve.js';
-import type { RandomSeed } from '@engine/protocol/components.js';
+import type { RandomSeed } from '@zerocraft/engine/engine/protocol/components.js';
 
 const seed = (s: number): RandomSeed => ({ type: 'RandomSeed', seed: s, sequence: 0 });
 

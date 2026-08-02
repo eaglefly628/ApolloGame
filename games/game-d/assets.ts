@@ -1,4 +1,4 @@
-import { parseAssetIndex, type AssetIndex, type AssetManifest } from '@assets/index.js';
+import { parseAssetIndex, type AssetIndex, type AssetManifest } from '@zerocraft/engine/assets/index.js';
 
 // Game D ·《骰途》基础 3D 模型资产（glTF/glb）。文件在 public/models/（vite 根服·src 用根绝对路径）。
 // 骰途世界主体用贴色体素(Mesh3D)拼；模型仅作 showcase（证明导入能力·小黄鸭沿用 game-z 先例）。

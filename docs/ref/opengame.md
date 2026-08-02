@@ -40,10 +40,10 @@ prompt
 
 ## 2. 和 ZeroCraft 对比
 
-| 维度 | OpenGame | ApolloGame（我们） |
+| 维度 | OpenGame | ZeroCraft（我们） |
 |---|---|---|
 | 产物形态 | LLM **直接写引擎代码**（canvas/Phaser/three 多文件工程） | **游戏=数据**：26 atom + capability 装配出 `WorldBlueprint`（纯 JSON 可重建） |
-| 生成前 | 先分类 + 出 **GDD**，再写 | apollo.py 直接 prompt → blueprint JSON（`_validate_blueprint` 结构校验） |
+| 生成前 | 先分类 + 出 **GDD**，再写 | zerocraft.py 直接 prompt → blueprint JSON（`_validate_blueprint` 结构校验） |
 | 稳定性手段 | Template Skill 骨架库 + Debug Skill 修复协议 | 引擎 capability **自描述 schema** + 确定性 lockstep（同输入同 hash） |
 | **验证方式** | **执行落地**：跑起来 + 脚本交互 + **VLM 看截图**（OpenGame-Bench） | 老软肋：**从没在浏览器看过一帧**；只有单测 + renderToString 烟雾 |
 | 素材 | 多模态生成（图/视频/ABC 音频）分 provider | 资产清单 TBF/filled + 资产透视器（本会话做的）；生成端是路线图 |
@@ -58,10 +58,10 @@ prompt
 
 | # | 吸收点 | 来自 OpenGame | 状态 |
 |---|---|---|---|
-| 1 | **ZeroCraftBench：执行落地体检** | OpenGame-Bench | ✅ **已实现**（`src/bench/`）。把每份蓝图喂进真实引擎跑 N tick，按 Structure/Load/Determinism/Numeric/Visual 五轴打分；**游戏类型感知**（空间 vs VN/sim，对应它的"游戏类型分类"）。`npm run bench` / `python3 apollo.py bench` / 启动器 Dev Tools「Bench」按钮 / 单测守 `src/bench/zerocraft-bench.test.ts`。 |
+| 1 | **ZeroCraftBench：执行落地体检** | OpenGame-Bench | ✅ **已实现**（`src/bench/`）。把每份蓝图喂进真实引擎跑 N tick，按 Structure/Load/Determinism/Numeric/Visual 五轴打分；**游戏类型感知**（空间 vs VN/sim，对应它的"游戏类型分类"）。`npm run bench` / `python3 zerocraft.py bench` / 启动器 Dev Tools「Bench」按钮 / 单测守 `src/bench/zerocraft-bench.test.ts`。 |
 | 2 | **Debug Skill：经验证修复协议** | Debug Skill | ✅ **已起头**（`docs/ref/verified-fixes.md`）。把本会话真修过的 bug（透视器白屏、Windows WinError 2）按"症状→根因→修复→守卫"立档，成长式追加。 |
 | 3 | 游戏类型分类 → 分型验证 | 类型分类 | ✅ 已并入 ZeroCraftBench（spatial/non-spatial 不同评分口径）。 |
-| 4 | **GDD-first**：先出设计文档再生成 | reasoning 阶段 | 🔜 路线图。apollo.py 现在一步到位 prompt→JSON；可加"先出 GDD → 再装配蓝图"两段式提质。 |
+| 4 | **GDD-first**：先出设计文档再生成 | reasoning 阶段 | 🔜 路线图。zerocraft.py 现在一步到位 prompt→JSON；可加"先出 GDD → 再装配蓝图"两段式提质。 |
 | 5 | Template 骨架库（成长式） | Template Skill | 🟡 部分。我们有 `PRESET_BLUEPRINTS` + 3 个游戏；可形式化成生成器可 scaffold 的模板注册表。 |
 | 6 | 真·视觉可用性（headless 浏览器 + VLM 评审） | Visual Usability | 🔜 路线图。需要 playwright/puppeteer（当前未装）+ VLM 接入；ZeroCraftBench 的 Visual 轴是其**数据级代理**（渲染项有限且落在视口内），不是替代。 |
 | 7 | 多模态素材生成分 provider（含 ABC 谱音频） | 素材管线 | 🔜 路线图。与我们既有资产 TBF/manifest 流程对接。 |

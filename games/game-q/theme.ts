@@ -1,5 +1,5 @@
 // Game Q · Neon Siege —— 视觉常量 + 数值配置 + UITheme（纯数据·无逻辑）。
-import type { UITheme } from '@ui/components/index.js';
+import type { UITheme } from '@zerocraft/engine/ui/components/index.js';
 
 // ── 画布逻辑尺寸（CanvasRenderer·世界坐标 1:1·无相机）──────────────────────
 export const FIELD_W = 960;

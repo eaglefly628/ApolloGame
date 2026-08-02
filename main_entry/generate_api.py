@@ -23,7 +23,7 @@ def handle_generate(body: dict) -> dict:
     api_key = get_api_key(provider)
     if not api_key:
         env_key = LLM_PROVIDERS.get(provider, {}).get('env_key', '?')
-        hint = 'mock provider 未启用（需 APOLLO_MOCK_LLM=1）' if provider == 'mock' else f'Set {env_key} in .env file.'
+        hint = 'mock provider 未启用（需 ZEROCRAFT_MOCK_LLM=1）' if provider == 'mock' else f'Set {env_key} in .env file.'
         return {'success': False, 'error': f'No API key for {provider}. {hint}', 'blueprint': None}
 
     models = LLM_PROVIDERS.get(provider, {}).get('models') or ['mock']

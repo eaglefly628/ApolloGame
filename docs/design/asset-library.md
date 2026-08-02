@@ -49,9 +49,9 @@ games/*/assets.ts ──manifestRecords──┘      （统一记录）        
 - `import/normalize.ts`：`planImport`（文件元数据+profile+现有 id 集 → 逐行计划）+ `planEntries`（→ 索引增量条目，带 provenance 溯源）。
 - `import/slice.ts`：网格切割数学（`gridCells/sheetSpec/atlasFrames`，keep 剔空格后帧名仍连号）。
 
-**写盘**：apollo.py `POST /api/assets/import`（先全量校验后写：路径锁死 assets/ 子树防穿越、
+**写盘**：zerocraft.py `POST /api/assets/import`（先全量校验后写：路径锁死 assets/ 子树防穿越、
 索引重复 id 整批拒绝），文件落 `assets/<type>/<分类>/`，索引增量含 `provenance`。
-apollo 未启动 → 提交失败给出明确提示（浏览/计划预览不受影响）。
+zerocraft 未启动 → 提交失败给出明确提示（浏览/计划预览不受影响）。
 
 ## 5. 视觉：壳层统一基调（`src/ui/shell-theme.ts`）
 
@@ -74,14 +74,14 @@ cc3265d 引入像素扫描语义标签（`artlib-tags.ts`：CAT_TAGS 路径级 +
 - **AI 选材 = `art:` 数据引用**（`src/assembly/resolve-art-refs.ts`）：LLM 在 manifest 里写
   `Sprite.textureKey: "art:skeleton warrior"`，进透视器前 `resolveArtRefs` 用 rankRecords top-1
   确定性替换为真实 id；无命中原样保留（渲染占位，不炸加载）；解析全程留痕（resolutions：
-  query→id+候选，console 审计）。生成 system prompt（apollo.py）已附写法与常用语义词。
+  query→id+候选，console 审计）。生成 system prompt（zerocraft.py）已附写法与常用语义词。
   宣言尺子：LLM 产出的只是查询字符串，选材发生在确定性解释器里——同 manifest 同索引永远同图。
 
 ## 5.6 入库主动扫描标注（v1.2，2026-06-10）
 
 用户拍板：**新资产入库时自动视觉打标**，与存量回填共用一条管线：
 
-- **apollo.py `POST /api/assets/autotag`**：`{entries:[{id,path}], model?}` →（路径锁 assets/ 子树）
+- **zerocraft.py `POST /api/assets/autotag`**：`{entries:[{id,path}], model?}` →（路径锁 assets/ 子树）
   每张经 `scripts/contact-sheet.mjs` 放大 6×（最近邻+棋盘底）→ Claude 视觉（默认 `claude-opus-4-8`）
   按受控词表打 4-10 个语义标签（**只标视觉可见**，禁编设定）→ `tags` 合并写回 index.json
   （`provenance.autotag={model,at}` 留痕）。单张失败不拖死整批；无 API key 明确报错。
@@ -103,7 +103,7 @@ cc3265d 引入像素扫描语义标签（`artlib-tags.ts`：CAT_TAGS 路径级 +
   （生成式数据：id→标签 + 嫌疑单）；`--assets` 扫项目 index.json 已填贴图并合并写回。
 - 合并：`build-artlib-index.mjs` 读 tags-scan.json 并入每条资产 `tags` 字段 →
   `artlibTokens`/`artlibSemanticTags` 已合并 a.tags → **搜索/浏览器/AI 选材零改动直接吃到**。
-- 入库挂钩：apollo `handle_asset_import` 写完索引后 best-effort 跑 `--assets` 模式
+- 入库挂钩：zerocraft `handle_asset_import` 写完索引后 best-effort 跑 `--assets` 模式
   （免费必跑）；API 视觉标注降级为「✨ 追加语义标注」可选项。
 - 首扫结果：**4687/4892 张打标并入**（跳过 205 张非 PNG，主要是 cardgame webp 卡面），
   index.json 894KB→1.1MB；语义对账嫌疑 **39 条**存 tags-scan.json `suspects`（混有真错标与

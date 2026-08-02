@@ -3,16 +3,17 @@ import os
 import time
 import json
 
-from .sysutil import ROOT
+from .sysutil import ZEROCRAFT_DIR, dir_or_legacy, env
 
 # ── LLM 交互日志（每次往返落一行 JSONL·排障用·REQ-STUDIO 心跳单第 0 项）──────────
-# 目录 .apollo/llm-logs/YYYY-MM-DD.jsonl（gitignore）。**API key 绝不落盘**；prompt/response 全文
-# 默认不落（只落字符数），APOLLO_LOG_VERBOSE=1 才落全文（本地排障）。best-effort：任何异常都吞掉，
-# 绝不让日志拖垮一次生成。「三轮失败是什么」从此 `cat` 一下 jsonl 就有答案。
-LLM_LOGS_DIR = ROOT / '.apollo' / 'llm-logs'
+# 目录 .zerocraft/llm-logs/YYYY-MM-DD.jsonl（gitignore·旧 .apollo/llm-logs/ 当天文件未迁移时读
+# 旧的 fallback，见 sysutil.dir_or_legacy）。**API key 绝不落盘**；prompt/response 全文默认不落
+# （只落字符数），ZEROCRAFT_LOG_VERBOSE=1（旧名 APOLLO_LOG_VERBOSE 过渡期仍读）才落全文（本地排障）。
+# best-effort：任何异常都吞掉，绝不让日志拖垮一次生成。「三轮失败是什么」从此 `cat` 一下 jsonl 就有答案。
+LLM_LOGS_DIR = ZEROCRAFT_DIR / 'llm-logs'  # 写永远落这
 
 def _log_verbose() -> bool:
-    return os.environ.get('APOLLO_LOG_VERBOSE', '') in ('1', 'true', 'yes')
+    return env('ZEROCRAFT_LOG_VERBOSE', default='') in ('1', 'true', 'yes')
 
 def _trunc(s, n: int = 200) -> str:
     s = '' if s is None else str(s)
@@ -51,9 +52,9 @@ def _llm_log(*, provider: str, model: str, mode: str, req: dict,
 
 def handle_llm_logs(n: int = 50) -> dict:
     """GET /api/llm-logs[?n=50]。今天的 LLM 交互日志尾部（新在前·壳设置页「调试日志」块消费）。
-    全文 prompt/response 不出端点（文件里才有·APOLLO_LOG_VERBOSE=1 时落）——端点只回度量行。"""
+    全文 prompt/response 不出端点（文件里才有·ZEROCRAFT_LOG_VERBOSE=1 时落）——端点只回度量行。"""
     n = max(1, min(int(n or 50), 200))
-    f = LLM_LOGS_DIR / (time.strftime('%Y-%m-%d') + '.jsonl')
+    f = dir_or_legacy('llm-logs', time.strftime('%Y-%m-%d') + '.jsonl')
     lines = []
     if f.is_file():
         try:

@@ -34,5 +34,5 @@
 - **P0·掌机 cartridge 黑屏**：zoom 修法（`c5608bbc`·2026-06-22）**仍待 owner 真机烧版验证**；次候选排查项见归档版 §0。
 - **待 owner 验证的完工件（条目已归档·grep requests-archive）**：①REQ-STUDIO-低模四件——真 deepseek key 同题重测（目标 ≤1 轮·对比 184k 基线）；②REQ-PKG——库卡带单文件 HTML 真机双击即玩。
 - **排队指派**（owner 2026-07-03 拍板·冲刺期让位主线）：甲=REQ-G-修正栈迁移并虚胖清算；程序A=REQ-G-演出迁时间线；P3D=REQ-GAMED 接线单（详见 docs/design/game-d/requests.md + P3D handoff 顶部指针）。
-- **⚠ apollo.py 已拆包（Lead 2026-07-12·owner 拍板「拆散主入口」）**：5060 行 → `main_entry/` 包 37 个按功能模块，根 `apollo.py` 只剩 67 行薄壳（写穿透代理·保住 `import apollo` 读写契约 + `python3 apollo.py` 入口）。**改 apollo 端点先按功能去 `main_entry/<域>.py`**（server.py=APIHandler 分派/generate_api/settings_api/library_api/assets/packaging/…）；纯移动零逻辑改（9 smoke 对齐基线）。**PST 在途 apollo.py 单需 rebase 到新结构**（会冲突·基线已变）。
+- **⚠ zerocraft.py 已拆包（Lead 2026-07-12·owner 拍板「拆散主入口」）**：5060 行 → `main_entry/` 包 37 个按功能模块，根 `zerocraft.py` 只剩 67 行薄壳（写穿透代理·保住 `import apollo` 读写契约 + `python3 zerocraft.py` 入口）。**改 apollo 端点先按功能去 `main_entry/<域>.py`**（server.py=APIHandler 分派/generate_api/settings_api/library_api/assets/packaging/…）；纯移动零逻辑改（9 smoke 对齐基线）。**PST 在途 zerocraft.py 单需 rebase 到新结构**（会冲突·基线已变）。
 - 历史标签两枚待 owner 指认 commit（见归档版）。

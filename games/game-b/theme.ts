@@ -2,7 +2,7 @@
 // 规格真相：docs/design/game-b/mockups/（Claude Design 参考稿·⚖ owner 点名 1:1 复刻）+ scene-layout-handoff.md。
 // 两套色调（对标参考包）：主菜单/演出=夜宴暗紫（NIGHT·凤翎粉金）；牌桌 HUD 席位卡=sakura 亮纸面。
 // 游戏层 UITheme 数据合法（game-q/g/d 先例）；凤翎 texture=主题作者写（apolloToon MOUNTAINS 先例）。
-import type { UITheme } from '@ui/components/index.js';
+import type { UITheme } from '@zerocraft/engine/ui/components/index.js';
 
 // ── 画面（mockup 线框稿坐标系 1:1：stage 1120×630·16:9·mountHost 等比信箱化）────────
 export const FIELD_W = 1120;

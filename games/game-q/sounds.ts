@@ -1,6 +1,6 @@
 // Game Q · Neon Siege —— 音效 = 数据（SfxSpec 音色表 + 引擎 SynthAudioPort 合成器）。
 // 零外部音频文件·确定性·headless/SSR 无 AudioContext → 静默 no-op（测试安全）。同 game-g sfx 纪律。
-import { SynthAudioPort, type SfxSpec } from '@services/audio/index.js';
+import { SynthAudioPort, type SfxSpec } from '@zerocraft/engine/services/audio/index.js';
 
 export type QSfx = 'build' | 'kill' | 'leak' | 'win' | 'lose';
 

@@ -19,7 +19,7 @@ import subprocess
 import http.client
 from pathlib import Path
 
-os.environ['APOLLO_MOCK_LLM'] = '1'  # 开 mock provider（import 前置·供 test 端点 ok）
+os.environ['ZEROCRAFT_MOCK_LLM'] = '1'  # 开 mock provider（import 前置·供 test 端点 ok）
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))

@@ -6,8 +6,8 @@
 //   ② 天罡战法：当前出战这套的 ≤size 天罡槽（已入组卡 + 空槽计数）。
 //   ③ 地支牌：12 生肖卡（铜/银/金档效果 + 卡包持有数）·养成图鉴展示。
 // 诚实边界：原稿翻牌 3D/立绘 SVG 是 bespoke 美术，pilot 用 Card 媒体字形 + tone 近似；内容/构筑交互/换皮全数据化。
-import { mountUI } from '@ui/components/index.js';
-import type { LayoutNode, HandlerMap } from '@ui/components/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { LayoutNode, HandlerMap } from '@zerocraft/engine/ui/components/index.js';
 import { GG_LOBBY_THEME } from './ui-theme.js';
 import { textureOverrideUri, iconUri } from './art-textures.js'; // 背景板槽（批30 全屏台账化·真图=cover·无=主题色）+ 套装图标（07-15 tiangang 接线）
 import { HERO_CARDS, type HeroCard } from './hero-codex.js';

@@ -9,8 +9,8 @@
 // 无需任何 sim/装配层改动。美术先用"类型颜色"占位（贴图能力后续做），靠现成精装管线（光/景深/泛光/天空）出质感。
 // 战斗/骰子/敌人 = 后续接入（见 docs/design/game-d/combat-design.md）。
 
-import type { WorldBlueprint } from '@assembly/demo.assembly.js';
-import type { VoxelTex } from '@engine/protocol/components.js';
+import type { WorldBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
+import type { VoxelTex } from '@zerocraft/engine/engine/protocol/components.js';
 
 type Ent = WorldBlueprint['entities'][string];
 

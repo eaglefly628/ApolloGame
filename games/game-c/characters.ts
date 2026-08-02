@@ -10,7 +10,7 @@
 import {
   normalizeCharacterCard, toSeatCard, isCardUsable,
   type PlatformCharacterDraft, type ZeroCraftCharacterCard, type SeatCard, type CardIssue,
-} from '@services/character-card/index.js';
+} from '@zerocraft/engine/services/character-card/index.js';
 import { STORY_OPPONENTS } from './theme.js';
 
 /** 平台会话入参（对面席位的角色卡草稿 + OssKey 解析器）。 */

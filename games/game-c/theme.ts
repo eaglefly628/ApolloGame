@@ -2,8 +2,8 @@
 // 色锚=场景线风格锚 `vegas-victoriana`（art-data-manual §1 唯一权威·照抄十六进制）；
 // 人物线（头像/立绘/衣物图标）走 sakura-nijigen 双锚（REQ-C-ART 修订①·美术台账件·S6 接）。
 // 布局基准=ui-brief §1 / art-data-manual §5：横屏 1280×720 逻辑分辨率。
-import type { UITheme } from '@ui/components/index.js';
-import type { Card } from '@engine/protocol/components.js';
+import type { UITheme } from '@zerocraft/engine/ui/components/index.js';
+import type { Card } from '@zerocraft/engine/engine/protocol/components.js';
 
 export const FIELD_W = 1280;
 export const FIELD_H = 720;

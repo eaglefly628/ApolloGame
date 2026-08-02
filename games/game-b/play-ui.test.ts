@@ -1,6 +1,6 @@
 // Game B ·《雀宴》对局 UI —— LayoutNode 校验 + 从 MatchState 投影正确性（UI 铁律·check-ui 门）。
 import { describe, it, expect } from 'vitest';
-import { validateLayoutNode, type LayoutNode } from '@ui/components/index.js';
+import { validateLayoutNode, type LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { startMatch, aiTurn, nextRound } from './core/game-state.js';
 import type { Meld } from './core/meld.js';
 import { buildPlayHud, PLAY_TILE, TOGGLE_LOG } from './play-ui.js';

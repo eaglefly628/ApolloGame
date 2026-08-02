@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // 资源库「右键 copy 到游戏」(vendor) 交互测试：右键项目资产 → 弹游戏菜单 → 点游戏 → POST /api/assets/vendor。
-// fetch 全 mock，不依赖真 apollo.py。守护「从美术库直达 vendor」这条 owner 需求的接线不回退。
+// fetch 全 mock，不依赖真 zerocraft.py。守护「从美术库直达 vendor」这条 owner 需求的接线不回退。
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';

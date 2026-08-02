@@ -3,7 +3,7 @@
 //   场况角标左上 · 设置右上 · 席位卡×4（头像+名+点数+风位章+衣物5章+立直条）· 字幕胶囊 · 行动按钮排。
 // 文案数值=gdd 拍板口径（起点 50,000·東1局 0本場·mockups/README 口径警示）；人名=gdd 工作名。
 // 写世界只走 action 信号（S3 全钮 disabled·S4 接 sim 后按合法性点亮）；缺件（樱瓣异形钮）S5 报 PUI。
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { FIELD_W, FIELD_H } from './theme.js';
 
 // ── 席位视图数据（S3=开局摆拍·S4 起由 world 投影）────────────────────────────────────

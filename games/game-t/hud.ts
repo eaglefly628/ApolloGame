@@ -1,7 +1,7 @@
 // Game T ·《墨消》—— 全部 UI = 纯 LayoutNode 数据（UI 铁律·apollo-toon「水墨玩趣」主题皮）。
 // 写世界只经 action 信号；本 HUD 的 action（play/retry/next/back/toggle_mute）全是宿主生命周期动作，
 // 由宿主 HandlerMap 消化——不碰 sim（棋盘输入走画布 clickable，不经 UI）。
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import type { ChapterSpec } from './levels.js';
 
 export interface HudGoalView {

@@ -10,19 +10,19 @@
 //   漏怪扣命  = 敌 leak 探针子区(hitbox→base.lives) + 大本营 kill-zone(hitbox→敌 hp)
 //   胜负      = t2-group-count(存活敌/剩余票) + t3-flow(GameFlow)
 // 能力总览：docs/design/game-q/capability-plan.md。
-import type { WorldBlueprint, EntityBlueprint } from '@assembly/demo.assembly.js';
+import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 import {
   transformCapability, hierarchyCapability, velocityCapability, shapeCapability,
   overlapDetectCapability, timerCapability, resourceCapability, flagCapability,
   tagCapability, relationCapability, destroyCapability, colorCapability,
-} from '@atom-skills/index.js';
-import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, tweenCapability } from '@skills/tier1/index.js';
+} from '@zerocraft/engine/atom-skills/index.js';
+import { motionApplyCapability, lifetimeCapability, hierarchyResolveCapability, hierarchyCascadeCapability, tweenCapability } from '@zerocraft/engine/skills/tier1/index.js';
 import {
   pathfindCapability, triggerZoneCapability, hitboxCapability, mortalCapability, overTimeCapability,
   effectApplyCapability, craftRecipeCapability, clickableCapability,
   keybindCapability, gaugeCapability, groupCountCapability, selfRuleCapability,
-} from '@skills/tier2/index.js';
-import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@skills/tier3/index.js';
+} from '@zerocraft/engine/skills/tier2/index.js';
+import { prefabCapability, casterCapability, aggroCapability, flowCapability } from '@zerocraft/engine/skills/tier3/index.js';
 import {
   FIELD_W, ZONE, ENEMY, TOWER, BASE, TICKET, TINT, TOWERS, ENEMIES,
   START_GOLD, START_LIVES, INCOME_PER, INCOME_EVERY, WAVE_SCHEDULE, LANE_NODES, LANE_EDGES,

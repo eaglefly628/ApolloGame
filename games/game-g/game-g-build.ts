@@ -5,7 +5,7 @@ import { FORMATION_PRESETS, PRESET_NAMES, TIANGANG_BY_ID, cardFavorIndex, rankOf
 import { cardPoints, P_MAX } from './clash-resolve.js';
 import { NO_TENGANG, type TengangFx } from './combat-types.js';
 import { type PokerCard } from './turn-combat.js';
-import { aggregateModifiers, type ModifierRow, type ModifierCtx } from '@skills/tier2/modifier-stack.js';
+import { aggregateModifiers, type ModifierRow, type ModifierCtx } from '@zerocraft/engine/skills/tier2/modifier-stack.js';
 
 export const clampFavor = (f: number): number => Math.max(5, Math.min(95, Math.round(f)));
 export const avg = (xs: number[]): number => Math.round(xs.reduce((a, b) => a + b, 0) / xs.length);
@@ -118,4 +118,4 @@ export function tengangFxOf(cards: Iterable<{ kind: string; params?: Record<stri
 }
 
 // 确定性洗牌已收敛到 atoms 单一真相（mulberry32·零漂移·见 atoms/random/seeded-shuffle.test）。保留同名 export 不破现有 import。
-export { seededShuffle as seededShuffleArr } from '@atom-skills/index.js';
+export { seededShuffle as seededShuffleArr } from '@zerocraft/engine/atom-skills/index.js';

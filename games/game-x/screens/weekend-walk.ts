@@ -8,7 +8,7 @@
 //  设计稿精确 hex 直填 Panel.bg / SVG <rect>；设计文字色经最近令牌映射（#9a8da2→sub · #e8dcc8→text）。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { deviceShell } from '../device-frame.js';
 import { svgUri } from '../scenes.js';
 

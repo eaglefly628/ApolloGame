@@ -6,9 +6,9 @@
 //   ④ 头顶挂 `WorldUI3D` 大号点数（owner「最后落地的点数看不清」→ 醒目可读）。
 // 翻滚随机 = **专属种子 PRNG**（引擎 nextRandom·从壁钟播种·render-only 表现层·不碰 Math.random、不污染游戏主 seed）。
 // ⚠ 结果由物理定 = 非确定性（cannon-es「为表现非同步」）→ 暂放弃 game-d 的 seed/lockstep 可回放（owner「先做效果」·原型阶段）。
-import type { Engine } from '@runtime/engine.js';
-import type { Component } from '@engine/core/types.js';
-import { upFaceIndex } from '@renderer/three/dice.js';
+import type { Engine } from '@zerocraft/engine/runtime/engine.js';
+import type { Component } from '@zerocraft/engine/engine/core/types.js';
+import { upFaceIndex } from '@zerocraft/engine/renderer/three/dice.js';
 import { ELEM_INFO, type Die, type RolledDie, type Elem } from './dice.js';
 import { diceFaceArt } from './art.js';
 import { ARENA_HALF } from './rooms.js';

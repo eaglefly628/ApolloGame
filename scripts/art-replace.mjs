@@ -1,11 +1,11 @@
 // scripts/art-replace.mjs —— 美术替换工作流大脑（REQ-DEMO-T1·工作流档 docs/design/art-replacement-workflow.md）。
 // 两段式：placeholder 先行（art: 解析到免费库）→ 列表推导 → 配风格包 → 批量生成 → 对位替换。
-// 全在服务/脚本层·src/assembly 引擎不动。apollo.py 薄胶水 shell 调本脚本；生成走 ai-gen.mjs 既有 adapters。
+// 全在服务/脚本层·src/assembly 引擎不动。zerocraft.py 薄胶水 shell 调本脚本；生成走 ai-gen.mjs 既有 adapters。
 //
-// 用法（apollo.py/smoke 调）：
+// 用法（zerocraft.py/smoke 调）：
 //   node scripts/art-replace.mjs derive  <slug>            → 扫 manifest 推导台账 art-ledger.json（打印 JSON）
 //   node scripts/art-replace.mjs batch   <slug> <packId> [--mock]  → 逐行生成 + 落盘 + 更新台账（打印 summary）
-//   node scripts/art-replace.mjs replace <slug>            → 按编号重钉 manifest 引用（打印新 manifest·不落盘·apollo 校验后落）
+//   node scripts/art-replace.mjs replace <slug>            → 按编号重钉 manifest 引用（打印新 manifest·不落盘·zerocraft 校验后落）
 //   node scripts/art-replace.mjs packs                     → 列风格包
 // 纯函数（deriveLedger/applyReplacements/…）导出供单测直接跑（无需起服务）。
 
@@ -510,7 +510,7 @@ export async function genRowAsset(row, pack, { mock = true, apiKey = null, gameS
   return { buffer, ext: 'png', provider, model: g.model, mock: false, prompt, cacheKey: ck, request: g.request ?? null };
 }
 
-// ═══ ④ 批量生成器（并发留给 apollo 层·此处确定性顺序·缓存/续跑/探针）═══
+// ═══ ④ 批量生成器（并发留给 zerocraft 层·此处确定性顺序·缓存/续跑/探针）═══
 
 /** 把 fetch/网络错误的真因摊平（e.cause 链的 code/message）——否则只剩 'fetch failed' 无从下手：
  *  网络类=ENOTFOUND(DNS)/ECONNREFUSED/UND_ERR_CONNECT_TIMEOUT/CERT_*（连不上·非 key 问题），
@@ -722,7 +722,7 @@ export function swapSlot(manifest, ledger, no, assetId, { source = 'library', at
   return { ok: true, manifest: m, row };
 }
 
-// ═══ CLI（apollo.py/smoke 薄胶水调用）═══
+// ═══ CLI（zerocraft.py/smoke 薄胶水调用）═══
 
 // 台账推导（美术库地基）：优先 deriveLedger（扫 art: 皮肤槽）；纯色块生成游戏无 art: 槽 → 会空 →
 // 回退 deriveRequirements（扫所有视觉实体·连色块都列出「该配什么美术」）。让美术库对任何生成的游戏都有内容。
@@ -824,11 +824,11 @@ async function run(argv) {
     console.log(JSON.stringify({ ok: true, slug, no, manifest: sw.manifest, row: sw.row }));
     return;
   }
-  // T2 换皮：slug=新卡带（apollo 已 copy 好 manifest+台账）→ 全行重跑新风格包 → 重钉引用。
+  // T2 换皮：slug=新卡带（zerocraft 已 copy 好 manifest+台账）→ 全行重跑新风格包 → 重钉引用。
   if (cmd === 'reskin') {
     const packId = argv[2]; const mock = argv.includes('--mock');
     const mf = readJson(manifestFile(ROOT, slug), null); const ledger = readJson(ledgerFile(ROOT, slug), null);
-    if (!mf || !ledger) { console.error('reskin 缺 manifest/台账（apollo 应先 copy 新卡带）'); process.exit(1); }
+    if (!mf || !ledger) { console.error('reskin 缺 manifest/台账（zerocraft 应先 copy 新卡带）'); process.exit(1); }
     ledger.game = slug; resetAllRows(ledger);
     const b = await batchGenerate(ledger, packId, { game: slug, mock });
     if (!b.ok) { console.log(JSON.stringify(b)); process.exit(1); }

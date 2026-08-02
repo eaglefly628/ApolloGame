@@ -3,8 +3,8 @@
 //   本文件=S5 视觉 1:1「换正装」——字体/渐变/纹样/发光纯观感替换，**布局锚点零改动**。
 // 写世界只经 action 信号；宿主 HandlerMap 消化。3D 视口（牌桌/立体筹码）=scene 层 render-only；本层 2D HUD 浮层。
 // 中英切换（owner 2026-07-20）：一切用户可见文案走 strings.ts 的 t(lang,key)/fmt*（v.lang 贯穿）；**默认英语**（宿主定 lang）。
-import type { LayoutNode } from '@ui/components/index.js';
-import type { Card } from '@engine/protocol/components.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
+import type { Card } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   cardFace,
   FIELD_W, FIELD_H, STORY_OPPONENTS, STORY_HERO, STORY_PARTNER, type StorySeatDef,

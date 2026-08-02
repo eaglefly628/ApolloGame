@@ -13,7 +13,7 @@ import {
   type PlatformCharacterDraft,
   type ZeroCraftCharacterCard,
   type SeatCard,
-} from '@services/character-card/index.js';
+} from '@zerocraft/engine/services/character-card/index.js';
 import { SEATS } from './rules.js';
 import { type SeatId } from './guandan-session.js';
 import { artOverride } from './art-overrides.js';

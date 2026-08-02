@@ -4,7 +4,7 @@
 //   不是美术风格而是**核心 gameplay 可用性**：点击目标够大、顾客需求看得清、可交付/冷却反馈齐全。
 //   结构：HUD（等级/体力+计时/金币/宝石/商店）+ 顾客订单卡（头像+盘子放需求物·大而清晰+金币奖励+可交付✓）
 //   + 蓝色合并板井（7×9·物品小巧 size74≈占格50%·生成器格金色·可交付格标✓）。全由引擎世界态每帧投影。
-import type { LayoutNode } from '@ui/components/types.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/types.js';
 import s1Tree from './layout/s1.layout.json';
 import { GAME, CHAINS, ITEM_EMOJI } from './theme.js';
 

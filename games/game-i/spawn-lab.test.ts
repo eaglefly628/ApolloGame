@@ -1,6 +1,6 @@
 // 生成与寿命样例：发射器周期性生成粒子（实体数增长），粒子到期自毁（数量见顶回落/稳定）。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { spawnBlueprint } from './spawn-lab.js';
 
 function entityCount(e: Engine): number {

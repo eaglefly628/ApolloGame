@@ -8,16 +8,16 @@
 //   屏② 塔内场景 HUD（左·六色元素法阵环 / 右·队友 + Buff 面板 / 顶·层间 chip + 货币 / 底·命运骰盅入口）
 //   屏③ 命运骰盅·选骰备战（骰库 Tab + 卡片 + 详情子页 + 出战骰组 + 骰型 + 本关需求·越省越好）
 //   屏④ 通关 + 3D 战利品三选一
-import { Engine } from '@runtime/engine.js';
-import { ThreeRenderer } from '@renderer/three-renderer.js';
-import { easeOutBack } from '@renderer/three-projection.js'; // 缓动纯函数（无 three·骰钟转场 eOutBack 回弹）
-import { AssetManager, ModelAssetLoader } from '@assets/index.js';
-import { mountUI } from '@ui/components/index.js';
-import type { LayoutNode, UITheme } from '@ui/components/index.js';
-import type { Camera3D, RandomSeed, Card } from '@engine/protocol/components.js';
-import type { Component } from '@engine/core/types.js';
-import { nextRandom } from '@skills/atoms/random/index.js';
-import { evaluateHand, rankMaxCount } from '@skills/tier3/poker-hand.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { ThreeRenderer } from '@zerocraft/engine/renderer/three-renderer.js';
+import { easeOutBack } from '@zerocraft/engine/renderer/three-projection.js'; // 缓动纯函数（无 three·骰钟转场 eOutBack 回弹）
+import { AssetManager, ModelAssetLoader } from '@zerocraft/engine/assets/index.js';
+import { mountUI } from '@zerocraft/engine/ui/components/index.js';
+import type { LayoutNode, UITheme } from '@zerocraft/engine/ui/components/index.js';
+import type { Camera3D, RandomSeed, Card } from '@zerocraft/engine/engine/protocol/components.js';
+import type { Component } from '@zerocraft/engine/engine/core/types.js';
+import { nextRandom } from '@zerocraft/engine/skills/atoms/random/index.js';
+import { evaluateHand, rankMaxCount } from '@zerocraft/engine/skills/tier3/poker-hand.js';
 import { baseBlueprint, genRoom, roomMeta, ROOM_SPACING, ACTS, type ThemeArt } from './rooms.js';
 import { GAME_D_ASSETS } from './assets.js';
 import {

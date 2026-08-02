@@ -6,7 +6,7 @@
 //  场景像素图走 Image(data-URI SVG·SMIL 动蒸汽/眨眼)。交互只发 action 信号。
 // ════════════════════════════════════════════════════════════════════════
 
-import type { LayoutNode } from '@ui/components/index.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import type { Companion } from './characters.js';
 import type { ClockReading, DeskView, Weather } from './companion.js';
 import { deskSceneUri } from './scenes.js';

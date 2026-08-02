@@ -1,9 +1,9 @@
 // 3D 样例：蓝图装进真 ECS → tween 推进 Transform.rotation（翻面角）。WebGL 渲染由 ThreeRenderer 在浏览器做，
 // 此处只验证「纯蓝图 + 现成能力」的逻辑面（rotation 被驱动）。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { threeBlueprint } from './three-lab.js';
-import type { Transform, Mesh3D } from '@engine/protocol/components.js';
+import type { Transform, Mesh3D } from '@zerocraft/engine/engine/protocol/components.js';
 
 describe('Game I · 3D 渲染样例（Mesh3D 蓝图）', () => {
   it('蓝图纯数据：三个 Mesh3D 物件（无专属 system）', () => {

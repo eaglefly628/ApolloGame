@@ -1,6 +1,6 @@
-import type { Card } from '@engine/protocol/components.js';
-import { evaluateHand, type HandType } from '@skills/tier3/poker-hand.js';
-import { seededShuffle } from '@atom-skills/random/index.js';
+import type { Card } from '@zerocraft/engine/engine/protocol/components.js';
+import { evaluateHand, type HandType } from '@zerocraft/engine/skills/tier3/poker-hand.js';
+import { seededShuffle } from '@zerocraft/engine/atom-skills/random/index.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  game-c ·《六人德州》摊牌评估（capability-plan §4-a·owner 2026-07-17 TS 口径）

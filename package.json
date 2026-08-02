@@ -1,11 +1,25 @@
 {
-  "name": "zerocraft-preview",
+  "name": "@zerocraft/engine",
   "version": "0.1.0",
   "description": "ZeroCraft Game Engine",
   "author": "ZeroCraft Game Studio",
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
+  "exports": {
+    "./engine/*": "./src/engine/*",
+    "./skills/*": "./src/skills/*",
+    "./atom-skills/*": "./src/skills/atoms/*",
+    "./ui/*": "./src/ui/*",
+    "./renderer/*": "./src/renderer/*",
+    "./services/*": "./src/services/*",
+    "./assets/*": "./src/assets/*",
+    "./net/*": "./src/net/*",
+    "./runtime/*": "./src/runtime/*",
+    "./assembly/*": "./src/assembly/*",
+    "./tsconfig.game-base.json": "./tsconfig.game-base.json",
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "dev": "vite",
     "dev:clean": "rm -rf node_modules/.vite && vite --force",
@@ -24,7 +38,8 @@
     "pack:win": "electron-builder --win --config electron-builder.yml",
     "pack:platform:mac": "electron-builder --mac --config electron-builder.platform.yml",
     "dist": "python3 scripts/dist.py",
-    "test:deep": "APOLLO_DEEP=1 vitest run"
+    "test:deep": "ZEROCRAFT_DEEP=1 vitest run",
+    "zerocraft": "node scripts/zerocraft.mjs"
   },
   "optionalDependencies": {
     "steamworks.js": "^0.4.0"

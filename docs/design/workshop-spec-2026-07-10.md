@@ -8,7 +8,7 @@
 
 | # | 断点 | 位置 |
 |---|---|---|
-| 1 | generate 纯函数不落盘；「一句话玩法」无持久位 | apollo.py:999,611；_write_meta:2277 无 description |
+| 1 | generate 纯函数不落盘；「一句话玩法」无持久位 | zerocraft.py:999,611；_write_meta:2277 无 description |
 | 2 | S1 立项卡只能 CLI 填（无端点无 UI） | game-pipeline.mjs concept 段；GamePipelinePanel 无表单 |
 | 3 | manifest 落盘后台账不自动重 derive（靠美术面板打开兜底） | library_put_manifest:2441；ArtLedgerPanel.tsx:113 |
 | 4 | 保存成功后无「下一步」引导；卡带操作条无 🏭 | onWizardSaved launcher:922；LibActionBar |
@@ -16,11 +16,11 @@
 | 6 | cart 的 S8 终检=全仓 tsc+vitest+build 过重·证据绑 git HEAD 易过期 | game-pipeline.mjs gateRun S8 |
 | 7 | dev 旧 GameCreator 生成不入库=迷途点 | launcher:1284 起 |
 | 8 | llm-onboarding 五步与八阶段流程板互不引用 | llm-onboarding §2 |
-| 9 | anthropic 供应商配的 `claude-sonnet-4-20250514` 已弃用（2026-06-15 退役） | apollo.py:235 |
+| 9 | anthropic 供应商配的 `claude-sonnet-4-20250514` 已弃用（2026-06-15 退役） | zerocraft.py:235 |
 
 ## 〇.五、与既有 Workshop 壳的对齐（2026-07-11 rebase 增补·载体修正）
 
-另一施工 session 已落 Workshop 地基（`c3dd4743`/`69e2f849`/`66744bea`）：**Workshop=`workshop/index.dc.html`+`support.js` 原版设计壳**（Claude Design 产出·apollo.py `/workshop` 静态伺服·同源免跨域·`python apollo.py workshop` 一键启动），owner 已拍板**豁免 LayoutNode 铁律**（开发工具/展示台非游戏 UI）。游戏库屏已接真 `/api/games`。据此修正本规范：
+另一施工 session 已落 Workshop 地基（`c3dd4743`/`69e2f849`/`66744bea`）：**Workshop=`workshop/index.dc.html`+`support.js` 原版设计壳**（Claude Design 产出·zerocraft.py `/workshop` 静态伺服·同源免跨域·`python zerocraft.py workshop` 一键启动），owner 已拍板**豁免 LayoutNode 铁律**（开发工具/展示台非游戏 UI）。游戏库屏已接真 `/api/games`。据此修正本规范：
 
 - **§一 的载体改为 workshop/ 壳**：A 批=在壳上接线，**不新建 src/studio/Workshop.tsx**；「ChatPane 从 DesignStudio 抽取」作废——对话 UI 用壳的原版对话屏（「跟平常对话框一致」即指它），共享的是 §二服务端协议。
 - **端点命名对齐**：壳侧待接线清单叫 `/api/agent/chat`——即本规范 §2.3 的 revise-chat 编排层，**统一用 `/api/agent/chat`**（携带 mode/role/messages 字段语义照 §2.3）。
@@ -50,11 +50,11 @@
 - **收编与退役**：CreationWizard/DesignStudio 的生成与保存回路**复用不重写**（save 流 CreationWizard.tsx:160-188 原样迁移）；旧 GameCreator 删除，dev 模式接「＋新建游戏」同一入口；dev 的 continueCreate 旧 seed 分支（launcher:913-920）改走统一路径。
 - 「应用改动」（owner 已拍板·与现流程一致）：**显式按钮确认**后落盘，不随对话每轮自动直写——对话是入口，工件是唯一真相（§四红线）。
 
-## 二、对话协议（B 段·接 Claude Message·apollo.py）
+## 二、对话协议（B 段·接 Claude Message·zerocraft.py）
 
 ### 2.1 Claude 通道 = 订阅 + setup-token + Agent SDK（主通道·owner 拍板「不买 API·不花新钱」）
 
-- **机制原封不动**：owner 机器上 `claude setup-token` 产出长期 OAuth token（`sk-ant-oat01-…`）→ 存 `.apollo-config.json`（gitignored）新字段或 env `CLAUDE_CODE_OAUTH_TOKEN`；apollo.py 新增 provider **`claude-code`**：`_llm_call` 分支 spawn 子进程调 Claude Agent SDK / Claude Code CLI headless（`claude -p --output-format json --model <档位>`），token 经环境注入——**走订阅额度，零 API 计费**。
+- **机制原封不动**：owner 机器上 `claude setup-token` 产出长期 OAuth token（`sk-ant-oat01-…`）→ 存 `.apollo-config.json`（gitignored）新字段或 env `CLAUDE_CODE_OAUTH_TOKEN`；zerocraft.py 新增 provider **`claude-code`**：`_llm_call` 分支 spawn 子进程调 Claude Agent SDK / Claude Code CLI headless（`claude -p --output-format json --model <档位>`），token 经环境注入——**走订阅额度，零 API 计费**。
 - **安全铁律（必须写死）**：该子进程只当**纯文本生成器**用——**工具面全禁**（`--tools ""`/`--disallowedTools` 全量禁用，工作目录指向空目录）；绝不许它读写仓库文件。token 同 key 纪律：打码回显、不落日志、不入库。
 - **多轮**：v1 把 messages 数组转写为 transcript 文本拼进 prompt（确定性·好测）；SDK session/resume 机制记 v2。
 - **档位（owner 已拍板）**：默认 **Opus 4.8**（订阅版主力档）；菜单可切 **Fable 5**（展示档·现场 demo 更强）与 **Sonnet**（量产批量档）——档位名走 Claude Code 的模型别名（opus/fable/sonnet），不硬编日期型号；订阅套餐没有该档时网关明报错回落默认档（不静默降级不提示）。
@@ -70,11 +70,11 @@
 ### 2.3 revise-chat 模式（两通道共用的编排层·双角色）
 
 - 新 mode `revise-chat`：请求 `{mode, slug, role: 'gd'|'pe', messages:[{role,content}…], provider, catalog}`；服务端按 `role` 拼系统提示词（`pe`=catalog 注入为主·manifest 结构域；`gd`=玩法/数值/内容+美术台账上下文注入——读该游戏 art-ledger 的编号/状态/风格锚拼进 system）+ 全量 messages 调网关；响应 `{reply, manifest?, artHints?}`——manifest 仅在过 `_run_manifest_check` 自动修正环后返回；`artHints`（gd 角色可选）=结构化美术建议（点名 art-NN/风格锚文案），前端渲染为「跳美术平台」引导。前端「应用改动」→ PUT manifest。
-- 地基已在：网关已消化 anthropic messages 形态（apollo.py:438-460）；design-chat 已传多轮（DesignStudio.tsx:257）。**这是扩展不是新建。**
+- 地基已在：网关已消化 anthropic messages 形态（zerocraft.py:438-460）；design-chat 已传多轮（DesignStudio.tsx:257）。**这是扩展不是新建。**
 
-## 三、数据桥与语义修正（C 段·apollo.py + scripts/game-pipeline.mjs）
+## 三、数据桥与语义修正（C 段·zerocraft.py + scripts/game-pipeline.mjs）
 
-1. **meta.description**：`_write_meta`（apollo.py:2277）加默认字段；前端 library-model.ts:54 已备好消费，零改。
+1. **meta.description**：`_write_meta`（zerocraft.py:2277）加默认字段；前端 library-model.ts:54 已备好消费，零改。
 2. **建库自动写立项卡**：`library_create` 收 `description`（≤300）→ 写 meta + 传 `_scaffold(pitch=…)` → `_pipeline_cli(['concept', slug, '--name', …, '--pitch', …])` best-effort（照 :2318-2321 derive 先例）；`library_install_sample` 传 `preset.description`。**不走 PUT 捎带**（revise 不该反复动立项卡）。
 3. **`POST /api/pipeline/concept`**：字段 name/pitch/refs/style/planWaiver（≥1 个·name≤80 其余≤300·slug/长度守门照 signoff 先例）；`boardFor` 返回体加 `concept`；生产板 S1 侧栏加 name/pitch 编辑（签核表单保留——机器绿≠人门绿）。
 4. **manifest 落盘自动重 derive 台账**：`library_put_manifest` 与 `_put_manifest_anywhere` builtin 分支各加 best-effort `_art_replace_cli(['derive', slug])`。安全前提=mergeLedger append-only（编号保号/replaced 不墓碑/artStyle 保留）已有测试钉死；**回归硬门=art-replace-smoke 45 断言整跑**（防美术写回链二次 derive 互踩）。
@@ -88,7 +88,7 @@
 - Workshop 对白编辑每次落盘必过 parseManifest 零 error 门 + git 版本化——**对话是入口，工件是唯一真相**。
 - mock 永不上画面（三道闸+gen/mock 命名空间沟）不因 Workshop 改变。
 - claude-code 子进程工具面全禁（§2.1）——LLM 通道绝不获得本地文件读写。
-- 引擎目录（src/{engine,skills,assembly,renderer,services,net}）零触碰；全部改动限 studio/launcher/apollo/scripts/docs。
+- 引擎目录（src/{engine,skills,assembly,renderer,services,net}）零触碰；全部改动限 studio/launcher/zerocraft/scripts/docs。
 
 ## 五、测试与验收（E 段·PST 交付门）
 
@@ -192,9 +192,9 @@ load+2tick；④**台账**——PUT 即自动 derive（去重版）。与对话�
 ### §八.1 验收修订（owner 2026-07-11 真机验收六条·当日落地）
 
 1. **三对话入口**：策划(gd)/**美术(art·新)**/程序(pe)——改写 §一「两入口·策划兼美术」定稿；美术角色系统词以台账 digest 为核、点名 art-NN、皮肤槽/风格锚归它。
-2. **对话持久化**：每卡带每角色历史存 `.apollo/workshop-chats/<slug>.json`（GET/PUT `/api/agent/chats`·进工坊自动恢复）——对齐 Claude Code 的 session 体验。
+2. **对话持久化**：每卡带每角色历史存 `.zerocraft/workshop-chats/<slug>.json`（GET/PUT `/api/agent/chats`·进工坊自动恢复）——对齐 Claude Code 的 session 体验。
 3. **模型/思考档可调**：对话屏 chips——模型 Opus 4.8（默认·订阅）/Fable 5（**另计费**·usage credits）/Sonnet 5；思考 high（默认）/xhigh/max（CLI `--effort`）。
-4. **debug 日志对齐**：传输层 `[LLM] →/←` 控制台打点 + `GET /api/llm-logs`（度量行·不出全文）+ 壳设置页🐞调试日志块；全文=`APOLLO_LOG_VERBOSE=1` 落 `.apollo/llm-logs/`。
+4. **debug 日志对齐**：传输层 `[LLM] →/←` 控制台打点 + `GET /api/llm-logs`（度量行·不出全文）+ 壳设置页🐞调试日志块；全文=`ZEROCRAFT_LOG_VERBOSE=1`（旧名 APOLLO_LOG_VERBOSE 过渡期仍读）落 `.zerocraft/llm-logs/`。
 5. **games filter**：全部/卡带/引擎内置三 chips（不影响素材库页签与发布列表）。
 6. **生成进度真话**：阶段文案跟真实链路步骤走（读目录→生成→建库→落盘）+秒表——治「卡在 92%」误导（假进度封顶时真相是 Opus 深思考中）。
    另：编辑工坊项目卡显示落盘路径（library/<slug> + public/games/<slug>）。

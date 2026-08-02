@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
-import { Engine } from '@runtime/engine.js';
-import { applyCommands, QueuedInputSource } from '@net/index.js';
-import { validateLayoutNode } from '@ui/components/index.js';
-import type { GameFlow, MatchBoard, Resource, Flag } from '@engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import { applyCommands, QueuedInputSource } from '@zerocraft/engine/net/index.js';
+import { validateLayoutNode } from '@zerocraft/engine/ui/components/index.js';
+import type { GameFlow, MatchBoard, Resource, Flag } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildLevelBlueprint } from './blueprint.js';
 import {
   LEVELS, LEVEL_NAMES, CHAPTERS, chapterStartingAt, type LevelSpec,

@@ -1,9 +1,9 @@
 // 精灵动画样例：蓝图装进真 ECS（Engine.load）→ world.tick 跑 tween 系统 → 表现字段被推进。
 // 验证「纯蓝图数据 + 现成能力」即出动画，无专属 system。
 import { describe, it, expect } from 'vitest';
-import { Engine } from '@runtime/engine.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { animBlueprint } from './anim-lab.js';
-import type { Transform, Color } from '@engine/protocol/components.js';
+import type { Transform, Color } from '@zerocraft/engine/engine/protocol/components.js';
 
 describe('Game I · 精灵动画样例（tween 蓝图）', () => {
   it('蓝图纯数据：capabilities + entities（无专属 system）', () => {
