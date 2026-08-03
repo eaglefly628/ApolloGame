@@ -20,7 +20,7 @@ export interface LedgerRow {
   readonly no: string;
   readonly kind: string;
   readonly desc?: string; // 人读短描述（authored-inventory 台账有·如 game-c；derive 线无）
-  readonly slot?: { entity: string; component: string; field: string }; // derive 线（manifest 推导·game-q）
+  readonly slot?: { entity: string; component: string; field: string }; // derive 线（manifest 推导·历史实例 game-q·已随 REQ-RETRO 引擎大扫除 2026-08-03 删除）
   readonly ref?: { mechanism?: string; component?: string; field?: string; resolver?: string; servedPath?: string }; // authored-inventory 线（声明式台账·game-c）
   readonly query: string;
   readonly prompt?: string; // 回填的完整提示词（skinKey 行有·needs-art 行 null）
@@ -323,7 +323,7 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
         {/* 缩略图墙 */}
         <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', flexWrap: 'wrap', gap: 10, alignContent: 'flex-start', minWidth: 0 }}>
           {loading ? <div style={{ color: SHELL.dim }}>加载台账…</div>
-            : rows.length === 0 ? <div style={{ color: SHELL.dim, fontSize: 13 }}>{kind === 'builtin' ? '编译期游戏未初始化美术库——照 game-q 样板跑一次 requirements 推导脚本（见交接档 game-q 节）' : '无台账（自动初始化失败——确认 library 卡带 manifest 可读后点 ↻）'}</div>
+            : rows.length === 0 ? <div style={{ color: SHELL.dim, fontSize: 13 }}>{kind === 'builtin' ? '编译期游戏未初始化美术库——照 scripts/game-g-art-requirements.mjs 样板跑一次本游戏的 requirements 推导脚本' : '无台账（自动初始化失败——确认 library 卡带 manifest 可读后点 ↻）'}</div>
               : rows.map((r) => {
                 const b = SOURCE_BADGE(r); const active = selNo === r.no; const entity = r.slot?.entity || r.ref?.component || r.no;
                 return (

@@ -23,7 +23,7 @@ import type { Gauge, Resource, Hierarchy, Shape } from '@engine/protocol/compone
 //  路由场景，全局取会取错单位）；缺省 = 先自身后全局首个同 id（与 ResourceModify 的 R11 auto 一致）。
 //  定序（REQ-F-031 修正）：phase **PostResolve** —— gauge 是终态表现投影。曾放 Update，但 gauge
 //  写 Shape 被 overlap-detect(Update) 读，而 overlap→trigger→hitbox→resource-apply 传递回写
-//  Resource(gauge 读) → Update 内闭成 5 元环（game-f 战斗图实测抛环）。跨相位后与 Update 系统
+//  Resource(gauge 读) → Update 内闭成 5 元环（历史实例：自走棋战斗图实测抛环）。跨相位后与 Update 系统
 //  无边：读到本帧**最终** Resource（伤害已结算），写 Shape 时碰撞早已读完；同相 runsBefore
 //  hierarchy-resolve 让 localX 同帧投影成世界坐标。Update 内 Shape 读者(overlap/clickable)读到
 //  上一帧条宽——条不参战、不可点，无语义影响。

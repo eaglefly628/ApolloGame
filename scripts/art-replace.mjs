@@ -172,8 +172,9 @@ export function deriveLedger(manifest, { game = '' } = {}) {
 }
 
 // ═══ 需求推导（retrofit 路径·色块游戏没有 art: 槽位时）：扫所有视觉实体 → 该配什么美术 + 描述 ═══
-// game-q 这类「零真资产·全程序化色块」的反面教材，用它产出「资产需求表」——每条=一个视觉实体
-// 需要的美术 + 当前占位描述 + 美术需求描述。产出同台账 schema（status='needs-art'）。
+// 「零真资产·全程序化色块」的反面教材（历史实例 game-q，已随 REQ-RETRO 引擎大扫除 2026-08-03 删除，
+// 仅留教训），用它产出「资产需求表」——每条=一个视觉实体需要的美术 + 当前占位描述 + 美术需求描述。
+// 产出同台账 schema（status='needs-art'）。
 
 const LOGIC_ONLY = new Set(['Resource', 'Flag', 'Timer', 'NavGraph', 'GameFlow', 'CraftRecipe', 'KeyBinding', 'PrefabLibrary', 'OverTime', 'GroupCount', 'Camera', 'Sensor', 'Hitbox', 'Tag', 'Relation', 'Perception', 'SelfRule', 'Caster', 'Aggro', 'Gauge', 'Clickable', 'Spawner', 'SpawnTicket']);
 

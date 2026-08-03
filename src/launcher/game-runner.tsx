@@ -62,15 +62,10 @@ export function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => v
     if (!containerRef.current) return;
     // mount 第二参 host（可选·向后兼容）：把壳层「退出到游戏库」钩子传给游戏，让游戏可把退出收进自己的设置菜单（owner 2026-06-21）。
     const loaders: Record<string, () => Promise<{ mount: (el: HTMLElement, host?: { exit: () => void }) => () => void }>> = {
-      'game-e': () => import('../game-e.js'),
-      'game-f': () => import('@games/game-f/game-f.js'),
+      'game-e': () => import('@games/game-e/game-e.js'),
       'game-g': () => import('@games/game-g/game-g.js'),
       'game-i': () => import('@games/game-i/game-i.js'),
-      'game-x': () => import('@games/game-x/game-x.js'),
       'game-z': () => import('@games/game-z/game-z.js'),
-      'game-d': () => import('@games/game-d/game-d.js'),
-      'game-q': () => import('@games/game-q/game-q.js'),
-      'game-t': () => import('@games/game-t/game-t.js'),
       'game-b': () => import('@games/game-b/game-b.js'),
       'game-a': () => import('@games/game-a/game-a.js'),
       'game-c': () => import('@games/game-c/game-c.js'),

@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// ZeroCraft Kit 基座 + 分层贴图底 / UV 滚动能力（owner 2026-06-25：把 game-f 的 Cloud Design 皮升格引擎基座）。
+// ZeroCraft Kit 基座 + 分层贴图底 / UV 滚动能力（owner 2026-06-25：把 game-f 的 Cloud Design 皮升格引擎基座——
+// 功能已完全独立于 game-f，该游戏已随 REQ-RETRO 引擎大扫除 2026-08-03 删除，仅留出处说明）。
 //   · UITheme.texture/wash → renderScreen 合成「wash , texture , 底色」三层（无则纯底色·老主题零变化）。
 //   · Screen/Panel.bgScroll → mountUI 注入逐元素滚动关键帧（滚动 UI 特效）。
 //   · apolloOnyx/apolloBrocade = 从 ZeroCraft UI Kit 交底映射出的真 UITheme（玄铁/锦霞双皮）。

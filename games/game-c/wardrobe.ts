@@ -6,7 +6,7 @@ import type { EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.j
 //  机制=零新代码：每件衣物一条 `t2-craft-recipe` 配方（纯数据），引擎解释——
 //    信号 pawn_p<seat>_<item> 在场 && 该件在身（衣物 Resource current=1）
 //    → 原子扣衣物(1→0) + 加筹码(+面值)。二次典当同件=costs 不可负担 → 整单不动（引擎原子性，免游戏层判重）。
-//  本文件只有：数据表 + id 约定 + 蓝图片段生成（纯转换零逻辑·game-t blueprint 同款明许形态）。
+//  本文件只有：数据表 + id 约定 + 蓝图片段生成（纯转换零逻辑·已删 game-t blueprint 同款明许形态）。
 //  筹码 Resource（chipsResourceId）是全局装配件（betting/典当共写一份），由装配层建——此处只引不建。
 // ═══════════════════════════════════════════════════════════════
 

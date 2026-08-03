@@ -4,12 +4,13 @@ import { resolve } from 'path';
 import { copyUsedAssets, inlineUsedAssets } from './vite.assets';
 import { engineAliases } from './scripts/engine-aliases.mjs';
 
-const targetGame = process.env.VITE_TARGET_GAME ?? 'game-f';
+// 默认目标（REQ-RETRO 批①·2026-08-03）：曾默认 game-f，随其删除改默认 game-g（出口①·当前旗舰）。
+const targetGame = process.env.VITE_TARGET_GAME ?? 'game-g';
 
 // 每个游戏的真名（用于把 cartridge.html 的 <title> 从 "ZeroCraft OS" 换成游戏名）。
 const GAME_TITLES: Record<string, string> = {
   'game-e': '小丑牌 · 卡牌构建',
-  'game-f': '像素三分天下 · 自走棋', 'game-g': '翻命扑克 · 3D 掷命骨架',
+  'game-g': '翻命扑克 · 3D 掷命骨架',
   'game-i': '控件测试场 · 数据驱动 UI',
 };
 function setTitlePlugin() {

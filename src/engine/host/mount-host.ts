@@ -1,7 +1,8 @@
 // 引擎公用宿主骨架（render-only · 纯 DOM · 零 sim 依赖）——REQ-AUDIT-守门 C 件下沉。
 //
 // 抽出各卡带宿主层重复的「wrapper > scene(定尺缩放盒) > [topHost/bottomHost/overlayHost]」五容器
-// 骨架 + 等比缩放逻辑（原 game-q/game-t mount 逐字复制的那段）。本 helper 只搭台：不引 Engine/World，
+// 骨架 + 等比缩放逻辑（历史出处：原 game-q/game-t mount 逐字复制的那段·两游戏已随 REQ-RETRO 引擎大扫除
+// 2026-08-03 删除，仅留出处说明）。本 helper 只搭台：不引 Engine/World，
 // 不碰 sim/hash，不接渲染器/输入/HUD——那些一律留在调用方（宿主契约明许的 sim 外胶水）。
 //
 // 布局：wrapper 铺满容器并 flex 居中 → scene 定尺盒（fieldW×fieldH·等比 scale 缩进容器·信箱化）；

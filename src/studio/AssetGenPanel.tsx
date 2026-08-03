@@ -218,7 +218,7 @@ export function AssetGenPanel({ onClose, onCommitted }: { onClose: () => void; o
         <input
           value={game}
           onChange={(e) => setGame(e.target.value.toLowerCase())}
-          placeholder="共享货架（留空）· 或填 game-z / game-d …"
+          placeholder="共享货架（留空）· 或填 game-z / game-103 …"
           style={{ ...sInput(), width: 280, margin: '8px 0 22px' }}
         />
 

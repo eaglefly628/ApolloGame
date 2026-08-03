@@ -70,15 +70,15 @@ describe('library — 三来源适配', () => {
   });
 
   it('manifestRecords：data: 内联 → placeholder；文件引用 → filled；sheet 归精灵表类', () => {
-    const rs = manifestRecords('game-f', gameManifest);
-    expect(rs[0]).toMatchObject({ status: 'filled', thumb: '/assets/FreeArtLib/monster/death_knight.png', sourceLabel: 'game-f' });
+    const rs = manifestRecords('sample-game', gameManifest);
+    expect(rs[0]).toMatchObject({ status: 'filled', thumb: '/assets/FreeArtLib/monster/death_knight.png', sourceLabel: 'sample-game' });
     expect(rs[1]).toMatchObject({ status: 'placeholder', category: 'misc' });
     expect(rs[2]).toMatchObject({ category: 'sheet', variants: 8 });
   });
 });
 
 describe('library — 查询/计数', () => {
-  const all = [...projectRecords(projIndex), ...artlibRecords(artIndex), ...manifestRecords('game-f', gameManifest)];
+  const all = [...projectRecords(projIndex), ...artlibRecords(artIndex), ...manifestRecords('sample-game', gameManifest)];
 
   it('文本分词全命中', () => {
     expect(queryLibrary(all, { text: 'undead skeleton' })).toHaveLength(1);

@@ -145,7 +145,7 @@ export function buildBurst(s: BurstState): LayoutNode {
 
 // ── ② 结算屏（通关·星级=Rating + 钥匙 Badge + 得分 + 庆祝 Particles）──────────────────────
 // 透明关纪律：半透 scrim 只当幕布不载字——文字全坐**不透明纸面 Panel 卡**（对比按实底算·ui-playbook §3）。
-// 采 Screen + 居中卡 + 屏级 confetti（同 game-t 结算·confetti 需铺满全屏·Modal 卡会裁切）；语义即"结算模态"。
+// 采 Screen + 居中卡 + 屏级 confetti（同已删 game-t 结算先例·confetti 需铺满全屏·Modal 卡会裁切）；语义即"结算模态"。
 export function buildResult(s: ResultState): LayoutNode {
   const doorOpen = s.keys >= s.keysTotal;
   const card: LayoutNode = {
@@ -186,7 +186,7 @@ export function buildResult(s: ResultState): LayoutNode {
   };
 }
 
-// ── ③ 选关屏（LevelPath 蛇形路径·game-t 同款活范例 + 金币 Badge + 返回）────────────────────
+// ── ③ 选关屏（LevelPath 蛇形路径·已删 game-t 曾用同款活范例 + 金币 Badge + 返回）────────────────────
 export function buildSelect(s: SelectState): LayoutNode {
   return {
     type: 'Screen',

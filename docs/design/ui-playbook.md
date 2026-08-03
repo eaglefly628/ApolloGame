@@ -134,7 +134,7 @@ node tools/ui-audit.mjs tools/audits/<你的页面>.audit.ts    # 退出码 0=�
 | 视觉特效（pulse/glow/sheen/flash…）怎么用、两库怎么分 | `docs/design/effects-architecture.md` + `layout.fx`（types.ts `VisualEffect`） |
 | 主题令牌有哪些、换皮怎么做 | `src/ui/components/types.ts` `UITheme` + `wiki/skills/ui-theming.md` |
 | 最高纲领 / 该不该下沉成能力 | `docs/design/data-driven-manifesto.md` |
-| UI 必须用 LayoutNode 的铁律 / 边界 | `CLAUDE.md`「UI 铁律」+ `docs/design/apollo-ui-contract.md` |
+| UI 必须用 LayoutNode 的铁律 / 边界 | `CLAUDE.md`「UI 铁律」+ `docs/design/archive/apollo-ui-contract.md` |
 | **防重叠 / 颜色 / 透明度 / 布局卫生准则** | **本手册** |
 
 ---

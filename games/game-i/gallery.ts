@@ -2,7 +2,7 @@
 //
 // 这就是「玩 UI」的测试场：把引擎现有 15 个控件全部铺开、可交互、可换皮。
 // 红线：本文件只产出数据。渲染/事件/换皮由引擎 renderNode + mountUI 解释（见 game-i.ts）。
-// 母法：docs/design/apollo-ui-contract.md（控件契约总表）。
+// 母法：docs/design/archive/apollo-ui-contract.md（控件契约总表）。
 
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { uiTextureUrl, SKIN_METAL, SKIN_WOOD, SKIN_STONE, SKIN_SCROLL, BTN_BLUE, BTN_GREEN, BTN_RED, BTN_YELLOW, BTN_GREY, BTN_ROUND, BTN_GLOSSY, BTN_GHOST, CARD_JOKER, CARD_FLOWER } from './ui-assets.js';

@@ -1,23 +1,23 @@
 import React, { useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Engine } from './runtime/engine.js';
-import type { Resource, PlayedHand, Flag, StringVar, ScoreTrace, ScoreEvent } from './engine/protocol/components.js';
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import type { Resource, PlayedHand, Flag, StringVar, ScoreTrace, ScoreEvent } from '@zerocraft/engine/engine/protocol/components.js';
 import {
   buildGameEBlueprint, buildJokerEntities, jokerToEntities, toEngineCard, BASE_CHIPS_BY_RANK, HAND_TYPE_TO_ENGINE, HANDMOD_FLAGS, F_DID_DISCARD, F_DID_ROUND,
   R_CHIPS, R_MULT, R_MONEY, R_HAND_SCORE, R_ROUND_SCORE, R_HANDS_LEFT, R_DISCARDS_LEFT, R_BLIND, V_HAND_TYPE,
-} from '@games/game-e/blueprint.js';
+} from './blueprint.js';
 import {
   HAND_RANKINGS, HAND_ORDER, handScoreAtLevel, RANK_ORDER, RANKS, SUITS, shuffledDeck, rollJokerOffer, blindRequirement, BLIND_ORDER,
   COMMON_PLANETS, planetForHand, bossForAnte, TAROTS, ENCHANTS, roundEndPayout, discardPayout, passiveTotals,
   type PlanetCard, type BossBlind, type TarotCard, type EnchantId,
   type Card, type Suit, type Rank, type HandType, type JokerCard, type BlindKind,
-} from '@games/game-e/index.js';
+} from './index.js';
 
 // 消耗位道具 = 星球牌（升级牌型）或 塔罗牌（盖附魔）。
 type Consumable = PlanetCard | TarotCard;
-import { cardCell, CELL_W, CELL_H, SHEET_W, SHEET_H } from '@games/game-e/cards-atlas.js';
-import { inlineUrl } from './assets/inline-url.js';
-import { evaluateHand } from './skills/tier3/index.js';
+import { cardCell, CELL_W, CELL_H, SHEET_W, SHEET_H } from './cards-atlas.js';
+import { inlineUrl } from '@zerocraft/engine/assets/inline-url.js';
+import { evaluateHand } from '@zerocraft/engine/skills/tier3/index.js';
 
 // 引擎牌型名(连字符) → 游戏牌型表键(下划线)，供选牌时的牌型预览取基础 chips/mult。
 const ENGINE_TO_HR: Record<string, HandType> = {

@@ -1,12 +1,13 @@
 // 局外小态的类型化本地存储（KV + 编解码 + 优雅降级）——REQ-SHELL-公共壳三件 ③。
 //
-// 提升自 game-f `account.ts:19-30` 现成的极小 KV 抽象（game-f 冻结·**只抄不动原文件**），
-// 补上七家宿主各写一遍的那圈样板：`typeof localStorage === 'undefined'` 判空 + try/catch 吞异常 +
-// JSON 解析 + 形状校验 + 坏档回缺省。收编面（各家现状）：
-//   game-t/game-t.ts:30-48（关卡星级 JSON）· game-x/record.ts:16-27（关系档 JSON+缺省合并）
+// 提升自 game-f `account.ts:19-30` 现成的极小 KV 抽象（历史出处·game-f 已随 REQ-RETRO 引擎大扫除
+// 2026-08-03 删除·只抄不动原文件，功能不依赖该游戏存在），
+// 补上当时七家宿主各写一遍的那圈样板：`typeof localStorage === 'undefined'` 判空 + try/catch 吞异常 +
+// JSON 解析 + 形状校验 + 坏档回缺省。收编面（立项时各家现状·game-t/game-x/game-q 三家已随
+// REQ-RETRO 2026-08-03 删除，仅留出处）：
 //   game-103/achievements.ts:38-54（解锁集）· game-103/leaderboard.ts:24-40（榜）
 //   game-a/game-a.ts:64-66 + game-c/game-c.ts:121-129（语言/人数·**原文**存非 JSON）
-//   game-q/sounds.ts:20-25 · game-t/sounds.ts:50-63 · game-g/sound.ts:29-43（静音位 '1'/'0'）
+//   game-g/sound.ts:29-43（静音位 '1'/'0'）
 // 故编解码是**闭集 4 款**，各对应真实存量写法，迁移后字节级同格式（老玩家档不炸）：
 //   `jsonCodec`（JSON blob·可带形状校验）· `textCodec`（原文枚举串）· `intCodec`（原文整数+钳）· `flagCodec`（'1'/'0'）。
 //

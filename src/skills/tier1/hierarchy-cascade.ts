@@ -7,7 +7,7 @@ import type { Hierarchy, DestroyRequest } from '@engine/protocol/components.js';
 //
 //  hierarchy 此前只做了"子跟父变换"(hierarchy-resolve)，漏了另一半"子的存活以父为界"：
 //  父被销毁后，子(名牌/血条/光环/buff 图标/手持物等挂件)成孤儿——hierarchy-resolve 见父无
-//  Transform 即 skip，孤儿原地残留(game-f：死棋子的名字残留屏幕)。任何挂件都该随宿主一并消失，
+//  Transform 即 skip，孤儿原地残留(历史实例：自走棋游戏死棋子的名字残留屏幕)。任何挂件都该随宿主一并消失，
 //  这是场景图(Unity/Godot/Unreal)的通用语义，不是自走棋专属。
 //
 //  按生命周期铁律(销毁=请求制，不在逻辑里散调 destroyEntity)：本系统排在 destroy-apply **之前**，

@@ -48,15 +48,15 @@ describe('REQ-ART · 孤儿行审计', () => {
   });
 
   it('auditGame：混合台账正确统计有槽/孤儿并列出孤儿编号', () => withRoot((root) => {
-    seedLedger(root, 'game-x', {
+    seedLedger(root, 'sample-game', {
       mode: 'requirements',
       rows: [
-        { no: 'art-01', skinKey: 'game-x/a', kind: 'sprite', desc: '有槽的' },
+        { no: 'art-01', skinKey: 'sample-game/a', kind: 'sprite', desc: '有槽的' },
         { no: 'art-02', skinKey: '', kind: 'texture', desc: '孤儿背景' },
         { no: 'art-03', slot: { field: 'src' }, kind: 'sprite', desc: '只有 slot 声明' },
       ],
     });
-    const r = auditGame(root, 'game-x');
+    const r = auditGame(root, 'sample-game');
     expect(r.total).toBe(3);
     expect(r.consumable).toBe(1);
     expect(r.orphans.map((o) => o.no)).toEqual(['art-02', 'art-03']);

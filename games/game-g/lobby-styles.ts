@@ -1,7 +1,7 @@
 // Game G · 大厅设计令牌 CSS（双皮变量 + 基础重置 + keyframes·纯样式字符串·零依赖）。
 // 去腐 2026-06-28：手写 DOM 旧大厅删除后，其专属 class 样式（.felt-h/.dcard/.pcard/.deck-nav/.ench-*/.hero-*/.ldr-* …）全成死 CSS（~310 行）已剪。
 // 数据驱动大厅（lobby-dd + 各 *-screen）走 LayoutNode 内联样式，只借这里的设计令牌 var(--felt/--gold/--chip/--ink/--panel…) + 字体。
-// game-f 有自己本地的 LOBBY_CSS，不依赖本文件。
+// 已删 game-f 曾有自己本地的 LOBBY_CSS，不依赖本文件（历史说明）。
 export const LOBBY_CSS = `
 @keyframes ggl-sheen { 0% { background-position:-130% 0 } 100% { background-position:230% 0 } }
 @keyframes ggl-float { 0%,100% { transform:translateY(0) rotate(var(--rot,0deg)) } 50% { transform:translateY(-12px) rotate(var(--rot,0deg)) } }

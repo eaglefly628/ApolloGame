@@ -16,14 +16,16 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-// 冻结名单（免检）：game-f 冻结（CLAUDE.md「f=冻结」·owner 2026-06-25·冻结勿删勿迁）。
+// 冻结名单（免检）：曾含 game-f（CLAUDE.md 旧「f=冻结」·owner 2026-06-25）——game-f 已随
+// REQ-RETRO 引擎大扫除（owner 2026-08-03 拍板）删除，冻结措辞随之撤销，名单清空。
 // launcher 无机器可读冻结旗 → 此处按项目宪法硬列；将来 launcher 若加 frozen 标记，改为解析它。
-const FROZEN = new Set(['game-f']);
+const FROZEN = new Set([]);
 
 // 存量欠账白名单（2026-07-17 盘点·逐步清偿·**不许新增**）：
 // 这些游戏在生产线（八阶段板）建立之前即注册，尚无 pipeline.json 生产板。补板后从本表删除即恢复受检。
 // 新注册的游戏一律不得进此表——没进生产线就上不了架（守卫的意义即此）。
-const LEGACY_NO_BOARD = new Set(['game-e', 'game-g', 'game-i', 'game-x', 'game-z', 'game-d', 'game-q']);
+// game-d/game-q/game-x 已随 REQ-RETRO 引擎大扫除（2026-08-03）删除，从本表移除。
+const LEGACY_NO_BOARD = new Set(['game-e', 'game-g', 'game-i', 'game-z']);
 
 /** 从 launcher.tsx 源码解析 GAMES 注册表（照 games_list.py 同款正则·只读·无副作用）。 */
 export function parseRegisteredGames(src) {
@@ -53,11 +55,13 @@ export function boardStatus(root, slug) {
   return true;
 }
 
-/** 核心审计（纯函数·供真仓库守卫与合成点名测试共用）：返回违规清单 [{id, reason}]。 */
-export function auditRegistry(games, whitelist, statusFn) {
+/** 核心审计（纯函数·供真仓库守卫与合成点名测试共用）：返回违规清单 [{id, reason}]。
+ *  frozen 缺省=真仓库冻结名单（当前为空——REQ-RETRO 2026-08-03 撤销 game-f 冻结后暂无冻结项）；
+ *  合成点名测试可传自定义 frozen 集合，验证机制本身，不依赖真仓库此刻是否恰好有冻结游戏。 */
+export function auditRegistry(games, whitelist, statusFn, frozen = FROZEN) {
   const violations = [];
   for (const g of games) {
-    if (FROZEN.has(g.id)) continue;
+    if (frozen.has(g.id)) continue;
     if (whitelist.has(g.id)) continue;
     const r = statusFn(g.id);
     if (r !== true) violations.push({ id: g.id, reason: r });
@@ -100,7 +104,8 @@ describe('auditRegistry — 合成点名（红/白/冻结三态）', () => {
     expect(v).toEqual([]);
   });
   it('冻结游戏缺板 → 免检绿', () => {
-    const v = auditRegistry([{ id: 'game-f', status: 'playable' }], new Set(), stub('缺板'));
+    // 合成 frozen 集合验证机制本身（真仓库 FROZEN 此刻为空·2026-08-03 撤销 game-f 冻结）。
+    const v = auditRegistry([{ id: 'zz-sample-frozen', status: 'playable' }], new Set(), stub('缺板'), new Set(['zz-sample-frozen']));
     expect(v).toEqual([]);
   });
   it('有板但 S1 空 → 红', () => {

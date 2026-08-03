@@ -32,12 +32,12 @@
       "cwd": "${workspaceFolder}"
     },
     {
-      "name": "Build Cartridge: game-f",
+      "name": "Build Cartridge: game-g",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/build_game.py",
       "args": [
-        "game-f"
+        "game-g"
       ],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}"
@@ -64,9 +64,9 @@
   ],
   "compounds": [
     {
-      "name": "Build + Preview: game-f",
+      "name": "Build + Preview: game-g",
       "configurations": [
-        "Build Cartridge: game-f",
+        "Build Cartridge: game-g",
         "Preview Cartridge"
       ],
       "stopAll": true

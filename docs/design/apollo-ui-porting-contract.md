@@ -3,7 +3,7 @@
 > 给「把 ZeroCraft 游戏库移植到微信小游戏」的团队：照本文实现一台 **Canvas 后端解释器**，
 > 即可让**所有现有游戏的 UI 数据原样跑起来**，无需改任何游戏代码或控件契约。
 >
-> 配套读：`docs/design/apollo-ui-contract.md`（控件 props 总表）。本文只讲**怎么把数据画出来 + 收交互**。
+> 配套读：`docs/design/archive/apollo-ui-contract.md`（控件 props 总表）。本文只讲**怎么把数据画出来 + 收交互**。
 
 ---
 

@@ -647,12 +647,12 @@
                     </div>
                     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
                       <button onClick="{{ artRegen }}" style="{{ applyBtnStyle }}" style-active="{{ applyBtnActive }}">⚡ 重新生成这张</button>
-                      <button onClick="{{ artUpload }}" title="用本地图片（如自己用 Gemini 生成的）直接替换这张——无需 API、无需 manifest，编译期游戏（game-d/g）也能写回台账·游戏内即用" style="{{ uploadBtnStyle }}" style-active="{{ uploadBtnActive }}">⬆ 上传本地图替换</button>
+                      <button onClick="{{ artUpload }}" title="用本地图片（如自己用 Gemini 生成的）直接替换这张——无需 API、无需 manifest，编译期游戏（game-g 等）也能写回台账·游戏内即用" style="{{ uploadBtnStyle }}" style-active="{{ uploadBtnActive }}">⬆ 上传本地图替换</button>
                       <sc-if value="{{ artCanRestore }}" hint-placeholder-val="{{ false }}"><button onClick="{{ artRestore }}" title="一键还原这张到原始美术（撤销上传/生成的替换·游戏回退内置立绘/图标）——你上传的原图文件保留、不删，随时能再写回" style="{{ restoreBtnStyle }}" style-active="{{ restoreBtnActive }}">↩ 还原原图</button></sc-if>
                       <button onClick="{{ artCopyPrompt }}" title="复制提示词全文（外部文生图用·词已含透明底等要求·尺寸看上方规格行在工具里设）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⧉ 复制提示词</button>
                       <button onClick="{{ artCopyBrief }}" title="复制完整出图任务书：提示词 + 确定尺寸 + 底格式 + 编号（发给美术/外部工具一步到位）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⧉ 提示词+规格</button>
                       <button onClick="{{ artBatchGen }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">▶ 生成全部占位</button>
-                      <button onClick="{{ artApplyBack }}" title="把已生成的替换图批量写回卡带 manifest——仅数据卡带（有 manifest）适用；game-d/g/f 等编译期游戏无 manifest，请用左侧「⬆ 上传本地图替换」写回台账" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⤵ 写回 manifest（数据卡带）</button>
+                      <button onClick="{{ artApplyBack }}" title="把已生成的替换图批量写回卡带 manifest——仅数据卡带（有 manifest）适用；game-g 等编译期游戏无 manifest，请用左侧「⬆ 上传本地图替换」写回台账" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⤵ 写回 manifest（数据卡带）</button>
                       <button onClick="{{ artSelClose }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">✕ 收起</button>
                     </div>
                     <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">
@@ -1212,7 +1212,7 @@ class Component extends DCLogic {
     return (a && typeof a === 'object' && typeof a.stylePrompt === 'string') ? a.stylePrompt : (typeof a === 'string' ? a : '');
   }
   // 本地图写回（owner 07-15「我本地用 Gemini 生成了图，想把这三个图标写回·没走 API 时也支持本地图替代写回」）：
-  // 无 API/无 manifest 也能替换——选一张本地图 → base64 上传 /api/art/upload（编译期游戏 game-d/g 走台账直更+钉皮肤 key）。
+  // 无 API/无 manifest 也能替换——选一张本地图 → base64 上传 /api/art/upload（编译期游戏（game-g 等）走台账直更+钉皮肤 key）。
   // 走临时 input 元素（与壳里 window.prompt/window.open/FileReader 同一档浏览器 API·非游戏 DOM），最稳，不依赖运行时渲染 file input。
   artUpload() {
     const slug = this.state.assetsSlug;

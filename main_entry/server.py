@@ -165,8 +165,8 @@ class APIHandler(BaseHTTPRequestHandler):
         self._send_file(target, ctype)
 
     def _serve_public_art(self, path: str) -> None:
-        """GET /art/... → 只读伺服 public/art/**（内置代码游戏按 URL 引用的真美术·如 game-d 的
-        /art/game-d/dice/*.png·美术台账 servedPath 同源可显）。路径穿越防护同 _serve_public_games。"""
+        """GET /art/... → 只读伺服 public/art/**（内置代码游戏按 URL 引用的真美术·
+        美术台账 servedPath 同源可显）。路径穿越防护同 _serve_public_games。"""
         base = (ROOT / 'public' / 'art').resolve()
         target = (base / path[len('/art/'):]).resolve()
         try:

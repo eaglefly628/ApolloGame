@@ -1,7 +1,8 @@
 // 引擎公用宿主运行环（render-only · 零 sim 依赖）——REQ-SHELL-公共壳三件 ①·mount-host 姊妹件。
 //
-// 抽出四家宿主逐字重复的「一局的生老病死」壳层：
-//   game-103.ts:199-236 · game-q.ts:112-165 · game-t.ts:213-250 · game101.ts:360-388
+// 抽出当时四家宿主逐字重复的「一局的生老病死」壳层（game-q/game-t 两家已随 REQ-RETRO 引擎大扫除
+// 2026-08-03 删除，仅留出处）：
+//   game-103.ts:199-236 · game-q.ts:112-165（已删） · game-t.ts:213-250（已删） · game101.ts:360-388
 // 公倍数恰好四件事：
 //   ① startSim/stopSim/restart —— 建局（engine+renderer+胶水）→ 订阅每帧 → 起跑；停局时退订+停机+释放。
 //   ② lastSig 差分重绘 —— 把世界态投影成一个签名串，只在变了才重绘 HUD（省 mountUI diff）。
@@ -90,7 +91,7 @@ export interface RunLoop<C> {
 }
 
 /**
- * 建一个宿主运行环。典型接法（game-q 形态）：
+ * 建一个宿主运行环。典型接法（历史实例 game-q 形态·该游戏已随 REQ-RETRO 引擎大扫除 2026-08-03 删除）：
  * ```ts
  * const loop = createRunLoop({
  *   create: () => { const engine = new Engine({ input }); engine.load(bp); … ; return { engine, renderer, canvas, onDown }; },

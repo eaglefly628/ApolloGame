@@ -8,7 +8,7 @@ import { auditEmoji } from './emoji-audit.mjs';
 let root;
 beforeAll(() => {
   root = mkdtempSync(join(tmpdir(), 'emoji-'));
-  const dir = join(root, 'games', 'game-t');
+  const dir = join(root, 'games', 'sample-game');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'screen.ts'), [
     `// 花色记号 ♠♥ 只在注释里——不该计入`,
@@ -22,7 +22,7 @@ afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 describe('emoji-audit · 只扫玩家可见 UI 文本', () => {
   it('注释行 emoji 不计入·UI 文本 emoji 计入', () => {
-    const r = auditEmoji('game-t', { root });
+    const r = auditEmoji('sample-game', { root });
     const kinds = Object.fromEntries(r.emojis.map((e) => [e.emoji, e.count]));
     expect(kinds['🎲']).toBe(2);   // 两处 UI 文本
     expect(kinds['💎']).toBe(1);
@@ -31,7 +31,7 @@ describe('emoji-audit · 只扫玩家可见 UI 文本', () => {
   });
 
   it('聚合：total / distinct / 文件排名', () => {
-    const r = auditEmoji('game-t', { root });
+    const r = auditEmoji('sample-game', { root });
     expect(r.total).toBe(3); // 🎲×2 + 💎×1
     expect(r.distinct).toBe(2);
     expect(r.files[0].file).toBe('screen.ts');

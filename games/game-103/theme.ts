@@ -54,7 +54,7 @@ export const PLAYER_DEF = {
 
 // ── 武器册（gdd §4·统一数据表·pattern 声明射法）────────────────────────────
 // 每把武器=一条纯数据；authoring 期 prefab builder（blueprint.ts）按 pattern 组装成现有能力的组件蓝图
-// （Launch/Hitbox/Steering/Perception/rotation…）——非运行时游戏层解释器（同 game-q towerTemplate 先例·合规）。
+// （Launch/Hitbox/Steering/Perception/rotation…）——非运行时游戏层解释器（同已删 game-q towerTemplate 先例·合规）。
 // dmg/cd/projSpeed/life 皆 tick 化；命中由 t2-hitbox 结算（× 全局 power 系数）。
 export type FirePattern =
   | 'straight'   // 直线飞弹（Launch toward:target·单发 consumeOnHit）

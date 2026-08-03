@@ -4,10 +4,8 @@ interface GameModule { mount: (el: HTMLElement) => () => void }
 
 const GAMES: Record<string, { title: string; subtitle: string }> = {
   'game-e': { title: 'Game E: Balatro-like',         subtitle: '小丑牌 · 卡牌构建' },
-  'game-f': { title: 'Game F: Pixel Three Kingdoms', subtitle: '像素三分天下 · 自走棋' },
   'game-g': { title: 'Game G: Fateflip Poker',       subtitle: '翻命扑克 · 3D 掷命骨架' },
   'game-i': { title: 'Game I: UI Gallery',           subtitle: '控件测试场 · 数据驱动 UI' },
-  'game-x': { title: 'Game X: Living Companion',     subtitle: '残响 · 掌上伴侣 Desk Mode' },
 };
 
 // Statically-analyzable import chain — Rollup can DCE dead branches when
@@ -16,11 +14,9 @@ const GAMES: Record<string, { title: string; subtitle: string }> = {
 //   （scripts/package-web.mjs 打包库卡带走此分支；工程游戏各自静态 import 不受牵连、不进数据运行时）。
 function startLoad(id: string): Promise<GameModule> {
   if (id === '__inline__') return import('./cartridge-inline-run.js') as Promise<GameModule>;
-  if (id === 'game-e') return import('./game-e.js') as Promise<GameModule>;
-  if (id === 'game-f') return import('@games/game-f/game-f.js') as Promise<GameModule>;
+  if (id === 'game-e') return import('@games/game-e/game-e.js') as Promise<GameModule>;
   if (id === 'game-g') return import('@games/game-g/game-g.js') as Promise<GameModule>;
   if (id === 'game-i') return import('@games/game-i/game-i.js') as Promise<GameModule>;
-  if (id === 'game-x') return import('@games/game-x/game-x.js') as Promise<GameModule>;
   return Promise.reject(new Error(`Unknown game: ${id}`));
 }
 

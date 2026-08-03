@@ -1,7 +1,7 @@
 // Game B ·《雀宴》—— 视觉常量 + UITheme（夜宴暗紫主菜单 + sakura 亮纸 HUD）+ 机位表（纯数据·无逻辑）。
 // 规格真相：docs/design/game-b/mockups/（Claude Design 参考稿·⚖ owner 点名 1:1 复刻）+ scene-layout-handoff.md。
 // 两套色调（对标参考包）：主菜单/演出=夜宴暗紫（NIGHT·凤翎粉金）；牌桌 HUD 席位卡=sakura 亮纸面。
-// 游戏层 UITheme 数据合法（game-q/g/d 先例）；凤翎 texture=主题作者写（apolloToon MOUNTAINS 先例）。
+// 游戏层 UITheme 数据合法（历史先例含已删 game-q/game-d，现存 game-g）；凤翎 texture=主题作者写（apolloToon MOUNTAINS 先例）。
 import type { UITheme } from '@zerocraft/engine/ui/components/index.js';
 
 // ── 画面（mockup 线框稿坐标系 1:1：stage 1120×630·16:9·mountHost 等比信箱化）────────
@@ -109,7 +109,7 @@ export const NIGHT: UITheme = {
   },
 };
 
-// 主菜单宿主背景层（凤翎 texture 叠深紫渐变·game-t sceneBackground 先例·宿主装饰层）。
+// 主菜单宿主背景层（凤翎 texture 叠深紫渐变·已删 game-t sceneBackground 先例·宿主装饰层）。
 export const MENU_BG = `${NIGHT_TEXTURE}, ${NIGHT.pageBg}`;
 // 主菜单画面尺寸（对标 mockups/main-menu.dc.html·1280×720）。
 export const MENU_W = 1280;

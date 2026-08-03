@@ -1,7 +1,7 @@
 // Game B ·《雀宴》—— 本地美术索引装载（vendoring 模型·REQ-Resource ⑤）。
 // 真相文件=public/games/game-b/art/index.json（scripts/vendor-asset.mjs 产·B-007 占位包：
 // FluffyStuff riichi 牌面 40 张 PNG·CC0·provenance 在条目里）；游戏只引本地拷贝、不直引共享货架。
-// 消费路线=game-q 先例：运行时 fetch 本地索引 → registerAssetIndex 统一桥接（path 站点绝对 → baseUrl ''）。
+// 消费路线=已删 game-q 先例：运行时 fetch 本地索引 → registerAssetIndex 统一桥接（path 站点绝对 → baseUrl ''）。
 import { AssetManager, ImageAssetLoader, parseAssetIndex, registerAssetIndex } from '@zerocraft/engine/assets/index.js';
 
 export const ART_INDEX_URL = '/games/game-b/art/index.json';

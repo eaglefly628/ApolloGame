@@ -49,7 +49,7 @@ function fxAnimComps(anim: FxAnim | undefined): Record<string, unknown> {
 
 // ── prefab 模板 ──────────────────────────────────────────────────────────────
 
-// 子弹（按射法 pattern 组装·非运行时解释器·authoring 期 builder 同 game-q towerTemplate）：
+// 子弹（按射法 pattern 组装·非运行时解释器·authoring 期 builder 同已删 game-q towerTemplate 先例）：
 //  straight=Launch 直飞·单发命中；beam=快速长条·穿一线(连续 per-tick)；boomerang=Launch 去 + Perception/Steering 拉回；
 //  nova=自身大范围 Hitbox·短寿命扫全场(per-tick)。命中一律 ×power 系数·寿命回收。
 function projByPattern(w: WeaponDef): { entities: Record<string, Record<string, unknown>> } {

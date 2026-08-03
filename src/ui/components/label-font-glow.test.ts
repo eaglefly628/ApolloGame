@@ -3,7 +3,8 @@
 //   · font：具名字体槽 ui/mono/pixel/display → 取 UITheme 对应槽（pixel/display 缺省回退 ui/mono）。
 //   · glow：text-shadow 柔光（琥珀时钟磷光）。
 //   · tracking：letter-spacing（Silkscreen 全大写微标）。
-// 折进 Label 扩字段而非新建控件（manifesto：扩字段优先于加控件类型）。下沉自 game-x《残响》像素 UI。
+// 折进 Label 扩字段而非新建控件（manifesto：扩字段优先于加控件类型）。历史出处：下沉自 game-x《残响》
+// 像素 UI（功能已完全独立于 game-x，该游戏已随 REQ-RETRO 引擎大扫除 2026-08-03 删除，仅留出处说明）。
 import { describe, it, expect } from 'vitest';
 import { renderNode } from './index.js';
 import { apolloOnyx } from './apollo-kit.js';

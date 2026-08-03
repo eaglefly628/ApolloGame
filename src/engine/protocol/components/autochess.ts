@@ -80,9 +80,8 @@ export interface HexBoard extends Component {
   // 'odd-r'(推荐)：错位矩形棋盘——每行 axial q 范围随 −(r>>1) 平移（offset col=q+(r>>1)∈[0,cols)）；
   //   sim 仍严格 axial（距离/邻居/A* 不变），真投影 x=q·ts+r·ts/2 即呈规整矩形+六边形交错，
   //   **几何与拓扑同构**（视觉相邻=逻辑相邻）。摆子用 hex.ts 的 offsetToAxial(col,row) 换算。
-  // 'offset'(已废弃)：旧投影错位 (r&1)·ts/2——视觉≠拓扑（每格 6 邻中 1 个投影在 1.5ts 外），
-  //   仅为 game-f 迁移窗口保留（inbox F-10），迁完即删。
-  // （旧 'offset' 投影错位已随 F-10 迁移完成删除——视觉≠拓扑，外审 Q5。）
+  // （旧 'offset' 投影错位已随 F-10 迁移完成删除——视觉≠拓扑，外审 Q5。原用它的 game-f 已随
+  //   REQ-RETRO 引擎大扫除 2026-08-03 删除。）
   layout?: 'axial' | 'odd-r';
 }
 // 单位当前所在格(axial 整数)。网格移动的 SIM 真相(进 snapshot/hash)。

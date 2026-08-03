@@ -2,7 +2,7 @@
 //
 // 数据驱动铁律下的真 3D 骰：**零手写 Three.js**。本模块只在 game 层**声明 ECS 组件数据**
 // （Transform3D 位姿 / Mesh3D box+dieFaces 骰面 / Vfx3D 能量注入粒子 / Camera3D / Light3D / Sky3D env），
-// 由主程/P3D 的 `ThreeRenderer` 解释渲染——与 game-d Title 大骰同一条路子（game-d.ts createEntity+addComponent）。
+// 由主程/P3D 的 `ThreeRenderer` 解释渲染——与已删 game-d Title 大骰同一条路子（历史实例·game-d.ts createEntity+addComponent）。
 // 绝不改 three-renderer/引擎；绝不用 CSS 3D transform（既绕过 3D 基座、又会在战斗 zoom 画框里重演放大 bug）。
 //
 // 挂载点：clashNode 的 `clash-die3d-m`/`clash-die3d-f` 两个 🎲 锚点（各一颗骰）——mountTurnBattle 量锚点屏幕 rect、

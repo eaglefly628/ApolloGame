@@ -3,7 +3,7 @@
 // 视觉锚 = docs/design/game102/game102-screens.dc.html（卡通像素风·「稿=1:1 复刻基准」铁律）。
 // 全部由既有 UITheme 闭集令牌 + 程序化 data-URI 糖果皮表达——零新控件、render-only、确定性（无裸随机·encodeURIComponent 一次）。
 // 谱系同 apollo-toon：candySkin 厚底唇钮皮是既有形状的另一套配色实例（数据·非新能力）。
-// 分工同 game-t：sim 常量/几何/调色闭集在 `theme.ts`（PE 域·单一真相）；本文件只出「UI 皮 + HUD 展示常量」（PUI 域）。
+// 分工同已删 game-t 先例：sim 常量/几何/调色闭集在 `theme.ts`（PE 域·单一真相）；本文件只出「UI 皮 + HUD 展示常量」（PUI 域）。
 //
 // 8 色板（GD 布局稿）：夜紫底 #16122e / 品紫面 #231d45 / 缃金 #ffd54a / 天青 #4fc3ff /
 //   渲染橙 #ff9d4d(PE 层专用·UI 不取) / 翠绿 #5ee8a0 / 玫红 #ff6fae / 警红 #ff5d6c。

@@ -1,7 +1,8 @@
 // 游戏本地美术索引装载（render-only · 失败静默回退）——REQ-SHELL-公共壳三件 ②。
 //
-// 六家宿主逐字重复的那段「拉 /games/<slug>/art/index.json」在此收编：
-//   game-q.ts:117-125 · game-103.ts:189-197 · game102.ts:73-80 · game102/voxel-proto.ts:276
+// 当时六家宿主逐字重复的那段「拉 /games/<slug>/art/index.json」在此收编（game-q.ts:117-125 一家已随
+// REQ-RETRO 引擎大扫除 2026-08-03 删除，仅留出处）：
+//   game-103.ts:189-197 · game102.ts:73-80 · game102/voxel-proto.ts:276
 //   （以上=注册进 AssetManager 形态）· game-a/art-overrides.ts:39-57 · game-c/art-overrides.ts:77-95
 //   （以上=skinKey→URL 覆盖表形态·两份近逐字）· game-c/art-overrides.ts:54-64（loadSkinIndex）。
 // 两形态同源一条链，故一件两出口：

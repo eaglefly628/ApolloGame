@@ -2,20 +2,21 @@ import { describe, it, expect } from 'vitest';
 import { validateReferences } from './validate-references.js';
 import { parseManifestDetailed } from './manifest.js';
 import { exportManifest } from '../studio/inspect.js';
-import { buildGameEBlueprint } from '@games/game-e/blueprint.js';
+import { buildFixtureBlueprint } from '../test-fixtures/engine-fixture.js';
 import type { WorldBlueprint } from './demo.assembly.js';
 
 // 引用链接器（P0）：id 交叉引用体检。两条军规：
 //  ① 真断链必须点名（信号无生产者/条件缺叶/effect 缺目标/模板缺失/图内跳空）；
 //  ② 真实游戏蓝图必须零误报（self 寻址不查、prefab 模板实体进"存在宇宙"）。
-//  注：game-f 用 @signal-source 运行期哨兵目标，现 linter 未白名单它（既有缺口·非本次删游戏引入），故此处用 game-e 作回归样本。
+//  注：`@signal-source` 运行期哨兵目标现 linter 未白名单它（既有缺口·非本次引入）——与本回归样本无关，
+//  此处改用引擎侧夹具（`test-fixtures/engine-fixture.ts`，REQ-RETRO 批①·2026-08-03·断游戏目录借用）。
 
 type Entities = Record<string, Record<string, unknown>>;
 const lint = (entities: Entities) => validateReferences(entities as never);
 
 describe('validate-references —— 零误报军规（真实蓝图回归）', () => {
   const games: Array<[string, () => WorldBlueprint]> = [
-    ['E', () => buildGameEBlueprint()],
+    ['fixture', () => buildFixtureBlueprint()],
   ];
   for (const [name, build] of games) {
     it(`Game ${name} 真实蓝图 → 0 引用告警`, () => {

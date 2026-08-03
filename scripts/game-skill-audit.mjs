@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// 游戏能力接入审计（owner 2026-07-02 立项：防 game-d 式绕引擎）
-// 用法：node scripts/game-skill-audit.mjs [game-d game-g ...]（缺省=全部游戏）
+// 游戏能力接入审计（owner 2026-07-02 立项：防绕引擎手写自由代码）
+// 用法：node scripts/game-skill-audit.mjs [game-g game-i ...]（缺省=全部游戏）
 // 体检输出每个游戏的引擎能力接入面 + 分层旗标，末行判词 token + 退出码可接门禁。
 //
 // 分层（REQ-QA-测试审计强化三件 · 主程 spec 2026-07-04）：

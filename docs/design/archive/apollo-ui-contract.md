@@ -1,5 +1,8 @@
 # ZeroCraft UI 控件契约总表（数据驱动 UI 库 · 开工蓝图）
 
+> **已挪至 `docs/design/archive/`（REQ-RETRO 引擎大扫除·2026-08-03·token 减负——文档级权威已转移到
+> `docs/design/ui-playbook.md` + `docs/playbooks/ui.md`，本文件控件规格内容仍准确，作为详表保留供查）。**
+
 > 本文是「阿波罗 UI」库的开工蓝图：把**现有引擎 UI 能力**盘清成数据接口规格，
 > 再把**待补控件**设计成同一风格的契约。新库建好后整份搬过去，按规格逐个实现。
 >

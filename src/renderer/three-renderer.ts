@@ -32,7 +32,7 @@ import { pivotMatrix, applyPivot } from './three/pivot.js';
 import { WorldUiLayer } from './three/world-ui.js';
 import { IndexDebug } from './three/index-debug.js';
 import { AssetReadyTracker } from './three/asset-ready.js';
-import type { PhysicsSystem } from './three/physics.js'; // 运行时**懒加载**（见 ensurePhysics）：physics.ts 依赖 cannon-es 重包·仅在有 RigidBody3D 时才进图，无刚体的游戏(如 game-d)不连带解析 cannon-es（修 vite dev「Failed to resolve cannon-es」）
+import type { PhysicsSystem } from './three/physics.js'; // 运行时**懒加载**（见 ensurePhysics）：physics.ts 依赖 cannon-es 重包·仅在有 RigidBody3D 时才进图，无刚体的游戏不连带解析 cannon-es（修 vite dev「Failed to resolve cannon-es」）
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import { isModelHandle } from '@assets/index.js';
@@ -216,7 +216,7 @@ export class ThreeRenderer implements RendererBackend {
   }
 
   // 懒加载物理子系统：仅当场上出现 RigidBody3D 才 `import('./three/physics.js')`（连带 cannon-es 进独立 chunk）。
-  // 无刚体的游戏（如 game-d）永不触发 → physics.ts/cannon-es 根本不进模块图，vite dev 也不会因缺包报错。
+  // 无刚体的游戏永不触发 → physics.ts/cannon-es 根本不进模块图，vite dev 也不会因缺包报错。
   private ensurePhysics(world: IWorld): void {
     if (this.physics || this.physicsLoading) return;
     if (world.query('RigidBody3D').length === 0) return;

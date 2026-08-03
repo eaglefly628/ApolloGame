@@ -3,7 +3,7 @@ import { validateComponentData, validateAssetRefs, formatIssues } from './valida
 import { parseManifest } from './manifest.js';
 import { resourceCapability, flagCapability, spriteCapability, soundCapability } from '@atom-skills/index.js';
 import type { EntityBlueprint } from './demo.assembly.js';
-import { buildGameFBlueprint } from '@games/game-f/index.js';
+import { buildFixtureBlueprint } from '../test-fixtures/engine-fixture.js';
 
 const ent = (comps: Record<string, Record<string, unknown>>): Record<string, EntityBlueprint> =>
   comps as unknown as Record<string, EntityBlueprint>;
@@ -49,7 +49,7 @@ describe('R12 组件数据 schema 校验（复用 provides.fields，不另造）
 
   it('真实蓝图 → 零类型 error（数据与声明 schema 一致）', () => {
     const games = [
-      ['game-f', buildGameFBlueprint()],
+      ['fixture', buildFixtureBlueprint()],
     ] as const;
     for (const [name, bp] of games) {
       const r = validateComponentData(bp.capabilities, bp.entities);

@@ -11,7 +11,7 @@ import { ArtLedgerPanel, type LedgerRow } from './ArtLedgerPanel.js';
 
 // 两条 needs-art 行：enemy=皮肤槽回退 circle·#ff5c7a；track-seg=纯色块 box·#1c3a5c。
 const LEDGER = {
-  success: true, mode: 'requirements', game: 'game-q', count: 2,
+  success: true, mode: 'requirements', game: 'sample-game', count: 2,
   rows: [
     { no: 'art-12', kind: 'sprite', slot: { entity: 'prefab:enemy_basic:body', component: 'Sprite', field: 'textureKey' }, query: 'enemy basic body', skinKey: 'q/enemy-basic', prompt: 'top-down neon drone, pink #ff5c7a', placeholder: { current: '皮肤槽 q/enemy-basic（未填时回退 2D 色块 circle·#ff5c7a）', source: 'procedural', count: 1 }, spec: { w: 24, h: 24, transparent: true }, context: '美术需求：「enemy basic body」', status: 'needs-art', gen: null, provenance: null },
     { no: 'art-38', kind: 'sprite', slot: { entity: 'track-seg-0', component: 'Shape', field: 'art' }, query: 'track seg', placeholder: { current: '2D 色块（box·#1c3a5c）', source: 'procedural', count: 5 }, spec: { w: 210, h: 26, transparent: true }, context: '美术需求：「track seg」', status: 'needs-art', gen: null, provenance: null },
@@ -36,7 +36,7 @@ afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlo
 
 describe('ArtLedgerPanel · 需求可辨认（卡面描述 + 占位色块图）', () => {
   it('卡面显示 query 人读描述 + 未生成行画 SVG 色块占位图（形状+色正确）', async () => {
-    await act(async () => { root.render(<ArtLedgerPanel slug="game-q" onBack={() => {}} />); });
+    await act(async () => { root.render(<ArtLedgerPanel slug="sample-game" onBack={() => {}} />); });
     await flush();
     const html = container.innerHTML;
     // C：卡面有人读描述（不再只有 art-NN → 一眼分得清）

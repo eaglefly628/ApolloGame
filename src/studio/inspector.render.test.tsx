@@ -7,7 +7,7 @@ import { studioAssets } from './assets-model.js';
 import { inspectBlueprint } from './inspect.js';
 import { parseManifest } from '../assembly/manifest.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
-import { buildGameFBlueprint } from '@games/game-f/index.js';
+import { buildFixtureBlueprint } from '../test-fixtures/engine-fixture.js';
 import { demoBlueprint } from '../assembly/demo.assembly.js';
 
 // 回归：透视器曾因一款已删旧游戏蓝图的可选字段 Tween.loops=undefined → kindOf 落 'json' →
@@ -15,9 +15,10 @@ import { demoBlueprint } from '../assembly/demo.assembly.js';
 // （tsc/build/单测都没渲染过该组件，所以全绿却白屏。）两道守卫：
 //   ① 真把组件渲染一遍（默认 game-e）。
 //   ② 不变式：任何"值缺省(undefined/null)"的字段都不能被判成 'json'（否则 JSON.stringify→undefined）。
+// 'fixture' 曾借用 game-f（REQ-RETRO 批①·2026-08-03 已删）——现用引擎侧夹具 test-fixtures/engine-fixture.ts。
 
 const GAMES: Array<[string, () => WorldBlueprint]> = [
-  ['game-f', () => buildGameFBlueprint()],
+  ['fixture', () => buildFixtureBlueprint()],
   ['demo', () => demoBlueprint],
 ];
 

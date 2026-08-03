@@ -15,7 +15,7 @@ import {
   type LibraryStatus,
 } from '@assets/index.js';
 import type { ArtLibIndex } from '@assets/artlib.js';
-import { GAME_F_ASSETS } from '@games/game-f/assets.js';
+import { FIXTURE_ASSETS } from '../test-fixtures/engine-fixture.js';
 import { JOKER_ART_MANIFEST } from '@games/game-e/assets.js';
 import { SHELL, sBtn, sInput, sSelect, sChip, sLabel, sBadge, sChecker } from '../ui/shell-theme.js';
 import { AssetImportWizard } from './AssetImportWizard.js';
@@ -35,9 +35,11 @@ import { AssetPendingReview } from './AssetPendingReview.js';
 
 const CAP = 400; // 网格一次最多渲染数（靠搜索/过滤收窄）
 
+// 'game-f' 条目（REQ-RETRO 批①·2026-08-03 已删）换成引擎侧夹具（test-fixtures/engine-fixture.ts，
+// 不挂 games/**）——借某游戏的清单当"内置样例"本就是越界耦合，删游戏顺势断掉。
 const GAME_MANIFESTS: ReadonlyArray<readonly [string, Parameters<typeof manifestRecords>[1]]> = [
   ['game-e', JOKER_ART_MANIFEST],
-  ['game-f', GAME_F_ASSETS],
+  ['fixture', FIXTURE_ASSETS],
 ];
 
 const STATUS_LABEL: Record<LibraryStatus, string> = { filled: '已填', tbf: '待填', placeholder: '占位' };

@@ -113,8 +113,8 @@ export const dragPlaceCapability = defineCapability({
       // 输入先行（同 card-pile 纪律）：写 Transform 汇入 overlap→…→resource-apply 链、又读 Flag/Resource
       // → runsBefore 删反向边（grid-move/motion-apply 同写 Transform 的 RMW 对、flow/zone 的 Flag、
       // group-count/self-rule/resource-apply 的 Resource）。读上一拍相位/限额，备战级操作不可感知。
-      // 'motion-apply'：REQ-F-050——与 grid-move 同类的 Transform RMW 对，首个两者同场的世界（game-f
-      // 主角自由移动+拖拽）即成 22 系统 SCC；输入先行语义不变（先落拖拽终点、同拍再积分速度）。
+      // 'motion-apply'：REQ-F-050——与 grid-move 同类的 Transform RMW 对，首个两者同场的世界（历史实例：
+      // 自走棋主角自由移动+拖拽）即成 22 系统 SCC；输入先行语义不变（先落拖拽终点、同拍再积分速度）。
       // REQ-F-058 注：投放区命中时本系统**只负责不动**（信号由下方独立 drop-zone 小系统种——它只写
       // Signal、零 Transform/Resource 牵连，可安然排在 event-when 全局清扫之后；本系统若兼职写 Signal
       // 会陷入「既要早于结算链、又要晚于 event-when」的死结，实测三角环）。

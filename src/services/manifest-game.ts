@@ -1,7 +1,8 @@
-// mountManifestGame —— 内置「纯数据游戏」通用薄宿主（源起 2026-07-10 官方示例先例·该两款 2026-07-16 已删·现消费者=game-q 等内置数据游戏）。
+// mountManifestGame —— 内置「纯数据游戏」通用薄宿主（源起 2026-07-10 官方示例先例·该两款 2026-07-16 已删·
+// 曾消费者含 game-q（已随 REQ-RETRO 引擎大扫除 2026-08-03 删除），现消费者=game-103/game102 等内置数据游戏）。
 //
 // 一个内置数据游戏 = public/games/<slug>/manifest.json（tracked·纯 JSON）+ 本地美术 index + 本宿主。
-// 职责（全在 sim 外·零玩法逻辑·同 game-q host 纪律）：
+// 职责（全在 sim 外·零玩法逻辑·同已删 game-q 曾用的 host 纪律）：
 //   fetch manifest →（残留 art: 引用则经素材库解析）→ parseManifest → Engine + CanvasRenderer(+AssetManager)
 //   + 画布指针逆投影入队。世界坐标=画布逻辑坐标（manifest 自带居中相机·1:1）。
 // 美术管线：台账/生成/替换走美术平台 library 线（manifestFile 已回退到 public/games/<slug>/manifest.json）。
@@ -40,7 +41,7 @@ export function mountManifestGame(slug: string) {
       } catch { /* 无素材索引 → Shape 回退观感 */ }
       const bp = parseManifest(raw);
       if (dead) return;
-      // 3) 皮肤资产：本地 index（gen/ 生成物 + 上传物）——就绪即换装，缺失=Shape 回退（观感承诺同 game-q）
+      // 3) 皮肤资产：本地 index（gen/ 生成物 + 上传物）——就绪即换装，缺失=Shape 回退（观感承诺同已删 game-q 先例）
       const assets = new AssetManager(new ImageAssetLoader());
       try {
         const r = await fetch(`/games/${slug}/art/index.json`, { cache: 'no-store' });

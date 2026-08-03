@@ -34,7 +34,7 @@ try {
   await page.waitForSelector('canvas, [data-action]', { timeout: 20000 });
   const has3d = await page.$('canvas');
   await page.waitForTimeout(has3d ? 3000 : 800); // 3D 等 WebGL 初始化几帧（云/角色/阴影）；DOM UI 等布局稳定
-  // 可选点击穿透（arg 4·逗号分隔按钮文案，依次点·每次等 1.6s）：深链只能到首屏，要截后续屏（如 game-d 战场/骰盅）→ 点按钮进屏。
+  // 可选点击穿透（arg 4·逗号分隔按钮文案，依次点·每次等 1.6s）：深链只能到首屏，要截后续屏（如战场/结算屏）→ 点按钮进屏。
   const clicks = (process.argv[4] || '').split(',').map((s) => s.trim()).filter(Boolean);
   for (const label of clicks) {
     try { await page.getByText(label, { exact: false }).first().click({ timeout: 6000 }); await page.waitForTimeout(Number(process.env.SHOOT_WAIT) || 1600); }

@@ -11,10 +11,9 @@ import { exportManifest } from '../src/studio/inspect.ts';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // game → 该游戏导出的 WorldBlueprint 构造器（新增蓝图游戏在此登记）。
-const BUILDERS = {
-  'game-d': async () => (await import('../games/game-d/rooms.ts')).baseBlueprint(),
-  'game-f': async () => (await import('../games/game-f/blueprint.ts')).buildGameFBlueprint(),
-};
+// game-d/game-f 已随 REQ-RETRO 引擎大扫除（owner 2026-08-03）删除，原条目跟删——暂空，
+// 下一个导出 WorldBlueprint 构造器的"代码游戏"在此登记即可复用本工具。
+const BUILDERS = {};
 
 const game = process.argv[2];
 if (!BUILDERS[game]) {

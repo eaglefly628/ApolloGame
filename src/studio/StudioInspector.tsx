@@ -8,7 +8,7 @@ import { getCameraView } from '@engine/protocol/camera-view.js';
 import type { WorldBlueprint } from '../assembly/demo.assembly.js';
 import { demoBlueprint } from '../assembly/demo.assembly.js';
 import { buildGameEBlueprint } from '@games/game-e/index.js';
-import { buildGameFBlueprint, GAME_F_ASSETS } from '@games/game-f/index.js';
+import { buildFixtureBlueprint, FIXTURE_ASSETS } from '../test-fixtures/engine-fixture.js';
 import {
   inspectBlueprint,
   blueprintStats,
@@ -31,7 +31,7 @@ import { resolveEdits, parseCommand } from './edit-resolve.js';
 //  左：引擎实时预览(画布) + 实时世界状态读出 + 启用能力 + 「能配啥」schema 参考 + 资产透视
 //  右：搜索 + 域分类(单位/棋盘/经济/UI…) 的完整数据树(可改每个字段) ｜ 顶：游戏选择 + 统计 + 导出
 //  改字段 → 改的是初始数据 → 点"重跑"用新数据从 t=0 重启 → 看涌现/手感变化。
-//  覆盖在产游戏(E/F)。分类导航见 categorize.ts —— 复杂游戏(game-f 上百实体)按域可读。
+//  覆盖在产游戏(E) + 引擎内置夹具。分类导航见 categorize.ts —— 复杂游戏(上百实体)按域可读。
 // ═══════════════════════════════════════════════════════════════
 
 interface PreviewInput {
@@ -54,14 +54,16 @@ interface GameDef {
 const GAMES: GameDef[] = [
   { id: 'game-e', title: 'Game E · Balatro 小丑牌', build: () => buildGameEBlueprint() },
   {
-    id: 'game-f',
-    title: 'Game F · 三国自走棋',
-    build: () => buildGameFBlueprint(),
-    viewport: { w: 1280, h: 720 }, // 原生视口(=Camera.viewportW/H)；预览按 previewScale CSS 缩放铺满列
+    // 曾是 game-f（REQ-RETRO 批①·2026-08-03 已删·借用 game-f 蓝图当"引擎侧内置样例"本就是越界耦合）——
+    // 换成不挂 games/** 的引擎侧夹具（test-fixtures/engine-fixture.ts）。
+    id: 'fixture',
+    title: 'Fixture · 引擎内置样例',
+    build: () => buildFixtureBlueprint(),
+    viewport: { w: 640, h: 400 }, // 原生视口(=Camera.viewportW/H)；预览按 previewScale CSS 缩放铺满列
 
     makeAssets: () => {
       const a = new AssetManager(new ImageAssetLoader());
-      a.registerManifest(GAME_F_ASSETS);
+      a.registerManifest(FIXTURE_ASSETS);
       void a.loadAll();
       return a;
     },
@@ -475,7 +477,7 @@ export function StudioInspector({ onBack, extraGame }: { onBack: () => void; ext
 
   const currentDef = allGames.find((g) => g.id === gameId);
   const vp = currentDef?.viewport ?? { w: 640, h: 400 };
-  // 预览缩放：游戏按原生视口渲染(如 game-f 1280×720)，再 CSS 缩放铺满列(约 620px) → 全景可见，
+  // 预览缩放：游戏按原生视口渲染(如某游戏 1280×720)，再 CSS 缩放铺满列(约 620px) → 全景可见，
   // 不再"只显示中间一块"(此前把视口设小，看到的是相机中心的一小窗)。
   const previewScale = Math.min(1, 620 / vp.w);
   // 选中实体在预览框里的屏幕坐标(世界→屏幕，与渲染器同一相机契约)× 预览缩放。无 Transform → null。

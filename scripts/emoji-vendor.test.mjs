@@ -20,7 +20,7 @@ beforeAll(() => {
     ],
   }));
   // 游戏 UI 源：🎲（exact）+ ★（alias→2b50）+ ☆（alias→2b50·与 ★ 去重）
-  const g = join(root, 'games', 'game-t');
+  const g = join(root, 'games', 'sample-game');
   mkdirSync(g, { recursive: true });
   writeFileSync(join(g, 'screen.ts'), [`const a = { text: '🎲 掷骰' };`, `const b = '★ 满星 ☆ 空星';`].join('\n'));
 });
@@ -28,20 +28,20 @@ afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 describe('emoji-vendor · 扫→去重→vendor 进本地', () => {
   it('plan：★☆ 都解析到 ⭐(2b50)·与 🎲 共 2 张唯一美术图', () => {
-    const p = planEmojiVendor('game-t', { root });
+    const p = planEmojiVendor('sample-game', { root });
     expect(p.uniqueArt).toBe(2); // 🎲 + ⭐（★☆ 去重）
     expect(p.assets.map((a) => a.id).sort()).toEqual(['emoji/1f3b2', 'emoji/2b50']);
     expect(p.missing).toEqual([]);
   });
 
   it('apply：copy 文件 + 登记本地 index（码点键·servedPath·vendoredFrom）', () => {
-    const res = vendorEmoji('game-t', { root });
+    const res = vendorEmoji('sample-game', { root });
     expect(res.copied).toBe(2);
-    expect(existsSync(join(root, 'public', 'games', 'game-t', 'art', 'emoji', '1f3b2.png'))).toBe(true);
-    expect(existsSync(join(root, 'public', 'games', 'game-t', 'art', 'emoji', '2b50.png'))).toBe(true);
-    const idx = JSON.parse(readFileSync(join(root, 'public', 'games', 'game-t', 'art', 'index.json'), 'utf8'));
+    expect(existsSync(join(root, 'public', 'games', 'sample-game', 'art', 'emoji', '1f3b2.png'))).toBe(true);
+    expect(existsSync(join(root, 'public', 'games', 'sample-game', 'art', 'emoji', '2b50.png'))).toBe(true);
+    const idx = JSON.parse(readFileSync(join(root, 'public', 'games', 'sample-game', 'art', 'index.json'), 'utf8'));
     const die = idx.assets.find((a) => a.id === 'emoji/1f3b2');
-    expect(die).toMatchObject({ type: 'texture', category: 'emoji', path: '/games/game-t/art/emoji/1f3b2.png' });
+    expect(die).toMatchObject({ type: 'texture', category: 'emoji', path: '/games/sample-game/art/emoji/1f3b2.png' });
     expect(die.provenance.vendoredFrom).toBe('emoji/game_die');
   });
 });

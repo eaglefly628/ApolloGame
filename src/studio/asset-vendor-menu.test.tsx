@@ -47,7 +47,7 @@ afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlo
 describe('资源库 · 右键 copy 到游戏（vendor）', () => {
   it('右键项目资产 → 弹游戏列表 → 点游戏 → POST /api/assets/vendor 带 {id,game}', async () => {
     const { calls } = mockFetch([
-      ['/api/games', { games: [{ id: 'game-d', hasLocalArt: false }, { id: 'game-z', hasLocalArt: true }] }],
+      ['/api/games', { games: [{ id: 'sample-game', hasLocalArt: false }, { id: 'game-z', hasLocalArt: true }] }],
       ['/assets/index.json', PROJ_INDEX],
       ['/assets/FreeArtLib/index.json', { assetCount: 0, assets: [] }],
       ['/assets/curated/search-aliases.json', { aliases: {} }],
@@ -65,7 +65,7 @@ describe('资源库 · 右键 copy 到游戏（vendor）', () => {
 
     // 菜单列出两款游戏
     expect(container.textContent).toContain('copy 到游戏');
-    expect(container.textContent).toContain('game-d');
+    expect(container.textContent).toContain('sample-game');
     expect(container.textContent).toContain('game-z');
 
     // 点 game-z（精确命中 vendor 行）

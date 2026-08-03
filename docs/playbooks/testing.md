@@ -9,7 +9,7 @@
 | 纯逻辑 / capability 语义 | vitest（`src/**/*.test.ts`） | 退出码 0 |
 | capability 注册完整性 | `src/assembly/registry-guard.test.ts`（漏注册即红·计数下限防空 glob 假绿） | vitest 内 |
 | 确定性 / 回放 / 性能 | ZeroCraftBench（`src/bench/`·双跑同 hash）·单 manifest 走 `scripts/bench-manifest.mjs` | hash 一致 |
-| 数值平衡 | `scripts/game-d-balance-sim.mjs` · `games/game-g/simulate-balance.ts`（N=500 胜率扫描） | 胜率∈目标带 |
+| 数值平衡 | `games/game-g/simulate-balance.ts`（N=500 胜率扫描·各游戏可仿此自建 `<game>/simulate-balance.ts`） | 胜率∈目标带 |
 | UI 卫生 | `/check-ui` 技能 + validateLayoutNode | issue 归零 |
 | 真浏览器旅程 | playwright-core e2e（`scripts/studio-*-e2e.mjs` 模式·chromium=/opt/pw-browsers） | 脚本退出码 |
 | 产品线冒烟 | `scripts/*-smoke.py`（library / studio / **steam 发行编排**·后者 `steam-publish-smoke.py` 无真账号用 480 验 VDF/命令/plan · **AI 生成人审门** `art-review-smoke.py` 全链 generate→pending→approve/reject + provenance 硬校验 · **美术替换工作流** `art-replace-smoke.py` 全链 derive→batch(mock)→replace(parseManifest 零 error)+断点续跑+编号稳定·进程内 API·快照恢复零污染） | 退出码 |
@@ -33,7 +33,7 @@
 
 - **可玩性目击（owner 2026-07-25 拍板·game101「点了没反应」复盘落地·全档位一体适用）**：**headless 全绿（sim 单测 + `validateLayoutNode` + 验收剧本机读态）≠ 能玩**——门禁与验收剧本都**不点真 DOM、不看渲染可见性**（剧本 schema 明写「不读 DOM」），故「逻辑对但渲染盖住 / 产出落点玩家看不见 / 信号没接到视图」这类 bug **全部漏网**。复盘实例：生成器产出用 `caster at:'self'` 落在**生成器自己那格**、被生成器图标盖住 → 点了体力静默扣、屏上无物 = 像坏了没法玩，却 sim 测全绿。**任何可点/可拖的交互特性，宣布「能玩 / done」前必须三步目击**：① 起真浏览器（`?game=<slug>`·`/opt/pw-browsers/chromium`）② 做**真实玩家手势**（点/拖真元素·**非**合成 RawInput 直插世界）③ 断言**可见产出**（新物/反馈出现在玩家**看得见、够得着**的格/位·非只机读态涨了）——三步缺一不算目击，截图进领工声明/复查。别再拿「门禁绿」当「能玩」。
 - **门禁=退出码**：`tsc + vitest + build` 全 0 才推；rebase 带进新提交必须重跑；禁 `vitest | grep` 吞失败码。
-- **快/慢双车道（owner 2026-07-21 提速）**：`npm test`（推送门禁+`scripts/scoped-gate.mjs` 走这条）=快车道·`vite.config.ts` 已排除冻结 game-f + 整局通关巨无霸 + 起进程 CLI 测试（占全量 CPU 近半却每推空转）；`npm run test:deep`（`APOLLO_DEEP=1`）=慢车道跑全 392 文件·**发版前/定期必跑=完整安全网**。缩的是「每次推的负担」非总覆盖。改动全在单游戏时 scoped-gate 只跑该游戏测试（详该脚本头注）。
+- **快/慢双车道（owner 2026-07-21 提速）**：`npm test`（推送门禁+`scripts/scoped-gate.mjs` 走这条）=快车道·`vite.config.ts` 已排除整局通关巨无霸 + 起进程 CLI 测试（占 CPU 不成比例却每推空转，具体排除项与理由见 `vite.config.ts` `exclude` 注释——不抄清单，清单本身会漂移）；`npm run test:deep`（`ZEROCRAFT_DEEP=1`）=慢车道跑全部文件·**发版前/定期必跑=完整安全网**（总文件数以实测为准，不抄数字）。缩的是「每次推的负担」非总覆盖。改动全在单游戏时 scoped-gate 只跑该游戏测试（详该脚本头注）。
 - **测试代码三禁**：真实时间等待（墙钟 sleep/setTimeout）、外部 IO 直连、无种子随机——FAIL 级，用信号/mock/种子 PRNG 替代（fake timers 合法）。
 - **复现=seed+tick**：bug 复现优先给种子 + tick 序列/replay 文件（确定性引擎的强项）；文字步骤是降级方案。
 - **缺基线判黄不判绿**：sim 缺目标带、bench 缺 prior、AC 不可测 → CONCERNS / MANUAL CHECK 交 owner；绝不默认过、绝不编造目标值。

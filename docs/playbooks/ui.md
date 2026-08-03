@@ -66,7 +66,7 @@
 ## ④ 正样例 / 反面教材
 
 - ✅ game-i（LayoutNode 纯数据展示台）、game-g 大厅六屏（达标）。
-- ✖ 手写 React UI 屏两例勿模仿：`src/game-e.tsx`（1163 行·**注意入口在 src 根目录不在 games/game-e/——查它状态别掉这个坑**）与 `games/game-f/game-f.tsx`（970 行·冻结）。
+- ✖ 手写 React UI 屏勿模仿：`games/game-e/game-e.tsx`（1163 行·decouple-check 祖父豁免·记债未消解——`games/game-f/game-f.tsx` 原是第二例，随 game-f 删除（REQ-RETRO·2026-08-03）已跟删）。
 
 ## ⑤ 交付前 + 查不到怎么办
 

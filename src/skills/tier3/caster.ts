@@ -8,7 +8,7 @@ import { nearestByTag } from '@skills/atoms/spatial-query/index.js';
 //  SpawnRequest，交给 prefab 能力展开成技能/陷阱/召唤/掉落。补上 prefab 缺的"运行时按数据释放"入口
 //  （REQ-008 评审时显式延后的那块：「spawn 需模板展开（assembly 层），单提」）。
 //
-//  现状：prefab 只消费现成的 SpawnRequest{templateId,x,y}（game-d 测试里靠手注一条）。没有任何东西把
+//  现状：prefab 只消费现成的 SpawnRequest{templateId,x,y}（此前靠手注一条测试数据）。没有任何东西把
 //  "信号 + 一个位置策略"接成 SpawnRequest。caster 正是这一环：声明 Caster{onSignal,template,at,targetTag?}：
 //    at:'self'   → 施法者自身 Transform（自爆/buff 光环）
 //    at:'pointer'→ 光标**世界坐标**（输入采集层已逆投影；暗黑的"点地放冰环/陨石"）

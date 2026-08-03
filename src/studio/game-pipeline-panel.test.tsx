@@ -10,7 +10,7 @@ import { GamePipelinePanel } from './GamePipelinePanel.js';
 
 const gate = (state: string, detail: string) => ({ state, detail });
 const BOARD = {
-  success: true, slug: 'game-x', form: '内置', concept: { name: 'X', pitch: 'p' }, next: 'S2',
+  success: true, slug: 'sample-game', form: '内置', concept: { name: 'X', pitch: 'p' }, next: 'S2',
   stages: [
     { id: 'S3', title: '骨架关', handbook: 'h', gate: 'manifest-check',
       machine: gate('ok', '✓ 过'), review: gate('ok', '✓ PASS by lead @ 2026-07-15 · 复核通过'), human: gate('dim', '待人审（signoff 落账）'), status: 'warn' },
@@ -37,7 +37,7 @@ afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlo
 
 describe('GamePipelinePanel · 三门显示（REQ-QC-UI）', () => {
   it('板行一眼见三门：复查门紧凑标记（复✓ / 复—）', async () => {
-    await act(async () => { root.render(<GamePipelinePanel slug="game-x" onBack={() => {}} />); });
+    await act(async () => { root.render(<GamePipelinePanel slug="sample-game" onBack={() => {}} />); });
     await flush();
     expect(container.textContent).toContain('复✓'); // S3/S7 review=ok
     expect(container.textContent).toContain('复—'); // S8 review=dim
@@ -45,7 +45,7 @@ describe('GamePipelinePanel · 三门显示（REQ-QC-UI）', () => {
   });
 
   it('选 S3 → 详情显「复查门：✓ PASS …」三行齐（机器门/复查门/人门）', async () => {
-    await act(async () => { root.render(<GamePipelinePanel slug="game-x" onBack={() => {}} />); });
+    await act(async () => { root.render(<GamePipelinePanel slug="sample-game" onBack={() => {}} />); });
     await flush();
     await act(async () => { clickRowByTitle(container, '骨架关').click(); });
     await flush();
@@ -55,7 +55,7 @@ describe('GamePipelinePanel · 三门显示（REQ-QC-UI）', () => {
   });
 
   it('选 S7 → 机器门行改标「评分卡」+ 显 VISUAL/PREMIUM 判词', async () => {
-    await act(async () => { root.render(<GamePipelinePanel slug="game-x" onBack={() => {}} />); });
+    await act(async () => { root.render(<GamePipelinePanel slug="sample-game" onBack={() => {}} />); });
     await flush();
     await act(async () => { clickRowByTitle(container, '品质关').click(); });
     await flush();
@@ -64,7 +64,7 @@ describe('GamePipelinePanel · 三门显示（REQ-QC-UI）', () => {
   });
 
   it('选 S8 → 显乱序放行痕', async () => {
-    await act(async () => { root.render(<GamePipelinePanel slug="game-x" onBack={() => {}} />); });
+    await act(async () => { root.render(<GamePipelinePanel slug="sample-game" onBack={() => {}} />); });
     await flush();
     await act(async () => { clickRowByTitle(container, '终检关').click(); });
     await flush();

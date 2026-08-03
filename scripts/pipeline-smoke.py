@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""生产流程板数据桥全链冒烟（REQ-WORKSHOP C1/C2·spec=docs/design/workshop-spec-2026-07-10.md §五）。
+"""生产流程板数据桥全链冒烟（REQ-WORKSHOP C1/C2·spec=docs/design/archive/workshop-spec-2026-07-10.md §五）。
 
 起 API（进程内·随机空闲端口）→
   ① 建库即立项卡：create 带 description → meta.description + concept 落盘 + board S1 机器绿
@@ -425,7 +425,7 @@ try:
           '两侧目录都清（library + public/games）')
     st12, dd2 = req('DELETE', f'/api/library/{DEL}')
     check(st12 == 404, '再删 404（幂等语义）')
-    st12, dd3 = req('DELETE', '/api/library/game-d')
+    st12, dd3 = req('DELETE', '/api/library/game-g')
     check(st12 == 404, '引擎内置游戏删不到（不在 library/ 即 404）')
     st12, _dd4 = req('DELETE', '/api/library/BAD..SLUG')
     check(st12 in (400, 404), '坏 slug 拒')

@@ -1,5 +1,8 @@
 # Workshop 统一工作台 + 整链打通 · 规范（**已定稿 2026-07-10·owner 三问已拍板** → PST 施工）
 
+> **已挪至 `docs/design/archive/`（REQ-RETRO 引擎大扫除·2026-08-03·token 减负——Workshop 已 ✅ 完工并移交
+> PST 维护，本规范转为历史定稿记录；现行维护指针=`docs/workflow/finish/PST-workshop-handoff.md`）。**
+
 > owner 2026-07-10 三条口径：①把整套东西打通（创作台→卡带库→八阶段生产板→美术平台→换皮量产，评委路径单人单屏全 UI 无 CLI）；②把创作台收进 Workshop 做成**完整编辑器**（状态机：未创建=对话生成模式·已创建=对白编辑模式·内嵌美术台等·延续 SHELL 风格）；③编辑对话「跟平常对话框一致·接 Claude Message」，且 **Claude 通道=订阅 + setup-token + Agent SDK 原封不动——不买 API、不花新钱**（owner 07-10 追加拍板）。
 > 流程：Lead 出本规范 → owner 讨论定稿 → PST 施工（REQ-WORKSHOP）→ Lead 对抗性验收。
 > 已拍板：生产板全模式可见；退役旧 GameCreator。

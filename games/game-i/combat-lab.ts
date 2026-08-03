@@ -1,6 +1,6 @@
 // Game I · 战斗结算样例（底座「命中 → 伤害 → 状态/DoT → 死亡」能力展示）
 //
-// 纯蓝图数据，不写专属 system（组件写法照搬 game-d/blueprint.ts）：
+// 纯蓝图数据，不写专属 system（组件写法照搬已删 game-d/blueprint.ts 先例）：
 //   弹道（Sensor + Tag(ZONE_FLAG) + Hitbox）飞行(motion-apply) → 与敌重叠(overlap-detect) →
 //   trigger-zone 产 Trigger → hitbox 校验阵营(targetMask)后扣 Resource(hp)、可挂 OverTime(DoT) →
 //   resource 结算 → mortal(hp≤0 → DestroyRequest) → destroy 移除。弹道自身 Timer(life) 到期自毁(lifetime)。
