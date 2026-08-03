@@ -1,39 +1,6 @@
 {
-  "//": "REQ-PKG-位置无关与正名·Lead 图纸②——外部内容（居仓外的游戏目录）的 tsconfig.json 用 `extends` 继承本文件（specifier 形如 '@zerocraft/engine/tsconfig.game-base.json'，经该目录自己的 node_modules/@zerocraft/engine 这个真 npm 依赖解析，与 package.json 的 file: 依赖同一条链路）。编译期选项照本仓根 tsconfig.json 对齐；paths 把十个包名子路径指回同一个 node_modules 包内的 src/**（TS 源直出，无需引擎单独构建一份 .d.ts）。外部项目自己的 tsconfig.json 只需再加 include/exclude 与自身源码相关的设置，无需重复这些字段。",
-  "//paths-legacy": "paths 里同时列了包名子路径（游戏自己源码用）与十个旧短别名（@engine 等）——旧别名不是给外部游戏用的，是因为 tsc 顺着上面的映射把引擎 src/ 内部文件带进本项目的编译闭包后，那些文件彼此还在用未改的旧别名（CLAUDE.md：src/ 内部相互引用不改），同一份 paths 必须一并接住，否则引擎内部 import 在外部项目里解析不到。",
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "jsx": "react-jsx",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "paths": {
-      "@zerocraft/engine/engine/*": ["./node_modules/@zerocraft/engine/src/engine/*"],
-      "@zerocraft/engine/skills/*": ["./node_modules/@zerocraft/engine/src/skills/*"],
-      "@zerocraft/engine/atom-skills/*": ["./node_modules/@zerocraft/engine/src/skills/atoms/*"],
-      "@zerocraft/engine/ui/*": ["./node_modules/@zerocraft/engine/src/ui/*"],
-      "@zerocraft/engine/renderer/*": ["./node_modules/@zerocraft/engine/src/renderer/*"],
-      "@zerocraft/engine/services/*": ["./node_modules/@zerocraft/engine/src/services/*"],
-      "@zerocraft/engine/assets/*": ["./node_modules/@zerocraft/engine/src/assets/*"],
-      "@zerocraft/engine/net/*": ["./node_modules/@zerocraft/engine/src/net/*"],
-      "@zerocraft/engine/runtime/*": ["./node_modules/@zerocraft/engine/src/runtime/*"],
-      "@zerocraft/engine/assembly/*": ["./node_modules/@zerocraft/engine/src/assembly/*"],
-      "@engine/*": ["./node_modules/@zerocraft/engine/src/engine/*"],
-      "@skills/*": ["./node_modules/@zerocraft/engine/src/skills/*"],
-      "@atom-skills/*": ["./node_modules/@zerocraft/engine/src/skills/atoms/*"],
-      "@ui/*": ["./node_modules/@zerocraft/engine/src/ui/*"],
-      "@renderer/*": ["./node_modules/@zerocraft/engine/src/renderer/*"],
-      "@services/*": ["./node_modules/@zerocraft/engine/src/services/*"],
-      "@assets/*": ["./node_modules/@zerocraft/engine/src/assets/*"],
-      "@net/*": ["./node_modules/@zerocraft/engine/src/net/*"],
-      "@runtime/*": ["./node_modules/@zerocraft/engine/src/runtime/*"],
-      "@assembly/*": ["./node_modules/@zerocraft/engine/src/assembly/*"]
-    }
-  }
+  "//": "REQ-PKG-位置无关与正名·Lead 图纸②——外部内容（居仓外的游戏目录）的 tsconfig.json 用 `extends` 继承本文件（specifier 形如 '@zerocraft/engine/tsconfig.game-base.json'，经该目录自己的 node_modules/@zerocraft/engine 这个真 npm 依赖解析，与 package.json 的 file: 依赖同一条链路）。",
+  "//same-source": "Lead 终审返工②（2026-08-02）：编译期选项不许独立手写第二套——本文件直接 extends 引擎自己的根 tsconfig.json（同目录相对路径，物理上就是同一个文件），一个字都不重复敲，天然与引擎源码在仓内被检查时用的完全同一份 compilerOptions（strict/target/module/…）。外部项目自己的 tsconfig.json 只需再 extends 本文件 + 加自己的 include，无需也不应该再补别的编译选项。",
+  "//paths-anchor": "根 tsconfig.json 的 paths 已经把包名子路径与旧短别名都指向 `./src/**`（相对『声明 paths 的那个配置文件所在目录』解析，即引擎仓根——TS 4.1+ 允许不设 baseUrl，此时 paths 就近似「锚定在声明它的文件」，天然不依赖外部项目的 node_modules 符号链接结构，也不要求外部项目自己声明 baseUrl）。extends 链路原样继承这份 paths，本文件不重复声明、不另起一份指向 node_modules/@zerocraft/engine/src/** 的版本——两份路径值不同会精度漂移，只保留仓内这一份真相。",
+  "extends": "./tsconfig.json"
 }

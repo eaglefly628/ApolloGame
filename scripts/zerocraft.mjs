@@ -187,10 +187,13 @@ async function cmdRun() {
 // extends 的入口文件；放别处（比如临时目录）的话 exclude 压根锚不到 gameDir，形同虚设
 // （实测踩过这个坑，见 Lead 终审返工①）。用完即删，不留痕。
 const TEST_GLOBS = ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'];
+// node_modules 兜底显式带上（目标自己的 tsconfig.json 若压根没写 exclude，TS 的隐式默认值就是
+// node_modules——但我们的派生文件一旦声明了自己的 exclude，就不再享受那份隐式默认，得自己带）。
+const DEFAULT_EXCLUDE = ['node_modules'];
 function writeBuildTsconfig(tsconfigPath) {
   let own = {};
   try { own = JSON.parse(readFileSync(tsconfigPath, 'utf8')); } catch { /* 目标自己的 tsconfig 有问题，交给 tsc 自己报 */ }
-  const ownExclude = Array.isArray(own.exclude) ? own.exclude : [];
+  const ownExclude = Array.isArray(own.exclude) ? own.exclude : DEFAULT_EXCLUDE;
   const exclude = [...new Set([...ownExclude, ...TEST_GLOBS])];
   const wrapperPath = join(gameDir, '.zerocraft-tsconfig.build.json');
   writeFileSync(wrapperPath, JSON.stringify({ extends: './tsconfig.json', exclude }, null, 2) + '\n');
