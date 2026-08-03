@@ -22,6 +22,10 @@
 <!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结迁归档（requests-archive.md）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
 
 
+### REQ-RETRO-引擎大扫除 · 全引擎回顾：清老码+裁 TODO+优化 token 负重+测试精简+旧游戏清场 · [2026-08-03] · owner 拍板（全权授 Lead） → Lead 主持·先盘点后裁决后施工 · status: in-progress（盘点已派） · 优先级: P0 · 类型: 架构卫生（回顾期）
+> **⚖ Lead 编排**：三段式——①**盘点**（低档代理只读扫全库·四份清单：死码与旧游戏引用面 / 全部 TODO·FIXME·记债台账 / 文档 token 负重（T0+手册+池外膨胀点）/ 测试套件健康度（重复·慢·假信心·祖父白名单 12 处））→ ②**Lead 裁决**（每项 删/留/改 三分·成执行清单）→ ③**施工**（低档批量执行·全量门禁）。
+> **旧游戏清场已拍板**（owner「清除老旧 code」·处置表无异议）：删 game-d/f/q/x/t（git 历史在·随删清慢车道排除项与审计基线挂账）；game-g/e 引用摘干净后再裁；game-i（PUI 展示台）与 game-z（P3D 域）保留。品牌残名五项并入本单批次。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
