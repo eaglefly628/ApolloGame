@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#0b0a12}
+  *{box-sizing:border-box}
+  @keyframes dt-breathe{0%,100%{box-shadow:0 0 0 0 rgba(245,201,105,.45),0 10px 30px -6px rgba(0,0,0,.6)}50%{box-shadow:0 0 34px 6px rgba(245,201,105,.55),0 10px 30px -6px rgba(0,0,0,.6)}}
+  @keyframes dt-float{0%{transform:translateY(0);opacity:.5}50%{transform:translateY(-16px);opacity:1}100%{transform:translateY(0);opacity:.5}}
+  @keyframes dt-twinkle{0%,100%{opacity:.2}50%{opacity:.9}}
+  @keyframes dt-spin{to{transform:rotate(360deg)}}
+  @keyframes dt-spin-rev{to{transform:rotate(-360deg)}}
+  .dt-rune{transform-box:fill-box;transform-origin:center;animation:dt-spin 26s linear infinite}
+  .dt-rune-rev{transform-box:fill-box;transform-origin:center;animation:dt-spin-rev 34s linear infinite}
+  @keyframes dt-loot-in{0%{transform:translateY(40px) scale(.6);opacity:0}60%{transform:translateY(-8px) scale(1.04);opacity:1}100%{transform:translateY(0) scale(1)}}
+  @keyframes dt-veil{from{opacity:0}to{opacity:1}}
+  @keyframes dt-badge-pop{0%{transform:scale(0) rotate(-12deg)}70%{transform:scale(1.18) rotate(4deg)}100%{transform:scale(1) rotate(0)}}
+  @keyframes dt-rise{0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}
+  .dt-range{-webkit-appearance:none;appearance:none;height:5px;border-radius:5px;background:linear-gradient(90deg,#3b3a64,#f5c969);outline:none}
+  .dt-range::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:#fff;border:3px solid #f5c969;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+  .dt-range::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid #f5c969;cursor:pointer}
+</style>
+<script>if(!window.THREE&&!window.__threeLoading){window.__threeLoading=true;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';document.head.appendChild(s);}</script>
+</helmet>
+
+<div style="min-height:100vh;background:radial-gradient(120% 90% at 50% -10%,#1a1730 0%,#0b0a12 60%);font-family:'Noto Sans SC',system-ui,sans-serif;color:#e9e4f7;padding:18px 22px 40px">
+
+  <!-- ===== TOP BAR ===== -->
+  <header style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:18px">
+    <div style="display:flex;align-items:baseline;gap:10px">
+      <span style="font-family:'Noto Serif SC',serif;font-weight:900;font-size:21px;letter-spacing:2px;background:linear-gradient(180deg,#ffe9a8,#f5b942 55%,#c8841f);-webkit-background-clip:text;background-clip:text;color:transparent">骰途</span>
+      <span style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:#9a93b8">VISUAL&nbsp;PROTOTYPE</span>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;padding:7px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px">
+      <span style="font-size:11px;color:#9a93b8;white-space:nowrap">暗神秘</span>
+      <input type="range" min="0" max="100" value="{{ tonePct }}" oninput="{{ onTone }}" class="dt-range" style="width:160px">
+      <span style="font-size:11px;color:#9a93b8;white-space:nowrap">暖童话</span>
+    </div>
+
+    <div style="display:flex;gap:6px;padding:5px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px">
+      <sc-for list="{{ layers }}" as="lyr" hint-placeholder-count="4">
+        <button onclick="{{ lyr.onSelect }}" style="position:relative;border:none;cursor:pointer;background:transparent;color:#cdc6e6;font-family:'Noto Sans SC',sans-serif;font-size:12.5px;font-weight:500;padding:6px 12px;border-radius:8px">
+          {{ lyr.label }}
+          <sc-if value="{{ lyr.active }}" hint-placeholder-val="{{ true }}">
+            <span style="position:absolute;left:10px;right:10px;bottom:2px;height:2px;border-radius:2px;background:#f5c969"></span>
+          </sc-if>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;gap:9px;margin-left:auto">
+      <button onclick="{{ onRoll }}" style="display:flex;align-items:center;gap:7px;border:1px solid rgba(245,201,105,.5);cursor:pointer;background:linear-gradient(180deg,rgba(245,201,105,.22),rgba(245,201,105,.08));color:#ffe5a8;font-family:'Noto Sans SC',sans-serif;font-weight:700;font-size:13px;padding:8px 16px;border-radius:10px">⚄ 掷命运骰</button>
+      <button onclick="{{ onToggleRoom }}" style="border:1px solid rgba(255,255,255,.14);cursor:pointer;background:rgba(255,255,255,.05);color:#cdc6e6;font-family:'Noto Sans SC',sans-serif;font-weight:500;font-size:13px;padding:8px 15px;border-radius:10px">{{ roomToggleLabel }}</button>
+      <button onclick="{{ onClear }}" style="display:flex;align-items:center;gap:7px;border:1px solid rgba(126,224,160,.5);cursor:pointer;background:linear-gradient(180deg,rgba(126,224,160,.24),rgba(126,224,160,.08));color:#aef0c6;font-family:'Noto Sans SC',sans-serif;font-weight:700;font-size:13px;padding:8px 16px;border-radius:10px">✦ 通关演示</button>
+    </div>
+  </header>
+
+  <!-- ===== STAGES ===== -->
+  <div style="display:flex;flex-direction:column;gap:24px">
+
+    <!-- (1) TITLE SCREEN -->
+    <section data-screen-label="① Title 屏" style="width:100%;max-width:760px;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="font-size:11px;font-weight:700;letter-spacing:1px;color:#0b0a12;background:#f5c969;padding:3px 9px;border-radius:6px">① 开场 TITLE 屏</span>
+        <span style="font-size:11.5px;color:#7d769c">品牌门面 · 3D 命运骰</span>
+      </div>
+
+      <div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.09);box-shadow:0 24px 60px -24px rgba(0,0,0,.8)">
+        <div ref="{{ skyRef }}" style="position:absolute;inset:0;background:linear-gradient(180deg,#24204a 0%,#1a1638 55%,#0e0b22 100%)"></div>
+
+        <!-- stars -->
+        <div style="position:absolute;inset:0;pointer-events:none">
+          <span style="position:absolute;left:14%;top:18%;width:3px;height:3px;border-radius:50%;background:#fff;animation:dt-twinkle 3.4s ease-in-out infinite"></span>
+          <span style="position:absolute;left:78%;top:14%;width:2px;height:2px;border-radius:50%;background:#fff;animation:dt-twinkle 2.6s .4s ease-in-out infinite"></span>
+          <span style="position:absolute;left:60%;top:26%;width:2px;height:2px;border-radius:50%;background:#fff;animation:dt-twinkle 4s .9s ease-in-out infinite"></span>
+          <span style="position:absolute;left:30%;top:10%;width:2px;height:2px;border-radius:50%;background:#fff;animation:dt-twinkle 3s 1.2s ease-in-out infinite"></span>
+          <span style="position:absolute;left:88%;top:30%;width:3px;height:3px;border-radius:50%;background:#fff;animation:dt-twinkle 3.6s .6s ease-in-out infinite"></span>
+        </div>
+
+        <!-- tower silhouette -->
+        <svg viewBox="0 0 240 380" style="position:absolute;left:50%;bottom:-6%;transform:translateX(-50%);height:84%;opacity:.92;filter:drop-shadow(0 0 30px rgba(120,90,220,.35))">
+          <defs><linearGradient id="dt-tower" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2350"/><stop offset="1" stop-color="#120e26"/></linearGradient></defs>
+          <polygon points="120,4 150,40 90,40" fill="url(#dt-tower)"/>
+          <rect x="112" y="36" width="16" height="26" fill="url(#dt-tower)"/>
+          <polygon points="92,62 148,62 158,96 82,96" fill="url(#dt-tower)"/>
+          <polygon points="82,96 158,96 170,150 70,150" fill="url(#dt-tower)"/>
+          <polygon points="70,150 170,150 184,214 56,214" fill="url(#dt-tower)"/>
+          <polygon points="56,214 184,214 200,300 40,300" fill="url(#dt-tower)"/>
+          <polygon points="40,300 200,300 214,380 26,380" fill="url(#dt-tower)"/>
+          <g fill="#f5c969" opacity=".85">
+            <rect x="116" y="44" width="8" height="11" rx="2"/>
+            <rect x="104" y="112" width="9" height="13" rx="2"/><rect x="127" y="112" width="9" height="13" rx="2"/>
+            <rect x="96" y="174" width="10" height="15" rx="2"/><rect x="134" y="174" width="10" height="15" rx="2"/>
+            <rect x="84" y="252" width="11" height="17" rx="2"/><rect x="145" y="252" width="11" height="17" rx="2"/>
+            <rect x="114" y="330" width="12" height="20" rx="2"/>
+          </g>
+        </svg>
+
+        <!-- 3D die canvas -->
+        <canvas ref="{{ titleRef }}" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+
+        <!-- floating motes -->
+        <div style="position:absolute;inset:0;pointer-events:none">
+          <span style="position:absolute;left:22%;top:62%;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle,#ffe5a8,transparent);animation:dt-float 5s ease-in-out infinite"></span>
+          <span style="position:absolute;left:74%;top:54%;width:5px;height:5px;border-radius:50%;background:radial-gradient(circle,#9b6cff,transparent);animation:dt-float 6.4s .8s ease-in-out infinite"></span>
+          <span style="position:absolute;left:62%;top:70%;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle,#3ba0ff,transparent);animation:dt-float 5.6s 1.4s ease-in-out infinite"></span>
+          <span style="position:absolute;left:34%;top:48%;width:5px;height:5px;border-radius:50%;background:radial-gradient(circle,#46c66a,transparent);animation:dt-float 7s .3s ease-in-out infinite"></span>
+        </div>
+
+        <!-- vignette -->
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(80% 70% at 50% 42%,transparent 55%,rgba(6,4,16,.6))"></div>
+
+        <!-- LOGO + UI -->
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:6% 0;pointer-events:none">
+          <div style="margin-top:2%">
+            <div style="font-family:'Noto Serif SC',serif;font-weight:900;font-size:min(8.4vw,76px);line-height:.95;letter-spacing:6px;background:linear-gradient(180deg,#fff4cf 0%,#f7c252 48%,#c8841f 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 2px 18px rgba(245,180,60,.3)">骰途</div>
+            <div style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:12px;color:#cdbfe8">
+              <span style="height:1px;width:34px;background:linear-gradient(90deg,transparent,#cdbfe8)"></span>
+              <span style="font-family:'Cinzel',serif;font-size:min(2vw,15px);letter-spacing:6px">TOWER OF FATE</span>
+              <span style="height:1px;width:34px;background:linear-gradient(90deg,#cdbfe8,transparent)"></span>
+            </div>
+            <div style="margin-top:9px;font-size:min(1.7vw,13px);color:#9b93bb;letter-spacing:1px">两名掷命者，一座会改写命运的古塔</div>
+          </div>
+
+          <div style="margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:13px;pointer-events:auto">
+            <button onclick="{{ onStart }}" style="animation:dt-breathe 3.4s ease-in-out infinite;border:1px solid rgba(255,235,170,.7);cursor:pointer;background:linear-gradient(180deg,#ffd982,#f0a93a);color:#3a2406;font-family:'Noto Serif SC',serif;font-weight:900;font-size:min(2.5vw,19px);letter-spacing:4px;padding:13px 42px;border-radius:13px" style-hover="transform:translateY(-1px)">开 始 攀 塔</button>
+            <div style="font-size:min(1.5vw,11.5px);color:#b7aede;letter-spacing:2px">第一层 · {{ layerName }}</div>
+            <div style="display:flex;gap:10px;margin-top:2px">
+              <button style="border:1px solid rgba(245,201,105,.4);cursor:pointer;background:rgba(14,11,26,.72);backdrop-filter:blur(6px);color:#f3ecff;font-weight:600;font-size:min(1.5vw,12px);padding:8px 18px;border-radius:9px;box-shadow:0 4px 14px -4px rgba(0,0,0,.7)" style-hover="background:rgba(28,20,44,.85);border-color:rgba(245,201,105,.7)">双人同攀</button>
+              <button style="border:1px solid rgba(245,201,105,.4);cursor:pointer;background:rgba(14,11,26,.72);backdrop-filter:blur(6px);color:#f3ecff;font-weight:600;font-size:min(1.5vw,12px);padding:8px 18px;border-radius:9px;box-shadow:0 4px 14px -4px rgba(0,0,0,.7)" style-hover="background:rgba(28,20,44,.85);border-color:rgba(245,201,105,.7)">单人</button>
+              <button style="border:1px solid rgba(245,201,105,.4);cursor:pointer;background:rgba(14,11,26,.72);backdrop-filter:blur(6px);color:#f3ecff;font-weight:600;font-size:min(1.5vw,12px);padding:8px 18px;border-radius:9px;box-shadow:0 4px 14px -4px rgba(0,0,0,.7)" style-hover="background:rgba(28,20,44,.85);border-color:rgba(245,201,105,.7)">设置</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="position:absolute;right:12px;bottom:9px;font-size:10px;color:rgba(255,255,255,.32);letter-spacing:1px">v0.3 · 命运之塔</div>
+      </div>
+    </section>
+
+    <!-- (2) GAMEPLAY SCENE -->
+    <section data-screen-label="② 塔内场景" style="width:100%;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="font-size:11px;font-weight:700;letter-spacing:1px;color:#0b0a12;background:#7fd0c0;padding:3px 9px;border-radius:6px">② 塔内场景</span>
+        <span style="font-size:11.5px;color:#7d769c">近俯视体素竞技场 · 微缩盒庭</span>
+      </div>
+
+      <div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.09);box-shadow:0 24px 60px -24px rgba(0,0,0,.8)">
+        <div ref="{{ stageRef }}" style="position:absolute;top:0;left:0;width:960px;height:540px;transform-origin:top left">
+        <canvas ref="{{ gameRef }}" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+
+        <!-- tilt-shift blur strips -->
+        <div style="position:absolute;left:0;right:0;top:0;height:24%;pointer-events:none;backdrop-filter:blur(2.5px);-webkit-backdrop-filter:blur(2.5px);-webkit-mask-image:linear-gradient(180deg,#000,transparent);mask-image:linear-gradient(180deg,#000,transparent)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:20%;pointer-events:none;backdrop-filter:blur(2.5px);-webkit-backdrop-filter:blur(2.5px);-webkit-mask-image:linear-gradient(0deg,#000,transparent);mask-image:linear-gradient(0deg,#000,transparent)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(95% 80% at 50% 46%,transparent 60%,rgba(4,3,12,.5))"></div>
+
+        <!-- ===== HUD ===== -->
+        <!-- loot banner (shows while choosing the 3D reward cards) -->
+        <sc-if value="{{ lootActive }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;background:radial-gradient(70% 60% at 50% 22%,rgba(8,5,16,.0),rgba(8,5,16,.55));z-index:2"></div>
+          <div style="position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:3px;animation:dt-loot-in .5s ease-out both">
+            <span style="font-family:'Noto Serif SC',serif;font-weight:900;font-size:21px;letter-spacing:5px;color:#ffe9bf;text-shadow:0 2px 14px rgba(245,180,60,.5)">试 炼 通 关</span>
+            <span style="font-size:12px;letter-spacing:3px;color:#cbb6d6">选择你的战利品 · 点击卡牌</span>
+          </div>
+        </sc-if>
+        <!-- top-left: layer / room -->
+        <div style="position:absolute;left:14px;top:13px;display:flex;align-items:center;gap:9px;padding:7px 12px 7px 9px;background:rgba(14,11,26,.62);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:12px">
+          <div style="display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:linear-gradient(180deg,rgba(245,201,105,.3),rgba(245,201,105,.08));border:1px solid rgba(245,201,105,.4);font-family:'Noto Serif SC',serif;font-weight:900;font-size:15px;color:#ffe5a8">{{ layerNum }}</div>
+          <div style="display:flex;flex-direction:column;line-height:1.25">
+            <span style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:13px;color:#f2ecff">第{{ layerNum }}层 · {{ layerName }}</span>
+            <span style="font-size:10.5px;color:#9a93b8">{{ roomName }} · 房间 {{ roomIndex }}/3</span>
+          </div>
+        </div>
+
+        <!-- top-right: currency -->
+        <div style="position:absolute;right:14px;top:13px;display:flex;gap:8px">
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;background:rgba(14,11,26,.62);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:11px">
+            <span style="width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a8,#e0a328);box-shadow:0 0 8px rgba(245,201,105,.6)"></span>
+            <span style="font-weight:700;font-size:13px;color:#ffe5a8">128</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 11px;background:rgba(14,11,26,.62);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:11px">
+            <span style="width:12px;height:12px;transform:rotate(45deg);background:linear-gradient(135deg,#9b6cff,#5e8bff);box-shadow:0 0 8px rgba(123,108,255,.7)"></span>
+            <span style="font-weight:700;font-size:13px;color:#cdbfff">7</span>
+          </div>
+        </div>
+
+        <!-- LEFT: 元素法阵 — staggered art-runes; click to cast an elemental bolt -->
+        <div style="position:absolute;left:8px;top:70px;display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+          <button onclick="{{ fireFns.huo }}" title="火 · 法阵" style="margin-left:10px;position:relative;display:grid;place-items:center;width:64px;height:64px;border-radius:50%;cursor:pointer;border:2.5px solid #ff5b4d;background:radial-gradient(circle at 50% 34%,rgba(255,138,122,.5),rgba(14,11,26,.84));box-shadow:0 0 18px -4px #ff5b4d,inset 0 0 15px -4px #ff5b4d,inset 0 2px 0 rgba(255,255,255,.16)" style-hover="transform:scale(1.08)">
+            <svg viewBox="0 0 40 40" width="34" height="34" style="filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))"><path d="M20 4 C21 11 27 13 26 20 C25.5 26 22 30 20 33 C18 30 14 27 14 21 C14 18 16 17 17 14 C17.5 17 19 17 19 15 C19.5 11 19 8 20 4 Z" fill="rgba(255,255,255,.93)"/></svg>
+          </button>
+          <button onclick="{{ fireFns.shui }}" title="水 · 法阵" style="margin-left:32px;position:relative;display:grid;place-items:center;width:64px;height:64px;border-radius:50%;cursor:pointer;border:2.5px solid #3ba0ff;background:radial-gradient(circle at 50% 34%,rgba(122,192,255,.5),rgba(14,11,26,.84));box-shadow:0 0 18px -4px #3ba0ff,inset 0 0 15px -4px #3ba0ff,inset 0 2px 0 rgba(255,255,255,.16)" style-hover="transform:scale(1.08)">
+            <svg viewBox="0 0 40 40" width="34" height="34" style="filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))"><g fill="none" stroke="rgba(255,255,255,.93)" stroke-width="2.7" stroke-linecap="round"><path d="M9 14 q5.5 -5 11 0 t11 0"/><path d="M9 21 q5.5 -5 11 0 t11 0"/><path d="M9 28 q5.5 -5 11 0 t11 0"/></g></svg>
+          </button>
+          <button onclick="{{ fireFns.mu }}" title="木 · 法阵" style="margin-left:14px;position:relative;display:grid;place-items:center;width:64px;height:64px;border-radius:50%;cursor:pointer;border:2.5px solid #46c66a;background:radial-gradient(circle at 50% 34%,rgba(122,216,143,.5),rgba(14,11,26,.84));box-shadow:0 0 18px -4px #46c66a,inset 0 0 15px -4px #46c66a,inset 0 2px 0 rgba(255,255,255,.16)" style-hover="transform:scale(1.08)">
+            <svg viewBox="0 0 40 40" width="34" height="34" style="filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))"><path d="M20 5 C29 11 29 27 20 34 C11 27 11 11 20 5 Z" fill="rgba(255,255,255,.93)"/><g fill="none" stroke="rgba(24,70,38,.45)" stroke-width="1.7" stroke-linecap="round"><path d="M20 9 V31"/><path d="M20 16 L14.5 12"/><path d="M20 16 L25.5 12"/><path d="M20 23 L14.5 19"/><path d="M20 23 L25.5 19"/></g></svg>
+          </button>
+          <button onclick="{{ fireFns.lei }}" title="雷 · 法阵" style="margin-left:36px;position:relative;display:grid;place-items:center;width:64px;height:64px;border-radius:50%;cursor:pointer;border:2.5px solid #ffcf3f;background:radial-gradient(circle at 50% 34%,rgba(255,224,122,.5),rgba(14,11,26,.84));box-shadow:0 0 18px -4px #ffcf3f,inset 0 0 15px -4px #ffcf3f,inset 0 2px 0 rgba(255,255,255,.16)" style-hover="transform:scale(1.08)">
+            <svg viewBox="0 0 40 40" width="34" height="34" style="filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))"><path d="M23 4 L12 22 L19 22 L16 36 L29 15 L21 15 Z" fill="rgba(255,255,255,.93)"/></svg>
+          </button>
+          <button onclick="{{ fireFns.feng }}" title="风 · 法阵" style="margin-left:8px;position:relative;display:grid;place-items:center;width:64px;height:64px;border-radius:50%;cursor:pointer;border:2.5px solid #e8edf3;background:radial-gradient(circle at 50% 34%,rgba(244,247,251,.42),rgba(14,11,26,.84));box-shadow:0 0 18px -4px #e8edf3,inset 0 0 15px -4px #cfd6e0,inset 0 2px 0 rgba(255,255,255,.16)" style-hover="transform:scale(1.08)">
+            <svg viewBox="0 0 40 40" width="34" height="34" style="filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))"><g fill="none" stroke="rgba(255,255,255,.93)" stroke-width="2.7" stroke-linecap="round"><path d="M8 15 H24 a4.5 4.5 0 1 0 -4.5 -4.5"/><path d="M8 22 H29 a4.5 4.5 0 1 1 -4.5 4.5"/><path d="M8 29 H19"/></g></svg>
+          </button>
+          <button onclick="{{ fireFns.an }}" title="暗 · 法阵" style="margin-left:28px;position:relative;display:grid;place-items:center;width:64px;height:64px;border-radius:50%;cursor:pointer;border:2.5px solid #9b6cff;background:radial-gradient(circle at 50% 34%,rgba(184,154,255,.5),rgba(14,11,26,.86));box-shadow:0 0 18px -4px #9b6cff,inset 0 0 15px -4px #9b6cff,inset 0 2px 0 rgba(255,255,255,.16)" style-hover="transform:scale(1.08)">
+            <svg viewBox="0 0 40 40" width="34" height="34" style="filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))"><path d="M25 6 a13.5 13.5 0 1 0 0.5 28 A10 10 0 1 1 25 6 Z" fill="rgba(255,255,255,.9)"/><circle cx="14" cy="13" r="1.6" fill="rgba(255,255,255,.85)"/></svg>
+          </button>
+        </div>
+
+        <!-- RIGHT: teammate status + current buffs -->
+        <div style="position:absolute;right:14px;top:60px;width:188px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;flex-direction:column;gap:8px;padding:10px 11px;background:rgba(14,11,26,.62);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:13px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="position:relative;display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:linear-gradient(160deg,#ff9bbd,#c2547e);font-family:'Noto Serif SC',serif;font-weight:900;font-size:14px;color:#fff">乙</span>
+              <div style="display:flex;flex-direction:column;line-height:1.2">
+                <span style="font-size:12px;font-weight:700;color:#f2ecff">掷命者 · 乙</span>
+                <span style="font-size:9.5px;color:#7ee0a0">协战中 · 邻室</span>
+              </div>
+              <span style="margin-left:auto;font-size:10px;color:#cbb6d6">Lv.4</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:9px;color:#9a8fb0;width:22px">生命</span>
+              <div style="position:relative;flex:1;height:7px;border-radius:5px;background:rgba(0,0,0,.4);overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:62%;border-radius:5px;background:linear-gradient(90deg,#ff6a8a,#ff9bbd)"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:9px;color:#9a8fb0;width:22px">护盾</span>
+              <div style="position:relative;flex:1;height:7px;border-radius:5px;background:rgba(0,0,0,.4);overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:40%;border-radius:5px;background:linear-gradient(90deg,#5e8bff,#9bd0ff)"></div></div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;padding:9px 11px;background:rgba(14,11,26,.62);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:13px">
+            <span style="font-size:9.5px;letter-spacing:1px;color:#9a8fb0">当前 BUFF</span>
+            <sc-for list="{{ buffs }}" as="b" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:7px">
+                <span style="width:9px;height:9px;border-radius:50%;background:{{ b.color }};box-shadow:0 0 7px {{ b.color }}"></span>
+                <span style="font-size:11.5px;color:#e9e0f4;flex:1">{{ b.name }}</span>
+                <span style="font-size:10px;color:#7d769c">{{ b.tip }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- bottom: 包袱 (cloth bundle) opener + ready loadout preview -->
+        <div style="position:absolute;left:50%;bottom:13px;transform:translateX(-50%);display:flex;align-items:center;gap:11px">
+          <button onclick="{{ onOpenBag }}" style="display:flex;align-items:center;gap:11px;cursor:pointer;border:1px solid rgba(245,201,105,.45);background:rgba(14,11,26,.66);backdrop-filter:blur(10px);border-radius:15px;padding:8px 9px 8px 8px" style-hover="border-color:rgba(245,201,105,.85)">
+            <!-- knotted bundle glyph -->
+            <span style="position:relative;display:grid;place-items:center;width:42px;height:42px;border-radius:11px;background:radial-gradient(120% 120% at 30% 20%,#a8506a,#6e2d44);box-shadow:inset 0 2px 0 rgba(255,255,255,.25),inset 0 -6px 12px rgba(0,0,0,.4),0 4px 10px -2px rgba(0,0,0,.5)">
+              <span style="position:absolute;inset:0;border-radius:11px;background:repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 4px,transparent 4px 9px)"></span>
+              <span style="position:absolute;top:-5px;width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd98a,#e0a328);box-shadow:0 1px 4px rgba(0,0,0,.5)"></span>
+              <span style="position:absolute;top:-9px;width:7px;height:12px;border-radius:4px;background:#caa24a;transform:rotate(-20deg);left:11px"></span>
+              <span style="position:absolute;top:-9px;width:7px;height:12px;border-radius:4px;background:#caa24a;transform:rotate(20deg);right:11px"></span>
+              <span style="position:absolute;bottom:-7px;right:-9px;display:grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border-radius:11px;background:linear-gradient(180deg,#ffd982,#f0a93a);color:#3a2406;font-weight:900;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,.5);border:1.5px solid rgba(14,11,26,.8)">{{ diceLeft }}</span>
+            </span>
+            <div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;padding-right:4px">
+              <span style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:13px;color:#ffe5a8">命运骰盅</span>
+              <span style="font-size:10px;color:#9a93b8">剩 {{ diceLeft }} 颗 · 越省越好</span>
+            </div>
+            <span style="display:flex;gap:4px;padding-left:4px;border-left:1px solid rgba(255,255,255,.12)">
+              <sc-for list="{{ loadoutMini }}" as="m" hint-placeholder-count="5">
+                <span style="display:grid;place-items:center;width:24px;height:24px;border-radius:6px;font-weight:800;font-size:11px;color:#fff;background:{{ m.bg }};box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 5px -1px rgba(0,0,0,.5)">{{ m.face }}</span>
+              </sc-for>
+            </span>
+          </button>
+          <button onclick="{{ onThrow }}" style="display:flex;align-items:center;gap:6px;border:1px solid rgba(245,201,105,.6);cursor:pointer;background:linear-gradient(180deg,#ffd982,#f0a93a);color:#3a2406;font-family:'Noto Serif SC',serif;font-weight:900;font-size:14px;letter-spacing:2px;padding:11px 20px;border-radius:13px;box-shadow:0 6px 16px -4px rgba(240,169,58,.6)" style-hover="transform:translateY(-1px)">⚄ 掷 出</button>
+        </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= ③ 命运骰盅 · 选骰备战 ================= -->
+  <section data-screen-label="③ 命运骰盅 · 选骰备战" style="margin-top:22px;display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;align-items:center;gap:9px">
+      <span style="font-size:11px;font-weight:700;letter-spacing:1px;color:#0b0a12;background:#e6a8c8;padding:3px 9px;border-radius:6px">③ 命运骰盅 · 选骰备战</span>
+      <span style="font-size:11.5px;color:#7d769c">打开骰盅 · 几选几奖励 · 选出本轮要投掷的骰子（越省越好）</span>
+    </div>
+
+    <div style="position:relative;border-radius:20px;overflow:hidden;border:1px solid rgba(245,201,105,.2);background:linear-gradient(165deg,#2a1430 0%,#1d1024 55%,#160c1c 100%);box-shadow:0 30px 70px -30px rgba(0,0,0,.8)">
+      <!-- woven fabric texture -->
+      <div style="position:absolute;inset:0;opacity:.4;pointer-events:none;background:repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0 3px,transparent 3px 9px),repeating-linear-gradient(-45deg,rgba(0,0,0,.07) 0 3px,transparent 3px 9px)"></div>
+      <!-- folded cloth corners -->
+      <div style="position:absolute;top:-44px;left:-44px;width:120px;height:120px;transform:rotate(45deg);background:linear-gradient(180deg,#7a3450,#5e2740);box-shadow:0 6px 14px rgba(0,0,0,.4);pointer-events:none"></div>
+      <div style="position:absolute;top:-44px;right:-44px;width:120px;height:120px;transform:rotate(45deg);background:linear-gradient(180deg,#7a3450,#5e2740);box-shadow:0 6px 14px rgba(0,0,0,.4);pointer-events:none"></div>
+
+      <div style="position:relative;padding:20px 22px 22px">
+        <!-- HEADER -->
+        <div style="display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:13px">
+            <span style="position:relative;display:grid;place-items:center;width:50px;height:50px;border-radius:14px;background:radial-gradient(120% 120% at 30% 20%,#a8506a,#6e2d44);box-shadow:inset 0 2px 0 rgba(255,255,255,.25),inset 0 -7px 14px rgba(0,0,0,.4)">
+              <span style="position:absolute;top:-6px;width:17px;height:17px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd98a,#e0a328)"></span>
+            </span>
+            <div style="display:flex;flex-direction:column;line-height:1.2">
+              <span style="font-family:'Noto Serif SC',serif;font-weight:900;font-size:20px;letter-spacing:2px;color:#ffe9bf">命运骰盅</span>
+              <span style="font-size:11.5px;color:#c79ab0">第{{ layerNum }}层 · {{ layerName }} · 剩 <b style="color:#ffe5a8">{{ diceLeft }}</b> 颗命运骰，越省越好</span>
+            </div>
+          </div>
+          <!-- 本关需求 -->
+          <div style="margin-left:auto;display:flex;flex-direction:column;gap:7px;padding:11px 15px;border-radius:14px;background:rgba(0,0,0,.28);border:1px solid rgba(245,201,105,.25);min-width:240px">
+            <span style="font-size:11px;letter-spacing:1px;color:#f5c969">本关需求 · {{ goalTrial }}</span>
+            <div style="display:flex;gap:7px;flex-wrap:wrap">
+              <sc-for list="{{ reqList }}" as="r" hint-placeholder-count="2">
+                <span style="display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:8px;background:rgba(255,255,255,.06)">
+                  <span style="width:9px;height:9px;border-radius:50%;background:{{ r.barBg }}"></span>
+                  <span style="font-size:12px;font-weight:700;color:#f2ecff">{{ r.txt }}</span>
+                  <sc-if value="{{ r.ok }}" hint-placeholder-val="{{ false }}"><span style="color:#7ee0a0;font-size:12px">✓</span></sc-if>
+                </span>
+              </sc-for>
+            </div>
+            <span style="font-size:10.5px;color:#9a8fb0">限 {{ goalThrows }} 次投掷达成 · {{ goalDesc }}</span>
+          </div>
+        </div>
+
+        </div>
+
+        <!-- MAIN: pool + side -->
+        <div style="margin-top:16px;display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">
+          <!-- POOL -->
+          <div style="flex:1 1 460px;min-width:300px;display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:12px;color:#cbb6d6;letter-spacing:1px">可选骰 · 点选装入出战骰组</span>
+              <div style="display:flex;gap:4px;margin-left:auto;padding:4px;background:rgba(0,0,0,.26);border-radius:11px">
+                <sc-for list="{{ bagTabs }}" as="t" hint-placeholder-count="3">
+                  <button onclick="{{ t.onSelect }}" style="border:none;cursor:pointer;background:{{ t.bg }};color:{{ t.fg }};font-weight:600;font-size:12px;padding:6px 13px;border-radius:8px">{{ t.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="margin-top:11px;display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:11px">
+              <sc-for list="{{ gridItems }}" as="c" hint-placeholder-count="9">
+                <button onclick="{{ c.onClick }}" style="position:relative;display:flex;flex-direction:column;gap:9px;cursor:pointer;text-align:left;padding:12px 12px 13px;border-radius:15px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(170deg,rgba(255,255,255,.08),rgba(0,0,0,.2))" style-hover="border-color:rgba(245,201,105,.7)">
+                  <sc-if value="{{ c.inLoadout }}" hint-placeholder-val="{{ false }}">
+                    <span style="position:absolute;inset:0;border-radius:15px;border:2px solid #f5c969;box-shadow:0 0 16px -2px rgba(245,201,105,.6);pointer-events:none"></span>
+                    <span style="position:absolute;top:9px;right:9px;display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:#f5c969;color:#3a2406;font-weight:900;font-size:12px;z-index:1">✓</span>
+                  </sc-if>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <div style="position:relative;flex:none;width:50px;height:50px;border-radius:13px;background:{{ c.dieBg }};box-shadow:inset 0 2px 0 rgba(255,255,255,.4),inset 0 -7px 12px rgba(0,0,0,.3),0 4px 9px -3px rgba(0,0,0,.5)">
+                      <div style="position:absolute;inset:9px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:2px">
+                        <sc-for list="{{ c.pips }}" as="p" hint-placeholder-count="9"><span style="display:grid;place-items:center"><sc-if value="{{ p.on }}" hint-placeholder-val="{{ false }}"><span style="width:6px;height:6px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#e2e8f0);box-shadow:0 1px 1px rgba(0,0,0,.35)"></span></sc-if></span></sc-for>
+                      </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                      <span style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:13px;color:#fff4e4">{{ c.name }}</span>
+                      <span style="font-size:10px;letter-spacing:1px;color:#f5c969">{{ c.starStr }}</span>
+                    </div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+                    <span style="font-size:10px;font-weight:700;color:#1c1020;padding:2px 7px;border-radius:6px;background:{{ c.elBg }}">{{ c.el }}</span>
+                    <span style="font-size:10px;color:#cbb6d6;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.08)">{{ c.size }}</span>
+                    <sc-if value="{{ c.isFn }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;color:#ffd98a;padding:2px 7px;border-radius:6px;background:rgba(245,201,105,.16)">{{ c.tag }}</span></sc-if>
+                  </div>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- SIDE: detail + loadout -->
+          <div style="flex:0 0 300px;display:flex;flex-direction:column;gap:13px">
+            <!-- detail inspector -->
+            <div style="display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg,rgba(0,0,0,.3),rgba(0,0,0,.45))">
+              <div style="display:flex;gap:13px;align-items:center">
+                <div style="position:relative;flex:none;width:74px;height:74px;border-radius:18px;background:{{ detail.dieBg }};box-shadow:inset 0 3px 0 rgba(255,255,255,.45),inset 0 -10px 18px rgba(0,0,0,.32),0 6px 16px -4px rgba(0,0,0,.5)">
+                  <div style="position:absolute;inset:13px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3px">
+                    <sc-for list="{{ detail.pips }}" as="p" hint-placeholder-count="9"><span style="display:grid;place-items:center"><sc-if value="{{ p.on }}" hint-placeholder-val="{{ false }}"><span style="width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#e2e8f0);box-shadow:0 1px 2px rgba(0,0,0,.4)"></span></sc-if></span></sc-for>
+                  </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:5px;min-width:0">
+                  <span style="font-family:'Noto Serif SC',serif;font-weight:900;font-size:17px;color:#fff4e4">{{ detail.name }}</span>
+                  <div style="display:flex;gap:5px;flex-wrap:wrap">
+                    <span style="font-size:10px;font-weight:700;color:#1c1020;padding:2px 7px;border-radius:6px;background:{{ detail.elBg }}">{{ detail.el }}</span>
+                    <span style="font-size:10px;color:#cbb6d6;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.08)">{{ detail.cat }} · {{ detail.size }} · {{ detail.sides }}</span>
+                  </div>
+                  <span style="font-size:11px;letter-spacing:1px;color:#f5c969">{{ detail.starStr }}</span>
+                </div>
+              </div>
+              <div style="padding:9px 11px;border-radius:10px;background:rgba(245,201,105,.1);border:1px solid rgba(245,201,105,.22)">
+                <span style="font-size:11.5px;color:#ffe5b8;line-height:1.4">⚡ {{ detail.special }}</span>
+              </div>
+              <!-- faces -->
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:10.5px;color:#9a8fb0;letter-spacing:1px">骰面 · {{ detail.sides }}</span>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <sc-for list="{{ detail.faces }}" as="f" hint-placeholder-count="6">
+                    <span style="position:relative;display:grid;place-items:center;width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)">
+                      <span style="position:absolute;top:3px;left:3px;width:7px;height:7px;border-radius:50%;background:{{ f.dot }}"></span>
+                      <sc-if value="{{ f.num }}" hint-placeholder-val="{{ false }}"><span style="font-weight:800;font-size:13px;color:#f2ecff">{{ f.num }}</span></sc-if>
+                      <sc-if value="{{ f.pips }}" hint-placeholder-val="{{ false }}"><span style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:1.5px;width:17px;height:17px"><sc-for list="{{ f.pips }}" as="q" hint-placeholder-count="9"><span style="display:grid;place-items:center"><sc-if value="{{ q.on }}" hint-placeholder-val="{{ false }}"><span style="width:3.5px;height:3.5px;border-radius:50%;background:#f2ecff"></span></sc-if></span></sc-for></span></sc-if>
+                    </span>
+                  </sc-for>
+                </div>
+              </div>
+              <span style="font-size:11px;color:#8c84a6;font-style:italic;line-height:1.4">「{{ detail.flavor }}」</span>
+              <button onclick="{{ detail.onAdd }}" style="border:1px solid rgba(245,201,105,.4);cursor:pointer;background:rgba(245,201,105,.14);color:#ffe5a8;font-weight:700;font-size:12.5px;padding:9px;border-radius:10px" style-hover="background:rgba(245,201,105,.24)">{{ detail.addLabel }}</button>
+            </div>
+
+            <!-- 出战骰组 loadout + confirm -->
+            <div style="display:flex;flex-direction:column;gap:11px;padding:16px;border-radius:16px;border:1px solid rgba(245,201,105,.26);background:linear-gradient(180deg,rgba(245,201,105,.07),rgba(0,0,0,.32))">
+              <div style="display:flex;align-items:baseline;gap:8px">
+                <span style="font-family:'Noto Serif SC',serif;font-weight:700;font-size:14px;color:#ffe5a8">出战骰组</span>
+                <span style="font-size:11px;color:#9a8fb0">{{ loHint }}</span>
+                <span style="margin-left:auto;font-size:12px;color:#cbb6d6">{{ loadoutCount }} / {{ cap }}</span>
+              </div>
+              <!-- dynamic dice: fewer = bigger & glowing (rewards a lean hand) -->
+              <div style="display:flex;gap:{{ loGap }}px;flex-wrap:wrap;justify-content:center;align-items:center;min-height:68px;padding:4px 0">
+                <sc-for list="{{ loCards }}" as="d" hint-placeholder-count="4">
+                  <button onclick="{{ d.onRemove }}" title="{{ d.name }}" style="position:relative;flex:none;width:{{ loSize }}px;height:{{ loSize }}px;border-radius:{{ loRad }}px;border:none;cursor:pointer;background:{{ d.dieBg }};box-shadow:{{ loGlow }}" style-hover="filter:brightness(1.1)">
+                    <span style="position:absolute;inset:{{ loInset }}px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:2px">
+                      <sc-for list="{{ d.pips }}" as="p" hint-placeholder-count="9"><span style="display:grid;place-items:center"><sc-if value="{{ p.on }}" hint-placeholder-val="{{ false }}"><span style="width:{{ loDot }}px;height:{{ loDot }}px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#e2e8f0);box-shadow:0 1px 1px rgba(0,0,0,.35)"></span></sc-if></span></sc-for>
+                    </span>
+                    <span style="position:absolute;top:-6px;right:-6px;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#1a1020;color:#ff9d8f;font-size:11px;font-weight:900;border:1px solid rgba(255,255,255,.2)">✕</span>
+                  </button>
+                </sc-for>
+              </div>
+              <!-- 骰型 (poker-style hand) readout -->
+              <div style="display:flex;align-items:center;gap:11px;padding:9px 13px;border-radius:12px;background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.08)">
+                <span style="font-size:10px;color:#9a8fb0;letter-spacing:1px;writing-mode:vertical-lr;text-orientation:upright">骰型</span>
+                <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0">
+                  <div style="display:flex;align-items:baseline;gap:9px">
+                    <span style="font-family:'Noto Serif SC',serif;font-weight:900;font-size:18px;color:{{ hand.color }}">{{ hand.name }}</span>
+                    <span style="font-size:11px;letter-spacing:1px;color:{{ hand.color }};opacity:.85">{{ handStars }}</span>
+                  </div>
+                  <span style="font-size:11px;color:#cbb6d6">{{ hand.blurb }}</span>
+                </div>
+              </div>
+              <!-- requirement match readout -->
+              <div style="display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:11px;background:rgba(0,0,0,.3)">
+                <span style="font-size:10.5px;color:#9a8fb0;letter-spacing:1px">本轮可凑 · 对照试炼</span>
+                <sc-for list="{{ reqList }}" as="r" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="width:9px;height:9px;border-radius:50%;background:{{ r.barBg }}"></span>
+                    <span style="font-size:12px;color:#e9e0f4;flex:1">{{ r.name }}</span>
+                    <span style="font-size:12px;font-weight:800;color:{{ r.okColor }}">{{ r.have }} / {{ r.need }}</span>
+                    <sc-if value="{{ r.ok }}" hint-placeholder-val="{{ false }}"><span style="color:#7ee0a0">✓</span></sc-if>
+                    <sc-if value="{{ r.bad }}" hint-placeholder-val="{{ true }}"><span style="color:#ff9d8f">✕</span></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <button onclick="{{ onThrow }}" style="display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid {{ throwRing }};cursor:pointer;background:{{ throwBg }};color:#3a2406;font-family:'Noto Serif SC',serif;font-weight:900;font-size:15px;letter-spacing:3px;padding:13px;border-radius:13px;box-shadow:0 8px 20px -6px rgba(240,169,58,.55)" style-hover="transform:translateY(-1px)">⚄ 确认投掷 · {{ loadoutCount }} 骰</button>
+              <span style="font-size:10.5px;text-align:center;color:#9a8fb0">{{ reqTip }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p style="margin:18px 2px 0;font-size:12px;line-height:1.6;color:#6f6890;max-width:980px">
+    交互：拖动顶部 <b style="color:#bdb4dd">暗神秘 ↔ 暖童话</b> 滑块实时改两屏氛围 · 点 <b style="color:#bdb4dd">翠庭/古殿/熔心/晶顶</b> 给塔内场景换皮（几何不变，只换贴图+光色）· <b style="color:#bdb4dd">掷命运骰</b> 把 3D 骰子掷进竞技场 · <b style="color:#bdb4dd">{{ roomToggleLabel }}</b> 切战斗间/守关者间焦点。骨架是程序化的——设计师做的是「皮」。
+  </p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:820},&quot;tone&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0.6,&quot;min&quot;:0,&quot;max&quot;:1,&quot;step&quot;:0.01,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;氛围&quot;},&quot;layerTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;翠庭&quot;,&quot;options&quot;:[&quot;翠庭&quot;,&quot;古殿&quot;,&quot;熔心&quot;,&quot;晶顶&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;氛围&quot;}}">
+class Component extends DCLogic {
+  state = { tone: 0.6, layer: 0, boss: false, loadout: [2,6,0,3], detail: 6, draft: null, tab: 'all', diceLeft: 14,
+            dmode: 'die', cidx: 0, enchant: null, cqty: [3,2,2,1,2,1,2,1,1], ench: {} };
+  CAP = 5;
+
+  // consumables — single-use 附魔 materials applied to dice (染元素 / 加点 / 重铸 / 镶嵌万能)
+  CONSUM = [
+    {id:0,name:'烈焰结晶',el:0,kind:'enchant',effect:'附魔：将骰子一面染为火元素',flavor:'凝固的炉心余烬，触之微烫。'},
+    {id:1,name:'寒霜结晶',el:1,kind:'enchant',effect:'附魔：将骰子一面染为水元素',flavor:'入手成冰，久握不化。'},
+    {id:2,name:'藤蔓孢子',el:2,kind:'enchant',effect:'附魔：将骰子一面染为木元素',flavor:'落地即生根的小东西。'},
+    {id:3,name:'雷纹符',el:3,kind:'enchant',effect:'附魔：将骰子一面染为雷元素',flavor:'符上雷纹仍在游走。'},
+    {id:4,name:'风之羽',el:4,kind:'enchant',effect:'附魔：将骰子一面染为风元素',flavor:'轻得要用气托着。'},
+    {id:5,name:'暗影墨',el:5,kind:'enchant',effect:'附魔：将骰子一面染为暗元素',flavor:'会悄悄吸走周围的光。'},
+    {id:6,name:'增幅油',el:null,sym:'↑',kind:'util',effect:'附魔：该骰所有点数 +1',flavor:'抹上后骰子沉了几分。'},
+    {id:7,name:'重铸锤',el:null,sym:'↻',kind:'util',effect:'附魔：随机重铸该骰的一面',flavor:'叮当一声，命运重排。'},
+    {id:8,name:'百搭核',el:null,sym:'✦',kind:'inlay',rare:true,effect:'镶嵌：将一面永久变为万能',flavor:'命运不挑食的内核。'},
+  ];
+  gemBg(el){ if(el==null) return 'linear-gradient(160deg,#ffe6ad,#e0a328)'; const c=this.ELEMENTS[el].color; return `linear-gradient(160deg,${this._shade(c,.3)},${this._shade(c,-.1)})`; }
+
+  dieClick(id){ if(this.state.enchant!=null){ this.applyEnchant(id); return; } this.toggleDie(id); }
+  applyEnchant(dieId){ this.setState(s=>{ const c=s.enchant; const cq=s.cqty.slice(); if(cq[c]>0) cq[c]--; const en=Object.assign({},s.ench); en[dieId]=(en[dieId]||0)+1; return {cqty:cq, ench:en, enchant:null, dmode:'die', detail:dieId}; }); }
+  startEnchant(){ this.setState(s=>(s.cqty[s.cidx]>0?{enchant:s.cidx}:{})); }
+
+  // poker-style 骰型 evaluation from the selected loadout's elements (万能=wildcard)
+  evalHand(){ const D=this.DICE, ids=this.state.loadout, n=ids.length;
+    if(!n) return {name:'—',blurb:'选骰后结算骰型',tier:0,color:'#9a8fb0'};
+    let wild=0; const cnt={}; ids.forEach(id=>{const el=D[id].el; if(el==null) wild++; else cnt[el]=(cnt[el]||0)+1;});
+    const groups=Object.values(cnt).sort((a,b)=>b-a); const distinct=groups.length;
+    const g0=groups[0]||0, g1=groups[1]||0; const top=g0+wild;
+    const pairs=groups.filter(g=>g>=2).length;
+    const T=(name,tier,blurb,color)=>({name,tier,blurb,color});
+    if(top>=5) return T('五星同辉',5,'全色同辉 · 终极爆发',  '#ffd24a');
+    if(top>=4) return T('四元共鸣',4,'同色伤害 ×2',          '#ff9d4a');
+    if((g0>=3&&g1>=2)||(g0>=2&&g1>=2&&wild>=1)||(g0>=3&&wild>=2)) return T('福满堂',4,'攻防兼备 · 三带二','#c08aff');
+    if(n>=5 && distinct+wild>=5) return T('五行连珠',3,'全异色 · 顺势连击','#7ee0a0');
+    if(top>=3) return T('三元和鸣',3,'同色伤害 ×1.5',        '#7ad0ff');
+    if(pairs>=2) return T('双生对',2,'双色压制',             '#8be6a4');
+    if(top>=2) return T('元素对子',1,'小幅强化',             '#cbb6d6');
+    return T('散手',0,'尚无成型骰型',                        '#9a8fb0');
+  }
+
+  // ---------- palette helpers ----------
+  _hx(h){ h=h.replace('#',''); return {r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16)}; }
+  _hex(o){ const c=v=>('0'+Math.max(0,Math.min(255,Math.round(v))).toString(16)).slice(-2); return '#'+c(o.r)+c(o.g)+c(o.b); }
+  _lerp(a,b,t){ const A=this._hx(a),B=this._hx(b); return this._hex({r:A.r+(B.r-A.r)*t,g:A.g+(B.g-A.g)*t,b:A.b+(B.b-A.b)*t}); }
+  _shade(h,a){ const o=this._hx(h),t=a<0?0:255,k=Math.abs(a); return this._hex({r:o.r+(t-o.r)*k,g:o.g+(t-o.g)*k,b:o.b+(t-o.b)*k}); }
+
+  get themes(){ return [
+    { key:'翠庭', tile:'grass', top:'#6fae4a', top2:'#5a9a3a', side:'#8a5a32', side2:'#5d3a20', wall:'#9aa86a', trim:'#f2d066', accent:'#ffd24a',
+      skyW:['#bfe6ff','#9ecbef','#d3ecc9'], skyD:['#241f4a','#1a1638','#0e0b22'], lightW:'#fff0cf', lightD:'#5d6bff', hemi:'#6f8f4a' },
+    { key:'古殿', tile:'stone', top:'#8b93a4', top2:'#737c8f', side:'#565d6e', side2:'#3c4250', wall:'#9aa1b4', trim:'#67d6e0', accent:'#5fd6e6',
+      skyW:['#cfe0ef','#aebfd6','#dfe7f0'], skyD:['#1c2540','#141a30','#0a0e1e'], lightW:'#e2ecff', lightD:'#5566cc', hemi:'#5b6478' },
+    { key:'熔心', tile:'lava', top:'#4a3a34', top2:'#372b27', side:'#33251f', side2:'#241a16', wall:'#5a463c', trim:'#ff7a3c', accent:'#ff7a2c', lava:true,
+      skyW:['#5a2c2a','#7a3a2a','#a85a30'], skyD:['#1a0e16','#240f12','#3a1510'], lightW:'#ffb070', lightD:'#ff6a3c', hemi:'#5a302a' },
+    { key:'晶顶', tile:'crystal', top:'#4a6f8a','top2':'#3c5d78', side:'#3a5070', side2:'#2a3a58', wall:'#5a7fa6', trim:'#c08aff', accent:'#b58bff', crystal:true,
+      skyW:['#bfe0ff','#a9c6ff','#d6c6ff'], skyD:['#1a2348','#181a3a','#241a44'], lightW:'#e2f0ff', lightD:'#7a6cff', hemi:'#46607a' },
+  ]; }
+
+  ELEMENTS = [
+    {name:'火',color:'#ff5b4d'},{name:'水',color:'#3ba0ff'},{name:'木',color:'#46c66a'},
+    {name:'雷',color:'#ffcf3f'},{name:'风',color:'#e8edf3'},{name:'暗',color:'#9b6cff'},
+  ];
+
+  // id, name, cat, el(index|null=万能), size S/M/L, sides, rarity, tag, special, flavor
+  DICE = [
+    {id:0,name:'烈焰骰',cat:'element',el:0,size:'M',sides:6,rarity:2,tag:'火',special:'最朴素的火元素骰',flavor:'塔底铁匠铺最常见的货色。'},
+    {id:1,name:'寒泉骰',cat:'element',el:1,size:'M',sides:6,rarity:2,tag:'水',special:'稳定的水元素来源',flavor:'触手生凉，掷地有回声。'},
+    {id:2,name:'藤蔓骰',cat:'element',el:2,size:'M',sides:6,rarity:2,tag:'木',special:'稳定的木元素来源',flavor:'骰身缠着会生长的活藤。'},
+    {id:3,name:'惊雷骰',cat:'element',el:3,size:'M',sides:6,rarity:3,tag:'雷',special:'雷元素 · 偏高点数',flavor:'掷出时噼啪作响。'},
+    {id:4,name:'轻风骰',cat:'element',el:4,size:'S',sides:6,rarity:1,tag:'风·小型',special:'小型 · 消耗低、好凑数',flavor:'轻得几乎吹得走。'},
+    {id:5,name:'幽冥骰',cat:'element',el:5,size:'M',sides:6,rarity:3,tag:'暗',special:'暗元素 · 克制光辉守关者',flavor:'盯久了会盯回来。'},
+    {id:6,name:'百搭骰',cat:'function',el:null,size:'M',sides:6,rarity:5,tag:'万能',special:'可充当任意一种元素',flavor:'命运不挑食。凑色万金油。'},
+    {id:7,name:'增幅骰',cat:'function',el:null,size:'L',sides:6,rarity:4,tag:'增幅·大型',special:'本轮同色伤害 ×2',flavor:'越赌越大。'},
+    {id:8,name:'转化骰',cat:'function',el:null,size:'M',sides:6,rarity:4,tag:'转化',special:'掷出后改写一颗骰的元素',flavor:'把坏运气拧成好运气。'},
+    {id:9,name:'连锁骰',cat:'function',el:3,size:'M',sides:8,rarity:4,tag:'连锁·八面',special:'命中后连锁相邻同色',flavor:'一发入魂，魂魂相连。'},
+    {id:10,name:'熔岩重骰',cat:'element',el:0,size:'L',sides:6,rarity:4,tag:'火·大型',special:'大型 · 点数翻倍，但占两格',flavor:'沉得能砸穿地台。'},
+    {id:11,name:'双子风骰',cat:'function',el:4,size:'S',sides:6,rarity:3,tag:'双子',special:'一次投出两颗',flavor:'形影不离的一对。'},
+    {id:12,name:'守护骰',cat:'function',el:1,size:'M',sides:6,rarity:3,tag:'守护',special:'掷出护盾，抵挡一次反击',flavor:'最好的进攻是不被打。'},
+    {id:13,name:'棱晶骰',cat:'element',el:5,size:'M',sides:8,rarity:5,tag:'暗·八面',special:'八面 · 上限更高',flavor:'晶顶的馈赠，棱角分明。'},
+  ];
+
+  // per-layer trial requirement (the goal the selection must meet)
+  goals = [
+    {trial:'翠庭 · 试炼之庭',desc:'唤醒藤蔓之力',throws:3,reqs:[{el:2,count:3}]},
+    {trial:'古殿 · 回响试炼',desc:'水与风的共鸣',throws:3,reqs:[{el:1,count:2},{el:4,count:2}]},
+    {trial:'熔心 · 守关者',desc:'点燃炽焰核心',throws:2,reqs:[{el:0,count:4}]},
+    {trial:'晶顶 · 守关者',desc:'暗雷裂解',throws:2,reqs:[{el:5,count:2},{el:3,count:2}]},
+  ];
+  // 几选几 reward draft offered on clearing (planner-tunable)
+  offers = [
+    [{kind:'die',id:6},{kind:'die',id:8},{kind:'ability',name:'重掷术',icon:'↻',desc:'每轮可重掷一次骰'}],
+    [{kind:'die',id:9},{kind:'die',id:12},{kind:'ability',name:'扩容袋',icon:'＋',desc:'出战骰组 +1 格'}],
+    [{kind:'die',id:7},{kind:'die',id:10},{kind:'ability',name:'炽焰祝福',icon:'✦',desc:'火元素伤害 +25%'}],
+    [{kind:'die',id:13},{kind:'die',id:11},{kind:'ability',name:'命运庇护',icon:'❖',desc:'失败时保留一颗骰'}],
+  ];
+
+  pipGrid(n){ const P={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[n]||[]; return Array.from({length:9},(_,i)=>({on:P.indexOf(i)>=0})); }
+  sizeLabel(s){ return {S:'小型',M:'中型',L:'大型'}[s]; }
+  starStr(r){ return '★'.repeat(r)+'☆'.repeat(5-r); }
+  elColor(el){ return el==null?'#caa6ff':this.ELEMENTS[el].color; }
+  dieBg(el){ if(el==null) return 'conic-gradient(from 200deg,#ff5b4d,#ffcf3f,#46c66a,#3ba0ff,#9b6cff,#ff5b4d)'; const c=this.ELEMENTS[el].color; return `linear-gradient(165deg,${this._shade(c,.24)},${this._shade(c,-.14)})`; }
+  faces(d){ const n=d.sides; if(d.el==null) return Array.from({length:n},(_,i)=>({val:(i%6)+1,el:i%6})); return Array.from({length:n},(_,i)=>({val:i+1,el:d.el})); }
+
+  constructor(p){ super(p); this.skyRef=React.createRef(); this.titleRef=React.createRef(); this.gameRef=React.createRef(); this.stageRef=React.createRef(); }
+
+  componentDidMount(){ this._wait(); }
+  _wait(){ if(window.THREE){ this.boot(); } else { this._t=setTimeout(()=>this._wait(),60); } }
+
+  boot(){
+    try{
+      this.initTitle();
+      this.initGame();
+      this.buildArena();
+      this.applyTheme();
+      this._prev={layer:this.state.layer,tone:this.state.tone,boss:this.state.boss};
+      this._last=performance.now();
+      this.loop();
+      this.resize();
+      this._clickH=(e)=>this.onCanvasClick(e); this.gameRef.current.addEventListener('click',this._clickH);
+      this._ro1=new ResizeObserver(()=>this.resize()); this._ro1.observe(this.titleRef.current.parentElement);
+      this._ro2=new ResizeObserver(()=>this.resize()); this._ro2.observe(this.stageRef.current.parentElement);
+    }catch(e){ console.error('boot',e); }
+  }
+  componentWillUnmount(){ clearTimeout(this._t); cancelAnimationFrame(this._raf); this._ro1&&this._ro1.disconnect(); this._ro2&&this._ro2.disconnect(); }
+
+  componentDidUpdate(){
+    if(!this.game){ return; }
+    const p=this._prev||{}; const {layer,tone,boss}=this.state;
+    if(this.trans){ this._prev={layer,tone,boss}; return; }
+    if(p.layer!==layer){ this.buildArena(); this.applyTheme(); }
+    else if(p.tone!==tone){ this.applyTheme(); }
+    if(p.boss!==boss){ this.updateFocal(); }
+    this._prev={layer,tone,boss};
+  }
+
+  // ---------- textures ----------
+  _tx(draw,sz){ const c=document.createElement('canvas'); c.width=c.height=sz||128; draw(c.getContext('2d'),c.width); const t=new window.THREE.CanvasTexture(c); t.anisotropy=4; return t; }
+  rand(a,b){ return a+Math.random()*(b-a); }
+
+  topTex(th){ return this._tx((x,s)=>{
+    const g=x.createLinearGradient(0,0,s,s); g.addColorStop(0,this._shade(th.top,.06)); g.addColorStop(1,this._shade(th.top,-.08)); x.fillStyle=g; x.fillRect(0,0,s,s);
+    for(let i=0;i<150;i++){ const c=Math.random()<.5?th.top2:this._shade(th.top,this.rand(-.12,.16)); x.fillStyle=c; const w=this.rand(2,6); x.fillRect(this.rand(0,s),this.rand(0,s),w,w*(th.tile==='grass'?2.2:1)); }
+    if(th.tile==='crystal'){ x.strokeStyle=this._shade(th.trim,.1); x.globalAlpha=.5; x.lineWidth=1.5; for(let i=0;i<5;i++){ x.beginPath(); x.moveTo(this.rand(0,s),this.rand(0,s)); x.lineTo(this.rand(0,s),this.rand(0,s)); x.stroke(); } x.globalAlpha=1; }
+    if(th.tile==='stone'){ x.strokeStyle=this._shade(th.side,-.1); x.globalAlpha=.4; x.lineWidth=2; for(let i=0;i<4;i++){ x.beginPath(); x.moveTo(this.rand(0,s),0); x.lineTo(this.rand(0,s),s); x.stroke(); } x.globalAlpha=1; }
+    x.strokeStyle='rgba(0,0,0,.22)'; x.lineWidth=4; x.strokeRect(2,2,s-4,s-4);
+  }); }
+
+  sideTex(th){ return this._tx((x,s)=>{
+    const g=x.createLinearGradient(0,0,0,s); g.addColorStop(0,this._shade(th.side,.08)); g.addColorStop(1,this._shade(th.side,-.14)); x.fillStyle=g; x.fillRect(0,0,s,s);
+    for(let i=0;i<60;i++){ x.fillStyle=this._shade(th.side2,this.rand(-.06,.12)); x.fillRect(this.rand(0,s),this.rand(0,s),this.rand(3,9),this.rand(2,4)); }
+    x.strokeStyle='rgba(0,0,0,.25)'; x.lineWidth=3; x.strokeRect(1,1,s-2,s-2);
+  }); }
+
+  wallTex(th){ return this._tx((x,s)=>{
+    const g=x.createLinearGradient(0,0,0,s); g.addColorStop(0,this._shade(th.wall,.1)); g.addColorStop(1,this._shade(th.wall,-.16)); x.fillStyle=g; x.fillRect(0,0,s,s);
+    x.fillStyle=th.trim; x.globalAlpha=.85; x.fillRect(0,0,s,8); x.globalAlpha=1;
+    for(let r=0;r<3;r++)for(let c2=0;c2<3;c2++){ x.strokeStyle='rgba(0,0,0,.22)'; x.lineWidth=2; x.strokeRect(c2*s/3+2,r*s/3+10,s/3-4,s/3-6); }
+  }); }
+
+  dieFaceTex(color,n){ return this._tx((x,s)=>{
+    const r=v=>v*s;
+    x.fillStyle=this._shade(color,-.04); this._rr(x,r(.04),r(.04),s-r(.08),s-r(.08),r(.18)); x.fill();
+    const g=x.createLinearGradient(0,0,s,s); g.addColorStop(0,this._shade(color,.22)); g.addColorStop(1,this._shade(color,-.1)); x.fillStyle=g; this._rr(x,r(.08),r(.08),s-r(.16),s-r(.16),r(.14)); x.fill();
+    x.strokeStyle='rgba(255,255,255,.28)'; x.lineWidth=r(.03); this._rr(x,r(.1),r(.1),s-r(.2),s-r(.2),r(.12)); x.stroke();
+    const lo=.28,mid=.5,hi=.72, P={1:[[mid,mid]],2:[[lo,lo],[hi,hi]],3:[[lo,lo],[mid,mid],[hi,hi]],4:[[lo,lo],[hi,lo],[lo,hi],[hi,hi]],5:[[lo,lo],[hi,lo],[mid,mid],[lo,hi],[hi,hi]],6:[[lo,lo],[lo,mid],[lo,hi],[hi,lo],[hi,mid],[hi,hi]]}[n];
+    const pr=s*.075;
+    P.forEach(([px,py])=>{ const cx=px*s,cy=py*s; const rg=x.createRadialGradient(cx-pr*.3,cy-pr*.3,pr*.1,cx,cy,pr); rg.addColorStop(0,'#ffffff'); rg.addColorStop(1,'#dde4ec'); x.fillStyle=rg; x.shadowColor='rgba(0,0,0,.35)'; x.shadowBlur=s*.04; x.shadowOffsetY=s*.012; x.beginPath(); x.arc(cx,cy,pr,0,7); x.fill(); x.shadowColor='transparent'; });
+  },256); }
+
+  _rr(x,a,b,w,h,r){ x.beginPath(); x.moveTo(a+r,b); x.arcTo(a+w,b,a+w,b+h,r); x.arcTo(a+w,b+h,a,b+h,r); x.arcTo(a,b+h,a,b,r); x.arcTo(a,b,a+w,b,r); x.closePath(); }
+
+  // ---------- die mesh ----------
+  dieMesh(size){ const T=window.THREE; const pips=[1,6,2,5,3,4];
+    const mats=this.ELEMENTS.map((e,i)=>new T.MeshStandardMaterial({map:this.dieFaceTex(e.color,pips[i]),roughness:.42,metalness:.18,emissive:new T.Color(e.color),emissiveIntensity:.16}));
+    const m=new T.Mesh(new T.BoxGeometry(size,size,size),mats); m.castShadow=true; m._mats=mats; return m; }
+
+  glowSprite(color,scale){ const T=window.THREE; const c=document.createElement('canvas'); c.width=c.height=128; const x=c.getContext('2d'); const g=x.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,'rgba(255,255,255,.9)'); g.addColorStop(.4,'rgba(255,255,255,.35)'); g.addColorStop(1,'rgba(255,255,255,0)'); x.fillStyle=g; x.fillRect(0,0,128,128);
+    const s=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(c),color:new T.Color(color),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); s.scale.set(scale,scale,1); return s; }
+
+  // ---------- TITLE scene ----------
+  initTitle(){ const T=window.THREE; const cv=this.titleRef.current; const w=cv.clientWidth||640,h=cv.clientHeight||360;
+    const renderer=new T.WebGLRenderer({canvas:cv,alpha:true,antialias:true}); renderer.setPixelRatio(Math.min(2,devicePixelRatio)); renderer.setSize(w,h,false); renderer.outputEncoding=T.sRGBEncoding; renderer.toneMapping=T.ACESFilmicToneMapping; renderer.toneMappingExposure=1.15;
+    const scene=new T.Scene(); const cam=new T.PerspectiveCamera(38,w/h,.1,100); cam.position.set(0,.2,6.3);
+    scene.add(new T.AmbientLight(0xffffff,.5));
+    const key=new T.DirectionalLight(0xfff0d8,1.1); key.position.set(3,4,5); scene.add(key);
+    const rim=new T.PointLight(0x9b6cff,1.2,30); rim.position.set(-4,1,-3); scene.add(rim);
+    const fill=new T.PointLight(0x3ba0ff,.7,30); fill.position.set(4,-2,2); scene.add(fill);
+    const glow=this.glowSprite('#ffe5a8',6.4); glow.position.set(0,-.45,-1.4); scene.add(glow);
+    const die=this.dieMesh(1.95); die.position.y=-.45; die.rotation.set(.5,.7,0); scene.add(die);
+    this.title={renderer,scene,cam,die,glow,key,rim,vx:.004,vy:.006};
+  }
+
+  // ---------- GAME scene ----------
+  initGame(){ const T=window.THREE; const cv=this.gameRef.current; const w=960,h=540;
+    const renderer=new T.WebGLRenderer({canvas:cv,antialias:true}); renderer.setPixelRatio(Math.min(2,devicePixelRatio)); renderer.setSize(w,h,false); renderer.shadowMap.enabled=true; renderer.shadowMap.type=T.PCFSoftShadowMap; renderer.outputEncoding=T.sRGBEncoding; renderer.toneMapping=T.ACESFilmicToneMapping; renderer.toneMappingExposure=1.12;
+    const scene=new T.Scene(); const aspect=w/h, fr=7.0; const cam=new T.OrthographicCamera(-fr*aspect,fr*aspect,fr,-fr,.1,100); cam.position.set(0,12,7.8); cam.lookAt(0,0,0);
+    const amb=new T.AmbientLight(0xffffff,.45);
+    const hemi=new T.HemisphereLight(0xffffff,0x404040,.5);
+    const key=new T.DirectionalLight(0xfff0d8,1.0); key.position.set(6,11,5); key.castShadow=true; key.shadow.mapSize.set(2048,2048); const sc=key.shadow.camera; sc.left=-9;sc.right=9;sc.top=9;sc.bottom=-9;sc.near=1;sc.far=40; key.shadow.bias=-.0004; key.shadow.radius=4;
+    const fill=new T.DirectionalLight(0x6f7cff,.35); fill.position.set(-5,4,-4);
+    scene.add(amb,hemi,key,fill);
+    scene.fog=new T.Fog(0x1a1638,16,30);
+    this.game={renderer,cam,scene,amb,hemi,key,fill,aspect,fr,arena:null,animated:[],dice:[],glowy:[],fx:[]};
+  }
+
+  buildArena(){ const T=window.THREE; const g=this.game; const th=this.themes[this.state.layer];
+    if(g.arena){ g.scene.remove(g.arena); }
+    const root=new T.Group(); g.animated=[]; g.glowy=[]; g.dice.forEach(d=>g.scene.remove(d.mesh)); g.dice=[];
+    const N=7, sz=1, top=.45;
+    const topT=this.topTex(th), sideT=this.sideTex(th);
+    const tileMat=[new T.MeshStandardMaterial({map:sideT,roughness:.9}),new T.MeshStandardMaterial({map:sideT,roughness:.9}),new T.MeshStandardMaterial({map:topT,roughness:.85}),new T.MeshStandardMaterial({map:sideT,roughness:.9}),new T.MeshStandardMaterial({map:sideT,roughness:.9}),new T.MeshStandardMaterial({map:sideT,roughness:.9})];
+    const lavaMat=th.lava?new T.MeshStandardMaterial({color:new T.Color('#ff7a2c'),emissive:new T.Color('#ff5a18'),emissiveIntensity:1.0,roughness:.6}):null;
+    const off=(N-1)/2;
+    for(let i=0;i<N;i++)for(let j=0;j<N;j++){ const isLava=th.lava&&Math.random()<.14; const c=new T.Mesh(new T.BoxGeometry(sz,top,sz),isLava?lavaMat:tileMat); c.position.set((i-off)*sz,0,(j-off)*sz); c.receiveShadow=true; c.castShadow=!isLava; root.add(c); if(isLava) g.glowy.push({m:lavaMat,base:1.0,kind:'em'}); }
+    // walls
+    const wallT=this.wallTex(th); const wallMat=new T.MeshStandardMaterial({map:wallT,roughness:.85});
+    const wh=.85, edge=off+.5, doorGap=1.5;
+    const addWall=(x,z,w,d)=>{ const m=new T.Mesh(new T.BoxGeometry(w,wh,d),wallMat); m.position.set(x,wh/2+top/2,z); m.castShadow=true; m.receiveShadow=true; root.add(m); };
+    addWall(0,edge, N+1,.5);                       // front
+    addWall(-edge,0,.5,N+1); addWall(edge,0,.5,N+1); // sides
+    // back wall with door gap
+    const backLen=(N+1-doorGap)/2;
+    addWall(-(doorGap/2+backLen/2),-edge,backLen,.5);
+    addWall((doorGap/2+backLen/2),-edge,backLen,.5);
+    // door frame (glowing, toward top/back)
+    const doorMat=new T.MeshStandardMaterial({color:new T.Color(th.wall),emissive:new T.Color(th.accent),emissiveIntensity:.7,roughness:.5,map:wallT});
+    const dl=new T.Mesh(new T.BoxGeometry(.35,1.7,.5),doorMat); dl.position.set(-doorGap/2,1.7/2+top/2,-edge); dl.castShadow=true; root.add(dl);
+    const dr=new T.Mesh(new T.BoxGeometry(.35,1.7,.5),doorMat); dr.position.set(doorGap/2,1.7/2+top/2,-edge); dr.castShadow=true; root.add(dr);
+    const lintel=new T.Mesh(new T.BoxGeometry(doorGap+.7,.4,.5),doorMat); lintel.position.set(0,1.7+top/2,-edge); root.add(lintel);
+    const portal=new T.Mesh(new T.PlaneGeometry(doorGap,1.6),new T.MeshBasicMaterial({color:new T.Color(th.accent),transparent:true,opacity:.35,side:T.DoubleSide})); portal.position.set(0,1.6/2+top/2,-edge+.02); root.add(portal);
+    const dglow=this.glowSprite(th.accent,2.4); dglow.position.set(0,1.2,-edge+.3); root.add(dglow); g.glowy.push({s:dglow,base:.6,kind:'sp'});
+
+    // ---- center focal: altar (battle) + boss (guardian) ----
+    const focal=new T.Group(); focal.position.set(0,top/2,.3); root.add(focal); g.focal=focal;
+    // altar
+    const altar=new T.Group();
+    const ped=new T.Mesh(new T.BoxGeometry(1.5,.4,1.5),new T.MeshStandardMaterial({map:topT,roughness:.8})); ped.position.y=.2; ped.castShadow=true; ped.receiveShadow=true; altar.add(ped);
+    const ped2=new T.Mesh(new T.BoxGeometry(1,.35,1),new T.MeshStandardMaterial({map:topT,roughness:.8})); ped2.position.y=.55; ped2.castShadow=true; altar.add(ped2);
+    const gem=new T.Mesh(new T.OctahedronGeometry(.42),new T.MeshStandardMaterial({color:new T.Color(th.accent),emissive:new T.Color(th.accent),emissiveIntensity:.9,roughness:.2,metalness:.3})); gem.position.y=1.15; altar.add(gem); g.animated.push({mesh:gem,kind:'gem',baseY:1.15});
+    const gg=this.glowSprite(th.accent,2); gg.position.y=1.15; altar.add(gg); g.glowy.push({s:gg,base:.55,kind:'sp'});
+    focal.add(altar); g.altar=altar;
+    // boss (voxel guardian)
+    const boss=new T.Group();
+    const bMat=new T.MeshStandardMaterial({color:new T.Color(this._shade(th.accent,-.25)),emissive:new T.Color(th.accent),emissiveIntensity:.4,roughness:.55,metalness:.2});
+    const bBody=new T.Mesh(new T.BoxGeometry(1.7,1.5,1.4),bMat); bBody.position.y=1.0; bBody.castShadow=true; boss.add(bBody);
+    const bHead=new T.Mesh(new T.BoxGeometry(1.1,.9,1.0),bMat); bHead.position.y=2.15; bHead.castShadow=true; boss.add(bHead);
+    const eMat=new T.MeshStandardMaterial({color:0xffffff,emissive:new T.Color('#fff'),emissiveIntensity:1.4});
+    const e1=new T.Mesh(new T.BoxGeometry(.2,.2,.1),eMat); e1.position.set(-.26,2.2,.5); boss.add(e1);
+    const e2=e1.clone(); e2.position.x=.26; boss.add(e2);
+    const aMat=bMat.clone();
+    const armL=new T.Mesh(new T.BoxGeometry(.5,1.1,.5),aMat); armL.position.set(-1.1,1.0,0); armL.castShadow=true; boss.add(armL);
+    const armR=armL.clone(); armR.position.x=1.1; boss.add(armR);
+    boss.visible=false; focal.add(boss); g.boss=boss; g.animated.push({mesh:boss,kind:'idle',baseY:0});
+
+    // ---- duck showcase ----
+    const duck=new T.Group(); const yMat=new T.MeshStandardMaterial({color:0xffd23f,roughness:.55}); const oMat=new T.MeshStandardMaterial({color:0xff8a1e,roughness:.5});
+    const dBody=new T.Mesh(new T.BoxGeometry(.7,.55,.95),yMat); dBody.position.y=.32; dBody.castShadow=true; duck.add(dBody);
+    const dHead=new T.Mesh(new T.BoxGeometry(.5,.5,.5),yMat); dHead.position.set(0,.78,.34); dHead.castShadow=true; duck.add(dHead);
+    const dBeak=new T.Mesh(new T.BoxGeometry(.2,.16,.24),oMat); dBeak.position.set(0,.74,.66); duck.add(dBeak);
+    const dEye=new T.Mesh(new T.BoxGeometry(.09,.12,.05),new T.MeshStandardMaterial({color:0x111111})); dEye.position.set(.16,.86,.55); duck.add(dEye); const dEye2=dEye.clone(); dEye2.position.x=-.16; duck.add(dEye2);
+    duck.position.set(-2.1,top/2,1.8); root.add(duck); g.animated.push({mesh:duck,kind:'bob',baseY:top/2,phase:1.1});
+
+    // ---- scattered element objects ----
+    const spots=[[2,-1.4],[2.3,1.6],[-1.8,-1.2]];
+    spots.forEach((p,i)=>{ const e=this.ELEMENTS[(i*2+1)%6]; const m=new T.Mesh(new T.BoxGeometry(.55,.55,.55),new T.MeshStandardMaterial({color:new T.Color(e.color),emissive:new T.Color(e.color),emissiveIntensity:.45,roughness:.4})); m.position.set(p[0],top/2+.4,p[1]); m.castShadow=true; root.add(m); g.animated.push({mesh:m,kind:'spin',baseY:top/2+.4,phase:i*1.7}); const eg=this.glowSprite(e.color,1.2); eg.position.copy(m.position); root.add(eg); g.glowy.push({s:eg,base:.4,kind:'sp'}); });
+
+    g.fx&&g.fx.forEach(f=>{f.orb&&g.scene.remove(f.orb);f.gl&&g.scene.remove(f.gl);f.impact&&g.scene.remove(f.impact);}); g.fx=[];
+
+    // ===== 浮空微缩盒庭：基座 + 外圈装饰（让平台不再空旷）=====
+    const rimR=4.0, rimMat=new T.MeshStandardMaterial({map:sideT,roughness:.92});
+    // ledge rim ring (just outside the walls)
+    [[0,rimR+.4,N+2.6,.8],[0,-(rimR+.4),N+2.6,.8],[-(rimR+.4),0,.8,N+2.6],[(rimR+.4),0,.8,N+2.6]].forEach(([x,z,w,d])=>{ const m=new T.Mesh(new T.BoxGeometry(w,.42,d),rimMat); m.position.set(x,top/2-.02,z); m.castShadow=true; m.receiveShadow=true; root.add(m); });
+    // tiered base plinth → floating-diorama silhouette
+    const b1=new T.Mesh(new T.BoxGeometry(N+4.2,1.5,N+4.2),new T.MeshStandardMaterial({color:new T.Color(this._shade(th.side,-.16)),roughness:1})); b1.position.y=-1.0; b1.receiveShadow=true; root.add(b1);
+    const b2=new T.Mesh(new T.BoxGeometry(N+2.4,1.6,N+2.4),new T.MeshStandardMaterial({color:new T.Color(this._shade(th.side,-.34)),roughness:1})); b2.position.y=-2.3; b2.receiveShadow=true; root.add(b2);
+    // corner braziers (warm light + verticality)
+    const braPil=new T.MeshStandardMaterial({map:wallT,roughness:.9});
+    const braOrbMat=new T.MeshStandardMaterial({color:new T.Color('#ffb05a'),emissive:new T.Color('#ff7a2c'),emissiveIntensity:1.4,roughness:.5});
+    [[-(rimR+.3),-(rimR+.3)],[(rimR+.3),-(rimR+.3)],[-(rimR+.3),(rimR+.3)],[(rimR+.3),(rimR+.3)]].forEach(([x,z])=>{
+      const pil=new T.Mesh(new T.BoxGeometry(.5,1.5,.5),braPil); pil.position.set(x,top/2+.75,z); pil.castShadow=true; root.add(pil);
+      const bowl=new T.Mesh(new T.BoxGeometry(.74,.32,.74),braPil); bowl.position.set(x,top/2+1.55,z); bowl.castShadow=true; root.add(bowl);
+      const orb=new T.Mesh(new T.SphereGeometry(.26,12,12),braOrbMat); orb.position.set(x,top/2+1.86,z); root.add(orb); g.animated.push({mesh:orb,kind:'bob',baseY:top/2+1.86,phase:Math.random()*6});
+      const og=this.glowSprite('#ffb05a',2.2); og.position.set(x,top/2+1.96,z); root.add(og); g.glowy.push({s:og,base:.75,kind:'sp'});
+    });
+    // themed perimeter props (auto-recolor per layer via theme palette)
+    const propA=th.top, propB=th.top2, propAcc=th.accent, rockC=th.side;
+    const mkProp=(x,z,kind)=>{ const grp=new T.Group(); grp.position.set(x,top/2,z);
+      if(kind===0){ [[0,0,.5],[.3,0,.36],[-.27,.03,.34],[.05,.27,.3]].forEach(([dx,dy,s])=>{ const m=new T.Mesh(new T.BoxGeometry(s,s,s),new T.MeshStandardMaterial({color:new T.Color(this._shade(Math.random()<.5?propA:propB,this.rand(-.06,.12))),roughness:.95})); m.position.set(dx,dy+s/2,0); m.castShadow=true; grp.add(m); }); }
+      else if(kind===1){ const stem=new T.Mesh(new T.BoxGeometry(.16,.34,.16),new T.MeshStandardMaterial({color:0xe8e0d0,roughness:.9})); stem.position.y=.17; stem.castShadow=true; grp.add(stem); const cap=new T.Mesh(new T.BoxGeometry(.42,.22,.42),new T.MeshStandardMaterial({color:new T.Color(propAcc),emissive:new T.Color(propAcc),emissiveIntensity:.5,roughness:.5})); cap.position.y=.42; cap.castShadow=true; grp.add(cap); const gg=this.glowSprite(propAcc,1.0); gg.position.y=.5; grp.add(gg); g.glowy.push({s:gg,base:.3,kind:'sp'}); }
+      else if(kind===2){ [[0,.32],[.32,.22],[-.26,.18]].forEach(([dx,s])=>{ const m=new T.Mesh(new T.BoxGeometry(s,s*.8,s),new T.MeshStandardMaterial({color:new T.Color(this._shade(rockC,this.rand(-.1,.12))),roughness:1})); m.position.set(dx,s*.4,0); m.castShadow=true; grp.add(m); }); }
+      else { const cr=new T.Mesh(new T.OctahedronGeometry(.32),new T.MeshStandardMaterial({color:new T.Color(propAcc),emissive:new T.Color(propAcc),emissiveIntensity:.65,roughness:.2,metalness:.3})); cr.position.y=.36; cr.castShadow=true; grp.add(cr); g.animated.push({mesh:cr,kind:'gem',baseY:.36}); const gg=this.glowSprite(propAcc,1.1); gg.position.y=.36; grp.add(gg); g.glowy.push({s:gg,base:.3,kind:'sp'}); }
+      root.add(grp); };
+    const ringPos=[[-rimR,-2.4],[-rimR,.5],[-rimR,2.9],[rimR,-2.4],[rimR,.5],[rimR,2.9],[-2.4,rimR],[0,rimR],[2.4,rimR],[-2.8,-rimR+.1],[2.8,-rimR+.1]];
+    ringPos.forEach((p,i)=>{ const kind=th.crystal?(i%3===0?3:(i%3===1?2:1)):(th.lava?(i%2?2:0):(i%3)); mkProp(p[0],p[1],kind); });
+    // floating lanterns above
+    [[-3.6,3.7,-2.2],[3.7,4.1,1.2],[0,4.5,-3.4]].forEach(p=>{ const lg=this.glowSprite('#ffcf8a',1.6); lg.position.set(p[0],p[1],p[2]); root.add(lg); g.glowy.push({s:lg,base:.5,kind:'sp'}); g.animated.push({mesh:lg,kind:'bob',baseY:p[1],phase:Math.random()*6}); });
+
+    g.arena=root; g.scene.add(root); g.topT=topT; this.updateFocal();
+  }
+
+  // ---- elemental cast effect: bolt flies from the left into the arena ----
+  fireElement(el){ const T=window.THREE; const g=this.game; if(!g) return; const col=this.ELEMENTS[el].color;
+    const from=new T.Vector3(-9.5, 3.4-el*0.95, 2.2);
+    const to=new T.Vector3((Math.random()-.5)*1.6, .7, .3+(Math.random()-.5)*1.2);
+    const orb=new T.Mesh(new T.SphereGeometry(.24,16,16),new T.MeshBasicMaterial({color:new T.Color(col)})); orb.position.copy(from); g.scene.add(orb);
+    const gl=this.glowSprite(col,1.9); gl.position.copy(from); g.scene.add(gl);
+    g.fx.push({orb,gl,col,from:from.clone(),to,t:0,dur:.5,phase:'fly',it:0});
+  }
+  updateFx(dt){ const T=window.THREE; const g=this.game; for(let i=g.fx.length-1;i>=0;i--){ const f=g.fx[i];
+      if(f.phase==='fly'){ f.t+=dt/f.dur; const e=Math.min(1,f.t); const p=new T.Vector3().lerpVectors(f.from,f.to,e); p.y+=Math.sin(e*Math.PI)*1.4; f.orb.position.copy(p); f.gl.position.copy(p);
+        if(e>=1){ f.phase='impact'; g.scene.remove(f.orb); f.impact=this.glowSprite(f.col,.4); f.impact.position.copy(f.to); g.scene.add(f.impact); } }
+      else { f.it+=dt; const s=.4+f.it*16; f.impact.scale.set(s,s,1); f.impact.material.opacity=Math.max(0,1-f.it*2.6); f.gl.material.opacity=Math.max(0,1-f.it*4);
+        if(f.it>.45){ g.scene.remove(f.gl); g.scene.remove(f.impact); g.fx.splice(i,1); } } } }
+
+  // ================= 通关转场：战场被骰子外壳包住 → 螺旋升走 → 下一颗骰子旋入展开 =================
+  _eOutBack(p){ const c=1.70158,c3=c+1; return 1+c3*Math.pow(p-1,3)+c*Math.pow(p-1,2); }
+  clearLevel(){ const T=window.THREE; const g=this.game; if(!g||this.trans||this.loot) return;
+    const piv=new T.Group(); g.scene.add(piv);
+    let oldArena=null;
+    if(g.arena){ g.scene.remove(g.arena); piv.add(g.arena); oldArena=g.arena; }
+    const shell=this.dieMesh(8.6); shell.position.set(0,0.9,0); shell.scale.setScalar(0.001); piv.add(shell);
+    const sg=this.glowSprite('#fff0cf',11); sg.position.set(0,0.9,0); sg.material.opacity=0; piv.add(sg);
+    this.trans={t:0,dur:2.5,piv,shell,sg,oldArena,swapped:false,spin:new T.Vector3(0,0,0)};
+  }
+  updateTransition(dt){ const T=window.THREE; const g=this.game; const tr=this.trans; if(!tr) return;
+    tr.t+=dt; const p=Math.min(1,tr.t/tr.dur); const piv=tr.piv, sh=tr.shell;
+    if(p<0.2){ const k=this._eOutBack(p/0.2); sh.scale.setScalar(Math.max(0.001,k)); tr.sg.material.opacity=k*0.5; sh.rotation.y+=dt*1.2; if(tr.oldArena) tr.oldArena.scale.setScalar(Math.max(0.0001,1-p/0.2)); }
+    else if(p<0.46){ if(tr.oldArena) tr.oldArena.scale.setScalar(0.0001); const k=(p-0.2)/0.26; tr.spin.x+=dt*7; tr.spin.y+=dt*9; piv.rotation.set(tr.spin.x,tr.spin.y,tr.spin.x*0.4); const s=1-0.62*k; piv.scale.setScalar(s); piv.position.y=2.9*k; tr.sg.material.opacity=0.5; }
+    else if(!tr.swapped){ tr.swapped=true; if(tr.oldArena){ piv.remove(tr.oldArena); g.scene.remove(tr.oldArena); } this.setState(s=>({layer:(s.layer+1)%this.themes.length}),()=>{ this.buildArena(); this.applyTheme(); const na=this.game.arena; this.game.scene.remove(na); na.scale.setScalar(0.0001); tr.piv.add(na); tr.newArena=na; }); }
+    else if(p<0.74){ const k=(p-0.46)/0.28; tr.spin.x+=dt*6; tr.spin.y+=dt*7; piv.rotation.set(tr.spin.x*(1-k),tr.spin.y*(1-k),0); const s=0.38+0.62*k; piv.scale.setScalar(s); piv.position.y=2.9*(1-k); if(tr.newArena) tr.newArena.scale.setScalar(0.0001); }
+    else if(p<1){ const k=(p-0.74)/0.26; piv.rotation.set(0,0,0); piv.scale.setScalar(1); piv.position.y=0; const o=this._eOutBack(Math.min(1,k*1.25)); sh.scale.setScalar(Math.max(0.001,1-o)); tr.sg.material.opacity=0.5*(1-k); sh.rotation.y+=dt*1.5; if(tr.newArena) tr.newArena.scale.setScalar(Math.max(0.0001,this._eOutBack(Math.min(1,k*1.15)))); }
+    else { if(tr.newArena){ tr.piv.remove(tr.newArena); g.scene.add(tr.newArena); tr.newArena.scale.setScalar(1); tr.newArena.rotation.set(0,0,0); tr.newArena.position.set(0,0,0); g.arena=tr.newArena; } g.scene.remove(tr.piv); this.trans=null; this.showLoot(); }
+  }
+
+  // ================= 战利品：三张 3D 卡牌 Mesh 扇形浮在地图上方、旋转、可点选 =================
+  lootCardTexture(offer){ const T=window.THREE; const D=this.DICE,E=this.ELEMENTS; const die=offer.kind==='die'?D[offer.id]:null;
+    const accent=die?(die.el==null?'#caa6ff':E[die.el].color):'#ffd98a';
+    const c=document.createElement('canvas'); c.width=420; c.height=588; const x=c.getContext('2d'); const W=c.width,H=c.height; const R=(a,b,w,h,r)=>{x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath();};
+    // bg
+    const bg=x.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#2a1838'); bg.addColorStop(1,'#170c20'); x.fillStyle=bg; R(0,0,W,H,40); x.fill();
+    // accent inner glow
+    const ig=x.createRadialGradient(W/2,H*0.36,20,W/2,H*0.36,W*0.7); ig.addColorStop(0,this._shade(accent,.0)+''); ig.addColorStop(0,accent); ig.addColorStop(1,'rgba(0,0,0,0)'); x.globalAlpha=.28; x.fillStyle=ig; R(14,14,W-28,H-28,32); x.fill(); x.globalAlpha=1;
+    // gold frame
+    x.strokeStyle='#f5c969'; x.lineWidth=6; R(16,16,W-32,H-32,32); x.stroke(); x.strokeStyle=this._shade(accent,-.1); x.lineWidth=2; R(26,26,W-52,H-52,26); x.stroke();
+    // emblem disc
+    const cx=W/2, cy=H*0.36, rad=110;
+    const dg=x.createLinearGradient(cx-rad,cy-rad,cx+rad,cy+rad); dg.addColorStop(0,this._shade(accent,.26)); dg.addColorStop(1,this._shade(accent,-.16)); x.fillStyle=dg; x.beginPath(); R(cx-rad,cy-rad,rad*2,rad*2,40); x.fill();
+    x.strokeStyle='rgba(255,255,255,.35)'; x.lineWidth=3; x.beginPath(); R(cx-rad+8,cy-rad+8,rad*2-16,rad*2-16,32); x.stroke();
+    if(die){ const n=((die.id*2)%6)+1; const P={1:[[.5,.5]],2:[[.28,.28],[.72,.72]],3:[[.28,.28],[.5,.5],[.72,.72]],4:[[.3,.3],[.7,.3],[.3,.7],[.7,.7]],5:[[.3,.3],[.7,.3],[.5,.5],[.3,.7],[.7,.7]],6:[[.3,.28],[.3,.5],[.3,.72],[.7,.28],[.7,.5],[.7,.72]]}[n]; const pr=rad*0.13; P.forEach(([px,py])=>{ const gx=cx-rad+px*rad*2, gy=cy-rad+py*rad*2; const rg=x.createRadialGradient(gx-pr*.3,gy-pr*.3,1,gx,gy,pr); rg.addColorStop(0,'#fff'); rg.addColorStop(1,'#dde4ec'); x.fillStyle=rg; x.beginPath(); x.arc(gx,gy,pr,0,7); x.fill(); }); }
+    else { x.fillStyle='#3a2406'; x.font='900 120px "Noto Serif SC",serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(offer.icon||'✦',cx,cy+6); }
+    // name
+    x.fillStyle='#fff4e4'; x.font='900 40px "Noto Serif SC",serif'; x.textAlign='center'; x.textBaseline='alphabetic'; x.fillText(offer.kind==='die'?die.name:offer.name, W/2, H*0.66);
+    // type + stars
+    x.fillStyle=accent; x.font='600 22px "Noto Sans SC",sans-serif'; x.fillText(offer.kind==='die'?(die.cat==='function'?'功能骰':'元素骰'):'能力', W/2, H*0.71);
+    x.fillStyle='#f5c969'; x.font='24px serif'; const stars=offer.kind==='die'?('★'.repeat(die.rarity)+'☆'.repeat(5-die.rarity)):'★★★★☆'; x.fillText(stars, W/2, H*0.755);
+    // effect text (wrap)
+    x.fillStyle='#cbb6d6'; x.font='22px "Noto Sans SC",sans-serif'; const eff=offer.kind==='die'?die.special:offer.desc; const words=eff.split(''); let line='',ly=H*0.83; for(const ch of words){ if(x.measureText(line+ch).width>W-90){ x.fillText(line,W/2,ly); line=ch; ly+=30; } else line+=ch; } x.fillText(line,W/2,ly);
+    const t=new T.CanvasTexture(c); t.anisotropy=4; return t; }
+  cardBackTexture(){ const T=window.THREE; const c=document.createElement('canvas'); c.width=420;c.height=588; const x=c.getContext('2d'); const R=(a,b,w,h,r)=>{x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath();}; const bg=x.createLinearGradient(0,0,420,588); bg.addColorStop(0,'#5e2740'); bg.addColorStop(1,'#2a1430'); x.fillStyle=bg; R(0,0,420,588,40); x.fill(); x.strokeStyle='#f5c969'; x.lineWidth=6; R(16,16,388,556,32); x.stroke(); x.fillStyle='rgba(245,201,105,.9)'; x.font='900 150px "Noto Serif SC",serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('?',210,300); const t=new T.CanvasTexture(c); return t; }
+  showLoot(){ const T=window.THREE; const g=this.game; if(!g||this.loot) return; const offers=this.offers[this.state.layer]; const cards=[];
+    const back=this.cardBackTexture();
+    offers.forEach((o,i)=>{ const front=this.lootCardTexture(o); const edge=new T.MeshBasicMaterial({color:new T.Color('#3a2030')});
+      const mats=[edge,edge,edge,edge,new T.MeshBasicMaterial({map:front}),new T.MeshBasicMaterial({map:back})];
+      const m=new T.Mesh(new T.BoxGeometry(2.0,2.8,0.1),mats); m.userData.loot=i;
+      const ang=(i-1)*0.26; const bx=(i-1)*2.45, by=3.5, bz=2.9+Math.abs(i-1)*-0.25;
+      m.position.set(bx,0.6,1.0); m.scale.setScalar(0.01);
+      g.scene.add(m); cards.push({m,bx,by,bz,baseRotZ:-(i-1)*0.16,tiltX:-0.92,appear:0,delay:i*0.13,picked:false,idx:i,gl:null}); });
+    this.loot={cards,t:0,chosen:-1,done:false}; this.forceUpdate();
+  }
+  updateLoot(dt){ const T=window.THREE; const g=this.game; const L=this.loot; if(!L) return; L.t+=dt;
+    for(const c of L.cards){ const m=c.m;
+      if(L.chosen<0){ if(L.t>c.delay){ c.appear=Math.min(1,c.appear+dt/0.5); const k=this._eOutBack(c.appear); m.scale.setScalar(Math.max(0.01,k));
+          m.position.x=0+(c.bx-0)*k; m.position.y=0.6+(c.by-0.6)*k; m.position.z=1.0+(c.bz-1.0)*k; }
+        const wob=Math.sin(L.t*1.6+c.idx)*0.18; m.rotation.set(c.tiltX, wob, c.baseRotZ+Math.sin(L.t*1.2+c.idx)*0.04); m.position.y=c.by+Math.sin(L.t*1.5+c.idx*1.3)*0.12*c.appear; }
+      else { const chosen=c.idx===L.chosen;
+        if(chosen){ c.pk=Math.min(1,(c.pk||0)+dt/1.25); const e=(c.pk<.5?4*c.pk*c.pk*c.pk:1-Math.pow(-2*c.pk+2,3)/2);
+          const tx=0, ty=3.0, tz=5.6;
+          m.position.set(c.sp.x+(tx-c.sp.x)*e, c.sp.y+(ty-c.sp.y)*e, c.sp.z+(tz-c.sp.z)*e);
+          const yaw=c.sr*(1-e)+(Math.PI*4)*e;          // two full spins, ending front-facing
+          m.rotation.set(c.tiltX+(-0.62-c.tiltX)*e, yaw, 0);
+          m.scale.setScalar(c.ss+(1.9-c.ss)*e);
+          if(c.pk>=1){ m.position.y=ty+Math.sin(L.t*1.6)*0.07; }                 // gentle idle once arrived
+        }
+        else { c.pk=Math.min(1,(c.pk||0)+dt/0.4); m.scale.setScalar(Math.max(0.001,1-c.pk)); m.position.x+=(m.position.x>=0?1:-1)*dt*3.5; m.position.y-=dt*2.4; m.rotation.y+=dt*5; }
+      }
+    }
+    if(L.chosen>=0){ const ch=L.cards[L.chosen]; if(ch.pk>=1){ L.hold=(L.hold||0)+dt;
+        if(L.hold>1.7){ ch.out=Math.min(1,(ch.out||0)+dt/0.45); const m=ch.m; m.scale.setScalar(Math.max(0.001,1.9*(1-ch.out))); m.position.y+=dt*1.6; if(ch.out>=1&&!L.done){ L.done=true; L.cards.forEach(c=>g.scene.remove(c.m)); this.loot=null; this.forceUpdate(); } } } }
+  }
+  pickLoot(i){ if(!this.loot||this.loot.chosen>=0) return; const L=this.loot; L.cards.forEach(c=>{ c.sp=c.m.position.clone(); c.sr=c.m.rotation.y; c.ss=c.m.scale.x; }); L.chosen=i; this.forceUpdate(); }
+  onCanvasClick(e){ const T=window.THREE; const g=this.game; if(!g||!this.loot||this.loot.chosen>=0) return; const cv=this.gameRef.current; const r=cv.getBoundingClientRect(); const nx=((e.clientX-r.left)/r.width)*2-1; const ny=-((e.clientY-r.top)/r.height)*2+1; const ray=new T.Raycaster(); ray.setFromCamera({x:nx,y:ny},g.cam); const hits=ray.intersectObjects(this.loot.cards.map(c=>c.m)); if(hits.length){ this.pickLoot(hits[0].object.userData.loot); } }
+
+
+  updateFocal(){ const g=this.game; if(!g||!g.altar) return; g.altar.visible=!this.state.boss; g.boss.visible=this.state.boss; }
+
+  // ---------- theme / tone ----------
+  applyTheme(){ const T=window.THREE; const th=this.themes[this.state.layer]; const t=this.state.tone;
+    const sky=[0,1,2].map(i=>this._lerp(th.skyD[i],th.skyW[i],t));
+    if(this.skyRef.current) this.skyRef.current.style.background=`linear-gradient(180deg,${sky[0]} 0%,${sky[1]} 52%,${sky[2]} 100%)`;
+    // title mood
+    if(this.title){ const ei=0.34-0.2*t, go=0.85-0.42*t; this.title.die._mats.forEach(m=>{m.emissiveIntensity=ei;}); this.title.glow.material.opacity=go; this.title.rim.intensity=1.4-0.6*t; }
+    // game lights + sky
+    const g=this.game; if(!g) return;
+    const lc=new T.Color(this._lerp(th.lightD,th.lightW,t)); g.key.color.copy(lc); g.key.intensity=0.5+0.7*t; g.amb.intensity=0.24+0.42*t; g.hemi.intensity=0.3+0.4*t; g.hemi.color.set(this._lerp('#3a3a55',th.skyW[0],t)); g.hemi.groundColor.set(th.side); g.fill.intensity=0.2+0.3*(1-t);
+    g.scene.background=this.skyTex(sky[0],sky[2]); g.scene.fog.color.set(sky[2]); g.scene.fog.near=15-3*t; g.scene.fog.far=30;
+  }
+
+  skyTex(a,b){ const T=window.THREE; const c=document.createElement('canvas'); c.width=8; c.height=256; const x=c.getContext('2d'); const gr=x.createLinearGradient(0,0,0,256); gr.addColorStop(0,a); gr.addColorStop(1,b); x.fillStyle=gr; x.fillRect(0,0,8,256); const t=new T.CanvasTexture(c); return t; }
+
+  // ---------- dice roll ----------
+  dieMeshEl(size,el){ if(el==null) return this.dieMesh(size); const T=window.THREE; const col=this.ELEMENTS[el].color;
+    const mats=[1,6,2,5,3,4].map(n=>new T.MeshStandardMaterial({map:this.dieFaceTex(col,n),roughness:.42,metalness:.18,emissive:new T.Color(col),emissiveIntensity:.2}));
+    const m=new T.Mesh(new T.BoxGeometry(size,size,size),mats); m.castShadow=true; m._mats=mats; return m; }
+
+  rollDice(els){ const T=window.THREE; const g=this.game; if(!g) return; els=(els&&els.length)?els:[2,0]; g.dice.forEach(d=>g.scene.remove(d.mesh)); g.dice=[];
+    const n=els.length, spread=Math.min(4.4,Math.max(1.2,n*0.9));
+    els.forEach((el,i)=>{ const fx=n===1?0:(-spread/2+spread*i/(n-1)); const tz=1.0+Math.sin(i*1.9)*.55; const m=this.dieMeshEl(.58,el); m.position.set(fx*1.25,5.6,4); g.scene.add(m);
+      g.dice.push({mesh:m,t:0,dur:1.0+Math.random()*.28,from:new T.Vector3(fx*1.25,5.6,4),to:new T.Vector3(fx,.45/2+.3,tz),ax:new T.Vector3(Math.random(),Math.random(),Math.random()).normalize(),spin:13+Math.random()*7,delay:i*.1}); });
+  }
+
+  updateDice(dt){ const g=this.game; for(const d of g.dice){ if(d.delay>0){ d.delay-=dt; continue; } if(d.t>=1) continue; d.t=Math.min(1,d.t+dt/d.dur); const e=1-Math.pow(1-d.t,3); const m=d.mesh; m.position.lerpVectors(d.from,d.to,e); m.position.y+=Math.sin(Math.min(1,d.t)*Math.PI)*2.2*(1-d.t*.3); m.rotateOnAxis(d.ax,d.spin*dt*(1-d.t*.7)); } }
+
+  // ---------- loop ----------
+  loop=()=>{ this._raf=requestAnimationFrame(this.loop); const now=performance.now(); const dt=Math.min(.05,(now-this._last)/1000); this._last=now; const tt=now*.001;
+    if(this.stageRef.current){ const f=this.stageRef.current.parentElement; const w=f&&f.clientWidth; if(w&&w!==this._sw){ this._sw=w; this.stageRef.current.style.transformOrigin='top left'; this.stageRef.current.style.transform=`scale(${w/960})`; } }
+    if(this.title){ const T=this.title; T.die.rotation.x+=T.vx; T.die.rotation.y+=T.vy; T.vx+=(.004-T.vx)*.03; T.vy+=(.006-T.vy)*.03; T.glow.material.rotation+=.002; T.renderer.render(T.scene,T.cam); }
+    if(this.game){ const g=this.game; for(const a of g.animated){ if(a.kind==='bob'){a.mesh.position.y=a.baseY+Math.sin(tt*1.6+(a.phase||0))*.06;} else if(a.kind==='spin'){a.mesh.rotation.y+=.012; a.mesh.position.y=a.baseY+Math.sin(tt*2+(a.phase||0))*.07;} else if(a.kind==='gem'){a.mesh.rotation.y+=.02; a.mesh.position.y=a.baseY+Math.sin(tt*1.8)*.13;} else if(a.kind==='idle'){a.mesh.position.y=Math.sin(tt*1.2)*.07;} }
+      for(const gl of g.glowy){ if(gl.kind==='sp'){ gl.s.material.opacity=gl.base*(.75+.25*Math.sin(tt*2+gl.s.position.x)); } else if(gl.kind==='em'){ gl.m.emissiveIntensity=gl.base*(.7+.4*Math.sin(tt*3+gl.m.id)); } }
+      this.updateDice(dt); this.updateFx(dt); this.updateTransition(dt); this.updateLoot(dt); g.renderer.render(g.scene,g.cam); }
+  };
+
+  resize(){ if(this.title){ const cv=this.titleRef.current,w=cv.clientWidth,h=cv.clientHeight; if(w&&h){ this.title.renderer.setSize(w,h,false); this.title.cam.aspect=w/h; this.title.cam.updateProjectionMatrix(); } }
+    if(this.stageRef.current){ const frame=this.stageRef.current.parentElement; const w=frame.clientWidth; if(w){ this.stageRef.current.style.transform=`scale(${w/960})`; } } }
+
+  renderVals(){ const th=this.themes[this.state.layer]; const S=this.state; const D=this.DICE; const E=this.ELEMENTS;
+    const goal=this.goals[S.layer];
+    const inLo=id=>S.loadout.indexOf(id)>=0;
+    const card=(d)=>({ id:d.id, name:d.name, dieBg:this.dieBg(d.el), pips:this.pipGrid(((d.id*2)%6)+1),
+      el:d.el==null?'万能':E[d.el].name, elBg:d.el==null?'linear-gradient(90deg,#caa6ff,#7ad0ff)':E[d.el].color,
+      size:this.sizeLabel(d.size), starStr:this.starStr(d.rarity), tag:d.tag, cat:d.cat==='function'?'功能骰':'元素骰',
+      isFn:d.cat==='function', inLoadout:inLo(d.id), onClick:()=>this.toggleDie(d.id) });
+    const pool=D.filter(d=> S.tab==='all' || (S.tab==='element'&&d.cat==='element') || (S.tab==='function'&&d.cat==='function'));
+    const dd=D[S.detail];
+    const reqList=goal.reqs.map(r=>{ const have=S.loadout.filter(id=>{const x=D[id];return x.el===r.el||x.el==null;}).length; const ok=have>=r.count; return {name:E[r.el].name, barBg:E[r.el].color, have, need:r.count, ok, bad:!ok, okColor:ok?'#7ee0a0':'#ff9d8f', txt:`${E[r.el].name} ${have}/${r.count}`}; });
+    const reqMet=reqList.every(r=>r.ok);
+    const n=S.loadout.length;
+    const loSize = n<=3?62 : n===4?52 : 46;
+    const loDot = Math.max(5,Math.round(loSize*0.13));
+    const loInset = Math.round(loSize*0.17);
+    const loRad = Math.round(loSize*0.22);
+    const loGap = n<=3?13:9;
+    const loGlow = n>0&&n<=3 ? '0 0 20px -2px rgba(245,201,105,.6),inset 0 2px 0 rgba(255,255,255,.4),inset 0 -7px 12px rgba(0,0,0,.3)' : 'inset 0 2px 0 rgba(255,255,255,.4),inset 0 -7px 12px rgba(0,0,0,.3)';
+    const loCards = S.loadout.map(id=>{ const d=D[id]; return {dieBg:this.dieBg(d.el), pips:this.pipGrid(((id*2)%6)+1), name:d.name, onRemove:()=>this.toggleDie(id)}; });
+    const loHint = n===0?'从左侧点选骰子装入 · 最多 5 颗' : (n<=3?'精简强力 · 越少越稳':'阵容偏大 · 谨慎取舍');
+    const hand=this.evalHand();
+    const handStars='◆'.repeat(hand.tier)+'◇'.repeat(5-hand.tier);
+    const offerSet=this.offers[S.layer].map((o,i)=>{ const d=o.kind==='die'?D[o.id]:null; return {i, isDie:o.kind==='die',
+      name:d?d.name:o.name, desc:d?d.special:o.desc, icon:o.icon||'', hasIcon:!!o.icon,
+      dieBg:d?this.dieBg(d.el):'linear-gradient(160deg,#ffe2a0,#e0a328)', pips:d?this.pipGrid(((d.id*2)%6)+1):null,
+      starStr:d?this.starStr(d.rarity):'★★★★', tag:d?d.tag:'能力', picked:S.draft===i, ring:S.draft===i?'rgba(245,201,105,.85)':'rgba(255,255,255,.1)', onPick:()=>this.setState({draft:i}) }; });
+    return {
+      skyRef:this.skyRef, titleRef:this.titleRef, gameRef:this.gameRef, stageRef:this.stageRef,
+      stop:(e)=>e.stopPropagation(),
+      tonePct:Math.round(this.state.tone*100),
+      onTone:(e)=>this.setState({tone:+e.target.value/100}),
+      onRoll:()=>this.onThrow(),
+      onStart:()=>this.rollDice([2,0,3]),
+      onToggleRoom:()=>this.setState(s=>({boss:!s.boss})),
+      onClear:()=>this.clearLevel(),
+      lootActive:!!(this.loot&&this.loot.chosen<0),
+      roomToggleLabel:this.state.boss?'切到 战斗间':'切到 守关者间',
+      layers:this.themes.map((t,i)=>({label:t.key,active:this.state.layer===i,onSelect:()=>this.setState({layer:i})})),
+      layerName:th.key, layerNum:this.state.layer+1,
+      roomName:this.state.boss?'守关者间':'战斗间', roomIndex:this.state.boss?3:2,
+      fireFns:{huo:()=>this.fireElement(0),shui:()=>this.fireElement(1),mu:()=>this.fireElement(2),lei:()=>this.fireElement(3),feng:()=>this.fireElement(4),an:()=>this.fireElement(5)},
+      buffs:[{name:'木·再生',tip:'2 回合',color:'#46c66a'},{name:'火·灼烧',tip:'×3',color:'#ff5b4d'},{name:'风·疾行',tip:'1 回合',color:'#e8edf3'}],
+      // bag / loadout
+      onOpenBag:()=>this.rollDice(this.state.loadout.map(id=>D[id].el)),
+      onThrow:()=>this.onThrow(),
+      diceLeft:S.diceLeft,
+      loadoutMini:S.loadout.slice(0,5).map(id=>({bg:this.dieBg(D[id].el),face:((id*2)%6)+1})),
+      // selection screen
+      goalTrial:goal.trial, goalDesc:goal.desc, goalThrows:goal.throws,
+      reqList, reqMet, reqTip:reqMet?'当前选择已满足试炼 · 可投掷':'选择尚未满足试炼需求',
+      bagTabs:[{key:'all',label:'全部'},{key:'element',label:'元素骰'},{key:'function',label:'功能骰'}].map(t=>({label:t.label, active:S.tab===t.key, bg:S.tab===t.key?'rgba(245,201,105,.9)':'transparent', fg:S.tab===t.key?'#2a1606':'#cdbfe0', onSelect:()=>this.setState({tab:t.key})})),
+      gridItems:pool.map(card),
+      loadoutCount:S.loadout.length, cap:this.CAP,
+      loSize, loDot, loInset, loRad, loGap, loGlow, loCards, loHint,
+      hand, handStars,
+      throwRing:(reqMet&&S.loadout.length)?'rgba(126,224,160,.7)':'rgba(245,201,105,.6)',
+      throwBg:(reqMet&&S.loadout.length)?'linear-gradient(180deg,#8be6a4,#46c66a)':'linear-gradient(180deg,#ffd982,#f0a93a)',
+      offerSet,
+      // detail
+      detail:{ name:dd.name, dieBg:this.dieBg(dd.el), pips:this.pipGrid(((dd.id*2)%6)+1),
+        el:dd.el==null?'万能':E[dd.el].name, elBg:dd.el==null?'linear-gradient(90deg,#caa6ff,#7ad0ff)':E[dd.el].color,
+        cat:dd.cat==='function'?'功能骰':'元素骰', size:this.sizeLabel(dd.size), sides:dd.sides+'面', starStr:this.starStr(dd.rarity),
+        special:dd.special, flavor:dd.flavor, inLoadout:inLo(dd.id),
+        addLabel:inLo(dd.id)?'移出骰组':'装入骰组', onAdd:()=>this.toggleDie(dd.id),
+        faces:this.faces(dd).map(f=>({ pips:f.val<=6?this.pipGrid(f.val):null, num:f.val>6?f.val:null, dot:this.elColor(f.el) })) },
+    };
+  }
+  toggleDie(id){ this.setState(s=>{ const i=s.loadout.indexOf(id); let lo=s.loadout.slice(); if(i>=0){ lo.splice(i,1); } else if(lo.length<this.CAP){ lo.push(id); } return {loadout:lo, detail:id}; }); }
+  onThrow(){ const D=this.DICE; const lo=this.state.loadout; if(!lo.length) return; this.rollDice(lo.map(id=>D[id].el)); this.setState(s=>({diceLeft:Math.max(0,s.diceLeft-lo.length)})); }
+}
+</script>
+</body>
+</html>

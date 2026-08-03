@@ -67,8 +67,7 @@ export interface Card {
   // ── REQ-E-021 牌的内禀重触发（红蜡封）── 并进逐张计分的 repeats（该牌连同其上 mods/小丑一起重复结算）。
   retrigger?: number;
   // ── REQ-GAMED #2 百搭/通配（wild）── true=这张可当任意 suit+rank，evaluateHand 小规模确定性枚举求**最优牌型**。
-  // 内禀于牌（随 PlayedHand.cards 流经 poker-eval，零新配置）：game-e 通配类小丑把某张 wild:true 即可
-  // （历史实例 game-d 百搭骰同款用法·已随 REQ-RETRO 引擎大扫除 2026-08-03 删除，仅留教训）。
+  // 内禀于牌（随 PlayedHand.cards 流经 poker-eval，零新配置）：game-d 百搭骰、game-e 通配类小丑各把某张 wild:true 即可。
   // 缺省/false=普通牌，判型逐字节等价旧行为（无 wild 不枚举）。
   wild?: boolean;
 }
@@ -219,8 +218,7 @@ export interface CardPile extends Component {
 
 // ── dice-roll（REQ-GAMED #1）── 骰能力族：声明骰池 → 种子化掷骰 → 结果（供 poker-hand/dice 对掷消费）。
 // 「掷一份声明好的骰池」此前无能力（poker-hand 只消费已填好的 PlayedHand，random 原子只给 [0,1)/整数）——
-// 历史动机：game-d《骰途》曾正卡在这缺口（手写 sim + 裸 Math.random·该游戏已随 REQ-RETRO 引擎大扫除
-// 2026-08-03 删除，仅留出处说明）。本组件族补上：骰面/骰池=纯数据（最弱 LLM 可产），
+// game-d《骰途》正卡在这缺口（手写 sim + 裸 Math.random）。本组件族补上：骰面/骰池=纯数据（最弱 LLM 可产），
 // 掷骰/锁定重掷/结算前禁骰=引擎确定性系统（dice-roll，消费 RandomSeed 整数 PRNG，lockstep/录放安全）。
 // 与 poker-hand 同族：RolledDice 结果按 element(→suit)/value(→rank) 映射即可喂 poker-eval 判"骰型"（六色同花等）。
 

@@ -9,7 +9,7 @@
 | 纯逻辑 / capability 语义 | vitest（`src/**/*.test.ts`） | 退出码 0 |
 | capability 注册完整性 | `src/assembly/registry-guard.test.ts`（漏注册即红·计数下限防空 glob 假绿） | vitest 内 |
 | 确定性 / 回放 / 性能 | ZeroCraftBench（`src/bench/`·双跑同 hash）·单 manifest 走 `scripts/bench-manifest.mjs` | hash 一致 |
-| 数值平衡 | `games/game-g/simulate-balance.ts`（N=500 胜率扫描·各游戏可仿此自建 `<game>/simulate-balance.ts`） | 胜率∈目标带 |
+| 数值平衡 | `scripts/game-d-balance-sim.mjs` · `games/game-g/simulate-balance.ts`（N=500 胜率扫描） | 胜率∈目标带 |
 | UI 卫生 | `/check-ui` 技能 + validateLayoutNode | issue 归零 |
 | 真浏览器旅程 | playwright-core e2e（`scripts/studio-*-e2e.mjs` 模式·chromium=/opt/pw-browsers） | 脚本退出码 |
 | 产品线冒烟 | `scripts/*-smoke.py`（library / studio / **steam 发行编排**·后者 `steam-publish-smoke.py` 无真账号用 480 验 VDF/命令/plan · **AI 生成人审门** `art-review-smoke.py` 全链 generate→pending→approve/reject + provenance 硬校验 · **美术替换工作流** `art-replace-smoke.py` 全链 derive→batch(mock)→replace(parseManifest 零 error)+断点续跑+编号稳定·进程内 API·快照恢复零污染） | 退出码 |

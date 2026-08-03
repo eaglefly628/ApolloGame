@@ -15,7 +15,7 @@ import { demoBlueprint } from '../assembly/demo.assembly.js';
 // （tsc/build/单测都没渲染过该组件，所以全绿却白屏。）两道守卫：
 //   ① 真把组件渲染一遍（默认 game-e）。
 //   ② 不变式：任何"值缺省(undefined/null)"的字段都不能被判成 'json'（否则 JSON.stringify→undefined）。
-// 'fixture' 曾借用 game-f（REQ-RETRO 批①·2026-08-03 已删）——现用引擎侧夹具 test-fixtures/engine-fixture.ts。
+// 'fixture' 曾借用 game-f 当测试夹具——本就是越界耦合，现用引擎侧夹具 test-fixtures/engine-fixture.ts。
 
 const GAMES: Array<[string, () => WorldBlueprint]> = [
   ['fixture', () => buildFixtureBlueprint()],

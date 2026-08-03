@@ -123,7 +123,7 @@ describe('T2 drag-place（拖拽摆放，REQ-F-045）', () => {
     const { selfRuleCapability } = await import('./self-rule.js');
     const { resourceCapability } = await import('@atom-skills/resource/index.js');
     // REQ-F-050 回归锁：motion-apply（主角自由移动）与 drag-place 互为 Transform RMW 对——
-    // 首个同场世界（历史实例：自走棋）曾成 22 系统 SCC；six 件套补成七件套后此图必须可排。
+    // 首个同场世界（game-f）曾成 22 系统 SCC；six 件套补成七件套后此图必须可排。
     const { motionApplyCapability } = await import('../tier1/index.js');
     const w = mk();
     for (const cap of [gridMoveCapability, motionApplyCapability, flowCapability, zoneOccupancyCapability, groupCountCapability, selfRuleCapability, resourceCapability]) {

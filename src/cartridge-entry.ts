@@ -4,6 +4,7 @@ interface GameModule { mount: (el: HTMLElement) => () => void }
 
 const GAMES: Record<string, { title: string; subtitle: string }> = {
   'game-e': { title: 'Game E: Balatro-like',         subtitle: '小丑牌 · 卡牌构建' },
+  'game-f': { title: 'Game F: Pixel Three Kingdoms', subtitle: '像素三分天下 · 自走棋' },
   'game-g': { title: 'Game G: Fateflip Poker',       subtitle: '翻命扑克 · 3D 掷命骨架' },
   'game-i': { title: 'Game I: UI Gallery',           subtitle: '控件测试场 · 数据驱动 UI' },
 };
@@ -15,6 +16,7 @@ const GAMES: Record<string, { title: string; subtitle: string }> = {
 function startLoad(id: string): Promise<GameModule> {
   if (id === '__inline__') return import('./cartridge-inline-run.js') as Promise<GameModule>;
   if (id === 'game-e') return import('@games/game-e/game-e.js') as Promise<GameModule>;
+  if (id === 'game-f') return import('@games/game-f/game-f.js') as Promise<GameModule>;
   if (id === 'game-g') return import('@games/game-g/game-g.js') as Promise<GameModule>;
   if (id === 'game-i') return import('@games/game-i/game-i.js') as Promise<GameModule>;
   return Promise.reject(new Error(`Unknown game: ${id}`));

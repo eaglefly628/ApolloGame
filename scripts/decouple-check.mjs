@@ -24,7 +24,7 @@ const SRC_WHITELIST = [/^src\/launcher(\/|$)/, /^src\/cartridge/];
 // 迁移期发现的**既有**（非本次引入）跨界——本单未经 Lead 授权不敢扩大目录级白名单，先按「精确文件」
 // 闭集放行、逐条留痕，实质仍是违规待裁。
 //
-// REQ-RETRO 引擎大扫除批①（2026-08-03）瘦身：原 10 条里 9 条借的是已删 game-f / 或把"随手可得的
+// REQ-RETRO 引擎大扫除批①（2026-08-03）瘦身：原 10 条里 9 条借的是 game-f / 或把"随手可得的
 // 真实蓝图"当测试夹具（validate-manifest/validate-references/bench/preview.integration/game-e.tsx
 // 独立入口）——全部换成不挂 games/** 的引擎侧夹具（`src/test-fixtures/engine-fixture.ts`）或挪回
 // `games/game-e/` 自己目录，白名单条目随之清零；只留 Studio 资产浏览三处真借用 game-e 真实数据
@@ -36,6 +36,9 @@ const SRC_GRANDFATHERED = new Set([
 ]);
 const A_GRANDFATHERED = new Set([
   'games/game-c/dokiworld-export.test.ts::../../tools/export-targets/dokiworld.mjs',
+  // game-f 还原（owner 2026-08-03 改判）后回填：game-f 大厅从 docs/ 里 raw-import 教程 HTML 文本，
+  // 既有耦合与本次引擎侧夹具消解无关（未经 Lead 点名·game-f 冻结政策封锁·不摘除）。
+  'games/game-f/lobby.tsx::../../docs/game-design/game-f-tutorial.html?raw',
 ]);
 
 const SPEC_RE =

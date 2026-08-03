@@ -9,8 +9,8 @@
 //   整体退出码本就受 AUDIT 判词影响，与棘轮是否新增红旗无关，故只断言棘轮段的判词（照 docs-ref-guard.test.mjs 的 spawn 模式）。
 // ④⑤ 用 ZEROCRAFT_AUDIT_BASELINE 指向临时固定基线（不碰真基线·搭配真游戏源实测红旗：
 //    ④/⑤ 判定逻辑只看"本次实际扫到的游戏(rows)"，与真基线是否恰好记录该游戏无关——故随便挑现存游戏当
-//    CLI 扫描目标即可（REQ-RETRO 批①·2026-08-03 game-f/game-q 已删，原样例换成 game-e/game-g）：
-//    ④ game-e 基线声明豁免（缺 approvedBy）；⑤ game-g 真源本就带红旗（8/29/31，见 audit-baseline.json）。
+//    CLI 扫描目标即可（REQ-RETRO 批①·2026-08-03 owner 拍板删 d/f/q/x/t，同日改判 d/f 还原·q/x/t 终删）：
+//    ④ game-e 基线声明豁免（缺 approvedBy）；⑤ game-f（冻结·稳定带红旗，见 audit-baseline.json）。
 // 脚本纯 node/fs，故直接用 `node` 跑（不需 vite-node）。
 import { describe, it, expect, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
@@ -54,9 +54,9 @@ describe('红旗棘轮（audit-baseline.json）', () => {
     expect(stderr).not.toContain('超基线');
   }, 60000);
 
-  it('基线覆盖 e/g/i/z 全部在册（h/j/k/m/block-blast-mini 已删·owner 2026-07-16；d/f/q/x/t 已删·owner 2026-08-03 REQ-RETRO）', () => {
+  it('基线覆盖 d/e/f/g/i/z 全部在册（h/j/k/m/block-blast-mini 已删·owner 2026-07-16；q/x/t 已删·owner 2026-08-03 REQ-RETRO；d/f 同日改判还原）', () => {
     expect([...BASELINE_GAMES].sort()).toEqual(
-      ['game-e', 'game-g', 'game-i', 'game-z'],
+      ['game-d', 'game-e', 'game-f', 'game-g', 'game-i', 'game-z'],
     );
   });
 
@@ -81,9 +81,9 @@ describe('红旗棘轮（audit-baseline.json）', () => {
   }, 60000);
 
   it('对抗·新游戏红旗：无基线条目 + 带红旗 → RATCHET: FAIL（豁免走 requests.md 找 Lead·不自加条目）', () => {
-    // 用 game-g（真源稳定带红旗，见 audit-baseline.json 8/29/31）作被测源。
+    // 用 game-f（冻结·稳定带红旗）作被测源。
     const bl = fixtureBaseline({ games: {} });
-    const { stdout, stderr } = runAudit(['game-g'], { ZEROCRAFT_AUDIT_BASELINE: bl });
+    const { stdout, stderr } = runAudit(['game-f'], { ZEROCRAFT_AUDIT_BASELINE: bl });
     const all = stdout + stderr;
     expect(all).toContain('RATCHET: FAIL');
     expect(all).toContain('新游戏红旗');

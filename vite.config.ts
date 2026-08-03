@@ -50,7 +50,7 @@ function serveLiveGameAssets() {
 // 素材库当 JS 解析/把 JS 当素材 404，两头都坏。挪到 `app/` 只影响平台构建；不设该 env 时
 // （日常 `npm run dev`/`npm run build`）assetsDir 仍是 Vite 默认 'assets'，零回归。
 // copyPublicDir 同理为 false：平台构建改由 build-platform.mjs 精选拷贝 public/games/<9 白名单>，
-// 不能让 Vite 内建的"整个 public/ 原样搬进 dist/"把被过滤掉的游戏素材（game-a 等）也塞进去。
+// 不能让 Vite 内建的"整个 public/ 原样搬进 dist/"把被过滤掉的游戏素材（game-f/d/a 等）也塞进去。
 const PLATFORM_BUILD = process.env.VITE_PLATFORM_BUILD === '1';
 
 export default defineConfig({
@@ -121,6 +121,7 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**', '**/dist/**', '**/.claude/**',
       ...((process.env.ZEROCRAFT_DEEP ?? process.env.APOLLO_DEEP) === '1' ? [] : [
+        'games/game-f/**', // 冻结游戏（owner 勿删勿迁·2026-08-03 owner 改判「不删了要还原·上架但代码纪律仍冻结」）·26s/133 测·没人开发→只慢车道跑
         'games/game-g/flow-walk.test.ts', // 整局通关走查 8.4s/1 测·33 个单元文件已覆盖各片段
         'scripts/manifest-check.test.mjs', // 起进程跑 CLI 7.3s·库 manifest 校验（发版前跑够）
         'scripts/acceptance.test.mjs', // 起进程 3.1s·验收剧本harness

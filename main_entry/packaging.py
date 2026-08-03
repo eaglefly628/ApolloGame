@@ -33,10 +33,11 @@ _PKG_PLATFORMS = {
 # 内置卡带工程游戏（有 games 入口·可打卡带/桌面）——与 scripts/dist.py 的 GAME_META 对齐。
 _PKG_BUILTIN_META = {
     'game-e': ('ApolloBalatroDeck', 'com.apollo.gamee'),
+    'game-f': ('ApolloPixelKingdoms', 'com.apollo.gamef'),
     'game-g': ('FateflipPoker', 'com.apollo.gameg'),
 }
 # cartridge-entry 能静态 import 的工程游戏（与其 startLoad 分支一致）——不在此集内的 slug=库卡带（纯数据）。
-_CARTRIDGE_ENGINE_GAMES = {'game-e', 'game-g', 'game-i'}
+_CARTRIDGE_ENGINE_GAMES = {'game-e', 'game-f', 'game-g', 'game-i'}
 
 def _pkg_job_update(jid: str, **kw) -> None:
     with _PKG_JOBS_LOCK:

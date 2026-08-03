@@ -14,9 +14,9 @@
 
 ## 范例文档（照着写，不照抄结论）
 
-- `docs/design/game-103/gdd.md`·`docs/design/game-103/balance-design.md`·`docs/design/game-103/capability-plan.md`（GDD + 数值 + 能力总览一整套）。
+- `docs/design/game-d/gdd.md`·`docs/design/game-d/balance-design.md`·`docs/design/game-d/capability-plan.md`（GDD + 数值 + 能力总览一整套）。
 - `docs/design/game-g-master-overview.md`·`docs/design/game-g-clash-fate-roll-vision.md`（game-g 设计总览/愿景）。
-- 数值验证：`games/game-g/simulate-balance.ts`（balance-sim 先例）。
+- 数值验证：`scripts/game-d-balance-sim.mjs`（balance-sim 先例）。
 
 ## 补全规则（照模板 §4）
 

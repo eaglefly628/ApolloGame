@@ -18,6 +18,9 @@ export const ACHIEVEMENTS: Readonly<Record<string, readonly AchievementDef[]>> =
     { id: 'GE_FIRST_BOOT', name: '入场', desc: '首次启动《小丑牌》。' },
     { id: 'GE_FIRST_WIN',  name: '首胜',  desc: '赢得第一局。' },
   ],
+  'game-f': [
+    { id: 'GF_FIRST_BOOT', name: '入主', desc: '首次启动《像素三分天下》。' },
+  ],
 };
 
 /** 某游戏的「首次启动」成就 id（无目录则 undefined）。 */

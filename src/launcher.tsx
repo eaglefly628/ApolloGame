@@ -66,6 +66,16 @@ export const GAMES: GameEntry[] = [
     status: 'playable',
   },
   {
+    id: 'game-f',
+    title: 'Game F: Pixel Three Kingdoms',
+    subtitle: '像素三分天下 · 自走棋',
+    description: '三国自走棋切片：蜀(红) vs 魏(蓝) 全自动对战——棋子索敌、走位、普攻互砍、团灭判胜。AI/普攻/战斗全由通用能力（aggro/steering/caster/hitbox/mortal）涌现，零自走棋专属代码。三国感靠命名+势力分色，美术走 DCSS 换皮。',
+    color: '#2a1f12',
+    accentColor: '#e0a83e',
+    icon: '♟️',
+    status: 'playable',
+  },
+  {
     id: 'game-g',
     title: 'Game G: Fateflip Poker',
     subtitle: '翻命扑克 · 实时三路掷命',
@@ -93,6 +103,16 @@ export const GAMES: GameEntry[] = [
     color: '#0b1020',
     accentColor: '#9ccc65',
     icon: '🧊',
+    status: 'playable',
+  },
+  {
+    id: 'game-d',
+    title: 'Game D: 骰途 Dice & Dungeons',
+    subtitle: '双人骰子 Roguelike · 3D 场景骨架',
+    description: '「所有战斗都用掷骰子解决」的双人合作 Roguelike——两人各带骰池、一关一关往前闯，过关三选一拿 buff（哈迪斯式），骰子凑不够掏宝物消耗品救场，打穿一层拿局外永久解锁，全灭重开。当前=场景骨架：无限程序化房间流（分层 + 每层 2 战斗 + 1 BOSS）串成往上推进的地牢，近俯视一屏一战场、房间流式生成/卸载；精装管线（暖冷光 + 移轴景深 + 泛光 + 软影 + 天空盒）让美术不糙。战斗/骰子/敌人后续接入（见 docs/design/game-d/combat-design.md）。',
+    color: '#140e1f',
+    accentColor: '#c084fc',
+    icon: '🎲',
     status: 'playable',
   },
   {

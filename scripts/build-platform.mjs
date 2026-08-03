@@ -36,9 +36,11 @@ export const GAMES_ALLOWLIST = [
   'game101', 'game102', 'game-103', 'game-c', 'game-e', 'game-b', 'game-g', 'game-i', 'game-z',
 ];
 // 明确排除（仅用于自检断言 + 日志——真正生效的过滤是上面那份白名单本身）。
-// game-f/x/d/q/t 已随 REQ-RETRO 引擎大扫除（owner 2026-08-03）删除，从本表移除（launcher/game-runner.tsx
-// 的动态 import 表已不再提它们，Rollup 根本不会再产出对应 chunk，本表条目本就该同步跟删）。
-export const GAMES_EXCLUDED = ['game-a'];
+// game-q/x/t 已随 REQ-RETRO 引擎大扫除（owner 2026-08-03）删除，从本表移除；game-d/game-f 同批一度
+// 删除后 owner 2026-08-03 改判还原（game-f 且继续上架），但两者本就不在上面 9 游戏打包白名单里
+// （历来如此，非本次变化），故仍需保留在排除表——launcher/game-runner.tsx 的动态 import 表恢复
+// 提它们，Rollup 会再产出对应 chunk，需要本表继续剔除。
+export const GAMES_EXCLUDED = ['game-f', 'game-d', 'game-a'];
 
 function log(msg) { process.stdout.write(`[build-platform] ${msg}\n`); }
 
@@ -135,15 +137,17 @@ function copyWhitelistedGameAssets() {
 /** 白名单游戏用到的共享美术子集：vite `copyUsedAssets` 插件在 build 期已经算好落在
  * dist/assets/FreeArtLib/**（server.py `_serve_assets` 路由认的是 ROOT/assets/**，不是
  * ROOT/dist/assets——两个"assets"字面重名但不是一个目录，故这里要**搬**到 platform-dist
- * 顶层的 assets/，而不是留在 dist/ 里）。曾还要精确剔除 monster/effect 两个 game-f 专属子目录
- * （vite.assets.ts usedAssetRels 曾有的 game-f 分支）——game-f 已随 REQ-RETRO 引擎大扫除
- * （owner 2026-08-03）删除，该分支已随之从 usedAssetRels 移除，此处剔除逻辑同步跟删。 */
+ * 顶层的 assets/，而不是留在 dist/ 里）。该插件当前对 game-e + game-f 都会拷（无游戏粒度
+ * 参数），game-f 不在白名单——精确剔除 monster/effect 两个 game-f 专属子目录（来源见
+ * vite.assets.ts usedAssetRels：这两个键只有 game-f 分支写；game-f 已随 owner 2026-08-03
+ * 改判还原，此剔除逻辑同步回填）。 */
 function relocateSharedArt() {
   const from = join(OUT, 'dist', 'assets', 'FreeArtLib');
   if (!existsSync(from)) { log('（无共享美术子集需要搬运——白名单游戏都不依赖 FreeArtLib）'); return; }
-  log('搬运共享美术子集 dist/assets/FreeArtLib → assets/FreeArtLib…');
+  log('搬运共享美术子集 dist/assets/FreeArtLib → assets/FreeArtLib（剔除 game-f 专属子目录）…');
   const to = join(OUT, 'assets', 'FreeArtLib');
   cpSync(from, to, { recursive: true });
+  for (const excluded of ['monster', 'effect']) rmrf(join(to, excluded)); // game-f 专属·不在白名单
   // 特意不删原位置 dist/assets/：_serve_static 的 do_GET 分派顺序里 `/assets/` 前缀早被
   // _serve_assets（读 ROOT/assets）拦下，dist/assets/** 天生不可达、留着也不会被误伺服——
   // 只是几百 KB 死重复，换来 --skip-build 调试路径可重复跑（不删源就不会「删了却没地方再搬一次」）。

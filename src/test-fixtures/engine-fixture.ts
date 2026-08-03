@@ -2,7 +2,8 @@
 //
 // 背景：bench/assembly/studio 等引擎侧工具历史上借用 game-f/game-e 的真实蓝图当"随手可得的真实数据"
 // 测试夹具（decouple-check.mjs 的 SRC_GRANDFATHERED 祖父白名单 9 条），构成引擎→游戏目录的越界耦合
-// （game-f 已随本次清场删除，此耦合必须断；game-e 虽存活，但引擎侧工具借用它当夹具同样是应消解的架构债）。
+// （game-f/game-e 虽存活（game-f owner 2026-08-03 改判还原上架），但引擎侧工具借用具体游戏当夹具
+// 本就是应消解的架构债——与该游戏是否存在无关，此耦合断开与否不应系于游戏生死）。
 // 本文件是唯一替代：比 demo.assembly.ts 的两实体示例更完整——覆盖信号链(EventWhen→Effect)、
 // 经济配方(CraftRecipe)、prefab 模板(PrefabLibrary+Caster)、逐实体死亡(Mortal)、流程机(GameFlow)，
 // 让 validate-references 的"真实蓝图零误报"回归仍有意义（不退化成空跑）；且整份蓝图真跑得动 Engine

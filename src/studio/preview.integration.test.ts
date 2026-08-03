@@ -7,7 +7,7 @@ import { buildFixtureBlueprint } from '../test-fixtures/engine-fixture.js';
 // 透视器预览路径的集成保护：把每个真实游戏的蓝图喂进引擎、真的跑 tick、读快照。
 // 这是项目里第一组"蓝图→引擎→运行"的集成测试（此前 SESSION-HANDOFF §4 自审：零集成、
 // 所有游戏蓝图从未在真实 ECS 循环里被 load+tick 过）。透视器的实时预览正是依赖这条路径。
-// 'fixture' 曾借用 game-f（REQ-RETRO 批①·2026-08-03 已删·借用本就是引擎→游戏目录越界耦合）——
+// 'fixture' 曾借用 game-f（借用本就是引擎→游戏目录越界耦合，与 game-f 是否存在无关）——
 // 现换成引擎侧夹具 test-fixtures/engine-fixture.ts（真跑得动 Engine，见 zerocraft-bench 同款校准）。
 const cases: Array<[string, () => WorldBlueprint]> = [
   ['demo', () => demoBlueprint],

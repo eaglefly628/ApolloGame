@@ -27,6 +27,7 @@ os.makedirs(OUT, exist_ok=True)
 
 GAME_TITLES = {
     'game-e': 'ZeroCraft Balatro Deck（小丑牌）',
+    'game-f': 'ZeroCraft Pixel Kingdoms（像素三分天下）',
     'game-g': 'Fateflip Poker（翻命扑克）',
 }
 
@@ -183,8 +184,8 @@ def build_argv(cfg):
         flags.append({'win': '--win', 'mac': '--mac', 'linux': '--linux'}.get(p, ''))
     flags = [x for x in flags if x]
     game = cfg['game']
-    title = {'game-e': 'ApolloBalatroDeck', 'game-g': 'FateflipPoker'}.get(game, game)
-    app_id = {'game-e': 'com.apollo.gamee', 'game-g': 'com.apollo.gameg'}.get(game, f'com.apollo.{game.replace("-", "")}')
+    title = {'game-e': 'ApolloBalatroDeck', 'game-f': 'ApolloPixelKingdoms', 'game-g': 'FateflipPoker'}.get(game, game)
+    app_id = {'game-e': 'com.apollo.gamee', 'game-f': 'com.apollo.gamef', 'game-g': 'com.apollo.gameg'}.get(game, f'com.apollo.{game.replace("-", "")}')
     # --dir = 出"裸目录"（Steam 要的，不是 dmg/exe 安装包）
     return (['npx', 'electron-builder'] + flags + ['--dir',
             '--config', 'electron-builder.yml',

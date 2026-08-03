@@ -16,16 +16,17 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-// 冻结名单（免检）：曾含 game-f（CLAUDE.md 旧「f=冻结」·owner 2026-06-25）——game-f 已随
-// REQ-RETRO 引擎大扫除（owner 2026-08-03 拍板）删除，冻结措辞随之撤销，名单清空。
+// 冻结名单（免检）：game-f 冻结（CLAUDE.md「f=冻结」·owner 2026-06-25·冻结勿删勿迁；
+// owner 2026-08-03 改判：还原上架，代码冻结纪律不变，名单不变）。
 // launcher 无机器可读冻结旗 → 此处按项目宪法硬列；将来 launcher 若加 frozen 标记，改为解析它。
-const FROZEN = new Set([]);
+const FROZEN = new Set(['game-f']);
 
 // 存量欠账白名单（2026-07-17 盘点·逐步清偿·**不许新增**）：
 // 这些游戏在生产线（八阶段板）建立之前即注册，尚无 pipeline.json 生产板。补板后从本表删除即恢复受检。
 // 新注册的游戏一律不得进此表——没进生产线就上不了架（守卫的意义即此）。
-// game-d/game-q/game-x 已随 REQ-RETRO 引擎大扫除（2026-08-03）删除，从本表移除。
-const LEGACY_NO_BOARD = new Set(['game-e', 'game-g', 'game-i', 'game-z']);
+// game-q/game-x 已随 REQ-RETRO 引擎大扫除（2026-08-03）删除，从本表移除；game-d 同批一度删除后
+// owner 2026-08-03 改判还原，随之回填本表（原状态：存量缺板豁免）。
+const LEGACY_NO_BOARD = new Set(['game-d', 'game-e', 'game-g', 'game-i', 'game-z']);
 
 /** 从 launcher.tsx 源码解析 GAMES 注册表（照 games_list.py 同款正则·只读·无副作用）。 */
 export function parseRegisteredGames(src) {

@@ -54,7 +54,7 @@ interface GameDef {
 const GAMES: GameDef[] = [
   { id: 'game-e', title: 'Game E · Balatro 小丑牌', build: () => buildGameEBlueprint() },
   {
-    // 曾是 game-f（REQ-RETRO 批①·2026-08-03 已删·借用 game-f 蓝图当"引擎侧内置样例"本就是越界耦合）——
+    // 曾借用 game-f 蓝图当"引擎侧内置样例"（本就是越界耦合，与 game-f 是否存在无关）——
     // 换成不挂 games/** 的引擎侧夹具（test-fixtures/engine-fixture.ts）。
     id: 'fixture',
     title: 'Fixture · 引擎内置样例',

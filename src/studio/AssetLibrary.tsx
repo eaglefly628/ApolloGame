@@ -35,8 +35,8 @@ import { AssetPendingReview } from './AssetPendingReview.js';
 
 const CAP = 400; // 网格一次最多渲染数（靠搜索/过滤收窄）
 
-// 'game-f' 条目（REQ-RETRO 批①·2026-08-03 已删）换成引擎侧夹具（test-fixtures/engine-fixture.ts，
-// 不挂 games/**）——借某游戏的清单当"内置样例"本就是越界耦合，删游戏顺势断掉。
+// 'game-f' 条目换成引擎侧夹具（test-fixtures/engine-fixture.ts，不挂 games/**）——借某游戏的清单
+// 当"内置样例"本就是越界耦合，与 game-f 是否存在无关，断耦合与游戏生死解绑。
 const GAME_MANIFESTS: ReadonlyArray<readonly [string, Parameters<typeof manifestRecords>[1]]> = [
   ['game-e', JOKER_ART_MANIFEST],
   ['fixture', FIXTURE_ASSETS],

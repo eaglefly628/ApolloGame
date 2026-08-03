@@ -60,9 +60,11 @@ Manifest(纯 JSON) ──parseManifest──▶ WorldBlueprint ──engine.load
 | game-e 小丑牌 | Balatro-like；计分核+68 张数据小丑=**最佳正面教材**；1163 行手写 React=**反面教材勿模仿** | sample |
 | game-i UI Gallery | LayoutNode 纯数据展示台 | sample · UI 活范例 |
 | game-f 自走棋 | — | **owner 冻结勿动** |
-| game-x 残响 / game-z 盒庭 | 伴侣框架 / P3D 3D 渲染线底座 | sample·基建 |
+| game-z 盒庭 | P3D 3D 渲染线底座 | sample·基建 |
 
-（game-h/j/k/m 与 block-blast-mini 已删除（owner 2026-07-16 清库）；任何文档再提到它们即为过期信号。**B 位 2026-07-17 重启为全新项目（雀宴·日式麻将）**（立项档 `docs/design/game-b/`·与已删旧作无关）。**A 位 2026-07-17 重启为全新项目**（立项档 `docs/design/game-a/`·与已删旧作无关——早于该日期的 game-a 提法均属旧作·旧作信息已依 owner 令全库抹除）。**C 位 2026-07-17 重启为全新项目（六人德州扑克）**（立项档 `docs/design/game-c/`·与已删旧作无关——早于该日期的 game-c 提法均属旧作·旧作痕迹已依 owner 令抹除，引擎注释仅存 REQ-C-001~004 归档工单号作能力出处）。装示例按钮装的是 zerocraft 内嵌 preset·与已删内置无关。）
+（game-h/j/k/m 与 block-blast-mini 已删除（owner 2026-07-16 清库）；**game-q/x/t 已删除**（owner
+2026-08-03 REQ-RETRO 拍板；d/f 同批一度删除·owner 同日改判还原为上表原状态）；再提到 q/x/t 即过期信号。
+**B 位 2026-07-17 重启为全新项目（雀宴·日式麻将）**（立项档 `docs/design/game-b/`·与已删旧作无关）。**A 位 2026-07-17 重启为全新项目**（立项档 `docs/design/game-a/`·与已删旧作无关——早于该日期的 game-a 提法均属旧作·旧作信息已依 owner 令全库抹除）。**C 位 2026-07-17 重启为全新项目（六人德州扑克）**（立项档 `docs/design/game-c/`·与已删旧作无关——早于该日期的 game-c 提法均属旧作·旧作痕迹已依 owner 令抹除，引擎注释仅存 REQ-C-001~004 归档工单号作能力出处）。装示例按钮装的是 zerocraft 内嵌 preset·与已删内置无关。）
 
 ## 5. 归档纪律
 

@@ -272,7 +272,7 @@ export const pokerHandCapability = defineCapability({
       'Balatro 牌桌：PokerHand{ rankingTable:{ "pair":{chips:10,mult:2}, "flush":{chips:35,mult:4}, "straight-flush":{chips:100,mult:8} }, chipsResource:"chips", multResource:"mult" } + PlayedHand{cards:[...]}',
       '出同花顺：PlayedHand{ cards:[{suit:0,rank:10},{suit:0,rank:11},{suit:0,rank:12},{suit:0,rank:13},{suit:0,rank:14}] } → 牌型 straight-flush → set chips=100,mult=8',
       '打出同花 → 触发某小丑：PokerHand.handTypeVar:"lastHand" → poker-eval 写 StringVar(lastHand="flush") → condition{string,eq,"flush"} 读到 → 小丑 effect 生效',
-      '百搭（REQ-GAMED #2）：某张 Card{wild:true} 可当任意 suit+rank 求最优牌型（小规模确定性枚举）。PlayedHand{cards:[{suit:0,rank:10},{suit:0,rank:11},{suit:0,rank:12},{suit:0,rank:13},{wild:true}]} → 补 ♠A 成 straight-flush。game-e 通配小丑把某张 wild 即用',
+      '百搭（REQ-GAMED #2）：某张 Card{wild:true} 可当任意 suit+rank 求最优牌型（小规模确定性枚举）。PlayedHand{cards:[{suit:0,rank:10},{suit:0,rank:11},{suit:0,rank:12},{suit:0,rank:13},{wild:true}]} → 补 ♠A 成 straight-flush。game-d 百搭骰 / game-e 通配小丑各把某张 wild 即用',
     ],
   },
 

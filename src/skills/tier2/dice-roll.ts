@@ -8,8 +8,7 @@ import { rollDicePool, applyBanFilter } from './dice.js';
 //  dice-roll —— 「掷一份声明好的骰池」确定性能力（REQ-GAMED #1，骰能力族 P0）。
 //
 //  真缺口：poker-hand 只消费已填好的 PlayedHand，random 原子只给 [0,1)/整数——没有「掷一个声明的骰池」的能力。
-//  历史动机：game-d《骰途》曾正卡在这（手写 sim + 裸 Math.random 绕种子随机·该游戏已随 REQ-RETRO
-//  引擎大扫除 2026-08-03 删除，仅留出处说明）。本能力补上，且把骰子玩法与 game-g 的
+//  game-d《骰途》正卡在这（手写 sim + 裸 Math.random 绕种子随机）。本能力补上，且把 game-d 与 game-g 的
 //  掷骰需求收敛为**同一个骰能力族**（防两次下沉出两套不协调的骰能力）：
 //    · 掷骰池（面数任意）+ 锁定重掷（只重掷未锁骰）+ 结算前禁骰（禁最高/最低 n，foe 数据驱动，#4 并入本能力）。
 //    · 对掷判定（game-g 战力对掷）作为同族**纯函数** opposedRoll 一并下沉（见 dice.ts；非 capability）。

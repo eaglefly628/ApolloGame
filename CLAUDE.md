@@ -30,4 +30,4 @@
 ## 关键文件
 
 - 宪法 `docs/design/data-driven-manifesto.md`；新游戏接入唯一入口 `docs/llm-onboarding.md`（数字口径以它 §0 机读真相为准·文档手抄数字 = 过期信号）；交接 `docs/workflow/SESSION-HANDOFF.md`；能力库 `src/skills/{atoms,tier1,tier2,tier3}`·组件契约 `src/engine/protocol/components.ts`。
-- 游戏 `games/`：d/e/f/g/i/q/x/z（出口 D+G·e/i = sample·f 冻结）；**A/B/C + 101/102/103 为新项目**（A = 掼蛋·B = 雀宴日麻·C = 六人德州·101 = 海港绯闻 Merge·102 = Pixel Pour·103 = 幸存者·各 `docs/design/<game>/`）。
+- 游戏 `games/`：d/e/f/g/i/z（出口 D+G·e/i = sample·f 冻结；q/x/t 已随 REQ-RETRO 2026-08-03 删除·再提到即过期信号）；**A/B/C + 101/102/103 为新项目**（A = 掼蛋·B = 雀宴日麻·C = 六人德州·101 = 海港绯闻 Merge·102 = Pixel Pour·103 = 幸存者·各 `docs/design/<game>/`）。

@@ -3,9 +3,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-GAME_IDS=(game-e game-g game-i game-z)
+GAME_IDS=(game-d game-e game-f game-g game-i game-z)
 GAME_NAMES=(
+  "Game D: Dice & Dungeons   · 骰途 · 骰子roguelike"
   "Game E: Balatro-like      · 小丑牌 · 卡牌构建"
+  "Game F: Pixel 3 Kingdoms  · 像素三分天下 · 自走棋"
   "Game G: Fateflip Poker    · 翻命扑克"
   "Game I: UI Gallery        · 控件测试场"
   "Game Z: Diorama           · 盒庭 · 3D渲染线"

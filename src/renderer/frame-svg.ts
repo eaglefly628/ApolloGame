@@ -6,7 +6,7 @@ import { faceDown } from './three-projection.js';
 //  frame-svg —— 把世界投影成一帧 SVG 的「无头截图」（复用纯函数 collectRenderables，无 DOM/GL）。
 //
 //  为什么 SVG 不 PNG：node 无 GL 上下文跑不了真 WebGL/canvas 截图；SVG 投影则**确定、可版本控制、
-//  浏览器直接看、可文本 diff**——天然适合无头视觉回归。各游戏自己的 render-frame 脚本本是这段
+//  浏览器直接看、可文本 diff**——天然适合无头视觉回归。game-d/f/g 各自的 render-frame 脚本本是这段
 //  投影的重复，此处收敛为引擎级单一实现（可视作 ascii/canvas/three 之外的「SVG 后端」）。
 //
 //  坐标取 2 位小数（跨端 1-ULP 漂移被吸收，golden 不抖）。游戏可选传 resolveSprite 把贴图换成内嵌矢量。
