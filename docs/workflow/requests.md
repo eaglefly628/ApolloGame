@@ -22,18 +22,7 @@
 <!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结迁归档（requests-archive.md）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
 
 
-### REQ-RETRO-引擎大扫除 · 全引擎回顾：清老码+裁 TODO+优化 token 负重+测试精简+旧游戏清场 · [2026-08-03] · owner 拍板（全权授 Lead） → Lead 主持·先盘点后裁决后施工 · status: **✅ done（2026-08-03·施工完成·待 Lead 终审）** · 优先级: P0 · 类型: 架构卫生（回顾期）
-> **⚖ Lead 编排**：三段式——①**盘点**（低档代理只读扫全库·四份清单：死码与旧游戏引用面 / 全部 TODO·FIXME·记债台账 / 文档 token 负重（T0+手册+池外膨胀点）/ 测试套件健康度（重复·慢·假信心·祖父白名单 12 处））→ ②**Lead 裁决**（每项 删/留/改 三分·成执行清单）→ ③**施工**（低档批量执行·全量门禁）。
-> **旧游戏清场已拍板**（owner「清除老旧 code」·处置表无异议）：删 game-d/f/q/x/t（git 历史在·随删清慢车道排除项与审计基线挂账）；game-g/e 引用摘干净后再裁；game-i（PUI 展示台）与 game-z（P3D 域）保留。品牌残名五项并入本单批次。
-> **⚠ owner 施工中改判留痕（2026-08-03·同日）**：施工代理落地 game-d/f/q/x/t 五游戏清场后，owner 追加裁决**game-d《骰途》与 game-f 自走棋不删了，完整还原上架**（game-f 冻结代码纪律不变）；**game-q/game-x/game-t 维持终删**。施工代理已按改判用 `git checkout d140e4b9f^ -- <路径>` 逐一还原 game-d/game-f 全部足迹（games/ 本体、docs/design/game-d/**、docs/game-design/game-f-*.md 24 个、专属工具脚本、`src/ui/themes/sanguo`、`public/games/game-d/art/**`）+ 回填 launcher/cartridge-entry/audit-baseline/pipeline-registry-guard/decouple-check/build-platform 等全部配置面，两提交（`971551396` 批①收尾 + `23a7b74f9` 改判还原）均已推送验证（tsc/vitest 快慢车道/build/四道守卫全绿，game-d+game-f 自身测试 17 文件 154 测全绿）。
-> **回执（施工完成·详见两提交信息）**：
-> - **删除统计**：q/x/t 三游戏终删（games/ 本体 + 专属文档/脚本/工具审计入口，约 70+ 文件）；d/f 一度删除后完整还原（约 324 文件回填，与首次删除逐一对应，git 历史完整无损）。
-> - **夹具方案**：新增 `src/test-fixtures/engine-fixture.ts`（不挂 games/** 的最小可执行蓝图 + 资产清单桩·信号/经济/prefab/死亡/流程五类逻辑·真跑得动 Engine 120 tick），接掉 bench/assembly/studio 预览与检视测试对 game-f/game-e 的"借真实游戏当夹具"越界耦合（该架构债与 game-f 是否存在无关，即使 game-f 还原也未撤销此项解耦）。
-> - **decouple 白名单前后对比**：SRC_GRANDFATHERED 10→3、A_GRANDFATHERED 2→2（game-c/dokiworld 不变 + game-f/lobby.tsx 随其还原回填，非新增）——合计 **12→5**（先前回执误写"12→3"，此处更正：game-f 还原后其自身 `lobby.tsx` raw-import 教程 HTML 的既有耦合一并回填，非本次消解范围）。
-> - **token 减负数字**：`SESSION-HANDOFF.md` 3263→1418 字符（不再手抄会过期的"活着的线头"）；宪法 §8 硬编码数字改指向 `llm-onboarding.md` §0；`apollo-ui-contract.md`/`workshop-spec-2026-07-10.md`/`modular-game-framework.md` 移入 `docs/design/archive/`；`context-budget-guard.mjs` 新增手册字符维度封顶（22000）+ `requests-3d.md` 封顶（70000，此前完全在监控盲区）。
-> - **据实偏差**（未经本次改判明确点名·如实留痕供复核）：① Studio 资产浏览三处（AssetLibrary.tsx/StudioInspector.tsx/bench 系列）仍走引擎侧夹具而非改回直接 import game-f——判断解耦与游戏生死无关，未随其还原撤销；② `docs/workflow/requests-archive.md` 按月拆卷（批②-4）**未完成**——权衡拆分风险（1880 行/173 条历史记录，误拆有腐蚀历史审计记录风险）与本单剩余时间预算，选择不在时间压力下仓促执行，留作后续单独一单；③ 全库 q/x/t 残余提及的地毯式排查限于报告§A/§C 列名文件 + 施工中主动扩排的机械改写面（历史决策记录/pipeline.json reason 字段/requests-archive.md 等归档层按纪律不追溯改，未逐字排查全库）。
-> **品牌残名五项**：Lead 再后置裁决——关键帧族（`APOLLO_KEYFRAMES` 等）与约 10 个 playwright e2e 脚本字符串选择器耦合，爆炸半径>收益，**维持记债**，本单未动。
-> **待 Lead 终审事项**：上表①②两项据实偏差（夹具解耦范围/白名单口径）+ `requests-archive.md` 拆卷延后 + 已开三张新工单（B-014/REQ-I-lab测试弱断言/REQ-G102-HARDLINE）。
+<!-- REQ-RETRO-引擎大扫除（P0·owner 全权授 Lead）已完结迁归档（requests-archive.md·grep REQ-RETRO）；后置不占槽小条：requests-archive.md 按月拆卷（要做时重开）。 -->
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
