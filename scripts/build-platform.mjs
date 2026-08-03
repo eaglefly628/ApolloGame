@@ -84,6 +84,30 @@ function copyBackend() {
   });
   cpSync(join(ROOT, 'workshop'), join(OUT, 'workshop'), { recursive: true });
   cpSync(join(ROOT, 'requirements.txt'), join(OUT, 'requirements.txt'));
+  copyGamesListInputs();
+}
+
+/** `/api/games`（工坊落地页的「引擎游戏」货架数据源）的两个磁盘依赖——不带上，打包态货架**全空**：
+ *   ① `games/<slug>/` 目录存在性：`handle_games_list` 枚举 `ROOT/games` 下匹配 game-* 的**目录**
+ *      当权威列表（只判 `is_dir()` + 名字正则，不读内容）。游戏真正跑靠 dist/ 里的 JS chunk 与
+ *      public/games/ 运行时资产，这里的 TS 源码客户端用不着，故只建**空目录占位**、不搬 22M 源码。
+ *      顺带天然只露白名单那 9 个（与 launcher 的 VITE_GAMES_ALLOWLIST 过滤一致，不漏内部 WIP）。
+ *   ② `src/launcher.tsx`：内置游戏元信息（title/subtitle/description/icon/color…）由
+ *      `_builtin_games_meta()` 正则解析它得来（单一真相在 launcher）。缺了不会崩，但每张卡片
+ *      退化成只剩一个 id 编号。44K，直接带。
+ * 背景：落地页从 React 游戏架（GAMES 烤进 JS 包）改成工坊 `/workshop/` 后，这条洞才第一次可见——
+ * 工坊货架是真去打这个接口的（workshop/index.dc.html `fetch('/api/games')`）。 */
+function copyGamesListInputs() {
+  log('补 /api/games 的磁盘依赖（games/<slug> 占位目录 + src/launcher.tsx 元信息源）…');
+  const placed = [];
+  for (const slug of GAMES_ALLOWLIST) {
+    if (!existsSync(join(ROOT, 'games', slug))) continue; // 仓库里没有的 slug 不凭空造
+    mkdirSync(join(OUT, 'games', slug), { recursive: true });
+    placed.push(slug);
+  }
+  mkdirSync(join(OUT, 'src'), { recursive: true });
+  cpSync(join(ROOT, 'src', 'launcher.tsx'), join(OUT, 'src', 'launcher.tsx'));
+  log(`  games/ 占位 ${placed.length} 个：${placed.join(', ')}；launcher.tsx 已带`);
 }
 
 /** 9 白名单游戏运行时资产：public/games/<slug>（游戏代码自己 fetch('/games/<slug>/...')·
