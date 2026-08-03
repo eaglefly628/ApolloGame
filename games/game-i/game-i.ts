@@ -18,7 +18,7 @@ import { applyShop, INITIAL_SHOP, type ShopState } from './shop.js';
 import { applyPick, INITIAL_PICK, type PickState } from './pickcards.js';
 import { makeSoundPlayer, CHORDS } from './sounds.js';
 import { applyRawInput, INITIAL_INPUT, resolveSignal, type InputLabState, type RawInputData } from './input-lab.js';
-import { INITIAL_AISHE, SAMPLE_PROMPT, type AisheState } from './video-lab.js';
+import { INITIAL_AISHE, composeAishePrompt, aisheOptsForMode, type AisheState } from './video-lab.js';
 import { NullAishePort } from '@zerocraft/engine/services/aigp/index.js';
 import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { CanvasRenderer } from '@zerocraft/engine/renderer/index.js';
@@ -168,13 +168,15 @@ export function mount(container: HTMLElement): () => void {
     afterTabSwitch: (tabId) => { if (tabId) activeTab = tabId; nudgeRepaint(); }, // 记住当前 tab + 强制重栅格
     enterModule: (id) => { currentModule = id ?? null; activeTab = 'tab-layout'; rerender(); nudgeRepaint(); }, // 进模块（大换页·逼重绘）
     exitModule: () => { currentModule = null; rerender(); nudgeRepaint(); }, // 退回展台
-    aisheGen: () => { // 爱诗：调 AishePort 生成 → 句柄就绪 → 局部更新（异步旁路·不碰 sim）
+    aisheGen: () => { // 爱诗：外观 look + 模式 → 组装提示词/选项 → 调 AishePort → 句柄 → 局部更新（旁路·不碰 sim）
       if (aishe.generating) return;
       aishe = { ...aishe, generating: true }; rerender();
-      void aishePort.generate(SAMPLE_PROMPT, { aspect: '9:16', seconds: 6 }).then((handle) => {
-        aishe = { handle, generating: false }; rerender();
+      void aishePort.generate(composeAishePrompt(aishe.look, aishe.mode), aisheOptsForMode(aishe.mode, aishe.seed)).then((handle) => {
+        aishe = { ...aishe, handle, generating: false }; rerender();
       });
     },
+    aisheMode: (arg) => { if (arg) { aishe = { ...aishe, mode: arg, handle: null }; rerender(); } }, // 切输出模式（8 种·换模式清旧句柄）
+
     playSound: (id) => { if (id) player.play(id, { volume: controls.vol / 100, pan: controls.pan / 100 }); },
     playChord: (id) => { player.playChord(CHORDS[id ?? 'major'] ?? CHORDS['major']!, { volume: (controls.vol / 100) * 0.6, pan: controls.pan / 100 }); },
     playPan: (where) => { const pan = where === 'left' ? -1 : where === 'right' ? 1 : 0; player.play('success', { volume: controls.vol / 100, pan }); },

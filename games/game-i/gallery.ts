@@ -743,7 +743,7 @@ export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; 
   { id: 'mod-spawn', glyph: '🎆', label: '生成与寿命', desc: 'spawn → 飞 → 寿命自毁', tone: 'normal' as const, dim: '2d' },
   { id: 'mod-fx', glyph: '💥', label: '战场特效（库B）', desc: '爆炸环 prefab · 火花叠在画面上', tone: 'normal' as const, dim: '2d' },
   { id: 'mod-fsm', glyph: '🔀', label: '状态机', desc: 'condition → signal → set-state', tone: 'normal' as const, dim: '2d' },
-  { id: 'mod-video', glyph: '🎬', label: '爱诗视频', desc: 'AIGP 端口 → 竖屏短视频', tone: 'normal' as const, dim: '2d' },
+  { id: 'mod-video', glyph: '🎬', label: '爱诗工作室', desc: 'AIGP 端口 · 8 输出模式 · 竖/横屏短视频', tone: 'normal' as const, dim: '2d' },
   // ── 3D 区（消费 P3D 3D 渲染线·ThreeRenderer）──
   { id: 'mod-3d', glyph: '🧊', label: '3D 渲染', desc: 'Mesh3D · 翻面/翻滚 基础旋转', tone: 'accent' as const, dim: '3d' },
   { id: 'mod-3d-light', glyph: '💡', label: '数据化光照', desc: 'Light3D 定向+环境 · 投影', tone: 'normal' as const, dim: '3d' },

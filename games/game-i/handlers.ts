@@ -36,8 +36,10 @@ export interface GalleryHooks {
   enterModule: (id?: string) => void;
   /** 退回展台落地页。 */
   exitModule: () => void;
-  /** 爱诗生成竖屏视频（调 AishePort → 句柄 → 局部更新）。 */
+  /** 爱诗生成竖屏视频（组装提示词/选项 → 调 AishePort → 句柄 → 局部更新）。 */
   aisheGen: () => void;
+  /** 爱诗切输出模式（arg=模式 id·8 种用途预设）。 */
+  aisheMode: (arg?: string) => void;
   /** 播放合成音（宿主 Web Audio·按 id 出声·应用当前声像/混响）。 */
   playSound: (id?: string) => void;
   /** 混音：和弦预设 id（major/all）多音齐发。 */
@@ -87,6 +89,7 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     enterModule: (a) => { L('enterModule', a); if (a) hooks.enterModule(a); },
     exitModule: () => { L('exitModule', undefined); hooks.exitModule(); },
     aisheGen: () => { L('aisheGen', undefined); hooks.aisheGen(); },
+    aisheMode: (a) => { L('aisheMode', a); hooks.aisheMode(a); },
     setTheme: (a) => {
       L('setTheme', a);
       if (a) hooks.setTheme(a);
