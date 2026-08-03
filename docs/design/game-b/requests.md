@@ -4,6 +4,13 @@
 
 ## 待处理
 
+### B-014 · game-state.test.ts:175 死断言（else 分支恒 `expect(true).toBe(true)`）· [2026-08-03] · REQ-RETRO 引擎大扫除盘点发现（低档代理测试健康度盘点·非本次修复范围） → **PE-B** · status: open · P2 · 类型: 测试债（假信心）
+> **位置**：`games/game-b/core/game-state.test.ts:175`，用例「立直后供托归和者（settleWin 回收 kyotaku）」。
+> **问题**：手牌 `m.cur.hands[0]=[0,0,0,1,1,1,2,2,2,3,3,3,27]` + `drawn=27` 是否真构成自摸和牌未经保证——`if (canTsumo(m)) { 真断言 } else { expect(true).toBe(true) }`。若构造牌手未按预期和牌（如未来手牌评估逻辑变动），第 172 行真正要测的「供托回收清零」断言被**直接跳过而测试仍绿**，不算失败——典型「总会通过」的死断言，覆盖强度为零。
+> **真修法**：构造一手**确定性、已验证成立**的自摸和牌（不靠 `if` 猜测），去掉 else 分支的占位断言，让「供托回收」成为无条件真断言。
+> **验收**：新断言必跑到 `declareTsumo(m)` 分支且不含任何 `expect(true).toBe(true)` 占位；game-b 全量 vitest 零回归。
+> **来源**：REQ-RETRO-引擎大扫除盘点段 B（测试套件健康度）「假信心样本抽查」#1，唯一判定为"严重"级的死断言（其余 9 例为轻度存在性检查弱化，未逐条开单）。
+
 ### B-013 · 迁移 GameLog 到引擎共享 event-log 原子 · [2026-07-23] · Lead 落单（REQ-EVENTLOG 下沉完工）→ **PE-B** · status: open · P3（DRY 收敛·非阻塞·功能等价） · 类型: 游戏层消费迁移（PE-B 域）
 > **背景**：REQ-EVENTLOG 已下沉引擎通用 `src/skills/tier1/event-log.ts`（`EventLog<K, Extra>` 泛型类 + `createEventLog()`·`push`(自增 seq)/`recent`/`all`/`size`/`clear`/`dump`）。game-b `core/game-log.ts` 的手写 `GameLog` 类是 rule-of-two 的一半，迁移到共享原子收敛 DRY。
 > **活**：`core/game-log.ts` 的 `GameLog`→薄封装 `EventLog<LogKind, { round: string; actor: string; tile?: number }>`（`import { EventLog } from '@skills/tier1/index.js'`）——保留自家 `LogKind` 闭集与 `LogEvent`/`push` 对外签名（`push` 现返回带 seq 条目·可无视），内部委托给 `EventLog`。`recent(14)`/`all`/`size`/`clear`/`dump` 语义已 1:1 对齐。**验收**：game-b 全量 vitest 零回归（日志断言不变）；`GameLog` 公开 API 对消费方（game-state/HUD）字节等价。**功能等价·可暂缓**（不阻玩法）。

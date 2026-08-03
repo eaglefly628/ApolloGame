@@ -9,14 +9,22 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const budget = JSON.parse(readFileSync(join(ROOT, 'scripts', 'context-budget-baseline.json'), 'utf8'));
 
 describe('context-budget-guard — 真仓库在预算内（门禁）', () => {
-  it('requests 池 ≤ 封顶 · T0 必读各 ≤ 封顶 · 每本手册 ≤80 行', () => {
+  it('requests 池 ≤ 封顶 · T0 必读各 ≤ 封顶 · 每本手册 ≤80 行 + ≤字符封顶 · requests-3d ≤ 封顶', () => {
     const t0Chars = {};
     for (const f of Object.keys(budget.t0MaxChars)) t0Chars[f] = readFileSync(join(ROOT, f), 'utf8').length;
     const playbookLines = {};
+    const playbookChars = {};
     for (const f of readdirSync(join(ROOT, 'docs', 'playbooks'))) {
-      if (f.endsWith('.md')) playbookLines[`docs/playbooks/${f}`] = readFileSync(join(ROOT, 'docs', 'playbooks', f), 'utf8').split('\n').length;
+      if (!f.endsWith('.md')) continue;
+      const text = readFileSync(join(ROOT, 'docs', 'playbooks', f), 'utf8');
+      playbookLines[`docs/playbooks/${f}`] = text.split('\n').length;
+      playbookChars[`docs/playbooks/${f}`] = text.length;
     }
-    const actual = { requestsChars: readFileSync(join(ROOT, 'docs/workflow/requests.md'), 'utf8').length, t0Chars, playbookLines };
+    const requests3dChars = readFileSync(join(ROOT, 'docs/workflow/requests-3d.md'), 'utf8').length;
+    const actual = {
+      requestsChars: readFileSync(join(ROOT, 'docs/workflow/requests.md'), 'utf8').length,
+      t0Chars, playbookLines, playbookChars, requests3dChars,
+    };
     expect(checkBudget(actual, budget)).toEqual([]); // 超预算即红·点名文件与数字
   });
 });
@@ -49,6 +57,20 @@ describe('context-budget-guard — 检查核语义（自证）', () => {
     const i = checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: { 'a.md': 10 }, playbookLines: { 'docs/playbooks/x.md': 81 } }, B);
     expect(i).toHaveLength(1);
     expect(i[0]).toContain('x.md');
+  });
+  it('手册超字符封顶点名（行数达标·字符密度超顶）', () => {
+    const B3 = { ...B, playbookMaxChars: 100 };
+    const i = checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: { 'a.md': 10 }, playbookLines: { 'docs/playbooks/x.md': 5 }, playbookChars: { 'docs/playbooks/x.md': 101 } }, B3);
+    expect(i).toHaveLength(1);
+    expect(i[0]).toContain('x.md');
+    expect(checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: { 'a.md': 10 }, playbookLines: { 'docs/playbooks/x.md': 5 }, playbookChars: { 'docs/playbooks/x.md': 100 } }, B3)).toEqual([]);
+  });
+  it('requests-3d 超封顶点名（此前完全在监控盲区）', () => {
+    const B4 = { ...B, requests3dMaxChars: 100 };
+    const i = checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: { 'a.md': 10 }, playbookLines: {}, requests3dChars: 101 }, B4);
+    expect(i).toHaveLength(1);
+    expect(i[0]).toContain('requests-3d.md');
+    expect(checkBudget({ requestsEntries: 1, requestsChars: 1, t0Chars: { 'a.md': 10 }, playbookLines: {}, requests3dChars: 100 }, B4)).toEqual([]);
   });
   it('全在预算内 → 空', () => {
     expect(checkBudget({ requestsEntries: 1, requestsChars: 99, t0Chars: { 'a.md': 50 }, playbookLines: { 'docs/playbooks/x.md': 80 } }, B)).toEqual([]);

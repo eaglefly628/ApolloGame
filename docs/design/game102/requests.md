@@ -7,6 +7,14 @@
 
 ## 待处理 / 进行中
 
+### REQ-G102-HARDLINE · voxel-proto.ts 硬红线违规无工单跟踪（innerHTML×2 + createElement×4）· [2026-08-03] · REQ-RETRO 引擎大扫除盘点发现（低档代理测试健康度盘点·非本次修复范围） → **待 owner/Lead 裁决** · status: open · 优先级: P1 · 类型: 治理缺口（红旗棘轮/硬红线）
+> **实证**（`node scripts/game-skill-audit.mjs game102` 实测）：
+> - 🔴 innerHTML（应走 LayoutNode/mountUI）：`games/game102/voxel-proto.ts:107`、`voxel-proto.ts:399`
+> - 🔴 document.createElement（手写 DOM，应走 LayoutNode）：`games/game102/game102.ts:26`、`voxel-proto.ts:107`、`voxel-proto.ts:318`、`voxel-proto.ts:319`
+> **问题**：CLAUDE.md 硬红线「游戏层禁裸 innerHTML/createElement（走 LayoutNode）」——`scripts/audit-baseline.json` 无 game102 条目，属"新游戏无基线条目+带红旗"，`scripts/audit-ratchet.test.mjs` 判 `RATCHET: FAIL`（新游戏红旗）。检索 `docs/design/game102/requests.md`（本文件，改动前）未发现任何相关工单——即该违规存在但从未被登记跟踪，只在慢车道 `ZEROCRAFT_DEEP=1 vitest` 才现红，日常快车道推送不可见。
+> **待裁决**（本工单只登记事实，不代拍）：① 若 voxel-proto.ts 的体素原型渲染判定为脱离 LayoutNode 表达力的真缺口——按硬红线纪律须走 `docs/workflow/requests.md` 找 Lead 裁决豁免（补 `scripts/audit-baseline.json` 条目 + `approvedBy:"LEAD"+date+reason` 三字段）；② 若判定为可消解——需 owner/Lead/PE-102 定夺是重构走 LayoutNode 还是维持现状记债转正。**两条路径本工单均未预设，纯记录违规存在供裁决。**
+> **来源**：REQ-RETRO-引擎大扫除盘点段 B（测试套件健康度）§E「已排除测试的红色透明度缺口」，被判定为"真实、未被任何工单跟踪的当前违规"（区别于同批次 acceptance.test.mjs 的两例已有工单跟踪的红）。
+
 ### REQ-G102-CORE-V2 · 核心机制重做：环形轨道+多炮绕行+过位侧向剥离（实机三图校正）· [2026-07-24] · GD 提（owner 三图）→ **PE（Lead 裁能力路线）** · status: **open（path-follow 已落地·可上真环轨）** · 优先级: **P0（核心重定义·压过其它 game102 单）** · 类型: 核心玩法重做
 > **spec**：`docs/design/game102/core-experience-v2.md` + **参考图 `ref/pixelflow-ref-01~03.png`（唯一复刻基准·看图目击优先）**。
 > **校正要点**：v1「单条直线传送带·单发射位·打任意同色」**是简化错的**。真机=**单一 360° 闭环传送带（一条连续环带·绕整幅像素画一周·非左右直线、非四条分开边带）·色炮上带后绕整整一圈跑（经上/右/下/左四边）·经过某边即对该边外沿暴露同色过位剥离·多炮同时绕圈各自时间差·选错色/时机则空转一圈啥也不打**。部署池含 🔒解锁 + 盲盒；每关 x/5 分段；画内嵌 🔑/🔒。

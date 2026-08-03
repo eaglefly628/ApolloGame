@@ -24,9 +24,9 @@
 - 美术对话 agent 可产 ```art-ops 操作提议（regen/batch/replace 三式），壳出确认卡「✔ 执行全部」
   ——agent 开方子、人点头、工坊执行；**agent 永不代执行**，也不许再叫用户去旧平台手动 retire。
 
-## 编译期游戏线（games·如 game-q）· 差异只在两处
+## 编译期游戏线（games·如 game-103）· 差异只在两处
 
-- **接入**（一次性·三行）：theme 定 skin key → 蓝图视觉实体加 `Sprite:{textureKey,anchorX:0.5,anchorY:0.5,zOrder:0}`（**必与 Shape 并存**·未就绪回退 Shape=观感零变）→ 照 game-q 样板写 requirements 推导脚本。mount 拉本地 index 注册 AssetManager（`game-q.ts` skinAssets 样板）。
+- **接入**（一次性·三行）：theme 定 skin key → 蓝图视觉实体加 `Sprite:{textureKey,anchorX:0.5,anchorY:0.5,zOrder:0}`（**必与 Shape 并存**·未就绪回退 Shape=观感零变）→ 照 `scripts/game-g-art-requirements.mjs` 样板写 requirements 推导脚本。mount 拉本地 index 注册 AssetManager（`games/game-103/game-103.ts` 的 `loadGameArtInto` 样板）。
 - **程序矢量=索引一等公民（REQ-VECTOR-ART 步3·07-13）**：参数化程序美术不留在渲染代码里——索引条目
   `type:'texture'+spec.generator:{name,params}`（免 path·params=纯数据·双皮=两组 params），game 模块
   `registerTextureGenerator(name, fn)`（确定性纯函数→data-URI）**先登记后 registerAssetIndex**；
@@ -36,7 +36,7 @@
 
 ## 红线
 
-- **禁纯色块游戏**：主体视觉实体必须有皮肤槽（art: 或 Sprite+skinKey）——没槽=不可换皮=生成线白搭（game-q 初版=反面教材）。
+- **禁纯色块游戏**：主体视觉实体必须有皮肤槽（art: 或 Sprite+skinKey）——没槽=不可换皮=生成线白搭（历史反面教材：已删的 game-q 初版）。
 - **台本只列「有消费槽」的行（owner 2026-07-22·REQ-ART-可消费槽铁律）**：`art-ledger.json` 每行必须有真实消费槽（manifest `art:` 或游戏侧消费的 `skinKey`）——**孤儿行（无槽·生成/换了游戏里不上画面）禁止列进台本**（换了白换=坑 owner）。程序化背景要能替换→用 `mountHost` 背景皮肤槽（有生成图用图·无则回退程序化·兜底不丢）。清台本二选一：接槽 或 退役。反面教材=game-c 37 行素坯 skinKey:null（REQ-C-112）。
   - **机器守卫**：`npm run ledger:audit`（=`node scripts/ledger-audit.mjs [<game>|--all]`）——报 `ORPHAN-LEDGER-ROW`（无 skinKey 且无 manifest `art:`）。默认顾问态不阻推送；PE 清完自己游戏可 `--strict` 单游戏门禁（有孤儿即退 1）。完工判据=该游戏零孤儿（样板 game-g 110/110）。
 - **游戏侧消费必须读台账/skinMap·禁只读硬编码路径（owner 2026-07-27「换了没反应」铁律）**：视觉加载先取 `skinMap['<skinKey>']`（=台账当前图·含创作台替换图——编译期游戏替换写 `row.gen.servedPath`+别名登记），**硬编码路径只作回退**。有 skinKey 但渲染读死路径=创作台替换进了台账也不上画面（「换了没反应」）；生成器/物品/立绘/背景走**同一条皮肤槽装载路径**。诊断「换了没反应」第一步=查该视觉是否 skinMap 优先。反面教材=game-101 订单卡立绘读死 `CUST_PORTRAITS`（art-49~54 换脸无效·2026-07-27 修）。

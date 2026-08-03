@@ -62,6 +62,18 @@
 > - **UV 动画材质**（流水/岩浆/传送带）：`Material3D{…, map:<textureKey>, uvAnim:{scrollX:0.08,scrollY:0.04}, tiling:{repeat:3}}`。
 > 契约同上（3d.md + render.ts）；勿改 three-renderer/three/**。
 
+### REQ-I-lab测试弱断言 · 五个 lab showcase 测试占位断言加强（存在性检查→内容/行为检查）· [2026-08-03] · REQ-RETRO 引擎大扫除盘点发现（低档代理测试健康度盘点·非本次修复范围） → **指派：PUI（game-i 域）** · status: open · 优先级: P3 · 类型: 测试债（假信心·轻度）
+> **位置**（5 处·同一弱模式复制 5 份）：
+> - `games/game-i/fsm-lab.test.ts:14`
+> - `games/game-i/anim-lab.test.ts:11`
+> - `games/game-i/three-lab.test.ts:11`
+> - `games/game-i/physics-lab.test.ts:10`
+> - `games/game-i/ai-lab.test.ts:12`
+> **问题**：全部只断言 `expect(bp.capabilities.length).toBeGreaterThan(0)`——只证明"该展台声明了 >0 个能力"，蓝图声明了错误/不完整的能力集合也能通过；不是"总会通过"级别的死断言（严重级，见 B-014），但覆盖强度远低于形式暗示（存在性检查代替内容检查）。
+> **建议修法**：改为断言各展台蓝图**确实含该展台名义要展示的具体能力 id**（如 fsm-lab 应含 `t1-fsm` 或对应 capability id，anim-lab 应含动画相关能力等）——具体断言内容由 PUI 按各展台实际教学意图定，非本工单代拍。
+> **验收**：5 个测试文件断言从"数量>0"改为"含指定能力 id 列表"；game-i 全量 vitest 零回归。
+> **来源**：REQ-RETRO-引擎大扫除盘点段 B（测试套件健康度）「假信心样本抽查」#2-6，5 处同一弱模式（轻度·非阻断）。
+
 ### REQ-I-gallery拆分 · gallery.ts 1620 行按展台分模块（token 优化③·owner 2026-07-15 批）· [2026-07-15] · Lead 转呈 → **指派：PUI（game-i 域·勿由他人代拆）** · status: open · 优先级: P2 · 类型: 结构拆分（零逻辑改）
 > 背景：owner 批「拆大文件」降低 session 读入成本（launcher.tsx 已由 Lead 拆·zerocraft.py 先例）。`games/game-i/gallery.ts` 1620 行=单文件 top1，但 game-i 是 PUI 地盘（CLAUDE.md 边界），Lead 不越界。
 > spec 建议（照 zerocraft.py/launcher 先例）：按展台/页签的自然缝拆 `games/game-i/gallery/*.ts`，gallery.ts 留薄入口 re-export；**逐字节搬运零逻辑改**；tsc+vitest（game-i 测试零改动照绿）+build 全绿直推；拆后单文件 ≤500 行。

@@ -47,7 +47,7 @@ README.txt
 
 1. **协议桥**（`tools/export-targets/dokiworld.mjs` 注入产物内 `dokiworldBridge`）：`protocolVersion=1`；ready/init/initialized/result/close/resize；init 全校验（source===parent·origin 钉定复检·grantedScopes 子集+去重·context schema·逐 scope 字段）；幂等 init；`initialized` Promise；standalone 惰性。
 2. **`game.json`（schema v2）**（落 dist 根 = `/games/<id>/game.json`）：`schemaVersion:2`·id·`kind:game`·`capability`·entry·**launchRequirements.minPlayers**（a=4·b=4·c=2）·`context.{requiredScopes,optionalScopes}`·locales(en+zh-cn·含 `aliases`)·`runtime:{protocol:'dokiworld.game',protocolVersion:1}`。**供应方不设 `status`/`selection`**（移交 DokiWorld registration）。
-3. **资源展平**：vite `base:'./'` + `closeBundle` 把 `dist/games/<id>/*→dist/*`（禁嵌套 `games/game-x/`）。
+3. **资源展平**：vite `base:'./'` + `closeBundle` 把 `dist/games/<id>/*→dist/*`（禁嵌套 `games/<id>/`）。
 4. **计分注入**：各游戏**已有终局一次性闸**调 `host.complete(...)`，一局一次。映射（契约 §6.1）：a=胜100/负0（metrics 轮数·钱包）·b=四人名次线性0..100（第一名 win）·c=主角胜100/0（metrics 手数·筹码）。
 
 ## 7. 与卡片桥的关系 + 当前开口（红线）
