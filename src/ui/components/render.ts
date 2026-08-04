@@ -326,7 +326,7 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
     p.glow ? `text-shadow:0 0 8px ${cl},0 0 2px ${cl}` : '',
     // 描边字（comic outline·卡通粗轮廓）：深色描边在填色之下（paint-order:stroke fill 保填色/可读）。可与 glow 叠。
     p.stroke ? `-webkit-text-stroke:2px ${t.bg0};paint-order:stroke fill` : '',
-    p.tracking !== undefined ? `letter-spacing:${p.tracking}px` : '',
+    p.tracking !== undefined ? `letter-spacing:${num(p.tracking)}px` : '',
     ls,
   ].filter(Boolean).join(';');
   // 富文本多段着色(render-only·有 spans 忽略 text)：逐段自带 color(令牌)/bold，外层保字号/字体。
@@ -344,7 +344,7 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
     const tweenAttr = ` data-tween-to="${num(p.tween.to)}" data-tween-ms="${num(p.tween.ms, 600)}" data-tween-dec="${dec}"${fmtAttr}`;
     return `<span id="${esc(id)}"${tweenAttr} style="${style}">${esc(formatNumber(num(p.tween.from), p.format, dec))}</span>`;
   }
-  const tw = p.typewriter ? ` data-typewriter="${p.typewriter}"` : '';
+  const tw = p.typewriter ? ` data-typewriter="${esc(String(p.typewriter))}"` : ''; // 转义防属性逃逸（威胁模型：弱模型可能给字符串）
   // 纯数字 text + format → 渲染时格式化（idle 大数/计时/百分比·静态显示）。
   const body = (p.format && p.text !== undefined && p.text !== '' && Number.isFinite(Number(p.text)))
     ? formatNumber(Number(p.text), p.format) : (p.text ?? '');
@@ -505,7 +505,7 @@ function renderScreen(id: string, p: ScreenProps, children: LayoutNode[], t: UIT
   const bg     = [t.wash, texLayer(p.bgTexture, p.bgTextureSize), t.texture, baseBg].filter(Boolean).join(', ');
   const center = p.center ? 'align-items:center;justify-content:center;' : 'align-items:stretch;';
   const bgImg  = p.image ? `background-image:url('${esc(p.image)}');background-size:cover;background-position:center;` : '';
-  const blur   = p.blur ? `backdrop-filter:blur(${p.blur}px);` : '';
+  const blur   = p.blur ? `backdrop-filter:blur(${num(p.blur)}px);` : '';
   // 高度语义（REQ-SCREENFILL）：缺省 100vh（吃视口·直挂页面对）；fill=100%（吃父定尺盒·mountHost 信箱盒填满去底部空白）。
   const minH   = p.fill ? '100%' : '100vh';
   const style  = `width:100%;min-height:${minH};display:flex;flex-direction:column;${center}background:${bg};${bgImg}${blur}font-family:${t.fontUi};position:relative;`;
@@ -513,10 +513,10 @@ function renderScreen(id: string, p: ScreenProps, children: LayoutNode[], t: UIT
 }
 
 function renderSlider(id: string, p: SliderProps, ls: string, t: UITheme): string {
-  const min   = p.min   ?? 0;
-  const max   = p.max   ?? 100;
-  const step  = p.step  ?? 1;
-  const value = p.value ?? Math.round((min + max) / 2);
+  const min   = num(p.min, 0); // num() 而非 ??：?? 只挡 null/undefined，字符串 props 会内插进属性造成注入
+  const max   = num(p.max, 100);
+  const step  = num(p.step, 1);
+  const value = num(p.value, Math.round((min + max) / 2));
   const action = p.action ? ` data-action="${esc(p.action)}"` : '';
   const header = p.label
     ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px">
@@ -794,7 +794,7 @@ function renderVersus(id: string, p: VersusProps, ls: string, t: UITheme): strin
 
 // 数量 ±：到界或无 action 则禁用按钮（不发信号）；按钮 data-arg=钳位后新值。
 function renderStepper(id: string, p: StepperProps, ls: string, t: UITheme): string {
-  const min = p.min ?? 0, max = p.max ?? 99, step = p.step ?? 1, v = p.value;
+  const min = num(p.min, 0), max = num(p.max, 99), step = num(p.step, 1), v = num(p.value, 0); // num()：v 直插 span，字符串会造成裸 HTML 注入
   const btn = (lbl: string, target: number, disabled: boolean): string =>
     `<button${disabled ? ' disabled' : ` data-action="${esc(p.action ?? '')}" data-arg="${target}"`} style="width:26px;height:26px;border-radius:6px;background:${t.bg2};border:1px solid ${t.line};color:${t.sub};font-size:15px;line-height:1;cursor:${disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};opacity:${disabled ? 0.4 : 1}">${lbl}</button>`;
   return `<div id="${esc(id)}" style="display:inline-flex;align-items:center;gap:8px;${ls}">${btn('−', Math.max(min, v - step), !p.action || v <= min)}<span style="min-width:28px;text-align:center;font-size:13px;color:${t.text};font-family:${t.fontMono}">${v}</span>${btn('+', Math.min(max, v + step), !p.action || v >= max)}</div>`;
@@ -812,7 +812,7 @@ function renderSegmented(id: string, p: SegmentedProps, ls: string, t: UITheme):
 
 // 头像/立绘位：src 有则图、无则 name 首字；shape 决定圆角。
 function renderAvatar(id: string, p: AvatarProps, ls: string, t: UITheme): string {
-  const size = p.size ?? 40;
+  const size = num(p.size, 40); // num()：size 直插 width/height 样式，字符串会造成注入
   const radius = p.shape === 'square' ? 0 : p.shape === 'rounded' ? Math.round(size * 0.22) : size;
   const inner = p.src
     ? `<img src="${esc(p.src)}" alt="${esc(p.name ?? '')}" style="width:100%;height:100%;object-fit:cover">`

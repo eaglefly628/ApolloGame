@@ -28,7 +28,15 @@ const el = (id: string) => document.getElementById(id) as HTMLElement;
 function log(msg: string, type: 'ok' | 'warn' = 'ok') {
   const div = document.createElement('div');
   div.className = `log-line${type === 'warn' ? ' warn' : ''}`;
-  div.innerHTML = `<span class="log-pfx">${type === 'warn' ? '!' : '>'}</span><span class="log-txt">${msg}</span>`;
+  // textContent 路径：msg 源自卡带 meta（title 等作者数据）与异常文本，绝不进 innerHTML——
+  // 否则 title 含 <img onerror=...> 即在引导壳执行，击穿「纯数据卡带不可执行」宪法边界。
+  const pfx = document.createElement('span');
+  pfx.className = 'log-pfx';
+  pfx.textContent = type === 'warn' ? '!' : '>';
+  const txt = document.createElement('span');
+  txt.className = 'log-txt';
+  txt.textContent = msg;
+  div.append(pfx, txt);
   el('boot-log').appendChild(div);
   requestAnimationFrame(() => div.classList.add('show'));
 }

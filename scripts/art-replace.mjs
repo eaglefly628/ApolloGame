@@ -750,6 +750,14 @@ async function run(argv) {
     const r = deleteLocalStyle(String(argv[1] || '').trim());
     console.log(JSON.stringify(r)); if (!r.ok) process.exit(1); return;
   }
+  // 此后所有命令都把 slug 直接拼进读写路径（manifestFile/ledgerFile/genAbs）。slug 源自
+  // zerocraft 胶水 / /api/art/derive（非 owner 手输）→ 硬校验防路径穿越（'../../x' 越界
+  // 读任意 manifest.json、mkdir+写任意 .json）。与 cart-logic-check.mjs 同口径；不吃 slug 的
+  // packs/style-save/style-delete 已在上方返回。
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug || '')) {
+    console.error(`非法 slug（仅限 [a-z0-9-]、字母或数字开头）：${JSON.stringify(slug)}`);
+    process.exit(1);
+  }
   if (cmd === 'derive') {
     const mf = readJson(manifestFile(ROOT, slug), null);
     if (!mf) { console.error(`无 manifest: library/${slug}/manifest.json`); process.exit(1); }
