@@ -4,8 +4,10 @@ import type { CSSProperties } from 'react';
 //  ZeroCraft Shell 统一视觉基调（引擎壳层：launcher / Studio / 资源库 / 游戏返回钮）
 //
 //  气质定位：清幽 · 高雅 · 高级 · 秩序 —— 一台安静运转的 AI 引擎。
-//  · 绯红近黑作底（不是纯黑：保留一点酒红的"夜色"层次·呼应 ZeroCraft 立方体图标的红底）
-//  · 主色「珊瑚红」（coral，暖亮·取自图标顶面）；辅色「玫」（rose·取自图标侧面）；点睛「淡金」（克制地表达高级·跟红系相衬）
+//  · 靛蓝近黑作底（不是纯黑：保留一点靛紫的"夜色"层次）
+//  · 主色「青」（teal 青碧，清幽）；辅色「靛紫」（indigo）；点睛「淡金」（克制地表达高级）
+//  · owner 2026-08-01 拍板：**app 图标走红、界面不跟红**——壳层配色刻意与图标解耦，
+//    别再"为配图标"改这里的色（红界面版已 revert；要动壳层色须 owner 单独发话）。
 //  · 发丝线分隔（hairline）替代重边框；阔字距小标签表达秩序感
 //  · 语义色（成功/警示/危险）统一降饱和，不抢戏
 //
@@ -13,42 +15,42 @@ import type { CSSProperties } from 'react';
 //  规则：壳层组件一律从此取色/取样式，不再各自内联色值。
 // ═══════════════════════════════════════════════════════════════
 
-// ZeroCraft 绯玄 onyx 贴图底（品牌重塑 2026-08-01：引擎 chrome 配 ZeroCraft 红立方体图标脸·绯红系）。程序化纹理·零资产。
-const ZEROCRAFT_APPBG  = 'radial-gradient(120% 120% at 50% -8%, #4a0e1a 0%, #2a0810 55%, #140409 100%)'; // 酒红径向底色
-const ZEROCRAFT_TEXTURE = 'repeating-linear-gradient(45deg, rgba(240,150,160,.05) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(240,150,160,.04) 0 1px, transparent 1px 9px)'; // 绯红斜向交叉细纹
-const ZEROCRAFT_WASH    = 'radial-gradient(120% 85% at 28% 8%, rgba(225,29,72,.20), transparent 55%), radial-gradient(100% 80% at 88% 100%, rgba(18,4,10,.55), transparent 55%)'; // 左上绯光提亮 + 右下压暗
+// ZeroCraft 靛玄 onyx 贴图底（品牌重塑 2026-07-29·靛×青）。程序化纹理·零资产。
+const ZEROCRAFT_APPBG  = 'radial-gradient(120% 120% at 50% -8%, #2a2763 0%, #17153a 55%, #090816 100%)'; // 靛紫径向底色
+const ZEROCRAFT_TEXTURE = 'repeating-linear-gradient(45deg, rgba(150,140,240,.05) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(150,140,240,.04) 0 1px, transparent 1px 9px)'; // 靛紫斜向交叉细纹
+const ZEROCRAFT_WASH    = 'radial-gradient(120% 85% at 28% 8%, rgba(99,102,241,.20), transparent 55%), radial-gradient(100% 80% at 88% 100%, rgba(9,8,22,.55), transparent 55%)'; // 左上靛光提亮 + 右下压暗
 
 export const SHELL = {
-  // 底色（由深到浅四级·绯玄夜色）
-  bg0: '#140409',
-  bg1: '#1c060d',
-  bg2: '#280913',
-  bg3: '#380e1a',
+  // 底色（由深到浅四级·靛玄夜色）
+  bg0: '#070613',
+  bg1: '#0b0a1c',
+  bg2: '#12102a',
+  bg3: '#191634',
   /** 页面大背景渐变 */
-  pageBg: 'linear-gradient(180deg, #140409 0%, #2a0812 100%)',
-  /** 引擎页面贴图底（ZeroCraft 绯玄 onyx 分层合成：wash , 纹理 , 径向底色）。launcher/Studio 等 React chrome 根背景用它。
+  pageBg: 'linear-gradient(180deg, #070613 0%, #0f0d28 100%)',
+  /** 引擎页面贴图底（ZeroCraft 靛玄 onyx 分层合成：wash , 纹理 , 径向底色）。launcher/Studio 等 React chrome 根背景用它。
    *  刻意只做这一个合成字段、不设 SHELL.texture/wash——否则会污染 renderNode 默认主题、给所有默认数据 Screen 平添贴图（非本需求）。 */
   appBg: `${ZEROCRAFT_WASH}, ${ZEROCRAFT_TEXTURE}, ${ZEROCRAFT_APPBG}`,
 
-  // 发丝线（绯调）
-  line: 'rgba(220,150,160,0.10)',
-  lineStrong: 'rgba(220,150,160,0.22)',
+  // 发丝线（靛调）
+  line: 'rgba(164,166,214,0.10)',
+  lineStrong: 'rgba(164,166,214,0.22)',
 
-  // 文字（亮 → 暗·暖调）
-  text: '#f5e9ea',
-  sub: '#c9a1a8',
-  dim: '#8f636c',
-  faint: '#5c3b43',
+  // 文字（亮 → 暗）
+  text: '#e6e6f4',
+  sub: '#9b9ec2',
+  dim: '#63658a',
+  faint: '#3d3f63',
 
-  // 主色 · 珊瑚红（coral·图标顶面·暖亮跳色）
-  jade: '#ff7d6e',
-  jadeWash: 'rgba(255,125,110,0.12)',
-  jadeLine: 'rgba(255,125,110,0.38)',
+  // 主色 · 青（teal）
+  jade: '#5fdcc8',
+  jadeWash: 'rgba(95,220,200,0.10)',
+  jadeLine: 'rgba(95,220,200,0.35)',
 
-  // 辅色 · 玫（rose·图标侧面）
-  violet: '#ff93a6',
-  violetWash: 'rgba(255,147,166,0.12)',
-  violetLine: 'rgba(255,147,166,0.34)',
+  // 辅色 · 靛紫（indigo）
+  violet: '#9aa0f5',
+  violetWash: 'rgba(129,140,248,0.12)',
+  violetLine: 'rgba(129,140,248,0.34)',
 
   // 点睛 · 淡金（克制使用：选中态/高亮数字）
   gold: '#d4bd8a',
@@ -154,7 +156,7 @@ export function sBadge(tone: 'ok' | 'warn' | 'dim'): CSSProperties {
 
 /** 棋盘格透明底（资产缩略图背景）。 */
 export const sChecker: CSSProperties = {
-  background: 'repeating-conic-gradient(#2a0d14 0% 25%, #1a0710 0% 50%) 50% / 16px 16px',
+  background: 'repeating-conic-gradient(#1b1836 0% 25%, #110f28 0% 50%) 50% / 16px 16px',
 };
 
 /** 游戏内右上角壳层菜单 · 齿轮触发钮（替代旧常驻「返回」pill：缩成一颗图标，不再压住游戏右上角 HUD）。 */
