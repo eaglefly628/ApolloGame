@@ -30,7 +30,8 @@
 > 四里程碑（详见图纸）：M1 闭集 VN 控件三件（dialog/choiceList/portrait·PUI·high·**第一步**·验收过即退役 ui/vn）→ M2 立绘/表情链（emotion→资产 key 纯数据表·PUI+PA）∥ M3 伴侣在场件（presence 起手模板+事件→反应数据表·PUI）→ M4 Sample 示范游戏 + `@ui/starters` 剧情起手包。t3-dialogue 已完备**不改**（输入接缝已为闭集 UI 预留 arg 通道）。悬置段=DokiWorld 数值双向契约，等 owner 三样材料（真卡 schema/宿主接口文档/双人确认）。每步 Lead 对抗性验收。
 > **M1 ✅ done（PUI·2026-08-04·待 Lead 对抗性验收）**：catalog 闭集新增三控件 `dialog`/`choiceList`/`portrait`（沿 panelTexture 先例·types+render+catalog describe+validate 自动认+点名测试+ui.md 回填+house 主题取色可皮）。**投影读世界**=另立结构投影器 `resolveDialogue(tree, DialogueSource)`（bindings.ts·DI 接口·ui 不 import @skills）——因标量 UIDataSource 表达不了「变长选项+逐项 optionAvailable」这类结构投影；写世界=`dialogue.advance`/`dialogue.choose`+arg 下标（t3-dialogue 已认 arg 串·零游戏 handler）。守卫：`src/ui/components/dialogue.test.ts`（8 例·validate/渲染/投影/可选性门控/bind 未命中透传）+ catalog-coverage 41 型 + game-i `dialogue-demo.ts`（`💬 剧情·VN 对话三件` tab·+测试+audit 0 阻断）。scoped-gate 全绿。**Lead 评判**：M1 确为真闭集缺口（非可重组·游戏代码建选项列=「代码重建 UI 树」反模式）·PUI 独立复核同判接受。**退役令待触发**：M1 验收过→ PUI 出小单标 `ui/vn` deprecated 并删。
 
-### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
+### REQ-PIPESOFT-管线软件 · 八步法软件化：一句话入口+向导壳+阶段编排器+IDE 接入 · [2026-08-03] · owner 批（四裁在图纸头）→ **图纸：`docs/design/pipeline-software-plan-2026-08.md`（唯一真相）** · status: **in-progress（P0 施工中·P1 待 Lead 出编排器细图）** · 优先级: P1（与剧情线并行·域不冲突） · 类型: 生产线基建（workshop 壳=PST 域·编排器/MCP=引擎 scripts）
+> P0 规矩成文（代码准入五级阶梯进 capability-plan 模板 + S2 门措辞·低档施工中）→ P1 向导壳+编排器（自动起匿名无头会话·每步小上下文·人门真人点·600s 看门狗）→ P2 MCP 服务+斜杠命令+板红拦推 hook → P3 试点=owner 自派的 RPS 游戏走全程（Lead 只管软件不管游戏内容）。红线：无特权通道·代签禁止·阶梯降级留痕。
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
 
