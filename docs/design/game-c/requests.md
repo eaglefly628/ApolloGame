@@ -168,3 +168,12 @@
 > **修法方向**：排查是否每例都重新起一遍完整会话/整手牌局漫游（含 REQ-C-105/106/109 那批守恒 fuzz·数千局随机动作序列），若是→评估共享 session 搭建（`beforeAll`/`beforeEach` 复用已构造好的骨架）或收窄 fuzz 局数到仍能钉住回归的最小值；避免不必要的重复初始化开销。
 > **红线**：fuzz 类守恒测试（REQ-C-105/106/109）是真回归防线，**优化耗时不许削弱断言覆盖面**——局数若要降，须先确认仍能复现原 bug 场景。
 > **验收**：22 例断言语义不变（零回归）；耗时显著下降；`node scripts/scoped-gate.mjs --run`（game-c 面）绿。
+
+### REQ-C-116 · 桌形口径失同步：GDD §5 仍写「大椭圆桌」·实现已是矩形平面 · [2026-08-04] · SPECTRACE 试点首跑逮出（R-C-017）→ **指派：GD-C（文档同步）** · status: open · 优先级: P3 · 类型: 文档口径
+> **事实**：owner 2026-07-22 已拍板改矩形平面（`build3d.ts` 注记在案·`build3d.test.ts` 验证的是矩形），GDD §5 文字未随动。**修法**：GDD 该句改矩形口径（一句话改动）→ spec-trace.json 里 R-C-017 从 human 改映射 `build3d.test.ts` → `--bless R-C-017`。追踪矩阵将自动盯住此类失同步（这正是首个战果）。
+
+### REQ-C-117 · 典当阈值 spec/实现不符：GDD 写「<3BB·性格影响」·实现是 <1BB 全员统一 · [2026-08-04] · SPECTRACE 试点首跑逮出（R-C-011）→ **等 owner/GD 裁**（是简化定案还是待补实现） · status: open · 优先级: P2（玩法行为差异） · 类型: 规则裁决
+> **事实**：`game-session.ts autoPawnIfBroke()` 阈值 `< bigBlind`（1BB）、无性格差异；GDD 写 <3BB 且性格影响阈值。**两案**：A=认可现状简化→GDD 改口径（连同性格影响移入 M2 AI 段）；B=按 GDD 补实现（PE-C·含性格参数）。裁定后更新 R-C-011 映射并 bless。
+
+### REQ-C-118 · acceptance/README 缺口清单过期：REQ-C-108② 实已被覆盖 · [2026-08-04] · SPECTRACE 试点顺带发现 → **指派：GD-C** · status: open · 优先级: P3 · 类型: 文档卫生
+> `acceptance/README.md` 仍列「下注不足态不变仍缺」，实际 `game-session.test.ts` 的 heroAct 防御 no-op 单测已覆盖（R-C-003 已引用之）。README 该行删除或标已覆盖。
