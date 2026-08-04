@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Game 106 · 你画我猜</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Noto+Sans+SC:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="grid-floor" aria-hidden="true"></div>
+<div class="scanlines" aria-hidden="true"></div>
+
+<div class="app">
+
+  <!-- ============ 顶部 HUD ============ -->
+  <header class="hud">
+    <div class="hud-left">
+      <div class="logo">
+        <span class="logo-no">106</span>
+        <span class="logo-name">你画我猜</span>
+      </div>
+    </div>
+    <div class="hud-stats">
+      <div class="stat">
+        <span class="stat-label">关卡</span>
+        <span class="stat-val" id="hudRound">1/8</span>
+      </div>
+      <div class="stat stat-score">
+        <span class="stat-label">得分</span>
+        <span class="stat-val" id="hudScore">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">连击</span>
+        <span class="stat-val" id="hudStreak">0</span>
+      </div>
+    </div>
+    <div class="hud-right">
+      <button class="chip" id="btnSound" type="button">♪ 音效开</button>
+      <button class="chip chip-quit" id="btnQuit" type="button">退出</button>
+    </div>
+  </header>
+
+  <!-- ============ 主舞台 ============ -->
+  <main class="stage" id="stage">
+    <div class="frame">
+      <span class="corner tl"></span><span class="corner tr"></span>
+      <span class="corner bl"></span><span class="corner br"></span>
+      <canvas id="screen" width="512" height="512"></canvas>
+      <div class="glare" aria-hidden="true"></div>
+      <div class="verdict" id="verdict"></div>
+      <div class="combo-badge" id="comboBadge"></div>
+    </div>
+
+    <div class="meters">
+      <div class="meter">
+        <div class="meter-head">
+          <span class="meter-label">清晰度</span>
+          <span class="meter-num" id="clarityVal">0%</span>
+        </div>
+        <div class="meter-track">
+          <div class="meter-fill" id="clarityFill"></div>
+        </div>
+      </div>
+      <div class="potential" id="potential">
+        <span class="pot-label">现在猜中可得</span>
+        <span class="pot-val" id="potentialVal">1000</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============ 选项 ============ -->
+  <section class="options" id="options"></section>
+  <p class="hint">按 <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> 也可以作答</p>
+</div>
+
+<!-- ============ 开始界面 ============ -->
+<div class="screen show" id="screenStart">
+  <div class="panel">
+    <div class="panel-tag">GAME 106</div>
+    <h1 class="panel-title">你画我猜</h1>
+    <p class="panel-sub">图片从马赛克逐渐变清晰 —— 越早认出，得分越高</p>
+
+    <ul class="rules">
+      <li><b>8</b> 道题，每题从重度马赛克开始，约 <b>13 秒</b>完全清晰</li>
+      <li>分值随清晰度从 <b>1000</b> 一路掉到 <b>150</b>，看准就出手</li>
+      <li>四选一。<b>猜错一次</b>本题分值减半，<b>错两次</b>本题作废</li>
+      <li>连续答对累积 <b>连击加成</b>，最高 <b>×1.5</b></li>
+    </ul>
+
+    <button class="btn btn-primary" id="btnStart" type="button">
+      <span>开始游戏</span>
+    </button>
+    <p class="panel-foot">回车 / 空格 同样可以开始</p>
+  </div>
+</div>
+
+<!-- ============ 结算界面 ============ -->
+<div class="screen" id="screenEnd">
+  <div class="panel">
+    <div class="panel-tag">结算</div>
+    <div class="rank" id="endRank">S</div>
+    <h2 class="end-title" id="endTitle">神之直觉</h2>
+    <p class="end-desc" id="endDesc"></p>
+
+    <div class="end-score">
+      <span class="es-label">总得分</span>
+      <span class="es-val" id="endScore">0</span>
+    </div>
+    <div class="new-best" id="endNewBest">★ 新纪录 ★</div>
+
+    <div class="end-grid">
+      <div class="eg-item"><span class="eg-label">答对</span><span class="eg-val" id="endHits">0/8</span></div>
+      <div class="eg-item"><span class="eg-label">平均识破清晰度</span><span class="eg-val" id="endClarity">—</span></div>
+      <div class="eg-item"><span class="eg-label">最高连击</span><span class="eg-val" id="endStreak">0</span></div>
+      <div class="eg-item"><span class="eg-label">历史最佳</span><span class="eg-val" id="endBest">0</span></div>
+    </div>
+
+    <button class="btn btn-primary" id="btnAgain" type="button"><span>再来一局</span></button>
+  </div>
+</div>
+
+<script src="js/artwork.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
