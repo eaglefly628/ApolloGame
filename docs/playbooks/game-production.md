@@ -38,7 +38,7 @@
 | 关 | 做什么 | 机器门 | 人门 | 手册 |
 |---|---|---|---|---|
 | S1 立项卡 | 名字+一句话玩法+参考+风格意向 | concept 字段非空 | owner/Lead 签 | `docs/llm-onboarding.md` |
-| S2 能力计划 | capability-plan 过审（纯数据卡带可记免 plan 裁决） | plan 在档 或 裁决在案 | Lead 签 | `docs/design/capability-plan-template.md` |
+| S2 能力计划 | capability-plan 过审（纯数据卡带可记免 plan 裁决） | plan 在档 或 裁决在案 + 阶梯申报在档（L3 无未批条目） | Lead 签 | `docs/design/capability-plan-template.md` |
 | S3 骨架关 | manifest 立起来、引擎吃得下 | parseManifest 零 error **+ 真引擎装载 load+空跑2tick**（gate·「能存必须能跑」owner 07-11） | 挂载目击签 | `docs/playbooks/index.md`（找对应线） |
 | S4 玩法关 | 胜负/重开/核心循环闭环 | **自证产物在档**（`S4-alignment.md`+shots ≥5·缺=拒跑）→ GD 验收剧本 ≥3 场景 conformance 绿（剧本作者=GD 非 PE）→ 该游戏 walkthrough vitest 绿；卡带=bench 五轴（gate） | 试玩签（附真浏览器截图序列） | `docs/playbooks/testing.md` |
 | S5 UI 关 | HUD/菜单守 LayoutNode 纪律 | **自证产物在档**（`S5-alignment.md`+shots ≥5·缺=拒跑）→ game-skill-audit 红旗零（gate）；卡带天然免 | /check-ui 结论签 | `docs/playbooks/ui.md` |
@@ -71,6 +71,8 @@
 - **S8 过期即重跑**：rebase/新提交后 S8 证据自动过期——推送前必须净树重跑（呼应 CLAUDE.md 推送门禁）。
 - **自证先于复查（owner 2026-07-29 拍板）**：S4/S5 送复查门前，施工 session 必须完成 `docs/playbooks/self-check.md` 仪式——真渲染自玩+截图序列+策划对齐单零未解释偏差；缺=复查门直接 FAIL。
 - pipeline.json 是台账不是配置——只经 CLI/端点写，勿手改造假绿。
+- **代码准入阶梯（owner 2026-08-03 拍板）**：产游戏按 L0→L3 逐级降落·降级必须留痕（plan 阶梯申报或
+  capgap 记录）·静默用 L3/L4 = 审计红旗（game-skill-audit/cart-logic-check 现门执法）。
 
 ## 查不到怎么办
 

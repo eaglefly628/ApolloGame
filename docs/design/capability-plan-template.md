@@ -49,6 +49,19 @@
 - **起手包**：主菜单/结算等常见屏是否 import `@ui/starters`（`buildStarterHome`/`buildStarterResult`）？不用则说明用什么富屏替代（不接受"从空白搭朴素屏"）。
 - **成熟件清单**：按游戏「有什么」列将用的成熟华丽件（`docs/playbooks/ui.md`「华丽起手·橱窗货架」对照）——如 卡牌→`faceArt`/翻面 · 选关→`LevelPath` · 庆祝→`Particles` · 主 CTA→`sheen-hover`+`Panel.skin` · 数值→`Label.format` · 异形→`shape` · 立体→3D UI。**零成熟件 = 朴素缺陷**，须在此说明为何该玩法确实用不上（PUI 复查可打回）。
 
+## 4.7 代码准入阶梯申报（必填·2026-08-03 补·`docs/design/pipeline-software-plan-2026-08.md` §二）
+
+**每条玩法规则**逐条标注落级，降级须留痕（不许跳级不写理由）：
+
+| 规则 | 落级 | 说明 |
+|---|---|---|
+| 例：胜负判定表 | L0 纯数据 manifest | 无 |
+| 例：连击修正 | L1 数据 + 现有 capability 重组 | 用 `修正聚合` capability |
+| 例：XX 结算规则 | L2 capgap 待裁 | 已提 requests.md（链接：___） |
+| 例：XX 手感调校 | L3 受控 TS 卡带 | 为什么 L0-L2 表达不了：___（万不得已·记债） |
+
+> L4（自由代码/手写 UI/自建解释器）**禁止申报**——不是例外项，直接驳回改用 L0-L3。
+
 ## 5. 确定性声明
 
 - 随机源：（引擎种子 PRNG？seed 从哪来？）
