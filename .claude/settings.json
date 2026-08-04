@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[规则] 需求先评判：能组合/已覆盖→回驳；真缺口→能力下沉。[手册] 生产任务先查 docs/playbooks/index.md——查得到必用基座件，查不到提 requests.md 绝不自造。详见CLAUDE.md'"
+          }
+        ]
+      }
+    ]
+  }
+}
