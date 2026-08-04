@@ -82,7 +82,7 @@
 | 优先 | 买什么 | env 名（写 .env·绝不入库） | 干什么用 |
 |---|---|---|---|
 | **P0** | 阿里云百炼 DashScope | `DASHSCOPE_API_KEY` | **一key两用**：千问 LLM 生成 manifest + 万相 wanx 文生图（2D 皮=demo 主力） |
-| ~~P0~~ **不采购（owner 2026-07-10 改道）** | ~~Anthropic~~ Claude 订阅 | `CLAUDE_CODE_OAUTH_TOKEN`（`claude setup-token` 产出） | 出 manifest 走**订阅 + setup-token + Agent SDK 通道**（零 API 费·spec=`docs/design/archive/workshop-spec-2026-07-10.md` §2.1）；raw `ANTHROPIC_API_KEY` 仅 BYO-key 备用 |
+| ~~P0~~ **不采购（owner 2026-07-10 改道）** | ~~Anthropic~~ Claude 订阅 | `CLAUDE_CODE_OAUTH_TOKEN`（`claude setup-token` 产出） | 出 manifest 走**订阅 + setup-token + Agent SDK 通道**（零 API 费·spec=`workshop-spec-2026-07-10.md` §2.1，归档层已删·查 git 历史）；raw `ANTHROPIC_API_KEY` 仅 BYO-key 备用 |
 | **P1** | Tripo | `TRIPO_API_KEY` | 文生 3D 模型（adapter 已通） |
 | P2 | Meshy | `MESHY_API_KEY` | 3D 第二供应商（adapter 已在 `scripts/ai-gen.mjs`·冗余/比质量） |
 | 已有 | DeepSeek | `DEEPSEEK_API_KEY` | 批量成本测试（30 款/周经济性用它算账） |

@@ -12,7 +12,7 @@
 ## 2. 开工必读（按序·T0 不重复）
 
 1. `docs/llm-onboarding.md`（机读口径 + 五步产游戏路径）
-2. `docs/workflow/requests-archive.md` 搜 **REQ-STUDIO** 全史（M0..M3/M4·设计先行；现存 5 条已归档）
+2. `git log --oneline --grep=REQ-STUDIO` 查 **REQ-STUDIO** 全史（M0..M3/M4·设计先行；归档层已删·查 git 历史）
 3. 现存前端/服务面代码 `src/studio/**` + `zerocraft.py`
 
 ## 3. 技能与工具
@@ -23,7 +23,7 @@
 
 ## 4. 白皮书（本角色知识库）
 
-- 无独立白皮书；知识库=**REQ-STUDIO 归档全史（requests-archive.md）+ llm-onboarding 产游戏路径**。
+- 无独立白皮书；知识库=**REQ-STUDIO 全史（归档层已删·查 git 历史）+ llm-onboarding 产游戏路径**。
 - 补全规则：产品线沉淀的做法 → 追加到本节（≤20 行/次），同提交推。
 
 ## 5. 通道与仪式

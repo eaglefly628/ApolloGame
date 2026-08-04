@@ -32,6 +32,6 @@
 - [ ] 小工单：`AishePort` 补 `poll(handle)` + 图生视频入参（真 key 前置件·任何厂商通用）
 - [ ] owner：墙外核实三件 + 决定是否申请 R1 伙伴计划（建议=首款游戏上线后再申）
 - [ ] V6 短片线随 game104 走（brief 已含「猫卡 GIF 引流」·真 key 到即接）
-- 纠档：requests-archive 曾记「PixVerse 仅 key 槽」——实测 ai-gen ADAPTERS 零装配·槽位只在设置 UI 名单（接入时补装配）
+- 纠档：git 历史曾记「PixVerse 仅 key 槽」——实测 ai-gen ADAPTERS 零装配·槽位只在设置 UI 名单（接入时补装配）
 
 事实清单/赛道对标/成本表全文=调研代理报告（置信度逐条标注·内容农场数字已剔除）。

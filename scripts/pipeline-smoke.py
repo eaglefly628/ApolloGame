@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""生产流程板数据桥全链冒烟（REQ-WORKSHOP C1/C2·spec=docs/design/archive/workshop-spec-2026-07-10.md §五）。
+"""生产流程板数据桥全链冒烟（REQ-WORKSHOP C1/C2·spec=workshop-spec-2026-07-10.md §五，归档层已删·查 git 历史）。
 
 起 API（进程内·随机空闲端口）→
   ① 建库即立项卡：create 带 description → meta.description + concept 落盘 + board S1 机器绿

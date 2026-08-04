@@ -37,7 +37,7 @@
 - **本体**：g=110 行（53 replaced / 57 needs-art·`public/games/game-g/art/art-ledger.json`）；d=83 行全 replaced（真手绘已交付·Cloud Design）。行行带：稳定编号 no（保号主键）、skinKey、确定尺寸 spec{w,h,transparent}、英文 query（尾部统一风格锚）、人工 prompt 位、status、gen 产物指针、provenance 硬字段。
 - **保号机制成立**（代码级核实）：`scripts/art-replace.mjs mergeLedger()`——改 spec 重跑，旧行保 no/status/gen/provenance/history/人工 prompt，新槽 maxNo 顺延，消失槽打墓碑不删账。g 入口 `npx vite-node scripts/game-g-art-requirements.mjs`（append-only）；d=纯扫盘全量重建（已交付态，无保号需求）。
 - **写回链**：工坊素材屏逐行 ⤵ 替换/⬆ 上传/⚡ 重生成 + ↩ 一键还原（`7c384a41`·orig 快照精确复位·原图保留）。**诚实记账：这条链 07-15 才第一次端到端真跑通**（`8e1523d8` 修两根因：vite dev 不伺服新建文件致大叉；art-replace fill 分支 TDZ 崩致 regenerate 从未成功过）。
-- **诚实边界（未台账化）**：战斗屏 bespoke 兵牌面（接立绘需 owner 点头设计）、正文行内 emoji 长尾（约 20 枚）、天罡 38 张逐张牌面（现按 kind 图标覆盖）、art-68 between-backdrop。出处：requests-archive REQ-G-ART-v2 回执。
+- **诚实边界（未台账化）**：战斗屏 bespoke 兵牌面（接立绘需 owner 点头设计）、正文行内 emoji 长尾（约 20 枚）、天罡 38 张逐张牌面（现按 kind 图标覆盖）、art-68 between-backdrop。出处：查 git 历史 REQ-G-ART-v2 回执。
 - **缺口（账本"非常清楚"还差的一块）**：**无「台账行↔资产文件↔游戏引用」三方自动核验**——asset-reconcile（`06dbe847`）只对 index.json↔磁盘↔spec key，明确跳过 art-ledger；台账 servedPath 是否在盘、replaced 是否真接消费点，目前靠 owner 报错人工定位（row-54 大厅背景板、天罡 art-87 无消费点都是这么漏的）。建议（候选）：asset-reconcile 加 `--ledger` 面（读台账 rows 对 servedPath/消费点），PA 域小活。
 
 ## 五、文生图就绪度（owner 申请方案前该知道的硬信息）

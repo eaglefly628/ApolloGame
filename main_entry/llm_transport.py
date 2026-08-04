@@ -68,7 +68,7 @@ _FALLBACK_CATALOG = (
 )
 
 LLM_PROVIDERS = {
-    # 订阅通道（owner 2026-07-10 拍板「不买 API·不花新钱」·spec=docs/design/archive/workshop-spec-2026-07-10.md §2.1）：
+    # 订阅通道（owner 2026-07-10 拍板「不买 API·不花新钱」·spec=workshop-spec-2026-07-10.md §2.1，归档层已删·查 git 历史）：
     # 走本机 Claude Code CLI headless（`claude -p`），凭订阅（已登录）或 setup-token（CLAUDE_CODE_OAUTH_TOKEN）。
     # 档位=CLI 模型别名（opus=默认主力·fable=展示档更强·sonnet=量产档），不硬编日期型号。
     'claude-code': {

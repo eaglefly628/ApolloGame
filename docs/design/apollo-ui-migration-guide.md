@@ -4,7 +4,7 @@
 > 以 **Game G（翻命扑克）** 为首个对象，但方法对 E/F/任意游戏通用。
 >
 > 配套读：
-> - `docs/design/archive/apollo-ui-contract.md` —— 30 控件 props 总表（填什么数据）
+> - `apollo-ui-contract.md`（归档层已删·查 git 历史） —— 30 控件 props 总表（填什么数据）
 > - `apollo-ui-porting-contract.md` —— 渲染后端（HTML→Canvas/微信小游戏）
 > - **活样板：`games/game-i/`** —— 30 控件 + 2 个组合演示 + 绑定/拖放/动画，照抄即可
 >
@@ -34,7 +34,7 @@ LayoutNode 树 ──┤
 
 ### 步骤 ① 把屏拆成 LayoutNode 树（替掉 HTML 字符串）
 - 容器用 `Panel`（`direction: row/column/grid`）/ `Screen` / `Tabs`。
-- 叶子查 `docs/design/archive/apollo-ui-contract.md` 选控件，**别造新控件**——先重组。
+- 叶子查 `apollo-ui-contract.md`（归档层已删·查 git 历史）选控件，**别造新控件**——先重组。
 - 绝对定位/旋转/缩放用 `layout: { x, y, rotate, scale }`。
 
 ### 步骤 ② 事件 → 信号名 + HandlerMap

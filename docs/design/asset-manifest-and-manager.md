@@ -2,7 +2,7 @@
 
 > 作者：**PB（Programmer B）** · 状态：**草案，待 review（Lead + Gemini）** · 日期：2026-06-03
 > 定位：**Skin 层契约 + 工具**——与"模块库"并列的护城河第二条腿。
-> 关联：`docs/design/archive/modular-game-framework.md`（三层分离 / `EnginePort` / AIGP 旁路 X5·X7）、
+> 关联：`modular-game-framework.md`（三层分离 / `EnginePort` / AIGP 旁路 X5·X7·归档层已删·查 git 历史）、
 > `docs/workflow/requests.md`（R1 贴图渲染 / R8 音频后端）。
 
 ---
@@ -13,7 +13,7 @@
 
 ## 1. 战略定位：为什么是"契约 + 人在环"，不是"AI 全自动出图"
 
-`docs/design/archive/modular-game-framework.md` 1.1 节确立的护城河逻辑——**质量沉淀在策展资产里，AI 只做选/填/补，不做从零裸生成**（裸生成 = gameslop，Steam 评分低 15–20%）——对**美术资产同样成立**：
+`modular-game-framework.md`（归档层已删·查 git 历史）1.1 节确立的护城河逻辑——**质量沉淀在策展资产里，AI 只做选/填/补，不做从零裸生成**（裸生成 = gameslop，Steam 评分低 15–20%）——对**美术资产同样成立**：
 
 - 每张图现 call 文生图从零生成 → 角色跨表情换脸、跨场景画风漂移、风格不统一、版权/安全失控。
 - 正解与模块 pipeline 同构：**策展库（护城河）+ AI 语义选择（智能导购）+ 生成式增量（增强）+ 程序化占位（永远能跑的兜底）**，**重心放在契约（数据结构）上**，而不是某个生成模型上。

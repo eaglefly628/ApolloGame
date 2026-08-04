@@ -2,7 +2,7 @@
 
 > Lead 亲手施工（owner 2026-07-11 授权），完工后**维护权移交 PST**。本档=你接手要知道的全部：
 > 部件地图 / 接口契约 / 红线 / 验证方法 / 已知债。唯一 spec 仍是
-> `docs/design/archive/workshop-spec-2026-07-10.md`（语义裁决以它为准；本档只是维护视角的导览）。
+> `workshop-spec-2026-07-10.md`（语义裁决以它为准，归档层已删·查 git 历史；本档只是维护视角的导览）。
 
 ## 0. 一句话架构
 
@@ -126,5 +126,5 @@ npx tsc --noEmit && npx vitest run && npx vite build
 
 ## 6. 变更纪律
 
-语义级改动（状态机/端点形状/红线）先回 `docs/design/archive/workshop-spec-2026-07-10.md` 改 spec 或 requests.md 提单等 Lead 裁决；
+语义级改动（状态机/端点形状/红线）先回 `workshop-spec-2026-07-10.md`（归档层已删·查 git 历史）改 spec 或 requests.md 提单等 Lead 裁决；
 纯修缺陷/补测试直接干，回执照 T1/T2 格式附门禁实数。

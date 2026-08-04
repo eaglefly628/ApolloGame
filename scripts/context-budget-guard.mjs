@@ -23,10 +23,10 @@ const BASELINE = join(ROOT, 'scripts', 'context-budget-baseline.json');
 export function checkBudget(actual, budget) {
   const issues = [];
   if (budget.requestsPoolMaxEntries && actual.requestsEntries > budget.requestsPoolMaxEntries) {
-    issues.push(`requests.md ${actual.requestsEntries} 条 > ${budget.requestsPoolMaxEntries} 硬槽（owner 2026-07-15 拍板）——10 条做不完不许加新的：先清掉（done 迁归档/游戏票迁 docs/design/<game>/requests.md）腾槽再加`);
+    issues.push(`requests.md ${actual.requestsEntries} 条 > ${budget.requestsPoolMaxEntries} 硬槽（owner 2026-07-15 拍板）——10 条做不完不许加新的：先清掉（done 删除条目查 git 历史/游戏票迁 docs/design/<game>/requests.md）腾槽再加`);
   }
   if (actual.requestsChars > budget.requestsPoolMaxChars) {
-    issues.push(`requests.md ${actual.requestsChars} 字符 > 封顶 ${budget.requestsPoolMaxChars}——done 条目全文迁 requests-archive.md（池只留活跃·归档纪律）`);
+    issues.push(`requests.md ${actual.requestsChars} 字符 > 封顶 ${budget.requestsPoolMaxChars}——done 条目删除（查 git 历史·池只留活跃）`);
   }
   for (const [file, max] of Object.entries(budget.t0MaxChars)) {
     const got = actual.t0Chars[file];
@@ -35,7 +35,7 @@ export function checkBudget(actual, budget) {
   }
   for (const [file, chars] of Object.entries(actual.gameRequestsChars ?? {})) {
     if (budget.gameRequestsMaxChars && chars > budget.gameRequestsMaxChars) {
-      issues.push(`${file} ${chars} 字符 > 封顶 ${budget.gameRequestsMaxChars}——游戏需求单同主池纪律：done 工作票全文迁 requests-archive.md`);
+      issues.push(`${file} ${chars} 字符 > 封顶 ${budget.gameRequestsMaxChars}——游戏需求单同主池纪律：done 工作票删除（查 git 历史）`);
     }
   }
   for (const [file, lines] of Object.entries(actual.playbookLines)) {
