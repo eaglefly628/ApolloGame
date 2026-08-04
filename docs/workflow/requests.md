@@ -52,6 +52,9 @@
 > **⚖ Lead 核查结论（2026-08-04·xhigh）**：①最小复现=**2 件**：t3-timeline + f1-resource（双方 RMW `Resource`→组件推断边互为前驱成 2-环）；原报四件中 **keybind 根本不在环上**、event-when 是叠加 3-环（event-when→timeline→resource-apply→event-when）。②全库普查（101 能力两两配对=5050 对）**65 对成环**——热点=Resource/Flag/State/CardPile 等黑板组件；含 card-play×card-pile、dialogue×flow、dialogue×timeline 等必然同装组合。③根因=**类问题非点问题**：组件推断边规则下任意两系统 RMW 同一黑板组件即互锁，显式申报需 O(n²)——65 处点修=劣解，申报制不可持续。
 > **方案 spec（owner 裁）**：**B 止血（推荐先行·指派 Opus·high）**=topologicalSort 对「纯组件推断互锁 2-环（零显式边参与）」按 tier 序+注册序确定性平局裁决+console 留痕——装载炸降级为确定性可审计顺序；显式边参与的环**仍抛**（真申报 bug 照旧拦）。**C 正解（中期·照 matrix-duel「拆相位=成环正解」判例）**=能力按语义定 phase（input→intent→logic→apply/结算）跨桶天然无环——需 101 能力相位普查+现役游戏全量回归，单独立单排期。引擎核定序面 xhigh 不降档（B 实现面机械·high 可）。
 
+### REQ-ARTPIPE2-美术管线二期 · 台账强制（无账不录入）+ Unreal 式资产浏览器（目录/历史/回滚/替换工作流） · [2026-08-04] · owner 令（「美术台账不全该不该强制」+「预览操作器太像玩具·要完整工作流」） → Lead 规划中（侦察→图纸→owner 过目→分批派工） · status: **open（只读侦察中）** · 优先级: P1 · 类型: 生产线基建（守卫+PST 美术平台）
+> 总纲：**不重造轮子**——历史/备份=git 承载（浏览器只做呈现与回滚操作）·台账+assets/index=唯一账本（浏览器是视图非第二真相）。四翼：A1 台账强制（双向对账守卫：黑户文件/死账行/缺来源=红·棘轮基线存量挂账·入口补漏——同时执法 AI 披露红线）→ A2 浏览器核心（目录树+缩略图网格+预览+拖入自动登记）→ A3 历史回滚（每资产 git 提交史+一键回退+前后对比）→ A4 替换工作流（消费方视图+替换+逐行人审）。待裁：src/studio 旧资产浏览器（白名单产品耦合 3 条）与新浏览器关系。侦察项：黑户/裸路径底数·现有平台件清单·studio 关系材料。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
