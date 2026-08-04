@@ -32,7 +32,13 @@ import { spawnSync } from 'node:child_process';
 
 // ROOT=仓库根（默认）。ZEROCRAFT_PIPELINE_ROOT（旧名 APOLLO_PIPELINE_ROOT 过渡期仍读）仅供测试
 // 注入临时根（跑 CLI 端到端·不碰真仓库）——生产不设此环境变量，行为逐字节同旧版。
-const ROOT = process.env.ZEROCRAFT_PIPELINE_ROOT || process.env.APOLLO_PIPELINE_ROOT || join(dirname(fileURLToPath(import.meta.url)), '..');
+const REAL_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = process.env.ZEROCRAFT_PIPELINE_ROOT || process.env.APOLLO_PIPELINE_ROOT || REAL_ROOT;
+// R1·渲染冒烟探针（REQ-RENDERCHECK）只在真仓库根下跑——它天生要连「真运行中的 app」（vite 起服 +
+// 真 Chromium + 真游戏注册表），跟本文件其余门那种「随便指个空临时目录」式沙盒测试前提不兼容
+// （沙盒根没有 node_modules/index.html，探针连 vite 都起不来）。SANDBOXED=true 时 S3 门保留旧语义
+// （零回归：本仓已有的 S3 CLI 测试全部走沙盒根）；真仓库根下照常追加跑探针。
+const SANDBOXED = ROOT !== REAL_ROOT;
 
 const readJson = (f, fb) => { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return fb; } };
 const writeJson = (f, v) => { mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, JSON.stringify(v, null, 2) + '\n'); };
@@ -263,9 +269,12 @@ export function boardFor(root, slug) {
             : { state: 'dim', detail: '无能力计划也无免 plan 裁决（模板见手册列）' };
         break;
       case 'S3':
-        machine = manifestPath(root, slug, form)
-          ? evalEvidence(pf.evidence?.S3, hashNow, head)
-          : { state: 'ok', detail: '编译期游戏无 manifest（本关免·玩法关直接接管）' };
+        // R1（REQ-RENDERCHECK）：编译期游戏免 manifest 校验，但 gate 现在追加跑渲染探针——
+        // 有证据（跑过）就照实证据走（ok/fail/stale）；从未跑过才显示「免」的旧提示（未跑≠免责）。
+        machine = evalEvidence(pf.evidence?.S3, hashNow, head);
+        if (machine.state === 'dim' && !manifestPath(root, slug, form)) {
+          machine.detail = '编译期游戏免 manifest 校验·渲染探针未跑（gate 跑一次落证据）';
+        }
         break;
       case 'S4': {
         machine = evalEvidence(pf.evidence?.S4, hashNow, head);
@@ -352,12 +361,35 @@ export function orderGate(board, stage, reason) {
 // ── 机器门执行（gate 子命令·真跑·记证据）──────────────────────────────
 const run = (cmd, args, opts = {}) => spawnSync(cmd, args, { cwd: ROOT, encoding: 'utf8', timeout: 900_000, ...opts });
 
+/** R1 探针门读码（REQ-RENDERCHECK）：探针 exit 0=过·3=环境无浏览器（不算红·权威判定以有浏览器
+ *  环境为准）·其余（1/2/…）=红。纯函数（不碰盘/不 spawn）——导出供单测直接灌各退出码，
+ *  不必真起浏览器就能验「S3 门怎么读探针退出码」这条接线逻辑本身对不对。 */
+export function interpretRenderProbe(baseSummary, probeExit, probeTail) {
+  if (probeExit === 3) return { exit: 0, summary: `${baseSummary} · ⚠ 渲染探针未跑·环境无浏览器（权威判定以有浏览器环境为准）` };
+  if (probeExit === 0) return { exit: 0, summary: `${baseSummary} · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png）` };
+  return { exit: 1, summary: `${baseSummary} · ✗ 渲染探针未过${probeTail ? ' · ' + probeTail : ''}` };
+}
+
 function gateRun(slug, stage, form) {
   if (stage === 'S3') {
     const mf = manifestPath(ROOT, slug, form);
-    if (!mf) return { exit: 0, summary: '编译期游戏免 manifest 校验' };
-    const r = run('npx', ['vite-node', 'scripts/manifest-check.mjs'], { input: readFileSync(mf, 'utf8') });
-    return { exit: r.status ?? 1, summary: r.status === 0 ? 'parse+引擎装载（load+2tick）零 error' : (r.stderr || r.stdout || '').trim().slice(0, 300) };
+    let baseSummary;
+    if (mf) {
+      const r = run('npx', ['vite-node', 'scripts/manifest-check.mjs'], { input: readFileSync(mf, 'utf8') });
+      if ((r.status ?? 1) !== 0) return { exit: r.status ?? 1, summary: (r.stderr || r.stdout || '').trim().slice(0, 300) };
+      baseSummary = 'parse+引擎装载（load+2tick）零 error';
+    } else {
+      baseSummary = '编译期游戏免 manifest 校验';
+    }
+    // R1·渲染冒烟探针接线（REQ-RENDERCHECK）：现有检查（manifest-check 或编译期免检）过了才追加跑——
+    // 证明「画面真画得出」而非只「逻辑跑得动」。沙盒临时根（见 SANDBOXED 定义）下跳过（无真 app 可连）。
+    if (!SANDBOXED) {
+      const probeScript = join(dirname(fileURLToPath(import.meta.url)), 'render-probe.mjs');
+      const probe = run('node', [probeScript, '--game', slug]);
+      const probeTail = (probe.stdout || probe.stderr || '').trim().split('\n').slice(-2).join(' / ').slice(0, 200);
+      return interpretRenderProbe(baseSummary, probe.status ?? 1, probeTail);
+    }
+    return { exit: 0, summary: baseSummary };
   }
   if (stage === 'S4') {
     // 图纸④·验收剧本存在性门（compiled/卡带通用·先查最便宜的）：<3 场景直接拒，不空转跑重活。

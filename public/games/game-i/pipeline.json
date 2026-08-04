@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "slug": "game-i",
+  "concept": {},
+  "signoffs": {},
+  "evidence": {
+    "S3": {
+      "exit": 0,
+      "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png）",
+      "at": "2026-08-04T14:59:55.083Z",
+      "gameHash": "189d3cce5b2595f0"
+    }
+  },
+  "outOfOrder": [
+    {
+      "stage": "S3",
+      "reason": "REQ-RENDERCHECK R1 施工验证：S3 门渲染探针接线真跑核证（Lead 复查用）",
+      "at": "2026-08-04T14:59:48.928Z"
+    }
+  ],
+  "history": [
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "REQ-RENDERCHECK R1 施工验证：S3 门渲染探针接线真跑核证（Lead 复查用）",
+      "at": "2026-08-04T14:59:48.928Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-04T14:59:55.083Z"
+    }
+  ]
+}

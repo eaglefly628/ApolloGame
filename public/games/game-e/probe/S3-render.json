@@ -1,0 +1,31 @@
+{
+  "slug": "game-e",
+  "at": "2026-08-04T14:58:26.720Z",
+  "gameHash": "2ef7ad77d8d81ba7",
+  "ok": true,
+  "form": "compiled",
+  "assertions": {
+    "nonBlank": {
+      "pass": true,
+      "variance": 268.51,
+      "mean": 15.93,
+      "threshold": 15
+    },
+    "consoleErrors": {
+      "pass": true,
+      "count": 0,
+      "messages": []
+    },
+    "noUncaught": {
+      "pass": true,
+      "pageErrors": 0,
+      "overlay": false,
+      "messages": []
+    }
+  },
+  "screenshot": "public/games/game-e/probe/S3-render.png",
+  "browser": {
+    "execPath": "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    "via": "explicit"
+  }
+}
