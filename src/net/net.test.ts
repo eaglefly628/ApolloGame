@@ -37,6 +37,32 @@ describe('确定性守卫: hashSnapshot', () => {
     step(a, [moveA(1, 1, 0)]); // alice 右移
     expect(hashSnapshot(a.snapshot())).not.toBe(before);
   });
+
+  // ── 表现层组件不进 hash（Mesh3D/Coachmark 曾漏登记，是潜伏 desync 雷） ──
+  it('排除表现组件：仅 Coachmark 不同的两世界 → 同 hash', () => {
+    const base = { e: { Resource: { type: 'Resource', current: 5 } } } as unknown as import('@engine/core/types.js').WorldSnapshot;
+    const withCoach = { e: { Resource: { type: 'Resource', current: 5 }, Coachmark: { type: 'Coachmark', anchorId: 'btn', shape: 'rect' } } } as unknown as import('@engine/core/types.js').WorldSnapshot;
+    expect(hashSnapshot(base)).toBe(hashSnapshot(withCoach));
+  });
+  it('排除表现组件：仅 Mesh3D 字段不同的两世界 → 同 hash', () => {
+    const a = { e: { Mesh3D: { type: 'Mesh3D', kind: 'box' } } } as unknown as import('@engine/core/types.js').WorldSnapshot;
+    const b = { e: { Mesh3D: { type: 'Mesh3D', kind: 'sphere' } } } as unknown as import('@engine/core/types.js').WorldSnapshot;
+    expect(hashSnapshot(a)).toBe(hashSnapshot(b));
+  });
+
+  // ── 字符串值转义：分隔符不再能伪造结构 → 两个不同状态不碰撞（desync 不漏检） ──
+  it('防碰撞：字符串内含分隔符的两个不同状态 → hash 不同', () => {
+    const a = { e: { Tag: { type: 'Tag', a: '1,b=2' } } } as unknown as import('@engine/core/types.js').WorldSnapshot;
+    const b = { e: { Tag: { type: 'Tag', a: '1', b: '2' } } } as unknown as import('@engine/core/types.js').WorldSnapshot;
+    expect(hashSnapshot(a)).not.toBe(hashSnapshot(b));
+  });
+
+  // ── undefined 字段 ≡ 缺席：防「写 field=undefined」的 writer 造成跨端 hash 分裂 ──
+  it('undefined 字段等同缺席 → 同 hash', () => {
+    const withU = { e: { Resource: { type: 'Resource', current: 5, extra: undefined } } } as unknown as import('@engine/core/types.js').WorldSnapshot;
+    const without = { e: { Resource: { type: 'Resource', current: 5 } } } as unknown as import('@engine/core/types.js').WorldSnapshot;
+    expect(hashSnapshot(withU)).toBe(hashSnapshot(without));
+  });
 });
 
 describe('固定步长: FixedStepClock', () => {

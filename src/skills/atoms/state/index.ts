@@ -52,6 +52,10 @@ export const stateCapability = defineCapability({
       writes: ['State', 'StateChanged'],
       consumes: [],
       execute(world) {
+        // 生产者自清（BUG-003 模式·同 timer-advance 清 TimerDone）：先删上一拍自己发的
+        // StateChanged，事件才有「仅在切换那一拍存在」的单拍语义。否则事件永久残留，
+        // 任何按「本拍事件」读它的下游每 tick 重复触发。消费者一律 reads:['StateChanged']。
+        for (const [id] of world.query('StateChanged')) world.removeComponent(id, 'StateChanged');
         for (const [entityId] of world.query('State')) {
           const st = world.getComponent<State>(entityId, 'State');
           if (!st) continue;

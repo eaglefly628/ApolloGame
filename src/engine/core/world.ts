@@ -206,5 +206,9 @@ export class World implements IWorld {
       }
       this.entities.set(id, m);
     }
+    // restore 换了整个世界内容：单调推进 version，作废一切以 version 为键的派生缓存
+    // （如 spatial-query 索引）。否则读档/回滚后缓存命中 restore 前的陈旧索引 → 返回
+    // 已销毁实体或旧位置 → lockstep 分叉。version 只增不减，同 tick() 语义。
+    this.version++;
   }
 }

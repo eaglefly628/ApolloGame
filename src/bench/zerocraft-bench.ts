@@ -220,7 +220,11 @@ export function benchBlueprint(game: string, build: () => WorldBlueprint): Bench
   }
 
   const total = axes.reduce((s, a) => s + a.score, 0);
-  return { game, total: Math.round(total), passed: total >= PASS, spatial, evolves, axes };
+  // 硬红线一票否决：Determinism（双跑同 hash·裸 Math.random 会挂）与 Numeric（无 NaN/∞）
+  // 是引擎不可让渡的底线，任一挂 0 即不通过——不允许被 Structure/Visual 等轴的高分平均掉。
+  const detOk = (axes.find((a) => a.name === 'Determinism')?.score ?? 0) > 0;
+  const numericOk = (axes.find((a) => a.name === 'Numeric')?.score ?? 0) > 0;
+  return { game, total: Math.round(total), passed: total >= PASS && detOk && numericOk, spatial, evolves, axes };
 }
 
 export const BENCH_PASS_THRESHOLD = PASS;

@@ -57,4 +57,13 @@ describe('state-sync system', () => {
     expect(changed.from).toBe('run');
     expect(changed.to).toBe('jump');
   });
+
+  it('生产者自清：StateChanged 只在切换那一拍存在，次拍无消费者也自动消失', () => {
+    world.createEntity('e');
+    world.addComponent('e', makeState('behavior', 'run', 'idle'));
+    world.tick(); // 切换拍：发出 StateChanged
+    expect(world.hasComponent('e', 'StateChanged')).toBe(true);
+    world.tick(); // 次拍：无任何消费者手动清除，生产者应自清
+    expect(world.hasComponent('e', 'StateChanged')).toBe(false);
+  });
 });
