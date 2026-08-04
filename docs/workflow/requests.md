@@ -48,7 +48,7 @@
 
 <!-- REQ-MATRIXDUEL-同时决策矩阵（P1·game108 带出）已完结：t2-matrix-duel 落地·Lead 终审 PASS（5bfa84f48·裁决与偏差全文查 git 历史）。 -->
 
-### REQ-CYCLEHAZ-既有定序成环隐患 · 能力两两 RMW 对撞装载成环（普查 65 对·远超原报四件） · [2026-08-04] · Lead 核查 ✅ done（2026-08-04·探针实测）→ 方案待 owner 裁（B 止血 / C 相位化 / B+C 皆可并行） · status: open（核查毕·待裁与派工） · 优先级: **P1（Lead 升档：剧情线 M4 Sample 必踩——dialogue×flow、dialogue×timeline 均在环清单·原 P2「现役未踩到」评估失效）** · 类型: 引擎核定序卫生
+### REQ-CYCLEHAZ-既有定序成环隐患 · 能力两两 RMW 对撞装载成环（普查 65 对·远超原报四件） · [2026-08-04] · 审核会话核查 ✅ → **⚖ Lead 终裁（2026-08-04）：B 止血先行·C 相位化另单排期·不并行**（B=安全网：纯推断 2-环确定性平局裁决+留痕·显式边环照抛真错照拦；C 动 101 能力+全量回归·以 B 落地与剧情线实战反馈喂饱普查再动刀） · status: **in-progress（B 施工中·施工主体=Lead 主会话·他会话勿重复派工）** · 优先级: **P1（Lead 升档：剧情线 M4 Sample 必踩——dialogue×flow、dialogue×timeline 均在环清单·原 P2「现役未踩到」评估失效）** · 类型: 引擎核定序卫生
 > **⚖ Lead 核查结论（2026-08-04·xhigh）**：①最小复现=**2 件**：t3-timeline + f1-resource（双方 RMW `Resource`→组件推断边互为前驱成 2-环）；原报四件中 **keybind 根本不在环上**、event-when 是叠加 3-环（event-when→timeline→resource-apply→event-when）。②全库普查（101 能力两两配对=5050 对）**65 对成环**——热点=Resource/Flag/State/CardPile 等黑板组件；含 card-play×card-pile、dialogue×flow、dialogue×timeline 等必然同装组合。③根因=**类问题非点问题**：组件推断边规则下任意两系统 RMW 同一黑板组件即互锁，显式申报需 O(n²)——65 处点修=劣解，申报制不可持续。
 > **方案 spec（owner 裁）**：**B 止血（推荐先行·指派 Opus·high）**=topologicalSort 对「纯组件推断互锁 2-环（零显式边参与）」按 tier 序+注册序确定性平局裁决+console 留痕——装载炸降级为确定性可审计顺序；显式边参与的环**仍抛**（真申报 bug 照旧拦）。**C 正解（中期·照 matrix-duel「拆相位=成环正解」判例）**=能力按语义定 phase（input→intent→logic→apply/结算）跨桶天然无环——需 101 能力相位普查+现役游戏全量回归，单独立单排期。引擎核定序面 xhigh 不降档（B 实现面机械·high 可）。
 
