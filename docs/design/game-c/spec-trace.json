@@ -1,0 +1,291 @@
+{
+  "game": "game-c",
+  "clausePrefix": "C",
+  "docs": [
+    "gdd.md"
+  ],
+  "clauses": [
+    {
+      "clause": "R-C-001",
+      "checks": [
+        {
+          "type": "scenario",
+          "id": "01-button-blinds"
+        },
+        {
+          "type": "test",
+          "name": "games/game-c/betting-engine.test.ts"
+        }
+      ],
+      "blessedHash": "2b392353d28e8edd09d86ad4dc0794e631fbeedaf70e0af36e6543cb20ce0fa8"
+    },
+    {
+      "clause": "R-C-002",
+      "checks": [
+        {
+          "type": "scenario",
+          "id": "01-button-blinds"
+        }
+      ],
+      "blessedHash": "ff4739d276bb1f9483521b570c7ad0bd716d6348556329eaee0d34d1bf275e2b"
+    },
+    {
+      "clause": "R-C-003",
+      "checks": [
+        {
+          "type": "test",
+          "name": "games/game-c/betting-engine.test.ts"
+        },
+        {
+          "type": "test",
+          "name": "games/game-c/game-session.test.ts"
+        }
+      ],
+      "blessedHash": "67c343c8d12eac1a65730468091fc7575e40d82dacdfd9263ae60eb543708fb9"
+    },
+    {
+      "clause": "R-C-004",
+      "checks": [
+        {
+          "type": "scenario",
+          "id": "04-allin-showdown-pots"
+        },
+        {
+          "type": "scenario",
+          "id": "05-allin-sidepot-matrix"
+        }
+      ],
+      "blessedHash": "aa0bbd8a68035687fb19d8865d40c7587687d61083d6d5bc866fb8406fca93b6"
+    },
+    {
+      "clause": "R-C-005",
+      "checks": [
+        {
+          "type": "scenario",
+          "id": "02-showdown-settlement"
+        },
+        {
+          "type": "test",
+          "name": "games/game-c/holdem-eval.test.ts"
+        }
+      ],
+      "blessedHash": "7314fd7bd16e50a0aee609a714a9d0f6191a9589e1f548c351f68162d19f24d1"
+    },
+    {
+      "clause": "R-C-006",
+      "checks": [
+        {
+          "type": "test",
+          "name": "games/game-c/holdem-eval.test.ts"
+        },
+        {
+          "type": "test",
+          "name": "games/game-c/game-log.test.ts"
+        }
+      ],
+      "blessedHash": "47b18c424f52da8f27096cb965dc1aa7f23447889d155c47965f84efb25fe245"
+    },
+    {
+      "clause": "R-C-007",
+      "checks": [
+        {
+          "type": "scenario",
+          "id": "01-button-blinds"
+        }
+      ],
+      "blessedHash": "ddf302be08711cb654217c656c5564f1f5bd19e95a005feee38c18c16c258062"
+    },
+    {
+      "clause": "R-C-008",
+      "checks": [
+        {
+          "type": "scenario",
+          "id": "06-inhand-pawn-conservation"
+        },
+        {
+          "type": "test",
+          "name": "games/game-c/wardrobe.test.ts"
+        }
+      ],
+      "blessedHash": "6fb51fc90c18b71da96a762e225dc6a5efeef1109f15ed553e9ee93af42bc164"
+    },
+    {
+      "clause": "R-C-009",
+      "checks": [
+        {
+          "type": "test",
+          "name": "games/game-c/game-session.test.ts"
+        }
+      ],
+      "blessedHash": "a4e06afaf5fff091887a97d71e25be2ad9a213cd3b946825c3e21357b8e24077"
+    },
+    {
+      "clause": "R-C-010",
+      "checks": [
+        {
+          "type": "test",
+          "name": "games/game-c/hud.test.ts"
+        }
+      ],
+      "blessedHash": "d8b78d374d99779e68d42f59f7cf20cf4ba8706ed03159d0583b0812533741d0"
+    },
+    {
+      "clause": "R-C-011",
+      "checks": [
+        {
+          "type": "human",
+          "note": "占位 autoPawnIfBroke 阈值=<1BB(bigBlind)·全员统一无性格差异，与本条『默认<3BB·性格影响阈值』不符（见 game-session.ts autoPawnIfBroke）；M2 真行为树前不建议硬凑映射，待GD核实口径或PE补齐后再补剧本"
+        }
+      ],
+      "blessedHash": "e3c50c52bbb5c59aa35c4f880dab25a87d13b72c90ee51769b41c5e361b62064"
+    },
+    {
+      "clause": "R-C-012",
+      "checks": [
+        {
+          "type": "test",
+          "name": "games/game-c/wardrobe.test.ts"
+        },
+        {
+          "type": "test",
+          "name": "games/game-c/game-session.test.ts"
+        }
+      ],
+      "blessedHash": "82aeaffc0c1657ef32115f7ec98be942be48f9472e8a3c830e42ee8376f0b044"
+    },
+    {
+      "clause": "R-C-013",
+      "checks": [
+        {
+          "type": "human",
+          "note": "现为占位阈值策略（aiDecide：handStrength+池比+种子噪声阈值分支），非规格所述『行为树·四类输入+加注尺度表』结构；M2 真行为树落地前待GD补剧本核验骨架"
+        }
+      ],
+      "blessedHash": "ae40b96f2a033d136eb07688f3bb70a16064e75f5aafb29487d18eddb65b33e0"
+    },
+    {
+      "clause": "R-C-014",
+      "checks": [
+        {
+          "type": "human",
+          "note": "读牌 oracle 未实现（game-session.ts 注释：AI 占位·真行为树+读牌 oracle=M2）；M2 落地后待GD补剧本/probe"
+        }
+      ],
+      "blessedHash": "3f3cbfc8d2f40d23276f8b4b4aad8315051a1a5ee74bc1251870f1afc3c5bbfc"
+    },
+    {
+      "clause": "R-C-015",
+      "checks": [
+        {
+          "type": "human",
+          "note": "五档性格模板（紧凶/松凶/岩石/跟注站/诈唬狂）尚未接入 AI 决策参数——characters.ts 的 persona 只接台词/头像展示，不影响打法；M2 落地后待GD补剧本"
+        }
+      ],
+      "blessedHash": "4f352307e488aaf85915198caa6b0d130eddfb9716f5bc7c93faa2244d7b1fb8"
+    },
+    {
+      "clause": "R-C-016",
+      "checks": [
+        {
+          "type": "human",
+          "note": "不作弊承诺无专门回归测试钉死——现 aiDecide 入参只有 holeOf(seat)+community，结构上未见读取隐藏信息，但无测试防未来改动引入作弊；待GD补一条『AI决策函数只读公开信息』的核证"
+        }
+      ],
+      "blessedHash": "7fd7f3150dd8dc5be17bb8e286d2c6786be679d11bc8520ec8c73a88a6433fb9"
+    },
+    {
+      "clause": "R-C-017",
+      "checks": [
+        {
+          "type": "human",
+          "note": "文档写『大椭圆桌』，但 build3d.ts/build3d.test.ts（owner 2026-07-22 记录）已把桌形改成长方 flat plane，本节验收口径未见随之更新——待GD核实当前口径以文档为准还是以 build3d 实现为准，再补对应 test/probe（不许把 build3d.test.ts 硬凑成『验证了椭圆桌』）"
+        }
+      ],
+      "blessedHash": "41bfce8e2904dd3c068802eec321103c1ab1a6ca030741a1b80f4c622291afa8"
+    },
+    {
+      "clause": "R-C-018",
+      "checks": [
+        {
+          "type": "test",
+          "name": "games/game-c/chip3d.test.ts"
+        }
+      ],
+      "blessedHash": "6435607e3264faeb9e00c4e882c631b45abba772f78b7b447010fe1c8e27a19c"
+    },
+    {
+      "clause": "R-C-019",
+      "checks": [
+        {
+          "type": "test",
+          "name": "games/game-c/chip3d.test.ts"
+        }
+      ],
+      "blessedHash": "06ab8f447fd049890b1ba47c557035df020828044848c929eb25cc2d03a8aa82"
+    },
+    {
+      "clause": "R-C-020",
+      "checks": [
+        {
+          "type": "test",
+          "name": "games/game-c/build3d.test.ts"
+        }
+      ],
+      "blessedHash": "a488f29736c88c29a7f737beab01b333ac0bea901501b0357ca5b646c58bbbb6"
+    },
+    {
+      "clause": "R-C-021",
+      "checks": [
+        {
+          "type": "test",
+          "name": "games/game-c/hud.test.ts"
+        }
+      ],
+      "blessedHash": "f5c69b1c3b3828221b414341d1f296993fb31cc73a181514d8455fd06a8f96e6"
+    },
+    {
+      "clause": "R-C-022",
+      "checks": [
+        {
+          "type": "test",
+          "name": "games/game-c/hud.test.ts"
+        }
+      ],
+      "blessedHash": "1a0ecde447ff86190c5cb067d21c6fc6d51624f64a9f0d18791e2a80c6877916"
+    },
+    {
+      "clause": "R-C-023",
+      "checks": [
+        {
+          "type": "human",
+          "note": "每局种子=当前时间到秒，属宿主选种（非 sim 内决定），当前测试套件未见覆盖该宿主层随机行为；待GD补人工浏览器目击或补一个可注入时钟的宿主测试"
+        }
+      ],
+      "blessedHash": "fa2f11e1d4a78d25617d5b58bf0b11096ce9205d42acdea9da4b18c4ed92d207"
+    },
+    {
+      "clause": "R-C-024",
+      "checks": [
+        {
+          "type": "test",
+          "name": "games/game-c/game-session.test.ts"
+        }
+      ],
+      "blessedHash": "88ddfcfaedb069e43a2970647e2bfa1bf4dfa5491099fcabbde555bfd56d9284"
+    },
+    {
+      "clause": "R-C-025",
+      "checks": [
+        {
+          "type": "audit",
+          "rule": "mathRandom"
+        },
+        {
+          "type": "test",
+          "name": "games/game-c/game-log.test.ts"
+        }
+      ],
+      "blessedHash": "b126c2ec9e540444da060a3236027cd9fe113c920157f72145c4dcdbc7314ab2"
+    }
+  ]
+}
