@@ -28,7 +28,7 @@ from .llm_log import handle_llm_logs
 from .llm_transport import get_available_providers
 from .packaging import _PKG_JOBS, _PKG_JOBS_LOCK, handle_package_job_get, handle_package_job_start
 from .paths import LIBRARY_DIR, _design_parts, _lib_parts, _valid_slug
-from .pipeline_board import handle_pipeline_board, handle_pipeline_concept, handle_pipeline_gate, handle_pipeline_signoff
+from .pipeline_board import handle_pipeline_board, handle_pipeline_concept, handle_pipeline_gate, handle_pipeline_orch_abort, handle_pipeline_orch_dispatch, handle_pipeline_orch_status, handle_pipeline_signoff, handle_pipeline_wizard_concept
 from .placeholder import handle_art_resolve
 from .protocols import handle_capgaps_list
 from .settings_api import handle_settings_get, handle_settings_put, handle_settings_test
@@ -392,6 +392,12 @@ class APIHandler(BaseHTTPRequestHandler):
         elif path == '/api/pipeline':
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_pipeline_board((qs.get('slug') or [''])[0])
+        elif path == '/api/pipeline/orchestrator/status':  # 向导锁横幅 + 步进器「开工」轮询共用（REQ-PIPESOFT P1b）
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            try:
+                data = handle_pipeline_orch_status((qs.get('slug') or [''])[0])
+            except Exception as e:
+                data = {'success': False, 'error': f'orchestrator status 异常: {e}'}
         elif path == '/api/games':
             data = handle_games_list()
         elif path == '/api/version':
@@ -609,6 +615,21 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_pipeline_concept(body)
             except Exception as e:
                 data = {'success': False, 'error': f'pipeline concept 异常: {e}'}
+        elif path == '/api/pipeline/wizard-concept':  # 向导「一句话入口」（REQ-PIPESOFT P1b①）
+            try:
+                data = handle_pipeline_wizard_concept(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'wizard-concept 异常: {e}'}
+        elif path == '/api/pipeline/orchestrator/dispatch':  # 步进器「▶ 开工」（P1b②）
+            try:
+                data = handle_pipeline_orch_dispatch(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'orchestrator dispatch 异常: {e}'}
+        elif path == '/api/pipeline/orchestrator/abort':  # 锁横幅「中止」（P1b③）
+            try:
+                data = handle_pipeline_orch_abort(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'orchestrator abort 异常: {e}'}
         elif path == '/api/agent/session/reset':
             data = handle_agent_session_reset(body)
         elif path == '/api/agent/chat':

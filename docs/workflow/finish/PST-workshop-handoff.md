@@ -34,6 +34,22 @@
     运行器侧 `RunOnly` 带同款装载探针+`onError`：装不起来=「卡带装入失败」+原因+修复建议（粘给「程序」对话/历史回滚），不再静默白屏。
     Agent 侧 `AGENT_CHAT_COMMON` 注入 House Rules 准则摘要（词表封闭/能存必须能跑/组件=对象非数组/art: 槽/改值优先）——三角色同吃。
 - `GET /api/pipeline?slug=` → `{success, stages:[{id,title,status: ok|warn|fail|dim, machine{state,detail}, human}], concept{name,pitch,…}, gameHash, next}`
+- **向导模式（REQ-PIPESOFT P1b·2026-08-04）**：workshop 壳「生产八关」区新增 🧭 第三入口（现有 create 双模式/生产八关灯行不动）。
+  全部薄封装既有 CLI（concept/gate/signoff 已有·orchestrator/* 新加·同样只是 shell 出 `scripts/pipeline-orchestrator.mjs`，
+  不建第二真相/第二任务注册表）：
+  - `POST /api/pipeline/wizard-concept {slug, pitch}`——一句话入口：先原样落 pitch（`concept --pitch`，两分支共同前置）；
+    再起后台 `orchestrator dispatch <slug> S1`（`_orch_dispatch_kickoff`：Popen + 2.5s 快路径等待——秒退多半是
+    NO_RUNTIME/LOCKED/USAGE 这类起会话前就退出的路径，直接转发；没秒退=真起了会话，交子进程后台跑完，另起收尸线程
+    `communicate()` 防僵尸，不阻塞请求）。返回 `{success, ranSession, reason}`。
+  - `POST /api/pipeline/orchestrator/dispatch {slug, stage}` / `GET .../status?slug=` / `POST .../abort {slug}`——
+    步进器「▶开工」+ 库级锁横幅「■中止」的薄封装（`main_entry/pipeline_board.py` 新增 `handle_pipeline_orch_*`）。
+    dispatch 同样走 2.5s 快路径等待；status/abort 短活直接同步转发（`_orch_cli_sync`）。
+  - 前端（`workshop/index.dc.html`）：库级横幅常驻（不分屏幕·轮询 `orchestrator/status` 不传 slug·4s 一次）；
+    编辑工坊「生产八关」卡新增「🧭 向导模式」toggle——S1 未填=一句话输入框，S1 已填=步进器（只亮 `board.next`
+    对应阶段·三钮=开工/跑机器门（仅 `stage.gate` 非空时显）/请人门（note/by 输入框永远起始为空，`wizardSignoff`
+    disabled 态由 `!note.trim()` 判定，绝不预填/代填）；S6 换成「进美术库」按钮（不代签）；其余阶段折叠一行摘要。
+  - 冒烟自测（未入库·仅本地验证用）：dispatch 快/慢路径、库级锁互斥、abort 误杀防护（OTHER_SLUG）、
+    wizard-concept 两分支，见回执附的 scratchpad 脚本；真浏览器三状态截图同附。
 - `GET /api/art/ledger?slug=` → `{success, rows:[{no, status, query, slot, gen{servedPath,mock,…}}]}`（servedPath=/games/… 正好走静态路由）
 - `POST /api/agent/chat` `{slug, role: gd|pe|art, messages[≤40·末条须 user], provider?, model?, effort?, catalog?}` →
   `{success, reply, manifest?|manifestError?, artHints?(gd/art), attempts, provider, model}`

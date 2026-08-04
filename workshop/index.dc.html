@@ -101,6 +101,15 @@
         <!-- content -->
         <div class="scr" style="flex:1;overflow-y:auto;padding:24px 26px 34px">
 
+          <!-- 库级「施工中」横幅（REQ-PIPESOFT P1b③·编排会话在跑就常驻显示·不分屏幕）——锁可视 + 中止 -->
+          <sc-if value="{{ wizardBannerOn }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;background:linear-gradient(180deg,#ffd7c2,#ffb98f);border:3px solid #3a2312;border-radius:14px;padding:10px 16px;box-shadow:0 4px 0 #a0532a;flex-wrap:wrap">
+              <span style="width:10px;height:10px;border-radius:50%;background:#a03222;flex:none;animation:bob 1s ease-in-out infinite"></span>
+              <span style="font-family:'Noto Sans SC';font-weight:700;color:#5a2412;font-size:12.5px">{{ wizardBannerText }}</span>
+              <button onClick="{{ wizardAbort }}" style="{{ delBtnStyle }}" style-active="{{ miniBtnActive }}">{{ wizardAbortLabel }}</button>
+            </div>
+          </sc-if>
+
           <!-- ---------- MY GAMES (home) ---------- -->
           <sc-if value="{{ isGames }}" hint-placeholder-val="{{ true }}">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
@@ -392,8 +401,74 @@
                     <button onClick="{{ goArtFor }}" title="打开游戏美术库并定位到这盘游戏" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">🎨 美术库</button>
                     <button onClick="{{ downloadPack }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⬇ 下载包</button>
                     <button onClick="{{ openOldBench }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⇄ 旧工作台（试玩 / 美术台）</button>
+                    <button onClick="{{ wizardToggle }}" title="向导模式（REQ-PIPESOFT P1b·第三入口）：一句话入口 / 步进器只亮下一步 / 跑机器门 / 请人门——详情仍可去旧工作台 🏭 生产板" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ wizardToggleLabel }}</button>
                     <button onClick="{{ deleteCart }}" title="删除这盘卡带（不可恢复·会二次确认）" style="{{ delBtnStyle }}" style-active="{{ miniBtnActive }}">🗑 删除</button>
                   </div>
+                  <!-- 向导面板（REQ-PIPESOFT P1b·第三入口·薄封装 concept/gate/signoff/orchestrator，不造第二真相） -->
+                  <sc-if value="{{ wizardOpenOn }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:12px;background:rgba(58,35,18,.05);border:2.5px dashed rgba(58,35,18,.4);border-radius:14px;padding:13px">
+                      <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:15px;color:#3a2312;margin-bottom:8px">🧭 向导模式</div>
+
+                      <sc-if value="{{ wizardLoadingOn }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;align-items:center;gap:8px"><span style="width:16px;height:16px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#5a3d1e">加载生产板…</span></div>
+                      </sc-if>
+                      <sc-if value="{{ wizardErrorOn }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#a03222">✕ {{ wizardErrorText }}</div>
+                      </sc-if>
+
+                      <!-- 状态①：空板一句话入口（S1 未填） -->
+                      <sc-if value="{{ wizardEmptyOn }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-family:'Noto Sans SC';font-weight:600;font-size:12px;color:#8a5a2c;margin-bottom:8px">S1 立项卡还没填——写一句话玩法：有编排运行时会派一个 S1 微会话扩成完整草稿（名字/参考）；没有就原样落 pitch，其余手填。</div>
+                        <div style="display:flex;gap:8px;align-items:center">
+                          <input value="{{ wizardPitchVal }}" onInput="{{ wizardPitchType }}" placeholder="一句话玩法：如「森林里的糖果三消，每 10 关一个 Boss 果冻」…" maxlength="300" style="flex:1;border:2.5px solid #3a2312;border-radius:9px;padding:8px 10px;font-family:'Noto Sans SC';font-weight:600;font-size:12px;background:#fff;color:#3a2312;outline:none">
+                          <button onClick="{{ wizardSubmitPitch }}" style="{{ wizardSubmitStyle }}" style-active="{{ applyBtnActive }}">{{ wizardSubmitLabel }}</button>
+                        </div>
+                      </sc-if>
+
+                      <!-- 状态②：步进器（只亮第一个非绿阶段·其余折叠证据摘要） -->
+                      <sc-if value="{{ wizardStepperOn }}" hint-placeholder-val="{{ false }}">
+                        <div style="background:#fffdf5;border:2.5px solid #3a2312;border-radius:12px;padding:11px;margin-bottom:10px">
+                          <div style="font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#1f86bd;font-weight:700">{{ wizardCurId }} {{ wizardCurTitle }}〔📖 {{ wizardCurHandbook }}〕</div>
+                          <div style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#5a3d1e;line-height:1.6;margin-top:4px">{{ wizardCurMachine }}</div>
+                          <div style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#5a3d1e;line-height:1.6">{{ wizardCurReview }}</div>
+                          <div style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#5a3d1e;line-height:1.6;margin-bottom:8px">{{ wizardCurHuman }}</div>
+                          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+                            <button onClick="{{ wizardDispatch }}" title="起一个匿名无头会话跑这一步（喂料=本阶段手册+板状态+游戏目录·完成后编排器自己独立重验机器门，不信会话口头汇报）" style="{{ wizardDispatchStyle }}" style-active="{{ miniBtnActive }}">{{ wizardDispatchLabel }}</button>
+                            <sc-if value="{{ wizardGateOn }}" hint-placeholder-val="{{ false }}">
+                              <button onClick="{{ wizardGate }}" style="{{ wizardGateStyle }}" style-active="{{ applyBtnActive }}">{{ wizardGateLabel }}</button>
+                            </sc-if>
+                          </div>
+                          <sc-if value="{{ wizardIsS6 }}" hint-placeholder-val="{{ false }}">
+                            <button onClick="{{ wizardGoArt }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">🎨 进美术库完成本关（逐行复核=人门）</button>
+                          </sc-if>
+                          <sc-if value="{{ wizardShowSignoff }}" hint-placeholder-val="{{ false }}">
+                            <div style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#3a2312;margin-bottom:4px">请人门（review 内容必填·永远真人手填，向导绝不代填 note）</div>
+                            <div style="display:flex;gap:6px;margin-bottom:6px">
+                              <input value="{{ signByVal }}" onInput="{{ wizardSignByType }}" placeholder="签核人" style="width:100px;border:2.5px solid #3a2312;border-radius:9px;padding:7px 9px;font-family:'Noto Sans SC';font-weight:600;font-size:11px;background:#fff;color:#3a2312;outline:none">
+                              <input value="{{ signNoteVal }}" onInput="{{ wizardSignNoteType }}" placeholder="review 了什么、结论是什么…" style="flex:1;border:2.5px solid #3a2312;border-radius:9px;padding:7px 9px;font-family:'Noto Sans SC';font-weight:600;font-size:11px;background:#fff;color:#3a2312;outline:none">
+                            </div>
+                            <button onClick="{{ wizardSignoff }}" style="{{ wizardSignoffStyle }}" style-active="{{ applyBtnActive }}">{{ wizardSignoffLabel }}</button>
+                          </sc-if>
+                        </div>
+                        <div style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c;margin-bottom:6px">其余阶段（折叠·证据摘要）</div>
+                        <div style="display:flex;flex-direction:column;gap:4px">
+                          <sc-for list="{{ wizardCollapsedRows }}" as="wr" hint-placeholder-count="7">
+                            <div style="{{ wr.style }}">
+                              <span style="{{ wr.dotStyle }}"></span>
+                              <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#3a2312;font-weight:700;flex:none;width:24px">{{ wr.id }}</span>
+                              <span style="font-family:'Noto Sans SC';font-weight:700;font-size:10px;color:#3a2312;flex:none;width:56px">{{ wr.title }}</span>
+                              <span style="font-family:'Noto Sans SC';font-weight:600;font-size:10px;color:#8a5a2c;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ wr.summary }}</span>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+
+                      <!-- 状态③（隐含）：八关全绿 -->
+                      <sc-if value="{{ wizardAllGreenOn }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-family:'Noto Sans SC';font-weight:700;font-size:13px;color:#4e8a24">✔ 八关全绿——可推进发布 / 换皮量产。</div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
                   <sc-if value="{{ tsFeatureOn }}" hint-placeholder-val="{{ false }}">
                     <div style="display:flex;gap:8px;align-items:center;margin-top:10px;background:rgba(160,50,34,.07);border:2px dashed #a03222;border-radius:10px;padding:7px 10px">
                       <button onClick="{{ toggleAllowTs }}" title="展示例外（owner 07-11）：打勾后「程序」对话可提议本卡带的 logic.ts——记债：该卡带退出回放/换皮/bench 保证" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ allowTsLabel }}</button>
@@ -974,6 +1049,12 @@ class Component extends DCLogic {
     dsSlug: null, dsFiles: null, dsSel: null, dsRev: '', dsRevising: false,
     // 对白编辑（REQ-WORKSHOP A·spec §一）——三角色（owner 07-11）+ 模型/思考档 + 服务端持久化
     editSlug: null, editName: '', editPitch: '', board: null,
+    // 向导模式（REQ-PIPESOFT P1b·PST 域·图纸 docs/design/pipeline-orchestrator-spec-2026-08.md §P1b）：
+    // 一句话入口 + 步进器 + 库级锁横幅——全部薄封装既有 CLI（concept/gate/signoff/orchestrator）·第三入口，
+    // 现有「生产八关」灯行 + 旧工作台入口不动。orchLock 是库级（不分 editSlug）·轮询独立于当前屏幕。
+    wizardOpen: false, wizardPitch: '', wizardBusy: false, orchLock: null, orchDispatchStage: null,
+    wizardGateBusy: null, wizardSignBusy: null, orchAbortBusy: false,
+    signNote: '', signBy: 'owner',  // 人门签核字段——向导绝不代填 note（铁律：签核人真人手打）
     chatRole: 'gd', chats: { gd: [], pe: [], art: [] }, chatInput: '', chatBusy: false, chatLive: null,
     editModel: 'opus', editEffort: 'high',
     pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, edRev: '', edRevising: false, editStats: null,
@@ -993,7 +1074,7 @@ class Component extends DCLogic {
     toast: null
   };
 
-  componentWillUnmount() { clearInterval(this._g); clearInterval(this._cl); clearTimeout(this._t); Object.values(this._pk || {}).forEach(clearInterval); }
+  componentWillUnmount() { clearInterval(this._g); clearInterval(this._cl); clearInterval(this._ol); clearTimeout(this._t); Object.values(this._pk || {}).forEach(clearInterval); }
 
   // 嵌入我们的接口：真游戏列表（卡带=/api/library·引擎游戏=/api/games）+ 版本 + 设置（打码视图）。
   refreshGames() {
@@ -1011,6 +1092,7 @@ class Component extends DCLogic {
       .then(d => this.setState({ version: (d && d.version) || '0.1.0' }))
       .catch(() => this.setState({ version: '0.1.0' }));
     this.refreshSettings();
+    this.watchOrchLock();  // 库级施工锁横幅（REQ-PIPESOFT P1b）——独立于屏幕/editSlug，一直轮询
     // 设计先行现场恢复（owner 07-11「杀掉重开不重来」）：聊天/阶段/名字落盘于 .zerocraft/workshop-chats/_design-draft.json
     fetch('/api/workshop/draft').then(r => r.json()).then(d => {
       const dr = d && d.success && d.draft;
@@ -1160,6 +1242,84 @@ class Component extends DCLogic {
       .then(d => { const files = (d && d.files) || {}; if (this.state.editSlug === slug)
         this.setState({ editDocs: files, editDocSel: Object.keys(files)[0] || null }); })
       .catch(() => {});
+  }
+  // ── 向导模式（REQ-PIPESOFT P1b）：一句话入口 + 步进器 + 库级锁横幅 ─────────────────
+  // 全部薄封装既有端点（/api/pipeline/{concept,gate,signoff} 已有·orchestrator/* 新加·同样只是
+  // shell 出 scripts/pipeline-orchestrator.mjs，不造第二真相）。
+  watchOrchLock() {
+    clearInterval(this._ol);
+    const poll = () => fetch('/api/pipeline/orchestrator/status').then(r => r.json())
+      .then(d => { const rows = (d && d.success && d.rows) || []; this.setState({ orchLock: rows.find(r => r.live) || null }); })
+      .catch(() => {});
+    poll();
+    this._ol = setInterval(poll, 4000);
+  }
+  wizardToggle() { this.setState(st => ({ wizardOpen: !st.wizardOpen, signNote: '', signBy: 'owner' })); }
+  wizardPitchType(e) { this.setState({ wizardPitch: e.target.value }); }
+  wizardSubmitPitch() {
+    const slug = this.state.editSlug, pitch = (this.state.wizardPitch || '').trim();
+    if (!slug || !pitch || this.state.wizardBusy) return;
+    this.setState({ wizardBusy: true });
+    fetch('/api/pipeline/wizard-concept', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, pitch }) }).then(r => r.json()).then(d => {
+        this.setState({ wizardBusy: false });
+        if (!d || !d.success) throw new Error((d && d.error) || '提交失败');
+        this.setState({ wizardPitch: '' });
+        this.showToast((d.reason || '✓ 已提交').slice(0, 140));
+        this.refreshBoard(slug);
+        this.watchOrchLock();
+      }).catch(e => { this.setState({ wizardBusy: false }); this.showToast('✕ ' + ((e && e.message) || '提交失败').slice(0, 100)); });
+  }
+  wizardDispatch(stage) {
+    const slug = this.state.editSlug;
+    if (!slug || !stage || this.state.orchDispatchStage) return;
+    this.setState({ orchDispatchStage: stage });
+    fetch('/api/pipeline/orchestrator/dispatch', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, stage }) }).then(r => r.json()).then(d => {
+        this.setState({ orchDispatchStage: null });
+        this.showToast(((d && d.success) ? '✓ ' : '✕ ') + ((d && (d.reason || d.error)) || '开工失败').slice(0, 160));
+        this.watchOrchLock();
+        this.refreshBoard(slug);
+      }).catch(e => { this.setState({ orchDispatchStage: null }); this.showToast('✕ ' + ((e && e.message) || '开工失败').slice(0, 100)); });
+  }
+  wizardGate(stage) {
+    const slug = this.state.editSlug;
+    if (!slug || !stage || this.state.wizardGateBusy) return;
+    this.setState({ wizardGateBusy: stage });
+    fetch('/api/pipeline/gate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, stage }) }).then(r => r.json()).then(d => {
+        this.setState({ wizardGateBusy: null });
+        this.showToast(((d && d.success) ? ('✓ ' + stage + ' 机器门过：') : ('✕ ' + stage + ' 未过：')) + ((d && (d.summary || d.error)) || '').slice(0, 140));
+        this.refreshBoard(slug);
+      }).catch(e => { this.setState({ wizardGateBusy: null }); this.showToast('✕ ' + ((e && e.message) || '跑门失败').slice(0, 100)); });
+  }
+  wizardSignNoteType(e) { this.setState({ signNote: e.target.value }); }
+  wizardSignByType(e) { this.setState({ signBy: e.target.value }); }
+  // 人门签核——note 必须真人手打（永不代填/预填）：按钮在 note 为空时保持灰态（渲染态见 renderVals）。
+  wizardSignoff(stage) {
+    const slug = this.state.editSlug, note = (this.state.signNote || '').trim(), by = (this.state.signBy || '').trim() || 'owner';
+    if (!slug || !stage || !note || this.state.wizardSignBusy) return;
+    this.setState({ wizardSignBusy: stage });
+    fetch('/api/pipeline/signoff', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, stage, note, by }) }).then(r => r.json()).then(d => {
+        this.setState({ wizardSignBusy: null });
+        if (d && d.success) this.setState({ signNote: '' });
+        this.showToast(((d && d.success) ? ('✓ ' + stage + ' 人门落账') : ('✕ ' + ((d && d.error) || '签核失败'))).slice(0, 140));
+        this.refreshBoard(slug);
+      }).catch(e => { this.setState({ wizardSignBusy: null }); this.showToast('✕ ' + ((e && e.message) || '签核失败').slice(0, 100)); });
+  }
+  wizardAbort() {
+    const lock = this.state.orchLock;
+    if (!lock || this.state.orchAbortBusy) return;
+    if (!window.confirm('中止 ' + lock.slug + ' 的 ' + lock.stage + ' 会话（pid ' + lock.pid + '）？\n该阶段将标「中止·需人工」，接手前先看板。')) return;
+    this.setState({ orchAbortBusy: true });
+    fetch('/api/pipeline/orchestrator/abort', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: lock.slug }) }).then(r => r.json()).then(d => {
+        this.setState({ orchAbortBusy: false });
+        this.showToast(((d && d.success) ? '✓ 已中止：' : '✕ ') + ((d && (d.reason || d.error)) || '').slice(0, 140));
+        this.watchOrchLock();
+        if (this.state.editSlug === lock.slug) this.refreshBoard(lock.slug);
+      }).catch(e => { this.setState({ orchAbortBusy: false }); this.showToast('✕ ' + ((e && e.message) || '中止失败').slice(0, 100)); });
   }
   // 编辑工坊·底案直改（owner 07-11「再进去也能继续修改框架 MD」）：design-revise → 确认即落盘。
   edRevise() {
@@ -1864,6 +2024,23 @@ class Component extends DCLogic {
         background: lampColor[st2.status] || '#c8c8c8', color: st2.status === 'warn' ? '#3a2312' : '#fff5db',
         fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: '11px', boxShadow: 'inset 0 2px 0 rgba(255,255,255,.4)' }
     }));
+    // ── 向导模式派生态（REQ-PIPESOFT P1b）：步进器只亮第一个非绿阶段·其余折叠证据摘要 ────────
+    const wStages = (s.board && s.board.stages) || [];
+    const wS1 = wStages.find(st3 => st3.id === 'S1');
+    const wizardEmptyOn = !!(s.wizardOpen && s.board && s.board.success !== false && wS1 && wS1.status === 'dim');
+    const wCur = (s.board && s.board.next) ? wStages.find(st3 => st3.id === s.board.next) : null;
+    const wGateLabel = { 'manifest-check': '骨架关校验', walkthrough: '玩法验收', audit: 'UI 审计', 'full-suite': '终检三绿' };
+    const wLockHere = !!(s.orchLock && s.editSlug && s.orchLock.slug === s.editSlug);
+    const wRunningThisStage = !!(wLockHere && wCur && s.orchLock.stage === wCur.id);
+    const wLockElsewhere = !!(s.orchLock && (!s.editSlug || s.orchLock.slug !== s.editSlug));
+    const wDispatching = !!s.orchDispatchStage;
+    const wDur = (iso) => { if (!iso) return '0s'; const sec = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000)); return sec < 60 ? sec + 's' : Math.round(sec / 60) + 'min'; };
+    const wizardCollapsedRows = wStages.filter(st3 => !wCur || st3.id !== wCur.id).map(st3 => ({
+      id: st3.id, title: st3.title,
+      dotStyle: { width: '8px', height: '8px', borderRadius: '4px', background: lampColor[st3.status] || '#c8c8c8', flex: 'none' },
+      style: { display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 10px', borderRadius: '8px', background: 'rgba(255,255,255,.55)' },
+      summary: [st3.id === 'S7' ? '评分卡' : '机器门', ': ', (st3.machine && st3.machine.detail) || '', ' · 人门: ', (st3.human && st3.human.detail) || ''].join('').slice(0, 100)
+    }));
     const tabOn = { border: '3px solid #3a2312', borderRadius: '11px', padding: '7px 16px', cursor: 'pointer', fontFamily: "'ZCOOL KuaiLe','Fredoka',sans-serif", fontSize: '15px', background: 'linear-gradient(180deg,#ffe08a,#f5b731)', color: '#3a2312', boxShadow: '0 3px 0 #c98a1e' };
     const tabOff = { border: '3px solid transparent', borderRadius: '11px', padding: '7px 16px', cursor: 'pointer', fontFamily: "'ZCOOL KuaiLe','Fredoka',sans-serif", fontSize: '15px', background: 'rgba(58,35,18,.12)', color: '#5a3d1e' };
     const copyBtnStyle = { alignSelf: 'flex-end', flex: 'none', marginLeft: '5px', width: '24px', height: '24px',
@@ -2297,6 +2474,46 @@ class Component extends DCLogic {
       // edit screen
       editName: s.editName, editSlug: s.editSlug || '', editPitch: s.editPitch || '（立项卡待填——S1 侧栏或对话里补）',
       stageLamps, miniBtnStyle: mini.style, miniBtnActive: mini.active,
+      // ── 向导模式（REQ-PIPESOFT P1b·第三入口·「生产八关」灯行 + ⇄旧工作台不动）───────────
+      wizardToggleLabel: s.wizardOpen ? '🧭 收起向导' : '🧭 向导模式', wizardToggle: () => this.wizardToggle(),
+      wizardOpenOn: !!s.wizardOpen,
+      wizardLoadingOn: !!s.wizardOpen && !s.board,
+      wizardErrorOn: !!(s.wizardOpen && s.board && s.board.success === false),
+      wizardErrorText: (s.board && s.board.error) || '',
+      wizardEmptyOn,
+      wizardPitchVal: s.wizardPitch, wizardPitchType: (e) => this.wizardPitchType(e),
+      wizardSubmitPitch: () => this.wizardSubmitPitch(),
+      wizardSubmitLabel: s.wizardBusy ? '⏳ 提交中…' : '✨ 生成立项卡草稿',
+      wizardSubmitStyle: Object.assign({}, apply.style, (s.wizardBusy || !(s.wizardPitch || '').trim()) ? { opacity: .55, cursor: s.wizardBusy ? 'wait' : 'not-allowed' } : {}),
+      wizardStepperOn: !!(s.wizardOpen && !wizardEmptyOn && wCur),
+      wizardAllGreenOn: !!(s.wizardOpen && !wizardEmptyOn && !wCur && s.board && s.board.success !== false),
+      wizardCurId: wCur ? wCur.id : '', wizardCurTitle: wCur ? wCur.title : '', wizardCurHandbook: wCur ? wCur.handbook : '',
+      wizardCurMachine: wCur ? (wCur.id === 'S7' ? '评分卡：' : '机器门：') + ((wCur.machine && wCur.machine.detail) || '') : '',
+      wizardCurReview: wCur ? '复查门：' + ((wCur.review && wCur.review.detail) || '') : '',
+      wizardCurHuman: wCur ? '人　门：' + ((wCur.human && wCur.human.detail) || '') : '',
+      wizardDispatchLabel: wRunningThisStage ? ('⏳ 会话' + (s.orchLock.state === 'stalled' ? '停滞（看门狗将重派）' : '跑中') + '…')
+        : wDispatching ? '⏳ 派工中…' : '▶ 开工（派会话）',
+      wizardDispatchStyle: Object.assign({}, mini.style, (wDispatching || wRunningThisStage || wLockElsewhere) ? { opacity: .5, cursor: wLockElsewhere ? 'not-allowed' : 'wait' } : {}),
+      wizardDispatch: () => wCur && this.wizardDispatch(wCur.id),
+      wizardGateOn: !!(wCur && wCur.gate),
+      wizardGateLabel: (s.wizardGateBusy && wCur && s.wizardGateBusy === wCur.id) ? '⏳ 跑门中…' : ('▶ 跑机器门（' + (wCur && (wGateLabel[wCur.gate] || wCur.gate)) + '）'),
+      wizardGateStyle: Object.assign({}, apply.style, (s.wizardGateBusy) ? { opacity: .55, cursor: 'wait' } : {}),
+      wizardGate: () => wCur && this.wizardGate(wCur.id),
+      wizardIsS6: !!(wCur && wCur.id === 'S6'),
+      wizardShowSignoff: !!(wCur && wCur.id !== 'S6'),
+      wizardGoArt: () => { const slug = s.editSlug; this.setState({ screen: 'assets' }); if (slug) this.pickAssetGame(slug); },
+      signNoteVal: s.signNote, wizardSignNoteType: (e) => this.wizardSignNoteType(e),
+      signByVal: s.signBy, wizardSignByType: (e) => this.wizardSignByType(e),
+      wizardSignoffLabel: (s.wizardSignBusy && wCur && s.wizardSignBusy === wCur.id) ? '⏳ 签核中…' : '☑ 请人门（真人签）',
+      wizardSignoffStyle: Object.assign({}, apply.style, (!(s.signNote || '').trim() || s.wizardSignBusy) ? { opacity: .5, cursor: 'not-allowed' } : {}),
+      wizardSignoff: () => wCur && this.wizardSignoff(wCur.id),
+      wizardCollapsedRows,
+      // 库级施工锁横幅（不分屏幕常驻·图纸 §P1b③）+ 中止
+      wizardBannerOn: !!s.orchLock,
+      wizardBannerText: s.orchLock ? ('🔒 库级施工中：' + s.orchLock.slug + ' · ' + s.orchLock.stage + ' · 已 ' + wDur(s.orchLock.startedAt)
+        + (s.orchLock.state === 'stalled' ? '（⚠ 停滞·看门狗将重派）' : '（运行中）')) : '',
+      wizardAbort: () => this.wizardAbort(),
+      wizardAbortLabel: s.orchAbortBusy ? '⏳ 中止中…' : '■ 中止',
       downloadPack: () => { if (s.editSlug) { window.open('/api/library/' + s.editSlug + '/export', '_blank'); this.showToast('打包中——浏览器将开始下载'); } },
       openOldBench: () => window.open('/bench', '_blank'),
       hasPending: !!s.pending, pendingSummary,
