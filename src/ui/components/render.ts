@@ -12,6 +12,7 @@ import type {
   CardProps, PlayingCardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
   RatingProps, ComboboxProps, DrawerProps, VirtualListProps, ContextMenuProps,
   CoinFlipProps, VersusProps, VideoProps, ParticlesProps, LevelPathProps, FloatProps, ConnectorProps, AnchorRef,
+  DialogProps, ChoiceListProps, PortraitProps,
 } from './types.js';
 
 const esc = (s: string): string =>
@@ -1006,6 +1007,58 @@ function renderFloat(id: string, p: FloatProps, children: LayoutNode[], ls: stri
   // 初始移出屏 + 隐藏（定位前不闪）；mountUI 每帧摆到锚点、目标消失自隐。fixed=按视口 rect 定位（跟随滚动）。
   return `<div id="${esc(id)}" ${data} style="position:fixed;left:0;top:0;z-index:60;opacity:0;transform:translate(-9999px,-9999px);${ls}">${inner}</div>`;
 }
+// ── 剧情 / VN 三件（REQ-DIALOGUE M1·闭集纯数据·house 主题取色·消费 t3-dialogue 投影）──────────────
+// 台词框：说话人色标 + 台词（复用 Label 打字机/emoji/字体）+ 推进态。可推进节点=整框可点发 advanceAction。
+function renderDialog(id: string, p: DialogProps, ls: string, t: UITheme): string {
+  const speaker = p.speaker
+    ? `<div style="font-size:13px;font-weight:700;letter-spacing:.4px;color:${t.gold};font-family:${t.fontSerif ?? t.fontUi};margin-bottom:6px">${escT(p.speaker, t)}</div>`
+    : '';
+  // 台词正文借 Label 渲（打字机/emoji/字体一体·DRY）——构 inner Label 节点交 renderNode（同 Versus 借 PlayingCard）。
+  const body = renderNode(
+    { type: 'Label', id: `${id}-tx`, props: { text: p.text ?? '', size: 'md', color: 'text', ...(p.typewriter ? { typewriter: p.typewriter } : {}) } },
+    t,
+  );
+  // 推进提示：line/check 可推进 → 整框可点 + ▶；choice 节点推进交给 choiceList → 不显、不发信号。
+  const canAdvance = p.kind !== 'choice';
+  const advAction = p.advanceAction ?? 'dialogue.advance';
+  const hint = canAdvance ? `<div style="position:absolute;right:13px;bottom:9px;color:${t.dim};font-size:13px;line-height:1">▶</div>` : '';
+  const action = canAdvance ? ` data-action="${esc(advAction)}"` : '';
+  const cursor = canAdvance ? 'cursor:pointer;' : '';
+  const emo = p.emotion ? ` data-emotion="${esc(p.emotion)}"` : '';
+  return `<div id="${esc(id)}"${action}${emo} style="position:relative;background:${t.bg1};border:1px solid ${t.line};border-radius:12px;padding:14px 16px;font-family:${t.fontUi};${cursor}${ls}">${speaker}${body}${hint}</div>`;
+}
+
+// 选项列表：一列选项行（可选性门控·不可选=灰显不可点）。每行发 chooseAction + arg=下标（或 actionArg）。
+function renderChoiceList(id: string, p: ChoiceListProps, ls: string, t: UITheme): string {
+  const chooseAction = p.chooseAction ?? 'dialogue.choose';
+  const rows = (p.options ?? []).map((o, i) => {
+    const available = o.available !== false;
+    const arg = o.actionArg ?? String(i);
+    const action = available ? ` data-action="${esc(chooseAction)}" data-arg="${esc(arg)}"` : '';
+    const bg = available ? t.bg2 : 'transparent';
+    const fg = available ? t.text : t.dim;
+    const cursor = available ? 'cursor:pointer' : 'cursor:not-allowed';
+    const op = available ? '' : 'opacity:.55;';
+    const idx = `<span style="color:${available ? t.gold : t.dim};font-weight:700;margin-right:9px;font-family:${t.fontMono}">${i + 1}</span>`;
+    return `<div id="${esc(id)}-o${i}"${action} role="button" style="display:flex;align-items:center;padding:10px 14px;border:1px solid ${t.line};border-radius:10px;background:${bg};color:${fg};font-size:13px;font-family:${t.fontUi};${op}${cursor}">${idx}${escT(o.label, t)}</div>`;
+  }).join('');
+  return `<div id="${esc(id)}" style="display:flex;flex-direction:column;gap:8px;${ls}">${rows}</div>`;
+}
+
+// 立绘槽：art 图（cover·顶部对齐存脸）或名首字/剧场面具占位（绝不空白）。emotion 透出 data-emotion（M2 表选变体）。
+function renderPortrait(id: string, p: PortraitProps, ls: string, t: UITheme): string {
+  const emo = p.emotion ? ` data-emotion="${esc(p.emotion)}"` : '';
+  const inner = p.art
+    ? `<img src="${esc(p.art)}" alt="${esc(p.name ?? '')}" style="width:100%;height:100%;object-fit:cover;object-position:top center">`
+    : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:linear-gradient(160deg,${t.bg2},${t.bg0});color:${t.dim};font-size:46px;font-family:${t.fontSerif ?? t.fontUi}">${p.name ? escT(p.name.slice(0, 1), t) : '🎭'}</div>`;
+  const align = p.side === 'right' ? 'right' : 'left';
+  // 名条=**全不透明**深底名牌（白字压深底·两皮皆可读；不透明底 ui-audit 才量得对比·半透/渐变会被跳过误判）。
+  const nameTag = p.name
+    ? `<div style="position:absolute;left:0;right:0;bottom:0;padding:6px 11px;background:#1c150d;color:#fff;font-size:13px;font-weight:700;font-family:${t.fontUi};text-align:${align}">${escT(p.name, t)}</div>`
+    : '';
+  return `<div id="${esc(id)}"${emo} style="position:relative;overflow:hidden;min-width:72px;min-height:96px;border:1px solid ${t.line};border-radius:14px;background:${t.bg1};${ls}">${inner}${nameTag}</div>`;
+}
+
 function renderConnector(id: string, p: ConnectorProps, t: UITheme): string {
   const toneColor: Record<string, string> = { jade: t.jade, gold: t.gold, ok: t.ok, warn: t.warn, danger: t.danger };
   const col = toneColor[p.tone ?? 'jade'] ?? t.jade;
@@ -1082,6 +1135,9 @@ function renderDispatch(node: LayoutNode, theme: UITheme = SHELL): string {
     case 'LevelPath':  return renderLevelPath(node.id, node.props as LevelPathProps, ls, t);
     case 'Float':      return renderFloat(node.id, node.props as FloatProps, node.children ?? [], ls, t);
     case 'Connector':  return renderConnector(node.id, node.props as ConnectorProps, t);
+    case 'dialog':     return renderDialog(node.id, node.props as DialogProps, ls, t);
+    case 'choiceList': return renderChoiceList(node.id, node.props as ChoiceListProps, ls, t);
+    case 'portrait':   return renderPortrait(node.id, node.props as PortraitProps, ls, t);
     default:           return `<!-- unknown: ${String((node as LayoutNode).type)} -->`;
   }
 }

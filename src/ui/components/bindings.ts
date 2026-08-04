@@ -8,7 +8,7 @@
 //   · 绑定 = resourceId **字符串**（最弱 LLM 能填），绝不收自由取值表达式；
 //   · 只读世界（显示）；写世界(按钮信号)走 action + HandlerMap(enqueue sim)，两端分明。
 
-import type { LayoutNode, LabelProps, ProgressBarProps, ImageProps } from './types.js';
+import type { LayoutNode, LabelProps, ProgressBarProps, ImageProps, DialogProps, ChoiceListProps, PortraitProps } from './types.js';
 
 /** 注入式世界数据源（游戏/引擎提供一份·解耦 ECS）：resource 读数值资源，value 读字符串变量，flag 读布尔旗标。 */
 export interface UIDataSource {
@@ -62,5 +62,51 @@ export function resolveBindings(node: LayoutNode, ds: UIDataSource): LayoutNode 
 
   // visibleWhen 不满足的子节点先从 children 里剔除（连同子树·替代游戏用代码 if/else 重建树），再递归解析绑定。
   const children = node.children?.filter((ch) => isVisible(ch, ds)).map((ch) => resolveBindings(ch, ds));
+  return children ? { ...node, props, children } : { ...node, props };
+}
+
+// ── 剧情 / VN 投影（REQ-DIALOGUE M1·结构投影器·独立于标量 UIDataSource）─────────────────────────────
+// 为什么另起一个投影器而非扩 UIDataSource：VN 投影是**结构性**的——当前对话节点 →
+// {speaker, text, emotion, **变长** options[] + 逐项 optionAvailable}。标量 resource/value/flag 表达不了
+// 「把当前 choice 节点展开成一列可选性门控的选项」。故沿 resolveBindings 同款 DI 思路（接口注入·ui 不碰 ECS/@skills）
+// 另立 DialogueSource + resolveDialogue：游戏/引擎侧提供一份读世界实现（读 t3-dialogue 的 DialogueScript+State），
+// ui/components 只认接口。活 HUD：resolveDialogue(tree, dsrc) 后（需要时再 resolveBindings）→ renderNode。
+
+/** 当前对话节点的投影视图（读世界结果·纯数据）。options 仅 choice 节点有。 */
+export interface DialogueView {
+  kind: 'line' | 'choice' | 'check';
+  speaker?: string;
+  text?: string;
+  emotion?: string;
+  options?: Array<{ label: string; available: boolean }>;
+}
+/** 注入式对话数据源（游戏/引擎提供·解耦 ECS/@skills）：按对话实体 id 读当前节点视图。 */
+export interface DialogueSource {
+  current(entityId: string): DialogueView | undefined;
+}
+
+/**
+ * 把树里带 bind(对话实体 id) 的 dialog/choiceList/portrait 用 dsrc 投影成字面 props，返回**新树**（纯函数·不改原树）。
+ * 未命中/无 bind 的节点原样透传。用法：renderNode(resolveDialogue(tree, dsrc), theme)（如还需资源绑定，再套 resolveBindings）。
+ */
+export function resolveDialogue(node: LayoutNode, dsrc: DialogueSource): LayoutNode {
+  let props = node.props;
+  const bind = (node.props as { bind?: string }).bind;
+  if (bind && (node.type === 'dialog' || node.type === 'choiceList' || node.type === 'portrait')) {
+    const v = dsrc.current(bind);
+    if (v) {
+      if (node.type === 'dialog') {
+        const p = node.props as DialogProps;
+        props = { ...p, speaker: v.speaker ?? p.speaker, text: v.text ?? p.text, emotion: v.emotion ?? p.emotion, kind: v.kind };
+      } else if (node.type === 'choiceList') {
+        const p = node.props as ChoiceListProps;
+        if (v.options) props = { ...p, options: v.options.map((o) => ({ label: o.label, available: o.available })) };
+      } else {
+        const p = node.props as PortraitProps;
+        props = { ...p, name: v.speaker ?? p.name, emotion: v.emotion ?? p.emotion };
+      }
+    }
+  }
+  const children = node.children?.map((ch) => resolveDialogue(ch, dsrc));
   return children ? { ...node, props, children } : { ...node, props };
 }

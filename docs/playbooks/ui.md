@@ -49,10 +49,11 @@
 | 意图叠层（扇形手牌/牌堆） | `layout.allowOverlap:true`（render-only·A-007a） | 绝对定位件（`layout.x/y/rotate`）**故意叠放**时标它 → 渲染 `data-allow-overlap` → `ui-audit` 重叠检查豁免此件（叠是设计意图非 bug）。用于扇形手牌 / 牌堆 / 层叠标记。**只标真该叠的**，别拿它掩盖误叠。**扑克牌红黑花色本色**（红♥♦ on 白牌 3.68）不吃 WCAG=`PlayingCard` 根自带 `data-audit-skip-contrast`·audit 免其内文字对比（A-007b·无需游戏手动标） |
 | 图标（emoji→套装美术图标） | `Button.icon` / `Tag.icon` / `Panel.titleIcon` / `Tabs.tab.icon` / `Label spans[].img` / `Card.media`(URL 自动按图渲)（批32·REQ-FACEART②补录标题/页签槽） | 六个图文位·全 additive：不填=纯文字零回归。`Panel.titleIcon`=面板标题前 1.05em 内联图；`Tabs.tab.icon`=页签文字前内联图。界面 emoji 记号（🪙💎⚡🀄…）逐槽换成台账套装图标（统一风格锚成套生成）；排印记号（→ ✓ ★ ⚠）**不图标化**。样例=game-g lobby-dd `iconPill`/overlays `iconBtnProps`（覆盖在场才换·观感零变式接线） |
 | 文本 emoji 自动图渲（一处配置覆盖全线） | `UITheme.emoji`（`{base,size?}`·render-only·REQ-UI-emoji图渲） | **不必逐个手转 icon 槽**：主题挂 `emoji:{base:'/games/<g>/art/emoji'}` → 渲染时自动扫 **Label/Button.label/spans/Tag/Badge/Tabs/Card** 显示文本里的 emoji 字形，内联成库里 Twemoji 美术图（`<img>`·1em 随字号·baseline）。码点解析与 PA `scripts/emoji-resolve.mjs` **一致**（`assets/emoji/<cp>.png`·4871 张·★→⭐ 等符号走 SYMBOL_ALIAS）。**资产可达**：`scripts/emoji-vendor.mjs <g> --apply` 把该游戏用到的 emoji vendor 进本地 `public/games/<g>/art/emoji/`（served·hermetic）再把 base 指过去。**逃生** `Label.raw:true`=保字形不图渲（代码块/刻意）。缺省不配=文本 emoji 零变化（零回归）。**不进 sim/hash**（纯渲染增强·同 icon 槽）。样例=game-i「🎨 emoji 美术」tab `t-emoji` 段（自动图渲 vs raw 保字形对照） |
+| 剧情/VN 三件（台词/选项/立绘） | `dialog` / `choiceList` / `portrait`（闭集控件·REQ-DIALOGUE M1·消费 `t3-dialogue`） | VN/剧情屏用**三件闭集控件**（禁手写 React·`ui/vn` 已退役）：`dialog`=说话人+台词框（`typewriter` 逐字·line/check 节点整框可点发 `dialogue.advance`）；`choiceList`=选项列（`options[{label,available?}]`·`available:false` 灰显不可点·选中发 `dialogue.choose`+arg=下标·**t3-dialogue 认 arg 串无需游戏 handler**）；`portrait`=立绘槽（`art` 已解析 URL·`emotion` 变体键·缺图→名首字/面具占位不空白）。**读世界=投影**：给 `bind`=对话实体 id → `resolveDialogue(tree, DialogueSource)` 从世界当前节点填 speaker/text/options（结构投影·标量 `resolveBindings` 表达不了变长选项+可选性·故另立投影器·DI 接口 ui 不碰 @skills）。M2 补 emotion→assetKey 表·M3 `presence` 起手模板。样例=game-i `dialogue-demo.ts`（`💬 剧情·VN 对话三件` tab） |
 
 ## ② 样例指针
 
-- **活范例**：`games/game-i/gallery.ts`（全控件 + 艺术字体墙 + 特效/纹理/大标题等新 prop 全覆盖）+ `mmo-hud.ts`（最复杂 HUD·纯数据复现 WoW）。
+- **活范例**：`games/game-i/gallery.ts`（全控件 + 艺术字体墙 + 特效/纹理/大标题等新 prop 全覆盖）+ `mmo-hud.ts`（最复杂 HUD·纯数据复现 WoW）+ `dialogue-demo.ts`（VN 剧情三件·REQ-DIALOGUE M1）。
 - **达标大厅**：`games/game-g/lobby-dd.ts` + 六屏 `home/campaign/collection/craft/deck/turn-battle-screen.ts`（LayoutNode 纯数据）。
 - 控件目录/形状：`src/ui/components/catalog.ts` + `types.ts`；渲染 debug：`render.ts`。
 

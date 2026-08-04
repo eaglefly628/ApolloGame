@@ -13,7 +13,8 @@ export type ComponentType =
   | 'Card' | 'PlayingCard' | 'Stepper' | 'Segmented' | 'Avatar' | 'Accordion'
   | 'Rating' | 'Combobox' | 'Drawer' | 'VirtualList' | 'ContextMenu'
   | 'CoinFlip' | 'Versus' | 'Video' | 'Particles' | 'LevelPath'
-  | 'Float' | 'Connector';
+  | 'Float' | 'Connector'
+  | 'dialog' | 'choiceList' | 'portrait';
 
 /** 布局约束：坐标/尺寸/弹性。x/y 触发绝对定位；flex 在父 Panel/Screen 内生效。 */
 export interface LayoutConstraints {
@@ -564,6 +565,39 @@ export interface VideoProps {
   controls?: boolean; loop?: boolean; autoplay?: boolean; muted?: boolean;
 }
 
+// ── 剧情 / VN 三件（REQ-DIALOGUE M1·闭集 VN 控件·消费 t3-dialogue 投影·退役 ui/vn React 版）────────────
+// 数据契约继承自 ui/vn `VNBinding` 的**形状**（dialogueEntityId/portrait），但**代码不继承**（纯 LayoutNode·非 React）。
+//   · 投影（读世界）：给 `bind`=对话实体 id → `resolveDialogue(tree, DialogueSource)` 从世界当前节点填 speaker/text/options
+//     （标量 UIDataSource 表达不了「变长选项 + 逐项可选性」这类结构投影·故为独立投影器·镜像 resolveBindings）。
+//   · 信号（写世界）：dialog 点击→`dialogue.advance`；choiceList 选中→`dialogue.choose` + arg=下标
+//     （t3-dialogue 已认 arg 字符串→无需游戏 handler·见 src/skills/tier3/dialogue.ts）。
+// 红线：控件=闭集纯数据·禁手写 React/DOM；typewriter 等观感=控件渲染参数（render-only·不进 sim）。
+
+/** 台词框：说话人 + 台词 + 推进。投影当前对话节点 speaker/text/emotion/kind；可推进节点点击发 `advanceAction`（缺省 dialogue.advance）。 */
+export interface DialogProps {
+  speaker?: string;          // 说话人名（literal·或经 bind 投影填）
+  text?: string;             // 台词正文（同上·复用 Label 打字机/emoji/字体）
+  emotion?: string;          // 情绪键（M1 透出 data-emotion·M2 驱动立绘变体）
+  kind?: 'line' | 'choice' | 'check'; // 当前节点种类（投影填）：choice 节点隐推进提示（推进交给 choiceList）
+  advanceAction?: string;    // 推进信号名（缺省 dialogue.advance）
+  typewriter?: number;       // 打字机每字 ms（复用 Label 逐字揭示·render-only 不进 sim）
+  bind?: string;             // 对话实体 id（resolveDialogue 投影 speaker/text/emotion/kind）
+}
+/** 选项列表：choice 节点选项 + 可选性（`available:false`→灰显不可点）。选中发 `chooseAction` + arg=下标（或 actionArg）。 */
+export interface ChoiceListProps {
+  options?: Array<{ label: string; available?: boolean; actionArg?: string }>;
+  chooseAction?: string;     // 选择信号名（缺省 dialogue.choose）
+  bind?: string;             // 对话实体 id（resolveDialogue 投影 options + 逐项 optionAvailable）
+}
+/** 立绘槽：art 图（经资产索引·已解析 URL）+ emotion 变体键 + 角色名。纯展示（无信号·表现层旁路）。缺图→名首字/剪影占位（绝不空白/报错）。 */
+export interface PortraitProps {
+  art?: string;              // 立绘图 URL（sim 持资产 key·游戏经 resolveAsset 解析后填·同 Image.src）
+  emotion?: string;          // 情绪变体键（M1 透出 data-emotion·M2 emotion→assetKey 表选图）
+  name?: string;             // 角色名（底部小标·缺省无）
+  side?: 'left' | 'right';   // 站位（缺省 left·双人对话名对齐用）
+  bind?: string;             // 对话实体 id（resolveDialogue 投影 name=speaker·emotion=当前节点情绪）
+}
+
 export type ComponentProps =
   | ButtonProps | LabelProps | DropdownProps | BadgeProps | InputProps | PanelProps
   | CheckboxProps | ToggleProps | RadioGroupProps | ImageProps | ScreenProps | SliderProps
@@ -572,6 +606,7 @@ export type ComponentProps =
   | RatingProps | ComboboxProps | DrawerProps | VirtualListProps | ContextMenuProps
   | CoinFlipProps | VersusProps | VideoProps | ParticlesProps | LevelPathProps
   | FloatProps | ConnectorProps
+  | DialogProps | ChoiceListProps | PortraitProps
   | Record<string, never>;
 
 /** LayoutNode = 弱模型填写的 UI 数据单元。type + id + props 必填；layout/children 按需。 */

@@ -411,6 +411,40 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
     ],
     sample: { type: 'Versus', id: 's-versus', props: { left: { rank: 'A', suit: '♠' }, right: { rank: 'K', suit: '♥' }, label: '76 : 24', winner: 'left' } },
   },
+  // ── 剧情 / VN 三件（REQ-DIALOGUE M1·消费 t3-dialogue·投影读世界走 resolveDialogue(bind=对话实体 id)）──
+  {
+    type: 'dialog', summary: '台词框（说话人 + 台词 + 推进）', whenToUse: 'VN/剧情对话当前行。literal 填 speaker/text，或 bind=对话实体 id 由 resolveDialogue 投影。line/check 节点整框可点发 dialogue.advance；choice 节点配 choiceList 用。', children: 'none',
+    props: [
+      { name: 'speaker', type: 'string', describe: '说话人名（或 bind 投影填）' },
+      { name: 'text', type: 'string', describe: '台词正文（复用 Label 打字机/emoji/字体）' },
+      { name: 'emotion', type: 'string', describe: '情绪键（透出 data-emotion·M2 驱动立绘变体）' },
+      { name: 'kind', type: 'enum', values: ['line', 'choice', 'check'], describe: '当前节点种类（投影填·choice 时隐推进提示）' },
+      { name: 'advanceAction', type: 'string', default: 'dialogue.advance', describe: '推进信号名（缺省 dialogue.advance）' },
+      { name: 'typewriter', type: 'number', describe: '打字机每字 ms（render-only 不进 sim）' },
+      { name: 'bind', type: 'string', describe: '对话实体 id（resolveDialogue 投影 speaker/text/emotion/kind）' },
+    ],
+    sample: { type: 'dialog', id: 's-dialog', props: { speaker: '林清越', text: '你终于来了……我等这一刻很久了。', emotion: 'warm', kind: 'line' } },
+  },
+  {
+    type: 'choiceList', summary: '选项列表（可选性门控）', whenToUse: 'choice 节点的选项。literal 填 options，或 bind=对话实体 id 由 resolveDialogue 投影当前选项 + optionAvailable。选中发 dialogue.choose + arg=下标（t3-dialogue 认 arg 串·无需游戏 handler）。available:false→灰显不可点。', children: 'none',
+    props: [
+      { name: 'options', type: 'list', describe: '选项 [{label,available?,actionArg?}]·available:false 灰显不可点（或 bind 投影填）' },
+      { name: 'chooseAction', type: 'string', default: 'dialogue.choose', describe: '选择信号名（缺省 dialogue.choose·arg=下标）' },
+      { name: 'bind', type: 'string', describe: '对话实体 id（resolveDialogue 投影 options + 逐项可选性）' },
+    ],
+    sample: { type: 'choiceList', id: 's-choices', props: { options: [{ label: '坦白心意' }, { label: '岔开话题' }, { label: '沉默不语（需好感 ≥ 10）', available: false }] } },
+  },
+  {
+    type: 'portrait', summary: '立绘槽（art + emotion + 名）', whenToUse: '角色立绘。art=已解析图 URL（sim 持 key）；缺图→名首字/剧场面具占位（绝不空白）。bind=对话实体 id 由 resolveDialogue 投影 name=speaker/emotion。纯展示无信号。', children: 'none',
+    props: [
+      { name: 'art', type: 'string', describe: '立绘图 URL（sim 持资产 key·resolveAsset 后填·同 Image.src）' },
+      { name: 'emotion', type: 'string', describe: '情绪变体键（透出 data-emotion·M2 emotion→assetKey 表选图）' },
+      { name: 'name', type: 'string', describe: '角色名（底部小标）' },
+      { name: 'side', type: 'enum', values: ['left', 'right'], describe: '站位（缺省 left·名对齐）' },
+      { name: 'bind', type: 'string', describe: '对话实体 id（resolveDialogue 投影 name=speaker·emotion）' },
+    ],
+    sample: { type: 'portrait', id: 's-portrait', props: { name: '林清越', emotion: 'warm', side: 'left' }, layout: { width: 120, height: 168 } },
+  },
 ];
 
 /** 按 type 取 spec（校验器/查询用）。 */

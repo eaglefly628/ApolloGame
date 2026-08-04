@@ -1,8 +1,8 @@
 export { renderNode, formatNumber } from './render.js';
 export { mountUI, showToast, ensureUiKeyframes, ensureWebfonts } from './server.js';
 export type { MountHandle } from './server.js';
-export { resolveBindings, isVisible } from './bindings.js';
-export type { UIDataSource } from './bindings.js';
+export { resolveBindings, isVisible, resolveDialogue } from './bindings.js';
+export type { UIDataSource, DialogueSource, DialogueView } from './bindings.js';
 export { UI_CATALOG, catalogSpec } from './catalog.js';
 export type { UiComponentSpec, UiPropSpec } from './catalog.js';
 export { COMPOSED_SAMPLES } from './composed-samples.js';
@@ -20,4 +20,5 @@ export type {
   CardProps, PlayingCardProps, StepperProps, SegmentedProps, AvatarProps, AccordionProps,
   RatingProps, ComboboxProps, DrawerProps, VirtualListProps, ContextMenuProps,
   CoinFlipProps, VersusProps,
+  DialogProps, ChoiceListProps, PortraitProps,
 } from './types.js';

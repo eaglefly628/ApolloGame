@@ -26,8 +26,9 @@
 
 <!-- REQ-RETRO2-能力库整理（P1·owner 三裁缩范围）已完结（查 git 历史）。 -->
 
-### REQ-DIALOGUE-剧情基础线 · 剧情向 Dialogue 能力做成基础件+Sample+Template · [2026-08-03] · owner 令（约会性单机超休闲转型线·owner 同日令启动） → **图纸在档：`docs/design/dialogue-line-blueprint-2026-08.md`（派工唯一真相）** · status: **in-progress（M1 待派 PUI）** · 优先级: P1（转型关键路径） · 类型: 能力线（引擎+UI 基座+样板）
+### REQ-DIALOGUE-剧情基础线 · 剧情向 Dialogue 能力做成基础件+Sample+Template · [2026-08-03] · owner 令（约会性单机超休闲转型线·owner 同日令启动） → **图纸在档：`docs/design/dialogue-line-blueprint-2026-08.md`（派工唯一真相）** · status: **in-progress（M1 ✅ PUI done·待 Lead 对抗性验收；M2/M3 next）** · 优先级: P1（转型关键路径） · 类型: 能力线（引擎+UI 基座+样板）
 > 四里程碑（详见图纸）：M1 闭集 VN 控件三件（dialog/choiceList/portrait·PUI·high·**第一步**·验收过即退役 ui/vn）→ M2 立绘/表情链（emotion→资产 key 纯数据表·PUI+PA）∥ M3 伴侣在场件（presence 起手模板+事件→反应数据表·PUI）→ M4 Sample 示范游戏 + `@ui/starters` 剧情起手包。t3-dialogue 已完备**不改**（输入接缝已为闭集 UI 预留 arg 通道）。悬置段=DokiWorld 数值双向契约，等 owner 三样材料（真卡 schema/宿主接口文档/双人确认）。每步 Lead 对抗性验收。
+> **M1 ✅ done（PUI·2026-08-04·待 Lead 对抗性验收）**：catalog 闭集新增三控件 `dialog`/`choiceList`/`portrait`（沿 panelTexture 先例·types+render+catalog describe+validate 自动认+点名测试+ui.md 回填+house 主题取色可皮）。**投影读世界**=另立结构投影器 `resolveDialogue(tree, DialogueSource)`（bindings.ts·DI 接口·ui 不 import @skills）——因标量 UIDataSource 表达不了「变长选项+逐项 optionAvailable」这类结构投影；写世界=`dialogue.advance`/`dialogue.choose`+arg 下标（t3-dialogue 已认 arg 串·零游戏 handler）。守卫：`src/ui/components/dialogue.test.ts`（8 例·validate/渲染/投影/可选性门控/bind 未命中透传）+ catalog-coverage 41 型 + game-i `dialogue-demo.ts`（`💬 剧情·VN 对话三件` tab·+测试+audit 0 阻断）。scoped-gate 全绿。**Lead 评判**：M1 确为真闭集缺口（非可重组·游戏代码建选项列=「代码重建 UI 树」反模式）·PUI 独立复核同判接受。**退役令待触发**：M1 验收过→ PUI 出小单标 `ui/vn` deprecated 并删。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
