@@ -119,3 +119,25 @@ export { weightedPick } from './weighted-pick.js';
 // weighted-spawn（REQ-TAPSPAWN·game101 生成器缺口）：信号→（可选）原子扣自身资源→世界种子 PRNG 按权重表
 // 抽一个模板→发 SpawnRequest（真生成交现成 prefab-spawn）。runsAfter resource-apply 打破 RMW 伪环。
 export { weightedSpawnCapability } from './weighted-spawn.js';
+// matrix-duel（REQ-MATRIXDUEL·game108 签名机制）：同时决策 × 收益矩阵结算解释器——双方 DuelIntent 齐备即查
+// DuelMatrix 定胜负 → 写 ResourceModify + 发具名 Signal → 清双方 intent；patches 三闭集（改克制/改收益/增设新手）
+// 对局开始按书写序确定性套用，坏补丁装载期拒收（checkDuelMatrix/validateDuelMatrix）。
+export {
+  matrixDuelCapability,
+  checkDuelMatrix,
+  validateDuelMatrix,
+  resolveDuelMatrix,
+  duelVerdict,
+  DUEL_PATCH_KINDS,
+} from './matrix-duel.js';
+export type {
+  DuelThrowId,
+  DuelEffect,
+  DuelPayoff,
+  DuelTie,
+  DuelTable,
+  DuelPatch,
+  DuelMatrix,
+  DuelIntent,
+  DuelOutcome,
+} from './matrix-duel.js';

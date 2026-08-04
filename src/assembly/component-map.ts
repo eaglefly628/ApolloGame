@@ -138,6 +138,7 @@ import type {
   Zone,
 } from '@engine/protocol/components.js';
 import type { DialogueScript, DialogueAdvance, DialogueChoose } from '@skills/tier3/dialogue.js';
+import type { DuelMatrix, DuelIntent, DuelOutcome } from '@skills/tier2/matrix-duel.js';
 
 export interface ComponentDataMap {
   Acceleration: Omit<Acceleration, 'type'>;
@@ -274,4 +275,7 @@ export interface ComponentDataMap {
   DialogueScript: Omit<DialogueScript, 'type'>;
   DialogueAdvance: Omit<DialogueAdvance, 'type'>;
   DialogueChoose: Omit<DialogueChoose, 'type'>;
+  DuelMatrix: Omit<DuelMatrix, 'type'>;
+  DuelIntent: Omit<DuelIntent, 'type'>;
+  DuelOutcome: Omit<DuelOutcome, 'type'>;
 }

@@ -46,12 +46,14 @@
 > **双轨**：①过渡轨（先装·止血）=设计需求单自动起草一键复制 + 工坊**收稿箱**（上传/投递 `.dc.html` 自动归位游戏目录+登记档案指纹）——owner 继续用 Claude Design 网页但搬运消失；②主轨（试产定夺）=编排器扩「设计会话」类型（无头+游戏 UI 设计技能包+house 风格锚+需求单→ `.dc.html` 直接落档），工坊预览+反馈框→一键修订轮，**定稿=人门**（登记指纹·自动挂「在档=1:1 复刻基准」铁律·将来接 R3 实现 vs 稿像素比对）。事实前提：Claude Design 网页产品无可编程拉起接口——「自动拉起对话」只能在自养会话轨实现。主轨质量由 owner 试产一屏亲比后定夺全切与否。
 > **⚖ Lead 终审 过渡轨（2026-08-04）：✅ PASS**（`6ef243086`·全库门禁绿·同批交付沉浸布局修正+三处隐藏+换新会话钮）——五偏差照准：base64 收稿沿 upload 先例够用；上下文百分比 200k 硬编码=已标「估算值」诚实口径；风格包未锚定占位=预期分支；`concept_digest` 每轮无条件算（15s 超时上限）=沿既有 digest 写法·记微债随后续优化；requests.md 不代更=域纪律正确（本行即 Lead 补记）。换新会话=复用既有 reset 机制下沉到每 tab+接力包并入生产板阶段摘要（不造第二真相=正确）。测试卡带清理亲核干净。**主轨试产一屏排队（R1 后）**。
 
-### REQ-MATRIXDUEL-同时决策矩阵 · 「同时出招 × 收益矩阵」结算解释器（`matrix-duel`） · [2026-08-04] · game108《拳律》立项带出（owner 同日批 108） → **指派：Opus**（spec 已写死·见下） · status: **open（S3 卡口·未落地不进玩法骨架）** · 优先级: P1 · 类型: tier2 能力下沉
+### REQ-MATRIXDUEL-同时决策矩阵 · 「同时出招 × 收益矩阵」结算解释器（`matrix-duel`） · [2026-08-04] · game108《拳律》立项带出（owner 同日批 108） → **指派：Opus**（spec 已写死·见下） · status: **done（待 Lead 对抗性验收）** · 优先级: P1 · 类型: tier2 能力下沉
 > **要什么**：`DuelMatrix{throws[],beats{},payoff{},tie{},patches[]}` + 双方 `DuelIntent{throw}` → 两侧 intent 齐备即结算：查表定胜负 → 发具名 `Signal` + 写 `ResourceModify`（伤害/附带效果）→ 清 intent。`patches` 在对局开始时按序确定性套用（**改 beats / 改 payoff / 增 throw 维度**三类补丁）。
 > **为什么不能重组**（Lead 评判·已按核心规则走过「能否现有能力表达」）：`ConditionExpr` 的 `id` 是**静态**的，无法按「本回合两侧出招」动态查表。三手可硬写 9 条 `t2-event-when` 规则，但 ① 遗物**运行时改写**判定表、② 遗物**增设第四手**（3×3→4×4）静态规则集表达不了——放弃它等于放弃该作签名机制。
 > **为什么值得进引擎**（通用·非游戏专属）：任何同时决策收益矩阵对决同吃——猜拳全变体（含蜥蜴斯波克）、田忌赛马、押注对决、兵种相克战棋。纯整数查表 → 确定性/可回放/可审计。
 > **边界（防加宽）**：**不含** AI 策略选招（走 `t2-event-when`+`t2-weighted-spawn` 重组）、**不含**手牌（`t2-card-pile`）、**不含**押注（`t2-craft-recipe`+`t2-modifier-stack`）。允许触碰：`src/skills/tier2/matrix-duel.ts` + registry 注册 + `component-map` + 点名测试 + `docs/playbooks/events-logic.md` 回填一行。
 > 消费方与验收语义：`docs/design/game108/{gdd.md 条款 R-108-01~04/30/31, capability-plan.md §4}`。
+> **⚖ Lead 裁决（2026-08-04）：下沉照准**——重组不可行论证成立（静态规则集表达不了运行时改表/增维）·通用多消费方·边界防加宽合格·**署名更正：spec 起草=game108 会话·Lead 终审照准**。
+> **✅ done（Opus·2026-08-04·待 Lead 对抗性验收）**：`t2-matrix-duel` 落地（`src/skills/tier2/matrix-duel.ts` + registry + component-map + 手册一行 + 31 点名测试全绿）——`DuelMatrix/DuelIntent/DuelOutcome` 三组件·补丁三闭集（beats/payoff/add-throw）按书写序纯函数 fold·落盘门 `checkDuelMatrix`/`validateDuelMatrix` 拒收未知类型/断链手/表残缺/互克/effects 越权改血量·**偏差待裁**：为同时满足「runsBefore resource-apply」与「信号不被 event-when 全局清扫」拆成两系统（结算 Update + 播报 Commit·同相位可证成环，测试内附回归）。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 

@@ -21,6 +21,7 @@
 | 胜负/占据/到达判定 | `t2-zone-occupancy` | 挂 `Zone{outFlag,矩形,requiredTag,count}`；下游读 outFlag |
 | 组数量作为可读数值 | `t2-group-count` | 挂 `GroupCount{countResource,requiredTag}`；阈值配 event-when |
 | 演出时序（第 N tick 发什么） | `t3-timeline` | 挂 `Timeline{id,cues:[{at,do}],playOnSignal,skipOnSignal?}`；do=signal/flag/resource/spawn 四闭集；播完发 `timeline:done:<id>` |
+| 双方同时出招 → 查表定胜负收益 | `t2-matrix-duel` | 对局实体挂 `DuelMatrix{hpResource,throws,beats,payoff,tie,patches?}`，双方实体各挂 `Resource{id:hpResource}` + 本回合 `DuelIntent{throw}`；两侧齐备即结算（写 ResourceModify + 发具名 Signal + 清 intent）。遗物/变体 = `patches` 三闭集（改克制 / 改收益 / 增设一手），坏补丁装载期拒收（`validateDuelMatrix`）。AI 选招 / 手牌 / 押注不归它 |
 
 ## ② 样例指针
 

@@ -59,6 +59,7 @@ import {
   bounceRelayCapability,
   pullAnchorCapability,
   weightedSpawnCapability,
+  matrixDuelCapability,
 } from '@skills/tier2/index.js';
 import { dialogueCapability, match3BoardCapability, prefabCapability, casterCapability, aggroCapability, pokerHandCapability, cardScoringCapability, flowCapability, mergeRuleCapability, timelineCapability, slotPayoutCapability, blockGridCapability, handPatternCapability } from '@skills/tier3/index.js';
 
@@ -156,6 +157,10 @@ export const ALL_CAPABILITIES: readonly CapabilityDefinition[] = [
   // t2-weighted-spawn（REQ-TAPSPAWN·game101 生成器缺口）：信号→（可选）原子扣自身资源→世界种子 PRNG
   // 按权重表抽一个模板→发 SpawnRequest（真生成交现成 prefab-spawn）。runsAfter resource-apply 破 RMW 伪环。
   weightedSpawnCapability,
+  // t2-matrix-duel（REQ-MATRIXDUEL·game108《拳律》签名机制）：同时决策 × 收益矩阵结算解释器——双方 DuelIntent
+  // 齐备即查 DuelMatrix 定胜负 → 写 ResourceModify + 发具名 Signal → 清双方 intent。判定表 + 三闭集补丁
+  // （改克制/改收益/增设新手）全是数据，坏补丁装载期拒收；猜拳全变体/田忌赛马/兵种相克通吃。
+  matrixDuelCapability,
   // tier3
   dialogueCapability,
   match3BoardCapability,
