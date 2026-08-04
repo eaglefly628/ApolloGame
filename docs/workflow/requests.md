@@ -34,6 +34,14 @@
 ### REQ-PIPESOFT-管线软件 · 八步法软件化：一句话入口+向导壳+阶段编排器+IDE 接入 · [2026-08-03] · owner 批（四裁在图纸头）→ **图纸：`docs/design/pipeline-software-plan-2026-08.md`（唯一真相）** · status: **in-progress（P0 施工中·P1 待 Lead 出编排器细图）** · 优先级: P1（与剧情线并行·域不冲突） · 类型: 生产线基建（workshop 壳=PST 域·编排器/MCP=引擎 scripts）
 > P0 ✅（阶梯成文·`217b87d60`）→ P1a ✅ 编排器核（`5f070a4ed`·Lead 终审 PASS·九偏差裁决在编排器图纸尾）→ P1b ✅ 向导壳（`89b3f9bd4`·Lead 终审 PASS·三偏差照准：两模式解读=workshop 壳内第三入口不碰 studio 旧板；wizard-concept 不预填 name=不伪造数据由会话补；2.5s 快路径阈值=运行态调参。真浏览器四截图在案·人门空签灰钮不代填亲验·测试卡带已清）→ **P2 MCP+斜杠命令+板红拦推 hook：排队·建议 P3 试点跑过一轮再动**（试点只需 P1）→ P3 试点=owner 自派 RPS 走全程（Lead 只管软件不管游戏内容·真机联调首项=编排器权限口径 acceptEdits+允许清单）。红线：无特权通道·代签禁止·阶梯降级留痕。**留验项**：P1b 施工中见 `pipeline-smoke.py` 4 条 pre-existing 基线红（stash 对比证非本单引入）——下次巡检核对归属。
 
+### REQ-SPECTRACE-条款追踪 · 策划细则→机器验收的追踪矩阵+守卫（无限更新循环） · [2026-08-04] · owner 令（复查不靠人看·按细则收工） → **图纸：`docs/design/spec-trace-blueprint-2026-08.md`** · status: **in-progress（V1 施工中·试点 game-c）** · 优先级: P1（客观复查线①） · 类型: 生产线基建（守卫+文档规约）
+> 三件套：细则编号`【R-<游戏>-<序号>】`（GD 写）+ 追踪矩阵 spec-trace.json（数据）+ spec-trace-guard（未覆盖/死引用/**过期=文档改了旧检查自动失效**/孤儿 四判·bless 带证据留痕）。human 型验收合法但占比上报表。V1 独立跑不接门禁；V2 接 S4/S5 门+复查门清单+stale 自动开单（与编排器汇流）。
+
+### REQ-RENDERCHECK-渲染裁判 · 渲染器当客观判定器：三探针进机器门 · [2026-08-04] · owner 令（「用渲染器直接判定」·连提两次=授权） → Lead 口径已出（图纸随 R1 施工时落） · status: **open（R1 排队·SPECTRACE V1 后启动）** · 优先级: P1（客观复查线②） · 类型: 生产线基建（机器门加严）
+> R1 渲染冒烟（S3 门·真浏览器装载→非空白像素方差+零控制台错+机器自动截图=门证·施工会话截图作业退役）→ R2 真界面走查（S4 门·验收剧本操作序列经真实 UI 重放·闭集控件自动盖机器可寻标签=通用驱动器红利）→ R3 标准照比对（S5/S8 门·固定种子固定帧·像素漂移机器发现+人裁意图·探针模式冻结动效）。验收物类型=SPECTRACE 矩阵的 `probe` 型（两案汇流）。
+
+### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
+
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
 
 ## 已结案条目 → 查 git 历史（owner 2026-08-03 拍板删除归档层·`git log --oneline --grep=REQ-XXX` 或按提交信息 grep·随时可恢复）
