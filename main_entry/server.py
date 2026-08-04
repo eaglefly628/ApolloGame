@@ -19,6 +19,7 @@ from .blueprints import PRESET_BLUEPRINTS
 from .claude_code import handle_llm_live
 from .config import _features
 from .design_drafts import _draft_id_from_path, design_draft_delete, design_draft_get, design_draft_list, design_draft_put
+from .design_ingest import design_preview_path, handle_design_finalize, handle_design_ingest, handle_design_ledger_get
 from .games_list import handle_catalog, handle_game_cover_generate, handle_games_list
 from .generate_api import handle_generate
 from .groups import handle_matlib_groups_get, handle_matlib_groups_put
@@ -207,6 +208,17 @@ class APIHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _serve_design_preview(self, slug: str, filename: str) -> None:
+        """GET /api/design/preview?slug=<slug>&file=<filename> → 只读伺服已收 .dc.html 设计稿正文
+        （收稿箱「👁 预览」新窗口打开用）。路径防护见 design_ingest.design_preview_path（basename 白名单
+        +归一化后仍在该游戏设计目录内的纵深断言，同 _serve_public_games 先例）。"""
+        ok, target = design_preview_path(slug, filename)
+        if not ok:
+            self._send_json(400, {'success': False, 'error': target}); return
+        if not target.is_file():
+            self.send_response(404); self.end_headers(); return
+        self._send_file(target, 'text/html; charset=utf-8')
+
     _STATIC_CT = {
         '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8',
         '.mjs': 'application/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -323,6 +335,12 @@ class APIHandler(BaseHTTPRequestHandler):
             self._serve_package_download((qs.get('id') or [''])[0])
             return
 
+        # 设计稿预览（REQ-DESIGNLINE 过渡轨②·收稿箱「👁 预览」新窗口·文本正文出，先于 JSON 分派）。
+        if path == '/api/design/preview':
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            self._serve_design_preview((qs.get('slug') or [''])[0], (qs.get('file') or [''])[0])
+            return
+
         m_stats = re.fullmatch(r'/api/library/([a-z0-9][a-z0-9-]*)/stats', path)
         if m_stats:
             self._send_json(200, handle_library_stats(m_stats.group(1)))
@@ -389,6 +407,9 @@ class APIHandler(BaseHTTPRequestHandler):
         elif path == '/api/art/ledger':
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_art_ledger((qs.get('slug') or [''])[0])
+        elif path == '/api/design/ledger':  # 收稿箱列表（REQ-DESIGNLINE 过渡轨②）
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            data = handle_design_ledger_get((qs.get('slug') or [''])[0])
         elif path == '/api/pipeline':
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_pipeline_board((qs.get('slug') or [''])[0])
@@ -600,6 +621,16 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_art_reskin(body)
             except Exception as e:
                 data = {'success': False, 'error': f'reskin 异常: {e}'}
+        elif path == '/api/design/ingest':  # 收稿箱落盘（REQ-DESIGNLINE 过渡轨②）
+            try:
+                data = handle_design_ingest(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'design ingest 异常: {e}'}
+        elif path == '/api/design/finalize':  # 定稿人门（过渡轨③·note 永远真人手填）
+            try:
+                data = handle_design_finalize(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'design finalize 异常: {e}'}
         elif path == '/api/pipeline/gate':
             try:
                 data = handle_pipeline_gate(body)

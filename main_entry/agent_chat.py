@@ -12,6 +12,7 @@ from .llm_log import _llm_log
 from .llm_transport import LLM_PROVIDERS, _FALLBACK_CATALOG, _provider_request, get_api_key
 from .mock import _mock_revise
 from .paths import LIBRARY_DIR, _run_manifest_check, _valid_design_relpath, _valid_slug
+from .pipeline_board import _pipeline_cli
 from .protocols import _capgap_record, _split_art_ops, _split_capgap
 from .sysutil import ROOT
 from .ts_carts import _run_cart_logic_check, _split_reply_ts, _ts_cart_enabled
@@ -34,6 +35,33 @@ def _agent_art_digest(slug: str, cap: int = 40) -> str:
         skin = f" skin={r.get('skinKey')}" if r.get('skinKey') else ''
         lines.append(f"{r.get('no')} [{r.get('status')}] {r.get('query', '')}{skin}")
     return '\n'.join(lines) or '(empty ledger)'
+
+def _agent_concept_digest(slug: str) -> str:
+    """立项卡摘要 + 生产板当前阶段（owner 2026-08-04「换新会话」接力包）：薄封装既有
+    `_pipeline_cli(['board', slug, '--json'])`（board 命令已算好 concept + 八阶段状态·不建第二套
+    阶段判定）。短超时（15s，聊天路径不能被拖住）——取不到板（新游戏/CLI 异常/超时）明说，不断链。"""
+    try:
+        res = _pipeline_cli(['board', slug, '--json'], timeout=15)
+    except Exception:
+        return '(pipeline board unavailable)'
+    if not res.get('ok'):
+        return '(pipeline board unavailable — new game or not yet staged)'
+    concept = res.get('concept') or {}
+    lines = []
+    if concept.get('name') or concept.get('pitch'):
+        lines.append(f"concept: name={concept.get('name') or '-'} · pitch={concept.get('pitch') or '-'}")
+    if concept.get('style'):
+        lines.append(f"style note: {concept['style']}")
+    if concept.get('refs'):
+        lines.append(f"refs: {concept['refs']}")
+    stages = res.get('stages') or []
+    if stages:
+        lines.append('stages: ' + ' '.join(f"{st.get('id')}:{st.get('status')}" for st in stages if isinstance(st, dict)))
+    nxt = res.get('next')
+    if nxt:
+        lines.append(f'next stage: {nxt}')
+    return '\n'.join(lines) or '(no concept/board data yet)'
+
 
 def _agent_design_digest(slug: str, cap_chars: int = 6000) -> str:
     """gd 角色的底案全文注入（超预算按文件截断·文件清单永远完整）。库缺失=明说。"""
@@ -170,6 +198,7 @@ def handle_agent_chat(body: dict) -> dict:
     design_digest = _agent_design_digest(slug)  # 三角色同吃（owner 07-12「程序凭名字瞎猜」——底案=spec，谁施工谁必读）
     manifest_json = json.dumps(current, ensure_ascii=False)
     art_digest = _agent_art_digest(slug) if role in ('gd', 'art') else ''
+    concept_digest = _agent_concept_digest(slug)  # 立项卡+生产板阶段（owner 08-04「换新会话」接力包·三角色同吃）
 
     # ── token 优化 P0+P1（owner 07-15 review 拍板）────────────────────────────────
     # P0：能力目录抽成**独立首段**（≈1.1 万 token·全角色全游戏共享）→ anthropic 独立缓存断点跨对话复用、
@@ -177,14 +206,16 @@ def handle_agent_chat(body: dict) -> dict:
     # P1：HTTP 供应商（无 --resume 的全量重发通道）用「**开局冻结上下文**」——底案/manifest/logic/美术摘要
     #     在对话第一轮快照进 system 并全程不变（前缀稳定=多轮缓存全程命中）；中途工件变更不改 system，
     #     改为**末条消息前附更新提示**（最新全文·以此为准），noted 指纹防重复附。CC 通道已有同范式（mf_hash）。
-    ctx = {'design': design_digest, 'manifest': manifest_json, 'art': art_digest, 'logic': logic_text}
+    # concept（立项卡+生产板阶段）不参与 ctx_hash/更新提示——阶段流转不必打断对话；它只在「开局」这一轮
+    # 现身（system 只在开局真发·CC resume/HTTP 冻结后的轮次都不重发 system），过时也无害（下轮 换新会话 即换新）。
+    ctx = {'design': design_digest, 'manifest': manifest_json, 'art': art_digest, 'logic': logic_text, 'concept': concept_digest}
     ctx_hash = hashlib.sha1('|'.join([design_digest, manifest_json, art_digest, logic_text]).encode()).hexdigest()[:16]
     if provider != 'claude-code':
         stored = _ws_http_ctx_load(slug, role)
         if len(messages) <= 1 or not stored.get('hash') or not isinstance(stored.get('ctx'), dict):
             _ws_http_ctx_save(slug, role, ctx_hash, ctx, ctx_hash)  # 开局（或无快照）：冻结当前版
         else:
-            ctx = {k: str(stored['ctx'].get(k, '')) for k in ('design', 'manifest', 'art', 'logic')}  # 用冻结版拼 system
+            ctx = {k: str(stored['ctx'].get(k, '')) for k in ('design', 'manifest', 'art', 'logic', 'concept')}  # 用冻结版拼 system
             if stored.get('noted') != ctx_hash:  # 工件变了且尚未传达 → 末端更新提示（system 不动·缓存前缀保命中）
                 note = ('【提示】游戏工件已更新为最新版（以下为准·开局注入的旧版作废）：\n'
                         + f'\n### 设计底案（最新）\n{design_digest}\n'
@@ -206,7 +237,8 @@ def handle_agent_chat(body: dict) -> dict:
                    .replace('{CURRENT_MANIFEST}', ctx['manifest'])
                    .replace('{CAPABILITY_CATALOG}', '（见最前『引擎能力目录』共享块——那是唯一词汇表）')
                    .replace('{DESIGN_DOCS}', ctx['design'])
-                   .replace('{ART_DIGEST}', ctx['art']))
+                   .replace('{ART_DIGEST}', ctx['art'])
+                   .replace('{CONCEPT_DIGEST}', ctx['concept']))
     system = [catalog_seg, system_rest]  # 传输层：anthropic 逐段缓存断点·其余顺序拼接（str 调用方语义不变）
 
     # 方案 A（owner 07-11 拍板）：订阅通道用 CC 原生 session——首轮全量注入并抓 session_id，

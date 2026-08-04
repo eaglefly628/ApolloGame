@@ -388,8 +388,11 @@
           <!-- ---------- EDIT (对白编辑工坊·REQ-WORKSHOP A) ---------- -->
           <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}">
             <!-- 沉浸模式：返回键已固定在顶栏（不随内容滚动消失），这里不再重复放一个 -->
-            <div style="display:grid;grid-template-columns:.9fr 1.1fr;gap:20px;align-items:start">
-              <!-- left: project card + 8-stage lamps + actions + pending -->
+            <!-- 沉浸态布局比例修正（owner 2026-08-04 实时反馈「左边太大右边太小」）：右侧对话/创作面板升为
+                 主体（固定窄左列 300px + 右列吃满剩余，≈70%+ 宽·内容区已因侧栏/货币角标隐藏而更宽敞）；
+                 左列非核心项（下载包/删除/TS 例外/路径统计）收进「⋯ 更多」折叠，见下 editMoreOpen。 -->
+            <div style="display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start">
+              <!-- left: project card + 8-stage lamps + actions + pending（沉浸态压窄——见上） -->
               <div>
                 <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:20px;padding:16px;box-shadow:0 6px 0 rgba(58,35,18,.28)">
                   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
@@ -397,9 +400,12 @@
                     <div style="min-width:0"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:20px;color:#3a2312;line-height:1.05">{{ editName }}</div>
                     <div style="font-family:'Fredoka';font-weight:700;font-size:10px;color:#b0723a">{{ editSlug }}</div>
                     <div style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#8a5a2c;margin-top:2px">{{ editPitch }}</div>
-                    <div title="卡带本体（manifest/meta/design·独立 git 版本化）在 library/；美术资产与生产台账在 public/games/" style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#b0723a;margin-top:3px">📁 library/{{ editSlug }} · public/games/{{ editSlug }}</div>
-                    <sc-if value="{{ editStatsText }}" hint-placeholder-val="{{ false }}">
-                      <div title="卡带体量：文本工件（manifest/设计稿/台账）的文件数与行数" style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#8a5a2c;margin-top:2px">📊 {{ editStatsText }}</div>
+                    <!-- 沉浸模式隐藏（owner 2026-08-04 隐藏收尾·chromeOn 同款条件）：路径行 + 统计行=杂讯 -->
+                    <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+                      <div title="卡带本体（manifest/meta/design·独立 git 版本化）在 library/；美术资产与生产台账在 public/games/" style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#b0723a;margin-top:3px">📁 library/{{ editSlug }} · public/games/{{ editSlug }}</div>
+                      <sc-if value="{{ editStatsText }}" hint-placeholder-val="{{ false }}">
+                        <div title="卡带体量：文本工件（manifest/设计稿/台账）的文件数与行数" style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#8a5a2c;margin-top:2px">📊 {{ editStatsText }}</div>
+                      </sc-if>
                     </sc-if></div>
                   </div>
                   <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#3a2312;margin-bottom:6px">生产八关（详情在旧工作台 🏭 生产板）</div>
@@ -408,14 +414,27 @@
                       <span title="{{ l.tip }}" style="{{ l.style }}">{{ l.label }}</span>
                     </sc-for>
                   </div>
+                  <!-- 沉浸态主按钮（owner 2026-08-04 布局比例修正：只留运行/美术库/旧工作台/向导——
+                       其余低频操作收进下方「⋯ 更多」，给右侧对话面板让宽） -->
                   <div style="display:flex;gap:8px;flex-wrap:wrap">
                     <button onClick="{{ runCart }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">▶ 运行</button>
                     <button onClick="{{ goArtFor }}" title="打开游戏美术库并定位到这盘游戏" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">🎨 美术库</button>
-                    <button onClick="{{ downloadPack }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⬇ 下载包</button>
                     <button onClick="{{ openOldBench }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⇄ 旧工作台（试玩 / 美术台）</button>
                     <button onClick="{{ wizardToggle }}" title="向导模式（REQ-PIPESOFT P1b·第三入口）：一句话入口 / 步进器只亮下一步 / 跑机器门 / 请人门——详情仍可去旧工作台 🏭 生产板" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ wizardToggleLabel }}</button>
-                    <button onClick="{{ deleteCart }}" title="删除这盘卡带（不可恢复·会二次确认）" style="{{ delBtnStyle }}" style-active="{{ miniBtnActive }}">🗑 删除</button>
+                    <button onClick="{{ editMoreToggle }}" title="下载包 / 删除卡带 / TS 例外开关这类低频操作" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ editMoreLabel }}</button>
                   </div>
+                  <sc-if value="{{ editMoreOpenOn }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:2px dashed rgba(58,35,18,.25)">
+                      <button onClick="{{ downloadPack }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">⬇ 下载包</button>
+                      <button onClick="{{ deleteCart }}" title="删除这盘卡带（不可恢复·会二次确认）" style="{{ delBtnStyle }}" style-active="{{ miniBtnActive }}">🗑 删除</button>
+                    </div>
+                    <sc-if value="{{ tsFeatureOn }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;gap:8px;align-items:center;margin-top:8px;background:rgba(160,50,34,.07);border:2px dashed #a03222;border-radius:10px;padding:7px 10px">
+                        <button onClick="{{ toggleAllowTs }}" title="展示例外（owner 07-11）：打勾后「程序」对话可提议本卡带的 logic.ts——记债：该卡带退出回放/换皮/bench 保证" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ allowTsLabel }}</button>
+                        <span style="font-family:'Noto Sans SC';font-weight:600;font-size:10px;color:#a03222">{{ tsDebtNote }}</span>
+                      </div>
+                    </sc-if>
+                  </sc-if>
                   <!-- 向导面板（REQ-PIPESOFT P1b·第三入口·薄封装 concept/gate/signoff/orchestrator，不造第二真相） -->
                   <sc-if value="{{ wizardOpenOn }}" hint-placeholder-val="{{ false }}">
                     <div style="margin-top:12px;background:rgba(58,35,18,.05);border:2.5px dashed rgba(58,35,18,.4);border-radius:14px;padding:13px">
@@ -481,12 +500,59 @@
                       </sc-if>
                     </div>
                   </sc-if>
-                  <sc-if value="{{ tsFeatureOn }}" hint-placeholder-val="{{ false }}">
-                    <div style="display:flex;gap:8px;align-items:center;margin-top:10px;background:rgba(160,50,34,.07);border:2px dashed #a03222;border-radius:10px;padding:7px 10px">
-                      <button onClick="{{ toggleAllowTs }}" title="展示例外（owner 07-11）：打勾后「程序」对话可提议本卡带的 logic.ts——记债：该卡带退出回放/换皮/bench 保证" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ allowTsLabel }}</button>
-                      <span style="font-family:'Noto Sans SC';font-weight:600;font-size:10px;color:#a03222">{{ tsDebtNote }}</span>
+                  <!-- TS 例外开关已收进上方「⋯ 更多」折叠（owner 2026-08-04 布局比例修正） -->
+                </div>
+                <!-- 设计稿产线（REQ-DESIGNLINE 过渡轨①②③·PST 域 2026-08-04）：需求单一键复制 + 收稿箱 + 定稿人门 -->
+                <div style="margin-top:14px;background:#fffdf5;border:4px solid #3a2312;border-radius:18px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25)">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <span style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312">🎨 设计稿产线（Claude Design 网页协作）</span>
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+                    <button onClick="{{ designBriefToggle }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ designBriefToggleLabel }}</button>
+                  </div>
+                  <sc-if value="{{ designBriefOpenOn }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-bottom:10px">
+                      <textarea value="{{ designBriefText }}" onInput="{{ designBriefEdit }}" rows="10" style="width:100%;box-sizing:border-box;border:2.5px solid #3a2312;border-radius:10px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.6;color:#3a2312;background:rgba(58,35,18,.05);resize:vertical;outline:none"></textarea>
+                      <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
+                        <button onClick="{{ designBriefCopy }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">📋 复制全部</button>
+                        <span style="font-family:'Noto Sans SC';font-weight:600;font-size:10px;color:#8a5a2c">点开已自动复制一次·框内文字可全选（Ctrl/Cmd+A）或改完再点复制</span>
+                      </div>
                     </div>
                   </sc-if>
+                  <!-- 收稿箱（拖放/选择上传 Claude Design 产出的 .dc.html） -->
+                  <div style="border-top:2.5px dashed rgba(58,35,18,.3);margin-top:6px;padding-top:12px">
+                    <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#3a2312;margin-bottom:6px">📥 收稿箱</div>
+                    <div onDragOver="{{ designDropOver }}" onDrop="{{ designDrop }}" onClick="{{ designPickFile }}" style="border:3px dashed rgba(58,35,18,.4);border-radius:14px;padding:16px;text-align:center;cursor:pointer;background:rgba(255,255,255,.5)">
+                      <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#5a3d1e">拖放 .html / .dc.html 到此处，或点击选择文件</div>
+                      <div style="font-family:'Noto Sans SC';font-weight:600;font-size:10px;color:#8a5a2c;margin-top:4px">仅收自包含设计稿（不含外链 &lt;script src=&gt;）· 上限 2MB</div>
+                    </div>
+                    <sc-if value="{{ designIngestBusyOn }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="width:14px;height:14px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#5a3d1e">上传中…</span></div>
+                    </sc-if>
+                    <sc-if value="{{ hasDesignLedger }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+                        <sc-for list="{{ designLedgerRows }}" as="dl" hint-placeholder-count="2">
+                          <div>
+                            <div style="{{ dl.rowStyle }}">
+                              <span style="{{ dl.badgeStyle }}">{{ dl.badgeText }}</span>
+                              <span title="{{ dl.filename }}" style="flex:1;min-width:0;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#3a2312;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ dl.filename }}</span>
+                              <button onClick="{{ dl.preview }}" title="新窗口打开该设计稿（静态服务路径）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">👁 预览</button>
+                              <sc-if value="{{ dl.showFinalize }}" hint-placeholder-val="{{ false }}">
+                                <button onClick="{{ dl.startFinalize }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">☑ 定稿</button>
+                              </sc-if>
+                            </div>
+                            <sc-if value="{{ dl.signOpen }}" hint-placeholder-val="{{ false }}">
+                              <div style="display:flex;gap:6px;padding:6px 4px 2px;align-items:center;flex-wrap:wrap">
+                                <input value="{{ designSignByVal }}" onInput="{{ designSignByType }}" placeholder="定稿人" style="width:88px;border:2.5px solid #3a2312;border-radius:9px;padding:6px 8px;font-family:'Noto Sans SC';font-weight:600;font-size:11px;background:#fff;color:#3a2312;outline:none">
+                                <input value="{{ designSignNoteVal }}" onInput="{{ designSignNoteType }}" placeholder="review 了什么、结论是什么…（必填·永远真人手打）" style="flex:1;min-width:160px;border:2.5px solid #3a2312;border-radius:9px;padding:6px 8px;font-family:'Noto Sans SC';font-weight:600;font-size:11px;background:#fff;color:#3a2312;outline:none">
+                                <button onClick="{{ dl.confirmFinalize }}" style="{{ dl.finalizeBtnStyle }}" style-active="{{ applyBtnActive }}">{{ dl.finalizeBtnLabel }}</button>
+                              </div>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
                 </div>
                 <sc-if value="{{ hasDocs }}" hint-placeholder-val="{{ false }}">
                   <div style="margin-top:14px;background:#fffdf5;border:4px solid #3a2312;border-radius:18px;padding:14px;box-shadow:0 5px 0 rgba(58,35,18,.25)">
@@ -583,19 +649,37 @@
               </div>
               <!-- right: triple-role chat（owner 07-11 三入口：策划/美术/程序） -->
               <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:20px;box-shadow:0 6px 0 rgba(58,35,18,.28);display:flex;flex-direction:column;height:600px">
-                <div style="display:flex;gap:8px;padding:12px 14px;border-bottom:3px solid #3a2312;background:linear-gradient(180deg,#f7e6c0,#efd79e)">
-                  <button onClick="{{ pickGd }}" style="{{ gdTabStyle }}">📐 策划</button>
-                  <button onClick="{{ pickArt }}" style="{{ artTabStyle }}">🎨 美术</button>
-                  <button onClick="{{ pickPe }}" style="{{ peTabStyle }}">🔧 程序</button>
+                <!-- 角色 tab（owner 2026-08-04 追加：每 tab 自带「🔄 换新会话」+ 上下文用量百分比——
+                     换新会话=结束该角色当前后端 session，聊天记录保留，下一轮自动开新 session 并带接力包
+                     （立项卡摘要+生产板阶段+近期对话原文，见 agent_chat._agent_concept_digest） -->
+                <div style="display:flex;gap:8px;padding:12px 14px;border-bottom:3px solid #3a2312;background:linear-gradient(180deg,#f7e6c0,#efd79e);flex-wrap:wrap">
+                  <div style="display:flex;align-items:center;gap:3px">
+                    <button onClick="{{ pickGd }}" style="{{ gdTabStyle }}">{{ gdTabLabel }}</button>
+                    <sc-if value="{{ gdResetOn }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ gdReset }}" title="🔄 换新会话：结束当前 session（聊天记录保留），下一轮自动开新 session 并带接力包" style="{{ tabResetBtnStyle }}">🔄</button>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:3px">
+                    <button onClick="{{ pickArt }}" style="{{ artTabStyle }}">{{ artTabLabel }}</button>
+                    <sc-if value="{{ artResetOn }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ artReset }}" title="🔄 换新会话：结束当前 session（聊天记录保留），下一轮自动开新 session 并带接力包" style="{{ tabResetBtnStyle }}">🔄</button>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:3px">
+                    <button onClick="{{ pickPe }}" style="{{ peTabStyle }}">{{ peTabLabel }}</button>
+                    <sc-if value="{{ peResetOn }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ peReset }}" title="🔄 换新会话：结束当前 session（聊天记录保留），下一轮自动开新 session 并带接力包" style="{{ tabResetBtnStyle }}">🔄</button>
+                    </sc-if>
+                  </div>
                   <span style="margin-left:auto;font-family:'Fredoka';font-weight:700;font-size:10px;color:#8a5a2c;align-self:center">{{ chatRoleHint }}</span>
                 </div>
-                <!-- 各角色独立 CC session（owner 07-12 亮牌+可归档重开） -->
-                <div title="三个角色=三个独立 Claude Code session（每盘卡带各一套·--resume 各续各的记忆）" style="display:flex;align-items:center;gap:8px;padding:4px 14px;border-bottom:2.5px solid #3a2312;background:#fbf6e8">
-                  <span style="flex:1;font-family:ui-monospace,Menlo,monospace;font-size:9px;color:#8a5a2c;word-break:break-all">{{ chatSessionLine }}</span>
-                  <sc-if value="{{ hasChatSession }}" hint-placeholder-val="{{ false }}">
-                    <button onClick="{{ resetChatSession }}" title="归档重开：解绑当前 session，聊天记录保留；下一轮自动开新 session 并带着末 30 条历史+底案+manifest 全量重注入（=干净的上下文压实）" style="border:2px solid rgba(58,35,18,.35);border-radius:7px;background:rgba(255,255,255,.75);cursor:pointer;font-size:10px;padding:2px 8px;color:#5a3d1e;font-family:'Noto Sans SC';font-weight:700;flex:none">♻ 重开</button>
-                  </sc-if>
-                </div>
+                <!-- 各角色独立 CC session 调试行——沉浸模式隐藏（owner 2026-08-04 隐藏收尾·chromeOn
+                     同款条件；换新会话能力已上移进各 tab 旁的 🔄，这里只剩原始 session id 供调试） -->
+                <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+                  <div title="三个角色=三个独立 Claude Code session（每盘卡带各一套·--resume 各续各的记忆）" style="display:flex;align-items:center;gap:8px;padding:4px 14px;border-bottom:2.5px solid #3a2312;background:#fbf6e8">
+                    <span style="flex:1;font-family:ui-monospace,Menlo,monospace;font-size:9px;color:#8a5a2c;word-break:break-all">{{ chatSessionLine }}</span>
+                  </div>
+                </sc-if>
                 <!-- 模型/思考档（默认 Opus 4.8 · high·owner 07-11）——仅订阅通道生效 -->
                 <div style="display:flex;gap:6px;align-items:center;padding:8px 14px;border-bottom:2.5px solid #3a2312;background:#fffdf5;flex-wrap:wrap">
                   <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#8a5a2c">模型</span>
@@ -1072,7 +1156,14 @@ class Component extends DCLogic {
     pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, edRev: '', edRevising: false, editStats: null,
     features: null, pendingLogic: null, logicErr: null, editAllowTs: false, editHasLogic: false, pendingArtOps: null,
     chatSessions: {},  // 各角色当前 CC session id（三角色三独立 session·owner 07-12 亮牌）
+    chatUsage: {},     // 各角色最近一次 usage（owner 08-04：tab 上下文用量百分比·仅订阅通道有数）
     chatQueue: [], docZoom: false,  // 生成中追加排队 + 底案全屏（owner 07-12）
+    editMoreOpen: false,  // 沉浸态「⋯ 更多」折叠（owner 08-04 布局比例修正：下载包/删除/TS 例外收纳）
+    // 设计稿产线（REQ-DESIGNLINE 过渡轨①②③·PST 域 2026-08-04）：需求单一键复制 + 收稿箱 + 定稿人门
+    designBriefOpen: false, designBriefText: '',
+    designAnchor: null, stylePacksAll: null,  // 风格包锚定（该游戏若锚过某风格包·纯前端拼需求单用）
+    designLedger: null, designIngestBusy: false,
+    designSignRow: null, designSignNote: '', designSignBy: 'owner', designSignBusy: null,  // 定稿人门（沿 wizardSignoff 先例·note 永远空起不代填）
     // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
     assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null, traceLog: '', llmLegacy: false,
     coverPrompt: '', coverBusy: false,   // 游戏封面/图标文生图（owner 07-12·替换卡片默认矢量图标）
@@ -1218,11 +1309,15 @@ class Component extends DCLogic {
     this.setState({ screen: 'edit', editSlug: slug, editName: name || slug, editPitch: pitch || '',
       board: null, chats: { gd: [], pe: [], art: [] }, chatRole: 'gd', chatInput: '', chatBusy: false,
       pending: null, pendingErr: null, artHints: [], editDocs: null, editDocSel: null, pendingDesign: null, editStats: null,
-      pendingLogic: null, logicErr: null, pendingArtOps: null, chatSessions: {}, chatQueue: [], docZoom: false,
+      pendingLogic: null, logicErr: null, pendingArtOps: null, chatSessions: {}, chatUsage: {}, chatQueue: [], docZoom: false,
+      editMoreOpen: false, designBriefOpen: false, designBriefText: '', designAnchor: null, designLedger: null,
+      designIngestBusy: false, designSignRow: null, designSignNote: '', designSignBy: 'owner',
       editAllowTs: !!(this.state.carts || []).filter(c => c && c.slug === slug).map(c => c.allowTs)[0],
       editHasLogic: !!(this.state.carts || []).filter(c => c && c.slug === slug).map(c => c.hasLogic)[0] });
     this.refreshBoard(slug);
     this.refreshDocs(slug);
+    this.refreshDesignLedger(slug);
+    this.refreshDesignAnchor(slug);
     fetch('/api/library/' + encodeURIComponent(slug) + '/stats').then(r => r.json())
       .then(d => { if (this.state.editSlug === slug && d && d.success) this.setState({ editStats: d }); })
       .catch(() => {});
@@ -1232,6 +1327,30 @@ class Component extends DCLogic {
         this.setState({ chats: { gd: d.chats.gd || [], pe: d.chats.pe || [], art: d.chats.art || [] },
           chatSessions: (d.sessions && typeof d.sessions === 'object') ? d.sessions : {} }, () => this.scrollChat()); })
       .catch(() => {});
+  }
+  // 设计稿产线：收稿箱列表（REQ-DESIGNLINE 过渡轨②）。
+  refreshDesignLedger(slug) {
+    fetch('/api/design/ledger?slug=' + encodeURIComponent(slug)).then(r => r.json())
+      .then(d => { if (this.state.editSlug === slug) this.setState({ designLedger: (d && d.success) ? (d.entries || []) : [] }); })
+      .catch(() => { if (this.state.editSlug === slug) this.setState({ designLedger: [] }); });
+  }
+  // 风格包锚定（需求单「风格锚原文」用）：该游戏美术台账若已锚过某风格包（artStyle.packId 或任一行
+  // gen.pack）→ 从 /api/art/style-packs 找到该包全貌；纯前端拼装（数据经现有 API 取，缺则前端留占位）。
+  refreshDesignAnchor(slug) {
+    const ensurePacks = Array.isArray(this.state.stylePacksAll) ? Promise.resolve(this.state.stylePacksAll)
+      : fetch('/api/art/style-packs').then(r => r.json()).then(d => { const p = (d && d.packs) || []; this.setState({ stylePacksAll: p }); return p; }).catch(() => []);
+    Promise.all([ensurePacks, fetch('/api/art/ledger?slug=' + encodeURIComponent(slug)).then(r => r.json()).catch(() => null)])
+      .then(([packs, led]) => {
+        if (this.state.editSlug !== slug) return;
+        const style = led && led.artStyle;
+        let packId = (style && typeof style === 'object' && style.packId) || null;
+        if (!packId && led && Array.isArray(led.rows)) {
+          const hit = led.rows.find(r => r && r.gen && r.gen.pack);
+          packId = hit ? hit.gen.pack : null;
+        }
+        const pack = packId ? (packs || []).find(p => p.packId === packId) : null;
+        this.setState({ designAnchor: pack || null });
+      });
   }
   // 设计先行现场存盘（fire-and-forget）；clear=true 清槽（原型入库后）。
   saveDraft(clear) {
@@ -1669,6 +1788,7 @@ class Component extends DCLogic {
         logicErr: d.logicPatch ? null : (d.logicError || cur.logicErr),
         pendingArtOps: (d.artOps && d.artOps.length) ? d.artOps : cur.pendingArtOps,
         chatSessions: d.sessionId ? Object.assign({}, cur.chatSessions, { [role]: d.sessionId }) : cur.chatSessions,
+        chatUsage: d.usage ? Object.assign({}, cur.chatUsage, { [role]: d.usage }) : cur.chatUsage,  // tab 上下文用量百分比用（owner 08-04）
         artHints: (d.artHints && d.artHints.length) ? d.artHints : cur.artHints
       }), () => { this.saveChats(slug); this.scrollChat(); this.flushChatQueue(); });
     }).catch(e => {
@@ -1896,8 +2016,162 @@ class Component extends DCLogic {
     };
   }
 
+  // 换新会话（owner 08-04·薄封装既有归档重开端点）：结束该角色当前后端 session（聊天记录保留），
+  // 下一轮自动开新 session；新会话开场自动带接力包（system 里的立项卡摘要+生产板阶段+设计底案/manifest
+  // 全量重注入，见 agent_chat._agent_concept_digest）+ 前端已发的末 30 条历史原文（sendChat 每轮都送）。
+  resetChatSession(role) {
+    const slug = this.state.editSlug;
+    if (!slug || !role) return;
+    fetch('/api/agent/session/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, role }) }).then(r => r.json()).then(d => {
+        if (!d || !d.success) throw new Error((d && d.error) || '换新会话失败');
+        const roleName = { gd: '策划', art: '美术', pe: '程序' }[role] || role;
+        this.showToast('🔄 已换新会话（' + roleName + '）——聊天记录保留，下一轮自动开新会话并带接力包');
+        this.setState(cur => ({ chatSessions: Object.assign({}, cur.chatSessions, { [role]: null }),
+          chatUsage: Object.assign({}, cur.chatUsage, { [role]: null }) }));
+      }).catch(e => this.showToast('✕ ' + ((e && e.message) || '换新会话失败')));
+  }
+
+  // ── 设计稿产线（REQ-DESIGNLINE 过渡轨①②③·PST 域 2026-08-04）──────────────────────
+  // ①需求单一键复制：纯前端拼装（立项卡/风格锚经现有 API 取，缺则占位提示人补）。
+  // ②收稿箱：base64 收稿（同 /api/art/upload 先例）落 docs/design/<slug>/·登记台账。
+  // ③定稿人门：note 永远空起不代填（沿 wizardSignoff 先例）。
+  buildDesignBrief() {
+    const s = this.state;
+    const slug = s.editSlug || '';
+    const name = s.editName || slug || '（未命名）';
+    const pitch = (s.editPitch || '').trim() || '【请填：一句话玩法——先在左侧立项卡/策划对话里补上 pitch，会自动带进来】';
+    const concept = (s.board && s.board.concept) || {};
+    const styleNote = (concept.style || '').trim();
+    const refs = (concept.refs || '').trim();
+    const anchor = s.designAnchor;
+    const packsAll = Array.isArray(s.stylePacksAll) ? s.stylePacksAll : [];
+    const hex = (n) => '#' + ((Number(n) || 0) >>> 0).toString(16).padStart(6, '0');
+    const anchorBlock = anchor ? [
+      '【' + (anchor.packId || '') + ' · ' + (anchor.name || '') + '】',
+      '中文提示词：' + (anchor.promptZh || '（无）'),
+      '英文提示词：' + (anchor.promptEn || '（无）'),
+      '调色板：' + (Array.isArray(anchor.palette) ? anchor.palette.map(hex).join(' ') : '（无）')
+    ].join('\n') : (
+      '【该游戏暂未锚定风格包——人补：从下列任选其一写进视觉方向，或直接描述参考图/关键词/情绪板】\n' +
+      (packsAll.length ? packsAll.map(p => '· ' + p.packId + '（' + (p.name || '') + '）').join('\n')
+        : '（风格包列表还没拉到——去美术库点一下会自动加载；或直接写自由描述，不必等）')
+    );
+    const lines = [
+      '【设计需求单 · ' + name + '（' + (slug || '未命名 slug') + '）】',
+      '生成时间：' + new Date().toLocaleString(),
+      '',
+      '一句话玩法（pitch）：' + pitch
+    ];
+    if (styleNote) lines.push('立项卡风格备注：' + styleNote);
+    if (refs) lines.push('参考：' + refs);
+    lines.push(
+      '',
+      '── 屏目的 ──',
+      '【请填：这一屏解决什么问题 / 用户在此做什么决策——例：主菜单入口引导、关卡内 HUD 战况读取、结算屏成就反馈…】',
+      '',
+      '── 信息层级（从最重要到次要，标出必须先看到什么）──',
+      '1.【请填：本屏第一眼要看到的信息】',
+      '2.【请填：次级信息】',
+      '3.【请填：辅助/装饰信息】',
+      '',
+      '── 状态清单（这一屏要覆盖哪些态，勾选/增删）──',
+      '□ 默认态　□ 加载中　□ 空态　□ 错误态　□ 成功/庆祝态　□ 禁用/锁定态',
+      '',
+      '── 控件闭集提示（1:1 复刻基准前必读——回来的稿会被复刻成引擎数据，不是直接嵌进网页）──',
+      '· 每处控件要能落进闭集 ComponentType（按钮/面板/文本/列表/进度条/开关/输入框…）；画草图可用自由 HTML/CSS，但标清用途与交互态（悬停/点击/禁用），程序会照此重做，不会直接搬 DOM。',
+      '· 起手默认华丽：参考 house 主题基调（apollo-toon 水墨玩趣 / apolloOnyx 玄铁 / apolloBrocade 锦霞……）挑一支写进视觉方向，别素色朴素起手。',
+      '· 写世界的交互（点击/提交/切换）用「点了发生什么」描述即可，不用写死实现逻辑。',
+      '',
+      '── 风格锚原文 ──',
+      anchorBlock,
+      '',
+      '── 交付方式 ──',
+      '产出 .dc.html 后回到本工坊「🎨 设计稿产线 · 📥 收稿箱」拖放或选择上传——自动落 docs/design/' + (slug || '<slug>') + '/ 并登记台账（draft）；review 通过后勾「☑ 定稿」（定稿=1:1 复刻基准挂载对象）。'
+    );
+    return lines.join('\n');
+  }
+  designBriefToggle() {
+    if (this.state.designBriefOpen) { this.setState({ designBriefOpen: false }); return; }
+    const text = this.buildDesignBrief();
+    this.setState({ designBriefOpen: true, designBriefText: text }, () => this.copyText(text));
+  }
+  designBriefEdit(e) { this.setState({ designBriefText: e.target.value }); }
+  designBriefCopy() { this.copyText(this.state.designBriefText); }
+  designDropOver(e) { if (e && e.preventDefault) e.preventDefault(); }
+  designDrop(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const f = e && e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) this._designUploadFile(f);
+  }
+  designPickFile() {
+    if (this.state.designIngestBusy) return;
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.html,.dc.html,text/html';
+    inp.onchange = () => { const f = inp.files && inp.files[0]; if (f) this._designUploadFile(f); };
+    inp.click();
+  }
+  _designUploadFile(file) {
+    const slug = this.state.editSlug;
+    if (!slug) return;
+    const fname = String((file && file.name) || '');
+    if (!/\.(dc\.html|html)$/i.test(fname)) { this.showToast('✕ 只收 .html / .dc.html'); return; }
+    if (file.size > 2 * 1024 * 1024) { this.showToast('✕ 超过 2MB 上限'); return; }
+    const reader = new FileReader();
+    reader.onerror = () => this.showToast('✕ 读文件失败');
+    reader.onload = () => {
+      const durl = String(reader.result || ''); const ci = durl.indexOf(',');
+      const b64 = ci >= 0 ? durl.slice(ci + 1) : '';
+      if (!b64) { this.showToast('✕ 读文件为空'); return; }
+      this.setState({ designIngestBusy: true });
+      fetch('/api/design/ingest', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, filename: fname, dataBase64: b64 }) }).then(r => r.json()).then(d => {
+          this.setState({ designIngestBusy: false });
+          if (!d || !d.success) throw new Error((d && d.error) || '上传失败');
+          this.showToast('✓ 已收稿：' + d.filename);
+          this.refreshDesignLedger(slug);
+        }).catch(e => { this.setState({ designIngestBusy: false }); this.showToast('✕ ' + ((e && e.message) || '上传失败').slice(0, 100)); });
+    };
+    reader.readAsDataURL(file);
+  }
+  designStartFinalize(filename) { this.setState({ designSignRow: filename, designSignNote: '', designSignBy: 'owner' }); }
+  designSignNoteType(e) { this.setState({ designSignNote: e.target.value }); }
+  designSignByType(e) { this.setState({ designSignBy: e.target.value }); }
+  designConfirmFinalize(filename) {
+    const st = this.state; const slug = st.editSlug;
+    const note = (st.designSignNote || '').trim(); const by = (st.designSignBy || '').trim() || 'owner';
+    if (!slug || !filename || !note || st.designSignBusy) return;
+    this.setState({ designSignBusy: filename });
+    fetch('/api/design/finalize', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, filename, note, by }) }).then(r => r.json()).then(d => {
+        this.setState({ designSignBusy: null });
+        if (d && d.success) this.setState({ designSignRow: null, designSignNote: '' });
+        this.showToast(((d && d.success) ? '✓ 已定稿：' : '✕ 定稿失败：') + String((d && (d.filename || d.error)) || '').slice(0, 120));
+        this.refreshDesignLedger(slug);
+      }).catch(e => { this.setState({ designSignBusy: null }); this.showToast('✕ ' + ((e && e.message) || '定稿失败').slice(0, 100)); });
+  }
+  designPreviewOpen(filename) {
+    const slug = this.state.editSlug;
+    if (!slug || !filename) return;
+    window.open('/api/design/preview?slug=' + encodeURIComponent(slug) + '&file=' + encodeURIComponent(filename), '_blank');
+  }
+
   renderVals() {
     const s = this.state;
+    // 角色 tab 上下文用量百分比（owner 08-04「顺手在 tab 上显示一个小百分比」·仅订阅通道 usage 里带
+    // cache_read/cache_creation 字段时才算得出——200000 token 是 Claude 订阅通道标准上下文窗口的
+    // 估算值（无法从 CLI 读到精确上限，仅供参考，非精确读数）；mock/HTTP 通道或还没对过话=不显示。
+    const CTX_WINDOW_EST = 200000;
+    const ctxPct = (role) => {
+      const u = (s.chatUsage || {})[role];
+      if (!u || typeof u !== 'object') return null;
+      if (typeof u.cache_read_input_tokens !== 'number' && typeof u.cache_creation_input_tokens !== 'number') return null;
+      const total = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
+      if (!total) return null;
+      return Math.min(100, Math.round(total / CTX_WINDOW_EST * 100));
+    };
+    const ctxPctLabel = (role) => { const p = ctxPct(role); return p == null ? '' : (' ' + p + '%'); };
     const titles = {
       games: ['我的游戏库', 'MY GAMES · 卡带与在研项目'],
       newgame: ['新建游戏', 'NEW GAME · 选择起点'],
@@ -2622,7 +2896,44 @@ class Component extends DCLogic {
       runCart: () => { if (s.editSlug) window.open('/bench?to=' + encodeURIComponent('/?game=lib:' + s.editSlug + '&from=workshop&bare=1'), '_blank'); },
       goArtFor: () => { const slug = s.editSlug; this.setState({ screen: 'assets' }); if (slug) this.pickAssetGame(slug); },
       editStatsText: s.editStats ? (this.fmt(s.editStats.files) + ' 文件 · ' + this.fmt(s.editStats.lines) + ' 行 · ' + Math.round((s.editStats.bytes || 0) / 1024) + ' KB') : '',
+      // ⋯ 更多折叠（owner 08-04 布局比例修正：下载包/删除/TS 例外这类低频操作收纳）
+      editMoreOpenOn: !!s.editMoreOpen,
+      editMoreLabel: s.editMoreOpen ? '⋯ 收起' : '⋯ 更多',
+      editMoreToggle: () => this.setState(st => ({ editMoreOpen: !st.editMoreOpen })),
       delBtnStyle: Object.assign({}, mini.style, { color: '#a03222' }),
+      // 设计稿产线（REQ-DESIGNLINE 过渡轨①②③）
+      designBriefOpenOn: !!s.designBriefOpen,
+      designBriefToggleLabel: s.designBriefOpen ? '📐 收起需求单' : '📐 设计需求单',
+      designBriefToggle: () => this.designBriefToggle(),
+      designBriefText: s.designBriefText,
+      designBriefEdit: (e) => this.designBriefEdit(e),
+      designBriefCopy: () => this.designBriefCopy(),
+      designIngestBusyOn: !!s.designIngestBusy,
+      designPickFile: () => this.designPickFile(),
+      designDropOver: (e) => this.designDropOver(e),
+      designDrop: (e) => this.designDrop(e),
+      hasDesignLedger: Array.isArray(s.designLedger) && s.designLedger.length > 0,
+      designLedgerRows: (Array.isArray(s.designLedger) ? s.designLedger : []).map(entry => {
+        const isFinal = entry && entry.status === 'final';
+        const busy = s.designSignBusy === (entry && entry.filename);
+        return {
+          filename: (entry && entry.filename) || '',
+          rowStyle: { display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: '10px',
+            background: isFinal ? 'rgba(126,203,69,.18)' : 'rgba(255,255,255,.55)', border: isFinal ? '2px solid #4e8a24' : '2px solid transparent' },
+          badgeText: isFinal ? '⭐ 基准' : '📝 draft',
+          badgeStyle: { flex: 'none', fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: '10px', padding: '2px 8px', borderRadius: '999px',
+            color: isFinal ? '#fff5db' : '#5a3d1e', background: isFinal ? '#4e8a24' : 'rgba(58,35,18,.15)' },
+          preview: () => this.designPreviewOpen(entry && entry.filename),
+          showFinalize: !isFinal,
+          signOpen: s.designSignRow === (entry && entry.filename),
+          startFinalize: () => this.designStartFinalize(entry && entry.filename),
+          confirmFinalize: () => this.designConfirmFinalize(entry && entry.filename),
+          finalizeBtnLabel: busy ? '⏳ 定稿中…' : '☑ 确认定稿',
+          finalizeBtnStyle: Object.assign({}, apply.style, (!(s.designSignNote || '').trim() || busy) ? { opacity: .5, cursor: 'not-allowed' } : {})
+        };
+      }),
+      designSignByVal: s.designSignBy, designSignByType: (e) => this.designSignByType(e),
+      designSignNoteVal: s.designSignNote, designSignNoteType: (e) => this.designSignNoteType(e),
       deleteCart: () => {
         const slug = s.editSlug;
         if (!slug) return;
@@ -2638,19 +2949,15 @@ class Component extends DCLogic {
       pickPe: () => this.setState({ chatRole: 'pe' }, () => this.scrollChat()),
       pickArt: () => this.setState({ chatRole: 'art' }, () => this.scrollChat()),
       gdTabStyle: s.chatRole === 'gd' ? tabOn : tabOff, peTabStyle: s.chatRole === 'pe' ? tabOn : tabOff, artTabStyle: s.chatRole === 'art' ? tabOn : tabOff,
+      gdTabLabel: '📐 策划' + ctxPctLabel('gd'), artTabLabel: '🎨 美术' + ctxPctLabel('art'), peTabLabel: '🔧 程序' + ctxPctLabel('pe'),
       chatRoleHint: { gd: '玩法 / 数值 / 内容 / 节奏', art: '风格 / 台账 art-NN / 皮肤槽', pe: '结构 / 组件 / 能力接线' }[s.chatRole],
       chatSessionLine: 'session: ' + (((s.chatSessions || {})[s.chatRole]) || '（首轮对话后分配·仅订阅通道·三角色各自独立）'),
-      hasChatSession: !!((s.chatSessions || {})[s.chatRole]) && !s.chatBusy,
-      resetChatSession: () => {
-        const slug = s.editSlug, role = s.chatRole;
-        if (!slug) return;
-        fetch('/api/agent/session/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug, role }) }).then(r => r.json()).then(d => {
-            if (!d || !d.success) throw new Error((d && d.error) || '重开失败');
-            this.showToast('♻ 已归档重开——聊天记录保留，下一轮自动开新 session');
-            this.setState(cur => ({ chatSessions: Object.assign({}, cur.chatSessions, { [role]: null }) }));
-          }).catch(e => this.showToast('✕ ' + ((e && e.message) || '重开失败')));
-      },
+      // 每 tab 独立「🔄 换新会话」（owner 08-04：不必先切到该角色 tab 才能重开·各角色各自的活跃态判断）
+      tabResetBtnStyle: { border: '2px solid rgba(58,35,18,.35)', borderRadius: '7px', background: 'rgba(255,255,255,.75)', cursor: 'pointer', fontSize: '11px', padding: '3px 6px', color: '#5a3d1e', flex: 'none', lineHeight: 1 },
+      gdResetOn: !!((s.chatSessions || {}).gd) && !(s.chatBusy && s.chatRole === 'gd'),
+      artResetOn: !!((s.chatSessions || {}).art) && !(s.chatBusy && s.chatRole === 'art'),
+      peResetOn: !!((s.chatSessions || {}).pe) && !(s.chatBusy && s.chatRole === 'pe'),
+      gdReset: () => this.resetChatSession('gd'), artReset: () => this.resetChatSession('art'), peReset: () => this.resetChatSession('pe'),
       // 底案全屏（owner 07-12 Zoom in/out）
       docZoomOn: !!s.docZoom,
       openDocZoom: () => this.setState({ docZoom: true }),
