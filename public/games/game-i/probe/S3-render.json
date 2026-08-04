@@ -1,13 +1,13 @@
 {
   "slug": "game-i",
-  "at": "2026-08-04T14:59:55.042Z",
-  "gameHash": "5db1076641fde0a5",
+  "at": "2026-08-04T15:12:48.261Z",
+  "gameHash": "9023344b637a7bf7",
   "ok": true,
   "form": "compiled",
   "assertions": {
     "nonBlank": {
       "pass": true,
-      "variance": 536.79,
+      "variance": 536.77,
       "mean": 23.38,
       "threshold": 15
     },
