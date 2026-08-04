@@ -47,6 +47,11 @@ P1a：指派 Opus 档子代理（xhigh·正确性关键——锁/看门狗/独�
 P1b：P1a 落地后派 PST 档（medium-high）。P1c 一句话入口含在 P1b。
 每单完成 = Lead 对抗性验收（突变探针：谎报完成必须被拦；双 dispatch 必须被拒）。
 
+## ⚖ P1a 终审（Lead 2026-08-04·✅ PASS·commit `5f070a4ed`）与偏差裁决
+
+九条据实偏差**全部照准**：②max-turns 默认（25/60/120/40·P3 试点再调）③.gitignore 补三行（图纸「已盖」系误记·以实测为准）④运行台账 `orchestrator-runs.json`（运行时域·不在 pipeline.json 造第二真相=正确）⑤abort=failed+aborted+needsHuman（闭集不外扩）⑥S1/S2 重验走 `board --json` 推导 machine.state（同「自己量」精神）⑦锁键名 stage ⑧退出码分档 0-4（P1b 回落手动所需）⑨编排器测试留快车道（纪律执法点·每推必跑）。
+**①会话权限口径（Lead 裁）**：默认组合=`--permission-mode acceptEdits` + 仓内 settings 允许清单；**禁止**把 `--dangerously-skip-permissions` 写死为代码默认——操作者要放权自担，经 `ZEROCRAFT_ORCH_FLAGS` 注入并留痕。真机联调归 P3 试点首项。
+
 ## 红线（继承上位案）
 
 无特权通道（编排会话与手动会话同门同板）；人门不可代签不可 API 绕过；token 档位不越级；
