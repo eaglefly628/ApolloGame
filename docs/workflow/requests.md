@@ -57,6 +57,10 @@
 ### REQ-ARTPIPE2-美术管线二期 · 台账强制（无账不录入）+ Unreal 式资产浏览器（目录/历史/回滚/替换工作流） · [2026-08-04] · owner 令（「美术台账不全该不该强制」+「预览操作器太像玩具·要完整工作流」） → Lead 规划中（侦察→图纸→owner 过目→分批派工） · status: **open（侦察毕·细图纸在档 `docs/design/artpipe2-blueprint-2026-08.md`·待 owner 过目后 A1 先行）** · 优先级: P1 · 类型: 生产线基建（守卫+PST 美术平台）
 > 总纲：**不重造轮子**——历史/备份=git 承载（浏览器只做呈现与回滚操作）·台账+assets/index=唯一账本（浏览器是视图非第二真相）。四翼：A1 台账强制（双向对账守卫：黑户文件/死账行/缺来源=红·棘轮基线存量挂账·入口补漏——同时执法 AI 披露红线）→ A2 浏览器核心（目录树+缩略图网格+预览+拖入自动登记）→ A3 历史回滚（每资产 git 提交史+一键回退+前后对比）→ A4 替换工作流（消费方视图+替换+逐行人审）。待裁：src/studio 旧资产浏览器（白名单产品耦合 3 条）与新浏览器关系。侦察项：黑户/裸路径底数·现有平台件清单·studio 关系材料。
 
+### REQ-ENGINEAUDIT-引擎全量评审落地 · 15 子系统深审+2 流程审计（110+ 发现·1 P0/~30 P1） · [2026-08-04] · owner 令（「全量 review 引擎+能修直接修+两问」）→ **报告在档：`docs/design/engine-review-2026-08-04.md`（唯一真相·全清单/根因/两问答复/工单分诊）** · status: **进行中（已修推 13 处/3 提交·门禁全绿；余按报告 §6 分诊）** · 优先级: **P0（含 1 条已实测复现 P0）** · 类型: 引擎质量总账
+> **已修并推**（3 提交 `0031b950d`/`3b8e2757c`/`29cf511ba`·回归 +10）：确定性护栏（restore version++·NON_DETERMINISTIC 补 Mesh3D/Coachmark·canonical undefined·字符串转义防碰撞·bench 一票否决·StateChanged 自清）+ 注入面（cartridge innerHTML·art-replace slug 穿越·render.ts number props 消毒）+ voxel 批 dispose 崩溃。
+> **待办（报告 §6 排序）**：①**P0 lockstep-tab 加入死锁**（实测复现·立即修）②存档/装配正确性批（save hash 不验/envelope 丢档/BoardCell 双 provider/__proto__ 蒸发）③**根因① reads/writes 申报对账守卫 + §3.1 补齐组**（CYCLEHAZ B 已解锁）④**根因② 运行时组件全集基准**（解锁 NON_DETERMINISTIC 对账·装配校验·catalog 共用）⑤**根因④ 受信执行环境**（回应 Q2 卡点漏洞·服务端 CI 独立复跑+签名证据+CODEOWNERS·低成本止血=编排器全板复验）⑥Q1 消费路径（dump-catalog 分档+capgap 断链+audit 进推送门补逃逸抓捕+pick-list·顺清 game102 audit 实况红旗）⑦sim 逻辑批⑧渲染专项⑨UI 契约批。**四条贯穿根因见报告 §4——修根因 > 逐点补。**
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
