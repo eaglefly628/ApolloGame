@@ -34,7 +34,8 @@
   <div style="position:relative;width:1280px;max-width:100%;height:800px;background:#2a1a0d;border:5px solid #3a2312;border-radius:26px;padding:5px;box-shadow:0 16px 0 rgba(0,0,0,.32),0 34px 60px rgba(0,0,0,.42);flex:none">
     <div style="width:100%;height:100%;border-radius:21px;overflow:hidden;display:flex">
 
-      <!-- ===== SIDEBAR ===== -->
+      <!-- ===== SIDEBAR（沉浸模式收起·owner 2026-08-04：进编辑工坊整栏隐藏不压窄，见 chromeOn） ===== -->
+      <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
       <div style="flex:none;width:236px;background:repeating-linear-gradient(180deg,#c88a52 0 11px,#bd7f47 11px 22px);border-right:4px solid #3a2312;box-shadow:inset -6px 0 0 rgba(0,0,0,.18),inset 0 4px 0 rgba(255,255,255,.25);display:flex;flex-direction:column;padding:20px 16px">
         <!-- logo -->
         <div style="text-align:center;margin-bottom:22px">
@@ -75,17 +76,27 @@
           <div style="line-height:1.15"><div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:14px;color:#fff5db;-webkit-text-stroke:2px #3a2312;paint-order:stroke fill">爱萌互动</div><div style="font-family:'Fredoka';font-weight:700;font-size:9px;color:#f3e2c4">{{ versionLabel }}</div></div>
         </div>
       </div>
+      </sc-if>
 
       <!-- ===== MAIN ===== -->
       <div style="flex:1;display:flex;flex-direction:column;background:linear-gradient(180deg,#8ad4f7,#5cc0f2 45%,#8fd0f5)">
-        <!-- topbar -->
+        <!-- topbar（沉浸模式瘦身·owner 2026-08-04：编辑工坊换成「← 返回+库名+当前游戏名」，去装饰副标+货币角标） -->
         <div style="flex:none;display:flex;align-items:center;gap:14px;padding:16px 22px;border-bottom:4px solid #3a2312;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,.12))">
+          <sc-if value="{{ immersiveOn }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ goGames }}" title="返回游戏库（固定可达·不随内容滚动）" style="{{ immersiveBackStyle }}" style-active="{{ backBtnActive }}">← 返回游戏库</button>
+          </sc-if>
           <div style="min-width:0">
-            <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:24px;line-height:1;color:#fff5db;-webkit-text-stroke:3.5px #3a2312;paint-order:stroke fill;text-shadow:0 3px 0 #c98a1e,0 5px 5px rgba(0,0,0,.22)">{{ pageTitle }}</div>
-            <div style="font-family:'Fredoka';font-weight:700;font-size:11px;color:rgba(26,79,110,.85);letter-spacing:.08em;margin-top:3px">{{ pageSub }}</div>
+            <sc-if value="{{ immersiveOn }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:18px;line-height:1;color:#fff5db;-webkit-text-stroke:2.5px #3a2312;paint-order:stroke fill;text-shadow:0 2px 0 #c98a1e">{{ immersiveTitle }}</div>
+            </sc-if>
+            <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+              <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:24px;line-height:1;color:#fff5db;-webkit-text-stroke:3.5px #3a2312;paint-order:stroke fill;text-shadow:0 3px 0 #c98a1e,0 5px 5px rgba(0,0,0,.22)">{{ pageTitle }}</div>
+              <div style="font-family:'Fredoka';font-weight:700;font-size:11px;color:rgba(26,79,110,.85);letter-spacing:.08em;margin-top:3px">{{ pageSub }}</div>
+            </sc-if>
           </div>
           <div style="flex:1"></div>
-          <!-- currencies -->
+          <!-- currencies（沉浸模式隐藏·装饰角标=杂讯） -->
+          <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
           <div style="display:flex;gap:8px;align-items:center">
             <div onClick="{{ topUp }}" title="点击充值 +1000 金币" style="cursor:pointer;display:flex;align-items:center;gap:6px;background:linear-gradient(180deg,#4a3320,#2e1d0e);border:3px solid #3a2312;border-radius:999px;padding:4px 7px 4px 5px;box-shadow:0 4px 0 rgba(0,0,0,.35)">
               <span style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe89a,#ffd257 55%,#e0a71f);border:2.5px solid #3a2312;display:flex;align-items:center;justify-content:center;font-family:'Fredoka';font-weight:700;color:#a06a12;font-size:13px">$</span>
@@ -96,6 +107,7 @@
               <span style="font-family:'Fredoka';font-weight:700;color:#fff5db;font-size:14px;min-width:30px">{{ gemsFmt }}</span>
             </div>
           </div>
+          </sc-if>
         </div>
 
         <!-- content -->
@@ -375,8 +387,8 @@
 
           <!-- ---------- EDIT (对白编辑工坊·REQ-WORKSHOP A) ---------- -->
           <sc-if value="{{ isEdit }}" hint-placeholder-val="{{ false }}">
-            <button onClick="{{ goGames }}" style="{{ backBtnStyle }}" style-active="{{ backBtnActive }}">← 返回游戏库</button>
-            <div style="display:grid;grid-template-columns:.9fr 1.1fr;gap:20px;align-items:start;margin-top:6px">
+            <!-- 沉浸模式：返回键已固定在顶栏（不随内容滚动消失），这里不再重复放一个 -->
+            <div style="display:grid;grid-template-columns:.9fr 1.1fr;gap:20px;align-items:start">
               <!-- left: project card + 8-stage lamps + actions + pending -->
               <div>
                 <div style="background:#fffdf5;border:4px solid #3a2312;border-radius:20px;padding:16px;box-shadow:0 6px 0 rgba(58,35,18,.28)">
@@ -2408,6 +2420,10 @@ class Component extends DCLogic {
       isGames: s.screen === 'games', isNewGame: s.screen === 'newgame',
       isTemplates: s.screen === 'templates', isCreate: s.screen === 'create', isEdit: s.screen === 'edit',
       isAssets: s.screen === 'assets', isMatlib: s.screen === 'matlib', isPublish: s.screen === 'publish', isSettings: s.screen === 'settings',
+      // ── 沉浸模式（owner 2026-08-04：进编辑工坊自动收起侧栏+顶栏瘦身+杂讯清理·无开关不持久化，退出即恢复） ──
+      immersiveOn: s.screen === 'edit', chromeOn: s.screen !== 'edit',
+      immersiveTitle: '爱萌互动 · ' + (s.editName || s.editSlug || '编辑工坊'),
+      immersiveBackStyle: Object.assign({}, back.style, { marginBottom: 0 }),
       navGamesStyle: navBase(['games', 'newgame', 'templates', 'create', 'edit'].indexOf(s.screen) >= 0),
       navAssetsStyle: navBase(s.screen === 'assets'), navMatlibStyle: navBase(s.screen === 'matlib'), navPublishStyle: navBase(s.screen === 'publish'), navSettingsStyle: navBase(s.screen === 'settings'),
       goGames: () => this.setState({ screen: 'games' }), goNewGame: () => this.setState({ screen: 'newgame' }),
