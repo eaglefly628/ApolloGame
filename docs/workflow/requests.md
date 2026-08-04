@@ -26,8 +26,8 @@
 
 <!-- REQ-RETRO2-能力库整理（P1·owner 三裁缩范围）已完结迁归档（requests-archive.md·grep REQ-RETRO2）；悬置项：归档拆卷等 owner 终字（方案在案·要做时重开小条）。 -->
 
-### REQ-DIALOGUE-剧情基础线 · 剧情向 Dialogue 能力做成基础件+Sample+Template · [2026-08-03] · owner 令（约会性单机超休闲转型线） → Lead 出图后派工 · status: **open（排队·REQ-RETRO2 结案后启动·勿先动工）** · 优先级: P1（转型关键路径） · 类型: 能力线（引擎+UI 基座+样板）
-> owner 意图：剧情向游戏的对话能力按**基础设施级**设计，配齐 Sample（示范游戏）与 Template（可复制起手模板）。已知底账（2026-08-03 侦察实证）：t3-dialogue 已有（line/choice/check 节点图+requires 条件门+检定）——核心不缺；缺口=①VN 屏合规入口（ui/vn 被禁待退役·LayoutNode 闭集无 Dialog/Choice/Portrait 控件·PUI 域）②立绘/表情链（PortraitSlot 空占位不吃图·emotion→贴图切换无落点·faceArt 系牌类专属）③伴侣在场件（立绘+表情+台词气泡·事件→表情反应=纯数据表）。关联输入（等 owner 提供）：DokiWorld 真角色卡 schema + 宿主运行时接口文档（数值双向契约的谈判材料）。启动条件=REQ-RETRO2 结案；启动时 Lead 先出图纸再派工。
+### REQ-DIALOGUE-剧情基础线 · 剧情向 Dialogue 能力做成基础件+Sample+Template · [2026-08-03] · owner 令（约会性单机超休闲转型线·owner 同日令启动） → **图纸在档：`docs/design/dialogue-line-blueprint-2026-08.md`（派工唯一真相）** · status: **in-progress（M1 待派 PUI）** · 优先级: P1（转型关键路径） · 类型: 能力线（引擎+UI 基座+样板）
+> 四里程碑（详见图纸）：M1 闭集 VN 控件三件（dialog/choiceList/portrait·PUI·high·**第一步**·验收过即退役 ui/vn）→ M2 立绘/表情链（emotion→资产 key 纯数据表·PUI+PA）∥ M3 伴侣在场件（presence 起手模板+事件→反应数据表·PUI）→ M4 Sample 示范游戏 + `@ui/starters` 剧情起手包。t3-dialogue 已完备**不改**（输入接缝已为闭集 UI 预留 arg 通道）。悬置段=DokiWorld 数值双向契约，等 owner 三样材料（真卡 schema/宿主接口文档/双人确认）。每步 Lead 对抗性验收。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
