@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { topologicalSort } from './topological-sort.js';
 import { SystemPhase } from './types.js';
 import type { SystemDeclaration } from './types.js';
@@ -10,6 +10,16 @@ function sys(id: string, reads: string[], writes: string[], phase?: number): Sys
 function order(systems: SystemDeclaration[]): string[] {
   return topologicalSort(systems).map((s) => s.id);
 }
+// 平局裁决会 console.warn 留痕；单测里默认吞掉（需要断言留痕的用例自己 spy）。
+function quietOrder(systems: SystemDeclaration[]): string[] {
+  const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    return order(systems);
+  } finally {
+    spy.mockRestore();
+  }
+}
+afterEach(() => vi.restoreAllMocks());
 
 describe('topologicalSort — 组件依赖定序（缺省阶段，行为不变）', () => {
   it('writer 排在 reader 之前（输入乱序也对）', () => {
@@ -17,8 +27,9 @@ describe('topologicalSort — 组件依赖定序（缺省阶段，行为不变�
     expect(order).toEqual(['producer', 'consumer']);
   });
 
-  it('同阶段两个系统都读写同一组件 → 判成环', () => {
-    expect(() => topologicalSort([sys('a', ['X'], ['X']), sys('b', ['X'], ['X'])])).toThrow(/Circular/);
+  // REQ-CYCLEHAZ 方案 B 前：此处抛 Circular。B 后：纯推断 RMW 互锁降级为确定性平局裁决（见文末 describe）。
+  it('同阶段两个系统都读写同一组件 → 不再抛，按平局键定序', () => {
+    expect(quietOrder([sys('a', ['X'], ['X']), sys('b', ['X'], ['X'])])).toEqual(['a', 'b']);
   });
 });
 
@@ -31,10 +42,13 @@ describe('topologicalSort — phase 阶段', () => {
     expect(topologicalSort([resolve, detect]).map((s) => s.id)).toEqual(['detect', 'resolve']);
   });
 
-  it('同样的两系统不分阶段 → 确实会成环（证明阶段是解法）', () => {
+  // 同样两系统不分阶段：B 前抛环、B 后按平局键裁决（装得进但顺序由注册序定，语义不保证）——
+  // 所以 phase 仍是这条「读后改」管线的**正解**：它表达的是意图，平局裁决只是安全网。
+  it('同样的两系统不分阶段 → 裁决出的顺序与「拿 phase 表达意图」不同（phase 仍是正解）', () => {
     const detect = sys('detect', ['Transform'], ['Overlap']);
     const resolve = sys('resolve', ['Overlap'], ['Transform']); // 同 Update 阶段
-    expect(() => topologicalSort([resolve, detect])).toThrow(/Circular/);
+    // 输入序 [resolve, detect] → 平局键让 resolve 在前，恰与 phase 表达的意图相反。
+    expect(quietOrder([resolve, detect])).toEqual(['resolve', 'detect']);
   });
 
   it('阶段内仍按组件拓扑排序', () => {
@@ -44,10 +58,12 @@ describe('topologicalSort — phase 阶段', () => {
     expect(order.indexOf('accel')).toBeLessThan(order.indexOf('motion'));
   });
 
-  it('阶段内成环仍抛错（phase 不掩盖真正的环）', () => {
+  it('阶段内成环由该阶段自己裁决（phase 不掩盖环，也不跨阶段串味）', () => {
     const a = sys('a', ['X'], ['Y'], SystemPhase.Resolve);
     const b = sys('b', ['Y'], ['X'], SystemPhase.Resolve);
-    expect(() => topologicalSort([a, b])).toThrow(/Circular/);
+    const c = sys('c', [], [], SystemPhase.Update);
+    // Update 桶正常排在前；Resolve 桶内的纯推断环按平局键裁决。
+    expect(quietOrder([a, b, c])).toEqual(['c', 'a', 'b']);
   });
 });
 
@@ -88,5 +104,119 @@ describe('topologicalSort — 显式定序 runsAfter/runsBefore（R10）', () =>
     const b = { id: 'b', reads: [], writes: [], consumes: [], phase: SystemPhase.Resolve, runsAfter: ['a'], execute: noop };
     // a 在 Update、b 在 Resolve → 仍是 a 在前；runsAfter 跨 phase 引用不报错。
     expect(order([b, a])).toEqual(['a', 'b']);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+//  REQ-CYCLEHAZ 方案 B —— 纯推断环的确定性平局裁决（止血安全网）
+//
+//  契约（钉死·改实现必须同步改这里的理由，不许只改期望值）：
+//   · 显式 runsAfter/runsBefore = 硬约束，绝不被裁决推翻；**申报边自成环 = 申报自相矛盾 → 照旧抛**。
+//   · 环由组件推断边闭合 → 砍环内推断边、保留环内显式边，按「平局键升序且服从显式边」定环内全序。
+//   · 平局键 = 系统在输入数组中的下标 = addSystem 注册序（= 蓝图 capabilities 装载序）。
+//   · 裁决结果参与全图传播：环外下游仍排在**整个环**之后。
+// ══════════════════════════════════════════════════════════════════════════
+describe('topologicalSort — 纯推断环平局裁决（REQ-CYCLEHAZ B）', () => {
+  const rmw = (id: string, comp: string): SystemDeclaration => sys(id, [comp], [comp]);
+
+  it('① 2-环（都 RMW 同组件）装得进，且两次排序同序', () => {
+    const input = [rmw('timeline', 'Resource'), rmw('resource-apply', 'Resource')];
+    const a = quietOrder(input);
+    const b = quietOrder([...input]);
+    expect(a).toEqual(['timeline', 'resource-apply']);
+    expect(b).toEqual(a); // 确定性：同一世界每次装载同序（录放一致）
+  });
+
+  it('② 3-环（含一条正确的显式边·event-when→timeline→resource-apply 同构）装得进且显式边被服从', () => {
+    // event-when 写 Signal / 读 Resource；timeline runsAfter event-when，且与 resource-apply RMW Resource。
+    const eventWhen: SystemDeclaration = { id: 'event-when', reads: ['Resource'], writes: ['Signal'], consumes: [], execute: noop };
+    const timeline: SystemDeclaration = { id: 'timeline', reads: ['Signal', 'Resource'], writes: ['Resource'], consumes: [], runsAfter: ['event-when'], execute: noop };
+    const resourceApply = rmw('resource-apply', 'Resource');
+    const got = quietOrder([eventWhen, timeline, resourceApply]);
+    expect(got).toEqual(['event-when', 'timeline', 'resource-apply']);
+    // 硬约束不被推翻：无论输入序怎么打乱，event-when 恒在 timeline 之前。
+    const shuffled = quietOrder([resourceApply, timeline, eventWhen]);
+    expect(shuffled.indexOf('event-when')).toBeLessThan(shuffled.indexOf('timeline'));
+  });
+
+  it('③ 申报边自成环仍抛（互指 runsBefore）', () => {
+    const a = { id: 'a', reads: [], writes: [], consumes: [], runsBefore: ['b'], execute: noop };
+    const b = { id: 'b', reads: [], writes: [], consumes: [], runsBefore: ['a'], execute: noop };
+    expect(() => topologicalSort([a, b])).toThrow(/Circular/);
+    expect(() => topologicalSort([a, b])).toThrow(/申报自相矛盾/);
+  });
+
+  it('③b 申报边自成环（三元 runsBefore/runsAfter 混合）仍抛 · 即便同时有推断边可砍', () => {
+    const a = { id: 'a', reads: ['X'], writes: ['X'], consumes: [], runsBefore: ['b'], execute: noop };
+    const b = { id: 'b', reads: ['X'], writes: ['X'], consumes: [], runsBefore: ['c'], execute: noop };
+    const c = { id: 'c', reads: ['X'], writes: ['X'], consumes: [], runsBefore: ['a'], execute: noop };
+    expect(() => topologicalSort([a, b, c])).toThrow(/Circular/);
+    // 断到具体判词：必须是「申报自相矛盾」这条判定拦下的，不是兜底网兜住的
+    // （兜底网也含 Circular 字样 → 只断 /Circular/ 会给假绿·假信心自查实测过）。
+    expect(() => topologicalSort([a, b, c])).toThrow(/申报自相矛盾/);
+  });
+
+  it('④ 裁决顺序 = 平局键（注册序）· 反序装载即反序裁决', () => {
+    const t = rmw('timeline', 'Resource');
+    const r = rmw('resource-apply', 'Resource');
+    // 注册表按 atoms→tier1→tier2→tier3 编写：按注册表序装载时 atom(resource-apply) 在前 = tier 序。
+    expect(quietOrder([r, t])).toEqual(['resource-apply', 'timeline']);
+    // 反过来装载 → 裁决随注册序翻转（键就是注册序本身，不是系统 id 字典序之类的隐含规则）。
+    expect(quietOrder([t, r])).toEqual(['timeline', 'resource-apply']);
+  });
+
+  it('⑤ console.warn 留痕：点名环成员 + 闭环组件 + 裁决顺序 + 显式申报可覆盖', () => {
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    order([rmw('timeline', 'Resource'), rmw('resource-apply', 'Resource')]);
+    expect(spy).toHaveBeenCalledTimes(1);
+    const msg = String(spy.mock.calls[0][0]);
+    expect(msg).toContain('timeline');
+    expect(msg).toContain('resource-apply');
+    expect(msg).toContain('Resource'); // 闭环组件点名
+    expect(msg).toContain('timeline → resource-apply'); // 裁决顺序
+    expect(msg).toMatch(/runsAfter\/runsBefore/); // 「显式申报可覆盖」提示
+    expect(msg).toContain('REQ-CYCLEHAZ');
+  });
+
+  it('裁决参与全图传播：环外下游排在**整个环**之后（不是砍一条边了事）', () => {
+    const a = rmw('a', 'X');
+    const b = rmw('b', 'X');
+    const down = sys('down', ['X'], ['Y']); // 读 X → 两个环成员都是它的前驱
+    const tail = sys('tail', ['Y'], []); // 再下游
+    const got = quietOrder([down, tail, a, b]);
+    expect(got.indexOf('a')).toBeLessThan(got.indexOf('down'));
+    expect(got.indexOf('b')).toBeLessThan(got.indexOf('down'));
+    expect(got.indexOf('down')).toBeLessThan(got.indexOf('tail'));
+    expect(got).toHaveLength(4); // 一个系统都不许丢
+  });
+
+  it('N-环（三系统链式互锁）整环按平局键定序 · 上游仍在前', () => {
+    // a 写 P·b 读 P 写 Q·c 读 Q 写 P → b、c、a 互相闭环；up 只写 P 的上游、无人写它读的组件。
+    const up = sys('up', [], ['Seed']);
+    const a = sys('a', ['Seed', 'R'], ['P']);
+    const b = sys('b', ['P'], ['Q']);
+    const c = sys('c', ['Q'], ['R']);
+    const got = quietOrder([up, a, b, c]);
+    expect(got).toEqual(['up', 'a', 'b', 'c']);
+  });
+
+  it('多个独立环各自裁决 · 互不串味', () => {
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const input = [rmw('a1', 'X'), rmw('a2', 'X'), rmw('b1', 'Y'), rmw('b2', 'Y')];
+    const got = order(input);
+    // 两个环各自按平局键定内部相对序（环之间无边 → 由 Kahn 的 FIFO 交错，属既有稳定行为）。
+    expect(got.indexOf('a1')).toBeLessThan(got.indexOf('a2'));
+    expect(got.indexOf('b1')).toBeLessThan(got.indexOf('b2'));
+    expect([...got].sort()).toEqual(['a1', 'a2', 'b1', 'b2']);
+    expect(order([...input])).toEqual(got); // 确定性
+    expect(spy).toHaveBeenCalledTimes(4); // 两次排序 × 两个环，各留一条痕
+    spy.mockRestore();
+  });
+
+  it('无环时零 warn（快车道行为逐位不变）', () => {
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(order([sys('consumer', ['X'], []), sys('producer', [], ['X'])])).toEqual(['producer', 'consumer']);
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
   });
 });

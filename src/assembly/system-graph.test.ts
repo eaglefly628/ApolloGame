@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
 import type { SystemDeclaration } from '@engine/core/types.js';
 import { topologicalSort } from '@engine/core/topological-sort.js';
@@ -34,7 +34,7 @@ describe('system-graph — 全局硬不变量', () => {
 
 // ── 与引擎 topological-sort 逐条对齐（fidelity·防两套模型漂移）─────────────
 describe('system-graph — 与引擎 topo-sort fidelity', () => {
-  it('RMW 伪环：analyzer 检出 SCC 且引擎真抛环', () => {
+  it('RMW 伪环：analyzer 检出 SCC；引擎（REQ-CYCLEHAZ B 后）平局裁决降级不抛', () => {
     // A、B 都读写同一组件 X → 互为前驱 → 环。
     const A = sys('A', { reads: ['X'], writes: ['X'] });
     const B = sys('B', { reads: ['X'], writes: ['X'] });
@@ -42,7 +42,12 @@ describe('system-graph — 与引擎 topo-sort fidelity', () => {
     expect(rep.sccs.length).toBe(1);
     expect(rep.sccs[0].systems.map((s) => s.id).sort()).toEqual(['A', 'B']);
     expect(rep.sccs[0].viaComponents).toContain('X');
-    expect(() => topologicalSort([A, B])).toThrow(/Circular/);
+    // B 后：纯推断环不再炸装载，改为确定性平局裁决 + console.warn 留痕。
+    // → **analyzer 的 SCC 报告因此更重要**：它是这类隐患唯一的静态可见面。
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(topologicalSort([A, B]).map((s) => s.id)).toEqual(['A', 'B']);
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
   });
 
   it('显式 runsBefore 破环：analyzer 无 SCC 且引擎不抛', () => {
@@ -68,7 +73,17 @@ describe('system-graph — 与引擎 topo-sort fidelity', () => {
     const rep = analyzeSystemGraph([cap('c', [A, B, C])]);
     expect(rep.sccs.length).toBe(1);
     expect(rep.sccs[0].systems.map((s) => s.id).sort()).toEqual(['A', 'B', 'C']);
-    expect(() => topologicalSort([A, B, C])).toThrow(/Circular/);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(topologicalSort([A, B, C]).map((s) => s.id)).toEqual(['A', 'B', 'C']); // 平局键=注册序
+    warn.mockRestore();
+  });
+
+  it('申报边自成环：analyzer 检出 SCC 且引擎照旧抛（真申报 bug 必须拦）', () => {
+    const A = sys('A', { runsBefore: ['B'] });
+    const B = sys('B', { runsBefore: ['A'] });
+    expect(analyzeSystemGraph([cap('c', [A, B])]).sccs.length).toBe(1);
+    expect(() => topologicalSort([A, B])).toThrow(/Circular/);
+    expect(() => topologicalSort([A, B])).toThrow(/申报自相矛盾/); // 断到判词·防兜底网给假绿
   });
 });
 

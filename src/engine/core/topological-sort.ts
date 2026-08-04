@@ -8,19 +8,26 @@ import type { SystemDeclaration, ComponentType } from './types.js';
 //   2) 显式定序（runsAfter/runsBefore，按 id）：用于纯组件拓扑无法/不该表达的顺序。
 // 关键：当两个系统都 read-modify-write 同一组件时，组件图会给出互为前驱的两条边 → 判成环；
 // **显式边会覆盖相反方向的组件推断边**，从而以确定顺序打破这种 RMW 伪环（见 R10）。
+//
+// ── REQ-CYCLEHAZ 方案 B（2026-08-04·止血安全网）──────────────────────────────
+// 背景：组件推断边规则下，任意两个系统 RMW 同一黑板组件（Resource/Flag/State/CardPile…）即互为前驱
+// 成 2-环。全库普查 101 能力两两配对得 65 对成环——这是**类问题不是点问题**，靠 O(n²) 显式申报堵不住。
+// 于是：**纯组件推断成的环**（环内零显式边参与）不再炸装载，改为「确定性平局裁决 + console.warn 留痕」；
+// **只要环上有任何一条显式申报边参与，照旧抛**（那是真申报 bug，必须拦）。
+// 正解仍是相位化（能力按语义分 phase 跨桶天然无环，REQ-CYCLEHAZ 方案 C），B 只是安全网。
 export function topologicalSort(systems: SystemDeclaration[]): SystemDeclaration[] {
   const phases = Array.from(new Set(systems.map((s) => s.phase ?? 0))).sort((a, b) => a - b);
-  if (phases.length <= 1) return sortWithinPhase(systems); // 全缺省 → 与原行为完全一致
+  if (phases.length <= 1) return sortWithinPhase(systems, phases[0] ?? 0); // 全缺省 → 与原行为完全一致
 
   const result: SystemDeclaration[] = [];
   for (const phase of phases) {
-    result.push(...sortWithinPhase(systems.filter((s) => (s.phase ?? 0) === phase)));
+    result.push(...sortWithinPhase(systems.filter((s) => (s.phase ?? 0) === phase), phase));
   }
   return result;
 }
 
 // 单个阶段内的拓扑排序（Kahn 算法），边 = 组件推断边（经显式定序覆盖后）+ 显式定序边。
-function sortWithinPhase(systems: SystemDeclaration[]): SystemDeclaration[] {
+function sortWithinPhase(systems: SystemDeclaration[], phase: number): SystemDeclaration[] {
   const n = systems.length;
   const idToIndex = new Map<string, number>();
   for (let i = 0; i < n; i++) idToIndex.set(systems[i].id, i);
@@ -64,32 +71,193 @@ function sortWithinPhase(systems: SystemDeclaration[]): SystemDeclaration[] {
   for (let u = 0; u < n; u++) for (const v of componentEdges[u]) adj[u].add(v);
   for (const [u, v] of explicitEdges) adj[u].add(v);
 
-  const inDegree = new Array(n).fill(0);
-  for (let u = 0; u < n; u++) for (const v of adj[u]) inDegree[v]++;
+  // 5) Kahn 快车道：无环即到此为止，与改动前**逐位同序**（零回归面）。
+  let order = kahn(adj, n);
+  if (order.length === n) return order.map((i) => systems[i]);
 
-  // Kahn's algorithm（按 index 顺序入队 → 确定性、稳定）
-  const queue: number[] = [];
-  for (let i = 0; i < n; i++) {
-    if (inDegree[i] === 0) queue.push(i);
-  }
+  // 6) 有环 → 精确切出最小 SCC，按「环是不是**申报自相矛盾**」分流（方案 B）。
+  //
+  // 分流判据（钉死·比「环上有显式边就抛」更准，理由见下）：
+  //   · **显式申报边 = 硬约束**，任何情况下都不砍——作者写了 runsAfter/runsBefore 就是要那个先后。
+  //   · **组件推断边 = 软约束**，只表达「两系统碰同一黑板组件」，不表达真实先后 → 成环时可砍。
+  //   · 故「只由显式边构成的子图」自身成环 ⇔ 申报自相矛盾（A 说在 B 前、B 说在 A 前）→ **照旧抛**；
+  //     否则环一定是软边闭合的 → 按确定性平局裁决打破（下方 6b）。
+  // 为何不是「环上有任一显式边即抛」：Lead 核查点名的三元环 event-when→timeline→resource-apply
+  // 恰恰带一条**完全正确**的显式边（timeline.runsAfter:['event-when']），闭环的是 timeline/resource-apply
+  // 之间 RMW Resource 的推断边。按「有显式边即抛」会把这类正常申报连坐炸掉（且越申报越容易炸），
+  // 与 B「止血」的目的相反。真申报 bug（互指）仍被下面这一关拦死。
+  const explicitKeys = new Set(explicitEdges.map(([u, v]) => `${u}->${v}`));
+  const cycles = stronglyConnectedComponents(adj);
 
-  const sorted: SystemDeclaration[] = [];
-  while (queue.length > 0) {
-    const idx = queue.shift()!;
-    sorted.push(systems[idx]);
-    for (const neighbor of adj[idx]) {
-      inDegree[neighbor]--;
-      if (inDegree[neighbor] === 0) queue.push(neighbor);
-    }
-  }
-
-  if (sorted.length !== n) {
-    const missing = systems.filter((_, i) => !sorted.includes(systems[i])).map((s) => s.id);
+  // 6a) 显式边自成环 = 申报自相矛盾 → 抛（点名成环的申报边）。
+  const explicitOnly: Set<number>[] = Array.from({ length: n }, () => new Set<number>());
+  for (const [u, v] of explicitEdges) explicitOnly[u].add(v);
+  const declaredCycles = stronglyConnectedComponents(explicitOnly);
+  if (declaredCycles.length > 0) {
+    const detail = declaredCycles
+      .map((c) => {
+        const edges = intraEdges(c, explicitOnly).map(([u, v]) => `${systems[u].id}→${systems[v].id}`);
+        return `[${sortedIds(c, systems).join(', ')}]（申报边：${edges.sort().join(', ')}）`;
+      })
+      .join('；');
     throw new Error(
-      `Circular dependency detected among systems: ${missing.join(', ')}. ` +
-        `若两系统读改写同一组件，用 runsAfter/runsBefore 显式定序打破。`,
+      `Circular dependency detected among systems: ${declaredCycles.flatMap((c) => sortedIds(c, systems)).join(', ')}. ` +
+        `**显式 runsAfter/runsBefore 申报自相矛盾**（申报边自成环），不做平局裁决：${detail}。` +
+        `请改申报方向，或把其中一方拆到更后的 phase。`,
     );
   }
 
-  return sorted;
+  // 6b) 环由组件推断边闭合 → 确定性平局裁决打破。
+  //
+  // 砍边语义（钉死·勿随手改）：对每个 SCC，**砍掉环内全部推断边、保留环内全部显式边**，再按
+  // 「平局键升序，但服从保留下来的显式边」给环内成员定一条**全序链** m0→m1→…→mk。
+  // 四点保证：① 环内相对序确定（同一世界每次装载同序 → 录放一致）；② 显式申报绝不被裁决推翻
+  // （链是显式子图的一个拓扑序）；③ SCC 对外的入边/出边原样保留 → 裁决结果继续参与全图传播
+  // （下游仍排在整个 SCC 之后，不是「砍一条边了事」）；④ 不引入新环——SCC 极大性保证任意
+  // 「成员⇝成员」的路径全落在 SCC 内部，而内部只剩与链同向的显式边，故链边只能单向前进。
+  //
+  // 平局键 = **系统在输入数组中的下标** = 它被 addSystem 注册进 world 的顺序（= 蓝图 capabilities
+  // 的装载序）。而 `ALL_CAPABILITIES` 注册表按 atoms→tier1→tier2→tier3 编写，故按注册表序装载时
+  // 该键天然就是「tier 序优先、同 tier 按能力注册序」。键值随世界固定 → 顺序固定。
+  for (const cycle of cycles) {
+    const inCycle = new Set(cycle);
+    // 砍软边（推断边）、留硬边（显式边）。
+    for (const u of cycle) {
+      for (const v of [...adj[u]]) {
+        if (inCycle.has(v) && !explicitKeys.has(`${u}->${v}`)) adj[u].delete(v);
+      }
+    }
+    const members = orderCycleMembers(cycle, adj);
+    for (let k = 0; k + 1 < members.length; k++) adj[members[k]].add(members[k + 1]);
+    warnTieBreak(phase, members, systems);
+  }
+
+  order = kahn(adj, n);
+  if (order.length !== n) {
+    // 兜底：破环后仍排不出（理论不可达——SCC 全部拆过即为 DAG）。宁可炸也不静默出半张表。
+    const stuck = systems.filter((_, i) => !order.includes(i)).map((s) => s.id);
+    throw new Error(
+      `Circular dependency detected among systems: ${stuck.join(', ')}. ` +
+        `（平局裁决后仍不可排——定序器内部不变量被破坏，请报引擎主程）`,
+    );
+  }
+  return order.map((i) => systems[i]);
+}
+
+// Kahn 算法（按 index 顺序入队 → 确定性、稳定）。返回可排出的节点下标序；长度 < n 即有环。
+function kahn(adj: Set<number>[], n: number): number[] {
+  const inDegree = new Array(n).fill(0);
+  for (let u = 0; u < n; u++) for (const v of adj[u]) inDegree[v]++;
+
+  const queue: number[] = [];
+  for (let i = 0; i < n; i++) if (inDegree[i] === 0) queue.push(i);
+
+  const out: number[] = [];
+  for (let head = 0; head < queue.length; head++) {
+    const idx = queue[head];
+    out.push(idx);
+    for (const neighbor of adj[idx]) {
+      if (--inDegree[neighbor] === 0) queue.push(neighbor);
+    }
+  }
+  return out;
+}
+
+/**
+ * Tarjan 强连通分量（迭代式·避免深递归爆栈）。只返回 size>1 的分量 = 真环。
+ * （`src/assembly/system-graph.ts` 的图分析复用本函数——一份实现，防两处漂移。）
+ */
+export function stronglyConnectedComponents(adj: Set<number>[]): number[][] {
+  const n = adj.length;
+  const index = new Array<number>(n).fill(-1);
+  const low = new Array<number>(n).fill(0);
+  const onStack = new Array<boolean>(n).fill(false);
+  const stack: number[] = [];
+  let idx = 0;
+  const out: number[][] = [];
+
+  for (let s = 0; s < n; s++) {
+    if (index[s] !== -1) continue;
+    // 迭代 DFS：帧 = [node, 邻居数组, 下标]
+    const work: Array<{ v: number; nbrs: number[]; i: number }> = [{ v: s, nbrs: [...adj[s]], i: 0 }];
+    index[s] = low[s] = idx++; stack.push(s); onStack[s] = true;
+    while (work.length) {
+      const f = work[work.length - 1];
+      if (f.i < f.nbrs.length) {
+        const w = f.nbrs[f.i++];
+        if (index[w] === -1) {
+          index[w] = low[w] = idx++; stack.push(w); onStack[w] = true;
+          work.push({ v: w, nbrs: [...adj[w]], i: 0 });
+        } else if (onStack[w]) {
+          low[f.v] = Math.min(low[f.v], index[w]);
+        }
+      } else {
+        if (low[f.v] === index[f.v]) {
+          const comp: number[] = [];
+          for (;;) { const w = stack.pop()!; onStack[w] = false; comp.push(w); if (w === f.v) break; }
+          if (comp.length > 1) out.push(comp);
+        }
+        work.pop();
+        if (work.length) low[work[work.length - 1].v] = Math.min(low[work[work.length - 1].v], low[f.v]);
+      }
+    }
+  }
+  return out;
+}
+
+// 环内边（u→v 两端都在环上）。
+function intraEdges(cycle: number[], adj: Set<number>[]): Array<[number, number]> {
+  const set = new Set(cycle);
+  const out: Array<[number, number]> = [];
+  for (const u of cycle) for (const v of adj[u]) if (set.has(v)) out.push([u, v]);
+  return out;
+}
+
+/**
+ * 环内成员的最终相对序 = 「平局键（下标）升序，但服从环内保留下来的显式边」。
+ * 做法 = 只在环内跑一次 Kahn，每步取**入度 0 中下标最小**者（环规模极小，线性挑选足够）。
+ * 显式子图已在 6a 验过无环 → 必能全部取出；兜底把万一漏下的按键序补尾，绝不丢成员。
+ */
+function orderCycleMembers(cycle: number[], adj: Set<number>[]): number[] {
+  const members = [...cycle].sort((a, b) => a - b); // 平局键升序
+  const remaining = new Set(members);
+  const indeg = new Map<number, number>(members.map((m) => [m, 0]));
+  for (const u of members) for (const v of adj[u]) if (remaining.has(v)) indeg.set(v, indeg.get(v)! + 1);
+
+  const out: number[] = [];
+  for (;;) {
+    const pick = members.find((m) => remaining.has(m) && indeg.get(m) === 0);
+    if (pick === undefined) break;
+    remaining.delete(pick);
+    out.push(pick);
+    for (const v of adj[pick]) if (remaining.has(v)) indeg.set(v, indeg.get(v)! - 1);
+  }
+  for (const m of members) if (remaining.has(m)) out.push(m);
+  return out;
+}
+
+function sortedIds(cycle: number[], systems: SystemDeclaration[]): string[] {
+  return [...cycle].sort((a, b) => a - b).map((i) => systems[i].id);
+}
+
+// 留痕：点名环成员 + 闭环组件 + 裁决出的顺序 + 「显式申报可覆盖」提示。
+// （warn 只是旁路输出，不参与定序 → 不影响确定性。）
+function warnTieBreak(phase: number, members: number[], systems: SystemDeclaration[]): void {
+  const via = new Set<ComponentType>();
+  for (const u of members) {
+    for (const v of members) {
+      if (u === v) continue;
+      const deps = new Set([...systems[v].reads, ...systems[v].consumes]);
+      for (const w of systems[u].writes) if (deps.has(w)) via.add(w);
+    }
+  }
+  const ids = members.map((i) => systems[i].id);
+  console.warn(
+    `[topological-sort] phase ${phase}：检测到由**组件推断边**闭合的定序环 ` +
+      `[${[...members].sort((a, b) => a - b).map((i) => systems[i].id).join(', ')}]` +
+      `（闭环组件：${[...via].sort().join(', ') || '—'}）。环上无自相矛盾的显式申报 → 按确定性平局裁决` +
+      `（注册序/tier 序·已服从既有 runsAfter/runsBefore）定序为：${ids.join(' → ')}。` +
+      `此顺序仅保证可复现、不保证合语义：要指定先后请用 runsAfter/runsBefore 显式申报覆盖，` +
+      `或按语义把系统拆到不同 phase（REQ-CYCLEHAZ）。`,
+  );
 }

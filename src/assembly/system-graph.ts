@@ -1,5 +1,6 @@
 import type { SystemDeclaration, ComponentType } from '@engine/core/types.js';
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
+import { stronglyConnectedComponents } from '@engine/core/topological-sort.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  system-graph —— 系统调度依赖图分析（REQ-STAB·积木稳定性工具）。
@@ -8,8 +9,9 @@ import type { CapabilityDefinition } from '@engine/core/define-capability.js';
 //    · 组件推断边：A 写 X 且 B 读/consume X ⇒ A→B。
 //    · 显式边：runsAfter[id]⇒id→self；runsBefore[id]⇒self→id。
 //    · 显式边**删除相反方向的组件边**（打破 RMW 伪环）。
-//  不可排（有环）→ 引擎抛错，但错误信息把「环 + 一切被环卡住的下游」全列出来（over-report），
-//  且不指出是哪条边/哪个组件闭的环。本模块用 **Tarjan 精确切出最小 SCC**、点名闭环组件、给破环建议，
+//  有环时（REQ-CYCLEHAZ 方案 B 后）引擎分流：**纯组件推断环**→确定性平局裁决 + console.warn 留痕（能装载，
+//  但顺序只保证可复现、不保证合语义）；**有显式申报边参与的环**→照旧抛错。两种都不告诉你是哪条边/哪个
+//  组件闭的环。本模块用 **Tarjan 精确切出最小 SCC**（复用引擎同一实现）、点名闭环组件、给破环建议，
 //  并检出两类**恒为 bug** 的形态：悬空显式边（runsBefore/runsAfter 指向不存在的系统=静默失效）、
 //  重复 system id（同 id 多能力=idToIndex 覆盖·定序静默改变）。
 //
@@ -136,45 +138,6 @@ function buildPhaseGraph(refs: SysRef[]): PhaseGraph {
   return { refs, adj, compEdgeComponents };
 }
 
-// Tarjan 强连通分量（迭代式·避免深递归爆栈）。返回 size>1 的 SCC（真环）。
-function tarjanSccs(adj: Set<number>[]): number[][] {
-  const n = adj.length;
-  const index = new Array<number>(n).fill(-1);
-  const low = new Array<number>(n).fill(0);
-  const onStack = new Array<boolean>(n).fill(false);
-  const stack: number[] = [];
-  let idx = 0;
-  const out: number[][] = [];
-
-  for (let s = 0; s < n; s++) {
-    if (index[s] !== -1) continue;
-    // 迭代 DFS：帧 = [node, 邻居迭代器数组下标]
-    const work: Array<{ v: number; nbrs: number[]; i: number }> = [{ v: s, nbrs: [...adj[s]], i: 0 }];
-    index[s] = low[s] = idx++; stack.push(s); onStack[s] = true;
-    while (work.length) {
-      const f = work[work.length - 1];
-      if (f.i < f.nbrs.length) {
-        const w = f.nbrs[f.i++];
-        if (index[w] === -1) {
-          index[w] = low[w] = idx++; stack.push(w); onStack[w] = true;
-          work.push({ v: w, nbrs: [...adj[w]], i: 0 });
-        } else if (onStack[w]) {
-          low[f.v] = Math.min(low[f.v], index[w]);
-        }
-      } else {
-        if (low[f.v] === index[f.v]) {
-          const comp: number[] = [];
-          for (;;) { const w = stack.pop()!; onStack[w] = false; comp.push(w); if (w === f.v) break; }
-          if (comp.length > 1) out.push(comp);
-        }
-        work.pop();
-        if (work.length) low[work[work.length - 1].v] = Math.min(low[work[work.length - 1].v], low[f.v]);
-      }
-    }
-  }
-  return out;
-}
-
 /** 完整分析：全部能力 → 悬空边 / 重复 id / 逐 phase 最小 SCC（含闭环组件 + 破环建议）。 */
 export function analyzeSystemGraph(caps: readonly CapabilityDefinition[]): SystemGraphReport {
   const refs = collectSystems(caps);
@@ -188,7 +151,7 @@ export function analyzeSystemGraph(caps: readonly CapabilityDefinition[]): Syste
   for (const phase of phases) {
     const pref = refs.filter((r) => r.phase === phase);
     const g = buildPhaseGraph(pref);
-    for (const comp of tarjanSccs(g.adj)) {
+    for (const comp of stronglyConnectedComponents(g.adj)) {
       const set = new Set(comp);
       const via = new Set<string>();
       for (const u of comp) for (const v of g.adj[u]) {
