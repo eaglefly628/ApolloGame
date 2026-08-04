@@ -46,5 +46,5 @@ plan §4 已把它逐条申报并给出「先摆成数据表 + 由引擎物理�
 | 关 | 状态 |
 |---|---|
 | S1 立项卡 | 📝 本文件（待 owner/Lead 签） |
-| S2 能力计划 | 📝 `capability-plan.md` 送审稿（待 Lead 签·含 1 条 capgap 待裁） |
-| S3+ | ⛔ 未开工（plan 未过审不写游戏层系统代码） |
+| S2 能力计划 | 📝 `capability-plan.md` 送审稿（待 Lead 签·含 2 条 capgap 待裁） |
+| S3+ | ⛔ 未开工。除 plan 未过审外，另有**硬前置**：`REQ-3D-TOWER-STACK`（引擎物理世界参数全局硬编码 `gravity -42`，实测 54 块塔 0.1s 崩塌·**无游戏层绕行路**） |

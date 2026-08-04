@@ -6,6 +6,25 @@
 
 ---
 
+## REQ-3D-TOWER-STACK · 物理世界参数按游戏可配（现全局硬编码 · 重力 -42 使多层堆叠不可能）· [2026-08-04] · GD-105 提（叠叠乐塔立不住）→ P3D · status: open · 优先级: **P1（game-105 S3 骨架关硬阻塞·塔立不住则全部规则无从谈起）** · 类型: 3D 线能力缺口（物理世界配置）
+> **缺口**：`src/renderer/three/physics.ts:148` `initWorld()` 把物理世界参数**全局硬编码**：`gravity -42`（注释「世界单位较大 → 重力调大·**色子下落干脆**」= 为掷骰调的）、`restitution 0.4`（「弹一点」）、`friction 0.35`，且**未设 `solver.iterations`**（cannon-es 0.20 `GSSolver` 默认 **10**）。全引擎共用**一个** cannon World，**没有任何数据出口**可按游戏/场景调整（`render.ts:466` 的 `gravity` 是粒子发射器字段，与物理世界无关）。掷骰/碎片这类「单体抛落」在该配置下很好，但**多层刚体堆叠**要求恰好相反的参数。
+> **实证（54 块塔·cannon-es 0.20.0 = 引擎 pin 版本·离线复现·判塌=塔顶下沉 > 2 倍积木高）**：
+>
+> | 配置 | 结果 |
+> |---|---|
+> | ① 引擎现状原样（g=-42·it=默认10·rest=0.4） | **0.1s 崩塌** ❌ |
+> | ② 仅把 `solver.iterations` 提到 40 | **0.1s 崩塌** ❌ |
+> | ③ ② + `restitution=0` | **0.1s 崩塌** ❌ |
+> | ④ ③ + `gravity=-9.82` | **站住**（20s 塔顶仅下沉 0.085） ✅ |
+>
+> **主因是重力，不是迭代次数**——这与直觉相反，故列表存证：`-42` 下接触力过大，soft-constraint 求解器每接触的穿透量随力放大，18 层累积后整塔当场解体；提迭代/去弹性都救不回来。另一独立实测：即便 `g=-9.82`，`iterations=20` 时塔仍会在 20s 内因求解器蠕变自行塌陷（塔顶 5.23→1.26），**40 次才稳**。故堆叠场景需要 **`gravity≈-10` + `restitution≈0` + `iterations≥40` 三者同时成立**。
+> **要什么（P3D 主理·技术路 P3D 定）**：给物理世界一条**按游戏/场景配置的数据路**（如场景级单例组件 `PhysicsWorld3D{gravity?,restitution?,friction?,solverIterations?}`，缺省=现行值）。游戏摆纯数据即可，渲染器读它建 World。
+> **⚠ 明确不要「直接改全局默认」**：`g=-42` 是 game-d 掷骰**刻意调**的（owner 2026-07-03「色子下落干脆」），game102 碎片同样跑在这套参数上。全局改必回归伤到它们——**必须 opt-in 可配，缺省行为零变**。
+> **复用面**：任何堆叠/搭建玩法（叠叠乐/积木/罗汉塔/推箱堆垛）· 需要慢重力的漂浮/水下场景 · 需要高精度接触的多米诺。现状下这些**一律做不了**。
+> **验收**：game-105 的 54 块塔在填 `PhysicsWorld3D{gravity:-9.82,restitution:0,solverIterations:40}` 后静置 20s 不塌（塔顶下沉 < 0.2）+ **game-d 掷骰不填该组件时行为逐位不变**（回归目击）+ 测试钉死（缺省值 = 现行硬编码值）。
+> **边界**：`src/renderer/**`（`three/physics.ts`）= P3D 独占域；Lead 评审。render-only·不进 sim/hash。
+> **阻塞关系**：本条 **P1 硬阻塞 game-105 的 S3**（与 `REQ-3D-SETTLE-SIGNAL` 不同——那条可用薄胶水绕行，本条**无绕行路**：物理世界配置在引擎侧，游戏层再怎么摆数据也改不动）。
+
 ## REQ-3D-SETTLE-SIGNAL · 刚体落定 / 失稳 → 信号出口（物理结果通向 sim 的唯一缺口）· [2026-08-04] · GD-105 提（叠叠乐判负）→ P3D · status: open · 优先级: P2（game-105 核心判负条件阻塞·另有两处游戏层已在手搓同件） · 类型: 3D 线能力缺口（物理事件 → 信号）
 > **缺口**：物理结果只写回 `Transform3D`，而 `Transform3D` 在 `src/net/determinism.ts:18` 的 `NON_DETERMINISTIC` 集内 → **`Condition` 读不到、不进 hash**。于是「刚体停稳了没有 / 塔塌了没有」这类**物理结论无任何出口通向 sim**——凡是靠物理定结果的玩法，都只能在游戏层自己轮询 `Transform3D`。
 > **实证（三处重复 + 引擎已算出该状态）**：① `src/renderer/three/physics.ts:188` **已经在配 cannon 的 `allowSleep` / `sleepSpeedLimit` / `sleepTimeLimit`**——「落定」cannon 本来就算出来了，只是没出口；② `games/game-d/throw3d.ts` 手搓 12 处（`lastMoveMs`/`prevQuat` 轮询落定 → 读朝上面定点数）；③ `games/game102/voxel-proto.ts` 手搓 12 处（sleep/超时 despawn）；④ `REQ-3D-G102-DEBRIS` 性能预算里再次写「落定/超时 despawn（sleep 后 1.5-2.5s 回收）」；⑤ game-105 叠叠乐判负 = 第四次。
