@@ -24,8 +24,12 @@
 
 <!-- REQ-RETRO-引擎大扫除（P0·owner 全权授 Lead）已完结迁归档（requests-archive.md·grep REQ-RETRO）；后置不占槽小条：requests-archive.md 按月拆卷（要做时重开）。 -->
 
-### REQ-RETRO2-能力库整理 · 能力使用审计+老数据清理+测试套扫描精简 · [2026-08-03] · owner 令（续 REQ-RETRO 二期） → Lead 主持·两路只读盘点→Lead 裁决→施工另派 · status: **open（盘点中）** · 优先级: P1 · 类型: 架构卫生（回顾期二期）
+### REQ-RETRO2-能力库整理 · 能力使用审计+老数据清理+测试套扫描精简 · [2026-08-03] · owner 令（续 REQ-RETRO 二期） → Lead 主持·两路只读盘点→Lead 裁决→施工另派 · status: **open（盘点中·owner 已缩范围）** · 优先级: P1 · 类型: 架构卫生（回顾期二期）
+> **⚖ owner 三裁（2026-08-03 同日）**：①能力库**不删**（矩阵撤销·降为情报）；②`public/games/` 三陈旧目录（`game`/`sample-platformer`/`smoke-test-game`）**批删**——施工前置=引用核查（疑似活夹具·若为测试所用则报回不盲删）；③测试套扫描**照做**。归档文件处置（Lead 建议拆卷+深冻 vs owner 初提删除）**等 owner 终字**，未字前不动。
 > 范围三路：① **能力库使用审计**——skills 全量 192 项（atoms 33 / tier1 20 / tier2 113 / tier3 26）逐项找消费方，产出使用矩阵，零消费/重复覆盖/可合并三类进 Lead 裁决（删/留/合并·警惕「删了明天要用」，约会小游戏线已点名 launch/bounce/dialogue 等为将用件）；② **老数据清理**——`public/games/` 陈旧目录（`game`/`sample-platformer`/`smoke-test-game` 等非现役 12 游戏项）、各基线台账残留（audit-baseline/门证/美术台账指向已删对象）、`wiki/skills/index.md` 与 registry 实况漂移、`requests-archive.md` 按月拆卷（承 REQ-RETRO 一期延后项）；③ **测试套扫描**——440 测试文件：慢测清单（deep 车道计时）、重复覆盖、弱断言（只测存在性）、死夹具、decouple 白名单余 5 处收缩可行性。盘点=两只低档只读代理并行；**裁决=Lead 逐项**；施工按裁决清单另派低档。
+
+### REQ-DIALOGUE-剧情基础线 · 剧情向 Dialogue 能力做成基础件+Sample+Template · [2026-08-03] · owner 令（约会性单机超休闲转型线） → Lead 出图后派工 · status: **open（排队·REQ-RETRO2 结案后启动·勿先动工）** · 优先级: P1（转型关键路径） · 类型: 能力线（引擎+UI 基座+样板）
+> owner 意图：剧情向游戏的对话能力按**基础设施级**设计，配齐 Sample（示范游戏）与 Template（可复制起手模板）。已知底账（2026-08-03 侦察实证）：t3-dialogue 已有（line/choice/check 节点图+requires 条件门+检定）——核心不缺；缺口=①VN 屏合规入口（ui/vn 被禁待退役·LayoutNode 闭集无 Dialog/Choice/Portrait 控件·PUI 域）②立绘/表情链（PortraitSlot 空占位不吃图·emotion→贴图切换无落点·faceArt 系牌类专属）③伴侣在场件（立绘+表情+台词气泡·事件→表情反应=纯数据表）。关联输入（等 owner 提供）：DokiWorld 真角色卡 schema + 宿主运行时接口文档（数值双向契约的谈判材料）。启动条件=REQ-RETRO2 结案；启动时 Lead 先出图纸再派工。
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
