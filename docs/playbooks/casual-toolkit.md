@@ -46,7 +46,7 @@
 - 拖尾：`Trail3D`（运动残影）。
 
 ## 五、物理玩具（3D · 表现物理 · 不进 sim/hash · 可用随机）
-- 刚体：`RigidBody3D{shape:box/sphere/capsule/cylinder/convex/heightfield}`——掉落 / 翻滚 / 堆叠 / 掷骰。体形由 `RigidBody3D.shape` 自带（缺省取同实体 `Mesh3D`）·**无独立 Collider3D 组件**（2026-08-04 回填：原文误列·闭集里没有它·细则以 `playbooks/3d.md` 物理行为准）。
+- 刚体：`RigidBody3D{shape:box/sphere/capsule/cylinder/convex/heightfield}`——掉落 / 翻滚 / 堆叠 / 掷骰。体形由 `RigidBody3D.shape` 自带（缺省取同实体 `Mesh3D`）·**render-only 物理线无独立 Collider3D 组件**（2026-08-04 回填 + Lead 校注：原文误列；⚠ sim 侧另有**同名**确定性组件 `Collider3D`（`protocol/components/spatial.ts`·进 hash·`overlap-detect-3d` 消费）——那是逻辑碰撞线，与本节表现物理是两条线，勿混用；细则以 `playbooks/3d.md` 物理行为准）。
 - 运行时施力：`Impulse3D`（bump `trigger` → 弹 / 射 / 跳 / 击退 / 风 · 或渲染器 `applyImpulse` 命令式）。
 - 关节约束：`Joint3D`（cannon 约束·绳 / 秋千 / 吊桥 / 布娃娃）。
 - 拾取：`Pickable3D`（射线拾取 → 信号入队·同鼠标点击类外源输入）。

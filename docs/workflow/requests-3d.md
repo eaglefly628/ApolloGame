@@ -24,16 +24,18 @@
 > **验收**：game-105 的 54 块塔在填 `PhysicsWorld3D{gravity:-9.82,restitution:0,solverIterations:40}` 后静置 20s 不塌（塔顶下沉 < 0.2）+ **game-d 掷骰不填该组件时行为逐位不变**（回归目击）+ 测试钉死（缺省值 = 现行硬编码值）。
 > **边界**：`src/renderer/**`（`three/physics.ts`）= P3D 独占域；Lead 评审。render-only·不进 sim/hash。
 > **阻塞关系**：本条 **P1 硬阻塞 game-105 的 S3**（与 `REQ-3D-SETTLE-SIGNAL` 不同——那条可用薄胶水绕行，本条**无绕行路**：物理世界配置在引擎侧，游戏层再怎么摆数据也改不动）。
+> **⚖ Lead 评审（2026-08-04）：✅ 准·下沉**——独立核实缺口成立：`physics.ts:148-150` 硬编码三参 + 全文件零 `solver.iterations` + `src/` 全域零 `PhysicsWorld` 配置入口（`render.ts:466` gravity 确为粒子字段无关）。spec 照案：**opt-in 场景级·缺省行为零变**（护 game-d/-42 刻意调参）·验收含 game-d 回归目击 + 缺省值测试钉死。维持 P1（game-105 S2 已过审·S3 唯此硬前置）。P3D 施工。
 
-## REQ-3D-SETTLE-SIGNAL · 刚体落定 / 失稳 → 信号出口（物理结果通向 sim 的唯一缺口）· [2026-08-04] · GD-105 提（叠叠乐判负）→ P3D · status: open · 优先级: P2（game-105 核心判负条件阻塞·另有两处游戏层已在手搓同件） · 类型: 3D 线能力缺口（物理事件 → 信号）
+## REQ-3D-SETTLE-SIGNAL · 刚体落定 / 失稳 → 信号出口（物理结果通向 sim 的唯一缺口）· [2026-08-04] · GD-105 提（叠叠乐判负）→ P3D · status: open · 优先级: P2（game-105 核心判负条件阻塞·game-d 已在游戏层手搓同件） · 类型: 3D 线能力缺口（物理事件 → 信号）
 > **缺口**：物理结果只写回 `Transform3D`，而 `Transform3D` 在 `src/net/determinism.ts:18` 的 `NON_DETERMINISTIC` 集内 → **`Condition` 读不到、不进 hash**。于是「刚体停稳了没有 / 塔塌了没有」这类**物理结论无任何出口通向 sim**——凡是靠物理定结果的玩法，都只能在游戏层自己轮询 `Transform3D`。
-> **实证（三处重复 + 引擎已算出该状态）**：① `src/renderer/three/physics.ts:188` **已经在配 cannon 的 `allowSleep` / `sleepSpeedLimit` / `sleepTimeLimit`**——「落定」cannon 本来就算出来了，只是没出口；② `games/game-d/throw3d.ts` 手搓 12 处（`lastMoveMs`/`prevQuat` 轮询落定 → 读朝上面定点数）；③ `games/game102/voxel-proto.ts` 手搓 12 处（sleep/超时 despawn）；④ `REQ-3D-G102-DEBRIS` 性能预算里再次写「落定/超时 despawn（sleep 后 1.5-2.5s 回收）」；⑤ game-105 叠叠乐判负 = 第四次。
+> **实证（重复面 + 引擎已算出该状态）**：① `src/renderer/three/physics.ts:188` **已经在配 cannon 的 `allowSleep` / `sleepSpeedLimit` / `sleepTimeLimit`**（⚖ Lead 校注：per-body 配置非 world 级·「已算出无出口」结论不变）——「落定」cannon 本来就算出来了，只是没出口；② `games/game-d/throw3d.ts` 手搓（`lastMoveMs`/`prevQuat` 轮询落定 → 读朝上面定点数·`:26-27,75-90`）；③ `REQ-3D-G102-DEBRIS` 性能预算里再次写「落定/超时 despawn（sleep 后 1.5-2.5s 回收）」；④ game-105 叠叠乐判负。**⚖ Lead 校注（2026-08-04）**：原稿所列 `voxel-proto.ts`「手搓 12 处 sleep 判定」**不实**（该文件零 `RigidBody3D`·手写弹道积分 + life 计时回收·非刚体落定）·剔除；`chip3d.ts` 筹码落定记为潜在消费方。**校正后重复面 = 3 处（在用 1 + 规划 1 + 本作 1）·下沉论证仍足**。
 > **要什么（P3D 主理·技术路 P3D 定）**：给 `RigidBody3D` 一个 **opt-in 事件出口**（如 `settleSignal?: string` 落定即发；可选 `toppleSignal?` + 位移/倾角阈值），命中时经**与 `Pickable3D` 完全相同的既有通路**发信号——渲染器 → 游戏输入胶水 `ActionSink.enqueueAction(signal,{arg:entityId})` → `keybind` 产 `Signal` → sim 按名消费。该通路 `Pickable3D` 文档已明载「与鼠标点击同类外源输入·本地合法·**不碰 sim 确定性**」，故本条**不引入确定性风险**（物理仍 render-only·仍不进 hash·只是把「已经发生的事」告诉 sim，同用户点击）。
 > **明确不要什么**：**不要确定性物理**。本条只求「暴露落定/失稳事件」，不求物理结果可逐位复现——后者量级完全不同，且 game-d 已记债放弃（`throw3d.ts` 头注）。若 Lead 认为必须可复现，请单独立项，别混进本条。
-> **复用面**：game-d 掷骰落定读数（可删手搓轮询）· game102 碎片 sleep 回收 · game-c 筹码落定 · game-105 塔失稳判负 · 后续任何「物理定结果」玩法（保龄球/弹珠/推币机）。**一片薄能力消四处重复**。
+> **复用面**：game-d 掷骰落定读数（可删手搓轮询）· G102-DEBRIS 碎片 sleep 回收（规划）· game-c 筹码落定（潜在）· game-105 塔失稳判负 · 后续任何「物理定结果」玩法（保龄球/弹珠/推币机）。
 > **验收**：game-d `throw3d.ts` 的落定轮询能删改成填 `settleSignal` 且掷骰读数行为不变（回归目击）+ 新增测试钉死（落定发一次·不重复发·睡醒再动再落定重发）+ 不进 hash 的红线测试（`determinism.ts` 集合不变）。
 > **边界**：`src/renderer/**`（`three/physics.ts` + `three-renderer.ts`）= P3D 独占域；Lead 评审。render-only·不进 sim/hash。
 > **不阻塞**：game-105 按代码准入阶梯 L2「可先用 L0/L1 绕行出可玩版」，裁决落地前照 `throw3d.ts` 先例用薄轮询胶水（记债·L3 申报在 `docs/design/game-105/capability-plan.md §4.7`），能力下沉后删胶水改填数据。
+> **⚖ Lead 评审（2026-08-04）：✅ 准·下沉**——「引擎已配 sleep 无出口」属实；走 `Pickable3D` 同通路（不进 hash·同外源输入）口径**正确**；「不要确定性物理」**同判**（要可复现另立项）。重复面校正见上（3 处仍足）。验收三件照案（game-d 回归目击 + 落定/重发测试 + determinism 集合不变红线测试）。P2 维持·P3D 施工·过渡期胶水记债准。
 
 ## REQ-3D-PBR-INSTANCING · Material3D/PBR 网格按材质签名归批实例化（同材质 → 1 InstancedMesh）· [2026-07-27] · owner 拍板（game102 每色真材质立方）→ P3D · status: open · 优先级: P1（owner 明示·game102 真材质立方阻塞·现被迫限尺寸 N≤6） · 类型: 渲染性能（PBR 实例化·render-only·承 REQ-3D-RENDER-EFFICIENCY / W1-A 未覆盖面）
 > **缺口（实证）**：REQ-3D-RENDER-EFFICIENCY 已把**平色盒 + voxelTex 体素**归批实例化，但**挂 `Material3D` 的 PBR 网格仍走单 mesh**（`three-renderer.ts:315`「有 Material3D → PBR 单 mesh」）。game102 要「每色一套真材质」（红=emissive火/黄=gold真金/蓝=glass玻璃水/紫=plastic光泽/绿=草）——用 `Material3D` 真 PBR 后，几百颗覆盖格 = 几百 draw call·大立方掉帧。owner 现被迫「真材质仅小关 N≤6·大关退实例化 voxelTex 近似」（`voxel-proto.ts richMat` 分支），是权宜非根治。

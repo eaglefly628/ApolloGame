@@ -45,12 +45,13 @@
 | `Camera3D`（`shake`/`tween`） | 绕塔运镜；**塌塔瞬间 `shake` 打击反馈** | ✅ 现有 |
 | `Light3D` / `Post3D` / `Decal3D` | 双色打光、辉光、桌面软阴影 | ✅ 现有 |
 
-> **诚实校正（手册缺陷·回填项）**：`docs/playbooks/casual-toolkit.md` §五首行写「刚体：`RigidBody3D` + `Collider3D`」，
-> 但组件闭集里**没有 `Collider3D`**——体形由 `RigidBody3D{shape}` 自带（`playbooks/3d.md` 物理行口径正确）。
-> 建议随本案回填该行，避免后续 session 照抄不存在的组件名。
+> **诚实校正（⚖ Lead 校注 2026-08-04 修正口径）**：**render-only 物理线**无独立 `Collider3D`——体形由 `RigidBody3D{shape}` 自带
+> （`playbooks/3d.md` 物理行口径正确）；`casual-toolkit.md` §五该行回填已随 `56b229824` 同批落地，本段「建议回填」为陈旧文案。
+> ⚠ 但「闭集里没有 `Collider3D`」的说法**不准确勿再扩散**：sim 侧确有同名组件 `Collider3D`
+> （`protocol/components/spatial.ts:92`·REQ-3D-Collision·**确定性逻辑碰撞体·进 hash**·由 `overlap-detect-3d` 消费）——那是逻辑碰撞线，与本节表现物理是两条线。
 
-> **先例台**：`games/game-d/throw3d.ts`（3D 物理掷骰=物理定结果的既有范式）、`games/game-c/chip3d.ts`（筹码刚体 + `angularFactor`）、
-> `games/game102/voxel-proto.ts`（体素刚体碎片）、`src/renderer/three/physics.ts`（物理子系统）。
+> **先例台**：`games/game-d/throw3d.ts`（3D 物理掷骰=物理定结果的既有范式）、`games/game-c/chip3d.ts`（筹码刚体·⚖ Lead 校注：`angularFactor` 在该文件仅为待填注释尚未在用·引擎侧已支持）、
+> `src/renderer/three/physics.ts`（物理子系统）。（⚖ Lead 校注：原列 `voxel-proto.ts`「体素刚体碎片」剔除——该文件零 `RigidBody3D`·手写弹道积分非刚体先例。）
 
 ## 3. 摆成数据的规则面
 
@@ -99,13 +100,14 @@
 
 - 引擎 `src/renderer/three/physics.ts:188` **已经在配 cannon 的 `allowSleep` / `sleepSpeedLimit` / `sleepTimeLimit`**
   ——「落定」这个状态 **cannon 本来就算出来了**，只是没有任何出口通向 sim。
-- 游戏层已有**两处**各自手搓同一件事：`games/game-d/throw3d.ts`（12 处 `lastMove`/`prevQuat`/落定轮询）、
-  `games/game102/voxel-proto.ts`（12 处 sleep/despawn 判定）。加上本作 = **第三处**。
-- `REQ-3D-G102-DEBRIS` 的性能预算里也写着「落定/超时 despawn（sleep 后 1.5-2.5s 回收）」——同一需求第四次出现。
+- 游戏层已在手搓同一件事：`games/game-d/throw3d.ts`（`lastMoveMs`/`prevQuat` 落定轮询·`throw3d.ts:26-27,75-90`）。
+  **⚖ Lead 校注（2026-08-04）**：原稿另列 `voxel-proto.ts`「12 处 sleep 判定」**不实**——该文件零 `RigidBody3D`，movers 是手写弹道积分 + life 计时回收，与刚体落定无关，剔除。
+- `REQ-3D-G102-DEBRIS` 的性能预算里也写着「落定/超时 despawn（sleep 后 1.5-2.5s 回收）」——规划面同需求。
+  **校正后的重复面 = throw3d（在用）+ G102-DEBRIS（规划）+ 本作 = 3 处**（另 `chip3d.ts` 筹码落定为潜在消费方），下沉论证仍成立。
 
 **建议下沉的薄片**：给 `RigidBody3D` 加一个 opt-in 的事件出口（如 `settleSignal?` / `topplePolicy?`），
 落定或越过位移/倾角阈值时经与 `Pickable3D` **完全相同的既有通路**（渲染器 → `enqueueAction` → `Signal` → sim）发信号。
-一片能力同时消掉 game-d 掷骰读数、game102 碎片回收、game-c 筹码落定与本作判负四处重复。
+一片能力消掉 game-d 掷骰读数（在用）、G102-DEBRIS 碎片回收（规划）、game-c 筹码落定（潜在）与本作判负的重复。
 
 **已提单**：`docs/workflow/requests-3d.md` → `REQ-3D-SETTLE-SIGNAL`（P3D 域·Lead 评审）。
 
@@ -178,4 +180,10 @@
 - 提交人 / 日期：GD-105 / 2026-08-04
 - 待裁焦点：① 形态（编译期 TS vs 卡带）② **E3 物理世界可配（P1 硬阻塞·无绕行路·请优先裁）** ③ E1 下沉 vs 游戏层胶水 ④ §5 不承诺回放是否可接受
 - **前置依赖**：`REQ-3D-TOWER-STACK` 落地前 S3 无法开工——这不是排期问题，是「塔立不住」的物理事实
-- Lead 裁决：⬜ 通过 / ⬜ 有条件通过（条件：…）/ ⬜ 驳回（理由：…）
+- **⚖ Lead 裁决（2026-08-04）：☑ 有条件通过（S2 过审）**。四裁：
+  - **① 形态 = 编译期 TS 游戏·准**——输入胶水（拖拽→`Joint3D.anchor`）+ 物理回读是 `throw3d.ts` 既立的「薄胶水编排引擎能力」形态，卡带 manifest 接不住；同 game-103 先例。
+  - **② E3 = 准·下沉·维持 P1 硬前置**——独立核实：`physics.ts:148-150` 硬编码 g=-42/rest=0.4/friction=0.35、全文件零 `solver.iterations`、`src/` 全域零 `PhysicsWorld` 配置入口——「游戏层无绕行路」**成立**。`REQ-3D-TOWER-STACK` spec 照案通过（opt-in 场景级配置·**缺省行为零变**·game-d 掷骰回归目击 + 缺省值测试钉死进验收）。E3 落地前 S3 不开工。
+  - **③ E1 = 准·下沉为 `REQ-3D-SETTLE-SIGNAL`**——「引擎已配 per-body sleep（`physics.ts:188`）却无出口」属实；走 `Pickable3D` 同通路（渲染器→`enqueueAction`→`Signal`→sim·不进 hash）口径正确；「不要确定性物理」**同判**（要可复现另立项）。重复面经核实**校正为 3 处非 4 处**（voxel-proto 剔除·见 §4 校注）——论证仍足。过渡期 L3 轮询胶水照 `throw3d` 先例**记债准**，下沉后即删（§4.7 已申报）。
+  - **④ 确定性豁免 = 准**——本地 hot-seat 双人无联机同步需求；`NON_DETERMINISTIC` 集含全部 3D 组件已亲核（`determinism.ts:18`）；game-d 同款债先例在档（`throw3d.ts:8` 头注）。**条件**：本作不纳入 lockstep/Bench 双跑 hash 验收面；sim 侧（计分/抽卡/流程/判负信号消费）仍须全确定性进 hash（§5 承诺·S8 验收核）。「不扩确定性物理」同判——不为不需要的确定性付架构成本。E2 照先例准。
+  - **事实校正三条（Lead 已代改正文·见 §2.2/§4 校注）**：Collider3D「闭集里没有」措辞（sim 侧确有同名确定性组件）；voxel-proto「12 处 sleep 判定」不实；chip3d `angularFactor` 为注释未在用。其余核查（组件闭集逐项/sim 能力 15/15 实名/UI 面四项/两单在档/throw3d 记债）**全部属实**——GD-105 的「实证不是推测」纪律值得表扬，`throw3d.ts:37` 与 `:8` 头注语义互斥属旧文件内债，另记 game-d 工单不阻本案。
+  - **过审条件汇总**：E3 落地前 S3 不开工（P3D 施工·`requests-3d.md` 两单已批注）；手感超支风险（brief §6）S3 期重点盯 `PULL_FEEL` 是否守住 L0；owner 侧 S1 签字待补。
