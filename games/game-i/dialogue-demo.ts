@@ -21,23 +21,24 @@ export function buildDialogueScene(): LayoutNode {
           { type: 'Tag', id: 'vn-affinity', props: { label: '好感 8', icon: '💗', tone: 'accent', size: 'lg' } },
         ] },
 
-      // ② 立绘台：主角立绘（active·warm）+ 玩家侧影（dim·side right）。
+      // ② 立绘台：主角立绘（active·warm·金描边 + 高亮外发光=正在说话）+ 玩家侧影（盾形异形框·dim·side right）。
       { type: 'Panel', id: 'vn-stage', props: { bare: true }, layout: { direction: 'row', align: 'end', justify: 'between', gap: 10 },
         children: [
-          { type: 'portrait', id: 'vn-por-a', props: { name: '林清越', emotion: 'warm', side: 'left' }, layout: { width: 168, height: 236 } },
+          { type: 'portrait', id: 'vn-por-a', props: { name: '林清越', emotion: 'warm', side: 'left', edge: 'gold', glow: true }, layout: { width: 168, height: 236 } },
           { type: 'Particles', id: 'vn-amb', props: { kind: 'sparkle', count: 12, loop: true } },
-          { type: 'portrait', id: 'vn-por-b', props: { name: '你', emotion: 'calm', side: 'right' }, layout: { width: 120, height: 176, opacity: 0.85 } },
+          { type: 'portrait', id: 'vn-por-b', props: { name: '你', emotion: 'calm', side: 'right', shape: 'shield' }, layout: { width: 132, height: 188, opacity: 0.9 } },
         ] },
 
-      // ③ 台词框：说话人 + 台词（打字机逐字）+ 情绪键。line 节点整框可点推进。
+      // ③ 台词框：说话人 + 台词（打字机逐字）+ 情绪键 + 金描边货架框。line 节点整框可点推进。
       { type: 'dialog', id: 'vn-say',
-        props: { speaker: '林清越', text: '你终于来了……这场雨，我等了很久。要不要陪我把这局棋下完？', emotion: 'warm', kind: 'line', typewriter: 28 } },
+        props: { speaker: '林清越', text: '你终于来了……这场雨，我等了很久。要不要陪我把这局棋下完？', emotion: 'warm', kind: 'line', typewriter: 28, edge: 'gold' } },
 
-      // ④ 选项列表：三选项·第三条好感门控（available:false → 灰显不可点）。选中发 dialogue.choose+下标。
+      // ④ 选项列表：三选项渲成 house 糖果厚唇钮（optionKind:primary→吃主题皮·hoverSheen 悬停流光）。
+      //    第三条好感门控（available:false → 灰显不可点）。选中发 dialogue.choose+下标。
       { type: 'choiceList', id: 'vn-pick',
-        props: { options: [
-          { label: '「我来了，就没打算走。」' },
-          { label: '「棋盘我可下不过你。」' },
+        props: { optionKind: 'primary', hoverSheen: true, options: [
+          { label: '「我来了，就没打算走。」', icon: '💗' },
+          { label: '「棋盘我可下不过你。」', icon: '♟' },
           { label: '「握住她的手（需好感 ≥ 12）」', available: false },
         ] } },
 

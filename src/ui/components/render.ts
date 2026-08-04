@@ -277,6 +277,9 @@ function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): strin
   // 皮解析（批29 owner 07-15「按键也可换」）：node 级 skin 优先（含 skin:'' 显式关皮逃生）；未给则落主题级
   // buttonSkins[kind]——一个 kind 一张皮、全游戏按钮一体换，游戏零逐点改。两边都无 = 原 kind 底（字节不变）。
   const sk = p.skin !== undefined ? { skin: p.skin, skinSlice: p.skinSlice } : t.buttonSkins?.[kind] ?? { skin: undefined, skinSlice: undefined };
+  // 贴图皮按钮=**art 定色语义原语**（skinCss 强制白字 + 投影·可读性由皮 art 保证）→ 免 ui-audit 祖先链对比检查
+  // （border-image 非可读 backgroundColor·祖先走到亮父面误判低对比=REQ-STYLESET 记录的盲区·同 PlayingCard 本色 A-007b）。
+  const skinSkip = sk.skin ? ' data-audit-skip-contrast' : '';
   // 键首内联图标（批32 图标统一升级）：1em 随字号·居 label 前。无 icon=纯文字零变。
   const iconImg = p.icon ? `<img src="${esc(p.icon)}" alt="" style="height:1.05em;width:1.05em;object-fit:contain;vertical-align:-0.18em;margin-right:6px">` : '';
   const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
@@ -286,10 +289,10 @@ function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): strin
     const sheen = `<span style="position:absolute;top:0;bottom:0;left:-60%;width:45%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);animation:apollo-sheen 2.6s ease-in-out infinite;pointer-events:none"></span>`;
     const big = `<span style="display:block;font-size:17px;line-height:1.15">${iconImg}${escT(p.label, t)}</span>`;
     const sub = p.sub ? `<span style="display:block;font-size:11px;font-weight:600;opacity:.8;margin-top:2px">${escT(p.sub, t)}</span>` : '';
-    return `<button id="${esc(id)}" data-apollo-btn${sk.skin ? ' data-apollo-skin' : ''}${action}${p.disabled ? ' disabled' : ''} style="${hbase};${ls}${shapeCss(p.shape)}${skinCss(sk.skin, sk.skinSlice)}">${sheen}${big}${sub}</button>`;
+    return `<button id="${esc(id)}" data-apollo-btn${sk.skin ? ' data-apollo-skin' : ''}${skinSkip}${action}${p.disabled ? ' disabled' : ''} style="${hbase};${ls}${shapeCss(p.shape)}${skinCss(sk.skin, sk.skinSlice)}">${sheen}${big}${sub}</button>`;
   }
   const base = `padding:6px 14px;border-radius:7px;font-size:12px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};outline:none;transition:all .15s;opacity:${p.disabled ? 0.4 : 1}`;
-  return `<button id="${esc(id)}" data-apollo-btn${sk.skin ? ' data-apollo-skin' : ''}${action}${p.disabled ? ' disabled' : ''} style="${base};${kindStyle[kind]};${ls}${shapeCss(p.shape)}${skinCss(sk.skin, sk.skinSlice)}">${iconImg}${escT(p.label, t)}</button>`;
+  return `<button id="${esc(id)}" data-apollo-btn${sk.skin ? ' data-apollo-skin' : ''}${skinSkip}${action}${p.disabled ? ' disabled' : ''} style="${base};${kindStyle[kind]};${ls}${shapeCss(p.shape)}${skinCss(sk.skin, sk.skinSlice)}">${iconImg}${escT(p.label, t)}</button>`;
 }
 
 function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string {
@@ -1007,8 +1010,9 @@ function renderFloat(id: string, p: FloatProps, children: LayoutNode[], ls: stri
   // 初始移出屏 + 隐藏（定位前不闪）；mountUI 每帧摆到锚点、目标消失自隐。fixed=按视口 rect 定位（跟随滚动）。
   return `<div id="${esc(id)}" ${data} style="position:fixed;left:0;top:0;z-index:60;opacity:0;transform:translate(-9999px,-9999px);${ls}">${inner}</div>`;
 }
-// ── 剧情 / VN 三件（REQ-DIALOGUE M1·闭集纯数据·house 主题取色·消费 t3-dialogue 投影）──────────────
+// ── 剧情 / VN 三件（REQ-DIALOGUE M1·闭集纯数据·house 主题取色·消费 t3-dialogue 投影 + 华丽货架）──────
 // 台词框：说话人色标 + 台词（复用 Label 打字机/emoji/字体）+ 推进态。可推进节点=整框可点发 advanceAction。
+// 华丽货架（华丽起手）：skin=画框皮 9-slice · shape=异形轮廓 · edge=阵营/金描边——全是既有闭集令牌，非新写美术。
 function renderDialog(id: string, p: DialogProps, ls: string, t: UITheme): string {
   const speaker = p.speaker
     ? `<div style="font-size:13px;font-weight:700;letter-spacing:.4px;color:${t.gold};font-family:${t.fontSerif ?? t.fontUi};margin-bottom:6px">${escT(p.speaker, t)}</div>`
@@ -1025,27 +1029,37 @@ function renderDialog(id: string, p: DialogProps, ls: string, t: UITheme): strin
   const action = canAdvance ? ` data-action="${esc(advAction)}"` : '';
   const cursor = canAdvance ? 'cursor:pointer;' : '';
   const emo = p.emotion ? ` data-emotion="${esc(p.emotion)}"` : '';
-  return `<div id="${esc(id)}"${action}${emo} style="position:relative;background:${t.bg1};border:1px solid ${t.line};border-radius:12px;padding:14px 16px;font-family:${t.fontUi};${cursor}${ls}">${speaker}${body}${hint}</div>`;
+  // 货架框：skin=画框皮（cover/9-slice·art 即框·压过底/边框）；否则实底 + edge 描边（金框/阵营框·缺省细线）。
+  const border = p.edge ? edgeColor(t, p.edge) : t.line;
+  const frame = p.skin ? panelSkinCss(p.skin, p.skinSlice) : `background:${t.bg1};border:1px solid ${border};`;
+  return `<div id="${esc(id)}"${action}${emo} style="position:relative;${frame}border-radius:12px;padding:14px 16px;font-family:${t.fontUi};${cursor}${ls}${shapeCss(p.shape)}">${speaker}${body}${hint}</div>`;
 }
 
-// 选项列表：一列选项行（可选性门控·不可选=灰显不可点）。每行发 chooseAction + arg=下标（或 actionArg）。
+// 选项列表：选项行渲成**真 Button 节点**（复用 renderButton）→ 白拿 house buttonSkins 糖果厚唇皮 + kind（hero 金 CTA）
+// + shape 异形 + fx:sheen-hover 悬停流光 + icon 槽。可选性门控=Button.disabled（灰显不可点·不发信号）。让数据作者从按钮货架挑体量。
 function renderChoiceList(id: string, p: ChoiceListProps, ls: string, t: UITheme): string {
   const chooseAction = p.chooseAction ?? 'dialogue.choose';
+  const kind = p.optionKind ?? 'primary'; // 缺省 primary→吃 house 糖果皮（非朴素默认·华丽起手铁律）
   const rows = (p.options ?? []).map((o, i) => {
     const available = o.available !== false;
-    const arg = o.actionArg ?? String(i);
-    const action = available ? ` data-action="${esc(chooseAction)}" data-arg="${esc(arg)}"` : '';
-    const bg = available ? t.bg2 : 'transparent';
-    const fg = available ? t.text : t.dim;
-    const cursor = available ? 'cursor:pointer' : 'cursor:not-allowed';
-    const op = available ? '' : 'opacity:.55;';
-    const idx = `<span style="color:${available ? t.gold : t.dim};font-weight:700;margin-right:9px;font-family:${t.fontMono}">${i + 1}</span>`;
-    return `<div id="${esc(id)}-o${i}"${action} role="button" style="display:flex;align-items:center;padding:10px 14px;border:1px solid ${t.line};border-radius:10px;background:${bg};color:${fg};font-size:13px;font-family:${t.fontUi};${op}${cursor}">${idx}${escT(o.label, t)}</div>`;
+    const btn: LayoutNode = {
+      type: 'Button', id: `${id}-o${i}`,
+      props: {
+        label: o.label, kind,
+        ...(available ? { action: chooseAction, actionArg: o.actionArg ?? String(i) } : { disabled: true }),
+        ...(o.icon ? { icon: o.icon } : {}),
+        ...(p.optionShape ? { shape: p.optionShape } : {}),
+      },
+      ...(p.hoverSheen && available ? { layout: { fx: [{ kind: 'sheen-hover' as const }] } } : {}),
+    };
+    return renderNode(btn, t); // renderNode 套 fx/shape/press3d 等 layout 装饰
   }).join('');
-  return `<div id="${esc(id)}" style="display:flex;flex-direction:column;gap:8px;${ls}">${rows}</div>`;
+  // align-items:stretch → flex 项撑满列宽（选项按钮一列铺满·糖果厚唇钮堆叠）。
+  return `<div id="${esc(id)}" style="display:flex;flex-direction:column;gap:9px;align-items:stretch;${ls}">${rows}</div>`;
 }
 
 // 立绘槽：art 图（cover·顶部对齐存脸）或名首字/剧场面具占位（绝不空白）。emotion 透出 data-emotion（M2 表选变体）。
+// 华丽货架：shape=异形立绘框 · edge=金/阵营描边 · glow=当前说话人高亮外发光（突出正在说话一方）。
 function renderPortrait(id: string, p: PortraitProps, ls: string, t: UITheme): string {
   const emo = p.emotion ? ` data-emotion="${esc(p.emotion)}"` : '';
   const inner = p.art
@@ -1056,7 +1070,10 @@ function renderPortrait(id: string, p: PortraitProps, ls: string, t: UITheme): s
   const nameTag = p.name
     ? `<div style="position:absolute;left:0;right:0;bottom:0;padding:6px 11px;background:#1c150d;color:#fff;font-size:13px;font-weight:700;font-family:${t.fontUi};text-align:${align}">${escT(p.name, t)}</div>`
     : '';
-  return `<div id="${esc(id)}"${emo} style="position:relative;overflow:hidden;min-width:72px;min-height:96px;border:1px solid ${t.line};border-radius:14px;background:${t.bg1};${ls}">${inner}${nameTag}</div>`;
+  const border = p.edge ? edgeColor(t, p.edge) : t.line;
+  // 说话人高亮外发光（金圈 + 柔光·突出正在说话一方）。⚠ clip-path 会裁掉 box-shadow → 异形框不叠 glow（改用 edge 高亮）。
+  const glow = (p.glow && !p.shape) ? `box-shadow:0 0 0 2px ${t.gold},0 0 20px rgba(212,160,60,.5);` : '';
+  return `<div id="${esc(id)}"${emo} style="position:relative;overflow:hidden;min-width:72px;min-height:96px;border:2px solid ${border};border-radius:14px;background:${t.bg1};${glow}${ls}${shapeCss(p.shape)}">${inner}${nameTag}</div>`;
 }
 
 function renderConnector(id: string, p: ConnectorProps, t: UITheme): string {

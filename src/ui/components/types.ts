@@ -573,7 +573,8 @@ export interface VideoProps {
 //     （t3-dialogue 已认 arg 字符串→无需游戏 handler·见 src/skills/tier3/dialogue.ts）。
 // 红线：控件=闭集纯数据·禁手写 React/DOM；typewriter 等观感=控件渲染参数（render-only·不进 sim）。
 
-/** 台词框：说话人 + 台词 + 推进。投影当前对话节点 speaker/text/emotion/kind；可推进节点点击发 `advanceAction`（缺省 dialogue.advance）。 */
+/** 台词框：说话人 + 台词 + 推进。投影当前对话节点 speaker/text/emotion/kind；可推进节点点击发 `advanceAction`（缺省 dialogue.advance）。
+ *  美术货架（闭集令牌透传·华丽起手）：skin=画框皮（9-slice）· shape=异形轮廓 · edge=阵营/金描边——用足既有面板货架，非新写美术。 */
 export interface DialogProps {
   speaker?: string;          // 说话人名（literal·或经 bind 投影填）
   text?: string;             // 台词正文（同上·复用 Label 打字机/emoji/字体）
@@ -581,20 +582,32 @@ export interface DialogProps {
   kind?: 'line' | 'choice' | 'check'; // 当前节点种类（投影填）：choice 节点隐推进提示（推进交给 choiceList）
   advanceAction?: string;    // 推进信号名（缺省 dialogue.advance）
   typewriter?: number;       // 打字机每字 ms（复用 Label 逐字揭示·render-only 不进 sim）
+  skin?: string;             // 台词框画框皮（已解析图 URL·同 Panel.skin·art 即框·压过底/边框）
+  skinSlice?: number;        // skin 9-slice 源边距 px（画框式无损缩放·不填=cover）
+  shape?: ShapeToken;        // 异形轮廓（闭集·复用 Panel/Button 同套 clip-path·缺省=矩形）
+  edge?: EdgeColor;          // 描边语义/阵营色（覆盖默认线·金框/阵营框）
   bind?: string;             // 对话实体 id（resolveDialogue 投影 speaker/text/emotion/kind）
 }
-/** 选项列表：choice 节点选项 + 可选性（`available:false`→灰显不可点）。选中发 `chooseAction` + arg=下标（或 actionArg）。 */
+/** 选项列表：choice 节点选项 + 可选性（`available:false`→灰显不可点）。选中发 `chooseAction` + arg=下标（或 actionArg）。
+ *  美术货架：选项渲成真 `Button` → 白拿 house `buttonSkins` 糖果厚唇皮 + `optionKind`（hero 金 CTA 等）+ `optionShape` 异形 + `hoverSheen` 悬停流光 + 逐项 `icon`。让数据作者从按钮货架挑对话按钮体量。 */
 export interface ChoiceListProps {
-  options?: Array<{ label: string; available?: boolean; actionArg?: string }>;
+  options?: Array<{ label: string; available?: boolean; actionArg?: string; icon?: string }>;
   chooseAction?: string;     // 选择信号名（缺省 dialogue.choose）
+  optionKind?: 'primary' | 'ghost' | 'quiet' | 'hero'; // 选项按钮体量（缺省 primary→吃 house 糖果皮·hero=金 CTA 大键）
+  optionShape?: ShapeToken;  // 选项异形轮廓（闭集·如 ribbon 绶带/chevron 箭头/pill 胶囊）
+  hoverSheen?: boolean;      // 每项悬停流光（fx:sheen-hover·premium 手感）
   bind?: string;             // 对话实体 id（resolveDialogue 投影 options + 逐项 optionAvailable）
 }
-/** 立绘槽：art 图（经资产索引·已解析 URL）+ emotion 变体键 + 角色名。纯展示（无信号·表现层旁路）。缺图→名首字/剪影占位（绝不空白/报错）。 */
+/** 立绘槽：art 图（经资产索引·已解析 URL）+ emotion 变体键 + 角色名。纯展示（无信号·表现层旁路）。缺图→名首字/剪影占位（绝不空白/报错）。
+ *  美术货架：shape=异形立绘框（六边/盾形）· edge=金/阵营描边 · glow=当前说话人高亮外发光。 */
 export interface PortraitProps {
   art?: string;              // 立绘图 URL（sim 持资产 key·游戏经 resolveAsset 解析后填·同 Image.src）
   emotion?: string;          // 情绪变体键（M1 透出 data-emotion·M2 emotion→assetKey 表选图）
   name?: string;             // 角色名（底部小标·缺省无）
   side?: 'left' | 'right';   // 站位（缺省 left·双人对话名对齐用）
+  shape?: ShapeToken;        // 异形立绘框（闭集·复用同套 clip-path·如 hexagon/shield/diamond）
+  edge?: EdgeColor;          // 立绘框描边语义/阵营色（金框/阵营框·覆盖默认线）
+  glow?: boolean;            // 当前说话人高亮（外发光 fx:glow·突出正在说话的一方）
   bind?: string;             // 对话实体 id（resolveDialogue 投影 name=speaker·emotion=当前节点情绪）
 }
 

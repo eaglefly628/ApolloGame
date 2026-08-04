@@ -413,7 +413,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
   },
   // ── 剧情 / VN 三件（REQ-DIALOGUE M1·消费 t3-dialogue·投影读世界走 resolveDialogue(bind=对话实体 id)）──
   {
-    type: 'dialog', summary: '台词框（说话人 + 台词 + 推进）', whenToUse: 'VN/剧情对话当前行。literal 填 speaker/text，或 bind=对话实体 id 由 resolveDialogue 投影。line/check 节点整框可点发 dialogue.advance；choice 节点配 choiceList 用。', children: 'none',
+    type: 'dialog', summary: '台词框（说话人 + 台词 + 推进）', whenToUse: 'VN/剧情对话当前行。literal 填 speaker/text，或 bind=对话实体 id 由 resolveDialogue 投影。line/check 节点整框可点发 dialogue.advance；choice 节点配 choiceList 用。华丽货架：skin 画框皮 / shape 异形 / edge 金框（非新写美术）。', children: 'none',
     props: [
       { name: 'speaker', type: 'string', describe: '说话人名（或 bind 投影填）' },
       { name: 'text', type: 'string', describe: '台词正文（复用 Label 打字机/emoji/字体）' },
@@ -421,29 +421,39 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'kind', type: 'enum', values: ['line', 'choice', 'check'], describe: '当前节点种类（投影填·choice 时隐推进提示）' },
       { name: 'advanceAction', type: 'string', default: 'dialogue.advance', describe: '推进信号名（缺省 dialogue.advance）' },
       { name: 'typewriter', type: 'number', describe: '打字机每字 ms（render-only 不进 sim）' },
+      { name: 'skin', type: 'string', describe: '画框皮 URL（同 Panel.skin·art 即框·+skinSlice 9-slice）' },
+      { name: 'skinSlice', type: 'number', describe: 'skin 9-slice 源边距 px（画框式无损缩放·不填=cover）' },
+      { name: 'shape', type: 'enum', values: ['pill', 'hexagon', 'diamond', 'shield', 'ribbon', 'chevron', 'tag', 'cut'], describe: '异形轮廓（闭集·复用同套 clip-path·缺省矩形）' },
+      { name: 'edge', type: 'enum', values: ['jade', 'gold', 'ok', 'warn', 'danger', 'mine', 'foe'], describe: '描边语义/阵营色（金框/阵营框·覆盖默认线）' },
       { name: 'bind', type: 'string', describe: '对话实体 id（resolveDialogue 投影 speaker/text/emotion/kind）' },
     ],
-    sample: { type: 'dialog', id: 's-dialog', props: { speaker: '林清越', text: '你终于来了……我等这一刻很久了。', emotion: 'warm', kind: 'line' } },
+    sample: { type: 'dialog', id: 's-dialog', props: { speaker: '林清越', text: '你终于来了……我等这一刻很久了。', emotion: 'warm', kind: 'line', edge: 'gold' } },
   },
   {
-    type: 'choiceList', summary: '选项列表（可选性门控）', whenToUse: 'choice 节点的选项。literal 填 options，或 bind=对话实体 id 由 resolveDialogue 投影当前选项 + optionAvailable。选中发 dialogue.choose + arg=下标（t3-dialogue 认 arg 串·无需游戏 handler）。available:false→灰显不可点。', children: 'none',
+    type: 'choiceList', summary: '选项列表（选项=真按钮·可选性门控）', whenToUse: 'choice 节点的选项。literal 填 options，或 bind=对话实体 id 由 resolveDialogue 投影当前选项 + optionAvailable。选项渲成真 Button→吃 house 糖果皮/kind/shape/sheen-hover。选中发 dialogue.choose + arg=下标（t3-dialogue 认 arg 串·无需游戏 handler）。available:false→灰显不可点。', children: 'none',
     props: [
-      { name: 'options', type: 'list', describe: '选项 [{label,available?,actionArg?}]·available:false 灰显不可点（或 bind 投影填）' },
+      { name: 'options', type: 'list', describe: '选项 [{label,available?,actionArg?,icon?}]·available:false 灰显不可点（或 bind 投影填）' },
       { name: 'chooseAction', type: 'string', default: 'dialogue.choose', describe: '选择信号名（缺省 dialogue.choose·arg=下标）' },
+      { name: 'optionKind', type: 'enum', values: ['primary', 'ghost', 'quiet', 'hero'], default: 'primary', describe: '选项按钮体量（缺省 primary→吃 house 糖果皮·hero=金 CTA 大键）' },
+      { name: 'optionShape', type: 'enum', values: ['pill', 'hexagon', 'diamond', 'shield', 'ribbon', 'chevron', 'tag', 'cut'], describe: '选项异形轮廓（闭集·如 ribbon/chevron/pill）' },
+      { name: 'hoverSheen', type: 'boolean', describe: '每项悬停流光（fx:sheen-hover·premium 手感）' },
       { name: 'bind', type: 'string', describe: '对话实体 id（resolveDialogue 投影 options + 逐项可选性）' },
     ],
-    sample: { type: 'choiceList', id: 's-choices', props: { options: [{ label: '坦白心意' }, { label: '岔开话题' }, { label: '沉默不语（需好感 ≥ 10）', available: false }] } },
+    sample: { type: 'choiceList', id: 's-choices', props: { optionKind: 'primary', hoverSheen: true, options: [{ label: '坦白心意' }, { label: '岔开话题' }, { label: '沉默不语（需好感 ≥ 10）', available: false }] } },
   },
   {
-    type: 'portrait', summary: '立绘槽（art + emotion + 名）', whenToUse: '角色立绘。art=已解析图 URL（sim 持 key）；缺图→名首字/剧场面具占位（绝不空白）。bind=对话实体 id 由 resolveDialogue 投影 name=speaker/emotion。纯展示无信号。', children: 'none',
+    type: 'portrait', summary: '立绘槽（art + emotion + 名·可异形/描边/高亮）', whenToUse: '角色立绘。art=已解析图 URL（sim 持 key）；缺图→名首字/剧场面具占位（绝不空白）。bind=对话实体 id 由 resolveDialogue 投影 name=speaker/emotion。华丽货架：shape 异形框 / edge 金描边 / glow 说话人高亮。纯展示无信号。', children: 'none',
     props: [
       { name: 'art', type: 'string', describe: '立绘图 URL（sim 持资产 key·resolveAsset 后填·同 Image.src）' },
       { name: 'emotion', type: 'string', describe: '情绪变体键（透出 data-emotion·M2 emotion→assetKey 表选图）' },
       { name: 'name', type: 'string', describe: '角色名（底部小标）' },
       { name: 'side', type: 'enum', values: ['left', 'right'], describe: '站位（缺省 left·名对齐）' },
+      { name: 'shape', type: 'enum', values: ['pill', 'hexagon', 'diamond', 'shield', 'ribbon', 'chevron', 'tag', 'cut'], describe: '异形立绘框（闭集·如 hexagon/shield/diamond）' },
+      { name: 'edge', type: 'enum', values: ['jade', 'gold', 'ok', 'warn', 'danger', 'mine', 'foe'], describe: '立绘框描边语义/阵营色（金框/阵营框）' },
+      { name: 'glow', type: 'boolean', describe: '当前说话人高亮（外发光·矩形框生效·异形改用 edge 高亮）' },
       { name: 'bind', type: 'string', describe: '对话实体 id（resolveDialogue 投影 name=speaker·emotion）' },
     ],
-    sample: { type: 'portrait', id: 's-portrait', props: { name: '林清越', emotion: 'warm', side: 'left' }, layout: { width: 120, height: 168 } },
+    sample: { type: 'portrait', id: 's-portrait', props: { name: '林清越', emotion: 'warm', side: 'left', edge: 'gold', glow: true }, layout: { width: 120, height: 168 } },
   },
 ];
 
