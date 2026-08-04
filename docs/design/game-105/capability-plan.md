@@ -1,0 +1,161 @@
+# 能力总览 Capability Plan — game-105《心跳叠叠乐》（S2 送审稿）
+
+> GD-105 · 2026-08-04 · slot=`game-105` · 形态=编译期 TS 游戏（待 Lead 裁·理由见 `brief.md §5`）
+> **plan 未过审不写游戏层系统代码**（CLAUDE.md 能力总览铁律）。规则语义随后进 `gdd.md`。
+> 能力名已对照真实 registry 逐条核准（`src/skills/{atoms,tier1,tier2,tier3}`）；3D 组件名对照
+> `src/engine/protocol/components/render.ts`。
+
+## 1. 游戏一句话
+
+两人轮流从**真物理 54 块积木塔**抽一根，按颜色得亲密度并触发心动任务卡；**塔塌在谁手里谁输**，
+输家按「抽过的颜色分值 + 撑到第几轮」结算惩罚（参照：实体叠叠乐 × Truth-or-Dare 约会桌游）。
+
+## 2. 消费的引擎能力（对照 registry 实名）
+
+### 2.1 sim 侧（确定性·进 hash）
+
+| capability（注册名） | 用来做什么 | 状态 |
+|---|---|---|
+| `w1-random`（`RandomSeed`+`nextRandom`） | 积木颜色布局、任务卡抽取的**唯一随机源**（游戏层禁裸 `Math.random`） | ✅ 现有 |
+| `k1-spawn` | 54 块积木实体按塔布局表实例化 | ✅ 现有 |
+| `t3-prefab`（`PrefabTemplate`） | 「一块积木」= 预制体模板（4 色 4 个变体），塔布局表只填坐标+色 | ✅ 现有 |
+| `f1-resource` | 双方亲密度、共同亲密度、剩余积木数 | ✅ 现有 |
+| `f2-flag` | 当前执手方、本局已结束、任务卡待确认 | ✅ 现有 |
+| `t3-flow`（`State`+transitions） | 回合状态机：选积木→拖拽→等落定→判定→任务卡→交手 | ✅ 现有 |
+| `t2-event-when`（`EventWhen`+`Signal`） | 条件门发信号：塌了→判负、轮次推进、亲密度阈值解锁 | ✅ 现有 |
+| `t2-keybind`（`Signal`） | 输入胶水入队的信号落进 sim（`Pickable3D` 命中走此路） | ✅ 现有 |
+| `t2-modifier-stack`（`ModifierSource`+`ModifierTotals`） | **轮次加成**（每撑过 N 轮，颜色分值档位×1）聚合 | ✅ 现有 |
+| `t2-dice-roll`（`DicePool`） | 任务卡按颜色频道**种子化抽取**（不重复直到抽空） | ✅ 现有 |
+| `t3-dialogue`（`DialogueScript`） | **心动任务卡 = 对话树数据**（说话人+卡面文案+「完成了/换一张」选项） | ✅ 现有 |
+| `t2-stat-bind` / `t2-text-binding` | HUD 数值绑定（亲密度/轮次/剩余块数） | ✅ 现有 |
+| `t2-gauge`（`Gauge`） | 共同亲密度条 | ✅ 现有 |
+| `g1-tag` | 积木按颜色频道打标，供计分与卡组路由 | ✅ 现有 |
+
+### 2.2 render-only 侧（3D 表现物理·不进 sim/hash）
+
+| 组件 | 用来做什么 | 状态 |
+|---|---|---|
+| `Transform3D` + `Mesh3D`（box） | 54 块积木 + 桌面的位姿与外形 | ✅ 现有 |
+| `Material3D` | 四色积木 PBR 材质（木质 + 色调），桌面材质 | ✅ 现有 |
+| `RigidBody3D{shape:'box',mass}` | **整座塔的真刚体堆叠**（cannon-es 驱动·手册「物理玩具」首行明写用例=堆叠） | ✅ 现有 |
+| `Pickable3D{signal,hover}` | 指针拾取积木 → 输入胶水 `enqueueAction` → Signal → sim（**手册明载不碰 sim 确定性**） | ✅ 现有 |
+| `Joint3D{kind:'point',pivotA,anchor,maxForce}` | **抽积木的「手」**——球铰约束连到世界锚点，拖拽即改 `anchor`；`maxForce` 决定拉不拉得动被压紧的积木 | ✅ 现有 |
+| `Impulse3D{trigger,...}` | 可选：抽出瞬间给积木一点脱手冲量 | ✅ 现有 |
+| `WorldUI3D{node:LayoutNode}` | 悬停积木头顶浮出颜色/分值（同 game-d 骰子点数先例） | ✅ 现有 |
+| `Camera3D`（`shake`/`tween`） | 绕塔运镜；**塌塔瞬间 `shake` 打击反馈** | ✅ 现有 |
+| `Light3D` / `Post3D` / `Decal3D` | 双色打光、辉光、桌面软阴影 | ✅ 现有 |
+
+> **诚实校正（手册缺陷·回填项）**：`docs/playbooks/casual-toolkit.md` §五首行写「刚体：`RigidBody3D` + `Collider3D`」，
+> 但组件闭集里**没有 `Collider3D`**——体形由 `RigidBody3D{shape}` 自带（`playbooks/3d.md` 物理行口径正确）。
+> 建议随本案回填该行，避免后续 session 照抄不存在的组件名。
+
+> **先例台**：`games/game-d/throw3d.ts`（3D 物理掷骰=物理定结果的既有范式）、`games/game-c/chip3d.ts`（筹码刚体 + `angularFactor`）、
+> `games/game102/voxel-proto.ts`（体素刚体碎片）、`src/renderer/three/physics.ts`（物理子系统）。
+
+## 3. 摆成数据的规则面
+
+| 数据表 | 内容 | 谁解释它（禁游戏层自写解释器） |
+|---|---|---|
+| `TOWER_LAYOUT` | 18 层 × 3 块的坐标/朝向/尺寸公差 | `k1-spawn` + `t3-prefab`（纯坐标表，无逻辑） |
+| `BLOCK_CHANNELS` | 四色频道：分值 / 色值 / 标签（樱粉1·星紫2·夜蓝3·流金5） | `g1-tag` + `f1-resource`（加分）+ `t2-modifier-stack`（轮次档） |
+| `COLOR_MIX` | 54 块的颜色配额（20/16/12/6） | `w1-random` 种子洗牌 |
+| `TASK_DECKS` | 四频道任务卡文案树 | `t3-dialogue`（`DialogueScript`）+ `t2-dice-roll`（抽取） |
+| `ROUND_BONUS` | 轮次→分值档位曲线 | `t2-modifier-stack`（op=mul 聚合） |
+| `PENALTY_TIERS` | 惩罚分→惩罚等级与文案 | `t2-event-when`（阈值条件）+ `t3-dialogue`（结算文案） |
+| `PULL_FEEL` | 抽拉手感：`maxForce` / 拖拽灵敏度 / 失稳阈值 | `Joint3D.maxForce` + 物理参数直接消费（**见 §4 E1**） |
+
+> **红线自检**：以上每张表都指向现成能力做解释器，无「表 + 待写游戏层 for 循环」。
+> 唯一需要裁的解释器归属是 `PULL_FEEL` 的失稳阈值——见 §4。
+
+## 4. 申请的游戏层代码例外 / 能力缺口（逐条过审）
+
+| 编号 | 例外 | 为什么现有能力表达不了 | 预计行数 | 请裁 |
+|---|---|---|---|---|
+| **E1** | **「刚体落定/失稳 → 信号」回读** | 物理结果只写回 `Transform3D`，而 `Transform3D` 在 `src/net/determinism.ts` 的 `NON_DETERMINISTIC` 集里 → **`Condition` 读不到、不进 hash**。本作的核心判负条件（塔塌了没有）因此**无法用现有能力表达** | 见下 | **下沉（首选）** |
+| **E2** | 指针拖拽 → 移动 `Joint3D.anchor` 的输入胶水 | 与 `Pickable3D` 文档明载的「渲染器 pick → 游戏输入胶水 `enqueueAction`」同类；`throw3d.ts` 已确立同形态先例 | ~50 | ✅ 准（照先例） |
+
+### E1 详述 —— 请 Lead 裁「下沉 vs 游戏层胶水」
+
+**实证（不是推测）**：
+
+- 引擎 `src/renderer/three/physics.ts:188` **已经在配 cannon 的 `allowSleep` / `sleepSpeedLimit` / `sleepTimeLimit`**
+  ——「落定」这个状态 **cannon 本来就算出来了**，只是没有任何出口通向 sim。
+- 游戏层已有**两处**各自手搓同一件事：`games/game-d/throw3d.ts`（12 处 `lastMove`/`prevQuat`/落定轮询）、
+  `games/game102/voxel-proto.ts`（12 处 sleep/despawn 判定）。加上本作 = **第三处**。
+- `REQ-3D-G102-DEBRIS` 的性能预算里也写着「落定/超时 despawn（sleep 后 1.5-2.5s 回收）」——同一需求第四次出现。
+
+**建议下沉的薄片**：给 `RigidBody3D` 加一个 opt-in 的事件出口（如 `settleSignal?` / `topplePolicy?`），
+落定或越过位移/倾角阈值时经与 `Pickable3D` **完全相同的既有通路**（渲染器 → `enqueueAction` → `Signal` → sim）发信号。
+一片能力同时消掉 game-d 掷骰读数、game102 碎片回收、game-c 筹码落定与本作判负四处重复。
+
+**已提单**：`docs/workflow/requests-3d.md` → `REQ-3D-SETTLE-SIGNAL`（P3D 域·Lead 评审）。
+
+**不阻塞路径**：按代码准入阶梯 L2「可先用 L0/L1 绕行出可玩版」——裁决未下之前，
+本作照 `throw3d.ts` 先例用一层**薄轮询胶水**（~60 行·记债）出 S3/S4 可玩版；
+能力下沉后**删胶水改填数据**。此降级已在 §4.7 逐条留痕。
+
+> 未列进本表的游戏层自由代码 = 违规。审计红旗（裸 `Math.random` / `innerHTML` / `createElement` / 零能力接入 / 零测试）不接受申请为例外。
+
+## 4.5 美术接入
+
+- **皮肤槽清单**：主体视觉实体 = 积木（四色）、桌面、背景幕。四色积木走 `Material3D`（PBR 木纹 + 色调槽），
+  桌面走 `Material3D.map` + `Decal3D`（软阴影）。**主体视觉实体全部带槽**（art-pipeline 红线）。
+- **台账产出**：形态=编译期 TS 游戏 → 照 `scripts/game-g-art-requirements.mjs` 样板写推导脚本
+  `game-105-art-derive.mjs`（待建·PE 骨架落地时同提交）。
+- 原型阶段用程序化色块占位，**皮肤就绪即盖过**；「全程序化」不作为终态美德。
+
+## 4.6 UI 呈现 · 华丽起手
+
+- **house 主题**：`apolloBrocade`「锦霞」（`@ui/components/apollo-kit`）——暖白锦缎 + 金/胭脂波点 + 玫瑰点睛，
+  手册标注适配「宫廷/**女性向**/卡牌」，与约会向定位一致。**非自写皮、非缺省 SHELL**。
+- **起手包**：主菜单 = `buildStarterHome`（双人名字输入 + 主 CTA）；结算 = `buildStarterResult`
+  （星级 Rating + 撒纸屑 + `Label.format` 大分）。均 import `@ui/starters`。
+- **成熟件清单**（对照 `playbooks/ui.md` 华丽起手货架）：
+  - 心动任务卡 → **VN 三件** `dialog`（`typewriter` 逐字 + `skin` 画框皮）+ `choiceList`（糖果厚唇选项钮）+ `portrait`（男女主立绘槽）
+  - 抽拉阻力表 → `ProgressBar.shape:'ring'`（环形仪表·非朴素条）
+  - 得分反馈 → `Particles` / `Float`（分数飘字）
+  - 主 CTA → `sheen-hover` + `Panel.skin`
+  - 数值 → `Label.format`
+  - 世界内 → `WorldUI3D`（积木头顶分值牌）
+- 零成熟件 = 朴素缺陷；本作已逐项落位，**无手写 React 屏 / 无自由 DOM**。
+
+## 4.7 代码准入阶梯申报
+
+| 规则 | 落级 | 说明 |
+|---|---|---|
+| 塔布局（18×3 坐标/朝向/公差） | **L0** 纯数据 | `TOWER_LAYOUT` 表 |
+| 四色频道分值 / 颜色配额 | **L0** 纯数据 | `BLOCK_CHANNELS` + `COLOR_MIX` |
+| 任务卡文案与分支 | **L0** 纯数据 | `TASK_DECKS`（`DialogueScript`） |
+| 惩罚分级与文案 | **L0** 纯数据 | `PENALTY_TIERS` |
+| 积木实例化 | **L1** 数据 + 现有能力 | `k1-spawn` + `t3-prefab` |
+| 回合流转 / 交手 | **L1** | `t3-flow` 状态机 |
+| 计分与轮次加成 | **L1** | `f1-resource` + `t2-modifier-stack` |
+| 任务卡抽取（种子化不重复） | **L1** | `t2-dice-roll` + `w1-random` |
+| 判负条件（塔塌） | **L1** 条件门 | `t2-event-when` 消费 E1 下沉后的信号 |
+| 抽积木的「手」 | **L1** | `Joint3D{kind:'point',maxForce}` 纯数据 |
+| 指针拖拽 → 移动 `Joint3D.anchor` | **L1** 输入胶水 | 照 `Pickable3D` 文档与 `throw3d.ts` 先例（E2） |
+| **物理落定/失稳 → 信号** | **L2 capgap 待裁** | 已提 `requests-3d.md` → `REQ-3D-SETTLE-SIGNAL`（E1） |
+| **抽拉手感调校**（`maxForce`/阈值数值） | **L0 纯数据**（降级路径） | 摆成 `PULL_FEEL` 表由 `Joint3D.maxForce` + 物理参数直接消费；**不写游戏层解释器** |
+| （过渡期）落定轮询薄胶水 | **L3 受控·记债** | 仅在 E1 裁决落地前存在，照 `throw3d.ts` 先例；**能力下沉后即删** |
+
+> L4（自由代码 / 手写 UI / 自建解释器）未申报，也不会用。
+
+## 5. 确定性声明
+
+**如实分层，不粉饰**：
+
+- **sim 侧全确定性**：颜色布局、任务卡抽取、计分、轮次、判负全部走 `w1-random` 种子 PRNG + 现有能力，进 hash，可回放。
+- **物理侧非确定性**：`RigidBody3D` 等全部 3D 组件在 `src/net/determinism.ts` 的 `NON_DETERMINISTIC` 集内，
+  按引擎既定口径「为表现非同步」。塔的姿态**不进 hash**。
+- **因此本作不承诺逐位回放 / lockstep**——与 game-d 同一处境（`throw3d.ts` 已记同款债：
+  「结果由物理定 = 非确定性 → 暂放弃 seed/lockstep 可回放」）。
+- **为什么可接受**：本作是**本地 hot-seat 双人**（情侣同屏轮流），无联机同步需求；
+  且输入本身是连续指针拖拽，本就不可逐位复现。**不为不需要的确定性付架构成本**。
+- 若 Lead 要求本作纳入 `ZeroCraftBench` 双跑同 hash 验收，则需先裁 E1 时一并裁「物理结果是否需可复现」——
+  这会把范围从「暴露落定信号」扩到「确定性物理」，量级完全不同。**GD 建议不做**，理由同上。
+
+## 6. 评审记录
+
+- 提交人 / 日期：GD-105 / 2026-08-04
+- 待裁焦点：① 形态（编译期 TS vs 卡带）② E1 下沉 vs 游戏层胶水 ③ §5 不承诺回放是否可接受
+- Lead 裁决：⬜ 通过 / ⬜ 有条件通过（条件：…）/ ⬜ 驳回（理由：…）
