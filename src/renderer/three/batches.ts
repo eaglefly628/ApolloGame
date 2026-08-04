@@ -47,7 +47,7 @@ export class InstancedBatches {
       if (!groups.has(key)) {
         scene.remove(b.mesh);
         b.mesh.geometry.dispose();
-        (b.mesh.material as THREE.Material).dispose();
+        disposeMat(b.mesh.material); // voxel 批材质是六面数组，单材质 .dispose() 会 TypeError → 之后每脏帧连环崩
         this.batches.delete(key);
       }
     }

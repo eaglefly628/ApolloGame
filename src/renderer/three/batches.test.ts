@@ -58,4 +58,14 @@ describe('InstancedBatches voxelTex 体素批（大立方几百体素 → 每款
     expect(b.count).toBe(2);
     b.dispose(scene);
   });
+  it('体素批消失（下一帧不再出现）→ 移除路径不抛异常且批删除（材质数组正确释放）', () => {
+    const scene = new THREE.Scene();
+    const b = new InstancedBatches();
+    b.sync(scene, new Map([['vox|stone', [item(voxBox(0x8b8f98), 0)]]]));
+    expect(b.count).toBe(1);
+    // 下一帧该批从 groups 消失 → 走移除路径；曾对六面材质数组误用单材质 .dispose() → TypeError 连环崩
+    expect(() => b.sync(scene, new Map())).not.toThrow();
+    expect(b.count).toBe(0);
+    b.dispose(scene);
+  });
 });
