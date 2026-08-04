@@ -162,3 +162,9 @@
 > - `art-overrides.ts:10-45`（`registerTextureOverrides`/`textureOverrideUri`/`backdropUri`/`wearIconUri`/`buttonSkinsForTheme`）**留在游戏层**——game-c 自己的消费口径，非公共壳。
 > - `game-c.ts:121-123`（`gc_lang`）→ `localStore<Lang>('gc_lang', 'en', textCodec(['en','zh']))`；`game-c.ts:126-129`（`gc_players` 2~6 钳）→ `localStore('gc_players', 4, intCodec(2, 6))`——两者都是**原文**格式（不裹引号/不 JSON），与现存键字节兼容，老档不丢。
 > **验收**：观感/交互零变化 + game-c vitest 绿 + `node scripts/scoped-gate.mjs --run`。红线：不碰 sim/蓝图/hash 面。
+
+### REQ-C-测速 · game-session.test.ts 10.7s/22 测=快车道最慢件 · [2026-08-03] · Lead 巡检发现（REQ-RETRO2 施工回执带出）→ **指派：PE-C** · status: open · 优先级: P3 · 类型: 测试性能优化（PE 域·非功能）
+> **背景**：`games/game-c/game-session.test.ts` 现耗时 10.7s/22 例，是快车道全套里最慢的单文件，拖慢日常 `scoped-gate` 单游戏面反馈环（同类问题见 game-103 `REQ-103-测速`）。
+> **修法方向**：排查是否每例都重新起一遍完整会话/整手牌局漫游（含 REQ-C-105/106/109 那批守恒 fuzz·数千局随机动作序列），若是→评估共享 session 搭建（`beforeAll`/`beforeEach` 复用已构造好的骨架）或收窄 fuzz 局数到仍能钉住回归的最小值；避免不必要的重复初始化开销。
+> **红线**：fuzz 类守恒测试（REQ-C-105/106/109）是真回归防线，**优化耗时不许削弱断言覆盖面**——局数若要降，须先确认仍能复现原 bug 场景。
+> **验收**：22 例断言语义不变（零回归）；耗时显著下降；`node scripts/scoped-gate.mjs --run`（game-c 面）绿。

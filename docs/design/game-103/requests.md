@@ -135,3 +135,8 @@
 > 1. **补 plan §4 条目**：在 `docs/design/game-103/capability-plan.md §4` 表后加一行例外记账（"E5 成就/本地榜 = 局外壳层表现件"），写清**为何当时没走 AchievementSync/PlatformPort**（可能的正当理由：无平台壳时的纯本地展示层），交 Lead 复裁。
 > 2. **随迁移消解**：持久化那半（`achievements.ts:38-54`+`leaderboard.ts:24-40`）改用 `services/persist`；判定/排序那半（`newlyUnlocked`/`recordScore`）——**排序并入 `insertRanked`**；`ACHIEVEMENTS` 阈值表 + `newlyUnlocked` 若与 `services/platform` 的 `AchievementSync` 语义等价则改接端口（`NullPlatformPort` 下自动静默降级=现有纯本地行为），**不等价再回报 Lead 留作已报备的游戏层例外**。
 > **红线**：这是治理欠账不是功能单——**不许借机加成就/改阈值**；消解后 plan 与实现零偏差，`node scripts/game-skill-audit.mjs game-103` 保持零红旗。
+
+### REQ-103-测速 · game-103.test.ts 14.5s/37 测=快车道最慢件 · [2026-08-03] · Lead 巡检发现（REQ-RETRO2 施工回执带出）→ **指派：PE-103** · status: open · 优先级: P3 · 类型: 测试性能优化（PE 域·非功能）
+> **背景**：`games/game-103/game-103.test.ts` 现耗时 14.5s/37 例，是快车道全套里最慢的单文件，拖慢日常 `scoped-gate` 单游戏面反馈环。
+> **修法方向**：排查是否每例都重新起一遍完整引擎/世界（`createWorld`+装配整套蓝图），若是→改共享 world 搭建（`beforeAll`/`beforeEach` 复用已装配好的骨架，各例只重置需要变化的那部分状态）+ 减少重复引擎起动开销；避免不必要的真实 tick 循环跑满整局。
+> **验收**：37 例断言语义不变（零回归）；耗时显著下降；`node scripts/scoped-gate.mjs --run`（game-103 面）绿。

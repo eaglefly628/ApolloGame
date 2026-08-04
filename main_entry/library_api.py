@@ -88,7 +88,7 @@ def library_create(body: dict) -> tuple:
 
 def library_install_sample(body: dict) -> tuple:
     """装官方示例卡带。preset='all'（或缺省）=全套幂等安装（已存在的跳过）；指定单个 preset 也幂等。
-    slug 取 preset 首选名（match3→game-j·dressup→game-m），无首选名回退 sample-<preset>。"""
+    slug 取 preset 首选名（platformer/pong 现无首选名覆盖），无首选名回退 sample-<preset>。"""
     preset_name = str(body.get('preset') or 'all')
     names = list(PRESET_BLUEPRINTS) if preset_name == 'all' else [preset_name]
     if any(n not in PRESET_BLUEPRINTS for n in names):

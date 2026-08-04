@@ -7,17 +7,17 @@
 |------|-------------|---------|------|
 | ECS 架构 | defineCapability, World, Assembly | 新建 skill / 修改引擎结构 | wiki/skills/ecs-architecture.md |
 | 运动 | motion-apply, accel-apply, hierarchy | 实现位移/加速/父子跟随 | wiki/skills/motion.md |
-| 碰撞 | overlap-detect, collision-separate, bounce | 实现碰撞检测或响应 | wiki/skills/collision.md |
+| 碰撞 | overlap-detect, collision-resolve, bounce | 实现碰撞检测或响应 | wiki/skills/collision.md |
 | 物理 | gravity, friction, mass | 实现重力/摩擦/质量相关 | wiki/skills/physics.md |
 | 动画 | animation, frame, anim-state-machine | 实现帧动画/状态机动画 | wiki/skills/animation.md |
 | 输入 | input-capture, action-map, controllable | 处理键盘/触屏/手柄输入 | wiki/skills/input.md |
 | 渲染 | sprite, camera, text, color, visibility | 渲染层/画面/UI 显示 | wiki/skills/rendering.md |
 | 生命周期 | spawn, destroy, timer, lifetime | 实体创建/销毁/计时 | wiki/skills/lifecycle.md |
-| AI 行为 | ai-patrol, ai-chase, state, dialogue | 实现 NPC 行为/决策 | wiki/skills/ai-behavior.md |
-| 资源系统 | resource, resource-modify, damage-number | 血量/MP/伤害数字/UI 绑定 | wiki/skills/resource.md |
+| AI 行为 | ai-patrol, ai-chase（无独立能力·按宣言由 aggro+steering+state 装配）, state, dialogue | 实现 NPC 行为/决策 | wiki/skills/ai-behavior.md |
+| 资源系统 | resource, resource-modify, damage-number（无此能力名·registry 未建） | 血量/MP/伤害数字/UI 绑定 | wiki/skills/resource.md |
 | 空间查询 | spatial-query, range-detect, trigger-zone | 范围检测/空间分区 | wiki/skills/spatial.md |
 | 网络同步 | random-seed, lockstep, determinism | 联机/确定性/帧同步 | wiki/skills/networking.md |
-| 乙游扩展 | check.resolve, love-interest, settlement | Tier 3/4 乙游玩法方向 | wiki/skills/otome.md |
+| 乙游扩展 | check.resolve, love-interest, settlement（乙游前瞻规划·registry 未建） | Tier 3/4 乙游玩法方向 | wiki/skills/otome.md |
 | 序列化 | 存档/读档, JSON, 二进制, 版本迁移 | 实现存档/状态快照 | wiki/skills/serialization.md |
 | TypeScript | 判别联合, branded type, 泛型, 性能 | TS 类型设计/模式选择 | wiki/skills/typescript-patterns.md |
 | UI 系统 | HUD, 菜单, 对话框, React 集成 | 实现游戏界面/交互 | wiki/skills/ui-system.md |

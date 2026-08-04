@@ -29,15 +29,19 @@ const SRC_WHITELIST = [/^src\/launcher(\/|$)/, /^src\/cartridge/];
 // 独立入口）——全部换成不挂 games/** 的引擎侧夹具（`src/test-fixtures/engine-fixture.ts`）或挪回
 // `games/game-e/` 自己目录，白名单条目随之清零；只留 Studio 资产浏览三处真借用 game-e 真实数据
 // （小丑牌美术目录/真实蓝图，非"借夹具"，是产品功能——留债，非本次消解范围）。
+// 分类回执（REQ-RETRO2 施工 2026-08-03）：以下 3 条 = 产品功能耦合（Studio 需展示真实 game-e 资产）·
+// 长期条目·非待偿测试债，不纳入债务清零目标。
 const SRC_GRANDFATHERED = new Set([
   'src/studio/AssetLibrary.tsx',
   'src/studio/StudioInspector.tsx',
   'src/studio/assets-model.ts',
 ]);
 const A_GRANDFATHERED = new Set([
+  // 分类回执（REQ-RETRO2 施工 2026-08-03）：锚点守卫·须读真实导出插件·性质不同不偿还。
   'games/game-c/dokiworld-export.test.ts::../../tools/export-targets/dokiworld.mjs',
   // game-f 还原（owner 2026-08-03 改判）后回填：game-f 大厅从 docs/ 里 raw-import 教程 HTML 文本，
   // 既有耦合与本次引擎侧夹具消解无关（未经 Lead 点名·game-f 冻结政策封锁·不摘除）。
+  // 分类回执（REQ-RETRO2 施工 2026-08-03）：冻结封锁·随 game-f 冻结政策，不纳入债务清零目标。
   'games/game-f/lobby.tsx::../../docs/game-design/game-f-tutorial.html?raw',
 ]);
 
