@@ -48,6 +48,13 @@
 
 <!-- REQ-MATRIXDUEL-同时决策矩阵（P1·game108 带出）已完结：t2-matrix-duel 落地·Lead 终审 PASS（5bfa84f48·裁决与偏差全文查 git 历史）。 -->
 
+### REQ-MATRIXDUEL-2-收益缩放 · `DuelPayoff.damage` 支持按资源线性缩放 · [2026-08-04] · game108 GDD v2 超休闲重构带出（owner 同日定「公开蓄力槽」机制） → **指派：Opus**（spec 写死·边界极窄） · status: **open（game108 S3 唯一卡口·未落地不进玩法骨架）** · 优先级: P1 · 类型: 既有能力扩写（`t2-matrix-duel`）
+> **要什么**：`DuelPayoff.damage` 由固定整数扩为可选 `{base, scaleByResource, step}` → 伤害 = `base + 该侧该手资源当前值 × step`（game108 = `10 + 蓄力 × 10`）。资源按**侧 local 寻址**（同 `hpResource` 口径）；纯整数、无浮点；缺省仍收固定整数 = 零回归。
+> **为什么不能重组**（Lead 评判·已走过「能否现有能力表达」）：穷举静态规则（「蓄力=1→10 / =2→20 / =3→30」×3 手×2 侧 = 18 条 `t2-event-when`）纸面可写，但**会被消费方自己的数据打碎**——game108 遗物「蓄海」把蓄力上限 3→4，**静态规则集无法预先穷举一个可被数据改写的上限**。这是「数据能改、规则集不能跟着改」的结构性矛盾，不是行数多少的问题。
+> **通用性**：任何「同时决策 + 可变系数结算」同吃——蓄力/怒气/连击/加注倍率/兵力数值同一形状。
+> **边界（防加宽·复查门核对用）**：只动 `DuelPayoff.damage` 类型与结算取值一处 + 落盘门校验（`scaleByResource` 须存在且非 `hpResource`）+ 点名测试（含「缺省固定整数零回归」一例）；**不碰**胜负判定 / 补丁 fold / 定序拆相位。允许触碰：`src/skills/tier2/matrix-duel.ts` + 其测试。
+> 消费方与验收语义：`docs/design/game108/{gdd.md 【R-108-13】, capability-plan.md §4}`。
+
 ### REQ-CYCLEHAZ-既有定序成环隐患 · 能力两两 RMW 对撞装载成环（普查 65 对·远超原报四件） · [2026-08-04] · 审核会话核查 ✅ → **⚖ Lead 终裁（2026-08-04）：B 止血先行·C 相位化另单排期·不并行**（B=安全网：纯推断 2-环确定性平局裁决+留痕·显式边环照抛真错照拦；C 动 101 能力+全量回归·以 B 落地与剧情线实战反馈喂饱普查再动刀） · status: **B done（待 Lead 对抗性验收）·C 相位化另单待立** · 优先级: **P1（Lead 升档：剧情线 M4 Sample 必踩——dialogue×flow、dialogue×timeline 均在环清单·原 P2「现役未踩到」评估失效）** · 类型: 引擎核定序卫生
 > **⚖ Lead 核查结论（2026-08-04·xhigh）**：①最小复现=**2 件**：t3-timeline + f1-resource（双方 RMW `Resource`→组件推断边互为前驱成 2-环）；原报四件中 **keybind 根本不在环上**、event-when 是叠加 3-环（event-when→timeline→resource-apply→event-when）。②全库普查（101 能力两两配对=5050 对）**65 对成环**——热点=Resource/Flag/State/CardPile 等黑板组件；含 card-play×card-pile、dialogue×flow、dialogue×timeline 等必然同装组合。③根因=**类问题非点问题**：组件推断边规则下任意两系统 RMW 同一黑板组件即互锁，显式申报需 O(n²)——65 处点修=劣解，申报制不可持续。
 > **方案 spec（owner 裁）**：**B 止血（推荐先行·指派 Opus·high）**=topologicalSort 对「纯组件推断互锁 2-环（零显式边参与）」按 tier 序+注册序确定性平局裁决+console 留痕——装载炸降级为确定性可审计顺序；显式边参与的环**仍抛**（真申报 bug 照旧拦）。**C 正解（中期·照 matrix-duel「拆相位=成环正解」判例）**=能力按语义定 phase（input→intent→logic→apply/结算）跨桶天然无环——需 101 能力相位普查+现役游戏全量回归，单独立单排期。引擎核定序面 xhigh 不降档（B 实现面机械·high 可）。
