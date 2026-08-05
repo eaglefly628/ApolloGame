@@ -1,0 +1,302 @@
+{
+  "version": 1,
+  "game": "game102",
+  "mode": "authored-inventory",
+  "note": "REQ-ARTPIPE2 A1（2026-08-05·Lead 施工）机械建账：由 game102 美术目录磁盘文件 + 本地/共享 index.json 已有登记推导首版台账。来源可考的照抄既有 provenance/license/source；不可考的如实标 provenance:'unknown-legacy'（不伪造）。逐行消费槽（skinKey/游戏渲染是否真消费）未核——此为账务建档，非消费槽审计（见 ledger-audit.mjs）。",
+  "count": 14,
+  "instances": 14,
+  "rows": [
+    {
+      "no": "art-01",
+      "desc": "打蛋器 cannon · blue tint (#2e6cf6) · 去背+消数字+换色自 owner 参考图",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "owner-supplied reference (IMG_6063)",
+        "servedPath": "/games/game102/art/cannon-blue.png",
+        "localId": "cannon/blue"
+      },
+      "provenance": {
+        "method": "matte(flood)+number-blank+hsv-recolor",
+        "originalFile": "IMG_6063.jpeg",
+        "sourceHue": "purple",
+        "targetHue": "#2e6cf6",
+        "note": "authoring-time deterministic recolor; luminance/value preserved, hue/sat replaced; baked '40' painted over with body mid-tone for live dynamic overlay",
+        "license": "proprietary",
+        "source": "owner-supplied reference (IMG_6063)"
+      }
+    },
+    {
+      "no": "art-02",
+      "desc": "打蛋器 cannon · green tint (#5cb544) · 去背+消数字+换色自 owner 参考图",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "owner-supplied reference (IMG_6063)",
+        "servedPath": "/games/game102/art/cannon-green.png",
+        "localId": "cannon/green"
+      },
+      "provenance": {
+        "method": "matte(flood)+number-blank+hsv-recolor",
+        "originalFile": "IMG_6063.jpeg",
+        "sourceHue": "purple",
+        "targetHue": "#5cb544",
+        "note": "authoring-time deterministic recolor; luminance/value preserved, hue/sat replaced; baked '40' painted over with body mid-tone for live dynamic overlay",
+        "license": "proprietary",
+        "source": "owner-supplied reference (IMG_6063)"
+      }
+    },
+    {
+      "no": "art-03",
+      "desc": "打蛋器 cannon · red tint (#e0433f) · 去背+消数字+换色自 owner 参考图",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "owner-supplied reference (IMG_6063)",
+        "servedPath": "/games/game102/art/cannon-red.png",
+        "localId": "cannon/red"
+      },
+      "provenance": {
+        "method": "matte(flood)+number-blank+hsv-recolor",
+        "originalFile": "IMG_6063.jpeg",
+        "sourceHue": "purple",
+        "targetHue": "#e0433f",
+        "note": "authoring-time deterministic recolor; luminance/value preserved, hue/sat replaced; baked '40' painted over with body mid-tone for live dynamic overlay",
+        "license": "proprietary",
+        "source": "owner-supplied reference (IMG_6063)"
+      }
+    },
+    {
+      "no": "art-04",
+      "desc": "加农炮台精灵 · blue · 程序化生成（voxel-proto 底部发射炮）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game102/art/cannon-tower-blue.png",
+        "localId": "cannon-tower/blue"
+      },
+      "provenance": {
+        "method": "procedural-raster (disc/capsule/roundRect + cylindrical shading + cartoon outline)",
+        "generator": "scripts/game-102-cannon-gen.mjs",
+        "tint": "#2e6cf6",
+        "note": "deterministic; zero external assets/network; barrel recolored per palette, neutral wood carriage/wheels",
+        "license": "CC0",
+        "source": "procedural (scripts/game-102-cannon-gen.mjs)"
+      }
+    },
+    {
+      "no": "art-05",
+      "desc": "加农炮台精灵 · green · 程序化生成（voxel-proto 底部发射炮）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game102/art/cannon-tower-green.png",
+        "localId": "cannon-tower/green"
+      },
+      "provenance": {
+        "method": "procedural-raster (disc/capsule/roundRect + cylindrical shading + cartoon outline)",
+        "generator": "scripts/game-102-cannon-gen.mjs",
+        "tint": "#5cb544",
+        "note": "deterministic; zero external assets/network; barrel recolored per palette, neutral wood carriage/wheels",
+        "license": "CC0",
+        "source": "procedural (scripts/game-102-cannon-gen.mjs)"
+      }
+    },
+    {
+      "no": "art-06",
+      "desc": "加农炮台精灵 · purple · 程序化生成（voxel-proto 底部发射炮）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game102/art/cannon-tower-purple.png",
+        "localId": "cannon-tower/purple"
+      },
+      "provenance": {
+        "method": "procedural-raster (disc/capsule/roundRect + cylindrical shading + cartoon outline)",
+        "generator": "scripts/game-102-cannon-gen.mjs",
+        "tint": "#8b5cf6",
+        "note": "deterministic; zero external assets/network; barrel recolored per palette, neutral wood carriage/wheels",
+        "license": "CC0",
+        "source": "procedural (scripts/game-102-cannon-gen.mjs)"
+      }
+    },
+    {
+      "no": "art-07",
+      "desc": "加农炮台精灵 · red · 程序化生成（voxel-proto 底部发射炮）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game102/art/cannon-tower-red.png",
+        "localId": "cannon-tower/red"
+      },
+      "provenance": {
+        "method": "procedural-raster (disc/capsule/roundRect + cylindrical shading + cartoon outline)",
+        "generator": "scripts/game-102-cannon-gen.mjs",
+        "tint": "#e0433f",
+        "note": "deterministic; zero external assets/network; barrel recolored per palette, neutral wood carriage/wheels",
+        "license": "CC0",
+        "source": "procedural (scripts/game-102-cannon-gen.mjs)"
+      }
+    },
+    {
+      "no": "art-08",
+      "desc": "加农炮台精灵 · yellow · 程序化生成（voxel-proto 底部发射炮）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game102/art/cannon-tower-yellow.png",
+        "localId": "cannon-tower/yellow"
+      },
+      "provenance": {
+        "method": "procedural-raster (disc/capsule/roundRect + cylindrical shading + cartoon outline)",
+        "generator": "scripts/game-102-cannon-gen.mjs",
+        "tint": "#f2c21e",
+        "note": "deterministic; zero external assets/network; barrel recolored per palette, neutral wood carriage/wheels",
+        "license": "CC0",
+        "source": "procedural (scripts/game-102-cannon-gen.mjs)"
+      }
+    },
+    {
+      "no": "art-09",
+      "desc": "打蛋器 cannon · yellow tint (#f2c21e) · 去背+消数字+换色自 owner 参考图",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "owner-supplied reference (IMG_6063)",
+        "servedPath": "/games/game102/art/cannon-yellow.png",
+        "localId": "cannon/yellow"
+      },
+      "provenance": {
+        "method": "matte(flood)+number-blank+hsv-recolor",
+        "originalFile": "IMG_6063.jpeg",
+        "sourceHue": "purple",
+        "targetHue": "#f2c21e",
+        "note": "authoring-time deterministic recolor; luminance/value preserved, hue/sat replaced; baked '40' painted over with body mid-tone for live dynamic overlay",
+        "license": "proprietary",
+        "source": "owner-supplied reference (IMG_6063)"
+      }
+    },
+    {
+      "no": "art-10",
+      "desc": "卡通加农炮 3D 模型（GLB）· 程序化生成 · 半透明玻璃炮管+黄铜装饰箍+青铜侧轮+青铜金属底座（底座与车轮同材质）。接线约定：前向轴=+Z（炮口沿 local +Z 出膛）；原点=底座中心/旋转支点（底面/轮胎落 y=0）；muzzle(炮口)local=[0, 1.102, 1.013]（炮管已整体上抬 0.30 脱离底座）；命名节点 carriage/barrel/barrel_trim/wheel_l/wheel_r。barrel 为半透明玻璃（alphaMode=BLEND·alpha=0.45·淡青玻璃色·挂 KHR_materials_transmission 0.85+ior 1.5），非中性色，若仍要 tint 需注意乘法后偏玻璃底色。",
+      "kind": "mesh",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game102/art/cannon.glb",
+        "localId": "model/cannon"
+      },
+      "provenance": {
+        "method": "procedural-glTF (cylinderZ/torusZ + trapezoid carriage + side wheels, per-part PBR baseColorFactor+metallicFactor+roughnessFactor; glass barrel via alphaMode BLEND + KHR_materials_transmission/KHR_materials_ior; zero external assets/network)",
+        "generator": "scripts/game-102-cannon-model-gen.mjs",
+        "forwardAxis": "+Z",
+        "origin": "base center / rotation pivot; sits on y=0 (wheels+carriage ground)",
+        "muzzleLocal": [
+          0,
+          1.102,
+          1.013
+        ],
+        "nodes": [
+          "carriage",
+          "barrel",
+          "barrel_trim",
+          "wheel_l",
+          "wheel_r"
+        ],
+        "materials": "barrel=translucent glass, pale cyan #B8DBE6 (metal=0, rough=0.06, alphaMode=BLEND alpha=0.45 + KHR_materials_transmission 0.85 + ior 1.5), lifted +0.30 in Y to clear the carriage; barrel_trim=brass #E7C27D (metal=1, rough=0.22, fixed gold rings, opaque, lifted with barrel); wheels=bronze #B87333 (metal=1, rough=0.35); carriage=bronze #B87333 (metal=1, rough=0.35, same material as wheels)",
+        "extensionsUsed": [
+          "KHR_materials_transmission",
+          "KHR_materials_ior"
+        ],
+        "tintTarget": "barrel is now translucent glass (colored, alpha-blended) — tint no longer reads as neutral; barrel_trim/wheels/carriage fixed",
+        "triangles": 2164,
+        "bboxUnits": {
+          "x": 1.4,
+          "y": 1.177,
+          "z": 1.614
+        },
+        "scaleNote": "scale 34 → 约 1.6 体素长(z·1.615*34≈55, PITCH=33)/~1.2 体素高；1.5~2 体素区间可用 31~41，restingTiltX=-0.12rad 上扬姿态",
+        "note": "deterministic; CC0 (纯我方程序化几何·无外部素材·无网络)",
+        "license": "CC0",
+        "source": "procedural (scripts/game-102-cannon-model-gen.mjs)"
+      }
+    },
+    {
+      "no": "art-11",
+      "desc": "功能格图标贴图 · 弹药 · 程序化生成（voxel 功能格方块面 emissiveMap·透明底白符号）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game102/art/cell-icon-ammo.png",
+        "localId": "cell-icon/ammo"
+      },
+      "provenance": {
+        "method": "procedural-raster (transparent background + polygon-scanline white glyph)",
+        "generator": "scripts/game-102-cell-icon-gen.mjs",
+        "note": "deterministic; zero external assets/network; transparent-background white-symbol texture used as emissiveMap on 3D voxel cell faces (transparent/black = no glow = cube palette color shows; white symbol = glows)",
+        "license": "CC0",
+        "source": "procedural (scripts/game-102-cell-icon-gen.mjs)"
+      }
+    },
+    {
+      "no": "art-12",
+      "desc": "功能格图标贴图 · 爆炸 · 程序化生成（voxel 功能格方块面 emissiveMap·透明底白符号）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game102/art/cell-icon-bomb.png",
+        "localId": "cell-icon/bomb"
+      },
+      "provenance": {
+        "method": "procedural-raster (transparent background + polygon-scanline white glyph)",
+        "generator": "scripts/game-102-cell-icon-gen.mjs",
+        "note": "deterministic; zero external assets/network; transparent-background white-symbol texture used as emissiveMap on 3D voxel cell faces (transparent/black = no glow = cube palette color shows; white symbol = glows)",
+        "license": "CC0",
+        "source": "procedural (scripts/game-102-cell-icon-gen.mjs)"
+      }
+    },
+    {
+      "no": "art-13",
+      "desc": "功能格图标贴图 · 火 · 程序化生成（voxel 功能格方块面 emissiveMap·透明底白符号）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game102/art/cell-icon-fire.png",
+        "localId": "cell-icon/fire"
+      },
+      "provenance": {
+        "method": "procedural-raster (transparent background + polygon-scanline white glyph)",
+        "generator": "scripts/game-102-cell-icon-gen.mjs",
+        "note": "deterministic; zero external assets/network; transparent-background white-symbol texture used as emissiveMap on 3D voxel cell faces (transparent/black = no glow = cube palette color shows; white symbol = glows)",
+        "license": "CC0",
+        "source": "procedural (scripts/game-102-cell-icon-gen.mjs)"
+      }
+    },
+    {
+      "no": "art-14",
+      "desc": "功能格图标贴图 · 时钟 · 程序化生成（voxel 功能格方块面 emissiveMap·透明底白符号）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game102/art/cell-icon-time.png",
+        "localId": "cell-icon/time"
+      },
+      "provenance": {
+        "method": "procedural-raster (transparent background + polygon-scanline white glyph)",
+        "generator": "scripts/game-102-cell-icon-gen.mjs",
+        "note": "deterministic; zero external assets/network; transparent-background white-symbol texture used as emissiveMap on 3D voxel cell faces (transparent/black = no glow = cube palette color shows; white symbol = glows)",
+        "license": "CC0",
+        "source": "procedural (scripts/game-102-cell-icon-gen.mjs)"
+      }
+    }
+  ]
+}

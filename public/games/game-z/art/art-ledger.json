@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "game": "game-z",
+  "mode": "authored-inventory",
+  "note": "REQ-ARTPIPE2 A1（2026-08-05·Lead 施工）机械建账：由 game-z 美术目录磁盘文件 + 本地/共享 index.json 已有登记推导首版台账。来源可考的照抄既有 provenance/license/source；不可考的如实标 provenance:'unknown-legacy'（不伪造）。逐行消费槽（skinKey/游戏渲染是否真消费）未核——此为账务建档，非消费槽审计（见 ledger-audit.mjs）。",
+  "count": 5,
+  "instances": 5,
+  "rows": [
+    {
+      "no": "art-01",
+      "desc": "aarch64 original · devicon",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "devicon",
+        "servedPath": "/games/game-z/art/devicon/aarch64-original.svg",
+        "localId": "tex/vendor-demo"
+      },
+      "provenance": {
+        "repo": "devicons/devicon",
+        "ref": "master",
+        "vendoredFrom": "devicon/aarch64-original",
+        "license": "MIT",
+        "source": "devicon"
+      }
+    },
+    {
+      "no": "art-02",
+      "desc": "单位立方（占位/箱体） · 公用基础几何",
+      "kind": "mesh",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-shelf",
+        "servedPath": "/games/game-z/art/meshes/cube.glb",
+        "localId": "mesh/demo-cube"
+      },
+      "provenance": {
+        "vendoredFrom": "mesh/cube",
+        "license": "CC0-1.0",
+        "source": "apollo-shelf"
+      }
+    },
+    {
+      "no": "art-03",
+      "desc": "木板 albedo（程序化·确定性） · 公用贴图",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-shelf",
+        "servedPath": "/games/game-z/art/textures/plank_albedo.png",
+        "localId": "tex/plank_albedo"
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "source": "apollo-shelf"
+      }
+    },
+    {
+      "no": "art-04",
+      "desc": "木板法线图（线性·法线用途） · 公用贴图",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-shelf",
+        "servedPath": "/games/game-z/art/textures/plank_normal.png",
+        "localId": "tex/plank_normal"
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "source": "apollo-shelf"
+      }
+    },
+    {
+      "no": "art-05",
+      "desc": "符文自发光图（emissiveMap 展示） · 公用贴图",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "apollo-shelf",
+        "servedPath": "/games/game-z/art/textures/rune_emissive.png",
+        "localId": "tex/rune_emissive"
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "source": "apollo-shelf"
+      }
+    }
+  ]
+}

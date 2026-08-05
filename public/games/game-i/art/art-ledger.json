@@ -1,0 +1,1692 @@
+{
+  "version": 1,
+  "game": "game-i",
+  "mode": "authored-inventory",
+  "note": "REQ-ARTPIPE2 A1（2026-08-05·Lead 施工）机械建账：由 game-i 美术目录磁盘文件 + 本地/共享 index.json 已有登记推导首版台账。来源可考的照抄既有 provenance/license/source；不可考的如实标 provenance:'unknown-legacy'（不伪造）。逐行消费槽（skinKey/游戏渲染是否真消费）未核——此为账务建档，非消费槽审计（见 ledger-audit.mjs）。",
+  "count": 103,
+  "instances": 103,
+  "rows": [
+    {
+      "no": "art-01",
+      "desc": "emoji 🀄(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f004.png",
+        "localId": "emoji/1f004"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/mahjong",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-02",
+      "desc": "emoji 🌑(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f311.png",
+        "localId": "emoji/1f311"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/new_moon",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-03",
+      "desc": "emoji 🌟(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f31f.png",
+        "localId": "emoji/1f31f"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/star2",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-04",
+      "desc": "emoji 🌫(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f32b.png",
+        "localId": "emoji/1f32b"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/fog",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-05",
+      "desc": "emoji 🍖(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f356.png",
+        "localId": "emoji/1f356"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/meat_on_bone",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-06",
+      "desc": "emoji 🎁(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f381.png",
+        "localId": "emoji/1f381"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/gift",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-07",
+      "desc": "emoji 🎆(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f386.png",
+        "localId": "emoji/1f386"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/fireworks",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-08",
+      "desc": "emoji 🎇(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f387.png",
+        "localId": "emoji/1f387"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/sparkler",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-09",
+      "desc": "emoji 🎉(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f389.png",
+        "localId": "emoji/1f389"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/tada",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-10",
+      "desc": "emoji 🎒(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f392.png",
+        "localId": "emoji/1f392"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/school_satchel",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-11",
+      "desc": "emoji 🎛(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f39b.png",
+        "localId": "emoji/1f39b"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/control_knobs",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-12",
+      "desc": "emoji 🎨(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f3a8.png",
+        "localId": "emoji/1f3a8"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/art",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-13",
+      "desc": "emoji 🎬(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f3ac.png",
+        "localId": "emoji/1f3ac"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/clapper",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-14",
+      "desc": "emoji 🎮(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f3ae.png",
+        "localId": "emoji/1f3ae"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/video_game",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-15",
+      "desc": "emoji 🎯(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f3af.png",
+        "localId": "emoji/1f3af"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/dart",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-16",
+      "desc": "emoji 🎲(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f3b2.png",
+        "localId": "emoji/1f3b2"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/game_die",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-17",
+      "desc": "emoji 🎴(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f3b4.png",
+        "localId": "emoji/1f3b4"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/flower_playing_cards",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-18",
+      "desc": "emoji 🎵(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f3b5.png",
+        "localId": "emoji/1f3b5"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/musical_note",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-19",
+      "desc": "emoji 🎶(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f3b6.png",
+        "localId": "emoji/1f3b6"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/notes",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-20",
+      "desc": "emoji 🏅(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f3c5.png",
+        "localId": "emoji/1f3c5"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/medal_sports",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-21",
+      "desc": "emoji 🏆(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f3c6.png",
+        "localId": "emoji/1f3c6"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/trophy",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-22",
+      "desc": "emoji 🏪(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f3ea.png",
+        "localId": "emoji/1f3ea"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/convenience_store",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-23",
+      "desc": "emoji 🏹(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f3f9.png",
+        "localId": "emoji/1f3f9"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/bow_and_arrow",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-24",
+      "desc": "emoji 🐉(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f409.png",
+        "localId": "emoji/1f409"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/dragon",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-25",
+      "desc": "emoji 👋(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f44b.png",
+        "localId": "emoji/1f44b"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/wave",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-26",
+      "desc": "emoji 👛(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f45b.png",
+        "localId": "emoji/1f45b"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/purse",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-27",
+      "desc": "emoji 👤(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f464.png",
+        "localId": "emoji/1f464"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/bust_in_silhouette",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-28",
+      "desc": "emoji 👥(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f465.png",
+        "localId": "emoji/1f465"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/busts_in_silhouette",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-29",
+      "desc": "emoji 💀(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f480.png",
+        "localId": "emoji/1f480"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/skull",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-30",
+      "desc": "emoji 💊(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f48a.png",
+        "localId": "emoji/1f48a"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/pill",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-31",
+      "desc": "emoji 💎(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f48e.png",
+        "localId": "emoji/1f48e"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/gem",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-32",
+      "desc": "emoji 💡(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f4a1.png",
+        "localId": "emoji/1f4a1"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/bulb",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-33",
+      "desc": "emoji 💥(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f4a5.png",
+        "localId": "emoji/1f4a5"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/boom",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-34",
+      "desc": "emoji 💧(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f4a7.png",
+        "localId": "emoji/1f4a7"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/droplet",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-35",
+      "desc": "emoji 💰(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f4b0.png",
+        "localId": "emoji/1f4b0"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/moneybag",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-36",
+      "desc": "emoji 📜(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f4dc.png",
+        "localId": "emoji/1f4dc"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/scroll",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-37",
+      "desc": "emoji 📢(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f4e2.png",
+        "localId": "emoji/1f4e2"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/loudspeaker",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-38",
+      "desc": "emoji 🔀(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f500.png",
+        "localId": "emoji/1f500"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/twisted_rightwards_arrows",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-39",
+      "desc": "emoji 🔊(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f50a.png",
+        "localId": "emoji/1f50a"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/loud_sound",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-40",
+      "desc": "emoji 🔒(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f512.png",
+        "localId": "emoji/1f512"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/lock",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-41",
+      "desc": "emoji 🔘(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f518.png",
+        "localId": "emoji/1f518"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/radio_button",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-42",
+      "desc": "emoji 🔤(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f524.png",
+        "localId": "emoji/1f524"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/abc",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-43",
+      "desc": "emoji 🔥(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f525.png",
+        "localId": "emoji/1f525"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/fire",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-44",
+      "desc": "emoji 🔦(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f526.png",
+        "localId": "emoji/1f526"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/flashlight",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-45",
+      "desc": "emoji 🔭(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f52d.png",
+        "localId": "emoji/1f52d"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/telescope",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-46",
+      "desc": "emoji 🔷(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f537.png",
+        "localId": "emoji/1f537"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/large_blue_diamond",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-47",
+      "desc": "emoji 🕓(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f553.png",
+        "localId": "emoji/1f553"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/clock4",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-48",
+      "desc": "emoji 🖍(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f58d.png",
+        "localId": "emoji/1f58d"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/crayon",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-49",
+      "desc": "emoji 🗡(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f5e1.png",
+        "localId": "emoji/1f5e1"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/dagger",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-50",
+      "desc": "emoji 🗺(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f5fa.png",
+        "localId": "emoji/1f5fa"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/world_map",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-51",
+      "desc": "emoji 🚧(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f6a7.png",
+        "localId": "emoji/1f6a7"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/construction",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-52",
+      "desc": "emoji 🚨(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f6a8.png",
+        "localId": "emoji/1f6a8"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/rotating_light",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-53",
+      "desc": "emoji 🛡(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f6e1.png",
+        "localId": "emoji/1f6e1"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/shield",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-54",
+      "desc": "emoji 🛤(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f6e4.png",
+        "localId": "emoji/1f6e4"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/railway_track",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-55",
+      "desc": "emoji 🟢(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f7e2.png",
+        "localId": "emoji/1f7e2"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/green_circle",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-56",
+      "desc": "emoji 🟦(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f7e6.png",
+        "localId": "emoji/1f7e6"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/blue_square",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-57",
+      "desc": "emoji 🥁(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f941.png",
+        "localId": "emoji/1f941"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/drum",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-58",
+      "desc": "emoji 🥋(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f94b.png",
+        "localId": "emoji/1f94b"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/martial_arts_uniform",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-59",
+      "desc": "emoji 🦆(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f986.png",
+        "localId": "emoji/1f986"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/duck",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-60",
+      "desc": "emoji 🧊(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f9ca.png",
+        "localId": "emoji/1f9ca"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/ice_cube",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-61",
+      "desc": "emoji 🧠(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f9e0.png",
+        "localId": "emoji/1f9e0"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/brain",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-62",
+      "desc": "emoji 🧩(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f9e9.png",
+        "localId": "emoji/1f9e9"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/jigsaw",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-63",
+      "desc": "emoji 🧪(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f9ea.png",
+        "localId": "emoji/1f9ea"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/test_tube",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-64",
+      "desc": "emoji 🧭(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f9ed.png",
+        "localId": "emoji/1f9ed"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/compass",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-65",
+      "desc": "emoji 🧱(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1f9f1.png",
+        "localId": "emoji/1f9f1"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/bricks",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-66",
+      "desc": "emoji 🩸(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1fa78.png",
+        "localId": "emoji/1fa78"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/drop_of_blood",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-67",
+      "desc": "emoji 🪙(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1fa99.png",
+        "localId": "emoji/1fa99"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/coin",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-68",
+      "desc": "emoji 🪧(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1faa7.png",
+        "localId": "emoji/1faa7"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/placard",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-69",
+      "desc": "emoji 🪨(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/1faa8.png",
+        "localId": "emoji/1faa8"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/rock",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-70",
+      "desc": "emoji ☠(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/2620.png",
+        "localId": "emoji/2620"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/skull_and_crossbones",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-71",
+      "desc": "emoji ♠(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/2660.png",
+        "localId": "emoji/2660"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/spades",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-72",
+      "desc": "emoji ♣(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/2663.png",
+        "localId": "emoji/2663"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/clubs",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-73",
+      "desc": "emoji ♥(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/2665.png",
+        "localId": "emoji/2665"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/hearts",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-74",
+      "desc": "emoji ♦(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/2666.png",
+        "localId": "emoji/2666"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/diamonds",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-75",
+      "desc": "emoji ⚔(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/2694.png",
+        "localId": "emoji/2694"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/crossed_swords",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-76",
+      "desc": "emoji ⚙(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/2699.png",
+        "localId": "emoji/2699"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/gear",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-77",
+      "desc": "emoji ⚠(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/26a0.png",
+        "localId": "emoji/26a0"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/warning",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-78",
+      "desc": "emoji ⚡(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/26a1.png",
+        "localId": "emoji/26a1"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/zap",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-79",
+      "desc": "emoji ⛰(exact) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/26f0.png",
+        "localId": "emoji/26f0"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/mountain",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-80",
+      "desc": "emoji ★(alias) (Twemoji·vendored)",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "twemoji",
+        "servedPath": "/games/game-i/art/emoji/2b50.png",
+        "localId": "emoji/2b50"
+      },
+      "provenance": {
+        "vendoredFrom": "emoji/star",
+        "license": "CC BY 4.0",
+        "source": "twemoji"
+      }
+    },
+    {
+      "no": "art-81",
+      "desc": "flower playing cards flat · fluentui-emoji",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "fluentui-emoji",
+        "servedPath": "/games/game-i/art/fluentui/flower_playing_cards_flat.svg",
+        "localId": "tex/card-flower"
+      },
+      "provenance": {
+        "repo": "microsoft/fluentui-emoji",
+        "ref": "main",
+        "vendoredFrom": "fluentui/flower_playing_cards_flat",
+        "license": "MIT",
+        "source": "fluentui-emoji"
+      }
+    },
+    {
+      "no": "art-82",
+      "desc": "joker flat · fluentui-emoji",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "fluentui-emoji",
+        "servedPath": "/games/game-i/art/fluentui/joker_flat.svg",
+        "localId": "tex/card-joker"
+      },
+      "provenance": {
+        "repo": "microsoft/fluentui-emoji",
+        "ref": "main",
+        "vendoredFrom": "fluentui/joker_flat",
+        "license": "MIT",
+        "source": "fluentui-emoji"
+      }
+    },
+    {
+      "no": "art-83",
+      "desc": "blue button00 · kenney-ui",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "kenney-ui",
+        "servedPath": "/games/game-i/art/kenney-ui/blue-button00.png",
+        "localId": "tex/btn-round"
+      },
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/blue-button00",
+        "license": "CC0-1.0",
+        "source": "kenney-ui"
+      }
+    },
+    {
+      "no": "art-84",
+      "desc": "blue button05 · kenney-ui",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "kenney-ui",
+        "servedPath": "/games/game-i/art/kenney-ui/blue-button05.png",
+        "localId": "tex/btn-blue"
+      },
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/blue-button05",
+        "license": "CC0-1.0",
+        "source": "kenney-ui"
+      }
+    },
+    {
+      "no": "art-85",
+      "desc": "green button03 · kenney-ui",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "kenney-ui",
+        "servedPath": "/games/game-i/art/kenney-ui/green-button03.png",
+        "localId": "tex/btn-glossy"
+      },
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/green-button03",
+        "license": "CC0-1.0",
+        "source": "kenney-ui"
+      }
+    },
+    {
+      "no": "art-86",
+      "desc": "green button05 · kenney-ui",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "kenney-ui",
+        "servedPath": "/games/game-i/art/kenney-ui/green-button05.png",
+        "localId": "tex/btn-green"
+      },
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/green-button05",
+        "license": "CC0-1.0",
+        "source": "kenney-ui"
+      }
+    },
+    {
+      "no": "art-87",
+      "desc": "grey button05 · kenney-ui",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "kenney-ui",
+        "servedPath": "/games/game-i/art/kenney-ui/grey-button05.png",
+        "localId": "tex/btn-grey"
+      },
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/grey-button05",
+        "license": "CC0-1.0",
+        "source": "kenney-ui"
+      }
+    },
+    {
+      "no": "art-88",
+      "desc": "red button01 · kenney-ui",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "kenney-ui",
+        "servedPath": "/games/game-i/art/kenney-ui/red-button01.png",
+        "localId": "tex/btn-red"
+      },
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/red-button01",
+        "license": "CC0-1.0",
+        "source": "kenney-ui"
+      }
+    },
+    {
+      "no": "art-89",
+      "desc": "yellow button05 · kenney-ui",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "kenney-ui",
+        "servedPath": "/games/game-i/art/kenney-ui/yellow-button05.png",
+        "localId": "tex/btn-yellow"
+      },
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/yellow-button05",
+        "license": "CC0-1.0",
+        "source": "kenney-ui"
+      }
+    },
+    {
+      "no": "art-90",
+      "desc": "yellow button13 · kenney-ui",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "kenney-ui",
+        "servedPath": "/games/game-i/art/kenney-ui/yellow-button13.png",
+        "localId": "tex/btn-ghost"
+      },
+      "provenance": {
+        "repo": "ereborstudios/kenney-ui-pack",
+        "ref": "main",
+        "vendoredFrom": "kenney-ui/yellow-button13",
+        "license": "CC0-1.0",
+        "source": "kenney-ui"
+      }
+    },
+    {
+      "no": "art-91",
+      "desc": "金属铆钉板按钮皮（贴图 UI sample·程序化自产 SVG）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game-i/art/textures/skin-metal.svg",
+        "localId": "tex/skin-metal"
+      },
+      "provenance": {
+        "license": "CC0",
+        "source": "src/games/game-i (自产)"
+      }
+    },
+    {
+      "no": "art-92",
+      "desc": "卷轴羊皮按钮皮（贴图 UI sample·程序化自产 SVG）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game-i/art/textures/skin-scroll.svg",
+        "localId": "tex/skin-scroll"
+      },
+      "provenance": {
+        "license": "CC0",
+        "source": "src/games/game-i (自产)"
+      }
+    },
+    {
+      "no": "art-93",
+      "desc": "花岗岩石纹按钮皮（贴图 UI sample·程序化自产 SVG）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game-i/art/textures/skin-stone.svg",
+        "localId": "tex/skin-stone"
+      },
+      "provenance": {
+        "license": "CC0",
+        "source": "src/games/game-i (自产)"
+      }
+    },
+    {
+      "no": "art-94",
+      "desc": "木纹板按钮皮（贴图 UI sample·程序化自产 SVG）",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "procedural",
+        "servedPath": "/games/game-i/art/textures/skin-wood.svg",
+        "localId": "tex/skin-wood"
+      },
+      "provenance": {
+        "license": "CC0",
+        "source": "src/games/game-i (自产)"
+      }
+    },
+    {
+      "no": "art-95",
+      "desc": "Astronaut 0o7w · undraw",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "undraw",
+        "servedPath": "/games/game-i/art/undraw/Astronaut_0o7w.svg",
+        "localId": "tex/cartoon-astronaut"
+      },
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/Astronaut_0o7w",
+        "license": "MIT",
+        "source": "undraw"
+      }
+    },
+    {
+      "no": "art-96",
+      "desc": "camping j8s0 · undraw",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "undraw",
+        "servedPath": "/games/game-i/art/undraw/camping_j8s0.svg",
+        "localId": "tex/cartoon-camping"
+      },
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/camping_j8s0",
+        "license": "MIT",
+        "source": "undraw"
+      }
+    },
+    {
+      "no": "art-97",
+      "desc": "gaming 6oy3 · undraw",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "undraw",
+        "servedPath": "/games/game-i/art/undraw/gaming_6oy3.svg",
+        "localId": "tex/cartoon-gaming"
+      },
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/gaming_6oy3",
+        "license": "MIT",
+        "source": "undraw"
+      }
+    },
+    {
+      "no": "art-98",
+      "desc": "good doggy 4wfq · undraw",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "undraw",
+        "servedPath": "/games/game-i/art/undraw/good_doggy_4wfq.svg",
+        "localId": "tex/cartoon-dog"
+      },
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/good_doggy_4wfq",
+        "license": "MIT",
+        "source": "undraw"
+      }
+    },
+    {
+      "no": "art-99",
+      "desc": "happy birthday s72n · undraw",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "undraw",
+        "servedPath": "/games/game-i/art/undraw/happy_birthday_s72n.svg",
+        "localId": "tex/cartoon-birthday"
+      },
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/happy_birthday_s72n",
+        "license": "MIT",
+        "source": "undraw"
+      }
+    },
+    {
+      "no": "art-100",
+      "desc": "music r1se · undraw",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "undraw",
+        "servedPath": "/games/game-i/art/undraw/music_r1se.svg",
+        "localId": "tex/cartoon-music"
+      },
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/music_r1se",
+        "license": "MIT",
+        "source": "undraw"
+      }
+    },
+    {
+      "no": "art-101",
+      "desc": "playful cat ql3n · undraw",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "undraw",
+        "servedPath": "/games/game-i/art/undraw/playful_cat_ql3n.svg",
+        "localId": "tex/cartoon-cat"
+      },
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/playful_cat_ql3n",
+        "license": "MIT",
+        "source": "undraw"
+      }
+    },
+    {
+      "no": "art-102",
+      "desc": "robotics kep0 · undraw",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "undraw",
+        "servedPath": "/games/game-i/art/undraw/robotics_kep0.svg",
+        "localId": "tex/cartoon-robot"
+      },
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/robotics_kep0",
+        "license": "MIT",
+        "source": "undraw"
+      }
+    },
+    {
+      "no": "art-103",
+      "desc": "travel pb6m · undraw",
+      "kind": "sprite",
+      "status": "filled",
+      "gen": {
+        "source": "undraw",
+        "servedPath": "/games/game-i/art/undraw/travel_pb6m.svg",
+        "localId": "tex/cartoon-travel"
+      },
+      "provenance": {
+        "repo": "cuuupid/undraw-illustrations",
+        "ref": "master",
+        "vendoredFrom": "undraw/travel_pb6m",
+        "license": "MIT",
+        "source": "undraw"
+      }
+    }
+  ]
+}

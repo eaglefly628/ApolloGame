@@ -91,6 +91,9 @@ function planFor(c) {
     { name: 'docs-ref', cmd: ['node', ['scripts/docs-ref-guard.mjs']] },
     { name: 'context-budget', cmd: ['node', ['scripts/context-budget-guard.mjs']] },
     { name: 'decouple-check', cmd: ['node', ['scripts/decouple-check.mjs']] },
+    // REQ-ARTPIPE2 A1②：台账强制守卫。退出码 0=全净·1=棘轮违规（新黑户）硬拦·2=有存量挂账/死账/
+    // 缺来源但无新增——警告态，allowExit 放行（已知债务开工单追，不该拦无关改动的推送）。
+    { name: 'art-ledger-guard', cmd: ['node', ['scripts/art-ledger-guard.mjs']], allowExit: [0, 2] },
   ];
   const TSC = { name: 'tsc', cmd: ['npx', ['tsc', '--noEmit']] };
   const BUILD = { name: 'build', cmd: ['npm', ['run', 'build']] };
@@ -127,7 +130,8 @@ function main() {
   for (const step of plan) {
     console.log(`\n── ${step.name} ──`);
     const r = spawnSync(step.cmd[0], step.cmd[1], { stdio: 'inherit' });
-    if (r.status !== 0) { console.error(`\n❌ 门禁失败于 ${step.name}（退出码 ${r.status}）`); process.exit(r.status || 1); }
+    const ok = step.allowExit ? step.allowExit.includes(r.status) : r.status === 0;
+    if (!ok) { console.error(`\n❌ 门禁失败于 ${step.name}（退出码 ${r.status}）`); process.exit(r.status || 1); }
   }
   console.log(`\n✅ 门禁全绿（scope=${c.scope}${c.game ? ':' + c.game : ''}）`);
 }

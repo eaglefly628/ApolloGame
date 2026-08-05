@@ -18,6 +18,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 // 材质等数据型资产的贴图键 + vendoredFrom：都引用「另一条资产 id」，是 spec 内部引用。
 const KEY_FIELDS = ['map', 'normalMap', 'roughnessMap', 'aoMap', 'metalnessMap', 'emissiveMap', 'ormMap'];
+// 游戏目录名闭集：`game-<slug>`（game-a/game-103…）或无连字符 `game<digits>`（game101/game102…）。
+// REQ-ARTPIPE2 A1④：原正则死认连字符（`/^game-[a-z0-9]+$/`），漏了 game101/game102（侦察在案的盲区）。
+const GAME_NAME_RE = /^game-?[a-z0-9]+$/;
 
 function readIndex(file) {
   try { return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null; }
@@ -103,7 +106,7 @@ export function reconcile({ root = ROOT, scope = 'all' } = {}) {
   const scopes = [];
 
   const wantShared = scope === 'all' || scope === 'shared';
-  const wantGames = scope === 'all' || scope === 'games' || (scope !== 'shared' && scope.startsWith('game-'));
+  const wantGames = scope === 'all' || scope === 'games' || (scope !== 'shared' && GAME_NAME_RE.test(scope));
 
   if (wantShared) {
     scopes.push({
@@ -113,9 +116,9 @@ export function reconcile({ root = ROOT, scope = 'all' } = {}) {
   }
   if (wantGames) {
     const gamesDir = join(root, 'public', 'games');
-    const games = existsSync(gamesDir) ? readdirSync(gamesDir).filter((g) => /^game-[a-z0-9]+$/.test(g)) : [];
+    const games = existsSync(gamesDir) ? readdirSync(gamesDir).filter((g) => GAME_NAME_RE.test(g)) : [];
     for (const g of games) {
-      if (scope.startsWith('game-') && scope !== g) continue;
+      if (GAME_NAME_RE.test(scope) && scope !== g) continue;
       const artDir = join(gamesDir, g, 'art');
       if (!existsSync(join(artDir, 'index.json'))) continue;
       scopes.push({
@@ -137,7 +140,7 @@ function run(argv) {
   const asJson = argv.includes('--json');
   const scopeArg = argv.includes('--shared') ? 'shared'
     : argv.includes('--games') ? 'games'
-    : (argv.find((a) => /^game-[a-z0-9]+$/.test(a)) || 'all');
+    : (argv.find((a) => GAME_NAME_RE.test(a)) || 'all');
   const r = reconcile({ scope: scopeArg });
   if (asJson) { console.log(JSON.stringify(r, null, 2)); process.exit(r.fails > 0 ? 1 : 0); }
 
