@@ -153,3 +153,6 @@ S5 牌桌屏 1:1 复刻 owner 钦定稿 `guandan-lite-mockup.html`（可读 Reac
 > - `art-overrides.ts:9-31`（`registerArtOverrides`/`artUri`/`artOverride` 覆盖注册表）**留在游戏层**——那是 game-a 自己的消费口径，不属公共壳。
 > - `game-a.ts:64-66`（`ga_lang` 语言持久）→ `localStore<Lang>('ga_lang', 'zh', textCodec(['zh','en']))`——原文枚举串（不裹引号），与现有 `getItem(k) === 'en'` 写法字节兼容，老玩家语言偏好不丢。
 > **验收**：观感/交互零变化 + game-a vitest 绿 + `node scripts/scoped-gate.mjs --run`。红线：不碰 sim/蓝图/hash 面。
+
+### A-027 · 美术裸路径收编：theme.ts 两处直写 /games/game-a/art/ 路径 · [2026-08-05] · ARTPIPE2 侦察带出 → **指派：PE-A** · status: open · 优先级: P3 · 类型: 美术接线卫生
+> `theme.ts:29-38 ART_FALLBACK` 字面量表 + `:104` 字符串拼接。有 art-overrides 覆盖层兜底非硬伤，但绕台账索引=浏览器消费方反查盲区。修法：改经资产索引别名取路径。

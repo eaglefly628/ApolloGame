@@ -89,3 +89,6 @@
 > **完工判据**：① 工坊替换某牌面 → 别名登记进 `public/games/game-b/art/index.json` → 游戏即显新图（**非破坏·留原 CC0 图·带 provenance/M2.5**）；② `npm run ledger:audit game-b --strict` 孤儿归零（无用行改退役/移出台本亦可）；③ 现有 game-b 测零回归·门禁绿；④ 真浏览器亲验换一张牌面成立（review-gates 领工截图铁律）。
 > **边界**：game-b 游戏代码（`play-ui.ts`/`assets.ts`/`tiles.ts`）=PE-B 域；引擎件（`filledSrc` 解析口 + 孤儿审计 `ledger-audit`）已 done、直接消费。
 > **owner 临时验观感（不阻本单）**：直接覆盖服务文件 `public/games/game-b/art/mahjong/man-2.png`（同名 PNG）+ 硬刷即显——破坏式手动旁路，仅供当下试观感，非最终机制。
+
+### B-015 · 美术裸路径收编：play-ui.ts 三处直写 /games/game-b/art/ 路径 · [2026-08-05] · ARTPIPE2 侦察带出 → **指派：PE-B** · status: open · 优先级: P3 · 类型: 美术接线卫生
+> `play-ui.ts:40 ART` / `:46 TACHIE` / `:287 WOOD_SKIN` 三常量直写路径且**无覆盖层**（比 game-a 硬）。修法：改经资产索引别名；浏览器消费方反查与换图热替换收益直接。

@@ -77,3 +77,6 @@
 ### REQ-I-gallery拆分 · gallery.ts 1620 行按展台分模块（token 优化③·owner 2026-07-15 批）· [2026-07-15] · Lead 转呈 → **指派：PUI（game-i 域·勿由他人代拆）** · status: open · 优先级: P2 · 类型: 结构拆分（零逻辑改）
 > 背景：owner 批「拆大文件」降低 session 读入成本（launcher.tsx 已由 Lead 拆·zerocraft.py 先例）。`games/game-i/gallery.ts` 1620 行=单文件 top1，但 game-i 是 PUI 地盘（CLAUDE.md 边界），Lead 不越界。
 > spec 建议（照 zerocraft.py/launcher 先例）：按展台/页签的自然缝拆 `games/game-i/gallery/*.ts`，gallery.ts 留薄入口 re-export；**逐字节搬运零逻辑改**；tsc+vitest（game-i 测试零改动照绿）+build 全绿直推；拆后单文件 ≤500 行。
+
+### REQ-I-裸路径收编 · game-i.ts emoji base + ui-assets.ts 人工双份维护 index 镜像 · [2026-08-05] · ARTPIPE2 侦察带出 → **指派：PUI** · status: open · 优先级: P3 · 类型: 美术接线卫生
+> `game-i.ts:151 EMOJI_CFG.base` 直写路径；`ui-assets.ts:31,50-53,63-64` 内联镜像 index.json 的 path 字面量（注释自称同源实为两份人工维护=漂移温床）。修法：统一经 @assets/index 取。
