@@ -468,4 +468,25 @@ describe('matrix-duel — 落盘门（Lead 附加②·坏补丁一律拒收，�
     intend(w, 'p2', 'rock');
     expect(() => w.tick()).toThrow(/出了判定表外的手 "lizard"/);
   });
+
+  // 回归（engine-review-2026-08-04 §3.3 · P2）：同一 duelId 挂 ≥3 份 DuelIntent 时，
+  // 旧实现 `sides.length !== 2 → continue` 把它和「一侧未提交」混为一谈；但三份**永远不会
+  // 自己变回两份** → 对局静止、零报错的永久死锁。与上面「表外的手」同类，同口径硬抛。
+  it('同一 duelId 挂 ≥3 份 DuelIntent → 硬抛点名（永不自愈的数据错不得静默死锁）', () => {
+    const w = table(BASE_MATRIX());
+    w.createEntity('p3');
+    w.addComponent('p3', { type: 'Resource', id: 'hp', current: 20, min: 0, max: 100 } as Resource);
+    intend(w, 'p1', 'rock');
+    intend(w, 'p2', 'scissors');
+    intend(w, 'p3', 'paper');
+    expect(() => w.tick()).toThrow(/挂了 3 份 DuelIntent/);
+  });
+
+  it('只有一侧提交 → 照常静默等齐（瞬时态·不得误抛）', () => {
+    const w = table(BASE_MATRIX());
+    intend(w, 'p1', 'rock');
+    expect(() => w.tick()).not.toThrow();
+    expect(hp(w, 'p1')).toBe(20); // 未结算
+    expect(hp(w, 'p2')).toBe(20);
+  });
 });

@@ -89,3 +89,31 @@ describe('T2 merge-on-place — 拖放裁决', () => {
     expect(w.getComponent<Transform>('i1', 'Transform')!.x).toBe(200); // 交换
   });
 });
+
+// ── 回归（engine-review-2026-08-04 §3.3 · P1）─────────────────────────────
+// 载体/事件实体 id 原先只用每拍归零的计数器命名。MergeEvent 由 merge-proximity-clear/juice
+// 之类下游「read-then-consume」，**但游戏不一定装了这些消费者**——那上一拍的 mev:1 会一直在，
+// 次拍再合并时 createEntity 撞名 → 硬抛 `Entity "mev:1" already exists` 当场崩局。
+// 修：id 带 world.getVersion() 拍号（每拍 +1、同拍内全系统同值、全对端一致 → 跨拍唯一且不破确定性）。
+describe('T2 merge-on-place — 跨拍 id 唯一（无 MergeEvent 消费者时也不得撞名硬崩）', () => {
+  it('连续两拍各合并一次（不装任何 MergeEvent/SpawnRequest 消费者）→ 不抛', () => {
+    const w = w0();
+    rule(w, 'egg', 'chick');
+
+    item(w, 'a1', 'egg', 0, 0);
+    item(w, 'a2', 'egg', 1, 0);
+    drop(w, 'a1', 'a2', 1, 0);
+    expect(() => w.tick()).not.toThrow();
+
+    // 第二拍：再来一组同模板合并。上一拍产出的 mev/mop 实体仍在（无消费者），
+    // 旧实现在此撞名硬抛。
+    item(w, 'b1', 'egg', 5, 5);
+    item(w, 'b2', 'egg', 6, 5);
+    drop(w, 'b1', 'b2', 6, 5);
+    expect(() => w.tick()).not.toThrow();
+
+    // 两拍各产出一条 spawn 请求，彼此独立（没有互相覆盖/丢失）
+    expect(spawnReqs(w).filter((r) => r.templateId === 'chick').length).toBe(2);
+  });
+});
+

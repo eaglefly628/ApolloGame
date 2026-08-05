@@ -66,6 +66,13 @@ export const mergeOnPlaceCapability = defineCapability({
           if (r && r.need <= 2 && r.template && r.into) into.set(r.template, r.into);
         }
 
+        // 载体/事件实体 id 必须**跨拍**唯一：mergeN 每拍归零，若只用它命名，一旦下游没消费掉
+        // 上一拍的实体（例如游戏没装 merge-proximity-clear/juice 这类 MergeEvent 消费者），
+        // 次拍再发生合并就会撞上同名实体 → `createEntity` 直接硬抛「already exists」崩局
+        // （engine-review-2026-08-04 §3.3 · P1）。
+        // 取 world.getVersion() 作拍号前缀：它在 tick() 内每拍 +1、同一拍内所有系统看到同一值，
+        // 全对端一致 → 既跨拍唯一又不破确定性（不可用墙钟/随机）。
+        const tickTag = world.getVersion();
         let mergeN = 0;
         const drops = world.query('MergeDrop').map(([id, comps]) => ({ id, size: comps.size }));
         for (const { id: did, size } of drops) {
@@ -82,11 +89,12 @@ export const mergeOnPlaceCapability = defineCapability({
                     // ① 合成：销毁 from+to，在 to 处产出次级。
                     if (!world.hasComponent(d.from, 'DestroyRequest')) world.addComponent(d.from, { type: 'DestroyRequest', entityId: d.from } as DestroyRequest);
                     if (!world.hasComponent(d.to, 'DestroyRequest')) world.addComponent(d.to, { type: 'DestroyRequest', entityId: d.to } as DestroyRequest);
-                    const carrier = `mop:${into.get(fromPO.templateId)}:${mergeN++}`;
+                    const n = mergeN++;
+                    const carrier = `mop:${into.get(fromPO.templateId)}:${tickTag}:${n}`;
                     world.createEntity(carrier);
                     world.addComponent(carrier, { type: 'SpawnRequest', templateId: into.get(fromPO.templateId)!, x: toT.x, y: toT.y } as SpawnRequest);
                     // 合并事件（下游 merge-proximity-clear/juice 响应·read-then-consume）：在合并落点发一条。
-                    const ev = `mev:${mergeN}`;
+                    const ev = `mev:${tickTag}:${n}`;
                     world.createEntity(ev);
                     world.addComponent(ev, { type: 'MergeEvent', x: toT.x, y: toT.y } as MergeEvent);
                   } else {

@@ -445,7 +445,18 @@ export const matrixDuelCapability = defineCapability({
             const it = world.getComponent<DuelIntent>(iid, 'DuelIntent');
             if (it && (it.duelId ?? '') === key) sides.push({ eid: iid, intent: it });
           }
-          if (sides.length !== 2) continue; // 两侧未齐（或多于两侧）→ 本拍不结算，等齐
+          // < 2：一侧还没提交 → 本拍不结算、等齐（**瞬时**态，下一拍可能就齐了，合理跳过）。
+          // > 2：同一 duelId 挂了三份及以上 DuelIntent = 数据错，**永远不会自己变回 2** →
+          //      旧实现一并 continue 就成了静默永久死锁（对局静止、零报错、最难查）。
+          //      本文件对「表外的手」已立同一规矩：这类永不自愈的数据错必须点名硬抛，
+          //      故此处补齐同口径（engine-review-2026-08-04 §3.3 · P2）。
+          if (sides.length > 2) {
+            throw new Error(
+              `matrix-duel: duelId "${key}" 挂了 ${sides.length} 份 DuelIntent（判定表是两方对决，只能有 2 份）——`
+              + `涉事实体：${sides.map((s) => `"${s.eid}"`).join(' / ')}`,
+            );
+          }
+          if (sides.length < 2) continue;
 
           const [sa, sb] = sides;
           const ta = sa.intent.throw;
