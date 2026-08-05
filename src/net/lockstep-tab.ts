@@ -52,6 +52,8 @@ export interface LockstepOptions {
 
 const HEARTBEAT_MS = 250;
 const PEER_TIMEOUT_MS = 1200;
+// 输入缓存保留的 epoch 桶数上界（当前 epoch + 若干个「将来可能进入」的）。见 pruneInputEpochs。
+const MAX_INPUT_EPOCHS = 4;
 
 // ═══════════════════════════════════════════════════════════════
 //  帧同步客户端（lockstep）—— 每个标签页一个。
@@ -168,7 +170,10 @@ export class LockstepClient {
     this.world = this.buildWorld(members.map((_, i) => playerIdForSlot(i)));
     this.simTick = 0;
     this.committedInputTick = this.inputDelay; // 前 inputDelay 个 tick 视为零输入热身
+    // 保留本 epoch 已缓存的输入（错峰期间对端先发来的那几拍就在这里，正是 P0 修复的关键：
+    // 不能像旧实现那样在此重置成空桶，否则等于把缓存又丢一次）。
     if (!this.inputs.has(key)) this.inputs.set(key, new Map());
+    this.pruneInputEpochs(key);
     this.peerHashAt.clear();
   }
 
@@ -185,7 +190,15 @@ export class LockstepClient {
         this.recomputeEpoch();
         break;
       case 'input':
-        if (m.epoch === this.epoch) this.recordInput(m.epoch, m.tick, m.peer, { dx: m.dx, dy: m.dy, jump: m.jump ?? 0 });
+        // 刻意**不按 epoch 过滤**（P0 死锁修复·engine-review-2026-08-04 §3.3）：
+        // 成员变化时各端切 epoch 的时刻不同，先切的一方会在对端还没进入新 epoch 时就
+        // 广播该 epoch 的输入。旧实现在此丢弃，而发送方 committedInputTick 单调递增、
+        // 永不重发 → 后进入者永久缺那几拍；它一卡住，自身 commitLocalInputs 的 target
+        // 也不再前进（target = simTick + inputDelay）→ 停止产出新输入 → 两端互等、
+        // **永久卡死**（实测：A 停在 2*inputDelay、B 停在 inputDelay）。
+        // inputs 本身是 epoch-keyed 的，未知/未来 epoch 的输入照常收下即可——进入该
+        // epoch 时正好用上；不属于任何将来 epoch 的桶由 resetEpoch 按上界淘汰。
+        this.recordInput(m.epoch, m.tick, m.peer, { dx: m.dx, dy: m.dy, jump: m.jump ?? 0 });
         break;
       case 'hash':
         if (m.epoch === this.epoch) this.peerHashAt.set(m.tick, m.hash);
@@ -209,6 +222,18 @@ export class LockstepClient {
         dy: inp.dy,
         jump: inp.jump ?? 0,
       });
+    }
+  }
+
+  /** 淘汰过期 epoch 的输入桶，给「按 epoch 缓存」封上界。
+   *  当前 epoch 永不淘汰；其余按插入序（Map 语义）淘汰最旧的，保留最近若干桶——
+   *  成员反复抖动（多端进出）时可能同时存在几个「将来可能进入」的 epoch，全清会把
+   *  下一个 epoch 的错峰缓存也清掉、把 P0 换个姿势复发；故留窗口而非只留当前。 */
+  private pruneInputEpochs(current: string): void {
+    if (this.inputs.size <= MAX_INPUT_EPOCHS) return;
+    for (const k of [...this.inputs.keys()]) {
+      if (this.inputs.size <= MAX_INPUT_EPOCHS) break;
+      if (k !== current) this.inputs.delete(k);
     }
   }
 
