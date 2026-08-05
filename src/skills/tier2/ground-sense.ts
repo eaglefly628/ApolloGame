@@ -28,7 +28,7 @@ export const groundSenseCapability = defineCapability({
         fields: {},
       },
     },
-    reads: ['Overlap', 'Velocity', 'Grounded'],
+    reads: ['Overlap', 'Velocity', 'Grounded', 'Sensor'],
     writes: ['Grounded'],
     consumes: [],
   },
@@ -38,7 +38,7 @@ export const groundSenseCapability = defineCapability({
   systems: [
     {
       id: 'ground-sense',
-      reads: ['Overlap', 'Velocity'],
+      reads: ['Overlap', 'Velocity', 'Sensor'],
       writes: ['Grounded'],
       consumes: [],
       execute(world) {
@@ -62,6 +62,10 @@ export const groundSenseCapability = defineCapability({
           } else {
             continue; // 墙面(ny≈0)，不算落地
           }
+          // 非实心 Sensor（金币/伤害区/触发区）不是支撑面：踩上去不算落地。
+          // 口径同 collision-resolve REQ-002（任一方是 Sensor 即跳过）。旧实现漏了这条 →
+          // **跳过金币即可判着地、于空中再跳 = 二段跳**（engine-review-2026-08-04 §3.3 · P1）。
+          if (world.hasComponent(rider, 'Sensor') || world.hasComponent(support, 'Sensor')) continue;
           if (!world.hasComponent(rider, 'Velocity')) continue; // 骑乘者须是动态体才谈"落地"
           claims.push({ rider, support, staticSupport: !world.hasComponent(support, 'Velocity') });
         }

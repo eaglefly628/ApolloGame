@@ -24,7 +24,7 @@ export const frictionCapability = defineCapability({
 
   components: {
     provides: {},
-    reads: ['Overlap', 'Velocity'],
+    reads: ['Overlap', 'Velocity', 'Sensor'],
     writes: ['Velocity'],
     consumes: [],
   },
@@ -35,12 +35,16 @@ export const frictionCapability = defineCapability({
     {
       id: 'friction',
       phase: SystemPhase.PostResolve,
-      reads: ['Overlap', 'Velocity'],
+      reads: ['Overlap', 'Velocity', 'Sensor'],
       writes: ['Velocity'],
       consumes: [],
       execute(world: IWorld) {
         for (const [oid] of world.query('Overlap')) {
           const o = world.getComponent<Overlap>(oid, 'Overlap')!;
+          // 非实心 Sensor（伤害区/触发区/金币）不参与物理 → 也不该产生摩擦。
+          // 口径与 collision-resolve 的 REQ-002 完全一致（那边同样是「任一方是 Sensor 就跳过」）；
+          // 旧实现漏了这条 → **贴着伤害区走会被凭空削速**（engine-review-2026-08-04 §3.3 · P1）。
+          if (world.hasComponent(o.entityA, 'Sensor') || world.hasComponent(o.entityB, 'Sensor')) continue;
           const nx = o.normalX; // 单位法线 A→B（来自 overlap-detect）
           const ny = o.normalY;
 

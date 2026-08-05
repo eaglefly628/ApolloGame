@@ -23,7 +23,8 @@ function addOverlap(w: World, a: string, b: string, normalY: number): void {
 describe('T2 ground-sense — capability metadata', () => {
   it('id / 读 Overlap+Velocity / 写 Grounded / provide marker', () => {
     expect(groundSenseCapability.id).toBe('t2-ground-sense');
-    expect(groundSenseCapability.components.reads).toEqual(['Overlap', 'Velocity', 'Grounded']);
+    // Sensor：非实心区不是支撑面（踩金币不算落地）——真读了就必须申报（根因①「申报漂移」）。
+    expect(groundSenseCapability.components.reads).toEqual(['Overlap', 'Velocity', 'Grounded', 'Sensor']);
     expect(groundSenseCapability.components.writes).toEqual(['Grounded']);
     expect(groundSenseCapability.components.provides.Grounded.category).toBe('marker');
   });
@@ -95,3 +96,44 @@ describe('T2 ground-sense — REQ-003 动态支撑链', () => {
     expect(w.hasComponent('player', 'Grounded')).toBe(false);
   });
 });
+
+// ── 回归（engine-review-2026-08-04 §3.3 · P1）─────────────────────────────
+// 非实心 Sensor（金币/伤害区/触发区）不是支撑面。旧实现只看法线方向 + 骑乘者有无 Velocity，
+// 于是**跳过一枚金币就被判着地、可在空中再跳一次 = 二段跳**。
+// 正确口径在 collision-resolve（REQ-002：任一方是 Sensor 即跳过），此处与之对齐。
+describe('T2 ground-sense — Sensor 不是支撑面（与 collision-resolve REQ-002 同口径）', () => {
+  const sensor = (w: World, id: string) => {
+    w.createEntity(id);
+    w.addComponent(id, { type: 'Sensor', triggered: false } as never);
+  };
+
+  it('踩在 Sensor（金币）上 → 不算落地（防二段跳）', () => {
+    const w = worldWithGroundSense();
+    addDyn(w, 'player');
+    sensor(w, 'coin');
+    addOverlap(w, 'player', 'coin', 1); // 法线朝下 = player 骑在 coin 上
+    w.tick();
+    expect(w.hasComponent('player', 'Grounded')).toBe(false);
+  });
+
+  it('踩在实心地面上 → 照常落地（修 Sensor 不误伤正常路径）', () => {
+    const w = worldWithGroundSense();
+    addDyn(w, 'player');
+    w.createEntity('floor');
+    addOverlap(w, 'player', 'floor', 1);
+    w.tick();
+    expect(w.hasComponent('player', 'Grounded')).toBe(true);
+  });
+
+  it('同时压着金币与地面 → 仍算落地（Sensor 只被忽略、不否决实心支撑）', () => {
+    const w = worldWithGroundSense();
+    addDyn(w, 'player');
+    sensor(w, 'coin');
+    w.createEntity('floor');
+    addOverlap(w, 'player', 'coin', 1);
+    addOverlap(w, 'player', 'floor', 1);
+    w.tick();
+    expect(w.hasComponent('player', 'Grounded')).toBe(true);
+  });
+});
+

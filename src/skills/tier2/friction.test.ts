@@ -54,9 +54,11 @@ describe('T2 friction — capability metadata（契约钉死）', () => {
     expect(frictionCapability.systems[0].phase).toBe(SystemPhase.PostResolve);
   });
 
-  it('reads Overlap+Velocity，writes Velocity，不 consume/provide', () => {
+  it('reads Overlap+Velocity+Sensor，writes Velocity，不 consume/provide', () => {
     expect(frictionCapability.components.provides).toEqual({});
-    expect(frictionCapability.components.reads).toEqual(['Overlap', 'Velocity']);
+    // Sensor：非实心区不产生摩擦（口径同 collision-resolve REQ-002）——真读了就必须申报，
+    // 否则与写 Sensor 的系统之间没有定序边、只能靠相位巧合（根因①「申报漂移」）。
+    expect(frictionCapability.components.reads).toEqual(['Overlap', 'Velocity', 'Sensor']);
     expect(frictionCapability.components.writes).toEqual(['Velocity']);
     expect(frictionCapability.components.consumes).toEqual([]);
   });
@@ -203,3 +205,39 @@ describe('T2 friction — COEF 边界', () => {
     expect(vel(w, 'dyn').vx).toBeCloseTo(10 * Math.pow(0.8, 5));
   });
 });
+
+// ── 回归（engine-review-2026-08-04 §3.3 · P1）─────────────────────────────
+// 非实心 Sensor（伤害区/触发区/金币）不参与物理解算，也就不该产生摩擦。
+// 旧实现对所有 Overlap 一律施加切向阻尼 → **贴着伤害区走会被凭空削速**。
+// 正确口径在 collision-resolve（REQ-002：任一方是 Sensor 即跳过），此处与之对齐。
+describe('T2 friction — Sensor 不产生摩擦（与 collision-resolve REQ-002 同口径）', () => {
+  it('对手方是 Sensor → 速度分毫不动', () => {
+    const w = worldWithFriction();
+    addDyn(w, 'player', 10, 0);
+    addStatic(w, 'hurtzone');
+    w.addComponent('hurtzone', { type: 'Sensor', triggered: false } as never);
+    addOverlap(w, 'player', 'hurtzone', 0, 1);
+    w.tick();
+    expect(vel(w, 'player').vx).toBe(10); // 未被削速
+  });
+
+  it('自身是 Sensor → 同样跳过', () => {
+    const w = worldWithFriction();
+    addDyn(w, 'trigger', 10, 0);
+    w.addComponent('trigger', { type: 'Sensor', triggered: false } as never);
+    addStatic(w, 'floor');
+    addOverlap(w, 'trigger', 'floor', 0, 1);
+    w.tick();
+    expect(vel(w, 'trigger').vx).toBe(10);
+  });
+
+  it('实心地面照常产生摩擦（修 Sensor 不误伤正常路径）', () => {
+    const w = worldWithFriction();
+    addDyn(w, 'player', 10, 0);
+    addStatic(w, 'floor');
+    addOverlap(w, 'player', 'floor', 0, 1);
+    w.tick();
+    expect(vel(w, 'player').vx).toBeCloseTo(8, 5); // 10 × (1-0.2)
+  });
+});
+
