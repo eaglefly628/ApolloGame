@@ -456,8 +456,25 @@ export function DataCartridgeRunner({ slug, entry, api, resolveArt, onBack }: {
         const manifest = resolveArt ? resolveArt(raw) : raw;
         let bp = parseManifest(manifest);
         if (entry.hasLogic) {
+          // ── 执行侧闸门（engine-review-2026-08-04 §3.3 · owner 2026-08-05 拍板补）──────
+          // 旧实现只看 `hasLogic`（= 盘上有 logic.ts）就直接 import 执行，而**授权旗
+          // `allowTs` 压根没被传到运行时**（后端 library.py 明明发了，前端 metaToGameEntry
+          // 漏映射）。等于「写」有闸（后端 features.tsCarts + 卡带打勾控制 PE 能不能写），
+          // 「跑」没闸：任何方式落到 library/<slug>/ 的 logic.ts 都会被执行——旧卡带、
+          // 手工塞的、外部拷来的卡带包，哪怕从未被打勾授权。
+          // 现在改 fail-closed：**未授权一律不 import**。且刻意**不静默跳过**——静默跳过
+          // 会让游戏少了逻辑却看不出来（又一个 fail-silent），必须明确报出来让人处理。
+          if (!entry.allowTs) {
+            throw new Error(
+              '此卡带盘上有 logic.ts，但未获 TS 例外授权（需后端 features.tsCarts 开启 + 卡带 meta.allowTs 打勾）'
+              + '——已拒绝装载它的 TS 逻辑。请在创作台给这张卡带打勾授权，或删除 logic.ts。',
+            );
+          }
           // TS 例外卡带（owner 07-11 拍板·记债）：logic.ts 经 vite 管线动态装载成附加 capability
           // 与数据蓝图合体。只在 dev 线可跑（静态包无 vite transform）；装不上=明报不白屏。
+          // ⚠ 已知边界（不夸大）：ESM 动态 import 一旦发生，模块顶层代码就已执行，
+          // 「先查契约再执行」对 ESM 本身做不到（要沙箱/静态分析，超出本次范围）。
+          // 故**真正的安全边界是上面那道授权闸**，下面的契约检查只用于「装上来的东西形状对不对」。
           try {
             const mod = (await import(/* @vite-ignore */ `/library/${slug}/logic.ts?v=${Date.now()}`)) as {
               cartCapability?: WorldBlueprint['capabilities'][number];
@@ -478,7 +495,7 @@ export function DataCartridgeRunner({ slug, entry, api, resolveArt, onBack }: {
       }
     })();
     return () => { dead = true; };
-  }, [api, slug, resolveArt, entry.hasLogic]);
+  }, [api, slug, resolveArt, entry.hasLogic, entry.allowTs]);
   // RunOnly 装载/首帧崩溃 → 同一错误态（原因明文，不再静默白屏）。
   const onRunError = useCallback((message: string) => setState({ phase: 'error', message }), []);
 

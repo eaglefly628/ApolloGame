@@ -16,6 +16,10 @@ export interface GameEntry {
   hasDesign?: boolean;
   /** TS 例外卡带（owner 07-11·记债旗）：盘上有 logic.ts → 运行器要合体装载。 */
   hasLogic?: boolean;
+  /** TS 例外**授权**旗（= 后端 features.tsCarts 开 且 该卡带 meta.allowTs 打了勾）。
+   *  必须与 hasLogic 分开传：hasLogic 只说明「盘上有文件」，allowTs 才是「获准执行」。
+   *  运行器据它做执行侧闸门（engine-review-2026-08-04 §3.3·owner 2026-08-05 拍板补）。 */
+  allowTs?: boolean;
 }
 
 /** library/<slug>/meta.json 的形状（zerocraft.py `_write_meta` 落盘字段；description 可选·后端暂不写）。 */
@@ -63,6 +67,7 @@ export function metaToGameEntry(entry: LibraryEntry): GameEntry {
     status: entry.valid ? 'playable' : 'coming-soon',
     hasDesign: entry.hasDesign === true,
     hasLogic: entry.hasLogic === true,
+    allowTs: entry.allowTs === true,
   };
 }
 

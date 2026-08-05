@@ -29,6 +29,7 @@ describe('metaToGameEntry · meta.json → 卡带 GameEntry', () => {
       status: 'playable',
       hasDesign: true,
       hasLogic: false,
+      allowTs: false,
     });
   });
 
@@ -40,6 +41,19 @@ describe('metaToGameEntry · meta.json → 卡带 GameEntry', () => {
   it('hasLogic 透传（TS 例外卡带旗·owner 07-11）', () => {
     expect(metaToGameEntry({ slug: 'x', meta: {}, valid: true, hasLogic: true }).hasLogic).toBe(true);
     expect(metaToGameEntry({ slug: 'x', meta: {}, valid: true }).hasLogic).toBe(false);
+  });
+
+  // 回归（engine-review-2026-08-04 §3.3 · owner 2026-08-05 拍板补执行侧闸门）：
+  // 后端 library.py 一直在发 allowTs（= features.tsCarts 开 且 卡带打勾），但这里**漏了映射**
+  // → 授权旗到不了运行时 → 运行器只能看 hasLogic（盘上有文件）就执行 = 「写有闸、跑没闸」。
+  // 授权旗必须与 hasLogic 分开透传：一个是「有没有文件」，一个是「获不获准执行」。
+  it('allowTs 透传（TS 例外**授权**旗·与 hasLogic 分开）', () => {
+    expect(metaToGameEntry({ slug: 'x', meta: {}, valid: true, allowTs: true }).allowTs).toBe(true);
+    expect(metaToGameEntry({ slug: 'x', meta: {}, valid: true }).allowTs).toBe(false);
+    // 盘上有文件但未授权 = 运行器必须拒绝执行的组合（闸门在 DataCartridgeRunner）
+    const e = metaToGameEntry({ slug: 'x', meta: {}, valid: true, hasLogic: true });
+    expect(e.hasLogic).toBe(true);
+    expect(e.allowTs).toBe(false);
   });
 
   it('缺省 meta：色/图标兜底为暗蓝 + 默认卡带图标，title 回退 slug', () => {
