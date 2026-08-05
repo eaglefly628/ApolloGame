@@ -10,7 +10,7 @@
 
 
 
-### REQ-STYLESET-风格库 apollo-toon · 迪士尼×Supercell×中国水墨混风·全类型 house style · [2026-07-16] · owner 拍板（全形态换装非调色·先现装可视版·其他风格收敛）→ **指派：PA（M0 台账底座）+ PUI（M0.5 现装可视版·先行）** · status: **M0 ✅ PASS + M0.5 ✅ PASS（Lead 验收 2026-07-16）+ 三游戏风格锚 ✅（Lead PASS 2026-08-04）+ M0.6 主题指针 ✅ done（PUI 2026-08-05·待 Lead 验收）；M1 试产/M2 建库 open·等真 key（连 REQ-AIGEN 卡口）** · 优先级: P1 · 类型: 引擎级风格资产库 + UI 基座消费
+### REQ-STYLESET-风格库 apollo-toon · 迪士尼×Supercell×中国水墨混风·全类型 house style · [2026-07-16] · owner 拍板（全形态换装非调色·先现装可视版·其他风格收敛）→ **指派：PA（M0 台账底座）+ PUI（M0.5 现装可视版·先行）** · status: **⏸ 暂停（owner 2026-08-05 令）·M0.6 已落地未验收随冻结·重启时 Lead 先补验** · 优先级: P1 · 类型: 引擎级风格资产库 + UI 基座消费
 > 图纸唯一真相=`docs/design/styleset-artlib-plan-2026-07-16.md`（§二 三增量·§六 首批清单 spec + M0/M0.5 交付边界·风格锚 v2 单一真相在风格包·**IP 红线：锚用描述词不写厂牌词**）。M1 试产/M2 建库等真 key（连 REQ-AIGEN 卡口）；M3 对齐（examples 进 game-i）；M4 D/G 出口游戏换装。完工各标 ✅ 待 Lead 对抗性验收（真浏览器截图必查）。
 > **+ M0.6 主题指针（owner 2026-07-16·game-t 连带需求·指派 PUI）**：UITheme 加 `cursor?` 主题令牌（data-URI 图 + hotspot + 按压态·缺省无=老主题零变化·沿 panelTexture 先例：guard+点名测试+ui.md 回填）；apollo-toon 配墨笔尖造型指针（程序化 SVG 占位·台账行留真图位）；触屏无指针不受影响。"墨迹拖尾跟随"记二期候选不做。
 > **M0.6 ✅ done（PUI·2026-08-05·待 Lead 对抗性验收）**：`UITheme.cursor?: UICursor{image(data-URI),x?,y?,press?{image,x?,y?}}`（types.ts·闭集令牌·沿 panelTexture 先例）；`mountUI`/`update` 落 host 根——纯函数 `cursorCss()` 算 base/press 值 + djb2 去重键，base 光标设 `host.style.cursor`（面板/文字继承·按钮 `cursor:pointer` 保留），按下态注入 `.apollo-cur-<key>:active`/`*:active` scoped 规则（`!important` 压继承·id 幂等去重）。**缺省无=复位系统箭头（老主题零变化）·触屏不受影响**。apollo-toon 配程序化墨笔尖（斜竹杆+墨锥·尖 (3,3) 热点·按下蘸青墨·provenance:procedural 占位·真图走美术台账逐令牌替换）。守卫：`cursor.test.ts`（6 例·cursorCss 值/键 + 主题令牌存在 + mountUI 落根 + 缺省零变化·happy-dom）；ui.md 回填「主题指针」行。scoped-gate 全绿。
@@ -33,7 +33,7 @@
 ### REQ-SPECTRACE-条款追踪 · 策划细则→机器验收的追踪矩阵+守卫（无限更新循环） · [2026-08-04] · owner 令（复查不靠人看·按细则收工） → **图纸：`docs/design/spec-trace-blueprint-2026-08.md`** · status: **in-progress（V1 施工中·试点 game-c）** · 优先级: P1（客观复查线①） · 类型: 生产线基建（守卫+文档规约）
 > 三件套=细则编号【R-游戏-序号】+追踪矩阵 spec-trace.json+四判守卫（未覆盖/死引用/过期/孤儿·bless 带证据）。**V1 ✅ Lead 终审 PASS**（`74236fddb`·试点首跑逮出两处真 spec/实现漂移·REQ-C-116/117/118 已开单·117 等 owner A/B·判词全文查 git 历史）；**V2**（接 S4/S5 门+复查门+stale 自动开单）等试点周期反馈。
 
-### REQ-RENDERCHECK-渲染裁判 · 渲染器当客观判定器：三探针进机器门 · [2026-08-04] · owner 令（「用渲染器直接判定」·连提两次=授权） → Lead 口径已出 · status: **R1 ✅ done（`8d813d1a8`·Lead 终审 PASS）；owner 2026-08-04 提优先级→R3 施工中（Lead 派）·R2a 控件标签=PUI 小单（spec 见下）·R2b 驱动器随 R2a 落地即派** · 优先级: P1（客观复查线②） · 类型: 生产线基建（机器门加严）
+### REQ-RENDERCHECK-渲染裁判 · 渲染器当客观判定器：三探针进机器门 · [2026-08-04] · owner 令（「用渲染器直接判定」·连提两次=授权） → Lead 口径已出 · status: **R2 施工中（owner 2026-08-05 立即令→R2a+R2b 并单·施工主体=Lead 代理·PUI 域例外经 owner 直令授权·他会话勿动）** · 优先级: P1（客观复查线②） · 类型: 生产线基建（机器门加严）
 > **R2a·PUI 小单（spec 写死·你的 PUI 会话领走）**：`src/ui/components/render.ts` 给交互控件盖机器可寻标签——凡发 action 信号的控件（Button/clickable 类/choiceList 选项/dialog 推进面）渲染时带 `data-ui-id`（节点 id）+ `data-action`（动作名）+ `data-action-arg`（有 arg 则带）。纯机械·零行为改动·点名测试 1 例（渲染树含标签断言）+ 既有 UI 测试全绿。落地后知会 Lead 派 R2b 驱动器。
 > **R1 冒烟 ✅ + R3 标准照 ✅ 双 Lead 终审 PASS**（`8d813d1a8`/`0e4937e11`·机器亲拍门证+基准照+漂移演示在案·判词全文查 git 历史）；**R2a=PUI 小单（spec 见下·等 owner PUI 会话领走）→ R2b 通用驱动器随其落地 Lead 即派**。
 
@@ -45,7 +45,7 @@
 
 <!-- REQ-CYCLEHAZ-定序成环（P1）已完结：B 止血落地 887c410f7·Lead 终审 PASS（全文查 git 历史）；后置不占槽：B.2 SCC 棘轮（low）+ C 相位化（xhigh·等剧情线实战反馈）——要做时重开。 -->
 
-### REQ-ARTPIPE2-美术管线二期 · 台账强制（无账不录入）+ Unreal 式资产浏览器（目录/历史/回滚/替换工作流） · [2026-08-04] · owner 令（「美术台账不全该不该强制」+「预览操作器太像玩具·要完整工作流」） → Lead 规划中（侦察→图纸→owner 过目→分批派工） · status: **open（侦察毕·细图纸在档 `docs/design/artpipe2-blueprint-2026-08.md`·待 owner 过目后 A1 先行）** · 优先级: P1 · 类型: 生产线基建（守卫+PST 美术平台）
+### REQ-ARTPIPE2-美术管线二期 · 台账强制（无账不录入）+ Unreal 式资产浏览器（目录/历史/回滚/替换工作流） · [2026-08-04] · owner 令（「美术台账不全该不该强制」+「预览操作器太像玩具·要完整工作流」） → Lead 规划中（侦察→图纸→owner 过目→分批派工） · status: **A1 施工中（owner 2026-08-05 开工令「你自己做」·施工主体=Lead 代理）** · 优先级: P1 · 类型: 生产线基建（守卫+PST 美术平台）
 > 总纲：**不重造轮子**——历史/备份=git 承载（浏览器只做呈现与回滚操作）·台账+assets/index=唯一账本（浏览器是视图非第二真相）。四翼：A1 台账强制（双向对账守卫：黑户文件/死账行/缺来源=红·棘轮基线存量挂账·入口补漏——同时执法 AI 披露红线）→ A2 浏览器核心（目录树+缩略图网格+预览+拖入自动登记）→ A3 历史回滚（每资产 git 提交史+一键回退+前后对比）→ A4 替换工作流（消费方视图+替换+逐行人审）。待裁：src/studio 旧资产浏览器（白名单产品耦合 3 条）与新浏览器关系。侦察项：黑户/裸路径底数·现有平台件清单·studio 关系材料。
 
 ### REQ-ENGINEAUDIT-引擎全量评审落地 · 15 子系统深审+2 流程审计（110+ 发现·1 P0/~30 P1） · [2026-08-04] · owner 令（「全量 review 引擎+能修直接修+两问」）→ **报告在档：`docs/design/engine-review-2026-08-04.md`（唯一真相·全清单/根因/两问答复/工单分诊）** · status: **进行中（已修推 13 处/3 提交·门禁全绿；余按报告 §6 分诊）** · 优先级: **P0（含 1 条已实测复现 P0）** · 类型: 引擎质量总账
