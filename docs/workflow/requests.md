@@ -47,12 +47,33 @@
 
 <!-- REQ-CYCLEHAZ-定序成环（P1）已完结：B 止血落地 887c410f7·Lead 终审 PASS（全文查 git 历史）；后置不占槽：B.2 SCC 棘轮（low）+ C 相位化（xhigh·等剧情线实战反馈）——要做时重开。 -->
 
-### REQ-ARTPIPE2-美术管线二期 · 台账强制（无账不录入）+ Unreal 式资产浏览器（目录/历史/回滚/替换工作流） · [2026-08-04] · owner 令（「美术台账不全该不该强制」+「预览操作器太像玩具·要完整工作流」） → Lead 规划中（侦察→图纸→owner 过目→分批派工） · status: **A1 done（Lead 代理·已验收 PASS）→ A2 done（PST 施工 2026-08-05·待 Lead 验收）→ A3/A4 待派** · 优先级: P1 · 类型: 生产线基建（守卫+PST 美术平台）
+### REQ-ARTPIPE2-美术管线二期 · 台账强制（无账不录入）+ Unreal 式资产浏览器（目录/历史/回滚/替换工作流） · [2026-08-04] · owner 令（「美术台账不全该不该强制」+「预览操作器太像玩具·要完整工作流」） → Lead 规划中（侦察→图纸→owner 过目→分批派工） · status: **A1 done（Lead 代理·已验收 PASS）→ A2 done（PST 施工 2026-08-05·待 Lead 验收）→ A3+A4 done（PST 合单施工 2026-08-05·待 Lead 验收）** · 优先级: P1 · 类型: 生产线基建（守卫+PST 美术平台）
 > 总纲：**不重造轮子**——历史/备份=git 承载（浏览器只做呈现与回滚操作）·台账+assets/index=唯一账本（浏览器是视图非第二真相）。四翼：A1 台账强制（双向对账守卫：黑户文件/死账行/缺来源=红·棘轮基线存量挂账·入口补漏——同时执法 AI 披露红线）→ A2 浏览器核心（目录树+缩略图网格+预览+拖入自动登记）→ A3 历史回滚（每资产 git 提交史+一键回退+前后对比）→ A4 替换工作流（消费方视图+替换+逐行人审）。待裁：src/studio 旧资产浏览器（白名单产品耦合 3 条）与新浏览器关系。侦察项：黑户/裸路径底数·现有平台件清单·studio 关系材料。
 > **✅ A1 回执（2026-08-05）**：`scripts/art-ledger-guard.mjs`（黑户/死账/缺来源三判·servedPath 为真相不假设标准目录树·game-d 83 行非标路径零误判·退出码 0/1/2）+ 棘轮基线 `art-ledger-baseline.json`（实测黑户 187→三游戏建账后 65·只许减不许增）+ 接入 `scoped-gate` 常驻守卫链（exit 2 警告放行/exit 1 硬拦）。game-i(103)/game-z(5)/game102(14) 机械建账（磁盘+本地/共享 index.json 推导·来源全可考·零伪造）。`asset-reconcile.mjs` games 正则盲区（漏 game101/102）已修。测试 14 例+假信心自查（短路棘轮比较→转红→复原转绿）。全库实测：黑户 65（game-103:4/game-a:57/game-c:1/game101:3·存量挂账进基线）·死账 2（game-a art-03/game-c art-017·各开游戏级工单指派 PA·A1 不修）·缺来源 0。门禁：`node scripts/scoped-gate.mjs --run` exit 0（tsc+全量vitest 431文件/3892例+build+四守卫全绿）。
 > **⚖ Lead 终审 A1（2026-08-05）：✅ PASS**——独立复跑：守卫退出 2（仅存量死账警示·符合预期）·14 测绿·三游戏台账+棘轮基线（65 黑户存量）四件在档亲核。三偏差照准：退出码三档（1=新增黑户硬拦·2=存量债警示不拦）+ scoped-gate allowExit 泛化；覆盖判定宽扫 servedPath/死账严判 gen.servedPath（防 game-c/d 假阳·正解）；orig/ 备份目录排除。**一处敲打**：为隔离跑门禁 stash 了并行代理在途文件（虽 verify-diff 无损归还）——**此法禁用**，已入 CLAUDE.md 玩火律：要隔离验证去临时 clone。**升级预告**：A2 浏览器落地（拖入自动登记）后「缺来源」从警示升硬红。A2 待派。
 > **✅ A2 回执（PST 施工 2026-08-05·提交 `6a39b4214`）**：workshop 新入口「🗂 资产浏览器」——三栏（目录树：游戏×分组/共享库×分组懒加载展开 → 缩略图网格懒加载 `<img loading=lazy>` → 详情栏大图+台账字段+provenance）+ 四态徽标闭集 ⭐final/📝draft/⚠黑户/✕死账（`art-ledger` 行 `status==='approved'`→final·design-ledger `status==='final'`→final·其余 draft·no 落 guard `deadAccounts`→dead·guard `blackHouseholds` 合成条目→blackhouse）。新端点 `GET /api/artbrowser/tree?scope=index|shared|<slug>`（`main_entry/artbrowser.py`·薄封装：只读现拼 art-ledger + design-ledger + assets/index.json 三源，黑户/死账/缺来源外调既有 `art-ledger-guard.mjs --json`，零第二真相/零缓存文件/零写入）。拖入登记复用既有 `/api/art/upload`（同 `ArtLedgerPanel.doUpload` 先例·非新逻辑）：UI 选目标游戏+槽位→落盘钉 provenance→A1「缺来源」随之清账。历史(A3)/替换·消费方(A4) 两个详情栏占位 tab（纯文案·未接后端）。真浏览器验证 9 图（目录树+网格徽标/详情栏/黑户网格/共享库网格/拖入登记后台账行钉真 provenance）+ 临时测试卡带 game-104 全链路验证后 DELETE 清净。门禁 `scoped-gate --run` exit 0（scope=full·tsc+434 文件/3945 例 vitest+build+四守卫全绿）。**已知偏差**（据实报告未拍板）：library 卡带（有 manifest.json）走 `/api/art/upload` 的 swap 分支，落盘后 `gen.servedPath` 缺失（provenance 正常）——浏览器缩略图正确退化图标占位，不在 A2 域内不代修，详见 `docs/workflow/finish/PST-workshop-handoff.md` §2。待 Lead 验收。
 > **⚖ Lead 终审 A2（2026-08-05）：✅ PASS**——真浏览器九截图亲阅（三栏/徽标树/黑户网格/拖入登记闭环）·门禁全绿·测试卡带清净核过。三偏差裁决：①FreeArtLib 不并入=**永久窄口径照准**（素材库屏已专职展示·并入=重复建设）；②`t2_replace.py` swap--upload 分支落账缺 gen.servedPath=**存量 bug 收进 A4 一并修**（A4 本就动替换流）；③单组 200 项截断=照准。**A3+A4 合单已派（Lead 自持·施工主体标注防撞）**。
+> **✅ A3+A4 回执（PST 合单施工 2026-08-05·提交 `24168ee1f`）**：详情栏由两个占位 tab 变真功能。**A3 历史/回滚**——
+> `GET /api/artbrowser/history?path=` 拼 `git log --follow` 提交列表（hash/date/message·`_served_path_to_repo_rel`
+> 把 `/games/**`·`/assets/**` 站点 URL 换算回仓库相对路径·越界防护沿 `design_ingest.design_preview_path` 先例）；
+> `GET /api/artbrowser/history-blob?path=&rev=` 走 `git show rev:path` 字节流直出（`server.py` 新增二进制专用路由·
+> `rev` 白名单 `^[0-9a-f]{7,40}$` 防注入）供当前↔历史版并排对比；「回退到此版」=`POST /api/artbrowser/restore` 取
+> 历史字节直调既有 `handle_art_upload`（零重写·保号）→ 成功后 `provenance.restoreFrom` 记 `restore-from:<rev>` +
+> `history` 末条记 `restoreFromRev`——不直接 `git checkout`，零新存储（git 本身就是备份）。**A4 替换/消费方**——
+> `GET /api/artbrowser/consumers?slug=&no=` 反查该行引用键（`skinKey`/`gen.localId`）落在该游戏 `manifest.json`
+> 哪个路径（递归 grep）+ 本地 `art/index.json` 别名；编译期代码游戏无 `manifest.json` 可 grep 时如实退化为台账行
+> 自带 `slot`/`ref`（`manifestChecked:false`，不假装 grep 到了）。重新生成/换库/换皮三钮=壳前端直调既有
+> `/api/art/{regenerate,swap,reskin}`（零新后端逻辑）；上传替换复用 A2 拖入登记同一套 `_abUploadFile` 机关。
+> 逐行人审沿 `POST /api/art/approve` 语义（新增可选 `note`/`by`·**不强制**——`ArtLedgerPanel` 等既有调用方从不传，
+> 强制会破坏零重写承诺；「note 空起不代填」这条 wizardSignoff 铁律由壳 UI 前端把关：起始态永远空、按钮
+> `!note.trim()` 禁用）。**顺修 Lead 裁决②的存量 bug**：`handle_art_upload` 里 library 卡带线调完
+> `art-replace.mjs swap --upload` 后，若该行 `gen` 缺 `servedPath` 就用调用方本就已知的路径回填并重写台账文件（
+> `scripts/swapSlot` 契约不动）。回归测试 `main_entry/artbrowser_smoke.py`（27 断言：servedPath 回归·真 git 读写·
+> 路径穿越×4 处+rev 注入·消费方两条退化路径·临时测试卡带用后即删）全绿。真浏览器验证 9 图（route 拦截本地同版本
+> React 18.3.1 UMD + npm registry 现下 `@babel/standalone` 顶替被组织策略拦的 unpkg CDN·纯测试期手段·未改任何
+> 项目文件·未触碰真实游戏数据）：目录树/网格/详情/历史列表/历史对比含回退按钮/消费方反查/替换四钮/逐行人审
+> （note 起空+按钮禁用可见）/黑户项优雅退化「不适用」提示。门禁 `scoped-gate --run` 退出码 0 直接量（scope=full·
+> tsc+434 文件/3945 例 vitest+build+四守卫全绿）。待 Lead 验收。
 
 ### REQ-ENGINEAUDIT-引擎全量评审落地 · 15 子系统深审+2 流程审计（110+ 发现·1 P0/~30 P1） · [2026-08-04] · owner 令（「全量 review 引擎+能修直接修+两问」）→ **报告在档：`docs/design/engine-review-2026-08-04.md`（唯一真相·全清单/根因/两问答复/工单分诊）** · status: **进行中（已修推 13 处/3 提交·门禁全绿；余按报告 §6 分诊）** · 优先级: **P0（含 1 条已实测复现 P0）** · 类型: 引擎质量总账
 > **已修并推**（3 提交 `0031b950d`/`3b8e2757c`/`29cf511ba`·回归 +10）：确定性护栏（restore version++·NON_DETERMINISTIC 补 Mesh3D/Coachmark·canonical undefined·字符串转义防碰撞·bench 一票否决·StateChanged 自清）+ 注入面（cartridge innerHTML·art-replace slug 穿越·render.ts number props 消毒）+ voxel 批 dispose 崩溃。

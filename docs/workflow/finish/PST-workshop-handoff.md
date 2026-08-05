@@ -21,7 +21,7 @@
 | 双角色对话 | `zerocraft.py` `handle_agent_chat` | `POST /api/agent/chat`（下详）·系统词 `AGENT_GD_SYSTEM`/`AGENT_PE_SYSTEM` |
 | 订阅通道 | `zerocraft.py` `_claude_code_*` | claude-code 子进程（下详·红线区） |
 | 数据桥 | `zerocraft.py` `library_create`/`library_put_manifest`/`handle_pipeline_concept`/`handle_art_reskin` | create 带 description→meta+S1 立项卡；PUT 即台账；换皮谱系 |
-| 资产浏览器 | `main_entry/artbrowser.py` + 壳 `screen==='browser'` 区块 | REQ-ARTPIPE2 A2（PST 施工 2026-08-05）：三栏（目录树/缩略图网格/详情栏）·数据薄封装见下 `GET /api/artbrowser/tree` |
+| 资产浏览器 | `main_entry/artbrowser.py` + `main_entry/t2_replace.py`（approve 扩 note/by·upload servedPath 顺修）+ 壳 `screen==='browser'` 区块 | REQ-ARTPIPE2 A2+A3+A4（PST 施工 2026-08-05）：三栏（目录树/缩略图网格/详情栏×3 tab：详情/历史/替换消费方）·数据薄封装见下 `GET /api/artbrowser/*` |
 | 八阶段板 | `scripts/game-pipeline.mjs` + `src/studio/GamePipelinePanel.tsx` | cart-S8=轻量终检（mockDebt∧manifest-check∧bench·证据绑 gameHash） |
 | launcher 导流 | `src/launcher.tsx` + `src/studio/DataCartridgeRunner.tsx`（LibActionBar） | 🏭/⤓ 导出/保存成功「下一步→🏭」/⇄ Workshop 链接 |
 
@@ -68,13 +68,34 @@
     'approved'` 或 design-ledger `status==='final'`）/`draft`（其余）/`blackhouse`/`dead`（no 落在 guard `deadAccounts`）。
   - 拖入登记：壳 UI 选目标游戏+槽位后，直接复用既有 `POST /api/art/upload`（同 `ArtLedgerPanel.doUpload` 先例，
     非新逻辑）——上传落盘即台账行钉 provenance，A1 守卫「缺来源」判定随之清账。
-  - 历史（A3）/替换·消费方反查（A4）为详情栏两个占位 tab（纯文案，未接后端）——按图纸顺延到对应翼施工。
-  - **已知偏差**（施工回执已报 Lead·未拍板）：`/api/art/upload` 对**有 `manifest.json` 的 library 卡带**走
-    `art-replace.mjs swap --upload` 分支（非 `is_game` 的直钉 `gen.servedPath` 分支）——实测该分支落盘后
-    `art-ledger.json` 行的 `gen` 对象只剩 `{source:'upload', localId}`，**没有 `servedPath`**（`provenance` 正常）。
-    本浏览器 `thumbUrl` 读不到就正确退化为图标占位（不是本模块的 bug），但意味着**卡带**游戏走拖入登记后网格缩略图
-    暂时空白（编译期/无 manifest 的游戏台账走的是另一分支，`servedPath` 正常）——不在 A2 域内不代修，登记为债待
-    Lead/PE 域裁决（复现：任意 library 卡带 + 已 derive 台账 + `/api/art/upload` 传 `no`→查 `art-ledger.json` 该行）。
+  - **A3 历史/回滚**（PST 施工 2026-08-05）：详情栏「历史」tab。`GET /api/artbrowser/history?path=<servedPath>` →
+    `git log --follow --format=...` 该文件的提交列表（新→旧·hash/date/message，`_served_path_to_repo_rel` 把
+    `/games/**`·`/assets/**` 站点 URL 换算回仓库相对路径，路径穿越防护同 `_serve_public_games`/`design_ingest`
+    先例）。`GET /api/artbrowser/history-blob?path=&rev=` → `git show rev:path` 字节流直出（`server.py` 二进制
+    专用路由，先于 JSON 分派；`rev` 白名单 `^[0-9a-f]{7,40}$` 防注入）——供当前 vs 历史版并排对比图直接
+    `<img src>` 消费。`POST /api/artbrowser/restore {slug,no,path,rev}`「回退到此版」：取历史字节 → 直接调
+    `t2_replace.handle_art_upload`（既有落盘+台账更新语义·零重写）→ 成功后追加 `provenance.restoreFrom=
+    'restore-from:<rev>'` + `history` 末条记 `restoreFromRev`（可溯源标记·不改 upload 本身契约）。零新存储——
+    git 本身就是备份，一切「回退」走写台账留痕的正路，绝非 `git checkout`。
+  - **A4 替换工作流 + 消费方反查**（PST 施工 2026-08-05）：详情栏「替换/消费方」tab（仅对 `source==='art-ledger'`
+    的项开放，其余来源如实提示不适用）。`GET /api/artbrowser/consumers?slug=&no=` → 反查该行引用键
+    （`skinKey` 优先·否则 `gen.localId`）：① 该游戏 `manifest.json`（library 卡带/内置数据游戏两处都试）全量
+    递归 grep 出命中的 JSON 路径 ② 本地 `art/index.json` 里指向同一文件的别名条目。**编译期代码游戏**（美术写死
+    在 `games/` 源码·无 `manifest.json` 可 grep）如实退化为台账行自带的 `slot`/`ref` 字段（`manifestChecked:
+    false`），不假装 grep 到了。替换四钮=**壳前端直接调既有端点**（零新后端逻辑）：🔄 重新生成→
+    `POST /api/art/regenerate`；📚 换库→`POST /api/art/swap`；🎭 换皮（整游戏→新卡带）→`POST /api/art/reskin`；
+    ⬆ 上传替换=复用 A2 拖入登记同一套 `abPickFile`/`_abUploadFile`（选中项即预填目标游戏/槽位）。逐行人审
+    「☑ 请人门」沿 `POST /api/art/approve` 语义（新增可选 `note`/`by` 两参·不强制——`ArtLedgerPanel` 等既有
+    调用方从不传，强制会破坏零重写承诺；「note 空起不代填」这条 wizardSignoff 铁律由壳 UI 前端把关：
+    起始态永远空、按钮 `!note.trim()` 禁用，传了才如实记进 `history`）。替换/回退/上传动作成功后统一走
+    `_abRefreshSelected(slug,no)` 收尾：重拉该游戏分组 + 顶层计数徽标 + 若消费方 tab 开着一并刷新，选中态不丢。
+  - **顺修存量 bug**（A2 发现·A4 收单）：`/api/art/upload` 对**有 `manifest.json` 的 library 卡带**走
+    `art-replace.mjs swap --upload` 分支——该分支只知 assetId 不知服务路径，落账后 `art-ledger.json` 行的
+    `gen` 对象曾只剩 `{source:'upload', localId}`、**没有 `servedPath`**（`provenance` 正常）。`scripts/`
+    域不动（不改 `swapSlot` 契约），改在 `handle_art_upload` 里补写——CLI 调用返回后，若该行 `gen` 缺
+    `servedPath` 就用调用方本就已知的路径回填并重写台账文件（响应体与磁盘文件同步补）。回归测试见
+    `main_entry/artbrowser_smoke.py`（①号断言组：临时 library 卡带走 upload → 断言落盘台账行 `gen.servedPath`
+    存在且格式正确）。
 - `POST /api/agent/chat` `{slug, role: gd|pe|art, messages[≤40·末条须 user], provider?, model?, effort?, catalog?}` →
   `{success, reply, manifest?|manifestError?, artHints?(gd/art), attempts, provider, model}`
   - **三角色**（owner 07-11 改三入口）：gd=玩法数值 · art=美术方向/台账/皮肤槽（系统词带台账 digest）· pe=结构接线
@@ -150,6 +171,9 @@
 python3 -c "import ast; ast.parse(open('zerocraft.py').read())"   # AST 快查
 python3 scripts/pipeline-smoke.py     # 44 断言：数据桥+cart-S8+agent-chat+壳伺服面（⑧=壳/静态/zip/catalog）
 python3 scripts/art-replace-smoke.py  # 45 断言：美术管线+mock 三道闸
+python3 main_entry/artbrowser_smoke.py  # 27 断言：A3 历史/回滚（真 git log+show·路径穿越防护×4处）+ A4 消费方
+                                          # 反查（manifest grep/declared-slot 退化）+ servedPath 顺修回归（不进
+                                          # scripts/**·PST 自己域内的测法，同精神不同落点）
 npx tsc --noEmit && npx vitest run && npx vite build
 ```
 壳侧改 `index.dc.html` 后：起 `python zerocraft.py workshop` 真浏览器过一遍
