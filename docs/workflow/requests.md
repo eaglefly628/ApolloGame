@@ -46,14 +46,8 @@
 > **双轨**：①过渡轨（先装·止血）=设计需求单自动起草一键复制 + 工坊**收稿箱**（上传/投递 `.dc.html` 自动归位游戏目录+登记档案指纹）——owner 继续用 Claude Design 网页但搬运消失；②主轨（试产定夺）=编排器扩「设计会话」类型（无头+游戏 UI 设计技能包+house 风格锚+需求单→ `.dc.html` 直接落档），工坊预览+反馈框→一键修订轮，**定稿=人门**（登记指纹·自动挂「在档=1:1 复刻基准」铁律·将来接 R3 实现 vs 稿像素比对）。事实前提：Claude Design 网页产品无可编程拉起接口——「自动拉起对话」只能在自养会话轨实现。主轨质量由 owner 试产一屏亲比后定夺全切与否。
 > **⚖ Lead 终审 过渡轨（2026-08-04）：✅ PASS**（`6ef243086`·全库门禁绿·同批交付沉浸布局修正+三处隐藏+换新会话钮）——五偏差照准：base64 收稿沿 upload 先例够用；上下文百分比 200k 硬编码=已标「估算值」诚实口径；风格包未锚定占位=预期分支；`concept_digest` 每轮无条件算（15s 超时上限）=沿既有 digest 写法·记微债随后续优化；requests.md 不代更=域纪律正确（本行即 Lead 补记）。换新会话=复用既有 reset 机制下沉到每 tab+接力包并入生产板阶段摘要（不造第二真相=正确）。测试卡带清理亲核干净。**主轨试产一屏排队（R1 后）**。
 
-<!-- REQ-MATRIXDUEL-同时决策矩阵（P1·game108 带出）已完结：t2-matrix-duel 落地·Lead 终审 PASS（5bfa84f48·裁决与偏差全文查 git 历史）。 -->
+<!-- REQ-MATRIXDUEL-同时决策矩阵（P1·game108 带出）已完结：t2-matrix-duel 落地·Lead 终审 PASS（5bfa84f48·裁决与偏差全文查 git 历史）。后续 payoff 缩放扩写=REQ-108-ENG-01，因 10 硬槽已满而降级放 docs/design/game108/requests.md（不占槽·Lead 已裁·待派工）。 -->
 
-### REQ-MATRIXDUEL-2-收益缩放 · `DuelPayoff.damage` 支持按资源线性缩放 · [2026-08-04] · game108 GDD v2 超休闲重构带出（owner 同日定「公开蓄力槽」机制） → **指派：Opus**（spec 写死·边界极窄） · status: **open（game108 S3 唯一卡口·未落地不进玩法骨架）** · 优先级: P1 · 类型: 既有能力扩写（`t2-matrix-duel`）
-> **要什么**：`DuelPayoff.damage` 由固定整数扩为可选 `{base, scaleByResource, step}` → 伤害 = `base + 该侧该手资源当前值 × step`（game108 = `10 + 蓄力 × 10`）。资源按**侧 local 寻址**（同 `hpResource` 口径）；纯整数、无浮点；缺省仍收固定整数 = 零回归。
-> **为什么不能重组**（Lead 评判·已走过「能否现有能力表达」）：穷举静态规则（「蓄力=1→10 / =2→20 / =3→30」×3 手×2 侧 = 18 条 `t2-event-when`）纸面可写，但**会被消费方自己的数据打碎**——game108 遗物「蓄海」把蓄力上限 3→4，**静态规则集无法预先穷举一个可被数据改写的上限**。这是「数据能改、规则集不能跟着改」的结构性矛盾，不是行数多少的问题。
-> **通用性**：任何「同时决策 + 可变系数结算」同吃——蓄力/怒气/连击/加注倍率/兵力数值同一形状。
-> **边界（防加宽·复查门核对用）**：只动 `DuelPayoff.damage` 类型与结算取值一处 + 落盘门校验（`scaleByResource` 须存在且非 `hpResource`）+ 点名测试（含「缺省固定整数零回归」一例）；**不碰**胜负判定 / 补丁 fold / 定序拆相位。允许触碰：`src/skills/tier2/matrix-duel.ts` + 其测试。
-> 消费方与验收语义：`docs/design/game108/{gdd.md 【R-108-13】, capability-plan.md §4}`。
 
 ### REQ-CYCLEHAZ-既有定序成环隐患 · 能力两两 RMW 对撞装载成环（普查 65 对·远超原报四件） · [2026-08-04] · 审核会话核查 ✅ → **⚖ Lead 终裁（2026-08-04）：B 止血先行·C 相位化另单排期·不并行**（B=安全网：纯推断 2-环确定性平局裁决+留痕·显式边环照抛真错照拦；C 动 101 能力+全量回归·以 B 落地与剧情线实战反馈喂饱普查再动刀） · status: **B done（待 Lead 对抗性验收）·C 相位化另单待立** · 优先级: **P1（Lead 升档：剧情线 M4 Sample 必踩——dialogue×flow、dialogue×timeline 均在环清单·原 P2「现役未踩到」评估失效）** · 类型: 引擎核定序卫生
 > **⚖ Lead 核查结论（2026-08-04·xhigh）**：①最小复现=**2 件**：t3-timeline + f1-resource（双方 RMW `Resource`→组件推断边互为前驱成 2-环）；原报四件中 **keybind 根本不在环上**、event-when 是叠加 3-环（event-when→timeline→resource-apply→event-when）。②全库普查（101 能力两两配对=5050 对）**65 对成环**——热点=Resource/Flag/State/CardPile 等黑板组件；含 card-play×card-pile、dialogue×flow、dialogue×timeline 等必然同装组合。③根因=**类问题非点问题**：组件推断边规则下任意两系统 RMW 同一黑板组件即互锁，显式申报需 O(n²)——65 处点修=劣解，申报制不可持续。
