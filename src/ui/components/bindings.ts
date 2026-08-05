@@ -99,8 +99,9 @@ export function resolveDialogue(node: LayoutNode, dsrc: DialogueSource): LayoutN
         const p = node.props as DialogProps;
         props = { ...p, speaker: v.speaker ?? p.speaker, text: v.text ?? p.text, emotion: v.emotion ?? p.emotion, kind: v.kind };
       } else if (node.type === 'choiceList') {
+        // 选项恒随世界当前节点：choice 节点=投影其选项 + 逐项可选性；非 choice 节点=空（对话行/检定时不显选项）。
         const p = node.props as ChoiceListProps;
-        if (v.options) props = { ...p, options: v.options.map((o) => ({ label: o.label, available: o.available })) };
+        props = { ...p, options: (v.options ?? []).map((o) => ({ label: o.label, available: o.available })) };
       } else {
         const p = node.props as PortraitProps;
         props = { ...p, name: v.speaker ?? p.name, emotion: v.emotion ?? p.emotion };

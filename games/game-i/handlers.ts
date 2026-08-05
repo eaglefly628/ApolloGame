@@ -40,6 +40,10 @@ export interface GalleryHooks {
   aisheGen: () => void;
   /** 爱诗切输出模式（arg=模式 id·8 种用途预设）。 */
   aisheMode: (arg?: string) => void;
+  /** VN 剧情推进（台词框点击·line/check）：宿主对真 dialogue 世界发 DialogueAdvance + tick + 重投影。 */
+  dialogueAdvance: () => void;
+  /** VN 剧情选择（选项点击·arg=下标）：宿主对真 dialogue 世界发 DialogueChoose + tick + 重投影。 */
+  dialogueChoose: (arg?: string) => void;
   /** 播放合成音（宿主 Web Audio·按 id 出声·应用当前声像/混响）。 */
   playSound: (id?: string) => void;
   /** 混音：和弦预设 id（major/all）多音齐发。 */
@@ -90,6 +94,9 @@ export function buildHandlers(hooks: GalleryHooks): HandlerMap {
     exitModule: () => { L('exitModule', undefined); hooks.exitModule(); },
     aisheGen: () => { L('aisheGen', undefined); hooks.aisheGen(); },
     aisheMode: (a) => { L('aisheMode', a); hooks.aisheMode(a); },
+    // VN 剧情三件的写世界信号（控件默认发这两个名·t3-dialogue 认 arg 串·此处宿主 tick 真世界）。
+    'dialogue.advance': (a) => { L('dialogue.advance', a); hooks.dialogueAdvance(); },
+    'dialogue.choose': (a) => { L('dialogue.choose', a); hooks.dialogueChoose(a); },
     setTheme: (a) => {
       L('setTheme', a);
       if (a) hooks.setTheme(a);

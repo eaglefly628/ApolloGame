@@ -9,8 +9,9 @@
 // 注意：画廊本体（gallery.ts）是 100% 数据；事件日志面板与换皮重挂属于宿主运行时，
 // 不是游戏数据——这正是契约里「工程师写 mountUI/host 层」该待的地方。
 
-import { mountUI, showToast, resolveBindings } from '@zerocraft/engine/ui/components/index.js';
+import { mountUI, showToast, resolveBindings, resolveDialogue } from '@zerocraft/engine/ui/components/index.js';
 import type { UITheme, UIDataSource, LayoutNode } from '@zerocraft/engine/ui/components/index.js';
+import { createDialogueWorld, type DialogueWorld } from './dialogue-world.js';
 import { buildGallery, modalOverlay, drawerOverlay, INITIAL_CONTROLS, MODULE_NO, type ControlsState } from './gallery.js';
 import { buildHandlers } from './handlers.js';
 import { THEMES } from './themes.js';
@@ -131,6 +132,7 @@ export function mount(container: HTMLElement): () => void {
   let currentModule: string | null = null; // 展台导航：null=落地积木墙；否则进该模块子菜单
   let input: InputLabState = INITIAL_INPUT; // 输入底座样例状态（宿主 DOM 监听喂 RawInput → reducer）
   let aishe: AisheState = INITIAL_AISHE;     // 爱诗视频样例状态（宿主调 AishePort → 句柄）
+  let dlg: DialogueWorld | null = null;      // VN 剧情展台的真 dialogueCapability 世界（进 mod-dialogue 时建·离场销）
   const aishePort = new NullAishePort();     // 占位后端（不发网络·即时 ready 占位句柄）
   // 渲染舞台（第二种宿主）：sim 模块激活时把引擎渲染器挂到 #sim-stage；退出/换皮重挂时拆掉重建。
   let stage: { engine: Engine; renderer: RendererBackend; module: string; container: HTMLElement; sig: string } | null = null;
@@ -141,7 +143,8 @@ export function mount(container: HTMLElement): () => void {
   // 演示用「世界」状态 + 注入式数据源（resolveBindings 活 HUD 用·解耦 ECS）。
   const world = { hp: { current: 70, max: 100 }, gold: { current: 1280 } };
   const dataSource: UIDataSource = {
-    resource: (id) => (world as Record<string, { current: number; max?: number }>)[id],
+    resource: (id) => (id === 'aff' ? (dlg ? { current: dlg.affinity() } : undefined) // VN 好感取真世界值（bind:'aff' 活 pill）
+      : (world as Record<string, { current: number; max?: number }>)[id]),
     flag: (id) => (id === 'demoFlag' ? controls.flag : false), // visibleWhen 条件显隐演示
   };
 
@@ -166,8 +169,14 @@ export function mount(container: HTMLElement): () => void {
     setModal: (open) => { showOverlay(open ? modalOverlay : null); },
     setDrawer: (open) => { showOverlay(open ? drawerOverlay : null); },
     afterTabSwitch: (tabId) => { if (tabId) activeTab = tabId; nudgeRepaint(); }, // 记住当前 tab + 强制重栅格
-    enterModule: (id) => { currentModule = id ?? null; activeTab = 'tab-layout'; rerender(); nudgeRepaint(); }, // 进模块（大换页·逼重绘）
-    exitModule: () => { currentModule = null; rerender(); nudgeRepaint(); }, // 退回展台
+    enterModule: (id) => {
+      currentModule = id ?? null; activeTab = 'tab-layout';
+      dlg = id === 'mod-dialogue' ? createDialogueWorld() : null; // 进 VN 展台建真世界·进别的模块弃旧世界
+      rerender(); nudgeRepaint();
+    },
+    exitModule: () => { currentModule = null; dlg = null; rerender(); nudgeRepaint(); }, // 退回展台·弃 VN 世界
+    dialogueAdvance: () => { dlg?.advance(); rerender(); }, // 台词框点击 → 真世界推进 + 重投影
+    dialogueChoose: (arg) => { if (arg !== undefined) dlg?.choose(Number(arg)); rerender(); }, // 选项点击 → 真世界选择 + 重投影
     aisheGen: () => { // 爱诗：外观 look + 模式 → 组装提示词/选项 → 调 AishePort → 句柄 → 局部更新（旁路·不碰 sim）
       if (aishe.generating) return;
       aishe = { ...aishe, generating: true }; rerender();
@@ -228,8 +237,12 @@ export function mount(container: HTMLElement): () => void {
   // reconcile 永不替换整个 Tabs（含各页/表格）→ 切页态/滚动/输入态全保留、不回弹、不黑。
   // 非换皮重渲：active 恒为 'tab-layout' 常量 → reconcile 永不替换整个 Tabs（切页态/滚动/输入态全保留）。
   // 换皮重挂：传入当前 activeTab → 直接在停留页上挂出（不闪回首页），再 reselectTab 逼重绘。
-  const buildTree = (active = 'tab-layout'): LayoutNode =>
-    resolveBindings(buildGallery(currentTheme, currentModule, false, false, shop, pick, active, controls, input, aishe), dataSource);
+  // VN 展台活时先跑 resolveDialogue 把三控件 bind 从真世界当前节点投影（speaker/text/options+可选性），
+  // 再 resolveBindings 填其余 bind（如好感 pill）。两者都是纯树变换（返回新树·不改原树）。
+  const buildTree = (active = 'tab-layout'): LayoutNode => {
+    const base = buildGallery(currentTheme, currentModule, false, false, shop, pick, active, controls, input, aishe);
+    return resolveBindings(dlg ? resolveDialogue(base, dlg.source) : base, dataSource);
+  };
 
   // 输入底座宿主胶水（「运行时职责」）：在捕获板 #input-pad 上挂 DOM 监听 → 造 RawInputData →
   // 喂纯 reducer → 局部更新读数。幂等绑定（dataset 标记）：reconcile 保留同一 pad 元素 → 监听不重复；
