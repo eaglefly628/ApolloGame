@@ -16,6 +16,35 @@ describe('envelope —— 往返 round-trip', () => {
     expect(env.savedAt).toBe(1700000000000);
     expect(openEnvelope(env, codecV1)).toEqual(data);
   });
+
+  // ── 回归（engine-review-2026-08-04 §3.3 · P1）─────────────────────────────
+  // checksum 必须覆盖「真正会被持久化的形态」：端口落盘必经 JSON.stringify
+  // （local-save-port.ts:43），而 JSON 会**丢掉 undefined 键、把 NaN/Infinity 变 null**。
+  // 若 seal 时按内存形态算、open 时按 JSON 往返后的形态重算，两者必然不符 →
+  // **合法存档被误判「损坏或被篡改」而丢档**。迁移链正是产出 undefined 的常见姿势
+  // （见下方 v2→v3 用例：{...o, deck: undefined}）。
+  const roundTrip = (env: SaveEnvelope): SaveEnvelope => JSON.parse(JSON.stringify(env)) as SaveEnvelope;
+
+  it('含 undefined 字段的存档经 JSON 往返后仍能拆封（不得误判损坏）', () => {
+    const data = { gold: 7, deck: undefined, decks: [[1, 2]] };
+    const env = sealEnvelope(data, codecV1, 1700000000000);
+    expect(() => openEnvelope(roundTrip(env), codecV1)).not.toThrow();
+    // 往返后 undefined 键消失属 JSON 语义（非 bug）；关键是不能因此判损坏。
+    expect(openEnvelope(roundTrip(env), codecV1)).toEqual({ gold: 7, decks: [[1, 2]] });
+  });
+
+  it('含 NaN / Infinity 的存档经 JSON 往返后仍能拆封（JSON 语义变 null·不得误判损坏）', () => {
+    const data = { hp: NaN, mult: Infinity, ok: 3 };
+    const env = sealEnvelope(data, codecV1, 1700000000000);
+    expect(() => openEnvelope(roundTrip(env), codecV1)).not.toThrow();
+    expect(openEnvelope(roundTrip(env), codecV1)).toEqual({ hp: null, mult: null, ok: 3 });
+  });
+
+  it('真篡改仍必须报错（修误判不能把防篡改一起放水）', () => {
+    const env = sealEnvelope({ gold: 7 }, codecV1, 1700000000000);
+    const tampered = { ...roundTrip(env), data: { gold: 999999 } };
+    expect(() => openEnvelope(tampered, codecV1)).toThrow(CorruptSaveError);
+  });
 });
 
 describe('envelope —— checksum 损坏报错不静默', () => {

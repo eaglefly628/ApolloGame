@@ -23,6 +23,16 @@ export interface ParseResult {
   warnings: string[];
 }
 
+// 原型链保留名：manifest 用普通对象累积实体/组件（`entities[eid] = …`），若 key 是这些名字，
+// 赋值不会产生自有属性，而是去改写原型 → 条目**静默蒸发**（fail-open：游戏少了个实体却零报错，
+// 极难定位），同时是原型污染入口（卡带可来自工坊/用户库，不是可信输入）。
+// 故 fail-closed：加载期直接报错要求改名——manifest 是 LLM 产出的数据，叫 `__proto__` 必是笔误而非本意，
+// 大声拒绝远好过静默吞掉。（engine-review-2026-08-04 §3.3 · P2）
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+function isUnsafeKey(k: string): boolean {
+  return UNSAFE_KEYS.has(k);
+}
+
 function fail(msg: string): never {
   throw new Error(`manifest: ${msg}`);
 }
@@ -44,11 +54,13 @@ export function parseManifestDetailed(raw: unknown, opts: ParseOptions = {}): Pa
   const srcEntities = ent as Record<string, unknown>;
   const entities: Record<string, EntityBlueprint> = {};
   for (const [eid, comps] of Object.entries(srcEntities)) {
+    if (isUnsafeKey(eid)) fail(`实体 id "${eid}" 是原型链保留名——请改名（禁用：${[...UNSAFE_KEYS].join(' / ')}）`);
     if (typeof comps !== 'object' || comps === null || Array.isArray(comps)) {
       fail(`实体 "${eid}" 必须是 { 组件名: 数据 } 对象`);
     }
     const cleaned: Record<string, unknown> = {};
     for (const [ctype, data] of Object.entries(comps as Record<string, unknown>)) {
+      if (isUnsafeKey(ctype)) fail(`实体 "${eid}" 的组件名 "${ctype}" 是原型链保留名——请改名（禁用：${[...UNSAFE_KEYS].join(' / ')}）`);
       if (typeof data !== 'object' || data === null || Array.isArray(data)) {
         fail(`实体 "${eid}" 的组件 "${ctype}" 必须是对象`);
       }

@@ -83,4 +83,28 @@ describe('manifest 桥接：导出↔导入对称、可加载、可玩', () => {
     for (let i = 0; i < 10; i++) e.world.tick();
     expect(e.world.getAllEntities().length).toBeGreaterThan(0);
   });
+
+  // ── 回归（engine-review-2026-08-04 §3.3 · P2）─────────────────────────────
+  // 原型链保留名做 key：`entities['__proto__'] = …` 在普通对象上不产生自有属性、而是改写原型
+  // → 条目**静默蒸发**（游戏少一个实体、零报错）。必须 fail-closed 大声拒绝，
+  // 而不是 fail-open 吞掉；同时堵住原型污染（卡带可来自工坊/用户库，非可信输入）。
+  it('实体 id 为原型链保留名 → 报错拒绝（不得静默蒸发）', () => {
+    // 用 JSON.parse 构造真正的 own property "__proto__"（字面量写法会被引擎当原型赋值）
+    const raw = JSON.parse('{"entities":{"__proto__":{"Transform":{"x":1,"y":2}}}}');
+    expect(() => parseManifest(raw)).toThrow(/原型链保留名/);
+    for (const bad of ['constructor', 'prototype']) {
+      expect(() => parseManifest(JSON.parse(`{"entities":{"${bad}":{"Transform":{"x":0,"y":0}}}}`)))
+        .toThrow(/原型链保留名/);
+    }
+  });
+
+  it('组件名为原型链保留名 → 报错拒绝', () => {
+    const raw = JSON.parse('{"entities":{"hero":{"__proto__":{"x":1}}}}');
+    expect(() => parseManifest(raw)).toThrow(/原型链保留名/);
+  });
+
+  it('正常实体/组件名不受影响（fail-closed 不误伤）', () => {
+    const raw = JSON.parse('{"entities":{"hero":{"Transform":{"x":1,"y":2}}}}');
+    expect(() => parseManifest(raw)).not.toThrow();
+  });
 });

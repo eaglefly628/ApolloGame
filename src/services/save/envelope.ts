@@ -15,12 +15,34 @@ export class CorruptSaveError extends Error {
 }
 
 // ── 规范化序列化（对象键排序 → 与字段书写序无关）+ FNV-1a 32bit（自包含，不依赖 net/determinism）──
+//
+//  铁律：checksum 必须覆盖**真正会被持久化的形态**，不是内存形态。
+//  端口落盘必经 `JSON.stringify`（local-save-port.ts）——而 JSON 会改写值域：
+//    · 对象里 undefined / 函数 / symbol 值的键 → **整个键消失**
+//    · 数组里同类值 → **变 null**（不塌缩长度）
+//    · NaN / ±Infinity → **变 null**
+//    · 带 toJSON 的对象（Date 等）→ 先取 toJSON() 的结果
+//  旧实现按内存形态算（`String(undefined)`→"undefined"、`String(NaN)`→"NaN"），存档经端口
+//  往返后重算必然不符 → **合法存档被误判「已损坏或被篡改」而丢档**（迁移链产出
+//  `field: undefined` 是最常见姿势）。故此处照 JSON 语义先归一，再算指纹：
+//  往返前后同形 → 同指纹；真篡改仍会改变形态 → 仍然报错（防篡改不放水）。
+function jsonDropped(v: unknown): boolean {
+  return v === undefined || typeof v === 'function' || typeof v === 'symbol';
+}
 function stable(v: unknown): string {
-  if (typeof v === 'number') return Object.is(v, -0) ? '0' : String(v);
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v)) return 'null'; // NaN / ±Infinity → JSON 落盘为 null
+    return Object.is(v, -0) ? '0' : String(v);
+  }
+  if (jsonDropped(v)) return 'null'; // 仅在数组元素位到达这里（对象键位已在下方跳过）
   if (v === null || typeof v !== 'object') return typeof v === 'string' ? JSON.stringify(v) : String(v);
+  const withToJson = v as { toJSON?: () => unknown };
+  if (typeof withToJson.toJSON === 'function') return stable(withToJson.toJSON());
   if (Array.isArray(v)) return `[${v.map(stable).join(',')}]`;
   const o = v as Record<string, unknown>;
-  return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${stable(o[k])}`).join(',')}}`;
+  return `{${Object.keys(o).sort()
+    .filter((k) => !jsonDropped(o[k])) // 这些键 JSON 落盘时整个消失 → 指纹里也必须不存在
+    .map((k) => `${JSON.stringify(k)}:${stable(o[k])}`).join(',')}}`;
 }
 function fnv1a(str: string): string {
   let h = 0x811c9dc5;
