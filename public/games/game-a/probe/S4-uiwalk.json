@@ -1,0 +1,434 @@
+{
+  "slug": "game-a",
+  "at": "2026-08-05T15:11:27.958Z",
+  "gameHash": "a197d5a970bf235a",
+  "ok": true,
+  "form": "compiled",
+  "uiDrivableRate": 0,
+  "totalSummary": {
+    "signalSteps": 19,
+    "drivenSteps": 0,
+    "tickSteps": 0,
+    "expectSteps": 26,
+    "uiDrivableRate": 0
+  },
+  "scenarios": [
+    {
+      "name": "一盘打到结算·头游判定·进贡还贡口径",
+      "file": "01-round-settle-tribute.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "play-round",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 2,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 3,
+          "kind": "signal",
+          "signal": "next-round",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 4,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 5,
+        "signalSteps": 2,
+        "drivenSteps": 0,
+        "tickSteps": 0,
+        "expectSteps": 3,
+        "uiDrivableRate": 0
+      }
+    },
+    {
+      "name": "非法出牌被拒·状态不变（判型/压制/轮次/无牌）",
+      "file": "02-illegal-plays-rejected.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "pass",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 2,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 3,
+          "kind": "signal",
+          "signal": "play",
+          "driven": false,
+          "note": "args 非单值可表达（{\"cards\":[9999]}）·非原子点击可发出"
+        },
+        {
+          "step": 4,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 5,
+          "kind": "signal",
+          "signal": "play",
+          "driven": false,
+          "note": "args 非单值可表达（{\"cards\":[203,104]}）·非原子点击可发出"
+        },
+        {
+          "step": 6,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 7,
+          "kind": "signal",
+          "signal": "play",
+          "driven": false,
+          "note": "args 非单值可表达（{\"cards\":[15]}）·非原子点击可发出"
+        },
+        {
+          "step": 8,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 9,
+          "kind": "signal",
+          "signal": "play",
+          "driven": false,
+          "note": "args 非单值可表达（{\"cards\":[13,13]}）·非原子点击可发出"
+        },
+        {
+          "step": 10,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 11,
+          "kind": "signal",
+          "signal": "play",
+          "driven": false,
+          "note": "args 非单值可表达（{\"cards\":[3]}）·非原子点击可发出"
+        },
+        {
+          "step": 12,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 13,
+        "signalSteps": 6,
+        "drivenSteps": 0,
+        "tickSteps": 0,
+        "expectSteps": 7,
+        "uiDrivableRate": 0
+      }
+    },
+    {
+      "name": "重开下一局·级牌逐盘推进（双上+3）",
+      "file": "03-level-advance-restart.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "play-round",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 2,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 3,
+          "kind": "signal",
+          "signal": "next-round",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 4,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 5,
+          "kind": "signal",
+          "signal": "play-round",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 6,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 7,
+        "signalSteps": 3,
+        "drivenSteps": 0,
+        "tickSteps": 0,
+        "expectSteps": 4,
+        "uiDrivableRate": 0
+      }
+    },
+    {
+      "name": "run 终局·对方过 A 游戏结束",
+      "file": "04-run-terminates-opponent-passes-ace.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "play-run",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 2,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 3,
+        "signalSteps": 1,
+        "drivenSteps": 0,
+        "tickSteps": 0,
+        "expectSteps": 2,
+        "uiDrivableRate": 0
+      }
+    },
+    {
+      "name": "节奏·盘必在有限步收束且单调推进",
+      "file": "05-round-tempo-flow.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "auto",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 2,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 3,
+          "kind": "signal",
+          "signal": "play-round",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 4,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 5,
+        "signalSteps": 2,
+        "drivenSteps": 0,
+        "tickSteps": 0,
+        "expectSteps": 3,
+        "uiDrivableRate": 0
+      }
+    },
+    {
+      "name": "抗贡·双大王免贡·头游先出（G3）",
+      "file": "06-resist-tribute-exempt.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "play-round",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 2,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 3,
+          "kind": "signal",
+          "signal": "next-round",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 4,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 5,
+        "signalSteps": 2,
+        "drivenSteps": 0,
+        "tickSteps": 0,
+        "expectSteps": 3,
+        "uiDrivableRate": 0
+      }
+    },
+    {
+      "name": "双下·双进贡·大者归头游·次者归二游·大贡者先出（G2）",
+      "file": "07-double-down-tribute.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "signal",
+          "signal": "play-round",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 1,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 2,
+          "kind": "signal",
+          "signal": "next-round",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 3,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 4,
+        "signalSteps": 2,
+        "drivenSteps": 0,
+        "tickSteps": 0,
+        "expectSteps": 2,
+        "uiDrivableRate": 0
+      }
+    },
+    {
+      "name": "run 终局·我方过 A 通关（run-won·A2）",
+      "file": "08-run-won-we-pass-ace.scenario.jsonc",
+      "steps": [
+        {
+          "step": 0,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        },
+        {
+          "step": 1,
+          "kind": "signal",
+          "signal": "play-run",
+          "driven": false,
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+        },
+        {
+          "step": 2,
+          "kind": "expect",
+          "driven": false,
+          "note": "断言步骤·探针只读 UI 动作清单(非仿真世界态)·未核"
+        }
+      ],
+      "summary": {
+        "totalSteps": 3,
+        "signalSteps": 1,
+        "drivenSteps": 0,
+        "tickSteps": 0,
+        "expectSteps": 2,
+        "uiDrivableRate": 0
+      }
+    }
+  ],
+  "assertions": {
+    "consoleErrors": {
+      "pass": true,
+      "count": 0,
+      "messages": []
+    },
+    "noUncaught": {
+      "pass": true,
+      "count": 0,
+      "messages": []
+    }
+  },
+  "browser": {
+    "execPath": "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    "via": "explicit"
+  }
+}
