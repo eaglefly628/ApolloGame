@@ -13,7 +13,7 @@ from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 from .agent_chat import handle_agent_chat
 from .art_replace import handle_art_batch, handle_art_derive, handle_art_ledger, handle_art_packs, handle_art_replace, handle_art_style_save, handle_art_style_delete
 from .art_review import handle_asset_pending, handle_asset_review
-from .artbrowser import handle_artbrowser_tree
+from .artbrowser import handle_artbrowser_consumers, handle_artbrowser_history, handle_artbrowser_restore, handle_artbrowser_tree, resolve_history_blob
 from .asset_annotate import handle_asset_autotag
 from .assets import handle_asset_generate, handle_asset_generate_providers, handle_asset_import, handle_asset_matte, handle_asset_vendor
 from .blueprints import PRESET_BLUEPRINTS
@@ -209,6 +209,22 @@ class APIHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _serve_artbrowser_history_blob(self, path: str, rev: str) -> None:
+        """GET /api/artbrowser/history-blob?path=&rev= → `git show rev:path` 字节流（REQ-ARTPIPE2 A3
+        「历史」tab 任意版本缩略预览·回退前后并排对比图源）。路径穿越防护 + rev 白名单见
+        `artbrowser.resolve_history_blob`（同 `_serve_design_preview` 先例：校验/解析在模块层，
+        字节直出在 server 层）。"""
+        ok, data, ctype = resolve_history_blob(path, rev)
+        if not ok:
+            self._send_json(400, {'success': False, 'error': data}); return
+        self.send_response(200)
+        self.send_header('Content-Type', ctype)
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(data)
+
     def _serve_design_preview(self, slug: str, filename: str) -> None:
         """GET /api/design/preview?slug=<slug>&file=<filename> → 只读伺服已收 .dc.html 设计稿正文
         （收稿箱「👁 预览」新窗口打开用）。路径防护见 design_ingest.design_preview_path（basename 白名单
@@ -342,6 +358,12 @@ class APIHandler(BaseHTTPRequestHandler):
             self._serve_design_preview((qs.get('slug') or [''])[0], (qs.get('file') or [''])[0])
             return
 
+        # 资产浏览器历史版本字节流（REQ-ARTPIPE2 A3·git show 直出，先于 JSON 分派）。
+        if path == '/api/artbrowser/history-blob':
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            self._serve_artbrowser_history_blob((qs.get('path') or [''])[0], (qs.get('rev') or [''])[0])
+            return
+
         m_stats = re.fullmatch(r'/api/library/([a-z0-9][a-z0-9-]*)/stats', path)
         if m_stats:
             self._send_json(200, handle_library_stats(m_stats.group(1)))
@@ -414,6 +436,18 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_artbrowser_tree((qs.get('scope') or [''])[0])
             except Exception as e:
                 data = {'success': False, 'error': f'artbrowser tree 异常: {e}'}
+        elif path == '/api/artbrowser/history':  # 详情栏「历史」tab（REQ-ARTPIPE2 A3·git log --follow）
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            try:
+                data = handle_artbrowser_history((qs.get('path') or [''])[0])
+            except Exception as e:
+                data = {'success': False, 'error': f'artbrowser history 异常: {e}'}
+        elif path == '/api/artbrowser/consumers':  # 详情栏「替换/消费方」tab（REQ-ARTPIPE2 A4·manifest 反查）
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            try:
+                data = handle_artbrowser_consumers((qs.get('slug') or [''])[0], (qs.get('no') or [''])[0])
+            except Exception as e:
+                data = {'success': False, 'error': f'artbrowser consumers 异常: {e}'}
         elif path == '/api/design/ledger':  # 收稿箱列表（REQ-DESIGNLINE 过渡轨②）
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_design_ledger_get((qs.get('slug') or [''])[0])
@@ -623,6 +657,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_art_restore(body)
             except Exception as e:
                 data = {'success': False, 'error': f'restore 异常: {e}'}
+        elif path == '/api/artbrowser/restore':  # 详情栏「历史」tab「回退到此版」（REQ-ARTPIPE2 A3）
+            try:
+                data = handle_artbrowser_restore(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'artbrowser restore 异常: {e}'}
         elif path == '/api/art/reskin':
             try:
                 data = handle_art_reskin(body)

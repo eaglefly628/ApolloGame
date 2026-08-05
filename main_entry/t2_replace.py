@@ -82,10 +82,20 @@ def handle_art_style(body: dict) -> dict:
 GEN_PROVIDER_RE = re.compile(r'qwen|seedream|tripo|meshy')  # 2D:qwen/seedream · 3D:tripo/meshy（owner 2026-07-21 加 seedream·否则选 seedream 被拒→退回 qwen→无 key→mock 噪声图）
 
 def handle_art_approve(body: dict) -> dict:
-    """POST /api/art/approve {slug, no|'all'}。人审复核（double verify 第二道门·owner 2026-07-10）：
-    replaced/filled 行 → approved。只许已写回的行复核；'all'=批量过全部可复核行。"""
+    """POST /api/art/approve {slug, no|'all', note?, by?}。人审复核（double verify 第二道门·owner
+    2026-07-10）：replaced/filled 行 → approved。只许已写回的行复核；'all'=批量过全部可复核行。
+    note/by 可选（REQ-ARTPIPE2 A4「逐行人审」加·沿 wizardSignoff/design_finalize 先例记进 history——
+    **不在本端点强制**：既有调用方（ArtLedgerPanel doApprove/「全部复核」）从不传 note，若改成强制会
+    破坏现有零逻辑重写承诺；「note 空起不代填」这条铁律由调用方 UI 自行把关（起始态永远空、按钮按
+    `!note.trim()` 禁用），后端只负责——传了就如实记账，不传也照旧放行。"""
     slug = str(body.get('slug', '')).strip()
     no = str(body.get('no', '')).strip()
+    note = str(body.get('note', '') or '').strip()
+    by = str(body.get('by', '') or '').strip()
+    if note and len(note) > 500:
+        return {'success': False, 'error': 'note ≤500 字'}
+    if by and len(by) > 40:
+        return {'success': False, 'error': 'by ≤40 字'}
     if not _valid_slug(slug):
         return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
     f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
@@ -102,7 +112,12 @@ def handle_art_approve(body: dict) -> dict:
                     return {'success': False, 'error': f'{no} 是 mock 占位——mock 产物不可复核（真图生成后再过人门）'}
                 continue
             r['status'] = 'approved'
-            r.setdefault('history', []).append({'action': 'approve'})
+            entry = {'action': 'approve'}
+            if note:
+                entry['note'] = note
+            if by:
+                entry['by'] = by
+            r.setdefault('history', []).append(entry)
             hit += 1
         elif no != 'all':
             return {'success': False, 'error': f"{no} 状态={r.get('status')}——只有已写回（replaced/filled）的行可复核"}
@@ -273,6 +288,22 @@ def handle_art_upload(body: dict) -> dict:
         return {'success': True, 'no': no, 'localId': local_id, 'row': row}
     _write_json(idx_f, idx)  # 原地 upsert·不整份 sort（diff 干净）
     res = _art_replace_cli(['swap', slug, no, local_id, '--upload'])
+    if res.get('ok'):
+        # 顺修存量 bug（A2 资产浏览器验证时发现·REQ-ARTPIPE2 A4 收单）：library 卡带线过
+        # art-replace.mjs swapSlot() 只知 assetId 不知服务路径 → 落账后 gen 缺 servedPath
+        # （scripts/ 域不在本单范围·不改 swapSlot 契约，这里补写我们本来就已知的量）。
+        # 回填后浏览器缩略图/详情栏不再对 library 卡带退化为图标占位。
+        try:
+            _led_now = json.loads(led_f.read_text('utf-8')) if led_f.is_file() else None
+            if _led_now:
+                _row_now = next((r for r in _led_now.get('rows', []) if r.get('no') == no), None)
+                if isinstance(_row_now, dict) and isinstance(_row_now.get('gen'), dict) and not _row_now['gen'].get('servedPath'):
+                    _row_now['gen']['servedPath'] = f'/games/{slug}/art/{rel}'
+                    _write_json(led_f, _led_now)
+                    if isinstance(res.get('row'), dict):
+                        res['row'] = dict(res['row'], gen=dict(res['row'].get('gen') or {}, servedPath=_row_now['gen']['servedPath']))
+        except Exception:
+            pass  # 回填是补充信息·失败不影响主流程已落盘的替换结果
     return _art_save_manifest(slug, res, f'美术上传替换 {no}', {'no': no, 'localId': local_id, 'row': res.get('row')})
 
 def handle_art_restore(body: dict) -> dict:

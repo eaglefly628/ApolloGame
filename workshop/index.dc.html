@@ -1089,9 +1089,114 @@
                 <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
                   <sc-for list="{{ abTabs }}" as="tb" hint-placeholder-count="3"><button onClick="{{ tb.pick }}" style="{{ tb.style }}">{{ tb.label }}</button></sc-for>
                 </div>
-                <sc-if value="{{ abTabPlaceholderOn }}" hint-placeholder-val="{{ false }}">
-                  <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;line-height:1.7;background:rgba(255,255,255,.5);border:2px dashed rgba(58,35,18,.35);border-radius:10px;padding:12px">{{ abTabPlaceholderText }}</div>
+                <!-- 历史 / 回滚（REQ-ARTPIPE2 A3）：git log --follow 提交列表 + 任意版本预览（git show rev:path）
+                     + 当前↔历史版并排对比 + 「回退到此版」（既有 /api/art/upload 语义落盘·台账留痕）。 -->
+                <sc-if value="{{ abTabHistoryOn }}" hint-placeholder-val="{{ false }}">
+                  <sc-if value="{{ abHistNoPathText }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;line-height:1.6;background:rgba(255,255,255,.5);border:2px dashed rgba(58,35,18,.35);border-radius:10px;padding:12px">{{ abHistNoPathText }}</div>
+                  </sc-if>
+                  <sc-if value="{{ abHistLoadingText }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px">{{ abHistLoadingText }}</div>
+                  </sc-if>
+                  <sc-if value="{{ abHistEmptyText }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;line-height:1.6;background:rgba(255,255,255,.5);border:2px dashed rgba(58,35,18,.35);border-radius:10px;padding:12px">{{ abHistEmptyText }}</div>
+                  </sc-if>
+                  <sc-if value="{{ abHistHasList }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10.5px;letter-spacing:.04em;margin-bottom:6px">共 {{ abHistCount }} 次提交（新→旧·点一条看该版）</div>
+                    <div class="scr" style="display:flex;flex-direction:column;gap:6px;max-height:190px;overflow-y:auto;margin-bottom:10px">
+                      <sc-for list="{{ abHistRows }}" as="hc" hint-placeholder-count="3">
+                        <button onClick="{{ hc.pick }}" style="{{ hc.style }}">
+                          <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#8a5a2c">{{ hc.shortHash }} · {{ hc.date }}</span>
+                          <span style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:11px;line-height:1.35;word-break:break-word">{{ hc.message }}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ abHistCompareOn }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10.5px;letter-spacing:.04em;margin:4px 0 6px;border-top:2px solid rgba(58,35,18,.18);padding-top:10px">当前 ↔ {{ abHistSelLabel }}</div>
+                    <div style="display:flex;gap:8px;margin-bottom:10px">
+                      <div style="flex:1;min-width:0">
+                        <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:10px;margin-bottom:3px;text-align:center">当前</div>
+                        <div style="height:84px;border-radius:9px;border:2px solid #3a2312;display:flex;align-items:center;justify-content:center;overflow:hidden;background:repeating-conic-gradient(#ececec 0% 25%, #f8f8f8 0% 50%) 50% / 12px 12px">
+                          <sc-if value="{{ abDetailHasThumb }}" hint-placeholder-val="{{ false }}"><img src="{{ abDetailThumbUrl }}" style="max-width:92%;max-height:92%;object-fit:contain"></sc-if>
+                          <sc-if value="{{ abDetailNoThumb }}" hint-placeholder-val="{{ true }}"><span style="font-size:22px;opacity:.5">{{ abDetailIcon }}</span></sc-if>
+                        </div>
+                      </div>
+                      <div style="flex:1;min-width:0">
+                        <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:10px;margin-bottom:3px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ abHistSelLabel }}">{{ abHistSelLabel }}</div>
+                        <div style="height:84px;border-radius:9px;border:2px solid #3a2312;display:flex;align-items:center;justify-content:center;overflow:hidden;background:repeating-conic-gradient(#ececec 0% 25%, #f8f8f8 0% 50%) 50% / 12px 12px">
+                          <img src="{{ abHistBlobUrl }}" style="max-width:92%;max-height:92%;object-fit:contain">
+                        </div>
+                      </div>
+                    </div>
+                    <sc-if value="{{ abHistCanRestore }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ abHistRestore }}" title="取这个历史版本的字节，走既有上传替换语义落盘+台账行更新（保号·provenance 记 restore-from）——不是 git checkout" style="{{ abHistRestoreBtnStyle }}" style-active="{{ abHistRestoreBtnActive }}">{{ abHistRestoreLabel }}</button>
+                    </sc-if>
+                  </sc-if>
                 </sc-if>
+
+                <!-- 替换 / 消费方（REQ-ARTPIPE2 A4）：反查引用（只读 grep）+ 重生成/换库/换皮/上传替换（薄封装既有
+                     /api/art/* 端点·零逻辑重写）+ 逐行人审（沿 wizardSignoff 铁律·note 永远起空·不代签）。 -->
+                <sc-if value="{{ abTabConsumersOn }}" hint-placeholder-val="{{ false }}">
+                  <sc-if value="{{ abConsNotApplicableText }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;line-height:1.6;background:rgba(255,255,255,.5);border:2px dashed rgba(58,35,18,.35);border-radius:10px;padding:12px">{{ abConsNotApplicableText }}</div>
+                  </sc-if>
+                  <sc-if value="{{ abConsApplicableOn }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10.5px;letter-spacing:.04em;margin-bottom:5px">🔁 消费方（谁在用这张）</div>
+                    <sc-if value="{{ abConsLoadingText }}" hint-placeholder-val="{{ false }}"><div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11.5px">{{ abConsLoadingText }}</div></sc-if>
+                    <sc-if value="{{ abConsCountText }}" hint-placeholder-val="{{ false }}"><div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:10.5px;margin-bottom:5px;word-break:break-all">{{ abConsCountText }}</div></sc-if>
+                    <sc-if value="{{ abConsNote }}" hint-placeholder-val="{{ false }}"><div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;line-height:1.5;background:rgba(255,255,255,.5);border:2px dashed rgba(58,35,18,.3);border-radius:9px;padding:8px;margin-bottom:6px">{{ abConsNote }}</div></sc-if>
+                    <div class="scr" style="display:flex;flex-direction:column;gap:5px;max-height:110px;overflow-y:auto;margin-bottom:10px">
+                      <sc-for list="{{ abConsRows }}" as="cc" hint-placeholder-count="2">
+                        <div style="background:rgba(255,255,255,.55);border:1.5px solid rgba(58,35,18,.25);border-radius:8px;padding:5px 8px">
+                          <div style="font-family:ui-monospace,Menlo,monospace;font-size:9px;color:#8a5a2c">{{ cc.kindLabel }} · {{ cc.file }}</div>
+                          <div style="font-family:'Noto Sans SC';font-weight:600;font-size:10.5px;color:#3a2312;word-break:break-all">{{ cc.path }}</div>
+                        </div>
+                      </sc-for>
+                    </div>
+
+                    <div style="border-top:2px solid rgba(58,35,18,.18);padding-top:10px;margin-top:4px">
+                      <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10.5px;letter-spacing:.04em;margin-bottom:6px">🔄 重新生成（可改描述）</div>
+                      <textarea value="{{ abRegenQuery }}" onInput="{{ abRegenQueryType }}" rows="2" style="width:100%;border:2.5px solid #3a2312;border-radius:9px;padding:7px 9px;font-family:ui-monospace,Menlo,monospace;font-size:10.5px;background:#fff;color:#3a2312;outline:none;resize:vertical;box-sizing:border-box"></textarea>
+                      <div style="display:flex;flex-wrap:wrap;gap:5px;margin:6px 0">
+                        <sc-for list="{{ abPackChips }}" as="pk" hint-placeholder-count="3"><button onClick="{{ pk.pick }}" style="{{ pk.style }}">{{ pk.label }}</button></sc-for>
+                      </div>
+                      <button onClick="{{ abRegenGo }}" style="{{ abRegenBtnStyle }}" style-active="{{ abRegenBtnActive }}">{{ abRegenLabel }}</button>
+                    </div>
+
+                    <div style="border-top:2px solid rgba(58,35,18,.18);padding-top:10px;margin-top:10px">
+                      <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10.5px;letter-spacing:.04em;margin-bottom:6px">📚 从共享库换（资产 id）</div>
+                      <input value="{{ abSwapId }}" onInput="{{ abSwapIdType }}" placeholder="如 dungeon/monsters/orc" style="width:100%;border:2.5px solid #3a2312;border-radius:9px;padding:7px 9px;font-family:ui-monospace,Menlo,monospace;font-size:10.5px;background:#fff;color:#3a2312;outline:none;box-sizing:border-box;margin-bottom:6px">
+                      <button onClick="{{ abSwapGo }}" style="{{ abSwapBtnStyle }}" style-active="{{ abSwapBtnActive }}">{{ abSwapLabel }}</button>
+                    </div>
+
+                    <div style="border-top:2px solid rgba(58,35,18,.18);padding-top:10px;margin-top:10px">
+                      <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10.5px;letter-spacing:.04em;margin-bottom:6px">⬆ 上传替换</div>
+                      <button onClick="{{ abPickFile }}" title="同上方「拖入登记」——目标游戏/槽位已按这一项预填" style="{{ abDropBtnStyle }}" style-active="{{ abDropBtnActive }}">{{ abDropBtnLabel }}</button>
+                    </div>
+
+                    <div style="border-top:2px solid rgba(58,35,18,.18);padding-top:10px;margin-top:10px">
+                      <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10.5px;letter-spacing:.04em;margin-bottom:6px">🎭 换皮（整游戏 → 新卡带）</div>
+                      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">
+                        <sc-for list="{{ abReskinPackChips }}" as="rp" hint-placeholder-count="3"><button onClick="{{ rp.pick }}" style="{{ rp.style }}">{{ rp.label }}</button></sc-for>
+                      </div>
+                      <button onClick="{{ abReskinGo }}" style="{{ abReskinBtnStyle }}" style-active="{{ abReskinBtnActive }}">{{ abReskinLabel }}</button>
+                    </div>
+
+                    <div style="border-top:2px solid rgba(58,35,18,.18);padding-top:10px;margin-top:10px">
+                      <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10.5px;letter-spacing:.04em;margin-bottom:6px">☑ 逐行人审（复核通过）</div>
+                      <sc-if value="{{ abApproveEligible }}" hint-placeholder-val="{{ false }}">
+                        <input value="{{ abApproveByVal }}" onInput="{{ abApproveByType }}" placeholder="签核人" style="width:100%;border:2.5px solid #3a2312;border-radius:9px;padding:6px 9px;font-family:'Noto Sans SC';font-weight:600;font-size:11px;background:#fff;color:#3a2312;outline:none;box-sizing:border-box;margin-bottom:5px">
+                        <input value="{{ abApproveNoteVal }}" onInput="{{ abApproveNoteType }}" placeholder="review 了什么、结论是什么…（必填·真人手打）" style="width:100%;border:2.5px solid #3a2312;border-radius:9px;padding:6px 9px;font-family:'Noto Sans SC';font-weight:600;font-size:11px;background:#fff;color:#3a2312;outline:none;box-sizing:border-box;margin-bottom:6px">
+                        <button onClick="{{ abApproveGo }}" style="{{ abApproveBtnStyle }}" style-active="{{ abApproveBtnActive }}">{{ abApproveLabel }}</button>
+                      </sc-if>
+                      <sc-if value="{{ abApproveNotEligibleText }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;line-height:1.5">{{ abApproveNotEligibleText }}</div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </sc-if>
+
                 <sc-if value="{{ abTabInfoOn }}" hint-placeholder-val="{{ true }}">
                   <sc-if value="{{ abDetailOn }}" hint-placeholder-val="{{ false }}">
                     <div style="width:100%;height:132px;border-radius:10px;border:2.5px solid #3a2312;display:flex;align-items:center;justify-content:center;overflow:hidden;background:repeating-conic-gradient(#ececec 0% 25%, #f8f8f8 0% 50%) 50% / 14px 14px;margin-bottom:10px">
@@ -1318,6 +1423,12 @@ class Component extends DCLogic {
     abIndex: null, abOpenGames: {}, abOpenShared: false, abGameData: {}, abSharedData: null,
     abOpenGroup: null, abSel: null, abDetailTab: 'info',
     abDropSlug: '', abDropNo: '', abDropBusy: false,
+    // A3 历史/回滚（REQ-ARTPIPE2 A3）：abHistData 按 servedPath 缓存 { loading | commits:[...] }。
+    abHistData: {}, abHistSel: null, abHistBusy: false,
+    // A4 替换工作流/消费方反查（REQ-ARTPIPE2 A4）：abConsData 按 "slug:no" 缓存 consumers 响应。
+    abConsData: {}, abConsBusy: null,
+    abRegenQuery: '', abRegenPack: null, abSwapId: '', abReskinPack: null,
+    abApproveNote: '', abApproveBy: 'owner', abApproveBusy: null,  // note 永远起空·不代填（wizardSignoff 铁律）
     tokenInput: '', genKeyInputs: {}, provKeyInputs: {}, genOptSel: {}, defaultProv: null, cfgModel: null, saving: false,
     toast: null
   };
@@ -1756,12 +1867,139 @@ class Component extends DCLogic {
   }
   abPickGroup(key) { this.setState({ abOpenGroup: key, abSel: null, abDetailTab: 'info' }); }
   abPickItem(it) {
-    const patch = { abSel: it, abDetailTab: 'info' };
-    // 点了某游戏的台账行 → 顺手把「拖入登记」目标预填成同一槽（owner「点开就是想换这张」的最短路径）。
+    // 换了选中项 → 历史/替换两个 tab 的临时态清零（含人审 note——wizardSignoff 铁律：永远起空·绝不带着上一张的签名过来）。
+    const patch = { abSel: it, abDetailTab: 'info', abHistSel: null, abApproveNote: '', abApproveBy: 'owner',
+      abRegenQuery: (it && (it.query || it.desc)) || '', abSwapId: '' };
+    // 点了某游戏的台账行 → 顺手把「拖入登记」目标预填成同一槽（owner「点开就是想换这张」的最短路径·
+    // A4「上传替换」按钮直接复用这套既有拖入登记机关，零逻辑重写）。
     if (it && it.source === 'art-ledger' && it.slug && it.no) { patch.abDropSlug = it.slug; patch.abDropNo = it.no; }
     this.setState(patch);
   }
-  abTabPick(tab) { this.setState({ abDetailTab: tab }); }
+  abTabPick(tab) {
+    this.setState({ abDetailTab: tab });
+    const it = this.state.abSel;
+    if (!it) return;
+    if (tab === 'history' && it.servedPath) this.abLoadHistory(it.servedPath);
+    if (tab === 'consumers' && it.source === 'art-ledger' && it.slug && it.no) {
+      this.abLoadConsumers(it.slug, it.no);
+      this.ensureArtMeta();  // 风格包/provider 清单——复用素材屏已有的一次性拉取逻辑（重新生成/换皮的 pack chips 用）
+    }
+  }
+
+  // ── A3 · 历史与回滚（REQ-ARTPIPE2 A3）───────────────────────────────────────────────
+  // 零新存储——git 本身就是备份。历史列表=服务端 `git log --follow`；预览=`git show rev:path` 字节流
+  // （直接给 <img src> 用，同源 GET·浏览器自己拉）；回退=既有 `/api/art/upload` 语义（保号·台账留痕）。
+  abLoadHistory(path, force) {
+    if (!path || (!force && this.state.abHistData[path])) return;
+    this.setState(cur => ({ abHistData: Object.assign({}, cur.abHistData, { [path]: { loading: true } }) }));
+    fetch('/api/artbrowser/history?path=' + encodeURIComponent(path)).then(r => r.json())
+      .then(d => this.setState(cur => ({ abHistData: Object.assign({}, cur.abHistData, { [path]: (d && d.success) ? d : { commits: [] } }) })))
+      .catch(() => this.setState(cur => ({ abHistData: Object.assign({}, cur.abHistData, { [path]: { commits: [] } }) })));
+  }
+  abHistRestore() {
+    const it = this.state.abSel, rev = this.state.abHistSel;
+    if (!it || !rev || this.state.abHistBusy) return;
+    if (!window.confirm('回退 ' + it.slug + ' ' + it.no + ' 到版本 ' + rev.slice(0, 9) + '？（写台账留痕的正路——不是 git checkout；历史仍在 git 里，可再回退回来）')) return;
+    this.setState({ abHistBusy: true });
+    fetch('/api/artbrowser/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: it.slug, no: it.no, path: it.servedPath, rev }) }).then(r => r.json()).then(d => {
+        this.setState({ abHistBusy: false });
+        if (!d || !d.success) throw new Error((d && d.error) || '回退失败');
+        this.showToast('✓ 已回退到 ' + rev.slice(0, 9) + '（provenance 已记 restore-from）');
+        this.abLoadHistory(it.servedPath, true);
+        this._abRefreshSelected(it.slug, it.no);
+      }).catch(e => { this.setState({ abHistBusy: false }); this.showToast('✕ ' + ((e && e.message) || '回退失败').slice(0, 100)); });
+  }
+  // 替换/回退动作成功后的统一收尾：网格 + 详情栏刷新（owner「替换后要能立刻看到」）——重拉该游戏分组数据，
+  // 若当前选中项还是同一张就原地换成新数据（不掉选中态）；顶层计数徽标 + 消费方 tab（若开着）一并跟刷。
+  _abRefreshSelected(slug, no) {
+    fetch('/api/artbrowser/tree?scope=' + encodeURIComponent(slug)).then(r => r.json()).then(d => {
+      if (!d || !d.success) return;
+      this.setState(cur => {
+        const patch = { abGameData: Object.assign({}, cur.abGameData, { [slug]: d }) };
+        if (cur.abSel && cur.abSel.slug === slug && cur.abSel.no === no) {
+          const items = (d.groups || []).reduce((acc, g) => acc.concat(g.items), []);
+          const hit = items.find(x => x.slug === slug && x.no === no);
+          if (hit) patch.abSel = hit;
+        }
+        return patch;
+      });
+    }).catch(() => {});
+    this.abLoadIndex();
+    if (this.state.abDetailTab === 'consumers') this.abLoadConsumers(slug, no, true);
+  }
+
+  // ── A4 · 替换工作流 + 消费方反查（REQ-ARTPIPE2 A4）──────────────────────────────────
+  // 消费方视图=新读接口（GET /api/artbrowser/consumers）；四个替换钮=薄封装既有 /api/art/{regenerate,
+  // swap,reskin,upload} 端点（零逻辑重写·同 ArtLedgerPanel 语义）；「上传替换」直接复用 A2 已有的拖入
+  // 登记机关（abPickItem 选中即预填 abDropSlug/abDropNo→abPickFile/_abUploadFile 原样调用）。
+  abLoadConsumers(slug, no, force) {
+    const key = slug + ':' + no;
+    if (!force && this.state.abConsData[key]) return;
+    this.setState(cur => ({ abConsData: Object.assign({}, cur.abConsData, { [key]: { loading: true } }) }));
+    fetch('/api/artbrowser/consumers?slug=' + encodeURIComponent(slug) + '&no=' + encodeURIComponent(no)).then(r => r.json())
+      .then(d => this.setState(cur => ({ abConsData: Object.assign({}, cur.abConsData, { [key]: (d && d.success) ? d : { consumers: [] } }) })))
+      .catch(() => this.setState(cur => ({ abConsData: Object.assign({}, cur.abConsData, { [key]: { consumers: [] } }) })));
+  }
+  abRegenGo() {
+    const it = this.state.abSel;
+    if (!it || this.state.abConsBusy) return;
+    const pack = this.state.abRegenPack || (((this.state.artPacks || [])[0] || {}).packId) || 'pixel';
+    this.setState({ abConsBusy: 'regen' });
+    fetch('/api/art/regenerate', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: it.slug, no: it.no, packId: pack, query: (this.state.abRegenQuery || '').trim() || undefined }) })
+      .then(r => r.json()).then(d => {
+        this.setState({ abConsBusy: null });
+        if (!d || !d.success) throw new Error((d && d.error) || '重新生成失败');
+        this.showToast('✓ 重新生成 ' + it.no);
+        this._abRefreshSelected(it.slug, it.no);
+      }).catch(e => { this.setState({ abConsBusy: null }); this.showToast('✕ ' + ((e && e.message) || '失败').slice(0, 100)); });
+  }
+  abSwapGo() {
+    const it = this.state.abSel, assetId = (this.state.abSwapId || '').trim();
+    if (!it || !assetId || this.state.abConsBusy) return;
+    this.setState({ abConsBusy: 'swap' });
+    fetch('/api/art/swap', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: it.slug, no: it.no, assetId }) }).then(r => r.json()).then(d => {
+        this.setState({ abConsBusy: null });
+        if (!d || !d.success) throw new Error((d && d.error) || '换库失败');
+        this.showToast('✓ 已换库 → ' + assetId);
+        this._abRefreshSelected(it.slug, it.no);
+      }).catch(e => { this.setState({ abConsBusy: null }); this.showToast('✕ ' + ((e && e.message) || '失败').slice(0, 100)); });
+  }
+  abReskinGo() {
+    const it = this.state.abSel;
+    if (!it || this.state.abConsBusy) return;
+    const packs = Array.isArray(this.state.artPacks) ? this.state.artPacks : [];
+    const pack = this.state.abReskinPack || ((packs[1] || packs[0] || {}).packId);
+    if (!pack) { this.showToast('风格包列表还没加载好，稍等再点'); return; }
+    if (!window.confirm('整游戏换皮「' + pack + '」→ 产出一张新卡带（不改当前这盘）？')) return;
+    this.setState({ abConsBusy: 'reskin' });
+    fetch('/api/art/reskin', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: it.slug, packId: pack }) }).then(r => r.json()).then(d => {
+        this.setState({ abConsBusy: null });
+        if (!d || !d.success) throw new Error((d && d.error) || '换皮失败');
+        this.showToast('✓ 换皮完成 → 新卡带 ' + (d.newSlug || ''));
+        this.abLoadIndex();
+      }).catch(e => { this.setState({ abConsBusy: null }); this.showToast('✕ ' + ((e && e.message) || '失败').slice(0, 100)); });
+  }
+  abApproveNoteType(e) { this.setState({ abApproveNote: e.target.value }); }
+  abApproveByType(e) { this.setState({ abApproveBy: e.target.value }); }
+  abApproveGo() {
+    const it = this.state.abSel;
+    const note = (this.state.abApproveNote || '').trim();
+    const by = (this.state.abApproveBy || '').trim() || 'owner';
+    if (!it || !note || this.state.abApproveBusy) return;
+    this.setState({ abApproveBusy: it.no });
+    fetch('/api/art/approve', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: it.slug, no: it.no, note, by }) }).then(r => r.json()).then(d => {
+        this.setState({ abApproveBusy: null });
+        if (!d || !d.success) throw new Error((d && d.error) || '复核失败');
+        this.showToast('✓ ' + it.no + ' 复核通过（' + by + '）');
+        this.setState({ abApproveNote: '' });
+        this._abRefreshSelected(it.slug, it.no);
+      }).catch(e => { this.setState({ abApproveBusy: null }); this.showToast('✕ ' + ((e && e.message) || '失败').slice(0, 100)); });
+  }
   abDropPickGame(slug) {
     this.setState({ abDropSlug: slug, abDropNo: '' });
     this.abLoadGame(slug);
@@ -1802,8 +2040,7 @@ class Component extends DCLogic {
           this.setState({ abDropBusy: false });
           if (!d || !d.success) throw new Error((d && d.error) || '上传失败');
           this.showToast('✓ 已登记：' + slug + ' ' + no + '（台账行已钉真图+provenance）');
-          this.abLoadGame(slug, true);   // 该游戏分组数据刷新（新行立即可见）
-          this.abLoadIndex();            // 顶层计数徽标同步刷新
+          this._abRefreshSelected(slug, no);  // 网格 + 详情栏 + 顶层计数徽标一并刷新（同 A4 替换动作收尾口径）
         }).catch(e => { this.setState({ abDropBusy: false }); this.showToast('✕ ' + ((e && e.message) || '上传失败').slice(0, 100)); });
     };
     reader.readAsDataURL(file);
@@ -2731,13 +2968,62 @@ class Component extends DCLogic {
     const abDetailRows = abDetail ? abDetail.rows : [];
     const abDetailHasPreview = abDetail ? abDetail.hasPreviewHref : false;
     const abDetailOpenPreview = abDetail ? abDetail.openPreview : (() => {});
-    const abTabs = [['info', '📋 详情'], ['history', '🕘 历史（A3）'], ['consumers', '🔁 替换/消费方（A4）']].map(([id, label]) => ({
+    const abTabs = [['info', '📋 详情'], ['history', '🕘 历史'], ['consumers', '🔁 替换/消费方']].map(([id, label]) => ({
       label, style: chipStyle(s.abDetailTab === id), pick: () => this.abTabPick(id) }));
-    const abTabPlaceholderText = s.abDetailTab === 'history'
-      ? '历史 / 回滚（REQ-ARTPIPE2 A3·未派工）—— 计划：git log --follow 该文件的提交列表 + 任意版本缩略图预览（git show rev:path）+ 一键回退到此版（写工作树+台账行状态变更）。'
-      : s.abDetailTab === 'consumers'
-        ? '替换工作流 / 消费方反查（REQ-ARTPIPE2 A4·未派工）—— 计划：该资产被哪些游戏/哪些屏引用的索引反查 → 重生成/换库/换皮/上传替换（复用 art-replace.mjs 既有四命令）+ 人审签名（沿 wizardSignoff 铁律·不代签）。'
-        : '';
+
+    // ── A3 历史/回滚派生态（REQ-ARTPIPE2 A3）───────────────────────────────────────────
+    const abHistPath = (abDetail && s.abSel && s.abSel.servedPath) || '';
+    const abHistEntry = abHistPath ? s.abHistData[abHistPath] : null;
+    const abHistNoPathText = (abDetail && !abHistPath) ? '这一项没有已入库的文件路径（黑户/未写回的占位行）——没有历史可查。' : '';
+    const abHistLoadingText = (abHistEntry && abHistEntry.loading) ? '读取 git 历史中…' : '';
+    const abHistCommits = (abHistEntry && !abHistEntry.loading && abHistEntry.commits) || [];
+    const abHistHasList = !!abHistPath && !(abHistEntry && abHistEntry.loading) && abHistCommits.length > 0;
+    const abHistEmptyText = !!abHistPath && !(abHistEntry && abHistEntry.loading) && abHistEntry && abHistCommits.length === 0
+      ? '这个文件还没有 git 提交记录（多半是刚生成/上传·还没走过一次带它的提交）。' : '';
+    const abHistRows = abHistCommits.map(cc => ({
+      hash: cc.hash, shortHash: cc.shortHash, date: cc.date, message: cc.message || '（无 message）',
+      style: Object.assign({}, treeHeaderStyle(s.abHistSel === cc.hash), { flexDirection: 'column', alignItems: 'flex-start', gap: '2px', padding: '7px 12px' }),
+      pick: () => this.setState({ abHistSel: cc.hash }),
+    }));
+    const abHistCompareOn = !!s.abHistSel && !!abHistPath;
+    const abHistBlobUrl = abHistCompareOn ? ('/api/artbrowser/history-blob?path=' + encodeURIComponent(abHistPath) + '&rev=' + encodeURIComponent(s.abHistSel)) : '';
+    const abHistSelCommit = abHistCommits.find(cc => cc.hash === s.abHistSel);
+    const abHistSelLabel = abHistSelCommit ? (abHistSelCommit.shortHash + ' · ' + abHistSelCommit.date) : (s.abHistSel || '').slice(0, 9);
+    const abHistCanRestore = abHistCompareOn && s.abSel && s.abSel.source === 'art-ledger';
+    const abHistRestoreLabel = s.abHistBusy ? '⏳ 回退中…' : '↩ 回退到此版';
+
+    // ── A4 替换工作流 + 消费方派生态（REQ-ARTPIPE2 A4）─────────────────────────────────
+    const abConsApplicableOn = !!(abDetail && s.abSel && s.abSel.source === 'art-ledger');
+    const abConsNotApplicableText = (abDetail && s.abSel && s.abSel.source !== 'art-ledger')
+      ? '消费方反查 / 替换动作只对「游戏美术台账」行有效——去左侧目录树点开某游戏分组（texture/sprite/bg/model3d）里的一项。' : '';
+    const abConsKey = abConsApplicableOn ? (s.abSel.slug + ':' + s.abSel.no) : '';
+    const abConsEntry = abConsKey ? s.abConsData[abConsKey] : null;
+    const abConsLoadingText = (abConsEntry && abConsEntry.loading) ? '反查引用中…' : '';
+    const abConsRows = ((abConsEntry && !abConsEntry.loading && abConsEntry.consumers) || []).map(cc => ({
+      file: cc.file, path: cc.path,
+      kindLabel: cc.kind === 'manifest' ? '📄 manifest' : cc.kind === 'alias' ? '🔗 别名' : '🧩 台账声明',
+    }));
+    const abConsNote = (abConsEntry && !abConsEntry.loading && abConsEntry.note) || '';
+    const abConsCountText = (abConsEntry && !abConsEntry.loading)
+      ? ('共 ' + (abConsEntry.count || 0) + ' 处引用' + (abConsEntry.key ? '（键: ' + abConsEntry.key + '）' : '')) : '';
+    const artPacksForAb = Array.isArray(s.artPacks) ? s.artPacks : [];
+    const abRegenPackCur = s.abRegenPack || ((artPacksForAb[0] || {}).packId);
+    const abPackChips = artPacksForAb.map(p => ({
+      label: p.name || p.packId, style: chipStyle(abRegenPackCur === p.packId), pick: () => this.setState({ abRegenPack: p.packId }) }));
+    const abReskinPackCur = s.abReskinPack || (((artPacksForAb[1] || artPacksForAb[0]) || {}).packId);
+    const abReskinPackChips = artPacksForAb.map(p => ({
+      label: p.name || p.packId, style: chipStyle(abReskinPackCur === p.packId), pick: () => this.setState({ abReskinPack: p.packId }) }));
+    const abRegenBusy = s.abConsBusy === 'regen', abSwapBusy = s.abConsBusy === 'swap', abReskinBusy = s.abConsBusy === 'reskin';
+    const abRegenLabel = abRegenBusy ? '⏳ 生成中…' : '🔄 重新生成';
+    const abSwapLabel = abSwapBusy ? '⏳ 换库中…' : '📚 换库';
+    const abReskinLabel = abReskinBusy ? '⏳ 换皮中…' : '🎭 换皮出新卡带';
+    // 复核只对已写回（replaced/filled）行开放（同 /api/art/approve 后端语义·前端提前把关免打空错误回来）。
+    const abApproveEligible = abConsApplicableOn && ['replaced', 'filled'].includes(s.abSel.status);
+    const abApproveNotEligibleText = abConsApplicableOn && !abApproveEligible
+      ? ('当前状态「' + (s.abSel.status || '') + '」——只有已写回（replaced/filled）的行可复核（先用上面任一替换动作写回一张图）。') : '';
+    const abApproveBtnBusy = abConsApplicableOn && s.abApproveBusy === s.abSel.no;
+    const abApproveLabel = abApproveBtnBusy ? '⏳ 签核中…' : '☑ 请人门（真人签）';
+    const abApproveReady = !!(s.abApproveNote || '').trim() && !abApproveBtnBusy;
     // 拖入登记：目标游戏 chips（游戏清单来自 abIndex——都已建过台账，槽位选择才有意义）+ 该游戏槽位 chips（该游戏台账已有的 art-NN）。
     const abDropGameChips = ((abIdx && abIdx.games) || []).map(g => ({
       label: g.slug, style: chipStyle(s.abDropSlug === g.slug), pick: () => this.abDropPickGame(g.slug) }));
@@ -3470,7 +3756,27 @@ class Component extends DCLogic {
       abDetailOn: !!abDetail, abDetailEmptyText: abDetail ? '' : '点中间网格里的一张，看详情',
       abDetailTitle, abDetailThumbUrl, abDetailHasThumb, abDetailNoThumb, abDetailIcon,
       abDetailBadgeText, abDetailBadgeStyle, abDetailRows, abDetailHasPreview, abDetailOpenPreview,
-      abTabs, abTabInfoOn: s.abDetailTab === 'info', abTabPlaceholderOn: s.abDetailTab !== 'info', abTabPlaceholderText,
+      abTabs, abTabInfoOn: s.abDetailTab === 'info',
+      abTabHistoryOn: s.abDetailTab === 'history', abTabConsumersOn: s.abDetailTab === 'consumers',
+      // A3 历史/回滚
+      abHistNoPathText, abHistLoadingText, abHistHasList, abHistCount: abHistCommits.length, abHistRows, abHistEmptyText,
+      abHistCompareOn, abHistBlobUrl, abHistSelLabel, abHistCanRestore,
+      abHistRestore: () => this.abHistRestore(), abHistRestoreLabel, abHistRestoreBtnStyle: restore.style, abHistRestoreBtnActive: restore.active,
+      // A4 消费方 + 替换四钮 + 逐行人审
+      abConsApplicableOn, abConsNotApplicableText, abConsLoadingText, abConsRows, abConsNote, abConsCountText,
+      abRegenQuery: s.abRegenQuery, abRegenQueryType: (e) => this.setState({ abRegenQuery: e.target.value }),
+      abPackChips, abRegenGo: () => this.abRegenGo(), abRegenLabel, abRegenBtnStyle: apply.style, abRegenBtnActive: apply.active,
+      abRegenDisabled: abRegenBusy,
+      abSwapId: s.abSwapId, abSwapIdType: (e) => this.setState({ abSwapId: e.target.value }),
+      abSwapGo: () => this.abSwapGo(), abSwapLabel, abSwapBtnStyle: mini.style, abSwapBtnActive: mini.active,
+      abSwapDisabled: abSwapBusy || !(s.abSwapId || '').trim(),
+      abReskinPackChips, abReskinGo: () => this.abReskinGo(), abReskinLabel, abReskinBtnStyle: coverBtn.style, abReskinBtnActive: coverBtn.active,
+      abReskinDisabled: abReskinBusy,
+      abApproveEligible, abApproveNotEligibleText,
+      abApproveNoteVal: s.abApproveNote, abApproveNoteType: (e) => this.abApproveNoteType(e),
+      abApproveByVal: s.abApproveBy, abApproveByType: (e) => this.abApproveByType(e),
+      abApproveGo: () => this.abApproveGo(), abApproveLabel,
+      abApproveBtnStyle: Object.assign({}, apply.style, !abApproveReady ? { opacity: .5, cursor: 'not-allowed' } : {}), abApproveBtnActive: apply.active,
       abDropGameChips, abDropSlotChips, abDropSlotEmptyText, abDropReady, abDropHint,
       abDropSlug: s.abDropSlug, abDropNo: s.abDropNo,
       abDropOver: (e) => this.abDropOver(e), abDrop: (e) => this.abDrop(e), abPickFile: () => this.abPickFile(),
