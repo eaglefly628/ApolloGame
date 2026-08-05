@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { ConvexHull } from 'three/addons/math/ConvexHull.js';
 import type * as CANNON from 'cannon-es';
 import type { IWorld } from '@engine/core/types.js';
-import type { RigidBody3D, Mesh3D, Transform3D, Impulse3D, Joint3D } from '@engine/protocol/components.js';
+import type { RigidBody3D, Mesh3D, Transform3D, Impulse3D, Joint3D, PhysicsWorld3D } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  three/PhysicsSystem —— 真物理刚体（cannon-es 驱动·TA·**纯表现**）。
@@ -38,7 +38,7 @@ export class PhysicsSystem {
     const ents = world.query('RigidBody3D');
     if (ents.length === 0) { if (this.world) this.disposeWorld(); return 0; }
     if (!C) { ensureCannon(); return 0; } // cannon-es 懒加载中/缺失 → 本帧跳过刚体物理
-    if (!this.world) this.initWorld();
+    if (!this.world) this.initWorld(world);
     const cw = this.world!;
     const seen = new Set<string>();
     for (const [id] of ents) {
@@ -144,10 +144,15 @@ export class PhysicsSystem {
     this.joints.delete(id);
   }
 
-  private initWorld(): void {
-    const cw = new C!.World({ gravity: new C!.Vec3(0, -42, 0) }); // 世界单位较大 → 重力调大·色子下落干脆
-    cw.defaultContactMaterial.restitution = 0.4; // 弹一点
-    cw.defaultContactMaterial.friction = 0.35;
+  private initWorld(world: IWorld): void {
+    // 物理世界配置（PhysicsWorld3D 场景级单例·REQ-3D-TOWER-STACK）：不挂 = 现行硬编码值（行为逐位不变·护掷骰 -42）；
+    // 挂则按数据配（堆叠场景 gravity≈-9.82 + restitution 0 + solverIterations≥40 才立得住）。
+    let cfg: PhysicsWorld3D | undefined;
+    for (const [id] of world.query('PhysicsWorld3D')) { cfg = world.getComponent<PhysicsWorld3D>(id, 'PhysicsWorld3D'); break; }
+    const cw = new C!.World({ gravity: new C!.Vec3(0, cfg?.gravity ?? -42, 0) }); // 缺省 -42（世界单位大→色子下落干脆）
+    cw.defaultContactMaterial.restitution = cfg?.restitution ?? 0.4; // 缺省弹一点
+    cw.defaultContactMaterial.friction = cfg?.friction ?? 0.35;
+    if (cfg?.solverIterations !== undefined) (cw.solver as unknown as { iterations: number }).iterations = cfg.solverIterations; // 堆叠需 ≥40（缺省 cannon GSSolver 10·iterations 在 GSSolver 子类上）
     const ground = new C!.Body({ mass: 0, shape: new C!.Plane() }); // 地面：静态·法线朝上·y=0
     ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
     cw.addBody(ground);

@@ -188,6 +188,20 @@ export interface Pickable3D extends Component {
   hover?: string; // 可选·指针悬停命中时的信号名（游戏在 pointermove 调 pick 时用）
 }
 
+// ── PhysicsWorld3D（render-only·场景级单例·物理世界配置·REQ-3D-TOWER-STACK）───────────────────────
+// 给 cannon 物理世界一条**按游戏/场景可配的数据路**（挂任一实体即生效·取第一个）。缺省=渲染器现行硬编码值
+// （gravity -42 / restitution 0.4 / friction 0.35 / solverIterations 默认 10）——**不挂本组件 = 行为逐位不变**
+// （护 game-d 掷骰「色子下落干脆」的 -42 刻意调参 + game102 碎片）。
+// 多层刚体堆叠（叠叠乐/积木/多米诺）要求相反参数：实测 gravity≈-10 + restitution≈0 + solverIterations≥40 才稳。
+// 红线：render-only（cannon 物理本就不进 hash·仅表现）。弱 LLM 只填几个标量。
+export interface PhysicsWorld3D extends Component {
+  readonly type: 'PhysicsWorld3D';
+  gravity?: number; // 竖直重力加速度（缺省 -42·堆叠场景用 ≈-9.82）
+  restitution?: number; // 默认接触弹性 0..1（缺省 0.4·堆叠用 0）
+  friction?: number; // 默认接触摩擦（缺省 0.35）
+  solverIterations?: number; // 求解器迭代次数（缺省 cannon 10·堆叠需 ≥40 防求解器蠕变塌陷）
+}
+
 // ── RigidBody3D（render-only，表现物理 · TA）──────────────────────────────────────────────
 // 真物理刚体（cannon-es 驱动·**纯表现**：滚色子/掉落/翻滚·**不进 sim/hash·不为联机同步**·owner 2026-06-30「为表现非同步」）。
 // 渲染侧物理子系统每帧步进 → 把结果(位置+四元数)写回同实体 Transform3D（render-only）→ 渲染器照常画。

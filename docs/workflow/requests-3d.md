@@ -16,7 +16,8 @@
 > **边界**：`src/renderer/three/**` + 对应测试；不碰 sim/引擎核、不碰 `src/ui/**`。
 > **验收要求**：①每条配回归测试（先复现→红→修→绿·回执贴「撤掉修复即转红」证据）；②贴图泄漏那条**必须**给出「共享贴图未被误释放」的正面用例（两个网格共用同一 texture，销毁其一后另一个仍可渲）——否则等于用画面损坏换泄漏；③render-only 可按手册缩范围跑门禁。
 
-## REQ-3D-TOWER-STACK · 物理世界参数按游戏可配（现全局硬编码 · 重力 -42 使多层堆叠不可能）· [2026-08-04] · GD-105 提（叠叠乐塔立不住）→ P3D · status: open · 优先级: **P1（game-105 S3 骨架关硬阻塞·塔立不住则全部规则无从谈起）** · 类型: 3D 线能力缺口（物理世界配置）
+## REQ-3D-TOWER-STACK · 物理世界参数按游戏可配（现全局硬编码 · 重力 -42 使多层堆叠不可能）· [2026-08-04] · GD-105 提（叠叠乐塔立不住）→ P3D · status: **✅ done（P3D 2026-08-05·已推·见回执）** · 优先级: **P1（game-105 S3 骨架关硬阻塞·塔立不住则全部规则无从谈起）** · 类型: 3D 线能力缺口（物理世界配置）
+> **★ P3D 落地回执（2026-08-05·照 spec·opt-in 场景级·缺省零变）**：新组件 `PhysicsWorld3D{gravity?,restitution?,friction?,solverIterations?}`（场景级单例·render-only·入 NON_DETERMINISTIC + manifest 143）。`physics.ts initWorld(world)` 读第一个 `PhysicsWorld3D` → 建 cannon World 时套用（`solver.iterations` 走 GSSolver·**未设=缺省 10**）；**不挂本组件 = 逐位现行值**（g=-42/rest=0.4/fric=0.35·护 game-d 掷骰 -42 刻意调参 + game102 碎片）。测试 3 例钉死：① 缺省不挂 → 重力仍 -42（落得快·回归护栏）② 配 `gravity:-9.82` → 落得慢（数据路生效）③ 12 层叠叠乐塔 + `{gravity:-9.82,restitution:0,solverIterations:40}` → 静置 5s 塔顶下沉 <0.4（站住不塌）。回填 `playbooks/3d.md` 物理世界配置行。**交 PE-105**：game-105 场景挂一个 `PhysicsWorld3D{gravity:-9.82,restitution:0,solverIterations:40}` 即塔立得住·S3 解锁。tsc0/vitest(physics18)/build0/manifest143。
 > **缺口**：`src/renderer/three/physics.ts:148` `initWorld()` 把物理世界参数**全局硬编码**：`gravity -42`（注释「世界单位较大 → 重力调大·**色子下落干脆**」= 为掷骰调的）、`restitution 0.4`（「弹一点」）、`friction 0.35`，且**未设 `solver.iterations`**（cannon-es 0.20 `GSSolver` 默认 **10**）。全引擎共用**一个** cannon World，**没有任何数据出口**可按游戏/场景调整（`render.ts:466` 的 `gravity` 是粒子发射器字段，与物理世界无关）。掷骰/碎片这类「单体抛落」在该配置下很好，但**多层刚体堆叠**要求恰好相反的参数。
 > **实证（54 块塔·cannon-es 0.20.0 = 引擎 pin 版本·离线复现·判塌=塔顶下沉 > 2 倍积木高）**：
 >

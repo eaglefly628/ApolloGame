@@ -259,3 +259,53 @@ describe('PhysicsSystem：真物理刚体（cannon-es·render-only 表现）', (
     expect(hashSnapshot(w.snapshot())).toBe(h0); // Transform3D 整体 render-only
   });
 });
+
+describe('PhysicsWorld3D：物理世界按场景可配（REQ-3D-TOWER-STACK·堆叠）', () => {
+  beforeAll(async () => { await preloadPhysics(); });
+
+  // 自由落体 T 秒后的 y ≈ y0 - 0.5·g·T²。用它区分缺省 -42（落得快）vs 配置 -9.82（落得慢）。
+  const dropY = (cfg: Record<string, number> | null): number => {
+    const w = new World();
+    if (cfg) { w.createEntity('pw'); w.addComponent('pw', { type: 'PhysicsWorld3D', ...cfg } as never); }
+    w.createEntity('d');
+    w.addComponent('d', { type: 'Transform3D', x: 0, y: 40, z: 0 } as Transform3D); // 高空落·不撞地
+    w.addComponent('d', { type: 'Mesh3D', shape: 'box', width: 2, height: 2, depth: 2, frontTint: 0xffffff } as Mesh3D);
+    w.addComponent('d', { type: 'RigidBody3D', shape: 'box', mass: 1 } as RigidBody3D);
+    const phys = new PhysicsSystem();
+    for (let i = 1; i <= 30; i++) phys.sync(w, i * 16.7); // ~0.5s
+    const y = w.getComponent<Transform3D>('d', 'Transform3D')!.y;
+    phys.dispose();
+    return y;
+  };
+
+  it('缺省（不挂 PhysicsWorld3D）= 现行 -42 重力（落得快·行为逐位不变·护掷骰）', () => {
+    const y = dropY(null); // g=-42·0.5s 落 ~5.25 → y≈34.7
+    expect(y).toBeLessThan(37); // 明显 < -9.82 情形（该情形 y>38）
+  });
+  it('配置 gravity:-9.82 → 落得慢（数据路生效）', () => {
+    const y = dropY({ gravity: -9.82 }); // 0.5s 落 ~1.23 → y≈38.8
+    expect(y).toBeGreaterThan(38);
+    expect(dropY({ gravity: -9.82 })).toBeGreaterThan(dropY(null) + 2); // 同口径下配置明显比缺省落得慢
+  });
+
+  it('叠叠乐塔：填 {gravity:-9.82,restitution:0,solverIterations:40} → 静置数秒不塌（塔顶不下沉）', () => {
+    const w = new World();
+    w.createEntity('pw');
+    w.addComponent('pw', { type: 'PhysicsWorld3D', gravity: -9.82, restitution: 0, solverIterations: 40 } as never);
+    const N = 12, H = 1; // 12 层薄宽积木
+    for (let k = 0; k < N; k++) {
+      const id = `blk-${k}`;
+      w.createEntity(id);
+      w.addComponent(id, { type: 'Transform3D', x: 0, y: H / 2 + k * H, z: 0 } as Transform3D); // 层层叠放·底层贴地
+      w.addComponent(id, { type: 'Mesh3D', shape: 'box', width: 6, height: H, depth: 3, frontTint: 0xffffff } as Mesh3D);
+      w.addComponent(id, { type: 'RigidBody3D', shape: 'box', mass: 1 } as RigidBody3D);
+    }
+    const topId = `blk-${N - 1}`;
+    const y0 = w.getComponent<Transform3D>(topId, 'Transform3D')!.y;
+    const phys = new PhysicsSystem();
+    for (let i = 1; i <= 300; i++) phys.sync(w, i * 16.7); // ~5s
+    const yTop = w.getComponent<Transform3D>(topId, 'Transform3D')!.y;
+    expect(y0 - yTop).toBeLessThan(0.4); // 塔顶下沉 < 0.4（站住·未塌）
+    phys.dispose();
+  });
+});
