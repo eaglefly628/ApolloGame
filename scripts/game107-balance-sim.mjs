@@ -41,13 +41,34 @@ const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
 /* ═══════════════ 数值表（纯数据 · 与 balance-design.md 同源） ═══════════════ */
 
-const ARENA_R = 900;         // 圆形竞技场（逆位视角 = 全局俯瞰，不用相机跟随）
+const ARENA_H = 640;         // 矩形竞技场半宽/半高（1280×1280）：对角 905 ≈ 裂隙环 560+腐化圈 340 的触及半径
+                             //   ——四角必须可被合围，否则角落=永久安全区（矩形化实测踩坑）——Lead Y1 裁：bounds-clamp 纯 AABB，无圆形
 const RIFT_RING = 560;       // 裂隙环
 const MATCH_TIME = 900;      // 15:00 一局
 
 // 英雄 = game-103 的幸存者玩家（数值取 game-103 gdd §3 / balance-design §2）
+// ★ 属性闭集：每种怪物只打其中一条防御条。三个动词各对应一条。
+//   锐 = 处决（魂蛆/疾影/魔王）· 蚀 = 消磨（腐蚀者/腐化领地）· 缚 = 控制夺取（缚锁者/缚魂者/食晶蛭）
+const ATTRS = ['rui', 'shi', 'fu'];
+const ATTR_NAME = { rui: '锐', shi: '蚀', fu: '缚' };
+
+// 英雄「防御侧写」：入场时抽一种。三条防御强弱不同 ⇒ 每个英雄是一道不同的题。
+//   这就是「要能看到他的数值」为什么是玩法而不是装饰——你得读面板才知道该投什么。
+const DEF_PROFILES = [
+  { id: 'bulwark', name: '铁壁', mul: { rui: 2.2, shi: 1.0, fu: 0.3 } },
+  { id: 'warden',  name: '守誓', mul: { rui: 0.3, shi: 2.2, fu: 1.0 } },
+  { id: 'zealot',  name: '狂信', mul: { rui: 1.0, shi: 0.3, fu: 2.2 } },
+  { id: 'even',    name: '游侠', mul: { rui: 1.0, shi: 1.0, fu: 1.0 } },
+];
+
 const HERO = {
-  maxHp: 100, moveSpeed: 200, pickupRadius: 80,
+  // NPC 化：不再受 game-103 玩家平衡约束（owner 2026-08-05「毕竟他只是个 npc」）
+  baseHp: 120, hpPerLevel: 22,
+  defBase: 30, defPerLevel: 8,     // 每条防御条的基准（再乘侧写系数）
+  defRegen: 0.06,                   // 脱离该属性伤害 4s 后，每秒回复 6% 该条上限
+  defRegenDelay: 4,
+  breakBonus: 1.5,                  // ★ 破防后该属性伤害转入 HP 并 ×1.5
+  moveSpeed: 200, pickupRadius: 80,
   iframe: 0.5,               // ★ 0.5s 无敌帧 → 接触伤害上限 2 次/秒（堆量无法提 DPS）
   radius: 16,
   xpToNext: lv => 5 + lv * 10,
@@ -84,15 +105,16 @@ const PASSIVES = [
 
 // 怪物谱系：T1 只能压制，T3 才有处决力（接触伤害受无敌帧封顶 → 每击伤害才是真战力）
 const MONSTERS = [
-  { id: 'grub',   name: '魂蛆',     tier: 1, cost: 10,  pop: 2, hp: 18,   contact: 6,  speed: 70,  radius: 12, gem: 1,  role: 'chase' },
-  { id: 'spider', name: '蛛影',     tier: 1, cost: 24,  pop: 1, hp: 40,   contact: 3,  speed: 210, radius: 11, gem: 2,  role: 'chase' },
-  { id: 'binder', name: '缚锁者',   tier: 2, cost: 55,  pop: 2, hp: 45,   contact: 5,  speed: 205, radius: 13, gem: 3,  role: 'chase', slow: { mul: 0.68, dur: 2.0 } },
-  { id: 'leech',  name: '食晶蛭',   tier: 2, cost: 30,  pop: 1, hp: 30,   contact: 3,  speed: 150, radius: 11, gem: 1,  role: 'eatgem' },
-  { id: 'golem',  name: '噬石魔',   tier: 2, cost: 90,  pop: 4, hp: 420,  contact: 22, speed: 55,  radius: 24, gem: 6,  role: 'chase' },
-  { id: 'corr',   name: '腐蚀者',   tier: 3, cost: 70,  pop: 2, hp: 60,   contact: 0,  speed: 90,  radius: 13, gem: 4,  role: 'ranged', atkRange: 300, atkCd: 1.6, dot: { dps: 6, dur: 4, max: 3 } },
-  { id: 'stalk',  name: '疾影',     tier: 3, cost: 120, pop: 3, hp: 90,   contact: 26, speed: 215, radius: 13, gem: 5,  role: 'chase' },
-  { id: 'soul',   name: '缚魂者',   tier: 3, cost: 140, pop: 3, hp: 80,   contact: 0,  speed: 95,  radius: 14, gem: 5,  role: 'ranged', atkRange: 320, atkCd: 1.4, xpDrain: 8 },
-  { id: 'fiend',  name: '深渊魔王', tier: 4, cost: 340, pop: 8, hp: 1600, contact: 45, speed: 90,  radius: 30, gem: 20, role: 'chase' },
+  { id: 'grub',   name: '魂蛆',     tier: 1, attr: 'rui', cost: 10,  pop: 2, hp: 18,   contact: 6,  speed: 70,  radius: 12, gem: 1,  role: 'chase' },
+  { id: 'spider', name: '缠影',     tier: 1, attr: 'fu', cost: 24,  pop: 1, hp: 40,   contact: 3,  speed: 210, radius: 11, gem: 2,  role: 'chase' },
+  { id: 'spore',  name: '孢蚀虫',   tier: 1, attr: 'shi', cost: 18,  pop: 1, hp: 26,   contact: 4,  speed: 120, radius: 11, gem: 1,  role: 'chase' },
+  { id: 'binder', name: '缚锁者',   tier: 2, attr: 'fu', cost: 55,  pop: 2, hp: 45,   contact: 5,  speed: 205, radius: 13, gem: 3,  role: 'chase', slow: { mul: 0.68, dur: 2.0 } },
+  { id: 'leech',  name: '食晶蛭',   tier: 2, attr: 'fu', cost: 30,  pop: 1, hp: 30,   contact: 3,  speed: 150, radius: 11, gem: 1,  role: 'eatgem' },
+  { id: 'golem',  name: '酸蚀巨躯', tier: 2, attr: 'shi', cost: 90,  pop: 4, hp: 420,  contact: 22, speed: 55,  radius: 24, gem: 6,  role: 'chase' },
+  { id: 'corr',   name: '腐蚀者',   tier: 3, attr: 'shi', cost: 70,  pop: 2, hp: 60,   contact: 0,  speed: 90,  radius: 13, gem: 4,  role: 'ranged', atkRange: 300, atkCd: 1.6, dot: { dps: 6, dur: 4, max: 3 } },
+  { id: 'stalk',  name: '疾影',     tier: 3, attr: 'rui', cost: 120, pop: 3, hp: 90,   contact: 26, speed: 215, radius: 13, gem: 5,  role: 'chase' },
+  { id: 'soul',   name: '缚魂者',   tier: 3, attr: 'fu', cost: 140, pop: 3, hp: 80,   contact: 0,  speed: 95,  radius: 14, gem: 5,  role: 'ranged', atkRange: 320, atkCd: 1.4, xpDrain: 8 },
+  { id: 'fiend',  name: '深渊魔王', tier: 4, attr: 'rui', cost: 340, pop: 8, hp: 1600, contact: 45, speed: 90,  radius: 30, gem: 20, role: 'chase' },
 ];
 const MBY = Object.fromEntries(MONSTERS.map(m => [m.id, m]));
 
@@ -104,7 +126,7 @@ const ECON = {
   // ★ 胜利条件 = 收割配额，不是「活下来」。
   //   纯龟缩 → 收不满 → 输；乱杀小怪 → 赏金太薄也收不满；
   //   只有「养到高等级再收割」才够量（Lv6 赏金 196 ≈ 3 个 Lv1）。
-  quota: 1800,
+  quota: 1800,   // 全在 Lv1 割掉 = 22×66 = 1452 < 1800 ⇒ 数学上强制养肥
   // ★ 赏金随等级暴涨 —— 「养肥再收割」是你的增长主引擎
   bountySouls: lv => 40 + 26 * lv,
   bountyCorrupt: lv => 10 + 6 * lv,
@@ -115,26 +137,32 @@ const ECON = {
   pressureRadius: 260,
   tierReq: [0, 40, 150, 360],
   zoneBase: 200, zonePerCorrupt: 0.35, zoneMax: 340,
-  zoneDps: 5, zoneSlow: 0.75,
+  zoneDps: 5, zoneSlow: 0.75, zonePressure: 3.0,   // zoneDps 只作用于蚀防（见 step()）——领地封空间，不代替怪物杀人
   // ★ 深渊科技：腐化度不只是解锁门槛，还持续强化全体怪物 ——
   //   否则你的曲线是线性的，追不上英雄的指数成长（中后期必然停摆）。
   techPerTier: 0.22,
   gemLife: 45,                 // 经验宝石存在时限：过期即消散（让「断经验/拖时间」成为真手段）
   recallRefund: 0.4,
-  spawnCd: { grub: 0.8, spider: 1.4, binder: 2.0, leech: 1.6, golem: 5.0, corr: 2.4, stalk: 4.0, soul: 5.0, fiend: 22 },
+  spawnCd: { grub: 0.8, spider: 1.4, spore: 1.0, binder: 2.0, leech: 1.6, golem: 5.0, corr: 2.4, stalk: 4.0, soul: 5.0, fiend: 22 },
 };
 
 /* ═══════════════ 世界 ═══════════════ */
 
 function makeHero(S, id) {
   const a = S.rnd() * Math.PI * 2;
-  return {
-    id, x: Math.cos(a) * 860, y: Math.sin(a) * 860, vx: 0, vy: 0,
-    hp: HERO.maxHp, maxHp: HERO.maxHp, level: 1, xp: 0,
+  const prof = DEF_PROFILES[Math.floor(S.rnd() * DEF_PROFILES.length)];
+  const h = {
+    id, prof, x: Math.cos(a) * 600, y: Math.sin(a) * 600, vx: 0, vy: 0,
+    hp: 0, maxHp: 0, level: 1, xp: 0,
+    def: {}, defMax: {}, defQuiet: {},   // 当前值 / 上限 / 距上次受该属性伤害的时间
     iframe: COHORT.entryGrace, dots: [], slowT: 0, slowMul: 1, alive: true,
     weapons: [{ w: WEAPONS[0], lv: 1, cd: 0 }], passives: {},
     mods: { dmgAdd: 0, cdRed: 0, areaAdd: 0, amtAdd: 0, hpMul: 0, spdMul: 0, pickMul: 0 },
   };
+  recomputeHero(h);
+  h.hp = h.maxHp;
+  for (const a2 of ATTRS) { h.def[a2] = h.defMax[a2]; h.defQuiet[a2] = 0; }
+  return h;
 }
 
 function createSim(seed) {
@@ -150,7 +178,7 @@ function createSim(seed) {
     core: { x: 0, y: 0, hp: ECON.core.hp, maxHp: ECON.core.hp },
     riftSites, monsters: [], gems: [], heals: [], cds: {},
     heroes: [], nextHeroId: 1, entryTimer: COHORT.entryEvery, pending: [],
-    stats: { spawned: 0, recalled: 0, xpFed: 0, xpDrained: 0, gemsEaten: 0, dmgToHeroes: 0, heroKills: 0, killsByLevel: [], soulsEarned: 0, harvest: 0 },
+    stats: { spawned: 0, recalled: 0, xpFed: 0, xpDrained: 0, gemsEaten: 0, dmgToHeroes: 0, heroKills: 0, killsByLevel: [], soulsEarned: 0, harvest: 0, defStripped: 0, breaks: 0 },
   };
   for (let i = 0; i < COHORT.startCount; i++) S.heroes.push(makeHero(S, S.nextHeroId++));
   return S;
@@ -212,7 +240,18 @@ function buildRift(S, idx) {
 }
 
 /* ---------------- 英雄成长 ---------------- */
-function recomputeHero(h) { h.maxHp = Math.round(HERO.maxHp * (1 + h.mods.hpMul)); if (h.hp > h.maxHp) h.hp = h.maxHp; }
+function recomputeHero(h) {
+  const lv = h.level - 1;
+  h.maxHp = Math.round((HERO.baseHp + HERO.hpPerLevel * lv) * (1 + h.mods.hpMul));
+  if (h.hp > h.maxHp) h.hp = h.maxHp;
+  const base = HERO.defBase + HERO.defPerLevel * lv;
+  for (const a of ATTRS) {
+    const nm = Math.round(base * h.prof.mul[a]);
+    const ratio = h.defMax[a] ? h.def[a] / h.defMax[a] : 1;
+    h.defMax[a] = nm;
+    h.def[a] = Math.min(nm, nm * ratio);
+  }
+}
 
 function gainXp(S, h, n) {
   S.stats.xpFed += n; h.xp += n;
@@ -281,14 +320,37 @@ function damageMonster(S, m, dmg) {
   }
 }
 
-function damageHero(S, h, dmg, bypassIframe) {
+// attr = 这一击的属性。★ 伤害先打对应防御条；该条见底才落到 HP（并 ×breakBonus）。
+//   ⇒ 「属性怪的叠加」＝ 先用便宜的同属性怪剥防，再让高伤同属性怪穿进去。
+// 战果结算：伤害/剥防 → 魂能 + 腐化度
+function credit(S, amount) {
+  if (amount <= 0) return;
+  S.souls += amount * 0.4; S.stats.soulsEarned += amount * 0.4;
+  S.corruption += amount * ECON.corruptPerDamage;
+}
+
+function damageHero(S, h, dmg, attr, bypassIframe) {
   if (!h.alive) return;
   if (!bypassIframe) { if (h.iframe > 0) return; h.iframe = HERO.iframe; }
+  if (attr && ATTRS.includes(attr)) {
+    h.defQuiet[attr] = 0;
+    if (h.def[attr] > 0) {
+      const absorbed = Math.min(dmg, h.def[attr]);
+      h.def[attr] -= absorbed;
+      dmg -= absorbed;
+      S.stats.defStripped += absorbed;
+      // ★ 剥防也是战果：按 60% 计入魂能/腐化度。
+      //   否则「打在防御条上的伤害」全是白干，腐化度经济会整体塌掉（实测踩坑）。
+      credit(S, absorbed * 0.6);
+      if (h.def[attr] <= 0) S.stats.breaks++;
+      if (dmg <= 0) return;
+    }
+    dmg *= HERO.breakBonus;              // 破防增伤
+  }
   const dealt = Math.min(dmg, h.hp);
   h.hp -= dmg;
   S.stats.dmgToHeroes += dealt;
-  S.souls += dealt * 0.4; S.stats.soulsEarned += dealt * 0.4;
-  S.corruption += dealt * ECON.corruptPerDamage;
+  credit(S, dealt);
   if (h.hp <= 0) heroDies(S, h);
 }
 
@@ -334,13 +396,19 @@ function step(S, dt) {
   for (const h of S.heroes) {
     if (!h.alive) continue;
     if (h.iframe > 0) h.iframe -= dt;
+    for (const a of ATTRS) {
+      h.defQuiet[a] += dt;
+      if (h.defQuiet[a] > HERO.defRegenDelay && h.def[a] < h.defMax[a]) {
+        h.def[a] = Math.min(h.defMax[a], h.def[a] + h.defMax[a] * HERO.defRegen * dt);
+      }
+    }
     if (h.slowT > 0) { h.slowT -= dt; if (h.slowT <= 0) h.slowMul = 1; }
 
     if (h.dots.length) {
       let dps = 0;
       for (const d of h.dots) { dps += d.dps; d.t -= dt; }
       h.dots = h.dots.filter(d => d.t > 0);
-      if (dps > 0) damageHero(S, h, dps * dt, true);
+      if (dps > 0) damageHero(S, h, dps * dt, 'shi', true);
       if (!h.alive) continue;
     }
 
@@ -382,14 +450,24 @@ function step(S, dt) {
       }
     }
 
-    const rr = Math.hypot(h.x, h.y);
-    if (rr > ARENA_R - 300) {
-      const gap = Math.max(20, ARENA_R - rr), w = 80 * Math.pow(300 / gap, 2);
-      vx += -h.x / Math.max(1, rr) * w; vy += -h.y / Math.max(1, rr) * w;
-    }
+    // 矩形边界斥力（四边各算·与怪物斥力同量级，防被逼进角落卡死）
+    const wall = d => 80 * Math.pow(300 / Math.max(d, 22), 2);
+    if (h.x > ARENA_H - 240) vx -= wall(ARENA_H - h.x);
+    if (h.x < -ARENA_H + 240) vx += wall(h.x + ARENA_H);
+    if (h.y > ARENA_H - 240) vy -= wall(ARENA_H - h.y);
+    if (h.y < -ARENA_H + 240) vy += wall(h.y + ARENA_H);
 
     const zoned = inZone(S, h);
-    if (zoned) { damageHero(S, h, ECON.zoneDps * dt, true); if (!h.alive) continue; }
+    // ★ 腐化领地只剥蚀防 + 减速，不直接打 HP —— 否则「造完裂隙等地形闷死英雄」会成为退化解
+    // 领地压制：英雄站在腐化区里持续为你产腐化度（不打 HP）——「封空间」本身就是战果
+    if (zoned) S.corruption += ECON.zonePressure * dt;
+    if (zoned && h.def.shi > 0) {
+      const d = Math.min(ECON.zoneDps * dt, h.def.shi);
+      h.def.shi -= d; h.defQuiet.shi = 0;
+      S.stats.defStripped += d;
+      credit(S, d * 0.6);
+      if (h.def.shi <= 0) S.stats.breaks++;
+    }
 
     const vm = Math.hypot(vx, vy);
     if (vm > 0.001) {
@@ -397,7 +475,8 @@ function step(S, dt) {
       h.vx = (vx / vm) * sp; h.vy = (vy / vm) * sp;
       h.x += h.vx * dt; h.y += h.vy * dt;
     } else { h.vx = 0; h.vy = 0; }
-    { const r0 = Math.hypot(h.x, h.y); if (r0 > ARENA_R) { h.x = h.x / r0 * ARENA_R; h.y = h.y / r0 * ARENA_R; } }
+    h.x = Math.max(-ARENA_H, Math.min(ARENA_H, h.x));
+    h.y = Math.max(-ARENA_H, Math.min(ARENA_H, h.y));
 
     if (nearest < ECON.pressureRadius) S.corruption += ECON.corruptPerPressureSec * dt;
 
@@ -454,7 +533,7 @@ function step(S, dt) {
     }
     if (dd > d.radius + HERO.radius) { m.x += (tgt.x - m.x) / dd * d.speed * dt; m.y += (tgt.y - m.y) / dd * d.speed * dt; }
     else {
-      damageHero(S, tgt, d.contact * (m.dmgMul || 1));
+      damageHero(S, tgt, d.contact * (m.dmgMul || 1), d.attr);
       if (d.slow) { tgt.slowMul = d.slow.mul; tgt.slowT = d.slow.dur; }
     }
   }
@@ -470,6 +549,13 @@ const econFirst = S => { buildAll(S); return builtCount(S) < 4; };
 const weakest = S => S.heroes.slice().sort((a, b) => a.level - b.level || a.hp - b.hp)[0];
 const strongest = S => S.heroes.slice().sort((a, b) => b.level - a.level || power(b) - power(a))[0];
 const CHAFF = ['grub', 'spider'];
+// 按属性归类可投放的怪物（同属性才能剥同一条防御条）
+const BY_ATTR = {};
+for (const m of MONSTERS) (BY_ATTR[m.attr] ||= []).push(m.id);
+// 该英雄最好剥的那条：当前值最低 = 最快破防
+const weakAttr = h => ATTRS.slice().sort((a, b) => h.def[a] - h.def[b])[0];
+// 破防收益 = 赏金 / 需要剥掉的防御量（越高越值得动手）
+const ripeness = h => ECON.bountySouls(h.level) / Math.max(20, h.def[weakAttr(h)]);
 
 function deploy(S, target, wallRatio, order) {
   const cap = popCap(S);
@@ -532,6 +618,53 @@ const STRATS = [
     // ③ 没熟的一律不杀，只挂压制单位换腐化度（顺便别让他们吃太多宝石）
     const supp = S.monsters.filter(m => ['spider', 'leech', 'soul'].includes(m.def.id)).length;
     if (supp < 6) for (const id of ['spider', 'leech', 'soul']) if (canSpawn(S, id) === 'ok') { spawn(S, id, null); return; }
+  }],
+
+  ['G 读面板·打弱防', S => {
+    if (econFirst(S)) return;
+    for (const m of S.monsters.slice())
+      if (m.hp / m.maxHp < 0.25 && S.heroes.every(h => dist(m, h) > 260)) { recall(S, m); break; }
+    if (!S.heroes.length) return;
+
+    // 讨伐级优先处理；否则挑「破防收益」最高的那个下手
+    const raid = S.heroes.filter(h => h.level >= HERO.raidLevel - 1).sort((a, b) => b.level - a.level)[0];
+    const tgt = raid || S.heroes.slice().sort((a, b) => ripeness(b) - ripeness(a))[0];
+    const a = weakAttr(tgt);
+
+    // 同属性阶梯：未破防 → 先上最便宜的剥防手；已破防 → 换最贵的载荷穿进去
+    const cheapFirst = BY_ATTR[a].slice().sort((x, y) => MBY[x].cost - MBY[y].cost);
+    const order = tgt.def[a] <= 0 ? cheapFirst.slice().reverse() : cheapFirst;
+    // 同属性的廉价怪同时充当围堵墙
+    const cap = popCap(S);
+    const same = S.monsters.filter(m => m.def.attr === a).reduce((x, m) => x + m.def.pop, 0);
+    if (same < cap * 0.55) {
+      for (const id of cheapFirst) if (canSpawn(S, id) === 'ok') { spawn(S, id, tgt); return; }
+    }
+    for (const id of order) if (canSpawn(S, id) === 'ok') { spawn(S, id, tgt); return; }
+  }],
+
+  ['H 读面板 + 牧养', S => {
+    if (econFirst(S)) return;
+    for (const m of S.monsters.slice())
+      if (m.hp / m.maxHp < 0.25 && S.heroes.every(h => dist(m, h) > 260)) { recall(S, m); break; }
+    if (!S.heroes.length) return;
+
+    const raid = S.heroes.filter(h => h.level >= HERO.raidLevel - 1).sort((a, b) => b.level - a.level)[0];
+    const ripe = S.heroes.filter(h => h.level >= 4).sort((a, b) => ripeness(b) - ripeness(a))[0];
+    const tgt = raid || ripe;
+    if (!tgt) {
+      // 还没有够肥的：只挂压制单位换腐化度，不下杀手（让他们长）
+      const supp = S.monsters.filter(m => ['leech', 'soul', 'spider'].includes(m.def.id)).length;
+      if (supp < 5) for (const id of ['spider', 'leech', 'soul']) if (canSpawn(S, id) === 'ok') { spawn(S, id, null); return; }
+      return;
+    }
+    const a = weakAttr(tgt);
+    const cheapFirst = BY_ATTR[a].slice().sort((x, y) => MBY[x].cost - MBY[y].cost);
+    const order = tgt.def[a] <= 0 ? cheapFirst.slice().reverse() : cheapFirst;
+    const cap = popCap(S);
+    const same = S.monsters.filter(m => m.def.attr === a).reduce((x, m) => x + m.def.pop, 0);
+    if (same < cap * 0.55) { for (const id of cheapFirst) if (canSpawn(S, id) === 'ok') { spawn(S, id, tgt); return; } }
+    for (const id of order) if (canSpawn(S, id) === 'ok') { spawn(S, id, tgt); return; }
   }],
 ];
 

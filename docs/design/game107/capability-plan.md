@@ -49,6 +49,8 @@
 | `t2-effect-apply` (`Effect`) | ★ **伤害→资源**：信号驱动 `modify-resource`（痛苦汲取 / 赏金 / 养分） | ✅ 现有 |
 | `t2-self-rule` (`SelfRule`) | 怪物 per-entity 自治（摘要原文即列「塔防」用例） | ✅ 现有 |
 | `t2-trigger-zone` (`Trigger`) | **腐化领地**：进圈 → 挂 DoT + 减速（圈半径住 zone 实体 `Shape.radius`·见 Y2 裁决） | ✅ 现有 |
+| `f1-resource` ×3 | ★ **属性防御条**（锐/蚀/缚）= 每条一个 `Resource`（`Hitbox.resource` 本就是任意字符串） | ✅ 现有 |
+| `t2-hitbox`(`setMask`/`requireMask`) | ★ **破防门控**：破防后才允许伤害进 HP（registry「冰霜新星→碎冰重锤」同款模式） | ⚠ **缺 Flag→Status 一跳·见 §5.5 Z1** |
 | `t2-clickable` (`Clickable`) | 建裂隙 / 投放 / 回收的点击入口（action 信号入队） | ✅ 现有 |
 | `t2-bounds-clamp` | 竞技场边界（**矩形**·Y1 已裁：schema 纯 AABB 无圆形·退化为矩形场地） | ✅ 现有 |
 | `k1-spawn` / `w2-spatial-query` / `d1-overlap-detect` / `e1-timer` | 生成 / 范围查询 / 接触伤害 / 各类计时 | ✅ 现有 |
@@ -65,6 +67,7 @@
 | `HERO_BT` | 英雄行为树（探索/抢宝石/拆裂隙/讨伐的优先级） | `t2-behavior-tree`（叶=注册的 TS 例外·见 §5） |
 | `DRAFT_POLICY` | 三选一 AI 估值权重表 | `draft-offer`+`weighted-pick` 纯函数核（import 直调·非 manifest 能力） |
 | `ECONOMY` | 三资源转化率 / 裂隙递增造价 / 赏金曲线 / 配额 | `f1-resource` + `t2-effect-apply` |
+| `ATTRS` / `DEF_PROFILES` | 属性闭集（锐/蚀/缚）+ 英雄防御侧写系数 | `f1-resource`（每属性一条 Resource）+ `t2-hitbox` 门控 |
 | `TIERS` | 腐化层级门槛 + 科技加成 | `t2-event-when` + `t2-modifier-stack` |
 | `COHORT` | 涌入节奏 / 总数 / 在场上限 / 入场无敌 | `e1-timer` + `k1-spawn` + `t2-group-count` |
 
@@ -81,12 +84,14 @@
 > 逐条对 registry 核查后**全部撤回**——`t2-effect-apply` 的 `modify-resource`、`atoms/destroy`（与 `t2-mortal` 死亡路径分离）、
 > `t2-group-count`（摘要原文即写「人口」）已分别覆盖。**本作对引擎的净新增需求 = 0。**
 
-## 5.5 待 Lead 核的两个薄点
+## 5.5 待 Lead 核 / 已提单
 
 | # | 事项 | 说明 | ⚖ Lead 裁（2026-08-04·亲核代码） |
 |---|---|---|---|
+| **Z1** | ⛔ **`REQ-STATUSSET`**（GD 2026-08-05 新提·属性防御带出） | 「防御条 Resource 见底 → 置 `Status` 位 → `Hitbox.requireMask` 放行伤害进 HP」。全库**无能力能把资源阈值写成 Status 位**（`effect-apply`/`self-rule` do 闭集只有 `set-flag`/`set-state`/`modify-resource`/`destroy`；`Hitbox` 不读 `Flag`）。请求给 do 闭集补 `set-status`/`clear-status`，或给 `Hitbox` 加通用 `requireResourceAtOrBelow`。**降级**：退化为二元状态 combo（可跑·失去可见防御条体验） | **待裁** |
 | Y1 | `t2-bounds-clamp` 是否支持**圆形**边界 | GDD 用圆形竞技场；若只支持矩形，退化为矩形场地（设计可接受）或走 capgap | **不支持**（`bounds-clamp.ts:31-38` schema 纯 `minX/minY/maxX/maxY`·实现纯 AABB 双轴 clamp；`:5-9` 的 `Shape.radius` 是被钳实体半径非边界形状）。**裁：退化为矩形场地·不下沉**——单游戏诉求不扩引擎（YAGNI）；若后续第二个游戏也要圆形边界再提 capgap |
 | Y2 | `t2-trigger-zone` 能否表达**半径随资源变化**的动态圈 | 腐化领地半径 = f(腐化度)。若不能，退化为分档（每层级一个固定半径）——**GD 认为分档即可，不必下沉** | **能，且是连续动态、纯数据、零下沉**——plan 低估了现有件：圈半径住 zone 实体 `Shape.radius`（trigger-zone 本身不持半径，只翻译 `Overlap`→`Trigger`），而 `Shape.radius` 可被现成链路运行时驱动：`Resource(腐化度) → ModifierSource.valueFrom{resourceId,scale}`（`modifier-stack.ts:134`）`→ ModifierTotals → stat-bind{component:'Shape',field:'radius'}`（`stat-bind.ts:81` whenToUse 逐字载此用法）`→ d1-overlap-detect → Trigger`。**裁：走此链路，分档降级不必要**。唯一代价=stat-bind 在 Commit 相位、投影下一 tick 生效（既定纪律非 bug） |
+
 
 ## 6. 确定性声明
 
