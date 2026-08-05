@@ -54,6 +54,10 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M4 17 l5-4 4 3 3-2 4 3"/></svg>
             <span>游戏美术库</span>
           </button>
+          <button onClick="{{ goBrowser }}" style="{{ navBrowserStyle }}" title="资产浏览器（REQ-ARTPIPE2 A2）：目录树 + 缩略图网格 + 详情栏·徽标读台账/守卫">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><path d="M3 6h6l2 2h10v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6z"/></svg>
+            <span>🗂 资产浏览器</span>
+          </button>
           <button onClick="{{ goMatlib }}" style="{{ navMatlibStyle }}">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
             <span>素材库</span>
@@ -979,6 +983,141 @@
             </sc-if>
           </sc-if>
 
+          <!-- ---------- ASSET BROWSER（资产浏览器·REQ-ARTPIPE2 A2·PST 域 2026-08-05）
+               三栏：目录树（游戏/共享库/类型分组·懒加载）→ 缩略图网格 → 详情栏。数据薄封装
+               GET /api/artbrowser/tree?scope=index 或 shared 或 该游戏 slug（拼现读台账/设计稿账/共享索引/A1 守卫 JSON，
+               本屏零二次判定）。拖入登记复用既有 /api/art/upload 语义。历史(A3)/替换·消费方(A4) 两个占位 tab。 ---------- -->
+          <sc-if value="{{ isBrowser }}" hint-placeholder-val="{{ false }}">
+            <div style="display:inline-flex;align-items:center;gap:8px;background:#37b6ef;border:3px solid #3a2312;border-radius:12px;padding:6px 14px;box-shadow:0 4px 0 #1f86bd;margin-bottom:14px">
+              <span style="font-family:'Noto Sans SC';font-weight:700;color:#fff5db;font-size:13px">三栏：目录树（游戏/共享库/类型）→ 缩略图网格 → 详情栏 · 徽标 ⭐final / 📝draft / ⚠黑户 / ✕死账（读台账 + A1 守卫）</span>
+            </div>
+
+            <!-- 拖入登记（沿 /api/art/upload 语义·上传即建台账行·A1 守卫=无逃逸） -->
+            <div style="background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:13px 15px;box-shadow:0 4px 0 rgba(58,35,18,.18);margin-bottom:16px">
+              <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:16px;color:#3a2312;margin-bottom:6px">📥 拖入登记</div>
+              <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;margin-bottom:8px">① 选目标游戏 → ② 选该游戏台账里的槽位（art-NN）→ ③ 拖图/选文件——落盘即钉真图 + provenance，台账行立即更新（同美术库「⬆ 上传替换」同一条后端语义）。</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+                <sc-for list="{{ abDropGameChips }}" as="dg" hint-placeholder-count="4"><button onClick="{{ dg.pick }}" style="{{ dg.style }}">{{ dg.label }}</button></sc-for>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px">
+                <sc-for list="{{ abDropSlotChips }}" as="ds" hint-placeholder-count="4"><button onClick="{{ ds.pick }}" style="{{ ds.style }}">{{ ds.label }}</button></sc-for>
+                <sc-if value="{{ abDropSlotEmptyText }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px">{{ abDropSlotEmptyText }}</span></sc-if>
+              </div>
+              <div onDragOver="{{ abDropOver }}" onDrop="{{ abDrop }}" style="border:3px dashed rgba(58,35,18,.4);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.5);flex-wrap:wrap">
+                <span style="font-family:'Noto Sans SC';font-weight:600;color:#5a3d1e;font-size:12px;flex:1;min-width:200px">{{ abDropHint }}</span>
+                <button onClick="{{ abPickFile }}" style="{{ abDropBtnStyle }}" style-active="{{ abDropBtnActive }}">{{ abDropBtnLabel }}</button>
+              </div>
+            </div>
+
+            <!-- 三栏：目录树 / 缩略图网格 / 详情栏 -->
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <!-- 目录树 -->
+              <div class="scr" style="width:250px;flex:none;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:10px;box-shadow:0 4px 0 rgba(58,35,18,.18);max-height:640px;overflow-y:auto">
+                <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10.5px;padding:2px 4px 8px;letter-spacing:.04em">🎮 游戏</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <sc-for list="{{ abGameRows }}" as="gr" hint-placeholder-count="4">
+                    <div>
+                      <button onClick="{{ gr.toggle }}" style="{{ gr.headerStyle }}">
+                        <span style="font-size:13px;width:14px;flex:none">{{ gr.chevron }}</span>
+                        <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-align:left">{{ gr.title }}</span>
+                        <span style="{{ gr.countStyle }}">{{ gr.count }}</span>
+                      </button>
+                      <sc-if value="{{ gr.open }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;flex-direction:column;gap:5px;margin-top:5px;padding-left:14px">
+                          <sc-if value="{{ gr.loadingText }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px">{{ gr.loadingText }}</span></sc-if>
+                          <sc-for list="{{ gr.groups }}" as="gg" hint-placeholder-count="3">
+                            <button onClick="{{ gg.pick }}" style="{{ gg.headerStyle }}">
+                              <span style="font-size:12px;width:12px;flex:none">{{ gg.chevron }}</span>
+                              <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;flex:1;text-align:left">{{ gg.label }}</span>
+                              <span style="{{ gg.countStyle }}">{{ gg.count }}</span>
+                            </button>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10.5px;padding:12px 4px 8px;border-top:2px solid rgba(58,35,18,.18);margin-top:8px;letter-spacing:.04em">📦 共享库</div>
+                <div>
+                  <button onClick="{{ abSharedNode.toggle }}" style="{{ abSharedNode.headerStyle }}">
+                    <span style="font-size:13px;width:14px;flex:none">{{ abSharedNode.chevron }}</span>
+                    <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11.5px;flex:1;text-align:left">assets/index.json</span>
+                    <span style="{{ abSharedNode.countStyle }}">{{ abSharedNode.count }}</span>
+                  </button>
+                  <sc-if value="{{ abSharedNode.open }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:5px;margin-top:5px;padding-left:14px">
+                      <sc-if value="{{ abSharedNode.loadingText }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px">{{ abSharedNode.loadingText }}</span></sc-if>
+                      <sc-for list="{{ abSharedNode.groups }}" as="sg" hint-placeholder-count="4">
+                        <button onClick="{{ sg.pick }}" style="{{ sg.headerStyle }}">
+                          <span style="font-size:12px;width:12px;flex:none">{{ sg.chevron }}</span>
+                          <span style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;flex:1;text-align:left">{{ sg.label }}</span>
+                          <span style="{{ sg.countStyle }}">{{ sg.count }}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+
+              <!-- 缩略图网格 -->
+              <div class="scr" style="flex:1;min-width:0;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:12px;box-shadow:0 4px 0 rgba(58,35,18,.18);max-height:640px;overflow-y:auto">
+                <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:12.5px;margin-bottom:10px">{{ abGridTitle }}</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:12px">
+                  <sc-for list="{{ abGrid }}" as="a" hint-placeholder-count="6">
+                    <div onClick="{{ a.pick }}" title="{{ a.label }}" style="{{ a.cardStyle }}">
+                      <div style="{{ a.coverStyle }}">
+                        <sc-if value="{{ a.hasThumb }}" hint-placeholder-val="{{ false }}">
+                          <img src="{{ a.thumbUrl }}" loading="lazy" alt="{{ a.label }}" style="max-width:92%;max-height:92%;object-fit:contain;image-rendering:pixelated">
+                        </sc-if>
+                        <sc-if value="{{ a.noThumb }}" hint-placeholder-val="{{ true }}">
+                          <span style="font-size:26px;opacity:.5">{{ a.icon }}</span>
+                        </sc-if>
+                      </div>
+                      <div style="padding:6px 6px 8px;text-align:center;background:#fffdf5;border-top:2px solid #3a2312">
+                        <div style="font-family:'Noto Sans SC';font-weight:700;color:#3a2312;font-size:10px;line-height:1.25;max-height:26px;overflow:hidden;word-break:break-word">{{ a.label }}</div>
+                        <sc-if value="{{ a.badgeText }}" hint-placeholder-val="{{ false }}"><span style="{{ a.badgeStyle }}">{{ a.badgeText }}</span></sc-if>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ abGridMoreText }}" hint-placeholder-val="{{ false }}"><div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:11px;margin-top:10px">{{ abGridMoreText }}</div></sc-if>
+                <sc-if value="{{ abGridEmptyText }}" hint-placeholder-val="{{ false }}"><div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;text-align:center;padding:24px">{{ abGridEmptyText }}</div></sc-if>
+              </div>
+
+              <!-- 详情栏 -->
+              <div class="scr" style="width:296px;flex:none;background:#fffdf5;border:3px solid #3a2312;border-radius:14px;padding:13px;box-shadow:0 4px 0 rgba(58,35,18,.18);max-height:640px;overflow-y:auto">
+                <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+                  <sc-for list="{{ abTabs }}" as="tb" hint-placeholder-count="3"><button onClick="{{ tb.pick }}" style="{{ tb.style }}">{{ tb.label }}</button></sc-for>
+                </div>
+                <sc-if value="{{ abTabPlaceholderOn }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;line-height:1.7;background:rgba(255,255,255,.5);border:2px dashed rgba(58,35,18,.35);border-radius:10px;padding:12px">{{ abTabPlaceholderText }}</div>
+                </sc-if>
+                <sc-if value="{{ abTabInfoOn }}" hint-placeholder-val="{{ true }}">
+                  <sc-if value="{{ abDetailOn }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:100%;height:132px;border-radius:10px;border:2.5px solid #3a2312;display:flex;align-items:center;justify-content:center;overflow:hidden;background:repeating-conic-gradient(#ececec 0% 25%, #f8f8f8 0% 50%) 50% / 14px 14px;margin-bottom:10px">
+                      <sc-if value="{{ abDetailHasThumb }}" hint-placeholder-val="{{ false }}"><img src="{{ abDetailThumbUrl }}" style="max-width:92%;max-height:92%;object-fit:contain"></sc-if>
+                      <sc-if value="{{ abDetailNoThumb }}" hint-placeholder-val="{{ true }}"><span style="font-size:34px;opacity:.5">{{ abDetailIcon }}</span></sc-if>
+                    </div>
+                    <div style="font-family:'ZCOOL KuaiLe','Fredoka';font-size:15px;color:#3a2312;word-break:break-word">{{ abDetailTitle }}</div>
+                    <sc-if value="{{ abDetailBadgeText }}" hint-placeholder-val="{{ false }}"><span style="{{ abDetailBadgeStyle }};margin-top:5px;display:inline-block">{{ abDetailBadgeText }}</span></sc-if>
+                    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+                      <sc-for list="{{ abDetailRows }}" as="rr" hint-placeholder-count="4">
+                        <div>
+                          <div style="font-family:'Fredoka';font-weight:700;color:#8a5a2c;font-size:10px;letter-spacing:.04em">{{ rr.label }}</div>
+                          <div style="font-family:'Noto Sans SC';font-weight:600;color:#3a2312;font-size:11.5px;line-height:1.5;word-break:break-all">{{ rr.value }}</div>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <sc-if value="{{ abDetailHasPreview }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ abDetailOpenPreview }}" title="在新窗口打开原始 .dc.html 预览" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">🔍 打开预览</button>
+                    </sc-if>
+                  </sc-if>
+                  <sc-if value="{{ abDetailEmptyText }}" hint-placeholder-val="{{ false }}"><div style="font-family:'Noto Sans SC';font-weight:600;color:#8a5a2c;font-size:12px;text-align:center;margin-top:24px">{{ abDetailEmptyText }}</div></sc-if>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+
           <!-- ---------- PUBLISH（发布=导出下载包·owner 07-11 拍板） ---------- -->
           <sc-if value="{{ isPublish }}" hint-placeholder-val="{{ false }}">
             <div style="max-width:840px">
@@ -1173,6 +1312,12 @@ class Component extends DCLogic {
     matteUp: false, matteUpMode: 'flood',   // 上传时抠图去背（owner 07-16·REQ-ASSET·工作台上传线）：开则先过 /api/assets/matte 出真 alpha
     artStyleInput: null, artStyleBusy: false,   // 本游戏整体美术风格锚（owner 07-13·拼进每张生成提示词·后端 dialectPrompt 已支持）
     artPreview: null, artZoom: 1,                // 台账美术图片预览灯箱 + 放大缩小（owner 07-13）
+    // 资产浏览器（REQ-ARTPIPE2 A2·PST 域 2026-08-05）：目录树（游戏/共享库/类型）→ 缩略图网格 → 详情栏。
+    // 三源现读现拼（art-ledger + design-ledger + assets/index.json）+ art-ledger-guard JSON 徽标——薄封装，
+    // 零第二真相。abGameData/abSharedData 按 slug/一次性懒加载缓存，不重复拉。
+    abIndex: null, abOpenGames: {}, abOpenShared: false, abGameData: {}, abSharedData: null,
+    abOpenGroup: null, abSel: null, abDetailTab: 'info',
+    abDropSlug: '', abDropNo: '', abDropBusy: false,
     tokenInput: '', genKeyInputs: {}, provKeyInputs: {}, genOptSel: {}, defaultProv: null, cfgModel: null, saving: false,
     toast: null
   };
@@ -1575,6 +1720,95 @@ class Component extends DCLogic {
   closeArtPreview() { this.setState({ artPreview: null, artZoom: 1 }); }
   artZoomBy(d) { this.setState(st => ({ artZoom: Math.max(0.25, Math.min(6, +(st.artZoom + d).toFixed(2))) })); }
   artZoomStep() { this.setState(st => ({ artZoom: st.artZoom >= 3 ? 1 : +(st.artZoom + 1).toFixed(2) })); } // 点图循环 1→2→3→1
+
+  // ── 资产浏览器（REQ-ARTPIPE2 A2·PST 域 2026-08-05）──────────────────────────────────
+  // 三栏：目录树（游戏/共享库/类型分组·懒加载）→ 缩略图网格 → 详情栏。数据薄封装
+  // GET /api/artbrowser/tree?scope=index|shared|<slug>（服务端拼台账/设计稿账/共享索引/守卫 JSON，
+  // 前端零二次判定，只管渲染）。拖入登记复用既有 /api/art/upload 语义（同 ArtLedgerPanel doUpload 先例）。
+  goBrowser() { this.setState({ screen: 'browser' }); this.abLoadIndex(); }
+  abLoadIndex() {
+    if (this._abIdxLoading) return;
+    this._abIdxLoading = true;
+    fetch('/api/artbrowser/tree?scope=index').then(r => r.json())
+      .then(d => this.setState({ abIndex: (d && d.success) ? d : { games: [], shared: null } }))
+      .catch(() => this.setState({ abIndex: { games: [], shared: null } }))
+      .finally(() => { this._abIdxLoading = false; });
+  }
+  abLoadGame(slug, force) {
+    if (!slug || (!force && this.state.abGameData[slug])) return;
+    fetch('/api/artbrowser/tree?scope=' + encodeURIComponent(slug)).then(r => r.json())
+      .then(d => this.setState(cur => ({ abGameData: Object.assign({}, cur.abGameData, { [slug]: (d && d.success) ? d : { groups: [], slots: [] } }) })))
+      .catch(() => this.setState(cur => ({ abGameData: Object.assign({}, cur.abGameData, { [slug]: { groups: [], slots: [] } }) })));
+  }
+  abToggleGame(slug) {
+    const willOpen = !this.state.abOpenGames[slug];
+    this.setState(cur => ({ abOpenGames: Object.assign({}, cur.abOpenGames, { [slug]: willOpen }) }));
+    if (willOpen) this.abLoadGame(slug);
+  }
+  abToggleShared() {
+    const willOpen = !this.state.abOpenShared;
+    this.setState({ abOpenShared: willOpen });
+    if (willOpen && !this.state.abSharedData) {
+      fetch('/api/artbrowser/tree?scope=shared').then(r => r.json())
+        .then(d => this.setState({ abSharedData: (d && d.success) ? d : { groups: [] } }))
+        .catch(() => this.setState({ abSharedData: { groups: [] } }));
+    }
+  }
+  abPickGroup(key) { this.setState({ abOpenGroup: key, abSel: null, abDetailTab: 'info' }); }
+  abPickItem(it) {
+    const patch = { abSel: it, abDetailTab: 'info' };
+    // 点了某游戏的台账行 → 顺手把「拖入登记」目标预填成同一槽（owner「点开就是想换这张」的最短路径）。
+    if (it && it.source === 'art-ledger' && it.slug && it.no) { patch.abDropSlug = it.slug; patch.abDropNo = it.no; }
+    this.setState(patch);
+  }
+  abTabPick(tab) { this.setState({ abDetailTab: tab }); }
+  abDropPickGame(slug) {
+    this.setState({ abDropSlug: slug, abDropNo: '' });
+    this.abLoadGame(slug);
+  }
+  abDropPickSlot(no) { this.setState({ abDropNo: no }); }
+  abDropOver(e) { if (e && e.preventDefault) e.preventDefault(); }
+  abDrop(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const f = e && e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) this._abUploadFile(f);
+  }
+  abPickFile() {
+    if (this.state.abDropBusy) return;
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.png,.webp,.jpg,.jpeg,.glb';
+    inp.onchange = () => { const f = inp.files && inp.files[0]; if (f) this._abUploadFile(f); };
+    inp.click();
+  }
+  // 拖入自动登记（沿 /api/art/upload 的 base64 先例，同 artUpload/_designUploadFile 一样的读文件模式）：
+  // 目标游戏 + 槽位（该游戏台账已有的 art-NN）在 UI 选好，落盘即台账行被钉真图+provenance（A1 守卫=无逃逸）。
+  _abUploadFile(file) {
+    const slug = this.state.abDropSlug, no = this.state.abDropNo;
+    if (!slug || !no) { this.showToast('先选目标游戏 + 槽位，再拖图/选文件'); return; }
+    const fname = String((file && file.name) || '');
+    const ext = (fname.split('.').pop() || 'png').toLowerCase();
+    if (['png', 'webp', 'jpg', 'jpeg', 'glb'].indexOf(ext) < 0) { this.showToast('✕ 只收 png/webp/jpg/glb'); return; }
+    if (file.size > 12 * 1024 * 1024) { this.showToast('✕ 图太大（>12MB），换张小的'); return; }
+    const reader = new FileReader();
+    reader.onerror = () => this.showToast('✕ 读文件失败');
+    reader.onload = () => {
+      const durl = String(reader.result || ''); const ci = durl.indexOf(',');
+      const b64 = ci >= 0 ? durl.slice(ci + 1) : '';
+      if (!b64) { this.showToast('✕ 读文件为空'); return; }
+      this.setState({ abDropBusy: true });
+      fetch('/api/art/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, no, dataBase64: b64, ext }) }).then(r => r.json()).then(d => {
+          this.setState({ abDropBusy: false });
+          if (!d || !d.success) throw new Error((d && d.error) || '上传失败');
+          this.showToast('✓ 已登记：' + slug + ' ' + no + '（台账行已钉真图+provenance）');
+          this.abLoadGame(slug, true);   // 该游戏分组数据刷新（新行立即可见）
+          this.abLoadIndex();            // 顶层计数徽标同步刷新
+        }).catch(e => { this.setState({ abDropBusy: false }); this.showToast('✕ ' + ((e && e.message) || '上传失败').slice(0, 100)); });
+    };
+    reader.readAsDataURL(file);
+  }
+
   // 游戏封面/图标文生图（owner 07-12）：POST → 生成 cover.png → 刷新 carts/liveGames 使卡片外观即换。
   coverGen() {
     const slug = this.state.assetsSlug;
@@ -2179,6 +2413,7 @@ class Component extends DCLogic {
       create: ['AI 新建', 'DESCRIBE → GENERATE（真生成·入库即可编辑）'],
       edit: ['编辑工坊', 'WORKSHOP · 策划 / 程序 对白编辑'],
       assets: ['游戏美术库', 'GAME ART · 每游戏一本美术台账'],
+      browser: ['🗂 资产浏览器', 'ASSET BROWSER · 目录树 · 缩略图 · 详情栏'],
       matlib: ['素材库', 'ASSET LIBRARY · 共享免费资产库'],
       publish: ['发布', 'EXPORT · 下载包'],
       settings: ['设置', 'SETTINGS · LLM 通道 + 文生图 API']
@@ -2377,6 +2612,145 @@ class Component extends DCLogic {
       border: '2.5px solid #3a2312', borderRadius: '11px', padding: '6px 12px', color: '#3a2312',
       background: open ? 'linear-gradient(180deg,#d6f1ff,#a9e0fb)' : 'rgba(255,255,255,.55)',
       boxShadow: open ? '0 3px 0 #5c8fd2' : '0 2px 0 rgba(58,35,18,.16)' });
+
+    // ── 资产浏览器（REQ-ARTPIPE2 A2）：目录树行（游戏×分组 + 共享库×分组）+ 当前网格 + 详情栏 ──────
+    const AB_BADGE = { final: ['⭐ final', '#7ecb45'], draft: ['📝 draft', '#ffd257'], blackhouse: ['⚠ 黑户', '#ef5138'], dead: ['✕ 死账', '#8f3a2a'] };
+    const abBadgeChip = (badge) => {
+      const b = AB_BADGE[badge] || ['', '#c8c8c8'];
+      return { text: b[0], style: { background: b[1], border: '2px solid #3a2312', borderRadius: '7px', padding: '1px 6px',
+        fontFamily: "'Noto Sans SC',sans-serif", fontWeight: 700, fontSize: '9px', color: (badge === 'dead' || badge === 'blackhouse') ? '#fff5db' : '#3a2312' } };
+    };
+    const abIdx = s.abIndex;
+    const abGameRows = ((abIdx && abIdx.games) || []).map(g => {
+      const open = !!s.abOpenGames[g.slug];
+      const gd = s.abGameData[g.slug];
+      const cts = g.counts || {};
+      const countBits = [cts.final ? ('⭐' + cts.final) : '', cts.draft ? ('📝' + cts.draft) : '',
+        cts.blackHousehold ? ('⚠' + cts.blackHousehold) : '', cts.deadAccount ? ('✕' + cts.deadAccount) : ''].filter(Boolean).join(' ');
+      return {
+        slug: g.slug, title: (g.title || g.slug) + '（' + g.slug + '）', open, chevron: open ? '▾' : '▸',
+        headerStyle: treeHeaderStyle(open), countStyle: countBadgeStyle, count: countBits || String(cts.total || 0),
+        toggle: () => this.abToggleGame(g.slug),
+        groups: (open && gd && Array.isArray(gd.groups)) ? gd.groups.map(grp => {
+          const gKey = g.slug + '::' + grp.key;
+          const gopen = s.abOpenGroup === gKey;
+          return { key: gKey, label: grp.label, count: grp.items.length, open: gopen, chevron: gopen ? '▾' : '▸',
+            headerStyle: subHeaderStyle(gopen), countStyle: countBadgeStyle, pick: () => this.abPickGroup(gKey) };
+        }) : [],
+        loadingText: (open && !gd) ? '加载中…' : '',
+      };
+    });
+    const sharedRootOpen = s.abOpenShared;
+    const sharedGroups = (sharedRootOpen && s.abSharedData && Array.isArray(s.abSharedData.groups)) ? s.abSharedData.groups.map(grp => {
+      const gKey = 'shared::' + grp.key;
+      const gopen = s.abOpenGroup === gKey;
+      return { key: gKey, label: grp.label, count: grp.total != null ? grp.total : grp.items.length, open: gopen, chevron: gopen ? '▾' : '▸',
+        headerStyle: subHeaderStyle(gopen), countStyle: countBadgeStyle, pick: () => this.abPickGroup(gKey) };
+    }) : [];
+    const abSharedNode = {
+      open: sharedRootOpen, chevron: sharedRootOpen ? '▾' : '▸', headerStyle: treeHeaderStyle(sharedRootOpen), countStyle: countBadgeStyle,
+      count: String((abIdx && abIdx.shared && abIdx.shared.count) || 0), toggle: () => this.abToggleShared(),
+      groups: sharedGroups, loadingText: (sharedRootOpen && !s.abSharedData) ? '加载中…' : '',
+    };
+    // 当前网格 = 目录树里被点开的那个分组（key 形如 "<slug>::<kind>" 或 "shared::<cat>"）。
+    let abGridItems = [], abGridTitle = '点左侧目录树展开一个分组查看';
+    if (s.abOpenGroup) {
+      const sep = s.abOpenGroup.indexOf('::');
+      const scopeId = sep >= 0 ? s.abOpenGroup.slice(0, sep) : '';
+      const gKey = sep >= 0 ? s.abOpenGroup.slice(sep + 2) : '';
+      if (scopeId === 'shared') {
+        const grp = ((s.abSharedData && s.abSharedData.groups) || []).find(x => x.key === gKey);
+        if (grp) { abGridItems = grp.items; abGridTitle = '共享库 · ' + grp.label + (grp.truncated ? '（显示前 ' + grp.items.length + ' / ' + grp.total + '——全量搜索去「素材库」屏）' : ''); }
+      } else {
+        const gd = s.abGameData[scopeId];
+        const grp = gd && (gd.groups || []).find(x => x.key === gKey);
+        if (grp) { abGridItems = grp.items; abGridTitle = (gd.title || scopeId) + ' · ' + grp.label; }
+      }
+    }
+    const AB_GRID_CAP = 240;
+    const abGrid = abGridItems.slice(0, AB_GRID_CAP).map(it => {
+      const bc = abBadgeChip(it.badge);
+      const active = !!(s.abSel && s.abSel.id === it.id);
+      return {
+        thumbUrl: it.thumbUrl || '', hasThumb: !!it.thumbUrl, noThumb: !it.thumbUrl,
+        icon: it.kind === 'model3d' ? '🧊' : (it.kind === 'design-doc' ? '📄' : '🎨'),
+        label: it.label || it.id, badgeText: bc.text, badgeStyle: bc.style,
+        cardStyle: { borderRadius: '16px', overflow: 'hidden', cursor: 'pointer',
+          border: '3px solid ' + (active ? '#7ecb45' : '#ffd257'),
+          boxShadow: '0 4px 0 rgba(58,35,18,.25),0 0 0 2px #3a2312', background: '#fff' },
+        coverStyle: { height: '78px', borderBottom: '2px solid #3a2312', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: it.thumbUrl ? '#f2ead8' : 'repeating-conic-gradient(#ececec 0% 25%, #f8f8f8 0% 50%) 50% / 14px 14px' },
+        pick: () => this.abPickItem(it),
+      };
+    });
+    const abGridMoreText = abGridItems.length > AB_GRID_CAP ? ('…还有 ' + (abGridItems.length - AB_GRID_CAP) + ' 项（用素材库屏搜索精确定位）') : '';
+    const abGridEmptyText = (s.abOpenGroup && !abGrid.length) ? '这个分组暂无内容' : '';
+
+    // 详情栏：通用 label/value 行（三源统一渲染·不按来源分模板）+ 两个占位 tab（A3 历史 / A4 替换·消费方）。
+    const abDetail = (() => {
+      const it = s.abSel;
+      if (!it) return null;
+      const SRC_LABEL = { 'art-ledger': '游戏美术台账', 'design-ledger': '设计稿收稿箱', shared: '共享资产库 assets/index.json',
+        'black-household': '⚠ 黑户——磁盘有文件·台账无行（下方「拖入登记」补建 provenance，或到旧工作台美术平台按编号处理）' };
+      const rows = [{ label: '来源', value: SRC_LABEL[it.source] || it.source || '' }];
+      if (it.no) rows.push({ label: '编号', value: it.no });
+      if (it.kind) rows.push({ label: '类型', value: it.kind });
+      if (it.status) rows.push({ label: '状态', value: it.status });
+      if (it.query || it.desc) rows.push({ label: '描述 / 查询词', value: it.query || it.desc });
+      if (it.servedPath) rows.push({ label: '文件路径', value: it.servedPath });
+      if (it.provenance) {
+        const p = it.provenance;
+        rows.push({ label: '来源 provenance', value: [p.model, p.license, p.date].filter(Boolean).join(' · ') || '（有 provenance 对象·字段皆空）' });
+        if (p.prompt) rows.push({ label: '生成提示词', value: p.prompt });
+      } else if (it.source === 'art-ledger' && it.status && it.status !== 'needs-art' && it.status !== 'placeholder' && it.status !== 'tbf') {
+        rows.push({ label: '来源 provenance', value: '⚠ 缺失（A1 守卫会标记「缺来源」）' });
+      }
+      if (it.license) rows.push({ label: '许可', value: it.license });
+      if (it.sha256) rows.push({ label: 'sha256', value: it.sha256 });
+      if (it.receivedAt) rows.push({ label: '收稿时间', value: it.receivedAt });
+      if (it.note) rows.push({ label: '定稿备注', value: it.note + (it.by ? '（' + it.by + '）' : '') });
+      const bc = abBadgeChip(it.badge);
+      return {
+        title: it.label || it.id, thumbUrl: it.thumbUrl || '', hasThumb: !!it.thumbUrl,
+        icon: it.kind === 'model3d' ? '🧊' : '🎨',
+        badgeText: bc.text, badgeStyle: Object.assign({}, bc.style, { fontSize: '11px', padding: '2px 9px' }),
+        rows: rows.map(r => ({ label: r.label, value: String(r.value == null ? '' : r.value) })),
+        hasPreviewHref: !!it.previewHref,
+        openPreview: it.previewHref ? (() => window.open(it.previewHref, '_blank')) : (() => {}),
+      };
+    })();
+    // 详情栏字段一律拍平到顶层 key 直供模板绑定（同全库先例：模板里不对可能为 null 的对象做 `.field` 深访问，
+    // 空态给结构安全的默认值·仅 abDetailRows 是数组·数组内条目永远随 sc-for 一起出现，天然非空安全）。
+    const abDetailTitle = abDetail ? abDetail.title : '';
+    const abDetailThumbUrl = abDetail ? abDetail.thumbUrl : '';
+    const abDetailHasThumb = abDetail ? abDetail.hasThumb : false;
+    const abDetailNoThumb = abDetail ? !abDetail.hasThumb : true;
+    const abDetailIcon = abDetail ? abDetail.icon : '';
+    const abDetailBadgeText = abDetail ? abDetail.badgeText : '';
+    const abDetailBadgeStyle = abDetail ? abDetail.badgeStyle : {};
+    const abDetailRows = abDetail ? abDetail.rows : [];
+    const abDetailHasPreview = abDetail ? abDetail.hasPreviewHref : false;
+    const abDetailOpenPreview = abDetail ? abDetail.openPreview : (() => {});
+    const abTabs = [['info', '📋 详情'], ['history', '🕘 历史（A3）'], ['consumers', '🔁 替换/消费方（A4）']].map(([id, label]) => ({
+      label, style: chipStyle(s.abDetailTab === id), pick: () => this.abTabPick(id) }));
+    const abTabPlaceholderText = s.abDetailTab === 'history'
+      ? '历史 / 回滚（REQ-ARTPIPE2 A3·未派工）—— 计划：git log --follow 该文件的提交列表 + 任意版本缩略图预览（git show rev:path）+ 一键回退到此版（写工作树+台账行状态变更）。'
+      : s.abDetailTab === 'consumers'
+        ? '替换工作流 / 消费方反查（REQ-ARTPIPE2 A4·未派工）—— 计划：该资产被哪些游戏/哪些屏引用的索引反查 → 重生成/换库/换皮/上传替换（复用 art-replace.mjs 既有四命令）+ 人审签名（沿 wizardSignoff 铁律·不代签）。'
+        : '';
+    // 拖入登记：目标游戏 chips（游戏清单来自 abIndex——都已建过台账，槽位选择才有意义）+ 该游戏槽位 chips（该游戏台账已有的 art-NN）。
+    const abDropGameChips = ((abIdx && abIdx.games) || []).map(g => ({
+      label: g.slug, style: chipStyle(s.abDropSlug === g.slug), pick: () => this.abDropPickGame(g.slug) }));
+    const abDropGameData = s.abDropSlug ? s.abGameData[s.abDropSlug] : null;
+    const abDropSlots = (abDropGameData && abDropGameData.slots) || [];
+    const abDropSlotChips = abDropSlots.slice(0, 80).map(sl => ({
+      label: sl.no, style: Object.assign(chipStyle(s.abDropNo === sl.no), { fontFamily: 'ui-monospace,Menlo,monospace', fontSize: '10px' }),
+      pick: () => this.abDropPickSlot(sl.no) }));
+    const abDropSlotEmptyText = s.abDropSlug ? (abDropGameData ? (abDropSlots.length ? '' : '这盘游戏台账暂无槽位') : '槽位加载中…') : '先选目标游戏';
+    const abDropReady = !!(s.abDropSlug && s.abDropNo);
+    const abDropHint = abDropReady ? ('目标：' + s.abDropSlug + ' · ' + s.abDropNo + '——把图片文件拖进这个框，或点右边按钮选文件')
+      : '先在上面选好「目标游戏」+「槽位」，这个框才会生效';
+
     // 游戏美术库·按种类分组折叠（真字段 kind + slot.entity 推导·优先级见 spec）
     const ledRowsAll = ((s.ledger && s.ledger.rows) || []).filter(r => r.status !== 'retired');
     const artKindOf = (r) => {
@@ -2693,16 +3067,17 @@ class Component extends DCLogic {
       versionLabel: 'Version ' + (s.version || '0.1.0'), versionShort: 'v' + (s.version || '0.1.0'),
       isGames: s.screen === 'games', isNewGame: s.screen === 'newgame',
       isTemplates: s.screen === 'templates', isCreate: s.screen === 'create', isEdit: s.screen === 'edit',
-      isAssets: s.screen === 'assets', isMatlib: s.screen === 'matlib', isPublish: s.screen === 'publish', isSettings: s.screen === 'settings',
+      isAssets: s.screen === 'assets', isBrowser: s.screen === 'browser', isMatlib: s.screen === 'matlib', isPublish: s.screen === 'publish', isSettings: s.screen === 'settings',
       // ── 沉浸模式（owner 2026-08-04：进编辑工坊自动收起侧栏+顶栏瘦身+杂讯清理·无开关不持久化，退出即恢复） ──
       immersiveOn: s.screen === 'edit', chromeOn: s.screen !== 'edit',
       immersiveTitle: '爱萌互动 · ' + (s.editName || s.editSlug || '编辑工坊'),
       immersiveBackStyle: Object.assign({}, back.style, { marginBottom: 0 }),
       navGamesStyle: navBase(['games', 'newgame', 'templates', 'create', 'edit'].indexOf(s.screen) >= 0),
-      navAssetsStyle: navBase(s.screen === 'assets'), navMatlibStyle: navBase(s.screen === 'matlib'), navPublishStyle: navBase(s.screen === 'publish'), navSettingsStyle: navBase(s.screen === 'settings'),
+      navAssetsStyle: navBase(s.screen === 'assets'), navBrowserStyle: navBase(s.screen === 'browser'), navMatlibStyle: navBase(s.screen === 'matlib'), navPublishStyle: navBase(s.screen === 'publish'), navSettingsStyle: navBase(s.screen === 'settings'),
       goGames: () => this.setState({ screen: 'games' }), goNewGame: () => this.setState({ screen: 'newgame' }),
       goTemplates: () => this.setState({ screen: 'templates' }), goCreate: () => this.setState({ screen: 'create' }),
       goAssets: () => { this.setState({ screen: 'assets' }); if (!s.assetsSlug && mergedSlugs.length) this.pickAssetGame(mergedSlugs[0]); },
+      goBrowser: () => this.goBrowser(),
       goMatlib: () => { this.setState({ screen: 'matlib' }); this.ensureFreeLib(); },
       goPublish: () => this.setState({ screen: 'publish' }), goSettings: () => { this.setState({ screen: 'settings' }); this.refreshSettings(); this.refreshLogs(); },
       myGames, gameFilters,
@@ -3089,6 +3464,18 @@ class Component extends DCLogic {
       flQuery: s.flQuery, flType: (e) => this.setState({ flQuery: e.target.value }),
       flClear: () => this.setState({ flQuery: '' }), flClearStyle: flClearBtn,
       flLoading, flSearching, flResults, flResultLabel, flNoResult, flTreeShown, flCats,
+      // 资产浏览器（REQ-ARTPIPE2 A2）
+      abIndexLoaded: !!abIdx, abGameRows, abSharedNode,
+      abGridTitle, abGrid, abGridMoreText, abGridEmptyText,
+      abDetailOn: !!abDetail, abDetailEmptyText: abDetail ? '' : '点中间网格里的一张，看详情',
+      abDetailTitle, abDetailThumbUrl, abDetailHasThumb, abDetailNoThumb, abDetailIcon,
+      abDetailBadgeText, abDetailBadgeStyle, abDetailRows, abDetailHasPreview, abDetailOpenPreview,
+      abTabs, abTabInfoOn: s.abDetailTab === 'info', abTabPlaceholderOn: s.abDetailTab !== 'info', abTabPlaceholderText,
+      abDropGameChips, abDropSlotChips, abDropSlotEmptyText, abDropReady, abDropHint,
+      abDropSlug: s.abDropSlug, abDropNo: s.abDropNo,
+      abDropOver: (e) => this.abDropOver(e), abDrop: (e) => this.abDrop(e), abPickFile: () => this.abPickFile(),
+      abDropBusy: s.abDropBusy, abDropBtnLabel: s.abDropBusy ? '⏳ 上传登记中…' : '📁 选文件登记（或把图拖进虚线框）',
+      abDropBtnStyle: upload.style, abDropBtnActive: upload.active,
       // publish
       publishRows, publishHint, pkgBtnStyle: pkgB.style, pkgBtnActive: pkgB.active, dlBtnStyle: dlB.style, dlBtnActive: dlB.active,
       // settings

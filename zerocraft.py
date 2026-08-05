@@ -18,7 +18,7 @@ from main_entry import (
     agent_prompts, workshop_store, agent_chat, protocols, ts_carts, settings_api,
     assets, games_list, jobs, packaging, groups, placeholder, workshop_state,
     art_review, art_replace, t2_replace, pipeline_board, asset_annotate, library,
-    library_api, design_drafts, server, cli,
+    library_api, design_drafts, artbrowser, server, cli,
 )
 
 _MODULES = [
@@ -27,7 +27,7 @@ _MODULES = [
     agent_prompts, workshop_store, agent_chat, protocols, ts_carts, settings_api,
     assets, games_list, jobs, packaging, groups, placeholder, workshop_state,
     art_review, art_replace, t2_replace, pipeline_board, asset_annotate, library,
-    library_api, design_drafts, server, cli,
+    library_api, design_drafts, artbrowser, server, cli,
 ]
 
 # 外部（smoke）会 `apollo.NAME = v` 重新赋值这些可变态；写必须落到属主模块、读取回属主模块（保持活值）。

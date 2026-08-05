@@ -13,6 +13,7 @@ from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 from .agent_chat import handle_agent_chat
 from .art_replace import handle_art_batch, handle_art_derive, handle_art_ledger, handle_art_packs, handle_art_replace, handle_art_style_save, handle_art_style_delete
 from .art_review import handle_asset_pending, handle_asset_review
+from .artbrowser import handle_artbrowser_tree
 from .asset_annotate import handle_asset_autotag
 from .assets import handle_asset_generate, handle_asset_generate_providers, handle_asset_import, handle_asset_matte, handle_asset_vendor
 from .blueprints import PRESET_BLUEPRINTS
@@ -407,6 +408,12 @@ class APIHandler(BaseHTTPRequestHandler):
         elif path == '/api/art/ledger':
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_art_ledger((qs.get('slug') or [''])[0])
+        elif path == '/api/artbrowser/tree':  # 资产浏览器三栏数据（REQ-ARTPIPE2 A2·薄封装既有台账/索引/守卫 JSON）
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            try:
+                data = handle_artbrowser_tree((qs.get('scope') or [''])[0])
+            except Exception as e:
+                data = {'success': False, 'error': f'artbrowser tree 异常: {e}'}
         elif path == '/api/design/ledger':  # 收稿箱列表（REQ-DESIGNLINE 过渡轨②）
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_design_ledger_get((qs.get('slug') or [''])[0])

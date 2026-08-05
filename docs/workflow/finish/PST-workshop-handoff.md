@@ -21,6 +21,7 @@
 | 双角色对话 | `zerocraft.py` `handle_agent_chat` | `POST /api/agent/chat`（下详）·系统词 `AGENT_GD_SYSTEM`/`AGENT_PE_SYSTEM` |
 | 订阅通道 | `zerocraft.py` `_claude_code_*` | claude-code 子进程（下详·红线区） |
 | 数据桥 | `zerocraft.py` `library_create`/`library_put_manifest`/`handle_pipeline_concept`/`handle_art_reskin` | create 带 description→meta+S1 立项卡；PUT 即台账；换皮谱系 |
+| 资产浏览器 | `main_entry/artbrowser.py` + 壳 `screen==='browser'` 区块 | REQ-ARTPIPE2 A2（PST 施工 2026-08-05）：三栏（目录树/缩略图网格/详情栏）·数据薄封装见下 `GET /api/artbrowser/tree` |
 | 八阶段板 | `scripts/game-pipeline.mjs` + `src/studio/GamePipelinePanel.tsx` | cart-S8=轻量终检（mockDebt∧manifest-check∧bench·证据绑 gameHash） |
 | launcher 导流 | `src/launcher.tsx` + `src/studio/DataCartridgeRunner.tsx`（LibActionBar） | 🏭/⤓ 导出/保存成功「下一步→🏭」/⇄ Workshop 链接 |
 
@@ -51,6 +52,29 @@
   - 冒烟自测（未入库·仅本地验证用）：dispatch 快/慢路径、库级锁互斥、abort 误杀防护（OTHER_SLUG）、
     wizard-concept 两分支，见回执附的 scratchpad 脚本；真浏览器三状态截图同附。
 - `GET /api/art/ledger?slug=` → `{success, rows:[{no, status, query, slot, gen{servedPath,mock,…}}]}`（servedPath=/games/… 正好走静态路由）
+- **资产浏览器**（REQ-ARTPIPE2 A2·PST 施工 2026-08-05）：`main_entry/artbrowser.py` 薄封装——只读现拼三源
+  （各游戏 `art-ledger.json` + `docs/design/<slug>/design-ledger.json` + `assets/index.json`），黑户/死账/缺来源徽标
+  外调既有 `scripts/art-ledger-guard.mjs --json`（A1 · 只读 shell 调用·同 `_art_replace_cli` 先例，本模块**不重新实现**
+  黑户/死账判定）。零第二真相：不落任何缓存文件，每次请求现读现拼。
+  - `GET /api/artbrowser/tree?scope=index`（缺省）→ 顶层目录树：`{games:[{slug,title,counts:{total,final,draft,
+    blackHousehold,deadAccount,missingProvenance}}], shared:{count,byCategory}}`
+  - `GET /api/artbrowser/tree?scope=shared` → 共享库按 `assets/index.json` 的 `category` 分组，单组截断
+    `SHARED_GROUP_CAP=200`（`icon.ui`/`emoji` 现有 25080/4870 项·全量倒库单响应过大——超出部分 `truncated:true`
+    + `total`，UI 提示去「素材库」屏用标签搜索；FreeArtLib 不在此三源内，`共享库`=项目资产索引，与素材库屏的
+    FreeArtLib 双源展示是两回事，勿混淆）
+  - `GET /api/artbrowser/tree?scope=<slug>` → 该游戏分组（`texture`/`sprite`/`bg`/`model3d` 按 `art-ledger` 行 `kind`
+    分·`design-doc` 组=该游戏设计稿收稿箱·`black-household` 组=guard 报告的黑户文件合成条目，只读展示不建行）+
+    `slots:[{no,label,status}]`（供拖入登记 UI 的槽位选择器）。四态徽标闭集 `final`（`art-ledger` 行 `status==
+    'approved'` 或 design-ledger `status==='final'`）/`draft`（其余）/`blackhouse`/`dead`（no 落在 guard `deadAccounts`）。
+  - 拖入登记：壳 UI 选目标游戏+槽位后，直接复用既有 `POST /api/art/upload`（同 `ArtLedgerPanel.doUpload` 先例，
+    非新逻辑）——上传落盘即台账行钉 provenance，A1 守卫「缺来源」判定随之清账。
+  - 历史（A3）/替换·消费方反查（A4）为详情栏两个占位 tab（纯文案，未接后端）——按图纸顺延到对应翼施工。
+  - **已知偏差**（施工回执已报 Lead·未拍板）：`/api/art/upload` 对**有 `manifest.json` 的 library 卡带**走
+    `art-replace.mjs swap --upload` 分支（非 `is_game` 的直钉 `gen.servedPath` 分支）——实测该分支落盘后
+    `art-ledger.json` 行的 `gen` 对象只剩 `{source:'upload', localId}`，**没有 `servedPath`**（`provenance` 正常）。
+    本浏览器 `thumbUrl` 读不到就正确退化为图标占位（不是本模块的 bug），但意味着**卡带**游戏走拖入登记后网格缩略图
+    暂时空白（编译期/无 manifest 的游戏台账走的是另一分支，`servedPath` 正常）——不在 A2 域内不代修，登记为债待
+    Lead/PE 域裁决（复现：任意 library 卡带 + 已 derive 台账 + `/api/art/upload` 传 `no`→查 `art-ledger.json` 该行）。
 - `POST /api/agent/chat` `{slug, role: gd|pe|art, messages[≤40·末条须 user], provider?, model?, effort?, catalog?}` →
   `{success, reply, manifest?|manifestError?, artHints?(gd/art), attempts, provider, model}`
   - **三角色**（owner 07-11 改三入口）：gd=玩法数值 · art=美术方向/台账/皮肤槽（系统词带台账 digest）· pe=结构接线
