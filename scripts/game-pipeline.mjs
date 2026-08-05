@@ -29,6 +29,10 @@ import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+// R3（REQ-RENDERCHECK·标准照比对）门读码只要「有没有 blessed 基准」这一个纯 fs 判断——从
+// scripts/lib/golden-ledger.mjs（而非 golden-shot.mjs 本体）import，避免跟 golden-shot.mjs
+// （它反过来要 import 本文件的 detectForm/gameHash）互相 import 成环。
+import { blessedStates } from './lib/golden-ledger.mjs';
 
 // ROOT=仓库根（默认）。ZEROCRAFT_PIPELINE_ROOT（旧名 APOLLO_PIPELINE_ROOT 过渡期仍读）仅供测试
 // 注入临时根（跑 CLI 端到端·不碰真仓库）——生产不设此环境变量，行为逐字节同旧版。
@@ -370,6 +374,30 @@ export function interpretRenderProbe(baseSummary, probeExit, probeTail) {
   return { exit: 1, summary: `${baseSummary} · ✗ 渲染探针未过${probeTail ? ' · ' + probeTail : ''}` };
 }
 
+/** R3 标准照比对门读码（REQ-RENDERCHECK）：compare exit 0=过·3=环境无浏览器（同 R1 语义·不算红）
+ *  ·其余=红（提示「有意变更请 bless」——漂移未必是 bug，也可能是真改动没走 bless 转正）。
+ *  纯函数（不碰盘/不 spawn）——导出供单测直接灌各退出码。 */
+export function interpretGoldenCompare(baseSummary, compareExit, compareTail) {
+  if (compareExit === 3) return { exit: 0, summary: `${baseSummary} · ⚠ 标准照比对未跑·环境无浏览器（权威判定以有浏览器环境为准）` };
+  if (compareExit === 0) return { exit: 0, summary: `${baseSummary} · ✓ 标准照比对过（golden-shot compare）` };
+  return { exit: 1, summary: `${baseSummary} · ✗ 标准照漂移（有意变更请 golden-shot capture+bless 转正）${compareTail ? ' · ' + compareTail : ''}` };
+}
+
+/** S5/S8 门收尾（REQ-RENDERCHECK R3）：base 门（audit/三绿等）已过才追加标准照比对——base 已红
+ *  不必再跑（省时间·结论不变）。无 blessed 基准＝⚠ 提示不拦（golden-shot bless 建基准前，标准照
+ *  比对对该游戏是可选项非硬门）；有基准则真起服跑 compare 子进程按 interpretGoldenCompare 读码。
+ *  SANDBOXED 根跳过（同 R1 SANDBOXED 语义——沙盒测试根无真 app 可连）。 */
+function withGoldenGate(slug, base) {
+  if (base.exit !== 0 || SANDBOXED) return base;
+  if (!blessedStates(ROOT, slug).length) {
+    return { exit: 0, summary: `${base.summary} · ⚠ 无标准照基准·未比对（golden-shot bless 建基准）` };
+  }
+  const script = join(dirname(fileURLToPath(import.meta.url)), 'golden-shot.mjs');
+  const cmp = run('node', [script, 'compare', '--game', slug]);
+  const tail = (cmp.stdout || cmp.stderr || '').trim().split('\n').slice(-2).join(' / ').slice(0, 200);
+  return interpretGoldenCompare(base.summary, cmp.status ?? 1, tail);
+}
+
 function gateRun(slug, stage, form) {
   if (stage === 'S3') {
     const mf = manifestPath(ROOT, slug, form);
@@ -424,14 +452,16 @@ function gateRun(slug, stage, form) {
     return { exit: 0, summary: `walkthrough 绿（${tail.slice(0, 120)}）· 验收剧本 ${nScen} 场景绿` };
   }
   if (stage === 'S5') {
-    if (form === 'cart') return { exit: 0, summary: '纯数据卡带免审计' };
+    // R3（REQ-RENDERCHECK）：S5 收尾一律经 withGoldenGate——它自己在 base.exit≠0 时原样透传，
+    // 故这里两条路径（cart 免审计的即时过 / 非 cart 的 audit 结果）都直接包一层，不必分叉判断。
+    if (form === 'cart') return withGoldenGate(slug, { exit: 0, summary: '纯数据卡带免审计' });
     // REQ-SELFCHECK·图纸①（UI 关同款前置·spawn audit 前的纯 fs 检查）：
     // UI 好不好看/交互顺不顺，audit 判不了——自证对齐单 + 真渲染截图序列在档才许跑。
     const scBlock5 = selfCheckBlock(selfCheckArtifacts(ROOT, slug, 'S5'), 'S5');
     if (scBlock5) return { exit: 1, summary: scBlock5 };
     const r = run('node', ['scripts/game-skill-audit.mjs', slug]);
     const verdict = (r.stdout || '').split('\n').filter((l) => /^(AUDIT|RATCHET):/.test(l)).join(' · ');
-    return { exit: r.status ?? 1, summary: verdict || (r.stderr || '').slice(0, 200) };
+    return withGoldenGate(slug, { exit: r.status ?? 1, summary: verdict || (r.stderr || '').slice(0, 200) });
   }
   if (stage === 'S8') {
     if (form === 'cart') {
@@ -447,7 +477,8 @@ function gateRun(slug, stage, form) {
       let pass = false, score = '?';
       try { const j = JSON.parse((b.stdout || '').trim().split('\n').pop()); pass = !!j.pass; score = j.score; } catch { /* 输出非 JSON 即失败 */ }
       if (!pass) return { exit: 1, summary: `✗ bench 五轴 score=${score}` };
-      return { exit: 0, summary: `cart 终检：MOCK 0 · manifest-check=0 · bench score=${score}` };
+      // R3（REQ-RENDERCHECK）收尾：三项已绿才追加标准照比对——中途任一红已提前 return，不会到这里。
+      return withGoldenGate(slug, { exit: 0, summary: `cart 终检：MOCK 0 · manifest-check=0 · bench score=${score}` });
     }
     const steps = [
       ['npx', ['tsc', '--noEmit']],
@@ -460,7 +491,8 @@ function gateRun(slug, stage, form) {
       parts.push(`${args[0]}=${r.status ?? 1}`);
       if ((r.status ?? 1) !== 0) return { exit: r.status ?? 1, summary: `✗ ${parts.join(' ')} · ${(r.stderr || r.stdout || '').trim().slice(0, 200)}` };
     }
-    return { exit: 0, summary: `tsc+vitest+build 三绿（${parts.join(' ')}）` };
+    // R3（REQ-RENDERCHECK）收尾：tsc+vitest+build 三绿才追加标准照比对。
+    return withGoldenGate(slug, { exit: 0, summary: `tsc+vitest+build 三绿（${parts.join(' ')}）` });
   }
   return { exit: 1, summary: `阶段 ${stage} 无机器门` };
 }

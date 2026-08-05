@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "slug": "game-e",
+  "concept": {},
+  "signoffs": {},
+  "evidence": {
+    "S8": {
+      "exit": 0,
+      "summary": "tsc+vitest+build 三绿（tsc=0 vitest=0 run=0） · ✓ 标准照比对过（golden-shot compare）",
+      "at": "2026-08-05T06:35:38.790Z",
+      "head": "b7f03d3384e6b3ec333c441b91a9272905a5c137",
+      "dirty": true
+    }
+  },
+  "outOfOrder": [
+    {
+      "stage": "S8",
+      "reason": "REQ-RENDERCHECK R3 施工验证：S8 门标准照比对接线真跑核证（Lead 复查用）",
+      "at": "2026-08-05T06:32:43.279Z"
+    }
+  ],
+  "history": [
+    {
+      "action": "out-of-order",
+      "stage": "S8",
+      "reason": "REQ-RENDERCHECK R3 施工验证：S8 门标准照比对接线真跑核证（Lead 复查用）",
+      "at": "2026-08-05T06:32:43.279Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S8",
+      "exit": 0,
+      "at": "2026-08-05T06:35:38.790Z"
+    }
+  ]
+}

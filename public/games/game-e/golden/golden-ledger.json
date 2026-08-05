@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "slug": "game-e",
+  "states": {
+    "boot": {
+      "status": "blessed",
+      "sha256": "73c7b61677db512c45a6acf77225000cc247e26973ca1aed95601dbf9031a11e",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "capturedAt": "2026-08-05T06:28:25.426Z",
+      "gameHash": "4cbe11fad5029aa1",
+      "flaky": false,
+      "blessedAt": "2026-08-05T06:28:37.350Z",
+      "blessedBy": "auto-bootstrap",
+      "note": "首基准·Lead 派工令"
+    }
+  },
+  "history": [
+    {
+      "action": "capture",
+      "state": "boot",
+      "at": "2026-08-05T06:28:25.426Z",
+      "sha256": "73c7b61677db512c45a6acf77225000cc247e26973ca1aed95601dbf9031a11e",
+      "stable": true,
+      "attempts": 2,
+      "wasBlessed": false
+    },
+    {
+      "action": "bless",
+      "state": "boot",
+      "at": "2026-08-05T06:28:37.350Z",
+      "by": "auto-bootstrap",
+      "note": "首基准·Lead 派工令",
+      "sha256": "73c7b61677db512c45a6acf77225000cc247e26973ca1aed95601dbf9031a11e"
+    },
+    {
+      "action": "compare",
+      "at": "2026-08-05T06:28:55.122Z",
+      "ok": true,
+      "results": [
+        {
+          "state": "boot",
+          "ok": true,
+          "ratio": 0
+        }
+      ]
+    },
+    {
+      "action": "compare",
+      "at": "2026-08-05T06:35:38.770Z",
+      "ok": true,
+      "results": [
+        {
+          "state": "boot",
+          "ok": true,
+          "ratio": 0
+        }
+      ]
+    }
+  ]
+}
