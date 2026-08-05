@@ -138,6 +138,14 @@ function reconcileChildrenKeyed(el: HTMLElement, oldN: LayoutNode, newN: LayoutN
     const cid = (child as HTMLElement).id;
     if (cid && oldById.has(cid) && !newIds.has(cid)) child.remove();
   }
+  // 语义内容锚（REQ-UICONTRACT②·修脆锚点）：Panel chrome（vignette/pattern/title）是**无 id 装饰直子**，渲在内容前；
+  // 内容 LayoutNode 直子恒带 id。首个内容子的插入锚 = 第一个**带 id 的直子**（跳过前导 chrome），
+  // 而非 `el.firstElementChild`（那会把内容插到 title/暗角之前 → 标题错位·结构一变就错）。
+  const firstContentAnchor = (): Element | null => {
+    let c = el.firstElementChild;
+    while (c && !(c as HTMLElement).id) c = c.nextElementSibling; // 跳过前导无 id chrome
+    return c;
+  };
   // ② 按新序逐个就位：同型→递归打补丁；缺/换型→渲染新建；再 insertBefore 到 prev 之后（稳定子不重载）。
   let prev: Element | null = null;
   for (const nk of newKids) {
@@ -153,7 +161,7 @@ function reconcileChildrenKeyed(el: HTMLElement, oldN: LayoutNode, newN: LayoutN
       dom = tmp.firstElementChild;
     }
     if (dom) {
-      const anchor: Element | null = prev ? prev.nextElementSibling : el.firstElementChild;
+      const anchor: Element | null = prev ? prev.nextElementSibling : firstContentAnchor();
       if (dom !== anchor) el.insertBefore(dom, anchor);
       prev = dom;
     }
@@ -307,48 +315,53 @@ export function mountUI(
   let curRoot = root;
   let curTheme = theme;
 
-  // 打字机（收编 VN DialogBox 逐字显）：挂载时把带 data-typewriter 的元素逐字揭示；teardown 清定时器。
+  // ── 数据驱动动效初始化（render-only·**可重入**·REQ-UICONTRACT③）────────────────────────────────
+  // 把带 data-* 动效标记的元素初始化：typewriter 逐字 / tween 数字滚动 / flyto 弧线飞 / bgscroll 背景滚动。
+  // 每元素处理后打 `data-dyn-init` 标记、选择器 `:not([data-dyn-init])` 只初始化一次（幂等）。
+  // **mount 扫全 host；update 后再扫一次** → reconcile 换/插进来的**新元素**（含首屏后由数据新增/改值的动效）也被初始化
+  //   → 修「扫描只在 mount 跑一次·首屏之后由数据新增的动效全是死的（写了没反应·最像引擎坏了）」。
+  //   （props 变的元素 reconcile 走 outerHTML 整体替换=全新无标记 DOM → 自然重扫重播；未变元素留标记 → 不重复触发。）
   const typers: ReturnType<typeof setInterval>[] = [];
-  host.querySelectorAll<HTMLElement>('[data-typewriter]').forEach((el) => {
-    const speed = Number(el.dataset['typewriter']) || 30;
-    const full = el.textContent ?? '';
-    el.textContent = '';
-    let i = 0;
-    const iv = setInterval(() => {
-      el.textContent = full.slice(0, ++i);
-      if (i >= full.length) clearInterval(iv);
-    }, speed);
-    typers.push(iv);
-  });
-
-  // 数字滚动补间（收编自掷骰滚到命点/计分跳动·render-only）：把带 data-tween-to 的元素从当前值(=from)动画到 to。
-  // 定时器分步 + easeOutCubic；与打字机共用 typers 数组 → teardown 一并清。纯表现·不碰 sim/hash。
-  host.querySelectorAll<HTMLElement>('[data-tween-to]').forEach((el) => {
-    const to = Number(el.dataset['tweenTo']);
-    if (!Number.isFinite(to)) return;
-    const ms = Number(el.dataset['tweenMs']) || 600;
-    const dec = Number(el.dataset['tweenDec']) || 0;
-    const fmt = el.dataset['tweenFmt']; // 数字格式化（compact/time/percent/int·formatNumber）
-    // format 在场时 textContent 已是格式化串（不可解析）→ 从 data-tween-from 取原始初值。
-    const from = fmt !== undefined ? (Number(el.dataset['tweenFrom']) || 0) : (Number(el.textContent) || 0);
-    const steps = Math.max(1, Math.round(ms / 16));
-    let i = 0;
-    const iv = setInterval(() => {
-      i++;
-      const k = i >= steps ? 1 : 1 - Math.pow(1 - i / steps, 3); // easeOutCubic
-      const v = from + (to - from) * k;
-      el.textContent = fmt !== undefined ? formatNumber(v, fmt, dec) : v.toFixed(dec);
-      if (i >= steps) clearInterval(iv);
-    }, 16);
-    typers.push(iv);
-  });
-
-  // 「飞向」奖励动画（render-only·休闲招牌）：量本元素与目标 rect → 算屏幕位移 → 注入 CSS 变量 + apollo-flyto 弧线飞。
-  // 挂载后一帧量取（等布局稳定）；目标须在同一 host 树里。teardown 无需清（animation forwards 停末态·元素随下次 update 换掉）。
-  if (typeof document !== 'undefined') {
-    host.querySelectorAll<HTMLElement>('[data-flyto-to]').forEach((el) => {
+  const scrollStyles: HTMLStyleElement[] = [];
+  const hasDoc = typeof document !== 'undefined';
+  function initDynamics(scope: ParentNode): void {
+    // 打字机（收编 VN DialogBox 逐字显）：逐字揭示；teardown 清定时器。
+    scope.querySelectorAll<HTMLElement>('[data-typewriter]:not([data-dyn-init])').forEach((el) => {
+      el.dataset['dynInit'] = '1';
+      const speed = Number(el.dataset['typewriter']) || 30;
+      const full = el.textContent ?? '';
+      el.textContent = '';
+      let i = 0;
+      const iv = setInterval(() => { el.textContent = full.slice(0, ++i); if (i >= full.length) clearInterval(iv); }, speed);
+      typers.push(iv);
+    });
+    // 数字滚动补间（掷骰滚到命点/计分跳动·render-only·easeOutCubic·共用 typers 数组 teardown 一并清）。
+    scope.querySelectorAll<HTMLElement>('[data-tween-to]:not([data-dyn-init])').forEach((el) => {
+      const to = Number(el.dataset['tweenTo']);
+      if (!Number.isFinite(to)) return;
+      el.dataset['dynInit'] = '1';
+      const ms = Number(el.dataset['tweenMs']) || 600;
+      const dec = Number(el.dataset['tweenDec']) || 0;
+      const fmt = el.dataset['tweenFmt']; // 数字格式化（compact/time/percent/int·formatNumber）
+      // format 在场时 textContent 已是格式化串（不可解析）→ 从 data-tween-from 取原始初值。
+      const from = fmt !== undefined ? (Number(el.dataset['tweenFrom']) || 0) : (Number(el.textContent) || 0);
+      const steps = Math.max(1, Math.round(ms / 16));
+      let i = 0;
+      const iv = setInterval(() => {
+        i++;
+        const k = i >= steps ? 1 : 1 - Math.pow(1 - i / steps, 3); // easeOutCubic
+        const v = from + (to - from) * k;
+        el.textContent = fmt !== undefined ? formatNumber(v, fmt, dec) : v.toFixed(dec);
+        if (i >= steps) clearInterval(iv);
+      }, 16);
+      typers.push(iv);
+    });
+    // 「飞向」奖励动画（render-only·休闲招牌）：量本元素与目标 rect → 算屏幕位移 → 注入 CSS 变量 + apollo-flyto 弧线飞。
+    // 目标须在同一 host 树里。teardown 无需清（animation forwards 停末态·元素随下次 update 换掉）。
+    if (hasDoc) scope.querySelectorAll<HTMLElement>('[data-flyto-to]:not([data-dyn-init])').forEach((el) => {
       const targetId = el.dataset['flytoTo']; if (!targetId) return;
       const target = host.querySelector<HTMLElement>(`[id="${CSS.escape(targetId)}"]`); if (!target) return;
+      el.dataset['dynInit'] = '1';
       const ms = Number(el.dataset['flytoMs']) || 700;
       const arc = Number(el.dataset['flytoArc']) || 60;
       const delay = Number(el.dataset['flytoDelay']) || 0;
@@ -360,7 +373,19 @@ export function mountUI(
       el.style.setProperty('--fly-arc', `${arc}px`);
       el.style.animation = `apollo-flyto ${ms}ms cubic-bezier(.45,0,.5,1) ${delay}ms forwards`;
     });
+    // 背景 UV 滚动（render-only）：逐元素注入平移 background-position 关键帧·无限循环。配 repeating 贴图即无缝滚动底纹。
+    if (hasDoc) scope.querySelectorAll<HTMLElement>('[data-bgscroll]:not([data-dyn-init])').forEach((el) => {
+      el.dataset['dynInit'] = '1';
+      const [x, y, ms] = (el.dataset['bgscroll'] ?? '0,0,6000').split(',').map(Number);
+      const name = `apollo-bgs-${__bgScrollSeq++}`;
+      const st = document.createElement('style');
+      st.textContent = `@keyframes ${name}{from{background-position:0 0}to{background-position:${x || 0}px ${y || 0}px}}`;
+      (document.head ?? document.documentElement).appendChild(st);
+      el.style.animation = `${name} ${ms || 6000}ms linear infinite`;
+      scrollStyles.push(st);
+    });
   }
+  initDynamics(host);
 
   // 锚定浮层/连线（REQ-UI-锚定层①·render-only·不进 sim/hash）：每帧读目标 live rect → 把 Float 摆到锚点、Connector 连两端。
   //   目标消失/隐藏(rect 0)→自隐（不悬空）。entity=渲染器盖 `data-entity-anchor` 的实体节点·node=同树 LayoutNode id。
@@ -461,21 +486,7 @@ export function mountUI(
     host.addEventListener('pointerleave', onFollowLeave);
   }
   ensureParticleFollowLoop();
-
-  // 背景 UV 滚动（render-only·滚动 UI 特效）：给带 data-bgscroll 的元素注入逐元素关键帧（平移 background-position），
-  // 无限循环。配 repeating 贴图(texture)即得无缝滚动底纹；teardown 移除注入的 style。
-  const scrollStyles: HTMLStyleElement[] = [];
-  if (typeof document !== 'undefined') {
-    host.querySelectorAll<HTMLElement>('[data-bgscroll]').forEach((el) => {
-      const [x, y, ms] = (el.dataset['bgscroll'] ?? '0,0,6000').split(',').map(Number);
-      const name = `apollo-bgs-${__bgScrollSeq++}`;
-      const st = document.createElement('style');
-      st.textContent = `@keyframes ${name}{from{background-position:0 0}to{background-position:${x || 0}px ${y || 0}px}}`;
-      (document.head ?? document.documentElement).appendChild(st);
-      el.style.animation = `${name} ${ms || 6000}ms linear infinite`;
-      scrollStyles.push(st);
-    });
-  }
+  // 背景 UV 滚动已并入 initDynamics（上·data-bgscroll·teardown 移除注入的 scrollStyles）。
 
   const dispatch = (e: Event): void => {
     const el = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
@@ -533,8 +544,11 @@ export function mountUI(
     if (!scrim || e.target !== scrim) return; // 点的是弹窗体内部 → 不关
     const action = scrim.dataset['modalClose'];
     if (!action) return;
+    // 路由同 dispatch（REQ-UICONTRACT①）：本地 handler 优先·无 handler + 有 sink → 发信号入队。
+    // 缺这条回退时纯信号游戏（不挂 handler·只挂 ActionSink）点遮罩关不掉 Modal → 玩家卡死弹窗。
     const fn = handlers[action];
-    if (fn) fn();
+    if (fn) { fn(); return; }
+    input?.enqueueAction(action);
   };
 
   // Tooltip 悬浮显隐（引擎内建·内联样式表达不了 :hover）：mouseover/focusin 显气泡、移出隐。
@@ -617,12 +631,13 @@ export function mountUI(
     const opt = target.closest('[data-combo-opt]') as HTMLElement | null;
     if (opt) {
       const root = opt.closest('[data-combo]') as HTMLElement | null;
-      const input = root?.querySelector<HTMLInputElement>(':scope > [data-combo-search]');
+      const searchBox = root?.querySelector<HTMLInputElement>(':scope > [data-combo-search]'); // 局部搜索框（勿与 ActionSink 参数 input 撞名）
       const panel = root?.querySelector<HTMLElement>(':scope > [data-combo-panel]');
-      if (input) input.value = opt.dataset['comboLabel'] ?? '';
+      if (searchBox) searchBox.value = opt.dataset['comboLabel'] ?? '';
       if (panel) panel.style.display = 'none';
       const action = root?.dataset['combo'], val = opt.dataset['comboOpt'];
-      if (action && val != null) { const fn = handlers[action]; if (fn) fn(val); }
+      // 路由同 dispatch（REQ-UICONTRACT①）：本地 handler 优先·无 handler + 有 sink → 发信号入队（纯信号游戏下拉点得动）。
+      if (action && val != null) { const fn = handlers[action]; if (fn) fn(val); else input?.enqueueAction(action, { arg: val }); }
       return;
     }
     host.querySelectorAll<HTMLElement>('[data-combo-panel]').forEach((panel) => { // 点外 → 合
@@ -738,6 +753,7 @@ export function mountUI(
     bindVlists(); // 子树可能被替换 → 复绑 vlist 滚动监听
     ensureAnchorLoop(); // update 引入锚定件（Float/Connector）→ 启动跟随 rAF（幂等·game-i 从 hub .update 进模块的路径）
     ensureParticleFollowLoop(); // update 引入 Particles follow:'cursor' → 启动光标微尘 rAF（幂等）
+    initDynamics(host); // REQ-UICONTRACT③：reconcile 换/插进来的新动效元素（typewriter/tween/flyto/bgscroll）也初始化（幂等·标记去重）
   };
 
   const teardown = (() => {
