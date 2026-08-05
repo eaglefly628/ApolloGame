@@ -10,12 +10,12 @@ import {
   transform3dPose, groundPose, poseBounds3D, bounds3DCenter, bounds3DExtent, fitDistance3D, rayAabbT,
 } from './three-projection.js';
 import { mesh3dPose, applyPose, buildMesh3D, buildDieMesh3D, dieMode, buildVoxelMesh3D, voxelMode, buildGlowTexture, buildGeometry, buildSkyTexture, disposeMesh } from './three/geometry.js';
-import { buildPbrMesh3D, pbrSig, applyMaterialRef, type PbrMaps } from './three/material.js';
+import { buildPbrMesh3D, buildPbrGeoMat, pbrTransmissive, pbrSig, applyMaterialRef, type PbrMaps } from './three/material.js';
 import { hashPoses, camSig, postSig } from './three/stats.js';
 import { LightRig } from './three/lights.js';
 import { PostPipeline, FlashDecay } from './three/post.js';
 import { ModelPool } from './three/models.js';
-import { InstancedBatches, type InstGroups } from './three/batches.js';
+import { InstancedBatches, type InstGroups, type PbrBatchBuild } from './three/batches.js';
 import { CameraRig, CameraShake, FollowDamper, type DampedCenter } from './three/camera-rig.js';
 import { ColliderDebug } from './three/collider-debug.js';
 import { NavDebug } from './three/nav-debug.js';
@@ -245,6 +245,7 @@ export class ThreeRenderer implements RendererBackend {
     const seen = new Set<string>();
     const poses: Pose3D[] = [];
     const instGroups: InstGroups = new Map(); // W1-A：不透明 Mesh3D 按视觉签名分批
+    const pbrBuilders = new Map<string, PbrBatchBuild>(); // PBR 批构建器（REQ-3D-PBR-INSTANCING·按材质签名·渲染器持贴图解析器故在此建闭包）
     this.frame++;
     const cam3d = getCamera3D(world); // 盒庭模式开关（在场=轨道相机 + 2D 实体落地面 + 柔和阴影）
     const followTarget = cam3d?.mode === 'follow' ? cam3d.target : undefined; // mode:'follow' 注视的实体
@@ -345,8 +346,21 @@ export class ThreeRenderer implements RendererBackend {
             applyPose(mesh, pose);
           }
         } else if (r.material3d) {
-          const mesh = this.ensurePbrMesh(r, r.mesh3d, r.material3d);
-          applyPose(mesh, pose);
+          // PBR/Material3D（REQ-3D-PBR-INSTANCING）：不透明 + 无描边 + 非透明材质 → **按材质签名归批实例化**
+          //   （同材质 = 1 InstancedMesh·color 在签名里 → 每色一批·game102 5 色真材质立方 = ~5 draw call·与体素数无关）；
+          //   透明（玻璃 transmission / 软混合）/ 描边（背面壳子网格）→ 走单 mesh（排序/子网格·同 W1-A 透明先例）。
+          const eff = r.material3d.materialRef ? applyMaterialRef(r.material3d, this.materials?.get(r.material3d.materialRef)) : r.material3d;
+          if ((r.color?.alpha ?? 1) >= 1 && !eff.outline && !pbrTransmissive(eff)) {
+            const maps = this.resolvePbrMaps(eff);
+            const mk = `${maps.map ? 'M' : ''}${maps.normalMap ? 'N' : ''}${maps.roughnessMap ? 'R' : ''}${maps.aoMap ? 'A' : ''}${maps.metalnessMap ? 'E' : ''}${maps.emissiveMap ? 'G' : ''}${maps.ormMap ? 'O' : ''}`; // 贴图就绪态入 key（迟到贴图就绪 → 换批挂上·配 AssetReadyTracker 自愈）
+            const key = `pbr|${pbrSig(r.mesh3d, eff)}|${mk}`;
+            let g = instGroups.get(key);
+            if (!g) { g = []; instGroups.set(key, g); pbrBuilders.set(key, () => buildPbrGeoMat(r.mesh3d!, eff, maps)); } // 首见该签名 → 注册构建器（建一次共享材质）
+            g.push({ r, pose });
+          } else {
+            const mesh = this.ensurePbrMesh(r, r.mesh3d, r.material3d);
+            applyPose(mesh, pose);
+          }
         } else if ((r.color?.alpha ?? 1) >= 1) {
           const key = mesh3dBatchKey(r.mesh3d);
           let g = instGroups.get(key);
@@ -405,7 +419,7 @@ export class ThreeRenderer implements RendererBackend {
     }
     this.lastRenderSig = renderSig;
 
-    this.batches.sync(this.scene, instGroups); // W1-A：脏帧才写 instanceMatrix（一次 buffer 上传）+ 移空批
+    this.batches.sync(this.scene, instGroups, pbrBuilders); // W1-A：脏帧才写 instanceMatrix（一次 buffer 上传）+ 移空批·PBR 批按材质签名
 
     // 相机解释（REQ-3D-Camera）：① Camera3D → 盒庭轨道/跟随（投影/fov/ortho/near-far 全从数据·CameraRig 算矩阵）；
     //   ② 否则原俯视自适配（向后兼容）。follow 模式注视点 = target 实体位（收集期捕获的 followPose）。

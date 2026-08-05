@@ -133,7 +133,9 @@ export function buildOutline(geo: THREE.BufferGeometry, o: { width?: number; col
 }
 
 // Material3D + Mesh3D → 单 mesh（特征物件·不进哑光实例化批）。maps=渲染器已解析的真实贴图（色彩空间已设）。
-export function buildPbrMesh3D(m: Mesh3D, mat: Material3D, maps?: PbrMaps): THREE.Mesh {
+// PBR 网格的几何 + 材质（供单 mesh 与**实例化批**共用·同材质签名 pbrSig 的网格共享一份 → 实例化 1 draw call）。
+// flat=无光平涂（MeshBasic·不吃阴影·receiveShadow 关）。不含 outline（描边=背面壳子网格·实例化不支持·带 outline 的走单 mesh）。
+export function buildPbrGeoMat(m: Mesh3D, mat: Material3D, maps?: PbrMaps): { geo: THREE.BufferGeometry; material: THREE.Material; flat: boolean } {
   const def = resolvePbr(mat.preset, mat);
   const rg = roundGeo(m); // 圆润单材质图元（sphere/cylinder/cone/capsule/torus）·三处几何工厂共用
   const geo = rg ?? (m.shape === 'plane'
@@ -151,9 +153,19 @@ export function buildPbrMesh3D(m: Mesh3D, mat: Material3D, maps?: PbrMaps): THRE
     if (mat.transparent) material.transparent = true; // 软混合
     material.needsUpdate = true;
   }
+  return { geo, material, flat: mat.shading === 'flat' };
+}
+
+// 透明材质（玻璃 transmission / 软混合 transparent）→ 有排序坑·**不实例化**（走单 mesh fallback·同 W1-A 透明盒先例）。
+export function pbrTransmissive(mat: Material3D): boolean {
+  return (resolvePbr(mat.preset, mat).transmission ?? 0) > 0 || mat.transparent === true;
+}
+
+export function buildPbrMesh3D(m: Mesh3D, mat: Material3D, maps?: PbrMaps): THREE.Mesh {
+  const { geo, material, flat } = buildPbrGeoMat(m, mat, maps);
   const mesh = new THREE.Mesh(geo, material);
   mesh.castShadow = true;
-  mesh.receiveShadow = mat.shading !== 'flat'; // 无光平涂不吃阴影（MeshBasicMaterial 不响应光）
+  mesh.receiveShadow = !flat; // 无光平涂不吃阴影（MeshBasicMaterial 不响应光）
   if (mat.outline) mesh.add(buildOutline(geo, mat.outline)); // 卡通描边：共享几何的背面外扩壳（子网格·随父变换）
   return mesh;
 }

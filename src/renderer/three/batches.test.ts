@@ -9,7 +9,7 @@ beforeAll(() => {
   const ctx = new Proxy({}, { get: (_t, p) => (p === 'createLinearGradient' ? () => g : () => {}), set: () => true });
   (HTMLCanvasElement.prototype as unknown as { getContext: () => unknown }).getContext = () => ctx;
 });
-import { InstancedBatches, type InstGroups } from './batches.js';
+import { InstancedBatches, type InstGroups, type PbrBatchBuild } from './batches.js';
 import type { Renderable } from '../renderable.js';
 import type { Pose3D } from '../three-projection.js';
 import type { Mesh3D } from '@engine/protocol/components.js';
@@ -66,6 +66,37 @@ describe('InstancedBatches voxelTex 体素批（大立方几百体素 → 每款
     // 下一帧该批从 groups 消失 → 走移除路径；曾对六面材质数组误用单材质 .dispose() → TypeError 连环崩
     expect(() => b.sync(scene, new Map())).not.toThrow();
     expect(b.count).toBe(0);
+    b.dispose(scene);
+  });
+});
+
+describe('InstancedBatches PBR 批（材质签名归批·REQ-3D-PBR-INSTANCING·真材质立方）', () => {
+  it('同材质签名 N 网格 + pbrBuild → 1 InstancedMesh（共享传入的真 PBR 材质·count N）', () => {
+    const scene = new THREE.Scene();
+    const b = new InstancedBatches();
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd991, metalness: 1, roughness: 0.26 }); // 真金
+    const groups: InstGroups = new Map([['pbr|gold', Array.from({ length: 80 }, (_, i) => item(box(0xffffff), i * 4))]]);
+    const builders = new Map<string, PbrBatchBuild>([['pbr|gold', () => ({ geo: new THREE.BoxGeometry(4, 4, 4), material: goldMat })]]);
+    b.sync(scene, groups, builders);
+    expect(b.count).toBe(1);       // 80 网格 → 1 批（原来 80 draw call）
+    expect(b.instances).toBe(80);
+    const im = scene.children.find((o) => o instanceof THREE.InstancedMesh) as THREE.InstancedMesh;
+    expect(im.count).toBe(80);
+    expect(im.material).toBe(goldMat); // 用传入的真材质·非默认 vertexColors 哑光
+    b.dispose(scene);
+  });
+  it('不同材质签名 → 各自成批（5 色真材质 = 5 批·与实例数无关·game102 大立方）', () => {
+    const scene = new THREE.Scene();
+    const b = new InstancedBatches();
+    const groups: InstGroups = new Map();
+    const builders = new Map<string, PbrBatchBuild>();
+    for (const c of ['gold', 'emissive', 'plastic', 'grass', 'steel']) {
+      groups.set(`pbr|${c}`, Array.from({ length: 50 }, (_, i) => item(box(0xffffff), i * 4)));
+      builders.set(`pbr|${c}`, () => ({ geo: new THREE.BoxGeometry(4, 4, 4), material: new THREE.MeshStandardMaterial() }));
+    }
+    b.sync(scene, groups, builders);
+    expect(b.count).toBe(5);        // 5 材质 = 5 批（非 250 draw call）
+    expect(b.instances).toBe(250);
     b.dispose(scene);
   });
 });

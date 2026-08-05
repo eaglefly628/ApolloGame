@@ -16,6 +16,9 @@ function disposeMat(mat: THREE.Material | THREE.Material[]): void {
 // ═══════════════════════════════════════════════════════════════
 
 export type InstGroups = Map<string, { r: Renderable; pose: Pose3D }[]>;
+// PBR 批构建器（REQ-3D-PBR-INSTANCING）：渲染器侧闭包（持 Material3D + 解析好的贴图/材质目录）建几何+共享材质。
+// 材质构建要 AssetManager 解析器（在渲染器·非本子系统），故由渲染器按 key 传闭包进来·本子系统只管 InstancedMesh 生命周期。
+export type PbrBatchBuild = () => { geo: THREE.BufferGeometry; material: THREE.Material };
 
 export class InstancedBatches {
   private readonly batches = new Map<string, { mesh: THREE.InstancedMesh; cap: number }>();
@@ -32,9 +35,9 @@ export class InstancedBatches {
   }
 
   // 脏帧写所有批的 instanceMatrix + 移除空批。每批：ensure（首建/扩容）→ 逐实例合矩阵 setMatrixAt → 设 count + needsUpdate。
-  sync(scene: THREE.Scene, groups: InstGroups): void {
+  sync(scene: THREE.Scene, groups: InstGroups, pbrBuilders?: Map<string, PbrBatchBuild>): void {
     for (const [key, list] of groups) {
-      const batch = this.ensure(scene, key, list[0]!.r.mesh3d!, list.length);
+      const batch = this.ensure(scene, key, list[0]!.r.mesh3d!, list.length, pbrBuilders?.get(key));
       for (let i = 0; i < list.length; i++) {
         applyPose(this.dummy, list[i]!.pose);
         this.dummy.updateMatrix();
@@ -64,22 +67,24 @@ export class InstancedBatches {
 
   // 建/复用批：签名编码几何+逐面色（烤进 vertexColors）或 voxelTex 六面材质，同签名共享一个 InstancedMesh。
   // 超容量 ×2 扩容重建（摊还）。frustumCulled=false——实例散布全场，按单实例包围盒剔会误剔整批。
-  private ensure(scene: THREE.Scene, key: string, sample: Mesh3D, needed: number): { mesh: THREE.InstancedMesh; cap: number } {
+  private ensure(scene: THREE.Scene, key: string, sample: Mesh3D, needed: number, pbrBuild?: PbrBatchBuild): { mesh: THREE.InstancedMesh; cap: number } {
     const existing = this.batches.get(key);
     if (existing && needed <= existing.cap) return existing;
     if (existing) { scene.remove(existing.mesh); existing.mesh.geometry.dispose(); disposeMat(existing.mesh.material); }
     const cap = Math.max(needed, existing ? existing.cap * 2 : 8);
-    // voxelTex 体素 → 复用单 mesh 的几何 + 六面贴图材质（提速块观感·同 voxelMode 签名的体素共享一份·实例化 1 draw call）；
-    // 否则平色盒/图元 → 逐面色烤进 vertexColors 的哑光材质（原路）。
-    const geo = sample.voxelTex ? undefined : buildInstancedMesh3DGeometry(sample);
+    // 三类批：① PBR/Material3D（材质签名归批·渲染器传闭包建真材质·REQ-3D-PBR-INSTANCING）；
+    //   ② voxelTex 体素（六面贴图材质数组）；③ 平色盒/图元（逐面色烤进 vertexColors 的哑光材质·原路）。
     let mesh: THREE.InstancedMesh;
-    if (sample.voxelTex) {
+    if (pbrBuild) {
+      const { geo, material } = pbrBuild();
+      mesh = new THREE.InstancedMesh(geo, material, cap);
+    } else if (sample.voxelTex) {
       const gm = buildVoxelGeoMats(sample);
       mesh = new THREE.InstancedMesh(gm.geo, gm.mats, cap);
     } else {
       const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0 }); // 不透明·哑光
       if (sample.shape === 'plane') mat.side = THREE.DoubleSide;
-      mesh = new THREE.InstancedMesh(geo!, mat, cap);
+      mesh = new THREE.InstancedMesh(buildInstancedMesh3DGeometry(sample), mat, cap);
     }
     mesh.castShadow = true;
     mesh.receiveShadow = true;
