@@ -135,6 +135,23 @@ describe('card-pile · REQ-F-040 据码分发 + 可负担门', () => {
     expect(played(w)).toEqual([]); // 出牌区空
   });
 
+  // 回归（engine-review-2026-08-04 §3.3 · P1）：空出牌曾被当成交——takeFromHand 会过滤越界下标，
+  // 旧实现先扣费后取牌，于是「一张牌都没真出去」却照扣代价、照脉冲 scoring Flag 触发整条计分链
+  // = 无本万利的空成交。口径对齐上面「A2 拒单」：视同本拍没出牌。
+  it('空出牌（下标全越界 / 空数组）→ 视同没出牌：不扣金、不写码、Flag 不脉冲、牌不丢', () => {
+    for (const values of [[99], [], [-1, 7]]) {
+      const w = wShop([207, 105], 10);
+      w.tick(); // hand=[207]
+      setInput(w, [{ source: 'p1', key: 'play', values }]);
+      w.tick();
+      expect(pile(w).hand, `values=${JSON.stringify(values)}`).toEqual([207]); // 牌还在
+      expect(rget(w, 'r_gold'), `values=${JSON.stringify(values)}`).toBe(10);  // 分文未扣
+      expect(rget(w, 'r_code'), `values=${JSON.stringify(values)}`).toBe(0);   // 码未写
+      expect(flag(w), `values=${JSON.stringify(values)}`).toBe(false);         // 计分链不空转
+      expect(played(w), `values=${JSON.stringify(values)}`).toEqual([]);       // 出牌区空
+    }
+  });
+
   it('零迁移：不设两字段 → 行为与旧 card-pile 完全一致（无 Resource 也不抛）', () => {
     const w = w0([2, 5, 7], 2);
     w.tick();

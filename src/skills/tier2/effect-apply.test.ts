@@ -121,6 +121,42 @@ describe('T2 effect-apply — modify-resource 运算 op + 结算顺序 order（R
     expect(res(w)).toBe(20);
   });
 
+  // ── 回归（engine-review-2026-08-04 §3.3 · P1）─────────────────────────────
+  // ①「缺资源=无效=不动」这条契约旧实现靠 v=0 兜，只对 add 成立：mul 会把资源**清零**、
+  //   set 会**设成 0**（同一句注释在三个 op 下语义相反）。现在整步跳过。
+  it("valueFrom 来源资源缺失 → mul 不得清零、set 不得设 0（契约「无效=不动」对全部 op 成立）", () => {
+    for (const op of ['mul', 'set', 'add'] as const) {
+      const w = worldWithRes('chips', 40);
+      effect(w, 'ef', { onSignal: 'score', kind: 'modify-resource', targetId: 'chips', op, value: 0, valueFrom: { resourceId: 'no_such_res' } });
+      signal(w, 'score');
+      w.tick();
+      expect(res(w), `op=${op}`).toBe(40); // 原封不动
+    }
+  });
+
+  it("valueFrom 的 timesResourceId 缺失 → 同样整步跳过（mul 不清零）", () => {
+    const w = worldWithRes('chips', 40);
+    effect(w, 'ef', { onSignal: 'score', kind: 'modify-resource', targetId: 'chips', op: 'mul', value: 0, valueFrom: { resourceId: 'chips', timesResourceId: 'ghost' } });
+    signal(w, 'score');
+    w.tick();
+    expect(res(w)).toBe(40);
+  });
+
+  // ② value 漏填 → Number(undefined)=NaN；NaN 的 min/max 钳位比较全为 false，**钳不住**，
+  //   NaN 会直接写进 Resource 并污染确定性 hash（lockstep 误报 desync、存档 hash 一起废）。
+  it('value 漏填 / 非数（NaN·Infinity）→ 绝不写进 Resource（防污染确定性 hash）', () => {
+    // Effect.value 在 TS 里必填，但 manifest 是运行期 JSON、字段可缺（parseManifest 不补默认）→
+    // 用转型如实模拟「数据侧漏了 value」这一真实可达状态。
+    for (const bad of [undefined, NaN, Infinity, -Infinity, 'abc'] as unknown as number[]) {
+      const w = worldWithRes('chips', 40);
+      effect(w, 'ef', { onSignal: 'score', kind: 'modify-resource', targetId: 'chips', op: 'add', value: bad });
+      signal(w, 'score');
+      w.tick();
+      expect(Number.isFinite(res(w)), `value=${String(bad)}`).toBe(true);
+      expect(res(w), `value=${String(bad)}`).toBe(40);
+    }
+  });
+
   it("op:'add' 显式 → 与缺省一致（current + value）", () => {
     const w = worldWithRes('chips', 5);
     effect(w, 'ef', { onSignal: 'gain', kind: 'modify-resource', targetId: 'chips', op: 'add', value: 7 });

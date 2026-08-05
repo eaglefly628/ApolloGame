@@ -158,18 +158,36 @@ export const effectApplyCapability = defineCapability({
                 //   v = resource[resourceId].current × (timesResourceId ? resource[timesResourceId].current : coeff ?? 1)
                 // 解最终计分 score += chips×mult、Bull 每$1+2c、星球升级 chips += level×增量。缺资源按 0 处理（无效=不动）。
                 let v: number;
+                // 「缺资源 = 无效 = 不动」这条契约必须显式实现，不能靠 v=0 兜（engine-review-2026-08-04
+                // §3.3 · P1）：v=0 只对 add 恰好等价「不动」，对 mul 是**把资源清零**、对 set 是**设成 0**
+                // ——同一句注释在三个 op 下语义相反。故这里记下「来源缺失」，下面整步跳过。
+                let sourceMissing = false;
                 if (ef.valueFrom) {
                   // REQ-E-023①：countOf 在场 → base = Tag.flags 命中掩码的实体数（每个 tagged 物 ×coeff）；否则读具名 Resource。
-                  const base = ef.valueFrom.countOf !== undefined
-                    ? countByTag(world, ef.valueFrom.countOf)
-                    : (lookup.resource(ef.valueFrom.resourceId ?? '')?.current ?? 0);
-                  const factor = ef.valueFrom.timesResourceId
-                    ? (lookup.resource(ef.valueFrom.timesResourceId)?.current ?? 0)
-                    : (ef.valueFrom.coeff ?? 1);
+                  let base: number;
+                  if (ef.valueFrom.countOf !== undefined) {
+                    base = countByTag(world, ef.valueFrom.countOf); // 计数 0 是合法结果、不算缺失
+                  } else {
+                    const br = lookup.resource(ef.valueFrom.resourceId ?? '');
+                    if (!br) sourceMissing = true;
+                    base = br?.current ?? 0;
+                  }
+                  let factor: number;
+                  if (ef.valueFrom.timesResourceId) {
+                    const fr = lookup.resource(ef.valueFrom.timesResourceId);
+                    if (!fr) sourceMissing = true;
+                    factor = fr?.current ?? 0;
+                  } else {
+                    factor = ef.valueFrom.coeff ?? 1;
+                  }
                   v = base * factor;
                 } else {
-                  v = Number(ef.value);
+                  v = Number(ef.value); // value 缺失/非数 → NaN，由下面的有限性门拦住
                 }
+                // 非有限值（value 漏填得 NaN、±Infinity）绝不能落进 world：NaN 的钳位比较全为 false，
+                // 上面那行 min/max 钳位**钳不住**，NaN 会直接写进 Resource 并**污染确定性 hash**
+                // （lockstep 立刻误报 desync、存档 hash 也跟着废）。同「缺资源」一并按无效步跳过。
+                if (sourceMissing || !Number.isFinite(v)) break;
                 const next = ef.op === 'mul' ? r.current * v : ef.op === 'set' ? v : r.current + v;
                 r.current = next < r.min ? r.min : next > r.max ? r.max : next;
                 // REQ-019：记一步（target/op/本步量 v/本步后值/来源=Effect 实体 id）。UI 据 target/source 演出小丑抖动。

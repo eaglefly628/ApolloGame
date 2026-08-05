@@ -147,23 +147,32 @@ export const cardPileCapability = defineCapability({
             }
           }
           if (playAccepted && playIdx) {
-            if (pile.playCosts?.length) {
-              for (const c of pile.playCosts) {
-                const r = resBy(c.id)!;
-                const next = r.current - c.amount;
-                r.current = next < r.min ? r.min : next; // 验过可负担，钳底仅作防御
-              }
-            }
+            // 先算实取再扣费：takeFromHand 会过滤越界下标，故 playIdx=[] 或全部越界时 taken 为空。
+            // 旧实现先扣费后取牌 → **空出牌变成"无本万利的空成交"**：代价照扣、出牌区置空、
+            // scoring Flag 照脉冲触发整条计分链，可一张牌都没出（engine-review-2026-08-04 §3.3 · P1）。
+            // 按本文件既有「付不起=本拍视同没出牌（牌不丢·区清空·Flag 灭）」的同一口径处理。
             const { taken, rest } = takeFromHand(pile.hand, playIdx);
-            pile.hand = rest;
-            if (ph) ph.cards = taken.map(decodeCard) as Card[];
-            // REQ-F-040(A1)：成交拍把牌码产物化进 Resource（恰取 1 张时写；商店 handSize 语义一次一张）。
-            // banded EventWhen{resource eq 码, mode:edge} 据此分发到每英雄/每卡专属信号。
-            if (pile.playedCodeResource && taken.length === 1) {
-              const cr = resBy(pile.playedCodeResource);
-              if (cr) {
-                const v = taken[0];
-                cr.current = v < cr.min ? cr.min : v > cr.max ? cr.max : v; // 数据侧把 max 设大于最大牌码
+            if (taken.length === 0) {
+              playAccepted = false; // 落到下方 Flag 不脉冲；出牌区在此清空
+              if (ph) ph.cards = [];
+            } else {
+              if (pile.playCosts?.length) {
+                for (const c of pile.playCosts) {
+                  const r = resBy(c.id)!;
+                  const next = r.current - c.amount;
+                  r.current = next < r.min ? r.min : next; // 验过可负担，钳底仅作防御
+                }
+              }
+              pile.hand = rest;
+              if (ph) ph.cards = taken.map(decodeCard) as Card[];
+              // REQ-F-040(A1)：成交拍把牌码产物化进 Resource（恰取 1 张时写；商店 handSize 语义一次一张）。
+              // banded EventWhen{resource eq 码, mode:edge} 据此分发到每英雄/每卡专属信号。
+              if (pile.playedCodeResource && taken.length === 1) {
+                const cr = resBy(pile.playedCodeResource);
+                if (cr) {
+                  const v = taken[0];
+                  cr.current = v < cr.min ? cr.min : v > cr.max ? cr.max : v; // 数据侧把 max 设大于最大牌码
+                }
               }
             }
           } else if (ph) {
