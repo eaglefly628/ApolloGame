@@ -88,6 +88,17 @@ const PAPER_GRAIN =
   `</svg>`;
 const PAPER_GRAIN_LAYER = `url(${dataUri(PAPER_GRAIN)}) 0 0 / 60px repeat`;
 
+// ── 程序化墨笔尖指针（cursor·M0.6 占位·台账留真图位）：斜竹杆 + 墨色笔锥·尖在 (3,3)=热点。
+//    按下态：笔尖多一团青墨（蘸墨感）。真图（美术台账）到位后逐令牌替换·此为 provenance:procedural 占位。
+const INK_NIB = (press: boolean): string =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28">` +
+  `<path d="M8 8 L23 23" stroke="#6E675E" stroke-width="3" stroke-linecap="round" stroke-opacity="0.85"/>` + // 竹笔杆
+  (press ? `<circle cx="3.2" cy="3.2" r="4" fill="${C.teal}" fill-opacity="0.5"/>` : '') +                    // 蘸墨团（按下）
+  `<path d="M2.5 2.5 L12.5 6.5 L6.5 12.5 Z" fill="${C.ink}"/>` +                                              // 墨色笔锥
+  `<circle cx="3.2" cy="3.2" r="1.8" fill="${C.ink}"/>` +                                                     // 笔尖墨点（热点）
+  `</svg>`;
+const INK_CURSOR = { image: dataUri(INK_NIB(false)), x: 3, y: 3, press: { image: dataUri(INK_NIB(true)), x: 3, y: 3 } };
+
 /** 「水墨玩趣」apollo-toon —— 宣纸底 + 墨字 + 糖果厚底唇钮 + 远山淡墨背景。亮皮（浅底深字）。 */
 export const apolloToon: UITheme = {
   // 宣纸四级底（由深到浅）
@@ -120,6 +131,8 @@ export const apolloToon: UITheme = {
   texture: MOUNTAINS_LAYER,
   wash: WASH,
   panelTexture: PAPER_GRAIN_LAYER,
+  // 墨笔尖指针（M0.6·程序化占位·按下蘸青墨·触屏无指针不受影响）
+  cursor: INK_CURSOR,
   // 主题级糖果厚底唇钮皮（一 kind 一皮·全游戏一体换·9-slice 任意尺寸不糊）
   buttonSkins: {
     hero:    { skin: SKIN_HERO,    skinSlice: APOLLO_TOON_SLICE },

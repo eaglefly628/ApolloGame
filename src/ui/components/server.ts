@@ -8,7 +8,39 @@ import { renderNode, renderVListWindow, formatNumber } from './render.js';
 import { ART_FONT_CSS } from './art-fonts.js';
 import { ART_FONT_CJK_CSS } from './art-fonts-cjk.js';
 import { SHELL } from '../shell-theme.js';
-import type { LayoutNode, HandlerMap, ActionSink, UITheme, ToastProps, VirtualListProps, WebFont } from './types.js';
+import type { LayoutNode, HandlerMap, ActionSink, UITheme, UICursor, ToastProps, VirtualListProps, WebFont } from './types.js';
+
+// ── 主题指针（REQ-STYLESET M0.6·render-only）：把 UITheme.cursor 令牌转成 CSS 光标 + 按下态 scoped 规则 ──
+/** 纯函数（可单测·无 DOM）：算 base 光标 CSS 值、按下态 CSS 值（有 press 才有）、去重键（按图内容哈希）。 */
+export function cursorCss(c: UICursor): { value: string; pressValue?: string; key: string } {
+  const val = (img: string, x = 0, y = 0): string => `url("${img}") ${Math.round(x)} ${Math.round(y)}, auto`;
+  const value = val(c.image, c.x, c.y);
+  const pressValue = c.press ? val(c.press.image, c.press.x, c.press.y) : undefined;
+  // djb2 → base36（确定性·无 Math.random）：同一对图 → 同一 style id/class（多主题/多挂载去重）。
+  const src = c.image + '|' + (c.press?.image ?? '');
+  let h = 5381;
+  for (let i = 0; i < src.length; i++) h = ((h << 5) + h + src.charCodeAt(i)) | 0;
+  return { value, pressValue, key: (h >>> 0).toString(36) };
+}
+
+/** 把主题指针落到 mountUI 根：base 光标设 host.style.cursor（面板/文字继承·按钮等自带 pointer 保留）；
+ *  按下态注入一条全局 scoped 规则（`.cls:active` / `.cls *:active` → press 光标·!important 压过继承）。缺省无 = 复位系统箭头。 */
+function applyThemeCursor(host: HTMLElement, c?: UICursor): void {
+  if (!c) { host.style.removeProperty('cursor'); return; } // 缺省/换到无指针主题 → 复位（老主题零变化）
+  const { value, pressValue, key } = cursorCss(c);
+  host.style.cursor = value;
+  if (!pressValue) return;
+  const cls = `apollo-cur-${key}`;
+  const id = `apollo-cursor-${key}`;
+  const d = host.ownerDocument ?? (typeof document !== 'undefined' ? document : undefined);
+  if (d && !d.getElementById(id)) {
+    const st = d.createElement('style');
+    st.id = id;
+    st.textContent = `.${cls}:active,.${cls} *:active{cursor:${pressValue}!important}`;
+    (d.head ?? d.documentElement).appendChild(st);
+  }
+  host.classList.add(cls);
+}
 
 /** mountUI 句柄：调用即 teardown（向后兼容）；`.update(newTree, theme?)` 做局部更新（最小 diff）。 */
 export type MountHandle = (() => void) & { update: (root: LayoutNode, theme?: UITheme) => void };
@@ -269,6 +301,7 @@ export function mountUI(
   ensureWebfonts(theme.webfonts);
   ensureArtFonts();
   host.innerHTML = renderNode(root, theme);
+  applyThemeCursor(host, theme.cursor); // 主题指针（缺省无=零变化·触屏不受影响）
 
   // 当前已挂载的树与主题（update 做最小 diff 的基线·VirtualList 复绑取数据）。
   let curRoot = root;
@@ -689,7 +722,7 @@ export function mountUI(
   // （替换 host 的单个子元素，非 host.innerHTML 全清）；其余情况走按 id 的 reconcile。
   const update = (newRoot: LayoutNode, newTheme?: UITheme): void => {
     const themeChanged = !!(newTheme && newTheme !== curTheme);
-    if (themeChanged) curTheme = newTheme!;
+    if (themeChanged) { curTheme = newTheme!; applyThemeCursor(host, curTheme.cursor); } // 换皮同步主题指针
     // 整根重挂条件：① 换皮（换主题令牌包·全盘换色）② **换根**（新根 id ≠ 旧根 id·如牌桌 a-play→结算 a-result）。
     // 换根为何不能交给 reconcileNode：它起手 `uiFindById(host, newRoot.id)` 找**新** id → host 里只有**旧**根元素 →
     // 找不到静默 return → 屏一动不动；且 curRoot 已推进 → 之后每次 update 都拿新 id 找不到、永久 no-op（含菜单开合）=

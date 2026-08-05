@@ -672,6 +672,17 @@ export interface WebFont {
   style?: string;
 }
 
+/** 主题指针令牌（REQ-STYLESET M0.6·render-only·闭集数据）：自定义 CSS 光标 = 图 + 热点 + 按下态。
+ *  `image`=**已编码 data-URI 图**（SVG/PNG·主题作者填·同 texture/panelTexture 约定·非游戏 LayoutNode 数据）；
+ *  `x`/`y`=热点像素（光标"作用点"在图内的坐标·缺省 0,0=图左上角）；`press`=按下(:active)态图 + 热点（缺省无=按下不变）。
+ *  弱模型/游戏层不填此令牌（属主题作者层·同 texture）；缺省整份 cursor 不设 = 系统默认箭头（老主题零变化）。 */
+export interface UICursor {
+  image: string;
+  x?: number;
+  y?: number;
+  press?: { image: string; x?: number; y?: number };
+}
+
 export interface UITheme {
   bg0: string; bg1: string; bg2: string; bg3: string; pageBg: string;
   line: string;
@@ -704,6 +715,10 @@ export interface UITheme {
    *  house-style 纸纹/底纹主题填（同 texture 约定：主题作者写完整 background 层·可含 CSS），区别于游戏 LayoutNode 数据。
    *  缺省无 = 面板零变化（老主题字节不变）。REQ-STYLESET apollo-toon 纸纹面。 */
   panelTexture?: string;
+  /** 主题指针（可选·render-only·REQ-STYLESET M0.6·沿 panelTexture 先例：主题作者填·缺省无=系统箭头零变化）。
+   *  自定义 CSS 光标：base 光标落 mountUI 根（面板/文字继承之）；按钮等自带 cursor:pointer 的可交互件仍保留其指针。
+   *  按下态（`press`·:active）由 mountUI 注入一条 scoped 规则实现。触屏无指针·不受影响。 */
+  cursor?: UICursor;
   /** 主题级按钮皮槽（owner 07-15 批29「按键/背景/牌面都可换」）：kind → 贴图皮（skin=已解析图 URL·
    *  skinSlice=源边 px 走 9-slice 无损缩放，缺省整图 cover）。一个 kind 一张皮、全游戏按钮一体换——
    *  node 级 ButtonProps.skin 优先（含 skin:'' 显式关皮逃生）；缺省无 = 原 kind 底（老主题零变化）。 */
