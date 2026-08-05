@@ -108,3 +108,39 @@ describe('manifest 桥接：导出↔导入对称、可加载、可玩', () => {
     expect(() => parseManifest(raw)).not.toThrow();
   });
 });
+
+// ── 回归（engine-review-2026-08-04 §3.3 · owner 2026-08-05 拍板「不许静默猜」）──────────
+// BoardCell 被 match3-board / block-grid 共用（同一视图格接口·字段完全相同）。
+// 旧行为：COMPONENT_PROVIDERS「先登记者胜」把它静默判给注册序靠前的 match3-board
+// （实测 166 行 vs 176 行）→ 一个方块放置游戏只要没写 capabilities 就被装上**三消解释器**，
+// 且零报错；同时 validate-manifest 用的是「后登记者胜」，两处规则相反。
+// 新行为：共用组件不参与推断（不猜），改为点名告警要求显式声明。
+describe('共用组件的推断：不猜 + 点名告警', () => {
+  it('只给 BoardCell → 不再静默把 match3-board 塞进来，并给出点名告警', () => {
+    const raw = JSON.parse('{"entities":{"c0":{"BoardCell":{"boardId":"b","index":0}}}}');
+    const r = parseManifestDetailed(raw);
+    expect(r.inferredCapabilities).toBe(true);
+    // 关键：不再猜——两个提供者一个都没被自动装上
+    expect(r.blueprint.capabilities.map((c) => c.id)).not.toContain('t3-match3-board');
+    expect(r.blueprint.capabilities.map((c) => c.id)).not.toContain('t3-block-grid');
+    // 且必须明确告诉作者为什么、怎么办（fail-loud 取代 fail-silent）
+    const hit = r.warnings.filter((w) => w.includes('BoardCell') && w.includes('多个能力共同提供'));
+    expect(hit.length).toBe(1);
+    expect(hit[0]).toMatch(/显式声明/);
+  });
+
+  it('显式声明 capabilities → 照你说的装，不受影响', () => {
+    const raw = JSON.parse('{"capabilities":["t3-block-grid"],"entities":{"c0":{"BoardCell":{"boardId":"b","index":0}}}}');
+    const r = parseManifestDetailed(raw);
+    expect(r.inferredCapabilities).toBe(false);
+    expect(r.blueprint.capabilities.map((c) => c.id)).toContain('t3-block-grid');
+    expect(r.blueprint.capabilities.map((c) => c.id)).not.toContain('t3-match3-board');
+  });
+
+  it('单一提供者组件的推断行为完全不变（不误伤绝大多数组件）', () => {
+    const raw = JSON.parse('{"entities":{"hero":{"Controllable":{"playerId":"p1","speed":3}}}}');
+    const r = parseManifestDetailed(raw);
+    expect(r.blueprint.capabilities.length).toBeGreaterThan(0);
+  });
+});
+

@@ -32,10 +32,16 @@ export interface SchemaReport {
 
 // 从一组（已解析的）能力聚出 组件类型 → 字段 schema 表。
 function collectFieldSchemas(capabilities: readonly CapabilityDefinition[]): Map<string, Record<string, { type: string }>> {
+  // 先登记者胜（**刻意与 capability-registry 的 COMPONENT_PROVIDERS 同向**）。
+  // 旧实现无条件 set = 后登记者胜，与注册表的先登记者胜**规则相反** → 共用组件会出现
+  // 「按 A 的字段规格校验、却把 B 的解释器装给你」（engine-review-2026-08-04 §3.3）。
+  // 共用组件（如 BoardCell 被 match3-board / block-grid 共用）本身允许，但前提是**各提供者
+  // 声明的字段结构必须完全一致**——该不变量由 capability-registry.test 的守卫钉死，
+  // 一旦有人让它们分叉就会转红；故此处取谁都等价，只需两边规则同向、结果确定。
   const out = new Map<string, Record<string, { type: string }>>();
   for (const cap of capabilities) {
     for (const [ctype, schema] of Object.entries(cap.components?.provides ?? {})) {
-      out.set(ctype, schema.fields ?? {});
+      if (!out.has(ctype)) out.set(ctype, schema.fields ?? {});
     }
   }
   return out;

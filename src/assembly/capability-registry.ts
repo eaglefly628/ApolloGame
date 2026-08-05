@@ -204,14 +204,41 @@ export function resolveCapabilities(ids: readonly string[]): CapabilityDefinitio
   return out;
 }
 
-/** 组件类型 → 提供它的 capability id（先登记者胜）。供从 entities 反推所需能力。 */
-export const COMPONENT_PROVIDERS: ReadonlyMap<string, string> = (() => {
-  const m = new Map<string, string>();
+/** 组件类型 → **全部**声明提供它的 capability id（登记序）。多于 1 个 = 该组件被多个能力共用。
+ *  共用本身可以是刻意的（如 `BoardCell` 被 match3-board / block-grid 共用同一视图格接口，
+ *  两边字段完全相同），但它让「从组件反推能力」这件事**在语义上就无解**——见下方 AMBIGUOUS。 */
+export const COMPONENT_PROVIDERS_ALL: ReadonlyMap<string, readonly string[]> = (() => {
+  const m = new Map<string, string[]>();
   for (const cap of ALL_CAPABILITIES) {
     for (const type of Object.keys(cap.components?.provides ?? {})) {
-      if (!m.has(type)) m.set(type, cap.id);
+      const list = m.get(type);
+      if (list) list.push(cap.id);
+      else m.set(type, [cap.id]);
     }
   }
+  return m;
+})();
+
+/** 被多个能力共同提供的组件 → 提供者清单。推断**刻意不碰**这些（不猜），由 manifest 显式声明。 */
+export const AMBIGUOUS_COMPONENTS: ReadonlyMap<string, readonly string[]> = (() => {
+  const m = new Map<string, readonly string[]>();
+  for (const [type, ids] of COMPONENT_PROVIDERS_ALL) if (ids.length > 1) m.set(type, ids);
+  return m;
+})();
+
+/** 组件类型 → 提供它的 capability id。**只收唯一提供者**；多提供者组件不入表（见 AMBIGUOUS_COMPONENTS）。
+ *
+ *  为什么不再「先登记者胜」（engine-review-2026-08-04 §3.3 · owner 2026-08-05 拍板修）：
+ *  旧规则会把共用组件**静默判给注册表里排前面的那个能力**——实测 `BoardCell` 被判给
+ *  match3-board（注册序 166 早于 block-grid 176），于是一个方块放置游戏只要没显式写
+ *  `capabilities`，就会被装上**三消解释器**，且零报错。更糟的是同仓另一处
+ *  （validate-manifest 的 collectFieldSchemas）用的是**后登记者胜**，两处规则相反 →
+ *  「按 A 的规格校验字段、却把 B 的解释器装给你」。
+ *  共用组件的正确姿势是**承认推不出来**：不猜、由 parseManifest 发告警要求显式声明能力，
+ *  fail-loud 取代 fail-silent。单一提供者的组件（绝大多数）推断行为完全不变。 */
+export const COMPONENT_PROVIDERS: ReadonlyMap<string, string> = (() => {
+  const m = new Map<string, string>();
+  for (const [type, ids] of COMPONENT_PROVIDERS_ALL) if (ids.length === 1) m.set(type, ids[0]!);
   return m;
 })();
 

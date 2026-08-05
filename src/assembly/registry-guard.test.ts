@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { describe, it, expect } from 'vitest';
-import { ALL_CAPABILITIES } from './capability-registry.js';
+import { ALL_CAPABILITIES, AMBIGUOUS_COMPONENTS, COMPONENT_PROVIDERS } from './capability-registry.js';
 import type { CapabilityDefinition } from '@engine/core/define-capability.js';
 
 // ═══════════════════════════════════════════════════════════════
@@ -55,3 +55,41 @@ describe('capability-registry 守护 — src/skills 全部 defineCapability 必�
     expect(missing).toEqual([]);
   });
 });
+
+// ── 共用组件不变量守卫（engine-review-2026-08-04 §3.3 · owner 2026-08-05 拍板）──────────
+// 一个组件被多个能力共同提供（如 BoardCell 被 match3-board / block-grid 共用同一视图格接口）
+// 是**允许**的，但**前提是各提供者声明的字段结构完全一致**——否则「按 A 的规格校验数据、
+// 却按 B 的语义解释」就会发生，且全程零报错。本守卫把这条前提钉死：谁让它们分叉就转红。
+describe('共用组件（多 provider）必须各家字段结构一致', () => {
+  it('每个共用组件的所有提供者声明同一份 fields', () => {
+    const byComponent = new Map<string, Array<{ capId: string; fields: string }>>();
+    for (const cap of ALL_CAPABILITIES) {
+      for (const [ctype, schema] of Object.entries(cap.components?.provides ?? {})) {
+        // 按字段名排序后序列化 → 与书写顺序无关，只比"结构是否相同"
+        const f = schema.fields ?? {};
+        const norm = JSON.stringify(Object.keys(f).sort().map((k) => [k, (f as Record<string, { type?: string }>)[k]?.type]));
+        const list = byComponent.get(ctype) ?? [];
+        list.push({ capId: cap.id, fields: norm });
+        byComponent.set(ctype, list);
+      }
+    }
+    const diverged: string[] = [];
+    for (const [ctype, providers] of byComponent) {
+      if (providers.length < 2) continue;
+      const uniq = new Set(providers.map((p) => p.fields));
+      if (uniq.size > 1) {
+        diverged.push(`${ctype}：${providers.map((p) => p.capId).join(' / ')} 声明的字段结构不一致`);
+      }
+    }
+    expect(diverged).toEqual([]);
+  });
+
+  it('AMBIGUOUS_COMPONENTS 如实列出全部共用组件，且不入单一提供者表', () => {
+    for (const [ctype, providers] of AMBIGUOUS_COMPONENTS) {
+      expect(providers.length).toBeGreaterThan(1);
+      // 共用组件刻意不进 COMPONENT_PROVIDERS（推断不猜），否则又会静默判给某一家
+      expect(COMPONENT_PROVIDERS.has(ctype)).toBe(false);
+    }
+  });
+});
+

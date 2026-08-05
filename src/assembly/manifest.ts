@@ -1,5 +1,5 @@
 import type { WorldBlueprint, EntityBlueprint } from './demo.assembly.js';
-import { resolveCapabilities, inferCapabilityIds } from './capability-registry.js';
+import { resolveCapabilities, inferCapabilityIds, AMBIGUOUS_COMPONENTS } from './capability-registry.js';
 import { validateComponentData, validateAssetRefs, formatIssues } from './validate-manifest.js';
 import { validateReferences } from './validate-references.js';
 
@@ -85,6 +85,18 @@ export function parseManifestDetailed(raw: unknown, opts: ParseOptions = {}): Pa
     warnings.push(
       `未声明 capabilities，已据组件类型推断 ${capIds.length} 个；仅含"提供组件"的能力，行为类系统(如运动/碰撞)可能需显式补全`,
     );
+    // 共用组件（多个能力都提供）→ 推断**刻意不猜**（见 capability-registry AMBIGUOUS_COMPONENTS）。
+    // 旧行为是静默判给注册序靠前者，实测能把方块放置游戏装成三消解释器且零报错。
+    // 这里逐个点名告警：作者必须显式写 capabilities 才能确定用哪个解释器。
+    const used = new Set<string>();
+    for (const comps of Object.values(entities)) for (const t of Object.keys(comps)) used.add(t);
+    for (const [ctype, providers] of AMBIGUOUS_COMPONENTS) {
+      if (!used.has(ctype)) continue;
+      warnings.push(
+        `组件 "${ctype}" 被多个能力共同提供（${providers.join(' / ')}）——无法从数据反推该用哪个，`
+        + `已跳过它的推断。请在 manifest 的 capabilities 里显式声明你要的那个，否则该组件不会被解释。`,
+      );
+    }
   }
 
   const capabilities = resolveCapabilities(capIds);
