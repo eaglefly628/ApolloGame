@@ -10,7 +10,7 @@
 
 
 
-### REQ-STYLESET-风格库 apollo-toon · 迪士尼×Supercell×中国水墨混风·全类型 house style · [2026-07-16] · owner 拍板（全形态换装非调色·先现装可视版·其他风格收敛）→ **指派：PA（M0 台账底座）+ PUI（M0.5 现装可视版·先行）** · status: **M0 ✅ PASS + M0.5 ✅ PASS（Lead 对抗性验收 2026-07-16）；M1 试产 open·等真 key（连 REQ-AIGEN 卡口）** · 优先级: P1 · 类型: 引擎级风格资产库 + UI 基座消费
+### REQ-STYLESET-风格库 apollo-toon · 迪士尼×Supercell×中国水墨混风·全类型 house style · [2026-07-16] · owner 拍板（全形态换装非调色·先现装可视版·其他风格收敛）→ **指派：PA（M0 台账底座）+ PUI（M0.5 现装可视版·先行）** · status: **M0 ✅ PASS + M0.5 ✅ PASS（Lead 验收 2026-07-16）+ 三游戏风格锚 ✅（Lead PASS 2026-08-04）+ M0.6 主题指针 ✅ done（PUI 2026-08-05·待 Lead 验收）；M1 试产/M2 建库 open·等真 key（连 REQ-AIGEN 卡口）** · 优先级: P1 · 类型: 引擎级风格资产库 + UI 基座消费
 > 图纸唯一真相=`docs/design/styleset-artlib-plan-2026-07-16.md`（§二 三增量·§六 首批清单 spec + M0/M0.5 交付边界·风格锚 v2 单一真相在风格包·**IP 红线：锚用描述词不写厂牌词**）。M1 试产/M2 建库等真 key（连 REQ-AIGEN 卡口）；M3 对齐（examples 进 game-i）；M4 D/G 出口游戏换装。完工各标 ✅ 待 Lead 对抗性验收（真浏览器截图必查）。
 > **+ M0.6 主题指针（owner 2026-07-16·game-t 连带需求·指派 PUI）**：UITheme 加 `cursor?` 主题令牌（data-URI 图 + hotspot + 按压态·缺省无=老主题零变化·沿 panelTexture 先例：guard+点名测试+ui.md 回填）；apollo-toon 配墨笔尖造型指针（程序化 SVG 占位·台账行留真图位）；触屏无指针不受影响。"墨迹拖尾跟随"记二期候选不做。
 > **M0.6 ✅ done（PUI·2026-08-05·待 Lead 对抗性验收）**：`UITheme.cursor?: UICursor{image(data-URI),x?,y?,press?{image,x?,y?}}`（types.ts·闭集令牌·沿 panelTexture 先例）；`mountUI`/`update` 落 host 根——纯函数 `cursorCss()` 算 base/press 值 + djb2 去重键，base 光标设 `host.style.cursor`（面板/文字继承·按钮 `cursor:pointer` 保留），按下态注入 `.apollo-cur-<key>:active`/`*:active` scoped 规则（`!important` 压继承·id 幂等去重）。**缺省无=复位系统箭头（老主题零变化）·触屏不受影响**。apollo-toon 配程序化墨笔尖（斜竹杆+墨锥·尖 (3,3) 热点·按下蘸青墨·provenance:procedural 占位·真图走美术台账逐令牌替换）。守卫：`cursor.test.ts`（6 例·cursorCss 值/键 + 主题令牌存在 + mountUI 落根 + 缺省零变化·happy-dom）；ui.md 回填「主题指针」行。scoped-gate 全绿。
