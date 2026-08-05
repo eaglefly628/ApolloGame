@@ -45,8 +45,9 @@
 
 <!-- REQ-CYCLEHAZ-定序成环（P1）已完结：B 止血落地 887c410f7·Lead 终审 PASS（全文查 git 历史）；后置不占槽：B.2 SCC 棘轮（low）+ C 相位化（xhigh·等剧情线实战反馈）——要做时重开。 -->
 
-### REQ-ARTPIPE2-美术管线二期 · 台账强制（无账不录入）+ Unreal 式资产浏览器（目录/历史/回滚/替换工作流） · [2026-08-04] · owner 令（「美术台账不全该不该强制」+「预览操作器太像玩具·要完整工作流」） → Lead 规划中（侦察→图纸→owner 过目→分批派工） · status: **A1 施工中（owner 2026-08-05 开工令「你自己做」·施工主体=Lead 代理）** · 优先级: P1 · 类型: 生产线基建（守卫+PST 美术平台）
+### REQ-ARTPIPE2-美术管线二期 · 台账强制（无账不录入）+ Unreal 式资产浏览器（目录/历史/回滚/替换工作流） · [2026-08-04] · owner 令（「美术台账不全该不该强制」+「预览操作器太像玩具·要完整工作流」） → Lead 规划中（侦察→图纸→owner 过目→分批派工） · status: **A1 done（Lead 代理 2026-08-05·待 Lead 验收）→ A2/A3/A4 待派** · 优先级: P1 · 类型: 生产线基建（守卫+PST 美术平台）
 > 总纲：**不重造轮子**——历史/备份=git 承载（浏览器只做呈现与回滚操作）·台账+assets/index=唯一账本（浏览器是视图非第二真相）。四翼：A1 台账强制（双向对账守卫：黑户文件/死账行/缺来源=红·棘轮基线存量挂账·入口补漏——同时执法 AI 披露红线）→ A2 浏览器核心（目录树+缩略图网格+预览+拖入自动登记）→ A3 历史回滚（每资产 git 提交史+一键回退+前后对比）→ A4 替换工作流（消费方视图+替换+逐行人审）。待裁：src/studio 旧资产浏览器（白名单产品耦合 3 条）与新浏览器关系。侦察项：黑户/裸路径底数·现有平台件清单·studio 关系材料。
+> **✅ A1 回执（2026-08-05）**：`scripts/art-ledger-guard.mjs`（黑户/死账/缺来源三判·servedPath 为真相不假设标准目录树·game-d 83 行非标路径零误判·退出码 0/1/2）+ 棘轮基线 `art-ledger-baseline.json`（实测黑户 187→三游戏建账后 65·只许减不许增）+ 接入 `scoped-gate` 常驻守卫链（exit 2 警告放行/exit 1 硬拦）。game-i(103)/game-z(5)/game102(14) 机械建账（磁盘+本地/共享 index.json 推导·来源全可考·零伪造）。`asset-reconcile.mjs` games 正则盲区（漏 game101/102）已修。测试 14 例+假信心自查（短路棘轮比较→转红→复原转绿）。全库实测：黑户 65（game-103:4/game-a:57/game-c:1/game101:3·存量挂账进基线）·死账 2（game-a art-03/game-c art-017·各开游戏级工单指派 PA·A1 不修）·缺来源 0。门禁：`node scripts/scoped-gate.mjs --run` exit 0（tsc+全量vitest 431文件/3892例+build+四守卫全绿）。
 
 ### REQ-ENGINEAUDIT-引擎全量评审落地 · 15 子系统深审+2 流程审计（110+ 发现·1 P0/~30 P1） · [2026-08-04] · owner 令（「全量 review 引擎+能修直接修+两问」）→ **报告在档：`docs/design/engine-review-2026-08-04.md`（唯一真相·全清单/根因/两问答复/工单分诊）** · status: **进行中（已修推 13 处/3 提交·门禁全绿；余按报告 §6 分诊）** · 优先级: **P0（含 1 条已实测复现 P0）** · 类型: 引擎质量总账
 > **已修并推**（3 提交 `0031b950d`/`3b8e2757c`/`29cf511ba`·回归 +10）：确定性护栏（restore version++·NON_DETERMINISTIC 补 Mesh3D/Coachmark·canonical undefined·字符串转义防碰撞·bench 一票否决·StateChanged 自清）+ 注入面（cartridge innerHTML·art-replace slug 穿越·render.ts number props 消毒）+ voxel 批 dispose 崩溃。

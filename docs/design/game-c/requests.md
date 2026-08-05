@@ -13,6 +13,9 @@
 
 ## 待处理
 
+### REQ-C-119 · [2026-08-05] · REQ-ARTPIPE2 A1 台账守卫实测发现 · 死账：art-017 加注按钮皮台账行 `gen.servedPath` 指向不存在文件 · 指派：PA · status: open · 优先级: P3（不阻玩法·台账诚实性债务） · 类型: 资产账务清理（PA 域）
+> `art-ledger.json` art-017（`game-c/ui/btn-raise` 加注按钮皮）现 `status:'replaced'`、`gen.servedPath` 指 `/games/game-c/art/gen/art-017-up.png`（owner 上传替换），但该文件磁盘不存在——`ref.servedPath` 指的原程序化占位 `/games/game-c/art/ui/btn-raise.svg` **仍在盘上**（游戏实际很可能还在吃这张占位图）。`node scripts/art-ledger-guard.mjs` 判定为「死账」（行的当前真相路径无文件）。**修法二选一**：① 找回/重新上传该按钮皮真图落到 `gen.servedPath` 指的路径；② 行状态回退为 `placeholder`（`gen.servedPath` 改指仍在盘的 `ref.servedPath` 或清空），如实反映「替换从未真正落盘」。REQ-ARTPIPE2 A1 侦察在案·不在本轮修（A1 域=守卫工具本身，不改各游戏台账内容）。
+
 ### REQ-C-116 · [2026-07-23] · 巡检发现 · vendor.test 分解式断言 37 条 vs 索引实有 44（owner 本地美术推送未同步测试·REQ-C-111 同款二犯） · status: ✅ **done（Lead 当场清·owner 2026-07-23「把红修复」在场授权）** · 优先级: **P1（阻全量测试·当日清）** · 类型: 资产对账同步（PE 域）
 > 巡检实证：owner 从本地推美术（`c8b65550`·game-c ledger+index +7 条）→ `vendor.test.ts`「37=9+28」失败（expected 44 to be 37）。
 > **✅ Lead 处置（2026-07-23·owner 在场「把它修复」授权·非自动巡检的 hands-off）**：新 7 条 = 6 真上传（`gen/art-001/002/017-up`+`game-c/{scene/backdrop,table/felt-albedo,ui/btn-raise}`·generator:upload）+ **1 悬空 mock（`gen/mock/art-002`·文件 gitignored·qwen mock）**。① 删悬空 mock 条 → index 43 条；② vendor.test 改**三类分解断言**：9 vendor 筹码 + 28 程序生成（game-c-art-gen）+ 6 owner 上传（upload）=43·三类无缝覆盖全体·+「无 card/*·无 mock」护栏。全量 vitest 绿。**根因同 A-025**：mock 按设计留本地 index 供墙预览、但不该随 index.json 提交——护栏已由 vendor.test「无 mock」承接。

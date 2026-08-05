@@ -2,6 +2,9 @@
 
 > 规则同引擎池：Lead/owner 裁决改状态；能力缺口确认后由 GD 转 `docs/workflow/requests.md` 提 Lead。
 
+### A-026 · [2026-08-05] · REQ-ARTPIPE2 A1 台账守卫实测发现 · 死账：art-03 呢面台账行 `gen.servedPath` 指向不存在文件 · 指派：PA · status: open · 优先级: P3（不阻玩法·台账诚实性债务） · 类型: 资产账务清理（PA 域）
+> `art-ledger.json` art-03（felt/table 呢面桌面）现 `status:'generated'`、`gen.servedPath` 指 `/games/game-a/art/gen/mock/art-03.png`——该文件系 qwen **mock 生成**，本就未落盘（gitignored·同 A-025 已确认的 mock 铁律：mock 不入库）。行至今仍指着这个从未存在的路径，`node scripts/art-ledger-guard.mjs` 判定为「死账」（行有当前真相路径、磁盘无文件）。**修法二选一**：① 重新真跑一次 seedream/qwen 生成呢面素材落盘，`gen.servedPath` 改指真文件；② 该行退回 `status:'placeholder'`（`gen.servedPath:null`）、回退到程序化 SVG 占位 `felt/table.svg`（磁盘现存·未被任何行的 servedPath 引用，游戏实际仍在吃这张占位图，只是台账行没说真话）。REQ-ARTPIPE2 A1 侦察在案·不在本轮修（A1 域=守卫工具本身，不改各游戏台账内容）。
+
 ### A-025 · [2026-07-23] · 巡检发现 · vendor.test 断言 55 条 vs 索引实有 58（owner 本地美术推送未同步测试） · status: ✅ **done（Lead 当场清·owner 2026-07-23「把红修复」在场授权）** · 优先级: **P1（阻全量测试·当日清）** · 类型: 资产对账同步（PE 域）
 > 巡检实证：owner 从本地推美术（`e5db3d0e`·game-a art-02.png + index +3 条）→ `games/game-a/vendor.test.ts`「55 条」失败（expected 58 to be 55）。
 > **✅ Lead 处置（2026-07-23·owner 在场「把它修复」授权·非自动巡检的 hands-off）**：新 3 条 = 2 真 seedream 生成（`gen/art-02`+`game-a/bg/table` 桌背 skinKey）+ **1 悬空 mock（`gen/mock/art-03`·文件 gitignored·qwen mock）**。① 删悬空 mock 条（enforce「mock 永不入库」铁律·文件本就不在库）→ index 57 条；② vendor.test 改**分解式断言**：55 vendor（vendoredFrom）+ 2 生成（generator·非 mock）=57·+「无 mock」护栏钉死（今后 mock 泄漏进 committed index 即红拦）。全量 vitest 绿。**根因**：`batchGenerate` 按设计把 mock 留本地 index 供墙预览（`art-replace.test` 钉死），但 mock 条不该随 index.json 提交（文件 gitignored→提交即悬空）——护栏已由 vendor.test「无 mock」承接。
