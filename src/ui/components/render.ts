@@ -282,7 +282,7 @@ function renderButton(id: string, p: ButtonProps, ls: string, t: UITheme): strin
   const skinSkip = sk.skin ? ' data-audit-skip-contrast' : '';
   // 键首内联图标（批32 图标统一升级）：1em 随字号·居 label 前。无 icon=纯文字零变。
   const iconImg = p.icon ? `<img src="${esc(p.icon)}" alt="" style="height:1.05em;width:1.05em;object-fit:contain;vertical-align:-0.18em;margin-right:6px">` : '';
-  const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
+  const action = p.action ? ` data-ui-id="${esc(id)}" data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
   // hero：金色倒角 sheen 大 CTA（下沉自 game-g 出征键）。倒角 clip-path + 流光 span(apollo-sheen 关键帧) + 可选副标。
   if (kind === 'hero') {
     const hbase = `position:relative;overflow:hidden;padding:14px 30px;border:0;border-radius:4px;cursor:${p.disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};outline:none;background:linear-gradient(180deg,${t.gold},${t.warn});color:${t.bg0};font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.45);clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px);opacity:${p.disabled ? 0.4 : 1}`;
@@ -354,7 +354,7 @@ function renderLabel(id: string, p: LabelProps, ls: string, t: UITheme): string 
 
 function renderDropdown(id: string, p: DropdownProps, ls: string, t: UITheme): string {
   const base = `background:${t.bg2};color:${t.sub};border:1px solid ${t.line};border-radius:6px;font-size:12px;padding:6px 10px;outline:none;font-family:${t.fontUi};cursor:pointer`;
-  const action = p.action ? ` data-action="${esc(p.action)}"` : '';
+  const action = p.action ? ` data-ui-id="${esc(id)}" data-action="${esc(p.action)}"` : '';
   const ph = p.placeholder
     ? `<option value="" disabled${!p.value ? ' selected' : ''}>${esc(p.placeholder)}</option>`
     : '';
@@ -376,7 +376,7 @@ function renderBadge(id: string, p: BadgeProps, ls: string, t: UITheme): string 
 
 function renderInput(id: string, p: InputProps, ls: string, t: UITheme): string {
   const base = `background:${t.inputBg ?? 'rgba(0,0,0,0.35)'};color:${t.text};border:1px solid ${t.line};border-radius:6px;font-size:12px;padding:6px 10px;outline:none;font-family:${t.fontUi}`;
-  const action = p.action ? ` data-action="${esc(p.action)}"` : '';
+  const action = p.action ? ` data-ui-id="${esc(id)}" data-action="${esc(p.action)}"` : '';
   return `<input id="${esc(id)}" type="${p.type ?? 'text'}" value="${esc(p.value ?? '')}" placeholder="${esc(p.placeholder ?? '')}"${action} style="${base};${ls}">`;
 }
 
@@ -433,7 +433,7 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
     : '';
   const inner = children.map((ch) => renderNode(ch, t)).join('');
   // 容器可点（REQ-UI-容器可点）：整个容器发信号（同 Button·只信号名）+ 手型。
-  const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
+  const action = p.action ? ` data-ui-id="${esc(id)}" data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
   const cursor = p.action ? 'cursor:pointer;' : '';
   return `<div id="${esc(id)}"${action}${bgScrollAttr(p.bgScroll)} style="${style}${cursor}">${vignette}${pattern}${title}${inner}</div>`;
 }
@@ -441,8 +441,8 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
 // ── 新增 6 个控件 ───────────────────────────────────────────────
 
 // hidden input 辅助：opacity:0 + 零尺寸，<label for> 触发它；change 事件冒泡给 dispatch。
-const hiddenInput = (id: string, type: string, action: string, extra = ''): string =>
-  `<input type="${type}" id="${esc(id)}"${action ? ` data-action="${esc(action)}"` : ''} ${extra} style="opacity:0;width:0;height:0;position:absolute">`;
+const hiddenInput = (id: string, type: string, action: string, extra = '', uiId?: string): string =>
+  `<input type="${type}" id="${esc(id)}"${action ? ` data-ui-id="${esc(uiId ?? id)}" data-action="${esc(action)}"` : ''} ${extra} style="opacity:0;width:0;height:0;position:absolute">`;
 
 function renderCheckbox(id: string, p: CheckboxProps, ls: string, t: UITheme): string {
   const checked = p.checked ?? false;
@@ -450,7 +450,7 @@ function renderCheckbox(id: string, p: CheckboxProps, ls: string, t: UITheme): s
   const boxBorder = checked ? t.jadeLine  : t.line;
   const mark      = checked ? `<span style="color:${t.jade};font-size:10px;line-height:1;font-weight:700">✓</span>` : '';
   return `<span id="${esc(id)}" style="display:inline-flex;align-items:center;${ls}">
-  ${hiddenInput(`${id}-i`, 'checkbox', p.action ?? '', checked ? 'checked' : '')}
+  ${hiddenInput(`${id}-i`, 'checkbox', p.action ?? '', checked ? 'checked' : '', id)}
   <label for="${esc(id)}-i" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
     <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid ${boxBorder};border-radius:3px;background:${boxBg};flex-shrink:0">${mark}</span>
     <span style="font-size:12px;color:${t.sub};font-family:${t.fontUi}">${esc(p.label)}</span>
@@ -465,7 +465,7 @@ function renderToggle(id: string, p: ToggleProps, ls: string, t: UITheme): strin
   const knob     = on ? t.bg0        : t.dim;
   const knobLeft = on ? '18px'           : '2px';
   return `<span id="${esc(id)}" style="display:inline-flex;align-items:center;${ls}">
-  ${hiddenInput(`${id}-i`, 'checkbox', p.action ?? '', on ? 'checked' : '')}
+  ${hiddenInput(`${id}-i`, 'checkbox', p.action ?? '', on ? 'checked' : '', id)}
   <label for="${esc(id)}-i" style="display:inline-flex;align-items:center;gap:10px;cursor:pointer">
     <span style="display:inline-block;width:36px;height:20px;border-radius:10px;background:${trackBg};border:1px solid ${border};position:relative;flex-shrink:0">
       <span style="width:14px;height:14px;border-radius:50%;background:${knob};position:absolute;top:2px;left:${knobLeft}"></span>
@@ -482,7 +482,7 @@ function renderRadioGroup(id: string, p: RadioGroupProps, ls: string, t: UITheme
     const dot    = sel ? `<span style="width:7px;height:7px;border-radius:50%;background:${t.jade}"></span>` : '';
     const border = sel ? t.jade : t.line;
     return `<span style="display:inline-flex;align-items:center">
-    ${hiddenInput(rid, 'radio', p.action ?? '', `name="${esc(p.name)}" value="${esc(opt.value)}"${sel ? ' checked' : ''}`)}
+    ${hiddenInput(rid, 'radio', p.action ?? '', `name="${esc(p.name)}" value="${esc(opt.value)}"${sel ? ' checked' : ''}`, id)}
     <label for="${esc(rid)}" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
       <span style="width:14px;height:14px;border-radius:50%;border:1.5px solid ${border};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${dot}</span>
       <span style="font-size:12px;color:${t.sub};font-family:${t.fontUi}">${esc(opt.label)}</span>
@@ -517,7 +517,7 @@ function renderSlider(id: string, p: SliderProps, ls: string, t: UITheme): strin
   const max   = num(p.max, 100);
   const step  = num(p.step, 1);
   const value = num(p.value, Math.round((min + max) / 2));
-  const action = p.action ? ` data-action="${esc(p.action)}"` : '';
+  const action = p.action ? ` data-ui-id="${esc(id)}" data-action="${esc(p.action)}"` : '';
   const header = p.label
     ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px">
         <span style="font-size:11px;color:${t.sub};font-family:${t.fontUi}">${esc(p.label)}</span>
@@ -542,7 +542,7 @@ function renderTable(id: string, p: TableProps, ls: string, t: UITheme): string 
   const toneColor: Record<string, string> = { normal: t.text, accent: t.gold, dim: t.dim };
   const body = p.rows.length
     ? p.rows.map((r) => {
-        const act = r.action ? ` data-action="${esc(r.action)}" data-arg="${esc(r.id)}"` : '';
+        const act = r.action ? ` data-ui-id="${esc(r.id)}" data-action="${esc(r.action)}" data-arg="${esc(r.id)}"` : '';
         const cur = r.action ? 'cursor:pointer;' : '';
         const cells = p.columns.map((c) => `<span style="${colFlex(c)};text-align:${c.align ?? 'left'};font-size:12px;color:${toneColor[r.tone ?? 'normal'] ?? t.text};font-family:${t.fontUi};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.cells[c.key] ?? '')}</span>`).join('');
         return `<div${act} style="display:flex;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid ${t.line};${cur}">${cells}</div>`;
@@ -557,7 +557,7 @@ function renderTabs(id: string, p: TabsProps, children: LayoutNode[], ls: string
   const active = p.active ?? p.tabs[0]?.id ?? '';
   const navBtn = (tb: { id: string; label: string; anchor?: string; icon?: string }): string => {
     const on = tb.id === active;
-    const act = p.action ? ` data-action="${esc(p.action)}" data-arg="${esc(tb.id)}"` : '';
+    const act = p.action ? ` data-ui-id="${esc(tb.id)}" data-action="${esc(p.action)}" data-arg="${esc(tb.id)}"` : '';
     const anchor = tb.anchor ? ` data-anchor="${esc(tb.anchor)}"` : ''; // 新手引导锚点：spotlight 到具体页签按钮（REQ-UI-Tabs每页签锚点）
     // 页签图标（REQ-UI-标题图标槽）：icon 在场 → 文字前 1.05em 内联图；无=纯文字页签字节不变。
     const icon = tb.icon ? `<img src="${esc(tb.icon)}" alt="" style="height:1.05em;width:1.05em;object-fit:contain;vertical-align:-0.18em;margin-right:5px">` : '';
@@ -606,7 +606,7 @@ function renderTag(id: string, p: TagProps, ls: string, t: UITheme): string {
   const bg = on ? t.jadeWash : (toneBg[p.tone ?? 'normal'] ?? 'rgba(255,255,255,0.04)');
   const fg = on ? t.jade : (toneFg[p.tone ?? 'normal'] ?? t.sub);
   const border = on ? t.jadeLine : t.line;
-  const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
+  const action = p.action ? ` data-ui-id="${esc(id)}" data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
   const cursor = p.action ? 'cursor:pointer;' : '';
   const x = p.removable ? '<span style="margin-left:6px;opacity:.7">×</span>' : '';
   // 首部内联图标（批32 图标统一升级）：1em 随字号。无 icon=原输出字节不变。
@@ -665,7 +665,7 @@ function renderModal(id: string, p: ModalProps, children: LayoutNode[], ls: stri
   const closable = p.closable ?? true;
   const scrimClose = p.closeAction ? ` data-modal-close="${esc(p.closeAction)}"` : '';
   const xBtn = (closable && p.closeAction)
-    ? `<button data-action="${esc(p.closeAction)}" aria-label="close" style="position:absolute;top:10px;right:13px;width:26px;height:26px;background:none;border:none;color:${t.dim};font-size:19px;line-height:1;cursor:pointer;font-family:${t.fontUi}">×</button>`
+    ? `<button data-ui-id="${esc(id)}" data-action="${esc(p.closeAction)}" aria-label="close" style="position:absolute;top:10px;right:13px;width:26px;height:26px;background:none;border:none;color:${t.dim};font-size:19px;line-height:1;cursor:pointer;font-family:${t.fontUi}">×</button>`
     : '';
   const title = p.title
     ? `<div style="font-size:15px;font-weight:700;color:${t.text};font-family:${t.fontUi};margin-bottom:12px;padding-right:26px">${esc(p.title)}</div>`
@@ -682,7 +682,7 @@ function renderModal(id: string, p: ModalProps, children: LayoutNode[], ls: stri
 function renderCard(id: string, p: CardProps, children: LayoutNode[], ls: string, t: UITheme): string {
   const border = p.tone === 'accent' ? t.jadeLine : t.line;
   const dimmed = (p.tone === 'locked' || p.tone === 'dim') ? 'opacity:.55;' : '';
-  const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
+  const action = p.action ? ` data-ui-id="${esc(id)}" data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
   const cursor = p.action ? 'cursor:pointer;' : '';
   const corner = p.corner ? `<span style="position:absolute;top:7px;right:8px;font-size:9px;padding:1px 6px;border-radius:7px;background:${t.jadeWash};color:${t.jade};font-family:${t.fontUi}">${esc(p.corner)}</span>` : '';
   // media URL 检测（批32 图标统一升级·additive）：'/x.png'|'http…'|'data:…' → 图片媒体；其余照旧当字形字符（零回归）。
@@ -708,7 +708,7 @@ function renderPlayingCard(id: string, p: PlayingCardProps, ls: string, t: UIThe
   // light=经典白扑克牌（红黑对比·对决卡用）；dark=暗主题卡（牌库格/收藏用·缺省）。
   const sc = light ? (isRed ? '#c0392b' : '#1a1a1a') : (isRed ? t.danger : t.text);
   const faceUp = p.faceUp !== false;
-  const action = p.action ? ` data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
+  const action = p.action ? ` data-ui-id="${esc(id)}" data-action="${esc(p.action)}"${p.actionArg ? ` data-arg="${esc(p.actionArg)}"` : ''}` : '';
   const cursor = p.action ? 'cursor:pointer;' : '';
   const dimmed = p.dimmed ? 'opacity:.5;' : '';
   const selBorder = p.selected ? t.gold : sc;
@@ -758,7 +758,7 @@ function renderCoinFlip(id: string, p: CoinFlipProps, ls: string, t: UITheme): s
   const d = num(p.size, 92);
   const ms = num(p.durationMs, 1100);
   const tails = p.outcome === 'tails';
-  const action = p.action ? ` data-action="${esc(p.action)}"` : '';
+  const action = p.action ? ` data-ui-id="${esc(id)}" data-action="${esc(p.action)}"` : '';
   const cursor = p.action ? 'cursor:pointer;' : '';
   // spinning：用白名单关键帧（apollo-coin-heads/tails·server.ts 注入）落定；静态：直接定到结果面。
   const spin = p.spinning
@@ -796,7 +796,7 @@ function renderVersus(id: string, p: VersusProps, ls: string, t: UITheme): strin
 function renderStepper(id: string, p: StepperProps, ls: string, t: UITheme): string {
   const min = num(p.min, 0), max = num(p.max, 99), step = num(p.step, 1), v = num(p.value, 0); // num()：v 直插 span，字符串会造成裸 HTML 注入
   const btn = (lbl: string, target: number, disabled: boolean): string =>
-    `<button${disabled ? ' disabled' : ` data-action="${esc(p.action ?? '')}" data-arg="${target}"`} style="width:26px;height:26px;border-radius:6px;background:${t.bg2};border:1px solid ${t.line};color:${t.sub};font-size:15px;line-height:1;cursor:${disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};opacity:${disabled ? 0.4 : 1}">${lbl}</button>`;
+    `<button${disabled ? ' disabled' : ` data-ui-id="${esc(id)}" data-action="${esc(p.action ?? '')}" data-arg="${target}"`} style="width:26px;height:26px;border-radius:6px;background:${t.bg2};border:1px solid ${t.line};color:${t.sub};font-size:15px;line-height:1;cursor:${disabled ? 'not-allowed' : 'pointer'};font-family:${t.fontUi};opacity:${disabled ? 0.4 : 1}">${lbl}</button>`;
   return `<div id="${esc(id)}" style="display:inline-flex;align-items:center;gap:8px;${ls}">${btn('−', Math.max(min, v - step), !p.action || v <= min)}<span style="min-width:28px;text-align:center;font-size:13px;color:${t.text};font-family:${t.fontMono}">${v}</span>${btn('+', Math.min(max, v + step), !p.action || v >= max)}</div>`;
 }
 
@@ -804,7 +804,7 @@ function renderStepper(id: string, p: StepperProps, ls: string, t: UITheme): str
 function renderSegmented(id: string, p: SegmentedProps, ls: string, t: UITheme): string {
   const segs = p.options.map((o) => {
     const on = p.value === o.value;
-    const action = p.action ? ` data-action="${esc(p.action)}" data-arg="${esc(o.value)}"` : '';
+    const action = p.action ? ` data-ui-id="${esc(id)}" data-action="${esc(p.action)}" data-arg="${esc(o.value)}"` : '';
     return `<button${action} style="padding:5px 12px;border:none;border-radius:6px;background:${on ? t.jadeWash : 'transparent'};color:${on ? t.jade : t.sub};font-size:12px;cursor:pointer;font-family:${t.fontUi}">${esc(o.label)}</button>`;
   }).join('');
   return `<div id="${esc(id)}" style="display:inline-flex;gap:2px;padding:2px;border-radius:8px;background:${t.bg2};border:1px solid ${t.line};${ls}">${segs}</div>`;
@@ -823,7 +823,7 @@ function renderAvatar(id: string, p: AvatarProps, ls: string, t: UITheme): strin
 // 折叠面板：title 行点击切开合（mountUI 内建·锚 data-accordion*）；open 初始展开。
 function renderAccordion(id: string, p: AccordionProps, children: LayoutNode[], ls: string, t: UITheme): string {
   const open = p.open ?? false;
-  const action = p.action ? ` data-action="${esc(p.action)}"` : '';
+  const action = p.action ? ` data-ui-id="${esc(id)}" data-action="${esc(p.action)}"` : '';
   const head = `<button data-accordion-head${action} style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px 12px;background:${t.bg2};border:1px solid ${t.line};border-radius:8px;color:${t.text};font-size:13px;font-weight:600;cursor:pointer;font-family:${t.fontUi}"><span>${esc(p.title)}</span><span data-accordion-caret style="color:${t.dim};transition:transform .15s;transform:rotate(${open ? 90 : 0}deg)">▸</span></button>`;
   const body = `<div data-accordion-body style="display:${open ? 'block' : 'none'};padding:10px 12px">${children.map((ch) => renderNode(ch, t)).join('')}</div>`;
   return `<div id="${esc(id)}" data-accordion style="display:flex;flex-direction:column;gap:4px;${ls}">${head}${body}</div>`;
@@ -836,7 +836,7 @@ function renderRating(id: string, p: RatingProps, ls: string, t: UITheme): strin
   const max = p.max ?? 5;
   const stars = Array.from({ length: max }, (_, i) => {
     const n = i + 1, on = n <= p.value;
-    const act = p.action ? ` data-action="${esc(p.action)}" data-arg="${n}"` : '';
+    const act = p.action ? ` data-ui-id="${esc(id)}" data-action="${esc(p.action)}" data-arg="${n}"` : '';
     return `<span${act} style="font-size:16px;line-height:1;color:${on ? t.gold : t.dim};${p.action ? 'cursor:pointer;' : ''}">${on ? '★' : '☆'}</span>`;
   }).join('');
   return `<span id="${esc(id)}" style="display:inline-flex;gap:2px;${ls}">${stars}</span>`;
@@ -862,7 +862,7 @@ function renderDrawer(id: string, p: DrawerProps, children: LayoutNode[], ls: st
   };
   const scrimClose = p.closeAction ? ` data-modal-close="${esc(p.closeAction)}"` : '';
   const xBtn = p.closeAction
-    ? `<button data-action="${esc(p.closeAction)}" aria-label="close" style="position:absolute;top:10px;right:13px;width:26px;height:26px;background:none;border:none;color:${t.dim};font-size:19px;line-height:1;cursor:pointer;font-family:${t.fontUi}">×</button>`
+    ? `<button data-ui-id="${esc(id)}" data-action="${esc(p.closeAction)}" aria-label="close" style="position:absolute;top:10px;right:13px;width:26px;height:26px;background:none;border:none;color:${t.dim};font-size:19px;line-height:1;cursor:pointer;font-family:${t.fontUi}">×</button>`
     : '';
   const title = p.title ? `<div style="font-size:15px;font-weight:700;color:${t.text};font-family:${t.fontUi};margin-bottom:12px;padding-right:26px">${esc(p.title)}</div>` : '';
   const body = children.map((ch) => renderNode(ch, t)).join('');
@@ -874,7 +874,7 @@ function renderDrawer(id: string, p: DrawerProps, children: LayoutNode[], ls: st
 // 单行（绝对定位在 index*rowHeight）：列定义同 Table；可点(arg=row.id)。
 function vlistRowHtml(p: VirtualListProps, row: { id: string; cells: Record<string, string> }, index: number, t: UITheme): string {
   const cols = p.columns ?? [{ key: Object.keys(row.cells)[0] ?? '', label: '' }];
-  const act = p.action ? ` data-action="${esc(p.action)}" data-arg="${esc(row.id)}"` : '';
+  const act = p.action ? ` data-ui-id="${esc(row.id)}" data-action="${esc(p.action)}" data-arg="${esc(row.id)}"` : '';
   const cells = cols.map((c) => `<span style="${c.width !== undefined ? `flex:0 0 ${c.width}px` : 'flex:1'};text-align:${c.align ?? 'left'};font-size:12px;color:${t.text};font-family:${t.fontUi};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(row.cells[c.key] ?? '')}</span>`).join('');
   return `<div data-vlist-row="${esc(row.id)}"${act} style="position:absolute;top:${index * p.rowHeight}px;left:0;right:0;height:${p.rowHeight}px;display:flex;align-items:center;gap:10px;padding:0 12px;${p.action ? 'cursor:pointer;' : ''}border-bottom:1px solid ${t.line}">${cells}</div>`;
 }
@@ -898,7 +898,7 @@ function renderVirtualList(id: string, p: VirtualListProps, ls: string, t: UIThe
 
 // 右键菜单：包裹 children 作触发元素 + 一个隐藏菜单(右键在光标处弹·mountUI 内建)。项带 data-action(arg=item.id)。
 function renderContextMenu(id: string, p: ContextMenuProps, children: LayoutNode[], ls: string, t: UITheme): string {
-  const items = p.items.map((it) => `<button data-action="${esc(it.action)}" data-arg="${esc(it.id)}" data-ctxmenu-item style="display:block;width:100%;text-align:left;padding:7px 14px;background:none;border:none;color:${t.text};font-size:12px;cursor:pointer;font-family:${t.fontUi};white-space:nowrap;border-radius:5px">${esc(it.label)}</button>`).join('');
+  const items = p.items.map((it) => `<button data-ui-id="${esc(it.id)}" data-action="${esc(it.action)}" data-arg="${esc(it.id)}" data-ctxmenu-item style="display:block;width:100%;text-align:left;padding:7px 14px;background:none;border:none;color:${t.text};font-size:12px;cursor:pointer;font-family:${t.fontUi};white-space:nowrap;border-radius:5px">${esc(it.label)}</button>`).join('');
   const pop = `<div data-ctxmenu-pop style="display:none;position:fixed;z-index:260;min-width:140px;background:${t.bg2};border:1px solid ${t.line};border-radius:8px;padding:4px;box-shadow:0 12px 30px rgba(0,0,0,0.4)">${items}</div>`;
   const inner = children.map((ch) => renderNode(ch, t)).join('');
   return `<span id="${esc(id)}" data-ctxmenu style="position:relative;display:inline-flex;${ls}">${inner}${pop}</span>`;
@@ -991,7 +991,7 @@ function renderLevelPath(id: string, p: LevelPathProps, ls: string, t: UITheme):
   const marks = nodes.map((n, i) => {
     const pt = pts[i]!; const state = n.state ?? 'locked';
     const label = n.label ?? String(i + 1);
-    const act = n.action ? ` data-action="${esc(n.action)}"${n.actionArg ? ` data-arg="${esc(n.actionArg)}"` : ''}` : '';
+    const act = n.action ? ` data-ui-id="${esc(id)}" data-action="${esc(n.action)}"${n.actionArg ? ` data-arg="${esc(n.actionArg)}"` : ''}` : '';
     const cursor = n.action ? 'cursor:pointer;' : '';
     let bg = t.bg1, fg = t.dim, bd = t.line, inner = '🔒', extra = '';
     if (state === 'done') { bg = lit; fg = t.bg0; bd = lit; inner = esc(label); }
@@ -1026,7 +1026,7 @@ function renderDialog(id: string, p: DialogProps, ls: string, t: UITheme): strin
   const canAdvance = p.kind !== 'choice';
   const advAction = p.advanceAction ?? 'dialogue.advance';
   const hint = canAdvance ? `<div style="position:absolute;right:13px;bottom:9px;color:${t.dim};font-size:13px;line-height:1">▶</div>` : '';
-  const action = canAdvance ? ` data-action="${esc(advAction)}"` : '';
+  const action = canAdvance ? ` data-ui-id="${esc(id)}" data-action="${esc(advAction)}"` : '';
   const cursor = canAdvance ? 'cursor:pointer;' : '';
   const emo = p.emotion ? ` data-emotion="${esc(p.emotion)}"` : '';
   // 货架框：skin=画框皮（cover/9-slice·art 即框·压过底/边框）；否则实底 + edge 描边（金框/阵营框·缺省细线）。

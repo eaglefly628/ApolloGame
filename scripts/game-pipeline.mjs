@@ -383,6 +383,27 @@ export function interpretGoldenCompare(baseSummary, compareExit, compareTail) {
   return { exit: 1, summary: `${baseSummary} · ✗ 标准照漂移（有意变更请 golden-shot capture+bless 转正）${compareTail ? ' · ' + compareTail : ''}` };
 }
 
+/** R2b 走查探针门读码（REQ-RENDERCHECK）：探针 exit 0=过·3=环境无浏览器（不算红）·其余=红。
+ *  纯函数（不碰盘/不 spawn）——导出供单测直接灌各退出码。判红只认「真出错」（装载失败/驱动点击后
+ *  控制台 error/未捕获异常/零验收剧本）——UI 可驱动率低是诚实发现（剧本 signal 词表与 UI 词表本就
+ *  不同源），不拿它当红线（同 spec-trace-guard.mjs「human 型占比」先例：报告不设阈值门）。 */
+export function interpretUiWalkthrough(baseSummary, probeExit, probeTail) {
+  if (probeExit === 3) return { exit: 0, summary: `${baseSummary} · ⚠ UI 走查未跑·环境无浏览器（权威判定以有浏览器环境为准）` };
+  if (probeExit === 0) return { exit: 0, summary: `${baseSummary} · ✓ UI 走查过（可驱动率见 public/games/<slug>/probe/S4-uiwalk.json）` };
+  return { exit: 1, summary: `${baseSummary} · ✗ UI 走查未过${probeTail ? ' · ' + probeTail : ''}` };
+}
+
+/** S4 门收尾（REQ-RENDERCHECK R2b）：conformance（+ bench/walkthrough）已绿才追加真界面走查——
+ *  base 已红不必再跑（省时间·结论不变）。SANDBOXED 根跳过（无真 app 可连·同 R1/R3 先例——
+ *  game-pipeline.test.mjs 的沙盒 fixture 从不会真跑到这一步，故对既有测试零影响）。 */
+function withUiWalkthroughGate(slug, base) {
+  if (base.exit !== 0 || SANDBOXED) return base;
+  const script = join(dirname(fileURLToPath(import.meta.url)), 'ui-walkthrough-probe.mjs');
+  const probe = run('node', [script, '--game', slug]);
+  const tail = (probe.stdout || probe.stderr || '').trim().split('\n').slice(-2).join(' / ').slice(0, 200);
+  return interpretUiWalkthrough(base.summary, probe.status ?? 1, tail);
+}
+
 /** S5/S8 门收尾（REQ-RENDERCHECK R3）：base 门（audit/三绿等）已过才追加标准照比对——base 已红
  *  不必再跑（省时间·结论不变）。无 blessed 基准＝⚠ 提示不拦（golden-shot bless 建基准前，标准照
  *  比对对该游戏是可选项非硬门）；有基准则真起服跑 compare 子进程按 interpretGoldenCompare 读码。
@@ -444,12 +465,12 @@ function gateRun(slug, stage, form) {
       let pass = false, score = '?';
       try { const j = JSON.parse((r.stdout || '').trim().split('\n').pop()); pass = !!j.pass; score = j.score; } catch { /* 输出非 JSON 即失败 */ }
       if (!pass) return { exit: 1, summary: `✗ bench 五轴 score=${score}` };
-      return { exit: 0, summary: `bench 五轴 score=${score} · 验收剧本 ${nScen} 场景绿` };
+      return withUiWalkthroughGate(slug, { exit: 0, summary: `bench 五轴 score=${score} · 验收剧本 ${nScen} 场景绿` });
     }
     const r = run('npx', ['vitest', 'run', `games/${slug}/`]);
     const tail = (r.stdout || '').trim().split('\n').filter((l) => /Tests|Test Files/.test(l)).join(' · ');
     if ((r.status ?? 1) !== 0) return { exit: r.status ?? 1, summary: `✗ walkthrough · ${tail.slice(0, 160) || (r.stderr || '').slice(0, 160)}` };
-    return { exit: 0, summary: `walkthrough 绿（${tail.slice(0, 120)}）· 验收剧本 ${nScen} 场景绿` };
+    return withUiWalkthroughGate(slug, { exit: 0, summary: `walkthrough 绿（${tail.slice(0, 120)}）· 验收剧本 ${nScen} 场景绿` });
   }
   if (stage === 'S5') {
     // R3（REQ-RENDERCHECK）：S5 收尾一律经 withGoldenGate——它自己在 base.exit≠0 时原样透传，

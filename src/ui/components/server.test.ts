@@ -524,3 +524,53 @@ describe('UI Components · renderNode', () => {
     expect(html).toContain('右键我'); expect(html).toContain('删除');
   });
 });
+
+// R2a（REQ-RENDERCHECK·owner 直令·PUI 域例外）：凡发 action 信号的交互控件渲染时带 data-ui-id（节点 id）+
+// data-action（动作名）+ data-arg（有 arg 则带）——给 R2b 真界面走查驱动器一个稳定的机器可寻标签。
+// 纯机械叠加·不改既有 data-action/data-arg 字节（既有断言全绿=零行为改动的证据）。
+describe('R2a · data-ui-id 机器可寻标签（凡发 action 信号的控件）', () => {
+  it('Button/Panel/Tag/Card/PlayingCard/Dropdown/Input/Slider/CoinFlip/Accordion：data-ui-id = 节点 id，与 data-action/data-arg 同现', () => {
+    const btn = renderNode({ type: 'Button', id: 'btn-ui', props: { label: 'Buy', action: 'buy', actionArg: 'item-1' } });
+    expect(btn).toContain('data-ui-id="btn-ui"'); expect(btn).toContain('data-action="buy"'); expect(btn).toContain('data-arg="item-1"');
+
+    const panel = renderNode({ type: 'Panel', id: 'panel-ui', props: { action: 'clickPanel' } });
+    expect(panel).toContain('data-ui-id="panel-ui"'); expect(panel).toContain('data-action="clickPanel"');
+
+    const tag = renderNode({ type: 'Tag', id: 'tag-ui', props: { label: '筛选', action: 'filterSuit', actionArg: 'S' } });
+    expect(tag).toContain('data-ui-id="tag-ui"');
+
+    const dd = renderNode({ type: 'Dropdown', id: 'dd-ui', props: { options: [{ value: 'a', label: 'A' }], action: 'setDiff' } });
+    expect(dd).toContain('data-ui-id="dd-ui"');
+
+    // 无 action 的控件不长出 data-ui-id（同既有 data-action 门控·非全量贴标）。
+    const btnNoAction = renderNode({ type: 'Button', id: 'btn-quiet', props: { label: 'Quiet' } });
+    expect(btnNoAction).not.toContain('data-ui-id');
+  });
+
+  it('复合子项：Table 行 / Tabs 页签 / VirtualList 行 / ContextMenu 项——data-ui-id 镜像各自的子项 id（非外层节点 id）', () => {
+    const table = renderNode({ type: 'Table', id: 'tbl', props: { columns: [{ key: 'n', label: 'N' }], rows: [{ id: 'row-9', cells: { n: '9' }, action: 'viewRow' }] } });
+    expect(table).toContain('data-ui-id="row-9"'); expect(table).toContain('data-arg="row-9"');
+
+    const tabs = renderNode({ type: 'Tabs', id: 'tb', props: { tabs: [{ id: 'home', label: '首页' }], action: 'nav' }, children: [{ type: 'Label', id: 'l', props: { text: 'x' } }] });
+    expect(tabs).toContain('data-ui-id="home"');
+
+    const vlist = renderNode({ type: 'VirtualList', id: 'vl', props: { rows: [{ id: 'r0', cells: { n: '第0行' } }], rowHeight: 20, action: 'pick' } });
+    expect(vlist).toContain('data-ui-id="r0"');
+
+    const ctx = renderNode({ type: 'ContextMenu', id: 'cm', props: { items: [{ id: 'del', label: '删除', action: 'doDelete' }] }, children: [{ type: 'Label', id: 'l', props: { text: 'x' } }] });
+    expect(ctx).toContain('data-ui-id="del"');
+  });
+
+  it('Checkbox/Toggle/RadioGroup：隐藏 input 自身 DOM id 各不同，但 data-ui-id 统一镜回外层 LayoutNode id', () => {
+    const cb = renderNode({ type: 'Checkbox', id: 'cb1', props: { label: '同意', action: 'toggleAgree', checked: true } });
+    expect(cb).toContain('id="cb1-i"'); expect(cb).toContain('data-ui-id="cb1"'); expect(cb).toContain('data-action="toggleAgree"');
+
+    const tg = renderNode({ type: 'Toggle', id: 'tg1', props: { label: '静音', action: 'mute' } });
+    expect(tg).toContain('id="tg1-i"'); expect(tg).toContain('data-ui-id="tg1"');
+
+    const rg = renderNode({ type: 'RadioGroup', id: 'rg1', props: { name: 'diff', options: [{ value: 'l1', label: 'L1' }, { value: 'l2', label: 'L2' }], action: 'setDiff' } });
+    expect(rg).toContain('id="rg1-r0"'); expect(rg).toContain('id="rg1-r1"');
+    // 两个选项的 data-ui-id 都镜回 RadioGroup 自己的节点 id（选项本身无独立 LayoutNode id·value 已充当 data-arg）。
+    expect((rg.match(/data-ui-id="rg1"/g) || []).length).toBe(2);
+  });
+});

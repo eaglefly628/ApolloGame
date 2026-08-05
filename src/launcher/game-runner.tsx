@@ -55,6 +55,21 @@ function GameOverlayMenu({ items }: { items: OverlayMenuItem[] }) {
   );
 }
 
+// 只读调试口安装/拆卸（REQ-RENDERCHECK R2b·dev 模式限定·launcher 域=Lead 自持）：见 src/global.d.ts
+// 的 Window.__zcProbe 类型注释——纯读挂载好的 DOM 快照，零副作用、不碰 sim/hash。
+function installZcProbe(gameId: string, host: HTMLElement): void {
+  window.__zcProbe = {
+    gameId,
+    actions: () => Array.from(host.querySelectorAll<HTMLElement>('[data-action]')).map((el) => ({
+      action: el.dataset['action'] ?? '',
+      arg: el.dataset['arg'],
+      uiId: el.dataset['uiId'],
+      disabled: (el as HTMLButtonElement).disabled === true,
+    })),
+  };
+}
+function teardownZcProbe(): void { delete window.__zcProbe; }
+
 export function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => void }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -85,8 +100,9 @@ export function GameRunner({ gameId, onBack }: { gameId: string; onBack: () => v
       if (disposed || !containerRef.current) return;
       cleanup = mod.mount(containerRef.current, { exit: onBack });
       if (disposed) { cleanup?.(); cleanup = undefined; } // mount 期间又被卸载 → 立即清
+      else if (import.meta.env.DEV) installZcProbe(gameId, containerRef.current);
     });
-    return () => { disposed = true; cleanup?.(); };
+    return () => { disposed = true; cleanup?.(); teardownZcProbe(); };
   }, [gameId]);
 
   return (
