@@ -16,6 +16,8 @@ export interface Frame {
 
 export interface Recording {
   initialSnapshot: WorldSnapshot;
+  /** 起始实体创建序（= query 序）。可选：旧录像没有则退回键序。见 `World.snapshotOrder()`。 */
+  initialOrder?: string[];
   systemOrder: string[];
   frames: Frame[];
 }
@@ -34,6 +36,7 @@ export class Recorder {
     this.tracer = new Tracer(world, opts).attach();
     this.recording = {
       initialSnapshot: world.snapshot(),
+      initialOrder: world.snapshotOrder(),
       systemOrder: world.getSortedSystems().map((s) => s.id),
       frames: [],
     };

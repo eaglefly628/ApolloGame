@@ -20,7 +20,7 @@ export class SaveSystem {
       timestamp: Date.now(),
       label,
     };
-    await this.port.save(slot, { meta, snapshot });
+    await this.port.save(slot, { meta, snapshot, order: world.snapshotOrder() });
     return meta;
   }
 
@@ -40,7 +40,7 @@ export class SaveSystem {
         `存档校验失败：槽位 "${slot}" 快照指纹不符（期望 ${data.meta.hash}，实为 ${actual}）——数据已损坏或被篡改`,
       );
     }
-    world.restore(data.snapshot);
+    world.restore(data.snapshot, data.order); // order 缺省（旧存档）→ 退回键序，见 SaveGame.order
     return data.meta;
   }
 

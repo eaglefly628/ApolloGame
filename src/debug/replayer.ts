@@ -21,7 +21,7 @@ export function replay(recording: Recording, capabilities: CapabilityDefinition[
   for (const cap of capabilities) {
     for (const system of cap.systems) world.addSystem(system);
   }
-  world.restore(recording.initialSnapshot);
+  world.restore(recording.initialSnapshot, recording.initialOrder);
 
   const divergences: Divergence[] = [];
   for (const frame of recording.frames) {

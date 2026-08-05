@@ -187,14 +187,37 @@ export class World implements IWorld {
     return snap;
   }
 
-  restore(snapshot: WorldSnapshot): void {
+  /** 创建序 = query 序的唯一真相。
+   *
+   *  必须显式带出来的理由（engine-review-2026-08-04 §3.3 · owner 2026-08-05 拍板修）：
+   *  `snapshot()` 返回的是普通对象，而 JS 对**数字样 id**（"1"/"42"）强制按**数值升序**枚举、
+   *  且排在字符串键之前——即快照的键序**不等于**创建序。实测：创建序 `10,2,hero,1`
+   *  → 枚举序 `1,2,10,hero`。旧 `restore()` 拿键序当创建序重建，于是读档/回滚/回放后
+   *  query 序静默改变 → 谁先动、谁先被打中全变。最阴的是**读档瞬间 hash 校验是通过的**
+   *  （组件内容一样），之后才逐步偏离 → 联机莫名 desync、回放对不上，极难定位。
+   *  想跨 restore 保住 query 序的调用方，必须把本数组和快照一起存/一起传。 */
+  snapshotOrder(): EntityId[] {
+    return [...this.entities.keys()]; // Map 保序 = 真创建序
+  }
+
+  /** @param order 可选·创建序（见 snapshotOrder）。不给则退回「按快照键序」的旧行为——
+   *  对全字符串 id 的世界二者等价；含数字样 id 时才有差别。 */
+  restore(snapshot: WorldSnapshot, order?: readonly EntityId[]): void {
     this.entities.clear();
     this.typeIndex.clear();
     this.creationSeq.clear();
     this.nextSeq = 0;
-    for (const [id, comps] of Object.entries(snapshot)) {
+    // 有 order 就按它排（只认快照里真存在的 id）；order 未覆盖到的键按枚举序补在后面，
+    // 保证「order 残缺/过期」时不丢实体（宁可顺序退化，不可丢数据）。
+    const keys = Object.keys(snapshot);
+    const ids = order
+      ? [...order.filter((id) => Object.prototype.hasOwnProperty.call(snapshot, id)),
+        ...keys.filter((id) => !order.includes(id))]
+      : keys;
+    for (const id of ids) {
+      const comps = snapshot[id]!;
       const m = new Map<ComponentType, Component>();
-      this.creationSeq.set(id, this.nextSeq++); // 快照键序=原创建序 → query 序经重放仍一致
+      this.creationSeq.set(id, this.nextSeq++);
       for (const [type, comp] of Object.entries(comps)) {
         m.set(type, structuredClone(comp));
         let owners = this.typeIndex.get(type);

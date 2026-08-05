@@ -17,6 +17,10 @@ export interface SaveMeta {
 export interface SaveGame {
   meta: SaveMeta;
   snapshot: WorldSnapshot;
+  /** 实体创建序（= query 序）。可选：**旧存档没有这个字段仍可正常读**，只是退回「按快照键序」
+   *  的旧行为。必须显式存的理由见 `World.snapshotOrder()`——快照是普通对象，数字样 id 会被
+   *  JS 强制数值升序枚举，键序 ≠ 创建序，不存就会读档后 query 序静默改变。 */
+  order?: string[];
 }
 
 // 存储端口契约。实现可同步（localStorage/内存）或异步（fs/云）——一律 Promise 化。

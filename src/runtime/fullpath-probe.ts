@@ -163,23 +163,26 @@ export function crawlStates(makeEngine: () => Engine, fire: FireFn, actions: str
 
   interface Node {
     snap: WorldSnapshot;
+    /** 与 snap 配对的创建序：分支树靠 restore 反复回退，不带上它则每次回退都可能改变
+     *  query 序（数字样 id 场景），探针结论就不可复现。见 `World.snapshotOrder()`。 */
+    order: string[];
     depth: number;
     path: string[];
   }
   const visited = new Set<string>([keyOf(e)]);
-  const queue: Node[] = [{ snap: e.world.snapshot(), depth: 0, path: [] }];
+  const queue: Node[] = [{ snap: e.world.snapshot(), order: e.world.snapshotOrder(), depth: 0, path: [] }];
 
   while (queue.length > 0) {
     const node = queue.shift()!;
     maxDepthReached = Math.max(maxDepthReached, node.depth);
-    e.world.restore(node.snap);
+    e.world.restore(node.snap, node.order);
     if (!canExpand(e) || node.depth >= maxDepth) continue; // 叶 / 到底：发现即可，不展开
     for (const signal of actions) {
       if (visited.size >= maxStates) {
         truncated = true;
         break;
       }
-      e.world.restore(node.snap); // 回到本节点，再试下一个动作（restore 从快照克隆，快照不被改）
+      e.world.restore(node.snap, node.order); // 回到本节点，再试下一个动作（restore 从快照克隆，快照不被改）
       transitions++;
       try {
         fire(e, signal);
@@ -193,7 +196,7 @@ export function crawlStates(makeEngine: () => Engine, fire: FireFn, actions: str
       const key = keyOf(e);
       if (!visited.has(key)) {
         visited.add(key);
-        queue.push({ snap: e.world.snapshot(), depth: node.depth + 1, path: [...node.path, signal] });
+        queue.push({ snap: e.world.snapshot(), order: e.world.snapshotOrder(), depth: node.depth + 1, path: [...node.path, signal] });
       }
     }
     if (truncated) break;
