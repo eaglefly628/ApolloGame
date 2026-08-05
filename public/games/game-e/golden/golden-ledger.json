@@ -58,6 +58,18 @@
           "ratio": 0
         }
       ]
+    },
+    {
+      "action": "compare",
+      "at": "2026-08-05T06:45:42.540Z",
+      "ok": true,
+      "results": [
+        {
+          "state": "boot",
+          "ok": true,
+          "ratio": 0
+        }
+      ]
     }
   ]
 }
