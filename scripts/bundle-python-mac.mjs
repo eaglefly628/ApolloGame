@@ -48,10 +48,14 @@ import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { tmpdir, homedir } from 'node:os';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = resolve(ROOT, 'platform-dist');
+// 下载缓存目录（**在 platform-dist 之外**：build-platform.mjs 每次会清空 platform-dist，
+// 缓存放里面等于没有）。按资产名存，命中即跳过下载。想强制重下就删这个目录。
+const CACHE_DIR = join(homedir(), '.cache', 'zerocraft', 'pybuild');
+
 const PYBUNDLE_DIR = join(OUT, 'pybundle');
 const REQUIREMENTS = join(ROOT, 'requirements.txt');
 
@@ -93,6 +97,34 @@ export function pickAsset(assets, series, tag) {
     throw new Error(`匹配到 ${hits.length} 个资产（预期恰好 1 个），命名规则可能变了：${hits.map((a) => a.name).join(', ')}`);
   }
   return hits[0];
+}
+
+/** 网络动作统一重试（owner 2026-08-06 真机事故：第 3 步 `fetch failed` 整个打包白跑）。
+ *  `fetch failed` 是**网络层**失败（DNS/TLS/连接被代理拦/瞬时抖动），不是逻辑错——
+ *  一次失败就让 20 分钟的打包全废太脆。指数退避重试 3 次；仍失败则抛带**可操作提示**的错。 */
+async function withRetry(what, fn, tries = 3) {
+  let lastErr;
+  for (let i = 1; i <= tries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (i === tries) break;
+      const waitMs = 2000 * (2 ** (i - 1)); // 2s → 4s
+      log(`  ⚠ ${what} 第 ${i}/${tries} 次失败（${e.message}）→ ${waitMs / 1000}s 后重试…`);
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+  }
+  throw new Error(
+    `${what} 连续 ${tries} 次失败：${lastErr?.message}\n`
+    + '  这是**网络层**失败，不是脚本 bug。逐条排查：\n'
+    + '  ① 测通不通： curl -sS -o /dev/null -w \'%{http_code}\\n\' '
+    + `https://api.github.com/repos/${GH_REPO}/releases/tags/${DEFAULT_RELEASE_TAG}\n`
+    + '  ② 若被墙/代理拦：挂上代理再跑，或用下面③离线路径\n'
+    + '  ③ **离线/手工兜底**：自己用浏览器下好那个 .tar.gz，然后\n'
+    + '     PYBUILD_TARBALL=/path/to/cpython-….tar.gz bash scripts/build-mac-dmg.sh\n'
+    + '  ④ 若是 GitHub API 限流（60 次/小时/IP）：设 GITHUB_TOKEN=<你的 token> 再跑',
+  );
 }
 
 /** GET JSON，带 UA（api.github.com 匿名请求没有 UA 会被 403）+ 可选 token。 */
@@ -205,18 +237,50 @@ async function main(argv) {
   assertPlatformDistExists();
   rmrf(PYBUNDLE_DIR); // 可能残留 build-platform.mjs 写的 PLACEHOLDER.md 占位目录，先清
 
-  log('① 查询 release 资产列表…');
-  const release = await fetchJson(`https://api.github.com/repos/${GH_REPO}/releases/tags/${tag}`);
-  const asset = pickAsset(release.assets || [], series, tag);
-  log(`  命中资产：${asset.name}`);
+  // 逃生口①：手工指定本地 tarball（网络被墙/离线机器）——直接跳过 GitHub 全部网络动作。
+  const manual = process.env.PYBUILD_TARBALL;
+  if (manual && !existsSync(manual)) throw new Error(`PYBUILD_TARBALL 指向的文件不存在：${manual}`);
+
+  let asset = null;
+  let release = null;
+  if (manual) {
+    log(`① 跳过 release 查询——用 PYBUILD_TARBALL 指定的本地包：${manual}`);
+  } else {
+    log('① 查询 release 资产列表…');
+    release = await withRetry('查询 release 元数据',
+      () => fetchJson(`https://api.github.com/repos/${GH_REPO}/releases/tags/${tag}`));
+    asset = pickAsset(release.assets || [], series, tag);
+    log(`  命中资产：${asset.name}`);
+  }
 
   const tmpDir = await mkdtemp(join(tmpdir(), 'zerocraft-pybuild-'));
   try {
-    const tarballPath = join(tmpDir, asset.name);
-    log('② 下载…');
-    await download(asset.browser_download_url, tarballPath);
+    let tarballPath;
+    if (manual) {
+      tarballPath = manual;
+    } else {
+      // 逃生口②：本地缓存。同一个 tag+资产名下载过就复用——**重打包不再重下 ~100MB**，
+      // 也让「上一轮下到一半断网」不至于从零开始（owner 2026-08-06：一次抖动整轮白跑）。
+      const cached = join(CACHE_DIR, asset.name);
+      if (existsSync(cached) && statSync(cached).size > 1024 * 1024) {
+        log(`② 命中本地缓存，跳过下载：${cached}`);
+        tarballPath = cached;
+      } else {
+        mkdirSync(CACHE_DIR, { recursive: true });
+        const partial = `${cached}.part`;
+        log('② 下载…');
+        await withRetry('下载 python tarball', () => download(asset.browser_download_url, partial));
+        renameSync(partial, cached); // 只有完整下完才落成正式缓存名（防半截文件被当缓存复用）
+        tarballPath = cached;
+        log(`  已缓存到 ${cached}（下次重打包直接复用）`);
+      }
+    }
 
-    const shaAsset = (release.assets || []).find((a) => a.name === `${asset.name}.sha256`);
+    // 手工指定 tarball（PYBUILD_TARBALL）时没有 release 元数据可查 → 跳过 SHA 校验：
+    // 那是用户自己下的文件、来源由用户负责；此处若照旧读 release.assets 会 NPE 崩掉。
+    const shaAsset = release && asset
+      ? (release.assets || []).find((a) => a.name === `${asset.name}.sha256`)
+      : null;
     if (shaAsset) {
       log('  校验 SHA256…');
       const shaRes = await fetch(shaAsset.browser_download_url, {
@@ -230,7 +294,9 @@ async function main(argv) {
       }
       log('  ✓ SHA256 匹配');
     } else {
-      log(`  ⚠ 未找到 ${asset.name}.sha256 校验文件，跳过完整性校验（上游不保证每个资产都发校验文件，不当场硬失败，但建议留意）。`);
+      log(asset
+        ? `  ⚠ 未找到 ${asset.name}.sha256 校验文件，跳过完整性校验（上游不保证每个资产都发校验文件，不当场硬失败，但建议留意）。`
+        : '  ⚠ 手工指定的 tarball（PYBUILD_TARBALL）无上游校验文件可比，跳过完整性校验——来源由你自己负责。');
     }
 
     log('③ 解压…');
