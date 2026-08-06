@@ -141,9 +141,40 @@ v2 最重的那条新需求——**对局进行中改写判定表**【R-108-42 �
   （3 手 × 2 侧）。上限可变不影响它（置零与上限无关），故与上一条不同，**重组成立 → 依协议第 1 步即终止，不上报 A/B**。
 - **三时区节拍**：`t3-flow` 四状态 + `e1-timer`，现成。
 
-**S3 首个验证项（下一个大概率的 A/B 岔路口）**：AI 的**两次**决策（T1 蓄哪手 / T2 出哪手）用
-「`t2-event-when` 条件命中发信号 → `t2-weighted-spawn` 按权重表确定性抽取」重组【R-108-30】。
-**依协议**：跑通即终止、不上报；跑不通则摆 A/B 交 owner 判——**Lead 不得先在游戏层写个选招器再补申请**。
+### 🔺 S3 实查发现（2026-08-06·**待 owner 判 A/B**）：出招没有数据通路
+
+**症状**：UI 点 `throw.rock`【R-108-70】→ 世界里出现 `DuelIntent`，**这一步没有任何现有能力能做**。
+AI 出招【R-108-30】同理（它也要产 intent），**一个缺口卡住玩家与 AI 两侧**。
+
+**① 先查（实查·留痕·非印象）**
+
+| 查了什么 | 结论 |
+|---|---|
+| `Effect.kind` 闭集（`protocol/components/logic.ts:113`） | `set-flag`/`set-flag-tagged`/`modify-resource`/`set-state`/`set-sensor`/`set-visible`/`set-visible-tagged`/`destroy`/`destroy-tagged`/`reset-timer` —— **没有「加组件」** |
+| `SelfAction.kind`（同文件 `:212`） | `set-flag`/`modify-resource`/`set-state`/`destroy`/`spawn` —— 同样没有 |
+| `t3-prefab` | 只**新建实体**（id=`模板#seq:localId`），**不往已存在实体挂组件** |
+| `t2-weighted-spawn` | 产 `SpawnRequest` → 走 prefab，同上，**给不了 p1/p2 挂 intent** |
+| `t2-matrix-duel` 自身 | `describe` 原文：「给双方实体各挂 `DuelIntent`」——**它假定别人挂好，自己不提供入口** |
+| intent 能不能挂在别的实体上 | ❌ 不行：结算把**持 intent 的实体**当作该侧，伤害就扣在它的 `hpResource` 上 → intent 必须与 hp 同实体 |
+
+⇒ **重组路走不通的实证结论**。
+
+**② 两条路（Lead 举证·不下裁决）**
+
+| | **A 补引擎缺口** | **B 游戏独有逻辑** |
+|---|---|---|
+| 做法 | 给 `t2-matrix-duel` 补**输入接缝**：`DuelMatrix.intentSignals?: Record<手, 信号名>` —— 收到该名 Signal 时，把 `Signal.source` 那一侧的 intent 置为对应手（沿 `t3-dialogue`「能力自带闭集 UI 输入接缝」的先例） | host 层在 UI handler 里直接 `world.addComponent(p1, DuelIntent)` |
+| 合不合规 | 合：UI 只发具名信号，世界改动仍在 sim 能力层 | **违 `events-logic.md` 红线**：「写世界 = 具名 Signal 入队由能力消费·handler 里绝不塞自由逻辑」 |
+| 覆盖面 | 玩家 + AI **一次解决**（AI 侧发同名信号即可） | 玩家、AI 各写一套 |
+| 通用性 | 高：任何「同时出招」对抗都要这条缝 | 零 |
+| 风险 | 低（additive·不填=零回归） | 高：游戏层自写世界写入 = 审计红旗边缘；AI/回放/lockstep 都得自己兜 |
+
+**Lead 推荐 A**。理由：`matrix-duel` 是解释器型能力，**输入接缝本就该由它自己定义**——
+`t3-dialogue` 早有同形先例（`dialogue.advance`/`dialogue.choose` + arg 通道，零游戏 handler）。
+现在的状态相当于「能力有出口没入口」。
+
+**A 的边界（防加宽·若判 A）**：只加 `intentSignals` 读信号置 intent 一处 + 落盘门（信号名非空、手必须在 `throws` 内）
++ 点名测试（玩家侧信号产 intent / AI 侧同名信号产 intent / 不填=零回归）；**不碰**判定、补丁 fold、定序、伤害缩放。
 
 ## 4.5 美术接入
 
