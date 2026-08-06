@@ -107,6 +107,15 @@ function copyGamesListInputs() {
   for (const slug of GAMES_ALLOWLIST) {
     if (!existsSync(join(ROOT, 'games', slug))) continue; // 仓库里没有的 slug 不凭空造
     mkdirSync(join(OUT, 'games', slug), { recursive: true });
+    writeFileSync(join(OUT, 'games', slug, '.keep'),
+      `# 占位：/api/games 靠枚举 games/<slug> 目录列出内置游戏（main_entry/games_list.py）。\n`
+      + `# 只带空目录不带源码即可（源码 22MB 客户用不上）；但**必须有本文件**——\n`
+      + `# 空目录会被打包拷贝丢掉，导致货架为空。删它 = 该游戏从创作台货架消失。\n`);
+    // 必须往占位目录里放一个**真文件**——**空目录会被 electron-builder 的 extraResources
+    // 拷贝丢掉**（大多数打包器/glob 拷贝都不保留空目录），于是打包态 `ROOT/games` 为空 →
+    // `/api/games` 返回 [] → 创作台货架「引擎内置」显示 0（owner 2026-08-06 真机实测事故）。
+    // 这个坑极隐蔽：直接跑 platform-dist/ 一切正常（目录还在），只有穿过 electron-builder
+    // 才暴露——故本文件的自检不足以证明它，必须打包后验（见 verifyPackagedGamesDirs）。
     placed.push(slug);
   }
   mkdirSync(join(OUT, 'src'), { recursive: true });
@@ -178,6 +187,20 @@ function verify() {
   const foundAllowlisted = GAMES_ALLOWLIST.filter((slug) => chunkNames.some((n) => n.startsWith(`${slug}-`)));
   log(`  排除名单 ${GAMES_EXCLUDED.length} 个均不在产物里 ✓；白名单里能在 dist/app 找到独立 chunk 的有 ${foundAllowlisted.length}/9（game-e 等纯静态卡带可能被打进主 bundle，不一定有独立 chunk，不算异常）`);
 
+  log('自检①b：games/ 占位目录必须**非空**（空目录会被 electron-builder 丢掉→货架为空）…');
+  {
+    const bad = GAMES_ALLOWLIST
+      .filter((slug) => existsSync(join(OUT, 'games', slug)))
+      .filter((slug) => readdirSync(join(OUT, 'games', slug)).length === 0);
+    if (bad.length) {
+      throw new Error(
+        `[build-platform] games/ 占位目录为空：${bad.join(', ')}——空目录会被打包拷贝丢掉，`
+        + '装出来的 app 里 /api/games 会返回 []、创作台货架「引擎内置」显示 0'
+        + '（owner 2026-08-06 真机事故）。每个占位目录必须含 .keep。',
+      );
+    }
+    log(`  9 占位目录均非空 ✓（各含 .keep·防打包丢目录）`);
+  }
   log('自检②：零 key（scanDir 复用 assert-no-baked-key 逻辑）…');
   const { hits, fileCount, scanned } = scanDir(OUT);
   if (hits.length) {
