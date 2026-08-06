@@ -107,6 +107,16 @@ class APIHandler(BaseHTTPRequestHandler):
             self.send_header('Location', f'http://localhost:{port}{to}')
             self.end_headers()
             return
+        # 打包态（electron·owner 2026-08-06 真机实测事故）：产物**不带 node/vite**，等 vite 永远等不到，
+        # 点货架「运行」就卡在下面那张转圈页上。但打包态前端**就在本进程身上**——已构建产物由
+        # `_serve_static` 同源伺服于 `/`。故此处先看「有没有已构建前端」，有就**同源跳转**、别等 vite。
+        # 顺序讲究：vite 活着优先（开发态照旧，零回归）→ 再看静态产物（打包态）→ 都没有才给转圈页
+        # （开发态 vite 冷启动那几秒的原本用途）。
+        if (STATIC_DIST_DIR / 'index.html').is_file():
+            self.send_response(302)
+            self.send_header('Location', to)  # 同源相对跳转：谁的端口都不用猜
+            self.end_headers()
+            return
         # 兜底页不再是死链（owner 07-15）：zerocraft.py workshop 拉 vite 是非阻塞的·冷启动几秒——
         # 这几秒里点 ▶ 就会撞这页。改成轮询 /api/bench-ready·vite 一就绪自动跳转（就绪前转圈·不要求重启）。
         safe_to = json.dumps(to)
