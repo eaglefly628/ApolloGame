@@ -1,8 +1,8 @@
 import type { IWorld, RendererBackend } from '@engine/core/types.js';
-import type { Tilemap } from '@engine/protocol/components.js';
+import type { Tilemap, Sprite } from '@engine/protocol/components.js';
 import type { AssetManager } from '@assets/index.js';
 import { isImageHandle } from '@assets/index.js';
-import { collectRenderables, getCameraView, chooseRenderMode, resolveRotation2D } from './renderable.js';
+import { collectRenderables, getCameraView, chooseRenderMode, resolveRotation2D, spriteAnchorOffset } from './renderable.js';
 import { wrapLines } from './text-layout.js';
 import { deviceBase, entityMatrix } from './canvas-transform.js';
 
@@ -103,7 +103,7 @@ export class CanvasRenderer implements RendererBackend {
           ctx.fillText(cached.lines[li], 0, li * lineHeight);
         }
       } else if (mode === 'sprite' && r.sprite) {
-        this.drawSprite(ctx, r.sprite.textureKey, r.frame?.index); // spriteReady 已确认会成功
+        this.drawSprite(ctx, r.sprite.textureKey, r.frame?.index, r.sprite); // spriteReady 已确认会成功
       } else if (mode === 'shape' && r.shape?.kind === 'circle') {
         ctx.beginPath();
         ctx.arc(0, 0, r.shape.radius ?? 4, 0, Math.PI * 2);
@@ -140,13 +140,23 @@ export class CanvasRenderer implements RendererBackend {
     return !!resolved && isImageHandle(resolved.asset.handle);
   }
 
-  // 解析 (textureKey, frameIndex) → 已加载帧，居中绘制源矩形。成功返回 true，否则 false(退化占位)。
-  // (ctx 已被 sync 平移到实体中心；此处按帧尺寸居中绘制。)
-  private drawSprite(ctx: CanvasRenderingContext2D, textureKey: string, frameIndex?: number): boolean {
+  // 解析 (textureKey, frameIndex) → 已加载帧，按 **Sprite.anchorX/anchorY** 定位绘制源矩形。
+  // 成功返回 true，否则 false(退化占位)。(ctx 已被 sync 平移到实体的 Transform 位置。)
+  //
+  // anchor 语义（能力卡 `a-sprite` 明写「0~1 锚点·渲染层读取此组件绘制」）：锚点是贴图上与实体
+  // 位置重合的那个点——0.5/0.5=中心（缺省）、0/0=左上、0.5/1=底部中心（脚底站位·最常用的非缺省值）。
+  // 旧实现把偏移**写死** `-sw/2, -sh/2`（永远居中），anchorX/Y 根本没传进来 → **契约承诺了却
+  // 静默失效**：作者按文档写 anchorY:1 想让角色"脚踩地面"，画面纹丝不动且零报错
+  // （engine-review-2026-08-04 §5「2D 渲染」P1）。
+  // 缺省 0.5 时 `-sw*0.5` 与旧式 `-sw/2` **逐位等价** → 现有游戏零回归。
+  private drawSprite(
+    ctx: CanvasRenderingContext2D, textureKey: string, frameIndex?: number, sprite?: Sprite,
+  ): boolean {
     const resolved = this.assets?.resolve(textureKey, frameIndex);
     if (!resolved || !isImageHandle(resolved.asset.handle)) return false;
     const { sx, sy, sw, sh } = resolved;
-    ctx.drawImage(resolved.asset.handle.image, sx, sy, sw, sh, -sw / 2, -sh / 2, sw, sh);
+    const { dx, dy } = spriteAnchorOffset(sprite, sw, sh); // 纯函数·单测在 renderable.test
+    ctx.drawImage(resolved.asset.handle.image, sx, sy, sw, sh, dx, dy, sw, sh);
     return true;
   }
 

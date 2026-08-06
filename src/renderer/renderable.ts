@@ -46,6 +46,22 @@ export function chooseRenderMode(r: Renderable, spriteReady: boolean): RenderMod
 // 进 sim/hash——这里是它唯一允许出现的地方：每帧重算、不进快照。无 FaceDir → 照旧用 Transform.rotation
 // （零回归）。**只供 2D 后端**（CanvasRenderer 等）调用；three-projection/three-renderer 仍直接读
 // `r.rotation` 做 Mesh3D 翻面语义，不调用本函数、不受影响（P3D 域零改动）。
+
+// Sprite 锚点 → 绘制偏移（**2D 渲染路径专用、纯函数**·同 resolveRotation2D 的"薄胶水外置"纪律）。
+// 锚点语义（能力卡 `a-sprite` 明写「anchorX/Y 是 0~1 锚点·渲染层读取此组件绘制」）：贴图上与实体
+// 位置重合的那个点——0.5/0.5=中心（缺省）·0/0=左上·0.5/1=底部中心（角色"脚踩地面"的常用值）。
+// 背景：2D 后端曾把偏移写死 `-sw/2, -sh/2`（永远居中），anchorX/Y 从未被消费 → **契约承诺了却静默
+// 失效**，按文档写 anchorY:1 画面纹丝不动且零报错（engine-review-2026-08-04 §5「2D 渲染」P1）。
+// 缺省 0.5 时结果与旧式 `-sw/2` 逐位等价 → 现有游戏零回归；非有限值（坏数据/NaN）退回 0.5，
+// 不让脏数据把贴图甩出画面。
+export function spriteAnchorOffset(
+  sprite: Sprite | undefined, sw: number, sh: number,
+): { dx: number; dy: number } {
+  const ax = Number.isFinite(sprite?.anchorX) ? sprite!.anchorX : 0.5;
+  const ay = Number.isFinite(sprite?.anchorY) ? sprite!.anchorY : 0.5;
+  return { dx: -sw * ax, dy: -sh * ay };
+}
+
 export function resolveRotation2D(r: Renderable): number {
   return r.faceDir ? Math.atan2(r.faceDir.y, r.faceDir.x) : r.rotation;
 }

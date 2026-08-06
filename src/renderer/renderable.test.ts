@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { screenToWorld, chooseRenderMode, resolveRotation2D } from './renderable.js';
+import { screenToWorld, chooseRenderMode, resolveRotation2D, spriteAnchorOffset } from './renderable.js';
 import type { CameraView, Renderable } from './renderable.js';
 import type { Shape, Sprite, Text, FaceDir } from '@engine/protocol/components.js';
 
@@ -68,3 +68,30 @@ describe('resolveRotation2D — FaceDir → 视觉旋转角（REQ-FACE-ROTATE，
     expect(resolveRotation2D({ ...base, faceDir: left })).toBeCloseTo(Math.PI, 9);
   });
 });
+
+// ── 回归（engine-review-2026-08-04 §5「2D 渲染」P1 · owner 2026-08-05 派工 item④）──────────
+// `a-sprite` 能力卡明写「anchorX/Y 是 0~1 锚点·渲染层读取此组件绘制」，但 2D 后端曾把绘制偏移
+// 写死 `-sw/2, -sh/2`（永远居中）、anchorX/Y 从未被消费 → **按文档写了却静默失效**：
+// 作者写 anchorY:1 想让角色脚踩地面，画面纹丝不动且零报错。
+describe('spriteAnchorOffset — Sprite 锚点真被消费（契约兑现）', () => {
+  const spr = (anchorX: number, anchorY: number): Sprite =>
+    ({ type: 'Sprite', textureKey: 't', anchorX, anchorY, zOrder: 0 } as Sprite);
+
+  it('缺省 0.5/0.5 = 居中，与旧式 -sw/2 逐位等价（现有游戏零回归）', () => {
+    expect(spriteAnchorOffset(spr(0.5, 0.5), 32, 48)).toEqual({ dx: -16, dy: -24 });
+    expect(spriteAnchorOffset(undefined, 32, 48)).toEqual({ dx: -16, dy: -24 });
+  });
+
+  it('anchorY=1 → 贴图底边对齐实体位置（角色"脚踩地面"·最常用的非缺省值）', () => {
+    expect(spriteAnchorOffset(spr(0.5, 1), 32, 48)).toEqual({ dx: -16, dy: -48 });
+  });
+
+  it('anchor 0/0 → 左上角对齐实体位置', () => {
+    expect(spriteAnchorOffset(spr(0, 0), 32, 48)).toEqual({ dx: -0, dy: -0 });
+  });
+
+  it('坏数据（NaN/undefined 字段）退回 0.5，不把贴图甩出画面', () => {
+    expect(spriteAnchorOffset(spr(NaN, NaN), 32, 48)).toEqual({ dx: -16, dy: -24 });
+  });
+});
+
