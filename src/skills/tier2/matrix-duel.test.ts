@@ -9,6 +9,7 @@ import {
   validateDuelMatrix,
   resolveDuelMatrix,
   duelVerdict,
+  scaleResourceId,
   type DuelMatrix,
   type DuelIntent,
   type DuelPatch,
@@ -590,6 +591,93 @@ describe('matrix-duel — 伤害缩放（REQ-108-ENG-01）', () => {
     expect(() => duel(twoSlots(), 'rock', 'paper')).toThrow(/挂了 2 份同 id 的 Resource/);
     // 报错必须点名涉事实体，照 ">2 份 DuelIntent" 的口径
     expect(() => duel(twoSlots(), 'rock', 'paper')).toThrow(/chargeP1[\s\S]*chargeP2/);
+  });
+
+  // ── REQ-108-ENG-01 返工（复查侧撤回 PASS 改判打回·owner 2026-08-06 判 A）──────────────
+  // 首版做的是「绝对 id + 全局回落」，把 spec 的唯一要点「按侧」丢了：payoff 是双方共用一张表、
+  // scaleByResource 只能填一个字符串，故无论同 id 还是各侧唯一 id，两侧出同一手都取到同一条槽。
+  // 返工 = perSide:true 时把表里的**相对名**拼成 `<出手方实体 id>.<相对名>`。
+  describe('按侧缩放 perSide（REQ-108-ENG-01 返工）', () => {
+    /** 同一张表：rock 克 paper·rock 的伤害按「出手方自己那条 charge.rock」缩放。 */
+    const perSideWorld = (p1Charge: number, p2Charge: number): World => {
+      const w = table({
+        hpResource: 'hp',
+        throws: ['rock', 'paper'],
+        beats: { rock: ['paper'], paper: [] },
+        payoff: {
+          rock: { damage: { base: 0, scaleByResource: 'charge.rock', step: 5, perSide: true } },
+          paper: { damage: 1 },
+        },
+        tie: { selfDamage: 0 },
+      });
+      w.createEntity('slotA');
+      w.addComponent('slotA', { type: 'Resource', id: 'p1.charge.rock', current: p1Charge, min: 0, max: 9 } as Resource);
+      w.createEntity('slotB');
+      w.addComponent('slotB', { type: 'Resource', id: 'p2.charge.rock', current: p2Charge, min: 0, max: 9 } as Resource);
+      return w;
+    };
+
+    // 【返工验收核心】同一张表、同一手 rock，两侧各按自己那条槽结算。
+    // 首版在这里必错：两次都会取到同一条槽（表里只能填一个 id）。
+    it('两侧对拍：p1 槽=3 / p2 槽=0，同手各取自己的槽', () => {
+      // p1 出 rock 取胜 → 按 p1.charge.rock=3 → 伤害 15
+      expect(perSideWorld(3, 0)).toBeDefined();
+      expect(duel(perSideWorld(3, 0), 'rock', 'paper').p2).toBe(20 - 15);
+      // p2 出 rock 取胜 → 按 p2.charge.rock=0 → 伤害 0（首版此处会打出 15）
+      expect(duel(perSideWorld(3, 0), 'paper', 'rock').p1).toBe(20);
+      // 反过来装一遍，证明结果跟着数据走而不是跟着实体创建序走
+      expect(duel(perSideWorld(0, 3), 'rock', 'paper').p2).toBe(20);
+      expect(duel(perSideWorld(0, 3), 'paper', 'rock').p1).toBe(20 - 15);
+    });
+
+    it('perSide 相对名解析不到 → 退化成 base，绝不 NaN', () => {
+      const w = table({
+        hpResource: 'hp',
+        throws: ['rock', 'paper'],
+        beats: { rock: ['paper'], paper: [] },
+        payoff: { rock: { damage: { base: 7, scaleByResource: '没这条槽', step: 10, perSide: true } }, paper: { damage: 1 } },
+        tie: { selfDamage: 0 },
+      });
+      const r = duel(w, 'rock', 'paper');
+      expect(r.p2).toBe(20 - 7);            // = base
+      expect(Number.isNaN(r.p2)).toBe(false);
+    });
+
+    it('不做隐式回落：perSide 的相对名**不会**去撞同名的绝对 id 槽', () => {
+      // 世界里有一条绝对 id 叫 "charge.rock"（正是表里填的相对名）。若实现写成「相对名找不到就试绝对名」，
+      // 这里会取到 4 打出 20 伤；正确行为 = 拼出的 p1.charge.rock 不存在 → 退化成 base。
+      const w = table({
+        hpResource: 'hp',
+        throws: ['rock', 'paper'],
+        beats: { rock: ['paper'], paper: [] },
+        payoff: { rock: { damage: { base: 2, scaleByResource: 'charge.rock', step: 5, perSide: true } }, paper: { damage: 1 } },
+        tie: { selfDamage: 0 },
+      });
+      w.createEntity('trap');
+      w.addComponent('trap', { type: 'Resource', id: 'charge.rock', current: 4, min: 0, max: 9 } as Resource);
+      expect(duel(w, 'rock', 'paper').p2).toBe(20 - 2); // base，不是 2+4×5
+    });
+
+    it('scaleResourceId：perSide 拼出手方前缀·缺省原样（纯函数·确定性）', () => {
+      expect(scaleResourceId({ base: 0, scaleByResource: 'charge.rock', step: 1, perSide: true }, 'p2')).toBe('p2.charge.rock');
+      expect(scaleResourceId({ base: 0, scaleByResource: 'charge.rock', step: 1 }, 'p2')).toBe('charge.rock');
+      expect(scaleResourceId({ base: 0, scaleByResource: 'pot', step: 1, perSide: false }, 'p1')).toBe('pot');
+    });
+
+    it('落盘门：perSide 非布尔 → 报错拒收；相对名同样不得指向 hpResource', () => {
+      const check = (dmg: unknown): string => checkDuelMatrix({
+        type: 'DuelMatrix', hpResource: 'hp', throws: ['a'], beats: { a: [] },
+        payoff: { a: { damage: dmg } }, tie: { selfDamage: 0 },
+      } as unknown as DuelMatrix).join();
+      expect(check({ base: 1, scaleByResource: 'c', step: 1, perSide: 'yes' })).toMatch(/perSide 只能是布尔/);
+      expect(check({ base: 1, scaleByResource: 'hp', step: 1, perSide: true })).toMatch(/不能是血量资源/);
+      expect(check({ base: 1, scaleByResource: 'c', step: 1, perSide: true })).toBe(''); // 合法写法零误报
+    });
+
+    it('绝对 id 旧写法零回归（共享池形态仍照走全局唯一）', () => {
+      const w = charged('charge', 3);      // 缺省式：表填绝对 id·世界里唯一一份
+      expect(duel(w, 'rock', 'paper').p1).toBe(20 - (2 + 3 * 3));
+    });
   });
 
   it('唯一同 id 槽 + 出手方身上无该资源 → 全局回落照常工作（零回归）', () => {

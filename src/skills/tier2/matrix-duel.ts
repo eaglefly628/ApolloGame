@@ -62,15 +62,28 @@ export interface DuelEffect {
 /**
  * 伤害数值：**固定整数** 或 **按资源线性缩放**（REQ-108-ENG-01·owner 2026-08-06 判 A）。
  * 缩放式：`base + 出手方该资源当前值 × step`（game108 蓄力槽 = `10 + 蓄力 × 10`）。
- * 资源按**侧 local 寻址**（读出手方实体自己身上那份·同 hpResource 口径）；全程整数、无浮点。
  * 为什么必须下沉而非用 event-when 穷举：静态规则集会被消费方自己的数据打碎——遗物把蓄力上限
  * 3→4，穷举的 18 条规则就漏了第 4 档且**零报错**；线性式天然跟着上限走。
  * 通用性：蓄力/怒气/连击/加注倍率/兵力同一形状。
+ *
+ * **寻址两式**（`perSide` 二选一·REQ-108-ENG-01 返工 2026-08-06·owner 判 A）：
+ *  · 缺省（绝对 id）：`scaleByResource` 就是 Resource 的 id，全世界只能有一份（多份 → 硬抛，见 resolveDamage）。
+ *    适用于「双方共享一个池子」的形态（公共赌注 / 场地能量）。
+ *  · `perSide: true`（相对名）：表里填**相对名**（如 `charge.rock`），运行期拼成
+ *    **`<出手方实体 id>.<相对名>`**（→ `p1.charge.rock` / `p2.charge.rock`）。
+ *    **这是「按侧缩放」的唯一正解**：`payoff` 是双方共用一张表、`scaleByResource` 只能填一个字符串，
+ *    所以靠「各侧用唯一 id」是治不了的——表填了 p1 的 id，p2 出手照样取 p1 的槽（实测证伪，
+ *    见 REQ-108-ENG-01 改判）。而引擎「一实体一组件」使侧实体那个 Resource 槽已被 hpResource 占死，
+ *    真·local 寻址（读 attacker 自己身上那份）在这个形态下永远落空，故只能靠 id 组装。
+ *
+ * **不做隐式回落**（相对名找不到 → 不去试绝对名）：本能力这一路的每个 bug 都出在静默回落上，
+ * 再加一条只会重蹈覆辙。找不到 = 退化成 base（绝不 NaN），与缺省式同口径。
  */
 export type DuelDamage = number | {
   base: number;            // 基础伤害
-  scaleByResource: string; // 按哪个 Resource 缩放（侧 local·不得是 hpResource，见落盘门）
+  scaleByResource: string; // 缩放源：perSide 时填**相对名**，否则填 Resource 的**绝对 id**（均不得是 hpResource，见落盘门）
   step: number;            // 每 1 点资源加多少伤害
+  perSide?: boolean;       // true = 相对名，运行期拼成 `<出手方实体 id>.<相对名>`（缺省 false = 绝对 id·零回归）
 };
 
 /** 某一手的收益（胜负两侧各一项，闭集两个数 + 一个具名信号 + 附带效果）。 */
@@ -177,18 +190,30 @@ function checkEffects(effects: DuelEffect[] | undefined, hpResource: string, at:
 }
 
 /**
- * 伤害取值（REQ-108-ENG-01）：固定整数直接返回；缩放式 = `base + 出手方该资源当前值 × step`。
- * **侧 local 寻址**：只读 `attacker` 自己身上那份 Resource（两侧同 id 靠挂载实体区分·同 hpResource 口径）。
+ * 缩放源的**实际 Resource id**（REQ-108-ENG-01 返工）：
+ *  · `perSide: true` → `<出手方实体 id>.<相对名>`（p1/p2 各自拼出各自的槽 = 按侧取值的落点）；
+ *  · 缺省 → 表里那个绝对 id 原样（零回归）。
+ * 纯字符串拼接、无 IO、无随机，故确定性与快照 hash 不受影响。
+ */
+export function scaleResourceId(damage: Exclude<DuelDamage, number>, attacker: EntityId): string {
+  return damage.perSide === true ? `${attacker}.${damage.scaleByResource}` : damage.scaleByResource;
+}
+
+/**
+ * 伤害取值（REQ-108-ENG-01 + 其返工）：固定整数直接返回；缩放式 = `base + 出手方该资源当前值 × step`。
+ * **按侧取值靠 `perSide` 组装 id**（见 DuelDamage 注释）——`payoff` 双方共用一张表、`scaleByResource`
+ * 只能填一个字符串，故「各侧用唯一 id」治不了按侧（实测证伪）；真·local 寻址也永远落空
+ * （侧实体那个 Resource 槽已被 hpResource 占死）。
  * 资源缺失/非有限 → 当 0（= 退化成 base·绝不 NaN 污染 hp 与快照 hash）。结果取整：全程整数、无浮点。
  */
 export function resolveDamage(world: IWorld, damage: DuelDamage, attacker: EntityId): number {
   if (typeof damage === 'number') return damage;
+  const wantId = scaleResourceId(damage, attacker);
   // 寻址口径**照抄 resource-apply**（atoms/resource/index.ts:149-153），不自创：
-  // ① 先看出手方**自己身上**那份 Resource（id 匹配才算）——两侧同 id 的槽靠挂载实体区分；
-  // ② 找不到再按 id 全局找（引擎一实体一组件，故 hp 与蓄力这类通常分居不同实体，
-  //    全局回落让「蓄力用各侧唯一 id」这种写法也能工作）。
+  // ① 先看出手方**自己身上**那份 Resource（id 匹配才算）——槽真挂在出手方身上时走这条；
+  // ② 找不到再按 id 全局找（引擎一实体一组件，hp 与蓄力这类必然分居不同实体，故这条才是常走的路）。
   let res = world.getComponent<Resource>(attacker, 'Resource');
-  if (!res || res.id !== damage.scaleByResource) {
+  if (!res || res.id !== wantId) {
     // 全局回落**必须唯一**：出手方身上没有该 id 时，「取第一个同 id 的」会让 A 侧按 B 侧的槽算伤害
     // ——无报错无告警、只是数字错，正是本文件开头骂过的那类失败态（复查实测：p2 以自身蓄力 0
     // 取胜却按 p1 的蓄力 3 结算，多打 9 点血）。落盘门抓不到（落盘时看不见世界里挂了几份同 id），
@@ -197,14 +222,15 @@ export function resolveDamage(world: IWorld, damage: DuelDamage, attacker: Entit
     const hits: EntityId[] = [];
     for (const [e] of world.query('Resource')) {
       const r = world.getComponent<Resource>(e, 'Resource');
-      if (r && r.id === damage.scaleByResource) { hits.push(e); if (!res) res = r; }
+      if (r && r.id === wantId) { hits.push(e); if (!res) res = r; }
     }
     if (hits.length > 1) {
       throw new Error(
-        `matrix-duel: 出手方 "${attacker}" 身上没有资源 "${damage.scaleByResource}"，而世界里挂了 `
+        `matrix-duel: 出手方 "${attacker}" 身上没有资源 "${wantId}"，而世界里挂了 `
         + `${hits.length} 份同 id 的 Resource（全局回落只能有一份，否则会按错侧的值结算伤害）——`
         + `涉事实体：${hits.map((e) => `"${e}"`).join(' / ')}。`
-        + `缩放槽请各侧用唯一 id（如 "p1.charge" / "p2.charge"），或把该槽挂到出手方实体上。`,
+        + `按侧缩放请改用 perSide:true + 相对名（表填 "charge"，槽命名 "${attacker}.charge"）；`
+        + `共享池请确保该 id 全世界只有一份。`,
       );
     }
   }
@@ -228,10 +254,14 @@ function checkPayoffShape(p: DuelPayoff | undefined, hpResource: string, at: str
     if (typeof d.scaleByResource !== 'string' || d.scaleByResource.length === 0) {
       issues.push(`${at}.damage.scaleByResource 未填（缩放式伤害要指明按哪个 Resource 缩放）`);
     } else if (d.scaleByResource === hpResource) {
+      // 相对名同样拦：`<attacker>.hp` 这种拼法即便拼得出来也是拿血量当缩放源，语义上一样错。
       issues.push(
         `${at}.damage.scaleByResource 不能是血量资源 "${hpResource}"（两侧同 id 无法全局寻址）——`
         + '换一个专用资源（如蓄力/怒气槽）',
       );
+    }
+    if (d.perSide !== undefined && typeof d.perSide !== 'boolean') {
+      issues.push(`${at}.damage.perSide 只能是布尔（true = scaleByResource 按 "<出手方实体 id>.<相对名>" 组装）`);
     }
   } else if (!isFiniteNum(p.damage)) {
     issues.push(`${at}.damage 不是有限数字（或写成 {base,scaleByResource,step} 缩放式）`);
