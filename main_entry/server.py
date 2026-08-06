@@ -13,6 +13,7 @@ from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 from .agent_chat import handle_agent_chat
 from .art_replace import handle_art_batch, handle_art_derive, handle_art_ledger, handle_art_packs, handle_art_replace, handle_art_style_save, handle_art_style_delete
 from .art_review import handle_asset_pending, handle_asset_review
+from .art_sync import handle_art_sync, handle_art_sync_status
 from .artbrowser import handle_artbrowser_consumers, handle_artbrowser_history, handle_artbrowser_restore, handle_artbrowser_tree, resolve_history_blob
 from .asset_annotate import handle_asset_autotag
 from .assets import handle_asset_generate, handle_asset_generate_providers, handle_asset_import, handle_asset_matte, handle_asset_vendor
@@ -430,6 +431,12 @@ class APIHandler(BaseHTTPRequestHandler):
         elif path == '/api/art/ledger':
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             data = handle_art_ledger((qs.get('slug') or [''])[0])
+        elif path == '/api/art/sync/status':  # 内置游戏美术待同步改动数（一键提交推送按钮角标）
+            qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
+            try:
+                data = handle_art_sync_status((qs.get('slug') or [''])[0])
+            except Exception as e:
+                data = {'success': False, 'error': f'sync status 异常: {e}'}
         elif path == '/api/artbrowser/tree':  # 资产浏览器三栏数据（REQ-ARTPIPE2 A2·薄封装既有台账/索引/守卫 JSON）
             qs = urllib.parse.parse_qs(self.path.split('?', 1)[1]) if '?' in self.path else {}
             try:
@@ -667,6 +674,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_art_reskin(body)
             except Exception as e:
                 data = {'success': False, 'error': f'reskin 异常: {e}'}
+        elif path == '/api/art/sync':  # 内置游戏美术一键提交+推送（fetch→rebase→push 自动重试·冲突自动 abort 保本地提交）
+            try:
+                data = handle_art_sync(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'sync 异常: {e}'}
         elif path == '/api/design/ingest':  # 收稿箱落盘（REQ-DESIGNLINE 过渡轨②）
             try:
                 data = handle_design_ingest(body)

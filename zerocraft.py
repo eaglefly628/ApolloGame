@@ -17,7 +17,7 @@ from main_entry import (
     claude_code, llm_transport, generation, lowmodel, design_flow, generate_api,
     agent_prompts, workshop_store, agent_chat, protocols, ts_carts, settings_api,
     assets, games_list, jobs, packaging, groups, placeholder, workshop_state,
-    art_review, art_replace, t2_replace, pipeline_board, asset_annotate, library,
+    art_review, art_replace, art_sync, t2_replace, pipeline_board, asset_annotate, library,
     library_api, design_drafts, artbrowser, server, cli,
 )
 
@@ -26,7 +26,7 @@ _MODULES = [
     claude_code, llm_transport, generation, lowmodel, design_flow, generate_api,
     agent_prompts, workshop_store, agent_chat, protocols, ts_carts, settings_api,
     assets, games_list, jobs, packaging, groups, placeholder, workshop_state,
-    art_review, art_replace, t2_replace, pipeline_board, asset_annotate, library,
+    art_review, art_replace, art_sync, t2_replace, pipeline_board, asset_annotate, library,
     library_api, design_drafts, artbrowser, server, cli,
 ]
 

@@ -95,6 +95,7 @@
 | 后处理 | `scripts/ai-gen.mjs` 后处理段（palette-snap/缩放） | 确定性·mock 也走 |
 | 对位替换 | zerocraft.py：按 no 重钉 manifest 引用+落盘（PUT 前 parseManifest 零 error 铁律不变） | 留替换历史 |
 | 浏览/点名 UI | ✅ 并入上行「美术资产平台」 | 缩略图+编号+status+三式替换（不再单列） |
+| 内置游戏一键提交推送 | ✅ `main_entry/art_sync.py`（`GET /api/art/sync/status` + `POST /api/art/sync`）+ 面板「⤴ 提交推送」钮（builtin 限定） | owner 2026-08-06「替换老是冲突」止痛：add 限 `public/games/<slug>` → commit(带路径·不碰他人暂存) → fetch→rebase --autostash→push 自动重试；冲突自动 abort 保本地提交。冒烟 `scripts/art-sync-smoke.py`（临时仓自证）。library 卡带不适用（自带每卡带版本化）。根治项（覆盖层拆分·冲突面归零）另议 |
 
 ## 六、验收口径
 

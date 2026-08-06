@@ -121,3 +121,41 @@ describe('ArtLedgerPanel · REQ-ARTLIB fileless placeholder 不空白', () => {
     expect(real.rows.length).toBeGreaterThan(0);
   });
 });
+
+// ═══ 一键提交推送按钮（owner 2026-08-06「内置游戏美术替换老是冲突」·方案A）═══
+// 内置游戏（kind='builtin'）：渲「⤴ 提交推送」+ 待同步数角标（/api/art/sync/status）；library 卡带不渲（自带每卡带版本化）。
+function stubLedgerWithSync(count: number): void {
+  const L = { success: true, mode: 'requirements', game: 'game-c', count: 1, rows: [PH_NO_FILE] };
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    if (url.includes('/api/art/sync/status')) return { ok: true, json: async () => ({ success: true, count, files: [], branch: 'claude/mainbranch' }) };
+    if (url.includes('/api/art/ledger')) return { ok: true, json: async () => L };
+    if (url.includes('/api/art/style-packs')) return { ok: true, json: async () => ({ packs: [{ packId: 'p', name: 'P' }] }) };
+    return { ok: true, json: async () => ({}) };
+  }));
+}
+
+describe('ArtLedgerPanel · 内置游戏一键提交推送', () => {
+  it('kind=builtin + 有待同步改动 → 渲「⤴ 提交推送」带数量角标', async () => {
+    stubLedgerWithSync(3);
+    await act(async () => { root.render(<ArtLedgerPanel slug="game-c" kind="builtin" onBack={() => {}} />); });
+    await flush();
+    expect(container.innerHTML).toContain('提交推送（3）');
+  });
+
+  it('kind=builtin + 无改动 → 按钮在但禁用（无角标）', async () => {
+    stubLedgerWithSync(0);
+    await act(async () => { root.render(<ArtLedgerPanel slug="game-c" kind="builtin" onBack={() => {}} />); });
+    await flush();
+    expect(container.innerHTML).toContain('提交推送');
+    expect(container.innerHTML).not.toContain('提交推送（');
+    const btn = [...container.querySelectorAll('button')].find((b) => b.textContent?.includes('提交推送'));
+    expect(btn?.disabled).toBe(true);
+  });
+
+  it('library 卡带不渲此按钮（library/ 不入引擎仓·自带版本化）', async () => {
+    stubLedgerWithSync(3);
+    await act(async () => { root.render(<ArtLedgerPanel slug="some-cart" kind="library" onBack={() => {}} />); });
+    await flush();
+    expect(container.innerHTML).not.toContain('提交推送');
+  });
+});

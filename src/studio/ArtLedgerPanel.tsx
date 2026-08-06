@@ -181,6 +181,17 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
   const [genProvider, setGenProvider] = useState(''); // ''=风格包默认；否则点名覆盖 qwen/tripo/meshy（owner review ④）
   const triedDerive = useRef(false); // library 卡带缺台账 → 自动 derive 一次（防循环）
   const [realMap, setRealMap] = useState<Record<string, string>>({}); // skinKey → 真图路径（游戏 index.json filled·渲染真相）
+  // 内置游戏待同步改动数（owner 2026-08-06「替换老是冲突」：改完不提交躺工作区被 mainbranch 拉扯——一键提交推送止痛）
+  const [syncCount, setSyncCount] = useState<number | null>(null);
+
+  const loadSync = useCallback(() => {
+    if (kind !== 'builtin') return;
+    fetch(`${API}/api/art/sync/status?slug=${encodeURIComponent(slug)}`)
+      .then((r) => r.json())
+      .then((j: { success?: boolean; count?: number }) => setSyncCount(j?.success ? (j.count ?? 0) : null))
+      .catch(() => setSyncCount(null));
+  }, [slug, kind]);
+  useEffect(() => loadSync(), [loadSync]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -230,11 +241,26 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
     setBusy(true);
     try {
       const res = await fetch(`${API}${url}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json() as Promise<{ success?: boolean; error?: string; newSlug?: string }>);
-      if (res.success) { flash(true, res.newSlug ? `${okMsg} → ${res.newSlug}` : okMsg); load(); onChanged?.(); }
+      if (res.success) { flash(true, res.newSlug ? `${okMsg} → ${res.newSlug}` : okMsg); load(); loadSync(); onChanged?.(); }
       else flash(false, `✕ ${res.error ?? '失败'}`);
     } catch (e) { flash(false, `✕ ${String(e)}`); }
     finally { setBusy(false); }
-  }, [busy, load, onChanged]);
+  }, [busy, load, loadSync, onChanged]);
+
+  // ⤴ 一键提交推送（仅内置游戏·tracked public/games/<slug>）：服务端 add(限本游戏)→commit→fetch→rebase→push
+  // 自动重试；rebase 冲突自动 abort、改动保留为本地提交（绝不丢，也绝不留半截 rebase 现场）。
+  const doSync = useCallback(async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await fetch(`${API}/api/art/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug }) })
+        .then((res) => res.json() as Promise<{ success?: boolean; clean?: boolean; pushed?: boolean; committed?: string; files?: string[]; note?: string; error?: string }>);
+      if (r.success && r.clean) flash(true, '✓ 无待同步改动');
+      else if (r.success) flash(true, r.pushed ? `✓ 已提交并推送（${r.files?.length ?? 0} 文件 · ${r.committed}）` : `✓ 已本地提交 ${r.committed}（${r.note ?? '未推送'}）`);
+      else flash(false, `✕ ${r.committed ? `已本地提交 ${r.committed}·` : ''}${r.error ?? '同步失败'}`);
+    } catch (e) { flash(false, `✕ ${String(e)}`); }
+    finally { setBusy(false); loadSync(); }
+  }, [busy, slug, loadSync]);
 
   const doRegen = () => sel && act('/api/art/regenerate', { slug, no: sel.no, packId: regenPack, query: regenPrompt.trim() || undefined, mock: mockRun, ...(genProvider ? { provider: genProvider } : {}) }, `✓ 重生成 ${sel.no}`);
   const doSaveStyle = () => act('/api/art/style', { slug, stylePrompt: stylePrompt.trim() }, '✓ 风格锚已存').then(() => setStyleDirty(false));
@@ -256,10 +282,10 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
         if ((rep.skippedMock ?? 0) > 0) mockSkipNote = ` · MOCK ${rep.skippedMock} 不写回（仅墙预览·真图后再钉）`;
       }
       flash(true, `✓ 全量：生成 ${b.summary?.generated ?? 0} · 缓存 ${b.summary?.cached ?? 0}${(b.summary?.mock ?? 0) > 0 ? ` · MOCK ${b.summary?.mock}` : ''}${mockSkipNote}`);
-      load(); onChanged?.();
+      load(); loadSync(); onChanged?.();
     } catch (e) { flash(false, `✕ ${String(e)}`); }
     finally { setBusy(false); }
-  }, [busy, slug, reskinPack, mockRun, mode, load, onChanged]);
+  }, [busy, slug, reskinPack, mockRun, mode, load, loadSync, onChanged]);
   const doUpload = useCallback((file: File) => {
     if (!sel) return;
     const reader = new FileReader();
@@ -300,6 +326,12 @@ export function ArtLedgerPanel({ slug, title, kind, onBack, onChanged }: { slug:
         </select>
         <button onClick={doBatchAll} disabled={busy} style={{ ...sBtn('primary'), opacity: busy ? 0.5 : 1 }} title="整表批量生成（断点续跑·缓存命中不重扣费）">⚡ 一键全量</button>
         <button onClick={() => doApprove('all')} disabled={busy} style={{ ...sBtn('ghost'), opacity: busy ? 0.5 : 1 }} title="人审复核（double verify 第二道门）：全部已写回的行 → 复核通过">☑ 全部复核</button>
+        {kind === 'builtin' && (
+          <button onClick={doSync} disabled={busy || !syncCount} style={{ ...sBtn(syncCount ? 'primary' : 'ghost'), opacity: busy || !syncCount ? 0.5 : 1 }}
+            title={syncCount ? `本游戏 public/games/${slug} 下有 ${syncCount} 处未提交改动——一键提交进引擎仓并推送（fetch→rebase→push 自动重试·冲突自动回退保本地提交）` : '无待同步改动（替换落盘后此处会亮起）'}>
+            ⤴ 提交推送{syncCount ? `（${syncCount}）` : ''}
+          </button>
+        )}
         {mode === 'library' && <button onClick={doReskin} disabled={busy} style={{ ...sBtn('primary'), opacity: busy ? 0.5 : 1 }} title="同玩法换风格包 → 存新卡带">🎭 一键换皮</button>}
         <button onClick={load} style={sBtn('quiet')}>↻</button>
         <button onClick={onBack} style={sBtn('ghost')}>← 返回</button>
