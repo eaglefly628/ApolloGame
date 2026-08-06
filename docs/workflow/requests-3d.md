@@ -6,22 +6,13 @@
 
 ---
 
-## REQ-3D-RENDERHYG · 渲染卫生批：贴图泄漏 + 脏标失效 + 后处理漏 dispose · [2026-08-05] · Lead 提（引擎全量评审 §6 工单⑧·owner 2026-08-05 令派 P3D）→ P3D · status: **✅ done（P3D 2026-08-05·fix①②④+全尾·已推·见回执；fix③睡眠随 SETTLE-SIGNAL 同做）** · 优先级: P2（**全为 render-only·不阻塞玩法**·但长局面越跑越卡/显存越吃越多） · 类型: 渲染健壮 + 性能
-> **★ P3D 落地回执（2026-08-05·每条红→绿测试·`render-hygiene.test` 9 例）**：
-> - **fix①（P1·贴图泄漏）**：`disposeMeshMat` 用**源头标记法**——`pbrMapTexture` 给共享缓存图打 `userData.shared`，`disposeMeshMat` 只释放**未标记的 per-mesh 独占图**（补漏 map/emissiveMap/ao/metal·ORM 三槽去重）。**正面用例已钉**：两网格共用同一共享图·销毁其一→另一个仍持可渲的图（撤修复即转红）。
-> - **fix②（P1·脏标永久失效）**：`models.update` 返回**真正在播的 action 数**（新纯函数 `countRunningAnims`·`isRunning()`）·非 `anims.size`——带 clip 的静态/播完模型不再永久占 `animLive>0`+每帧刷阴影。测试含真 AnimationMixer 语义（LoopOnce 播完→false·LoopRepeat 恒 true·**不冻结正在播的**）。
-> - **fix④（P2·后处理漏 dispose）**：`PostPipeline.dispose` 逐 pass dispose（RenderPass/GTAO/hTilt/vTilt/Bloom/grade/SMAA 各自 RT）+ 清引用。
-> - **尾**：`postSig` 补 AO/grade（漏则改 AO/分级静态场景不重渲）· `hashPoses` 补 quat（纯四元数旋转不再被跳渲吞）· tiltShift/bloom 参数补 finite 兜底（`fin`/`posOr`·NaN 进 uniform→画面损坏）· HDRI 坏图**不再每帧重 parse**（`hdriEnv` 早返修：`hdriKey===key` 即回·失败=null 也回·原 `&&hdriTex` 使坏图每帧重试）。
-> - **fix③（P2·SLEEPING 刚体仍占脏标）**：**随 REQ-3D-SETTLE-SIGNAL 同做**（同一睡眠语义·两单一起改省一次回归·spec 明示合并）。
-> 边界守住（只碰 `three/**` + 测试·不碰 sim/UI）。tsc0/vitest/build0。
-> 详情唯一真相 = `docs/design/engine-review-2026-08-04.md`（§3.2 表 + §5「3D 渲染」）。Lead 已复核为真发现，落在 P3D 域故整批转派、**不擅改**。
-> 1. **`three/geometry.ts:298` `disposeMeshMat` 只释放 normalMap/roughnessMap，漏 `map`/`emissiveMap`（P1·显存泄漏）** —— ⚠ **报告明确警示：不可盲加 `.dispose()`**：`map`/`emissiveMap` 可能来自**共享缓存**（`pbrMapTexture`/`texCache`），直接释放会把**其他活网格正在用的贴图**一起毁掉 → **画面损坏比泄漏更糟**。正解=引用计数或来源标记，区分 per-mesh 独占 vs 共享缓存，只释放前者。
-> 2. **`three/models.ts:87` 带 clip 的静态模型令 `animLive>0`（P1）** —— 脏标跳渲**永久失效** + 每帧刷阴影。修法=`update()` 改返回「真正在播的 action 数」，但需 `isRunning()` 语义精确；**判断错会让动画冻结**（可见回归），且 `models.test` 当前无覆盖 → 必须先补测试再动。
-> 3. **`three/physics.ts:69` `sync` 返回值含 SLEEPING 刚体（P2）** —— 骰子入睡后脏标仍每帧成立、白烧 GPU。修法=只计 `sleepState !== SLEEPING`。**建议与 `REQ-3D-SETTLE-SIGNAL` 合并做**（同一处睡眠语义，两单一起改省一次回归）。
-> 4. **`three/post.ts:178` `PostPipeline.dispose` 漏逐 pass dispose（P2）** —— GTAO/Bloom/SMAA 各自 RT 滞留。
-> 尾巴（同批顺清·按报告原文取）：`renderSig` 漏 ao/grade/quat、HDRI 坏图每帧重 parse、num-guard 漏 tiltShift·bloom。
-> **边界**：`src/renderer/three/**` + 对应测试；不碰 sim/引擎核、不碰 `src/ui/**`。
-> **验收要求**：①每条配回归测试（先复现→红→修→绿·回执贴「撤掉修复即转红」证据）；②贴图泄漏那条**必须**给出「共享贴图未被误释放」的正面用例（两个网格共用同一 texture，销毁其一后另一个仍可渲）——否则等于用画面损坏换泄漏；③render-only 可按手册缩范围跑门禁。
+## REQ-3D-RENDERHYG · 渲染卫生批：贴图泄漏 + 脏标失效 + 后处理漏 dispose · [2026-08-05] · Lead 提（引擎全量评审 §6⑧·owner 令派 P3D）→ P3D · status: open · 优先级: P2（全 render-only·不阻塞玩法·但长局越跑越卡/越吃显存） · 类型: 渲染健壮 + 性能
+> 详情唯一真相 = `docs/design/engine-review-2026-08-04.md`（§3.2 + §5「3D 渲染」）。Lead 已复核为真发现，落 P3D 域故转派、不擅改。
+> ①**`three/geometry.ts:298` `disposeMeshMat` 漏释放 `map`/`emissiveMap`（P1 显存泄漏）** —— ⚠ **不可盲加 `.dispose()`**：二者可能来自共享缓存（`pbrMapTexture`/`texCache`），直接释放会毁掉**其他活网格正在用的贴图** → **画面损坏比泄漏更糟**。正解=引用计数/来源标记，只释放 per-mesh 独占。
+> ②**`three/models.ts:87` 带 clip 的静态模型令 `animLive>0`（P1）** —— 脏标跳渲永久失效 + 每帧刷阴影。修法=`update()` 返回真正在播的 action 数，但 `isRunning()` 语义要准，**判断错会让动画冻结**；`models.test` 无覆盖 → 先补测试再动。
+> ③**`three/physics.ts:69` `sync` 返回值含 SLEEPING 刚体（P2）** —— 骰子入睡后仍每帧重渲。修法=只计 `sleepState !== SLEEPING`。**建议与 `REQ-3D-SETTLE-SIGNAL` 合并做**（同一处睡眠语义·省一次回归）。
+> ④**`three/post.ts:178` `PostPipeline.dispose` 漏逐 pass dispose（P2）** —— GTAO/Bloom/SMAA 各自 RT 滞留。尾巴同批顺清：`renderSig` 漏 ao/grade/quat · HDRI 坏图每帧重 parse · num-guard 漏 tiltShift/bloom。
+> **边界**：`src/renderer/three/**` + 测试；不碰 sim/引擎核/`src/ui/**`。**验收**：①每条配回归测试（复现→红→修→绿·回执贴「撤修即转红」证据）；②贴图那条**必须**给「共享贴图未被误释放」正面用例（两网格共用一 texture·销毁其一后另一仍可渲）否则=用画面损坏换泄漏；③render-only 可缩范围跑门禁。
 
 ## REQ-3D-TOWER-STACK · 物理世界参数按游戏可配（现全局硬编码 · 重力 -42 使多层堆叠不可能）· [2026-08-04] · GD-105 提（叠叠乐塔立不住）→ P3D · status: **✅ done（P3D 2026-08-05·已推·见回执）** · 优先级: **P1（game-105 S3 骨架关硬阻塞·塔立不住则全部规则无从谈起）** · 类型: 3D 线能力缺口（物理世界配置）
 > **★ P3D 落地回执（2026-08-05·照 spec·opt-in 场景级·缺省零变）**：新组件 `PhysicsWorld3D{gravity?,restitution?,friction?,solverIterations?}`（场景级单例·render-only·入 NON_DETERMINISTIC + manifest 143）。`physics.ts initWorld(world)` 读第一个 `PhysicsWorld3D` → 建 cannon World 时套用（`solver.iterations` 走 GSSolver·**未设=缺省 10**）；**不挂本组件 = 逐位现行值**（g=-42/rest=0.4/fric=0.35·护 game-d 掷骰 -42 刻意调参 + game102 碎片）。测试 3 例钉死：① 缺省不挂 → 重力仍 -42（落得快·回归护栏）② 配 `gravity:-9.82` → 落得慢（数据路生效）③ 12 层叠叠乐塔 + `{gravity:-9.82,restitution:0,solverIterations:40}` → 静置 5s 塔顶下沉 <0.4（站住不塌）。回填 `playbooks/3d.md` 物理世界配置行。**交 PE-105**：game-105 场景挂一个 `PhysicsWorld3D{gravity:-9.82,restitution:0,solverIterations:40}` 即塔立得住·S3 解锁。tsc0/vitest(physics18)/build0/manifest143。
