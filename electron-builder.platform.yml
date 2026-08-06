@@ -68,6 +68,15 @@ mac:
   #     electron-builder ≥24 会在签名后自动尝试公证（无需在这份配置里再显式声明 mac.notarize——
   #     它的默认行为就是"有对应 Apple 凭据 env 才公证，没有就跳过"，恰好也是"别硬依赖 secret"）。
   hardenedRuntime: true # 只在真走 Developer ID 签名+公证那条路径时生效；未签名/ad-hoc 时这个字段本身不产生任何效果
+  # 🔴 **必须为 mac 产物打签名（哪怕只是 ad-hoc 自签）**——owner 2026-08-05 客户机实测事故：
+  # Apple Silicon 上**未签名的可执行文件会被系统直接拒运行**，报错文案是「**已损坏，无法打开**」，
+  # 极易被误判成"包坏了/下载不完整"（客户第一反应就是这个）。仅 `xattr -cr` 清隔离标记**不够**，
+  # 还必须有签名。故这里不再依赖"有证书才签"：
+  #   · 有真 Developer ID（CI 给了 CSC_LINK）→ electron-builder 走正式签名 + 可选公证；
+  #   · 没有证书 → 由 afterSign 钩子补一个 **ad-hoc 签名**（`codesign --sign -`），
+  #     客户「右键→打开」即可运行，无需手敲任何终端命令。
+  # ad-hoc 签名不提供来源可信度（仍会被 Gatekeeper 拦一次），但它让 app **技术上可执行**，
+  # 这是 arm64 的硬要求，与"是否被信任"是两件事。
   target:
     - target: dmg
       arch: [arm64] # owner 07-26 拍板：目标机型 = Apple Silicon（macos-latest runner 本身也是 arm64）；Intel 客户走 x64/universal 是另一条后续需求，不在本次范围
@@ -75,3 +84,8 @@ mac:
 # 平台整机打包不出 Windows 目标（win-only 场景不在 D5 范围内，留空避免 electron-builder 误跑）。
 win:
   target: []
+
+# afterSign 钩子（**顶层键**·不是 mac 的子键）：electron-builder 在签名阶段之后调用它。
+# 若那一步没产生有效签名（无 Developer ID 证书的默认情形），钩子补一个 ad-hoc 自签，
+# 让 app 在 Apple Silicon 上技术可执行（否则报「已损坏」）。见 scripts/mac-adhoc-sign.cjs。
+afterSign: scripts/mac-adhoc-sign.cjs

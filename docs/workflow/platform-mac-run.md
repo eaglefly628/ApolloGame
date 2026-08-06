@@ -48,13 +48,22 @@ x64/universal 是另一条后续需求，不在本次范围）。苹果菜单 �
    默认**未签名**（无 Apple 开发者账号，owner 07-26 拍板；若某次 CI 跑配了签名 secret 则这步
    可以省，见 §5）。绕过方法（任选一种）：
    - **右键（或 Control+点按）App → 打开 → 再点一次「打开」**。
-   - 若右键打开仍报「已损坏」（新版 macOS 对未签名 App 更严格），打开「终端」执行：
+   - 若右键打开仍报「**已损坏，无法打开**」——**这几乎总是签名问题、不是包坏了**（owner 2026-08-05
+     客户机实测事故）：Apple Silicon 要求所有可执行文件必须带签名，未签名的会被系统直接拒绝加载，
+     而系统文案偏偏说"已损坏"，客户第一反应是重新下载，下多少次都一样。
+     **单靠 `xattr -cr` 不够**（那只清"从网络下载"的隔离标记＝解决**信任**问题；这里缺的是**签名本身**
+     ＝能不能**执行**的问题，两件事都得满足）。打开「终端」整段粘贴：
      ```
-     xattr -cr /Applications/ZeroCraft\ Preview.app
+     APP="/Applications/ZeroCraft Preview.app"; xattr -cr "$APP"; codesign --force --deep --sign - "$APP"
      ```
-     然后正常双击。
-   - 同款更详细的图文说明已经在仓库里现成一份（`build/mac-open-help/`），把里面的 App 名字换成
-     `ZeroCraft Preview.app` 就能直接照抄给客户用。
+     （报 permission denied 就在两条命令前各加 `sudo`。）然后正常双击。
+   - **更省事**：包里附带的 `build/mac-open-help/修复并打开.command` 双击即可——它已包含上面两步
+     （自动找 App → 清隔离 → 无有效签名则补 ad-hoc 自签 → 打开）。
+   - **本源已修（2026-08-05）**：打包链加了 `afterSign` 钩子 `scripts/mac-adhoc-sign.cjs`——
+     没有 Developer ID 证书时**自动补 ad-hoc 自签**（有真证书则原样不动、绝不覆盖）。故**此后新打的包
+     客户只需「右键→打开」一次，不必再敲任何命令**；上面的手工命令只用于修复 08-05 之前打的旧包。
+   - （`build/mac-open-help/` 里另有一份给客户的图文说明 `先读我_MAC放行.txt`；助手脚本已改为
+     **自动按名字找 App**，不再需要手工替换 App 名。）
 3. 打开后是**首启引导**：填生图 key / Deepseek key，或直接跳过（跳过＝离线模式，见下面矩阵）。
    key 只落本机 gitignored 配置，绝不随包分发（`platform-packaging-spec.md` 决策②安全红线，
    CI 有 `assert-no-baked-key.mjs` 门禁挡）。
