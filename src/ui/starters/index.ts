@@ -4,3 +4,6 @@ export type { StarterAction } from './starter-kit.js';
 // 剧情起手 · 伴侣在场件（REQ-DIALOGUE M3·用 M1 三件拼装·非新控件）。
 export { buildPresence, pickReaction, SAMPLE_REACTIONS } from './presence.js';
 export type { ReactionEntry, ReactionTable } from './presence.js';
+// 剧情起手 · 立绘/表情链（REQ-DIALOGUE M2·emotion→assetKey 纯数据表 + 分级降级）。
+export { resolveEmotionArt, emotionArtResolver, SAMPLE_EMOTION_ART } from './emotion-art.js';
+export type { EmotionArtTable, ArtFallback, ArtResolver } from './emotion-art.js';

@@ -39,7 +39,8 @@ export function pickReaction(table: ReactionTable, event: string, seed: number):
  */
 export function buildPresence(o: {
   name?: string;
-  art?: string;                                   // 立绘图 URL（sim 持 key·resolveAsset 后填·M2 表按 emotion 选）
+  art?: string;                                   // 立绘图 URL（sim 持 key·resolveAsset 后填·静态兜底）
+  resolveArt?: (emotion?: string) => string | undefined; // M2 表情链：按当前情绪解析立绘 URL（emotionArtResolver 合成·缺图→占位）
   side?: 'left' | 'right';
   reaction?: { emotion: string; line: string };
   id?: string;
@@ -48,9 +49,11 @@ export function buildPresence(o: {
   const rootId = o.id ?? 'presence';
   const emo = o.reaction?.emotion;
   const line = o.reaction?.line ?? '';
+  // M2 表情链：有 resolveArt 则按情绪解析立绘（分级降级·缺图返 undefined → portrait 出剪影/名首字占位）；否则用静态 art。
+  const art = o.resolveArt ? (o.resolveArt(emo) ?? o.art) : o.art;
   const portrait: LayoutNode = {
     type: 'portrait', id: `${rootId}-por`,
-    props: { name: o.name, art: o.art, emotion: emo, side, edge: 'gold', glow: true },
+    props: { name: o.name, art, emotion: emo, side, edge: 'gold', glow: true },
     layout: { width: 96, height: 120 },
   };
   const bubble: LayoutNode = {
