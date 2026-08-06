@@ -11,7 +11,7 @@ from .library import _read_design
 from .llm_log import _llm_log
 from .llm_transport import LLM_PROVIDERS, _FALLBACK_CATALOG, _provider_request, get_api_key
 from .mock import _mock_revise
-from .paths import LIBRARY_DIR, _run_manifest_check, _valid_design_relpath, _valid_slug
+from .paths import LIBRARY_DIR, _run_manifest_check, _valid_design_relpath, _valid_slug, art_root
 from .pipeline_board import _pipeline_cli
 from .protocols import _capgap_record, _split_art_ops, _split_capgap
 from .sysutil import ROOT
@@ -20,7 +20,7 @@ from .workshop_store import _AGENT_ROLES, _ws_file_load, _ws_sessions_save, _ws_
 
 def _agent_art_digest(slug: str, cap: int = 40) -> str:
     """gd 角色的美术台账摘要：编号/状态/查询词/皮肤槽 + 风格锚。缺台账=明说（不是空串）。"""
-    f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    f = art_root(slug) / 'art-ledger.json'
     if not f.is_file():
         return '(no art ledger yet — it is derived automatically when the manifest is saved)'
     try:

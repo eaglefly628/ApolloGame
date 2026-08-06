@@ -17,6 +17,7 @@ import { ADAPTERS, encodePng, curlFor } from './ai-gen.mjs';
 import { decodePng, encodePngRGBA } from './asset-matte.mjs';
 import { decodeJpeg } from './jpeg-decode.mjs';
 import { STYLE_PACKS, listStylePacks, saveLocalStyle, deleteLocalStyle } from './style-packs.mjs';
+import { artRoot } from './art-paths.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ART_PREFIX = 'art:';
@@ -27,9 +28,11 @@ const manifestFile = (root, slug) => {
   if (existsSync(lib)) return lib;
   return join(root, 'public', 'games', slug, 'manifest.json'); // 内置纯数据游戏（tracked·owner 2026-07-10）
 };
-const ledgerFile = (root, slug) => join(root, 'public', 'games', slug, 'art', 'art-ledger.json');
-const localIndexFile = (root, slug) => join(root, 'public', 'games', slug, 'art', 'index.json');
-const genAbs = (root, slug, rel) => join(root, 'public', 'games', slug, 'art', rel);
+// 美术根走单一真相 artRoot（REQ-CARTART·卡带 → library/<slug>/art·内置 → public/games/<slug>/art）。
+// Python 侧同源 = main_entry/paths.py::art_root；两边规则必须一字不差，否则「上传写 A·生成写 B」= split-brain。
+const ledgerFile = (root, slug) => join(artRoot(root, slug), 'art-ledger.json');
+const localIndexFile = (root, slug) => join(artRoot(root, slug), 'index.json');
+const genAbs = (root, slug, rel) => join(artRoot(root, slug), rel);
 
 const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const readJson = (f, fb) => (existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : fb);
@@ -549,11 +552,11 @@ export function backupOrigFile(root, game, no, servedPath) {
   if (typeof servedPath !== 'string' || !servedPath.startsWith(prefix)) return null;
   const rel = servedPath.slice(prefix.length);
   if (rel.includes('..') || rel.startsWith('/')) return null;
-  const src = join(root, 'public', 'games', game, 'art', rel);
+  const src = join(artRoot(root, game), rel);
   if (!existsSync(src)) return null;
   const ext = (rel.split('.').pop() || 'png').toLowerCase();
   const bakRel = `orig/${no}.${ext}`;
-  const bakAbs = join(root, 'public', 'games', game, 'art', bakRel);
+  const bakAbs = join(artRoot(root, game), bakRel);
   mkdirSync(dirname(bakAbs), { recursive: true });
   copyFileSync(src, bakAbs);
   return `${prefix}${bakRel}`;
@@ -775,7 +778,7 @@ async function run(argv) {
     const szi = argv.indexOf('--size'); const targetSize = szi >= 0 ? parseSize(argv[szi + 1]) : undefined; // 手动尺寸覆盖 WxH
     const mock = argv.includes('--mock');
     const ledger = readJson(ledgerFile(ROOT, slug), null);
-    if (!ledger) { console.error(`无台账: public/games/${slug}/art/art-ledger.json`); process.exit(1); }
+    if (!ledger) { console.error(`无台账: ${ledgerFile(root, slug)}`); process.exit(1); }
     const rr = resetRow(ledger, no, { query, targetSize });
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
     const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg, debug });

@@ -22,7 +22,7 @@ import re
 import subprocess
 
 from .games_list import _builtin_games_meta
-from .paths import LIBRARY_DIR, _valid_slug, _write_json
+from .paths import LIBRARY_DIR, _valid_slug, _write_json, art_root
 from .sysutil import ROOT, _spawn
 from .t2_replace import _ART_NO_RE, handle_art_upload
 
@@ -63,10 +63,12 @@ def _run_guard(args: list) -> dict:
 
 def _discover_game_slugs() -> list:
     """guard 不可用时的兜底发现（与 guard 自己的 discoverGames 同口径：有 art/ 目录即算）。"""
-    base = ROOT / 'public' / 'games'
-    if not base.is_dir():
-        return []
-    return sorted(d.name for d in base.iterdir() if d.is_dir() and (d / 'art').is_dir())
+    found = set()
+    for base in (ROOT / 'public' / 'games', LIBRARY_DIR):  # 卡带美术归位 library 后同样要被发现（REQ-CARTART）
+        if not base.is_dir():
+            continue
+        found.update(d.name for d in base.iterdir() if d.is_dir() and (d / 'art').is_dir())
+    return sorted(found)
 
 
 def _read_json(path) -> dict:
@@ -80,7 +82,7 @@ def _read_json(path) -> dict:
 
 
 def _read_game_ledger(slug: str) -> dict:
-    return _read_json(ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json')
+    return _read_json(art_root(slug) / 'art-ledger.json')
 
 
 def _ledger_rows(ledger: dict) -> list:
@@ -287,41 +289,54 @@ _HISTORY_EXT_CT = {
 
 
 def _served_path_to_repo_rel(path):
-    """servedPath（`/games/<slug>/...` 或 `/assets/...`·台账/索引里现成的站点 URL）→ 仓库相对路径
+    """servedPath（`/games/<slug>/...` 或 `/assets/...`·台账/索引里现成的站点 URL）→ **(仓库根, 仓内相对路径)**
     （供 `git log`/`git show` 用）。路径穿越防护沿 `design_ingest.design_preview_path` 先例：归一化后
-    仍须落在对应静态根内（同 `_serve_public_games`/`_serve_assets` 的纵深断言）。失败返回 (None, 错误信息)。"""
+    仍须落在对应静态根内（同 `_serve_public_games`/`_serve_assets` 的纵深断言）。失败返回 (None, None, 错误信息)。
+
+    **卡带走自己的仓（REQ-CARTART）**：卡带美术归位到 `library/<slug>/art/` 后已不在引擎仓里，
+    历史得去卡带自己那个 git 仓查（`library.py::_git_commit_all` 每次保存 `add -A` 提交整个卡带目录）。
+    故返回 (repo_root, rel)：内置游戏 = (ROOT, 'public/games/...')，卡带 = (library/<slug>, 'art/...')。"""
     p = str(path or '').strip()
     if not p:
-        return None, '缺 path'
+        return None, None, '缺 path'
     if p.startswith('/games/'):
-        base = (ROOT / 'public' / 'games').resolve()
-        rel = p[len('/games/'):]
+        rel_all = p[len('/games/'):]
+        slug = rel_all.split('/', 1)[0]
+        # 卡带 art 子树 → 卡带自己的仓（与 _serve_public_games 的回退判据同源）
+        if _valid_slug(slug) and rel_all.startswith(f'{slug}/art/') and (LIBRARY_DIR / slug).is_dir():
+            repo = (LIBRARY_DIR / slug).resolve()
+            base = (repo / 'art').resolve()
+            rel = rel_all[len(f'{slug}/art/'):]
+        else:
+            repo = ROOT.resolve()
+            base = (ROOT / 'public' / 'games').resolve()
+            rel = rel_all
     elif p.startswith('/assets/'):
+        repo = ROOT.resolve()
         base = (ROOT / 'assets').resolve()
         rel = p[len('/assets/'):]
     else:
-        return None, 'path 必须以 /games/ 或 /assets/ 开头（servedPath 原样传·同网格缩略图 URL）'
+        return None, None, 'path 必须以 /games/ 或 /assets/ 开头（servedPath 原样传·同网格缩略图 URL）'
     if not rel or rel.endswith('/'):
-        return None, 'path 缺文件名'
-    root_resolved = ROOT.resolve()
+        return None, None, 'path 缺文件名'
     target = (base / rel).resolve()
     try:
         target.relative_to(base)
-        target.relative_to(root_resolved)
+        target.relative_to(repo)
     except ValueError:
-        return None, '路径越界'
-    return target.relative_to(root_resolved).as_posix(), None
+        return None, None, '路径越界'
+    return repo, target.relative_to(repo).as_posix(), None
 
 
-def _git_log_follow(repo_rel: str, limit: int = 60) -> list:
+def _git_log_follow(repo, repo_rel: str, limit: int = 60) -> list:
     """`git log --follow` 该文件的提交列表（新→旧·hash/date/message 首行）。用 ASCII unit separator
     （\\x1f）分栏——message 本身可能含空格/冒号，不能拿它们当分隔符。文件从未入库/已被 git rm → 空列表
-    （非错误——「零历史」是合法态，不是失败）。"""
+    （非错误——「零历史」是合法态，不是失败）。repo=该文件所属仓（内置=引擎仓·卡带=卡带自己的仓）。"""
     try:
         r = subprocess.run(
             ['git', 'log', '--follow', f'-{max(1, min(200, limit))}', '--format=%H\x1f%h\x1f%ad\x1f%s',
              '--date=short', '--', repo_rel],
-            cwd=ROOT, capture_output=True, encoding='utf-8', errors='replace', timeout=15)
+            cwd=str(repo), capture_output=True, encoding='utf-8', errors='replace', timeout=15)
     except Exception:
         return []
     out = (r.stdout or '').strip()
@@ -339,10 +354,10 @@ def _git_log_follow(repo_rel: str, limit: int = 60) -> list:
 
 def handle_artbrowser_history(path) -> dict:
     """GET /api/artbrowser/history?path=<servedPath>。该文件的 git 提交列表（详情栏「历史」tab）。"""
-    repo_rel, err = _served_path_to_repo_rel(path)
+    repo, repo_rel, err = _served_path_to_repo_rel(path)
     if err:
         return {'success': False, 'error': err}
-    commits = _git_log_follow(repo_rel)
+    commits = _git_log_follow(repo, repo_rel)
     return {'success': True, 'path': path, 'repoRelPath': repo_rel, 'commits': commits}
 
 
@@ -353,11 +368,11 @@ def resolve_history_blob(path, rev):
     rev = str(rev or '').strip()
     if not _REV_RE.fullmatch(rev):
         return False, f'非法版本号: {rev or "(空)"}', None
-    repo_rel, err = _served_path_to_repo_rel(path)
+    repo, repo_rel, err = _served_path_to_repo_rel(path)
     if err:
         return False, err, None
     try:
-        r = subprocess.run(['git', 'show', f'{rev}:{repo_rel}'], cwd=ROOT, capture_output=True, timeout=15)
+        r = subprocess.run(['git', 'show', f'{rev}:{repo_rel}'], cwd=str(repo), capture_output=True, timeout=15)
     except Exception as e:
         return False, f'git show 失败: {e}', None
     if r.returncode != 0 or not r.stdout:
@@ -391,7 +406,7 @@ def handle_artbrowser_restore(body: dict) -> dict:
         return res
     # 落盘已成功——追加可溯源标记（锦上添花·失败不回滚已落地的替换结果）。
     try:
-        led_f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+        led_f = art_root(slug) / 'art-ledger.json'
         ledger = json.loads(led_f.read_text('utf-8')) if led_f.is_file() else None
         if ledger:
             row = next((r for r in ledger.get('rows', []) if r.get('no') == no), None)
@@ -462,7 +477,7 @@ def handle_artbrowser_consumers(slug, no) -> dict:
         for p in _walk_json_str_paths(mf, key):
             consumers.append({'file': label, 'path': p, 'kind': 'manifest'})
     # 本地 index.json 别名（同一底层文件被另起了 id·换掉这行连带影响那个别名）。
-    idx = _read_json(ROOT / 'public' / 'games' / slug / 'art' / 'index.json')
+    idx = _read_json(art_root(slug) / 'index.json')
     served = (row.get('gen') or {}).get('servedPath')
     if served and isinstance(idx.get('assets'), list):
         for a in idx['assets']:

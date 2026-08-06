@@ -30,6 +30,7 @@
 //   缺省 scope = 所有带 `public/games/<game>/art/` 目录的游戏。
 
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
+import { artRoot } from './art-paths.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -43,7 +44,7 @@ function readJson(path, fallback) {
 
 /** 读一款游戏的 art-ledger.json（缺失/解析失败 → 空台账 + missing 标记，不抛错）。 */
 export function readLedger(root, game) {
-  const p = join(root, 'public', 'games', game, 'art', 'art-ledger.json');
+  const p = join(artRoot(root, game), 'art-ledger.json');
   if (!existsSync(p)) return { rows: [], pending: [], missing: true };
   const parsed = readJson(p, null);
   if (!parsed) return { rows: [], pending: [], missing: true, error: 'parse-error' };
@@ -143,7 +144,7 @@ export function listArtFiles(absDir, servedPrefix) {
  */
 export function discoverArtRoots(root, game, ledger) {
   const standardPrefix = `/games/${game}/art`;
-  const roots = new Map([[join(root, 'public', 'games', game, 'art'), standardPrefix]]);
+  const roots = new Map([[artRoot(root, game), standardPrefix]]); // 卡带 → library/<slug>/art（REQ-CARTART）
   const gameRe = new RegExp(`^(/[^/]+/${game.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})(/|$)`);
   for (const row of allRows(ledger)) {
     for (const sp of collectRowServedPaths(row)) {
@@ -173,13 +174,18 @@ export function blackHouseholdFiles(root, game, ledger) {
 
 // ── 发现游戏 + 单游戏/批量审计 ───────────────────────────────────────
 
-/** 有 `public/games/<game>/art/` 目录的游戏（不要求已有台账——零台账游戏正是本守卫要抓的）。 */
+/** 有 `art/` 目录的游戏：内置 `public/games/<game>/art/` + 卡带 `library/<slug>/art/`
+ * （REQ-CARTART：卡带美术归位到 library 后，不并进来会让全部卡带台账变成"不存在"而漏审）。
+ * 不要求已有台账——零台账游戏正是本守卫要抓的。 */
 export function discoverGames(root) {
-  const dir = join(root, 'public', 'games');
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir)
-    .filter((g) => { try { return statSync(join(dir, g, 'art')).isDirectory(); } catch { return false; } })
-    .sort();
+  const found = new Set();
+  for (const [dir, sub] of [[join(root, 'public', 'games'), 'art'], [join(root, 'library'), 'art']]) {
+    if (!existsSync(dir)) continue;
+    for (const g of readdirSync(dir)) {
+      try { if (statSync(join(dir, g, sub)).isDirectory()) found.add(g); } catch { /* 非目录/无权限 → 跳过 */ }
+    }
+  }
+  return [...found].sort();
 }
 
 export function auditGame(root, game) {

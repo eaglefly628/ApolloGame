@@ -143,20 +143,42 @@ class APIHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _serve_public_games(self, path: str) -> None:
-        """GET /games/<slug>/... → 只读伺服 public/games/**（REQ-WORKSHOP A：壳的素材缩略图/台账
-        servedPath 同源可显）。路径穿越防护同 _serve_workshop。"""
+        """GET /games/<slug>/... → 只读伺服游戏资产（REQ-WORKSHOP A：壳的素材缩略图/台账
+        servedPath 同源可显）。路径穿越防护同 _serve_workshop。
+
+        **卡带回退（REQ-CARTART）**：`/games/<slug>/art/**` 对创作台卡带解析到 `library/<slug>/art/**`
+        （见 paths.art_root）——URL 契约不变、存储归位到卡带自己那一屋，引擎侧零改动。
+        非 art 子路径（manifest/cover 等）与内置游戏一律走 public/，行为一字不变。
+        两根各自独立做穿越校验：先在 library 根内解析+校验，落空再回 public 根同样校验。"""
+        rel = path[len('/games/'):]
+        slug = rel.split('/', 1)[0]
+        # 卡带 art 优先根（仅当 slug 合法且确是卡带·且请求的正是 art/ 子树）
+        if _valid_slug(slug) and rel.startswith(f'{slug}/art/'):
+            lib_base = (LIBRARY_DIR / slug / 'art').resolve()
+            lib_target = (lib_base / rel[len(f'{slug}/art/'):]).resolve()
+            try:
+                lib_target.relative_to(lib_base)  # 穿越防护（与 public 根同规格）
+            except ValueError:
+                self.send_response(403); self.end_headers(); return
+            if lib_target.is_file():
+                self._send_file(lib_target, self._asset_ctype(lib_target))
+                return
         base = (ROOT / 'public' / 'games').resolve()
-        target = (base / path[len('/games/'):]).resolve()
+        target = (base / rel).resolve()
         try:
             target.relative_to(base)
         except ValueError:
             self.send_response(403); self.end_headers(); return
         if not target.is_file():
             self.send_response(404); self.end_headers(); return
-        ctype = {'.json': 'application/json; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp',
-                 '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml',
-                 '.glb': 'model/gltf-binary'}.get(target.suffix.lower(), 'application/octet-stream')
-        self._send_file(target, ctype)
+        self._send_file(target, self._asset_ctype(target))
+
+    @staticmethod
+    def _asset_ctype(target) -> str:
+        """按扩展名给游戏资产的 content-type（两个根共用·与 vite serveLiveGameAssets 表同源）。"""
+        return {'.json': 'application/json; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp',
+                '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml',
+                '.glb': 'model/gltf-binary'}.get(target.suffix.lower(), 'application/octet-stream')
 
     def _serve_assets(self, path: str) -> None:
         """GET /assets/... → 只读伺服 assets/**（素材库屏共享免费资产库 FreeArtLib 的 index.json +
@@ -286,8 +308,10 @@ class APIHandler(BaseHTTPRequestHandler):
 
     def _serve_export(self, slug: str) -> None:
         """GET /api/library/<slug>/export → 下载包 zip（owner 2026-07-11「发布=一个下载包」）。
-        内容：卡带本体（manifest/meta/design）+ 游戏资产侧（public/games/<slug>·**排除 gen/mock 预览物**
-        与 pipeline.json 台账）。内存 zip·不落盘。"""
+        内容：卡带本体（manifest/meta/design·**REQ-CARTART 后美术 art/ 也在卡带本体里**，随 lib 树自动进包，
+        归档路径由 `<slug>/assets/art/…` 变为 `<slug>/art/…`）+ 游戏资产侧 public/games/<slug>
+        （内置游戏走这条；卡带这边通常只剩 pipeline.json/cover）。**排除 .git/snapshots/gen-mock 预览物**。
+        内存 zip·不落盘。"""
         if not _valid_slug(slug):
             self._send_json(400, {'success': False, 'error': f'非法 slug: {slug}'}); return
         lib = LIBRARY_DIR / slug

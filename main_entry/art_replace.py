@@ -3,7 +3,7 @@ import json
 import re
 
 from .library import _art_replace_cli
-from .paths import _valid_slug
+from .paths import _valid_slug, art_root
 from .sysutil import ROOT, c
 from .t2_replace import GEN_PROVIDER_RE, _put_manifest_anywhere
 
@@ -30,7 +30,7 @@ def handle_art_ledger(slug: str) -> dict:
     """GET /api/art/ledger?slug=<slug>。读该游戏台账（=替换列表·同一份文件两视角）。"""
     if not _valid_slug(slug):
         return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
-    f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    f = art_root(slug) / 'art-ledger.json'
     if not f.is_file():
         return {'success': False, 'error': '无台账（先 /api/art/derive）'}
     try:

@@ -1,6 +1,9 @@
 # 卡带美术存储归位（owner 2026-08-06 令·方案 b「口径彻底统一」）
 
-> 提出：PST · 待 Lead 裁决与派工。触发：owner 问「新建卡带时它怎么知道放仓库哪儿」→ 查出卡带被劈成两半。
+> 提出：PST · 触发：owner 问「新建卡带时它怎么知道放仓库哪儿」→ 查出卡带被劈成两半。
+> **状态：b-full 已全量落地（2026-08-06·owner 明示豁免 PST 跨 `scripts/` 一次）**——8 项全做完，
+> 冒烟 `scripts/cartridge-art-smoke.py` 18 例绿 + 全量门禁绿。**⚠ 越界记债：`scripts/art-replace.mjs`
+> 与 `scripts/art-ledger-guard.mjs` 属 Lead 独占域，本次经 owner 单次豁免由 PST 改动，待 Lead 追认。**
 
 ## 一、现状：卡带被劈成两半（缺陷本体）
 
@@ -69,8 +72,27 @@
 - 验收：卡带换图后**刷新即见新图**（三宿主各验一次：vite dev / python server / 打包产物）+
   卡带 zip 自带美术 + 守卫对卡带零黑户 + 引擎仓 `git status` 换图后**保持干净**（本单的目的）。
 
-## 六、待 Lead 裁
+## 六、如建（2026-08-06 落地实况）
 
-① b-lite 还是 b-full（PST 荐 b-full·owner 已选「彻底统一」= b-full 语义）；
-② ⑥⑦ 派工给谁（Lead 自改 / 指派 Opus 照本图纸施工·图纸已写死到函数名行号）；
-③ ② 项 `vite.config.ts` 归属（构建配置·PST 可否代改其与 server.py 孪生的那段）。
+owner 选 b-full 并豁免跨域，8 项全部落地：
+
+- **单一真相双实现**：`main_entry/paths.py::art_root`（Python）+ `scripts/art-paths.mjs::artRoot`（JS）。
+  两边规则必须一字不差——**冒烟 ② 直接跨语言比对两者对同一 slug 的答案**，这是 split-brain 的机械防线。
+- **伺服双宿主**：`server.py::_serve_public_games` 卡带 art 优先根（两根各自独立做穿越校验）+
+  `vite.config.ts::serveLiveGameAssets` 同规格镜像。content-type 表抽 `_asset_ctype` 两根共用。
+- **写盘落点**：`t2_replace.py`/`art_replace.py`/`agent_chat.py`/`artbrowser.py` 全改走 `art_root`；
+  `art-replace.mjs` 的 `ledgerFile`/`localIndexFile`/`genAbs`/备份改走 `artRoot`。
+- **历史归位**：`_served_path_to_repo_rel` 改返回 **(仓库根, 仓内相对路径)**——卡带去卡带自己的 git 仓
+  查 `git log --follow` / `git show`（美术随 `_version_save` 的 `add -A` 自动入卡带仓）。
+- **发现口径**：guard `discoverGames` + artbrowser `_discover_game_slugs` 双根枚举（否则卡带台账全成黑户漏审）。
+- **导出包**：`_serve_export` 无需改代码——art 已在卡带本体内，随 lib 树自动进包（归档路径由
+  `<slug>/assets/art/…` 变为 `<slug>/art/…`）。
+- **存量迁移**：`scripts/cartridge-art-migrate.py`（默认 dry-run·`--apply` 真搬·幂等·
+  跟踪过的只 `git rm --cached` 不代人提交）。
+
+**验收**：`scripts/cartridge-art-smoke.py` 18 例——解析分流 / 双语言一致 / 伺服三态（卡带出 library·
+内置回归 public·穿越 403·缺文件 404）/ 上传落卡带屋且 public 侧零文件 / **引擎仓 git status 保持干净**
+（本单目的）/ 台账端点 / 迁移 dry-run+apply+幂等 / 守卫发现卡带。
+
+**未纳入（明示留尾·不占槽）**：`pipeline.json`（立项卡）仍落 `public/games/<slug>/`——它不在 `art/` 下、
+消费方是生产板另一条线，本单只做「美术归位」不顺手扩面。要做时单开小条。

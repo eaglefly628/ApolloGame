@@ -15,6 +15,18 @@ GAME_RE = re.compile(r'game-?[a-z0-9]+')
 LIBRARY_DIR = ROOT / 'library'
 _SLUG_RE = re.compile(r'^[a-z0-9][a-z0-9-]*$')
 
+def art_root(slug: str) -> Path:
+    """该游戏美术资料库的**磁盘根**（单一真相·REQ-CARTART 2026-08-06）：
+      · 创作台卡带（`library/<slug>/` 存在）→ `library/<slug>/art`——随卡带自己的 git 仓版本化
+        （`_version_save` 本就 `add -A` 整个卡带目录），**不入引擎仓**，故换图不再与 mainbranch 撞冲突；
+      · 内置游戏 → `public/games/<slug>/art`——tracked 出货内容，照旧。
+    **URL 契约 `/games/<slug>/art/**` 两者共用**：引擎侧（game-art-load.ts / manifest-game.ts）只认
+    URL，存储在哪是伺服细节（server.py `_serve_public_games` + vite `serveLiveGameAssets` 双宿主回退）。
+    故台账/索引里的 servedPath **一字不用改**，本迁移零数据格式变更。JS 侧同源实现见 `scripts/art-paths.mjs`。"""
+    if (LIBRARY_DIR / slug).is_dir():
+        return LIBRARY_DIR / slug / 'art'
+    return ROOT / 'public' / 'games' / slug / 'art'
+
 def _valid_slug(slug) -> bool:
     return isinstance(slug, str) and 0 < len(slug) <= 64 and '..' not in slug and _SLUG_RE.match(slug) is not None
 

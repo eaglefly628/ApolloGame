@@ -33,6 +33,21 @@ function serveLiveGameAssets() {
         let rel: string;
         try { rel = decodeURIComponent(url.slice(prefix.length)); } catch { return next(); }
         const base = roots[prefix];
+        // 卡带 art 回退（REQ-CARTART·与 server.py `_serve_public_games` 刻意孪生·规则见 scripts/art-paths.mjs）：
+        // `/games/<slug>/art/**` 若该 slug 是创作台卡带 → 解析到 library/<slug>/art/**（不入引擎仓）。
+        // 命中即出，落空照旧回退 public 根 —— 内置游戏与非 art 子路径行为一字不变。
+        const cart = prefix === '/games/' && /^([a-z0-9][a-z0-9-]*)\/art\//.exec(rel);
+        if (cart) {
+          const libBase = resolve(__dirname, 'library', cart[1], 'art');
+          const libTarget = resolve(libBase, rel.slice(`${cart[1]}/art/`.length));
+          if (libTarget !== libBase && !libTarget.startsWith(libBase + sep)) { res.statusCode = 403; res.end('forbidden'); return; }
+          if (existsSync(libTarget) && statSync(libTarget).isFile()) {
+            res.setHeader('Content-Type', ASSET_CT[extname(libTarget).toLowerCase()] || 'application/octet-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            createReadStream(libTarget).pipe(res);
+            return;
+          }
+        }
         const target = resolve(base, rel);
         if (target !== base && !target.startsWith(base + sep)) { res.statusCode = 403; res.end('forbidden'); return; } // 防路径穿越
         if (!existsSync(target) || !statSync(target).isFile()) return next(); // 非文件 → 交回 Vite（可能是应用路由）

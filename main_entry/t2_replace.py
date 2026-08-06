@@ -6,7 +6,7 @@ import re
 
 from .library import _art_replace_cli
 from .library_api import library_put_manifest
-from .paths import LIBRARY_DIR, _dedup_slug, _game_dir, _run_manifest_check, _valid_slug, _write_json
+from .paths import LIBRARY_DIR, _dedup_slug, _game_dir, _run_manifest_check, _valid_slug, _write_json, art_root
 from .pipeline_board import _pipeline_cli
 from .sysutil import ROOT, c
 
@@ -52,7 +52,7 @@ def handle_art_style(body: dict) -> dict:
     slug = str(body.get('slug', '')).strip()
     if not _valid_slug(slug):
         return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
-    f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    f = art_root(slug) / 'art-ledger.json'
     if not f.is_file():
         return {'success': False, 'error': '无台账（先初始化该游戏的美术库）'}
     try:
@@ -98,7 +98,7 @@ def handle_art_approve(body: dict) -> dict:
         return {'success': False, 'error': 'by ≤40 字'}
     if not _valid_slug(slug):
         return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
-    f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    f = art_root(slug) / 'art-ledger.json'
     if not f.is_file():
         return {'success': False, 'error': '无台账'}
     ledger = json.loads(f.read_text('utf-8'))
@@ -139,7 +139,7 @@ def handle_art_regenerate(body: dict) -> dict:
     # （写回=skinKey 别名登记本地 index·蓝图零改动）。同一端点同一 UI，差异收在这里。
     has_manifest = (LIBRARY_DIR / slug / 'manifest.json').is_file() or \
         (ROOT / 'public' / 'games' / slug / 'manifest.json').is_file()  # 内置数据游戏也走 manifest 线
-    is_game = (not has_manifest) and (ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json').is_file()
+    is_game = (not has_manifest) and (art_root(slug) / 'art-ledger.json').is_file()
     cmdname = 'fill' if is_game else 'regen'
     args = [cmdname, slug, no, pack]
     if isinstance(query, str) and query.strip():
@@ -197,12 +197,12 @@ def _backup_orig(slug: str, no: str, orig_entry, gen):
     rel = served[len(prefix):]
     if '..' in rel or rel.startswith('/'):
         return None
-    src = ROOT / 'public' / 'games' / slug / 'art' / rel
+    src = art_root(slug) / rel
     if not src.is_file():
         return None
     ext = (src.suffix.lstrip('.') or 'png').lower()
     bak_rel = f'orig/{no}.{ext}'
-    bak_abs = ROOT / 'public' / 'games' / slug / 'art' / bak_rel
+    bak_abs = art_root(slug) / bak_rel
     bak_abs.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(src, bak_abs)
     return f'{prefix}{bak_rel}'
@@ -234,15 +234,15 @@ def handle_art_upload(body: dict) -> dict:
     if not magic_ok:
         return {'success': False, 'error': f'文件内容与扩展名 .{ext} 不符（magic bytes 校验失败）'}
     rel = f'gen/{no}-up.{ext}'
-    abs_path = ROOT / 'public' / 'games' / slug / 'art' / rel
-    idx_f = ROOT / 'public' / 'games' / slug / 'art' / 'index.json'
+    abs_path = art_root(slug) / rel
+    idx_f = art_root(slug) / 'index.json'
     idx = json.loads(idx_f.read_text('utf-8')) if idx_f.is_file() else {'version': 1, 'assets': []}
     if not isinstance(idx.get('assets'), list):
         idx['assets'] = []
     local_id = f'gen/{no}-up'
     # 编译期游戏（无 manifest·有台账）：写回=skinKey 别名登记 + 台账行直更（无 manifest 可钉）。
     is_game = not (LIBRARY_DIR / slug / 'manifest.json').is_file()
-    led_f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    led_f = art_root(slug) / 'art-ledger.json'
     ledger = row = skin = None
     # ⚠ 备份必须在写新文件**之前**：上传目标 gen/{no}-up 可能正是原图路径·先写就把原图冲掉了（owner 2026-07-27 报 restore 得到新图）。
     if is_game:
@@ -316,7 +316,7 @@ def handle_art_restore(body: dict) -> dict:
         return {'success': False, 'error': f'非法 slug: {slug or "(空)"}'}
     if not _ART_NO_RE.fullmatch(no):
         return {'success': False, 'error': f'非法编号: {no or "(空)"}'}
-    led_f = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    led_f = art_root(slug) / 'art-ledger.json'
     if not led_f.is_file():
         return {'success': False, 'error': '无台账'}
     if (LIBRARY_DIR / slug / 'manifest.json').is_file():
@@ -326,7 +326,7 @@ def handle_art_restore(body: dict) -> dict:
     if row is None:
         return {'success': False, 'error': f'台账无 {no}'}
     skin = row.get('skinKey')
-    idx_f = ROOT / 'public' / 'games' / slug / 'art' / 'index.json'
+    idx_f = art_root(slug) / 'index.json'
     idx = json.loads(idx_f.read_text('utf-8')) if idx_f.is_file() else {'version': 1, 'assets': []}
     if not isinstance(idx.get('assets'), list):
         idx['assets'] = []
@@ -339,7 +339,7 @@ def handle_art_restore(body: dict) -> dict:
         oe = orig.get('indexEntry')
         bak = orig.get('backupPath')
         prefix = f'/games/{slug}/art/'
-        bak_abs = (ROOT / 'public' / 'games' / slug / 'art' / bak[len(prefix):]) if isinstance(bak, str) and bak.startswith(prefix) and '..' not in bak else None
+        bak_abs = (art_root(slug) / bak[len(prefix):]) if isinstance(bak, str) and bak.startswith(prefix) and '..' not in bak else None
         if bak_abs is not None and bak_abs.is_file() and skin:  # 有原图备份 → 皮肤别名指向备份（文件永不被覆盖·原图精确复原·工作台预览也回来）
             e = json.loads(json.dumps(oe)) if isinstance(oe, dict) else {'id': skin, 'type': 'texture', 'category': 'ai-gen', 'tags': ['orig']}
             e['id'] = skin; e['path'] = bak; e['status'] = 'filled'
@@ -386,11 +386,11 @@ def handle_art_reskin(body: dict) -> dict:
     meta['reskinOf'] = slug
     _write_json(dst / 'meta.json', meta)
     # 确保源有台账（提供 slot 定义），复制给新卡带
-    src_led = ROOT / 'public' / 'games' / slug / 'art' / 'art-ledger.json'
+    src_led = art_root(slug) / 'art-ledger.json'
     if not src_led.is_file():
         _art_replace_cli(['derive', slug])
     if src_led.is_file():
-        dst_led = ROOT / 'public' / 'games' / new_slug / 'art' / 'art-ledger.json'
+        dst_led = art_root(new_slug) / 'art-ledger.json'
         dst_led.parent.mkdir(parents=True, exist_ok=True)
         dst_led.write_bytes(src_led.read_bytes())
     args = ['reskin', new_slug, pack] + (['--mock'] if mock else [])

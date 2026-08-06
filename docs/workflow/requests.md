@@ -46,7 +46,10 @@
 
 <!-- REQ-STATUSSET-资源见底置状态位（game107 带出）→ **owner 2026-08-05 令废除出池**：107 尚未开工·无现役游戏被阻塞·不该占引擎硬槽。**spec 原文完整降级存 `docs/design/game107/requests.md`**（不占槽），107 真开工时先按核心规则重核「能否用现有闭集重组」再决定升回。 -->
 
-### REQ-CARTART-卡带美术存储归位 · 卡带被劈两半（玩法在仓外·美术在仓内）· [2026-08-06] · PST 提 · owner 选方案 b「口径彻底统一」 → **图纸=唯一真相 `docs/design/cartridge-art-storage-2026-08.md`（改动清单已写死到函数名/行号）** · status: **open（待 Lead 裁 + 派工）** · 优先级: P1 · 类型: 存储归位（伺服 + 写盘落点·**零引擎改动**）
+### REQ-CARTART-卡带美术存储归位 · 卡带被劈两半（玩法在仓外·美术在仓内）· [2026-08-06] · PST 提 · owner 选方案 b「口径彻底统一」 → **图纸=唯一真相 `docs/design/cartridge-art-storage-2026-08.md`（含如建实况）** · status: **b-full 已全量落地·待 Lead 追认越界** · 优先级: P1 · 类型: 存储归位（伺服 + 写盘落点·**零引擎改动**）
+> **⚠ 越界记债（本条的唯一待办）**：`scripts/art-replace.mjs`（写盘落点）与 `scripts/art-ledger-guard.mjs`（发现口径 + 台账根）属 **Lead 独占域**，**owner 2026-08-06 明示「豁免」授权 PST 单次跨域**，已由 PST 改动并跑全量门禁。**请 Lead 追认这两处**；不认可则按图纸原样回退这两文件即可（其余 6 项全在 PST 域内、与之解耦）。
+> **已落地**：单一真相双实现 `paths.py::art_root` + `art-paths.mjs::artRoot`（**冒烟跨语言比对两者答案**=split-brain 机械防线）· 伺服双宿主回退（server.py + vite·各自独立穿越校验）· 写盘落点全改 · 历史改查卡带自己的 git 仓（`_served_path_to_repo_rel` 返回 (仓库根, 仓内相对路径)）· 发现口径双根枚举 · 存量迁移脚本（dry-run 缺省·`git rm --cached` 不代人提交）。冒烟 `scripts/cartridge-art-smoke.py` **18 例绿**（含「引擎仓 git status 保持干净」这条本单目的的直接断言）。
+> **留尾不占槽**：`pipeline.json` 仍落 `public/games/<slug>/`（不在 art/ 下·消费方是生产板另一条线·本单不顺手扩面）。
 > **缺陷**：创作台建卡带落 gitignored 的 `library/<slug>/`，但台账/立项卡/生成真图落**跟踪区** `public/games/<slug>/`。故卡带美术照样被 mainbranch 推挤出冲突，而 `handle_art_sync`（一键提交推送）拒卡带的理由「不入引擎仓」**只对 manifest 成立** → 卡带美术冲突无解。内置游戏美术留仓内是对的，本单不动。
 > **关键发现（把本单从引擎面降成局部迁移）**：引擎拿的是 **URL 不是磁盘路径**（`game-art-load.ts::gameArtIndexUrl` + `manifest-game.ts:47`·index.json 的 path 以 baseUrl='' 原样当 URL 消费）→ URL 契约 `/games/<slug>/art/**` 不变则 `src/{assets,services,engine,renderer}` **一行不改·台账文件内容也不用改写**。
 > **PST 荐 b-full**（美术挪进 `library/<slug>/art/`）：版本历史免费到手（`_version_save` 本就 `add -A` 整个卡带目录）· 打包更简单 · sync 拒卡带的理由从此真正成立。备选 b-lite（.gitignore 反白名单·5 行零代码）代价=卡带美术零历史 + 漏写内置游戏即静默不入库。
