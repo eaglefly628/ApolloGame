@@ -53,4 +53,24 @@ describe('REQ-DIALOGUE M3 · 伴侣在场件 presence', () => {
     expect(t.has('dialog')).toBe(false); // 无 line → 不拼气泡
     expect(validateLayoutNode(node)).toEqual([]);
   });
+
+  // ── 回归（Lead 对抗性验收 2026-08-06 实测·owner 授权 Lead 直修）─────────────────
+  // 反应表的 key 是**游戏数据里的任意串**，直接 `table[event]` 会沿原型链取到内建成员。
+  it('event 为原型链保留名 → 安全返回 undefined（旧实现 constructor 会直接抛错崩掉）', () => {
+    for (const e of ['constructor', 'toString', 'hasOwnProperty', 'valueOf']) {
+      expect(() => pickReaction(SAMPLE_REACTIONS, e, 1)).not.toThrow();
+      expect(pickReaction(SAMPLE_REACTIONS, e, 1)).toBeUndefined();
+    }
+  });
+
+  // seed 由游戏给（分数/tick/RandomSeed）；游戏侧一旦算出 NaN，旧实现返回 line:undefined，
+  // 而签名承诺 string → 气泡渲染 "undefined" / 消费方 .length 崩。
+  it('脏种子（NaN/Infinity）→ 仍返回合法 string，且保持确定性', () => {
+    for (const bad of [NaN, Infinity, -Infinity]) {
+      const r = pickReaction(SAMPLE_REACTIONS, 'win', bad);
+      expect(typeof r!.line).toBe('string');
+      expect(r!.line.length).toBeGreaterThan(0);
+      expect(r).toEqual(pickReaction(SAMPLE_REACTIONS, 'win', bad)); // 脏值也得确定性
+    }
+  });
 });

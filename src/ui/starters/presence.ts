@@ -21,9 +21,16 @@ export type ReactionTable = Record<string, ReactionEntry[]>;
  * 再从其 lines 里选一句。seed 由游戏给（世界 RandomSeed / tick 计数 / 分数…任意确定值）。event 无候选 → undefined。
  */
 export function pickReaction(table: ReactionTable, event: string, seed: number): { emotion: string; line: string } | undefined {
-  const entries = table[event];
-  if (!entries || entries.length === 0) return undefined;
-  const s = Math.abs(Math.trunc(seed));
+  // 只认**自有属性**：`event` 是游戏数据里的任意串，直接 `table[event]` 会沿原型链取到
+  // `constructor`/`toString` 这些内建成员——实测 `event:'constructor'` 会拿到 Object 构造函数、
+  // 随后 `entries.reduce` **直接抛错崩掉**（Lead 验收 2026-08-06 实测）。同 manifest `__proto__`
+  // 那一类（数据从游戏层击穿宿主假设），闭集数据入口一律先 hasOwn。
+  const entries = Object.prototype.hasOwnProperty.call(table, event) ? table[event] : undefined;
+  if (!Array.isArray(entries) || entries.length === 0) return undefined;
+  // 脏种子兜底：seed 由游戏给（分数/tick/RandomSeed），一旦游戏侧算出 NaN/Infinity，
+  // 下面的取模全变 NaN → 返回 `line: undefined`，而签名承诺的是 string（气泡渲染 "undefined"
+  // 或消费方 `line.length` 崩）。非有限值一律折 0 = 取第一条·仍确定性（Lead 验收实测）。
+  const s = Number.isFinite(seed) ? Math.abs(Math.trunc(seed)) : 0;
   const total = entries.reduce((sum, e) => sum + Math.max(1, e.weight ?? 1), 0);
   let r = s % total;
   let chosen = entries[0]!;

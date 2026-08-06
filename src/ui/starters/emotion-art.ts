@@ -15,10 +15,15 @@ export type ArtFallback = 'exact' | 'neutral' | 'none';
 
 /** 情绪→立绘资产 key（分级降级·确定性·绝不空白/报错）。返回 assetKey（none 时 undefined）+ 命中层级（可上报/调试）。 */
 export function resolveEmotionArt(table: EmotionArtTable, characterId: string, emotion?: string): { key?: string; fallback: ArtFallback } {
-  const row = table[characterId];
+  // 只认**自有属性**（characterId / emotion 都是游戏数据里的任意串）：直接下标会沿原型链取到
+  // `constructor`/`toString`/`__proto__` 等内建成员——实测 `emotion:'constructor'` 会返回
+  // `fallback:'exact'` 且 key 是**函数**（签名承诺 string），喂给游戏 resolveAsset 直接坏
+  // （Lead 验收 2026-08-06 实测）。同 manifest `__proto__` 那一类，闭集数据入口一律先 hasOwn。
+  const own = (o: Record<string, unknown>, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
+  const row = own(table, characterId) ? table[characterId] : undefined;
   if (!row) return { fallback: 'none' };                                  // 角色无表 → 占位
-  if (emotion && row[emotion]) return { key: row[emotion], fallback: 'exact' }; // 命中指定情绪
-  if (row['neutral']) return { key: row['neutral'], fallback: 'neutral' };      // 回退中性锚
+  if (emotion && own(row, emotion)) return { key: row[emotion], fallback: 'exact' }; // 命中指定情绪
+  if (own(row, 'neutral')) return { key: row['neutral'], fallback: 'neutral' };      // 回退中性锚
   return { fallback: 'none' };                                            // 连中性都缺 → 占位
 }
 
@@ -36,7 +41,8 @@ export function emotionArtResolver(
   return (emotion) => {
     const { key } = resolveEmotionArt(table, characterId, emotion);
     if (key) { const url = resolveAsset(key); if (url) return url; }      // ① 情绪 key 有图
-    const neutral = table[characterId]?.['neutral'];                     // ② 缺图 → 退中性锚的图（art 级降级）
+    const rowN = Object.prototype.hasOwnProperty.call(table, characterId) ? table[characterId] : undefined;
+    const neutral = rowN && Object.prototype.hasOwnProperty.call(rowN, 'neutral') ? rowN['neutral'] : undefined; // ② 缺图 → 退中性锚（同样只认自有属性）
     if (neutral && neutral !== key) { const url = resolveAsset(neutral); if (url) return url; }
     return undefined;                                                    // 两级皆缺 → 占位（不空白）
   };

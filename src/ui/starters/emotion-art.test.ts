@@ -44,4 +44,22 @@ describe('REQ-DIALOGUE M2 · 立绘/表情链', () => {
     expect((por2.props as { art?: string }).art).toBe('data:img/neu');
     expect(validateLayoutNode(happy)).toEqual([]);
   });
+
+  // ── 回归（Lead 对抗性验收 2026-08-06 实测·owner 授权 Lead 直修）─────────────────
+  // characterId / emotion 都是游戏数据里的任意串；直接下标会沿原型链取到内建成员——
+  // 旧实现 emotion:'constructor' 返回 fallback:'exact' 且 key 是**函数**（签名承诺 string）。
+  it('emotion 为原型链保留名 → 不误判命中，走正常降级', () => {
+    for (const e of ['constructor', 'toString', 'hasOwnProperty', '__proto__']) {
+      const r = resolveEmotionArt(SAMPLE_EMOTION_ART, '林清越', e);
+      expect(r.fallback).toBe('neutral');            // 该降级到中性锚，而不是假装命中
+      expect(typeof r.key).toBe('string');           // 绝不能是函数/对象
+      expect(r.key).toBe('lin/neutral');
+    }
+  });
+
+  it('characterId 为原型链保留名 → 判为无表（占位），不误取内建成员', () => {
+    const r = resolveEmotionArt(SAMPLE_EMOTION_ART, 'constructor', 'happy');
+    expect(r.fallback).toBe('none');
+    expect(r.key).toBeUndefined();
+  });
 });
