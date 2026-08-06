@@ -64,7 +64,13 @@
 > **验收**：game102 N=8 立方每色真材质渲染正确 + `readStats().drawCalls` 随「不同材质数」增长（5 色 ≈ 个位数批·非几百）+ 真浏览器截图（真金属金/玻璃水/发光火不丢失·旋转/Pivot3D 正常）。落地后 game102 去掉 `richMat` 尺寸限制、所有关都用真材质。
 > **边界**：`src/renderer/**`（`three-renderer.ts` PBR mesh 路 + `batches`/`InstancedBatches`）= P3D 独占域；Lead 评审。render-only·不进 sim/hash。
 
-## REQ-3D-OCCLUSION-CULL · 被遮挡实体/体素的遮挡剔除（interior/背面不进 draw）· [2026-07-27] · owner 提（game102 大立方）→ P3D · status: open · 优先级: P2（owner 提·game102 已游戏层手工剔内部·引擎级通用剔除仍缺） · 类型: 渲染性能（遮挡剔除·render-only）
+## REQ-3D-OCCLUSION-CULL · 被遮挡实体/体素的遮挡剔除（interior/背面不进 draw）· [2026-07-27] · owner 提（game102 大立方）→ P3D · status: **wontfix / 低优（P3D 评判 2026-08-05·本条即「先评判该不该做」·下方裁词；有实证卡顿再开）** · 优先级: P3 · 类型: 渲染性能（遮挡剔除·render-only）
+> **★ P3D 评判（2026-08-05·CORE RULE·警惕 YAGNI/过度设计）= 暂不做**：
+> - **廉价路已被 three 默认覆盖**：非实例网格 three 默认**视锥剔除**（`frustumCulled` 缺省 true）；不透明材质 `side:FrontSide` → GPU **背面剔除**自动。这两块无需自建。
+> - **interior 体素遮挡属数据层·非渲染器职责**：正解 = **只建暴露体素**（空邻居才建实体·= Minecraft 面剔/greedy meshing 的数据层做法）——game102 `voxel-proto.ts exposed()` 已这么做（业界标准）。配已落地的 **voxelTex + PBR 实例化**，暴露壳本就 ~几 draw call。引擎再加遮挡查询是重复解同一问题。
+> - **引擎级 Hi-Z / 硬件遮挡查询 = 复杂 + YAGNI**：当前量级（数百~数千实例已合成 1 draw call·GPU readback 延迟少有回报）。实例批**故意** `frustumCulled=false`（防散布整批误剔·W1-A）·per-instance 视锥剔除要每帧重算可见实例 + 改写 instanceMatrix，成本高、批多在屏内、收益低。
+> - **等价手写法（若某场景真需要）**：数据层只建可见/暴露实体（game102 先例）；或超大散布场景游戏层按区块 LOD/隐藏远块。
+> **重开条件**：出现「大量被遮挡几何**实测**卡顿、且数据层剔不掉」的真场景（如 game-z 盒庭密堆有帧时实证）→ 再排期评估 per-instance 视锥剔除。**若第二个游戏也要「只建暴露体素」→ 下沉一个共享 `surfaceVoxels()` 数据助手**（数据层·非渲染器遮挡）。Lead 复核裁词。
 > **缺口**：`three-renderer` 现无遮挡剔除（grep 无 occlusion/cull 相关；仅 W1-A `frustumCulled=false` 防散布整批误剔）。大体素立方**内部体素**被外壳完全遮挡、**背向相机的面/体**也不可见，全都仍进 draw/instance。
 > **现状缓解（游戏层·非引擎）**：game102 `voxel-proto.ts` 只为**暴露格**（`exposed()` 有空邻居）建实体、剥层时 `reveal` 才补渲内层 → 内部体素本就不进场景。**这是游戏层手工遮挡**·非引擎通用能力·其它 3D 场景（game-z 盒庭/密堆场景）无此优化。
 > **要什么（P3D 主理·技术路 P3D 定·可缓做）**：评估引擎级遮挡剔除的性价比与实现路——① 廉价路=背面/视锥剔除已由 three 默认覆盖多少；② 密堆体素/盒庭的 Hi-Z 或硬件遮挡查询是否值得（复杂·可能 YAGNI）。**先评判该不该做**（owner「有没有·没有提个需求」）：若 game102 游戏层手工剔除 + REQ-3D-PBR-INSTANCING 已够，则本条可标低优/wontfix（附等价手写法）；若 game-z 类场景有实证卡顿再排期。
