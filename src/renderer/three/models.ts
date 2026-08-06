@@ -16,6 +16,15 @@ import { disposeObject } from './geometry.js';
 interface Tpl { scene: THREE.Object3D; clips: THREE.AnimationClip[]; } // 模板：场景图 + glTF 动画
 interface Anim { mixer: THREE.AnimationMixer; clips: THREE.AnimationClip[]; clip?: string; action?: THREE.AnimationAction; }
 
+// 真正在播动画的模型数（RENDERHYG fix②）：有 clip 但 action 未播 / 已 clampWhenFinished 停 → **不算**——
+// 修「带 clip 的静态模型令 `animLive>0` 永久失效脏标跳渲 + 每帧刷阴影」。`isRunning()` 精确：循环恒 true
+// （一直算 live·不会冻结正在播的）·一次性 clip 播完 paused → false（脏标可歇）。纯函数（无 GL·可单测）。
+export function countRunningAnims(anims: Iterable<{ action?: { isRunning(): boolean } }>): number {
+  let n = 0;
+  for (const an of anims) if (an.action?.isRunning()) n++;
+  return n;
+}
+
 export class ModelPool {
   private gltf?: GLTFLoader; // 懒建
   private readonly instances = new Map<string, THREE.Object3D>(); // 每实体已放置的实例（template 的 clone）
@@ -84,7 +93,7 @@ export class ModelPool {
     const dt = this.lastMs ? Math.min(0.1, (nowMs - this.lastMs) / 1000) : 0;
     this.lastMs = nowMs;
     for (const [, an] of this.anims) an.mixer.update(dt);
-    return this.anims.size;
+    return countRunningAnims(this.anims.values()); // 只计**真正在播**的（RENDERHYG fix②）·非 anims.size
   }
 
   // 整体染色（每帧·tint 变即反映）：把实例自有材质的 color 设成 hex。

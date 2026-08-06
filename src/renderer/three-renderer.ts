@@ -645,7 +645,7 @@ export class ThreeRenderer implements RendererBackend {
   // 真 HDRI 环境贴图（REQ-3D ⑤）：从 AssetManager 取 .hdr 字节（equirect）→ RGBELoader.parse → PMREM → 环境贴图。
   // 字节未就绪 → null（本帧回退程序化·就绪后自动切）。解析失败容错回退（不崩画面）。按 key 缓存·变才重建。
   private hdriEnv(key: string): THREE.Texture | null {
-    if (this.hdriKey === key && this.hdriTex) return this.hdriTex;
+    if (this.hdriKey === key) return this.hdriTex; // 此 key 已处理（成功=tex·**失败=null 也直接回**·别每帧重 parse 坏图·RENDERHYG 尾）
     const res = this.assets?.get(key);
     if (!res || !isModelHandle(res.handle)) return null; // .hdr 以字节资产(ArrayBuffer)登记·未就绪则回退
     try {
@@ -821,6 +821,7 @@ export class ThreeRenderer implements RendererBackend {
     tex.repeat.set(rep, rep);
     tex.offset.set(ox, oy);
     tex.needsUpdate = true;
+    tex.userData['shared'] = true; // 共享缓存标记（RENDERHYG fix①）：disposeMeshMat 见此标不释放·防销毁一网格连累其他共用者
     this.texCache.set(ck, tex);
     return tex;
   }

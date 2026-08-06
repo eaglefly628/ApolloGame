@@ -24,7 +24,10 @@ export interface RenderStats {
 export function hashPoses(poses: readonly Pose3D[]): number {
   let h = 2166136261;
   const f = (n: number): void => { h = Math.imul(h ^ ((n * 1000) | 0), 16777619); };
-  for (const p of poses) { f(p.x); f(p.y); f(p.z); f(p.rotZ); f(p.sx); f(p.sy); f(p.rx ?? 0); f(p.ry ?? 0); f(p.sz ?? 1); }
+  for (const p of poses) {
+    f(p.x); f(p.y); f(p.z); f(p.rotZ); f(p.sx); f(p.sy); f(p.rx ?? 0); f(p.ry ?? 0); f(p.sz ?? 1);
+    if (p.quat) { f(p.quat[0]); f(p.quat[1]); f(p.quat[2]); f(p.quat[3]); } // 四元数朝向（RENDERHYG 尾·漏则纯 quat 旋转在静态场景不重渲）
+  }
   return h >>> 0;
 }
 
@@ -43,8 +46,9 @@ export function camSig(c: Camera3D | null): string {
 // 后处理签名（参与渲染脏标）。
 export function postSig(p: Post3D | null): string {
   if (!p) return '';
-  const t = p.tiltShift, b = p.bloom, v = p.vignette;
+  const t = p.tiltShift, b = p.bloom, v = p.vignette, a = p.ao, g = p.grade;
   return `${t?.focus ?? -1},${t?.intensity ?? -1},${b?.strength ?? -1},${b?.radius ?? -1},${b?.threshold ?? -1}` +
-    `,${v?.intensity ?? -1},${v?.smoothness ?? -1},${v?.color ?? -1},${p.flash?.trigger ?? -1}`; // 暗角(静态)+闪白触发帧
-
+    `,${v?.intensity ?? -1},${v?.smoothness ?? -1},${v?.color ?? -1},${p.flash?.trigger ?? -1}` + // 暗角(静态)+闪白触发帧
+    `,${a?.intensity ?? -1},${a?.radius ?? -1},${a?.scale ?? -1}` + // AO（RENDERHYG 尾·漏则改 AO 静态场景不重渲）
+    `,${g?.exposure ?? -1},${g?.contrast ?? -1},${g?.saturation ?? -1},${g?.brightness ?? -1},${g?.tint ?? -1}`; // 分级（同上）
 }

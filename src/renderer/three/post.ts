@@ -108,8 +108,8 @@ export class PostPipeline {
     this.hTilt!.enabled = tsOn;
     this.vTilt!.enabled = tsOn;
     if (ts) {
-      const focus = ts.focus ?? 0.5;
-      const intensity = ts.intensity ?? 3;
+      const focus = fin(ts.focus, 0.5); // finite 兜底（RENDERHYG 尾·NaN 进移轴 uniform → 画面损坏）
+      const intensity = fin(ts.intensity, 3);
       this.hTilt!.uniforms['r']!.value = focus;
       this.hTilt!.uniforms['h']!.value = intensity / this.width;
       this.vTilt!.uniforms['r']!.value = focus;
@@ -118,9 +118,9 @@ export class PostPipeline {
     const bl = post.bloom;
     this.bloom!.enabled = !!bl;
     if (bl) {
-      this.bloom!.strength = bl.strength ?? 0.6;
-      this.bloom!.radius = bl.radius ?? 0.4;
-      this.bloom!.threshold = bl.threshold ?? 0.85;
+      this.bloom!.strength = posOr(bl.strength, 0.6); // finite + 非负兜底（RENDERHYG 尾·NaN/负值进 bloom → 黑屏）
+      this.bloom!.radius = posOr(bl.radius, 0.4);
+      this.bloom!.threshold = posOr(bl.threshold, 0.85);
     }
     // 色彩分级 + 暗角 + 命中闪白（共用一 pass·任一在用即启）。
     const gr = post.grade, vig = post.vignette;
@@ -176,7 +176,12 @@ export class PostPipeline {
   }
 
   dispose(): void {
+    // 逐 pass dispose（RENDERHYG fix④）：GTAO/Bloom/SMAA 各自持内部 RenderTarget，composer.dispose() 不级联释放 →
+    // 反复建/销毁管线（切游戏/画质档）会滞留一堆 RT 吃显存。各 pass 有 dispose 就调（可选链兜住无此法的旧 pass）。
+    for (const p of [this.renderPass, this.gtao, this.hTilt, this.vTilt, this.bloom, this.grade, this.smaa]) {
+      (p as { dispose?: () => void } | undefined)?.dispose?.();
+    }
     this.composer?.dispose();
-    this.composer = undefined;
+    this.composer = this.renderPass = this.gtao = this.hTilt = this.vTilt = this.bloom = this.grade = this.smaa = undefined;
   }
 }

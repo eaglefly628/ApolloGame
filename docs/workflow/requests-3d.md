@@ -6,7 +6,14 @@
 
 ---
 
-## REQ-3D-RENDERHYG · 渲染卫生批：贴图泄漏 + 脏标失效 + 后处理漏 dispose · [2026-08-05] · Lead 提（引擎全量评审 §6 工单⑧·owner 2026-08-05 令派 P3D）→ P3D · status: open · 优先级: P2（**全为 render-only·不阻塞玩法**·但长局面越跑越卡/显存越吃越多） · 类型: 渲染健壮 + 性能
+## REQ-3D-RENDERHYG · 渲染卫生批：贴图泄漏 + 脏标失效 + 后处理漏 dispose · [2026-08-05] · Lead 提（引擎全量评审 §6 工单⑧·owner 2026-08-05 令派 P3D）→ P3D · status: **✅ done（P3D 2026-08-05·fix①②④+全尾·已推·见回执；fix③睡眠随 SETTLE-SIGNAL 同做）** · 优先级: P2（**全为 render-only·不阻塞玩法**·但长局面越跑越卡/显存越吃越多） · 类型: 渲染健壮 + 性能
+> **★ P3D 落地回执（2026-08-05·每条红→绿测试·`render-hygiene.test` 9 例）**：
+> - **fix①（P1·贴图泄漏）**：`disposeMeshMat` 用**源头标记法**——`pbrMapTexture` 给共享缓存图打 `userData.shared`，`disposeMeshMat` 只释放**未标记的 per-mesh 独占图**（补漏 map/emissiveMap/ao/metal·ORM 三槽去重）。**正面用例已钉**：两网格共用同一共享图·销毁其一→另一个仍持可渲的图（撤修复即转红）。
+> - **fix②（P1·脏标永久失效）**：`models.update` 返回**真正在播的 action 数**（新纯函数 `countRunningAnims`·`isRunning()`）·非 `anims.size`——带 clip 的静态/播完模型不再永久占 `animLive>0`+每帧刷阴影。测试含真 AnimationMixer 语义（LoopOnce 播完→false·LoopRepeat 恒 true·**不冻结正在播的**）。
+> - **fix④（P2·后处理漏 dispose）**：`PostPipeline.dispose` 逐 pass dispose（RenderPass/GTAO/hTilt/vTilt/Bloom/grade/SMAA 各自 RT）+ 清引用。
+> - **尾**：`postSig` 补 AO/grade（漏则改 AO/分级静态场景不重渲）· `hashPoses` 补 quat（纯四元数旋转不再被跳渲吞）· tiltShift/bloom 参数补 finite 兜底（`fin`/`posOr`·NaN 进 uniform→画面损坏）· HDRI 坏图**不再每帧重 parse**（`hdriEnv` 早返修：`hdriKey===key` 即回·失败=null 也回·原 `&&hdriTex` 使坏图每帧重试）。
+> - **fix③（P2·SLEEPING 刚体仍占脏标）**：**随 REQ-3D-SETTLE-SIGNAL 同做**（同一睡眠语义·两单一起改省一次回归·spec 明示合并）。
+> 边界守住（只碰 `three/**` + 测试·不碰 sim/UI）。tsc0/vitest/build0。
 > 详情唯一真相 = `docs/design/engine-review-2026-08-04.md`（§3.2 表 + §5「3D 渲染」）。Lead 已复核为真发现，落在 P3D 域故整批转派、**不擅改**。
 > 1. **`three/geometry.ts:298` `disposeMeshMat` 只释放 normalMap/roughnessMap，漏 `map`/`emissiveMap`（P1·显存泄漏）** —— ⚠ **报告明确警示：不可盲加 `.dispose()`**：`map`/`emissiveMap` 可能来自**共享缓存**（`pbrMapTexture`/`texCache`），直接释放会把**其他活网格正在用的贴图**一起毁掉 → **画面损坏比泄漏更糟**。正解=引用计数或来源标记，区分 per-mesh 独占 vs 共享缓存，只释放前者。
 > 2. **`three/models.ts:87` 带 clip 的静态模型令 `animLive>0`（P1）** —— 脏标跳渲**永久失效** + 每帧刷阴影。修法=`update()` 改返回「真正在播的 action 数」，但需 `isRunning()` 语义精确；**判断错会让动画冻结**（可见回归），且 `models.test` 当前无覆盖 → 必须先补测试再动。
