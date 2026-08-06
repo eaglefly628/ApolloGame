@@ -10,12 +10,7 @@
 
 
 
-### REQ-STYLESET-风格库 apollo-toon · 迪士尼×Supercell×中国水墨混风·全类型 house style · [2026-07-16] · owner 拍板（全形态换装非调色·先现装可视版·其他风格收敛）→ **指派：PA（M0 台账底座）+ PUI（M0.5 现装可视版·先行）** · status: **⏸ 暂停（owner 2026-08-05 令）·M0.6 已落地未验收随冻结·重启时 Lead 先补验** · 优先级: P1 · 类型: 引擎级风格资产库 + UI 基座消费
-> 图纸唯一真相=`docs/design/styleset-artlib-plan-2026-07-16.md`（§二 三增量·§六 首批清单 spec + M0/M0.5 交付边界·风格锚 v2 单一真相在风格包·**IP 红线：锚用描述词不写厂牌词**）。M1 试产/M2 建库等真 key（连 REQ-AIGEN 卡口）；M3 对齐（examples 进 game-i）；M4 D/G 出口游戏换装。完工各标 ✅ 待 Lead 对抗性验收（真浏览器截图必查）。
-> **+ M0.6 主题指针（owner 2026-07-16·game-t 连带需求·指派 PUI）**：UITheme 加 `cursor?` 主题令牌（data-URI 图 + hotspot + 按压态·缺省无=老主题零变化·沿 panelTexture 先例：guard+点名测试+ui.md 回填）；apollo-toon 配墨笔尖造型指针（程序化 SVG 占位·台账行留真图位）；触屏无指针不受影响。"墨迹拖尾跟随"记二期候选不做。
-> **M0.6 ✅ done（PUI·2026-08-05·待 Lead 对抗性验收）**：`UITheme.cursor?: UICursor{image(data-URI),x?,y?,press?{image,x?,y?}}`（types.ts·闭集令牌·沿 panelTexture 先例）；`mountUI`/`update` 落 host 根——纯函数 `cursorCss()` 算 base/press 值 + djb2 去重键，base 光标设 `host.style.cursor`（面板/文字继承·按钮 `cursor:pointer` 保留），按下态注入 `.apollo-cur-<key>:active`/`*:active` scoped 规则（`!important` 压继承·id 幂等去重）。**缺省无=复位系统箭头（老主题零变化）·触屏不受影响**。apollo-toon 配程序化墨笔尖（斜竹杆+墨锥·尖 (3,3) 热点·按下蘸青墨·provenance:procedural 占位·真图走美术台账逐令牌替换）。守卫：`cursor.test.ts`（6 例·cursorCss 值/键 + 主题令牌存在 + mountUI 落根 + 缺省零变化·happy-dom）；ui.md 回填「主题指针」行。scoped-gate 全绿。
-> **已完结里程碑**：M0+M0.5+三游戏风格锚 ✅ 全 Lead 验收 PASS（判词全文查 git 历史）；遗留记债=ui-audit border-image 盲区+亮主题 dim 假阳（PUI 工具债）·默认主题切否 apollo-toon 等 owner（M3 顺手）。
-
+<!-- REQ-STYLESET-风格库 apollo-toon（PA+PUI）→ **owner 2026-08-05 令暂停后移出池**（不占槽）。图纸唯一真相仍在 `docs/design/styleset-artlib-plan-2026-07-16.md`。**已落地未验收的存量**：M0 台账底座 + M0.5 现装可视版 + 三游戏风格锚（均 Lead 验收 PASS）· **M0.6 主题指针 = PUI 已 done 但未经 Lead 对抗性验收，随暂停冻结**——重启时 Lead 必须先补验 M0.6 再往下走。未做：M1 试产/M2 建库（等真 key·连 REQ-AIGEN 卡口）· M3 对齐 · M4 出口游戏换装。遗留债：ui-audit border-image 盲区 + 亮主题 dim 假阳（PUI 工具债）· 默认主题是否切 apollo-toon 等 owner。重启即重开本条。 -->
 
 <!-- REQ-UIRECON-换根重挂（P1·PUI）+ REQ-UIAUDIT-叠层与动效（①②③·PUI·Lead 验收 PASS）已完结（查 git 历史）；REQ-UIAUDIT 余 ④bounce+border-image 后置工具债（不占槽·要做时重开小条）。 -->
 
@@ -56,16 +51,7 @@
 
 <!-- REQ-UICONTRACT-UI 契约批（P1·引擎评审 §6⑨）已完结：PUI 三条（modalClose/comboClick 补 ActionSink 回退 · 键控锚点改 firstContentAnchor · 动效扫描抽 initDynamics 幂等且 mount/update 各扫一次）+ Lead item④（Sprite.anchorX/Y 抽 spriteAnchorOffset 纯函数真消费）全部落地。Lead 对抗性验收 PASS：6 例守卫独立复跑绿·撤 update 侧 initDynamics 实测转红 2 例·撤 item④ 修复转红 2 例。P2/P3 尾巴（bindings 不递归 node props / layout-solver 忽略 cols / typewriter+emoji 掉字 / apollo-kit 像素字体退化 / onboarding 缩放错位…）按报告 §5 原文另清·不占槽。全文查 git 历史。 -->
 
-### REQ-STATUSSET-资源见底置状态位 · 给 `t2-effect-apply` / `t2-self-rule` 的 do 闭集补 `set-status`/`clear-status` · [2026-08-05] · game107《逆位·深渊》属性防御系统带出 · status: **open（S2 卡口·未落地则属性破防只能退化为二元 combo）** · 优先级: P2 · 类型: 现有能力闭集补齐（非新能力）
-> **要什么**：`t2-effect-apply` 的 `Effect.kind` 与 `t2-self-rule` 的 `SelfRule.do[].kind` 各补两项 —— `set-status{mask}` / `clear-status{mask}`（写目标 `Status.flags` 位）。二者现有闭集已是 `set-flag`/`set-state`/`modify-resource`/`destroy`，本项**同形状加两条**，不新增组件、不新增能力。
-> **为什么需要**：`t2-hitbox` 的门控读的是 `Status.flags`（`requireMask`/`setMask`/`clearMask`），但**全库没有任何能力能把「某个 Resource 见底」变成 Status 位**——`effect-apply`/`self-rule` 只能写 `Flag`/`State`，与 `Status` 不互通。于是「**防御条被打空 → 后续伤害才落到 HP**」这一环断了。
-> **为什么不能重组**（已按核心规则逐条核过）：① `Hitbox` 的资源门只有 hp 专用的 `requireHpFracBelow/Above`，不能门控任意 Resource；② `Status` 位目前只有 `hitbox`(setMask/clearMask) 与 `over-time` 会写，二者都由「命中/计时」驱动，无法由「资源阈值」驱动；③ 用 `Flag` 替代不行——`Hitbox` 不读 `Flag`。**链路缺的就是 Flag→Status 这一跳。**
-> **通用性（非游戏专属）**：任何「破盾/破甲/破韧性后进入虚弱」的战斗设计同吃——魂系削韧、MOBA 护盾、塔防护甲层、Boss 阶段门。是 `Condition→Event→Effect` 三段式在 Status 维度上的补齐，属既有设计的对称缺口。
-> **替代方案（若 Lead 更倾向改 hitbox 侧）**：给 `Hitbox` 加通用 `requireResourceAtOrBelow{id,value}`（泛化现有 hp 专用门）。二选一即可，GD 倾向前者（更通用、受益面更广）。
-> **边界（防加宽）**：**不含**百分比抗性乘算（game107 明确不做隐形乘数，走可见的防御条）、**不含**新的伤害类型通道（属性用 `Resource` 一条一条表达即可）。允许触碰：`src/skills/tier2/effect-apply.ts` + `self-rule.ts` + registry describe + 点名测试 + `docs/playbooks/combat.md` 回填一行。
-> **降级方案（未落地时）**：game107 退化为「二元状态叠加 combo」（`Hitbox.setMask`+`requireMask`，registry「冰霜新星→碎冰重锤」同款），可跑但失去「防御条数值可见 + 逐点剥防」的核心读面板体验。
-> **⚖ Lead 下沉裁决（2026-08-05）：照准 A 案**——effect-apply/self-rule do 闭集同形补 set-status/clear-status 两条（对称缺口论证成立·Status 位现仅命中/计时可写=资源阈值驱动链确缺）；B 案（hitbox 泛化资源门）不采——A 受益面更广且零碰 hitbox 语义。**指派待排（high·战斗核邻接·随下一批施工窗）**。
-> 消费方与验收语义：`docs/design/game107/{gdd.md §4.2 属性防御, capability-plan.md §5.5}`。
+<!-- REQ-STATUSSET-资源见底置状态位（game107 带出）→ **owner 2026-08-05 令废除出池**：107 尚未开工·无现役游戏被阻塞·不该占引擎硬槽。**spec 原文完整降级存 `docs/design/game107/requests.md`**（不占槽），107 真开工时先按核心规则重核「能否用现有闭集重组」再决定升回。 -->
 
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
