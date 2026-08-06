@@ -1,3 +1,6 @@
 // 华丽起手包出口（PUI·owner 2026-07「起手默认华丽」）。新游戏 UI 起手 import 这里·别从零搭朴素屏。
 export { STARTER_THEME, buildStarterHome, buildStarterResult } from './starter-kit.js';
 export type { StarterAction } from './starter-kit.js';
+// 剧情起手 · 伴侣在场件（REQ-DIALOGUE M3·用 M1 三件拼装·非新控件）。
+export { buildPresence, pickReaction, SAMPLE_REACTIONS } from './presence.js';
+export type { ReactionEntry, ReactionTable } from './presence.js';

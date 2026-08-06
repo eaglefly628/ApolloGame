@@ -20,7 +20,7 @@
 <!-- REQ-RETRO2-能力库整理（P1·owner 三裁缩范围）已完结（查 git 历史）。 -->
 
 ### REQ-DIALOGUE-剧情基础线 · 剧情向 Dialogue 能力做成基础件+Sample+Template · [2026-08-03] · owner 令（约会性单机超休闲转型线·owner 同日令启动） → **图纸在档：`docs/design/dialogue-line-blueprint-2026-08.md`（派工唯一真相）** · status: **in-progress（M1 ✅ PUI done·待 Lead 对抗性验收；M2/M3 next）** · 优先级: P1（转型关键路径） · 类型: 能力线（引擎+UI 基座+样板）
-> 四里程碑详见图纸。**M1 ✅ 全闭环**（三控件+整改真跑展台+ui/vn 已退役 `6c425414a`·Lead 抽验绿·判词全文查 git 历史）；**M2 立绘表情链 ∥ M3 伴侣在场件 = owner PUI 会话接手**；M4 Sample 最后。悬置段=DokiWorld 数值双向契约等 owner 三样材料。
+> 四里程碑详见图纸。**M1 ✅ 全闭环**（三控件+整改真跑展台+ui/vn 已退役 `6c425414a`·Lead 抽验绿·判词全文查 git 历史）；**M3 伴侣在场件 ✅ done（PUI·2026-08-05·待 Lead 验收）**：`@ui/starters/presence.ts`——`ReactionTable`(gameEvent→反应候选[]·纯数据) + `pickReaction(table,event,seed)`(确定性选句·加权·无裸 Math.random·录放一致) + `buildPresence(...)`(用 M1 三件拼装：立绘金框高亮 + dialog kind:'choice' 被动气泡·非新控件) + `SAMPLE_REACTIONS`；守卫 `presence.test.ts`(6) + game-i `🫂 伴侣在场件`展台(`presence-demo.ts`·四 event·+测试+audit 0 阻断·截图在案)。**M2 立绘/表情链（emotion→assetKey 表·PUI+PA）next**；M4 Sample 最后。悬置段=DokiWorld 数值双向契约等 owner 三样材料。
 
 ### REQ-PIPESOFT-管线软件 · 八步法软件化：一句话入口+向导壳+阶段编排器+IDE 接入 · [2026-08-03] · owner 批（四裁在图纸头）→ **图纸：`docs/design/pipeline-software-plan-2026-08.md`（唯一真相）** · status: **in-progress（P0 施工中·P1 待 Lead 出编排器细图）** · 优先级: P1（与剧情线并行·域不冲突） · 类型: 生产线基建（workshop 壳=PST 域·编排器/MCP=引擎 scripts）
 > **P0+P1a+P1b ✅ 全 Lead 终审 PASS**（`217b87d60`/`5f070a4ed`/`89b3f9bd4`·判词与偏差裁决全文查 git 历史）→ **P2 IDE 接入排队**（试点跑一轮再动）→ P3 试点=owner 自派 RPS 走全程（真机首项=编排器权限口径 acceptEdits+允许清单）。小尾巴：冒烟⑥修复 spec 已写死（low·随手可派·查 git 历史 grep 留验项）。红线：无特权通道·代签禁止·阶梯降级留痕。

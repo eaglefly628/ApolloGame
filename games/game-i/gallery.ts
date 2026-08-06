@@ -14,6 +14,7 @@ import { buildVideoLab, INITIAL_AISHE, type AisheState } from './video-lab.js';
 import { buildMmoHud } from './mmo-hud.js';
 import { buildCasualHud } from './casual-hud.js';
 import { buildDialogueScene } from './dialogue-demo.js';
+import { buildPresenceDemo } from './presence-demo.js';
 import { SOUNDS, BGM } from './sounds.js';
 
 // 自定义画选中态的交互控件值（必须进 state·点击改值 + 局部更新才会动）。
@@ -738,6 +739,7 @@ export const MODULES: ReadonlyArray<{ id: string; glyph: string; label: string; 
   { id: 'mod-mmo', glyph: '🗡', label: '组合 · MMO HUD', desc: '纯数据复现 WoW 风最复杂 HUD', tone: 'accent' as const, dim: '2d' },
   { id: 'mod-casual', glyph: '🍬', label: '组合 · 超休闲对局', desc: '精致消除对局屏 · 糖果棋盘 + 道具 + juice', tone: 'accent' as const, dim: '2d' },
   { id: 'mod-dialogue', glyph: '💬', label: '剧情 · VN 对话三件', desc: '台词框 + 选项 + 立绘 · 闭集纯数据 · 消费 t3-dialogue 投影', tone: 'accent' as const, dim: '2d' },
+  { id: 'mod-presence', glyph: '🫂', label: '剧情 · 伴侣在场件', desc: '非剧情对局叠伴侣反应 · 反应表选句 + M1 三件拼装', tone: 'accent' as const, dim: '2d' },
   { id: 'mod-sound', glyph: '🔊', label: '声音', desc: '合成 / 混音 / 立体声 / 混响', tone: 'normal' as const, dim: '2d' },
   { id: 'mod-input', glyph: '🎮', label: '输入底座', desc: 'RawInput → KeyBinding → 信号', tone: 'normal' as const, dim: '2d' },
   { id: 'mod-anim', glyph: '✨', label: '精灵动画', desc: 'tween 驱动 · Canvas 实时绘制', tone: 'normal' as const, dim: '2d' },
@@ -1640,6 +1642,7 @@ function moduleBody(
     case 'mod-mmo': return buildMmoHud();
     case 'mod-casual': return buildCasualHud();
     case 'mod-dialogue': return buildDialogueScene();
+    case 'mod-presence': return buildPresenceDemo();
     case 'mod-sound': return buildSoundPage(controls);
     case 'mod-input': return buildInputLab(input);
     case 'mod-video': return buildVideoLab(aishe);
