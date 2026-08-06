@@ -175,8 +175,11 @@
 ### REQ-C-116 · 桌形口径失同步：GDD §5 仍写「大椭圆桌」·实现已是矩形平面 · [2026-08-04] · SPECTRACE 试点首跑逮出（R-C-017）→ **指派：GD-C（文档同步）** · status: open · 优先级: P3 · 类型: 文档口径
 > **事实**：owner 2026-07-22 已拍板改矩形平面（`build3d.ts` 注记在案·`build3d.test.ts` 验证的是矩形），GDD §5 文字未随动。**修法**：GDD 该句改矩形口径（一句话改动）→ spec-trace.json 里 R-C-017 从 human 改映射 `build3d.test.ts` → `--bless R-C-017`。追踪矩阵将自动盯住此类失同步（这正是首个战果）。
 
-### REQ-C-117 · 典当阈值 spec/实现不符：GDD 写「<3BB·性格影响」·实现是 <1BB 全员统一 · [2026-08-04] · SPECTRACE 试点首跑逮出（R-C-011）→ **等 owner/GD 裁**（是简化定案还是待补实现） · status: open · 优先级: P2（玩法行为差异） · 类型: 规则裁决
-> **事实**：`game-session.ts autoPawnIfBroke()` 阈值 `< bigBlind`（1BB）、无性格差异；GDD 写 <3BB 且性格影响阈值。**两案**：A=认可现状简化→GDD 改口径（连同性格影响移入 M2 AI 段）；B=按 GDD 补实现（PE-C·含性格参数）。裁定后更新 R-C-011 映射并 bless。
+### REQ-C-117 · 典当阈值 spec/实现不符：GDD 写「<3BB·性格影响」·实现是 <1BB 全员统一 · [2026-08-04] · SPECTRACE 试点首跑逮出（R-C-011）→ **⚖ 已裁：A 案（认可现状·改 GDD 口径）** → **指派：GD-C 执行** · status: **裁定完毕·待 GD-C 落地** · 优先级: P2（玩法行为差异） · 类型: 规则裁决
+> **事实**：`game-session.ts autoPawnIfBroke()` 阈值 `< bigBlind`（1BB）、无性格差异；GDD 写 <3BB 且性格影响阈值。
+> **⚖ 裁定 = A（owner 2026-08-05·顺带定路由规矩）**：认可代码现状（1BB 才典当），**改 GDD 口径**对齐实现；「性格影响阈值」移入 M2 AI 人格段一并做（它本属 AI 性格，不该和典当阈值绑死）。理由：筹码见底才脱的戏剧张力强于 3BB 就开始脱。
+> **GD-C 执行三步**：① GDD 典当条文改为「筹码低于 1 个大盲注时自动典当·全员统一」并注明性格差异归 M2；② 更新 `spec-trace.json` 里 R-C-011 的映射指向现实现；③ 带证据 bless 该条，让四判守卫转绿。
+> **⚠ 路由留痕（owner 2026-08-05 明训）**：**这类「本游戏 spec 与本游戏实现不符」属游戏自治范围——GD 裁规则、PE 补实现，不得上抛引擎需求池，也不该上抛 owner/主程。** 本条当初写成「等 owner/GD 裁」是流程错误（Lead 认领），已改为直接指派 GD-C。
 
 ### REQ-C-118 · acceptance/README 缺口清单过期：REQ-C-108② 实已被覆盖 · [2026-08-04] · SPECTRACE 试点顺带发现 → **指派：GD-C** · status: open · 优先级: P3 · 类型: 文档卫生
 > `acceptance/README.md` 仍列「下注不足态不变仍缺」，实际 `game-session.test.ts` 的 heroAct 防御 no-op 单测已覆盖（R-C-003 已引用之）。README 该行删除或标已覆盖。
