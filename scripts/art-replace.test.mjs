@@ -3,7 +3,11 @@
 import { describe, it, expect } from 'vitest';
 import { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+
+const __dirnameCli = dirname(fileURLToPath(import.meta.url)); // 起子进程验 CLI 分支（见文件末）
 import { deriveLedger, batchGenerate, applyReplacements, dialectPrompt, cacheKey, paletteSnapRgb, deriveRequirements, resetRow, swapSlot, mergeLedger, deriveForGame, sizeForSpec, genSizeForTarget, resizeImageTo, errText, isPngBuffer, sniffImageFmt, backupOrigFile } from './art-replace.mjs';
 import { encodePng } from './ai-gen.mjs';
 import { decodePng } from './asset-matte.mjs';
@@ -564,5 +568,27 @@ describe('台账按素材去重（owner 2026-07-12「100 平台共图却出 40 �
     const prev2 = prevRows.map((r) => (r.no === 'art-05' ? { ...r, status: 'generated', gen: { localId: 'gen/x', mock: false } } : r));
     const merged2 = mergeLedger({ version: 1, game: 'g', rows: prev2 }, deriveLedger(mf, { game: 'g' }), mf);
     expect(merged2.rows.some((r) => r.gen && r.gen.localId === 'gen/x')).toBe(true);
+  });
+});
+
+// ── CLI 分支守卫（REQ-CARTART Lead 追认时撞出·2026-08-06） ──────────────────
+// `fill` 的「无台账」错误分支只在 run() 里、不经任何导出函数，故上面 47 例单测够不着它。
+// CARTART 把该行的字面量路径改成 ledgerFile(root, slug) 时把 ROOT 写成了 root（run() 内无此绑定）
+// → 撞上无台账的游戏不是干净报错退出，而是 ReferenceError 崩栈。只能起子进程验真。
+describe('CLI `fill`·无台账走干净错误退出（不 ReferenceError 崩栈）', () => {
+  const cli = (args) => spawnSync(process.execPath, [join(__dirnameCli, 'art-replace.mjs'), ...args], { encoding: 'utf8' });
+
+  it('无台账 → exit 1 + 报出台账绝对路径·stderr 无 ReferenceError', () => {
+    const r = cli(['fill', 'zz-no-such-game', 'art-01', 'toon', '--mock']);
+    expect(r.stderr).not.toMatch(/ReferenceError/); // 崩栈 = 回归
+    expect(r.stderr).toContain('无台账:');
+    expect(r.stderr).toContain(join('public', 'games', 'zz-no-such-game', 'art', 'art-ledger.json')); // 报绝对路径而非写死字面量
+    expect(r.status).toBe(1);
+  });
+
+  it('非法 slug 仍在更早一关拦下（本次改动没挪动校验顺序）', () => {
+    const r = cli(['fill', '__bad__', 'art-01', 'toon', '--mock']);
+    expect(r.stderr).toContain('非法 slug');
+    expect(r.status).toBe(1);
   });
 });

@@ -778,7 +778,7 @@ async function run(argv) {
     const szi = argv.indexOf('--size'); const targetSize = szi >= 0 ? parseSize(argv[szi + 1]) : undefined; // 手动尺寸覆盖 WxH
     const mock = argv.includes('--mock');
     const ledger = readJson(ledgerFile(ROOT, slug), null);
-    if (!ledger) { console.error(`无台账: ${ledgerFile(root, slug)}`); process.exit(1); }
+    if (!ledger) { console.error(`无台账: ${ledgerFile(ROOT, slug)}`); process.exit(1); }
     const rr = resetRow(ledger, no, { query, targetSize });
     if (!rr.ok) { console.log(JSON.stringify(rr)); process.exit(1); }
     const b = await batchGenerate(ledger, packId, { game: slug, mock, only: no, provider: providerArg, debug });
