@@ -8,20 +8,31 @@
   ④ 远端分叉（不同文件）→ fetch+rebase 自动合 → 推送成功·两边提交都在
   ⑤ 远端分叉（同文件同行冲突）→ rebase 自动 abort·无半截 rebase 现场·改动保留为本地提交
   ⑥ 无远端 → 本地提交成功 + note 明说未推送
+  ⑧ 非交互硬化（owner 2026-08-06 复查补洞·防「终端弹 Username 把请求挂到超时」）：
+     ⑧a 子进程环境堵死终端提示/askpass/ssh 口令，且不覆盖用户既有 GIT_SSH_COMMAND
+     ⑧b 凭证类错误分类器认得 git/ssh 原样文案（不重试的判据）
+     ⑧c 远端不可达 → 秒级返回·不挂起·本地提交保住（超时/挂起类回归的守卫）
 端点校验腿（直调 handler·只走拒绝路径，绝不对真仓 add/commit）：
   ⑦ 非法 slug / 不存在游戏 / library 卡带 → 拒绝且错误信息可读
 
+⑧ 的「真 401」腿不在此跑（门禁环境无外网·不拿网络当测试依赖）：凭证失败的**判据**由 ⑧b
+按 git/ssh verbatim 文案自证，**不挂起**由 ⑧c 用连接立即被拒的远端自证。
+
 用法：python3 scripts/art-sync-smoke.py
 """
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from main_entry.art_sync import handle_art_sync, handle_art_sync_status, status_paths, sync_paths  # noqa: E402
+from main_entry.art_sync import (  # noqa: E402
+    _AUTH_FAIL_RE, _noninteractive_env, handle_art_sync, handle_art_sync_status, status_paths, sync_paths,
+)
 
 PASS, FAIL = 0, 0
 
@@ -127,6 +138,45 @@ try:
     r = sync_paths(solo, SCOPE, 'art(game-x): 无远端')
     check(r.get('ok') and r.get('committed') and not r.get('pushed') and '无远端' in str(r.get('note')),
           '⑥ 无远端 → 本地提交成功 + note 明说未推送', str(r))
+
+    # ⑧a 非交互环境：堵死三个「等人输入」的口子 + 不覆盖用户既有 GIT_SSH_COMMAND
+    e = _noninteractive_env()
+    check(e['GIT_TERMINAL_PROMPT'] == '0' and e['GIT_ASKPASS'] == '' and e['SSH_ASKPASS'] == '',
+          '⑧a 终端提示/askpass 全关（HTTPS 凭证缺失→立即失败而非等输入）', str({k: e.get(k) for k in ('GIT_TERMINAL_PROMPT', 'GIT_ASKPASS')}))
+    check('BatchMode=yes' in e['GIT_SSH_COMMAND'], '⑧a ssh BatchMode（key 带口令且无 agent→失败不等输入）', e['GIT_SSH_COMMAND'])
+    _saved = os.environ.get('GIT_SSH_COMMAND')
+    os.environ['GIT_SSH_COMMAND'] = 'ssh -i /custom/key'
+    try:
+        e2 = _noninteractive_env()
+        check(e2['GIT_SSH_COMMAND'] == 'ssh -i /custom/key -o BatchMode=yes',
+              '⑧a 用户既有 GIT_SSH_COMMAND 保留（只追加不覆盖·专用 key 不被顶掉）', e2['GIT_SSH_COMMAND'])
+    finally:
+        os.environ.pop('GIT_SSH_COMMAND', None)
+        if _saved is not None:
+            os.environ['GIT_SSH_COMMAND'] = _saved
+
+    # ⑧b 凭证类错误分类器（git/ssh verbatim 文案 → 不重试的判据）
+    for msg in ["fatal: could not read Username for 'https://github.com': terminal prompts disabled",
+                'remote: Support for password authentication was removed on August 13, 2021.',
+                'fatal: Authentication failed for https://github.com/x/y.git/',
+                'git@github.com: Permission denied (publickey).',
+                'Host key verification failed.']:
+        check(bool(_AUTH_FAIL_RE.search(msg)), f'⑧b 认得凭证类失败：{msg[:46]}…')
+    for msg in ['fatal: unable to access: Could not resolve host: github.com',
+                'CONFLICT (content): Merge conflict in public/games/game-x/art/index.json',
+                '! [rejected] main -> main (fetch first)']:
+        check(not _AUTH_FAIL_RE.search(msg), f'⑧b 不误判非凭证失败：{msg[:46]}…')
+
+    # ⑧c 远端不可达 → 秒级返回·不挂起（本 bug 的核心回归：绝不 120s 干等）·本地提交保住
+    (sa / 'index.json').write_text('{"v":2}\n')
+    git(solo, 'remote', 'add', 'origin', 'https://127.0.0.1:1/nope.git')  # 连接立即被拒·无外网依赖
+    t0 = time.monotonic()
+    r = sync_paths(solo, SCOPE, 'art(game-x): 远端不可达', max_attempts=2)
+    dt = time.monotonic() - t0
+    check(not r.get('ok') and r.get('committed') and not r.get('pushed'),
+          '⑧c 远端不可达 → 拒推·改动已落本地提交（没丢）', str(r))
+    check(dt < 30, f'⑧c 秒级返回不挂起（实测 {dt:.1f}s·旧行为会干等到 120s 超时）', f'{dt:.1f}s')
+    check('本地提交' in str(r.get('error')), '⑧c 错误文案告诉 owner 改动在哪', str(r.get('error')))
 
     # ⑦ 端点校验腿（拒绝路径·不碰真仓）
     check(not handle_art_sync({'slug': '../evil'}).get('success'), '⑦ 非法 slug 拒绝', '')

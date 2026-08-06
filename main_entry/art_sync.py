@@ -10,6 +10,8 @@
 在途/已暂存改动一律不带（2026-08-03 误提交事故律）。library 卡带不入引擎仓
 （自带每卡带 git 版本化，见 library.py），不适用本端点。
 """
+import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -18,10 +20,39 @@ from .sysutil import ROOT, c
 
 # 提交署名走本地 -c（同 library.py 先例：不依赖机器有无全局 git 身份）。
 _GIT_AUTHOR = ['-c', 'user.name=ZeroCraft Preview', '-c', 'user.email=studio@zerocraft.local']
+# 非交互硬化（owner 2026-08-06 复查补洞）：凭证缺失/失效时必须**立刻失败**，绝不在跑创作台的
+# 那个终端弹「Username:」等人输入——否则创作台的 HTTP 请求就挂在那儿直到超时，UI 卡死一分半。
+# credential.interactive=false 关 Git Credential Manager（Win/macOS 常见）的交互弹窗。
+_GIT_NONINTERACTIVE = ['-c', 'credential.interactive=false']
+
+# 凭证类失败特征（git/ssh 原样文案）：命中即**不重试**——凭证不会因为多试两次就长出来。
+_AUTH_FAIL_RE = re.compile(
+    r'terminal prompts disabled|could not read (Username|Password)|Authentication failed|'
+    r'Permission denied \(publickey|Host key verification failed|'
+    r'Support for password authentication was removed', re.I)
+
+
+def _noninteractive_env() -> dict:
+    """子进程环境：堵死一切「等人输入」的口子（终端提示 / 图形 askpass / ssh 口令）。"""
+    env = dict(os.environ)
+    env['GIT_TERMINAL_PROMPT'] = '0'  # HTTPS 凭证终端提示 → 直接失败
+    env['GIT_ASKPASS'] = ''           # 不唤起图形 askpass 弹窗
+    env['SSH_ASKPASS'] = ''
+    # SSH remote 同理：key 带口令且 agent 里没有时 ssh 会等输入，BatchMode 让它失败。
+    # 保留用户既有 GIT_SSH_COMMAND（可能指定了专用 key），只追加不覆盖。
+    ssh = (env.get('GIT_SSH_COMMAND') or '').strip()
+    env['GIT_SSH_COMMAND'] = f'{ssh} -o BatchMode=yes' if ssh else 'ssh -o BatchMode=yes'
+    return env
 
 
 def _git(repo: Path, args: list, timeout: int = 60):
-    return subprocess.run(['git', *args], cwd=str(repo), capture_output=True, text=True, timeout=timeout)
+    """跑一条 git。stdin=DEVNULL + 非交互环境 = 永不阻塞等输入；超时折成普通失败（非异常），
+    让调用方按「已本地提交·未推送」的正常语义收尾，而不是把 500 抛给创作台。"""
+    try:
+        return subprocess.run(['git', *_GIT_NONINTERACTIVE, *args], cwd=str(repo), capture_output=True,
+                              text=True, timeout=timeout, stdin=subprocess.DEVNULL, env=_noninteractive_env())
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(args, 1, '', f'git {args[0]} 超时（{timeout}s）——网络不通或远端无响应')
 
 
 def _err_text(r) -> str:
@@ -62,10 +93,15 @@ def sync_paths(repo: Path, pathspecs: list, message: str, remote: str = 'origin'
     if _git(repo, ['remote', 'get-url', remote], timeout=15).returncode != 0:
         return {'ok': True, 'pushed': False, 'note': f'无远端 {remote}——已保存为本地提交', **base}
     last_err = ''
+    auth_note = ('推送失败：本机 git 凭证未配置或已失效——改动已保存为本地提交，'
+                 '配好凭证（SSH key / gh auth login / 凭据管理器）后 git push 即可')
     for attempt in range(1, max_attempts + 1):
         f = _git(repo, ['fetch', remote, branch], timeout=120)
         if f.returncode != 0:
             last_err = f'fetch 失败: {_err_text(f)}'
+            if _AUTH_FAIL_RE.search(last_err):  # 凭证问题：秒退，不做无谓重试（原会干等三轮）
+                return {'ok': False, 'pushed': False, 'attempts': attempt, 'authFailed': True,
+                        'error': auth_note, 'detail': last_err[:300], **base}
         elif _git(repo, ['rev-parse', '--verify', '-q', f'{remote}/{branch}'], timeout=15).returncode == 0:
             # --autostash：域外未提交改动（owner 自己的在途编辑）由 git 原生暂存并在 rebase 后原样放回。
             rb = _git(repo, ['rebase', '--autostash', f'{remote}/{branch}'], timeout=120)
@@ -78,6 +114,9 @@ def sync_paths(repo: Path, pathspecs: list, message: str, remote: str = 'origin'
         if p.returncode == 0:
             return {'ok': True, 'pushed': True, 'attempts': attempt, **base}
         last_err = _err_text(p)
+        if _AUTH_FAIL_RE.search(last_err):  # 同上：凭证不会因多试两次长出来
+            return {'ok': False, 'pushed': False, 'attempts': attempt, 'authFailed': True,
+                    'error': auth_note, 'detail': last_err[:300], **base}
     return {'ok': False, 'pushed': False, 'attempts': max_attempts,
             'error': f'推送失败（已重试 {max_attempts} 次）：{last_err[:300]}——改动已保存为本地提交', **base}
 
