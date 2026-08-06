@@ -31,7 +31,7 @@
 | `f1-resource`（原子） | **六条蓄力槽**（双方各三）· 双方血量 100 · 烟雾次数【R-108-03/10/15/20】 | ✅ 现有 |
 | `t2-event-when`（`EventWhen`+`Signal`） | 条件成立发信号：蓄力满锁定、血量 ≤50 触发逆转、HP≤0、AI 策略规则命中【R-108-10/42/15/30】 | ✅ 现有 |
 | `t2-effect-apply`（`Effect`） | 信号改世界：蓄力 +1 / 扣血 / 给碎片 / 开关烟雾旗【R-108-10/13/20】 | ✅ 现有 |
-| `t2-weighted-spawn`（`WeightedSpawn`） | AI **两次**决策各按权重表确定性抽取（T1 蓄哪手 / T2 出哪手·消费世界 `RandomSeed`）【R-108-30】 | ✅ 现有（**出招落点改经 `REQ-108-ENG-02` 的 `intentSignals`**——weighted-spawn 只产 `SpawnRequest`，挂不了 intent） |
+| `t2-weighted-spawn`（`WeightedSpawn`） | AI **两次**决策各按权重表确定性抽取（T1 蓄哪手 / T2 出哪手·消费世界 `RandomSeed`）【R-108-30】 | ✅ 现有（出招落点经 **`REQ-108-ENG-02` 的 `intentSignals`·✅ 已交付**——weighted-spawn 只产 `SpawnRequest`，挂不了 intent） |
 | `t2-self-rule`（`SelfRule`） | 对手实体读自身状态施自身效（血少改段 / 蓄满必兑现）【R-108-32】 | ✅ 现有 |
 | `t2-modifier-stack`（`ModifierSource`+`ModifierTotals`） | 遗物对**收益**的加成聚合（重拳 +10 / 铁布衫 −10 / 回响 +20）【R-108-43】 | ✅ 现有 |
 | `t2-craft-recipe`（`CraftRecipe`） | 花费换取：**烟雾**（扣 1 次数 → 置隐藏旗）【R-108-20】 | ✅ 现有 |

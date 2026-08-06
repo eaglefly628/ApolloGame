@@ -155,7 +155,7 @@
 
 ---
 
-### REQ-108-ENG-02-出招输入接缝 · `t2-matrix-duel` 补「信号 → DuelIntent」入口 · [2026-08-06] · **owner 判 A** · **施工主体 = 主程 Lead session**（本策划 session 不施工·防双头同单） · status: **open·已裁 A·待施工（S3 卡口之二）**
+### REQ-108-ENG-02-出招输入接缝 · `t2-matrix-duel` 补「信号 → DuelIntent」入口 · [2026-08-06] · **owner 判 A** · **施工主体 = 主程 Lead session**（本策划 session 不施工·防双头同单） · status: **✅ 已交付·待复查侧验收**（见文末「ENG-02 交付」）
 
 > **要什么**：`DuelMatrix` 加可选字段 `intentSignals?: Record<手, 信号名>`。系统读本拍 `Signal`，
 > 若信号名命中该表，则把 **`Signal.source` 那一侧实体**的 `DuelIntent.throw` 置为对应的手
@@ -182,3 +182,57 @@
 > 允许触碰：`src/skills/tier2/matrix-duel.ts` + 其测试。
 >
 > **消费方语义**：`gdd.md`【R-108-70】动作词表（`throw.rock`/`throw.paper`/`throw.scissors`/`throw.void`）+【R-108-30】AI 出招。
+
+---
+
+## ✅ ENG-02 交付（主程 Lead session·2026-08-06）
+
+**三条「不能重组」的举证我逐条实查过**（不因上一轮你判对了就直接采信）：
+`Effect.kind` **十项**（set-flag / set-flag-tagged / modify-resource / set-state / set-sensor /
+set-visible / set-visible-tagged / destroy / destroy-tagged / reset-timer）— 无「加组件」✅；
+`SelfAction.kind` **五项**（set-flag / modify-resource / set-state / destroy / spawn）— 同样没有 ✅；
+全库唯一「组件类型名进数据」的是 `StatBind.bindings[].component`，但它是往**已存在组件**投影数值字段、
+源是 ModifierTotals/Stats 不是信号 → 够不着 ✅。**举证成立，缺口是真的。**
+
+**`t3-dialogue` 先例属实但形状不同**：它走 `InputQueue` 固定动作名 + `arg` 带可变部分。
+我核过能不能照搬——**不能**：InputQueue 是全局输入、不带来源实体，而本件必须认侧；AI 也塞不进 InputQueue。
+**所以你用 `Signal.source` 认侧、一条缝吃玩家 + AI 两侧，这个选择是对的**，照 spec 实现。
+
+**实现**：第三个系统 `matrix-duel-intent`（**Commit 相位**）读本拍 `Signal` → 命中 `intentSignals`
+→ 给 `Signal.source` 那一侧挂 `DuelIntent`（已有则覆盖）。落盘门四判：手须在 `throws` 内 ·
+信号名非空 · 一个信号名不许映射两只手（同名两义）· 类型必须是对象。
+
+### ⚠ spec 没提到的定序地雷（已实测·这是本条最需要交接的一点）
+
+本系统读 `Signal`，而 `event-when` 是 Signal 写者且排在 `resource-apply` 之后。**放 Update 相位就闭合成环**——
+实测把它改 Update，`topological-sort` 报：
+
+```
+环 [resource-apply, event-when, self-rule, matrix-duel, matrix-duel-intent]
+（闭环组件 DuelIntent / Signal / Resource / ResourceModify / Flag / State）
+```
+
+**注意它不抛**：REQ-CYCLEHAZ B 之后是「告警 + 按注册序确定性裁决」，**落序不合语义但照跑**，
+接缝**静默失效**（实测两条接缝用例转红、其余全绿）。⇒ 又一个只告警不拦的失败面，不能靠它兜底。
+**解法 = 放 Commit**，走「标准离散反馈·一拍延迟」（同 `effect-apply` 口径），零定序改动（边界要求不碰拆相位）。
+
+### 🎮 游戏侧要知道的两件事
+
+1. **一拍延迟**：本拍发信号 → **下一拍** Update 结算。对局是秒级时区、一拍 = 一帧，无感知；
+   但 **S4 验收剧本写步骤时要算上这一拍**（点击后立刻断言血量会失败）。
+2. **`add-throw` 补丁增设的手，必须预先在 `intentSignals` 里留条目**才出得了——
+   `intentSignals` 是基表字段、不参与补丁 fold（补丁三闭集改不到它）。
+   108 的【R-108-70】动作词表已含 `throw.void`，**开局就把四条都填上**即可，别等拿到「第四指」遗物再想。
+   （这是与 ENG-01 同类的「静态表被消费方数据打碎」形态，只是这次成本是**预先填满**而非改引擎，故不开新单。）
+
+**测试（spec 点名五条 + 两条我加的）**：① 玩家侧信号产 intent 并结算 · ② AI 侧同名信号同拍各自成立 ·
+③ 同一时区改主意 = 覆盖 · ④ 不填 `intentSignals` 零回归 · ⑤ 落盘门四判 ·
+\+ 接缝只认对局侧（信号源不是挂 hp 的一侧 → 不产 intent）· + 系统契约（相位/reads/writes/runsAfter）· + 不成环回归。
+
+**撤修复验红两轮**（带锚点命中断言）：① 相位改 Update → **3 红**（含两条接缝用例，即上文那个静默失效）；
+② 撤核心写入 → **2 红**。
+
+**边界**：只加接缝系统 + 落盘门 + 测试 + `reads` 申报补 `Signal`。**未碰**判定 / 补丁 fold / 定序拆相位 /
+伤害缩放 / 「≥2 份同 id 硬抛」。新系统放 `systems` **末尾**，既有「两系统契约」测试的位置解构不受影响。
+
+**验证**：`matrix-duel` 53/53 · **tier2 全域 653/653** · `scoped-gate` scope=full 全绿（退出码直核）。

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { topologicalSort } from '@engine/core/topological-sort.js';
 import { SystemPhase } from '@engine/core/types.js';
-import type { Resource, Signal, Flag, Effect } from '@engine/protocol/components.js';
+import type { Resource, Signal, Flag, Effect, EventWhen } from '@engine/protocol/components.js';
 import {
   matrixDuelCapability,
   checkDuelMatrix,
@@ -686,3 +686,108 @@ describe('matrix-duel — 伤害缩放（REQ-108-ENG-01）', () => {
   });
 });
 
+
+// ── REQ-108-ENG-02 输入接缝：信号 → DuelIntent ───────────────────────────────
+// 本件此前有出口没入口（describe 原文「双方各挂 DuelIntent」= 假定别人挂好）。已逐条实查：
+// Effect.kind 十项 / SelfAction.kind 五项都没有「加组件」，prefab 只建新实体 → 现有能力一条走不通。
+// 放 Commit 相位（一拍延迟）而非 Update：本系统读 Signal，而 event-when 是 Signal 写者且排在
+// resource-apply 之后，放 Update 会合围成文件头那个真环。
+describe('matrix-duel — 输入接缝 intentSignals（REQ-108-ENG-02）', () => {
+  const INTENT_TABLE = {
+    hpResource: 'hp',
+    throws: ['rock', 'paper'],
+    beats: { rock: [], paper: ['rock'] },
+    payoff: { rock: { damage: 5 }, paper: { damage: 6 } },
+    tie: { selfDamage: 0 },
+    intentSignals: { rock: 'throw.rock', paper: 'throw.paper' },
+  };
+  /** 把「发信号」按真实通路装上去：EventWhen 挂在侧实体上 → Signal.source = 该侧。 */
+  const arm = (w: World, side: string, signal: string, flagId: string): void => {
+    w.addComponent(side, { type: 'EventWhen', signal, when: { kind: 'flag', id: flagId }, mode: 'edge', armed: false } as unknown as EventWhen);
+  };
+  const setFlag = (w: World, id: string, active: boolean): void => {
+    const e = `flag:${id}`;
+    if (!w.hasComponent(e, 'Flag')) w.createEntity(e);
+    w.addComponent(e, { type: 'Flag', id, active } as Flag);
+  };
+  const thrownOf = (w: World, eid: string): string | undefined =>
+    w.getComponent<DuelIntent>(eid, 'DuelIntent')?.throw;
+
+  it('① 玩家侧 + ② AI 侧：同拍两条信号各自产 intent，下一拍结算', () => {
+    const w = table(INTENT_TABLE);
+    arm(w, 'p1', 'throw.rock', 'p1_rock');   // 玩家点 UI → 信号
+    arm(w, 'p2', 'throw.paper', 'p2_paper'); // AI 由 event-when 发同形信号
+    setFlag(w, 'p1_rock', true);
+    setFlag(w, 'p2_paper', true);
+
+    w.tick(); // Update: event-when 发两条信号 → Commit: 接缝各自挂 intent（本拍不结算）
+    expect(thrownOf(w, 'p1')).toBe('rock');
+    expect(thrownOf(w, 'p2')).toBe('paper');
+    expect(hp(w, 'p1')).toBe(20); // 一拍延迟：本拍还没结算
+
+    w.tick(); // Update: 两侧齐备 → 结算（paper 胜 rock，p1 挨 6）
+    expect(hp(w, 'p1')).toBe(20 - 6);
+    expect(hp(w, 'p2')).toBe(20);
+    expect(thrownOf(w, 'p1')).toBeUndefined(); // 结算后清 intent（read-then-settle 不变）
+  });
+
+  it('③ 同一时区内改主意 = 覆盖（结算按最后一次）', () => {
+    const w = table(INTENT_TABLE);
+    arm(w, 'p1', 'throw.rock', 'p1_rock');
+    setFlag(w, 'p1_rock', true);
+    w.tick();
+    expect(thrownOf(w, 'p1')).toBe('rock');   // 只有一侧有 intent → 不结算
+
+    // 改主意：同一侧改发 paper（真实里是玩家又点了另一颗按钮）
+    w.addComponent('p1', { type: 'EventWhen', signal: 'throw.paper', when: { kind: 'flag', id: 'p1_paper' }, mode: 'edge', armed: false } as unknown as EventWhen);
+    setFlag(w, 'p1_paper', true);
+    w.tick();
+    expect(thrownOf(w, 'p1')).toBe('paper');  // 覆盖成功
+    expect(hp(w, 'p1')).toBe(20);             // 仍只有一侧，未结算
+  });
+
+  it('④ 不填 intentSignals → 信号来了也不产 intent（零回归）', () => {
+    const w = table({ ...INTENT_TABLE, intentSignals: undefined });
+    arm(w, 'p1', 'throw.rock', 'p1_rock');
+    setFlag(w, 'p1_rock', true);
+    w.tick();
+    expect(thrownOf(w, 'p1')).toBeUndefined();
+  });
+
+  it('接缝只认对局侧实体：信号源不是挂着 hp 的一侧 → 不产 intent', () => {
+    const w = table(INTENT_TABLE);
+    w.createEntity('ui'); // 路人实体（没有 hp Resource）也发同名信号
+    arm(w, 'ui', 'throw.rock', 'ui_rock');
+    setFlag(w, 'ui_rock', true);
+    w.tick();
+    expect(thrownOf(w, 'ui')).toBeUndefined();
+  });
+
+  it('⑤ 落盘门：手不在 throws 内 / 信号名空 / 同名两义 → 报错拒收', () => {
+    const check = (intentSignals: unknown): string => checkDuelMatrix({
+      type: 'DuelMatrix', hpResource: 'hp', throws: ['rock', 'paper'],
+      beats: { rock: [], paper: ['rock'] },
+      payoff: { rock: { damage: 1 }, paper: { damage: 1 } }, tie: { selfDamage: 0 },
+      intentSignals,
+    } as unknown as DuelMatrix).join();
+    expect(check({ lizard: 'throw.lizard' })).toMatch(/intentSignals 有多余条目 "lizard"/);
+    expect(check({ rock: '' })).toMatch(/信号名未填/);
+    expect(check({ rock: 'throw.x', paper: 'throw.x' })).toMatch(/同时映射到/);
+    expect(check(['throw.rock'])).toMatch(/不是「手 → 信号名」的对象/);
+    expect(check({ rock: 'throw.rock', paper: 'throw.paper' })).toBe(''); // 合法写法零误报
+  });
+
+  it('接缝系统的契约：Commit 相位 · 诚实 reads·writes · 排在播报之后', () => {
+    const seam = matrixDuelCapability.systems.find((s) => s.id === 'matrix-duel-intent')!;
+    expect(seam.phase).toBe(SystemPhase.Commit); // 放 Update 会与 event-when 合围成环（下条实测）
+    expect(seam.reads).toEqual(['DuelMatrix', 'Signal']);
+    expect(seam.writes).toEqual(['DuelIntent']);
+    expect(seam.runsAfter).toEqual(['matrix-duel-announce']); // 播报的胜负信号不得被当成出招输入
+  });
+
+  it('定序：加了读 Signal 的接缝系统后仍不成环（文件头那个环的回归守卫）', () => {
+    const systems = [...matrixDuelCapability.systems, ...resourceCapability.systems,
+      ...eventWhenCapability.systems, ...effectApplyCapability.systems];
+    expect(() => topologicalSort(systems)).not.toThrow();
+  });
+});

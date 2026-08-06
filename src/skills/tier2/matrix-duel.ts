@@ -127,6 +127,14 @@ export interface DuelMatrix extends Component, DuelTable {
   loseSignal?: string; // 败方实体上的通用信号
   resolvedSignal?: string; // 对局实体上的「本回合已结算」信号（演出 cue 用）
   patches?: DuelPatch[];
+  /**
+   * 输入接缝（REQ-108-ENG-02）：`手 → 信号名`。本拍出现该名 Signal 时，把 **`Signal.source` 那一侧**
+   * 的 `DuelIntent.throw` 置为对应的手（已有则覆盖 = 同一时区内改主意）。缺省不填 = 现状零回归。
+   * 一条缝吃两侧：玩家点 UI 发信号、AI 由 event-when 发**同名信号**，都经 `Signal.source` 认侧。
+   * ⚠ `add-throw` 补丁**运行时增设**的手若要可出，必须**预先**在本表留条目——
+   *   补丁三闭集改不到 `intentSignals`（它是基表字段，不参与 fold）。
+   */
+  intentSignals?: Record<DuelThrowId, string>;
 }
 
 /** 某一侧本回合出的手（read-then-settle：结算后由本能力清除，同回合绝不二次结算）。 */
@@ -408,6 +416,26 @@ function foldDuelMatrix(m: DuelMatrix): { table: DuelTable; issues: string[] } {
   if (!tie || !isFiniteNum(tie.selfDamage)) issues.push('tie.selfDamage 不是有限数字（平局僵持伤；取负 = 双方回血）');
   checkEffects(tie?.effects, hpResource, 'tie', issues);
 
+  // 输入接缝（REQ-108-ENG-02）：手必须在 throws 内、信号名非空、且一个信号名不许映射到两只手
+  // （同名两义 = 点一下同时想出两手，永不自愈的数据错，装载期直接拒收）。
+  if (m.intentSignals !== undefined) {
+    if (typeof m.intentSignals !== 'object' || m.intentSignals === null || Array.isArray(m.intentSignals)) {
+      issues.push('intentSignals 不是「手 → 信号名」的对象');
+    } else {
+      const bySignal = new Map<string, DuelThrowId>();
+      for (const [thrown, sigName] of Object.entries(m.intentSignals)) {
+        if (!known.has(thrown)) issues.push(`intentSignals 有多余条目 "${thrown}"（不在 throws 里）`);
+        if (typeof sigName !== 'string' || sigName.length === 0) {
+          issues.push(`intentSignals["${thrown}"] 的信号名未填（要写 UI/AI 发的那个 Signal 名）`);
+          continue;
+        }
+        const prev = bySignal.get(sigName);
+        if (prev !== undefined) issues.push(`intentSignals 里信号名 "${sigName}" 同时映射到 "${prev}" 与 "${thrown}"（一个信号只能出一手）`);
+        else bySignal.set(sigName, thrown);
+      }
+    }
+  }
+
   return { table: { throws, beats, payoff, tie }, issues };
 }
 
@@ -506,7 +534,7 @@ export const matrixDuelCapability = defineCapability({
         },
       },
     },
-    reads: ['DuelMatrix', 'DuelIntent', 'DuelOutcome'],
+    reads: ['DuelMatrix', 'DuelIntent', 'DuelOutcome', 'Signal'],
     writes: ['ResourceModify', 'DuelIntent', 'DuelOutcome', 'Signal'],
     consumes: ['DuelOutcome'],
   },
@@ -698,5 +726,56 @@ export const matrixDuelCapability = defineCapability({
         }
       },
     },
+    {
+      // ③ 输入接缝（Commit·REQ-108-ENG-02）：读本拍 Signal → 给 `Signal.source` 那一侧挂 DuelIntent。
+      // 本件此前**有出口没入口**（describe 原文「双方各挂 DuelIntent」= 假定别人挂好），而现有能力
+      // 一条都产不出组件：Effect.kind 十项 / SelfAction.kind 五项都没有「加组件」，prefab 只建新实体
+      // （已逐条实查）。范式对标 t3-dialogue 自带 advance/choose 输入接缝。
+      //
+      // **为什么放 Commit 而不是 Update**（定序·已实测·非纸面推理）：本系统读 Signal，而 event-when
+      // 是 Signal 写者且排在 resource-apply 之后，故放 Update 就闭合成环——实测把本系统改 Update，
+      // topological-sort 报：环 [resource-apply, event-when, self-rule, matrix-duel, matrix-duel-intent]
+      // （闭环组件 DuelIntent/Signal/Resource/ResourceModify/Flag/State）。
+      // ⚠ 注意它**不抛**：REQ-CYCLEHAZ B 之后是「告警 + 按注册序确定性裁决」，落序不合语义而照跑，
+      //   接缝会**静默失效**（实测两条接缝用例转红、其余全绿）——又一个只告警不拦的失败面，故不能靠它兜。
+      // 放 Commit 后走「标准离散反馈·一拍延迟」（同 effect-apply 口径）：本拍点击 → 下一拍 Update 结算。
+      // 对局是秒级时区、一拍 = 一帧，无感知代价；换来零定序改动（边界要求不碰拆相位）。
+      id: 'matrix-duel-intent',
+      phase: SystemPhase.Commit,
+      reads: ['DuelMatrix', 'Signal'],
+      writes: ['DuelIntent'],
+      consumes: [],
+      runsAfter: ['matrix-duel-announce'], // 播报的胜负信号绝不该被当成出招输入（同拍两者都在 Commit）
+      execute(world: IWorld) {
+        const matrixIds = world.query('DuelMatrix').map(([id]) => id).sort();
+        if (matrixIds.length === 0) return;
+        for (const mid of matrixIds) {
+          const md = world.getComponent<DuelMatrix>(mid, 'DuelMatrix');
+          if (!md || !md.intentSignals) continue;
+          const table = resolveDuelMatrix(md);
+          // 信号名 → 手（反查表按信号名建，避免每个信号都遍历一遍 intentSignals）
+          const bySignal = new Map<string, DuelThrowId>();
+          for (const [thrown, sigName] of Object.entries(md.intentSignals)) {
+            if (typeof sigName === 'string' && sigName.length > 0) bySignal.set(sigName, thrown);
+          }
+          if (bySignal.size === 0) continue;
+          // 实体按 id 升序遍历（确定性·同本件其余系统）
+          for (const [eid] of world.query('Signal').sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))) {
+            const s = world.getComponent<Signal>(eid, 'Signal');
+            if (!s) continue;
+            const thrown = bySignal.get(s.name);
+            if (thrown === undefined) continue;
+            // 表外的手不许经输入接缝溜进来（结算期对表外的手是硬抛·此处提前挡在门口，
+            // 因为 add-throw 补丁增设的手若没在 intentSignals 里留条目，本来就出不了）。
+            if (!table.throws.includes(thrown)) continue;
+            const side = s.source;
+            if (!side || !world.hasComponent(side, 'Resource')) continue; // 只认真正的对局侧（挂着 hp 的实体）
+            // 已有 intent 则覆盖——同一时区内改主意是合法操作。
+            world.addComponent(side, { type: 'DuelIntent', throw: thrown, ...(md.duelId ? { duelId: md.duelId } : {}) } as DuelIntent);
+          }
+        }
+      },
+    },
+
   ],
 });
