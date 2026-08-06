@@ -498,6 +498,10 @@ export class ThreeRenderer implements RendererBackend {
   // 掷骰子（游戏层调·render-only 表现物理）：置位 → 下帧 sync 里把所有刚体抬高 + 随机翻滚重掷。
   rollDice(): void { this.rollPending = true; this.invalidate(); }
 
+  /** 取走本帧物理事件信号（RigidBody3D settleSignal/toppleSignal·REQ-3D-SETTLE-SIGNAL）。游戏输入胶水每帧调 →
+   *  `enqueueAction(signal,{arg:entityId})` → Signal → sim。与 pick() 同 pull 通路（本地外源输入·不进 hash·不碰确定性）。 */
+  drainPhysicsSignals(): { signal: string; arg: string }[] { return this.physics?.drainSignals() ?? []; }
+
   // 运行时对某刚体施力（render-only·输入胶水用）：拖拽甩球/点击弹射等**输入时算出方向**的冲量走这条命令式接口
   //   （同 pick/rollDice 先例）；纯数据的定向施力用 `Impulse3D` 组件（bump trigger）。物理未就绪则 no-op。
   applyImpulse(id: string, ix: number, iy: number, iz: number, torque?: readonly [number, number, number], mode: 'impulse' | 'velocity' = 'impulse'): void {

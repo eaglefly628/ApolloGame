@@ -31,6 +31,10 @@ export class PhysicsSystem {
   private readonly bodies = new Map<string, CANNON.Body>();
   private readonly impulseSeen = new Map<string, number>(); // Impulse3D 已施加的 trigger（同 shake/flash 触发范式·防每帧重复施力）
   private readonly joints = new Map<string, { c: CANNON.Constraint; anchor?: CANNON.Body; sig: string }>(); // Joint3D 约束池
+  // 物理事件出口（REQ-3D-SETTLE-SIGNAL）：落定/失稳信号队列 + 已发状态（去重·睡醒/回正后重新武装）。
+  private readonly pendingSignals: { signal: string; arg: string }[] = [];
+  private readonly settledArmed = new Set<string>(); // 已发过 settle·待睡醒重新武装
+  private readonly toppledArmed = new Set<string>(); // 已发过 topple·待回正重新武装
   private last = 0;
 
   // 每帧步进 + 写回 Transform3D。返回活跃刚体数（>0 → 渲染器把帧号折进 renderSig 持续重渲）。nowMs=performance.now()。
@@ -45,7 +49,7 @@ export class PhysicsSystem {
       seen.add(id);
       if (!this.bodies.has(id)) this.spawn(world, id);
     }
-    for (const [id, b] of this.bodies) if (!seen.has(id)) { cw.removeBody(b); this.bodies.delete(id); this.impulseSeen.delete(id); }
+    for (const [id, b] of this.bodies) if (!seen.has(id)) { cw.removeBody(b); this.bodies.delete(id); this.impulseSeen.delete(id); this.settledArmed.delete(id); this.toppledArmed.delete(id); }
     // 数据驱动施力（Impulse3D·nonce 触发）：trigger 变即施加一次线性/角冲量或直接设速度——弹/射/跳/击退的可复用原语。
     for (const [id] of ents) {
       const imp = world.getComponent<Impulse3D>(id, 'Impulse3D');
@@ -60,13 +64,38 @@ export class PhysicsSystem {
     const dt = this.last ? Math.min(0.05, (nowMs - this.last) / 1000) : STEP;
     this.last = nowMs;
     cw.step(STEP, dt, 4);
+    const SLEEPING = C!.Body.SLEEPING;
+    let live = 0; // fix③（RENDERHYG）：脏标 live 数**只计未入睡刚体**——入睡的骰子/碎片不再每帧白烧 GPU/刷阴影。
     for (const [id, b] of this.bodies) {
       const t = world.getComponent<Transform3D>(id, 'Transform3D');
       if (!t) continue;
       t.x = b.position.x; t.y = b.position.y; t.z = b.position.z;
       t.quat = [b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w];
+      const sleeping = b.sleepState === SLEEPING;
+      if (!sleeping) live++;
+      // 物理事件出口（REQ-3D-SETTLE-SIGNAL）：落定=入睡沿（发一次·睡醒重新武装）；失稳=倾角超阈值（发一次·回正重新武装）。
+      const rb = world.getComponent<RigidBody3D>(id, 'RigidBody3D');
+      if (rb?.settleSignal) {
+        if (sleeping) { if (!this.settledArmed.has(id)) { this.settledArmed.add(id); this.pendingSignals.push({ signal: rb.settleSignal, arg: id }); } }
+        else this.settledArmed.delete(id); // 睡醒 → 重新武装（再落定重发）
+      }
+      if (rb?.toppleSignal) {
+        const upY = 1 - 2 * (b.quaternion.x * b.quaternion.x + b.quaternion.z * b.quaternion.z); // 本体竖轴(0,1,0)转到世界后的 y 分量
+        const toppled = upY < Math.cos(rb.toppleTilt ?? 0.6); // 偏离竖直超阈值
+        if (toppled) { if (!this.toppledArmed.has(id)) { this.toppledArmed.add(id); this.pendingSignals.push({ signal: rb.toppleSignal, arg: id }); } }
+        else this.toppledArmed.delete(id); // 回正 → 重新武装
+      }
     }
-    return this.bodies.size;
+    return live;
+  }
+
+  /** 取走并清空本帧累计的物理事件信号（落定/失稳）。游戏输入胶水每帧调 → enqueueAction(signal,{arg}) → Signal → sim。
+   *  与 Pickable3D 同通路（本地外源输入·不进 hash·不碰确定性）。返回空数组表示无事件。 */
+  drainSignals(): { signal: string; arg: string }[] {
+    if (this.pendingSignals.length === 0) return [];
+    const out = this.pendingSignals.slice();
+    this.pendingSignals.length = 0;
+    return out;
   }
 
   // 重掷（掷骰子按钮）：所有刚体抬回各自起点上方 + 随机翻滚（render-only·随机自由）。bodies 为空（未步进过）则 no-op。
@@ -152,6 +181,8 @@ export class PhysicsSystem {
     const cw = new C!.World({ gravity: new C!.Vec3(0, cfg?.gravity ?? -42, 0) }); // 缺省 -42（世界单位大→色子下落干脆）
     cw.defaultContactMaterial.restitution = cfg?.restitution ?? 0.4; // 缺省弹一点
     cw.defaultContactMaterial.friction = cfg?.friction ?? 0.35;
+    cw.allowSleep = true; // 世界级睡眠开关（cannon 缺此则 per-body allowSleep 形同虚设·刚体永不入睡）——落定省算力 + 使
+    //   settleSignal 落定事件 + 脏标 live 排除入睡体（REQ-3D-SETTLE-SIGNAL / RENDERHYG fix③）真正生效。
     if (cfg?.solverIterations !== undefined) (cw.solver as unknown as { iterations: number }).iterations = cfg.solverIterations; // 堆叠需 ≥40（缺省 cannon GSSolver 10·iterations 在 GSSolver 子类上）
     const ground = new C!.Body({ mass: 0, shape: new C!.Plane() }); // 地面：静态·法线朝上·y=0
     ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);

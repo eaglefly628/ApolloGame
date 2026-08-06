@@ -221,6 +221,12 @@ export interface RigidBody3D extends Component {
   // 角约束/锁转轴（REQ-3D-RB-ANGFACTOR·opt-in·缺省 [1,1,1]=现行自由翻）：各轴角响应 0..1（0=锁该轴不转）。
   //   `[0,1,0]`=只准绕竖轴平旋·永不翻倒（硬币/筹码/冰球/圆盘·根治「立边」）；`[0,0,0]`=完全锁转（稳态骰面/招牌不晃）。
   angularFactor?: readonly [number, number, number];
+  // 物理事件出口（REQ-3D-SETTLE-SIGNAL·opt-in）：刚体「落定/失稳」经**与 Pickable3D 完全相同的通路**发信号
+  //   （渲染器 drainPhysicsSignals → 游戏输入胶水 enqueueAction(signal,{arg:entityId}) → keybind → Signal → sim）。
+  //   本地合法外源输入·**不碰确定性**（物理仍 render-only 不进 hash·只把「已发生的事」告诉 sim·同用户点击）。
+  settleSignal?: string; // 刚体入睡（落定停稳）发一次；睡醒再动再落定重发。掷骰读点数/碎片回收/落子判定。
+  toppleSignal?: string; // 倾角超阈值（失稳/倒下）发一次；回正后再倒重发。叠叠乐判负/多米诺。
+  toppleTilt?: number; // topple 倾角阈值（弧度·本体竖轴偏离世界竖直超此即算倒·缺省 ~0.6≈34°）
 }
 
 // ── Joint3D（render-only·不进 hash·物理关节/约束）── 在两个 RigidBody3D 之间（或本体↔世界固定锚）建 cannon 约束：绳/秋千/吊桥/布娃娃/铰链门。

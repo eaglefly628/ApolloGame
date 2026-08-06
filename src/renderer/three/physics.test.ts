@@ -309,3 +309,67 @@ describe('PhysicsWorld3D：物理世界按场景可配（REQ-3D-TOWER-STACK·堆
     phys.dispose();
   });
 });
+
+import { NON_DETERMINISTIC } from '@net/determinism.js';
+
+describe('RigidBody3D 物理事件出口（REQ-3D-SETTLE-SIGNAL·落定/失稳→信号）', () => {
+  beforeAll(async () => { await preloadPhysics(); });
+
+  function drop(rb: Partial<RigidBody3D>): { w: World; phys: PhysicsSystem } {
+    const w = new World();
+    w.createEntity('o');
+    w.addComponent('o', { type: 'Transform3D', x: 0, y: 3, z: 0 } as Transform3D);
+    w.addComponent('o', { type: 'Mesh3D', shape: 'box', width: 2, height: 2, depth: 2, frontTint: 0xffffff } as Mesh3D);
+    w.addComponent('o', { type: 'RigidBody3D', shape: 'box', mass: 1, ...rb } as RigidBody3D);
+    return { w, phys: new PhysicsSystem() };
+  }
+
+  it('settleSignal：落定入睡发一次·不重复·睡醒再落定重发', () => {
+    const { w, phys } = drop({ settleSignal: 'landed' });
+    const got: { signal: string; arg: string }[] = [];
+    for (let i = 1; i <= 400; i++) { phys.sync(w, i * 16.7); got.push(...phys.drainSignals()); } // 落定入睡
+    const landed = got.filter((s) => s.signal === 'landed');
+    expect(landed.length).toBe(1);          // 发一次
+    expect(landed[0]!.arg).toBe('o');        // arg=实体 id（同 Pickable3D 通路）
+    for (let i = 401; i <= 460; i++) phys.sync(w, i * 16.7);
+    expect(phys.drainSignals().length).toBe(0); // 睡着不重复发
+    // 睡醒（重掷）→ 再落定 → 重发一次
+    phys.roll(w);
+    const got2: { signal: string; arg: string }[] = [];
+    for (let i = 461; i <= 900; i++) { phys.sync(w, i * 16.7); got2.push(...phys.drainSignals()); }
+    expect(got2.filter((s) => s.signal === 'landed').length).toBe(1);
+    phys.dispose();
+  });
+
+  it('fix③（RENDERHYG）：入睡刚体不计入 live 数（脏标可歇·不白烧 GPU）', () => {
+    const { w, phys } = drop({ settleSignal: 'x' });
+    let live = 1;
+    for (let i = 1; i <= 400; i++) live = phys.sync(w, i * 16.7); // 跑到入睡
+    expect(live).toBe(0); // 入睡 → live=0（原来恒 bodies.size=1·永久占脏标）
+    phys.dispose();
+  });
+
+  it('toppleSignal：倾角超阈值发信号·平落不误发', () => {
+    // 平落（无翻滚）→ 竖直·永不 topple
+    const flat = drop({ toppleSignal: 'fell' });
+    const flatSig: { signal: string }[] = [];
+    for (let i = 1; i <= 300; i++) { flat.phys.sync(flat.w, i * 16.7); flatSig.push(...flat.phys.drainSignals()); }
+    expect(flatSig.filter((s) => s.signal === 'fell').length).toBe(0); // 平落不误发
+    flat.phys.dispose();
+    // 大角速度翻滚 → 倾角必超阈值 → 至少发一次
+    const tumble = drop({ toppleSignal: 'fell', avx: 10 });
+    const tSig: { signal: string }[] = [];
+    for (let i = 1; i <= 200; i++) { tumble.phys.sync(tumble.w, i * 16.7); tSig.push(...tumble.phys.drainSignals()); }
+    expect(tSig.filter((s) => s.signal === 'fell').length).toBeGreaterThanOrEqual(1); // 翻倒发信号
+    tumble.phys.dispose();
+  });
+
+  it('红线：settleSignal 不进 hash（RigidBody3D 仍在 NON_DETERMINISTIC·无新组件）', () => {
+    const w = new World();
+    w.createEntity('e');
+    const h0 = hashSnapshot(w.snapshot());
+    w.addComponent('e', { type: 'RigidBody3D', shape: 'box', settleSignal: 'x', toppleSignal: 'y' } as RigidBody3D);
+    expect(hashSnapshot(w.snapshot())).toBe(h0);              // 加物理事件字段不改 hash
+    expect(NON_DETERMINISTIC.has('RigidBody3D')).toBe(true);  // 走既有 render-only 通路·无新组件
+  });
+});
