@@ -7,3 +7,5 @@ export type { ReactionEntry, ReactionTable } from './presence.js';
 // 剧情起手 · 立绘/表情链（REQ-DIALOGUE M2·emotion→assetKey 纯数据表 + 分级降级）。
 export { resolveEmotionArt, emotionArtResolver, SAMPLE_EMOTION_ART } from './emotion-art.js';
 export type { EmotionArtTable, ArtFallback, ArtResolver } from './emotion-art.js';
+// 剧情起手屏（REQ-DIALOGUE M4·PUI 半·复制即跑的 VN 剧情屏模板·M1 三件已接线 bind + house 主题）。
+export { buildStoryStarter } from './story-starter.js';

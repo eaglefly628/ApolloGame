@@ -78,6 +78,9 @@ export interface DialogueView {
   speaker?: string;
   text?: string;
   emotion?: string;
+  /** 当前节点立绘 URL（可选·**源侧已解析**：游戏 DialogueSource 经 M2 emotionArtResolver 按 emotion 出图·已含分级降级）。
+   *  给了则 resolveDialogue 填 portrait.art（立绘随节点情绪换脸）；不给则 portrait 用字面 art / 名首字剪影占位。 */
+  art?: string;
   options?: Array<{ label: string; available: boolean }>;
 }
 /** 注入式对话数据源（游戏/引擎提供·解耦 ECS/@skills）：按对话实体 id 读当前节点视图。 */
@@ -103,8 +106,9 @@ export function resolveDialogue(node: LayoutNode, dsrc: DialogueSource): LayoutN
         const p = node.props as ChoiceListProps;
         props = { ...p, options: (v.options ?? []).map((o) => ({ label: o.label, available: o.available })) };
       } else {
+        // 立绘随节点：名=speaker·emotion=当前情绪·art=源侧 M2 已解析图（给了才覆盖·否则留字面 art/占位）。
         const p = node.props as PortraitProps;
-        props = { ...p, name: v.speaker ?? p.name, emotion: v.emotion ?? p.emotion };
+        props = { ...p, name: v.speaker ?? p.name, emotion: v.emotion ?? p.emotion, ...(v.art !== undefined ? { art: v.art } : {}) };
       }
     }
   }
