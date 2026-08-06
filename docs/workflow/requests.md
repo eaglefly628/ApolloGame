@@ -46,6 +46,13 @@
 
 <!-- REQ-STATUSSET-资源见底置状态位（game107 带出）→ **owner 2026-08-05 令废除出池**：107 尚未开工·无现役游戏被阻塞·不该占引擎硬槽。**spec 原文完整降级存 `docs/design/game107/requests.md`**（不占槽），107 真开工时先按核心规则重核「能否用现有闭集重组」再决定升回。 -->
 
+### REQ-CARTART-卡带美术存储归位 · 卡带被劈两半（玩法在仓外·美术在仓内）· [2026-08-06] · PST 提 · owner 选方案 b「口径彻底统一」 → **图纸=唯一真相 `docs/design/cartridge-art-storage-2026-08.md`（改动清单已写死到函数名/行号）** · status: **open（待 Lead 裁 + 派工）** · 优先级: P1 · 类型: 存储归位（伺服 + 写盘落点·**零引擎改动**）
+> **缺陷**：创作台建卡带落 gitignored 的 `library/<slug>/`，但台账/立项卡/生成真图落**跟踪区** `public/games/<slug>/`。故卡带美术照样被 mainbranch 推挤出冲突，而 `handle_art_sync`（一键提交推送）拒卡带的理由「不入引擎仓」**只对 manifest 成立** → 卡带美术冲突无解。内置游戏美术留仓内是对的，本单不动。
+> **关键发现（把本单从引擎面降成局部迁移）**：引擎拿的是 **URL 不是磁盘路径**（`game-art-load.ts::gameArtIndexUrl` + `manifest-game.ts:47`·index.json 的 path 以 baseUrl='' 原样当 URL 消费）→ URL 契约 `/games/<slug>/art/**` 不变则 `src/{assets,services,engine,renderer}` **一行不改·台账文件内容也不用改写**。
+> **PST 荐 b-full**（美术挪进 `library/<slug>/art/`）：版本历史免费到手（`_version_save` 本就 `add -A` 整个卡带目录）· 打包更简单 · sync 拒卡带的理由从此真正成立。备选 b-lite（.gitignore 反白名单·5 行零代码）代价=卡带美术零历史 + 漏写内置游戏即静默不入库。
+> **⚠ 不许只做一半**：⑥`scripts/art-replace.mjs`（写盘大脑落点）+ ⑦`art-ledger-guard.mjs`（扫描根）是 **Lead 独占域**，PST 改不了；缺它俩则「上传写 library·生成写 public」= **split-brain 比不改更糟**。故必须整批派工。其余 5 项在 PST 域内、图纸已写死，可随时照图施工。
+> **存量**：实测本仓 `git ls-files public/games/*` 全是内置游戏 → **迁移在本仓是空操作**，风险仅在 owner 本机未提交的卡带美术（移文件即可·非 git rm）。回滚=摘掉伺服回退 + 文件挪回，无数据格式变更。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
