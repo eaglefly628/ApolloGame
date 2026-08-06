@@ -328,7 +328,11 @@ describe('matrix-duel — 补丁：增设第四手（3×3 → 4×4 全查表可�
       const v = duelVerdict(t, a, b);
       if (v === 'tie') return { p1: 20 - t.tie.selfDamage, p2: 20 - t.tie.selfDamage };
       const [winT, loseT] = v === 'a' ? [a, b] : [b, a];
-      const dmg = t.payoff[winT].damage + (t.payoff[loseT].selfDamageOnLose ?? 0);
+      // damage 现为 DuelDamage（固定整数 | 缩放式）；本用例的表全是固定整数——
+      // 显式收窄并在不符时**抛错**，而不是静默取 base 糊过去（表=唯一真相，假设变了要当场炸）。
+      const raw = t.payoff[winT].damage;
+      if (typeof raw !== 'number') throw new Error(`本用例期望固定伤害，但 ${winT} 是缩放式`);
+      const dmg = raw + (t.payoff[loseT].selfDamageOnLose ?? 0);
       return v === 'a' ? { p1: 20, p2: 20 - dmg } : { p1: 20 - dmg, p2: 20 };
     };
 
@@ -490,3 +494,76 @@ describe('matrix-duel — 落盘门（Lead 附加②·坏补丁一律拒收，�
     expect(hp(w, 'p2')).toBe(20);
   });
 });
+
+// ── REQ-108-ENG-01：payoff 伤害按资源线性缩放（owner 2026-08-06 判 A·Lead 施工）──────────
+// 伤害 = base + 出手方该资源当前值 × step（game108 蓄力槽 = 10 + 蓄力×10）。
+// 缺省固定整数**零回归**；缩放式资源缺失退化成 base（绝不 NaN 污染 hp/快照 hash）。
+describe('matrix-duel — 伤害缩放（REQ-108-ENG-01）', () => {
+  // 蓄力槽用**各侧唯一 id**（引擎一实体一 Resource：p1/p2 身上那份已被 hp 占用，
+  // 故蓄力另居实体，走 resolveDamage 的全局按 id 回落——与 resource-apply 同口径）。
+  const charged = (chargeId: string, cur: number): World => {
+    const w = table({
+      hpResource: 'hp',
+      throws: ['rock', 'paper'],
+      beats: { rock: [], paper: ['rock'] },
+      payoff: {
+        rock: { damage: 5 },                                                  // 固定整数（零回归对照）
+        // 数值刻意压小：hp min=0 会截断，若伤害超过 20 血则各档结果都=0、断言分辨不出真假。
+        paper: { damage: { base: 2, scaleByResource: chargeId, step: 3 } }, // 缩放式
+      },
+      tie: { selfDamage: 0 },
+    });
+    w.createEntity('chargeSlot');
+    w.addComponent('chargeSlot', { type: 'Resource', id: chargeId, current: cur, min: 0, max: 9 } as Resource);
+    return w;
+  };
+
+  it('缩放式：蓄力 0/1/3 → 伤害 2/5/11（base + 值×step·各档可分辨）', () => {
+    for (const [charge, expectDmg] of [[0, 2], [1, 5], [3, 11]] as [number, number][]) { // base2 + 值×3
+      const w = charged('charge', charge);
+      const r = duel(w, 'rock', 'paper'); // paper 胜 rock
+      expect(r.p1).toBe(20 - expectDmg);  // p1 出 rock 落败，挨 paper 的缩放伤害
+    }
+  });
+
+  it('缺省固定整数 → 行为与旧版逐位一致（零回归）', () => {
+    const w = charged('charge', 4);       // 蓄力值故意非零，证明它只影响缩放式那一手
+    const r = duel(w, 'paper', 'rock');   // paper 胜：p2 出 rock 落败，挨缩放伤 = 2 + 4×3 = 14
+    expect(r.p2).toBe(20 - 14);
+    const w2 = charged('charge', 4);
+    // 固定伤害那手取胜的路径：让 rock 赢不了 paper，故直接查表断言固定值不被缩放污染
+    expect(w2.getComponent<DuelMatrix>('duel', 'DuelMatrix')!.payoff['rock']!.damage).toBe(5);
+  });
+
+  it('缩放资源不存在 → 退化成 base，绝不 NaN 污染 hp', () => {
+    const w = table({
+      hpResource: 'hp',
+      throws: ['rock', 'paper'],
+      beats: { rock: [], paper: ['rock'] },
+      payoff: { rock: { damage: 5 }, paper: { damage: { base: 10, scaleByResource: '不存在的槽', step: 10 } } },
+      tie: { selfDamage: 0 },
+    });
+    const r = duel(w, 'rock', 'paper');
+    expect(r.p1).toBe(10);                 // = base
+    expect(Number.isNaN(r.p1)).toBe(false);
+  });
+
+  it('落盘门：scaleByResource 缺失 / 非有限 base·step → 报错拒收', () => {
+    const bad = (dmg: unknown): string[] => checkDuelMatrix({
+      type: 'DuelMatrix', hpResource: 'hp', throws: ['a'], beats: { a: [] },
+      payoff: { a: { damage: dmg } }, tie: { selfDamage: 0 },
+    } as unknown as DuelMatrix);
+    expect(bad({ base: 10, step: 10 }).join()).toMatch(/scaleByResource 未填/);
+    expect(bad({ base: NaN, scaleByResource: 'c', step: 1 }).join()).toMatch(/base 不是有限数字/);
+    expect(bad({ base: 1, scaleByResource: 'c', step: NaN }).join()).toMatch(/step 不是有限数字/);
+  });
+
+  it('落盘门：scaleByResource 不得是 hpResource（两侧同 id 无法全局寻址）', () => {
+    const issues = checkDuelMatrix({
+      type: 'DuelMatrix', hpResource: 'hp', throws: ['a'], beats: { a: [] },
+      payoff: { a: { damage: { base: 10, scaleByResource: 'hp', step: 10 } } }, tie: { selfDamage: 0 },
+    } as unknown as DuelMatrix);
+    expect(issues.join()).toMatch(/不能是血量资源/);
+  });
+});
+

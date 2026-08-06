@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase, type Component, type EntityId, type IWorld } from '@engine/core/types.js';
-import type { ResourceModify, Signal } from '@engine/protocol/components.js';
+import type { Resource, ResourceModify, Signal } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  matrix-duel —— 「同时决策 × 收益矩阵」结算解释器（REQ-MATRIXDUEL·Lead 裁决 2026-08-04）。
@@ -59,9 +59,23 @@ export interface DuelEffect {
   amount: number; // 增减量（负 = 扣）
 }
 
+/**
+ * 伤害数值：**固定整数** 或 **按资源线性缩放**（REQ-108-ENG-01·owner 2026-08-06 判 A）。
+ * 缩放式：`base + 出手方该资源当前值 × step`（game108 蓄力槽 = `10 + 蓄力 × 10`）。
+ * 资源按**侧 local 寻址**（读出手方实体自己身上那份·同 hpResource 口径）；全程整数、无浮点。
+ * 为什么必须下沉而非用 event-when 穷举：静态规则集会被消费方自己的数据打碎——遗物把蓄力上限
+ * 3→4，穷举的 18 条规则就漏了第 4 档且**零报错**；线性式天然跟着上限走。
+ * 通用性：蓄力/怒气/连击/加注倍率/兵力同一形状。
+ */
+export type DuelDamage = number | {
+  base: number;            // 基础伤害
+  scaleByResource: string; // 按哪个 Resource 缩放（侧 local·不得是 hpResource，见落盘门）
+  step: number;            // 每 1 点资源加多少伤害
+};
+
 /** 某一手的收益（胜负两侧各一项，闭集两个数 + 一个具名信号 + 附带效果）。 */
 export interface DuelPayoff {
-  damage: number; // 出此手**取胜**时对败方造成的伤害（扣败方的 hpResource）
+  damage: DuelDamage; // 出此手**取胜**时对败方造成的伤害（扣败方的 hpResource）·可固定可按资源缩放
   selfDamageOnLose?: number; // 出此手**判负**时出手方额外自伤（剪刀祭式高风险手；缺省 0）
   signal?: string; // 出此手取胜时在**胜方实体**上发的具名 Signal（缺省回落 DuelMatrix.winSignal）
   effects?: DuelEffect[]; // 取胜时的附带资源效果（+1 洞察 / +1 拳票…）
@@ -162,12 +176,53 @@ function checkEffects(effects: DuelEffect[] | undefined, hpResource: string, at:
   });
 }
 
+/**
+ * 伤害取值（REQ-108-ENG-01）：固定整数直接返回；缩放式 = `base + 出手方该资源当前值 × step`。
+ * **侧 local 寻址**：只读 `attacker` 自己身上那份 Resource（两侧同 id 靠挂载实体区分·同 hpResource 口径）。
+ * 资源缺失/非有限 → 当 0（= 退化成 base·绝不 NaN 污染 hp 与快照 hash）。结果取整：全程整数、无浮点。
+ */
+export function resolveDamage(world: IWorld, damage: DuelDamage, attacker: EntityId): number {
+  if (typeof damage === 'number') return damage;
+  // 寻址口径**照抄 resource-apply**（atoms/resource/index.ts:149-153），不自创：
+  // ① 先看出手方**自己身上**那份 Resource（id 匹配才算）——两侧同 id 的槽靠挂载实体区分；
+  // ② 找不到再按 id 全局找（引擎一实体一组件，故 hp 与蓄力这类通常分居不同实体，
+  //    全局回落让「蓄力用各侧唯一 id」这种写法也能工作）。
+  let res = world.getComponent<Resource>(attacker, 'Resource');
+  if (!res || res.id !== damage.scaleByResource) {
+    res = undefined;
+    for (const [e] of world.query('Resource')) {
+      const r = world.getComponent<Resource>(e, 'Resource');
+      if (r && r.id === damage.scaleByResource) { res = r; break; }
+    }
+  }
+  // 资源缺失/非有限 → 当 0（退化成 base）：**绝不让 NaN 进 hp 与快照 hash**
+  // （同本 session 修 effect-apply NaN 污染的口径）。
+  const cur = res && Number.isFinite(res.current) ? res.current : 0;
+  return Math.trunc(damage.base + cur * damage.step);
+}
+
 function checkPayoffShape(p: DuelPayoff | undefined, hpResource: string, at: string, issues: string[]): void {
   if (!p || typeof p !== 'object') {
     issues.push(`${at} 缺收益条目（要写 {damage:数字}）`);
     return;
   }
-  if (!isFiniteNum(p.damage)) issues.push(`${at}.damage 不是有限数字`);
+  if (typeof p.damage === 'object' && p.damage !== null) {
+    // 缩放式：三字段齐全 + 资源名非空 + **不得是 hpResource**（两侧同 id 无法全局寻址，
+    // 同 checkEffects 的既有口径；拿血量当缩放源只会打中「第一个同 id 的资源」，是必错写法）。
+    const d = p.damage;
+    if (!isFiniteNum(d.base)) issues.push(`${at}.damage.base 不是有限数字`);
+    if (!isFiniteNum(d.step)) issues.push(`${at}.damage.step 不是有限数字`);
+    if (typeof d.scaleByResource !== 'string' || d.scaleByResource.length === 0) {
+      issues.push(`${at}.damage.scaleByResource 未填（缩放式伤害要指明按哪个 Resource 缩放）`);
+    } else if (d.scaleByResource === hpResource) {
+      issues.push(
+        `${at}.damage.scaleByResource 不能是血量资源 "${hpResource}"（两侧同 id 无法全局寻址）——`
+        + '换一个专用资源（如蓄力/怒气槽）',
+      );
+    }
+  } else if (!isFiniteNum(p.damage)) {
+    issues.push(`${at}.damage 不是有限数字（或写成 {base,scaleByResource,step} 缩放式）`);
+  }
   if (p.selfDamageOnLose !== undefined && !isFiniteNum(p.selfDamageOnLose)) {
     issues.push(`${at}.selfDamageOnLose 不是有限数字`);
   }
@@ -514,7 +569,8 @@ export const matrixDuelCapability = defineCapability({
             const wp = table.payoff[winThrow];
             const lp = table.payoff[loseThrow];
             // 败方挨两笔：胜方那手的 damage + 自己那手的 selfDamageOnLose（同一 hp 槽，合并成一条）。
-            const loserDelta = -wp.damage - (lp.selfDamageOnLose ?? 0);
+            // damage 可为缩放式 → 按**出手方（胜方）**自己身上那份资源取值（侧 local·同 hpResource 口径）。
+            const loserDelta = -resolveDamage(world, wp.damage, win.eid) - (lp.selfDamageOnLose ?? 0);
             if (loserDelta !== 0) addHp(lose.eid, loserDelta);
             addEffects(wp.effects);
             const winSignal = wp.signal ?? md.winSignal;
