@@ -116,3 +116,33 @@
 
 第一轮我验到「取错侧」就停了，**没有把「那条药方在真实数据形态下能不能成立」也验一遍**——
 药方本身没过测试就写进了 `capability-plan §5` 当实现约定。**开药方也要有实测**，与找 bug 同一标准。
+
+---
+
+### REQ-108-ENG-02-出招输入接缝 · `t2-matrix-duel` 补「信号 → DuelIntent」入口 · [2026-08-06] · **owner 判 A** · **施工主体 = 主程 Lead session**（本策划 session 不施工·防双头同单） · status: **open·已裁 A·待施工（S3 卡口之二）**
+
+> **要什么**：`DuelMatrix` 加可选字段 `intentSignals?: Record<手, 信号名>`。系统读本拍 `Signal`，
+> 若信号名命中该表，则把 **`Signal.source` 那一侧实体**的 `DuelIntent.throw` 置为对应的手
+> （已有 intent 则覆盖——同一时区内改主意是合法操作）。不填 `intentSignals` = 现状零回归。
+>
+> **为什么不能重组**（Lead 实查·留痕在 `capability-plan.md §4`「S3 实查发现」）：
+> `Effect.kind` 闭集十项、`SelfAction.kind` 五项**都没有「加组件」**；`t3-prefab` 只新建实体、
+> 不往已存在实体挂组件；`t2-weighted-spawn` 产 `SpawnRequest` 走 prefab 同上；
+> `matrix-duel` 自己的 `describe` 原文是「给双方实体各挂 `DuelIntent`」= **假定别人挂好、自己不提供入口**；
+> intent 也不能挪到别的实体——结算把**持 intent 的实体**当作该侧、伤害就扣它的 `hpResource`。
+> ⇒ **UI 动作 / AI 决策 → intent 这条路，现有能力一条都走不通。**
+>
+> **定性**：`matrix-duel` 是解释器型能力，目前**有出口没入口**。先例 = `t3-dialogue`
+> （自带 `dialogue.advance`/`dialogue.choose` 闭集输入接缝 + arg 通道，零游戏 handler）——
+> 本条就是给 matrix-duel 补上同形的那一半。
+>
+> **一次解决两侧**：玩家点 UI 发信号、AI 由 `t2-event-when`→加权表发**同名信号**，走同一条缝。
+>
+> **必须有的测试**：① 玩家侧信号产 intent 并结算；② AI 侧同名信号产 intent（两侧同拍各自成立）；
+> ③ 同一时区内改主意=覆盖；④ 不填 `intentSignals` 零回归；⑤ 落盘门：信号名非空、手必须在 `throws` 内。
+>
+> **边界（防加宽·复查门核对用）**：只加 `intentSignals` 的读信号置 intent 一处 + 落盘门 + 测试；
+> **不碰** 判定 / 补丁 fold / 定序拆相位 / 伤害缩放（`REQ-108-ENG-01`）/ 「≥2 份同 id 硬抛」。
+> 允许触碰：`src/skills/tier2/matrix-duel.ts` + 其测试。
+>
+> **消费方语义**：`gdd.md`【R-108-70】动作词表（`throw.rock`/`throw.paper`/`throw.scissors`/`throw.void`）+【R-108-30】AI 出招。
