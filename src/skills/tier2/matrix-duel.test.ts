@@ -565,5 +565,36 @@ describe('matrix-duel — 伤害缩放（REQ-108-ENG-01）', () => {
     } as unknown as DuelMatrix);
     expect(issues.join()).toMatch(/不能是血量资源/);
   });
+
+  // 复查 session 实测撞出（c7d4c2b3·owner 2026-08-06 令开单）：出手方身上没有该 id、而世界里挂着
+  // **两份及以上同 id** 时，旧实现的全局回落取「第一个」——p2 用自己蓄力 0 的手，却按 p1 的蓄力 3
+  // 算伤害，**无报错无告警、只是数字错**。落盘门抓不到（落盘时看不见世界里有几份同 id），
+  // 故按本文件既定规矩（表外的手 / >2 份 DuelIntent）点名硬抛：永不自愈的数据错不许静默。
+  it('同 id 蓄力槽挂了两份 → 点名硬抛，不静默取错侧', () => {
+    const twoSlots = (): World => {
+      const w = table({
+        hpResource: 'hp',
+        throws: ['rock', 'paper'],
+        beats: { rock: [], paper: ['rock'] },
+        payoff: { rock: { damage: 5 }, paper: { damage: { base: 2, scaleByResource: 'charge', step: 3 } } },
+        tie: { selfDamage: 0 },
+      });
+      // 两份同 id：p1 侧 3 / p2 侧 0（都不挂在 p1/p2 身上——那两个槽已被 hp 占用）
+      w.createEntity('chargeP1');
+      w.addComponent('chargeP1', { type: 'Resource', id: 'charge', current: 3, min: 0, max: 9 } as Resource);
+      w.createEntity('chargeP2');
+      w.addComponent('chargeP2', { type: 'Resource', id: 'charge', current: 0, min: 0, max: 9 } as Resource);
+      return w;
+    };
+    // p2 出 paper 取胜，自己蓄力 0 → 期望伤害 = base 2；旧实现取到 p1 的 3 → 11（静默错 9 点血）
+    expect(() => duel(twoSlots(), 'rock', 'paper')).toThrow(/挂了 2 份同 id 的 Resource/);
+    // 报错必须点名涉事实体，照 ">2 份 DuelIntent" 的口径
+    expect(() => duel(twoSlots(), 'rock', 'paper')).toThrow(/chargeP1[\s\S]*chargeP2/);
+  });
+
+  it('唯一同 id 槽 + 出手方身上无该资源 → 全局回落照常工作（零回归）', () => {
+    const w = charged('charge', 3);        // 只有一份 charge → 回落取它
+    expect(duel(w, 'rock', 'paper').p1).toBe(20 - (2 + 3 * 3));
+  });
 });
 

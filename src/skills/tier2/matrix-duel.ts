@@ -189,10 +189,23 @@ export function resolveDamage(world: IWorld, damage: DuelDamage, attacker: Entit
   //    全局回落让「蓄力用各侧唯一 id」这种写法也能工作）。
   let res = world.getComponent<Resource>(attacker, 'Resource');
   if (!res || res.id !== damage.scaleByResource) {
+    // 全局回落**必须唯一**：出手方身上没有该 id 时，「取第一个同 id 的」会让 A 侧按 B 侧的槽算伤害
+    // ——无报错无告警、只是数字错，正是本文件开头骂过的那类失败态（复查实测：p2 以自身蓄力 0
+    // 取胜却按 p1 的蓄力 3 结算，多打 9 点血）。落盘门抓不到（落盘时看不见世界里挂了几份同 id），
+    // 故与「表外的手」「>2 份 DuelIntent」同口径：永不自愈的数据错点名硬抛。
     res = undefined;
+    const hits: EntityId[] = [];
     for (const [e] of world.query('Resource')) {
       const r = world.getComponent<Resource>(e, 'Resource');
-      if (r && r.id === damage.scaleByResource) { res = r; break; }
+      if (r && r.id === damage.scaleByResource) { hits.push(e); if (!res) res = r; }
+    }
+    if (hits.length > 1) {
+      throw new Error(
+        `matrix-duel: 出手方 "${attacker}" 身上没有资源 "${damage.scaleByResource}"，而世界里挂了 `
+        + `${hits.length} 份同 id 的 Resource（全局回落只能有一份，否则会按错侧的值结算伤害）——`
+        + `涉事实体：${hits.map((e) => `"${e}"`).join(' / ')}。`
+        + `缩放槽请各侧用唯一 id（如 "p1.charge" / "p2.charge"），或把该槽挂到出手方实体上。`,
+      );
     }
   }
   // 资源缺失/非有限 → 当 0（退化成 base）：**绝不让 NaN 进 hp 与快照 hash**
