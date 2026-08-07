@@ -122,6 +122,7 @@ async function main() {
 
       const cl = await until('对决');
       check(`R${round} 进到对决时区（亮拳）`, cl.phase === '对决' && !cl.timeout, `实读 ${cl.phase}`);
+      await page.waitForTimeout(400);   // 等本回合结算落地再拍——不然拍到的是上一回合的手（实测踩过）
       if (round === 1) await shot('4-clash-reveal');
 
       await page.waitForTimeout(700);

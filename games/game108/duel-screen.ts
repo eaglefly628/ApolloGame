@@ -181,10 +181,31 @@ function tableRow(view: DuelView): LayoutNode {
       ? { text: HAND_ICON[shown[side]], size: 'xl', color: side === 'p1' ? 'gold' : 'danger', stroke: true, glow: true }
       : { text: '❔', size: 'lg', color: 'sub' },
   });
+  /** 一侧的亮手：**带名字**，且**上下排布与面板一致**（对手在上、你在下）。 */
+  const row = (side: Side, id: string, name: string): LayoutNode => ({
+    type: 'Panel', id: `${id}-row`, props: { bare: true },
+    layout: { direction: 'row', align: 'center', justify: 'center', gap: 10, width: 240 },
+    children: [
+      {
+        type: 'Label', id: `${id}-n`,
+        props: { text: name, size: 'sm', color: side === 'p1' ? 'gold' : 'danger', bold: true },
+      },
+      hand(side, id),
+    ],
+  });
   return {
+    // ⚠ **归属可读**（owner 2026-08-07 当场指出·我的七问整个漏了这一维）：
+    // 第一版是「对手的手 | 石板 | 你的手」**横排且零文字**——玩家看到左右两只拳，
+    // **根本不知道哪只是自己出的**。唯一区别是颜色（金=你/红=对手），而这个约定从没告诉过玩家；
+    // 更糟的是面板本身是**上下**布局（对手在上、你在下），亮手却是**左右** ⇒ 空间映射直接断了。
+    // 现在：**上下排 + 每侧带名字**，与面板的上下关系严丝合缝。
     type: 'Panel', id: 'table', props: { bare: true },
-    layout: { direction: 'row', align: 'center', justify: 'center', gap: revealed ? 26 : 18 },
-    children: [hand('p2', 'shown-p2'), ruleSlab(), hand('p1', 'shown-p1')],
+    layout: { direction: 'column', align: 'center', justify: 'center', gap: revealed ? 6 : 4 },
+    children: [
+      row('p2', 'shown-p2', '对手'),
+      ruleSlab(),
+      row('p1', 'shown-p1', '你'),
+    ],
   };
 }
 

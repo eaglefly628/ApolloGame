@@ -48,21 +48,29 @@ export function mount(container: HTMLElement): () => void {
     for (const s of SIDES) {
       if (prevHp[s] > hp[s]) lastOutcome = { winner: s === 'p1' ? 'p2' : 'p1', damage: prevHp[s] - hp[s] };
     }
-    if (phase === 'clash' && prevPhase !== 'clash') tieThisRound = true;      // 进对决先假定平局
+    const round = num('round') || 1;
+    // **本回合结算落地了没有**（真渲染目击到的坑）：亮手读的是 `lastThrow`、结果读的是血量差，
+    // 而这两样都要等结算那一拍才更新——结算比「进对决」晚一拍。不判这个，进对决的头一小段
+    // 屏上摆的是**上一回合**的手和伤害：我明明出了布，屏上写「你 ✌️剪 · 被打中 -20」。
+    // 判据用回合数：结算会把 `round` +1，所以 `round > roundAtClash` ⇔ 本回合已结算。
+    if (phase === 'clash' && prevPhase !== 'clash') { roundAtClash = round; lastOutcome = undefined; tieThisRound = true; }
+    const settled = round > roundAtClash;
     if (lastOutcome && lastOutcome.damage > 0) tieThisRound = false;
     prevHp = { ...hp }; prevPhase = phase;
 
     return {
       phase,
       phaseLeft: total > 0 ? Math.max(0, 1 - elapsed / total) : 0,
-      round: num('round') || 1,
+      round,
       hp,
       charge,
       smoke: { uses: num('smoke:uses:p1'), hidden: !!(engine.world.getComponent('smoke:res:p1', 'Flag') as { active: boolean } | undefined)?.active },
       ...(intent ? { submitted: intent.throw } : {}),
-      ...(phase === 'clash' || phase === 'settle' ? { shown } : {}),
-      ...(lastOutcome ? { outcome: lastOutcome } : tieThisRound && (phase === 'clash' || phase === 'settle') && shown.p1 && shown.p2
-        ? { outcome: { winner: 'tie' as const, damage: 0 } } : {}),
+      // 只有本回合真结算了才亮手/出结果——否则揭晓期摆的是上一回合的数据（见上面 settled 注释）。
+      ...(settled && (phase === 'clash' || phase === 'settle') ? { shown } : {}),
+      ...(settled && lastOutcome ? { outcome: lastOutcome }
+        : settled && tieThisRound && (phase === 'clash' || phase === 'settle') && shown.p1 && shown.p2
+          ? { outcome: { winner: 'tie' as const, damage: 0 } } : {}),
     };
   }
 
@@ -70,6 +78,7 @@ export function mount(container: HTMLElement): () => void {
   let prevHp: Record<Side, number> = { p1: HP_MAX, p2: HP_MAX };
   let prevPhase: Phase = 'charge';
   let tieThisRound = false;
+  let roundAtClash = 0;
   let lastOutcome: { winner: Side | 'tie'; damage: number } | undefined;
 
   /**
