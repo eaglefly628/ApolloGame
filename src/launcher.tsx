@@ -181,6 +181,17 @@ export const GAMES: GameEntry[] = [
     icon: '⚓',
     status: 'playable',
   },
+  {
+    id: 'game211',
+    title: 'Game 211: 翻命扑克 · 战斗重做',
+    subtitle: 'game-g fork · 实时物理自动战斗（在建）',
+    description:
+      'game-g《翻命扑克》的战斗重做分支（owner 2026-08-07：不动 game-g、fork 出来改）。元层原样继承——52 历史名将 / 天罡 / 地支 / 52 关战役 / 经济 / 六屏大厅全部照旧；**只换战斗**：回合制三路掷命 → 实时、物理驱动、自动交战的 RTS 式战场（玩家操作收在战前布阵 + 战中投技能，不微操单位）。当前=忠实 fork 基线（战斗仍是旧回合制核，等物理线 A/B 裁决后整块替换）。能力总览见 games/game211/design/capability-plan.md。',
+    color: '#101c2a',
+    accentColor: '#7c9cff',
+    icon: '⚔️',
+    status: 'playable',
+  },
 ];
 
 // 客户端货架实际渲染表（下方 Launcher 组件 + CartridgeCarousel 消费这份，不消费 GAMES 本身）：

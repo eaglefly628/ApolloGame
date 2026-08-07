@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "slug": "game211",
+  "concept": {
+    "name": "翻命扑克 · 战斗重做",
+    "pitch": "game-g《翻命扑克》的战斗重做分支（owner 2026-08-07 拍板：不动 game-g、fork 出来改）。元层原样继承——52 历史名将 / 天罡 / 地支 / 52 关战役 / 经济 / 六屏大厅全部照旧；只换战斗：回合制三路掷命 → 实时、物理驱动、自动交战的 RTS 式战场，玩家操作收在战前布阵 + 战中投技能，不微操单位。充分吃引擎的碰撞物理与实例化批渲。",
+    "refs": "game-g(元层来源),Totally Accurate Battle Simulator,They Are Billions,game-103(实时零系统代码先例)",
+    "style": "沿用 game-g 玄铁/锦霞双皮 + LayoutNode 闭集；战场走 render 组件 + 批渲后端"
+  },
+  "signoffs": {},
+  "evidence": {},
+  "history": [
+    {
+      "action": "concept",
+      "at": "2026-08-07T18:46:46.762Z"
+    }
+  ]
+}

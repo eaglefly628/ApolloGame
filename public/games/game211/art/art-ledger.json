@@ -1,0 +1,3186 @@
+{
+  "version": 1,
+  "game": "game211",
+  "mode": "requirements",
+  "count": 110,
+  "rows": [
+    {
+      "no": "art-01",
+      "skinKey": "game211/hero/sA",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/AS",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, deep steel blue tone, legendary, ornate gilded armor, radiant aura, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "孙武（兵圣），春秋·齐/吴 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·孙武「兵圣」（春秋·齐/吴·♠A·orange）：《孙子兵法》东方兵学之祖，影响全球 2500 年",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「sA」·写回=fill 别名登记 game211/hero/sA（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/AS.svg",
+        "localId": "game211/hero/sA"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-02",
+      "skinKey": "game211/hero/hA",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/AH",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "mongol steppe warlord, fur-trimmed helm, composite bow motif, crimson red tone, legendary, ornate gilded armor, radiant aura, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "成吉思汗（一代天骄），13C·蒙古 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·成吉思汗「一代天骄」（13C·蒙古·♥A·orange）：史上最大陆地帝国，骑兵机动战革命",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「hA」·写回=fill 别名登记 game211/hero/hA（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/AH.svg",
+        "localId": "game211/hero/hA"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-03",
+      "skinKey": "game211/hero/dA",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/AD",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, amber gold tone, legendary, ornate gilded armor, radiant aura, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "亚历山大大帝（征服者），BC4C·马其顿 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·亚历山大大帝「征服者」（BC4C·马其顿·♦A·orange）：十年无败绩，三十岁征服已知世界",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「dA」·写回=fill 别名登记 game211/hero/dA（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/AD.svg",
+        "localId": "game211/hero/dA"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-04",
+      "skinKey": "game211/hero/cA",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/AC",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "european early-modern commander, tricorn or plumed bicorne, epaulettes, jade green tone, legendary, ornate gilded armor, radiant aura, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "拿破仑（战争之神），18–19C·法国 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·拿破仑「战争之神」（18–19C·法国·♣A·orange）：重塑欧洲，奠定近代军制与战法",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「cA」·写回=fill 别名登记 game211/hero/cA（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/AC.svg",
+        "localId": "game211/hero/cA"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-05",
+      "skinKey": "game211/hero/sK",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/KS",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, deep steel blue tone, epic, elaborate engraved armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "凯撒（高卢征服者），BC1C·罗马 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·凯撒「高卢征服者」（BC1C·罗马·♠K·purple）：《高卢战记》，罗马霸权奠基",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「sK」·写回=fill 别名登记 game211/hero/sK（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/KS.svg",
+        "localId": "game211/hero/sK"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-06",
+      "skinKey": "game211/hero/hK",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/KH",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, crimson red tone, epic, elaborate engraved armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "汉尼拔（战略之父），BC3C·迦太基 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·汉尼拔「战略之父」（BC3C·迦太基·♥K·purple）：翻越阿尔卑斯，坎尼歼灭战千古典范",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「hK」·写回=fill 别名登记 game211/hero/hK（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/KH.svg",
+        "localId": "game211/hero/hK"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-07",
+      "skinKey": "game211/hero/dK",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/KD",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, amber gold tone, epic, elaborate engraved armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "韩信（兵仙），BC3C·汉 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·韩信「兵仙」（BC3C·汉·♦K·purple）：背水一战、十面埋伏，助汉定天下",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「dK」·写回=fill 别名登记 game211/hero/dK（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/KD.svg",
+        "localId": "game211/hero/dK"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-08",
+      "skinKey": "game211/hero/cK",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/KC",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, jade green tone, epic, elaborate engraved armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "白起（杀神），BC3C·秦 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·白起「杀神」（BC3C·秦·♣K·purple）：一生未尝败，长平定秦基",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「cK」·写回=fill 别名登记 game211/hero/cK（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/KC.svg",
+        "localId": "game211/hero/cK"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-09",
+      "skinKey": "game211/hero/sQ",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/QS",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "middle-eastern conqueror, turban helm, scale armor, deep steel blue tone, epic, elaborate engraved armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "哈立德·伊本·瓦利德（真主之剑），7C·阿拉伯 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·哈立德·伊本·瓦利德「真主之剑」（7C·阿拉伯·♠Q·purple）：百战不败，奠定伊斯兰扩张",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「sQ」·写回=fill 别名登记 game211/hero/sQ（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/QS.svg",
+        "localId": "game211/hero/sQ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-10",
+      "skinKey": "game211/hero/hQ",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/QH",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, crimson red tone, epic, elaborate engraved armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "居鲁士大帝（万王之王），BC6C·波斯 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·居鲁士大帝「万王之王」（BC6C·波斯·♥Q·purple）：首个横跨亚非的波斯帝国",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「hQ」·写回=fill 别名登记 game211/hero/hQ（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/QH.svg",
+        "localId": "game211/hero/hQ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-11",
+      "skinKey": "game211/hero/dQ",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/QD",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, amber gold tone, epic, elaborate engraved armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "帖木儿（跛足征服者），14C·中亚 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·帖木儿「跛足征服者」（14C·中亚·♦Q·purple）：重建蒙古式帝国，未尝败绩",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「dQ」·写回=fill 别名登记 game211/hero/dQ（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/QD.svg",
+        "localId": "game211/hero/dQ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-12",
+      "skinKey": "game211/hero/cQ",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/QC",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "mongol steppe warlord, fur-trimmed helm, composite bow motif, jade green tone, epic, elaborate engraved armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "速不台（常胜先锋），13C·蒙古 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·速不台「常胜先锋」（13C·蒙古·♣Q·purple）：横扫欧亚，征域史上最广",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「cQ」·写回=fill 别名登记 game211/hero/cQ（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/QC.svg",
+        "localId": "game211/hero/cQ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-13",
+      "skinKey": "game211/hero/sJ",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/JS",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "european early-modern commander, tricorn or plumed bicorne, epaulettes, deep steel blue tone, rare, fine detailed armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "腓特烈大帝（军事天才），18C·普鲁士 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·腓特烈大帝「军事天才」（18C·普鲁士·♠J·blue）：斜击战术，以弱立普鲁士",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「sJ」·写回=fill 别名登记 game211/hero/sJ（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/JS.svg",
+        "localId": "game211/hero/sJ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-14",
+      "skinKey": "game211/hero/hJ",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/JH",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, crimson red tone, rare, fine detailed armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "西庇阿（征非者），BC3C·罗马 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·西庇阿「征非者」（BC3C·罗马·♥J·blue）：扎马会战击败汉尼拔",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「hJ」·写回=fill 别名登记 game211/hero/hJ（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/JH.svg",
+        "localId": "game211/hero/hJ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-15",
+      "skinKey": "game211/hero/dJ",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/JD",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "european early-modern commander, tricorn or plumed bicorne, epaulettes, amber gold tone, rare, fine detailed armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "苏沃洛夫（不败统帅），18C·俄国 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·苏沃洛夫「不败统帅」（18C·俄国·♦J·blue）：六十余战全胜",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「dJ」·写回=fill 别名登记 game211/hero/dJ（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/JD.svg",
+        "localId": "game211/hero/dJ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-16",
+      "skinKey": "game211/hero/cJ",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/JC",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, jade green tone, rare, fine detailed armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "李靖（大唐军神），7C·唐 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·李靖「大唐军神」（7C·唐·♣J·blue）：灭东突厥，《李卫公兵法》",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「cJ」·写回=fill 别名登记 game211/hero/cJ（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/JC.svg",
+        "localId": "game211/hero/cJ"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-17",
+      "skinKey": "game211/hero/s10",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/10S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, deep steel blue tone, rare, fine detailed armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "萨拉丁（伊斯兰之盾），12C·阿尤布 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·萨拉丁「伊斯兰之盾」（12C·阿尤布·♠10·blue）：哈丁会战收复耶路撒冷",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「s10」·写回=fill 别名登记 game211/hero/s10（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/10S.svg",
+        "localId": "game211/hero/s10"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-18",
+      "skinKey": "game211/hero/h10",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/10H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "european early-modern commander, tricorn or plumed bicorne, epaulettes, crimson red tone, rare, fine detailed armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "古斯塔夫二世（近代战争之父），17C·瑞典 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·古斯塔夫二世「近代战争之父」（17C·瑞典·♥10·blue）：诸兵种协同革新",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「h10」·写回=fill 别名登记 game211/hero/h10（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/10H.svg",
+        "localId": "game211/hero/h10"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-19",
+      "skinKey": "game211/hero/d10",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/10D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, amber gold tone, rare, fine detailed armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "霍去病（冠军侯），BC2C·汉 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·霍去病「冠军侯」（BC2C·汉·♦10·blue）：封狼居胥，闪击匈奴",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「d10」·写回=fill 别名登记 game211/hero/d10（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/10D.svg",
+        "localId": "game211/hero/d10"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-20",
+      "skinKey": "game211/hero/c10",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/10C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, jade green tone, rare, fine detailed armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "李世民（天可汗），7C·唐 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·李世民「天可汗」（7C·唐·♣10·blue）：虎牢关一战定中原",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「c10」·写回=fill 别名登记 game211/hero/c10（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/10C.svg",
+        "localId": "game211/hero/c10"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-21",
+      "skinKey": "game211/hero/s9",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/9S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, deep steel blue tone, rare, fine detailed armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "朱可夫（胜利元帅），20C·苏联 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·朱可夫「胜利元帅」（20C·苏联·♠9·blue）：斯大林格勒、柏林",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「s9」·写回=fill 别名登记 game211/hero/s9（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/9S.svg",
+        "localId": "game211/hero/s9"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-22",
+      "skinKey": "game211/hero/h9",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/9H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, crimson red tone, rare, fine detailed armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "隆美尔（沙漠之狐），20C·德国 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·隆美尔「沙漠之狐」（20C·德国·♥9·blue）：机动装甲战大师",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「h9」·写回=fill 别名登记 game211/hero/h9（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/9H.svg",
+        "localId": "game211/hero/h9"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-23",
+      "skinKey": "game211/hero/d9",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/9D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, amber gold tone, rare, fine detailed armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "项羽（西楚霸王），BC3C·楚 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·项羽「西楚霸王」（BC3C·楚·♦9·blue）：巨鹿破釜沉舟，万人敌",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「d9」·写回=fill 别名登记 game211/hero/d9（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/9D.svg",
+        "localId": "game211/hero/d9"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-24",
+      "skinKey": "game211/hero/c9",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/9C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, jade green tone, rare, fine detailed armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "贝利撒留（最后的罗马人），6C·拜占庭 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·贝利撒留「最后的罗马人」（6C·拜占庭·♣9·blue）：以寡胜众，光复故土",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「c9」·写回=fill 别名登记 game211/hero/c9（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/9C.svg",
+        "localId": "game211/hero/c9"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-25",
+      "skinKey": "game211/hero/s8",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/8S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, deep steel blue tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "阿提拉（上帝之鞭），5C·匈人 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·阿提拉「上帝之鞭」（5C·匈人·♠8·green）：震撼罗马帝国",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「s8」·写回=fill 别名登记 game211/hero/s8（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/8S.svg",
+        "localId": "game211/hero/s8"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-26",
+      "skinKey": "game211/hero/h8",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/8H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "middle-eastern conqueror, turban helm, scale armor, crimson red tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "穆罕默德二世（征服者），15C·奥斯曼 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·穆罕默德二世「征服者」（15C·奥斯曼·♥8·green）：攻陷君士坦丁堡",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「h8」·写回=fill 别名登记 game211/hero/h8（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/8H.svg",
+        "localId": "game211/hero/h8"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-27",
+      "skinKey": "game211/hero/d8",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/8D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, amber gold tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "曼施坦因（闪击战策划），20C·德国 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·曼施坦因「闪击战策划」（20C·德国·♦8·green）：镰刀收割计划",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「d8」·写回=fill 别名登记 game211/hero/d8（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/8D.svg",
+        "localId": "game211/hero/d8"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-28",
+      "skinKey": "game211/hero/c8",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/8C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, jade green tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "岳飞（精忠武穆），12C·南宋 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·岳飞「精忠武穆」（12C·南宋·♣8·green）：撼山易，撼岳家军难",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「c8」·写回=fill 别名登记 game211/hero/c8（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/8C.svg",
+        "localId": "game211/hero/c8"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-29",
+      "skinKey": "game211/hero/s7",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/7S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "european early-modern commander, tricorn or plumed bicorne, epaulettes, deep steel blue tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "威灵顿公爵（铁公爵），19C·英国 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·威灵顿公爵「铁公爵」（19C·英国·♠7·green）：滑铁卢终结拿破仑",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「s7」·写回=fill 别名登记 game211/hero/s7（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/7S.svg",
+        "localId": "game211/hero/s7"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-30",
+      "skinKey": "game211/hero/h7",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/7H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "european early-modern commander, tricorn or plumed bicorne, epaulettes, crimson red tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "纳尔逊（海上之王），18–19C·英国 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·纳尔逊「海上之王」（18–19C·英国·♥7·green）：特拉法加海战",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「h7」·写回=fill 别名登记 game211/hero/h7（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/7H.svg",
+        "localId": "game211/hero/h7"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-31",
+      "skinKey": "game211/hero/d7",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/7D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, amber gold tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "戚继光（抗倭名将），16C·明 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·戚继光「抗倭名将」（16C·明·♦7·green）：鸳鸯阵，戚家军",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「d7」·写回=fill 别名登记 game211/hero/d7（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/7D.svg",
+        "localId": "game211/hero/d7"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-32",
+      "skinKey": "game211/hero/c7",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/7C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, jade green tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "诸葛亮（卧龙·智圣），3C·蜀汉 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·诸葛亮「卧龙·智圣」（3C·蜀汉·♣7·green）：隆中对，木牛流马",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「c7」·写回=fill 别名登记 game211/hero/c7（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/7C.svg",
+        "localId": "game211/hero/c7"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-33",
+      "skinKey": "game211/hero/s6",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/6S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, deep steel blue tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "扬·杰士卡（独眼不败），15C·波希米亚 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·扬·杰士卡「独眼不败」（15C·波希米亚·♠6·green）：胡斯战争，车堡战术",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「s6」·写回=fill 别名登记 game211/hero/s6（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/6S.svg",
+        "localId": "game211/hero/s6"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-34",
+      "skinKey": "game211/hero/h6",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/6H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "european early-modern commander, tricorn or plumed bicorne, epaulettes, crimson red tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "马尔伯勒公爵（常胜公爵），18C·英国 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·马尔伯勒公爵「常胜公爵」（18C·英国·♥6·green）：布伦海姆",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「h6」·写回=fill 别名登记 game211/hero/h6（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/6H.svg",
+        "localId": "game211/hero/h6"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-35",
+      "skinKey": "game211/hero/d6",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/6D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "japanese sengoku daimyo, lacquered samurai armor, crescent kabuto, amber gold tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "织田信长（第六天魔王），16C·日本 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·织田信长「第六天魔王」（16C·日本·♦6·green）：桶狭间，铁炮革新",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「d6」·写回=fill 别名登记 game211/hero/d6（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/6D.svg",
+        "localId": "game211/hero/d6"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-36",
+      "skinKey": "game211/hero/c6",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/6C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, jade green tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "卫青（长平侯），BC2C·汉 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·卫青「长平侯」（BC2C·汉·♣6·green）：反击匈奴，收复河套",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「c6」·写回=fill 别名登记 game211/hero/c6（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/6C.svg",
+        "localId": "game211/hero/c6"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-37",
+      "skinKey": "game211/hero/s5",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/5S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, deep steel blue tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "查理曼（欧洲之父），8–9C·法兰克 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·查理曼「欧洲之父」（8–9C·法兰克·♠5·green）：统一西欧",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「s5」·写回=fill 别名登记 game211/hero/s5（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/5S.svg",
+        "localId": "game211/hero/s5"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-38",
+      "skinKey": "game211/hero/h5",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/5H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, crimson red tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "图拉真（最佳元首），2C·罗马 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·图拉真「最佳元首」（2C·罗马·♥5·green）：罗马极盛之疆",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「h5」·写回=fill 别名登记 game211/hero/h5（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/5H.svg",
+        "localId": "game211/hero/h5"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-39",
+      "skinKey": "game211/hero/d5",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/5D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "middle-eastern conqueror, turban helm, scale armor, amber gold tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "苏莱曼大帝（立法者），16C·奥斯曼 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·苏莱曼大帝「立法者」（16C·奥斯曼·♦5·green）：奥斯曼极盛",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「d5」·写回=fill 别名登记 game211/hero/d5（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/5D.svg",
+        "localId": "game211/hero/d5"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-40",
+      "skinKey": "game211/hero/c5",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/5C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, jade green tone, sturdy campaign armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "曹操（魏武），3C·汉/魏 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·曹操「魏武」（3C·汉/魏·♣5·green）：官渡破袁，统一北方",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「c5」·写回=fill 别名登记 game211/hero/c5（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/5C.svg",
+        "localId": "game211/hero/c5"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-41",
+      "skinKey": "game211/hero/s4",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/4S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, deep steel blue tone, simple practical armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "埃帕米农达斯（斜阵之父），BC4C·底比斯 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·埃帕米农达斯「斜阵之父」（BC4C·底比斯·♠4·white）：留克特拉破斯巴达",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「s4」·写回=fill 别名登记 game211/hero/s4（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/4S.svg",
+        "localId": "game211/hero/s4"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-42",
+      "skinKey": "game211/hero/h4",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/4H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, crimson red tone, simple practical armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "皮洛士（险胜之王），BC3C·伊庇鲁斯 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·皮洛士「险胜之王」（BC3C·伊庇鲁斯·♥4·white）：「皮洛士式胜利」",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「h4」·写回=fill 别名登记 game211/hero/h4（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/4H.svg",
+        "localId": "game211/hero/h4"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-43",
+      "skinKey": "game211/hero/d4",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/4D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "japanese sengoku daimyo, lacquered samurai armor, crescent kabuto, amber gold tone, simple practical armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "武田信玄（甲斐之虎），16C·日本 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·武田信玄「甲斐之虎」（16C·日本·♦4·white）：风林火山",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「d4」·写回=fill 别名登记 game211/hero/d4（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/4D.svg",
+        "localId": "game211/hero/d4"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-44",
+      "skinKey": "game211/hero/c4",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/4C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, jade green tone, simple practical armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "吴起（兵家亚圣），BC4C·魏/楚 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·吴起「兵家亚圣」（BC4C·魏/楚·♣4·white）：《吴子》，魏武卒",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「c4」·写回=fill 别名登记 game211/hero/c4（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/4C.svg",
+        "localId": "game211/hero/c4"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-45",
+      "skinKey": "game211/hero/s3",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/3S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, deep steel blue tone, simple practical armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "列奥尼达（温泉关之王），BC5C·斯巴达 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·列奥尼达「温泉关之王」（BC5C·斯巴达·♠3·white）：三百勇士死战",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「s3」·写回=fill 别名登记 game211/hero/s3（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/3S.svg",
+        "localId": "game211/hero/s3"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-46",
+      "skinKey": "game211/hero/h3",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/3H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "european early-modern commander, tricorn or plumed bicorne, epaulettes, crimson red tone, simple practical armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "罗伯特·李（南军统帅），19C·美国 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·罗伯特·李「南军统帅」（19C·美国·♥3·white）：钱斯勒斯维尔以少胜多",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「h3」·写回=fill 别名登记 game211/hero/h3（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/3H.svg",
+        "localId": "game211/hero/h3"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-47",
+      "skinKey": "game211/hero/d3",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/3D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, amber gold tone, simple practical armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "孙膑（智囊），BC4C·齐 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·孙膑「智囊」（BC4C·齐·♦3·white）：围魏救赵、马陵之战",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「d3」·写回=fill 别名登记 game211/hero/d3（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/3D.svg",
+        "localId": "game211/hero/d3"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-48",
+      "skinKey": "game211/hero/c3",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/3C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, jade green tone, simple practical armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "巴布尔（莫卧儿奠基者），16C·莫卧儿 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·巴布尔「莫卧儿奠基者」（16C·莫卧儿·♣3·white）：帕尼帕特",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「c3」·写回=fill 别名登记 game211/hero/c3（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/3C.svg",
+        "localId": "game211/hero/c3"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-49",
+      "skinKey": "game211/hero/s2",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/2S",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, deep steel blue tone, simple practical armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "斯巴达克斯（角斗士之王），BC1C·罗马 历史名将半身立绘，古风拟人厚涂，冷钢蓝主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·斯巴达克斯「角斗士之王」（BC1C·罗马·♠2·white）：起义撼罗马",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「s2」·写回=fill 别名登记 game211/hero/s2（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/2S.svg",
+        "localId": "game211/hero/s2"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-50",
+      "skinKey": "game211/hero/h2",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/2H",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "classical antiquity general, bronze cuirass, crested helm, crimson red tone, simple practical armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "维钦托利（高卢之王），BC1C·高卢 历史名将半身立绘，古风拟人厚涂，赤焰红主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·维钦托利「高卢之王」（BC1C·高卢·♥2·white）：阿莱西亚抗凯撒",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「h2」·写回=fill 别名登记 game211/hero/h2（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/2H.svg",
+        "localId": "game211/hero/h2"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-51",
+      "skinKey": "game211/hero/d2",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/2D",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "european early-modern commander, tricorn or plumed bicorne, epaulettes, amber gold tone, simple practical armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "沙卡·祖鲁（非洲战王），19C·祖鲁 历史名将半身立绘，古风拟人厚涂，琥珀金主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·沙卡·祖鲁「非洲战王」（19C·祖鲁·♦2·white）：牛角阵，建祖鲁王国",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「d2」·写回=fill 别名登记 game211/hero/d2（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/2D.svg",
+        "localId": "game211/hero/d2"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-52",
+      "skinKey": "game211/hero/c2",
+      "kind": "sprite",
+      "slot": {
+        "entity": "hero/2C",
+        "component": "PlayingCard",
+        "field": "art"
+      },
+      "query": "ancient chinese general, ornate dynasty armor, tassled helm, jade green tone, simple practical armor, dignified bust portrait, painterly collectible card art, dramatic rim light, isolated subject, transparent background",
+      "prompt": "狮心王理查（狮心），12C·英格兰 历史名将半身立绘，古风拟人厚涂，苍翠绿主色调，盔甲+背后兵器，透明背景，卡牌立绘",
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": true
+      },
+      "desc": "立绘·狮心王理查「狮心」（12C·英格兰·♣2·white）：第三次十字军",
+      "context": "用途=sprite·牌面立绘（牌库/收藏/改造坊 PlayingCard.art）·覆盖键「c2」·写回=fill 别名登记 game211/hero/c2（步2 覆盖注册表消费·未填=程序化矢量回退）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "portraits.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/portraits/2C.svg",
+        "localId": "game211/hero/c2"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "portraits.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-53",
+      "skinKey": "game211/tex/felt-brocade",
+      "kind": "sprite",
+      "slot": {
+        "entity": "table/felt",
+        "component": "Panel",
+        "field": "bgTexture"
+      },
+      "query": "chinese bronze coin lattice pattern, antique gold thin lines on dark green felt, subtle elegant, seamless tile texture",
+      "prompt": "古钱币锁子纹无缝平铺底纹，玄铁金线，暗绿呢牌桌质感，低对比 subtle，可平铺",
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": false
+      },
+      "desc": "主页牌桌呢面底纹（无缝平铺·现=程序化钱币纹）",
+      "context": "消费点=home-screen home-felt Panel.bgTexture（feltBrocadeUri 覆盖优先）",
+      "status": "replaced",
+      "gen": {
+        "provider": "procedural",
+        "model": "art-textures.ts",
+        "prompt": null,
+        "servedPath": "/games/game211/art/textures/felt-brocade.svg",
+        "localId": "game211/tex/felt-brocade"
+      },
+      "provenance": {
+        "generator": "procedural-vector",
+        "source": "art-textures.ts",
+        "mock": false
+      }
+    },
+    {
+      "no": "art-54",
+      "skinKey": "game211/tex/home-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:home-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "grand chinese war-room hall interior, dark wood, hanging banners, candle glow, cinematic wide game menu background",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "主页整幅背景板（现=纯主题色·填图即上）",
+      "context": "消费点=home-screen Screen.image（cover 整图·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/tex-home-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-55",
+      "skinKey": "game211/tex/campaign-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:campaign-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "ancient asian campaign map on aged parchment, mountains rivers passes, ink wash style, wide game background",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "战役选关屏背景板（现=纯主题色）",
+      "context": "消费点=campaign-screen Screen.image（cover·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/tex-campaign-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-56",
+      "skinKey": "game211/tex/battle-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:battle-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "ancient battlefield plain at dusk, war banners, distant fortress walls, dramatic sky, wide game background",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "对战屏背景板（批29 已接线·画框外衬底）",
+      "context": "消费点=turn-battle-screen buildTurnBattleHTML 根（底色叠 cover·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/tex-battle-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-57",
+      "skinKey": "game211/tex/coin-heads",
+      "kind": "sprite",
+      "slot": {
+        "entity": "tex:coin-heads",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "antique gold coin face, embossed imperial chinese warrior profile, ornate rim, game coin art, circular, transparent background",
+      "prompt": null,
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "desc": "战胜硬币·人面（留场）·现=CSS 渐变+文字",
+      "context": "消费点=coin-flip .face.heads 背景（覆盖在场才换·文字仍叠显）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/tex-coin-heads.svg",
+        "current": "现况=CSS 金渐变圆+文字"
+      }
+    },
+    {
+      "no": "art-58",
+      "skinKey": "game211/tex/coin-tails",
+      "kind": "sprite",
+      "slot": {
+        "entity": "tex:coin-tails",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "antique silver coin back, embossed chinese calligraphy character, ornate rim, game coin art, circular, transparent background",
+      "prompt": null,
+      "spec": {
+        "w": 256,
+        "h": 256,
+        "transparent": true
+      },
+      "desc": "战胜硬币·字面（回库）·现=CSS 渐变+文字",
+      "context": "消费点=coin-flip .face.tails 背景（覆盖在场才换）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/tex-coin-tails.svg",
+        "current": "现况=CSS 银渐变圆+文字"
+      }
+    },
+    {
+      "no": "art-59",
+      "skinKey": "game211/tex/card-back",
+      "kind": "sprite",
+      "slot": {
+        "entity": "tex:card-back",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "ornate playing card back design, chinese brocade pattern, gold on deep lacquer red, symmetrical, rectangular game card back",
+      "prompt": null,
+      "spec": {
+        "w": 480,
+        "h": 640,
+        "transparent": false
+      },
+      "desc": "牌背图（批29 引擎 PlayingCard.backArt prop 落地·已接线）",
+      "context": "消费点=home-screen duel-back PlayingCard.backArt（整面 cover·覆盖在场才换·无=原棋盘格纹）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/tex-card-back.svg",
+        "current": "现况=红底棋盘格程序纹+❖"
+      }
+    },
+    {
+      "no": "art-60",
+      "skinKey": "game211/model/clash-dice",
+      "kind": "model3d",
+      "slot": {
+        "entity": "model:clash-dice",
+        "component": "Model3D",
+        "field": "modelKey"
+      },
+      "query": "ornate bronze six-sided battle die, engraved chinese numerals, worn antique metal, game-ready low-poly 3d model",
+      "prompt": null,
+      "spec": {
+        "polyBudget": 3000,
+        "scale": 1
+      },
+      "desc": "对决 3D 骰（P3D 独占域：clash-dice-3d.ts——台账行先立·3D 接线动作知会 P3D）",
+      "context": "用途=model3d·对决特写掷骰·现=程序化 3D 图元；替换=P3D 接 Model3D（P3D-game-z-handoff §0.1 边界）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/model-clash-dice.svg",
+        "current": "现况=程序化 3D 图元骰"
+      }
+    },
+    {
+      "no": "art-61",
+      "skinKey": "game211/ui/btn-hero",
+      "kind": "sprite",
+      "slot": {
+        "entity": "ui:btn-hero",
+        "component": "Button",
+        "field": "skin"
+      },
+      "query": "gilded ornate banner button, chinese bronze coin motif, gold gradient on dark lacquer, chamfered corners, game UI hero call-to-action button, wide rectangle",
+      "prompt": null,
+      "spec": {
+        "w": 480,
+        "h": 160,
+        "transparent": true
+      },
+      "desc": "出征大 CTA 按钮皮（kind:hero·整图 cover）",
+      "context": "消费点=主题级 buttonSkins.hero（GG 三主题 getter·所有 hero 键一体换：出征/掷骰/结束回合）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/ui-btn-hero.svg",
+        "current": "现况=引擎 kind 底（CSS）"
+      }
+    },
+    {
+      "no": "art-62",
+      "skinKey": "game211/ui/btn-primary",
+      "kind": "sprite",
+      "slot": {
+        "entity": "ui:btn-primary",
+        "component": "Button",
+        "field": "skin"
+      },
+      "query": "antique gold frame button, subtle jade inlay border, dark parchment center, ornament confined to outer 10px edge, seamless stretchable middle, game UI button, 9-slice",
+      "prompt": null,
+      "spec": {
+        "w": 240,
+        "h": 80,
+        "transparent": false
+      },
+      "desc": "主按钮皮（kind:primary·9-slice slice=10）",
+      "context": "消费点=主题级 buttonSkins.primary（确认/继续/完成类主键一体换·边饰限外缘 10px）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/ui-btn-primary.svg",
+        "current": "现况=引擎 kind 底（CSS）"
+      }
+    },
+    {
+      "no": "art-63",
+      "skinKey": "game211/ui/btn-ghost",
+      "kind": "sprite",
+      "slot": {
+        "entity": "ui:btn-ghost",
+        "component": "Button",
+        "field": "skin"
+      },
+      "query": "thin bronze outline button, translucent dark center, faint gold hairline border, ornament confined to outer 10px edge, understated game UI secondary button, 9-slice",
+      "prompt": null,
+      "spec": {
+        "w": 240,
+        "h": 80,
+        "transparent": true
+      },
+      "desc": "次按钮皮（kind:ghost·9-slice slice=10）",
+      "context": "消费点=主题级 buttonSkins.ghost（返回/取消/工具类次键一体换·边饰限外缘 10px）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/ui-btn-ghost.svg",
+        "current": "现况=引擎 kind 底（CSS）"
+      }
+    },
+    {
+      "no": "art-64",
+      "skinKey": "game211/tex/lobby-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:lobby-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "imperial chinese gambling hall interior, ornate wooden pillars, hanging red lanterns, subdued dark ambience, wide game lobby background",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "大厅整壳背景板（罩五 tab 最外层·现=纯主题色）",
+      "context": "消费点=lobby-dd Screen.image（cover·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/tex-lobby-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-65",
+      "skinKey": "game211/tex/collection-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:collection-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "ancient chinese archive hall, wooden card cabinets and scroll shelves, warm candlelight, subdued wide game background",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "收藏屏背景板（现=纯主题色）",
+      "context": "消费点=collection-screen Screen.image（cover·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/tex-collection-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-66",
+      "skinKey": "game211/tex/deck-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:deck-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "war council tent interior, campaign maps and banners on long table, strategic candlelit atmosphere, subdued wide game background",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "牌组屏背景板（现=纯主题色）",
+      "context": "消费点=deck-screen Screen.image（cover·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/tex-deck-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-67",
+      "skinKey": "game211/tex/craft-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:craft-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "mystic chinese forge workshop, zodiac talismans on walls, ember glow over anvil, subdued wide game background",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "改造坊屏背景板（现=纯主题色）",
+      "context": "消费点=craft-screen Screen.image（cover·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/tex-craft-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-68",
+      "skinKey": "game211/tex/between-backdrop",
+      "kind": "bg",
+      "slot": {
+        "entity": "tex:between-backdrop",
+        "component": "Sprite",
+        "field": "textureKey"
+      },
+      "query": "victorious army camp at night, bonfire and war banners, three glowing reward pedestals, wide game background, celebratory but subdued",
+      "prompt": null,
+      "spec": {
+        "w": 1280,
+        "h": 720,
+        "transparent": false
+      },
+      "desc": "战间三选一屏背景板（现=纯主题底）",
+      "context": "消费点=game211.tsx showBetween Screen.image（cover·覆盖在场才生效）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/tex-between-backdrop.svg",
+        "current": "现况=纯主题色底"
+      }
+    },
+    {
+      "no": "art-69",
+      "skinKey": "game211/story/beat-1",
+      "kind": "bg",
+      "slot": {
+        "entity": "story:beat-1",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "dim casino at night, green felt card table, an antique deck glowing faintly in shadows, cinematic game illustration, chinese ink-and-gold palette",
+      "prompt": null,
+      "spec": {
+        "w": 1024,
+        "h": 576,
+        "transparent": false
+      },
+      "desc": "开场故事插画 · 第1幕「夜 · 赌场」（现=纯旁白无图）",
+      "context": "幕旁白=\"传说，世上最伟大的将军，从未真正死去——他们只是，在等一个执…\"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/story-beat-1.svg",
+        "current": "现况=纯旁白无插画"
+      }
+    },
+    {
+      "no": "art-70",
+      "skinKey": "game211/story/beat-2",
+      "kind": "bg",
+      "slot": {
+        "entity": "story:beat-2",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "close-up of a hand flipping an ancient brass switch beneath a card table, dramatic chiaroscuro, cinematic game illustration, chinese ink-and-gold palette",
+      "prompt": null,
+      "spec": {
+        "w": 1024,
+        "h": 576,
+        "transparent": false
+      },
+      "desc": "开场故事插画 · 第2幕「开关」（现=纯旁白无图）",
+      "context": "幕旁白=\"一只手无意间拨动了牌桌下一枚古旧的黄铜开关。咔哒。…\"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/story-beat-2.svg",
+        "current": "现况=纯旁白无插画"
+      }
+    },
+    {
+      "no": "art-71",
+      "skinKey": "game211/story/beat-3",
+      "kind": "bg",
+      "slot": {
+        "entity": "story:beat-3",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "lights extinguished, a whole deck of cards levitating in a blinding burst of light, supernatural, cinematic game illustration, chinese ink-and-gold palette",
+      "prompt": null,
+      "spec": {
+        "w": 1024,
+        "h": 576,
+        "transparent": false
+      },
+      "desc": "开场故事插画 · 第3幕「异变」（现=纯旁白无图）",
+      "context": "幕旁白=\"灯火骤灭，整副扑克腾空、光芒大作。远古以来，五十二位最负盛名…\"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/story-beat-3.svg",
+        "current": "现况=纯旁白无插画"
+      }
+    },
+    {
+      "no": "art-72",
+      "skinKey": "game211/story/beat-4",
+      "kind": "bg",
+      "slot": {
+        "entity": "story:beat-4",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "silhouettes of legendary ancient generals flashing across floating card faces, epic montage, cinematic game illustration, chinese ink-and-gold palette",
+      "prompt": null,
+      "spec": {
+        "w": 1024,
+        "h": 576,
+        "transparent": false
+      },
+      "desc": "开场故事插画 · 第4幕「群像」（现=纯旁白无图）",
+      "context": "幕旁白=\"孙武、成吉思汗、亚历山大、项羽……剪影在牌面一一闪现。他们困…\"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/story-beat-4.svg",
+        "current": "现况=纯旁白无插画"
+      }
+    },
+    {
+      "no": "art-73",
+      "skinKey": "game211/story/beat-5",
+      "kind": "bg",
+      "slot": {
+        "entity": "story:beat-5",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "two regal joker dealers materializing at the far end of a card table, ominous golden mist, cinematic game illustration, chinese ink-and-gold palette",
+      "prompt": null,
+      "spec": {
+        "w": 1024,
+        "h": 576,
+        "transparent": false
+      },
+      "desc": "开场故事插画 · 第5幕「庄家」（现=纯旁白无图）",
+      "context": "幕旁白=\"牌桌尽头，大王与小王缓缓浮现——执掌这副命运之牌的两位庄家。…\"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/story-beat-5.svg",
+        "current": "现况=纯旁白无插画"
+      }
+    },
+    {
+      "no": "art-74",
+      "skinKey": "game211/story/beat-6",
+      "kind": "bg",
+      "slot": {
+        "entity": "story:beat-6",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "a chosen card master seizing a glowing deck of destiny, heroic wide shot, cinematic game illustration, chinese ink-and-gold palette",
+      "prompt": null,
+      "spec": {
+        "w": 1024,
+        "h": 576,
+        "transparent": false
+      },
+      "desc": "开场故事插画 · 第6幕「召唤」（现=纯旁白无图）",
+      "context": "幕旁白=\"你，无意间成了执掌命运之人。重打这五十二场命运之战、翻动他们…\"·消费点=overlays storyModal（真图在场才插 Image·16:9 cover）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/story-beat-6.svg",
+        "current": "现况=纯旁白无插画"
+      }
+    },
+    {
+      "no": "art-75",
+      "skinKey": "game211/shop/banner-tiangang",
+      "kind": "sprite",
+      "slot": {
+        "entity": "shop:banner-tiangang",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "gacha banner, fanned thunder talisman cards, gold lightning motif on dark lacquer, wide game shop banner",
+      "prompt": null,
+      "spec": {
+        "w": 640,
+        "h": 200,
+        "transparent": false
+      },
+      "desc": "天罡卡池 banner（现=纯文案面板）",
+      "context": "消费点=overlays shopModal poolPanel tiangang（Image·覆盖在场才插）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/shop-banner-tiangang.svg",
+        "current": "现况=纯文案面板无图"
+      }
+    },
+    {
+      "no": "art-76",
+      "skinKey": "game211/shop/banner-dizhi",
+      "kind": "sprite",
+      "slot": {
+        "entity": "shop:banner-dizhi",
+        "component": "Image",
+        "field": "src"
+      },
+      "query": "gacha banner, twelve chinese zodiac animals in a circle, jade and bronze motif, wide game shop banner",
+      "prompt": null,
+      "spec": {
+        "w": 640,
+        "h": 200,
+        "transparent": false
+      },
+      "desc": "地支卡池 banner（现=纯文案面板）",
+      "context": "消费点=overlays shopModal poolPanel dizhi（Image·覆盖在场才插）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/shop-banner-dizhi.svg",
+        "current": "现况=纯文案面板无图"
+      }
+    },
+    {
+      "no": "art-77",
+      "skinKey": "game211/icon/coin",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:coin",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "round gold coin with square hole, chinese ancient currency, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·金币（现=emoji 🪙）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('coin')·已接：顶栏/商城余额（Tag.icon+span.img）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-coin.svg",
+        "current": "现况=emoji 🪙 记号"
+      }
+    },
+    {
+      "no": "art-78",
+      "skinKey": "game211/icon/diamond",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:diamond",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "faceted precious gemstone, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·钻石（现=emoji 💎）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('diamond')·已接：顶栏/商城余额",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-diamond.svg",
+        "current": "现况=emoji 💎 记号"
+      }
+    },
+    {
+      "no": "art-79",
+      "skinKey": "game211/icon/shard-tiangang",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:shard-tiangang",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "glowing amber talisman shard, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·天罡碎片（现=emoji 🔶）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('shard-tiangang')·已接：商城余额条",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-shard-tiangang.svg",
+        "current": "现况=emoji 🔶 记号"
+      }
+    },
+    {
+      "no": "art-80",
+      "skinKey": "game211/icon/shard-dizhi",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:shard-dizhi",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "carved jade puzzle shard, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·地支碎片（现=emoji 🧩）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('shard-dizhi')·已接：顶栏/商城余额",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-shard-dizhi.svg",
+        "current": "现况=emoji 🧩 记号"
+      }
+    },
+    {
+      "no": "art-81",
+      "skinKey": "game211/icon/mana",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:mana",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "glowing water droplet, summoning spring essence, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·召唤源泉（现=emoji 💧）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('mana')·接线待战斗屏改造（行先立·图先出）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-mana.svg",
+        "current": "现况=emoji 💧 记号"
+      }
+    },
+    {
+      "no": "art-82",
+      "skinKey": "game211/icon/battle",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:battle",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "crossed chinese dao sabers, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·出征/战斗（现=emoji ⚔）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('battle')·已接：顶栏战役 pill；后续出征键 Button.icon",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-battle.svg",
+        "current": "现况=emoji ⚔ 记号"
+      }
+    },
+    {
+      "no": "art-83",
+      "skinKey": "game211/icon/fortune",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:fortune",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "ornate fate card with mystic glyph, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·卦象/命运牌（现=emoji 🎴）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('fortune')·已接：浮层启动器",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-fortune.svg",
+        "current": "现况=emoji 🎴 记号"
+      }
+    },
+    {
+      "no": "art-84",
+      "skinKey": "game211/icon/deck",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:deck",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "fanned playing cards, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·牌组（现=emoji 🃏）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('deck')·接线随屏改造（tab 导航）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-deck.svg",
+        "current": "现况=emoji 🃏 记号"
+      }
+    },
+    {
+      "no": "art-85",
+      "skinKey": "game211/icon/dice",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:dice",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "six-sided battle die showing pips, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·战力骰（现=emoji 🎲）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('dice')·接线随屏改造（战斗屏）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-dice.svg",
+        "current": "现况=emoji 🎲 记号"
+      }
+    },
+    {
+      "no": "art-86",
+      "skinKey": "game211/icon/shield",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:shield",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "round bronze war shield, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·防御/守护（现=emoji 🛡）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('shield')·接线随屏改造",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-shield.svg",
+        "current": "现况=emoji 🛡 记号"
+      }
+    },
+    {
+      "no": "art-87",
+      "skinKey": "game211/icon/tiangang",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:tiangang",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "thunderbolt talisman emblem, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·天罡（现=emoji ⚡）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('tiangang')·接线随屏改造（收藏/牌组卡标）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-tiangang.svg",
+        "current": "现况=emoji ⚡ 记号"
+      }
+    },
+    {
+      "no": "art-88",
+      "skinKey": "game211/icon/dizhi",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:dizhi",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "mahjong-style zodiac tile, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·地支（现=emoji 🀄）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('dizhi')·接线随屏改造",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-dizhi.svg",
+        "current": "现况=emoji 🀄 记号"
+      }
+    },
+    {
+      "no": "art-89",
+      "skinKey": "game211/icon/foil",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:foil",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "four-point radiant sparkle, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·闪艺（现=emoji ✨）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('foil')·已接：顶栏+收藏页头",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-foil.svg",
+        "current": "现况=emoji ✨ 记号"
+      }
+    },
+    {
+      "no": "art-90",
+      "skinKey": "game211/icon/trophy",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:trophy",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "bronze victory cup, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·战利品/天梯（现=emoji 🏆）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('trophy')·接线随屏改造",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-trophy.svg",
+        "current": "现况=emoji 🏆 记号"
+      }
+    },
+    {
+      "no": "art-91",
+      "skinKey": "game211/icon/skull",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:skull",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "ancient warrior skull, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·阵亡/败北（现=emoji 💀）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('skull')·接线随屏改造（战斗屏）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-skull.svg",
+        "current": "现况=emoji 💀 记号"
+      }
+    },
+    {
+      "no": "art-92",
+      "skinKey": "game211/icon/shop",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:shop",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "market stall with hanging coins, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·商城（现=emoji 🛒）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('shop')·已接：顶栏+浮层启动器",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-shop.svg",
+        "current": "现况=emoji 🛒 记号"
+      }
+    },
+    {
+      "no": "art-93",
+      "skinKey": "game211/icon/settings",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:settings",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "bronze mechanical gear, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·设置（现=emoji ⚙）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('settings')·已接：顶栏+浮层启动器",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-settings.svg",
+        "current": "现况=emoji ⚙ 记号"
+      }
+    },
+    {
+      "no": "art-94",
+      "skinKey": "game211/icon/manual",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:manual",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "open bound war manual, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·手册/帮助（现=emoji 📖）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('manual')·已接：顶栏+浮层启动器",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-manual.svg",
+        "current": "现况=emoji 📖 记号"
+      }
+    },
+    {
+      "no": "art-95",
+      "skinKey": "game211/icon/story",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:story",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "unrolled ancient scroll, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·开场故事（现=emoji 📜）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('story')·已接：浮层启动器",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-story.svg",
+        "current": "现况=emoji 📜 记号"
+      }
+    },
+    {
+      "no": "art-96",
+      "skinKey": "game211/icon/craft",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:craft",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "smith hammer over anvil, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·改造坊（现=emoji 🔨）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('craft')·接线随屏改造（tab 导航）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-craft.svg",
+        "current": "现况=emoji 🔨 记号"
+      }
+    },
+    {
+      "no": "art-97",
+      "skinKey": "game211/icon/collection",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:collection",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "card archive chest, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·收藏（现=emoji 🗃）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('collection')·已接：收藏页头",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-collection.svg",
+        "current": "现况=emoji 🗃 记号"
+      }
+    },
+    {
+      "no": "art-98",
+      "skinKey": "game211/icon/target",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:target",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "archery target with arrow, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·克制提示（现=emoji 🎯）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('target')·接线随屏改造",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-target.svg",
+        "current": "现况=emoji 🎯 记号"
+      }
+    },
+    {
+      "no": "art-99",
+      "skinKey": "game211/icon/zodiac-rat",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-rat",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "rat head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·鼠（现=emoji 🐀）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-rat')·已接：改造坊生肖 chips（Tag.icon）",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-zodiac-rat.svg",
+        "current": "现况=emoji 🐀 记号"
+      }
+    },
+    {
+      "no": "art-100",
+      "skinKey": "game211/icon/zodiac-ox",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-ox",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "ox head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·牛（现=emoji 🐂）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-ox')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-zodiac-ox.svg",
+        "current": "现况=emoji 🐂 记号"
+      }
+    },
+    {
+      "no": "art-101",
+      "skinKey": "game211/icon/zodiac-tiger",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-tiger",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "tiger head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·虎（现=emoji 🐅）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-tiger')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-zodiac-tiger.svg",
+        "current": "现况=emoji 🐅 记号"
+      }
+    },
+    {
+      "no": "art-102",
+      "skinKey": "game211/icon/zodiac-rabbit",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-rabbit",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "rabbit head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·兔（现=emoji 🐇）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-rabbit')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-zodiac-rabbit.svg",
+        "current": "现况=emoji 🐇 记号"
+      }
+    },
+    {
+      "no": "art-103",
+      "skinKey": "game211/icon/zodiac-dragon",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-dragon",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "dragon head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·龙（现=emoji 🐉）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-dragon')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-zodiac-dragon.svg",
+        "current": "现况=emoji 🐉 记号"
+      }
+    },
+    {
+      "no": "art-104",
+      "skinKey": "game211/icon/zodiac-snake",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-snake",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "snake head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·蛇（现=emoji 🐍）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-snake')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-zodiac-snake.svg",
+        "current": "现况=emoji 🐍 记号"
+      }
+    },
+    {
+      "no": "art-105",
+      "skinKey": "game211/icon/zodiac-horse",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-horse",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "horse head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·马（现=emoji 🐎）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-horse')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-zodiac-horse.svg",
+        "current": "现况=emoji 🐎 记号"
+      }
+    },
+    {
+      "no": "art-106",
+      "skinKey": "game211/icon/zodiac-goat",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-goat",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "goat head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·羊（现=emoji 🐑）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-goat')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-zodiac-goat.svg",
+        "current": "现况=emoji 🐑 记号"
+      }
+    },
+    {
+      "no": "art-107",
+      "skinKey": "game211/icon/zodiac-monkey",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-monkey",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "monkey head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·猴（现=emoji 🐒）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-monkey')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-zodiac-monkey.svg",
+        "current": "现况=emoji 🐒 记号"
+      }
+    },
+    {
+      "no": "art-108",
+      "skinKey": "game211/icon/zodiac-rooster",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-rooster",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "rooster head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·鸡（现=emoji 🐓）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-rooster')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-zodiac-rooster.svg",
+        "current": "现况=emoji 🐓 记号"
+      }
+    },
+    {
+      "no": "art-109",
+      "skinKey": "game211/icon/zodiac-dog",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-dog",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "dog head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·狗（现=emoji 🐕）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-dog')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-zodiac-dog.svg",
+        "current": "现况=emoji 🐕 记号"
+      }
+    },
+    {
+      "no": "art-110",
+      "skinKey": "game211/icon/zodiac-pig",
+      "kind": "sprite",
+      "slot": {
+        "entity": "icon:zodiac-pig",
+        "component": "Icon",
+        "field": "src"
+      },
+      "query": "pig head emblem, chinese zodiac, engraved antique bronze and gold game icon, chinese bronze-ware motif, clean bold silhouette, centered emblem, flat, transparent background, unified icon set style",
+      "prompt": null,
+      "spec": {
+        "w": 128,
+        "h": 128,
+        "transparent": true
+      },
+      "desc": "套装图标·生肖·猪（现=emoji 🐖）",
+      "context": "统一图标集 34 枚之一（风格锚在 query 尾·成套生成勿单换风格）·消费=iconUri('zodiac-pig')·已接：改造坊生肖 chips",
+      "status": "needs-art",
+      "gen": null,
+      "provenance": null,
+      "placeholder": {
+        "servedPath": "/games/game211/art/placeholder/icon-zodiac-pig.svg",
+        "current": "现况=emoji 🐖 记号"
+      }
+    }
+  ],
+  "artStyle": "古风拟人矢量·翻命扑克"
+}
