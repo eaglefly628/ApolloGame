@@ -1,28 +1,50 @@
-// game108 对局屏 —— **纯 LayoutNode 数据**（UI 铁律：禁手写 React/自由 DOM）。
-// 屋规照 `games/game-i/casual-hud.ts`（ui-playbook §0.1 展台导览「①抄一整屏结构」）。
-// 写世界只经 `action`，信号名一律取自【R-108-70】动作词表（UI / data-action / 验收剧本同源）。
+// game108 对局屏 —— **横版·手为主体**（纯 LayoutNode 数据·UI 铁律：禁手写 React/自由 DOM）。
 //
-// ⚠ **信息层级是本屏的第一设计约束**（owner 2026-08-07 玩家视角复核·self-check「七问」第 1 问）：
-// 本作的**唯一支柱**是「对手往哪只手存力，你看得见」。第一版把六条槽做成了一模一样的小灰条，
-// 视觉权重跟血条一样甚至更低 ⇒ 玩家要主动去比对六个小数字才读得到核心信息，层级完全反了。
-// 现在：**对手的槽是屏上最重的元素**（更宽、带威胁标、蓄满高亮），我方槽退居次级。
+// ⚠ 本屏的第一构图约束（owner 2026-08-07 定方向）：
+// 「石头剪刀布的核心是**看到那只手出招的过程**——手从边缘伸出来展开，出招前晃一晃，然后变成那一招。
+//   当中的路空出来留给手，其余 UI 围着这只手展开。」
+// 于是整屏是**一条中央通道 + 四角 HUD**：两只手各占约四分之一画面从左右边缘伸入，
+// 顶栏（身份/血/相位）、右上（对手蓄力槽）、左下（我方蓄力槽）、底中（三招键）、右下（烟雾）全部退到边上。
+//
+// ⚠ 第二约束（self-check 七问第 1 问）：本作的**唯一支柱**是「对手往哪只手存力，你看得见」。
+// 所以对手的三条槽是**HUD 里最重的一块**（更宽、蓄满转危险色 + 「满」标），我方槽退居次级。
+//
+// ⚠ 第三约束（八问第 8 问·owner 一句「哪个是我出的」问出来的）：屏上每样东西都要能一眼归属。
+// 三重冗余：**左恒为你 / 右恒为对手**（永不互换）+ **肤色与袖口色分明**（暖浅肤金袖 vs 深橙肤绯袖）
+// + 每只手底下**钉一张名牌**（我这张同时兼「已出招 ✋ 布」的确认）。
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 
 import {
   HANDS, HAND_CN, HAND_ICON, CHARGE_CAP, HP_MAX, DMG_BASE, DMG_STEP, ACT, SIDES,
   chargeRes, HP_RES, VIEW_W, VIEW_H, SMOKE_USES, type Hand, type Side,
 } from './theme.js';
+import { handArt, HAND_ASPECT } from './hand-art.js';
 
 /** 这只手现在打多少【R-108-13】（数值口径与 theme 同源，屏里不另写公式）。 */
 const DMG_AT = (charge: number): number => DMG_BASE + charge * DMG_STEP;
 
 const STAGE_W = VIEW_W, STAGE_H = VIEW_H;
 
+// ── 构图坐标（1280×720·全部绝对定位·**一处改一处生效**）────────────────────
+// 手：整只（前臂 + 掌）640×273，掌部约占画布 21% 宽 × 33% 高 = 全屏最大的单个元素。
+// 前臂根部**刻意出画**（HOME_X 为负 / 超右边缘）——「从画外伸进来」的前提是根部看不见。
+//
+// **手与 HUD 井水不犯河水**（首版真渲染目击：820 宽的手把左下蓄力槽和右上对手槽整块压住了）：
+// 掌 x 293–557 / 723–987、y 240–476；前臂 y 306–408 那一条横带**左右两侧刻意留空**，就是给手走的路。
+// 四角 HUD 的框全部排在这两个区间之外——下面每个 x/y 都是照着这条约束算的，改一个要重算一遍。
+const HAND_W = 704;
+const HAND_H = Math.round(HAND_W / HAND_ASPECT);   // 273
+const HAND_Y = 230;                                 // 掌心中线 ≈ y 50%
+const HAND_HOME_X: Record<Side, number> = { p1: -70, p2: VIEW_W - HAND_W + 70 };
+/** 中线通道（两掌之间的缝·x 557–723）——石板挂在缝的上端，结果横幅打在缝的下端。 */
+const SLAB_X = 576, SLAB_Y = 112, SLAB_W = 128, SLAB_H = 88;
+const LANE_X = 440, LANE_Y = 516, LANE_W = 400, LANE_H = 84;
+
 export type Phase = 'charge' | 'throw' | 'clash' | 'settle' | 'p1win' | 'p2win';
 
 export interface DuelView {
   phase: Phase;
-  /** 相位剩余比例 0..1（倒计时环）。 */
+  /** 相位剩余比例 0..1（倒计时环 + **手的动画时钟**）。 */
   phaseLeft: number;
   /** 第几回合（七问第 5 问：玩家得知道自己打到哪了）。 */
   round: number;
@@ -48,15 +70,111 @@ const PHASE_CN: Record<Phase, string> = {
 };
 /** 每个时区一句「现在该干嘛」——七问第 6 问：第一次打开的人得知道这些键干嘛。 */
 const PHASE_HINT: Record<Phase, string> = {
-  charge: '点一只手蓄力 · 对手看得见',
+  charge: '点一只手蓄力 · 对手看得见你存在哪只手上',
   throw: '出一只手 · 不必是蓄过的那只',
   clash: '亮拳',
-  settle: '出过的手清零',
+  settle: '出过的手清零 · 没出的原样保留',
   p1win: '', p2win: '',
 };
 
+/** 谁克谁（屏上给提示用·与判定表同源的静态常识，不参与判定）。 */
+const BEATS: Record<Hand, Hand> = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
+
+// ── 手的动画（**用相位时钟算出来的变换**·不是 CSS 关键帧）──────────────────
+//
+// 为什么不用 `layout.anim` 的闭集预设：本作的三段动作（伸入 / 摇拳 / 出招）**必须与相位时长严丝合缝**——
+// 摇拳只能发生在 T2 那 3 秒里、摇完正好到出招。CSS 关键帧跑的是**墙钟**，和引擎的相位计时器
+// 各走各的、必然漂；而且闭集里 `float` 只有上下位移、`spin` 是整圈自转，**没有**「旋转 + 放缩的循环摆动」
+// （缺口已报 `REQ-108-UI-02`）。
+// 这里换一条路：**从 `phaseLeft` 这个世界时钟推出每一帧的位移/角度/缩放**，填进 `layout` 的标量。
+// 仍是纯数据（闭集字段·无自由 CSS），且动作与相位天然同步；`mountUI` 的最小 diff 只重渲这两个手节点。
+// 量化（`q`）是为了压 DOM 打补丁次数：值没变的帧根本不进 diff。
+const clamp01 = (x: number): number => (x < 0 ? 0 : x > 1 ? 1 : x);
+const easeOut = (t: number): number => 1 - (1 - t) ** 3;
+const q = (v: number, step: number): number => Math.round(v / step) * step;
+
+/** 一只手这一帧的姿态。`dx` = **朝中线为正**（两侧对称·各自取号）。 */
+interface HandMotion { dx: number; dy: number; rot: number; scale: number }
+
+function handMotion(view: DuelView): HandMotion {
+  const p = 1 - view.phaseLeft;   // 本相位已走过的比例 0..1
+  switch (view.phase) {
+    case 'charge': {
+      // ① 伸入：前 18%（约 0.55 秒）从画外一路推进到位，三次方缓出 → 有惯性、不是平移滑块。
+      const e = easeOut(clamp01(p / 0.18));
+      return { dx: q((e - 1) * 440, 4), dy: 0, rot: 0, scale: 1 };
+    }
+    case 'throw': {
+      // ② 摇拳：现实里「一、二、三」那三下——上下位移 + 旋转 + 放缩**同相**，
+      //    最后 25% 收住不摇（蓄势待发的那一顿），玩家据此知道「要出了」。
+      const beat = clamp01(p / 0.75);
+      const w = Math.sin(beat * Math.PI * 6);        // 3 个整周期 = 三下
+      return { dx: 0, dy: q(-Math.abs(w) * 26, 2), rot: q(w * 8, 1), scale: 1 + q(Math.abs(w) * 0.05, 0.01) };
+    }
+    case 'clash':
+    case 'settle': {
+      // ③ 出招：手型换成实际那一招（见 `gestureOf`），同时朝中线推一记 + 微涨。
+      const e = easeOut(clamp01(p / (view.phase === 'clash' ? 0.22 : 1)));
+      return { dx: q(e * 40, 4), dy: 0, rot: 0, scale: 1 + q(e * 0.07, 0.01) };
+    }
+    default:
+      return { dx: 0, dy: 0, rot: 0, scale: 1 };
+  }
+}
+
+/** 这一帧该显示哪个手型：亮拳后 = 真出的那只；否则 = **待机握拳**（owner：未出招时握拳待机即可）。 */
+const gestureOf = (view: DuelView, side: Side): Hand => view.shown?.[side] || 'rock';
+
 /**
- * 一条蓄力槽【R-108-03】。`big` = 对手那三条（屏上最重的元素）。
+ * 一只手（**全屏最大的元素**）。
+ * 右手不另画美术：`rotateY:180` 就地镜像（省一半资产·且两侧姿态天然对称）。
+ * `allowOverlap` = 意图叠层：手是压在 HUD 之上的舞台主体，包围盒与四角 HUD 相交是构图本意不是 bug。
+ */
+function handNode(view: DuelView, side: Side): LayoutNode {
+  const m = handMotion(view);
+  const inward = side === 'p1' ? 1 : -1;
+  return {
+    type: 'Image', id: `hand-${side}`,
+    props: { src: handArt(gestureOf(view, side), side), alt: side === 'p1' ? '你的手' : '对手的手', fit: 'contain' },
+    layout: {
+      x: HAND_HOME_X[side] + m.dx * inward,
+      y: HAND_Y + m.dy,
+      width: HAND_W, height: HAND_H,
+      // 镜像后 rotate 仍按屏幕方向算 → 右手取反，两只手才是**镜像对称**地摇（同向摇会像在跳同一支舞）。
+      rotate: m.rot * inward, scale: m.scale,
+      ...(side === 'p2' ? { rotateY: 180 } : {}),
+      allowOverlap: true,
+    },
+  };
+}
+
+/**
+ * 手底下的名牌（第 8 问「这是谁的」的第三重冗余）。
+ * 我这张同时兼**出招确认**：点完到揭晓之间有 2 秒空窗，玩家得知道自己提交了什么（第 2 问）。
+ */
+function handTag(view: DuelView, side: Side): LayoutNode {
+  const mine = side === 'p1';
+  const sub = view.submitted;
+  const text = mine
+    ? (sub ? `已出 ${HAND_ICON[sub]} ${HAND_CN[sub]}` : view.phase === 'throw' ? '未出招 · 顺延上一手' : '你')
+    : '对手';
+  return {
+    type: 'Panel', id: `tag-${side}`,
+    props: { bg: mine ? 'gold-sheen' : 'blood', shape: 'pill', edge: (mine ? 'gold' : 'danger') as 'gold' | 'danger' },
+    layout: {
+      // 钉在各自那只掌的**正下方**（掌心 x 中点 ±60）——名牌离手越近，归属越不用想。
+      x: mine ? 365 : 795, y: 484, width: 120, height: 30,
+      direction: 'row', align: 'center', justify: 'center', padding: 2,
+    },
+    children: [{
+      type: 'Label', id: `tag-${side}-t`,
+      props: { text, size: 'sm', color: mine ? 'ink' : 'text', bold: true },
+    }],
+  };
+}
+
+/**
+ * 一条蓄力槽【R-108-03】。`big` = 对手那三条（HUD 里最重的元素）。
  * 蓄满时整条转成危险色 + 标「满」——「他攒够了」必须是**一眼可见的事件**，不是要读数字才知道。
  */
 function chargeBar(side: Side, h: Hand, view: DuelView, big: boolean): LayoutNode {
@@ -76,7 +194,7 @@ function chargeBar(side: Side, h: Hand, view: DuelView, big: boolean): LayoutNod
           value: 0, max: CHARGE_CAP, bind: chargeRes(side, h),
           tone: full ? 'danger' : hot ? 'warn' : side === 'p1' ? 'gold' : 'accent',
         },
-        layout: { width: big ? 176 : 118, height: big ? 14 : 8 },
+        layout: { width: big ? 172 : 132, height: big ? 16 : 10 },
       },
       {
         type: 'Label', id: `cb-${side}-${h}-v`,
@@ -87,231 +205,166 @@ function chargeBar(side: Side, h: Hand, view: DuelView, big: boolean): LayoutNod
       },
       // 「满」标只在对手那侧出——玩家自己那侧键上已经写着「满蓄·40」了，两处重复反而稀释。
       ...(big && full
-        ? [{ type: 'Badge', id: `cb-${side}-${h}-x`, props: { text: '满', tone: 'danger' } } as LayoutNode]
+        ? [{ type: 'Badge', id: `cb-${side}-${h}-x`, props: { text: '满', tone: 'warn' } } as LayoutNode]
         : []),
     ],
   };
 }
 
-/** 对手面板：**屏上最重的一块**——血条 + 三条大号蓄力槽 + 威胁提示。 */
-function opponentPanel(view: DuelView): LayoutNode {
+/** 右上：对手蓄力槽（**HUD 最重的一块**·它就是玩家全程要读的那份情报）。 */
+function foeSlots(view: DuelView): LayoutNode {
   const maxCharge = Math.max(...HANDS.map((h) => view.charge.p2[h]));
-  const threat = maxCharge >= CHARGE_CAP ? '他攒满了一手 · 被打中要掉四成血'
-    : maxCharge >= 2 ? '他在攒力 · 留意那只手'
-      : '';
   return {
-    type: 'Panel', id: 'side-p2', props: { bg: 'blood', glass: true, edge: (maxCharge >= 2 ? 'danger' : 'foe') as 'danger' | 'foe' },
-    layout: { direction: 'column', gap: 6, padding: 12 },
+    type: 'Panel', id: 'foe-slots',
+    props: {
+      bg: view.smoke.hidden ? 'ink-deep' : 'blood', glass: true,
+      edge: (maxCharge >= 2 ? 'danger' : 'foe') as 'danger' | 'foe',
+    },
+    layout: { x: 944, y: 72, width: 320, height: 160, direction: 'column', gap: 6, padding: 12 },
     children: [
       {
-        type: 'Panel', id: 'p2-head', props: { bare: true },
-        layout: { direction: 'row', align: 'center', justify: 'between' },
-        children: [
-          { type: 'Label', id: 'side-p2-n', props: { text: '对手', font: 'cnbrush', size: 'lg', color: 'text', bold: true } },
-          {
-            type: 'Panel', id: 'p2-hprow', props: { bare: true },
-            layout: { direction: 'row', align: 'center', gap: 6 },
-            children: [
-              { type: 'ProgressBar', id: 'side-p2-hp', props: { value: view.hp.p2, max: HP_MAX, tone: 'ok' }, layout: { width: 120 } },
-              { type: 'Label', id: 'side-p2-hpv', props: { text: `${view.hp.p2}`, font: 'impact', size: 'lg', color: 'text', bold: true } },
-            ],
-          },
-        ],
+        type: 'Label', id: 'foe-slots-t',
+        props: { text: '对手在攒的力', size: 'sm', color: 'text', bold: true },
       },
       ...HANDS.map((h) => chargeBar('p2', h, view, true)),
-      ...(threat ? [{ type: 'Label', id: 'p2-threat', props: { text: `⚠ ${threat}`, size: 'sm', color: 'danger', bold: true } } as LayoutNode] : []),
     ],
   };
 }
 
-/** 我方面板：血条 + 三条次级槽 + **出招确认**（七问第 2 问）。 */
-function selfPanel(view: DuelView): LayoutNode {
-  const sub = view.submitted;
+/** 左下：我方蓄力槽（次级·比对手那三条轻一档，层级不能反）。 */
+function selfSlots(view: DuelView): LayoutNode {
   return {
-    type: 'Panel', id: 'side-p1', props: { bg: 'steel', glass: true, edge: 'gold' },
-    layout: { direction: 'column', gap: 5, padding: 10 },
+    type: 'Panel', id: 'self-slots', props: { bg: 'steel', glass: true, edge: 'gold' },
+    layout: { x: 12, y: 452, width: 272, height: 150, direction: 'column', gap: 6, padding: 12 },
     children: [
       {
-        type: 'Panel', id: 'p1-head', props: { bare: true },
-        layout: { direction: 'row', align: 'center', justify: 'between' },
-        children: [
-          { type: 'Label', id: 'side-p1-n', props: { text: '你', font: 'cnbrush', size: 'md', color: 'text', bold: true } },
-          {
-            type: 'Panel', id: 'p1-hprow', props: { bare: true },
-            layout: { direction: 'row', align: 'center', gap: 6 },
-            children: [
-              { type: 'ProgressBar', id: 'side-p1-hp', props: { value: view.hp.p1, max: HP_MAX, tone: 'ok' }, layout: { width: 120 } },
-              { type: 'Label', id: 'side-p1-hpv', props: { text: `${view.hp.p1}`, font: 'impact', size: 'lg', color: 'text', bold: true } },
-            ],
-          },
-        ],
+        type: 'Label', id: 'self-slots-t',
+        props: { text: view.smoke.hidden ? '你的力 · 💨 已遮蔽' : '你攒的力 · 对手看得见', size: 'sm', color: 'gold', bold: true },
       },
       ...HANDS.map((h) => chargeBar('p1', h, view, false)),
-      {
-        // 出招确认：点完到揭晓之间有 2 秒空窗（悬念是对的），但**玩家得知道自己提交了什么**，
-        // 否则手滑点错了都不知道（七问第 2 问·第一版整个缺这条）。
-        type: 'Label', id: 'p1-submitted',
-        props: sub
-          ? { text: `已出招 ${HAND_ICON[sub]} ${HAND_CN[sub]}`, size: 'sm', color: 'gold', bold: true }
-          : { text: view.phase === 'throw' ? '未出招 · 到点顺延上一手' : ' ', size: 'sm', color: 'sub' },
-      },
     ],
   };
 }
 
-/** 规则石板【R-108-40】：判定表可视化。 */
-function ruleSlab(): LayoutNode {
+/** 一侧的顶栏身份块（名 + 血条 + 大数字）。左恒为你、右恒为对手，与手的左右严丝合缝。 */
+function idBar(view: DuelView, side: Side): LayoutNode {
+  const mine = side === 'p1';
+  const bar: LayoutNode = {
+    type: 'ProgressBar', id: `side-${side}-hp`,
+    props: { value: view.hp[side], max: HP_MAX, tone: view.hp[side] <= 30 ? 'danger' : 'ok' },
+    layout: { width: 150, height: 14 },
+  };
+  const num: LayoutNode = {
+    type: 'Label', id: `side-${side}-hpv`,
+    props: { text: `${view.hp[side]}`, font: 'impact', size: 'xl', color: view.hp[side] <= 30 ? 'danger' : 'text', bold: true },
+  };
+  const name: LayoutNode = {
+    type: 'Label', id: `side-${side}-n`,
+    props: { text: mine ? '你' : '对手', font: 'cnbrush', size: 'lg', color: mine ? 'gold' : 'danger', bold: true },
+  };
   return {
-    type: 'Panel', id: 'slab', props: { shape: 'shield', edge: 'gold', bg: 'ember' },
-    layout: { direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 8, width: 150, height: 74 },
-    children: [
-      { type: 'Label', id: 'slab-t', props: { text: '拳律', font: 'cnbrush', size: 'lg', color: 'gold', bold: true, stroke: true, glow: true } },
-      { type: 'Label', id: 'slab-r', props: { text: '石 › 剪 › 布 › 石', size: 'xs', color: 'sub' } },
-    ],
+    type: 'Panel', id: `side-${side}`, props: { bare: true },
+    layout: {
+      x: mine ? 12 : 948, y: 12, width: 320, height: 56,
+      direction: 'row', align: 'center', justify: mine ? 'start' : 'end', gap: 10, padding: 4,
+    },
+    children: mine ? [name, bar, num] : [num, bar, name],
   };
 }
 
-/** 亮手区：**揭晓时占画面中心**（七问第 3 问——亮拳是本作的情绪核，不能是配角）。 */
-function tableRow(view: DuelView): LayoutNode {
-  const shown = view.shown;
-  const revealed = !!(shown?.p1 || shown?.p2);
-  const hand = (side: Side, id: string): LayoutNode => ({
-    type: 'Label', id,
-    props: shown?.[side]
-      ? { text: HAND_ICON[shown[side]], size: 'xl', color: side === 'p1' ? 'gold' : 'danger', stroke: true, glow: true }
-      : { text: '❔', size: 'lg', color: 'sub' },
-  });
-  /** 一侧的亮手：**带名字**，且**上下排布与面板一致**（对手在上、你在下）。 */
-  const row = (side: Side, id: string, name: string): LayoutNode => ({
-    type: 'Panel', id: `${id}-row`, props: { bare: true },
-    layout: { direction: 'row', align: 'center', justify: 'center', gap: 10, width: 240 },
-    children: [
-      {
-        type: 'Label', id: `${id}-n`,
-        props: { text: name, size: 'sm', color: side === 'p1' ? 'gold' : 'danger', bold: true },
-      },
-      hand(side, id),
-    ],
-  });
+/** 顶栏中央：回合数 + 倒计时环 + 相位名。 */
+function phaseBar(view: DuelView): LayoutNode {
   return {
-    // ⚠ **归属可读**（owner 2026-08-07 当场指出·我的七问整个漏了这一维）：
-    // 第一版是「对手的手 | 石板 | 你的手」**横排且零文字**——玩家看到左右两只拳，
-    // **根本不知道哪只是自己出的**。唯一区别是颜色（金=你/红=对手），而这个约定从没告诉过玩家；
-    // 更糟的是面板本身是**上下**布局（对手在上、你在下），亮手却是**左右** ⇒ 空间映射直接断了。
-    // 现在：**上下排 + 每侧带名字**，与面板的上下关系严丝合缝。
-    type: 'Panel', id: 'table', props: { bare: true },
-    layout: { direction: 'column', align: 'center', justify: 'center', gap: revealed ? 6 : 4 },
+    type: 'Panel', id: 'status', props: { bare: true },
+    layout: {
+      x: 470, y: 8, width: 340, height: 64,
+      direction: 'row', align: 'center', justify: 'center', gap: 12,
+    },
     children: [
-      row('p2', 'shown-p2', '对手'),
-      ruleSlab(),
-      row('p1', 'shown-p1', '你'),
+      // 回合数用 Label 不用 Badge：Badge 的闭集 tone 只有 ok/warn/dim，dim 在暗底实测 2.93
+      // 真读不清（ui-audit 抓到）。而回合数是七问第 5 问要的信息，不该是灰的。
+      { type: 'Label', id: 'round-b', props: { text: `第 ${view.round} 回合`, size: 'sm', color: 'text', bold: true } },
+      {
+        type: 'ProgressBar', id: 'phase-ring',
+        // 最后三分之一转红：让「还剩多久必须出手」看得见（七问第 5 问）。
+        props: { value: Math.round(view.phaseLeft * 100), max: 100, shape: 'ring', size: 46, tone: view.phaseLeft < 0.34 ? 'danger' : 'gold' },
+      },
+      { type: 'Label', id: 'phase-t', props: { text: PHASE_CN[view.phase], font: 'cnbrush', size: 'xl', color: 'gold', bold: true, glow: true } },
     ],
   };
 }
 
 /**
- * 读牌区（T1/T2 揭晓之前占中区）。第一版这块是**大片死空白**——而中区是屏上最大的一块地方，
- * 空着等于告诉玩家「这儿没什么可看的」，正好和本作「你应该盯着对手的手」相反。
- * 现在：把**对手攒得最满的那只手**放大摆在这儿，配一句「他攒了 N 层 · 挨一下掉 M」。
- * 这不是装饰，是七问第 1 问的落点——核心信息该在屏上最重的位置。
+ * 顶栏下的一行读牌提示（七问第 1/6 问的落点）。
+ * 横版之后这里不再需要「读牌区」那个大方块——对手的三条槽已经在右上占了重量，
+ * 这一行只补最后一步**结论**：他攒满的是哪只、挨一下掉多少、该用什么克。
  */
-function readingArea(view: DuelView): LayoutNode | null {
-  // 终局态也要闭嘴——第一版没排除，赢了之后中区还在念「对手还没开始攒力」（真渲染目击）。
-  if (view.phase === 'clash' || view.phase === 'settle' || isOver(view.phase)) return null;
+function readLine(view: DuelView): LayoutNode {
   let top: Hand = 'rock';
   for (const h of HANDS) if (view.charge.p2[h] > view.charge.p2[top]) top = h;
   const lv = view.charge.p2[top];
-  if (lv <= 0) {
-    return {
-      type: 'Panel', id: 'reading', props: { bare: true },
-      layout: { direction: 'column', align: 'center', gap: 4 },
-      children: [{ type: 'Label', id: 'reading-idle', props: { text: '对手还没开始攒力', size: 'sm', color: 'sub' } }],
-    };
-  }
+  const text = isOver(view.phase) ? ''
+    : lv >= CHARGE_CAP ? `⚠ 他攒满了 ${HAND_ICON[top]}${HAND_CN[top]} · 挨一下掉 ${DMG_AT(lv)} · 用 ${HAND_CN[BEATS[top]]} 克它`
+      : lv >= 1 ? `他在攒 ${HAND_ICON[top]}${HAND_CN[top]}（${lv}/${CHARGE_CAP}）· 挨一下掉 ${DMG_AT(lv)} · 用 ${HAND_CN[BEATS[top]]} 克它`
+        : PHASE_HINT[view.phase];
   return {
-    type: 'Panel', id: 'reading', props: { bg: lv >= CHARGE_CAP ? 'blood' : 'sunken', edge: (lv >= CHARGE_CAP ? 'danger' : 'warn') as 'danger' | 'warn' },
-    layout: { direction: 'column', align: 'center', gap: 2, padding: 10, width: 290 },
+    type: 'Panel', id: 'read', props: { bare: true },
+    layout: { x: 380, y: 76, width: 520, height: 28, direction: 'row', align: 'center', justify: 'center' },
+    children: [{
+      type: 'Label', id: 'read-t',
+      props: { text: text || ' ', size: 'sm', color: lv >= CHARGE_CAP ? 'danger' : lv >= 1 ? 'warn' : 'sub', bold: lv >= 1 },
+    }],
+  };
+}
+
+/** 中线缝的上端：**规则石板**【R-108-40】常驻。将来被碎片/遗物当场改写，重刻的表演也在这块。 */
+function ruleSlab(): LayoutNode {
+  return {
+    type: 'Panel', id: 'slab', props: { shape: 'shield', edge: 'gold', bg: 'ember' },
+    layout: {
+      x: SLAB_X, y: SLAB_Y, width: SLAB_W, height: SLAB_H,
+      direction: 'column', align: 'center', justify: 'center', gap: 2, padding: 6,
+    },
     children: [
-      { type: 'Label', id: 'reading-l', props: { text: '他在攒这只手', size: 'xs', color: 'sub' } },
-      {
-        type: 'Panel', id: 'reading-row', props: { bare: true },
-        layout: { direction: 'row', align: 'center', justify: 'center', gap: 10 },
-        children: [
-          { type: 'Label', id: 'reading-h', props: { text: HAND_ICON[top], size: 'xl', color: 'danger', stroke: true, glow: true } },
-          { type: 'Label', id: 'reading-n', props: { text: `${lv}/${CHARGE_CAP}`, font: 'impact', size: 'xl', color: 'danger', bold: true } },
-        ],
-      },
-      { type: 'Label', id: 'reading-d', props: { text: `挨一下掉 ${DMG_AT(lv)} · 用 ${HAND_CN[BEATS[top]]} 克它`, size: 'sm', color: 'warn', bold: true } },
+      { type: 'Label', id: 'slab-t', props: { text: '拳律', font: 'cnbrush', size: 'lg', color: 'gold', bold: true, stroke: true, glow: true } },
+      { type: 'Label', id: 'slab-r', props: { text: '石 › 剪 › 布 › 石', size: 'xs', color: 'text' } },
     ],
   };
 }
 
-/** 谁克谁（屏上给提示用·与判定表同源的静态常识，不参与判定）。 */
-const BEATS: Record<Hand, Hand> = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
-
 /**
- * 结果横幅（七问第 3/4 问）：**一眼看出赢没赢、代价多少**。
- * 第一版只有血条数字在变，玩家得自己算差值；而且 40 和 10 的视觉重量一模一样——
- * 「满蓄一击 = 四成血」本该是全场最大的事件。这里按伤害档位放大字号与颜色。
+ * 中线缝的下端：**结果横幅**（七问第 3/4 问）——一眼看出赢没赢、代价多少。
+ * 位置刻意压在两掌相触点的正下方：亮拳那一刻眼睛就在那儿，不必再找。
  */
 function outcomeBanner(view: DuelView): LayoutNode | null {
   const o = view.outcome;
   if (!o || (view.phase !== 'clash' && view.phase !== 'settle')) return null;
+  const box = {
+    x: LANE_X, y: LANE_Y, width: LANE_W, height: LANE_H,
+    direction: 'row' as const, align: 'center' as const, justify: 'center' as const, gap: 14, padding: 6,
+  };
   if (o.winner === 'tie') {
     return {
-      type: 'Panel', id: 'outcome', props: { bg: 'sunken' },
-      layout: { direction: 'row', align: 'center', justify: 'center', gap: 8, padding: 6, width: 300 },
-      children: [{ type: 'Label', id: 'outcome-t', props: { text: '平局 · 双方都不掉血', font: 'cnbrush', size: 'md', color: 'sub', bold: true } }],
+      type: 'Panel', id: 'lane', props: { bg: 'sunken', edge: 'gold' }, layout: box,
+      children: [{ type: 'Label', id: 'lane-t', props: { text: '平局 · 双方都不掉血', font: 'cnbrush', size: 'lg', color: 'text', bold: true } }],
     };
   }
   const iWon = o.winner === 'p1';
-  const heavy = o.damage >= 30;          // 满蓄档 → 字更大、加描边（视觉重量跟数值挂钩）
+  const heavy = o.damage >= 30;          // 满蓄档 → 字更大（视觉重量跟数值挂钩）
   return {
-    type: 'Panel', id: 'outcome', props: { bg: iWon ? 'gold-sheen' : 'blood', edge: (iWon ? 'gold' : 'danger') as 'gold' | 'danger' },
-    layout: { direction: 'row', align: 'center', justify: 'center', gap: 10, padding: 6, width: 300 },
+    type: 'Panel', id: 'lane', props: { bg: iWon ? 'gold-sheen' : 'blood', edge: (iWon ? 'gold' : 'danger') as 'gold' | 'danger' }, layout: box,
     children: [
-      { type: 'Label', id: 'outcome-t', props: { text: iWon ? '你赢了这回合' : '你被打中', font: 'cnbrush', size: heavy ? 'lg' : 'md', color: iWon ? 'ink' : 'text', bold: true } },
+      { type: 'Label', id: 'lane-t', props: { text: iWon ? '你赢了这回合' : '你被打中', font: 'cnbrush', size: heavy ? 'xl' : 'lg', color: iWon ? 'ink' : 'text', bold: true } },
       // **ASCII 连字符，不是全角减号 U+2212**：`impact`(Anton) 没有 U+2212 的字形，
       // 渲出来是个黑豆腐块——而这是全屏最要紧的一个数字（真渲染目击到才发现·字体缺字形不报错）。
-      // 也不加 stroke：描边在这个字号上会把数字糊住。
-      { type: 'Label', id: 'outcome-d', props: { text: `-${o.damage}`, font: 'impact', size: heavy ? 'xl' : 'lg', color: iWon ? 'ink' : 'danger', bold: true } },
-    ],
-  };
-}
-
-/** 顶栏：回合数 + 相位环 + 相位名 + 该干嘛（七问第 5/6 问）。 */
-function statusBar(view: DuelView): LayoutNode {
-  return {
-    type: 'Panel', id: 'status', props: { bare: true },
-    layout: { direction: 'column', align: 'center', gap: 2 },
-    children: [
-      {
-        type: 'Panel', id: 'status-row', props: { bare: true },
-        layout: { direction: 'row', align: 'center', justify: 'center', gap: 10 },
-        children: [
-          // 回合数用 Label 不用 Badge：Badge 的闭集 tone 只有 ok/warn/dim，dim 在暗底实测 2.93
-          // 真读不清（ui-audit 抓到）。而回合数是七问第 5 问要的信息，不该是灰的。
-          { type: 'Label', id: 'round-b', props: { text: `第 ${view.round} 回合`, size: 'sm', color: 'text', bold: true } },
-          {
-            type: 'ProgressBar', id: 'phase-ring',
-            // 最后三分之一转红：让「还剩多久必须出手」看得见（七问第 5 问）。
-            props: { value: Math.round(view.phaseLeft * 100), max: 100, shape: 'ring', size: 44, tone: view.phaseLeft < 0.34 ? 'danger' : 'gold' },
-          },
-          { type: 'Label', id: 'phase-t', props: { text: PHASE_CN[view.phase], font: 'cnbrush', size: 'xl', color: 'gold', bold: true, glow: true } },
-        ],
-      },
-      ...(PHASE_HINT[view.phase]
-        ? [{ type: 'Label', id: 'phase-hint', props: { text: PHASE_HINT[view.phase], size: 'xs', color: 'sub' } } as LayoutNode]
-        : []),
-      ...(view.tell ? [{ type: 'Label', id: 'tell', props: { text: view.tell, size: 'sm', color: 'warn' } } as LayoutNode] : []),
+      { type: 'Label', id: 'lane-d', props: { text: `-${o.damage}`, font: 'impact', size: 'xl', color: iWon ? 'ink' : 'danger', bold: true } },
     ],
   };
 }
 
 /**
- * 动作键排。**信号名取自动作词表**【R-108-70】。
+ * 底中：三招键。**信号名取自动作词表**【R-108-70】。
  * 蓄力键在槽满时禁用【R-108-10】：不可点、不产生信号。
- * 烟雾键（第七问：词表里有、屏上没有 = 功能缺失）——`ui-inventory` 曾点名 `smoke.use` 玩家够不着。
  */
 function actionRow(view: DuelView): LayoutNode {
   const charging = view.phase === 'charge';
@@ -330,70 +383,80 @@ function actionRow(view: DuelView): LayoutNode {
         kind: 'hero', shape: 'hexagon', disabled,
         ...(disabled ? {} : { action }),
       },
-      layout: { width: 118, height: 78, press3d: true },
+      layout: { width: 152, height: 96, press3d: true },
     };
   });
   return {
     type: 'Panel', id: 'keys', props: { bare: true },
-    layout: { direction: 'column', align: 'center', gap: 6, padding: 4 },
+    layout: { x: 394, y: 610, width: 492, height: 96, direction: 'row', justify: 'between', align: 'center' },
+    children: keys,
+  };
+}
+
+/** 右下：烟雾键【R-108-20】。 */
+function smokeKey(view: DuelView): LayoutNode {
+  const usable = view.smoke.uses > 0 && !view.smoke.hidden;
+  return {
+    type: 'Button', id: 'key-smoke',
+    props: {
+      label: `💨 烟雾 ×${view.smoke.uses}`,
+      sub: view.smoke.hidden ? '生效中 · 对手看不见你的槽' : '遮住自己三条槽 2 回合',
+      kind: 'ghost', disabled: !usable,
+      ...(usable ? { action: ACT.smoke } : {}),
+    },
+    layout: { x: 940, y: 626, width: 300, height: 60 },
+  };
+}
+
+/**
+ * 终局面板（覆盖在中线上）。第一版**根本没有**——赢了只是相位名换成「你赢了」，
+ * 三个对局键还亮着、点了没用，玩家**卡在死路上没有出口**（真渲染目击 + `ui-inventory` 点名 `duel.next` 够不着）。
+ */
+function endPanel(view: DuelView): LayoutNode {
+  const won = view.phase === 'p1win';
+  return {
+    type: 'Panel', id: 'end', props: { bg: won ? 'gold-sheen' : 'blood', edge: (won ? 'gold' : 'danger') as 'gold' | 'danger' },
+    layout: {
+      x: 420, y: 240, width: 440, height: 260, allowOverlap: true,
+      direction: 'column', align: 'center', justify: 'center', gap: 12, padding: 18,
+    },
     children: [
-      { type: 'Panel', id: 'keys-row', props: { bare: true }, layout: { direction: 'row', justify: 'center', gap: 10 }, children: keys },
+      { type: 'Label', id: 'end-t', props: { text: won ? '你赢了' : '你输了', font: 'cnbrush', size: 'xl', color: won ? 'ink' : 'text', bold: true, stroke: true } },
+      { type: 'Label', id: 'end-s', props: { text: `打了 ${view.round} 回合 · 剩 ${view.hp.p1} 血`, size: 'md', color: won ? 'ink' : 'text' } },
       {
-        type: 'Button', id: 'key-smoke',
-        props: {
-          label: `💨 烟雾 ×${view.smoke.uses}`,
-          sub: view.smoke.hidden ? '生效中 · 对手看不见你的槽' : '遮住自己三条槽 2 回合',
-          kind: 'ghost', disabled: view.smoke.uses <= 0 || view.smoke.hidden,
-          ...(view.smoke.uses > 0 && !view.smoke.hidden ? { action: ACT.smoke } : {}),
-        },
-        layout: { width: 260, height: 40 },
+        type: 'Button', id: 'key-next',
+        props: { label: '再来一局', kind: 'hero', action: ACT.next },
+        layout: { width: 220, height: 56, press3d: true },
       },
     ],
   };
 }
 
 /**
- * 终局面板。第一版**根本没有**——赢了只是相位名换成「你赢了」，三个对局键还亮着、点了没用，
- * 玩家**卡在死路上没有出口**（真渲染目击 + `ui-inventory` 点名 `duel.next` 够不着）。
+ * 对局屏（S-03·横版）。
+ * 层序（后画的压前面）：舞台底 → 四角 HUD → **两只手（主体）** → 名牌 → 中线槽 → 终局覆盖层。
  */
-function endPanel(view: DuelView): LayoutNode {
-  const won = view.phase === 'p1win';
-  return {
-    type: 'Panel', id: 'end', props: { bg: won ? 'gold-sheen' : 'blood', edge: (won ? 'gold' : 'danger') as 'gold' | 'danger' },
-    layout: { direction: 'column', align: 'center', gap: 8, padding: 14, width: 300 },
-    children: [
-      { type: 'Label', id: 'end-t', props: { text: won ? '你赢了' : '你输了', font: 'cnbrush', size: 'xl', color: won ? 'ink' : 'text', bold: true, stroke: true } },
-      { type: 'Label', id: 'end-s', props: { text: `打了 ${view.round} 回合 · 剩 ${view.hp.p1} 血`, size: 'sm', color: won ? 'ink' : 'sub' } },
-      {
-        type: 'Button', id: 'key-next',
-        props: { label: '再来一局', kind: 'hero', action: ACT.next },
-        layout: { width: 200, height: 52, press3d: true },
-      },
-    ],
-  };
-}
-
-/** 对局屏（S-03）。信息层级：对手槽 > 亮手/结果 > 我方槽 > 键。 */
 export function buildDuelScreen(view: DuelView): LayoutNode {
+  const over = isOver(view.phase);
   const banner = outcomeBanner(view);
-  const reading = readingArea(view);
   return {
     type: 'Panel', id: 'duel-screen', props: { vignette: true },
-    layout: { width: STAGE_W, height: STAGE_H, direction: 'column', align: 'center', justify: 'between', gap: 6, padding: 12 },
+    layout: { width: STAGE_W, height: STAGE_H, padding: 0 },
     children: [
-      opponentPanel(view),
-      statusBar(view),
-      {
-        type: 'Panel', id: 'center', props: { bare: true },
-        layout: { direction: 'column', align: 'center', justify: 'center', gap: 12, flex: 1 },
-        children: [
-          ...(reading ? [reading] : []),
-          tableRow(view),
-          ...(banner ? [banner] : []),
-        ],
-      },
-      selfPanel(view),
-      isOver(view.phase) ? endPanel(view) : actionRow(view),
+      idBar(view, 'p1'),
+      idBar(view, 'p2'),
+      phaseBar(view),
+      readLine(view),
+      foeSlots(view),
+      selfSlots(view),
+      ruleSlab(),
+      // 手在 HUD 之后画 = 压在 HUD 之上（舞台主体·意图叠层）。
+      handNode(view, 'p1'),
+      handNode(view, 'p2'),
+      handTag(view, 'p1'),
+      handTag(view, 'p2'),
+      ...(banner ? [banner] : []),
+      ...(over ? [endPanel(view)] : [actionRow(view), smokeKey(view)]),
     ],
   };
 }
@@ -421,4 +484,4 @@ export function screenActions(view: DuelView): string[] {
   return out;
 }
 
-export { SIDES };
+export { SIDES, HP_RES, handMotion };

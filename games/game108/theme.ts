@@ -74,8 +74,12 @@ export const OPPONENT_CN: Record<OpponentId, string> = {
   parrot: '复读机', brute: '莽夫', actor: '戏子', gambler: '赌徒', master: '拳律大师',
 };
 
-// 竖屏超休闲舞台尺寸（**单一真相**）：mountHost 的 field 与对局屏根 Panel 的定尺同取这两个数——
+// 舞台尺寸（**单一真相**）：mountHost 的 field 与对局屏根 Panel 的定尺同取这两个数——
 // 不同源就是 2026-08-07 真渲染目击到的那个病：field 720×1280、屏 456×788 → 屏缩在 field 左上角，
-// 下半截整片死白。同 casual-hud 口径。
-export const VIEW_W = 456;
-export const VIEW_H = 788;
+// 下半截整片死白。
+//
+// **横版 16:9**（owner 2026-08-07 定方向）：本作的核心是「看着一只手伸出来、摇一摇、出招」——
+// 竖屏把中区挤没了，手只能当两个小图标（正好和玩法反了）。横版把**中间那条道空出来留给手**，
+// 其余 UI 全部退到四角围着手转。
+export const VIEW_W = 1280;
+export const VIEW_H = 720;
