@@ -260,7 +260,8 @@
 >
 > 通用要求：逐件独立提交全绿（tsc+vitest+build）；新组件入闭集+registry describe；**每件落地同提交回填 `docs/playbooks/3d.md`**（手册铁律）；拾取件加无头测试（ray 求交纯函数部分）+ 真浏览器点选自证。完工逐件标 ✅。
 
-## REQ-3D-像素断言 · shoot-game.mjs 从人审升级为机器断言（TGS 吸收 C 件·owner 2026-07-06 批） · [2026-07-07] · Lead 图纸 → **指派：P3D** · status: open（排 P3D 队·**7·29 冲刺后再动**——REQ-DEMO-0729 队列重排） · 优先级: P2 · 类型: 3D QA 基建
+## REQ-3D-像素断言 · shoot-game.mjs 从人审升级为机器断言（TGS 吸收 C 件·owner 2026-07-06 批） · [2026-07-07] · Lead 图纸 → **指派：P3D** · status: **✅ done（P3D 2026-08-07·独立命令·未进推送门待 3× 稳定·见回执/标定表）·待 Lead 验收（红测）** · 优先级: P2 · 类型: 3D QA 基建
+> **★ P3D 回执（2026-08-07·7·29 冲刺已过·拉动施工）**：三断言下沉为**纯函数模块** `scripts/lib/pixel-qa.mjs`（零浏览器·可单测——同 render-harness.decodePNG 哲学）：① `analyzeFrame` 非黑占比 + 亮度直方图 p5..p95 动态范围（对比度·抗离群点）；② `frameActivity` 两帧逐像素亮度差均值（防冻结）；③ `assertPixelQA` 汇总判定（无 frameB→跳活动·单帧静态屏）。`shoot-game.mjs` 加 `PIXELQA=1` 开关（**缺省关·不动既有美术管线截图行为**）：截两帧（隔 250ms·有 canvas 才截第二帧判活动）→ 解码 → 断言 → 打 `PIXELQA: PASS|FAIL` + 退出码（照 docs-ref-guard 模式·FAIL 点名哪条 + 实测 vs 阈值）。**复用** `render-harness.decodePNG`（不另造 PNG 解码）。测试 `pixel-qa.test.mjs` 14 例（luma/通道兼容·黑屏→nonBlack 红·纯色板→contrast 红·冻结→activity 红·健康帧全过）。**⚖ CORE RULE 覆盖检查**：render-probe（REQ-RENDERCHECK·2026-07-24）已在 **S3 门**做 nonBlank——但那是 per-game dev-server 深链冒烟；本件补的是 **美术管线 shoot-game**（build+preview+SwiftShader+**点击穿透任意屏**）的机器门，且加 render-probe 无的**对比度直方图 + 帧活动防冻结**两断言，非重复。**标定表（草案·实测分布定·非拍脑袋·spec 项②）**：game-z（3D·三跑）非黑 0.998–0.999 / 对比度 62–69 / 活动 12.4–13.5；game-i（DOM UI·活动 skip）非黑 0.412 / 对比度 42。取实测最小值下方留裕度 → 草案阈值 `{minNonBlackRatio:0.05, minDynamicRange:24, minActivity:0.15}`。**未进推送门（spec 项④）**：需「全量并发下连过 3 次」才议进门——本轮 game-z 3 跑 + game-i 1 跑均稳过、值离阈值远，但正式入门待更多场景连跑核。红路径已由 14 单测机证（黑/糊/冻各造红）；owner 报的「故意黑屏/冻结场景」端到端红测留 Lead 验收。tsc0/vitest/build0/manifest（无组件变更）。
 
 > **背景**：`docs/design/art-pipeline-vision-2026-07.md §八` 对照裁决——canvas 像素级 QA 是 TGS 四道门里我们缺的一道；现 `scripts/shoot-game.mjs` 截图只能人审，判定不进机器。
 > **spec（Lead 图纸）**：
