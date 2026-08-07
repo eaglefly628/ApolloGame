@@ -169,3 +169,5 @@ game108 恰好三者都用（`weighted-spawn` 管 AI 抽选、`craft-recipe` 管
 
 **我漏这条的原因**（记下来）：我第一轮只跑了 `matrix-duel.test.ts` 的定序用例（它们**绿**，因为断言的是
 本件三条显式关系），**没去看 stderr 里的告警**。⇒ **review 三步该补一条：告警也要读，绿灯不等于没话说。**
+
+> ✅ **已落地**（owner 2026-08-06 令）：CLAUDE.md「施工与复查」第 4 条现为 **review 四步**，新增 ④ **读告警**——`topological-sort` 的成环、守卫的 WARN 都只打 stderr 不改退出码，绿灯不等于没话说。
