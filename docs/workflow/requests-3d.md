@@ -6,66 +6,23 @@
 
 ---
 
-## REQ-3D-RENDERHYG · 渲染卫生批：贴图泄漏 + 脏标失效 + 后处理漏 dispose · [2026-08-05] · Lead 提（引擎全量评审 §6⑧·owner 令派 P3D）→ P3D · status: open · 优先级: P2（全 render-only·不阻塞玩法·但长局越跑越卡/越吃显存） · 类型: 渲染健壮 + 性能
-> 详情唯一真相 = `docs/design/engine-review-2026-08-04.md`（§3.2 + §5「3D 渲染」）。Lead 已复核为真发现，落 P3D 域故转派、不擅改。
-> ①**`three/geometry.ts:298` `disposeMeshMat` 漏释放 `map`/`emissiveMap`（P1 显存泄漏）** —— ⚠ **不可盲加 `.dispose()`**：二者可能来自共享缓存（`pbrMapTexture`/`texCache`），直接释放会毁掉**其他活网格正在用的贴图** → **画面损坏比泄漏更糟**。正解=引用计数/来源标记，只释放 per-mesh 独占。
-> ②**`three/models.ts:87` 带 clip 的静态模型令 `animLive>0`（P1）** —— 脏标跳渲永久失效 + 每帧刷阴影。修法=`update()` 返回真正在播的 action 数，但 `isRunning()` 语义要准，**判断错会让动画冻结**；`models.test` 无覆盖 → 先补测试再动。
-> ③**`three/physics.ts:69` `sync` 返回值含 SLEEPING 刚体（P2）** —— 骰子入睡后仍每帧重渲。修法=只计 `sleepState !== SLEEPING`。**建议与 `REQ-3D-SETTLE-SIGNAL` 合并做**（同一处睡眠语义·省一次回归）。
-> ④**`three/post.ts:178` `PostPipeline.dispose` 漏逐 pass dispose（P2）** —— GTAO/Bloom/SMAA 各自 RT 滞留。尾巴同批顺清：`renderSig` 漏 ao/grade/quat · HDRI 坏图每帧重 parse · num-guard 漏 tiltShift/bloom。
-> **边界**：`src/renderer/three/**` + 测试；不碰 sim/引擎核/`src/ui/**`。**验收**：①每条配回归测试（复现→红→修→绿·回执贴「撤修即转红」证据）；②贴图那条**必须**给「共享贴图未被误释放」正面用例（两网格共用一 texture·销毁其一后另一仍可渲）否则=用画面损坏换泄漏；③render-only 可缩范围跑门禁。
+## REQ-3D-DISSOLVE · 溶解消散材质效果（Material3D.dissolve·shader 溶解 + voronoi 光点前沿）· [2026-08-06] · owner 提（移植 mp.weixin 文章技术）→ P3D · status: **🚧 增量①✅ done（P3D 2026-08-06·已推·见回执）；增量②③（羽毛纹理化/顶点外扩）待拉动** · 优先级: P2（owner 提·通用材质效果） · 类型: 渲染能力补全（材质 shader·render-only）
+> **★ P3D 移植回执（2026-08-06·CORE RULE=真缺口→下沉引擎 capability·自由 GLSL 只写一次·游戏摆数据）**：文章是 Unity HLSL 的溶解 shader（阈值溶解 + Voronoi 光点消散 + 距离场变形 + 边缘发光·shader 算代替真粒子省性能）。我们无 dissolve → **下沉成 `Material3D.dissolve`**（render-only·闭集数据），渲染器给材质注入 GLSL（`onBeforeCompile`·**同 outline 先例**·`dissolve.ts injectDissolve`），`DissolveSystem` 每帧推进 progress/time uniform（**同 UvAnimSystem 时间驱动先例**·live>0 持续重渲）。**增量①（本轮·核心）**：`dissolve{progress|trigger+dur+direction, pattern:'noise'|'voronoi', shape:'euclid'|'manhattan'|'chebyshev'|'star', scale, speed, edge, edgeColor, glow}`——**屏幕空间**算距离场（形状/图案 build 期烤进 GLSL·避免运行时分支）·按 progress 阈值 discard·溶解前沿加性**发光条带**；voronoi=动画种子点「光点消散」（星形/闵可夫斯基/切比雪夫多样形状）；`trigger` bump 引擎自播 0→1（out）/1→0（in·direction）·同 flash 先例。dissolve 材质走单 mesh（不实例化·DissolveSystem 驱动 uniform）·`pbrSig` 纳入 `dissolveSig`（pattern/shape 变则重建）。测试 `dissolve.test` 6 例（注入 uniform·钳位·sig·显式 progress·trigger 自播 out/in·live 计数）。真浏览器目击 game-z Platform Three `p3-dissolve`（蓝钢球半溶解 + 橙色光点前沿·shader 编译无误）。tsc0/vitest/build0/manifest（Material3D 加字段·无新组件）。**增量②③（记档待拉动·文章后半·复杂度高）**：② 羽毛/纹理化溶解（局部坐标系采样贴图 + SampleGrad/textureGrad 修 mip + 9-tap/六边形网格叠加）；③ 顶点着色器按 progress 外扩打破 mesh 轮廓 + 彩色纹理重叠软混合。有真需求再排。
+
+## REQ-3D-RENDERHYG · 渲染卫生批：贴图泄漏 + 脏标失效 + 后处理漏 dispose · [2026-08-05] · Lead 提（引擎全量评审 §6 工单⑧·owner 2026-08-05 令派 P3D）→ P3D · status: **✅ done（P3D 2026-08-05·fix①②④+全尾·已推·见回执；fix③睡眠随 SETTLE-SIGNAL 同做）** · 优先级: P2（**全为 render-only·不阻塞玩法**·但长局面越跑越卡/显存越吃越多） · 类型: 渲染健壮 + 性能
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-TOWER-STACK · 物理世界参数按游戏可配（现全局硬编码 · 重力 -42 使多层堆叠不可能）· [2026-08-04] · GD-105 提（叠叠乐塔立不住）→ P3D · status: **✅ done（P3D 2026-08-05·已推·见回执）** · 优先级: **P1（game-105 S3 骨架关硬阻塞·塔立不住则全部规则无从谈起）** · 类型: 3D 线能力缺口（物理世界配置）
-> **★ P3D 落地回执（2026-08-05·照 spec·opt-in 场景级·缺省零变）**：新组件 `PhysicsWorld3D{gravity?,restitution?,friction?,solverIterations?}`（场景级单例·render-only·入 NON_DETERMINISTIC + manifest 143）。`physics.ts initWorld(world)` 读第一个 `PhysicsWorld3D` → 建 cannon World 时套用（`solver.iterations` 走 GSSolver·**未设=缺省 10**）；**不挂本组件 = 逐位现行值**（g=-42/rest=0.4/fric=0.35·护 game-d 掷骰 -42 刻意调参 + game102 碎片）。测试 3 例钉死：① 缺省不挂 → 重力仍 -42（落得快·回归护栏）② 配 `gravity:-9.82` → 落得慢（数据路生效）③ 12 层叠叠乐塔 + `{gravity:-9.82,restitution:0,solverIterations:40}` → 静置 5s 塔顶下沉 <0.4（站住不塌）。回填 `playbooks/3d.md` 物理世界配置行。**交 PE-105**：game-105 场景挂一个 `PhysicsWorld3D{gravity:-9.82,restitution:0,solverIterations:40}` 即塔立得住·S3 解锁。tsc0/vitest(physics18)/build0/manifest143。
-> **缺口**：`src/renderer/three/physics.ts:148` `initWorld()` 把物理世界参数**全局硬编码**：`gravity -42`（注释「世界单位较大 → 重力调大·**色子下落干脆**」= 为掷骰调的）、`restitution 0.4`（「弹一点」）、`friction 0.35`，且**未设 `solver.iterations`**（cannon-es 0.20 `GSSolver` 默认 **10**）。全引擎共用**一个** cannon World，**没有任何数据出口**可按游戏/场景调整（`render.ts:466` 的 `gravity` 是粒子发射器字段，与物理世界无关）。掷骰/碎片这类「单体抛落」在该配置下很好，但**多层刚体堆叠**要求恰好相反的参数。
-> **实证（54 块塔·cannon-es 0.20.0 = 引擎 pin 版本·离线复现·判塌=塔顶下沉 > 2 倍积木高）**：
->
-> | 配置 | 结果 |
-> |---|---|
-> | ① 引擎现状原样（g=-42·it=默认10·rest=0.4） | **0.1s 崩塌** ❌ |
-> | ② 仅把 `solver.iterations` 提到 40 | **0.1s 崩塌** ❌ |
-> | ③ ② + `restitution=0` | **0.1s 崩塌** ❌ |
-> | ④ ③ + `gravity=-9.82` | **站住**（20s 塔顶仅下沉 0.085） ✅ |
->
-> **主因是重力，不是迭代次数**——这与直觉相反，故列表存证：`-42` 下接触力过大，soft-constraint 求解器每接触的穿透量随力放大，18 层累积后整塔当场解体；提迭代/去弹性都救不回来。另一独立实测：即便 `g=-9.82`，`iterations=20` 时塔仍会在 20s 内因求解器蠕变自行塌陷（塔顶 5.23→1.26），**40 次才稳**。故堆叠场景需要 **`gravity≈-10` + `restitution≈0` + `iterations≥40` 三者同时成立**。
-> **要什么（P3D 主理·技术路 P3D 定）**：给物理世界一条**按游戏/场景配置的数据路**（如场景级单例组件 `PhysicsWorld3D{gravity?,restitution?,friction?,solverIterations?}`，缺省=现行值）。游戏摆纯数据即可，渲染器读它建 World。
-> **⚠ 明确不要「直接改全局默认」**：`g=-42` 是 game-d 掷骰**刻意调**的（owner 2026-07-03「色子下落干脆」），game102 碎片同样跑在这套参数上。全局改必回归伤到它们——**必须 opt-in 可配，缺省行为零变**。
-> **复用面**：任何堆叠/搭建玩法（叠叠乐/积木/罗汉塔/推箱堆垛）· 需要慢重力的漂浮/水下场景 · 需要高精度接触的多米诺。现状下这些**一律做不了**。
-> **验收**：game-105 的 54 块塔在填 `PhysicsWorld3D{gravity:-9.82,restitution:0,solverIterations:40}` 后静置 20s 不塌（塔顶下沉 < 0.2）+ **game-d 掷骰不填该组件时行为逐位不变**（回归目击）+ 测试钉死（缺省值 = 现行硬编码值）。
-> **边界**：`src/renderer/**`（`three/physics.ts`）= P3D 独占域；Lead 评审。render-only·不进 sim/hash。
-> **阻塞关系**：本条 **P1 硬阻塞 game-105 的 S3**（与 `REQ-3D-SETTLE-SIGNAL` 不同——那条可用薄胶水绕行，本条**无绕行路**：物理世界配置在引擎侧，游戏层再怎么摆数据也改不动）。
-> **⚖ Lead 评审（2026-08-04）：✅ 准·下沉**——独立核实缺口成立：`physics.ts:148-150` 硬编码三参 + 全文件零 `solver.iterations` + `src/` 全域零 `PhysicsWorld` 配置入口（`render.ts:466` gravity 确为粒子字段无关）。spec 照案：**opt-in 场景级·缺省行为零变**（护 game-d/-42 刻意调参）·验收含 game-d 回归目击 + 缺省值测试钉死。维持 P1（game-105 S2 已过审·S3 唯此硬前置）。P3D 施工。
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-SETTLE-SIGNAL · 刚体落定 / 失稳 → 信号出口（物理结果通向 sim 的唯一缺口）· [2026-08-04] · GD-105 提（叠叠乐判负）→ P3D · status: **✅ done（P3D 2026-08-05·含 RENDERHYG fix③·已推·见回执）** · 优先级: P2（game-105 核心判负条件阻塞·game-d 已在游戏层手搓同件） · 类型: 3D 线能力缺口（物理事件 → 信号）
-> **★ P3D 落地回执（2026-08-05·opt-in·不碰确定性·走 Pickable3D 同通路）**：`RigidBody3D` 加 `settleSignal?`(落定入睡发一次)·`toppleSignal?`+`toppleTilt?`(倾角超阈值发一次)。`physics.ts` 检测：**settle**=入睡沿（`sleepState===SLEEPING` 首帧·睡醒重新武装再落定重发）；**topple**=本体竖轴偏离世界竖直超阈值（回正重新武装）。累积进队列 → `renderer.drainPhysicsSignals()`（**与 pick() 同 pull 通路**·游戏输入胶水每帧取走 → `enqueueAction(signal,{arg:entityId})` → Signal → sim）。render-only·不进 hash（同外源输入·不引入确定性风险）。**关键修**：`initWorld` 补 `world.allowSleep=true`——cannon 缺此则 per-body allowSleep（193 行早配的）**形同虚设·刚体永不入睡**，故 settle/fix③ 原本都不生效；补后落定真入睡。**同批含 RENDERHYG fix③**：`physics.sync` 返回的脏标 live 数**只计未入睡刚体**（入睡骰子/碎片不再每帧白烧 GPU/刷阴影）。测试 4 例（落定发一次/不重复/睡醒重发·平落不误发 topple/翻滚发 topple·入睡 live=0·settleSignal 不进 hash + NON_DETERMINISTIC 集不变红线）。真浏览器目击 game-d 掷骰台无回归（玻璃骰照转）。**交 PE-105/game-d**：填 `settleSignal` 即得落定事件（game-d 可删 `throw3d.ts` 轮询·game-105 塔顶块填 `toppleSignal` 判负）。tsc0/vitest3958/build0。
-> **缺口**：物理结果只写回 `Transform3D`，而 `Transform3D` 在 `src/net/determinism.ts:18` 的 `NON_DETERMINISTIC` 集内 → **`Condition` 读不到、不进 hash**。于是「刚体停稳了没有 / 塔塌了没有」这类**物理结论无任何出口通向 sim**——凡是靠物理定结果的玩法，都只能在游戏层自己轮询 `Transform3D`。
-> **实证（重复面 + 引擎已算出该状态）**：① `src/renderer/three/physics.ts:188` **已经在配 cannon 的 `allowSleep` / `sleepSpeedLimit` / `sleepTimeLimit`**（⚖ Lead 校注：per-body 配置非 world 级·「已算出无出口」结论不变）——「落定」cannon 本来就算出来了，只是没出口；② `games/game-d/throw3d.ts` 手搓（`lastMoveMs`/`prevQuat` 轮询落定 → 读朝上面定点数·`:26-27,75-90`）；③ `REQ-3D-G102-DEBRIS` 性能预算里再次写「落定/超时 despawn（sleep 后 1.5-2.5s 回收）」；④ game-105 叠叠乐判负。**⚖ Lead 校注（2026-08-04）**：原稿所列 `voxel-proto.ts`「手搓 12 处 sleep 判定」**不实**（该文件零 `RigidBody3D`·手写弹道积分 + life 计时回收·非刚体落定）·剔除；`chip3d.ts` 筹码落定记为潜在消费方。**校正后重复面 = 3 处（在用 1 + 规划 1 + 本作 1）·下沉论证仍足**。
-> **要什么（P3D 主理·技术路 P3D 定）**：给 `RigidBody3D` 一个 **opt-in 事件出口**（如 `settleSignal?: string` 落定即发；可选 `toppleSignal?` + 位移/倾角阈值），命中时经**与 `Pickable3D` 完全相同的既有通路**发信号——渲染器 → 游戏输入胶水 `ActionSink.enqueueAction(signal,{arg:entityId})` → `keybind` 产 `Signal` → sim 按名消费。该通路 `Pickable3D` 文档已明载「与鼠标点击同类外源输入·本地合法·**不碰 sim 确定性**」，故本条**不引入确定性风险**（物理仍 render-only·仍不进 hash·只是把「已经发生的事」告诉 sim，同用户点击）。
-> **明确不要什么**：**不要确定性物理**。本条只求「暴露落定/失稳事件」，不求物理结果可逐位复现——后者量级完全不同，且 game-d 已记债放弃（`throw3d.ts` 头注）。若 Lead 认为必须可复现，请单独立项，别混进本条。
-> **复用面**：game-d 掷骰落定读数（可删手搓轮询）· G102-DEBRIS 碎片 sleep 回收（规划）· game-c 筹码落定（潜在）· game-105 塔失稳判负 · 后续任何「物理定结果」玩法（保龄球/弹珠/推币机）。
-> **验收**：game-d `throw3d.ts` 的落定轮询能删改成填 `settleSignal` 且掷骰读数行为不变（回归目击）+ 新增测试钉死（落定发一次·不重复发·睡醒再动再落定重发）+ 不进 hash 的红线测试（`determinism.ts` 集合不变）。
-> **边界**：`src/renderer/**`（`three/physics.ts` + `three-renderer.ts`）= P3D 独占域；Lead 评审。render-only·不进 sim/hash。
-> **不阻塞**：game-105 按代码准入阶梯 L2「可先用 L0/L1 绕行出可玩版」，裁决落地前照 `throw3d.ts` 先例用薄轮询胶水（记债·L3 申报在 `docs/design/game-105/capability-plan.md §4.7`），能力下沉后删胶水改填数据。
-> **⚖ Lead 评审（2026-08-04）：✅ 准·下沉**——「引擎已配 sleep 无出口」属实；走 `Pickable3D` 同通路（不进 hash·同外源输入）口径**正确**；「不要确定性物理」**同判**（要可复现另立项）。重复面校正见上（3 处仍足）。验收三件照案（game-d 回归目击 + 落定/重发测试 + determinism 集合不变红线测试）。P2 维持·P3D 施工·过渡期胶水记债准。
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-PBR-INSTANCING · Material3D/PBR 网格按材质签名归批实例化（同材质 → 1 InstancedMesh）· [2026-07-27] · owner 拍板（game102 每色真材质立方）→ P3D · status: **✅ done（P3D 2026-08-05·已推·见回执）** · 优先级: P1（owner 明示·game102 真材质立方阻塞·现被迫限尺寸 N≤6） · 类型: 渲染性能（PBR 实例化·render-only·承 REQ-3D-RENDER-EFFICIENCY / W1-A 未覆盖面）
-> **★ P3D 落地回执（2026-08-05·零数据改动·渲染器自己批）**：`three-renderer.ts:315`「有 Material3D → PBR 单 mesh」改为——**不透明 + 无描边 + 非透明材质** → 按**材质签名**（`pbrSig` = preset + 覆盖 color/rough/metal/emissive + 贴图 key + 几何尺寸 + 贴图就绪态）归批：同签名 → 一个 `InstancedMesh`（共享材质·per-instance 只上 instanceMatrix）。**color 在签名里 → 每色一批**（game102 5 色真材质立方 = ~5 draw call·与体素/实例数无关）。**透明（玻璃 transmission / 软混合 `transparent`）→ 单 mesh fallback**（排序坑·同 W1-A 透明先例）；**描边（inverted-hull 子网格）→ 单 mesh**。实现：`material.ts` 抽 `buildPbrGeoMat`（单 mesh 与批共用几何+材质）+ `pbrTransmissive` 判据；`InstancedBatches` 加 PBR 批（渲染器传闭包建真材质——材质要 AssetManager 贴图解析器·在渲染器侧建闭包按 key 传入）；贴图就绪态入 batch key（迟到贴图就绪→换批挂上·配 AssetReadyTracker 自愈）。**零数据改动**（游戏照旧摆 Mesh3D+Material3D·渲染器自批·无 instanced 旗标）。测试 `batches.test` 2 例（80 同材质→1 批·5 材质→5 批·共享真材质）。**真浏览器目击零回归**：game-z 材质陈列台 11 预设（金属金/铜/钢反射 + 玻璃透射走单 mesh fallback + 自发光 + toon/flat 全对）。tsc0/vitest/build0。**交 PE-102**：去掉 `voxel-proto.ts richMat` 的 N≤6 限制、覆盖格改用 `Material3D` 真材质（渲染器自动批·大立方不再掉帧）。
-> **缺口（实证）**：REQ-3D-RENDER-EFFICIENCY 已把**平色盒 + voxelTex 体素**归批实例化，但**挂 `Material3D` 的 PBR 网格仍走单 mesh**（`three-renderer.ts:315`「有 Material3D → PBR 单 mesh」）。game102 要「每色一套真材质」（红=emissive火/黄=gold真金/蓝=glass玻璃水/紫=plastic光泽/绿=草）——用 `Material3D` 真 PBR 后，几百颗覆盖格 = 几百 draw call·大立方掉帧。owner 现被迫「真材质仅小关 N≤6·大关退实例化 voxelTex 近似」（`voxel-proto.ts richMat` 分支），是权宜非根治。
-> **owner 判断（2026-07-27·架构正解）**：**同材质本就该合批**——立方最多 5 种颜色 = 5 种材质 → **最多 5 个 instance draw call**，与体素数无关。所以真材质 + 大立方**不冲突**，缺的是渲染器把 PBR 网格按材质签名实例化的能力。
-> **要什么（P3D 主理·技术路 P3D 定）**：把 `Material3D` PBR 网格纳入实例化——按**材质签名**（preset + 覆盖参数 color/roughness/metalness/emissive/emissiveMap/map… + 几何尺寸）分组，同签名 → 一个 `InstancedMesh`（共享材质·per-instance 只上 instanceMatrix）。透明材质（glass transmission·alpha）排序坑照 W1-A 先例走单 mesh fallback 或专门半透明批。**零数据改动**（游戏照旧摆 Mesh3D+Material3D 纯数据·渲染器自己批·绝不加 instanced 旗标）。
-> **验收**：game102 N=8 立方每色真材质渲染正确 + `readStats().drawCalls` 随「不同材质数」增长（5 色 ≈ 个位数批·非几百）+ 真浏览器截图（真金属金/玻璃水/发光火不丢失·旋转/Pivot3D 正常）。落地后 game102 去掉 `richMat` 尺寸限制、所有关都用真材质。
-> **边界**：`src/renderer/**`（`three-renderer.ts` PBR mesh 路 + `batches`/`InstancedBatches`）= P3D 独占域；Lead 评审。render-only·不进 sim/hash。
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-OCCLUSION-CULL · 被遮挡实体/体素的遮挡剔除（interior/背面不进 draw）· [2026-07-27] · owner 提（game102 大立方）→ P3D · status: **wontfix / 低优（P3D 评判 2026-08-05·本条即「先评判该不该做」·下方裁词；有实证卡顿再开）** · 优先级: P3 · 类型: 渲染性能（遮挡剔除·render-only）
-> **★ P3D 评判（2026-08-05·CORE RULE·警惕 YAGNI/过度设计）= 暂不做**：
-> - **廉价路已被 three 默认覆盖**：非实例网格 three 默认**视锥剔除**（`frustumCulled` 缺省 true）；不透明材质 `side:FrontSide` → GPU **背面剔除**自动。这两块无需自建。
-> - **interior 体素遮挡属数据层·非渲染器职责**：正解 = **只建暴露体素**（空邻居才建实体·= Minecraft 面剔/greedy meshing 的数据层做法）——game102 `voxel-proto.ts exposed()` 已这么做（业界标准）。配已落地的 **voxelTex + PBR 实例化**，暴露壳本就 ~几 draw call。引擎再加遮挡查询是重复解同一问题。
-> - **引擎级 Hi-Z / 硬件遮挡查询 = 复杂 + YAGNI**：当前量级（数百~数千实例已合成 1 draw call·GPU readback 延迟少有回报）。实例批**故意** `frustumCulled=false`（防散布整批误剔·W1-A）·per-instance 视锥剔除要每帧重算可见实例 + 改写 instanceMatrix，成本高、批多在屏内、收益低。
-> - **等价手写法（若某场景真需要）**：数据层只建可见/暴露实体（game102 先例）；或超大散布场景游戏层按区块 LOD/隐藏远块。
-> **重开条件**：出现「大量被遮挡几何**实测**卡顿、且数据层剔不掉」的真场景（如 game-z 盒庭密堆有帧时实证）→ 再排期评估 per-instance 视锥剔除。**若第二个游戏也要「只建暴露体素」→ 下沉一个共享 `surfaceVoxels()` 数据助手**（数据层·非渲染器遮挡）。Lead 复核裁词。
-> **缺口**：`three-renderer` 现无遮挡剔除（grep 无 occlusion/cull 相关；仅 W1-A `frustumCulled=false` 防散布整批误剔）。大体素立方**内部体素**被外壳完全遮挡、**背向相机的面/体**也不可见，全都仍进 draw/instance。
-> **现状缓解（游戏层·非引擎）**：game102 `voxel-proto.ts` 只为**暴露格**（`exposed()` 有空邻居）建实体、剥层时 `reveal` 才补渲内层 → 内部体素本就不进场景。**这是游戏层手工遮挡**·非引擎通用能力·其它 3D 场景（game-z 盒庭/密堆场景）无此优化。
-> **要什么（P3D 主理·技术路 P3D 定·可缓做）**：评估引擎级遮挡剔除的性价比与实现路——① 廉价路=背面/视锥剔除已由 three 默认覆盖多少；② 密堆体素/盒庭的 Hi-Z 或硬件遮挡查询是否值得（复杂·可能 YAGNI）。**先评判该不该做**（owner「有没有·没有提个需求」）：若 game102 游戏层手工剔除 + REQ-3D-PBR-INSTANCING 已够，则本条可标低优/wontfix（附等价手写法）；若 game-z 类场景有实证卡顿再排期。
-> **边界**：`src/renderer/**` = P3D 独占域；Lead 评审。render-only·不进 sim/hash。
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-RENDER-EFFICIENCY · 渲染效率提高（大规模同屏实体·批绘/实例化）· [2026-07-24] · **owner 拍板「先把渲染效率提高」** → P3D · status: **🚧 增量①✅（2D canvas 去每实体 save/restore）+ 3D-半✅（voxelTex 体素实例化·game102 大立方）done（P3D 2026-07-26·已推）；增量②WebGL2 批渲仅当仍不达标/上千实体再上** · 优先级: **P1（owner 明示先做·game-103 百敌卡顿实证）** · 类型: 渲染性能（2D 批绘 + 3D 实例化·render-only）
 > **★ P3D 3D-半 回执（2026-07-26·voxelTex 体素实例化·owner「大立方上实例化才能又大又细」）**：诊断=game102 中央大立方每体素 = `Mesh3D{voxelTex}`（提速块贴图）→ three-renderer 走**单 mesh**（line 332 `ensureVoxelMesh3D`）→ 488 体素壳 = **488 draw call**·卡且做不大。修法=把不透明 voxelTex 体素**归批实例化**（按 `voxelMode` 签名分组→ 同款体素共享一个 `InstancedMesh`·六面贴图材质数组·per-instance 只上 instanceMatrix）：抽 `buildVoxelGeoMats`（单 mesh 与批共用几何+材质）·`InstancedBatches.ensure` 支持 voxelTex 批（材质数组）·three-renderer voxelTex 分支不透明→ instGroups(`voxelMode` key)。**488 体素 → 每款颜色/地形层 1 批 = ~4-8 draw call**（真浏览器截图自证 game102 4 色贴图立方渲染正确·纹理零丢失·旋转/Pivot3D 正常）。测试 `batches.test` 3 例（平色盒批 + 300 voxelTex→1 批 + 异签名分批）。透明 voxelTex 仍单 mesh（排序）。tsc0/vitest3639/build0。**又大又细达成**：立方可加体素数/细分而 draw call 只随「不同款式数」增长。
@@ -85,56 +42,22 @@
 > **依赖/顺序**：非玩法阻塞（sim 层碎片=纯表现）——可待 PE 的 S3/S4 玩法核（2D 判定）落地后并行；若裁 B，需与 PE 协调棋盘渲染迁移排期。
 
 ## REQ-3D-RB-ANGFACTOR · RigidBody3D 角约束（angularFactor·锁转轴防圆盘立边）· [2026-07-23] · PE-C 提（game-c 筹码 bug）→ P3D · status: **✅ done（P3D 2026-07-26·已推·见回执）** · 优先级: P2（owner 报的可见 bug·game-c 已上游戏侧缓解·根治缺此能力）· 类型: 3D 线能力缺口（物理角约束）
-> **★ P3D 落地回执（2026-07-26·照建议·additive·不改组件清单）**：`RigidBody3D` 加 `angularFactor?: readonly [number,number,number]`（缺省 `[1,1,1]`=现行自由翻）；`physics.ts spawn()` 里 `if (rb.angularFactor) body.angularFactor.set(...)`（cannon orientation 积分按 `角速度×angularFactor` → 锁轴姿态冻结·含被撞的碰撞扭矩）。测试钉死：薄圆盘带 `avx:8` 翻滚初速 + `angularFactor:[0,1,0]` → 落定后 quat 的 x/z 分量恒 ≈0、上向量 y>0.999（**永远平躺·不立边**·含初速也压不翻）。回填 `playbooks/3d.md` 物理行。**交 PE-C**：`chip3d.ts` throwBet+setStack 填 `angularFactor:[0,1,0]` 即 100% 根治立边（含被撞/堆边）。tsc0/vitest+2/build0。
-> **触发（owner 2026-07-23 报 bug）**：game-c 3D 物理筹码（薄圆柱 r0.17×h0.06·cannon-es）落桌后**有时立在桌面上**（停在圆柱侧面=硬币立起）。根因：抛注给了三轴随机角速度（avx/avy/avz），翻着落地就可能停在侧面这个半稳态。
-> **game-c 侧已缓解（已推·不阻塞）**：`chip3d.ts` 抛注改**只绕竖直 Y 轴平旋**（avx=avz=0·飞碟式平飞平落）+ 降 restitution 0.12 → 绝大多数不再立边。**但落地被别的筹码撞、或落在筹码堆边沿仍可能被顶立**——数据侧无法根治（Transform3D.quat 每帧被物理写回·游戏层改不动落定姿态）。
-> **缺口**：`RigidBody3D` 无任何**角约束/锁转轴**字段（现只有初速 vx.. + 初角速 avx..）；cannon-es 本体支持 `body.angularFactor`（各轴角响应 0..1·0=锁该轴不转），但组件没暴露 → 游戏层锁不了「圆盘只许绕竖轴转、永不翻倒」。
-> **建议（P3D 裁·opt-in·向后兼容）**：给 `RigidBody3D` 加 `angularFactor?: readonly [number, number, number]`（缺省 `[1,1,1]`=现行不变）；`physics.ts spawn()` 里 `if (rb.angularFactor) body.angularFactor.set(ax,ay,az)`（并 `body.angularFactor` 初值同步·防睡醒重置）。落地后 game-c 筹码填 `[0,1,0]`=**只准平旋·永不立边**（100% 根治·含被撞）。
-> **复用面**：任何硬币/筹码/冰球/圆盘（保持平面）、或「只许绕某轴转」的门/轮/摆（等价 hinge 但免建约束体）、`[0,0,0]`=完全锁转（稳态骰子停面/招牌不晃）。标准物理引擎（Rapier/PhysX）都有 lockRotation·对齐 cannon API。
-> **PE-C 侧就绪**：API 落地后 `chip3d.ts` throwBet + setStack 各加一字段即根治·测试同步钉 `[0,1,0]`。**非阻塞**：已上缓解版·观感基本无立边。
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-DECAL-TEX · 可换真图的「平贴 + alpha + 自定义贴图」贴花（Decal3D 无贴图槽）· [2026-07-22] · PE-C 提（game-c 下注线 REQ-C-113）→ P3D · status: **✅ done（P3D 2026-07-22·取方案①·已推·见回执）** · 优先级: P3 · 类型: 3D 线能力缺口（贴花贴图）
-> **缺口**：想在呢面上平贴一张**可被工坊生成图替换**的下注线/发牌区贴花（台账槽 `game-c/table/betline`），闭集里没有干净件——`Decal3D`=**程序化**（kind blob/ring/disc·无贴图键·不碰 assets）→ 换不了真图；`Material3D.map` 平贴 mesh 有 map 但 **PBR 路无 alpha**（透明底 PNG 的透明区渲成不透明黑）；`Billboard3D.tex` 有贴图 + alpha 但**永远朝相机**（陡俯视下立起 ~26°·不平贴）。三者都缺「平 + alpha + 自定义贴图」这一交集。
-> **建议（P3D 裁·二选一）**：① 给 `Decal3D` 加 `tex?` 贴图键（走 `pbrMapTexture`/assets 解析·decal 本就平 + alpha·最贴合）；或 ② 给 `Material3D` map 路加 `transparent`/`alphaMap`（平贴 mesh 就能透）。落地后 game-c betline 即从程序化金环换成台账真图（`build3d.ts` 已留位·现程序化 `Decal3D{kind:'ring'}` 占位）。**非阻塞**：betline 是次要贴花·现金环占位可接受。
-> **game-c 现状**：chips（`Material3D.map` 顶盖）、fx（`Billboard3D.tex` 瞬时）已接真图；仅 betline 卡此缺口。
->
-> **★ P3D 落地回执（2026-07-22·取方案① Decal3D.tex·PE-C 的三向缺口分析与我评判一致）**：`Decal3D` 加 `tex?`(texture 资产 id·alpha 走贴图自带通道·异步就绪前暂隐不显白块) + `width?/height?`(非等比长条·下注线是细长条) + `rotation?`(地面内 Y 朝向·对准座位)。DecalSystem 复用 Billboard 的 `ResolveTex`/`pbrMapTexture` 取图；有 tex 用真图、无 tex 走原程序化遮罩（向后兼容·additive·Decal3D 已在册不改组件清单）。测试 6 例（tex 就绪/未就绪暂隐/非等比/朝向）·回填 `playbooks/3d.md` 贴花行。**demo**：game-z Platform Three `p3-decal-rune`+`p3-decal-line`。**交 PE-C**：把 betline 从 `Decal3D{kind:'ring'}` 占位换成 `Decal3D{tex:<台账 betline key>,width,height,rotation}`（真图带 alpha 由 PA/PE-C 出）·API 已就绪。tsc0/vitest3004/build0 全绿·截图自证。
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-MAT-ALPHA · Material3D.map 透明贴图路（transparent/alphaTest opt-in）· [2026-07-22] · PE-C 提（game-c 顶视牌桌）→ P3D · status: **✅ done（P3D 2026-07-26·已推·见回执）** · 优先级: **P2（现在阻塞 game-c 顶视重构主桌面视觉）** · 类型: 3D 线能力缺口（材质 alpha）
-> **★ P3D 落地回执（2026-07-26·照建议①·additive·不碰 🔒 assets 预设文件）**：`Material3D` 加 `alphaTest?`(cutout 阈值·硬边·无排序坑·首选) + `transparent?`(软混合)；在 `material.ts buildPbrMesh3D` 建完材质后按 `mat.alphaTest/transparent` 直接设 `material.alphaTest/transparent`（PBR MeshStandard 路 + 平涂/卡通路都吃·非只 transmission 玻璃路）；`pbrSig` 纳入两字段（改→重建）。缺省不设=现行不透明行为零变（向后兼容）。为何不走 PbrOverrides/resolvePbr：那在 `src/assets`(🔒 主程/PA)——改在 `material.ts`(我域)后置一行即可，零跨域。测试 4 例（缺省不透明/alphaTest 生效/transparent 生效/pbrSig 纳入）。回填 `playbooks/3d.md` 透明贴图行。**交 PE-C**：`build3d.ts` table-surface 的 `Material3D` 加 `alphaTest:0.5`（或 transparent），顶视牌桌透明底图即不再渲黑。tsc0/vitest+4/build0。
-> **触发**：owner 上传了一张**带透明色**的顶视牌桌图，写回 `game-c/table/surface`（`build3d.ts` table-surface plane·`Material3D.map`）后，**透明区渲成黑**——正是本池早已顺记、当时判「眼下不催」的缺口（见下条 REQ-3D-资产就绪自动重渲「连带小缺口」+ REQ-3D-DECAL-TEX 建议②）。owner 大重构把牌桌改成「一张顶视整幅贴图盖住物理桌」后，这张 `Material3D.map` 平面**就是**当时说的「透明贴花面」——条件已满足，现在**是主桌面视觉、阻塞**。
-> **缺口**：`material.ts buildPbrMaterial` 的 MeshStandard 路恒 `transparent:false`（只玻璃 transmission 路设 true）·`Material3D` 无 `transparent`/`alphaTest` 字段 → 贴图 alpha 通道被忽略·透明像素按 RGB(黑)渲出。台账 `spec.transparent` 声明**只 2D UI(img)吃·3D 材质不吃**（owner 敏锐指出「含/不含透明色要写清楚」——声明是有，3D 没接）。
-> **建议（P3D 裁·opt-in·向后兼容）**：给 `Material3D` 加 `alphaTest?`(cutout·硬边·透明像素 discard·无排序问题·最适合桌面透明角/贴花) + 可选 `transparent?`(软混合·配 opacity)；`buildPbrMaterial` 据此设 `m.alphaTest`/`m.transparent`。缺省不设=现行不透明行为零变。**顺带**：可让台账 `spec.transparent:true` 在 3D 消费端自动置 `transparent`（对齐 owner 直觉·2D/3D 声明一致）。
-> **PE-C 侧就绪**：`build3d.ts` table-surface 已在册；API 落地后我加 `alphaTest`（或 `transparent`）一字段即透。**workaround（不等 P3D）**：owner 改出**不透明**顶视桌图（四周深色/环境烤进图·填满 16:9），`spec.transparent:false` 即正常显（现台账已 false）。
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-资产就绪自动重渲 · 静态场景 × 异步贴图迟到 = 脏帧跳渲吞掉换图帧 · [2026-07-17] · PE-B 提 → P3D · status: **✅ done（P3D 2026-07-24·渲染器自愈 AssetReadyTracker·已推 c55a71aa；2026-07-26 被 game-103 提交 d47ee942 误删→重新落地）** · 类型: 渲染健壮（W1-C 脏帧跳渲的盲区）
-
-> **现象（game-b S3 实证）**：全静态 3D 场景（无动画/无相机动）+ Material3D.map 贴图异步 fetch 迟到——`ensurePbrMesh` 在贴图就绪后按 mode 正确重建了 mesh，但 `renderSig`（位姿/相机/灯/后处理…）不含资产就绪态 → 跳渲判「画面没变」→ 新贴图永不上屏（canvas 停在旧帧）。动态场景（game-z 恒动）撞不到此坑，纯静态陈列场景必撞。
-> **game-b 侧 workaround 在案**：宿主胶水 `assets.loadAll()` 收尾后调公开 `renderer.invalidate()`（`games/game-b/{assets,game-b}.ts`·可参考）。
-> **提议（P3D 裁决取一）**：① renderSig 折入 AssetManager 就绪版本号（资产每 ready 一枚 version++·最通用）；② attachRenderer 侧监听 loadAll 完成自动 invalidate；③ 维持宿主手动 invalidate 但回填 `playbooks/3d.md` 一行「静态场景+异步贴图必调」（最省·先堵手册）。
-> **连带小缺口（同域顺记）**：Material3D.map 无 alpha 路（transparent/alphaTest 均不设）→ 透明底 PNG 透明像素渲黑。game-b 占位牌面已按「程序化出路」授权期合成不透明贴图绕开（`scripts/game-b-compose-tiles.mjs`）；若后续真有「透明贴花面」需求再议 `alphaTest?` opt-in，眼下不催。
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-程序化动画方法集 · Anim3D 扩为底层可组合运动原语（osc/noise/ease）· [2026-07-06] · owner → P3D · status: **✅ done（P3D 2026-07-06·已推·见回执）** · 类型: 渲染能力补全（程序化动画底座）
-
-> **owner 2026-07-06**：「游戏若有程序化动画需求，开发一套底层的程序化动画方法」。
-> **P3D 评判（CORE RULE）**：`Anim3D`(spin/bob + 同 field 叠加) 是好底子 → **扩成完整闭集方法集**，只补真缺口：
-> - **真缺口·已加**：`osc{wave:sine|triangle|saw|square}`（bob 泛化·机械/摆动/闪烁·波形与 sine 同相）· `noise{amp,freq,seed}`（确定性 1D 平滑噪声·有机漂移·正弦重组不出来）· **`ease{from,to,dur,curve:linear|cubicOut|outBack,delay}`**（**一次性 once**·入场弹出/强调·当前最大缺口——之前全无一次性动画·绝对值不绕初值·播完保持终值）。
-> - **回驳（现有叠加可重组·不加）**：orbit=x/z 双 osc 相位差 π/2；pulse 变速自转=spin+bob 叠加（骰盅 P18 已证）。
-> - **保留**：spin/bob（向后兼容·bob=osc sine 简写）。**loop+once 共存**、**同 field 叠加**、帧率无关（壁钟绝对秒·不累积漂移）、render-only 不进 hash。
-> **实现**：`render.ts`(Anim3DChannel 扩 osc/noise/ease + Wave/Curve 枚举)·`three-projection.ts`(anim3dField 全 kind + animWave/noise1 纯函数)·`anim3d.ts`(ease 播完不计活跃→渲染器可 idle)。**测试** +5（波形/噪声确定性/ease 进度·delay·hold·outBack 过冲/系统 idle）。**demo** game-z prim-* 入场弹出(错峰 ease)+ 三角波弹跳 + rune-slab noise 漂移。回填 `playbooks/3d.md`。tsc+vitest+build 全绿。
-> **后续可长**（按需·不先造）：wave 更多（如 expo）、ease 更多曲线、`shake`（衰减振荡·冲击反馈）——有真需求再加。
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-货架接入 · game-z/game-d 3D 素材改从公用货架 vendor（停直引全局散落）· [2026-07-04] · PA → P3D · status: **✅ game-z 贴图收口（2026-07-04·P3D·见回执）；models 共享暂留 + gen-shelf 耦合转回 PA** · 类型: vendoring 收口（REQ-PA-3D公用货架 ④b）
-
-> **★ P3D 回执（2026-07-04·全绿·观感不变）**：
-> - **✅ game-z 自产贴图（plank/rune）停全局散落**：`public/textures/{plank_albedo,plank_normal,rune_emissive}.png` → `git mv` 进 `public/games/game-z/art/textures/`；`GAME_Z_INDEX` 路径改本地 `/games/game-z/art/textures/*`；删空 `public/textures/`；`gen-textures.mjs` 输出改本地目录。build 验证贴图进 `dist/games/game-z/art/textures/`、渲染观感不变、门禁全绿（2298 测）。**game-z 贴图无全局散落直引。**
-> - **⚠️ 转回 PA·gen-shelf-3d 耦合**：`scripts/gen-shelf-3d.mjs`（PA 域）从 `public/textures/` 取 plank/rune 拷进货架——**源已移走**。但 plank/rune 是 **game-z 专属程序化art**（非通用货架素材），本就不该进公用货架 → 建议 PA **删 gen-shelf-3d 的 plank/rune 拷入段**（它们归 game-z 本地）。我为完成本单动了 `gen-textures.mjs`(PA 列表内工具·仅改输出路径 1 行)——知会 PA。
-> - **models（duck/box/fox）暂留全局**：`public/models/*.glb` 被 **game-z/game-d/game-i 共享直引**（`game-i` 🔒 非我域·移动会破它）→ 单游戏 vendoring 需跨游戏协调，非本单「贴图散落」scope。**建议**：要么各游戏 vendor 各自本地副本（含 game-i·需 owner/PA 统筹），要么公认 `public/models` 为共享模型库（非「散落」）。留待 owner/PA 定。
-> - **game-d**：grep 确认 game-d **无 `/textures/` 直引**（只 `/models/duck.glb` 共享模型）→ 贴图散落问题 game-d 不存在；其 models 同上共享项。**本单 game-d 侧无贴图待办。**
-
-> **背景**：PA 已把公用 3D 基础素材（材质 `mat/*`、基础 mesh `mesh/plane|cube|sphere`、程序化贴图 `tex/plank_*`、天空盒 `env/sky-gradient`）备进共享货架 `assets/index.json`，并让 `scripts/vendor-asset.mjs` 支持 3D（数据型材质 + glb/贴图文件）。本地目录标准见 `docs/playbooks/assets.md ⑥`。
-> **P3D 侧待办（🔒 game-z/game-d 域·PA 不越界）**：现 `game-z` diorama 等**直引全局散落目录 `public/textures/`**（plank/rune 贴图）——改为从货架 vendor 进 `public/games/game-z/art/{textures,materials,models,env}/` 再引本地索引（例：`node scripts/vendor-asset.mjs tex/plank_albedo game-z`）。切换后可删 `public/textures/` 直引 + 让 `gen-textures.mjs` 退役或改产进货架。**验收**：game-z 只引本地 `art/index.json`、无全局散落直引；渲染观感不变；门禁全绿。
-> **不阻塞**：货架+工具已就绪，P3D 按 3D 线核心工作节奏排入即可。
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-卡通描边（toon outline）·暂缓 + Godot 调研文 · [2026-06-30] · owner → P3D · status: **⏸ outline 暂缓（深度边缘不可靠·待法线缓冲版）；Godot 对比文 ✅ 已出** · 类型: 渲染能力（NPR）+ 调研
 
@@ -148,113 +71,25 @@
 ---
 
 ## REQ-3D-骨骼动画（glTF skeletal animation） · [2026-06-30] · owner（渲染缺口评估→选做） → P3D · status: **✅ done（P3D 2026-06-30·已推）** · 类型: 渲染能力补全（最大缺口·角色动起来）
-
-> **背景**：P3D 给 owner 做了「引擎还缺啥」评估，**骨骼动画 = 最大缺口**（导入 glTF 但不播自带动画·追逐游戏角色全程滑行）。owner 选做。
->
-> **✅ 落地（全 render-only·P3D 渲染线域）**：
-> - **数据** `AnimState3D`（`render.ts`·render-only·入 NON_DETERMINISTIC）：`clip`(动画名) + `speed` + `loop`。弱 LLM 只填 clip 名·填不了骨骼矩阵。登记 component-map。
-> - **`ModelPool` 升级**：模板缓存 `{scene, clips}`（解析 glTF 同时存 `gltf.animations`）；实例化改 **`SkeletonUtils.clone`**（正确克隆骨架/蒙皮·每实例独立动画·共享几何）；挂 AnimState3D 的实体建 `AnimationMixer` 播指定 clip（`applyAnim` 换 clip 名=淡入淡出切动作·idle↔run 平滑）；`update(now)` 每帧推进混合器（壁钟 delta）。
-> - **接入** `three-renderer`：model 分支读 AnimState3D → applyAnim；collect 后 `models.update` 推进；活跃混合器数折进 renderSig（持续重渲）+ 刷阴影（蒙皮影跟动）。
-> - **资产**：新增 `fox.glb`（Khronos Fox·**CC0**·带 Survey/Walk/Run·登记 CREDITS）。**hero 换成奔跑的狐狸**（播 'Run'·`autoRun` 胶水设朝向跟跑动方向）——替原静态鸭，正配「跑酷主角」。
-> - 测试 `models.test`(2·AnimState3D 不进 hash + ModelPool 无模型安全 no-op)；`diorama.test` 改测 hero=fox。tsc+vitest(1978)+build 全绿。截图：狐狸奔跑姿（骨骼蒙皮·非 T-pose）+ 连帧腿姿变（混合器在推进）。
-> - **⬜ 待续**：① **动画状态机/混合树**（idle/walk/run 按速度 blend·Godot AnimationTree 思路·做成数据 = 下一步可借鉴点）；② 追兵也换骨骼模型；③ 根运动(root motion)开关（现假设原地循环）。
-
----
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-程序化 normal/roughness 贴图 · [2026-06-30] · owner（选「程序化生成」） → P3D（TA Phase 5） · status: **✅ done（P3D 2026-06-30·已推）** · 类型: 渲染能力补全（PBR 表面细节·零美术文件）
-
-> **owner 选型**：normal/roughness 走**程序化生成**（非美术贴图资产）——同「天空盒按 Sky3D 数据程序化生成纹理」先例·零美术管线依赖·弱 LLM 能填参数。
->
-> **✅ 落地（全 render-only·P3D 渲染线域）**：
-> - **数据** `Material3D.surface?: SurfaceDetail`（`render.ts`·render-only·不进 hash）：闭集 `pattern`('bumps'|'noise'|'scratches') + `tiles`/`normal`/`rough`/`scale` 标量。
-> - **生成器** `renderer/three/surface-tex.ts`：`buildSurfaceMaps` 据参数**确定性**生成 normal + roughness `DataTexture`（128²·value-noise/fbm/sin·无随机 → 同参数同图·稳定不闪）。法线由高度场环绕中央差分求（平铺无缝）；roughness 凸光凹哑×材质 base。线性数据贴图（非 sRGB）。
-> - **接入** `material.ts`：`buildPbrMaterial(def, surface?)` 挂 `normalMap`/`normalScale`(=surface.normal·运行时可调不重生)/`roughnessMap`；`pbrSig` 纳入 surface；`disposeMesh` 释放生成贴图。
-> - **demo**：陈列台给岩石(noise 凹凸)/土/木(scratches 木纹)/钢(拉丝)/金(bumps 锤打) 挂 surface → 截图明显浮雕，无 surface 的(哑光/塑料/铁/铜/玻璃)仍光滑。
-> - 测试 `surface-tex.test`(4·尺寸/wrap/repeat·法线 Z 朝外·确定性逐字节·bumps 有浮雕)。tsc+vitest(1972)+build 全绿。
-> - **⬜ 待续**：法线强度 `normal` 现走 normalScale（运行时调）；要更多图案（grid/voronoi 砖纹）或真实贴图按 key 加载（标准 PBR 工作流）按需再加。
-
----
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-真物理模拟（色子/表现物理·cannon-es） · [2026-06-30] · owner → P3D · status: **✅ done（P3D 2026-06-30·cannon-es·已推）** · 类型: render-only 表现能力（刚体物理）
-
-> **owner 拍板（2026-06-30·提前到现在做·「马上要用」）**：做**色子真物理模拟**——**为表现非同步**（滚色子读朝上/画面用途·不需两边一致·要一致就单机）。**「用现成物理库·别自己开发·要简化点的」** → 选 **`cannon-es`**（纯 JS/TS·无 WASM 异步·three.js 圈轻量刚体标配·正好「简化」；Rapier 更强但 WASM 重·表现色子用不上）。
->
-> **✅ 落地（全 render-only·P3D 渲染线域·cannon-es 仅在 renderer/three 下 import → 进 3D chunk·2D 游戏不连带）**：
-> - **数据** `RigidBody3D`（`render.ts`·**render-only·入 NON_DETERMINISTIC·不进 sim/hash**）：shape/mass/restitution/friction/初速/初角速。体形尺寸取同实体 Mesh3D。+ `Transform3D.quat`（可选四元数·物理翻滚无万向锁）。登记 component-map。
-> - **子系统** `renderer/three/physics.ts` `PhysicsSystem`：cannon `World`(重力-42)+静态地面 Plane·每帧步进 → 把刚体位置+四元数写回 `Transform3D`（render-only）→ 渲染器照常画（`applyPose` quat 路径）。睡眠优化（停稳就睡）。活跃刚体数折进 renderSig 持续重渲。
-> - **接入** `three-renderer`：sync 顶部步进（collect 前）；`rollDice()`（按钮调·置位 → 下帧重掷=抬高+随机翻滚·render-only 随机自由）；destroy 释放。
-> - **demo**：game-z 三颗塑料色子（红/蓝/绿·中心区）掉落翻滚停稳；调试面板「🎲 掷骰子（真物理）」按钮重掷。截图：色子从空中落定（随机朝向）→ 点按钮重掷→再翻滚落定。
-> - 测试 `physics.test`(3·重力下落+落地不穿地+写 quat·无刚体返回 0·RigidBody3D/Transform3D 不进 hash)。tsc+vitest(1975)+build 全绿。**新依赖 `cannon-es@0.20.0`**（render-only·进 3D chunk）。
-> - **✅ 追加（2026-07-03·owner「掷骰物理落地→给我确定点数」）**：读朝上面 = 确定点数落地。新 `three/dice.ts` `upFaceIndex(quat)`（纯函数·据朝向四元数算哪面朝上·面序 [+X,-X,+Y,-Y,+Z,-Z]·`dice.test` 5 例）；`ThreeRenderer.screenToWorld` 已有。消费 = game-d `throw3d.ts`（编排：每 loadout 骰生成带初始翻滚的 RigidBody3D·隐形围栏收住·落定 quat 静止后读朝上面 → RolledDie·头顶挂 `WorldUI3D` 大号点数·骰=玻璃 dieGlass 通透）。**初始翻滚参数全从游戏确定性种子 rnd 取**（owner 2026-07-03「用确定种子数据喂物理→物理由确定输入决定→天然支持 lockstep/回放」）→ 同种子同落定面·可回放/双端一致（cannon 同 build 一致；真跨平台定点需另换定点物理·此处不做）。
-> - **⬜ 待续**：① 刚体间互撞堆叠调参（现围栏收住·可再调）；② reroll 也接物理（现 reroll 仍走 2D rollPool）；③ 若要进 sim（确定性物理）须换定点/同步方案——owner 言明暂不需要。
-
----
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-关卡重构「永远追逐」+ 杂项（去腐/大字/Toggle 绕过） · [2026-06-30] · owner → P3D（Game Z 域） · status: **✅ v1 done（P3D 2026-06-30·已推）** · 类型: 关卡数据重构 + 体验修
-
-> **owner 拍板（2026-06-30·多条合并）**：把 game-z 关卡重设成「**永远追逐**」——鸭子 AI 在前面自动跑、追兵在后追逐、一切动态；缩小场景、去掉低画质绿尖塔林、材质陈列台字号放大；并复诉「所有开关型 UI 视觉点击不变」的 bug。
->
-> **✅ v1 落地（纯数据 + 运行时胶水·零专属 system）**：
-> - **永远追逐玩法**：鸭子(hero) **AI 绕环形赛道自动跑**（game-z.ts `autoRun` 胶水·每帧把 Velocity 设成赛道切线 + 拉回半径 TRACK_R=30·**同 WASD 输入胶水先例**·WASD 可接管）；**三只追兵**(`NavAgent` + `Relation target=hero`)循自动烘焙 NavGraph 一路追（速度略低 → 永远追不太上）；**相机跟随鸭子**(`mode:'follow'`)。截图验证：鸭子 t3→t8 绕跑移位、追兵尾随。
-> - **关卡去腐 + 缩小**（owner「缩小一半 + 去绿尖塔林·画质 low」）：删 `forest()`(~320 尖塔)/蘑菇/鹅卵石径/Toad/静态鸭/平台/迷墙/斜墙等纯装饰；地台 240²→**160²**；保留**有碰撞体**的障碍（内圈三石墩 + 外圈四石柱·部分 PBR 钢/铜）+ 中心金属信标(gold)+魔法喷泉 VFX。
-> - **材质陈列台**：保留（北侧·材质球·IBL 反射）；**标名字号 xs→md**（owner「字太小」）；「🔬 看材质陈列台」机位按钮照旧。
-> - **⚠️ Toggle 视觉点击不更新——game-z 侧绕过**（根因是主程 UI 库 bug·已记 `requests.md` REQ-UI-BUG-Toggle视觉点击不更新）：点 Toggle 后其隐藏 checkbox 抢焦点 → UI 库 reconcile「焦点保护」误跳过重建。**绕过 = 改态后先 `document.activeElement.blur()` 再 `menuUi.update()`**（解焦 → 面板正常重建反映新 checked）。截图验证：点「AO 遮蔽」开关绿→灰、从属滑块随之显隐。**根治仍待主程改 server.ts。**
-> - 测试：`diorama.test` 改测追逐关卡（鸭子胶囊 + 追兵 NavAgent/Relation + 障碍 box 碰撞 + 三追兵 target=hero + 信标 gold）。tsc+vitest(1968)+build 全绿。
-> - **⬜ 待续**：① **关卡流式加载（streaming·往右动态加载）= owner 要的下一大块·真能力缺口·需设计**（见下「流式加载提案」）；② 程序化 normal/roughness 贴图（owner 已选「程序化生成」·排队中）；③ 鸭子自动跑现为运行时胶水（含 trig·单机测试台 OK·若上多人 lockstep 需下沉成确定性 capability）。
-
-> **🔭 流式加载（streaming）提案（待 owner 确认再做）**：owner 以为「three 已有 streaming 能力」——**澄清：引擎暂无关卡流式能力，是真缺口**。按数据驱动宪法评判=**该做但需设计**（关卡块=数据·加载器=固定解释器）。关键设计点（**determinism**）：关卡块若带碰撞体/寻路体（sim·进 hash），流式增删实体必须**逐 tick 跨端一致**（否则 lockstep desync）——故触发条件须取**确定性 sim 量**（如鸭子前进距离），不能取 render-only 相机。建议形态：`StreamChunk` 数据（块蓝图 + 沿 +X 的区间）+ `chunk-stream` capability（按鸭子 X 距离确定性地 spawn 前方块 / despawn 后方块·对象池复用）。**先确认要不要做 + 单机够不够（单机可放宽 determinism）再开工。**
-
----
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-材质测试台（IBL 环境光 + 材质陈列板·「我怎么测材质」） · [2026-06-30] · owner → P3D（3D 渲染线·TA Phase 5） · status: **✅ done（P3D 2026-06-30·IBL + 11 预设陈列台·截图验证·已推）** · 类型: 渲染能力补全（金属反射缺 IBL）+ 测试台数据
-
-> **背景**：owner 问「我怎么测这个材质？」。PBR 金属/玻璃**没有环境贴图就乌黑死板**（金属本色=反射环境·无环境可反射→近黑）——这是材质看不出效果的根因，不是预设数值问题。
->
-> **✅ 落地（全在 P3D 渲染线域）**：
-> - **IBL 环境光照（真能力补全）**：`Sky3D` 加 `env?: number`（IBL 强度·render-only·缺省 0=不装·向后兼容）。渲染器 `syncEnv`：`env>0` → 懒建一次中性影室 `RoomEnvironment` 烘成 PMREM → `scene.environment` + `scene.environmentIntensity`（数据驱动·变才写·destroy 释放）。金属/玻璃自此有反射成像。中性 studio 环境与 sky 色解耦·稳定可预期（材质测试要的是基准光照·非场景天色干扰）。
-> - **材质陈列台（纯数据·测试台）**：`diorama` 加 `materialBoard()`——北侧独立石台一排 11 个样品块，每块挂一种闭集预设（哑光/塑料/岩石/土/木/钢/铁/金/铜/玻璃/自发光）+ 头顶飘字标名（WorldUI3D）。样品转 45° 让两面各吃一侧反射（更显金属/粗糙度差异）。零专属代码：样品 = `Mesh3D` box + `Material3D{preset}`。game-z 默认相机可拖向北看陈列台。
-> - **验证**：临时把相机对准陈列台截图——金属（钢/铁/金/铜）IBL 下呈金属反射（金=金色、铜=铜色、钢/铁=暗金属），玻璃半透，介电（岩石/土/木）显本色；标名飘字到位。tsc+vitest(1967)+build 全绿。
-> - **✅ 追加（owner 2026-06-30·同日）—— 材质球 + 实测参考值 + 看材质机位**：
->   - **`sphere` 基元（真能力补全·过 geometry 管线）**：`Mesh3D.shape` 加 `'sphere'`（box/plane→+sphere·width=直径）。接全管线：`geometry.ts`（`buildMesh3D`/`buildInstancedMesh3DGeometry` 新 `sphereGeo`·单色烤）、`three-projection`（`mesh3dDepth`/`mesh3dBatchKey` 认 sphere·同直径同色归一批）、`material.ts buildPbrMesh3D`（高段 SphereGeometry·反射顺滑）。+2 纯函数测（depth/batchKey sphere）。**球比方块显材质好得多**（高光/粗糙度/反射差异），业界材质球惯例。陈列台样品换成材质球。
->   - **金属 base color 换 Filament 实测 sRGB 参考值**（owner「从现代引擎里找」）：`pbr-materials.ts` 金 0xFFD991(1.00,0.85,0.57)·铜 0xF7BD9E(0.97,0.74,0.62)·钢 0xC4C7C7(Filament 铁色)·铁 0x9A9DA0(铸铁暗档)；介电 albedo 取实测（橡木/花岗岩/干土）。来源注 Filament Materials guide。截图：金/铜/钢/铁四金属在 IBL 下各自正确反射、玻璃透、介电哑光。
->   - **「看材质陈列台」机位按钮（render-only 写 Camera3D）**：调试面板加 `Button`「🔬 看材质陈列台」/「🏠 回总览」（UI 铁律·LayoutNode Button·action 经 handler 写 `Camera3D` 机位预设 `BOARD_CAM`/`HOME_CAM`·退 follow）。一键正对陈列台看清材质。截图验证 11 球清晰排开。
-> - **⬜ 待续（按需·非本次）**：① IBL 来源可选 sky 派生（现中性 studio·够用）；② 法线/粗糙度/金属度贴图精修（现纯参数）；③ 调试面板加 PBR 参数实时调；④ 更多金属预设（银/铝/铬·Filament 表已有值·按需加）。
-
----
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-BUG-后处理黑屏（AO/分级脏数值） · [2026-06-30] · owner 报 → P3D（3D 渲染线·后处理域） · status: **✅ fixed（P3D 2026-06-30·根因定位 + 渲染器 finite 兜底 + 面板域修正 + 回归测试·已推）** · 类型: 渲染健壮性 bug（脏数值喂 shader → 整片黑屏）
-
-> **现象（owner 2026-06-30）**：「AO 强度的时候，屏幕动一下，屏就全黑了」「要改任何东西都会改，对比改那个也会黑屏」。即调试面板拖滑块改后处理参数后 → 3D 画面整片黑（HUD/世界飘字等 DOM 叠层仍在·只 WebGL 黑）。
->
-> **根因（无头 Chromium 稳定复现 + 逐层 bisect 定位·非 GPU 玄学）**：链条 = **UI 库 Slider 偶发回调 `undefined`（见 `requests.md` REQ-UI-BUG-Slider回调偶发undefined）→ `Number(undefined)=NaN` 写进 `Post3D.ao.intensity` → `PostPipeline` 直传 `gtao.blendIntensity=NaN` → GTAO blend `mix(1,ao,NaN)=NaN` → 整片黑**。
-> - **次因（即便不 NaN 也危险）**：`blendIntensity` 是 AO 的**不透明度 [0,1]**（0=不施加·1=全施加），**非强度倍率**。GTAO blend = `1 − intensity·(1−ao)`，`intensity>1` 让有遮蔽处(ao<1)算出负值→钳 0→黑。原面板「AO 强度」滑块范围 0..3、默认 1.1，**本就探进危险区**。
->
-> **✅ 修法（全在 P3D 渲染线域·`renderer/three/**` + `games/game-z/**`）**：
-> - **渲染器 finite 兜底（真·能力修·健壮性铁律）**：新 `renderer/three/num-guard.ts`（`clamp01`/`posOr`/`fin` 纯函数）——`PostPipeline.render` 喂 GPU 前，AO `intensity` 钳 [0,1]·NaN→1，`radius`/`scale` 取正·NaN→缺省；分级 `exposure/contrast/saturation/brightness` 全 finite 兜底。**渲染器绝不把 NaN/超界喂进 shader**（弱 LLM 写脏数据 / UI 抖动都不黑屏）。
-> - **面板域修正**：「AO 强度」滑块范围改 0..1（其合法域）、默认 0.85；`diorama` 初值 1.1→0.85；滑块 handler 只接受 `Number.isFinite` 值（脏回调丢弃·与渲染器兜底双保险）。
-> - **回归测试** `num-guard.test.ts`（3·NaN/undefined/超界→安全回退）。tsc+vitest(1965)+build+无头截图全绿（拖滑块至上界 + 转相机不再黑）。
-> - **连带产出**：定位过程挖出两个 UI 库（主程域）bug，已记 `requests.md`：① **Toggle 视觉点击不更新**（owner 同日另报·`reconcile` 焦点保护误伤 Toggle）；② **Slider 回调偶发 undefined**（本黑屏的上游触发源）。
-
----
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-Nav 导航网格自动烘焙（寻路数据 + 寻路碰撞·game-z 验证） · [2026-06-28] · owner → P3D（owner 授权跨界·**复用主程 pathfind**） · status: **✅ done（P3D 2026-06-28·自动生成·复用主程 NavGraph·端到端验证·已推）** · 类型: 真能力缺口（碰撞几何→可走拓扑**自动生成**）
-
-> **⚠️ 知会主程（owner 2026-06-28 拍板·关于你的 `REQ-寻路`）**：owner 要 game-z 验证「寻路数据 + 寻路碰撞」。你的 `pathfind`（航点图 NavGraph + 通用 A* + 沿路跟随 + collision-resolve 避让）很好，**我全盘复用、一行没改**。唯一分歧：owner **不接受手摆 NavGraph**（「我摆这些东西太麻烦了，也没有手摆需求……一定要像 Recast 这样自动生成」）。结论 = **不取代你的 runtime，只在它上游加一层「自动生成 NavGraph」**：
-> - **共存（owner「不能共存吗」）**：场上摆 `NavMesh`（范围+格边长+半径）→ `navmesh-bake` 自动烘 `NavGraph`；只摆手写 `NavGraph`（无 NavMesh）→ 烘焙不动、用你的手摆图。**二选一·同一下游 pathfind**。
-> - 你那段 `NavGraph`/`NavAgent`/`NavPath`/`pathfind`/`astar.ts` **保持不变**；手摆路径仍可用（你若不需要可不管）。本 REQ 不动你的代码。
->
-> **✅ 落地（P3D 2026-06-28·已推）—— 自动生成（Recast 思路·确定性轻量版）**：
-> - **新组件** `NavMesh`（`spatial.ts`·烘焙配置·单例：范围矩形 + 格边长 + agentRadius·进 hash）。注册 `assembly/component-map.ts`。**作者零手摆航点**——只圈个范围。
-> - **纯函数核** `engine/spatial/navmesh.ts`：`gridFromBounds` + `rasterizeBlocked`（障碍 AABB→封格·「寻路碰撞」）+ `bakeNavGraph`（可行走格→**主程 NavGraph 结构**：节点=空格中心、八向边·斜边防穿角）。整数化·跨端逐位确定。
-> - **能力** `skills/atoms/navmesh-bake`：读 `NavMesh` + `Collider3D` → 写**主程的 `NavGraph`**（每帧重烘·rollback 安全）。排除 trigger / NavAgent。`runsBefore nav-follow + motion-apply`（图先就绪 + 破 Transform 环）。
-> - **下游零改**：主程 `pathfind`(`nav-follow`) 照常读 NavGraph → A* → 写 Velocity → `motion-apply` 走动。
-> - **debug 可视化（P3D 渲染线域）** `renderer/three/nav-debug.ts`（render-only）：青点=航点（没点处=被碰撞封住）+ 暗青线=连边 + 黄线=`NavPath` 规划路径。接入 `three-renderer`（`setDebugNav`）。
-> - **game-z 验证**：`NavMesh` 罩草地台 + 三石墩障碍（`obstacle()`·碰撞+寻路双用）+ 橙盒追兵（**主程 `NavAgent` + `Relation(target=hero)` + `Velocity`**）→ 自动绕障碍逼近小黄鸭。菜单加「🧭 导航网格」+ N 键。截图：青点网格自动避开所有碰撞体、追兵沿黄线绕行。
-> - **扩充关卡 + 多 agent 蛇形迷墙（owner 2026-06-28「扩充一倍 + 加寻路碰撞展示」）**：地台 70²→**100²**（NavMesh/相机随扩）；加四角石柱 + **两道交错长墙（各留缺口）的蛇形迷墙**；**第二个追兵**（蓝盒·从 100² 远端出发·必须穿迷墙两缺口）→ 展示长程绕路 + 多 agent 同时寻路。**烘焙器改进**：排除带 `Velocity` 的动态体（玩家/追兵不当静态障碍·不在自己导航上挖洞·`runsBefore motion-apply` 已保序）。+1 测（动态体不烘进图）。
-> - **测试**：`navmesh.test`(5·栅格化/封格无节点/防穿角/确定性) + `navmesh-bake.test`(4·**端到端绕墙不穿墙**[配主程 pathfind] + **共存：无 NavMesh 不烘** + 两世界 hash 一致)。tsc+vitest+build+截图全绿（主程 `pathfind`/`astar` 测试一并跑绿·未碰你的代码）。
-> - **⬜ 待续（按需）**：静态障碍只在变更时重烘（现每帧·盒庭够）；多边形 navmesh（现栅格·真要更强壮再升）；动态体避让走主程 collision-resolve（game-z 暂无 2D resolve·靠图拓扑静态避障已够）。
-
----
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-Collision 3D 逻辑碰撞（触发/重叠·升维 2D） · [2026-06-28] · owner+P3D → 主程（sim/能力域评审） · status: **🚧 P1 + debug 线框/可点击菜单 + P2(精简 hull·凸多面体 SAT) 已落（owner 2026-06-28 授权 P3D 跨界落·知会主程评审）；P3 物理表现轨待（YAGNI）** · 类型: 真能力缺口（3D 逻辑碰撞·升维复用）
 
@@ -374,47 +209,10 @@
 ---
 
 ## REQ-3D-Camera相机参数补全 · [2026-06-28] · owner → P3D（3D 渲染线）· status: **✅ done（P3D 2026-06-28·三层落地·正交/跟随截图验证）** · 类型: 真能力扩增（3D 线·过四条尺子）
-
-> **✅ 落地（P3D 2026-06-28·已推）**：严守三层铁律——数据补参数 / 解释器算矩阵 / 行为写态。
-> - **① 数据层**：`Camera3D` 补 `projection('perspective'|'ortho')`/`fov`/`orthoSize`/`near`/`far`/`mode('orbit'|'follow')`/`target`/`pitchMin`/`pitchMax`（全语义参数·**无矩阵**·多模式用 `mode` 枚举）。
-> - **② 解释器层**：新 `renderer/three/camera-rig.ts`（`CameraRig`·持透视+正交两台·按 `projection` 选 active·fov/ortho/near/far 全从数据读）；`mode:'follow'` 由渲染器把注视点解析成 `target` 实体位（收集期捕获位姿·不写 sim/不进 hash）；投影/正交视锥/夹角数学抽 `three-projection` 纯函数（`orthoFrustum`/`clampPitch`）+ node 单测。
-> - **③ 行为层**：game-z 拖拽/滚轮写 `Camera3D`（运行时胶水·pitch 夹角读数据）；O 键切正交、F 键切跟随小黄鸭（只写数据·渲染器解释）。
-> - 验收：截图确认**正交=等距盒庭**、**follow 相机注视小黄鸭**；fov/pitch 夹角/near-far 全从数据；`renderer.info` 无回归。`fov` 从 `ThreeRendererOptions` 迁到 `Camera3D` 数据。`camSig` 纳入全相机参数（改即重渲）。tsc+vitest+build+截图全绿。**未做（YAGNI·准则点名）**：震屏/镜头过渡（要做时是 render-only 行为写 `Camera3D`+tween·不塞字段）。
-
-> **owner 2026-06-28**：3D 相机要像传统 3D 游戏那样有更多参数（投影 / fov / near-far / 跟随 / 约束）。这是「3D 线被证明的真缺口边」上的**正当扩增**。
-> **架构铁律（贯穿）**：**相机 = 数据（`Camera3D`）+ 固定解释器（渲染器算矩阵）**。传统引擎是「Camera 对象带 lookAt/setFov/矩阵方法、游戏调它」；我们这套**反转**——游戏**永不调相机方法、永不持矩阵**，只填 `Camera3D` 数据，渲染器去 lookAt / 算 view·projection 矩阵。三层分工：
-
-### ① 数据层（`Camera3D` 组件补字段 · render-only · 语义参数 · 弱模型能填）
-- 现有：`yaw / pitch / distance / pivotX·Y·Z`（保留）。
-- 补：`projection?: 'perspective'|'ortho'`（正交=等距微缩盒庭常用）；`fov?`（透视·从 `ThreeRendererOptions` 移到数据·per-scene）；`orthoSize?`（正交半高）；`near?` / `far?`（深度精度·配 W1-C 收紧）；`mode?: 'orbit'|'follow'`；`target?: string`（follow 时注视/环绕的实体 id）；`pitchMin?` / `pitchMax?`（俯仰夹角·game-z 现硬编码在 mount，挪成数据）。
-- **绝不放矩阵**——弱模型 litmus：它填得了 `fov:50 / mode:'follow' / target:'duck' / near:1`，**填不了一个 4×4 矩阵**。**多模式用 `mode` 枚举，别开 N 个相机组件。**
-
-### ② 解释器层（`three-projection` 纯函数 + `ThreeRenderer` · 引擎固定 · 算矩阵）
-- `projection:'ortho'` → 运行时切 `THREE.OrthographicCamera`（按 orthoSize/aspect 定 frustum）；`'perspective'` → 现 `PerspectiveCamera` 用 `fov`。
-- `fov / near / far` 从 `Camera3D` 读（不再写死在构造 option）。
-- `mode:'follow'` → 渲染器每 sync 把 `pivot` 解析成 `target` 实体的世界位（Transform3D 或 2D-Transform 落地面位）——**这是「解释」（渲染器读世界），不是新 capability、不写 sim、不进 hash**。
-- `pitchMin/Max` 夹 pitch。投影 / lookAt / ortho frustum 数学抽 `three-projection` 纯函数 + node 单测（同 `orbitCamera`/`fitDistance3D` 先例）。
-
-### ③ 行为层（运镜 · 写 `Camera3D` 随时间变 · render-only）
-- 输入运镜（拖拽转 yaw/pitch、滚轮改 distance）已是**运行时输入胶水**（game-z mount 先例）——保持；按需可抽成 render-only 小能力。
-- 震屏 / 镜头过渡 = **暂不做（YAGNI）**；要做时是 render-only 行为（写 `Camera3D` + 用 `tween`），**不塞进 `Camera3D` 字段**。
-
-> **尺子（别扩歪）**：① 矩阵留解释器、组件只存语义参数；② `mode` 枚举非 N 组件；③ 别投机搬电影机全套（景深 DOF 已是 `Post3D` 的活 / 镜头语言 YAGNI）；④ 运镜是「行为写态」不是 `Camera3D` 字段；⑤ render-only 出 hash（`Camera3D` 已在 `NON_DETERMINISTIC`）。
-> **验收**：盒庭可切正交看等距；`mode:'follow', target:'hero'` 时相机跟鸭走；pitch 夹角 / near-far 来自数据；投影 / follow-pivot 纯函数单测；tsc+vitest+build 全绿。
-> **这是「3D 线下一个正当扩增」的样板**：数据补参数、解释器算矩阵、行为写态——**三层不混**。跨出 3D 渲染线（如要动资产/核心 ECS）先报主程。
-
----
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-Model导入 · [2026-06-28] · P3D（3D 渲染线）→ 主程（资产层域）· status: **✅ done（端到端打通·owner 2026-06-28 当面授权 P3D 跨界把资产半边也落）** · 类型: 真能力缺口（box 原语表达不了圆润模型）
-
-> **⚠️ 知会主程**：资产层（`src/assets/`·按契约 🔒 主程域）这次由 P3D 落了——**owner（junbai.li）2026-06-28 当面授权**「资产这块你也去，可以授权你动」。改动**极小且零 three 依赖**，不碰任何 2D 逻辑/现有 kind 行为，全绿。如与并行资产改动撞 rebase 请喊主程。
-> **背景**：owner 2026-06-28 拍板做「轻量 3D 渲染场景」——模型导入打头阵（圆润真模型，box/plane 原语表达不了，是真缺口非重组）。纯 Three.js（零裸 WebGL），用 `three/addons` 的 `GLTFLoader`。
-> **干净的边界切法（资产层零 three 依赖）**：glTF 解析产物是 three 场景图（渲染概念）。故**资产层只管「key → 取 `.glb` 字节(ArrayBuffer)」（零 three 依赖）**，`GLTFLoader.parse(bytes)` 留在 `ThreeRenderer`。
-> **✅ 资产半边（`src/assets/`·owner 授权 P3D 落）**：`asset-types.ts` 加 `ModelDescriptor{kind:'model';key;src}`；`model-loader.ts`（新·`ModelAssetLoader` fetch→ArrayBuffer + `isModelHandle`·零 three）；`asset-manager.ts` 两处 exhaustive switch 补 `'model'`；`index.ts` 导出。测试 `model-loader.test.ts`。
-> **✅ render 半边**：`Model3D` render-only 组件（`modelKey` + `scale?` + `tint?`·蓝图只持 key 不塞 URL/二进制）；登记三处（component-map / determinism `NON_DETERMINISTIC` / renderable）；`three-renderer` 按 modelKey 取 ArrayBuffer → `GLTFLoader.parse` 一次入模板缓存 → 多实例 clone（共享几何·每实例 clone 材质供染色/独立释放）→ 位姿走 Transform3D/盒庭落地面/2D 投影同套路 → 投/受软影；未就绪本帧不画（同 sprite 先例）。GLTFLoader 进 three-renderer code-split chunk。
-> **✅ 端到端（game-z 真模型 + 截图回归）**：基础模型资产（Khronos glTF-Sample-Assets·`public/models/`·`duck.glb`+`box.glb`·许可见 `CREDITS.md`）；game-z 把方块换 `Model3D{modelKey:'duck'}`（可控）+ 静态 `duck-statue`（共享模板·多实例复用）；无头截图回归确认软影 + 自带材质渲出。**坑**：glTF 节点常带内建 scale，物体真实尺寸 ≠ 裸 accessor min/max → `Model3D.scale` 按**渲染后包围盒**定。
-
----
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## 路线图记录（已做 / 待长）
 
@@ -423,70 +221,13 @@
 - 🔭 **待长**：可旋转交互（输入→`Camera3D.yaw/pitch`·render-only）；玩法（owner 解冻后）；UI↔世界锚（把世界特效锚到 UI 元素屏幕位·需要时一个通用 seam·别每游戏手写）。
 
 ## REQ-3D-PBR-IBL PBR 金属需环境贴图（无 IBL 纯金属发黑） · [2026-06-29] · PI → P3D（3D 渲染线·材质域） · status: **✅ done（P3D 2026-06-30·TA Phase5 IBL·Sky3D.env）** · 类型: 渲染正确性（PBR 金属可读性）
-
-> **现象**：`Material3D` 的金属预设（`gold`/`steel`/`copper`·metalness:1）渲出来**发黑**——建 game-i「PBR 材质」展台时实测：纯金属盒几乎全黑，只有直接镜面高光一点。
-> **根因**：`MeshStandardMaterial` metalness=1 **没有漫反射**，全靠**反射环境**。渲染器没设 `scene.environment`（无 IBL/PMREM env map）→ 金属反射的是黑色 → 发黑。介电材质（木/岩/玻璃/自发光）不受影响、渲得对。
-> **建议**（P3D 定夺）：用 `PMREMGenerator` 从 **Sky3D 程序天空**生成一张 env map 设 `scene.environment`（盒庭天空当 IBL 源）——金属即反射天色、显出金属光泽；天变则重生成（脏标）。一处加、所有 PBR 金属受益。
-> **展示台侧已绕**（不等修）：金属用 `Material3D` 的 `metalness` 覆盖压到 ~0.4 让基色显出来（合法数据·展台可读）；P3D 补 IBL 后即可回纯预设（metalness:1 显真金属反射）。
->
-> **✅ P3D 已交付（2026-06-30·同日）**：`Sky3D.env?:number` 开 IBL（RoomEnvironment→PMREM→scene.environment）。展台 game-i 材质场景已用 `env:1` + 回退纯金属预设（去掉 metalness 绕法）→ 金属正确反射环境。结案。
-
----
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-骰盅 · 对决 3D 骰子（各自掷战力骰·两骰在牌下旋转） · [2026-07-02] · game-g（主程/Lead session）→ P3D（3D 渲染线） · status: **✅ P3D 评审收编（2026-07-04·裁决见下）** · 类型: 表现增强（owner 点名要 3D）
-
-> **★ P3D 裁决（2026-07-04·评审 `game-g/clash-dice-3d.ts`）**：
-> - **(a) 收编游戏层版为正解 ✅**：`clash-dice-3d.ts` 是**范本级数据驱动**——零渲染器改动、纯 ECS 数据声明（Transform3D/Mesh3D box+dieFaces/Vfx3D/Anim3D/Camera3D/Light3D/Sky3D）由公有 `ThreeRenderer` 解释、用 Anim3D 底座翻滚、headless 回退 emoji、全 render-only 不进 hash。守住了 owner「必须用底座别绕规则」。照用。
-> - **UI↔世界锚 seam：暂不下沉 ⏸**（YAGNI）：game-g 的「量锚点 rect + 覆 fixed canvas」是为**其战斗屏 innerHTML 重建 + zoom 裁剪**这一 game-g 专属约束做的 plumbing，非通用 3D 需求；单一消费者 → 不够格下沉成 P3D 通用件。**有第二个同需求消费者再评**。现游戏层覆层照用。
-> - **P18「摇骰手感」pulse：真缺口·已下沉 ✅**（`baa`→本次）：根因=`Anim3DSystem` 同 field 多通道**相互覆盖(clobber)** → game-g 只能靠**游戏层 rAF 逐帧改 spin.rate**（绕基座 bypass）。修法**照 CORE RULE 首选「重组现有原语」**：让**同 field 通道叠加(compose)** → `spin(rotY)+bob(rotY)` = 变速自转（加速→减速）纯数据可表达。已实现 `renderer/three/anim3d.ts`（异 field 单通道结果不变·向后兼容）+ 测试 + 回填 `playbooks/3d.md`。**→ game-g 可删 `clash-dice-3d.ts` 的 rAF pulse 循环，改在 Anim3D 加 bob(rotX/rotY) 通道达同效**（game-g 域·你改；我不碰你文件）。
-> - **骰面 [1,power]>6 的映射**：game-g 用 `dieFaces[].src` 程序化数字面贴任意点数——**正解**（比 6 面 pip 更忠实战力值）·无异议。
-
-> **⚠ 更新 [2026-07-03·程序B/game-g]**：owner 2026-07-03 当面反复点名要程序B（game-g session）**当场把 3D 骰加进去**（「必须得用我们的底座和 3D 基础去做，不要绕过我的规则」「里面有个 3D 色子旋转的地方，你帮我加进去」）——**晚于本单 07-02 的「转 P3D」路由**，owner 直接指令优先。已交**游戏层数据驱动版**（`games/game-g/clash-dice-3d.ts`）：
-> - **零 P3D 文件改动**：只在 game 层声明 ECS 数据（`Transform3D`/`Mesh3D` box+dieFaces 数字骰面/`Vfx3D` 能量注入粒子/`Camera3D`/`Light3D`/`Sky3D`.env），由公有 `ThreeRenderer` 解释渲染——与 `game-d` Title 大骰同一条路子（game 层 new ThreeRenderer + createEntity/addComponent，不碰 three-renderer.ts）。**非 CSS 3D**（守数据驱动铁律 + 避战斗 zoom 画框放大 bug）。
-> - **UI↔世界锚 seam**（本单 §集成难点点名的那个）：`mountTurnBattle.syncDice3D` 量 `#clash-die3d-m/f` 锚点屏幕 rect → 各覆一张 `position:fixed` canvas（逃 innerHTML 重建 + zoom 裁剪）。three 走**动态 import**（600KB 只在首次掷命拉·不压 game-g 首屏）；无 WebGL(headless)→ 回退 🎲 emoji 占位（测试绿）。双骰绕 X/Y 缓转 + 粒子上涌；掷值仍由 `clash-die-m/f` 文本显（3D 骰纯装饰旋转·不落特定面）。
-> - **请 P3D 定夺**：(a) 认可这版游戏层覆层照用；或 (b) 把「UI↔世界锚 seam」下沉成 P3D 域通用能力（路线图「待长」项）、game-g 改消费那个通用件。当前已全绿上线（tsc+vitest+build），owner 要的「掷骰爽感」先满足；收编与否由你（P3D）评审。
-
-
-> **owner 2026-07-02 原话**：「能不能做成 3D？因为我们 3D 引擎也有了嘛，你把这两个色子做成 3D 模型在那里旋转。」——game-g 对决「各自掷战力骰」的两颗骰子，希望做成 **3D 模型在对决画面旋转**。
-> **边界**：3D 渲染（three-renderer / Mesh3D·Model3D / 3D 场景集成）是 P3D 独占域，game-g session 不擅入 → 按 §0.1 转工单给你评审/落地。sim/数据侧（掷值 rollA/rollB、战力范围）已是纯数据、现成可读。
->
-> **现状（game-g 已铺好的 2D 过渡版 + 挂载锚点）**：
-> - 对决特写（`turn-battle-screen.ts` `clashNode`）已把两颗骰子摆在**两张牌正下方**的 `clash-dicewrap` 面板里；每颗骰一列 `clash-diecol-m/f`：
->   - `clash-die3d-m` / `clash-die3d-f` = 🎲 **emoji 占位·即 3D 骰挂载锚点**（你把 3D 骰塞这两个屏幕位）。
->   - `clash-die-m` / `clash-die-f` = 掷值数字（驱动层 `game-g.tsx doClashRoll` 就地哒哒哒滚到掷值）。
-> - 掷值数据：`ClashEvent.rollA`（我方掷值）/`rollB`（敌方掷值）、范围 = `a.pEff`/`b.pEff`（即 `[1,战力]` 上限）。我方=暖橙 `mine`、敌方=冷蓝 `foe`。
->
-> **诉求（P3D 定夺实现）**：
-> 1. 两颗 3D 骰（`Mesh3D` box 六面点数贴图 / 或导入 `Model3D` 骰模型），在 `clash-die3d-m/f` 两个屏幕位各自旋转。
-> 2. 「掷」时旋转翻滚 → 落定停在**该骰掷出的点数面**（掷值来自 rollA/rollB；>6 的战力骰如何映射到 6 面骰的视觉——是显数字面还是多骰/自定义面，请你定，或回驳建议改表现）。
-> 3. 我方橙 / 敌方蓝 区分；纯表现、**不进 hash**（determinism 红线：新 render-only 组件登记 `NON_DETERMINISTIC`）。
-> **集成难点（需你评估）**：game-g 战斗屏走 `renderNode + innerHTML`（2D·不跑 mountUI、无 3D 画布）。把一个 three 画布锚到 UI 元素屏幕位＝路线图里记的「UI↔世界锚」seam（你 §路线图「待长」有列）。若这个通用 seam 值得先做，这单可当它的第一个消费者。
-> **可回驳**：若「6 面骰表达 [1,30] 掷值」不成立 / 集成成本过高 → 请回驳并给替代（如 2D 骰面贴图升级、或战力骰改「转盘/进度条」表现）。owner 要的是「掷骰的爽感表现」，3D 是他提的实现手段、非硬指标。
-
----
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-Vfx3D 点吸引力场（粒子跟随鼠标聚集·加减速自然） · [2026-07-03] · game-d（我·P3D 转呈）→ P3D（3D 渲染线·粒子域） · status: **✅ done（2026-07-03·已推）** · 类型: render-only 粒子能力补全（点吸引子）
-
-> **✅ 落地（全 render-only·P3D 渲染线域）**：
-> - **能力** `Vfx3D.attractor?: {x,y,z,strength}`（`render.ts`·render-only·Vfx3D 本就在 NON_DETERMINISTIC）：`VfxSystem` 每帧对每颗粒子施弹簧力 `F=strength·(target−pos)`，配**现成 `drag` 阻尼** = 阻尼弹簧 = **先加速后减速**的自然收拢（零新缓动参·合 owner「不夸张」）。力积分抽成纯函数 `integrateParticle`（半隐式 Euler·稳定不炸）便于确定性单测。
-> - **输入 seam** `ThreeRenderer.screenToWorld(clientX,clientY,worldZ)`（通用 screen→world·Raycaster+Plane·透视/正交都对）：与 WorldUI3D 的世界→屏互逆（路线图「UI↔世界锚」的输入向落地）。游戏层输入胶水/世界拾取共用。
-> - **消费** game-d Title：`uiHost` mousemove → `screenToWorld` unproject 到尘埃平面 → 写各 dust 发射器的 `attractor`（离场撤力）。render-only 胶水（同 autoRun/WASD 先例）。截图 before/after 验：尘埃随光标聚拢（软聚非硬吸）。
-> - 测试 `vfx.test`(4·弹簧收拢到目标 / 先加速后减速 / 无 attractor 向后兼容 / attractor 不进 hash)。tsc+vitest(2196)+build 全绿。
-
-> **owner 原话（2026-07-03）**：Title 那片氛围粒子——「**鼠标在哪，粒子就往鼠标那里去聚集、follow 我这个鼠标**；但要有个**加速度、减速度的过程，不要太夸张**」。owner 明示这条按 3D 引擎需求提给 3D 引擎（不进 `requests.md`）。
->
-> **我（game-d）已先做架构评判（CORE RULE·不照单转呈）——判定=真缺口·建议接受下沉**：
-> - **能用现有 `Vfx3D` 字段重组表达吗？** 不能。现有 `Vfx3D` 有 `shape`/`gravity`/`drag`/`sizeCurve`/`colorGradient`/`blend`——`gravity` 是**全局常向量**、不是指向某动点的**点力**；`drag` 只给全局阻尼、没有把粒子拉向目标点的力。「向一个移动的点聚拢」现有字段表达不了。
-> - **已被覆盖/功能等价？** 否，无任何点吸引子/磁吸语义。
-> - **真缺口 → 下沉成通用能力**：`Vfx3D.attractor?: { x:number; y:number; z:number; strength:number }`（世界坐标点 + 力强）。每帧对每颗粒子施 `a += strength * normalize(target - pos)`（或按距离衰减的弹簧力 `strength * (target - pos)`）；**加减速天然来自「弹簧力 + 现有 `drag` 阻尼」**——趋近时力小、`drag` 拖尾 → 自动缓入缓出，正是 owner 要的「不夸张」的加速/减速，**零新缓动参数**。`strength=0`/`attractor` 缺省 = 现行为（向后兼容）。
-> - **弱 LLM 尺子**：接受——只填 4 个数（x/y/z/strength）·填不了自由力场代码。**render-only**：`attractor` 是表现字段，`Vfx3D` 本就 render-only；须确保**不进 sim/hash**（determinism 红线·`Vfx3D` 应已在 `NON_DETERMINISTIC`·加字段不改归属）。
->
-> **诉求（P3D 定夺实现）**：
-> 1. `Vfx3D` 加可选 `attractor{x,y,z,strength}`，粒子积分里加点力项（弹簧力 + 复用现有 `drag` 阻尼 = 自然加减速）。登记/文档同步。
-> 2. **鼠标屏坐标 → 世界坐标的接线（screen→world unproject）**：game-d 每帧把光标 unproject 到粒子所在平面、写进 `attractor.x/y/z`。这段是**运行时胶水**（同 game-z `autoRun`/WASD 胶水、game-g `syncDice3D` 先例·game 层可自理）。**但**：这与你路线图「待长」里记的「UI↔世界锚 seam」是**互逆的一对**（那条是 world→screen，这条是 screen→world 输入）——**请你定夺**：(a) 输入 unproject 就让 game-d 用现成相机 API 自己接；或 (b) 值得沉一个 P3D 域通用「屏↔世界」输入 seam（game-d 当第一个消费者）。
-> 3. 纯表现、加减速由物理（弹簧+阻尼）自然给出，**不加夸张的吸附/弹射**（owner「不要太夸张」）。
->
-> **可回驳**：若你认为点吸引子该并进未来更通用的「力场（force field·点/线/风场）」一起设计、或 unproject 该走别的 seam → 请回驳并给替代。owner 要的是「粒子温柔地跟手聚拢」，`attractor` 是我判的最小充分手段、非硬指标。
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-交互与材质补全批 · 对象拾取/图元/BlendSpace/贴图槽/HDRI 五件 + Tier3 不做清单固化 · [2026-07-03] · owner 提需 → 主程逐条裁决 → P3D · status: **①②④⑤ ✅ Lead 验收通过（2026-07-04·判决见下·偏离全裁）；③ 待拉动（角色步态成熟时开工）** · 类型: 3D 线能力补全（Lead 图纸）
 
@@ -530,29 +271,7 @@
 > 6. 门禁全绿直推；完工标 ✅ 待 Lead 验收（我会拿一个故意黑屏/冻结的场景做红测）。
 
 ## REQ-3D-世界空间 UI 表达 · WorldUI3D 超越飘字（owner 2026-07-07「3D UI 表达·两者都要」） · [2026-07-14] · 提出：UI/game-i session → P3D · status: **✅ #1#2 done（P3D 2026-07-14）；#3 diegetic ✅ done（P3D 2026-07-15·消费方=展示台·CSS3D 路线）** · 优先级: P2 · 类型: 3D UI 能力
-
-> **#3 diegetic 落地（P3D 2026-07-15·owner 点名 + 消费方=contents 展示台 → 解除"暂缓待消费者"）**：新组件 `Diegetic3D{node,pxWidth,pxHeight,worldWidth,worldHeight,bg}`。
-> **实现选型经一次纠偏**：先按 owner 原话「LayoutNode→贴图→材质」走 foreignObject 栅格路线（26949c25）——**game-z 截图实证在 Chromium 渲空白**（浏览器安全限制·SVG foreignObject 画进 canvas 仅 Firefox 可用）。改用 **CSS3DRenderer 真 DOM 面片**（c5323dd9）：CSS3DObject 定位 Transform3D·同相机投影·文字锐利 Chromium 稳（截图实证渲出标题+进度条）。**代价**：DOM 叠层不进 WebGL 深度→不被遮挡/不吃后处理（适合"给人看的"面板·非需遮挡场景）。若日后要"可被遮挡的真贴图 diegetic"→ 需引擎为 LayoutNode 子集写 Canvas2D 解释器（另立单）。
-
-> **★ P3D 裁决（2026-07-14·按 manifesto 尺子·能重组则重组·真缺口才下沉）**：
-> - **#1 世界空间面板 + #2 屏幕锚定跟随单位 = ✅ 重组（不新建 Panel3D）**：`WorldUiLayer` 本就做「世界锚点→屏幕投影→挂 LayoutNode→随实体每帧跟随→背相机/出屏自动隐」——**#2 的机制已在**，#1 的「billboard 面板」也正是这条路。唯一缺口=`WorldUI3D` 只吃单 `text`。→ **加 `WorldUI3D.node?: LayoutNode`**（富内容·面板/血条 ProgressBar/名牌/多行·仍走 UI 库·UI 铁律），`text` 保留为简写。一处小扩展覆盖 #1+#2。**不新建 `Panel3D`**（会与 WorldUI3D 重复）。demo：game-z 狐狸名牌（Label+ProgressBar·随奔跑跟随）。测试 + 回填手册。全绿。
-> - **#3 diegetic UI（UI 贴到 3D 面片·透视正确·可遮挡）= 真缺口·暂缓**：这是**另一条渲染路**（`LayoutNode→CanvasTexture→Material3D.map`），非 WorldUI3D 的屏幕叠层 billboard 能重组。**难点**：现 UI 库渲成 **DOM**，要上 Mesh3D 面片需把 DOM 光栅化成 canvas 纹理（html2canvas 级·重且不完美）或另造**canvas 版 LayoutNode 渲染器**——工程量大。**当前无具名消费者**（无游戏要控制台屏/桌上卡牌）→ 按 YAGNI **暂不造**，记设计待真需求拉动（那时评估 canvas-UI 光栅化路）。
-> - **边界确认**：`WorldUI3D.node` 是 render-only 组件字段（住 render.ts·🔶 知会 Lead·type-only import LayoutNode·无运行时环）；world-ui.ts 是 P3D 域。**未越界 UI 库**（只消费 LayoutNode·不改控件闭集）。
-
-> **背景**：owner 要「开发 3D UI 表达」，明确「两者都要」——① 2D LayoutNode 加 CSS-3D 变换（透视倾斜/景深叠层/悬停立体抬起）**已由 UI 域落地**（`LayoutConstraints.rotateX/rotateY/perspective/z/tilt3d`·game-i `t-3d` 段·见 transform3d.test）；② **世界空间 UI**=UI 面板/HUD 挂进真 3D 场景，属 P3D 独占域，本单提交 P3D 评估。
-> **诉求（待 P3D 按 manifesto 评判：能否用现有 WorldUI3D 组合表达 / 真缺口才下沉）**：现 `WorldUI3D` 只有世界空间**飘字**（text/offsetY/size/glow）。商业 3D 游戏的「世界空间 UI」还含：
-> 1. **世界空间面板**（3D 空间里的一块信息板/菜单·可 billboard 朝相机或固定朝向）——承载多行文字/图标/进度条，而非单行飘字。是否值得一个 `Panel3D{ layout 数据? / 贴图? }`，还是让 LayoutNode 渲成纹理贴到 Mesh3D 面片（UI-as-texture）？
-> 2. **屏幕空间锚定到世界物件**（血条/名牌跟随 3D 单位、投影到屏幕叠 LayoutNode HUD）——本池 UI↔世界锚 seam（screenToWorld）是否已够，缺的是把 2D LayoutNode 定位到世界物件的屏幕投影点的桥？
-> 3. **diegetic UI**（UI 是场景的一部分：控制台屏幕、卡牌摆在 3D 桌面上）——大概率 = LayoutNode→CanvasTexture→Material3D.map 的管线，值得评估。
-> **边界**：这是 render-only 表现层（不进 sim/hash）。**不预设做法**——P3D 评估是重组现有能力还是下沉新组件；若下沉，闭集数据+registry describe+回填 `docs/playbooks/3d.md`（手册铁律）。owner 无 deadline，排 P3D 队自主定档。
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。
 
 ## REQ-3D-震屏首见基线 · CameraShake 装载首帧白震一次 · [2026-07-15] · Lead 验收超休闲六连批时发现 → **指派：P3D** · status: **✅ done（P3D 2026-07-15）·连带修 flash/impulse 同类·Lead 复核 ✅（a2e161fe 修法/测试对版）** · 优先级: P2 · 类型: 小修（camera-rig.ts + 一条测试）
-
-> **P3D 落地（2026-07-15）**：照 Lead 一行级修法落 `CameraShake.update`（首见=基线不注入）。**同类扩查**：`FlashDecay`（Post3D.flash）与 `Impulse3D`（physics·`impulseSeen` 首见 `undefined!==0` 同样自触发）是**同一 nonce 范式的孪生 bug**——一并修（各加首见基线分支）。impulse 语义定：出生初速用 `RigidBody3D.vx`·Impulse 只在 bump 时施力。三处各加钉死测试（静态 trigger 首帧不触发·bump 才触发）。game-z demo 静态带 `shake/flash:{trigger:0}` 装载不再白震/白闪。
-> **Lead 复核备注（用法约定·防边角·不返工）**：首见=基线的代价——蓝图初始**不带** trigger、事件时才首次设值的话，第一次真 bump 会被当基线吞掉。约定：**要用 nonce 触发（shake/flash/impulse）的实体蓝图自带 `trigger:0` 起始**，事件 bump 到 1/2/…。孪生扩查做得好——正是该有的举一反三。
-
-> **验收背景**：超休闲缺口批六连（手感三件套 778df8dd + Decal3D 5bb6409e + UI 三补 7c902aa0 + uvAnim f41b1b7e + Path3D 2ff1a909 + Billboard3D/tween 692024b7）Lead 对抗性验收 **✅ 全部放行**——render-only 纯净（新解释器零 world 回写·零裸 Math.random·震屏噪声=确定性 sin 合成可复现）、三个新组件 NON_DETERMINISTIC+component-map 成对登记无漏、协议扩展全 additive 闭集、件件带测试、合树 2588 测全绿。唯此一条真问题开单：
-> **问题**：`CameraShake.update` 的 `lastTrigger` 初始 `undefined`——蓝图**静态带** `shake:{trigger:0,...}` 的场景，装载后第一帧 `0 !== undefined` 即注入 trauma=1 → **无事件白震一次**。语义应是「bump=变化才震」，首见值该只作基线。
-> **修法（一行级）**：首见（`this.lastTrigger === undefined` 且 shake 在场）只记基线不注入：`if (this.lastTrigger === undefined) { this.lastTrigger = shake.trigger; return NO_SHAKE; }`。加一条测试钉死：静态 trigger 首帧 `active:false`、随后 bump 才震。
-> **附 P3 备注（不挡·记档）**：① FollowDamper 速度估计=raw 帧差/壁钟 dt，sim tick 与渲染帧不同步时 lookAhead 速度在「阶跃/0」间抖（现被指数平滑吸收大半）——真游戏若见预读抖动，对速度也做一层平滑即可；② `camSig` 不含 `follow` 参数（改 lag 不触发重渲·收敛态视觉无差·接受）。
-> **边界记录**：7c902aa0 动了 `src/ui/components/{types,render,server,catalog}.ts`（主程域）——实现合格照单全收（闭集+引擎注入 CSS+测试齐），但交验清单只报了 three*/render.ts/determinism/component-map 四处。**下回动 🔶/主程域文件请在知会里列全。**
+> 回执/裁词全文见 git 历史（`git log -p -- docs/workflow/requests-3d.md`）——池只留活跃（context-budget 铁律）。

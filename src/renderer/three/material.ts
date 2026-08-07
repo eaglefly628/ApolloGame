@@ -3,6 +3,7 @@ import type { Mesh3D, Material3D, SurfaceDetail } from '@engine/protocol/compone
 import { resolvePbr, type PbrMaterialDef, type MaterialSpec } from '@assets/index.js';
 import { buildSurfaceMaps } from './surface-tex.js';
 import { roundGeo } from './geometry.js';
+import { injectDissolve, dissolveSig } from './dissolve.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  three/material —— PBR 材质（TA Phase 5·render-only）。据 `Material3D` 预设 + 覆盖建物理材质。
@@ -153,6 +154,7 @@ export function buildPbrGeoMat(m: Mesh3D, mat: Material3D, maps?: PbrMaps): { ge
     if (mat.transparent) material.transparent = true; // 软混合
     material.needsUpdate = true;
   }
+  if (mat.dissolve) injectDissolve(material, mat.dissolve); // 溶解消散（REQ-3D-DISSOLVE·注入 shader·DissolveSystem 每帧驱动）
   return { geo, material, flat: mat.shading === 'flat' };
 }
 
@@ -177,5 +179,5 @@ export function pbrSig(m: Mesh3D, mat: Material3D): string {
   const mk = `${mat.map ?? ''}.${mat.normalMap ?? ''}.${mat.roughnessMap ?? ''}.${mat.aoMap ?? ''}.${mat.metalnessMap ?? ''}.${mat.emissiveMap ?? ''}.${mat.ormMap ?? ''}`;
   const tl = mat.tiling ? `${mat.tiling.repeat ?? ''}.${mat.tiling.offset?.[0] ?? ''}.${mat.tiling.offset?.[1] ?? ''}` : '';
   const ol = mat.outline ? `${mat.outline.width ?? ''}.${mat.outline.color ?? ''}` : '';
-  return `pbr|${mat.preset}|${mat.shading ?? ''}|${mat.toonSteps ?? ''}|${ol}|${mat.color ?? ''}|${mat.roughness ?? ''}|${mat.metalness ?? ''}|${mat.emissive ?? ''}|${m.shape}|${m.width}|${m.height}|${m.depth ?? ''}|${ss}|${mk}|${tl}|${mat.alphaTest ?? ''}|${mat.transparent ? 't' : ''}`;
+  return `pbr|${mat.preset}|${mat.shading ?? ''}|${mat.toonSteps ?? ''}|${ol}|${mat.color ?? ''}|${mat.roughness ?? ''}|${mat.metalness ?? ''}|${mat.emissive ?? ''}|${m.shape}|${m.width}|${m.height}|${m.depth ?? ''}|${ss}|${mk}|${tl}|${mat.alphaTest ?? ''}|${mat.transparent ? 't' : ''}|${mat.dissolve ? dissolveSig(mat.dissolve) : ''}`;
 }

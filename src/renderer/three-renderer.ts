@@ -24,6 +24,7 @@ import { TrailSystem } from './three/trail.js';
 import { LineSystem } from './three/line3d.js';
 import { DecalSystem } from './three/decal.js';
 import { UvAnimSystem } from './three/uv-anim.js';
+import { DissolveSystem } from './three/dissolve.js';
 import { BillboardSystem } from './three/billboard.js';
 import { DiegeticLayer } from './three/diegetic.js';
 import { Anim3DSystem } from './three/anim3d.js';
@@ -92,6 +93,7 @@ export class ThreeRenderer implements RendererBackend {
   private readonly lines = new LineSystem(); // 世界折线（Line3D·瞄准线/牵引/路径·render-only）
   private readonly decals = new DecalSystem(); // 地面贴花（Decal3D·blob 阴影/环/圆·render-only）
   private readonly uvAnim = new UvAnimSystem(); // 材质 UV 动画（Material3D.uvAnim·滚动/序列帧·render-only）
+  private readonly dissolve = new DissolveSystem(); // 溶解消散（Material3D.dissolve·shader 溶解 + 发光前沿·render-only·REQ-3D-DISSOLVE）
   private readonly billboards = new BillboardSystem(); // 世界空间贴图广告牌（Billboard3D·朝相机·深度排序·render-only）
   private readonly diegetic = new DiegeticLayer(); // UI 贴进 3D 空间（Diegetic3D·CSS3DObject 真 DOM 面片·render-only）
   private readonly anim3d = new Anim3DSystem(); // 程序化位姿动画（Anim3D·spin/bob·render-only·把 title 骰自转等从游戏层手写下沉成数据）
@@ -350,7 +352,7 @@ export class ThreeRenderer implements RendererBackend {
           //   （同材质 = 1 InstancedMesh·color 在签名里 → 每色一批·game102 5 色真材质立方 = ~5 draw call·与体素数无关）；
           //   透明（玻璃 transmission / 软混合）/ 描边（背面壳子网格）→ 走单 mesh（排序/子网格·同 W1-A 透明先例）。
           const eff = r.material3d.materialRef ? applyMaterialRef(r.material3d, this.materials?.get(r.material3d.materialRef)) : r.material3d;
-          if ((r.color?.alpha ?? 1) >= 1 && !eff.outline && !pbrTransmissive(eff)) {
+          if ((r.color?.alpha ?? 1) >= 1 && !eff.outline && !eff.dissolve && !pbrTransmissive(eff)) { // dissolve 走单 mesh（DissolveSystem 每帧驱动 uniform）
             const maps = this.resolvePbrMaps(eff);
             const mk = `${maps.map ? 'M' : ''}${maps.normalMap ? 'N' : ''}${maps.roughnessMap ? 'R' : ''}${maps.aoMap ? 'A' : ''}${maps.metalnessMap ? 'E' : ''}${maps.emissiveMap ? 'G' : ''}${maps.ormMap ? 'O' : ''}`; // 贴图就绪态入 key（迟到贴图就绪 → 换批挂上·配 AssetReadyTracker 自愈）
             const key = `pbr|${pbrSig(r.mesh3d, eff)}|${mk}`;
@@ -394,6 +396,7 @@ export class ThreeRenderer implements RendererBackend {
     const animLive = this.models.update(performance.now());
     // 材质 UV 动画（Material3D.uvAnim·render-only·须在 mesh 建好后）：逐帧改克隆贴图 offset/repeat（滚动/序列帧）。活跃 >0 → 持续重渲。
     const uvLive = this.uvAnim.sync(world, this.meshes, performance.now());
+    const dissolveLive = this.dissolve.sync(world, this.meshes, performance.now()); // 溶解每帧推进 progress/time uniform
 
     // W1-C 脏标跳渲：渲染签名（投影体姿 + 相机 + 灯 + 后处理 + 天空云飘帧 + 粒子/物理/骨骼动画活跃帧）。与上帧一致 → 跳过
     // instanceMatrix 上传 + 阴影 + render（画面不变·省 CPU/GPU/带宽）——「低开销」最大单点。
@@ -410,7 +413,7 @@ export class ThreeRenderer implements RendererBackend {
     const camTweenActive = this.cameras.tickTween(cam3d?.tween, performance.now());
     // 命中闪白：据 Post3D.flash.trigger 算衰减量——>0 时折进 renderSig 持续重渲直至归零。
     const flashAmt = this.flash.update(post?.flash, performance.now());
-    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}|ag${this.assetReady.gen}`;
+    const renderSig = `${ph}|${camSig(cam3d)}|${this.lights.lightSig}|${postSig(post)}|${sky?.scroll ? this.frame : (sky ? `${sky.top}.${sky.bottom}` : '')}|${this.debugColliders ? 'd' : ''}|${this.debugNav ? 'n' : ''}|${this.debugIndices ? 'ix' : ''}|${vfxLive > 0 ? this.frame : 'v0'}|${physLive > 0 ? this.frame : 'p0'}|${animLive > 0 ? this.frame : 'a0'}|${animPoseLive > 0 ? this.frame : 'ap0'}|${pathLive > 0 ? this.frame : 'pa0'}|${pivotMap.size > 0 ? this.frame : 'pv0'}|${shakeOff.active ? this.frame : 's0'}|${followCenter?.settling ? this.frame : 'f0'}|${camTweenActive ? this.frame : 'ct0'}|${trailLive > 0 ? this.frame : 't0'}|${decalLive > 0 ? this.frame : 'dc0'}|${billboardLive > 0 ? this.frame : 'bb0'}|${uvLive > 0 ? this.frame : 'uv0'}|${dissolveLive > 0 ? this.frame : 'ds0'}|${this.lines.contentSig(world)}|${this.diegetic.contentSig(world)}|${flashAmt > 0 ? this.frame : 'fl0'}|${this.fogSig}|ag${this.assetReady.gen}`;
     const shadowSig = `${ph}|${this.lights.lightSig}`; // 阴影只随投影体姿/灯变（相机/云飘/后处理不触发）
     if (renderSig === this.lastRenderSig) {
       this.rendered = false;
@@ -585,6 +588,7 @@ export class ThreeRenderer implements RendererBackend {
     this.decals.dispose(this.scene);
     this.billboards.dispose(this.scene);
     this.uvAnim.dispose();
+    this.dissolve.dispose();
     this.anim3d.dispose();
     this.paths.dispose();
     this.camShake.dispose();

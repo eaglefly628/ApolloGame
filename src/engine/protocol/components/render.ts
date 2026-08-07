@@ -409,6 +409,23 @@ export interface Material3D extends Component {
   //   transparent=软混合（配 opacity·有排序·适合渐隐）。二者独立·可只给 alphaTest（推荐·无排序坑）。
   alphaTest?: number; // 透明度裁剪阈值（>0 启用 cutout）
   transparent?: boolean; // 软透明混合（缺省 false）
+  // 溶解消散（REQ-3D-DISSOLVE·render-only·opt-in）：物品消失/角色倒下/技能收尾的通用材质效果。渲染器给材质注入
+  //   一段 shader（onBeforeCompile·同 outline 先例）：**屏幕空间**算距离场（图案 pattern·形状 shape），按 progress
+  //   阈值 discard 溶解，边缘飘一条**发光条带**。voronoi 图案 = 动画种子点 → 边缘星星点点「光点消散」（shader 算·省真粒子）。
+  //   自由 GLSL 只活在引擎解释器·游戏只填这几个标量/枚举（数据驱动·最弱 LLM 也填得了）。
+  dissolve?: {
+    progress?: number;   // 溶解进度 0..1（0=完好·1=全消散）。显式给（外部/游戏驱动）；或用 trigger 让引擎自播。
+    trigger?: number;    // bump（任意变化数）→ 引擎自播溶解（render-only 时间驱动·同 flash/shake 先例）。
+    dur?: number;        // 自播时长秒（缺省 1.2）
+    direction?: 'out' | 'in'; // out=消散 0→1（缺省）·in=重现 1→0
+    pattern?: 'noise' | 'voronoi'; // 距离场图案（缺省 voronoi=光点/晶格消散·noise=平滑噪声溶解）
+    shape?: 'euclid' | 'manhattan' | 'chebyshev' | 'star'; // voronoi 距离度量 → 溶解形状（缺省 euclid 圆点）
+    scale?: number;      // 晶格/噪声尺度（屏幕像素·缺省 44·越小格越密）
+    speed?: number;      // 种子点动画速度（缺省 1·voronoi 光点浮动）
+    edge?: number;       // 边缘发光条带宽 0..1（缺省 0.1）
+    edgeColor?: number;  // 边缘发光色 0xRRGGBB（缺省暖橙 0xffa030）
+    glow?: number;       // 边缘发光强度（缺省 1.6）
+  };
 }
 
 // 程序化表面细节（render-only·TA Phase 5）：渲染器据参数生成 normal + roughness 贴图（DataTexture）—— **不需美术贴图文件**，

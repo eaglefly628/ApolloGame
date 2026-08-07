@@ -220,6 +220,8 @@ function platformThree(): Record<string, Ent> {
     },
     // 平涂无光球（flat·纯亮色）。
     'p3-flat': { Transform3D: { x: X - 34, y: 5, z: 6 }, Mesh3D: { shape: 'sphere', width: 6, height: 6, frontTint: 0xffffff }, Material3D: { preset: 'gold', shading: 'flat', color: 0xffca28 }, Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.8 }] }, WorldUI3D: { text: '平涂 flat', offsetY: 6, size: 'sm', color: 'gold' } },
+    // 溶解消散（REQ-3D-DISSOLVE·Material3D.dissolve·shader 溶解 + voronoi 光点前沿）：trigger 每几秒自播一轮溶解-重现。
+    'p3-dissolve': { Transform3D: { x: X - 20, y: 6, z: -20 }, Mesh3D: { shape: 'sphere', width: 7, height: 7, frontTint: 0xffffff }, Material3D: { preset: 'steel', color: 0x4aa3ff, dissolve: { progress: 0.5, pattern: 'voronoi', shape: 'euclid', edgeColor: 0xffa030, glow: 1.8, scale: 40 } }, Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.5 }] }, WorldUI3D: { text: '溶解 dissolve（voronoi 光点前沿）', offsetY: 6, size: 'sm', color: 'gold' } },
     // 自定义贴图地面贴花（REQ-3D-DECAL-TEX·Decal3D.tex）：平贴地面的真图贴花（alpha 走贴图通道·区别程序化 blob/ring/disc）。
     // ① 符文法阵（方贴片·符文自发光图当地面法阵）。
     'p3-decal-rune': { Transform3D: { x: X - 8, y: 0, z: 10 }, Decal3D: { tex: TEX_RUNE_EMISSIVE, radius: 7, opacity: 0.95 }, WorldUI3D: { text: '贴图贴花 Decal3D.tex（符文法阵）', offsetY: 2, size: 'sm', color: 'jade' } },
