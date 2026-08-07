@@ -1,0 +1,22 @@
+// GD-108 验收剧本 ④ · 平局（gdd §15 表第 4 行·验 R-108-15）。
+//   双方同出石 → 判平：**双方都不掉血**，但双方石槽都归 0（出过即清零，不看胜负）。
+// 对抗目标：平局互扣血（曾是 v1 设计·v2 改掉了）→ hp 断言红；平局不清零 → 槽断言红。
+{
+  "name": "平局·双方不掉血但都清零",
+  "game": "game108", "seed": 108,
+  "steps": [
+    { "signal": "charge.rock" }, { "tick": 2 },
+    { "signal": "charge.rock", "by": "p2" }, { "tick": 2 },
+    { "tick": 180 },
+    { "signal": "throw.rock" },
+    { "signal": "throw.rock", "by": "p2" },
+    { "tick": 300 },
+    { "expect": [
+      { "sv": "flow", "eq": "settle" },
+      { "res": "p1.hp", "eq": 100 },          // 【R-108-15】平局双方不掉血
+      { "res": "p2.hp", "eq": 100 },
+      { "res": "p1.charge.rock", "eq": 0 },
+      { "res": "p2.charge.rock", "eq": 0 },
+    ] },
+  ],
+}

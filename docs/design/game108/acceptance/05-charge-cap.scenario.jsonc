@@ -1,0 +1,20 @@
+// GD-108 验收剧本 ⑤ · 上限锁（gdd §15 表第 5 行·验 R-108-10）。
+//   石槽已满 3 时再点，**不越界**（引擎侧由 Resource.max 钳位；UI 侧那一半是「键禁用」，
+//   由 games/game108/game108.test.ts 的闭集断言 + S3 点击探针把关，本剧本只验世界态）。
+// 对抗目标：把 Resource.max 拆掉 / op 改成不钳位 → 第 5 次点后断言红（会是 5）。
+{
+  "name": "上限锁·满 3 后再点不越界",
+  "game": "game108", "seed": 108,
+  "steps": [
+    { "signal": "charge.rock" }, { "tick": 2 },
+    { "signal": "charge.rock" }, { "tick": 2 },
+    { "signal": "charge.rock" }, { "tick": 2 },
+    { "expect": [ { "res": "p1.charge.rock", "eq": 3 } ] },
+    { "signal": "charge.rock" }, { "tick": 2 },
+    { "signal": "charge.rock" }, { "tick": 2 },
+    { "expect": [
+      { "res": "p1.charge.rock", "eq": 3 },   // 【R-108-10】封顶 3·多点无效也不报错
+      { "sv": "flow", "eq": "charge" },
+    ] },
+  ],
+}

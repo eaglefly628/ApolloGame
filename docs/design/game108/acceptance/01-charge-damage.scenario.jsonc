@@ -1,0 +1,60 @@
+// GD-108 验收剧本 ① · 蓄力与伤害（gdd §15 表第 1 行·验 R-108-10/12/13/14）。
+//   蓄石 ×2 → 出石，对手出剪 → 石克剪，伤害 = 10 + 2×10 = 30；石槽归 0、布剪槽不动。
+// 对抗目标（改坏被测逻辑应变红）：
+//   · 伤害不按出手方蓄力缩放（perSide 失效退化成 base）→ p2.hp 断言红（会是 90 不是 70）。
+//   · 清零清错侧 / 连没出的手一起清 → charge 断言红。
+//   · 克制表写反 → 掉血的会是 p1。
+// **时序断言（R-108-01）**：T2 出招是「同时提交·全程隐藏」，扣血写在 **T4 结算**那一拍，
+//   所以出招当下血量**不该**变——这条是照条款写的，不是照实现写的。
+{
+  "name": "蓄力与伤害·蓄2出石克剪掉30",
+  "game": "game108",
+  "seed": 108,
+  "steps": [
+    { "expect": [
+      { "sv": "flow", "eq": "charge" },
+      { "res": "p1.hp", "eq": 100 },
+      { "res": "p2.hp", "eq": 100 },
+      { "res": "p1.charge.rock", "eq": 0 },
+    ] },
+
+    // T1 蓄力时区：点两下石（走真输入通路·动作名 = 屏上 data-action）
+    { "signal": "charge.rock" }, { "tick": 2 },
+    { "signal": "charge.rock" }, { "tick": 2 },
+    { "expect": [
+      { "res": "p1.charge.rock", "eq": 2 },
+      { "res": "p1.charge.paper", "eq": 0 },
+      { "sv": "flow", "eq": "charge" },
+    ] },
+
+    // 走完 T1 的 3 秒 → 进 T2 出招时区
+    { "tick": 180 },
+    { "expect": [ { "sv": "flow", "eq": "throw" } ] },
+
+    // T2：双方同时提交
+    { "signal": "throw.rock" },
+    { "signal": "throw.scissors", "by": "p2" },
+    { "tick": 3 },
+    { "expect": [
+      { "sv": "flow", "eq": "throw" },
+      { "res": "p2.hp", "eq": 100 },        // 【R-108-01】扣血在 T4，出招当下不该掉
+      { "res": "p1.charge.rock", "eq": 2 }, // 清零同理，也在 T4
+    ] },
+
+    // 走完 T2 → T3 对决（亮拳/判定/伤害演出）
+    { "tick": 180 },
+    { "expect": [ { "sv": "flow", "eq": "clash" } ] },
+
+    // 走完 T3 → T4 结算：扣血 + 出过的手清零
+    { "tick": 120 },
+    { "expect": [
+      { "sv": "flow", "eq": "settle" },
+      { "res": "p2.hp", "eq": 70 },           // 【R-108-13】10 + 2×10 = 30
+      { "res": "p1.hp", "eq": 100 },          // 胜方不掉血
+      { "res": "p1.charge.rock", "eq": 0 },   // 【R-108-14】出过即清零
+      { "res": "p1.charge.paper", "eq": 0 },
+      { "sv": "p1.lastThrow", "eq": "rock" }, // 【R-108-02/30】记本回合的手
+      { "sv": "p2.lastThrow", "eq": "scissors" },
+    ] },
+  ],
+}
