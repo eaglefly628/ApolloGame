@@ -624,7 +624,7 @@ ENG-04 只给 `KeyBinding` 开了 `source`（玩家那条路），**AI 走的 `E
 **未动 `src/ui/components` 任何文件**。横版重构等这两件到位再做——
 先做布局、后补动画的话，中间那条走道会空着没东西可放，等于把返工排进计划里。
 
-### REQ-108-UI-03 · 面板缺「平移投影」（卡通立体感的基件）· [2026-08-07] · owner 当场指出 · status: open（待 PUI/Lead 裁）
+### REQ-108-UI-03 · 面板缺「平移投影」（卡通立体感的基件）· [2026-08-07] · owner 当场指出 · status: **✅ 已下沉（PUI·判 A）·待游戏侧接**
 
 - **病**：owner 看图第一句——「你 / 蓄力 / 复读机 这三个牌**不是 3D 浮空的**，下面该有颜色和阴影」。
   设计定稿里这是全屏统一的语言：`box-shadow: 0 4px 0 #14776a`（身份牌）/ `0 5px 0`（相位牌）/
@@ -646,7 +646,17 @@ ENG-04 只给 `KeyBinding` 开了 `source`（玩家那条路），**AI 走的 `E
     "去写个 SVG 生成器"不能。
 - **验收**：`Panel{shadow:{y:4}}` 渲出硬边偏移投影；game108 的 `plate-art.ts` 能删掉投影那一支。
 
-### REQ-108-UI-04 · 缺一款**卡通粗中文**字体槽 · [2026-08-07] · owner 当场指出 · status: open（待 PUI 裁）
+> **✅ PUI 交付（2026-08-07·判 A·下沉）**：`PanelProps.shadow?: { y: number; color?: SurfaceToken | 色串 }`
+> → 渲 `box-shadow:0 <y>px 0 <color>`（硬边非模糊）。`color` 缺省=深墨(`ink`/`bg0`)·优先填闭集 `SurfaceToken`
+> （换皮自适应）·裸色串走稿子精确墨色。与 `accent` 柔光**逗号共存**、作用于 skin 框皮面（`plate-art` 可删投影支）。
+> 非法 `y` 走 `num()` 退化 0px·绝不 NaN。真渲染目击 4 档（y=4/5/7/8 浮空梯度）+ 对照无投影已过。
+> 落点：`types.ts`(字段) · `render.ts`(`shadowColor` 解析 + box-shadow 叠层合成) · `catalog.ts`(spec) ·
+> `panel-fill.test.ts`(+8 例·含"验收核心 y 偏移"/换皮/裸串/accent 叠/skin/bare 忽略/NaN 退化/零回归) ·
+> game-i 展台加 `PANEL.shadow` 货架行。`scoped-gate` scope=full 全绿。
+> **游戏侧接法**：`design-tokens.ts` 身份牌 `shadow:{y:4}` / 相位牌 `{y:5}` / 招式卡 `{y:7}` / 主 CTA `{y:8}`，
+> 颜色填 `SurfaceToken`（换皮）或稿子墨色；接上后删 `plate-art.ts` 的投影生成支。
+
+### REQ-108-UI-04 · 缺一款**卡通粗中文**字体槽 · [2026-08-07] · owner 当场指出 · status: **✅ 已加槽（PUI）·待游戏侧接**
 
 - **病**：owner——「字体不够饱满，要一定的艺术粗体」。设计定稿指定 **ZCOOL KuaiLe（站酷快乐体）**
   作为全屏中文显示字，Fredoka 作为数字字。
@@ -660,6 +670,14 @@ ENG-04 只给 `KeyBinding` 开了 `source`（玩家那条路），**AI 走的 `E
   这是**加一个槽**，不是放宽闭集，与手册「缺字体→提 requests 让主程加一个槽」的口径完全一致。
 - **验收**：`Label{font:'cnkuai'}` 能渲汉字；game108 把 `design-tokens.ts` 的 `F.cjk` 从 `'ui'` 改成它，
   与稿子 `screens/*.png` 并排看字形一致。
+
+> **✅ PUI 交付（2026-08-07·加槽）**：槽名落定 **`cnround`**（非建议的 `cnkuai`——与既有 `cnbrush/cnwen` 的
+> "语种+风格"命名一致：cn+round 圆黑）。ZCOOL KuaiLe（站酷快乐体·SIL OFL）走既有 CJK 惰性载产线：
+> `cjk-art-font-vendor.py` 子集化 → `cnround.woff2`（url() @font-face·非 base64·主 bundle 零增）→
+> `ART_FONT_FAMILY.cnround='ZCOOL KuaiLe'`·render 自带 `'ZCOOL KuaiLe','PingFang SC'…` 兜底链。
+> `types.ts`/`catalog.ts` 枚举补齐(4→5 款)·`label-font-glow.test.ts` 点名验·game-i CJK 字体墙加样张·真渲染目击。
+> **游戏侧接法**：`design-tokens.ts` 的 `F.cjk` 从 `'ui'` 改 `'cnround'`。若稿子出现 src 从未用过的生僻字→
+> 重跑 `python3 scripts/cjk-art-font-vendor.py` 重新子集（幂等）。**⚠ 但 vendor 只扫 `src/**` → 游戏层文案缺字见 UI-05。**
 
 ### REQ-108-UI-05 · CJK 字体子集只扫 `src/**`，游戏层文案会逐字静默回退 · [2026-08-07] · status: open（PUI 工具债·低优先）
 

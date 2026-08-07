@@ -66,6 +66,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'edge', type: 'enum', values: ['jade', 'gold', 'ok', 'warn', 'danger', 'mine', 'foe'], describe: '描边语义/阵营色（覆盖默认线·mine/foe=我/敌阵营框·配 layout.radius 异形/虚线 dashed）' },
       { name: 'dashed', type: 'boolean', describe: '虚线描边（落点/占位圈）' },
       { name: 'shape', type: 'enum', values: ['pill', 'hexagon', 'diamond', 'shield', 'ribbon', 'chevron', 'tag', 'cut'], describe: '异形容器轮廓（闭集·复用 Button 同套 clip-path·缺省=矩形）。非矩形容器（异形菜单卡/盾形板/蜂窝格）用它·不必贴图硬凑；命中区=包围盒·异形须给足宽高避免裁掉内容' },
+      { name: 'shadow', type: 'object', describe: '硬边平移投影 {y:number, color?:SurfaceToken|色串}——卡通"浮空感"基件（渲 box-shadow:0 <y>px 0 <color>·硬边非模糊）。color 缺省=深墨·优先填 SurfaceToken 换皮自适应。区别 accent 柔光/press3d 交互态：这是常态投影。与 accent/skin/edge/shape 可叠' },
     ],
     sample: { type: 'Panel', id: 's-panel', props: { title: 'SECTION' }, layout: { direction: 'column', gap: 8, padding: 16 }, children: [{ type: 'Label', id: 's-panel-l', props: { text: '面板内容' } }] },
   },

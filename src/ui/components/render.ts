@@ -264,6 +264,12 @@ function resolveFill(bg: unknown, t: UITheme): string | undefined {
   if (PRESET_FILL[s]) return PRESET_FILL[s];            // 预设配色·固定观感
   return s; // 遗留裸串（back-compat·audit 标记建议迁令牌/preset/custom）
 }
+// 平移投影的"3D 侧"实色（REQ-108-UI-03·Panel.shadow.color）：闭集 SurfaceToken → 主题色（换皮自适应），
+// 否则裸串原样（稿子精确墨色）。**只取实色**·不走 PRESET_FILL（那是渐变·硬边投影要单色）。缺省=深墨。
+function shadowColor(c: string | undefined, t: UITheme): string {
+  if (!c) return t.ink ?? t.bg0;              // 缺省 3D 侧 = 最深墨（自然投影侧）
+  const tok = SURFACE_TOKEN[c]; return tok ? tok(t) : c;
+}
 
 // ── 原有 7 个控件 ───────────────────────────────────────────────
 
@@ -404,7 +410,11 @@ function renderPanel(id: string, p: PanelProps, c: LayoutConstraints | undefined
   const border = p.edge ? edgeColor(t, p.edge) : (p.accent ? t.jadeLine : t.line);
   const bStyle = p.dashed ? 'dashed' : 'solid';
   const rad = num(c?.radius ?? 10);
-  const glow = (!bare && p.accent) ? `box-shadow:0 0 0 1px ${t.jadeWash},0 10px 34px rgba(0,0,0,.4);` : '';
+  // box-shadow 叠层（accent 柔光 + REQ-108-UI-03 硬边平移投影可共存·逗号合成）：bare 无 chrome 故都忽略。
+  const shadowLayers: string[] = [];
+  if (!bare && p.accent) shadowLayers.push(`0 0 0 1px ${t.jadeWash}`, `0 10px 34px rgba(0,0,0,.4)`);
+  if (!bare && p.shadow) shadowLayers.push(`0 ${num(p.shadow.y)}px 0 ${shadowColor(p.shadow.color, t)}`); // 硬边偏移（卡通浮空）
+  const glow = shadowLayers.length ? `box-shadow:${shadowLayers.join(',')};` : '';
   // 图片贴图层（平铺·叠在面板底上）。bare 但有贴图 → 只铺贴图、仍无框。
   const tex = texLayer(p.bgTexture, p.bgTextureSize);
   // 主题级面板底纹（纸纹/底纹·house-style 主题填·叠在填色之上、节点 bgTexture 之下）。缺省无 = 老主题字节不变。

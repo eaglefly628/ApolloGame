@@ -269,6 +269,12 @@ export interface PanelProps {
    *  六边蜂窝格）不必再靠透明贴图皮硬凑。命中区=包围盒（同 Button）；clip 会裁掉溢出多边形的子内容→**异形须给足
    *  width/height**。与 skin/bgTexture/edge 可叠（clip 在最外层裁形）。 */
   shape?: ShapeToken;
+  /** 硬边平移投影（REQ-108-UI-03·卡通"浮空感"基件）：渲成 `box-shadow:0 <y>px 0 <color>`——**硬边偏移**(不糊),
+   *  卡通 UI 的立体浮空全靠它（身份牌 y=4 / 相位牌 y=5 / 招式卡 y=7 / 主 CTA y=8）。区别 `accent` 的柔光、
+   *  区别 `press3d/tilt3d` 的交互态：这是**常态**投影。`y`=下沉像素；`color` 缺省=深墨(`ink`/`bg0`)，
+   *  优先填闭集 `SurfaceToken`(换皮自适应·如 'jade'/'gold') · 特别指定才用裸色串（稿子精确墨色）。
+   *  与 skin/edge/shape 可叠（投影在盒外·shape 异形同样跟形）。纯表现·不进 sim hash。 */
+  shadow?: { y: number; color?: SurfaceToken | (string & {}) };
 }
 
 /** 单个开/关复选框。handler 收到 'true' | 'false'。 */

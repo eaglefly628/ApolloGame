@@ -62,3 +62,41 @@ describe('Panel.bg · 面填充三态（色库化）', () => {
     expect(cus).toContain('#0a0a0a');
   });
 });
+
+describe('Panel.shadow · 硬边平移投影（REQ-108-UI-03·卡通浮空基件）', () => {
+  const panel = (props: Record<string, unknown>, theme = apolloOnyx) =>
+    renderNode({ type: 'Panel', id: 'p', props, children: [] }, theme);
+
+  it('shadow:{y} 渲出硬边偏移投影 `0 <y>px 0`（缺省色=深墨 ink/bg0·验收核心）', () => {
+    const ink = apolloOnyx.ink ?? apolloOnyx.bg0;
+    expect(panel({ shadow: { y: 4 } })).toContain(`box-shadow:0 4px 0 ${ink}`);
+    expect(panel({ shadow: { y: 8 } })).toContain(`box-shadow:0 8px 0 ${ink}`); // 主 CTA 稿子 y=8
+  });
+  it('color=SurfaceToken → 主题解析·换皮自适应（同一 jade 两主题不同真色）', () => {
+    expect(panel({ shadow: { y: 4, color: 'jade' } })).toContain(`0 4px 0 ${apolloOnyx.jadeWash}`);
+    expect(panel({ shadow: { y: 4, color: 'jade' } }, apolloBrocade)).toContain(`0 4px 0 ${apolloBrocade.jadeWash}`);
+    expect(apolloOnyx.jadeWash).not.toBe(apolloBrocade.jadeWash); // 换皮自适应铁证
+  });
+  it('color=裸色串 → 原样透传（稿子精确墨色 #14776a）', () => {
+    expect(panel({ shadow: { y: 4, color: '#14776a' } })).toContain('0 4px 0 #14776a');
+  });
+  it('与 accent 柔光共存（逗号合成·两层都在·不互斥）', () => {
+    const html = panel({ accent: true, shadow: { y: 5, color: 'gold' } });
+    expect(html).toContain(`box-shadow:0 0 0 1px ${apolloOnyx.jadeWash},0 10px 34px rgba(0,0,0,.4),0 5px 0 ${apolloOnyx.gold}`);
+  });
+  it('也作用于 skin 框皮面（plate-art 可删投影那一支·改用本字段）', () => {
+    const html = panel({ skin: 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E', shadow: { y: 7, color: '#3f2b1e' } });
+    expect(html).toContain('0 7px 0 #3f2b1e');
+  });
+  it('bare 面板忽略 shadow（无 chrome·同 accent 口径）', () => {
+    expect(panel({ bare: true, shadow: { y: 4 } })).not.toContain('box-shadow');
+  });
+  it('非法 y → num() 退化 0px·绝不 NaN', () => {
+    const html = panel({ shadow: { y: 'x' as unknown as number } });
+    expect(html).toContain('box-shadow:0 0px 0 ');
+    expect(html).not.toContain('NaN');
+  });
+  it('不填 shadow → 无 box-shadow（零回归）', () => {
+    expect(panel({})).not.toContain('box-shadow');
+  });
+});

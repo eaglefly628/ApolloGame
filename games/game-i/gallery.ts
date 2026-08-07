@@ -1053,6 +1053,35 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           layout: { width: 108, height: 54 },
         })) },
 
+      divider('d-panelshadow'),
+      sectionTitle('t-panelshadow', 'PANEL.shadow · 硬边平移投影（REQ-108-UI-03·卡通"浮空感"基件·闭集 {y,color}·非模糊阴影·非贴图）'),
+      { type: 'Label', id: 'panelshadow-note', props: {
+        text: '卡通 UI 的立体浮空全靠一条硬边偏移投影（box-shadow:0 <y>px 0 <color>）。以前要么手搓 CSS、要么每块面生成一张带投影的 SVG 贴皮。现在是 Panel 的闭集数据字段：y=下沉像素、color 优先填 SurfaceToken（换皮自适应）。稿子体系：身份牌 y=4 / 相位牌 y=5 / 招式卡 y=7 / 主 CTA y=8。', color: 'sub', size: 'sm' } },
+      { type: 'Panel', id: 'panelshadow-row', props: {}, layout: { direction: 'grid', cols: 4, gap: 20, padding: 22 },
+        children: ([
+          { label: '你', y: 4, color: 'jade', edge: 'jade' },
+          { label: '蓄力', y: 5, color: 'gold', edge: 'gold' },
+          { label: '复读机', y: 7, color: 'danger', edge: 'danger' },
+          { label: '开 始', y: 8, edge: 'gold' },
+        ] as Array<{ label: string; y: number; color?: 'jade' | 'gold' | 'danger'; edge: 'jade' | 'gold' | 'danger' }>)
+          .map(({ label, y, color, edge }): LayoutNode => ({
+            type: 'Panel', id: `pshadow-${label}`,
+            props: { edge, shadow: { y, ...(color ? { color } : {}) } },
+            layout: { direction: 'column', align: 'center', justify: 'center', width: 132, height: 76, radius: 12 },
+            children: [
+              { type: 'Label', id: `pshadow-l-${label}`, props: { text: label, size: 'lg', bold: true, font: 'cnround', color: 'text' } },
+              { type: 'Label', id: `pshadow-y-${label}`, props: { text: `shadow.y=${y}`, size: 'sm', color: 'sub' } },
+            ],
+          })) },
+      { type: 'Label', id: 'panelshadow-cmp', props: { text: '对照：无 shadow 的面板贴在底面上、没有浮空感（下面这块）。同一块面加 shadow:{y:6} 就"抬"起来了。', size: 'sm', color: 'sub' } },
+      { type: 'Panel', id: 'panelshadow-flat', props: { edge: 'jade' }, layout: { direction: 'row', gap: 16, padding: 14, align: 'center' },
+        children: [
+          { type: 'Panel', id: 'pshadow-flat-a', props: { bg: 'raised' }, layout: { width: 120, height: 56, align: 'center', justify: 'center', radius: 10 },
+            children: [{ type: 'Label', id: 'pshadow-flat-al', props: { text: '无投影', color: 'sub', size: 'sm' } }] },
+          { type: 'Panel', id: 'pshadow-flat-b', props: { bg: 'raised', shadow: { y: 6, color: '#14776a' } }, layout: { width: 120, height: 56, align: 'center', justify: 'center', radius: 10 },
+            children: [{ type: 'Label', id: 'pshadow-flat-bl', props: { text: 'shadow y=6', color: 'text', size: 'sm', bold: true } }] },
+        ] },
+
       divider('d-skin'),
       sectionTitle('t-skin', 'BUTTON.skin · 贴图按钮（资产 key→uiTextureUrl 解析→已解析 URL·入库自 public/games/game-i/art·配 shape=异形贴图键）'),
       { type: 'Panel', id: 'skin-row', props: {}, layout: { direction: 'grid', cols: 4, gap: 14, padding: 18 },
