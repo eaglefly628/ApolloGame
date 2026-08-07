@@ -31,4 +31,5 @@ export const ART_FONT_FAMILY: Record<string, string> = {
   cnwen: "'ZCOOL XiaoWei'",
   jpbrush: "'Yuji Syuku'",
   jppen: "'Klee One'",
+  cnround: "'ZCOOL KuaiLe'", // 站酷快乐体·卡通粗圆黑（汉字·卡通标题/大字）
 };

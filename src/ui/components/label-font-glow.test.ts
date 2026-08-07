@@ -37,9 +37,9 @@ describe('UI Components · Label.font 具名字体槽', () => {
 });
 
 describe('UI Components · Label.font CJK 艺术字（中/日·owner 2026-07-23）', () => {
-  it('4 款 CJK 槽解到真族名 + 带 CJK 兜底链（缺字回退系统字·非拉丁艺术字回退主字体）', () => {
+  it('5 款 CJK 槽解到真族名 + 带 CJK 兜底链（缺字回退系统字·非拉丁艺术字回退主字体）', () => {
     const cases: Array<[string, string]> = [
-      ['cnbrush', "'Ma Shan Zheng'"], ['cnwen', "'ZCOOL XiaoWei'"],
+      ['cnbrush', "'Ma Shan Zheng'"], ['cnwen', "'ZCOOL XiaoWei'"], ['cnround', "'ZCOOL KuaiLe'"],
       ['jpbrush', "'Yuji Syuku'"], ['jppen', "'Klee One'"],
     ];
     for (const [slug, fam] of cases) {
@@ -47,11 +47,13 @@ describe('UI Components · Label.font CJK 艺术字（中/日·owner 2026-07-23�
       expect(html).toContain(`font-family:${fam}, 'PingFang SC'`); // 族名在前·系统 CJK 兜底其后
     }
   });
-  it('CJK @font-face = url() 引用（非 base64·浏览器惰性下载）· 覆 4 族', () => {
+  it('CJK @font-face = url() 引用（非 base64·浏览器惰性下载）· 覆 5 族', () => {
     expect(ART_FONT_CJK_CSS).toContain("url(/ui-fonts/cjk/cnbrush.woff2)");
+    expect(ART_FONT_CJK_CSS).toContain("url(/ui-fonts/cjk/cnround.woff2)");
+    expect(ART_FONT_CJK_CSS).toContain("font-family:'ZCOOL KuaiLe'"); // 站酷快乐体·卡通粗圆黑（owner 设计稿字体）
     expect(ART_FONT_CJK_CSS).toContain("font-family:'Klee One'");
     expect(ART_FONT_CJK_CSS).not.toContain('base64'); // CJK 走 url·不内嵌（区别拉丁 18 款）
-    expect((ART_FONT_CJK_CSS.match(/@font-face/g) ?? []).length).toBe(4);
+    expect((ART_FONT_CJK_CSS.match(/@font-face/g) ?? []).length).toBe(5);
   });
 });
 

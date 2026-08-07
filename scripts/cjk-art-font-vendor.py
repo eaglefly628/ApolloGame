@@ -20,6 +20,7 @@ FONTS = [
     ('cnwen',   'ZCOOL XiaoWei',  'ofl/zcoolxiaowei/ZCOOLXiaoWei-Regular.ttf', '中文·文艺细宋', 'cn'),
     ('jpbrush', 'Yuji Syuku',     'ofl/yujisyuku/YujiSyuku-Regular.ttf',       '日文·毛筆明朝', 'jp'),
     ('jppen',   'Klee One',       'ofl/kleeone/KleeOne-Regular.ttf',           '日文·楷書ペン', 'jp'),
+    ('cnround', 'ZCOOL KuaiLe',   'ofl/zcoolkuaile/ZCOOLKuaiLe-Regular.ttf',   '中文·卡通粗圆黑', 'cn'),  # 站酷快乐体·卡通标题/大字（owner 设计稿字体）
 ]
 RAW = 'https://raw.githubusercontent.com/google/fonts/main/'
 
