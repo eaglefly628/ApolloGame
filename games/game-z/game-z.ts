@@ -10,7 +10,7 @@ import { AssetManager, registerAssetIndex } from '@zerocraft/engine/assets/index
 import { mountUI } from '@zerocraft/engine/ui/components/index.js';
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import type { Velocity, Camera3D, Post3D, Fog3D, Transform, AnimState3D } from '@zerocraft/engine/engine/protocol/components.js';
-import { dioramaBlueprint, HOME_CAM, PLATFORM_TWO_CAM, PLATFORM_THREE_CAM, PLATFORM_FOUR_CAM, TRACK_R } from './diorama.js';
+import { dioramaBlueprint, HOME_CAM, PLATFORM_TWO_CAM, PLATFORM_THREE_CAM, PLATFORM_FOUR_CAM, PLATFORM_FIVE_CAM, TRACK_R } from './diorama.js';
 import { GAME_Z_INDEX, GAME_Z_MATERIALS, DioramaLoader } from './assets.js';
 
 const MOVE_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD']);
@@ -24,9 +24,9 @@ function hudTree(fps: number, stats: RenderStats | null, showProfiler: boolean, 
     { type: 'Label', id: 'gz-title', props: { text: 'GAME Z · 永远追逐', size: 'xxl', glow: true } },
     { type: 'Label', id: 'gz-sub', props: { text: '鸭子 AI 绕赛道自动跑 · 三只追兵循寻路追逐 · 一切皆动', size: 'sm' } },
     { type: 'Label', id: 'gz-hint', props: { text: 'WASD 控鸭 · 拖拽旋转 · 滚轮缩放 · O 正交 · F 跟随 · P 剖析 · C 碰撞 · N 寻路 · I 编号 · 点物件拾取', size: 'sm' } },
-    { type: 'Label', id: 'gz-show', props: { text: '🌉 四台分布：A=追逐场 ｜ Two=手感·物理 ｜ Three=材质·渲染 ｜ Four=物理沙盘（掉落砸地）', size: 'sm', color: 'jade' } },
+    { type: 'Label', id: 'gz-show', props: { text: '🌉 五台分布：A=追逐场 ｜ Two=手感·物理 ｜ Three=材质·渲染 ｜ Four=物理沙盘 ｜ Five=批渲·实例化', size: 'sm', color: 'jade' } },
     { type: 'Label', id: 'gz-show2', props: { text: '🎮 相机=C 软跟随 ｜ 点任意物件=B 震屏+E 闪白 ｜ 拖拽旋转 · 滚轮缩放', size: 'sm', color: 'gold' } },
-    { type: 'Label', id: 'gz-show3', props: { text: '🚀 调试面板「传送」按钮 → Camera3D.tween 循环飞越 A→Two→Three→Four→A 看各台特性', size: 'sm', color: 'jade' } },
+    { type: 'Label', id: 'gz-show3', props: { text: '🚀 调试面板「传送」按钮 → Camera3D.tween 循环飞越 A→Two→Three→Four→Five→A 看各台特性', size: 'sm', color: 'jade' } },
     { type: 'Label', id: 'gz-zone', props: { text: '🔴 追逐中', size: 'sm', glow: true, color: 'warn' } },
   ];
   if (picked) children.push({ type: 'Label', id: 'gz-pick', props: { text: `🎯 拾取：${picked}`, size: 'sm', glow: true, color: 'jade' } }); // Pickable3D 拾取自证
@@ -80,10 +80,10 @@ export function mount(container: HTMLElement): () => void {
     c.mode = 'orbit'; // 切机位时退出 follow（否则注视点被 hero 覆盖看不到陈列台）
   };
   // 🚀 平台循环传送（Camera3D.tween 运镜过渡·飞越 A → Two → Three → A 看不同专台·owner「循环传送看得清」）。
-  //   A=追逐场(follow 跟狐狸)、Two=手感/物理展台、Three=材质/渲染展台（皆 orbit 定机位·从 diorama 导出）。
-  const CYCLE = ['A', 'two', 'three', 'four'] as const;
-  const PLAT_CAM = { two: PLATFORM_TWO_CAM, three: PLATFORM_THREE_CAM, four: PLATFORM_FOUR_CAM } as const;
-  const PLAT_LABEL = { A: 'Platform A（追逐场）', two: 'Platform Two（手感·物理）', three: 'Platform Three（材质·渲染）', four: 'Platform Four（物理沙盘）' } as const;
+  //   A=追逐场(follow 跟狐狸)、Two=手感/物理、Three=材质/渲染、Four=物理沙盘、Five=批渲/实例化（皆 orbit 定机位·从 diorama 导出）。
+  const CYCLE = ['A', 'two', 'three', 'four', 'five'] as const;
+  const PLAT_CAM = { two: PLATFORM_TWO_CAM, three: PLATFORM_THREE_CAM, four: PLATFORM_FOUR_CAM, five: PLATFORM_FIVE_CAM } as const;
+  const PLAT_LABEL = { A: 'Platform A（追逐场）', two: 'Platform Two（手感·物理）', three: 'Platform Three（材质·渲染）', four: 'Platform Four（物理沙盘）', five: 'Platform Five（批渲·实例化）' } as const;
   let platIdx = 0;
   let tweenN = 0;
   const teleport = (): void => {

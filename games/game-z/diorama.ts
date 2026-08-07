@@ -313,6 +313,55 @@ function platformFour(): Record<string, Ent> {
   return out;
 }
 
+// ── Platform Five（批渲 / 实例化展台·X=0/Z=-220）──────────────────────────────────────────────
+// owner「批渲原型在 3D 场景里做个专门场景表达」：一支**同款方块军团**（几百个同形方块·按色分几带），渲染器
+// 按视觉签名把每色带**归批成一个 InstancedMesh**（W1-A 实例化绘制）——draw call 只随「颜色数」增长、与方块
+// 数无关。这是 2D WebGL 批渲后端（REQ-3D-RENDER-EFFICIENCY 增量②）**同一思想的 3D 原生表达**：上千同款实体
+// → 少数几次 draw。开 P 剖析对比：`inst` 蹦几百、`batch` 只加几 = 批渲的意义。全 render-only·纯数据·零专属 system。
+export const PLATFORM5_X = 0;
+export const PLATFORM5_Z = -220;
+export const PLATFORM_FIVE_CAM = { yaw: 0.22, pitch: 0.5, distance: 96, pivotX: PLATFORM5_X, pivotY: 10, pivotZ: PLATFORM5_Z };
+const LEGION_COLORS = [0xef5350, 0xffa726, 0xffee58, 0x66bb6a, 0x29b6f6, 0xab47bc]; // 6 色带（每色 = 1 批）
+function platformFive(): Record<string, Ent> {
+  const X = PLATFORM5_X, Z = PLATFORM5_Z;
+  const out: Record<string, Ent> = {};
+  const COLS = 24, ROWS = 16, GAP = 2.8, SIZE = 2.2, FLOAT_Y = 10;
+  const spanX = (COLS - 1) * GAP, spanZ = (ROWS - 1) * GAP;
+  // 地台（军团悬浮其上）。
+  out['p5-base'] = { ...block(X, -2.5, Z, spanX + 18, 5, spanZ + 18, 0x2a3550, 0x1c2438), Material3D: { preset: 'matte', color: 0x37415f, surface: { pattern: 'noise', tiles: 10, normal: 0.4, rough: 0.8 } } };
+  // 军团：COLS×ROWS 个同款方块·按列分 6 色带（每色→1 批）·各自旋转（per-instance 矩阵仍归同一批）·
+  //   高度按到中心的径向余弦起伏成一层「涟漪」（authoring 期算的静态高度·非逐帧·只为立体观感）。
+  let n = 0;
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const band = Math.floor(c / (COLS / LEGION_COLORS.length)) % LEGION_COLORS.length;
+      const col = LEGION_COLORS[band]!;
+      const dx = c - (COLS - 1) / 2, dz = r - (ROWS - 1) / 2;
+      const y = FLOAT_Y + 3.5 * Math.cos(Math.sqrt(dx * dx + dz * dz) * 0.6); // 径向涟漪（静态·立体感）
+      out[`p5-cube-${n++}`] = {
+        Transform3D: { x: X - spanX / 2 + c * GAP, y, z: Z - spanZ / 2 + r * GAP },
+        Mesh3D: { shape: 'box', width: SIZE, height: SIZE, depth: SIZE, frontTint: col, backTint: col, edgeTint: col },
+        Anim3D: { channels: [{ kind: 'spin', field: 'rotY', rate: 0.3 + band * 0.13 }] }, // 各色带转速不同（闪烁感·per-instance 转仍归一批）
+      };
+    }
+  }
+  // 世界屏（说明 + 引导开 P 看剖析）。
+  out['p5-sign'] = {
+    Transform3D: { x: X - spanX / 2 - 8, y: 17, z: Z - spanZ / 2 - 6, rotY: 0.6 },
+    Diegetic3D: {
+      pxWidth: 540, pxHeight: 226, worldWidth: 27, bg: '#0d1522',
+      node: { type: 'Panel', id: 'p5s', props: { bg: 'raised' }, layout: { gap: 6, padding: 13 }, children: [
+        { type: 'Label', id: 'p5s-t', props: { text: '◈ PLATFORM FIVE · 批渲 / 实例化展台', size: 'lg', glow: true, color: 'jade' } },
+        { type: 'Label', id: 'p5s-1', props: { text: `${COLS * ROWS} 个同款方块 → 渲染器归批成 ${LEGION_COLORS.length} 个 InstancedMesh`, size: 'sm', color: 'gold' } },
+        { type: 'Label', id: 'p5s-2', props: { text: 'draw call 只随「颜色数」增长·与方块数无关（W1-A 实例化绘制）', size: 'sm', color: 'jade' } },
+        { type: 'Label', id: 'p5s-3', props: { text: '按 P 开剖析：inst 里这军团占几百 · 但只吃 6 个 draw = 批渲的意义', size: 'sm', color: 'warn' } },
+      ] },
+    },
+  };
+  out['p5-title'] = { Transform3D: { x: X, y: FLOAT_Y + 12, z: Z - spanZ / 2 - 2 }, WorldUI3D: { text: `同款方块军团 ×${COLS * ROWS} → ${LEGION_COLORS.length} draw call`, offsetY: 0, size: 'md', glow: true, color: 'gold' } };
+  return out;
+}
+
 // 一只追兵（NavAgent + Relation(target=hero) → pathfind 沿自动 NavGraph 追鸭子）。light 给前两只（动态光预算 2 盏）。
 function pursuer(x: number, z: number, body: number, edge: number, label: string, color: string, light?: { color: number; intensity: number; range: number }): Ent {
   return {
@@ -429,15 +478,17 @@ export function dioramaBlueprint(): WorldBlueprint {
       // 材质铺陈：草地色 matte + 程序化起伏浮雕（noise·大 tiles 铺满大地面）→ 掠光下有草皮质感·不再纯平板。
       ground: { ...block(0, -2.5, 0, 160, 5, 160, 0x7cb342, 0x5d4037), Material3D: { preset: 'matte', color: 0x7cb342, surface: { pattern: 'noise', tiles: 16, normal: 0.7, rough: 0.55, scale: 1.5 } } },
 
-      // 🌉 四台分布（owner 2026-07-16「追逐场东西太多·分散到专台·循环传送看得清」）：
+      // 🌉 五台分布（owner 2026-07-16「追逐场东西太多·分散到专台·循环传送看得清」）：
       //   Platform A（本台）= 纯追逐玩法（狐狸/追兵/障碍/信标/色子）——不再堆展示物。
       //   Platform Two（X=+190）= 手感 & 物理特性（关节/胶囊/弹簧/描边/贴花/路径/拖尾/瞄准线）。
       //   Platform Three（X=-190）= 材质 & 渲染（11 材质球/圆润图元/UV 水面/符文自发光/平涂）。
       //   Platform Four（Z=+220）= 物理沙盘（方块掉落砸地/堆叠/弹性对比/杠杆跷跷板·三消掉落表现）。
+      //   Platform Five（Z=-220）= 批渲/实例化展台（同款方块军团 → 少数 InstancedMesh·开 P 看 batch/inst）。
       // 「🚀 传送」按钮 Camera3D.tween 循环飞越 A → Two → Three → Four → A。
       ...platformTwo(),
       ...platformThree(),
       ...platformFour(),
+      ...platformFive(),
     },
   };
 }
