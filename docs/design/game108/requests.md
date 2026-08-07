@@ -679,7 +679,7 @@ ENG-04 只给 `KeyBinding` 开了 `source`（玩家那条路），**AI 走的 `E
 > **游戏侧接法**：`design-tokens.ts` 的 `F.cjk` 从 `'ui'` 改 `'cnround'`。若稿子出现 src 从未用过的生僻字→
 > 重跑 `python3 scripts/cjk-art-font-vendor.py` 重新子集（幂等）。**⚠ 但 vendor 只扫 `src/**` → 游戏层文案缺字见 UI-05。**
 
-### REQ-108-UI-05 · CJK 字体子集只扫 `src/**`，游戏层文案会逐字静默回退 · [2026-08-07] · status: open（PUI 工具债·低优先）
+### REQ-108-UI-05 · CJK 字体子集只扫 `src/**`，游戏层文案会逐字静默回退 · [2026-08-07] · status: **✅ 已修（PUI·glob 加 games/**）**
 
 - **病**：`scripts/cjk-art-font-vendor.py` 的子集字符集来自 `src/**/*.ts(x)`（脚本第 31 行的 glob），
   **不含 `games/**`**。游戏层的文案只要用到一个 src 里没出现过的汉字，那个字就不在 woff2 里，
@@ -692,3 +692,10 @@ ENG-04 只给 `KeyBinding` 开了 `source`（玩家那条路），**AI 走的 `E
 - **为什么不是我改**：`scripts/cjk-art-font-vendor.py` + `art-fonts-cjk.ts` 属 PUI 域（UI 基座），
   按域边界报单不擅改。
 - **绕过**：无需绕过——缺的 3 个字当前不上屏；上屏前 PUI 重跑一次 vendor 即可。
+
+> **✅ PUI 交付（2026-08-07·采纳建议一「glob 加 games/**」）**：`char_set()` 的 glob 从 `src/**` 扩到
+> `src/** + games/**`（`.ts`/`.tsx`）→ 重跑 vendor。子集 3275 字（含游戏文案）·五款 woff2 重新子集
+> （url() 惰性载·主 bundle 零增不变）。实测 `莽/夫/徒` 现已进 `cnround.woff2` cmap（fontTools 直核·三字 True）。
+> 未采建议二（覆盖率对账告警）——glob 扩容已直接消灭静默回退，对账是二次防线·YAGNI。
+> **注意**：游戏文案改动后若引入 src+games 都没出现过的新汉字，仍需 PUI 重跑 vendor（幂等）——这是子集化的
+> 固有性质·非本次遗留（真要免维护得走"全字库不子集"·体积代价不划算）。

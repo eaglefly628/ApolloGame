@@ -26,9 +26,11 @@ RAW = 'https://raw.githubusercontent.com/google/fonts/main/'
 
 
 def char_set():
-    """子集字符集 = src 里所有 CJK 字（含注释·≈开发者常用字·给新标题留余量）+ 全假名 + CJK 标点 + ASCII + 全角。"""
+    """子集字符集 = src + games 里所有 CJK 字（含注释·≈开发者常用字 + 游戏文案·给新标题留余量）+ 全假名 + CJK 标点 + ASCII + 全角。
+    含 games/**（REQ-108-UI-05）：游戏层文案（对手名/招式/剧情）用到的汉字若只扫 src 会**逐字静默回退**系统字
+    （同行混两种字形·不报错），故一并扫进子集。CJK 子集按字取·增量很小。"""
     chars = set()
-    for pat in ('src/**/*.ts', 'src/**/*.tsx'):
+    for pat in ('src/**/*.ts', 'src/**/*.tsx', 'games/**/*.ts', 'games/**/*.tsx'):
         for fp in glob.glob(os.path.join(ROOT, pat), recursive=True):
             try:
                 t = open(fp, encoding='utf-8').read()
