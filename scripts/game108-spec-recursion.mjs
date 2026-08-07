@@ -52,6 +52,21 @@ const SABOTAGES = [
     replace: 'tie: { selfDamage: 10 },',
   },
   {
+    clause: 'R-108-30 AI 代表**对局侧**出招（EventWhen.source·ENG-05）',
+    find: "        source: 'p2',                                       // ← REQ-108-ENG-05：接缝据此认侧",
+    replace: '        // 破坏：撤掉代发',
+  },
+  {
+    clause: 'R-108-30/32 AI 只在对应时区动手（相位门）',
+    find: "        when: { kind: 'and', of: [{ kind: 'flag', id: THROWING_GATE }, repeats] },",
+    replace: '        when: repeats,',                    // 破坏：任何时区都出招
+  },
+  {
+    clause: 'R-108-15 血量归零判负（按侧·self-rule → 各侧唯一旗）',
+    find: "        do: [{ kind: 'set-flag', targetId: deadFlag(side), value: true }],",
+    replace: "        do: [],",
+  },
+  {
     clause: 'R-108-10 蓄力封顶 3',
     find: 'Resource: { id: chargeRes(side, h), current: 0, min: 0, max: CHARGE_CAP },',
     replace: 'Resource: { id: chargeRes(side, h), current: 0, min: 0, max: 99 },',
@@ -71,7 +86,7 @@ try {
     console.error('✗ 前提不成立：未破坏时验收剧本就没全绿，先修那个再跑递归复核\n' + (base.stdout || ''));
     process.exit(1);
   }
-  console.log('前提 ✓ 未破坏时 5/5 全绿\n══ 递归复核：逐条款打坏，看有没有剧本转红 ══\n');
+  console.log('前提 ✓ 未破坏时验收剧本全绿\n══ 递归复核：逐条款打坏，看有没有剧本转红 ══\n');
 
   for (const s of SABOTAGES) {
     if (!original.includes(s.find)) {                 // 锚点断言：改不到就是假绿

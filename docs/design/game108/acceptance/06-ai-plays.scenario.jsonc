@@ -1,0 +1,38 @@
+// GD-108 验收剧本 ⑥ · 对手会自己打（gdd §15 精神 + 验 R-108-30/32 对手①复读机）。
+//   **玩家全程不点任何键**，只让世界自己跑两回合：
+//   · 第 1 回合：AI 蓄石 + 出石（复读机首回合默认石）；玩家没出招 → 不结算（缺一方 intent）。
+//   · 第 2 回合起：AI 的 lastThrow 仍是空（没结算过），所以照样出石——规律**明显·必现**，
+//     这正是【R-108-32】对第一名对手的要求（教「对手是有规律的」）。
+// 对抗目标（改坏应变红）：
+//   · EventWhen.source 撤掉（REQ-108-ENG-05）→ 接缝认不到侧 → p2 永远挂不上 DuelIntent → 断言红。
+//   · 相位门撤掉 → AI 在蓄力时区就出招 → flow/槽断言红。
+{
+  "name": "对手会自己打·复读机首回合蓄石出石",
+  "game": "game108", "seed": 108,
+  "steps": [
+    { "expect": [
+      { "sv": "flow", "eq": "charge" },
+      { "res": "p2.charge.rock", "eq": 0 },
+    ] },
+
+    // T1：玩家一下不点，只等——AI 应当自己把石蓄上
+    { "tick": 60 },
+    { "expect": [
+      { "sv": "flow", "eq": "charge" },
+      { "res": "p2.charge.rock", "eq": 1 },   // 【R-108-30】AI 自己动了手
+      { "res": "p2.charge.paper", "eq": 0 },  // 复读机只碰那一手（规律明显）
+      { "res": "p1.charge.rock", "eq": 0 },   // 玩家没点 → 纹丝不动
+    ] },
+
+    // 走进 T2：AI 出招（玩家仍不点）
+    { "tick": 180 },
+    { "expect": [ { "sv": "flow", "eq": "throw" } ] },
+    { "tick": 5 },
+    { "expect": [
+      // 接缝把 AI 的出招挂成了**对局侧 p2 自己**的 intent（REQ-108-ENG-05 代发的要害）
+      { "comp": { "entity": "p2", "component": "DuelIntent", "field": "throw" }, "eq": "rock" },
+      { "res": "p1.hp", "eq": 100 },          // 玩家没出招 → 缺一方 → 不结算
+      { "res": "p2.hp", "eq": 100 },
+    ] },
+  ],
+}

@@ -1,0 +1,146 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "开局双方满血【R-108-15】",
+      "pass": true,
+      "detail": "100/100"
+    },
+    {
+      "name": "R1 进到蓄力时区",
+      "pass": true,
+      "detail": "实读 蓄力"
+    },
+    {
+      "name": "R1 满蓄布 3/3【R-108-10】",
+      "pass": true,
+      "detail": "实读 3/3"
+    },
+    {
+      "name": "R1 进到出招时区【R-108-01】",
+      "pass": true,
+      "detail": "实读 出招"
+    },
+    {
+      "name": "R1 键已切成出招信号【R-108-70】",
+      "pass": true,
+      "detail": "实读 throw.paper"
+    },
+    {
+      "name": "R1 出招当下不掉血（扣血在揭晓后）【R-108-01】",
+      "pass": true,
+      "detail": "实读 100"
+    },
+    {
+      "name": "R1 进到对决时区（亮拳）",
+      "pass": true,
+      "detail": "实读 对决"
+    },
+    {
+      "name": "R1 对手掉 40（10+3×10）【R-108-13】",
+      "pass": true,
+      "detail": "实读 60 期望 60"
+    },
+    {
+      "name": "R1 玩家没被打（复读机被克）【R-108-12】",
+      "pass": true,
+      "detail": "实读 100"
+    },
+    {
+      "name": "R2 进到蓄力时区",
+      "pass": true,
+      "detail": "实读 蓄力"
+    },
+    {
+      "name": "R2 满蓄布 3/3【R-108-10】",
+      "pass": true,
+      "detail": "实读 3/3"
+    },
+    {
+      "name": "R2 进到出招时区【R-108-01】",
+      "pass": true,
+      "detail": "实读 出招"
+    },
+    {
+      "name": "R2 键已切成出招信号【R-108-70】",
+      "pass": true,
+      "detail": "实读 throw.paper"
+    },
+    {
+      "name": "R2 出招当下不掉血（扣血在揭晓后）【R-108-01】",
+      "pass": true,
+      "detail": "实读 60"
+    },
+    {
+      "name": "R2 进到对决时区（亮拳）",
+      "pass": true,
+      "detail": "实读 对决"
+    },
+    {
+      "name": "R2 对手掉 40（10+3×10）【R-108-13】",
+      "pass": true,
+      "detail": "实读 20 期望 20"
+    },
+    {
+      "name": "R2 玩家没被打（复读机被克）【R-108-12】",
+      "pass": true,
+      "detail": "实读 100"
+    },
+    {
+      "name": "R3 进到蓄力时区",
+      "pass": true,
+      "detail": "实读 蓄力"
+    },
+    {
+      "name": "R3 满蓄布 3/3【R-108-10】",
+      "pass": true,
+      "detail": "实读 3/3"
+    },
+    {
+      "name": "R3 进到出招时区【R-108-01】",
+      "pass": true,
+      "detail": "实读 出招"
+    },
+    {
+      "name": "R3 键已切成出招信号【R-108-70】",
+      "pass": true,
+      "detail": "实读 throw.paper"
+    },
+    {
+      "name": "R3 出招当下不掉血（扣血在揭晓后）【R-108-01】",
+      "pass": true,
+      "detail": "实读 20"
+    },
+    {
+      "name": "R3 进到对决时区（亮拳）",
+      "pass": true,
+      "detail": "实读 对决"
+    },
+    {
+      "name": "R3 对手掉 40（10+3×10）【R-108-13】",
+      "pass": true,
+      "detail": "实读 0 期望 0"
+    },
+    {
+      "name": "R3 玩家没被打（复读机被克）【R-108-12】",
+      "pass": true,
+      "detail": "实读 100"
+    },
+    {
+      "name": "打完一局并分出胜负【R-108-15】",
+      "pass": true,
+      "detail": "实读 你赢了"
+    },
+    {
+      "name": "终局时对手血量归零",
+      "pass": true,
+      "detail": "实读 0"
+    },
+    {
+      "name": "全程控制台零 error / 零未捕获异常",
+      "pass": true,
+      "detail": "干净"
+    }
+  ],
+  "consoleErrors": []
+}

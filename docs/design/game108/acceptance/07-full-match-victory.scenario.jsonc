@@ -1,0 +1,55 @@
+// GD-108 验收剧本 ⑦ · **一整局打到终局**（S4 核心循环：开局 → 行动 → 反馈 → 终局）。
+//   对手①复读机永远出石；玩家每回合满蓄布（布克石）→ 每回合打 10+3×10 = 40。
+//   三回合 120 > 100 ⇒ 对手倒下，flow 进 p1win。
+//   这条是「这游戏到底能不能玩完」的机器证——不是单点规则，是**整条循环**。
+// 对抗目标（改坏应变红）：
+//   · 胜负判定撤掉（self-rule → dead flag 那条按侧通路）→ flow 永远停在 settle → 断言红。
+//   · AI 不出招 → 永不结算 → 血不掉 → 断言红。
+{
+  "name": "整局闭环·三回合满蓄布打死复读机",
+  "game": "game108", "seed": 108,
+  "steps": [
+    { "expect": [ { "res": "p2.hp", "eq": 100 }, { "sv": "flow", "eq": "charge" } ] },
+
+    // ── 第 1 回合：满蓄布 → 出布（克石）→ 对手 100−40=60 ──
+    { "signal": "charge.paper" }, { "tick": 2 },
+    { "signal": "charge.paper" }, { "tick": 2 },
+    { "signal": "charge.paper" }, { "tick": 2 },
+    { "expect": [ { "res": "p1.charge.paper", "eq": 3 } ] },
+    { "tick": 180 },
+    { "expect": [ { "sv": "flow", "eq": "throw" } ] },
+    { "signal": "throw.paper" },
+    { "tick": 360 },
+    { "expect": [
+      { "res": "p2.hp", "eq": 60 },             // 【R-108-13】10+3×10=40
+      { "res": "p1.hp", "eq": 100 },
+      { "res": "p1.charge.paper", "eq": 0 },    // 【R-108-14】出过即清零
+      { "sv": "p2.lastThrow", "eq": "rock" },   // 复读机出的石（下回合还出石）
+    ] },
+
+    // ── 第 2 回合 ──
+    { "tick": 60 },
+    { "expect": [ { "sv": "flow", "eq": "charge" } ] },   // 【S4】回合能重开
+    { "signal": "charge.paper" }, { "tick": 2 },
+    { "signal": "charge.paper" }, { "tick": 2 },
+    { "signal": "charge.paper" }, { "tick": 2 },
+    { "tick": 180 },
+    { "signal": "throw.paper" },
+    { "tick": 360 },
+    { "expect": [ { "res": "p2.hp", "eq": 20 } ] },
+
+    // ── 第 3 回合：打死 ──
+    { "tick": 60 },
+    { "signal": "charge.paper" }, { "tick": 2 },
+    { "signal": "charge.paper" }, { "tick": 2 },
+    { "signal": "charge.paper" }, { "tick": 2 },
+    { "tick": 180 },
+    { "signal": "throw.paper" },
+    { "tick": 360 },
+    { "expect": [
+      { "res": "p2.hp", "eq": 0 },              // 【R-108-15】血量归零
+      { "flag": "p2.dead", "eq": true },        // 按侧判定（self-rule 读自身 → 各侧唯一旗）
+      { "sv": "flow", "eq": "p1win" },          // **终局**：流程收束到胜利态
+    ] },
+  ],
+}

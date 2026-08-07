@@ -136,31 +136,38 @@ describe('game108 · S3 条款走查（真引擎驱动·用【R-108-70】动作�
     for (let i = 0; i < 5; i++) { fire(e, 'p1', ACT.charge('rock'), `c${i}`); e.world.tick(); e.world.tick(); }
     expect(slot(e, 'p1', 'rock')).toBe(CHARGE_CAP);   // 封顶
     expect(slot(e, 'p1', 'paper')).toBe(0);           // 没蓄的不动
-    expect(slot(e, 'p2', 'rock')).toBe(0);            // 对面不动
+    // ⚠ 不能断言「p2 的石不动」——对手①复读机现在会**自己**蓄石（【R-108-30】·纯数据规则）。
+    // 改断言它**没碰**的那两只手：这仍然守住了原意「玩家的信号没串到对面去」，
+    // 而且不会因为对面开始有行为就假红。
+    expect(slot(e, 'p2', 'paper')).toBe(0);
+    expect(slot(e, 'p2', 'scissors')).toBe(0);
   });
 
   it('一整回合闭环：蓄 2 → 双方出招 → 伤害按侧缩放 + 出过即清零 + 记本回合的手', () => {
     const e = fresh();
-    fire(e, 'p1', ACT.charge('rock'), 'c1'); e.world.tick(); e.world.tick();
-    fire(e, 'p1', ACT.charge('rock'), 'c2'); e.world.tick(); e.world.tick();
-    fire(e, 'p2', aiChargeSignal('paper'), 'a1'); e.world.tick(); e.world.tick();
-    expect(slot(e, 'p1', 'rock')).toBe(2);
+    // **跟真 AI 打**：对手①复读机会自己蓄石、出石（【R-108-30】），不再手动指定它出什么
+    // ——手动指定会被它自己的出招覆盖（它在进出招时区那一拍才发），测出来的是假的。
+    // 玩家蓄布 ×2 出布：布克石 ⇒ 10+2×10 = 30，与原用例同数同条款。
+    fire(e, 'p1', ACT.charge('paper'), 'c1'); e.world.tick(); e.world.tick();
+    fire(e, 'p1', ACT.charge('paper'), 'c2'); e.world.tick(); e.world.tick();
+    expect(slot(e, 'p1', 'paper')).toBe(2);
 
-    fire(e, 'p1', throwSignal('rock'), 't1');
-    fire(e, 'p2', throwSignal('scissors'), 't2');
+    fire(e, 'p1', throwSignal('paper'), 't1');
     // 【R-108-01】结算门（REQ-108-ENG-06）：提交完**不会当拍结算**——要等 flow 走进 T3 对决时区
     // 才开门。本测试原先断言「3 拍后就掉血」，那正是条款禁止的（提交那刻血就掉 ⇒ 亮拳变成
     // 播放已发生的事）。跑到 T3：起手 charge 180 + throw 180 = 360 拍进 clash。
     for (let i = 0; i < 360; i++) e.world.tick();
     expect(phase(e)).toBe('clash');
+    // 门在进 clash 那一拍（Commit）才 arm，结算在**下一拍**的 Update ⇒ 停在开门那一拍还没结算。
+    e.world.tick(); e.world.tick(); e.world.tick();
 
     expect(res(e, 'p2')).toBe(HP_MAX - (DMG_BASE + 2 * DMG_STEP)); // 【R-108-13】10+2×10=30
     expect(res(e, 'p1')).toBe(HP_MAX);                              // 胜方不掉血
-    expect(slot(e, 'p1', 'rock')).toBe(0);                          // 【R-108-14】出过即清零
-    expect(slot(e, 'p2', 'paper')).toBe(1);                         // 没出的手原样保留（诈唬支点）
+    expect(slot(e, 'p1', 'paper')).toBe(0);                         // 【R-108-14】出过即清零
+    expect(slot(e, 'p1', 'rock')).toBe(0);                          // 没出的手原样保留（这里本就是 0）
     const lt = (side: string): string => e.world.getComponent<StringVar>(`var:${side}`, 'StringVar')!.value;
-    expect(lt('p1')).toBe('rock');                                  // 【R-108-02/30】
-    expect(lt('p2')).toBe('scissors');
+    expect(lt('p1')).toBe('paper');                                 // 【R-108-02/30】
+    expect(lt('p2')).toBe('rock');                                  // 复读机出的石
   });
 
   it('血量归零 → 该侧 dead flag 置位（按侧判定走 self-rule·非全局条件）【R-108-15】', () => {
@@ -237,7 +244,8 @@ describe('game108 · 玩家动作真实通路（REQ-108-ENG-04·owner 判 A）',
     const e = fresh();
     tap(e, ACT.charge('rock')); e.world.tick();
     expect(slot(e, 'p1', 'rock')).toBe(1);
-    expect(slot(e, 'p2', 'rock')).toBe(0);   // 对面不动
+    expect(slot(e, 'p2', 'paper')).toBe(0);  // 复读机只碰石·没碰的两只手仍为 0（玩家信号没串台）
+    expect(slot(e, 'p2', 'scissors')).toBe(0);
   });
 
   it('点出招键 → 信号代发到 p1，接缝据此挂上该侧 DuelIntent（**ENG-04 的要害**）', () => {
@@ -253,16 +261,15 @@ describe('game108 · 玩家动作真实通路（REQ-108-ENG-04·owner 判 A）',
 
   it('玩家全程只点屏：蓄 2 → 出招 → 对面真掉 30 血【R-108-13】（端到端闭环）', () => {
     const e = fresh();
-    for (let i = 0; i < 2; i++) { tap(e, ACT.charge('rock')); e.world.tick(); }
-    expect(slot(e, 'p1', 'rock')).toBe(2);
+    for (let i = 0; i < 2; i++) { tap(e, ACT.charge('paper')); e.world.tick(); }
+    expect(slot(e, 'p1', 'paper')).toBe(2);
 
-    fire(e, 'p2', throwSignal('scissors'), 'ai1');   // AI 侧仍走内部信号（S4 才接表演型 AI）
-    tap(e, ACT.throw('rock'));                      // 玩家这一侧全程只"点屏"
-    // 同上：结算门要到 T3 才开（【R-108-01】·REQ-108-ENG-06）。
+    tap(e, ACT.throw('paper'));                     // 玩家这一侧全程只"点屏"；对手是真 AI
+    // 结算门要到 T3 才开（【R-108-01】·REQ-108-ENG-06）。
     for (let i = 0; i < 360; i++) e.world.tick();
 
     expect(res(e, 'p2')).toBe(HP_MAX - (DMG_BASE + 2 * DMG_STEP)); // 10 + 2×10 = 30
     expect(res(e, 'p1')).toBe(HP_MAX);
-    expect(slot(e, 'p1', 'rock')).toBe(0);                          // 【R-108-14】出过即清零
+    expect(slot(e, 'p1', 'paper')).toBe(0);                         // 【R-108-14】出过即清零
   });
 });
