@@ -19,7 +19,14 @@
       "at": "2026-08-07T07:12:12.089Z"
     }
   },
-  "evidence": {},
+  "evidence": {
+    "S3": {
+      "exit": 0,
+      "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（3 个控件 · 3 个点后 DOM 真的变了 · 零控制台 error）",
+      "at": "2026-08-07T09:14:43.131Z",
+      "gameHash": "be28b82835b69b9a"
+    }
+  },
   "history": [
     {
       "action": "concept",
@@ -34,6 +41,76 @@
       "action": "signoff",
       "stage": "S2",
       "at": "2026-08-07T07:12:12.089Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "S2 复查门待另开 session 补（复查人≠施工人）·本次为验证 REQ-S3CLICK 点击门接线",
+      "at": "2026-08-07T09:12:49.438Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-07T09:13:05.955Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "S2 复查门待另开 session 补",
+      "at": "2026-08-07T09:13:32.965Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-07T09:13:53.659Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "撤修验红",
+      "at": "2026-08-07T09:14:09.814Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 1,
+      "at": "2026-08-07T09:14:26.378Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "S2 复查门待另开 session 补",
+      "at": "2026-08-07T09:14:26.457Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-07T09:14:43.131Z"
+    }
+  ],
+  "outOfOrder": [
+    {
+      "stage": "S3",
+      "reason": "S2 复查门待另开 session 补（复查人≠施工人）·本次为验证 REQ-S3CLICK 点击门接线",
+      "at": "2026-08-07T09:12:49.438Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "S2 复查门待另开 session 补",
+      "at": "2026-08-07T09:13:32.965Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "撤修验红",
+      "at": "2026-08-07T09:14:09.814Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "S2 复查门待另开 session 补",
+      "at": "2026-08-07T09:14:26.457Z"
     }
   ]
 }

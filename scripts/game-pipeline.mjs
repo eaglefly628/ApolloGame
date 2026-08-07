@@ -374,6 +374,17 @@ export function interpretRenderProbe(baseSummary, probeExit, probeTail) {
   return { exit: 1, summary: `${baseSummary} · ✗ 渲染探针未过${probeTail ? ' · ' + probeTail : ''}` };
 }
 
+/** REQ-S3CLICK·点击门读码：0=过 · 3=环境无浏览器（同 R1/R3 语义·不算红）· 其余=红。
+ *  纯函数（不碰盘/不 spawn）——导出供单测直接灌各退出码，不必真起浏览器就能验「门怎么读」。 */
+export function interpretClickGate(baseSummary, clickExit, clickTail) {
+  if (clickExit === 3) return { exit: 0, summary: `${baseSummary} · ⚠ 点击门未跑·环境无浏览器` };
+  // 探针自己的那句已经带「✓ 点击打穿（…）」，这里只剥掉 `[click-probe] <slug> ` 前缀直接接上，
+  // 别再套一层自己的措辞——套了就成「✓ 点击打穿（✓ 点击打穿（…））」（实测出来的重复）。
+  const tail = (clickTail || '').replace(/^\[click-probe\]\s*\S+\s*/, '').trim();
+  if (clickExit === 0) return { exit: 0, summary: `${baseSummary} · ${tail || '✓ 点击打穿'}` };
+  return { exit: 1, summary: `${baseSummary} · ✗ 点击门未过${clickTail ? ' · ' + clickTail : ''}` };
+}
+
 /** R3 标准照比对门读码（REQ-RENDERCHECK）：compare exit 0=过·3=环境无浏览器（同 R1 语义·不算红）
  *  ·其余=红（提示「有意变更请 bless」——漂移未必是 bug，也可能是真改动没走 bless 转正）。
  *  纯函数（不碰盘/不 spawn）——导出供单测直接灌各退出码。 */
@@ -433,10 +444,18 @@ function gateRun(slug, stage, form) {
     // R1·渲染冒烟探针接线（REQ-RENDERCHECK）：现有检查（manifest-check 或编译期免检）过了才追加跑——
     // 证明「画面真画得出」而非只「逻辑跑得动」。沙盒临时根（见 SANDBOXED 定义）下跳过（无真 app 可连）。
     if (!SANDBOXED) {
-      const probeScript = join(dirname(fileURLToPath(import.meta.url)), 'render-probe.mjs');
-      const probe = run('node', [probeScript, '--game', slug]);
+      const here = dirname(fileURLToPath(import.meta.url));
+      const probe = run('node', [join(here, 'render-probe.mjs'), '--game', slug]);
       const probeTail = (probe.stdout || probe.stderr || '').trim().split('\n').slice(-2).join(' / ').slice(0, 200);
-      return interpretRenderProbe(baseSummary, probe.status ?? 1, probeTail);
+      const rendered = interpretRenderProbe(baseSummary, probe.status ?? 1, probeTail);
+      if (rendered.exit !== 0) return rendered;
+      // REQ-S3CLICK（owner 2026-08-07 判 A）·「点击打穿」门：画得出 ≠ 点得动。
+      // 渲染探针一次都不点，于是「按钮画得好看但点了没反应」能一路绿着过 S3
+      // （game108 实测踩到两发·都不报错）。**S3 只问「信号打得穿吗」**，
+      // 「规则对不对」仍归 S4 验收剧本。存量游戏在 click-probe 的可见豁免名单里（owner 明示不回溯）。
+      const click = run('node', [join(here, 'click-probe.mjs'), '--game', slug]);
+      const clickTail = (click.stdout || click.stderr || '').trim().split('\n').slice(-2).join(' / ').slice(0, 240);
+      return interpretClickGate(rendered.summary, click.status ?? 1, clickTail);
     }
     return { exit: 0, summary: baseSummary };
   }
