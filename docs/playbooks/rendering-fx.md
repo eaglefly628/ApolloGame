@@ -30,6 +30,12 @@
 - 颜色用**语义令牌闭集**（EffectColor/EdgeColor），play-field Color 用值但**不收自由注入**。
 - HUD/菜单**不用** render 组件手搭——那是 UI 库 LayoutNode 的活（ui.md）。
 
+## ③b 大规模同屏实体（性能）
+
+- 缺省后端 `canvas-renderer.ts`（增量①已去每实体 save/restore·数百实体够用）。
+- **上千同类实体**（弹幕/幸存者百敌/大群）→ WebGL2 实例化批渲后端原型 `src/renderer/webgl/`（`?renderer=webgl2` opt-in·manifest-game 动态挂）：相邻同纹理实体并成一批 `drawArraysInstanced`，N 实体→少数几 draw（规划纯函数 `sprite-batch.ts` 可单测·`webgl-batch-bench.mjs` 量化）。**零数据改动**——照旧摆 Sprite/Shape 实体，换的是后端。
+- **原型边界**：只批精灵+实心方/圆；文本/多边形/瓦片走 canvas（planner 记 `skipped`）。真图集打包/文本支持=后续增量（REQ-3D-RENDER-EFFICIENCY 增量②）。目击 `node scripts/webgl-proto-shot.mjs`（540 实体→1 draw）。
+
 ## ④ 正样例 / 反面教材
 
 - ✅ `games/game-i/fx-lab.ts`：VisualEffect 闭集纯数据驱动。

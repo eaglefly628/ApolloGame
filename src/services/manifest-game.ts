@@ -55,7 +55,22 @@ export function mountManifestGame(slug: string) {
       const input = new QueuedInputSource(slug);
       engine = new Engine({ input });
       engine.load(bp);
-      const renderer = new CanvasRenderer({ width: W, height: H, background: 'transparent', assets });
+      // 渲染后端选择：缺省 CanvasRenderer；`?renderer=webgl2` → WebGL2 实例化批渲原型（REQ-3D-RENDER-EFFICIENCY
+      //   增量②·上千同类实体 draw 坍缩）。动态 import 让 GL 代码只在 opt-in 时进包（不拖累缺省 canvas 消费者）。
+      const wantWebgl = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('renderer') === 'webgl2';
+      let renderer;
+      if (wantWebgl) {
+        try {
+          const { WebGLRenderer } = await import('@renderer/webgl/webgl-renderer.js');
+          if (dead) return;
+          renderer = new WebGLRenderer({ width: W, height: H, background: 'transparent', assets });
+        } catch (e) {
+          console.warn('[manifest-game] WebGL2 后端不可用·退回 CanvasRenderer：', e); // 无 WebGL2 环境优雅退化
+          renderer = new CanvasRenderer({ width: W, height: H, background: 'transparent', assets });
+        }
+      } else {
+        renderer = new CanvasRenderer({ width: W, height: H, background: 'transparent', assets });
+      }
       engine.attachRenderer(renderer, container);
       canvas = container.querySelector('canvas');
       if (canvas) {

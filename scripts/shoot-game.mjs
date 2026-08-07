@@ -32,7 +32,9 @@ try {
   const page = await browser.newPage({ viewport: { width: vpW || 1000, height: vpH || 640 } });
   page.on('console', (m) => console.log('[page]', m.type(), m.text()));
   page.on('pageerror', (e) => console.log('[pageerror]', e.message));
-  await page.goto(`http://localhost:${PORT}/?game=${gameId}`, { waitUntil: 'load', timeout: 30000 });
+  // 可选深链附加参数（env SHOOT_QUERY，如 `&renderer=webgl2` 验 WebGL2 批渲后端·REQ-3D-RENDER-EFFICIENCY 增量②）。
+  const extraQuery = process.env.SHOOT_QUERY || '';
+  await page.goto(`http://localhost:${PORT}/?game=${gameId}${extraQuery}`, { waitUntil: 'load', timeout: 30000 });
   // 就绪信号：3D 游戏等 WebGL `canvas`；纯 LayoutNode/DOM UI 游戏（game-a/i·无 canvas）等 mountUI 渲出的
   // `[data-action]` 交互节点——两类游戏统一可截（此前死等 canvas·DOM UI 游戏必超时·owner 2026-07-18 报 game-a 截不了）。
   await page.waitForSelector('canvas, [data-action]', { timeout: 20000 });
