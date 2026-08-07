@@ -61,3 +61,9 @@
 > - `game101.ts:382` 的 `lastSig = ''` 强制重绘（飞行奖励清除后）→ `loop.invalidate()`。
 > - 顺带：`detectDissolve`/`fireBurst` 等纯表现层定时器仍是宿主自理（本件不管），只是把它们的清理挪进 `dispose`。
 > **验收**：观感/交互零变化 + game101 vitest 绿 + `node scripts/scoped-gate.mjs --run`。红线：不碰 sim/蓝图/hash 面。
+
+### REQ-101-美术登记补漏 · superpowers faceset 三文件无账 · [2026-08-06] · PST 体检带出 → **指派：PA / PE-101** · status: open · 类型: 资产登记（无代码改动）
+> **实测（2026-08-06 `art-ledger-guard --json`）**：本游戏 3 个黑户——`art/superpowers/ninja-adventure/characters/faceset/{1,5,12}.png`。三者**既不在 `art-ledger.json`，也不在 `art/index.json`**，是本仓 65 个"黑户"里**仅有的名副其实者**（其余 62 个是有完整来源登记、只是没上需求台账的 vendored 资产，见引擎池 `REQ-ARTGUARD`）。
+> **要做的**：确认这三张是否仍被消费 → ① 在用 = 补 `art/index.json` 条目（`license`/`source`/`provenance` 三件齐·同该目录其它 superpowers 条目口径）；② 不在用 = 删文件。二选一，别留第三态。
+> **顺带**：完成后把 `scripts/art-ledger-baseline.json` 里 game101 的 3 条基线删掉（棘轮只紧不松·消化掉的旧黑户要从基线摘除，否则基线继续替它们挡着）。
+> **验收**：`node scripts/art-ledger-guard.mjs game101 --json` 该游戏黑户归零。

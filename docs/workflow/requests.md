@@ -48,6 +48,14 @@
 
 <!-- REQ-CARTART-卡带美术存储归位（P1·PST 提·owner 选方案 b-full）→ **2026-08-06 Lead 追认越界·结案出池**：两处跨域改动（`scripts/art-replace.mjs` 写盘落点 + `scripts/art-ledger-guard.mjs` 发现口径/台账根）**均予追认**——改法正确（都收敛到单一真相 `artRoot`，没有另起一套口径）、面最小、与 Python 侧 `paths.py::art_root` 同源。**追认时实证撞出并已修一处真 bug**：`art-replace.mjs` `fill` 的「无台账」错误分支把 `ROOT` 写成了 `root`（`run()` 内无该绑定）→ 撞上无台账的游戏不是干净报错退出而是 **ReferenceError 崩栈**；已修 + 补 2 例子进程 CLI 守卫（原 47 例单测全走导出函数，够不着 CLI 分支）·撤修复实测转红 1 例。复验：cartridge-art-smoke 18/18 · art-ledger-guard WARN(exit 2·gate allowExit 内·两条死账为既有存量) · scoped-gate scope=full 全绿。**留尾不占槽**：①`pipeline.json` 仍落 `public/games/<slug>/`（不在 art/ 下·消费方是生产板另一条线）②JS `artRoot` 用 `existsSync` 而 Py `art_root` 用 `.is_dir()`——`library/<slug>` 若是文件则两边分叉；判定不可达（需手工在 library 下造同名文件），记债不修。图纸全文 `docs/design/cartridge-art-storage-2026-08.md`。 -->
 
+### REQ-ARTGUARD-黑户判据认索引记账 · 62/65「黑户」是假阳·把判词钉死在 WARN · [2026-08-06] · PST 提（owner 认可）· status: **open（待 Lead 裁 + 派工·守卫属 Lead 独占域）** · 优先级: P2 · 类型: 守卫判据修正
+> **实证（非推测·2026-08-06 实跑）**：全仓 65 个黑户里，**62 个在各游戏 `art/index.json` 有完整来源登记**——game-a 的 55 张是 CC0 vendored 扑克（`license:"Public Domain"`·`source:"notpeter/Vector-Playing-Cards"`·`provenance.pulledFrom` 精确到源 URL·`status:filled`，游戏正靠 `cardAssetId()→索引` 消费），game-103 的 4 个 fx 同样三件齐，game-c 的 1 个有 provenance。**真正无账的只有 3 个**（game101 superpowers faceset·索引里也没有·已落 `docs/design/game101/requests.md`）。
+> **根因**：`blackHouseholdFiles()` 只拿 `art-ledger.json` 的 servedPath 做 covered 集，**完全不读 `art/index.json`**。于是"记账在资产索引、不在需求台账"的合法 vendored 资产被永久判成黑户 → 判词长期钉死 WARN、**真信号被 62 条噪声淹没**；且这 65 条已全部写进棘轮基线 `scripts/art-ledger-baseline.json`（game-a:57/game-103:4/game101:3/game-c:1），等于把噪声固化了。
+> **建议判据（Lead 裁）**：文件不算黑户当满足其一——① 被台账行 servedPath 覆盖（现规则不变）；② 在该游戏 `art/index.json` 有 `path` 命中的条目**且有来源登记**（`provenance` 对象存在 **或** `license`+`source` 齐）。落地后同步**瘦身基线**只留真黑户（棘轮只紧不松）。
+> **明确不做**：给 55 张扑克逐张编台账号——违背 owner「一行=一种素材」去重原则，它们不是 55 个独立美术需求而是一副成套 vendored 牌面。
+> **需 Lead 权衡的取舍**：认索引记账 = 把"记账可信度"下放给 index.json（与台账同信任级）。好处是判词恢复可用；代价是伪造索引条目也能过——但那与伪造台账行同级，且需留下 license/source 痕迹。另：`SKIP_DIR_PREFIXES` 已含 `orig`/`ai/pending`，备份目录不是新假阳源（已核）。
+> **验收**：改后全仓黑户从 65 → 3（且这 3 个正是 game101 那单要清的）；判词随之可回 PASS。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。
