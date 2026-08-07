@@ -54,6 +54,7 @@
 
 ## ② 样例指针
 
+- **🧭 game-i 展台导览（怎么逛·哪模块演什么·怎么照抄）= `docs/design/ui-playbook.md §0.1`**——做 UI 前/卡壳时开 `?game=game-i` 对照：①抄整屏结构（🗡MMO/🍬超休闲/💬VN/🫂在场件）②单控件写法（🎛 UI 控件 8 子 tab·对橱窗货架表「game-i 段」列）③逐能力隔离台 + 🧊3D hub ④定位后去 `games/game-i/<file>.ts` 照抄改数据。
 - **活范例**：`games/game-i/gallery.ts`（全控件 + 艺术字体墙 + 特效/纹理/大标题等新 prop 全覆盖）+ `mmo-hud.ts`（最复杂 HUD·纯数据复现 WoW）+ `dialogue-demo.ts`（VN 剧情三件·REQ-DIALOGUE M1）。
 - **达标大厅**：`games/game-g/lobby-dd.ts` + 六屏 `home/campaign/collection/craft/deck/turn-battle-screen.ts`（LayoutNode 纯数据）。
 - 控件目录/形状：`src/ui/components/catalog.ts` + `types.ts`；渲染 debug：`render.ts`。

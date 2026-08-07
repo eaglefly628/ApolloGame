@@ -32,6 +32,19 @@
 | 立体感/3D 展示 | 3D UI(`layout.rotateX/Y/z/tilt3d/press3d`) · 世界空间面板 `WorldUI3D` | 🧊 3D UI |
 | 高级质感底/换皮 | `UITheme.texture/wash/panelTexture`(house 底纹) + `Panel.glass`(磨砂) | 换皮下拉 |
 
+### 0.1 game-i 展台导览（怎么逛·哪个模块演什么·怎么照抄）
+
+**做任何 UI 前 + 卡壳时都开 `?game=game-i` 对照**——它是本手册的「活参照」，35 个模块逐能力隔离演示。按你要做的**类型**定位：
+
+- **① 抄一整屏结构**（不只单控件·先看这类）——顶栏进「组合」模块，照抄整屏骨架改数据：
+  - 🗡 **组合·MMO HUD**（`mmo-hud.ts`）= 纯数据复现最复杂 HUD（血蓝条/技能格/小地图/buff 行）——**信息密集屏**照它。
+  - 🍬 **组合·超休闲对局**（`casual-hud.ts`）= 消除对局屏（顶栏 + 目标 + 糖果棋盘 + 道具 + juice）——**休闲/关卡对局屏**照它。
+  - 💬 **剧情·VN 对话三件**（`dialogue-demo.ts`·真跑）= 台词框+选项+立绘（bind 投影·信号推进）——**剧情/约会屏**照它（或直接 `@ui/starters` `buildStoryStarter`）。
+  - 🫂 **剧情·伴侣在场件**（`presence-demo.ts`）= 非剧情小对局叠伴侣反应（反应表 + 立绘换脸）。
+- **② 找单控件写法**——🎛 **UI 控件** 模块（8 子 tab：`容器与布局`/`数据展示`/`输入与交互`/`🧊 3D UI`/`🎨 emoji 美术`/`🆕 新控件/特性`/`🧩 商店`/`🎴 选牌`）。上方**橱窗货架表**的「game-i 段」列直接指到具体子 tab/段（如 `t-shape`/`t-ring`/`t-anchor`）。
+- **③ 逐能力隔离台**（想学「怎么单独驱动 X」看这里最清）——🔊声音 · 🎮输入底座 · ✨精灵动画 · 🧠游戏 AI · 🟢运动碰撞 · ⚔️战斗结算 · 🎆生成寿命 · 💥战场特效 · 🔀状态机 · 🎬爱诗工作室；**3D** 走 🧊 3D hub（18 块：光照/景深泛光/AO/PBR 材质/寻路/碰撞/粒子/toon/路径/弹簧/glTF…·逐块对应 `three3d.ts` 蓝图函数）。
+- **④ 怎么照抄**：模块/子 tab 定位 → 去 `games/game-i/<对应 file>.ts`（组合屏）或 `gallery.ts` 搜那段 `id`（单控件·如 `t-shape`）→ **照抄写法、只改数据**。成熟起手屏（主菜单/结算/剧情屏）直接 import `@ui/starters`（`buildStarterHome`/`buildStarterResult`/`buildStoryStarter`）。
+
 1. **选控件**：只从闭集 `ComponentType` 选 → 先读 `src/ui/components/catalog.ts`（每个控件的 `whenToUse` + 字段 schema + canonical sample）。**别凭记忆瞎猜 prop**。
 2. **抄范例**：去 sample `games/game-i/`（展示台）找最接近的写法照抄改数据。`gallery.ts` 的「🆕 新控件/特性」tab + `mmo-hud.ts`（最复杂组合）是活模板；**成熟起手屏抄 `@ui/starters`**。
 3. **组合，别逃生**：能用现成控件重组表达就重组；表达不了 → 写 `docs/workflow/requests.md` 让主程扩**一个闭集 kind/控件**。**永远不手写 React 屏 / 自由 CSS·DOM**（UI 铁律）。
