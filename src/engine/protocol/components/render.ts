@@ -425,6 +425,11 @@ export interface Material3D extends Component {
     edge?: number;       // 边缘发光条带宽 0..1（缺省 0.1）
     edgeColor?: number;  // 边缘发光色 0xRRGGBB（缺省暖橙 0xffa030）
     glow?: number;       // 边缘发光强度（缺省 1.6）
+    // 增量②·纹理化碎片溶解（羽毛/花瓣/星屑·REQ-3D-DISSOLVE 增量②）：给 tex 则每个 voronoi 格用一枚**碎片贴图**
+    //   代替纯阈值——碎片随进度**变小飘散**（局部坐标缩放）、按种子随机旋转、9-tap 邻格叠加防切边、textureGrad 修 mip。
+    tex?: string;        // 碎片贴图 key（AssetManager·带 alpha·在场则启纹理化溶解·cutout 硬边·软混合留增量③）
+    spread?: number;     // 碎片消散错峰 0..1（缺省 0.35·越大越像「前沿推进」·0=整体同时变小）
+    cutoff?: number;     // 碎片 alpha 裁剪阈值 0..1（缺省 0.4·tex 模式用）
   };
 }
 

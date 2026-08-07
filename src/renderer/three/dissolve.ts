@@ -21,19 +21,47 @@ const DIST_EXPR: Record<NonNullable<Dissolve['shape']>, string> = {
 };
 
 // build 期确定的 shader 变体签名（进 pbrSig·变则重建材质）。progress/time 是 uniform·不进签名（每帧活更新）。
+// tex 在场 = 纹理化碎片模式（增量②·完全不同的 field 函数）→ 必进签名。
 export function dissolveSig(d: Dissolve): string {
-  return `${d.pattern ?? 'voronoi'}|${d.shape ?? 'euclid'}`;
+  return `${d.tex ? 'tex' : (d.pattern ?? 'voronoi')}|${d.shape ?? 'euclid'}`;
 }
 
-// GLSL 头（hash/星形多边形/距离场函数·屏幕空间 voronoi 或平滑噪声）。pattern/shape 烤进。
-function dissolveGLSL(d: Dissolve): string {
+// GLSL 头（hash/星形多边形/距离场函数·屏幕空间 voronoi 或平滑噪声）。pattern/shape/hasTex 烤进。
+function dissolveGLSL(d: Dissolve, hasTex: boolean): string {
   const pattern = d.pattern ?? 'voronoi';
   const distExpr = DIST_EXPR[d.shape ?? 'euclid'];
   const star = (d.shape ?? 'euclid') === 'star';
-  return /* glsl */ `
+  // 公共 uniform 头（feather 多两枚 + 采样器）。sampler 只在 tex 模式声明·避免未绑定采样器报错。
+  const head = /* glsl */ `
     uniform float uDisProgress; uniform float uDisTime; uniform float uDisScale;
     uniform float uDisSpeed; uniform float uDisEdge; uniform vec3 uDisEdgeColor; uniform float uDisGlow;
-    float dHash21(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
+    float dHash21(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }`;
+  if (hasTex) {
+    // 纹理化碎片模式（增量②）：每个 voronoi 格摆一枚碎片贴图·随错峰进度缩小飘散·随种子旋转·textureGrad 修 mip·
+    //   9-tap（3×3 邻格）取最大 alpha 防切边（碎片跨格）。best = maxα·(1-cp) → 越消散越淡（软出）。
+    return /* glsl */ `${head}
+    uniform float uDisSpread; uniform float uDisCutoff; uniform sampler2D uDisTex;
+    mat2 dRot(float a){ float c=cos(a),s=sin(a); return mat2(c,-s,s,c); }
+    float dField(vec2 uv){
+      vec2 g=floor(uv), f=fract(uv);
+      vec2 gx=dFdx(uv), gy=dFdy(uv);          // 屏幕导数（textureGrad 选 mip·抗锯齿）
+      float best=0.0;
+      for(int y=-1;y<=1;y++) for(int x=-1;x<=1;x++){
+        vec2 o=vec2(float(x),float(y)); vec2 nc=g+o;
+        float r1=dHash21(nc), r2=dHash21(nc+0.1), r3=dHash21(nc+0.2);
+        float cp=clamp((uDisProgress - r3*uDisSpread)/max(0.001,1.0-uDisSpread),0.0,1.0); // 错峰进度
+        if(cp>=0.999) continue;               // 该碎片已散尽
+        float sc=1.0/max(0.03,1.0-cp);        // 缩小（cp→1 碎片趋无穷小）
+        vec2 seed=o+0.5+vec2(cos(r1*6.2831853+uDisTime*uDisSpeed),sin(r1*6.2831853+uDisTime*uDisSpeed))*0.18;
+        vec2 local=dRot(r2*6.2831853)*(f-seed); // 相对碎片中心·随机旋转
+        local=local*sc+0.5;                    // 缩放到 [0..1] 采样空间
+        if(local.x<0.0||local.x>1.0||local.y<0.0||local.y>1.0) continue;
+        float a=textureGrad(uDisTex, local, gx*sc, gy*sc).r; // 灰度当 alpha（花瓣/羽毛剪影）
+        best=max(best, a*(1.0-cp));
+      }
+      return best; }`;
+  }
+  return /* glsl */ `${head}
     ${star ? /* glsl */ `
     float lPoly(vec2 p,float n){ float a=atan(p.x,p.y)+3.14159265; float r=6.2831853/n; return cos(floor(0.5+a/r)*r-a)*length(p); }
     float lStar(vec2 p,float n,float o){ float c=cos(3.14159265/n),s=sin(3.14159265/n); mat2 R=mat2(c,-s,s,c); return (lPoly(p,n)-lPoly(R*p,n)*o)/(1.0-o); }` : ''}
@@ -50,7 +78,7 @@ function dissolveGLSL(d: Dissolve): string {
   `;
 }
 
-// 片元段：屏幕空间算 field → 阈值 discard + 发光前沿条带（改 gl_FragColor）。keep if field>progress。
+// 片元段（解析模式）：field>progress 留·<progress 溶 + 发光前沿条带。
 const DISSOLVE_FRAG = /* glsl */ `
   #include <dithering_fragment>
   {
@@ -63,9 +91,22 @@ const DISSOLVE_FRAG = /* glsl */ `
   }
 `;
 
+// 片元段（纹理化碎片模式·增量②）：碎片 alpha < cutoff → discard（硬边剪影）·裁剪前沿发光。
+const DISSOLVE_FRAG_TEX = /* glsl */ `
+  #include <dithering_fragment>
+  {
+    float field = dField(gl_FragCoord.xy / max(uDisScale, 1.0));
+    if (field < uDisCutoff) discard;                                        // 低于阈值的碎片区 → 丢弃
+    float edge = smoothstep(uDisCutoff + max(uDisEdge, 0.001), uDisCutoff, field); // 靠近裁剪边 → 1
+    gl_FragColor.rgb += uDisEdgeColor * (uDisGlow * edge);                 // 碎片边缘发光
+  }
+`;
+
 // 给材质注入溶解 shader + 把 uniform 存到 userData（供 DissolveSystem 每帧更新 progress/time）。
-export function injectDissolve(mat: THREE.Material, d: Dissolve): void {
-  const u = {
+// dissolveTex 在场 → 纹理化碎片模式（增量②·uniform 多 uDisSpread/uDisCutoff/uDisTex）。
+export function injectDissolve(mat: THREE.Material, d: Dissolve, dissolveTex?: THREE.Texture): void {
+  const hasTex = !!dissolveTex;
+  const u: Record<string, { value: unknown }> = {
     uDisProgress: { value: Math.max(0, Math.min(1, d.progress ?? 0)) },
     uDisTime: { value: 0 },
     uDisScale: { value: d.scale ?? 44 },
@@ -74,13 +115,19 @@ export function injectDissolve(mat: THREE.Material, d: Dissolve): void {
     uDisEdgeColor: { value: new THREE.Color((d.edgeColor ?? 0xffa030) & 0xffffff) },
     uDisGlow: { value: d.glow ?? 1.6 },
   };
+  if (hasTex) {
+    u['uDisSpread'] = { value: Math.max(0, Math.min(1, d.spread ?? 0.35)) };
+    u['uDisCutoff'] = { value: Math.max(0, Math.min(1, d.cutoff ?? 0.4)) };
+    u['uDisTex'] = { value: dissolveTex };
+  }
   mat.userData['dissolveUniforms'] = u;
-  const glsl = dissolveGLSL(d);
+  const glsl = dissolveGLSL(d, hasTex);
+  const frag = hasTex ? DISSOLVE_FRAG_TEX : DISSOLVE_FRAG;
   const prevOBC = mat.onBeforeCompile;
   mat.onBeforeCompile = (shader, renderer) => {
     prevOBC?.(shader, renderer); // 叠加于既有注入（如 outline·别覆盖）
     Object.assign(shader.uniforms, u);
-    shader.fragmentShader = glsl + shader.fragmentShader.replace('#include <dithering_fragment>', DISSOLVE_FRAG);
+    shader.fragmentShader = glsl + shader.fragmentShader.replace('#include <dithering_fragment>', frag);
   };
   mat.needsUpdate = true;
 }

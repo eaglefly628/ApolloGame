@@ -35,6 +35,36 @@ describe('dissolveSig：pattern/shape 变 → 签名变（重建材质）', () =
     expect(dissolveSig({ pattern: 'voronoi', shape: 'euclid' })).not.toBe(dissolveSig({ pattern: 'noise', shape: 'euclid' }));
     expect(dissolveSig({ shape: 'euclid' })).not.toBe(dissolveSig({ shape: 'star' }));
   });
+  it('tex 在场 → 签名走纹理化分支（不同于任何 pattern）', () => {
+    expect(dissolveSig({ tex: 'PETAL', pattern: 'voronoi' })).not.toBe(dissolveSig({ pattern: 'voronoi' }));
+    expect(dissolveSig({ tex: 'PETAL' })).toContain('tex');
+  });
+});
+
+describe('injectDissolve 纹理化碎片模式（增量②）：dissolveTex 在场 → 多挂 spread/cutoff/tex uniform', () => {
+  it('不给 tex → 无碎片 uniform（解析模式·不声明采样器）', () => {
+    const mat = new THREE.MeshStandardMaterial();
+    injectDissolve(mat, { progress: 0.5 });
+    const u = mat.userData['dissolveUniforms'];
+    expect(u.uDisTex).toBeUndefined();
+    expect(u.uDisCutoff).toBeUndefined();
+  });
+  it('给 tex → uDisTex/uDisSpread/uDisCutoff 上到 userData·钳到 0..1', () => {
+    const mat = new THREE.MeshStandardMaterial();
+    const tex = new THREE.Texture();
+    injectDissolve(mat, { tex: 'PETAL', spread: 1.4, cutoff: -0.2 }, tex);
+    const u = mat.userData['dissolveUniforms'];
+    expect(u.uDisTex.value).toBe(tex);
+    expect(u.uDisSpread.value).toBe(1);   // 1.4 钳到 1
+    expect(u.uDisCutoff.value).toBe(0);   // -0.2 钳到 0
+  });
+  it('给 tex + 缺省 → spread 0.35 / cutoff 0.4', () => {
+    const mat = new THREE.MeshStandardMaterial();
+    injectDissolve(mat, { tex: 'PETAL' }, new THREE.Texture());
+    const u = mat.userData['dissolveUniforms'];
+    expect(u.uDisSpread.value).toBeCloseTo(0.35);
+    expect(u.uDisCutoff.value).toBeCloseTo(0.4);
+  });
 });
 
 describe('DissolveSystem：每帧驱动 progress/time uniform', () => {

@@ -20,6 +20,7 @@ export interface PbrMaps {
   metalnessMap?: THREE.Texture; // 线性（REQ-3D ④）
   emissiveMap?: THREE.Texture; // sRGB（REQ-3D ④）
   ormMap?: THREE.Texture; // 打包图·线性（REQ-3D ④·同图挂 ao/rough/metal 三槽）
+  dissolveTex?: THREE.Texture; // 溶解碎片贴图（REQ-3D-DISSOLVE 增量②·sRGB·羽毛/花瓣）
 }
 
 // REQ-Resource ④：材质数据资产（MaterialSpec）→ 合成有效 Material3D。
@@ -154,7 +155,7 @@ export function buildPbrGeoMat(m: Mesh3D, mat: Material3D, maps?: PbrMaps): { ge
     if (mat.transparent) material.transparent = true; // 软混合
     material.needsUpdate = true;
   }
-  if (mat.dissolve) injectDissolve(material, mat.dissolve); // 溶解消散（REQ-3D-DISSOLVE·注入 shader·DissolveSystem 每帧驱动）
+  if (mat.dissolve) injectDissolve(material, mat.dissolve, maps?.dissolveTex); // 溶解消散（REQ-3D-DISSOLVE·shader·增量② tex→纹理化碎片）
   return { geo, material, flat: mat.shading === 'flat' };
 }
 

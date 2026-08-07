@@ -785,7 +785,7 @@ export class ThreeRenderer implements RendererBackend {
     const eff = mat.materialRef ? applyMaterialRef(mat, this.materials?.get(mat.materialRef)) : mat;
     const maps = this.resolvePbrMaps(eff); // REQ-Resource ①：按 key 取真实贴图（色彩空间按用途设）
     // 贴图就绪态并入 mode：异步贴图从未就绪→就绪时 mode 变 → 重建 mesh 挂上图（同 sprite 异步先例）。
-    const mode = `${pbrSig(m, eff)}|${maps.map ? 'M' : ''}${maps.normalMap ? 'N' : ''}${maps.roughnessMap ? 'R' : ''}${maps.aoMap ? 'A' : ''}${maps.metalnessMap ? 'E' : ''}${maps.emissiveMap ? 'G' : ''}${maps.ormMap ? 'O' : ''}`;
+    const mode = `${pbrSig(m, eff)}|${maps.map ? 'M' : ''}${maps.normalMap ? 'N' : ''}${maps.roughnessMap ? 'R' : ''}${maps.aoMap ? 'A' : ''}${maps.metalnessMap ? 'E' : ''}${maps.emissiveMap ? 'G' : ''}${maps.ormMap ? 'O' : ''}${maps.dissolveTex ? 'D' : ''}`; // 溶解碎片图就绪 → mode 变重建挂上（增量②·配 AssetReadyTracker）
     const prev = this.meshes.get(r.entityId);
     if (prev && this.modeOf.get(r.entityId) === mode) return prev;
     if (prev) { this.scene.remove(prev); disposeMesh(prev); }
@@ -807,6 +807,7 @@ export class ThreeRenderer implements RendererBackend {
     if (mat.metalnessMap) { const t = this.pbrMapTexture(mat.metalnessMap, false, tl); if (t) maps.metalnessMap = t; } // 金属度·线性
     if (mat.emissiveMap) { const t = this.pbrMapTexture(mat.emissiveMap, true, tl); if (t) maps.emissiveMap = t; } // 自发光·sRGB（颜色）
     if (mat.ormMap) { const t = this.pbrMapTexture(mat.ormMap, false, tl); if (t) maps.ormMap = t; } // ORM 打包·线性
+    if (mat.dissolve?.tex) { const t = this.pbrMapTexture(mat.dissolve.tex, true, tl); if (t) maps.dissolveTex = t; } // 溶解碎片贴图（增量②·sRGB）
     return maps;
   }
 
