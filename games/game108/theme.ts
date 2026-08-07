@@ -57,8 +57,35 @@ export const chargeEntity = (side: Side, hand: Hand): string => `slot:${side}:${
 export const lastThrowVar = (side: Side): string => `${side}.lastThrow`;
 
 // ── UI ────────────────────────────────────────────────────────────────
-/** house 主题（capability-plan §4.6：起手传 house 主题，不自写皮）。 */
-export const DUEL_THEME: UITheme = apolloOnyx;
+/**
+ * 对局屏主题 —— **按设计定稿的令牌表改配**（`design-tokens.ts` 是逐字抄稿的那份）。
+ *
+ * 为什么不是直接用 house 主题：稿子是**明亮卡通**（青草地 + 奶油面 + 墨描边），
+ * house 的 `apolloOnyx` 是暗金属，两者不是一路。仍从 apolloOnyx 起手（继承字体栈/间距等），
+ * 只覆盖颜色令牌 —— 这是「有明确美术方向」的那条口子（`docs/playbooks/ui.md` 华丽起手第一步）。
+ *
+ * ⚠ **11 个文字色令牌要装下稿子的 14 种用色，装不下**（闭集是有代价的·偏差逐条在案）。
+ * 映射按"用得最多的那处"定，各令牌的实际担当：
+ *   text=#fff8e7 亮奶油字（深色条/彩色牌面上）· ink=#3f2b1e 墨字（奶油面上）
+ *   dim=#7a6553 奶油面上的次级 · sub=#8c7a68 深色条上的三级
+ *   jade=#7defd6 我方亮色（血量数字/标签）· mine=#23b5a0 我方主色
+ *   foe=#ff9a8a 对手亮色 · danger=#e0483f 对手主色 · warn=#ff5a45 告警（倒计时最后三分之一/挨打）
+ *   gold=#ffc93c 金 · ok=#a8720b **金面上的深金字**（借 ok 槽装 gold-deep·稿子里这色只此一用）
+ */
+export const DUEL_THEME: UITheme = {
+  ...apolloOnyx,
+  pageBg: '#d9f1ff', bg0: '#3f2b1e', bg1: '#fff6e2', bg2: '#f4e2c4', bg3: '#cfc3b0',
+  line: '#3f2b1e',
+  text: '#fff8e7', sub: '#8c7a68', dim: '#7a6553',
+  jade: '#7defd6', jadeWash: 'rgba(35,181,160,.16)', jadeLine: '#23b5a0',
+  gold: '#ffc93c',
+  ok: '#a8720b', okWash: 'rgba(255,201,60,.2)',
+  warn: '#ff5a45', warnWash: 'rgba(255,90,69,.2)',
+  danger: '#e0483f',
+  mine: '#23b5a0', foe: '#ff9a8a',
+  ink: '#3f2b1e',
+  texture: '', wash: '', panelTexture: '',
+};
 
 /** 烟雾【R-108-20/21/22】：次数资源 id / 生效回合数 / 隐藏旗 id。 */
 export const SMOKE_RES = (side: Side): string => `${side}.smoke`;
@@ -78,8 +105,8 @@ export const OPPONENT_CN: Record<OpponentId, string> = {
 // 不同源就是 2026-08-07 真渲染目击到的那个病：field 720×1280、屏 456×788 → 屏缩在 field 左上角，
 // 下半截整片死白。
 //
-// **横版 16:9**（owner 2026-08-07 定方向）：本作的核心是「看着一只手伸出来、摇一摇、出招」——
-// 竖屏把中区挤没了，手只能当两个小图标（正好和玩法反了）。横版把**中间那条道空出来留给手**，
-// 其余 UI 全部退到四角围着手转。
-export const VIEW_W = 1280;
-export const VIEW_H = 720;
+// **横版 16:9 · 1920×1080**（设计定稿的画布·`design-tokens.ts CANVAS`）：本作的核心是
+// 「看着一只手伸出来、摇一摇、出招」——竖屏把中区挤没了，手只能当两个小图标（正好和玩法反了）。
+// 横版把中间那条道空出来留给手，其余 UI 全部退到四周。
+export const VIEW_W = 1920;
+export const VIEW_H = 1080;

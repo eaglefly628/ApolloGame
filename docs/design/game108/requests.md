@@ -623,3 +623,40 @@ ENG-04 只给 `KeyBinding` 开了 `source`（玩家那条路），**AI 走的 `E
 
 **未动 `src/ui/components` 任何文件**。横版重构等这两件到位再做——
 先做布局、后补动画的话，中间那条走道会空着没东西可放，等于把返工排进计划里。
+
+### REQ-108-UI-03 · 面板缺「平移投影」（卡通立体感的基件）· [2026-08-07] · owner 当场指出 · status: open（待 PUI/Lead 裁）
+
+- **病**：owner 看图第一句——「你 / 蓄力 / 复读机 这三个牌**不是 3D 浮空的**，下面该有颜色和阴影」。
+  设计定稿里这是全屏统一的语言：`box-shadow: 0 4px 0 #14776a`（身份牌）/ `0 5px 0`（相位牌）/
+  `0 7px 0`（招式卡）/ `0 8px 0 #c9932a`（主 CTA）——**硬边偏移投影**，不是模糊阴影，
+  卡通 UI 的「浮空感」全靠它。
+- **查过了**：`PanelProps` 有 `bg / edge / accent / dashed / radius / shape / skin / glass / vignette`，
+  **没有任何投影字段**；`layout` 里的 `press3d/tilt3d` 是交互态（:active/:hover）不是常态投影；
+  `accent` 那条 `box-shadow` 是固定的柔光不可配。→ 现有闭集**表达不了**。
+- **现在的做法（可用但是绕的）**：`games/game108/plate-art.ts` 生成一张画好了「面 + 墨边 + 偏移投影」
+  的 SVG，用 `Panel.skin` 贴上去。像素对得上，代价是**每一块面都是一张生成图**，
+  且尺寸一改就得重生成（源图尺寸必须等于盒子尺寸，否则 `<img>` 按固有比例反过来定尺寸——已踩过）。
+- **两条路（Lead 给推荐·owner/PUI 裁）**：
+  - **A 补引擎缺口**：`PanelProps.shadow?: { y: number; color?: SurfaceToken|string }`（闭集语义色优先）。
+    代价：动 `src/ui/**`（PUI 域）+ 全库 render 面；收益：**这是商业卡通 UI 的通用件**，
+    game-i 的糖果钮、apollo-toon 的厚唇皮都在手搓同一件事，下沉后一处配全库受益。
+  - **B 维持贴图法**：game108 自持 `plate-art.ts`。代价：每个走卡通风的新游戏各抄一份；
+    且「面」变成了美术资产，尺寸/圆角/描边改动都要过生成器。
+  - **推荐 A**：判据是「最弱 LLM 能不能产出同样的数据」——`shadow:{y:4,color:'#14776a'}` 能，
+    "去写个 SVG 生成器"不能。
+- **验收**：`Panel{shadow:{y:4}}` 渲出硬边偏移投影；game108 的 `plate-art.ts` 能删掉投影那一支。
+
+### REQ-108-UI-04 · 缺一款**卡通粗中文**字体槽 · [2026-08-07] · owner 当场指出 · status: open（待 PUI 裁）
+
+- **病**：owner——「字体不够饱满，要一定的艺术粗体」。设计定稿指定 **ZCOOL KuaiLe（站酷快乐体）**
+  作为全屏中文显示字，Fredoka 作为数字字。
+- **查过了**：`Label.font` 的 CJK 艺术字槽只有四款——`cnbrush`(马善政毛笔行楷) / `cnwen`(站酷小薇文艺细宋) /
+  `jpbrush`(筑紫日文毛筆) / `jppen`(Klee One 日文楷書)。**三款是毛笔/楷体、一款是细宋，没有一款是粗卡通体**。
+  拉丁侧 `bubbly`(Baloo 2) 与 Fredoka 同族圆润，数字这一半已经能顶上（现用它）。
+- **现在的做法**：中文走主字体 `ui` + `bold:true`。字重顶上来了，**字形还是系统黑体，不是卡通体**——
+  与稿子的观感差在这一处，是本次复刻**最大的单项视觉偏差**。
+- **一条路就够（不构成 A/B）**：ZCOOL KuaiLe 是 **SIL OFL**，与现有四款 CJK 艺术字同一许可、同一条产线——
+  `scripts/cjk-art-font-vendor.py` 子集化 + `art-fonts-cjk.ts` 加一个枚举值（如 `cnkuai`）。
+  这是**加一个槽**，不是放宽闭集，与手册「缺字体→提 requests 让主程加一个槽」的口径完全一致。
+- **验收**：`Label{font:'cnkuai'}` 能渲汉字；game108 把 `design-tokens.ts` 的 `F.cjk` 从 `'ui'` 改成它，
+  与稿子 `screens/*.png` 并排看字形一致。

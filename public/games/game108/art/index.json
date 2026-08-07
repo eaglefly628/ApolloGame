@@ -1,0 +1,55 @@
+{
+ "assets": [
+  {
+   "key": "108/hand-icon-rock",
+   "path": "icon_rock.png",
+   "kind": "texture",
+   "spec": {
+    "usage": "ui",
+    "colorSpace": "srgb"
+   },
+   "license": "owner-provided",
+   "source": "design_handoff_rule_of_three_battle",
+   "provenance": {
+    "generator": "owner-reference-art",
+    "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_rock.png",
+    "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
+    "date": "2026-08-07"
+   }
+  },
+  {
+   "key": "108/hand-icon-paper",
+   "path": "icon_paper.png",
+   "kind": "texture",
+   "spec": {
+    "usage": "ui",
+    "colorSpace": "srgb"
+   },
+   "license": "owner-provided",
+   "source": "design_handoff_rule_of_three_battle",
+   "provenance": {
+    "generator": "owner-reference-art",
+    "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_paper.png",
+    "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
+    "date": "2026-08-07"
+   }
+  },
+  {
+   "key": "108/hand-icon-scissors",
+   "path": "icon_scissors.png",
+   "kind": "texture",
+   "spec": {
+    "usage": "ui",
+    "colorSpace": "srgb"
+   },
+   "license": "owner-provided",
+   "source": "design_handoff_rule_of_three_battle",
+   "provenance": {
+    "generator": "owner-reference-art",
+    "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_scissors.png",
+    "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
+    "date": "2026-08-07"
+   }
+  }
+ ]
+}

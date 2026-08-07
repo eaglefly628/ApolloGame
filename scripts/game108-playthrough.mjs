@@ -137,6 +137,9 @@ async function main() {
     const win = await until('你赢了');
     check('打完一局并分出胜负【R-108-15】', win.phase === '你赢了' && !win.timeout, `实读 ${win.phase}`);
     check('终局时对手血量归零', win.hp.p2 === '0', `实读 ${win.hp.p2}`);
+    // 终局面板有一段 400ms 的 pop 入场（scale .4→1 · opacity 0→1）。立刻拍会拍到入场半途——
+    // 面是半透的、还没放到原大，看起来像"面板没画出来"（2026-08-07 我自己被这张图骗了一轮）。
+    await page.waitForTimeout(600);
     await shot('6-victory');
     say('');
     check('全程控制台零 error / 零未捕获异常', errors.length === 0, errors.join(' | ') || '干净');

@@ -1,115 +1,110 @@
-// game108 手部美术 —— **程序化 data-URI SVG**（原创占位级·可整张替换）。
+// game108 手部美术 —— **逐形状抄自设计定稿**（`design/battle-screen.dc.html` 的内联 SVG）。
 //
-// 为什么是程序化而不是贴图文件：横版重构的主体是「手」，而手的美术还没有真图。
-// 走 `UITheme.texture`/apollo-toon 同一路子（程序化 data-URI SVG·`docs/playbooks/ui.md` 在案）——
-// 先把**结构**（三手型 × 两色系 × 镜像）钉死并真渲染出来，真图到位时只换 `handArt()` 的返回值，
-// 消费端（`Image.src`）一行不动。**不落 public/ 目录 → 不产生黑户**（美术台账走真图那一步）。
+// 稿子里手是画在 `viewBox 0 0 700 700` 里的一组圆角矩形 + 一颗高光椭圆，
+// 描边 15、`stroke-linejoin:round`，填一条 45° 的三段肤色渐变。**下面的坐标一个没动**——
+// 这是 1:1 复刻的地基，动了就不是复刻了。
 //
-// 画法（卡通厚描边·四遍）：
-// ① 轮廓遍：全形状用 line 色描 20px 粗边**并填 line 色** → 并成一条外轮廓，内缝被自己的填充盖掉；
-// ② 本色遍：同形状用 base 色纯填盖回内部，只剩外圈 10px 描边；
-// ③ 结构遍：指缝/拇指轮廓用 line 色**空心描线** —— 没有这一遍，拳头就是一团圆角方块（首版真渲染目击）；
-// ④ 光影遍：暗部 + 前臂高光，让平涂有体积。
-// 一个 viewBox 只画**左手**（前臂从左边缘伸入·掌心朝右）；右手用 `layout.rotateY:180` 镜像，不另画。
+// 与稿子的三处差别，都是"落到我们这边必须做的换算"，不是改设计：
+// ① 稿子的 `<svg overflow:visible>` 让图形能画出 viewBox 外（`布` 的拇指顶到 y≈−15，
+//    `剪` 的食指顶到 x≈700）。我们走 `Image`，**超出 viewBox 会被裁掉**
+//    → 把 viewBox 四周各放 40 单位、盒子按同比例放大并反向偏移，**画面缩放与落点分毫不变**。
+// ② 右手在稿子里是 `transform:scaleX(-1)`；我们用 `layout.rotateY:180`（同一件事·闭集字段）。
+// ③ 前臂在稿子里是独立的 div（**手会摇、前臂不摇**，所以不能烤进手的贴图）→ 这里也单出一张。
 //
-// **两侧色系必须一眼可分**（owner 2026-08-07「两个拳哪个是我出的」那一问的美术侧答案）：
-// 我方 = 暖浅肤 + 金袖口；对手 = 深赭肤 + 绯红袖口（明度与色相双重拉开·暗底上也不会认错）。
+// 真美术到位时（稿子要 6 张 1280×1280 @2x 贴图）只换本文件的返回值，屏那边一行不动。
 
 import type { Hand } from './theme.js';
+import { C } from './design-tokens.js';
 
-/** 一套手的配色（肤色/暗部/描边/袖口）。 */
-interface HandSkin {
-  base: string;
-  shade: string;
-  line: string;
-  cuff: string;
+/** 稿子的 viewBox 是 0 0 700 700；我们四周各放 `PAD` 单位，防止溢出图形被裁。 */
+const VB = 700;
+const PAD = 40;
+/** 盒子相对稿子 640×640 的放大倍率（把 PAD 换算进去）。 */
+export const HAND_BOX_SCALE = (VB + PAD * 2) / VB;
+/** 盒子相对稿子落点要反向偏移的比例（乘以稿子的 640 得到 px）。 */
+export const HAND_BOX_SHIFT = PAD / VB;
+
+/** 三手型的形状集 —— 逐字抄自 dc.html（左手；掌心朝右）。 */
+const SHAPES: Record<Hand, string> = {
+  rock:
+    '<rect x="60" y="110" width="400" height="520" rx="190"/>'
+    + '<rect x="300" y="122" width="288" height="142" rx="71" transform="rotate(-3 320 193)"/>'
+    + '<rect x="305" y="256" width="315" height="142" rx="71"/>'
+    + '<rect x="300" y="388" width="292" height="140" rx="70" transform="rotate(3 320 458)"/>'
+    + '<rect x="292" y="512" width="248" height="132" rx="66" transform="rotate(7 312 578)"/>'
+    + '<rect x="268" y="112" width="168" height="322" rx="84" transform="rotate(-10 352 273)"/>',
+  paper:
+    '<rect x="300" y="108" width="352" height="116" rx="58" transform="rotate(-16 330 166)"/>'
+    + '<rect x="305" y="240" width="378" height="118" rx="59" transform="rotate(-3 335 299)"/>'
+    + '<rect x="300" y="358" width="362" height="116" rx="58" transform="rotate(9 330 416)"/>'
+    + '<rect x="285" y="458" width="310" height="110" rx="55" transform="rotate(22 315 513)"/>'
+    + '<rect x="95" y="92" width="285" height="128" rx="64" transform="rotate(-44 200 156)"/>'
+    + '<rect x="50" y="170" width="400" height="400" rx="180"/>',
+  scissors:
+    '<rect x="300" y="98" width="388" height="122" rx="61" transform="rotate(-13 330 159)"/>'
+    + '<rect x="300" y="244" width="398" height="122" rx="61" transform="rotate(4 330 305)"/>'
+    + '<rect x="60" y="215" width="400" height="400" rx="180"/>'
+    + '<rect x="300" y="378" width="228" height="122" rx="61"/>'
+    + '<rect x="292" y="490" width="206" height="116" rx="58"/>'
+    + '<rect x="290" y="400" width="135" height="200" rx="67" transform="rotate(8 357 500)"/>',
+};
+
+/** 掌纹（只有「布」有·稿子里是两条 `stroke-width:10 opacity:.4` 的曲线）。 */
+const CREASE: Record<Hand, string> = {
+  rock: '',
+  paper: '<path fill="none" stroke-width="10" d="M150 290 Q225 348 208 428"/>'
+    + '<path fill="none" stroke-width="10" d="M220 300 Q292 360 278 445"/>',
+  scissors: '',
+};
+
+/** 高光椭圆（逐手型各自的落点·稿子里我方 .45、对手 .34）。 */
+const GLINT: Record<Hand, { cx: number; cy: number; rx: number; ry: number }> = {
+  rock: { cx: 180, cy: 240, rx: 78, ry: 56 },
+  paper: { cx: 150, cy: 270, rx: 66, ry: 48 },
+  scissors: { cx: 160, cy: 320, rx: 68, ry: 50 },
+};
+
+const svgUri = (svg: string): string =>
+  `data:image/svg+xml,${encodeURIComponent(svg).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/'/g, '%27')}`;
+
+/** 一只手（左手朝向；右手由屏那边 `rotateY:180` 镜像）。 */
+export function handArt(hand: Hand, side: 'p1' | 'p2'): string {
+  const mine = side === 'p1';
+  const skin = mine ? C.skinYou : C.skinOpp;
+  const line = mine ? C.lineYou : C.lineOpp;
+  const glintOpacity = mine ? 0.45 : 0.34;
+  const creaseOpacity = mine ? 0.4 : 0.38;
+  const g = GLINT[hand];
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-PAD} ${-PAD} ${VB + PAD * 2} ${VB + PAD * 2}">`
+    + `<defs><linearGradient id="sk" x1="0" y1="0" x2=".35" y2="1">`
+    + `<stop offset="0" stop-color="${skin[0]}"/><stop offset=".55" stop-color="${skin[1]}"/>`
+    + `<stop offset="1" stop-color="${skin[2]}"/></linearGradient></defs>`
+    + `<g stroke="${line}" stroke-width="15" stroke-linejoin="round" fill="url(#sk)">${SHAPES[hand]}</g>`
+    + (CREASE[hand] ? `<g stroke="${line}" opacity="${creaseOpacity}">${CREASE[hand]}</g>` : '')
+    + `<ellipse cx="${g.cx}" cy="${g.cy}" rx="${g.rx}" ry="${g.ry}" fill="#fff" opacity="${glintOpacity}"/>`
+    + '</svg>';
+  return svgUri(svg);
 }
 
-export const HAND_SKIN: Record<'p1' | 'p2', HandSkin> = {
-  p1: { base: '#f0c79b', shade: '#c98f5f', line: '#2b1a10', cuff: '#e8cd82' },
-  p2: { base: '#cf7a3e', shade: '#94501f', line: '#20100a', cuff: '#d0424b' },
-};
-
-/** viewBox（左手·前臂从左边缘伸入）。与 `HAND_ASPECT` 同源——屏那边按这个比例定框。 */
-const VB = { x: -210, y: 40, w: 670, h: 260 };
-export const HAND_ASPECT = VB.w / VB.h;
-
 /**
- * 前臂（三手型共用）。左端**远远出画**——「从画外伸进来」的前提是根部永远看不见。
- * 厚度 74 ≈ 拳团高度（176）的四成：**这个比例是「像不像一只手」的开关**——
- * 首版前臂厚 98、拳团圆角 66，渲出来两截一样粗、还都是胶囊 ⇒ 整只手读作一根面包（真渲染目击）。
+ * 前臂（贴屏幕边缘的独立件）。稿子：`430×158`、`border:15px solid <line>`、竖向两段肤色渐变，
+ * 且**外侧那条边不画**（`border-left:none` / `border-right:none`）——它是被屏幕裁掉的断面。
+ * 这里画法：矩形往外侧多伸 60 单位再由 viewBox 裁掉，外侧那条描边自然就没了。
  */
-const FOREARM = '<path d="M-220 122 L40 140 L130 148 L130 200 L40 208 L-220 226 Z"/>';
-/** 腕带（单独一色·卡在最细的腕上 → 读作护腕；圆角别开太大，否则渲成一颗蛋）。 */
-const CUFF = '<rect x="56" y="138" width="48" height="74" rx="12"/>';
-
-/** 三手型的实心形状（不含前臂/腕带）。掌心朝右 = 出招方向。 */
-const SHAPES: Record<Hand, string> = {
-  // 握拳：拳团（近正方·rx 小 → 有棱角）+ 右缘四节指关节 + 横压在下前方的拇指。
-  rock:
-    '<rect x="140" y="82" width="186" height="176" rx="46"/>'
-    + '<circle cx="326" cy="106" r="24"/><circle cx="330" cy="150" r="25"/>'
-    + '<circle cx="330" cy="194" r="25"/><circle cx="322" cy="232" r="22"/>'
-    + '<rect x="176" y="204" width="152" height="56" rx="28"/>',
-  // 张开：掌 + 四指向右铺开（指间留 8 的缝 → 描边后仍剩一道暗线 = 指缝）+ 斜下的拇指。
-  paper:
-    '<rect x="140" y="96" width="132" height="156" rx="40"/>'
-    + '<rect x="258" y="84" width="150" height="40" rx="20"/>'
-    + '<rect x="258" y="132" width="162" height="40" rx="20"/>'
-    + '<rect x="258" y="180" width="148" height="40" rx="20"/>'
-    + '<rect x="254" y="228" width="118" height="36" rx="18"/>'
-    + '<rect x="150" y="222" width="120" height="48" rx="24" transform="rotate(14 150 222)"/>',
-  // 剪：拳团 + 张开成 V 的食指与中指 + 收起的拇指。
-  scissors:
-    '<rect x="146" y="130" width="170" height="128" rx="44"/>'
-    + '<rect x="220" y="92" width="176" height="40" rx="20" transform="rotate(-20 220 112)"/>'
-    + '<rect x="226" y="158" width="170" height="40" rx="20" transform="rotate(14 226 178)"/>'
-    + '<rect x="180" y="206" width="118" height="50" rx="25"/>',
-};
-
-/**
- * 结构线（空心描线·**这一遍决定了拳头是不是一团面**）。
- * 首版漏了它 → 真渲染出来石头就是个圆角方块，指关节被自己的填充吃掉了。
- */
-const GROOVE: Record<Hand, string> = {
-  rock:
-    '<path d="M238 128 H322"/><path d="M238 172 H324"/>'           // 折指之间的两道横缝
-    + '<rect x="176" y="204" width="152" height="56" rx="28"/>',    // 拇指轮廓（兼第三道分界）
-  paper:
-    '<path d="M266 108 H286"/>'                                     // 掌与食指的交界
-    + '<rect x="150" y="222" width="120" height="48" rx="24" transform="rotate(14 150 222)"/>',
-  scissors:
-    '<path d="M244 146 L372 124"/>'                                 // 两指之间的分缝
-    + '<rect x="180" y="206" width="118" height="50" rx="25"/>',
-};
-
-/** 暗部（拇指/掌根压一层阴影·让平涂有体积）。 */
-const SHADE: Record<Hand, string> = {
-  rock: '<rect x="176" y="204" width="152" height="56" rx="28"/>',
-  paper: '<rect x="150" y="222" width="120" height="48" rx="24" transform="rotate(14 150 222)"/>',
-  scissors: '<rect x="180" y="206" width="118" height="50" rx="25"/>',
-};
-
-/**
- * 出一张手的 data-URI。
- * @param hand 手型（石/布/剪）
- * @param side 色系（我方暖浅肤金袖 / 对手深赭肤绯袖）
- */
-export function handArt(hand: Hand, side: 'p1' | 'p2'): string {
-  const s = HAND_SKIN[side];
-  const body = FOREARM + SHAPES[hand];
+export function armArt(side: 'p1' | 'p2', w: number, h: number): string {
+  const mine = side === 'p1';
+  const skin = mine ? C.armYou : C.armOpp;
+  const line = mine ? C.lineYou : C.lineOpp;
+  const bw = 15;
+  const over = 60;                                   // 往外侧多伸出去、被 viewBox 裁掉的那一截
+  const x = mine ? -over : bw / 2;
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VB.x} ${VB.y} ${VB.w} ${VB.h}">`
-    + `<g fill="${s.line}" stroke="${s.line}" stroke-width="20" stroke-linejoin="round">${body}${CUFF}</g>`
-    + `<g fill="${s.base}">${body}</g>`
-    + `<g fill="${s.cuff}">${CUFF}</g>`
-    + `<g fill="${s.shade}" opacity="0.4">${SHADE[hand]}</g>`
-    + `<g fill="none" stroke="${s.line}" stroke-width="9" stroke-linecap="round" opacity="0.85">${GROOVE[hand]}</g>`
-    + '<rect x="-190" y="142" width="160" height="13" rx="6" fill="#ffffff" opacity="0.16"/>'
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`
+    + `<defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1">`
+    + `<stop offset="0" stop-color="${skin[0]}"/><stop offset="1" stop-color="${skin[1]}"/></linearGradient></defs>`
+    + `<rect x="${x}" y="${bw / 2}" width="${w - bw / 2 + over}" height="${h - bw}"`
+    + ` fill="url(#ar)" stroke="${line}" stroke-width="${bw}"/>`
     + '</svg>';
-  // **必须整串 %XX 化**：`render.ts` 的 `safeUrl` 会把 URL 里的 `'"()\` 与空白**直接剥掉**——
-  // 而 `encodeURIComponent` 恰好不转义 `'()` 三个字符（规范里它们是 unreserved mark）。
-  // 不补这三条 replace，`rotate(12 196 236)` 的括号会被剥成 `rotate12 196 236` ⇒ SVG 解析失败、**整只手不显示且不报错**。
-  return `data:image/svg+xml,${encodeURIComponent(svg)
-    .replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/'/g, '%27')}`;
+  return svgUri(svg);
 }

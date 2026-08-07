@@ -1,0 +1,110 @@
+{
+ "rows": [
+  {
+   "skinKey": "108/hand-icon-rock",
+   "no": "art-01",
+   "desc": "front-facing rock hand icon, cartoon, thick ink outline, cream skin, transparent background",
+   "kind": "ui-icon",
+   "slot": {
+    "entity": "duel-screen",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "hand icon rock",
+   "spec": {
+    "w": 195,
+    "h": 236,
+    "displayW": 96,
+    "displayH": 104,
+    "transparent": true
+   },
+   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「石」手型图标",
+   "status": "filled",
+   "gen": {
+    "source": "design-handoff",
+    "script": "games/game108/design_handoff_rule_of_three_battle/design/hands/",
+    "style": "rule-of-three cartoon (ZCOOL/Fredoka handoff)",
+    "servedPath": "/games/game108/art/icon_rock.png"
+   },
+   "provenance": {
+    "generator": "owner-reference-art",
+    "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_rock.png",
+    "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
+    "date": "2026-08-07"
+   },
+   "license": "owner-provided",
+   "source": "design_handoff_rule_of_three_battle"
+  },
+  {
+   "skinKey": "108/hand-icon-paper",
+   "no": "art-02",
+   "desc": "front-facing paper hand icon, cartoon, thick ink outline, cream skin, transparent background",
+   "kind": "ui-icon",
+   "slot": {
+    "entity": "duel-screen",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "hand icon paper",
+   "spec": {
+    "w": 218,
+    "h": 245,
+    "displayW": 96,
+    "displayH": 104,
+    "transparent": true
+   },
+   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「布」手型图标",
+   "status": "filled",
+   "gen": {
+    "source": "design-handoff",
+    "script": "games/game108/design_handoff_rule_of_three_battle/design/hands/",
+    "style": "rule-of-three cartoon (ZCOOL/Fredoka handoff)",
+    "servedPath": "/games/game108/art/icon_paper.png"
+   },
+   "provenance": {
+    "generator": "owner-reference-art",
+    "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_paper.png",
+    "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
+    "date": "2026-08-07"
+   },
+   "license": "owner-provided",
+   "source": "design_handoff_rule_of_three_battle"
+  },
+  {
+   "skinKey": "108/hand-icon-scissors",
+   "no": "art-03",
+   "desc": "front-facing scissors hand icon, cartoon, thick ink outline, cream skin, transparent background",
+   "kind": "ui-icon",
+   "slot": {
+    "entity": "duel-screen",
+    "component": "Image",
+    "field": "src"
+   },
+   "query": "hand icon scissors",
+   "spec": {
+    "w": 162,
+    "h": 236,
+    "displayW": 96,
+    "displayH": 104,
+    "transparent": true
+   },
+   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「剪」手型图标",
+   "status": "filled",
+   "gen": {
+    "source": "design-handoff",
+    "script": "games/game108/design_handoff_rule_of_three_battle/design/hands/",
+    "style": "rule-of-three cartoon (ZCOOL/Fredoka handoff)",
+    "servedPath": "/games/game108/art/icon_scissors.png"
+   },
+   "provenance": {
+    "generator": "owner-reference-art",
+    "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_scissors.png",
+    "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
+    "date": "2026-08-07"
+   },
+   "license": "owner-provided",
+   "source": "design_handoff_rule_of_three_battle"
+  }
+ ],
+ "pending": []
+}

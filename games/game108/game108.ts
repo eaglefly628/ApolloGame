@@ -9,13 +9,14 @@ import { QueuedInputSource } from '@zerocraft/engine/net/index.js';
 import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildDuelScreen, emptyView, type DuelView, type Phase } from './duel-screen.js';
-import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, type Hand, type Side } from './theme.js';
+import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, TPS, OPPONENT_CN, type Hand, type Side } from './theme.js';
 
-const STAGE_BG = 'radial-gradient(120% 90% at 50% 40%, #1a2230 0%, #070a0f 82%)';
+// 舞台外框（画布之外那圈·稿子里是 `#171310` 深木底衬着 1920×1080 的对局屏）。
+const STAGE_BG = '#171310';
 
 export function mount(container: HTMLElement): () => void {
   const { scene, teardown } = mountHost(container, {
-    fieldW: VIEW_W, fieldH: VIEW_H, sceneBackground: STAGE_BG, wrapperBackground: '#05070b',
+    fieldW: VIEW_W, fieldH: VIEW_H, sceneBackground: STAGE_BG, wrapperBackground: '#171310',
   });
 
   // UI action → 引擎输入：QueuedInputSource 同时是 Engine 的输入源与 mountUI 的 ActionSink
@@ -61,6 +62,9 @@ export function mount(container: HTMLElement): () => void {
     return {
       phase,
       phaseLeft: total > 0 ? Math.max(0, 1 - elapsed / total) : 0,
+      // 环心读数（稿子的「N.N 秒」）：剩余 tick / TPS。
+      phaseSec: total > 0 ? Math.max(0, (total - elapsed) / TPS) : 0,
+      foeName: OPPONENT_CN['parrot'],
       round,
       hp,
       charge,
