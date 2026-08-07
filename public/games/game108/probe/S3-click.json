@@ -1,0 +1,76 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "三个手键都在活体 DOM 里",
+      "pass": true,
+      "detail": "{\"rock\":{\"disabled\":false,\"action\":\"charge.rock\"},\"paper\":{\"disabled\":false,\"action\":\"charge.paper\"},\"scissors\":{\"disabled\":false,\"action\":\"charge.scissors\"}}"
+    },
+    {
+      "name": "蓄力时区里手键带的是 charge.* 信号【R-108-70】",
+      "pass": true,
+      "detail": "实读 data-action=charge.rock"
+    },
+    {
+      "name": "起手双方满血 100【R-108-15】",
+      "pass": true,
+      "detail": "p1=100 p2=100"
+    },
+    {
+      "name": "起手六条槽全 0【R-108-03】",
+      "pass": true,
+      "detail": "石=0/3"
+    },
+    {
+      "name": "点一下石 → 石槽 0/3 → 1/3（真点击打穿到世界）",
+      "pass": true,
+      "detail": "实读 1/3"
+    },
+    {
+      "name": "没点的手纹丝不动（信号没串台）",
+      "pass": true,
+      "detail": "布=0/3 剪=0/3"
+    },
+    {
+      "name": "累加到上限 3/3【R-108-10】",
+      "pass": true,
+      "detail": "实读 3/3"
+    },
+    {
+      "name": "槽条**真的填满了**（props.bind 经 resolveBindings 读到世界·非哑弹）",
+      "pass": true,
+      "detail": "石条 width=100% · 布条 width=0%"
+    },
+    {
+      "name": "满槽后石键禁用且不带 action【R-108-10】",
+      "pass": true,
+      "detail": "{\"disabled\":true,\"action\":null}"
+    },
+    {
+      "name": "禁用后再点不越界（仍是 3/3）",
+      "pass": true,
+      "detail": "实读 3/3"
+    },
+    {
+      "name": "相位自动从「蓄力」走到「出招」【R-108-01】",
+      "pass": true,
+      "detail": "走过：蓄力 → 出招"
+    },
+    {
+      "name": "同一个键在出招时区带 throw.* 信号【R-108-70】",
+      "pass": true,
+      "detail": "实读 throw.paper"
+    },
+    {
+      "name": "点出招键不炸（信号发得出去·接缝已认侧见 ENG-04 单测）",
+      "pass": true,
+      "detail": "控制台见下"
+    },
+    {
+      "name": "全程控制台零 error / 零未捕获异常",
+      "pass": true,
+      "detail": "干净"
+    }
+  ],
+  "consoleErrors": []
+}
