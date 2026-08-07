@@ -962,3 +962,69 @@ describe('matrix-duel — 接缝对悬空 source 留痕（ENG-04/05 裁决的配
     expect(rej[0].what).toContain('不是对局侧');
   });
 });
+
+// ── REQ-108-ENG-07：结算门开了之后 DuelIntent 的生命周期（owner 2026-08-07 判 A）────────
+// 来源：主程复查 ENG-04/05/06 第③步的三个探针。ENG-06 制造了「intent 可长期不结算」的窗口，
+// 而结算是 DuelIntent 唯一的清理点 → 门关着时没人清 → 滞留到下一回合用旧的手结算（零报错）。
+describe('matrix-duel — 结算门下的 intent 生命周期（REQ-108-ENG-07）', () => {
+  const gated = (): World => {
+    const w = table({
+      hpResource: 'hp', throws: ['rock', 'paper'], beats: { rock: [], paper: ['rock'] },
+      payoff: { rock: { damage: 5 }, paper: { damage: 7 } }, tie: { selfDamage: 0 },
+      settleWhenFlag: 'reveal',
+    });
+    w.createEntity('flag:reveal');
+    w.addComponent('flag:reveal', { type: 'Flag', id: 'reveal', active: true } as Flag);
+    return w;
+  };
+  const gate = (w: World, on: boolean): void => { w.getComponent<Flag>('flag:reveal', 'Flag')!.active = on; };
+
+  // 【验收核心】原缺陷：p2 本回合没出手，却被上一回合滞留的 intent 结算，p1 血 20→13。
+  it('滞留 intent 不再带进下一回合（原缺陷：p2 没出手却打出 7 点）', () => {
+    const w = gated();
+    intend(w, 'p1', 'rock'); intend(w, 'p2', 'paper');
+    w.tick();                       // 门开 → 两侧 armed
+    gate(w, false);                 // 揭晓窗口过去
+    w.addComponent('p1', { type: 'DuelIntent', throw: 'rock' } as DuelIntent); // p1 改主意 → armed 掉
+    w.tick(); w.tick();             // 本回合就这么过去了
+    expect(w.hasComponent('p2', 'DuelIntent')).toBe(false); // p2 那份已 armed 的被回收
+    gate(w, true);                  // 下一回合门开：p2 这回合根本没出手
+    w.tick(); w.tick();
+    expect(hp(w, 'p1')).toBe(20);   // 原缺陷这里是 13
+    expect(hp(w, 'p2')).toBe(20);
+  });
+
+  it('只回收 armed 的：门关着提交的 intent 是正常态，不许动', () => {
+    const w = gated();
+    gate(w, false);                 // 门关着（T2 出招时区）
+    intend(w, 'p1', 'rock'); intend(w, 'p2', 'paper');
+    w.tick(); w.tick();
+    expect(w.hasComponent('p1', 'DuelIntent')).toBe(true);  // 正等门开，不该被回收
+    expect(w.hasComponent('p2', 'DuelIntent')).toBe(true);
+    gate(w, true);                  // 揭晓
+    w.tick(); w.tick();
+    expect(hp(w, 'p1')).toBe(20 - 7); // paper 胜 rock → 正常结算
+  });
+
+  it('不设 settleWhenFlag → 回收逻辑整段不跑（零回归）', () => {
+    const w = table(BASE_MATRIX());
+    const r = duel(w, 'rock', 'scissors');
+    expect(r.p2).toBe(14);
+    expect(w.hasComponent('p1', 'DuelIntent')).toBe(false); // 结算照常清
+  });
+
+  it('回收留痕：trace 里有一条 reject（守则第 3 类）', () => {
+    const w = gated();
+    w.createEntity('dbg');
+    w.addComponent('dbg', { type: 'DebugTrace', events: [] } as DebugTrace);
+    intend(w, 'p1', 'rock'); intend(w, 'p2', 'paper');
+    w.tick();
+    gate(w, false);
+    w.addComponent('p1', { type: 'DuelIntent', throw: 'rock' } as DuelIntent);
+    w.tick();
+    const t = w.getComponent<DebugTrace>('dbg', 'DebugTrace')!;
+    const rej = t.events.filter((e) => e.kind === 'reject' && e.what.includes('回收过期 intent'));
+    expect(rej).toHaveLength(1);
+    expect(rej[0].what).toContain('p2');
+  });
+});

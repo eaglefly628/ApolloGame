@@ -894,13 +894,27 @@ export const matrixDuelCapability = defineCapability({
               const f = world.getComponent<Flag>(fe, 'Flag');
               if (f && f.id === md.settleWhenFlag) { open = f.active; break; }
             }
-            if (open) {
-              const key = md.duelId ?? '';
-              for (const [iid] of world.query('DuelIntent')) {
-                const it = world.getComponent<DuelIntent>(iid, 'DuelIntent');
-                if (it && (it.duelId ?? '') === key && it.armed !== true) {
-                  world.addComponent(iid, { ...it, armed: true } as DuelIntent);
-                }
+            const key = md.duelId ?? '';
+            for (const [iid] of world.query('DuelIntent')) {
+              const it = world.getComponent<DuelIntent>(iid, 'DuelIntent');
+              if (!it || (it.duelId ?? '') !== key) continue;
+              if (open) {
+                if (it.armed !== true) world.addComponent(iid, { ...it, armed: true } as DuelIntent);
+                continue;
+              }
+              // ── 过期回收（REQ-108-ENG-07·owner 2026-08-07 判 A）─────────────────────
+              // 门**关着**而这份 intent **已经 armed** ⇒ 它的揭晓窗口已经过去却没结算完
+              //（唯一成因：armed 后被 ENG-02 接缝改主意/单侧掉队，而结算要两侧齐）。
+              // 不回收的话没人清得掉它——**结算是 DuelIntent 唯一的清理点，而门关着时结算不发生**
+              // ⇒ 它会滞留到下一回合，用**上一回合的手**参与结算。
+              // 实证（主程复查 ENG-04/05/06 的第③步探针）：p1 血 20→13，p2 本回合根本没出手，
+              // 却用上一回合滞留的 paper 打出 7 点伤害，**零报错**。
+              // **只回收 armed 的**：没 armed 的是「本回合已提交、正等门开」的正常态，动它就把玩法打断了。
+              if (it.armed === true) {
+                world.removeComponent(iid, 'DuelIntent');
+                appendTrace(tr, tk, 'matrix-duel-intent', 'reject',
+                  `回收过期 intent："${iid}" 的 ${it.throw}（已 armed 但门已关）`,
+                  `settleWhenFlag=${md.settleWhenFlag}·揭晓窗口已过`);
               }
             }
           }
