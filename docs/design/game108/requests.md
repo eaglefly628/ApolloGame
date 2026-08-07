@@ -302,3 +302,80 @@ set-visible / set-visible-tagged / destroy / destroy-tagged / reset-timer）— 
 > **刻意不读 Resource**（读了与「排 resource-apply 之前」合围成环）；announce 排在 resource-apply 之后，
 > 读到的正是扣血后的真值。自证：**撤修实测 3 红 → 复原 58 绿**；全量门禁绿（tsc + vitest 全量 + build + 守卫）；
 > `announce` 的 `reads/writes` 声明如实更新并同步定序申报用例。**待楚晨照 Review 单复核。**
+
+---
+
+## REQ-108-UI-01 · ui-audit `solidBgUp` 遇渐变底跳过 → 渐变按钮全量假阳（报 PUI·非本 session 域）
+
+**状态**：待 PUI 裁 ｜ **域**：`tools/ui-audit.mjs`（PUI 专职域·本 session 不擅改）
+**提出**：策划 session 2026-08-07 · game108 S3 交付前跑 ui-audit 时撞到
+
+**现象**：game108 对局屏三个 hero 键（`✊ 石` 及其副标）被判 `ratio=1.12` 硬失败（阻断），
+但真渲染截图（`public/games/game108/probe/S3-render.png`）目击**清晰可读**。
+
+**根因（实证·非推断）**：
+- `src/ui/components/render.ts:288` —— hero 键 = `background:linear-gradient(180deg,t.gold,t.warn)`
+  且 `color:t.bg0`（近黑字）。**渐变没有 `backgroundColor`**。
+- `tools/ui-audit.mjs:102` `solidBgUp()` —— 逐层向上找第一个不透明 `backgroundColor`，
+  **渐变底因为读不到 backgroundColor 被直接跳过**，一路落到兜底 `[6,8,13]`（近黑页底）。
+- ⇒ 近黑字 vs 近黑兜底 = 1.12。字的**真实底**（金渐变）从来没被量到。
+
+**影响面不止本游戏**：`game-c-play.audit.ts` 头注早已把同一形态记成「已知假阳」
+（gold-sheen 加注键 + ink 暗字），`game-a` 亦有先例。即凡用 hero 键 / FillPreset 渐变面的暗色游戏
+都会吃这一发，各自在审计入口写一段免责注释绕过——**假阳被分散消化掉了，阻断信号也就失效了**。
+
+**建议解法（PUI 定夺）**：`solidBgUp` 在 `backgroundColor` 透明但 `backgroundImage` 是
+`linear-gradient(...)` 时，**取首个色标当实底**，而不是跳过。
+比「给每个 hero 键手标 `data-audit-skip-contrast`」更根治——后者是把检查关掉，前者是把底量对。
+
+**本 session 已做的**：
+- 真读不清的 8 处**已修**（`ProgressBar.showValue` 在暗底 = `t.dim` 11px → 实测 2.93，改自出高对比 Label）。
+- 剩 6 处假阳按 game-c 先例在 `tools/audits/game108-duel.audit.ts` 头注留证据链，不掩盖。
+- **边界声明**：本 session 只**新增**了 `tools/audits/game108-duel.audit.ts`（本游戏的审计入口·同各游戏惯例），
+  **未改动** `tools/ui-audit.mjs` 或任何既有 PUI 文件。
+
+---
+
+## REQ-108-ENG-04 · 玩家出招接不进接缝：`Signal.source` 与房屋输入范式对不上（**缺口裁决协议·待 owner 判 A/B**）
+
+**状态**：**待 owner 判** ｜ **施工主体**：未定（owner 判后再认领并推一次）
+**发现**：策划 session 2026-08-07 · S3 接线宿主时撞到 ｜ **阻断**：玩家三个出招键**接不上世界**（S4 玩法关的前置）
+
+### ① 先查（协议第一步·留原文·禁凭印象）
+
+| 查了什么 | 原文 | 结论 |
+|---|---|---|
+| 接缝怎么认侧 | `matrix-duel.ts:848-849` `const side = s.source; if (!side \|\| !world.hasComponent(side,'Resource')) continue;` | 只认**挂着 hp 的对局侧实体**做 `Signal.source` |
+| keybind 怎么发信号 | `keybind.ts:83` `world.addComponent(id, {type:'Signal', name:kb.signal, source:id, ...(ev.arg!==undefined?{arg:ev.arg}:{})})` | `source` = **挂 KeyBinding 的那个实体**；已透传 `arg` |
+| 房屋 UI 接线范式 | `game-f/blueprint.ts:287-294`、`game101:109`、`game-103:294/422` | 一律 **一动作一个专属 `kb-*` 实体** → `Signal.source='kb-throw-rock'` ≠ `p1` |
+| 能不能把 3 份 KeyBinding 挂 p1 | **实测**（临时 vitest 探针）：连挂两份 → `getComponent` 只剩后一份、`query('KeyBinding').length===1` | **一实体一组件·第二份静默覆盖** ⇒ 挂不了 3 个 |
+| 别的产 Signal 的件行不行 | `event-when.ts:92` `source:eid`（同样一实体一份）；`clickable.ts:113` `source:best.eid`（要 Shape/空间命中·UI 键不走空间） | 都是同一堵墙 |
+| 有没有现成"代发"口 | `input.ts:49-54` `KeyBinding{key,signal,phase?}` —— **无 source 字段** | 没有 |
+| 引擎里有没有 source≠宿主的先例 | `drag-place.ts:253` `addComponent(zid,{...,source:eid})`；`timeline.ts:27` `source:owner` | **有先例**：代发在引擎里是既成形态，不是新概念 |
+
+**为什么重组不成**：房屋范式（一动作一 `kb-*` 实体）之所以对别的游戏都成立，是因为下游（`effect-apply`/`craft-recipe`/`event-when`）**按信号名 + 全局 `targetId` 消费，压根不看 `source`**。game108 是全库**第一个按 `Signal.source` 路由**的消费方（正是 owner 判过的 ENG-02 接缝），于是范式与消费方对不上。这不是我写错了接线，是两边范式的接缝没人对过。
+
+> 补一句根因：这已是同一个病的**第五次**——前四次是「全局 id 路由分不清按侧」（伤害缩放 / 清零 / flow 胜负 / ProgressBar.bind），这次是反过来「按侧路由接不上全局范式的输入」。对称双方玩法碰全局 id 路由，默认要撞。
+
+### ② 两条路（各附代价·影响面·通用性·选错要付什么）
+
+**A · 补引擎缺口：`KeyBinding` 加可选 `source?: EntityId`（"代发"）**
+- 改动面：`input.ts` 加一个可选字段 + `keybind.ts:83` 一处 `source: kb.source ?? id` + 落盘门 + 测试。**加法·不填=零回归**。
+- 通用性：**高**。凡「谁做的这件事」要被下游认的场景（按侧/按座/按队）都吃这一口，不止 game108。
+- 先例：`drag-place`/`timeline` 已在发 source≠宿主的信号，A 只是把这能力**开放给数据填**。
+- 代价：碰的是**共享输入面**（`src/skills/tier2/keybind.ts`），按「引擎改动分两类」属 🔴（碰新增写目标语义）→ 归主程，或按「自做自验 + Review 单」由我做。**两条规矩打架，正是楚晨请你收口的那条。**
+- 选错要付：几乎没有——可选字段不填即旧行为；真错了删字段即可。
+
+**B · 游戏独有逻辑：宿主直接写 `DuelIntent`**
+- 改动面：只动 `games/game108/game108.ts`，不碰引擎。**最快**。
+- 代价：**破 UI 铁律**（"handler 里绝不塞自由逻辑·写世界一律经 action 信号"）+ 玩法逻辑从数据漏进宿主代码 = 数据驱动宣言的反面。且**帧同步/状态同步（【R-108-60~62】v2 联机）会当场废掉**——宿主写的组件不进输入流，回放/对帧全断。
+- 通用性：零，纯游戏私货，还得记债。
+- 选错要付：v2 联机时推倒重来。
+
+**（另有一条 A′，供你一并看：让接缝改读 `Signal.arg`——一个 `throw` 信号 + arg 带手，KeyBinding 就能只挂一份在 `p1` 上。**只碰 matrix-duel 自己**、爆炸半径最小，且 `dialogue.choose`+arg 是现成先例。但它只修好 game108 这一处，下一个按 source 路由的消费方还得再撞一次。）**
+
+### ③ 我的推荐（**只是推荐·不下裁决**）
+
+**推 A**。理由：它把「代发」从两处硬编码（drag-place/timeline）提升成数据可填的通用能力，是**这五次同源事故里第一次能一次治本**的口子；代价是一个可选字段，选错成本几乎为零。A′ 更省事但等于承认「按 source 路由是 matrix-duel 的私事」，下次照撞。B 不建议——它省的那点工，要拿 v2 联机去还。
+
+**请你判 A / A′ / B。** 判完我再改工单的「施工主体」并推一次占锁，然后动手。
