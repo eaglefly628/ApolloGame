@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#171310;font-family:"ZCOOL KuaiLe","Fredoka",system-ui,sans-serif}
+a{color:#ffc93c}a:hover{color:#ffe08a}
+@keyframes rt3-shake{0%{transform:translateY(0) rotate(-9deg) scale(1)}25%{transform:translateY(-34px) rotate(4deg) scale(1.06)}50%{transform:translateY(6px) rotate(-6deg) scale(.97)}75%{transform:translateY(-22px) rotate(3deg) scale(1.04)}100%{transform:translateY(0) rotate(-9deg) scale(1)}}
+@keyframes rt3-shakeR{0%{transform:translateY(0) rotate(9deg) scale(1)}25%{transform:translateY(-34px) rotate(-4deg) scale(1.06)}50%{transform:translateY(6px) rotate(6deg) scale(.97)}75%{transform:translateY(-22px) rotate(-3deg) scale(1.04)}100%{transform:translateY(0) rotate(9deg) scale(1)}}
+@keyframes rt3-push{0%{transform:translateX(0)}100%{transform:translateX(26px)}}
+@keyframes rt3-pushR{0%{transform:translateX(0)}100%{transform:translateX(-26px)}}
+@keyframes rt3-glow{0%,100%{box-shadow:0 0 0 0 rgba(255,201,60,.9),0 6px 0 #3f2b1e}50%{box-shadow:0 0 0 12px rgba(255,201,60,0),0 6px 0 #3f2b1e}}
+@keyframes rt3-pop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1);opacity:1}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:radial-gradient(120% 100% at 50% 0%,#241c16,#0f0c0a);display:flex;flex-direction:column;align-items:center;gap:18px;padding:16px 0 48px">
+
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#211a15;border:1px solid #3f2b1e;border-radius:999px;padding:8px 12px;font-family:'Fredoka',system-ui,sans-serif">
+  <span style="color:#8c7a68;font-size:12px;letter-spacing:.08em;padding:0 6px">拳律 · 横版对局屏 1920×1080</span>
+  <sc-for list="{{ phaseTabs }}" as="tab" hint-placeholder-count="5">
+    <button onClick="{{ tab.go }}" style="{{ tab.style }}">{{ tab.label }}</button>
+  </sc-for>
+  <button onClick="{{ toggleAnno }}" style="{{ annoStyle }}">百分比标注</button>
+</div>
+
+<div ref="{{ fitRef }}" style="width:1920px;height:1080px;position:relative;overflow:hidden;border-radius:10px;border:3px solid #3f2b1e;box-shadow:0 30px 80px rgba(0,0,0,.6);transform-origin:top center;flex:none">
+
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,#5fc2ee 0%,#9fdcf7 42%,#d9f1ff 58%,#d9f1ff 60%)"></div>
+  <div style="position:absolute;left:120px;top:90px;width:260px;height:96px;background:#fff;border-radius:999px;opacity:.85;filter:blur(1px)"></div>
+  <div style="position:absolute;left:1420px;top:130px;width:340px;height:110px;background:#fff;border-radius:999px;opacity:.7;filter:blur(1px)"></div>
+  <div style="position:absolute;left:640px;top:60px;width:200px;height:74px;background:#fff;border-radius:999px;opacity:.6;filter:blur(1px)"></div>
+  <div style="position:absolute;left:-100px;top:430px;width:1100px;height:420px;background:#6fb84e;border-radius:50%"></div>
+  <div style="position:absolute;left:900px;top:400px;width:1300px;height:460px;background:#63ac46;border-radius:50%"></div>
+  <div style="position:absolute;left:0;top:560px;width:1920px;height:520px;background:linear-gradient(180deg,#8ccf55 0%,#77bd45 100%)"></div>
+  <div style="position:absolute;left:0;top:560px;width:1920px;height:520px;background:repeating-linear-gradient(102deg,rgba(255,255,255,.09) 0 46px,rgba(0,0,0,0) 46px 108px)"></div>
+  <div style="position:absolute;left:180px;top:540px;width:26px;height:44px;background:#f6e05e;border-radius:50%;box-shadow:120px 26px 0 #fff,300px -10px 0 #f8a5c2,470px 40px 0 #fff,1180px 18px 0 #f6e05e,1390px -6px 0 #fff,1620px 34px 0 #f8a5c2"></div>
+  <div style="position:absolute;left:1180px;top:470px;width:150px;height:120px;background:#e46a8a;border-radius:56% 56% 12% 12%;border:6px solid #c04f6d;box-sizing:border-box"></div>
+  <div style="position:absolute;left:1246px;top:560px;width:18px;height:60px;background:#c9a06a"></div>
+
+  <div style="{{ youArmStyle }}"></div>
+  <div style="{{ oppArmStyle }}"></div>
+
+  <div style="{{ youHandWrapStyle }}">
+    <svg viewBox="0 0 700 700" style="width:100%;height:100%;display:block;overflow:visible;filter:drop-shadow(0 16px 16px rgba(0,0,0,.22))">
+      <defs>
+        <linearGradient id="skL" x1="0" y1="0" x2=".35" y2="1">
+          <stop offset="0" stop-color="#fff3e2"/><stop offset=".55" stop-color="#fbe4cb"/><stop offset="1" stop-color="#efcda9"/>
+        </linearGradient>
+      </defs>
+      <g stroke="#6b4a3a" stroke-width="15" stroke-linejoin="round" fill="url(#skL)">
+        <g display="{{ youRockD }}">
+          <rect x="60" y="110" width="400" height="520" rx="190"/>
+          <rect x="300" y="122" width="288" height="142" rx="71" transform="rotate(-3 320 193)"/>
+          <rect x="305" y="256" width="315" height="142" rx="71"/>
+          <rect x="300" y="388" width="292" height="140" rx="70" transform="rotate(3 320 458)"/>
+          <rect x="292" y="512" width="248" height="132" rx="66" transform="rotate(7 312 578)"/>
+          <rect x="268" y="112" width="168" height="322" rx="84" transform="rotate(-10 352 273)"/>
+          <ellipse cx="180" cy="240" rx="78" ry="56" fill="#fff" opacity=".45" stroke="none"/>
+        </g>
+        <g display="{{ youPaperD }}">
+          <rect x="300" y="108" width="352" height="116" rx="58" transform="rotate(-16 330 166)"/>
+          <rect x="305" y="240" width="378" height="118" rx="59" transform="rotate(-3 335 299)"/>
+          <rect x="300" y="358" width="362" height="116" rx="58" transform="rotate(9 330 416)"/>
+          <rect x="285" y="458" width="310" height="110" rx="55" transform="rotate(22 315 513)"/>
+          <rect x="95" y="92" width="285" height="128" rx="64" transform="rotate(-44 200 156)"/>
+          <rect x="50" y="170" width="400" height="400" rx="180"/>
+          <path fill="none" stroke-width="10" opacity=".4" d="M150 290 Q225 348 208 428"/>
+          <path fill="none" stroke-width="10" opacity=".4" d="M220 300 Q292 360 278 445"/>
+          <ellipse cx="150" cy="270" rx="66" ry="48" fill="#fff" opacity=".45" stroke="none"/>
+        </g>
+        <g display="{{ youScissorsD }}">
+          <rect x="300" y="98" width="388" height="122" rx="61" transform="rotate(-13 330 159)"/>
+          <rect x="300" y="244" width="398" height="122" rx="61" transform="rotate(4 330 305)"/>
+          <rect x="60" y="215" width="400" height="400" rx="180"/>
+          <rect x="300" y="378" width="228" height="122" rx="61"/>
+          <rect x="292" y="490" width="206" height="116" rx="58"/>
+          <rect x="290" y="400" width="135" height="200" rx="67" transform="rotate(8 357 500)"/>
+          <ellipse cx="160" cy="320" rx="68" ry="50" fill="#fff" opacity=".45" stroke="none"/>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div style="{{ oppHandWrapStyle }}">
+    <svg viewBox="0 0 700 700" style="width:100%;height:100%;display:block;overflow:visible;transform:scaleX(-1);filter:drop-shadow(0 16px 16px rgba(0,0,0,.22))">
+      <defs>
+        <linearGradient id="skR" x1="0" y1="0" x2=".35" y2="1">
+          <stop offset="0" stop-color="#fdbc86"/><stop offset=".55" stop-color="#f79f62"/><stop offset="1" stop-color="#e9834a"/>
+        </linearGradient>
+      </defs>
+      <g stroke="#b5501a" stroke-width="15" stroke-linejoin="round" fill="url(#skR)">
+        <g display="{{ oppRockD }}">
+          <rect x="60" y="110" width="400" height="520" rx="190"/>
+          <rect x="300" y="122" width="288" height="142" rx="71" transform="rotate(-3 320 193)"/>
+          <rect x="305" y="256" width="315" height="142" rx="71"/>
+          <rect x="300" y="388" width="292" height="140" rx="70" transform="rotate(3 320 458)"/>
+          <rect x="292" y="512" width="248" height="132" rx="66" transform="rotate(7 312 578)"/>
+          <rect x="268" y="112" width="168" height="322" rx="84" transform="rotate(-10 352 273)"/>
+          <ellipse cx="180" cy="240" rx="78" ry="56" fill="#fff" opacity=".34" stroke="none"/>
+        </g>
+        <g display="{{ oppPaperD }}">
+          <rect x="300" y="108" width="352" height="116" rx="58" transform="rotate(-16 330 166)"/>
+          <rect x="305" y="240" width="378" height="118" rx="59" transform="rotate(-3 335 299)"/>
+          <rect x="300" y="358" width="362" height="116" rx="58" transform="rotate(9 330 416)"/>
+          <rect x="285" y="458" width="310" height="110" rx="55" transform="rotate(22 315 513)"/>
+          <rect x="95" y="92" width="285" height="128" rx="64" transform="rotate(-44 200 156)"/>
+          <rect x="50" y="170" width="400" height="400" rx="180"/>
+          <path fill="none" stroke-width="10" opacity=".38" d="M150 290 Q225 348 208 428"/>
+          <path fill="none" stroke-width="10" opacity=".38" d="M220 300 Q292 360 278 445"/>
+          <ellipse cx="150" cy="270" rx="66" ry="48" fill="#fff" opacity=".34" stroke="none"/>
+        </g>
+        <g display="{{ oppScissorsD }}">
+          <rect x="300" y="98" width="388" height="122" rx="61" transform="rotate(-13 330 159)"/>
+          <rect x="300" y="244" width="398" height="122" rx="61" transform="rotate(4 330 305)"/>
+          <rect x="60" y="215" width="400" height="400" rx="180"/>
+          <rect x="300" y="378" width="228" height="122" rx="61"/>
+          <rect x="292" y="490" width="206" height="116" rx="58"/>
+          <rect x="290" y="400" width="135" height="200" rx="67" transform="rotate(8 357 500)"/>
+          <ellipse cx="160" cy="320" rx="68" ry="50" fill="#fff" opacity=".34" stroke="none"/>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div style="position:absolute;left:883px;top:172px;width:154px;display:flex;flex-direction:column;gap:6px;align-items:center">
+    <div style="background:#6d6257;border:5px solid #3f2b1e;border-radius:12px;padding:10px 8px;display:flex;flex-direction:column;gap:8px;align-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.22),0 6px 0 rgba(0,0,0,.3)">
+      <div style="font-size:15px;color:#f2e6d2;letter-spacing:.12em">判定表</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:24px;color:#fff8e7;text-shadow:0 2px 0 rgba(0,0,0,.45)">
+        <div style="display:flex;gap:6px;align-items:center;justify-content:center">石<span style="color:#ffc93c">›</span>剪</div>
+        <div style="display:flex;gap:6px;align-items:center;justify-content:center">剪<span style="color:#ffc93c">›</span>布</div>
+        <div style="display:flex;gap:6px;align-items:center;justify-content:center">布<span style="color:#ffc93c">›</span>石</div>
+      </div>
+    </div>
+    <div style="font-family:'Fredoka',sans-serif;font-size:11px;color:#3f2b1e;background:rgba(255,255,255,.7);border-radius:6px;padding:2px 6px">道具可凿裂重刻</div>
+  </div>
+
+  <sc-if value="{{ showBanner }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:460px;top:392px;width:1000px;display:flex;flex-direction:column;align-items:center;gap:10px;animation:rt3-pop .35s cubic-bezier(.2,1.4,.4,1) both;pointer-events:none">
+    <div style="{{ verdictStyle }}">{{ verdictText }}</div>
+    <div style="{{ dmgStyle }}">{{ dmgText }}</div>
+    <div style="background:rgba(24,17,12,.86);border:6px solid #3f2b1e;border-radius:999px;padding:6px 40px;font-size:38px;color:#fff8e7">{{ bannerText }}</div>
+  </div>
+  </sc-if>
+
+  <div style="position:absolute;left:0;top:0;width:1920px;height:97px;background:linear-gradient(180deg,rgba(24,17,12,.86),rgba(24,17,12,.62));border-bottom:4px solid #3f2b1e;display:flex;align-items:center;padding:0 18px;box-sizing:border-box;gap:14px">
+
+    <div style="width:230px;flex:none;display:flex;align-items:center;gap:10px">
+      <div style="background:#23b5a0;border:4px solid #3f2b1e;border-radius:10px;padding:4px 16px;font-size:30px;color:#08312c;box-shadow:0 4px 0 #14776a">你</div>
+      <div style="width:34px;height:34px;border-radius:8px;background:#f9e2c8;border:3px solid #3f2b1e"></div>
+    </div>
+    <div style="width:290px;flex:none;display:flex;flex-direction:column;gap:5px">
+      <div style="height:22px;background:#2b211a;border:3px solid #3f2b1e;border-radius:999px;overflow:hidden"><div style="{{ youHpFill }}"></div></div>
+      <div style="display:flex;align-items:baseline;gap:6px;font-family:'Fredoka',sans-serif"><span style="font-size:38px;font-weight:700;color:#7defd6;line-height:.9">{{ youHp }}</span><span style="font-size:15px;color:#8c7a68">/100</span></div>
+    </div>
+
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:18px">
+      <div style="font-size:26px;color:#e8d9c2">第 3 回合</div>
+      <div style="{{ ringStyle }}">
+        <div style="width:60px;height:60px;border-radius:50%;background:#1b1410;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1">
+          <div style="{{ timerStyle }}">{{ timer }}</div>
+          <div style="font-size:10px;color:#8c7a68;font-family:'Fredoka',sans-serif">秒</div>
+        </div>
+      </div>
+      <div style="{{ phaseChipStyle }}">{{ phaseName }}</div>
+    </div>
+
+    <div style="width:290px;flex:none;display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+      <div style="width:100%;height:22px;background:#2b211a;border:3px solid #3f2b1e;border-radius:999px;overflow:hidden;display:flex;justify-content:flex-end"><div style="{{ oppHpFill }}"></div></div>
+      <div style="display:flex;align-items:baseline;gap:6px;font-family:'Fredoka',sans-serif"><span style="font-size:15px;color:#8c7a68">/100</span><span style="font-size:38px;font-weight:700;color:#ff9a8a;line-height:.9">{{ oppHp }}</span></div>
+    </div>
+    <div style="width:230px;flex:none;display:flex;align-items:center;justify-content:flex-end;gap:10px">
+      <div style="width:34px;height:34px;border-radius:8px;background:#f0a468;border:3px solid #3f2b1e"></div>
+      <div style="background:#e0483f;border:4px solid #3f2b1e;border-radius:10px;padding:4px 16px;font-size:30px;color:#fff2ec;box-shadow:0 4px 0 #94261f">赌徒</div>
+    </div>
+  </div>
+
+  <div style="position:absolute;left:1848px;top:112px;width:52px;height:52px;border-radius:50%;background:#fff6e2;border:4px solid #3f2b1e;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 0 rgba(0,0,0,.3)">⚙</div>
+
+  <div style="position:absolute;right:112px;top:110px;width:620px;display:flex;flex-direction:column;align-items:flex-end;gap:7px">
+    <div style="width:100%;box-sizing:border-box;display:flex;align-items:center;gap:9px;background:rgba(24,17,12,.62);border:3px solid #e0483f;border-radius:14px;padding:7px 10px;backdrop-filter:blur(2px)">
+      <div style="flex:none;font-size:19px;color:#ff9a8a;line-height:1.05;text-align:center">赌徒<br>蓄力</div>
+      <sc-for list="{{ oppSlots }}" as="s">
+        <div style="{{ s.style }}">
+          <div style="{{ s.iconStyle }}"></div>
+          <div style="flex:1;display:flex;gap:4px">
+            <div style="{{ s.p1 }}"></div><div style="{{ s.p2 }}"></div><div style="{{ s.p3 }}"></div>
+          </div>
+          <div style="{{ s.readStyle }}">{{ s.read }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ showThreat }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:center;gap:8px;background:#e0483f;border:4px solid #3f2b1e;border-radius:999px;padding:3px 18px;font-size:21px;color:#fff2ec;box-shadow:0 5px 0 rgba(0,0,0,.35)">
+      <span>⚠</span>他攒满了一手<span style="color:#ffc93c">石</span> · 被打中要掉四成血
+    </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ showHud }}" hint-placeholder-val="{{ true }}">
+  <div style="position:absolute;left:0;top:800px;width:1920px;height:280px;background:linear-gradient(180deg,rgba(24,17,12,.78),rgba(24,17,12,.94));border-top:5px solid #3f2b1e;box-sizing:border-box;padding:14px 20px;display:flex;gap:18px;align-items:stretch">
+
+    <div style="flex:none;display:flex;gap:12px">
+      <sc-for list="{{ cards }}" as="c" hint-placeholder-count="3">
+        <button onClick="{{ c.noop }}" style="{{ c.style }}">
+          <div style="{{ c.stripStyle }}">{{ c.name }}</div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:6px 0;min-height:0"><div style="{{ c.iconStyle }}"></div></div>
+          <div style="{{ c.subStyle }}">{{ c.sub }}</div>
+          <div style="{{ c.badgeStyle }}">{{ c.badge }}</div>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="flex:1;min-width:0;display:flex;align-items:stretch;gap:12px;background:rgba(35,181,160,.16);border:5px solid #23b5a0;border-radius:18px;padding:10px 14px;box-sizing:border-box">
+      <div style="flex:none;width:46px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:27px;color:#7defd6;line-height:1.05">我的<br>蓄力</div>
+      <sc-for list="{{ youSlots }}" as="s" hint-placeholder-count="3">
+        <div style="{{ s.style }}">
+          <div style="display:flex;align-items:center;gap:10px;width:100%">
+            <div style="{{ s.bigIconStyle }}"></div>
+            <div style="flex:1;min-width:0;text-align:left">
+              <div style="font-size:26px;color:#3f2b1e;line-height:1.1">{{ s.label }}</div>
+              <div style="font-family:'Fredoka',sans-serif;font-size:16px;color:#7a6553">现在打 {{ s.dmg }}</div>
+            </div>
+            <div style="{{ s.readStyle }}">{{ s.read }}</div>
+          </div>
+          <div style="display:flex;gap:7px;width:100%">
+            <div style="{{ s.p1 }}"></div><div style="{{ s.p2 }}"></div><div style="{{ s.p3 }}"></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="{{ smokeStyle }}">
+      <div style="font-size:52px;line-height:1">💨</div>
+      <div style="font-size:27px;color:#3f2b1e">烟雾 <span style="font-family:'Fredoka',sans-serif;font-weight:700">×2</span></div>
+      <div style="{{ smokeSubStyle }}">{{ smokeSub }}</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ showEnd }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;background:rgba(16,11,8,.78);display:flex;align-items:center;justify-content:center">
+    <div style="width:840px;background:linear-gradient(180deg,#fff6e2,#f4e2c4);border:9px solid #3f2b1e;border-radius:28px;padding:44px 56px;display:flex;flex-direction:column;align-items:center;gap:22px;box-shadow:0 20px 0 rgba(0,0,0,.35);animation:rt3-pop .4s cubic-bezier(.2,1.4,.4,1) both">
+      <div style="font-size:96px;line-height:1;color:#23b5a0;text-shadow:0 6px 0 #3f2b1e">你赢了</div>
+      <div style="display:flex;gap:40px;font-family:'Fredoka',sans-serif">
+        <div style="text-align:center"><div style="font-size:52px;font-weight:700;color:#3f2b1e;line-height:1">7</div><div style="font-size:18px;color:#7a6553;font-family:'ZCOOL KuaiLe'">回合</div></div>
+        <div style="width:3px;background:#d8c3a2"></div>
+        <div style="text-align:center"><div style="font-size:52px;font-weight:700;color:#3f2b1e;line-height:1">30</div><div style="font-size:18px;color:#7a6553;font-family:'ZCOOL KuaiLe'">剩余血量</div></div>
+      </div>
+      <button onClick="{{ noop }}" style="margin-top:6px;background:#ffc93c;border:6px solid #3f2b1e;border-radius:18px;padding:14px 60px;font-family:'ZCOOL KuaiLe';font-size:44px;color:#3f2b1e;box-shadow:0 8px 0 #c9932a;cursor:pointer">再来一局</button>
+      <div style="font-family:'Fredoka',sans-serif;font-size:14px;color:#9a8873">对局键已收起 · 此屏无死路操作</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ anno }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;pointer-events:none">
+    <sc-for list="{{ annoBoxes }}" as="b" hint-placeholder-count="6">
+      <div style="{{ b.style }}"><span style="{{ b.tagStyle }}">{{ b.label }}</span></div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+</div>
+
+<div style="width:1180px;max-width:92vw;color:#c9b8a4;font-family:'Fredoka',system-ui,sans-serif;font-size:14px;line-height:1.75">
+  <div style="font-family:'ZCOOL KuaiLe';font-size:22px;color:#ffc93c;margin-bottom:10px">交付说明</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px">
+    <div>
+      <div style="color:#fff6e2;font-family:'ZCOOL KuaiLe';font-size:17px;margin-bottom:4px">摇拳（T2）幅度与节拍 · REQ-108-UI-02</div>
+      3 拍循环，每拍 200ms，合计 600ms，共摇 5 轮（3.0s 相位铺满）。<br>
+      上下位移 −34px → +6px（约画布高 3.1% / −0.6%）；旋转 −9° → +4°；缩放 0.97 → 1.06。<br>
+      左右手反相同幅（右手旋转取负），落点回到待机姿态。<br>
+      引擎缺口：需要「循环 旋转+缩放 摆动」单条动画，或允许一个元素挂两条。
+    </div>
+    <div>
+      <div style="color:#fff6e2;font-family:'ZCOOL KuaiLe';font-size:17px;margin-bottom:4px">手部贴图规格（6 张 = 3 手型 × 2 色系）</div>
+      画布内每只手占 640×640 px 方框（= 33.3% × 59.3%），左手方框左边 x=250，右手右边 x=250，顶 y=150。<br>
+      稿中手型是矢量示意，出图请按 1280×1280 @2x 导出：hand_{rock|paper|scissors}_{L|R}.png。<br>
+      单掌实测 366×476 px = 画布 19.1% × 44.1%，掌心落屏 y≈47%；比 brief 的 22.4%/45.4% 略窄，因为指节向中线伸出后合计仍占满区间——手型切换时掌心不动。<br>
+      手臂是独立件（430×158，贴边不切手），不并入手型图；色系换掌与臂同一套色。<br>
+      底栏三卡与蓄力槽的小图标是同一套手型的正视版，另出 3 张。
+    </div>
+  </div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:1240}}">
+const INK='#3f2b1e', CREAM='#fff6e2';
+const GEST={rock:{n:'石',g:'✊'},paper:{n:'布',g:'✋'},scissors:{n:'剪',g:'✌'}};
+const CARDC={rock:'#2f7fd0',paper:'#31a83f',scissors:'#c8214f'};
+const ICON={rock:'hands/icon_rock.png',paper:'hands/icon_paper.png',scissors:'hands/icon_scissors.png'};
+const BOX={off:250,top:150,size:640};
+
+class Component extends DCLogic {
+  state={phase:'t1',anno:false};
+  componentDidMount(){this.fit();this._h=()=>this.fit();window.addEventListener('resize',this._h);}
+  componentWillUnmount(){window.removeEventListener('resize',this._h);}
+  fit(){const el=this._el;if(!el)return;const w=el.parentElement.clientWidth;const s=Math.min(1,(w-8)/1920);el.style.transform='scale('+s+')';el.style.marginBottom=(1080*s-1080)+'px';}
+
+  data(){
+    const p=this.state.phase;
+    const d={
+      t1:{name:'蓄力',timer:'2.4',pct:80,you:'idle',opp:'idle',mode:'charge',youHp:100,oppHp:100,
+          youSlots:{rock:1,paper:3,scissors:0},oppSlots:{rock:3,paper:1,scissors:0},sel:null,banner:null},
+      t2:{name:'出招',timer:'0.8',pct:27,you:'shake',opp:'shake',mode:'strike',youHp:100,oppHp:100,
+          youSlots:{rock:1,paper:3,scissors:0},oppSlots:{rock:3,paper:1,scissors:0},sel:'paper',banner:null},
+      t3:{name:'对决',timer:'1.2',pct:60,you:'paper',opp:'rock',mode:'off',youHp:100,oppHp:100,
+          youSlots:{rock:1,paper:3,scissors:0},oppSlots:{rock:3,paper:1,scissors:0},sel:'paper',
+          banner:{v:'布 › 石',t:'你赢了这回合',d:'-40',dmg:40,win:true}},
+      t4:{name:'结算',timer:'0.6',pct:30,you:'paper',opp:'rock',mode:'off',youHp:100,oppHp:60,
+          youSlots:{rock:1,paper:0,scissors:0},oppSlots:{rock:0,paper:1,scissors:0},sel:null,
+          banner:{v:'布 › 石',t:'伤害落定',d:'-40',dmg:40,win:true}},
+      end:{name:'终局',timer:'—',pct:0,you:'paper',opp:'rock',mode:'off',youHp:30,oppHp:0,
+          youSlots:{rock:0,paper:0,scissors:0},oppSlots:{rock:0,paper:0,scissors:0},sel:null,banner:null}
+    };
+    return d[p];
+  }
+
+  slot(k,n,mine){
+    const full=n>=3;
+    const pip=(i)=>{
+      const on=i<=n;
+      return 'flex:1;height:'+(mine?'20px':'9px')+';border-radius:'+(mine?'6px':'3px')+';border:'+(mine?'3px':'2px')+' solid '+INK+';box-sizing:border-box;background:'+(on?(full?'#ffc93c':(mine?'#23b5a0':'#e0483f')):'rgba(63,43,30,.18)');
+    };
+    return {
+      label:GEST[k].n+(k==='rock'?' 石头':k==='paper'?' 布':' 剪刀'),
+      icon:ICON[k],
+      iconStyle:'flex:none;width:28px;height:34px;background:url('+ICON[k]+') center/contain no-repeat',
+      bigIconStyle:'flex:none;width:56px;height:62px;background:url('+ICON[k]+') center/contain no-repeat',
+      p1:pip(1),p2:pip(2),p3:pip(3),
+      dmg:(10+n*10),
+      read:n+'/3',
+      readStyle:'flex:none;font-family:Fredoka,sans-serif;font-weight:700;font-size:'+(mine?'38px':'19px')+';color:'+(full?'#a8720b':'#5d4a3a')+';min-width:'+(mine?'78px':'44px')+';text-align:right;line-height:1',
+      style:mine
+        ? 'flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:12px 16px;border-radius:16px;box-sizing:border-box;background:'+(full?'linear-gradient(180deg,#ffe9a8,#ffd45e)':CREAM)+';border:5px solid '+INK+';box-shadow:0 6px 0 rgba(0,0,0,.4)'+(full?';animation:rt3-glow 1.4s ease-out infinite':'')
+        : 'flex:1;min-width:0;display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:9px;box-sizing:border-box;background:'+(full?'linear-gradient(180deg,#ffe9a8,#ffd45e)':'rgba(255,246,226,.94)')+';border:3px solid '+INK
+    };
+  }
+
+  renderVals(){
+    const st=this.state, d=this.data(), p=st.phase;
+    const tabs=[['t1','T1 蓄力'],['t2','T2 出招'],['t3','T3 对决'],['t4','T4 结算'],['end','终局']];
+    const btn=(on)=>'font-family:inherit;font-size:13px;padding:6px 14px;border-radius:999px;cursor:pointer;border:1px solid '+(on?'#ffc93c':'#3f2b1e')+';background:'+(on?'#ffc93c':'#2a211a')+';color:'+(on?'#241c16':'#c9b8a4');
+
+    const key=(m)=>(m==='idle'||m==='shake')?'rock':m;
+    const dsp=(m,k)=>key(m)===k?'inline':'none';
+    const handWrap=(side,mode)=>{
+      const base='position:absolute;top:'+BOX.top+'px;height:'+BOX.size+'px;width:'+BOX.size+'px;'+(side==='L'?'left:'+BOX.off+'px':'right:'+BOX.off+'px')+';';
+      let anim='';
+      if(mode==='shake') anim='animation:'+(side==='L'?'rt3-shake':'rt3-shakeR')+' .6s ease-in-out infinite;transform-origin:'+(side==='L'?'left':'right')+' center;';
+      else if(mode!=='idle') anim='animation:'+(side==='L'?'rt3-push':'rt3-pushR')+' .28s cubic-bezier(.2,1.4,.4,1) forwards;';
+      return base+anim;
+    };
+    const arm=(side)=>{
+      const k=key(side==='L'?'x':'x');
+      const skin=side==='L'?'linear-gradient(180deg,#fdf0dd,#eecfab)':'linear-gradient(180deg,#fdbc86,#e9834a)';
+      const line=side==='L'?'#6b4a3a':'#b5501a';
+      return 'position:absolute;top:420px;height:158px;width:430px;'+(side==='L'?'left:0;border-left:none':'right:0;border-right:none')+';background:'+skin+';border:15px solid '+line+';box-sizing:border-box';
+    };
+
+    const cards=['rock','paper','scissors'].map(k=>{
+      const n=d.youSlots[k], full=n>=3, off=d.mode==='off';
+      const disabled=off||(d.mode==='charge'&&full);
+      const selected=d.sel===k;
+      let sub='—';
+      if(d.mode==='charge') sub=full?'已满 · 点不动':'蓄力 → '+(20+n*10);
+      else if(d.mode==='strike') sub='打 '+(10+n*10);
+      else sub='本回合不可点';
+      return {
+        name:GEST[k].n+' · '+(k==='rock'?'石头':k==='paper'?'布':'剪刀'),
+        iconStyle:'width:96px;height:104px;background:url('+ICON[k]+') center/contain no-repeat;filter:drop-shadow(0 4px 4px rgba(0,0,0,.18))', sub, noop:()=>{},
+        badge:selected?'已提交':(full?'满':''),
+        badgeStyle:(selected||full)?'position:absolute;top:-14px;right:-10px;background:'+(selected?'#ffc93c':'#e0483f')+';color:'+(selected?INK:'#fff')+';border:4px solid '+INK+';border-radius:999px;padding:2px 12px;font-size:17px':'display:none',
+        stripStyle:'width:100%;background:'+CARDC[k]+';color:#fff;border-bottom:4px solid '+INK+';padding:5px 0;font-size:20px;text-shadow:0 2px 0 rgba(0,0,0,.3)',
+        subStyle:'margin-top:auto;width:100%;padding:7px 0;font-size:'+(d.mode==='strike'?'26px':'22px')+';color:'+(disabled?'#9a8873':INK)+';background:rgba(63,43,30,.08);border-top:3px solid rgba(63,43,30,.25)',
+        style:'position:relative;width:186px;height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;overflow:visible;padding:0;font-family:inherit;cursor:'+(disabled?'not-allowed':'pointer')+';background:'+(disabled?'#cfc3b0':CREAM)+';border:5px solid '+INK+';border-radius:16px;box-shadow:0 '+(selected?'2px':'7px')+' 0 '+(selected?'#c9932a':'rgba(0,0,0,.4)')+';transform:translateY('+(selected?'5px':'0')+');opacity:'+(disabled?'.62':'1')+';outline:'+(selected?'6px solid #ffc93c':'none')
+      };
+    });
+
+    const bx=(l,t,w,h,label,c)=>({label,style:'position:absolute;left:'+l+'px;top:'+t+'px;width:'+w+'px;height:'+h+'px;border:3px dashed '+c+';box-sizing:border-box;border-radius:4px;background:rgba(0,0,0,.06)',tagStyle:'position:absolute;left:0;top:0;transform:translateY(-100%);background:'+c+';color:#fff;font-family:Fredoka,sans-serif;font-size:14px;font-weight:600;padding:2px 8px;white-space:nowrap'});
+    const annoBoxes=[
+      bx(0,0,1920,97,'① 顶栏 y 0–9%','#e0483f'),
+      bx(250,150,640,640,'③ 左手方框（你）x 13.0–46.4% · y 13.9–73.1%','#1a7bd4'),
+      bx(1030,150,640,640,'③ 右手方框（赌徒）x 53.6–86.9%','#1a7bd4'),
+      bx(0,420,430,158,'左臂 x 0–22.4% · y 38.9–53.5%','#2aa5e0'),
+      bx(1490,420,430,158,'右臂 x 77.6–100%','#2aa5e0'),
+      bx(883,150,154,548,'④ 中线区 x 46–54%','#8e44ad'),
+      bx(0,800,1920,280,'⑤⑥⑦ 底栏 y 74–100%','#0f9d58'),
+      bx(305,250,366,476,'单掌 宽 19.1% · 高 44.1% · 掌心 y≈47%','#ff8c1a')
+    ];
+
+    const b=d.banner;
+    return {
+      phaseTabs:tabs.map(([k,l])=>({label:l,go:()=>this.setState({phase:k}),style:btn(p===k)})),
+      toggleAnno:()=>this.setState({anno:!st.anno}),
+      annoStyle:btn(st.anno), anno:st.anno, noop:()=>{},
+      showHud:p!=='end', showEnd:p==='end',
+      showThreat:(p==='t1'||p==='t2'),
+      showBanner:!!b,
+      verdictText:b?b.v:'', bannerText:b?b.t:'', dmgText:b?b.d:'',
+      verdictStyle:'font-size:52px;color:#fff8e7;background:#8e44ad;border:6px solid '+INK+';border-radius:999px;padding:2px 40px;text-shadow:0 3px 0 rgba(0,0,0,.4)',
+      dmgStyle:b?('font-family:Fredoka,sans-serif;font-weight:700;line-height:.86;margin:-4px 0;font-size:'+(56+b.dmg*2.1)+'px;color:'+(b.win?'#ffc93c':'#ff6a58')+';text-shadow:0 5px 0 '+INK+',0 0 34px rgba(255,201,60,.6)'):'',
+      youRockD:dsp(d.you,'rock'), youPaperD:dsp(d.you,'paper'), youScissorsD:dsp(d.you,'scissors'),
+      oppRockD:dsp(d.opp,'rock'), oppPaperD:dsp(d.opp,'paper'), oppScissorsD:dsp(d.opp,'scissors'),
+      youArmStyle:arm('L'), oppArmStyle:arm('R'),
+      youHandWrapStyle:handWrap('L',d.you), oppHandWrapStyle:handWrap('R',d.opp),
+      youHp:d.youHp, oppHp:d.oppHp,
+      youHpFill:'height:100%;width:'+d.youHp+'%;background:linear-gradient(180deg,#5fe8cd,#1f9c89)',
+      oppHpFill:'height:100%;width:'+d.oppHp+'%;background:linear-gradient(180deg,#ff9a8a,#d0342b)',
+      phaseName:d.name, timer:d.timer,
+      timerStyle:'font-family:Fredoka,sans-serif;font-weight:700;font-size:24px;color:'+(d.pct<34?'#ff5a45':'#fff6e2'),
+      ringStyle:'width:78px;height:78px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient('+(d.pct<34?'#ff5a45':'#ffc93c')+' '+(d.pct*3.6)+'deg,rgba(255,255,255,.14) 0)',
+      phaseChipStyle:'font-size:34px;color:'+INK+';background:'+(d.pct<34?'#ff5a45':'#ffc93c')+';border:5px solid '+INK+';border-radius:12px;padding:2px 26px;box-shadow:0 5px 0 rgba(0,0,0,.4)',
+      cards,
+      oppSlots:['rock','paper','scissors'].map(k=>this.slot(k,d.oppSlots[k],false)),
+      youSlots:['rock','paper','scissors'].map(k=>this.slot(k,d.youSlots[k],true)),
+      smokeSub:p==='t3'||p==='t4'?'对决中不可用':'遮蔽我方三槽 2 回合',
+      smokeSubStyle:'font-family:Fredoka,sans-serif;font-size:14px;color:#7a6553',
+      smokeStyle:'flex:none;width:270px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:'+((p==='t3'||p==='t4')?'#cfc3b0':CREAM)+';border:5px solid '+INK+';border-radius:16px;box-shadow:0 7px 0 rgba(0,0,0,.4);opacity:'+((p==='t3'||p==='t4')?'.6':'1')+';cursor:pointer',
+      annoBoxes,
+      fitRef:(el)=>{this._el=el;if(el)requestAnimationFrame(()=>this.fit());}
+    };
+  }
+}
+</script>
+</body>
+</html>
