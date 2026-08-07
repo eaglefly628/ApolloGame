@@ -1,0 +1,24 @@
+// GD-108 验收剧本 ⑨ · 烟雾（gdd §15 表第 9 行·验 R-108-20/21/22）。
+//   点烟雾：扣 1 次次数 → 隐藏旗亮起 → 计 2 回合；**蓄力照常累积**（这是条款的要害：
+//   烟雾遮的是"对手能不能看见"，不是"我能不能蓄"）。
+// 对抗目标：烟雾不扣次数（无限用）/ 不置旗（点了没效果）→ 断言红。
+{
+  "name": "烟雾·扣次数置旗且蓄力照常",
+  "game": "game108", "seed": 108,
+  "steps": [
+    { "expect": [
+      { "res": "p1.smoke", "eq": 2 },          // 一局两发
+      { "flag": "p1.hidden", "eq": false },
+      { "res": "p1.smokeTurns", "eq": 0 },
+    ] },
+    { "signal": "smoke.use" }, { "tick": 3 },
+    { "expect": [
+      { "res": "p1.smoke", "eq": 1 },          // 【R-108-20】扣一次
+      { "flag": "p1.hidden", "eq": true },     // 【R-108-21】自方槽对对手隐藏
+      { "res": "p1.smokeTurns", "eq": 2 },     // 【R-108-22】遮 2 回合
+    ] },
+    // 【R-108-21】蓄力照常累积（烟雾不影响自己蓄）
+    { "signal": "charge.rock" }, { "tick": 2 },
+    { "expect": [ { "res": "p1.charge.rock", "eq": 1 }, { "flag": "p1.hidden", "eq": true } ] },
+  ],
+}

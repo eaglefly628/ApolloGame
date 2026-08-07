@@ -10,12 +10,13 @@
 // 能力总览：docs/design/game108/capability-plan.md；规则语义：gdd.md（条款 R-108-NN）。
 import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 import { resourceCapability, flagCapability, stringVariableCapability, randomCapability } from '@zerocraft/engine/atom-skills/index.js';
-import { eventWhenCapability, effectApplyCapability, matrixDuelCapability, selfRuleCapability, keybindCapability } from '@zerocraft/engine/skills/tier2/index.js';
+import { eventWhenCapability, effectApplyCapability, matrixDuelCapability, selfRuleCapability, keybindCapability, craftRecipeCapability } from '@zerocraft/engine/skills/tier2/index.js';
 import { flowCapability } from '@zerocraft/engine/skills/tier3/index.js';
 import {
   HANDS, SIDES, HP_MAX, CHARGE_CAP, DMG_BASE, DMG_STEP, TIE_SELF_DAMAGE,
   PHASE_TICKS, ACT, HP_RES, chargeRes, chargeRelName, chargeEntity, lastThrowVar,
-  type Hand, type Side,
+  SMOKE_RES, SMOKE_TURNS, SMOKE_FLAG, SMOKE_USES, SMOKE_DURATION,
+  type Hand, type Side, type OpponentId,
 } from './theme.js';
 
 /** 「该侧已倒下」的 Flag id（**各侧唯一**——全局条件路由靠它认侧）。 */
@@ -34,8 +35,10 @@ export const aiChargeSignal = (h: Hand): string => `ai.charge.${h}`;
 export const throwSignal = (h: Hand): string => ACT.throw(h);
 
 /** 判定表【R-108-12/13】：石 > 剪 > 布 > 石；伤害按**出手方**该手蓄力线性缩放。 */
-function duelMatrix(): Record<string, unknown> {
+function duelMatrix(opponent: OpponentId = 'parrot'): Record<string, unknown> {
   return {
+    // 【R-108-32】大师自带改写过的判定表（静态补丁·其余对手无补丁）。
+    ...(opponent === 'master' ? { patches: MASTER_PATCHES } : {}),
     hpResource: HP_RES,
     throws: [...HANDS],
     beats: { rock: ['scissors'], paper: ['rock'], scissors: ['paper'] },
@@ -88,7 +91,12 @@ function duelFlow(): Record<string, unknown> {
       // 判定与伤害在引擎里是同一次操作，故「揭晓」这一拍就是它落地的那一拍）。
       {
         id: 'clash',
-        onEnter: [{ kind: 'set-flag', targetId: SETTLE_GATE, value: true }],
+        onEnter: [
+          { kind: 'set-flag', targetId: SETTLE_GATE, value: true },
+          // **必须在这里关出招门**：不关的话，结算写完 lastThrow 会让「按 lastThrow 出招」那批
+          // edge 规则再次抬升边沿 → 同一回合结算第二次（实测：伤害从 30 变 40 = 30 + 清零后的 10）。
+          { kind: 'set-flag', targetId: THROWING_GATE, value: false },
+        ],
         transitions: [{ after: PHASE_TICKS.clash, to: 'settle' }],
       },
       // T4 结算：门随即关上——下一回合的提交不该被上一回合开着的门直接结算掉。
@@ -146,51 +154,132 @@ function playerKeys(): Record<string, EntityBlueprint> {
 }
 
 /**
- * 对手 ①【复读机】【R-108-30/32】—— **纯数据的条件加权表**（本目录零 AI 代码）。
+ * 五名对手【R-108-30/32】—— **纯数据的条件规则表**（本目录零 AI 代码）。
  *
- * 行为：**复用上一回合自己出过的那只手**（首回合没有上一手 → 出石开局）。
- * 这是教学曲线的第一课：「对手是有规律的」——玩家读两回合就该看出来，然后用克制它的手赢。
- * 【R-108-32】要求破绽「明显·必现」，所以这一档**刻意不随机**。
+ * 【R-108-32】五名对手是**一条教学曲线**，不是五个数值不同的怪：
+ *  ① 复读机 parrot  —— 复用上一回合自己出的手。破绽明显·必现。教「对手是有规律的」。
+ *  ② 莽夫   brute   —— 偏爱石头（永远蓄石出石，除非上一手是石则继续石）。教「读表演」。
+ *  ③ 戏子   actor   —— **蓄一手、出另一手**（蓄上一手的克制手、出上一手）。教「蓄力会说谎」。
+ *  ④ 赌徒   gambler —— 血少（≤50）时必满蓄押上一手；血厚时同复读机。教「逆转与孤注」。
+ *  ⑤ 大师   master  —— 自带**改写过的判定表**（静态 patches）+ 行为同戏子。总检。
  *
- * 怎么表达成数据（全部现成能力，零游戏层 system）：
- *  · **读上一手** = `ConditionExpr{kind:'string', id:'p2.lastThrow'}` 读 `lastThrowVar` 写下的那份
- *    （`clearOnSettle`/`lastThrowVar` 是 REQ-108-ENG-03 收进解释器的结算副作用）。
- *  · **只在对应时区动手** = 与相位门 Flag 取 `and`（flow 的 `onEnter` 开关它）。
- *  · **代表 p2 发信号** = `EventWhen.source: 'p2'`（REQ-108-ENG-05）——接缝按 `Signal.source` 认侧，
- *    不代发就永远认不到人（一实体一组件也挤不下三手，故一手一个规则实体）。
- *  · `mode:'edge'` = 每进一次该时区只发一次（离开时区条件回落自动复位）。
+ * 【R-108-30】原文要求「条件加权表·权重经种子 PRNG 抽取」。**本轮五档全部落在"条件"这一半**：
+ * 每档的行为都是**确定性规则**，没有用到权重抽取——这不是偷懒，是【R-108-32】的硬要求：
+ * 前四档都写明了「破绽」（明显·必现 / 攥拳高频 / 假动作 / 血低时破绽变多），
+ * **破绽要可读，行为就不能随机**。设计红线也写死了「AI 必须 3-4 回合内可读，读不出来的 AI =
+ * 随机数发生器 = 违反支柱一」。加权抽取留给后续「同权重档位间的平局打散」，届时另查通路。
  *
- * 后续四名对手（莽夫/戏子/赌徒/Boss）要**按权重抽**，那需要种子 PRNG 的抽取通路——
- * 本轮先把「AI 能对打」这条通路打通并被验收剧本钉死，加权档另查。
+ * 表达手段（全部现成能力）：读上一手 = `ConditionExpr{kind:'string'}` 读 `lastThrowVar`；
+ * 只在对应时区动手 = 与相位门 Flag 取 `and`；代表 p2 发信号 = `EventWhen.source`（ENG-05）。
  */
-function opponentRules(): Record<string, EntityBlueprint> {
+const BEATEN_BY: Record<Hand, Hand> = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
+
+function opponentRules(who: OpponentId): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
   const lastIs = (h: Hand | ''): Record<string, unknown> => ({ kind: 'string', id: lastThrowVar('p2'), equals: h });
+  const openingIsRock = (h: Hand): Record<string, unknown> =>
+    h === 'rock' ? { kind: 'or', of: [lastIs('rock'), lastIs('')] } : lastIs(h);
+
+  /** 该档在「上一手 = prev」时，蓄哪只手 / 出哪只手。 */
+  const plan = (prev: Hand): { charge: Hand; throw: Hand } => {
+    switch (who) {
+      case 'brute':   return { charge: 'rock', throw: 'rock' };                       // 偏爱石头·永远石
+      case 'actor':                                                                    // 蓄一手、出另一手
+      case 'master':  return { charge: BEATEN_BY[prev], throw: prev };                // 蓄"克制上一手的手"当假动作，实际出上一手
+      case 'gambler': return { charge: prev, throw: prev };                            // 押上一手（血低时靠满蓄放大·见 §赌徒）
+      default:        return { charge: prev, throw: prev };                            // 复读机
+    }
+  };
+
   for (const h of HANDS) {
-    // 上一手是 h（首回合 lastThrow='' → 只有石那条的 or 分支命中）→ T1 蓄 h、T2 出 h。
-    const repeats = h === 'rock'
-      ? { kind: 'or', of: [lastIs('rock'), lastIs('')] }   // 开局默认出石（确定性·非随机）
-      : lastIs(h);
+    const when = openingIsRock(h);
+    const p = plan(h);
     out[`ai:charge:${h}`] = {
       EventWhen: {
-        signal: aiChargeSignal(h), mode: 'edge', armed: false,
-        when: { kind: 'and', of: [{ kind: 'flag', id: CHARGING_GATE }, repeats] },
+        signal: aiChargeSignal(p.charge), mode: 'edge', armed: false,
+        when: { kind: 'and', of: [{ kind: 'flag', id: CHARGING_GATE }, when] },
       },
     } as EntityBlueprint;
     out[`ai:throw:${h}`] = {
       EventWhen: {
-        signal: throwSignal(h), mode: 'edge', armed: false,
+        signal: throwSignal(p.throw), mode: 'edge', armed: false,
         source: 'p2',                                       // ← REQ-108-ENG-05：接缝据此认侧
-        when: { kind: 'and', of: [{ kind: 'flag', id: THROWING_GATE }, repeats] },
+        when: { kind: 'and', of: [{ kind: 'flag', id: THROWING_GATE }, when] },
       },
     } as EntityBlueprint;
   }
   return out;
 }
 
-export function buildBlueprint(): WorldBlueprint {
+/**
+ * 【R-108-02】超时顺延——T2 不点就**保持上一回合的选择**（不罚玩家、不卡节奏）。
+ *
+ * 做法与复读机同一个形状：一进 T2 就按 `p1.lastThrow` 先替玩家提交一手；
+ * 玩家真点了会**覆盖**掉它（接缝原话「已有 intent 则覆盖——同一时区内改主意是合法操作」）。
+ * 首回合没有上一手（`lastThrow=''`）⇒ 不预填，玩家必须自己选。
+ */
+function timeoutCarryOver(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  for (const h of HANDS) {
+    out[`carry:${h}`] = {
+      EventWhen: {
+        signal: throwSignal(h), mode: 'edge', armed: false,
+        source: 'p1',
+        when: {
+          kind: 'and',
+          of: [{ kind: 'flag', id: THROWING_GATE }, { kind: 'string', id: lastThrowVar('p1'), equals: h }],
+        },
+      },
+    } as EntityBlueprint;
+  }
+  return out;
+}
+
+/**
+ * 【R-108-20/21/22】烟雾——花一次次数，把自方三条槽对对手遮 2 回合；蓄力照常累积。
+ * `t2-craft-recipe`：`smoke.use` 信号 + 扣 1 次次数 → 置隐藏旗；回合数由 `smokeTurns` 资源计，
+ * 每次结算（`duel.resolved`）−1，归零时 self-rule 落旗。**全是数据，零游戏层 system。**
+ */
+function smokeWiring(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  out['smoke:p1'] = {
+    CraftRecipe: {
+      onSignal: ACT.smoke,
+      costs: [{ id: SMOKE_RES('p1'), amount: 1 }],
+      gains: [{ id: SMOKE_TURNS('p1'), amount: SMOKE_DURATION }],
+      grantsFlag: SMOKE_FLAG('p1'),
+    },
+  } as EntityBlueprint;
+  // 每次结算 −1 回合（duel.resolved 是判定表的 resolvedSignal）。
+  out['smoke:tick'] = {
+    Effect: { onSignal: 'duel.resolved', kind: 'modify-resource', targetId: SMOKE_TURNS('p1'), value: -1, op: 'add' },
+  } as EntityBlueprint;
+  // 回合数归零 → 落旗（读自身 → 施自身，按侧不串台）。
+  out['smoke:res:p1'] = {
+    Resource: { id: SMOKE_TURNS('p1'), current: 0, min: 0, max: SMOKE_DURATION },
+    Flag: { id: SMOKE_FLAG('p1'), active: false },
+    SelfRule: {
+      when: { kind: 'resource', id: SMOKE_TURNS('p1'), cmp: 'lte', value: 0 },
+      do: [{ kind: 'set-flag', targetId: SMOKE_FLAG('p1'), value: false }],
+    },
+  } as EntityBlueprint;
+  out['smoke:uses:p1'] = { Resource: { id: SMOKE_RES('p1'), current: SMOKE_USES, min: 0, max: SMOKE_USES } } as EntityBlueprint;
+  out['kb:smoke'] = { KeyBinding: { key: ACT.smoke, signal: ACT.smoke } } as EntityBlueprint;
+  return out;
+}
+
+/** 【R-108-32】大师自带改写过的判定表（**静态 patches**·对局开始即生效·每拍重 fold）。 */
+const MASTER_PATCHES = [
+  // **整环反转**（石←→剪←→布 全反），而不是只让石多克一手——后者会让「石克布」与「布克石」
+  // 同时成立，落盘门当场硬抛「同一格定不出胜负」（实测踩过，判词还直接给了修法）。
+  { kind: 'beats', throw: 'rock', beats: ['paper'] },
+  { kind: 'beats', throw: 'paper', beats: ['scissors'] },
+  { kind: 'beats', throw: 'scissors', beats: ['rock'] },
+];
+
+export function buildBlueprint(opponent: OpponentId = 'parrot'): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {
-    duel: { DuelMatrix: duelMatrix() } as EntityBlueprint,
+    duel: { DuelMatrix: duelMatrix(opponent) } as EntityBlueprint,
     flow: { GameFlow: duelFlow() } as EntityBlueprint,
     // 种子 PRNG：AI 抽招 / 破绽概率门一律走它——游戏层禁裸 Math.random（红线）。
     seed: { RandomSeed: { seed: 108 } } as EntityBlueprint,
@@ -198,7 +287,9 @@ export function buildBlueprint(): WorldBlueprint {
     gate: { Flag: { id: SETTLE_GATE, active: false } } as EntityBlueprint,
     'gate:charging': { Flag: { id: CHARGING_GATE, active: true } } as EntityBlueprint,
     'gate:throwing': { Flag: { id: THROWING_GATE, active: false } } as EntityBlueprint,
-    ...opponentRules(),
+    ...opponentRules(opponent),
+    ...timeoutCarryOver(),
+    ...smokeWiring(),
     ...chargeEffects(),
     ...playerKeys(),
   };
@@ -227,7 +318,7 @@ export function buildBlueprint(): WorldBlueprint {
   return {
     capabilities: [
       resourceCapability, flagCapability, stringVariableCapability, randomCapability,
-      eventWhenCapability, effectApplyCapability, keybindCapability,
+      eventWhenCapability, effectApplyCapability, keybindCapability, craftRecipeCapability,
       matrixDuelCapability, selfRuleCapability,
       flowCapability,
     ],

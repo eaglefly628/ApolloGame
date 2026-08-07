@@ -60,6 +60,20 @@ export const lastThrowVar = (side: Side): string => `${side}.lastThrow`;
 /** house 主题（capability-plan §4.6：起手传 house 主题，不自写皮）。 */
 export const DUEL_THEME: UITheme = apolloOnyx;
 
+/** 烟雾【R-108-20/21/22】：次数资源 id / 生效回合数 / 隐藏旗 id。 */
+export const SMOKE_RES = (side: Side): string => `${side}.smoke`;
+export const SMOKE_TURNS = (side: Side): string => `${side}.smokeTurns`;
+export const SMOKE_FLAG = (side: Side): string => `${side}.hidden`;
+export const SMOKE_USES = 2;      // 一局两发
+export const SMOKE_DURATION = 2;  // 遮 2 回合，第 3 回合起全曝光
+
+/** 五名对手【R-108-32】= 一条教学曲线，不是五个数值不同的怪。 */
+export const OPPONENTS = ['parrot', 'brute', 'actor', 'gambler', 'master'] as const;
+export type OpponentId = (typeof OPPONENTS)[number];
+export const OPPONENT_CN: Record<OpponentId, string> = {
+  parrot: '复读机', brute: '莽夫', actor: '戏子', gambler: '赌徒', master: '拳律大师',
+};
+
 // 竖屏超休闲舞台尺寸（**单一真相**）：mountHost 的 field 与对局屏根 Panel 的定尺同取这两个数——
 // 不同源就是 2026-08-07 真渲染目击到的那个病：field 720×1280、屏 456×788 → 屏缩在 field 左上角，
 // 下半截整片死白。同 casual-hud 口径。

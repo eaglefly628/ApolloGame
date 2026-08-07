@@ -79,6 +79,23 @@ async function main() {
     check('开局双方满血【R-108-15】', s0.hp.p1 === '100' && s0.hp.p2 === '100', `${s0.hp.p1}/${s0.hp.p2}`);
     await shot('1-start');
 
+    // ── 先故意打输一回合（自证仪式要求截图序列含**一次失败路径**）──────────
+    // 复读机出石，我故意出剪 → 石克剪 → **我挨打**。这一轮也验了「输了照样清零」。
+    say('\n── 第 0 回合（故意打输·看失败反馈）──');
+    await until('蓄力');
+    await page.click('#key-scissors').catch(() => {});      // 蓄剪 1
+    await page.waitForTimeout(150);
+    await until('出招');
+    await page.click('#key-scissors').catch(() => {});      // 出剪 → 被石克
+    await until('对决');
+    await page.waitForTimeout(700);
+    const lost = await state();
+    say(`  → 我方血量 ${lost.hp.p1}`);
+    // 掉 20 不是 10：复读机在 T1 也蓄了一层石（【R-108-13】伤害 = 10 + 出手方该手蓄力 × 10）。
+    check('输的一方掉血且反馈可见【R-108-12/13】', lost.hp.p1 === '80', `实读 ${lost.hp.p1}`);
+    check('对手没掉血（我输了）', lost.hp.p2 === '100', `实读 ${lost.hp.p2}`);
+    await shot('2b-lost-round');
+
     // 战术：复读机永远出石 → 每回合满蓄「布」出布（布克石·40 伤）→ 三回合打死。
     const EXPECT = ['60', '20', '0'];
     for (let round = 1; round <= 3; round++) {
@@ -111,7 +128,7 @@ async function main() {
       const after = await state();
       say(`  → 对手血量 ${after.hp.p2}（打了 ${100 - Number(after.hp.p2) - (round > 1 ? 100 - Number(EXPECT[round - 2]) : 0)}）`);
       check(`R${round} 对手掉 40（10+3×10）【R-108-13】`, after.hp.p2 === EXPECT[round - 1], `实读 ${after.hp.p2} 期望 ${EXPECT[round - 1]}`);
-      check(`R${round} 玩家没被打（复读机被克）【R-108-12】`, after.hp.p1 === '100', `实读 ${after.hp.p1}`);
+      check(`R${round} 玩家没再被打（复读机被克）【R-108-12】`, after.hp.p1 === '80', `实读 ${after.hp.p1}`);
       if (round === 2) await shot('5-round2-done');
     }
 

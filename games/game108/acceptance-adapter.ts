@@ -12,7 +12,7 @@ import { applyCommands, QueuedInputSource } from '@zerocraft/engine/net/index.js
 import type { IWorld } from '@zerocraft/engine/engine/core/types.js';
 import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint, throwSignal, aiChargeSignal } from './blueprint.js';
-import { SIDES, HANDS, type Hand, type Side } from './theme.js';
+import { SIDES, HANDS, type Hand, type Side, type OpponentId } from './theme.js';
 
 interface AccWorld {
   engine: Engine;
@@ -24,10 +24,11 @@ interface AccWorld {
   getComponent(id: string, type: string): unknown;
 }
 
-export function createWorld(seed: number, _config: Record<string, unknown> = {}): AccWorld {
+export function createWorld(seed: number, config: Record<string, unknown> = {}): AccWorld {
   const input = new QueuedInputSource('p1');
   const engine = new Engine({ input });
-  const bp = buildBlueprint();
+  // 剧本可用 config.opponent 选对手（缺省 parrot 复读机）——五档是同一份数据表的不同行。
+  const bp = buildBlueprint((config.opponent as OpponentId | undefined) ?? 'parrot');
   // 剧本的 seed 覆盖蓝图默认种子——同 seed 同结果（确定性断言的前提）。
   (bp.entities.seed as { RandomSeed: { seed: number } }).RandomSeed.seed = seed;
   engine.load(bp);

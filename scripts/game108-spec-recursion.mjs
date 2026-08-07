@@ -58,13 +58,33 @@ const SABOTAGES = [
   },
   {
     clause: 'R-108-30/32 AI 只在对应时区动手（相位门）',
-    find: "        when: { kind: 'and', of: [{ kind: 'flag', id: THROWING_GATE }, repeats] },",
-    replace: '        when: repeats,',                    // 破坏：任何时区都出招
+    find: "        when: { kind: 'and', of: [{ kind: 'flag', id: THROWING_GATE }, when] },",
+    replace: '        when,',                                // 破坏：任何时区都出招
   },
   {
     clause: 'R-108-15 血量归零判负（按侧·self-rule → 各侧唯一旗）',
     find: "        do: [{ kind: 'set-flag', targetId: deadFlag(side), value: true }],",
     replace: "        do: [],",
+  },
+  {
+    clause: 'R-108-02 超时顺延（不点=保持上一回合的选择）',
+    find: "          of: [{ kind: 'flag', id: THROWING_GATE }, { kind: 'string', id: lastThrowVar('p1'), equals: h }],",
+    replace: "          of: [{ kind: 'flag', id: 'never.exists' }],",   // 破坏：顺延条件永不成立
+  },
+  {
+    clause: 'R-108-20 烟雾扣次数',
+    find: "      costs: [{ id: SMOKE_RES('p1'), amount: 1 }],",
+    replace: '      costs: [],',                      // 破坏：不要钱，无限用
+  },
+  {
+    clause: 'R-108-21 烟雾置隐藏旗',
+    find: "      grantsFlag: SMOKE_FLAG('p1'),",
+    replace: '      // 破坏：不置旗（点了没效果）',
+  },
+  {
+    clause: 'R-108-32/40 大师自带改写过的判定表',
+    find: "    ...(opponent === 'master' ? { patches: MASTER_PATCHES } : {}),",
+    replace: '    // 破坏：大师用标准表',
   },
   {
     clause: 'R-108-10 蓄力封顶 3',
@@ -83,6 +103,7 @@ try {
   // 前提：未破坏时必须全绿，否则下面「变红」这件事不成立。
   const base = runAcceptance();
   if ((base.status ?? 1) !== 0) {
+    writeFileSync(BP, original);                     // 同上：早退必先复原
     console.error('✗ 前提不成立：未破坏时验收剧本就没全绿，先修那个再跑递归复核\n' + (base.stdout || ''));
     process.exit(1);
   }
@@ -90,7 +111,10 @@ try {
 
   for (const s of SABOTAGES) {
     if (!original.includes(s.find)) {                 // 锚点断言：改不到就是假绿
-      console.error(`✗ 锚点未命中（脚本过期，不是条款没守卫）：${s.clause}\n   找不到：${s.find}`);
+      // **先复原再退出**：`process.exit()` 会跳过 finally，早退在这里直接把上一轮的破坏留在盘上
+      // （2026-08-07 实测：锚点过期一次，蓝图就被留在"撤掉代发"的破坏态，下一次跑直接判"前提不成立"）。
+      writeFileSync(BP, original);
+      console.error(`✗ 锚点未命中（脚本过期，不是条款没守卫）：${s.clause}\n   找不到：${s.find}\n（已复原蓝图）`);
       process.exit(1);
     }
     writeFileSync(BP, original.replace(s.find, s.replace));
