@@ -18,9 +18,11 @@ export function mount(container: HTMLElement): () => void {
     fieldW: VIEW_W, fieldH: VIEW_H, sceneBackground: STAGE_BG, wrapperBackground: '#05070b',
   });
 
-  const engine = new Engine();
+  // UI action → 引擎输入：QueuedInputSource 同时是 Engine 的输入源与 mountUI 的 ActionSink
+  // （同 game101 口径）——屏上的 `action` 入队成 InputQueue 动作，再由 t2-keybind 转成 Signal。
+  const queue = new QueuedInputSource('p1');
+  const engine = new Engine({ input: queue });
   engine.load(buildBlueprint());
-  const queue = new QueuedInputSource('p1'); // UI action → 引擎输入（keybind 转成 Signal）
 
   const num = (eid: string): number => engine.world.getComponent<Resource>(eid, 'Resource')?.current ?? 0;
   const str = (eid: string): string => engine.world.getComponent<StringVar>(eid, 'StringVar')?.value ?? '';
@@ -44,10 +46,8 @@ export function mount(container: HTMLElement): () => void {
     };
   }
 
-  // UI action → 入队（引擎侧 keybind 把动作名转成 Signal·handler 里零自由逻辑=信号铁律）。
-  const ui: MountHandle = mountUI(scene, buildDuelScreen(emptyView()), {}, DUEL_THEME, {
-    enqueueAction: (name: string, value?: { arg?: string }) => { queue.enqueueAction(name, value?.arg ? { arg: value.arg } : undefined); },
-  });
+  // handlers 传空 {}：屏上没有任何本地 handler，写世界一律经 action 信号（信号铁律）。
+  const ui: MountHandle = mountUI(scene, buildDuelScreen(emptyView()), {}, DUEL_THEME, queue);
 
   let raf = 0;
   const loop = (): void => {

@@ -199,3 +199,65 @@ describe('game108 · 对局屏（LayoutNode 纯数据）', () => {
     expect(acts).toContain(ACT.charge('paper'));      // 没满 → 照常
   });
 });
+
+// ── REQ-108-ENG-04：玩家动作走**真实输入通路**打到世界（UI action → InputQueue → keybind → Signal）──
+// 之前的走查用 `fire()` 手挂 EventWhen 到侧实体上，那是**测试专用捷径**，证不了玩家真点得动。
+// 这一组走玩家那条路：入队 InputQueue 动作名（= 屏上 Button.action 的同一串字符【R-108-70】）。
+import type { InputQueue, RawInputData, Signal } from '@zerocraft/engine/engine/protocol/components.js';
+
+/**
+ * 模拟玩家点屏一次：动作名入队 → **走一拍** → 排空队列。
+ * 排空是要害：真 `QueuedInputSource` 每拍把队列交给引擎后就排空，手写的 InputQueue 组件**不会**，
+ * 连着 tick 两拍就会把一次点击算成两次（本测试首版正是这么把「蓄 2」测成了 3·已实证）。
+ */
+function tap(e: Engine, action: string): void {
+  const acts: RawInputData[] = [{ source: 'p1', key: action, phase: 'action' }];
+  if (!e.world.hasComponent('global-input', 'InputQueue')) e.world.createEntity('global-input');
+  e.world.addComponent('global-input', { type: 'InputQueue', actions: acts } as InputQueue);
+  e.world.tick();  // keybind 本拍产 Signal
+  e.world.addComponent('global-input', { type: 'InputQueue', actions: [] } as InputQueue);
+}
+
+describe('game108 · 玩家动作真实通路（REQ-108-ENG-04·owner 判 A）', () => {
+  it('接线齐：六个动作各有一个 kb 实体，且出招三键代发到 p1【R-108-70】', () => {
+    const ents = buildBlueprint().entities as Record<string, { KeyBinding?: { key: string; signal: string; source?: string } }>;
+    for (const h of HANDS) {
+      // 蓄力键不代发（走 effect-apply 全局 targetId 路由，与 source 无关）。
+      expect(ents[`kb:charge:${h}`]!.KeyBinding).toEqual({ key: ACT.charge(h), signal: ACT.charge(h) });
+      // 出招键必须代发到 p1——接缝按 Signal.source 认侧，kb 实体不是对局侧。
+      expect(ents[`kb:throw:${h}`]!.KeyBinding).toEqual({ key: ACT.throw(h), signal: ACT.throw(h), source: 'p1' });
+    }
+  });
+
+  it('点蓄力键 → 自己那条槽 +1（走 InputQueue·非手挂组件）【R-108-10】', () => {
+    const e = fresh();
+    tap(e, ACT.charge('rock')); e.world.tick();
+    expect(slot(e, 'p1', 'rock')).toBe(1);
+    expect(slot(e, 'p2', 'rock')).toBe(0);   // 对面不动
+  });
+
+  it('点出招键 → 信号代发到 p1，接缝据此挂上该侧 DuelIntent（**ENG-04 的要害**）', () => {
+    const e = fresh();
+    tap(e, ACT.throw('rock'));
+    // ① keybind 产的信号，source 是 p1 而不是 kb 实体
+    const s = e.world.getComponent<Signal>('kb:throw:rock', 'Signal')!;
+    expect(s).toMatchObject({ name: ACT.throw('rock'), source: 'p1' });
+    // ② 接缝认出了侧，把意图挂到 p1 上（不代发的话这里会是 undefined——静默失效）
+    e.world.tick();
+    expect(e.world.getComponent('p1', 'DuelIntent')).toMatchObject({ throw: 'rock' });
+  });
+
+  it('玩家全程只点屏：蓄 2 → 出招 → 对面真掉 30 血【R-108-13】（端到端闭环）', () => {
+    const e = fresh();
+    for (let i = 0; i < 2; i++) { tap(e, ACT.charge('rock')); e.world.tick(); }
+    expect(slot(e, 'p1', 'rock')).toBe(2);
+
+    fire(e, 'p2', throwSignal('scissors'), 'ai1');   // AI 侧仍走内部信号（S4 才接表演型 AI）
+    tap(e, ACT.throw('rock'));                      // 玩家这一侧全程只"点屏"
+    e.world.tick(); e.world.tick();
+
+    expect(res(e, 'p2')).toBe(HP_MAX - (DMG_BASE + 2 * DMG_STEP)); // 10 + 2×10 = 30
+    expect(res(e, 'p1')).toBe(HP_MAX);
+    expect(slot(e, 'p1', 'rock')).toBe(0);                          // 【R-108-14】出过即清零
+  });
+});

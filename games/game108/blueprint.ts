@@ -10,7 +10,7 @@
 // 能力总览：docs/design/game108/capability-plan.md；规则语义：gdd.md（条款 R-108-NN）。
 import type { WorldBlueprint, EntityBlueprint } from '@zerocraft/engine/assembly/demo.assembly.js';
 import { resourceCapability, flagCapability, stringVariableCapability, randomCapability } from '@zerocraft/engine/atom-skills/index.js';
-import { eventWhenCapability, effectApplyCapability, matrixDuelCapability, selfRuleCapability } from '@zerocraft/engine/skills/tier2/index.js';
+import { eventWhenCapability, effectApplyCapability, matrixDuelCapability, selfRuleCapability, keybindCapability } from '@zerocraft/engine/skills/tier2/index.js';
 import { flowCapability } from '@zerocraft/engine/skills/tier3/index.js';
 import {
   HANDS, SIDES, HP_MAX, CHARGE_CAP, DMG_BASE, DMG_STEP, TIE_SELF_DAMAGE,
@@ -94,6 +94,24 @@ function chargeEffects(): Record<string, EntityBlueprint> {
   return out;
 }
 
+/**
+ * 玩家动作接线【R-108-70】：UI 的 `action` → InputQueue → t2-keybind → Signal。
+ * 一动作一个专属 `kb:*` 实体（房屋范式·game-f/game101/game-103 同款·一实体一组件挤不下多份）。
+ *
+ * **出招三键必须填 `source: 'p1'`**（REQ-108-ENG-04·owner 2026-08-07 判 A）：
+ * matrix-duel 的出招接缝**按 `Signal.source` 认侧**（`matrix-duel.ts:848`），而 kb 实体不是对局侧
+ * ⇒ 不代发就永远认不到人，玩家点了没反应还不报错。
+ * 蓄力三键**不填**：它们走 `t2-effect-apply` 的全局 `targetId` 路由（按信号名分侧），与 source 无关。
+ */
+function playerKeys(): Record<string, EntityBlueprint> {
+  const out: Record<string, EntityBlueprint> = {};
+  for (const h of HANDS) {
+    out[`kb:charge:${h}`] = { KeyBinding: { key: ACT.charge(h), signal: ACT.charge(h) } } as EntityBlueprint;
+    out[`kb:throw:${h}`] = { KeyBinding: { key: throwSignal(h), signal: throwSignal(h), source: 'p1' } } as EntityBlueprint;
+  }
+  return out;
+}
+
 export function buildBlueprint(): WorldBlueprint {
   const entities: Record<string, EntityBlueprint> = {
     duel: { DuelMatrix: duelMatrix() } as EntityBlueprint,
@@ -101,6 +119,7 @@ export function buildBlueprint(): WorldBlueprint {
     // 种子 PRNG：AI 抽招 / 破绽概率门一律走它——游戏层禁裸 Math.random（红线）。
     seed: { RandomSeed: { seed: 108 } } as EntityBlueprint,
     ...chargeEffects(),
+    ...playerKeys(),
   };
 
   // 双方：血量各挂一份**同 id**（matrix-duel 的 hpResource 按侧 local 寻址）【R-108-15】。
@@ -127,7 +146,7 @@ export function buildBlueprint(): WorldBlueprint {
   return {
     capabilities: [
       resourceCapability, flagCapability, stringVariableCapability, randomCapability,
-      eventWhenCapability, effectApplyCapability,
+      eventWhenCapability, effectApplyCapability, keybindCapability,
       matrixDuelCapability, selfRuleCapability,
       flowCapability,
     ],

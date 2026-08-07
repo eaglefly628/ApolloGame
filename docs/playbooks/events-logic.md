@@ -41,6 +41,32 @@
 - 条件用 `ConditionExpr`（event-when/flow 复用），不各写一套判定。
 - 概率门用 `chancePass` 种子化（randomness.md），**禁裸 `Math.random`**。
 
+## ③′ ⚠ 全局 id 路由 vs 按侧寻址（**对称双方玩法头号坑**·2026-08-07 立·五次事故换来）
+
+> 症状永远一个样：**不报错、就是不生效**。写的人以为接上了，跑起来静悄悄。
+
+引擎里「谁被作用」绝大多数是**全局 id 路由**：`Effect.targetId`、`ConditionExpr{kind:'resource',id}`、
+`ProgressBar.bind` 都按一个字符串找目标、**没有 `entity` 字段**。单主角天然对；一旦做**对称双方**
+（对战/双打/多座），两侧常必须共用同一 id（解释器按侧 local 寻址），全局路由就**分不清哪一侧**。
+game108 一个游戏撞了五次，全是这条：
+
+| 想干的事 | 撞在哪 | 解法 |
+|---|---|---|
+| 伤害按出手方蓄力缩放 | `payoff` 两侧共用，`scaleByResource` 只吃一个字符串 | 引擎加 `perSide` 相对名（运行期拼 `<侧>.<相对名>`） |
+| 出过的手清零 | `Effect.targetId` 全局，分不清清哪侧的槽 | 收进解释器当结算副作用（它才知道谁出了什么） |
+| 血量归零判负 | `ConditionExpr` 的 resource **无 `entity` 字段** | **重组**：各侧 `t2-self-rule` 读**自身** → 置各侧唯一 id 的 Flag，再按该 flag 读 |
+| 血条绑世界值 | `ProgressBar.bind` 是全局 resourceId | 不 bind，宿主投影按侧填 |
+| 玩家动作接进接缝 | **反过来**：消费方按 `Signal.source` 认侧，而「一动作一个 `kb-*` 实体」让 source 永远是 kb 实体 | `KeyBinding.source` 代发 |
+
+**开工前自问三句**（比事后查省一整轮）：① 目标两侧会不会**同名**？同名就别指望全局 id 分得清。
+② 要读的是「世界上某个 id」还是「**这一侧自己的**」？后者用 `t2-self-rule`，或让各侧持一个
+**各侧唯一 id** 的中间物（Flag/Resource）当转接口。③ 我的消费方若按 `Signal.source` 认人，
+**输入侧接得上吗**？—— source 默认是 kb 实体不是行为主体，要认人就填 `KeyBinding.source`。
+
+**给写引擎能力的人**：新解释器若按 source/按侧路由，**必须在 `whenToUse` 写清「上游怎么把 source 填对」**，
+且**输入接缝要和输出一起设计**——game108 的 ENG-02(输出)与 ENG-04(输入接不上)本该是同一张单，
+拆成两轮就是因为第一轮只想了输出。对不上时是**静默**的。
+
 ## ④ 正样例 / 反面教材
 
 - ✅ `src/skills/tier2/event-when.ts` + `effect-apply.ts`：条件→信号→效果全数据。

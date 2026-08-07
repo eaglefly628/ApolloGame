@@ -51,6 +51,13 @@ export interface KeyBinding extends Component {
   key: string; // 匹配 InputQueue 事件的 key（物理键如 '1'/'q'，或语义动作名如 'cast_nova'）
   signal: string; // 命中时产出的 Signal.name
   phase?: string; // 仅匹配此相位（如 'down'|'action'）；缺省=任意相位
+  // 代发（REQ-108-ENG-04·owner 2026-08-07 判 A）：产出的 Signal.source 填这个实体，而不是挂本组件的实体。
+  // 治的病：房屋 UI 接线范式是「一动作一个专属 kb-* 实体」，于是 Signal.source 永远是那个 kb 实体；
+  // 而**按 source 认人**的消费方（如 t2-matrix-duel 的出招接缝按侧认人）就永远认不到真正的行为主体。
+  // 一实体一组件 ⇒ 也不能把多份 KeyBinding 挤到主体实体上。代发在引擎里已有先例
+  // （t2-drag-place / t3-timeline 都发 source ≠ 宿主的信号），本字段只是把它开放给数据填。
+  // 缺省=挂本组件的实体（**零回归**）。空串 = 数据错，硬抛。
+  source?: string;
 }
 
 // ── clickable ── 指针命中该实体的 Shape 时，在该实体上产出一个配置好的 Signal（命中→信号，REQ-C-002）。

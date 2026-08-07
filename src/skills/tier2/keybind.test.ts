@@ -85,3 +85,50 @@ describe('keybind — 具名动作 → Signal', () => {
     expect('arg' in sig(w, 'b1')!).toBe(false); // 不写 arg:undefined
   });
 });
+
+// ── 代发 source（REQ-108-ENG-04·owner 2026-08-07 判 A）────────────────────────
+describe('keybind — 代发 Signal.source（REQ-108-ENG-04）', () => {
+  it('填了 source → Signal.source = 该实体（信号组件仍挂在 KeyBinding 实体上）', () => {
+    const w = world();
+    bind(w, 'kb:throw:rock', { key: 'throw.rock', signal: 'throw.rock', source: 'p1' });
+    input(w, [{ source: 'p1', key: 'throw.rock', phase: 'down' }]);
+    w.tick();
+    // 认人的是 source 字段，不是挂载实体——这正是接缝要的那一位。
+    expect(sig(w, 'kb:throw:rock')).toMatchObject({ name: 'throw.rock', source: 'p1' });
+    // 生命周期不变：信号仍挂在 kb 实体（清扫逻辑①按 KeyBinding 实体清）。
+    expect(sig(w, 'p1')).toBeUndefined();
+  });
+
+  it('不填 source → 零回归：仍是挂载实体自己', () => {
+    const w = world();
+    bind(w, 'kb1', { key: 'q', signal: 'dash' });
+    input(w, [{ source: 'p1', key: 'q', phase: 'down' }]);
+    w.tick();
+    expect(sig(w, 'kb1')!.source).toBe('kb1');
+  });
+
+  it('代发照样透传 arg（带参代发：谁 + 干了什么 两件都在）', () => {
+    const w = world();
+    bind(w, 'kb2', { key: 'buy', signal: 'buy', source: 'p1' });
+    input(w, [{ source: 'p1', key: 'buy', phase: 'down', arg: 'card_42' }]);
+    w.tick();
+    expect(sig(w, 'kb2')).toMatchObject({ name: 'buy', source: 'p1', arg: 'card_42' });
+  });
+
+  it('多绑定各自代发到不同主体（双人同屏：同一动作名按主体分流）', () => {
+    const w = world();
+    bind(w, 'kb:p1:rock', { key: 'throw.rock', signal: 'throw', source: 'p1' });
+    bind(w, 'kb:p2:rock', { key: 'p2.throw.rock', signal: 'throw', source: 'p2' });
+    input(w, [{ source: 'x', key: 'throw.rock', phase: 'down' }, { source: 'x', key: 'p2.throw.rock', phase: 'down' }]);
+    w.tick();
+    expect(sig(w, 'kb:p1:rock')!.source).toBe('p1');
+    expect(sig(w, 'kb:p2:rock')!.source).toBe('p2');
+  });
+
+  it('source 空串 = 数据错 → 点名硬抛（不静默退回本实体）', () => {
+    const w = world();
+    bind(w, 'kb-bad', { key: 'x', signal: 's', source: '' });
+    input(w, [{ source: 'p1', key: 'x', phase: 'down' }]);
+    expect(() => w.tick()).toThrow(/KeyBinding\.source 是空串/);
+  });
+});

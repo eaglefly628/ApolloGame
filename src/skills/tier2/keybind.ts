@@ -32,6 +32,7 @@ export const keybindCapability = defineCapability({
       '按 1 放冰环：KeyBinding{ key:"1", signal:"cast_nova" } → caster 释放',
       '按 q 冲刺：KeyBinding{ key:"q", signal:"dash", phase:"down" }',
       'UI 语义动作：KeyBinding{ key:"confirm", signal:"advance" } → 对话推进',
+      '代发给行为主体：KeyBinding{ key:"throw.rock", signal:"throw.rock", source:"p1" } → Signal.source="p1"（按 source 认人的消费方才认得出是谁出的手）',
     ],
   },
 
@@ -44,6 +45,12 @@ export const keybindCapability = defineCapability({
           key: { type: 'string', describe: '匹配 InputQueue 事件的 key（物理键 "1"/"q" 或语义动作名）' },
           signal: { type: 'string', describe: '命中时产出的 Signal.name' },
           phase: { type: 'string', describe: "仅匹配此相位（如 'down'|'action'）；缺省=任意" },
+          source: {
+            type: 'EntityId',
+            describe:
+              '代发：产出的 Signal.source 填这个实体而非本实体。给**按 source 认人**的消费方用（如 matrix-duel 出招接缝按侧认人）——'
+              + '房屋范式「一动作一个 kb-* 实体」会让 source 永远是 kb 实体，而一实体一组件又不许把多份绑定挤到主体上。缺省=本实体（零回归）；空串硬抛。',
+          },
         },
       },
     },
@@ -77,10 +84,17 @@ export const keybindCapability = defineCapability({
         const ids = world.query('KeyBinding').map(([id]) => id).sort();
         for (const id of ids) {
           const kb = world.getComponent<KeyBinding>(id, 'KeyBinding')!;
+          // 代发落盘门：`source` 填了空串 = 永不自愈的数据错（发出去的信号没有主体，下游按 source
+          // 认人的消费方只会静默认不到）——点名硬抛，不静默退回 id（同本库「坏数据不许静默」教条）。
+          if (kb.source !== undefined && kb.source === '') {
+            throw new Error(`keybind: 实体 "${id}" 的 KeyBinding.source 是空串（代发要填真实体 id；不代发就别填这个字段）`);
+          }
           for (const ev of queue.actions) {
             if (ev.key === kb.key && (kb.phase === undefined || ev.phase === kb.phase)) {
               // arg 透传（带参 UI 动作·如买哪件 card_42）：仅在事件带 arg 时挂，无参动作不挂 arg:undefined（旧内容形状/hash 不变）。
-              world.addComponent(id, { type: 'Signal', name: kb.signal, source: id, ...(ev.arg !== undefined ? { arg: ev.arg } : {}) } as Signal);
+              // source：缺省=本实体（零回归）；填了 = 代发给该实体（REQ-108-ENG-04·见 KeyBinding.source 注释）。
+              // 信号组件本身仍挂在本实体上（清扫逻辑①按 KeyBinding 实体清·代发不改生命周期）。
+              world.addComponent(id, { type: 'Signal', name: kb.signal, source: kb.source ?? id, ...(ev.arg !== undefined ? { arg: ev.arg } : {}) } as Signal);
               break;
             }
           }
