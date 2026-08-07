@@ -14,13 +14,20 @@
 
 ## 工作规范
 
-- **引擎只归主程**：`src/{engine,skills,assembly,renderer,services,net}` + `scripts/` 守卫只由 Lead session 改；PE/策划走 `requests.md` 提需求、不直接改引擎。
+- **引擎改动分两类（owner 2026-08-06 立·改「引擎只归主程」为分类切·原因=主程串行实现会 block 提需方进度）**：面 = `src/{engine,skills,assembly,renderer,services,net}` + `scripts/` 守卫。
+  - **🟢 提需方写 · 主程 review**：**已有能力的扩写**——加可选字段 / 加落盘门校验 / 加点名测试，spec 写死、边界明确。提需方对自己的语义比主程清楚（2026-08-06 实证：主程写的 `REQ-108-ENG-01` 丢了 spec 唯一要点「按侧」，提需方一眼看出）。
+  - **🔴 仍只归主程**：碰 **定序/相位 · 确定性与快照 hash · lockstep · 存档 · 跨游戏共享面 · 新增 system** 的一律不放。这类坑**不在 spec 里也不在 review 清单里**，是动手时才撞出来的（实证：`REQ-108-ENG-02` 的接缝一放 Update 相位就闭合成环，而 `topological-sort` 在 REQ-CYCLEHAZ B 之后**只告警不抛**、落序不合语义却照跑 → 接缝静默失效）。
+  - 拿不准归哪类 = 按 🔴 走，问主程。**动 🟢 之前仍要在工单里标「施工主体」**（防双头同单）；并行改同一片时守共享工作树纪律（见「推送门禁」）。
+- **⚖ review 三步铁律（owner 2026-08-06 立·`review` 不达标 = 没 review 过）**：换谁打字都不降低出错率，**降出错率的是实证纪律**。2026-08-06 一轮里四处错（主程实现错 / 复查首轮误判 PASS / 主程「唯一 id 是正解」错 / 主程「放 Update 会抛错」错），**无一处是读代码读出来的，全是跑出来的**。故：
+  1. **独立复跑**——自己装依赖自己跑，不采信自陈的测试结果与「全绿」结论；
+  2. **撤修复验红**——把被审方的修复撤掉，确认对应测试**真的转红**；sabotage **必须带锚点命中断言**（`assert old in s`），否则"全绿"可能只是根本没改到文件（2026-08-06 差点据此误报）；
+  3. **实证复现**——任何「我觉得这里有问题」的断言，先复现再说，不许拿判断当结论；反过来，被审方声称的「已修复」也照此复现。
 - **专职域例外**：① 3D 渲染线（`src/renderer/three-*` + 3D render-only 组件）+ `games/game-z/**` = **P3D**（边界 `docs/workflow/finish/P3D-game-z-handoff.md §0.1`）；② UI 基座 `src/ui/**` + `games/game-i/**` + `tools/ui-audit.mjs`/`tools/audits/**` + UI 手册 = **PUI**（边界 `docs/roles/PUI.md §1`）。别的 session 勿擅改这两片，缺件走 requests.md 报对应角色。
 - **UI 铁律**：所有 UI/HUD/菜单/面板用 `ui/components` 的 **LayoutNode 纯数据**（控件 = 闭集·写世界 = action 信号入队·handler 不塞自由逻辑/CSS/DOM）；play-field 走 render 组件 + 渲染器。**禁**手写 React 屏/自由 DOM/直用 `ui/shell`·`ui/vn`。表达不了 → requests.md 扩控件，绝不手写逃生。**有 `.dc.html` 设计稿在档 = 1:1 复刻基准**：开工前真渲染目击（附截图）、视觉规格全消费、差异逐条报 PUI 裁决。**做 UI 前必读 `docs/design/ui-playbook.md` + `docs/playbooks/ui.md`。**
 - **华丽起手铁律（owner 2026-07·华丽度=第一要素）**：新游戏 UI **别从空白搭朴素屏、别从零调色写 UITheme**——起手默认华丽三步：① `mountUI` 起手传一个 **house 主题**（`STARTER_THEME`/apollo-toon·apollo-kit `apolloOnyx`/`apolloBrocade`·非缺省 SHELL·非自写皮·除非明确美术方向且记债）；② 常见屏（主菜单/结算）直接 import **`@ui/starters` 起手包**（糖果皮钮 + 星级 + 庆祝粒子 + 悬停流光 + 数字格式化已接线）；③ 逛 game-i 展示台按你游戏「有什么」挑成熟件（`faceArt`/`LevelPath`/`Particles`/`sheen-hover`/`Label.format`/`shape`/3D UI…·货架表见 `docs/playbooks/ui.md`「华丽起手」）。**朴素默认 UI = 缺陷**（同手写逃生·PUI 复查可打回）。华丽 ≠ 破铁律 = 用足既有华丽件走闭集数据。
 - **推送门禁**：`claude/mainbranch` 直推不开 PR；每次提交前 `fetch → rebase → push`。`scripts/scoped-gate.mjs --run` 按改动面缩范围（单游戏→该游戏 vitest + tsc + build；纯文档→文档守卫；碰引擎/共享/多游戏→全量）。**全绿才推·用退出码核对**（别 `vitest | grep` 吞失败码·守卫退出码同律永不经管道量）。**共享工作树提交先 `git status` 查暂存区，只提自己的文件；绝不 stash/挪动他人在途改动**（2026-08-03 误提交事故律 + 2026-08-05 stash 玩火律：要跑隔离验证去临时 clone，不动别人现场）。**rebase 后对 origin 重判一次**（自己 delta 非引擎面不必全量重跑·别人已门禁过的提交不重复背）。全库兜底 = 主程每日定时巡检（发现红开单派修·不改代码）。
 - 提交署名 `Claude <noreply@anthropic.com>`·信息以 session URL 结尾·产物里不写模型标识。
-- **需求池**：`docs/workflow/requests.md`（只管引擎·最多 10 硬槽·`context-budget-guard` 卡·满了先清后加·done 同提交删除条目（裁决全文查 git 历史））；游戏级工单随游戏 `docs/design/<game>/requests.md`（不占槽）；3D 独立池 `requests-3d.md`。**派工**：Lead 评审通过的实现类需求标「指派：Opus」+ 附写死 spec，由 Opus 档 session/子代理照图施工。
+- **需求池**：`docs/workflow/requests.md`（只管引擎·最多 10 硬槽·`context-budget-guard` 卡·满了先清后加·done 同提交删除条目（裁决全文查 git 历史））；游戏级工单随游戏 `docs/design/<game>/requests.md`（不占槽）；3D 独立池 `requests-3d.md`。**派工**：Lead 评审通过的实现类需求标「指派：Opus」+ 附写死 spec。**🟢 扩写类默认由提需方自己施工、Lead 只做 review**（走上面 review 三步）；**🔴 类**由 Lead / Opus 档 session 照图施工。工单必须标**施工主体**（防双头同单）。
 - **开发新 capability 前查知识库** `wiki/skills/index.md`（按需读对应分类·别一次读完）。
 - **游戏能力总览铁律**：新游戏/新玩法开工前先交 `docs/design/<game>/capability-plan.md`（模板 `docs/design/capability-plan-template.md`）：① 消费哪些引擎 capability（对 registry 实名）② 规则摆数据表 + 由现有能力解释（禁「数据表 + 游戏层自写解释器」）③ 逐条申请游戏层例外（Lead 裁·记债）。**plan 未过审不写游戏层 system 代码**；偏差用 `node scripts/game-skill-audit.mjs [game]` 体检。硬红线 = 游戏层禁裸 Math.random（用引擎种子 PRNG）·禁 innerHTML/createElement（走 LayoutNode）·禁零能力接入·禁零测试。
 - **TS 卡带例外**：`features.tsCarts`（默认开）+ 卡带 `meta.allowTs` → 允许 `library/<slug>/logic.ts`（`cartCapability` 契约·`scripts/cart-logic-check.mjs` 门·记债）；除此游戏仍 = 纯数据。价值排序：**「能出复杂的东西」= 第一要素**，「最弱 LLM 也能产出」尺子降级。词表缺口走 capgap 快速通道（`.apollo/cap-gaps.jsonl` → Lead 裁）。
