@@ -189,7 +189,7 @@ function idPlate(view: DuelView, side: Side): LayoutNode {
     layout: { width: w, height: h, direction: 'row', align: 'center', justify: 'center', padding: 0 },
     children: [{
       type: 'Label', id: `side-${side}-nt`,
-      props: { text: name, size: S.plate, font: F.cjk, bold: true, color: 'ink' },
+      props: { text: name, size: S.plate, font: F.cjk, color: 'ink' },
     }],
   };
   return {
@@ -249,7 +249,7 @@ function phaseBar(view: DuelView): LayoutNode {
     type: 'Panel', id: 'status', props: { bare: true },
     layout: { x: 566, y: 10, width: 788, height: 78, direction: 'row', align: 'center', justify: 'center', gap: 18 },
     children: [
-      { type: 'Label', id: 'round-b', props: { text: `第 ${view.round} 回合`, size: S.round, font: F.cjk, bold: true, color: 'text' } },
+      { type: 'Label', id: 'round-b', props: { text: `第 ${view.round} 回合`, size: S.round, font: F.cjk, color: 'text' } },
       {
         type: 'Panel', id: 'phase-ring',
         props: { skin: ring(L.ring, pct, accent, C.ringDisc, L.ringDisc) },
@@ -263,7 +263,7 @@ function phaseBar(view: DuelView): LayoutNode {
         type: 'Panel', id: 'phase-chip',
         props: { skin: plate({ w: chipW, h: 62, fill: accent, border: 5, radius: R.chip, shadow: SH.chip }) },
         layout: { width: chipW, height: 62, direction: 'row', align: 'center', justify: 'center', padding: 0 },
-        children: [{ type: 'Label', id: 'phase-t', props: { text: PHASE_CN[view.phase], size: S.phaseChip, font: F.cjk, bold: true, color: 'ink' } }],
+        children: [{ type: 'Label', id: 'phase-t', props: { text: PHASE_CN[view.phase], size: S.phaseChip, font: F.cjk, color: 'ink' } }],
       },
     ],
   };
@@ -346,7 +346,7 @@ function threatLine(view: DuelView): LayoutNode | null {
     children: [{
       type: 'Label', id: 'threat-t',
       props: {
-        size: S.threat, font: F.cjk, bold: true, color: 'text',
+        size: S.threat, font: F.cjk, color: 'text',
         spans: [
           { text: '⚠ 他攒满了一手' },
           { text: HAND_CN[top], color: 'gold' as const },
@@ -376,8 +376,8 @@ function foeStrip(view: DuelView): LayoutNode {
             type: 'Panel', id: 'foe-slots-t', props: { bare: true },
             layout: { width: 68, direction: 'column', align: 'center', gap: 0 },
             children: [
-              { type: 'Label', id: 'foe-slots-t1', props: { text: view.foeName, size: S.oppRead, font: F.cjk, bold: true, color: 'foe' } },
-              { type: 'Label', id: 'foe-slots-t2', props: { text: '蓄力', size: S.oppRead, font: F.cjk, bold: true, color: 'foe' } },
+              { type: 'Label', id: 'foe-slots-t1', props: { text: view.foeName, size: S.oppRead, font: F.cjk, color: 'foe' } },
+              { type: 'Label', id: 'foe-slots-t2', props: { text: '蓄力', size: S.oppRead, font: F.cjk, color: 'foe' } },
             ],
           },
           ...HANDS.map((h) => foeChip(view, h)),
@@ -394,7 +394,7 @@ function ruleSlab(): LayoutNode {
   const rows: LayoutNode[] = [['石', '剪'], ['剪', '布'], ['布', '石']].map(([a, b], i) => ({
     type: 'Label', id: `slab-r${i}`,
     props: {
-      size: S.slab, font: F.cjk, bold: true, color: 'text',
+      size: S.slab, font: F.cjk, color: 'text',
       spans: [{ text: a! }, { text: ' › ', color: 'gold' as const }, { text: b! }],
     },
   }));
@@ -412,7 +412,7 @@ function ruleSlab(): LayoutNode {
         },
         layout: { width: w, height: 152, direction: 'column', align: 'center', justify: 'center', gap: 8, padding: 10 },
         children: [
-          { type: 'Label', id: 'slab-h', props: { text: '判定表', size: S.slabHead, font: F.cjk, bold: true, color: 'text' } },
+          { type: 'Label', id: 'slab-h', props: { text: '判定表', size: S.slabHead, font: F.cjk, color: 'text' } },
           ...rows,
         ],
       },
@@ -420,7 +420,7 @@ function ruleSlab(): LayoutNode {
         type: 'Panel', id: 'slab-cap',
         props: { skin: plate({ w: 120, h: 22, fill: 'rgba(255,255,255,.7)', radius: 6 }) },
         layout: { width: 120, height: 22, direction: 'row', align: 'center', justify: 'center', padding: 0 },
-        children: [{ type: 'Label', id: 'slab-capt', props: { text: '道具可凿裂重刻', size: S.slabCap, font: F.cjk, bold: true, color: 'ink' } }],
+        children: [{ type: 'Label', id: 'slab-capt', props: { text: '道具可凿裂重刻', size: S.slabCap, font: F.cjk, color: 'ink' } }],
       },
     ],
   };
@@ -443,7 +443,7 @@ function banner(view: DuelView): LayoutNode | null {
     type: 'Panel', id: 'verdict',
     props: { skin: plate({ w: vw, h: 76, fill: C.verdict, border: B.verdict, radius: R.pill }) },
     layout: { width: vw, height: 76, direction: 'row', align: 'center', justify: 'center', padding: 0 },
-    children: [{ type: 'Label', id: 'verdict-t', props: { text: verdict, size: S.verdict, font: F.cjk, bold: true, color: 'text' } }],
+    children: [{ type: 'Label', id: 'verdict-t', props: { text: verdict, size: S.verdict, font: F.cjk, color: 'text' } }],
   }];
   if (!tie) {
     kids.push({
@@ -460,7 +460,7 @@ function banner(view: DuelView): LayoutNode | null {
     type: 'Panel', id: 'lane-line',
     props: { skin: plate({ w: lw, h: 62, fill: 'rgba(24,17,12,.86)', border: B.verdict, radius: R.pill }) },
     layout: { width: lw, height: 62, direction: 'row', align: 'center', justify: 'center', padding: 0 },
-    children: [{ type: 'Label', id: 'lane-t', props: { text: line, size: S.resultLine, font: F.cjk, bold: true, color: 'text' } }],
+    children: [{ type: 'Label', id: 'lane-t', props: { text: line, size: S.resultLine, font: F.cjk, color: 'text' } }],
   });
   return {
     type: 'Panel', id: 'lane', props: { bare: true },
@@ -499,9 +499,9 @@ function moveCard(view: DuelView, h: Hand, idx: number): LayoutNode {
     children: [child],
   });
   const kids: LayoutNode[] = [
-    band(`key-${h}-nb`, 38, { type: 'Label', id: `key-${h}-n`, props: { text: `${HAND_CN[h]} · ${HAND_FULL[h]}`, size: S.cardStrip, font: F.cjk, bold: true, color: 'text' } }),
+    band(`key-${h}-nb`, 38, { type: 'Label', id: `key-${h}-n`, props: { text: `${HAND_CN[h]} · ${HAND_FULL[h]}`, size: S.cardStrip, font: F.cjk, color: 'text' } }),
     band(`key-${h}-ib`, undefined, { type: 'Image', id: `key-${h}-i`, props: { src: HAND_ICON_SRC[h], alt: HAND_CN[h], fit: 'contain' }, layout: { width: 96, height: 104 } }),
-    band(`key-${h}-sb`, 48, { type: 'Label', id: `key-${h}-s`, props: { text: sub, size: throwing ? S.cardSub2 : S.cardSub, font: F.cjk, bold: true, color: disabled ? 'dim' : 'ink' } }),
+    band(`key-${h}-sb`, 48, { type: 'Label', id: `key-${h}-s`, props: { text: sub, size: throwing ? S.cardSub2 : S.cardSub, font: F.cjk, color: disabled ? 'dim' : 'ink' } }),
   ];
   if (badge) {
     kids.push({
@@ -511,7 +511,7 @@ function moveCard(view: DuelView, h: Hand, idx: number): LayoutNode {
         x: w - 86, y: -14, width: 96, height: 34,
         direction: 'row', align: 'center', justify: 'center', padding: 0, allowOverlap: true,
       },
-      children: [{ type: 'Label', id: `key-${h}-badget`, props: { text: badge, size: S.badge, font: F.cjk, bold: true, color: selected ? 'ink' : 'text' } }],
+      children: [{ type: 'Label', id: `key-${h}-badget`, props: { text: badge, size: S.badge, font: F.cjk, color: selected ? 'ink' : 'text' } }],
     });
   }
   return {
@@ -563,7 +563,7 @@ function mySlot(view: DuelView, h: Hand, idx: number): LayoutNode {
             type: 'Panel', id: `cb-p1-${h}-n`, props: { bare: true },
             layout: { flex: 1, direction: 'column', gap: 0, align: 'start' },
             children: [
-              { type: 'Label', id: `cb-p1-${h}-nt`, props: { text: `${HAND_CN[h]} ${HAND_FULL[h]}`, size: S.slotName, font: F.cjk, bold: true, color: 'ink' } },
+              { type: 'Label', id: `cb-p1-${h}-nt`, props: { text: `${HAND_CN[h]} ${HAND_FULL[h]}`, size: S.slotName, font: F.cjk, color: 'ink' } },
               { type: 'Label', id: `cb-p1-${h}-d`, props: { text: `现在打 ${DMG_AT(lv)}`, size: S.slotDmg, font: F.num, color: 'sub' } },
             ],
           },
@@ -601,7 +601,7 @@ function smokeKey(view: DuelView): LayoutNode {
     },
     children: [
       { type: 'Label', id: 'key-smoke-i', props: { text: '💨', size: S.smokeIcon } },
-      { type: 'Label', id: 'key-smoke-n', props: { text: `烟雾 ×${view.smoke.uses}`, size: S.smokeName, font: F.cjk, bold: true, color: 'ink' } },
+      { type: 'Label', id: 'key-smoke-n', props: { text: `烟雾 ×${view.smoke.uses}`, size: S.smokeName, font: F.cjk, color: 'ink' } },
       {
         type: 'Label', id: 'key-smoke-s',
         props: {
@@ -638,8 +638,8 @@ function bottomBar(view: DuelView): LayoutNode[] {
         type: 'Panel', id: 'my-slots-t', props: { bare: true },
         layout: { width: 56, direction: 'column', align: 'center', gap: 0 },
         children: [
-          { type: 'Label', id: 'my-slots-t1', props: { text: '我的', size: S.label, font: F.cjk, bold: true, color: 'jade' } },
-          { type: 'Label', id: 'my-slots-t2', props: { text: '蓄力', size: S.label, font: F.cjk, bold: true, color: 'jade' } },
+          { type: 'Label', id: 'my-slots-t1', props: { text: '我的', size: S.label, font: F.cjk, color: 'jade' } },
+          { type: 'Label', id: 'my-slots-t2', props: { text: '蓄力', size: S.label, font: F.cjk, color: 'jade' } },
         ],
       }],
     },
@@ -658,7 +658,7 @@ function endPanel(view: DuelView): LayoutNode[] {
     layout: { direction: 'column', align: 'center', gap: 2 },
     children: [
       { type: 'Label', id: `${id}-n`, props: { text: n, size: S.endStat, font: F.num, bold: true, color: 'ink' } },
-      { type: 'Label', id: `${id}-l`, props: { text: label, size: S.endLabel, font: F.cjk, bold: true, color: 'sub' } },
+      { type: 'Label', id: `${id}-l`, props: { text: label, size: S.endLabel, font: F.cjk, color: 'sub' } },
     ],
   });
   return [
@@ -684,7 +684,7 @@ function endPanel(view: DuelView): LayoutNode[] {
         anim: 'pop', animMs: 400, allowOverlap: true,
       },
       children: [
-        { type: 'Label', id: 'end-t', props: { text: won ? '你赢了' : '你输了', size: S.endTitle, font: F.cjk, bold: true, color: won ? 'jade' : 'danger', stroke: true } },
+        { type: 'Label', id: 'end-t', props: { text: won ? '你赢了' : '你输了', size: S.endTitle, font: F.cjk, color: won ? 'jade' : 'danger', stroke: true } },
         {
           type: 'Panel', id: 'end-stats', props: { bare: true },
           layout: { direction: 'row', align: 'center', justify: 'center', gap: 40 },
@@ -697,7 +697,7 @@ function endPanel(view: DuelView): LayoutNode[] {
             action: ACT.next,
           },
           layout: { width: 320, height: 90, direction: 'row', align: 'center', justify: 'center', padding: 0 },
-          children: [{ type: 'Label', id: 'key-next-t', props: { text: '再来一局', size: S.cta, font: F.cjk, bold: true, color: 'ink' } }],
+          children: [{ type: 'Label', id: 'key-next-t', props: { text: '再来一局', size: S.cta, font: F.cjk, color: 'ink' } }],
         },
       ],
     },

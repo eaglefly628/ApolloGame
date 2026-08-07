@@ -50,7 +50,7 @@ Everything in this design was drawn to map onto that widget set」——所以**
 
 | # | 差在哪 | 为什么 | 报给谁 |
 |---|---|---|---|
-| D1 | **中文字形**：稿子要 ZCOOL KuaiLe（卡通粗中文），我们渲的是主字体 + `bold` | `Label.font` 的 CJK 槽只有毛笔/细宋四款，**没有卡通粗体**；闭集只收枚举槽名，不收自由 font-family | **REQ-108-UI-04**（PUI·加一个槽·该字体同为 SIL OFL，与现有四款同产线） |
+| ~~D1~~ | ~~中文字形~~ | **✅ 已清（2026-08-07）**：PUI 按 `REQ-108-UI-04` 补了第 5 款 CJK 槽 `cnround` = **ZCOOL KuaiLe 本尊**（`3f265259`）。`F.cjk` 已切过去，真渲染目击字形与稿子一致。顺带撤掉了原先顶字重用的 `bold:true`——该字只有 400 一个字重，`bold` 触发的是浏览器合成粗体，在圆粗展示体上只会糊 | 已关闭 |
 | D2 | **数字字形**：稿子要 Fredoka，我们用 `bubbly`(Baloo 2) | 同族圆润无衬线，是闭集里最近的替身 | 同 D1 一并处理；不单独开单 |
 | D3 | **面的投影靠贴图**而非控件字段 | `PanelProps` 无投影字段（已实查） | **REQ-108-UI-03**（建议下沉 `Panel.shadow`） |
 | D4 | 伤害数字的 `text-shadow: 0 5px 0 #3f2b1e`（硬边墨投影）→ 我们用 `stroke + glow` | `Label` 有 `stroke`/`glow`，没有可配偏移的文字投影 | 并入 REQ-108-UI-03 的同类问题（记债·不单开） |
@@ -84,6 +84,10 @@ Everything in this design was drawn to map onto that widget set」——所以**
 
 ## 迭代记录
 
+- **第 2 轮（2026-08-07）**：`cnround` 到位 → D1 关闭（本次复刻最大的单项视觉偏差已清）。
+  同时撤掉中文的合成粗体。**新发现（已报 PUI·见 game108 requests REQ-108-UI-05）**：
+  CJK 子集脚本只扫 `src/**/*.ts(x)`，**不扫 `games/**`** → 游戏层文案里的生僻字会**逐字静默回退**系统字。
+  实测 game108 的 91 个汉字里缺 3 个（`莽` `夫` `徒`，来自还没上场的对手名「莽夫」「赌徒」）。
 - **第 1 轮（2026-08-07）**：按稿子重搭全屏。抓到 §3 的 1/2/4/5 四条。
   owner 当场指出两处：**牌不浮空**（→ §3.3 投影几何 bug，已修）、**字不够饱满**
   （→ D1，闭集缺件，已开 REQ-108-UI-04；先用 `bold` 顶住）。
