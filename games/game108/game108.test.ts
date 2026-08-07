@@ -171,3 +171,31 @@ describe('game108 · S3 条款走查（真引擎驱动·用【R-108-70】动作�
     expect(deadFlag('p2')).toBe('p2.dead');
   });
 });
+
+// ── S3 对局屏：闭集校验 + 动作词表对账（ui-playbook 黄金流程 step 5）──────────
+import { validateLayoutNode } from '@zerocraft/engine/ui/components/index.js';
+import { buildDuelScreen, emptyView, screenActions } from './duel-screen.js';
+
+describe('game108 · 对局屏（LayoutNode 纯数据）', () => {
+  it('validateLayoutNode 零 issue（闭集合法）', () => {
+    const issues = validateLayoutNode(buildDuelScreen(emptyView()));
+    expect(issues).toEqual([]);
+  });
+
+  it('屏上每个 action 都出自【R-108-70】动作词表——UI 与验收剧本同源', () => {
+    const vocab = new Set<string>([
+      ...HANDS.map(ACT.charge), ...HANDS.map(ACT.throw), ACT.smoke, ACT.shardPick, ACT.next,
+    ]);
+    const used = screenActions(emptyView());
+    expect(used.length).toBeGreaterThan(0);
+    for (const a of used) expect(vocab.has(a)).toBe(true);
+  });
+
+  it('蓄力时区：槽满的那只手键禁用且不带 action【R-108-10】', () => {
+    const v = emptyView();
+    v.charge.p1.rock = CHARGE_CAP;
+    const acts = screenActions(v);
+    expect(acts).not.toContain(ACT.charge('rock'));   // 满 → 无 action（不可点·不产生信号）
+    expect(acts).toContain(ACT.charge('paper'));      // 没满 → 照常
+  });
+});
