@@ -40,6 +40,9 @@ export interface DuelView {
   tell?: string;
 }
 
+/** 局已结束（胜/负）——终局态的屏跟对局中不是同一屏，别让对局件继续说话。 */
+const isOver = (p: Phase): boolean => p === 'p1win' || p === 'p2win';
+
 const PHASE_CN: Record<Phase, string> = {
   charge: '蓄力', throw: '出招', clash: '对决', settle: '结算', p1win: '你赢了', p2win: '你输了',
 };
@@ -192,7 +195,8 @@ function tableRow(view: DuelView): LayoutNode {
  * 这不是装饰，是七问第 1 问的落点——核心信息该在屏上最重的位置。
  */
 function readingArea(view: DuelView): LayoutNode | null {
-  if (view.phase === 'clash' || view.phase === 'settle') return null;
+  // 终局态也要闭嘴——第一版没排除，赢了之后中区还在念「对手还没开始攒力」（真渲染目击）。
+  if (view.phase === 'clash' || view.phase === 'settle' || isOver(view.phase)) return null;
   let top: Hand = 'rock';
   for (const h of HANDS) if (view.charge.p2[h] > view.charge.p2[top]) top = h;
   const lv = view.charge.p2[top];
@@ -327,6 +331,27 @@ function actionRow(view: DuelView): LayoutNode {
   };
 }
 
+/**
+ * 终局面板。第一版**根本没有**——赢了只是相位名换成「你赢了」，三个对局键还亮着、点了没用，
+ * 玩家**卡在死路上没有出口**（真渲染目击 + `ui-inventory` 点名 `duel.next` 够不着）。
+ */
+function endPanel(view: DuelView): LayoutNode {
+  const won = view.phase === 'p1win';
+  return {
+    type: 'Panel', id: 'end', props: { bg: won ? 'gold-sheen' : 'blood', edge: (won ? 'gold' : 'danger') as 'gold' | 'danger' },
+    layout: { direction: 'column', align: 'center', gap: 8, padding: 14, width: 300 },
+    children: [
+      { type: 'Label', id: 'end-t', props: { text: won ? '你赢了' : '你输了', font: 'cnbrush', size: 'xl', color: won ? 'ink' : 'text', bold: true, stroke: true } },
+      { type: 'Label', id: 'end-s', props: { text: `打了 ${view.round} 回合 · 剩 ${view.hp.p1} 血`, size: 'sm', color: won ? 'ink' : 'sub' } },
+      {
+        type: 'Button', id: 'key-next',
+        props: { label: '再来一局', kind: 'hero', action: ACT.next },
+        layout: { width: 200, height: 52, press3d: true },
+      },
+    ],
+  };
+}
+
 /** 对局屏（S-03）。信息层级：对手槽 > 亮手/结果 > 我方槽 > 键。 */
 export function buildDuelScreen(view: DuelView): LayoutNode {
   const banner = outcomeBanner(view);
@@ -347,7 +372,7 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
         ],
       },
       selfPanel(view),
-      actionRow(view),
+      isOver(view.phase) ? endPanel(view) : actionRow(view),
     ],
   };
 }
