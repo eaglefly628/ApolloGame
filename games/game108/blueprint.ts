@@ -285,6 +285,9 @@ export function buildBlueprint(opponent: OpponentId = 'parrot'): WorldBlueprint 
     seed: { RandomSeed: { seed: 108 } } as EntityBlueprint,
     // 结算门旗（flow 的 onEnter 开关它·matrix-duel 的 Commit 接缝读它）。
     gate: { Flag: { id: SETTLE_GATE, active: false } } as EntityBlueprint,
+    // 回合数（玩家视角复核第 5 问：得知道自己打到第几回合了）——每次结算 +1，纯数据。
+    round: { Resource: { id: 'round', current: 1, min: 1, max: 99 } } as EntityBlueprint,
+    'fx:round': { Effect: { onSignal: 'duel.resolved', kind: 'modify-resource', targetId: 'round', value: 1, op: 'add' } } as EntityBlueprint,
     'gate:charging': { Flag: { id: CHARGING_GATE, active: true } } as EntityBlueprint,
     'gate:throwing': { Flag: { id: THROWING_GATE, active: false } } as EntityBlueprint,
     ...opponentRules(opponent),

@@ -9,7 +9,7 @@ import { QueuedInputSource } from '@zerocraft/engine/net/index.js';
 import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
 import { buildDuelScreen, emptyView, type DuelView, type Phase } from './duel-screen.js';
-import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, type Hand, type Side } from './theme.js';
+import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, type Hand, type Side } from './theme.js';
 
 const STAGE_BG = 'radial-gradient(120% 90% at 50% 40%, #1a2230 0%, #070a0f 82%)';
 
@@ -37,14 +37,40 @@ export function mount(container: HTMLElement): () => void {
       s, Object.fromEntries(HANDS.map((h) => [h, num(chargeEntity(s, h))])) as Record<Hand, number>,
     ])) as Record<Side, Record<Hand, number>>;
     const shown = Object.fromEntries(SIDES.map((s) => [s, str(`var:${s}`) as Hand | ''])) as Record<Side, Hand | ''>;
+    const hp = { p1: num('p1'), p2: num('p2') };
+
+    // ── 表现层派生（**不是规则**·不写世界·不进 hash）───────────────────────
+    // ① 本回合我提交了什么：读世界里我这侧的 DuelIntent（接缝挂上去的那份）。
+    const intent = engine.world.getComponent('p1', 'DuelIntent') as { throw: Hand } | undefined;
+    // ② 上一次结算「谁赢了、打了多少」：**比对上一帧的血量**。为什么这么做——
+    //    `DuelOutcome` 在 Commit 被 announce 消费掉、跨不到宿主；而"谁掉了多少血"本身就是
+    //    玩家看得见的事实，用它反推展示是**投影不是判定**（规则仍只在引擎里）。
+    for (const s of SIDES) {
+      if (prevHp[s] > hp[s]) lastOutcome = { winner: s === 'p1' ? 'p2' : 'p1', damage: prevHp[s] - hp[s] };
+    }
+    if (phase === 'clash' && prevPhase !== 'clash') tieThisRound = true;      // 进对决先假定平局
+    if (lastOutcome && lastOutcome.damage > 0) tieThisRound = false;
+    prevHp = { ...hp }; prevPhase = phase;
+
     return {
       phase,
       phaseLeft: total > 0 ? Math.max(0, 1 - elapsed / total) : 0,
-      hp: { p1: num('p1'), p2: num('p2') },
+      round: num('round') || 1,
+      hp,
       charge,
+      smoke: { uses: num('smoke:uses:p1'), hidden: !!(engine.world.getComponent('smoke:res:p1', 'Flag') as { active: boolean } | undefined)?.active },
+      ...(intent ? { submitted: intent.throw } : {}),
       ...(phase === 'clash' || phase === 'settle' ? { shown } : {}),
+      ...(lastOutcome ? { outcome: lastOutcome } : tieThisRound && (phase === 'clash' || phase === 'settle') && shown.p1 && shown.p2
+        ? { outcome: { winner: 'tie' as const, damage: 0 } } : {}),
     };
   }
+
+  // 表现层记忆（render-only·不进 sim/hash）：用于「上一次结算掉了多少血」的横幅。
+  let prevHp: Record<Side, number> = { p1: HP_MAX, p2: HP_MAX };
+  let prevPhase: Phase = 'charge';
+  let tieThisRound = false;
+  let lastOutcome: { winner: Side | 'tie'; damage: number } | undefined;
 
   /**
    * 世界数据源（引擎的 DI 接缝）：`LayoutNode` 里的 `props.bind` **不会自己生效**——
