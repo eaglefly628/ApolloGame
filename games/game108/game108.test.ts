@@ -148,7 +148,11 @@ describe('game108 · S3 条款走查（真引擎驱动·用【R-108-70】动作�
 
     fire(e, 'p1', throwSignal('rock'), 't1');
     fire(e, 'p2', throwSignal('scissors'), 't2');
-    e.world.tick(); e.world.tick(); e.world.tick(); // 产 intent(Commit) → 结算(Update) → 副作用落地
+    // 【R-108-01】结算门（REQ-108-ENG-06）：提交完**不会当拍结算**——要等 flow 走进 T3 对决时区
+    // 才开门。本测试原先断言「3 拍后就掉血」，那正是条款禁止的（提交那刻血就掉 ⇒ 亮拳变成
+    // 播放已发生的事）。跑到 T3：起手 charge 180 + throw 180 = 360 拍进 clash。
+    for (let i = 0; i < 360; i++) e.world.tick();
+    expect(phase(e)).toBe('clash');
 
     expect(res(e, 'p2')).toBe(HP_MAX - (DMG_BASE + 2 * DMG_STEP)); // 【R-108-13】10+2×10=30
     expect(res(e, 'p1')).toBe(HP_MAX);                              // 胜方不掉血
@@ -254,7 +258,8 @@ describe('game108 · 玩家动作真实通路（REQ-108-ENG-04·owner 判 A）',
 
     fire(e, 'p2', throwSignal('scissors'), 'ai1');   // AI 侧仍走内部信号（S4 才接表演型 AI）
     tap(e, ACT.throw('rock'));                      // 玩家这一侧全程只"点屏"
-    e.world.tick(); e.world.tick();
+    // 同上：结算门要到 T3 才开（【R-108-01】·REQ-108-ENG-06）。
+    for (let i = 0; i < 360; i++) e.world.tick();
 
     expect(res(e, 'p2')).toBe(HP_MAX - (DMG_BASE + 2 * DMG_STEP)); // 10 + 2×10 = 30
     expect(res(e, 'p1')).toBe(HP_MAX);

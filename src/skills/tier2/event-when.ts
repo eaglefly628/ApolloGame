@@ -38,6 +38,7 @@ export const eventWhenCapability = defineCapability({
           when: { type: 'string', describe: '布尔条件树 ConditionExpr（结构化对象：and/or/not + resource/flag/state 叶子）' },
           mode: { type: 'string', describe: "触发模式 'edge'|'level'：edge=上升沿一次(迟滞)；level=为真时每帧持续" },
           armed: { type: 'boolean', describe: '边沿检测内部状态（初始 false）' },
+          source: { type: 'EntityId', describe: '代发：产出的 Signal.source 填这个实体而非本实体。给**按 source 认人**的消费方用（如 matrix-duel 出招接缝按侧认人）——「一规则一个专属实体」的范式会让 source 永远是规则实体，而一实体一组件又不许把多份 EventWhen 挤到主体上。同 KeyBinding.source。缺省=本实体（零回归）；空串硬抛。' },
         },
       },
       Signal: {
@@ -88,8 +89,15 @@ export const eventWhenCapability = defineCapability({
           }
 
           // 信号直接挂在本 EventWhen 实体上（Signal 逻辑从属于它），下游照样 query('Signal') 消费。
+          // `source`：缺省=本实体（零回归）；填了=代发给该实体（REQ-108-ENG-05·见组件注释）。
+          // 代发只改 `Signal.source` 这一个字段，**不改信号的生命周期**（仍挂本实体、仍每帧先清后标）。
           if (fire) {
-            world.addComponent(eid, { type: 'Signal', name: ew.signal, source: eid } as Signal);
+            // 代发落盘门：空串 = 永不自愈的数据错（发出去的信号没有主体，按 source 认人的
+            // 消费方只会静默认不到）——点名硬抛，不静默退回 eid（同本库「坏数据不许静默」教条）。
+            if (ew.source !== undefined && ew.source === '') {
+              throw new Error(`event-when: 实体 "${eid}" 的 EventWhen.source 是空串（代发要填真实体 id；不代发就别填这个字段）`);
+            }
+            world.addComponent(eid, { type: 'Signal', name: ew.signal, source: ew.source ?? eid } as Signal);
           }
         }
       },

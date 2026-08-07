@@ -21,6 +21,9 @@ import {
 /** 「该侧已倒下」的 Flag id（**各侧唯一**——全局条件路由靠它认侧）。 */
 export const deadFlag = (side: Side): string => `${side}.dead`;
 
+/** 结算门 Flag id【R-108-01】：T3 对决时区开、T4 结算时区关（REQ-108-ENG-06）。 */
+export const SETTLE_GATE = 'duel.settle';
+
 /** AI 侧的内部信号名——**不进动作词表**（【R-108-70】只管玩家动作），故与玩家的 `charge.<手>` 分开。 */
 export const aiChargeSignal = (h: Hand): string => `ai.charge.${h}`;
 /** 出招信号玩家与 AI **共用一个名**：接缝靠 `Signal.source` 认侧（见 capability-plan §4）。 */
@@ -38,6 +41,10 @@ function duelMatrix(): Record<string, unknown> {
     }])),
     tie: { selfDamage: TIE_SELF_DAMAGE },
     intentSignals: Object.fromEntries(HANDS.map((h) => [h, throwSignal(h)])),
+    // 【R-108-01】结算门：只有进了 T3 对决时区才结算（REQ-108-ENG-06）。
+    // 不设门的话双方一提交就立刻扣血 ⇒ 你出招那一刻血条就掉、槽就清，
+    // **「亮拳」那 2 秒变成播放已经发生过的事**——而亮拳是本作的情绪核（§13 演出）。
+    settleWhenFlag: SETTLE_GATE,
     clearOnSettle: 'charge',      // 【R-108-14】只清各自出过的那只手
     lastThrowVar: 'lastThrow',    // 【R-108-02/30】记本回合的手
     resolvedSignal: 'duel.resolved',
@@ -59,9 +66,17 @@ function duelFlow(): Record<string, unknown> {
       { id: 'throw', transitions: [{ after: PHASE_TICKS.throw, to: 'clash' }] },
       // clash → settle 至少隔 1 tick：接缝在 Commit 产 intent、下一拍 Update 才结算
       // （capability-plan §5 实现约定 2），同拍收口会漏结算。
-      { id: 'clash', transitions: [{ after: PHASE_TICKS.clash, to: 'settle' }] },
+      // T3 对决：进来就开结算门（【R-108-01】T3 = 亮拳 → 克制判定 → 伤害演出——
+      // 判定与伤害在引擎里是同一次操作，故「揭晓」这一拍就是它落地的那一拍）。
+      {
+        id: 'clash',
+        onEnter: [{ kind: 'set-flag', targetId: SETTLE_GATE, value: true }],
+        transitions: [{ after: PHASE_TICKS.clash, to: 'settle' }],
+      },
+      // T4 结算：门随即关上——下一回合的提交不该被上一回合开着的门直接结算掉。
       {
         id: 'settle',
+        onEnter: [{ kind: 'set-flag', targetId: SETTLE_GATE, value: false }],
         transitions: [
           { when: hpDown('p2'), to: 'p1win' },
           { when: hpDown('p1'), to: 'p2win' },
@@ -118,6 +133,8 @@ export function buildBlueprint(): WorldBlueprint {
     flow: { GameFlow: duelFlow() } as EntityBlueprint,
     // 种子 PRNG：AI 抽招 / 破绽概率门一律走它——游戏层禁裸 Math.random（红线）。
     seed: { RandomSeed: { seed: 108 } } as EntityBlueprint,
+    // 结算门旗（flow 的 onEnter 开关它·matrix-duel 的 Commit 接缝读它）。
+    gate: { Flag: { id: SETTLE_GATE, active: false } } as EntityBlueprint,
     ...chargeEffects(),
     ...playerKeys(),
   };

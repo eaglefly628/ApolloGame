@@ -90,6 +90,13 @@ export interface EventWhen extends Component {
   when: ConditionExpr; // 布尔条件树
   mode: 'edge' | 'level'; // edge=上升沿触发一次(迟滞)；level=条件为真时每帧持续触发
   armed: boolean; // 边沿检测内部状态：true=已在本轮触发、等条件回落后复位
+  // 代发（REQ-108-ENG-05·owner 2026-08-07 判 A·与 `KeyBinding.source`(ENG-04) 逐字对称）：
+  // 产出的 `Signal.source` 填这个实体，而不是挂本组件的实体。
+  // 治的病同 ENG-04：**按 source 认人**的消费方（如 t2-matrix-duel 出招接缝按侧认人）碰上
+  // 「一规则一个专属实体」的范式，source 永远是那个规则实体、不是行为主体；而一实体一组件
+  // 又不许把多份 EventWhen 挤到主体上。**玩家能代发、AI 不能，这种不对称本身就是缺陷面。**
+  // 缺省=挂本组件的实体（**零回归**）。空串 = 数据错，硬抛。
+  source?: EntityId;
 }
 
 // ── event-when 产出 ── 信号事件：某 EventWhen 这帧触发了。每帧先清后标。

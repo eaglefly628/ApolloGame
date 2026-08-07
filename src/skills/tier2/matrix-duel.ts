@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase, type Component, type EntityId, type IWorld } from '@engine/core/types.js';
-import type { Resource, ResourceModify, Signal, StringSet } from '@engine/protocol/components.js';
+import type { Flag, Resource, ResourceModify, Signal, StringSet } from '@engine/protocol/components.js';
 import type { DebugTrace } from '@engine/protocol/components.js';
 import { findDebugTrace, appendTrace } from '../debug-trace.js';
 
@@ -145,6 +145,21 @@ export interface DuelMatrix extends Component, DuelTable {
    * 为什么归本件：**它是唯一同时知道「谁出了什么」的地方**，这本就是结算副作用；
    * 而 `t2-effect-apply` 的 `Effect.targetId` 是全局寻址、两侧共用一个出招信号名，分不清该清哪一侧（已实查证伪）。
    */
+  /**
+   * 结算门（REQ-108-ENG-06·owner 2026-08-07 判 A）：**Flag id**。设了则**只有该 Flag 为真时才结算**；
+   * 不设 = 凑齐即算（**零回归**·旧行为逐字节不变）。
+   *
+   * 治的病：本解释器原本「双方 intent 一凑齐就立刻结算」，于是**表达不了任何有揭晓节拍的对局**——
+   * 玩家提交那一刻血就掉了，「亮拳/开牌」那几秒变成播放已经发生过的事。而同时决策类玩法
+   * （猜拳/押注/兵种相克/田忌赛马）的情绪核恰恰在揭晓。这是解释器的表达力缺口，不是某个游戏的偏好。
+   *
+   * **为什么是 Flag 而不是 ConditionExpr**：结算系统在 Update 且**刻意不读 Resource**
+   * （读了与「排 resource-apply 之前」合围成环·文件头有实测记录）。**实测**：给结算系统加 `Flag`
+   * 读面同样当场成环 `[resource-apply, self-rule, matrix-duel]`。故门**在 Commit 相位的接缝里判**
+   * （那里读 Flag 实测不成环），判完把 `DuelIntent.armed` 置真；Update 的结算只认 `armed`，
+   * **两边都不新增危险读面**。上游用 `t3-flow` 的 `onEnter:[{kind:'set-flag'}]` 开关它即可（现成能力）。
+   */
+  settleWhenFlag?: string;
   clearOnSettle?: string;
   /**
    * 结算副作用②（REQ-108-ENG-03）：**相对名**。结算末尾把双方本回合的手写进
@@ -161,6 +176,9 @@ export interface DuelIntent extends Component {
   readonly type: 'DuelIntent';
   throw: DuelThrowId;
   duelId?: string; // 属于哪场对局（缺省 ''）
+  // 结算门开过了（内部·由 Commit 接缝置）。仅当 DuelMatrix.settleWhenFlag 设了时有意义：
+  // 结算只认已 armed 的 intent。不设门则本字段被忽略（零回归）。
+  armed?: boolean;
 }
 
 /** 本回合的结算记录（Update 产 → Commit 播报后 consume；跨相位传结果用，不留过拍）。 */
@@ -625,6 +643,14 @@ export const matrixDuelCapability = defineCapability({
             const it = world.getComponent<DuelIntent>(iid, 'DuelIntent');
             if (it && (it.duelId ?? '') === key) sides.push({ eid: iid, intent: it });
           }
+          // 结算门（REQ-108-ENG-06）：设了 `settleWhenFlag` 就只结算**已 armed** 的 intent。
+          // arming 在 Commit 接缝里做（那里读 Flag 不成环）；此处**不读 Flag**，只认 intent 上的标记
+          // ——这正是这个设计的要害：Update 侧零新增读面，定序一动不动。
+          // 未 armed = 双方已提交但还没到揭晓那一拍 ⇒ 与「一侧没提交」同为**瞬时**态，等下一拍。
+          if (md.settleWhenFlag && sides.some((sd) => sd.intent.armed !== true)) {
+            appendTrace(tr, tk, 'matrix-duel', 'reject', `duel "${key}" 结算门未开（settleWhenFlag=${md.settleWhenFlag}）→ 本拍不结算`);
+            continue;
+          }
           // < 2：一侧还没提交 → 本拍不结算、等齐（**瞬时**态，下一拍可能就齐了，合理跳过）。
           // > 2：同一 duelId 挂了三份及以上 DuelIntent = 数据错，**永远不会自己变回 2** →
           //      旧实现一并 continue 就成了静默永久死锁（对局静止、零报错、最难查）。
@@ -844,7 +870,10 @@ export const matrixDuelCapability = defineCapability({
       // 对局是秒级时区、一拍 = 一帧，无感知代价；换来零定序改动（边界要求不碰拆相位）。
       id: 'matrix-duel-intent',
       phase: SystemPhase.Commit,
-      reads: ['DuelMatrix', 'Signal'],
+      // 读 `Flag` 是给结算门用的（REQ-108-ENG-06）。**为什么门判在这儿**：Update 的结算系统
+      // 加任何读面都成环（实测 `Flag` 当场闭合 `[resource-apply, self-rule, matrix-duel]`），
+      // 而本系统在 Commit，读 Flag 实测不成环（定序用例覆盖）。
+      reads: ['DuelMatrix', 'Signal', 'Flag'],
       writes: ['DuelIntent'],
       consumes: [],
       runsAfter: ['matrix-duel-announce'], // 播报的胜负信号绝不该被当成出招输入（同拍两者都在 Commit）
@@ -853,7 +882,28 @@ export const matrixDuelCapability = defineCapability({
         if (matrixIds.length === 0) return;
         for (const mid of matrixIds) {
           const md = world.getComponent<DuelMatrix>(mid, 'DuelMatrix');
-          if (!md || !md.intentSignals) continue;
+          if (!md) continue;
+
+          // ── 结算门 arming（REQ-108-ENG-06）：门开着就把本场双方的 intent 标成"可结算"。
+          // 下一拍 Update 的结算系统只认这个标记（它读不了 Flag，见上面 reads 注释）。
+          if (md.settleWhenFlag) {
+            let open = false;
+            for (const [fe] of world.query('Flag')) {
+              const f = world.getComponent<Flag>(fe, 'Flag');
+              if (f && f.id === md.settleWhenFlag) { open = f.active; break; }
+            }
+            if (open) {
+              const key = md.duelId ?? '';
+              for (const [iid] of world.query('DuelIntent')) {
+                const it = world.getComponent<DuelIntent>(iid, 'DuelIntent');
+                if (it && (it.duelId ?? '') === key && it.armed !== true) {
+                  world.addComponent(iid, { ...it, armed: true } as DuelIntent);
+                }
+              }
+            }
+          }
+
+          if (!md.intentSignals) continue;
           const table = resolveDuelMatrix(md);
           // 信号名 → 手（反查表按信号名建，避免每个信号都遍历一遍 intentSignals）
           const bySignal = new Map<string, DuelThrowId>();

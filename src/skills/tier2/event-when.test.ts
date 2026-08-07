@@ -109,3 +109,48 @@ describe('T2 event-when — 每帧先清后标 + 多触发器独立', () => {
     expect(signalName(w, 'ew_b')).toBe('sig_b');
   });
 });
+
+// ── 代发 source（REQ-108-ENG-05·owner 2026-08-07 判 A·与 KeyBinding.source 对称）──────
+function eventWhenSrc(w: World, eid: string, signal: string, when: ConditionExpr, source?: string): void {
+  w.createEntity(eid);
+  w.addComponent(eid, { type: 'EventWhen', signal, when, mode: 'level', armed: false, ...(source !== undefined ? { source } : {}) } as EventWhen);
+}
+const sigOf = (w: World, eid: string): Signal | undefined => w.getComponent<Signal>(eid, 'Signal');
+const GO: ConditionExpr = { kind: 'flag', id: 'go' };
+
+describe('event-when — 代发 Signal.source（REQ-108-ENG-05）', () => {
+  it('填了 source → Signal.source = 该实体（信号组件仍挂在 EventWhen 实体上）', () => {
+    const w = worldWithEventWhen();
+    flag(w, 'go', true);
+    eventWhenSrc(w, 'ew1', 'throw.rock', GO, 'p2');
+    w.tick();
+    // 认人的是 source 字段，不是挂载实体——接缝（matrix-duel）据此认侧。
+    expect(sigOf(w, 'ew1')).toMatchObject({ name: 'throw.rock', source: 'p2' });
+    expect(sigOf(w, 'p2')).toBeUndefined();   // 生命周期不变：信号仍挂规则实体
+  });
+
+  it('不填 source → 零回归：仍是挂载实体自己', () => {
+    const w = worldWithEventWhen();
+    flag(w, 'go', true);
+    eventWhenSrc(w, 'ew2', 's', GO);
+    w.tick();
+    expect(sigOf(w, 'ew2')!.source).toBe('ew2');
+  });
+
+  it('多条规则各自代发到不同主体（同一动作名按主体分流·AI 双人同屏就靠这个）', () => {
+    const w = worldWithEventWhen();
+    flag(w, 'go', true);
+    eventWhenSrc(w, 'ew:p1', 'throw', GO, 'p1');
+    eventWhenSrc(w, 'ew:p2', 'throw', GO, 'p2');
+    w.tick();
+    expect(sigOf(w, 'ew:p1')!.source).toBe('p1');
+    expect(sigOf(w, 'ew:p2')!.source).toBe('p2');
+  });
+
+  it('source 空串 = 数据错 → 点名硬抛（不静默退回本实体）', () => {
+    const w = worldWithEventWhen();
+    flag(w, 'go', true);
+    eventWhenSrc(w, 'ew-bad', 's', GO, '');
+    expect(() => w.tick()).toThrow(/EventWhen\.source 是空串/);
+  });
+});
