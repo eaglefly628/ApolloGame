@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "slug": "game108",
+  "concept": {
+    "name": "拳律 Rule of Three",
+    "pitch": "六条蓄力槽公开摊在台面上——你往哪一手存力所有人都看得见，然后你可以出别的。T1 蓄力(公开) → T2 出招(隐藏·同时) → T3 对决：克制关系定胜负、蓄力只决定赢了打多少(10/20/30/40)，出过的手清零。满蓄被克 = 一次赔掉三回合。判定表本身是数据，遗物能当场凿改它。超休闲操作 × 轻 roguelite 深度。",
+    "refs": "石头剪刀布,Slay the Spire(意图公开),Reigns(二选一心流)",
+    "style": "竖屏 456×788 超休闲·apolloOnyx house 主题·纯 LayoutNode 闭集"
+  },
+  "signoffs": {
+    "S1": {
+      "by": "owner",
+      "note": "owner 2026-08-06 口头签（session 代录·原文见 docs/design/game108/brief.md 人门签记录）：品类=超休闲操作 × 轻 roguelite 深度，名 Rule of Three，方向 A+B。",
+      "at": "2026-08-07T07:12:12.026Z"
+    },
+    "S2": {
+      "by": "owner",
+      "note": "owner 2026-08-06 口头签（session 代录·原文见 docs/design/game108/capability-plan.md）：逐条看过能力计划后签；同轮立缺口裁决协议（先查→摆 A/B→owner 判）。",
+      "at": "2026-08-07T07:12:12.089Z"
+    }
+  },
+  "evidence": {},
+  "history": [
+    {
+      "action": "concept",
+      "at": "2026-08-07T07:11:56.003Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S1",
+      "at": "2026-08-07T07:12:12.026Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S2",
+      "at": "2026-08-07T07:12:12.089Z"
+    }
+  ]
+}

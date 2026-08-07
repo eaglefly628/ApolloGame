@@ -5,12 +5,14 @@
 // 写世界只经 `action` 信号名，且**信号名一律取自【R-108-70】动作词表**（UI / data-action / 验收剧本同源）。
 // 华丽起手（capability-plan §4.6）：house 主题 apolloOnyx + 成熟件（ProgressBar/异形石板/hero 键 + press3d/ring 倒计时）。
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
-const STAGE_W = 456, STAGE_H = 788; // 竖屏超休闲舞台（同 casual-hud 口径）
 
 import {
   HANDS, HAND_CN, HAND_ICON, CHARGE_CAP, HP_MAX, ACT, SIDES,
-  chargeRes, HP_RES, type Hand, type Side,
+  chargeRes, HP_RES, VIEW_W, VIEW_H, type Hand, type Side,
 } from './theme.js';
+
+// 舞台定尺取自 theme 的单一真相——与 mountHost 的 field 同源（不同源 = 屏缩在 field 一角）。
+const STAGE_W = VIEW_W, STAGE_H = VIEW_H;
 
 /** 相位（对局屏按它决定哪一排键可点）——与 blueprint 的 GameFlow 状态 id 同名。 */
 export type Phase = 'charge' | 'throw' | 'clash' | 'settle' | 'p1win' | 'p2win';
@@ -121,30 +123,39 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
       { type: 'Particles', id: 'ds-amb', props: { kind: 'sparkle', count: 14, loop: true } },
       sidePanel('p2', view),
       {
+        // 台面中区：相位环 + 双方亮手 + 规则石板。**相位环必须在台面里**——2026-08-07 真渲染目击到
+        // 它原本贴在「你」面板正上方，读起来像玩家私有物，其实是全局相位（离双方等距才不误读）。
+        // flex:1 撑开中区（照 casual-hud 屋规）：台面吃掉余高，双方面板各贴上下缘。
         type: 'Panel', id: 'center', props: { bare: true },
-        layout: { direction: 'row', align: 'center', justify: 'center', gap: 18 },
+        layout: { direction: 'column', align: 'center', justify: 'center', gap: 16, flex: 1 },
         children: [
           {
-            type: 'Label', id: 'shown-p2',
-            props: { text: shown?.p2 ? HAND_ICON[shown.p2] : '❔', size: 'xl' },
+            type: 'Panel', id: 'phase', props: { bare: true },
+            layout: { direction: 'row', align: 'center', justify: 'center', gap: 10 },
+            children: [
+              {
+                type: 'ProgressBar', id: 'phase-ring',
+                props: { value: Math.round(view.phaseLeft * 100), max: 100, shape: 'ring', size: 54, tone: 'gold' },
+              },
+              { type: 'Label', id: 'phase-t', props: { text: PHASE_CN[view.phase], font: 'heavy', size: 'lg', color: 'gold', bold: true } },
+              ...(view.tell ? [{ type: 'Label', id: 'tell', props: { text: view.tell, size: 'sm', color: 'warn' } } as LayoutNode] : []),
+            ],
           },
-          ruleSlab(),
           {
-            type: 'Label', id: 'shown-p1',
-            props: { text: shown?.p1 ? HAND_ICON[shown.p1] : '❔', size: 'xl' },
+            type: 'Panel', id: 'table', props: { bare: true },
+            layout: { direction: 'row', align: 'center', justify: 'center', gap: 18 },
+            children: [
+              {
+                type: 'Label', id: 'shown-p2',
+                props: { text: shown?.p2 ? HAND_ICON[shown.p2] : '❔', size: 'xl' },
+              },
+              ruleSlab(),
+              {
+                type: 'Label', id: 'shown-p1',
+                props: { text: shown?.p1 ? HAND_ICON[shown.p1] : '❔', size: 'xl' },
+              },
+            ],
           },
-        ],
-      },
-      {
-        type: 'Panel', id: 'phase', props: { bare: true },
-        layout: { direction: 'row', align: 'center', justify: 'center', gap: 10 },
-        children: [
-          {
-            type: 'ProgressBar', id: 'phase-ring',
-            props: { value: Math.round(view.phaseLeft * 100), max: 100, shape: 'ring', size: 54, tone: 'gold' },
-          },
-          { type: 'Label', id: 'phase-t', props: { text: PHASE_CN[view.phase], font: 'heavy', size: 'lg', color: 'gold', bold: true } },
-          ...(view.tell ? [{ type: 'Label', id: 'tell', props: { text: view.tell, size: 'sm', color: 'warn' } } as LayoutNode] : []),
         ],
       },
       sidePanel('p1', view),

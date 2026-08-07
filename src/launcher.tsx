@@ -45,6 +45,17 @@ const GAMES_ALLOWLIST: Set<string> | null = (() => {
 // GAMES 不拆走：main_entry/games_list.py 以正则从 src/launcher.tsx 解析本表（内置卡片元信息单一真相·只读）。
 export const GAMES: GameEntry[] = [
   {
+    id: 'game108',
+    title: 'Game 108: 拳律 Rule of Three',
+    subtitle: '公开蓄力槽 · 猜拳心理战',
+    description:
+      '六条蓄力槽摊在台面上——你往哪一手存力所有人都看得见，然后你可以出别的。T1 蓄力(公开) → T2 出招(隐藏·同时) → T3 对决，克制关系定胜负、蓄力只决定赢了打多少(10/20/30/40)；出过的手清零，满蓄被克 = 一次赔掉三回合。判定表本身是数据，遗物能当场凿改它。超休闲操作 × 轻 roguelite 深度。',
+    color: '#0f1620',
+    accentColor: '#ff7a3c',
+    icon: '✊',
+    status: 'playable',
+  },
+  {
     id: 'game102',
     title: 'Game 102: 色流工坊 Pixel Pour',
     subtitle: '3D 体素雕刻 · 转面喂炮揭雕像',

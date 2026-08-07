@@ -1,0 +1,31 @@
+{
+  "slug": "game108",
+  "at": "2026-08-07T07:09:31.538Z",
+  "gameHash": "2916f6f9e02a4f5c",
+  "ok": true,
+  "form": "compiled",
+  "assertions": {
+    "nonBlank": {
+      "pass": true,
+      "variance": 736.81,
+      "mean": 19.12,
+      "threshold": 15
+    },
+    "consoleErrors": {
+      "pass": true,
+      "count": 0,
+      "messages": []
+    },
+    "noUncaught": {
+      "pass": true,
+      "pageErrors": 0,
+      "overlay": false,
+      "messages": []
+    }
+  },
+  "screenshot": "public/games/game108/probe/S3-render.png",
+  "browser": {
+    "execPath": "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    "via": "explicit"
+  }
+}

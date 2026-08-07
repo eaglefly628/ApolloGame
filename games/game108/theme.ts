@@ -60,5 +60,8 @@ export const lastThrowVar = (side: Side): string => `${side}.lastThrow`;
 /** house 主题（capability-plan §4.6：起手传 house 主题，不自写皮）。 */
 export const DUEL_THEME: UITheme = apolloOnyx;
 
-export const VIEW_W = 720;
-export const VIEW_H = 1280; // 竖屏超休闲
+// 竖屏超休闲舞台尺寸（**单一真相**）：mountHost 的 field 与对局屏根 Panel 的定尺同取这两个数——
+// 不同源就是 2026-08-07 真渲染目击到的那个病：field 720×1280、屏 456×788 → 屏缩在 field 左上角，
+// 下半截整片死白。同 casual-hud 口径。
+export const VIEW_W = 456;
+export const VIEW_H = 788;
