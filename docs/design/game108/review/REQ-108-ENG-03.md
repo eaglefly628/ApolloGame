@@ -140,3 +140,32 @@ Review 单与代码注释写「全库只有 `t3-poker-hand` 与 `x3-string-varia
 工单里那行「施工主体 = 主程 Lead session」当时也没更新。
 **建议**：自做自验优先，但**开工前必须把工单的「施工主体」改成自己并推一次**——
 那一行就是锁，抢到锁的人做。这条要 owner 拍。
+
+### 七、判词补遗（同日·做日志设施试点时撞出，我 review 时漏了）
+
+**新增发现 C（minor·PASS 不变）：ENG-03 引入了一条 Commit 相位的定序环告警。**
+
+`announce.reads` 加上 `Resource` 后，Commit 相位闭合出：
+
+```
+环 [effect-apply, craft-recipe, weighted-spawn, matrix-duel-announce]
+（闭环组件：RandomSeed, Resource, Signal）
+```
+
+**实证**：把 `announce.reads` 退回 ENG-03 之前的 `['DuelOutcome']`，告警消失；改回来，告警出现。**是本单引入的，不是存量。**
+
+**为什么 PASS 不变**：`topological-sort` 只告警不抛，且裁决出的落序是
+`craft-recipe → matrix-duel-announce → effect-apply → weighted-spawn`——**显式 `runsBefore: ['effect-apply']` 仍被服从**，
+本件语义（信号当拍被消费）没坏，既有定序用例也仍绿。
+
+**但它是新增的潜伏面**：这条环的落序由「注册序/tier 序」兜底裁决，**不保证合语义**。
+今天已经吃过同款：ENG-02 的接缝放 Update 也是"只告警不抛、落序不合语义却照跑 → 静默失效"。
+现在 `matrix-duel-announce` 与 `weighted-spawn`/`craft-recipe` 之间**没有任何显式申报**，谁先谁后全靠兜底。
+game108 恰好三者都用（`weighted-spawn` 管 AI 抽选、`craft-recipe` 管烟雾）。
+
+**建议（不拦本单·请施工方接一下）**：给 `matrix-duel-announce` 补显式 `runsAfter`/`runsBefore`
+把它与 `weighted-spawn`/`craft-recipe` 的先后**申报出来**，让这条环从「兜底裁决」变成「显式定序」——
+`topological-sort` 的告警原文自己给的就是这个处方：「要指定先后请用 runsAfter/runsBefore 显式申报覆盖」。
+
+**我漏这条的原因**（记下来）：我第一轮只跑了 `matrix-duel.test.ts` 的定序用例（它们**绿**，因为断言的是
+本件三条显式关系），**没去看 stderr 里的告警**。⇒ **review 三步该补一条：告警也要读，绿灯不等于没话说。**

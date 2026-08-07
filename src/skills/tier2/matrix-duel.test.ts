@@ -15,6 +15,8 @@ import {
   type DuelPatch,
   type DuelTable,
 } from './matrix-duel.js';
+import type { DebugTrace } from '@engine/protocol/components.js';
+import { formatTrace } from '../debug-trace.js';
 import { eventWhenCapability } from './event-when.js';
 import { effectApplyCapability } from './effect-apply.js';
 import { craftRecipeCapability } from './craft-recipe.js';
@@ -874,5 +876,65 @@ describe('matrix-duel — 结算副作用（REQ-108-ENG-03）', () => {
     expect(bad({ clearOnSettle: 'hp' })).toMatch(/clearOnSettle 不能是血量资源/);
     expect(bad({ lastThrowVar: 'hp' })).toMatch(/lastThrowVar 不能是血量资源/);
     expect(bad({ clearOnSettle: 'charge', lastThrowVar: 'lastThrow' })).toBe(''); // 正常表零 issue
+  });
+});
+
+// ── 日志基准守则试点（owner 2026-08-06 判 A·matrix-duel 当标尺）────────────────
+// 验的不是"有没有 log"，是守则的两条硬指标：① 关时零污染 ② **只读 trace 能重建因果**。
+describe('matrix-duel — DebugTrace 试点（日志基准守则）', () => {
+  const traced = (w: World, tick = 0): DebugTrace => {
+    w.createEntity('dbg');
+    w.addComponent('dbg', { type: 'DebugTrace', events: [], tick } as DebugTrace);
+    return w.getComponent<DebugTrace>('dbg', 'DebugTrace')!;
+  };
+
+  it('① 默认不开：不挂 DebugTrace 时行为逐位不变（零污染）', () => {
+    const a = table(BASE_MATRIX()); const ra = duel(a, 'rock', 'scissors');
+    const b = table(BASE_MATRIX()); traced(b); const rb = duel(b, 'rock', 'scissors');
+    expect(rb).toEqual(ra); // 开不开 trace，结算结果一模一样
+  });
+
+  it('② 密度：一次结算正常路径 ≤ 3 条，且四类只出现该出现的', () => {
+    const w = table(BASE_MATRIX());
+    const t = traced(w, 7);
+    duel(w, 'rock', 'scissors');
+    expect(t.events.length).toBeLessThanOrEqual(3);           // 守则：每 system 每 tick ≤ 3 条
+    expect(t.events.map((e) => e.kind)).toEqual(['decision', 'commit']); // 正常路径无 reject
+    expect(t.events.every((e) => e.tick === 7)).toBe(true);   // 拍号来自宿主，非墙钟
+    expect(t.events.every((e) => e.system === 'matrix-duel')).toBe(true);
+  });
+
+  it('③ **验收判据**：只读 trace 就能重建「为什么 p2 掉了 6 血」', () => {
+    const w = table(BASE_MATRIX());
+    const t = traced(w);
+    duel(w, 'rock', 'scissors'); // 石克剪 → p2 -6
+    const log = formatTrace(t);
+    expect(log).toContain('判定 a');                 // 谁赢
+    expect(log).toContain('p1:rock vs p2:scissors'); // 依据什么赢
+    expect(log).toContain('p2-6');                   // 落到谁身上、多少
+    expect(log).toContain('hp');                     // 改的哪个资源
+  });
+
+  it('④ **reject 类真的记下了「什么都没发生」**（守则第 3 类的要害）', () => {
+    const w = table(BASE_MATRIX());
+    const t = traced(w);
+    intend(w, 'p1', 'rock');   // 只挂一侧 → 等齐、本拍不结算
+    w.tick();
+    expect(t.events).toHaveLength(1);
+    expect(t.events[0].kind).toBe('reject');
+    expect(t.events[0].what).toContain('未齐（1/2）');
+  });
+
+  it('⑤ 缩放取不到 → reject 一条（正是本能力吃过两次亏的形态）', () => {
+    const w = table({
+      hpResource: 'hp', throws: ['rock', 'paper'], beats: { rock: [], paper: ['rock'] },
+      payoff: { rock: { damage: 1 }, paper: { damage: { base: 3, scaleByResource: '没这条槽', step: 9 } } },
+      tie: { selfDamage: 0 },
+    });
+    const t = traced(w);
+    duel(w, 'rock', 'paper');
+    const rej = t.events.filter((e) => e.kind === 'reject');
+    expect(rej).toHaveLength(1);
+    expect(rej[0].what).toContain('退化 base=3');
   });
 });

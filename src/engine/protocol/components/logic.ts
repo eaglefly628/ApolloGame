@@ -336,3 +336,33 @@ export interface TimelinePlayback extends Component {
   seq: number; // 瞬时发射实体唯一 id 计数器（单调；避免 id 复用冲突）
   emitted: string[]; // 上一 tick 发射的瞬时实体 id（signal/spawn）；下一 tick 开头销毁 → 无泄漏
 }
+
+// ── debug-trace（owner 2026-08-06 立·全库日志基准守则）──────────────────────
+// 「逻辑写到哪，trace 记到哪」的落点：**opt-in 单例**——世界里挂了 DebugTrace 才记，没挂全程 no-op
+// （零开销·零污染），同 ScoreTrace 先例。默认不开；出 bug 时挂上它跑一遍即可重建判定路径。
+// **必须排除出 hashSnapshot**（`src/net/determinism.ts` 的 NON_DETERMINISTIC）——否则"开日志"本身
+// 就改 hash，lockstep 当场误报 desync（Mesh3D/Coachmark 漏登记的旧案，见该文件注释）。
+// 时间戳一律用 tick 序号，**禁墙钟**（Date.now 会让回放对不上）。
+export interface TraceEvent {
+  readonly seq: number; // append 序（= 记录时的数组长度，确定性）
+  readonly tick: number; // 第几拍（**禁墙钟**：回放要对得上）
+  readonly system: string; // 哪个系统记的（= System.id）
+  // 四类闭集（守则写死·别的一律不记）：
+  //   decision  = 若干条路里选了哪一条（查表命中 / 条件真假 / 优先级裁决 / 随机抽取结果）
+  //   transition= 状态跳转（FSM/相位/回合）：what 写 "from→to"
+  //   reject    = 拒收或降级（落盘门拒 / 退化成缺省 / 守卫跳过 / 找不到目标 no-op）
+  //               —— **凡是「什么都没发生」的分支必须记一条**，它在外部完全不可见
+  //   commit    = 对世界的实际写入摘要（改了哪个 id、增量多少、落在哪个实体）
+  readonly kind: 'decision' | 'transition' | 'reject' | 'commit';
+  readonly what: string; // 发生了什么（标量文本·禁 dump 大对象）
+  readonly why?: string; // 依据的关键输入（可选·标量文本）
+}
+export interface DebugTrace extends Component {
+  readonly type: 'DebugTrace';
+  events: TraceEvent[];
+  max?: number; // 环形上限（缺省 2000）：超了丢最旧的，防长跑撑爆内存
+  // 当前拍号：**由宿主 run loop 显式推进**（`bumpTraceTick`），不设专职系统——
+  // 相位内先后无法保证，专职系统会让同一拍的记录拿到错位的号；而宿主才真正知道帧号。
+  // 宿主不推进也无妨：全为 0，只是失去按拍分组，seq 仍给出全序。**禁墙钟**（Date.now 会让回放对不上）。
+  tick?: number;
+}

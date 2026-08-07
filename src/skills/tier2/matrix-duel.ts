@@ -1,6 +1,8 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase, type Component, type EntityId, type IWorld } from '@engine/core/types.js';
 import type { Resource, ResourceModify, Signal, StringSet } from '@engine/protocol/components.js';
+import type { DebugTrace } from '@engine/protocol/components.js';
+import { findDebugTrace, appendTrace } from '../debug-trace.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  matrix-duel —— 「同时决策 × 收益矩阵」结算解释器（REQ-MATRIXDUEL·Lead 裁决 2026-08-04）。
@@ -244,7 +246,10 @@ export function scaleResourceId(damage: Exclude<DuelDamage, number>, attacker: E
  * （侧实体那个 Resource 槽已被 hpResource 占死）。
  * 资源缺失/非有限 → 当 0（= 退化成 base·绝不 NaN 污染 hp 与快照 hash）。结果取整：全程整数、无浮点。
  */
-export function resolveDamage(world: IWorld, damage: DuelDamage, attacker: EntityId): number {
+export function resolveDamage(
+  world: IWorld, damage: DuelDamage, attacker: EntityId,
+  trace?: DebugTrace, tick = 0,
+): number {
   if (typeof damage === 'number') return damage;
   const wantId = scaleResourceId(damage, attacker);
   // 寻址口径**照抄 resource-apply**（atoms/resource/index.ts:149-153），不自创：
@@ -274,7 +279,12 @@ export function resolveDamage(world: IWorld, damage: DuelDamage, attacker: Entit
   }
   // 资源缺失/非有限 → 当 0（退化成 base）：**绝不让 NaN 进 hp 与快照 hash**
   // （同本 session 修 effect-apply NaN 污染的口径）。
-  const cur = res && Number.isFinite(res.current) ? res.current : 0;
+  const ok = res !== undefined && Number.isFinite(res.current);
+  const cur = ok ? res!.current : 0;
+  // 守则第 3 类【reject】：**「什么都没发生」的分支必须留痕**——缩放源取不到时静默退化成 base，
+  // 正是本能力吃过两次亏的形态（全局回落取错侧 / 唯一 id 也取不到按侧）。
+  if (!ok) appendTrace(trace, tick, 'matrix-duel', 'reject', `缩放源 "${wantId}" 取不到 → 退化 base=${damage.base}`, `attacker=${attacker}`);
+  else appendTrace(trace, tick, 'matrix-duel', 'decision', `缩放源 "${wantId}"=${cur}`, `attacker=${attacker}·perSide=${damage.perSide === true}`);
   return Math.trunc(damage.base + cur * damage.step);
 }
 
@@ -598,6 +608,10 @@ export const matrixDuelCapability = defineCapability({
         if (matrixIds.length === 0) return;
         const intentIds = world.query('DuelIntent').map(([id]) => id).sort();
 
+        // 日志基准守则（owner 2026-08-06）：opt-in——世界没挂 DebugTrace 时 `tr` 为 undefined，
+        // 下面全部 appendTrace 都是 no-op（零开销）。拍号由宿主推进（禁墙钟）。
+        const tr = findDebugTrace(world);
+        const tk = tr?.tick ?? 0;
         for (const mid of matrixIds) {
           const md = world.getComponent<DuelMatrix>(mid, 'DuelMatrix');
           if (!md) continue;
@@ -622,7 +636,12 @@ export const matrixDuelCapability = defineCapability({
               + `涉事实体：${sides.map((s) => `"${s.eid}"`).join(' / ')}`,
             );
           }
-          if (sides.length < 2) continue;
+          if (sides.length < 2) {
+            // 守则第 3 类【reject】：本拍不结算。这是「什么都没发生」的分支，外部完全不可见——
+            // 一旦某侧的 intent 因接线错误永远到不了，只看现象就是「对局静止、零报错」。
+            appendTrace(tr, tk, 'matrix-duel', 'reject', `duelId "${key}" 未齐（${sides.length}/2）→ 本拍不结算`);
+            continue;
+          }
 
           const [sa, sb] = sides;
           const ta = sa.intent.throw;
@@ -650,6 +669,8 @@ export const matrixDuelCapability = defineCapability({
           };
 
           const verdict = duelVerdict(table, ta, tb);
+          // 守则第 1 类【decision】：查表选了哪一条——本能力的核心分叉，一个点恰好一条。
+          appendTrace(tr, tk, 'matrix-duel', 'decision', `判定 ${verdict}`, `${sa.eid}:${ta} vs ${sb.eid}:${tb}`);
           const emit: DuelOutcome['emit'] = [];
           let outcome: DuelOutcome;
 
@@ -681,7 +702,7 @@ export const matrixDuelCapability = defineCapability({
             const lp = table.payoff[loseThrow];
             // 败方挨两笔：胜方那手的 damage + 自己那手的 selfDamageOnLose（同一 hp 槽，合并成一条）。
             // damage 可为缩放式 → 按**出手方（胜方）**自己身上那份资源取值（侧 local·同 hpResource 口径）。
-            const loserDelta = -resolveDamage(world, wp.damage, win.eid) - (lp.selfDamageOnLose ?? 0);
+            const loserDelta = -resolveDamage(world, wp.damage, win.eid, tr, tk) - (lp.selfDamageOnLose ?? 0);
             if (loserDelta !== 0) addHp(lose.eid, loserDelta);
             addEffects(wp.effects);
             const winSignal = wp.signal ?? md.winSignal;
@@ -705,6 +726,10 @@ export const matrixDuelCapability = defineCapability({
             emit.push({ entity: mid, signal: md.resolvedSignal, arg: verdict === 'tie' ? '' : outcome.winThrow });
           }
 
+          // 守则第 4 类【commit】：实际写入摘要。**聚合一条**（不逐实体刷屏 = 守则「循环内只记聚合」）。
+          appendTrace(tr, tk, 'matrix-duel', 'commit',
+            [...hpDelta].filter(([, a]) => a !== 0).map(([e, a]) => `${e}${a > 0 ? '+' : ''}${a}`).join(' ') || '无血量变动',
+            `资源 "${md.hpResource}"`);
           for (const [eid, amount] of hpDelta) {
             if (amount === 0) continue;
             world.addComponent(eid, {
