@@ -1,6 +1,6 @@
 import { defineCapability } from '@engine/core/define-capability.js';
 import { SystemPhase, type Component, type EntityId, type IWorld } from '@engine/core/types.js';
-import type { Resource, ResourceModify, Signal } from '@engine/protocol/components.js';
+import type { Resource, ResourceModify, Signal, StringSet } from '@engine/protocol/components.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  matrix-duel —— 「同时决策 × 收益矩阵」结算解释器（REQ-MATRIXDUEL·Lead 裁决 2026-08-04）。
@@ -135,6 +135,23 @@ export interface DuelMatrix extends Component, DuelTable {
    *   补丁三闭集改不到 `intentSignals`（它是基表字段，不参与 fold）。
    */
   intentSignals?: Record<DuelThrowId, string>;
+  /**
+   * 结算副作用①（REQ-108-ENG-03·owner 2026-08-06 判 A1）：**相对名**。
+   * 结算末尾把双方**各自出的那只手**对应的 `<该侧>.<相对名>.<手>` 资源清零
+   * （胜/负/平三态都做）；**没出的手原样保留**。
+   * 例：填 `charge` → p1 出石、p2 出剪 ⇒ `p1.charge.rock` 与 `p2.charge.scissors` 归零，其余四条不动。
+   * 为什么归本件：**它是唯一同时知道「谁出了什么」的地方**，这本就是结算副作用；
+   * 而 `t2-effect-apply` 的 `Effect.targetId` 是全局寻址、两侧共用一个出招信号名，分不清该清哪一侧（已实查证伪）。
+   */
+  clearOnSettle?: string;
+  /**
+   * 结算副作用②（REQ-108-ENG-03）：**相对名**。结算末尾把双方本回合的手写进
+   * `<该侧>.<相对名>` 的 `StringVar`（经 `StringSet` 事件，由 `x3-string-variable` 的 string-apply 落地）。
+   * 例：填 `lastThrow` → `p1.lastThrow='rock'`。供「超时顺延保持上次选择」「AI 抄对手上一手」这类取用。
+   * 为什么归本件：`Effect.kind` 十项里**没有写字符串**，全库只有 `t3-poker-hand` 与 `x3-string-variable`
+   * 自己产 `StringSet`（已实查）——信号改得了数字，改不了字符串。
+   */
+  lastThrowVar?: string;
 }
 
 /** 某一侧本回合出的手（read-then-settle：结算后由本能力清除，同回合绝不二次结算）。 */
@@ -203,6 +220,19 @@ function checkEffects(effects: DuelEffect[] | undefined, hpResource: string, at:
  *  · 缺省 → 表里那个绝对 id 原样（零回归）。
  * 纯字符串拼接、无 IO、无随机，故确定性与快照 hash 不受影响。
  */
+/**
+ * 按 Resource id 找持有者（REQ-108-ENG-03 用）。引擎一实体一组件，故蓄力槽必然各居一实体。
+ * 只取**首个**命中：本能力已在 resolveDamage 侧对「同 id 多份」点名硬抛，此处不重复报错，
+ * 但也不静默挑错的——清零针对的是 `<侧>.<相对名>.<手>` 这种**天然唯一**的 id。
+ */
+function findResourceHolder(world: IWorld, id: string): { eid: EntityId; res: Resource } | undefined {
+  for (const [e] of world.query('Resource')) {
+    const r = world.getComponent<Resource>(e, 'Resource');
+    if (r && r.id === id) return { eid: e, res: r };
+  }
+  return undefined;
+}
+
 export function scaleResourceId(damage: Exclude<DuelDamage, number>, attacker: EntityId): string {
   return damage.perSide === true ? `${attacker}.${damage.scaleByResource}` : damage.scaleByResource;
 }
@@ -416,6 +446,16 @@ function foldDuelMatrix(m: DuelMatrix): { table: DuelTable; issues: string[] } {
   if (!tie || !isFiniteNum(tie.selfDamage)) issues.push('tie.selfDamage 不是有限数字（平局僵持伤；取负 = 双方回血）');
   checkEffects(tie?.effects, hpResource, 'tie', issues);
 
+  // 结算副作用（REQ-108-ENG-03）：两个相对名——非空字符串，且不得是 hpResource
+  // （拿血量当清零/记手的落点只会误伤对局本身，与 effects/scaleByResource 同一条拒收口径）。
+  for (const [field, val] of [['clearOnSettle', m.clearOnSettle], ['lastThrowVar', m.lastThrowVar]] as const) {
+    if (val === undefined) continue;
+    if (typeof val !== 'string' || val.length === 0) {
+      issues.push(`${field} 要填非空**相对名**（如 "charge" / "lastThrow"，运行期拼成 "<侧>.<相对名>…"）`);
+    } else if (val === m.hpResource) {
+      issues.push(`${field} 不能是血量资源 "${m.hpResource}"（相对名拼出来会撞上对局血量，必错）`);
+    }
+  }
   // 输入接缝（REQ-108-ENG-02）：手必须在 throws 内、信号名非空、且一个信号名不许映射到两只手
   // （同名两义 = 点一下同时想出两手，永不自愈的数据错，装载期直接拒收）。
   if (m.intentSignals !== undefined) {
@@ -700,8 +740,12 @@ export const matrixDuelCapability = defineCapability({
       // 信号无需自清：下一拍 event-when 的全局清扫会带走（Update 早于 Commit），本件不留跨拍状态。
       id: 'matrix-duel-announce',
       phase: SystemPhase.Commit,
-      reads: ['DuelOutcome'],
-      writes: ['Signal'],
+      // REQ-108-ENG-03 起还兼「结算副作用」：读 DuelMatrix 取两个相对名 + 读 Resource 取槽当前值
+      // （**必须读**：ResourceModify 只有加减没有 set，清零只能发 -当前值）。
+      // 放这里而非结算系统（Update）：结算系统**刻意不读 Resource**（读了就与「排 resource-apply 之前」
+      // 合围成环，见 ① 的注释）；而本系统在 Commit、排在 resource-apply 之后，读到的正是扣血后的真值。
+      reads: ['DuelOutcome', 'DuelMatrix', 'Resource'],
+      writes: ['Signal', 'ResourceModify', 'StringSet'],
       consumes: ['DuelOutcome'],
       runsBefore: ['effect-apply'], // 组件拓扑（写 Signal → effect-apply 读）本已排前，显式加固
       execute(world: IWorld) {
@@ -723,6 +767,39 @@ export const matrixDuelCapability = defineCapability({
           }
           // 附带效果的瞬时载体：ResourceModify 已由本拍 resource-apply 消费，此处收走空壳（不留过拍垃圾）。
           for (const cid of o.carriers) world.destroyEntity(cid);
+
+          // ── 结算副作用（REQ-108-ENG-03）───────────────────────────────────
+          // DuelOutcome 挂在**对局实体**上（结算处 `world.addComponent(mid, outcome)`），故 oid === 对局实体。
+          const md = world.getComponent<DuelMatrix>(oid, 'DuelMatrix');
+          if (!md) continue;
+          for (let i = 0; i < o.sides.length; i++) {
+            const side = o.sides[i];
+            const thrown = o.throws[i];
+            if (!alive.has(side)) continue; // 该侧已被 mortal/destroy 收走 → 无处可写，跳过
+            // ① 清零：只清**该侧出过的那只手**（没出的原样保留 = 该机制的要害）。
+            //    ResourceModify 只有加减、没有 set → 发「-当前值」，故必须先读到当前值。
+            if (md.clearOnSettle) {
+              const slotId = `${side}.${md.clearOnSettle}.${thrown}`;
+              const holder = findResourceHolder(world, slotId);
+              if (holder && holder.res.current !== 0 && !world.hasComponent(holder.eid, 'ResourceModify')) {
+                world.addComponent(holder.eid, {
+                  type: 'ResourceModify',
+                  resourceId: slotId,
+                  amount: -holder.res.current,
+                  scope: 'local', // 就挂在持有者身上 → local 最稳，不受同名全局资源干扰
+                } as ResourceModify);
+              }
+            }
+            // ② 记本回合的手：走 StringSet 一次性写事件（由 x3-string-variable 的 string-apply 落地）。
+            if (md.lastThrowVar && !world.hasComponent(side, 'StringSet')) {
+              world.addComponent(side, {
+                type: 'StringSet',
+                id: `${side}.${md.lastThrowVar}`,
+                value: thrown,
+                scope: 'global',
+              } as StringSet);
+            }
+          }
         }
       },
     },

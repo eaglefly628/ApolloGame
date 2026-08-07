@@ -267,7 +267,7 @@ set-visible / set-visible-tagged / destroy / destroy-tagged / reset-timer）— 
 
 ---
 
-### REQ-108-ENG-03-结算副作用 · `t2-matrix-duel` 自带「清零 + 记本回合的手」 · [2026-08-06] · **owner 判 A1** · **施工主体 = 主程 Lead session** · status: **open·已裁 A1·待施工（S3 卡口之三）**
+### REQ-108-ENG-03-结算副作用 · `t2-matrix-duel` 自带「清零 + 记本回合的手」 · [2026-08-06] · **owner 判 A1** · **施工 = 策划 session（owner 2026-08-06 授权自做自验）·复查 = 楚晨** · status: **✅ 已实现 + 自证在案·待复查**（Review 单：`review/REQ-108-ENG-03.md`）
 
 > **要什么**：`DuelMatrix` 加两个可选字段，均在**结算末尾**生效（胜/负/平三态都要做）：
 > 1. `clearOnSettle?: string`（**相对名**）—— 把双方**各自出的那只手**对应的 `<该侧>.<相对名>.<手>` 资源置 0。
@@ -296,3 +296,9 @@ set-visible / set-visible-tagged / destroy / destroy-tagged / reset-timer）— 
 > 允许触碰：`src/skills/tier2/matrix-duel.ts` + 其测试。
 >
 > **消费方语义**：`gdd.md`【R-108-14】出过即清零 ·【R-108-02】超时顺延 ·【R-108-30】AI 抄上一手。
+
+> **✅ 施工与自证（策划 session·2026-08-06·owner 授权自做自验）**：落点选在 `matrix-duel-announce`（Commit）——
+> `ResourceModify` 只有加减没有 `set`，清零只能发「-当前值」故必须读 `Resource`，而结算系统（Update）
+> **刻意不读 Resource**（读了与「排 resource-apply 之前」合围成环）；announce 排在 resource-apply 之后，
+> 读到的正是扣血后的真值。自证：**撤修实测 3 红 → 复原 58 绿**；全量门禁绿（tsc + vitest 全量 + build + 守卫）；
+> `announce` 的 `reads/writes` 声明如实更新并同步定序申报用例。**待楚晨照 Review 单复核。**

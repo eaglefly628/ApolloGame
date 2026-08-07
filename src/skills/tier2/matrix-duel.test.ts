@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { World } from '@engine/core/world.js';
 import { topologicalSort } from '@engine/core/topological-sort.js';
 import { SystemPhase } from '@engine/core/types.js';
-import type { Resource, Signal, Flag, Effect, EventWhen } from '@engine/protocol/components.js';
+import type { Resource, Signal, Flag, Effect, EventWhen, StringVar } from '@engine/protocol/components.js';
 import {
   matrixDuelCapability,
   checkDuelMatrix,
@@ -59,6 +59,7 @@ function table(md: Omit<DuelMatrix, 'type'>): World {
   for (const s of flagCapability.systems) w.addSystem(s);
   for (const s of eventWhenCapability.systems) w.addSystem(s);
   for (const s of effectApplyCapability.systems) w.addSystem(s);
+  for (const s of stringVariableCapability.systems) w.addSystem(s);
   w.createEntity('duel');
   w.addComponent('duel', { type: 'DuelMatrix', ...md } as DuelMatrix);
   for (const p of ['p1', 'p2']) {
@@ -106,8 +107,10 @@ describe('matrix-duel — 定序申报（Lead 附加①·R10 范式）', () => {
     expect(announce.id).toBe('matrix-duel-announce');
     expect(announce.phase).toBe(SystemPhase.Commit); // 排在 event-when 的全局 Signal 清扫之后
     expect(announce.runsBefore).toEqual(['effect-apply']);
-    expect(announce.reads).toEqual(['DuelOutcome']);
-    expect(announce.writes).toEqual(['Signal']);
+    // REQ-108-ENG-03 起 announce 兼「结算副作用」：读 DuelMatrix 取相对名、读 Resource 取槽当前值
+    // （ResourceModify 只有加减没有 set，清零只能发 -当前值），写 ResourceModify/StringSet。
+    expect(announce.reads).toEqual(['DuelOutcome', 'DuelMatrix', 'Resource']);
+    expect(announce.writes).toEqual(['Signal', 'ResourceModify', 'StringSet']);
     expect(announce.consumes).toEqual(['DuelOutcome']);
   });
 
@@ -789,5 +792,87 @@ describe('matrix-duel — 输入接缝 intentSignals（REQ-108-ENG-02）', () =>
     const systems = [...matrixDuelCapability.systems, ...resourceCapability.systems,
       ...eventWhenCapability.systems, ...effectApplyCapability.systems];
     expect(() => topologicalSort(systems)).not.toThrow();
+  });
+});
+
+// ── ⑨ 结算副作用 clearOnSettle / lastThrowVar（REQ-108-ENG-03·owner 判 A1）─────────────
+// 为什么归本件而非扩 effect-apply：本件是唯一同时知道「谁出了什么」的地方；且 Effect.targetId 全局寻址
+// 分不清两侧（出招信号两侧共用一个名靠 Signal.source 认侧），Effect.kind 十项也没有「写字符串」。
+describe('matrix-duel — 结算副作用（REQ-108-ENG-03）', () => {
+  const SIDE_TABLE = (extra: Record<string, unknown>): Omit<DuelMatrix, 'type'> => ({
+    hpResource: 'hp',
+    throws: ['rock', 'paper', 'scissors'],
+    beats: { rock: ['scissors'], paper: ['rock'], scissors: ['paper'] },
+    payoff: { rock: { damage: 1 }, paper: { damage: 1 }, scissors: { damage: 1 } },
+    tie: { selfDamage: 0 },
+    ...extra,
+  } as Omit<DuelMatrix, 'type'>);
+
+  /** 建六条 <侧>.charge.<手> 槽（game108 真实形态：一实体一组件 → 槽各居一实体）。 */
+  function withSlots(w: World, init: Record<string, number>): void {
+    for (const side of ['p1', 'p2']) {
+      for (const h of ['rock', 'paper', 'scissors']) {
+        const id = `${side}.charge.${h}`;
+        const e = `slot:${side}:${h}`;
+        w.createEntity(e);
+        w.addComponent(e, { type: 'Resource', id, current: init[id] ?? 0, min: 0, max: 3 } as Resource);
+      }
+    }
+  }
+  const slotOf = (w: World, side: string, h: string): number =>
+    w.getComponent<Resource>(`slot:${side}:${h}`, 'Resource')!.current;
+
+  it('① 清零按侧：各清各出过的那只手，**另外两只不动**', () => {
+    const w = table(SIDE_TABLE({ clearOnSettle: 'charge' }));
+    withSlots(w, { 'p1.charge.rock': 3, 'p1.charge.paper': 2, 'p2.charge.scissors': 3, 'p2.charge.rock': 1 });
+    duel(w, 'rock', 'scissors'); // p1 出石胜 / p2 出剪负
+    w.tick();                    // Commit 发的 ResourceModify 由下一拍 resource-apply 落地
+    expect(slotOf(w, 'p1', 'rock')).toBe(0);        // 出过 → 清
+    expect(slotOf(w, 'p2', 'scissors')).toBe(0);    // 出过 → 清（败方也清）
+    expect(slotOf(w, 'p1', 'paper')).toBe(2);       // 没出 → 原样（诈唬机制的支点）
+    expect(slotOf(w, 'p2', 'rock')).toBe(1);        // 没出 → 原样
+  });
+
+  it('② 平局也清（胜/负/平三态一致）', () => {
+    const w = table(SIDE_TABLE({ clearOnSettle: 'charge' }));
+    withSlots(w, { 'p1.charge.rock': 3, 'p2.charge.rock': 2, 'p1.charge.paper': 3 });
+    duel(w, 'rock', 'rock');
+    w.tick();
+    expect(slotOf(w, 'p1', 'rock')).toBe(0);
+    expect(slotOf(w, 'p2', 'rock')).toBe(0);
+    expect(slotOf(w, 'p1', 'paper')).toBe(3); // 没出的仍不动
+  });
+
+  it('③ lastThrowVar 按侧写对本回合的手', () => {
+    const w = table(SIDE_TABLE({ lastThrowVar: 'lastThrow' }));
+    for (const side of ['p1', 'p2']) {
+      const e = `var:${side}`;
+      w.createEntity(e);
+      w.addComponent(e, { type: 'StringVar', id: `${side}.lastThrow`, value: '' } as unknown as StringVar);
+    }
+    duel(w, 'paper', 'scissors');
+    w.tick(); // StringSet 由下一拍 string-apply 落地
+    const read = (side: string): string =>
+      (w.getComponent(`var:${side}`, 'StringVar') as unknown as { value: string }).value;
+    expect(read('p1')).toBe('paper');
+    expect(read('p2')).toBe('scissors');
+  });
+
+  it('④ 两字段都不填 → 槽与变量都不动（零回归）', () => {
+    const w = table(SIDE_TABLE({}));
+    withSlots(w, { 'p1.charge.rock': 3 });
+    duel(w, 'rock', 'scissors');
+    w.tick();
+    expect(slotOf(w, 'p1', 'rock')).toBe(3);
+  });
+
+  it('⑤ 落盘门：空相对名 / 撞 hpResource 一律拒收', () => {
+    const bad = (extra: Record<string, unknown>): string =>
+      checkDuelMatrix({ type: 'DuelMatrix', ...SIDE_TABLE(extra) } as DuelMatrix).join();
+    expect(bad({ clearOnSettle: '' })).toMatch(/clearOnSettle 要填非空/);
+    expect(bad({ lastThrowVar: '' })).toMatch(/lastThrowVar 要填非空/);
+    expect(bad({ clearOnSettle: 'hp' })).toMatch(/clearOnSettle 不能是血量资源/);
+    expect(bad({ lastThrowVar: 'hp' })).toMatch(/lastThrowVar 不能是血量资源/);
+    expect(bad({ clearOnSettle: 'charge', lastThrowVar: 'lastThrow' })).toBe(''); // 正常表零 issue
   });
 });
