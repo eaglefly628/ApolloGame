@@ -140,7 +140,21 @@ try {
     const noWidth = ((cs.borderWidth || '').match(/[\d.]+/g) || [0]).map(Number).every((w) => w === 0);
     if (noStyle || noWidth) borderImageBroken.push({ id: el.id || `<${el.tagName.toLowerCase()}>`, why: noStyle ? 'border-style:none' : 'border-width:0' });
   }
-    return { positionedCount: positioned.length, overlaps, low, borderImageBroken };
+  // — 华丽度（华丽起手第三步「逛橱窗挑成熟件」没产物·就给它造一个产物）：数 DOM 里的华丽件命中，逐类列。
+  //   零命中 = 通体朴素默认屏（SHELL 灰皮·没挑任何成熟件）= 华丽起手铁律要拦的形态。非阻断（警告·打回是 PUI 复查的裁量）。
+  const flair = { skin: 0, shape: 0, fx: 0, glass: 0, juice: 0, particles: 0 };
+  for (const el of host.querySelectorAll('*')) {
+    const cs = getComputedStyle(el);
+    if (el.matches('[data-apollo-skin]') || (cs.borderImageSource && cs.borderImageSource !== 'none')) flair.skin++;       // 贴图皮/house buttonSkins/faceArt 9-slice
+    if (cs.clipPath && cs.clipPath !== 'none') flair.shape++;                                                             // 异形 shape/chamfer
+    if (el.matches('[data-fx],[data-sheen]')) flair.fx++;                                                                 // 流光/发光/holo/pulse…
+    if (cs.backdropFilter && cs.backdropFilter !== 'none') flair.glass++;                                                 // 磨砂玻璃
+    if (el.matches('[data-typewriter],[data-tween-to],[data-flyto-to],[data-tilt3d],[data-press3d]')) flair.juice++;     // 打字机/滚动/飞向/3D 手感
+    if (el.matches('[data-particle],[data-particle-follow]') || /particle/i.test(el.id)) flair.particles++;              // 庆祝/环境粒子
+  }
+  const flairTotal = Object.values(flair).reduce((a, b) => a + b, 0);
+  const houseTheme = !!host.querySelector('[data-apollo-skin]') || flair.skin > 0; // house 主题的强信号（buttonSkins/纸纹面留 border-image）
+  return { positionedCount: positioned.length, overlaps, low, borderImageBroken, flair, flairTotal, houseTheme };
   }, { MOUNT, OVERLAP_TOL, MIN_CONTRAST, HARD_FLOOR });
 } finally {
   if (browser) await browser.close().catch(() => {});
@@ -162,6 +176,17 @@ for (const l of warnLow) console.log(`  ! ${l.id.padEnd(16)} "${l.text}"  ratio=
 const biBroken = report.borderImageBroken ?? [];
 console.log(`\n[border-image 前提] ${biBroken.length} 处（设了皮却缺 border-style/width·真浏览器不画）— 阻断`);
 for (const b of biBroken) console.log(`  ✕ ${b.id.padEnd(16)} ${b.why}`);
+
+// [华丽度] 华丽起手第三步的产物（逛橱窗挑成熟件·把「逛没逛」从心理活动变成可 review 的数字）— 非阻断·警告。
+const fl = report.flair ?? {};
+const flStr = Object.entries(fl).filter(([, n]) => n > 0).map(([k, n]) => `${k}:${n}`).join(' ') || '无';
+console.log(`\n[华丽度] ${report.flairTotal ?? 0} 处华丽件命中（${flStr}）· house 主题：${report.houseTheme ? '是' : '否'} — 非阻断·产物给「华丽起手第三步」`);
+if ((report.flairTotal ?? 0) === 0) {
+  console.log(`  ⚠ 零华丽件命中 = 疑似通体朴素默认屏（SHELL 灰皮·没挑任何成熟件）。华丽起手第三步「逛 game-i 挑成熟件」可能没做——`);
+  console.log(`    对着橱窗货架逐类核（卡牌/选关/庆祝/主CTA/数值/异形/环进度/立体·docs/design/ui-playbook.md §0），要么挑件、要么写明「本作无此类」。PUI 复查重点看这条。`);
+} else if ((report.flairTotal ?? 0) < 3 && !report.houseTheme) {
+  console.log(`  ⚠ 华丽件命中偏少且未见 house 主题皮——复核是否只搭了朴素骨架（华丽起手第三步核逐类货架）。`);
+}
 
 const fail = report.overlaps.length + hardLow.length + biBroken.length;
 console.log(`\n${fail === 0

@@ -18,7 +18,7 @@
 
 **第二步 · 常见屏 import 起手包 `@ui/starters`**（`src/ui/starters/`）：`buildStarterHome({title,subtitle?,actions})` = 富主菜单（糖果钮列 + 衬线大标题 + 环境微光 + 主 CTA 悬停流光）；`buildStarterResult({stars,score,hasNext?})` = 富结算（星级 Rating + 撒纸屑 + 数字格式化大分）。传数据即得一屏华丽 UI，再按游戏改/加件。
 
-**第三步 · 逛橱窗挑成熟件**：按你游戏「有什么」拿对应成熟件（卡牌→`faceArt`/翻面 · 选关→`LevelPath` · 庆祝→`Particles`/`Float` · 主 CTA→`sheen-hover`+`Panel.skin` · 数值→`Label.format` · 异形→`shape` · 环进度→`ProgressBar.shape:ring` · 立体→3D UI · 质感底→`UITheme.texture/panelTexture`+`Panel.glass`）——**完整「有 X→用这件→game-i 段」货架表见 `docs/design/ui-playbook.md §0` 华丽起手**。拿成熟件仍走闭集数据（`action` 信号·非自由 DOM）；缺件→`requests.md` 报 PUI。华丽 ≠ 破铁律 = **用足既有华丽件**。
+**第三步 · 逛橱窗挑成熟件**：按你游戏「有什么」拿对应成熟件（卡牌→`faceArt`/翻面 · 选关→`LevelPath` · 庆祝→`Particles`/`Float` · 主 CTA→`sheen-hover`+`Panel.skin` · 数值→`Label.format` · 异形→`shape` · 环进度→`ProgressBar.shape:ring` · 立体→3D UI · 质感底→`UITheme.texture/panelTexture`+`Panel.glass`）——**完整「有 X→用这件→game-i 段」货架表见 `docs/design/ui-playbook.md §0` 华丽起手**。拿成熟件仍走闭集数据（`action` 信号·非自由 DOM）；缺件→`requests.md` 报 PUI。华丽 ≠ 破铁律 = **用足既有华丽件**。**第三步的产物 = `ui-audit` 的 `[华丽度] N 处命中` 行**（自动逐类对账·零命中=疑似朴素默认屏当场警告）——「屏幕能渲染、门禁全绿」≠ 第三步做完了，交付看这行数字（详见 ui-playbook §0 步骤 7）。
 
 ## ① 引擎接线链（LayoutNode → 世界）
 
