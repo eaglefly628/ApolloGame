@@ -264,3 +264,35 @@ set-visible / set-visible-tagged / destroy / destroy-tagged / reset-timer）— 
 2. **【R-108-14】出过即清零，引擎不负责**——实测结算后 `p1.charge.rock` 仍为 3。
    这与 plan §2 的判断一致（清零走游戏侧 6 条静态规则重组），**对拍留证，S3 必须真接上**，
    否则就是「策划写了、没人实现」的虚胖条款。
+
+---
+
+### REQ-108-ENG-03-结算副作用 · `t2-matrix-duel` 自带「清零 + 记本回合的手」 · [2026-08-06] · **owner 判 A1** · **施工主体 = 主程 Lead session** · status: **open·已裁 A1·待施工（S3 卡口之三）**
+
+> **要什么**：`DuelMatrix` 加两个可选字段，均在**结算末尾**生效（胜/负/平三态都要做）：
+> 1. `clearOnSettle?: string`（**相对名**）—— 把双方**各自出的那只手**对应的 `<该侧>.<相对名>.<手>` 资源置 0。
+>    本作填 `charge` → 结算后 `p1.charge.rock` / `p2.charge.scissors` 各自归零【R-108-14】。
+>    **只清各自出过的那只手**，没出的手原样保留（这是【R-108-14】的要害，也是诈唬机制的支点）。
+> 2. `lastThrowVar?: string`（**相对名**）—— 把双方本回合的手写进 `<该侧>.<相对名>` 的 `StringVar`。
+>    本作填 `lastThrow` → `p1.lastThrow='rock'`。供【R-108-02】超时顺延与【R-108-30】AI「抄上一手」取用。
+>
+> **为什么不能重组**（Lead 实查·留痕 `capability-plan.md §7` 系统普查）：
+> `t2-effect-apply` 的 `Effect` 只能写**数值/布尔/状态名**且 `targetId` **全局寻址**——
+> ① 出招信号两侧**共用一个名**（靠 `Signal.source` 认侧），全局 `targetId` 分不清该清哪一侧的槽；
+>    `@signal-source` 哨兵**只对物理 kind**（set-sensor/set-visible/destroy）生效，`modify-resource` 用不了。
+> ② `StringVar` 只能由 `StringSet` 事件改，而**全库只有 `t3-poker-hand` 与 `x3-string-variable` 自己**产 `StringSet`；
+>    `Effect.kind` 十项里没有「写字符串」。
+> ⇒ **信号能改数字，改不了「按侧的数字」，也改不了字符串。**
+>
+> **为什么归 matrix-duel**（owner 判 A1 而非 A2 扩 `effect-apply`）：**它是唯一同时知道「谁出了什么」的地方**，
+> 这两件事本就是它的**结算副作用**；而 `effect-apply` 是全库最核心的写入面，不该被一个游戏的需求推着改。
+>
+> **必须有的测试**：① 清零**按侧**（p1 出石 / p2 出剪 → 各自那只手归 0，**另外两只不动**）；
+> ② 平局也清（双方同手 → 双方该手归 0）；③ `lastThrowVar` 按侧写对；
+> ④ 两字段都不填 = 零回归；⑤ 落盘门（相对名非空、不得是 `hpResource`）。
+>
+> **边界（防加宽·复查门核对用）**：只在结算末尾加这两个可选字段的处理 + 落盘门 + 测试；
+> **不碰** 判定 / 补丁 fold / 定序拆相位 / `perSide` 缩放 / `intentSignals` 接缝。
+> 允许触碰：`src/skills/tier2/matrix-duel.ts` + 其测试。
+>
+> **消费方语义**：`gdd.md`【R-108-14】出过即清零 ·【R-108-02】超时顺延 ·【R-108-30】AI 抄上一手。
