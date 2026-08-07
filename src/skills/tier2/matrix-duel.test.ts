@@ -938,3 +938,27 @@ describe('matrix-duel — DebugTrace 试点（日志基准守则）', () => {
     expect(rej[0].what).toContain('退化 base=3');
   });
 });
+
+// 代发 source 打错字的落点（主程 2026-08-07 裁 ENG-04：代发侧不校验实体存在·消费侧必须留痕）
+describe('matrix-duel — 接缝对悬空 source 留痕（ENG-04/05 裁决的配套）', () => {
+  it('信号 source 不是对局侧 → 不产 intent，且 trace 里有一条 reject', () => {
+    const w = table({
+      hpResource: 'hp', throws: ['rock', 'paper'], beats: { rock: [], paper: ['rock'] },
+      payoff: { rock: { damage: 5 }, paper: { damage: 5 } }, tie: { selfDamage: 0 },
+      intentSignals: { rock: 'throw.rock' },
+    });
+    w.createEntity('dbg');
+    w.addComponent('dbg', { type: 'DebugTrace', events: [] } as DebugTrace);
+    // 代发到一个打错字的实体（"p11" 不存在）——keybind/event-when 侧刻意不拦这种
+    w.createEntity('kb');
+    w.addComponent('kb', { type: 'EventWhen', signal: 'throw.rock', when: { kind: 'flag', id: 'go' }, mode: 'edge', armed: false, source: 'p11' } as unknown as EventWhen);
+    w.createEntity('flag:go');
+    w.addComponent('flag:go', { type: 'Flag', id: 'go', active: true } as Flag);
+    w.tick();
+    expect(w.hasComponent('p11', 'DuelIntent')).toBe(false);
+    const t = w.getComponent<DebugTrace>('dbg', 'DebugTrace')!;
+    const rej = t.events.filter((e) => e.kind === 'reject' && e.what.includes('p11'));
+    expect(rej).toHaveLength(1);                       // 「点了没反应」现在查得出来
+    expect(rej[0].what).toContain('不是对局侧');
+  });
+});

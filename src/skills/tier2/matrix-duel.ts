@@ -878,6 +878,8 @@ export const matrixDuelCapability = defineCapability({
       consumes: [],
       runsAfter: ['matrix-duel-announce'], // 播报的胜负信号绝不该被当成出招输入（同拍两者都在 Commit）
       execute(world: IWorld) {
+        const tr = findDebugTrace(world); // opt-in·没挂 DebugTrace 就全程 no-op（日志基准守则）
+        const tk = tr?.tick ?? 0;
         const matrixIds = world.query('DuelMatrix').map(([id]) => id).sort();
         if (matrixIds.length === 0) return;
         for (const mid of matrixIds) {
@@ -921,7 +923,16 @@ export const matrixDuelCapability = defineCapability({
             // 因为 add-throw 补丁增设的手若没在 intentSignals 里留条目，本来就出不了）。
             if (!table.throws.includes(thrown)) continue;
             const side = s.source;
-            if (!side || !world.hasComponent(side, 'Resource')) continue; // 只认真正的对局侧（挂着 hp 的实体）
+            if (!side || !world.hasComponent(side, 'Resource')) {
+              // 守则第 3 类【reject】：**「什么都没发生」的分支必须留痕**。
+              // 这里是 `KeyBinding.source`/`EventWhen.source` 代发（ENG-04/05）打错字的落点——
+              // 代发侧刻意不校验「目标实体存在」（动态生灭的游戏会被误伤·主程 2026-08-07 裁），
+              // 于是悬空 source 的唯一症状就是「点了没反应」。不留这一条就真的查不出来。
+              appendTrace(tr, tk, 'matrix-duel-intent', 'reject',
+                `信号 "${s.name}" 的 source "${side}" 不是对局侧（无 ${'Resource'} 组件）→ 不产 intent`,
+                '代发 source 打错字 / 该侧已被销毁');
+              continue;
+            }
             // 已有 intent 则覆盖——同一时区内改主意是合法操作。
             world.addComponent(side, { type: 'DuelIntent', throw: thrown, ...(md.duelId ? { duelId: md.duelId } : {}) } as DuelIntent);
           }
