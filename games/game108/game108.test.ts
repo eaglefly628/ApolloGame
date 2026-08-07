@@ -83,3 +83,91 @@ describe('game108 · 蓄力槽 id 约定（capability-plan §5 实现约定 1）
     expect(HP_RES).toBe('hp');
   });
 });
+
+// ── S3 骨架关：引擎吃得下 + 空跑（机器门）+ 条款走查 ────────────────────────
+import { Engine } from '@zerocraft/engine/runtime/engine.js';
+import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
+import { buildBlueprint, throwSignal, aiChargeSignal, deadFlag } from './blueprint.js';
+
+const res = (e: Engine, eid: string): number => e.world.getComponent<Resource>(eid, 'Resource')?.current ?? -1;
+const slot = (e: Engine, side: string, h: string): number => res(e, `slot:${side}:${h}`);
+const phase = (e: Engine): string => e.world.getComponent<GameFlow>('flow', 'GameFlow')!.current;
+
+function fresh(): Engine { const e = new Engine(); e.load(buildBlueprint()); return e; }
+
+/** 走真实通路发信号：把 EventWhen 挂在**该侧实体**上 → Signal.source = 该侧（接缝据此认侧）。 */
+function fire(e: Engine, side: string, signal: string, tag: string): void {
+  const fid = `${side}_${tag}`;
+  e.world.addComponent(side, { type: 'EventWhen', signal, when: { kind: 'flag', id: fid }, mode: 'edge', armed: false } as never);
+  const fe = `flag:${fid}`;
+  if (!e.world.hasComponent(fe, 'Flag')) e.world.createEntity(fe);
+  e.world.addComponent(fe, { type: 'Flag', id: fid, active: true } as never);
+}
+
+describe('game108 · S3 骨架关（机器门：引擎吃得下 + 空跑）', () => {
+  it('真引擎装载 + 空跑 2 tick 不炸', () => {
+    const e = fresh();
+    expect(() => { e.world.tick(); e.world.tick(); }).not.toThrow();
+  });
+
+  it('装配面齐：判定表 / 流程 / 双方 / 六条槽 / 种子 / 蓄力效果', () => {
+    const ids = Object.keys(buildBlueprint().entities);
+    expect(ids).toContain('duel');
+    expect(ids).toContain('flow');
+    expect(ids).toContain('seed');            // 种子 PRNG（禁裸 Math.random 的落点）
+    expect(ids.filter((i) => i.startsWith('slot:'))).toHaveLength(6);   // 【R-108-03】
+    expect(ids.filter((i) => i.startsWith('fx:charge:'))).toHaveLength(6);
+    for (const side of SIDES) { expect(ids).toContain(side); expect(ids).toContain(`var:${side}`); }
+  });
+
+  it('起手态照策划：双方 100 血、六条槽全 0、相位 = charge', () => {
+    const e = fresh();
+    for (const side of SIDES) {
+      expect(res(e, side)).toBe(HP_MAX);                                  // 【R-108-15】
+      for (const h of HANDS) expect(slot(e, side, h)).toBe(0);            // 【R-108-03】
+    }
+    expect(phase(e)).toBe('charge');                                      // 【R-108-01】
+  });
+});
+
+describe('game108 · S3 条款走查（真引擎驱动·用【R-108-70】动作名）', () => {
+  it('蓄力 +1 只打自己那条槽，且封顶 3【R-108-10】', () => {
+    const e = fresh();
+    for (let i = 0; i < 5; i++) { fire(e, 'p1', ACT.charge('rock'), `c${i}`); e.world.tick(); e.world.tick(); }
+    expect(slot(e, 'p1', 'rock')).toBe(CHARGE_CAP);   // 封顶
+    expect(slot(e, 'p1', 'paper')).toBe(0);           // 没蓄的不动
+    expect(slot(e, 'p2', 'rock')).toBe(0);            // 对面不动
+  });
+
+  it('一整回合闭环：蓄 2 → 双方出招 → 伤害按侧缩放 + 出过即清零 + 记本回合的手', () => {
+    const e = fresh();
+    fire(e, 'p1', ACT.charge('rock'), 'c1'); e.world.tick(); e.world.tick();
+    fire(e, 'p1', ACT.charge('rock'), 'c2'); e.world.tick(); e.world.tick();
+    fire(e, 'p2', aiChargeSignal('paper'), 'a1'); e.world.tick(); e.world.tick();
+    expect(slot(e, 'p1', 'rock')).toBe(2);
+
+    fire(e, 'p1', throwSignal('rock'), 't1');
+    fire(e, 'p2', throwSignal('scissors'), 't2');
+    e.world.tick(); e.world.tick(); e.world.tick(); // 产 intent(Commit) → 结算(Update) → 副作用落地
+
+    expect(res(e, 'p2')).toBe(HP_MAX - (DMG_BASE + 2 * DMG_STEP)); // 【R-108-13】10+2×10=30
+    expect(res(e, 'p1')).toBe(HP_MAX);                              // 胜方不掉血
+    expect(slot(e, 'p1', 'rock')).toBe(0);                          // 【R-108-14】出过即清零
+    expect(slot(e, 'p2', 'paper')).toBe(1);                         // 没出的手原样保留（诈唬支点）
+    const lt = (side: string): string => e.world.getComponent<StringVar>(`var:${side}`, 'StringVar')!.value;
+    expect(lt('p1')).toBe('rock');                                  // 【R-108-02/30】
+    expect(lt('p2')).toBe('scissors');
+  });
+
+  it('血量归零 → 该侧 dead flag 置位（按侧判定走 self-rule·非全局条件）【R-108-15】', () => {
+    const e = fresh();
+    const hp = e.world.getComponent<Resource>('p2', 'Resource')!;
+    e.world.addComponent('p2', { ...hp, current: 0 });
+    e.world.tick(); e.world.tick();
+    const flagOf = (side: string): boolean =>
+      (e.world.getComponent(side, 'Flag') as unknown as { active: boolean }).active;
+    expect(flagOf('p2')).toBe(true);
+    expect(flagOf('p1')).toBe(false); // 只认自己那侧
+    expect(deadFlag('p2')).toBe('p2.dead');
+  });
+});
