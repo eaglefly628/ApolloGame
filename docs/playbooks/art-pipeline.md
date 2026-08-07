@@ -1,6 +1,6 @@
 # 美术管线手册（给游戏配美术 · 接线图）
 
-> 深文：终态档 `docs/design/art-platform-2026-07-09.md`（唯一权威）+ 工作流 `docs/design/art-replacement-workflow.md`。
+> 深文：**如建全景 `docs/design/art-pipeline-asbuilt-2026-08.md`（现状唯一权威）** + 工作流 `docs/design/art-replacement-workflow.md`（schema/五步全文）；07-09 终态档=历史快照。
 > 本册只回答「做 X 用哪个件、按什么顺序」。资产登记/vendor 见 `docs/playbooks/assets.md`；视觉验收见 `docs/playbooks/visual-scorecard.md`。
 
 ## 卡带游戏线（创作台产出·demo 主线）· 八步
@@ -11,7 +11,7 @@
 | 2 | 秒可玩：art: 确定性解析到免费 CC0 库（同查询同图·placeholder=真图） | `resolveArtRefs`（引擎·自动） |
 | 3 | 出需求台账：机器扫 art: 槽位→**按素材去重**（owner 07-12：一行=一种素材·同 query 多实体共用一行·slots[] 记全部槽位·生成一张扇出写回全部·旧重复行自动吸收） | 美术平台/工坊素材屏自动（或 POST /api/art/derive） |
 | 4 | 配风格：选**风格包**（闭集·中英双方言+palette+钉死供应商）+ 填**本游戏风格锚**；模型菜单默认随包 | 平台头部（风格包/🎯风格锚/模型下拉） |
-| 5 | 一键全量：逐行拼 prompt（`prompt`>`query+desc`>`query` + 类型词 + 包方言 + 游戏锚）→ 调 API → palette-snap+按规格缩放 → 落游戏资产目录+provenance；断点续跑·缓存不重扣费·无 key=探针+mock | 平台「⚡ 一键全量」（大脑=`scripts/art-replace.mjs`） |
+| 5 | 一键全量：逐行拼 prompt（`prompt`>`query+desc`>`query` + 类型词 + 包方言 + 游戏锚）→ 调 API → palette-snap+按规格缩放 → 落**该游戏美术根**+provenance；断点续跑·缓存不重扣费·无 key=探针+mock | 平台「⚡ 一键全量」（大脑=`scripts/art-replace.mjs`） |
 | 6 | 写回：按编号重钉 manifest art: 引用→**parseManifest 零 error 才落盘**（玩法零改） | 平台自动（library 线 batch 后 replace） |
 | 7 | 优化：缩略图墙按编号三式——重生成(可改 prompt)/库选换/上传（magic-bytes 嗅探）——只动那一行 | 平台详情面板 |
 | 7.5 | **人审复核（double verify 人门）**：逐行/全部「☑ 复核通过」→ approved——五步流程条全绿才算这条线走完 | 平台流程条+复核按钮 |
@@ -33,6 +33,15 @@
   热替换=同 id 条目在 `path`(raster)↔`spec.generator`(矢量) 间只改索引数据，textureKey/调用点零改。
 - **写回**：不钉 manifest——生成/上传按 `skinKey` **别名登记**进 `public/games/<g>/art/index.json`，资产就绪自动换装。其余步骤与卡带线相同（换库/换皮动作在平台自动隐藏）。
 - **程序化背景 = 可换背景槽（REQ-ART ②·owner 2026-07-22）**：宿主层 CSS 渐变背景（原直传 `mountHost({sceneBackground})`）改用背景皮肤槽：`mountHost({ sceneBackground: 程序化底, sceneBgSkin: { skinKey, imageUrl: filledSrc(gameIndex, skinKey) } })`——有生成图叠图、无图纯回退程序化底（**兜底永不丢**）。台账加一行 `skinKey=<g>/scene/<名>`（孤儿审计据此认作有槽）；生成图入索引前过 M2.5 人审才上画面（不拿空/未审图盖掉手绘背景）。`filledSrc`=`src/assets/asset-index.ts`（skinKey→URL 解析口）。
+
+## 美术存哪（REQ-CARTART·2026-08-06 归位）
+
+**单一真相 = `paths.py::art_root` / `art-paths.mjs::artRoot`**（两实现·冒烟跨语言比对防跑偏）：
+- **卡带**（`library/<slug>/` 存在）→ `library/<slug>/art/`——**不入引擎仓**，随卡带自己的 git 仓版本化（换图不再与 mainbranch 撞冲突）。
+- **内置游戏** → `public/games/<slug>/art/`——tracked 出货内容，照旧；改完可用平台「⤴ 提交推送」一键 commit+rebase+push。
+
+**URL 契约 `/games/<slug>/art/**` 两者共用**（引擎只认 URL·伺服层回退），故台账里的 servedPath 与游戏侧消费点**一律不用改**。
+存量搬迁：`python3 scripts/cartridge-art-migrate.py [--apply]`（缺省 dry-run·幂等·不代人提交）。
 
 ## 红线
 

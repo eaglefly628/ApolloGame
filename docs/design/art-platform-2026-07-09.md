@@ -1,6 +1,9 @@
 # 美术平台·终态一页（2026-07-09 · Lead 亲手收口 · **全员必读**）
 
-> owner 授权 Lead 一次性收口（R1/R2/R3 三单合并落地后撤单）。本页=美术管线现状的**唯一权威描述**；
+> ⚠ **2026-08-06 更新**：本页是 **07-09 当时的收口快照**。此后有 ARTPIPE2 四翼（台账守卫/资产浏览器/
+> 历史回滚/消费方反查）与卡带美术归位（REQ-CARTART）等变更——**管线现状以 `docs/design/art-pipeline-asbuilt-2026-08.md` 为准**，本页留作历史。
+>
+> owner 授权 Lead 一次性收口（R1/R2/R3 三单合并落地后撤单）。本页=07-09 时点的权威描述；
 > 上游设计=`docs/design/art-replacement-workflow.md`（五步流程/schema 全文），冲刺纲领=`docs/design/demo-sprint-2026-07-29.md`。
 > 有出入以本页+代码为准；发现漂移提 `docs/workflow/requests.md`。**分角色交接（PST/透视器/game-q/PA 各自要看的）=`docs/workflow/finish/art-platform-handoff-2026-07-09.md`。**
 
