@@ -32,6 +32,7 @@
 - **TS 卡带例外**：`features.tsCarts`（默认开）+ 卡带 `meta.allowTs` → 允许 `library/<slug>/logic.ts`（`cartCapability` 契约·`scripts/cart-logic-check.mjs` 门·记债）；除此游戏仍 = 纯数据。价值排序：**「能出复杂的东西」= 第一要素**，「最弱 LLM 也能产出」尺子降级。词表缺口走 capgap 快速通道（`.apollo/cap-gaps.jsonl` → Lead 裁）。
 - **角色启动协议**：owner 宣告「角色 = X·任务 = Y」→ 第一步读 `docs/roles/index.md` 找角色卡照办（域边界/必读/工具以卡为准）；未宣告 = 通用 session 按本文件。
 - **生产线手册铁律**：动手任何生产任务（UI/特效/3D/寻路/事件/战斗/卡牌/随机/资产/音频/存档）前先读 `docs/playbooks/index.md` 找对应线手册照做——查得到的用基座件·查不到提 requests.md 等裁决绝不自造。绕基座 = 手册缺陷（修游戏同时回填手册）。
+- **⛔ 收工律（owner 2026-08-06 立·治「干一半就停」通病）**：回合只有两种合法中途交回——①缺口 A/B 裁决点（owner 独裁面）②复查门（复查人≠施工人）。其余**做完再停**：交付=清单空+门禁绿+已推送，缺一即未完；**禁把可执行项整理成「欠账清单」交回**（整理≠完成）。机器围栏：Stop 钩子拦未收尾停车（`.claude/hooks/stop-completion-check.sh`）+ 每输入注入提醒。
 - **effort 档位（控 token）**：主 session 默认 xhigh 只干判断类活；能下放的派子代理定档——`low` 机械（搜索/批量改/跑测试/登记）·`medium` 有 spec 小活（单文件小修/写纯数据/补简单测试）·`high` 需理解上下文（多文件实现/常规修 bug/UI 复查/review）·`xhigh` 正确性关键（引擎下沉/难 bug 根因/架构评审/对抗验证）·`max` 仅 owner 明示。owner 说「省着点」→ 降一档；正确性关键路径（引擎核/战斗核/确定性/lockstep）不降档。
 
 ## 关键文件
