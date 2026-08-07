@@ -7,7 +7,9 @@
 //  本守卫把「读得完」变成机器保证的预算：
 //    · 需求池 requests.md ≤ 封顶（超=红·逼「done 全文进 archive·池只留活跃」的归档纪律）
 //    · T0 必读集（CLAUDE.md/宪法/llm-onboarding）各自封顶（想变厚=显式改基线·diff 可见）
-//    · 每本线手册 ≤80 行（原为君子约定·从此机器卡）+ ≤字符封顶（行数不捕捉密度·REQ-RETRO 2026-08-03 补）
+//    · 每本线手册行数上限（原为君子约定·从此机器卡·**上限值以 baseline 的 playbookMaxLines 为准，
+//      别在文案里手抄数字**）+ ≤字符封顶（行数不捕捉密度·REQ-RETRO 2026-08-03 补）。
+//      owner 2026-08-07 放宽 80 → 100：「手册还是更全一点比较好，但太多会乱，100 行之内可以」。
 //    · 3D 独立需求池 requests-3d.md ≤ 字符封顶（此前完全在监控盲区·REQ-RETRO 2026-08-03 补）
 //  判词 token：`CONTEXT-BUDGET: PASS|FAIL`（照 docs-ref-guard 模式·退出码进门禁）。
 //  基线=scripts/context-budget-baseline.json；抬预算唯一合法姿势=同提交改基线（review 一眼可见）。
@@ -40,7 +42,7 @@ export function checkBudget(actual, budget) {
   }
   for (const [file, lines] of Object.entries(actual.playbookLines)) {
     if (lines > budget.playbookMaxLines) {
-      issues.push(`${file} ${lines} 行 > ${budget.playbookMaxLines} 行——手册铁律（≤80 行·弱模型也读得完）·瘦身或拆册`);
+      issues.push(`${file} ${lines} 行 > ${budget.playbookMaxLines} 行——手册铁律（弱模型也读得完）·瘦身或拆册`);
     }
   }
   if (budget.playbookMaxChars) {

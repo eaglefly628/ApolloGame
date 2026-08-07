@@ -379,3 +379,58 @@ set-visible / set-visible-tagged / destroy / destroy-tagged / reset-timer）— 
 **推 A**。理由：它把「代发」从两处硬编码（drag-place/timeline）提升成数据可填的通用能力，是**这五次同源事故里第一次能一次治本**的口子；代价是一个可选字段，选错成本几乎为零。A′ 更省事但等于承认「按 source 路由是 matrix-duel 的私事」，下次照撞。B 不建议——它省的那点工，要拿 v2 联机去还。
 
 **请你判 A / A′ / B。** 判完我再改工单的「施工主体」并推一次占锁，然后动手。
+
+---
+
+## REQ-108-ENG-05 · AI 出招也接不进接缝：`EventWhen` 缺 `source`（**缺口裁决协议·待 owner 判**）
+
+**状态**：**待 owner 判** ｜ **施工主体**：未定（判后认领并推一次占锁）
+**由来**：S2 能力计划 §6 Lead 初裁挂的条件——「AI 两次决策【R-108-30】在开工首个验证项**先查**；
+重组跑通即终止，跑不通则按协议摆 A/B 上报 owner，**Lead 不自裁**」。本单即那次先查的结论。
+**阻断**：AI 出不了招 ⇒ 一整回合永远不结算 ⇒ **打不完一局**（S4 玩法关的核心循环）。
+
+### ① 先查（留原文·禁凭印象）
+
+AI 每回合要两个决策：**T1 蓄哪手** → 发 `ai.charge.<手>`；**T2 出哪手** → 发 `throw.<手>`。
+**T1 通**（`effect-apply` 按信号名 + 全局 `targetId` 路由，与 `Signal.source` 无关）。**T2 不通**：
+
+| 查了什么 | 原文 | 结论 |
+|---|---|---|
+| 接缝怎么认侧 | `matrix-duel.ts:848-849` `const side = s.source; if (!side \|\| !world.hasComponent(side,'Resource')) continue;` | 出招信号的 `source` **必须是 p2 本身** |
+| `t2-self-rule` 能不能发信号 | `self-rule.ts:136` `SelfAction` 闭集 = `set-flag / modify-resource / set-state / destroy / spawn` | **没有「发信号」这一档** ⇒ 发不出 |
+| `t2-weighted-spawn` 能不能 | `weighted-spawn.ts:82` `writes: ['Resource','RandomSeed','SpawnRequest']` | 只发 `SpawnRequest` ⇒ 发不出信号 |
+| `t2-event-when` 能不能 | `event-when.ts:92` `addComponent(eid, {type:'Signal', name:ew.signal, source:eid})` | 能发信号，但 **`source` 恒为挂 `EventWhen` 的那个实体**、无字段可配 |
+| 那把 `EventWhen` 挂 p2 上呢 | 一实体一组件（**已实测**：连挂两份 → `query` 只 1 条、后者静默覆盖前者） | p2 只放得下 **1 份**，而出招要 **3 手** ⇒ 不够 |
+| `t3-timeline` 能不能（它发 `source: owner`） | `timeline.ts:21/27` `owner` = **挂 Timeline 的实体本身**，非可配字段；且 cue 按固定 tick 发 | 挂 p2 可得 source=p2，但 cue 是**写死的编排**，表达不了「按权重抽一手」 ⇒ 表达不了【R-108-30】 |
+| 绕道：给 `EventWhen` 实体挂个 `Resource` 骗过接缝守卫 | 接缝只查 `hasComponent(side,'Resource')` | **实证否掉**：`DuelIntent` 会落到那个假实体上，matrix-duel 按 `DuelIntent` 持有者枚举双方 ⇒ 打的是假侧、真 p2 不掉血；且假实体要挂 id=`hp` 的 Resource，正好撞 `matrix-duel` 对「≥2 份同 id 资源」的**点名硬抛** |
+
+**⇒ 重组不成**，且根因与 owner 已判过的 `REQ-108-ENG-04` **完全同一条**：
+「**按 source 认人的消费方** vs **产信号的件把 source 写死成自己**」。
+ENG-04 只给 `KeyBinding` 开了 `source`（玩家那条路），**AI 走的 `EventWhen` 那条路没开**。
+
+### ② 两条路（Lead 举证·不下裁决）
+
+**A · 给 `EventWhen` 加同款可选 `source?: EntityId`**
+- 做法：与 ENG-04 **逐字对称**——`event-when.ts:92` 一处 `source: ew.source ?? eid` + 空串硬抛 + 测试。
+- 改动面：`input.ts` 同级的组件定义 + 一个能力一处取值。加法·不填=零回归。
+- 通用性：**高**。任何「条件成立 → 代表某个主体发信号」的场景（AI 行动、队友、召唤物、陷阱记账到布设者）。
+- 代价：又一次加宽同一个概念。**这也正是它的好处——两处不对称才是真的坏**：玩家能代发、AI 不能，本身就是缺陷。
+- 选错要付：几乎为零（可选字段不填即旧行为）。
+
+**B · 游戏层写 AI**（宿主每回合算一手，直接往世界里挂 `DuelIntent`）
+- 改动面：只动 `games/game108/`，最快。
+- 代价：**AI 逻辑漏出数据层**；【R-108-60~62】v2 联机时服务器没有这套 AI；确定性/回放自负；
+  且违背「人/AI 共用动作总线」（CLAUDE.md UI 铁律原话）。
+- 通用性：零，记债。
+
+**（附一条 A″ 供你一并看：把 `Signal.source` 的可配性**一次性**收敛成通用契约——凡产 `Signal` 的件
+（`event-when`/`clickable`/`drag-place`/`timeline`/`keybind`）统一支持可选 `source`。
+好处是**一次治完**不用再撞第三次；代价是一口气碰五个能力，面比 A 大得多，且 `clickable`/`drag-place`
+的 source 有空间语义（命中谁就是谁），未必该开。**我不推 A″**——没有实证需求的那三个属于无脑加宽。）
+
+### ③ 我的推荐（**只是推荐·不下裁决**）
+
+**推 A**。理由：它是 owner 已经判过的 ENG-04 的**对称补齐**，不是新概念；面最小；
+而「玩家能代发、AI 不能」这种不对称本身就是缺陷面。A″ 太贪，B 要拿 v2 联机去还。
+
+**请你判 A / A″ / B。** 判完我改「施工主体」推一次占锁再动手。

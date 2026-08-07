@@ -9,7 +9,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const budget = JSON.parse(readFileSync(join(ROOT, 'scripts', 'context-budget-baseline.json'), 'utf8'));
 
 describe('context-budget-guard — 真仓库在预算内（门禁）', () => {
-  it('requests 池 ≤ 封顶 · T0 必读各 ≤ 封顶 · 每本手册 ≤80 行 + ≤字符封顶 · requests-3d ≤ 封顶', () => {
+  it('requests 池 ≤ 封顶 · T0 必读各 ≤ 封顶 · 每本手册 ≤行数封顶 + ≤字符封顶 · requests-3d ≤ 封顶', () => {
     const t0Chars = {};
     for (const f of Object.keys(budget.t0MaxChars)) t0Chars[f] = readFileSync(join(ROOT, f), 'utf8').length;
     const playbookLines = {};
