@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#171310;font-family:"ZCOOL KuaiLe","Fredoka",system-ui,sans-serif}
+a{color:#ffc93c}a:hover{color:#ffe08a}
+@keyframes rt3-shake{0%{transform:translateY(0) rotate(-9deg) scale(1)}25%{transform:translateY(-34px) rotate(4deg) scale(1.06)}50%{transform:translateY(6px) rotate(-6deg) scale(.97)}75%{transform:translateY(-22px) rotate(3deg) scale(1.04)}100%{transform:translateY(0) rotate(-9deg) scale(1)}}
+@keyframes rt3-shakeR{0%{transform:translateY(0) rotate(9deg) scale(1)}25%{transform:translateY(-34px) rotate(-4deg) scale(1.06)}50%{transform:translateY(6px) rotate(6deg) scale(.97)}75%{transform:translateY(-22px) rotate(-3deg) scale(1.04)}100%{transform:translateY(0) rotate(9deg) scale(1)}}
+@keyframes rt3-push{0%{transform:translateX(0)}100%{transform:translateX(26px)}}
+@keyframes rt3-pushR{0%{transform:translateX(0)}100%{transform:translateX(-26px)}}
+@keyframes rt3-glow{0%,100%{box-shadow:0 0 0 0 rgba(255,201,60,.9),0 6px 0 #3f2b1e}50%{box-shadow:0 0 0 12px rgba(255,201,60,0),0 6px 0 #3f2b1e}}
+@keyframes rt3-pop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes rt3-m0{0%{left:20px;top:814px;width:186px;height:252px}100%{left:334px;top:214px;width:380px;height:520px}}
+@keyframes rt3-m1{0%{left:218px;top:814px;width:186px;height:252px}100%{left:770px;top:214px;width:380px;height:520px}}
+@keyframes rt3-m2{0%{left:416px;top:814px;width:186px;height:252px}100%{left:1206px;top:214px;width:380px;height:520px}}
+@keyframes rt3-b0{0%{left:334px;top:214px;width:380px;height:520px}30%{left:334px;top:214px;width:380px;height:520px;animation-timing-function:cubic-bezier(.16,1.3,.36,1)}49%,100%{left:20px;top:814px;width:186px;height:252px}}
+@keyframes rt3-b1{0%{left:770px;top:214px;width:380px;height:520px}30%{left:770px;top:214px;width:380px;height:520px;animation-timing-function:cubic-bezier(.16,1.3,.36,1)}49%,100%{left:218px;top:814px;width:186px;height:252px}}
+@keyframes rt3-b2{0%{left:1206px;top:214px;width:380px;height:520px}30%{left:1206px;top:214px;width:380px;height:520px;animation-timing-function:cubic-bezier(.16,1.3,.36,1)}49%,100%{left:416px;top:814px;width:186px;height:252px}}
+@keyframes rt3-pour{0%{height:0}62%{height:76%}80%{height:108%}92%{height:96%}100%{height:100%}}
+@keyframes rt3-ripple{0%,100%{transform:scaleY(1) translateX(-3%)}50%{transform:scaleY(.5) translateX(3%)}}
+@keyframes rt3-ripple2{0%,100%{transform:scaleY(.6) translateX(4%)}50%{transform:scaleY(1.15) translateX(-4%)}}
+@keyframes rt3-slosh{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(1.6deg)}}
+@keyframes rt3-bub{0%{transform:translateY(0) scale(.5);opacity:0}18%{opacity:.95}100%{transform:translateY(-210px) scale(1.15);opacity:0}}
+@keyframes rt3-fly{0%{transform:translate(0,0) scale(.4);opacity:0}10%{opacity:1;transform:translate(calc(var(--dx)*.1),-90px) scale(1.25)}100%{transform:translate(var(--dx),var(--dy)) scale(.3);opacity:0}}
+@keyframes rt3-burst{0%{transform:scale(.2);opacity:1;border-width:26px}100%{transform:scale(2.6);opacity:0;border-width:2px}}
+@keyframes rt3-land{0%,60%{transform:scale(1);opacity:0}72%{transform:scale(1.5);opacity:.95}100%{transform:scale(1);opacity:0}}
+@keyframes rt3-tick{0%{transform:scale(1.4);opacity:1}100%{transform:scale(1);opacity:.92}}
+@keyframes rt3-drip{0%{transform:translateY(0);opacity:0}20%{opacity:1}100%{transform:translateY(46px);opacity:0}}
+@keyframes rt3-shk1{0%,100%{transform:translate(0,0)}25%{transform:translate(-6px,3px)}75%{transform:translate(6px,-3px)}}
+@keyframes rt3-shk2{0%,100%{transform:translate(0,0)}20%{transform:translate(-14px,7px)}50%{transform:translate(12px,-6px)}80%{transform:translate(-7px,4px)}}
+@keyframes rt3-shk3{0%,100%{transform:translate(0,0)}15%{transform:translate(-26px,13px)}40%{transform:translate(23px,-11px)}65%{transform:translate(-16px,8px)}85%{transform:translate(10px,-5px)}}
+@keyframes rt3-ret{0%{opacity:1}100%{opacity:.12}}
+@keyframes rt3-lag{0%{width:var(--w0)}30%{width:var(--w0)}100%{width:var(--w1)}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:radial-gradient(120% 100% at 50% 0%,#241c16,#0f0c0a);display:flex;flex-direction:column;align-items:center;gap:18px;padding:16px 0 48px">
+
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#211a15;border:1px solid #3f2b1e;border-radius:999px;padding:8px 12px;font-family:'Fredoka',system-ui,sans-serif">
+  <span style="color:#8c7a68;font-size:12px;letter-spacing:.08em;padding:0 6px">拳律 · 横版对局屏 1920×1080 · v3</span>
+  <sc-for list="{{ phaseTabs }}" as="tab" hint-placeholder-count="10">
+    <button onClick="{{ tab.go }}" style="{{ tab.style }}">{{ tab.label }}</button>
+  </sc-for>
+  <button onClick="{{ toggleLang }}" style="{{ langStyle }}">{{ langLabel }}</button>
+  <button onClick="{{ toggleAnno }}" style="{{ annoStyle }}">百分比标注</button>
+</div>
+
+<div ref="{{ fitRef }}" style="width:1920px;height:1080px;position:relative;overflow:hidden;border-radius:10px;border:3px solid #3f2b1e;box-shadow:0 30px 80px rgba(0,0,0,.6);transform-origin:top center;flex:none">
+
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,#5fc2ee 0%,#9fdcf7 42%,#d9f1ff 58%,#d9f1ff 60%)"></div>
+  <div style="position:absolute;left:120px;top:90px;width:260px;height:96px;background:#fff;border-radius:999px;opacity:.85;filter:blur(1px)"></div>
+  <div style="position:absolute;left:1420px;top:130px;width:340px;height:110px;background:#fff;border-radius:999px;opacity:.7;filter:blur(1px)"></div>
+  <div style="position:absolute;left:640px;top:60px;width:200px;height:74px;background:#fff;border-radius:999px;opacity:.6;filter:blur(1px)"></div>
+  <div style="position:absolute;left:-100px;top:430px;width:1100px;height:420px;background:#6fb84e;border-radius:50%"></div>
+  <div style="position:absolute;left:900px;top:400px;width:1300px;height:460px;background:#63ac46;border-radius:50%"></div>
+  <div style="position:absolute;left:0;top:560px;width:1920px;height:520px;background:linear-gradient(180deg,#8ccf55 0%,#77bd45 100%)"></div>
+  <div style="position:absolute;left:0;top:560px;width:1920px;height:520px;background:repeating-linear-gradient(102deg,rgba(255,255,255,.09) 0 46px,rgba(0,0,0,0) 46px 108px)"></div>
+  <div style="position:absolute;left:180px;top:540px;width:26px;height:44px;background:#f6e05e;border-radius:50%;box-shadow:120px 26px 0 #fff,300px -10px 0 #f8a5c2,470px 40px 0 #fff,1180px 18px 0 #f6e05e,1390px -6px 0 #fff,1620px 34px 0 #f8a5c2"></div>
+  <div style="position:absolute;left:1180px;top:470px;width:150px;height:120px;background:#e46a8a;border-radius:56% 56% 12% 12%;border:6px solid #c04f6d;box-sizing:border-box"></div>
+  <div style="position:absolute;left:1246px;top:560px;width:18px;height:60px;background:#c9a06a"></div>
+
+  <div style="{{ youArmStyle }}"></div>
+  <div style="{{ oppArmStyle }}"></div>
+
+  <div style="{{ youHandWrapStyle }}">
+    <svg viewBox="0 0 700 700" style="width:100%;height:100%;display:block;overflow:visible;filter:drop-shadow(0 16px 16px rgba(0,0,0,.22))">
+      <defs>
+        <linearGradient id="skL" x1="0" y1="0" x2=".35" y2="1">
+          <stop offset="0" stop-color="#fff3e2"/><stop offset=".55" stop-color="#fbe4cb"/><stop offset="1" stop-color="#efcda9"/>
+        </linearGradient>
+      </defs>
+      <g stroke="#6b4a3a" stroke-width="15" stroke-linejoin="round" fill="url(#skL)">
+        <g display="{{ youRockD }}">
+          <rect x="60" y="110" width="400" height="520" rx="190"/>
+          <rect x="300" y="122" width="288" height="142" rx="71" transform="rotate(-3 320 193)"/>
+          <rect x="305" y="256" width="315" height="142" rx="71"/>
+          <rect x="300" y="388" width="292" height="140" rx="70" transform="rotate(3 320 458)"/>
+          <rect x="292" y="512" width="248" height="132" rx="66" transform="rotate(7 312 578)"/>
+          <rect x="268" y="112" width="168" height="322" rx="84" transform="rotate(-10 352 273)"/>
+          <ellipse cx="180" cy="240" rx="78" ry="56" fill="#fff" opacity=".45" stroke="none"/>
+        </g>
+        <g display="{{ youPaperD }}">
+          <rect x="300" y="108" width="352" height="116" rx="58" transform="rotate(-16 330 166)"/>
+          <rect x="305" y="240" width="378" height="118" rx="59" transform="rotate(-3 335 299)"/>
+          <rect x="300" y="358" width="362" height="116" rx="58" transform="rotate(9 330 416)"/>
+          <rect x="285" y="458" width="310" height="110" rx="55" transform="rotate(22 315 513)"/>
+          <rect x="95" y="92" width="285" height="128" rx="64" transform="rotate(-44 200 156)"/>
+          <rect x="50" y="170" width="400" height="400" rx="180"/>
+          <path fill="none" stroke-width="10" opacity=".4" d="M150 290 Q225 348 208 428"/>
+          <path fill="none" stroke-width="10" opacity=".4" d="M220 300 Q292 360 278 445"/>
+          <ellipse cx="150" cy="270" rx="66" ry="48" fill="#fff" opacity=".45" stroke="none"/>
+        </g>
+        <g display="{{ youScissorsD }}">
+          <rect x="300" y="98" width="388" height="122" rx="61" transform="rotate(-13 330 159)"/>
+          <rect x="300" y="244" width="398" height="122" rx="61" transform="rotate(4 330 305)"/>
+          <rect x="60" y="215" width="400" height="400" rx="180"/>
+          <rect x="300" y="378" width="228" height="122" rx="61"/>
+          <rect x="292" y="490" width="206" height="116" rx="58"/>
+          <rect x="290" y="400" width="135" height="200" rx="67" transform="rotate(8 357 500)"/>
+          <ellipse cx="160" cy="320" rx="68" ry="50" fill="#fff" opacity=".45" stroke="none"/>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div style="{{ oppHandWrapStyle }}">
+    <svg viewBox="0 0 700 700" style="width:100%;height:100%;display:block;overflow:visible;transform:scaleX(-1);filter:drop-shadow(0 16px 16px rgba(0,0,0,.22))">
+      <defs>
+        <linearGradient id="skR" x1="0" y1="0" x2=".35" y2="1">
+          <stop offset="0" stop-color="#fdbc86"/><stop offset=".55" stop-color="#f79f62"/><stop offset="1" stop-color="#e9834a"/>
+        </linearGradient>
+      </defs>
+      <g stroke="#b5501a" stroke-width="15" stroke-linejoin="round" fill="url(#skR)">
+        <g display="{{ oppRockD }}">
+          <rect x="60" y="110" width="400" height="520" rx="190"/>
+          <rect x="300" y="122" width="288" height="142" rx="71" transform="rotate(-3 320 193)"/>
+          <rect x="305" y="256" width="315" height="142" rx="71"/>
+          <rect x="300" y="388" width="292" height="140" rx="70" transform="rotate(3 320 458)"/>
+          <rect x="292" y="512" width="248" height="132" rx="66" transform="rotate(7 312 578)"/>
+          <rect x="268" y="112" width="168" height="322" rx="84" transform="rotate(-10 352 273)"/>
+          <ellipse cx="180" cy="240" rx="78" ry="56" fill="#fff" opacity=".34" stroke="none"/>
+        </g>
+        <g display="{{ oppPaperD }}">
+          <rect x="300" y="108" width="352" height="116" rx="58" transform="rotate(-16 330 166)"/>
+          <rect x="305" y="240" width="378" height="118" rx="59" transform="rotate(-3 335 299)"/>
+          <rect x="300" y="358" width="362" height="116" rx="58" transform="rotate(9 330 416)"/>
+          <rect x="285" y="458" width="310" height="110" rx="55" transform="rotate(22 315 513)"/>
+          <rect x="95" y="92" width="285" height="128" rx="64" transform="rotate(-44 200 156)"/>
+          <rect x="50" y="170" width="400" height="400" rx="180"/>
+          <path fill="none" stroke-width="10" opacity=".38" d="M150 290 Q225 348 208 428"/>
+          <path fill="none" stroke-width="10" opacity=".38" d="M220 300 Q292 360 278 445"/>
+          <ellipse cx="150" cy="270" rx="66" ry="48" fill="#fff" opacity=".34" stroke="none"/>
+        </g>
+        <g display="{{ oppScissorsD }}">
+          <rect x="300" y="98" width="388" height="122" rx="61" transform="rotate(-13 330 159)"/>
+          <rect x="300" y="244" width="398" height="122" rx="61" transform="rotate(4 330 305)"/>
+          <rect x="60" y="215" width="400" height="400" rx="180"/>
+          <rect x="300" y="378" width="228" height="122" rx="61"/>
+          <rect x="292" y="490" width="206" height="116" rx="58"/>
+          <rect x="290" y="400" width="135" height="200" rx="67" transform="rotate(8 357 500)"/>
+          <ellipse cx="160" cy="320" rx="68" ry="50" fill="#fff" opacity=".34" stroke="none"/>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div style="position:absolute;left:883px;top:172px;width:154px;z-index:6;display:flex;flex-direction:column;gap:6px;align-items:center">
+    <div style="background:#6d6257;border:5px solid #3f2b1e;border-radius:12px;padding:10px 8px;display:flex;flex-direction:column;gap:8px;align-items:center;box-shadow:inset 0 3px 0 rgba(255,255,255,.22),0 6px 0 rgba(0,0,0,.3)">
+      <div style="{{ tableTitleStyle }}">{{ tableTitle }}</div>
+      <div style="{{ tableRowsStyle }}">
+        <sc-for list="{{ ruleRows }}" as="r" hint-placeholder-count="3">
+          <div style="display:flex;gap:6px;align-items:center;justify-content:center">{{ r.a }}<span style="color:#ffc93c">›</span>{{ r.b }}</div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="{{ tableSubStyle }}">{{ tableSub }}</div>
+  </div>
+
+  <sc-if value="{{ showZoom }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;pointer-events:none;z-index:5">
+    <div style="{{ zoomHintWrapStyle }}"><div style="{{ zoomHintStyle }}">{{ zoomHint }}</div></div>
+    <sc-for list="{{ zoomCards }}" as="z" hint-placeholder-count="3">
+      <div style="{{ z.style }}">
+        <div style="{{ z.sloshStyle }}">
+          <div style="{{ z.fillStyle }}">
+            <div style="{{ z.ripStyle }}"></div>
+            <div style="{{ z.rip2Style }}"></div>
+            <div style="{{ z.b1 }}"></div><div style="{{ z.b2 }}"></div><div style="{{ z.b3 }}"></div>
+          </div>
+        </div>
+        <div style="{{ z.stripStyle }}">{{ z.name }}</div>
+        <div style="position:relative;flex:1;display:flex;align-items:center;justify-content:center;min-height:0;overflow:hidden"><div style="{{ z.iconStyle }}"></div></div>
+        <div style="{{ z.subStyle }}">{{ z.sub }}</div>
+        <div style="{{ z.pipsStyle }}">
+          <div style="{{ z.p1 }}"></div><div style="{{ z.p2 }}"></div><div style="{{ z.p3 }}"></div>
+        </div>
+        <div style="{{ z.badgeStyle }}">{{ z.badge }}</div>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ showBanner }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:460px;top:392px;width:1000px;display:flex;flex-direction:column;align-items:center;gap:10px;animation:rt3-pop .35s cubic-bezier(.2,1.4,.4,1) both;pointer-events:none">
+    <div style="{{ verdictStyle }}">{{ verdictText }}</div>
+    <div style="{{ dmgStyle }}">{{ dmgText }}</div>
+    <div style="{{ bannerChipStyle }}">{{ bannerText }}</div>
+  </div>
+  </sc-if>
+
+  <div style="{{ flashStyle }}"></div>
+
+  <div style="position:absolute;left:0;top:0;width:1920px;height:97px;background:linear-gradient(180deg,rgba(24,17,12,.86),rgba(24,17,12,.62));border-bottom:4px solid #3f2b1e;display:flex;align-items:center;padding:0 18px;box-sizing:border-box;gap:14px">
+
+    <div style="width:230px;flex:none;display:flex;align-items:center;gap:10px">
+      <div style="width:76px;height:76px;flex:none;border-radius:14px;background:#f9e2c8;border:4px solid #3f2b1e;display:flex;align-items:center;justify-content:center;font-size:38px;color:#3f2b1e;box-shadow:0 4px 0 rgba(0,0,0,.35)">{{ youInitial }}</div>
+      <div style="min-width:0;display:flex;flex-direction:column;gap:4px;align-items:flex-start">
+        <div style="{{ youNameStyle }}">{{ youName }}</div>
+      </div>
+    </div>
+    <div style="width:290px;flex:none;display:flex;flex-direction:column;gap:5px">
+      <div style="height:22px;background:#2b211a;border:3px solid #3f2b1e;border-radius:999px;overflow:hidden;position:relative"><div style="{{ youHpLag }}"></div><div style="{{ youHpFill }}"></div></div>
+      <div style="display:flex;align-items:baseline;gap:6px;font-family:'Fredoka',sans-serif"><span style="font-size:38px;font-weight:700;color:#7defd6;line-height:.9">{{ youHp }}</span><span style="font-size:15px;color:#8c7a68">/100</span></div>
+    </div>
+
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:18px">
+      <div style="{{ roundStyle }}">{{ roundText }}</div>
+      <div style="{{ ringStyle }}">
+        <div style="width:60px;height:60px;border-radius:50%;background:#1b1410;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1">
+          <div style="{{ timerStyle }}">{{ timer }}</div>
+          <div style="{{ secStyle }}">{{ secLabel }}</div>
+        </div>
+      </div>
+      <div style="{{ phaseChipStyle }}">{{ phaseName }}</div>
+    </div>
+
+    <div style="width:290px;flex:none;display:flex;flex-direction:column;gap:5px;align-items:flex-end">
+      <div style="width:100%;height:22px;background:#2b211a;border:3px solid #3f2b1e;border-radius:999px;overflow:hidden;display:flex;justify-content:flex-end;position:relative"><div style="{{ oppHpLag }}"></div><div style="{{ oppHpFill }}"></div></div>
+      <div style="display:flex;align-items:baseline;gap:6px;font-family:'Fredoka',sans-serif"><span style="font-size:15px;color:#8c7a68">/100</span><span style="font-size:38px;font-weight:700;color:#ff9a8a;line-height:.9">{{ oppHp }}</span></div>
+    </div>
+    <div style="width:230px;flex:none;display:flex;align-items:center;justify-content:flex-end;gap:10px">
+      <div style="min-width:0;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+        <div style="{{ oppNameStyle }}">{{ oppName }}</div>
+        <div style="{{ moodStyle }}">{{ moodText }}</div>
+      </div>
+      <div style="width:76px;height:76px;flex:none;border-radius:14px;background:#f0a468;border:4px solid #3f2b1e;display:flex;align-items:center;justify-content:center;font-size:38px;color:#3f2b1e;box-shadow:0 4px 0 rgba(0,0,0,.35)">{{ oppInitial }}</div>
+    </div>
+  </div>
+
+  <button onClick="{{ toggleMenu }}" style="position:absolute;left:1848px;top:112px;width:52px;height:52px;padding:0;border-radius:50%;background:#fff6e2;border:4px solid #3f2b1e;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 0 rgba(0,0,0,.3);cursor:pointer">⚙</button>
+
+  <div style="position:absolute;right:112px;top:110px;width:620px;display:flex;flex-direction:column;align-items:flex-end;gap:7px">
+    <div style="width:100%;box-sizing:border-box;display:flex;align-items:center;gap:9px;background:rgba(24,17,12,.62);border:3px solid #e0483f;border-radius:14px;padding:7px 10px;backdrop-filter:blur(2px)">
+      <div style="{{ oppChargeLabelStyle }}">{{ oppChargeLabel }}</div>
+      <sc-for list="{{ oppSlots }}" as="s">
+        <div style="{{ s.style }}">
+          <div style="{{ s.iconStyle }}"></div>
+          <div style="flex:1;display:flex;gap:4px">
+            <div style="{{ s.p1 }}"></div><div style="{{ s.p2 }}"></div><div style="{{ s.p3 }}"></div>
+          </div>
+          <div style="{{ s.readStyle }}">{{ s.read }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ showThreat }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ threatStyle }}">
+      <span>⚠</span>{{ threatA }}<span style="color:#ffc93c">{{ threatB }}</span>{{ threatC }}
+    </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ showPenalty }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:0;top:0;width:1920px;height:1080px;display:flex;align-items:center;justify-content:center;pointer-events:none">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:14px;background:rgba(122,26,18,.94);border:7px solid #3f2b1e;border-radius:32px;padding:24px 56px 28px;box-shadow:0 12px 0 rgba(0,0,0,.45)">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="width:64px;height:64px;flex:none;border-radius:50%;background:#ff5a45;border:5px solid #3f2b1e;display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-weight:700;font-size:32px;color:#3f2b1e;animation:rt3-tick 1s steps(1,end) infinite">−1</div>
+        <div style="{{ penaltyTextStyle }}">{{ penaltyText }}</div>
+      </div>
+      <div style="width:100%;height:4px;background:rgba(255,255,255,.22);border-radius:2px"></div>
+      <div style="display:flex;align-items:baseline;gap:16px">
+        <div style="{{ penaltyOweLabelStyle }}">{{ penaltyOweLabel }}</div>
+        <div style="font-family:'Fredoka',sans-serif;font-weight:700;font-size:132px;line-height:.82;color:#ffd0c6;text-shadow:0 7px 0 #3f2b1e,0 0 44px rgba(255,90,69,.7)">{{ penaltyOwe }}</div>
+      </div>
+      <div style="{{ penaltyFootStyle }}">{{ penaltyFoot }}</div>
+    </div>
+  </div>
+  <div style="position:absolute;left:262px;top:190px;display:flex;flex-direction:column;gap:4px;pointer-events:none">
+    <sc-for list="{{ drips }}" as="d" hint-placeholder-count="3">
+      <div style="{{ d.style }}">{{ d.v }}</div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ showNext }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:0;top:706px;width:1920px;display:flex;justify-content:center">
+    <button onClick="{{ noop }}" style="{{ nextBtnStyle }}">{{ nextLabel }}</button>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ showHud }}" hint-placeholder-val="{{ true }}">
+  <div style="position:absolute;left:0;top:800px;width:1920px;height:280px;background:linear-gradient(180deg,rgba(24,17,12,.78),rgba(24,17,12,.94));border-top:5px solid #3f2b1e;box-sizing:border-box;padding:14px 20px;display:flex;gap:18px;align-items:stretch">
+
+    <div style="flex:none;display:flex;gap:12px">
+      <sc-for list="{{ cards }}" as="c" hint-placeholder-count="3">
+        <button onClick="{{ c.noop }}" style="{{ c.style }}">
+          <div style="{{ c.stripStyle }}">{{ c.name }}</div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:6px 0;min-height:0"><div style="{{ c.iconStyle }}"></div></div>
+          <div style="{{ c.subStyle }}">{{ c.sub }}</div>
+          <div style="{{ c.badgeStyle }}">{{ c.badge }}</div>
+          <div style="{{ c.ghostTagStyle }}">{{ c.ghostTag }}</div>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="flex:1;min-width:0;display:flex;align-items:stretch;gap:12px;background:rgba(35,181,160,.16);border:5px solid #23b5a0;border-radius:18px;padding:10px 14px;box-sizing:border-box">
+      <div style="{{ myChargeLabelStyle }}">{{ myChargeLabel }}</div>
+      <sc-for list="{{ youSlots }}" as="s" hint-placeholder-count="3">
+        <div style="{{ s.style }}">
+          <div style="display:flex;align-items:center;gap:10px;width:100%">
+            <div style="{{ s.bigIconStyle }}"></div>
+            <div style="flex:1;min-width:0;text-align:left">
+              <div style="{{ s.labelStyle }}">{{ s.label }}</div>
+              <div style="{{ s.dmgLineStyle }}">{{ s.dmgLine }}</div>
+            </div>
+            <div style="{{ s.readStyle }}">{{ s.read }}</div>
+          </div>
+          <div style="display:flex;gap:7px;width:100%">
+            <div style="{{ s.p1 }}"></div><div style="{{ s.p2 }}"></div><div style="{{ s.p3 }}"></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="{{ smokeStyle }}">
+      <div style="font-size:52px;line-height:1">💨</div>
+      <div style="{{ smokeNameStyle }}">{{ smokeName }} <span style="font-family:'Fredoka',sans-serif;font-weight:700">×2</span></div>
+      <div style="{{ smokeSubStyle }}">{{ smokeSub }}</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ showParticles }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;pointer-events:none">
+    <sc-for list="{{ particles }}" as="p" hint-placeholder-count="7">
+      <div style="{{ p.style }}"></div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ showSub }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;left:0;top:726px;width:1920px;display:flex;justify-content:center;pointer-events:none">
+    <div style="{{ subStyle }}">{{ subText }}</div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;background:rgba(16,11,8,.62);display:flex;align-items:center;justify-content:center">
+    <div style="width:620px;box-sizing:border-box;background:linear-gradient(180deg,#fff6e2,#f4e2c4);border:9px solid #3f2b1e;border-radius:28px;padding:34px 40px 30px;display:flex;flex-direction:column;align-items:center;gap:14px;box-shadow:0 20px 0 rgba(0,0,0,.35);animation:rt3-pop .26s cubic-bezier(.2,1.4,.4,1) both">
+      <div style="{{ menuTitleStyle }}">{{ menuTitle }}</div>
+      <div style="width:524px;height:4px;background:#d8c3a2;border-radius:2px"></div>
+      <sc-for list="{{ menuRows }}" as="r" hint-placeholder-count="4">
+        <div style="width:524px;height:62px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div style="{{ r.labelStyle }}">{{ r.label }}</div>
+          <div style="{{ r.keyStyle }}">{{ r.value }}</div>
+        </div>
+      </sc-for>
+      <button onClick="{{ toggleMenu }}" style="{{ menuCloseStyle }}">{{ menuClose }}</button>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ showEnd }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;background:rgba(16,11,8,.78);display:flex;align-items:center;justify-content:center">
+    <div style="width:840px;background:linear-gradient(180deg,#fff6e2,#f4e2c4);border:9px solid #3f2b1e;border-radius:28px;padding:44px 56px;display:flex;flex-direction:column;align-items:center;gap:22px;box-shadow:0 20px 0 rgba(0,0,0,.35);animation:rt3-pop .4s cubic-bezier(.2,1.4,.4,1) both">
+      <div style="{{ endTitleStyle }}">{{ endTitle }}</div>
+      <div style="display:flex;gap:40px;font-family:'Fredoka',sans-serif">
+        <div style="text-align:center"><div style="font-size:52px;font-weight:700;color:#3f2b1e;line-height:1">7</div><div style="{{ endStatStyle }}">{{ endRoundsLabel }}</div></div>
+        <div style="width:3px;background:#d8c3a2"></div>
+        <div style="text-align:center"><div style="font-size:52px;font-weight:700;color:#3f2b1e;line-height:1">{{ endHp }}</div><div style="{{ endStatStyle }}">{{ endHpLabel }}</div></div>
+      </div>
+      <button onClick="{{ noop }}" style="{{ againBtnStyle }}">{{ againLabel }}</button>
+      <div style="{{ endFootStyle }}">{{ endFoot }}</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ anno }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;pointer-events:none">
+    <sc-for list="{{ annoBoxes }}" as="b" hint-placeholder-count="6">
+      <div style="{{ b.style }}"><span style="{{ b.tagStyle }}">{{ b.label }}</span></div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+</div>
+
+<div style="width:1180px;max-width:92vw;color:#c9b8a4;font-family:'Fredoka',system-ui,sans-serif;font-size:14px;line-height:1.75">
+  <div style="font-family:'ZCOOL KuaiLe';font-size:22px;color:#ffc93c;margin-bottom:10px">v3 增量规格</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px 34px">
+    <div>
+      <div style="color:#fff6e2;font-family:'ZCOOL KuaiLe';font-size:17px;margin-bottom:4px">① T1 中央通道放大态</div>
+      三卡 <b>380×520</b>，间距 <b>56</b>，整排 1252 宽居中 → 左边 x=<b>334</b>，顶 y=<b>214</b>，底 y=734。<br>
+      上界让给对手蓄力条（其底边 180）+34px 呼吸；下界离底栏 800 还剩 66px。左右各留 334px，两只手待机拳的外缘仍露出约 84px。<br>
+      入场是<b>形变不是缩放</b>：直接补间 left/top/width/height，从底栏原位（186×252 @ x20/218/416, y814）长到大位（380×520 @ x334/770/1206, y214），<b>380ms</b> cubic-bezier(.16,1.3,.36,1) 带回弹，三张错开 <b>0/55/110ms</b>。<br>
+      不用 transform:scale——描边 7px、圆角 24px、条头高度在全程<b>保持原值不被拉伸</b>，四角同构。<br>
+      底栏原位处理：<b>虚影</b>——同尺寸 5px 虚线描边、背景 rgba(255,246,226,.10)、标「已升起」，保住底栏高度不塌。
+    </div>
+    <div>
+      <div style="color:#fff6e2;font-family:'ZCOOL KuaiLe';font-size:17px;margin-bottom:4px">② 注水与粒子</div>
+      <b>注水</b>：被点中的卡从下往上灌，水色<b>就用这只手自己的牌色</b>（石 #2f7fd0 / 布 #31a83f / 剪 #c8214f，顶部 85% 不透明往下到实色），不是金色——水、粒子、落点光晕三处同色，一眼看得出这股力属于哪只手，<b>620ms</b>，水位分四段：62% 处到 76%（快灌）→ 80% 处冲到 108%（拍到顶）→ 92% 回落到 96% → 100% 落定，看得出一记「咣」。<br>
+      水面是<b>两条错频的椭圆脊</b>叠加：主脊 20px 高 scaleY 1↔.5 且左右荡 ±3%（900ms），副脊 16px 白 55% 透明、scaleY .6↔1.15 反向荡（1250ms）——两条不同步才有晃动感，单条只会像呼吸。<br>
+      整杯水挂 <b>rt3-slosh</b>：以杯底为轴 ±1.6° 摇（1300ms），卡片本身不动。另有 <b>3 颗气泡</b>（16/11/20px，白 60–75%）从底往上窜 210px，周期 1.5/1.8/2.1s 错开发。<br>
+      <b>这一拍分两段，先粒子后回落</b>：① 选中卡的力化成粒子灌进它<b>该去的那一格</b>蓄力槽（600ms）；② 粒子落定后三张牌<b>各自飞回底栏原位</b>——不是飞进槽里，槽已经由粒子加满了。<br>
+      回落用<b>和升起完全同一套节奏</b>：380ms、cubic-bezier(.16,1.3,.36,1)、错开 0/55/110ms，只是几何反着走。牌全程盖在底栏之上（z 5）。<br>
+      <b>粒子</b>：起手一圈 <b>爆环</b>（100px 圆、26px 描边取牌色，0.5s 内涨到 2.6 倍并收边到 2px），随后 <b>14 颗</b>射出，直径 12–30 六档，芯白 → 牌色 → 牌色 75% 径向渐变，外挂 26px 同色光晕 + 5px 白描边；先向上窜 90px 再俯冲，飞行 <b>600ms</b>、每颗错开 36ms；落点一记 200×130 的<b>同色落地光晕</b>。只有<b>被选中的那一张</b>发粒子，另两张不发。<br>
+      <b>这套 CSS 粒子只是形态与节奏的稿</b>——真机建议直接换引擎粒子器（发射数 14、锥角 30°、初速带随机 ±15%、重力回落、加拖尾），CSS 这版拿不出真正的拖尾与随机散布。接口仍是 layout.flyTo{to:'slot-rock',ms:600,arc:.35}。
+    </div>
+    <div>
+      <div style="color:#fff6e2;font-family:'ZCOOL KuaiLe';font-size:17px;margin-bottom:4px">③ T2 罚血读秒态</div>
+      免费 5s 走完 → 倒计时环<b>不再倒数</b>（转为满圈红、停转，只当色块用），画面<b>正中央</b>升起欠账牌：620 宽、墨边 7px、暗红面。第一行是一枚每秒跳一下的「−1」印章（steps(1,end) 1s）+ <b>42px</b> 主句「超时了 · 每思考 1 秒罚 1 滴血」；分隔线下是 <b>132px</b> 的累计欠数；底一行 22px 小字「出手即停 · 这不是他打的」。<br>
+      放正中是有意的：这一拍两只手在摇、六条槽不用读，正中是唯一没人抢的地方，玩家一眼就懂自己在被罚。<br>
+      与战果掉血区分：罚血是<b>血条左端渗出的小红滴</b>（−1，24px，rt3-drip 从血条下沿落 46px，0.9s），<b>不走中央横幅、不放大字号、不震屏、不触发胜负判定</b>。战果掉血才有横幅＋大字＋震屏。文案钉死「超时罚血」，不写「受伤」。
+    </div>
+    <div>
+      <div style="color:#fff6e2;font-family:'ZCOOL KuaiLe';font-size:17px;margin-bottom:4px">④ 结算演出的幅度与节拍</div>
+      <b>伤害跳数</b>：0 → 终值，<b>460ms</b> ease-out，步进 24 帧；字号仍 56+dmg×2.1，跳数期间字号同步从 .82 倍长到 1 倍。<br>
+      <b>血槽双段条</b>：底层滞后条 <b>停 140ms</b> 再用 <b>420ms</b> ease-in-out 追上，颜色 #ffd45e（我方）/ #ffb3a6（对方）。<br>
+      <b>震屏三档</b>：掉 10 → ±6px / 180ms；20–30 → ±14px / 260ms；40 → ±26px / 380ms，各配红色 inset 光晕 .16/.26/.38。<br>
+      <b>蓄力回撤</b>：出过的手清零时，格子逐个褪色 rt3-ret <b>520ms</b>，从满格往回、每格延迟 90ms，不是瞬间归零。
+    </div>
+    <div>
+      <div style="color:#fff6e2;font-family:'ZCOOL KuaiLe';font-size:17px;margin-bottom:4px">⑤「下一轮」与⑥ 角色卡</div>
+      <b>下一轮</b>：居中 x 960、y 706–790（底栏之上 10px），奶油面 + 墨边 + 金色底影，<b>宽 320×84</b>，字 40px。与终局「再来一局」的区别：那颗是<b>金面 44px、宽 460</b>，这颗是<b>奶油面、更小</b>——同族不同重，不会认错。<br>
+      <b>角色卡</b>：34×34 升到 <b>76×76</b>（顶栏 97 内留 10px 上下气），名字来自卡片、无图退化成首字。<b>不另开立绘位</b>——对局屏四拍全在读六条槽，立绘会抢注意力；真正该放大画像的是 T4 结算与二选一屏。<b>心情上屏</b>：名字下一枚 18px 小签（阴晴不定/执拗/上头/玩心/精明），它直接解释对手为什么这样打。
+    </div>
+    <div>
+      <div style="color:#fff6e2;font-family:'ZCOOL KuaiLe';font-size:17px;margin-bottom:4px">⑦ 英文版排版 · ⑧ 设置</div>
+      英文一律 <b>Fredoka</b>，中文 ZCOOL KuaiLe，两套字号阶梯：英文取中文的 <b>0.72×</b>，下限 15px。<br>
+      三处溢出的正式解：<b>MY CHARGE</b> 竖排改<b>横排两行 20px</b>、列宽 46→<b>92px</b>（不动 56px 那一列，是加宽标签列）；<b>FOE CHARGE</b> 两行 15px、列宽 62px；卡副标英文缩写为 <b>CHARGE → 30 / HIT 30 / Locked</b>，烟雾副标压到 13px 两行。<br>
+      <b>设置</b>：620 宽、卡通语言不变，四行 62px、开关 180×56 金面（关为灰面），标题下加一条 4px 分隔，关闭键降为奶油面——菜单里没有第二颗主键。
+    </div>
+  </div>
+  <div style="margin-top:22px;color:#8c7a68;font-size:13px;border-top:1px solid #3f2b1e;padding-top:12px">
+    未改动：构图、配色、字号阶梯、圆角、描边、投影、手的几何、T2 摇拳幅度、手部贴图规格（见上一版 README）。<br>
+    时长已按 v3 改：T1 2.5s 硬倒计时（一回合每手仅 +1 层）· T2 5s 免费 + 每秒 −1 罚 · T3 1.5s · T4 无自动兜底。
+  </div>
+</div>
+
+</div>
+
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#7ED957"/><text x="50" y="64" font-size="38" font-family="serif" font-weight="700" fill="#fff" text-anchor="middle">拳</text></svg></template>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:1560},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;zh&quot;,&quot;en&quot;],&quot;default&quot;:&quot;zh&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;本地化&quot;},&quot;cardZoomWidth&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:380,&quot;min&quot;:300,&quot;max&quot;:460,&quot;step&quot;:10,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;T1 中央通道&quot;},&quot;penaltyRate&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1,&quot;min&quot;:1,&quot;max&quot;:5,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;T2 罚血&quot;}}">
+const INK='#3f2b1e', CREAM='#fff6e2';
+const CARDC={rock:'#2f7fd0',paper:'#31a83f',scissors:'#c8214f'};
+const ICON={rock:'hands/icon_rock.png',paper:'hands/icon_paper.png',scissors:'hands/icon_scissors.png'};
+const BOX={off:250,top:150,size:640};
+const D={
+  zh:{table:'判定表',tableSub:'道具可凿裂重刻',rock:'石头',paper:'布',scissors:'剪刀',
+      sRock:'石',sPaper:'布',sScissors:'剪',
+      myCharge:'我的\n蓄力',oppCharge:'对手\n蓄力',round:'第 3 回合',sec:'秒',
+      t1:'蓄力',t2:'出招',t3:'对决',t4:'结算',end:'终局',pen:'超时',
+      next:'下一轮',again:'再来一局',settings:'设置',close:'关闭',
+      smoke:'烟雾',smokeSub:'遮蔽我方三槽 2 回合',smokeOff:'对决中不可用',
+      full:'满',sent:'已提交',risen:'已升起',
+      chargeTo:'蓄力 → ',fullLock:'已满 · 点不动',hit:'打 ',lockRound:'本回合不可点',dash:'—',
+      nowHit:'现在打 ',threatA:'他攒满了一手',threatC:' · 被打中要掉四成血',
+      pick:'选一手蓄力 · 每回合只能加一层',
+      penText:'超时了 · 每思考 1 秒罚 1 滴血',penOwe:'已欠',penFoot:'出手即停 · 这不是他打的',
+      win:'你赢了',lose:'你输了',rounds:'回合',hpLeft:'剩余血量',
+      endFoot:'对局键已收起 · 此屏无死路操作',sub:'这一手，你算得挺准。',
+      mood:'阴晴不定',you:'你',oppName:'林知夏',
+      menu:[['音乐','开'],['音效','开'],['配音','开'],['语言','中文']]},
+  en:{table:'RULES',tableSub:'Carvable by relics',rock:'ROCK',paper:'PAPER',scissors:'SCISSORS',
+      sRock:'RK',sPaper:'PA',sScissors:'SC',
+      myCharge:'MY\nCHARGE',oppCharge:'FOE\nCHARGE',round:'ROUND 3',sec:'S',
+      t1:'CHARGE',t2:'STRIKE',t3:'DUEL',t4:'RESOLVE',end:'END',pen:'OVERTIME',
+      next:'NEXT ROUND',again:'PLAY AGAIN',settings:'SETTINGS',close:'CLOSE',
+      smoke:'SMOKE',smokeSub:'Hides my 3 slots · 2 rounds',smokeOff:'Locked in duel',
+      full:'FULL',sent:'SENT',risen:'RAISED',
+      chargeTo:'CHARGE → ',fullLock:'FULL · locked',hit:'HIT ',lockRound:'Locked this round',dash:'—',
+      nowHit:'Hits for ',threatA:'He has a full ',threatC:' · 40% damage',
+      pick:'Pick one hand · +1 layer per round',
+      penText:'OVERTIME · −1 HP per second',penOwe:'OWED',penFoot:'Stops when you strike · not his hit',
+      win:'YOU WIN',lose:'YOU LOSE',rounds:'ROUNDS',hpLeft:'HP LEFT',
+      endFoot:'Battle keys hidden · no dead ends here',sub:'You read him well.',
+      mood:'Mercurial',you:'YOU',oppName:'Lin Zhixia',
+      menu:[['Music','On'],['SFX','On'],['Voice','On'],['Language','EN']]}
+};
+
+class Component extends DCLogic {
+  state={phase:'t1',anno:false,menuOpen:false,lang:null};
+  componentDidMount(){this.fit();this._h=()=>this.fit();window.addEventListener('resize',this._h);}
+  componentWillUnmount(){window.removeEventListener('resize',this._h);}
+  fit(){const el=this._el;if(!el)return;const w=el.parentElement.clientWidth;const s=Math.min(1,(w-8)/1920);el.style.transform='scale('+s+')';el.style.marginBottom=(1080*s-1080)+'px';}
+
+  lang(){return this.state.lang||this.props.lang||'zh';}
+
+  data(){
+    const p=this.state.phase;
+    const base={youSlots:{rock:1,paper:3,scissors:0},oppSlots:{rock:3,paper:1,scissors:0}};
+    const d={
+      t1:{key:'t1',timer:'2.4',pct:80,you:'idle',opp:'idle',mode:'charge',youHp:100,oppHp:100,sel:null,banner:null,zoom:0},
+      t1a:{key:'t1',timer:'2.2',pct:74,you:'idle',opp:'idle',mode:'charge',youHp:100,oppHp:100,sel:null,banner:null,zoom:1},
+      t1b:{key:'t1',timer:'1.3',pct:44,you:'idle',opp:'idle',mode:'charge',youHp:100,oppHp:100,sel:'rock',banner:null,zoom:2},
+      t1c:{key:'t1',timer:'0.1',pct:4,you:'idle',opp:'idle',mode:'charge',youHp:100,oppHp:100,sel:'rock',banner:null,zoom:3},
+      t2:{key:'t2',timer:'3.6',pct:72,you:'shake',opp:'shake',mode:'strike',youHp:100,oppHp:100,sel:'paper',banner:null,zoom:0},
+      t2p:{key:'pen',timer:'0.0',pct:100,you:'shake',opp:'shake',mode:'strike',youHp:96,oppHp:100,sel:null,banner:null,zoom:0,penalty:4,hpFrom:100},
+      t3:{key:'t3',timer:'1.2',pct:80,you:'paper',opp:'rock',mode:'off',youHp:100,oppHp:100,sel:'paper',zoom:0,
+          banner:{v:'paper',t:'win',d:'-40',dmg:40,win:true}},
+      t4:{key:'t4',timer:'—',pct:100,you:'paper',opp:'rock',mode:'off',youHp:100,oppHp:60,sel:null,zoom:0,oppFrom:100,
+          youSlots:{rock:1,paper:0,scissors:0},oppSlots:{rock:0,paper:1,scissors:0},
+          youBack:{paper:3},oppBack:{rock:3},shake:3,next:true,
+          banner:{v:'paper',t:'locked',d:'-40',dmg:40,win:true}},
+      end:{key:'end',timer:'—',pct:0,you:'paper',opp:'rock',mode:'off',youHp:30,oppHp:0,sel:null,banner:null,zoom:0,
+          youSlots:{rock:0,paper:0,scissors:0},oppSlots:{rock:0,paper:0,scissors:0}},
+      lose:{key:'end',timer:'—',pct:0,you:'scissors',opp:'rock',mode:'off',youHp:0,oppHp:20,sel:null,banner:null,zoom:0,
+          youSlots:{rock:0,paper:0,scissors:0},oppSlots:{rock:0,paper:0,scissors:0}}
+    };
+    return Object.assign({},base,d[p]);
+  }
+
+  slot(k,n,mine,back){
+    const T=D[this.lang()], EN=this.lang()==='en', full=n>=3;
+    const pip=(i)=>{
+      const on=i<=n, ret=!on&&back&&i<=back;
+      return 'flex:1;height:'+(mine?'20px':'9px')+';border-radius:'+(mine?'6px':'3px')+';border:'+(mine?'3px':'2px')+' solid '+INK+';box-sizing:border-box;background:'+(on?(full?'#ffc93c':(mine?'#23b5a0':'#e0483f')):(ret?'#ffc93c':'rgba(63,43,30,.18)'))+(ret?';animation:rt3-ret .52s ease-out '+((3-i)*90)+'ms forwards':'');
+    };
+    return {
+      label:T[k==='rock'?'rock':k==='paper'?'paper':'scissors'],
+      labelStyle:'font-size:'+(EN?'19px':'26px')+';color:'+INK+';line-height:1.1;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';letter-spacing:'+(EN?'.04em':'0'),
+      dmgLine:T.nowHit+(10+n*10),
+      dmgLineStyle:'font-family:Fredoka,sans-serif;font-size:'+(EN?'15px':'16px')+';color:#7a6553',
+      iconStyle:'flex:none;width:28px;height:34px;background:url('+ICON[k]+') center/contain no-repeat',
+      bigIconStyle:'flex:none;width:56px;height:62px;background:url('+ICON[k]+') center/contain no-repeat',
+      p1:pip(1),p2:pip(2),p3:pip(3),
+      read:n+'/3',
+      readStyle:'flex:none;font-family:Fredoka,sans-serif;font-weight:700;font-size:'+(mine?'38px':'19px')+';color:'+(full?'#a8720b':'#5d4a3a')+';min-width:'+(mine?'78px':'44px')+';text-align:right;line-height:1',
+      style:mine
+        ? 'flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:12px 16px;border-radius:16px;box-sizing:border-box;background:'+(full?'linear-gradient(180deg,#ffe9a8,#ffd45e)':CREAM)+';border:5px solid '+INK+';box-shadow:0 6px 0 rgba(0,0,0,.4)'+(full?';animation:rt3-glow 1.4s ease-out infinite':'')
+        : 'flex:1;min-width:0;display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:9px;box-sizing:border-box;background:'+(full?'linear-gradient(180deg,#ffe9a8,#ffd45e)':'rgba(255,246,226,.94)')+';border:3px solid '+INK
+    };
+  }
+
+  renderVals(){
+    const st=this.state, d=this.data(), p=st.phase;
+    const L=this.lang(), EN=L==='en', T=D[L];
+    const F=(zh,en)=>EN?en:zh;
+    const cw=this.props.cardZoomWidth||380;
+    const rate=this.props.penaltyRate||1;
+
+    const tabs=[['t1','T1 待选'],['t1a','T1a 放大'],['t1b','T1b 注水'],['t1c','T1c 粒子'],['t2','T2 出招'],['t2p','T2 罚血'],['t3','T3 对决'],['t4','T4 结算'],['end','终局·胜'],['lose','终局·负']];
+    const btn=(on)=>'font-family:inherit;font-size:13px;padding:6px 14px;border-radius:999px;cursor:pointer;border:1px solid '+(on?'#ffc93c':'#3f2b1e')+';background:'+(on?'#ffc93c':'#2a211a')+';color:'+(on?'#241c16':'#c9b8a4');
+
+    const key=(m)=>(m==='idle'||m==='shake')?'rock':m;
+    const dsp=(m,k)=>key(m)===k?'inline':'none';
+    const handWrap=(side,mode)=>{
+      const base='position:absolute;top:'+BOX.top+'px;height:'+BOX.size+'px;width:'+BOX.size+'px;'+(side==='L'?'left:'+BOX.off+'px':'right:'+BOX.off+'px')+';';
+      let anim='';
+      if(mode==='shake') anim='animation:'+(side==='L'?'rt3-shake':'rt3-shakeR')+' .6s ease-in-out infinite;transform-origin:'+(side==='L'?'left':'right')+' center;';
+      else if(mode!=='idle') anim='animation:'+(side==='L'?'rt3-push':'rt3-pushR')+' .28s cubic-bezier(.2,1.4,.4,1) forwards;';
+      return base+anim;
+    };
+    const arm=(side)=>{
+      const skin=side==='L'?'linear-gradient(180deg,#fdf0dd,#eecfab)':'linear-gradient(180deg,#fdbc86,#e9834a)';
+      const line=side==='L'?'#6b4a3a':'#b5501a';
+      return 'position:absolute;top:420px;height:158px;width:430px;'+(side==='L'?'left:0;border-left:none':'right:0;border-right:none')+';background:'+skin+';border:15px solid '+line+';box-sizing:border-box';
+    };
+
+    const zoomed=d.zoom>0;
+    const cardSub=(k,n)=>{
+      const full=n>=3;
+      if(d.mode==='charge') return full?T.fullLock:T.chargeTo+(20+n*10);
+      if(d.mode==='strike') return T.hit+(10+n*10);
+      return T.lockRound;
+    };
+
+    const cards=['rock','paper','scissors'].map(k=>{
+      const n=d.youSlots[k], full=n>=3, off=d.mode==='off';
+      const disabled=off||(d.mode==='charge'&&full);
+      const selected=d.sel===k&&!zoomed;
+      if(zoomed) return {
+        name:'',sub:'',badge:'',noop:()=>{},
+        iconStyle:'display:none',stripStyle:'display:none',subStyle:'display:none',badgeStyle:'display:none',
+        ghostTag:T.risen,
+        ghostTagStyle:'position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);font-family:Fredoka,sans-serif;font-size:15px;letter-spacing:.1em;color:rgba(255,246,226,.5)',
+        style:'position:relative;width:186px;height:100%;box-sizing:border-box;padding:0;background:rgba(255,246,226,.10);border:5px dashed rgba(255,246,226,.42);border-radius:16px;cursor:default'
+      };
+      return {
+        name:T[k], sub:cardSub(k,n), noop:()=>{}, ghostTag:'', ghostTagStyle:'display:none',
+        iconStyle:'width:96px;height:104px;background:url('+ICON[k]+') center/contain no-repeat;filter:drop-shadow(0 4px 4px rgba(0,0,0,.18))',
+        badge:selected?T.sent:(full?T.full:''),
+        badgeStyle:(selected||full)?'position:absolute;top:-14px;right:-10px;background:'+(selected?'#ffc93c':'#e0483f')+';color:'+(selected?INK:'#fff')+';border:4px solid '+INK+';border-radius:999px;padding:2px 12px;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?700:400)+';font-size:'+F('17px','15px'):'display:none',
+        stripStyle:'width:100%;background:'+CARDC[k]+';color:#fff;border-bottom:4px solid '+INK+';padding:5px 0;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('20px','17px')+';letter-spacing:'+F('0','.05em')+';text-shadow:0 2px 0 rgba(0,0,0,.3)',
+        subStyle:'margin-top:auto;width:100%;padding:7px 0;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-size:'+(EN?'16px':(d.mode==='strike'?'26px':'22px'))+';color:'+(disabled?'#9a8873':INK)+';background:rgba(63,43,30,.08);border-top:3px solid rgba(63,43,30,.25)',
+        style:'position:relative;width:186px;height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;overflow:visible;padding:0;font-family:inherit;cursor:'+(disabled?'not-allowed':'pointer')+';background:'+(disabled?'#cfc3b0':CREAM)+';border:5px solid '+INK+';border-radius:16px;box-shadow:0 '+(selected?'2px':'7px')+' 0 '+(selected?'#c9932a':'rgba(0,0,0,.4)')+';transform:translateY('+(selected?'5px':'0')+');opacity:'+(disabled?'.62':'1')+';outline:'+(selected?'6px solid #ffc93c':'none')
+      };
+    });
+
+    const zoomCards=['rock','paper','scissors'].map((k,i)=>{
+      const n=d.youSlots[k], full=n>=3, sel=d.sel===k;
+      const pouring=d.zoom===2&&sel;
+      const BIG=[334,770,1206], flying=d.zoom===3;
+      const geo='left:'+BIG[i]+'px;top:214px;width:'+cw+'px;height:520px;';
+      const anim=flying
+        ? 'animation:rt3-b'+i+' 2s linear '+(i*55)+'ms infinite;'
+        : 'animation:rt3-m'+i+' .38s cubic-bezier(.16,1.3,.36,1) '+(i*55)+'ms both;';
+      return {
+        name:T[k], sub:cardSub(k,n), badge:sel?T.sent:(full?T.full:''),
+        badgeStyle:(sel||full)?'position:absolute;top:16px;right:16px;z-index:2;background:'+(sel?'#ffc93c':'#e0483f')+';color:'+(sel?INK:'#fff')+';border:5px solid '+INK+';border-radius:999px;padding:2px 18px;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?700:400)+';font-size:'+F('22px','18px')+';white-space:nowrap':'display:none',
+        style:'position:absolute;'+geo+'box-sizing:border-box;display:flex;flex-direction:column;align-items:center;overflow:hidden;background:'+(full?'#d5c8b0':CREAM)+';border:7px solid '+INK+';border-radius:24px;box-shadow:0 12px 0 rgba(0,0,0,.42);filter:'+(full?'saturate(.35)':'none')+';outline:'+(sel?'8px solid #ffc93c':'none')+';'+anim,
+        sloshStyle:pouring?'position:absolute;left:0;bottom:0;width:100%;height:100%;overflow:hidden;transform-origin:50% 100%;animation:rt3-slosh 1.3s ease-in-out infinite':'display:none',
+        fillStyle:'position:absolute;left:0;bottom:0;width:100%;background:linear-gradient(180deg,'+CARDC[k]+'d9,'+CARDC[k]+');animation:rt3-pour .62s cubic-bezier(.3,.75,.35,1) forwards',
+        ripStyle:'position:absolute;left:-6%;top:-10px;width:112%;height:20px;background:'+CARDC[k]+'cc;border-radius:50%/100%;animation:rt3-ripple .9s ease-in-out infinite',
+        rip2Style:'position:absolute;left:-6%;top:-4px;width:112%;height:16px;background:#fff;opacity:.5;border-radius:50%/100%;animation:rt3-ripple2 1.25s ease-in-out infinite',
+        b1:'position:absolute;left:24%;bottom:10px;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.75);animation:rt3-bub 1.5s ease-in infinite',
+        b2:'position:absolute;left:52%;bottom:10px;width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.7);animation:rt3-bub 1.8s ease-in .35s infinite',
+        b3:'position:absolute;left:73%;bottom:10px;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.6);animation:rt3-bub 2.1s ease-in .7s infinite',
+        stripStyle:'position:relative;z-index:1;flex:none;width:100%;box-sizing:border-box;background:'+CARDC[k]+';color:#fff;border-bottom:6px solid '+INK+';padding:10px 0;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('34px','28px')+';line-height:1.25;letter-spacing:'+F('.02em','.06em')+';white-space:nowrap;text-shadow:0 3px 0 rgba(0,0,0,.3)',
+        iconStyle:'width:180px;height:196px;max-height:100%;background:url('+ICON[k]+') center/contain no-repeat;filter:drop-shadow(0 6px 6px rgba(0,0,0,.2))',
+        subStyle:'position:relative;z-index:1;flex:none;width:100%;box-sizing:border-box;padding:12px 0;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-size:'+F('30px','21px')+';line-height:1.25;white-space:nowrap;color:'+(full?'#9a8873':INK)+';background:rgba(63,43,30,.08);border-top:4px solid rgba(63,43,30,.25)',
+        pipsStyle:'position:relative;z-index:1;flex:none;width:100%;box-sizing:border-box;padding:12px 22px 16px;display:flex;gap:10px',
+        p1:this.zpip(1,n,full),p2:this.zpip(2,n,full),p3:this.zpip(3,n,full)
+      };
+    });
+
+    const SRC={rock:524,paper:960,scissors:1396}, TGT={rock:842,paper:1145,scissors:1447};
+    const pk=d.sel||'rock', pc=CARDC[pk], px=SRC[pk], ptx=TGT[pk];
+    const hex2rgb=(h)=>parseInt(h.slice(1,3),16)+','+parseInt(h.slice(3,5),16)+','+parseInt(h.slice(5,7),16);
+    const rgb=hex2rgb(pc);
+    const particles=[];
+    particles.push({style:'position:absolute;left:'+(px-50)+'px;top:424px;width:100px;height:100px;border-radius:50%;border:26px solid '+pc+';box-sizing:border-box;animation:rt3-burst .5s ease-out infinite'});
+    for(let i=0;i<14;i++){
+      const size=[16,24,12,30,18,22,14,26,20,12,28,16,22,18][i];
+      const ox=px+((i%7)-3)*18, oy=468+((i%3)-1)*10;
+      const dx=(ptx-ox+((i%5)-2)*14)+'px', dy=(940-oy+(i%4)*10)+'px';
+      particles.push({style:'position:absolute;left:'+ox+'px;top:'+oy+'px;width:'+size+'px;height:'+size+'px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,'+pc+' 62%,rgba('+rgb+',.75));box-shadow:0 0 26px rgba('+rgb+',.95),0 0 0 5px rgba(255,255,255,.4);--dx:'+dx+';--dy:'+dy+';animation:rt3-fly .6s cubic-bezier(.3,-0.4,.55,1) '+(i*36)+'ms infinite'});
+    }
+    particles.push({style:'position:absolute;left:'+(ptx-100)+'px;top:874px;width:200px;height:130px;border-radius:18px;background:radial-gradient(ellipse at center,rgba('+rgb+',.9),rgba('+rgb+',0) 68%);animation:rt3-land 1s ease-out infinite'});
+
+    const drips=[0,1,2].map(i=>({v:'−'+rate,style:'font-family:Fredoka,sans-serif;font-weight:700;font-size:24px;color:#ff5a45;text-shadow:0 2px 0 '+INK+';animation:rt3-drip .9s ease-in '+(i*300)+'ms infinite'}));
+
+    const bx=(l,t,w,h,label,c)=>({label,style:'position:absolute;left:'+l+'px;top:'+t+'px;width:'+w+'px;height:'+h+'px;border:3px dashed '+c+';box-sizing:border-box;border-radius:4px;background:rgba(0,0,0,.06)',tagStyle:'position:absolute;left:0;top:0;transform:translateY(-100%);background:'+c+';color:#fff;font-family:Fredoka,sans-serif;font-size:14px;font-weight:600;padding:2px 8px;white-space:nowrap'});
+    const annoBoxes=[
+      bx(0,0,1920,97,'① 顶栏 y 0–9%','#e0483f'),
+      bx(250,150,640,640,'③ 左手方框（你）x 13.0–46.4% · y 13.9–73.1%','#1a7bd4'),
+      bx(1030,150,640,640,'③ 右手方框 x 53.6–86.9%','#1a7bd4'),
+      bx(883,150,154,548,'④ 中线区 x 46–54%','#8e44ad'),
+      bx(0,800,1920,280,'⑤⑥⑦ 底栏 y 74–100%','#0f9d58'),
+      bx(334,214,1252,520,'v3① 中央通道三卡 x 17.4–82.6% · y 19.8–68.0%','#ff8c1a'),
+      bx(1188,110,620,70,'对手蓄力条 · 全程不可遮','#e0483f'),
+      bx(800,706,320,84,'v3⑤ 下一轮 320×84','#0f9d58')
+    ];
+
+    const b=d.banner;
+    const verdictMap={paper:F('布 › 石','PAPER › ROCK')};
+    const bannerMap={win:F('你赢了这回合','You win the round'),locked:F('伤害落定','Damage locked')};
+    const shakeTier=d.shake||0;
+    const oppFrom=d.oppFrom!=null?d.oppFrom:d.oppHp;
+    const youFrom=d.hpFrom!=null?d.hpFrom:d.youHp;
+
+    return {
+      phaseTabs:tabs.map(([k,l])=>({label:l,go:()=>this.setState({phase:k}),style:btn(p===k)})),
+      toggleAnno:()=>this.setState({anno:!st.anno}),
+      annoStyle:btn(st.anno), anno:st.anno, noop:()=>{},
+      toggleLang:()=>this.setState({lang:EN?'zh':'en'}), langStyle:btn(EN), langLabel:EN?'EN':'中文',
+
+      showHud:p!=='end'&&p!=='lose', showEnd:p==='end'||p==='lose',
+      showZoom:zoomed, showParticles:d.zoom===3, showNext:!!d.next,
+      showPenalty:!!d.penalty,
+
+      zoomHint:T.pick,
+      zoomHintStyle:'background:rgba(24,17,12,.82);border:4px solid '+INK+';border-radius:999px;padding:4px 30px;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-size:'+F('28px','20px')+';color:#fff8e7',
+      zoomHintWrapStyle:'position:absolute;left:0;top:110px;width:1920px;display:flex;justify-content:center;opacity:'+(d.zoom===3?'0':'1')+';transition:opacity .2s',
+      zoomCards, particles, drips,
+
+      penaltyText:T.penText,
+      penaltyTextStyle:'font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('42px','32px')+';color:#fff0ea;white-space:nowrap',
+      penaltyOweLabel:T.penOwe,
+      penaltyOweLabelStyle:'font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-size:'+F('34px','26px')+';color:#f0a89c;white-space:nowrap',
+      penaltyFoot:T.penFoot,
+      penaltyFootStyle:'font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-size:'+F('22px','17px')+';color:#e0958a;white-space:nowrap',
+      penaltyOwe:'−'+(d.penalty||0),
+
+      nextLabel:T.next,
+      nextBtnStyle:'width:320px;height:84px;background:'+CREAM+';border:6px solid '+INK+';border-radius:20px;font-family:'+(EN?"'Fredoka',sans-serif":"'ZCOOL KuaiLe'")+';font-weight:'+(EN?600:400)+';font-size:'+F('40px','30px')+';letter-spacing:'+F('.04em','.06em')+';color:'+INK+';box-shadow:0 9px 0 #c9932a;cursor:pointer',
+
+      youName:T.you, youInitial:F('你','Y'), youNameStyle:'background:#23b5a0;border:4px solid '+INK+';border-radius:10px;padding:3px 14px;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('30px','22px')+';color:#08312c;box-shadow:0 4px 0 #14776a',
+      oppName:T.oppName, oppInitial:F('林','L'), oppNameStyle:'max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#e0483f;border:4px solid '+INK+';border-radius:10px;padding:3px 14px;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('28px','20px')+';color:#fff2ec;box-shadow:0 4px 0 #94261f',
+      moodText:T.mood, moodStyle:'font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-size:'+F('18px','15px')+';color:#e8c9a0;background:rgba(255,246,226,.14);border:2px solid rgba(255,246,226,.3);border-radius:999px;padding:1px 12px',
+
+      tableTitle:T.table, tableTitleStyle:'font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('15px','14px')+';color:#f2e6d2;letter-spacing:.12em',
+      tableSub:T.tableSub, tableSubStyle:'font-family:Fredoka,sans-serif;font-size:11px;color:'+INK+';background:rgba(255,255,255,.7);border-radius:6px;padding:2px 6px;text-align:center',
+      tableRowsStyle:'display:flex;flex-direction:column;gap:5px;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('24px','18px')+';color:#fff8e7;text-shadow:0 2px 0 rgba(0,0,0,.45)',
+      ruleRows:[{a:T.sRock,b:T.sScissors},{a:T.sScissors,b:T.sPaper},{a:T.sPaper,b:T.sRock}],
+
+      myChargeLabel:T.myCharge,
+      myChargeLabelStyle:'flex:none;width:'+F('46px','92px')+';display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-line;line-height:1.15;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';letter-spacing:'+F('0','.06em')+';font-size:'+F('27px','20px')+';color:#7defd6',
+      oppChargeLabel:T.oppCharge,
+      oppChargeLabelStyle:'flex:none;width:'+F('44px','62px')+';text-align:center;white-space:pre-line;line-height:1.05;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('19px','15px')+';color:#ff9a8a',
+
+      showThreat:(d.key==='t1'||d.key==='t2'||d.key==='pen')&&Math.max(d.oppSlots.rock,d.oppSlots.paper,d.oppSlots.scissors)>=3,
+      threatA:T.threatA, threatB:T.rock, threatC:T.threatC,
+      threatStyle:'display:flex;align-items:center;gap:8px;background:#e0483f;border:4px solid '+INK+';border-radius:999px;padding:3px 18px;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-size:'+F('21px','16px')+';color:#fff2ec;box-shadow:0 5px 0 rgba(0,0,0,.35)',
+
+      showBanner:!!b,
+      verdictText:b?verdictMap[b.v]:'', bannerText:b?bannerMap[b.t]:'', dmgText:b?b.d:'',
+      verdictStyle:'font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('52px','40px')+';color:#fff8e7;background:#8e44ad;border:6px solid '+INK+';border-radius:999px;padding:2px 40px;text-shadow:0 3px 0 rgba(0,0,0,.4)',
+      bannerChipStyle:'background:rgba(24,17,12,.86);border:6px solid '+INK+';border-radius:999px;padding:6px 40px;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-size:'+F('38px','28px')+';color:#fff8e7',
+      dmgStyle:b?('font-family:Fredoka,sans-serif;font-weight:700;line-height:.86;margin:-4px 0;font-size:'+(56+b.dmg*2.1)+'px;color:'+(b.win?'#ffc93c':'#ff6a58')+';text-shadow:0 5px 0 '+INK+',0 0 34px rgba(255,201,60,.6)'):'',
+
+      flashStyle:shakeTier?('position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 220px rgba(224,72,63,'+[0,.16,.26,.38][shakeTier]+');animation:rt3-shk'+shakeTier+' '+[0,180,260,380][shakeTier]+'ms ease-in-out 2'):'display:none',
+
+      youRockD:dsp(d.you,'rock'), youPaperD:dsp(d.you,'paper'), youScissorsD:dsp(d.you,'scissors'),
+      oppRockD:dsp(d.opp,'rock'), oppPaperD:dsp(d.opp,'paper'), oppScissorsD:dsp(d.opp,'scissors'),
+      youArmStyle:arm('L'), oppArmStyle:arm('R'),
+      youHandWrapStyle:handWrap('L',d.you), oppHandWrapStyle:handWrap('R',d.opp),
+      youHp:d.youHp, oppHp:d.oppHp,
+      youHpLag:'position:absolute;left:0;top:0;height:100%;width:'+youFrom+'%;background:#ffd45e',
+      youHpFill:'position:relative;height:100%;width:'+d.youHp+'%;background:linear-gradient(180deg,#5fe8cd,#1f9c89)',
+      oppHpLag:'position:absolute;right:0;top:0;height:100%;width:'+oppFrom+'%;background:#ffb3a6',
+      oppHpFill:'position:relative;height:100%;width:'+d.oppHp+'%;background:linear-gradient(180deg,#ff9a8a,#d0342b)',
+
+      roundText:T.round, roundStyle:'font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('26px','20px')+';letter-spacing:'+F('0','.06em')+';color:#e8d9c2',
+      phaseName:T[d.key], timer:d.timer,
+      secLabel:T.sec, secStyle:'font-size:10px;color:#8c7a68;font-family:Fredoka,sans-serif',
+      timerStyle:'font-family:Fredoka,sans-serif;font-weight:700;font-size:24px;color:'+(d.penalty?'#ff5a45':(d.pct<34?'#ff5a45':'#fff6e2')),
+      ringStyle:'width:78px;height:78px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:'+(d.penalty?'#ff5a45':'conic-gradient('+(d.pct<34?'#ff5a45':'#ffc93c')+' '+(d.pct*3.6)+'deg,rgba(255,255,255,.14) 0)'),
+      phaseChipStyle:'font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('34px','25px')+';letter-spacing:'+F('0','.05em')+';color:'+INK+';background:'+(d.penalty||d.pct<34?'#ff5a45':'#ffc93c')+';border:5px solid '+INK+';border-radius:12px;padding:2px 26px;box-shadow:0 5px 0 rgba(0,0,0,.4)',
+
+      cards,
+      oppSlots:['rock','paper','scissors'].map(k=>this.slot(k,d.oppSlots[k],false,d.oppBack&&d.oppBack[k])),
+      youSlots:['rock','paper','scissors'].map(k=>this.slot(k,d.youSlots[k],true,d.youBack&&d.youBack[k])),
+
+      smokeName:T.smoke, smokeNameStyle:'font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('27px','20px')+';color:'+INK,
+      smokeSub:(p==='t3'||p==='t4')?T.smokeOff:T.smokeSub,
+      smokeSubStyle:'font-family:Fredoka,sans-serif;font-size:13px;line-height:1.3;color:#7a6553;text-align:center;padding:0 10px',
+      smokeStyle:'flex:none;width:270px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:'+((p==='t3'||p==='t4')?'#cfc3b0':CREAM)+';border:5px solid '+INK+';border-radius:16px;box-shadow:0 7px 0 rgba(0,0,0,.4);opacity:'+((p==='t3'||p==='t4')?'.6':'1')+';cursor:pointer',
+
+      showSub:p==='t3', subText:T.sub,
+      subStyle:'background:rgba(24,17,12,.86);border:4px solid '+INK+';border-radius:999px;padding:6px 40px;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-size:'+F('26px','19px')+';color:#fff8e7;line-height:1.4',
+
+      menuOpen:st.menuOpen, toggleMenu:()=>this.setState({menuOpen:!st.menuOpen}),
+      menuTitle:T.settings, menuTitleStyle:'font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('46px','34px')+';letter-spacing:'+F('0','.06em')+';color:'+INK+';line-height:1.2',
+      menuClose:T.close, menuCloseStyle:'margin-top:6px;width:220px;height:60px;background:'+CREAM+';border:5px solid '+INK+';border-radius:16px;font-family:'+(EN?"'Fredoka',sans-serif":"'ZCOOL KuaiLe'")+';font-weight:'+(EN?600:400)+';font-size:'+F('26px','20px')+';color:'+INK+';box-shadow:0 7px 0 rgba(0,0,0,.4);cursor:pointer',
+      menuRows:T.menu.map(([label,value])=>({
+        label,value,
+        labelStyle:'font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('30px','22px')+';color:'+INK,
+        keyStyle:'width:180px;height:56px;display:flex;align-items:center;justify-content:center;font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?600:400)+';font-size:'+F('26px','20px')+';color:'+INK+';background:#ffc93c;border:5px solid '+INK+';border-radius:16px;box-shadow:0 5px 0 #c9932a'
+      })),
+
+      endTitle:p==='lose'?T.lose:T.win,
+      endTitleStyle:'font-family:'+(EN?"'Fredoka',sans-serif":'inherit')+';font-weight:'+(EN?700:400)+';font-size:'+F('96px','72px')+';line-height:1;text-shadow:0 6px 0 '+INK+';color:'+(p==='lose'?'#e0483f':'#23b5a0'),
+      endHp:String(d.youHp), endRoundsLabel:T.rounds, endHpLabel:T.hpLeft,
+      endStatStyle:'font-family:'+(EN?"'Fredoka',sans-serif":"'ZCOOL KuaiLe'")+';font-size:'+F('18px','15px')+';letter-spacing:'+F('0','.08em')+';color:#7a6553',
+      againLabel:T.again,
+      againBtnStyle:'margin-top:6px;width:460px;height:96px;background:#ffc93c;border:6px solid '+INK+';border-radius:18px;font-family:'+(EN?"'Fredoka',sans-serif":"'ZCOOL KuaiLe'")+';font-weight:'+(EN?700:400)+';font-size:'+F('44px','34px')+';letter-spacing:'+F('0','.05em')+';color:'+INK+';box-shadow:0 8px 0 #c9932a;cursor:pointer',
+      endFoot:T.endFoot, endFootStyle:'font-family:Fredoka,sans-serif;font-size:14px;color:#9a8873',
+
+      annoBoxes,
+      fitRef:(el)=>{this._el=el;if(el)requestAnimationFrame(()=>this.fit());}
+    };
+  }
+
+  zpip(i,n,full){
+    const on=i<=n;
+    return 'flex:1;height:26px;border-radius:8px;border:4px solid '+INK+';box-sizing:border-box;background:'+(on?(full?'#ffc93c':'#23b5a0'):'rgba(63,43,30,.16)');
+  }
+}
+</script>
+</body>
+</html>
