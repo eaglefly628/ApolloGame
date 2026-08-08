@@ -6,7 +6,7 @@
 //   · screens/*.png = 五个状态的成品图（视觉基准）
 // 复刻口径（CLAUDE.md「有 .dc.html 设计稿在档 = 1:1 复刻基准」）：
 //   **坐标与颜色一律取自 `design-tokens.ts`**（那份是逐字抄来的），本文件只负责「用闭集控件把它摆出来」。
-//   差异逐条记在 `docs/design/game108/self-check/S5-design-alignment.md`，不默降。
+//   差异逐条记在 `docs/design/game108/self-check/S5-alignment.md`，不默降。
 //
 // 稿子自己也写明了：「this game's UI is a closed-set, data-driven widget system … Everything in this
 // design was drawn to map onto that widget set」——所以这里不是"移植 HTML"，是**照着规格用控件搭**。
