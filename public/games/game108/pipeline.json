@@ -20,28 +20,33 @@
     },
     "S3": {
       "by": "owner",
-      "note": "owner 2026-08-07 口头签（session 代录·同 S1/S2 口径）：横版对局屏真浏览器目击——挂载起得来、真按钮点得动、信号打得穿世界（试玩走查 35 条断言全过·含终局重开）。骨架关放行。",
-      "at": "2026-08-08T03:28:02.997Z"
+      "note": "owner 2026-08-08 口头签（session 代录）：v3 节奏 + 设计定稿 v3 1:1 复刻后拉版本真机试玩过，骨架关认可",
+      "at": "2026-08-08T09:00:11.357Z"
+    },
+    "S4": {
+      "by": "owner",
+      "note": "owner 2026-08-08 口头签（session 代录）：真机打完整局，玩法关认可；同轮提出的四条改进（T1 时长/配音节流/开始屏/烟雾与 AI）另行落单，不阻断本签",
+      "at": "2026-08-08T09:00:11.446Z"
     }
   },
   "evidence": {
     "S3": {
       "exit": 0,
-      "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（10 个控件 · 8 个点后 DOM 真的变了 · 零控制台 error）",
-      "at": "2026-08-08T08:45:48.244Z",
-      "gameHash": "df19f841ad1e787e"
+      "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（6 个控件 · 5 个点后 DOM 真的变了 · 零控制台 error）",
+      "at": "2026-08-08T09:06:30.889Z",
+      "gameHash": "cd850fd537759200"
     },
     "S4": {
-      "exit": 0,
-      "summary": "walkthrough 绿（ Test Files  1 passed (1) ·       Tests  41 passed (41)）· 验收剧本 12 场景绿 · ✓ UI 走查过（可驱动率见 public/games/<slug>/probe/S4-uiwalk.json）",
-      "at": "2026-08-08T08:46:12.152Z",
-      "gameHash": "df19f841ad1e787e"
+      "exit": 1,
+      "summary": "✗ 验收剧本 conformance 未过（12 场景）·       当步机读态：{\"res\":{\"round\":2,\"p1.debt\":0,\"p1.smokeTurns\":0,\"p1.smoke\":2,\"hp\":100,\"p1.budget\":0,\"p1.charge.rock\":0,\"p1.charge.paper\":0,\"p1.charge.scissors\":0,\"p2.budget\":0,\"p2.charge.rock\":1,\"p2.charg",
+      "at": "2026-08-08T09:06:33.942Z",
+      "gameHash": "cd850fd537759200"
     },
     "S5": {
       "exit": 0,
       "summary": "AUDIT: PASS · RATCHET: PASS · ⚠ 无标准照基准·未比对（golden-shot bless 建基准）",
-      "at": "2026-08-08T08:46:12.366Z",
-      "gameHash": "df19f841ad1e787e"
+      "at": "2026-08-08T09:06:34.168Z",
+      "gameHash": "cd850fd537759200"
     }
   },
   "history": [
@@ -279,6 +284,52 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-08-08T08:46:12.366Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S3",
+      "at": "2026-08-08T09:00:11.357Z"
+    },
+    {
+      "action": "signoff",
+      "stage": "S4",
+      "at": "2026-08-08T09:00:11.446Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "S2 复查门待补（同已记账口径）；owner 试玩四条改进落地后重刷",
+      "at": "2026-08-08T09:06:03.818Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-08T09:06:30.889Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "S2 复查门待补（同已记账口径）；owner 试玩四条改进落地后重刷",
+      "at": "2026-08-08T09:06:31.028Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 1,
+      "at": "2026-08-08T09:06:33.942Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "S2 复查门待补（同已记账口径）；owner 试玩四条改进落地后重刷",
+      "at": "2026-08-08T09:06:34.083Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-08-08T09:06:34.168Z"
     }
   ],
   "outOfOrder": [
@@ -371,18 +422,33 @@
       "stage": "S5",
       "reason": "S2 复查门待另开 session 补（同已记账口径）；设计定稿 v3 1:1 复刻后重刷三门",
       "at": "2026-08-08T08:46:12.287Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "S2 复查门待补（同已记账口径）；owner 试玩四条改进落地后重刷",
+      "at": "2026-08-08T09:06:03.818Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "S2 复查门待补（同已记账口径）；owner 试玩四条改进落地后重刷",
+      "at": "2026-08-08T09:06:31.028Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "S2 复查门待补（同已记账口径）；owner 试玩四条改进落地后重刷",
+      "at": "2026-08-08T09:06:34.083Z"
     }
   ],
   "selfCheck": {
     "S4": {
-      "at": "2026-08-08T08:46:12.152Z",
+      "at": "2026-08-08T09:06:33.942Z",
       "shots": 7,
-      "gameHash": "df19f841ad1e787e"
+      "gameHash": "cd850fd537759200"
     },
     "S5": {
-      "at": "2026-08-08T08:46:12.366Z",
+      "at": "2026-08-08T09:06:34.168Z",
       "shots": 7,
-      "gameHash": "df19f841ad1e787e"
+      "gameHash": "cd850fd537759200"
     }
   }
 }

@@ -83,6 +83,67 @@
      2026-08-08 已按该写法接线完成（game108 罚血真扣血·验收剧本 12/12 绿）。全文查 git 历史与
      `docs/design/game108/requests.md` 的回驳单。**教训：开单编号前扫全套 docs/design/<game>/*.md，不只扫 requests。** -->
 
+### REQ-UIFX-2D 表现件补齐：**UI 层粒子对位 3D** + **液面件** · [2026-08-08] · owner 令（game108 设计定稿 v3 带出） → **指派：PUI**（`src/ui/**` 是 PUI 域） · status: **open** · 优先级: P1 · 类型: UI 基座扩件（render-only）
+
+**起因**：Claude Design 给 game108 的 v3 定稿里有两样表现，**闭集里现在做不了**。
+owner 2026-08-08 判词：「这是个偏美术的东西…粒子拖尾以前我们在 3D 里面实现过，所以应该是能做的…
+**我也不希望你用它的这个每一帧换新皮的锁死的方法**。」——即：**不许游戏层每帧生成新贴图绕过去**，
+该由渲染器承担的动画就交给渲染器，游戏只给静态数据。
+
+#### ① 先查（实查·留原文）
+
+| 查了什么 | 结论 | 出处 |
+|---|---|---|
+| UI 闭集 `Particles` | **只有 4 个预设 kind**（confetti/coins/stars/sparkle）+ `count` + `loop` + `follow:'cursor'`。**没有颜色、没有方向/目标、没有尺寸、没有拖尾** | `src/ui/components/types.ts:377-386` |
+| 同件的自述 | 「UI 层发射器（**世界层对等件=Vfx3D**）」 | 同上 :375 |
+| 世界层 `Vfx3D` | **已经是 Niagara-lite 闭集发射器**：`rate/lifetime/shape(point\|cone\|sphere)/coneAngle/speed/gravity/drag/attractor/size/sizeCurve/color/colorGradient/blend` | `protocol/components/render.ts:494-521` |
+| 3D 拖尾 | **已有 `Trail3D`**：`segments/width/color/minDist/fade/blend` | 同上 :526-534 |
+| UI 闭集里有没有液面/波纹/按父圆角裁剪 | **一个都没有**（`liquid`/`wave`/`clipChildren`/`overflow` 全库零命中） | `types.ts` 全文 grep |
+| `ProgressBar` | 已有 `value/max/tone/shape('bar'\|'ring')/size/bind` —— **形态轴已经开着**，加一档是同族扩写不是新件 | `types.ts:362-372` |
+
+**⇒ 不是「能不能」的问题，是「3D 有、UI 层没有」。** owner 说的「3D 里实现过」经查属实，
+UI 层那个同名件只是个四预设的门面。
+
+#### ② 要补的两件（都是 render-only·不进 sim/hash）
+
+**A · `Particles` 扩写到与 `Vfx3D` 对位**（**主项**）
+定稿要的原文：「14 颗射出，直径 12–30 六档，芯白 → 牌色 → 牌色 75% 径向渐变，外挂 26px 同色光晕 + 5px 白描边；
+先向上窜 90px 再俯冲，飞行 600ms、每颗错开 36ms；落点一记 200×130 的同色落地光晕」+「**加拖尾**」。
+缺的轴（照 `Vfx3D` 的既有命名，别另起一套）：
+- `color` / `colorGradient`（现在粒子色写死在预设里）
+- `size` + 尺寸分档（定稿要六档 12–30）
+- **方向与目标**：`shape:'cone'` + `coneAngle`，以及**飞向某个 LayoutNode**（可复用已有的锚引用
+  `AnchorRef{kind:'node',id}`——`layout.flyTo` 已经在用同一套寻址，别新造第三套）
+- **拖尾**：对位 `Trail3D` 的 `segments/width/fade/blend`
+- `gravity` / `drag`（定稿的「先窜上去再俯冲」= 初速 + 重力，不是手写关键帧）
+
+**B · 液面件 = `ProgressBar` 加 `shape:'liquid'`**（**同族扩写·不新增控件**）
+定稿要的原文：「水面是**两条错频的椭圆脊**叠加：主脊 20px scaleY 1↔.5 且左右荡 ±3%（900ms），
+副脊 16px 白 55% 反向荡（1250ms）——两条不同步才有晃动感，单条只会像呼吸。
+整杯水挂 `rt3-slosh`：以杯底为轴 ±1.6° 摇（1300ms）。另有 **3 颗气泡**（16/11/20px，白 60–75%）
+从底往上窜 210px，周期 1.5/1.8/2.1s 错开发。」
+建议字段（沿用该件既有口径）：`shape:'liquid'` + `radius`（按盒圆角裁）+ `fillColor` + `wave?:boolean` + `bubbles?:number`。
+**游戏只给一个标量 `value`**（水位）——四段过冲的曲线 game108 已经算好了（`POUR_KEYS`），
+不需要引擎管；引擎只管「把这个水位画成会晃的水面 + 气泡」。
+
+#### ③ 为什么不能在游戏层解决（= owner 那句「不许每帧换新皮」的技术面）
+
+现在的注水是把水面**烤进卡皮的 SVG**（闭集控件没有"按父圆角裁剪"，只能这么做）。
+要让水面逐帧形变，就得**每帧生成一张新 data-URI** ⇒ `mountUI` 判定 props 变了 ⇒
+**整屏面板 outerHTML 全量重建 + `<img>` PNG 重新请求**——2026-08-07 实测踩过，
+表现是**网络永远闲不下来、`networkidle` 直接超时**，真渲染探针跑不完。
+所以这不是"偷懒不做"，是那条路本身有害。
+
+#### ④ 边界（复查门核对用）
+
+`src/ui/components/types.ts`（两处 props）+ `server.ts` 的渲染胶水 + 其单测 + game-i 展示台一格。
+**不碰**任何游戏；game108 接上后把 `self-check/S5-design-v3-alignment.md` 的偏差 #1/#2 划掉。
+
+#### ⑤ 同族小项（PUI 一并判·不做也不阻塞）
+
+- `Label.tween` 期间**字号同步缩放**（定稿：伤害跳数时字号 .82 → 1）——现在 tween 只管数值。
+- 一个 **steps 节拍**的 `anim`（定稿：罚血「−1」印章每秒跳一下 `steps(1,end)`）。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。

@@ -83,6 +83,12 @@ export const STRINGS = {
   'penalty.owe': { en: 'OWED', zh: '已欠' },
   'penalty.foot': { en: 'Stops when you strike · not his hit', zh: '出手即停 · 这不是他打的' },
 
+  // ── 开始屏（owner 2026-08-08 要）──────────────────────────────────────
+  'start.title': { en: 'RULE OF THREE', zh: '拳律' },
+  'start.sub': { en: 'Charge in the open. Then lie about it.', zh: '当着他的面存力 · 然后出别的' },
+  'start.go': { en: 'START', zh: '开始' },
+  'start.tip': { en: 'Both slots are public — read where his power goes', zh: '六条槽全公开 · 读他的力往哪只手去' },
+
   // ── T1 放大选牌（设计定稿）────────────────────────────────────────────
   't1.pick': { en: 'Pick one hand · +1 layer per round', zh: '选一手蓄力 · 每回合只能加一层' },
   'card.badgeRisen': { en: 'RAISED', zh: '已升起' },

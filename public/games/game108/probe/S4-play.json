@@ -2,6 +2,16 @@
   "ok": true,
   "checks": [
     {
+      "name": "首屏是开始屏，且开始键带 action",
+      "pass": true,
+      "detail": "data-action=ui.start"
+    },
+    {
+      "name": "点了开始才开局（开始屏消失）",
+      "pass": true,
+      "detail": "开始屏还在"
+    },
+    {
       "name": "开局双方满血【R-108-15】",
       "pass": true,
       "detail": "100/100"

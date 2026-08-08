@@ -27,8 +27,11 @@ describe('game108 · 数值钉死（GDD §5）', () => {
     expect(TIE_SELF_DAMAGE).toBe(0);
   });
 
-  it('【R-108-01】v3 四拍：T1 硬 2.5 秒 · T2 免费 5 秒 · T3 演出 1.5 秒 · T4 无时长（玩家闸门）', () => {
-    expect(PHASE_TICKS.charge).toBe(2.5 * TPS);
+  it('【R-108-01】v3 四拍：T1 硬 4.5 秒 · T2 免费 5 秒 · T3 演出 1.5 秒 · T4 无时长（玩家闸门）', () => {
+    // T1 由 2.5 → 4.5 秒（owner 2026-08-08 试玩改判：「浮上来以后给我大概 3~4 秒」）。
+    // **这条要连着下面那条一起看**：真正能挑手的窗口 = 总时长 − 升起 − 收场，
+    // 只钉总时长会让"演出再长一点"把可操作窗口悄悄吃光而测试照绿。
+    expect(PHASE_TICKS.charge).toBe(4.5 * TPS);
     expect(PHASE_TICKS.throw).toBe(5 * TPS);
     expect(PHASE_TICKS.clash).toBe(1.5 * TPS);
     // 【R-108-05】T4 **不是"零秒"，是没有时长**：由玩家点「下一轮」收尾，不设自动兜底。
@@ -36,6 +39,15 @@ describe('game108 · 数值钉死（GDD §5）', () => {
     expect(PHASE_TICKS.settle).toBe(0);
     // ⚠ v2 那条「一回合 9 秒 → 一场 60-90 秒」的断言随 v3 作废（gdd §5 已划掉）——
     // T2 软超时 + T4 玩家闸门之后单局时长由玩家掌握，钉它等于钉一个不存在的承诺。
+  });
+
+  it('【R-108-08】T1 里**真正能挑手的窗口** ≥ 3 秒（owner 2026-08-08：「浮上来以后给我大概 3~4 秒」）', () => {
+    // 升起 380ms + 三张错开 110ms；收场 = 粒子 600ms + 回落 380ms（都照设计定稿）。
+    const RISE = 380 + 2 * 55, OUTRO = 600 + 380;
+    const pickMs = (PHASE_TICKS.charge / TPS) * 1000 - RISE - OUTRO;
+    expect(pickMs).toBeGreaterThanOrEqual(3000);
+    // 也别长到回到「纯等」（owner 2026-08-07 嫌 5 秒里有 4.7 秒空等，那次判词的教训还在）。
+    expect(pickMs).toBeLessThanOrEqual(4000);
   });
 
   it('【R-108-04】罚血定值：每 1 秒扣 1 点（owner 2026-08-07：「一格血就是 1 点，1 秒钟 1 点」）', () => {
@@ -282,6 +294,17 @@ describe('game108 · 对局屏（LayoutNode 纯数据）', () => {
       ['T4 等玩家点', { ...base, phase: 'settle', phaseLeft: 0, phaseSec: 0, awaitNext: true, outcome: { winner: 'p1', damage: 20 }, shown: { p1: 'paper', p2: 'rock' } }],
     ];
     for (const [name, v] of views) expect([name, validateLayoutNode(buildDuelScreen(v))]).toEqual([name, []]);
+  });
+
+  it('开始屏：没点开始前只有一个出口，且它是 `ui.` 本地动作不是世界动作（owner 2026-08-08）', () => {
+    const v: DuelView = { ...emptyView(), notStarted: true };
+    const acts = screenActions(v);
+    expect(acts).toContain(UI_ACT.start);
+    // 开局是**宿主的局生命周期**，世界不需要知道玩家什么时候准备好 —— 所以它必须是 `ui.` 那一类。
+    expect(UI_ACT.start.startsWith('ui.')).toBe(true);
+    // 还没开局时屏上不该有对局动作（点了也没世界在跑，等于死键）。
+    for (const h of HANDS) expect(acts).not.toContain(ACT.charge(h));
+    expect(validateLayoutNode(buildDuelScreen(v))).toEqual([]);
   });
 
   it('【R-108-05】T4 才画「下一轮」键，且它发的是词表里的 `duel.next`', () => {

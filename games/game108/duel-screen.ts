@@ -76,6 +76,12 @@ export interface DuelView {
   /** 【R-108-05】v3：T4 由玩家点「下一轮」推进——有它才画那枚键（终局屏画的是「再来一局」）。 */
   awaitNext?: boolean;
   /**
+   * **还没开局**（owner 2026-08-08 试玩：「我还没有点开始，它就直接三个牌飞上来了」）。
+   * 为真时整屏盖一张开始屏，且宿主**不启动引擎**——不是"暂停"，是根本还没开始跑，
+   * 所以玩家点开始那一刻看到的是完完整整的第一拍，不是已经播过一半的。
+   */
+  notStarted?: boolean;
+  /**
    * 【R-108-07】T1 注水：本回合蓄的是哪只手 + **蓄下去那一刻在 T1 里的毫秒数**。
    * 注水是"从这一刻起灌 450ms"，屏上只有相位时钟一个钟（表现层也别引入第二个钟），
    * 所以起点必须由宿主在看见槽涨的那一帧记下来传进来。
@@ -832,8 +838,10 @@ function pourLevel(view: DuelView, h: Hand): number {
 
 /** 一张招式卡。同一组键在不同时区含义不同——副标把「这一下打多少」写在键面上。 */
 function moveCard(view: DuelView, h: Hand, idx: number): LayoutNode {
-  const charging = view.phase === 'charge';
-  const throwing = view.phase === 'throw';
+  // 未开局时全体禁用：幕布只是画上去的，探针/键盘照样够得着底下的键——
+  // 「盖住了就等于关了」是 2026-08-07 那个死键教过的错。
+  const charging = view.phase === 'charge' && view.notStarted !== true;
+  const throwing = view.phase === 'throw' && view.notStarted !== true;
   const lv = view.charge.p1[h];
   const full = lv >= CHARGE_CAP;
   const disabled = charging ? full : !throwing;
@@ -976,7 +984,7 @@ function mySlot(view: DuelView, h: Hand, idx: number): LayoutNode {
 }
 
 function smokeKey(view: DuelView): LayoutNode {
-  const off = view.phase === 'clash' || view.phase === 'settle';
+  const off = view.phase === 'clash' || view.phase === 'settle' || view.notStarted === true;
   const usable = !off && view.smoke.uses > 0 && !view.smoke.hidden;
   const w = L.smoke.w, hgt = BOTTOM_INNER_H;
   return {
@@ -1162,6 +1170,45 @@ function nextKey(view: DuelView): LayoutNode {
   };
 }
 
+/**
+ * 开始屏（owner 2026-08-08 要）。**设计定稿里没有这一屏**——所以照它的终局屏同一套语言拼：
+ * 奶油渐变面 + 墨边 + 硬边投影，主键沿用定稿给「再来一局」的规格（金面·宽 460）。
+ * 已在对账单里记为「稿子没画、我按同族语言拼的」，等设计方正式定稿。
+ */
+function startScreen(view: DuelView): LayoutNode[] {
+  const w = 900, hgt = 520;
+  const x = Math.round((CANVAS.w - w) / 2), y = Math.round((CANVAS.h - hgt) / 2);
+  return [
+    {
+      type: 'Image', id: 'start-veil',
+      props: { src: plate({ w: CANVAS.w, h: CANVAS.h, fill: 'rgba(16,11,8,.72)', radius: 0 }), alt: '', fit: 'fill' },
+      layout: { x: 0, y: 0, width: CANVAS.w, height: CANVAS.h, allowOverlap: true },
+    },
+    {
+      type: 'Panel', id: 'start',
+      props: { skin: plate({ w, h: hgt, fill: [C.cream, '#f4e2c4'], border: B.end, radius: R.end, shadow: SH.end, shadowColor: 'rgba(0,0,0,.35)' }) },
+      layout: {
+        x, y, width: w, height: hgt, direction: 'column', align: 'center', justify: 'center', gap: 16, padding: 44,
+        anim: 'pop', animMs: 320, allowOverlap: true,
+      },
+      children: [
+        { type: 'Label', id: 'start-t', props: { text: t(view.lang, 'start.title'), size: 96, font: F.cjk, color: 'ink' }, layout: { height: 108 } },
+        { type: 'Label', id: 'start-s', props: { text: t(view.lang, 'start.sub'), size: 30, font: F.cjk, color: 'dim' } },
+        {
+          type: 'Panel', id: 'key-start',
+          props: {
+            skin: plate({ w: 460, h: 104, fill: [C.goldFillA, C.goldFillB], border: B.end, radius: R.pill, shadow: SH.cta, shadowColor: C.goldDeep }),
+            action: UI_ACT.start,
+          },
+          layout: { width: 460, height: 104, direction: 'row', align: 'center', justify: 'center', padding: 0 },
+          children: [{ type: 'Label', id: 'key-start-t', props: { text: t(view.lang, 'start.go'), size: 52, font: F.cjk, color: 'ok' } }],
+        },
+        { type: 'Label', id: 'start-tip', props: { text: t(view.lang, 'start.tip'), size: 22, font: F.cjk, color: 'sub' } },
+      ],
+    },
+  ];
+}
+
 function settingsMenu(view: DuelView): LayoutNode[] {
   const a = view.audio ?? { bgm: true, sfx: true, voice: true };
   const w = 620, hgt = 470;
@@ -1334,6 +1381,8 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
       // 红纱压在对局层之上、菜单之下：它是打击感，不该盖住玩家正在操作的设置面板。
       ...(veil ? [veil] : []),
       ...(view.menuOpen ? settingsMenu(view) : []),
+      // 开始屏盖在最上面（含菜单）——还没开局时屏上只该有一个出口。
+      ...(view.notStarted ? startScreen(view) : []),
     ],
   };
 }

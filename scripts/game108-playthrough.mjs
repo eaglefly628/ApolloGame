@@ -84,6 +84,15 @@ async function main() {
     await page.waitForTimeout(700);
 
     say('══ game108 S4 试玩走查（真浏览器·全程只点真按钮）══\n');
+    // owner 2026-08-08：第一次进来必须先有开始键（在那之前引擎根本没跑）。
+    const gate0 = await page.$('#key-start');
+    check('首屏是开始屏，且开始键带 action', !!gate0 && (await gate0.getAttribute('data-action')) === 'ui.start',
+      gate0 ? `data-action=${await gate0.getAttribute('data-action')}` : '找不到开始键');
+    await shot('0-start-screen');
+    // ⚔ 对抗性输入：连点开始——只该开一局（`startGame` 幂等）。
+    await page.evaluate(() => { const el = document.getElementById('key-start'); for (let i = 0; i < 5; i++) el?.click(); });
+    await page.waitForTimeout(400);
+    check('点了开始才开局（开始屏消失）', !(await page.$('#key-start')), '开始屏还在');
     const s0 = await state();
     say(`开局：${s0.phase} · 血 ${s0.hp.p1}/${s0.hp.p2}`);
     check('开局双方满血【R-108-15】', s0.hp.p1 === '100' && s0.hp.p2 === '100', `${s0.hp.p1}/${s0.hp.p2}`);

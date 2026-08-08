@@ -55,15 +55,26 @@ export function mount(container: HTMLElement): () => void {
   let engine = boot();
   let lang: Lang = loadLang();
   let menuOpen = false;
+  // owner 2026-08-08：「我还没有点开始，它就直接三个牌飞上来了」——**第一次进来必须先有开始键**。
+  // 做法是**根本不启动引擎**（不是暂停）：玩家点下去看到的是完完整整的第一拍，
+  // 而不是已经播过一半的 T1。顺带它还是整局第一个真实手势，BGM 从这里起（浏览器自动播放策略）。
+  let started = false;
   // 音频门面（声音=数据·端口在引擎）。无 AudioContext（探针/测试）→ 端口内建静默 no-op。
   const audio = createAudio(loadAudioFlags());
   // 角色配音：TTS 链；发不出声（headless / 没装音色）时 `say` 返回 false → 走字幕兜底。
   const voice = createVoice(card.id, card.mood, lang);
   let subtitle = '';
   let subtitleUntil = 0;          // 用**回合数**计时，不用墙钟——同一条纪律：表现层也别引入第二个时钟
-  /** 角色说一句：能出声就出声，出不了声就把台词打成字幕（手册的兜底③）。 */
+  /**
+   * 角色说一句 —— **带冷却**（owner 2026-08-08 试玩：「有点太聒噪了，少说点话」）。
+   * 冷却用宿主自己的帧计数（`frames`·每次 redraw +1 = 每 tick 一次），**不用墙钟**——
+   * 表现层也不许引入第二个时钟（同字幕用回合数计时那条纪律）。
+   */
+  const SAY_COOLDOWN = 8 * TPS;   // 同一张嘴至少隔 8 秒再开口
   const say = (ev: VoiceEvent): void => {
     if (!audio.flags.voice) return;
+    if (frames - lastSayAt < SAY_COOLDOWN) return;
+    lastSayAt = frames;
     voice.say(ev, lang);          // 返回 false 也照打字幕：听得见的人两样都有，听不见的至少看得见
     subtitle = voiceLine(ev, lang);
     subtitleUntil = shownRound + 1;
@@ -74,6 +85,7 @@ export function mount(container: HTMLElement): () => void {
 
   /** world → 视图（**纯读**·outcome-first；不在这里做任何规则计算）。 */
   function readView(): DuelView {
+    frames++;
     const flow = engine.world.getComponent<GameFlow>('flow', 'GameFlow');
     const raw = flow?.current ?? 'charge';
     // 【R-108-04】v3：世界里的 `throwPenalty` / `throwPenaltyHit` 是 T2 的读秒尾巴，**不是第五拍**——
@@ -96,8 +108,11 @@ export function mount(container: HTMLElement): () => void {
     // ② 上一次结算「谁赢了、打了多少」：**比对上一帧的血量**。为什么这么做——
     //    `DuelOutcome` 在 Commit 被 announce 消费掉、跨不到宿主；而"谁掉了多少血"本身就是
     //    玩家看得见的事实，用它反推展示是**投影不是判定**（规则仍只在引擎里）。
-    for (const s of SIDES) {
-      if (prevHp[s] > hp[s]) lastOutcome = { winner: s === 'p1' ? 'p2' : 'p1', damage: prevHp[s] - hp[s] };
+    // 同理：罚血掉的血**不算战果**，不许写进 `lastOutcome`——否则结果横幅会把 −1 当成「被打中」。
+    if (!inPenalty) {
+      for (const s of SIDES) {
+        if (prevHp[s] > hp[s]) lastOutcome = { winner: s === 'p1' ? 'p2' : 'p1', damage: prevHp[s] - hp[s] };
+      }
     }
     const round = num('round') || 1;
     // **本回合结算落地了没有**（真渲染目击到的坑）：亮手读的是 `lastThrow`、结果读的是血量差，
@@ -134,8 +149,13 @@ export function mount(container: HTMLElement): () => void {
     prevSubmitted = phase === 'charge' ? '' : sub;
     if (phase === 'clash' && prevPhase !== 'clash') { audio.play('reveal'); say('clash'); }
     if (phase === 'charge' && prevPhase === 'settle') say('roundStart');
-    for (const s of SIDES) {
-      if (prevHp[s] > hp[s]) { audio.play(s === 'p1' ? 'taken' : 'hit'); say(s === 'p1' ? 'foeWin' : 'youWin'); }
+    // **罚血掉的血不是战果**：不出挨打音、不说胜负台词（定稿把这条写死成「不走横幅、不放大字号、
+    // 不震屏、不触发胜负判定」——音这一路是同一条规则的另一半）。
+    // owner 2026-08-08 实测报的正是这个：罚血每扣一秒就重新触发一次「看吧，我说中了」。
+    if (!inPenalty) {
+      for (const s of SIDES) {
+        if (prevHp[s] > hp[s]) { audio.play(s === 'p1' ? 'taken' : 'hit'); say(s === 'p1' ? 'foeWin' : 'youWin'); }
+      }
     }
     if (phase === 'p1win' && prevPhase !== 'p1win') { audio.play('win'); say('gameWin'); }
     if (phase === 'p2win' && prevPhase !== 'p2win') { audio.play('lose'); say('gameLose'); }
@@ -160,6 +180,7 @@ export function mount(container: HTMLElement): () => void {
       hp,
       charge,
       penalty: { active: inPenalty, debt: num('debt:p1') },
+      ...(started ? {} : { notStarted: true }),
       ...(phase === 'settle' ? { awaitNext: true } : {}),
       ...(charged ? { charged } : {}),
       ...(before ? { before } : {}),
@@ -177,6 +198,8 @@ export function mount(container: HTMLElement): () => void {
   let shownRound = 1;
   let prevCharge = 0;             // 我方三槽总层数——涨了就是"又蓄了一层"
   let prevChargeByHand: Record<Hand, number> = { rock: 0, paper: 0, scissors: 0 };  // 逐手上一帧值（认出"涨的是哪只手"）
+  let frames = 0;        // 宿主帧计数（= tick 数·**render-only**）——配音冷却用它，不引入墙钟
+  let lastSayAt = -1e9;  // 上次开口的帧号
   let prevFoeFull = false;        // 对手是否已有满蓄的一手（由无到有 = 一记提醒）
   let prevSubmitted: Hand | '' = '';
 
@@ -187,6 +210,7 @@ export function mount(container: HTMLElement): () => void {
   const resetPresentation = (): void => {
     prevHp = { p1: HP_MAX, p2: HP_MAX };
     prevPhase = 'charge'; tieThisRound = false; roundAtClash = 0; lastOutcome = undefined;
+    frames = 0; lastSayAt = -1e9;
     shownRound = 1; prevCharge = 0; prevChargeByHand = { rock: 0, paper: 0, scissors: 0 }; prevFoeFull = false; prevSubmitted = '';
     subtitle = ''; subtitleUntil = 0;
     charged = undefined; before = undefined;
@@ -239,6 +263,7 @@ export function mount(container: HTMLElement): () => void {
     engine.stop();
     engine = boot();
     resetPresentation();
+    started = true;   // 「再来一局」是玩家明确要打，不必再问一次「开始吗」
     engine.subscribe(redraw);
     engine.start();
     audio.play('ui');
@@ -258,7 +283,16 @@ export function mount(container: HTMLElement): () => void {
     queue.enqueueAction(ACT.next);
     audio.play('ui');
   };
+  /** 开局：起引擎 + 起 BGM（这是整局第一个真实用户手势，浏览器的自动播放门在这儿开）。 */
+  const startGame = (): void => {
+    if (started) return;         // 连点幂等——同「再来一局」那条对抗性输入
+    started = true;
+    audio.start(); audio.play('ui');
+    engine.start();
+    redraw();
+  };
   const ui: MountHandle = mountUI(scene, screen(emptyView()), {
+    [UI_ACT.start]: startGame,
     // 每个本地动作都先「起一次 BGM」：浏览器的自动播放策略要求**真实用户手势之后**才准出声，
     // 而设置菜单这几个键正好都是真手势（`audio.start()` 幂等）。
     [ACT.next]: nextOrRestart,
@@ -275,7 +309,8 @@ export function mount(container: HTMLElement): () => void {
   // ⇒ 点了没反应，而且**不报错**（2026-08-07 点击探针实测抓到，单测与渲染探针都照绿）。
   // 另有固定步长时钟（真实流逝时间 → 整数模拟步），自搓的圈还会让相位时长随帧率漂。
   engine.subscribe(redraw);
-  engine.start();
+  // **不 start()**：等玩家点「开始」（见 startGame）。先画一帧把开始屏摆出来。
+  redraw();
 
   return () => { engine.stop(); audio.stop(); voice.dispose(); ui(); teardown(); };
 }

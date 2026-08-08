@@ -1,100 +1,59 @@
 {
   "slug": "game108",
   "exit": 0,
-  "summary": "✓ 点击打穿（10 个控件 · 8 个点后 DOM 真的变了 · 零控制台 error）",
-  "controls": 10,
-  "changed": 8,
+  "summary": "✓ 点击打穿（6 个控件 · 5 个点后 DOM 真的变了 · 零控制台 error）",
+  "controls": 6,
+  "changed": 5,
   "hits": [
     {
       "id": "key-menu",
+      "changed": false,
+      "changedIds": []
+    },
+    {
+      "id": "key-start",
       "changed": true,
       "changedIds": [
-        "menu-veil",
-        "menu",
-        "menu-t",
-        "menu-div",
-        "menu-bgm",
-        "menu-bgm-l"
+        "phase-sec",
+        "cb-p2-rock-v",
+        "key-rock",
+        "key-rock-nb",
+        "key-rock-ib",
+        "key-rock-i"
       ]
     },
     {
       "id": "key-rock",
-      "changed": false,
-      "changedIds": []
+      "changed": true,
+      "changedIds": [
+        "phase-sec",
+        "cb-p1-rock-d",
+        "cb-p1-rock-v",
+        "key-rock-s"
+      ]
     },
     {
       "id": "key-paper",
-      "changed": false,
-      "changedIds": []
+      "changed": true,
+      "changedIds": [
+        "phase-sec"
+      ]
     },
     {
       "id": "key-scissors",
       "changed": true,
       "changedIds": [
-        "side-p1-hpv",
-        "subtitle",
-        "subtitle-t",
-        "pen-card",
-        "pen-head",
-        "pen-stamp"
+        "phase-sec"
       ]
     },
     {
       "id": "key-smoke",
       "changed": true,
       "changedIds": [
-        "side-p1-hpv",
-        "pen-owe-n",
-        "pen-drip-2"
-      ]
-    },
-    {
-      "id": "key-bgm",
-      "changed": true,
-      "changedIds": [
-        "side-p1-hpv",
-        "pen-owe-n",
-        "key-bgm-t"
-      ]
-    },
-    {
-      "id": "key-sfx",
-      "changed": true,
-      "changedIds": [
-        "key-sfx-t"
-      ]
-    },
-    {
-      "id": "key-voice",
-      "changed": true,
-      "changedIds": [
-        "side-p1-hpv",
-        "pen-owe-n",
-        "key-voice-t"
-      ]
-    },
-    {
-      "id": "key-lang",
-      "changed": true,
-      "changedIds": [
-        "side-p1-n",
-        "side-p1-nt",
-        "side-p1-art",
-        "side-p1-hpv",
-        "round-b",
-        "phase-secu"
-      ]
-    },
-    {
-      "id": "key-menu-close",
-      "changed": true,
-      "changedIds": [
-        "menu-veil",
-        "menu",
-        "menu-t",
-        "menu-div",
-        "menu-bgm",
-        "menu-bgm-l"
+        "phase-sec",
+        "cb-p2-rock-v",
+        "key-smoke-n",
+        "key-smoke-s"
       ]
     }
   ],
