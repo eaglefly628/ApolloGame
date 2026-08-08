@@ -243,3 +243,67 @@ describe('self-rule · REQ-F-036 完整战斗图同场不抛（残环二刷）',
     expect(R(w, 'hero').current).toBe(3); // 门关同帧停手
   });
 });
+
+// ── 回驳证明测试（主程 2026-08-07·game108【R-108-04】罚血「欠债 → 真扣血」）────────────
+// 提需方举证：「全局条件成立时扣**指定一侧**的 hp，现有能力表达不了——能读全局的写不到指定侧，
+// 能写指定侧的读不到全局」。**实查证伪**：`SelfRule` 两头都有——`whenGlobal` 按全局 id 求值
+// （REQ-F-035「实体自治但受全局相位约束」），`do` 施于**自身**（一实体一组件 ⇒ 打到的就是该侧那份 hp）。
+// 故此需求 **wontfix·不开引擎单**，本组用例就是等价数据写法的可执行证明。
+describe('self-rule · 全局条件 → 只扣指定一侧（罚血形态·回驳证明）', () => {
+  /** 两侧各一份 hp；欠债计数住独立实体（一实体一组件），id 全局唯一。 */
+  const arena = (p1Debt: number): World => {
+    const w = mk();
+    for (const p of ['p1', 'p2']) { w.createEntity(p); w.addComponent(p, res('hp', 100) as never); }
+    w.createEntity('debt:p1');
+    w.addComponent('debt:p1', res('p1.debt', p1Debt) as never);
+    return w;
+  };
+
+  it('whenGlobal 读全局欠债 + do 施于自身 → p1 掉血、p2 纹丝不动', () => {
+    const w = arena(3);
+    w.addComponent('p1', {
+      type: 'SelfRule',
+      whenGlobal: { kind: 'resource', id: 'p1.debt', cmp: 'gte', value: 1 }, // 全局 id 路由
+      when: { kind: 'resource', id: 'hp', cmp: 'gt', value: 0 },             // 自身：还活着才罚
+      do: [{ kind: 'modify-resource', value: -5 }],                          // 施于自身 = 该侧的 hp
+    } as unknown as SelfRule);
+    w.tick();
+    expect(R(w, 'p1').current).toBe(95);
+    expect(R(w, 'p2').current).toBe(100); // 关键：另一侧不受影响（举证说做不到的正是这一条）
+  });
+
+  it('欠债清零 → 罚血自动停（whenGlobal 转假，整条跳过）', () => {
+    const w = arena(0);
+    w.addComponent('p1', {
+      type: 'SelfRule',
+      whenGlobal: { kind: 'resource', id: 'p1.debt', cmp: 'gte', value: 1 },
+      when: { kind: 'resource', id: 'hp', cmp: 'gt', value: 0 },
+      do: [{ kind: 'modify-resource', value: -5 }],
+    } as unknown as SelfRule);
+    w.tick(); w.tick();
+    expect(R(w, 'p1').current).toBe(100);
+  });
+
+  // ⚠ 写数据的人必须知道的一条：`once` 的 armed 复位**只看 `when`（自身），不看 `whenGlobal`**
+  // ——实现里 whenGlobal 为假是 `continue` 整条跳过，注释明写「armed 不动：once 规则跨相位保持待发」。
+  // ⇒ **周期节拍要放 `when` 里**（读自身那份 Flag），放 whenGlobal 里只会罚第一次就再也不复位。
+  it('周期性：节拍旗放 `when`（自身）+ once → 每个上升沿罚一次，不是每拍刷血', () => {
+    const w = arena(3);
+    w.addComponent('p1', flag('p1.penalty.tick', false) as never); // 节拍旗挂**自己身上**（id 全局唯一 → Effect 仍可按 id 置位）
+    w.addComponent('p1', {
+      type: 'SelfRule',
+      whenGlobal: { kind: 'resource', id: 'p1.debt', cmp: 'gte', value: 1 }, // 全局门只管「该不该罚」
+      when: { kind: 'flag', id: 'p1.penalty.tick', equals: true },           // 周期在自身侧 → armed 才复位得了
+      do: [{ kind: 'modify-resource', value: -5 }],
+      once: true,
+    } as unknown as SelfRule);
+    w.tick(); w.tick();
+    expect(R(w, 'p1').current).toBe(100);   // 旗没抬 → 一点没罚
+    F(w, 'p1').active = true; w.tick(); w.tick(); w.tick();
+    expect(R(w, 'p1').current).toBe(95);    // 抬起来只罚 1 次（不是 3 次）
+    F(w, 'p1').active = false; w.tick();
+    F(w, 'p1').active = true;  w.tick();
+    expect(R(w, 'p1').current).toBe(90);    // 回落复位 → 下一个上升沿再罚 1 次
+    expect(R(w, 'p2').current).toBe(100);   // 全程另一侧不受影响
+  });
+});
