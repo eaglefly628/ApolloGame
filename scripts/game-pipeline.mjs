@@ -85,8 +85,9 @@ export function gameHash(root, slug) {
     for (const name of readdirSync(d).sort()) {
       const p = join(d, name);
       const st = statSync(p);
-      // gen/mock/ 预览物、probe/ 门禁自产证据 —— 都不入指纹（后者见函数头注的实测复现）。
-      if (st.isDirectory()) { if (name !== 'mock' && name !== 'probe') walk(p); continue; }
+      // gen/mock/ 预览物、probe/ 门禁自产证据、golden/ 标准照基准 —— 都不入指纹
+      // （probe 见函数头注的实测复现；golden 同形：bless 转正基准若入指纹会把 S3/S4 判过期·Lead 2026-08-08 并集）。
+      if (st.isDirectory()) { if (name !== 'mock' && name !== 'probe' && name !== 'golden') walk(p); continue; }
       if (name === 'pipeline.json') continue;
       if (name === 'requests.md') continue; // 工单池台账不入指纹（高频回执≠内容变更）
       files.push(p);

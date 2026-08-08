@@ -42,6 +42,12 @@ describe('游戏内容指纹（证据过期的机器判据）', () => {
     expect(gameHash(root, 'g')).toBe(h0); // 记账不自我过期
     put(root, 'public/games/g/art/gen/mock/art-01.png', 'noise');
     expect(gameHash(root, 'g')).toBe(h0); // mock 预览物不入指纹
+    put(root, 'public/games/g/probe/S3-render.png', 'shot');
+    put(root, 'public/games/g/probe/S4-uiwalk.json', { ok: true });
+    expect(gameHash(root, 'g')).toBe(h0); // 探针门证不入指纹（否则跑门→指纹变→板自我过期·2026-08-08 game108 实测）
+    put(root, 'public/games/g/golden/boot.png', 'baseline');
+    put(root, 'public/games/g/golden/golden-ledger.json', { states: [] });
+    expect(gameHash(root, 'g')).toBe(h0); // 标准照基准同理不入指纹
     put(root, 'public/games/g/art/gen/art-01.png', 'real');
     const h1 = gameHash(root, 'g');
     expect(h1).not.toBe(h0); // 真图入指纹
