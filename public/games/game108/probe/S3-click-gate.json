@@ -12,9 +12,9 @@
         "menu-veil",
         "menu",
         "menu-t",
+        "menu-div",
         "menu-bgm",
-        "menu-bgm-l",
-        "key-bgm"
+        "menu-bgm-l"
       ]
     },
     {
@@ -32,17 +32,20 @@
       "changed": true,
       "changedIds": [
         "side-p1-hpv",
-        "phase-secu",
-        "phase-chip",
         "subtitle",
-        "subtitle-t"
+        "subtitle-t",
+        "pen-card",
+        "pen-head",
+        "pen-stamp"
       ]
     },
     {
       "id": "key-smoke",
       "changed": true,
       "changedIds": [
-        "side-p1-hpv"
+        "side-p1-hpv",
+        "pen-owe-n",
+        "pen-drip-2"
       ]
     },
     {
@@ -50,15 +53,14 @@
       "changed": true,
       "changedIds": [
         "side-p1-hpv",
-        "key-bgm-t",
-        "pen-veil"
+        "pen-owe-n",
+        "key-bgm-t"
       ]
     },
     {
       "id": "key-sfx",
       "changed": true,
       "changedIds": [
-        "pen-veil",
         "key-sfx-t"
       ]
     },
@@ -66,6 +68,8 @@
       "id": "key-voice",
       "changed": true,
       "changedIds": [
+        "side-p1-hpv",
+        "pen-owe-n",
         "key-voice-t"
       ]
     },
@@ -78,7 +82,7 @@
         "side-p1-art",
         "side-p1-hpv",
         "round-b",
-        "phase-chip"
+        "phase-secu"
       ]
     },
     {
@@ -88,9 +92,9 @@
         "menu-veil",
         "menu",
         "menu-t",
+        "menu-div",
         "menu-bgm",
-        "menu-bgm-l",
-        "key-bgm"
+        "menu-bgm-l"
       ]
     }
   ],

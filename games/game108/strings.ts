@@ -47,9 +47,9 @@ export const STRINGS = {
   'slots.threat': { en: 'Full charge on {hand} · a hit costs 40% HP', zh: '他攒满了一手{hand} · 被打中要掉四成血' },
 
   // ── 招式卡 ──────────────────────────────────────────────────────────
-  'card.charge': { en: 'Charge → {n}', zh: '蓄力 → {n}' },
-  'card.full': { en: 'Full · locked', zh: '已满 · 点不动' },
-  'card.throwFor': { en: 'Hits {n}', zh: '打 {n}' },
+  'card.charge': { en: 'CHARGE → {n}', zh: '蓄力 → {n}' },
+  'card.full': { en: 'FULL · locked', zh: '已满 · 点不动' },
+  'card.throwFor': { en: 'HIT {n}', zh: '打 {n}' },
   'card.locked': { en: 'Locked', zh: '本回合不可点' },
   'card.badgeFull': { en: 'FULL', zh: '满' },
   'card.badgeSent': { en: 'SENT', zh: '已提交' },
@@ -73,13 +73,19 @@ export const STRINGS = {
   'end.again': { en: 'Play again', zh: '再来一局' },
   // 【R-108-05】v3 T4 玩家闸门。**与「再来一局」文案必须分得开**——
   // 一个是进下一回合、一个是重开整局，混了玩家会以为结算屏那一点就把这局作废了。
-  'end.nextRound': { en: 'Next round', zh: '下一轮' },
+  'end.nextRound': { en: 'NEXT ROUND', zh: '下一轮' },
 
-  // ── 罚血读秒（【R-108-04】v3）──────────────────────────────────────────
-  // 口径：说「你在拖」不说「你被打」——罚血不是战果，屏上必须与挨打区分得开（owner 明确）。
-  'penalty.title': { en: 'STALLING', zh: '拖延中' },
-  'penalty.debt': { en: '-{n} HP', zh: '已扣 {n} 点' },
-  'penalty.hint': { en: 'Throw to stop the bleed', zh: '出手即停' },
+  // ── 罚血读秒（【R-108-04】v3·**文案逐字照设计定稿**）─────────────────────
+  // 设计方钉死的口径：写「超时罚血」，**不写「受伤」**——罚血不是战果。
+  // 「这不是他打的」那句是稿子里专门用来把罚血与挨打分开的，不许改写。
+  'penalty.title': { en: 'OVERTIME', zh: '超时' },
+  'penalty.text': { en: 'OVERTIME · −1 HP per second', zh: '超时了 · 每思考 1 秒罚 1 滴血' },
+  'penalty.owe': { en: 'OWED', zh: '已欠' },
+  'penalty.foot': { en: 'Stops when you strike · not his hit', zh: '出手即停 · 这不是他打的' },
+
+  // ── T1 放大选牌（设计定稿）────────────────────────────────────────────
+  't1.pick': { en: 'Pick one hand · +1 layer per round', zh: '选一手蓄力 · 每回合只能加一层' },
+  'card.badgeRisen': { en: 'RAISED', zh: '已升起' },
 
   // ── 设置菜单（owner 2026-08-07：右上角一个菜单键·里面放音乐和语言）──────
   'menu.title': { en: 'SETTINGS', zh: '设置' },
@@ -110,6 +116,14 @@ export type StringKey = keyof typeof STRINGS;
  * （实测溢出：「MY CHARGE」把 56px 的标签列顶到 90px）。
  */
 export const CHAR_W: Record<Lang, number> = { zh: 1, en: 0.55 };
+
+/**
+ * 英文字号阶梯 —— **设计定稿 v3 §⑦ 的正式解**（此前那套按字宽系数临调是"止血不是设计"，作废）：
+ * 「英文一律 Fredoka，中文 ZCOOL KuaiLe，两套字号阶梯：**英文取中文的 0.72×，下限 15px**。」
+ * 定宽盒里仍要用 `CHAR_W` 估宽（那管的是"一个字占多宽"），这条管的是"字打多大"，两者各管一半。
+ */
+export const enSize = (lang: Lang, zhSize: number): number =>
+  lang === 'en' ? Math.max(15, Math.round(zhSize * 0.72)) : zhSize;
 
 /** 查表 + `{name}` 占位替换。缺 key 直接返回 key（**不静默变空串**，好在屏上一眼看见漏了哪条）。 */
 export function t(lang: Lang, key: StringKey, vars?: Record<string, string | number>): string {

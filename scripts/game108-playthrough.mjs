@@ -39,6 +39,9 @@ const READ = `(() => {
     hp: { p1: txt('side-p1-hpv'), p2: txt('side-p2-hpv') },
     charge: { p1: txt('cb-p1-paper-v'), rock: txt('cb-p1-rock-v'), p2r: txt('cb-p2-rock-v') },
     ring: txt('phase-sec'),
+    // 罚血的欠数按设计定稿 v3 搬到了**画面正中的欠账牌**（132px 大字），不再塞倒计时环。
+    owe: txt('pen-owe-n'),
+    penFoot: txt('pen-foot'),
     round: txt('round-b'),
     // v3：两枚 duel.next 键的落点不同 —— T4 闸门（进下一回合）/ 终局重开（换一个世界）。
     // **分开读**：同一枚读法会让"点了它到底发生什么"这条断言失去分辨力。
@@ -142,16 +145,18 @@ async function main() {
     check('进到出招时区【R-108-01】', String(t2.phase).startsWith('出招') && !t2.timeout, `实读 ${t2.phase}`);
     check('键已切成出招信号【R-108-70】', t2.keys.paper?.action === 'throw.paper', `实读 ${t2.keys.paper?.action}`);
     const hpBeforeStall = Number((await state()).hp.p1);
-    const stalled = await until('拖延中', 9000);           // 免费 5 秒走完自动进这一态
-    check('免费段走完转入罚血读秒【R-108-04】', String(stalled.phase).startsWith('拖延中') && !stalled.timeout, `实读 ${stalled.phase}`);
+    const stalled = await until('超时', 9000);             // 免费 5 秒走完自动进这一态
+    check('免费段走完转入罚血读秒【R-108-04】', String(stalled.phase).startsWith('超时') && !stalled.timeout, `实读 ${stalled.phase}`);
     await page.waitForTimeout(2600);
     const stallRead = await state();
     // 屏上的欠债读数（环心）应该已经记到 2 点以上——**读屏，不读世界**。
-    check('罚血读秒把「已欠多少」写在环心上【R-108-04】',
-      /^-\d+$/.test(String(stallRead.ring)) && Number(String(stallRead.ring).slice(1)) >= 2,
-      `实读 ${stallRead.ring}`);
+    check('罚血把「已欠多少」写在正中的欠账牌上【R-108-04·设计定稿 v3】',
+      /^\d+$/.test(String(stallRead.owe)) && Number(stallRead.owe) >= 2, `实读 ${stallRead.owe}`);
+    // 定稿钉死的那句：把罚血与「被对手打中」区分开。缺了它就等于没做到那条要求。
+    check('欠账牌写着「这不是他打的」【R-108-04·设计定稿 v3】',
+      String(stallRead.penFoot || '').includes('这不是他打的'), `实读 ${stallRead.penFoot}`);
     check('罚血**不**触发胜负横幅（它不是战果）【R-108-04】',
-      String(stallRead.phase).startsWith('拖延中'), `实读 ${stallRead.phase}`);
+      String(stallRead.phase).startsWith('超时'), `实读 ${stallRead.phase}`);
     await shot('2d-penalty');
     await page.click('#key-paper').catch(() => {});          // 出手即停
     await until('对决');
@@ -216,7 +221,7 @@ async function main() {
     say(`  → 重开后：${fresh.phase} · 血 ${fresh.hp.p1}/${fresh.hp.p2}`);
     check('点完真的重开了：双方满血', fresh.hp.p1 === '100' && fresh.hp.p2 === '100', `实读 ${fresh.hp.p1}/${fresh.hp.p2}`);
     check('点完真的重开了：回到对局相位（不再停在终局）',
-      ['蓄力', '出招', '对决', '结算', '拖延中'].some((p) => String(fresh.phase).startsWith(p)), `实读 ${fresh.phase}`);
+      ['蓄力', '出招', '对决', '结算', '超时'].some((p) => String(fresh.phase).startsWith(p)), `实读 ${fresh.phase}`);
     check('点完真的重开了：蓄力槽已清零', fresh.charge.p1 === '0/3', `实读 ${fresh.charge.p1}`);
     // 新局要真的能打——不然"重开"只是把屏刷回去了，世界其实没跟上。
     await until('蓄力');

@@ -1,16 +1,16 @@
 {
   "slug": "game108",
-  "at": "2026-08-08T08:04:11.290Z",
-  "gameHash": "1d11550473ca701e",
+  "at": "2026-08-08T08:46:12.107Z",
+  "gameHash": "df19f841ad1e787e",
   "ok": true,
   "form": "compiled",
-  "uiDrivableRate": 0.3150684931506849,
+  "uiDrivableRate": 0.2876712328767123,
   "totalSummary": {
     "signalSteps": 73,
-    "drivenSteps": 23,
+    "drivenSteps": 21,
     "tickSteps": 136,
     "expectSteps": 61,
-    "uiDrivableRate": 0.3150684931506849
+    "uiDrivableRate": 0.2876712328767123
   },
   "scenarios": [
     {
@@ -40,7 +40,7 @@
           "kind": "signal",
           "signal": "charge.rock",
           "driven": false,
-          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is not sta"
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
         },
         {
           "step": 4,
@@ -317,7 +317,7 @@
           "kind": "signal",
           "signal": "charge.rock",
           "driven": false,
-          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is not sta"
         },
         {
           "step": 13,
@@ -469,7 +469,8 @@
           "step": 0,
           "kind": "signal",
           "signal": "charge.rock",
-          "driven": true
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
         },
         {
           "step": 1,
@@ -532,7 +533,8 @@
           "step": 10,
           "kind": "signal",
           "signal": "charge.rock",
-          "driven": true
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
         },
         {
           "step": 11,
@@ -657,10 +659,10 @@
       "summary": {
         "totalSteps": 30,
         "signalSteps": 11,
-        "drivenSteps": 3,
+        "drivenSteps": 1,
         "tickSteps": 17,
         "expectSteps": 2,
-        "uiDrivableRate": 0.2727272727272727
+        "uiDrivableRate": 0.09090909090909091
       }
     },
     {
@@ -671,7 +673,8 @@
           "step": 0,
           "kind": "signal",
           "signal": "charge.rock",
-          "driven": true
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
         },
         {
           "step": 1,
@@ -683,7 +686,8 @@
           "step": 2,
           "kind": "signal",
           "signal": "charge.rock",
-          "driven": true
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
         },
         {
           "step": 3,
@@ -713,15 +717,13 @@
           "step": 7,
           "kind": "signal",
           "signal": "throw.rock",
-          "driven": false,
-          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+          "driven": true
         },
         {
           "step": 8,
           "kind": "signal",
           "signal": "throw.rock",
-          "driven": false,
-          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+          "driven": true
         },
         {
           "step": 9,
@@ -766,7 +768,7 @@
           "kind": "signal",
           "signal": "charge.rock",
           "driven": false,
-          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
         },
         {
           "step": 1,

@@ -44,6 +44,8 @@ export interface PlateSpec {
    * 而闭集控件没有"按父圆角裁剪"的字段。同 strip/subBar 的处置。
    */
   fillLevel?: { level: number; color: string; lineColor?: string };
+  /** 虚线描边（【R-108-07】T1 底栏「已升起」虚影·设计定稿 v3：5px 虚线 + 半透奶油面）。 */
+  dashed?: boolean;
 }
 
 /**
@@ -92,7 +94,8 @@ export function plate(spec: PlateSpec): string {
     spec.glow ? `<rect x="${half}" y="${half}" width="${w - bw}" height="${faceH - bw}" rx="${r}" fill="none" stroke="${spec.glow}" stroke-width="12" opacity="0.55"/>` : '',
     // ③ 面 + 墨边。
     `<rect x="${half}" y="${half}" width="${w - bw}" height="${faceH - bw}" rx="${r}" fill="${ref}"`
-    + (bw > 0 ? ` stroke="${spec.borderColor ?? '#3f2b1e'}" stroke-width="${bw}"` : '') + '/>',
+    + (bw > 0 ? ` stroke="${spec.borderColor ?? '#3f2b1e'}" stroke-width="${bw}"` : '')
+    + (spec.dashed === true ? ` stroke-dasharray="${bw * 3} ${bw * 2.4}"` : '') + '/>',
     // ④ 顶部色条 / 底部副标条：**烤进这张皮**，不做成子 LayoutNode——
     //    它们要跟着卡的圆角走（子面板是方角，会从圆角里探出来），且随卡整体缩放。
     ...(spec.strip || spec.subBar || spec.fillLevel ? [`<clipPath id="clip${id}"><rect x="${bw}" y="${bw}" width="${w - bw * 2}" height="${faceH - bw * 2}" rx="${Math.max(0, r - bw)}"/></clipPath>`] : []),
@@ -159,7 +162,7 @@ export function ring(size: number, pct: number, accent: string, discColor: strin
  */
 export function hpBar(
   w: number, h: number, pct: number, fill: readonly [string, string], track: string, ink: string,
-  anchor: 'left' | 'right', ghostPct?: number,
+  anchor: 'left' | 'right', ghostPct?: number, ghostColor?: string,
 ): string {
   const bw = 3;
   const r = h / 2;
@@ -170,14 +173,14 @@ export function hpBar(
   // 惨白段 = [pct, ghostPct] 这一截；ghost 未给或没超出当前血量 → 不画（同旧版）。
   const gw = ghostPct !== undefined && ghostPct > pct ? span * clampPct(ghostPct) - innerW : 0;
   const gx = anchor === 'left' ? bw + innerW : w - bw - innerW - gw;
-  const id = hashId(`hp${w}${h}${pct}${gw.toFixed(1)}${fill.join()}${track}${ink}${anchor}`);
+  const id = hashId(`hp${w}${h}${pct}${gw.toFixed(1)}${ghostColor ?? ''}${fill.join()}${track}${ink}${anchor}`);
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`
     + `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">`
     + `<stop offset="0" stop-color="${fill[0]}"/><stop offset="1" stop-color="${fill[1]}"/></linearGradient>`
     + `<clipPath id="c${id}"><rect x="${bw}" y="${bw}" width="${span}" height="${h - bw * 2}" rx="${r}"/></clipPath></defs>`
     + `<rect x="${bw / 2}" y="${bw / 2}" width="${w - bw}" height="${h - bw}" rx="${r}" fill="${track}" stroke="${ink}" stroke-width="${bw}"/>`
-    + (gw > 0 ? `<rect x="${gx}" y="${bw}" width="${gw}" height="${h - bw * 2}" fill="rgba(255,244,232,.82)" clip-path="url(#c${id})"/>` : '')
+    + (gw > 0 ? `<rect x="${gx}" y="${bw}" width="${gw}" height="${h - bw * 2}" fill="${ghostColor ?? 'rgba(255,244,232,.82)'}" clip-path="url(#c${id})"/>` : '')
     + `<rect x="${x}" y="${bw}" width="${innerW}" height="${h - bw * 2}" fill="url(#${id})" clip-path="url(#c${id})"/>`
     + '</svg>';
   return svgUri(svg);

@@ -39,6 +39,8 @@ export const C = {
   cardRock: '#2f7fd0',       // 石卡顶条
   cardPaper: '#31a83f',      // 布卡顶条
   cardScissors: '#c8214f',   // 剪卡顶条
+  /** 满格招式卡的面色（设计定稿 v3：`#d5c8b0` + saturate(.35)，比通用 disabled 更「褪色」而非「变灰」）。 */
+  cardFull: '#d5c8b0',
   disabled: '#cfc3b0',       // 不可点的面
   disabledText: '#9a8873',
   hpTrack: '#2b211a',        // 血槽底

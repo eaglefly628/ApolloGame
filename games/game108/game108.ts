@@ -12,7 +12,7 @@ import { buildDuelScreen, emptyView, type DuelView, type Phase } from './duel-sc
 import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, TPS, type Hand, type Side } from './theme.js';
 import { DEFAULT_CARD, MOOD_AI, type CardCharacter } from './card-character.js';
 import { UI_ACT, ACT } from './theme.js';
-import { loadLang, saveLang, type Lang } from './strings.js';
+import { loadLang, saveLang, t, type Lang } from './strings.js';
 import { createAudio, loadAudioFlags, type Sfx } from './audio.js';
 import { createVoice, voiceLine, type VoiceEvent } from './voice.js';
 
@@ -149,6 +149,8 @@ export function mount(container: HTMLElement): () => void {
       phaseSec: total > 0 ? Math.max(0, (total - elapsed) / TPS) : 0,
       elapsedMs: (elapsed / TPS) * 1000,
       foeName: card.name,
+      // 定稿 §⑥：心情上屏（名字下一枚小签）——它直接解释对手为什么这样打。
+      foeMood: t(lang, `mood.${card.mood}` as const),
       ...(card.portrait ? { portrait: { p2: card.portrait } } : {}),
       lang,
       menuOpen,

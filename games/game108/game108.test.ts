@@ -300,11 +300,13 @@ describe('game108 · 对局屏（LayoutNode 纯数据）', () => {
       for (const c of n.children ?? []) walk(c);
     };
     walk(buildDuelScreen(pen));
-    expect(texts).toContain('-7');                       // 欠了几点，一秒一记
-    // 相位牌 = 「拖延中 · 出手即停」（提示原本塞在环心里，78px 的环装不下·真渲染目击）
-    expect(texts.some((x) => x.includes(t('zh', 'penalty.title')))).toBe(true);
-    expect(texts.some((x) => x.includes(t('zh', 'penalty.hint')))).toBe(true);
-    expect(texts).not.toContain('出招');                  // 这一拍不是普通出招
+    // 设计定稿 v3：欠数进**画面正中的欠账牌**（132px 大字），不塞进 78px 的倒计时环。
+    expect(texts).toContain('7');
+    expect(texts).toContain(t('zh', 'penalty.text'));    // 「超时了 · 每思考 1 秒罚 1 滴血」
+    expect(texts).toContain(t('zh', 'penalty.owe'));     // 「已欠」
+    // 这一句是稿子专门用来把罚血与挨打分开的，缺了就等于没做到那条要求。
+    expect(texts).toContain(t('zh', 'penalty.foot'));    // 「出手即停 · 这不是他打的」
+    expect(texts).not.toContain('出招');                  // 相位牌换成「超时」
   });
 
   it('【R-108-05】T4 不画倒计时环（画一圈停在 0.0 秒 = 骗玩家"时间到了"）', () => {
