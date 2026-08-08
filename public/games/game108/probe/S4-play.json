@@ -147,6 +147,31 @@
       "detail": "实读 0"
     },
     {
+      "name": "终局屏上有「再来一局」且带 action【R-108-70】",
+      "pass": true,
+      "detail": "data-action=duel.next"
+    },
+    {
+      "name": "点完真的重开了：双方满血",
+      "pass": true,
+      "detail": "实读 100/100"
+    },
+    {
+      "name": "点完真的重开了：回到对局相位（不再停在终局）",
+      "pass": true,
+      "detail": "实读 蓄力"
+    },
+    {
+      "name": "点完真的重开了：蓄力槽已清零",
+      "pass": true,
+      "detail": "实读 0/3"
+    },
+    {
+      "name": "新局能接着打（点蓄力真的加层）",
+      "pass": true,
+      "detail": "槽读数 0/3"
+    },
+    {
       "name": "全程控制台零 error / 零未捕获异常",
       "pass": true,
       "detail": "干净"
