@@ -8,7 +8,7 @@
   "game": "game108", "seed": 108,
   "steps": [
     { "expect": [ { "res": "p1.charge.rock", "eq": 0 }, { "res": "p1.budget", "eq": 1 } ] },
-    { "tick": 152 },                        // T1 2.5 秒整段不点
+    { "tick": 275 },                        // T1 整段不点（275 = T1 的 270 拍 + 定手窗 2 拍 + 2 拍余量·下限有点名测试守着）
     { "expect": [
       { "sv": "flow", "eq": "throw" },      // 正常进 T2
       { "res": "p1.charge.rock", "eq": 0 }, // 六条槽一格没涨

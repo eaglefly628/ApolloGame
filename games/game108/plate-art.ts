@@ -187,6 +187,53 @@ export function hpBar(
 }
 
 /**
+ * **加载条**（owner 2026-08-08 给的启动画面稿：金属外框 + 深槽 + 紫色斜纹填充 + 顶部高光）。
+ *
+ * 照稿子的四层结构从外往里画：
+ *   ① 外框 —— 浅灰→深灰的竖向渐变，像一圈金属包边
+ *   ② 深槽 —— 未填满那段的底色
+ *   ③ 填充 —— 紫色渐变 + **45° 亮斜纹**（稿子那条最显眼的特征）
+ *   ④ 高光 —— 填充上沿一道半透白，让它看起来是圆的
+ *
+ * ⚠ `pct` 由调用方**量化**后再传（见 duel-screen 的 `LOAD_STEP`）：这张图是 data-URI，
+ * 每换一个值就是一张新贴图 → 每帧换新皮会让 `mountUI` 每帧重建面板、重新请求 PNG，
+ * `networkidle` 永不落停（本仓已经吃过一次这个亏，注释留在这里当路标）。
+ */
+export function loadBar(w: number, h: number, pct: number): string {
+  const frame = Math.max(3, Math.round(h * 0.16));       // 金属包边厚度
+  const r = h / 2;
+  const innerH = h - frame * 2;
+  const span = w - frame * 2;
+  const fillW = Math.max(0, Math.min(1, pct)) * span;
+  const id = hashId(`load${w}${h}${pct.toFixed(3)}`);
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`
+    + '<defs>'
+    + `<linearGradient id="f${id}" x1="0" y1="0" x2="0" y2="1">`
+    + '<stop offset="0" stop-color="#e9e9ef"/><stop offset="0.45" stop-color="#9a9aa6"/>'
+    + '<stop offset="0.55" stop-color="#6f6f7a"/><stop offset="1" stop-color="#c9c9d2"/></linearGradient>'
+    + `<linearGradient id="p${id}" x1="0" y1="0" x2="0" y2="1">`
+    + '<stop offset="0" stop-color="#d24be0"/><stop offset="0.5" stop-color="#a219c4"/>'
+    + '<stop offset="1" stop-color="#7d0fa4"/></linearGradient>'
+    // 45° 亮斜纹：一个 18px 的图案单元里画一条 9px 的半透白带。
+    + `<pattern id="s${id}" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">`
+    + '<rect width="9" height="18" fill="rgba(255,255,255,.22)"/></pattern>'
+    + `<clipPath id="c${id}"><rect x="${frame}" y="${frame}" width="${span}" height="${innerH}" rx="${innerH / 2}"/></clipPath>`
+    + '</defs>'
+    + `<rect x="0" y="0" width="${w}" height="${h}" rx="${r}" fill="url(#f${id})"/>`
+    + `<rect x="${frame}" y="${frame}" width="${span}" height="${innerH}" rx="${innerH / 2}" fill="#3a3a42"/>`
+    + (fillW > 0
+      ? `<g clip-path="url(#c${id})">`
+        + `<rect x="${frame}" y="${frame}" width="${fillW}" height="${innerH}" fill="url(#p${id})"/>`
+        + `<rect x="${frame}" y="${frame}" width="${fillW}" height="${innerH}" fill="url(#s${id})"/>`
+        + `<rect x="${frame}" y="${frame}" width="${fillW}" height="${Math.round(innerH * 0.34)}" fill="rgba(255,255,255,.22)"/>`
+        + '</g>'
+      : '')
+    + '</svg>';
+  return svgUri(svg);
+}
+
+/**
  * 背景舞台（天空渐变 + 两道山丘 + 斜纹草地 + 云 + 花）。
  * 稿子里这是十来个绝对定位的 div；这里合成**一张整幅背景图**——它是纯装饰、零交互、每帧不变，
  * 拆成十几个 LayoutNode 只是把美术切碎，既不好读也不好换（真画的背景到位时同样只换这一张）。

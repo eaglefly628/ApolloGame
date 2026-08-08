@@ -7,7 +7,7 @@
   "name": "T4 玩家闸门·不点就不走",
   "game": "game108", "seed": 108,
   "steps": [
-    { "tick": 152 },
+    { "tick": 275 },
     { "signal": "throw.rock" }, { "tick": 3 },
     { "tick": 300 }, { "tick": 92 },
     { "expect": [ { "sv": "flow", "eq": "settle" }, { "flag": "duel.next.armed", "eq": false } ] },
@@ -21,7 +21,7 @@
     { "expect": [ { "sv": "flow", "eq": "charge" }, { "flag": "duel.next.armed", "eq": false } ] },
 
     // 闸门旗必须已复位：没复位的话，这一回合的 T4 会被上一次按下的那下直接推过去
-    { "tick": 152 },
+    { "tick": 275 },
     { "signal": "throw.rock" }, { "tick": 3 },
     { "tick": 300 }, { "tick": 92 },
     { "expect": [ { "sv": "flow", "eq": "settle" } ] },

@@ -8,7 +8,7 @@
     { "signal": "charge.rock" }, { "tick": 2 },
     { "signal": "charge.rock", "by": "p2" }, { "tick": 2 },
     { "expect": [ { "res": "p1.charge.rock", "eq": 1 }, { "res": "p2.charge.rock", "eq": 1 } ] },
-    { "tick": 148 },
+    { "tick": 275 },
     { "expect": [ { "sv": "flow", "eq": "throw" } ] },
     { "signal": "throw.rock" }, { "signal": "throw.rock", "by": "p2" }, { "tick": 3 },
     { "tick": 300 }, { "tick": 92 },

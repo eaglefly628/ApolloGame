@@ -158,6 +158,89 @@ export const playerThrewHand = (hand: Hand): string => `p1.threw.${hand}`;
  */
 export const playerCounted = (hand: Hand): string => `p1.counted.${hand}`;
 
+// ── 【R-108-34】大师 v5：心态机 + 蓄力动机（owner 2026-08-08）────────────────
+/**
+ * **大师为什么蓄力**（owner 原话：「你要思考一下这个 AI 它为什么会蓄力？它蓄力也不代表一定要出那个东西」）。
+ *
+ * v4 的大师蓄力毫无动机——照抄自己上一手，纯装饰。v5 把蓄力还原成它在本作里**本来的含义**：
+ * 蓄力 = **一笔公开的投资**。加的是伤害（10→40），付的是情报（对面看得见你押在哪只手上）。
+ * 于是「蓄哪只手」与「出哪只手」变成两个独立决策，中间隔着一枚骰子：
+ *
+ *   · **真蓄**（不诈唬）—— 蓄 X 出 X。押中就是重拳；但对面照着你的槽反制就吃亏。
+ *   · **诈蓄**（诈唬）  —— 蓄 X 出**别的**。伤害只有 10，换的是「对面被你的槽骗走一手」。
+ *
+ * 骰子按**心态**给不同的概率（下表），心态本身是一台**真状态机**（`State` + `set-state`·数据）。
+ * 这样玩家看见「它蓄了石」时，脑子里跑的是一道真正的题：这是重拳还是鱼饵？
+ * ——这正是本作要的那口博弈，只是这次由 AI 也发一次牌。
+ */
+export const MOOD_FSM = 'ai.mood';
+export type Mood = 'probe' | 'press' | 'bluff' | 'finish';
+export const MOODS: readonly Mood[] = ['probe', 'press', 'bluff', 'finish'] as const;
+/**
+ * **读准度**（`p2.read`·0..10·起手 5·**跨局落地**）——「对历史数据的回顾」那一半。
+ * 每回合结算后按胜负 ±1：它赢 = 读对了 +1，它输 = 被读穿了 −1，平局不动。
+ * 这不是难度旋钮，是**它对自己的判断**：读得准就敢押重拳（press），
+ * 被人连着看穿就改打心理战（bluff）。玩家因此能感到「它在适应我」。
+ */
+export const READ_RES = 'p2.read';
+export const READ_MAX = 10;
+export const READ_MID = 5;
+export const READ_LOW = 3;          // ≤ 这个数 = 被读穿了 → 心理战
+export const READ_HIGH = 8;         // ≥ 这个数 = 手感来了 → 施压
+/**
+ * **收割线**：玩家血 ≤ 这个数 → 心态切 `finish`，从不诈唬、必押重拳（它要的是那 40 点）。
+ *
+ * ⚠ 读的是**玩家的**血，不是它自己的——不是设计偏好，是**引擎的寻址事实**：
+ * `ConditionExpr{kind:'resource'}` 是全局 id 路由、无 entity 字段，而两侧 hp 必须同 id
+ * （matrix-duel 按侧 local 寻址）⇒ 全局条件读到的永远是**第一个**挂 hp 的实体 = p1
+ * （这条已由「玩家侧死亡看守 `watch:p1`」的点名测试钉住）。p2 想读自己的血只能靠它那格
+ * `SelfRule`，而那格已经给了死亡判定，**一实体一组件挤不下第二条**。
+ *
+ * 于是换了个**更好读**的触发：不是「它快死了所以孤注」，而是「**你快死了所以它不玩了**」。
+ * 玩家的体验更直接——血一见底，对面立刻停止花招、开始抡重拳。
+ */
+export const FINISH_HP = 30;
+/** 各心态的**诈唬概率 / 沉默概率**（分子，分母 `ODDS_DEN`）。沉默 = 这回合干脆不蓄，什么也不告诉你。 */
+export const ODDS_DEN = 10;
+export const BLUFF_ODDS: Record<Mood, number> = { probe: 3, press: 2, bluff: 7, finish: 0 };
+export const SILENT_ODDS: Record<Mood, number> = { probe: 3, press: 0, bluff: 0, finish: 0 };
+/** 本回合大师的骰子结果与计划（每回合 T1 开场清）。 */
+export const BLUFF_FLAG = 'p2.bluffing';
+export const SILENT_FLAG = 'p2.silent';
+export const MOOD_SET_FLAG = 'p2.moodSet';   // 心态已定（骰子等它，免得拿上回合的心态摇）
+export const DICE_DONE_FLAG = 'p2.diceDone'; // 骰子已摇（蓄力等它，免得在沉默判出来之前就蓄了）
+export const planFlag = (hand: Hand): string => `p2.plan.${hand}`;
+/** 大师对「玩家这一手会出什么」的判读结果（定手窗第一拍算出、第二拍消费）。 */
+export const readFlag = (hand: Hand): string => `p2.read.${hand}`;
+
+/** 跨局落地的玩家画像（宿主存 localStorage·开局灌回世界）。**只存公开可复现的数**。 */
+export interface Memory { hist: Record<Hand, number>; style: number; read: number }
+export const MEMORY_KEY = 'game108.memory.v1';
+
+/**
+ * 读画像（宿主用·同 `loadLang` 口径：读不到就当新玩家）。
+ * **逐字段校验 + 钳位**：localStorage 是玩家能直接改的，一个 NaN 灌进 `Resource.current`
+ * 就是整局条件比较全部为假、AI 一手不出且零报错。宁可当没读到。
+ */
+export const loadMemory = (): Memory | undefined => {
+  try {
+    if (typeof localStorage === 'undefined') return undefined;
+    const raw = localStorage.getItem(MEMORY_KEY);
+    if (!raw) return undefined;
+    const o = JSON.parse(raw) as Partial<Memory>;
+    const n = (v: unknown, lo: number, hi: number): number =>
+      typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : lo;
+    return {
+      hist: Object.fromEntries(HANDS.map((h) => [h, n(o.hist?.[h], 0, 99999)])) as Record<Hand, number>,
+      style: n(o.style, 0, STYLE_MAX),
+      read: n(o.read, 0, READ_MAX),
+    };
+  } catch { return undefined; }
+};
+export const saveMemory = (m: Memory): void => {
+  try { localStorage.setItem(MEMORY_KEY, JSON.stringify(m)); } catch { /* 无 localStorage（探针/SSR）→ 本次会话内仍生效 */ }
+};
+
 // ── UI ────────────────────────────────────────────────────────────────
 /**
  * 对局屏主题 —— **按设计定稿的令牌表改配**（`design-tokens.ts` 是逐字抄稿的那份）。

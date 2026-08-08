@@ -12,7 +12,7 @@
   "game": "game108", "seed": 108,
   "steps": [
     // ── ① 免费段内提交 → 零罚血 ───────────────────────────────────────
-    { "tick": 152 },
+    { "tick": 275 },
     { "expect": [ { "sv": "flow", "eq": "throw" }, { "res": "p1.debt", "eq": 0 } ] },
     { "tick": 180 },                       // 在 T2 第 3 秒出手（免费段是 5 秒）
     { "signal": "throw.paper" }, { "tick": 3 },
@@ -26,7 +26,7 @@
     { "signal": "duel.next" }, { "tick": 3 },
 
     // ── ② 拖过免费段 → 每 1 秒欠 1 点 ─────────────────────────────────
-    { "tick": 152 },
+    { "tick": 275 },
     { "expect": [ { "sv": "flow", "eq": "throw" } ] },
     { "tick": 300 },                       // 免费 5 秒烧完
     { "expect": [ { "sv": "flow", "eq": "throwPenalty" }, { "res": "p1.debt", "eq": 0 } ] },

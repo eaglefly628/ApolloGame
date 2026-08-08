@@ -25,7 +25,7 @@
     ] },
 
     // 走进 T2：AI 出招（玩家仍不点）
-    { "tick": 180 },
+    { "tick": 275 },
     { "expect": [ { "sv": "flow", "eq": "throw" } ] },
     { "tick": 5 },
     { "expect": [

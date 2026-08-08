@@ -11,7 +11,7 @@
       "changedIds": []
     },
     {
-      "id": "key-start",
+      "id": "start",
       "changed": true,
       "changedIds": [
         "phase-sec",

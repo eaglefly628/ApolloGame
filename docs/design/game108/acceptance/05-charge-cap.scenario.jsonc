@@ -10,17 +10,17 @@
     { "signal": "charge.rock" }, { "tick": 2 },
     { "signal": "charge.rock" }, { "tick": 2 },   // 同回合再点 = 加 0【R-108-10】v3
     { "expect": [ { "res": "p1.charge.rock", "eq": 1 } ] },
-    { "tick": 148 },
+    { "tick": 275 },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
     { "tick": 300 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
 
-    { "signal": "charge.rock" }, { "tick": 2 }, { "tick": 150 },
+    { "signal": "charge.rock" }, { "tick": 2 }, { "tick": 275 },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
     { "tick": 300 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
 
     { "signal": "charge.rock" }, { "tick": 2 },
     { "expect": [ { "res": "p1.charge.rock", "eq": 3 } ] },
-    { "tick": 150 },
+    { "tick": 275 },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
     { "tick": 300 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
 

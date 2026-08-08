@@ -7,17 +7,17 @@
   "game": "game108", "seed": 108,
   "steps": [
     // 第 1、2 回合：蓄石但出剪（对手出布 ⇒ 我赢），石攒到 2
-    { "signal": "charge.rock" }, { "tick": 2 }, { "tick": 150 },
+    { "signal": "charge.rock" }, { "tick": 2 }, { "tick": 275 },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
     { "tick": 300 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
-    { "signal": "charge.rock" }, { "tick": 2 }, { "tick": 150 },
+    { "signal": "charge.rock" }, { "tick": 2 }, { "tick": 275 },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
     { "tick": 300 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
 
     // 第 3 回合：石满 3 → 出石，被布克
     { "signal": "charge.rock" }, { "tick": 2 },
     { "expect": [ { "res": "p1.charge.rock", "eq": 3 } ] },
-    { "tick": 150 },
+    { "tick": 275 },
     { "signal": "throw.rock" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
     { "tick": 300 }, { "tick": 92 },
     { "expect": [

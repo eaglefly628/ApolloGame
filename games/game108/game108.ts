@@ -8,8 +8,9 @@ import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { QueuedInputSource } from '@zerocraft/engine/net/index.js';
 import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint } from './blueprint.js';
-import { buildDuelScreen, emptyView, type DuelView, type Phase } from './duel-screen.js';
+import { buildDuelScreen, emptyView, loadPct, type DuelView, type Phase } from './duel-screen.js';
 import { DUEL_THEME, VIEW_W, VIEW_H, HANDS, SIDES, HP_MAX, HP_RES, chargeEntity, lastThrowVar, PHASE_TICKS, TPS, type Hand, type Side } from './theme.js';
+import { READ_MID, loadMemory, saveMemory, type Memory } from './theme.js';
 import { DEFAULT_CARD, MOOD_AI, type CardCharacter } from './card-character.js';
 import { UI_ACT, ACT } from './theme.js';
 import { loadLang, saveLang, t, type Lang } from './strings.js';
@@ -49,7 +50,10 @@ export function mount(container: HTMLElement): () => void {
    */
   const boot = (): Engine => {
     const e = new Engine({ input: queue });
-    e.load(buildBlueprint(MOOD_AI[card.mood]));
+    // 【R-108-34】跨局画像灌回世界（owner 2026-08-08：「本地可以把玩家的数据落地」）。
+    // **每局重灌一次**：局与局之间世界是新的，不灌就等于每局都是新玩家、
+    // 「它有更长的记忆所以更强」当场变成空话。
+    e.load(buildBlueprint(MOOD_AI[card.mood], loadMemory()));
     return e;
   };
   let engine = boot();
@@ -83,6 +87,25 @@ export function mount(container: HTMLElement): () => void {
 
   const num = (eid: string): number => engine.world.getComponent<Resource>(eid, 'Resource')?.current ?? 0;
   const str = (eid: string): string => engine.world.getComponent<StringVar>(eid, 'StringVar')?.value ?? '';
+
+  /**
+   * 把这一局积累的玩家画像写回 localStorage（【R-108-34】维度一的落地端）。
+   * **从世界读、不在宿主另记一份**——宿主记一份就有了第二个真相，两边一漂移
+   * 就是"AI 表现和存档对不上"这类查不出来的 bug。
+   */
+  const persist = (): void => {
+    const m: Memory = {
+      hist: Object.fromEntries(HANDS.map((h) => [h, num(`hist:${h}`)])) as Record<Hand, number>,
+      style: num('style:p1'),
+      read: num('read:p2'),
+    };
+    // 读准度**只有大师那一档存在**（前四档没有 `read:p2` 实体 → `num` 返回 0）。
+    // 拿这个 0 覆盖上次存的真值 = 打一局复读机就把喂给大师的记忆抹平了。
+    // ⚠ 兜底**不能写成 `?? m.read`**——那正是 0 本身，等于没兜（真浏览器旅程当场逮到：
+    // 打完五回合复读机，存下来的是 `read: 0`）。没有旧值就回到中位，别回到 0。
+    if (!engine.world.hasComponent('read:p2', 'Resource')) m.read = loadMemory()?.read ?? READ_MID;
+    saveMemory(m);
+  };
 
   /** world → 视图（**纯读**·outcome-first；不在这里做任何规则计算）。 */
   function readView(): DuelView {
@@ -159,6 +182,10 @@ export function mount(container: HTMLElement): () => void {
         if (prevHp[s] > hp[s]) { audio.play(s === 'p1' ? 'taken' : 'hit'); say(s === 'p1' ? 'foeWin' : 'youWin'); }
       }
     }
+    // 【R-108-34】画像落地：**每回合结算时**存一次，不等终局。
+    // 等终局的话玩家中途关页面（本作最常见的退出方式）这一局就白打了，
+    // 而"它记得你"正是第五档唯一的强项。存的是三样公开数，不含任何隐私。
+    if (phase === 'settle' && prevPhase !== 'settle') persist();
     if (phase === 'p1win' && prevPhase !== 'p1win') { audio.play('win'); say('gameWin'); }
     if (phase === 'p2win' && prevPhase !== 'p2win') { audio.play('lose'); say('gameLose'); }
 
@@ -182,7 +209,7 @@ export function mount(container: HTMLElement): () => void {
       hp,
       charge,
       penalty: { active: inPenalty, debt: num('debt:p1') },
-      ...(started ? {} : { notStarted: true }),
+      ...(started ? {} : { notStarted: true, bootMs }),
       ...(helpOpen ? { helpOpen: true } : {}),
       ...(phase === 'settle' ? { awaitNext: true } : {}),
       ...(charged ? { charged } : {}),
@@ -287,10 +314,38 @@ export function mount(container: HTMLElement): () => void {
     queue.enqueueAction(ACT.next);
     audio.play('ui');
   };
+  /**
+   * 【启动画面】假进度条的帧循环。**只在没开局那一段跑**：引擎还没 start（这是上一轮
+   * owner 要的那道闸门——「我还没有点开始，它就直接三个牌飞上来了」），所以世界不会
+   * 替我们发帧，加载条得自己走。
+   *
+   * 这是宿主里**唯一一处墙钟**，且刻意只服务表现层：世界的一切（含罚血读秒、字幕冷却）
+   * 仍然按 tick 计时——「表现层也别引入第二个时钟」那条纪律管的是**参与规则的计时**，
+   * 而这条进度是假的、开局即弃，进不了世界也进不了 hash。
+   * 走完就**自己停**（不空转 rAF），点下去 `startGame` 再收一次尾。
+   */
+  let bootMs = 0;
+  let bootStart = 0;
+  let bootRaf = 0;
+  const tickBoot = (now: number): void => {
+    if (started) return;
+    if (bootStart === 0) bootStart = now;
+    const was = loadPct(bootMs);
+    bootMs = now - bootStart;
+    const next = loadPct(bootMs);
+    if (next !== was) redraw();                 // 只在**量化后的挡位**变了才重画（见 loadPct 注释）
+    if (next < 1) bootRaf = requestAnimationFrame(tickBoot);
+    else bootRaf = 0;
+  };
+  const stopBoot = (): void => { if (bootRaf !== 0) { cancelAnimationFrame(bootRaf); bootRaf = 0; } };
   /** 开局：起引擎 + 起 BGM（这是整局第一个真实用户手势，浏览器的自动播放门在这儿开）。 */
   const startGame = (): void => {
     if (started) return;         // 连点幂等——同「再来一局」那条对抗性输入
+    // 加载没走完就点不动：整屏那枚键在 `startScreen` 里是**加载完才挂 action** 的，
+    // 这里再挡一道——handler 是公开面（键位/脚本都发得出），别只靠"没画按钮"。
+    if (loadPct(bootMs) < 1) return;
     started = true;
+    stopBoot();
     audio.start(); audio.play('ui');
     engine.start();
     redraw();
@@ -315,10 +370,12 @@ export function mount(container: HTMLElement): () => void {
   // ⇒ 点了没反应，而且**不报错**（2026-08-07 点击探针实测抓到，单测与渲染探针都照绿）。
   // 另有固定步长时钟（真实流逝时间 → 整数模拟步），自搓的圈还会让相位时长随帧率漂。
   engine.subscribe(redraw);
-  // **不 start()**：等玩家点「开始」（见 startGame）。先画一帧把开始屏摆出来。
+  // **不 start()**：等玩家点「开始」（见 startGame）。先画一帧把启动屏摆出来，
+  // 再起那圈只服务加载条的 rAF（走完自停·见 tickBoot）。
   redraw();
+  bootRaf = requestAnimationFrame(tickBoot);
 
-  return () => { engine.stop(); audio.stop(); voice.dispose(); ui(); teardown(); };
+  return () => { stopBoot(); engine.stop(); audio.stop(); voice.dispose(); ui(); teardown(); };
 }
 
 export { lastThrowVar, HP_RES };

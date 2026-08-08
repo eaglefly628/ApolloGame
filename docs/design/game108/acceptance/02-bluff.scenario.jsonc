@@ -11,7 +11,7 @@
     // ── 第 1 回合：蓄石 → 出剪（对手出布 ⇒ 剪克布，我赢）──────────────────
     { "signal": "charge.rock" }, { "tick": 2 },
     { "expect": [ { "res": "p1.charge.rock", "eq": 1 } ] },
-    { "tick": 150 },
+    { "tick": 275 },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
     { "tick": 300 }, { "tick": 92 },
     { "expect": [ { "sv": "flow", "eq": "settle" }, { "res": "p2.hp", "eq": 90 } ] },
@@ -20,7 +20,7 @@
     // ── 第 2 回合：同上，石攒到 2 ─────────────────────────────────────────
     { "signal": "charge.rock" }, { "tick": 2 },
     { "expect": [ { "res": "p1.charge.rock", "eq": 2 } ] },
-    { "tick": 150 },
+    { "tick": 275 },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
     { "tick": 300 }, { "tick": 92 },
     { "signal": "duel.next" }, { "tick": 3 },
@@ -28,7 +28,7 @@
     // ── 第 3 回合：石满 3 —— 摆着吓人，出的却是剪 ─────────────────────────
     { "signal": "charge.rock" }, { "tick": 2 },
     { "expect": [ { "res": "p1.charge.rock", "eq": 3 } ] },
-    { "tick": 150 },
+    { "tick": 275 },
     { "expect": [ { "sv": "flow", "eq": "throw" } ] },
     { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
     { "tick": 300 }, { "tick": 92 },

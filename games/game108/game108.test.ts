@@ -5,7 +5,8 @@ import {
   HANDS, HP_MAX, CHARGE_CAP, DMG_BASE, DMG_STEP, TIE_SELF_DAMAGE,
   PHASE_TICKS, PENALTY_PERIOD, PENALTY_HP, CHARGE_PER_ROUND,
   TPS, ACT, UI_ACT, SIDES, HP_RES, chargeRes, chargeRelName, chargeEntity, chargeBudgetRes, penaltyDebtRes,
-  STYLE_MID, STYLE_MAX,
+  STYLE_MID, STYLE_MAX, MOOD_FSM, READ_RES, READ_MID, READ_LOW, READ_HIGH, FINISH_HP,
+  BLUFF_FLAG, SILENT_FLAG, type Memory,
 } from './theme.js';
 
 describe('game108 · 数值钉死（GDD §5）', () => {
@@ -110,7 +111,11 @@ describe('game108 · 蓄力槽 id 约定（capability-plan §5 实现约定 1）
 });
 
 // ── S3 骨架关：引擎吃得下 + 空跑（机器门）+ 条款走查 ────────────────────────
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Engine } from '@zerocraft/engine/runtime/engine.js';
+
+const ACCEPT_DIR = join(process.cwd(), 'docs/design/game108/acceptance');
 import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
 import { buildBlueprint, throwSignal, aiChargeSignal, deadFlag } from './blueprint.js';
 
@@ -233,7 +238,7 @@ describe('game108 · S3 条款走查（真引擎驱动·用【R-108-70】动作�
 
 // ── S3 对局屏：闭集校验 + 动作词表对账（ui-playbook 黄金流程 step 5）──────────
 import { validateLayoutNode } from '@zerocraft/engine/ui/components/index.js';
-import { buildDuelScreen, emptyView, screenActions, type DuelView } from './duel-screen.js';
+import { buildDuelScreen, emptyView, screenActions, loadPct, type DuelView } from './duel-screen.js';
 import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 import { t } from './strings.js';
 
@@ -297,15 +302,31 @@ describe('game108 · 对局屏（LayoutNode 纯数据）', () => {
     for (const [name, v] of views) expect([name, validateLayoutNode(buildDuelScreen(v))]).toEqual([name, []]);
   });
 
-  it('开始屏：没点开始前只有一个出口，且它是 `ui.` 本地动作不是世界动作（owner 2026-08-08）', () => {
-    const v: DuelView = { ...emptyView(), notStarted: true };
-    const acts = screenActions(v);
+  it('启动屏：加载**没走完就点不动**，走完了才有那唯一一个 `ui.` 出口（owner 2026-08-08）', () => {
+    const loading: DuelView = { ...emptyView(), notStarted: true, bootMs: 0 };
+    const ready: DuelView = { ...emptyView(), notStarted: true, bootMs: 60_000 };
+    // 加载中：整屏没有任何出口。挂了 action 就等于"进度条是装饰、随时能跳过"，那条就白画了。
+    expect(screenActions(loading)).not.toContain(UI_ACT.start);
+    expect(loadPct(0)).toBe(0);
+    expect(loadPct(60_000)).toBe(1);
+    // 走完：PRESS ANY KEY —— 整屏就是那枚键。
+    const acts = screenActions(ready);
     expect(acts).toContain(UI_ACT.start);
     // 开局是**宿主的局生命周期**，世界不需要知道玩家什么时候准备好 —— 所以它必须是 `ui.` 那一类。
     expect(UI_ACT.start.startsWith('ui.')).toBe(true);
     // 还没开局时屏上不该有对局动作（点了也没世界在跑，等于死键）。
     for (const h of HANDS) expect(acts).not.toContain(ACT.charge(h));
-    expect(validateLayoutNode(buildDuelScreen(v))).toEqual([]);
+    for (const v of [loading, ready]) expect(validateLayoutNode(buildDuelScreen(v))).toEqual([]);
+  });
+
+  it('加载进度**量化**（每帧换新贴图会让 mountUI 每帧重建面板、PNG 重请一轮）', () => {
+    // 本仓踩过一次：逐帧生成 data-URI 皮 → `networkidle` 永不落停、探针全线超时。
+    const seen = new Set(Array.from({ length: 400 }, (_, i) => loadPct(i * 5)));
+    expect(seen.size).toBeLessThanOrEqual(21);           // 0.00 … 1.00 共 21 挡
+    expect(loadPct(0)).toBe(0);
+    expect(loadPct(1e9)).toBe(1);                        // 单调封顶，不会溢出成 >1
+    let prev = -1;
+    for (let ms = 0; ms <= 3000; ms += 17) { const p = loadPct(ms); expect(p).toBeGreaterThanOrEqual(prev); prev = p; }
   });
 
   it('玩法说明：菜单里有入口，说明屏闭集合法（owner 2026-08-08）', () => {
@@ -601,42 +622,189 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
     expect(gamble('rock', 'paper')).toBe(STYLE_MID - 1);     // 蓄一手出另一手 = 诈
   });
 
-  it('【R-108-21】烟雾对大师**真生效**：雾中它读不到我的满蓄（这才是烟雾的规则那一半）', () => {
-    /** 打到 T2，返回大师定的那只手。`smoke` 为真时先放烟雾。 */
+  it('【R-108-21】烟雾对大师**真生效**：雾中它只剩长期记忆，读不到我这一回合的槽', () => {
+    /**
+     * 打到定手窗，返回大师定的那只手。`smoke` 为真时先放烟雾。
+     *
+     * ⚠ 这个夹具**必须让两条路给出不同答案**，否则断言是假的：
+     * v4 那版让「满蓄石」与「兜底石」都指向石，两条路都出布 ⇒ 换成 v5 后当场变成
+     * `expect('paper').not.toBe('paper')`。教训（第四次撞同一形状）：**尺子不能照着被测物做**。
+     * 现在的夹具：**这一回合**满蓄剪（雾能遮）、**长期习惯**是石（雾遮不住）——
+     *   无雾 → 读剪 → 出石；有雾 → 只剩记忆 → 读石 → 出布。答案不同，断言才有信息量。
+     */
     const masterPick = (smoke: boolean): string => {
-      const e = new Engine(); e.load(buildBlueprint('master'));
-      // 直接把石槽灌满 = 最响的宣告（决策链第 1 条）。
-      const r = e.world.getComponent<Resource>('slot:p1:rock', 'Resource')!;
-      e.world.addComponent('slot:p1:rock', { ...r, current: CHARGE_CAP });
+      const e = new Engine(); e.load(buildBlueprint('master', { hist: { rock: 9, paper: 1, scissors: 1 }, style: STYLE_MID, read: 5 }));
+      const r = e.world.getComponent<Resource>('slot:p1:scissors', 'Resource')!;
+      e.world.addComponent('slot:p1:scissors', { ...r, current: CHARGE_CAP });
       if (smoke) { tap(e, ACT.smoke); e.world.tick(); }
       until(e, 'throw');
       return (e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw ?? '';
     };
-    // 没雾：它看得见石满 3 → 出布吃石。
-    expect(masterPick(false)).toBe('paper');
-    // 有雾：那一条读不到 ⇒ 它**不会**再吃石（退回习惯/兜底）。
-    expect(masterPick(true)).not.toBe('paper');
+    expect(masterPick(false)).toBe('rock');    // 看得见满蓄的剪 → 出石吃它
+    expect(masterPick(true)).toBe('paper');    // 雾里只剩「他老出石」这条记忆 → 出布吃石
   });
 
-  it('【R-108-33】不许赖皮·第二道：T2 里再按蓄力键也**骗不动**大师（定手窗只有一拍）', () => {
-    // 这一条钉的是 `DECIDE_GATE` 本身，**与上一条互不覆盖**：
-    // 上一条走的是"台账入账推迟到结算"这道闸；本条走的是台账管不到的那个口子——
-    // `fx:chargedflag` 听的是 `charge.<手>` 信号且**没有相位门**（Effect 没有 when），
-    // 所以玩家在 T2 里照样能把 `p1.charged.<手>` 点亮（槽不会涨，额度已清零，但旗会亮）。
-    // 大师的第 ② 条（赌徒型 → 吃他刚蓄的那只）正读这面旗：
-    // 只要它的触发条件还挂在整段 T2 都开着的 `THROWING_GATE` 上，这就是一次新的上升沿 ⇒ 当场改手。
-    const e = new Engine(); e.load(buildBlueprint('master'));
-    // 先把玩家标成赌徒型，好让第 ② 条有资格命中。
-    const st = e.world.getComponent<Resource>('style:p1', 'Resource')!;
-    e.world.addComponent('style:p1', { ...st, current: STYLE_MAX });
+  // ── 【R-108-34】v5：大师的心态机 + 蓄力动机（owner 2026-08-08）──────────────────
+  /** 打到定手窗之后，返回大师这一回合的手。`prep` 在 T1 中段跑（骰子已落、蓄力已定）。 */
+  const masterRound = (mem: Memory | undefined, prep?: (e: Engine) => void): { hand: string; e: Engine } => {
+    const e = new Engine(); e.load(buildBlueprint('master', mem));
+    for (let i = 0; i < 5; i++) e.world.tick();          // 心态 → 骰子 → 蓄力，三级各占一拍
+    prep?.(e);
     until(e, 'throw');
-    const locked = (e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw;
-    expect(locked).toBeTruthy();
-    // T2 里疯按蓄力：布亮起 ⇒ 若定手窗失效，第 ② 条会让大师改出剪刀吃布。
-    tap(e, ACT.charge('paper'));
+    return { hand: (e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw ?? '', e };
+  };
+  const setFlag = (e: Engine, eid: string, id: string, active: boolean): void => {
+    e.world.addComponent(eid, { type: 'Flag', id, active } as never);
+  };
+  const setRes = (e: Engine, eid: string, v: number): void => {
+    const r = e.world.getComponent<Resource>(eid, 'Resource')!;
+    e.world.addComponent(eid, { ...r, current: v });
+  };
+  const flagOn = (e: Engine, eid: string): boolean => (e.world.getComponent(eid, 'Flag') as { active: boolean } | undefined)?.active === true;
+
+  it('【R-108-34】蓄力 ≠ 出手：诈唬那一回合，大师**出的不是它蓄的那只**', () => {
+    // 长期记忆说玩家爱出石 ⇒ 它蓄布（吃石）。这是它的"公开宣告"。
+    const mem: Memory = { hist: { rock: 9, paper: 0, scissors: 0 }, style: STYLE_MID, read: READ_MID };
+    const honest = masterRound(mem, (e) => setFlag(e, 'flag:bluffing', BLUFF_FLAG, false));
+    const bluff = masterRound(mem, (e) => setFlag(e, 'flag:bluffing', BLUFF_FLAG, true));
+    expect(flagOn(honest.e, 'flag:plan:paper')).toBe(true);   // 两局都蓄布（宣告一样）
+    expect(flagOn(bluff.e, 'flag:plan:paper')).toBe(true);
+    expect(honest.hand).toBe('paper');                        // 真蓄：蓄什么出什么 → 重拳
+    // 诈蓄：出的是**判读那只手本身**（石）。玩家若照着它的布槽反制（出剪吃布），正好被石吃掉；
+    // 代价是这一手没蓄力，只有 10 点伤害——这就是诈唬要付的钱。
+    expect(bluff.hand).toBe('rock');
+    expect(bluff.hand).not.toBe(honest.hand);                 // owner 的原话：「蓄力也不代表一定要出那个东西」
+  });
+
+  it('【R-108-34】沉默那一回合它**一格都不蓄**——什么都不告诉你也是一手', () => {
+    const e = new Engine(); e.load(buildBlueprint('master'));
+    e.world.tick(); e.world.tick();                            // 心态定 → 骰子落
+    setFlag(e, 'flag:silent', SILENT_FLAG, true);
+    for (let i = 0; i < 6; i++) e.world.tick();
+    for (const h of HANDS) expect(res(e, `slot:p2:${h}`)).toBe(0);
+    for (const h of HANDS) expect(flagOn(e, `flag:plan:${h}`)).toBe(false);
+    // 但它照样出手（沉默的是蓄力，不是出招）——不然玩家永远等不到结算。
+    until(e, 'throw');
+    expect((e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw).toBeTruthy();
+  });
+
+  it('【R-108-34】心态机四态按条件切换（收割优先 · 其余按读准度分档）', () => {
+    const moodAfter = (read: number, p1hp: number): string => {
+      const e = new Engine(); e.load(buildBlueprint('master', { hist: { rock: 0, paper: 0, scissors: 0 }, style: STYLE_MID, read }));
+      const hp = e.world.getComponent<Resource>('p1', 'Resource')!;
+      e.world.addComponent('p1', { ...hp, current: p1hp });
+      e.world.tick(); e.world.tick();
+      return (e.world.getComponent('mood:p2', 'State') as { current: string } | undefined)?.current ?? '';
+    };
+    expect(moodAfter(READ_MID, HP_MAX)).toBe('probe');          // 读准度中游 = 试探
+    expect(moodAfter(READ_HIGH, HP_MAX)).toBe('press');         // 读得准 = 押重拳
+    expect(moodAfter(READ_LOW, HP_MAX)).toBe('bluff');          // 被读穿 = 打心理战
+    // 收割**压过**上面三条：玩家见底时它不管读得准不准，一律停止花招。
+    expect(moodAfter(READ_LOW, FINISH_HP)).toBe('finish');
+    expect(moodAfter(READ_HIGH, FINISH_HP)).toBe('finish');
+  });
+
+  it('【R-108-34】押重拳的心态（press/finish）**出的就是蓄的那只**——它要的是伤害', () => {
+    const mem: Memory = { hist: { rock: 9, paper: 0, scissors: 0 }, style: STYLE_MID, read: READ_HIGH };
+    const { hand, e } = masterRound(mem, (ee) => setFlag(ee, 'flag:bluffing', BLUFF_FLAG, false));
+    expect((e.world.getComponent('mood:p2', 'State') as { current: string } | undefined)?.current).toBe('press');
+    expect(flagOn(e, 'flag:plan:paper')).toBe(true);
+    expect(hand).toBe('paper');
+    expect(res(e, 'slot:p2:paper')).toBeGreaterThan(0);         // 蓄的那只真有层 ⇒ 真是重拳
+  });
+
+  it('【R-108-34】回顾：它赢了读准度 +1、被读穿 −1（「对历史数据的回顾」那一半）', () => {
+    const play = (playerHand: string): number => {
+      const e = new Engine(); e.load(buildBlueprint('master'));
+      until(e, 'throw');
+      tap(e, ACT.throw(playerHand as never));
+      until(e, 'clash'); e.world.tick(); e.world.tick();
+      return res(e, 'read:p2');
+    };
+    // 大师开局判读「他会出石」→ 出布。玩家真出石 = 它读对了；玩家出剪 = 它被吃了。
+    expect(play('rock')).toBe(READ_MID + 1);
+    expect(play('scissors')).toBe(READ_MID - 1);
+    expect(play('paper')).toBe(READ_MID);                       // 平局不动（没有信息）
+  });
+
+  it('【R-108-34】跨局记忆真的灌得进去（owner：「本地可以把玩家的数据落地」）', () => {
+    const e = new Engine();
+    e.load(buildBlueprint('master', { hist: { rock: 3, paper: 40, scissors: 1 }, style: 17, read: 9 }));
+    expect(res(e, 'hist:paper')).toBe(40);
+    expect(res(e, 'style:p1')).toBe(17);
+    expect(res(e, 'read:p2')).toBe(9);
+    // 灌进去要**真影响决策**，不然只是个摆设：布是压倒性冠军 ⇒ 它蓄剪、出剪。
     for (let i = 0; i < 5; i++) e.world.tick();
-    expect((e.world.getComponent('flag:charged:paper', 'Flag') as { active: boolean } | undefined)?.active).toBe(true);  // 口子确实在
-    expect((e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw).toBe(locked);             // 但改不动它
+    expect(flagOn(e, 'flag:plan:scissors')).toBe(true);
+  });
+
+  it('【R-108-34】两手同时满蓄时**只点亮一面判读旗**（否则出招信号打架，出哪只手由实体名字典序定）', () => {
+    // 这不是洁癖：玩家攒两手满蓄是六个回合的事。v4 的「某手满 3」两条会同拍成立，
+    // 两个出招信号同拍发出、接缝后写覆盖 ⇒ 规则优先级由 id 字典序决定，测不出来也不报错。
+    const e = new Engine(); e.load(buildBlueprint('master'));
+    for (const h of ['rock', 'paper'] as const) {
+      const r = e.world.getComponent<Resource>(`slot:p1:${h}`, 'Resource')!;
+      e.world.addComponent(`slot:p1:${h}`, { ...r, current: CHARGE_CAP });
+    }
+    until(e, 'throw');
+    expect(HANDS.filter((h) => flagOn(e, `flag:read:${h}`))).toHaveLength(1);
+    expect((e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw).toBeTruthy();
+  });
+
+  it('【R-108-34】骰子走引擎种子 PRNG：同一颗种子跑两遍，逐回合结果**完全一致**', () => {
+    // 游戏层禁裸 Math.random（硬红线）。这条同时也是"随机不许破坏确定性/录放"的看门狗。
+    const run = (): string[] => {
+      const e = new Engine(); e.load(buildBlueprint('master'));
+      const out: string[] = [];
+      for (let r = 0; r < 8; r++) {
+        until(e, 'throw');
+        out.push(`${flagOn(e, 'flag:bluffing') ? 'B' : '-'}${flagOn(e, 'flag:silent') ? 'S' : '-'}`);
+        tap(e, ACT.throw('rock'));
+        until(e, 'settle'); tap(e, ACT.next); until(e, 'charge');
+      }
+      return out;
+    };
+    const a = run();
+    expect(a).toEqual(run());
+    // ⚠ **别让这条测试变成空转**：骰子一次都没中的话两遍都是 '----'，断言照绿而随机根本没被测到。
+    // 故同时钉住「这 8 回合里骰子确实中过」——中不中是种子决定的定值，不是概率。
+    expect(a.join('')).toMatch(/[BS]/);
+  });
+
+  it('验收剧本里「跨过 T1」的等待拍数 ≥ T1 真实长度（剧本写死字面量·常量一改就静默假绿）', () => {
+    // **这条是 2026-08-08 交的学费**：T1 由 2.5→4.5 秒时，12 本剧本里的 `tick: 145~182`
+    // 一个都没跟着改 ⇒ 整套验收当场变红，而门禁（scoped-gate）不跑验收，**没人看见**。
+    // 剧本格式是闭集 JSONC（步骤只有 signal/tick/expect，没有"等到某相位"），
+    // 所以字面量躲不掉；躲不掉就得有人守着——守的人在这里，读的是常量不是剧本。
+    const files = readdirSync(ACCEPT_DIR).filter((f) => f.endsWith('.scenario.jsonc'));
+    expect(files.length).toBeGreaterThan(0);
+    // 落进 T2 需要：T1 的 after 门（270 拍·从 0 起跳要 elapsed>=after 故多一拍）+ 定手窗两拍。
+    const needed = PHASE_TICKS.charge + 3;
+    const offenders: string[] = [];
+    for (const f of files) {
+      const raw = readFileSync(join(ACCEPT_DIR, f), 'utf8')
+        .replace(/^\s*\/\/.*$/gm, '').replace(/\/\/[^\n"]*$/gm, '')   // 去行注释
+        .replace(/,(\s*[}\]])/g, '$1');                               // 去尾逗号
+      const steps = (JSON.parse(raw) as { steps: Record<string, unknown>[] }).steps;
+      // **判据取自剧本自己**：跟着剧本走一遍，记住"上一次断言时人在哪一拍"，
+      // 只挑「上次还在 T1 → 等一段 → 断言已在 T2」这一种形状。
+      // 两版走偏都记在这儿当路标：① 拿"tick > 100 就算跨相位"当启发式，冤枉了 T2 内部
+      // 那些等待（在第 3 秒出手、再拖 4 秒罚血）；② 只看"下一步断言 flow==throw"，
+      // 又冤枉了「已经在 T2、等 3 拍确认还在 T2」。**判据必须是相位的"从哪来"，不是数字大小。**
+      let at = 'charge';                       // 剧本一律从 T1 开局
+      steps.forEach((st, i) => {
+        const exp = Array.isArray(st.expect) ? (st.expect as Record<string, unknown>[]) : [];
+        const asserted = exp.find((e) => e.sv === 'flow')?.eq;
+        if (typeof asserted === 'string') {
+          const prev = steps[i - 1];
+          if (at === 'charge' && asserted === 'throw' && typeof prev?.tick === 'number' && prev.tick < needed) {
+            offenders.push(`${f}: tick ${prev.tick} < ${needed}`);
+          }
+          at = asserted;
+        }
+      });
+    }
+    expect(offenders).toEqual([]);
   });
 
   it('蓄力额度的资源 id 不得与 `charge.` 同前缀（会撞进 clearOnSettle 的清零面）', () => {

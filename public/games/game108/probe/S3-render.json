@@ -1,14 +1,14 @@
 {
   "slug": "game108",
-  "at": "2026-08-08T09:21:29.263Z",
-  "gameHash": "ea6c5738c1515fe4",
+  "at": "2026-08-08T10:50:16.441Z",
+  "gameHash": "2e4969b32da64233",
   "ok": true,
   "form": "compiled",
   "assertions": {
     "nonBlank": {
       "pass": true,
-      "variance": 5206.15,
-      "mean": 78.04,
+      "variance": 7747.66,
+      "mean": 69.35,
       "threshold": 15
     },
     "consoleErrors": {

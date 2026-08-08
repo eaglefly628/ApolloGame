@@ -22,7 +22,7 @@ import {
   HP_RES, SMOKE_USES, UI_ACT, PHASE_TICKS, TPS, PENALTY_HP, type Hand, type Side,
 } from './theme.js';
 import { C, S, F, L, R, B, SH, CANVAS, dmgFontSize } from './design-tokens.js';
-import { plate, ring, hpBar, scene } from './plate-art.js';
+import { plate, ring, hpBar, scene, loadBar } from './plate-art.js';
 import { handArt, armArt, HAND_BOX_SCALE, HAND_BOX_SHIFT } from './hand-art.js';
 import { HAND_ICON_SRC } from './hand-icons.js';
 import { t, CHAR_W, enSize, type Lang, type StringKey as StringKeyOf } from './strings.js';
@@ -81,6 +81,8 @@ export interface DuelView {
    * 所以玩家点开始那一刻看到的是完完整整的第一拍，不是已经播过一半的。
    */
   notStarted?: boolean;
+  /** 【启动画面】从挂载起过了多少毫秒——假进度条读它（`notStarted` 时才有意义）。 */
+  bootMs?: number;
   /**
    * 【R-108-07】T1 注水：本回合蓄的是哪只手 + **蓄下去那一刻在 T1 里的毫秒数**。
    * 注水是"从这一刻起灌 450ms"，屏上只有相位时钟一个钟（表现层也别引入第二个钟），
@@ -1176,33 +1178,75 @@ function nextKey(view: DuelView): LayoutNode {
  * 奶油渐变面 + 墨边 + 硬边投影，主键沿用定稿给「再来一局」的规格（金面·宽 460）。
  * 已在对账单里记为「稿子没画、我按同族语言拼的」，等设计方正式定稿。
  */
+/**
+ * **启动 / 加载画面**（owner 2026-08-08 给了美术稿：标题 + 进度条 + LOADING…）。
+ *
+ * owner 的口径：「进度条的话，你**模拟一下**进度条就好了，因为我们很快加载好了嘛。
+ * Loading 完了以后，Press any key。」——所以这里**没有真实加载进度可读**，
+ * 条走的是一段固定时长的假进度。这不是偷懒：本作的资源就是几张 data-URI，
+ * 真去测"加载完了没有"只会得到一个恒 100% 的条，比假的还没信息量。
+ * **老实写在注释里**，别让后来人以为它接了真进度。
+ *
+ * 走完之后底下那行 `LOADING ...` 换成 `PRESS ANY KEY`，整屏成为一枚大按钮
+ * （它同时也是 owner 上一轮要的那道开始闸门 + 浏览器出声所需的第一个真实手势）。
+ *
+ * ⚠ 进度**量化到 `LOAD_STEP`**：条是 data-URI 贴图，每换一个数就是一张新图，
+ * 逐帧换新皮会让 `mountUI` 每帧重建面板、重新请全部 PNG（本仓踩过，`networkidle` 永不落停）。
+ */
+const LOAD_MS = 1400;
+const LOAD_STEP = 0.05;                       // 20 张图跑完全程，够顺也够省
+const BAR = { w: 760, h: 62 } as const;
+
+/** 加载进度（0..1·**已量化**）。走完 = 1。 */
+export function loadPct(elapsedMs: number): number {
+  const raw = Math.max(0, Math.min(1, elapsedMs / LOAD_MS));
+  return Math.round(raw / LOAD_STEP) * LOAD_STEP;
+}
+
 function startScreen(view: DuelView): LayoutNode[] {
-  const w = 900, hgt = 520;
+  const pct = loadPct(view.bootMs ?? 0);
+  const done = pct >= 1;
+  const w = 980, hgt = 620;
   const x = Math.round((CANVAS.w - w) / 2), y = Math.round((CANVAS.h - hgt) / 2);
   return [
     {
       type: 'Image', id: 'start-veil',
-      props: { src: plate({ w: CANVAS.w, h: CANVAS.h, fill: 'rgba(16,11,8,.72)', radius: 0 }), alt: '', fit: 'fill' },
+      // 比别的蒙版**厚得多**（.72 → .93）：这是启动画面不是弹窗。
+      // .72 时整块台面连血条带倒计时都还读得清（真渲染目击），像"游戏已经开始了但被挡住"；
+      // 稿子上那张是一层压暗虚化的背景，压住才有"还没进去"的分寸。
+      props: { src: plate({ w: CANVAS.w, h: CANVAS.h, fill: 'rgba(14,10,7,.93)', radius: 0 }), alt: '', fit: 'fill' },
       layout: { x: 0, y: 0, width: CANVAS.w, height: CANVAS.h, allowOverlap: true },
     },
     {
+      // **整屏就是那枚键**（稿子上没有按钮，只有 PRESS ANY KEY）。
+      // 加载没走完时不挂 `action` —— 挂了就等于"进度条是装饰、随时能跳过"，那这条就白画了。
       type: 'Panel', id: 'start',
-      props: { skin: plate({ w, h: hgt, fill: [C.cream, '#f4e2c4'], border: B.end, radius: R.end, shadow: SH.end, shadowColor: 'rgba(0,0,0,.35)' }) },
+      props: {
+        skin: plate({ w, h: hgt, fill: [C.cream, '#f4e2c4'], border: B.end, radius: R.end, shadow: SH.end, shadowColor: 'rgba(0,0,0,.35)' }),
+        ...(done ? { action: UI_ACT.start } : {}),
+      },
       layout: {
-        x, y, width: w, height: hgt, direction: 'column', align: 'center', justify: 'center', gap: 16, padding: 44,
+        x, y, width: w, height: hgt, direction: 'column', align: 'center', justify: 'center', gap: 18, padding: 44,
         anim: 'pop', animMs: 320, allowOverlap: true,
       },
       children: [
         { type: 'Label', id: 'start-t', props: { text: t(view.lang, 'start.title'), size: 96, font: F.cjk, color: 'ink' }, layout: { height: 108 } },
         { type: 'Label', id: 'start-s', props: { text: t(view.lang, 'start.sub'), size: 30, font: F.cjk, color: 'dim' } },
         {
-          type: 'Panel', id: 'key-start',
+          type: 'Image', id: 'load-bar',
+          props: { src: loadBar(BAR.w, BAR.h, pct), alt: '', fit: 'fill' },
+          layout: { width: BAR.w, height: BAR.h },
+        },
+        // 一个 Label 两副面孔（不是两个节点轮流显隐）：文字换了、id 没换，
+        // 布局不会因为"少了一个孩子"而重排，走完那一刻只有字在变。
+        {
+          type: 'Label', id: 'start-go',
           props: {
-            skin: plate({ w: 460, h: 104, fill: [C.goldFillA, C.goldFillB], border: B.end, radius: R.pill, shadow: SH.cta, shadowColor: C.goldDeep }),
-            action: UI_ACT.start,
+            text: t(view.lang, done ? 'start.anykey' : 'start.loading'),
+            size: 52, font: F.cjk, color: done ? 'ok' : 'sub',
+            ...(done ? { anim: 'pulse' } : {}),
           },
-          layout: { width: 460, height: 104, direction: 'row', align: 'center', justify: 'center', padding: 0 },
-          children: [{ type: 'Label', id: 'key-start-t', props: { text: t(view.lang, 'start.go'), size: 52, font: F.cjk, color: 'ok' } }],
+          layout: { height: 62 },
         },
         { type: 'Label', id: 'start-tip', props: { text: t(view.lang, 'start.tip'), size: 22, font: F.cjk, color: 'sub' } },
       ],

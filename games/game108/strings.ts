@@ -89,6 +89,8 @@ export const STRINGS = {
   'start.title': { en: 'RULE OF THREE', zh: '拳律' },
   'start.sub': { en: 'Charge in the open. Then lie about it.', zh: '当着他的面存力 · 然后出别的' },
   'start.go': { en: 'START', zh: '开始' },
+  'start.loading': { en: 'LOADING ...', zh: '加载中 ...' },
+  'start.anykey': { en: 'PRESS ANY KEY', zh: '按任意键开始' },
   'start.tip': { en: 'Both slots are public — read where his power goes', zh: '六条槽全公开 · 读他的力往哪只手去' },
 
   // ── T1 放大选牌（设计定稿）────────────────────────────────────────────
