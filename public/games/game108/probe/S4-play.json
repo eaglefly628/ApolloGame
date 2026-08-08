@@ -2,14 +2,19 @@
   "ok": true,
   "checks": [
     {
-      "name": "首屏是开始屏，且开始键带 action",
+      "name": "启动屏在，且条画出来了（owner 2026-08-08 给稿）",
+      "pass": true,
+      "detail": "启动屏=true 进度条=true"
+    },
+    {
+      "name": "加载走完：整屏成为那枚 PRESS ANY KEY 键",
       "pass": true,
       "detail": "data-action=ui.start"
     },
     {
-      "name": "点了开始才开局（开始屏消失）",
+      "name": "点了开始才开局（启动屏消失）",
       "pass": true,
-      "detail": "开始屏还在"
+      "detail": "启动屏还在"
     },
     {
       "name": "开局双方满血【R-108-15】",

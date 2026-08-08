@@ -31,8 +31,11 @@
 | `f1-resource`（原子） | **六条蓄力槽**（双方各三）· 双方血量 100 · 烟雾次数【R-108-03/10/15/20】 | ✅ 现有 |
 | `t2-event-when`（`EventWhen`+`Signal`） | 条件成立发信号：蓄力满锁定、血量 ≤50 触发逆转、HP≤0、AI 策略规则命中【R-108-10/42/15/30】 | ✅ 现有 |
 | `t2-effect-apply`（`Effect`） | 信号改世界：蓄力 +1 / 扣血 / 给碎片 / 开关烟雾旗【R-108-10/13/20】 | ✅ 现有 |
-| `t2-weighted-spawn`（`WeightedSpawn`） | AI **两次**决策各按权重表确定性抽取（T1 蓄哪手 / T2 出哪手·消费世界 `RandomSeed`）【R-108-30】 | ✅ 现有（出招落点经 **`REQ-108-ENG-02` 的 `intentSignals`·✅ 已交付**——weighted-spawn 只产 `SpawnRequest`，挂不了 intent） |
+| ~~`t2-weighted-spawn`（`WeightedSpawn`）~~ | ~~AI 两次决策各按权重表确定性抽取~~ —— **v5 起没用上**：AI 的两次决策改由「互斥条件链 + `Effect.chance` 掷表演骰」表达（见下三行）。weighted-spawn 只产 `SpawnRequest`、挂不了 `DuelIntent`，硬用要多绕一层接缝；而 v5 需要的恰恰是**确定性的判读 + 只在表演面随机**，权重抽取给不了这个分工 | — |
 | `t2-self-rule`（`SelfRule`） | 对手实体读自身状态施自身效（血少改段 / 蓄满必兑现）【R-108-32】 | ✅ 现有 |
+| **`j1-state` + `t2-effect-apply{set-state}` + `ConditionExpr{kind:'state'}`** | **大师的四态心态机**【R-108-34】v5：试探/施压/心理战/收割。`State{fsmId:'ai.mood'}` 挂 `mood:p2` 实体；四条互斥 `EventWhen` 在 T1 开场按「玩家血 + 自己的读准度」发 `ai.mood.<态>` → `Effect{set-state}` 落态；下游条件用 `{kind:'state', fsmId, equals}` 读。**状态机是数据不是代码**：加一态 = 加一条规则 + 一行概率表 | ✅ 现有（原子 + tier2·零新增） |
+| ↳ `Effect.chance{num,den}` + `w1-random` | 心态查出的**诈唬率 / 沉默率**（`BLUFF_ODDS`/`SILENT_ODDS` 两张表·分母 10）→ 走世界 `RandomSeed` 掷点置 `p2.bluffing`/`p2.silent`。**随机只碰「诈不诈唬 / 蓄不蓄力」这两个表演选择，不碰判读**（破绽要可读，可读就不能随机·守【R-108-31】） | ✅ 现有（`effect-apply.ts:123`） |
+| ↳ `ConditionExpr{resource, vsResource}` | 「哪只手是玩家的统计冠军」= 资源对资源比大小（`p1.hist.<手>` 三者互比·严格大于才算冠军） | ✅ 现有（`condition.ts:86`） |
 | `t2-modifier-stack`（`ModifierSource`+`ModifierTotals`） | 遗物对**收益**的加成聚合（重拳 +10 / 铁布衫 −10 / 回响 +20）【R-108-43】 | ✅ 现有 |
 | `t2-craft-recipe`（`CraftRecipe`） | 花费换取：**烟雾**（扣 1 次数 → 置隐藏旗）【R-108-20】 | ✅ 现有 |
 | `f2-flag`（原子） | 烟雾隐藏旗 · 蓄满锁定旗 · 逆转已触发旗【R-108-10/20/42】 | ✅ 现有 |

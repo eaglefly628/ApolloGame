@@ -117,7 +117,7 @@ import { Engine } from '@zerocraft/engine/runtime/engine.js';
 
 const ACCEPT_DIR = join(process.cwd(), 'docs/design/game108/acceptance');
 import type { Resource, GameFlow, StringVar } from '@zerocraft/engine/engine/protocol/components.js';
-import { buildBlueprint, throwSignal, aiChargeSignal, deadFlag } from './blueprint.js';
+import { buildBlueprint, throwSignal, aiChargeSignal, deadFlag, DECIDE_GATE, READ_GATE, THROWING_GATE, MASTER_PATCHES } from './blueprint.js';
 
 const res = (e: Engine, eid: string): number => e.world.getComponent<Resource>(eid, 'Resource')?.current ?? -1;
 const slot = (e: Engine, side: string, h: string): number => res(e, `slot:${side}:${h}`);
@@ -640,8 +640,11 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
       until(e, 'throw');
       return (e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw ?? '';
     };
-    expect(masterPick(false)).toBe('rock');    // 看得见满蓄的剪 → 出石吃它
-    expect(masterPick(true)).toBe('paper');    // 雾里只剩「他老出石」这条记忆 → 出布吃石
+    // ⚠ 克星按**大师自己那张反转表**算（石吃布·布吃剪·剪吃石·`MASTER_PATCHES`）：
+    // 想吃剪要出布，想吃石要出剪。拿标准表的直觉写这两行 = 把 bug 钉进测试
+    // （2026-08-08 实测踩过：大师算错表，整局 100:0 输给"一直出同一只手"）。
+    expect(masterPick(false)).toBe('paper');   // 看得见满蓄的剪 → 出布吃它
+    expect(masterPick(true)).toBe('scissors'); // 雾里只剩「他老出石」这条记忆 → 出剪吃石
   });
 
   // ── 【R-108-34】v5：大师的心态机 + 蓄力动机（owner 2026-08-08）──────────────────
@@ -667,9 +670,10 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
     const mem: Memory = { hist: { rock: 9, paper: 0, scissors: 0 }, style: STYLE_MID, read: READ_MID };
     const honest = masterRound(mem, (e) => setFlag(e, 'flag:bluffing', BLUFF_FLAG, false));
     const bluff = masterRound(mem, (e) => setFlag(e, 'flag:bluffing', BLUFF_FLAG, true));
-    expect(flagOn(honest.e, 'flag:plan:paper')).toBe(true);   // 两局都蓄布（宣告一样）
-    expect(flagOn(bluff.e, 'flag:plan:paper')).toBe(true);
-    expect(honest.hand).toBe('paper');                        // 真蓄：蓄什么出什么 → 重拳
+    // 大师表里吃石要出**剪**（不是标准表的布）——见 blueprint 的 M_COUNTER 注释。
+    expect(flagOn(honest.e, 'flag:plan:scissors')).toBe(true);   // 两局都蓄剪（宣告一样）
+    expect(flagOn(bluff.e, 'flag:plan:scissors')).toBe(true);
+    expect(honest.hand).toBe('scissors');                        // 真蓄：蓄什么出什么 → 重拳
     // 诈蓄：出的是**判读那只手本身**（石）。玩家若照着它的布槽反制（出剪吃布），正好被石吃掉；
     // 代价是这一手没蓄力，只有 10 点伤害——这就是诈唬要付的钱。
     expect(bluff.hand).toBe('rock');
@@ -708,9 +712,9 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
     const mem: Memory = { hist: { rock: 9, paper: 0, scissors: 0 }, style: STYLE_MID, read: READ_HIGH };
     const { hand, e } = masterRound(mem, (ee) => setFlag(ee, 'flag:bluffing', BLUFF_FLAG, false));
     expect((e.world.getComponent('mood:p2', 'State') as { current: string } | undefined)?.current).toBe('press');
-    expect(flagOn(e, 'flag:plan:paper')).toBe(true);
-    expect(hand).toBe('paper');
-    expect(res(e, 'slot:p2:paper')).toBeGreaterThan(0);         // 蓄的那只真有层 ⇒ 真是重拳
+    expect(flagOn(e, 'flag:plan:scissors')).toBe(true);
+    expect(hand).toBe('scissors');
+    expect(res(e, 'slot:p2:scissors')).toBeGreaterThan(0);      // 蓄的那只真有层 ⇒ 真是重拳
   });
 
   it('【R-108-34】回顾：它赢了读准度 +1、被读穿 −1（「对历史数据的回顾」那一半）', () => {
@@ -721,10 +725,11 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
       until(e, 'clash'); e.world.tick(); e.world.tick();
       return res(e, 'read:p2');
     };
-    // 大师开局判读「他会出石」→ 出布。玩家真出石 = 它读对了；玩家出剪 = 它被吃了。
+    // 大师开局判读「他会出石」→ 按**它自己的表**出剪（剪吃石）。
+    // 玩家真出石 = 它读对了（+1）；玩家出布 = 布吃剪，它被吃了（−1）；同手 = 平局不动。
     expect(play('rock')).toBe(READ_MID + 1);
-    expect(play('scissors')).toBe(READ_MID - 1);
-    expect(play('paper')).toBe(READ_MID);                       // 平局不动（没有信息）
+    expect(play('paper')).toBe(READ_MID - 1);
+    expect(play('scissors')).toBe(READ_MID);
   });
 
   it('【R-108-34】跨局记忆真的灌得进去（owner：「本地可以把玩家的数据落地」）', () => {
@@ -735,7 +740,8 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
     expect(res(e, 'read:p2')).toBe(9);
     // 灌进去要**真影响决策**，不然只是个摆设：布是压倒性冠军 ⇒ 它蓄剪、出剪。
     for (let i = 0; i < 5; i++) e.world.tick();
-    expect(flagOn(e, 'flag:plan:scissors')).toBe(true);
+    // 布是压倒性冠军 ⇒ 它蓄「吃布的手」= **石**（大师表：石吃布）。
+    expect(flagOn(e, 'flag:plan:rock')).toBe(true);
   });
 
   it('【R-108-34】两手同时满蓄时**只点亮一面判读旗**（否则出招信号打架，出哪只手由实体名字典序定）', () => {
@@ -749,6 +755,96 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
     until(e, 'throw');
     expect(HANDS.filter((h) => flagOn(e, `flag:read:${h}`))).toHaveLength(1);
     expect((e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw).toBeTruthy();
+  });
+
+  it('【R-108-33】A 闸独立咬合：大师的判读/出招规则必须挂在**只亮一拍**的窗口上（REQ-108-PE-01）', () => {
+    /**
+     * **为什么这条是结构断言而不是行为断言**（主程 2026-08-08 复查门实测带出）：
+     * 把定手窗改回整段 T2 都开着的 `THROWING_GATE`，60 条测试**一条都不红**——
+     * 因为 v5 把台账推迟到了结算（B 闸），⑤ 定手读的四样输入（判读旗 / 计划旗 / 骰子 / 心态）
+     * 在 T2 里已经**没有一样动得了**。两道闸同路冗余 ⇒ A 闸现为零覆盖的裸防御，
+     * 将来谁动账期，A 就无人看守（正是它存在的那一天）。
+     *
+     * 我的第一版"撤修验红"给出过 A 转红的结论——那是**在 v5 重写之前**跑的，v5 之后失效了。
+     * 教训：**撤修验红的结论跟着代码走，不跟着记忆走**；改完结构要重跑一遍。
+     *
+     * 行为测不到，就测结构——被保护的性质本来就是结构性的：
+     * 「AI 的决策面只准开一拍」。断言写成"必须含定手窗旗 + 不许含整段 T2 的门"，
+     * 改回 `THROWING_GATE` 两条都红。
+     */
+    const leaves = (c: unknown): Record<string, unknown>[] => {
+      if (c === null || typeof c !== 'object') return [];
+      const n = c as Record<string, unknown>;
+      if (Array.isArray(n.of)) return (n.of as unknown[]).flatMap(leaves);
+      if (n.of !== undefined) return leaves(n.of);
+      return [n];
+    };
+    const ents = buildBlueprint('master').entities as Record<string, Record<string, unknown>>;
+    const gated = (prefix: string, must: string): void => {
+      const rules = Object.entries(ents).filter(([k]) => k.startsWith(prefix));
+      expect([prefix, rules.length]).toEqual([prefix, HANDS.length]);
+      for (const [id, e] of rules) {
+        const ls = leaves((e.EventWhen as { when: unknown }).when);
+        const has = (flagId: string): boolean => ls.some((l) => l.kind === 'flag' && l.id === flagId && l.equals !== false);
+        expect([id, '挂了一拍窗', has(must)]).toEqual([id, '挂了一拍窗', true]);
+        // 整段 T2 都开着的那道门**绝不许**出现在 AI 的决策条件里——它就是赖皮事故的触发面。
+        expect([id, '没认整段 T2 的门', has(THROWING_GATE)]).toEqual([id, '没认整段 T2 的门', false]);
+      }
+    };
+    gated('master:read:', READ_GATE);
+    gated('master:throw:', DECIDE_GATE);
+
+    // 「只亮一拍」也不能只写在注释里：两个窗口态必须是**无条件立刻走**的过渡态。
+    // 谁给它们加个 `after`，窗口就变宽了，而上面那两条结构断言照绿。
+    const flow = (ents['flow'].GameFlow ?? ents['flow'].Flow) as { states: { id: string; transitions?: unknown[] }[] };
+    for (const id of ['lockIn', 'lockIn2']) {
+      const st = flow.states.find((x) => x.id === id);
+      expect([id, st?.transitions]).toEqual([id, [{ when: { kind: 'always' }, to: id === 'lockIn' ? 'lockIn2' : 'throw' }]]);
+    }
+  });
+
+  it('【R-108-33】两扇窗在整个 T2 全程是关的（玩家一路骚扰也开不出第二次决策）', () => {
+    const e = new Engine(); e.load(buildBlueprint('master'));
+    until(e, 'throw');
+    const open = (eid: string): boolean => (e.world.getComponent(eid, 'Flag') as { active: boolean } | undefined)?.active === true;
+    const stuck = (e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw;
+    for (let i = 0; i < PHASE_TICKS.throw - 5; i++) {
+      // 一路乱按蓄力（T2 里额度已作废，但 `p1.charged.*` 旗照样点得亮——判读链的输入之一）
+      if (i % 31 === 0) tap(e, ACT.charge(HANDS[(i / 31) % 3 as 0 | 1 | 2]));
+      e.world.tick();
+      if (open(`gate:decide`) || open(`gate:read`)) throw new Error(`第 ${i} 拍窗口又开了`);
+    }
+    expect((e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw).toBe(stuck);
+  });
+
+  it('【R-108-34】大师算克星用的是**它自己那张被改写过的表**（两表不许各走各的）', () => {
+    /**
+     * **2026-08-08 sim 实测逮到的真 bug**：`MASTER_PATCHES` 把判定表**整环反转**了
+     * （石吃布·布吃剪·剪吃石），而 v4/v5 的决策链一直按**标准表**算克星
+     * ⇒ 它每次"反制"出的恰恰是自己表里的败手。整局 sim：玩家只要一直出同一只手，
+     * **大师 100:0 一滴血不掉地输光**；更阴的是 ⑥ 回顾也用标准表判胜负，
+     * **它每输一局读准度还 +1**（自我认知与战果完全相反，零报错）。
+     *
+     * 守法不是把正确答案再抄一遍——那样两处会一起错。**判据从 `MASTER_PATCHES` 现推**：
+     * 让大师读到某只手，它出的那只必须在**补丁表里**吃得掉这只手。
+     * 改表不改脑（或改脑不改表）当场红。
+     */
+    const beatsOf = (h: string): string[] =>
+      (MASTER_PATCHES as { kind: string; throw: string; beats: string[] }[])
+        .find((p) => p.kind === 'beats' && p.throw === h)?.beats ?? [];
+    // 补丁表必须仍是一条完整的三元环（不是本条要测的东西，但塌了下面的判据就没意义）
+    expect(HANDS.flatMap(beatsOf).sort()).toEqual([...HANDS].sort());
+
+    for (const prey of HANDS) {
+      // 用**跨局记忆**把玩家的统计冠军钉成 prey ⇒ 大师的判读必然是 prey。
+      const hist = Object.fromEntries(HANDS.map((h) => [h, h === prey ? 9 : 0])) as Record<typeof HANDS[number], number>;
+      const e = new Engine(); e.load(buildBlueprint('master', { hist, style: STYLE_MID, read: READ_MID }));
+      until(e, 'throw');
+      const read = HANDS.filter((h) => (e.world.getComponent(`flag:read:${h}`, 'Flag') as { active: boolean } | undefined)?.active);
+      expect([prey, '判读', read]).toEqual([prey, '判读', [prey]]);
+      const hand = (e.world.getComponent('p2', 'DuelIntent') as { throw: string } | undefined)?.throw ?? '';
+      expect([prey, '出的手在它自己表里吃得掉判读的那只', beatsOf(hand)]).toEqual([prey, '出的手在它自己表里吃得掉判读的那只', [prey]]);
+    }
   });
 
   it('【R-108-34】骰子走引擎种子 PRNG：同一颗种子跑两遍，逐回合结果**完全一致**', () => {

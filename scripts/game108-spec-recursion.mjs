@@ -58,7 +58,10 @@ const SABOTAGES = [
   },
   {
     clause: 'R-108-30/32 AI 只在对应时区动手（相位门）',
-    find: "        when: { kind: 'and', of: [{ kind: 'flag', id: THROWING_GATE }, when] },",
+    // v5 起五档 AI 的出招统一挂**只亮一拍的定手窗** `DECIDE_GATE`（原来是整段 T2 都开着的
+    // `THROWING_GATE`·【R-108-33】赖皮事故的触发面）。锚点跟着改——脚本上一版没跟，
+    // 好在它报的是「锚点未命中（脚本过期）」而不是静默判绿，这条自我保护值得留着。
+    find: "        when: { kind: 'and', of: [{ kind: 'flag', id: DECIDE_GATE }, when] },",
     replace: '        when,',                                // 破坏：任何时区都出招
   },
   {
@@ -66,11 +69,9 @@ const SABOTAGES = [
     find: "        do: [{ kind: 'set-flag', targetId: deadFlag(side), value: true }],",
     replace: "        do: [],",
   },
-  {
-    clause: 'R-108-02 超时顺延（不点=保持上一回合的选择）',
-    find: "          of: [{ kind: 'flag', id: THROWING_GATE }, { kind: 'string', id: lastThrowVar('p1'), equals: h }],",
-    replace: "          of: [{ kind: 'flag', id: 'never.exists' }],",   // 破坏：顺延条件永不成立
-  },
+  // 【R-108-02】「超时顺延」**v3 已作废**（owner 2026-08-07：改成罚血读秒，卡到玩家出手为止）。
+  // 原来那条打坏项连着锚点一起删——留着只会年年报"锚点未命中"，噪音久了就没人看了。
+  // 现在守这一条款的是剧本⑧（T2 超时罚血·免费段不罚·出手即停·**不替玩家提交**）。
   {
     clause: 'R-108-20 烟雾扣次数',
     find: "      costs: [{ id: SMOKE_RES('p1'), amount: 1 }],",

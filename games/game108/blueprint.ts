@@ -444,6 +444,22 @@ function habitTracking(mem?: Memory): Record<string, EntityBlueprint> {
  */
 function masterRules(mem?: Memory): Record<string, EntityBlueprint> {
   const out: Record<string, EntityBlueprint> = {};
+  /**
+   * ⚠⚠ **大师打的是它自己那张被改写过的判定表**（`MASTER_PATCHES` = 石剪布**整环反转**）。
+   *
+   * 它的每一次「读到 R → 出 R 的克星」都必须按**这张表**算克星，不是按标准表。
+   * 这条 v4 就写错了、v5 把判读做成主干之后彻底暴露：整局 sim 实测——
+   * **玩家只要一直出同一只手，大师 100:0 一滴血不掉地输光**，因为它算出来的"克星"
+   * 恰恰是它自己表里的**败手**。更阴的是 ⑥ 回顾也用标准表判胜负 ⇒
+   * **它每输一局，读准度还 +1**（自我认知与战果完全相反，且零报错）。
+   *
+   * 反转表：石吃布 · 布吃剪 · 剪吃石。于是——
+   *   `M_PREY[t]`    = 出 t 能吃掉谁         （= 标准表的 BEATEN_BY）
+   *   `M_COUNTER[y]` = 想吃掉 y 该出哪只手   （= 标准表的 BEATS）
+   * 两张表在这里**显式命名**，就是不让人再拿标准表的直觉往下写。
+   */
+  const M_PREY: Record<Hand, Hand> = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
+  const M_COUNTER: Record<Hand, Hand> = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
   const flag = (id: string, equals = true): Record<string, unknown> => ({ kind: 'flag', id, equals });
   const hidden = flag(SMOKE_FLAG('p1'));
   const notHidden = flag(SMOKE_FLAG('p1'), false);
@@ -537,7 +553,7 @@ function masterRules(mem?: Memory): Record<string, EntityBlueprint> {
   // 沉默骰中了就一格不蓄——**什么都不告诉你**也是一种信息战（owner：「它有时候为什么要蓄力？」）。
   const longRead = firstOf(byHand((h) => any(top(h), all(...HANDS.map((y) => not(top(y))), echoes('p1', h)))));
   for (const h of HANDS) {
-    const mine = BEATEN_BY[h];                        // 吃掉 h 要用的那只手 = 它蓄的那只
+    const mine = M_COUNTER[h];                        // 吃掉 h 要用的那只手（**按大师自己那张表**）= 它蓄的那只
     out[`master:charge:${h}`] = {
       EventWhen: {
         signal: aiChargeSignal(mine), mode: 'edge', armed: false,
@@ -578,7 +594,7 @@ function masterRules(mem?: Memory): Record<string, EntityBlueprint> {
   //   A 诈唬  → 出**判读的那只手本身**。玩家若照着它的槽反制（出克制它槽的那只），正好被这一手吃掉；
   //             玩家若不上当，最坏也就是平局。代价是这只手没蓄力 ⇒ 只有 10 点伤害。
   //   B 押重拳 → 不诈唬 + 有计划 + 心态是 press/finish → **出蓄的那只手**（要的就是伤害）。
-  //   C 求赢   → 其余：出**判读那只手的克星**（v4 的老行为，仍是它的主干）。
+  //   C 求赢   → 其余：出**判读那只手的克星**（按大师自己那张反转表算·v4 的老行为，仍是主干）。
   // 于是「它蓄了石」对玩家不再是答案，而是一道题——这正是本作要的那口博弈。
   const bluffing = flag(BLUFF_FLAG);
   const notBluffing = flag(BLUFF_FLAG, false);
@@ -591,7 +607,7 @@ function masterRules(mem?: Memory): Record<string, EntityBlueprint> {
       // B：不诈唬 + 押重拳 + 蓄的正是 t
       all(notBluffing, commits, flag(planFlag(t))),
       // C：其余 —— 判读 = BEATS[t]（t 吃得掉的那只）⇒ 出 t
-      all(notBluffing, not(all(commits, any(...HANDS.map((y) => flag(planFlag(y)))))), flag(readFlag(BEATS[t]))),
+      all(notBluffing, not(all(commits, any(...HANDS.map((y) => flag(planFlag(y)))))), flag(readFlag(M_PREY[t]))),
     ];
     out[`master:throw:${t}`] = {
       EventWhen: { signal: throwSignal(t), mode: 'edge', armed: false, source: 'p2', when: all(gate, any(...cond)) },
@@ -603,7 +619,7 @@ function masterRules(mem?: Memory): Record<string, EntityBlueprint> {
   // 胜负不用另开账——两侧的 `lastThrow` 已经写在世界里，查一次判定表就知道谁吃谁。
   // ⚠ 读的是**大师自己打完的结果**，不是玩家的隐私；且在结算拍，早于它下一次定手。
   const beat = (a: Side, b: Side): Record<string, unknown> =>
-    any(...HANDS.map((x) => all({ kind: 'string', id: lastThrowVar(a), equals: x }, { kind: 'string', id: lastThrowVar(b), equals: BEATS[x] })));
+    any(...HANDS.map((x) => all({ kind: 'string', id: lastThrowVar(a), equals: x }, { kind: 'string', id: lastThrowVar(b), equals: M_PREY[x] })));
   out['master:hit'] = {
     EventWhen: { signal: 'p2.hit', mode: 'edge', armed: false, when: all(flag(SETTLE_GATE), beat('p2', 'p1')) },
   } as EntityBlueprint;
@@ -708,7 +724,7 @@ function smokeWiring(): Record<string, EntityBlueprint> {
 }
 
 /** 【R-108-32】大师自带改写过的判定表（**静态 patches**·对局开始即生效·每拍重 fold）。 */
-const MASTER_PATCHES = [
+export const MASTER_PATCHES = [
   // **整环反转**（石←→剪←→布 全反），而不是只让石多克一手——后者会让「石克布」与「布克石」
   // 同时成立，落盘门当场硬抛「同一格定不出胜负」（实测踩过，判词还直接给了修法）。
   { kind: 'beats', throw: 'rock', beats: ['paper'] },

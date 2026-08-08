@@ -84,15 +84,28 @@ async function main() {
     await page.waitForTimeout(700);
 
     say('══ game108 S4 试玩走查（真浏览器·全程只点真按钮）══\n');
-    // owner 2026-08-08：第一次进来必须先有开始键（在那之前引擎根本没跑）。
-    const gate0 = await page.$('#key-start');
-    check('首屏是开始屏，且开始键带 action', !!gate0 && (await gate0.getAttribute('data-action')) === 'ui.start',
+    // 【启动画面】owner 2026-08-08 给稿：加载条走完才有 PRESS ANY KEY。
+    // **加载中整屏不挂 action**——所以先断言"点不动"，再等它走完。
+    // ⚠ 这一段是 v5 补的：脚本原先一进门就找 `ui.start`，加载闸一上线它当场找不到键，
+    //   后面 16 条断言全部连锁假红（"改了游戏没改尺子"的老形状·同验收剧本的 tick 数）。
+    const loading = await page.$('#start');
+    const bar = await page.$('#load-bar');
+    check('启动屏在，且条画出来了（owner 2026-08-08 给稿）', !!loading && !!bar,
+      `启动屏=${!!loading} 进度条=${!!bar}`);
+    await shot('0-loading');
+    // ⚠ 「加载没走完就点不动」这一条**故意不在这里断言**：它要抢在 1.4 秒的假进度跑完之前
+    // 采样，而页面加载本身就要几百毫秒 —— 拿墙钟去赛墙钟，绿不绿取决于这台机器今天多快。
+    // 那条判据是确定性的，放在确定性的地方：单测「启动屏：加载**没走完就点不动**」
+    // （`loadPct(0)` 的屏上无 `ui.start`）。**别把 flaky 断言塞进旅程冒充覆盖。**
+    await page.waitForSelector('[data-action="ui.start"]', { timeout: 8000 }).catch(() => {});
+    const gate0 = await page.$('[data-action="ui.start"]');
+    check('加载走完：整屏成为那枚 PRESS ANY KEY 键', !!gate0 && (await gate0.getAttribute('data-action')) === 'ui.start',
       gate0 ? `data-action=${await gate0.getAttribute('data-action')}` : '找不到开始键');
     await shot('0-start-screen');
     // ⚔ 对抗性输入：连点开始——只该开一局（`startGame` 幂等）。
-    await page.evaluate(() => { const el = document.getElementById('key-start'); for (let i = 0; i < 5; i++) el?.click(); });
+    await page.evaluate(() => { const el = document.querySelector('[data-action="ui.start"]'); for (let i = 0; i < 5; i++) el?.click(); });
     await page.waitForTimeout(400);
-    check('点了开始才开局（开始屏消失）', !(await page.$('#key-start')), '开始屏还在');
+    check('点了开始才开局（启动屏消失）', !(await page.$('#start')), '启动屏还在');
     const s0 = await state();
     say(`开局：${s0.phase} · 血 ${s0.hp.p1}/${s0.hp.p2}`);
     check('开局双方满血【R-108-15】', s0.hp.p1 === '100' && s0.hp.p2 === '100', `${s0.hp.p1}/${s0.hp.p2}`);
