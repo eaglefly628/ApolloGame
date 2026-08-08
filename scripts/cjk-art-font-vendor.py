@@ -1,26 +1,31 @@
 #!/usr/bin/env python3
-# CJK 艺术字体 vendoring（owner 2026-07-23「引入一套中文 + 日文艺术字体」）——把 OFL 中/日艺术字
-# 子集化（只留 src 里用到的 CJK 字 + 全假名 + 标点）→ woff2 → public/ui-fonts/cjk/ + 生成 art-fonts-cjk.ts
-# 的 @font-face（**url() 引用·非 base64 内嵌**）。浏览器对 url() @font-face **按需惰性下载**——某游戏只在
-# 真渲染该字族时才拉那一个 woff2，主 bundle 零增（区别于拉丁 18 款 base64 内嵌·那批小/常驻）。
+# 惰性艺术字体 vendoring（owner 2026-07-23「引入一套中文 + 日文艺术字体」）——把 OFL 艺术字
+# 子集化（只留 src+games 里用到的 CJK 字 + 全假名 + 标点 + 全 ASCII）→ woff2 → public/ui-fonts/cjk/ +
+# 生成 art-fonts-cjk.ts 的 @font-face（**url() 引用·非 base64 内嵌**）。浏览器对 url() @font-face
+# **按需惰性下载**——某游戏只在真渲染该字族时才拉那一个 woff2，主 bundle 零增（区别于拉丁 18 款
+# base64 常驻内嵌·那批小）。收 CJK + **惰性拉丁艺术字**（如 Fredoka·体量大或多字重不宜塞常驻 bundle 的）。
 #
 # 依赖（非 repo 常驻·vendoring 时临时装）：pip install fonttools brotli
 # 跑法：python3 scripts/cjk-art-font-vendor.py    （幂等·重跑覆盖 woff2 + art-fonts-cjk.ts）
-# 许可：4 款皆 SIL OFL 1.1（可自托管/子集化/再分发）——OFL.txt 随字落 public/ui-fonts/cjk/。
-import glob, os, re, subprocess, sys, urllib.request
+# 许可：皆 SIL OFL 1.1（可自托管/子集化/再分发）——OFL.txt 随字落 public/ui-fonts/cjk/。
+import glob, os, re, subprocess, sys, urllib.parse, urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.path.join(ROOT, 'public', 'ui-fonts', 'cjk')
 TS_OUT = os.path.join(ROOT, 'src', 'ui', 'components', 'art-fonts-cjk.ts')
 CACHE = os.path.join(ROOT, '.cache-fonts')  # 下载的 TTF 缓存（不入 git）
 
-# 字体清单：slug（=Label.font 令牌）· family（CSS font-family）· 源（google/fonts OFL 路径）· 风格描述 · 语言。
+# 字体清单：slug（=Label.font 令牌）· family（CSS font-family）· 源（google/fonts OFL 路径）· 风格描述 ·
+#   语言（cn/jp/latin）· 字重（缺省 '400'；可变字体填范围如 '300 700' → @font-face font-weight 收该段）。
 FONTS = [
     ('cnbrush', 'Ma Shan Zheng',  'ofl/mashanzheng/MaShanZheng-Regular.ttf',   '中文·毛笔行楷', 'cn'),
     ('cnwen',   'ZCOOL XiaoWei',  'ofl/zcoolxiaowei/ZCOOLXiaoWei-Regular.ttf', '中文·文艺细宋', 'cn'),
     ('jpbrush', 'Yuji Syuku',     'ofl/yujisyuku/YujiSyuku-Regular.ttf',       '日文·毛筆明朝', 'jp'),
     ('jppen',   'Klee One',       'ofl/kleeone/KleeOne-Regular.ttf',           '日文·楷書ペン', 'jp'),
     ('cnround', 'ZCOOL KuaiLe',   'ofl/zcoolkuaile/ZCOOLKuaiLe-Regular.ttf',   '中文·卡通粗圆黑', 'cn'),  # 站酷快乐体·卡通标题/大字（owner 设计稿字体）
+    # Fredoka（REQ-108-UI-06·owner 设计稿数字字）——**可变字体**（wght 300–700·wdth 轴留默认 100）·
+    # Latin·惰性 url()（3 字重塞常驻 base64 bundle 不划算·数字/大标题只 game108 用）。子集只留 ASCII（Fredoka 无 CJK 字形）。
+    ('round',   'Fredoka',        'ofl/fredoka/Fredoka[wdth,wght].ttf',        '拉丁·圆润数字/标题', 'latin', '300 700'),
 ]
 RAW = 'https://raw.githubusercontent.com/google/fonts/main/'
 
@@ -62,20 +67,25 @@ def main():
         print('warn: OFL.txt fetch failed', e)
 
     faces = []
-    for slug, family, src, desc, lang in FONTS:
-        ttf = os.path.join(CACHE, os.path.basename(src))
+    for entry in FONTS:
+        slug, family, src, desc, lang = entry[:5]
+        weight = entry[5] if len(entry) > 5 else '400'   # 可变字体填范围（如 '300 700'）·缺省单字重 400
+        # 缓存名去掉路径里的方括号/逗号（可变字体文件名如 Fredoka[wdth,wght].ttf）·URL 侧照 RFC 编码方括号。
+        ttf = os.path.join(CACHE, os.path.basename(src).replace('[', '_').replace(']', '_').replace(',', '_'))
         if not os.path.exists(ttf):
             print(f'download {family} …')
-            urllib.request.urlretrieve(RAW + src, ttf)
+            urllib.request.urlretrieve(RAW + urllib.parse.quote(src, safe='/'), ttf)
         woff2 = os.path.join(OUT_DIR, f'{slug}.woff2')
+        # 可变字体（weight 带空格=范围）保留 fvar/gvar 变形轴 → 别丢名字表（fvar 引用轴/实例名 nameID≥256）。
+        name_ids = '*' if ' ' in weight else '1,2,4,6'
         subprocess.run([sys.executable, '-m', 'fontTools.subset', ttf,
                         f'--text-file={txt_path}', '--flavor=woff2',
                         f'--output-file={woff2}', '--layout-features=', '--no-hinting',
-                        '--desubroutinize', '--name-IDs=1,2,4,6', '--drop-tables+=GSUB,GPOS'],
+                        '--desubroutinize', f'--name-IDs={name_ids}', '--drop-tables+=GSUB,GPOS'],
                        check=True)
         kb = os.path.getsize(woff2) // 1024
-        print(f'  {slug:8} {family:16} {kb:>5} KB  ({desc})')
-        faces.append(f"@font-face{{font-family:'{family}';font-style:normal;font-weight:400;"
+        print(f'  {slug:8} {family:16} {kb:>5} KB  ({desc}·w{weight})')
+        faces.append(f"@font-face{{font-family:'{family}';font-style:normal;font-weight:{weight};"
                      f"font-display:swap;src:url(/ui-fonts/cjk/{slug}.woff2) format('woff2')}}")
 
     css = ''.join(faces)

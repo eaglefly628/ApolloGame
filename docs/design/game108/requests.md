@@ -646,7 +646,7 @@ ENG-04 只给 `KeyBinding` 开了 `source`（玩家那条路），**AI 走的 `E
 - **判据（为什么值得下沉）**：那把尺子——`shadow:{y:4}` 最弱的模型也填得出，
   「去写个 SVG 生成器」填不出。且 game-i 糖果钮、apollo-toon 厚唇皮都在手搓同一件事。
 
-### REQ-108-UI-06 · 补一款**圆润数字艺术字**槽（Fredoka）· [2026-08-07] · **owner 自发给 PUI** · status: open
+### REQ-108-UI-06 · 补一款**圆润数字艺术字**槽（Fredoka）· [2026-08-07] · **owner 自发给 PUI** · status: **✅ 已加槽（PUI·`round`）·待游戏侧接**
 
 - **病**：设计定稿的数字（血量 / 倒计时 / `n/3` 读数 / **伤害大数**）全部指定 **Fredoka**（500/600/700），
   它是与中文那款 ZCOOL KuaiLe 配套的圆润无衬线，两者一起构成稿子的"卡通"底色。
@@ -660,6 +660,20 @@ ENG-04 只给 `KeyBinding` 开了 `source`（玩家那条路），**AI 走的 `E
 - **验收**：`Label{font:'round', bold:true}` 渲出 Fredoka 700；game108 把 `design-tokens.ts`
   的 `F.num` 从 `'bubbly'` 切过去，与稿子 `screens/*.png` 的数字并排看骨架一致。
 
+> **✅ PUI 交付（2026-08-07·加槽 `round`）**：Fredoka（SIL OFL·**可变字体** wght 300–700）。
+> **两处与工单假设不同的工程判断**（都往省成本/不改语义走）：
+> ① **走 url() 惰性载而非 base64 常驻**——拉丁 18 款是 base64 塞进 `art-fonts.ts`（584KB·**全游戏常驻加载**）；
+>    Fredoka 3 字重塞那儿等于给每个游戏的首屏加税，而它只 game108 用。故复用 CJK 的惰性管线
+>    （`cjk-art-font-vendor.py` 加一条 → `round.woff2` 34KB·主 bundle 零增·只在真渲染时拉）。
+> ② **一颗可变字体覆全字重·不加 `Label` 字重字段**——`@font-face font-weight:300 700`（保 wght 轴）；
+>    `Label` 现只发 400/700（`bold`），game108 实际也只走 `bold`→700。真要 500/600 得给 `Label` 加闭集
+>    字重字段，game108 不消费 → YAGNI，不做。可变字体已让 bold→700 天然取到，将来加字段也无需重打包。
+> 落点：`cjk-art-font-vendor.py`(FONTS 加 Fredoka·支持字重范围 + 可变字体 name 表保留) · `art-fonts.ts`
+> `ART_FONT_FAMILY.round='Fredoka'` · `types.ts`/`catalog.ts` 枚举 + 文档 · `label-font-glow.test.ts`
+> (round→Fredoka·bold→700·@font-face 覆 `font-weight:300 700`) · game-i 展台加 `font:round` 数字墙（vs bubbly 对照）。
+> 真渲染目击：`140` 大数 + `0123456789` Fredoka 骨架（与 bubbly 并排可辨）·汉字正确回退主字体。`scoped-gate` scope=full 全绿。
+> **游戏侧接法**：`design-tokens.ts` 的 `F.num` 从 `'bubbly'` 改 `'round'`（`bold:true` 取 700）。
+
 > **✅ PUI 交付（2026-08-07·判 A·下沉）**：`PanelProps.shadow?: { y: number; color?: SurfaceToken | 色串 }`
 > → 渲 `box-shadow:0 <y>px 0 <color>`（硬边非模糊）。`color` 缺省=深墨(`ink`/`bg0`)·优先填闭集 `SurfaceToken`
 > （换皮自适应）·裸色串走稿子精确墨色。与 `accent` 柔光**逗号共存**、作用于 skin 框皮面（`plate-art` 可删投影支）。
@@ -668,7 +682,7 @@ ENG-04 只给 `KeyBinding` 开了 `source`（玩家那条路），**AI 走的 `E
 > `panel-fill.test.ts`(+8 例·含"验收核心 y 偏移"/换皮/裸串/accent 叠/skin/bare 忽略/NaN 退化/零回归) ·
 > game-i 展台加 `PANEL.shadow` 货架行。`scoped-gate` scope=full 全绿。
 > **游戏侧接法**：`design-tokens.ts` 身份牌 `shadow:{y:4}` / 相位牌 `{y:5}` / 招式卡 `{y:7}` / 主 CTA `{y:8}`，
-> 颜色填 `SurfaceToken`（换皮）或稿子墨色；接上后删 `plate-art.ts` 的投影生成支。
+> 颜色填 `SurfaceToken`（换皮）或稿子墨色。**切不切、删不删 `plate-art.ts` 由 game108 定——见下方 owner 裁（贴图路线不废弃·本轮不切）。**
 
 > **⚖ owner 2026-08-07 裁的边界（压过上面那句「接上后删 plate-art.ts」）**：
 > 原话——「**我们做归做，但是选择吃贴图可能也是我们最终选择**」。故：

@@ -32,4 +32,6 @@ export const ART_FONT_FAMILY: Record<string, string> = {
   jpbrush: "'Yuji Syuku'",
   jppen: "'Klee One'",
   cnround: "'ZCOOL KuaiLe'", // 站酷快乐体·卡通粗圆黑（汉字·卡通标题/大字）
+  // 惰性拉丁艺术字（@font-face url 也在 art-fonts-cjk.ts·非 base64 常驻）——体量大/多字重不宜塞常驻 bundle 的走这里。
+  round: "'Fredoka'",  // Fredoka·圆润数字/大标题（可变字重 300–700·bold→700·REQ-108-UI-06·配 cnround 成卡通底色）
 };

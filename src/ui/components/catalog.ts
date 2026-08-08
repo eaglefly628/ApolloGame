@@ -78,7 +78,7 @@ export const UI_CATALOG: readonly UiComponentSpec[] = [
       { name: 'size', type: 'enum-or-number', values: SIZE, default: 'md', describe: '字号档（具名令牌 xs10..xxxl34·保和谐默认）或裸 px 数字（复刻像素稿精确字号·8→任意大）' },
       { name: 'color', type: 'enum', values: COLOR, default: 'text', describe: '颜色令牌' },
       { name: 'bold', type: 'boolean', describe: '加粗' },
-      { name: 'font', type: 'enum', values: ['ui', 'mono', 'pixel', 'display', 'serif', 'impact', 'heavy', 'epic', 'fantasy', 'elegant', 'script', 'hand', 'scifi', 'terminal', 'comic', 'stencil', 'western', 'retro', 'marker', 'bubbly', 'gothic', 'fashion', 'shadow', 'cnbrush', 'cnwen', 'cnround', 'jpbrush', 'jppen'], describe: '字体槽：基础 ui/mono/pixel/display/serif + 18 款拉丁艺术字（OFL·base64）+ 5 款 CJK 艺术字（cnbrush 中文毛笔/cnwen 中文细宋/cnround 中文卡通粗圆黑站酷快乐体·标题大字/jpbrush 日文毛筆/jppen 日文楷書·能渲汉字假名·url 惰性载）' },
+      { name: 'font', type: 'enum', values: ['ui', 'mono', 'pixel', 'display', 'serif', 'impact', 'heavy', 'epic', 'fantasy', 'elegant', 'script', 'hand', 'scifi', 'terminal', 'comic', 'stencil', 'western', 'retro', 'marker', 'bubbly', 'gothic', 'fashion', 'shadow', 'round', 'cnbrush', 'cnwen', 'cnround', 'jpbrush', 'jppen'], describe: '字体槽：基础 ui/mono/pixel/display/serif + 18 款拉丁艺术字（OFL·base64）+ round(Fredoka 圆润数字/大标题·可变字重 300–700·bold→700·url 惰性载) + 5 款 CJK 艺术字（cnbrush 中文毛笔/cnwen 中文细宋/cnround 中文卡通粗圆黑站酷快乐体·标题大字/jpbrush 日文毛筆/jppen 日文楷書·能渲汉字假名·url 惰性载）' },
       { name: 'glow', type: 'boolean', describe: '磷光发光（按 color 描柔光）' },
       { name: 'stroke', type: 'boolean', describe: '描边字（comic 深色粗轮廓·卡通标题·可与 glow 叠）' },
       { name: 'bind', type: 'string', describe: '绑 Resource id（resolveBindings 接 current）' },

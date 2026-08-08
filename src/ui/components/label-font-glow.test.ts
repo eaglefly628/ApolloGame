@@ -47,13 +47,20 @@ describe('UI Components · Label.font CJK 艺术字（中/日·owner 2026-07-23�
       expect(html).toContain(`font-family:${fam}, 'PingFang SC'`); // 族名在前·系统 CJK 兜底其后
     }
   });
-  it('CJK @font-face = url() 引用（非 base64·浏览器惰性下载）· 覆 5 族', () => {
+  it('惰性拉丁槽 round → Fredoka（REQ-108-UI-06·圆润数字·可变字重 300–700·bold→700）', () => {
+    const html = renderNode({ type: 'Label', id: 't-round', props: { text: '140', font: 'round', bold: true } }, theme);
+    expect(html).toContain("font-family:'Fredoka'"); // 族名解到 Fredoka
+    expect(html).toContain('font-weight:700');       // bold → 700（可变字重顶格）
+  });
+  it('惰性 @font-face = url() 引用（非 base64·浏览器惰性下载）· 覆 5 CJK + Fredoka', () => {
     expect(ART_FONT_CJK_CSS).toContain("url(/ui-fonts/cjk/cnbrush.woff2)");
     expect(ART_FONT_CJK_CSS).toContain("url(/ui-fonts/cjk/cnround.woff2)");
+    expect(ART_FONT_CJK_CSS).toContain("url(/ui-fonts/cjk/round.woff2)");
     expect(ART_FONT_CJK_CSS).toContain("font-family:'ZCOOL KuaiLe'"); // 站酷快乐体·卡通粗圆黑（owner 设计稿字体）
     expect(ART_FONT_CJK_CSS).toContain("font-family:'Klee One'");
-    expect(ART_FONT_CJK_CSS).not.toContain('base64'); // CJK 走 url·不内嵌（区别拉丁 18 款）
-    expect((ART_FONT_CJK_CSS.match(/@font-face/g) ?? []).length).toBe(5);
+    expect(ART_FONT_CJK_CSS).toContain("font-family:'Fredoka';font-style:normal;font-weight:300 700"); // 可变字重范围
+    expect(ART_FONT_CJK_CSS).not.toContain('base64'); // 走 url·不内嵌（区别拉丁 18 款 base64 常驻）
+    expect((ART_FONT_CJK_CSS.match(/@font-face/g) ?? []).length).toBe(6); // 5 CJK + Fredoka
   });
 });
 

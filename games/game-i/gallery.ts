@@ -1320,6 +1320,24 @@ function buildPageNew(controls: ControlsState): LayoutNode {
           ],
         })) },
 
+      divider('d-roundfont'),
+      sectionTitle('t-roundfont', 'LABEL · font:round · 圆润数字艺术字 Fredoka（REQ-108-UI-06·可变字重 300–700·url 惰性载·配 cnround 成卡通底色）'),
+      { type: 'Label', id: 'roundfont-note', props: {
+        text: '拉丁圆润里 bubbly(Baloo 2) 之外补 round(Fredoka)：数字骨架不同（4/7 尤其），大字号（伤害大数）下更贴卡通稿。可变字体一颗 woff2 覆 300–700 全字重·bold→700·url 惰性载（主 bundle 零增·非 base64 常驻）。', color: 'sub', size: 'sm' } },
+      { type: 'Panel', id: 'roundfont-wall', props: {}, layout: { direction: 'column', gap: 10, padding: 16 },
+        children: [
+          { type: 'Panel', id: 'rf-big', props: { bare: true }, layout: { direction: 'row', align: 'end', gap: 20 },
+            children: [
+              { type: 'Label', id: 'rf-dmg', props: { text: '140', size: 'xxxl', bold: true, font: 'round', color: 'gold' } },
+              { type: 'Label', id: 'rf-hp', props: { text: '血量 100 · 3/3 · ⏱ 09', size: 'xl', bold: true, font: 'round', color: 'text' } },
+            ] },
+          { type: 'Panel', id: 'rf-cmp', props: { bare: true }, layout: { direction: 'row', align: 'center', gap: 24 },
+            children: [
+              { type: 'Label', id: 'rf-a', props: { text: 'round(Fredoka) 0123456789', size: 'lg', bold: true, font: 'round', color: 'jade' } },
+              { type: 'Label', id: 'rf-b', props: { text: 'bubbly(Baloo 2) 0123456789', size: 'lg', bold: true, font: 'bubbly', color: 'sub' } },
+            ] },
+        ] },
+
       divider('d-n17'),
       sectionTitle('t-fx', 'FX · UI 特效库（库 A·layout.fx 闭集合集·可叠加·render-only CSS·一个字段一串特效）'),
       { type: 'Label', id: 'fx-note', props: {
