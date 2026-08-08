@@ -21,7 +21,7 @@ from .blueprints import PRESET_BLUEPRINTS
 from .claude_code import handle_llm_live
 from .config import _features
 from .design_drafts import _draft_id_from_path, design_draft_delete, design_draft_get, design_draft_list, design_draft_put
-from .design_ingest import design_preview_path, handle_design_finalize, handle_design_ingest, handle_design_ledger_get
+from .design_ingest import design_preview_path, handle_design_finalize, handle_design_ingest, handle_design_ledger_get, handle_design_ui_brief
 from .games_list import handle_catalog, handle_game_cover_generate, handle_games_list
 from .generate_api import handle_generate
 from .groups import handle_matlib_groups_get, handle_matlib_groups_put
@@ -259,15 +259,19 @@ class APIHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def _serve_design_preview(self, slug: str, filename: str) -> None:
-        """GET /api/design/preview?slug=<slug>&file=<filename> → 只读伺服已收 .dc.html 设计稿正文
-        （收稿箱「👁 预览」新窗口打开用）。路径防护见 design_ingest.design_preview_path（basename 白名单
-        +归一化后仍在该游戏设计目录内的纵深断言，同 _serve_public_games 先例）。"""
+        """GET /api/design/preview?slug=<slug>&file=<filename> → 只读伺服已收设计稿正文（收稿箱
+        「👁 预览」新窗口打开用）。`filename` 既可以是单文件收稿的 basename，也可以是整包收稿
+        （REQ-DESIGNLINE 二期④）pack 内相对路径（如 `ui-refs/<稿名>/index.html` 或其引用的
+        `ui-refs/<稿名>/img/x.png`）——按扩展名选 Content-Type，图片/CSS/JSON 都要能经这条路径打开，
+        否则整包预览的入口 html 引用相对图片会裂图。路径防护见 design_ingest.design_preview_path
+        （禁绝对路径/`..` 段 + 归一化后仍在该游戏设计目录内的纵深断言，同 _serve_public_games 先例）。"""
         ok, target = design_preview_path(slug, filename)
         if not ok:
             self._send_json(400, {'success': False, 'error': target}); return
         if not target.is_file():
             self.send_response(404); self.end_headers(); return
-        self._send_file(target, 'text/html; charset=utf-8')
+        ctype = self._STATIC_CT.get(target.suffix.lower(), 'text/html; charset=utf-8')
+        self._send_file(target, ctype)
 
     _STATIC_CT = {
         '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8',
@@ -723,6 +727,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 data = handle_design_finalize(body)
             except Exception as e:
                 data = {'success': False, 'error': f'design finalize 异常: {e}'}
+        elif path == '/api/design/ui-brief':  # 「📐 生成 UI 设计需求单」钮（REQ-DESIGNLINE 二期①·S3 绿后可点）
+            try:
+                data = handle_design_ui_brief(body)
+            except Exception as e:
+                data = {'success': False, 'error': f'ui-brief 异常: {e}'}
         elif path == '/api/pipeline/gate':
             try:
                 data = handle_pipeline_gate(body)

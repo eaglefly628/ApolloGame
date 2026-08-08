@@ -24,6 +24,9 @@
 | 资产浏览器 | `main_entry/artbrowser.py` + `main_entry/t2_replace.py`（approve 扩 note/by·upload servedPath 顺修）+ 壳 `screen==='browser'` 区块 | REQ-ARTPIPE2 A2+A3+A4（PST 施工 2026-08-05）：三栏（目录树/缩略图网格/详情栏×3 tab：详情/历史/替换消费方）·数据薄封装见下 `GET /api/artbrowser/*` |
 | 八阶段板 | `scripts/game-pipeline.mjs` + `src/studio/GamePipelinePanel.tsx` | cart-S8=轻量终检（mockDebt∧manifest-check∧bench·证据绑 gameHash） |
 | launcher 导流 | `src/launcher.tsx` + `src/studio/DataCartridgeRunner.tsx`（LibActionBar） | 🏭/⤓ 导出/保存成功「下一步→🏭」/⇄ Workshop 链接 |
+| UI 需求单推导器 | `scripts/ui-brief.mjs`（新·纯函数+CLI） | REQ-DESIGNLINE 二期①：三源合并去重推导全动作清单（验收剧本 signal→蓝图/manifest 扫描→R2 实测钩子）+ GDD「屏幕」节推屏清单 + art-ledger 风格锚 + 品味槽 + 固定输出契约段。落 `docs/design/<slug>/ui-briefs/brief-<日期>.md` |
+| 设计稿收发（含整包 zip） | `main_entry/design_ingest.py` | 过渡轨②③单文件收稿 + 二期④整包 zip 收稿（安全解包+50MB 上限+扩展名白名单+html 拒外链）+ 二期③需求单↔收稿 `data-action` 对账 + 二期①②薄封装 `ui-brief.mjs`（shell 调，不重复实现推导逻辑） |
+| 本机导入 CLI | `main_entry/cli.py` `cmd_design_import` | `python3 zerocraft.py design-import <zip> --game <slug>`——零 HTTP 直调 `handle_design_ingest_zip`，owner 2026-08-08 裁：`--watch` 轮询监听砍掉不做，只留单次导入 |
 
 ## 2. 接口契约（壳↔服务端·改动必须两头同步）
 
@@ -148,6 +151,39 @@
   壳游戏库屏「🩺 体检」按钮出报告卡。只读不写——门在 manifest-check/cart-logic-check，体检是普查。
 - `GET/PUT /api/settings` → `{providers:[{id,name,models,model,apiKeyMasked,hasConfigKey,keyAvailable,…}], genKeys:[{envKey,apiKeyMasked,hasConfigKey,keyAvailable}], default}`
   - PUT 只送 dirty 字段；**空串=清除**；`genKeys` 三把=`DASHSCOPE_API_KEY / TRIPO_API_KEY / MESHY_API_KEY`（owner 07-11 收编旧美术台配置）
+- **REQ-DESIGNLINE 二期（PST 施工 2026-08-08）**——owner 痛点：Claude Design 真实导出物是 zip 包（html+图片
+  一堆文件），不是单 html；且需求单里的「全动作清单」全靠人记，容易漏（RENDERCHECK R2 实测 game-a 可驱动率
+  0/19 的病根之一）。
+  - `POST /api/design/ui-brief {slug, taste?}` → `{success, path, markdown, screenCount, actionCount,
+    actionSources:{scenario,blueprint,r2}, styleAnchorPackId, tasteFilled}`——薄封装
+    `node scripts/ui-brief.mjs --game <slug> [--taste …] --json`（同 `_pipeline_cli`/`_art_replace_cli`
+    先例，Python 侧不重复实现推导逻辑）。落盘 `docs/design/<slug>/ui-briefs/brief-<日期>.md`（同日重跑覆盖）；
+    壳「🎨 设计稿产线」区新增「📐 生成 UI 设计需求单」钮（S3 骨架关绿后可点，未绿只显灰字提示）+ 品味一句话
+    输入框，结果塞进既有一键复制框（`designBriefText`），不建第二套展示。
+  - `POST /api/design/ingest {slug, filename, dataBase64, screenName?}`——按 `filename` 扩展名分派：`.zip` →
+    `handle_design_ingest_zip`（新）整包收稿；`.html`/`.dc.html` → 原单文件路径（改名 `_handle_design_ingest_single`，
+    行为不变）。zip 路径：① 每条目先过 zip-slip 纵深断言（越界=**整包**拒收，不是单条跳过——安全问题与
+    「格式不认识」的白名单问题拒收语义分开）；② 50MB 上限（原始包体 + 解压后累计双卡，防炸弹式压缩比攻击）；
+    ③ 扩展名白名单 html/css/png/jpg/jpeg/svg/webp/json，白名单外**单条跳过**记 `skippedFiles`（非致命——
+    zip 里常见的 `.DS_Store` 之类杂项不该拖累整包）；④ html 条目仍拒外链 `<script src=`（任一命中=整包拒收，
+    安全策略不因打包而降级）；⑤ 入口 html 判定见 `_pick_entry_html`（优先顶层 `index.html`/`index.dc.html`，
+    唯一 html 也可，多个又判不出=拒收并提示加顶层 index.html）。落
+    `docs/design/<slug>/ui-refs/<稿名>/`（**保留包内相对路径结构**——图片跟入口 html 的相对引用关系不能因
+    落盘而裂图；重名目录 `-v2` 顺延，全过程校验先行、任何一条不过**不落一个字节到盘**，防半包残留）；
+    台账条目新增 `kind:'pack'|'single'`（旧条目缺该字段=历史遗留，前端按 `'single'` 兜底）、`entryHtml`、
+    `files:[{path,sha256,size}]`、`skippedFiles`。
+  - **需求单↔收稿对账**（`_check_brief_actions`，两条收稿路径共用）：该游戏 `ui-briefs/` 下有最新需求单
+    （文件名 `brief-*.md` 按日期字典序取最大）→ 解析其「## ② 全动作清单」表格反引号动作名 → 比对
+    收到 html 里 `data-action="…"` 标注，缺项记台账 `briefCheck:{applicable,missing:[],ok}`，响应体同带——
+    **不拒收**，前端亮 ⚠ 警示（收稿箱行 + 上传成功 toast）。无需求单/需求单无②清单 →
+    `applicable:false`（对账不适用≠全齐，前端不应混同展示为 ✓）。
+  - `GET /api/design/preview?slug=&file=`（`design_preview_path` 泛化）：`file` 既可以是单文件收稿的
+    basename（legacy），也可以是 pack 内相对路径（`ui-refs/<稿名>/index.html` 或它引用的
+    `ui-refs/<稿名>/img/x.png`）——按扩展名走 `_STATIC_CT` 选 Content-Type，不然整包预览的入口 html 引用
+    相对图片会裂图。防护统一为「禁绝对路径/`..` 段 + 归一化仍在该游戏 `docs/design/<slug>/` 子树内」。
+  - `python3 zerocraft.py design-import <zip路径> --game <slug>`（`main_entry/cli.py::cmd_design_import`）：
+    本机零 HTTP 直调 `handle_design_ingest_zip`——同一份安全解包/登记/对账代码，不建第二套口径。**owner
+    2026-08-08 明裁**：原计划的 `--watch <目录>` 轮询监听「没什么意思」，砍掉不做，只留单次导入。
 
 ## 2.5 UI 纪律：等模型必挂心跳实况（owner 07-11 立规）
 
@@ -174,7 +210,9 @@ python3 scripts/art-replace-smoke.py  # 45 断言：美术管线+mock 三道闸
 python3 main_entry/artbrowser_smoke.py  # 27 断言：A3 历史/回滚（真 git log+show·路径穿越防护×4处）+ A4 消费方
                                           # 反查（manifest grep/declared-slot 退化）+ servedPath 顺修回归（不进
                                           # scripts/**·PST 自己域内的测法，同精神不同落点）
-npx tsc --noEmit && npx vitest run && npx vite build
+python3 scripts/design-ingest-zip-check.py  # 22 断言：zip 收稿安全性（zip-slip/超限/白名单跳过/台账完整性）
+                                              # ——由 scripts/design-ingest-zip.test.mjs 逐 case spawn 纳入 vitest
+npx tsc --noEmit && npx vitest run && npx vite build   # vitest 内含 scripts/ui-brief.test.mjs（21 例·三源合并去重推导）
 ```
 壳侧改 `index.dc.html` 后：起 `python zerocraft.py workshop` 真浏览器过一遍
 （八屏 + mock 生成链 `ZEROCRAFT_MOCK_LLM=1`（旧名 APOLLO_MOCK_LLM 过渡期仍读） + 对白编辑「✔ 应用改动」+ 下载包 + 设置保存打码回显）。
@@ -187,6 +225,17 @@ npx tsc --noEmit && npx vitest run && npx vite build
 - ~~对白编辑历史不落盘~~ ✅ 已落（07-11 owner 点名·`/api/agent/chats` 持久化）
 - **Fable 5 计费告警**：Max 订阅**不含** Fable 5——走 usage credits 另计费（$10/$50 每 M token·2026-07-12 前有限免促销）；
   壳模型 chips 的 tip 已标注。量产/默认=Opus 4.8 + effort high（订阅内零新钱）
+- **REQ-DESIGNLINE 二期遗留**（PST 2026-08-08）：
+  - `ui-brief.mjs` 的动作源 (c)（R2 实测 data-action 清单）约定读 `public/games/<slug>/probe/ui-inventory.json`
+    的 `{seen:[...]}`，但本仓当前没有生产者把这份证据落盘（`scripts/ui-inventory.mjs` 只打印到 stdout）——
+    该源目前恒空。**不是缺陷，是留好的钩子**：等 REQ-RENDERCHECK/REQ-S3CLICK 一系探针补写落盘（哪怕只是
+    `ui-inventory.mjs` 收尾加一行 `writeFileSync`）即可自动接上，不用改 `ui-brief.mjs`。
+  - GDD「动作词表」节（如 game108 §14）只作**语义注解**用，不作独立动作源——三源（剧本/蓝图/R2）都应是它
+    的下游表达。真实验证：game108 GDD §14 声明 10 个动作，当前验收剧本只覆盖 6 个（`throw.void`/
+    `shard.pick`/`duel.next`/`charge.scissors` 尚未被任何 `.scenario.jsonc` 用到）——`ui-brief.mjs` 如实只列
+    推得出的 6 个，这是该游戏验收剧本覆盖度的真实缺口，不是推导器的 bug。
+  - `--watch <目录>` 轮询监听已被 owner 2026-08-08 明确砍掉（"没什么意思"）——`design-import` 只做单次导入，
+    往后如要重开走 requests.md 正常提案，不要凭旧规划字面复活。
 
 ## 6. 变更纪律
 

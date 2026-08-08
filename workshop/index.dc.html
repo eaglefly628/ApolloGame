@@ -514,6 +514,23 @@
                   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
                     <button onClick="{{ designBriefToggle }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">{{ designBriefToggleLabel }}</button>
                   </div>
+                  <!-- 全控件清单版需求单推导（REQ-DESIGNLINE 二期①②·S3 骨架关绿后可点）：薄封装 scripts/ui-brief.mjs，
+                       结果塞进上面同一个一键复制框（designBriefText），不建第二套展示。 -->
+                  <div style="border-top:2.5px dashed rgba(58,35,18,.3);margin-top:2px;padding-top:10px;margin-bottom:8px">
+                    <sc-if value="{{ uiBriefGateOn }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                        <input value="{{ uiBriefTasteVal }}" onInput="{{ uiBriefTasteType }}" placeholder="品味一句话（可选·如「走暗黑帝国感·金属质感强」）" style="flex:1;min-width:180px;border:2.5px solid #3a2312;border-radius:9px;padding:7px 9px;font-family:'Noto Sans SC';font-weight:600;font-size:11px;background:#fff;color:#3a2312;outline:none">
+                        <button onClick="{{ uiBriefGenerate }}" style="{{ uiBriefBtnStyle }}" style-active="{{ applyBtnActive }}">{{ uiBriefBtnLabel }}</button>
+                      </div>
+                      <div style="font-family:'Noto Sans SC';font-weight:600;font-size:10px;color:#8a5a2c;margin-top:5px">从验收剧本+蓝图+GDD 推导全控件清单版需求单（含屏清单/动作清单/风格锚/输出契约）——结果进上面一键复制框。</div>
+                    </sc-if>
+                    <sc-if value="{{ uiBriefGateOffOn }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#8a5a2c">📐 全控件清单版需求单需 S3 骨架关先过绿（点了才通·骨架先立起来动作清单才有东西可推）。</div>
+                    </sc-if>
+                    <sc-if value="{{ uiBriefResultOn }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-family:'Noto Sans SC';font-weight:700;font-size:11px;color:#4e8a24;margin-top:6px">{{ uiBriefResultText }}</div>
+                    </sc-if>
+                  </div>
                   <sc-if value="{{ designBriefOpenOn }}" hint-placeholder-val="{{ false }}">
                     <div style="margin-bottom:10px">
                       <textarea value="{{ designBriefText }}" onInput="{{ designBriefEdit }}" rows="10" style="width:100%;box-sizing:border-box;border:2.5px solid #3a2312;border-radius:10px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.6;color:#3a2312;background:rgba(58,35,18,.05);resize:vertical;outline:none"></textarea>
@@ -523,12 +540,12 @@
                       </div>
                     </div>
                   </sc-if>
-                  <!-- 收稿箱（拖放/选择上传 Claude Design 产出的 .dc.html） -->
+                  <!-- 收稿箱（拖放/选择上传 Claude Design 产出的 .dc.html 单文件，或 .zip 整包） -->
                   <div style="border-top:2.5px dashed rgba(58,35,18,.3);margin-top:6px;padding-top:12px">
                     <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#3a2312;margin-bottom:6px">📥 收稿箱</div>
                     <div onDragOver="{{ designDropOver }}" onDrop="{{ designDrop }}" onClick="{{ designPickFile }}" style="border:3px dashed rgba(58,35,18,.4);border-radius:14px;padding:16px;text-align:center;cursor:pointer;background:rgba(255,255,255,.5)">
-                      <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#5a3d1e">拖放 .html / .dc.html 到此处，或点击选择文件</div>
-                      <div style="font-family:'Noto Sans SC';font-weight:600;font-size:10px;color:#8a5a2c;margin-top:4px">仅收自包含设计稿（不含外链 &lt;script src=&gt;）· 上限 2MB</div>
+                      <div style="font-family:'Noto Sans SC';font-weight:700;font-size:12px;color:#5a3d1e">拖放 .zip（Claude Design 整包导出）/ .html / .dc.html 到此处，或点击选择文件</div>
+                      <div style="font-family:'Noto Sans SC';font-weight:600;font-size:10px;color:#8a5a2c;margin-top:4px">自包含设计稿（不含外链 &lt;script src=&gt;）· 单文件上限 2MB · zip 整包上限 50MB</div>
                     </div>
                     <sc-if value="{{ designIngestBusyOn }}" hint-placeholder-val="{{ false }}">
                       <div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="width:14px;height:14px;border:3px solid rgba(58,35,18,.2);border-top-color:#7ecb45;border-radius:50%;animation:spin .8s linear infinite;flex:none"></span><span style="font-family:'Noto Sans SC';font-weight:600;font-size:11px;color:#5a3d1e">上传中…</span></div>
@@ -540,6 +557,8 @@
                             <div style="{{ dl.rowStyle }}">
                               <span style="{{ dl.badgeStyle }}">{{ dl.badgeText }}</span>
                               <span title="{{ dl.filename }}" style="flex:1;min-width:0;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#3a2312;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ dl.filename }}</span>
+                              <span title="{{ dl.kindLabelTitle }}" style="{{ dl.kindLabelStyle }}">{{ dl.kindLabel }}</span>
+                              <span title="{{ dl.warnTitle }}" style="{{ dl.warnStyle }}">{{ dl.warnText }}</span>
                               <button onClick="{{ dl.preview }}" title="新窗口打开该设计稿（静态服务路径）" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">👁 预览</button>
                               <sc-if value="{{ dl.showFinalize }}" hint-placeholder-val="{{ false }}">
                                 <button onClick="{{ dl.startFinalize }}" style="{{ miniBtnStyle }}" style-active="{{ miniBtnActive }}">☑ 定稿</button>
@@ -1408,6 +1427,8 @@ class Component extends DCLogic {
     designAnchor: null, stylePacksAll: null,  // 风格包锚定（该游戏若锚过某风格包·纯前端拼需求单用）
     designLedger: null, designIngestBusy: false,
     designSignRow: null, designSignNote: '', designSignBy: 'owner', designSignBusy: null,  // 定稿人门（沿 wizardSignoff 先例·note 永远空起不代填）
+    // 全控件清单版需求单推导（REQ-DESIGNLINE 二期①②·薄封装 scripts/ui-brief.mjs·S3 绿后可点）
+    uiBriefTaste: '', uiBriefBusy: false, uiBriefResult: null,
     // 游戏美术库（台账·按种类折叠·Feature B）/ 素材库（共享 FreeArtLib·Feature C）/ 设置 / 调试日志
     assetsSlug: null, ledger: null, artOpen: {}, freeLib: null, flQuery: '', flCat: {}, flSub: {}, llmLogs: null, traceLog: '', llmLegacy: false,
     coverPrompt: '', coverBusy: false,   // 游戏封面/图标文生图（owner 07-12·替换卡片默认矢量图标）
@@ -1568,6 +1589,7 @@ class Component extends DCLogic {
       pendingLogic: null, logicErr: null, pendingArtOps: null, chatSessions: {}, chatUsage: {}, chatQueue: [], docZoom: false,
       editMoreOpen: false, designBriefOpen: false, designBriefText: '', designAnchor: null, designLedger: null,
       designIngestBusy: false, designSignRow: null, designSignNote: '', designSignBy: 'owner',
+      uiBriefTaste: '', uiBriefBusy: false, uiBriefResult: null,
       editAllowTs: !!(this.state.carts || []).filter(c => c && c.slug === slug).map(c => c.allowTs)[0],
       editHasLogic: !!(this.state.carts || []).filter(c => c && c.slug === slug).map(c => c.hasLogic)[0] });
     this.refreshBoard(slug);
@@ -2569,6 +2591,23 @@ class Component extends DCLogic {
   }
   designBriefEdit(e) { this.setState({ designBriefText: e.target.value }); }
   designBriefCopy() { this.copyText(this.state.designBriefText); }
+  // 全控件清单版需求单推导（REQ-DESIGNLINE 二期①②）：调后端薄封装 scripts/ui-brief.mjs，
+  // 结果塞进既有一键复制框（designBriefOpen/designBriefText）——不建第二套展示。
+  uiBriefTasteType(e) { this.setState({ uiBriefTaste: e.target.value }); }
+  uiBriefGenerate() {
+    const slug = this.state.editSlug;
+    if (!slug || this.state.uiBriefBusy) return;
+    this.setState({ uiBriefBusy: true, uiBriefResult: null });
+    fetch('/api/design/ui-brief', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, taste: this.state.uiBriefTaste || '' }) }).then(r => r.json()).then(d => {
+        this.setState({ uiBriefBusy: false });
+        if (!d || !d.success) throw new Error((d && d.error) || '推导失败');
+        this.setState({ designBriefOpen: true, designBriefText: d.markdown || '',
+          uiBriefResult: { path: d.path, screenCount: d.screenCount, actionCount: d.actionCount } },
+          () => this.copyText(d.markdown || ''));
+        this.showToast('✓ 需求单已生成并落盘：' + d.path);
+      }).catch(e => { this.setState({ uiBriefBusy: false }); this.showToast('✕ ' + ((e && e.message) || '推导失败').slice(0, 140)); });
+  }
   designDropOver(e) { if (e && e.preventDefault) e.preventDefault(); }
   designDrop(e) {
     if (e && e.preventDefault) e.preventDefault();
@@ -2579,7 +2618,7 @@ class Component extends DCLogic {
     if (this.state.designIngestBusy) return;
     const inp = document.createElement('input');
     inp.type = 'file';
-    inp.accept = '.html,.dc.html,text/html';
+    inp.accept = '.html,.dc.html,.zip,text/html,application/zip';
     inp.onchange = () => { const f = inp.files && inp.files[0]; if (f) this._designUploadFile(f); };
     inp.click();
   }
@@ -2587,8 +2626,10 @@ class Component extends DCLogic {
     const slug = this.state.editSlug;
     if (!slug) return;
     const fname = String((file && file.name) || '');
-    if (!/\.(dc\.html|html)$/i.test(fname)) { this.showToast('✕ 只收 .html / .dc.html'); return; }
-    if (file.size > 2 * 1024 * 1024) { this.showToast('✕ 超过 2MB 上限'); return; }
+    const isZip = /\.zip$/i.test(fname);
+    if (!isZip && !/\.(dc\.html|html)$/i.test(fname)) { this.showToast('✕ 只收 .html / .dc.html / .zip'); return; }
+    const maxBytes = isZip ? 50 * 1024 * 1024 : 2 * 1024 * 1024;
+    if (file.size > maxBytes) { this.showToast('✕ 超过' + (isZip ? ' 50MB（zip 整包）' : ' 2MB') + '上限'); return; }
     const reader = new FileReader();
     reader.onerror = () => this.showToast('✕ 读文件失败');
     reader.onload = () => {
@@ -2600,7 +2641,9 @@ class Component extends DCLogic {
         body: JSON.stringify({ slug, filename: fname, dataBase64: b64 }) }).then(r => r.json()).then(d => {
           this.setState({ designIngestBusy: false });
           if (!d || !d.success) throw new Error((d && d.error) || '上传失败');
-          this.showToast('✓ 已收稿：' + d.filename);
+          const bc = d.briefCheck || {};
+          const warn = (bc.applicable && !bc.ok) ? ('（⚠ 缺 ' + (bc.missing || []).length + ' 个需求单动作未标注）') : '';
+          this.showToast('✓ 已收稿：' + d.filename + warn);
           this.refreshDesignLedger(slug);
         }).catch(e => { this.setState({ designIngestBusy: false }); this.showToast('✕ ' + ((e && e.message) || '上传失败').slice(0, 100)); });
     };
@@ -2784,6 +2827,7 @@ class Component extends DCLogic {
     }));
     // ── 向导模式派生态（REQ-PIPESOFT P1b）：步进器只亮第一个非绿阶段·其余折叠证据摘要 ────────
     const wStages = (s.board && s.board.stages) || [];
+    const wS3Ok = (wStages.find(st3 => st3.id === 'S3') || {}).status === 'ok';  // REQ-DESIGNLINE 二期① UI 需求单钮门
     const wS1 = wStages.find(st3 => st3.id === 'S1');
     const wizardEmptyOn = !!(s.wizardOpen && s.board && s.board.success !== false && wS1 && wS1.status === 'dim');
     const wCur = (s.board && s.board.next) ? wStages.find(st3 => st3.id === s.board.next) : null;
@@ -3569,6 +3613,16 @@ class Component extends DCLogic {
       designBriefText: s.designBriefText,
       designBriefEdit: (e) => this.designBriefEdit(e),
       designBriefCopy: () => this.designBriefCopy(),
+      // 全控件清单版需求单推导（REQ-DESIGNLINE 二期①②·S3 骨架关绿后可点·复用上面 wS3Ok）
+      uiBriefGateOn: wS3Ok,
+      uiBriefGateOffOn: !wS3Ok,
+      uiBriefTasteVal: s.uiBriefTaste || '',
+      uiBriefTasteType: (e) => this.uiBriefTasteType(e),
+      uiBriefGenerate: () => this.uiBriefGenerate(),
+      uiBriefBtnLabel: s.uiBriefBusy ? '⏳ 推导中…' : '📐 生成 UI 设计需求单',
+      uiBriefBtnStyle: Object.assign({}, apply.style, s.uiBriefBusy ? { opacity: .6, cursor: 'not-allowed' } : {}),
+      uiBriefResultOn: !!s.uiBriefResult,
+      uiBriefResultText: s.uiBriefResult ? ('✓ ' + s.uiBriefResult.path + '（' + s.uiBriefResult.screenCount + ' 屏 · ' + s.uiBriefResult.actionCount + ' 动作）') : '',
       designIngestBusyOn: !!s.designIngestBusy,
       designPickFile: () => this.designPickFile(),
       designDropOver: (e) => this.designDropOver(e),
@@ -3576,7 +3630,13 @@ class Component extends DCLogic {
       hasDesignLedger: Array.isArray(s.designLedger) && s.designLedger.length > 0,
       designLedgerRows: (Array.isArray(s.designLedger) ? s.designLedger : []).map(entry => {
         const isFinal = entry && entry.status === 'final';
+        const isPack = !!(entry && entry.kind === 'pack');
+        const previewFile = isPack ? ('ui-refs/' + entry.filename + '/' + (entry.entryHtml || '')) : (entry && entry.filename) || '';
         const busy = s.designSignBusy === (entry && entry.filename);
+        const bc = (entry && entry.briefCheck) || {};
+        const hasWarn = !!(bc.applicable && !bc.ok);
+        const kindLabel = isPack ? ('📦 ' + ((entry.files || []).length) + ' 文件') : '';
+        const warnText = hasWarn ? ('⚠ 缺' + ((bc.missing || []).length) + '动作') : '';
         return {
           filename: (entry && entry.filename) || '',
           rowStyle: { display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: '10px',
@@ -3584,7 +3644,13 @@ class Component extends DCLogic {
           badgeText: isFinal ? '⭐ 基准' : '📝 draft',
           badgeStyle: { flex: 'none', fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: '10px', padding: '2px 8px', borderRadius: '999px',
             color: isFinal ? '#fff5db' : '#5a3d1e', background: isFinal ? '#4e8a24' : 'rgba(58,35,18,.15)' },
-          preview: () => this.designPreviewOpen(entry && entry.filename),
+          kindLabel, kindLabelTitle: isPack ? ('入口: ' + (entry.entryHtml || '')) : '',
+          kindLabelStyle: { display: kindLabel ? 'inline-block' : 'none', flex: 'none', fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: '10px',
+            color: '#5a3d1e', background: 'rgba(58,35,18,.12)', borderRadius: '999px', padding: '2px 7px' },
+          warnText, warnTitle: hasWarn ? ('未标注: ' + (bc.missing || []).join(', ')) : '',
+          warnStyle: { display: warnText ? 'inline-block' : 'none', flex: 'none', fontFamily: "'Fredoka',sans-serif", fontWeight: 700, fontSize: '10px',
+            color: '#fff5db', background: '#e0862f', borderRadius: '999px', padding: '2px 7px' },
+          preview: () => this.designPreviewOpen(previewFile),
           showFinalize: !isFinal,
           signOpen: s.designSignRow === (entry && entry.filename),
           startFinalize: () => this.designStartFinalize(entry && entry.filename),

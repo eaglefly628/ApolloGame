@@ -169,6 +169,47 @@ def cmd_status():
     print(c("  Games:", 'c'), ', '.join(s['games']) if s['games'] else '(none)')
     print()
 
+def cmd_design_import(args: list):
+    """python3 zerocraft.py design-import <zip路径> --game <slug>（REQ-DESIGNLINE 二期⑤·PST 域
+    2026-08-08）：本机直接导入 Claude Design 导出的 zip 设计稿包——不经浏览器/HTTP，直调
+    `design_ingest.handle_design_ingest_zip`（与工坊拖拽走同一份安全解包+登记+对账代码，零第二套口径）。
+    owner 裁：`--watch <目录>` 轮询监听砍掉不做（"没什么意思"）——本命令只管单次导入。"""
+    import base64
+    from .design_ingest import handle_design_ingest_zip
+
+    if not args or args[0].startswith('--'):
+        print(c("  用法: python3 zerocraft.py design-import <zip路径> --game <slug>", 'r'))
+        sys.exit(2)
+    zip_path = Path(args[0])
+    slug = None
+    if '--game' in args:
+        gi = args.index('--game')
+        if gi + 1 < len(args):
+            slug = args[gi + 1]
+    if not slug:
+        print(c("  缺 --game <slug>", 'r'))
+        sys.exit(2)
+    if not zip_path.is_file():
+        print(c(f"  文件不存在: {zip_path}", 'r'))
+        sys.exit(1)
+    raw = zip_path.read_bytes()
+    body = {'slug': slug, 'filename': zip_path.name, 'dataBase64': base64.b64encode(raw).decode('ascii')}
+    res = handle_design_ingest_zip(body)
+    if not res.get('success'):
+        print(c(f"  ✕ 导入失败: {res.get('error')}", 'r'))
+        sys.exit(1)
+    bc = res.get('briefCheck') or {}
+    print(c("  ✓ 导入成功", 'g'),
+          f"→ docs/design/{slug}/ui-refs/{res.get('filename')}/（入口={res.get('entryHtml')}·"
+          f"{len(((res.get('entry') or {}).get('files')) or [])} 文件）")
+    if bc.get('applicable'):
+        if bc.get('ok'):
+            print(c("  ✓ 对账", 'g'), f"需求单 {bc.get('expected')} 个动作全部标注")
+        else:
+            print(c("  ⚠ 对账", 'y'), f"缺 {len(bc.get('missing') or [])} 个需求单动作未标注: {', '.join(bc.get('missing') or [])}")
+    else:
+        print(c("  ·", 'dim'), "该游戏暂无 UI 需求单，跳过对账")
+
 def cmd_help():
     banner()
     print(c("  Commands:", 'w'))
@@ -180,6 +221,7 @@ def cmd_help():
     print(f"    {c('typecheck', 'c').ljust(30)} TypeScript type check")
     print(f"    {c('build', 'c').ljust(30)} Production build")
     print(f"    {c('bench', 'c').ljust(30)} ZeroCraftBench 执行落地体检 (每个游戏跑分)")
+    print(f"    {c('design-import', 'c').ljust(30)} <zip> --game <slug>  本机直接导入设计稿 zip（REQ-DESIGNLINE 二期⑤）")
     print(f"    {c('status', 'c').ljust(30)} Project stats")
     print(f"    {c('help', 'c').ljust(30)} This help")
     print()
@@ -191,12 +233,16 @@ def main():
         cmd_launcher()
         return
 
+    cmd = args[0]
+    if cmd == 'design-import':  # 需要吃余下 argv（zip 路径 + --game），不走零参 dispatch 表
+        cmd_design_import(args[1:])
+        return
+
     dispatch = {
         'launcher': cmd_launcher, 'player': cmd_player, 'workshop': cmd_workshop, 'platform': cmd_platform,
         'test': cmd_test, 'typecheck': cmd_typecheck, 'build': cmd_build, 'bench': cmd_bench, 'status': cmd_status,
         'help': cmd_help, '-h': cmd_help,
     }
-    cmd = args[0]
     if cmd in dispatch:
         dispatch[cmd]()
     else:
