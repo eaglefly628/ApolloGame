@@ -17,7 +17,6 @@
 import { Engine } from '@zerocraft/engine/runtime/engine.js';
 import { ThreeRenderer } from '@zerocraft/engine/renderer/three-renderer.js';
 import { AssetManager, ModelAssetLoader } from '@zerocraft/engine/assets/index.js';
-import { upFaceIndex } from '@zerocraft/engine/renderer/three/dice.js';
 import { nextRandom } from '@zerocraft/engine/atom-skills/index.js';
 import { mountUI } from '@zerocraft/engine/ui/components/index.js';
 import type { LayoutNode } from '@zerocraft/engine/ui/components/types.js';
@@ -27,18 +26,35 @@ import type { RandomSeed, Transform3D } from '@zerocraft/engine/engine/protocol/
 import { GG_THEME_ONYX } from './ui-theme.js';
 
 // ── 场地常量（世界单位）──
-const CARD_W = 1.5, CARD_H = 2.1, CARD_D = 0.16; // 命牌尺寸（薄板·像张牌）
-const ARENA = 5.2;   // 围栏半径（隐形墙内壁·收住不飞出画面）
-const THROW_X = 2.6; // 两张牌的出手点（对向）
-
-const FACE_FRONT = 4; // upFaceIndex 面序 [+X,-X,+Y,-Y,+Z,-Z] → +Z = Mesh3D 正面
+// 命符 = **圆牌**（owner 2026-08-07「一圈是个圆的·边缘圆弧·不可能站立·再薄一点」）：
+//   物理体 = `cylinder`（圆柱侧面是连续曲面 → 立在边上是**不稳定平衡**，落不住）；厚度压薄进一步杜绝。
+//   ⚠ 旧版是 `box` 薄板：方边有 4 条稳定棱，实测真会立着落地（owner 目击）——方盒立边是**稳定**平衡，必须换形状，调参数没用。
+const DISC_D = 1.9;   // 圆牌直径
+const DISC_T = 0.085; // 圆牌厚度（薄·越薄越立不住）
+const ARENA = 5.2;    // 围栏半径（隐形墙内壁·收住不飞出画面）
+const THROW_X = 2.6;  // 两张牌的出手点（对向）
+const GRAVITY = 20;   // 物理档重力大小（正数·算抛物线用；PhysicsWorld3D 里取负）
 const SIDE = ['a', 'b'] as const;
 type Side = (typeof SIDE)[number];
 
-/** 一张牌的落定读数。face=upFaceIndex 结果；front=是否正面朝上（活）。 */
-export interface CardOutcome { side: Side; face: number; front: boolean }
+/** 一张牌的落定读数。upY=牌**局部 +Y 轴**转到世界后的 y 分量（+1=正面完全朝上·−1=完全朝下）；front=正面朝上（活）。 */
+export interface CardOutcome { side: Side; upY: number; front: boolean }
 /** 一场对决的结局：双方读数 + 判词。 */
 export interface DuelOutcome { a: CardOutcome; b: CardOutcome; verdict: string }
+
+/** 圆牌朝向 → 世界 Y 分量（纯函数·可单测）：把局部 +Y=(0,1,0) 按四元数旋转，取 y 分量 = 1−2(x²+z²)。
+ *  圆盘只有两个稳定落定态（正面朝上 / 反面朝上）→ 用它判正反，比 6 面骰的 upFaceIndex 贴切。 */
+export function upYOf(q: readonly number[]): number {
+  const x = q[0] ?? 0, z = q[2] ?? 0;
+  return 1 - 2 * (x * x + z * z);
+}
+
+/** 把局部偏移 (0,−d,0) 按四元数 q 旋到世界（纯函数·可单测）。反面片贴在正面片下方、随牌一起翻，用它算位置。
+ *  用的是标准 v' = v + 2·qw·(q.xyz×v) + 2·q.xyz×(q.xyz×v)，对 v=(0,−d,0) 展开后的闭式（零 trig·省得每帧建四元数对象）。 */
+export function offsetUnder(q: readonly number[], d: number): [number, number, number] {
+  const x = q[0] ?? 0, y = q[1] ?? 0, z = q[2] ?? 0, w = q[3] ?? 1;
+  return [2 * d * (w * z - x * y), -d + 2 * d * (x * x + z * z), -2 * d * (w * x + y * z)];
+}
 
 /** 纯函数·由两张牌的朝上面判胜负（可单测·与表现解耦）。
  *  正面=活：两张都正面 → 平（同生）；都反面 → 平（同归于尽）；一正一反 → 正面者胜。 */
@@ -81,8 +97,12 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
   const stage = document.createElement('div');
   stage.style.cssText = 'position:relative;line-height:0';
   wrapper.appendChild(stage);
+  // HUD 宿主**不铺满**：铺满 + pointer-events:none 时，一旦「只给面板开 auto」那一步没命中（选择器/时序任一出错），
+  // 整层就变成透明挡板，点击全被下面的 canvas 吃掉 —— 实测就是这样：owner 点「再抛一次」毫无反应，
+  // Playwright 报 `<canvas> intercepts pointer events`。改成**贴左上角、按内容自适应、自身可点**，
+  // 既不覆盖画面其余部分，也不依赖任何运行时补救。
   const uiHost = document.createElement('div');
-  uiHost.style.cssText = 'position:absolute;inset:0;pointer-events:none';
+  uiHost.style.cssText = 'position:absolute;left:0;top:0;pointer-events:auto;z-index:3';
   wrapper.appendChild(uiHost);
   container.appendChild(wrapper);
 
@@ -105,7 +125,7 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
   // ⚠ `PhysicsWorld3D` **未登记进 `src/assembly/component-map.ts` 的蓝图组件闭集** → 蓝图里写不了，只能命令式挂
   //   （渲染器直接 world.query 读得到，功能正常）。这是 3d.md 文档与闭集登记的一处不一致，已记 requests-3d 待 P3D 补登记。
   engine.world.createEntity('g211-phys');
-  engine.world.addComponent('g211-phys', { type: 'PhysicsWorld3D', gravity: -22, restitution: 0.22, friction: 0.5, solverIterations: 20 } as unknown as Component);
+  engine.world.addComponent('g211-phys', { type: 'PhysicsWorld3D', gravity: -GRAVITY, restitution: 0.22, friction: 0.5, solverIterations: 20 } as unknown as Component);
 
   // 隐形围栏：有 RigidBody3D 无 Mesh3D = 物理有效但不渲染（3d.md「无 Mesh3D 的 RigidBody3D=隐形墙」·同 game-d 掷骰盒）。
   ([[ARENA, 0], [-ARENA, 0], [0, ARENA], [0, -ARENA]] as const).forEach(([dx, dz], k) => {
@@ -120,53 +140,71 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
   let outcome: DuelOutcome | null = null;
   let status = '按「抛掷」开始';
 
-  const cardId = (s: Side): string => `g211-card-${s}`;
+  // ⚠ 实体 id **每次抛掷都换**（`-<throwNo>` 后缀）——PhysicsSystem 只在 `!bodies.has(id)` 时建刚体，
+  //   复用同一 id 会让旧刚体（已静止）赖着不走、新初速根本不施加 = 「再抛一次」点了没反应（owner 目击的 bug）。
+  let liveIds: string[] = [];
+  const cardId = (s: Side): string => `g211-card-${s}-${throwNo}`;
+  const backId = (s: Side): string => `g211-card-${s}-${throwNo}-back`;
 
-  /** 抛一次：重建两张牌（对向抛出·空中相撞）。参数全取自种子 PRNG。 */
+  /** 抛一次：建两枚圆牌，**对向抛出并保证在半空撞上**。参数全取自种子 PRNG。 */
   function throwOnce(): void {
+    for (const id of liveIds) { try { engine.world.destroyEntity(id); } catch { /* 已不在 */ } } // 清上一把（含背面片）
+    liveIds = [];
     throwNo += 1;
     settled = new Set();
     prevQuat.clear(); stillSince.clear();
     outcome = null;
     status = '抛掷中…';
+    // 空中必相撞（owner 2026-08-07「两个牌在空中要能碰到·产生随机物理碰撞」）：
+    //   两枚**同时**出手、用**同一个** vy → 抛物线同步；水平速度按「到达中线所需时间 = 升到交汇点的时间」反解，
+    //   于是它们必在中线上方 x≈0 处相遇。**别让 vx/vy 各自乱取**——那样一个先落地、一个还在飞，永远碰不上（旧版就是这样）。
+    const vy = span(8.2, 9.4);                       // 共用初速（决定滞空与交汇高度）
+    const tMeet = (vy / GRAVITY) * span(0.72, 0.94); // 交汇时刻：略早于最高点（上升段相撞·看得清）
+    const vxMag = THROW_X / tMeet;                   // 水平速度反解 → t=tMeet 时两枚同抵 x=0
     for (const s of SIDE) {
-      const id = cardId(s);
-      try { engine.world.destroyEntity(id); } catch { /* 首次无此实体 */ }
-      const dir = s === 'a' ? 1 : -1;           // a 从左抛向右·b 从右抛向左 → 空中对撞
+      const id = cardId(s), bid = backId(s);
+      const dir = s === 'a' ? 1 : -1;                // a 从左抛向右·b 从右抛向左
+      // **擦碰**而非正面对撞：给两枚对称的 z 偏移（半径 0.95·偏移 ~0.3 → 必相交但不是心对心）。
+      // 正面对撞（z 都≈0）会让两枚在中线原地叠成一摞——既读不出正反、上面那枚还一直晃着不落定（实测目击）。
+      // 擦碰则把动量转成横向分离 + 随机自旋 = owner 要的「随机物理碰撞」，且撞完各自弹开、好读。
+      const zJit = dir * span(0.26, 0.42);
       engine.world.createEntity(id);
-      engine.world.addComponent(id, { type: 'Transform3D', x: -dir * THROW_X, y: span(0.9, 1.4), z: span(-0.5, 0.5) } as unknown as Component);
+      engine.world.addComponent(id, { type: 'Transform3D', x: -dir * THROW_X, y: 0.9, z: zJit } as unknown as Component);
+      // 正面 = 亮金（活）。圆柱图元是单材质 → 正反分色靠下面那片子实体（Pivot3D 合成）。
+      engine.world.addComponent(id, { type: 'Mesh3D', shape: 'cylinder', width: DISC_D, height: DISC_T, frontTint: 0xffd86b } as unknown as Component);
+      // 反面片：同径薄圆盘贴在正面片下方，逐帧跟随父体位姿（见 syncBacks）→ 翻过来看到的就是深色反面（我方暗红 / 敌方暗蓝）。
+      // ⚠ 不能用 `Pivot3D`：它的父变换只读 Euler `rotX/rotY/rotZ`，而物理写回的是 `quat` → 子片永远不跟着转
+      //   （实测：牌判定为反面、画面却仍是金色正面）。这是引擎侧口径限制（P3D 域·已记 requests-3d）。
+      engine.world.createEntity(bid);
+      engine.world.addComponent(bid, { type: 'Transform3D', x: 0, y: -DISC_T * 0.62, z: 0 } as unknown as Component);
+      engine.world.addComponent(bid, { type: 'Mesh3D', shape: 'cylinder', width: DISC_D * 0.995, height: DISC_T * 0.55, frontTint: s === 'a' ? 0x8c2018 : 0x1b2f6b } as unknown as Component);
       engine.world.addComponent(id, {
-        type: 'Mesh3D', shape: 'box', width: CARD_W, height: CARD_H, depth: CARD_D,
-        frontTint: 0xffd86b,                          // 正面 = 亮金牌面（活）——两方同色：定生死的是正反，不是敌我
-        backTint: s === 'a' ? 0x5e1512 : 0x101c3e,    // 反面 = 深底（亡）·我方暗红 / 敌方暗蓝（同时分敌我）
-        edgeTint: s === 'a' ? 0x8c3b2f : 0x2f4a8c,    // 侧边同阵营色 → 立着/半翻时也认得出是谁的牌
+        type: 'RigidBody3D', shape: 'cylinder', mass: 1.0, restitution: 0.24, friction: 0.5,
+        vx: dir * vxMag, vy, vz: -dir * span(0.5, 1.1),                          // 对向 + 抛高（同 vy → 同步抛物线）· vz 让两枚交错穿过而非顶牛
+        avx: span(-17, 17), avy: span(-7, 7), avz: span(-17, 17),                // 狂翻 → 正反面才有悬念
+        settleSignal: `duel-settle-${s}`,
       } as unknown as Component);
-      engine.world.addComponent(id, {
-        type: 'RigidBody3D', shape: 'box', mass: 1.1, restitution: 0.2, friction: 0.5,
-        vx: dir * span(3.4, 4.6), vy: span(7.2, 8.8), vz: span(-0.8, 0.8),            // 抛向对面 + 抛高
-        avx: span(-14, 14), avy: span(-9, 9), avz: span(-14, 14),                      // 翻滚（正反面才有悬念）
-        settleSignal: `duel-settle-${s}`,                                              // 落定信号（本仓首个消费者）
-      } as unknown as Component);
+      liveIds.push(id, bid);
     }
     renderUI();
   }
 
-  /** 落定读数：quat → upFaceIndex → 正/反。两张都落定即出判词。 */
+  /** 落定读数：quat → 局部+Y 的世界 y 分量 → 正/反。两张都落定即出判词。 */
   function readSettled(side: Side): void {
     if (settled.has(side)) return;
     settled.add(side);
     if (settled.size < SIDE.length) { status = `${side === 'a' ? '我方' : '敌方'}已落定…`; renderUI(); return; }
     const read = (s: Side): CardOutcome => {
       const t = engine.world.getComponent<Transform3D>(cardId(s), 'Transform3D');
-      const q = (t?.quat ?? [0, 0, 0, 1]) as [number, number, number, number];
-      const face = upFaceIndex(q);
-      return { side: s, face, front: face === FACE_FRONT };
+      const q = t?.quat ?? [0, 0, 0, 1];
+      const upY = upYOf(q);
+      return { side: s, upY, front: upY > 0 };
     };
     const a = read('a'), b = read('b');
     outcome = { a, b, verdict: judgeDuel(a, b) };
     status = '落定';
     opts?.onOutcome?.(outcome);
-    console.info('[game211/duel-spike] 第%d 掷 · 我方面=%d(%s) 敌方面=%d(%s) → %s', throwNo, a.face, a.front ? '正' : '反', b.face, b.front ? '正' : '反', outcome.verdict);
+    console.info('[game211/duel-spike] 第%d 掷 · 我方 upY=%s(%s) 敌方 upY=%s(%s) → %s', throwNo, a.upY.toFixed(2), a.front ? '正' : '反', b.upY.toFixed(2), b.front ? '正' : '反', outcome.verdict);
     renderUI();
   }
 
@@ -189,12 +227,8 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
   }
   let uiTeardown: (() => void) | null = null;
   function renderUI(): void {
-    uiHost.style.pointerEvents = 'none';
     uiTeardown?.();
     uiTeardown = mountUI(uiHost, tree(), { throw: () => throwOnce(), exit: () => opts?.onExit?.() }, GG_THEME_ONYX);
-    // 面板本身要能点（宿主层透传·只让控件收事件）。
-    const panel = uiHost.querySelector('[data-ui-id="dsp-panel"]') as HTMLElement | null;
-    if (panel) panel.style.pointerEvents = 'auto';
   }
 
   // ── 驱动：引擎跑起来 + 每帧判落定 ──
@@ -222,6 +256,19 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     }
   }
 
+  /** 反面片跟随：把父牌的 quat 原样抄给子片，位置 = 父位 + 「局部正下方 DISC_T*0.62」旋到世界。
+   *  纯表现胶水（同 game-d Throw3D 范式·不自造 system·不进 hash）。 */
+  function syncBacks(): void {
+    for (const s2 of SIDE) {
+      const pt = engine.world.getComponent<Transform3D>(cardId(s2), 'Transform3D');
+      const bt = engine.world.getComponent<Transform3D>(backId(s2), 'Transform3D');
+      if (!pt || !bt) continue;
+      const q = pt.quat ?? [0, 0, 0, 1];
+      const [ox, oy, oz] = offsetUnder(q, DISC_T * 0.62);
+      bt.x = pt.x + ox; bt.y = pt.y + oy; bt.z = pt.z + oz; bt.quat = [...q] as [number, number, number, number];
+    }
+  }
+
   engine.start();
   let raf = 0;
   const pump = (): void => {
@@ -229,6 +276,7 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
       const side = sig.signal === 'duel-settle-a' ? 'a' : sig.signal === 'duel-settle-b' ? 'b' : null;
       if (side) readSettled(side);
     }
+    syncBacks();
     pollStill(performance.now());
     raf = requestAnimationFrame(pump);
   };
