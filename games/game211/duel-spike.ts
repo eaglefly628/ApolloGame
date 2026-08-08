@@ -33,8 +33,24 @@ import { GG_THEME_ONYX } from './ui-theme.js';
 //   ⚠ 走过的弯路：① 只把 box 调薄——薄只降低概率，方边仍是稳定平衡，躲不掉；
 //                  ② 换 `cylinder` 圆盘——确实立不住，但外形成了圆牌，不是要的东西。
 const CARD_W = 1.55, CARD_H = 2.15, CARD_T = 0.085;
-const BEVEL_K = 0.87;  // 正/反面相对全尺寸的收窄比 → 中腰(z=0) 最宽、边缘成脊
+const BEVEL_K = 0.82;   // 正/反面相对中腰的收窄比 → 中腰最宽、边缘成环脊
+// 碰撞圆盘半径：牌半宽 0.775 ~ 半对角 1.325 之间取中。太小→两牌撞击前先视觉穿模；太大→撞出可见空隙。
+const HULL_R = 1.12;
 const GRAVITY = 20;    // 重力大小（正数·算抛物线用；PhysicsWorld3D 取负）
+// 牌的弹性刻意**低**（真纸牌本来就不弹）。教训：调到 0.52 想让撞击「弹开」，结果两张牌撞完各自**弹回原处**
+// 落在同一小片区域、互相压着 —— 实测「未躺平」从 1/2 恶化到 2/2。分离要靠**偏心擦碰把它们朝两侧甩开并继续前行**，
+// 不是靠对撞回弹。
+const CARD_RESTITUTION = 0.14;
+// 对称偏心量：**相对碰撞圆盘半径**取比例，才是真正的「擦碰」。0.2 的绝对值相对 R=1.12 几乎等于正心对撞，
+// 撞完两张牌几乎原地停下、然后叠在一起 → owner 看到的「还能站在那里」其实是**互相压着**，不是立在边上（实测口径：未躺平 1/2）。
+// 0.55×R 是明显的偏心：既给出大力偶（翻滚由碰撞产生），又把两张牌朝相反侧向甩开、各自落地。
+const COLLIDE_RATIO = 0.35;   // 出手时的 Z 向错位（相对碰撞半径）
+// Z 向**持续分离速度**：两张牌在 X 向对冲（保证相撞），同时在 Z 向朝相反方向匀速拉开。
+// 撞击那一刻还没拉开到不接触（错位 0.35R + 飞行位移 < 直径），所以必然擦上；撞完继续拉开 → **各自落到两边**。
+// 这是修「未躺平」的关键：实测 upY = −0.61/+0.57，两张牌撞完一起倒、互相支成人字帐篷 —— 
+// 不是立在边上，是没分开。只调弹性/偏心都治不了（0.52 弹性反而让它们弹回同一处，从 1/2 恶化到 2/2）。
+const VZ_SPREAD = 1.15;
+const SPIN0 = 2.2;             // 出手初旋（rad/s·很小·只为飞行中有点翻动；狂翻应由碰撞产生）
 
 const SIDE = ['a', 'b'] as const;
 type Side = (typeof SIDE)[number];
@@ -63,13 +79,19 @@ export function upYOf(q: readonly number[]): number {
   return 2 * (y * z - x * w);
 }
 
-/** 收尖棱凸包（纯函数·可单测）：中腰 z=0 是**全尺寸**矩形，正/反面在 ±t/2 处收窄到 k 倍
- *  → 侧面成斜坡、四边收成脊线，落不住。返回 12 个局部顶点（每角 3 个：中腰 / 正面 / 反面）。 */
-export function bevelCardHull(w: number, h: number, t: number, k: number): [number, number, number][] {
-  const hw = w / 2, hh = h / 2, hz = t / 2, iw = hw * k, ih = hh * k;
+/** 收尖**圆盘**凸包（纯函数·可单测·owner 2026-08-07「牌旁边要用圆形来做·回到边上不可能站住的状态」）。
+ *  三层同心环：中腰 z=0 半径 r（最宽）、正/反面 z=±t/2 半径 r·k（收窄）→ 侧向轮廓是**圆**、边缘收成一道**环脊**。
+ *  为什么必须是圆而不是上一版的矩形收棱：矩形收棱只有 4 条直脊，牌斜靠/半压在别的牌上时，
+ *  相邻的收窄斜面仍能提供支撑 → owner 实测「几组的时候有几组还站在那里」。圆环脊处处曲率连续、
+ *  任何方向都没有支撑面，站不住也靠不住。
+ *  seg=圆周分段（越大越圆·16 段已足够让每个小平面窄到撑不住一张牌）。返回 3×seg 个局部顶点。 */
+export function bevelDiscHull(r: number, t: number, k: number, seg = 16): [number, number, number][] {
   const out: [number, number, number][] = [];
-  for (const [sx, sy] of [[1, 1], [1, -1], [-1, -1], [-1, 1]] as const) {
-    out.push([sx * hw, sy * hh, 0], [sx * iw, sy * ih, hz], [sx * iw, sy * ih, -hz]);
+  const hz = t / 2;
+  for (let i = 0; i < seg; i++) {
+    const a = (i / seg) * Math.PI * 2;
+    const cx = Math.cos(a), cy = Math.sin(a);
+    out.push([r * cx, r * cy, 0], [r * k * cx, r * k * cy, hz], [r * k * cx, r * k * cy, -hz]);
   }
   return out;
 }
@@ -79,6 +101,15 @@ export function judgeDuel(a: CardOutcome, b: CardOutcome): string {
   if (a.front && b.front) return '双双正面 · 同生（平）';
   if (!a.front && !b.front) return '双双反面 · 同归于尽（平）';
   return a.front ? '我方正面朝上 · 胜' : '敌方正面朝上 · 负';
+}
+
+/** 没躺平的牌数（纯函数·可单测）：|upY| < FLAT_MIN 即牌没有平躺（立着/斜靠）。
+ *  这是「牌不许站住」这条要求的**可量化验收口径**——不靠肉眼看，直接数。理想恒为 0。 */
+export const FLAT_MIN = 0.7;
+export function upright(list: readonly DuelOutcome[]): number {
+  let n = 0;
+  for (const o of list) for (const c of [o.a, o.b]) if (Math.abs(c.upY) < FLAT_MIN) n += 1;
+  return n;
 }
 
 /** 多组对决 → 战况统计（纯函数·可单测）。 */
@@ -96,11 +127,11 @@ export function tallyOf(list: readonly DuelOutcome[]): { win: number; lose: numb
 export function layoutFor(n: number): { scale: number; laneGap: number; halfZ: number; halfX: number; camDist: number } {
   // 道间距必须 ≥ 牌的最长边（牌平躺时沿 Z 最多占 CARD_H×scale），否则相邻两道的牌会互相压到一起，
   // 20 组时全堆到场中央、看着是一坨而不是 20 组对决（实测目击）。故 laneGap = 2.5×scale（含余量）。
-  const LANE_SPAN = 2.5, DEPTH_BUDGET = 14;
+  const LANE_SPAN = 3.2, DEPTH_BUDGET = 16; // 道距要容得下「擦碰后朝两侧甩开」的落点，否则相邻道的牌会叠到一起
   const scale = Math.min(1, DEPTH_BUDGET / (LANE_SPAN * n));
   const laneGap = LANE_SPAN * scale;
   const halfZ = Math.max(3.2, (n * laneGap) / 2 + 1.2);
-  const halfX = Math.max(4.2, 3.4 * scale + 2.2);
+  const halfX = Math.max(5.4, 3.4 * scale + 3.2); // 场地留够横向余量：牌擦碰后要飞出去落地，别撞到围栏斜靠着
   return { scale, laneGap, halfZ, halfX, camDist: 7.2 + halfZ * 1.15 };
 }
 
@@ -203,7 +234,7 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     outcomes = Array.from({ length: duels }, () => null);
     status = '抛掷中…';
     const L = layoutFor(duels);
-    const hull = bevelCardHull(CARD_W * L.scale, CARD_H * L.scale, CARD_T * L.scale, BEVEL_K);
+    const hull = bevelDiscHull(HULL_R * L.scale, CARD_T * L.scale, BEVEL_K);
     const throwX = 1.7 * L.scale + 0.9;
     for (let lane = 0; lane < duels; lane++) {
       const laneZ = (lane - (duels - 1) / 2) * L.laneGap;
@@ -213,19 +244,23 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
       for (const s of SIDE) {
         const id = cardId(lane, s);
         const dir = s === 'a' ? 1 : -1;
-        const zOff = dir * span(0.16, 0.30) * L.scale;  // 擦碰（非心对心）→ 撞完横向分离·不叠成一摞
+        // 严格镜像：同速反向、同 vy、同 |vz| —— 两张牌是**一对一对撞**，不是各飞各的（owner 2026-08-07
+        //   「不是一对一朝对象给相反的作用力和旋转，好像用很大力在乱飞」）。
+          const zOff = dir * COLLIDE_RATIO * HULL_R * L.scale; // 对称偏心（按半径取比例）→ 撞击点不过质心 → 力偶=旋转由**碰撞**产生
         engine.world.createEntity(id);
         engine.world.addComponent(id, { type: 'Transform3D', x: -dir * throwX, y: 0.9, z: laneZ + zOff } as unknown as Component);
         engine.world.addComponent(id, {
-          type: 'Mesh3D', shape: 'box', width: CARD_W * L.scale, height: CARD_H * L.scale, depth: CARD_T * L.scale,
-          frontTint: FRONT_TINT[s],  // 正面 = 阵营色 = 活
-          backTint: DEATH_TINT,      // 反面 = 统一灰 = 死
-          edgeTint: EDGE_TINT,
+        type: 'Mesh3D', shape: 'box', width: CARD_W * L.scale, height: CARD_H * L.scale, depth: CARD_T * L.scale,
+        frontTint: FRONT_TINT[s],  // 正面 = 阵营色 = 活
+        backTint: DEATH_TINT,      // 反面 = 统一灰 = 死
+        edgeTint: EDGE_TINT,
         } as unknown as Component);
         engine.world.addComponent(id, {
-          type: 'RigidBody3D', shape: 'convex', hull, mass: 1.0, restitution: 0.24, friction: 0.5,
-          vx: dir * vxMag, vy, vz: -dir * span(0.4, 0.9),
-          avx: span(-16, 16), avy: span(-16, 16), avz: span(-7, 7), // 绕 X/Y 狂翻 → 正反才有悬念（绕 Z 只是自转不换面）
+        type: 'RigidBody3D', shape: 'convex', hull, mass: 1.0, restitution: CARD_RESTITUTION, friction: 0.45,
+        vx: dir * vxMag, vy, vz: dir * VZ_SPREAD,    // 完全镜像：X 向对冲相撞、Z 向持续拉开 → 撞完各自落两边
+        // 初旋只给**很小**的一点（让牌在飞行中略微翻动·有生气），真正的狂翻交给撞击那一下打出来。
+        // ⚠ 上一版给到 ±16 rad/s ≈ 2.5 转/秒 —— 那是「出手就在乱转」，撞击反而被淹没，看着像乱飞。
+        avx: dir * SPIN0, avy: span(-0.6, 0.6), avz: span(-0.6, 0.6),
         } as unknown as Component);
         cardIds.push(id);
       }
@@ -247,7 +282,8 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     status = done === duels ? '全部落定' : `落定 ${done}/${duels}`;
     if (done === duels) {
       const t = tallyOf(outcomes.filter(Boolean) as DuelOutcome[]);
-      console.info('[game211/duel-spike] 第%d 轮 · %d 组 → 胜%d 负%d 平%d · 帧 %sms(p95 %sms)', throwNo, duels, t.win, t.lose, t.draw, perfMean().toFixed(1), perfP95().toFixed(1));
+      const up = upright(outcomes.filter(Boolean) as DuelOutcome[]);
+      console.info('[game211/duel-spike] 第%d 轮 · %d 组 → 胜%d 负%d 平%d · 未躺平 %d/%d · 帧 %sms(p95 %sms)', throwNo, duels, t.win, t.lose, t.draw, up, duels * 2, perfMean().toFixed(1), perfP95().toFixed(1));
     }
     renderUI();
   }
@@ -294,6 +330,9 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     } else {
       rows.push({ type: 'Label', id: 'dsp-tally', props: { text: `战况：我方胜 ${t.win} · 负 ${t.lose} · 平 ${t.draw}`, size: 'md', color: 'gold' }, layout: {} });
     }
+    // 立牌计数（验收口径·理想恒 0）：>0 说明还有牌没躺平，一眼可见、不用猜。
+    const up = upright(done);
+    rows.push({ type: 'Label', id: 'dsp-upright', props: { text: `未躺平 ${up} / ${done.length * 2} 张`, size: 'sm', color: up > 0 ? 'danger' : 'ok' }, layout: {} });
     rows.push(
       { type: 'Button', id: 'dsp-throw', props: { label: throwNo === 0 ? '抛掷' : '再抛一次', action: 'throw', kind: 'hero' }, layout: {} },
       { type: 'Label', id: 'dsp-count-t', props: { text: '同时对决组数（压测）', size: 'sm', color: 'dim' }, layout: {} },

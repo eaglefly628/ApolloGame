@@ -1,6 +1,6 @@
 // duel-spike 纯函数测试（物理表现不可测·但「朝向→生死→判词」「凸包形状」「组数→布局」这三步是纯函数·必须钉死）。
 import { describe, it, expect } from 'vitest';
-import { judgeDuel, upYOf, bevelCardHull, tallyOf, layoutFor, DUEL_COUNTS, type CardOutcome, type DuelOutcome } from './duel-spike.js';
+import { judgeDuel, upYOf, bevelDiscHull, tallyOf, layoutFor, DUEL_COUNTS, type CardOutcome, type DuelOutcome } from './duel-spike.js';
 
 const c = (side: 'a' | 'b', upY: number): CardOutcome => ({ side, upY, front: upY > 0 });
 const duel = (aUp: number, bUp: number): DuelOutcome => {
@@ -52,26 +52,27 @@ describe('upYOf · 牌面朝向读数（正面法线 = 局部 +Z）', () => {
   });
 });
 
-describe('bevelCardHull · 收尖棱凸包（牌立不住的几何依据）', () => {
-  const W = 1.55, H = 2.15, T = 0.085, K = 0.87;
-  const hull = bevelCardHull(W, H, T, K);
-  it('12 个顶点（4 角 × 中腰/正面/反面）', () => { expect(hull).toHaveLength(12); });
-  it('最宽处在中腰 z=0 —— 正/反面都收窄，故边缘是一道脊而非平面', () => {
+describe('bevelDiscHull · 收尖圆盘凸包（牌立不住的几何依据）', () => {
+  const R = 1.12, T = 0.085, K = 0.82, SEG = 16;
+  const hull = bevelDiscHull(R, T, K, SEG);
+  it('3×seg 个顶点（中腰/正面/反面 三层同心环）', () => { expect(hull).toHaveLength(3 * SEG); });
+  it('轮廓是**圆**：中腰一圈点到轴心距离恒等于 r —— owner 要的「旁边用圆形」', () => {
     const mid = hull.filter(([, , z]) => z === 0);
-    const faces = hull.filter(([, , z]) => z !== 0);
-    expect(mid).toHaveLength(4);
-    const maxMidX = Math.max(...mid.map(([x]) => Math.abs(x)));
-    const maxFaceX = Math.max(...faces.map(([x]) => Math.abs(x)));
-    expect(maxMidX).toBeCloseTo(W / 2, 6);
-    expect(maxFaceX).toBeCloseTo((W / 2) * K, 6);
-    expect(maxFaceX).toBeLessThan(maxMidX); // ← 立不住的关键：没有与桌面平行的侧面
+    expect(mid).toHaveLength(SEG);
+    for (const [x, y] of mid) expect(Math.hypot(x, y)).toBeCloseTo(R, 6);
   });
-  it('外形仍是扑克牌矩形：不超出 W×H×T 包围盒（owner 要的不是圆牌）', () => {
-    for (const [x, y, z] of hull) {
-      expect(Math.abs(x)).toBeLessThanOrEqual(W / 2 + 1e-9);
-      expect(Math.abs(y)).toBeLessThanOrEqual(H / 2 + 1e-9);
-      expect(Math.abs(z)).toBeLessThanOrEqual(T / 2 + 1e-9);
-    }
+  it('最宽处在中腰、两面收窄 → 边缘是环脊而非平面（站不住的关键）', () => {
+    const faces = hull.filter(([, , z]) => z !== 0);
+    for (const [x, y] of faces) expect(Math.hypot(x, y)).toBeCloseTo(R * K, 6);
+    expect(R * K).toBeLessThan(R);
+  });
+  it('厚度不超 t（薄牌）', () => {
+    for (const [, , z] of hull) expect(Math.abs(z)).toBeLessThanOrEqual(T / 2 + 1e-9);
+  });
+  it('分段越多越接近真圆：相邻中腰点夹角 = 2π/seg', () => {
+    const mid = hull.filter(([, , z]) => z === 0);
+    const a0 = Math.atan2(mid[0]![1], mid[0]![0]), a1 = Math.atan2(mid[1]![1], mid[1]![0]);
+    expect(Math.abs(a1 - a0)).toBeCloseTo((2 * Math.PI) / SEG, 6);
   });
 });
 
