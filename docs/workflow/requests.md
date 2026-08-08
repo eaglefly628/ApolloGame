@@ -37,6 +37,9 @@
 
 <!-- REQ-ARTPIPE2-美术管线二期（P1·owner 令）整案已完结：A1 台账守卫+棘轮（无账不录入·新增黑户拦推送）→ A2 三栏资产浏览器（徽标/拖入自动登记）→ A3 git 历史回滚 → A4 替换工作流+消费方反查，四翼全 Lead 终审 PASS（判词全文查 git 历史 grep ARTPIPE2）。后置不占槽尾巴：①studio 旧 AssetLibrary 退役（功能对等已达·退役时清解耦白名单 3 条+approve 端点 note 转服务端强制）②game-z 裸路径 1 处（无 requests 文件·随 P3D 线记）③裸路径三单已落 A-027/B-015/REQ-I-裸路径收编。 -->
 
+### REQ-DESIGNLINE-设计稿产线·二期 · S3 后自动生成「全控件清单版」UI 设计需求单 + 收稿对账（owner 2026-08-07 令重开） → **施工主体=Lead 代理（已派）** · status: **in-progress** · 优先级: P1 · 类型: 生产线工具（scripts 推导器+workshop 接线·PST 域）
+> owner 手动流水自动化：①`scripts/ui-brief.mjs --game <slug>`——S3 后从游戏数据推导需求单：**全动作清单**（验收剧本 UI 词表步骤名【词表对齐律已保证同源】+ 蓝图/manifest 信号）+ 屏清单 + 风格锚（style-pack 有则引）+ **品味留人填槽**（owner 一句话）+ **输出契约段**（固定模板：单文件自包含 .dc.html·每交互元素标 `data-action=<清单名>`·屏尺寸·状态清单·经收稿箱交付）；②向导步进器 S3 绿后出「📐 生成 UI 设计需求单」钮（复用一键复制框）；③**收稿对账**：收稿箱 ingest 时核「稿内 data-action 标注 vs 需求单动作清单」，缺项亮警示不拒收（無缝接回=机器检查非祈祷）。过渡轨既有件（收稿箱/定稿/1:1 基准）不动只加接。主轨（自养设计会话）仍等 owner 亲比。
+
 ### REQ-ENGINEAUDIT-引擎全量评审落地 · 15 子系统深审（110+ 发现）· [2026-08-04] · owner 令 → **报告=唯一真相 `docs/design/engine-review-2026-08-04.md`** · status: **in-progress（P0 + 21 处已修推·门禁全绿；余 3 项见下）** · 优先级: P1（P0 已清·降档） · 类型: 引擎质量总账
 > **已修并推（Lead·全部「先实证复现→修→撤修复验红」）**：批0 确定性护栏/注入面/voxel 崩溃 13 处（`0031b950d`/`3b8e2757c`/`29cf511ba`）→ **P0 lockstep 加入死锁**（`ce3903c1`·输入按 epoch 缓存·实测 A 停 2×inputDelay/B 停 inputDelay）→ 存档装配批（envelope checksum 覆盖持久化形态 · save 读档校验 fail-closed · manifest `__proto__` 拒收）→ sim 正确性批（card-pile 空出牌 · effect-apply NaN/mul 清零 · friction/ground-sense 漏过滤 Sensor=二段跳 · merge-on-place 撞名硬崩 · matrix-duel ≥3 死锁）→ owner 四裁（共用组件推断不猜+守卫 · 快照带创建序 · TS 卡带执行侧闸门）→ Sprite.anchor 真消费。
 > **余下 3 项（待 owner 分配）**：①**根因① reads/writes 申报对账守卫 + §3.1 补齐组 13 处**（引擎定序契约批改·Lead 判定须独立专项·CYCLEHAZ B 已解锁）②**根因② 运行时组件全集基准**（扩 `build-component-map.mjs`·解锁 NON_DETERMINISTIC 对账+装配校验+catalog 共用）③**Q1 消费路径**（dump-catalog 分档 + capgap 断链 + audit 进推送门 + pick-list 决策树·多为低成本小活）。
