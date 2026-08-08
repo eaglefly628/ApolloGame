@@ -6,6 +6,38 @@
 
 ---
 
+## REQ-3D-CARD-FACE-AXIS · 薄牌类刚体：正反分色的面与可靠碰撞体**轴向不兼容**（现二者不可兼得）· [2026-08-07] · PE-211 提（game211 物理对决试验台·owner 判「补引擎缺口」）→ P3D · status: open · 优先级: **P2（game211 表现竖切阻塞：牌落地恒倾斜 ~55°、正反读不准；游戏侧已穷举参数无解）** · 类型: 3D 线能力缺口（网格面色轴向 / 刚体形状轴向）
+
+**需求一句话**：一张**扑克牌**（薄矩形、正反异色）被抛出、翻滚、落地，要求 ①**永远躺平**（不许立在边上/斜着停）②**正反面能分色**（正面=阵营色=活、反面=统一灰=死）。现在这两条**同时满足不了**。
+
+**为什么不可兼得（实查·非印象）**
+- `Mesh3D{shape:'box'}` 的正反分色**只作用在 ±Z 两面**（`frontTint`=+z / `backTint`=−z / 其余四面共用 `edgeTint`·`protocol/components/render.ts:57-59`）→ 牌必须**沿 Z 薄**，法线朝 Z。
+- `RigidBody3D{shape:'cylinder'}` 建的是 `new Cylinder(r,r,h)`，**轴向恒为 Y**（`three/physics.ts:217`），且 `r=Mesh3D.width/2`、`h=Mesh3D.height` → 圆盘只能躺在 XZ 平面、法线朝 Y。
+- 两者**差 90°**：要正反分色就不能用 cylinder 刚体；要 cylinder 刚体就分不了正反色。
+
+**已排除的替代（都实测过·别走回头路）**
+| 试过什么 | 结果 |
+|---|---|
+| `shape:'box'` 薄盒 | 方边是**稳定**平衡，抛多了必然立住（owner 目击）。调薄只降概率。 |
+| `shape:'convex'` 收尖棱矩形凸包 | 仍有牌不躺平 |
+| `shape:'convex'` **收尖圆盘**凸包（16 段·中腰全径、两面收窄） | **恒定倾斜 ~55°**：upY 三连测 −0.53/+0.47、−0.58/+0.58、−0.58/+0.52，重复性极高 → 规律性排除「随机叠压」，指向 **cannon-es 对极薄凸多面体（厚 0.085 / 半径 1.12·长径比 26:1）的接触求解伪影** |
+| 调弹性 / 偏心比例 / 道距 / 场地尺寸 / Z 向分离速度 | 数值几乎不动；弹性调高反而恶化（未躺平 1/2 → 2/2） |
+| `angularFactor:[0,1,0]`（REQ-3D-RB-ANGFACTOR 的解） | **不适用**：锁转轴后牌永不翻面 → 正反面这个玩法本体就没了。game-c 筹码不需要翻面，本例需要。 |
+| `shape:'cylinder'` + `Mesh3D{shape:'cylinder'}`（旧版圆盘） | **物理完全可靠**（upY 恒 ±1.00·零立牌），但圆柱图元是**单材质**、外形也成了圆牌 → owner 明确否决「不是让它变成圆牌，还是跟扑克牌一样」 |
+
+**两条候选（P3D 择一即可解锁·Lead 不下裁决）**
+- **A · `Mesh3D` 指定正反面轴向**：加 `faceAxis?: 'x'|'y'|'z'`（缺省 'z'=现行·零回归），让 `frontTint`/`backTint` 作用在指定轴的两面。→ 牌改沿 Y 薄（识别时天然躺平·顺带修「初始朝向很怪」），碰撞体直接用**引擎原生 cylinder**（已验证可靠）。代价小、面窄。
+- **B · `RigidBody3D.cylinder` 轴向可选**：加 `axis?: 'x'|'y'|'z'`（缺省 'y'=现行），建体时按轴旋转 shape 偏移。→ 牌保持沿 Z 薄、分色不动，碰撞体换成沿 Z 的圆盘。代价同样小，但**只修物理侧**、修不了「盒牌初始朝向是立着的」。
+
+> **Lead 倾向 A**（顺带解掉初始朝向问题·且 `faceAxis` 对所有薄片类物件通用：卡牌/瓷砖/硬币/招牌），但两条都能解锁 game211，请 P3D 按 3D 线内部代价判。
+
+**同轮撞到的另外三处 P3D 侧口径问题（都有游戏侧绕法·不阻塞·顺手记档）**
+1. `RigidBody3D` spawn **不读 `Transform3D.quat`**（`three/physics.ts` 只 `body.position.set`）→ 刚体无法以指定朝向出生，只能靠初始角速度凑。
+2. `Pivot3D` 的父变换**只读 Euler `rotX/rotY/rotZ`**（`three/pivot.ts` 的 `PivotXform`）→ 跟不了物理写回的 `quat`，父体是刚体时子实体完全不转（实测：判定为反面、画面仍是正面色）。游戏侧只能逐帧手抄位姿。
+3. `PhysicsWorld3D` **未登记进 `src/assembly/component-map.ts` 蓝图组件闭集** → 蓝图里写不了（tsc 直接拒），只能命令式 `addComponent`。与 `playbooks/3d.md`「场景级单例·挂任一实体即生效」的文档口径不一致。
+
+**验收口径（game211 侧已备好，改完直接量）**：`games/game211/duel-spike.ts` 的 HUD 与日志有「未躺平 N/M」计数（`upright()`·`|upY| < 0.7` 即没躺平）。**目标：连抛多轮恒为 0。**
+
 ## REQ-3D-DISSOLVE · 溶解消散材质效果（Material3D.dissolve·shader 溶解 + voronoi 光点前沿）· [2026-08-06] · owner 提（移植 mp.weixin 文章技术）→ P3D · status: **🚧 增量①✅ + 增量②✅（纹理化碎片溶解·textureGrad）done（P3D 2026-08-06/07·已推·见回执）；增量③（顶点外扩+彩色软混合）待拉动** · 优先级: P2（owner 提·通用材质效果） · 类型: 渲染能力补全（材质 shader·render-only）
 > **★ P3D 增量② 回执（2026-08-07·纹理化碎片溶解·文章后半「羽毛/SampleGrad」移植）**：文章后半用**碎片贴图**代替纯阈值——每个 Voronoi 格摆一枚剪影图（羽毛/花瓣/星屑），随进度**缩小飘散**。下沉为 `dissolve.tex?`（碎片图 key·灰度当 alpha）+ `spread?`（错峰 0..1·缺省 0.35·前沿推进感）+ `cutoff?`（碎片 alpha 剪裁·缺省 0.4）。GLSL 走**独立 field 函数**（`dissolveGLSL(d,hasTex)` 分支·tex 模式才声明 `sampler2D uDisTex`·避免未绑定采样器）：3×3 邻格 loop 取碎片·每格错峰进度 `cp=clamp((progress-r3·spread)/(1-spread),0,1)`·`sc=1/(1-cp)` 缩小·`dRot(r2·2π)` 按种子旋转·`textureGrad(uDisTex, local, gx·sc, gy·sc).r` 修 mip（**文章 SampleGrad/DDX-DDY 对应**）·9-tap `max` 防碎片跨格切边·`best=maxα·(1-cp)`（越散越淡）。片元 `field<cutoff→discard`（硬边剪影）+ 裁剪前沿发光。`dissolveTex` 走 `resolvePbrMaps`（sRGB·AssetReadyTracker 异步就绪重建·mode 加 'D'）·`dissolveSig` tex 在场进纹理化分支（重建材质）。测试 `dissolve.test` +4 例（sig tex 分支·无 tex 不声明采样器·tex uniform 上挂钳位·缺省值）。真浏览器目击 game-z `p3-dissolve-tex`（紫钢球·符文碎片飘散·render-probe 零 console error=shader 编译无误）。tsc0/vitest/build0/manifest（Material3D 加字段·无新组件）。**增量③（记档待拉动）**：顶点着色器按 progress 外扩打破 mesh 轮廓 + 彩色纹理重叠软混合。有真需求再排。
 > **★ P3D 移植回执（2026-08-06·CORE RULE=真缺口→下沉引擎 capability·自由 GLSL 只写一次·游戏摆数据）**：文章是 Unity HLSL 的溶解 shader（阈值溶解 + Voronoi 光点消散 + 距离场变形 + 边缘发光·shader 算代替真粒子省性能）。我们无 dissolve → **下沉成 `Material3D.dissolve`**（render-only·闭集数据），渲染器给材质注入 GLSL（`onBeforeCompile`·**同 outline 先例**·`dissolve.ts injectDissolve`），`DissolveSystem` 每帧推进 progress/time uniform（**同 UvAnimSystem 时间驱动先例**·live>0 持续重渲）。**增量①（本轮·核心）**：`dissolve{progress|trigger+dur+direction, pattern:'noise'|'voronoi', shape:'euclid'|'manhattan'|'chebyshev'|'star', scale, speed, edge, edgeColor, glow}`——**屏幕空间**算距离场（形状/图案 build 期烤进 GLSL·避免运行时分支）·按 progress 阈值 discard·溶解前沿加性**发光条带**；voronoi=动画种子点「光点消散」（星形/闵可夫斯基/切比雪夫多样形状）；`trigger` bump 引擎自播 0→1（out）/1→0（in·direction）·同 flash 先例。dissolve 材质走单 mesh（不实例化·DissolveSystem 驱动 uniform）·`pbrSig` 纳入 `dissolveSig`（pattern/shape 变则重建）。测试 `dissolve.test` 6 例（注入 uniform·钳位·sig·显式 progress·trigger 自播 out/in·live 计数）。真浏览器目击 game-z Platform Three `p3-dissolve`（蓝钢球半溶解 + 橙色光点前沿·shader 编译无误）。tsc0/vitest/build0/manifest（Material3D 加字段·无新组件）。**增量②③（记档待拉动·文章后半·复杂度高）**：② 羽毛/纹理化溶解（局部坐标系采样贴图 + SampleGrad/textureGrad 修 mip + 9-tap/六边形网格叠加）；③ 顶点着色器按 progress 外扩打破 mesh 轮廓 + 彩色纹理重叠软混合。有真需求再排。
