@@ -33,20 +33,20 @@
     "S3": {
       "exit": 0,
       "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（6 个控件 · 5 个点后 DOM 真的变了 · 零控制台 error）",
-      "at": "2026-08-08T14:56:17.767Z",
-      "gameHash": "7ed3c53b883276e3"
+      "at": "2026-08-08T15:09:23.325Z",
+      "gameHash": "b1f714fd573bf264"
     },
     "S4": {
       "exit": 0,
       "summary": "walkthrough 绿（ Test Files  1 passed (1) ·       Tests  63 passed (63)）· 验收剧本 12 场景绿 · ✓ UI 走查过（可驱动率见 public/games/<slug>/probe/S4-uiwalk.json）",
-      "at": "2026-08-08T14:56:30.895Z",
-      "gameHash": "7ed3c53b883276e3"
+      "at": "2026-08-08T15:09:36.124Z",
+      "gameHash": "b1f714fd573bf264"
     },
     "S5": {
       "exit": 0,
       "summary": "AUDIT: PASS · RATCHET: PASS · ⚠ 无标准照基准·未比对（golden-shot bless 建基准）",
-      "at": "2026-08-08T14:56:31.108Z",
-      "gameHash": "7ed3c53b883276e3"
+      "at": "2026-08-08T15:09:36.372Z",
+      "gameHash": "b1f714fd573bf264"
     }
   },
   "history": [
@@ -504,6 +504,42 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-08-08T14:56:31.108Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "S6 接背景皮肤槽后重刷（改动面 = game108.ts 一处 + 台账）",
+      "at": "2026-08-08T15:09:02.248Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-08T15:09:23.325Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "S6 接背景皮肤槽后重刷（改动面 = game108.ts 一处 + 台账）",
+      "at": "2026-08-08T15:09:23.465Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 0,
+      "at": "2026-08-08T15:09:36.124Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "S6 接背景皮肤槽后重刷（改动面 = game108.ts 一处 + 台账）",
+      "at": "2026-08-08T15:09:36.270Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-08-08T15:09:36.372Z"
     }
   ],
   "outOfOrder": [
@@ -671,18 +707,33 @@
       "stage": "S5",
       "reason": "S2/S4 复查 CONCERNS 的两张单（PE-01/GD-02）已交付，重刷机器门待主程复验",
       "at": "2026-08-08T14:56:31.037Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "S6 接背景皮肤槽后重刷（改动面 = game108.ts 一处 + 台账）",
+      "at": "2026-08-08T15:09:02.248Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "S6 接背景皮肤槽后重刷（改动面 = game108.ts 一处 + 台账）",
+      "at": "2026-08-08T15:09:23.465Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "S6 接背景皮肤槽后重刷（改动面 = game108.ts 一处 + 台账）",
+      "at": "2026-08-08T15:09:36.270Z"
     }
   ],
   "selfCheck": {
     "S4": {
-      "at": "2026-08-08T14:56:30.895Z",
+      "at": "2026-08-08T15:09:36.124Z",
       "shots": 12,
-      "gameHash": "7ed3c53b883276e3"
+      "gameHash": "b1f714fd573bf264"
     },
     "S5": {
-      "at": "2026-08-08T14:56:31.108Z",
+      "at": "2026-08-08T15:09:36.372Z",
       "shots": 12,
-      "gameHash": "7ed3c53b883276e3"
+      "gameHash": "b1f714fd573bf264"
     }
   },
   "reviews": {

@@ -8,6 +8,30 @@
 
 ## 待处理 / 进行中
 
+### REQ-ARTTOOL-01 · `art-replace.mjs batch` 无 key 时**把已填的真图行降级成 mock**（违反本线自己的红线）· [2026-08-08] · game108 S6 实测踩到 · status: open · 优先级: P1 · 类型: 工具修（美术线）
+> **复现**（一条命令）：`node scripts/art-replace.mjs batch game108 cartoon-thick`（环境无 `DASHSCOPE_API_KEY`）。
+> 探针正确地报了 `configured:false → mock 占位（绝不静默顶替）`，**但它照样写回了台账与索引**：
+> 三行 `status: filled → generated`、`gen.mock: true`、`servedPath` 从 `/games/game108/art/icon_rock.png`
+> 改指 `/games/game108/art/gen/mock/art-01.png`；`index.json` 的条目顺序与 key↔path 对应关系也被打乱重写。
+> 那三张是 **owner 自己的设计定稿切图**（`design_handoff_rule_of_three_battle`）。
+> **与手册红线直接冲突**：`art-pipeline.md` 写着 mock「**不写回 manifest、不登记 skinKey 别名、不可 approve**」
+> 与「不拿空/未审图盖掉手绘背景」。现在它三样全做了，只差没 approve。
+> **要什么**：无 key 时 batch 只产 mock 预览 + 探针回执，**一个字节都不许回写台账/索引**
+> （或至少：`status` 不是 `placeholder`/`needs-art` 的行一律跳过并在回执里点名列出跳过了谁）。
+> **危害面**：任何已配好真图的游戏，只要有人在没 key 的环境里手滑跑一次 batch，真图接线就被 mock 顶掉，
+> 而且**跑完是 `ok:true`**——不看 diff 发现不了。
+
+### REQ-ARTTOOL-02 · `mergeLedger` 按**槽**认行身份，N 种素材共用一个槽时重跑会塌成一行 · [2026-08-08] · game108 S6 实测 · status: open · 优先级: P2 · 类型: 工具修（美术线）
+> **复现**：三只手型图标（石/布/剪）是**三种素材**，但消费点同形状（`duel-screen` 的 `Image.src`）。
+> 照手册写台账推导脚本重跑一次 → 三行全被并成 `art-03`（`rowIdentity = slotKey(row.slot)`，见 `art-replace.mjs:274`）。
+> **与手册口径不符**：art-pipeline.md 步 3 写的是「**按素材去重**·一行 = 一种素材·同 query 多实体共用一行·
+> `slots[]` 记全部槽位」——身份该是**素材**（query/desc），槽位该是数组；实现却拿单个 `slot` 当身份。
+> manifest 驱动的卡带线每个 `art:` 槽天然唯一，所以一直没暴露；**编译期游戏**里一个组件画 N 种素材是常态。
+> **要什么**：`rowIdentity` 改按素材（`skinKey` 优先，回退 query/desc），`slot` → `slots[]`（旧数据兼容读单个）。
+> **绕法（game108 已用）**：把槽写细到逐素材（`duel-screen:hand-rock` …）。能绕，但那是让**槽**去迁就工具，
+> 不是槽本来的样子——所以这条仍值一张单。
+
+
 
 
 <!-- REQ-STYLESET-风格库 apollo-toon（PA+PUI）→ **owner 2026-08-05 令暂停后移出池**（不占槽）。图纸唯一真相仍在 `docs/design/styleset-artlib-plan-2026-07-16.md`。**已落地未验收的存量**：M0 台账底座 + M0.5 现装可视版 + 三游戏风格锚（均 Lead 验收 PASS）· **M0.6 主题指针 = PUI 已 done 但未经 Lead 对抗性验收，随暂停冻结**——重启时 Lead 必须先补验 M0.6 再往下走。未做：M1 试产/M2 建库（等真 key·连 REQ-AIGEN 卡口）· M3 对齐 · M4 出口游戏换装。遗留债：ui-audit border-image 盲区 + 亮主题 dim 假阳（PUI 工具债）· 默认主题是否切 apollo-toon 等 owner。重启即重开本条。 -->

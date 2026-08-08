@@ -188,7 +188,13 @@ AI 出招【R-108-30】同理（它也要产 intent），**一个缺口卡住玩
 - **皮肤槽清单**：① 对手立绘 → `portrait.art`（`emotion` 变体：常态/攥拳/得意/受创/摊牌——**表演型 tell 的载体**）；
   ② 规则石板 → `Panel.skin`(+`skinSlice` 9-slice)；③ 三个大出招键 → `UITheme.buttonSkins`（一 kind 一皮）；
   ④ 蓄力槽 → `ProgressBar` 主题皮 + 满槽特效；⑤ 遗物/碎片图标 → `Card.media`；⑥ 背景/面纹 → `UITheme.texture`/`panelTexture`。
-- **台账产出**：编译期游戏 → 照 `scripts/game-g-art-requirements.mjs` 样板写推导脚本（脚本名：`scripts/game108-art-requirements.mjs`）。
+- **台账产出**：编译期游戏 → 照 `scripts/game-g-art-requirements.mjs` 样板写推导脚本
+  （**✅ 2026-08-08 已落地**：`scripts/game108-art-requirements.mjs`·`npx vite-node` 跑·append-only 保号保状态）。
+- **S6 现状（2026-08-08）**：台账 4 行 0 孤儿 · 锚 ✓（`cartoon-thick` + 咬住 owner 定稿的 stylePrompt）
+  · 写回 3（三只手型图标 = owner 定稿切图）· 复核 0。
+  · art-04 舞台背景**槽已接**（`mountHost({sceneBgSkin})`·有图叠图/无图纯回退程序化底），但**图还没有**。
+  · **卡在 `DASHSCOPE_API_KEY` 未配**：探针回执 `configured:false → mock 占位（绝不静默顶替）`。
+    mock **不上画面、不写回、不可 approve**（手册红线），故 S6 机器门到不了绿——这是**外部条件**不是欠工。
 - **首版占位**：程序化槽/石板 + 立绘占位（`portrait` 缺图落名首字占位，不空白）；**占位不是美德**，台账保号，风格锚到位即逐行替换。
 - **文生图**：对手立绘走风格包锚（PA 出「暗调拳馆」锚）；如实披露 AI 生成。
 - **表演关键帧风险**：静态立绘 + 表情切换若读不出 tell，需补 2-3 帧关键动作（S4 试玩定夺·台账预留位）。

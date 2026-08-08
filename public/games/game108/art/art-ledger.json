@@ -1,12 +1,18 @@
 {
+ "slug": "game108",
+ "mode": "compiled",
+ "artStyle": {
+  "packId": "cartoon-thick",
+  "stylePrompt": "rule-of-three cartoon duel style, thick ink outline, flat cel shading, warm cream paper ground, saturated candy palette: gold #f0b429, crimson #d9534f, jade #4f9d69, chunky rounded forms, hand-drawn feel, no gradients on outlines, matches the shipped hand icons in design_handoff_rule_of_three_battle",
+  "note": "owner 2026-08-07 设计定稿随件交付；锚咬住定稿以免新生成的图与已有三张手型图标打架"
+ },
  "rows": [
   {
    "skinKey": "108/hand-icon-rock",
-   "no": "art-01",
    "desc": "front-facing rock hand icon, cartoon, thick ink outline, cream skin, transparent background",
    "kind": "ui-icon",
    "slot": {
-    "entity": "duel-screen",
+    "entity": "duel-screen:hand-rock",
     "component": "Image",
     "field": "src"
    },
@@ -18,8 +24,9 @@
     "displayH": 104,
     "transparent": true
    },
-   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「石」手型图标",
+   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「rock」手型图标",
    "status": "filled",
+   "no": "art-01",
    "gen": {
     "source": "design-handoff",
     "script": "games/game108/design_handoff_rule_of_three_battle/design/hands/",
@@ -31,17 +38,14 @@
     "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_rock.png",
     "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
     "date": "2026-08-07"
-   },
-   "license": "owner-provided",
-   "source": "design_handoff_rule_of_three_battle"
+   }
   },
   {
    "skinKey": "108/hand-icon-paper",
-   "no": "art-02",
    "desc": "front-facing paper hand icon, cartoon, thick ink outline, cream skin, transparent background",
    "kind": "ui-icon",
    "slot": {
-    "entity": "duel-screen",
+    "entity": "duel-screen:hand-paper",
     "component": "Image",
     "field": "src"
    },
@@ -53,8 +57,9 @@
     "displayH": 104,
     "transparent": true
    },
-   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「布」手型图标",
+   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「paper」手型图标",
    "status": "filled",
+   "no": "art-02",
    "gen": {
     "source": "design-handoff",
     "script": "games/game108/design_handoff_rule_of_three_battle/design/hands/",
@@ -66,30 +71,28 @@
     "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_paper.png",
     "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
     "date": "2026-08-07"
-   },
-   "license": "owner-provided",
-   "source": "design_handoff_rule_of_three_battle"
+   }
   },
   {
    "skinKey": "108/hand-icon-scissors",
-   "no": "art-03",
    "desc": "front-facing scissors hand icon, cartoon, thick ink outline, cream skin, transparent background",
    "kind": "ui-icon",
    "slot": {
-    "entity": "duel-screen",
+    "entity": "duel-screen:hand-scissors",
     "component": "Image",
     "field": "src"
    },
    "query": "hand icon scissors",
    "spec": {
-    "w": 162,
-    "h": 236,
+    "w": 210,
+    "h": 245,
     "displayW": 96,
     "displayH": 104,
     "transparent": true
    },
-   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「剪」手型图标",
+   "context": "招式卡 96×104 / 我方蓄力槽 56×62 / 对手蓄力条 28×34 三处复用的「scissors」手型图标",
    "status": "filled",
+   "no": "art-03",
    "gen": {
     "source": "design-handoff",
     "script": "games/game108/design_handoff_rule_of_three_battle/design/hands/",
@@ -101,10 +104,26 @@
     "pulledFrom": "games/game108/design_handoff_rule_of_three_battle/design/hands/icon_scissors.png",
     "note": "设计定稿随件交付；README「Assets · Shipped in this bundle」写明 cut from the owner’s own reference art（owner 自有素材）",
     "date": "2026-08-07"
+   }
+  },
+  {
+   "skinKey": "108/scene/stage",
+   "desc": "dim underground fist-dueling hall, warm lantern pools, deep shadow, out-of-focus crowd silhouettes, painterly cartoon, no text",
+   "kind": "background",
+   "slot": {
+    "entity": "host-scene",
+    "component": "sceneBgSkin",
+    "field": "imageUrl"
    },
-   "license": "owner-provided",
-   "source": "design_handoff_rule_of_three_battle"
+   "query": "underground duel hall background",
+   "spec": {
+    "w": 1920,
+    "h": 1080,
+    "transparent": false
+   },
+   "context": "对局舞台底（1920×1080·`mountHost` 背景皮肤槽·无图时回退纯色 #171310）",
+   "status": "needs-art",
+   "no": "art-04"
   }
- ],
- "pending": []
+ ]
 }

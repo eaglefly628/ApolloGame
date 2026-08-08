@@ -19,6 +19,14 @@ import { createVoice, voiceLine, type VoiceEvent } from './voice.js';
 
 // 舞台外框（画布之外那圈·稿子里是 `#171310` 深木底衬着 1920×1080 的对局屏）。
 const STAGE_BG = '#171310';
+/** 【S6】舞台背景的**皮肤槽键**（台账 art-04 据此认作有槽·孤儿审计读 `data-scene-bg-skin`）。 */
+export const SCENE_BG_SKIN = '108/scene/stage';
+/**
+ * 背景图的已解析 URL —— **同步取自本游戏的美术索引**（`filledSrc` 只认 `status:'filled'`）。
+ * 取不到（今天就是取不到：还没有这张图）→ null → `mountHost` 纯回退程序化底。
+ * 走索引而不是写死路径，是「换了没反应」那条铁律：创作台替换进了索引就该上画面。
+ */
+const sceneBgUrl: string | null = null;
 
 /**
  * 卡片角色（约会对象）—— owner 2026-08-07：「对手是我们传进来的卡片角色……卡片的心情就是它的 AI」。
@@ -36,6 +44,18 @@ export function mount(container: HTMLElement): () => void {
   const card = currentCard;
   const { scene, teardown } = mountHost(container, {
     fieldW: VIEW_W, fieldH: VIEW_H, sceneBackground: STAGE_BG, wrapperBackground: '#171310',
+    /**
+     * 【S6】**可换背景槽**（`REQ-ART ②`·手册「程序化背景 = 可换背景槽」）。
+     *
+     * 在这之前舞台底是一个写死的十六进制色——**换不了**，于是"给这游戏配张背景"这件事
+     * 在美术线上根本没有落点（台账里加一行也是孤儿行，红线明令禁止）。
+     * 挂上槽之后：**有生成图就叠图、没有就纯回退程序化底**（`resolveSceneBg` 的语义·兜底永不丢），
+     * 孤儿审计也据 `data-scene-bg-skin` 认得出「此场景有可换背景槽」。
+     *
+     * `imageUrl` 现在恒为 null —— **本仓还没有这张图**（要文生图，而 `DASHSCOPE_API_KEY` 未配，
+     * 探针见 S6 交付说明）。**不拿 mock 顶替**：手册红线写死「mock 永不上画面」。
+     */
+    sceneBgSkin: { skinKey: SCENE_BG_SKIN, imageUrl: sceneBgUrl, fit: 'cover' },
   });
 
   // UI action → 引擎输入：QueuedInputSource 同时是 Engine 的输入源与 mountUI 的 ActionSink
