@@ -35,6 +35,8 @@ export interface LobbyView {
 export interface LobbyHandlers {
   getView: () => LobbyView;
   onPlay: () => void;
+  /** 物理对决试验台入口（owner 2026-08-07 表现验证竖切·战斗重做落地后随试验台一并撤）。 */
+  onSpike?: () => void;
   onBuyTiangang?: (id: string) => void;
   onBuyPlanet?: (id: string) => void;
   onBuyFoil?: (id: string) => void;

@@ -153,6 +153,7 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
     lobby = mountLobby(host, {
       getView: buildLobbyView,
       onPlay: () => startBattle(),
+      onSpike: () => showDuelSpike(),
       // 金币解锁（doc25）：需该关已抵达(unlockStage ≤ campaignMax) + 金币够 → ownedTiangangs；牌组未满自动选入
       onBuyTiangang: (id) => { const j = TIANGANG_BY_ID.get(id); if (!j || save.ownedTiangangs.includes(id) || unlockStageOf(id) > save.campaignMax) return; buy(j.cost, () => { save.ownedTiangangs.push(id); const d = activeDeck(save); if (d && d.cards.length < TIANGANG_DECK_SIZE) { d.cards.push(id); syncTiangangs(save); } }); },
       // 钻石速购（doc25 · 跳 grind·只加速）：无视关门槛，花钻石(=unlockStage)直解。
@@ -264,6 +265,15 @@ export function mount(container: HTMLElement, shell?: { exit?: () => void }): ()
 
   // 出征：旧「布阵分兵 / 备战干预」两屏已废弃 → 点出征直接进战斗。默认用上次布阵；开战前无预置干预。
   // doc24 大转向：战斗走【回合制】(showTurnMatch · turn-combat + turn-battle-screen)，取代旧实时三路(showMatch·保留作参考/帧测)。
+  // 物理对决试验台（owner 2026-08-07「先把表现做出来看看是不是我想要的」）：从大厅一键进，右上角「← 返回大厅」出。
+  // 与 `?spike=duel` 深链是同一个挂载器，只是省去手敲参数。战斗重做落地后此入口随试验台一并撤。
+  function showDuelSpike(): void {
+    clear();
+    root.style.cssText = 'position:absolute;inset:0;overflow:hidden;background:#121a2a';
+    const spike = mountDuelSpike(root, { onExit: () => showLobby() }); // 返回键在试验台自己的面板里（避开启动器齿轮）
+    battle = { update: () => {}, destroy: () => spike.destroy() }; // 交给 clear() 统一回收
+  }
+
   function startBattle(): void {
     const off = [...save.lastOfficers] as [number, number, number];
     showTurnMatch({ officers: off }, describeFormation(off), []);

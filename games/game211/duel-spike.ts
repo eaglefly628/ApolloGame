@@ -73,7 +73,7 @@ function arenaBlueprint(): WorldBlueprint {
 export interface DuelSpikeHandle { destroy: () => void }
 
 /** 挂载物理对决试验台。onOutcome=每次落定后回调（供上层记录/展示）。 */
-export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; onOutcome?: (o: DuelOutcome) => void }): DuelSpikeHandle {
+export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; onOutcome?: (o: DuelOutcome) => void; onExit?: () => void }): DuelSpikeHandle {
   // 布局按 game-z 可用范式：wrapper=有真实尺寸的定位盒·stage=`position:relative` 收紧包住 canvas。
   // ⚠ 别用 `position:absolute;inset:0` 当 stage——容器未定位时它塌成 0 高，canvas 不可见 → 渲染器不画 → 物理也不步进（本竖切踩过）。
   const wrapper = document.createElement('div');
@@ -181,6 +181,8 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
     ];
     if (outcome) rows.push({ type: 'Label', id: 'dsp-verdict', props: { text: outcome.verdict, size: 'lg', color: 'gold' }, layout: {} });
     rows.push({ type: 'Button', id: 'dsp-throw', props: { label: throwNo === 0 ? '抛掷' : '再抛一次', action: 'throw', kind: 'hero' }, layout: {} });
+    // 返回键收进本面板（别另开叠层：右上角会被启动器齿轮压住·实测撞过）。
+    if (opts?.onExit) rows.push({ type: 'Button', id: 'dsp-exit', props: { label: '← 返回大厅', kind: 'ghost', action: 'exit' }, layout: {} });
     // ⚠ 叠加层的根**必须**是 bare Panel，不能是 `Screen`——Screen.bg 缺省铺主题 pageBg，会把底下的 3D canvas 整块盖黑
     //   （本竖切踩过：canvas 在、相机对、网格在，却全黑）。同 game-z `gz-hud` 范式。
     return { type: 'Panel', id: 'dsp-panel', props: {}, layout: { x: 18, y: 14, direction: 'column', gap: 8, padding: 14, width: 300 }, children: rows };
@@ -189,7 +191,7 @@ export function mountDuelSpike(container: HTMLElement, opts?: { seed?: number; o
   function renderUI(): void {
     uiHost.style.pointerEvents = 'none';
     uiTeardown?.();
-    uiTeardown = mountUI(uiHost, tree(), { throw: () => throwOnce() }, GG_THEME_ONYX);
+    uiTeardown = mountUI(uiHost, tree(), { throw: () => throwOnce(), exit: () => opts?.onExit?.() }, GG_THEME_ONYX);
     // 面板本身要能点（宿主层透传·只让控件收事件）。
     const panel = uiHost.querySelector('[data-ui-id="dsp-panel"]') as HTMLElement | null;
     if (panel) panel.style.pointerEvents = 'auto';
