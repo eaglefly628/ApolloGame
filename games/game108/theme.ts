@@ -105,6 +105,18 @@ export const chargeBudgetRes = (side: Side): string => `${side}.budget`;
 /** 【R-108-04】本回合已欠的罚血点数（**per-round**·T1 开场清零）。屏上「你已经欠了多少」读它。 */
 export const penaltyDebtRes = (side: Side): string => `${side}.debt`;
 
+/**
+ * 【R-108-04】罚血的**节拍旗**（全局 id·flow 每秒点亮一拍）。
+ * 该侧的 `SelfRule` 用 `whenGlobal` 读它 → `do.modify-resource` 扣**自身**那份 hp，
+ * 这是「全局条件 → 按侧扣血」在现有能力里的正解（主程 2026-08-07 回驳单的等价写法）。
+ *
+ * ⚠ **不带 `once`**：`once` 的 armed 复位只看 `when`（自身）不看 `whenGlobal`
+ * （`whenGlobal` 为假是 continue 整条跳过·armed 不动），节拍放 `whenGlobal` 里会「罚第一次就再也不复位」。
+ * 改用 level 模式 + **旗只亮一拍**（`throwPenaltyHit` 进态点亮 → 下一拍 `throwPenalty` 熄灭），
+ * 于是「一秒一点」由 flow 的两态互跳保证，不依赖 armed 语义。
+ */
+export const penaltyTickFlag = (side: Side): string => `${side}.penaltyTick`;
+
 // ── UI ────────────────────────────────────────────────────────────────
 /**
  * 对局屏主题 —— **按设计定稿的令牌表改配**（`design-tokens.ts` 是逐字抄稿的那份）。

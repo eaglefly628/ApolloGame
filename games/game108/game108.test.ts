@@ -187,16 +187,34 @@ describe('game108 · S3 条款走查（真引擎驱动·用【R-108-70】动作�
     expect(lt('p2')).toBe('rock');                                  // 复读机出的石
   });
 
-  it('血量归零 → 该侧 dead flag 置位（按侧判定走 self-rule·非全局条件）【R-108-15】', () => {
+  it('血量归零 → 该侧 dead flag 置位（按侧判定·两侧走两条不同的路）【R-108-15】', () => {
+    // v3 起两侧不再对称：p1 那格 SelfRule 让给了罚血（只有自治规则扣得到本侧 hp），
+    // 死亡判定挪到 `watch:p1`（whenGlobal 读全局 hp）；p2 照旧读自身 hp。
+    const dead = (e: Engine, side: string): boolean =>
+      (e.world.getComponent(side === 'p1' ? 'watch:p1' : side, 'Flag') as unknown as { active: boolean }).active;
+    const kill = (e: Engine, side: string): void => {
+      const hp = e.world.getComponent<Resource>(side, 'Resource')!;
+      e.world.addComponent(side, { ...hp, current: 0 });
+      e.world.tick(); e.world.tick();
+    };
+    const a = fresh(); kill(a, 'p2');
+    expect(dead(a, 'p2')).toBe(true);
+    const b = fresh(); kill(b, 'p1');
+    expect(dead(b, 'p1')).toBe(true);
+    expect(deadFlag('p2')).toBe('p2.dead');
+  });
+
+  it('【R-108-15】`watch:p1` 只盯 p1 —— 打死 p2 不许把玩家判死（全局 id 路由的要害）', () => {
+    // 这条钉的是 watch:p1 那条 whenGlobal 的隐含依赖：`{resource id:'hp'}` 取的是
+    // **世界里第一个 id='hp' 的 Resource**，装配序保证它恒是 p1。
+    // 哪天有人把 SIDES 倒过来、或在 p1 之前插进第三个挂 hp 的实体，这条当场红——
+    // 不然表现是「打死对手的同时自己也判负」，而且不报错。
     const e = fresh();
     const hp = e.world.getComponent<Resource>('p2', 'Resource')!;
     e.world.addComponent('p2', { ...hp, current: 0 });
-    e.world.tick(); e.world.tick();
-    const flagOf = (side: string): boolean =>
-      (e.world.getComponent(side, 'Flag') as unknown as { active: boolean }).active;
-    expect(flagOf('p2')).toBe(true);
-    expect(flagOf('p1')).toBe(false); // 只认自己那侧
-    expect(deadFlag('p2')).toBe('p2.dead');
+    for (let i = 0; i < 4; i++) e.world.tick();
+    expect((e.world.getComponent('watch:p1', 'Flag') as unknown as { active: boolean }).active).toBe(false);
+    expect((e.world.getComponent('p2', 'Flag') as unknown as { active: boolean }).active).toBe(true);
   });
 });
 
@@ -417,6 +435,29 @@ describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
     const at = res(e, 'debt:p1');
     until(e, 'clash');
     expect(res(e, 'debt:p1')).toBe(at);                                // 出手即停，不再涨
+  });
+
+  it('【R-108-04】罚血**真扣血**：拖 N 秒 = 自己掉 N 点，对手一点不掉', () => {
+    const e = fresh();
+    until(e, 'throw');
+    for (let i = 0; i < PHASE_TICKS.throw + 10; i++) e.world.tick();   // 烧完免费段
+    expect(res(e, 'p1')).toBe(HP_MAX);                                  // 免费段内不罚
+    for (let i = 0; i < 4 * PENALTY_PERIOD; i++) e.world.tick();
+    // 台账与血量必须**同步**——只对台账断言的话，「屏上写着欠 4 点、血条纹丝不动」这种
+    // 最难查的假象照样全绿（接线第一版漏建节拍旗实体，正是这个形状）。
+    expect(res(e, 'debt:p1')).toBe(4 * PENALTY_HP);
+    expect(res(e, 'p1')).toBe(HP_MAX - 4 * PENALTY_HP);
+    expect(res(e, 'p2')).toBe(HP_MAX);                                  // 只罚拖的那一侧
+  });
+
+  it('【R-108-04+15】一直不出手会被罚死，且**不会卡在读秒里**（血归零即收局）', () => {
+    const e = fresh();
+    until(e, 'throw');
+    // 免费 5 秒 + 罚 100 秒 = 血罚光。不加「血归零即收局」那条转移的话，
+    // 血 clamp 在 0、玩家又没出手 ⇒ 永远出不去读秒态 = 死局（点不动、也不结束）。
+    for (let i = 0; i < PHASE_TICKS.throw + 110 * PENALTY_PERIOD; i++) e.world.tick();
+    expect(res(e, 'p1')).toBe(0);
+    expect(phase(e)).toBe('p2win');
   });
 
   it('【R-108-02】v3 作废「超时顺延」：T2 全程不点 = 不会有人替你提交', () => {

@@ -1,16 +1,16 @@
 {
   "slug": "game108",
-  "at": "2026-08-08T07:33:08.397Z",
-  "gameHash": "55edda0e5133f9d5",
+  "at": "2026-08-08T08:04:11.290Z",
+  "gameHash": "1d11550473ca701e",
   "ok": true,
   "form": "compiled",
-  "uiDrivableRate": 0.2876712328767123,
+  "uiDrivableRate": 0.3150684931506849,
   "totalSummary": {
     "signalSteps": 73,
-    "drivenSteps": 21,
+    "drivenSteps": 23,
     "tickSteps": 136,
     "expectSteps": 61,
-    "uiDrivableRate": 0.2876712328767123
+    "uiDrivableRate": 0.3150684931506849
   },
   "scenarios": [
     {
@@ -53,7 +53,7 @@
           "kind": "signal",
           "signal": "charge.rock",
           "driven": false,
-          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is not sta"
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
         },
         {
           "step": 6,
@@ -386,7 +386,8 @@
           "step": 23,
           "kind": "signal",
           "signal": "charge.rock",
-          "driven": true
+          "driven": false,
+          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
         },
         {
           "step": 24,
@@ -454,10 +455,10 @@
       "summary": {
         "totalSteps": 34,
         "signalSteps": 11,
-        "drivenSteps": 1,
+        "drivenSteps": 0,
         "tickSteps": 17,
         "expectSteps": 6,
-        "uiDrivableRate": 0.09090909090909091
+        "uiDrivableRate": 0
       }
     },
     {
@@ -682,8 +683,7 @@
           "step": 2,
           "kind": "signal",
           "signal": "charge.rock",
-          "driven": false,
-          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+          "driven": true
         },
         {
           "step": 3,
@@ -751,10 +751,10 @@
       "summary": {
         "totalSteps": 13,
         "signalSteps": 4,
-        "drivenSteps": 1,
+        "drivenSteps": 2,
         "tickSteps": 6,
         "expectSteps": 3,
-        "uiDrivableRate": 0.25
+        "uiDrivableRate": 0.5
       }
     },
     {
@@ -779,7 +779,7 @@
           "kind": "signal",
           "signal": "charge.rock",
           "driven": false,
-          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
         },
         {
           "step": 3,
@@ -803,15 +803,13 @@
           "step": 6,
           "kind": "signal",
           "signal": "throw.scissors",
-          "driven": false,
-          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+          "driven": true
         },
         {
           "step": 7,
           "kind": "signal",
           "signal": "throw.paper",
-          "driven": false,
-          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
+          "driven": true
         },
         {
           "step": 8,
@@ -849,7 +847,7 @@
           "kind": "signal",
           "signal": "charge.rock",
           "driven": false,
-          "error": "elementHandle.click: Element is not attached to the DOM\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+          "note": "活体 DOM 无匹配 [data-action]（剧本 signal 词表与 UI 词表不同源·非驱动器 bug）"
         },
         {
           "step": 14,
@@ -1010,10 +1008,10 @@
       "summary": {
         "totalSteps": 39,
         "signalSteps": 15,
-        "drivenSteps": 4,
+        "drivenSteps": 6,
         "tickSteps": 21,
         "expectSteps": 3,
-        "uiDrivableRate": 0.26666666666666666
+        "uiDrivableRate": 0.4
       }
     },
     {
