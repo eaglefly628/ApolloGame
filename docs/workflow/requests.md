@@ -76,6 +76,48 @@
 - **边界**（复查门核对用）：`scripts/click-probe.mjs`（新）+ `scripts/game-pipeline.mjs` 的 S3 门读码一处
   + 其单测。**不碰**别的阶段门、不碰渲染探针、不改任何游戏。
 
+### REQ-108-ENG-07 · 全局条件成立时**扣指定一侧**的血——现有能力表达不了 · [2026-08-08] · game108 v3【R-108-04】带出 · status: **open · 等 owner 判 A/B** · 优先级: P1（卡 game108 S4 收口） · 类型: 引擎缺口
+
+**要表达的一句话**：「T2 免费段走完还没出手 → **每 1 秒扣 p1 一点血**，直到他出手」（gdd【R-108-04】·owner 2026-08-07 定值）。
+形状 = **全局条件（相位门 + 已出手旗 + 周期钟）→ 按侧局部写（p1 自己那份 `hp`）**。
+
+#### ① 先查（实查·留原文·不凭印象）
+
+| 查了什么 | 结论 | 出处 |
+|---|---|---|
+| `Effect{kind:'modify-resource'}` | 目标是 `lookup.resource(targetId)` = **全局 id 首个**；`targetEntity` **只被** set-sensor / set-visible / destroy / reset-timer 四个 kind 消费 | `effect-apply.ts:153-197`，`targetsOf` 调用点 207/219/245/287 |
+| `buildConditionLookup` | 「同 id 多份时**取第一份**（假定全局唯一）」 | `condition.ts:22` |
+| `CraftRecipe` 的 costs/gains | 同样是 `lookup.resource` 全局路由 | `craft-recipe.ts:85/95/102` |
+| `flow` 的 `onEnter/do` 动作 | `applyAction` 也是 `lookup.resource` | `tier3/flow.ts:37-45` |
+| `SelfRule` | **能**写自身 Resource，且 `whenGlobal` 正好是「全局阶段门 + 自治写」（REQ-F-035）——**形状完全对**；但 game108 的 `p1` 实体那一格 `SelfRule` 已被【R-108-15】的死亡判定占死（读自身 hp → 置自身 `p1.dead`），引擎**一实体一组件**，装不下第二条 | `logic.ts:229-239`、`blueprint.ts` 侧实体那段 |
+| 死亡判定能不能挪走腾出槽 | **不能**：它同样要「读 p1 自己的 hp」，而 hp 只有 self-local 一条路能认侧 | 同上 |
+| `OverTime`/`TimedEffect` | **周期改自身资源**正是要的，但 `TimedEffect` **没有任何门控字段**，且数据侧无法在运行期挂载/摘除（`addTimedEffect` 是代码 API，由 hitbox 调） | `combat.ts:65-73`、`over-time.ts` |
+| `Mortal` | 到阈值**销毁自身**——销毁 p1 会连带打掉血条/重开，不可用 | `combat.ts:169-174` |
+| 能不能靠「p1 恰好是第一个 Resource」 | 能跑，但**是个静默地雷**：`SIDES` 一换序就罚错人、零报错。本能力自己在三处禁止这种写法 | `matrix-duel.ts:60/86/228-231/322-325`（落盘门**直接拒收** effects/scaleByResource 碰 hpResource，判词原文「两侧同 id 无法全局寻址」） |
+
+**重组不成立的原因一句话**：能读全局的写不到指定侧（effect/craft/flow 全是 id 路由），能写指定侧的读不到全局（self-rule 的槽被占死）。两半都在，接不上。
+
+#### ② 两条路（Lead 给推荐·**不下裁决**）
+
+**A · 补引擎缺口**：把**已有字段** `Effect.targetEntity` 补齐到 `modify-resource`——在场时写该实体自己那份 `Resource`（id 仍须匹配 `targetId`），缺省保持现在的全局路由。
+- 代价：动 `effect-apply`（Commit 相位·跨游戏共享面 ⇒ 🔴 主程域），约 3 行 + 契约注释 + 点名测试。**纯增量、向后兼容**（不填 `targetEntity` 的旧数据一字不变）。
+- 影响面：全库。**通用性高**——凡「多实体各挂同 id 资源」（双方 hp / 多席位分数 / 多队血条）都吃这个亏，`matrix-duel` 已经为它打了三处补丁（用落盘门**禁止**作者去碰，而不是让作者能碰）。
+- 选错要付什么：给 Effect 开了一条"按实体写资源"的路，将来有人拿它绕开 self-rule 的自治语义。可用「id 必须匹配」这条约束压住（不是任意实体任意资源）。
+- 不碰定序/相位/hash 口径：只改**寻址**，写入点、时机、钳位一字不动。
+
+**B · 游戏独有逻辑**：game108 自写一个 system 每 tick 判「相位 + 已出手 + 计时」→ 扣 p1 的 hp。
+- 代价：违反数据驱动宣言（游戏层不许写 system）；且这条逻辑（相位门 + 按侧扣血）明显是通用形状，写在游戏层等于把缺口埋起来，下一个游戏再挖一遍。
+- 好处：不动引擎，零全库风险。
+
+**Lead 推荐 A。** 理由：这不是 game108 一家的需求，是引擎「实体寻址轴」上缺的一格——`SelfRule.whenGlobal` 已经把「全局门 + 自治写」补齐了，A 补的是它的镜像「全局规则 + 指定实体写」。
+
+#### ③ 本轮的落地状态（**等判决期间没有停工**）
+
+罚血的**账已经记准、演出已经做全**：`throwPenalty ↔ throwPenaltyHit` 两态互跳当周期钟（每 1 秒一记），
+写进全局唯一 id 的 `p1.debt`；屏上倒计时环翻成「已欠 -N」、相位牌换「拖延中」、每秒闪一次红纱。
+**唯一没接的是最后一步「`p1.debt` → 真扣 hp」**——判 A 就是加一条 `Effect{targetEntity:'p1'}`；
+判 B 则改成游戏层 system。两条路都不需要改已经落地的这些。
+
 ### 📦 3D 渲染线需求 → 已移至 `docs/workflow/requests-3d.md`（owner 2026-06-28 立独立池）
 
 > Mesh3D/Transform3D/Camera3D/Sky3D/Model3D/Light3D/Post3D 等 **3D 盒庭渲染线 + Game Z** 的需求 / 工单（含 `REQ-3D-W1高效引擎`·实例化绘制、`REQ-3D-Model导入`·glTF）**全部移至 [`requests-3d.md`](./requests-3d.md)**。新 3D 需求进那里、不进本文件；本文件留通用 UI 库 / 其它游戏需求。

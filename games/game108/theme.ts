@@ -18,14 +18,38 @@ export const DMG_BASE = 10;         // 【R-108-13】伤害 = DMG_BASE + 蓄力 
 export const DMG_STEP = 10;         //             → 10 / 20 / 30 / 40
 export const TIE_SELF_DAMAGE = 0;   // 【R-108-15】平局双方不掉血（清零由 §R-108-14 承担）
 
-/** 三时区四拍的 tick 时长（【R-108-01】3/3/2/1 秒 × TPS）。 */
+/**
+ * 三时区四拍的 tick 时长（【R-108-01】**v3**·gdd §5b 七个数由 owner 2026-08-07 定完）。
+ *
+ * v3 改的是「每一拍**由什么结束**」，不是「谁赢」：
+ *   T1 charge  硬倒计时 **2.5 秒**到点 → T2
+ *   T2 throw   **免费 5 秒**；到点**不强制推进**，转入罚血读秒（【R-108-04】），罚到玩家出手为止
+ *   T3 clash   演出播完 **1.5 秒** → T4
+ *   T4 settle  **玩家点「下一轮」才推进**（【R-108-05】·**不设自动兜底**）
+ *
+ * ⚠ `settle: 0` 不是"零秒"、是**没有时长**——T4 由闸门收尾，屏上那圈倒计时环这一拍不该出现。
+ * 读这张表的地方（宿主 `readView`）据此判「有没有倒计时」，别写成 `?? charge` 兜底：
+ * 兜底会让结算屏画出一圈 2.5 秒的环，玩家以为再不点就自动过了。
+ */
 export const TPS = 60;
 export const PHASE_TICKS = {
-  charge: 3 * TPS,   // T1 蓄力（公开）
-  throw: 3 * TPS,    // T2 出招（隐藏·同时）
-  clash: 2 * TPS,    // T3 对决
-  settle: 1 * TPS,   // T4 结算
+  charge: Math.round(2.5 * TPS),  // 150 —— T1 蓄力（公开·硬倒计时）
+  throw: 5 * TPS,                 // 300 —— T2 出招（隐藏·同时）**免费段**
+  clash: Math.round(1.5 * TPS),   // 90  —— T3 对决演出
+  settle: 0,                      //  0  —— T4 结算：玩家闸门，无时长
 } as const;
+
+/** 【R-108-04】超时罚血：免费段用完后**每 1 秒扣 1 点**，直到该侧提交出招。 */
+export const PENALTY_PERIOD = 1 * TPS;
+export const PENALTY_HP = 1;
+
+/**
+ * 【R-108-10】v3：**一回合最多给一只手 +1 层**（上限仍 3，故满蓄仍需攒 3 回合）。
+ * 条款原文一直是「往一手存 +1」，v2 实现做成了「每点一次 +1」——owner 2026-08-07 判「那是个 bug」。
+ * 实现手段 = 每回合一份「蓄力额度」资源（见 `chargeBudgetRes`），加多少层由额度当前值决定，
+ * 加完即把额度清零 ⇒ 同回合再点加 0（**不是禁用按钮**：按钮禁不禁是表现，额度才是规则）。
+ */
+export const CHARGE_PER_ROUND = 1;
 
 // ── 动作词表（【R-108-70】唯一真相：UI action / data-action / 验收剧本步骤名同一串字符）──
 export const ACT = {
@@ -69,6 +93,17 @@ export const chargeEntity = (side: Side, hand: Hand): string => `slot:${side}:${
 
 /** 「本回合出了哪只手」的 StringVar id —— 供【R-108-14】出过即清零的 6 条静态规则取用。 */
 export const lastThrowVar = (side: Side): string => `${side}.lastThrow`;
+
+/**
+ * 【R-108-10】v3 蓄力额度的 **Resource id**：每回合 T1 开场置 `CHARGE_PER_ROUND`，
+ * 蓄力 Effect 用 `valueFrom` 读它当加层数，紧接着的第二条 Effect 把它清零。
+ * **绝不与 `charge.` 同前缀**——判定表的 `clearOnSettle:'charge'` 按相对名拼 `<侧>.charge.<手>`，
+ * 同前缀会撞进清零面（v3 第一版就是这么写的，实测蓄力恒为 0）。
+ */
+export const chargeBudgetRes = (side: Side): string => `${side}.budget`;
+
+/** 【R-108-04】本回合已欠的罚血点数（**per-round**·T1 开场清零）。屏上「你已经欠了多少」读它。 */
+export const penaltyDebtRes = (side: Side): string => `${side}.debt`;
 
 // ── UI ────────────────────────────────────────────────────────────────
 /**

@@ -19,7 +19,7 @@ import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
 
 import {
   HANDS, HAND_CN, CHARGE_CAP, HP_MAX, DMG_BASE, DMG_STEP, ACT, SIDES,
-  HP_RES, SMOKE_USES, UI_ACT, type Hand, type Side,
+  HP_RES, SMOKE_USES, UI_ACT, PHASE_TICKS, TPS, type Hand, type Side,
 } from './theme.js';
 import { C, S, F, L, R, B, SH, CANVAS, dmgFontSize } from './design-tokens.js';
 import { plate, ring, hpBar, scene } from './plate-art.js';
@@ -34,6 +34,10 @@ const DMG_AT = (charge: number): number => DMG_BASE + charge * DMG_STEP;
 const handShort = (lang: Lang, h: Hand): string => t(lang, `hand.${h}.short` as const);
 const handFull = (lang: Lang, h: Hand): string => t(lang, `hand.${h}.full` as const);
 const CARD_COLOR: Record<Hand, string> = { rock: C.cardRock, paper: C.cardPaper, scissors: C.cardScissors };
+/** 【R-108-07】注水色 = 该手色条的半透明版（灌进奶油卡面上是"这只手的力"，不是另一种颜色）。 */
+const CARD_WATER: Record<Hand, string> = {
+  rock: 'rgba(255,201,60,.55)', paper: 'rgba(35,181,160,.55)', scissors: 'rgba(255,154,138,.55)',
+};
 /** 谁克谁（屏上提示与判定结论用·与判定表同源的静态常识，不参与判定）。 */
 const BEATS: Record<Hand, Hand> = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
 
@@ -45,6 +49,12 @@ export interface DuelView {
   phaseLeft: number;
   /** 相位剩余秒数（稿子的环心读数）。 */
   phaseSec: number;
+  /**
+   * **本状态已走过的毫秒数**（= `flow.elapsed / TPS × 1000`）。所有演出的唯一时钟。
+   * 为什么不继续用 `phaseLeft` 推：v3 有两拍**没有时长**（T4 玩家闸门 / T2 罚血读秒），
+   * `phaseLeft` 在那两拍恒为 0 —— 照它算，手就僵在原地不摇了（改 v3 时差点漏掉这一处）。
+   */
+  elapsedMs: number;
   round: number;
   hp: Record<Side, number>;
   charge: Record<Side, Record<Hand, number>>;
@@ -53,6 +63,26 @@ export interface DuelView {
   /** 我这回合提交了哪只手（稿子的「已提交」态·出招到揭晓那两秒空窗靠它撑）。 */
   submitted?: Hand | '';
   outcome?: { winner: Side | 'tie'; damage: number };
+  /**
+   * 【R-108-04】v3 罚血读秒：免费 5 秒走完仍没出手 → `active`，`debt` = 本回合已欠点数。
+   * **屏上必须与"被对手打中"区分得开**（owner 明确）——罚血不是战果，不触发胜负横幅。
+   * 相位仍是 `throw`（世界里那两个 `throwPenalty*` 状态是 T2 的尾巴，不是第五拍）。
+   */
+  penalty?: { active: boolean; debt: number };
+  /** 【R-108-05】v3：T4 由玩家点「下一轮」推进——有它才画那枚键（终局屏画的是「再来一局」）。 */
+  awaitNext?: boolean;
+  /**
+   * 【R-108-07】T1 注水：本回合蓄的是哪只手 + **蓄下去那一刻在 T1 里的毫秒数**。
+   * 注水是"从这一刻起灌 450ms"，屏上只有相位时钟一个钟（表现层也别引入第二个钟），
+   * 所以起点必须由宿主在看见槽涨的那一帧记下来传进来。
+   */
+  charged?: { hand: Hand; atMs: number };
+  /**
+   * 【R-108-06/09】结算演出的**参照系**：本回合开打前的血量与六条槽。
+   * 血槽双段条要画"这一波掉了多少"、蓄力回撤要从"退回前是几层"退起——
+   * 两者都不是当前值能反推的，必须在进 T3 那一拍抓一张快照。
+   */
+  before?: { hp: Record<Side, number>; charge: Record<Side, Record<Hand, number>> };
   smoke: { uses: number; hidden: boolean };
   /** 对手名（稿子样例是「赌徒」）。**约会向定位下这是传入卡片角色的名字**，不是内置对手名。 */
   foeName: string;
@@ -114,19 +144,21 @@ function shakeAt(ms: number): HandMotion {
 }
 
 function handMotion(view: DuelView): HandMotion {
-  const p = 1 - view.phaseLeft;   // 本相位已走过的比例 0..1
+  const ms = view.elapsedMs;
   switch (view.phase) {
     case 'charge': {
       // 伸入：从画外沿水平方向推进到位（稿子 §Animations 1：不是淡入、不是弹出）。
-      const e = easeOutBack(clamp01(p / 0.2));
+      const e = easeOutBack(clamp01(ms / 500));
       return { dx: q((e - 1) * 420, 4), dy: 0, rot: 0, scale: 1 };
     }
     case 'throw':
-      return shakeAt(p * 3000);                       // T2 = 3 秒，正好 5 轮
+      // 摇拳按**真实毫秒**走，摇到你出手为止（v3 的 T2 没有固定长度：免费 5 秒 + 罚血读秒）。
+      // 罚血期 `elapsedMs` 每秒归零一次（那是读秒子状态的钟），加上欠债秒数才连得起来。
+      return shakeAt(view.penalty?.active ? view.penalty.debt * 1000 + ms : ms);
     case 'clash':
     case 'settle': {
       // 出招：手型换成实际那一招，同时朝中线推 26px（稿子 `rt3-push`）。
-      const e = easeOutBack(clamp01(p / (view.phase === 'clash' ? 0.14 : 1)));
+      const e = easeOutBack(clamp01(ms / (view.phase === 'clash' ? 210 : 280)));
       return { dx: q(e * 26, 2), dy: 0, rot: 0, scale: 1 };
     }
     default:
@@ -227,6 +259,22 @@ function idPlate(view: DuelView, side: Side): LayoutNode {
 }
 
 /** 血量块（条 + 大数字 + `/100`）。对手那条**从外侧掉**（稿子明写）。 */
+/**
+ * 【R-108-06】血槽双段条：先掉的那段延迟 220ms 才开始追、620ms 追到位。
+ * 参照系是**进 T3 那一拍的血量快照**（`view.before`）——当前值反推不出"这一波掉了多少"。
+ * 追完（或没掉血）返回 undefined ⇒ `hpBar` 与旧版逐字节相同，不多生成一张皮。
+ */
+function ghostPct(view: DuelView, side: Side): number | undefined {
+  const was = view.before?.hp[side];
+  if (was === undefined || was <= view.hp[side]) return undefined;
+  if (view.phase !== 'clash' && view.phase !== 'settle') return undefined;
+  // T4 的时钟是玩家闸门（可以停很久）→ 只在 T3 演这一段，进 T4 就已经追平了。
+  const ms = view.phase === 'clash' ? view.elapsedMs : Infinity;
+  const p = clamp01((ms - DRAIN_DELAY) / DRAIN_MS);
+  if (p >= 1) return undefined;
+  return q((was - (was - view.hp[side]) * easeInOut(p)) / HP_MAX * 100, 1);
+}
+
 function hpBlock(view: DuelView, side: Side): LayoutNode {
   const mine = side === 'p1';
   const hp = view.hp[side];
@@ -234,7 +282,8 @@ function hpBlock(view: DuelView, side: Side): LayoutNode {
     type: 'Image', id: `side-${side}-hp`,
     props: {
       src: hpBar(L.hpBlock.w, L.hpTrack.h, (hp / HP_MAX) * 100,
-        mine ? ['#5fe8cd', '#1f9c89'] : ['#ff9a8a', '#d0342b'], C.hpTrack, C.ink, mine ? 'left' : 'right'),
+        mine ? ['#5fe8cd', '#1f9c89'] : ['#ff9a8a', '#d0342b'], C.hpTrack, C.ink, mine ? 'left' : 'right',
+        ghostPct(view, side)),
       alt: '', fit: 'fill',
     },
     layout: { width: L.hpBlock.w, height: L.hpTrack.h },
@@ -265,29 +314,44 @@ function hpBlock(view: DuelView, side: Side): LayoutNode {
 
 /** 顶栏中央：回合数 + 倒计时环 + 相位牌。环在最后三分之一整体转红（稿子的硬要求）。 */
 function phaseBar(view: DuelView): LayoutNode {
-  const pct = Math.round(view.phaseLeft * 100);
-  const hot = pct < 34;
+  // 【R-108-04】罚血读秒：环从「还剩多久」翻成「你已经欠了多少」——满圈红 + 圈心是欠债点数。
+  // 相位牌也换字（「拖延中」），因为这一拍**不是**普通的出招，玩家得一眼知道自己正在流血。
+  const pen = view.penalty?.active === true;
+  const pct = pen ? 100 : Math.round(view.phaseLeft * 100);
+  const hot = pen || pct < 34;
   const accent = hot ? C.danger : C.gold;
-  const chipW = 26 * 2 + phaseName(view.lang, view.phase).length * S.phaseChip * (view.lang === 'en' ? 0.62 : 1) + 10;
+  // 罚血牌带上「出手即停」：这句原本塞在环心里，78px 的环装不下，真渲染目击到它糊出圈外
+  // （`S4-play-2d-penalty.png`）。相位牌是自适应宽度的，放这儿正好。
+  const chipText = pen ? `${t(view.lang, 'penalty.title')} · ${t(view.lang, 'penalty.hint')}` : phaseName(view.lang, view.phase);
+  const chipW = 26 * 2 + chipText.length * S.phaseChip * (view.lang === 'en' ? 0.62 : 1) + 10;
   return {
     type: 'Panel', id: 'status', props: { bare: true },
     layout: { x: 566, y: 10, width: 788, height: 78, direction: 'row', align: 'center', justify: 'center', gap: 18 },
     children: [
       { type: 'Label', id: 'round-b', props: { text: t(view.lang, 'top.round', { n: view.round }), size: S.round, font: F.cjk, color: 'text' } },
-      {
+      // 【R-108-05】T4 **没有倒计时**（玩家闸门）——环整个不画。
+      // 画一圈停在 0.0 秒的环 = 告诉玩家"时间到了"，而事实是它在等你点；这是最容易骗到人的一种 UI 谎话。
+      ...(view.awaitNext ? [] : [{
         type: 'Panel', id: 'phase-ring',
         props: { skin: ring(L.ring, pct, accent, C.ringDisc, L.ringDisc) },
         layout: { width: L.ring, height: L.ring, direction: 'column', align: 'center', justify: 'center', gap: 0, padding: 0 },
-        children: [
-          { type: 'Label', id: 'phase-sec', props: { text: view.phaseSec.toFixed(1), size: S.timer, font: F.num, bold: true, color: hot ? 'danger' : 'text' } },
-          { type: 'Label', id: 'phase-secu', props: { text: t(view.lang, 'top.sec'), size: S.ringSec, font: F.num, color: 'sub' } },
-        ],
-      },
+        children: pen
+          ? [
+            // 欠债一秒一记：`-N`。**不用 tween 平滑**——owner 要的正是"一秒一记的节拍感"，
+            // 连续滑落读起来像血在慢慢流，读不出"每多拖一秒就多欠一点"。
+            { type: 'Label', id: 'phase-sec', props: { text: `-${view.penalty?.debt ?? 0}`, size: S.timer, font: F.num, bold: true, color: 'danger' } },
+            { type: 'Label', id: 'phase-secu', props: { text: 'HP', size: S.ringSec, font: F.num, color: 'warn' } },
+          ]
+          : [
+            { type: 'Label', id: 'phase-sec', props: { text: view.phaseSec.toFixed(1), size: S.timer, font: F.num, bold: true, color: hot ? 'danger' : 'text' } },
+            { type: 'Label', id: 'phase-secu', props: { text: t(view.lang, 'top.sec'), size: S.ringSec, font: F.num, color: 'sub' } },
+          ],
+      } as LayoutNode]),
       {
         type: 'Panel', id: 'phase-chip',
         props: { skin: plate({ w: chipW, h: 62, fill: accent, border: 5, radius: R.chip, shadow: SH.chip }) },
         layout: { width: chipW, height: 62, direction: 'row', align: 'center', justify: 'center', padding: 0 },
-        children: [{ type: 'Label', id: 'phase-t', props: { text: phaseName(view.lang, view.phase), size: S.phaseChip, font: F.cjk, color: 'ink' } }],
+        children: [{ type: 'Label', id: 'phase-t', props: { text: chipText, size: S.phaseChip, font: F.cjk, color: 'ink' } }],
       },
     ],
   };
@@ -480,6 +544,65 @@ function ruleSlab(lang: Lang): LayoutNode {
 }
 
 /** 结果横幅（T3/T4）：判定结论胶囊 + **随数值放大的伤害数字** + 结果句。 */
+// ── 【R-108-06/09】结算演出 ──────────────────────────────────────────────
+//
+// 三件套：**红色震动（幅度随掉血量）** + **血槽双段条** + **伤害数字跳数**。
+// 全部由相位时钟推（同手的动作），不走 CSS 关键帧——理由见文件上方 handMotion 那段。
+const HIT_MS = 480;      // 震动持续
+const DRAIN_DELAY = 220; // 双段条：后一段延迟多久开始追
+const DRAIN_MS = 620;    // 追多久追到位
+
+/**
+ * 幅度随掉血量（owner 点名「掉 10 和掉 40 不能一个抖法」·委托稿要三档）：
+ *   10 → ±6px / 20–30 → ±11–14px / 40 → ±18px。
+ * 连续式（`4 + dmg × 0.35`）而不是三个 if：伤害档位会被遗物改（凿改层能改 base/step），
+ * 写死三档等着下一次改数值时静默失配——同 matrix-duel 拒绝穷举 18 条规则的那条理由。
+ */
+const shakeAmp = (damage: number): number => 4 + damage * 0.35;
+
+/** 这一帧的震动位移（衰减正弦·量化到 1px 防每帧新皮）。掉血量为 0 → 不抖。 */
+function hitShake(view: DuelView): { dx: number; dy: number } {
+  const dmg = view.outcome?.damage ?? 0;
+  if (dmg <= 0 || view.phase !== 'clash' || view.elapsedMs > HIT_MS) return { dx: 0, dy: 0 };
+  const decay = 1 - view.elapsedMs / HIT_MS;
+  const amp = shakeAmp(dmg) * decay * decay;
+  const ph = (view.elapsedMs / 55) * Math.PI;
+  return { dx: q(Math.sin(ph) * amp, 1), dy: q(Math.cos(ph * 1.4) * amp * 0.6, 1) };
+}
+
+/** 红色震动的另一半：整屏红纱，浓度随掉血量（40 血那一下要"红一下眼"）。 */
+function hitVeil(view: DuelView): LayoutNode | null {
+  const dmg = view.outcome?.damage ?? 0;
+  if (dmg <= 0 || view.phase !== 'clash' || view.elapsedMs > HIT_MS) return null;
+  // 只有**我**挨打才红屏：打中对手时红屏会让玩家以为自己被打了（罚血同理，见下面 penaltyVeil）。
+  if (view.outcome?.winner !== 'p2') return null;
+  const a = q((1 - view.elapsedMs / HIT_MS) * Math.min(0.42, 0.1 + dmg * 0.008), 0.05);
+  if (a <= 0) return null;
+  return {
+    type: 'Image', id: 'hit-veil',
+    // 生成图的**源尺寸必须等于盒子尺寸**（2026-08-07 踩过：8×8 的源被居中画成 1080 见方一块）。
+    props: { src: plate({ w: CANVAS.w, h: CANVAS.h, fill: `rgba(224,72,63,${a})`, radius: 0 }), alt: '', fit: 'fill' },
+    layout: { x: 0, y: 0, width: CANVAS.w, height: CANVAS.h, allowOverlap: true },
+  };
+}
+
+/**
+ * 【R-108-04】罚血读秒的红纱：**一秒一闪**，且比挨打那一下淡得多。
+ * owner 的硬要求是"必须与被对手打中区分得开"——所以这里既不触发胜负横幅，也不用同一浓度。
+ */
+function penaltyVeil(view: DuelView): LayoutNode | null {
+  if (!view.penalty?.active) return null;
+  const beat = view.elapsedMs % 1000;
+  if (beat > 180) return null;
+  const a = q((1 - beat / 180) * 0.16, 0.04);
+  if (a <= 0) return null;
+  return {
+    type: 'Image', id: 'pen-veil',
+    props: { src: plate({ w: CANVAS.w, h: CANVAS.h, fill: `rgba(224,72,63,${a})`, radius: 0 }), alt: '', fit: 'fill' },
+    layout: { x: 0, y: 0, width: CANVAS.w, height: CANVAS.h, allowOverlap: true },
+  };
+}
+
 function banner(view: DuelView): LayoutNode | null {
   const o = view.outcome;
   if (!o || (view.phase !== 'clash' && view.phase !== 'settle')) return null;
@@ -500,14 +623,23 @@ function banner(view: DuelView): LayoutNode | null {
     children: [{ type: 'Label', id: 'verdict-t', props: { text: verdict, size: S.verdict, font: F.cjk, color: 'text' } }],
   }];
   if (!tie) {
+    // 【R-108-09】伤害数字**跳数**：不是直接显示终值，从 0 弹到 -N（`Label.tween` 是基座件）。
+    // 减号单独一个 Label：`tween` 接管的是数字本身，前缀塞不进去；而这个减号又不能省
+    //（省了就变成"加了 30 血"）。ASCII 连字符——全角减号在艺术字里常缺字形，渲成黑豆腐块。
+    const dsize = dmgFontSize(o.damage);
     kids.push({
-      type: 'Label', id: 'lane-d',
-      props: {
-        // ASCII 连字符：全角减号 U+2212 在艺术字里常缺字形，会渲成黑豆腐块——
-        // 而这是全屏最要紧的一个数字（2026-08-07 真渲染目击）。
-        text: `-${o.damage}`, size: dmgFontSize(o.damage), font: F.num, bold: true,
-        color: iWon ? 'gold' : 'danger', glow: true, stroke: true,
-      },
+      type: 'Panel', id: 'lane-dw', props: { bare: true },
+      layout: { direction: 'row', align: 'center', justify: 'center', gap: 0 },
+      children: [
+        { type: 'Label', id: 'lane-dm', props: { text: '-', size: dsize, font: F.num, bold: true, color: iWon ? 'gold' : 'danger', glow: true, stroke: true } },
+        {
+          type: 'Label', id: 'lane-d',
+          props: {
+            tween: { from: 0, to: o.damage, ms: 420, decimals: 0 },
+            size: dsize, font: F.num, bold: true, color: iWon ? 'gold' : 'danger', glow: true, stroke: true,
+          },
+        },
+      ],
     });
   }
   kids.push({
@@ -530,6 +662,46 @@ function banner(view: DuelView): LayoutNode | null {
 const BOTTOM_INNER_Y = L.bottom.y + L.bottom.pad[0];
 const BOTTOM_INNER_H = L.bottom.h - L.bottom.pad[0] * 2;
 
+// ── 【R-108-07/08】T1 放大选牌（owner 2026-08-07 判 A：放大到**中央通道**，不是整屏）─────
+//
+// 硬约束（gdd【R-108-03】+ §1 唯一支柱）：右上角对手蓄力条（x 1188–1808 / y 110–180）与顶栏
+// **全程可见**——T1 正是对手在存力那一拍，盖住它等于把这游戏的核心信息在最关键的时刻关掉。
+// 于是放大只用两只手让出来的那条中央通道（约 x 300–1620 / y 150–790），三张卡摆在 y 240–700：
+// 顶栏（0–97）与对手条（110–180）都在上面，一格没碰。两只手在 T1 是待机握拳，被卡片挡一部分是允许的。
+// y 从 290 起：240 那一版真渲染目击到**把判定表石板整块盖住**（石板 y≈155–275），
+// 而石板是「谁克谁」的常驻参考——T1 正是玩家在挑手的那一拍，这时候把克制表关掉最不该。
+// 290 + 460 = 750，仍在底栏（800）之上，一格没越界。
+// 340×460 @y240 那两版都被真渲染打回过：
+//   ① y=240 → 把判定表石板（y≈155–275）整块盖住，而石板是「谁克谁」的常驻参考，
+//      T1 正是玩家在挑手的那一拍，这时候关掉克制表最不该；
+//   ② y=290 h=460 → 卡底 750 又压上角色字幕（y 726–778）。
+// 现在 285–685：石板全露、字幕全露、离底栏（800）还有 115px 余量。
+const BIG = { w: 330, h: 400, y: 285, gap: 60 } as const;
+const BIG_X0 = Math.round((CANVAS.w - (BIG.w * 3 + BIG.gap * 2)) / 2);
+const GROW_MS = 260;   // 放上去
+const BACK_MS = 320;   // 缩回来（比放上去慢一点：缩回同时要射粒子，太快看不清）
+const POUR_MS = 450;   // 注水灌满
+
+/**
+ * 这一帧卡片"放大了多少"（0=底栏原位 · 1=中央通道满尺寸）。
+ * **量化到 0.1 档**：卡面是生成图，尺寸变一次就是一张新 data-URI；不量化 = 每帧一张新皮，
+ * 面板全量重建 + 图片重新请求（2026-08-07 那次 `networkidle` 永不收敛就是这么来的）。
+ */
+function cardGrow(view: DuelView): number {
+  if (view.phase !== 'charge') return 0;
+  const total = PHASE_TICKS.charge / TPS * 1000;
+  const ms = view.elapsedMs;
+  if (ms < GROW_MS) return q(clamp01(easeOutBack(ms / GROW_MS)), 0.1);
+  if (ms > total - BACK_MS) return q(clamp01(1 - easeInOut((ms - (total - BACK_MS)) / BACK_MS)), 0.1);
+  return 1;
+}
+
+/** 【R-108-07】注水高度 0..1：从"蓄下去那一刻"起灌 450ms。没蓄过的手恒 0。 */
+function pourLevel(view: DuelView, h: Hand): number {
+  if (view.phase !== 'charge' || view.charged?.hand !== h) return 0;
+  return q(clamp01((view.elapsedMs - view.charged.atMs) / POUR_MS), 0.1);
+}
+
 /** 一张招式卡。同一组键在不同时区含义不同——副标把「这一下打多少」写在键面上。 */
 function moveCard(view: DuelView, h: Hand, idx: number): LayoutNode {
   const charging = view.phase === 'charge';
@@ -540,7 +712,15 @@ function moveCard(view: DuelView, h: Hand, idx: number): LayoutNode {
   const selected = throwing && view.submitted === h;
   const sub = charging ? (full ? t(view.lang, 'card.full') : t(view.lang, 'card.charge', { n: DMG_AT(lv + 1) }))
     : throwing ? t(view.lang, 'card.throwFor', { n: DMG_AT(lv) }) : t(view.lang, 'card.locked');
-  const w = L.card.w, hgt = BOTTOM_INNER_H;
+  // 【R-108-08】放大插值：底栏原位 ↔ 中央通道。三段带的高度按同一个 k 一起长，否则
+  // 图挤在顶上、副标压在卡外（v2 定高带那次真渲染目击过一模一样的病）。
+  const k = cardGrow(view);
+  const smallX = L.bottom.pad[1] + idx * (L.card.w + 12);
+  const lerp = (a: number, b: number): number => Math.round(a + (b - a) * k);
+  const w = lerp(L.card.w, BIG.w), hgt = lerp(BOTTOM_INNER_H, BIG.h);
+  const cardX = lerp(smallX, BIG_X0 + idx * (BIG.w + BIG.gap));
+  const stripH = lerp(38, 62), subH = lerp(48, 76), iconW = lerp(96, 176), iconH = lerp(104, 190);
+  const pour = pourLevel(view, h);
   const badge = selected ? t(view.lang, 'card.badgeSent') : full && charging ? t(view.lang, 'card.badgeFull') : '';
   // 三段定高带：色条 38 / 图（吃掉剩余） / 副标条 48 —— 与皮里烤好的色条和副标条严丝合缝。
   // 早先交给 `justify:between` 自由排，副标就压在卡底被裁掉了（真渲染目击）。
@@ -548,17 +728,17 @@ function moveCard(view: DuelView, h: Hand, idx: number): LayoutNode {
     type: 'Panel', id, props: { bare: true },
     layout: {
       ...(height !== undefined ? { height } : { flex: 1 }),
-      width: L.card.w - B.card * 2, direction: 'row', align: 'center', justify: 'center', padding: 0,
+      width: w - B.card * 2, direction: 'row', align: 'center', justify: 'center', padding: 0,
     },
     children: [child],
   });
   const kids: LayoutNode[] = [
-    band(`key-${h}-nb`, 38, { type: 'Label', id: `key-${h}-n`, // 稿子的卡面写「石 · 石头」，中文读起来是**同一个词说两遍**（owner 2026-08-07 当场指出）
+    band(`key-${h}-nb`, stripH, { type: 'Label', id: `key-${h}-n`, // 稿子的卡面写「石 · 石头」，中文读起来是**同一个词说两遍**（owner 2026-08-07 当场指出）
       // → 中英一律只用全名：石头 / 布 / 剪刀 · Rock / Paper / Scissors。
       // 短名（石/剪/布 · RK/PP/SC）只留给判定表和判定结论那种要压缩的地方。
-      props: { text: handFull(view.lang, h), size: S.cardStrip, font: F.cjk, color: 'text' } }),
-    band(`key-${h}-ib`, undefined, { type: 'Image', id: `key-${h}-i`, props: { src: HAND_ICON_SRC[h], alt: HAND_CN[h], fit: 'contain' }, layout: { width: 96, height: 104 } }),
-    band(`key-${h}-sb`, 48, { type: 'Label', id: `key-${h}-s`, props: { text: sub, size: (throwing ? S.cardSub2 : S.cardSub) * (view.lang === 'en' ? 0.8 : 1), font: F.cjk, color: disabled ? 'dim' : 'ink' } }),
+      props: { text: handFull(view.lang, h), size: Math.round(S.cardStrip * (1 + k * 0.5)), font: F.cjk, color: 'text' } }),
+    band(`key-${h}-ib`, undefined, { type: 'Image', id: `key-${h}-i`, props: { src: HAND_ICON_SRC[h], alt: HAND_CN[h], fit: 'contain' }, layout: { width: iconW, height: iconH } }),
+    band(`key-${h}-sb`, subH, { type: 'Label', id: `key-${h}-s`, props: { text: sub, size: Math.round((throwing ? S.cardSub2 : S.cardSub) * (view.lang === 'en' ? 0.8 : 1) * (1 + k * 0.5)), font: F.cjk, color: disabled ? 'dim' : 'ink' } }),
   ];
   if (badge) {
     kids.push({
@@ -577,14 +757,16 @@ function moveCard(view: DuelView, h: Hand, idx: number): LayoutNode {
       skin: plate({
         w, h: hgt, fill: disabled ? C.disabled : C.cream, border: B.card, radius: R.card,
         shadow: selected ? 2 : SH.card, shadowColor: selected ? C.goldDeep : 'rgba(0,0,0,.4)',
-        strip: { color: CARD_COLOR[h], h: 38 }, subBar: { h: 48 },
+        strip: { color: CARD_COLOR[h], h: stripH }, subBar: { h: subH },
+        // 【R-108-07】注水：选中的那张从下往上灌，带一条亮水线（不是整块换色）。
+        ...(pour > 0 ? { fillLevel: { level: pour, color: CARD_WATER[h], lineColor: 'rgba(255,255,255,.85)' } } : {}),
         ...(selected ? { outline: { color: C.gold, w: 6 } } : {}),
         ...(disabled ? { opacity: 0.62 } : {}),
       }),
       ...(disabled ? {} : { action: charging ? ACT.charge(h) : ACT.throw(h) }),
     },
     layout: {
-      x: L.bottom.pad[1] + idx * (w + 12), y: BOTTOM_INNER_Y + (selected ? 5 : 0),
+      x: cardX, y: lerp(BOTTOM_INNER_Y + (selected ? 5 : 0), BIG.y),
       width: w, height: hgt,
       direction: 'column', align: 'center', justify: 'start', gap: 0, padding: B.card, allowOverlap: true,
     },
@@ -592,9 +774,24 @@ function moveCard(view: DuelView, h: Hand, idx: number): LayoutNode {
   };
 }
 
+/**
+ * 【R-108-09】蓄力回撤：从"开打前是几层"一格一格退到当前值，每格 180ms。
+ * 只在 T3 演（T4 是玩家闸门，可以停很久，退到一半停住就成了穿帮）。
+ */
+const DRAIN_PER_PIP = 180;
+function drainedLevel(view: DuelView, h: Hand, lv: number): number {
+  const was = view.before?.charge.p1[h];
+  if (was === undefined || was <= lv || view.phase !== 'clash') return lv;
+  const gone = Math.floor(Math.max(0, view.elapsedMs - DRAIN_DELAY) / DRAIN_PER_PIP);
+  return Math.max(lv, was - gone);
+}
+
 /** 我方一格蓄力槽（**底栏最重的元素**·稿子把重量给了我方这三格，见 README 的偏差说明）。 */
 function mySlot(view: DuelView, h: Hand, idx: number): LayoutNode {
   const lv = view.charge.p1[h];
+  // 【R-108-09】**蓄力回撤**：出过的手清零时演出式退回，不是瞬间归零——
+  // 玩家要看见"我这一下花掉了什么"。灯一格一格灭（不是连续条），所以按时间算显示层数。
+  const lvShown = drainedLevel(view, h, lv);
   const full = lv >= CHARGE_CAP;
   const w = 290, hgt = 222;
   const x = 697 + idx * (w + 12);
@@ -633,7 +830,7 @@ function mySlot(view: DuelView, h: Hand, idx: number): LayoutNode {
       {
         type: 'Panel', id: `cb-p1-${h}-b`, props: { bare: true },
         layout: { direction: 'row', gap: 7 },
-        children: [1, 2, 3].map((i) => pip('p1', h, i, lv, full, true)),
+        children: [1, 2, 3].map((i) => pip('p1', h, i, lvShown, full, true)),
       },
     ],
   };
@@ -702,9 +899,67 @@ function bottomBar(view: DuelView): LayoutNode[] {
       }],
     },
     ...HANDS.map((h, i) => mySlot(view, h, i)),
-    ...HANDS.map((h, i) => moveCard(view, h, i)),
+    // 【R-108-05】T4 **拿三张招式卡的位置**摆「下一轮」。
+    // 为什么不另找一块空地：中区那条带（y≈690–780）同时被结果横幅的尾巴和角色字幕占着，
+    // 真渲染目击到按钮被「伤害落定」那枚牌压掉大半（`S4-play-2c-settle-gate.png`）——
+    // 点击探针点上去打在横幅上，**世界一点反应都没有且不报错**，正是死键的形状。
+    // 而 T4 的三张卡本来就全是「本回合不可点」的灰牌：把这一拍**唯一的动作**摆在最显眼的位置，
+    // 既没有叠层、又是对的信息层级。
+    ...(view.awaitNext ? [nextKey(view)] : HANDS.map((h, i) => moveCard(view, h, i))),
+    ...chargeParticles(view),
     smokeKey(view),
   ];
+}
+
+/**
+ * 【R-108-07】③ 缩回 + **粒子注入**：T1 收尾那一段，从被选中的卡射出高亮粒子，
+ * 飞进下方蓄力槽**对应的那一格**——让"力去哪了"是看得见的一条线。
+ * `layout.flyTo{to,ms,arc}` 是基座件（`ui.md` 在案）：元素沿弧飞到目标元素 id。
+ * 三粒错开 `delay`，看着像一串而不是一坨。
+ */
+function chargeParticles(view: DuelView): LayoutNode[] {
+  const c = view.charged;
+  if (!c || view.phase !== 'charge') return [];
+  const total = PHASE_TICKS.charge / TPS * 1000;
+  if (view.elapsedMs < total - BACK_MS) return [];      // 只在缩回那一段射
+  const idx = HANDS.indexOf(c.hand);
+  const from = BIG_X0 + idx * (BIG.w + BIG.gap) + BIG.w / 2;
+  return [0, 1, 2].map((i) => ({
+    type: 'Panel', id: `spark-${i}`,
+    props: { skin: plate({ w: 22, h: 22, fill: CARD_COLOR[c.hand], border: 3, radius: 999, glow: 'rgba(255,255,255,.9)' }) },
+    layout: {
+      x: Math.round(from - 11 + (i - 1) * 26), y: BIG.y + BIG.h - 40, width: 22, height: 22,
+      allowOverlap: true, flyTo: { to: `cb-p1-${c.hand}`, ms: BACK_MS, arc: 90, delay: i * 60 },
+    },
+  } as LayoutNode));
+}
+
+/**
+ * 【R-108-05】T4 的「下一轮」键。**与终局屏的「再来一局」是两个键**——
+ * 同一个动作名 `duel.next`，但落点不同（这里是世界闸门，那里是宿主换局），
+ * 风格该有关联（同款糖果皮）但文案不能混：混了玩家会以为点一下就重开整局。
+ */
+function nextKey(view: DuelView): LayoutNode {
+  // 占满三张招式卡的整条带（含两道 12px 间隙），高度与卡同高——不留半块空地给人误点。
+  const w = L.card.w * 3 + 24, hgt = BOTTOM_INNER_H;
+  return {
+    // id 与终局屏那枚**故意不同名**（那枚是 `key-next`）：同名的话试玩走查分不清自己点的是
+    // 「进下一回合」还是「重开整局」——2026-08-07 那个死键就是靠"点了它到底该发生什么"抓出来的。
+    type: 'Panel', id: 'key-nextround',
+    props: {
+      skin: plate({ w, h: hgt, fill: [C.goldFillA, C.goldFillB], border: B.card, radius: R.pill, shadow: SH.cta, shadowColor: C.goldDeep }),
+      action: ACT.next,
+    },
+    layout: {
+      x: L.bottom.pad[1], y: BOTTOM_INNER_Y, width: w, height: hgt,
+      direction: 'column', align: 'center', justify: 'center', gap: 10, padding: 0, allowOverlap: true,
+      anim: 'pop', animMs: 260,
+    },
+    children: [
+      { type: 'Label', id: 'key-nextround-t', props: { text: t(view.lang, 'end.nextRound'), size: 52, font: F.cjk, color: 'ok' } },
+      { type: 'Label', id: 'key-nextround-s', props: { text: '▶', size: 40, color: 'ok' } },
+    ],
+  };
 }
 
 /** 设置菜单（owner 2026-08-07）：音乐 / 音效 / 配音 / 语言 —— 只有这四条，别堆。 */
@@ -771,11 +1026,15 @@ function settingsMenu(view: DuelView): LayoutNode[] {
 function subtitle(view: DuelView): LayoutNode | null {
   if (!view.subtitle) return null;
   const w = Math.round(view.subtitle.length * 26 * CHAR_W[view.lang] + 80);
+  // 结果横幅在场时**让到横幅上方**：两者原本都想占 y≈726 那条带
+  // （横幅是自适应高度的列，伤害数字一大就往下长），真渲染目击过字幕把「伤害落定」压掉一半
+  // （`S4-play-2c-settle-gate.png`）。横幅是战果、字幕是角色台词，谁也不该盖谁。
+  const y = view.outcome && (view.phase === 'clash' || view.phase === 'settle') ? 320 : L.bottom.y - 74;
   return {
     type: 'Panel', id: 'subtitle',
     props: { skin: plate({ w, h: 52, fill: 'rgba(24,17,12,.86)', border: 4, radius: R.pill }) },
     layout: {
-      x: (CANVAS.w - w) / 2, y: L.bottom.y - 74, width: w, height: 52,
+      x: (CANVAS.w - w) / 2, y, width: w, height: 52,
       direction: 'row', align: 'center', justify: 'center', padding: 0, allowOverlap: true,
     },
     children: [{ type: 'Label', id: 'subtitle-t', props: { text: view.subtitle, size: 26, font: F.cjk, color: 'text' } }],
@@ -843,9 +1102,14 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
   const over = isOver(view.phase);
   const b = banner(view);
   const sub = subtitle(view);
+  const veil = hitVeil(view) ?? penaltyVeil(view);
+  // 【R-108-06】红色**震动**：整块舞台连人带 UI 一起抖（幅度随掉血量·见 shakeAmp）。
+  // 抖的是根面板的落点，所以画布要留出 shake 的余量——`allowOverlap` 下超出部分被裁掉，
+  // 而背景本来就是满画布铺的，抖出来的那几像素露的是舞台外框色，正是格斗游戏里那种"顿一下"。
+  const sk = hitShake(view);
   return {
     type: 'Panel', id: 'duel-screen', props: { bare: true },
-    layout: { width: CANVAS.w, height: CANVAS.h, padding: 0 },
+    layout: { x: sk.dx, y: sk.dy, width: CANVAS.w, height: CANVAS.h, padding: 0 },
     children: [
       stageBg(),
       armNode('p1'), armNode('p2'),
@@ -856,6 +1120,8 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
       ...(b ? [b] : []),
       ...(over ? endPanel(view) : bottomBar(view)),
       ...(sub ? [sub] : []),
+      // 红纱压在对局层之上、菜单之下：它是打击感，不该盖住玩家正在操作的设置面板。
+      ...(veil ? [veil] : []),
       ...(view.menuOpen ? settingsMenu(view) : []),
     ],
   };
@@ -864,7 +1130,7 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
 export function emptyView(): DuelView {
   const zero = (): Record<Hand, number> => ({ rock: 0, paper: 0, scissors: 0 });
   return {
-    phase: 'charge', phaseLeft: 1, phaseSec: 3, round: 1,
+    phase: 'charge', phaseLeft: 1, phaseSec: PHASE_TICKS.charge / TPS, elapsedMs: 0, round: 1,
     hp: { p1: HP_MAX, p2: HP_MAX },
     charge: { p1: zero(), p2: zero() },
     smoke: { uses: SMOKE_USES, hidden: false },

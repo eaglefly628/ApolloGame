@@ -38,6 +38,12 @@ const READ = `(() => {
   return { phase: txt('phase-t'),
     hp: { p1: txt('side-p1-hpv'), p2: txt('side-p2-hpv') },
     charge: { p1: txt('cb-p1-paper-v'), rock: txt('cb-p1-rock-v'), p2r: txt('cb-p2-rock-v') },
+    ring: txt('phase-sec'),
+    round: txt('round-b'),
+    // v3：两枚 duel.next 键的落点不同 —— T4 闸门（进下一回合）/ 终局重开（换一个世界）。
+    // **分开读**：同一枚读法会让"点了它到底发生什么"这条断言失去分辨力。
+    nextRound: !!document.getElementById('key-nextround'),
+    restart: !!document.getElementById('key-next'),
     keys: { rock: key('rock'), paper: key('paper'), scissors: key('scissors') } };
 })()`;
 
@@ -63,7 +69,8 @@ async function main() {
     const t0 = Date.now();
     for (;;) {
       const s = await state();
-      if (s.phase === want) return s;
+      // 前缀匹配：相位牌可能带后缀（罚血那一拍写的是「拖延中 · 出手即停」）。
+      if (String(s.phase ?? '').startsWith(want)) return s;
       if (Date.now() - t0 > maxMs) return { ...s, timeout: true };
       await page.waitForTimeout(120);
     }
@@ -83,12 +90,12 @@ async function main() {
     // 复读机出石，我故意出剪 → 石克剪 → **我挨打**。这一轮也验了「输了照样清零」。
     say('\n── 第 0 回合（故意打输·看失败反馈）──');
     await until('蓄力');
-    await page.click('#key-scissors').catch(() => {});      // 蓄剪 1
+    await page.click('#key-scissors').catch(() => {});      // 蓄剪 1（v3：一回合就这一层）
     await page.waitForTimeout(150);
     await until('出招');
     await page.click('#key-scissors').catch(() => {});      // 出剪 → 被石克
     await until('对决');
-    await page.waitForTimeout(700);
+    await page.waitForTimeout(900);
     const lost = await state();
     say(`  → 我方血量 ${lost.hp.p1}`);
     // 掉 20 不是 10：复读机在 T1 也蓄了一层石（【R-108-13】伤害 = 10 + 出手方该手蓄力 × 10）。
@@ -96,46 +103,97 @@ async function main() {
     check('对手没掉血（我输了）', lost.hp.p2 === '100', `实读 ${lost.hp.p2}`);
     await shot('2b-lost-round');
 
-    // 战术：复读机永远出石 → 每回合满蓄「布」出布（布克石·40 伤）→ 三回合打死。
-    const EXPECT = ['60', '20', '0'];
-    for (let round = 1; round <= 3; round++) {
-      say(`\n── 第 ${round} 回合 ──`);
-      const c = await until('蓄力');
-      check(`R${round} 进到蓄力时区`, c.phase === '蓄力' && !c.timeout, `实读 ${c.phase}`);
+    // ── 【R-108-05】T4 玩家闸门：不点就不走 ────────────────────────────────
+    const gate = await until('结算');
+    check('T4 停在结算等玩家【R-108-05】', String(gate.phase).startsWith('结算') && !gate.timeout, `实读 ${gate.phase}`);
+    check('T4 屏上有「下一轮」且带 action', gate.nextRound === true, `实读 ${gate.nextRound}`);
+    await page.waitForTimeout(2500);                        // 干等 2.5 秒（比整个 T1 还长）
+    const stillGate = await state();
+    check('干等 2.5 秒仍停在结算（**无自动兜底**）【R-108-05】', String(stillGate.phase).startsWith('结算'), `实读 ${stillGate.phase}`);
+    await shot('2c-settle-gate');
 
-      for (let i = 0; i < 3; i++) { await page.click('#key-paper').catch(() => {}); await page.waitForTimeout(120); }
-      const ch = await state();
-      check(`R${round} 满蓄布 3/3【R-108-10】`, ch.charge.p1 === '3/3', `实读 ${ch.charge.p1}`);
-      if (round === 1) await shot('2-charged');
+    // ⚔ 对抗性输入①：连点「下一轮」——只该推进一个回合，不该连跳
+    //   （owner 2026-08-07：「我们以后在测试脚本中应该多一些……做连续点击啊这种东西」）
+    //   **必须用 evaluate 同步连点**：`page.click` 每次都做可点性检查，第一下之后按钮就消失了
+    //   （离开结算屏），后面五下会各自等 30 秒超时 —— 那测的是 Playwright 的等待，不是游戏
+    //   （2026-08-08 第一版就是这么写的，跑出来"实读 拖延中"，白查一轮）。
+    await page.evaluate(() => { const el = document.getElementById('key-nextround'); for (let i = 0; i < 6; i++) el?.click(); });
+    await until('蓄力');
+    const afterSpam = await state();
+    // 判据是**只推进一格**：落在紧邻的 T1（蓄力）。多余的点击若也生效，闸门旗会一直举着，
+    // 下一回合的 T4 会被直接推过去 —— 那样这里读到的会是更靠后的相位（第一版没用 evaluate
+    // 同步连点时读到的正是「拖延中」）。
+    // ⚠ **不能拿回合数当判据**：回合数在**结算那一拍**就 +1 了（`duel.resolved` 驱动），
+    //   点「下一轮」只是放行，不再加——写成 `round !== roundBefore` 会假红（实测踩过）。
+    check('连点 6 下「下一轮」只推进一回合（没连跳）【对抗性输入】',
+      String(afterSpam.phase).startsWith('蓄力'), `实读 ${afterSpam.phase} · ${afterSpam.round}`);
 
-      const t = await until('出招');
-      check(`R${round} 进到出招时区【R-108-01】`, t.phase === '出招' && !t.timeout, `实读 ${t.phase}`);
-      check(`R${round} 键已切成出招信号【R-108-70】`, t.keys.paper?.action === 'throw.paper', `实读 ${t.keys.paper?.action}`);
+    // ⚔ 对抗性输入②：T1 连点蓄力——【R-108-10】v3 一回合只该加一层
+    await page.evaluate(() => { const el = document.getElementById('key-paper'); for (let i = 0; i < 6; i++) el?.click(); });
+    await page.waitForTimeout(300);
+    const spamCharge = await state();
+    check('T1 连点 6 下只加一层【R-108-10】v3【对抗性输入】',
+      spamCharge.charge.p1 === '1/3', `实读 ${spamCharge.charge.p1}`);
+    await shot('2-charged');
 
-      // 【R-108-01】提交那一刻**不该**掉血——扣血在揭晓之后（REQ-108-ENG-06 结算门）
+    // ── 【R-108-04】罚血读秒：免费段走完不出手，看它一秒一记地扣 ───────────
+    say('\n── 罚血读秒（T2 拖过免费 5 秒）──');
+    const t2 = await until('出招');
+    check('进到出招时区【R-108-01】', String(t2.phase).startsWith('出招') && !t2.timeout, `实读 ${t2.phase}`);
+    check('键已切成出招信号【R-108-70】', t2.keys.paper?.action === 'throw.paper', `实读 ${t2.keys.paper?.action}`);
+    const hpBeforeStall = Number((await state()).hp.p1);
+    const stalled = await until('拖延中', 9000);           // 免费 5 秒走完自动进这一态
+    check('免费段走完转入罚血读秒【R-108-04】', String(stalled.phase).startsWith('拖延中') && !stalled.timeout, `实读 ${stalled.phase}`);
+    await page.waitForTimeout(2600);
+    const stallRead = await state();
+    // 屏上的欠债读数（环心）应该已经记到 2 点以上——**读屏，不读世界**。
+    check('罚血读秒把「已欠多少」写在环心上【R-108-04】',
+      /^-\d+$/.test(String(stallRead.ring)) && Number(String(stallRead.ring).slice(1)) >= 2,
+      `实读 ${stallRead.ring}`);
+    check('罚血**不**触发胜负横幅（它不是战果）【R-108-04】',
+      String(stallRead.phase).startsWith('拖延中'), `实读 ${stallRead.phase}`);
+    await shot('2d-penalty');
+    await page.click('#key-paper').catch(() => {});          // 出手即停
+    await until('对决');
+    await page.waitForTimeout(900);
+    say(`  → 罚血前 ${hpBeforeStall} · 这一回合打完 ${(await state()).hp.p1}`);
+    await page.click('#key-nextround').catch(() => {});
+
+    // ── 打完剩下的回合：每回合蓄一层布、出布（布克石 ⇒ 20 伤）──────────────
+    // v3 一回合一层 ⇒ 一击 20，不再是 v2 那种"一个 T1 连点满蓄打 40、三回合结束"。
+    say('\n── 稳定打法：每回合 蓄布 ×1 → 出布（20 伤）──');
+    for (let round = 1; round <= 6; round++) {
+      const c = await until('蓄力', 15000);
+      if (c.timeout) { check(`R${round} 进到蓄力时区`, false, `实读 ${c.phase}`); break; }
+      await page.click('#key-paper').catch(() => {});
+      await page.waitForTimeout(120);
+      const t = await until('出招', 8000);
+      if (t.timeout) { check(`R${round} 进到出招时区`, false, `实读 ${t.phase}`); break; }
+      const beforeThrow = await state();
       await page.click('#key-paper').catch(() => {});
       await page.waitForTimeout(250);
       const justThrown = await state();
+      // 【R-108-01】提交那一刻**不该**掉血——扣血在揭晓之后（REQ-108-ENG-06 结算门）
       check(`R${round} 出招当下不掉血（扣血在揭晓后）【R-108-01】`,
-        justThrown.hp.p2 === (round === 1 ? '100' : EXPECT[round - 2]), `实读 ${justThrown.hp.p2}`);
+        justThrown.hp.p2 === beforeThrow.hp.p2, `实读 ${justThrown.hp.p2} → 期望仍是 ${beforeThrow.hp.p2}`);
       if (round === 1) await shot('3-thrown-hidden');
-
-      const cl = await until('对决');
-      check(`R${round} 进到对决时区（亮拳）`, cl.phase === '对决' && !cl.timeout, `实读 ${cl.phase}`);
+      const cl = await until('对决', 8000);
+      if (cl.timeout) { check(`R${round} 进到对决时区`, false, `实读 ${cl.phase}`); break; }
       await page.waitForTimeout(400);   // 等本回合结算落地再拍——不然拍到的是上一回合的手（实测踩过）
       if (round === 1) await shot('4-clash-reveal');
-
-      await page.waitForTimeout(700);
+      await page.waitForTimeout(900);
       const after = await state();
-      say(`  → 对手血量 ${after.hp.p2}（打了 ${100 - Number(after.hp.p2) - (round > 1 ? 100 - Number(EXPECT[round - 2]) : 0)}）`);
-      check(`R${round} 对手掉 40（10+3×10）【R-108-13】`, after.hp.p2 === EXPECT[round - 1], `实读 ${after.hp.p2} 期望 ${EXPECT[round - 1]}`);
-      check(`R${round} 玩家没再被打（复读机被克）【R-108-12】`, after.hp.p1 === '80', `实读 ${after.hp.p1}`);
+      const dealt = Number(beforeThrow.hp.p2) - Number(after.hp.p2);
+      say(`  → R${round}：对手 ${beforeThrow.hp.p2} → ${after.hp.p2}（打了 ${dealt}）`);
+      check(`R${round} 对手掉 20（10 + 1 层 ×10）【R-108-13】v3`, dealt === 20 || after.hp.p2 === '0', `实读 ${dealt}`);
       if (round === 2) await shot('5-round2-done');
+      if (after.hp.p2 === '0') break;
+      await page.click('#key-nextround').catch(() => {});    // 【R-108-05】玩家闸门
     }
 
     // 终局
-    const win = await until('你赢了');
-    check('打完一局并分出胜负【R-108-15】', win.phase === '你赢了' && !win.timeout, `实读 ${win.phase}`);
+    const win = await until('你赢了', 15000);
+    check('打完一局并分出胜负【R-108-15】', String(win.phase).startsWith('你赢了') && !win.timeout, `实读 ${win.phase}`);
     check('终局时对手血量归零', win.hp.p2 === '0', `实读 ${win.hp.p2}`);
     // 终局面板有一段 400ms 的 pop 入场（scale .4→1 · opacity 0→1）。立刻拍会拍到入场半途——
     // 面是半透的、还没放到原大，看起来像"面板没画出来"（2026-08-07 我自己被这张图骗了一轮）。
@@ -151,13 +209,14 @@ async function main() {
     check('终局屏上有「再来一局」且带 action【R-108-70】',
       !!nextBtn && (await nextBtn.getAttribute('data-action')) === 'duel.next',
       nextBtn ? `data-action=${await nextBtn.getAttribute('data-action')}` : '找不到该键');
-    await page.click('#key-next').catch(() => {});
-    await page.waitForTimeout(500);
+    // ⚔ 对抗性输入③：连点「再来一局」——重开是宿主换一个世界，连点该幂等（不许起两台引擎）。
+    await page.evaluate(() => { const el = document.getElementById('key-next'); for (let i = 0; i < 5; i++) el?.click(); });
+    await page.waitForTimeout(800);
     const fresh = await state();
     say(`  → 重开后：${fresh.phase} · 血 ${fresh.hp.p1}/${fresh.hp.p2}`);
     check('点完真的重开了：双方满血', fresh.hp.p1 === '100' && fresh.hp.p2 === '100', `实读 ${fresh.hp.p1}/${fresh.hp.p2}`);
     check('点完真的重开了：回到对局相位（不再停在终局）',
-      ['蓄力', '出招', '对决', '结算'].includes(String(fresh.phase)), `实读 ${fresh.phase}`);
+      ['蓄力', '出招', '对决', '结算', '拖延中'].some((p) => String(fresh.phase).startsWith(p)), `实读 ${fresh.phase}`);
     check('点完真的重开了：蓄力槽已清零', fresh.charge.p1 === '0/3', `实读 ${fresh.charge.p1}`);
     // 新局要真的能打——不然"重开"只是把屏刷回去了，世界其实没跟上。
     await until('蓄力');

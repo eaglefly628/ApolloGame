@@ -71,6 +71,15 @@ export const STRINGS = {
   'end.rounds': { en: 'rounds', zh: '回合' },
   'end.hpLeft': { en: 'HP left', zh: '剩余血量' },
   'end.again': { en: 'Play again', zh: '再来一局' },
+  // 【R-108-05】v3 T4 玩家闸门。**与「再来一局」文案必须分得开**——
+  // 一个是进下一回合、一个是重开整局，混了玩家会以为结算屏那一点就把这局作废了。
+  'end.nextRound': { en: 'Next round', zh: '下一轮' },
+
+  // ── 罚血读秒（【R-108-04】v3）──────────────────────────────────────────
+  // 口径：说「你在拖」不说「你被打」——罚血不是战果，屏上必须与挨打区分得开（owner 明确）。
+  'penalty.title': { en: 'STALLING', zh: '拖延中' },
+  'penalty.debt': { en: '-{n} HP', zh: '已扣 {n} 点' },
+  'penalty.hint': { en: 'Throw to stop the bleed', zh: '出手即停' },
 
   // ── 设置菜单（owner 2026-08-07：右上角一个菜单键·里面放音乐和语言）──────
   'menu.title': { en: 'SETTINGS', zh: '设置' },

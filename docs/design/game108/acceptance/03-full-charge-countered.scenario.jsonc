@@ -1,23 +1,32 @@
-// GD-108 验收剧本 ③ · 满蓄被克（gdd §15 表第 3 行·验 R-108-14 + §6 风险曲线）。
-//   蓄石 ×3 出石，对手出布 → 布克石：**自己**掉 10，且石槽照样归 0——一次赔掉三回合的积累。
-//   这条守的是「公开蓄力」的代价面：蓄得越满越显眼，被读到就越亏。
+// GD-108 验收剧本 ③ · 满蓄被克（gdd §15 表第 5 行·验 R-108-14 + §6 风险曲线）**v3 重写**。
+//   攒三个回合把石槽堆到 3 → 出石，对手出布 → 布克石：**自己**掉血，且石槽照样归 0
+//   ——一次赔掉三回合的积累。这条守的是「公开蓄力」的代价面：蓄得越满越显眼，被读到就越亏。
 // 对抗目标：败方不清零（那样满蓄零风险，整个心理博弈塌掉）→ 石槽断言红。
 {
   "name": "满蓄被克·赔掉三回合",
   "game": "game108", "seed": 108,
   "steps": [
+    // 第 1、2 回合：蓄石但出剪（对手出布 ⇒ 我赢），石攒到 2
+    { "signal": "charge.rock" }, { "tick": 2 }, { "tick": 150 },
+    { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
+    { "tick": 300 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
+    { "signal": "charge.rock" }, { "tick": 2 }, { "tick": 150 },
+    { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
+    { "tick": 300 }, { "tick": 92 }, { "signal": "duel.next" }, { "tick": 3 },
+
+    // 第 3 回合：石满 3 → 出石，被布克
     { "signal": "charge.rock" }, { "tick": 2 },
-    { "signal": "charge.rock" }, { "tick": 2 },
-    { "signal": "charge.rock" }, { "tick": 2 },
-    { "tick": 180 },
-    { "signal": "throw.rock" },
-    { "signal": "throw.paper", "by": "p2" },
-    { "tick": 300 },
+    { "expect": [ { "res": "p1.charge.rock", "eq": 3 } ] },
+    { "tick": 150 },
+    { "signal": "throw.rock" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
+    { "tick": 300 }, { "tick": 92 },
     { "expect": [
       { "sv": "flow", "eq": "settle" },
-      { "res": "p1.hp", "eq": 90 },          // 对手布槽 0 → 打 10
-      { "res": "p2.hp", "eq": 100 },
-      { "res": "p1.charge.rock", "eq": 0 },  // 【R-108-14】输了照样清零
+      // 【R-108-13】伤害 = 10 + **出手方**该手蓄力 ×10。对手不是木头：前两回合我逼它出布，
+      // 复读机于是也开始蓄布（【R-108-30】蓄上一手），第 3 回合它布槽 1 ⇒ 打 20。
+      // 这一笔正好也把「伤害按出手方算」钉死了——按我的槽算会是 40，按 base 算会是 10。
+      { "res": "p1.hp", "eq": 80 },
+      { "res": "p1.charge.rock", "eq": 0 },  // 【R-108-14】输了照样清零：三回合的力一次赔光
     ] },
   ],
 }

@@ -3,7 +3,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   HANDS, HP_MAX, CHARGE_CAP, DMG_BASE, DMG_STEP, TIE_SELF_DAMAGE,
-  PHASE_TICKS, TPS, ACT, UI_ACT, SIDES, HP_RES, chargeRes, chargeRelName, chargeEntity,
+  PHASE_TICKS, PENALTY_PERIOD, PENALTY_HP, CHARGE_PER_ROUND,
+  TPS, ACT, UI_ACT, SIDES, HP_RES, chargeRes, chargeRelName, chargeEntity, chargeBudgetRes, penaltyDebtRes,
 } from './theme.js';
 
 describe('game108 · 数值钉死（GDD §5）', () => {
@@ -26,16 +27,27 @@ describe('game108 · 数值钉死（GDD §5）', () => {
     expect(TIE_SELF_DAMAGE).toBe(0);
   });
 
-  it('【R-108-01】三时区四拍 = 3/3/2/1 秒', () => {
-    expect(PHASE_TICKS.charge).toBe(3 * TPS);
-    expect(PHASE_TICKS.throw).toBe(3 * TPS);
-    expect(PHASE_TICKS.clash).toBe(2 * TPS);
-    expect(PHASE_TICKS.settle).toBe(1 * TPS);
-    // 一回合 ≈ 9 秒 → 6-10 回合落在 60-90 秒（GDD §5 时长口径）。
-    const roundSec = (PHASE_TICKS.charge + PHASE_TICKS.throw + PHASE_TICKS.clash + PHASE_TICKS.settle) / TPS;
-    expect(roundSec).toBe(9);
-    expect(roundSec * 6).toBeGreaterThanOrEqual(54);
-    expect(roundSec * 10).toBeLessThanOrEqual(90);
+  it('【R-108-01】v3 四拍：T1 硬 2.5 秒 · T2 免费 5 秒 · T3 演出 1.5 秒 · T4 无时长（玩家闸门）', () => {
+    expect(PHASE_TICKS.charge).toBe(2.5 * TPS);
+    expect(PHASE_TICKS.throw).toBe(5 * TPS);
+    expect(PHASE_TICKS.clash).toBe(1.5 * TPS);
+    // 【R-108-05】T4 **不是"零秒"，是没有时长**：由玩家点「下一轮」收尾，不设自动兜底。
+    // 写死成 0 就是让读表的地方（宿主的倒计时环）一眼看出"这一拍没有钟"。
+    expect(PHASE_TICKS.settle).toBe(0);
+    // ⚠ v2 那条「一回合 9 秒 → 一场 60-90 秒」的断言随 v3 作废（gdd §5 已划掉）——
+    // T2 软超时 + T4 玩家闸门之后单局时长由玩家掌握，钉它等于钉一个不存在的承诺。
+  });
+
+  it('【R-108-04】罚血定值：每 1 秒扣 1 点（owner 2026-08-07：「一格血就是 1 点，1 秒钟 1 点」）', () => {
+    expect(PENALTY_PERIOD).toBe(1 * TPS);
+    expect(PENALTY_HP).toBe(1);
+    // 犹豫 10 秒 = 10 点 = 一次无蓄力命中的代价——罚得到，但罚不死（gdd【R-108-04】设计理由）。
+    expect((10 * TPS / PENALTY_PERIOD) * PENALTY_HP).toBe(DMG_BASE);
+  });
+
+  it('【R-108-10】v3 一回合最多给一只手 +1 层（上限仍 3 ⇒ 满蓄仍需攒 3 回合）', () => {
+    expect(CHARGE_PER_ROUND).toBe(1);
+    expect(CHARGE_CAP / CHARGE_PER_ROUND).toBe(3);
   });
 });
 
@@ -131,10 +143,12 @@ describe('game108 · S3 骨架关（机器门：引擎吃得下 + 空跑）', ()
 });
 
 describe('game108 · S3 条款走查（真引擎驱动·用【R-108-70】动作名）', () => {
-  it('蓄力 +1 只打自己那条槽，且封顶 3【R-108-10】', () => {
+  it('蓄力 +1 只打自己那条槽，**一回合就一层**（连点无效）【R-108-10】v3', () => {
     const e = fresh();
     for (let i = 0; i < 5; i++) { fire(e, 'p1', ACT.charge('rock'), `c${i}`); e.world.tick(); e.world.tick(); }
-    expect(slot(e, 'p1', 'rock')).toBe(CHARGE_CAP);   // 封顶
+    // v2 这里断言的是 `CHARGE_CAP`（连点即满）——owner 2026-08-07 判「那是个 bug」。
+    // 条款原文一直是「T1 往一手存 +1」：点五次也只有一层。
+    expect(slot(e, 'p1', 'rock')).toBe(CHARGE_PER_ROUND);
     expect(slot(e, 'p1', 'paper')).toBe(0);           // 没蓄的不动
     // ⚠ 不能断言「p2 的石不动」——对手①复读机现在会**自己**蓄石（【R-108-30】·纯数据规则）。
     // 改断言它**没碰**的那两只手：这仍然守住了原意「玩家的信号没串到对面去」，
@@ -143,25 +157,28 @@ describe('game108 · S3 条款走查（真引擎驱动·用【R-108-70】动作�
     expect(slot(e, 'p2', 'scissors')).toBe(0);
   });
 
-  it('一整回合闭环：蓄 2 → 双方出招 → 伤害按侧缩放 + 出过即清零 + 记本回合的手', () => {
+  it('一整回合闭环：蓄 1 → 双方出招 → 伤害按侧缩放 + 出过即清零 + 记本回合的手', () => {
     const e = fresh();
     // **跟真 AI 打**：对手①复读机会自己蓄石、出石（【R-108-30】），不再手动指定它出什么
     // ——手动指定会被它自己的出招覆盖（它在进出招时区那一拍才发），测出来的是假的。
-    // 玩家蓄布 ×2 出布：布克石 ⇒ 10+2×10 = 30，与原用例同数同条款。
+    // v3：一回合只能蓄一层 ⇒ 玩家蓄布 ×1 出布，布克石 ⇒ 10+1×10 = 20。
     fire(e, 'p1', ACT.charge('paper'), 'c1'); e.world.tick(); e.world.tick();
-    fire(e, 'p1', ACT.charge('paper'), 'c2'); e.world.tick(); e.world.tick();
-    expect(slot(e, 'p1', 'paper')).toBe(2);
+    expect(slot(e, 'p1', 'paper')).toBe(1);
 
-    fire(e, 'p1', throwSignal('paper'), 't1');
+    // 出招走**真实通路**（`tap` = 屏上点击 → InputQueue → keybind）。v3 起这条路还兼着
+    // 「玩家本回合已出手」那面旗（罚血的停止条件·见 blueprint threwFlag 注释）——
+    // 用 `fire` 手挂 EventWhen 绕过 keybind 的话，世界会认为你**还没出手**，一直卡在罚血读秒。
+    tap(e, ACT.throw('paper'));
     // 【R-108-01】结算门（REQ-108-ENG-06）：提交完**不会当拍结算**——要等 flow 走进 T3 对决时区
     // 才开门。本测试原先断言「3 拍后就掉血」，那正是条款禁止的（提交那刻血就掉 ⇒ 亮拳变成
-    // 播放已发生的事）。跑到 T3：起手 charge 180 + throw 180 = 360 拍进 clash。
-    for (let i = 0; i < 360; i++) e.world.tick();
+    // 播放已发生的事）。v3 的 T2 没有固定长度（免费 5 秒 + 罚血读秒），所以**跑到相位变成 clash
+    // 为止**、不写死拍数——写死秒数的等待正是 v3 一改节奏就会集体假红的那类断言。
+    for (let i = 0; i < 900 && phase(e) !== 'clash'; i++) e.world.tick();
     expect(phase(e)).toBe('clash');
     // 门在进 clash 那一拍（Commit）才 arm，结算在**下一拍**的 Update ⇒ 停在开门那一拍还没结算。
     e.world.tick(); e.world.tick(); e.world.tick();
 
-    expect(res(e, 'p2')).toBe(HP_MAX - (DMG_BASE + 2 * DMG_STEP)); // 【R-108-13】10+2×10=30
+    expect(res(e, 'p2')).toBe(HP_MAX - (DMG_BASE + 1 * DMG_STEP)); // 【R-108-13】10+1×10=20
     expect(res(e, 'p1')).toBe(HP_MAX);                              // 胜方不掉血
     expect(slot(e, 'p1', 'paper')).toBe(0);                         // 【R-108-14】出过即清零
     expect(slot(e, 'p1', 'rock')).toBe(0);                          // 没出的手原样保留（这里本就是 0）
@@ -185,7 +202,9 @@ describe('game108 · S3 条款走查（真引擎驱动·用【R-108-70】动作�
 
 // ── S3 对局屏：闭集校验 + 动作词表对账（ui-playbook 黄金流程 step 5）──────────
 import { validateLayoutNode } from '@zerocraft/engine/ui/components/index.js';
-import { buildDuelScreen, emptyView, screenActions } from './duel-screen.js';
+import { buildDuelScreen, emptyView, screenActions, type DuelView } from './duel-screen.js';
+import type { LayoutNode } from '@zerocraft/engine/ui/components/index.js';
+import { t } from './strings.js';
 
 describe('game108 · 对局屏（LayoutNode 纯数据）', () => {
   it('validateLayoutNode 零 issue（闭集合法）', () => {
@@ -225,6 +244,69 @@ describe('game108 · 对局屏（LayoutNode 纯数据）', () => {
     const acts = screenActions(v);
     expect(acts).not.toContain(ACT.charge('rock'));   // 满 → 无 action（不可点·不产生信号）
     expect(acts).toContain(ACT.charge('paper'));      // 没满 → 照常
+  });
+
+  // ── v3 演出的四个新屏态（gdd §3b）。每个都过一遍闭集校验：
+  //    这些态只在跑起来的某几百毫秒里出现，肉眼走查抓不到，但闭集违规会当场把整块面板画没。
+  it('v3 四个新屏态一律闭集合法（放大选牌 / 注水 / 罚血读秒 / 结算闸门）', () => {
+    const base = emptyView();
+    const views: Array<[string, DuelView]> = [
+      ['T1 放大中', { ...base, elapsedMs: 120 }],
+      ['T1 注水', { ...base, elapsedMs: 900, charged: { hand: 'rock', atMs: 700 } }],
+      ['T1 缩回射粒子', { ...base, elapsedMs: PHASE_TICKS.charge / TPS * 1000 - 100, charged: { hand: 'paper', atMs: 400 } }],
+      ['T2 罚血读秒', { ...base, phase: 'throw', phaseLeft: 0, phaseSec: 0, elapsedMs: 300, penalty: { active: true, debt: 4 } }],
+      ['T3 挨打震动', {
+        ...base, phase: 'clash', elapsedMs: 80, outcome: { winner: 'p2', damage: 40 },
+        shown: { p1: 'rock', p2: 'paper' },
+        before: { hp: { p1: 100, p2: 100 }, charge: { p1: { rock: 3, paper: 0, scissors: 0 }, p2: { rock: 0, paper: 0, scissors: 0 } } },
+        hp: { p1: 60, p2: 100 },
+      }],
+      ['T4 等玩家点', { ...base, phase: 'settle', phaseLeft: 0, phaseSec: 0, awaitNext: true, outcome: { winner: 'p1', damage: 20 }, shown: { p1: 'paper', p2: 'rock' } }],
+    ];
+    for (const [name, v] of views) expect([name, validateLayoutNode(buildDuelScreen(v))]).toEqual([name, []]);
+  });
+
+  it('【R-108-05】T4 才画「下一轮」键，且它发的是词表里的 `duel.next`', () => {
+    const settle: DuelView = { ...emptyView(), phase: 'settle', phaseLeft: 0, phaseSec: 0, awaitNext: true };
+    expect(screenActions(settle)).toContain(ACT.next);
+    // 别的拍不该有——结算之外冒出一枚「下一轮」= 玩家可以跳过出招（【R-108-01】当场破）。
+    expect(screenActions(emptyView())).not.toContain(ACT.next);
+  });
+
+  it('【R-108-04】罚血读秒时倒计时环换成欠债读数，相位牌换成「拖延中」', () => {
+    const pen: DuelView = { ...emptyView(), phase: 'throw', phaseLeft: 0, phaseSec: 0, elapsedMs: 200, penalty: { active: true, debt: 7 } };
+    const texts: string[] = [];
+    const walk = (n: LayoutNode): void => {
+      const tx = (n.props as { text?: string } | undefined)?.text;
+      if (typeof tx === 'string') texts.push(tx);
+      for (const c of n.children ?? []) walk(c);
+    };
+    walk(buildDuelScreen(pen));
+    expect(texts).toContain('-7');                       // 欠了几点，一秒一记
+    // 相位牌 = 「拖延中 · 出手即停」（提示原本塞在环心里，78px 的环装不下·真渲染目击）
+    expect(texts.some((x) => x.includes(t('zh', 'penalty.title')))).toBe(true);
+    expect(texts.some((x) => x.includes(t('zh', 'penalty.hint')))).toBe(true);
+    expect(texts).not.toContain('出招');                  // 这一拍不是普通出招
+  });
+
+  it('【R-108-05】T4 不画倒计时环（画一圈停在 0.0 秒 = 骗玩家"时间到了"）', () => {
+    const ids: string[] = [];
+    const walk = (n: LayoutNode): void => { ids.push(n.id); for (const c of n.children ?? []) walk(c); };
+    walk(buildDuelScreen({ ...emptyView(), phase: 'settle', phaseLeft: 0, phaseSec: 0, awaitNext: true }));
+    expect(ids).not.toContain('phase-ring');
+    walk(buildDuelScreen(emptyView()));
+    expect(ids).toContain('phase-ring');                 // 有钟的拍照旧画
+  });
+
+  it('【R-108-06】震动幅度随掉血量（掉 10 和掉 40 不能一个抖法）', () => {
+    const at = (damage: number): number => {
+      const v: DuelView = { ...emptyView(), phase: 'clash', elapsedMs: 40, outcome: { winner: 'p2', damage }, hp: { p1: 100 - damage, p2: 100 } };
+      const root = buildDuelScreen(v);
+      return Math.abs(root.layout?.x ?? 0) + Math.abs(root.layout?.y ?? 0);
+    };
+    expect(at(10)).toBeGreaterThan(0);
+    expect(at(40)).toBeGreaterThan(at(10));
+    expect(at(0)).toBe(0);                               // 没掉血不抖
   });
 });
 
@@ -276,17 +358,99 @@ describe('game108 · 玩家动作真实通路（REQ-108-ENG-04·owner 判 A）',
     expect(e.world.getComponent('p1', 'DuelIntent')).toMatchObject({ throw: 'rock' });
   });
 
-  it('玩家全程只点屏：蓄 2 → 出招 → 对面真掉 30 血【R-108-13】（端到端闭环）', () => {
+  it('玩家全程只点屏：蓄 1 → 出招 → 对面真掉 20 血【R-108-13】（端到端闭环）', () => {
     const e = fresh();
     for (let i = 0; i < 2; i++) { tap(e, ACT.charge('paper')); e.world.tick(); }
-    expect(slot(e, 'p1', 'paper')).toBe(2);
+    expect(slot(e, 'p1', 'paper')).toBe(1);         // 【R-108-10】v3：点两次也只有一层
 
     tap(e, ACT.throw('paper'));                     // 玩家这一侧全程只"点屏"；对手是真 AI
-    // 结算门要到 T3 才开（【R-108-01】·REQ-108-ENG-06）。
-    for (let i = 0; i < 360; i++) e.world.tick();
+    // 结算门要到 T3 才开（【R-108-01】·REQ-108-ENG-06）。等到相位真进 clash，不写死拍数。
+    for (let i = 0; i < 900 && phase(e) !== 'clash'; i++) e.world.tick();
+    e.world.tick(); e.world.tick(); e.world.tick();
 
-    expect(res(e, 'p2')).toBe(HP_MAX - (DMG_BASE + 2 * DMG_STEP)); // 10 + 2×10 = 30
+    expect(res(e, 'p2')).toBe(HP_MAX - (DMG_BASE + 1 * DMG_STEP)); // 10 + 1×10 = 20
     expect(res(e, 'p1')).toBe(HP_MAX);
     expect(slot(e, 'p1', 'paper')).toBe(0);                         // 【R-108-14】出过即清零
+  });
+});
+
+// ── v3 节奏案的四条新条款（gdd §3 / §3b / §5b·owner 2026-08-07 定完）─────────
+describe('game108 · v3 节奏（【R-108-01/02/04/05/10】）', () => {
+  /** 跑到某个相位（**不写死拍数**——v3 的 T2/T4 没有固定长度）。 */
+  const until = (e: Engine, want: string, cap = 2000): void => {
+    for (let i = 0; i < cap && phase(e) !== want; i++) e.world.tick();
+    e.world.tick();   // 再走一拍：flow 是**下一拍**才跑新状态的 onEnter（tier3/flow.ts:104-110）
+  };
+
+  it('【R-108-10】额度用完就加不动，下一回合自动补回来（跨回合才攒得到 2 层）', () => {
+    const e = fresh();
+    tap(e, ACT.charge('paper')); e.world.tick();
+    expect(slot(e, 'p1', 'paper')).toBe(1);
+    expect(res(e, 'budget:p1')).toBe(0);                 // 额度花完
+    tap(e, ACT.charge('paper')); e.world.tick();
+    expect(slot(e, 'p1', 'paper')).toBe(1);              // 同回合再点：不动
+
+    // 出剪（不出布 ⇒ 布那一层留着·【R-108-14】只清出过的手），走完一整回合回到 T1。
+    tap(e, ACT.throw('scissors'));
+    until(e, 'settle');
+    tap(e, ACT.next); until(e, 'charge');
+    expect(res(e, 'budget:p1')).toBe(CHARGE_PER_ROUND);  // 新回合补回额度
+    tap(e, ACT.charge('paper')); e.world.tick();
+    expect(slot(e, 'p1', 'paper')).toBe(2);              // 第二回合才叠到第二层
+  });
+
+  it('【R-108-01】T1 之外蓄不了力（额度在进 T2 那一拍作废·不靠禁用按钮）', () => {
+    const e = fresh();
+    until(e, 'throw');
+    tap(e, ACT.charge('rock')); e.world.tick();
+    expect(slot(e, 'p1', 'rock')).toBe(0);
+  });
+
+  it('【R-108-04】T2 免费 5 秒内出手不罚；拖过去每 1 秒欠 1 点，出手即停', () => {
+    const e = fresh();
+    until(e, 'throw');
+    for (let i = 0; i < PHASE_TICKS.throw + 10; i++) e.world.tick();   // 免费段整段耗光
+    expect(res(e, 'debt:p1')).toBe(0);                                 // 免费段内一点都不罚
+    for (let i = 0; i < 3 * PENALTY_PERIOD; i++) e.world.tick();
+    expect(res(e, 'debt:p1')).toBe(3 * PENALTY_HP);                    // 拖 3 秒 = 欠 3 点
+    tap(e, ACT.throw('rock'));
+    const at = res(e, 'debt:p1');
+    until(e, 'clash');
+    expect(res(e, 'debt:p1')).toBe(at);                                // 出手即停，不再涨
+  });
+
+  it('【R-108-02】v3 作废「超时顺延」：T2 全程不点 = 不会有人替你提交', () => {
+    const e = fresh();
+    // 先打完一回合让 p1.lastThrow 有值（v2 正是靠它顺延的）。
+    tap(e, ACT.throw('rock')); until(e, 'settle'); tap(e, ACT.next); until(e, 'charge');
+    expect(e.world.getComponent<StringVar>('var:p1', 'StringVar')!.value).toBe('rock');
+    until(e, 'throw');
+    for (let i = 0; i < PHASE_TICKS.throw + 5 * PENALTY_PERIOD; i++) e.world.tick();
+    // 顺延还在的话，这里早就替玩家挂上 DuelIntent 并结算完了；v3 该一直卡在罚血读秒。
+    expect(e.world.getComponent('p1', 'DuelIntent')).toBeUndefined();
+    expect(res(e, 'debt:p1')).toBeGreaterThan(0);
+  });
+
+  it('【R-108-05】T4 是纯玩家闸门：不点就一直停在结算，点了才进下一回合', () => {
+    const e = fresh();
+    tap(e, ACT.throw('rock'));
+    until(e, 'settle');
+    const r = res(e, 'round');
+    for (let i = 0; i < 20 * TPS; i++) e.world.tick();    // 干等 20 秒
+    expect(phase(e)).toBe('settle');                      // **没有自动兜底**
+    tap(e, ACT.next);
+    until(e, 'charge');
+    expect(phase(e)).toBe('charge');
+    expect(res(e, 'round')).toBe(r);                      // 回合数在结算那一拍就 +1 过了，闸门不重复计
+  });
+
+  it('蓄力额度的资源 id 不得与 `charge.` 同前缀（会撞进 clearOnSettle 的清零面）', () => {
+    // 判定表的 `clearOnSettle:'charge'` 按相对名拼 `<侧>.charge.<手>`——额度用同前缀就会被
+    // 结算副作用一起清掉，表现是"蓄力恒为 0"且**零报错**（v3 第一版就是这么写的，实测踩过）。
+    for (const s of SIDES) {
+      expect(chargeBudgetRes(s).startsWith(`${s}.charge`)).toBe(false);
+      expect(penaltyDebtRes(s).startsWith(`${s}.charge`)).toBe(false);
+      expect(chargeBudgetRes(s)).not.toBe(penaltyDebtRes(s));
+    }
   });
 });

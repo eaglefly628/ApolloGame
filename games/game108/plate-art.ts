@@ -38,6 +38,12 @@ export interface PlateSpec {
   outline?: { color: string; w: number };
   /** 整体不透明度（禁用态 .62 / .6）。 */
   opacity?: number;
+  /**
+   * 【R-108-07】v3 **注水**：从**底**往上灌到 `level`（0..1）的一层色，带一条亮水线。
+   * 为什么烤进这张皮而不是叠一个子面板：水面要跟着卡的圆角裁（方角子面板会从圆角里探出来），
+   * 而闭集控件没有"按父圆角裁剪"的字段。同 strip/subBar 的处置。
+   */
+  fillLevel?: { level: number; color: string; lineColor?: string };
 }
 
 /**
@@ -89,7 +95,16 @@ export function plate(spec: PlateSpec): string {
     + (bw > 0 ? ` stroke="${spec.borderColor ?? '#3f2b1e'}" stroke-width="${bw}"` : '') + '/>',
     // ④ 顶部色条 / 底部副标条：**烤进这张皮**，不做成子 LayoutNode——
     //    它们要跟着卡的圆角走（子面板是方角，会从圆角里探出来），且随卡整体缩放。
-    ...(spec.strip || spec.subBar ? [`<clipPath id="clip${id}"><rect x="${bw}" y="${bw}" width="${w - bw * 2}" height="${faceH - bw * 2}" rx="${Math.max(0, r - bw)}"/></clipPath>`] : []),
+    ...(spec.strip || spec.subBar || spec.fillLevel ? [`<clipPath id="clip${id}"><rect x="${bw}" y="${bw}" width="${w - bw * 2}" height="${faceH - bw * 2}" rx="${Math.max(0, r - bw)}"/></clipPath>`] : []),
+    // ④' 注水层：先于色条/副标条画，让那两条压在水面之上（水是"灌进卡里"的，不是盖在卡上）。
+    spec.fillLevel && spec.fillLevel.level > 0
+      ? (() => {
+        const lv = Math.min(1, spec.fillLevel.level);
+        const top = faceH - faceH * lv;
+        return `<g clip-path="url(#clip${id})"><rect x="0" y="${top}" width="${w}" height="${faceH - top}" fill="${spec.fillLevel.color}"/>`
+          + `<rect x="0" y="${top}" width="${w}" height="4" fill="${spec.fillLevel.lineColor ?? 'rgba(255,255,255,.75)'}"/></g>`;
+      })()
+      : '',
     spec.strip
       ? `<g clip-path="url(#clip${id})"><rect x="0" y="0" width="${w}" height="${spec.strip.h}" fill="${spec.strip.color}"/>`
       + `<rect x="0" y="${spec.strip.h - 4}" width="${w}" height="4" fill="${spec.borderColor ?? '#3f2b1e'}"/></g>`
@@ -138,19 +153,31 @@ export function ring(size: number, pct: number, accent: string, discColor: strin
 /**
  * 血条（槽底 + 墨边 + 渐变填充）。`anchor:'right'` = 对手那条，血从**外侧**开始掉
  * （稿子明写 "bar drains toward the outside edge"）。
+ *
+ * `ghostPct`（【R-108-06】v3 **双段条**）：先掉的那段用一层惨白留在原处、延迟追上来，
+ * 让玩家看清「这一波掉了多少」（格斗游戏惯例）。缺省/≤pct 时整条与旧版逐字节相同（零回归）。
  */
-export function hpBar(w: number, h: number, pct: number, fill: readonly [string, string], track: string, ink: string, anchor: 'left' | 'right'): string {
-  const id = hashId(`hp${w}${h}${pct}${fill.join()}${track}${ink}${anchor}`);
+export function hpBar(
+  w: number, h: number, pct: number, fill: readonly [string, string], track: string, ink: string,
+  anchor: 'left' | 'right', ghostPct?: number,
+): string {
   const bw = 3;
   const r = h / 2;
-  const innerW = Math.max(0, (w - bw * 2) * Math.max(0, Math.min(1, pct / 100)));
+  const span = w - bw * 2;
+  const clampPct = (v: number): number => Math.max(0, Math.min(1, v / 100));
+  const innerW = span * clampPct(pct);
   const x = anchor === 'left' ? bw : w - bw - innerW;
+  // 惨白段 = [pct, ghostPct] 这一截；ghost 未给或没超出当前血量 → 不画（同旧版）。
+  const gw = ghostPct !== undefined && ghostPct > pct ? span * clampPct(ghostPct) - innerW : 0;
+  const gx = anchor === 'left' ? bw + innerW : w - bw - innerW - gw;
+  const id = hashId(`hp${w}${h}${pct}${gw.toFixed(1)}${fill.join()}${track}${ink}${anchor}`);
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`
     + `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">`
     + `<stop offset="0" stop-color="${fill[0]}"/><stop offset="1" stop-color="${fill[1]}"/></linearGradient>`
-    + `<clipPath id="c${id}"><rect x="${bw}" y="${bw}" width="${w - bw * 2}" height="${h - bw * 2}" rx="${r}"/></clipPath></defs>`
+    + `<clipPath id="c${id}"><rect x="${bw}" y="${bw}" width="${span}" height="${h - bw * 2}" rx="${r}"/></clipPath></defs>`
     + `<rect x="${bw / 2}" y="${bw / 2}" width="${w - bw}" height="${h - bw}" rx="${r}" fill="${track}" stroke="${ink}" stroke-width="${bw}"/>`
+    + (gw > 0 ? `<rect x="${gx}" y="${bw}" width="${gw}" height="${h - bw * 2}" fill="rgba(255,244,232,.82)" clip-path="url(#c${id})"/>` : '')
     + `<rect x="${x}" y="${bw}" width="${innerW}" height="${h - bw * 2}" fill="url(#${id})" clip-path="url(#c${id})"/>`
     + '</svg>';
   return svgUri(svg);

@@ -1,23 +1,40 @@
-// GD-108 验收剧本 ② · 诈唬（gdd §15 表第 2 行·验 R-108-11/14）。
-//   蓄石 ×3 却出剪，对手出布 → 剪克布，伤害只有 10（剪槽没蓄）；**石槽仍是 3**（没出不清零）。
+// GD-108 验收剧本 ② · 诈唬（gdd §15 表第 4 行·验 R-108-11/14）**v3 重写**。
+//   攒到石槽 3（**要三个回合**·v3 一回合只叠一层）却出剪，对手出布 → 剪克布，
+//   伤害只有 10（剪槽没蓄）；**石槽仍是 3**（没出不清零）。
 //   这条守的是本作的支点：蓄力是公开信息，但它**会说谎**——不清零才让下一回合的威胁继续成立。
-// 对抗目标：清零清成「所有手」→ 石槽断言红；伤害按石槽算 → p2.hp 断言红（会是 60 不是 90）。
+// 对抗目标：清零清成「所有手」→ 石槽断言红；伤害按石槽算 → p2.hp 断言红（会少 30）。
+//   **一回合能叠三层**（v2 的 bug 回流）→ 第 1 回合末的 `eq 1` 当场红。
 {
-  "name": "诈唬·蓄石出剪，石槽不清零",
+  "name": "诈唬·攒三回合的石却出剪，石槽不清零",
   "game": "game108", "seed": 108,
   "steps": [
+    // ── 第 1 回合：蓄石 → 出剪（对手出布 ⇒ 剪克布，我赢）──────────────────
     { "signal": "charge.rock" }, { "tick": 2 },
+    { "expect": [ { "res": "p1.charge.rock", "eq": 1 } ] },
+    { "tick": 150 },
+    { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
+    { "tick": 300 }, { "tick": 92 },
+    { "expect": [ { "sv": "flow", "eq": "settle" }, { "res": "p2.hp", "eq": 90 } ] },
+    { "signal": "duel.next" }, { "tick": 3 },
+
+    // ── 第 2 回合：同上，石攒到 2 ─────────────────────────────────────────
     { "signal": "charge.rock" }, { "tick": 2 },
+    { "expect": [ { "res": "p1.charge.rock", "eq": 2 } ] },
+    { "tick": 150 },
+    { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
+    { "tick": 300 }, { "tick": 92 },
+    { "signal": "duel.next" }, { "tick": 3 },
+
+    // ── 第 3 回合：石满 3 —— 摆着吓人，出的却是剪 ─────────────────────────
     { "signal": "charge.rock" }, { "tick": 2 },
     { "expect": [ { "res": "p1.charge.rock", "eq": 3 } ] },
-    { "tick": 180 },
+    { "tick": 150 },
     { "expect": [ { "sv": "flow", "eq": "throw" } ] },
-    { "signal": "throw.scissors" },
-    { "signal": "throw.paper", "by": "p2" },
-    { "tick": 300 },
+    { "signal": "throw.scissors" }, { "signal": "throw.paper", "by": "p2" }, { "tick": 3 },
+    { "tick": 300 }, { "tick": 92 },
     { "expect": [
       { "sv": "flow", "eq": "settle" },
-      { "res": "p2.hp", "eq": 90 },           // 【R-108-13】剪槽 0 → 10 + 0×10 = 10
+      { "res": "p2.hp", "eq": 70 },           // 【R-108-13】剪槽 0 → 10 + 0×10 = 10（三回合各 10）
       { "res": "p1.charge.rock", "eq": 3 },   // 【R-108-11/14】没出的手原样保留 = 诈唬支点
       { "res": "p1.charge.scissors", "eq": 0 },
       { "sv": "p1.lastThrow", "eq": "scissors" },

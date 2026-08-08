@@ -75,9 +75,15 @@ export function mount(container: HTMLElement): () => void {
   /** world → 视图（**纯读**·outcome-first；不在这里做任何规则计算）。 */
   function readView(): DuelView {
     const flow = engine.world.getComponent<GameFlow>('flow', 'GameFlow');
-    const phase = (flow?.current ?? 'charge') as Phase;
+    const raw = flow?.current ?? 'charge';
+    // 【R-108-04】v3：世界里的 `throwPenalty` / `throwPenaltyHit` 是 T2 的读秒尾巴，**不是第五拍**——
+    // 屏上仍写「出招」，只是倒计时环换成"你已经欠了多少"。故投影时折回 `throw`。
+    const inPenalty = raw === 'throwPenalty' || raw === 'throwPenaltyHit';
+    const phase = (inPenalty ? 'throw' : raw) as Phase;
     const elapsed = flow?.elapsed ?? 0;
-    const total = PHASE_TICKS[phase as keyof typeof PHASE_TICKS] ?? PHASE_TICKS.charge;
+    // T4（`settle: 0`）与罚血读秒都**没有倒计时**：前者是玩家闸门，后者已经超时了。
+    // 不能 `?? PHASE_TICKS.charge` 兜底——那会在结算屏画出一圈 2.5 秒的环，玩家以为不点也会自动过。
+    const total = inPenalty ? 0 : PHASE_TICKS[phase as keyof typeof PHASE_TICKS] ?? 0;
     const charge = Object.fromEntries(SIDES.map((s) => [
       s, Object.fromEntries(HANDS.map((h) => [h, num(chargeEntity(s, h))])) as Record<Hand, number>,
     ])) as Record<Side, Record<Hand, number>>;
@@ -98,7 +104,13 @@ export function mount(container: HTMLElement): () => void {
     // 而这两样都要等结算那一拍才更新——结算比「进对决」晚一拍。不判这个，进对决的头一小段
     // 屏上摆的是**上一回合**的手和伤害：我明明出了布，屏上写「你 ✌️剪 · 被打中 -20」。
     // 判据用回合数：结算会把 `round` +1，所以 `round > roundAtClash` ⇔ 本回合已结算。
-    if (phase === 'clash' && prevPhase !== 'clash') { roundAtClash = round; lastOutcome = undefined; tieThisRound = true; }
+    if (phase === 'clash' && prevPhase !== 'clash') {
+      roundAtClash = round; lastOutcome = undefined; tieThisRound = true;
+      // 【R-108-06/09】开打前的快照：血槽双段条与蓄力回撤都拿它当参照系（见 DuelView.before）。
+      before = { hp: { ...hp }, charge: { p1: { ...charge.p1 }, p2: { ...charge.p2 } } };
+    }
+    // 【R-108-07】T1 注水的起点：看见我方总层数涨了就记一笔（哪只手 + 此刻在 T1 里的毫秒数）。
+    if (phase === 'charge' && prevPhase !== 'charge') charged = undefined;
     const settled = round > roundAtClash;
     if (lastOutcome && lastOutcome.damage > 0) tieThisRound = false;
     // ── 音画同步（**纯表现**·读世界之后触发·绝不回写）───────────────────
@@ -106,8 +118,14 @@ export function mount(container: HTMLElement): () => void {
     shownRound = round;
     if (subtitleUntil && round > subtitleUntil) subtitle = '';
     const myCharge = HANDS.reduce((n, h) => n + charge.p1[h], 0);
-    if (myCharge > prevCharge) audio.play(HANDS.some((h) => charge.p1[h] >= 3) ? 'full' : 'charge');
+    if (myCharge > prevCharge) {
+      audio.play(HANDS.some((h) => charge.p1[h] >= 3) ? 'full' : 'charge');
+      // 【R-108-07】哪只手涨了 = 这一回合注水的那张卡；起点毫秒数直接由相位时钟换算。
+      const grew = HANDS.find((h) => charge.p1[h] > (prevChargeByHand[h] ?? 0));
+      if (grew && phase === 'charge') charged = { hand: grew, atMs: (elapsed / TPS) * 1000 };
+    }
     prevCharge = myCharge;
+    prevChargeByHand = { ...charge.p1 };
     const foeFull = HANDS.some((h) => charge.p2[h] >= 3);
     if (foeFull && !prevFoeFull) { audio.play('full'); say('foeFull'); }
     prevFoeFull = foeFull;
@@ -129,6 +147,7 @@ export function mount(container: HTMLElement): () => void {
       phaseLeft: total > 0 ? Math.max(0, 1 - elapsed / total) : 0,
       // 环心读数（稿子的「N.N 秒」）：剩余 tick / TPS。
       phaseSec: total > 0 ? Math.max(0, (total - elapsed) / TPS) : 0,
+      elapsedMs: (elapsed / TPS) * 1000,
       foeName: card.name,
       ...(card.portrait ? { portrait: { p2: card.portrait } } : {}),
       lang,
@@ -138,6 +157,10 @@ export function mount(container: HTMLElement): () => void {
       round,
       hp,
       charge,
+      penalty: { active: inPenalty, debt: num('debt:p1') },
+      ...(phase === 'settle' ? { awaitNext: true } : {}),
+      ...(charged ? { charged } : {}),
+      ...(before ? { before } : {}),
       smoke: { uses: num('smoke:uses:p1'), hidden: !!(engine.world.getComponent('smoke:res:p1', 'Flag') as { active: boolean } | undefined)?.active },
       ...(intent ? { submitted: intent.throw } : {}),
       // 只有本回合真结算了才亮手/出结果——否则揭晓期摆的是上一回合的数据（见上面 settled 注释）。
@@ -151,6 +174,7 @@ export function mount(container: HTMLElement): () => void {
   // 表现层记忆（render-only·不进 sim/hash）：用于「上一次结算掉了多少血」的横幅 + 音画同步。
   let shownRound = 1;
   let prevCharge = 0;             // 我方三槽总层数——涨了就是"又蓄了一层"
+  let prevChargeByHand: Record<Hand, number> = { rock: 0, paper: 0, scissors: 0 };  // 逐手上一帧值（认出"涨的是哪只手"）
   let prevFoeFull = false;        // 对手是否已有满蓄的一手（由无到有 = 一记提醒）
   let prevSubmitted: Hand | '' = '';
 
@@ -161,9 +185,14 @@ export function mount(container: HTMLElement): () => void {
   const resetPresentation = (): void => {
     prevHp = { p1: HP_MAX, p2: HP_MAX };
     prevPhase = 'charge'; tieThisRound = false; roundAtClash = 0; lastOutcome = undefined;
-    shownRound = 1; prevCharge = 0; prevFoeFull = false; prevSubmitted = '';
+    shownRound = 1; prevCharge = 0; prevChargeByHand = { rock: 0, paper: 0, scissors: 0 }; prevFoeFull = false; prevSubmitted = '';
     subtitle = ''; subtitleUntil = 0;
+    charged = undefined; before = undefined;
   };
+  /** 【R-108-07】本回合蓄了哪只手 + 蓄下去那一刻在 T1 里的毫秒数（注水动画的起点）。 */
+  let charged: { hand: Hand; atMs: number } | undefined;
+  /** 【R-108-06/09】进 T3 那一拍抓的快照（血槽双段条 / 蓄力回撤的参照系）。 */
+  let before: { hp: Record<Side, number>; charge: Record<Side, Record<Hand, number>> } | undefined;
   let prevHp: Record<Side, number> = { p1: HP_MAX, p2: HP_MAX };
   let prevPhase: Phase = 'charge';
   let tieThisRound = false;
@@ -213,10 +242,24 @@ export function mount(container: HTMLElement): () => void {
     audio.play('ui');
     redraw();
   };
+  /**
+   * `duel.next` **v3 起是一键两用**，落点由当前相位定：
+   *   T4 结算 → 世界里的【R-108-05】玩家闸门（进下一回合）⇒ **入队走信号**，规则归引擎；
+   *   终局屏 → 换一个世界（上面的 `restart`）⇒ 局的生命周期归宿主。
+   * handler 挂着就**不会**自动进 ActionSink（本地 handler 优先），所以闸门那一路要**自己 enqueue**。
+   * 忘了这一句 = 结算屏那枚键点了没反应、且不报错——正是 2026-08-07「再来一局是死键」那个病的形状。
+   */
+  const nextOrRestart = (): void => {
+    audio.start();
+    const cur = engine.world.getComponent<GameFlow>('flow', 'GameFlow')?.current ?? 'charge';
+    if (cur === 'p1win' || cur === 'p2win') { restart(); return; }
+    queue.enqueueAction(ACT.next);
+    audio.play('ui');
+  };
   const ui: MountHandle = mountUI(scene, screen(emptyView()), {
     // 每个本地动作都先「起一次 BGM」：浏览器的自动播放策略要求**真实用户手势之后**才准出声，
     // 而设置菜单这几个键正好都是真手势（`audio.start()` 幂等）。
-    [ACT.next]: restart,
+    [ACT.next]: nextOrRestart,
     [UI_ACT.menu]: (): void => { menuOpen = !menuOpen; audio.start(); audio.play('ui'); redraw(); },
     [UI_ACT.lang]: (): void => { lang = lang === 'zh' ? 'en' : 'zh'; saveLang(lang); voice.setLang(lang); audio.play('ui'); redraw(); },
     [UI_ACT.bgm]: (): void => { audio.toggle('bgm'); audio.start(); audio.play('ui'); redraw(); },

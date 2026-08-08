@@ -1,0 +1,31 @@
+// GD-108 验收剧本 ⑫ · **T4 玩家闸门**（gdd §15 表第 12 行·验 R-108-05）。
+//   T4 不点「下一轮」→ **永远停在结算**（owner 2026-08-07 判：不设自动兜底，
+//   「我们是个单人游戏，没必要去 push 玩家」）；点了才进下一回合。
+// 对抗目标：给 T4 加回自动兜底（哪怕 30 秒）→ 中间那条「空等 20 秒仍是 settle」断言红。
+//   闸门旗不复位 → 下一回合的 T4 会被上一回合按下的那次直接推过去 → 末尾断言红。
+{
+  "name": "T4 玩家闸门·不点就不走",
+  "game": "game108", "seed": 108,
+  "steps": [
+    { "tick": 152 },
+    { "signal": "throw.rock" }, { "tick": 3 },
+    { "tick": 300 }, { "tick": 92 },
+    { "expect": [ { "sv": "flow", "eq": "settle" }, { "flag": "duel.next.armed", "eq": false } ] },
+
+    // 空等 20 秒（比 v2 的 T4 长 20 倍）——**无自动兜底**
+    { "tick": 1200 },
+    { "expect": [ { "sv": "flow", "eq": "settle" } ] },
+
+    // 点了才走
+    { "signal": "duel.next" }, { "tick": 3 },
+    { "expect": [ { "sv": "flow", "eq": "charge" }, { "flag": "duel.next.armed", "eq": false } ] },
+
+    // 闸门旗必须已复位：没复位的话，这一回合的 T4 会被上一次按下的那下直接推过去
+    { "tick": 152 },
+    { "signal": "throw.rock" }, { "tick": 3 },
+    { "tick": 300 }, { "tick": 92 },
+    { "expect": [ { "sv": "flow", "eq": "settle" } ] },
+    { "tick": 600 },
+    { "expect": [ { "sv": "flow", "eq": "settle" } ] },
+  ],
+}
