@@ -6,7 +6,57 @@
 
 ---
 
-## §0 ⚖ 待 owner 判：物理线 A / B（**唯一阻塞项**）
+## §0 ✅ 已裁：**B 线 · 真实物理**（owner 2026-08-07 判）
+
+> owner 原话：「我需要做的是真实的物理，就是 B。」→ 走 **cannon-es 刚体（render-only）**，接受「不进 hash · 不可回放 · 平衡手调」的代价。下方 A/B 对照表保留作决策留痕。
+
+### §0.1 裁决后实查（三条硬事实 · 均有实证，非推断）
+
+**① v1 零新引擎能力就能做**——原判「B 需要先下沉接触事件」是**错的**，`RigidBody3D.toppleSignal` 已经给出了死亡判据：
+- 兵倒下（倾角超阈值）→ 发一次信号 → `ThreeRenderer.drainPhysicsSignals()`（`three-renderer.ts:506`）→ `enqueueAction` → Signal → sim。
+- 实证：`src/renderer/three/physics.test.ts:352`「toppleSignal：倾角超阈值发信号·平落不误发」+ `:367`「红线：不进 hash」。
+- 即 **「被撞倒 = 阵亡」**（正是 TABS 的死亡模型）。**不需要接触伤害就能跑通一局。**
+- ⚠ 但 game211 会是**全仓第一个消费者**（`grep settleSignal games/` = 零命中）→ 集成风险自担，先做最小竖切验证信号真能到 sim。
+
+**② 物理承载量 ≈ 100 兵，不是 1000**（`node scripts/cannon-army-bench.mjs` 实测·两军 capsule 对冲·量 `world.step` 本身）：
+
+| 同场兵数 | 均值 | p95 | 接触峰 | 判词 |
+|---|---|---|---|---|
+| 50 | 1.6–2.5ms | 1.9–4.5ms | ~260 | ✅ 安全 |
+| 100 | 3.5–3.8ms | 4.7–5.1ms | ~570 | ✅ 安全 |
+| 200 | 8–10ms | 9.8–13.8ms | ~1200 | 🟡 吃满帧 |
+| 400 | 22ms | 27–30ms | ~2500 | ❌ 掉帧 |
+
+→ **设计上限：每方 ~50 兵、同场 ~100。** 中队规模的物理战场，不是千人军团。
+
+**③ 由 ② 推出的前提修正**：owner 要求「充分利用**批次渲染**能力」——但在 B 线上**批渲用不满**。批渲的价值在上千实体（2D WebGL2 实测 1000→1 draw；three InstancedMesh 同材质自动合批），而物理在 ~100 就先撞墙。**B 线的瓶颈是 CPU 物理，不是 draw call。** 合批仍然接（免费、零数据改动），但它不是这条线的胜负手；胜负手是「100 个刚体怎么打出军团感」（编队密集摆放 + 镜头 + 撞飞演出）。
+
+### §0.2 v1 接线（全数据·零新能力）
+
+| 要素 | 怎么做 | 依据 |
+|---|---|---|
+| 兵 | `RigidBody3D{shape:'capsule',mass,friction}` + `Mesh3D` + `Transform3D` | 3d.md「capsule=角色」 |
+| 冲锋 | `RigidBody3D.vx/vz` 初速；中途加速用 `Impulse3D{trigger}` bump | 组件字段现成 |
+| 阵亡 | `RigidBody3D.toppleSignal` → 倒下即出局 | physics.test.ts:352 |
+| 胜负 | sim 侧数存活：`group-count` + `t2-event-when` → `GameFlow` | game-103 先例 |
+| 技能 | spawn 带 `RigidBody3D` 的物理落体（巨石/滚木/爆桶）砸进敌阵 | 纯数据 prefab |
+| 战场 | `RigidBody3D{shape:'heightfield'}` 地形 + mass0 静态围栏 | 3d.md |
+| 物理档 | `PhysicsWorld3D{gravity:-9.82,restitution:0,solverIterations:40}` | 3d.md「密集接触必配」 |
+| 观感 | `Camera3D{mode:'orbit',shake}` · `Material3D{shading:'toon',outline}` · `Trail3D` · `Post3D` | 3d.md 华丽起手 |
+
+### §0.3 留给 v2 的真缺口（**不阻塞 v1**·届时走 `docs/workflow/requests-3d.md` 由 P3D 裁）
+
+| # | 缺口 | 实证 | v1 怎么绕 |
+|---|---|---|---|
+| P1 | **接触伤害**（撞击冲量 → 扣血）。`RigidBody3D` 只有 `settleSignal`/`toppleSignal` 两个出口，**无接触事件**（`grep beginContact src/renderer/three/physics.ts` = 零命中） | components/render.ts:227-229 | 用「倒下=死」替代 |
+| P2 | **物理侧索敌/转向**。`t2-steering` 写 2D `Velocity`，驱动不了刚体；`Impulse3D` 要显式世界向量，无 seek 力 | components/render.ts:253-257 | 直线冲锋（两军对冲） |
+| P3 | **范围技能选中**（按位置圈实体）。位置在 render-only `Transform3D`，sim 读它即破红线 | 3d.md 铁律 | 物理落体自然波及 |
+
+> 复诵：**v1 = 两军直线冲锋 · cannon 真物理推挤撞飞 · 倒下即阵亡 · 站着的人多者胜 · 技能=从天而降的物理落体。零新能力、~100 兵、先跑通一局再谈精细化。**
+
+---
+
+## §0 附 · 决策留痕：物理线 A / B 对照（owner 已判 B）
 
 仓库有**两条互不相通**的物理线，都带批次渲染。选哪条决定整个战斗层的写法、可测性与域归属。
 
