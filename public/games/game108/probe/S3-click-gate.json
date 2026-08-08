@@ -53,7 +53,9 @@
         "phase-sec",
         "cb-p2-rock-v",
         "key-smoke-n",
-        "key-smoke-s"
+        "key-smoke-s",
+        "smoke-fx",
+        "smoke-veil"
       ]
     }
   ],

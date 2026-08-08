@@ -25,7 +25,7 @@ import { C, S, F, L, R, B, SH, CANVAS, dmgFontSize } from './design-tokens.js';
 import { plate, ring, hpBar, scene } from './plate-art.js';
 import { handArt, armArt, HAND_BOX_SCALE, HAND_BOX_SHIFT } from './hand-art.js';
 import { HAND_ICON_SRC } from './hand-icons.js';
-import { t, CHAR_W, enSize, type Lang } from './strings.js';
+import { t, CHAR_W, enSize, type Lang, type StringKey as StringKeyOf } from './strings.js';
 import { DEFAULT_CARD } from './card-character.js';
 
 /** 这只手现在打多少【R-108-13】。 */
@@ -110,6 +110,8 @@ export interface DuelView {
   lang: Lang;
   /** 设置菜单开着没有（owner 2026-08-07：右上角一个菜单键·里面放音乐和语言）。 */
   menuOpen?: boolean;
+  /** 玩法说明开着没有（owner 2026-08-08：「少了个说明文档，需要在这个菜单里加一下」）。 */
+  helpOpen?: boolean;
   /** 三个音频开关的当前状态（纯显示·真状态在宿主的音频门面里）。 */
   audio?: { bgm: boolean; sfx: boolean; voice: boolean };
   /** 角色这一刻说的那句（配音发不出声时的**字幕兜底**——听不见也要看得见）。 */
@@ -1051,7 +1053,6 @@ function bottomBar(view: DuelView): LayoutNode[] {
     ...HANDS.map((h, i) => cardGhost(view, h, i)).filter((n): n is LayoutNode => n !== null),
     ...HANDS.map((h, i) => moveCard(view, h, i)),
     ...chargeParticles(view),
-    ...(view.awaitNext ? [nextKey(view)] : []),
     smokeKey(view),
   ];
 }
@@ -1162,8 +1163,8 @@ function nextKey(view: DuelView): LayoutNode {
       action: ACT.next,
     },
     layout: {
-      x: Math.round((CANVAS.w - w) / 2), y: 706, width: w, height: hgt,
-      direction: 'row', align: 'center', justify: 'center', padding: 0, allowOverlap: true,
+      width: w, height: hgt,
+      direction: 'row', align: 'center', justify: 'center', padding: 0,
       anim: 'pop', animMs: 260,
     },
     children: [{ type: 'Label', id: 'key-nextround-t', props: { text: t(view.lang, 'end.nextRound'), size: 40, font: F.cjk, color: 'ink' } }],
@@ -1204,6 +1205,100 @@ function startScreen(view: DuelView): LayoutNode[] {
           children: [{ type: 'Label', id: 'key-start-t', props: { text: t(view.lang, 'start.go'), size: 52, font: F.cjk, color: 'ok' } }],
         },
         { type: 'Label', id: 'start-tip', props: { text: t(view.lang, 'start.tip'), size: 22, font: F.cjk, color: 'sub' } },
+      ],
+    },
+  ];
+}
+
+/**
+ * 【R-108-21/22】烟雾**演出**（owner 2026-08-08：「烟雾完全没有效果啊，要有一个效果…
+ * 从这个烟雾地方飞上去，有个粒子的烟雾特效之类的…比如说遮住他的眼睛」）。
+ *
+ * 三样：① 从烟雾键升起的粒子雾（`Particles` 是基座件——`kind:'sparkle'`，
+ * 定色/定向/拖尾归 `REQ-UIFX` 那张单，到货后换）② 我方三槽罩一层雾
+ * ③ 对手画像上一枚「看不见」的标 —— 这一枚才是**信息**：告诉玩家「这两回合他真的读不到你」。
+ *
+ * ⚠ 规则那一半（AI 真的读不到）**不在这里**，在 `blueprint.ts` 的决策表里，
+ * 且要等 gdd §9.0 的 A/B/C 裁完才动——现在 AI 压根不读蓄力，所以烟雾在规则上还是空转的。
+ * **这一屏只做"看得见"，不假装"已经生效"**（假装 = 比没做还糟）。
+ */
+function smokeFx(view: DuelView): LayoutNode[] {
+  if (!view.smoke.hidden) return [];
+  const out: LayoutNode[] = [];
+  // ① 粒子雾：从烟雾键正上方升起（键在底栏最右，见 smokeKey 的落点）。
+  const sx = CANVAS.w - L.bottom.pad[1] - L.smoke.w;
+  out.push({
+    type: 'Particles', id: 'smoke-fx',
+    props: { kind: 'sparkle', count: 22, loop: true },
+    layout: { x: sx, y: L.bottom.y - 300, width: L.smoke.w, height: 320, allowOverlap: true },
+  } as LayoutNode);
+  // ② 我方三槽罩雾（雾是"对手看不见"的可视化——我自己仍然读得到底下的数字，故用半透）。
+  out.push({
+    type: 'Image', id: 'smoke-veil',
+    props: { src: plate({ w: 992, h: BOTTOM_INNER_H, fill: ['rgba(226,232,240,.34)', 'rgba(203,213,225,.20)'], radius: R.mySlotBox }), alt: '', fit: 'fill' },
+    layout: { x: 620, y: BOTTOM_INNER_Y, width: 992, height: BOTTOM_INNER_H, allowOverlap: true },
+  });
+  // ③ 对手画像上的「看不见」标 —— 玩家要的确认在这儿。
+  const w = 132;
+  out.push({
+    type: 'Panel', id: 'smoke-blind',
+    props: { skin: plate({ w, h: 32, fill: 'rgba(24,17,12,.82)', border: 3, radius: R.pill }) },
+    layout: {
+      x: CANVAS.w - 18 - w, y: 92, width: w, height: 32,
+      direction: 'row', align: 'center', justify: 'center', padding: 0, allowOverlap: true,
+    },
+    children: [{ type: 'Label', id: 'smoke-blind-t', props: { text: t(view.lang, 'smoke.blind'), size: 19, font: F.cjk, color: 'text' } }],
+  });
+  return out;
+}
+
+/**
+ * 玩法说明（owner 2026-08-08 要·从设置菜单里进）。
+ * 写法受 §0 验收铁律约束：本作**零记忆零算术**——**说明本身也不许要求玩家记东西或心算**，
+ * 所以只写「四拍各干什么 + 三条规则 + 一句为什么」，不列公式、不讲概率。
+ */
+function helpScreen(view: DuelView): LayoutNode[] {
+  const lang = view.lang;
+  const w = 1060, hgt = 760;
+  const x = Math.round((CANVAS.w - w) / 2), y = Math.round((CANVAS.h - hgt) / 2);
+  const head = (id: string, key: StringKeyOf): LayoutNode => ({
+    type: 'Label', id: `help-${id}`, props: { text: t(lang, key), size: 30, font: F.cjk, color: 'ok' },
+  });
+  const line = (id: string, key: StringKeyOf): LayoutNode => ({
+    type: 'Label', id: `help-${id}`, props: { text: t(lang, key), size: enSize(lang, 26), font: F.cjk, color: 'ink' },
+  });
+  return [
+    {
+      type: 'Image', id: 'help-veil',
+      props: { src: plate({ w: CANVAS.w, h: CANVAS.h, fill: 'rgba(16,11,8,.72)', radius: 0 }), alt: '', fit: 'fill' },
+      layout: { x: 0, y: 0, width: CANVAS.w, height: CANVAS.h, allowOverlap: true },
+    },
+    {
+      type: 'Panel', id: 'help',
+      props: { skin: plate({ w, h: hgt, fill: [C.cream, '#f4e2c4'], border: B.end, radius: R.end, shadow: SH.end, shadowColor: 'rgba(0,0,0,.35)' }) },
+      layout: {
+        x, y, width: w, height: hgt, direction: 'column', align: 'start', justify: 'center', gap: 10, padding: 48,
+        anim: 'pop', animMs: 280, allowOverlap: true,
+      },
+      children: [
+        { type: 'Label', id: 'help-t', props: { text: t(lang, 'help.title'), size: 48, font: F.cjk, color: 'ink' }, layout: { height: 60 } },
+        {
+          type: 'Image', id: 'help-div',
+          props: { src: plate({ w: w - 96, h: 4, fill: 'rgba(63,43,30,.22)', radius: 2 }), alt: '', fit: 'fill' },
+          layout: { width: w - 96, height: 4 },
+        },
+        head('h1', 'help.beats'),
+        line('t1', 'help.t1'), line('t2', 'help.t2'), line('t3', 'help.t3'), line('t4', 'help.t4'),
+        head('h2', 'help.rules'),
+        line('r1', 'help.r1'), line('r2', 'help.r2'), line('r3', 'help.r3'),
+        line('pen', 'help.penalty'),
+        { type: 'Label', id: 'help-tell', props: { text: t(lang, 'help.tell'), size: enSize(lang, 24), font: F.cjk, color: 'dim' } },
+        {
+          type: 'Panel', id: 'key-help-close',
+          props: { skin: plate({ w: 260, h: 66, fill: C.cream, border: B.card, radius: R.pill, shadow: SH.card }), action: UI_ACT.help },
+          layout: { width: 260, height: 66, direction: 'row', align: 'center', justify: 'center', padding: 0 },
+          children: [{ type: 'Label', id: 'key-help-close-t', props: { text: t(lang, 'menu.close'), size: 28, font: F.cjk, color: 'ink' } }],
+        },
       ],
     },
   ];
@@ -1264,6 +1359,8 @@ function settingsMenu(view: DuelView): LayoutNode[] {
         row('sfx', t(view.lang, 'menu.sfx'), a.sfx ? on : off, UI_ACT.sfx, a.sfx, 1),
         row('voice', t(view.lang, 'menu.voice'), a.voice ? on : off, UI_ACT.voice, a.voice, 2),
         row('lang', t(view.lang, 'menu.lang'), t(view.lang, view.lang === 'zh' ? 'menu.langZh' : 'menu.langEn'), UI_ACT.lang, true, 3),
+        // owner 2026-08-08：说明文档从这里进（菜单里第五行·不是第二颗主键，样式同前四行）。
+        row('help', t(view.lang, 'help.open'), '?', UI_ACT.help, true, 4),
         {
           type: 'Panel', id: 'key-menu-close',
           props: { skin: plate({ w: 220, h: 60, fill: C.cream, border: B.card, radius: R.card, shadow: SH.card }), action: UI_ACT.menu },
@@ -1354,6 +1451,12 @@ function endPanel(view: DuelView): LayoutNode[] {
 export function buildDuelScreen(view: DuelView): LayoutNode {
   const over = isOver(view.phase);
   const b = banner(view);
+  // 【R-108-05】「下一轮」**挂进结果横幅那一列的末尾**（定稿 T4 稿图里它就在「伤害落定」正下方）。
+  // 为什么不摆成独立绝对定位节点：横幅是**自适应高度的列**，伤害数字一大它就往下长——
+  // 摆 y706 那一版真渲染实测过：掉 20 没事，掉 40 时横幅长到 ~750，把键压住 ⇒
+  // 探针点在横幅上、**世界零反应且零报错**，试玩当场卡在结算（2026-08-08 第二次撞同一形状）。
+  // 挂进同一列 = 由布局保证不重叠，横幅多高都跟着走。
+  if (b && view.awaitNext) b.children = [...(b.children ?? []), nextKey(view)];
   const sub = subtitle(view);
   const veil = hitVeil(view);   // 罚血**不**用红纱了：定稿要它与挨打分得开，改走欠账牌 + 血条渗滴
   // 【R-108-06】红色**震动**：整块舞台连人带 UI 一起抖（幅度随掉血量·见 shakeAmp）。
@@ -1372,6 +1475,8 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
       handNode(view, 'p1'), handNode(view, 'p2'),
       ...(b ? [b] : []),
       ...(over ? endPanel(view) : bottomBar(view)),
+      // 没有横幅的结算（理论上罕见：平局且没亮手）也得留出口——否则玩家卡死在 T4。
+      ...(view.awaitNext && !b ? [nextKey(view)] : []),
       // T1 放大态：判定表**改画在卡片之上**（定稿 T1b 稿图里它就压在中间那张牌上）——
       // 六条槽与判定表是这一拍唯一要读的两样东西，被自己的牌盖住就等于关掉了。
       ...(view.phase === 'charge' ? [ruleSlab(view.lang)] : []),
@@ -1380,7 +1485,9 @@ export function buildDuelScreen(view: DuelView): LayoutNode {
       ...penaltyPanel(view), ...penaltyDrips(view),
       // 红纱压在对局层之上、菜单之下：它是打击感，不该盖住玩家正在操作的设置面板。
       ...(veil ? [veil] : []),
+      ...smokeFx(view),
       ...(view.menuOpen ? settingsMenu(view) : []),
+      ...(view.helpOpen ? helpScreen(view) : []),
       // 开始屏盖在最上面（含菜单）——还没开局时屏上只该有一个出口。
       ...(view.notStarted ? startScreen(view) : []),
     ],

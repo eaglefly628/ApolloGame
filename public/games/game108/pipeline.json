@@ -33,20 +33,20 @@
     "S3": {
       "exit": 0,
       "summary": "编译期游戏免 manifest 校验 · ✓ 渲染探针过（截图 public/games/<slug>/probe/S3-render.png） · ✓ 点击打穿（6 个控件 · 5 个点后 DOM 真的变了 · 零控制台 error）",
-      "at": "2026-08-08T09:06:30.889Z",
-      "gameHash": "cd850fd537759200"
+      "at": "2026-08-08T09:21:44.998Z",
+      "gameHash": "ea6c5738c1515fe4"
     },
     "S4": {
       "exit": 1,
       "summary": "✗ 验收剧本 conformance 未过（12 场景）·       当步机读态：{\"res\":{\"round\":2,\"p1.debt\":0,\"p1.smokeTurns\":0,\"p1.smoke\":2,\"hp\":100,\"p1.budget\":0,\"p1.charge.rock\":0,\"p1.charge.paper\":0,\"p1.charge.scissors\":0,\"p2.budget\":0,\"p2.charge.rock\":1,\"p2.charg",
-      "at": "2026-08-08T09:06:33.942Z",
-      "gameHash": "cd850fd537759200"
+      "at": "2026-08-08T09:21:47.645Z",
+      "gameHash": "ea6c5738c1515fe4"
     },
     "S5": {
       "exit": 0,
       "summary": "AUDIT: PASS · RATCHET: PASS · ⚠ 无标准照基准·未比对（golden-shot bless 建基准）",
-      "at": "2026-08-08T09:06:34.168Z",
-      "gameHash": "cd850fd537759200"
+      "at": "2026-08-08T09:21:47.839Z",
+      "gameHash": "ea6c5738c1515fe4"
     }
   },
   "history": [
@@ -330,6 +330,42 @@
       "stage": "S5",
       "exit": 0,
       "at": "2026-08-08T09:06:34.168Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S3",
+      "reason": "S2 复查门待补；说明文档 + 烟雾演出落地后重刷",
+      "at": "2026-08-08T09:21:23.000Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S3",
+      "exit": 0,
+      "at": "2026-08-08T09:21:44.998Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S4",
+      "reason": "S2 复查门待补；说明文档 + 烟雾演出落地后重刷",
+      "at": "2026-08-08T09:21:45.132Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S4",
+      "exit": 1,
+      "at": "2026-08-08T09:21:47.645Z"
+    },
+    {
+      "action": "out-of-order",
+      "stage": "S5",
+      "reason": "S2 复查门待补；说明文档 + 烟雾演出落地后重刷",
+      "at": "2026-08-08T09:21:47.766Z"
+    },
+    {
+      "action": "gate",
+      "stage": "S5",
+      "exit": 0,
+      "at": "2026-08-08T09:21:47.839Z"
     }
   ],
   "outOfOrder": [
@@ -437,18 +473,33 @@
       "stage": "S5",
       "reason": "S2 复查门待补（同已记账口径）；owner 试玩四条改进落地后重刷",
       "at": "2026-08-08T09:06:34.083Z"
+    },
+    {
+      "stage": "S3",
+      "reason": "S2 复查门待补；说明文档 + 烟雾演出落地后重刷",
+      "at": "2026-08-08T09:21:23.000Z"
+    },
+    {
+      "stage": "S4",
+      "reason": "S2 复查门待补；说明文档 + 烟雾演出落地后重刷",
+      "at": "2026-08-08T09:21:45.132Z"
+    },
+    {
+      "stage": "S5",
+      "reason": "S2 复查门待补；说明文档 + 烟雾演出落地后重刷",
+      "at": "2026-08-08T09:21:47.766Z"
     }
   ],
   "selfCheck": {
     "S4": {
-      "at": "2026-08-08T09:06:33.942Z",
+      "at": "2026-08-08T09:21:47.645Z",
       "shots": 7,
-      "gameHash": "cd850fd537759200"
+      "gameHash": "ea6c5738c1515fe4"
     },
     "S5": {
-      "at": "2026-08-08T09:06:34.168Z",
+      "at": "2026-08-08T09:21:47.839Z",
       "shots": 7,
-      "gameHash": "cd850fd537759200"
+      "gameHash": "ea6c5738c1515fe4"
     }
   }
 }

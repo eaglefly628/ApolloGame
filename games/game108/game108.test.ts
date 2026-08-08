@@ -307,6 +307,40 @@ describe('game108 · 对局屏（LayoutNode 纯数据）', () => {
     expect(validateLayoutNode(buildDuelScreen(v))).toEqual([]);
   });
 
+  it('玩法说明：菜单里有入口，说明屏闭集合法（owner 2026-08-08）', () => {
+    const open = screenActions({ ...emptyView(), menuOpen: true });
+    expect(open).toContain(UI_ACT.help);
+    const helpView: DuelView = { ...emptyView(), menuOpen: true, helpOpen: true };
+    expect(validateLayoutNode(buildDuelScreen(helpView))).toEqual([]);
+    // 说明本身也不许要求玩家记东西或心算（§0 验收铁律）——所以正文里不该出现公式/百分号。
+    const texts: string[] = [];
+    const walk = (n: LayoutNode): void => {
+      const tx = (n.props as { text?: string } | undefined)?.text;
+      if (typeof tx === 'string' && n.id.startsWith('help-')) texts.push(tx);
+      for (const c of n.children ?? []) walk(c);
+    };
+    walk(buildDuelScreen(helpView));
+    expect(texts.length).toBeGreaterThan(6);
+    for (const x of texts) expect(x).not.toMatch(/[%×＝=]|\d+\s*\/\s*\d+/);
+  });
+
+  it('【R-108-21】烟雾**看得见**：三样都在（粒子雾 / 罩雾 / 对手「看不见」标）', () => {
+    // owner 2026-08-08 报「烟雾完全没有效果」。这条钉的是**演出那一半**；
+    // 规则那一半（AI 真读不到）等 gdd §9.0 的 A/B/C 裁完再做，**现在不许假装已生效**。
+    const ids: string[] = [];
+    const walk = (n: LayoutNode): void => { ids.push(n.id); for (const c of n.children ?? []) walk(c); };
+    const off = { ...emptyView() };
+    walk(buildDuelScreen(off));
+    expect(ids).not.toContain('smoke-fx');
+    ids.length = 0;
+    const on: DuelView = { ...emptyView(), smoke: { uses: 1, hidden: true } };
+    walk(buildDuelScreen(on));
+    expect(ids).toContain('smoke-fx');       // 粒子雾
+    expect(ids).toContain('smoke-veil');     // 我方三槽罩雾
+    expect(ids).toContain('smoke-blind');    // 对手「看不见」标
+    expect(validateLayoutNode(buildDuelScreen(on))).toEqual([]);
+  });
+
   it('【R-108-05】T4 才画「下一轮」键，且它发的是词表里的 `duel.next`', () => {
     const settle: DuelView = { ...emptyView(), phase: 'settle', phaseLeft: 0, phaseSec: 0, awaitNext: true };
     expect(screenActions(settle)).toContain(ACT.next);

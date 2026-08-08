@@ -59,6 +59,8 @@ export const STRINGS = {
   'smoke.avail': { en: 'Hide my slots · 2 rounds', zh: '遮蔽我方三槽 2 回合' },
   'smoke.active': { en: 'Active · hidden from them', zh: '生效中 · 对手看不见' },
   'smoke.off': { en: 'Locked in clash', zh: '对决中不可用' },
+  // 【R-108-21】烟雾期间挂在对手画像旁的标——**这一枚才是信息**：告诉玩家「他这两回合读不到你」。
+  'smoke.blind': { en: 'HE IS BLIND', zh: '他看不见了' },
 
   // ── 结果横幅 ────────────────────────────────────────────────────────
   'result.win': { en: 'You win the round', zh: '你赢了这回合' },
@@ -104,6 +106,23 @@ export const STRINGS = {
   'menu.close': { en: 'Close', zh: '关闭' },
   'menu.langZh': { en: '中文', zh: '中文' },
   'menu.langEn': { en: 'English', zh: 'English' },
+
+  // ── 玩法说明（owner 2026-08-08 要·菜单里一项）────────────────────────
+  // 口径照 §0 验收铁律：**零记忆零算术**——说明本身也不许要求玩家记东西或心算，
+  // 所以写成「四拍各干什么 + 三条规则」，不写公式、不列概率。
+  'help.title': { en: 'HOW TO PLAY', zh: '玩法说明' },
+  'help.open': { en: 'How to play', zh: '玩法说明' },
+  'help.beats': { en: 'EACH ROUND', zh: '一个回合' },
+  'help.t1': { en: 'CHARGE · pick one hand, +1 layer (once per round)', zh: '蓄力 · 挑一只手 +1 层（一回合只能加一层）' },
+  'help.t2': { en: 'STRIKE · throw any hand — not necessarily the one you charged', zh: '出招 · 出任意一手，不必是刚蓄的那只' },
+  'help.t3': { en: 'DUEL · both hands revealed at once', zh: '对决 · 双方同时亮拳' },
+  'help.t4': { en: 'RESOLVE · press NEXT ROUND when you are ready', zh: '结算 · 看够了再点「下一轮」' },
+  'help.rules': { en: 'THREE RULES', zh: '三条规则' },
+  'help.r1': { en: 'Rock beats Scissors beats Paper beats Rock', zh: '石 > 剪 > 布 > 石' },
+  'help.r2': { en: 'Charge does not decide who wins — only how hard the win lands', zh: '蓄力不决定谁赢，只决定赢了打多重' },
+  'help.r3': { en: 'The hand you throw resets to zero — win, lose or tie', zh: '出过的手清零——赢、输、平都一样' },
+  'help.tell': { en: 'Both charge racks are public. That is the whole game: read where his power goes, and lie about yours.', zh: '六条槽全公开。这就是整个游戏：读他的力往哪去，再对自己的力说谎。' },
+  'help.penalty': { en: 'Stalling past the free time costs 1 HP per second — it stops the moment you strike.', zh: '出招拖过免费时间，每秒扣 1 点血——出手就停。' },
 
   // ── 心情（卡片角色的 AI 轴）──────────────────────────────────────────
   'mood.stubborn': { en: 'Stubborn', zh: '执拗' },

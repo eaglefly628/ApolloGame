@@ -55,6 +55,7 @@ export function mount(container: HTMLElement): () => void {
   let engine = boot();
   let lang: Lang = loadLang();
   let menuOpen = false;
+  let helpOpen = false;
   // owner 2026-08-08：「我还没有点开始，它就直接三个牌飞上来了」——**第一次进来必须先有开始键**。
   // 做法是**根本不启动引擎**（不是暂停）：玩家点下去看到的是完完整整的第一拍，
   // 而不是已经播过一半的 T1。顺带它还是整局第一个真实手势，BGM 从这里起（浏览器自动播放策略）。
@@ -181,6 +182,7 @@ export function mount(container: HTMLElement): () => void {
       charge,
       penalty: { active: inPenalty, debt: num('debt:p1') },
       ...(started ? {} : { notStarted: true }),
+      ...(helpOpen ? { helpOpen: true } : {}),
       ...(phase === 'settle' ? { awaitNext: true } : {}),
       ...(charged ? { charged } : {}),
       ...(before ? { before } : {}),
@@ -242,6 +244,7 @@ export function mount(container: HTMLElement): () => void {
     },
   };
   const screen = (v: DuelView): LayoutNode => resolveBindings(buildDuelScreen(v), dataSource);
+  void helpOpen;   // 由 readView 投影进视图（见上）
 
   // handlers **只挂表现层本地动作**（`ui.*`）：换语言是纯显示设置，不该进世界
   //（进了就会进 hash / 录放 / lockstep，两端语言不同就判不一致——那是灾难）。
@@ -296,7 +299,9 @@ export function mount(container: HTMLElement): () => void {
     // 每个本地动作都先「起一次 BGM」：浏览器的自动播放策略要求**真实用户手势之后**才准出声，
     // 而设置菜单这几个键正好都是真手势（`audio.start()` 幂等）。
     [ACT.next]: nextOrRestart,
-    [UI_ACT.menu]: (): void => { menuOpen = !menuOpen; audio.start(); audio.play('ui'); redraw(); },
+    [UI_ACT.menu]: (): void => { menuOpen = !menuOpen; if (!menuOpen) helpOpen = false; audio.start(); audio.play('ui'); redraw(); },
+    // 说明屏从菜单进、点关闭回菜单（菜单不关）——玩家是"来查一眼规则"，不是"要退出设置"。
+    [UI_ACT.help]: (): void => { helpOpen = !helpOpen; audio.play('ui'); redraw(); },
     [UI_ACT.lang]: (): void => { lang = lang === 'zh' ? 'en' : 'zh'; saveLang(lang); voice.setLang(lang); audio.play('ui'); redraw(); },
     [UI_ACT.bgm]: (): void => { audio.toggle('bgm'); audio.start(); audio.play('ui'); redraw(); },
     [UI_ACT.sfx]: (): void => { audio.toggle('sfx'); audio.play('ui'); redraw(); },
